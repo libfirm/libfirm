@@ -38,11 +38,10 @@ static needs_lowering_t *needs_lowering;
 
 static ir_node *create_not(dbg_info *dbgi, ir_node *node)
 {
-	ir_node   *block  = get_nodes_block(node);
-	ir_mode   *mode   = lowered_mode;
-	ir_tarval *tv_one = get_mode_one(mode);
-	ir_graph  *irg    = get_irn_irg(node);
-	ir_node   *one    = new_rd_Const(dbgi, irg, tv_one);
+	ir_node  *block = get_nodes_block(node);
+	ir_mode  *mode  = lowered_mode;
+	ir_graph *irg   = get_irn_irg(node);
+	ir_node  *one   = new_rd_Const_one(dbgi, irg, mode);
 
 	return new_rd_Eor(dbgi, block, node, one, mode);
 }
@@ -75,7 +74,7 @@ static ir_node *create_cond_set(ir_node *cond_value, ir_mode *dest_mode)
 	ir_node  *true_jmp    = new_r_Jmp(true_block);
 	ir_node  *false_jmp   = new_r_Jmp(false_block);
 	ir_node  *lower_in[2] = { true_jmp, false_jmp };
-	ir_node  *one         = new_r_Const(irg, get_mode_one(dest_mode));
+	ir_node  *one         = new_r_Const_one(irg, dest_mode);
 	ir_node  *zero        = new_r_Const_null(irg, dest_mode);
 	ir_node  *phi_in[2]   = { one, zero };
 	ir_node  *phi;
@@ -175,8 +174,7 @@ static ir_node *lower_node(ir_node *node)
 	case iro_Const: {
 		ir_tarval *tv = get_Const_tarval(node);
 		if (tv == get_tarval_b_true()) {
-			ir_tarval *tv_one = get_mode_one(mode);
-			res               = new_rd_Const(dbgi, irg, tv_one);
+			res = new_rd_Const_one(dbgi, irg, mode);
 		} else if (tv == get_tarval_b_false()) {
 			res = new_rd_Const_null(dbgi, irg, mode);
 		} else {

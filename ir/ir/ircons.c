@@ -658,3 +658,13 @@ ir_node *new_r_Const_null(ir_graph *const irg, ir_mode *const mode)
 {
 	return new_r_Const(irg, get_mode_null(mode));
 }
+
+ir_node *new_rd_Const_one(dbg_info *const dbgi, ir_graph *const irg, ir_mode *const mode)
+{
+	return new_rd_Const(dbgi, irg, get_mode_one(mode));
+}
+
+ir_node *new_r_Const_one(ir_graph *const irg, ir_mode *const mode)
+{
+	return new_r_Const(irg, get_mode_one(mode));
+}

@@ -295,7 +295,7 @@ int i_mapper_pow(ir_node *call)
 		if (tarval_is_null(tv)) {
 			/* pow(x, 0.0) = 1.0 */
 			ir_mode *mode = get_tarval_mode(tv);
-			irn = new_r_Const(irg, get_mode_one(mode));
+			irn = new_r_Const_one(irg, mode);
 		} else if (tarval_is_one(tv)) {
 			/* pow(x, 1.0) = x */
 			irn = left;
@@ -322,7 +322,7 @@ int i_mapper_pow(ir_node *call)
 			mode = float_arithmetic;
 		}
 
-		irn  = new_r_Const(irg, get_mode_one(mode));
+		irn  = new_r_Const_one(irg, mode);
 		div  = new_rd_Div(dbg, block, mem, irn, left, mode, op_pin_state_pinned);
 		mem  = new_r_Proj(div, mode_M, pn_Div_M);
 		irn  = new_r_Proj(div, mode, pn_Div_res);
@@ -348,7 +348,7 @@ int i_mapper_exp(ir_node *call)
 		/* exp(0.0) = 1.0 */
 		ir_graph *irg  = get_irn_irg(val);
 		ir_mode *mode  = get_irn_mode(val);
-		ir_node *irn   = new_r_Const(irg, get_mode_one(mode));
+		ir_node *irn   = new_r_Const_one(irg, mode);
 		ir_node *mem   = get_Call_mem(call);
 		DBG_OPT_ALGSIM0(call, irn, FS_OPT_RTS_EXP);
 		replace_call(irn, call, mem, NULL, NULL);
@@ -440,7 +440,7 @@ static int i_mapper_symmetric_zero_to_one(ir_node *call, int reason)
 		/* f(0.0) = 1.0 */
 		ir_graph *irg  = get_irn_irg(val);
 		ir_mode *mode  = get_irn_mode(val);
-		ir_node *irn   = new_r_Const(irg, get_mode_one(mode));
+		ir_node *irn   = new_r_Const_one(irg, mode);
 		ir_node *mem   = get_Call_mem(call);
 		DBG_OPT_ALGSIM0(call, irn, reason);
 		replace_call(irn, call, mem, NULL, NULL);

@@ -2604,7 +2604,7 @@ static ir_node *transform_node_Add(ir_node *n)
 				return n;
 			} else if (get_mode_arithmetic(mode) == irma_twos_complement) {
 				/* a + a -> a << 1 */
-				ir_node *const one = new_r_Const(irg, get_mode_one(mode_Iu));
+				ir_node *const one = new_r_Const_one(irg, mode_Iu);
 				n = new_rd_Shl(dbgi, block, a, one, mode);
 				return n;
 			}
@@ -2668,7 +2668,7 @@ static ir_node *transform_node_Add(ir_node *n)
 					if (y) {
 						/* x + (x * y) -> x * (y + 1) */
 mul_y_plus_1:;
-						z = new_r_Const(irg, get_mode_one(mode));
+						z = new_r_Const_one(irg, mode);
 mul_y_plus_z:;
 						dbg_info *const dbgi  = get_irn_dbg_info(n);
 						ir_node  *const block = get_nodes_block(n);
@@ -2935,7 +2935,7 @@ restart:
 			dbg_info *const dbg = get_irn_dbg_info(n);
 			ir_node  *const blk = get_nodes_block(n);
 			ir_graph *const irg = get_irn_irg(n);
-			ir_node  *const one = new_r_Const(irg, get_mode_one(mode));
+			ir_node  *const one = new_r_Const_one(irg, mode);
 			ir_node  *const sub = new_rd_Sub(dbg, blk, y, one, mode);
 			n = new_rd_Mul(dbg, blk, x, sub, mode);
 			DBG_OPT_ALGSIM0(oldn, n, FS_OPT_SUB_MUL_A_X_A);
@@ -3078,8 +3078,7 @@ static ir_node *can_negate_cheaply(ir_node *node)
 	if (is_Not(node)) {
 		assert(get_mode_arithmetic(mode) == irma_twos_complement);
 		ir_graph  *irg   = get_irn_irg(node);
-		ir_tarval *tv1   = get_mode_one(mode);
-		ir_node   *c1    = new_r_Const(irg, tv1);
+		ir_node   *c1    = new_r_Const_one(irg, mode);
 		dbg_info  *dbgi  = get_irn_dbg_info(node);
 		ir_node   *block = get_nodes_block(node);
 		ir_node   *op    = get_Not_op(node);
@@ -5777,8 +5776,7 @@ static ir_node *transform_Mux_set(ir_node *n, ir_relation relation)
 					unsigned   shift_amount = get_tarval_highest_bit(tv);
 					ir_node   *shift_cnt    = new_rd_Const_long(dbgi, irg, mode_Iu, shift_amount);
 					ir_node   *shift        = new_rd_Shr(dbgi, block, a, shift_cnt, calc_mode);
-					ir_tarval *one          = get_mode_one(calc_mode);
-					ir_node   *c            = new_rd_Const(dbgi, irg, one);
+					ir_node   *c            = new_rd_Const_one(dbgi, irg, calc_mode);
 					ir_node   *and          = new_rd_And(dbgi, block, shift, c, calc_mode);
 					if (calc_mode != dest_mode) {
 						and = new_rd_Conv(dbgi, block, and, dest_mode);

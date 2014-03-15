@@ -824,7 +824,7 @@ static void lower_shr_helper(ir_node *node, ir_mode *mode,
 	                                   low_unsigned);
 	ir_node *tconv        = create_conv(block_true, left_high,
 	                                    low_unsigned);
-	ir_node *one          = new_r_Const(irg, get_mode_one(low_unsigned));
+	ir_node *one          = new_r_Const_one(irg, low_unsigned);
 	ir_node *carry0       = new_rd_Shl(dbgi, block_true, tconv, one,
 	                                   low_unsigned);
 	ir_node *carry1       = new_rd_Shl(dbgi, block_true, carry0,
@@ -933,7 +933,7 @@ static void lower_Shl(ir_node *node, ir_mode *mode)
 	ir_node *not_shiftval = new_rd_Not(dbgi, block_true, right,
 	                                   low_unsigned);
 	ir_node *conv         = create_conv(block_true, left_low, mode);
-	ir_node *one          = new_r_Const(irg, get_mode_one(low_unsigned));
+	ir_node *one          = new_r_Const_one(irg, low_unsigned);
 	ir_node *carry0       = new_rd_Shr(dbgi, block_true, conv, one, mode);
 	ir_node *carry1       = new_rd_Shr(dbgi, block_true, carry0,
 	                                   not_shiftval, mode);

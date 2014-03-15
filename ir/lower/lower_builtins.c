@@ -120,11 +120,9 @@ static void replace_may_alias(ir_node *node)
 
 	ir_alias_relation alias = get_alias_relation(in0, type0, in1, type1);
 
-	ir_graph  *irg    = get_irn_irg(node);
-	ir_tarval *resval = alias == ir_no_alias
-	                  ? get_mode_null(rmode) : get_mode_one(rmode);
-	ir_node   *result = new_r_Const(irg, resval);
-	ir_node *const in[] = {
+	ir_graph *const irg    = get_irn_irg(node);
+	ir_node  *const result = (alias != ir_no_alias ? new_r_Const_one : new_r_Const_null)(irg, rmode);
+	ir_node  *const in[]   = {
 		[pn_Builtin_M]     = get_Builtin_mem(node),
 		[pn_Builtin_max+1] = result,
 	};

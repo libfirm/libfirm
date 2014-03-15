@@ -14,7 +14,7 @@
 #include "irgwalk.h"
 #include "irprog.h"
 #include "iredges_t.h"
-#include "ircons.h"
+#include "ircons_t.h"
 #include "irflag.h"
 #include "irgmod.h"
 #include "irgopt.h"
@@ -1371,7 +1371,7 @@ static ir_node *ia32_create_trampoline_fkt(ir_node *block, ir_node *mem, ir_node
 	ir_graph *const irg  = get_irn_irg(block);
 	ir_node  *      p    = trampoline;
 	ir_mode  *const mode = get_irn_mode(p);
-	ir_node  *const one  = new_r_Const(irg, get_mode_one(ia32_mode_gp));
+	ir_node  *const one  = new_r_Const_one(irg, ia32_mode_gp);
 	ir_node  *const four = new_r_Const_long(irg, ia32_mode_gp, 4);
 	ir_node  *      st;
 
