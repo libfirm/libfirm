@@ -185,13 +185,13 @@ FIRM_API void edges_reroute_except(ir_node *old, ir_node *nw,
 
 /**
  * Verifies the out edges of graph @p irg.
- * @return 1 if a problem was found, 0 otherwise
+ * @return 0 if a problem was found
  */
 FIRM_API int edges_verify(ir_graph *irg);
 
 /**
  * Verifies a certrain kind of out edges of graph @p irg.
- * @returns 1 if a problem was found, 0 otherwise
+ * @returns 0 if a problem was found
  */
 FIRM_API int edges_verify_kind(ir_graph *irg, ir_edge_kind_t kind);
 

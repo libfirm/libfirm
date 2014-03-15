@@ -12,6 +12,7 @@
 #ifndef FIRM_IR_EDGES_T_H
 #define FIRM_IR_EDGES_T_H
 
+#include <stdbool.h>
 #include "debug.h"
 
 #include "set.h"
@@ -36,10 +37,10 @@
  * An edge.
  */
 struct ir_edge_t {
-	ir_node  *src;          /**< The source node of the edge. */
-	int      pos;           /**< The position of the edge at @p src. */
+	ir_node *src;         /**< The source node of the edge. */
+	int      pos;         /**< The position of the edge at @p src. */
 #ifdef DEBUG_libfirm
-	unsigned present : 1;   /**< Used by the verifier. Don't rely on its content. */
+	bool     present : 1; /**< Used by the verifier. */
 #endif
 	struct list_head list;  /**< The list head to queue all out edges at a node. */
 };
