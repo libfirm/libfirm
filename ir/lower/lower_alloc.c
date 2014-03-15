@@ -36,13 +36,11 @@ static ir_node *adjust_alloc_size(dbg_info *dbgi, ir_node *size, ir_node *block)
 	if (is_Const(size) && !lower_constant_sizes)
 		return size;
 
-	ir_mode   *mode = get_irn_mode(size);
-	ir_tarval *tv   = new_tarval_from_long(stack_alignment-1, mode);
-	ir_graph  *irg  = get_Block_irg(block);
-	ir_node   *mask = new_r_Const(irg, tv);
+	ir_mode  *mode = get_irn_mode(size);
+	ir_graph *irg  = get_Block_irg(block);
+	ir_node  *mask = new_r_Const_long(irg, mode, stack_alignment - 1);
 	size = new_rd_Add(dbgi, block, size, mask, mode);
-	tv   = new_tarval_from_long(-(long)stack_alignment, mode);
-	mask = new_r_Const(irg, tv);
+	mask = new_r_Const_long(irg, mode, -(long)stack_alignment);
 	size = new_rd_And(dbgi, block, size, mask, mode);
 	return size;
 }

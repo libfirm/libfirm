@@ -620,8 +620,7 @@ static ir_node *eval_strlen(ir_graph *irg, ir_entity *ent, ir_type *res_tp)
 	for (i = 0; i < size; ++i) {
 		ir_initializer_t *val = get_initializer_compound_value(initializer, i);
 		if (initializer_val_is_null(val)) {
-			ir_tarval *tv = new_tarval_from_long(i, get_type_mode(res_tp));
-			return new_r_Const(irg, tv);
+			return new_r_Const_long(irg, get_type_mode(res_tp), i);
 		}
 	}
 

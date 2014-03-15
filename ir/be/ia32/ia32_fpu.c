@@ -44,18 +44,16 @@ static ir_entity *create_ent(int value, const char *name)
 	ir_graph  *cnst_irg;
 	ir_entity *ent;
 	ir_node   *cnst;
-	ir_tarval *tv;
 
 	set_type_alignment_bytes(type, 4);
 
-	tv  = new_tarval_from_long(value, mode);
 	ent = new_entity(glob, new_id_from_str(name), type);
 	set_entity_ld_ident(ent, get_entity_ident(ent));
 	set_entity_visibility(ent, ir_visibility_local);
 	add_entity_linkage(ent, IR_LINKAGE_CONSTANT);
 
 	cnst_irg = get_const_code_irg();
-	cnst     = new_r_Const(cnst_irg, tv);
+	cnst     = new_r_Const_long(cnst_irg, mode, value);
 	set_atomic_ent_value(ent, cnst);
 
 	return ent;

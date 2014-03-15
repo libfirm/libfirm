@@ -324,8 +324,7 @@ static void rewrite_float_unsigned_Conv(ir_node *node)
 	ir_node   *true_jmp    = new_r_Jmp(true_block);
 	ir_node   *false_jmp   = new_r_Jmp(false_block);
 
-	ir_tarval *correction  = new_tarval_from_long(0x80000000l, mode_s);
-	ir_node   *c_const     = new_r_Const(irg, correction);
+	ir_node   *c_const     = new_r_Const_long(irg, mode_s, 0x80000000L);
 	ir_node   *sub         = new_rd_Sub(dbgi, true_block, float_x, limitc,
 										mode_f);
 	ir_node   *sub_conv    = new_rd_Conv(dbgi, true_block, sub, mode_s);

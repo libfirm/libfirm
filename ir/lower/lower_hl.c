@@ -78,9 +78,8 @@ static void lower_sel(ir_node *sel)
 		/* replace Sel by add(obj, const(ent.offset)) */
 		newn = get_Sel_ptr(sel);
 		if (offset != 0) {
-			ir_mode   *mode_UInt = get_reference_mode_unsigned_eq(mode);
-			ir_tarval *tv        = new_tarval_from_long(offset, mode_UInt);
-			ir_node   *cnst      = new_r_Const(irg, tv);
+			ir_mode *const mode_UInt = get_reference_mode_unsigned_eq(mode);
+			ir_node *const cnst      = new_r_Const_long(irg, mode_UInt, offset);
 			newn = new_rd_Add(dbg, bl, newn, cnst, mode);
 		}
 	}
