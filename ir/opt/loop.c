@@ -1846,10 +1846,10 @@ static unsigned get_start_and_add(unrolling_kind_flag role)
 			if (loop_info.start_val && found_start_val != loop_info.start_val)
 				return 0;
 
-			if ((role == constant) && !is_const(found_start_val))
-					return 0;
-			else if((role == constant) && !(is_loop_invariant_def(found_start_val)))
-					return 0;
+			switch (role) {
+			case constant:  if (!is_const(found_start_val))              return 0; break;
+			case invariant: if (!is_loop_invariant_def(found_start_val)) return 0; break;
+			}
 
 			loop_info.start_val = found_start_val;
 		}
