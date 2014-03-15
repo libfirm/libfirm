@@ -11,6 +11,7 @@
  */
 #include <stdbool.h>
 
+#include "../adt/util.h"
 #include "iroptimize.h"
 #include "opt_init.h"
 #include "irnode.h"
@@ -2166,48 +2167,7 @@ static unsigned get_unroll_decision_invariant(void)
  * given maximum unroll factor and number of loop passes. */
 static unsigned get_preferred_factor_constant(ir_tarval *count_tar)
 {
-	ir_tarval *tar_6, *tar_5, *tar_4, *tar_3, *tar_2;
-	unsigned prefer;
-	ir_mode *mode = get_irn_mode(loop_info.end_val);
-
-	tar_6 = new_tarval_from_long(6, mode);
-	tar_5 = new_tarval_from_long(5, mode);
-	tar_4 = new_tarval_from_long(4, mode);
-	tar_3 = new_tarval_from_long(3, mode);
-	tar_2 = new_tarval_from_long(2, mode);
-
-	/* loop passes % {6, 5, 4, 3, 2} == 0  */
-	if (tarval_is_null(tarval_mod(count_tar, tar_6)))
-		prefer = 6;
-	else if (tarval_is_null(tarval_mod(count_tar, tar_5)))
-		prefer = 5;
-	else if (tarval_is_null(tarval_mod(count_tar, tar_4)))
-		prefer = 4;
-	else if (tarval_is_null(tarval_mod(count_tar, tar_3)))
-		prefer = 3;
-	else if (tarval_is_null(tarval_mod(count_tar, tar_2)))
-		prefer = 2;
-	else {
-		/* gcd(max_unroll, count_tar) */
-		int a = loop_info.max_unroll;
-		int b = (int)get_tarval_long(count_tar);
-		int c;
-
-		DB((dbg, LEVEL_4, "gcd of max_unroll %d and count_tar %d: ", a, b));
-
-		do {
-		c = a % b;
-		a = b; b = c;
-		} while( c != 0);
-
-		DB((dbg, LEVEL_4, "%d\n", a));
-		return a;
-	}
-
-	DB((dbg, LEVEL_4, "preferred unroll factor %d\n", prefer));
-
-	/*
-	 * If our preference is greater than the allowed unroll factor
+	/* If our preference is greater than the allowed unroll factor
 	 * we either might reduce the preferred factor and prevent a duffs device block,
 	 * or create a duffs device block, from which in this case (constants only)
 	 * we know the startloop at compiletime.
@@ -2222,29 +2182,32 @@ static unsigned get_preferred_factor_constant(ir_tarval *count_tar)
 	 *           Loop2   /      / Loop1   /
 	 *           |   `--'      |      `--'
 	 */
-
-	if (prefer <= loop_info.max_unroll)
-		return prefer;
-	else {
-		switch(prefer) {
-			case 6:
-				if (loop_info.max_unroll >= 3)
-					return 3;
-				else if (loop_info.max_unroll >= 2)
-					return 2;
-				else
-					return 0;
-
-			case 4:
-				if (loop_info.max_unroll >= 2)
-					return 2;
-				else
-					return 0;
-
-			default:
-				return 0;
+	/* loop passes % {6, 5, 4, 3, 2} == 0  */
+	ir_mode *const mode = get_irn_mode(loop_info.end_val);
+	for (unsigned prefer = MIN(loop_info.max_unroll, 6); prefer != 1; --prefer) {
+		ir_tarval *const prefer_tv = new_tarval_from_long(prefer, mode);
+		if (tarval_is_null(tarval_mod(count_tar, prefer_tv))) {
+			DB((dbg, LEVEL_4, "preferred unroll factor %d\n", prefer));
+			return prefer;
 		}
 	}
+
+	/* gcd(max_unroll, count_tar) */
+	int a = loop_info.max_unroll;
+	int b = (int)get_tarval_long(count_tar);
+
+	DB((dbg, LEVEL_4, "gcd of max_unroll %d and count_tar %d: ", a, b));
+
+	for (;;) {
+		int const c = a % b;
+		if (c == 0)
+			break;
+		a = b;
+		b = c;
+	};
+
+	DB((dbg, LEVEL_4, "%d\n", b));
+	return b;
 }
 
 /* Check if cur_loop is a simple counting loop.
