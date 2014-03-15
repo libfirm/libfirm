@@ -4585,7 +4585,7 @@ is_bittest: {
 						}
 						/* -a == c ==> a == -c, -a != c ==> a != -c */
 						else if (is_Minus(left)) {
-							ir_tarval *tv2 = tarval_sub(get_mode_null(mode), tv, NULL);
+							ir_tarval *tv2 = tarval_neg(tv);
 
 							if (tarval_is_constant(tv2)) {
 								left    = get_Minus_op(left);
