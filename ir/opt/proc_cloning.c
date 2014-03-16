@@ -328,7 +328,6 @@ static void create_clone_proc_irg(ir_entity *ent, const quadruple_t *q)
 	irg_walk_graph(method_irg, copy_nodes, set_preds, clone_irg);
 
 	/* The "cloned" graph must be matured. */
-	mature_immBlock(get_irg_end_block(clone_irg));
 	irg_finalize_cons(clone_irg);
 }
 

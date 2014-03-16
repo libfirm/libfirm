@@ -217,10 +217,8 @@ static ir_graph *gen_initializer_irg(ir_entity *ent_filename,
 	call = new_r_Call(bb, get_irg_initial_mem(irg), callee, 3, ins,
 	        get_entity_type(init_ent));
 	ret  = new_r_Return(bb, new_r_Proj(call, mode_M, pn_Call_M), 0, NULL);
-	mature_immBlock(bb);
 
 	add_immBlock_pred(get_irg_end_block(irg), ret);
-	mature_immBlock(get_irg_end_block(irg));
 
 	irg_finalize_cons(irg);
 
