@@ -125,7 +125,6 @@ typedef struct loop_opt_params_t {
 	int      depth_adaption;    /* Loop nest depth adaption [percent] */
 	unsigned allowed_calls;     /* Number of calls allowed [number] */
 	bool     count_phi;         /* Count phi nodes */
-	bool     count_proj;        /* Count projections */
 
 	unsigned max_cc_size;       /* Maximum condition chain size [nodes] */
 	unsigned max_branches;
@@ -235,16 +234,12 @@ static void get_loop_info(ir_node *const node, void *const env)
 				goto count;
 				break;
 
-		case iro_Proj:
-			if (opt_params.count_proj)
-				goto count;
-				break;
-
 		case iro_Address:
 		case iro_Align:
 		case iro_Confirm:
 		case iro_Const:
 		case iro_Offset:
+		case iro_Proj:
 		case iro_Size:
 			break;
 
@@ -2297,7 +2292,6 @@ static void set_loop_params(void)
 	opt_params.max_loop_size            =  100;
 	opt_params.depth_adaption           =  -50;
 	opt_params.count_phi                = true;
-	opt_params.count_proj               = false;
 	opt_params.allowed_calls            =    0;
 	opt_params.max_cc_size              =    5;
 	opt_params.allow_const_unrolling    = true;
