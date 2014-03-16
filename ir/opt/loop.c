@@ -164,8 +164,6 @@ typedef struct loop_info_t {
 	ir_node *iteration_phi;
 	ir_node *add;
 
-	ir_tarval *count_tar; /* Number of loop iterations */
-
 	ir_node            *duff_cond;   /* Duff mod */
 	unrolling_kind_flag unroll_kind; /* constant or invariant unrolling */
 } loop_info_t;
@@ -2165,7 +2163,6 @@ static unsigned get_unroll_decision_constant(void)
 		return 0;
 	}
 
-	loop_info.count_tar = count_tar;
 	return get_preferred_factor_constant(count_tar);
 }
 
