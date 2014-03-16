@@ -143,7 +143,7 @@ typedef struct loop_info_t {
 	unsigned   branches;   /* number of conditions */
 	unsigned   calls;      /* number of calls */
 	unsigned   cf_outs;    /* number of cf edges which leave the loop */
-	entry_edge cf_out;     /* single loop leaving cf edge */
+	ir_node   *cf_out;     /* single loop leaving cf edge */
 	int        be_src_pos; /* position of the single own backedge in the head */
 
 	/* for inversion */
@@ -256,7 +256,7 @@ count:
 		if (is_Block(node) && !node_in_loop && pred_in_loop) {
 			/* Count cf outs */
 			++loop_info.cf_outs;
-			loop_info.cf_out = (entry_edge){ .node = node, .pos = i, .pred = pred };
+			loop_info.cf_out = pred;
 		}
 
 		/* Find the loops head/the blocks with cfpred outside of the loop */
@@ -1794,7 +1794,7 @@ static ir_node *is_simple_loop(void)
 
 	DB((dbg, LEVEL_4, "loop has 1 own backedge.\n"));
 
-	ir_node *const exit_block = get_nodes_block(loop_info.cf_out.pred);
+	ir_node *const exit_block = get_nodes_block(loop_info.cf_out);
 	/* The loop has to be tail-controlled.
 	 * This can be changed/improved,
 	 * but we would need a duff iv. */
@@ -1804,7 +1804,7 @@ static ir_node *is_simple_loop(void)
 	DB((dbg, LEVEL_4, "tail-controlled loop.\n"));
 
 	/* find value on which loop exit depends */
-	ir_node *const projx = loop_info.cf_out.pred;
+	ir_node *const projx = loop_info.cf_out;
 	ir_node *const cond  = get_Proj_pred(projx);
 	ir_node *const cmp   = get_Cond_selector(cond);
 	if (!is_Cmp(cmp))
