@@ -762,14 +762,14 @@ static ir_node *gen_Mul(ir_node *const node)
 	if (get_mode_size_bits(mode) < 16) {
 		/* imulb only supports rax - reg form */
 		ir_node *new_node =
-                           gen_binop_rax(node, op1, op2, new_bd_amd64_IMul1Op,
-                                         match_mode_neutral
-                                       | match_commutative);
+		            gen_binop_rax(node, op1, op2, new_bd_amd64_IMul1Op,
+		                          match_mode_neutral
+		                          | match_commutative);
 		return new_r_Proj(new_node, mode_gp, pn_amd64_IMul1Op_res_low);
 	} else {
 		return gen_binop_am(node, op1, op2, new_bd_amd64_IMul,
-                                         match_immediate | match_am | match_mode_neutral
-                                         | match_commutative);
+		                    match_immediate | match_am
+		                    | match_mode_neutral | match_commutative);
 	}
 }
 
@@ -784,7 +784,7 @@ static ir_node *gen_Mulh(ir_node *const node)
 		new_node = gen_binop_rax(node, op1, op2, new_bd_amd64_IMul1Op,
                         /* match_am TODO */
                         match_mode_neutral | match_commutative);
-        return new_r_Proj(new_node, mode_gp, pn_amd64_IMul1Op_res_high);
+		return new_r_Proj(new_node, mode_gp, pn_amd64_IMul1Op_res_high);
 	} else {
 		new_node = gen_binop_rax(node, op1, op2, new_bd_amd64_Mul,
                          /* match_am TODO */
@@ -834,7 +834,6 @@ static ir_node *create_sext(ir_node *const node, amd64_insn_mode_t insn_mode)
 		panic("Sign extension only implemented for 32 and 64 bit");
 	}
 
-	arch_set_irn_register_reqs_in(sext, reg_reqs);
 	return sext;
 }
 
@@ -850,17 +849,19 @@ static ir_node *create_div(ir_node *const node, ir_mode *const mode,
 	ir_node *in[3];
 	int      arity = 0;
 	const arch_register_req_t **reqs;
+
 	amd64_op_mode_t op_mode;
+	amd64_addr_t    addr;
+	memset(&addr, 0, sizeof(addr));
+
+	gen_binop_rax_reg(op1, op2, in, &arity, &op_mode, &reqs);
+	reqs = rax_reg_rdx_reqs;
 
 	if (mode_is_signed(mode)) {
+		/* Sign extend RAX and RDX */
 		ir_node *sext = create_sext(be_transform_node(op1), insn_mode);
-
-		gen_binop_rax_reg(op1, op2, in, &arity, &op_mode, &reqs);
-		reqs = rax_reg_rdx_reqs;
 		in[arity++] = sext;
 
-		amd64_addr_t addr;
-		memset(&addr, 0, sizeof(addr));
 		res = new_bd_amd64_IDiv(dbgi, block, arity, in, insn_mode,
                                 op_mode, addr);
 	} else {
@@ -868,12 +869,7 @@ static ir_node *create_div(ir_node *const node, ir_mode *const mode,
 		ir_node *const zero = new_bd_amd64_Xor0(dbgi, block);
 		arch_set_irn_register_reqs_in(zero, reg_reqs);
 
-		gen_binop_rax_reg(op1, op2, in, &arity, &op_mode, &reqs);
-		reqs        = rax_reg_rdx_reqs;
 		in[arity++] = zero;
-
-		amd64_addr_t addr;
-		memset(&addr, 0, sizeof(addr));
 		res  = new_bd_amd64_Div(dbgi, block, arity, in, insn_mode,
                                 op_mode, addr);
 	}
@@ -1030,9 +1026,9 @@ static ir_node *gen_IJmp(ir_node *node)
 		}
 		ir_node *load_mem = get_Load_mem(load);
 		ir_node *new_mem  = be_transform_node(load_mem);
-		int mem_input = arity++;
-		in[mem_input] = new_mem;
-		addr.mem_input = mem_input;
+		int mem_input     = arity++;
+		in[mem_input]     = new_mem;
+		addr.mem_input    = mem_input;
 
 		op_mode = AMD64_OP_UNOP_ADDR;
 	} else {
