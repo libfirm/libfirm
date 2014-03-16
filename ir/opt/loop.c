@@ -1213,7 +1213,7 @@ static void unrolling_fix_loop_head_inv(void)
 	/* Original loop_heads ins are:
 	 * duff block and the own backedge */
 
-	ir_node *const proj           = new_Proj(loop_info.duff_cond, mode_X, 0);
+	ir_node *const proj           = new_r_Proj(loop_info.duff_cond, mode_X, 0);
 	ir_node *const head_pred      = get_Block_cfgpred(loop_head, loop_info.be_src_pos);
 	ir_node *const loop_condition = get_unroll_copy(head_pred, unroll_nr - 1);
 	ins[0] = loop_condition;
@@ -1297,7 +1297,7 @@ static void place_copies(int const copies)
 			 * and one from the previously unrolled loop. */
 			ir_node *ins[2];
 			/* Calculate corresponding projection of mod result for this copy c */
-			ir_node *proj = new_Proj(loop_info.duff_cond, mode_X, unroll_nr - c - 1);
+			ir_node *proj = new_r_Proj(loop_info.duff_cond, mode_X, unroll_nr - c - 1);
 			DB((dbg, LEVEL_4, "New duff proj %N\n" , proj));
 
 			ins[0] = new_jmp;
@@ -1397,7 +1397,7 @@ static ir_node *clone_phis_sans_bes(ir_node *const phi, ir_node *const be_block,
 
 /* Creates a new block from the given block node omitting own bes,
  * using be_block as supplier of backedge informations. */
-static ir_node *clone_block_sans_bes(ir_node *const node, ir_node *const be_block)
+static ir_node *clone_block_sans_bes(ir_graph *const irg, ir_node *const node, ir_node *const be_block)
 {
 	int const arity = get_Block_n_cfgpreds(node);
 	assert(arity == get_irn_arity(be_block));
@@ -1409,7 +1409,7 @@ static ir_node *clone_block_sans_bes(ir_node *const node, ir_node *const be_bloc
 			ins[c++] = pred;
 	}
 
-	return new_Block(c, ins);
+	return new_r_Block(irg, c, ins);
 }
 
 /* Creates a structure to calculate absolute value of node op.
@@ -1429,14 +1429,14 @@ static ir_node *new_Abs(ir_node *const op, ir_mode *const mode)
 /* Creates blocks for duffs device, using previously obtained
  * informations about the iv.
  * TODO split */
-static void create_duffs_block(void)
+static void create_duffs_block(ir_graph *const irg)
 {
 	ir_node *ins[2];
 
 	/* TODO naming
 	 * 1. Calculate first approach to count.
 	 *    Condition: (end - start) % step == 0 */
-	ir_node *const block1 = clone_block_sans_bes(loop_head, loop_head);
+	ir_node *const block1 = clone_block_sans_bes(irg, loop_head, loop_head);
 	DB((dbg, LEVEL_4, "Duff block 1 %N\n", block1));
 
 	/* Create loop entry phis in first duff block
@@ -1455,7 +1455,7 @@ static void create_duffs_block(void)
 	DB((dbg, LEVEL_4, "BLOCK1 sub %N\n", ems));
 
 	DB((dbg, LEVEL_4, "mod ins %N %N\n", ems, loop_info.step));
-	ir_node *const nomem   = new_NoMem();
+	ir_node *const nomem   = get_irg_no_mem(irg);
 	ir_node *const ems_mod = new_r_Mod(block1, nomem, ems, loop_info.step, mode, op_pin_state_pinned);
 	ir_node *const mod_res = new_r_Proj(ems_mod, mode_Iu, pn_Mod_res);
 
@@ -1464,7 +1464,7 @@ static void create_duffs_block(void)
 
 	DB((dbg, LEVEL_4, "New modulus node %N\n", ems_mod));
 
-	ir_node *const null          = new_Const(get_mode_null(mode));
+	ir_node *const null          = new_r_Const_null(irg, mode);
 	ir_node *const cmp_null      = new_r_Cmp(block1, mod_res, null, ir_relation_less);
 	ir_node *const ems_mode_cond = new_r_Cond(block1, cmp_null);
 
@@ -1481,7 +1481,7 @@ static void create_duffs_block(void)
 	 */
 	ins[0] = x_true;
 	ins[1] = x_false;
-	ir_node *const count_block = new_Block(ARRAY_SIZE(ins), ins);
+	ir_node *const count_block = new_r_Block(irg, ARRAY_SIZE(ins), ins);
 	DB((dbg, LEVEL_4, "Duff block 2 %N\n", count_block));
 
 
@@ -1489,7 +1489,7 @@ static void create_duffs_block(void)
 	 * uses the latest iv to compare to. */
 	ir_node       *true_val;
 	ir_node       *false_val;
-	ir_node *const one = new_Const(get_mode_one(mode));
+	ir_node *const one = new_r_Const_one(irg, mode);
 	if (loop_info.latest_value == 1) {
 		/* ems % step == 0 :  +0 */
 		true_val  = null;
@@ -1499,7 +1499,7 @@ static void create_duffs_block(void)
 		/* ems % step == 0 :  +1 */
 		true_val  = one;
 		/* ems % step != 0 :  +2 */
-		false_val = new_Const_long(mode, 2);
+		false_val = new_r_Const_long(irg, mode, 2);
 	}
 
 	ins[0] = true_val;
@@ -1507,7 +1507,7 @@ static void create_duffs_block(void)
 	ir_node *const correction = new_r_Phi(count_block, ARRAY_SIZE(ins), ins, mode);
 
 	/* (end - start) / step  +  correction */
-	ir_node *const count = new_Add(div_res, correction, mode);
+	ir_node *const count = new_r_Add(count_block ,div_res, correction, mode);
 
 	/* We preconditioned the loop to be tail-controlled.
 	 * So, if count is something 'wrong' like 0,
@@ -1519,15 +1519,15 @@ static void create_duffs_block(void)
 	ir_relation const rel           = loop_info.decreasing == 1 ? ir_relation_less : ir_relation_greater;
 	ir_node    *const cmp_bad_count = new_r_Cmp(count_block, count, null, rel);
 	ir_node    *const bad_count_neg = new_r_Cond(count_block, cmp_bad_count);
-	ir_node    *const good_count    = new_Proj(bad_count_neg, mode_X, pn_Cond_true);
-	ir_node    *const bad_count     = new_Proj(ems_mode_cond, mode_X, pn_Cond_false);
+	ir_node    *const good_count    = new_r_Proj(bad_count_neg, mode_X, pn_Cond_true);
+	ir_node    *const bad_count     = new_r_Proj(ems_mode_cond, mode_X, pn_Cond_false);
 
 	/* 3. Duff Block
 	 *    Contains module to decide which loop to start from. */
 
 	ins[0] = good_count;
 	ins[1] = bad_count;
-	ir_node *const duff_block = new_Block(ARRAY_SIZE(ins), ins);
+	ir_node *const duff_block = new_r_Block(irg, ARRAY_SIZE(ins), ins);
 	DB((dbg, LEVEL_4, "Duff block 3 %N\n", duff_block));
 
 	/* Get absolute value */
@@ -1537,9 +1537,9 @@ static void create_duffs_block(void)
 	ir_node *const count_phi = new_r_Phi(duff_block, ARRAY_SIZE(ins), ins, mode);
 
 	/* count % unroll_nr */
-	ir_node *const unroll_c = new_Const_long(mode, (long)unroll_nr);
+	ir_node *const unroll_c = new_r_Const_long(irg, mode, (long)unroll_nr);
 	ir_node *const duff_mod = new_r_Mod(duff_block, nomem, count_phi, unroll_c, mode, op_pin_state_pinned);
-	ir_node *const proj     = new_Proj(duff_mod, mode, pn_Mod_res);
+	ir_node *const proj     = new_r_Proj(duff_mod, mode, pn_Mod_res);
 	/* condition does NOT create itself in the block of the proj! */
 	ir_node *const cond     = new_r_Cond(duff_block, proj);
 
@@ -1838,7 +1838,7 @@ static unsigned are_mode_I(ir_node *const n1, ir_node *const n2, ir_node *const 
 
 /* Checks if cur_loop is a simple tail-controlled counting loop
  * with start and end value loop invariant, step constant. */
-static unsigned get_unroll_decision_invariant(void)
+static unsigned get_unroll_decision_invariant(ir_graph *const irg)
 {
 	/* RETURN if loop is not 'simple' */
 	ir_node *const loop_condition = is_simple_loop();
@@ -1927,7 +1927,7 @@ static unsigned get_unroll_decision_invariant(void)
 
 	DB((dbg, LEVEL_4, "step is not 0\n"));
 
-	create_duffs_block();
+	create_duffs_block(irg);
 
 	return loop_info.max_unroll;
 }
@@ -2190,7 +2190,7 @@ static void unroll_loop(ir_graph *const irg)
 	} else {
 		/* invariant case? */
 		if (opt_params.allow_invar_unrolling)
-			unroll_nr = get_unroll_decision_invariant();
+			unroll_nr = get_unroll_decision_invariant(irg);
 		if (unroll_nr > 1)
 			loop_info.unroll_kind = invariant;
 	}
@@ -2322,9 +2322,6 @@ static void loop_optimization(ir_graph *const irg, loop_op_t const loop_op)
 
 	/* Reset stats for this procedure */
 	reset_stats();
-
-	/* Preconditions */
-	set_current_ir_graph(irg);
 
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST);
 	collect_phiprojs(irg);
