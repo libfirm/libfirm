@@ -198,9 +198,6 @@ typedef enum loop_op_t {
 	loop_op_peeling
 } loop_op_t;
 
-/* Saves which loop operation to do until after basic tests. */
-static loop_op_t loop_op;
-
 /* Returns the maximum nodes for the given nest depth */
 static unsigned get_max_nodes_adapted(unsigned const depth)
 {
@@ -2261,7 +2258,7 @@ static void unroll_loop(ir_graph *const irg)
 
 /* Analyzes the loop, and checks if size is within allowed range.
  * Decides if loop will be processed. */
-static void init_analyze(ir_graph *const irg, ir_loop *const loop)
+static void init_analyze(ir_graph *const irg, ir_loop *const loop, loop_op_t const loop_op)
 {
 	cur_loop        = loop;
 	loop_head       = NULL;
@@ -2338,7 +2335,7 @@ static void set_loop_params(void)
  * The layout state of the frame type will be set to layout_undefined
  * if entities were removed.
  */
-static void loop_optimization(ir_graph *const irg)
+static void loop_optimization(ir_graph *const irg, loop_op_t const loop_op)
 {
 	/* Assure preconditions are met and go through all loops. */
 	assure_irg_properties(irg,
@@ -2378,7 +2375,7 @@ static void loop_optimization(ir_graph *const irg)
 		++stats.loops;
 
 		/* Analyze and handle loop */
-		init_analyze(irg, loop);
+		init_analyze(irg, loop, loop_op);
 
 		/* Copied blocks do not have their phi list yet */
 		collect_phiprojs(irg);
@@ -2398,20 +2395,17 @@ static void loop_optimization(ir_graph *const irg)
 
 void do_loop_unrolling(ir_graph *const irg)
 {
-	loop_op = loop_op_unrolling;
-	loop_optimization(irg);
+	loop_optimization(irg, loop_op_unrolling);
 }
 
 void do_loop_inversion(ir_graph *const irg)
 {
-	loop_op = loop_op_inversion;
-	loop_optimization(irg);
+	loop_optimization(irg, loop_op_inversion);
 }
 
 void do_loop_peeling(ir_graph *const irg)
 {
-	loop_op = loop_op_peeling;
-	loop_optimization(irg);
+	loop_optimization(irg, loop_op_peeling);
 }
 
 void firm_init_loop_opt(void)
