@@ -155,7 +155,6 @@ typedef struct loop_info_t {
 	unsigned max_unroll;       /* Number of unrolls satisfying max_loop_size */
 	unsigned exit_cond;        /* 1 if condition==true exits the loop.  */
 	unsigned latest_value:1;   /* 1 if condition is checked against latest counter value */
-	unsigned needs_backedge:1; /* 0 if loop is completely unrolled */
 	unsigned decreasing:1;     /* Step operation is_Sub, or step is<0 */
 
 	/* IV informations of a simple loop */
@@ -2217,15 +2216,6 @@ static void unroll_loop(ir_graph *const irg)
 
 		/* Get loop outs */
 		irg_walk_graph(irg, get_loop_entries, NULL, NULL);
-
-		if (loop_info.unroll_kind == constant) {
-			if ((int)get_tarval_long(loop_info.count_tar) == unroll_nr)
-				loop_info.needs_backedge = 0;
-			else
-				loop_info.needs_backedge = 1;
-		} else {
-			loop_info.needs_backedge = 1;
-		}
 
 		/* Use phase to keep copy of nodes from the condition chain. */
 		ir_nodemap_init(&map, irg);
