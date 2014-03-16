@@ -1736,7 +1736,7 @@ static unsigned simulate_next(ir_tarval **const count_tar, ir_tarval *const step
 	/* next step */
 	ir_tarval *const next = is_Add(loop_info.add) ?
 		tarval_add(stepped, step_tar) :
-		tarval_sub(stepped, step_tar, get_irn_mode(loop_info.end_val));
+		tarval_sub(stepped, step_tar, NULL);
 
 	DB((dbg, LEVEL_4, "Loop taken if %ld %s %ld ",
 				get_tarval_long(next),
@@ -2091,7 +2091,7 @@ static unsigned get_unroll_decision_constant(void)
 	if (!tarval_is_negative(step_tar) ^ !is_Sub(loop_info.add))
 		loop_info.decreasing = 1;
 
-	ir_tarval *const diff_tar = tarval_sub(end_tar, start_tar, mode);
+	ir_tarval *const diff_tar = tarval_sub(end_tar, start_tar, NULL);
 
 	/* We need at least count_tar steps to be close to end_val, maybe more.
 	 * No way, that we have gone too many steps.
@@ -2118,7 +2118,7 @@ static unsigned get_unroll_decision_constant(void)
 	/* |stepped| <= |end_tar|, and dist(stepped, end_tar) is smaller than a step. */
 	stepped = is_Add(loop_info.add) ?
 		tarval_add(start_tar, stepped) :
-		tarval_sub(start_tar, stepped, mode_Is);
+		tarval_sub(start_tar, stepped, NULL);
 
 	DB((dbg, LEVEL_4, "stepped to %ld\n", get_tarval_long(stepped)));
 
