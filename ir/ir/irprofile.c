@@ -202,7 +202,6 @@ static ir_graph *gen_initializer_irg(ir_entity *ent_filename,
 
 	/* create the new ir_graph */
 	irg = new_ir_graph(ent, 0);
-	set_current_ir_graph(irg);
 	empty_frame_type = get_irg_frame_type(irg);
 	set_type_size_bytes(empty_frame_type, 0);
 	set_type_state(empty_frame_type, layout_fixed);
