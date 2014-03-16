@@ -141,7 +141,6 @@ static loop_opt_params_t opt_params;
 /* Loop analysis informations */
 typedef struct loop_info_t {
 	unsigned   nodes;      /* node count */
-	unsigned   ld_st;      /* load and store nodes */
 	unsigned   branches;   /* number of conditions */
 	unsigned   calls;      /* number of calls */
 	unsigned   cf_outs;    /* number of cf edges which leave the loop */
@@ -229,11 +228,6 @@ static void get_loop_info(ir_node *const node, void *const env)
 		switch (get_irn_opcode(node)) {
 		case iro_Call:
 			++loop_info.calls;
-			goto count;
-
-		case iro_Load:
-		case iro_Store:
-			++loop_info.ld_st;
 			goto count;
 
 		case iro_Phi:
