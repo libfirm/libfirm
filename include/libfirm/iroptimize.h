@@ -184,17 +184,6 @@ FIRM_API void optimize_load_store(ir_graph *irg);
 FIRM_API void opt_ldst(ir_graph *irg);
 
 /**
- * Optimize loops by peeling or unrolling them if beneficial.
- *
- * @param irg  The graph whose loops will be processed
- *
- * This function did not change the graph, only its frame type.
- * The layout state of the frame type will be set to layout_undefined
- * if entities were removed.
- */
-FIRM_API void loop_optimization(ir_graph *irg);
-
-/**
  * Optimize the frame type of an irg by removing
  * never touched entities.
  *

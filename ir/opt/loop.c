@@ -2329,9 +2329,18 @@ static void set_loop_params(void)
 	opt_params.max_branches             = 9999;
 }
 
-/* Assure preconditions are met and go through all loops. */
-void loop_optimization(ir_graph *const irg)
+/**
+ * Optimize loops by peeling or unrolling them if beneficial.
+ *
+ * @param irg  The graph whose loops will be processed
+ *
+ * This function did not change the graph, only its frame type.
+ * The layout state of the frame type will be set to layout_undefined
+ * if entities were removed.
+ */
+static void loop_optimization(ir_graph *const irg)
 {
+	/* Assure preconditions are met and go through all loops. */
 	assure_irg_properties(irg,
 		IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES
 		| IR_GRAPH_PROPERTY_CONSISTENT_OUTS
