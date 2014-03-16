@@ -176,8 +176,6 @@ static loop_info_t loop_info;
 
 /* Outs of the condition chain (loop inversion). */
 static ir_node **cc_blocks;
-/* df/cf edges with def in the condition chain */
-static entry_edge *cond_chain_entries;
 /* Array of df loops found in the condition chain. */
 static entry_edge *head_df_loop;
 /* Number of blocks in cc */
@@ -1156,8 +1154,7 @@ static void loop_inversion(ir_graph *const irg)
 	 * We use block marks to flag blocks of the original condition chain. */
 	irg_walk_graph(irg, reset_block_mark, NULL, NULL);
 
-	cond_chain_entries = NEW_ARR_F(entry_edge, 0);
-	head_df_loop       = NEW_ARR_F(entry_edge, 0);
+	head_df_loop = NEW_ARR_F(entry_edge, 0);
 
 	/*head_inversion_node_count = 0;*/
 	inversion_blocks_in_cc = 0;
@@ -1220,7 +1217,6 @@ static void loop_inversion(ir_graph *const irg)
 	/* free */
 	obstack_free(&obst, NULL);
 	ir_nodemap_destroy(&map);
-	DEL_ARR_F(cond_chain_entries);
 	DEL_ARR_F(head_df_loop);
 
 	ir_free_resources(irg, IR_RESOURCE_BLOCK_MARK);
