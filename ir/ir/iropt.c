@@ -2495,7 +2495,7 @@ static ir_node *transform_node_Eor_(ir_node *n)
 		return n;
 	}
 
-	/* x ^ 1...1 -> ~1 */
+	/* x ^ 1...1 -> ~x */
 	if (is_Const(b) && is_Const_all_one(b)) {
 		n = new_r_Not(get_nodes_block(n), a, mode);
 		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_EOR_TO_NOT);
