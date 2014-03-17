@@ -1973,7 +1973,7 @@ static unsigned get_preferred_factor_constant(ir_tarval *const count_tar)
 			break;
 		a = b;
 		b = c;
-	};
+	}
 
 	DB((dbg, LEVEL_4, "%d\n", b));
 	return b;
