@@ -2533,6 +2533,27 @@ static ir_node *transform_node_Eor_(ir_node *n)
 		}
 	}
 
+	if (is_Or(a)) {
+		ir_node *const o = get_commutative_other_op(a, b);
+		if (o) {
+			/* (x | y) ^ y => x & ~y */
+			dbg_info *dbgi  = get_irn_dbg_info(n);
+			ir_node  *block = get_nodes_block(n);
+			ir_node  *not   = new_rd_Not(dbgi, block, b, mode);
+			return new_rd_And(dbgi, block, o, not, mode);
+		}
+	}
+	if (is_Or(b)) {
+		ir_node *const o = get_commutative_other_op(b, a);
+		if (o) {
+			/* x ^ (x | y) => ~x & y */
+			dbg_info *dbgi  = get_irn_dbg_info(n);
+			ir_node  *block = get_nodes_block(n);
+			ir_node  *not   = new_rd_Not(dbgi, block, a, mode);
+			return new_rd_And(dbgi, block, not, o, mode);
+		}
+	}
+
 	n = transform_bitop_chain(n);
 	if (n != oldn)
 		return n;
