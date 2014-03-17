@@ -2061,6 +2061,16 @@ chain_end:;
 				res = new_rd_Or(dbgi, block, res, orc, mode);
 			}
 		} else {
+			if (keep == flip) {
+				/* Chain starts with a Not. */
+				if (top_not && get_Not_op(top_not) == res) {
+					res = top_not;
+				} else {
+					res = new_rd_Not(dbgi, block, res, mode);
+				}
+				flip = get_mode_null(mode);
+			}
+
 			/* Chain starts with an And. */
 			if (is_binop_const(top_and, res, keep)) {
 				res = top_and;
