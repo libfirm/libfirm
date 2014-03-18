@@ -43,6 +43,7 @@ ir_graph *get_current_ir_graph(void)
 
 void set_current_ir_graph(ir_graph *graph)
 {
+	assert(!graph || irg_is_constrained(graph, IR_GRAPH_CONSTRAINT_CONSTRUCTION));
 	current_ir_graph = graph;
 }
 
