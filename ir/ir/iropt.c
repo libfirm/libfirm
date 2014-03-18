@@ -2226,7 +2226,7 @@ static ir_node *transform_node_bitop_shift(ir_node *n)
 
 	const ir_node *left  = get_binop_left(n);
 	const ir_node *right = get_binop_right(n);
-	assert(is_And(n) || is_Or(n) || is_Eor(n) || is_Or_Eor_Add(n) || is_Eor_Add(n));
+	assert(is_And(n) || is_Or(n) || is_Eor(n) || is_Eor_Add(n));
 	if (!is_Const(right) || !is_shiftop(left))
 		return n;
 
@@ -2569,7 +2569,7 @@ static ir_node *transform_node_Eor_(ir_node *n)
 static ir_node *transform_node_Eor(ir_node *n)
 {
 	/* normalize */
-	if (is_Or_Eor_Add(n) || is_Eor_Add(n)) {
+	if (is_Eor_Add(n)) {
 		dbg_info *dbgi  = get_irn_dbg_info(n);
 		ir_node  *block = get_nodes_block(n);
 		ir_node  *left  = get_Eor_left(n);
