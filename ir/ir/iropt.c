@@ -3823,30 +3823,30 @@ static ir_node *transform_node_Not(ir_node *n)
 			dbg_info *dbgi   = get_irn_dbg_info(n);
 			ir_node  *block  = get_nodes_block(n);
 			ir_node  *not_op = get_Not_op(left);
+			ir_node  *not    = new_rd_Not(dbgi, block, right, mode);
 			if (is_And(a)) {
 				/* ~(~a & b) => a | ~b */
-				ir_node *not = new_rd_Not(dbgi, block, right, mode);
 				n = new_rd_Or(dbgi, block, not_op, not, mode);
 			} else {
 				/* ~(~a | b) => a & ~b */
-				ir_node *not = new_rd_Not(dbgi, block, right, mode);
 				n = new_rd_And(dbgi, block, not_op, not, mode);
 			}
+			DBG_OPT_ALGSIM0(oldn, n, FS_OPT_DEMORGAN);
 			return n;
 		}
 		if (is_Not(right)) {
 			dbg_info *dbgi   = get_irn_dbg_info(n);
 			ir_node  *block  = get_nodes_block(n);
 			ir_node  *not_op = get_Not_op(right);
+			ir_node  *not    = new_rd_Not(dbgi, block, left, mode);
 			if (is_And(a)) {
 				/* ~(a & ~b) => ~a | b */
-				ir_node *not = new_rd_Not(dbgi, block, left, mode);
 				n = new_rd_Or(dbgi, block, not, not_op, mode);
 			} else {
 				/* ~(a | ~b) => ~a & b */
-				ir_node *not = new_rd_Not(dbgi, block, left, mode);
 				n = new_rd_And(dbgi, block, not, not_op, mode);
 			}
+			DBG_OPT_ALGSIM0(oldn, n, FS_OPT_DEMORGAN);
 			return n;
 		}
 	}
