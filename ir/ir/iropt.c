@@ -3780,14 +3780,6 @@ absorb:;
 		return n;
 	}
 
-	if (is_Const(b)) {
-		vrp_attr  *a_vrp = vrp_get_info(a);
-		ir_tarval *b_val = get_Const_tarval(b);
-		if (a_vrp != NULL && tarval_or(b_val, a_vrp->bits_not_set) == b_val) {
-			return a;
-		}
-	}
-
 	n = transform_bitop_chain(n);
 	if (n != oldn)
 		return n;
