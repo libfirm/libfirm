@@ -3780,6 +3780,14 @@ absorb:;
 		return n;
 	}
 
+	if (is_Minus(a) && is_Const(b) && is_Const_one(b)) {
+		/* -a & 1 => a & 1 */
+		dbg_info *const dbgi     = get_irn_dbg_info(n);
+		ir_node  *const block    = get_nodes_block(n);
+		ir_node  *const minus_op = get_Minus_op(a);
+		return new_rd_And(dbgi, block, minus_op, b, mode);
+	}
+
 	n = transform_bitop_chain(n);
 	if (n != oldn)
 		return n;
