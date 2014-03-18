@@ -3780,7 +3780,8 @@ absorb:;
 		return n;
 	}
 
-	if (is_Minus(a) && is_Const(b) && is_Const_one(b)) {
+	if (is_Minus(a) && is_Const(b) && is_Const_one(b)
+	    && get_mode_arithmetic(mode) == irma_twos_complement) {
 		/* -a & 1 => a & 1 */
 		dbg_info *const dbgi     = get_irn_dbg_info(n);
 		ir_node  *const block    = get_nodes_block(n);
