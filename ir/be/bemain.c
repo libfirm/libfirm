@@ -437,8 +437,7 @@ void be_after_irp_transform(const char *name)
 	if (be_after_transform == NULL)
 		return;
 
-	for (size_t i = get_irp_n_irgs(); i-- > 0; ) {
-		ir_graph *irg = get_irp_irg(i);
+	foreach_irp_irg_r(i, irg) {
 		be_after_transform(irg, name);
 	}
 }
@@ -449,8 +448,7 @@ void be_lower_for_target(void)
 
 	isa_if->lower_for_target();
 	/* set the phase to low */
-	for (size_t i = get_irp_n_irgs(); i-- > 0;) {
-		ir_graph *irg = get_irp_irg(i);
+	foreach_irp_irg_r(i, irg) {
 		assert(!irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_TARGET_LOWERED));
 		add_irg_constraints(irg, IR_GRAPH_CONSTRAINT_TARGET_LOWERED);
 	}
@@ -487,12 +485,10 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 	be_gas_begin_compilation_unit(&env);
 
 	/* First: initialize all birgs */
-	size_t num_birgs = 0;
-	size_t num_irgs  = get_irp_n_irgs();
+	size_t          num_birgs = 0;
 	/* we might need 1 birg more for instrumentation constructor */
-	be_irg_t *birgs = ALLOCAN(be_irg_t, num_irgs + 1);
-	for (size_t i = 0; i < num_irgs; ++i) {
-		ir_graph  *irg    = get_irp_irg(i);
+	be_irg_t *const birgs     = ALLOCAN(be_irg_t, get_irp_n_irgs() + 1);
+	foreach_irp_irg(i, irg) {
 		ir_entity *entity = get_irg_entity(irg);
 		if (get_entity_linkage(entity) & IR_LINKAGE_NO_CODEGEN)
 			continue;
@@ -526,10 +522,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 	if (num_birgs > 0 && be_options.opt_profile_generate) {
 		ir_graph *const prof_init_irg = ir_profile_instrument(prof_filename);
 		assert(prof_init_irg->be_data == NULL);
-		initialize_birg(&birgs[num_birgs], prof_init_irg, &env);
-		num_birgs++;
-		num_irgs++;
-		assert(num_irgs == get_irp_n_irgs());
+		initialize_birg(&birgs[num_birgs++], prof_init_irg, &env);
 	}
 
 	for (be_timer_id_t t = T_FIRST; t < T_LAST+1; ++t) {
@@ -537,16 +530,14 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 	}
 	if (!have_profile) {
 		be_timer_push(T_EXECFREQ);
-		for (size_t i = 0; i < num_irgs; ++i) {
-			ir_graph *irg = get_irp_irg(i);
+		foreach_irp_irg(i, irg) {
 			ir_estimate_execfreq(irg);
 		}
 		be_timer_pop(T_EXECFREQ);
 	}
 
 	/* For all graphs */
-	for (size_t i = 0; i < num_irgs; ++i) {
-		ir_graph  *const irg    = get_irp_irg(i);
+	foreach_irp_irg(i, irg) {
 		ir_entity *const entity = get_irg_entity(irg);
 		if (get_entity_linkage(entity) & IR_LINKAGE_NO_CODEGEN)
 			continue;

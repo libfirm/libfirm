@@ -158,4 +158,15 @@ FIRM_API void add_irp_irg(ir_graph *irg);
     shrinks the list by one. */
 FIRM_API void remove_irp_irg(ir_graph *irg);
 
+#define foreach_irp_irg(idx, irg) \
+	for (bool irg##__b = true; irg##__b; irg##__b = false) \
+		for (size_t idx = 0, irg##__n = get_irp_n_irgs(); irg##__b && idx != irg##__n; ++idx) \
+			for (ir_graph *const irg = (irg##__b = false, get_irp_irg(idx)); !irg##__b; irg##__b = true)
+
+#define foreach_irp_irg_r(idx, irg) \
+	for (bool irg##__b = true; irg##__b;) \
+		for (; irg##__b; irg##__b = false) \
+			for (size_t idx = get_irp_n_irgs(); irg##__b && idx-- != 0;) \
+				for (ir_graph *const irg = (irg##__b = false, get_irp_irg(idx)); !irg##__b; irg##__b = true)
+
 #endif

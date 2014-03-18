@@ -585,9 +585,8 @@ void irg_finalize_cons(ir_graph *irg)
 
 void irp_finalize_cons(void)
 {
-	size_t i, n;
-	for (i = 0, n = get_irp_n_irgs(); i < n; ++i) {
-		irg_finalize_cons(get_irp_irg(i));
+	foreach_irp_irg(i, irg) {
+		irg_finalize_cons(irg);
 	}
 }
 

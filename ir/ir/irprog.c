@@ -96,19 +96,19 @@ void free_ir_prog(void)
 	if (irp == NULL)
 		return;
 
-	size_t i;
 	/* must iterate backwards here */
-	for (i = get_irp_n_irgs(); i > 0;)
-		free_ir_graph(get_irp_irg(--i));
+	foreach_irp_irg_r(i, irg) {
+		free_ir_graph(irg);
+	}
 
 	/* free entities first to avoid entity types being destroyed before
 	 * the entities using them */
-	for (i = get_irp_n_types(); i > 0;)
+	for (size_t i = get_irp_n_types(); i > 0;)
 		free_type_entities(get_irp_type(--i));
 
 	ir_finish_entity(irp);
 
-	for (i = get_irp_n_types(); i > 0;)
+	for (size_t i = get_irp_n_types(); i > 0;)
 		free_type(get_irp_type(--i));
 
 	free_ir_graph(irp->const_code_irg);

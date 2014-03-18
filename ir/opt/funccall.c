@@ -23,6 +23,7 @@
 #include "iroptimize.h"
 #include "analyze_irg_args.h"
 #include "irhooks.h"
+#include "irprog_t.h"
 #include "irtools.h"
 #include "raw_bitset.h"
 #include "debug.h"
@@ -507,10 +508,7 @@ static mtp_additional_properties check_const_or_pure_function(ir_graph *irg, boo
 static void handle_const_Calls(env_t *ctx)
 {
 	/* all calls of const functions can be transformed */
-	size_t n = get_irp_n_irgs();
-	for (size_t i = 0; i < n; ++i) {
-		ir_graph *irg = get_irp_irg(i);
-
+	foreach_irp_irg(i, irg) {
 		ctx->float_const_call_list    = NEW_ARR_F(ir_node*, 0);
 		ctx->nonfloat_const_call_list = NEW_ARR_F(ir_node*, 0);
 		ctx->pure_call_list           = NEW_ARR_F(ir_node*, 0);
@@ -539,10 +537,7 @@ static void handle_const_Calls(env_t *ctx)
 static void handle_nothrow_Calls(env_t *ctx)
 {
 	/* all calls of const functions can be transformed */
-	size_t n = get_irp_n_irgs();
-	for (size_t i = 0; i < n; ++i) {
-		ir_graph *irg  = get_irp_irg(i);
-
+	foreach_irp_irg(i, irg) {
 		ctx->nothrow_call_list = NEW_ARR_F(ir_node*, 0);
 
 		ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
@@ -821,10 +816,8 @@ void optimize_funccalls(void)
 
 	/* first step: detect, which functions are nothrow or malloc */
 	DB((dbg, LEVEL_2, "Detecting nothrow and malloc properties ...\n"));
-	for (size_t i = 0, n = get_irp_n_irgs(); i < n; ++i) {
-		ir_graph *irg  = get_irp_irg(i);
-		unsigned  prop = check_nothrow_or_malloc(irg, true);
-
+	foreach_irp_irg(i, irg) {
+		unsigned const prop = check_nothrow_or_malloc(irg, true);
 		if (prop & mtp_property_nothrow) {
 			DB((dbg, LEVEL_2, "%+F has the nothrow property\n", irg));
 		} else if (prop & mtp_property_malloc) {
@@ -842,10 +835,8 @@ void optimize_funccalls(void)
 
 	/* third step: detect, which functions are const or pure */
 	DB((dbg, LEVEL_2, "Detecting const and pure properties ...\n"));
-	for (size_t i = 0, n = get_irp_n_irgs(); i < n; ++i) {
-		ir_graph *irg  = get_irp_irg(i);
-		unsigned  prop = check_const_or_pure_function(irg, true);
-
+	foreach_irp_irg(i, irg) {
+		unsigned const prop = check_const_or_pure_function(irg, true);
 		if (prop & mtp_property_const) {
 			DB((dbg, LEVEL_2, "%+F has the const property\n", irg));
 			check_for_possible_endless_loops(irg);

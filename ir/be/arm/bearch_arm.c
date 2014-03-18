@@ -12,7 +12,7 @@
 #include "lc_opts_enum.h"
 
 #include "irgwalk.h"
-#include "irprog.h"
+#include "irprog_t.h"
 #include "ircons.h"
 #include "irgmod.h"
 #include "irgopt.h"
@@ -381,20 +381,17 @@ static int arm_is_valid_clobber(const char *clobber)
 static void arm_lower_for_target(void)
 {
 	ir_mode *mode_gp = arm_reg_classes[CLASS_arm_gp].mode;
-	size_t i, n_irgs = get_irp_n_irgs();
 
 	/* lower compound param handling */
 	lower_calls_with_compounds(LF_RETURN_HIDDEN);
 	be_after_irp_transform("lower-calls");
 
-	for (i = 0; i < n_irgs; ++i) {
-		ir_graph *irg = get_irp_irg(i);
+	foreach_irp_irg(i, irg) {
 		lower_switch(irg, 4, 256, mode_gp);
 		be_after_transform(irg, "lower-switch");
 	}
 
-	for (i = 0; i < n_irgs; ++i) {
-		ir_graph *irg = get_irp_irg(i);
+	foreach_irp_irg(i, irg) {
 		/* Turn all small CopyBs into loads/stores and all bigger CopyBs into
 		 * memcpy calls.
 		 * TODO:  These constants need arm-specific tuning. */

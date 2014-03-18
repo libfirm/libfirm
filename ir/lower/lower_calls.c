@@ -836,8 +836,7 @@ void lower_calls_with_compounds(compound_call_lowering_flags flags)
 	lowered_mtps = pmap_create();
 
 	/* first step: Transform all graphs */
-	for (size_t i = 0, n = get_irp_n_irgs(); i < n; ++i) {
-		ir_graph *irg = get_irp_irg(i);
+	foreach_irp_irg(i, irg) {
 		transform_irg(flags, irg);
 	}
 

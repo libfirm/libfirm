@@ -217,9 +217,7 @@ void compute_callgraph(void)
 	/* initialize */
 	free_callgraph();
 
-	size_t n_irgs = get_irp_n_irgs();
-	for (size_t i = 0; i < n_irgs; ++i) {
-		ir_graph *irg = get_irp_irg(i);
+	foreach_irp_irg(i, irg) {
 		assert(get_irg_callee_info_state(irg) == irg_callee_info_consistent);
 		irg->callees = (cg_callee_entry **)new_pset(cg_callee_entry_cmp, 8);
 		irg->callers = (ir_graph **)new_pset(graph_cmp, 8);
@@ -227,16 +225,13 @@ void compute_callgraph(void)
 	}
 
 	/* Compute the call graph */
-	for (size_t i = 0; i < n_irgs; ++i) {
-		ir_graph *irg = get_irp_irg(i);
+	foreach_irp_irg(i, irg) {
 		construct_cf_backedges(irg);   // We also find the maximal loop depth of a call.
 		irg_walk_graph(irg, ana_Call, NULL, NULL);
 	}
 
 	/* Change the sets to arrays. */
-	for (size_t i = 0; i < n_irgs; ++i) {
-		ir_graph *irg = get_irp_irg(i);
-
+	foreach_irp_irg(i, irg) {
 		pset *callee_set = (pset *)irg->callees;
 		size_t count = pset_count(callee_set);
 		irg->callees = NEW_ARR_F(cg_callee_entry *, count);
@@ -264,8 +259,7 @@ void compute_callgraph(void)
 
 void free_callgraph(void)
 {
-	for (size_t i = 0, n_irgs = get_irp_n_irgs(); i < n_irgs; ++i) {
-		ir_graph *irg = get_irp_irg(i);
+	foreach_irp_irg(i, irg) {
 		if (irg->callees) DEL_ARR_F(irg->callees);
 		if (irg->callers) DEL_ARR_F(irg->callers);
 		if (irg->callee_isbe) free(irg->callee_isbe);
@@ -318,16 +312,13 @@ void callgraph_walk(callgraph_walk_func *pre, callgraph_walk_func *post, void *e
 	++master_cg_visited;
 
 	/* roots are methods which have no callers in the current program */
-	size_t n_irgs = get_irp_n_irgs();
-	for (size_t i = 0; i < n_irgs; ++i) {
-		ir_graph *irg = get_irp_irg(i);
+	foreach_irp_irg(i, irg) {
 		if (get_irg_n_callers(irg) == 0)
 			do_walk(irg, pre, post, env);
 	}
 
 	/* in case of unreachable call loops we haven't visited some irgs yet */
-	for (size_t i = 0; i < n_irgs; i++) {
-		ir_graph *irg = get_irp_irg(i);
+	foreach_irp_irg(i, irg) {
 		do_walk(irg, pre, post, env);
 	}
 }
@@ -529,8 +520,7 @@ static void init_scc(struct obstack *obst)
 	loop_node_cnt = 0;
 	init_stack();
 
-	for (size_t i = 0, n_irgs = get_irp_n_irgs(); i < n_irgs; ++i) {
-		ir_graph *irg = get_irp_irg(i);
+	foreach_irp_irg(i, irg) {
 		set_irg_link(irg, new_scc_info(obst));
 		irg->callgraph_recursion_depth = 0;
 		irg->callgraph_loop_depth      = 0;
@@ -770,9 +760,7 @@ static void cgscc(ir_graph *n)
  */
 static void reset_isbe(void)
 {
-	for (size_t i = 0, n_irgs = get_irp_n_irgs(); i < n_irgs; ++i) {
-		ir_graph *irg = get_irp_irg(i);
-
+	foreach_irp_irg(i, irg) {
 		free(irg->caller_isbe);
 		irg->caller_isbe = NULL;
 
@@ -802,14 +790,11 @@ void find_callgraph_recursions(void)
 
 	++master_cg_visited;
 	cgscc(outermost_ir_graph);
-	size_t n_irgs = get_irp_n_irgs();
-	for (size_t i = 0; i < n_irgs; ++i) {
-		ir_graph *irg = get_irp_irg(i);
+	foreach_irp_irg(i, irg) {
 		if (!cg_irg_visited(irg) && get_irg_n_callers(irg) == 0)
 			cgscc(irg);
 	}
-	for (size_t i = 0; i < n_irgs; ++i) {
-		ir_graph *irg = get_irp_irg(i);
+	foreach_irp_irg(i, irg) {
 		if (!cg_irg_visited(irg))
 			cgscc(irg);
 	}
@@ -819,8 +804,7 @@ void find_callgraph_recursions(void)
 	mature_loops(current_loop, get_irg_obstack(outermost_ir_graph));
 
 	/* -- Reverse the backedge information. -- */
-	for (size_t i = 0; i < n_irgs; ++i) {
-		ir_graph *irg = get_irp_irg(i);
+	foreach_irp_irg(i, irg) {
 		for (size_t j = 0, n_callees = get_irg_n_callees(irg); j < n_callees; ++j) {
 			if (is_irg_callee_backedge(irg, j))
 				set_irg_caller_backedge(get_irg_callee(irg, j), irg);

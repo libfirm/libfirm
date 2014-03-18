@@ -1193,9 +1193,7 @@ static void analyse_irp_globals_entity_usage(void)
 		check_initializers(type);
 	}
 
-	for (size_t i = 0, n = get_irp_n_irgs(); i < n; ++i) {
-		ir_graph *irg = get_irp_irg(i);
-
+	foreach_irp_irg(i, irg) {
 		assure_irg_outs(irg);
 		irg_walk_graph(irg, NULL, check_global_address, NULL);
 	}
@@ -1292,8 +1290,7 @@ void mark_private_methods(void)
 
 	/* first step: change the calling conventions of the local non-escaped entities */
 	bool changed = false;
-	for (size_t i = 0, n = get_irp_n_irgs(); i < n; ++i) {
-		ir_graph        *irg   = get_irp_irg(i);
+	foreach_irp_irg(i, irg) {
 		ir_entity       *ent   = get_irg_entity(irg);
 		ir_entity_usage  flags = get_entity_usage(ent);
 

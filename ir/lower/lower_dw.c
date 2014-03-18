@@ -33,6 +33,7 @@
 #include "irflag.h"
 #include "iroptimize.h"
 #include "debug.h"
+#include "irprog_t.h"
 #include "set.h"
 #include "pmap.h"
 #include "pdeq.h"
@@ -2908,9 +2909,7 @@ void ir_lower_dw_ops(void)
 	                         | IRP_RESOURCE_TYPE_VISITED);
 	inc_master_type_visited();
 	/* transform all graphs */
-	for (size_t i = 0, n = get_irp_n_irgs(); i < n; ++i) {
-		ir_graph *irg = get_irp_irg(i);
-
+	foreach_irp_irg(i, irg) {
 		ir_nodeset_init(&created_mux_nodes);
 
 		lower_irg(irg);

@@ -702,9 +702,8 @@ void free_loop_information(ir_graph *irg)
 
 void free_all_loop_information(void)
 {
-	size_t i;
-	for (i = 0; i < get_irp_n_irgs(); i++) {
-		free_loop_information(get_irp_irg(i));
+	foreach_irp_irg(i, irg) {
+		free_loop_information(irg);
 	}
 }
 

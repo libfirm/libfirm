@@ -16,7 +16,7 @@
 #include "irio.h"
 
 #include "irnode_t.h"
-#include "irprog.h"
+#include "irprog_t.h"
 #include "irgraph_t.h"
 #include "irprintf.h"
 #include "ircons_t.h"
@@ -1111,8 +1111,7 @@ void ir_export_file(FILE *file)
 
 	write_typegraph(env);
 
-	for (size_t i = 0, n_irgs = get_irp_n_irgs(); i < n_irgs; i++) {
-		ir_graph *irg = get_irp_irg(i);
+	foreach_irp_irg(i, irg) {
 		write_irg(env, irg);
 	}
 

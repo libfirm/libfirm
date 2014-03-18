@@ -166,11 +166,7 @@ void lower_const_code(void)
 
 void lower_highlevel()
 {
-	size_t i, n;
-
-	n = get_irp_n_irgs();
-	for (i = 0; i < n; ++i) {
-		ir_graph *irg = get_irp_irg(i);
+	foreach_irp_irg(i, irg) {
 		lower_highlevel_graph(irg);
 	}
 	lower_const_code();

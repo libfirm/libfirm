@@ -16,7 +16,7 @@
 
 #include "irnode_t.h"
 #include "irgraph_t.h"
-#include "irprog.h"
+#include "irprog_t.h"
 #include "irgwalk.h"
 #include "irhooks.h"
 #include "entity_t.h"
@@ -132,11 +132,7 @@ void irg_walk_graph(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post, void
 
 void all_irg_walk(irg_walk_func *pre, irg_walk_func *post, void *env)
 {
-	size_t i, n;
-	ir_graph *irg;
-
-	for (i = 0, n = get_irp_n_irgs(); i < n; i++) {
-		irg = get_irp_irg(i);
+	foreach_irp_irg(i, irg) {
 		irg_walk_graph(irg, pre, post, env);
 	}
 }
@@ -379,8 +375,9 @@ void walk_const_code(irg_walk_func *pre, irg_walk_func *post, void *env)
 	n_types = get_irp_n_types();
 	for (i = 0; i < n_types; i++)
 		walk_types_entities(get_irp_type(i), &walk_entity, &my_env);
-	for (i = 0; i < get_irp_n_irgs(); i++)
-		walk_types_entities(get_irg_frame_type(get_irp_irg(i)), &walk_entity, &my_env);
+	foreach_irp_irg(i, irg) {
+		walk_types_entities(get_irg_frame_type(irg), &walk_entity, &my_env);
+	}
 
 	/* Walk constant array bounds. */
 	for (i = 0; i < n_types; i++) {

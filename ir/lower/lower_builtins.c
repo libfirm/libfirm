@@ -18,6 +18,7 @@
 #include "irgwalk.h"
 #include "iroptimize.h"
 #include "error.h"
+#include "irprog_t.h"
 #include "util.h"
 
 static pmap *entities;
@@ -183,18 +184,14 @@ static void lower_builtin(ir_node *node, void *env)
 
 void lower_builtins(size_t n_exceptions, ir_builtin_kind *exceptions)
 {
-	size_t i;
-	size_t n_irgs;
 	memset(dont_lower, 0, sizeof(dont_lower));
-	for (i = 0; i < n_exceptions; ++i) {
+	for (size_t i = 0; i < n_exceptions; ++i) {
 		dont_lower[exceptions[i]] = true;
 	}
 
 	entities = pmap_create();
 
-	n_irgs = get_irp_n_irgs();
-	for (i = 0; i < n_irgs; ++i) {
-		ir_graph *irg = get_irp_irg(i);
+	foreach_irp_irg(i, irg) {
 		bool changed = false;
 		irg_walk_graph(irg, NULL, lower_builtin, &changed);
 		confirm_irg_properties(irg, changed ? IR_GRAPH_PROPERTIES_CONTROL_FLOW

@@ -652,15 +652,15 @@ static void collect_node(ir_node *node, void *env)
  */
 static ir_node **construct_block_lists(ir_graph *irg)
 {
-	size_t   i;
-	int      walk_flag = ir_resources_reserved(irg) & IR_RESOURCE_IRN_VISITED;
+	int const walk_flag = ir_resources_reserved(irg) & IR_RESOURCE_IRN_VISITED;
 
 	if (walk_flag) {
 		ir_free_resources(irg, IR_RESOURCE_IRN_VISITED);
 	}
 
-	for (i = get_irp_n_irgs(); i > 0;)
-		ird_set_irg_link(get_irp_irg(--i), NULL);
+	foreach_irp_irg_r(i, irg) {
+		ird_set_irg_link(irg, NULL);
+	}
 
 	ird_walk_graph(irg, clear_link, collect_node, irg);
 
@@ -1868,8 +1868,6 @@ void dump_vcg_footer(FILE *F)
 
 static void dump_blocks_as_subgraphs(FILE *out, ir_graph *irg)
 {
-	size_t i;
-
 	construct_block_lists(irg);
 
 	/*
@@ -1877,8 +1875,7 @@ static void dump_blocks_as_subgraphs(FILE *out, ir_graph *irg)
 	 * only the requested irg but also all irgs that can be reached
 	 * from irg.
 	 */
-	for (i = get_irp_n_irgs(); i > 0;) {
-		ir_graph *other_irg = get_irp_irg(--i);
+	foreach_irp_irg_r(i, other_irg) {
 		ir_node **arr = (ir_node**)ird_get_irg_link(other_irg);
 		if (arr == NULL)
 			continue;
@@ -2003,14 +2000,12 @@ void dump_cfg(FILE *F, ir_graph *irg)
 
 void dump_callgraph(FILE *F)
 {
-	size_t          i;
 	ir_dump_flags_t old_flags = ir_get_dump_flags();
 
 	ir_remove_dump_flags(ir_dump_flag_disable_edge_labels);
 	dump_vcg_header(F, "Callgraph", "Hierarchic", NULL);
 
-	for (i = get_irp_n_irgs(); i > 0;) {
-		ir_graph *irg = get_irp_irg(--i);
+	foreach_irp_irg_r(i, irg) {
 		ir_entity *ent = get_irg_entity(irg);
 		size_t j, n_callees = get_irg_n_callees(irg);
 
@@ -2407,10 +2402,7 @@ void dump_ir_graph(ir_graph *graph, const char *suffix)
 
 void dump_all_ir_graphs(const char *suffix)
 {
-	size_t i, n_irgs = get_irp_n_irgs();
-
-	for (i = 0; i < n_irgs; ++i) {
-		ir_graph *irg = get_irp_irg(i);
+	foreach_irp_irg(i, irg) {
 		dump_ir_graph(irg, suffix);
 	}
 }

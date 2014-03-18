@@ -14,6 +14,7 @@
 
 #include "hashptr.h"
 #include "debug.h"
+#include "irprog_t.h"
 #include "obst.h"
 #include "xmalloc.h"
 #include "set.h"
@@ -110,11 +111,9 @@ static unsigned int get_irg_n_blocks(ir_graph *irg)
  */
 static unsigned int get_irp_n_blocks(void)
 {
-	int i, n = get_irp_n_irgs();
 	unsigned int count = 0;
 
-	for (i = 0; i < n; i++) {
-		ir_graph *irg = get_irp_irg(i);
+	foreach_irp_irg(i, irg) {
 		count += get_irg_n_blocks(irg);
 	}
 
@@ -449,7 +448,6 @@ static ir_entity *new_static_string_entity(ident *name, const char *string)
 
 ir_graph *ir_profile_instrument(const char *filename)
 {
-	int n, n_blocks = 0;
 	ident *counter_id, *filename_id;
 	ir_entity *bblock_counts, *ent_filename;
 	block_id_walker_data_t wd;
@@ -461,7 +459,7 @@ ir_graph *ir_profile_instrument(const char *filename)
 		return NULL;
 
 	/* count the number of block first */
-	n_blocks = get_irp_n_blocks();
+	unsigned const n_blocks = get_irp_n_blocks();
 
 	/* create all the necessary types and entities. Note that the
 	 * types must have a fixed layout, because we are already running in the
@@ -474,8 +472,7 @@ ir_graph *ir_profile_instrument(const char *filename)
 
 	/* initialize block id array and instrument blocks */
 	wd.id  = 0;
-	for (n = get_irp_n_irgs() - 1; n >= 0; --n) {
-		ir_graph *irg = get_irp_irg(n);
+	foreach_irp_irg_r(i, irg) {
 		instrument_irg(irg, bblock_counts, &wd);
 	}
 
@@ -542,8 +539,7 @@ static void block_associate_walker(ir_node *bb, void *env)
 
 static void irp_associate_blocks(block_assoc_t *env)
 {
-	for (int n = get_irp_n_irgs() - 1; n >= 0; --n) {
-		ir_graph *irg = get_irp_irg(n);
+	foreach_irp_irg_r(i, irg) {
 		irg_block_walk_graph(irg, block_associate_walker, NULL, env);
 	}
 }
@@ -624,8 +620,7 @@ static void ir_set_execfreqs_from_profile(ir_graph *irg)
 
 void ir_create_execfreqs_from_profile(void)
 {
-	for (int n = get_irp_n_irgs() - 1; n >= 0; --n) {
-		ir_graph *irg = get_irp_irg(n);
+	foreach_irp_irg_r(i, irg) {
 		ir_set_execfreqs_from_profile(irg);
 	}
 }

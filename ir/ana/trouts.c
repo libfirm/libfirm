@@ -323,8 +323,7 @@ void compute_trouts(void)
 	init_trouts();
 
 	/* Compute outs for IR nodes. */
-	for (size_t i = get_irp_n_irgs(); i-- > 0;) {
-		ir_graph *irg = get_irp_irg(i);
+	foreach_irp_irg_r(i, irg) {
 		irg_walk_graph(irg, NULL, chain_accesses, NULL);
 	}
 	walk_const_code(NULL, chain_accesses, NULL);

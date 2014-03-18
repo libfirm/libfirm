@@ -29,7 +29,7 @@
 #include "irgmod.h"
 #include "irgwalk.h"
 #include "iropt_t.h"
-#include "irprog.h"
+#include "irprog_t.h"
 #include "lower_builtins.h"
 #include "lower_calls.h"
 #include "util.h"
@@ -503,15 +503,12 @@ static void amd64_lower_for_target(void)
 	lower_calls_with_compounds(LF_RETURN_HIDDEN);
 	be_after_irp_transform("lower-calls");
 
-	size_t n_irgs = get_irp_n_irgs();
-	for (size_t i = 0; i < n_irgs; ++i) {
-		ir_graph *irg = get_irp_irg(i);
+	foreach_irp_irg(i, irg) {
 		lower_switch(irg, 4, 256, mode_Iu);
 		be_after_transform(irg, "lower-switch");
 	}
 
-	for (size_t i = 0; i < n_irgs; ++i) {
-		ir_graph *irg = get_irp_irg(i);
+	foreach_irp_irg(i, irg) {
 		/* Turn all small CopyBs into loads/stores, and turn all bigger
 		 * CopyBs into memcpy calls, because we cannot handle CopyB nodes
 		 * during code generation yet.

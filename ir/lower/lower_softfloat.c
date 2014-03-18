@@ -812,11 +812,8 @@ void lower_floating_point(void)
 	ir_register_softloat_lower_function(op_Mul,   lower_Mul);
 	ir_register_softloat_lower_function(op_Sub,   lower_Sub);
 
-	size_t const n_irgs = get_irp_n_irgs();
-	bool *changed_irgs = XMALLOCNZ(bool, n_irgs);
-	for (size_t i = 0; i < n_irgs; ++i) {
-		ir_graph *const irg = get_irp_irg(i);
-
+	bool *const changed_irgs = XMALLOCNZ(bool, get_irp_n_irgs());
+	foreach_irp_irg(i, irg) {
 		ir_nodeset_init(&created_mux_nodes);
 
 		assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
@@ -835,8 +832,7 @@ void lower_floating_point(void)
 	ir_register_softloat_lower_function(op_Div,   lower_Div_mode);
 	ir_register_softloat_lower_function(op_Load,  lower_Load);
 
-	for (size_t i = 0; i < n_irgs; ++i) {
-		ir_graph  *const irg         = get_irp_irg(i);
+	foreach_irp_irg(i, irg) {
 		ir_entity *const ent         = get_irg_entity(irg);
 		ir_type   *const mtp         = get_entity_type(ent);
 		ir_type   *const lowered_mtp = lower_method_type(mtp);

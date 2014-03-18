@@ -546,7 +546,6 @@ restart:
 void proc_cloning(float threshold)
 {
 	entry_t *p;
-	size_t i, n;
 	q_set hmap;
 
 	DEBUG_ONLY(firm_dbg_module_t *dbg;)
@@ -559,8 +558,7 @@ void proc_cloning(float threshold)
 	hmap.heavy_uses = NULL;
 
 	/* initially fill our map by visiting all irgs */
-	for (i = 0, n = get_irp_n_irgs(); i < n; ++i) {
-		ir_graph *irg = get_irp_irg(i);
+	foreach_irp_irg(i, irg) {
 		irg_walk_graph(irg, collect_irg_calls, NULL, &hmap);
 	}
 

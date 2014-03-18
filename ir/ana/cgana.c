@@ -453,8 +453,7 @@ static size_t get_free_methods(ir_entity ***free_methods)
 {
 	pset *free_set = pset_new_ptr_default();
 
-	for (size_t i = 0, n = get_irp_n_irgs(); i < n; ++i) {
-		ir_graph  *const irg     = get_irp_irg(i);
+	foreach_irp_irg(i, irg) {
 		ir_entity *const ent     = get_irg_entity(irg);
 		ir_linkage const linkage = get_entity_linkage(ent);
 
@@ -651,8 +650,7 @@ static void callee_walker(ir_node *call, void *env)
 static void callee_ana(void)
 {
 	/* analyse all graphs */
-	for (size_t i = 0, n = get_irp_n_irgs(); i < n; ++i) {
-		ir_graph *irg = get_irp_irg(i);
+	foreach_irp_irg(i, irg) {
 		assure_irg_properties(irg, IR_GRAPH_PROPERTY_NO_TUPLES);
 		irg_walk_graph(irg, callee_walker, NULL, NULL);
 		set_irg_callee_info_state(irg, irg_callee_info_consistent);
@@ -704,8 +702,8 @@ void free_callee_info(ir_graph *irg)
 
 void free_irp_callee_info(void)
 {
-	for (size_t i = 0, n = get_irp_n_irgs(); i < n; ++i) {
-		free_callee_info(get_irp_irg(i));
+	foreach_irp_irg(i, irg) {
+		free_callee_info(irg);
 	}
 }
 

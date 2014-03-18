@@ -12,7 +12,7 @@
 #include "lc_opts_enum.h"
 #include "irarch.h"
 #include "irgwalk.h"
-#include "irprog.h"
+#include "irprog_t.h"
 #include "iredges_t.h"
 #include "ircons_t.h"
 #include "irflag.h"
@@ -1724,7 +1724,6 @@ static int ia32_is_valid_clobber(const char *clobber)
 static void ia32_lower_for_target(void)
 {
 	ir_mode *mode_gp = ia32_reg_classes[CLASS_ia32_gp].mode;
-	size_t   n_irgs  = get_irp_n_irgs();
 
 	/* lower compound param handling
 	 * Note: we lower compound arguments ourself, since on ia32 we don't
@@ -1766,8 +1765,7 @@ static void ia32_lower_for_target(void)
 	lower_builtins(s, supported);
 	be_after_irp_transform("lower-builtins");
 
-	for (size_t i = 0; i < n_irgs; ++i) {
-		ir_graph *irg = get_irp_irg(i);
+	foreach_irp_irg(i, irg) {
 		/* break up switches with wide ranges */
 		lower_switch(irg, 4, 256, mode_gp);
 		be_after_transform(irg, "lower-switch");
@@ -1776,15 +1774,13 @@ static void ia32_lower_for_target(void)
 	ia32_lower64();
 	be_after_irp_transform("lower-64");
 
-	for (size_t i = 0; i < n_irgs; ++i) {
-		ir_graph *irg = get_irp_irg(i);
+	foreach_irp_irg(i, irg) {
 		/* lower for mode_b stuff */
 		ir_lower_mode_b(irg, ia32_mode_gp);
 		be_after_transform(irg, "lower-modeb");
 	}
 
-	for (size_t i = 0; i < n_irgs; ++i) {
-		ir_graph *irg = get_irp_irg(i);
+	foreach_irp_irg(i, irg) {
 		/* Turn all small CopyBs into loads/stores, keep medium-sized CopyBs,
 		 * so we can generate rep movs later, and turn all big CopyBs into
 		 * memcpy calls. */

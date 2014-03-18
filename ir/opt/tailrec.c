@@ -628,8 +628,7 @@ void opt_tail_recursion(void)
 	FIRM_DBG_REGISTER(dbg, "firm.opt.tailrec");
 
 	DB((dbg, LEVEL_1, "Performing tail recursion ...\n"));
-	for (size_t i = 0, n = get_irp_n_irgs(); i < n; ++i) {
-		ir_graph *irg = get_irp_irg(i);
+	foreach_irp_irg(i, irg) {
 		opt_tail_rec_irg(irg);
 	}
 }

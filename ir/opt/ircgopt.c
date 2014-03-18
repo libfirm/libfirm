@@ -19,7 +19,7 @@
 
 #include "debug.h"
 #include "array.h"
-#include "irprog.h"
+#include "irprog_t.h"
 #include "irgwalk.h"
 #include "irloop_t.h"
 #include "irflag_t.h"
@@ -101,10 +101,8 @@ void gc_irgs(size_t n_keep, ir_entity ** keep_arr)
 	}
 
 	/* clean */
-	for (size_t i = get_irp_n_irgs(); i-- != 0;) {
-		ir_graph  *irg = get_irp_irg(i);
+	foreach_irp_irg_r(i, irg) {
 		ir_entity *ent = get_irg_entity(irg);
-
 		if (get_entity_link(ent) == MARK)
 			continue;
 

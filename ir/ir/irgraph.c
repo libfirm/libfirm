@@ -511,9 +511,9 @@ void set_max_irg_visited(int val)
 ir_visited_t inc_max_irg_visited(void)
 {
 #ifndef NDEBUG
-	size_t i;
-	for (i = 0; i < get_irp_n_irgs(); i++)
-		assert(max_irg_visited >= get_irg_visited(get_irp_irg(i)));
+	foreach_irp_irg(i, irg) {
+		assert(max_irg_visited >= get_irg_visited(irg));
+	}
 #endif
 	return ++max_irg_visited;
 }

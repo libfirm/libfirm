@@ -125,7 +125,6 @@ static void garbage_collect_in_segment(ir_type *segment)
 
 void garbage_collect_entities(void)
 {
-	size_t       i;
 	ir_segment_t s;
 
 	FIRM_DBG_REGISTER(dbg, "firm.opt.garbagecollect");
@@ -145,8 +144,7 @@ void garbage_collect_entities(void)
 	/* remove graphs of non-visited functions
 	 * (we have to count backwards, because freeing the graph moves the last
 	 *  graph in the list to the free position) */
-	for (i = get_irp_n_irgs(); i > 0;) {
-		ir_graph  *irg    = get_irp_irg(--i);
+	foreach_irp_irg_r(i, irg) {
 		ir_entity *entity = get_irg_entity(irg);
 
 		if (entity_visited(entity))
