@@ -773,12 +773,10 @@ static void reset_isbe(void)
 	for (size_t i = 0, n_irgs = get_irp_n_irgs(); i < n_irgs; ++i) {
 		ir_graph *irg = get_irp_irg(i);
 
-		if (irg->caller_isbe)
-			free(irg->caller_isbe);
+		free(irg->caller_isbe);
 		irg->caller_isbe = NULL;
 
-		if (irg->callee_isbe)
-			free(irg->callee_isbe);
+		free(irg->callee_isbe);
 		irg->callee_isbe = NULL;
 	}
 }
