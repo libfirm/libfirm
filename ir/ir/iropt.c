@@ -3822,6 +3822,42 @@ static ir_node *transform_node_Not(ir_node *n)
 
 	ir_mode *mode = get_irn_mode(n);
 
+	/* Try De Morgan's laws. */
+	if (is_And(a) || is_Or(a)) {
+		ir_node *left  = get_binop_left(a);
+		ir_node *right = get_binop_right(a);
+		if (is_Not(left)) {
+			dbg_info *dbgi   = get_irn_dbg_info(n);
+			ir_node  *block  = get_nodes_block(n);
+			ir_node  *not_op = get_Not_op(left);
+			if (is_And(a)) {
+				/* ~(~a & b) => a | ~b */
+				ir_node *not = new_rd_Not(dbgi, block, right, mode);
+				n = new_rd_Or(dbgi, block, not_op, not, mode);
+			} else {
+				/* ~(~a | b) => a & ~b */
+				ir_node *not = new_rd_Not(dbgi, block, right, mode);
+				n = new_rd_And(dbgi, block, not_op, not, mode);
+			}
+			return n;
+		}
+		if (is_Not(right)) {
+			dbg_info *dbgi   = get_irn_dbg_info(n);
+			ir_node  *block  = get_nodes_block(n);
+			ir_node  *not_op = get_Not_op(right);
+			if (is_And(a)) {
+				/* ~(a & ~b) => ~a | b */
+				ir_node *not = new_rd_Not(dbgi, block, left, mode);
+				n = new_rd_Or(dbgi, block, not, not_op, mode);
+			} else {
+				/* ~(a | ~b) => ~a & b */
+				ir_node *not = new_rd_Not(dbgi, block, left, mode);
+				n = new_rd_And(dbgi, block, not, not_op, mode);
+			}
+			return n;
+		}
+	}
+
 	/* normalize ~(a ^ b) => a ^ ~b */
 	if (is_Eor(a) || is_Or_Eor_Add(a)) {
 		dbg_info *dbg       = get_irn_dbg_info(n);
