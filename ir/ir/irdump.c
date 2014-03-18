@@ -937,9 +937,8 @@ hook_entry_t *dump_add_node_info_callback(dump_node_info_cb_t *cb, void *data)
 	return info;
 }
 
-void dump_remove_node_info_callback(hook_entry_t *handle)
+void dump_remove_node_info_callback(hook_entry_t *const info)
 {
-	hook_entry_t *info = (hook_entry_t*)handle;
 	unregister_hook(hook_node_info, info);
 	free(info);
 }
