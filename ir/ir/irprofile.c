@@ -9,22 +9,21 @@
  * @author      Adam M. Szalkowski, Steven Schaefer
  * @date        06.04.2006, 11.11.2010
  */
-#include <math.h>
-#include <stdio.h>
 
-#include "hashptr.h"
+#include "../adt/util.h"
 #include "debug.h"
+#include "execfreq_t.h"
+#include "hashptr.h"
+#include "ircons_t.h"
+#include "irdump_t.h"
+#include "irgwalk.h"
+#include "irnode_t.h"
+#include "irprofile.h"
 #include "irprog_t.h"
 #include "obst.h"
-#include "xmalloc.h"
 #include "set.h"
-#include "irgwalk.h"
-#include "irdump_t.h"
-#include "irnode_t.h"
-#include "ircons_t.h"
-#include "execfreq_t.h"
-#include "irprofile.h"
 #include "typerep.h"
+#include "xmalloc.h"
 
 /* Instrument blocks walker. */
 typedef struct block_id_walker_data_t {
@@ -50,7 +49,8 @@ static hook_entry_t *hook;
 /* The debug module handle. */
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
-/* Since the backend creates a new firm graph we cannot associate counts with
+/**
+ * Since the backend creates a new firm graph we cannot associate counts with
  * blocks directly. Instead we associate them with the block ids, which are
  * maintained.
  */
@@ -66,22 +66,19 @@ static int cmp_execcount(const void *a, const void *b, size_t size)
 {
 	const execcount_t *ea = (const execcount_t*)a;
 	const execcount_t *eb = (const execcount_t*)b;
-	(void) size;
+	(void)size;
 	return ea->block != eb->block;
 }
 
 uint32_t ir_profile_get_block_execcount(const ir_node *block)
 {
-	execcount_t *ec, query;
-
-	query.block = get_irn_node_nr(block);
-	ec = set_find(execcount_t, profile, &query, sizeof(query), query.block);
+	execcount_t  const query = { .block = get_irn_node_nr(block), .count = 0 };
+	execcount_t *const ec    = set_find(execcount_t, profile, &query, sizeof(query), query.block);
 
 	if (ec != NULL) {
 		return ec->count;
 	} else {
-		DBG((dbg, LEVEL_3,
-			"Warning: Profile contains no data for %+F\n", block));
+		DBG((dbg, LEVEL_3, "Warning: Profile contains no data for %+F\n", block));
 		return 0;
 	}
 }
@@ -91,9 +88,9 @@ uint32_t ir_profile_get_block_execcount(const ir_node *block)
  */
 static void block_counter(ir_node *bb, void *data)
 {
-	unsigned *count = (unsigned*) data;
-	(void) bb;
-	++(*count);
+	unsigned *const count = (unsigned*)data;
+	(void)bb;
+	++*count;
 }
 
 /**
@@ -112,11 +109,9 @@ static unsigned int get_irg_n_blocks(ir_graph *irg)
 static unsigned int get_irp_n_blocks(void)
 {
 	unsigned int count = 0;
-
 	foreach_irp_irg(i, irg) {
 		count += get_irg_n_blocks(irg);
 	}
-
 	return count;
 }
 
@@ -135,20 +130,19 @@ static void dump_profile_node_info(void *ctx, FILE *f, const ir_node *irn)
  */
 static void add_constructor(ir_entity *method)
 {
-    ir_type   *method_type  = get_entity_type(method);
-    ir_type   *ptr_type     = new_type_pointer(method_type);
-
-    ir_type   *constructors = get_segment_type(IR_SEGMENT_CONSTRUCTORS);
-	ident     *ide = id_unique("constructor_ptr.%u");
-    ir_entity *ptr = new_entity(constructors, ide, ptr_type);
-    ir_graph  *irg = get_const_code_irg();
-    ir_node   *val = new_r_Address(irg, method);
+	ir_type   *const method_type  = get_entity_type(method);
+	ir_type   *const ptr_type     = new_type_pointer(method_type);
+	ir_type   *const constructors = get_segment_type(IR_SEGMENT_CONSTRUCTORS);
+	ident     *const ide          = id_unique("constructor_ptr.%u");
+	ir_entity *const ptr          = new_entity(constructors, ide, ptr_type);
+	ir_graph  *const irg          = get_const_code_irg();
+	ir_node   *const val          = new_r_Address(irg, method);
 
 	set_entity_ld_ident(ptr, new_id_from_chars("", 0));
-    set_entity_compiler_generated(ptr, 1);
-    set_entity_linkage(ptr, IR_LINKAGE_CONSTANT | IR_LINKAGE_HIDDEN_USER);
-    set_entity_visibility(ptr, ir_visibility_private);
-    set_atomic_ent_value(ptr, val);
+	set_entity_compiler_generated(ptr, 1);
+	set_entity_linkage(ptr, IR_LINKAGE_CONSTANT | IR_LINKAGE_HIDDEN_USER);
+	set_entity_visibility(ptr, ir_visibility_private);
+	set_atomic_ent_value(ptr, val);
 }
 
 /**
@@ -158,18 +152,17 @@ static void add_constructor(ir_entity *method)
  */
 static ir_entity *get_init_firmprof_ref(void)
 {
-	ident   *init_name = new_id_from_str("__init_firmprof");
-	ir_type *init_type = new_type_method(3, 0);
-	ir_type *uint      = new_type_primitive(mode_Iu);
-	ir_type *uintptr   = new_type_pointer(uint);
-	ir_type *string    = new_type_pointer(new_type_primitive(mode_Bs));
-	ir_entity *result;
+	ident   *const init_name = new_id_from_str("__init_firmprof");
+	ir_type *const init_type = new_type_method(3, 0);
+	ir_type *const uint      = new_type_primitive(mode_Iu);
+	ir_type *const uintptr   = new_type_pointer(uint);
+	ir_type *const string    = new_type_pointer(new_type_primitive(mode_Bs));
 
 	set_method_param_type(init_type, 0, string);
 	set_method_param_type(init_type, 1, uintptr);
 	set_method_param_type(init_type, 2, uint);
 
-	result = new_entity(get_glob_type(), init_name, init_type);
+	ir_entity *const result = new_entity(get_glob_type(), init_name, init_type);
 	set_entity_visibility(result, ir_visibility_external);
 
 	return result;
@@ -184,44 +177,33 @@ static ir_entity *get_init_firmprof_ref(void)
  *        __init_firmprof(ent_filename, bblock_counts, n_blocks);
  *    }
  */
-static ir_graph *gen_initializer_irg(ir_entity *ent_filename,
-                                     ir_entity *bblock_counts, int n_blocks)
+static ir_graph *gen_initializer_irg(ir_entity *ent_filename, ir_entity *bblock_counts, int n_blocks)
 {
-	ir_graph *irg;
-	ir_node  *ins[3];
-	ir_node  *bb, *ret, *call;
-	ir_type  *empty_frame_type;
-
-	ir_entity *init_ent = get_init_firmprof_ref();
-
-	ident     *name = new_id_from_str("__firmprof_initializer");
-	ir_entity *ent  = new_entity(get_glob_type(), name, new_type_method(0, 0));
+	ident     *const name = new_id_from_str("__firmprof_initializer");
+	ir_entity *const ent  = new_entity(get_glob_type(), name, new_type_method(0, 0));
 	set_entity_visibility(ent, ir_visibility_local);
 	set_entity_ld_ident(ent, name);
 
-	/* create the new ir_graph */
-	irg = new_ir_graph(ent, 0);
-	empty_frame_type = get_irg_frame_type(irg);
+	ir_graph *const irg              = new_ir_graph(ent, 0);
+	ir_type  *const empty_frame_type = get_irg_frame_type(irg);
 	set_type_size_bytes(empty_frame_type, 0);
 	set_type_state(empty_frame_type, layout_fixed);
 
-	bb = get_r_cur_block(irg);
-
-	ir_node *const callee = new_r_Address(irg, init_ent);
-
-	ins[0] = new_r_Address(irg, ent_filename);
-	ins[1] = new_r_Address(irg, bblock_counts);
-	ins[2] = new_r_Const_long(irg, mode_Iu, n_blocks);
-
-	call = new_r_Call(bb, get_irg_initial_mem(irg), callee, 3, ins,
-	        get_entity_type(init_ent));
-	ret  = new_r_Return(bb, new_r_Proj(call, mode_M, pn_Call_M), 0, NULL);
+	ir_node   *const bb        = get_r_cur_block(irg);
+	ir_node   *const init_mem  = get_irg_initial_mem(irg);
+	ir_entity *const init_ent  = get_init_firmprof_ref();
+	ir_node   *const callee    = new_r_Address(irg, init_ent);
+	ir_node   *const filename  = new_r_Address(irg, ent_filename);
+	ir_node   *const counters  = new_r_Address(irg, bblock_counts);
+	ir_node   *const size      = new_r_Const_long(irg, mode_Iu, n_blocks);
+	ir_node   *const ins[]     = { filename, counters, size };
+	ir_type   *const call_type = get_entity_type(init_ent);
+	ir_node   *const call      = new_r_Call(bb, init_mem, callee, ARRAY_SIZE(ins), ins, call_type);
+	ir_node   *const call_mem  = new_r_Proj(call, mode_M, pn_Call_M);
+	ir_node   *const ret       = new_r_Return(bb, call_mem, 0, NULL);
 
 	add_immBlock_pred(get_irg_end_block(irg), ret);
-
 	irg_finalize_cons(irg);
-
-	/* add a pointer to the new function in the constructor section */
 	add_constructor(ent);
 
 	return irg;
@@ -232,28 +214,27 @@ static ir_graph *gen_initializer_irg(ir_entity *ent_filename,
  * This just inserts the instruction nodes, it doesn't connect the memory
  * nodes in a meaningful way.
  */
-static void instrument_block(ir_node *bb, ir_node *address, unsigned int id)
+static void instrument_block(ir_node *const bb, ir_node *const address, unsigned int const id)
 {
-	ir_graph *irg = get_irn_irg(bb);
-	ir_node  *load, *store, *offset, *add, *projm, *proji, *unknown, *cnst;
+	ir_graph *const irg = get_irn_irg(bb);
 
 	/* We can't instrument the end block */
 	if (bb == get_irg_end_block(irg))
 		return;
 
-	unknown = new_r_Unknown(irg, mode_M);
-	cnst    = new_r_Const_long(irg, mode_Iu, get_mode_size_bytes(mode_Iu) * id);
-	offset  = new_r_Add(bb, address, cnst, get_modeP_data());
-	load    = new_r_Load(bb, unknown, offset, mode_Iu, cons_none);
-	projm   = new_r_Proj(load, mode_M, pn_Load_M);
-	proji   = new_r_Proj(load, mode_Iu, pn_Load_res);
-	cnst    = new_r_Const_one(irg, mode_Iu);
-	add     = new_r_Add(bb, proji, cnst, mode_Iu);
-	store   = new_r_Store(bb, projm, offset, add, cons_none);
-	projm   = new_r_Proj(store, mode_M, pn_Store_M);
+	ir_node *const unknown = new_r_Unknown(irg, mode_M);
+	ir_node *const cnst    = new_r_Const_long(irg, mode_Iu, get_mode_size_bytes(mode_Iu) * id);
+	ir_node *const offset  = new_r_Add(bb, address, cnst, get_modeP_data());
+	ir_node *const load    = new_r_Load(bb, unknown, offset, mode_Iu, cons_none);
+	ir_node *const lmem    = new_r_Proj(load, mode_M, pn_Load_M);
+	ir_node *const proji   = new_r_Proj(load, mode_Iu, pn_Load_res);
+	ir_node *const one     = new_r_Const_one(irg, mode_Iu);
+	ir_node *const add     = new_r_Add(bb, proji, one, mode_Iu);
+	ir_node *const store   = new_r_Store(bb, lmem, offset, add, cons_none);
+	ir_node *const smem    = new_r_Proj(store, mode_M, pn_Store_M);
 
-	set_irn_link(bb, projm);
-	set_irn_link(projm, load);
+	set_irn_link(bb, smem);
+	set_irn_link(smem, load);
 }
 
 /**
@@ -263,34 +244,28 @@ static void instrument_block(ir_node *bb, ir_node *address, unsigned int id)
  * codes, inserting phiM nodes as necessary. Note that afterwards, the new
  * memory is not connected to any return nodes and thus still dead.
  */
-static void fix_ssa(ir_node *bb, void *data)
+static void fix_ssa(ir_node *const bb, void *const data)
 {
-	ir_graph *irg = get_irn_irg(bb);
-	ir_node *mem, *proj, *load;
-	int n, arity = get_Block_n_cfgpreds(bb);
+	(void)data;
 
-	(void) data;
+	ir_graph *const irg = get_irn_irg(bb);
 
 	/* end blocks are not instrumented, skip! */
 	if (bb == get_irg_end_block(irg))
 		return;
 
+	ir_node  *mem;
+	int const arity = get_Block_n_cfgpreds(bb);
 	if (bb == get_irg_start_block(irg)) {
 		mem = get_irg_initial_mem(irg);
 	} else if (arity == 1) {
-		ir_node *pred = get_Block_cfgpred_block(bb, 0);
-		if (pred != NULL)
-			mem = (ir_node*) get_irn_link(pred);
-		else
-			mem = new_r_NoMem(irg);
+		ir_node *const pred = get_Block_cfgpred_block(bb, 0);
+		mem = pred ? (ir_node*)get_irn_link(pred) : new_r_NoMem(irg);
 	} else {
 		ir_node **ins = ALLOCAN(ir_node*, arity);
-		for (n = arity - 1; n >= 0; --n) {
-			ir_node *pred = get_Block_cfgpred_block(bb, n);
-			if (pred != NULL)
-				ins[n] = (ir_node*) get_irn_link(pred);
-			else
-				ins[n] = new_r_NoMem(irg);
+		for (int n = arity; n-- != 0;) {
+			ir_node *const pred = get_Block_cfgpred_block(bb, n);
+			ins[n] = pred ? (ir_node*)get_irn_link(pred) : new_r_NoMem(irg);
 		}
 		mem = new_r_Phi(bb, arity, ins, mode_M);
 	}
@@ -298,8 +273,8 @@ static void fix_ssa(ir_node *bb, void *data)
 	/* The block link fields point to the projm from the instrumentation code,
 	 * the projm in turn links to the initial load which lacks a memory
 	 * argument at this point. */
-	proj = (ir_node*) get_irn_link(bb);
-	load = (ir_node*) get_irn_link(proj);
+	ir_node *const proj = (ir_node*)get_irn_link(bb);
+	ir_node *const load = (ir_node*)get_irn_link(proj);
 	set_Load_mem(load, mem);
 }
 
@@ -319,23 +294,16 @@ static void block_instrument_walker(ir_node *bb, void *data)
  */
 static ir_node *sync_mem(ir_node *bb, ir_node *mem)
 {
-	ir_node *ins[2];
-	ins[0] = (ir_node*) get_irn_link(bb);
-	ins[1] = mem;
-	return new_r_Sync(bb, 2, ins);
+	ir_node *const ins[] = { (ir_node*)get_irn_link(bb), mem };
+	return new_r_Sync(bb, ARRAY_SIZE(ins), ins);
 }
 
 /**
  * Instrument a single ir_graph, counters should point to the bblock
  * counters array.
  */
-static void instrument_irg(ir_graph *irg, ir_entity *counters,
-                           block_id_walker_data_t *wd)
+static void instrument_irg(ir_graph *irg, ir_entity *counters, block_id_walker_data_t *wd)
 {
-	ir_node *end   = get_irg_end(irg);
-	ir_node *endbb = get_irg_end_block(irg);
-	int i;
-
 	/* generate a node pointing to the count array */
 	wd->counters = new_r_Address(irg, counters);
 
@@ -344,13 +312,14 @@ static void instrument_irg(ir_graph *irg, ir_entity *counters,
 	irg_block_walk_graph(irg, fix_ssa, NULL, NULL);
 
 	/* connect the new memory nodes to the return nodes */
-	for (i = get_Block_n_cfgpreds(endbb) - 1; i >= 0; --i) {
-		ir_node *node = skip_Proj(get_Block_cfgpred(endbb, i));
-		ir_node *bb   = get_Block_cfgpred_block(endbb, i);
+	ir_node *const endbb = get_irg_end_block(irg);
+	for (int i = get_Block_n_cfgpreds(endbb); i != 0;) {
+		ir_node *const node = skip_Proj(get_Block_cfgpred(endbb, i));
+		ir_node *const bb   = get_Block_cfgpred_block(endbb, i);
 		if (bb == NULL)
 			continue;
-		ir_node *mem;
 
+		ir_node *mem;
 		switch (get_irn_opcode(node)) {
 		case iro_Return:
 			mem = get_Return_mem(node);
@@ -364,19 +333,18 @@ static void instrument_irg(ir_graph *irg, ir_entity *counters,
 			break;
 		default:
 			/* A fragile's op exception. There should be another path to End,
-			 * so ignore it.
-			 */
-			assert(is_fragile_op(node) && \
-				"unexpected End control flow predecessor");
+			 * so ignore it. */
+			assert(is_fragile_op(node) && "unexpected End control flow predecessor");
 		}
 	}
 
 	/* as well as calls with attribute noreturn */
-	for (i = get_End_n_keepalives(end) - 1; i >= 0; --i) {
+	ir_node *const end = get_irg_end(irg);
+	for (int i = get_End_n_keepalives(end); i-- != 0;) {
 		ir_node *node = get_End_keepalive(end, i);
 		if (is_Call(node)) {
-			ir_node *bb  = get_nodes_block(node);
-			ir_node *mem = get_Call_mem(node);
+			ir_node *const bb  = get_nodes_block(node);
+			ir_node *const mem = get_Call_mem(node);
 			set_Call_mem(node, sync_mem(bb, mem));
 		}
 	}
@@ -388,19 +356,16 @@ static void instrument_irg(ir_graph *irg, ir_entity *counters,
  */
 static ir_entity *new_array_entity(ident *name, int size)
 {
-	ir_entity *result;
-	ir_type *uint_type, *array_type;
-
-	uint_type = new_type_primitive(mode_Iu);
+	ir_type *const uint_type = new_type_primitive(mode_Iu);
 	set_type_alignment_bytes(uint_type, get_type_size_bytes(uint_type));
 
-	array_type = new_type_array(uint_type);
+	ir_type *const array_type = new_type_array(uint_type);
 	set_array_size_int(array_type, size);
 	set_type_size_bytes(array_type, size * get_mode_size_bytes(mode_Iu));
 	set_type_alignment_bytes(array_type, get_mode_size_bytes(mode_Iu));
 	set_type_state(array_type, layout_fixed);
 
-	result = new_entity(get_glob_type(), name, array_type);
+	ir_entity *const result = new_entity(get_glob_type(), name, array_type);
 	set_entity_visibility(result, ir_visibility_local);
 	set_entity_compiler_generated(result, 1);
 
@@ -413,14 +378,9 @@ static ir_entity *new_array_entity(ident *name, int size)
  */
 static ir_entity *new_static_string_entity(ident *name, const char *string)
 {
-	ir_entity *result;
-
-	ir_type *char_type   = new_type_primitive(mode_Bs);
-	ir_type *string_type = new_type_array(char_type);
-
-	ir_initializer_t *contents;
-
-	size_t i, length = strlen(string)+1;
+	ir_type *const char_type   = new_type_primitive(mode_Bs);
+	ir_type *const string_type = new_type_array(char_type);
+	size_t   const length      = strlen(string) + 1;
 
 	/* Create the type for a fixed-length string */
 	set_array_size_int(string_type, length);
@@ -428,17 +388,17 @@ static ir_entity *new_static_string_entity(ident *name, const char *string)
 	set_type_alignment_bytes(string_type, 1);
 	set_type_state(string_type, layout_fixed);
 
-	result = new_entity(get_glob_type(), name, string_type);
+	ir_entity *const result = new_entity(get_glob_type(), name, string_type);
 	set_entity_visibility(result, ir_visibility_local);
 	set_entity_linkage(result, IR_LINKAGE_CONSTANT);
 	set_entity_compiler_generated(result, 1);
 
 	/* There seems to be no simpler way to do this. Or at least, cparser
 	 * does exactly the same thing... */
-	contents = create_initializer_compound(length);
-	for (i = 0; i < length; i++) {
-		ir_tarval *c = new_tarval_from_long(string[i], mode_Bs);
-		ir_initializer_t *init = create_initializer_tarval(c);
+	ir_initializer_t *const contents = create_initializer_compound(length);
+	for (size_t i = 0; i < length; i++) {
+		ir_tarval        *const c    = new_tarval_from_long(string[i], mode_Bs);
+		ir_initializer_t *const init = create_initializer_tarval(c);
 		set_initializer_compound_value(contents, i, init);
 	}
 	set_entity_initializer(result, contents);
@@ -448,9 +408,6 @@ static ir_entity *new_static_string_entity(ident *name, const char *string)
 
 ir_graph *ir_profile_instrument(const char *filename)
 {
-	ident *counter_id, *filename_id;
-	ir_entity *bblock_counts, *ent_filename;
-	block_id_walker_data_t wd;
 	FIRM_DBG_REGISTER(dbg, "firm.ir.profile");
 
 	/* Don't do anything for modules without code. Else the linker will
@@ -464,14 +421,14 @@ ir_graph *ir_profile_instrument(const char *filename)
 	/* create all the necessary types and entities. Note that the
 	 * types must have a fixed layout, because we are already running in the
 	 * backend */
-	counter_id    = new_id_from_str("__FIRMPROF__BLOCK_COUNTS");
-	bblock_counts = new_array_entity(counter_id, n_blocks);
+	ident     *const counter_id    = new_id_from_str("__FIRMPROF__BLOCK_COUNTS");
+	ir_entity *const bblock_counts = new_array_entity(counter_id, n_blocks);
 
-	filename_id  = new_id_from_str("__FIRMPROF__FILE_NAME");
-	ent_filename = new_static_string_entity(filename_id, filename);
+	ident     *const filename_id  = new_id_from_str("__FIRMPROF__FILE_NAME");
+	ir_entity *const ent_filename = new_static_string_entity(filename_id, filename);
 
 	/* initialize block id array and instrument blocks */
-	wd.id  = 0;
+	block_id_walker_data_t wd = { .id = 0 };
 	foreach_irp_irg_r(i, irg) {
 		instrument_irg(irg, bblock_counts, &wd);
 	}
@@ -481,7 +438,7 @@ ir_graph *ir_profile_instrument(const char *filename)
 
 static unsigned int *parse_profile(const char *filename, unsigned int num_blocks)
 {
-	FILE *f = fopen(filename, "rb");
+	FILE *const f = fopen(filename, "rb");
 	if (!f) {
 		DBG((dbg, LEVEL_2, "Failed to open profile file (%s)\n", filename));
 		return NULL;
@@ -502,7 +459,6 @@ static unsigned int *parse_profile(const char *filename, unsigned int num_blocks
 	 * values stored little endian format. */
 	for (unsigned i = 0; i < num_blocks; ++i) {
 		unsigned char bytes[4];
-
 		if ((ret = fread(bytes, 1, 4, f)) < 1)
 			break;
 
@@ -527,13 +483,12 @@ end:
  */
 static void block_associate_walker(ir_node *bb, void *env)
 {
-	block_assoc_t *b = (block_assoc_t*) env;
+	block_assoc_t *b = (block_assoc_t*)env;
 	execcount_t query;
 
 	query.block = get_irn_node_nr(bb);
-	query.count = b->counters[(b->i)++];
-	DBG((dbg, LEVEL_4, "execcount(%+F, %u): %u\n", bb, query.block,
-	    query.count));
+	query.count = b->counters[b->i++];
+	DBG((dbg, LEVEL_4, "execcount(%+F, %u): %u\n", bb, query.block, query.count));
 	(void)set_insert(execcount_t, profile, &query, sizeof(query), query.block);
 }
 
@@ -559,12 +514,13 @@ void ir_profile_free(void)
 
 bool ir_profile_read(const char *filename)
 {
-	block_assoc_t env;
 	FIRM_DBG_REGISTER(dbg, "firm.ir.profile");
 
 	unsigned n_blocks = get_irp_n_blocks();
-	env.i        = 0;
-	env.counters = parse_profile(filename, n_blocks);
+	block_assoc_t env = {
+		.i        = 0,
+		.counters = parse_profile(filename, n_blocks)
+	};
 	if (!env.counters)
 		return false;
 
@@ -585,11 +541,10 @@ typedef struct initialize_execfreq_env_t {
 
 static void initialize_execfreq(ir_node *block, void *data)
 {
-	const initialize_execfreq_env_t *env
-		= (const initialize_execfreq_env_t*) data;
-	ir_graph *irg = get_irn_irg(block);
-	double freq;
+	const initialize_execfreq_env_t *env = (const initialize_execfreq_env_t*)data;
 
+	double          freq;
+	ir_graph *const irg = get_irn_irg(block);
 	if (block == get_irg_start_block(irg) || block == get_irg_end_block(irg)) {
 		freq = 1.0;
 	} else {
@@ -605,16 +560,15 @@ static void initialize_execfreq(ir_node *block, void *data)
 static void ir_set_execfreqs_from_profile(ir_graph *irg)
 {
 	/* Find the first block containing instructions */
-	ir_node *start_block = get_irg_start_block(irg);
-	unsigned count       = ir_profile_get_block_execcount(start_block);
+	ir_node *const start_block = get_irg_start_block(irg);
+	unsigned const count       = ir_profile_get_block_execcount(start_block);
 	if (count == 0) {
 		/* the function was never executed, so fallback to estimated freqs */
 		ir_estimate_execfreq(irg);
 		return;
 	}
 
-	initialize_execfreq_env_t env;
-	env.freq_factor = 1.0 / count;
+	initialize_execfreq_env_t env = { .freq_factor = 1.0 / count };
 	irg_block_walk_graph(irg, initialize_execfreq, NULL, &env);
 }
 
