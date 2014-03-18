@@ -2358,6 +2358,30 @@ static ir_node *transform_node_Or_(ir_node *n)
 		return n;
 	}
 
+	if (is_Minus(a) && is_Const(b)
+	    && get_mode_arithmetic(mode) == irma_twos_complement) {
+		const bitinfo *const ba   = get_bitinfo(a);
+		ir_tarval     *      mask;
+		if (ba) {
+			ir_tarval *const z         = ba->z;
+			ir_tarval *const minus_one = get_mode_minus_one(mode);
+
+			/* Create mask for rightmost may-1-bit and the trailing 0's. */
+			mask = tarval_eor(z, tarval_add(z, minus_one));
+		} else {
+			mask = get_mode_one(mode);
+		}
+
+		ir_tarval *const tv = get_Const_tarval(b);
+		if (tarval_is_all_one(tarval_or(tv, mask))) {
+			/* -(a=??????00) | 11111000 => a | 11111000 */
+			dbg_info *const dbgi     = get_irn_dbg_info(n);
+			ir_node  *const block    = get_nodes_block(n);
+			ir_node  *const minus_op = get_Minus_op(a);
+			return new_rd_Or(dbgi, block, minus_op, b, mode);
+		}
+	}
+
 	if (is_Eor(a) || is_Eor_Add(a)) {
 		ir_node *const o = get_commutative_other_op(a, b);
 		if (o) {
