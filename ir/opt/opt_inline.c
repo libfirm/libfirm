@@ -564,8 +564,6 @@ static bool inline_method(ir_node *const call, ir_graph *called_graph)
 	} else {
 		call_res = new_r_Bad(irg, mode_T);
 	}
-	/* handle the regular call */
-	ir_node *const call_x_reg = new_r_Jmp(post_bl);
 
 	/* Finally the exception control flow.
 	   We have two possible situations:
@@ -626,13 +624,18 @@ static bool inline_method(ir_node *const call, ir_graph *called_graph)
 	free(res_pred);
 	free(cf_pred);
 
-	ir_node *const call_in[] = {
+	ir_node *call_in[pn_Call_max+1] = {
 		[pn_Call_M]         = call_mem,
 		[pn_Call_T_result]  = call_res,
-		[pn_Call_X_regular] = call_x_reg,
-		[pn_Call_X_except]  = call_x_exc,
 	};
-	turn_into_tuple(call, ARRAY_SIZE(call_in), call_in);
+	int n_in = 2;
+	assert(pn_Call_M == 0 && pn_Call_T_result == 1);
+	if (ir_throws_exception(call)) {
+		call_in[pn_Call_X_regular] = new_r_Jmp(post_bl);
+		call_in[pn_Call_X_except]  = call_x_exc;
+		n_in = 4;
+	}
+	turn_into_tuple(call, n_in, call_in);
 
 	/* --  Turn CSE back on. -- */
 	set_optimize(rem_opt);

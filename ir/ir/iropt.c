@@ -3406,13 +3406,18 @@ make_tuple:;
 
 		/* skip a potential Pin */
 		mem = skip_Pin(mem);
-		ir_node *const in[] = {
+		ir_node *in[pn_Div_max+1] = {
 			[pn_Div_M]         = mem,
 			[pn_Div_res]       = value,
-			[pn_Div_X_regular] = new_r_Jmp(blk),
-			[pn_Div_X_except]  = new_r_Bad(irg, mode_X),
 		};
-		turn_into_tuple(n, ARRAY_SIZE(in), in);
+		int n_in = 2;
+		assert(pn_Div_M == 0 && pn_Div_res == 1);
+		if (ir_throws_exception(n)) {
+			in[pn_Div_X_regular] = new_r_Jmp(blk);
+			in[pn_Div_X_except]  = new_r_Bad(irg, mode_X);
+			n_in = 4;
+		}
+		turn_into_tuple(n, n_in, in);
 	}
 	return n;
 }
@@ -3491,13 +3496,18 @@ make_tuple:;
 
 		/* skip a potential Pin */
 		mem = skip_Pin(mem);
-		ir_node *const in[] = {
+		ir_node *in[pn_Mod_max+1] = {
 			[pn_Mod_M]         = mem,
-			[pn_Mod_res]       = value,
-			[pn_Mod_X_regular] = new_r_Jmp(blk),
-			[pn_Mod_X_except]  = new_r_Bad(irg, mode_X),
+			[pn_Mod_res]       = value
 		};
-		turn_into_tuple(n, ARRAY_SIZE(in), in);
+		int n_in = 2;
+		assert(pn_Mod_M == 0 && pn_Mod_res == 1);
+		if (ir_throws_exception(n)) {
+			in[pn_Mod_X_regular] = new_r_Jmp(blk);
+			in[pn_Mod_X_except]  = new_r_Bad(irg, mode_X);
+			n_in = 4;
+		}
+		turn_into_tuple(n, n_in, in);
 	}
 	return n;
 }

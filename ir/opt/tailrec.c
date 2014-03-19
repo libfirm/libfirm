@@ -262,9 +262,6 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env)
 			ir_node *const call = skip_Proj(get_Return_mem(p));
 			ir_node *const mem  = get_Call_mem(call);
 
-			/* create a new jump */
-			ir_node *jmp = new_r_Jmp(block);
-
 			for (size_t i = 0; i < env->n_ress; ++i) {
 				ir_mode *mode = modes[i];
 				if (env->variants[i] != TR_DIRECT) {
@@ -276,13 +273,18 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env)
 			/* create a new tuple for the return values */
 			ir_node *tuple = new_r_Tuple(block, env->n_ress, in);
 
-			ir_node *const in[] = {
+			ir_node *in[pn_Call_max+1] = {
 				[pn_Call_M]         = mem,
-				[pn_Call_T_result]  = tuple,
-				[pn_Call_X_regular] = jmp,
-				[pn_Call_X_except]  = new_r_Bad(irg, mode_X),
+				[pn_Call_T_result]  = tuple
 			};
-			turn_into_tuple(call, ARRAY_SIZE(in), in);
+			int n_in = 2;
+			assert(pn_Call_M == 0 && pn_Call_T_result == 1);
+			if (ir_throws_exception(call)) {
+				in[pn_Call_X_regular] = new_r_Jmp(block);
+				in[pn_Call_X_except]  = new_r_Bad(irg, mode_X);
+				n_in = 4;
+			}
+			turn_into_tuple(call, n_in, in);
 
 			for (size_t i = 0; i < env->n_ress; ++i) {
 				ir_node *res = get_Return_res(p, i);
