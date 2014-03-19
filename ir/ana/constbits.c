@@ -30,7 +30,7 @@
 #include "constbits.h"
 
 /* TODO:
- * - Implement cleared/set bit calculation for Add, Sub, Minus, Mul, Div, Mod, Shl, Shr, Shrs
+ * - Implement cleared/set bit calculation for Mul, Div, Mod, Shl, Shr, Shrs
  * - Implement min/max calculation for And, Eor, Or, Not, Conv, Shl, Shr, Shrs, Mux
  * - Implement min/max calculation for Add, Sub, Minus, Mul, Div, Mod, Conv, Shl, Shr, Shrs, Mux
  */
@@ -372,27 +372,20 @@ undefined:
 				}
 
 				case iro_Add: {
-					bitinfo*   const l  = get_bitinfo(get_Add_left(irn));
-					bitinfo*   const r  = get_bitinfo(get_Add_right(irn));
-					ir_tarval* const lz = l->z;
-					ir_tarval* const lo = l->o;
-					ir_tarval* const rz = r->z;
-					ir_tarval* const ro = r->o;
-					if (lz == lo && rz == ro) {
-						z = o = tarval_add(lz, rz);
-					} else {
-						// TODO improve: can only do lower disjoint bits
-						/* Determine where any of the operands has zero bits, i.e. where no
-						 * carry out is generated if there is not carry in */
-						ir_tarval* const no_c_in_no_c_out = tarval_and(lz, rz);
-						/* Generate a mask of the lower consecutive zeroes: x | -x.  In this
-						 * range the addition is disjoint and therefore Add behaves like Or.
-						 */
-						ir_tarval* const low_zero_mask = tarval_or(no_c_in_no_c_out, tarval_neg(no_c_in_no_c_out));
-						ir_tarval* const low_one_mask  = tarval_not(low_zero_mask);
-						z = tarval_or( tarval_or(lz, rz), low_zero_mask);
-						o = tarval_and(tarval_or(lo, ro), low_one_mask);
-					}
+					bitinfo*   const l   = get_bitinfo(get_Add_left(irn));
+					bitinfo*   const r   = get_bitinfo(get_Add_right(irn));
+					ir_tarval* const lz  = l->z;
+					ir_tarval* const lo  = l->o;
+					ir_tarval* const rz  = r->z;
+					ir_tarval* const ro  = r->o;
+					ir_tarval* const vz  = tarval_add(lz, rz);
+					ir_tarval* const vo  = tarval_add(lo, ro);
+					ir_tarval* const lnc = tarval_eor(lz, lo);
+					ir_tarval* const rnc = tarval_eor(rz, ro);
+					ir_tarval* const vnc = tarval_eor(vz, vo);
+					ir_tarval* const nc  = tarval_or(tarval_or(lnc, rnc), vnc);
+					z  = tarval_or(vz, nc);
+					o  = tarval_andnot(vz, nc);
 					break;
 				}
 
@@ -403,21 +396,18 @@ undefined:
 					if (l == NULL || r == NULL)
 						goto cannot_analyse;
 
-					ir_tarval* const lz = l->z;
-					ir_tarval* const lo = l->o;
-					ir_tarval* const rz = r->z;
-					ir_tarval* const ro = r->o;
-					if (lz == lo && rz == ro) {
-						z = o = tarval_sub(lz, rz, NULL);
-					} else if (tarval_is_null(tarval_andnot(rz, lo))) {
-						/* Every possible one of the subtrahend is backed by a safe one of the
-						 * minuend, i.e. there are no borrows. */
-						// TODO extend no-borrow like carry for Add above
-						z = tarval_andnot(lz, ro);
-						o = tarval_andnot(lo, rz);
-					} else {
-						goto cannot_analyse;
-					}
+					ir_tarval* const lz  = l->z;
+					ir_tarval* const lo  = l->o;
+					ir_tarval* const rz  = r->z;
+					ir_tarval* const ro  = r->o;
+					ir_tarval* const vz  = tarval_sub(lo, rz, m);
+					ir_tarval* const vo  = tarval_sub(lz, ro, m);
+					ir_tarval* const lnc = tarval_eor(lz, lo);
+					ir_tarval* const rnc = tarval_eor(rz, ro);
+					ir_tarval* const vnc = tarval_eor(vz, vo);
+					ir_tarval* const nc  = tarval_or(tarval_or(lnc, rnc), vnc);
+					z  = tarval_or(vz, nc);
+					o  = tarval_andnot(vz, nc);
 					break;
 				}
 
@@ -447,13 +437,19 @@ undefined:
 				}
 
 				case iro_Minus: {
-					bitinfo* const b = get_bitinfo(get_Minus_op(irn));
-					if (b->z == b->o) {
-						z = o = tarval_neg(b->z);
-					} else {
-						goto cannot_analyse;
-					}
+					/* -a = 0 - a */
+					bitinfo   *const b   = get_bitinfo(get_Minus_op(irn));
+					ir_tarval *const bz  = b->z;
+					ir_tarval *const bo  = b->o;
+					ir_tarval* const vz  = tarval_neg(bz);
+					ir_tarval* const vo  = tarval_neg(bo);
+					ir_tarval* const bnc = tarval_eor(bz, bo);
+					ir_tarval* const vnc = tarval_eor(vz, vo);
+					ir_tarval* const nc  = tarval_or(bnc, vnc);
+					z  = tarval_or(vz, nc);
+					o  = tarval_andnot(vz, nc);
 					break;
+
 				}
 
 				case iro_And: {
