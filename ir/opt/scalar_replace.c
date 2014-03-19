@@ -275,7 +275,8 @@ static leaf_state_t link_all_leaf_sels(ir_entity *ent, ir_node *sel)
 			continue;
 		}
 		if (is_Sel(succ)) {
-			state |= link_all_leaf_sels(ent, succ) | HAS_CHILD_SELS;
+			link_all_leaf_sels(ent, succ);
+			state |= HAS_CHILD_SELS;
 		} else if (is_Id(succ)) {
 			state |= link_all_leaf_sels(ent, succ);
 		} else {
