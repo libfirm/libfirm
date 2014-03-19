@@ -250,7 +250,6 @@ int be_remove_empty_blocks(ir_graph *irg)
 
 typedef struct remove_dead_nodes_env_t_ {
 	bitset_t *reachable;
-	ir_graph *irg;
 	be_lv_t  *lv;
 } remove_dead_nodes_env_t;
 
@@ -299,7 +298,6 @@ void be_remove_dead_nodes_from_schedule(ir_graph *irg)
 	remove_dead_nodes_env_t env;
 	env.reachable = bitset_alloca(get_irg_last_idx(irg));
 	env.lv        = be_get_irg_liveness(irg);
-	env.irg       = irg;
 
 	// mark all reachable nodes
 	irg_walk_graph(irg, mark_dead_nodes_walker, NULL, &env);
