@@ -247,43 +247,65 @@ bool is_address_taken(ir_node *sel)
 	return false;
 }
 
+/* we need a special address that serves as an address taken marker */
+static char _x;
+static void *ADDRESS_TAKEN = &_x;
+
+typedef enum leaf_state_t {
+	POSSIBLE_LEAF        = 0,
+	HAS_CHILD_LOAD_STORE = (1u << 0),
+	HAS_CHILD_SELS       = (1u << 1),
+} leaf_state_t;
+
 /**
  * Link all leaf Sels with the entity.
  *
  * @param ent  the entity that will be scalar replaced
  * @param sel  a Sel node that selects some fields of this entity
  */
-static bool link_all_leaf_sels(ir_entity *ent, ir_node *sel)
+static leaf_state_t link_all_leaf_sels(ir_entity *ent, ir_node *sel)
 {
-	bool is_leaf = true;
+	/** A leaf Sel is a Sel that is used directly by a Load or Store. */
+	leaf_state_t state = POSSIBLE_LEAF;
 	for (unsigned i = get_irn_n_outs(sel); i-- > 0; ) {
 		ir_node *succ = get_irn_out(sel, i);
 
+		if (is_Load(succ) || is_Store(succ)) {
+			state |= HAS_CHILD_LOAD_STORE;
+			continue;
+		}
 		if (is_Sel(succ)) {
-			/* the current Sel has further Sel's, no leaf */
-			is_leaf = false;
-			link_all_leaf_sels(ent, succ);
+			state |= link_all_leaf_sels(ent, succ) | HAS_CHILD_SELS;
 		} else if (is_Id(succ)) {
-			is_leaf &= link_all_leaf_sels(ent, succ);
+			state |= link_all_leaf_sels(ent, succ);
+		} else {
+			assert(is_End(succ));
 		}
 	}
-
-	if (is_leaf) {
-		/* beware of Id's */
-		sel = skip_Id(sel);
-
-		/* we know we are at a leaf, because this function is only called if
-		 * the address is NOT taken, so sel's successor(s) must be Loads or
-		 * Stores */
-		set_irn_link(sel, get_entity_link(ent));
-		set_entity_link(ent, sel);
+	if (state & HAS_CHILD_SELS) {
+		/* Sel is not a leaf, if it has load/stores bail out */
+		if (state & HAS_CHILD_LOAD_STORE) {
+			set_entity_link(ent, ADDRESS_TAKEN);
+		}
+		return state;
 	}
-	return is_leaf;
-}
 
-/* we need a special address that serves as an address taken marker */
-static char _x;
-static void *ADDRESS_TAKEN = &_x;
+	/* if we are here, then we have found a leaf Sel */
+
+	/* beware of Id's */
+	sel = skip_Id(sel);
+
+	void *link = get_entity_link(ent);
+	if (link == ADDRESS_TAKEN)
+		return HAS_CHILD_LOAD_STORE | HAS_CHILD_SELS;
+
+	/* we know we are at a leaf, because this function is only called if
+	 * the address is NOT taken, so sel's successor(s) must be Loads or
+	 * Stores */
+	set_irn_link(sel, link);
+	set_entity_link(ent, sel);
+	return state;
+}
 
 /**
  * Find possible scalar replacements.
