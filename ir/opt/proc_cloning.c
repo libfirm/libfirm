@@ -25,7 +25,7 @@
 #include "analyze_irg_args.h"
 #include "irprintf.h"
 #include "ircons.h"
-#include "irouts.h"
+#include "irouts_t.h"
 #include "irnode_t.h"
 #include "irtools.h"
 #include "irgmod.h"
@@ -277,8 +277,7 @@ static ir_node *get_irg_arg(ir_graph *irg, size_t pos)
 	assure_irg_outs(irg);
 
 	/* Search the argument with the number pos.*/
-	for (unsigned i = get_irn_n_outs(irg_args); i-- > 0; ) {
-		ir_node *proj = get_irn_out(irg_args, i);
+	foreach_irn_out_r(irg_args, i, proj) {
 		if ((int)pos == get_Proj_proj(proj)) {
 			if (arg) {
 				/*

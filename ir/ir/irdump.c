@@ -25,7 +25,7 @@
 
 #include "irgwalk.h"
 #include "tv_t.h"
-#include "irouts.h"
+#include "irouts_t.h"
 #include "iredges.h"
 #include "irdom.h"
 #include "irloop_t.h"
@@ -1595,9 +1595,7 @@ static void dump_class_hierarchy_node(ir_type *const tp, ir_entity *const ent, v
 static void dump_out_edge(ir_node *n, void *env)
 {
 	FILE *F = (FILE*)env;
-	for (int i = get_irn_n_outs(n); i-- > 0; ) {
-		ir_node *succ = get_irn_out(n, i);
-		assert(succ);
+	foreach_irn_out_r(n, i, succ) {
 		print_node_edge_kind(F, succ);
 		fprintf(F, "{sourcename: ");
 		print_nodeid(F, n);

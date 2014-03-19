@@ -11,7 +11,7 @@
 #include "irtypes.h"
 #include "vrp.h"
 #include "iroptimize.h"
-#include "irouts.h"
+#include "irouts_t.h"
 #include "irgraph_t.h"
 #include "irgopt.h"
 #include "irgwalk.h"
@@ -472,8 +472,7 @@ static void vrp_first_pass(ir_node *n, void *e)
 
 	vrp_update_node(env->info, n);
 
-	for (int i = get_irn_n_outs(n); i-- > 0; ) {
-		ir_node *succ = get_irn_out(n, i);
+	foreach_irn_out_r(n, i, succ) {
 		if (bitset_is_set(env->visited, get_irn_idx(succ))) {
 			/* we found a loop*/
 			waitq_put(env->workqueue, succ);
@@ -533,8 +532,7 @@ void set_vrp_data(ir_graph *irg)
 
 		if (vrp_update_node(info, node)) {
 			/* if something changed, add successors to worklist*/
-			for (int i = get_irn_n_outs(node); i-- > 0; ) {
-				ir_node *succ =  get_irn_out(node, i);
+			foreach_irn_out_r(node, i, succ) {
 				waitq_put(env->workqueue, succ);
 			}
 		}

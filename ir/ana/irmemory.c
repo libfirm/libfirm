@@ -21,7 +21,7 @@
 #include "irflag.h"
 #include "hashptr.h"
 #include "irflag.h"
-#include "irouts.h"
+#include "irouts_t.h"
 #include "irgwalk.h"
 #include "irprintf.h"
 #include "debug.h"
@@ -824,9 +824,7 @@ static ir_entity_usage determine_entity_usage(const ir_node *irn,
                                               ir_entity *entity)
 {
 	unsigned res = 0;
-	for (int i = get_irn_n_outs(irn); i-- > 0; ) {
-		ir_node *succ = get_irn_out(irn, i);
-
+	foreach_irn_out_r(irn, i, succ) {
 		switch (get_irn_opcode(succ)) {
 		case iro_Load:
 			/* beware: irn might be a Id node here, so irn might be not
@@ -916,11 +914,8 @@ static ir_entity_usage determine_entity_usage(const ir_node *irn,
 					--input_nr) {
 				ir_node *pred = get_Tuple_pred(succ, input_nr);
 				if (pred == irn) {
-					int k;
 					/* we found one input */
-					for (k = get_irn_n_outs(succ) - 1; k >= 0; --k) {
-						ir_node *proj = get_irn_out(succ, k);
-
+					foreach_irn_out_r(succ, k, proj) {
 						if (is_Proj(proj) && get_Proj_proj(proj) == input_nr) {
 							res |= determine_entity_usage(proj, entity);
 							break;
@@ -966,8 +961,7 @@ static void analyse_irg_entity_usage(ir_graph *irg)
 
 	ir_node *irg_frame = get_irg_frame(irg);
 
-	for (int j = get_irn_n_outs(irg_frame); j-- > 0; ) {
-		ir_node        *succ = get_irn_out(irg_frame, j);
+	foreach_irn_out_r(irg_frame, j, succ) {
 		ir_entity      *entity;
 		unsigned        flags;
 
@@ -993,13 +987,9 @@ static void analyse_irg_entity_usage(ir_graph *irg)
 
 		assure_irg_outs(inner_irg);
 		ir_node *args = get_irg_args(inner_irg);
-		for (int j = get_irn_n_outs(args); j-- > 0; ) {
-			ir_node *arg = get_irn_out(args, j);
-
+		foreach_irn_out_r(args, j, arg) {
 			if (get_Proj_proj(arg) == static_link_arg) {
-				for (int k = get_irn_n_outs(arg); k-- > 0; ) {
-					ir_node *succ = get_irn_out(arg, k);
-
+				foreach_irn_out_r(arg, k, succ) {
 					if (is_Sel(succ)) {
 						ir_entity *entity = get_Sel_entity(succ);
 

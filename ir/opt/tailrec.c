@@ -25,7 +25,7 @@
 #include "ircons.h"
 #include "irflag.h"
 #include "trouts.h"
-#include "irouts.h"
+#include "irouts_t.h"
 #include "irhooks.h"
 #include "ircons_t.h"
 #include "util.h"
@@ -363,9 +363,7 @@ static bool check_lifetime_of_locals(ir_graph *irg)
 	ir_type *frame_tp  = get_irg_frame_type(irg);
 	ir_node *irg_frame = get_irg_frame(irg);
 
-	for (unsigned i = get_irn_n_outs(irg_frame); i-- > 0;) {
-		ir_node *succ = get_irn_out(irg_frame, i);
-
+	foreach_irn_out_r(irg_frame, i, succ) {
 		if (is_Sel(succ)) {
 			/* Check if we have compound arguments.
 			   For now, we cannot handle them. */

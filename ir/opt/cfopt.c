@@ -33,7 +33,7 @@
 
 #include "array.h"
 
-#include "irouts.h"
+#include "irouts_t.h"
 #include "irbackedge_t.h"
 
 #include "irflag_t.h"
@@ -852,18 +852,13 @@ void optimize_cf(ir_graph *irg)
 				ir_node *ka = get_End_keepalive(end, i);
 
 				if (is_Phi(ka)) {
-					int k;
-
-					for (k = get_irn_n_outs(ka) - 1; k >= 0; --k) {
-						ir_node *user = get_irn_out(ka, k);
-
+					foreach_irn_out_r(ka, k, user) {
 						if (user != ka && user != end) {
 							/* Is it a real user or just a self loop ? */
+							in[j++] = ka;
 							break;
 						}
 					}
-					if (k >= 0)
-						in[j++] = ka;
 				} else
 					in[j++] = ka;
 			}

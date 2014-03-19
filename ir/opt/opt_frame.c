@@ -14,7 +14,7 @@
 #include "iroptimize.h"
 #include "irgraph_t.h"
 #include "type_t.h"
-#include "irouts.h"
+#include "irouts_t.h"
 #include "iredges.h"
 
 /*
@@ -25,9 +25,8 @@ void opt_frame_irg(ir_graph *irg)
 {
 	ir_type   *frame_tp = get_irg_frame_type(irg);
 	ir_entity *ent, *list;
-	ir_node   *frame, *sel;
+	ir_node   *frame;
 	size_t    i, n = get_class_n_members(frame_tp);
-	int       o;
 
 	if (n <= 0)
 		return;
@@ -46,8 +45,7 @@ void opt_frame_irg(ir_graph *irg)
 	frame = get_irg_frame(irg);
 
 	/* mark all used entities */
-	for (o = get_irn_n_outs(frame) - 1; o >= 0; --o) {
-		sel = get_irn_out(frame, o);
+	foreach_irn_out_r(frame, o, sel) {
 		if (is_Sel(sel)) {
 			ent = get_Sel_entity(sel);
 			/* only entities on the frame */

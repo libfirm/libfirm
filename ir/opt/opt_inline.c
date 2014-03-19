@@ -30,7 +30,7 @@
 #include "xmalloc.h"
 #include "pqueue.h"
 
-#include "irouts.h"
+#include "irouts_t.h"
 #include "irloop_t.h"
 #include "irbackedge_t.h"
 #include "opt_init.h"
@@ -784,10 +784,7 @@ static call_entry *duplicate_call_entry(const call_entry *entry,
 static unsigned calc_method_local_weight(ir_node *arg)
 {
 	unsigned weight = 0;
-
-	for (unsigned i = get_irn_n_outs(arg); i-- > 0; ) {
-		ir_node *succ = get_irn_out(arg, i);
-
+	foreach_irn_out_r(arg, i, succ) {
 		switch (get_irn_opcode(succ)) {
 		case iro_Load:
 		case iro_Store:
@@ -819,8 +816,7 @@ static unsigned calc_method_local_weight(ir_node *arg)
 				ir_node *pred = get_Tuple_pred(succ, j);
 				if (pred == arg) {
 					/* look for Proj(j) */
-					for (unsigned k = get_irn_n_outs(succ); k-- > 0; ) {
-						ir_node *succ_succ = get_irn_out(succ, k);
+					foreach_irn_out_r(succ, k, succ_succ) {
 						if (is_Proj(succ_succ)) {
 							if (get_Proj_proj(succ_succ) == j) {
 								/* found */
@@ -855,9 +851,8 @@ static void analyze_irg_local_weights(inline_irg_env *env, ir_graph *irg)
 
 	assure_irg_outs(irg);
 	ir_node *irg_args = get_irg_args(irg);
-	for (unsigned i = get_irn_n_outs(irg_args); i-- > 0; ) {
-		ir_node *arg = get_irn_out(irg_args, i);
-		long     pn  = get_Proj_proj(arg);
+	foreach_irn_out_r(irg_args, i, arg) {
+		long const pn = get_Proj_proj(arg);
 		env->local_weights[pn] = calc_method_local_weight(arg);
 	}
 }

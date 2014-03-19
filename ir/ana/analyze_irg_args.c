@@ -10,7 +10,7 @@
  */
 #include <stdlib.h>
 
-#include "irouts.h"
+#include "irouts_t.h"
 #include "irnode_t.h"
 #include "irmode_t.h"
 #include "array.h"
@@ -33,8 +33,7 @@ static ptr_access_kind analyze_arg(ir_node *arg, ptr_access_kind bits)
 	/* We must visit a node once to avoid endless recursion.*/
 	mark_irn_visited(arg);
 
-	for (int i = get_irn_n_outs(arg); i-- > 0; ) {
-		ir_node *succ = get_irn_out(arg, i);
+	foreach_irn_out_r(arg, i, succ) {
 		if (irn_visited(succ))
 			continue;
 
@@ -189,8 +188,7 @@ static void analyze_ent_args(ir_entity *ent)
 
 	/* search for arguments with mode reference
 	   to analyze them.*/
-	for (int i = get_irn_n_outs(irg_args); i-- > 0; ) {
-		ir_node *arg      = get_irn_out(irg_args, i);
+	foreach_irn_out_r(irg_args, i, arg) {
 		ir_mode *arg_mode = get_irn_mode(arg);
 		long     proj_nr  = get_Proj_proj(arg);
 
@@ -260,8 +258,7 @@ static unsigned calc_method_param_weight(ir_node *arg)
 	mark_irn_visited(arg);
 
 	unsigned weight = null_weight;
-	for (int i = get_irn_n_outs(arg); i-- > 0; ) {
-		ir_node *succ = get_irn_out(arg, i);
+	foreach_irn_out_r(arg, i, succ) {
 		if (irn_visited(succ))
 			continue;
 
@@ -306,8 +303,7 @@ static unsigned calc_method_param_weight(ir_node *arg)
 				ir_node *pred = get_Tuple_pred(succ, j);
 				if (pred == arg) {
 					/* look for Proj(j) */
-					for (int k = get_irn_n_outs(succ); k-- > 0; ) {
-						ir_node *succ_succ = get_irn_out(succ, k);
+					foreach_irn_out_r(succ, k, succ_succ) {
 						if (is_Proj(succ_succ)) {
 							if (get_Proj_proj(succ_succ) == j) {
 								/* found */
@@ -382,9 +378,8 @@ static void analyze_method_params_weight(ir_entity *ent)
 	assure_irg_outs(irg);
 
 	ir_node *irg_args = get_irg_args(irg);
-	for (int i = get_irn_n_outs(irg_args); i-- > 0; ) {
-		ir_node *arg     = get_irn_out(irg_args, i);
-		long     proj_nr = get_Proj_proj(arg);
+	foreach_irn_out_r(irg_args, i, arg) {
+		long const proj_nr = get_Proj_proj(arg);
 		ent->attr.mtd_attr.param_weight[proj_nr] += calc_method_param_weight(arg);
 	}
 }

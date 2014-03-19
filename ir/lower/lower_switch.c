@@ -16,13 +16,10 @@
 #include "irgopt.h"
 #include "irgwalk.h"
 #include "irnode_t.h"
-#include "irouts.h"
+#include "irouts_t.h"
 #include "lowering.h"
 #include "error.h"
 #include "irnodeset.h"
-
-#define foreach_out_irn(irn, i, outirn) \
-	for (unsigned i = get_irn_n_outs(irn); i-- != 0 ? outirn = get_irn_out(irn, i), 1 : 0;)
 
 typedef struct walk_env_t {
 	ir_nodeset_t  processed;
@@ -111,8 +108,7 @@ static void analyse_switch1(switch_info_t *info)
 	unsigned               c         = 0;
 	size_t                 e;
 
-	ir_node *proj = NULL;
-	foreach_out_irn(switchn, i, proj) {
+	foreach_irn_out_r(switchn, i, proj) {
 		long     pn     = get_Proj_proj(proj);
 		ir_node *target = get_irn_out(proj, 0);
 
@@ -211,8 +207,7 @@ static void create_out_of_bounds_check(switch_info_t *info)
 	set_nodes_block(switchn, new_block);
 
 	/* adjust projs */
-	ir_node *proj = NULL;
-	foreach_out_irn(switchn, i, proj) {
+	foreach_irn_out_r(switchn, i, proj) {
 		long pn = get_Proj_proj(proj);
 		if (pn == pn_Switch_default) {
 			assert(default_block == NULL);

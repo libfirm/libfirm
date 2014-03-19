@@ -16,7 +16,7 @@
 #include "irdom.h"
 #include "irgmod.h"
 #include "irgwalk.h"
-#include "irouts.h"
+#include "irouts_t.h"
 #include "irgopt.h"
 #include "iropt.h"
 #include "iroptimize.h"
@@ -228,17 +228,13 @@ static void walk_memory(ir_node *irn, irg_walk_func *pre, irg_walk_func *post, v
 	mode = get_irn_mode(irn);
 	if (mode == mode_M) {
 		/* every successor uses memory */
-		for (unsigned i = get_irn_n_outs(irn); i-- > 0; ) {
-			ir_node *succ = get_irn_out(irn, i);
-
+		foreach_irn_out_r(irn, i, succ) {
 			if (! irn_visited(succ))
 				walk_memory(succ, pre, post, ctx);
 		}
 	} else if (mode == mode_T) {
 		/* only some Proj's uses memory */
-		for (unsigned i = get_irn_n_outs(irn); i-- > 0; ) {
-			ir_node *proj = get_irn_out(irn, i);
-
+		foreach_irn_out_r(irn, i, proj) {
 			if (get_irn_mode(proj) == mode_M && ! irn_visited(proj))
 				walk_memory(proj, pre, post, ctx);
 		}
@@ -624,15 +620,12 @@ static void update_Load_memop(memop_t *m)
 
 	m->value.address = ptr;
 
-	for (unsigned i = get_irn_n_outs(load); i-- > 0; ) {
-		ir_node *proj = get_irn_out(load, i);
-		long    pn;
-
+	foreach_irn_out_r(load, i, proj) {
 		/* beware of keep edges */
 		if (is_End(proj))
 			continue;
 
-		pn = get_Proj_proj(proj);
+		long const pn = get_Proj_proj(proj);
 		m->projs[pn] = proj;
 		switch (pn) {
 		case pn_Load_res:
@@ -704,15 +697,12 @@ static void update_Store_memop(memop_t *m)
 
 	m->value.address = adr;
 
-	for (unsigned i = get_irn_n_outs(store); i-- > 0; ) {
-		ir_node *proj = get_irn_out(store, i);
-		long    pn;
-
+	foreach_irn_out_r(store, i, proj) {
 		/* beware of keep edges */
 		if (is_End(proj))
 			continue;
 
-		pn = get_Proj_proj(proj);
+		long const pn = get_Proj_proj(proj);
 		m->projs[pn] = proj;
 		switch (pn) {
 		case pn_Store_X_except:
@@ -750,9 +740,7 @@ static void update_Call_memop(memop_t *m)
 	} else
 		m->flags = FLAG_KILL_ALL;
 
-	for (unsigned i = get_irn_n_outs(call); i-- > 0; ) {
-		ir_node *proj = get_irn_out(call, i);
-
+	foreach_irn_out_r(call, i, proj) {
 		/* beware of keep edges */
 		if (is_End(proj))
 			continue;
@@ -777,9 +765,7 @@ static void update_Div_memop(memop_t *m)
 {
 	ir_node *div = m->node;
 
-	for (unsigned i = get_irn_n_outs(div); i-- > 0; ) {
-		ir_node *proj = get_irn_out(div, i);
-
+	foreach_irn_out_r(div, i, proj) {
 		/* beware of keep edges */
 		if (is_End(proj))
 			continue;
@@ -799,9 +785,7 @@ static void update_Mod_memop(memop_t *m)
 {
 	ir_node *div = m->node;
 
-	for (unsigned i = get_irn_n_outs(div); i-- > 0; ) {
-		ir_node *proj = get_irn_out(div, i);
-
+	foreach_irn_out_r(div, i, proj) {
 		/* beware of keep edges */
 		if (is_End(proj))
 			continue;

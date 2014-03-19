@@ -35,7 +35,7 @@
 #include "iropt_t.h"
 #include "irgwalk.h"
 #include "irop.h"
-#include "irouts.h"
+#include "irouts_t.h"
 #include "irgmod.h"
 #include "iropt_dbg.h"
 #include "debug.h"
@@ -765,9 +765,8 @@ static void add_to_cprop(node_t *y, environment_t *env)
 	if (get_irn_mode(irn) == mode_T) {
 		/* mode_T nodes always produce tarval_top, so we must explicitly
 		 * add its Projs to get constant evaluation to work */
-		for (unsigned i = get_irn_n_outs(irn); i-- > 0; ) {
-			node_t *proj = get_irn_node(get_irn_out(irn, i));
-
+		foreach_irn_out_r(irn, i, succ) {
+			node_t *const proj = get_irn_node(succ);
 			add_to_cprop(proj, env);
 		}
 	} else if (is_Block(irn)) {
@@ -2641,10 +2640,8 @@ static void propagate(environment_t *env)
 					++n_fallen;
 					DB((dbg, LEVEL_2, "Add node %+F to fallen\n", x->node));
 				}
-				for (unsigned i = get_irn_n_outs(x->node); i-- > 0; ) {
-					ir_node *succ = get_irn_out(x->node, i);
-					node_t  *y    = get_irn_node(succ);
-
+				foreach_irn_out_r(x->node, i, succ) {
+					node_t *const y = get_irn_node(succ);
 					/* Add y to y.partition.cprop. */
 					add_to_cprop(y, env);
 				}
@@ -2728,9 +2725,7 @@ static ir_node *get_leader(node_t *node)
 static bool only_one_reachable_proj(ir_node *n)
 {
 	unsigned k = 0;
-	for (unsigned i = get_irn_n_outs(n); i-- > 0; ) {
-		ir_node *proj = get_irn_out(n, i);
-
+	foreach_irn_out_r(n, i, proj) {
 		/* skip non-control flow Proj's */
 		if (get_irn_mode(proj) != mode_X)
 			continue;
@@ -2969,10 +2964,8 @@ static void exchange_leader(ir_node *irn, ir_node *leader)
  */
 static bool all_users_are_dead(const ir_node *irn)
 {
-	unsigned n = get_irn_n_outs(irn);
-	for (unsigned i = 0; i < n; ++i) {
-		const ir_node *succ  = get_irn_out(irn, i);
-		const node_t  *block = get_irn_node(get_nodes_block(succ));
+	foreach_irn_out(irn, i, succ) {
+		node_t const *const block = get_irn_node(get_nodes_block(succ));
 
 		if (!is_reachable(block)) {
 			/* block is unreachable */

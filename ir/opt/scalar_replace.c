@@ -22,7 +22,7 @@
 #include "irgwalk.h"
 #include "irnode_t.h"
 #include "iroptimize.h"
-#include "irouts.h"
+#include "irouts_t.h"
 #include "opt_init.h"
 #include "pset.h"
 #include "scalar_replace.h"
@@ -157,9 +157,7 @@ bool is_address_taken(ir_node *sel)
 	if (!is_const_sel(sel))
 		return true;
 
-	for (unsigned i = get_irn_n_outs(sel); i-- > 0; ) {
-		ir_node *succ = get_irn_out(sel, i);
-
+	foreach_irn_out_r(sel, i, succ) {
 		switch (get_irn_opcode(succ)) {
 		case iro_Load: {
 			/* do not remove volatile variables */
@@ -227,9 +225,7 @@ bool is_address_taken(ir_node *sel)
 				if (pred != sel)
 					continue;
 				/* we found one input */
-				for (unsigned k = get_irn_n_outs(succ); k-- > 0; ) {
-					ir_node *proj = get_irn_out(succ, k);
-
+				foreach_irn_out_r(succ, k, proj) {
 					if (is_Proj(proj) && get_Proj_proj(proj) == input_nr) {
 						bool res = is_address_taken(proj);
 						if (res)
@@ -267,9 +263,7 @@ static leaf_state_t link_all_leaf_sels(ir_entity *ent, ir_node *sel)
 {
 	/** A leaf Sel is a Sel that is used directly by a Load or Store. */
 	leaf_state_t state = POSSIBLE_LEAF;
-	for (unsigned i = get_irn_n_outs(sel); i-- > 0; ) {
-		ir_node *succ = get_irn_out(sel, i);
-
+	foreach_irn_out_r(sel, i, succ) {
 		if (is_Load(succ) || is_Store(succ)) {
 			state |= HAS_CHILD_LOAD_STORE;
 			continue;
@@ -343,13 +337,11 @@ static bool find_possible_replacements(ir_graph *irg)
 		assure_irg_properties(inner_irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS
 									   | IR_GRAPH_PROPERTY_NO_TUPLES);
 		args = get_irg_args(inner_irg);
-		for (unsigned j = get_irn_n_outs(args); j-- > 0; ) {
-			ir_node *arg = get_irn_out(args, j);
+		foreach_irn_out_r(args, j, arg) {
 			if (get_Proj_proj(arg) != static_link_arg)
 				continue;
 
-			for (unsigned k = get_irn_n_outs(arg); k-- > 0; ) {
-				ir_node *succ = get_irn_out(arg, k);
+			foreach_irn_out_r(arg, k, succ) {
 				if (!is_Sel(succ))
 					continue;
 				ir_entity *ent = get_Sel_entity(succ);
@@ -365,8 +357,7 @@ static bool find_possible_replacements(ir_graph *irg)
 	 * replacement set the link of this entity to ADDRESS_TAKEN. */
 	ir_node *irg_frame = get_irg_frame(irg);
 	int      res       = 0;
-	for (unsigned i = get_irn_n_outs(irg_frame); i-- > 0; ) {
-		ir_node *succ = get_irn_out(irg_frame, i);
+	foreach_irn_out_r(irg_frame, i, succ) {
 		if (!is_Sel(succ))
 			continue;
 
@@ -655,8 +646,7 @@ void scalar_replacement_opt(ir_graph *irg)
 		pset     *sels      = pset_new_ptr(8);
 		ir_type  *frame_tp  = get_irg_frame_type(irg);
 
-		for (unsigned i = get_irn_n_outs(irg_frame); i-- > 0; ) {
-			ir_node *succ = get_irn_out(irg_frame, i);
+		foreach_irn_out_r(irg_frame, i, succ) {
 			if (!is_Sel(succ))
 				continue;
 

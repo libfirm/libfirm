@@ -10,7 +10,7 @@
  * @date     1.2002
  */
 #include "xmalloc.h"
-#include "irouts.h"
+#include "irouts_t.h"
 #include "irnode_t.h"
 #include "irgraph_t.h"
 #include "irprog_t.h"
@@ -48,8 +48,7 @@ unsigned get_Block_n_cfg_outs(const ir_node *bl)
 {
 	assert(is_Block(bl));
 	unsigned n_cfg_outs = 0;
-	for (unsigned i = 0; i < get_irn_n_outs(bl); ++i) {
-		const ir_node *succ = get_irn_out(bl, i);
+	foreach_irn_out(bl, i, succ) {
 		if (get_irn_mode(succ) != mode_X)
 			continue;
 		if (is_End(succ) || is_Bad(succ))
@@ -63,8 +62,7 @@ unsigned get_Block_n_cfg_outs_ka(const ir_node *bl)
 {
 	assert(is_Block(bl));
 	unsigned n_cfg_outs = 0;
-	for (unsigned i = 0; i < get_irn_n_outs(bl); ++i) {
-		const ir_node *succ = get_irn_out(bl, i);
+	foreach_irn_out(bl, i, succ) {
 		if (get_irn_mode(succ) != mode_X)
 			continue;
 		if (is_Bad(succ))
@@ -84,8 +82,7 @@ unsigned get_Block_n_cfg_outs_ka(const ir_node *bl)
 ir_node *get_Block_cfg_out(const ir_node *bl, unsigned pos)
 {
 	assert(is_Block(bl));
-	for (unsigned i = 0; i < get_irn_n_outs(bl); ++i) {
-		const ir_node *succ = get_irn_out(bl, i);
+	foreach_irn_out(bl, i, succ) {
 		if (get_irn_mode(succ) != mode_X)
 			continue;
 		if (is_End(succ) || is_Bad(succ))
@@ -103,8 +100,7 @@ ir_node *get_Block_cfg_out(const ir_node *bl, unsigned pos)
 ir_node *get_Block_cfg_out_ka(const ir_node *bl, unsigned pos)
 {
 	assert(is_Block(bl));
-	for (unsigned i = 0; i < get_irn_n_outs(bl); ++i) {
-		const ir_node *succ = get_irn_out(bl, i);
+	foreach_irn_out(bl, i, succ) {
 		if (get_irn_mode(succ) != mode_X)
 			continue;
 		if (is_Bad(succ))
@@ -144,8 +140,7 @@ static void irg_out_walk_2(ir_node *node, irg_walk_func *pre,
 	if (pre != NULL)
 		pre(node, env);
 
-	for (int i = 0, n = get_irn_n_outs(node); i < n; ++i) {
-		ir_node *succ = get_irn_out(node, i);
+	foreach_irn_out(node, i, succ) {
 		if (get_irn_visited(succ) < get_irg_visited(irg))
 			irg_out_walk_2(succ, pre, post, env);
 	}
@@ -195,8 +190,7 @@ void irg_out_block_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post,
 	inc_irg_block_visited(irg);
 
 	if (get_irn_mode(node) == mode_X) {
-		for (int i = 0, n = get_irn_n_outs(node); i < n; ++i) {
-			ir_node *succ = get_irn_out(node, i);
+		foreach_irn_out(node, i, succ) {
 			irg_out_block_walk2(succ, pre, post, env);
 		}
 	} else {
