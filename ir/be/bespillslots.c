@@ -157,6 +157,11 @@ void be_node_needs_frame_entity(be_fec_env_t *env, ir_node *node,
 	ir_node *spillnode = get_memory_edge(node);
 	assert(spillnode != NULL);
 
+	/* if the node only produces memory outputs, then it is probably a Spill node which should not
+	 * be marked (only the reload nodes should be marked)! */
+	assert(arch_get_irn_n_outs(node) != 1
+	       || arch_get_irn_register_req_out(node, 0)->type != arch_register_req_type_none);
+
 	/* walk upwards and collect all phis and spills on this way */
 	collect_spill(env, spillnode, mode, align);
 
