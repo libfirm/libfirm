@@ -179,10 +179,8 @@ static void remove_empty_block(ir_node *block)
 		set_irn_n(succ_block, pos, pred);
 	}
 
-	if (entity != NULL) {
-		/* move the label to the successor block */
-		set_Block_entity(succ_block, entity);
-	}
+	/* move the label to the successor block */
+	set_Block_entity(succ_block, entity);
 
 	/* there can be some non-scheduled Pin nodes left in the block, move them
 	 * to the succ block (Pin) or pred block (Sync) */

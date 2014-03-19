@@ -65,8 +65,7 @@ static void block_remove_bads(ir_node *block)
 
 	ir_node   *new_block    = new_r_Block(irg, new_max, new_in);
 	ir_entity *block_entity = get_Block_entity(block);
-	if (block_entity != NULL)
-		set_Block_entity(new_block, block_entity);
+	set_Block_entity(new_block, block_entity);
 
 	/* 2. Remove inputs on Phis, where the block input is Bad. */
 	for (ir_node *phi = get_Block_phis(block), *next; phi != NULL; phi = next) {
