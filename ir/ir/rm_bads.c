@@ -8,7 +8,7 @@
  * @author   Andreas Zwinkau
  *
  * The idea behind this pass is that Bad nodes may only be present as block
- * or phi inputs (inputs that are now unreachale).
+ * or phi inputs (inputs that are now unreachable).
  */
 #include <assert.h>
 
@@ -35,7 +35,7 @@ static unsigned count_non_bads(ir_node *node)
 
 /**
  * Block-walker, remove Bad block predecessors and shorten Phis.
- * Phi links must be uptodate.
+ * Phi links must be up-to-date.
  */
 static void block_remove_bads(ir_node *block)
 {

@@ -2831,7 +2831,7 @@ static ir_node *transform_node_Sub(ir_node *n)
 restart:
 	HANDLE_BINOP_PHI((eval_func) tarval_sub, a, b, c, mode);
 
-	/* these optimizations are improcise for floatingpoint ops */
+	/* these optimizations are imprecise for floating-point ops */
 	if (mode_is_float(mode) && !ir_imprecise_float_transforms_allowed())
 		return n;
 
