@@ -26,8 +26,10 @@ $arch = "amd64";
 	],
 );
 
-$mode_gp        = "mode_Lu";
-$mode_flags     = "mode_Iu";
+$mode_gp      = "mode_Lu";
+$mode_flags   = "mode_Iu";
+$status_flags = "all"; # TODO
+$all_flags    = "all";
 
 sub amd64_custom_init_attr {
 	my $constr = shift;
@@ -152,7 +154,7 @@ Div => {
 	attr_type => "amd64_addr_attr_t",
 	attr      => "amd64_insn_mode_t insn_mode, amd64_op_mode_t op_mode, amd64_addr_t addr",
 	emit      => "div%M %AM",
-	modified_flags => 1,
+	modified_flags => $status_flags,
 },
 
 IDiv => {
@@ -163,7 +165,7 @@ IDiv => {
 	attr_type => "amd64_addr_attr_t",
 	attr      => "amd64_insn_mode_t insn_mode, amd64_op_mode_t op_mode, amd64_addr_t addr",
 	emit      => "idiv%M %AM",
-	modified_flags => 1,
+	modified_flags => $status_flags,
 },
 
 IMul => {
@@ -261,7 +263,7 @@ Sub => {
 	attr_type => "amd64_binop_addr_attr_t",
 	attr      => "const amd64_binop_addr_attr_t *attr_init",
 	emit      => "sub%M %S1, %D0",
-	modified_flags => 1,
+	modified_flags => $status_flags,
 },
 
 Neg => {
@@ -313,7 +315,7 @@ Xor0 => {
 	fixed     => "amd64_op_mode_t op_mode = AMD64_OP_REG_REG;",
 	emit      => "xorl %3D0, %3D0",
 	mode      => $mode_gp,
-	modified_flags => 1,
+	modified_flags => $status_flags,
 },
 
 MovImm => {
@@ -374,7 +376,7 @@ Cmp => {
 	attr_type => "amd64_binop_addr_attr_t",
 	attr      => "const amd64_binop_addr_attr_t *attr_init",
 	emit      => "cmp%M %AM",
-	modified_flags => 1,
+	modified_flags => $status_flags,
 },
 
 Lea => {
@@ -433,6 +435,7 @@ Call => {
 	attr      => "amd64_op_mode_t op_mode, amd64_addr_t addr",
 	fixed     => "amd64_insn_mode_t insn_mode = INSN_MODE_64;\n",
 	emit      => "call %AM",
+	modified_flags => $all_flags,
 },
 
 Start => {
