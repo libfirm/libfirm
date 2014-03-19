@@ -312,6 +312,14 @@ static ir_node *gen_Address(ir_node *node)
 	}
 }
 
+static ir_node *create_IncSP(const arch_register_t *sp_reg, ir_node *block,
+                             ir_node *old_sp, int offset, int align)
+{
+	ir_node *res = be_new_IncSP(sp_reg, block, old_sp, offset, align);
+	arch_add_irn_flags(res, arch_irn_flag_modify_flags);
+	return res;
+}
+
 typedef ir_node *(*construct_binop_func)(dbg_info *dbgi, ir_node *block,
 	int arity, ir_node *in[], const amd64_binop_addr_attr_t *attr_init);
 
@@ -1309,7 +1317,7 @@ static ir_node *gen_Call(ir_node *node)
 	/* construct an IncSP -> we have to always be sure that the stack is
 	 * aligned even if we don't push arguments on it */
 	const arch_register_t *sp_reg = &amd64_registers[REG_RSP];
-	ir_node *incsp = be_new_IncSP(sp_reg, new_block, new_frame,
+	ir_node *incsp = create_IncSP(sp_reg, new_block, new_frame,
 	                              cconv->param_stack_size, 1);
 	in_req[in_arity] = sp_reg->single_req;
 	in[in_arity]     = incsp;
@@ -1451,7 +1459,7 @@ static ir_node *gen_Call(ir_node *node)
 	set_irn_pinned(call, get_irn_pinned(node));
 
 	/* IncSP to destroy the call stackframe */
-	incsp = be_new_IncSP(sp_reg, new_block, incsp, -cconv->param_stack_size, 0);
+	incsp = create_IncSP(sp_reg, new_block, incsp, -cconv->param_stack_size, 0);
 	/* if we are the last IncSP producer in a block then we have to keep
 	 * the stack value.
 	 * Note: This here keeps all producers which is more than necessary */
