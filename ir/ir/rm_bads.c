@@ -63,7 +63,8 @@ static void block_remove_bads(ir_node *block)
 		}
 	}
 
-	ir_node   *new_block    = new_r_Block(irg, new_max, new_in);
+	dbg_info  *dbgi         = get_irn_dbg_info(block);
+	ir_node   *new_block    = new_rd_Block(dbgi, irg, new_max, new_in);
 	ir_entity *block_entity = get_Block_entity(block);
 	set_Block_entity(new_block, block_entity);
 
@@ -82,8 +83,9 @@ static void block_remove_bads(ir_node *block)
 		}
 		assert(j == new_max);
 
-		ir_mode *mode    = get_irn_mode(phi);
-		ir_node *new_phi = new_r_Phi(new_block, new_max, new_in, mode);
+		dbg_info *dbgi    = get_irn_dbg_info(phi);
+		ir_mode  *mode    = get_irn_mode(phi);
+		ir_node  *new_phi = new_rd_Phi(dbgi, new_block, new_max, new_in, mode);
 		exchange(phi, new_phi);
 	}
 
