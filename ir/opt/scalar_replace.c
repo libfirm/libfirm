@@ -8,27 +8,28 @@
  * @brief   Scalar replacement of compounds.
  * @author  Beyhan Veliev, Michael Beck
  */
-#include <string.h>
 #include <stdbool.h>
+#include <string.h>
 
-#include "iroptimize.h"
-#include "scalar_replace.h"
-#include "opt_init.h"
-#include "irflag_t.h"
-#include "irouts.h"
-#include "set.h"
-#include "pset.h"
 #include "array.h"
-#include "tv.h"
-#include "ircons_t.h"
-#include "hashptr.h"
-#include "irgwalk.h"
-#include "irgmod.h"
-#include "irnode_t.h"
-#include "util.h"
-#include "xmalloc.h"
+#include "be.h"
 #include "debug.h"
 #include "error.h"
+#include "hashptr.h"
+#include "ircons_t.h"
+#include "irflag_t.h"
+#include "irgmod.h"
+#include "irgwalk.h"
+#include "irnode_t.h"
+#include "iroptimize.h"
+#include "irouts.h"
+#include "opt_init.h"
+#include "pset.h"
+#include "scalar_replace.h"
+#include "set.h"
+#include "tv.h"
+#include "util.h"
+#include "xmalloc.h"
 
 static unsigned get_vnum(const ir_node *node)
 {
@@ -55,15 +56,15 @@ typedef union {
  * to variables that will be scalar replaced.
  */
 typedef struct path_t {
-	unsigned    vnum;      /**< The value number. */
-	size_t      path_len;  /**< The length of the access path. */
-	path_elem_t path[1];   /**< The path. */
+	unsigned    vnum;     /**< The value number. */
+	size_t      path_len; /**< The length of the access path. */
+	path_elem_t path[];   /**< The path. */
 } path_t;
 
 /** The size of a path in bytes. */
 static size_t path_size(path_t *p)
 {
-	return sizeof(*p) + sizeof(p->path[0]) * (p->path_len-1);
+	return sizeof(*p) + sizeof(p->path[0])*p->path_len;
 }
 
 typedef struct scalars_t {
@@ -79,10 +80,9 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg;)
  */
 static int path_cmp(const void *elt, const void *key, size_t size)
 {
+	(void)size;
 	const path_t *p1 = (const path_t*)elt;
 	const path_t *p2 = (const path_t*)key;
-	(void) size;
-
 	/* we can use memcmp here, because identical tarvals should have identical
 	 * addresses */
 	return memcmp(p1->path, p2->path, p1->path_len * sizeof(p1->path[0]));
@@ -95,10 +95,9 @@ static int path_cmp(const void *elt, const void *key, size_t size)
  */
 static int ent_cmp(const void *elt, const void *key, size_t size)
 {
+	(void)size;
 	const scalars_t *c1 = (const scalars_t*)elt;
 	const scalars_t *c2 = (const scalars_t*)key;
-	(void) size;
-
 	return c1->ent != c2->ent;
 }
 
@@ -115,7 +114,7 @@ static unsigned path_hash(const path_t *path)
 }
 
 /**
- * Returns non-zero, if all indeces of a Sel node are constants.
+ * Returns non-zero, if all indices of a Sel node are constants.
  *
  * @param sel  the Sel node that will be checked
  */
@@ -130,32 +129,23 @@ static bool is_const_sel(ir_node *sel)
 }
 
 /**
- * Check the mode of a Load/Store with the mode of the entity
- * that is accessed.
- * If the mode of the entity and the Load/Store mode do not match, we
- * have the bad reinterpret case:
- *
- * int i;
- * char b = *(char *)&i;
- *
- * We do NOT count this as one value and return address_taken
- * in that case.
- * However, we support an often used case. If the mode is two-complement
- * we allow casts between signed/unsigned.
- *
- * @param mode     the mode of the Load/Store
- * @param ent_mode the mode of the accessed entity
+ * Return true if a Conv node converting from mode @p from to mode @p to
+ * would have only bits from the source in the result.
+ * Put another way, the conv produces the same value as a load/store pair:
+ * Conv(val[mode_from], mode_to) == Load(Store(M, val[mode_from]), mode_to)
  */
-static bool check_load_store_mode(ir_mode *mode, ir_mode *ent_mode)
+static bool conv_is_bitcast(ir_mode *from, ir_mode *to)
 {
-	if (ent_mode != mode) {
-		if (ent_mode == NULL ||
-		    get_mode_size_bits(ent_mode) != get_mode_size_bits(mode) ||
-		    get_mode_arithmetic(ent_mode) != irma_twos_complement ||
-		    get_mode_arithmetic(mode) != irma_twos_complement)
-			return false;
-	}
-	return true;
+	if (from == to)
+		return true;
+
+	if (get_mode_arithmetic(from) != irma_twos_complement
+	    || get_mode_arithmetic(to) != irma_twos_complement)
+		return false;
+	unsigned from_size = get_mode_size_bits(from);
+	unsigned to_size   = get_mode_size_bits(to);
+	return from_size == to_size
+	    || (to_size < from_size && !be_is_big_endian());
 }
 
 /*
@@ -164,7 +154,7 @@ static bool check_load_store_mode(ir_mode *mode, ir_mode *ent_mode)
  */
 bool is_address_taken(ir_node *sel)
 {
-	if (! is_const_sel(sel))
+	if (!is_const_sel(sel))
 		return true;
 
 	for (unsigned i = get_irn_n_outs(sel); i-- > 0; ) {
@@ -179,7 +169,7 @@ bool is_address_taken(ir_node *sel)
 			ir_mode   *mode  = get_Load_mode(succ);
 			ir_entity *ent   = get_Sel_entity(sel);
 			ir_mode   *emode = get_type_mode(get_entity_type(ent));
-			if (! check_load_store_mode(mode, emode))
+			if (emode == NULL || !conv_is_bitcast(emode, mode))
 				return true;
 			break;
 		}
@@ -196,7 +186,7 @@ bool is_address_taken(ir_node *sel)
 			ir_mode   *mode  = get_irn_mode(value);
 			ir_entity *ent   = get_Sel_entity(sel);
 			ir_mode   *emode = get_type_mode(get_entity_type(ent));
-			if (! check_load_store_mode(mode, emode))
+			if (emode == NULL || !conv_is_bitcast(mode, emode))
 				return true;
 			break;
 		}
@@ -258,38 +248,37 @@ bool is_address_taken(ir_node *sel)
 }
 
 /**
- * Link all leave Sels with the entity.
+ * Link all leaf Sels with the entity.
  *
  * @param ent  the entity that will be scalar replaced
  * @param sel  a Sel node that selects some fields of this entity
  */
-static bool link_all_leave_sels(ir_entity *ent, ir_node *sel)
+static bool link_all_leaf_sels(ir_entity *ent, ir_node *sel)
 {
-	bool is_leave = true;
+	bool is_leaf = true;
 	for (unsigned i = get_irn_n_outs(sel); i-- > 0; ) {
 		ir_node *succ = get_irn_out(sel, i);
 
 		if (is_Sel(succ)) {
-			/* the current leave has further Sel's, no leave */
-			is_leave = false;
-			link_all_leave_sels(ent, succ);
+			/* the current Sel has further Sel's, no leaf */
+			is_leaf = false;
+			link_all_leaf_sels(ent, succ);
 		} else if (is_Id(succ)) {
-			is_leave &= link_all_leave_sels(ent, succ);
+			is_leaf &= link_all_leaf_sels(ent, succ);
 		}
 	}
 
-	if (is_leave) {
+	if (is_leaf) {
 		/* beware of Id's */
 		sel = skip_Id(sel);
 
-		/* we know we are at a leave, because this function is only
-		 * called if the address is NOT taken, so sel's successor(s)
-		 * must be Loads or Stores
-		 */
+		/* we know we are at a leaf, because this function is only called if
+		 * the address is NOT taken, so sel's successor(s) must be Loads or
+		 * Stores */
 		set_irn_link(sel, get_entity_link(ent));
 		set_entity_link(ent, sel);
 	}
-	return is_leave;
+	return is_leaf;
 }
 
 /* we need a special address that serves as an address taken marker */
@@ -307,89 +296,83 @@ static void *ADDRESS_TAKEN = &_x;
  * Sel nodes, that selects the atomic fields of this entity.
  * Otherwise, the link will be ADDRESS_TAKEN or NULL.
  *
- * @return  non-zero if at least one entity could be replaced
- *          potentially
+ * @return  true if at least one entity could be replaced potentially
  */
-static int find_possible_replacements(ir_graph *irg)
+static bool find_possible_replacements(ir_graph *irg)
 {
 	/* First, clear the link field of all interesting entities. */
 	ir_type *frame_tp = get_irg_frame_type(irg);
-	for (size_t mem_idx = get_class_n_members(frame_tp); mem_idx > 0;) {
-		ir_entity *ent = get_class_member(frame_tp, --mem_idx);
+	for (size_t i = get_class_n_members(frame_tp); i-- > 0;) {
+		ir_entity *ent = get_class_member(frame_tp, i);
 		set_entity_link(ent, NULL);
 	}
 
 	/* check for inner functions:
 	 * FIXME: need a way to get the argument position for the static link */
 	long static_link_arg = 0;
-	for (size_t mem_idx = get_class_n_members(frame_tp); mem_idx > 0;) {
-		ir_entity *ent = get_class_member(frame_tp, --mem_idx);
-		if (is_method_entity(ent)) {
-			ir_graph *inner_irg = get_entity_irg(ent);
-			ir_node  *args;
+	for (size_t i = get_class_n_members(frame_tp); i-- > 0;) {
+		ir_entity *ent = get_class_member(frame_tp, i);
+		if (!is_method_entity(ent))
+			continue;
 
-			assure_irg_properties(inner_irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS
-			                               | IR_GRAPH_PROPERTY_NO_TUPLES);
-			args = get_irg_args(inner_irg);
-			for (unsigned j = get_irn_n_outs(args); j-- > 0; ) {
-				ir_node *arg = get_irn_out(args, j);
+		ir_graph *inner_irg = get_entity_irg(ent);
+		ir_node  *args;
+		assure_irg_properties(inner_irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS
+									   | IR_GRAPH_PROPERTY_NO_TUPLES);
+		args = get_irg_args(inner_irg);
+		for (unsigned j = get_irn_n_outs(args); j-- > 0; ) {
+			ir_node *arg = get_irn_out(args, j);
+			if (get_Proj_proj(arg) != static_link_arg)
+				continue;
 
-				if (get_Proj_proj(arg) == static_link_arg) {
-					for (unsigned k = get_irn_n_outs(arg); k-- > 0; ) {
-						ir_node *succ = get_irn_out(arg, k);
-
-						if (is_Sel(succ)) {
-							ir_entity *ent = get_Sel_entity(succ);
-
-							if (get_entity_owner(ent) == frame_tp) {
-								/* found an access to the outer frame */
-								set_entity_link(ent, ADDRESS_TAKEN);
-							}
-						}
-					}
+			for (unsigned k = get_irn_n_outs(arg); k-- > 0; ) {
+				ir_node *succ = get_irn_out(arg, k);
+				if (!is_Sel(succ))
+					continue;
+				ir_entity *ent = get_Sel_entity(succ);
+				if (get_entity_owner(ent) == frame_tp) {
+					/* found an access to the outer frame */
+					set_entity_link(ent, ADDRESS_TAKEN);
 				}
 			}
 		}
 	}
 
-	/*
-	 * Check the ir_graph for Sel nodes. If the entity of Sel
-	 * isn't a scalar replacement set the link of this entity
-	 * equal ADDRESS_TAKEN.
-	 */
+	/* Check the ir_graph for Sel nodes. If the entity of Sel isn't a scalar
+	 * replacement set the link of this entity to ADDRESS_TAKEN. */
 	ir_node *irg_frame = get_irg_frame(irg);
 	int      res       = 0;
 	for (unsigned i = get_irn_n_outs(irg_frame); i-- > 0; ) {
 		ir_node *succ = get_irn_out(irg_frame, i);
+		if (!is_Sel(succ))
+			continue;
 
-		if (is_Sel(succ)) {
-			/* we are only interested in entities on the frame, NOT
-			   on the value type */
-			ir_entity *ent = get_Sel_entity(succ);
-			if (get_entity_owner(ent) != frame_tp)
-				continue;
-			if (get_entity_link(ent) == ADDRESS_TAKEN)
-				continue;
+		/* we are only interested in entities on the frame, NOT on the value
+		 * type */
+		ir_entity *ent = get_Sel_entity(succ);
+		if (get_entity_owner(ent) != frame_tp)
+			continue;
+		if (get_entity_link(ent) == ADDRESS_TAKEN)
+			continue;
 
-			/* we can handle arrays, structs and atomic types yet */
-			ir_type *ent_type = get_entity_type(ent);
-			if (is_aggregate_type(ent_type) || is_atomic_type(ent_type)) {
-				if (is_address_taken(succ)) {
-					 /* killing one */
-					if (get_entity_link(ent))
-						--res;
-					set_entity_link(ent, ADDRESS_TAKEN);
-				} else {
-					/* possible found one */
-					if (get_entity_link(ent) == NULL)
-						++res;
-					link_all_leave_sels(ent, succ);
-				}
+		/* we can handle arrays, structs and atomic types yet */
+		ir_type *ent_type = get_entity_type(ent);
+		if (is_aggregate_type(ent_type) || is_atomic_type(ent_type)) {
+			if (is_address_taken(succ)) {
+				 /* killing one */
+				if (get_entity_link(ent))
+					--res;
+				set_entity_link(ent, ADDRESS_TAKEN);
+			} else {
+				/* possible found one */
+				if (get_entity_link(ent) == NULL)
+					++res;
+				link_all_leaf_sels(ent, succ);
 			}
 		}
 	}
 
-	return res;
+	return res != 0;
 }
 
 /**
@@ -406,7 +389,7 @@ static path_t *find_path(ir_node *sel, size_t len)
 
 	path_t  *res;
 	ir_node *pred = get_Sel_ptr(sel);
-	if (! is_Sel(pred)) {
+	if (!is_Sel(pred)) {
 		/* we found the root */
 		res = XMALLOCF(path_t, path, len);
 		res->path_len = len;
@@ -427,8 +410,7 @@ static path_t *find_path(ir_node *sel, size_t len)
 
 
 /**
- * Allocate value numbers for the leaves
- * in our found entities.
+ * Allocate value numbers for the leafs in our found entities.
  *
  * @param sels  a set that will contain all Sels that have a value number
  * @param ent   the entity that will be scalar replaced
@@ -438,14 +420,14 @@ static path_t *find_path(ir_node *sel, size_t len)
  *
  * @return the next free value number
  */
-static unsigned allocate_value_numbers(pset *sels, ir_entity *ent, unsigned vnum, ir_mode ***modes)
+static unsigned allocate_value_numbers(pset *sels, ir_entity *ent,
+                                       unsigned vnum, ir_mode ***modes)
 {
 	set *pathes = new_set(path_cmp, 8);
 
 	DB((dbg, SET_LEVEL_3, "  Visiting Sel nodes of entity %+F\n", ent));
 	/* visit all Sel nodes in the chain of the entity */
-	ir_node *next;
-	for (ir_node *sel = (ir_node*)get_entity_link(ent); sel != NULL;
+	for (ir_node *sel = (ir_node*)get_entity_link(ent), *next; sel != NULL;
 	     sel = next) {
 		next = (ir_node*)get_irn_link(sel);
 
@@ -455,7 +437,7 @@ static unsigned allocate_value_numbers(pset *sels, ir_entity *ent, unsigned vnum
 		path_t *key  = find_path(sel, 0);
 		path_t *path = set_find(path_t, pathes, key, path_size(key), path_hash(key));
 
-		if (path) {
+		if (path != NULL) {
 			set_vnum(sel, path->vnum);
 			DB((dbg, SET_LEVEL_3, "  %+F represents value %u\n", sel, path->vnum));
 		} else {
@@ -496,9 +478,9 @@ static unsigned allocate_value_numbers(pset *sels, ir_entity *ent, unsigned vnum
  * environment for memory walker
  */
 typedef struct env_t {
-	unsigned nvals;      /**< number of values */
-	ir_mode  **modes;    /**< the modes of the values */
-	pset     *sels;      /**< A set of all Sel nodes that have a value number */
+	unsigned  nvals;   /**< number of values */
+	ir_mode **modes;   /**< the modes of the values */
+	pset     *sels;    /**< A set of all Sel nodes that have a value number */
 } env_t;
 
 /**
@@ -507,30 +489,23 @@ typedef struct env_t {
 static void walker(ir_node *node, void *ctx)
 {
 	env_t    *env = (env_t*)ctx;
-	ir_graph *irg = get_irn_irg(node);
 
 	if (is_Load(node)) {
 		/* a load, check if we can resolve it */
 		ir_node *addr = get_Load_ptr(node);
-
-		DB((dbg, SET_LEVEL_3, "  checking %+F for replacement ", node));
-		if (! is_Sel(addr)) {
-			DB((dbg, SET_LEVEL_3, "no Sel input (%+F)\n", addr));
+		if (!is_Sel(addr))
 			return;
-		}
-
-		if (! pset_find_ptr(env->sels, addr)) {
-			DB((dbg, SET_LEVEL_3, "Sel %+F has no VNUM\n", addr));
+		if (!pset_find_ptr(env->sels, addr))
 			return;
-		}
 
 		/* ok, we have a Load that will be replaced */
 		unsigned vnum = get_vnum(addr);
 		assert(vnum < env->nvals);
 
-		DB((dbg, SET_LEVEL_3, "replacing by value %u\n", vnum));
+		DB((dbg, SET_LEVEL_3, "replacing %+F by value %u\n", node, vnum));
 
-		ir_node *block = get_nodes_block(node);
+		ir_node  *block = get_nodes_block(node);
+		ir_graph *irg   = get_Block_irg(block);
 		set_r_cur_block(irg, block);
 
 		/* check, if we can replace this Load */
@@ -543,56 +518,62 @@ static void walker(ir_node *node, void *ctx)
 		 unsigned j = *(unsigned *)&i;
 
 		Handle this here. */
-		ir_mode *mode = get_Load_mode(node);
-		if (mode != get_irn_mode(val))
-			val = new_rd_Conv(get_irn_dbg_info(node), block, val, mode);
+		ir_mode *load_mode = get_Load_mode(node);
+		ir_mode *val_mode  = get_irn_mode(val);
+		if (load_mode != val_mode)
+			val = new_rd_Conv(get_irn_dbg_info(node), block, val, load_mode);
 
 		ir_node *mem = get_Load_mem(node);
-		ir_node *const in[] = {
+		ir_node *in[pn_Load_max+1] = {
 			[pn_Load_M]         = mem,
 			[pn_Load_res]       = val,
-			[pn_Load_X_regular] = new_r_Jmp(block),
-			[pn_Load_X_except]  = new_r_Bad(irg, mode_X),
 		};
-		turn_into_tuple(node, ARRAY_SIZE(in), in);
+		assert(pn_Load_M == 0 && pn_Load_res == 1);
+		int n_in = 2;
+		if (ir_throws_exception(node)) {
+			in[pn_Load_X_regular] = new_r_Jmp(block);
+			in[pn_Load_X_except]  = new_r_Bad(irg, mode_X);
+			n_in = 4;
+		}
+		turn_into_tuple(node, n_in, in);
 	} else if (is_Store(node)) {
-		DB((dbg, SET_LEVEL_3, "  checking %+F for replacement ", node));
-
 		/* a Store always can be replaced */
 		ir_node *addr = get_Store_ptr(node);
-
-		if (! is_Sel(addr)) {
-			DB((dbg, SET_LEVEL_3, "no Sel input (%+F)\n", addr));
+		if (!is_Sel(addr))
 			return;
-		}
-
-		if (! pset_find_ptr(env->sels, addr)) {
-			DB((dbg, SET_LEVEL_3, "Sel %+F has no VNUM\n", addr));
+		if (!pset_find_ptr(env->sels, addr))
 			return;
-		}
 
 		unsigned vnum = get_vnum(addr);
 		assert(vnum < env->nvals);
 
-		DB((dbg, SET_LEVEL_3, "replacing by value %u\n", vnum));
+		DB((dbg, SET_LEVEL_3, "replacing %+F by value %u\n", node, vnum));
 
 		ir_node *block = get_nodes_block(node);
+		ir_graph *irg  = get_Block_irg(block);
 		set_r_cur_block(irg, block);
 
 		/* Beware: A Store can contain a hidden conversion in Firm. */
 		ir_node *val = get_Store_value(node);
-		if (get_irn_mode(val) != env->modes[vnum])
-			val = new_rd_Conv(get_irn_dbg_info(node), block, val, env->modes[vnum]);
+		ir_mode *store_mode = get_irn_mode(val);
+		ir_mode *val_mode   = env->modes[vnum];
+		if (store_mode != val_mode)
+			val = new_rd_Conv(get_irn_dbg_info(node), block, val, val_mode);
 
 		set_r_value(irg, vnum, val);
 
 		ir_node *mem = get_Store_mem(node);
-		ir_node *const in[] = {
+		ir_node *in[pn_Store_max+1] = {
 			[pn_Store_M]         = mem,
-			[pn_Store_X_regular] = new_r_Jmp(block),
-			[pn_Store_X_except]  = new_r_Bad(irg, mode_X),
 		};
-		turn_into_tuple(node, ARRAY_SIZE(in), in);
+		assert(pn_Store_M == 0);
+		int n_in = 1;
+		if (ir_throws_exception(node)) {
+			in[pn_Store_X_regular] = new_r_Jmp(block);
+			in[pn_Store_X_except]  = new_r_Bad(irg, mode_X);
+			n_in = 3;
+		}
+		turn_into_tuple(node, n_in, in);
 	}
 }
 
@@ -639,6 +620,7 @@ void scalar_replacement_opt(ir_graph *irg)
 	irp_reserve_resources(irp, IRP_RESOURCE_ENTITY_LINK);
 
 	/* Find possible scalar replacements */
+	bool changed = false;
 	if (find_possible_replacements(irg)) {
 		DB((dbg, SET_LEVEL_1, "Scalar Replacement: %+F\n", irg));
 
@@ -652,39 +634,39 @@ void scalar_replacement_opt(ir_graph *irg)
 
 		for (unsigned i = get_irn_n_outs(irg_frame); i-- > 0; ) {
 			ir_node *succ = get_irn_out(irg_frame, i);
+			if (!is_Sel(succ))
+				continue;
 
-			if (is_Sel(succ)) {
-				ir_entity *ent = get_Sel_entity(succ);
+			/* we are only interested in entities on the frame, NOT
+			   parameters */
+			ir_entity *ent = get_Sel_entity(succ);
+			if (get_entity_owner(ent) != frame_tp
+				|| is_parameter_entity(ent))
+				continue;
 
-				/* we are only interested in entities on the frame, NOT
-				   parameters */
-				if (get_entity_owner(ent) != frame_tp
-				    || is_parameter_entity(ent))
-					continue;
+			if (get_entity_link(ent) == NULL
+				|| get_entity_link(ent) == ADDRESS_TAKEN)
+				continue;
 
-				if (get_entity_link(ent) == NULL || get_entity_link(ent) == ADDRESS_TAKEN)
-					continue;
-
-				scalars_t key;
-				key.ent = ent;
-				(void)set_insert(scalars_t, set_ent, &key, sizeof(key), hash_ptr(key.ent));
+			scalars_t key;
+			key.ent = ent;
+			(void)set_insert(scalars_t, set_ent, &key, sizeof(key), hash_ptr(key.ent));
 
 #ifdef DEBUG_libfirm
-				ir_type *ent_type = get_entity_type(ent);
+			ir_type *ent_type = get_entity_type(ent);
 
-				if (is_Array_type(ent_type)) {
-					DB((dbg, SET_LEVEL_1, "  found array %s\n", get_entity_name(ent)));
-				} else if (is_compound_type(ent_type)) {
-					DB((dbg, SET_LEVEL_1, "  found struct %s\n", get_entity_name(ent)));
-				} else if (is_atomic_type(ent_type))
-					DB((dbg, SET_LEVEL_1, "  found atomic value %s\n", get_entity_name(ent)));
-				else {
-					panic("Neither an array nor a struct or atomic value found in scalar replace");
-				}
-#endif /* DEBUG_libfirm */
-
-				nvals = allocate_value_numbers(sels, ent, nvals, &modes);
+			if (is_Array_type(ent_type)) {
+				DB((dbg, SET_LEVEL_1, "  found array %s\n", get_entity_name(ent)));
+			} else if (is_compound_type(ent_type)) {
+				DB((dbg, SET_LEVEL_1, "  found struct %s\n", get_entity_name(ent)));
+			} else if (is_atomic_type(ent_type))
+				DB((dbg, SET_LEVEL_1, "  found atomic value %s\n", get_entity_name(ent)));
+			else {
+				panic("Neither an array nor a struct or atomic value found in scalar replace");
 			}
+#endif
+
+			nvals = allocate_value_numbers(sels, ent, nvals, &modes);
 		}
 
 		DB((dbg, SET_LEVEL_1, "  %u values will be needed\n", nvals));
@@ -697,11 +679,7 @@ void scalar_replacement_opt(ir_graph *irg)
 				free_entity(value->ent);
 			}
 
-			/*
-			 * We changed the graph, but did NOT introduce new blocks
-			 * neither changed control flow, cf-backedges should be still
-			 * consistent.
-			 */
+			changed = true;
 		}
 		del_pset(sels);
 		del_set(set_ent);
@@ -711,7 +689,8 @@ void scalar_replacement_opt(ir_graph *irg)
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 	irp_free_resources(irp, IRP_RESOURCE_ENTITY_LINK);
 
-	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_NONE);
+	confirm_irg_properties(irg, changed ? IR_GRAPH_PROPERTIES_NONE
+	                                    : IR_GRAPH_PROPERTIES_ALL);
 }
 
 void firm_init_scalar_replace(void)
