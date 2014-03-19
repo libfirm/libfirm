@@ -1916,8 +1916,8 @@ static void amd64_register_transformers(void)
 	be_set_transform_function(op_Add,      gen_Add);
 	be_set_transform_function(op_Address,  gen_Address);
 	be_set_transform_function(op_And,      gen_And);
-	be_set_transform_function(op_Cmp,      gen_Cmp);
 	be_set_transform_function(op_Call,     gen_Call);
+	be_set_transform_function(op_Cmp,      gen_Cmp);
 	be_set_transform_function(op_Cond,     gen_Cond);
 	be_set_transform_function(op_Const,    gen_Const);
 	be_set_transform_function(op_Conv,     gen_Conv);
