@@ -1080,8 +1080,7 @@ static ir_node *equivalent_node_Minus(ir_node *n)
 		const bitinfo *const b  = get_bitinfo(op);
 
 		if (b) {
-			ir_tarval *const one = get_mode_one(mode);
-			ir_tarval *const shl = tarval_shl(b->z, one);
+			ir_tarval *const shl = tarval_shl_unsigned(b->z, 1U);
 			if (tarval_is_null(shl))
 				n = op;
 		}
