@@ -2716,7 +2716,7 @@ static ir_node *transform_node_Add(ir_node *n)
 						dbg_info *const dbgi  = get_irn_dbg_info(n);
 						ir_node  *const block = get_nodes_block(n);
 						ir_node  *const c     = new_rd_Const(dbgi, irg, add);
-						n = new_rd_Sub(get_irn_dbg_info(n), block, c, op, mode);
+						n = new_rd_Sub(dbgi, block, c, op, mode);
 						DBG_OPT_ALGSIM0(oldn, n, FS_OPT_NOT_PLUS_C);
 						return n;
 					}
