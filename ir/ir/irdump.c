@@ -848,39 +848,38 @@ static void dump_node_vcgattr(FILE *F, const ir_node *node, const ir_node *local
 		print_vcg_color(F, ird_color_memory);
 		return;
 	}
-	if (mode == mode_X) {
-		print_vcg_color(F, ird_color_controlflow);
-		return;
-	}
 
 	switch (get_irn_opcode(n)) {
 	case iro_Start:
 	case iro_End:
 		print_vcg_color(F, ird_color_anchor);
-		break;
+		return;
 	case iro_Bad:
 		print_vcg_color(F, ird_color_error);
-		break;
+		return;
 	case iro_Block:
 		print_vcg_color(F, ird_color_block_background);
-		break;
+		return;
 	case iro_Phi:
 		print_vcg_color(F, ird_color_phi);
+		return;
+	default:
 		break;
-	case iro_Pin:
-		print_vcg_color(F, ird_color_memory);
-		break;
-	default: {
-		ir_op *op = get_irn_op(n);
-
-		if (is_op_constlike(op)) {
-			print_vcg_color(F, ird_color_const);
-		} else if (is_op_uses_memory(op)) {
-			print_vcg_color(F, ird_color_memory);
-		} else if (is_op_cfopcode(op) || is_op_forking(op)) {
-			print_vcg_color(F, ird_color_controlflow);
-		}
 	}
+
+	if (mode == mode_X) {
+		print_vcg_color(F, ird_color_controlflow);
+		return;
+	}
+
+	ir_op *op = get_irn_op(n);
+
+	if (is_op_constlike(op)) {
+		print_vcg_color(F, ird_color_const);
+	} else if (is_op_uses_memory(op)) {
+		print_vcg_color(F, ird_color_memory);
+	} else if (is_op_cfopcode(op) || is_op_forking(op)) {
+		print_vcg_color(F, ird_color_controlflow);
 	}
 }
 
