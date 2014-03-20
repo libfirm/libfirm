@@ -3059,18 +3059,33 @@ restart:
 	}
 
 	if (get_mode_arithmetic(mode) == irma_twos_complement) {
-		/* c - ~X = X + (c+1) */
-		if (is_Const(a) && is_Not(b)) {
-			ir_tarval *tv = get_Const_tarval(a);
+		if (is_Const(a)) {
+			ir_tarval *const tv = get_Const_tarval(a);
 
-			tv = tarval_add(tv, get_mode_one(mode));
-			if (tarval_is_constant(tv)) {
-				ir_node  *blk = get_nodes_block(n);
-				ir_graph *irg = get_irn_irg(n);
-				ir_node  *c   = new_r_Const(irg, tv);
-				n = new_rd_Add(get_irn_dbg_info(n), blk, get_Not_op(b), c, mode);
-				DBG_OPT_ALGSIM0(oldn, n, FS_OPT_SUB_C_NOT_X);
-				return n;
+			if (is_Not(b)) {
+				/* c - ~X = X + (c+1) */
+				ir_tarval *const add = tarval_add(tv, get_mode_one(mode));
+				if (tarval_is_constant(add)) {
+					ir_node  *blk = get_nodes_block(n);
+					ir_graph *irg = get_irn_irg(n);
+					ir_node  *c   = new_r_Const(irg, add);
+					n = new_rd_Add(get_irn_dbg_info(n), blk, get_Not_op(b), c, mode);
+					DBG_OPT_ALGSIM0(oldn, n, FS_OPT_SUB_C_NOT_X);
+					return n;
+				}
+			} else if (is_Or(b)) {
+				ir_node *other = get_commutative_other_op(b, a);
+				if (other) {
+					/* C - (x | C) => -(x & ~C) */
+					dbg_info  *const dbgi   = get_irn_dbg_info(n);
+					ir_node   *const block  = get_nodes_block(n);
+					ir_graph  *const irg    = get_irn_irg(n);
+					ir_tarval *const tv_not = tarval_not(tv);
+					ir_node   *const not_c  = new_rd_Const(dbgi, irg, tv_not);
+					ir_node   *const and    = new_rd_And(dbgi, block, other, not_c, mode);
+					ir_node   *const minus  = new_rd_Minus(dbgi, block, and, mode);
+					return minus;
+				}
 			}
 		}
 		/* ~x - y = ~(x + y) */
