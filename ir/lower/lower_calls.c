@@ -10,24 +10,24 @@
  */
 #include <stdbool.h>
 
+#include "array.h"
+#include "error.h"
 #include "firm_types.h"
 #include "heights.h"
-#include "lower_calls.h"
-#include "lowering.h"
-#include "irprog_t.h"
-#include "irnode_t.h"
-#include "type_t.h"
-#include "irmode_t.h"
 #include "ircons.h"
 #include "irgmod.h"
 #include "irgwalk.h"
 #include "irmemory.h"
 #include "irmemory_t.h"
-#include "irtools.h"
+#include "irmode_t.h"
+#include "irnode_t.h"
 #include "iroptimize.h"
-#include "array.h"
+#include "irprog_t.h"
+#include "irtools.h"
+#include "lower_calls.h"
+#include "lowering.h"
 #include "pmap.h"
-#include "error.h"
+#include "type_t.h"
 #include "util.h"
 
 static pmap *pointer_types;
@@ -203,6 +203,7 @@ typedef struct wlk_env {
 	struct obstack       obst;             /**< An obstack to allocate the data on. */
 	cl_entry             *cl_list;         /**< The call list. */
 	compound_call_lowering_flags flags;
+	ir_type              *mtp;             /**< original mtp before lowering */
 	ir_type              *lowered_mtp;     /**< The lowered method type of the current irg if any. */
 	ir_heights_t         *heights;         /**< Heights for reachability check. */
 	bool                  only_local_mem:1;/**< Set if only local memory access was found. */
@@ -273,11 +274,10 @@ static ir_node *find_base_adr(ir_node *ptr, ir_entity **pEnt)
  */
 static void check_ptr(ir_node *ptr, wlk_env *env)
 {
-	ir_entity *ent;
-
 	/* still alias free */
-	ptr = find_base_adr(ptr, &ent);
-	ir_storage_class_class_t sc = get_base_sc(classify_pointer(ptr, ent));
+	ir_entity *ent;
+	ir_node *base_ptr = find_base_adr(ptr, &ent);
+	ir_storage_class_class_t sc = get_base_sc(classify_pointer(base_ptr, ent));
 	if (sc != ir_sc_localvar && sc != ir_sc_malloced) {
 		/* non-local memory access */
 		env->only_local_mem = false;
@@ -404,15 +404,14 @@ static void fix_args_and_collect_calls(ir_node *n, void *ctx)
 }
 
 /**
- * Returns non-zero if a node is a compound address
- * of a frame-type entity.
+ * Returns non-zero if a node is a compound address of a frame-type entity.
  *
  * @param ft   the frame type
  * @param adr  the node
  */
 static bool is_compound_address(ir_type *ft, ir_node *adr)
 {
-	if (! is_Sel(adr))
+	if (!is_Sel(adr))
 		return false;
 	if (get_Sel_n_indexs(adr) != 0)
 		return false;
@@ -582,9 +581,8 @@ static ir_entity *create_compound_arg_entity(ir_graph *irg, ir_type *type)
 	ir_type   *frame  = get_irg_frame_type(irg);
 	ident     *id     = id_unique("$compound_param.%u");
 	ir_entity *entity = new_entity(frame, id, type);
-	/* TODO:
-	 * we could do some optimizations here and create a big union type for all
-	 * different call types in a function */
+	/* TODO: we could do some optimizations here and create a big union type
+	 * for all different call types in a function */
 	return entity;
 }
 
@@ -630,6 +628,72 @@ static void fix_calls(wlk_env *env)
 	}
 }
 
+static void transform_return(ir_node *ret, size_t n_ret_com, wlk_env *env)
+{
+	ir_node   *block      = get_nodes_block(ret);
+	ir_graph  *irg        = get_Block_irg(block);
+	ir_type   *mtp        = env->mtp;
+	size_t     n_ress     = get_method_n_ress(mtp);
+	ir_node   *mem        = get_Return_mem(ret);
+	ir_node   *args       = get_irg_args(irg);
+	ir_type   *frame_type = get_irg_frame_type(irg);
+	size_t     n_cr_opt   = 0;
+	size_t     n_in       = 1;
+	ir_node  **new_in     = ALLOCAN(ir_node*, n_ress+1);
+	cr_pair   *cr_opt     = ALLOCAN(cr_pair, n_ret_com);
+
+	for (size_t i = 0, k = 0; i < n_ress; ++i) {
+		ir_node *pred = get_Return_res(ret, i);
+		ir_type *type = get_method_res_type(mtp, i);
+		if (!is_aggregate_type(type)) {
+			new_in[n_in++] = pred;
+			continue;
+		}
+
+		ir_node *arg = new_r_Proj(args, mode_P_data, k++);
+		if (env->flags & LF_RETURN_HIDDEN)
+			new_in[n_in++] = arg;
+
+		/* nothing to do when returning an unknown value */
+		if (is_Unknown(pred))
+			continue;
+
+		/**
+		 * Sorrily detecting that copy-return is possible isn't
+		 * that simple. We must check, that the hidden address
+		 * is alias free during the whole function.
+		 * A simple heuristic: all Loads/Stores inside
+		 * the function access only local frame.
+		 */
+		if (env->only_local_mem && is_compound_address(frame_type, pred)) {
+			/* we can do the copy-return optimization here */
+			cr_opt[n_cr_opt].ent = get_Sel_entity(pred);
+			cr_opt[n_cr_opt].arg = arg;
+			++n_cr_opt;
+		} else {
+			/* copy-return optimization is impossible, do the copy. */
+			bool is_volatile = is_partly_volatile(pred);
+			mem = new_r_CopyB(block, mem, arg, pred, type,
+							  is_volatile ? cons_volatile : cons_none);
+		}
+	}
+	/* replace the in of the Return */
+	new_in[0] = mem;
+	set_irn_in(ret, n_in, new_in);
+
+	if (n_cr_opt > 0) {
+		copy_return_opt_env env;
+		env.arr     = cr_opt;
+		env.n_pairs = n_cr_opt;
+		irg_walk_graph(irg, NULL, do_copy_return_opt, &env);
+
+		for (size_t c = 0; c < n_cr_opt; ++c)
+			free_entity(cr_opt[c].ent);
+	}
+
+	env->changed = true;
+}
+
 /**
  * Transform a graph. If it has compound parameter returns,
  * remove them and use the hidden parameter instead.
@@ -663,9 +727,9 @@ static void transform_irg(compound_call_lowering_flags flags, ir_graph *irg)
 		fix_parameter_entities(irg, n_ret_com);
 
 	long arg_shift;
-	if (n_ret_com) {
+	if (n_ret_com > 0) {
 		/* much easier if we have only one return */
-		normalize_one_return(irg);
+		assure_irg_properties(irg, IR_GRAPH_PROPERTY_ONE_RETURN);
 
 		/* hidden arguments are added first */
 		arg_shift = n_ret_com;
@@ -682,6 +746,7 @@ static void transform_irg(compound_call_lowering_flags flags, ir_graph *irg)
 	obstack_init(&env.obst);
 	env.arg_shift      = arg_shift;
 	env.flags          = flags;
+	env.mtp            = mtp;
 	env.lowered_mtp    = lowered_mtp;
 	env.param_sels     = NEW_ARR_F(ir_node*, 0);
 	env.only_local_mem = true;
@@ -710,95 +775,13 @@ static void transform_irg(compound_call_lowering_flags flags, ir_graph *irg)
 		env.changed = true;
 	}
 
-	if (n_ret_com) {
-		int idx;
-
-		/* STEP 1: find the return. This is simple, we have normalized the graph. */
+	/* transform return nodes */
+	if (n_ret_com > 0) {
 		ir_node *endbl = get_irg_end_block(irg);
-		ir_node *ret   = NULL;
-		for (idx = get_Block_n_cfgpreds(endbl) - 1; idx >= 0; --idx) {
-			ir_node *pred = get_Block_cfgpred(endbl, idx);
-
+		foreach_irn_in(endbl, i, pred) {
 			if (is_Return(pred)) {
-				ret = pred;
+				transform_return(pred, n_ret_com, &env);
 				break;
-			}
-		}
-
-		/* in case of infinite loops, there might be no return */
-		if (ret != NULL) {
-			/*
-			 * Now fix the Return node of the current graph.
-			 */
-			env.changed = true;
-
-			/*
-			 * STEP 2: fix it. For all compound return values add a CopyB,
-			 * all others are copied.
-			 */
-			ir_node  *bl       = get_nodes_block(ret);
-			ir_node  *mem      = get_Return_mem(ret);
-			ir_type  *ft       = get_irg_frame_type(irg);
-			size_t    n_cr_opt = 0;
-			size_t    j        = 1;
-			ir_node **new_in   = ALLOCAN(ir_node*, n_ress+1);
-			cr_pair  *cr_opt   = ALLOCAN(cr_pair, n_ret_com);
-
-			for (size_t i = 0, k = 0; i < n_ress; ++i) {
-				ir_node *pred = get_Return_res(ret, i);
-				ir_type *tp   = get_method_res_type(mtp, i);
-
-				if (is_aggregate_type(tp)) {
-					ir_node *arg = get_irg_args(irg);
-					arg = new_r_Proj(arg, mode_P_data, k);
-					++k;
-
-					if (is_Unknown(pred)) {
-						/* The Return(Unknown) is the Firm construct for a
-						 * missing return. Do nothing. */
-					} else {
-						/**
-						 * Sorrily detecting that copy-return is possible isn't
-						 * that simple. We must check, that the hidden address
-						 * is alias free during the whole function.
-						 * A simple heuristic: all Loads/Stores inside
-						 * the function access only local frame.
-						 */
-						if (env.only_local_mem && is_compound_address(ft, pred)) {
-							/* we can do the copy-return optimization here */
-							cr_opt[n_cr_opt].ent = get_Sel_entity(pred);
-							cr_opt[n_cr_opt].arg = arg;
-							++n_cr_opt;
-						} else {
-							/* copy-return optimization is impossible, do the
-							 * copy. */
-							bool is_volatile = is_partly_volatile(pred);
-
-							mem = new_r_CopyB(bl, mem, arg, pred, tp, is_volatile ? cons_volatile : cons_none);
-						}
-					}
-					if (flags & LF_RETURN_HIDDEN) {
-						new_in[j] = arg;
-						++j;
-					}
-				} else { /* scalar return value */
-					new_in[j] = pred;
-					++j;
-				}
-			}
-			/* replace the in of the Return */
-			new_in[0] = mem;
-			set_irn_in(ret, j, new_in);
-
-			if (n_cr_opt > 0) {
-				copy_return_opt_env env;
-				env.arr     = cr_opt;
-				env.n_pairs = n_cr_opt;
-				irg_walk_graph(irg, NULL, do_copy_return_opt, &env);
-
-				for (size_t c = 0; c < n_cr_opt; ++c) {
-					free_entity(cr_opt[c].ent);
-				}
 			}
 		}
 	}
@@ -806,17 +789,18 @@ static void transform_irg(compound_call_lowering_flags flags, ir_graph *irg)
 	if (env.heights != NULL)
 		heights_free(env.heights);
 	obstack_free(&env.obst, NULL);
-	confirm_irg_properties(irg, env.changed
-			? IR_GRAPH_PROPERTIES_CONTROL_FLOW : IR_GRAPH_PROPERTIES_ALL);
+	confirm_irg_properties(irg, env.changed ? IR_GRAPH_PROPERTIES_CONTROL_FLOW
+	                                        : IR_GRAPH_PROPERTIES_ALL);
 }
 
-static void lower_method_types(ir_type *const type, ir_entity *const entity, void *const env)
+static void lower_method_types(ir_type *const type, ir_entity *const entity,
+                               void *const env)
 {
 	const compound_call_lowering_flags *flags
 		= (const compound_call_lowering_flags*)env;
 
 	/* fix method entities */
-	if (entity) {
+	if (entity != NULL) {
 		ir_type *tp      = get_entity_type(entity);
 		ir_type *lowered = lower_mtp(*flags, tp);
 		set_entity_type(entity, lowered);
