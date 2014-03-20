@@ -552,7 +552,7 @@ FIRM_API dbg_info *get_irn_dbg_info(const ir_node *n);
 /**
  * Returns a descriptive name of a node (containing type+number)
  */
-FIRM_API const char *gdb_node_helper(void *firm_object);
+FIRM_API const char *gdb_node_helper(const void *firm_object);
 
 /**
  * @addtogroup Switch

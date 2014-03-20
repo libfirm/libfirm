@@ -1032,7 +1032,7 @@ dbg_info *(get_irn_dbg_info)(const ir_node *n)
 /**
  * A gdb helper function to print firm objects.
  */
-const char *gdb_node_helper(void *firm_object)
+const char *gdb_node_helper(const void *firm_object)
 {
 	static char buf[1024];
 	ir_snprintf(buf, sizeof(buf), "%+F", firm_object);
