@@ -57,7 +57,6 @@ typedef enum ird_color_t {
 	ird_color_controlflow,
 	ird_color_const,
 	ird_color_anchor,
-	ird_color_proj,
 	ird_color_uses_memory,
 	ird_color_error,
 	ird_color_entity,
@@ -277,7 +276,6 @@ static void init_colors(void)
 	custom_color(ird_color_memory,           "153 153 255");
 	custom_color(ird_color_controlflow,      "255 153 153");
 	custom_color(ird_color_const,            "204 255 255");
-	custom_color(ird_color_proj,             "255 255 153");
 	custom_color(ird_color_uses_memory,      "153 153 255");
 	custom_color(ird_color_phi,              "105 255 105");
 	custom_color(ird_color_anchor,           "100 100 255");
@@ -873,9 +871,6 @@ static void dump_node_vcgattr(FILE *F, const ir_node *node, const ir_node *local
 		break;
 	case iro_Pin:
 		print_vcg_color(F, ird_color_memory);
-		break;
-	case iro_Proj:
-		print_vcg_color(F, ird_color_proj);
 		break;
 	default: {
 		ir_op *op = get_irn_op(n);
