@@ -59,6 +59,10 @@ typedef enum ird_color_t {
 	ird_color_anchor,
 	ird_color_error,
 	ird_color_entity,
+	ird_color_type,
+	ird_color_edge_ent_type,
+	ird_color_edge_type_member,
+	ird_color_segment_type,
 	ird_color_count
 } ird_color_t;
 
@@ -73,15 +77,12 @@ typedef enum ird_color_t {
 #define INTER_DATA_EDGE_ATTR     "class:16 priority:10"
 #define BLOCK_EDGE_ATTR          "class:2  priority:50 linestyle:dotted"
 #define CF_EDGE_ATTR             "class:13 priority:60 color:red"
-#define EXC_CF_EDGE_ATTR         "class:18 priority:60 color:blue"
 #define INTRA_MEM_EDGE_ATTR      "class:14 priority:50 color:blue"
 #define INTER_MEM_EDGE_ATTR      "class:17 priority:10 color:blue"
 #define DOMINATOR_EDGE_ATTR      "class:15 color:red"
 #define POSTDOMINATOR_EDGE_ATTR  "class:19 color:red linestyle:dotted"
-#define KEEP_ALIVE_EDGE_ATTR     "class:20 priority:10 color:purple"
 #define KEEP_ALIVE_CF_EDGE_ATTR  "class:20 priority:60 color:purple"
 #define KEEP_ALIVE_DF_EDGE_ATTR  "class:20 priority:10 color:purple"
-#define ANCHOR_EDGE_ATTR         "class:20 priority:60 color:purple linestyle:dotted"
 #define OUT_EDGE_ATTR            "class:21 priority:10 color:gold linestyle:dashed"
 
 #define BACK_EDGE_ATTR "linestyle:dashed "
@@ -90,25 +91,15 @@ typedef enum ird_color_t {
 #define NODE2TYPE_EDGE_ATTR "class:2 priority:2 linestyle:dotted"
 
 /* Attributes of edges in type/entity graphs. */
-#define TYPE_METH_NODE_ATTR      "color: lightyellow"
-#define TYPE_CLASS_NODE_ATTR     "color: green"
-#define TYPE_DESCRIPTION_NODE_ATTR "color: lightgreen"
-#define ENTITY_NODE_ATTR         "color: yellow"
-#define ENUM_ITEM_NODE_ATTR      "color: green"
-#define ENT_TYPE_EDGE_ATTR       "class: 3 label: \"type\" color: red"
-#define ENT_OWN_EDGE_ATTR        "class: 4 label: \"owner\" color: black"
+#define ENT_TYPE_EDGE_ATTR       "class: 3 label: \"type\""
 #define METH_PAR_EDGE_ATTR       "class: 5 label: \"param %zu\" color: green"
 #define METH_RES_EDGE_ATTR       "class: 6 label: \"res %zu\" color: green"
 #define TYPE_SUPER_EDGE_ATTR     "class: 7 label: \"supertype\" color: red"
-#define UNION_EDGE_ATTR          "class: 8 label: \"component\" color: blue"
 #define PTR_PTS_TO_EDGE_ATTR     "class: 9 label: \"points to\" color:green"
 #define ARR_ELT_TYPE_EDGE_ATTR   "class: 10 label: \"arr elt tp\" color:green"
-#define ARR_ENT_EDGE_ATTR        "class: 10 label: \"arr ent\" color: green"
+#define ARR_ENT_EDGE_ATTR        "class: 10 label: \"arr ent\""
 #define ENT_OVERWRITES_EDGE_ATTR "class: 11 label: \"overwrites\" color:red"
-#define ENT_VALUE_EDGE_ATTR      "label: \"value %d\""
-#define ENT_CORR_EDGE_ATTR       "label: \"value %zu corresponds to \" "
-#define TYPE_MEMBER_EDGE_ATTR    "class: 12 label: \"member\" color:blue"
-/* #define CALLGRAPH_EDGE_ATTR      "calls" */
+#define TYPE_MEMBER_EDGE_ATTR    "class: 12 label: \"member\""
 
 typedef struct pns_lookup {
 	long       nr;      /**< the proj number */
@@ -278,6 +269,10 @@ static void init_colors(void)
 	custom_color(ird_color_phi,              "153 255 153"); //hsv 120,  .4, 1.
 	custom_color(ird_color_anchor,           "255 153 255"); //hsv 300,  .4, 1.
 	custom_color(ird_color_entity,           "127 127 127"); //hsv   0,   0, .5
+	custom_color(ird_color_type,             "153 255 153"); //hsv 120,  .4, 1.
+	custom_color(ird_color_segment_type,     "153 153 255"); //hsv 240,  .4, 1.
+	named_color(ird_color_edge_type_member,  "darkgrey");
+	named_color(ird_color_edge_ent_type,     "green");
 	named_color(ird_color_block_inout,       "lightblue");
 	named_color(ird_color_error,             "red");
 
@@ -359,6 +354,8 @@ static void print_type_ent_edge(FILE *F, const ir_type *tp, const ir_entity *ent
 	fprintf(F, " targetname: ");
 	print_entityid(F, ent);
 	ir_vfprintf(F, fmt, ap);
+	fputc(' ', F);
+	print_vcg_color(F, ird_color_edge_type_member);
 	fprintf(F, "}\n");
 	va_end(ap);
 }
@@ -401,6 +398,8 @@ static void print_ent_type_edge(FILE *F, const ir_entity *ent, const ir_type *tp
 	fprintf(F, " targetname: ");
 	print_typeid(F, tp);
 	ir_vfprintf(F, fmt, ap);
+	fputc(' ', F);
+	print_vcg_color(F, ird_color_edge_ent_type);
 	fprintf(F,"}\n");
 	va_end(ap);
 }
@@ -1440,30 +1439,6 @@ type:
 	}
 }
 
-static void print_typespecific_vcgattr(FILE *F, ir_type *tp)
-{
-	switch (get_type_tpop_code(tp)) {
-	case tpo_class:
-		fprintf(F, " " TYPE_CLASS_NODE_ATTR);
-		break;
-	case tpo_struct:
-		fprintf(F, " " TYPE_METH_NODE_ATTR);
-		break;
-	case tpo_method:
-		break;
-	case tpo_union:
-		break;
-	case tpo_array:
-		break;
-	case tpo_pointer:
-		break;
-	case tpo_primitive:
-		break;
-	default:
-		break;
-	}
-}
-
 void dump_type_node(FILE *F, ir_type *tp)
 {
 	fprintf(F, "node: {title: ");
@@ -1480,7 +1455,8 @@ void dump_type_node(FILE *F, ir_type *tp)
 	dump_type_to_file(F, tp);
 	fprintf(F, "\"\n");
 	print_type_dbg_info(F, get_type_dbg_info(tp));
-	print_typespecific_vcgattr(F, tp);
+	print_vcg_color(F, is_segment_type(tp) ? ird_color_segment_type
+	                                       : ird_color_type);
 	fprintf(F, "}\n");
 }
 
@@ -1525,9 +1501,6 @@ static void dump_type_info(ir_type *const tp, ir_entity *const ent, void *const 
 		/* The node */
 		dump_entity_node(F, ent);
 		/* The Edges */
-		/* skip this to reduce graph.  Member edge of type is parallel to this edge. *
-		fprintf(F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
-		ENT_OWN_EDGE_ATTR "}\n", ent, get_entity_owner(ent));*/
 		print_ent_type_edge(F,ent, get_entity_type(ent), ENT_TYPE_EDGE_ATTR);
 		if (is_Class_type(get_entity_owner(ent))) {
 			for (i = get_entity_n_overwrites(ent); i > 0;)
@@ -1573,7 +1546,7 @@ static void dump_type_info(ir_type *const tp, ir_entity *const ent, void *const 
 		case tpo_union:
 			for (i = get_union_n_members(tp); i > 0;) {
 				 --i;
-				print_type_ent_edge(F, tp, get_union_member(tp, i), UNION_EDGE_ATTR);
+				print_type_ent_edge(F, tp, get_union_member(tp, i), TYPE_MEMBER_EDGE_ATTR);
 			}
 			break;
 		case tpo_array:
