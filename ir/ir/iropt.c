@@ -4677,9 +4677,9 @@ is_bittest: {
 
 			/* for integer modes, we have more */
 			if (mode_is_int(mode) && !is_Const(left)) {
-				/* c > 0 : a < c  ==>  a <= (c-1)    a >= c  ==>  a > (c-1) */
 				if ((relation == ir_relation_less || relation == ir_relation_greater_equal) &&
 					tarval_cmp(tv, get_mode_null(mode)) == ir_relation_greater) {
+					/* c > 0 : a < c  ==>  a <= (c - 1)    a >= c  ==>  a > (c - 1) */
 					tv = tarval_sub(tv, get_mode_one(mode), NULL);
 
 					if (tarval_is_constant(tv)) {
@@ -4687,10 +4687,9 @@ is_bittest: {
 						changedc = true;
 						DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_CNST_MAGN);
 					}
-				}
-				/* c < 0 : a > c  ==>  a >= (c+1)    a <= c  ==>  a < (c+1) */
-				else if ((relation == ir_relation_greater || relation == ir_relation_less_equal) &&
+				} else if ((relation == ir_relation_greater || relation == ir_relation_less_equal) &&
 					tarval_cmp(tv, get_mode_null(mode)) == ir_relation_less) {
+					/* c < 0 : a > c  ==>  a >= (c + 1)    a <= c  ==>  a < (c + 1) */
 					tv = tarval_add(tv, get_mode_one(mode));
 
 					if (tarval_is_constant(tv)) {
@@ -4703,8 +4702,8 @@ is_bittest: {
 				/* the following reassociations work only for == and != */
 				if (relation == ir_relation_equal || relation == ir_relation_less_greater) {
 					if (tarval_is_constant(tv)) {
-						/* a-c1 == c2  ==>  a == c2+c1,  a-c1 != c2  ==>  a != c2+c1 */
 						if (is_Sub(left)) {
+							/* a - c1 ==/!= c2  ==>  a ==/!= c2 + c1 */
 							ir_node *c1 = get_Sub_right(left);
 							ir_tarval *tv2 = value_of(c1);
 
@@ -4718,9 +4717,8 @@ is_bittest: {
 									DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_OP_C);
 								}
 							}
-						}
-						/* a+c1 == c2  ==>  a == c2-c1,  a+c1 != c2  ==>  a != c2-c1 */
-						else if (is_Add(left) || is_Or_Eor_Add(left)) {
+						} else if (is_Add(left) || is_Or_Eor_Add(left)) {
+							/* a + c1 ==/!= c2  ==>  a ==/!= c2 - c1 */
 							ir_tarval *tv2 = value_of(get_binop_right(left));
 							if (tarval_is_constant(tv2)) {
 								tv2 = tarval_sub(tv, tv2, NULL);
@@ -4731,9 +4729,8 @@ is_bittest: {
 									DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_OP_C);
 								}
 							}
-						}
-						/* -a == c ==> a == -c, -a != c ==> a != -c */
-						else if (is_Minus(left)) {
+						} else if (is_Minus(left)) {
+							/* -a ==/!= c ==> a ==/!= -c */
 							ir_tarval *tv2 = tarval_neg(tv);
 
 							if (tarval_is_constant(tv2)) {
