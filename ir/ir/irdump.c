@@ -50,7 +50,6 @@ typedef enum ird_color_t {
 	ird_color_none = -1,
 	ird_color_prog_background,
 	ird_color_block_background,
-	ird_color_dead_block_background,
 	ird_color_block_inout,
 	ird_color_default_node,
 	ird_color_phi,
@@ -271,20 +270,19 @@ static void init_colors(void)
 
 	obstack_init(&color_obst);
 
-	custom_color(ird_color_prog_background,       "204 204 204");
-	custom_color(ird_color_block_background,      "255 255 0");
-	custom_color(ird_color_dead_block_background, "190 150 150");
-	named_color(ird_color_block_inout,            "lightblue");
-	named_color(ird_color_default_node,           "white");
-	custom_color(ird_color_memory,                "153 153 255");
-	custom_color(ird_color_controlflow,           "255 153 153");
-	custom_color(ird_color_const,                 "204 255 255");
-	custom_color(ird_color_proj,                  "255 255 153");
-	custom_color(ird_color_uses_memory,           "153 153 255");
-	custom_color(ird_color_phi,                   "105 255 105");
-	custom_color(ird_color_anchor,                "100 100 255");
-	named_color(ird_color_error,                  "red");
-	custom_color(ird_color_entity,                "204 204 255");
+	custom_color(ird_color_prog_background,  "204 204 204");
+	custom_color(ird_color_block_background, "255 255 0");
+	named_color(ird_color_block_inout,       "lightblue");
+	named_color(ird_color_default_node,      "white");
+	custom_color(ird_color_memory,           "153 153 255");
+	custom_color(ird_color_controlflow,      "255 153 153");
+	custom_color(ird_color_const,            "204 255 255");
+	custom_color(ird_color_proj,             "255 255 153");
+	custom_color(ird_color_uses_memory,      "153 153 255");
+	custom_color(ird_color_phi,              "105 255 105");
+	custom_color(ird_color_anchor,           "100 100 255");
+	named_color(ird_color_error,             "red");
+	custom_color(ird_color_entity,           "204 204 255");
 
 	initialized = 1;
 }
