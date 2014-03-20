@@ -57,7 +57,6 @@ typedef enum ird_color_t {
 	ird_color_controlflow,
 	ird_color_const,
 	ird_color_anchor,
-	ird_color_uses_memory,
 	ird_color_error,
 	ird_color_entity,
 	ird_color_count
@@ -276,7 +275,6 @@ static void init_colors(void)
 	custom_color(ird_color_memory,           "153 153 255");
 	custom_color(ird_color_controlflow,      "255 153 153");
 	custom_color(ird_color_const,            "204 255 255");
-	custom_color(ird_color_uses_memory,      "153 153 255");
 	custom_color(ird_color_phi,              "105 255 105");
 	custom_color(ird_color_anchor,           "100 100 255");
 	named_color(ird_color_error,             "red");
@@ -878,7 +876,7 @@ static void dump_node_vcgattr(FILE *F, const ir_node *node, const ir_node *local
 		if (is_op_constlike(op)) {
 			print_vcg_color(F, ird_color_const);
 		} else if (is_op_uses_memory(op)) {
-			print_vcg_color(F, ird_color_uses_memory);
+			print_vcg_color(F, ird_color_memory);
 		} else if (is_op_cfopcode(op) || is_op_forking(op)) {
 			print_vcg_color(F, ird_color_controlflow);
 		}
