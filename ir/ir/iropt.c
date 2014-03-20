@@ -2706,12 +2706,20 @@ static ir_node *transform_node_Add(ir_node *n)
 			if (is_Not(a)) {
 				ir_node *op = get_Not_op(a);
 
-				if (is_Const(b) && is_Const_one(b)) {
-					/* ~x + 1 = -x */
-					ir_node *blk = get_nodes_block(n);
-					n = new_rd_Minus(get_irn_dbg_info(n), blk, op, mode);
-					DBG_OPT_ALGSIM0(oldn, n, FS_OPT_NOT_PLUS_1);
-					return n;
+				if (is_Const(b)) {
+					ir_tarval *const tv        = get_Const_tarval(b);
+					ir_tarval *const minus_one = get_mode_minus_one(mode);
+					ir_tarval *const add       = tarval_add(tv, minus_one);
+
+					if (tarval_is_constant(add)) {
+						/* ~x + C = (C - 1) - x */
+						dbg_info *const dbgi  = get_irn_dbg_info(n);
+						ir_node  *const block = get_nodes_block(n);
+						ir_node  *const c     = new_rd_Const(dbgi, irg, add);
+						n = new_rd_Sub(get_irn_dbg_info(n), block, c, op, mode);
+						DBG_OPT_ALGSIM0(oldn, n, FS_OPT_NOT_PLUS_C);
+						return n;
+					}
 				}
 			}
 			if (!irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_ARCH_DEP)) {
