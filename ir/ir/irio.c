@@ -970,7 +970,6 @@ static void write_mode(write_env_t *env, ir_mode *mode)
 		write_unsigned(env, get_mode_size_bits(mode));
 		write_unsigned(env, get_mode_modulo_shift(mode));
 
-		write_mode_ref(env, get_reference_mode_signed_eq(mode));
 		write_mode_ref(env, get_reference_mode_unsigned_eq(mode));
 		write_int(env, (mode == mode_P ? 1 : 0));
 	} else if (mode_is_float(mode)) {
@@ -2170,7 +2169,6 @@ static void read_modes(read_env_t *env)
 			int size = read_long(env);
 			unsigned modulo_shift = read_long(env);
 			ir_mode *mode = new_reference_mode(name, arith, size, modulo_shift);
-			set_reference_mode_signed_eq(mode, read_mode_ref(env));
 			set_reference_mode_unsigned_eq(mode, read_mode_ref(env));
 			int is_mode_P = read_int(env);
 			if (is_mode_P) {

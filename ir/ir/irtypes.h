@@ -165,7 +165,6 @@ struct ir_mode {
 	ir_tarval         *all_one;     /**< the value ~0 */
 	ir_tarval         *infinity;    /**< the infinity value */
 	ir_tarval         *nan;         /** the not a number (NaN) value */
-	ir_mode           *eq_signed;   /**< For pointer modes, the equivalent signed integer one. */
 	ir_mode           *eq_unsigned; /**< For pointer modes, the equivalent unsigned integer one. */
 };
 

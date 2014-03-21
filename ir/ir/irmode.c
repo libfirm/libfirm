@@ -501,19 +501,6 @@ int values_in_mode(const ir_mode *sm, const ir_mode *lm)
 	return false;
 }
 
-ir_mode *get_reference_mode_signed_eq(const ir_mode *mode)
-{
-	assert(mode_is_reference(mode));
-	return mode->eq_signed;
-}
-
-void set_reference_mode_signed_eq(ir_mode *ref_mode, ir_mode *int_mode)
-{
-	assert(mode_is_reference(ref_mode));
-	assert(mode_is_int(int_mode));
-	ref_mode->eq_signed = int_mode;
-}
-
 ir_mode *get_reference_mode_unsigned_eq(const ir_mode *mode)
 {
 	assert(mode_is_reference(mode));
@@ -555,7 +542,6 @@ void init_mode(void)
 	mode_Lu  = new_int_mode("Lu",  irma_twos_complement, 64,  0, 64);
 
 	mode_P   = new_reference_mode("P", irma_twos_complement, 32, 32);
-	set_reference_mode_signed_eq(mode_P, mode_Is);
 	set_reference_mode_unsigned_eq(mode_P, mode_Iu);
 
 	/* set the machine specific modes to the predefined ones */
