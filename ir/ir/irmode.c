@@ -220,7 +220,16 @@ ir_mode *new_reference_mode(const char *name, ir_mode_arithmetic arithmetic,
 
 	ir_mode *result = alloc_mode(name, irms_reference, arithmetic, bit_size,
 	                             0, modulo_shift);
-	return register_mode(result);
+	ir_mode *res = register_mode(result);
+
+	/* construct the unsigned_eq mode */
+	char buf[64];
+	snprintf(buf, sizeof(buf), "%s_iu", name);
+	ir_mode *unsigned_eq = alloc_mode(buf, irms_int_number, arithmetic,
+	                                  bit_size, 0, modulo_shift);
+	unsigned_eq = register_mode(unsigned_eq);
+	set_reference_mode_unsigned_eq(res, unsigned_eq);
+	return res;
 }
 
 ir_mode *new_float_mode(const char *name, ir_mode_arithmetic arithmetic,
@@ -542,7 +551,6 @@ void init_mode(void)
 	mode_Lu  = new_int_mode("Lu",  irma_twos_complement, 64,  0, 64);
 
 	mode_P   = new_reference_mode("P", irma_twos_complement, 32, 32);
-	set_reference_mode_unsigned_eq(mode_P, mode_Iu);
 
 	/* set the machine specific modes to the predefined ones */
 	mode_P_code = mode_P;
