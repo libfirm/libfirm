@@ -553,7 +553,7 @@ static void build_address(ia32_address_mode_t *am, ir_node *node,
 		addr->mem         = nomem;
 		addr->entity      = entity;
 		addr->tls_segment = false;
-		addr->use_frame   = 1;
+		addr->use_frame   = false;
 		am->ls_mode       = get_type_mode(get_entity_type(entity));
 		am->pinned        = op_pin_state_floats;
 		return;
@@ -582,9 +582,9 @@ static void set_address(ir_node *node, const x86_address_t *addr)
 	set_ia32_am_ent(node, addr->entity);
 	set_ia32_am_offs_int(node, addr->offset);
 	set_ia32_am_tls_segment(node, addr->tls_segment);
+	set_ia32_frame_ent(node, addr->frame_entity);
 	if (addr->use_frame)
 		set_ia32_use_frame(node);
-	set_ia32_frame_ent(node, addr->frame_entity);
 }
 
 /**

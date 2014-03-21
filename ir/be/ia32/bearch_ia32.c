@@ -473,6 +473,8 @@ ir_node *ia32_turn_back_am(ir_node *node)
 	set_ia32_am_offs_int(node, 0);
 	set_ia32_am_ent(node, NULL);
 	set_ia32_am_scale(node, 0);
+	set_ia32_frame_ent(node, NULL);
+	clear_ia32_use_frame(node);
 
 	/* rewire mem-proj */
 	if (get_irn_mode(node) == mode_T) {
