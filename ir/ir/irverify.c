@@ -620,8 +620,8 @@ static int verify_node_Add(const ir_node *n)
 		} else if (mode_is_int(right_mode)) {
 			fine &= check_mode_same_input(n, n_Add_left, "left");
 		} else {
-			fine &= check_mode_same_input(n, n_Add_left, "left");
-			fine &= check_mode_same_input(n, n_Add_right, "right");
+			warn(n, "AddP has no integer input");
+			fine = false;
 		}
 	} else {
 		warn(n, "mode must be numeric or reference but is %+F", mode);
