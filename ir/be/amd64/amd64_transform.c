@@ -828,19 +828,23 @@ static ir_node *gen_Shrs(ir_node *const node)
 /**
  * Creates a signed extension.
  */
-static ir_node *create_sext(ir_node *const node, amd64_insn_mode_t insn_mode)
+static ir_node *create_sext(ir_node *const node, ir_mode *mode,
+                            amd64_insn_mode_t insn_mode)
 {
 	dbg_info *const dbgi  = get_irn_dbg_info(node);
 	ir_node  *const block = get_nodes_block(node);
 	ir_node  *sext;
 
-	if (insn_mode == INSN_MODE_32) {
-		sext = new_bd_amd64_CDQ(dbgi, block, node);
-	} else if (insn_mode == INSN_MODE_64) {
-		sext = new_bd_amd64_CQO(dbgi, block, node);
-	} else {
-		panic("Sign extension only implemented for 32 and 64 bit");
-	}
+	amd64_shift_attr_t attr;
+	memset(&attr, 0, sizeof(attr));
+	attr.base.op_mode = AMD64_OP_SHIFT_IMM;
+	attr.insn_mode    = insn_mode;
+	attr.immediate    = get_mode_size_bits(mode) - 1;
+	ir_node *in[1]    = { node };
+	sext              = new_bd_amd64_Sar(dbgi, block, ARRAY_SIZE(in), in, &attr);
+
+	arch_set_irn_register_reqs_in(sext, reg_reqs);
+	arch_set_irn_register_req_out(sext, 0, &amd64_requirement_gp_same_0);
 
 	return sext;
 }
@@ -866,8 +870,8 @@ static ir_node *create_div(ir_node *const node, ir_mode *const mode,
 	reqs = rax_reg_rdx_reqs;
 
 	if (mode_is_signed(mode)) {
-		/* Sign extend RAX and RDX */
-		ir_node *sext = create_sext(be_transform_node(op1), insn_mode);
+		/* Sign extend RAX to RDX */
+		ir_node *sext = create_sext(be_transform_node(op1), mode, insn_mode);
 		in[arity++] = sext;
 
 		res = new_bd_amd64_IDiv(dbgi, block, arity, in, insn_mode,
