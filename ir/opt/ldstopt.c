@@ -586,8 +586,10 @@ static ir_node *try_update_ptr_CopyB(ir_node *load, ir_node *load_base_ptr,
 	 */
 	ir_graph *irg          = get_irn_irg(load);
 	ir_node  *block        = get_nodes_block(load);
-	ir_node  *cnst         = new_r_Const_long(irg, mode_Is, load_src_offset);
-	ir_node  *new_load_ptr = new_r_Add(block, src_base_ptr, cnst, mode_P);
+	ir_mode  *mode_ref     = get_irn_mode(src_base_ptr);
+	ir_mode  *mode_ref_int = get_reference_mode_unsigned_eq(mode_ref);
+	ir_node  *cnst         = new_r_Const_long(irg, mode_ref_int, load_src_offset);
+	ir_node  *new_load_ptr = new_r_Add(block, src_base_ptr, cnst, mode_ref);
 	return new_load_ptr;
 }
 
@@ -1455,12 +1457,13 @@ static changes_t optimize_conv_load(ir_node *conv)
 	if (be_get_backend_param()->byte_order_big_endian) {
 		if (bits_diff % 8 != 0)
 			return NO_CHANGES;
-		ir_graph *irg   = get_irn_irg(conv);
-		ir_node  *ptr   = get_Load_ptr(load);
-		ir_mode  *mode  = get_irn_mode(ptr);
-		ir_node  *delta = new_r_Const_long(irg, mode, bits_diff/8);
-		ir_node  *block = get_nodes_block(load);
-		ir_node  *add   = new_r_Add(block, ptr, delta, mode);
+		ir_graph *irg       = get_irn_irg(conv);
+		ir_node  *ptr       = get_Load_ptr(load);
+		ir_mode  *mode      = get_irn_mode(ptr);
+		ir_mode  *mode_offs = get_reference_mode_unsigned_eq(mode);
+		ir_node  *delta     = new_r_Const_long(irg, mode_offs, bits_diff/8);
+		ir_node  *block     = get_nodes_block(load);
+		ir_node  *add       = new_r_Add(block, ptr, delta, mode);
 		set_Load_ptr(load, add);
 	}
 	set_Load_mode(load, mode);

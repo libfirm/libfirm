@@ -63,7 +63,7 @@ static void lower_small_copyb_node(ir_node *irn)
 	ir_node  *addr_src   = get_CopyB_src(irn);
 	ir_node  *addr_dst   = get_CopyB_dst(irn);
 	ir_node  *mem        = get_CopyB_mem(irn);
-	ir_mode  *addr_mode  = get_irn_mode(addr_src);
+	ir_mode  *mode_ref   = get_irn_mode(addr_src);
 	unsigned  mode_bytes =
 		allow_misalignments ? native_mode_bytes : get_type_alignment_bytes(tp);
 	unsigned  size       = get_type_size_bytes(tp);
@@ -72,18 +72,20 @@ static void lower_small_copyb_node(ir_node *irn)
 	while (offset < size) {
 		ir_mode *mode = get_ir_mode(mode_bytes);
 		for (; offset + mode_bytes <= size; offset += mode_bytes) {
+			ir_mode *mode_ref_int = get_reference_mode_unsigned_eq(mode_ref);
+
 			/* construct offset */
-			ir_node *addr_const = new_r_Const_long(irg, mode_Iu, offset);
+			ir_node *addr_const = new_r_Const_long(irg, mode_ref_int, offset);
 			ir_node *add        = new_r_Add(block, addr_src, addr_const,
-			                                addr_mode);
+			                                mode_ref);
 
 			ir_node *load     = new_r_Load(block, mem, add, mode, cons_none);
 			ir_node *load_res = new_r_Proj(load, mode, pn_Load_res);
 			ir_node *load_mem = new_r_Proj(load, mode_M, pn_Load_M);
 
-			ir_node *addr_const2 = new_r_Const_long(irg, mode_Iu, offset);
+			ir_node *addr_const2 = new_r_Const_long(irg, mode_ref_int, offset);
 			ir_node *add2        = new_r_Add(block, addr_dst, addr_const2,
-			                                 addr_mode);
+			                                 mode_ref);
 
 			ir_node *store     = new_r_Store(block, load_mem, add2, load_res,
 			                                 cons_none);

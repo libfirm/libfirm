@@ -684,9 +684,10 @@ static void create_stores_for_type(ir_graph *irg, ir_type *type)
 			                                 cons_none);
 			ir_node *mem0      = new_r_Proj(store0, mode_M, pn_Store_M);
 			size_t   offset    = get_mode_size_bits(mode)/8;
-			ir_mode *addr_mode = get_irn_mode(addr);
-			ir_node *cnst      = new_r_Const_long(irg, addr_mode, offset);
-			ir_node *next_addr = new_r_Add(start_block, addr, cnst, addr_mode);
+			ir_mode *mode_ref  = get_irn_mode(addr);
+			ir_mode *mode_offs = get_reference_mode_unsigned_eq(mode_ref);
+			ir_node *cnst      = new_r_Const_long(irg, mode_offs, offset);
+			ir_node *next_addr = new_r_Add(start_block, addr, cnst, mode_ref);
 			ir_node *store1    = new_r_Store(start_block, mem0, next_addr, val1,
 			                                 cons_none);
 			mem = new_r_Proj(store1, mode_M, pn_Store_M);
