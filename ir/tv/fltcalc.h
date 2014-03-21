@@ -72,8 +72,12 @@ void *fc_val_from_str(const char *str, size_t len, void *result);
  */
 fp_value *fc_val_from_ieee754(long double l, fp_value *result);
 
-fp_value *fc_val_from_ieee754_buf(fp_value *result, const unsigned char *buffer,
-                             const float_descriptor_t *desc);
+/**
+ * get fp_value from a floatingpoint an ieee754 float number encoded in little
+ * endian format in @p buffer.
+ */
+fp_value *fc_val_from_bytes(fp_value *result, const unsigned char *buffer,
+                            const float_descriptor_t *desc);
 
 /** retrieve the float value of an internal value
  * This function casts the internal value to long double and returns a
@@ -245,6 +249,12 @@ fc_rounding_mode_t fc_get_rounding_mode(void);
  */
 unsigned char fc_sub_bits(const fp_value *val, unsigned num_bit,
                           unsigned byte_ofs);
+
+/**
+ * Write (little endian) byte representation of the floatingpoint number to
+ * buffer buf.
+ */
+void fc_val_to_bytes(const fp_value *val, unsigned char *buf);
 
 /**
  * Returns non-zero if the result of the last operation was exact.

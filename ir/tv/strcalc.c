@@ -621,6 +621,18 @@ void sc_val_from_bytes(unsigned char const *const bytes, size_t n_bytes,
 		*p = 0;
 }
 
+void sc_val_to_bytes(const sc_word *buffer, unsigned char *const dest,
+                     size_t const dest_len)
+{
+	assert(dest_len*8 <= (size_t)calc_buffer_size*SC_BITS);
+
+	const sc_word *b = buffer;
+	for (size_t i = 0; i < dest_len; ++i) {
+		dest[i] = b[0] + (b[1]<<4);
+		b+=2;
+	}
+}
+
 void sc_val_from_bits(unsigned char const *const bytes, unsigned from,
                       unsigned to, sc_word *buffer)
 {

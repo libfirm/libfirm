@@ -193,6 +193,12 @@ void sc_min_from_bits(unsigned num_bits, bool sign, sc_word *buffer);
 void sc_max_from_bits(unsigned num_bits, bool sign, sc_word *buffer);
 
 /**
+ * Convert a strcalc value to a sequence of bytes in two complement little
+ * endian representation.
+ */
+void sc_val_to_bytes(const sc_word *val, unsigned char *buf, size_t buf_size);
+
+/**
  * Compares val1 and val2
  */
 ir_relation sc_comp(const sc_word *val1, const sc_word *val2);

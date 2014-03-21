@@ -642,8 +642,8 @@ void *fc_val_from_str(const char *str, size_t len, void *result)
 	return fc_val_from_ieee754(val, result);
 }
 
-fp_value *fc_val_from_ieee754_buf(fp_value *result, const unsigned char *buffer,
-                                  const float_descriptor_t *desc)
+fp_value *fc_val_from_bytes(fp_value *result, const unsigned char *buffer,
+                            const float_descriptor_t *desc)
 {
 	if (result == NULL)
 		result = calc_buffer;
@@ -705,7 +705,7 @@ fp_value *fc_val_from_ieee754(long double l, fp_value *result)
 #else
 	memcpy(buf, &l, real_size);
 #endif
-	return fc_val_from_ieee754_buf(result, buf, &long_double_desc);
+	return fc_val_from_bytes(result, buf, &long_double_desc);
 }
 
 long double fc_val_to_ieee754(const fp_value *val)
@@ -1013,14 +1013,20 @@ unsigned char fc_sub_bits(const fp_value *value, unsigned num_bits,
                           unsigned byte_ofs)
 {
 	/* this is used to cache the packed version of the value */
-	static sc_word *packed_value = NULL;
-	if (packed_value == NULL)
-		packed_value = XMALLOCN(sc_word, value_size);
-
-	if (value != NULL)
-		pack(value, packed_value);
-
+	sc_word *packed_value = ALLOCAN(sc_word, value_size);
+	pack(value, packed_value);
 	return sc_sub_bits(packed_value, num_bits, byte_ofs);
+}
+
+void fc_val_to_bytes(const fp_value *value, unsigned char *buffer)
+{
+	sc_word *packed_value = ALLOCAN(sc_word, value_size);
+	pack(value, packed_value);
+	const float_descriptor_t *desc = &value->desc;
+	unsigned n_bits = desc->mantissa_size + desc->exponent_size + 1;
+	assert(n_bits % 8 == 0);
+	unsigned n_bytes = n_bits / 8;
+	sc_val_to_bytes(packed_value, buffer, n_bytes);
 }
 
 bool fc_zero_mantissa(const fp_value *value)

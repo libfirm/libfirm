@@ -360,10 +360,9 @@ ir_tarval *new_tarval_from_bytes(unsigned char const *buf,
 			for (unsigned i = 0; i < size; ++i) {
 				temp[i] = buf[size-i-1];
 			}
-			fc_val_from_ieee754_buf(NULL, temp, get_descriptor(mode));
-		} else {
-			fc_val_from_ieee754_buf(NULL, buf, get_descriptor(mode));
+			buf = temp;
 		}
+		fc_val_from_bytes(NULL, buf, get_descriptor(mode));
 		return get_tarval_from_fp_value(fc_get_buffer(), mode);
 	}
 	case irma_none:
@@ -1376,9 +1375,11 @@ const char *ir_tarval_to_ascii(char *buf, size_t len, ir_tarval *tv)
 	case irms_float_number: {
 		/* fc_print is not specific enough for nans/infs, so we simply dump the
 		 * bit representation in hex. */
-		unsigned size = get_mode_size_bytes(mode);
+		unsigned       size  = get_mode_size_bytes(mode);
+		unsigned char *bytes = ALLOCAN(unsigned char, size);
+		fc_val_to_bytes((const fp_value*)tv->value, bytes);
 		for (size_t i = 0; i < size; ++i) {
-			uint8_t bits = get_tarval_sub_bits(tv, (int)i);
+			unsigned char bits = bytes[i];
 			buf[i*2]   = hexchar(bits & 0xf);
 			buf[i*2+1] = hexchar(bits >> 4);
 		}
@@ -1411,7 +1412,7 @@ ir_tarval *ir_tarval_from_ascii(const char *buf, ir_mode *mode)
 			unsigned char val = hexval(buf[i*2]) | (hexval(buf[i*2+1]) << 4);
 			temp[i] = val;
 		}
-		fc_val_from_ieee754_buf(NULL, temp, get_descriptor(mode));
+		fc_val_from_bytes(NULL, temp, get_descriptor(mode));
 		return get_tarval_from_fp_value(fc_get_buffer(), mode);
 	}
 	case irms_data:
