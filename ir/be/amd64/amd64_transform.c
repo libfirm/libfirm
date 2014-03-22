@@ -418,6 +418,36 @@ static bool needs_extension(ir_node *op)
 	return !be_upper_bits_clean(op, mode);
 }
 
+static ir_node *create_sext(ir_node *const node, ir_mode *mode)
+{
+	amd64_insn_mode_t insn_mode = get_insn_mode_from_mode(mode);
+	dbg_info *const   dbgi      = get_irn_dbg_info(node);
+	ir_node  *const   block     = get_nodes_block(node);
+
+	amd64_shift_attr_t attr;
+	memset(&attr, 0, sizeof(attr));
+	attr.base.op_mode = AMD64_OP_SHIFT_IMM;
+	attr.insn_mode    = insn_mode;
+	attr.immediate    = get_mode_size_bits(mode) - 1;
+	ir_node *in[1]    = { node };
+	ir_node *sext     = new_bd_amd64_Sar(dbgi, block, ARRAY_SIZE(in), in, &attr);
+
+	arch_set_irn_register_reqs_in(sext, reg_reqs);
+	arch_set_irn_register_req_out(sext, 0, &amd64_requirement_gp_same_0);
+
+	return sext;
+}
+
+static ir_node *create_zext(ir_node *const node)
+{
+	dbg_info *const dbgi  = get_irn_dbg_info(node);
+	ir_node  *const block = get_nodes_block(node);
+	ir_node  *const zero  = new_bd_amd64_Xor0(dbgi, block);
+
+	arch_set_irn_register_reqs_in(zero, reg_reqs);
+	return zero;
+}
+
 static bool use_address_matching(match_flags_t flags, ir_node *block,
                                  ir_node *op1, ir_node *op2,
                                  ir_node **out_load, ir_node **out_op)
@@ -825,30 +855,6 @@ static ir_node *gen_Shrs(ir_node *const node)
 	                       match_immediate);
 }
 
-/**
- * Creates a signed extension.
- */
-static ir_node *create_sext(ir_node *const node, ir_mode *mode,
-                            amd64_insn_mode_t insn_mode)
-{
-	dbg_info *const dbgi  = get_irn_dbg_info(node);
-	ir_node  *const block = get_nodes_block(node);
-	ir_node  *sext;
-
-	amd64_shift_attr_t attr;
-	memset(&attr, 0, sizeof(attr));
-	attr.base.op_mode = AMD64_OP_SHIFT_IMM;
-	attr.insn_mode    = insn_mode;
-	attr.immediate    = get_mode_size_bits(mode) - 1;
-	ir_node *in[1]    = { node };
-	sext              = new_bd_amd64_Sar(dbgi, block, ARRAY_SIZE(in), in, &attr);
-
-	arch_set_irn_register_reqs_in(sext, reg_reqs);
-	arch_set_irn_register_req_out(sext, 0, &amd64_requirement_gp_same_0);
-
-	return sext;
-}
-
 static ir_node *create_div(ir_node *const node, ir_mode *const mode,
                            ir_node *const op1, ir_node *const op2)
 {
@@ -871,19 +877,16 @@ static ir_node *create_div(ir_node *const node, ir_mode *const mode,
 
 	if (mode_is_signed(mode)) {
 		/* Sign extend RAX to RDX */
-		ir_node *sext = create_sext(be_transform_node(op1), mode, insn_mode);
-		in[arity++] = sext;
+		in[arity++] = create_sext(be_transform_node(op1), mode);
 
 		res = new_bd_amd64_IDiv(dbgi, block, arity, in, insn_mode,
                                 op_mode, addr);
 	} else {
-		/* Zero register RDX */
-		ir_node *const zero = new_bd_amd64_Xor0(dbgi, block);
-		arch_set_irn_register_reqs_in(zero, reg_reqs);
+		/* Zero extend to register RDX */
+		in[arity++] = create_zext(node);
 
-		in[arity++] = zero;
-		res  = new_bd_amd64_Div(dbgi, block, arity, in, insn_mode,
-                                op_mode, addr);
+		res = new_bd_amd64_Div(dbgi, block, arity, in, insn_mode,
+                               op_mode, addr);
 	}
 
 	arch_set_irn_register_reqs_in(res, reqs);
