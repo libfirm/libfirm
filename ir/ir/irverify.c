@@ -84,7 +84,7 @@ static bool check_input_mode(const ir_node *n, int input, const char *inputname,
 			inputname = num;
 		}
 		warn(n, "expected reference mode for input '%s' but found %+F (%+F)",
-		     inputname, mode, in);
+		     inputname, in_mode, in);
 		return false;
 	}
 	return true;
