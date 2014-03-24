@@ -33,19 +33,19 @@ ir_heights_t *ia32_heights = NULL;
 static bool check_immediate_constraint(long val, char immediate_constraint_type)
 {
 	switch (immediate_constraint_type) {
-		case 'g':
-		case 'i':
-		case 'n': return true;
+	case 'g':
+	case 'i':
+	case 'n': return true;
 
-		case 'I': return    0 <= val && val <=  31;
-		case 'J': return    0 <= val && val <=  63;
-		case 'K': return -128 <= val && val <= 127;
-		case 'L': return val == 0xff || val == 0xffff;
-		case 'M': return    0 <= val && val <=   3;
-		case 'N': return    0 <= val && val <= 255;
-		case 'O': return    0 <= val && val <= 127;
+	case 'I': return    0 <= val && val <=  31;
+	case 'J': return    0 <= val && val <=  63;
+	case 'K': return -128 <= val && val <= 127;
+	case 'L': return val == 0xff || val == 0xffff;
+	case 'M': return    0 <= val && val <=   3;
+	case 'N': return    0 <= val && val <= 255;
+	case 'O': return    0 <= val && val <= 127;
 
-		default: panic("Invalid immediate constraint found");
+	default: panic("Invalid immediate constraint found");
 	}
 }
 

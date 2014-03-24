@@ -343,38 +343,38 @@ static int ia32_possible_memory_operand(const ir_node *irn, unsigned int i)
 	}
 
 	switch (get_ia32_am_support(irn)) {
-		case ia32_am_none:
-			return 0;
+	case ia32_am_none:
+		return 0;
 
-		case ia32_am_unary:
-			if (i != n_ia32_unary_op)
+	case ia32_am_unary:
+		if (i != n_ia32_unary_op)
+			return 0;
+		break;
+
+	case ia32_am_binary:
+		switch (i) {
+		case n_ia32_binary_left: {
+			if (!is_ia32_commutative(irn))
+				return 0;
+
+			/* we can't swap left/right for limited registers
+			 * (As this (currently) breaks constraint handling copies) */
+			arch_register_req_t const *const req = arch_get_irn_register_req_in(irn, n_ia32_binary_left);
+			if (arch_register_req_is(req, limited))
 				return 0;
 			break;
+		}
 
-		case ia32_am_binary:
-			switch (i) {
-				case n_ia32_binary_left: {
-					if (!is_ia32_commutative(irn))
-						return 0;
-
-					/* we can't swap left/right for limited registers
-					 * (As this (currently) breaks constraint handling copies) */
-					arch_register_req_t const *const req = arch_get_irn_register_req_in(irn, n_ia32_binary_left);
-					if (arch_register_req_is(req, limited))
-						return 0;
-					break;
-				}
-
-				case n_ia32_binary_right:
-					break;
-
-				default:
-					return 0;
-			}
+		case n_ia32_binary_right:
 			break;
 
 		default:
-			panic("Unknown AM type");
+			return 0;
+		}
+		break;
+
+	default:
+		panic("Unknown AM type");
 	}
 
 	/* HACK: must not already use "real" memory.
@@ -452,20 +452,20 @@ ir_node *ia32_turn_back_am(ir_node *node)
 	set_irn_n(node, n_ia32_mem, get_irg_no_mem(irg));
 
 	switch (get_ia32_am_support(node)) {
-		case ia32_am_unary:
-			set_irn_n(node, n_ia32_unary_op, load_res);
-			break;
+	case ia32_am_unary:
+		set_irn_n(node, n_ia32_unary_op, load_res);
+		break;
 
-		case ia32_am_binary:
-			if (is_ia32_Immediate(get_irn_n(node, n_ia32_binary_right))) {
-				set_irn_n(node, n_ia32_binary_left, load_res);
-			} else {
-				set_irn_n(node, n_ia32_binary_right, load_res);
-			}
-			break;
+	case ia32_am_binary:
+		if (is_ia32_Immediate(get_irn_n(node, n_ia32_binary_right))) {
+			set_irn_n(node, n_ia32_binary_left, load_res);
+		} else {
+			set_irn_n(node, n_ia32_binary_right, load_res);
+		}
+		break;
 
-		default:
-			panic("Unknown AM type");
+	default:
+		panic("Unknown AM type");
 	}
 	noreg = ia32_new_NoReg_gp(irg);
 	set_irn_n(node, n_ia32_base,  noreg);
@@ -510,15 +510,15 @@ static ir_node *flags_remat(ir_node *node, ir_node *after)
 
 	type = get_ia32_op_type(node);
 	switch (type) {
-		case ia32_AddrModeS:
-			ia32_turn_back_am(node);
-			break;
+	case ia32_AddrModeS:
+		ia32_turn_back_am(node);
+		break;
 
-		case ia32_AddrModeD:
-			/* TODO implement this later... */
-			panic("found DestAM with flag user %+F this should not happen", node);
+	case ia32_AddrModeD:
+		/* TODO implement this later... */
+		panic("found DestAM with flag user %+F this should not happen", node);
 
-		default: assert(type == ia32_Normal); break;
+	default: assert(type == ia32_Normal); break;
 	}
 
 	copy = exact_copy(node);
@@ -566,13 +566,12 @@ static void transform_to_Load(ir_node *node)
 			new_op = new_bd_ia32_xLoad(dbgi, block, ptr, noreg, mem, spillmode);
 		else
 			new_op = new_bd_ia32_fld(dbgi, block, ptr, noreg, mem, spillmode);
-	}
-	else if (get_mode_size_bits(spillmode) == 128) {
+	} else if (get_mode_size_bits(spillmode) == 128) {
 		/* Reload 128 bit SSE registers */
 		new_op = new_bd_ia32_xxLoad(dbgi, block, ptr, noreg, mem);
-	}
-	else
+	} else {
 		new_op = new_bd_ia32_Load(dbgi, block, ptr, noreg, mem);
+	}
 
 	set_ia32_op_type(new_op, ia32_AddrModeS);
 	set_ia32_ls_mode(new_op, spillmode);
@@ -838,50 +837,50 @@ static void ia32_collect_frame_entity_nodes(ir_node *node, void *data)
 
 		switch (get_ia32_irn_opcode(node)) {
 need_stackent:
-			case iro_ia32_Load: {
-				const ia32_attr_t *attr = get_ia32_attr_const(node);
+		case iro_ia32_Load: {
+			const ia32_attr_t *attr = get_ia32_attr_const(node);
 
-				if (attr->data.need_32bit_stackent) {
-					mode = ia32_mode_gp;
-				} else if (attr->data.need_64bit_stackent) {
-					mode = mode_Ls;
-				} else {
-					mode = get_ia32_ls_mode(node);
-					if (is_ia32_is_reload(node))
-						mode = get_spill_mode_mode(mode);
-				}
-				align = get_mode_size_bytes(mode);
-				break;
+			if (attr->data.need_32bit_stackent) {
+				mode = ia32_mode_gp;
+			} else if (attr->data.need_64bit_stackent) {
+				mode = mode_Ls;
+			} else {
+				mode = get_ia32_ls_mode(node);
+				if (is_ia32_is_reload(node))
+					mode = get_spill_mode_mode(mode);
 			}
+			align = get_mode_size_bytes(mode);
+			break;
+		}
 
-			case iro_ia32_fild:
-			case iro_ia32_fld:
-			case iro_ia32_xLoad: {
-				mode  = get_ia32_ls_mode(node);
-				align = 4;
-				break;
-			}
+		case iro_ia32_fild:
+		case iro_ia32_fld:
+		case iro_ia32_xLoad: {
+			mode  = get_ia32_ls_mode(node);
+			align = 4;
+			break;
+		}
 
-			case iro_ia32_FldCW: {
-				/* although 2 byte would be enough 4 byte performs best */
-				mode  = ia32_mode_gp;
-				align = 4;
-				break;
-			}
+		case iro_ia32_FldCW: {
+			/* although 2 byte would be enough 4 byte performs best */
+			mode  = ia32_mode_gp;
+			align = 4;
+			break;
+		}
 
-			default:
+		default:
 #ifndef NDEBUG
-				panic("unexpected frame user while collection frame entity nodes");
+			panic("unexpected frame user while collection frame entity nodes");
 
-			case iro_ia32_FnstCW:
-			case iro_ia32_Store:
-			case iro_ia32_fst:
-			case iro_ia32_fist:
-			case iro_ia32_fisttp:
-			case iro_ia32_xStore:
-			case iro_ia32_xStoreSimple:
+		case iro_ia32_FnstCW:
+		case iro_ia32_Store:
+		case iro_ia32_fst:
+		case iro_ia32_fist:
+		case iro_ia32_fisttp:
+		case iro_ia32_xStore:
+		case iro_ia32_xStoreSimple:
 #endif
-				return;
+			return;
 		}
 	} else {
 		return;
@@ -1698,8 +1697,7 @@ static void ia32_get_call_abi(ir_type *method_type, be_abi_call_t *abi)
 
 		be_abi_call_res_reg(abi, 0, &ia32_registers[REG_EAX], ABI_CONTEXT_BOTH);
 		be_abi_call_res_reg(abi, 1, &ia32_registers[REG_EDX], ABI_CONTEXT_BOTH);
-	}
-	else if (n == 1) {
+	} else if (n == 1) {
 		ir_type *tp   = get_method_res_type(method_type, 0);
 		ir_mode *mode = get_type_mode(tp);
 		const arch_register_t *reg;

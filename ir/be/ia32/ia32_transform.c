@@ -4533,10 +4533,10 @@ static ir_node *gen_be_Call(ir_node *node)
 		assert(req->cls == &ia32_reg_classes[CLASS_ia32_gp]);
 
 		switch (*req->limited) {
-			case 1 << REG_GP_EAX: assert(eax == noreg_GP); eax = reg_parm; break;
-			case 1 << REG_GP_ECX: assert(ecx == noreg_GP); ecx = reg_parm; break;
-			case 1 << REG_GP_EDX: assert(edx == noreg_GP); edx = reg_parm; break;
-			default: panic("Invalid GP register for register parameter");
+		case 1 << REG_GP_EAX: assert(eax == noreg_GP); eax = reg_parm; break;
+		case 1 << REG_GP_ECX: assert(ecx == noreg_GP); ecx = reg_parm; break;
+		case 1 << REG_GP_EDX: assert(edx == noreg_GP); edx = reg_parm; break;
+		default: panic("Invalid GP register for register parameter");
 		}
 	}
 
