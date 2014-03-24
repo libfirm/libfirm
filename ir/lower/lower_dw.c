@@ -84,8 +84,8 @@ typedef struct conv_tp_entry {
 } conv_tp_entry_t;
 
 enum lower_flags {
-	MUST_BE_LOWERED = 1,  /**< graph must be lowered */
-	CF_CHANGED      = 2,  /**< control flow was changed */
+	MUST_BE_LOWERED = (1 << 0),  /**< graph must be lowered */
+	CF_CHANGED      = (1 << 1),  /**< control flow was changed */
 };
 
 /**
@@ -133,7 +133,7 @@ static ir_type *get_conv_type(ir_mode *imode, ir_mode *omode)
 		return mtd;
 
 	size_t n_param = 1;
-	size_t n_res = 1;
+	size_t n_res   = 1;
 	if (imode == env->high_signed || imode == env->high_unsigned)
 		n_param = 2;
 	if (omode == env->high_signed || omode == env->high_unsigned)
@@ -396,7 +396,7 @@ static void lower_Load(ir_node *node, ir_mode *mode)
  */
 static void lower_Store(ir_node *node, ir_mode *mode)
 {
-	(void) mode;
+	(void)mode;
 	ir_node               *value = get_Store_value(node);
 	const lower64_entry_t *entry = get_node_entry(value);
 
@@ -1036,9 +1036,9 @@ static void lower_Not(ir_node *node, ir_mode *mode)
 	const lower64_entry_t *op_entry = get_node_entry(op);
 	dbg_info              *dbgi     = get_irn_dbg_info(node);
 	ir_node               *block    = get_nodes_block(node);
-	ir_node               *res_low
+	ir_node *res_low
 		= new_rd_Not(dbgi, block, op_entry->low_word, env->low_unsigned);
-	ir_node               *res_high
+	ir_node *res_high
 		= new_rd_Not(dbgi, block, op_entry->high_word, mode);
 	ir_set_dw_lowered(node, res_low, res_high);
 }
@@ -1091,9 +1091,9 @@ static ir_node *get_cfop_destination(const ir_node *cfop)
 
 static void lower_Switch(ir_node *node, ir_mode *high_mode)
 {
+	(void)high_mode;
 	ir_node *selector = get_Switch_selector(node);
 	ir_mode *mode     = get_irn_mode(selector);
-	(void)high_mode;
 	if (mode == env->high_signed || mode == env->high_unsigned) {
 		/* we can't really handle Switch with 64bit offsets */
 		panic("Switch with 64bit jumptable not supported");
@@ -1106,7 +1106,7 @@ static void lower_Switch(ir_node *node, ir_mode *high_mode)
  */
 static void lower_Cond(ir_node *node, ir_mode *high_mode)
 {
-	(void) high_mode;
+	(void)high_mode;
 	ir_node *sel = get_Cond_selector(node);
 	if (!is_Cmp(sel)) {
 		lower_node(sel);
@@ -1409,7 +1409,7 @@ static void lower_Conv_from_Ll(ir_node *node)
  */
 static void lower_Cmp(ir_node *cmp, ir_mode *m)
 {
-	(void) m;
+	(void)m;
 	ir_node  *l        = get_Cmp_left(cmp);
 	ir_mode  *cmp_mode = get_irn_mode(l);
 	if (cmp_mode != env->high_signed && cmp_mode != env->high_unsigned)
@@ -1673,17 +1673,16 @@ static ir_type *lower_mtp(ir_type *mtp)
  */
 static void lower_Return(ir_node *node, ir_mode *mode)
 {
-	size_t     i, j, n;
-	int        need_conv = 0;
-	(void) mode;
+	(void)mode;
 
 	/* check if this return must be lowered */
-	for (i = 0, n = get_Return_n_ress(node); i < n; ++i) {
+	bool need_conv = false;
+	for (int i = 0, n = get_Return_n_ress(node); i < n; ++i) {
 		ir_node *pred  = get_Return_res(node, i);
 		ir_mode *rmode = get_irn_op_mode(pred);
 
 		if (rmode == env->high_signed || rmode == env->high_unsigned)
-			need_conv = 1;
+			need_conv = true;
 	}
 	if (!need_conv)
 		return;
@@ -1694,10 +1693,10 @@ static void lower_Return(ir_node *node, ir_mode *mode)
 
 	/* create a new in array */
 	ir_node **in = ALLOCAN(ir_node*, get_method_n_ress(mtp)+1);
-	j = 0;
+	int j = 0;
 	in[j++] = get_Return_mem(node);
 
-	for (i = 0, n = get_Return_n_ress(node); i < n; ++i) {
+	for (int i = 0, n = get_Return_n_ress(node); i < n; ++i) {
 		ir_node *pred      = get_Return_res(node, i);
 		ir_mode *pred_mode = get_irn_mode(pred);
 
@@ -1714,7 +1713,7 @@ static void lower_Return(ir_node *node, ir_mode *mode)
 			in[j++] = pred;
 		}
 	}
-	assert(j == get_method_n_ress(mtp)+1);
+	assert((size_t)j == get_method_n_ress(mtp)+1);
 
 	set_irn_in(node, j, in);
 }
@@ -1724,7 +1723,7 @@ static void lower_Return(ir_node *node, ir_mode *mode)
  */
 static void lower_Start(ir_node *node, ir_mode *high_mode)
 {
-	(void) high_mode;
+	(void)high_mode;
 	/* if type link is NULL then the type was not lowered, hence no changes
 	 * at Start necessary */
 	ir_graph  *irg      = get_irn_irg(node);
@@ -1807,7 +1806,7 @@ static void lower_Start(ir_node *node, ir_mode *high_mode)
  */
 static void lower_Call(ir_node *node, ir_mode *mode)
 {
-	(void) mode;
+	(void)mode;
 	ir_type *tp         = get_Call_type(node);
 	bool     need_lower = false;
 	size_t   n_params   = get_method_n_params(tp);
@@ -1889,9 +1888,9 @@ static void lower_Call(ir_node *node, ir_mode *mode)
 		if (!is_Proj(proj))
 			continue;
 
-		ir_mode *mode_h;
 		long     proj_nr   = get_Proj_proj(proj);
 		ir_mode *proj_mode = get_irn_mode(proj);
+		ir_mode *mode_h;
 		if (proj_mode == env->high_signed) {
 			mode_h = env->low_signed;
 		} else if (proj_mode == env->high_unsigned) {
@@ -2439,7 +2438,7 @@ static void lower_reduce_builtin(ir_node *builtin, ir_mode *mode)
  */
 static void lower_arithmetic_builtin(ir_node *builtin, ir_mode *mode)
 {
-	(void) mode;
+	(void)mode;
 	ir_builtin_kind  kind         = get_Builtin_kind(builtin);
 	ir_node         *operand      = get_Builtin_param(builtin, 0);
 	ir_mode         *operand_mode = get_irn_mode(operand);
@@ -2497,27 +2496,27 @@ static void lower_Builtin(ir_node *builtin, ir_mode *mode)
 {
 	ir_builtin_kind kind = get_Builtin_kind(builtin);
 	switch (kind) {
-	case ir_bk_trap:
-	case ir_bk_debugbreak:
-	case ir_bk_return_address:
-	case ir_bk_frame_address:
-	case ir_bk_prefetch:
-	case ir_bk_inport:
-	case ir_bk_outport:
-	case ir_bk_inner_trampoline:
-	case ir_bk_saturating_increment:
 	case ir_bk_compare_swap:
+	case ir_bk_debugbreak:
+	case ir_bk_frame_address:
+	case ir_bk_inner_trampoline:
+	case ir_bk_inport:
 	case ir_bk_may_alias:
+	case ir_bk_outport:
+	case ir_bk_prefetch:
+	case ir_bk_return_address:
+	case ir_bk_saturating_increment:
+	case ir_bk_trap:
 		/* Nothing to do/impossible to lower in a generic way */
 		return;
 	case ir_bk_bswap:
 		lower_arithmetic_builtin(builtin, mode);
 		return;
-	case ir_bk_ffs:
 	case ir_bk_clz:
 	case ir_bk_ctz:
-	case ir_bk_popcount:
+	case ir_bk_ffs:
 	case ir_bk_parity:
+	case ir_bk_popcount:
 		lower_reduce_builtin(builtin, mode);
 		return;
 	}
@@ -2532,14 +2531,14 @@ static bool always_lower(unsigned code)
 	switch (code) {
 	case iro_ASM:
 	case iro_Builtin:
-	case iro_Proj:
-	case iro_Start:
 	case iro_Call:
-	case iro_Return:
 	case iro_Cond:
-	case iro_Switch:
 	case iro_Conv:
+	case iro_Proj:
+	case iro_Return:
 	case iro_Sel:
+	case iro_Start:
+	case iro_Switch:
 		return true;
 	default:
 		return false;
@@ -2551,7 +2550,7 @@ static bool always_lower(unsigned code)
  */
 static int cmp_op_mode(const void *elt, const void *key, size_t size)
 {
-	(void) size;
+	(void)size;
 	const op_mode_entry_t *e1 = (const op_mode_entry_t*)elt;
 	const op_mode_entry_t *e2 = (const op_mode_entry_t*)key;
 	return (e1->op != e2->op) | (e1->imode != e2->imode) | (e1->omode != e2->omode);
@@ -2562,7 +2561,7 @@ static int cmp_op_mode(const void *elt, const void *key, size_t size)
  */
 static int cmp_conv_tp(const void *elt, const void *key, size_t size)
 {
-	(void) size;
+	(void)size;
 	const conv_tp_entry_t *e1 = (const conv_tp_entry_t*)elt;
 	const conv_tp_entry_t *e2 = (const conv_tp_entry_t*)key;
 	return (e1->imode != e2->imode) | (e1->omode != e2->omode);
@@ -2699,7 +2698,7 @@ static void lower_node(ir_node *node)
 
 static void clear_node_and_phi_links(ir_node *node, void *data)
 {
-	(void) data;
+	(void)data;
 	if (get_irn_mode(node) == mode_T) {
 		set_irn_link(node, node);
 	} else {
@@ -2829,7 +2828,6 @@ static int lower_mux_cb(ir_node *mux)
 void ir_lower_dw_ops(void)
 {
 	lower_dw_env_t lenv;
-
 	memset(&lenv, 0, sizeof(lenv));
 	lenv.params = param;
 	env = &lenv;
@@ -2922,7 +2920,7 @@ ir_entity *def_create_intrinsic_fkt(ir_type *method, const ir_op *op,
                                     const ir_mode *imode, const ir_mode *omode,
                                     void *context)
 {
-	(void) context;
+	(void)context;
 	char buf[64];
 	if (imode == omode) {
 		snprintf(buf, sizeof(buf), "__l%s%s", get_op_name(op),
