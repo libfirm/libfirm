@@ -6736,7 +6736,7 @@ restart:;
 				ir_tarval *o = b->o;
 
 				/* Replace node with constant value by Const. */
-				if (z == o) {
+				if (z == o && tarval_is_constant(z)) {
 					ir_mode *const m = get_irn_mode(n);
 					if (mode_is_int(m) || m == mode_b) {
 						ir_graph *const irg = get_irn_irg(n);
