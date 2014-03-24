@@ -379,6 +379,13 @@ FIRM_API ir_relation tarval_cmp(const ir_tarval *a, const ir_tarval *b);
  */
 FIRM_API ir_tarval *tarval_convert_to(ir_tarval *src, ir_mode *mode);
 
+/**
+ * Converts a tarval to another mode by reinterpreting the contained
+ * bits. This is only allowed if the source and destination mode have the
+ * same number of bits.
+ */
+FIRM_API ir_tarval *tarval_bitcast(ir_tarval *src, ir_mode *mode);
+
 /*
  * These function implement basic computations representable as opcodes
  * in FIRM nodes.

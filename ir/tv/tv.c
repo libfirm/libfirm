@@ -852,6 +852,32 @@ ir_tarval *tarval_convert_to(ir_tarval *src, ir_mode *dst_mode)
 	return tarval_bad;
 }
 
+ir_tarval *tarval_bitcast(ir_tarval *src, ir_mode *dst_mode)
+{
+	const ir_mode *src_mode = get_tarval_mode(src);
+	if (src_mode == dst_mode)
+		return src;
+	unsigned size = get_mode_size_bits(src_mode);
+	assert(get_mode_size_bits(dst_mode) == size);
+	assert(size % 8 == 0);
+
+	size_t         buf_len = size / 8;
+	unsigned char *buffer  = ALLOCAN(unsigned char, buf_len);
+	switch (get_mode_arithmetic(src_mode)) {
+	case irma_ieee754:
+	case irma_x86_extended_float:
+		fc_val_to_bytes((const fp_value*)src->value, buffer);
+		break;
+	case irma_twos_complement:
+		sc_val_to_bytes((const sc_word*)src->value, buffer, buf_len);
+		break;
+	default:
+		panic("unexpected arithmetic mode in tarval_bitcast");
+	}
+
+	return new_tarval_from_bytes(buffer, dst_mode, false);
+}
+
 ir_tarval *tarval_not(ir_tarval *a)
 {
 	switch (get_mode_sort(a->mode)) {
