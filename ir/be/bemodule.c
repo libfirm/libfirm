@@ -138,12 +138,14 @@ typedef struct module_opt_data_t {
 } module_opt_data_t;
 
 /**
- * Searches in list for module option. If found, set option to given value and return true.
+ * Searches in list for module option. If found, set option to given value and
+ * return true.
  * Beware: return value of 0 means error.
  */
 static bool set_opt_module(const char *name, lc_opt_type_t type, void *data,
                            size_t length, ...)
 {
+	(void)length;
 	module_opt_data_t            *moddata = (module_opt_data_t*)data;
 	bool                         res      = false;
 	va_list                      args;

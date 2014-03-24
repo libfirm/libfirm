@@ -25,6 +25,7 @@ bool lc_opt_enum_ ## N ## _cb(const char *name, lc_opt_type_t type, void *data, 
 	const char *arg; \
 	bool res = false; \
  \
+	(void) len; \
 	(void) name; \
 	(void) type; \
 	va_start(args, len); \
