@@ -396,17 +396,9 @@ static void lower_Load(ir_node *node, ir_mode *mode)
  */
 static void lower_Store(ir_node *node, ir_mode *mode)
 {
+	(void) mode;
 	ir_node               *value = get_Store_value(node);
 	const lower64_entry_t *entry = get_node_entry(value);
-	(void) mode;
-
-	assert(entry);
-
-	if (!entry->low_word) {
-		/* not ready yet, wait */
-		pdeq_putr(env->waitq, node);
-		return;
-	}
 
 	ir_graph *irg      = get_irn_irg(node);
 	ir_node  *adr      = get_Store_ptr(node);
