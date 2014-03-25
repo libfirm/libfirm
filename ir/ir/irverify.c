@@ -795,6 +795,23 @@ static int verify_node_Conv(const ir_node *n)
 	return fine;
 }
 
+static int verify_node_Bitcast(const ir_node *n)
+{
+	bool fine = check_mode_func(n, mode_is_data, "data");
+	ir_node *op       = get_Bitcast_op(n);
+	ir_mode *src_mode = get_irn_mode(op);
+	ir_mode *dst_mode = get_irn_mode(n);
+	/* Note: This constraint is currently strict as you can use Conv
+	 * for the other cases and we want to avoid having 2 nodes representing the
+	 * same operation. We might loosen this constraint in the future. */
+	if (get_mode_size_bits(src_mode) != get_mode_size_bits(dst_mode)
+	    || get_mode_arithmetic(src_mode) == get_mode_arithmetic(dst_mode)) {
+	    warn(n, "bitcast only allowed for modes with same size and different arithmetic");
+	    fine = false;
+	}
+	return fine;
+}
+
 static int mode_is_dataMb(const ir_mode *mode)
 {
 	return mode_is_data(mode) || mode == mode_M || mode == mode_b;
@@ -1253,6 +1270,7 @@ void ir_register_verify_node_ops(void)
 	register_verify_node_func(op_Align,    verify_node_int);
 	register_verify_node_func(op_Alloc,    verify_node_Alloc);
 	register_verify_node_func(op_And,      verify_node_And);
+	register_verify_node_func(op_Bitcast,  verify_node_Bitcast);
 	register_verify_node_func(op_Block,    verify_node_Block);
 	register_verify_node_func(op_Call,     verify_node_Call);
 	register_verify_node_func(op_Cmp,      verify_node_Cmp);

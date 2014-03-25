@@ -392,6 +392,16 @@ class Conv:
 	]
 
 @op
+class Bitcast:
+	"""Converts a value between modes with different arithmetics but same
+	number of bits by reinterpreting the bits in the new mode"""
+	flags = []
+	pinned = "no"
+	ins = [
+		("op", "operand")
+	]
+
+@op
 class CopyB:
 	"""Copies a block of memory with statically known size/type."""
 	ins   = [
