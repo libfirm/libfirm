@@ -2676,6 +2676,14 @@ static ir_node *gen_general_Store(ir_node *node)
 		ir_node *new_val = be_transform_node(val);
 		new_node = gen_fist(dbgi, new_block, addr.base, addr.index, addr.mem,
 		                    new_val);
+	} else if (!ia32_cg_config.use_sse2 && is_Bitcast(val)) {
+		ir_node *op      = get_Bitcast_op(val);
+		ir_mode *op_mode = get_irn_mode(op);
+		assert(mode_is_float(op_mode));
+		ir_node *new_op  = be_transform_node(op);
+		new_node = new_bd_ia32_fst(dbgi, new_block, addr.base, addr.index,
+		                           addr.mem, new_op, op_mode);
+		mode = op_mode;
 	} else {
 		unsigned dest_bits = get_mode_size_bits(mode);
 		while (is_downconv(val)
@@ -3547,58 +3555,38 @@ static ir_node *gen_x87_conv(ir_mode *tgt_mode, ir_node *node)
 	return new_node;
 }
 
-/**
- * Create a conversion from general purpose to x87 register
- */
-static ir_node *gen_x87_gp_to_fp(ir_node *node, ir_mode *src_mode)
+static void store_gp(dbg_info *dbgi, ia32_address_mode_t *am, ir_node *block,
+                     ir_node *value, bool extend_unsigned)
 {
-	ir_node  *src_block = get_nodes_block(node);
-	ir_node  *block     = be_transform_node(src_block);
-	dbg_info *dbgi      = get_irn_dbg_info(node);
-	ir_node  *op        = get_Conv_op(node);
-
-	/* fild can use source AM if the operand is a signed 16bit or 32bit
-	 * integer */
-	if (possible_int_mode_for_fp(src_mode)) {
-		ia32_address_mode_t am;
-
-		match_arguments(&am, src_block, NULL, op, NULL, match_am | match_try_am | match_16bit_am | match_upconv);
-		if (am.op_type == ia32_AddrModeS) {
-			x86_address_t *addr = &am.addr;
-
-			ir_node *fild     = new_bd_ia32_fild(dbgi, block, addr->base,
-			                                     addr->index, addr->mem);
-			ir_node *new_node = new_r_Proj(fild, mode_fp, pn_ia32_fild_res);
-
-			set_am_attributes(fild, &am);
-			SET_IA32_ORIG_NODE(fild, node);
-
-			fix_mem_proj(fild, &am);
-
-			return new_node;
-		}
+	ir_mode *mode = get_irn_mode(value);
+	if (!extend_unsigned) {
+		match_arguments(am, block, NULL, value, NULL, match_am | match_try_am);
+		if (am->op_type == ia32_AddrModeS)
+			return;
+	} else if (possible_int_mode_for_fp(mode)) {
+		match_arguments(am, block, NULL, value, NULL,
+						match_am | match_try_am | match_upconv | match_16bit_am);
+		if (am->op_type == ia32_AddrModeS)
+			return;
 	}
-	ir_node *new_op = be_transform_node(op);
 
-	ir_mode *mode = get_irn_mode(op);
+	ir_node  *new_node = be_transform_node(value);
 
 	/* first convert to 32 bit signed if necessary */
-	if (get_mode_size_bits(src_mode) < 32) {
-		if (!be_upper_bits_clean(op, src_mode)) {
-			new_op = create_Conv_I2I(dbgi, block, noreg_GP, noreg_GP, nomem,
-			                         new_op, src_mode);
-			SET_IA32_ORIG_NODE(new_op, node);
+	if (get_mode_size_bits(mode) < 32) {
+		if (!be_upper_bits_clean(value, mode)) {
+			new_node = create_Conv_I2I(dbgi, block, noreg_GP, noreg_GP, nomem,
+			                           new_node, mode);
 		}
 		mode = mode_Is;
 	}
 
-	assert(get_mode_size_bits(mode) == 32);
-
 	/* do a store */
-	ir_graph *irg   = get_Block_irg(block);
-	ir_node  *frame = get_irg_frame(irg);
-	ir_node  *store = new_bd_ia32_Store(dbgi, block, frame, noreg_GP, nomem,
-	                                   new_op);
+	ir_graph *irg       = get_Block_irg(block);
+	ir_node  *frame     = get_irg_frame(irg);
+	ir_node  *new_block = be_transform_node(block);
+	ir_node  *store     = new_bd_ia32_Store(dbgi, new_block, frame, noreg_GP,
+	                                        nomem, new_node);
 
 	set_irn_pinned(store, op_pin_state_floats);
 	set_ia32_use_frame(store);
@@ -3610,13 +3598,13 @@ static ir_node *gen_x87_gp_to_fp(ir_node *node, ir_mode *src_mode)
 
 	/* exception for 32bit unsigned, do a 64bit spill+load */
 	ir_mode *store_mode;
-	if (!mode_is_signed(mode)) {
+	if (!mode_is_signed(mode) && extend_unsigned) {
 		ir_node *in[2];
 		/* store a zero */
 		ir_node *zero_const = ia32_create_Immediate(irg, NULL, 0);
 
-		ir_node *zero_store = new_bd_ia32_Store(dbgi, block, frame, noreg_GP,
-		                                        nomem, zero_const);
+		ir_node *zero_store = new_bd_ia32_Store(dbgi, new_block, frame,
+		                                        noreg_GP, nomem, zero_const);
 		ir_node *zero_store_mem = new_r_Proj(zero_store, mode_M, pn_ia32_Store_M);
 
 		set_irn_pinned(zero_store, op_pin_state_floats);
@@ -3629,20 +3617,45 @@ static ir_node *gen_x87_gp_to_fp(ir_node *node, ir_mode *src_mode)
 		in[0] = zero_store_mem;
 		in[1] = store_mem;
 
-		store_mem  = new_rd_Sync(dbgi, block, 2, in);
+		store_mem  = new_rd_Sync(dbgi, new_block, 2, in);
 		store_mode = mode_Ls;
 	} else {
 		store_mode = ia32_mode_gp;
 	}
 
-	/* do a fild */
-	ir_node *fild = new_bd_ia32_fild(dbgi, block, frame, noreg_GP, store_mem);
-	set_irn_pinned(fild, op_pin_state_floats);
-	set_ia32_use_frame(fild);
-	set_ia32_op_type(fild, ia32_AddrModeS);
-	set_ia32_ls_mode(fild, store_mode);
+	memset(am, 0, sizeof(*am));
+	x86_address_t *addr = &am->addr;
+	addr->base      = frame;
+	addr->index     = noreg_GP;
+	addr->mem       = store_mem;
+	addr->use_frame = true;
+	am->op_type     = ia32_AddrModeS;
+	am->ls_mode     = store_mode;
+	am->pinned      = op_pin_state_floats;
+}
 
+/**
+ * Create a conversion from general purpose to x87 register
+ */
+static ir_node *gen_x87_gp_to_fp(ir_node *node)
+{
+	ir_node  *block     = get_nodes_block(node);
+	ir_node  *new_block = be_transform_node(block);
+	ir_node  *op        = get_Conv_op(node);
+	dbg_info *dbgi      = get_irn_dbg_info(node);
+
+	ia32_address_mode_t am;
+	store_gp(dbgi, &am, block, op, true);
+
+	const x86_address_t *addr = &am.addr;
+	ir_node *fild     = new_bd_ia32_fild(dbgi, new_block, addr->base,
+	                                     addr->index, addr->mem);
 	ir_node *new_node = new_r_Proj(fild, mode_fp, pn_ia32_fild_res);
+
+	set_am_attributes(fild, &am);
+	SET_IA32_ORIG_NODE(fild, node);
+
+	fix_mem_proj(fild, &am);
 	return new_node;
 }
 
@@ -3762,7 +3775,7 @@ static ir_node *gen_Conv(ir_node *node)
 			} else {
 				unsigned int_mantissa   = get_mode_size_bits(src_mode) - (mode_is_signed(src_mode) ? 1 : 0);
 				unsigned float_mantissa = get_mode_mantissa_size(tgt_mode);
-				ir_node *res = gen_x87_gp_to_fp(node, src_mode);
+				ir_node *res = gen_x87_gp_to_fp(node);
 
 				/* we need a float-conv, if the int mode has more bits than the
 				 * float mantissa */
@@ -3790,6 +3803,95 @@ static ir_node *gen_Conv(ir_node *node)
 		}
 	}
 
+	return res;
+}
+
+static void store_fp(dbg_info *dbgi, ia32_address_mode_t *am, ir_node *block,
+                     ir_node *value)
+{
+	match_arguments(am, block, NULL, value, NULL, match_am | match_try_am);
+	if (am->op_type == ia32_AddrModeS)
+		return;
+	/* TODO: match_am if value is a freshly loaded float value */
+	ir_node  *new_block = be_transform_node(block);
+	ir_node  *new_value = be_transform_node(value);
+	ir_graph *irg       = get_Block_irg(block);
+	ir_node  *frame     = get_irg_frame(irg);
+	ir_mode  *mode      = get_irn_mode(value);
+
+	ir_node *fst = new_bd_ia32_fst(dbgi, new_block, frame, noreg_GP, nomem,
+	                               new_value, mode);
+	set_irn_pinned(fst, op_pin_state_floats);
+	set_ia32_use_frame(fst);
+	set_ia32_op_type(fst, ia32_AddrModeD);
+	arch_add_irn_flags(fst, arch_irn_flag_spill);
+	ir_node *mem = new_r_Proj(fst, mode_M, pn_ia32_fst_M);
+
+	memset(am, 0, sizeof(*am));
+	x86_address_t *addr = &am->addr;
+	addr->base      = frame;
+	addr->index     = noreg_GP;
+	addr->mem       = mem;
+	addr->use_frame = true;
+	am->op_type     = ia32_AddrModeS;
+	am->ls_mode     = mode;
+	am->pinned      = op_pin_state_floats;
+}
+
+static ir_node *gen_Bitcast(ir_node *const node)
+{
+	ir_mode *dst_mode = get_irn_mode(node);
+	ir_node *op       = get_Bitcast_op(node);
+	ir_mode *src_mode = get_irn_mode(op);
+	/* TODO: SSE2 variant (a nop?) */
+
+	/* bitcast means float->int or int->float switch which only works with
+	 * load/store on ia32 */
+	dbg_info *dbgi  = get_irn_dbg_info(node);
+	ir_node  *block = get_nodes_block(node);
+	ia32_address_mode_t am;
+	switch (get_mode_arithmetic(src_mode)) {
+	case irma_twos_complement:
+		store_gp(dbgi, &am, block, op, false);
+		break;
+	case irma_ieee754:
+	case irma_x86_extended_float:
+		store_fp(dbgi, &am, block, op);
+		break;
+	default:
+		panic("ia32: unexpected src mode in Bitcast");
+	}
+
+	ir_node *new_block = be_transform_node(block);
+	ir_node *res;
+	switch (get_mode_arithmetic(dst_mode)) {
+	case irma_ieee754:
+	case irma_x86_extended_float: {
+		const x86_address_t *addr = &am.addr;
+		ir_node *fld      = new_bd_ia32_fld(dbgi, new_block, addr->base,
+		                                    addr->index, addr->mem, dst_mode);
+		res = new_r_Proj(fld, mode_fp, pn_ia32_fld_res);
+
+		am.ls_mode = dst_mode;
+		set_am_attributes(fld, &am);
+		SET_IA32_ORIG_NODE(fld, node);
+		fix_mem_proj(fld, &am);
+		break;
+	}
+	case irma_twos_complement: {
+		const x86_address_t *addr = &am.addr;
+		ir_node *ld = new_bd_ia32_Load(dbgi, new_block, addr->base, addr->index,
+		                               addr->mem);
+		res = new_r_Proj(ld, ia32_mode_gp, pn_ia32_Load_res);
+		am.ls_mode = dst_mode;
+		set_am_attributes(ld, &am);
+		SET_IA32_ORIG_NODE(ld, node);
+		fix_mem_proj(ld, &am);
+		break;
+	}
+	default:
+		panic("ia32: unexpected dst mode in Bitcast");
+	}
 	return res;
 }
 
@@ -5342,6 +5444,7 @@ static void register_transformers(void)
 	be_set_transform_function(op_be_IncSP,         gen_be_IncSP);
 	be_set_transform_function(op_be_Return,        gen_be_Return);
 	be_set_transform_function(op_be_SubSP,         gen_be_SubSP);
+	be_set_transform_function(op_Bitcast,          gen_Bitcast);
 	be_set_transform_function(op_Builtin,          gen_Builtin);
 	be_set_transform_function(op_Cmp,              gen_Cmp);
 	be_set_transform_function(op_Cond,             gen_Cond);
