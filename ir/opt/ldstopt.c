@@ -488,7 +488,7 @@ static ir_node *transform_previous_value(ir_mode *const load_mode,
 
 	/* two complement values can be transformed with bitops */
 	if (get_mode_arithmetic(prev_mode) == irma_twos_complement &&
-		get_mode_arithmetic(prev_mode) == irma_twos_complement) {
+		get_mode_arithmetic(load_mode) == irma_twos_complement) {
 		/* produce a shift to adjust offset delta */
 		unsigned const shift = be_get_backend_param()->byte_order_big_endian
 			? prev_mode_len - load_mode_len - delta
