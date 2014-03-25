@@ -731,15 +731,6 @@ static changes_t follow_Mem_chain(ir_node *load, ir_node *curr)
 			if (new_ptr) {
 				res |= NODES_CREATED;
 				ptr = new_ptr;
-				/*
-				 * Special case: If new_ptr points to
-				 * a constant, we *can* replace the
-				 * Load immediately.
-				 */
-				if (find_constant_entity(new_ptr)) {
-					set_Load_ptr(load, new_ptr);
-					return res | DF_CHANGED;
-				}
 			} else {
 				ir_alias_relation rel = get_alias_relation(
 					get_CopyB_dst(pred),
