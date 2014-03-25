@@ -238,7 +238,9 @@ static ir_entity *find_constant_entity(ir_node *ptr)
 {
 	for (;;) {
 		if (is_Address(ptr)) {
-			return get_Address_entity(ptr);
+			ir_entity *ent = get_Address_entity(ptr);
+			if (get_entity_linkage(ent) & IR_LINKAGE_CONSTANT)
+				return ent;
 		} else if (is_Sel(ptr)) {
 			ir_entity *ent = get_Sel_entity(ptr);
 			ir_type   *tp  = get_entity_owner(ent);
