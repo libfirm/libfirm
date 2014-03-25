@@ -6681,11 +6681,20 @@ static ir_node *transform_node_Load(ir_node *n)
 		 * with fixup code in some situations (like smaller/bigger modes) */
 		if (get_Load_ptr(pred_load) != ptr)
 			return n;
-		if (get_Load_mode(pred_load) != mode)
+		ir_mode *const pred_mode = get_Load_mode(pred_load);
+		if (get_mode_size_bits(pred_mode) != get_mode_size_bits(mode))
 			return n;
+		ir_node *      res   = new_r_Proj(pred_load, pred_mode, pn_Load_res);
+		ir_node *const block = get_nodes_block(n);
+		if (pred_mode != mode) {
+			if (get_mode_arithmetic(pred_mode) == get_mode_arithmetic(mode)) {
+				res = new_r_Conv(block, res, mode);
+			} else {
+				res = new_r_Bitcast(block, res, mode);
+			}
+		}
 		/* all combinations of aligned/unaligned pred/n should be fine so we do
 		 * not compare the unaligned attribute */
-		ir_node *res = new_r_Proj(pred_load, mode, pn_Load_res);
 		return create_load_replacement_tuple(n, mem, res);
 	} else if (is_Store(mem_pred)) {
 		ir_node *pred_store = mem_pred;
@@ -6693,8 +6702,20 @@ static ir_node *transform_node_Load(ir_node *n)
 
 		if (get_Store_ptr(pred_store) != ptr)
 			return n;
-		if (get_irn_mode(value) != mode)
-			return n;
+		ir_mode *const value_mode = get_irn_mode(value);
+		if (value_mode != mode) {
+			/* we don't handle different sizes currently.
+			 * TODO: we could handle the case where the store is bigger
+			 * than the load.*/
+			if (get_mode_size_bits(value_mode) != get_mode_size_bits(mode))
+				return n;
+			ir_node *const block = get_nodes_block(n);
+			if (get_mode_arithmetic(value_mode) == get_mode_arithmetic(mode)) {
+				value = new_r_Conv(block, value, mode);
+			} else {
+				value = new_r_Bitcast(block, value, mode);
+			}
+		}
 		/* all combinations of aligned/unaligned pred/n should be fine so we do
 		 * not compare the unaligned attribute */
 		return create_load_replacement_tuple(n, mem, value);
