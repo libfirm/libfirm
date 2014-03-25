@@ -178,7 +178,7 @@ FIRM_API void edges_reroute(ir_node *old, ir_node *nw);
 
 /**
  * reroutes (normal) edges from an old node to a new node, except for the
- * @p exception which keeps its input even if it is old.
+ * @p exception node which keeps its input even if it is @p old.
  */
 FIRM_API void edges_reroute_except(ir_node *old, ir_node *nw,
                                    ir_node *exception);
