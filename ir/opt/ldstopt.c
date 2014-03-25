@@ -406,8 +406,10 @@ static ir_node *transform_previous_value(ir_mode *const load_mode,
 		return prev_value;
 
 	/* two complement values can be transformed with bitops */
-	if (get_mode_arithmetic(prev_mode) == irma_twos_complement &&
-		get_mode_arithmetic(load_mode) == irma_twos_complement) {
+	ir_mode_arithmetic prev_arithmetic = get_mode_arithmetic(prev_mode);
+	ir_mode_arithmetic load_arithmetic = get_mode_arithmetic(load_mode);
+	if (prev_arithmetic == irma_twos_complement &&
+		load_arithmetic == irma_twos_complement) {
 		/* produce a shift to adjust offset delta */
 		unsigned const shift = be_get_backend_param()->byte_order_big_endian
 			? prev_mode_len - load_mode_len - delta
@@ -420,6 +422,9 @@ static ir_node *transform_previous_value(ir_mode *const load_mode,
 		}
 
 		return new_r_Conv(block, new_value, load_mode);
+	} else if(prev_arithmetic != load_arithmetic
+	          && load_mode_len == prev_mode_len) {
+		return new_r_Bitcast(block, prev_value, load_mode);
 	}
 
 	/* we would need some kind of bitcast to handle non two complement values */
