@@ -66,6 +66,18 @@ typedef struct ldst_info_t {
 	unsigned visited;            /**< visited counter for breaking loops */
 } ldst_info_t;
 
+typedef struct base_offset_t {
+	ir_node *base;
+	long     offset;
+} base_offset_t;
+
+typedef struct track_load_env_t {
+	ir_node      *load;
+	base_offset_t base_offset;
+	ir_node      *ptr; /* deprecated: alternative representation of
+	                      base_offset */
+} track_load_env_t;
+
 /**
  * flags for control flow.
  */
@@ -374,31 +386,6 @@ static void kill_and_reduce_usage(ir_node *node)
 }
 
 /**
- * Check, if an already existing value of mode old_mode can be converted
- * into the needed one new_mode without loss.
- */
-static bool can_use_stored_value(ir_mode *old_mode, ir_mode *new_mode)
-{
-	if (old_mode == new_mode)
-		return true;
-
-	unsigned old_size = get_mode_size_bits(old_mode);
-	unsigned new_size = get_mode_size_bits(new_mode);
-
-	/* if both modes are two-complement ones, we can always convert the
-	   Stored value into the needed one. (on big endian machines we currently
-	   only support this for modes of same size) */
-	if (old_size >= new_size &&
-		  get_mode_arithmetic(old_mode) == irma_twos_complement &&
-		  get_mode_arithmetic(new_mode) == irma_twos_complement &&
-		  (!be_get_backend_param()->byte_order_big_endian
-	        || old_size == new_size)) {
-		return true;
-	}
-	return false;
-}
-
-/**
  * Check whether a Call is at least pure, i.e. does only read memory.
  */
 static bool is_Call_pure(ir_node *call)
@@ -417,12 +404,12 @@ static bool is_Call_pure(ir_node *call)
 	return prop & (mtp_property_const|mtp_property_pure);
 }
 
-static ir_node *get_base_and_offset(ir_node *ptr, long *pOffset)
+static void get_base_and_offset(ir_node *ptr, base_offset_t *base_offset)
 {
-	ir_mode *mode  = get_irn_mode(ptr);
-	long    offset = 0;
-
-	/* TODO: long might not be enough, we should probably use some tarval thingy... */
+	/* TODO: long might not be enough, we should probably use some tarval
+	 * thingy, or at least detect long overflows and abort */
+	long     offset = 0;
+	ir_mode *mode   = get_irn_mode(ptr);
 	for (;;) {
 		if (is_Add(ptr)) {
 			ir_node *l = get_Add_left(ptr);
@@ -468,129 +455,197 @@ static ir_node *get_base_and_offset(ir_node *ptr, long *pOffset)
 			break;
 	}
 
-	*pOffset = offset;
-	return ptr;
+	base_offset->offset = offset;
+	base_offset->base   = ptr;
 }
 
-static changes_t try_load_after_store(ir_node *load, ir_node *load_base_ptr,
-                                      long load_offset, ir_node *store)
+/**
+ * This is called for load-after-load and load-after-store.
+ * If possible the value of the previous load/store is transformed in a way
+ * so the 2nd load can be left out/replaced by arithmetic on the previous
+ * value.
+ */
+static ir_node *transform_previous_value(ir_mode *const load_mode,
+	const base_offset_t *const load_bo, ir_mode *const prev_mode,
+	const base_offset_t *const prev_bo, ir_node *const prev_value,
+	ir_node *const block)
 {
-	ir_node *store_ptr      = get_Store_ptr(store);
-	long     store_offset;
-	ir_node *store_base_ptr = get_base_and_offset(store_ptr, &store_offset);
+	if (load_bo->base != prev_bo->base)
+		return NULL;
 
-	if (load_base_ptr != store_base_ptr)
-		return NO_CHANGES;
+	/* ensure the load value is completely contained in the previous one */
+	long delta = load_bo->offset - prev_bo->offset;
+	if (delta < 0)
+		return NULL;
+	long load_mode_len = get_mode_size_bytes(load_mode);
+	long prev_mode_len = get_mode_size_bytes(prev_mode);
+	if (delta+load_mode_len > prev_mode_len)
+		return NULL;
 
-	ir_mode *load_mode      = get_Load_mode(load);
-	long     load_mode_len  = get_mode_size_bytes(load_mode);
-	ir_mode *store_mode     = get_irn_mode(get_Store_value(store));
-	long     store_mode_len = get_mode_size_bytes(store_mode);
-	long     delta          = load_offset - store_offset;
-	ir_node *store_value    = get_Store_value(store);
+	/* simple case: previous value has the same mode */
+	if (load_mode == prev_mode)
+		return prev_value;
 
-	/* Ensure that Load is completely contained in Store. */
-	if (delta < 0 || delta+load_mode_len > store_mode_len)
-		return NO_CHANGES;
-
-	if (store_mode != load_mode) {
-		if (get_mode_arithmetic(store_mode) == irma_twos_complement &&
-		    get_mode_arithmetic(load_mode)  == irma_twos_complement) {
-
-			/* produce a shift to adjust offset delta */
-			unsigned const shift = be_get_backend_param()->byte_order_big_endian
-				? store_mode_len - load_mode_len - delta
-				: delta;
-			if (shift != 0) {
-				ir_graph *const irg  = get_irn_irg(load);
-				ir_node  *const cnst = new_r_Const_long(irg, mode_Iu, shift * 8);
-				store_value = new_r_Shr(get_nodes_block(load),
-				                        store_value, cnst, store_mode);
-			}
-
-			store_value = new_r_Conv(get_nodes_block(load), store_value, load_mode);
-		} else {
-			/* we would need some kind of bitcast node here */
-			return NO_CHANGES;
+	/* two complement values can be transformed with bitops */
+	if (get_mode_arithmetic(prev_mode) == irma_twos_complement &&
+		get_mode_arithmetic(prev_mode) == irma_twos_complement) {
+		/* produce a shift to adjust offset delta */
+		unsigned const shift = be_get_backend_param()->byte_order_big_endian
+			? prev_mode_len - load_mode_len - delta
+			: delta;
+		ir_node *new_value = prev_value;
+		if (shift != 0) {
+			ir_graph *const irg   = get_Block_irg(block);
+			ir_node  *const cnst  = new_r_Const_long(irg, mode_Iu, shift * 8);
+			new_value = new_r_Shr(block, new_value, cnst, prev_mode);
 		}
+
+		return new_r_Conv(block, new_value, load_mode);
 	}
 
-	DBG_OPT_RAW(load, store_value);
+	/* we would need some kind of bitcast to handle non two complement values */
+	return NULL;
+}
 
+static changes_t replace_load(ir_node *load, ir_node *new_value)
+{
 	ldst_info_t *info = (ldst_info_t*)get_irn_link(load);
 	if (info->projs[pn_Load_M])
 		exchange(info->projs[pn_Load_M], get_Load_mem(load));
 
 	changes_t res = NO_CHANGES;
 	/* no exception */
-	if (info->projs[pn_Load_X_except]) {
+	if (info->projs[pn_Load_X_except] != NULL) {
 		ir_graph *irg = get_irn_irg(load);
 		ir_node  *bad = new_r_Bad(irg, mode_X);
 		exchange(info->projs[pn_Load_X_except], bad);
 		res |= CF_CHANGED;
-	}
-	if (info->projs[pn_Load_X_regular]) {
+
+		assert(info->projs[pn_Load_X_regular] != NULL);
 		ir_node *jmp = new_r_Jmp(get_nodes_block(load));
 		exchange(info->projs[pn_Load_X_regular], jmp);
-		res |= CF_CHANGED;
 	}
 
-	if (info->projs[pn_Load_res])
-		exchange(info->projs[pn_Load_res], store_value);
+	/* loads without user should already be optimized away */
+	assert(info->projs[pn_Load_res] != NULL);
+	exchange(info->projs[pn_Load_res], new_value);
 
 	kill_and_reduce_usage(load);
 	return res | DF_CHANGED;
 }
 
-static ir_node *try_update_ptr_CopyB(ir_node *load, ir_node *load_base_ptr,
-                                     long load_offset, ir_node *copyB)
+/**
+ * returns false if op cannot be reached through the X_regular proj of
+ * @p prev_op or if there are no exceptions possible.
+ */
+static bool on_regular_path(ir_node *op, ir_node *prev_op)
 {
-	ir_node *copyB_dst = get_CopyB_dst(copyB);
-	long     dst_offset;
-	ir_node *dst_base_ptr = get_base_and_offset(copyB_dst, &dst_offset);
+	/* TODO: create a real test, for now we just make sure the previous node
+	 * does not throw an exception. */
+	(void)op;
+	return !is_fragile_op(prev_op) || !ir_throws_exception(prev_op);
+}
 
-	if (load_base_ptr != dst_base_ptr) {
-		return NULL;
-	}
+static changes_t try_load_after_store(track_load_env_t *env, ir_node *store)
+{
+	ir_node *const load = env->load;
+	if (!on_regular_path(load, store))
+		return NO_CHANGES;
 
-	/*
-	 * There are quite a few offsets here, please do not get
-	 * confused: The CopyB node copies n_copy bytes from
-	 * (src_base_ptr + src_offset) to (dst_base_ptr + dst_offset)
-	 * (calculated in bytes; no pointer arithmetic). The Load
-	 * loads from (dst_base_ptr + load_offset). This is translated
-	 * into load_src_offset, which points to the same data in the
-	 * CopyB's source array, if it is within its bounds.
-	 */
-	ir_type *copyB_type      = get_CopyB_type(copyB);
-	long     n_copy          = get_type_size_bytes(copyB_type);
+	ir_node      *store_ptr = get_Store_ptr(store);
+	base_offset_t base_offset;
+	get_base_and_offset(store_ptr, &base_offset);
 
-	ir_node *copyB_src       = get_CopyB_src(copyB);
-	long     src_offset;
-	ir_node *src_base_ptr    = get_base_and_offset(copyB_src, &src_offset);
+	ir_mode *const load_mode   = get_Load_mode(load);
+	ir_mode *const store_mode  = get_irn_mode(get_Store_value(store));
+	ir_node *const store_value = get_Store_value(store);
+	ir_node *const block       = get_nodes_block(load);
 
-	long     load_src_offset = src_offset - dst_offset + load_offset;
+	/* load value completely contained in previsou store? */
+	ir_node *const new_value
+		= transform_previous_value(load_mode, &env->base_offset, store_mode,
+		                           &base_offset, store_value, block);
+	if (new_value == NULL)
+		return NO_CHANGES;
 
-	ir_mode *load_mode       = get_Load_mode(load);
-	long     load_size       = get_mode_size_bytes(load_mode);
+	DBG_OPT_RAW(load, new_value);
+	return replace_load(load, new_value);
+}
 
-	if (load_src_offset + load_size > n_copy || load_src_offset < src_offset) {
-		return NULL;
-	}
+static changes_t try_load_after_load(track_load_env_t *env, ir_node *prev_load)
+{
+	ir_node *const load = env->load;
+	if (!on_regular_path(load, prev_load))
+		return NO_CHANGES;
+
+	ldst_info_t *info = (ldst_info_t*)get_irn_link(prev_load);
+	ir_node *const prev_value = info->projs[pn_Load_res];
+	/* the other load is unused and will get removed later anyway */
+	if (prev_value == NULL)
+		return NO_CHANGES;
+
+	ir_node *const prev_ptr = get_Load_ptr(prev_load);
+	base_offset_t base_offset;
+	get_base_and_offset(prev_ptr, &base_offset);
+	ir_mode *const load_mode = get_Load_mode(load);
+	ir_mode *const prev_mode = get_Load_mode(prev_load);
+	ir_node *const block     = get_nodes_block(load);
+
+	/* load value completely contained in previous load? */
+	ir_node *const new_value
+		= transform_previous_value(load_mode, &env->base_offset, prev_mode,
+		                           &base_offset, prev_value, block);
+	if (new_value == NULL)
+		return NO_CHANGES;
+
+	DBG_OPT_RAR(prev_load, load);
+	return replace_load(load, new_value);
+}
+
+static bool try_update_ptr_CopyB(track_load_env_t *env, ir_node *copyb)
+{
+	ir_node *copyb_dst = get_CopyB_dst(copyb);
+	base_offset_t dst_base_offset;
+	get_base_and_offset(copyb_dst, &dst_base_offset);
+	if (dst_base_offset.base != env->base_offset.base)
+		return false;
+
+	/* see if bytes loaded are fully contained in the CopyB */
+	if (env->base_offset.offset < dst_base_offset.offset)
+		return false;
+
+	ir_type *copyb_type = get_CopyB_type(copyb);
+	long     n_copy     = get_type_size_bytes(copyb_type);
+	ir_node *copyb_src  = get_CopyB_src(copyb);
+	base_offset_t src_base_offset;
+	get_base_and_offset(copyb_src, &src_base_offset);
+
+	long     delta     = env->base_offset.offset - dst_base_offset.offset;
+	ir_node *load      = env->load;
+	ir_mode *load_mode = get_Load_mode(load);
+	long     load_size = get_mode_size_bytes(load_mode);
+	if (delta + load_size > n_copy)
+		return false;
+
+	/* track src input */
+	env->base_offset.base   = src_base_offset.base;
+	env->base_offset.offset = src_base_offset.offset + delta;
 
 	/*
 	 * Everything is OK, we can replace
 	 *   ptr = (load_base_ptr + load_offset)
 	 * with
-	 *   new_load_ptr = (src_base_ptr + load_src_offset)
+	 *   new_load_ptr = (src_base_ptr + delta)
 	 */
 	ir_graph *irg          = get_irn_irg(load);
 	ir_node  *block        = get_nodes_block(load);
-	ir_mode  *mode_ref     = get_irn_mode(src_base_ptr);
+	ir_mode  *mode_ref     = get_irn_mode(src_base_offset.base);
 	ir_mode  *mode_ref_int = get_reference_mode_unsigned_eq(mode_ref);
-	ir_node  *cnst         = new_r_Const_long(irg, mode_ref_int, load_src_offset);
-	ir_node  *new_load_ptr = new_r_Add(block, src_base_ptr, cnst, mode_ref);
-	return new_load_ptr;
+	ir_node  *cnst         = new_r_Const_long(irg, mode_ref_int,
+	                                          src_base_offset.offset + delta);
+	ir_node  *new_load_ptr = new_r_Add(block, src_base_offset.base, cnst, mode_P);
+	env->ptr = new_load_ptr;
+	return true;
 }
 
 /**
@@ -603,119 +658,49 @@ static ir_node *try_update_ptr_CopyB(ir_node *load, ir_node *load_base_ptr,
  *
  * INC_MASTER() must be called before dive into
  */
-static changes_t follow_Mem_chain(ir_node *load, ir_node *curr)
+static changes_t follow_load_mem_chain(track_load_env_t *env, ir_node *start)
 {
-	changes_t    res  = NO_CHANGES;
-	ldst_info_t *info = (ldst_info_t*)get_irn_link(load);
-	ir_node     *ptr       = get_Load_ptr(load);
-	ir_node     *mem       = get_Load_mem(load);
-	ir_mode     *load_mode = get_Load_mode(load);
+	ir_node *load      = env->load;
+	ir_mode *load_mode = get_Load_mode(load);
 
-	ir_node *pred = curr;
-	while (load != pred) {
-		ldst_info_t *pred_info = (ldst_info_t*)get_irn_link(pred);
+	ir_node  *node = start;
+	changes_t res  = NO_CHANGES;
+	for (;;) {
+		ldst_info_t *node_info = (ldst_info_t*)get_irn_link(node);
 
-		/*
-		 * a Load immediately after a Store -- a read after write.
-		 * We may remove the Load, if both Load & Store does not have an
-		 * exception handler OR they are in the same Block. In the latter
-		 * case the Load cannot throw an exception when the previous Store was
-		 * quiet.
-		 *
-		 * Why we need to check for Store Exception? If the Store cannot
-		 * be executed (ROM) the exception handler might simply jump into
-		 * the load Block :-(
-		 * We could make it a little bit better if we would know that the
-		 * exception handler of the Store jumps directly to the end...
-		 */
-		if (is_Store(pred) && ((pred_info->projs[pn_Store_X_except] == NULL
-				&& info->projs[pn_Load_X_except] == NULL)
-				|| get_nodes_block(load) == get_nodes_block(pred)))
-		{
-			long      load_offset;
-			ir_node  *base_ptr = get_base_and_offset(ptr, &load_offset);
-			changes_t changes  = try_load_after_store(load, base_ptr, load_offset, pred);
-
+		if (is_Store(node)) {
+			/* first try load-after-store */
+			changes_t changes = try_load_after_store(env, node);
 			if (changes != NO_CHANGES)
-				return res | changes;
-		} else if (is_Load(pred) && get_Load_ptr(pred) == ptr &&
-		           can_use_stored_value(get_Load_mode(pred), load_mode)) {
-			/*
-			 * a Load after a Load -- a read after read.
-			 * We may remove the second Load, if it does not have an exception
-			 * handler OR they are in the same Block. In the later case
-			 * the Load cannot throw an exception when the previous Load was
-			 * quiet.
-			 *
-			 * Here, there is no need to check if the previous Load has an
-			 * exception hander because they would have exact the same
-			 * exception...
-			 *
-			 * TODO: implement load-after-load with different mode for big
-			 *       endian
-			 */
-			if (info->projs[pn_Load_X_except] == NULL
-					|| get_nodes_block(load) == get_nodes_block(pred)) {
-				DBG_OPT_RAR(load, pred);
+				return changes | res;
 
-				/* the result is used */
-				if (info->projs[pn_Load_res]) {
-					if (pred_info->projs[pn_Load_res] == NULL) {
-						/* create a new Proj again */
-						pred_info->projs[pn_Load_res] = new_r_Proj(pred, get_Load_mode(pred), pn_Load_res);
-					}
-					ir_node *value = pred_info->projs[pn_Load_res];
-
-					/* add an convert if needed */
-					if (get_Load_mode(pred) != load_mode) {
-						value = new_r_Conv(get_nodes_block(load), value, load_mode);
-					}
-
-					exchange(info->projs[pn_Load_res], value);
-				}
-
-				if (info->projs[pn_Load_M])
-					exchange(info->projs[pn_Load_M], mem);
-
-				/* no exception */
-				if (info->projs[pn_Load_X_except]) {
-					ir_graph *irg = get_irn_irg(load);
-					exchange(info->projs[pn_Load_X_except], new_r_Bad(irg, mode_X));
-					res |= CF_CHANGED;
-				}
-				if (info->projs[pn_Load_X_regular]) {
-					exchange( info->projs[pn_Load_X_regular], new_r_Jmp(get_nodes_block(load)));
-					res |= CF_CHANGED;
-				}
-
-				kill_and_reduce_usage(load);
-				return res |= DF_CHANGED;
-			}
-		}
-
-		if (is_Store(pred)) {
 			/* check if we can pass through this store */
-			ir_alias_relation rel = get_alias_relation(
-				get_Store_ptr(pred),
-				get_type_for_mode(get_irn_mode(get_Store_value(pred))),
-				ptr,
-				get_type_for_mode(load_mode));
+			const ir_node *ptr       = get_Store_ptr(node);
+			const ir_node *value     = get_Store_value(node);
+			const ir_mode *mode      = get_irn_mode(value);
+			const ir_type *type      = get_type_for_mode(mode);
+			const ir_type *load_type = get_type_for_mode(load_mode);
+			ir_alias_relation rel = get_alias_relation(ptr, type, env->ptr,
+			                                           load_type);
 			/* if the might be an alias, we cannot pass this Store */
 			if (rel != ir_no_alias)
 				break;
-			pred = skip_Proj(get_Store_mem(pred));
-		} else if (is_Load(pred)) {
-			pred = skip_Proj(get_Load_mem(pred));
-		} else if (is_Call(pred)) {
-			if (is_Call_pure(pred)) {
-				/* The called graph is at least pure, so there are no Store's
-				   in it. We can handle it like a Load and skip it. */
-				pred = skip_Proj(get_Call_mem(pred));
-			} else {
-				/* there might be Store's in the graph, stop here */
+			node = skip_Proj(get_Store_mem(node));
+		} else if (is_Load(node)) {
+			/* try load-after-load */
+			changes_t changes = try_load_after_load(env, node);
+			if (changes != NO_CHANGES)
+				return changes | res;
+			/* we can skip any load */
+			node = skip_Proj(get_Load_mem(node));
+		} else if (is_Call(node)) {
+			/* there might be Store's in non-pure graph, stop here */
+			if (!is_Call_pure(node))
 				break;
-			}
-		} else if (is_CopyB(pred)) {
+			/* The called graph is at least pure, so there are no Store's
+			   in it. We can handle it like a Load and skip it. */
+			node = skip_Proj(get_Call_mem(node));
+		} else if (is_CopyB(node)) {
 			/*
 			 * We cannot replace the Load with another
 			 * Load from the CopyB's source directly,
@@ -724,44 +709,49 @@ static changes_t follow_Mem_chain(ir_node *load, ir_node *curr)
 			 * use the source address from this point
 			 * onwards for further optimizations.
 			 */
-			long     load_offset;
-			ir_node *base_ptr = get_base_and_offset(ptr, &load_offset);
-			ir_node *new_ptr  = try_update_ptr_CopyB(load, base_ptr, load_offset, pred);
-
-			if (new_ptr) {
+			bool updated = try_update_ptr_CopyB(env, node);
+			if (updated) {
+				/* Special case: If new_ptr points to
+				 * a constant, we *can* replace the
+				 * Load immediately.
+				 */
 				res |= NODES_CREATED;
-				ptr = new_ptr;
-			} else {
-				ir_alias_relation rel = get_alias_relation(
-					get_CopyB_dst(pred),
-					get_CopyB_type(pred),
-					ptr,
-					get_type_for_mode(load_mode));
-				if (rel != ir_no_alias)
-					break;
+				ir_node *new_value = predict_load(env->ptr, load_mode);
+				if (new_value != NULL)
+					return replace_load(load, new_value) | res;
 			}
 
-			pred = skip_Proj(get_CopyB_mem(pred));
+			/* check aliasing with the CopyB */
+			ir_node *dst       = get_CopyB_dst(node);
+			ir_type *type      = get_CopyB_type(node);
+			ir_type *load_type = get_type_for_mode(load_mode);
+			ir_alias_relation rel = get_alias_relation(dst, type, env->ptr,
+			                                           load_type);
+			/* possible alias => we cannot continue */
+			if (rel != ir_no_alias)
+				break;
+			node = skip_Proj(get_CopyB_mem(node));
 		} else {
-			/* follow only Load chains */
+			/* be conservative about any other node and assume aliasing
+			 * that changes the loaded value */
 			break;
 		}
 
 		/* check for cycles */
-		if (NODE_VISITED(pred_info))
+		if (NODE_VISITED(node_info))
 			break;
-		MARK_NODE(pred_info);
+		MARK_NODE(node_info);
 	}
 
-	if (is_Sync(pred)) {
+	if (is_Sync(node)) {
 		/* handle all Sync predecessors */
-		for (int i = get_Sync_n_preds(pred); i-- > 0; ) {
-			res |=  follow_Mem_chain(load, skip_Proj(get_Sync_pred(pred, i)));
-			if (res & ~NODES_CREATED)
+		foreach_irn_in(node, i, in) {
+			ir_node *skipped = skip_Proj(in);
+			res |= follow_load_mem_chain(env, skipped);
+			if ((res & ~NODES_CREATED) != NO_CHANGES)
 				return res;
 		}
 	}
-
 	return res;
 }
 
@@ -806,23 +796,22 @@ static changes_t optimize_load(ir_node *load)
 	ir_node *mem = get_Load_mem(load);
 
 	if (info->projs[pn_Load_res] == NULL
-			&& info->projs[pn_Load_X_except] == NULL) {
+	    && info->projs[pn_Load_X_except] == NULL) {
+		assert(info->projs[pn_Load_X_regular] == NULL);
 		/* the value is never used and we don't care about exceptions, remove */
 		exchange(info->projs[pn_Load_M], mem);
-
-		if (info->projs[pn_Load_X_regular]) {
-			/* should not happen, but if it does, remove it */
-			exchange(info->projs[pn_Load_X_regular], new_r_Jmp(get_nodes_block(load)));
-			res |= CF_CHANGED;
-		}
 		kill_and_reduce_usage(load);
 		return res | DF_CHANGED;
 	}
 
-	/* Check, if the address of this load is used more than once.
-	 * If not, more load cannot be removed in any case. */
-	long dummy;
-	if (get_irn_n_edges(ptr) <= 1 && get_irn_n_edges(get_base_and_offset(ptr, &dummy)) <= 1)
+	track_load_env_t env;
+	get_base_and_offset(ptr, &env.base_offset);
+	env.ptr = ptr;
+
+	/* Check, if the base address of this load is used more than once.
+	 * If not, we won't find another store/load/CopyB anyway.
+	 * TODO: can we miss values with multiple users in between? */
+	if (get_irn_n_edges(ptr) <= 1 && get_irn_n_edges(env.base_offset.base) <= 1)
 		return res;
 
 	/*
@@ -833,7 +822,8 @@ static changes_t optimize_load(ir_node *load)
 	 * We break such cycles using a special visited flag.
 	 */
 	INC_MASTER();
-	res = follow_Mem_chain(load, skip_Proj(mem));
+	env.load = load;
+	res = follow_load_mem_chain(&env, skip_Proj(mem));
 	return res;
 }
 
@@ -866,8 +856,8 @@ static int is_partially_same(ir_node *small, ir_node *large)
  * Stores.
  * INC_MASTER() must be called before dive into
  */
-static changes_t follow_Mem_chain_for_Store(ir_node *store, ir_node *curr,
-                                            bool had_split)
+static changes_t follow_store_mem_chain(ir_node *store, ir_node *curr,
+                                        bool had_split)
 {
 	changes_t    res   = NO_CHANGES;
 	ldst_info_t *info  = (ldst_info_t*)get_irn_link(store);
@@ -1003,7 +993,7 @@ static changes_t follow_Mem_chain_for_Store(ir_node *store, ir_node *curr,
 	if (is_Sync(pred)) {
 		/* handle all Sync predecessors */
 		for (int i = get_Sync_n_preds(pred); i-- > 0; ) {
-			res |= follow_Mem_chain_for_Store(store, skip_Proj(get_Sync_pred(pred, i)), true);
+			res |= follow_store_mem_chain(store, skip_Proj(get_Sync_pred(pred, i)), true);
 			if (res)
 				break;
 		}
@@ -1063,7 +1053,7 @@ static changes_t optimize_store(ir_node *store)
 	/* follow the memory chain as long as there are only Loads */
 	INC_MASTER();
 
-	return follow_Mem_chain_for_Store(store, skip_Proj(mem), false);
+	return follow_store_mem_chain(store, skip_Proj(mem), false);
 }
 
 /**
@@ -1073,39 +1063,40 @@ static changes_t optimize_store(ir_node *store)
 static bool ptr_is_in_struct(ir_node *ptr, ir_type *ptr_type,
                              ir_node *struct_ptr, ir_type *struct_type)
 {
-	long      ptr_offset;
-	ir_node  *ptr_base      = get_base_and_offset(ptr, &ptr_offset);
-	long      struct_offset;
-	ir_node  *struct_base   = get_base_and_offset(struct_ptr, &struct_offset);
+	base_offset_t base_offset;
+	get_base_and_offset(ptr, &base_offset);
+	long      ptr_offset    = base_offset.offset;
+	base_offset_t struct_offset;
+	get_base_and_offset(struct_ptr, &struct_offset);
 	unsigned  ptr_size      = get_type_size_bytes(ptr_type);
 	unsigned  struct_size   = get_type_size_bytes(struct_type);
 
-	return ptr_base == struct_base &&
-		ptr_offset >= struct_offset &&
-		ptr_offset + ptr_size <= struct_offset + struct_size;
+	return base_offset.base == struct_offset.base &&
+		ptr_offset >= struct_offset.offset &&
+		ptr_offset + ptr_size <= struct_offset.offset + struct_size;
 }
 
 /**
- * Tries to optimize @c copyB. This function handles the following
+ * Tries to optimize @c copyb. This function handles the following
  * cases:
- * - A previous Store that lies completely within @c copyB's destination
- *   will be deleted, except it modifies the @c copyB's source.
- * - If a previous CopyB writes to @c copyB's source, @c copyB will
+ * - A previous Store that lies completely within @c copyb's destination
+ *   will be deleted, except it modifies the @c copyb's source.
+ * - If a previous CopyB writes to @c copyb's source, @c copyb will
  *   read from the previous CopyB's source if possible. Cases where
  *   the CopyB nodes are offset against each other are not handled.
  */
-static changes_t follow_Mem_chain_for_CopyB(ir_node *copyB, ir_node *curr,
-                                            bool had_split)
+static changes_t follow_copyb_mem_chain(ir_node *copyb, ir_node *curr,
+                                        bool had_split)
 {
 	changes_t res       = NO_CHANGES;
-	ir_node  *src       = get_CopyB_src(copyB);
-	ir_node  *dst       = get_CopyB_dst(copyB);
-	ir_type  *type      = get_CopyB_type(copyB);
+	ir_node  *src       = get_CopyB_src(copyb);
+	ir_node  *dst       = get_CopyB_dst(copyb);
+	ir_type  *type      = get_CopyB_type(copyb);
 	unsigned  type_size = get_type_size_bytes(type);
-	ir_node  *block     = get_nodes_block(copyB);
+	ir_node  *block     = get_nodes_block(copyb);
 
 	ir_node *pred = curr;
-	while (pred != copyB) {
+	while (pred != copyb) {
 		ldst_info_t *pred_info = (ldst_info_t*)get_irn_link(pred);
 
 		if (is_Store(pred) &&
@@ -1125,8 +1116,8 @@ static changes_t follow_Mem_chain_for_CopyB(ir_node *copyB, ir_node *curr,
 			ir_alias_relation  src_rel    = get_alias_relation(src, type, store_ptr, store_type);
 
 			if (src_rel == ir_no_alias && ptr_is_in_struct(store_ptr, store_type, dst, type)) {
-				DBG_OPT_WAW(pred, copyB);
-				DB((dbg, LEVEL_1, "  killing store %+F (override by %+F)\n", pred, copyB));
+				DBG_OPT_WAW(pred, copyb);
+				DB((dbg, LEVEL_1, "  killing store %+F (override by %+F)\n", pred, copyb));
 				exchange(pred_info->projs[pn_Store_M], get_Store_mem(pred));
 				kill_and_reduce_usage(pred);
 				return DF_CHANGED;
@@ -1176,9 +1167,9 @@ static changes_t follow_Mem_chain_for_CopyB(ir_node *copyB, ir_node *curr,
 				 * immediately.
 				 */
 				if (find_constant_entity(src)) {
-					DBG((dbg, LEVEL_1, "Optimizing %+F to read from %+F's source\n", copyB, pred));
+					DBG((dbg, LEVEL_1, "Optimizing %+F to read from %+F's source\n", copyb, pred));
 
-					set_CopyB_src(copyB, src);
+					set_CopyB_src(copyb, src);
 					return res | DF_CHANGED;
 				}
 			} else {
@@ -1212,7 +1203,7 @@ static changes_t follow_Mem_chain_for_CopyB(ir_node *copyB, ir_node *curr,
 	if (is_Sync(pred)) {
 		/* handle all Sync predecessors */
 		for (int i = get_Sync_n_preds(pred); i-- > 0; ) {
-			res |= follow_Mem_chain_for_CopyB(copyB, skip_Proj(get_Sync_pred(pred, i)), true);
+			res |= follow_copyb_mem_chain(copyb, skip_Proj(get_Sync_pred(pred, i)), true);
 			if (res)
 				break;
 		}
@@ -1223,18 +1214,18 @@ static changes_t follow_Mem_chain_for_CopyB(ir_node *copyB, ir_node *curr,
 /**
  * Optimizes a CopyB node.
  *
- * @param copyB  the CopyB node
+ * @param copyb  the CopyB node
  */
-static changes_t optimize_copyB(ir_node *copyB)
+static changes_t optimize_copyb(ir_node *copyb)
 {
-	if (get_CopyB_volatility(copyB) == volatility_is_volatile)
+	if (get_CopyB_volatility(copyb) == volatility_is_volatile)
 		return NO_CHANGES;
 
-	ir_node *mem = get_CopyB_mem(copyB);
+	ir_node *mem = get_CopyB_mem(copyb);
 
 	INC_MASTER();
 
-	return follow_Mem_chain_for_CopyB(copyB, skip_Proj(mem), false);
+	return follow_copyb_mem_chain(copyb, skip_Proj(mem), false);
 }
 
 /* check if a node has more than one real user. Keepalive edges do not count as
@@ -1472,7 +1463,7 @@ static void do_load_store_optimize(ir_node *n, void *env)
 	switch (get_irn_opcode(n)) {
 	case iro_Load:  wenv->changes |= optimize_load(n);      break;
 	case iro_Store: wenv->changes |= optimize_store(n);     break;
-	case iro_CopyB: wenv->changes |= optimize_copyB(n);     break;
+	case iro_CopyB: wenv->changes |= optimize_copyb(n);     break;
 	case iro_Phi:   wenv->changes |= optimize_phi(n, wenv); break;
 	case iro_Conv:  wenv->changes |= optimize_conv_load(n); break;
 	default:
@@ -1508,20 +1499,20 @@ static changes_t eliminate_dead_store(ir_node *store)
 	return NO_CHANGES;
 }
 
-static changes_t eliminate_dead_copyB(ir_node *copyB)
+static changes_t eliminate_dead_copyb(ir_node *copyb)
 {
-	if (get_CopyB_volatility(copyB) == volatility_is_volatile)
+	if (get_CopyB_volatility(copyb) == volatility_is_volatile)
 		return NO_CHANGES;
 
 	/* a CopyB whose destination is never read is unnecessary */
-	ir_node   *ptr    = get_CopyB_dst(copyB);
+	ir_node   *ptr    = get_CopyB_dst(copyb);
 	ir_entity *entity = find_entity(ptr);
 	if (entity != NULL && !(get_entity_usage(entity) & ir_usage_read)) {
 		DB((dbg, LEVEL_1, "  Killing useless %+F to never read entity %+F\n",
-		    copyB, entity));
-		reduce_node_usage(get_CopyB_dst(copyB));
-		reduce_node_usage(get_CopyB_src(copyB));
-		exchange(copyB, get_CopyB_mem(copyB));
+		    copyb, entity));
+		reduce_node_usage(get_CopyB_dst(copyb));
+		reduce_node_usage(get_CopyB_src(copyb));
+		exchange(copyb, get_CopyB_mem(copyb));
 		return DF_CHANGED;
 	}
 
@@ -1537,7 +1528,7 @@ static void do_eliminate_dead_stores(ir_node *n, void *env) {
 	if (is_Store(n)) {
 		wenv->changes |= eliminate_dead_store(n);
 	} else if (is_CopyB(n)) {
-		wenv->changes |= eliminate_dead_copyB(n);
+		wenv->changes |= eliminate_dead_copyb(n);
 	}
 }
 

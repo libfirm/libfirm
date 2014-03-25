@@ -6544,11 +6544,7 @@ handle_tv:;
 	return NULL;
 }
 
-/* try to predict the value of a Load operation.
- * This can usually be done if it loads from a known global entity with a
- * constant value.
- */
-static ir_node *predict_load(ir_node *ptr, ir_mode *mode)
+ir_node *predict_load(ir_node *ptr, ir_mode *mode)
 {
 	long offset = 0;
 	if (is_Add(ptr)) {

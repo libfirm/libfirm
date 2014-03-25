@@ -126,6 +126,13 @@ bool ir_is_optimizable_mux(const ir_node *sel, const ir_node *mux_false,
  */
 bool may_leave_out_middle_conv(ir_mode *m0, ir_mode *m1, ir_mode *m2);
 
+/**
+ * Try to predict the value of a Load operation.
+ * This can usually be done if it loads from a known global entity with a
+ * constant value.
+ */
+ir_node *predict_load(ir_node *ptr, ir_mode *mode);
+
 void ir_register_opt_node_ops(void);
 
 #endif
