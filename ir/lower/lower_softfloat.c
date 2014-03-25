@@ -591,6 +591,27 @@ static bool lower_Conv(ir_node *const n)
 	return true;
 }
 
+static bool lower_Bitcast(ir_node *const n)
+{
+	/* bitcast was casting float->int or int->float we can simply replace it
+	 * with a conv (between integer modes) now. */
+	ir_node *op       = get_Bitcast_op(n);
+	ir_mode *src_mode = get_irn_mode(op);
+	ir_mode *dst_mode = get_irn_mode(n);
+	/* note that the predecessor may already be transformed, so it's
+	 * possible that we don't see a float mode anymore. */
+	if (mode_is_float(dst_mode))
+		dst_mode = get_lowered_mode(dst_mode);
+	ir_node *res = op;
+	if (src_mode != dst_mode) {
+		dbg_info *dbgi  = get_irn_dbg_info(n);
+		ir_node  *block = get_nodes_block(n);
+		res = new_rd_Conv(dbgi, block, op, dst_mode);
+	}
+	exchange(n, res);
+	return true;
+}
+
 /**
  * Transforms a Div into the appropriate soft float function.
  */
@@ -827,10 +848,11 @@ void lower_floating_point(void)
 	}
 
 	ir_clear_opcodes_generic_func();
-	ir_register_softloat_lower_function(op_Call,  lower_Call);
-	ir_register_softloat_lower_function(op_Const, lower_Const);
-	ir_register_softloat_lower_function(op_Div,   lower_Div_mode);
-	ir_register_softloat_lower_function(op_Load,  lower_Load);
+	ir_register_softloat_lower_function(op_Bitcast, lower_Bitcast);
+	ir_register_softloat_lower_function(op_Call,    lower_Call);
+	ir_register_softloat_lower_function(op_Const,   lower_Const);
+	ir_register_softloat_lower_function(op_Div,     lower_Div_mode);
+	ir_register_softloat_lower_function(op_Load,    lower_Load);
 
 	foreach_irp_irg(i, irg) {
 		ir_entity *const ent         = get_irg_entity(irg);

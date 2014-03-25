@@ -1484,6 +1484,78 @@ void ir_default_lower_dw_Conv(ir_node *node, ir_mode *mode)
 	}
 }
 
+static void lower_Bitcast(ir_node *node, ir_mode *mode)
+{
+	ir_mode *dst_mode   = get_irn_mode(node);
+	ir_node *op         = get_Bitcast_op(node);
+	ir_mode *src_mode   = get_irn_mode(op);
+	ir_mode *other_mode;
+	if (dst_mode == env->high_signed || dst_mode == env->high_unsigned) {
+		other_mode = src_mode;
+		goto transform;
+	} else if (src_mode == env->high_signed || src_mode == env->high_unsigned) {
+		other_mode = dst_mode;
+		goto transform;
+	}
+	return;
+
+transform:
+	assert(get_mode_size_bits(src_mode) == get_mode_size_bits(dst_mode));
+
+	/** The bitcast is implemented with 2 integer stores+1 double load or
+	 * 1 double store+2 integer loads */
+	ir_graph  *irg         = get_irn_irg(node);
+	ir_type   *frame_type  = get_irg_frame_type(irg);
+	ident     *id          = id_unique("bitcast_%u");
+	ir_entity *entity      = new_entity(frame_type, id,
+	                                    get_type_for_mode(other_mode));
+	ir_node   *block       = get_nodes_block(node);
+	ir_node   *frame_ptr   = get_irg_frame(irg);
+	ir_node   *addr        = new_r_Sel(block, frame_ptr, 0, NULL, entity);
+	dbg_info  *dbgi        = get_irn_dbg_info(node);
+	ir_node   *nomem       = get_irg_no_mem(irg);
+	ir_mode   *addr_mode   = get_irn_mode(addr);
+	ir_node   *cnst        = new_r_Const(irg, env->tv_mode_bytes);
+	ir_node   *low         = addr;
+	ir_node   *high        = new_r_Add(block, addr, cnst, addr_mode);
+	/* big endian requires different order for lower/higher word */
+	if (!env->params->little_endian) {
+		ir_node *tmp = low;
+		low  = high;
+		high = tmp;
+	}
+
+	if (src_mode == env->high_signed || src_mode == env->high_unsigned) {
+		const lower64_entry_t *entry = get_node_entry(op);
+
+		ir_node  *store0 = new_rd_Store(dbgi, block, nomem, high,
+		                                entry->high_word, cons_floats);
+		ir_node  *mem0   = new_r_Proj(store0, mode_M, pn_Store_M);
+		ir_node  *store1 = new_rd_Store(dbgi, block, nomem, low,
+		                                entry->low_word, cons_floats);
+		ir_node  *mem1   = new_r_Proj(store1, mode_M, pn_Store_M);
+		ir_node  *in[]   = { mem0, mem1 };
+		ir_node  *sync   = new_r_Sync(block, ARRAY_SIZE(in), in);
+
+		ir_node  *load   = new_rd_Load(dbgi, block, sync,  addr, dst_mode,
+									   cons_floats);
+		ir_node  *res    = new_r_Proj(load, dst_mode, pn_Load_res);
+		exchange(node, res);
+	} else {
+		assert(dst_mode == env->high_signed || dst_mode == env->high_unsigned);
+		ir_node *store     = new_rd_Store(dbgi, block, nomem, addr, op,
+		                                  cons_floats);
+		ir_node *mem       = new_r_Proj(store, mode_M, pn_Store_M);
+		ir_node *load_low  = new_rd_Load(dbgi, block, mem, low, mode,
+		                                 cons_floats);
+		ir_node *res_low   = new_r_Proj(load_low, mode, pn_Load_res);
+		ir_node *load_high = new_rd_Load(dbgi, block, mem, high, mode,
+		                                 cons_floats);
+		ir_node *res_high  = new_r_Proj(load_high, mode, pn_Load_res);
+		ir_set_dw_lowered(node, res_low, res_high);
+	}
+}
+
 static void fix_parameter_entities(ir_graph *irg, ir_type *orig_mtp)
 {
 	size_t      orig_n_params      = get_method_n_params(orig_mtp);
@@ -2530,6 +2602,7 @@ static bool always_lower(unsigned code)
 {
 	switch (code) {
 	case iro_ASM:
+	case iro_Bitcast:
 	case iro_Builtin:
 	case iro_Call:
 	case iro_Cond:
@@ -2787,6 +2860,7 @@ void ir_prepare_dw_lowering(const lwrdw_param_t *new_param)
 	ir_register_dw_lower_function(op_Add,     lower_binop);
 	ir_register_dw_lower_function(op_And,     lower_And);
 	ir_register_dw_lower_function(op_Bad,     lower_Bad);
+	ir_register_dw_lower_function(op_Bitcast, lower_Bitcast);
 	ir_register_dw_lower_function(op_Builtin, lower_Builtin);
 	ir_register_dw_lower_function(op_Call,    lower_Call);
 	ir_register_dw_lower_function(op_Cmp,     lower_Cmp);
