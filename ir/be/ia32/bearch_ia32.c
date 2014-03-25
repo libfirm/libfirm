@@ -1732,7 +1732,8 @@ static void ia32_lower_for_target(void)
 	 *  on the callframe and we can't just use an arbitrary position on the
 	 *  stackframe)
 	 */
-	lower_calls_with_compounds(LF_RETURN_HIDDEN | LF_DONT_LOWER_ARGUMENTS);
+	lower_calls_with_compounds(LF_RETURN_HIDDEN | LF_DONT_LOWER_ARGUMENTS
+	                           | LF_RETURN_SMALL_ARRAY_IN_INTS);
 	be_after_irp_transform("lower-calls");
 
 	/* replace floating point operations by function calls */
