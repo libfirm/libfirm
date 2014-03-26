@@ -58,10 +58,6 @@ void finish_tarval(void);
  * A tarval struct consists of an internal representation of the
  * value and some additional fields further describing the value.
  *
- * ATTRIBUTES:
- *   - ir_mode *mode     The mode of the stored value
- *   - void *value       The internal representation
- *
  * @sa
  *   irmode.h for predefined modes
  */
