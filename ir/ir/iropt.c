@@ -2529,13 +2529,27 @@ static ir_node *transform_node_Eor_(ir_node *n)
 		return n;
 	}
 
-	/* x ^ 1...1 -> ~x */
-	if (is_Const(b) && is_Const_all_one(b)) {
-		dbg_info *dbgi  = get_irn_dbg_info(n);
-		ir_node  *block = get_nodes_block(n);
-		n = new_rd_Not(dbgi, block, a, mode);
-		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_EOR_TO_NOT);
-		return n;
+	if (is_Const(b)) {
+		if (is_Const_all_one(b)) {
+			/* x ^ 1...1 -> ~x */
+			dbg_info *dbgi  = get_irn_dbg_info(n);
+			ir_node  *block = get_nodes_block(n);
+			n = new_rd_Not(dbgi, block, a, mode);
+			DBG_OPT_ALGSIM0(oldn, n, FS_OPT_EOR_TO_NOT);
+			return n;
+		}
+
+		if (is_Minus(a)) {
+			ir_tarval *tv   = get_Const_tarval(b);
+			int        bits = (int)get_mode_size_bits(mode);
+			if (get_tarval_popcount(tarval_shl_unsigned(tv, 1)) == bits - 1) {
+				/* -x ^ ?1...1 => x + ?1...1 */
+				dbg_info *dbgi  = get_irn_dbg_info(n);
+				ir_node  *block = get_nodes_block(n);
+				ir_node  *op    = get_Minus_op(a);
+				return new_rd_Add(dbgi, block, op, b, mode);
+			}
+		}
 	}
 
 	if (is_And(a)) {
