@@ -35,8 +35,6 @@
  *
  * Call before init_mode().
  *
- * @param null_value
- *            The reference mode NULL value, typical 0l
  * @param support_quad_precision
  *            If non-zero, activate support for quad precision
  */
