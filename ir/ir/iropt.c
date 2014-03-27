@@ -3576,11 +3576,12 @@ static ir_node *transform_node_Cond(ir_node *n)
 	if (tarval_is_constant(ta)) {
 		/* It's branching on a boolean constant.
 		   Replace it by a tuple (Bad, Jmp) or (Jmp, Bad) */
-		ir_node *const blk  = get_nodes_block(n);
-		ir_node *const jmp  = new_r_Jmp(blk);
-		ir_node *const bad  = new_r_Bad(irg, mode_X);
-		bool     const cond = ta == tarval_b_true;
-		ir_node *const in[] = {
+		ir_node  *const blk  = get_nodes_block(n);
+		dbg_info *const dbgi = get_irn_dbg_info(n);
+		ir_node  *const jmp  = new_rd_Jmp(dbgi, blk);
+		ir_node  *const bad  = new_r_Bad(irg, mode_X);
+		bool      const cond = ta == tarval_b_true;
+		ir_node  *const in[] = {
 			[pn_Cond_false] = cond ? bad : jmp,
 			[pn_Cond_true]  = cond ? jmp : bad,
 		};
@@ -4567,32 +4568,43 @@ is_bittest: {
 	/* replace mode_b compares with ands/ors */
 	if (mode == mode_b) {
 		ir_node  *block = get_nodes_block(n);
+		dbg_info *dbgi  = get_irn_dbg_info(n);
 		ir_node  *bres;
 
 		switch (relation) {
-			case ir_relation_less_equal:
-				bres = new_r_Or(block, new_r_Not(block, left, mode_b), right, mode_b);
-				break;
-			case ir_relation_less:
-				bres = new_r_And(block, new_r_Not(block, left, mode_b), right, mode_b);
-				break;
-			case ir_relation_greater_equal:
-				bres = new_r_Or(block, left, new_r_Not(block, right, mode_b), mode_b);
-				break;
-			case ir_relation_greater:
-				bres = new_r_And(block, left, new_r_Not(block, right, mode_b), mode_b);
-				break;
-			case ir_relation_less_greater:
-				bres = new_r_Eor(block, left, right, mode_b);
-				break;
-			case ir_relation_equal:
-				bres = new_r_Not(block, new_r_Eor(block, left, right, mode_b), mode_b);
-				break;
-			default:
+		case ir_relation_less_equal: {
+			ir_node *not = new_rd_Not(dbgi, block, left, mode_b);
+			bres = new_rd_Or(dbgi, block, not, right, mode_b);
+			break;
+		}
+		case ir_relation_less: {
+			ir_node *not = new_rd_Not(dbgi, block, left, mode_b);
+			bres = new_rd_And(dbgi, block, not, right, mode_b);
+			break;
+		}
+		case ir_relation_greater_equal: {
+			ir_node *not = new_rd_Not(dbgi, block, right, mode_b);
+			bres = new_rd_Or(dbgi, block, left, not, mode_b);
+			break;
+		}
+		case ir_relation_greater: {
+			ir_node *not = new_rd_Not(dbgi, block, right, mode_b);
+			bres = new_rd_And(dbgi, block, left, not, mode_b);
+			break;
+		}
+		case ir_relation_less_greater:
+			bres = new_rd_Eor(dbgi, block, left, right, mode_b);
+			break;
+		case ir_relation_equal: {
+			ir_node *eor = new_rd_Eor(dbgi, block, left, right, mode_b);
+			bres = new_rd_Not(dbgi, block, eor, mode_b);
+			break;
+		}
+		default:
 #ifdef DEBUG_libfirm
-				ir_fprintf(stderr, "Optimization warning, unexpected mode_b Cmp %+F\n", n);
+			ir_fprintf(stderr, "Optimization warning, unexpected mode_b Cmp %+F\n", n);
 #endif
-				bres = NULL;
+			bres = NULL;
 		}
 		if (bres != NULL) {
 			DBG_OPT_ALGSIM0(n, bres, FS_OPT_CMP_TO_BOOL);
@@ -5337,9 +5349,10 @@ static ir_node *transform_node_shift_modulo(ir_node *n,
 			if (tv_mod == tv)
 				return n;
 
+			dbg_info *dbgi = get_irn_dbg_info(right);
 			newconst = new_r_Const(irg, tv_mod);
-			newop    = new_r_Add(block, get_binop_left(right), newconst,
-			                     mode_right);
+			newop    = new_rd_Add(dbgi, block, get_binop_left(right), newconst,
+			                      mode_right);
 		}
 	} else if (is_Sub(right)) {
 		ir_node *sub_left = get_Sub_left(right);
@@ -5349,8 +5362,10 @@ static ir_node *transform_node_shift_modulo(ir_node *n,
 			if (tv_mod == tv)
 				return n;
 
-			ir_node *newconst = new_r_Const(irg, tv_mod);
-			newop = new_r_Sub(block, newconst, get_Sub_right(right), mode_right);
+			dbg_info *dbgi     = get_irn_dbg_info(right);
+			ir_node  *newconst = new_r_Const(irg, tv_mod);
+			newop = new_rd_Sub(dbgi, block, newconst, get_Sub_right(right),
+			                   mode_right);
 		}
 	} else {
 		return n;
@@ -6204,40 +6219,42 @@ static ir_node *transform_node_Mux(ir_node *n)
 	 * before mode_b lowering */
 	if (!irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_MODEB_LOWERED)) {
 		if (is_Mux(t)) {
-			ir_node *block = get_nodes_block(n);
-			ir_node *c0    = sel;
-			ir_node *c1    = get_Mux_sel(t);
-			ir_node *t1    = get_Mux_true(t);
-			ir_node *f1    = get_Mux_false(t);
+			ir_node  *block = get_nodes_block(n);
+			dbg_info *dbgi  = get_irn_dbg_info(n);
+			ir_node  *c0    = sel;
+			ir_node  *c1    = get_Mux_sel(t);
+			ir_node  *t1    = get_Mux_true(t);
+			ir_node  *f1    = get_Mux_false(t);
 			if (f == f1) {
 				/* Mux(cond0, Mux(cond1, x, y), y) => Mux(cond0 && cond1, x, y) */
 				ir_node* and = new_r_And(block, c0, c1, mode_b);
 				DBG_OPT_ALGSIM0(oldn, t1, FS_OPT_MUX_COMBINE);
-				return new_r_Mux(block, and, f1, t1, mode);
+				return new_rd_Mux(dbgi, block, and, f1, t1, mode);
 			} else if (f == t1) {
 				/* Mux(cond0, Mux(cond1, x, y), x) */
 				ir_node* not_c1  = new_r_Not(block, c1, mode_b);
 				ir_node* and     = new_r_And(block, c0, not_c1, mode_b);
 				DBG_OPT_ALGSIM0(oldn, f1, FS_OPT_MUX_COMBINE);
-				return new_r_Mux(block, and, t1, f1, mode);
+				return new_rd_Mux(dbgi, block, and, t1, f1, mode);
 			}
 		} else if (is_Mux(f)) {
-			ir_node *block = get_nodes_block(n);
-			ir_node *c0    = sel;
-			ir_node *c1    = get_Mux_sel(f);
-			ir_node *t1    = get_Mux_true(f);
-			ir_node *f1    = get_Mux_false(f);
+			ir_node  *block = get_nodes_block(n);
+			dbg_info *dbgi  = get_irn_dbg_info(n);
+			ir_node  *c0    = sel;
+			ir_node  *c1    = get_Mux_sel(f);
+			ir_node  *t1    = get_Mux_true(f);
+			ir_node  *f1    = get_Mux_false(f);
 			if (t == t1) {
 				/* Mux(cond0, x, Mux(cond1, x, y)) -> typical if (cond0 || cond1) x else y */
 				ir_node* or = new_r_Or(block, c0, c1, mode_b);
 				DBG_OPT_ALGSIM0(oldn, f1, FS_OPT_MUX_COMBINE);
-				return new_r_Mux(block, or, f1, t1, mode);
+				return new_rd_Mux(dbgi, block, or, f1, t1, mode);
 			} else if (t == f1) {
 				/* Mux(cond0, x, Mux(cond1, y, x)) */
 				ir_node* not_c1  = new_r_Not(block, c1, mode_b);
 				ir_node* or      = new_r_Or(block, c0, not_c1, mode_b);
 				DBG_OPT_ALGSIM0(oldn, t1, FS_OPT_MUX_COMBINE);
-				return new_r_Mux(block, or, t1, f1, mode);
+				return new_rd_Mux(dbgi, block, or, t1, f1, mode);
 			}
 		}
 
