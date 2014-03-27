@@ -2562,7 +2562,7 @@ static ir_node *transform_node_Eor_(ir_node *n)
 			return n;
 		}
 
-		if (is_Minus(a)) {
+		if (is_Minus(a) && get_mode_arithmetic(mode) == irma_twos_complement) {
 			ir_tarval *tv   = get_Const_tarval(b);
 			int        bits = (int)get_mode_size_bits(mode);
 			if (get_tarval_popcount(tarval_shl_unsigned(tv, 1)) == bits - 1) {
