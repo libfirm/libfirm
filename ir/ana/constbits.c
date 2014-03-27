@@ -348,12 +348,24 @@ undefined:
 				case iro_Shr: {
 					bitinfo   *const l  = get_bitinfo(get_Shr_left(irn));
 					bitinfo   *const r  = get_bitinfo(get_Shr_right(irn));
+					ir_tarval *const lz = l->z;
+					ir_tarval *const lo = l->o;
 					ir_tarval *const rz = r->z;
 					if (rz == r->o) {
-						z = tarval_shr(l->z, rz);
-						o = tarval_shr(l->o, rz);
+						z = tarval_shr(lz, rz);
+						o = tarval_shr(lo, rz);
 					} else {
-						goto cannot_analyse;
+						int high = get_tarval_highest_bit(lz);
+						if (high >= 0) {
+							ir_tarval *one  = get_mode_one(m);
+							ir_tarval *shl  = tarval_shl_unsigned(one, high);
+							ir_tarval *mask = tarval_or(shl, tarval_sub(shl, one, m));
+							z = tarval_or(lz, mask);
+							o = tarval_andnot(lo, mask);
+						} else {
+							z = lz;
+							o = lo;
+						}
 					}
 					break;
 				}
@@ -361,12 +373,24 @@ undefined:
 				case iro_Shrs: {
 					bitinfo   *const l  = get_bitinfo(get_Shrs_left(irn));
 					bitinfo   *const r  = get_bitinfo(get_Shrs_right(irn));
+					ir_tarval *const lz = l->z;
+					ir_tarval *const lo = l->o;
 					ir_tarval *const rz = r->z;
 					if (rz == r->o) {
-						z = tarval_shrs(l->z, rz);
-						o = tarval_shrs(l->o, rz);
+						z = tarval_shrs(lz, rz);
+						o = tarval_shrs(lo, rz);
 					} else {
-						goto cannot_analyse;
+						int high = get_tarval_highest_bit(lz);
+						if (high >= 0) {
+							ir_tarval *one  = get_mode_one(m);
+							ir_tarval *shl  = tarval_shl_unsigned(one, high);
+							ir_tarval *mask = tarval_or(shl, tarval_sub(shl, one, m));
+							z = tarval_or(lz, mask);
+							o = tarval_andnot(lo, mask);
+						} else {
+							z = lz;
+							o = lo;
+						}
 					}
 					break;
 				}
