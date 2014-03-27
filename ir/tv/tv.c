@@ -561,8 +561,6 @@ ir_tarval *get_tarval_null(ir_mode *mode)
 		return new_tarval_from_double(0.0, mode);
 
 	case irms_int_number:
-		return new_tarval_from_long(0l,  mode);
-
 	case irms_reference:
 		return new_tarval_from_long(0l, mode);
 
