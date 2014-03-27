@@ -102,6 +102,11 @@ FIRM_API char *xstrdup(const char *str);
 #define ALLOCANZ(type, n) ((type*)memset((type*)alloca(sizeof(type) * (n)), 0, sizeof(type) * (n)))
 
 /**
+ * Allocate an object with n elements of a flexible array member on the stack
+ */
+#define ALLOCAF(type, member, n) ((type*)alloca(offsetof(type, member) + sizeof(*((type*)0)->member) * (n)))
+
+/**
  * Allocate n objects of a certain type on the given obstack
  */
 #define OALLOCN(obst, type, n) ((type*)obstack_alloc((obst), sizeof(type) * (n)))
