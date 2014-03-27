@@ -304,7 +304,7 @@ undefined:
 
 			/* leverage compute_value_node_XXX knowledge */
 			ir_tarval *computed = computed_value(irn);
-			if (computed != tarval_unknown) {
+			if (tarval_is_constant(computed)) {
 				z = o = computed;
 				goto set_info;
 			}
