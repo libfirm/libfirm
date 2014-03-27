@@ -177,6 +177,11 @@ FIRM_API ir_node *can_replace_load_by_const(const ir_node *load, ir_node *c);
 FIRM_API void optimize_load_store(ir_graph *irg);
 
 /**
+ * Combine adjacent "small" load/store operations into bigger ones.
+ */
+FIRM_API void combine_memops(ir_graph *irg);
+
+/**
  * New experimental alternative to optimize_load_store.
  * Based on a dataflow analysis, so load/stores are moved out of loops
  * where possible

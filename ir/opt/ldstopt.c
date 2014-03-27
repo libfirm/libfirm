@@ -35,6 +35,7 @@
 #include "set.h"
 #include "tv_t.h"
 #include "type_t.h"
+#include "util.h"
 
 /** The debug handle. */
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
@@ -1995,6 +1996,184 @@ static changes_t optimize_loops(ir_graph *irg)
 	ir_nodehashmap_destroy(&env.map);
 
 	return env.changes;
+}
+
+static ir_node *get_ptr(const ir_node *node)
+{
+	if (is_Store(node))
+		return get_Store_ptr(node);
+	if (is_Load(node))
+		return get_Load_ptr(node);
+	return NULL;
+}
+
+static int cmp_ptrs(const void *p0, const void *p1)
+{
+	ir_node *const *n0 = (ir_node*const *)p0;
+	ir_node *const *n1 = (ir_node*const *)p1;
+
+	ir_node *ptr0 = get_ptr(skip_Proj(*n0));
+	ir_node *ptr1 = get_ptr(skip_Proj(*n1));
+	if (ptr0 == NULL || ptr1 == NULL) {
+		long num0 = get_irn_node_nr(*n0);
+		long num1 = get_irn_node_nr(*n1);
+		return (num0 > num1) - (num0 < num1);
+	}
+
+	base_offset_t bo0;
+	base_offset_t bo1;
+	get_base_and_offset(ptr0, &bo0);
+	get_base_and_offset(ptr1, &bo1);
+	if (bo0.base != bo1.base)
+		return (bo0.base > bo1.base) - (bo0.base < bo1.base);
+	return (bo0.offset > bo1.offset) - (bo0.offset < bo1.offset);
+}
+
+static void combine_memop(ir_node *sync, void *data)
+{
+	(void)data;
+	if (!is_Sync(sync))
+		return;
+
+	unsigned machine_size = be_get_machine_size();
+	/* TODO: test if unaligned load/store is efficient, otherwise this isn't
+	 * really interesting. */
+
+	int       n_preds = get_Sync_n_preds(sync);
+	ir_node **new_in  = ALLOCAN(ir_node*, n_preds);
+	memcpy(new_in, get_irn_in(sync)+1, n_preds * sizeof(new_in[0]));
+
+	qsort(new_in, n_preds, sizeof(new_in[0]), cmp_ptrs);
+
+	bool changed = false;
+	for (int i = 0; i < n_preds-1; ++i) {
+again:;
+		ir_node *pred0 = new_in[i];
+		if (pred0 == NULL)
+			continue;
+
+		ir_node *skipped = skip_Proj(pred0);
+		ir_node *store0  = skipped;
+		if (is_Store(store0)) {
+			if (get_Store_volatility(store0) == volatility_is_volatile
+			 || ir_throws_exception(store0))
+				continue;
+			ir_node *store_val  = get_Store_value(store0);
+			ir_mode *store_mode = get_irn_mode(store_val);
+			if (get_mode_arithmetic(store_mode) != irma_twos_complement)
+				continue;
+			unsigned store_size = get_mode_size_bits(store_mode);
+			if (store_size >= machine_size || !is_po2(store_size))
+				continue;
+			ir_mode *mode_unsigned = find_unsigned_mode(store_mode);
+			if (mode_unsigned == NULL)
+				continue;
+			ir_mode *double_mode = find_double_bits_int_mode(mode_unsigned);
+			if (double_mode == NULL)
+				continue;
+
+			ir_node *store_ptr0 = get_Store_ptr(store0);
+			base_offset_t base0;
+			get_base_and_offset(store_ptr0, &base0);
+			ir_node *mem = get_Store_mem(store0);
+
+			/* found a candidate, the only store we can merge with
+			 * must be the next in the list */
+			ir_node *pred1 = NULL;
+			int i2 = i+1;
+			for ( ; i2 < n_preds; ++i2) {
+				pred1 = new_in[i2];
+				if (pred1 != NULL)
+					break;
+			}
+			if (pred1 == NULL)
+				continue;
+			ir_node *store1 = skip_Proj(pred1);
+			if (!is_Store(store1)
+			 || get_Store_volatility(store1) == volatility_is_volatile
+			 || ir_throws_exception(store1)
+			 || get_Store_mem(store1) != mem)
+				continue;
+			ir_node *store_val1  = get_Store_value(store1);
+			ir_mode *store_mode1 = get_irn_mode(store_val1);
+			if (get_mode_arithmetic(store_mode1) != irma_twos_complement
+			 || get_mode_size_bits(store_mode1) != store_size)
+				continue;
+
+			ir_node *store_ptr1 = get_Store_ptr(store1);
+			base_offset_t base1;
+			get_base_and_offset(store_ptr1, &base1);
+			if (base0.base   != base1.base
+			 || base1.offset != base0.offset + (long)(store_size/8))
+				continue;
+
+			/* sort values according to endianess */
+			if (be_is_big_endian()) {
+				ir_node *tmp = store_val;
+				store_val = store_val1;
+				store_val1 = tmp;
+			}
+
+			/* Abort optimisation if we can't guarantee that the extra
+			 * arithmetic code below will disappear. */
+			if (!is_Const(store_val1)) {
+				if (!is_Shr(store_val1))
+					continue;
+				ir_node *shiftval = get_Shr_right(store_val1);
+				if (!is_Const(shiftval))
+					continue;
+				ir_tarval *tv = get_Const_tarval(shiftval);
+				if (!tarval_is_long(tv)
+				    || get_tarval_long(tv) != (long)store_size)
+					continue;
+			}
+
+			/* combine values */
+			dbg_info *dbgi   = get_irn_dbg_info(store0);
+			ir_node  *block  = get_nodes_block(store0);
+			ir_graph *irg    = get_Block_irg(block);
+			ir_node  *convu0 = new_r_Conv(block, store_val, mode_unsigned);
+			ir_node  *conv0  = new_r_Conv(block, convu0, double_mode);
+			ir_node  *convu1 = new_r_Conv(block, store_val1, mode_unsigned);
+			ir_node  *conv1  = new_r_Conv(block, convu1, double_mode);
+			ir_node  *cnst   = new_r_Const_long(irg, mode_Iu, store_size);
+			ir_node  *shl    = new_r_Shl(block, conv1, cnst, double_mode);
+			ir_node  *or     = new_r_Or(block, conv0, shl, double_mode);
+
+			/* create a new store and replace the two small stores */
+			ir_cons_flags flags = cons_unaligned;
+			if (get_irn_pinned(store0) == op_pin_state_floats
+			 || get_irn_pinned(store1) == op_pin_state_floats)
+				flags |= cons_floats;
+			ir_node *new_store
+				= new_rd_Store(dbgi, block, mem, store_ptr0, or, flags);
+			exchange(store0, new_store);
+			exchange(store1, new_store);
+			new_in[i] = pred0;
+			new_in[i2] = NULL;
+			/* restart detection loop */
+			i = 0;
+			changed = true;
+			goto again;
+		}
+	}
+
+	if (changed) {
+		/* compact new_in array (remove NULL entries) */
+		int new_arity = 0;
+		for (int i = 0; i < n_preds; ++i) {
+			ir_node *in = new_in[i];
+			if (in != NULL)
+				new_in[new_arity++] = in;
+		}
+
+		set_irn_in(sync, new_arity, new_in);
+	}
+}
+
+void combine_memops(ir_graph *irg)
+{
+	irg_walk_graph(irg, combine_memop, NULL, NULL);
 }
 
 void optimize_load_store(ir_graph *irg)
