@@ -53,7 +53,7 @@ void init_tarval_2(void);
 void finish_tarval(void);
 
 /**
- * This struct represents the afore mentioned tarvals.
+ * This struct represents the aforementioned tarvals.
  *
  * A tarval struct consists of an internal representation of the
  * value and some additional fields further describing the value.
