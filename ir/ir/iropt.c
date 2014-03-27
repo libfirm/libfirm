@@ -2768,7 +2768,7 @@ static ir_node *transform_node_Add(ir_node *n)
 				if (is_Mul(a)) {
 					x = b;
 					y = get_commutative_other_op(a, x);
-					if (y) /* (x * y) + x -> x * (y + 1) */
+					if (y && !is_Const(b)) /* (x * y) + x -> x * (y + 1) */
 						goto mul_y_plus_1;
 					if (is_Mul(b)) {
 						ir_node *const al = get_Mul_left(a);
@@ -3258,6 +3258,15 @@ static ir_node *can_negate_cheaply(ir_node *node)
 
 static ir_node *transform_node_shl_shr(ir_node *n);
 
+/** Returns true if we can be sure that @p node only has a single read user. */
+static bool only_one_user(const ir_node *node)
+{
+	ir_graph *irg = get_irn_irg(node);
+	if (!edges_activated(irg))
+		return false;
+	return get_irn_n_edges(node) <= 1;
+}
+
 static ir_node *transform_node_Mul(ir_node *n)
 {
 	ir_node *oldn = n;
@@ -3272,16 +3281,38 @@ static ir_node *transform_node_Mul(ir_node *n)
 	ir_node *c;
 	HANDLE_BINOP_PHI((eval_func) tarval_mul, a, b, c, mode);
 
-	/* x*-1 => -x */
 	if (is_Const(b)) {
-		ir_tarval *tv = get_Const_tarval(b);
-		if (tarval_is_minus_one(tv) ||
+		ir_tarval *c1 = get_Const_tarval(b);
+
+		/* Normalize (x+C1) * C2 => x*C2 + (C1*C2),
+		 * but only do this if we can be sure that the add has only 1 user */
+		if (is_Add(a) && only_one_user(a)) {
+			ir_mode *mode      = get_irn_mode(a);
+			ir_node *add_right = get_Add_right(a);
+			if (is_Const(add_right)
+			    && get_mode_arithmetic(mode) == irma_twos_complement) {
+			    ir_tarval *c2       = get_Const_tarval(add_right);
+				ir_node   *add_left = get_Add_left(a);
+
+				dbg_info  *dbgi  = get_irn_dbg_info(n);
+				ir_node   *block = get_nodes_block(n);
+				ir_node   *mul   = new_rd_Mul(dbgi, block, add_left, b, mode);
+				ir_tarval *c1_c2 = tarval_mul(c1, c2);
+				ir_graph  *irg   = get_Block_irg(block);
+				ir_node   *cnst  = new_r_Const(irg, c1_c2);
+				ir_node   *add   = new_rd_Add(dbgi, block, mul, cnst, mode);
+				return add;
+			}
+		}
+
+		/* x*-1 => -x */
+		if (tarval_is_minus_one(c1) ||
 			(get_mode_arithmetic(mode) == irma_twos_complement
-		    && tarval_is_all_one(tv))) {
+		    && tarval_is_all_one(c1))) {
 			dbg_info *dbgi  = get_irn_dbg_info(n);
 			ir_node  *block = get_nodes_block(n);
 			return new_rd_Minus(dbgi, block, a, mode);
-		} else if (get_tarval_popcount(tv) == 1) {
+		} else if (get_tarval_popcount(c1) == 1) {
 			/* multiplication behaves Shl-like */
 			n = transform_node_shl_shr(n);
 			if (n != oldn)
