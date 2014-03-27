@@ -62,10 +62,10 @@ void finish_tarval(void);
  *   irmode.h for predefined modes
  */
 struct ir_tarval {
-	firm_kind  kind;    /**< must be k_tarval */
-	ir_mode    *mode;   /**< the mode of the stored value */
-	const void *value;  /**< the value stored in an internal way... */
-	size_t     length;  /**< the length of the stored value */
+	firm_kind     kind;    /**< must be k_tarval */
+	ir_mode      *mode;    /**< the mode of the stored value */
+	size_t        length;  /**< the length of the stored value */
+	unsigned char value[]; /**< the value stored in an internal way */
 };
 
 /* inline functions */
@@ -135,7 +135,7 @@ ir_tarval *get_tarval_epsilon(ir_mode *mode);
 static inline unsigned get_tarval_bit(ir_tarval const *const tv, unsigned const idx)
 {
 	assert(idx < get_mode_size_bits(get_tarval_mode(tv)));
-	return ((unsigned char const*)tv->value)[idx / SC_BITS] >> (idx % SC_BITS) & 1;
+	return tv->value[idx / SC_BITS] >> (idx % SC_BITS) & 1;
 }
 
 #endif

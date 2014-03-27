@@ -284,12 +284,12 @@ FIRM_API ir_tarval *const tarval_unknown;
 FIRM_API ir_tarval *get_tarval_unknown(void);
 
 /** The mode_b tarval 'false'. */
-FIRM_API ir_tarval *const tarval_b_false;
+FIRM_API ir_tarval *tarval_b_false;
 /** Returns the mode_b tarval 'false'. */
 FIRM_API ir_tarval *get_tarval_b_false(void);
 
 /** The mode_b tarval 'true'. */
-FIRM_API ir_tarval *const tarval_b_true;
+FIRM_API ir_tarval *tarval_b_true;
 /** Returns the mode_b tarval 'true'. */
 FIRM_API ir_tarval *get_tarval_b_true(void);
 

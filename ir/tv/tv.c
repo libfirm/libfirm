@@ -42,38 +42,32 @@
 /****************************************************************************
  *   local definitions and macros
  ****************************************************************************/
-#define INSERT_TARVAL(tv) (set_insert(ir_tarval, tarvals, (tv), sizeof(ir_tarval), hash_tv((tv))))
-#define FIND_TARVAL(tv) (set_find(ir_tarval, tarvals, (tv), sizeof(ir_tarval), hash_tv((tv))))
-
-#define INSERT_VALUE(val, size) (set_insert(char, values, (val), size, hash_val((val), size)))
-#define FIND_VALUE(val, size) (set_find(char, values, (val), size, hash_val((val), size)))
+#define INSERT_TARVAL(tv) (set_insert(ir_tarval, tarvals, (tv), offsetof(ir_tarval, value) + (tv)->length, hash_tv((tv))))
 
 /** A set containing all existing tarvals. */
 static struct set *tarvals = NULL;
-/** A set containing all existing values. */
-static struct set *values = NULL;
 
 static unsigned sc_value_length;
 
 /** The integer overflow mode. */
 static tarval_int_overflow_mode_t int_overflow_mode = TV_OVERFLOW_WRAP;
 
-/** Hash a tarval. */
-static unsigned hash_tv(const ir_tarval *tv)
-{
-	return (unsigned)((PTR_TO_INT(tv->value) ^ PTR_TO_INT(tv->mode)) + tv->length);
-}
-
 /** Hash a value. Treat it as a byte array. */
-static unsigned hash_val(const void *value, size_t length)
+static unsigned hash_val(unsigned char const *value, size_t length)
 {
 	/* scramble the byte - array */
 	unsigned hash = 0;
 	for (size_t i = 0; i < length; ++i) {
-		hash += (hash << 5) ^ (hash >> 27) ^ ((char*)value)[i];
+		hash += (hash << 5) ^ (hash >> 27) ^ value[i];
 		hash += (hash << 11) ^ (hash >> 17);
 	}
 	return hash;
+}
+
+/** Hash a tarval. */
+static unsigned hash_tv(const ir_tarval *tv)
+{
+	return (unsigned)((hash_val(tv->value, tv->length) ^ PTR_TO_INT(tv->mode)) + tv->length);
 }
 
 static int cmp_tv(const void *p1, const void *p2, size_t n)
@@ -92,40 +86,27 @@ static int cmp_tv(const void *p1, const void *p2, size_t n)
 		return -1;
 	if (tv1->length > tv2->length)
 		return 1;
-	if (tv1->value < tv2->value)
-		return -1;
-	if (tv1->value > tv2->value)
-		return 1;
-
-	return 0;
+	return memcmp(tv1->value, tv2->value, tv1->length);
 }
 
 /** finds tarval with value/mode or creates new tarval */
 static ir_tarval *get_tarval(const void *value, size_t length, ir_mode *mode)
 {
-	ir_tarval tv;
-	tv.kind   = k_tarval;
-	tv.mode   = mode;
-	tv.length = length;
-	if (length > 0) {
-		/* if there already is such a value, it is returned, else value
-		 * is copied into the set */
-		char *temp = ALLOCAN(char, length);
-		memcpy(temp, value, length);
-		if (get_mode_arithmetic(mode) == irma_twos_complement) {
-			if (mode_is_signed(mode)) {
-				sc_sign_extend((sc_word*)temp, get_mode_size_bits(mode));
-			} else {
-				sc_zero_extend((sc_word*)temp, get_mode_size_bits(mode));
-			}
+	ir_tarval *const tv = ALLOCAF(ir_tarval, value, length);
+	tv->kind   = k_tarval;
+	tv->mode   = mode;
+	tv->length = length;
+	memcpy(tv->value, value, length);
+	if (get_mode_arithmetic(mode) == irma_twos_complement) {
+		if (mode_is_signed(mode)) {
+			sc_sign_extend((sc_word*)tv->value, get_mode_size_bits(mode));
+		} else {
+			sc_zero_extend((sc_word*)tv->value, get_mode_size_bits(mode));
 		}
-		tv.value = INSERT_VALUE(temp, length);
-	} else {
-		tv.value = value;
 	}
 	/* if there is such a tarval, it is returned, else tv is copied
 	 * into the set */
-	return INSERT_TARVAL(&tv);
+	return INSERT_TARVAL(tv);
 }
 
 /** handle overflow */
@@ -196,13 +177,11 @@ static ir_tarval *get_tarval_overflow(const void *value, size_t length,
 	return get_tarval(value, length, mode);
 }
 
-static ir_tarval tarval_b_false_obj;
-static ir_tarval tarval_b_true_obj;
 static ir_tarval tarval_bad_obj;
 static ir_tarval tarval_unknown_obj;
 
-ir_tarval *const tarval_b_false = &tarval_b_false_obj;
-ir_tarval *const tarval_b_true  = &tarval_b_true_obj;
+ir_tarval       *tarval_b_false;
+ir_tarval       *tarval_b_true;
 ir_tarval *const tarval_bad     = &tarval_bad_obj;
 ir_tarval *const tarval_unknown = &tarval_unknown_obj;
 
@@ -1584,16 +1563,31 @@ tarval_int_overflow_mode_t tarval_get_integer_overflow_mode(void)
 	return int_overflow_mode;
 }
 
+static ir_tarval *make_b_tarval(unsigned char const val)
+{
+	size_t     const length = 1;
+	ir_tarval *const tv     = XMALLOCF(ir_tarval, value, length);
+	tv->kind     = k_tarval;
+	tv->mode     = NULL;
+	tv->length   = length;
+	tv->value[0] = val;
+	return tv;
+}
+
 void init_tarval_1(int support_quad_precision)
 {
 	/* initialize the sets holding the tarvals with a comparison function and
 	 * an initial size, which is the expected number of constants */
 	tarvals = new_set(cmp_tv, N_CONSTANTS);
-	values  = new_set(memcmp, N_CONSTANTS);
 	/* calls init_strcalc() with needed size */
 	init_fltcalc(support_quad_precision ? 112 : 64);
 
 	sc_value_length = sc_get_value_length();
+
+	/* true/false must be created beforehand without mode due to a cyclic
+	 * dependency between tarvals and modes. */
+	tarval_b_true  = make_b_tarval(1);
+	tarval_b_false = make_b_tarval(0);
 }
 
 void init_tarval_2(void)
@@ -1604,13 +1598,8 @@ void init_tarval_2(void)
 	tarval_unknown->kind  = k_tarval;
 	tarval_unknown->mode  = mode_ANY;
 
-	tarval_b_true->kind   = k_tarval;
-	tarval_b_true->mode   = mode_b;
-	tarval_b_true->value  = "\1";
-
-	tarval_b_false->kind  = k_tarval;
-	tarval_b_false->mode  = mode_b;
-	tarval_b_false->value = "\0";
+	tarval_b_true->mode  = mode_b;
+	tarval_b_false->mode = mode_b;
 }
 
 void finish_tarval(void)
@@ -1618,7 +1607,6 @@ void finish_tarval(void)
 	finish_strcalc();
 	finish_fltcalc();
 	del_set(tarvals); tarvals = NULL;
-	del_set(values);  values = NULL;
 }
 
 int (is_tarval)(const void *thing)
