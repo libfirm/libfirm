@@ -3382,12 +3382,12 @@ static ir_node *gen_Mux(ir_node *node)
 				relation  = get_negated_relation(relation);
 			}
 			if (is_Const_0(val_false) && is_Sub(val_true)) {
-				if ((relation & ir_relation_greater)
+				if ((relation & ~ir_relation_equal) == ir_relation_greater
 					&& get_Sub_left(val_true) == cmp_left
 					&& get_Sub_right(val_true) == cmp_right) {
 					return create_doz(node, cmp_left, cmp_right);
 				}
-				if ((relation & ir_relation_less)
+				if ((relation & ~ir_relation_equal) == ir_relation_less
 					&& get_Sub_left(val_true) == cmp_right
 					&& get_Sub_right(val_true) == cmp_left) {
 					return create_doz(node, cmp_right, cmp_left);
