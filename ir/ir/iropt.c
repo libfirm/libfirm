@@ -3642,6 +3642,29 @@ static ir_node *transform_node_Cond(ir_node *n)
 	return n;
 }
 
+/**
+ * Transforms a Confirm node.
+ *
+ * This sharpens the relation of a Confirm node.
+ */
+static ir_node *transform_node_Confirm(ir_node *n)
+{
+	ir_node     *value    = get_Confirm_value(n);
+	ir_node     *bound    = get_Confirm_bound(n);
+	ir_relation  relation = get_Confirm_relation(n);
+	ir_relation  possible = ir_get_possible_cmp_relations(value, bound);
+
+	/* mask out impossible relations */
+	ir_relation new_relation = relation & possible;
+	if (new_relation != relation) {
+		dbg_info *dbgi  = get_irn_dbg_info(n);
+		ir_node  *block = get_nodes_block(n);
+		return new_rd_Confirm(dbgi, block, value, bound, new_relation);
+	}
+
+	return n;
+}
+
 static ir_node *transform_node_Switch(ir_node *n)
 {
 	ir_node         *op  = get_Switch_selector(n);
@@ -7035,6 +7058,7 @@ void ir_register_opt_node_ops(void)
 	register_transform_node_func(op_Call,    transform_node_Call);
 	register_transform_node_func(op_Cmp,     transform_node_Cmp);
 	register_transform_node_func(op_Cond,    transform_node_Cond);
+	register_transform_node_func(op_Confirm, transform_node_Confirm);
 	register_transform_node_func(op_Conv,    transform_node_Conv);
 	register_transform_node_func(op_Div,     transform_node_Div);
 	register_transform_node_func(op_End,     transform_node_End);
