@@ -415,8 +415,9 @@ static const backend_params *arm_get_libfirm_params(void)
 		32,   /* SMUL & UMUL available for 32 bit */
 	};
 	static backend_params p = {
-		1,     /* big endian */
-		0,     /* PIC code not supported */
+		true,  /* big endian */
+		false, /* PIC code not supported */
+		false, /* unaligned memory access */
 		32,    /* modulo shift */
 		&ad,   /* will be set later */
 		arm_is_mux_allowed, /* allow_ifconv function */

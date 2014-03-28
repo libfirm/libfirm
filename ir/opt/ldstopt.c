@@ -2173,6 +2173,12 @@ again:;
 
 void combine_memops(ir_graph *irg)
 {
+	/* We don't have code yet to test whether the address is aligned for the
+	 * combined modes, so we can only do this if the backend supports unaligned
+	 * stores. */
+	if (!be_get_backend_param()->unaligned_memaccess_supported)
+		return;
+
 	irg_walk_graph(irg, combine_memop, NULL, NULL);
 }
 

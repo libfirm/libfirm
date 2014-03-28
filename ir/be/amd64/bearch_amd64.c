@@ -546,8 +546,9 @@ static const ir_settings_arch_dep_t amd64_arch_dep = {
  */
 static const backend_params *amd64_get_backend_params(void) {
 	static backend_params p = {
-		0,     /* little endian */
-		0,     /* PIC code not supported */
+		false,     /* little endian */
+		false,     /* PIC code not supported */
+		true,      /* unaligned memory */
 		32,    /* modulo shift */
 		&amd64_arch_dep,
 		amd64_is_mux_allowed,  /* parameter for if conversion */

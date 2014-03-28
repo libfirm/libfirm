@@ -247,8 +247,9 @@ static int TEMPLATE_is_mux_allowed(ir_node *sel, ir_node *mux_false,
 static const backend_params *TEMPLATE_get_backend_params(void)
 {
 	static backend_params p = {
-		0,     /* 0: little-endian, 1: big-endian */
-		0,     /* PIC code supported */
+		false, /* false: little-endian, true: big-endian */
+		false, /* PIC code supported */
+		false, /* unaligned memory access supported */
 		32,    /* modulo_shift */
 		NULL,  /* architecture dependent settings, will be set later */
 		TEMPLATE_is_mux_allowed,  /* parameter for if conversion */

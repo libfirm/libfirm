@@ -1404,8 +1404,9 @@ static const ir_settings_arch_dep_t ia32_arch_dep = {
 	32, /* Mulh allowed up to 32 bit */
 };
 static backend_params ia32_backend_params = {
-	0,     /* little endian */
-	1,     /* PIC code supported */
+	false, /* little endian */
+	true,  /* PIC code supported */
+	true,  /* unaligned memory access */
 	32,    /* modulo shift */
 	&ia32_arch_dep, /* will be set later */
 	ia32_is_mux_allowed,

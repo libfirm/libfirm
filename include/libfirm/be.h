@@ -102,6 +102,9 @@ typedef struct backend_params {
 	unsigned byte_order_big_endian:1;
 	/** 1 if backend supports generation of position independent code (PIC) */
 	unsigned pic_supported:1;
+	/** unaligned memory accesses are not supported natively (but the backend
+	 * may break the access up into several smaller ones) */
+	unsigned unaligned_memaccess_supported:1;
 
 	/**
 	 * Shifts on this architecture only read some bits of the shift value.

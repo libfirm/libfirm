@@ -561,8 +561,9 @@ static const backend_params *sparc_get_backend_params(void)
 		32,    /* max_bits_for_mulh */
 	};
 	static backend_params p = {
-		1,     /* big endian */
-		0,     /* PIC code supported */
+		true,  /* big endian */
+		false, /* PIC code supported */
+		false, /* unaligned memory access */
 		32,    /* modulo shift */
 		&arch_dep,              /* will be set later */
 		sparc_is_mux_allowed,   /* parameter for if conversion */
