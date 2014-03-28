@@ -114,9 +114,6 @@ typedef struct proj_lookup {
 
 #include "gen_irdump.c.inl"
 
-/** Dump only irgs with names that start with this prefix. */
-static ident *dump_file_filter_id = NULL;
-
 static ir_dump_flags_t flags =
 	ir_dump_flag_blocks_as_subgraphs |
 	ir_dump_flag_keepalive_edges |
@@ -468,8 +465,6 @@ static void init_irdump(void)
 	if (irdump_link_map)
 		pmap_destroy(irdump_link_map);
 	irdump_link_map = pmap_create();
-	if (!dump_file_filter_id)
-		dump_file_filter_id = new_id_from_str("");
 }
 
 /**
