@@ -596,9 +596,6 @@ struct ir_prog {
 	irp_callgraph_state callgraph_state; /**< The state of the callgraph. */
 	ir_loop *outermost_cg_loop;          /**< For callgraph analysis: entry point
 	                                              to looptree over callgraph. */
-	size_t max_callgraph_loop_depth;        /**< needed in callgraph. */
-	size_t max_callgraph_recursion_depth;   /**< needed in callgraph. */
-	double max_method_execution_frequency;  /**< needed in callgraph. */
 	loop_nesting_depth_state lnd_state;  /**< The state of loop nesting depth information. */
 	ir_entity_usage_computed_state globals_entity_usage_state;
 
