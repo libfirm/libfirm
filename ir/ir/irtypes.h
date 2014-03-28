@@ -562,12 +562,10 @@ struct ir_graph {
  * - main_irg:  The ir graph that is the entry point to the program.
  *              (Anything not reachable from here may be optimized away
  *              if this irp represents a whole program.
- * - irg:       List of all ir graphs in the program or module.
- * - type:      A list containing all types known to the translated program.
+ * - graphs:    List of all ir graphs in the program or module.
+ * - types:     A list containing all types known to the translated program.
  *              Some types can have several entries in this list (as a result of
  *              using exchange_types()).
- * - glob_type: The unique global type that is owner of all global entities
- *              of this module.
  */
 struct ir_prog {
 	firm_kind kind;                 /**< must be k_ir_prog */
