@@ -111,8 +111,6 @@ static inline ir_node *get_memory_edge(const ir_node *node)
 static spill_t *collect_spill(be_fec_env_t *env, ir_node *node,
 		                      const ir_mode *mode, int align)
 {
-	spill_t *spill;
-
 	/* already in spill set? */
 	unsigned idx = get_irn_idx(node);
 	if (rbitset_is_set(env->spills_set, idx)) {
@@ -123,7 +121,7 @@ static spill_t *collect_spill(be_fec_env_t *env, ir_node *node,
 	}
 	rbitset_set(env->spills_set, idx);
 
-	spill = OALLOC(&env->obst, spill_t);
+	spill_t *spill = OALLOC(&env->obst, spill_t);
 	/* insert into set of spills if not already there */
 	spill->spill     = node;
 	spill->mode      = mode;
@@ -157,8 +155,9 @@ void be_node_needs_frame_entity(be_fec_env_t *env, ir_node *node,
 	ir_node *spillnode = get_memory_edge(node);
 	assert(spillnode != NULL);
 
-	/* if the node only produces memory outputs, then it is probably a Spill node which should not
-	 * be marked (only the reload nodes should be marked)! */
+	/* if the node only produces memory outputs, then it is probably a Spill
+	 * node which should not be marked (only the reload nodes should be marked)
+	 */
 	assert(arch_get_irn_n_outs(node) != 1
 	       || arch_get_irn_register_req_out(node, 0)->type != arch_register_req_type_none);
 
@@ -171,12 +170,8 @@ void be_node_needs_frame_entity(be_fec_env_t *env, ir_node *node,
 static int merge_interferences(be_fec_env_t *env, bitset_t** interferences,
                                int* spillslot_unionfind, int s1, int s2)
 {
-	int res;
-	size_t spillcount;
-	size_t i;
-
 	/* merge spillslots and interferences */
-	res = uf_union(spillslot_unionfind, s1, s2);
+	int res = uf_union(spillslot_unionfind, s1, s2);
 	/* we assume that we always merge s2 to s1 so swap s1, s2 if necessary */
 	if (res != s1) {
 		int t = s1;
@@ -187,8 +182,7 @@ static int merge_interferences(be_fec_env_t *env, bitset_t** interferences,
 	bitset_or(interferences[s1], interferences[s2]);
 
 	/* update other interferences */
-	spillcount = ARR_LEN(env->spills);
-	for (i = 0; i < spillcount; ++i) {
+	for (size_t i = 0, n = ARR_LEN(env->spills); i < n; ++i) {
 		bitset_t *intfs = interferences[i];
 		if (bitset_is_set(intfs, s2))
 			bitset_set(intfs, s1);
@@ -197,7 +191,8 @@ static int merge_interferences(be_fec_env_t *env, bitset_t** interferences,
 	return res;
 }
 
-static bool my_values_interfere2(ir_graph *const irg, ir_node const *a, ir_node const *b)
+static bool my_values_interfere2(ir_graph *const irg, ir_node const *a,
+                                 ir_node const *b)
 {
 	if (value_dominates(b, a)) {
 		/* Adjust a and b so, that a dominates b if
@@ -210,10 +205,9 @@ static bool my_values_interfere2(ir_graph *const irg, ir_node const *a, ir_node 
 		return 0;
 	}
 
-	ir_node *const bb = get_nodes_block(b);
-
 	/* If a is live end in b's block it is
 	 * live at b's definition (a dominates b) */
+	ir_node *const bb = get_nodes_block(b);
 	be_lv_t *const lv = be_get_irg_liveness(irg);
 	if (be_is_live_end(lv, bb, a))
 		return true;
@@ -280,36 +274,30 @@ static void do_greedy_coalescing(be_fec_env_t *env)
 {
 	spill_t **spills     = env->spills;
 	size_t    spillcount = ARR_LEN(spills);
-	size_t    i;
-	size_t    affinity_edge_count;
-	bitset_t **interferences;
-	int* spillslot_unionfind;
-	struct obstack data;
-
 	if (spillcount == 0)
 		return;
 
-	obstack_init(&data);
-
 	DB((dbg, DBG_COALESCING, "Coalescing %d spillslots\n", spillcount));
 
-	interferences       = OALLOCN(&data, bitset_t*, spillcount);
-	spillslot_unionfind = OALLOCN(&data, int,       spillcount);
+	struct obstack data;
+	obstack_init(&data);
+
+	bitset_t **interferences       = OALLOCN(&data, bitset_t*, spillcount);
+	int       *spillslot_unionfind = OALLOCN(&data, int,       spillcount);
 
 	uf_init(spillslot_unionfind, spillcount);
 
-	for (i = 0; i < spillcount; ++i) {
+	for (size_t i = 0; i < spillcount; ++i) {
 		interferences[i] = bitset_obstack_alloc(&data, spillcount);
 	}
 
 	/* construct interferences */
-	for (i = 0; i < spillcount; ++i) {
-		size_t   i2;
+	for (size_t i = 0; i < spillcount; ++i) {
 		ir_node *spill1 = spills[i]->spill;
 		if (is_NoMem(spill1))
 			continue;
 
-		for (i2 = i+1; i2 < spillcount; ++i2) {
+		for (size_t i2 = i+1; i2 < spillcount; ++i2) {
 			ir_node *spill2 = spills[i2]->spill;
 			if (is_NoMem(spill2))
 				continue;
@@ -325,12 +313,12 @@ static void do_greedy_coalescing(be_fec_env_t *env)
 	}
 
 	/* sort affinity edges */
-	affinity_edge_count = ARR_LEN(env->affinity_edges);
+	size_t affinity_edge_count = ARR_LEN(env->affinity_edges);
 	qsort(env->affinity_edges, affinity_edge_count,
 	      sizeof(env->affinity_edges[0]), cmp_affinity);
 
 	/* try to merge affine nodes */
-	for (i = 0; i < affinity_edge_count; ++i) {
+	for (size_t i = 0; i < affinity_edge_count; ++i) {
 		const affinity_edge_t *edge = env->affinity_edges[i];
 		int s1 = uf_find(spillslot_unionfind, edge->slot1);
 		int s2 = uf_find(spillslot_unionfind, edge->slot2);
@@ -348,13 +336,12 @@ static void do_greedy_coalescing(be_fec_env_t *env)
 	}
 
 	/* try to merge as much remaining spillslots as possible */
-	for (i = 0; i < spillcount; ++i) {
-		size_t i2;
-		int    s1 = uf_find(spillslot_unionfind, i);
+	for (size_t i = 0; i < spillcount; ++i) {
+		int s1 = uf_find(spillslot_unionfind, i);
 		if (s1 != (int)i)
 			continue;
 
-		for (i2 = i+1; i2 < spillcount; ++i2) {
+		for (size_t i2 = i+1; i2 < spillcount; ++i2) {
 			int s2 = uf_find(spillslot_unionfind, i2);
 			if (s2 != (int)i2)
 				continue;
@@ -380,7 +367,7 @@ static void do_greedy_coalescing(be_fec_env_t *env)
 	}
 
 	/* assign spillslots to spills */
-	for (i = 0; i < spillcount; ++i) {
+	for (size_t i = 0; i < spillcount; ++i) {
 		spills[i]->spillslot = uf_find(spillslot_unionfind, i);
 	}
 
@@ -388,50 +375,47 @@ static void do_greedy_coalescing(be_fec_env_t *env)
 }
 
 typedef struct spill_slot_t {
-	int size;
-	int align;
+	int        size;
+	int        align;
 	ir_entity *entity;
 } spill_slot_t;
 
-typedef struct memperm_entry_t {
-	ir_node* node;
-	int pos;
-	ir_entity *in;
-	ir_entity *out;
-	struct memperm_entry_t *next;
-} memperm_entry_t;
+typedef struct memperm_entry_t memperm_entry_t;
+struct memperm_entry_t {
+	ir_node         *node;
+	int              pos;
+	ir_entity       *in;
+	ir_entity       *out;
+	memperm_entry_t *next;
+};
 
 typedef struct memperm_t {
-	ir_node *block;
-	int entrycount;
+	ir_node         *block;
+	int              entrycount;
 	memperm_entry_t *entries;
 } memperm_t;
 
 static int cmp_memperm(const void* d1, const void* d2, size_t size)
 {
+	(void)size;
 	const memperm_t* e1 = (const memperm_t*)d1;
 	const memperm_t* e2 = (const memperm_t*)d2;
-	(void) size;
-
 	return e1->block != e2->block;
 }
 
 static memperm_t *get_memperm(be_fec_env_t *env, ir_node *block)
 {
-	memperm_t entry, *res;
-	int hash;
-
+	memperm_t entry;
 	entry.block = block;
-	hash        = hash_irn(block);
-
-	res = set_find(memperm_t, env->memperms, &entry, sizeof(entry), hash);
+	unsigned hash = hash_irn(block);
+	memperm_t *res
+		= set_find(memperm_t, env->memperms, &entry, sizeof(entry), hash);
 
 	if (res == NULL) {
 		entry.entrycount = 0;
 		entry.entries = NULL;
 		res = set_insert(memperm_t, env->memperms, &entry, sizeof(entry), hash);
 	}
-
 	return res;
 }
 
@@ -494,10 +478,9 @@ static void assign_spillslots(be_fec_env_t *env)
 	spill_t      **spills     = env->spills;
 	size_t         spillcount = ARR_LEN(spills);
 	spill_slot_t  *spillslots = ALLOCANZ(spill_slot_t, spillcount);
-	size_t         s;
 
 	/* construct spillslots */
-	for (s = 0; s < spillcount; ++s) {
+	for (size_t s = 0; s < spillcount; ++s) {
 		const spill_t *spill  = spills[s];
 		int            slotid = spill->spillslot;
 		const ir_mode *mode   = spill->mode;
@@ -513,7 +496,7 @@ static void assign_spillslots(be_fec_env_t *env)
 		}
 	}
 
-	for (s = 0; s < spillcount; ++s) {
+	for (size_t s = 0; s < spillcount; ++s) {
 		const spill_t *spill  = spills[s];
 		ir_node       *node   = spill->spill;
 		int            slotid = spill->spillslot;
@@ -559,7 +542,7 @@ static void assign_spillslots(be_fec_env_t *env)
 		}
 	}
 
-	for (s = 0; s < ARR_LEN(env->reloads); ++s) {
+	for (size_t s = 0; s < ARR_LEN(env->reloads); ++s) {
 		ir_node            *reload    = env->reloads[s];
 		ir_node            *spillnode = get_memory_edge(reload);
 		const spill_t      *spill     = get_spill(env, spillnode);
@@ -574,34 +557,33 @@ static void assign_spillslots(be_fec_env_t *env)
 static void create_memperms(be_fec_env_t *env)
 {
 	foreach_set(env->memperms, memperm_t, memperm) {
-		ir_node         **nodes = ALLOCAN(ir_node*, memperm->entrycount);
-		memperm_entry_t  *entry;
-		ir_node          *mempermnode;
-		int               i;
-
 		assert(memperm->entrycount > 0);
 
-		for (entry = memperm->entries, i = 0; entry != NULL; entry = entry->next, ++i) {
+		ir_node **nodes = ALLOCAN(ir_node*, memperm->entrycount);
+		int       i     = 0;
+		for (memperm_entry_t *entry = memperm->entries; entry != NULL;
+		     entry = entry->next, ++i) {
 			ir_node* arg = get_irn_n(entry->node, entry->pos);
 			nodes[i] = arg;
 		}
 
-		mempermnode = be_new_MemPerm(memperm->block, memperm->entrycount,
-		                             nodes);
+		ir_node *mempermnode
+			= be_new_MemPerm(memperm->block, memperm->entrycount, nodes);
 
 		/* insert node into schedule */
-		ir_node *const blockend = be_get_end_of_block_insertion_point(memperm->block);
+		ir_node *const blockend
+			= be_get_end_of_block_insertion_point(memperm->block);
 		sched_add_before(blockend, mempermnode);
 		stat_ev_dbl("mem_perm", memperm->entrycount);
 
 		i = 0;
-		for (entry = memperm->entries; entry != NULL; entry = entry->next, ++i) {
-			ir_node *proj;
+		for (memperm_entry_t *entry = memperm->entries; entry != NULL;
+		     entry = entry->next, ++i) {
 			ir_node* arg = get_irn_n(entry->node, entry->pos);
 
 			be_set_MemPerm_in_entity(mempermnode, i, entry->in);
 			be_set_MemPerm_out_entity(mempermnode, i, entry->out);
-			proj = new_r_Proj(mempermnode, get_irn_mode(arg), i);
+			ir_node *proj = new_r_Proj(mempermnode, get_irn_mode(arg), i);
 
 			set_irn_n(entry->node, entry->pos, proj);
 		}
@@ -610,12 +592,10 @@ static void create_memperms(be_fec_env_t *env)
 
 static unsigned count_spillslots(const be_fec_env_t *env)
 {
-	size_t         spillcount = ARR_LEN(env->spills);
-	unsigned       slotcount  = 0;
-	size_t         s;
-
-	unsigned *const counted = rbitset_alloca(spillcount);
-	for (s = 0; s < spillcount; ++s) {
+	size_t          spillcount = ARR_LEN(env->spills);
+	unsigned        slotcount  = 0;
+	unsigned *const counted    = rbitset_alloca(spillcount);
+	for (size_t s = 0; s < spillcount; ++s) {
 		spill_t *spill     = env->spills[s];
 		int      spillslot = spill->spillslot;
 		if (!rbitset_is_set(counted, spillslot)) {
