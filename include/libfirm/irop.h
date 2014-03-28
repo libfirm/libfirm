@@ -92,9 +92,6 @@ FIRM_API unsigned get_next_ir_opcodes(unsigned num);
  */
 typedef void (*op_func)(void);
 
-/** The NULL-function. */
-#define NULL_FUNC       ((generic_func)(NULL))
-
 /**
  * Returns the generic function pointer from an IR operation.
  */
