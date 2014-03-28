@@ -14,7 +14,6 @@
 
 #include <stdio.h>
 #include "firm_types.h"
-#include "ident.h"
 #include "begin.h"
 
 /**

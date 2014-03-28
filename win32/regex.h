@@ -1,7 +1,6 @@
 #ifndef REGEX_H
 #define REGEX_H
 
-#include <stddef.h>
 #include <stdlib.h>
 
 /* naive and wrong regex stubs */

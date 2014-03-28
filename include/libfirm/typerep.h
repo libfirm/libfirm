@@ -10,7 +10,8 @@
 #ifndef FIRM_TYPEREP_H
 #define FIRM_TYPEREP_H
 
-#include <stdlib.h>
+#include <stddef.h>
+
 #include "firm_types.h"
 
 #include "begin.h"

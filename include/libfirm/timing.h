@@ -10,8 +10,6 @@
 #ifndef FIRM_TIMING_H
 #define FIRM_TIMING_H
 
-#include <stdlib.h>
-
 #include "begin.h"
 
 /**

@@ -11,7 +11,6 @@
 #ifndef _LIBCORE_LC_PRINTF_H
 #define _LIBCORE_LC_PRINTF_H
 
-#include <stddef.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdint.h>

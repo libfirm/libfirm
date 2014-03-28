@@ -11,7 +11,8 @@
 #ifndef FIRM_ADT_HASHPTR_H
 #define FIRM_ADT_HASHPTR_H
 
-#include <stdlib.h>
+#include <stddef.h>
+
 #include "../begin.h"
 
 /**

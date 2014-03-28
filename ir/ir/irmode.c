@@ -9,7 +9,6 @@
  * @author   Martin Trapp, Christian Schaefer, Goetz Lindenmaier, Mathias Heil
  */
 #include <stdlib.h>
-#include <stddef.h>
 #include <stdbool.h>
 
 #include "irprog_t.h"

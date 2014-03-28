@@ -11,7 +11,6 @@
 #ifndef FIRM_IR_IRPRINTF_H
 #define FIRM_IR_IRPRINTF_H
 
-#include <stddef.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include "begin.h"

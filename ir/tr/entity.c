@@ -9,7 +9,6 @@
  * @author  Martin Trapp, Christian Schaefer, Goetz Lindenmaier, Michael Beck
  */
 #include <stdlib.h>
-#include <stddef.h>
 
 #include "xmalloc.h"
 #include "entity_t.h"

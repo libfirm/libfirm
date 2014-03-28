@@ -5,8 +5,6 @@
 #ifndef FIRM_ADT_LIST_H
 #define FIRM_ADT_LIST_H
 
-#include <stdlib.h>
-
 #include "../begin.h"
 
 /**
@@ -117,8 +115,8 @@ static inline void __list_del(struct list_head * prev, struct list_head * next)
 static inline void list_del(struct list_head *entry)
 {
 	__list_del(entry->prev, entry->next);
-	entry->next = NULL;
-	entry->prev = NULL;
+	entry->next = 0;
+	entry->prev = 0;
 }
 
 

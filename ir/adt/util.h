@@ -12,7 +12,6 @@
 #ifndef FIRM_ADT_UTIL_H
 #define FIRM_ADT_UTIL_H
 
-#include <stddef.h>
 #include <string.h>
 
 /**

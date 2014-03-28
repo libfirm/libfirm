@@ -41,8 +41,6 @@ typedef struct timeval ir_timer_val_t;
 
 #endif /* _Win32 */
 
-#include <stddef.h>
-
 static inline void _time_reset(ir_timer_val_t *val);
 
 /**
