@@ -1572,6 +1572,23 @@ static ir_node *equivalent_node_Mux(ir_node *n)
 		 * Note: normalization puts the constant on the right side,
 		 * so we check only one case.
 		 */
+		if (is_Const(f) && is_Const_null(f) && relation == ir_relation_less_greater &&
+		    get_mode_arithmetic(get_irn_mode(cmp_l)) == irma_twos_complement &&
+		    (is_Eor(t) || is_Sub(t))) {
+			ir_node *t_l = get_binop_left(t);
+			ir_node *t_r = get_binop_right(t);
+
+			if ((t_l == cmp_l && t_r == cmp_r) || (t_l == cmp_r && t_r == cmp_l)) {
+				/* Mux((a != b, 0, a - b) => a - b */
+				/* Mux((a != b, 0, a ^ b) => a ^ b */
+				return t;
+			}
+		}
+
+		/*
+		 * Note: normalization puts the constant on the right side,
+		 * so we check only one case.
+		 */
 		if (cmp_l == t && tarval_is_null(value_of(cmp_r))) {
 			/* Mux(t CMP 0, X, t) */
 			if (is_Minus(f) && get_Minus_op(f) == t) {
