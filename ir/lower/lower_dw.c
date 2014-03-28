@@ -104,8 +104,6 @@ typedef struct lower_dw_env_t {
 	ir_mode   *high_unsigned;      /**< doubleword unsigned type */
 	ir_mode   *low_signed;         /**< word signed type */
 	ir_mode   *low_unsigned;       /**< word unsigned type */
-	ident     *first_id;           /**< .l for little and .h for big endian */
-	ident     *next_id;            /**< .h for little and .l for big endian */
 	const lwrdw_param_t *params;   /**< transformation parameter */
 	unsigned flags;                /**< some flags */
 	unsigned n_entries;            /**< number of entries */
@@ -2966,8 +2964,6 @@ void ir_lower_dw_ops(void)
 	lenv.tv_mode_bytes = new_tarval_from_long(param->doubleword_size/(2*8),
 	                                          lenv.low_unsigned);
 	lenv.waitq    = new_pdeq();
-	lenv.first_id = new_id_from_chars(param->little_endian ? ".l" : ".h", 2);
-	lenv.next_id  = new_id_from_chars(param->little_endian ? ".h" : ".l", 2);
 
 	irp_reserve_resources(irp, IRP_RESOURCE_TYPE_LINK
 	                         | IRP_RESOURCE_TYPE_VISITED);
