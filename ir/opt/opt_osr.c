@@ -1114,6 +1114,13 @@ static ir_node *applyOneEdge(ir_node *iv, ir_node *rc, LFTR_edge *e, iv_env *env
 			DB((dbg, LEVEL_4, " = OVERFLOW"));
 			return NULL;
 		}
+		/* backwards counting in unsigned modes easily leads to overflow
+		 * in the increment. TODO: improve this situation */
+		if (tv_incr == tarval_bad) {
+			tarval_set_integer_overflow_mode(ovmode);
+			DB((dbg, LEVEL_4, " = OVERFLOW (incr)"));
+			return NULL;
+		}
 
 		if (pscc->code == iro_Add) {
 			tv_end = tarval_add(tv, tv_incr);
