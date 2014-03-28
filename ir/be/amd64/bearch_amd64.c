@@ -326,7 +326,7 @@ static void amd64_collect_frame_entity_nodes(ir_node *node, void *data)
 static void amd64_finish_graph(ir_graph *irg)
 {
 	be_stack_layout_t *stack_layout = be_get_irg_stack_layout(irg);
-	bool               at_begin     = stack_layout->sp_relative ? true : false;
+	bool               at_begin     = stack_layout->sp_relative;
 	be_fec_env_t      *fec_env      = be_new_frame_entity_coalescer(irg);
 
 	/* create and coalesce frame entities */

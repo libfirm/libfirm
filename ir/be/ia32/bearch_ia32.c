@@ -982,7 +982,7 @@ static void ia32_emit(ir_graph *irg)
 	 */
 	ia32_irg_data_t   *irg_data     = ia32_get_irg_data(irg);
 	be_stack_layout_t *stack_layout = be_get_irg_stack_layout(irg);
-	bool               at_begin     = stack_layout->sp_relative ? true : false;
+	bool               at_begin     = stack_layout->sp_relative;
 	be_fec_env_t      *fec_env      = be_new_frame_entity_coalescer(irg);
 
 	/* create and coalesce frame entities */

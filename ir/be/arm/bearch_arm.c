@@ -216,7 +216,7 @@ static void arm_after_ra_walker(ir_node *block, void *data)
 static void arm_emit(ir_graph *irg)
 {
 	be_stack_layout_t *stack_layout = be_get_irg_stack_layout(irg);
-	bool               at_begin     = stack_layout->sp_relative ? true : false;
+	bool               at_begin     = stack_layout->sp_relative;
 	be_fec_env_t      *fec_env      = be_new_frame_entity_coalescer(irg);
 
 	irg_walk_graph(irg, NULL, arm_collect_frame_entity_nodes, fec_env);
