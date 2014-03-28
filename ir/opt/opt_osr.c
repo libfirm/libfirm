@@ -13,27 +13,29 @@
  *  by Keith D. Cooper, L. Taylor Simpson, Christopher A. Vick.
  *  Extended version.
  */
+#include <stdbool.h>
+
 #include "adt/pdeq.h"
-#include "iroptimize.h"
-#include "ircons.h"
-#include "irop_t.h"
-#include "irdom.h"
-#include "irgmod.h"
-#include "irflag_t.h"
-#include "irgwalk.h"
-#include "irouts.h"
-#include "iredges.h"
+#include "array.h"
 #include "debug.h"
+#include "error.h"
+#include "firmstat_t.h"
+#include "hashptr.h"
+#include "ircons.h"
+#include "irdom.h"
+#include "iredges.h"
+#include "irflag_t.h"
+#include "irgmod.h"
+#include "irgwalk.h"
+#include "irloop_t.h"
+#include "irop_t.h"
+#include "iroptimize.h"
+#include "irouts.h"
+#include "irtools.h"
 #include "obst.h"
 #include "set.h"
 #include "tv.h"
-#include "hashptr.h"
 #include "util.h"
-#include "irtools.h"
-#include "irloop_t.h"
-#include "array.h"
-#include "firmstat_t.h"
-#include "error.h"
 
 /** The debug handle. */
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
@@ -42,34 +44,38 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 typedef struct scc {
 	ir_node   *head; /**< the head of the list */
 	ir_tarval *init; /**< the init value iff only one exists. */
-	ir_tarval *incr; /**< the induction variable increment if only a single const exists. */
-	unsigned   code; /**< == iro_Add if +incr, iro_Sub if -incr, 0 if not analysed, iro_Bad else */
+	ir_tarval *incr; /**< the induction variable increment if only a single
+	                      const exists. */
+	unsigned   code; /**< == iro_Add if +incr, iro_Sub if -incr, 0 if not
+	                         analysed, iro_Bad else */
 } scc;
 
 /** A node entry */
 typedef struct node_entry {
-	unsigned DFSnum;    /**< the DFS number of this node */
-	unsigned low;       /**< the low number of this node */
+	unsigned  DFSnum;   /**< the DFS number of this node */
+	unsigned  low;      /**< the low number of this node */
 	ir_node  *header;   /**< the header of this node */
-	int      in_stack;  /**< flag, set if the node is on the stack */
+	bool      in_stack; /**< flag, set if the node is on the stack */
 	ir_node  *next;     /**< link to the next node the the same scc */
 	scc      *pscc;     /**< the scc of this node */
-	unsigned POnum;     /**< the post order number for blocks */
+	unsigned  POnum;    /**< the post order number for blocks */
 } node_entry;
 
 /** The environment. */
 typedef struct iv_env {
 	struct obstack obst;    /**< an obstack for allocations */
 	ir_node  **stack;       /**< the node stack */
-	size_t   tos;           /**< tos index */
-	unsigned nextDFSnum;    /**< the current DFS number */
-	unsigned POnum;         /**< current post order number */
+	size_t    tos;          /**< tos index */
+	unsigned  nextDFSnum;   /**< the current DFS number */
+	unsigned  POnum;        /**< current post order number */
 	set      *quad_map;     /**< a map from (op, iv, rc) to node */
 	set      *lftr_edges;   /**< the set of lftr edges */
-	unsigned replaced;      /**< number of replaced ops */
-	unsigned lftr_replaced; /**< number of applied linear function test replacements */
-	unsigned osr_flags;     /**< additional flags steering the transformation */
-	unsigned need_postpass; /**< set, if a post pass is needed to fix Add and Sub nodes */
+	unsigned  replaced;     /**< number of replaced ops */
+	unsigned  lftr_replaced;/**< number of applied linear function test
+	                             replacements */
+	unsigned  osr_flags;    /**< additional flags steering the transformation */
+	bool      need_postpass;/**< set, if a post pass is needed to fix Add and
+	                             Sub nodes */
 	/** Function called to process a SCC. */
 	void (*process_scc)(scc *pscc, struct iv_env *env);
 } iv_env;
@@ -78,22 +84,22 @@ typedef struct iv_env {
  * An entry in the (op, node, node) -> node map.
  */
 typedef struct quadruple_t {
-	unsigned   code; /**< the opcode of the reduced operation */
-	ir_node   *op1;  /**< the first operand the reduced operation */
-	ir_node   *op2;  /**< the second operand of the reduced operation */
+	unsigned code; /**< the opcode of the reduced operation */
+	ir_node *op1;  /**< the first operand the reduced operation */
+	ir_node *op2;  /**< the second operand of the reduced operation */
 
-	ir_node   *res; /**< the reduced operation */
+	ir_node *res; /**< the reduced operation */
 } quadruple_t;
 
 /**
  * A LFTR edge.
  */
-typedef struct LFTR_edge {
-	ir_node   *src;   /**< the source node */
-	ir_node   *dst;   /**< the destination node */
-	unsigned  code;   /**< the opcode that must be applied */
-	ir_node   *rc;    /**< the region const that must be applied */
-} LFTR_edge;
+typedef struct ldtr_edge_t {
+	ir_node  *src;   /**< the source node */
+	ir_node  *dst;   /**< the destination node */
+	unsigned  code;  /**< the opcode that must be applied */
+	ir_node  *rc;    /**< the region const that must be applied */
+} ldtr_edge_t;
 
 /* forward */
 static ir_node *reduce(ir_node *orig, ir_node *iv, ir_node *rc, iv_env *env);
@@ -101,12 +107,11 @@ static ir_node *reduce(ir_node *orig, ir_node *iv, ir_node *rc, iv_env *env);
 /**
  * Compare two LFTR edges.
  */
-static int LFTR_cmp(const void *e1, const void *e2, size_t size)
+static int lftr_cmp(const void *e1, const void *e2, size_t size)
 {
-	const LFTR_edge *l1 = (const LFTR_edge*)e1;
-	const LFTR_edge *l2 = (const LFTR_edge*)e2;
-	(void) size;
-
+	(void)size;
+	const ldtr_edge_t *l1 = (const ldtr_edge_t*)e1;
+	const ldtr_edge_t *l2 = (const ldtr_edge_t*)e2;
 	return l1->src != l2->src;
 }
 
@@ -115,13 +120,12 @@ static int LFTR_cmp(const void *e1, const void *e2, size_t size)
  *
  * @param src  the source node of the transition
  */
-static LFTR_edge *LFTR_find(ir_node *src, iv_env *env)
+static ldtr_edge_t *lftr_find(ir_node *src, iv_env *env)
 {
-	LFTR_edge key;
-
+	ldtr_edge_t key;
 	key.src  = src;
-
-	return set_find(LFTR_edge, env->lftr_edges, &key, sizeof(key), hash_ptr(src));
+	return set_find(ldtr_edge_t, env->lftr_edges, &key, sizeof(key),
+	                hash_ptr(src));
 }
 
 /**
@@ -133,10 +137,10 @@ static LFTR_edge *LFTR_find(ir_node *src, iv_env *env)
  * @param rc    the region const used in the transition
  * @param env   the environment
  */
-static void LFTR_add(ir_node *src, ir_node *dst, unsigned code, ir_node *rc, iv_env *env)
+static void lftr_add(ir_node *src, ir_node *dst, unsigned code, ir_node *rc,
+                     iv_env *env)
 {
-	LFTR_edge key;
-
+	ldtr_edge_t key;
 	key.src  = src;
 	key.dst  = dst;
 	key.code = code;
@@ -146,7 +150,8 @@ static void LFTR_add(ir_node *src, ir_node *dst, unsigned code, ir_node *rc, iv_
 	 * There might be more than one edge here. This is rather bad
 	 * because we currently store only one.
 	 */
-	(void)set_insert(LFTR_edge, env->lftr_edges, &key, sizeof(key), hash_ptr(src));
+	(void)set_insert(ldtr_edge_t, env->lftr_edges, &key, sizeof(key),
+	                 hash_ptr(src));
 }
 
 /**
@@ -198,7 +203,7 @@ static ir_node *is_iv(ir_node *irn, iv_env *env)
  * @param irn           the node to check
  * @param header_block  the header block of the induction variable
  */
-static int is_rc(ir_node *irn, ir_node *header_block)
+static bool is_rc(ir_node *irn, ir_node *header_block)
 {
 	ir_node *block = get_nodes_block(irn);
 
@@ -210,10 +215,9 @@ static int is_rc(ir_node *irn, ir_node *header_block)
  */
 static int quad_cmp(const void *e1, const void *e2, size_t size)
 {
+	(void)size;
 	const quadruple_t *c1 = (const quadruple_t*)e1;
 	const quadruple_t *c2 = (const quadruple_t*)e2;
-	(void) size;
-
 	return c1->code != c2->code || c1->op1 != c2->op1 || c1->op2 != c2->op2;
 }
 
@@ -229,14 +233,15 @@ static int quad_cmp(const void *e1, const void *e2, size_t size)
  */
 static ir_node *search(unsigned code, ir_node *op1, ir_node *op2, iv_env *env)
 {
-	quadruple_t key, *entry;
-
+	quadruple_t key;
 	key.code = code;
 	key.op1 = op1;
 	key.op2 = op2;
 
-	entry = set_find(quadruple_t, env->quad_map, &key, sizeof(key), (code * 9) ^ hash_ptr(op1) ^ hash_ptr(op2));
-	if (entry)
+	unsigned hash = (code*9) ^ hash_ptr(op1) ^ hash_ptr(op2);
+	quadruple_t *entry = set_find(quadruple_t, env->quad_map, &key, sizeof(key),
+	                              hash);
+	if (entry != NULL)
 		return entry->res;
 	return NULL;
 }
@@ -250,16 +255,17 @@ static ir_node *search(unsigned code, ir_node *op1, ir_node *op2, iv_env *env)
  * @param result  the result of the reduced operation
  * @param env     the environment
  */
-static void add(unsigned code, ir_node *op1, ir_node *op2, ir_node *result, iv_env *env)
+static void add(unsigned code, ir_node *op1, ir_node *op2, ir_node *result,
+                iv_env *env)
 {
 	quadruple_t key;
-
 	key.code = code;
 	key.op1  = op1;
 	key.op2  = op2;
 	key.res  = result;
 
-	(void)set_insert(quadruple_t, env->quad_map, &key, sizeof(key), (code * 9) ^ hash_ptr(op1) ^ hash_ptr(op2));
+	unsigned hash = (code*9) ^ hash_ptr(op1) ^ hash_ptr(op2);
+	(void)set_insert(quadruple_t, env->quad_map, &key, sizeof(key), hash);
 }
 
 /**
@@ -292,25 +298,21 @@ static ir_node *find_location(ir_node *block1, ir_node *block2)
  *
  * @return the newly created node
  */
-static ir_node *do_apply(unsigned code, dbg_info *db, ir_node *op1, ir_node *op2, ir_mode *mode)
+static ir_node *do_apply(unsigned code, dbg_info *db, ir_node *op1,
+                         ir_node *op2, ir_mode *mode)
 {
-	ir_node *result;
 	ir_node *block = find_location(get_nodes_block(op1), get_nodes_block(op2));
-
 	switch (code) {
 	case iro_Mul:
-		result = new_rd_Mul(db, block, op1, op2, mode);
-		break;
+		return new_rd_Mul(db, block, op1, op2, mode);
 	case iro_Add:
-		result = new_rd_Add(db, block, op1, op2, mode);
-		break;
+		return new_rd_Add(db, block, op1, op2, mode);
 	case iro_Sub:
-		result = new_rd_Sub(db, block, op1, op2, mode);
-		break;
+		return new_rd_Sub(db, block, op1, op2, mode);
 	default:
-		panic("Unsupported opcode");
+		break;
 	}
-	return result;
+	panic("Unsupported opcode");
 }
 
 /**
@@ -324,23 +326,22 @@ static ir_node *do_apply(unsigned code, dbg_info *db, ir_node *op1, ir_node *op2
  *
  * @return the newly created node
  */
-static ir_node *apply(ir_node *header, ir_node *orig, ir_node *op1, ir_node *op2, iv_env *env)
+static ir_node *apply(ir_node *header, ir_node *orig, ir_node *op1,
+                      ir_node *op2, iv_env *env)
 {
-	unsigned code = get_irn_opcode(orig);
+	unsigned code   = get_irn_opcode(orig);
 	ir_node *result = search(code, op1, op2, env);
 
 	if (result == NULL) {
-		dbg_info *db = get_irn_dbg_info(orig);
-		ir_node *op1_header = get_irn_ne(op1, env)->header;
-		ir_node *op2_header = get_irn_ne(op2, env)->header;
+		dbg_info *db         = get_irn_dbg_info(orig);
+		ir_node  *op1_header = get_irn_ne(op1, env)->header;
+		ir_node  *op2_header = get_irn_ne(op2, env)->header;
 
 		if (op1_header == header && is_rc(op2, op1_header)) {
 			result = reduce(orig, op1, op2, env);
-		}
-		else if (op2_header == header && is_rc(op1, op2_header)) {
+		} else if (op2_header == header && is_rc(op1, op2_header)) {
 			result = reduce(orig, op2, op1, env);
-		}
-		else {
+		} else {
 			result = do_apply(code, db, op1, op2, get_irn_mode(orig));
 			get_irn_ne(result, env)->header = NULL;
 		}
@@ -361,38 +362,37 @@ static ir_node *apply(ir_node *header, ir_node *orig, ir_node *op1, ir_node *op2
  */
 static ir_node *reduce(ir_node *orig, ir_node *iv, ir_node *rc, iv_env *env)
 {
-	unsigned code = get_irn_opcode(orig);
+	unsigned code   = get_irn_opcode(orig);
 	ir_node *result = search(code, iv, rc, env);
 
 	/* check if we have already done this operation on the iv */
 	if (result == NULL) {
-		node_entry *e, *iv_e;
-		ir_mode *mode = get_irn_mode(orig);
-
 		result = exact_copy(iv);
 
+		ir_mode *mode = get_irn_mode(orig);
 		if (get_irn_mode(result) != mode) {
 			/*
-			 * Beware: we must always create a new induction variable with the same mode
-			 * as the node we are replacing. Especially this means the mode might be changed
-			 * from P to I and back. This is always possible, because we have only Phi, Add
-			 * and Sub nodes.
-			 * However, this might lead to AddIs(Iu,Is) which we must fix. The best way to do this
-			 * seems to be a post-pass, or we might end with useless Conv's.
+			 * Beware: we must always create a new induction variable with the
+			 * same mode as the node we are replacing. Especially this means
+			 * the mode might be changed from P to I and back. This is always
+			 * possible, because we have only Phi, Add and Sub nodes.
+			 * However, this might lead to AddIs(Iu,Is) which we must fix. The
+			 * best way to do this seems to be a post-pass, or we might end
+			 * with useless Conv's.
 			 */
 			set_irn_mode(result, mode);
-			env->need_postpass = 1;
+			env->need_postpass = true;
 		}
 		add(code, iv, rc, result, env);
 		DB((dbg, LEVEL_3, "   Created new %+F for %+F (%s %+F)\n", result, iv,
 			get_irn_opname(orig), rc));
 
-		iv_e = get_irn_ne(iv, env);
-		e    = get_irn_ne(result, env);
+		node_entry *iv_e = get_irn_ne(iv, env);
+		node_entry *e    = get_irn_ne(result, env);
 		e->header = iv_e->header;
 
 		/* create the LFTR edge */
-		LFTR_add(iv, result, code, rc, env);
+		lftr_add(iv, result, code, rc, env);
 
 		foreach_irn_in_r(result, i, pred) {
 			ir_node *o = pred;
@@ -415,12 +415,11 @@ static ir_node *reduce(ir_node *orig, ir_node *iv, ir_node *rc, iv_env *env)
  */
 static void update_scc(ir_node *iv, node_entry *e, iv_env *env)
 {
+	DB((dbg, LEVEL_2, "  Creating SCC for new an induction variable:\n  "));
 	scc     *pscc   = e->pscc;
 	ir_node *header = e->header;
-	waitq    *wq = new_waitq();
-
-	DB((dbg, LEVEL_2, "  Creating SCC for new an induction variable:\n  "));
 	pscc->head = NULL;
+	waitq    *wq = new_waitq();
 	waitq_put(wq, iv);
 	do {
 		ir_node    *irn = (ir_node*)waitq_get(wq);
@@ -440,7 +439,7 @@ static void update_scc(ir_node *iv, node_entry *e, iv_env *env)
 				waitq_put(wq, pred);
 			}
 		}
-	} while (! waitq_empty(wq));
+	} while (!waitq_empty(wq));
 	del_waitq(wq);
 	DB((dbg, LEVEL_2, "\n"));
 }
@@ -455,27 +454,23 @@ static void update_scc(ir_node *iv, node_entry *e, iv_env *env)
  * @param rc    the region constant
  * @param env   the environment
  */
-static int replace(ir_node *irn, ir_node *iv, ir_node *rc, iv_env *env)
+static bool replace(ir_node *irn, ir_node *iv, ir_node *rc, iv_env *env)
 {
-	ir_node *result;
-
 	DB((dbg, LEVEL_2, "  Replacing %+F\n", irn));
 
-	result = reduce(irn, iv, rc, env);
+	ir_node *result = reduce(irn, iv, rc, env);
 	if (result != irn) {
-		node_entry *e;
-
 		hook_strength_red(get_irn_irg(irn), irn);
 		exchange(irn, result);
-		e = get_irn_ne(result, env);
+		node_entry *e = get_irn_ne(result, env);
 		if (e->pscc == NULL) {
 			e->pscc = OALLOCZ(&env->obst, scc);
 			update_scc(result, e, env);
 		}
 		++env->replaced;
-		return 1;
+		return true;
 	}
-	return 0;
+	return false;
 }
 
 /**
@@ -484,40 +479,39 @@ static int replace(ir_node *irn, ir_node *iv, ir_node *rc, iv_env *env)
  * @param iv    any node of the induction variable
  * @param env   the environment
  */
-static int is_counter_iv(ir_node *iv, iv_env *env)
+static bool is_counter_iv(ir_node *iv, iv_env *env)
 {
-	node_entry *e         = get_irn_ne(iv, env);
-	scc        *pscc      = e->pscc;
-	ir_node    *have_init = NULL;
-	ir_node    *have_incr = NULL;
-	ir_opcode  code       = iro_Bad;
-	ir_node    *irn;
+	node_entry *e    = get_irn_ne(iv, env);
+	scc        *pscc = e->pscc;
 
 	if (pscc->code != 0) {
 		/* already analysed */
 		return pscc->code != iro_Bad;
 	}
 
+	ir_node  *have_init = NULL;
+	ir_node  *have_incr = NULL;
+	ir_opcode code      = iro_Bad;
 	pscc->code = iro_Bad;
-	for (irn = pscc->head; irn != NULL; irn = e->next) {
+	for (ir_node *irn = pscc->head; irn != NULL; irn = e->next) {
 		if (is_Add(irn)) {
 			if (have_incr != NULL)
-				return 0;
+				return false;
 
 			have_incr = get_Add_right(irn);
-			if (! is_Const(have_incr)) {
+			if (!is_Const(have_incr)) {
 				have_incr = get_Add_left(irn);
-				if (! is_Const(have_incr))
-					return 0;
+				if (!is_Const(have_incr))
+					return false;
 			}
 			code = iro_Add;
 		} else if (is_Sub(irn)) {
 			if (have_incr != NULL)
-				return 0;
+				return false;
 
 			have_incr = get_Sub_right(irn);
-			if (! is_Const(have_incr))
-				return 0;
+			if (!is_Const(have_incr))
+				return false;
 			code = iro_Sub;
 		} else if (is_Phi(irn)) {
 			int i;
@@ -529,13 +523,14 @@ static int is_counter_iv(ir_node *iv, iv_env *env)
 				if (ne->header == e->header)
 					continue;
 				if (have_init != NULL)
-					return 0;
+					return false;
 				have_init = pred;
-				if (! is_Const(pred))
-					return 0;
+				if (!is_Const(pred))
+					return false;
 			}
-		} else
-			return 0;
+		} else {
+			return false;
+		}
 		e = get_irn_ne(irn, env);
 	}
 	pscc->init = get_Const_tarval(have_init);
@@ -553,15 +548,13 @@ static int is_counter_iv(ir_node *iv, iv_env *env)
  * @return non-zero if the register pressure is estimated
  *         to not increase, zero else
  */
-static int check_users_for_reg_pressure(ir_node *iv, iv_env *env)
+static bool check_users_for_reg_pressure(ir_node *iv, iv_env *env)
 {
-	ir_node    *irn;
 	ir_node    *have_user = NULL;
 	ir_node    *have_cmp  = NULL;
 	node_entry *e         = get_irn_ne(iv, env);
 	scc        *pscc      = e->pscc;
-
-	for (irn = pscc->head; irn != NULL; irn = e->next) {
+	for (ir_node *irn = pscc->head; irn != NULL; irn = e->next) {
 		foreach_out_edge(irn, edge) {
 			ir_node    *user = get_edge_src_irn(edge);
 			node_entry *ne = get_irn_ne(user, env);
@@ -573,14 +566,14 @@ static int check_users_for_reg_pressure(ir_node *iv, iv_env *env)
 			if (is_Cmp(user)) {
 				if (have_cmp != NULL) {
 					/* more than one cmp, for now end here */
-					return 0;
+					return false;
 				}
 				have_cmp = user;
 			} else {
 				/* user is a real user of the IV */
 				if (have_user != NULL) {
 					/* found the second user */
-					return 0;
+					return false;
 				}
 				have_user = user;
 			}
@@ -590,12 +583,12 @@ static int check_users_for_reg_pressure(ir_node *iv, iv_env *env)
 
 	if (have_user == NULL) {
 		/* no user, ignore */
-		return 1;
+		return true;
 	}
 
 	if (have_cmp == NULL) {
 		/* fine, only one user, try to reduce */
-		return 1;
+		return true;
 	}
 	/*
 	 * We found one user AND at least one cmp.
@@ -605,14 +598,14 @@ static int check_users_for_reg_pressure(ir_node *iv, iv_env *env)
 	 * are limited, so check if the iv has the right form: Only ONE
 	 * Phi, only one Add/Sub with a Const.
 	 */
-	if (! is_counter_iv(iv, env))
-		return 0;
+	if (!is_counter_iv(iv, env))
+		return false;
 
 	/*
 	 * Ok, we have only one increment AND it is a Const, we might be able
 	 * to do a linear function test replacement, so go on.
 	 */
-	return 1;
+	return true;
 }
 
 /**
@@ -623,44 +616,40 @@ static int check_users_for_reg_pressure(ir_node *iv, iv_env *env)
  *
  * @return non-zero if irn should be Replace'd
  */
-static int check_replace(ir_node *irn, iv_env *env)
+static bool check_replace(ir_node *irn, iv_env *env)
 {
-	ir_node   *left, *right, *iv, *rc;
-	ir_op     *op  = get_irn_op(irn);
+	ir_op    *op   = get_irn_op(irn);
 	unsigned  code = get_op_code(op);
-	ir_node   *liv, *riv;
-
 	switch (code) {
 	case iro_Mul:
 	case iro_Add:
-	case iro_Sub:
-		iv = rc = NULL;
+	case iro_Sub: {
+		ir_node *left  = get_binop_left(irn);
+		ir_node *right = get_binop_right(irn);
 
-		left  = get_binop_left(irn);
-		right = get_binop_right(irn);
-
-		liv = is_iv(left, env);
-		riv = is_iv(right, env);
+		ir_node *liv = is_iv(left, env);
+		ir_node *riv = is_iv(right, env);
+		ir_node *iv  = NULL;
+		ir_node *rc  = NULL;
 		if (liv && is_rc(right, liv)) {
 			iv = left; rc = right;
-		}
-		else if (riv && is_op_commutative(op) &&
+		} else if (riv && is_op_commutative(op) &&
 			            is_rc(left, riv)) {
 			iv = right; rc = left;
 		}
 
-		if (iv) {
-			if (env->osr_flags & osr_flag_keep_reg_pressure) {
-				if (! check_users_for_reg_pressure(iv, env))
-					return 0;
-			}
+		if (iv != NULL) {
+			if (env->osr_flags & osr_flag_keep_reg_pressure
+			    && !check_users_for_reg_pressure(iv, env))
+				return false;
 			return replace(irn, iv, rc, env);
 		}
 		break;
+	}
 	default:
 		break;
 	}
-	return 0;
+	return false;
 }
 
 /**
@@ -671,61 +660,56 @@ static int check_replace(ir_node *irn, iv_env *env)
  */
 static void classify_iv(scc *pscc, iv_env *env)
 {
-	ir_node *irn, *next, *header = NULL;
-	node_entry *b, *h = NULL;
-	int only_phi, num_outside;
-	ir_node *out_rc;
-
 	/* find the header block for this scc */
-	for (irn = pscc->head; irn; irn = next) {
+	ir_node    *header = NULL;
+	node_entry *h      = NULL;
+	for (ir_node *irn = pscc->head, *next; irn != NULL; irn = next) {
 		node_entry *e = (node_entry*)get_irn_link(irn);
 		ir_node *block = get_nodes_block(irn);
 
 		next = e->next;
-		b = get_irn_ne(block, env);
+		node_entry *b = get_irn_ne(block, env);
 
 		if (header) {
 			if (h->POnum < b->POnum) {
 				header = block;
 				h      = b;
 			}
-		}
-		else {
+		} else {
 			header = block;
 			h      = b;
 		}
 	}
 
 	/* check if this scc contains only Phi, Add or Sub nodes */
-	only_phi    = 1;
-	num_outside = 0;
-	out_rc      = NULL;
-	for (irn = pscc->head; irn; irn = next) {
+	bool     only_phi    = true;
+	unsigned num_outside = 0;
+	ir_node *out_rc      = NULL;
+	for (ir_node *irn = pscc->head, *next; irn != NULL; irn = next) {
 		node_entry *e = get_irn_ne(irn, env);
 
 		next = e->next;
 		switch (get_irn_opcode(irn)) {
-		case iro_Sub:
-			only_phi = 0;
-			{
-				ir_node    *left        = get_Sub_left(irn);
-				node_entry *left_entry  = get_irn_ne(left, env);
-				ir_node    *right       = get_Sub_right(irn);
-				node_entry *right_entry = get_irn_ne(right, env);
+		case iro_Sub: {
+			only_phi = false;
+			ir_node    *left        = get_Sub_left(irn);
+			node_entry *left_entry  = get_irn_ne(left, env);
+			ir_node    *right       = get_Sub_right(irn);
+			node_entry *right_entry = get_irn_ne(right, env);
 
-				if (left_entry->pscc != e->pscc ||
-				    (right_entry->pscc != e->pscc && !is_rc(right, header))) {
-					/*
-					 * Not an induction variable.
-					 * Region constant are only allowed on right hand side.
-					 */
-					goto fail;
-				}
+			if (left_entry->pscc != e->pscc ||
+				(right_entry->pscc != e->pscc && !is_rc(right, header))) {
+				/*
+				 * Not an induction variable.
+				 * Region constant are only allowed on right hand side.
+				 */
+				goto fail;
 			}
 			break;
+		}
 
 		case iro_Add:
-			only_phi = 0;
+			only_phi = false;
 			/* fall through */
 		case iro_Phi:
 			foreach_irn_in_r(irn, i, pred) {
@@ -733,11 +717,11 @@ static void classify_iv(scc *pscc, iv_env *env)
 
 				if (pe->pscc != e->pscc) {
 					/* not in the same SCC, must be a region const */
-					if (! is_rc(pred, header)) {
+					if (!is_rc(pred, header)) {
 						/* not an induction variable */
 						goto fail;
 					}
-					if (! out_rc) {
+					if (!out_rc) {
 						out_rc = pred;
 						++num_outside;
 					} else if (out_rc != pred) {
@@ -757,7 +741,7 @@ static void classify_iv(scc *pscc, iv_env *env)
 		/* a phi cycle with only one real predecessor can be collapsed */
 		DB((dbg, LEVEL_2, "  Found an USELESS Phi cycle:\n  "));
 
-		for (irn = pscc->head; irn; irn = next) {
+		for (ir_node *irn = pscc->head, *next; irn != NULL; irn = next) {
 			node_entry *e = get_irn_ne(irn, env);
 			next = e->next;
 			e->header = NULL;
@@ -768,7 +752,7 @@ static void classify_iv(scc *pscc, iv_env *env)
 	}
 
 	/* set the header for every node in this scc */
-	for (irn = pscc->head; irn; irn = next) {
+	for (ir_node *irn = pscc->head, *next; irn != NULL; irn = next) {
 		node_entry *e = get_irn_ne(irn, env);
 		e->header = header;
 		next = e->next;
@@ -778,7 +762,7 @@ static void classify_iv(scc *pscc, iv_env *env)
 	return;
 
 fail:
-	for (irn = pscc->head; irn; irn = next) {
+	for (ir_node *irn = pscc->head, *next; irn != NULL; irn = next) {
 		node_entry *e = get_irn_ne(irn, env);
 
 		next = e->next;
@@ -798,19 +782,15 @@ static void process_scc(scc *pscc, iv_env *env)
 	node_entry *e = (node_entry*)get_irn_link(head);
 
 #ifdef DEBUG_libfirm
-	{
-		ir_node *irn, *next;
+	DB((dbg, LEVEL_4, " SCC at %p:\n ", pscc));
+	for (ir_node *irn = pscc->head, *next; irn != NULL; irn = next) {
+		node_entry *e = (node_entry*)get_irn_link(irn);
 
-		DB((dbg, LEVEL_4, " SCC at %p:\n ", pscc));
-		for (irn = pscc->head; irn != NULL; irn = next) {
-			node_entry *e = (node_entry*)get_irn_link(irn);
+		next = e->next;
 
-			next = e->next;
-
-			DB((dbg, LEVEL_4, " %+F,", irn));
-		}
-		DB((dbg, LEVEL_4, "\n"));
+		DB((dbg, LEVEL_4, " %+F,", irn));
 	}
+	DB((dbg, LEVEL_4, "\n"));
 #endif
 
 	if (e->next == NULL) {
@@ -829,16 +809,13 @@ static void process_scc(scc *pscc, iv_env *env)
  */
 static void remove_phi_cycle(scc *pscc, iv_env *env)
 {
-	ir_node *irn, *next;
-	ir_node *out_rc;
-
 	/* check if this scc contains only Phi nodes */
-	out_rc      = NULL;
-	for (irn = pscc->head; irn; irn = next) {
+	ir_node *out_rc = NULL;
+	for (ir_node *irn = pscc->head, *next; irn; irn = next) {
 		node_entry *e = get_irn_ne(irn, env);
 
 		next = e->next;
-		if (! is_Phi(irn))
+		if (!is_Phi(irn))
 			return;
 
 		foreach_irn_in_r(irn, i, pred) {
@@ -846,7 +823,7 @@ static void remove_phi_cycle(scc *pscc, iv_env *env)
 
 			if (pe->pscc != e->pscc) {
 				/* not in the same SCC, must be the only input */
-				if (! out_rc) {
+				if (!out_rc) {
 					out_rc = pred;
 				} else if (out_rc != pred) {
 					return;
@@ -857,7 +834,7 @@ static void remove_phi_cycle(scc *pscc, iv_env *env)
 	/* found a Phi cycle */
 	DB((dbg, LEVEL_2, "  Found an USELESS Phi cycle:\n  "));
 
-	for (irn = pscc->head; irn; irn = next) {
+	for (ir_node *irn = pscc->head, *next; irn != NULL; irn = next) {
 		node_entry *e = get_irn_ne(irn, env);
 		next = e->next;
 		e->header = NULL;
@@ -874,23 +851,18 @@ static void remove_phi_cycle(scc *pscc, iv_env *env)
  */
 static void process_phi_only_scc(scc *pscc, iv_env *env)
 {
-	ir_node *head = pscc->head;
-	node_entry *e = (node_entry*)get_irn_link(head);
+	ir_node    *head = pscc->head;
+	node_entry *e    = (node_entry*)get_irn_link(head);
 
 #ifdef DEBUG_libfirm
-	{
-		ir_node *irn, *next;
+	DB((dbg, LEVEL_4, " SCC at %p:\n ", pscc));
+	for (ir_node *irn = pscc->head, *next; irn; irn = next) {
+		node_entry *e = (node_entry*)get_irn_link(irn);
+		next = e->next;
 
-		DB((dbg, LEVEL_4, " SCC at %p:\n ", pscc));
-		for (irn = pscc->head; irn; irn = next) {
-			node_entry *e = (node_entry*)get_irn_link(irn);
-
-			next = e->next;
-
-			DB((dbg, LEVEL_4, " %+F,", irn));
-		}
-		DB((dbg, LEVEL_4, "\n"));
+		DB((dbg, LEVEL_4, " %+F,", irn));
 	}
+	DB((dbg, LEVEL_4, "\n"));
 #endif
 
 	if (e->next != NULL)
@@ -906,15 +878,13 @@ static void process_phi_only_scc(scc *pscc, iv_env *env)
  */
 static void push(iv_env *env, ir_node *n)
 {
-	node_entry *e;
-
 	if (env->tos == ARR_LEN(env->stack)) {
 		size_t nlen = ARR_LEN(env->stack) * 2;
 		ARR_RESIZE(ir_node *, env->stack, nlen);
 	}
 	env->stack[env->tos++] = n;
-	e = get_irn_ne(n, env);
-	e->in_stack = 1;
+	node_entry *e = get_irn_ne(n, env);
+	e->in_stack = true;
 }
 
 /**
@@ -929,7 +899,7 @@ static ir_node *pop(iv_env *env)
 	ir_node *n = env->stack[--env->tos];
 	node_entry *e = get_irn_ne(n, env);
 
-	e->in_stack = 0;
+	e->in_stack = false;
 	return n;
 }
 
@@ -975,12 +945,9 @@ static void dfs(ir_node *irn, iv_env *env)
 		if (node->low == node->DFSnum) {
 			scc *pscc = OALLOCZ(&env->obst, scc);
 			ir_node *x;
-
 			do {
-				node_entry *e;
-
 				x = pop(env);
-				e = get_irn_ne(x, env);
+				node_entry *e = get_irn_ne(x, env);
 				e->pscc    = pscc;
 				e->next    = pscc->head;
 				pscc->head = x;
@@ -999,8 +966,7 @@ static void dfs(ir_node *irn, iv_env *env)
  */
 static void do_dfs(ir_graph *irg, iv_env *env)
 {
-	ir_node  *end = get_irg_end(irg);
-	int i;
+	ir_node *end = get_irg_end(irg);
 
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_VISITED);
 
@@ -1010,9 +976,8 @@ static void do_dfs(ir_graph *irg, iv_env *env)
 	dfs(end, env);
 
 	/* visit the keep-alives */
-	for (i = get_End_n_keepalives(end) - 1; i >= 0; --i) {
+	for (int i = get_End_n_keepalives(end); i-- > 0; ) {
 		ir_node *ka = get_End_keepalive(end, i);
-
 		if (!irn_visited(ka))
 			dfs(ka, env);
 	}
@@ -1025,9 +990,8 @@ static void do_dfs(ir_graph *irg, iv_env *env)
  */
 static void assign_po(ir_node *block, void *ctx)
 {
-	iv_env *env = (iv_env*)ctx;
-	node_entry *e = get_irn_ne(block, env);
-
+	iv_env     *env = (iv_env*)ctx;
+	node_entry *e   = get_irn_ne(block, env);
 	e->POnum = env->POnum++;
 }
 
@@ -1048,39 +1012,35 @@ static void assign_po(ir_node *block, void *ctx)
  * In the current implementation only the last edge is stored, so
  * only one chain exists. That's why we might miss some opportunities.
  */
-static ir_node *applyOneEdge(ir_node *iv, ir_node *rc, LFTR_edge *e, iv_env *env)
+static ir_node *apply_one_edge(ir_node *iv, ir_node *rc, ldtr_edge_t *e,
+                               iv_env *env)
 {
 	if (env->osr_flags & osr_flag_lftr_with_ov_check) {
-		ir_tarval *tv_l, *tv_r, *tv, *tv_init, *tv_incr, *tv_end;
-		tarval_int_overflow_mode_t ovmode;
-		scc *pscc;
-		ir_graph *irg;
-
-		if (! is_counter_iv(iv, env)) {
+		if (!is_counter_iv(iv, env)) {
 			DB((dbg, LEVEL_4, " not counter IV"));
 			return NULL;
 		}
 
 		/* overflow can only be decided for Consts */
-		if (! is_Const(e->rc)) {
+		if (!is_Const(e->rc)) {
 			if (e->code == iro_Add && mode_is_reference(get_irn_mode(e->rc))) {
-				/* However we allow ONE Pointer Add, as pointer arithmetic with wrap
-				   around is undefined anyway */
+				/* However we allow ONE Pointer Add, as pointer arithmetic with
+				 * wrap around is undefined anyway */
 				return do_apply(e->code, NULL, rc, e->rc, get_irn_mode(e->rc));
 			}
 			DB((dbg, LEVEL_4, " = UNKNOWN (%+F)", e->rc));
 			return NULL;
 		}
 
-		tv_l = get_Const_tarval(rc);
-		tv_r = get_Const_tarval(e->rc);
+		ir_tarval *tv_l = get_Const_tarval(rc);
+		ir_tarval *tv_r = get_Const_tarval(e->rc);
 
-		ovmode = tarval_get_integer_overflow_mode();
+		tarval_int_overflow_mode_t ovmode = tarval_get_integer_overflow_mode();
 		tarval_set_integer_overflow_mode(TV_OVERFLOW_BAD);
 
-		pscc    = get_iv_scc(iv, env);
-		tv_incr = pscc->incr;
-		tv_init = pscc->init;
+		scc       *pscc    = get_iv_scc(iv, env);
+		ir_tarval *tv_incr = pscc->incr;
+		ir_tarval *tv_init = pscc->init;
 
 		/*
 		 * Check that no overflow occurs:
@@ -1088,6 +1048,7 @@ static ir_node *applyOneEdge(ir_node *iv, ir_node *rc, LFTR_edge *e, iv_env *env
 		 * the new rc must be transformed without overflow
 		 * rc +/- incr must be possible without overflow
 		 */
+		ir_tarval *tv;
 		switch (e->code) {
 		case iro_Mul:
 			tv      = tarval_mul(tv_l, tv_r);
@@ -1122,6 +1083,7 @@ static ir_node *applyOneEdge(ir_node *iv, ir_node *rc, LFTR_edge *e, iv_env *env
 			return NULL;
 		}
 
+		ir_tarval *tv_end;
 		if (pscc->code == iro_Add) {
 			tv_end = tarval_add(tv, tv_incr);
 		} else {
@@ -1135,7 +1097,7 @@ static ir_node *applyOneEdge(ir_node *iv, ir_node *rc, LFTR_edge *e, iv_env *env
 			DB((dbg, LEVEL_4, " = OVERFLOW"));
 			return NULL;
 		}
-		irg = get_irn_irg(iv);
+		ir_graph *irg = get_irn_irg(iv);
 		return new_r_Const(irg, tv);
 	}
 	return do_apply(e->code, NULL, rc, e->rc, get_irn_mode(e->dst));
@@ -1155,26 +1117,26 @@ static ir_node *applyOneEdge(ir_node *iv, ir_node *rc, LFTR_edge *e, iv_env *env
  * @return the translated region constant or NULL
  *         if the translation was not possible
  */
-static ir_node *applyEdges(ir_node **pIV, ir_node *rc, iv_env *env)
+static ir_node *apply_edges(ir_node **pIV, ir_node *rc, iv_env *env)
 {
 	ir_node *iv = *pIV;
 	if (env->osr_flags & osr_flag_lftr_with_ov_check) {
 		/* overflow can only be decided for Consts */
-		if (! is_counter_iv(iv, env)) {
+		if (!is_counter_iv(iv, env)) {
 			DB((dbg, LEVEL_4, "not counter IV\n", rc));
 			return NULL;
 		}
-		if (! is_Const(rc)) {
+		if (!is_Const(rc)) {
 			DB((dbg, LEVEL_4, " = UNKNOWN (%+F)\n", rc));
 			return NULL;
 		}
 		DB((dbg, LEVEL_4, "%+F", get_Const_tarval(rc)));
 	}
 
-	for (; rc;) {
-		LFTR_edge *e = LFTR_find(iv, env);
+	while (rc != NULL) {
+		ldtr_edge_t *e = lftr_find(iv, env);
 		if (e != NULL) {
-			rc = applyOneEdge(iv, rc, e, env);
+			rc = apply_one_edge(iv, rc, e, env);
 			iv = e->dst;
 		} else
 			break;
@@ -1190,29 +1152,27 @@ static ir_node *applyEdges(ir_node **pIV, ir_node *rc, iv_env *env)
  */
 static void do_lftr(ir_node *cmp, void *ctx)
 {
-	iv_env *env = (iv_env*)ctx;
-	ir_node *left, *right, *liv, *riv;
-	ir_node *iv, *rc;
-	ir_node *nleft = NULL, *nright = NULL;
-
 	if (!is_Cmp(cmp))
 		return;
 
-	left  = get_Cmp_left(cmp);
-	right = get_Cmp_right(cmp);
+	iv_env  *env    = (iv_env*)ctx;
+	ir_node *left   = get_Cmp_left(cmp);
+	ir_node *right  = get_Cmp_right(cmp);
+	ir_node *liv    = is_iv(left, env);
+	ir_node *riv    = is_iv(right, env);
+	ir_node *nleft  = NULL;
+	ir_node *nright = NULL;
+	if (liv != NULL && is_rc(right, liv)) {
+		ir_node *iv = left;
+		ir_node *rc = right;
 
-	liv = is_iv(left, env);
-	riv = is_iv(right, env);
-	if (liv && is_rc(right, liv)) {
-		iv = left; rc = right;
-
-		nright = applyEdges(&iv, rc, env);
+		nright = apply_edges(&iv, rc, env);
 		nleft  = iv;
-	}
-	else if (riv && is_rc(left, riv)) {
-		iv = right; rc = left;
+	} else if (riv != NULL && is_rc(left, riv)) {
+		ir_node *iv = right;
+		ir_node *rc = left;
 
-		nleft  = applyEdges(&iv, rc, env);
+		nleft  = apply_edges(&iv, rc, env);
 		nright = iv;
 	}
 
@@ -1238,8 +1198,6 @@ static void lftr(ir_graph *irg, iv_env *env)
 /* Remove any Phi cycles with only one real input. */
 void remove_phi_cycles(ir_graph *irg)
 {
-	iv_env env;
-
 	assure_irg_properties(irg,
 		IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE
 		| IR_GRAPH_PROPERTY_CONSISTENT_OUTS
@@ -1249,6 +1207,7 @@ void remove_phi_cycles(ir_graph *irg)
 
 	DB((dbg, LEVEL_1, "Doing Phi cycle removement for %+F\n", irg));
 
+	iv_env env;
 	obstack_init(&env.obst);
 	env.stack         = NEW_ARR_F(ir_node *, 128);
 	env.tos           = 0;
@@ -1259,7 +1218,7 @@ void remove_phi_cycles(ir_graph *irg)
 	env.replaced      = 0;
 	env.lftr_replaced = 0;
 	env.osr_flags     = 0;
-	env.need_postpass = 0;
+	env.need_postpass = false;
 	env.process_scc   = process_phi_only_scc;
 
 	/* Clear all links and move Proj nodes into the
@@ -1292,15 +1251,13 @@ void remove_phi_cycles(ir_graph *irg)
  */
 static void fix_adds_and_subs(ir_node *irn, void *ctx)
 {
-	(void) ctx;
+	(void)ctx;
 
 	if (is_Add(irn)) {
 		ir_mode *mode = get_irn_mode(irn);
 
 		if (mode_is_int(mode)) {
-			ir_node *pred;
-
-			pred = get_Add_left(irn);
+			ir_node *pred = get_Add_left(irn);
 			if (get_irn_mode(pred) != mode) {
 				ir_node *block = get_nodes_block(pred);
 
@@ -1358,8 +1315,6 @@ static void fix_adds_and_subs(ir_node *irn, void *ctx)
 /* Performs Operator Strength Reduction for the passed graph. */
 void opt_osr(ir_graph *irg, unsigned flags)
 {
-	iv_env env;
-
 	FIRM_DBG_REGISTER(dbg, "firm.opt.osr");
 
 	assure_irg_properties(irg,
@@ -1369,17 +1324,18 @@ void opt_osr(ir_graph *irg, unsigned flags)
 
 	DB((dbg, LEVEL_1, "Doing Operator Strength Reduction for %+F\n", irg));
 
+	iv_env env;
 	obstack_init(&env.obst);
 	env.stack         = NEW_ARR_F(ir_node *, 128);
 	env.tos           = 0;
 	env.nextDFSnum    = 0;
 	env.POnum         = 0;
 	env.quad_map      = new_set(quad_cmp, 64);
-	env.lftr_edges    = new_set(LFTR_cmp, 64);
+	env.lftr_edges    = new_set(lftr_cmp, 64);
 	env.replaced      = 0;
 	env.lftr_replaced = 0;
 	env.osr_flags     = flags;
-	env.need_postpass = 0;
+	env.need_postpass = false;
 	env.process_scc   = process_scc;
 
 	/* Clear all links and move Proj nodes into the
@@ -1402,7 +1358,8 @@ void opt_osr(ir_graph *irg, unsigned flags)
 		lftr(irg, &env);
 		(void)lftr;
 
-		DB((dbg, LEVEL_1, "Replacements: %u + %u (lftr)\n\n", env.replaced, env.lftr_replaced));
+		DB((dbg, LEVEL_1, "Replacements: %u + %u (lftr)\n\n", env.replaced,
+		    env.lftr_replaced));
 	}
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 
