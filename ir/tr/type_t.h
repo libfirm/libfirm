@@ -163,10 +163,7 @@ void free_type_entities(ir_type *tp);
 
 void free_class_entities      (ir_type *clss);
 void free_struct_entities     (ir_type *strct);
-void free_method_entities     (ir_type *method);
 void free_union_entities      (ir_type *uni);
-void free_array_entities      (ir_type *array);
-void free_pointer_entities    (ir_type *pointer);
 
 void free_array_automatic_entities(ir_type *array);
 
@@ -174,7 +171,6 @@ void free_class_attrs      (ir_type *clss);
 void free_struct_attrs     (ir_type *strct);
 void free_method_attrs     (ir_type *method);
 void free_union_attrs      (ir_type *uni);
-void free_pointer_attrs    (ir_type *pointer);
 
 void set_class_mode(ir_type *tp, ir_mode *mode);
 void set_struct_mode(ir_type *tp, ir_mode *mode);
@@ -182,11 +178,6 @@ void set_pointer_mode(ir_type *tp, ir_mode *mode);
 void set_primitive_mode(ir_type *tp, ir_mode *mode);
 
 void set_default_size(ir_type *tp, unsigned bytes);
-
-/** Set and get a class' dfn --
- * This is an undocumented field, subject to change! */
-void set_class_dfn(ir_type *clss, int dfn);
-int  get_class_dfn(const ir_type *clss);
 
 void add_compound_member(ir_type *compound, ir_entity *entity);
 
