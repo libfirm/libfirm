@@ -588,9 +588,6 @@ struct ir_prog {
 	ident    **global_asms;         /**< An array of global ASM insertions. */
 
 	/* -- states of and access to generated information -- */
-	ir_node **ip_outedges;          /**< A huge Array that contains all out edges
-	                                     in interprocedural view. */
-
 	irg_callee_info_state callee_info_state; /**< Validity of callee information.
 	                                              Contains the lowest value or all irgs.  */
 	inh_transitive_closure_state inh_trans_closure_state;  /**< State of transitive closure

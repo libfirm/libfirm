@@ -271,16 +271,6 @@ ir_graph *(get_const_code_irg)(void)
 	return get_const_code_irg_();
 }
 
-void set_irp_ip_outedges(ir_node ** ip_outedges)
-{
-	irp->ip_outedges = ip_outedges;
-}
-
-ir_node** get_irp_ip_outedges(void)
-{
-	return irp->ip_outedges;
-}
-
 irg_callee_info_state get_irp_callee_info_state(void)
 {
 	return irp->callee_info_state;
