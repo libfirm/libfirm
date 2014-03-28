@@ -164,8 +164,6 @@ static ir_graph *new_r_ir_graph(ir_entity *ent, int n_loc)
 	first_block = new_r_Block(res, 1, &projX);
 	set_r_cur_block(res, first_block);
 
-	res->method_execution_frequency = -1.0;
-
 	return res;
 }
 

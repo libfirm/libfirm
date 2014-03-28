@@ -459,7 +459,6 @@ static inline void pop_scc_to_loop(ir_graph *irg)
 		set_irg_dfn(m, loop_node_cnt);
 		add_loop_irg(current_loop, m);
 		m->l = current_loop;
-		//m->callgraph_loop_depth = current_loop->depth;
 	} while (m != irg);
 }
 
@@ -522,8 +521,6 @@ static void init_scc(struct obstack *obst)
 
 	foreach_irp_irg(i, irg) {
 		set_irg_link(irg, new_scc_info(obst));
-		irg->callgraph_recursion_depth = 0;
-		irg->callgraph_loop_depth      = 0;
 	}
 }
 
@@ -812,19 +809,6 @@ void find_callgraph_recursions(void)
 	}
 
 	irp->callgraph_state = irp_callgraph_and_calltree_consistent;
-}
-
-size_t get_irg_loop_depth(const ir_graph *irg)
-{
-	assert(irp->callgraph_state == irp_callgraph_consistent ||
-		irp->callgraph_state == irp_callgraph_and_calltree_consistent);
-	return irg->callgraph_loop_depth;
-}
-
-size_t get_irg_recursion_depth(const ir_graph *irg)
-{
-	assert(irp->callgraph_state == irp_callgraph_and_calltree_consistent);
-	return irg->callgraph_recursion_depth;
 }
 
 void analyse_loop_nesting_depth(void)

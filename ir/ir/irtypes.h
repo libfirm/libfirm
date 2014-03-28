@@ -539,9 +539,6 @@ struct ir_graph {
 	cg_callee_entry   **callees;     /**< Callgraph: list of callee calls */
 	unsigned           *callee_isbe; /**< Callgraph: bitset if backedge info calculated. */
 	ir_loop            *l;           /**< For callgraph analysis. */
-	size_t              callgraph_loop_depth;
-	size_t              callgraph_recursion_depth;
-	double              method_execution_frequency;
 
 #ifdef DEBUG_libfirm
 	/** Unique graph number for each graph to make output readable. */

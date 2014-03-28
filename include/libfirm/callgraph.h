@@ -79,14 +79,6 @@ FIRM_API int has_irg_callee_backedge(const ir_graph *irg);
 /** Returns the maximal loop depth of call nodes that call along this edge. */
 FIRM_API size_t get_irg_callee_loop_depth(const ir_graph *irg, size_t pos);
 
-/** Returns the maximal loop depth of all paths from an external visible method to
-    this irg. */
-FIRM_API size_t get_irg_loop_depth(const ir_graph *irg);
-
-/** Returns the maximal recursion depth of all paths from an external visible method to
-    this irg. */
-FIRM_API size_t get_irg_recursion_depth(const ir_graph *irg);
-
 /** Returns the method execution frequency of a graph. */
 FIRM_API double get_irg_method_execution_frequency(const ir_graph *irg);
 
