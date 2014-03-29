@@ -16,6 +16,7 @@
  */
 #include <stdlib.h>
 
+#include "../../adt/util.h"
 #include "hashptr.h"
 #include "debug.h"
 #include "error.h"
@@ -97,7 +98,7 @@ ir_node *insert_Perm_before(ir_graph *irg, const arch_register_class_t *cls,
 	}
 	ir_nodeset_destroy(&live);
 	/* make the input order deterministic */
-	qsort(nodes, n, sizeof(nodes[0]), cmp_node_nr);
+	QSORT(nodes, n, cmp_node_nr);
 
 	ir_node *const bl = get_nodes_block(pos);
 	perm = be_new_Perm(cls, bl, n, nodes);

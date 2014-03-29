@@ -538,7 +538,7 @@ static void fill_sort_candidates(reg_pref_t *regprefs,
 		regprefs[r].pref = pref;
 	}
 	/* TODO: use a stable sort here to avoid unnecessary register jumping */
-	qsort(regprefs, n_regs, sizeof(regprefs[0]), compare_reg_pref);
+	QSORT(regprefs, n_regs, compare_reg_pref);
 }
 
 static bool try_optimistic_split(ir_node *to_split, ir_node *before,
@@ -1696,7 +1696,7 @@ static void determine_block_order(void)
 	}
 
 	/* sort array by block costs */
-	qsort(blocklist, n_blocks, sizeof(blocklist[0]), cmp_block_costs);
+	QSORT_ARR(blocklist, cmp_block_costs);
 
 	ir_reserve_resources(irg, IR_RESOURCE_BLOCK_VISITED);
 	inc_irg_block_visited(irg);

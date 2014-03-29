@@ -23,6 +23,7 @@
 
 #include <stdlib.h>
 
+#include "../../adt/util.h"
 #include "array.h"
 #include "pdeq.h"
 #include "beirg.h"
@@ -256,7 +257,7 @@ static void coalesce_blocks(blocksched_env_t *env)
 	edge_t *edges = env->edges;
 
 	/* sort interblock edges by execution frequency */
-	qsort(edges, ARR_LEN(edges), sizeof(edges[0]), cmp_edges);
+	QSORT_ARR(edges, cmp_edges);
 
 	/* run1: only look at jumps */
 	for (i = 0; i < edge_count; ++i) {
@@ -295,7 +296,7 @@ static void coalesce_blocks(blocksched_env_t *env)
 	/* run2: pick loop fallthroughs */
 	clear_loop_links(get_irg_loop(env->irg));
 
-	qsort(edges, ARR_LEN(edges), sizeof(edges[0]), cmp_edges_outedge_penalty);
+	QSORT_ARR(edges, cmp_edges_outedge_penalty);
 	for (i = 0; i < edge_count; ++i) {
 		const edge_t *edge  = &edges[i];
 		ir_node      *block = edge->block;
@@ -341,7 +342,7 @@ static void coalesce_blocks(blocksched_env_t *env)
 	}
 
 	/* sort interblock edges by execution frequency */
-	qsort(edges, ARR_LEN(edges), sizeof(edges[0]), cmp_edges);
+	QSORT_ARR(edges, cmp_edges);
 
 	/* run3: remaining edges */
 	for (i = 0; i < edge_count; ++i) {

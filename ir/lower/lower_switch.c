@@ -11,6 +11,7 @@
 #include <limits.h>
 #include <stdbool.h>
 
+#include "../../adt/util.h"
 #include "array.h"
 #include "ircons.h"
 #include "irgopt.h"
@@ -133,7 +134,7 @@ static void analyse_switch1(switch_info_t *info)
 	 * Switch should be transformed into an if cascade.
 	 * So first order the cases, so we can do a binary search on them.
 	 */
-	qsort(cases, num_cases, sizeof(cases[0]), casecmp);
+	QSORT(cases, num_cases, casecmp);
 
 	info->default_block = targets[pn_Switch_default];
 	info->cases         = cases;

@@ -203,7 +203,7 @@ static int loc_compare(const void *a, const void *b)
 
 static void workset_sort(workset_t *workset)
 {
-	qsort(workset->vals, workset->len, sizeof(workset->vals[0]), loc_compare);
+	QSORT(workset->vals, workset->len, loc_compare);
 }
 
 static inline unsigned workset_get_time(const workset_t *workset, unsigned idx)
@@ -560,7 +560,7 @@ static void decide_start_workset(ir_node *const block)
 	DB((dbg, DBG_START, "Loop pressure %d, taking %d delayed vals\n",
 	    pressure, free_slots));
 	if (free_slots > 0) {
-		qsort(delayed, ARR_LEN(delayed), sizeof(delayed[0]), loc_compare);
+		QSORT_ARR(delayed, loc_compare);
 
 		for (size_t i = 0; i < ARR_LEN(delayed) && free_slots > 0; ++i) {
 			loc_t *loc = & delayed[i];
@@ -605,7 +605,7 @@ static void decide_start_workset(ir_node *const block)
 	DEL_ARR_F(delayed);
 
 	/* Sort start values by first use */
-	qsort(starters, ARR_LEN(starters), sizeof(starters[0]), loc_compare);
+	QSORT_ARR(starters, loc_compare);
 
 	/* Copy the best ones from starters to start workset */
 	unsigned ws_count = MIN((unsigned) ARR_LEN(starters), n_regs);

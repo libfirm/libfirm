@@ -915,7 +915,7 @@ static void process_ops_in_block(ir_node *bl, void *data)
 		int i;
 
 		/* order the call nodes according to data dependency */
-		qsort(nodes, n_nodes, sizeof(nodes[0]), cmp_call_dependency);
+		QSORT(nodes, n_nodes, cmp_call_dependency);
 
 		for (i = n_nodes - 1; i >= 0; --i) {
 			ir_node *irn = nodes[i];
@@ -1057,7 +1057,7 @@ static void reg_map_to_arr(arch_register_t const **const res,
 	}
 
 	size_t n = pmap_count(reg_map);
-	qsort(res, n, sizeof(res[0]), cmp_regs);
+	QSORT(res, n, cmp_regs);
 }
 
 /**

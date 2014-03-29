@@ -664,9 +664,8 @@ static void build_affinity_chunks(co_mst_env_t *env)
 	}
 
 	/* now: sort edges and build the affinity chunks */
-	size_t const len = ARR_LEN(edges);
-	qsort(edges, len, sizeof(edges[0]), cmp_aff_edge);
-	for (size_t i = 0; i < len; ++i) {
+	QSORT_ARR(edges, cmp_aff_edge);
+	for (size_t i = 0, len = ARR_LEN(edges); i < len; ++i) {
 		DBG((dbg, LEVEL_1, "edge (%u,%u) %f\n", edges[i].src->node_idx, edges[i].tgt->node_idx, edges[i].weight));
 
 		(void)aff_chunk_absorb(env, edges[i].src, edges[i].tgt);
@@ -988,7 +987,7 @@ static int change_node_color_excluded(co_mst_env_t *env, co_mst_irn_t *node, int
 		costs[exclude_col].cost = REAL(0.0);
 
 		/* sort the colors according costs, cheapest first. */
-		qsort(costs, env->n_regs, sizeof(costs[0]), cmp_col_cost_gt);
+		QSORT(costs, env->n_regs, cmp_col_cost_gt);
 
 		/* Try recoloring the node using the color list. */
 		res = recolor_nodes(env, node, costs, changed, depth + 1, max_depth, trip);
@@ -1188,7 +1187,7 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c)
 		order[i].cost = (REAL(1.0) - dislike_influence) * c->color_affinity[i].cost + dislike_influence * dislike;
 	}
 
-	qsort(order, env->n_regs, sizeof(order[0]), cmp_col_cost_gt);
+	QSORT(order, env->n_regs, cmp_col_cost_gt);
 
 	DBG_COL_COST(env, LEVEL_2, order);
 	DB((dbg, LEVEL_2, "\n"));

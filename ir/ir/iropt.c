@@ -7221,7 +7221,7 @@ void ir_normalize_node(ir_node *n)
 			ir_node **ins     = get_irn_in(n)+1;
 			ir_node **new_ins = XMALLOCN(ir_node*, arity);
 			memcpy(new_ins, ins, arity*sizeof(ins[0]));
-			qsort(new_ins, arity, sizeof(new_ins[0]), cmp_node_nr);
+			QSORT(new_ins, arity, cmp_node_nr);
 			set_irn_in(n, arity, new_ins);
 			free(new_ins);
 		}

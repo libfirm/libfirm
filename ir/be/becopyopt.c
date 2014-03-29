@@ -569,7 +569,7 @@ static void co_sort_units(copy_opt_t *co)
 	for (i=0; i<count; ++i)
 		ir_printf("%+F\n", ous[i]->nodes[0]);
 
-	qsort(ous, count, sizeof(*ous), compare_ous);
+	QSORT(ous, count, compare_ous);
 
 	ir_printf("\n\n");
 	for (i=0; i<count; ++i)

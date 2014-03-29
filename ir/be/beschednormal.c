@@ -162,7 +162,7 @@ static int normal_tree_cost(ir_node* irn, instance_t *inst)
 			costs[i].cost = cost;
 		}
 
-		qsort(costs, arity, sizeof(*costs), cost_cmp);
+		QSORT(costs, arity, cost_cmp);
 		set_irn_link(irn, fc);
 	}
 
@@ -312,7 +312,7 @@ static void normal_sched_block(ir_node* block, void* env)
 		ir_fprintf(stderr, "height of %+F is %u\n", roots[i], root_costs[i].cost);
 #endif
 	}
-	qsort(root_costs, root_count, sizeof(*root_costs), root_cmp);
+	QSORT(root_costs, root_count, root_cmp);
 #if defined NORMAL_DBG
 	{
 		int n = root_count;

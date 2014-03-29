@@ -11,6 +11,7 @@
  */
 #include <stdlib.h>
 
+#include "../../adt/util.h"
 #include "set.h"
 #include "array.h"
 #include "irgwalk.h"
@@ -394,12 +395,10 @@ static void do_greedy_coalescing(be_fec_env_t *env)
 	}
 
 	/* sort affinity edges */
-	size_t affinity_edge_count = ARR_LEN(env->affinity_edges);
-	qsort(env->affinity_edges, affinity_edge_count,
-	      sizeof(env->affinity_edges[0]), cmp_affinity);
+	QSORT_ARR(env->affinity_edges, cmp_affinity);
 
 	/* try to merge affine nodes */
-	for (size_t i = 0; i < affinity_edge_count; ++i) {
+	for (size_t i = 0, n = ARR_LEN(env->affinity_edges); i < n; ++i) {
 		const affinity_edge_t *edge = env->affinity_edges[i];
 		int s1 = uf_find(spillslot_unionfind, edge->slot1);
 		int s2 = uf_find(spillslot_unionfind, edge->slot2);

@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <limits.h>
 
+#include "../../adt/util.h"
 #include "pattern.h"
 #include "ident.h"
 #include "irnode_t.h"
@@ -828,7 +829,7 @@ static void pattern_output(const char *fname)
 	count = i;
 
 	/* sort it */
-	qsort(pattern_arr, count, sizeof(*pattern_arr), pattern_count_cmp);
+	QSORT(pattern_arr, count, pattern_count_cmp);
 
 	for (i = 0; i < count; ++i) {
 		pattern_entry_t *const entry = pattern_arr[i];

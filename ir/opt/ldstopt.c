@@ -2043,7 +2043,7 @@ static void combine_memop(ir_node *sync, void *data)
 	ir_node **new_in  = ALLOCAN(ir_node*, n_preds);
 	memcpy(new_in, get_irn_in(sync)+1, n_preds * sizeof(new_in[0]));
 
-	qsort(new_in, n_preds, sizeof(new_in[0]), cmp_ptrs);
+	QSORT(new_in, n_preds, cmp_ptrs);
 
 	bool changed = false;
 	for (int i = 0; i < n_preds-1; ++i) {

@@ -462,7 +462,7 @@ static int change_color_not(co2_t *env, const ir_node *irn, col_t not_col, struc
 		csts[not_col].costs = INT_MAX;
 
 		/* sort the colors according costs, cheapest first. */
-		qsort(csts, n_regs, sizeof(csts[0]), col_cost_pair_lt);
+		QSORT(csts, n_regs, col_cost_pair_lt);
 
 		/* Try recoloring the node using the color list. */
 		res = recolor(env, irn, csts, parent_changed, depth);
@@ -637,7 +637,7 @@ static int coalesce_top_down(co2_cloud_irn_t *ci, int child_nr, int depth)
 		seq[parent_col].costs = min_badness - 1;
 
 	/* Sort the colors. The will be processed in that ordering. */
-	qsort(seq, env->n_regs, sizeof(seq[0]), col_cost_pair_lt);
+	QSORT(seq, env->n_regs, col_cost_pair_lt);
 
 	DBG((env->dbg, LEVEL_2, "\t%2{firm:indent}starting top-down coalesce for %+F\n", depth, ci->inh.irn));
 	INIT_LIST_HEAD(&changed);
@@ -823,7 +823,7 @@ static void process_cloud(co2_cloud_t *cloud)
 		}
 	}
 	edges = (edge_t*)obstack_finish(&cloud->obst);
-	qsort(edges, n_edges, sizeof(edges[0]), cmp_edges);
+	QSORT(edges, n_edges, cmp_edges);
 
 	/* Compute the maximum spanning tree using Kruskal/Union-Find */
 	DBG((env->dbg, LEVEL_2, "computing spanning tree of cloud with master %+F\n", cloud->master->inh.irn));
@@ -973,7 +973,7 @@ static void process(co2_t *env)
 	clouds = XMALLOCN(co2_cloud_t*, n_clouds);
 	list_for_each_entry(co2_cloud_t, pos, &env->cloud_head, list)
 		clouds[i++] = pos;
-	qsort(clouds, n_clouds, sizeof(clouds[0]), cmp_clouds_gt);
+	QSORT(clouds, n_clouds, cmp_clouds_gt);
 
 	for (i = 0; i < n_clouds; ++i) {
 		DEBUG_ONLY(init_costs += cloud_costs(clouds[i]);)

@@ -11,6 +11,7 @@
 #include <limits.h>
 #include <stdbool.h>
 
+#include "../../adt/util.h"
 #include "bearch_arm_t.h"
 #include "xmalloc.h"
 #include "tv.h"
@@ -529,7 +530,7 @@ static void emit_arm_CopyB(const ir_node *irn)
 	tmpregs[3] = &arm_registers[REG_R12];
 
 	/* Note: R12 is always the last register because the RA did not assign higher ones */
-	qsort((void *)tmpregs, 3, sizeof(tmpregs[0]), reg_cmp);
+	QSORT(tmpregs, 3, reg_cmp);
 
 	if (be_options.verbose_asm) {
 		arm_emitf(irn, "/* MemCopy (%S1)->(%S0) [%u bytes], Uses %r, %r, %r and %r */",

@@ -1143,15 +1143,13 @@ static void add_roots(ir_graph *irg, environment_t *env)
      * Else, we will split identical blocks if we start which different roots.
 	 */
 	for (bl = env->all_blocks; bl != NULL; bl = bl->all_next) {
-		size_t i, n = ARR_LEN(bl->roots);
-
 		/* TODO: is this really needed? The roots are already in
 		   idx-order by construction, which might be good enough. */
-		qsort(bl->roots, n, sizeof(bl->roots[0]), cmp_nodes);
+		QSORT_ARR(bl->roots, cmp_nodes);
 
 		DB((dbg, LEVEL_2, " Adding Roots for block %+F\n  ", bl->block));
 		/* ok, add them sorted */
-		for (i = 0; i < n; ++i) {
+		for (size_t i = 0, n = ARR_LEN(bl->roots); i < n; ++i) {
 			DB((dbg, LEVEL_2, "%+F, ", bl->roots[i]));
 			create_node(bl->roots[i], bl, env);
 		}

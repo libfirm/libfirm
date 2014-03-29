@@ -662,7 +662,7 @@ void matrix_optimize(sp_matrix_t *m)
 	matrix_foreach(m, e)
 		c[e->row]++;
 
-	qsort(c, size, sizeof(*c), cmp_count);
+	QSORT(c, size, cmp_count);
 
 	for (i = 0; i < size; ++i) {
 		if (! bitset_is_set(fullrow, i))

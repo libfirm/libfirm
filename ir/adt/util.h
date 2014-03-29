@@ -45,4 +45,8 @@
  */
 #define PTR_TO_INT(v)   (((char *)(v) - (char *)0))
 
+#define QSORT(base, n, cmp) (qsort((base), (n), sizeof(*(base)), cmp))
+
+#define QSORT_ARR(base, cmp) QSORT((base), ARR_LEN((base)), (cmp))
+
 #endif

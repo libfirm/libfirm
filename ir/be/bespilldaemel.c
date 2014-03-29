@@ -18,6 +18,8 @@
  *   Spilling in this context means placing a spill instruction behind the
  *   definition of the value and a reload before each usage.
  */
+
+#include "../../adt/util.h"
 #include "debug.h"
 
 #include "irnodeset.h"
@@ -169,8 +171,7 @@ static void do_spilling(ir_nodeset_t *live_nodes, ir_node *node)
 	assert(c == n_live_nodes);
 
 	/* sort spill candidates */
-	qsort(candidates, n_live_nodes, sizeof(candidates[0]),
-	      compare_spill_candidates_desc);
+	QSORT(candidates, n_live_nodes, compare_spill_candidates_desc);
 
 	/* spill cheapest ones */
 	size_t cand_idx = 0;

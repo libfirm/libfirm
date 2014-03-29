@@ -228,7 +228,7 @@ void dfs_dump(const dfs_t *dfs, FILE *file)
 		nodes[n++] = node;
 	}
 
-	qsort(nodes, n, sizeof(nodes[0]), node_level_cmp);
+	QSORT(nodes, n, node_level_cmp);
 
 	int i = 0;
 	while (i < n) {

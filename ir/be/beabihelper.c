@@ -9,6 +9,8 @@
  *              selection phase.
  * @author      Matthias Braun
  */
+
+#include "../../adt/util.h"
 #include "beabihelper.h"
 #include "bearch.h"
 #include "beirg.h"
@@ -600,7 +602,7 @@ static void process_ops_in_block(ir_node *block, void *data)
 	assert(n == n_nodes);
 
 	/* order nodes according to their data dependencies */
-	qsort(nodes, n_nodes, sizeof(nodes[0]), cmp_call_dependency);
+	QSORT(nodes, n_nodes, cmp_call_dependency);
 
 	/* remember the calculated dependency into a phase */
 	for (n = n_nodes-1; n > 0; --n) {

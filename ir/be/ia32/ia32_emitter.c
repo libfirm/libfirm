@@ -28,6 +28,7 @@
  */
 #include <limits.h>
 
+#include "../../adt/util.h"
 #include "xmalloc.h"
 #include "tv.h"
 #include "iredges.h"
@@ -1742,7 +1743,7 @@ void ia32_emit_function(ir_graph *irg)
 
 	/* Sort the exception table using the exception label id's.
 	   Those are ascending with ascending addresses. */
-	qsort(exc_list, ARR_LEN(exc_list), sizeof(exc_list[0]), cmp_exc_entry);
+	QSORT_ARR(exc_list, cmp_exc_entry);
 	{
 		size_t e;
 
