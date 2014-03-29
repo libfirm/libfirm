@@ -225,7 +225,7 @@ calling_convention_t *sparc_decide_calling_convention(ir_type *function_type,
 			param->type   = param_type;
 			param->offset = stack_offset;
 			/* increase offset by at least SPARC_REGISTER_SIZE bytes so everything is aligned */
-			stack_offset += bits > 8 * SPARC_REGISTER_SIZE ? bits / 8 : SPARC_REGISTER_SIZE;
+			stack_offset += MAX(bits / 8, SPARC_REGISTER_SIZE);
 			continue;
 		}
 

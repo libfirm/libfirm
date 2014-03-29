@@ -11,6 +11,7 @@
  */
 #include <stdlib.h>
 
+#include "../../adt/util.h"
 #include "iredges_t.h"
 #include "beirg.h"
 #include "besched.h"
@@ -420,7 +421,7 @@ static void trace_preprocess_block(trace_env_t *env, ir_node *block)
 						sched_timestep_t ld;
 
 						ld = latency(env, curr, 1, n, 0) + get_irn_delay(env, n);
-						d = ld > d ? ld : d;
+						d = MAX(d, ld);
 					}
 				}
 			}
@@ -447,7 +448,7 @@ static void trace_node_ready(void *data, ir_node *irn, ir_node *pred)
 	if (pred) {
 		etime_p = get_irn_etime(env, pred);
 		etime  += latency(env, pred, 1, irn, 0);
-		etime   = etime_p > etime ? etime_p : etime;
+		etime   = MAX(etime, etime_p);
 	}
 
 	set_irn_etime(env, irn, etime);
@@ -527,8 +528,7 @@ static ir_node *muchnik_select(void *block_env, ir_nodeset_t *ready_set)
 	/* calculate the max delay of all candidates */
 	foreach_ir_nodeset(ready_set, irn, iter) {
 		sched_timestep_t d = get_irn_delay(env, irn);
-
-		max_delay = d > max_delay ? d : max_delay;
+		max_delay = MAX(max_delay, d);
 	}
 
 	ir_nodeset_init_size(&mcands, 8);

@@ -11,6 +11,7 @@
  */
 #include <string.h>
 
+#include "../adt/util.h"
 #include "irouts.h"
 
 #include "xmalloc.h"
@@ -298,7 +299,7 @@ static void assign_tree_dom_pre_order_max(ir_node *block, void *data)
 
 	for (ir_node *p = bi->first; p; p = get_dom_info(p)->next) {
 		unsigned max_p = get_dom_info(p)->max_subtree_pre_num;
-		max          = max > max_p ? max : max_p;
+		max          = MAX(max, max_p);
 		has_children = true;
 	}
 
@@ -323,7 +324,7 @@ static void assign_tree_postdom_pre_order_max(ir_node *block, void *data)
 
 	for (ir_node *p = bi->first; p; p = get_pdom_info(p)->next) {
 		unsigned max_p = get_pdom_info(p)->max_subtree_pre_num;
-		max          = max > max_p ? max : max_p;
+		max          = MAX(max, max_p);
 		has_children = true;
 	}
 

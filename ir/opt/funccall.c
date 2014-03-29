@@ -8,6 +8,8 @@
  * @brief   Optimization of function calls.
  * @author  Michael Beck
  */
+
+#include "../adt/util.h"
 #include "opt_init.h"
 #include <stdbool.h>
 
@@ -299,7 +301,7 @@ static mtp_additional_properties max_property(mtp_additional_properties a,
 
 	if (a == mtp_no_property || b == mtp_no_property)
 		return mtp_no_property;
-	mtp_additional_properties r = a > b ? a : b;
+	mtp_additional_properties r = MAX(a, b);
 	return r | t;
 }
 

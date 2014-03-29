@@ -246,7 +246,7 @@ static int firm_emit_indent(lc_appendable_t *app, const lc_arg_occ_t *occ,
                             const lc_arg_value_t *arg)
 {
 	int i;
-	int width  = occ->width > 0 ? occ->width : 1;
+	int width  = MAX(1, occ->width);
 	int amount = arg->v_int * width;
 
 	for (i = 0; i < amount; ++i)

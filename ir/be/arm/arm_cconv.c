@@ -77,7 +77,7 @@ calling_convention_t *arm_decide_calling_convention(const ir_graph *irg,
 		} else {
 			param->offset = stack_offset;
 			/* increase offset 4 bytes so everything is aligned */
-			stack_offset += bits > 32 ? bits/8 : 4;
+			stack_offset += MAX(bits / 8, 4);
 			continue;
 		}
 

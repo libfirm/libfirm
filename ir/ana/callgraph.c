@@ -11,6 +11,7 @@
  */
 #include <stdlib.h>
 
+#include "../adt/util.h"
 #include "callgraph.h"
 
 #include "irloop_t.h"
@@ -191,7 +192,7 @@ static void ana_Call(ir_node *n, void *env)
 				pset_insert((pset *)irg->callees, found, hash_ptr(callee));
 			}
 			unsigned depth = get_loop_depth(get_irn_loop(get_nodes_block(n)));
-			found->max_depth = (depth > found->max_depth) ? depth : found->max_depth;
+			found->max_depth = MAX(found->max_depth, depth);
 		}
 	}
 }

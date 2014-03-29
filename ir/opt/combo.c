@@ -1641,7 +1641,7 @@ static void *lambda_commutative_partition(const node_t *node, environment_t *env
 		if (i == 0)
 			return pl < pr ? pl : pr;
 		else
-		return pl > pr ? pl : pr;
+			return MAX(pl, pr);
 	} else {
 		/* a not split out follower */
 		ir_node *pred = get_irn_n(irn, i);

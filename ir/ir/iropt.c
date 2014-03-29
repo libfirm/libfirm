@@ -6015,7 +6015,7 @@ static ir_node *transform_Mux_set(ir_node *n, ir_relation relation)
 					}
 					ir_graph *irg          = get_irn_irg(block);
 					ir_node  *eor          = new_rd_Eor(dbgi, block, left, right, calc_mode);
-					unsigned  shift_amount = left_low_bit > right_low_bit ? left_low_bit : right_low_bit;
+					unsigned  shift_amount = MAX(left_low_bit, right_low_bit);
 					ir_node  *shift_cnt    = new_rd_Const_long(dbgi, irg, mode_Iu, shift_amount);
 					ir_node  *shift        = new_rd_Shr(dbgi, block, eor, shift_cnt, calc_mode);
 					if (calc_mode != dest_mode) {
@@ -6435,8 +6435,7 @@ static bool sim_store_bitfield(unsigned char *buf, ir_mode *mode, long offset,
 
 	unsigned mode_size        = get_mode_size_bytes(mode);
 	unsigned initializer_size = get_type_size_bytes(type);
-	for (unsigned b = offset <= 0 ? 0 : (unsigned)offset;
-		 b < initializer_size; ++b) {
+	for (unsigned b = (unsigned)MAX(0, offset); b < initializer_size; ++b) {
 		if (b > (unsigned)offset + mode_size)
 			continue;
 		unsigned      idx      = be_is_big_endian() ? (initializer_size - 1 - b) : b;
@@ -6470,7 +6469,7 @@ static bool sim_store(unsigned char *buf, ir_mode *mode, long offset,
 handle_tv:
 		assert(get_type_mode(type) == get_tarval_mode(tv));
 
-		for (unsigned b = offset <= 0 ? 0 : (unsigned)offset;
+		for (unsigned b = (unsigned)MAX(0, offset);
 		     b < initializer_size; ++b) {
 			if (b > (unsigned)offset + mode_size)
 				continue;
@@ -6492,7 +6491,7 @@ handle_tv:
 			ir_type  *el_type = get_array_element_type(type);
 			unsigned  el_size = get_type_size_bytes(el_type);
 			assert(el_size > 0);
-			long   offset0   = offset < 0 ? 0 : offset;
+			long   offset0   = MAX(0, offset);
 			size_t first_idx = (size_t) ((unsigned)offset0 / el_size);
 			size_t last_idx  = (size_t)
 				((unsigned)(offset+get_mode_size_bytes(mode)-1) / el_size);

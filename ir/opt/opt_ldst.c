@@ -9,6 +9,8 @@
  *          VanDrunen's LEPRE
  * @author  Michael Beck
  */
+
+#include "../adt/util.h"
 #include "irnode_t.h"
 #include "irflag_t.h"
 #include "array.h"
@@ -27,7 +29,7 @@
 #include "type_t.h"
 
 /* maximum number of output Proj's */
-#define MAX_PROJ ((long)pn_Load_max > (long)pn_Store_max ? (long)pn_Load_max : (long)pn_Store_max)
+#define MAX_PROJ MAX((long)pn_Load_max, (long)pn_Store_max)
 
 /**
  * Mapping an address to an dense ID.

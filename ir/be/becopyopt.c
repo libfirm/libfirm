@@ -254,7 +254,7 @@ static int co_get_costs_exec_freq(const ir_node *root, int pos)
 	int      res     = get_block_execfreq_int(&factors, copy_bl);
 
 	/* don't allow values smaller than one. */
-	return res < 1 ? 1 : res;
+	return MAX(1, res);
 }
 
 /**
