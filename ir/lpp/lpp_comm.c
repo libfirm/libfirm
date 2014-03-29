@@ -338,7 +338,7 @@ char *lpp_readbuf(lpp_comm_t *comm, char *buf, size_t buflen)
 	size_t i;
 	size_t n         = buflen - 1;
 	size_t len       = lpp_readl(comm);
-	size_t max_read  = n < len ? n : len;
+	size_t max_read  = MIN(n, len);
 	size_t rest      = len - max_read;
 
 	if(buflen > 0 && buf != NULL) {

@@ -111,7 +111,7 @@ static char *readbuf(int fd, size_t buflen, char *buf)
 	size_t i;
 	size_t n         = buflen - 1;
 	size_t len       = readl(fd);
-	size_t max_read  = n < len ? n : len;
+	size_t max_read  = MIN(n, len);
 	size_t rest      = len - max_read;
 
 	if(buflen > 0 && buf != NULL) {

@@ -705,7 +705,7 @@ static ir_node *eval_strcmp(ir_graph *irg, ir_entity *left, ir_entity *right,
 
 	size_l = get_initializer_compound_n_entries(init_l);
 	size_r = get_initializer_compound_n_entries(init_r);
-	size   = size_l < size_r ? size_l : size_r;
+	size   = MIN(size_l, size_r);
 
 	for (i = 0; i != size; ++i) {
 		ir_initializer_t *const val_l = get_initializer_compound_value(init_l, i);

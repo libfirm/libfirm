@@ -21,6 +21,8 @@
  * TODO: * try to optimize cmp modes
  *       * decide when it is useful to move the convs through phis
  */
+
+#include "../adt/util.h"
 #include "iroptimize.h"
 
 #include <stdbool.h>
@@ -36,8 +38,6 @@
 #include "vrp.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
-
-static inline int imin(int a, int b) { return a < b ? a : b; }
 
 static bool is_optimizable_node(const ir_node *node, ir_mode *dest_mode)
 {
@@ -150,8 +150,9 @@ static int get_conv_costs(const ir_node *const node, ir_mode *const dest_mode)
 	// The shift count does not participate in the conv optimization
 	int const arity = is_shift(node) ? 1 : get_irn_arity(node);
 	for (int i = 0; i < arity; ++i) {
-		ir_node *pred = get_irn_n(node, i);
-		costs += imin(get_conv_costs(pred, dest_mode), 1);
+		ir_node *const pred   = get_irn_n(node, i);
+		int      const pcosts = get_conv_costs(pred, dest_mode);
+		costs += MIN(pcosts, 1);
 	}
 
 	return costs;

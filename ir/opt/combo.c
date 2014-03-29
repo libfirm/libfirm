@@ -1639,7 +1639,7 @@ static void *lambda_commutative_partition(const node_t *node, environment_t *env
 		partition_t *pr    = get_irn_node(right)->part;
 
 		if (i == 0)
-			return pl < pr ? pl : pr;
+			return MIN(pl, pr);
 		else
 			return MAX(pl, pr);
 	} else {
