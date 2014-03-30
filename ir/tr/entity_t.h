@@ -274,9 +274,9 @@ static inline ir_type *_get_entity_owner(const ir_entity *ent)
 static inline ident *_get_entity_ld_ident(const ir_entity *ent)
 {
 	assert(ent->kind == k_entity);
-	if (ent->ld_name == NULL)
-		return ent->name;
-	return ent->ld_name;
+	if (ent->ld_name)
+		return ent->ld_name;
+	return ent->name;
 }
 
 static inline void _set_entity_ld_ident(ir_entity *ent, ident *ld_ident)
