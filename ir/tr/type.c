@@ -356,11 +356,6 @@ int (type_visited)(const ir_type *tp)
 	return _type_visited(tp);
 }
 
-int (type_not_visited)(const ir_type *tp)
-{
-	return _type_not_visited(tp);
-}
-
 type_dbg_info *(get_type_dbg_info)(const ir_type *tp)
 {
 	return _get_type_dbg_info(tp);

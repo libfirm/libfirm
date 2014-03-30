@@ -246,14 +246,14 @@ void compute_inh_transitive_closure(void)
 	size_t n_types = get_irp_n_types();
 	for (size_t i = 0; i < n_types; ++i) {
 		ir_type *tp = get_irp_type(i);
-		if (is_Class_type(tp) && type_not_visited(tp)) { /* For others there is nothing to accumulate. */
+		if (is_Class_type(tp) && !type_visited(tp)) { /* For others there is nothing to accumulate. */
 			size_t n_subtypes = get_class_n_subtypes(tp);
 			int has_unmarked_subtype = 0;
 
 			assert(get_type_visited(tp) < get_master_type_visited()-1);
 			for (size_t j = 0; j < n_subtypes; ++j) {
 				ir_type *stp = get_class_subtype(tp, j);
-				if (type_not_visited(stp)) {
+				if (!type_visited(stp)) {
 					has_unmarked_subtype = 1;
 					break;
 				}
@@ -270,14 +270,14 @@ void compute_inh_transitive_closure(void)
 	inc_master_type_visited();
 	for (size_t i = 0; i < n_types; ++i) {
 		ir_type *tp = get_irp_type(i);
-		if (is_Class_type(tp) && type_not_visited(tp)) { /* For others there is nothing to accumulate. */
+		if (is_Class_type(tp) && !type_visited(tp)) { /* For others there is nothing to accumulate. */
 			size_t n_supertypes = get_class_n_supertypes(tp);
 			int has_unmarked_supertype = 0;
 
 			assert(get_type_visited(tp) < get_master_type_visited()-1);
 			for (size_t j = 0; j < n_supertypes; ++j) {
 				ir_type *stp = get_class_supertype(tp, j);
-				if (type_not_visited(stp)) {
+				if (!type_visited(stp)) {
 					has_unmarked_supertype = 1;
 					break;
 				}

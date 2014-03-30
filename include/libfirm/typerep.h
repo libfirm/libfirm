@@ -1041,9 +1041,6 @@ FIRM_API void mark_type_visited(ir_type *tp);
 /** Returns non-zero if the type is already visited
  * @see @ref visited_counters */
 FIRM_API int type_visited(const ir_type *tp);
-/** Returns non-zero if the type is not yet visited
- * @see @ref visited_counters */
-FIRM_API int type_not_visited(const ir_type *tp);
 
 /** Returns the associated link field of a type. */
 FIRM_API void *get_type_link(const ir_type *tp);

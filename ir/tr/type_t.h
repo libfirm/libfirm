@@ -34,7 +34,6 @@
 #define set_type_visited(tp, num)         _set_type_visited(tp, num)
 #define mark_type_visited(tp)             _mark_type_visited(tp)
 #define type_visited(tp)                  _type_visited(tp)
-#define type_not_visited(tp)              _type_not_visited(tp)
 #define get_type_dbg_info(tp)             _get_type_dbg_info(tp)
 #define set_type_dbg_info(tp, db)         _set_type_dbg_info(tp, db)
 #define is_type(thing)                    _is_type(thing)
@@ -301,12 +300,6 @@ static inline int _type_visited(const ir_type *tp)
 {
 	assert(tp->kind == k_type);
 	return tp->visit >= firm_type_visited;
-}
-
-static inline int _type_not_visited(const ir_type *tp)
-{
-	assert(tp->kind == k_type);
-	return tp->visit  < firm_type_visited;
 }
 
 static inline type_dbg_info *_get_type_dbg_info(const ir_type *tp)

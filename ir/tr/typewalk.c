@@ -362,7 +362,7 @@ static void class_walk_s2s_2(ir_type *tp, class_walk_func *pre,
 
 	/* Assure all supertypes are visited before */
 	for (size_t i = 0, n = get_class_n_supertypes(tp); i < n; ++i) {
-		if (type_not_visited(get_class_supertype(tp, i)))
+		if (!type_visited(get_class_supertype(tp, i)))
 			return;
 	}
 
@@ -390,7 +390,7 @@ void class_walk_super2sub(class_walk_func *pre,
 		ir_type *tp = get_irp_type(i);
 		if (is_Class_type(tp) &&
 		    (get_class_n_supertypes(tp) == 0) &&
-		    type_not_visited(tp) &&
+		    !type_visited(tp) &&
 		    (! is_frame_type(tp)) &&
 		    (tp != get_glob_type())) {
 			class_walk_s2s_2(tp, pre, post, env);
