@@ -85,7 +85,7 @@ void set_master_type_visited(ir_visited_t val)
 
 ir_visited_t (get_master_type_visited)(void)
 {
-	return _get_master_type_visited();
+	return get_master_type_visited_();
 }
 
 void inc_master_type_visited(void)
@@ -161,22 +161,22 @@ void free_type(ir_type *tp)
 
 void *(get_type_link)(const ir_type *tp)
 {
-	return _get_type_link(tp);
+	return get_type_link_(tp);
 }
 
 void (set_type_link)(ir_type *tp, void *l)
 {
-	_set_type_link(tp, l);
+	set_type_link_(tp, l);
 }
 
 const tp_op *(get_type_tpop)(const ir_type *tp)
 {
-	return _get_type_tpop(tp);
+	return get_type_tpop_(tp);
 }
 
 ident *(get_type_tpop_nameid)(const ir_type *tp)
 {
-	return _get_type_tpop_nameid(tp);
+	return get_type_tpop_nameid_(tp);
 }
 
 const char* get_type_tpop_name(const ir_type *tp)
@@ -187,12 +187,12 @@ const char* get_type_tpop_name(const ir_type *tp)
 
 tp_opcode (get_type_tpop_code)(const ir_type *tp)
 {
-	return _get_type_tpop_code(tp);
+	return get_type_tpop_code_(tp);
 }
 
 ir_mode *(get_type_mode)(const ir_type *tp)
 {
-	return _get_type_mode(tp);
+	return get_type_mode_(tp);
 }
 
 void set_type_mode(ir_type *tp, ir_mode *mode)
@@ -217,7 +217,7 @@ long get_type_nr(const ir_type *tp)
 
 unsigned (get_type_size_bytes)(const ir_type *tp)
 {
-	return _get_type_size_bytes(tp);
+	return get_type_size_bytes_(tp);
 }
 
 ir_visibility get_type_visibility(const ir_type *tp)
@@ -291,7 +291,7 @@ const char *get_type_state_name(ir_type_state s)
 
 ir_type_state (get_type_state)(const ir_type *tp)
 {
-	return _get_type_state(tp);
+	return get_type_state_(tp);
 }
 
 void set_type_state(ir_type *tp, ir_type_state state)
@@ -338,37 +338,37 @@ void set_type_state(ir_type *tp, ir_type_state state)
 
 ir_visited_t (get_type_visited)(const ir_type *tp)
 {
-	return _get_type_visited(tp);
+	return get_type_visited_(tp);
 }
 
 void (set_type_visited)(ir_type *tp, ir_visited_t num)
 {
-	_set_type_visited(tp, num);
+	set_type_visited_(tp, num);
 }
 
 void (mark_type_visited)(ir_type *tp)
 {
-	_mark_type_visited(tp);
+	mark_type_visited_(tp);
 }
 
 int (type_visited)(const ir_type *tp)
 {
-	return _type_visited(tp);
+	return type_visited_(tp);
 }
 
 type_dbg_info *(get_type_dbg_info)(const ir_type *tp)
 {
-	return _get_type_dbg_info(tp);
+	return get_type_dbg_info_(tp);
 }
 
 void (set_type_dbg_info)(ir_type *tp, type_dbg_info *db)
 {
-	_set_type_dbg_info(tp, db);
+	set_type_dbg_info_(tp, db);
 }
 
 int (is_type)(const void *thing)
 {
-	return _is_type(thing);
+	return is_type_(thing);
 }
 
 static void compound_init(ir_type *type)
@@ -473,7 +473,7 @@ static void add_class_member(ir_type *clss, ir_entity *member)
 
 size_t (get_class_n_members)(const ir_type *clss)
 {
-	return _get_class_n_members(clss);
+	return get_class_n_members_(clss);
 }
 
 size_t get_class_member_index(const ir_type *clss, ir_entity *mem)
@@ -484,7 +484,7 @@ size_t get_class_member_index(const ir_type *clss, ir_entity *mem)
 
 ir_entity *(get_class_member)(const ir_type *clss, size_t pos)
 {
-	return _get_class_member(clss, pos);
+	return get_class_member_(clss, pos);
 }
 
 static void remove_class_member(ir_type *clss, ir_entity *member)
@@ -609,7 +609,7 @@ void remove_class_supertype(ir_type *clss, ir_type *supertype)
 
 int (is_Class_type)(const ir_type *clss)
 {
-	return _is_class_type(clss);
+	return is_class_type_(clss);
 }
 
 void set_class_mode(ir_type *tp, ir_mode *mode)
@@ -690,7 +690,7 @@ static void remove_struct_member(ir_type *strct, ir_entity *member)
 
 int (is_Struct_type)(const ir_type *strct)
 {
-	return _is_struct_type(strct);
+	return is_struct_type_(strct);
 }
 
 void set_struct_mode(ir_type *tp, ir_mode *mode)
@@ -752,7 +752,7 @@ void free_method_attrs(ir_type *method)
 
 size_t (get_method_n_params)(const ir_type *method)
 {
-	return _get_method_n_params(method);
+	return get_method_n_params_(method);
 }
 
 ir_type *get_method_param_type(const ir_type *method, size_t pos)
@@ -772,7 +772,7 @@ void set_method_param_type(ir_type *method, size_t pos, ir_type *tp)
 
 size_t (get_method_n_ress)(const ir_type *method)
 {
-	return _get_method_n_ress(method);
+	return get_method_n_ress_(method);
 }
 
 ir_type *get_method_res_type(const ir_type *method, size_t pos)
@@ -816,28 +816,28 @@ void set_method_variadicity(ir_type *method, ir_variadicity vari)
 
 mtp_additional_properties (get_method_additional_properties)(const ir_type *method)
 {
-	return _get_method_additional_properties(method);
+	return get_method_additional_properties_(method);
 }
 
 void (set_method_additional_properties)(ir_type *method, mtp_additional_properties mask)
 {
-	_set_method_additional_properties(method, mask);
+	set_method_additional_properties_(method, mask);
 }
 
 void (add_method_additional_properties)(ir_type *method,
                                         mtp_additional_properties flag)
 {
-	_add_method_additional_properties(method, flag);
+	add_method_additional_properties_(method, flag);
 }
 
 unsigned (get_method_calling_convention)(const ir_type *method)
 {
-	return _get_method_calling_convention(method);
+	return get_method_calling_convention_(method);
 }
 
 void (set_method_calling_convention)(ir_type *method, unsigned cc_mask)
 {
-	_set_method_calling_convention(method, cc_mask);
+	set_method_calling_convention_(method, cc_mask);
 }
 
 unsigned get_method_n_regparams(ir_type *method)
@@ -858,7 +858,7 @@ void set_method_n_regparams(ir_type *method, unsigned n_regs)
 
 int (is_Method_type)(const ir_type *method)
 {
-	return _is_method_type(method);
+	return is_method_type_(method);
 }
 
 ir_type *new_type_union(ident *name)
@@ -928,7 +928,7 @@ static void remove_union_member(ir_type *uni, ir_entity *member)
 
 int (is_Union_type)(const ir_type *uni)
 {
-	return _is_union_type(uni);
+	return is_union_type_(uni);
 }
 
 ir_type *new_type_segment(ident *const name, type_flags const flags)
@@ -1038,7 +1038,7 @@ void set_array_variable_size(ir_type *array, int flag)
 
 int (is_Array_type)(const ir_type *array)
 {
-	return _is_array_type(array);
+	return is_array_type_(array);
 }
 
 
@@ -1067,7 +1067,7 @@ ir_type *get_pointer_points_to_type(const ir_type *pointer)
 
 int (is_Pointer_type)(const ir_type *pointer)
 {
-	return _is_pointer_type(pointer);
+	return is_pointer_type_(pointer);
 }
 
 void set_pointer_mode(ir_type *tp, ir_mode *mode)
@@ -1100,7 +1100,7 @@ ir_type *new_type_primitive(ir_mode *mode)
 
 int (is_Primitive_type)(const ir_type *primitive)
 {
-	return _is_primitive_type(primitive);
+	return is_primitive_type_(primitive);
 }
 
 void set_primitive_mode(ir_type *tp, ir_mode *mode)
@@ -1116,7 +1116,7 @@ void set_primitive_mode(ir_type *tp, ir_mode *mode)
 
 int (is_atomic_type)(const ir_type *tp)
 {
-	return _is_atomic_type(tp);
+	return is_atomic_type_(tp);
 }
 
 size_t get_compound_n_members(const ir_type *tp)

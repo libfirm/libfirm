@@ -19,39 +19,39 @@
 
 #include "array.h"
 
-#define get_master_type_visited()         _get_master_type_visited()
-#define get_type_link(tp)                 _get_type_link(tp)
-#define set_type_link(tp, l)              _set_type_link(tp, l)
-#define get_type_tpop(tp)                 _get_type_tpop(tp)
-#define get_type_tpop_nameid(tp)          _get_type_tpop_nameid(tp)
-#define get_type_tpop_code(tp)            _get_type_tpop_code(tp)
-#define get_type_mode(tp)                 _get_type_mode(tp)
-#define get_type_size_bytes(tp)           _get_type_size_bytes(tp)
-#define get_type_state(tp)                _get_type_state(tp)
-#define get_type_visited(tp)              _get_type_visited(tp)
-#define set_type_visited(tp, num)         _set_type_visited(tp, num)
-#define mark_type_visited(tp)             _mark_type_visited(tp)
-#define type_visited(tp)                  _type_visited(tp)
-#define get_type_dbg_info(tp)             _get_type_dbg_info(tp)
-#define set_type_dbg_info(tp, db)         _set_type_dbg_info(tp, db)
-#define is_type(thing)                    _is_type(thing)
-#define is_Class_type(clss)               _is_class_type(clss)
-#define get_class_n_members(clss)         _get_class_n_members(clss)
-#define get_class_member(clss, pos)       _get_class_member(clss, pos)
-#define is_Struct_type(strct)             _is_struct_type(strct)
-#define is_Method_type(method)            _is_method_type(method)
-#define is_Union_type(uni)                _is_union_type(uni)
-#define is_Array_type(array)              _is_array_type(array)
-#define is_Pointer_type(pointer)          _is_pointer_type(pointer)
-#define is_Primitive_type(primitive)      _is_primitive_type(primitive)
-#define is_atomic_type(tp)                _is_atomic_type(tp)
-#define get_method_n_params(method)       _get_method_n_params(method)
-#define get_method_n_ress(method)         _get_method_n_ress(method)
-#define get_method_additional_properties(method)        _get_method_additional_properties(method)
-#define set_method_additional_properties(method, mask)  _set_method_additional_properties(method, mask)
-#define add_method_additional_properties(method, flag)  _add_method_additional_properties(method, flag)
-#define get_method_calling_convention(method)           _get_method_calling_convention(method)
-#define set_method_calling_convention(method, cc_mask)  _set_method_calling_convention(method, cc_mask)
+#define get_master_type_visited()         get_master_type_visited_()
+#define get_type_link(tp)                 get_type_link_(tp)
+#define set_type_link(tp, l)              set_type_link_(tp, l)
+#define get_type_tpop(tp)                 get_type_tpop_(tp)
+#define get_type_tpop_nameid(tp)          get_type_tpop_nameid_(tp)
+#define get_type_tpop_code(tp)            get_type_tpop_code_(tp)
+#define get_type_mode(tp)                 get_type_mode_(tp)
+#define get_type_size_bytes(tp)           get_type_size_bytes_(tp)
+#define get_type_state(tp)                get_type_state_(tp)
+#define get_type_visited(tp)              get_type_visited_(tp)
+#define set_type_visited(tp, num)         set_type_visited_(tp, num)
+#define mark_type_visited(tp)             mark_type_visited_(tp)
+#define type_visited(tp)                  type_visited_(tp)
+#define get_type_dbg_info(tp)             get_type_dbg_info_(tp)
+#define set_type_dbg_info(tp, db)         set_type_dbg_info_(tp, db)
+#define is_type(thing)                    is_type_(thing)
+#define is_Class_type(clss)               is_class_type_(clss)
+#define get_class_n_members(clss)         get_class_n_members_(clss)
+#define get_class_member(clss, pos)       get_class_member_(clss, pos)
+#define is_Struct_type(strct)             is_struct_type_(strct)
+#define is_Method_type(method)            is_method_type_(method)
+#define is_Union_type(uni)                is_union_type_(uni)
+#define is_Array_type(array)              is_array_type_(array)
+#define is_Pointer_type(pointer)          is_pointer_type_(pointer)
+#define is_Primitive_type(primitive)      is_primitive_type_(primitive)
+#define is_atomic_type(tp)                is_atomic_type_(tp)
+#define get_method_n_params(method)       get_method_n_params_(method)
+#define get_method_n_ress(method)         get_method_n_ress_(method)
+#define get_method_additional_properties(method)        get_method_additional_properties_(method)
+#define set_method_additional_properties(method, mask)  set_method_additional_properties_(method, mask)
+#define add_method_additional_properties(method, flag)  add_method_additional_properties_(method, flag)
+#define get_method_calling_convention(method)           get_method_calling_convention_(method)
+#define set_method_calling_convention(method, cc_mask)  set_method_calling_convention_(method, cc_mask)
 
 /** Compound type attributes. */
 typedef struct {
@@ -196,7 +196,7 @@ ir_type *clone_type_method(ir_type *tp);
 
 extern ir_visited_t firm_type_visited;
 
-static inline ir_visited_t _get_master_type_visited(void)
+static inline ir_visited_t get_master_type_visited_(void)
 {
 	return firm_type_visited;
 }
@@ -217,187 +217,187 @@ static inline void set_higher_type(ir_type *tp, ir_type *higher_type)
 	tp->higher_type = higher_type;
 }
 
-static inline void *_get_type_link(const ir_type *tp)
+static inline void *get_type_link_(const ir_type *tp)
 {
 	assert(tp->kind == k_type);
 	return(tp -> link);
 }
 
-static inline void _set_type_link(ir_type *tp, void *l)
+static inline void set_type_link_(ir_type *tp, void *l)
 {
 	assert(tp->kind == k_type);
 	tp -> link = l;
 }
 
-static inline const tp_op *_get_type_tpop(const ir_type *tp)
+static inline const tp_op *get_type_tpop_(const ir_type *tp)
 {
 	assert(tp->kind == k_type);
 	return tp->type_op;
 }
 
-static inline ident *_get_type_tpop_nameid(const ir_type *tp)
+static inline ident *get_type_tpop_nameid_(const ir_type *tp)
 {
 	assert(tp->kind == k_type);
 	return get_tpop_ident(tp->type_op);
 }
 
-static inline tp_opcode _get_type_tpop_code(const ir_type *tp)
+static inline tp_opcode get_type_tpop_code_(const ir_type *tp)
 {
 	assert(tp->kind == k_type);
 	return get_tpop_code(tp->type_op);
 }
 
-static inline ir_mode *_get_type_mode(const ir_type *tp)
+static inline ir_mode *get_type_mode_(const ir_type *tp)
 {
 	assert(tp->kind == k_type);
 	return tp->mode;
 }
 
-static inline unsigned _get_type_size_bytes(const ir_type *tp)
+static inline unsigned get_type_size_bytes_(const ir_type *tp)
 {
 	assert(tp->kind == k_type);
 	return tp->size;
 }
 
-static inline ir_type_state _get_type_state(const ir_type *tp)
+static inline ir_type_state get_type_state_(const ir_type *tp)
 {
 	assert(tp->kind == k_type);
 	return tp->flags & tf_layout_fixed ? layout_fixed : layout_undefined;
 }
 
-static inline ir_visited_t _get_type_visited(const ir_type *tp)
+static inline ir_visited_t get_type_visited_(const ir_type *tp)
 {
 	assert(tp->kind == k_type);
 	return tp->visit;
 }
 
-static inline void _set_type_visited(ir_type *tp, ir_visited_t num)
+static inline void set_type_visited_(ir_type *tp, ir_visited_t num)
 {
 	assert(tp->kind == k_type);
 	tp->visit = num;
 }
 
-static inline void _mark_type_visited(ir_type *tp)
+static inline void mark_type_visited_(ir_type *tp)
 {
 	assert(tp->kind == k_type);
 	assert(tp->visit < firm_type_visited);
 	tp->visit = firm_type_visited;
 }
 
-static inline int _type_visited(const ir_type *tp)
+static inline int type_visited_(const ir_type *tp)
 {
 	assert(tp->kind == k_type);
 	return tp->visit >= firm_type_visited;
 }
 
-static inline type_dbg_info *_get_type_dbg_info(const ir_type *tp)
+static inline type_dbg_info *get_type_dbg_info_(const ir_type *tp)
 {
 	return tp->dbi;
 }
 
-static inline void _set_type_dbg_info(ir_type *tp, type_dbg_info *db)
+static inline void set_type_dbg_info_(ir_type *tp, type_dbg_info *db)
 {
 	tp->dbi = db;
 }
 
-static inline int _is_type(const void *thing)
+static inline int is_type_(const void *thing)
 {
 	return get_kind(thing) == k_type;
 }
 
-static inline int _is_class_type(const ir_type *clss)
+static inline int is_class_type_(const ir_type *clss)
 {
 	return clss->type_op == type_class;
 }
 
-static inline size_t _get_class_n_members(const ir_type *clss)
+static inline size_t get_class_n_members_(const ir_type *clss)
 {
 	assert(clss->type_op == type_class);
 	return ARR_LEN(clss->attr.ca.members);
 }
 
-static inline ir_entity *_get_class_member(const ir_type *clss, size_t pos)
+static inline ir_entity *get_class_member_(const ir_type *clss, size_t pos)
 {
 	assert(clss->type_op == type_class);
-	assert(pos < _get_class_n_members(clss));
+	assert(pos < get_class_n_members_(clss));
 	return clss->attr.ca.members[pos];
 }
 
-static inline int _is_struct_type(const ir_type *strct)
+static inline int is_struct_type_(const ir_type *strct)
 {
 	return (strct->type_op == type_struct);
 }
 
-static inline int _is_method_type(const ir_type *method)
+static inline int is_method_type_(const ir_type *method)
 {
 	return (method->type_op == type_method);
 }
 
-static inline int _is_union_type(const ir_type *uni)
+static inline int is_union_type_(const ir_type *uni)
 {
 	return (uni->type_op == type_union);
 }
 
-static inline int _is_array_type(const ir_type *array)
+static inline int is_array_type_(const ir_type *array)
 {
 	return (array->type_op == type_array);
 }
 
-static inline int _is_pointer_type(const ir_type *pointer)
+static inline int is_pointer_type_(const ir_type *pointer)
 {
 	return (pointer->type_op == type_pointer);
 }
 
 /** Returns true if a type is a primitive type. */
-static inline int _is_primitive_type(const ir_type *primitive)
+static inline int is_primitive_type_(const ir_type *primitive)
 {
 	assert(primitive->kind == k_type);
 	return (primitive->type_op == type_primitive);
 }
 
-static inline int _is_atomic_type(const ir_type *tp)
+static inline int is_atomic_type_(const ir_type *tp)
 {
 	assert(tp->kind == k_type);
-	return _is_primitive_type(tp) || _is_pointer_type(tp);
+	return is_Primitive_type(tp) || is_Pointer_type(tp);
 }
 
-static inline size_t _get_method_n_params(const ir_type *method)
+static inline size_t get_method_n_params_(const ir_type *method)
 {
 	assert(method->type_op == type_method);
 	return method->attr.ma.n_params;
 }
 
-static inline size_t _get_method_n_ress(const ir_type *method)
+static inline size_t get_method_n_ress_(const ir_type *method)
 {
 	assert(method->type_op == type_method);
 	return method->attr.ma.n_res;
 }
 
-static inline mtp_additional_properties _get_method_additional_properties(const ir_type *method)
+static inline mtp_additional_properties get_method_additional_properties_(const ir_type *method)
 {
 	assert(method->type_op == type_method);
 	return method->attr.ma.properties;
 }
 
-static inline void _set_method_additional_properties(ir_type *method, mtp_additional_properties properties)
+static inline void set_method_additional_properties_(ir_type *method, mtp_additional_properties properties)
 {
 	assert(method->type_op == type_method);
 	method->attr.ma.properties = properties;
 }
 
-static inline void _add_method_additional_properties(ir_type *method, mtp_additional_properties properties)
+static inline void add_method_additional_properties_(ir_type *method, mtp_additional_properties properties)
 {
 	assert(method->type_op == type_method);
 	method->attr.ma.properties |= properties;
 }
 
-static inline unsigned _get_method_calling_convention(const ir_type *method)
+static inline unsigned get_method_calling_convention_(const ir_type *method)
 {
 	assert(method->type_op == type_method);
 	return method->attr.ma.irg_calling_conv;
 }
 
-static inline void _set_method_calling_convention(ir_type *method, unsigned cc_mask)
+static inline void set_method_calling_convention_(ir_type *method, unsigned cc_mask)
 {
 	assert(method->type_op == type_method);
 	method->attr.ma.irg_calling_conv = cc_mask;
