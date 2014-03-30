@@ -19,9 +19,7 @@
 
 #include "array.h"
 
-#define set_master_type_visited(val)      _set_master_type_visited(val)
 #define get_master_type_visited()         _get_master_type_visited()
-#define inc_master_type_visited()         _inc_master_type_visited()
 #define get_type_link(tp)                 _get_type_link(tp)
 #define set_type_link(tp, l)              _set_type_link(tp, l)
 #define get_type_tpop(tp)                 _get_type_tpop(tp)
@@ -198,19 +196,9 @@ ir_type *clone_type_method(ir_type *tp);
 
 extern ir_visited_t firm_type_visited;
 
-static inline void _set_master_type_visited(ir_visited_t val)
-{
-	firm_type_visited = val;
-}
-
 static inline ir_visited_t _get_master_type_visited(void)
 {
 	return firm_type_visited;
-}
-
-static inline void _inc_master_type_visited(void)
-{
-	++firm_type_visited;
 }
 
 static inline int is_lowered_type(const ir_type *tp)

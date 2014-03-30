@@ -78,9 +78,9 @@ void ir_finish_type(ir_prog *irp)
 
 ir_visited_t firm_type_visited;
 
-void (set_master_type_visited)(ir_visited_t val)
+void set_master_type_visited(ir_visited_t val)
 {
-	_set_master_type_visited(val);
+	firm_type_visited = val;
 }
 
 ir_visited_t (get_master_type_visited)(void)
@@ -88,9 +88,9 @@ ir_visited_t (get_master_type_visited)(void)
 	return _get_master_type_visited();
 }
 
-void (inc_master_type_visited)(void)
+void inc_master_type_visited(void)
 {
-	_inc_master_type_visited();
+	++firm_type_visited;
 }
 
 /**
