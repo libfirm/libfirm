@@ -40,9 +40,6 @@ typedef enum x86_create_am_flags_t {
 	x86_create_am_force      = 1U << 0,
 	/** Fold AM, even if the root node has two users. */
 	x86_create_am_double_use = 1U << 1,
-	/** Global entities need to be addressed relative to the instruction
-	 * pointer */
-	x86_create_am_entities_ip_relative = 1U << 2,
 } x86_create_am_flags_t;
 
 /**
