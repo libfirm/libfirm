@@ -806,59 +806,22 @@ static void ia32_collect_frame_entity_nodes(ir_node *node, void *data)
 			be_forbid_coalescing(env);
 	}
 
-	if (!is_ia32_irn(node) || get_ia32_frame_ent(node) != NULL
-	 || !is_ia32_use_frame(node))
+	if (!is_ia32_irn(node) || !is_ia32_use_frame(node)
+	    || get_ia32_frame_ent(node) != NULL
+	    || get_ia32_op_type(node) != ia32_AddrModeS)
 		return;
 
-	const ir_mode *mode;
-	if (is_ia32_need_stackent(node))
-		goto need_stackent;
-	switch (get_ia32_irn_opcode(node)) {
-need_stackent:
-	case iro_ia32_Load: {
-		const ia32_attr_t *attr = get_ia32_attr_const(node);
-
-		if (attr->data.need_32bit_stackent) {
-			mode = ia32_mode_gp;
-		} else if (attr->data.need_64bit_stackent) {
-			mode = mode_Ls;
-		} else {
-			mode = get_ia32_ls_mode(node);
-			if (is_ia32_is_reload(node))
-				mode = get_spill_mode(mode);
-		}
-		break;
+	const ia32_attr_t *attr = get_ia32_attr_const(node);
+	const ir_mode     *mode;
+	if (attr->data.need_32bit_stackent) {
+		mode = ia32_mode_gp;
+	} else if (attr->data.need_64bit_stackent) {
+		mode = mode_Ls;
+	} else {
+		mode = get_ia32_ls_mode(node);
 	}
-
-	case iro_ia32_fild:
-	case iro_ia32_fld:
-	case iro_ia32_xLoad: {
-		mode  = get_ia32_ls_mode(node);
-		break;
-	}
-
-	case iro_ia32_FldCW: {
-		/* although 2 byte would be enough 4 byte performs best */
-		mode  = ia32_mode_gp;
-		break;
-	}
-
-	default:
-#ifndef NDEBUG
-		panic("unexpected frame user while collection frame entity nodes");
-
-	case iro_ia32_FnstCW:
-	case iro_ia32_Store:
-	case iro_ia32_fst:
-	case iro_ia32_fist:
-	case iro_ia32_fisttp:
-	case iro_ia32_xStore:
-	case iro_ia32_xStoreSimple:
-#endif
-		return;
-	}
-	int align = mode == ia32_mode_E ? 4 : get_mode_size_bytes(mode);
-	be_node_needs_frame_entity(env, node, mode, align);
+	ir_type *type = get_type_for_mode(mode);
+	be_load_needs_frame_entity(env, node, type);
 }
 
 static int determine_ebp_input(ir_node *ret)

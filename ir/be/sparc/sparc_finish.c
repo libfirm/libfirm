@@ -677,6 +677,11 @@ static void register_peephole_optimization(ir_op *op, peephole_opt_func func)
 	op->ops.generic = (op_func) func;
 }
 
+static bool is_frame_load(const ir_node *node)
+{
+	return is_sparc_Ld(node) || is_sparc_Ldf(node);
+}
+
 static void sparc_collect_frame_entity_nodes(ir_node *node, void *data)
 {
 	be_fec_env_t *env = (be_fec_env_t*)data;
@@ -693,8 +698,7 @@ static void sparc_collect_frame_entity_nodes(ir_node *node, void *data)
 		return;
 	}
 
-
-	if (!is_sparc_Ld(node) && !is_sparc_Ldf(node))
+	if (!is_frame_load(node))
 		return;
 
 	const sparc_load_store_attr_t *attr = get_sparc_load_store_attr_const(node);
@@ -706,12 +710,14 @@ static void sparc_collect_frame_entity_nodes(ir_node *node, void *data)
 		return;
 	if (arch_get_irn_flags(node) & sparc_arch_irn_flag_needs_64bit_spillslot)
 		mode = mode_Lu;
-	unsigned align = get_mode_size_bytes(mode);
-	be_node_needs_frame_entity(env, node, mode, align);
+	const ir_type *type = get_type_for_mode(mode);
+	be_load_needs_frame_entity(env, node, type);
 }
 
-static void sparc_set_frame_entity(ir_node *node, ir_entity *entity)
+static void sparc_set_frame_entity(ir_node *node, ir_entity *entity,
+                                   const ir_type *type)
 {
+	(void)type;
 	/* we only say be_node_needs_frame_entity on nodes with load_store
 	 * attributes, so this should be fine */
 	sparc_load_store_attr_t *attr = get_sparc_load_store_attr(node);

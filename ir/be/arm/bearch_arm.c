@@ -120,30 +120,33 @@ static void arm_prepare_graph(ir_graph *irg)
 	place_code(irg);
 }
 
-static void arm_collect_frame_entity_nodes(ir_node *node, void *data)
+static bool is_frame_load(const ir_node *node)
 {
-	be_fec_env_t  *env = (be_fec_env_t*)data;
-	const ir_mode *mode;
-	int            align;
-	ir_entity     *entity;
-	const arm_load_store_attr_t *attr;
-
-	if (!is_arm_Ldf(node) && !is_arm_Ldr(node))
-		return;
-
-	attr   = get_arm_load_store_attr_const(node);
-	entity = attr->entity;
-	mode   = attr->load_store_mode;
-	align  = get_mode_size_bytes(mode);
-	if (entity != NULL)
-		return;
-	if (!attr->is_frame_entity)
-		return;
-	be_node_needs_frame_entity(env, node, mode, align);
+	return is_arm_Ldr(node) || is_arm_Ldf(node);
 }
 
-static void arm_set_frame_entity(ir_node *node, ir_entity *entity)
+static void arm_collect_frame_entity_nodes(ir_node *node, void *data)
 {
+	if (!is_frame_load(node))
+		return;
+
+	const arm_load_store_attr_t *attr = get_arm_load_store_attr_const(node);
+	if (!attr->is_frame_entity)
+		return;
+	const ir_entity *entity = attr->entity;
+	if (entity != NULL)
+		return;
+	const ir_mode *mode = attr->load_store_mode;
+	const ir_type *type = get_type_for_mode(mode);
+
+	be_fec_env_t *env = (be_fec_env_t*)data;
+	be_load_needs_frame_entity(env, node, type);
+}
+
+static void arm_set_frame_entity(ir_node *node, ir_entity *entity,
+                                 const ir_type *type)
+{
+	(void)type;
 	arm_load_store_attr_t *attr = get_arm_load_store_attr(node);
 	attr->entity = entity;
 }
