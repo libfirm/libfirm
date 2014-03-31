@@ -1913,20 +1913,9 @@ static void bemit_modrm8(reg_modifier_t high_part, const arch_register_t *reg)
 	bemit8(modrm);
 }
 
-/**
- * Calculate the size of a signed immediate in bytes.
- *
- * @param offset  an offset
- */
-static unsigned get_signed_imm_size(int offset)
+static bool ia32_is_8bit_imm(ia32_immediate_attr_t const *const imm)
 {
-	if (ia32_is_8bit_val(offset)) {
-		return 1;
-	} else if (-32768 <= offset && offset < 32768) {
-		return 2;
-	} else {
-		return 4;
-	}
+	return !imm->entity && ia32_is_8bit_val(imm->offset);
 }
 
 /**
@@ -2131,7 +2120,7 @@ static void bemit_binop(ir_node const *const node, unsigned const code)
 	if (is_ia32_Immediate(right)) {
 		ia32_immediate_attr_t const *const attr = get_ia32_immediate_attr_const(right);
 		/* Try to use the short form with 8bit sign extended immediate. */
-		if (op != OP_8 && !attr->entity && get_signed_imm_size(attr->offset) == 1) {
+		if (op != OP_8 && ia32_is_8bit_imm(attr)) {
 			op   = OP_16_32_IMM8;
 			size = 8;
 		}
@@ -2199,7 +2188,7 @@ static void bemit_binop_mem(ir_node const *const node, unsigned const code)
 	if (is_ia32_Immediate(val)) {
 		ia32_immediate_attr_t const *const attr = get_ia32_immediate_attr_const(val);
 		/* Try to use the short form with 8bit sign extended immediate. */
-		if (op != OP_8 && !attr->entity && get_signed_imm_size(attr->offset) == 1) {
+		if (op != OP_8 && ia32_is_8bit_imm(attr)) {
 			op   = OP_16_32_IMM8;
 			size = 8;
 		}
@@ -2410,13 +2399,11 @@ static void bemit_bt(ir_node const *const node)
 	arch_register_t const *const lreg  = arch_get_irn_register_in(node, n_ia32_Bt_left);
 	ir_node         const *const right = get_irn_n(node, n_ia32_Bt_right);
 	if (is_ia32_Immediate(right)) {
-		ia32_immediate_attr_t const *const attr   = get_ia32_immediate_attr_const(right);
-		int                          const offset = attr->offset;
-		assert(!attr->entity);
-		assert(get_signed_imm_size(offset) == 1);
+		ia32_immediate_attr_t const *const attr = get_ia32_immediate_attr_const(right);
+		assert(ia32_is_8bit_imm(attr));
 		bemit8(0xBA);
 		bemit_modru(lreg, 4);
-		bemit8(offset);
+		bemit8(attr->offset);
 	} else {
 		bemit8(0xA3);
 		bemit_modrr(lreg, arch_get_irn_register(right));
@@ -2514,7 +2501,7 @@ static void bemit_imul(const ir_node *node)
 	/* Do we need the immediate form? */
 	if (is_ia32_Immediate(right)) {
 		int imm = get_ia32_immediate_attr_const(right)->offset;
-		if (get_signed_imm_size(imm) == 1) {
+		if (ia32_is_8bit_val(imm)) {
 			bemit_unop_reg(node, 0x6B, n_ia32_IMul_left);
 			bemit8(imm);
 		} else {
@@ -2819,21 +2806,13 @@ static void bemit_push(const ir_node *node)
 	const ir_node *value = get_irn_n(node, n_ia32_Push_val);
 
 	if (is_ia32_Immediate(value)) {
-		const ia32_immediate_attr_t *attr
-			= get_ia32_immediate_attr_const(value);
-		unsigned size = get_signed_imm_size(attr->offset);
-		if (attr->entity)
-			size = 4;
-		switch (size) {
-		case 1:
+		const ia32_immediate_attr_t *attr = get_ia32_immediate_attr_const(value);
+		if (ia32_is_8bit_imm(attr)) {
 			bemit8(0x6A);
 			bemit8((unsigned char)attr->offset);
-			break;
-		case 2:
-		case 4:
+		} else {
 			bemit8(0x68);
 			bemit_immediate(value, false);
-			break;
 		}
 	} else if (is_ia32_NoReg_GP(value)) {
 		bemit8(0xFF);
@@ -2994,7 +2973,6 @@ static void bemit_incsp(const ir_node *node)
 {
 	int                    offs;
 	const arch_register_t *reg;
-	unsigned               size;
 	unsigned               ext;
 
 	offs = be_get_IncSP_offset(node);
@@ -3008,13 +2986,13 @@ static void bemit_incsp(const ir_node *node)
 		offs = -offs;
 	}
 
-	size = get_signed_imm_size(offs);
-	bemit8(size == 1 ? 0x83 : 0x81);
+	bool const imm8b = ia32_is_8bit_val(offs);
+	bemit8(imm8b ? 0x83 : 0x81);
 
 	reg  = arch_get_irn_register_out(node, 0);
 	bemit_modru(reg, ext);
 
-	if (size == 1) {
+	if (imm8b) {
 		bemit8(offs);
 	} else {
 		bemit32(offs);
