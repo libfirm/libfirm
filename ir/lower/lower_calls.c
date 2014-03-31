@@ -86,10 +86,13 @@ static void remove_compound_param_entities(ir_graph *irg)
 
 static unsigned return_in_ints(compound_call_lowering_flags flags, ir_type *tp)
 {
-	if (!(flags & LF_RETURN_SMALL_ARRAY_IN_INTS))
+	if (is_Array_type(tp)) {
+		if (!(flags&LF_RETURN_SMALL_ARRAY_IN_INTS))
+			return 0;
+	} else if (!(flags & LF_RETURN_SMALL_STRUCT_IN_INTS)) {
+		assert(is_aggregate_type(tp));
 		return 0;
-	if (!is_Array_type(tp))
-		return 0;
+	}
 	unsigned size   = get_type_size_bytes(tp);
 	unsigned n_regs = size / get_mode_size_bytes(int_return_mode);
 	if (n_regs > 2)

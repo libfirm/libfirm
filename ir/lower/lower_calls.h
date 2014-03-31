@@ -24,6 +24,8 @@ typedef enum compound_call_lowering_flags {
 	/** Return small arays as integer values instead of storing them into
 	 * memory. */
 	LF_RETURN_SMALL_ARRAY_IN_INTS = 1 << 2,
+	/** Return small structs as integer values */
+	LF_RETURN_SMALL_STRUCT_IN_INTS = 1 << 3,
 } compound_call_lowering_flags;
 ENUM_BITSET(compound_call_lowering_flags)
 

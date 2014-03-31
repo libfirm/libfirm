@@ -1691,8 +1691,12 @@ static void ia32_lower_for_target(void)
 	 *  on the callframe and we can't just use an arbitrary position on the
 	 *  stackframe)
 	 */
-	lower_calls_with_compounds(LF_RETURN_HIDDEN | LF_DONT_LOWER_ARGUMENTS
-	                           | LF_RETURN_SMALL_ARRAY_IN_INTS);
+	bool darwin_abi = be_gas_object_file_format == OBJECT_FILE_FORMAT_MACH_O;
+	compound_call_lowering_flags lower_call_flags
+		= LF_RETURN_HIDDEN | LF_DONT_LOWER_ARGUMENTS
+		| LF_RETURN_SMALL_ARRAY_IN_INTS
+		| (darwin_abi ? LF_RETURN_SMALL_STRUCT_IN_INTS : LF_NONE);
+	lower_calls_with_compounds(lower_call_flags);
 	be_after_irp_transform("lower-calls");
 
 	/* replace floating point operations by function calls */
