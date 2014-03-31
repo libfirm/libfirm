@@ -26,6 +26,7 @@
 #define get_type_tpop_nameid(tp)          get_type_tpop_nameid_(tp)
 #define get_type_tpop_code(tp)            get_type_tpop_code_(tp)
 #define get_type_mode(tp)                 get_type_mode_(tp)
+#define get_type_alignment_bytes(tp)      get_type_alignment_bytes_(tp)
 #define get_type_size_bytes(tp)           get_type_size_bytes_(tp)
 #define get_type_state(tp)                get_type_state_(tp)
 #define get_type_visited(tp)              get_type_visited_(tp)
@@ -201,6 +202,11 @@ static inline ir_visited_t get_master_type_visited_(void)
 	return firm_type_visited;
 }
 
+static inline int is_type_(const void *thing)
+{
+	return get_kind(thing) == k_type;
+}
+
 static inline int is_lowered_type(const ir_type *tp)
 {
 	return tp->flags & tf_lowered_type;
@@ -253,6 +259,12 @@ static inline ir_mode *get_type_mode_(const ir_type *tp)
 	return tp->mode;
 }
 
+static inline unsigned get_type_alignment_bytes_(const ir_type *type)
+{
+	assert(is_type(type));
+	return type->align;
+}
+
 static inline unsigned get_type_size_bytes_(const ir_type *tp)
 {
 	assert(tp->kind == k_type);
@@ -298,11 +310,6 @@ static inline type_dbg_info *get_type_dbg_info_(const ir_type *tp)
 static inline void set_type_dbg_info_(ir_type *tp, type_dbg_info *db)
 {
 	tp->dbi = db;
-}
-
-static inline int is_type_(const void *thing)
-{
-	return get_kind(thing) == k_type;
 }
 
 static inline int is_class_type_(const ir_type *clss)

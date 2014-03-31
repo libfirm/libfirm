@@ -1015,18 +1015,9 @@ FIRM_API unsigned get_type_size_bytes(const ir_type *tp);
 FIRM_API void set_type_size_bytes(ir_type *tp, unsigned size);
 
 /** Returns the alignment of a type in bytes. */
-FIRM_API unsigned get_type_alignment_bytes(ir_type *tp);
+FIRM_API unsigned get_type_alignment_bytes(const ir_type *tp);
 
-/** Sets the alignment of a type in bytes.
- *
- *  If the alignment of a type is
- *  not set, it is calculated here according to the following rules:
- *  -#.) if a type has a mode, the alignment is the mode size.
- *  -#.) compound types have the alignment of their biggest member.
- *  -#.) array types have the alignment of their element type.
- *  -#.) method types return 0 here.
- *  -#.) all other types return 1 here (i.e. aligned at byte).
- */
+/** Sets the alignment of a type in bytes. */
 FIRM_API void set_type_alignment_bytes(ir_type *tp, unsigned align);
 
 /** Returns the visited counter of a type.

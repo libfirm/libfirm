@@ -45,6 +45,7 @@
 #include "error.h"
 #include "dbginfo.h"
 #include "irprog_t.h"
+#include "bitfiddle.h"
 
 #include "array.h"
 
@@ -238,44 +239,16 @@ void set_type_size_bytes(ir_type *tp, unsigned size)
 	tpop->ops.set_type_size(tp, size);
 }
 
-unsigned get_type_alignment_bytes(ir_type *tp)
+unsigned (get_type_alignment_bytes)(const ir_type *type)
 {
-	if (tp->align > 0)
-		return tp->align;
-
-	/* alignment NOT set calculate it "on demand" */
-	unsigned align;
-	if (tp->mode)
-		align = (get_mode_size_bits(tp->mode) + 7) >> 3;
-	else if (is_Array_type(tp))
-		align = get_type_alignment_bytes(get_array_element_type(tp));
-	else if (is_compound_type(tp)) {
-		align = 0;
-		for (size_t i = 0, n = get_compound_n_members(tp); i < n; ++i) {
-			ir_type  *t = get_entity_type(get_compound_member(tp, i));
-			unsigned  a = get_type_alignment_bytes(t);
-
-			if (a > align)
-				align = a;
-		}
-	} else if (is_Method_type(tp)) {
-		align = 0;
-	} else {
-		align = 1;
-	}
-
-	/* write back */
-	tp->align = align;
-	return align;
+	return get_type_alignment_bytes_(type);
 }
 
-void set_type_alignment_bytes(ir_type *tp, unsigned align)
+void set_type_alignment_bytes(ir_type *type, unsigned align)
 {
-	assert(is_type(tp));
-	/* Methods don't have an alignment. */
-	if (tp->type_op != type_method) {
-		tp->align = align;
-	}
+	assert(is_type(type));
+	assert(align > 0);
+	type->align = align;
 }
 
 const char *get_type_state_name(ir_type_state s)
@@ -713,6 +686,7 @@ ir_type *new_type_method(size_t n_param, size_t n_res)
 	res->attr.ma.res_type     = XMALLOCNZ(ir_type*, n_res);
 	res->attr.ma.variadicity  = variadicity_non_variadic;
 	res->attr.ma.properties   = mtp_no_property;
+	set_type_alignment_bytes(res, 1);
 	hook_new_type(res);
 	return res;
 }
@@ -739,6 +713,7 @@ ir_type *clone_type_method(ir_type *tp)
 	res->attr.ma.variadicity      = tp->attr.ma.variadicity;
 	res->attr.ma.properties       = tp->attr.ma.properties;
 	res->attr.ma.irg_calling_conv = tp->attr.ma.irg_calling_conv;
+	set_type_alignment_bytes(res, get_type_alignment_bytes(tp));
 	hook_new_type(res);
 	return res;
 }
@@ -950,6 +925,7 @@ ir_type *new_type_array(ir_type *element_type)
 	ir_type  *res = new_type(type_array, NULL);
 	res->attr.aa.element_type = element_type;
 	res->attr.aa.size         = new_r_Unknown(get_const_code_irg(), mode_Iu);
+	set_type_alignment_bytes(res, get_type_alignment_bytes(element_type));
 
 	ident *const id = new_id_from_chars("elem_ent", 8);
 	res->attr.aa.element_ent  = new_entity(res, id, element_type);
@@ -1001,6 +977,7 @@ void set_array_element_type(ir_type *array, ir_type *tp)
 	assert(is_Array_type(array));
 	assert(!is_Method_type(tp));
 	array->attr.aa.element_type = tp;
+	set_type_alignment_bytes(array, get_type_alignment_bytes(tp));
 }
 
 ir_type *get_array_element_type(const ir_type *array)
@@ -1047,8 +1024,10 @@ ir_type *new_type_pointer(ir_type *points_to)
 	ir_mode *const mode = get_type_pointer_mode(points_to);
 	ir_type *const res  = new_type(type_pointer, mode);
 	res->attr.pa.points_to = points_to;
-	res->size = get_mode_size_bytes(res->mode);
+	unsigned size = get_mode_size_bytes(mode);
+	res->size = size;
 	res->flags |= tf_layout_fixed;
+	set_type_alignment_bytes(res, size);
 	hook_new_type(res);
 	return res;
 }
@@ -1094,6 +1073,11 @@ ir_type *new_type_primitive(ir_mode *mode)
 	ir_type *res = new_type(type_primitive, mode);
 	res->size  = get_mode_size_bytes(mode);
 	res->flags |= tf_layout_fixed;
+	unsigned mode_size = get_mode_size_bits(mode);
+	unsigned align     = mode_size > 0
+	                   ? ceil_po2((get_mode_size_bits(mode) + 7) >> 3)
+	                   : 1;
+	set_type_alignment_bytes(res, align);
 	hook_new_type(res);
 	return res;
 }
@@ -1282,9 +1266,7 @@ void default_layout_compound_type(ir_type *type)
 	if (align_all > 0 && size % align_all) {
 		size += align_all - (size % align_all);
 	}
-	if (align_all > get_type_alignment_bytes(type)) {
-		set_type_alignment_bytes(type, align_all);
-	}
+	set_type_alignment_bytes(type, align_all);
 	set_type_size_bytes(type, size);
 	set_type_state(type, layout_fixed);
 }
