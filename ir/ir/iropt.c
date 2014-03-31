@@ -330,8 +330,15 @@ static ir_tarval *computed_value_Sub(const ir_node *n)
 	const ir_node *b    = get_Sub_right(n);
 
 	/* a - a == 0 (not possible for float because NaN - NaN == NaN */
-	if (a == b && get_mode_arithmetic(mode) == irma_twos_complement)
+	if (get_mode_arithmetic(mode) == irma_twos_complement &&
+	    (a == b ||
+	     (is_Confirm(a) && is_Confirm(b) &&
+	      get_Confirm_relation(a) == ir_relation_equal &&
+	      get_Confirm_relation(b) == ir_relation_equal &&
+	      get_Confirm_bound(a) == get_Confirm_value(b) &&
+	      get_Confirm_bound(b) == get_Confirm_value(a)))) {
 		return get_mode_null(mode);
+	}
 
 	ir_tarval *ta = value_of(a);
 	ir_tarval *tb = value_of(b);
