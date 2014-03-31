@@ -4364,6 +4364,7 @@ static ir_node *transform_node_Cmp(ir_node *n)
 {
 	ir_node    *left     = get_Cmp_left(n);
 	ir_node    *right    = get_Cmp_right(n);
+	ir_graph   *irg      = get_irn_irg(n);
 	ir_mode    *mode     = get_irn_mode(left);
 	ir_tarval  *tv       = NULL;
 	bool        changed  = false;
@@ -4422,7 +4423,6 @@ static ir_node *transform_node_Cmp(ir_node *n)
 				new_tv = tarval_convert_to(tv, mode_left);
 				tarval_set_integer_overflow_mode(last_mode);
 				if (tarval_is_constant(new_tv)) {
-					ir_graph *irg = get_irn_irg(n);
 					left    = op_left;
 					right   = new_r_Const(irg, new_tv);
 					mode    = get_irn_mode(left);
@@ -4548,7 +4548,6 @@ static ir_node *transform_node_Cmp(ir_node *n)
 				}
 				if (x) {
 cmp_x_eq_0:;
-					ir_graph *irg = get_irn_irg(n);
 					left    = x;
 					right   = new_r_Const_null(irg, mode);
 					changed = true;
@@ -4577,7 +4576,6 @@ cmp_x_eq_0:;
 
 						if (l1 + h2 < bits && l1 + h3 < bits) {
 							dbg_info *dbg   = get_irn_dbg_info(left);
-							ir_graph *irg   = get_irn_irg(left);
 							ir_node  *block = get_nodes_block(n);
 
 							ir_tarval *mask  = tarval_shl(c2, c1);
@@ -4615,7 +4613,6 @@ cmp_x_eq_0:;
 			if (mask != right)
 				mask = get_And_right(left);
 			if (mask == right && is_single_bit(mask)) {
-				ir_graph *irg = get_irn_irg(n);
 				relation =
 					relation == ir_relation_equal ? ir_relation_less_greater
 					                              : ir_relation_equal;
@@ -4652,7 +4649,7 @@ is_bittest: {
 	}
 
 	/* replace mode_b compares with ands/ors */
-	if (mode == mode_b) {
+	if (!irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_MODEB_LOWERED) && mode == mode_b) {
 		ir_node  *block = get_nodes_block(n);
 		dbg_info *dbgi  = get_irn_dbg_info(n);
 		ir_node  *bres;
@@ -4895,7 +4892,6 @@ is_bittest: {
 						ir_tarval *mask = tarval_and(get_Const_tarval(c1), tv);
 						if (mask != tv) {
 							/* TODO: move to constant evaluation */
-							ir_graph *irg = get_irn_irg(n);
 							c1 = create_bool_const(irg, relation != ir_relation_equal);
 							DBG_OPT_CSTEVAL(n, c1);
 							return c1;
@@ -4932,7 +4928,6 @@ is_bittest: {
 						 */
 						if (! tarval_is_null(get_Const_tarval(c1))) {
 							/* TODO: move to constant evaluation */
-							ir_graph *irg = get_irn_irg(n);
 							c1 = create_bool_const(irg, relation != ir_relation_equal);
 							DBG_OPT_CSTEVAL(n, c1);
 							return c1;
@@ -4948,7 +4943,6 @@ is_bittest: {
 					 */
 					c1 = get_Shl_right(left);
 					if (is_Const(c1)) {
-						ir_graph  *irg    = get_irn_irg(c1);
 						ir_tarval *tv1    = get_Const_tarval(c1);
 						ir_mode   *mode   = get_irn_mode(left);
 						ir_tarval *minus1 = get_mode_all_one(mode);
@@ -4978,7 +4972,6 @@ is_bittest: {
 					 */
 					c1 = get_Shr_right(left);
 					if (is_Const(c1)) {
-						ir_graph  *irg    = get_irn_irg(c1);
 						ir_tarval *tv1    = get_Const_tarval(c1);
 						ir_mode   *mode   = get_irn_mode(left);
 						ir_tarval *minus1 = get_mode_all_one(mode);
@@ -5008,7 +5001,6 @@ is_bittest: {
 					 */
 					c1 = get_Shrs_right(left);
 					if (is_Const(c1)) {
-						ir_graph  *irg     = get_irn_irg(c1);
 						ir_tarval *tv1     = get_Const_tarval(c1);
 						ir_mode   *mode    = get_irn_mode(left);
 						ir_tarval *all_one = get_mode_all_one(mode);
@@ -5038,7 +5030,6 @@ is_bittest: {
 	}
 
 	if (changedc) {     /* need a new Const */
-		ir_graph *irg = get_irn_irg(n);
 		right   = new_r_Const(irg, tv);
 		changed = true;
 	}
@@ -5056,7 +5047,6 @@ is_bittest: {
 					/* special case: (x % 2^n) CMP 0 ==> x & (2^n-1) CMP 0 */
 					ir_node  *v    = get_binop_left(op);
 					ir_node  *blk  = get_nodes_block(op);
-					ir_graph *irg  = get_irn_irg(op);
 					ir_mode  *mode = get_irn_mode(v);
 
 					tv      = tarval_sub(tv, get_mode_one(mode), NULL);
