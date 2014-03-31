@@ -37,13 +37,13 @@ static bool check_immediate_constraint(long val, char immediate_constraint_type)
 	case 'i':
 	case 'n': return true;
 
-	case 'I': return    0 <= val && val <=  31;
-	case 'J': return    0 <= val && val <=  63;
-	case 'K': return -128 <= val && val <= 127;
+	case 'I': return 0 <= val && val <=  31;
+	case 'J': return 0 <= val && val <=  63;
+	case 'K': return ia32_is_8bit_val(val);
 	case 'L': return val == 0xff || val == 0xffff;
-	case 'M': return    0 <= val && val <=   3;
-	case 'N': return    0 <= val && val <= 255;
-	case 'O': return    0 <= val && val <= 127;
+	case 'M': return 0 <= val && val <=   3;
+	case 'N': return 0 <= val && val <= 255;
+	case 'O': return 0 <= val && val <= 127;
 
 	default: panic("Invalid immediate constraint found");
 	}

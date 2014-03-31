@@ -129,4 +129,9 @@ void ia32_adjust_pic(ir_graph *irg);
 
 ir_node *ia32_get_pic_base(ir_graph *irg);
 
+static inline bool ia32_is_8bit_val(int32_t const v)
+{
+	return -128 <= v && v < 128;
+}
+
 #endif

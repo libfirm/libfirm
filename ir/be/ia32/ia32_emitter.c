@@ -1920,7 +1920,7 @@ static void bemit_modrm8(reg_modifier_t high_part, const arch_register_t *reg)
  */
 static unsigned get_signed_imm_size(int offset)
 {
-	if (-128 <= offset && offset < 128) {
+	if (ia32_is_8bit_val(offset)) {
 		return 1;
 	} else if (-32768 <= offset && offset < 32768) {
 		return 2;
@@ -1956,7 +1956,7 @@ static void bemit_mod_am(unsigned reg, const ir_node *node)
 	} else if (offs == 0) {
 		modrm |= MOD_IND;
 		emitoffs = 0;
-	} else if (-128 <= offs && offs < 128) {
+	} else if (ia32_is_8bit_val(offs)) {
 		modrm |= MOD_IND_BYTE_OFS;
 		emitoffs = 8;
 	} else {
