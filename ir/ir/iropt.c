@@ -444,8 +444,16 @@ static ir_tarval *computed_value_Eor(const ir_node *n)
 	const ir_node *a = get_Eor_left(n);
 	const ir_node *b = get_Eor_right(n);
 
-	if (a == b)
+	/* a ^ a == 0 */
+	if (a == b ||
+	    (is_Confirm(a) && is_Confirm(b) &&
+	     get_Confirm_relation(a) == ir_relation_equal &&
+	     get_Confirm_relation(b) == ir_relation_equal &&
+	     get_Confirm_bound(a) == get_Confirm_value(b) &&
+	     get_Confirm_bound(b) == get_Confirm_value(a))) {
 		return get_mode_null(get_irn_mode(n));
+	}
+
 	/* x^~x => ~0 */
 	if (complement_values(a, b))
 		return get_mode_all_one(get_irn_mode(n));
