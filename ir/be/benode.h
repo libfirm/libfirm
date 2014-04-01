@@ -10,7 +10,7 @@
  * @date        17.05.2005
  *
  * Backend node support for generic backend nodes.
- * This file provides Perm, Copy, Spill and Reload nodes.
+ * This file provides Perm, and Copy nodes.
  */
 #ifndef FIRM_BE_BENODE_T_H
 #define FIRM_BE_BENODE_T_H
@@ -22,9 +22,8 @@
 #include "bearch.h"
 
 typedef enum be_opcode {
-	beo_Spill,
-	beo_Reload,
 	beo_Perm,
+	beo_first = beo_Perm,
 	beo_MemPerm,
 	beo_Copy,
 	beo_Keep,
@@ -36,16 +35,12 @@ typedef enum be_opcode {
 	beo_SubSP,
 	beo_Start,
 	beo_FrameAddr,
-
-	beo_first = beo_Spill,
 	beo_last  = beo_FrameAddr
 } be_opcode;
 
 /**
  * The benode op's.  Must be available to register emitter function.
  */
-extern ir_op *op_be_Spill;
-extern ir_op *op_be_Reload;
 extern ir_op *op_be_Perm;
 extern ir_op *op_be_MemPerm;
 extern ir_op *op_be_Copy;
@@ -72,36 +67,6 @@ be_opcode get_be_irn_opcode(const ir_node *node);
 void be_init_op(void);
 
 void be_finish_op(void);
-
-/**
- * Position numbers for the be_Spill inputs.
- */
-enum {
-	n_be_Spill_frame = 0,
-	n_be_Spill_val   = 1
-};
-
-/**
- * Make a new Spill node.
- */
-ir_node *be_new_Spill(const arch_register_class_t *cls,
-                      const arch_register_class_t *cls_frame, ir_node *block,
-                      ir_node *frame, ir_node *to_spill);
-
-/**
- * Position numbers for the be_Reload inputs.
- */
-enum {
-	n_be_Reload_frame = 0,
-	n_be_Reload_mem   = 1
-};
-
-/**
- * Make a new Reload node.
- */
-ir_node *be_new_Reload(const arch_register_class_t *cls,
-                       const arch_register_class_t *cls_frame, ir_node *block,
-                       ir_node *frame, ir_node *mem, ir_mode *mode);
 
 /**
  * Position numbers for the be_Copy inputs.
@@ -393,11 +358,6 @@ void be_node_set_frame_entity(ir_node *node, ir_entity *entity);
  */
 int be_get_frame_offset(const ir_node *irn);
 
-ir_node* be_get_Reload_mem(const ir_node *irn);
-ir_node *be_get_Reload_frame(const ir_node *irn);
-ir_node* be_get_Spill_val(const ir_node *irn);
-ir_node *be_get_Spill_frame(const ir_node *irn);
-
 void be_set_MemPerm_in_entity(const ir_node *irn, int n, ir_entity* ent);
 ir_entity *be_get_MemPerm_in_entity(const ir_node *irn, int n);
 
@@ -465,8 +425,6 @@ ir_node *be_new_Phi(ir_node *block, int n_ins, ir_node **ins, ir_mode *mode,
  */
 ir_node *be_get_initial_reg_value(ir_graph *irg, const arch_register_t *reg);
 
-static inline bool be_is_Spill    (const ir_node *irn) { return get_irn_op(irn) == op_be_Spill    ; }
-static inline bool be_is_Reload   (const ir_node *irn) { return get_irn_op(irn) == op_be_Reload   ; }
 static inline bool be_is_Copy     (const ir_node *irn) { return get_irn_op(irn) == op_be_Copy     ; }
 static inline bool be_is_CopyKeep (const ir_node *irn) { return get_irn_op(irn) == op_be_CopyKeep ; }
 static inline bool be_is_Perm     (const ir_node *irn) { return get_irn_op(irn) == op_be_Perm     ; }

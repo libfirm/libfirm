@@ -10,7 +10,7 @@
  * @date        17.05.2005
  *
  * Backend node support for generic backend nodes.
- * This file provides Perm, Copy, Spill and Reload nodes.
+ * This file provides Perm, and Copy nodes.
  */
 #include <stdlib.h>
 
@@ -95,8 +95,6 @@ typedef struct {
 } be_memperm_attr_t;
 
 static unsigned be_opcode_start;
-ir_op *op_be_Spill;
-ir_op *op_be_Reload;
 ir_op *op_be_Perm;
 ir_op *op_be_MemPerm;
 ir_op *op_be_Copy;
@@ -236,83 +234,6 @@ static void add_register_req_in(ir_node *node, const arch_register_req_t *req)
 {
 	backend_info_t *info = be_get_info(node);
 	ARR_APP1(const arch_register_req_t*, info->in_reqs, req);
-}
-
-ir_node *be_new_Spill(const arch_register_class_t *cls,
-		const arch_register_class_t *cls_frame, ir_node *bl,
-		ir_node *frame, ir_node *to_spill)
-{
-	be_frame_attr_t *a;
-	ir_node         *in[2];
-	ir_node         *res;
-	ir_graph        *irg = get_Block_irg(bl);
-
-	in[0]     = frame;
-	in[1]     = to_spill;
-	res       = new_ir_node(NULL, irg, bl, op_be_Spill, mode_M, 2, in);
-	init_node_attr(res, 2, 1);
-	a         = (be_frame_attr_t*) get_irn_generic_attr(res);
-	a->ent    = NULL;
-	a->offset = 0;
-	a->base.exc.pin_state = op_pin_state_pinned;
-
-	be_node_set_reg_class_in(res, n_be_Spill_frame, cls_frame);
-	be_node_set_reg_class_in(res, n_be_Spill_val, cls);
-	arch_set_irn_register_req_out(res, 0, arch_no_register_req);
-	arch_add_irn_flags(res, arch_irn_flag_spill);
-
-	return res;
-}
-
-ir_node *be_new_Reload(const arch_register_class_t *cls,
-		const arch_register_class_t *cls_frame, ir_node *block,
-		ir_node *frame, ir_node *mem, ir_mode *mode)
-{
-	ir_node  *in[2];
-	ir_node  *res;
-	ir_graph *irg = get_Block_irg(block);
-	be_frame_attr_t *a;
-
-	in[0] = frame;
-	in[1] = mem;
-	res   = new_ir_node(NULL, irg, block, op_be_Reload, mode, 2, in);
-
-	init_node_attr(res, 2, 1);
-	be_node_set_reg_class_out(res, 0, cls);
-
-	be_node_set_reg_class_in(res, n_be_Reload_frame, cls_frame);
-	arch_set_irn_flags(res, arch_irn_flag_rematerializable);
-
-	a         = (be_frame_attr_t*) get_irn_generic_attr(res);
-	a->ent    = NULL;
-	a->offset = 0;
-	a->base.exc.pin_state = op_pin_state_pinned;
-
-	return res;
-}
-
-ir_node *be_get_Reload_mem(const ir_node *irn)
-{
-	assert(be_is_Reload(irn));
-	return get_irn_n(irn, n_be_Reload_mem);
-}
-
-ir_node *be_get_Reload_frame(const ir_node *irn)
-{
-	assert(be_is_Reload(irn));
-	return get_irn_n(irn, n_be_Reload_frame);
-}
-
-ir_node *be_get_Spill_val(const ir_node *irn)
-{
-	assert(be_is_Spill(irn));
-	return get_irn_n(irn, n_be_Spill_val);
-}
-
-ir_node *be_get_Spill_frame(const ir_node *irn)
-{
-	assert(be_is_Spill(irn));
-	return get_irn_n(irn, n_be_Spill_frame);
 }
 
 ir_node *be_new_Perm(arch_register_class_t const *const cls, ir_node *const block, int const n, ir_node *const *const in)
@@ -750,7 +671,7 @@ void be_set_CopyKeep_op(ir_node *cpy, ir_node *op)
 
 static bool be_has_frame_entity(const ir_node *irn)
 {
-	return be_is_Spill(irn) || be_is_Reload(irn) || be_is_FrameAddr(irn);
+	return be_is_FrameAddr(irn);
 }
 
 ir_entity *be_get_frame_entity(const ir_node *irn)
@@ -1276,14 +1197,12 @@ static ir_op *new_be_op(unsigned code, const char *name, op_pin_state p,
 
 void be_init_op(void)
 {
-	assert(op_be_Spill == NULL);
+	assert(op_be_Perm == NULL);
 
 	be_opcode_start = get_next_ir_opcodes(beo_last+1);
 
 	/* Acquire all needed opcodes. */
 	unsigned o = be_opcode_start;
-	op_be_Spill     = new_be_op(o+beo_Spill,     "be_Spill",     op_pin_state_exc_pinned, irop_flag_none,                          oparity_any,      sizeof(be_frame_attr_t));
-	op_be_Reload    = new_be_op(o+beo_Reload,    "be_Reload",    op_pin_state_exc_pinned, irop_flag_none,                          oparity_any,      sizeof(be_frame_attr_t));
 	op_be_Perm      = new_be_op(o+beo_Perm,      "be_Perm",      op_pin_state_exc_pinned, irop_flag_none,                          oparity_variable, sizeof(be_node_attr_t));
 	op_be_MemPerm   = new_be_op(o+beo_MemPerm,   "be_MemPerm",   op_pin_state_exc_pinned, irop_flag_none,                          oparity_variable, sizeof(be_memperm_attr_t));
 	op_be_Copy      = new_be_op(o+beo_Copy,      "be_Copy",      op_pin_state_exc_pinned, irop_flag_none,                          oparity_any,      sizeof(be_node_attr_t));
@@ -1300,8 +1219,6 @@ void be_init_op(void)
 	ir_op_set_memory_index(op_be_Call, n_be_Call_mem);
 	ir_op_set_fragile_indices(op_be_Call, pn_be_Call_X_regular, pn_be_Call_X_except);
 
-	op_be_Spill->ops.node_cmp_attr     = FrameAddr_cmp_attr;
-	op_be_Reload->ops.node_cmp_attr    = FrameAddr_cmp_attr;
 	op_be_Perm->ops.node_cmp_attr      = be_nodes_equal;
 	op_be_MemPerm->ops.node_cmp_attr   = be_nodes_equal;
 	op_be_Copy->ops.node_cmp_attr      = be_nodes_equal;
@@ -1327,8 +1244,6 @@ void be_init_op(void)
 
 void be_finish_op(void)
 {
-	free_ir_op(op_be_Spill);     op_be_Spill     = NULL;
-	free_ir_op(op_be_Reload);    op_be_Reload    = NULL;
 	free_ir_op(op_be_Perm);      op_be_Perm      = NULL;
 	free_ir_op(op_be_MemPerm);   op_be_MemPerm   = NULL;
 	free_ir_op(op_be_Copy);      op_be_Copy      = NULL;

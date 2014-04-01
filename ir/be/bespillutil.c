@@ -511,18 +511,14 @@ static int check_remat_conditions_costs(spill_env_t *env,
 	int costs = 0;
 	const ir_node *insn = skip_Proj_const(spilled);
 
-	assert(!be_is_Spill(insn));
+	assert(!arch_irn_is(insn, spill));
 	if (!arch_irn_is(insn, rematerializable))
 		return REMAT_COST_INFINITE;
 
-	if (be_is_Reload(insn)) {
-		costs += 2;
-	} else {
-		costs += arch_get_op_estimated_cost(insn);
-	}
-	if (parentcosts + costs >= env->reload_cost + env->spill_cost) {
+	costs += arch_get_op_estimated_cost(insn);
+	if (parentcosts + costs >= env->reload_cost + env->spill_cost)
 		return REMAT_COST_INFINITE;
-	}
+
 	/* never rematerialize a node which modifies the flags.
 	 * (would be better to test whether the flags are actually live at point
 	 * reloader...)
@@ -642,39 +638,6 @@ double be_get_reload_costs_on_edge(spill_env_t *env, ir_node *to_spill,
 	return be_get_reload_costs(env, to_spill, before);
 }
 
-ir_node *be_new_spill(ir_node *value, ir_node *after)
-{
-	ir_graph                    *irg       = get_irn_irg(value);
-	ir_node                     *frame     = get_irg_frame(irg);
-	const arch_register_class_t *cls       = arch_get_irn_reg_class(value);
-	const arch_register_class_t *cls_frame = arch_get_irn_reg_class(frame);
-	ir_node                     *block     = get_block(after);
-	ir_node                     *spill
-		= be_new_Spill(cls, cls_frame, block, frame, value);
-
-	sched_add_after(after, spill);
-	return spill;
-}
-
-ir_node *be_new_reload(ir_node *value, ir_node *spill, ir_node *before)
-{
-	ir_graph *irg   = get_irn_irg(value);
-	ir_node  *frame = get_irg_frame(irg);
-	ir_node  *block = get_block(before);
-	const arch_register_class_t *cls       = arch_get_irn_reg_class(value);
-	const arch_register_class_t *cls_frame = arch_get_irn_reg_class(frame);
-	ir_mode                     *mode      = get_irn_mode(value);
-	ir_node  *reload;
-
-	assert(be_is_Spill(spill) || is_Phi(spill));
-	assert(get_irn_mode(spill) == mode_M);
-
-	reload = be_new_Reload(cls, cls_frame, block, frame, spill, mode);
-	sched_add_before(before, reload);
-
-	return reload;
-}
-
 /*
  *  ___                     _     ____      _                 _
  * |_ _|_ __  ___  ___ _ __| |_  |  _ \ ___| | ___   __ _  __| |___
@@ -700,7 +663,7 @@ static void determine_spill_costs(spill_env_t *env, spill_info_t *spillinfo)
 		return;
 
 	assert(!arch_irn_is(insn, dont_spill));
-	assert(!be_is_Reload(insn));
+	assert(!arch_irn_is(insn, reload));
 
 	/* some backends have virtual noreg/unknown nodes that are not scheduled
 	 * and simply always available.

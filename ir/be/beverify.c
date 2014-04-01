@@ -410,7 +410,7 @@ static void collect_memphi(be_verify_spillslots_env_t *env, ir_node *node, ir_no
 
 static void collect(be_verify_spillslots_env_t *env, ir_node *node, ir_node *reload, ir_entity* ent)
 {
-	if (be_is_Spill(node)) {
+	if (arch_irn_is(node, spill)) {
 		collect_spill(env, node, reload, ent);
 	} else if (is_Proj(node)) {
 		collect_memperm(env, node, reload, ent);
@@ -427,7 +427,7 @@ static void collect_spills_walker(ir_node *node, void *data)
 {
 	be_verify_spillslots_env_t *env = (be_verify_spillslots_env_t*)data;
 
-	if (be_is_Reload(node)) {
+	if (arch_irn_is(node, reload)) {
 		ir_node *spill = get_memory_edge(node);
 		if (spill == NULL) {
 			ir_fprintf(stderr, "Verify warning: No spill attached to reload %+F in block %+F(%s)\n",
@@ -478,9 +478,10 @@ static void check_lonely_spills(ir_node *node, void *data)
 {
 	be_verify_spillslots_env_t *env = (be_verify_spillslots_env_t*)data;
 
-	if (be_is_Spill(node) || (is_Proj(node) && be_is_MemPerm(get_Proj_pred(node)))) {
+	if (arch_irn_is(node, spill)
+	    || (is_Proj(node) && be_is_MemPerm(get_Proj_pred(node)))) {
 		spill_t *spill = find_spill(env, node);
-		if (be_is_Spill(node)) {
+		if (arch_irn_is(node, spill)) {
 			ir_entity *ent = arch_get_frame_entity(node);
 			be_check_entity(env, node, ent);
 		}
