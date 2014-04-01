@@ -33,6 +33,7 @@
 #include "beirg.h"
 #include "bespillslots.h"
 #include "bespillutil.h"
+#include "beutil.h"
 #include "begnuas.h"
 #include "belistsched.h"
 #include "beflags.h"
@@ -127,13 +128,6 @@ static void arm_collect_frame_entity_nodes(ir_node *node, void *data)
 	ir_entity     *entity;
 	const arm_load_store_attr_t *attr;
 
-	if (be_is_Reload(node) && be_get_frame_entity(node) == NULL) {
-		mode  = get_irn_mode(node);
-		align = get_mode_size_bytes(mode);
-		be_node_needs_frame_entity(env, node, mode, align);
-		return;
-	}
-
 	if (!is_arm_Ldf(node) && !is_arm_Ldr(node))
 		return;
 
@@ -158,59 +152,32 @@ static void arm_set_frame_entity(ir_node *node, ir_entity *entity)
 	}
 }
 
-static void transform_Reload(ir_node *node)
+static ir_node *arm_new_reload(ir_node *value, ir_node *spill, ir_node *before)
 {
-	ir_node   *block  = get_nodes_block(node);
-	dbg_info  *dbgi   = get_irn_dbg_info(node);
-	ir_node   *ptr    = get_irn_n(node, n_be_Reload_frame);
-	ir_node   *mem    = get_irn_n(node, n_be_Reload_mem);
-	ir_mode   *mode   = get_irn_mode(node);
-	ir_entity *entity = be_get_frame_entity(node);
-	const arch_register_t *reg;
-	ir_node   *proj;
-	ir_node   *load;
-
-	load = new_bd_arm_Ldr(dbgi, block, ptr, mem, mode, entity, false, 0, true);
-	sched_replace(node, load);
-
-	proj = new_rd_Proj(dbgi, load, mode, pn_arm_Ldr_res);
-
-	reg = arch_get_irn_register(node);
-	arch_set_irn_register(proj, reg);
-
-	exchange(node, proj);
+	ir_node   *block  = get_block(before);
+	ir_graph  *irg    = get_Block_irg(block);
+	ir_node   *frame  = get_irg_frame(irg);
+	ir_mode   *mode   = get_irn_mode(value);
+	ir_node   *load   = new_bd_arm_Ldr(NULL, block, frame, spill, mode, NULL,
+	                                   false, 0, true);
+	ir_node   *proj   = new_r_Proj(load, mode, pn_arm_Ldr_res);
+	arch_add_irn_flags(load, arch_irn_flag_reload);
+	sched_add_before(before, load);
+	return proj;
 }
 
-static void transform_Spill(ir_node *node)
+static ir_node *arm_new_spill(ir_node *value, ir_node *after)
 {
-	ir_node   *block  = get_nodes_block(node);
-	dbg_info  *dbgi   = get_irn_dbg_info(node);
-	ir_node   *ptr    = get_irn_n(node, n_be_Spill_frame);
-	ir_graph  *irg    = get_irn_irg(node);
-	ir_node   *mem    = get_irg_no_mem(irg);
-	ir_node   *val    = get_irn_n(node, n_be_Spill_val);
-	ir_mode   *mode   = get_irn_mode(val);
-	ir_entity *entity = be_get_frame_entity(node);
-	ir_node   *store;
-
-	store = new_bd_arm_Str(dbgi, block, ptr, val, mem, mode, entity, false, 0,
-	                       true);
-	sched_replace(node, store);
-
-	exchange(node, store);
-}
-
-static void arm_after_ra_walker(ir_node *block, void *data)
-{
-	(void) data;
-
-	sched_foreach_reverse_safe(block, node) {
-		if (be_is_Reload(node)) {
-			transform_Reload(node);
-		} else if (be_is_Spill(node)) {
-			transform_Spill(node);
-		}
-	}
+	ir_node  *block  = get_block(after);
+	ir_graph *irg    = get_Block_irg(block);
+	ir_node  *frame  = get_irg_frame(irg);
+	ir_node  *mem    = get_irg_no_mem(irg);
+	ir_mode  *mode   = get_irn_mode(value);
+	ir_node  *store  = new_bd_arm_Str(NULL, block, frame, value, mem, mode,
+	                                  NULL, false, 0, true);
+	arch_add_irn_flags(store, arch_irn_flag_spill);
+	sched_add_after(after, store);
+	return store;
 }
 
 static void arm_emit(ir_graph *irg)
@@ -222,8 +189,6 @@ static void arm_emit(ir_graph *irg)
 	irg_walk_graph(irg, NULL, arm_collect_frame_entity_nodes, fec_env);
 	be_assign_entities(fec_env, arm_set_frame_entity, at_begin);
 	be_free_frame_entity_coalescer(fec_env);
-
-	irg_block_walk_graph(irg, NULL, arm_after_ra_walker, NULL);
 
 	/* fix stack entity offsets */
 	be_abi_fix_stack_nodes(irg);
@@ -467,8 +432,8 @@ const arch_isa_if_t arm_isa_if = {
 	arm_end_codegeneration,
 	NULL,  /* get call abi */
 	NULL,  /* mark remat */
-	be_new_spill,
-	be_new_reload,
+	arm_new_spill,
+	arm_new_reload,
 	NULL,  /* register_saved_by */
 
 	arm_handle_intrinsics, /* handle_intrinsics */
