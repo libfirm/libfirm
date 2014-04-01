@@ -1070,13 +1070,13 @@ ir_type *find_pointer_type_to_type(ir_type *tp)
 
 ir_type *new_type_primitive(ir_mode *mode)
 {
+	unsigned size  = get_mode_size_bytes(mode);
+	unsigned align = (size > 0 && size != (unsigned)-1)
+	               ? ceil_po2(size) : 1;
+
 	ir_type *res = new_type(type_primitive, mode);
-	res->size  = get_mode_size_bytes(mode);
+	res->size  = size;
 	res->flags |= tf_layout_fixed;
-	unsigned mode_size = get_mode_size_bits(mode);
-	unsigned align     = mode_size > 0
-	                   ? ceil_po2((get_mode_size_bits(mode) + 7) >> 3)
-	                   : 1;
 	set_type_alignment_bytes(res, align);
 	hook_new_type(res);
 	return res;
