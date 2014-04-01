@@ -17,6 +17,7 @@
 #include "lower_calls.h"
 #include "lower_builtins.h"
 #include "debug.h"
+#include "error.h"
 #include "be_t.h"
 #include "bearch.h"
 #include "benode.h"
@@ -317,6 +318,22 @@ static int TEMPLATE_register_saved_by(const arch_register_t *reg, int callee)
 	return 0;
 }
 
+static ir_node *TEMPLATE_new_spill(ir_node *value, ir_node *after)
+{
+	(void)value;
+	(void)after;
+	panic("TEMPLATE: spilling not implemented yet");
+}
+
+static ir_node *TEMPLATE_new_reload(ir_node *value, ir_node *spill,
+                                    ir_node *before)
+{
+	(void)value;
+	(void)spill;
+	(void)before;
+	panic("TEMPLATE: reload not implemented yet");
+}
+
 const arch_isa_if_t TEMPLATE_isa_if = {
 	TEMPLATE_init,
 	TEMPLATE_finish,
@@ -328,8 +345,8 @@ const arch_isa_if_t TEMPLATE_isa_if = {
 	TEMPLATE_end_codegeneration,
 	TEMPLATE_get_call_abi,
 	NULL, /* mark remat */
-	be_new_spill,
-	be_new_reload,
+	TEMPLATE_new_spill,
+	TEMPLATE_new_reload,
 	TEMPLATE_register_saved_by,
 
 	NULL, /* handle intrinsics */
