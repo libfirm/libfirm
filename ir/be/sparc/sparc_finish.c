@@ -693,12 +693,6 @@ static void sparc_collect_frame_entity_nodes(ir_node *node, void *data)
 		return;
 	}
 
-	if (be_is_Reload(node) && be_get_frame_entity(node) == NULL) {
-		ir_mode *mode  = get_irn_mode(node);
-		unsigned align = get_mode_size_bytes(mode);
-		be_node_needs_frame_entity(env, node, mode, align);
-		return;
-	}
 
 	if (!is_sparc_Ld(node) && !is_sparc_Ldf(node))
 		return;
