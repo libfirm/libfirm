@@ -614,6 +614,7 @@ static ir_node *sparc_new_spill(ir_node *value, ir_node *after)
 		store = new_bd_sparc_St_imm(NULL, block, value, frame, mem, mode, NULL,
 		                            0, true);
 	}
+	arch_add_irn_flags(store, arch_irn_flag_spill);
 	sched_add_after(after, store);
 	return store;
 }
@@ -633,6 +634,7 @@ static ir_node *sparc_new_reload(ir_node *value, ir_node *spill,
 		load = new_bd_sparc_Ld_imm(NULL, block, frame, spill, mode, NULL, 0,
 		                           true);
 	}
+	arch_add_irn_flags(load, arch_irn_flag_reload);
 	sched_add_before(before, load);
 	assert((long)pn_sparc_Ld_res == (long)pn_sparc_Ldf_res);
 	ir_node *res = new_r_Proj(load, mode, pn_sparc_Ld_res);
