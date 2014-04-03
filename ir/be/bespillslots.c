@@ -133,6 +133,9 @@ static spill_t *collect_spill(be_fec_env_t *env, ir_node *node,
 
 	if (is_Phi(node)) {
 		foreach_irn_in(node, i, arg) {
+			/* ignore obvious self-loops */
+			if (arg == node)
+				continue;
 			affinity_edge_t *affinty_edge;
 			spill_t         *arg_spill = collect_spill(env, arg, mode, align);
 			ir_node         *block     = get_nodes_block(arg);
