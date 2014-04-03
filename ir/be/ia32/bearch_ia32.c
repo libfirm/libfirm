@@ -619,7 +619,8 @@ static ir_node *ia32_new_reload(ir_node *value, ir_node *spill, ir_node *before)
 	return proj;
 }
 
-static ir_node *create_push(ir_node *node, ir_node *schedpoint, ir_node *sp, ir_node *mem, ir_entity *ent)
+static ir_node *create_push(ir_node *node, ir_node *schedpoint, ir_node *sp,
+                            ir_node *mem, ir_entity *ent, ir_mode *mode)
 {
 	dbg_info *dbgi  = get_irn_dbg_info(node);
 	ir_node  *block = get_nodes_block(node);
@@ -632,14 +633,15 @@ static ir_node *create_push(ir_node *node, ir_node *schedpoint, ir_node *sp, ir_
 	set_ia32_frame_ent(push, ent);
 	set_ia32_use_frame(push);
 	set_ia32_op_type(push, ia32_AddrModeS);
-	set_ia32_ls_mode(push, ia32_mode_gp);
+	set_ia32_ls_mode(push, mode);
 	set_ia32_is_spill(push);
 
 	sched_add_before(schedpoint, push);
 	return push;
 }
 
-static ir_node *create_pop(ir_node *node, ir_node *schedpoint, ir_node *sp, ir_entity *ent)
+static ir_node *create_pop(ir_node *node, ir_node *schedpoint, ir_node *sp,
+                           ir_entity *ent, ir_mode *mode)
 {
 	dbg_info *dbgi  = get_irn_dbg_info(node);
 	ir_node  *block = get_nodes_block(node);
@@ -653,7 +655,7 @@ static ir_node *create_pop(ir_node *node, ir_node *schedpoint, ir_node *sp, ir_e
 	set_ia32_frame_ent(pop, ent);
 	set_ia32_use_frame(pop);
 	set_ia32_op_type(pop, ia32_AddrModeD);
-	set_ia32_ls_mode(pop, ia32_mode_gp);
+	set_ia32_ls_mode(pop, mode);
 	set_ia32_is_reload(pop);
 
 	sched_add_before(schedpoint, pop);
@@ -698,20 +700,26 @@ static void transform_MemPerm(ir_node *node)
 		unsigned entsize = get_type_size_bytes(enttype);
 		unsigned entsize2 = get_type_size_bytes(get_entity_type(outent));
 		ir_node *mem = get_irn_n(node, i + 1);
-		ir_node *push;
 
 		/* work around cases where entities have different sizes */
 		if (entsize2 < entsize)
 			entsize = entsize2;
-		assert( (entsize == 4 || entsize == 8) && "spillslot on x86 should be 32 or 64 bit");
+		assert(entsize == 4 || entsize == 8 || entsize == 10);
 
-		push = create_push(node, node, sp, mem, inent);
+		ir_node *push = create_push(node, node, sp, mem, inent, ia32_mode_gp);
 		sp = create_spproj(node, push, pn_ia32_Push_stack);
-		if (entsize == 8) {
+		if (entsize >= 8) {
 			/* add another push after the first one */
-			push = create_push(node, node, sp, mem, inent);
-			add_ia32_am_offs_int(push, 4);
-			sp = create_spproj(node, push, pn_ia32_Push_stack);
+			ir_node *push2
+				= create_push(node, node, sp, mem, inent, ia32_mode_gp);
+			add_ia32_am_offs_int(push2, 4);
+			sp = create_spproj(node, push2, pn_ia32_Push_stack);
+			if (entsize == 10) {
+				ir_node *push3
+					= create_push(node, node, sp, mem, inent, mode_Hu);
+				add_ia32_am_offs_int(push3, 8);
+				sp = create_spproj(node, push3, pn_ia32_Push_stack);
+			}
 		}
 
 		set_irn_n(node, i, new_r_Bad(irg, mode_X));
@@ -724,22 +732,24 @@ static void transform_MemPerm(ir_node *node)
 		ir_type *enttype = get_entity_type(outent);
 		unsigned entsize = get_type_size_bytes(enttype);
 		unsigned entsize2 = get_type_size_bytes(get_entity_type(inent));
-		ir_node *pop;
 
 		/* work around cases where entities have different sizes */
 		if (entsize2 < entsize)
 			entsize = entsize2;
-		assert( (entsize == 4 || entsize == 8) && "spillslot on x86 should be 32 or 64 bit");
+		assert(entsize == 4 || entsize == 8 || entsize == 10);
 
-		pop = create_pop(node, node, sp, outent);
-		sp = create_spproj(node, pop, pn_ia32_Pop_stack);
-		if (entsize == 8) {
-			add_ia32_am_offs_int(pop, 4);
-
-			/* add another pop after the first one */
-			pop = create_pop(node, node, sp, outent);
+		if (entsize == 10) {
+			ir_node *pop = create_pop(node, node, sp, outent, mode_Hu);
 			sp = create_spproj(node, pop, pn_ia32_Pop_stack);
+			add_ia32_am_offs_int(pop, 8);
 		}
+		if (entsize >= 8) {
+			ir_node *pop = create_pop(node, node, sp, outent, ia32_mode_gp);
+			sp = create_spproj(node, pop, pn_ia32_Pop_stack);
+			add_ia32_am_offs_int(pop, 4);
+		}
+		ir_node *pop = create_pop(node, node, sp, outent, ia32_mode_gp);
+		sp = create_spproj(node, pop, pn_ia32_Pop_stack);
 
 		pops[i] = pop;
 	}
