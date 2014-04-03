@@ -187,7 +187,8 @@ static void ia32_set_frame_offset(ir_node *irn, int bias)
 			/* Pop nodes modify the stack pointer before calculating the
 			 * destination address, so fix this here
 			 */
-			bias -= 4;
+			ir_mode *mode = get_ia32_ls_mode(irn);
+			bias -= get_mode_size_bytes(mode);
 		}
 	}
 	add_ia32_am_offs_int(irn, bias);
@@ -198,11 +199,15 @@ static int ia32_get_sp_bias(const ir_node *node)
 	if (is_ia32_Call(node))
 		return -(int)get_ia32_call_attr_const(node)->pop;
 
-	if (is_ia32_Push(node))
-		return 4;
+	if (is_ia32_Push(node)) {
+		ir_mode *ls_mode = get_ia32_ls_mode(node);
+		return get_mode_size_bytes(ls_mode);
+	}
 
-	if (is_ia32_Pop(node) || is_ia32_PopMem(node))
-		return -4;
+	if (is_ia32_Pop(node) || is_ia32_PopMem(node)) {
+		ir_mode *ls_mode = get_ia32_ls_mode(node);
+		return -get_mode_size_bytes(ls_mode);
+	}
 
 	if (is_ia32_Leave(node) || is_ia32_CopyEbpEsp(node)) {
 		return SP_BIAS_RESET;
