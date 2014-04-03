@@ -2154,6 +2154,7 @@ static ir_node *gen_Load(ir_node *node)
 			                                new_mem, noreg_GP, mode);
 		} else {
 			new_node = new_bd_ia32_Load(dbgi, block, base, idx, new_mem);
+			mode     = ia32_mode_gp;
 		}
 	}
 	int throws_exception = ir_throws_exception(node);
@@ -3473,6 +3474,17 @@ static ir_node *gen_Mux(ir_node *node)
 	}
 }
 
+static void force_int_stackent(ir_node *node, ir_mode *mode)
+{
+	ia32_attr_t *attr = get_ia32_attr(node);
+	if (get_mode_size_bits(mode) == 64) {
+		attr->data.need_64bit_stackent = true;
+	} else {
+		assert(get_mode_size_bits(mode) == 32);
+		attr->data.need_32bit_stackent = true;
+	}
+}
+
 /**
  * Create a conversion from x87 state register to general purpose.
  */
@@ -3498,11 +3510,12 @@ static ir_node *gen_x87_fp_to_gp(ir_node *node)
 	assert(get_mode_size_bits(mode) <= 32);
 	/* exception we can only store signed 32 bit integers, so for unsigned
 	   we store a 64bit (signed) integer and load the lower bits */
+	ir_mode *ls_mode = ia32_mode_gp;
 	if (get_mode_size_bits(mode) == 32 && !mode_is_signed(mode)) {
-		set_ia32_ls_mode(fist, mode_Ls);
-	} else {
-		set_ia32_ls_mode(fist, ia32_mode_gp);
+		ls_mode = mode_Ls;
 	}
+	set_ia32_ls_mode(fist, ls_mode);
+	force_int_stackent(fist, ls_mode);
 	SET_IA32_ORIG_NODE(fist, node);
 
 	/* do a Load */
@@ -3512,13 +3525,7 @@ static ir_node *gen_x87_fp_to_gp(ir_node *node)
 	set_ia32_use_frame(load);
 	set_ia32_op_type(load, ia32_AddrModeS);
 	set_ia32_ls_mode(load, ia32_mode_gp);
-	if (get_ia32_ls_mode(fist) == mode_Ls) {
-		ia32_attr_t *attr = get_ia32_attr(load);
-		attr->data.need_64bit_stackent = 1;
-	} else {
-		ia32_attr_t *attr = get_ia32_attr(load);
-		attr->data.need_32bit_stackent = 1;
-	}
+	force_int_stackent(load, ls_mode);
 	SET_IA32_ORIG_NODE(load, node);
 
 	return new_r_Proj(load, ia32_mode_gp, pn_ia32_Load_res);
@@ -3613,15 +3620,19 @@ static void store_gp(dbg_info *dbgi, ia32_address_mode_t *am, ir_node *block,
 		add_ia32_am_offs_int(zero_store, 4);
 		set_ia32_ls_mode(zero_store, ia32_mode_gp);
 		arch_add_irn_flags(zero_store, arch_irn_flag_spill);
+		ia32_attr_t *zero_store_attr = get_ia32_attr(zero_store);
+		zero_store_attr->data.need_64bit_stackent = true;
 
 		in[0] = zero_store_mem;
 		in[1] = store_mem;
 
 		store_mem  = new_rd_Sync(dbgi, new_block, 2, in);
 		store_mode = mode_Ls;
+		force_int_stackent(zero_store, store_mode);
 	} else {
 		store_mode = ia32_mode_gp;
 	}
+	force_int_stackent(store, store_mode);
 
 	memset(am, 0, sizeof(*am));
 	x86_address_t *addr = &am->addr;
@@ -3651,6 +3662,8 @@ static ir_node *gen_x87_gp_to_fp(ir_node *node)
 	ir_node *fild     = new_bd_ia32_fild(dbgi, new_block, addr->base,
 	                                     addr->index, addr->mem);
 	ir_node *new_node = new_r_Proj(fild, mode_fp, pn_ia32_fild_res);
+	if (addr->use_frame && addr->entity == NULL)
+		force_int_stackent(fild, am.ls_mode);
 
 	set_am_attributes(fild, &am);
 	SET_IA32_ORIG_NODE(fild, node);
@@ -3825,6 +3838,7 @@ static void store_fp(dbg_info *dbgi, ia32_address_mode_t *am, ir_node *block,
 	set_ia32_use_frame(fst);
 	set_ia32_op_type(fst, ia32_AddrModeD);
 	arch_add_irn_flags(fst, arch_irn_flag_spill);
+	force_int_stackent(fst, mode);
 	ir_node *mem = new_r_Proj(fst, mode_M, pn_ia32_fst_M);
 
 	memset(am, 0, sizeof(*am));
@@ -3870,6 +3884,7 @@ static ir_node *gen_Bitcast(ir_node *const node)
 		const x86_address_t *addr = &am.addr;
 		ir_node *fld      = new_bd_ia32_fld(dbgi, new_block, addr->base,
 		                                    addr->index, addr->mem, dst_mode);
+		force_int_stackent(fld, dst_mode);
 		res = new_r_Proj(fld, mode_fp, pn_ia32_fld_res);
 
 		am.ls_mode = dst_mode;
@@ -3882,6 +3897,7 @@ static ir_node *gen_Bitcast(ir_node *const node)
 		const x86_address_t *addr = &am.addr;
 		ir_node *ld = new_bd_ia32_Load(dbgi, new_block, addr->base, addr->index,
 		                               addr->mem);
+		force_int_stackent(ld, dst_mode);
 		res = new_r_Proj(ld, ia32_mode_gp, pn_ia32_Load_res);
 		am.ls_mode = dst_mode;
 		set_am_attributes(ld, &am);
@@ -4205,6 +4221,8 @@ static ir_node *gen_ia32_l_LLtoFloat(ir_node *node)
 	set_ia32_ls_mode(store_high, ia32_mode_gp);
 	arch_add_irn_flags(store_low, arch_irn_flag_spill);
 	arch_add_irn_flags(store_high, arch_irn_flag_spill);
+	force_int_stackent(store_low, mode_Ls);
+	force_int_stackent(store_high, mode_Ls);
 	add_ia32_am_offs_int(store_high, 4);
 
 	ir_node *in[2] = { mem_low, mem_high };
@@ -4216,6 +4234,7 @@ static ir_node *gen_ia32_l_LLtoFloat(ir_node *node)
 	set_ia32_use_frame(fild);
 	set_ia32_op_type(fild, ia32_AddrModeS);
 	set_ia32_ls_mode(fild, mode_Ls);
+	force_int_stackent(fild, mode_Ls);
 
 	SET_IA32_ORIG_NODE(fild, node);
 
@@ -4271,6 +4290,7 @@ static ir_node *gen_ia32_l_FloattoLL(ir_node *node)
 	set_ia32_op_type(fist, ia32_AddrModeD);
 	set_ia32_ls_mode(fist, mode_Ls);
 	arch_add_irn_flags(fist, arch_irn_flag_spill);
+	force_int_stackent(fist, mode_Ls);
 
 	assert((long)pn_ia32_fist_M == (long) pn_ia32_fisttp_M);
 	return new_r_Proj(fist, mode_M, pn_ia32_fist_M);
@@ -4292,10 +4312,7 @@ static ir_node *gen_Proj_l_FloattoLL(ir_node *node)
 	set_ia32_use_frame(load);
 	set_ia32_op_type(load, ia32_AddrModeS);
 	set_ia32_ls_mode(load, ia32_mode_gp);
-	/* we need a 64bit stackslot (fist stores 64bit) even though we only load
-	 * 32 bit from it with this particular load */
-	ia32_attr_t *attr = get_ia32_attr(load);
-	attr->data.need_64bit_stackent = 1;
+	force_int_stackent(load, mode_Ls);
 
 	if (pn == pn_ia32_l_FloattoLL_res_high) {
 		add_ia32_am_offs_int(load, 4);

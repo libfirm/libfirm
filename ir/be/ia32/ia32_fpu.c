@@ -101,6 +101,12 @@ static ir_node *create_fpu_mode_spill(void *env, ir_node *state, bool force,
 	return NULL;
 }
 
+static void set_32bit_stackent(ir_node *node)
+{
+	ia32_attr_t *attr = get_ia32_attr(node);
+	attr->data.need_32bit_stackent = true;
+}
+
 static ir_node *create_fldcw_ent(ir_node *block, ir_entity *entity)
 {
 	ir_graph *irg   = get_irn_irg(block);
@@ -114,6 +120,7 @@ static ir_node *create_fldcw_ent(ir_node *block, ir_entity *entity)
 	set_ia32_am_ent(reload, entity);
 	set_ia32_use_frame(reload);
 	arch_set_irn_register(reload, &ia32_registers[REG_FPCW]);
+	set_32bit_stackent(reload);
 
 	return reload;
 }
@@ -147,6 +154,7 @@ static ir_node *create_fpu_mode_reload(void *env, ir_node *state,
 		set_ia32_op_type(reload, ia32_AddrModeS);
 		set_ia32_ls_mode(reload, ia32_reg_classes[CLASS_ia32_fp_cw].mode);
 		set_ia32_use_frame(reload);
+		set_32bit_stackent(reload);
 		arch_set_irn_register(reload, &ia32_registers[REG_FPCW]);
 
 		sched_add_before(before, reload);
@@ -163,12 +171,14 @@ static ir_node *create_fpu_mode_reload(void *env, ir_node *state,
 		set_ia32_op_type(cwstore, ia32_AddrModeD);
 		set_ia32_ls_mode(cwstore, lsmode);
 		set_ia32_use_frame(cwstore);
+		set_32bit_stackent(cwstore);
 		sched_add_before(before, cwstore);
 
 		load = new_bd_ia32_Load(NULL, block, frame, noreg, cwstore);
 		set_ia32_op_type(load, ia32_AddrModeS);
 		set_ia32_ls_mode(load, lsmode);
 		set_ia32_use_frame(load);
+		set_32bit_stackent(load);
 		sched_add_before(before, load);
 
 		load_res = new_r_Proj(load, ia32_mode_gp, pn_ia32_Load_res);
@@ -186,6 +196,7 @@ static ir_node *create_fpu_mode_reload(void *env, ir_node *state,
 		/* use ia32_mode_gp, as movl has a shorter opcode than movw */
 		set_ia32_ls_mode(store, ia32_mode_gp);
 		set_ia32_use_frame(store);
+		set_32bit_stackent(store);
 		store_proj = new_r_Proj(store, mode_M, pn_ia32_Store_M);
 		sched_add_before(before, store);
 
@@ -193,6 +204,7 @@ static ir_node *create_fpu_mode_reload(void *env, ir_node *state,
 		set_ia32_op_type(fldcw, ia32_AddrModeS);
 		set_ia32_ls_mode(fldcw, lsmode);
 		set_ia32_use_frame(fldcw);
+		set_32bit_stackent(fldcw);
 		arch_set_irn_register(fldcw, &ia32_registers[REG_FPCW]);
 		sched_add_before(before, fldcw);
 

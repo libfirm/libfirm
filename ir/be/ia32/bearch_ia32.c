@@ -167,12 +167,24 @@ static ir_entity *ia32_get_frame_entity(const ir_node *irn)
 	return is_ia32_irn(irn) ? get_ia32_frame_ent(irn) : NULL;
 }
 
-static void ia32_set_frame_entity(ir_node *node, ir_entity *entity)
+static void ia32_set_frame_entity(ir_node *node, ir_entity *entity,
+                                  const ir_type *type)
 {
-	if (is_be_node(node))
-		be_node_set_frame_entity(node, entity);
-	else
-		set_ia32_frame_ent(node, entity);
+	set_ia32_frame_ent(node, entity);
+
+	ia32_attr_t *attr = get_ia32_attr(node);
+	/* set ls_mode based on entity unless we explicitely requested
+	 * a certain mode */
+	if (attr->data.need_32bit_stackent || attr->data.need_64bit_stackent
+	    || is_ia32_Conv_I2I(node))
+		return;
+	ir_mode *mode = get_type_mode(type);
+	/** we 8bit stores have a special register requirement, so we can't simply
+	 * change the ls_mode to 8bit here. The "hack" in
+	 * ia32_collect_frame_entity_nodes() should take care that it never happens
+	 */
+	assert(!is_ia32_Store(node) || get_mode_size_bits(mode) > 8);
+	set_ia32_ls_mode(node, mode);
 }
 
 static void ia32_set_frame_offset(ir_node *irn, int bias)
@@ -310,11 +322,15 @@ static int ia32_get_op_estimated_cost(ir_node const *const irn)
 	return cost;
 }
 
-static ir_mode *get_spill_mode(const ir_mode *mode)
+static ir_mode *get_spill_mode(const ir_node *value)
 {
-	if (mode_is_float(mode))
-		return precise_x87_spills ? ia32_mode_E : ia32_mode_float64;
-	return ia32_mode_gp;
+	/* determine a sensible spill mode and try to make it small */
+	const ir_node *skipped = skip_Proj_const(value);
+	if (is_ia32_fld(skipped) || is_ia32_Load(skipped))
+		return get_ia32_ls_mode(skipped);
+
+	ir_mode *mode = get_irn_mode(value);
+	return mode_is_float(mode) ? ia32_mode_E : ia32_mode_gp;
 }
 
 /**
@@ -549,13 +565,12 @@ static void ia32_before_ra(ir_graph *irg)
 
 static ir_node *ia32_new_spill(ir_node *value, ir_node *after)
 {
-	ir_graph *irg        = get_irn_irg(value);
-	ir_node  *block      = get_block(after);
-	ir_node  *frame      = get_irg_frame(irg);
-	ir_mode  *value_mode = get_irn_mode(value);
-	ir_mode  *mode       = get_spill_mode(value_mode);
-	ir_node  *noreg      = ia32_new_NoReg_gp(irg);
-	ir_node  *nomem      = get_irg_no_mem(irg);
+	ir_graph *irg   = get_irn_irg(value);
+	ir_node  *block = get_block(after);
+	ir_node  *frame = get_irg_frame(irg);
+	ir_mode  *mode  = get_spill_mode(value);
+	ir_node  *noreg = ia32_new_NoReg_gp(irg);
+	ir_node  *nomem = get_irg_no_mem(irg);
 
 	ir_node *res;
 	ir_node *store;
@@ -591,16 +606,17 @@ static ir_node *ia32_new_reload(ir_node *value, ir_node *spill, ir_node *before)
 	ir_graph *irg       = get_irn_irg(before);
 	ir_node  *block     = get_block(before);
 	ir_mode  *mode      = get_irn_mode(value);
-	ir_mode  *spillmode = get_spill_mode(mode);
+	ir_mode  *spillmode = get_spill_mode(value);
 	ir_node  *noreg     = ia32_new_NoReg_gp(irg);
 	ir_node  *frame     = get_irg_frame(irg);
 
-	ir_node  *load;
+	ir_node *load;
 	if (mode_is_float(spillmode)) {
-		if (ia32_cg_config.use_sse2)
+		if (ia32_cg_config.use_sse2) {
 			load = new_bd_ia32_xLoad(NULL, block, frame, noreg, spill, spillmode);
-		else
+		} else {
 			load = new_bd_ia32_fld(NULL, block, frame, noreg, spill, spillmode);
+		}
 	} else if (get_mode_size_bits(spillmode) == 128) {
 		/* Reload 128 bit SSE registers */
 		load = new_bd_ia32_xxLoad(NULL, block, frame, noreg, spill);
@@ -615,7 +631,6 @@ static ir_node *ia32_new_reload(ir_node *value, ir_node *spill, ir_node *before)
 	sched_add_before(before, load);
 
 	ir_node *proj = new_r_Proj(load, mode, pn_ia32_res);
-
 	return proj;
 }
 
@@ -819,6 +834,13 @@ static void ia32_collect_frame_entity_nodes(ir_node *node, void *data)
 		mode = mode_Ls;
 	} else {
 		mode = get_ia32_ls_mode(node);
+		/* stupid hack: in some situations (like reloads folded into ConvI2I
+		 * with 8bit mode, an 8bit entity and reload+spill would suffice, but
+		 * an 8bit store has special register requirements on ia32 which we may
+		 * not be able to fulfill anymore at this point, so extend the spillslot
+		 * size to 16bit :-( */
+		if (get_mode_size_bits(mode) == 8)
+			mode = mode_Hu;
 	}
 	ir_type *type = get_type_for_mode(mode);
 	be_load_needs_frame_entity(env, node, type);
@@ -867,6 +889,7 @@ static void introduce_epilog(ir_node *ret)
 
 			/* pop ebp */
 			pop      = new_bd_ia32_PopEbp(NULL, block, curr_mem, curr_sp);
+			set_ia32_ls_mode(pop, ia32_mode_gp);
 			curr_bp  = new_r_Proj(pop, mode_gp, pn_ia32_PopEbp_res);
 			curr_sp  = new_r_Proj(pop, mode_gp, pn_ia32_PopEbp_stack);
 			curr_mem = new_r_Proj(pop, mode_M, pn_ia32_Pop_M);
@@ -910,9 +933,10 @@ static void introduce_prolog_epilog(ir_graph *irg)
 		ir_node *mem        = get_irg_initial_mem(irg);
 		ir_node *noreg      = ia32_new_NoReg_gp(irg);
 		ir_node *initial_bp = be_get_initial_reg_value(irg, bp);
-		ir_node *push       = new_bd_ia32_Push(NULL, block, noreg, noreg, mem, initial_bp, initial_sp);
+		ir_node *push       = new_bd_ia32_Push(NULL, block, noreg, noreg, mem,
+		                                       initial_bp, initial_sp);
 		ir_node *curr_sp    = new_r_Proj(push, mode_gp, pn_ia32_Push_stack);
-		ir_node *incsp;
+		set_ia32_ls_mode(push, ia32_mode_gp);
 
 		arch_set_irn_register(curr_sp, sp);
 		sched_add_after(start, push);
@@ -926,7 +950,7 @@ static void introduce_prolog_epilog(ir_graph *irg)
 		be_set_constr_single_reg_out(curr_sp, 0, sp, arch_register_req_type_produces_sp);
 		edges_reroute_except(initial_bp, curr_bp, push);
 
-		incsp = be_new_IncSP(sp, block, curr_sp, frame_size, 0);
+		ir_node *incsp = be_new_IncSP(sp, block, curr_sp, frame_size, 0);
 		edges_reroute_except(initial_sp, incsp, push);
 		sched_add_after(curr_sp, incsp);
 
