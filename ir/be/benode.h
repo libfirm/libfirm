@@ -351,13 +351,6 @@ void be_set_CopyKeep_op(ir_node *cpy, ir_node *op);
  */
 ir_entity *be_get_frame_entity(const ir_node *irn);
 
-void be_node_set_frame_entity(ir_node *node, ir_entity *entity);
-
-/**
- * Returns the frame offset of this node.
- */
-int be_get_frame_offset(const ir_node *irn);
-
 void be_set_MemPerm_in_entity(const ir_node *irn, int n, ir_entity* ent);
 ir_entity *be_get_MemPerm_in_entity(const ir_node *irn, int n);
 
