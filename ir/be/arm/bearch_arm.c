@@ -144,12 +144,8 @@ static void arm_collect_frame_entity_nodes(ir_node *node, void *data)
 
 static void arm_set_frame_entity(ir_node *node, ir_entity *entity)
 {
-	if (is_be_node(node)) {
-		be_node_set_frame_entity(node, entity);
-	} else {
-		arm_load_store_attr_t *attr = get_arm_load_store_attr(node);
-		attr->entity = entity;
-	}
+	arm_load_store_attr_t *attr = get_arm_load_store_attr(node);
+	attr->entity = entity;
 }
 
 static ir_node *arm_new_reload(ir_node *value, ir_node *spill, ir_node *before)

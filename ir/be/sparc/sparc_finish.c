@@ -712,16 +712,12 @@ static void sparc_collect_frame_entity_nodes(ir_node *node, void *data)
 
 static void sparc_set_frame_entity(ir_node *node, ir_entity *entity)
 {
-	if (is_be_node(node)) {
-		be_node_set_frame_entity(node, entity);
-	} else {
-		/* we only say be_node_needs_frame_entity on nodes with load_store
-		 * attributes, so this should be fine */
-		sparc_load_store_attr_t *attr = get_sparc_load_store_attr(node);
-		assert(attr->is_frame_entity);
-		assert(attr->base.immediate_value_entity == NULL);
-		attr->base.immediate_value_entity = entity;
-	}
+	/* we only say be_node_needs_frame_entity on nodes with load_store
+	 * attributes, so this should be fine */
+	sparc_load_store_attr_t *attr = get_sparc_load_store_attr(node);
+	assert(attr->is_frame_entity);
+	assert(attr->base.immediate_value_entity == NULL);
+	attr->base.immediate_value_entity = entity;
 }
 
 /** returns true if the should_be_same constraints of a node must be
