@@ -29,6 +29,7 @@
 #include "belive_t.h"
 #include "besched.h"
 #include "benode.h"
+#include "bessaconstr.h"
 #include "ia32_new_nodes.h"
 #include "gen_ia32_new_nodes.h"
 #include "gen_ia32_regalloc_if.h"
@@ -857,24 +858,6 @@ static int sim_load(x87_state *state, ir_node *n)
 }
 
 /**
- * Rewire all users of @p old_val to @new_val iff they are scheduled after @p store.
- *
- * @param store   The store
- * @param old_val The former value
- * @param new_val The new value
- */
-static void collect_and_rewire_users(ir_node *store, ir_node *old_val, ir_node *new_val)
-{
-	foreach_out_edge_safe(old_val, edge) {
-		ir_node *user = get_edge_src_irn(edge);
-		/* if the user is scheduled after the store: rewire */
-		if (sched_is_scheduled(user) && sched_comes_after(store, user)) {
-			set_irn_n(user, get_edge_src_pos(edge), new_val);
-		}
-	}
-}
-
-/**
  * Simulate a virtual Store.
  *
  * @param state  the x87 state
@@ -902,14 +885,16 @@ static int sim_store(x87_state *state, ir_node *n)
 		 * Note that we cannot test on mode_E, because floats might be 80bit ... */
 		ir_mode *const mode = get_ia32_ls_mode(n);
 		if (get_mode_size_bits(mode) > (mode_is_int(mode) ? 32U : 64U)) {
+			do_pop = true;
 			if (x87_get_depth(state) < N_FLOAT_REGS) {
 				/* ok, we have a free register: push + fstp */
 				x87_create_fpush(state, n, op2_idx, REG_FP_FP_NOREG, val);
-				do_pop = true;
 			} else {
-				/* stack full here: need fstp + load */
-				do_pop = true;
+				/* we can only store the tos to memory */
+				if (op2_idx != 0)
+					x87_create_fxch(state, n, op2_idx);
 
+				/* stack full here: need fstp + load */
 				ir_node *const block = get_nodes_block(n);
 				ir_node *const mem   = get_irn_Proj_for_mode(n, mode_M);
 				ir_node *const vfld  = new_bd_ia32_fld(NULL, block, get_irn_n(n, 0), get_irn_n(n, 1), mem, mode);
@@ -929,7 +914,12 @@ static int sim_store(x87_state *state, ir_node *n)
 				sched_add_after(n, vfld);
 
 				/* rewire all users, scheduled after the store, to the loaded value */
-				collect_and_rewire_users(n, val, rproj);
+				ir_graph *irg = get_irn_irg(val);
+				be_ssa_construction_env_t env;
+				be_ssa_construction_init(&env, irg);
+				be_ssa_construction_add_copy(&env, rproj);
+				be_ssa_construction_fix_users(&env, val);
+				be_ssa_construction_destroy(&env);
 
 				insn = NODE_ADDED;
 			}
