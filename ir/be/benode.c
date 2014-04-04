@@ -861,10 +861,9 @@ static void be_node_set_frame_offset(ir_node *irn, int offset)
 
 static int be_node_get_sp_bias(const ir_node *irn)
 {
+	assert(!be_is_Call(irn));
 	if (be_is_IncSP(irn))
 		return be_get_IncSP_offset(irn);
-	if (be_is_Call(irn))
-		return -(int)be_Call_get_pop(irn);
 	if (be_is_Start(irn)) {
 		const be_start_attr_t *attr
 			= (const be_start_attr_t*) get_irn_generic_attr_const(irn);
