@@ -674,17 +674,6 @@ static bool be_has_frame_entity(const ir_node *irn)
 	return be_is_FrameAddr(irn);
 }
 
-ir_entity *be_get_frame_entity(const ir_node *irn)
-{
-	if (be_has_frame_entity(irn)) {
-		const be_frame_attr_t *a = (const be_frame_attr_t*)get_irn_generic_attr_const(irn);
-		return a->ent;
-	} else if (be_is_MemPerm(irn)) {
-		return be_get_MemPerm_in_entity(irn, 0);
-	}
-	return NULL;
-}
-
 void be_set_MemPerm_in_entity(const ir_node *irn, int n, ir_entity *ent)
 {
 	const be_memperm_attr_t *attr = (const be_memperm_attr_t*)get_irn_generic_attr_const(irn);
@@ -848,7 +837,13 @@ int be_get_IncSP_align(const ir_node *irn)
 
 static ir_entity *be_node_get_frame_entity(const ir_node *irn)
 {
-	return be_get_frame_entity(irn);
+	if (be_has_frame_entity(irn)) {
+		const be_frame_attr_t *a = (const be_frame_attr_t*)get_irn_generic_attr_const(irn);
+		return a->ent;
+	} else if (be_is_MemPerm(irn)) {
+		return be_get_MemPerm_in_entity(irn, 0);
+	}
+	return NULL;
 }
 
 static void be_node_set_frame_offset(ir_node *irn, int offset)

@@ -343,14 +343,6 @@ ir_node *be_get_CopyKeep_op(const ir_node *cpy);
 
 void be_set_CopyKeep_op(ir_node *cpy, ir_node *op);
 
-/**
- * Returns the frame entity of a be node.
- * Try to avoid this function and better call arch_get_frame_entity!
- *
- * @return the frame entity used by the be node
- */
-ir_entity *be_get_frame_entity(const ir_node *irn);
-
 void be_set_MemPerm_in_entity(const ir_node *irn, int n, ir_entity* ent);
 ir_entity *be_get_MemPerm_in_entity(const ir_node *irn, int n);
 
