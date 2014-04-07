@@ -645,6 +645,10 @@ void dump_node_opcode(FILE *F, const ir_node *n)
 		fprintf(F, "%s &%s", name, get_entity_name(get_Address_entity(n)));
 		break;
 
+	case iro_Const:
+		ir_fprintf(F, "%s %T", name, get_Const_tarval(n));
+		break;
+
 	case iro_Offset:
 		fprintf(F, "%s %s", name, get_entity_name(get_Offset_entity(n)));
 		break;
