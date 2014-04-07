@@ -23,9 +23,9 @@ static void visit_entity(ir_entity *entity);
 
 static void visit_node(ir_node *node, void *env)
 {
-	ir_entity *entity;
 	(void) env;
 
+	ir_entity *entity;
 	if (is_Address(node)) {
 		entity = get_Address_entity(node);
 	} else if (is_Offset(node)) {
@@ -35,14 +35,12 @@ static void visit_node(ir_node *node, void *env)
 	} else {
 		return;
 	}
-
 	visit_entity(entity);
 }
 
 static void start_visit_node(ir_node *node)
 {
 	ir_graph *irg = get_irn_irg(node);
-
 	if (get_irg_visited(irg) < get_max_irg_visited()) {
 		set_irg_visited(irg, get_max_irg_visited());
 	}
@@ -60,8 +58,7 @@ static void visit_initializer(ir_initializer_t *initializer)
 		return;
 
 	case IR_INITIALIZER_COMPOUND: {
-		size_t i;
-		for (i = 0; i < initializer->compound.n_initializers; ++i) {
+		for (size_t i = 0; i < initializer->compound.n_initializers; ++i) {
 			ir_initializer_t *subinitializer
 				= initializer->compound.initializers[i];
 			visit_initializer(subinitializer);
@@ -74,8 +71,6 @@ static void visit_initializer(ir_initializer_t *initializer)
 
 static void visit_entity(ir_entity *entity)
 {
-	ir_graph *irg;
-
 	if (entity_visited(entity))
 		return;
 	mark_entity_visited(entity);
@@ -85,7 +80,7 @@ static void visit_entity(ir_entity *entity)
 	}
 
 	if (is_method_entity(entity)) {
-		irg = get_entity_irg(entity);
+		ir_graph *irg = get_entity_irg(entity);
 		if (irg != NULL)
 			start_visit_node(get_irg_end(irg));
 	}
@@ -93,10 +88,7 @@ static void visit_entity(ir_entity *entity)
 
 static void visit_segment(ir_type *segment)
 {
-	int n_entities = get_compound_n_members(segment);
-	int i;
-
-	for (i = 0; i < n_entities; ++i) {
+	for (int i = 0, n = get_compound_n_members(segment); i < n; ++i) {
 		ir_entity *entity = get_compound_member(segment, i);
 		if (get_entity_visibility(entity) != ir_visibility_external
 				&& !(get_entity_linkage(entity) & IR_LINKAGE_HIDDEN_USER)
@@ -109,11 +101,8 @@ static void visit_segment(ir_type *segment)
 
 static void garbage_collect_in_segment(ir_type *segment)
 {
-	int i;
-
-	for (i = get_compound_n_members(segment)-1; i >= 0; --i) {
+	for (int i = get_compound_n_members(segment); i-- > 0; ) {
 		ir_entity *entity = get_compound_member(segment, i);
-
 		if (entity_visited(entity))
 			continue;
 
@@ -125,8 +114,6 @@ static void garbage_collect_in_segment(ir_type *segment)
 
 void garbage_collect_entities(void)
 {
-	ir_segment_t s;
-
 	FIRM_DBG_REGISTER(dbg, "firm.opt.garbagecollect");
 
 	/* start a type walk for all externally visible entities */
@@ -134,7 +121,7 @@ void garbage_collect_entities(void)
 	inc_master_type_visited();
 	inc_max_irg_visited();
 
-	for (s = IR_SEGMENT_FIRST; s <= IR_SEGMENT_LAST; ++s) {
+	for (ir_segment_t s = IR_SEGMENT_FIRST; s <= IR_SEGMENT_LAST; ++s) {
 		ir_type *type = get_segment_type(s);
 		mark_type_visited(type);
 
@@ -155,7 +142,7 @@ void garbage_collect_entities(void)
 	}
 
 	/* we can now remove all non-visited (global) entities */
-	for (s = IR_SEGMENT_FIRST; s <= IR_SEGMENT_LAST; ++s) {
+	for (ir_segment_t s = IR_SEGMENT_FIRST; s <= IR_SEGMENT_LAST; ++s) {
 		ir_type *type = get_segment_type(s);
 		garbage_collect_in_segment(type);
 	}
