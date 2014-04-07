@@ -277,19 +277,24 @@ static int compare_edge_t(const void *k1, const void *k2, size_t size)
 	return ! (e1->n1 == e2->n1 && e1->n2 == e2->n2);
 }
 
+static void init_edge(edge_t *const edge, ir_node *const n1, ir_node *const n2)
+{
+	if (n1 < n2) {
+		edge->n1 = n1;
+		edge->n2 = n2;
+	} else {
+		edge->n1 = n2;
+		edge->n2 = n1;
+	}
+}
+
 #define HASH_EDGE(e) (hash_irn((e)->n1) ^ hash_irn((e)->n2))
 
 static inline edge_t *add_edge(set *edges, ir_node *n1, ir_node *n2, size_t *counter)
 {
 	edge_t new_edge;
+	init_edge(&new_edge, n1, n2);
 
-	if (PTR_TO_INT(n1) < PTR_TO_INT(n2)) {
-		new_edge.n1 = n1;
-		new_edge.n2 = n2;
-	} else {
-		new_edge.n1 = n2;
-		new_edge.n2 = n1;
-	}
 	(*counter)++;
 	return set_insert(edge_t, edges, &new_edge, sizeof(new_edge), HASH_EDGE(&new_edge));
 }
@@ -297,29 +302,17 @@ static inline edge_t *add_edge(set *edges, ir_node *n1, ir_node *n2, size_t *cou
 static inline edge_t *find_edge(set *edges, ir_node *n1, ir_node *n2)
 {
 	edge_t new_edge;
+	init_edge(&new_edge, n1, n2);
 
-	if (PTR_TO_INT(n1) < PTR_TO_INT(n2)) {
-		new_edge.n1 = n1;
-		new_edge.n2 = n2;
-	} else {
-		new_edge.n1 = n2;
-		new_edge.n2 = n1;
-	}
 	return set_find(edge_t, edges, &new_edge, sizeof(new_edge), HASH_EDGE(&new_edge));
 }
 
 static inline void remove_edge(set *edges, ir_node *n1, ir_node *n2, size_t *counter)
 {
-	edge_t new_edge, *e;
+	edge_t new_edge;
+	init_edge(&new_edge, n1, n2);
 
-	if (PTR_TO_INT(n1) < PTR_TO_INT(n2)) {
-		new_edge.n1 = n1;
-		new_edge.n2 = n2;
-	} else {
-		new_edge.n1 = n2;
-		new_edge.n2 = n1;
-	}
-	e = set_find(edge_t, edges, &new_edge, sizeof(new_edge), HASH_EDGE(&new_edge));
+	edge_t *const e = set_find(edge_t, edges, &new_edge, sizeof(new_edge), HASH_EDGE(&new_edge));
 	if (e) {
 		e->n1 = NULL;
 		e->n2 = NULL;
