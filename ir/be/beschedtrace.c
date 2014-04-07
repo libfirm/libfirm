@@ -254,7 +254,7 @@ static int get_num_successors(ir_node *irn)
 	else {
 		/* do not count keep-alive edges */
 		foreach_out_edge(irn, edge) {
-			if (get_irn_opcode(get_edge_src_irn(edge)) != iro_End)
+			if (!is_End(get_edge_src_irn(edge)))
 				sum++;
 		}
 	}

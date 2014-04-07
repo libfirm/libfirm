@@ -241,7 +241,7 @@ static void dca_transfer(ir_node *irn)
 			if (is_Const(right)) {
 				ir_tarval *right_tv = get_Const_tarval(right);
 				care_for(left, tarval_shl(care, right_tv));
-				if (iro_Shrs == get_irn_opcode(irn)
+				if (is_Shrs(irn)
 					&& !tarval_is_null(tarval_and(tarval_shrs(get_tarval_min(mode), right_tv),
 					                              tarval_convert_to(care, mode))))
 					/* Care bits that disappeared still care about the sign bit. */

@@ -267,11 +267,11 @@ static void irg_block_walk_2(ir_node *node, irg_walk_func *pre,
 		/* find the corresponding predecessor block. */
 		ir_node *pred = get_cf_op(get_Block_cfgpred(node, i));
 		pred = get_nodes_block(pred);
-		if (get_irn_opcode(pred) == iro_Block) {
+		if (is_Block(pred)) {
 			/* recursion */
 			irg_block_walk_2(pred, pre, post, env);
 		} else {
-			assert(get_irn_opcode(pred) == iro_Bad);
+			assert(is_Bad(pred));
 		}
 	}
 

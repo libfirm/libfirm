@@ -765,7 +765,7 @@ static void dump_node_nodeattr(FILE *F, const ir_node *n)
 		long     proj_nr = get_Proj_proj(n);
 		unsigned code    = get_irn_opcode(pred);
 
-		if (code == iro_Proj && get_irn_opcode(get_Proj_pred(pred)) == iro_Start) {
+		if (code == iro_Proj && is_Start(get_Proj_pred(pred))) {
 			fprintf(F, "Arg %ld ", proj_nr);
 		} else {
 			bool found = false;

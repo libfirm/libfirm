@@ -558,7 +558,7 @@ static bool my_values_interfere(const ir_node *a, const ir_node *b)
 		if (b == user)
 			continue;
 
-		if (get_irn_opcode(user) == iro_End)
+		if (is_End(user))
 			continue;
 
 		/* in case of phi arguments we compare with the block the value comes from */
