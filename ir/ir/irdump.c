@@ -631,65 +631,73 @@ static ir_node **construct_block_lists(ir_graph *irg)
 
 void dump_node_opcode(FILE *F, const ir_node *n)
 {
-	const ir_op_ops *ops = get_op_ops(get_irn_op(n));
-
 	/* call the dump_node operation if available */
+	ir_op_ops const *const ops = get_op_ops(get_irn_op(n));
 	if (ops->dump_node != NULL) {
 		ops->dump_node(F, n, dump_node_opcode_txt);
 		return;
 	}
 
+	char const *const name = get_irn_opname(n);
 	/* implementation for default nodes */
 	switch (get_irn_opcode(n)) {
 	case iro_Address:
-		fprintf(F, "Address &%s", get_entity_name(get_Address_entity(n)));
+		fprintf(F, "%s &%s", name, get_entity_name(get_Address_entity(n)));
 		break;
 
 	case iro_Offset:
-		fprintf(F, "Offset %s", get_entity_name(get_Offset_entity(n)));
+		fprintf(F, "%s %s", name, get_entity_name(get_Offset_entity(n)));
 		break;
 
 	case iro_Align:
-		ir_fprintf(F, "Align %+F", get_Align_type(n));
+		ir_fprintf(F, "%s %+F", name, get_Align_type(n));
 		break;
 
 	case iro_Size:
-		ir_fprintf(F, "Size %+F", get_Size_type(n));
+		ir_fprintf(F, "%s %+F", name, get_Size_type(n));
 		break;
 
-	case iro_Load:
-		if (get_Load_unaligned(n) == align_non_aligned)
-			fprintf(F, "ua");
-		fprintf(F, "%s[%s]", get_irn_opname(n), get_mode_name(get_Load_mode(n)));
+	case iro_Load: {
+		char const *const prefix = get_Load_unaligned(n) == align_non_aligned ? "ua" : "";
+		fprintf(F, "%s%s[%s]", prefix, name, get_mode_name(get_Load_mode(n)));
 		break;
-	case iro_Store:
-		if (get_Store_unaligned(n) == align_non_aligned)
-			fprintf(F, "ua");
-		fprintf(F, "%s", get_irn_opname(n));
+	}
+
+	case iro_Store: {
+		char const *const prefix = get_Store_unaligned(n) == align_non_aligned ? "ua" : "";
+		fprintf(F, "%s%s", prefix, name);
 		break;
-	case iro_Block:
-		if (n == get_irg_start_block(get_irn_irg(n)))
-			fputs("Start ", F);
-		if (n == get_irg_end_block(get_irn_irg(n)))
-			fputs("End ", F);
-		fprintf(F, "%s%s", get_irn_opname(n),
-			(flags & ir_dump_flag_show_marks) ? (get_Block_mark(n) ? "*" : "") : "");
+	}
+
+	case iro_Block: {
+		char const *const prefix =
+			n == get_irg_start_block(get_irn_irg(n)) ?  "Start " :
+			n == get_irg_end_block(get_irn_irg(n))   ?  "End "   :
+			"";
+		char const *const mark =
+			flags & ir_dump_flag_show_marks && get_Block_mark(n) ? "*" : "";
+		fprintf(F, "%s%s%s", prefix, name, mark);
 		break;
+	}
+
 	case iro_Div:
-		fprintf(F, "%s", get_irn_opname(n));
+		fprintf(F, "%s", name);
 		if (get_Div_no_remainder(n))
 			fprintf(F, "RL");
 		fprintf(F, "[%s]", get_mode_name(get_Div_resmode(n)));
 		break;
+
 	case iro_Mod:
-		fprintf(F, "%s[%s]", get_irn_opname(n), get_mode_name(get_Mod_resmode(n)));
+		fprintf(F, "%s[%s]", name, get_mode_name(get_Mod_resmode(n)));
 		break;
+
 	case iro_Builtin:
-		fprintf(F, "%s[%s]", get_irn_opname(n), get_builtin_kind_name(get_Builtin_kind(n)));
+		fprintf(F, "%s[%s]", name, get_builtin_kind_name(get_Builtin_kind(n)));
 		break;
 
 	default:
-		fprintf(F, "%s", get_irn_opname(n));
+		fprintf(F, "%s", name);
+		break;
 	}
 }
 
