@@ -719,7 +719,7 @@ static void transform_MemPerm(ir_node *node)
 		/* work around cases where entities have different sizes */
 		if (entsize2 < entsize)
 			entsize = entsize2;
-		assert(entsize == 4 || entsize == 8 || entsize == 10);
+		assert(entsize == 4 || entsize == 8 || entsize == 12);
 
 		ir_node *push = create_push(node, node, sp, mem, inent, ia32_mode_gp);
 		sp = create_spproj(node, push, pn_ia32_Push_stack);
@@ -729,9 +729,9 @@ static void transform_MemPerm(ir_node *node)
 				= create_push(node, node, sp, mem, inent, ia32_mode_gp);
 			add_ia32_am_offs_int(push2, 4);
 			sp = create_spproj(node, push2, pn_ia32_Push_stack);
-			if (entsize == 10) {
+			if (entsize == 12) {
 				ir_node *push3
-					= create_push(node, node, sp, mem, inent, mode_Hu);
+					= create_push(node, node, sp, mem, inent, ia32_mode_gp);
 				add_ia32_am_offs_int(push3, 8);
 				sp = create_spproj(node, push3, pn_ia32_Push_stack);
 			}
@@ -751,10 +751,10 @@ static void transform_MemPerm(ir_node *node)
 		/* work around cases where entities have different sizes */
 		if (entsize2 < entsize)
 			entsize = entsize2;
-		assert(entsize == 4 || entsize == 8 || entsize == 10);
+		assert(entsize == 4 || entsize == 8 || entsize == 12);
 
-		if (entsize == 10) {
-			ir_node *pop = create_pop(node, node, sp, outent, mode_Hu);
+		if (entsize == 12) {
+			ir_node *pop = create_pop(node, node, sp, outent, ia32_mode_gp);
 			sp = create_spproj(node, pop, pn_ia32_Pop_stack);
 			add_ia32_am_offs_int(pop, 8);
 		}
@@ -827,22 +827,27 @@ static void ia32_collect_frame_entity_nodes(ir_node *node, void *data)
 		return;
 
 	const ia32_attr_t *attr = get_ia32_attr_const(node);
-	const ir_mode     *mode;
+	const ir_type     *type;
 	if (attr->data.need_32bit_stackent) {
-		mode = ia32_mode_gp;
+		type = get_type_for_mode(ia32_mode_gp);
 	} else if (attr->data.need_64bit_stackent) {
-		mode = mode_Ls;
+		type = get_type_for_mode(mode_Ls);
 	} else {
-		mode = get_ia32_ls_mode(node);
+		ir_mode *mode = get_ia32_ls_mode(node);
 		/* stupid hack: in some situations (like reloads folded into ConvI2I
 		 * with 8bit mode, an 8bit entity and reload+spill would suffice, but
 		 * an 8bit store has special register requirements on ia32 which we may
 		 * not be able to fulfill anymore at this point, so extend the spillslot
 		 * size to 16bit :-( */
-		if (get_mode_size_bits(mode) == 8)
-			mode = mode_Hu;
+		if (get_mode_size_bits(mode) == 8) {
+			type = get_type_for_mode(mode_Hu);
+		} else if (mode == ia32_mode_E) {
+			type = ia32_type_E; /* make sure we have the right alignment
+			                       entity size (different from mode size) */
+		} else {
+			type = get_type_for_mode(mode);
+		}
 	}
-	ir_type *type = get_type_for_mode(mode);
 	be_load_needs_frame_entity(env, node, type);
 }
 
