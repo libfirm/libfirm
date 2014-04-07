@@ -630,9 +630,9 @@ static void undate_block_info(ir_node *node, graph_entry_t *graph)
 
 	foreach_irn_in(node, i, pred) {
 		ir_node *const other_block = get_nodes_block(pred);
-		if (other_block == block)
+		if (other_block == block) {
 			cnt_inc(&b_entry->cnt[bcnt_edges]); /* a in block edge */
-		else {
+		} else {
 			block_entry_t *b_entry_other = block_get_entry(&graph->recalc_cnts, get_irn_node_nr(other_block), graph->block_hash);
 
 			cnt_inc(&b_entry->cnt[bcnt_in_edges]);  /* an edge coming from another block */
@@ -653,9 +653,9 @@ static void analyse_params_of_Call(graph_entry_t *graph, ir_node *call)
 	for (i = 0; i < n; ++i) {
 		ir_node *param = get_Call_param(call, i);
 
-		if (is_irn_constlike(param))
+		if (is_irn_constlike(param)) {
 			++num_const_args;
-		else if (is_Sel(param)) {
+		} else if (is_Sel(param)) {
 			ir_node *base = param;
 
 			do {
@@ -1131,9 +1131,9 @@ static void update_graph_stat(graph_entry_t *global, graph_entry_t *graph)
 	stat_calc_pattern_history(graph->irg);
 
 	/* leaf function did not call others */
-	if (graph->is_leaf)
+	if (graph->is_leaf) {
 		graph->is_leaf_call = LCS_NON_LEAF_CALL;
-	else if (graph->is_leaf_call == LCS_UNKNOWN) {
+	} else if (graph->is_leaf_call == LCS_UNKNOWN) {
 		/* we still don't know if this graph calls leaf-functions, so enqueue */
 		pdeq_putl(status->wait_q, graph);
 	}

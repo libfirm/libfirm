@@ -522,13 +522,12 @@ static void melt_copykeeps(constraint_env_t *cenv)
 			if (be_is_CopyKeep(cp)) {
 				obstack_grow(&obst, &cp, sizeof(cp));
 				++num_ck;
-			}
 #ifdef KEEP_ALIVE_COPYKEEP_HACK
-			else {
+			} else {
 				set_irn_mode(cp, mode_ANY);
 				keep_alive(cp);
+#endif
 			}
-#endif /* KEEP_ALIVE_COPYKEEP_HACK */
 		}
 
 		/* compare each copykeep with all other copykeeps */

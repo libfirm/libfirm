@@ -1292,9 +1292,9 @@ static void replace_load(memop_t *op)
 	ir_node *proj;
 	ir_mode *mode;
 
-	if (def != NULL)
+	if (def != NULL) {
 		DB((dbg, LEVEL_1, "Replacing %+F by definition %+F\n", load, is_Proj(def) ? get_Proj_pred(def) : def));
-	else {
+	} else {
 		if (op->flags & FLAG_EXCEPTION) {
 			/* bad: this node is unused and executed for exception only */
 			DB((dbg, LEVEL_1, "Unused %+F executed for exception only ...\n", load));
@@ -1552,9 +1552,9 @@ static int insert_Load(block_t *bl)
 		 * Note: the last bit is the sentinel and ALWAYS set, so end with -2.
 		 */
 		for (pos = 0; pos < env.rbs_size - 1; ++pos) {
-			if (! rbitset_is_set(env.curr_set, pos))
+			if (!rbitset_is_set(env.curr_set, pos)) {
 				env.curr_id_2_memop[pos] = NULL;
-			else {
+			} else {
 				int      need_phi = 0;
 				memop_t *first    = NULL;
 				ir_mode *mode     = NULL;

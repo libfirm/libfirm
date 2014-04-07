@@ -71,8 +71,7 @@ static void ia32_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 						fputs("(no_pic_adjust)", F);
 					}
 				}
-			}
-			else {
+			} else {
 				const ia32_attr_t *attr = get_ia32_attr_const(n);
 
 				if (attr->am_ent != NULL || attr->am_offs != 0) {
@@ -165,8 +164,7 @@ static void ia32_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 				const ia32_attr_t *attr = get_ia32_attr_const(n);
 				fprintf(F, "condition_code = 0x%X\n", (unsigned)get_ia32_condcode(n));
 				fprintf(F, "ins_permuted = %u\n", (unsigned)attr->data.ins_permuted);
-			}
-			else if (is_ia32_CopyB(n) || is_ia32_CopyB_i(n)) {
+			} else if (is_ia32_CopyB(n) || is_ia32_CopyB_i(n)) {
 				fprintf(F, "size = %u\n", get_ia32_copyb_size(n));
 			}
 
@@ -180,8 +178,7 @@ static void ia32_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 			fprintf(F, "frame entity = ");
 			if (get_ia32_frame_ent(n)) {
 				ir_fprintf(F, "%+F", get_ia32_frame_ent(n));
-			}
-			else {
+			} else {
 				fprintf(F, "n/a");
 			}
 			fprintf(F, "\n");
@@ -190,8 +187,7 @@ static void ia32_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 			fprintf(F, "ls_mode = ");
 			if (get_ia32_ls_mode(n)) {
 				ir_fprintf(F, "%+F", get_ia32_ls_mode(n));
-			}
-			else {
+			} else {
 				fprintf(F, "n/a");
 			}
 			fprintf(F, "\n");

@@ -32,8 +32,7 @@ static plist_element_t *allocate_element(plist_t* list)
 		new_element              = list->first_free_element;
 		list->first_free_element = new_element->next;
 		new_element->next        = NULL;
-	}
-	else {
+	} else {
 		new_element = OALLOC(list->obst, plist_element_t);
 	}
 
@@ -86,8 +85,7 @@ void plist_insert_back(plist_t *list, void *value)
 {
 	if (list->last_element != NULL) {
 		plist_insert_after(list, list->last_element, value);
-	}
-	else {
+	} else {
 		plist_element_t *newElement = allocate_element(list);
 
 		newElement->data    = value;
@@ -102,8 +100,7 @@ void plist_insert_front(plist_t *list, void *value)
 {
 	if (list->first_element != NULL) {
 		plist_insert_before(list, list->first_element, value);
-	}
-	else {
+	} else {
 		plist_element_t *newElement = allocate_element(list);
 
 		newElement->data    = value;
@@ -126,8 +123,7 @@ void plist_insert_before(plist_t *list, plist_element_t *element, void *value)
 
 	if (prevElement != NULL) {
 		prevElement->next = newElement;
-	}
-	else {
+	} else {
 		list->first_element = newElement;
 	}
 
@@ -147,8 +143,7 @@ void plist_insert_after(plist_t* list, plist_element_t* element, void* value)
 
 	if (nextElement != NULL) {
 		nextElement->prev = newElement;
-	}
-	else {
+	} else {
 		list->last_element = newElement;
 	}
 
@@ -187,15 +182,13 @@ void plist_erase(plist_t *list, plist_element_t *element)
 
 	if (next_element != NULL) {
 		next_element->prev = prev_element;
-	}
-	else {
+	} else {
 		list->last_element = prev_element;
 	}
 
 	if (prev_element != NULL) {
 		prev_element->next = next_element;
-	}
-	else {
+	} else {
 		list->first_element = next_element;
 	}
 

@@ -19,8 +19,7 @@ static void *GetInitialAddress(DWORD dwAddress, DEBUGHELPER *pHelper)
   if (pHelper->dwVersion < 0x20000) {
     /* VC 6.0 access */
     return (void *)dwAddress;
-  }
-  else {
+  } else {
     /* VC 7.0+ access */
     return (void *)pHelper->GetRealAddress(pHelper);
   }
@@ -39,8 +38,7 @@ HRESULT copy_from_debuggee(const void *address, DEBUGHELPER *pHelper, void *dst,
       return E_FAIL;
     if (nGot != size)
       return E_FAIL;
-  }
-  else {
+  } else {
     /* VC 7.0+ access */
     if (pHelper->ReadDebuggeeMemoryEx(pHelper, (DWORDLONG)address, size, dst, &nGot) != S_OK)
       return E_FAIL;

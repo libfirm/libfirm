@@ -87,9 +87,9 @@ void fix_backedges(struct obstack *obst, ir_node *n)
 		arr = new_backedge_arr(obst, arity);
 
 		unsigned opc = get_irn_opcode(n);
-		if (opc == iro_Phi)
+		if (opc == iro_Phi) {
 			n->attr.phi.u.backedge = arr;
-		else if (opc == iro_Block) {
+		} else if (opc == iro_Block) {
 			n->attr.block.backedge = arr;
 		}
 	}

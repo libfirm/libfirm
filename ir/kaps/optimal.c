@@ -285,8 +285,7 @@ static void merge_source_into_target(pbqp_t *pbqp, pbqp_edge_t *edge)
 		if (old_edge->tgt == src_node) {
 			other_node = old_edge->src;
 			other_len  = old_matrix->rows;
-		}
-		else {
+		} else {
 			other_node = old_edge->tgt;
 			other_len  = old_matrix->cols;
 		}
@@ -309,9 +308,8 @@ static void merge_source_into_target(pbqp_t *pbqp, pbqp_edge_t *edge)
 					new_matrix->entries[tgt_index * other_len + other_index] = old_matrix->entries[other_index * src_len + src_index];
 				}
 			}
-		}
-		/* Source node selects the row of the old_matrix. */
-		else {
+		} else {
+			/* Source node selects the row of the old_matrix. */
 			for (unsigned tgt_index = 0; tgt_index < tgt_len; ++tgt_index) {
 				if (tgt_vec->entries[tgt_index].data == INF_COSTS)
 					continue;
@@ -426,8 +424,7 @@ static void merge_target_into_source(pbqp_t *pbqp, pbqp_edge_t *edge)
 		if (old_edge->tgt == tgt_node) {
 			other_node = old_edge->src;
 			other_len  = old_matrix->rows;
-		}
-		else {
+		} else {
 			other_node = old_edge->tgt;
 			other_len  = old_matrix->cols;
 		}
@@ -450,9 +447,8 @@ static void merge_target_into_source(pbqp_t *pbqp, pbqp_edge_t *edge)
 					new_matrix->entries[src_index * other_len + other_index] = old_matrix->entries[other_index * tgt_len + tgt_index];
 				}
 			}
-		}
-		/* Source node selects the row of the old_matrix. */
-		else {
+		} else {
+			/* Source node selects the row of the old_matrix. */
 			for (unsigned src_index = 0; src_index < src_len; ++src_index) {
 				if (src_vec->entries[src_index].data == INF_COSTS)
 					continue;

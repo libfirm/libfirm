@@ -582,9 +582,9 @@ void proc_cloning(float threshold)
 
 				/* put entry in the heavy uses list */
 				entry->next = NULL;
-				if (! hmap.heavy_uses)
+				if (!hmap.heavy_uses) {
 					hmap.heavy_uses = entry;
-				else {
+				} else {
 					if (entry->weight >= hmap.heavy_uses->weight) {
 						entry->next     = hmap.heavy_uses;
 						hmap.heavy_uses = entry;

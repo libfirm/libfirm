@@ -104,11 +104,8 @@ static int apply_alternating_path(const bipartite_t *gr, int *matching,
 			bitset_set(matched_left, i);
 			bitset_set(matched_right, right);
 			done_something = 1;
-		}
-
-
-		/* We have to create a new single edge */
-		else {
+		} else {
+			/* We have to create a new single edge */
 			assert(!bitset_is_set(matched_left, left));
 
 			bitset_andnot(tmp, matched_right);

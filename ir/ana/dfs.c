@@ -104,16 +104,13 @@ static void classify_edges(dfs_t *dfs)
 		if (tgt->ancestor == src) {
 			stat_ev_cnt_inc(anc);
 			edge->kind = DFS_EDGE_ANC;
-		}
-		else if (_dfs_int_is_ancestor(tgt, src)) {
+		} else if (_dfs_int_is_ancestor(tgt, src)) {
 			stat_ev_cnt_inc(back);
 			edge->kind = DFS_EDGE_BACK;
-		}
-		else if (_dfs_int_is_ancestor(src, tgt)) {
+		} else if (_dfs_int_is_ancestor(src, tgt)) {
 			stat_ev_cnt_inc(fwd);
 			edge->kind = DFS_EDGE_FWD;
-		}
-		else {
+		} else {
 			stat_ev_cnt_inc(cross);
 			edge->kind = DFS_EDGE_CROSS;
 		}

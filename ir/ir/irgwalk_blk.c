@@ -294,8 +294,7 @@ static void collect_walk(ir_node *node, blk_collect_data_t *env)
 		} else {
 			ARR_APP1(ir_node *, env->blk_list, node);
 		}
-	}
-	else {
+	} else {
 		block = get_nodes_block(node);
 
 		if (!irn_visited(block))

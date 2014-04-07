@@ -93,9 +93,9 @@ static int connect_tcp(const char *host, uint16_t port)
 	sin.sin_family = AF_INET;
 	sin.sin_port   = htons(port);
 
-	if ((phe = gethostbyname(host)))
+	if ((phe = gethostbyname(host))) {
 		memcpy(&sin.sin_addr, phe->h_addr_list[0], phe->h_length);
-	else if((sin.sin_addr.s_addr = inet_addr(host)) == INADDR_NONE) {
+	} else if ((sin.sin_addr.s_addr = inet_addr(host)) == INADDR_NONE) {
 		lpp_print_err("cannot get host entry for %s", host);
 		return -1;
 	}

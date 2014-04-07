@@ -439,13 +439,12 @@ ir_tarval *computed_value_Cmp_Confirm(const ir_node *cmp, ir_node *left,
 				DBG_OUT_R(r_relation, r_bound, left, relation, right, "true");
 				DBG_EVAL_CONFIRM(cmp);
 				return tarval_b_true;
-			}
-			/*
-			 * l == bound(r) AND relation(r) != relation:
-			 *
-			 * We know that a CMP b and check for a ~CMP b
-			 */
-			else {
+			} else {
+				/*
+				 * l == bound(r) AND relation(r) != relation:
+				 *
+				 * We know that a CMP b and check for a ~CMP b
+				 */
 				ir_relation neg_relation = get_negated_relation(relation);
 
 				if ((r_relation == neg_relation) || (r_relation == (neg_relation & ~ir_relation_equal))) {
@@ -483,13 +482,12 @@ ir_tarval *computed_value_Cmp_Confirm(const ir_node *cmp, ir_node *left,
 			DBG_OUT_L(l_relation, l_bound, left, relation, right, "true");
 			DBG_EVAL_CONFIRM(cmp);
 			return tarval_b_true;
-		}
-		/*
-		 * r == bound(l) AND relation(l) is Not(relation):
-		 *
-		 * We know that a CMP b and check for a ~CMP b
-		 */
-		else {
+		} else {
+			/*
+			 * r == bound(l) AND relation(l) is Not(relation):
+			 *
+			 * We know that a CMP b and check for a ~CMP b
+			 */
 			ir_relation neg_relation = get_negated_relation(relation);
 
 			if ((l_relation == neg_relation) || (l_relation == (neg_relation & ~ir_relation_equal))) {

@@ -214,9 +214,7 @@ static lc_opt_entry_t *resolve_up_to_last_str_rec(lc_opt_entry_t *from,
 		free(buf);
 
 		res = resolve_up_to_last_str_rec(from, path + end + next, last_name);
-	}
-
-	else if (last_name != NULL) {
+	} else if (last_name != NULL) {
 		*last_name = path;
 	}
 

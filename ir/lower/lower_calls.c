@@ -275,8 +275,7 @@ static ir_node *find_base_adr(ir_node *ptr, ir_entity **pEnt)
 		if (is_Sel(ptr)) {
 			ent = get_Sel_entity(ptr);
 			ptr = get_Sel_ptr(ptr);
-		}
-		else if (is_Add(ptr)) {
+		} else if (is_Add(ptr)) {
 			ir_node *left = get_Add_left(ptr);
 			if (mode_is_reference(get_irn_mode(left)))
 				ptr = left;

@@ -171,8 +171,7 @@ static void insert_ife_edge(be_pbqp_alloc_env_t *pbqp_alloc_env, ir_node *src_no
 			if (get_free_regs(restr_nodes, cls, src_node) == 1) {
 				unsigned idx = vector_get_min_index(get_node(pbqp, get_irn_idx(src_node))->costs);
 				vector_set(get_node(pbqp, get_irn_idx(trg_node))->costs, idx, INF_COSTS);
-			}
-			else {
+			} else {
 				unsigned idx = vector_get_min_index(get_node(pbqp, get_irn_idx(trg_node))->costs);
 				vector_set(get_node(pbqp, get_irn_idx(src_node))->costs, idx, INF_COSTS);
 			}
@@ -207,8 +206,7 @@ static void insert_afe_edge(be_pbqp_alloc_env_t *pbqp_alloc_env, ir_node *src_no
 						pbqp_matrix_set(afe_matrix, row, col, (num)res);
 				}
 			}
-		}
-		else {
+		} else {
 			afe_matrix = pbqp_alloc_env->aff_matrix_template;
 		}
 #if DO_USEFUL_OPT || USE_BIPARTIT_MATCHING
@@ -220,8 +218,7 @@ static void insert_afe_edge(be_pbqp_alloc_env_t *pbqp_alloc_env, ir_node *src_no
 			if (get_free_regs(restr_nodes, cls, src_node) == 1) {
 				unsigned regIdx = vector_get_min_index(get_node(pbqp, get_irn_idx(src_node))->costs);
 				vector_add_matrix_col(get_node(pbqp, get_irn_idx(trg_node))->costs, afe_matrix, regIdx);
-			}
-			else {
+			} else {
 				unsigned regIdx = vector_get_min_index(get_node(pbqp, get_irn_idx(trg_node))->costs);
 				vector_add_matrix_col(get_node(pbqp, get_irn_idx(src_node))->costs, afe_matrix, regIdx);
 			}
@@ -251,8 +248,7 @@ static void create_affinity_edges(ir_node *irn, void *env)
 
 			insert_afe_edge(pbqp_alloc_env, irn, arg, pos);
 		}
-	}
-	else if (is_Perm_Proj(irn)) { /* Perms */
+	} else if (is_Perm_Proj(irn)) { /* Perms */
 		ir_node *arg = get_Perm_src(irn);
 		if (!arch_irn_consider_in_reg_alloc(cls, arg))
 			return;
@@ -432,8 +428,7 @@ static void create_pbqp_coloring_instance(ir_node *block, void *data)
 
 			/* free memory */
 			bipartite_free(bp);
-		}
-		else {
+		} else {
 			if (arch_irn_consider_in_reg_alloc(cls, irn)) {
 				plist_insert_front(temp_list, get_node(pbqp_inst, get_irn_idx(irn)));
 			}
@@ -450,8 +445,7 @@ static void create_pbqp_coloring_instance(ir_node *block, void *data)
 				/* insert proj node into priority queue (descending by the number of interference edges) */
 				if (get_free_regs(restr_nodes, cls, proj) <= 4) {
 					pqueue_put(restr_nodes_queue, proj, pbqp_alloc_env->ife_edge_num[get_irn_idx(proj)]);
-				}
-				else {
+				} else {
 					pqueue_put(queue, proj, pbqp_alloc_env->ife_edge_num[get_irn_idx(proj)]);
 				}
 
@@ -468,8 +462,7 @@ static void create_pbqp_coloring_instance(ir_node *block, void *data)
 			if(last_element != NULL && allHaveIFEdges) {
 				if (get_free_regs(restr_nodes, cls, last_element) <= 4) {
 					pqueue_put(restr_nodes_queue, last_element, pbqp_alloc_env->ife_edge_num[get_irn_idx(last_element)]);
-				}
-				else {
+				} else {
 					pqueue_put(queue, last_element, pbqp_alloc_env->ife_edge_num[get_irn_idx(last_element)]);
 				}
 				plist_erase(temp_list, plist_find_value(temp_list, get_node(pbqp_inst, last_element->node_idx)));
@@ -494,15 +487,12 @@ static void create_pbqp_coloring_instance(ir_node *block, void *data)
 			}
 
 			plist_clear(sorted_list);
-
-		}
-		else {
+		} else {
 			if (arch_irn_consider_in_reg_alloc(cls, irn)) {
 				// remember last colorable node
 				last_element = irn;
 				plist_insert_front(temp_list, get_node(pbqp_inst, get_irn_idx(irn)));
-			}
-			else {
+			} else {
 				// node not colorable, so ignore it
 				last_element = NULL;
 			}
@@ -655,8 +645,7 @@ static void be_pbqp_coloring(be_chordal_env_t *env)
 #endif
 	if(use_late_decision) {
 		solve_pbqp_heuristical_co_ld(pbqp_alloc_env.pbqp_inst,pbqp_alloc_env.rpeo);
-	}
-	else {
+	} else {
 		solve_pbqp_heuristical_co(pbqp_alloc_env.pbqp_inst,pbqp_alloc_env.rpeo);
 	}
 #if TIMER

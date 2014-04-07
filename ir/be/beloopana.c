@@ -105,9 +105,9 @@ static unsigned be_compute_loop_pressure(be_loopana_t *loop_ana, ir_loop *loop,
 		unsigned     son_pressure;
 		loop_element elem = get_loop_element(loop, i);
 
-		if (*elem.kind == k_ir_node)
+		if (*elem.kind == k_ir_node) {
 			son_pressure = be_compute_block_pressure(elem.node, cls);
-		else {
+		} else {
 			assert(*elem.kind == k_ir_loop);
 			son_pressure = be_compute_loop_pressure(loop_ana, elem.son, cls);
 		}

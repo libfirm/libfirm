@@ -293,9 +293,9 @@ static ir_alias_relation different_sel_offsets(const ir_node *sel1,
 	ir_entity *ent2 = get_Sel_entity(sel2);
 	int i, check_arr = 0;
 
-	if (ent1 == ent2)
+	if (ent1 == ent2) {
 		check_arr = 1;
-	else {
+	} else {
 		ir_type *tp1 = get_entity_type(ent1);
 		ir_type *tp2 = get_entity_type(ent2);
 

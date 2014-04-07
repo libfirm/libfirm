@@ -89,12 +89,10 @@ static void find_neighbour_walker(ir_node *block, void *data)
 				has_started = 1;
 			else
 				break; /* if we reached the end of the node's lifetime we can safely break */
-		}
-		else if (b->is_def) {
+		} else if (b->is_def) {
 			/* if any other node than the one in question starts living, add it to the set */
 			ir_nodeset_insert(&it->neighbours, irn);
-		}
-		else if (!has_started) {
+		} else if (!has_started) {
 			/* we only delete, if the live range in question has not yet started */
 			ir_nodeset_remove(&it->neighbours, irn);
 		}

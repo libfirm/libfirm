@@ -250,8 +250,7 @@ static int get_num_successors(ir_node *irn)
 			else if (mode_is_data(mode))
 				sum += get_irn_n_edges(proj);
 		}
-	}
-	else {
+	} else {
 		/* do not count keep-alive edges */
 		foreach_out_edge(irn, edge) {
 			if (!is_End(get_edge_src_irn(edge)))
@@ -408,11 +407,10 @@ static void trace_preprocess_block(trace_env_t *env, ir_node *block)
 		if (is_cfop(curr)) {
 			/* assure, that branches can be executed last */
 			d = 0;
-		}
-		else {
-			if (is_root_node(env, curr))
+		} else {
+			if (is_root_node(env, curr)) {
 				d = exectime(env, curr);
-			else {
+			} else {
 				d = 0;
 				foreach_out_edge(curr, edge) {
 					ir_node *n = get_edge_src_irn(edge);
@@ -463,8 +461,7 @@ static void trace_update_time(void *data, ir_node *irn)
 	trace_env_t *env = (trace_env_t*)data;
 	if (is_Phi(irn) || be_is_Start(irn)) {
 		env->curr_time += get_irn_etime(env, irn);
-	}
-	else {
+	} else {
 		env->curr_time += exectime(env, irn);
 	}
 }
@@ -548,8 +545,7 @@ static ir_node *muchnik_select(void *block_env, ir_nodeset_t *ready_set)
 	if (ir_nodeset_size(&mcands) == 1) {
 		irn = get_nodeset_node(&mcands);
 		DB((env->dbg, LEVEL_3, "\tirn = %+F, mcand = 1, max_delay = %u\n", irn, max_delay));
-	}
-	else {
+	} else {
 		size_t cnt = ir_nodeset_size(&ecands);
 		if (cnt == 1) {
 			irn = get_nodeset_node(&ecands);
@@ -559,12 +555,10 @@ static ir_node *muchnik_select(void *block_env, ir_nodeset_t *ready_set)
 				goto force_mcands;
 			}
 			DB((env->dbg, LEVEL_3, "\tirn = %+F, ecand = 1, max_delay = %u\n", irn, max_delay));
-		}
-		else if (cnt > 1) {
+		} else if (cnt > 1) {
 			DB((env->dbg, LEVEL_3, "\tecand = %zu, max_delay = %u\n", cnt, max_delay));
 			irn = basic_selection(&ecands);
-		}
-		else {
+		} else {
 force_mcands:
 			DB((env->dbg, LEVEL_3, "\tmcand = %zu\n", ir_nodeset_size(&mcands)));
 			irn = basic_selection(&mcands);
@@ -668,8 +662,7 @@ static ir_node *heuristic_select(void *block_env, ir_nodeset_t *ns)
 
 	if (cand) {
 		DBG((trace_env->dbg, LEVEL_4, "heuristic selected %+F:\n", cand));
-	}
-	else {
+	} else {
 		cand = basic_selection(ns);
 	}
 

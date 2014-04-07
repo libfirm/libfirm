@@ -301,8 +301,7 @@ static void determine_color_costs(co2_t *env, co2_irn_t *ci, col_cost_pair_t *co
 		col_t col = get_col(env, pos);
 		if (color_is_fix(env, pos)) {
 			col_costs[col].costs  = INT_MAX;
-		}
-		else {
+		} else {
 			incur_constraint_costs(pos, col_costs, INT_MAX);
 			col_costs[col].costs = add_saturated(col_costs[col].costs, 8 * be_ifg_degree(ifg, pos));
 		}

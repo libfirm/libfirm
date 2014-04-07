@@ -449,9 +449,9 @@ static void simple_dump_graph(dumper_t *dmp, graph_entry_t *entry)
 		ir_graph *const_irg = get_const_code_irg();
 		int       i;
 
-		if (entry->irg == const_irg)
+		if (entry->irg == const_irg) {
 			fprintf(dmp->f, "\nConst code Irg %p", (void *)entry->irg);
-		else {
+		} else {
 			if (entry->ent)
 				fprintf(dmp->f, "\nEntity %s, Irg %p", get_entity_ld_name(entry->ent), (void *)entry->irg);
 			else

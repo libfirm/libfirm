@@ -394,8 +394,7 @@ static HRESULT format_tarval(DEBUGHELPER *pHelper, int nBase, const void *addr, 
       modinfo.mode_prefix = "";
       modinfo.mode_suffix = "";
     }
-  }
-  else {
+  } else {
     if (mode.tv_priv) {
       if (copy_from_debuggee(mode.tv_priv, pHelper, &modinfo, sizeof(modinfo)) != S_OK)
         return E_FAIL;
@@ -419,8 +418,7 @@ static HRESULT format_tarval(DEBUGHELPER *pHelper, int nBase, const void *addr, 
     tv.value = value;
 
     tarval_snprintf(pResult, max, &tv);
-  }
-  else {
+  } else {
     /* might be a reserved tarval */
     int resid = PTR_TO_INT(tv.value);
 
@@ -474,8 +472,7 @@ static HRESULT format_node(DEBUGHELPER *pHelper, int nBase, const void *addr, ch
   case iro_Const:
     if (format_tarval(pHelper, nBase, n.attr.con.tarval, name, sizeof(name)) != S_OK) {
       _tcsncat(pResult, "<???>", max);
-    }
-    else {
+    } else {
       _tcsncat(pResult, "<", max);
       _tcsncat(pResult, name, max);
       _tcsncat(pResult, ">", max);

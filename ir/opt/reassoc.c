@@ -180,11 +180,11 @@ static int reassoc_commutative(ir_node **node)
 			if (mode_c1 != mode_c2) {
 				if (mode_is_int(mode_c1) && mode_is_int(mode_c2)) {
 					/* get the bigger one */
-					if (get_mode_size_bits(mode_c1) > get_mode_size_bits(mode_c2))
+					if (get_mode_size_bits(mode_c1) > get_mode_size_bits(mode_c2)) {
 						c2 = new_r_Conv(block, c2, mode_c1);
-					else if (get_mode_size_bits(mode_c1) < get_mode_size_bits(mode_c2))
+					} else if (get_mode_size_bits(mode_c1) < get_mode_size_bits(mode_c2)) {
 						c1 = new_r_Conv(block, c1, mode_c2);
-					else {
+					} else {
 						/* Try to cast the real const */
 						if (c_c1 == REAL_CONSTANT)
 							c1 = new_r_Conv(block, c1, mode_c2);

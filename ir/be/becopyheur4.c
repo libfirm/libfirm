@@ -205,9 +205,9 @@ static void dbg_admissible_colors(const co_mst_env_t *env, const co_mst_irn_t *n
 {
 	(void) env;
 
-	if (bitset_popcount(node->adm_colors) < 1)
+	if (bitset_popcount(node->adm_colors) < 1) {
 		fprintf(stderr, "no admissible colors?!?");
-	else {
+	} else {
 		bitset_foreach(node->adm_colors, idx) {
 			ir_fprintf(stderr, " %zu", idx);
 		}
@@ -857,8 +857,7 @@ static aff_chunk_t *fragment_chunk(co_mst_env_t *env, int col, aff_chunk_t *c, w
 			decider        = decider_has_color;
 			check_for_best = 1;
 			DBG((dbg, LEVEL_4, "\tcolor %d wanted\n", col));
-		}
-		else {
+		} else {
 			decider        = decider_hasnot_color;
 			check_for_best = 0;
 			DBG((dbg, LEVEL_4, "\tcolor %d forbidden\n", col));
@@ -1075,8 +1074,7 @@ static int recolor_nodes(co_mst_env_t *env, co_mst_irn_t *node, col_cost_t *cost
 			/* append the local_changed ones to global ones */
 			list_splice(&local_changed, changed);
 			return 1;
-		}
-		else {
+		} else {
 			/* coloring of neighbours failed, so we try next color */
 			reject_coloring(&local_changed);
 		}
@@ -1125,9 +1123,9 @@ static int change_node_color(co_mst_env_t *env, co_mst_irn_t *node, int tgt_col,
 
 #ifdef DEBUG_libfirm
 		if (firm_dbg_get_mask(dbg) & LEVEL_4) {
-			if (!is_loose(node))
+			if (!is_loose(node)) {
 				DB((dbg, LEVEL_4, "\t\tCNC: %+F has already fixed color %d\n", node->irn, col));
-			else {
+			} else {
 				DB((dbg, LEVEL_4, "\t\tCNC: color %d not admissible for %+F (", tgt_col, node->irn));
 				dbg_admissible_colors(env, node);
 				DB((dbg, LEVEL_4, ")\n"));
@@ -1282,8 +1280,7 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c)
 				DB((dbg, LEVEL_3, "\n\t\t... omitting, global best is better\n"));
 				del_waitq(good_starts);
 			}
-		}
-		else {
+		} else {
 			del_waitq(good_starts);
 		}
 

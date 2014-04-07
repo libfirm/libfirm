@@ -603,8 +603,7 @@ static void collect_egde_frequency_ilp(ir_node *block, void *data)
 	if (arity == 1) {
 		double execfreq = get_block_execfreq(block);
 		add_ilp_edge(block, 0, execfreq, env);
-	}
-	else {
+	} else {
 		int i;
 		int cst_idx;
 

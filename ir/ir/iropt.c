@@ -1929,12 +1929,10 @@ static ir_node *transform_node_AddSub(ir_node *n)
   if (is_Const(b) && is_const_Phi(a)) {                           \
     /* check for Op(Phi, Const) */                                \
     c = apply_binop_on_phi(a, get_Const_tarval(b), eval, mode, 0);\
-  }                                                               \
-  else if (is_Const(a) && is_const_Phi(b)) {                      \
+  } else if (is_Const(a) && is_const_Phi(b)) {                    \
     /* check for Op(Const, Phi) */                                \
     c = apply_binop_on_phi(b, get_Const_tarval(a), eval, mode, 1);\
-  }                                                               \
-  else if (is_const_Phi(a) && is_const_Phi(b)) {                  \
+  } else if (is_const_Phi(a) && is_const_Phi(b)) {                \
     /* check for Op(Phi, Phi) */                                  \
     c = apply_binop_on_2_phis(a, b, eval, mode);                  \
   }                                                               \
@@ -3104,13 +3102,13 @@ restart:
 		ir_mode *add_mode;
 
 		/* Determine the right mode for the Add. */
-		if (m_b == m_y)
+		if (m_b == m_y) {
 			add_mode = m_b;
-		else if (mode_is_reference(m_b))
+		} else if (mode_is_reference(m_b)) {
 			add_mode = m_b;
-		else if (mode_is_reference(m_y))
+		} else if (mode_is_reference(m_y)) {
 			add_mode = m_y;
-		else {
+		} else {
 			/*
 			 * Both modes are different but none is reference,
 			 * happens for instance in SubP(SubP(P, Iu), Is).
@@ -5169,9 +5167,8 @@ static ir_node *transform_node_Phi(ir_node *phi)
 			ir_node *new_phi = new_r_Phi(block, n, in, mode_M);
 			return new_r_Pin(block, new_phi);
 		}
-	}
-	/* Move Confirms down through Phi nodes. */
-	else if (mode_is_reference(mode)) {
+	} else if (mode_is_reference(mode)) {
+		/* Move Confirms down through Phi nodes. */
 		n = get_irn_arity(phi);
 
 		/* Beware of Phi0 */

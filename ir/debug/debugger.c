@@ -411,8 +411,7 @@ static void update_hooks(breakpoint *bp)
 		default:
 			break;
 		}
-	}
-	else {
+	} else {
 		/* unregister the hook on demand */
 		switch (bp->reason) {
 		CASE_OFF(BP_ON_REPLACE,  hook_replace);
@@ -1009,9 +1008,9 @@ void firm_debug(const char *cmd)
 		case tok_remirg:
 			token = get_token();
 
-			if (token == tok_number)
+			if (token == tok_number) {
 				break_on_nr(lexer.number, BP_ON_REMIRG);
-			else if (token == tok_identifier) {
+			} else if (token == tok_identifier) {
 				get_token_text(name, sizeof(name));
 				break_on_ident(name, BP_ON_REMIRG);
 			} else
@@ -1021,9 +1020,9 @@ void firm_debug(const char *cmd)
 		case tok_newent:
 			token = get_token();
 
-			if (token == tok_number)
+			if (token == tok_number) {
 				break_on_nr(lexer.number, BP_ON_NEW_THING);
-			else if (token == tok_identifier) {
+			} else if (token == tok_identifier) {
 				get_token_text(name, sizeof(name));
 				break_on_ident(name, BP_ON_NEW_ENT);
 			} else
@@ -1034,9 +1033,9 @@ void firm_debug(const char *cmd)
 			token = get_token();
 
 			ir_type *type;
-			if (token == tok_number)
+			if (token == tok_number) {
 				type = find_type_nr(lexer.number);
-			else if (token == tok_identifier) {
+			} else if (token == tok_identifier) {
 				get_token_text(name, sizeof(name));
 				type = find_type_name(name);
 			} else
@@ -1049,9 +1048,9 @@ void firm_debug(const char *cmd)
 			token = get_token();
 
 			ir_entity *entity;
-			if (token == tok_number)
+			if (token == tok_number) {
 				entity = find_entity_nr(lexer.number);
-			else if (token == tok_identifier) {
+			} else if (token == tok_identifier) {
 				get_token_text(name, sizeof(name));
 				entity = find_entity_name(name);
 			} else

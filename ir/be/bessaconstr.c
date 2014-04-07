@@ -325,8 +325,7 @@ static ir_node *search_def_end_of_block(be_ssa_construction_env_t *env,
 			if (!block_info->already_processed) {
 				process_block(env, block);
 			}
-		}
-		else {
+		} else {
 			/* Search the last definition of the block. */
 			sched_foreach_reverse(block, def) {
 				constr_info const *const info = get_info(env, def);
@@ -545,8 +544,7 @@ void be_ssa_construction_fix_users_array(be_ssa_construction_env_t *env,
 
 		if (is_Phi(use)) {
 			fix_phi_arguments(env, use, info);
-		}
-		else {
+		} else {
 			DBG((dbg, LEVEL_3, "\tsearching def for %+F at %+F\n", use, get_nodes_block(use)));
 			search_def_at_block(env, use, info);
 		}

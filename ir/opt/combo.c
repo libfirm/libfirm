@@ -2345,9 +2345,9 @@ static node_t *identity_Phi(node_t *node)
 			continue;
 
 		node_t *pred = get_irn_node(get_Phi_pred(phi, i));
-		if (n_part == NULL)
+		if (n_part == NULL) {
 			n_part = pred;
-		else if (n_part->part != pred->part) {
+		} else if (n_part->part != pred->part) {
 			/* incongruent inputs, not a follower */
 			return node;
 		}
@@ -2748,16 +2748,15 @@ static bool only_one_reachable_proj(ir_node *n)
  */
 static bool can_exchange(ir_node *pred, ir_node *block)
 {
-	if (is_Start(pred) || get_Block_entity(block) != NULL)
+	if (is_Start(pred) || get_Block_entity(block) != NULL) {
 		return false;
-	else if (is_Jmp(pred))
+	} else if (is_Jmp(pred)) {
 		return true;
-	else if (is_Raise(pred)) {
+	} else if (is_Raise(pred)) {
 		/* Raise is a tuple and usually has only one reachable ProjX,
 		 * but it must not be eliminated like a Jmp */
 		return false;
-	}
-	else if (get_irn_mode(pred) == mode_T) {
+	} else if (get_irn_mode(pred) == mode_T) {
 		/* if the predecessor block has more than one
 		   reachable outputs we cannot remove the block */
 		return only_one_reachable_proj(pred);

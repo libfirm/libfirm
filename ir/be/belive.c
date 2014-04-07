@@ -62,11 +62,11 @@ static inline unsigned _be_liveness_bsearch(be_lv_info_t *arr, const ir_node *no
 		int md           = lo + ((hi - lo) >> 1);
 		ir_node *md_node = payload[md].node.node;
 
-		if (node > md_node)
+		if (node > md_node) {
 			lo = md + 1;
-		else if (node < md_node)
+		} else if (node < md_node) {
 			hi = md;
-		else {
+		} else {
 			res = md;
 			break;
 		}
@@ -267,13 +267,11 @@ static void liveness_for_node(ir_node *irn)
 		if (is_Phi(use)) {
 			ir_node *pred_block = get_Block_cfgpred_block(use_block, edge->pos);
 			live_end_at_block(pred_block, be_lv_state_end);
-		}
-
-		/*
-		 * Else, the value is live in at this block. Mark it and call live
-		 * out on the predecessors.
-		 */
-		else if (def_block != use_block) {
+		} else if (def_block != use_block) {
+			/*
+			 * Else, the value is live in at this block. Mark it and call live
+			 * out on the predecessors.
+			 */
 			int i;
 
 			be_lv_info_node_t *const n = be_lv_get_or_set(re.lv, use_block, irn);
