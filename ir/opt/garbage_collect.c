@@ -84,6 +84,11 @@ static void visit_entity(ir_entity *entity)
 		if (irg != NULL)
 			start_visit_node(get_irg_end(irg));
 	}
+
+	if (is_alias_entity(entity)) {
+		ir_entity *aliased = get_entity_alias(entity);
+		visit_entity(aliased);
+	}
 }
 
 static void visit_segment(ir_type *segment)
