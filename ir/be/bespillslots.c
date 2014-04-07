@@ -562,10 +562,9 @@ static void assign_spillslots(be_fec_env_t *env)
 		int               slotid = spill->spillslot;
 		const spillweb_t *web    = get_spill_web(spill->web);
 		const ir_type    *type   = web->type;
-		const ir_mode    *mode   = get_type_mode(type);
-		spill_slot_t     *slot   = &spillslots[slotid];
-		int               size   = get_mode_size_bytes(mode);
+		int               size   = get_type_size_bytes(type);
 		int               align  = get_type_alignment_bytes(type);
+		spill_slot_t     *slot   = &spillslots[slotid];
 
 		if (slot->align == 0 && slot->size == 0) {
 			slot->align = align;
