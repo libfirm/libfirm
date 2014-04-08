@@ -645,44 +645,29 @@ void dump_node_opcode(FILE *F, const ir_node *n)
 		fprintf(F, "%s &%s", name, get_entity_name(get_Address_entity(n)));
 		break;
 
-	case iro_Const:
-		ir_fprintf(F, "%s %T", name, get_Const_tarval(n));
-		break;
-
-	case iro_Offset:
-		fprintf(F, "%s %s", name, get_entity_name(get_Offset_entity(n)));
-		break;
-
 	case iro_Align:
 		ir_fprintf(F, "%s %+F", name, get_Align_type(n));
 		break;
 
-	case iro_Size:
-		ir_fprintf(F, "%s %+F", name, get_Size_type(n));
-		break;
-
-	case iro_Load: {
-		char const *const prefix = get_Load_unaligned(n) == align_non_aligned ? "ua" : "";
-		fprintf(F, "%s%s[%s]", prefix, name, get_mode_name(get_Load_mode(n)));
-		break;
-	}
-
-	case iro_Store: {
-		char const *const prefix = get_Store_unaligned(n) == align_non_aligned ? "ua" : "";
-		fprintf(F, "%s%s", prefix, name);
-		break;
-	}
-
 	case iro_Block: {
+		ir_graph   *const irg    = get_irn_irg(n);
 		char const *const prefix =
-			n == get_irg_start_block(get_irn_irg(n)) ?  "Start " :
-			n == get_irg_end_block(get_irn_irg(n))   ?  "End "   :
+			n == get_irg_start_block(irg) ?  "Start " :
+			n == get_irg_end_block(irg)   ?  "End "   :
 			"";
 		char const *const mark =
 			flags & ir_dump_flag_show_marks && get_Block_mark(n) ? "*" : "";
 		fprintf(F, "%s%s%s", prefix, name, mark);
 		break;
 	}
+
+	case iro_Builtin:
+		fprintf(F, "%s[%s]", name, get_builtin_kind_name(get_Builtin_kind(n)));
+		break;
+
+	case iro_Const:
+		ir_fprintf(F, "%s %T", name, get_Const_tarval(n));
+		break;
 
 	case iro_Div:
 		fprintf(F, "%s", name);
@@ -691,13 +676,29 @@ void dump_node_opcode(FILE *F, const ir_node *n)
 		fprintf(F, "[%s]", get_mode_name(get_Div_resmode(n)));
 		break;
 
+	case iro_Load: {
+		char const *const prefix = get_Load_unaligned(n) == align_non_aligned ? "ua" : "";
+		fprintf(F, "%s%s[%s]", prefix, name, get_mode_name(get_Load_mode(n)));
+		break;
+	}
+
 	case iro_Mod:
 		fprintf(F, "%s[%s]", name, get_mode_name(get_Mod_resmode(n)));
 		break;
 
-	case iro_Builtin:
-		fprintf(F, "%s[%s]", name, get_builtin_kind_name(get_Builtin_kind(n)));
+	case iro_Offset:
+		fprintf(F, "%s %s", name, get_entity_name(get_Offset_entity(n)));
 		break;
+
+	case iro_Size:
+		ir_fprintf(F, "%s %+F", name, get_Size_type(n));
+		break;
+
+	case iro_Store: {
+		char const *const prefix = get_Store_unaligned(n) == align_non_aligned ? "ua" : "";
+		fprintf(F, "%s%s", prefix, name);
+		break;
+	}
 
 	default:
 		fprintf(F, "%s", name);
