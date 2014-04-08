@@ -719,24 +719,27 @@ static void transform_MemPerm(ir_node *node)
 		/* work around cases where entities have different sizes */
 		if (entsize2 < entsize)
 			entsize = entsize2;
-		assert(entsize == 4 || entsize == 8 || entsize == 12);
 
-		ir_node *push = create_push(node, node, sp, mem, inent, ia32_mode_gp);
-		sp = create_spproj(node, push, pn_ia32_Push_stack);
-		if (entsize >= 8) {
-			/* add another push after the first one */
-			ir_node *push2
-				= create_push(node, node, sp, mem, inent, ia32_mode_gp);
-			add_ia32_am_offs_int(push2, 4);
-			sp = create_spproj(node, push2, pn_ia32_Push_stack);
-			if (entsize == 12) {
-				ir_node *push3
-					= create_push(node, node, sp, mem, inent, ia32_mode_gp);
-				add_ia32_am_offs_int(push3, 8);
-				sp = create_spproj(node, push3, pn_ia32_Push_stack);
+		int offset = 0;
+		do {
+			ir_mode *mode;
+			if (entsize%2 == 1) {
+				mode = mode_Bu;
+			} else if (entsize % 4 == 2) {
+				mode = mode_Hu;
+			} else {
+				assert(entsize%4 == 0);
+				mode = ia32_mode_gp;
 			}
-		}
 
+			ir_node *push = create_push(node, node, sp, mem, inent, mode);
+			sp = create_spproj(node, push, pn_ia32_Push_stack);
+			add_ia32_am_offs_int(push, offset);
+
+			unsigned size = get_mode_size_bytes(mode);
+			offset  += size;
+			entsize -= size;
+		} while(entsize > 0);
 		set_irn_n(node, i, new_r_Bad(irg, mode_X));
 	}
 
@@ -751,21 +754,27 @@ static void transform_MemPerm(ir_node *node)
 		/* work around cases where entities have different sizes */
 		if (entsize2 < entsize)
 			entsize = entsize2;
-		assert(entsize == 4 || entsize == 8 || entsize == 12);
 
-		if (entsize == 12) {
-			ir_node *pop = create_pop(node, node, sp, outent, ia32_mode_gp);
-			sp = create_spproj(node, pop, pn_ia32_Pop_stack);
-			add_ia32_am_offs_int(pop, 8);
-		}
-		if (entsize >= 8) {
-			ir_node *pop = create_pop(node, node, sp, outent, ia32_mode_gp);
-			sp = create_spproj(node, pop, pn_ia32_Pop_stack);
-			add_ia32_am_offs_int(pop, 4);
-		}
-		ir_node *pop = create_pop(node, node, sp, outent, ia32_mode_gp);
-		sp = create_spproj(node, pop, pn_ia32_Pop_stack);
+		int      offset = entsize;
+		ir_node *pop;
+		do {
+			ir_mode *mode;
+			if (entsize%2 == 1) {
+				mode = mode_Bu;
+			} else if (entsize%4 == 2) {
+				mode = mode_Hu;
+			} else {
+				assert(entsize%4 == 0);
+				mode = ia32_mode_gp;
+			}
+			pop = create_pop(node, node, sp, outent, mode);
+			sp  = create_spproj(node, pop, pn_ia32_Pop_stack);
 
+			unsigned size = get_mode_size_bytes(mode);
+			offset  -= size;
+			entsize -= size;
+			add_ia32_am_offs_int(pop, offset);
+		} while(entsize > 0);
 		pops[i] = pop;
 	}
 
