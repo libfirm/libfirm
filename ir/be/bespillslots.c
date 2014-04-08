@@ -210,7 +210,6 @@ static spill_t *collect_spill(be_fec_env_t *env, ir_node *node, spillweb_t *web)
 			/* ignore obvious self-loops */
 			if (arg == node)
 				continue;
-			spillweb_t *old_web = web;
 			spill_t *arg_spill = collect_spill(env, arg, web);
 			ir_node *block     = get_nodes_block(arg);
 
@@ -220,6 +219,9 @@ static spill_t *collect_spill(be_fec_env_t *env, ir_node *node, spillweb_t *web)
 			affinty_edge->slot1    = spill->spillslot;
 			affinty_edge->slot2    = arg_spill->spillslot;
 			ARR_APP1(affinity_edge_t*, env->affinity_edges, affinty_edge);
+#ifndef NDEBUG
+			spillweb_t *old_web = web;
+#endif
 			web = arg_spill->web;
 			assert(web->merged_with == NULL);
 			assert(web == old_web || old_web == NULL
