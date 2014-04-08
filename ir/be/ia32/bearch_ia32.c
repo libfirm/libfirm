@@ -353,6 +353,11 @@ static int ia32_possible_memory_operand(const ir_node *irn, unsigned int i)
 	if (mode_is_float(mode)) {
 		if (mode != ia32_mode_float64 && mode != mode_F)
 			return 0;
+		/* Don't do reload folding for x87 nodes for now, as we can't predict
+		 * yet wether the spillslot must be widened to 80bit for which no AM
+		 * operations exist. */
+		if (is_ia32_fld(load))
+			return 0;
 	}
 
 	switch (get_ia32_am_support(irn)) {
