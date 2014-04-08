@@ -3662,7 +3662,8 @@ static ir_node *gen_x87_gp_to_fp(ir_node *node)
 	ir_node *fild     = new_bd_ia32_fild(dbgi, new_block, addr->base,
 	                                     addr->index, addr->mem);
 	ir_node *new_node = new_r_Proj(fild, mode_fp, pn_ia32_fild_res);
-	if (addr->use_frame && addr->entity == NULL)
+	if (addr->use_frame && addr->entity == NULL
+	    && get_mode_arithmetic(am.ls_mode) != irma_twos_complement)
 		force_int_stackent(fild, am.ls_mode);
 
 	set_am_attributes(fild, &am);
