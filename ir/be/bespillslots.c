@@ -214,11 +214,11 @@ static spill_t *collect_spill(be_fec_env_t *env, ir_node *node, spillweb_t *web)
 			ir_node *block     = get_nodes_block(arg);
 
 			/* add an affinity edge */
-			affinity_edge_t *affinty_edge = OALLOC(&env->obst, affinity_edge_t);
-			affinty_edge->affinity = get_block_execfreq(block);
-			affinty_edge->slot1    = spill->spillslot;
-			affinty_edge->slot2    = arg_spill->spillslot;
-			ARR_APP1(affinity_edge_t*, env->affinity_edges, affinty_edge);
+			affinity_edge_t *affinity_edge = OALLOC(&env->obst, affinity_edge_t);
+			affinity_edge->affinity = get_block_execfreq(block);
+			affinity_edge->slot1    = spill->spillslot;
+			affinity_edge->slot2    = arg_spill->spillslot;
+			ARR_APP1(affinity_edge_t*, env->affinity_edges, affinity_edge);
 #ifndef NDEBUG
 			spillweb_t *old_web = web;
 #endif
