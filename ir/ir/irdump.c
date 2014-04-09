@@ -726,20 +726,14 @@ static void dump_node_mode(FILE *F, const ir_node *n)
 	case iro_Align:
 	case iro_Cmp:
 	case iro_Sel:
-	case iro_End:
-	case iro_Return:
-	case iro_Free:
-	case iro_Sync:
-	case iro_Jmp:
-	case iro_NoMem:
 	case iro_Offset:
 	case iro_Size:
 		break;
+
 	default: {
 		ir_mode *mode = get_irn_mode(n);
-
-		if (mode != NULL && mode != mode_BB && mode != mode_ANY && mode != mode_BAD &&
-			(mode != mode_T || iro == iro_Proj))
+		if ((mode != mode_ANY && mode != mode_BAD && mode != mode_BB && mode != mode_M && mode != mode_T && mode != mode_X) ||
+		    iro == iro_Bad || iro == iro_Proj)
 			fprintf(F, "%s", get_mode_name(mode));
 	}
 	}
