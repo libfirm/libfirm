@@ -1846,7 +1846,7 @@ static void dump_block_to_cfg(ir_node *block, void *env)
 		if (block == get_irg_end_block(get_irn_irg(block)))
 			fprintf(F, "End ");
 
-		fprintf(F, "%s ", get_op_name(get_irn_op(block)));
+		fprintf(F, "%s ", get_irn_opname(block));
 		print_nodeid(F, block);
 		fprintf(F, "\" ");
 		fprintf(F, "info1:\"");

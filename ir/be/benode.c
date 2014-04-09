@@ -1005,7 +1005,7 @@ void be_dump_phi_reg_reqs(FILE *F, const ir_node *node, dump_reason_t reason)
 {
 	switch (reason) {
 	case dump_node_opcode_txt:
-		fputs(get_op_name(get_irn_op(node)), F);
+		fputs(get_irn_opname(node), F);
 		break;
 	case dump_node_mode_txt:
 		fprintf(F, "%s", get_mode_name(get_irn_mode(node)));
@@ -1042,7 +1042,7 @@ static void dump_node(FILE *f, const ir_node *irn, dump_reason_t reason)
 
 	switch (reason) {
 		case dump_node_opcode_txt:
-			fputs(get_op_name(get_irn_op(irn)), f);
+			fputs(get_irn_opname(irn), f);
 			break;
 		case dump_node_mode_txt:
 			if (be_is_Copy(irn) || be_is_CopyKeep(irn)) {
