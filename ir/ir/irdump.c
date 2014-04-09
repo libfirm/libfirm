@@ -724,6 +724,7 @@ static void dump_node_mode(FILE *F, const ir_node *n)
 	switch (iro) {
 	case iro_Address:
 	case iro_Align:
+	case iro_Cmp:
 	case iro_Sel:
 	case iro_End:
 	case iro_Return:
