@@ -30,45 +30,51 @@ def format_a_an(text):
 	return "a " + text
 
 def format_blockparameter(node):
-	if hasattr(node, "knownBlock"):
+	if not node.block:
+		return "ir_node *block"
+	else:
 		if hasattr(node, "knownGraph"):
 			return ""
 		return "ir_graph *irg"
-	else:
-		return "ir_node *block"
 
 def format_blockparameterhelp(node):
-	if hasattr(node, "knownBlock"):
+	if not node.block:
+		return " * @param block     The IR block the node belongs to.\n"
+	else:
 		if hasattr(node, "knownGraph"):
 			return ""
 		return " * @param irg       The IR graph the node belongs to.\n"
-	else:
-		return " * @param block     The IR block the node belongs to.\n"
 
 def format_blockargument(node):
-	if hasattr(node, "knownBlock"):
+	if not node.block:
+		return "block"
+	else:
 		if hasattr(node, "knownGraph"):
 			return ""
 		return "irg"
+
+def format_blockassign(node):
+	if node.block:
+		return "ir_node *block = %s;" % node.block
 	else:
-		return "block"
+		return ""
 
 def format_irgassign(node):
 	if hasattr(node, "knownGraph"):
 		return "ir_graph *irg = %s;\n" % node.graph
 
-	if hasattr(node, "knownBlock"):
+	if node.block:
 		return ""
 	else:
 		return "ir_graph *irg = get_irn_irg(block);\n"
 
 def format_curblock(node):
-	if hasattr(node, "knownBlock"):
+	if not node.block:
+		return "get_cur_block()"
+	else:
 		if hasattr(node, "knownGraph"):
 			return ""
 		return "current_ir_graph"
-	else:
-		return "get_cur_block()"
 
 def format_insdecl(node):
 	arity = node.arity
@@ -160,12 +166,12 @@ def format_args(arglist):
 	return "\n".join(argument_names)
 
 def format_block(node):
-	if hasattr(node, "knownBlock"):
+	if not node.block:
+		return "block"
+	else:
 		if hasattr(node, "knownGraph"):
 			return ""
 		return "env->irg"
-	else:
-		return "block"
 
 def format_simplify_type(string):
 	"""Returns a simplified version of a C type for use in a function name.
@@ -194,6 +200,7 @@ env.filters['filtjoin']           = format_filtjoin
 env.filters['has']                = filter_has
 env.filters['hasnot']             = filter_hasnot
 env.filters['insdecl']            = format_insdecl
+env.filters['blockassign']        = format_blockassign
 env.filters['irgassign']          = format_irgassign
 env.filters['nodearguments']      = format_nodearguments
 env.filters['nodeparameters']     = format_nodeparameters
@@ -207,7 +214,7 @@ env.filters['stringformat']       = format_stringformat
 
 def preprocess_node(node):
 	setdefault(node, "attrs_name", node.name.lower())
-	setdefault(node, "block", "block")
+	setdefault(node, "block", None)
 
 	# construct node arguments
 	arguments = [ ]

@@ -28,7 +28,6 @@ class EntConst(object):
 	name       = "entconst"
 	flags      = [ "constlike", "start_block" ]
 	block      = "get_irg_start_block(irg)"
-	knownBlock = True
 	pinned     = "no"
 	attrs      = [
 		Attribute("entity", type="ir_entity*", comment="entity to operate on"),
@@ -43,7 +42,6 @@ class TypeConst(object):
 	name       = "typeconst"
 	flags      = [ "constlike", "start_block" ]
 	block      = "get_irg_start_block(irg)"
-	knownBlock = True
 	pinned     = "no"
 	attrs      = [
 		Attribute("type", type="ir_type*", comment="type to operate on"),
@@ -97,7 +95,6 @@ class Anchor:
 	flags            = [ "dump_noblock" ]
 	pinned           = "yes"
 	attr_struct      = "irg_attr"
-	knownBlock       = True
 	singleton        = True
 	noconstructor    = True
 	customSerializer = True
@@ -189,7 +186,6 @@ class Bad:
 	from undefined behaviour like reading uninitialized local variables in C."""
 	flags         = [ "start_block", "dump_noblock" ]
 	pinned        = "yes"
-	knownBlock    = True
 	block         = "get_irg_start_block(irg)"
 	attr_struct   = "bad_attr"
 	init = '''
@@ -210,7 +206,6 @@ class Deleted:
 class Block:
 	"""A basic block"""
 	mode             = "mode_BB"
-	knownBlock       = True
 	block            = "NULL"
 	pinned           = "yes"
 	arity            = "variable"
@@ -373,7 +368,6 @@ class Const:
 	flags      = [ "constlike", "start_block" ]
 	block      = "get_irg_start_block(irg)"
 	mode       = "get_tarval_mode(tarval)"
-	knownBlock = True
 	pinned     = "no"
 	attrs      = [
 		Attribute("tarval", type="ir_tarval*",
@@ -458,7 +452,6 @@ class Dummy:
 	nodes are used for the unknown predecessors and replaced later."""
 	ins        = []
 	flags      = [ "cfopcode", "start_block", "constlike", "dump_noblock" ]
-	knownBlock = True
 	pinned     = "yes"
 	block      = "get_irg_start_block(irg)"
 
@@ -471,7 +464,6 @@ class End:
 	arity            = "dynamic"
 	input_name       = "keepalive"
 	flags            = [ "cfopcode" ]
-	knownBlock       = True
 	block            = "get_irg_end_block(irg)"
 	singleton        = True
 
@@ -628,7 +620,6 @@ class NoMem:
 	mode          = "mode_M"
 	flags         = [ "dump_noblock" ]
 	pinned        = "yes"
-	knownBlock    = True
 	block         = "get_irg_start_block(irg)"
 	singleton     = True
 
@@ -684,7 +675,6 @@ class Proj:
 	]
 	flags      = []
 	pinned     = "no"
-	knownBlock = True
 	knownGraph = True
 	block      = "get_nodes_block(irn_pred)"
 	graph      = "get_irn_irg(irn_pred)"
@@ -785,7 +775,6 @@ class Start:
 	pinned           = "yes"
 	flags            = [ "cfopcode" ]
 	singleton        = True
-	knownBlock       = True
 	block            = "get_irg_start_block(irg)"
 
 @op
@@ -867,7 +856,6 @@ class Unknown:
 	Be careful when optimising Unknown values, you cannot simply replace
 	Unknown+x or Unknown<x with a new Unknown node if there are multiple
 	users of the original unknown node!"""
-	knownBlock = True
 	pinned     = "yes"
 	block      = "get_irg_start_block(irg)"
 	flags      = [ "start_block", "constlike", "dump_noblock" ]

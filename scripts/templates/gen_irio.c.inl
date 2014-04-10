@@ -2,7 +2,7 @@
 {%- for node in nodes|hasnot('customSerializer') %}
 static ir_node *read_{{node.name}}(read_env_t *env)
 {
-	{%- if not node.knownBlock %}
+	{%- if not node.block %}
 	ir_node *block = read_node_ref(env);
 	{%- endif %}
 	{%- for input in node.ins %}
@@ -68,7 +68,7 @@ static void write_{{node.name}}(write_env_t *env, const ir_node *node)
 {
 	write_symbol(env, "{{node.name}}");
 	write_node_nr(env, node);
-	{%- if not node.knownBlock %}
+	{%- if not node.block %}
 	write_node_ref(env, get_nodes_block(node));
 	{%- endif %}
 	{%- for input in node.ins %}

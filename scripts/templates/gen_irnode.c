@@ -48,6 +48,7 @@ ir_node *new_rd_{{node.name}}(
 		{{node|nodeparameters}}
 	{% endfilter %})
 {
+	{{node|blockassign}}
 	{{node|irgassign}}
 	{{node|insdecl}}
 
@@ -55,7 +56,7 @@ ir_node *new_rd_{{node.name}}(
 		{%- filter arguments %}
 			dbgi
 			irg
-			{{node.block}}
+			block
 			op_{{node.name}}
 			{% if hasattr(node, 'mode') -%}
 				{{node.mode}}
