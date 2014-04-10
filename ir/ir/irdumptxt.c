@@ -10,7 +10,6 @@
  *          Matthias Braun
  */
 #include <stdlib.h>
-#include <stdarg.h>
 #include <stdbool.h>
 
 #include "constbits.h"

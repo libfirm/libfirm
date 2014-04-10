@@ -8,6 +8,8 @@
  * @brief   Protocol stuff for lpp server
  * @author  Sebastian Hack
  */
+
+#include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>

@@ -11,7 +11,6 @@
 #define LPP_LPP_COMM_H
 
 #include <stdio.h>
-#include <stdarg.h>
 #include <stdint.h>
 
 #define LPP_PORT    2175
