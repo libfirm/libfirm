@@ -12,7 +12,6 @@
 #ifndef FIRM_IR_IRCONS_T_H
 #define FIRM_IR_IRCONS_T_H
 
-#include <assert.h>
 #include "ircons.h"
 #include "irgraph_t.h"
 #include "irverify_t.h"
