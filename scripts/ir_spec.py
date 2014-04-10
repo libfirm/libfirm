@@ -675,9 +675,8 @@ class Proj:
 	]
 	flags      = []
 	pinned     = "no"
-	knownGraph = True
 	block      = "get_nodes_block(irn_pred)"
-	graph      = "get_irn_irg(irn_pred)"
+	usesGraph  = False
 	attrs      = [
 		Attribute("proj", type="long",
 		          comment="number of tuple component to be extracted"),

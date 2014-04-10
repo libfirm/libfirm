@@ -32,26 +32,26 @@ def format_a_an(text):
 def format_blockparameter(node):
 	if not node.block:
 		return "ir_node *block"
-	else:
-		if hasattr(node, "knownGraph"):
-			return ""
+	elif node.usesGraph:
 		return "ir_graph *irg"
+	else:
+		return ""
 
 def format_blockparameterhelp(node):
 	if not node.block:
 		return " * @param block     The IR block the node belongs to.\n"
-	else:
-		if hasattr(node, "knownGraph"):
-			return ""
+	elif node.usesGraph:
 		return " * @param irg       The IR graph the node belongs to.\n"
+	else:
+		return ""
 
 def format_blockargument(node):
 	if not node.block:
 		return "block"
-	else:
-		if hasattr(node, "knownGraph"):
-			return ""
+	elif node.usesGraph:
 		return "irg"
+	else:
+		return ""
 
 def format_blockassign(node):
 	if node.block:
@@ -60,10 +60,7 @@ def format_blockassign(node):
 		return ""
 
 def format_irgassign(node):
-	if hasattr(node, "knownGraph"):
-		return "ir_graph *irg = %s;\n" % node.graph
-
-	if node.block:
+	if node.usesGraph:
 		return ""
 	else:
 		return "ir_graph *irg = get_irn_irg(block);\n"
@@ -71,10 +68,10 @@ def format_irgassign(node):
 def format_curblock(node):
 	if not node.block:
 		return "get_cur_block()"
-	else:
-		if hasattr(node, "knownGraph"):
-			return ""
+	elif node.usesGraph:
 		return "current_ir_graph"
+	else:
+		return ""
 
 def format_insdecl(node):
 	arity = node.arity
@@ -168,10 +165,10 @@ def format_args(arglist):
 def format_block(node):
 	if not node.block:
 		return "block"
-	else:
-		if hasattr(node, "knownGraph"):
-			return ""
+	elif node.usesGraph:
 		return "env->irg"
+	else:
+		return ""
 
 def format_simplify_type(string):
 	"""Returns a simplified version of a C type for use in a function name.
@@ -215,6 +212,7 @@ env.filters['stringformat']       = format_stringformat
 def preprocess_node(node):
 	setdefault(node, "attrs_name", node.name.lower())
 	setdefault(node, "block", None)
+	setdefault(node, "usesGraph", node.block != None)
 
 	# construct node arguments
 	arguments = [ ]
