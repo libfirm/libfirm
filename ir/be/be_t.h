@@ -12,7 +12,6 @@
 #define FIRM_BE_BE_T_H
 
 #include <assert.h>
-#include <stdbool.h>
 
 #include "be.h"
 #include "be_types.h"
