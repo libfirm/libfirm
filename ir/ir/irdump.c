@@ -763,6 +763,19 @@ static void dump_node_nodeattr(FILE *F, const ir_node *n)
 
 		if (code == iro_Proj && is_Start(get_Proj_pred(pred))) {
 			fprintf(F, "Arg %ld ", proj_nr);
+		} else if (code == iro_Switch && proj_nr != pn_Switch_default) {
+			char            const       *sep   = "case ";
+			ir_switch_table const *const table = get_Switch_table(pred);
+      for (size_t i = 0, n = ir_switch_table_get_n_entries(table); i < n; ++i) {
+				ir_switch_table_entry const *const entry = ir_switch_table_get_entry_const(table, i);
+				if (entry->pn != proj_nr)
+					continue;
+				ir_fprintf(F, "%s%T", sep, entry->min);
+				if (entry->min != entry->max)
+					ir_fprintf(F, "...%T", entry->max);
+				sep = ", ";
+			}
+			fputc(' ', F);
 		} else {
 			bool found = false;
 			for (unsigned i = 0; i < ARRAY_SIZE(proj_lut); ++i) {
