@@ -58,7 +58,6 @@ libfirm_la_SOURCES = \
 	ana/irmemory.c \
 	ana/irouts.c \
 	ana/irscc.c \
-	ana/trouts.c \
 	ana/vrp.c \
 	be/beabi.c \
 	be/beabihelper.c \
@@ -266,7 +265,6 @@ EXTRA_DIST = \
 	ana/irloop_t.h \
 	ana/irmemory_t.h \
 	ana/execfreq_t.h \
-	ana/trouts_t.h \
 	be/be_t.h \
 	be/be_types.h \
 	be/beabi.h \

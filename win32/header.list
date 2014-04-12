@@ -54,7 +54,6 @@ ir\ir\iredges.h
 ir\ir\iredgekinds.h
 
 ir\ana\irouts.h
-ir\ana\trouts.h
 ir\ana\irdom.h
 ir\ana\cgana.h
 ir\ana\compute_loop_info.h

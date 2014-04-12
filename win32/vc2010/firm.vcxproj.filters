@@ -219,9 +219,6 @@
     <ClCompile Include="$(FirmRoot)\ir\ana\structure.c">
       <Filter>ir\ana</Filter>
     </ClCompile>
-    <ClCompile Include="$(FirmRoot)\ir\ana\trouts.c">
-      <Filter>ir\ana</Filter>
-    </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ana\vrp.c">
       <Filter>ir\ana</Filter>
     </ClCompile>
@@ -1320,9 +1317,6 @@
     <ClInclude Include="$(FirmRoot)\include\libfirm\timing.h">
       <Filter>include\libfirm</Filter>
     </ClInclude>
-    <ClInclude Include="$(FirmRoot)\include\libfirm\trouts.h">
-      <Filter>include\libfirm</Filter>
-    </ClInclude>
     <ClInclude Include="$(FirmRoot)\include\libfirm\tv.h">
       <Filter>include\libfirm</Filter>
     </ClInclude>
@@ -2037,9 +2031,6 @@
     <ClCompile Include="$(FirmRoot)\ir\ana\structure.c">
       <Filter>ir\ana</Filter>
     </ClCompile>
-    <ClCompile Include="$(FirmRoot)\ir\ana\trouts.c">
-      <Filter>ir\ana</Filter>
-    </ClCompile>
     <ClInclude Include="$(FirmRoot)\ir\ana\absgraph.h">
       <Filter>ir\ana</Filter>
     </ClInclude>
@@ -3103,9 +3094,6 @@
       <Filter>include\libfirm</Filter>
     </ClInclude>
     <ClInclude Include="$(FirmRoot)\include\libfirm\structure.h">
-      <Filter>include\libfirm</Filter>
-    </ClInclude>
-    <ClInclude Include="$(FirmRoot)\include\libfirm\trouts.h">
       <Filter>include\libfirm</Filter>
     </ClInclude>
     <ClInclude Include="$(FirmRoot)\include\libfirm\tv.h">
@@ -3702,9 +3690,6 @@
     <ClCompile Include="$(FirmRoot)\ir\ana\structure.c">
       <Filter>ir\ana</Filter>
     </ClCompile>
-    <ClCompile Include="$(FirmRoot)\ir\ana\trouts.c">
-      <Filter>ir\ana</Filter>
-    </ClCompile>
     <ClInclude Include="$(FirmRoot)\ir\ana\absgraph.h">
       <Filter>ir\ana</Filter>
     </ClInclude>
@@ -4770,9 +4755,6 @@
     <ClInclude Include="$(FirmRoot)\include\libfirm\structure.h">
       <Filter>include\libfirm</Filter>
     </ClInclude>
-    <ClInclude Include="$(FirmRoot)\include\libfirm\trouts.h">
-      <Filter>include\libfirm</Filter>
-    </ClInclude>
     <ClInclude Include="$(FirmRoot)\include\libfirm\tv.h">
       <Filter>include\libfirm</Filter>
     </ClInclude>
@@ -5359,9 +5341,6 @@
       <Filter>ir\ana</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ana\structure.c">
-      <Filter>ir\ana</Filter>
-    </ClCompile>
-    <ClCompile Include="$(FirmRoot)\ir\ana\trouts.c">
       <Filter>ir\ana</Filter>
     </ClCompile>
     <ClInclude Include="$(FirmRoot)\ir\ana\absgraph.h">
@@ -6424,9 +6403,6 @@
       <Filter>include\libfirm</Filter>
     </ClInclude>
     <ClInclude Include="$(FirmRoot)\include\libfirm\structure.h">
-      <Filter>include\libfirm</Filter>
-    </ClInclude>
-    <ClInclude Include="$(FirmRoot)\include\libfirm\trouts.h">
       <Filter>include\libfirm</Filter>
     </ClInclude>
     <ClInclude Include="$(FirmRoot)\include\libfirm\tv.h">

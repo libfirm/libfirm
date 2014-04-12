@@ -18,7 +18,6 @@
 #include "irhooks.h"
 #include "iredges.h"
 #include "irouts.h"
-#include "trouts.h"
 #include "irgmod.h"
 #include "cgana.h"
 #include "debug.h"

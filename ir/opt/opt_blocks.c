@@ -18,7 +18,6 @@
 #include "irnode_t.h"
 #include "iropt_t.h"
 #include "array.h"
-#include "trouts.h"
 #include "irgwalk.h"
 #include "set.h"
 #include "debug.h"

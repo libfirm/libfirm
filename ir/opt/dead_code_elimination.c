@@ -23,7 +23,6 @@
 #include "irgwalk.h"
 #include "cgana.h"
 #include "irouts.h"
-#include "trouts.h"
 #include "iropt_t.h"
 #include "pmap.h"
 
@@ -86,7 +85,6 @@ void dead_node_elimination(ir_graph *irg)
 	/* Handle graph state */
 	free_callee_info(irg);
 	free_irg_outs(irg);
-	free_trouts();
 	free_loop_information(irg);
 	free_vrp_data(irg);
 	clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);

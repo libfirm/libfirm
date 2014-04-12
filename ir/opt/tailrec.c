@@ -24,7 +24,6 @@
 #include "irgraph_t.h"
 #include "ircons.h"
 #include "irflag.h"
-#include "trouts.h"
 #include "irouts_t.h"
 #include "irhooks.h"
 #include "ircons_t.h"

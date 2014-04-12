@@ -19,7 +19,6 @@
 
 #include "irprog_t.h"
 #include "entity_t.h"
-#include "trouts.h"
 #include "irgwalk.h"
 #include "tv_t.h"
 #include "irprintf.h"

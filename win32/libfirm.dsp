@@ -301,10 +301,6 @@ SOURCE=..\ir\ana\rta.c
 
 SOURCE=..\ir\ana\structure.c
 # End Source File
-# Begin Source File
-
-SOURCE=..\ir\ana\trouts.c
-# End Source File
 # End Group
 # Begin Group "arch"
 
@@ -2845,10 +2841,6 @@ SOURCE=..\include\libfirm\structure.h
 # Begin Source File
 
 SOURCE=..\include\libfirm\timing.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\include\libfirm\trouts.h
 # End Source File
 # Begin Source File
 

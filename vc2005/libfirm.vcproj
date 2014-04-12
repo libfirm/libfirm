@@ -7085,37 +7085,6 @@
 					RelativePath="..\ir\ana\structure.c"
 					>
 				</File>
-				<File
-					RelativePath="..\ir\ana\trouts.c"
-					>
-					<FileConfiguration
-						Name="Release|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							AdditionalIncludeDirectories=""
-							PreprocessorDefinitions=""
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Debug|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							AdditionalIncludeDirectories=""
-							PreprocessorDefinitions=""
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="DebugJTEST|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							AdditionalIncludeDirectories=""
-							PreprocessorDefinitions=""
-						/>
-					</FileConfiguration>
-				</File>
 			</Filter>
 			<Filter
 				Name="obstack_win"
@@ -7371,10 +7340,6 @@
 			</File>
 			<File
 				RelativePath="..\include\libfirm\timing.h"
-				>
-			</File>
-			<File
-				RelativePath="..\include\libfirm\trouts.h"
 				>
 			</File>
 			<File

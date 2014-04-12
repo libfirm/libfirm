@@ -160,7 +160,6 @@
     <ClCompile Include="$(FirmRoot)\ir\ana\rta.c"/>
     <ClCompile Include="$(FirmRoot)\ir\ana\vrp.c"/>
     <ClCompile Include="$(FirmRoot)\ir\ana\structure.c"/>
-    <ClCompile Include="$(FirmRoot)\ir\ana\trouts.c"/>
     <ClInclude Include="$(FirmRoot)\ir\ana\absgraph.h"/>
     <ClInclude Include="$(FirmRoot)\ir\ana\dfs.h"/>
     <ClInclude Include="$(FirmRoot)\ir\ana\dfs_t.h"/>
@@ -515,7 +514,6 @@
     <ClInclude Include="$(FirmRoot)\include\libfirm\rta.h"/>
     <ClInclude Include="$(FirmRoot)\include\libfirm\seqnumbers.h"/>
     <ClInclude Include="$(FirmRoot)\include\libfirm\structure.h"/>
-    <ClInclude Include="$(FirmRoot)\include\libfirm\trouts.h"/>
     <ClInclude Include="$(FirmRoot)\include\libfirm\tv.h"/>
     <ClInclude Include="$(FirmRoot)\include\libfirm\begin.h"/>
     <ClInclude Include="$(FirmRoot)\include\libfirm\vrp.h"/>

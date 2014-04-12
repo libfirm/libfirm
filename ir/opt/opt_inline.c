@@ -35,7 +35,6 @@
 #include "irbackedge_t.h"
 #include "opt_init.h"
 #include "cgana.h"
-#include "trouts.h"
 #include "error.h"
 #include "irmemory_t.h"
 

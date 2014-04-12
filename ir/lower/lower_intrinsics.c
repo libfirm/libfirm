@@ -19,7 +19,6 @@
 #include "ircons_t.h"
 #include "irgmod.h"
 #include "irgopt.h"
-#include "trouts.h"
 #include "irverify.h"
 #include "pmap.h"
 #include "array.h"

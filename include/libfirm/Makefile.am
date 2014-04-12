@@ -46,7 +46,6 @@ libfirminclude_HEADERS = \
 	opcodes.h \
 	statev.h \
 	timing.h \
-	trouts.h \
 	tv.h \
 	typerep.h \
 	vrp.h

@@ -106,7 +106,6 @@
 #include "irverify.h"
 #include "lowering.h"
 #include "timing.h"
-#include "trouts.h"
 #include "tv.h"
 #include "typerep.h"
 

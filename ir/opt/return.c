@@ -127,7 +127,7 @@ void normalize_one_return(ir_graph *irg)
 
 	/* invalidate analysis information:
 	 * a new Block was added, so dominator, outs and loop are inconsistent,
-	 * trouts and callee-state should be still valid */
+	 * callee-state should be still valid */
 	confirm_irg_properties(irg,
 		IR_GRAPH_PROPERTY_NO_BADS
 		| IR_GRAPH_PROPERTY_NO_TUPLES
@@ -337,7 +337,7 @@ void normalize_n_returns(ir_graph *irg)
 
 	/* Invalidate analysis information:
 	 * Blocks become dead and new Returns were deleted, so dominator, outs and
-	 * loop are inconsistent, trouts and callee-state should be still valid */
+	 * loop are inconsistent, callee-state should be still valid */
 	confirm_irg_properties(irg,
 		IR_GRAPH_PROPERTY_NO_TUPLES
 		| IR_GRAPH_PROPERTY_NO_CRITICAL_EDGES
