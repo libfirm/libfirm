@@ -420,10 +420,12 @@ void walk_types_entities(ir_type *tp,
 	case tpo_array:
 		doit(get_array_element_entity(tp), env);
 		break;
+	case tpo_code:
 	case tpo_method:
 	case tpo_pointer:
 	case tpo_primitive:
-	default:
+	case tpo_uninitialized:
+	case tpo_unknown:
 		break;
 	}
 }
