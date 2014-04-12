@@ -168,6 +168,7 @@ void hungarian_free(hungarian_problem_t* p)
 int hungarian_solve(hungarian_problem_t* p, unsigned *assignment,
                     unsigned *final_cost, unsigned cost_threshold)
 {
+	int       result       = 0;
 	unsigned  res_cost     = 0;
 	unsigned  num_rows     = p->num_rows;
 	unsigned  num_cols     = p->num_cols;
@@ -362,16 +363,20 @@ done:
 	/* Begin double check the solution 23 */
 	for (r = 0; r < num_rows; ++r) {
 		for (c = 0; c < num_cols; ++c) {
-			if ((int) cost[r*num_cols + c] < row_dec[r] - col_inc[c])
-				return -1;
+			if ((int) cost[r*num_cols + c] < row_dec[r] - col_inc[c]) {
+				result = -1;
+				goto ret;
+			}
 		}
 	}
 
 	for (r = 0; r < num_rows; ++r) {
 		c = col_mate[r];
 		if (c == (unsigned)-1
-		    || cost[r*num_cols + c] != (unsigned) (row_dec[r] - col_inc[c]))
-			return -2;
+		    || cost[r*num_cols + c] != (unsigned) (row_dec[r] - col_inc[c])) {
+		    result = -2;
+		    goto ret;
+		}
 	}
 
 	for (r = c = 0; c < num_cols; ++c) {
@@ -379,8 +384,10 @@ done:
 			r++;
 	}
 
-	if (r > num_rows)
-		return -3;
+	if (r > num_rows) {
+		result = -3;
+		goto ret;
+	}
 	/* End double check the solution 23 */
 
 	/* End Hungarian algorithm 18 */
@@ -417,17 +424,18 @@ done:
 
 	DBG((dbg, LEVEL_1, "Cost is %d\n", res_cost));
 
-	free(slack);
-	free(col_inc);
-	free(parent_row);
-	free(row_mate);
-	free(slack_row);
-	free(row_dec);
-	free(unchosen_row);
-	free(col_mate);
-
+ret:
 	if (final_cost != NULL)
 		*final_cost = res_cost;
 
-	return 0;
+	free(col_mate);
+	free(row_mate);
+	free(parent_row);
+	free(unchosen_row);
+	free(row_dec);
+	free(col_inc);
+	free(slack);
+	free(slack_row);
+
+	return result;
 }
