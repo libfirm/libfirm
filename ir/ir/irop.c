@@ -635,6 +635,7 @@ void firm_init_op(void)
 	ir_register_opt_node_ops();
 	ir_register_reassoc_node_ops();
 	ir_register_verify_node_ops();
+	ir_register_getter_ops();
 }
 
 void firm_finish_op(void)
