@@ -3695,11 +3695,7 @@ static ir_node *transform_node_Switch(ir_node *n)
 			if (entry->pn == 0)
 				continue;
 
-			ir_tarval *min = entry->min;
-			ir_tarval *max = entry->max;
-			if ((min == max && min == val)
-			    || (tarval_cmp(val, min) != ir_relation_less
-			        && tarval_cmp(val, max) != ir_relation_greater)) {
+			if (tarval_in_range(entry->min, val, entry->max)) {
 			    jmp_pn = entry->pn;
 			    break;
 			}

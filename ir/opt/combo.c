@@ -2180,29 +2180,14 @@ static void compute_Proj_Switch(node_t *node, ir_node *switchn)
 	} else {
 		ir_node               *proj      = node->node;
 		long                   pnc       = get_Proj_proj(proj);
-		long                   value     = get_tarval_long(selector->type.tv);
 		const ir_switch_table *table     = get_Switch_table(switchn);
 		size_t                 n_entries = ir_switch_table_get_n_entries(table);
 
 		for (size_t e = 0; e < n_entries; ++e) {
-			const ir_switch_table_entry *entry
-				= ir_switch_table_get_entry_const(table, e);
-			ir_tarval *min = entry->min;
-			ir_tarval *max = entry->max;
-			if (min == max) {
-				if (selector->type.tv == min) {
-					node->type.tv = entry->pn == pnc
-						? tarval_top : tarval_bottom;
-					return;
-				}
-			} else {
-				long minval = get_tarval_long(min);
-				long maxval = get_tarval_long(max);
-				if (minval <= value && value <= maxval) {
-					node->type.tv = entry->pn == pnc
-						? tarval_top : tarval_bottom;
-					return;
-				}
+			ir_switch_table_entry const *const entry = ir_switch_table_get_entry_const(table, e);
+			if (tarval_in_range(entry->min, selector->type.tv, entry->max)) {
+				node->type.tv = entry->pn == pnc ? tarval_top : tarval_bottom;
+				return;
 			}
 		}
 

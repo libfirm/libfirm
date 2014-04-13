@@ -1613,3 +1613,15 @@ int (is_tarval)(const void *thing)
 {
 	return is_tarval_(thing);
 }
+
+bool tarval_in_range(ir_tarval const *const min, ir_tarval const *const val, ir_tarval const *const max)
+{
+	assert(tarval_cmp(min, max) & ir_relation_less_equal);
+	assert(!tarval_is_nan(val));
+	/* Shortcuts. */
+	if (val == min)
+		return true;
+	if (min == max)
+		return false;
+	return tarval_cmp(min, val) & ir_relation_less_equal && tarval_cmp(val, max) & ir_relation_less_equal;
+}

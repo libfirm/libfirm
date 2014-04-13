@@ -138,4 +138,6 @@ static inline unsigned get_tarval_bit(ir_tarval const *const tv, unsigned const 
 	return tv->value[idx / SC_BITS] >> (idx % SC_BITS) & 1;
 }
 
+bool tarval_in_range(ir_tarval const *min, ir_tarval const *val, ir_tarval const *max);
+
 #endif
