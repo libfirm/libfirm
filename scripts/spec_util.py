@@ -91,6 +91,8 @@ def setnodedefaults(node):
 	setdefault(node, "attrs", [])
 	setdefault(node, "constructor_args", [])
 	setdefault(node, "customSerializer", False)
+	setdefault(node, "block", None)
+	setdefault(node, "usesGraph", node.block != None)
 	if hasattr(node, "__doc__"):
 		node.doc = trim_docstring(node.__doc__)
 	else:

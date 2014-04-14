@@ -211,8 +211,6 @@ env.filters['stringformat']       = format_stringformat
 
 def preprocess_node(node):
 	setdefault(node, "attrs_name", node.name.lower())
-	setdefault(node, "block", None)
-	setdefault(node, "usesGraph", node.block != None)
 
 	# construct node arguments
 	arguments = [ ]
