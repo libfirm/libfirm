@@ -196,44 +196,13 @@ bool is_address_taken(ir_node *sel)
 				return true;
 
 			/* Check the Sel successor of Sel */
+			if (!is_Sel(succ))
+				return true;
 			bool res = is_address_taken(succ);
 			if (res)
 				return true;
 			break;
 		}
-
-		case iro_Call:
-			/* The address of an entity is given as a parameter.
-			 * As long as we do not have analyses that can tell what
-			 * is done with parameters, think is taken.
-			 * One special case: If the Call type tells that it's a
-			 * value parameter, the address is NOT taken.
-			 */
-			return true;
-
-		case iro_Id: {
-			bool res = is_address_taken(succ);
-			if (res)
-				return true;
-			break;
-		}
-
-		case iro_Tuple:
-			/* Non-optimized Tuple, happens in inlining */
-			for (int input_nr = get_Tuple_n_preds(succ); input_nr-- > 0; ) {
-				ir_node *pred = get_Tuple_pred(succ, input_nr);
-				if (pred != sel)
-					continue;
-				/* we found one input */
-				foreach_irn_out_r(succ, k, proj) {
-					if (is_Proj(proj) && get_Proj_proj(proj) == input_nr) {
-						bool res = is_address_taken(proj);
-						if (res)
-							return true;
-					}
-				}
-			}
-			break;
 
 		default:
 			/* another op, the address is taken */
