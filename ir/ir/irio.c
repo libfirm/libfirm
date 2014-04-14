@@ -1724,7 +1724,8 @@ static void read_type(read_env_t *env)
 	return;
 
 finish_type:
-	set_type_alignment_bytes(type, align);
+	if (align > 0)
+		set_type_alignment_bytes(type, align);
 	type->flags = flags;
 
 	if (state == layout_fixed)
