@@ -23,53 +23,47 @@
  */
 void opt_frame_irg(ir_graph *irg)
 {
-	ir_type   *frame_tp = get_irg_frame_type(irg);
-	ir_entity *ent, *list;
-	ir_node   *frame;
-	size_t    i, n = get_class_n_members(frame_tp);
-
+	ir_type *frame_tp = get_irg_frame_type(irg);
+	size_t   n        = get_class_n_members(frame_tp);
 	if (n <= 0)
 		return;
 
 	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS);
-
 	irp_reserve_resources(irp, IRP_RESOURCE_ENTITY_LINK);
 
 	/* clear all entity links */
-	for (i = n; i > 0;) {
-		ent = get_class_member(frame_tp, --i);
-		set_entity_link(ent, NULL);
+	for (size_t i = n; i-- > 0;) {
+		ir_entity *entity = get_class_member(frame_tp, i);
+		set_entity_link(entity, NULL);
 	}
 
-	/* look for uses */
-	frame = get_irg_frame(irg);
-
 	/* mark all used entities */
+	ir_node *frame = get_irg_frame(irg);
 	foreach_irn_out_r(frame, o, sel) {
 		if (is_Sel(sel)) {
-			ent = get_Sel_entity(sel);
+			ir_entity *entity = get_Sel_entity(sel);
 			/* only entities on the frame */
-			if (get_entity_owner(ent) == frame_tp)
-				set_entity_link(ent, ent);
+			if (get_entity_owner(entity) == frame_tp)
+				set_entity_link(entity, entity);
 		}
 	}
 
 	/* link unused ones */
-	list = NULL;
-	for (i = n; i > 0;) {
-		ent = get_class_member(frame_tp, --i);
+	ir_entity *list = NULL;
+	for (size_t i = n; i-- > 0;) {
+		ir_entity *entity = get_class_member(frame_tp, i);
 		/* beware of inner functions: those are NOT unused */
-		if (get_entity_link(ent) == NULL && !is_method_entity(ent)) {
-			set_entity_link(ent, list);
-			list = ent;
+		if (get_entity_link(entity) == NULL && !is_method_entity(entity)) {
+			set_entity_link(entity, list);
+			list = entity;
 		}
 	}
 
 	if (list != NULL) {
 		/* delete list members */
-		for (ent = list; ent; ent = list) {
-			list = (ir_entity*)get_entity_link(ent);
-			free_entity(ent);
+		for (ir_entity *entity = list, *next; entity != NULL; entity = next) {
+			next = (ir_entity*)get_entity_link(entity);
+			free_entity(entity);
 		}
 		/* we changed the frame type, its layout should be redefined */
 		set_type_state(frame_tp, layout_undefined);
