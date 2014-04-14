@@ -140,11 +140,11 @@ static ir_entity **get_impl_methods(ir_entity *method)
 
 /** Analyze address computations.
  *
- *  Compute for all Sel nodes the set of methods that can be selected.
+ *  Compute for all Member nodes the set of methods that can be selected.
  *  For each entity we store the set of subentities in the link field.
  *
  *  Further do some optimizations:
- *  - Call standard optimizations for Sel nodes: this removes polymorphic
+ *  - Call standard optimizations for Member nodes: this removes polymorphic
  *    calls.
  *
  *  @param node  The node to analyze
@@ -152,7 +152,7 @@ static ir_entity **get_impl_methods(ir_entity *method)
 static void sel_methods_walker(ir_node *node, void *env)
 {
 	(void)env;
-	if (!is_Sel(node))
+	if (!is_Member(node))
 		return;
 
 	/* Call standard optimizations */
@@ -160,11 +160,11 @@ static void sel_methods_walker(ir_node *node, void *env)
 	if (node != new_node) {
 		exchange(node, new_node);
 		node = new_node;
-		if (!is_Sel(node))
+		if (!is_Member(node))
 			return;
 	}
 
-	ir_entity     *const entity      = get_Sel_entity(node);
+	ir_entity *const entity = get_Member_entity(node);
 	if (!is_method_entity(entity))
 		return;
 	/* we may have a vtable entry and need this redirection to get the actually
@@ -185,7 +185,7 @@ static void sel_methods_walker(ir_node *node, void *env)
  * Computes a set of entities that overwrite an entity and contain
  * an implementation. The set is stored in the entity's link field.
  *
- * Further replaces Sel nodes where this set contains exactly one
+ * Further replaces Member nodes where this set contains exactly one
  * method by Address nodes.
  */
 static void sel_methods_init(void)
@@ -203,37 +203,37 @@ static void sel_methods_init(void)
 /*--------------------------------------------------------------------------*/
 
 /**
- * Returns an array of all methods that could be called at a Sel node.
+ * Returns an array of all methods that could be called at a Member node.
  * This array contains every entry only once.
  *
- * @param sel  the Sel node
+ * @param member  the Member node
  */
-static ir_entity **get_Sel_arr(ir_node *sel)
+static ir_entity **get_member_arr(ir_node *member)
 {
-	ir_entity *const entity = get_Sel_entity(sel);
+	ir_entity *const entity = get_Member_entity(member);
 	assert(is_Method_type(get_entity_type(entity))); /* what else? */
 	return (ir_entity**)get_entity_link(entity);
 }
 
 /**
- * Returns the number of possible called methods at a Sel node.
+ * Returns the number of possible called methods at a Member node.
  *
- * @param sel  the Sel node
+ * @param member  the Member node
  */
-static size_t get_Sel_n_methods(ir_node *sel)
+static size_t get_member_n_methods(ir_node *member)
 {
-	ir_entity **const arr = get_Sel_arr(sel);
+	ir_entity **const arr = get_member_arr(member);
 	if (arr == NULL)
 		return 0;
 	return ARR_LEN(arr);
 }
 
 /**
- * Returns the ith possible called method entity at a Sel node.
+ * Returns the ith possible called method entity at a Member node.
  */
-static ir_entity *get_Sel_method(ir_node *sel, size_t pos)
+static ir_entity *get_member_method(ir_node *member, size_t pos)
 {
-	ir_entity **arr = get_Sel_arr(sel);
+	ir_entity **arr = get_member_arr(member);
 	assert(pos < ARR_LEN(arr));
 	return arr[pos];
 }
@@ -294,11 +294,11 @@ static void free_mark(ir_node *node, pset *set)
 	set_irn_link(node, MARK);
 
 	switch (get_irn_opcode(node)) {
-	case iro_Sel: {
-		const ir_entity *ent = get_Sel_entity(node);
+	case iro_Member: {
+		const ir_entity *ent = get_Member_entity(node);
 		if (is_method_entity(ent)) {
-			for (size_t i = 0, n = get_Sel_n_methods(node); i < n; ++i) {
-				pset_insert_ptr(set, get_Sel_method(node, i));
+			for (size_t i = 0, n = get_member_n_methods(node); i < n; ++i) {
+				pset_insert_ptr(set, get_member_method(node, i));
 			}
 		}
 		break;
@@ -341,7 +341,7 @@ static void free_ana_walker(ir_node *node, void *env)
 		/* special nodes */
 	case iro_Address:
 	case iro_Align:
-	case iro_Sel:
+	case iro_Member:
 	case iro_Const:
 	case iro_Offset:
 	case iro_Phi:
@@ -568,13 +568,13 @@ static void callee_ana_node(ir_node *node, pset *methods)
 		break;
 	}
 
-	case iro_Sel: {
-		ir_entity *entity = get_Sel_entity(node);
+	case iro_Member: {
+		ir_entity *entity = get_Member_entity(node);
 		if (!is_method_entity(entity))
 			break;
 		/* polymorphic method */
-		for (size_t i = 0, n = get_Sel_n_methods(node); i < n; ++i) {
-			ir_entity *ent = get_Sel_method(node, i);
+		for (size_t i = 0, n = get_member_n_methods(node); i < n; ++i) {
+			ir_entity *ent = get_member_method(node, i);
 			if (ent != NULL) {
 				pset_insert_ptr(methods, ent);
 			} else {
@@ -686,7 +686,8 @@ static void destruct_walker(ir_node *node, void *env)
 
 size_t cgana(ir_entity ***free_methods)
 {
-	/* Optimize Address/Sel nodes and compute all methods that implement an entity. */
+	/* Optimize Address/Member nodes and compute all methods that implement an
+	 * entity. */
 	sel_methods_init();
 	size_t length = get_free_methods(free_methods);
 	callee_ana();
@@ -715,11 +716,11 @@ void opt_call_addrs(void)
 	 * all ir graphs:
 	 * - All Address operations that refer to intern methods are replaced
 	 *   by Const operations referring to the corresponding entity.
-	 * - Sel nodes, that select entities that are not overwritten are
+	 * - Member nodes, that select entities that are not overwritten are
 	 *   replaced by Const nodes referring to the selected entity.
-	 * - Sel nodes, for which no method exists at all are replaced by Bad
+	 * - Member nodes, for which no method exists at all are replaced by Bad
 	 *   nodes.
-	 * - Sel nodes with a pointer input that is an Alloc node are replaced
+	 * - Member nodes with a pointer input that is an Alloc node are replaced
 	 *   by Const nodes referring to the entity that implements the method in
 	 *   the type given by the Alloc node.
 	 */

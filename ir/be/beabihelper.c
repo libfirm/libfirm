@@ -677,7 +677,7 @@ static void create_stores_for_type(ir_graph *irg, ir_type *type)
 		if (arg == IR_VA_START_PARAMETER_NUMBER)
 			continue;
 
-		addr = new_r_Sel(start_block, frame, 0, NULL, entity);
+		addr = new_r_Member(start_block, frame, entity);
 		if (entity->attr.parameter.doubleword_low_mode != NULL) {
 			ir_mode *mode      = entity->attr.parameter.doubleword_low_mode;
 			ir_node *val0      = new_r_Proj(args, mode, arg);

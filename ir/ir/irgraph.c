@@ -205,8 +205,8 @@ static void copy_all_nodes(ir_node *node, void *env)
 	set_irn_link(node, new_node);
 
 	/* fix access to entities on the stack frame */
-	if (is_Sel(new_node)) {
-		ir_entity *ent = get_Sel_entity(new_node);
+	if (is_Member(new_node)) {
+		ir_entity *ent = get_Member_entity(new_node);
 		ir_type   *tp  = get_entity_owner(ent);
 
 		if (is_frame_type(tp)) {
@@ -215,7 +215,7 @@ static void copy_all_nodes(ir_node *node, void *env)
 
 			assert(is_entity(ent));
 			assert(get_entity_owner(ent) == get_irg_frame_type(irg));
-			set_Sel_entity(new_node, ent);
+			set_Member_entity(new_node, ent);
 		}
 	}
 }

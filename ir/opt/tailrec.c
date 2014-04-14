@@ -363,10 +363,10 @@ static bool check_lifetime_of_locals(ir_graph *irg)
 	ir_node *irg_frame = get_irg_frame(irg);
 
 	foreach_irn_out_r(irg_frame, i, succ) {
-		if (is_Sel(succ)) {
+		if (is_Member(succ)) {
 			/* Check if we have compound arguments.
 			   For now, we cannot handle them. */
-			if (get_entity_owner(get_Sel_entity(succ)) != frame_tp)
+			if (get_entity_owner(get_Member_entity(succ)) != frame_tp)
 				return false;
 
 			if (is_address_taken(succ))

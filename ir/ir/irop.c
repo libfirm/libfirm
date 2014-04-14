@@ -294,8 +294,15 @@ static int node_cmp_attr_Call(const ir_node *a, const ir_node *b)
 /** Compares the attributes of two Sel nodes. */
 static int node_cmp_attr_Sel(const ir_node *a, const ir_node *b)
 {
-	const ir_entity *a_ent = get_Sel_entity(a);
-	const ir_entity *b_ent = get_Sel_entity(b);
+	const ir_type *a_type = get_Sel_type(a);
+	const ir_type *b_type = get_Sel_type(b);
+	return a_type != b_type;
+}
+
+static int node_cmp_attr_Member(const ir_node *a, const ir_node *b)
+{
+	const ir_entity *a_ent = get_Member_entity(a);
+	const ir_entity *b_ent = get_Member_entity(b);
 	return a_ent != b_ent;
 }
 
@@ -611,6 +618,7 @@ void firm_init_op(void)
 	set_op_cmp_attr(op_Div,     node_cmp_attr_Div);
 	set_op_cmp_attr(op_Dummy,   node_cmp_attr_unequal);
 	set_op_cmp_attr(op_Load,    node_cmp_attr_Load);
+	set_op_cmp_attr(op_Member,  node_cmp_attr_Member);
 	set_op_cmp_attr(op_Mod,     node_cmp_attr_Mod);
 	set_op_cmp_attr(op_Offset,  node_cmp_attr_entconst);
 	set_op_cmp_attr(op_Phi,     node_cmp_attr_Phi);

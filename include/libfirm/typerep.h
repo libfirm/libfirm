@@ -1531,12 +1531,6 @@ FIRM_API void set_array_element_type(ir_type *array, ir_type *tp);
 /** Returns the array element type. */
 FIRM_API ir_type *get_array_element_type(const ir_type *array);
 
-/** Sets the array element entity. */
-FIRM_API void set_array_element_entity(ir_type *array, ir_entity *ent);
-
-/** Returns the array element entity. */
-FIRM_API ir_entity *get_array_element_entity(const ir_type *array);
-
 /**
  * Sets the array variable size flag.
  * If this flag is set then no upper/lower bounds need to be set and

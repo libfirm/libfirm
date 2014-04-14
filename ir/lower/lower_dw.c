@@ -1509,7 +1509,7 @@ transform:
 	                                    get_type_for_mode(other_mode));
 	ir_node   *block       = get_nodes_block(node);
 	ir_node   *frame_ptr   = get_irg_frame(irg);
-	ir_node   *addr        = new_r_Sel(block, frame_ptr, 0, NULL, entity);
+	ir_node   *addr        = new_r_Member(block, frame_ptr, entity);
 	dbg_info  *dbgi        = get_irn_dbg_info(node);
 	ir_node   *nomem       = get_irg_no_mem(irg);
 	ir_mode   *addr_mode   = get_irn_mode(addr);

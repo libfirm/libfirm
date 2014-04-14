@@ -306,15 +306,15 @@ ir_node *duplicate_subgraph(dbg_info *dbg, ir_node *n, ir_node *block)
 		                  duplicate_subgraph(dbg, get_Not_op(n), block), mode);
 	case iro_NoMem:
 		return get_irg_no_mem(irg);
+	case iro_Member: {
+		ir_node   *ptr    = duplicate_subgraph(dbg, get_Member_ptr(n), block);
+		ir_entity *entity = get_Member_entity(n);
+		return new_rd_Member(dbg, block, ptr, entity);
+	}
 	case iro_Sel: {
-		ir_node  *ptr = duplicate_subgraph(dbg, get_Sel_ptr(n), block);
-		int       n_indexs = get_Sel_n_indexs(n);
-		ir_node **in       = ALLOCAN(ir_node*, n_indexs);
-		for (int i = 0; i < n_indexs; ++i) {
-			in[i] = duplicate_subgraph(dbg, get_Sel_index(n, i), block);
-		}
-		ir_entity *entity = get_Sel_entity(n);
-		return new_rd_Sel(dbg, block, ptr, n_indexs, in, entity);
+		ir_node *ptr   = duplicate_subgraph(dbg, get_Sel_ptr(n), block);
+		ir_node *index = duplicate_subgraph(dbg, get_Sel_index(n), block);
+		return new_rd_Sel(dbg, block, ptr, index, get_Sel_type(n));
 	}
 	case iro_Unknown:
 		return new_r_Unknown(irg, mode);

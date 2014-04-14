@@ -65,7 +65,7 @@ static ptr_access_kind analyze_arg(ir_node *arg, ptr_access_kind bits)
 							bits |= get_method_param_access(callee, p);
 						}
 					}
-				} else if (is_Sel(ptr) && get_irp_callee_info_state() == irg_callee_info_consistent) {
+				} else if (is_Member(ptr) && get_irp_callee_info_state() == irg_callee_info_consistent) {
 					/* is be a polymorphic call but callee information is available */
 					size_t n_params = get_Call_n_params(succ);
 

@@ -97,7 +97,6 @@ typedef enum ird_color_t {
 #define TYPE_SUPER_EDGE_ATTR     "class: 7 label: \"supertype\" color: red"
 #define PTR_PTS_TO_EDGE_ATTR     "class: 9 label: \"points to\" color:green"
 #define ARR_ELT_TYPE_EDGE_ATTR   "class: 10 label: \"arr elt tp\" color:green"
-#define ARR_ENT_EDGE_ATTR        "class: 10 label: \"arr ent\""
 #define ENT_OVERWRITES_EDGE_ATTR "class: 11 label: \"overwrites\" color:red"
 #define TYPE_MEMBER_EDGE_ATTR    "class: 12 label: \"member\""
 
@@ -725,8 +724,9 @@ static void dump_node_mode(FILE *F, const ir_node *n)
 	case iro_Address:
 	case iro_Align:
 	case iro_Cmp:
-	case iro_Sel:
+	case iro_Member:
 	case iro_Offset:
+	case iro_Sel:
 	case iro_Size:
 		break;
 
@@ -801,8 +801,8 @@ static void dump_node_nodeattr(FILE *F, const ir_node *n)
 		}
 		break;
 	}
-	case iro_Sel:
-		fprintf(F, "%s ", get_ent_dump_name(get_Sel_entity(n)));
+	case iro_Member:
+		fprintf(F, "%s ", get_ent_dump_name(get_Member_entity(n)));
 		break;
 	case iro_Cmp:
 		fprintf(F, "%s ", get_relation_string(get_Cmp_relation(n)));
@@ -1433,8 +1433,8 @@ type:
 		break;
 	}
 
-	case iro_Sel:
-		print_node_ent_edge(F,n,get_Sel_entity(n),NODE2TYPE_EDGE_ATTR);
+	case iro_Member:
+		print_node_ent_edge(F,n,get_Member_entity(n),NODE2TYPE_EDGE_ATTR);
 		break;
 	default:
 		break;
@@ -1546,7 +1546,6 @@ static void dump_type_info(ir_type *const tp, ir_entity *const ent, void *const 
 			break;
 		case tpo_array:
 			print_type_type_edge(F, tp, get_array_element_type(tp), ARR_ELT_TYPE_EDGE_ATTR);
-			print_type_ent_edge(F, tp, get_array_element_entity(tp), ARR_ENT_EDGE_ATTR);
 			ir_node *size = get_array_size(tp);
 			print_node_type_edge(F, size, tp, "label: \"size\"");
 			dump_const_expression(F, size);

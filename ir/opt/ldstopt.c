@@ -350,27 +350,26 @@ static void get_base_and_offset(ir_node *ptr, base_offset_t *base_offset)
 			offset -= get_tarval_long(get_Const_tarval(r));
 			ptr     = l;
 		} else if (is_Sel(ptr)) {
-			ir_entity *ent = get_Sel_entity(ptr);
-			ir_type   *tp  = get_entity_owner(ent);
+			ir_node *index = get_Sel_index(ptr);
+			if (!is_Const(index))
+				break;
 
-			if (is_Array_type(tp)) {
-				assert(get_Sel_n_indexs(ptr) == 1);
-				ir_node *index = get_Sel_index(ptr, 0);
-				if (!is_Const(index))
-					break;
+			ir_type *type         = get_Sel_type(ptr);
+			ir_type *element_type = get_array_element_type(type);
+			if (get_type_state(element_type) != layout_fixed)
+				break;
 
-				ir_type *element_type = get_entity_type(ent);
-				if (get_type_state(element_type) != layout_fixed)
-					break;
-
-				int size = get_type_size_bytes(element_type);
-				offset += size * get_tarval_long(get_Const_tarval(index));
-			} else {
-				if (get_type_state(tp) != layout_fixed)
-					break;
-				offset += get_entity_offset(ent);
-			}
+			/* TODO: may overflow here */
+			int size = get_type_size_bytes(element_type);
+			offset += size * get_tarval_long(get_Const_tarval(index));
 			ptr = get_Sel_ptr(ptr);
+		} else if (is_Member(ptr)) {
+			ir_entity *entity = get_Member_entity(ptr);
+			ir_type   *owner  = get_entity_owner(entity);
+			if (get_type_state(owner) != layout_fixed)
+				break;
+			offset += get_entity_offset(entity);
+			ptr = get_Member_ptr(ptr);
 		} else
 			break;
 	}
@@ -937,10 +936,10 @@ static ir_entity *find_entity(ir_node *ptr)
 	case iro_Offset:
 		return get_Offset_entity(ptr);
 
-	case iro_Sel: {
-		ir_node *pred = get_Sel_ptr(ptr);
+	case iro_Member: {
+		ir_node *pred = get_Member_ptr(ptr);
 		if (get_irg_frame(get_irn_irg(ptr)) == pred)
-			return get_Sel_entity(ptr);
+			return get_Member_entity(ptr);
 
 		return find_entity(pred);
 	}

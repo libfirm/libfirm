@@ -714,24 +714,40 @@ class Return:
 
 @op
 class Sel:
-	"""Computes the address of a entity of a compound type given the base
-	address of an instance of the compound type.
+	"""Computes the address of an array element from the array base pointer and
+	an index.
 
-	Optimizations assume that a Sel node can only produce a NULL pointer if the
-	ptr input was NULL."""
-	ins         = [
+	A Sel node must only produce a NULL pointer if the ptr input is NULL."""
+	ins = [
+		("ptr",   "pointer to array to select from"),
+		("index", "index to select"),
+	]
+	flags  = []
+	mode   = "mode_P_data"
+	pinned = "no"
+	attrs  = [
+		Attribute("type", type="ir_type*",
+		          comment="array type"),
+	]
+	attr_struct = "sel_attr"
+
+@op
+class Member:
+	"""Computes the address of a compound type member given the base address
+	of an instance of the compound type.
+
+	A Member node must only produce a NULL pointer if the ptr input is NULL."""
+	ins = [
 		("ptr", "pointer to object to select from"),
 	]
-	arity       = "variable"
-	input_name  = "index"
-	flags       = []
-	mode        = "is_Method_type(get_entity_type(entity)) ? mode_P_code : mode_P_data"
-	pinned      = "no"
-	attrs       = [
+	flags   = []
+	mode    = "is_Method_type(get_entity_type(entity)) ? mode_P_code : mode_P_data"
+	pinned  = "no"
+	attrs   = [
 		Attribute("entity", type="ir_entity*",
 		          comment="entity which is selected"),
 	]
-	attr_struct = "sel_attr"
+	attr_struct = "member_attr"
 
 @op
 class Shl(Binop):

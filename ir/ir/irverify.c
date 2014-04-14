@@ -550,17 +550,28 @@ static int verify_node_Sel(const ir_node *n)
 {
 	bool fine = check_mode_func(n, mode_is_reference, "reference");
 	fine &= check_input_func(n, n_Sel_ptr, "ptr", mode_is_reference, "reference");
-
-	for (int i = 0, n_indexs = get_Sel_n_indexs(n); i < n_indexs; ++i) {
-		fine &= check_input_func(n, n_Sel_max+i+1, NULL, mode_is_int, "int");
-	}
-	ir_entity *ent = get_Sel_entity(n);
-	if (ent == NULL) {
-		warn(n, "entity is NULL");
+	fine &= check_input_func(n, n_Sel_index, "index", mode_is_int, "int");
+	ir_type *type = get_Sel_type(n);
+	if (type == NULL) {
+		warn(n, "type is NULL");
+		fine = false;
+	} else if (!is_Array_type(type)) {
+		warn(n, "type %+F is not an array type", type);
 		fine = false;
 	}
-	if (get_entity_owner(ent)->flags & tf_segment) {
-		warn(n, "Sel from entity with global/segment type entity", n);
+	return fine;
+}
+
+static int verify_node_Member(const ir_node *n)
+{
+	bool fine = check_mode_func(n, mode_is_reference, "reference");
+	fine &= check_input_func(n, n_Member_ptr, "ptr", mode_is_reference, "reference");
+	ir_entity *entity = get_Member_entity(n);
+	if (entity == NULL) {
+		warn(n, "entity is NULL");
+		fine = false;
+	} else if (get_entity_owner(entity)->flags & tf_segment) {
+		warn(n, "Member from entity with global/segment type owner");
 		fine = false;
 	}
 	return fine;
@@ -1286,6 +1297,7 @@ void ir_register_verify_node_ops(void)
 	register_verify_node_func(op_IJmp,     verify_node_IJmp);
 	register_verify_node_func(op_Jmp,      verify_node_Jmp);
 	register_verify_node_func(op_Load,     verify_node_Load);
+	register_verify_node_func(op_Member,   verify_node_Member);
 	register_verify_node_func(op_Minus,    verify_node_Minus);
 	register_verify_node_func(op_Mod,      verify_node_Mod);
 	register_verify_node_func(op_Mul,      verify_node_Mul);

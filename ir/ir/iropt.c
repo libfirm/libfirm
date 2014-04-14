@@ -150,12 +150,15 @@ int value_not_null(const ir_node *n, const ir_node **confirm)
 			n = get_Minus_op(n);
 			continue;
 		}
-		/* we can ignore Sels: either the base pointer points to null or
+		/* we can ignore Sels/Members: either the base pointer points to null or
 		 * if it does not then members addresses cannot be at NULL or we have
 		 * undefined behavior because we are obviously not pointing to an
 		 * object. */
 		if (is_Sel(n)) {
 			n = get_Sel_ptr(n);
+			continue;
+		} else if (is_Member(n)) {
+			n = get_Member_ptr(n);
 			continue;
 		}
 

@@ -94,7 +94,7 @@ static const tp_op_ops
 	array_ops = {
 		NULL,
 		NULL,
-		free_array_automatic_entities,
+		NULL,
 		NULL,
 		set_default_size,
 		NULL,

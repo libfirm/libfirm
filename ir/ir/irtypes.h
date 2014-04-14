@@ -234,9 +234,14 @@ typedef struct typeconst_attr {
 	ir_type *type;
 } typeconst_attr;
 
+/** Member attributes. */
+typedef struct member_attr {
+	ir_entity *entity;    /**< entity to select */
+} member_attr;
+
 /** Sel attributes. */
 typedef struct sel_attr {
-	ir_entity *entity;    /**< entity to select */
+	ir_type *type;
 } sel_attr;
 
 /** Exception attributes. */
@@ -357,6 +362,7 @@ typedef union ir_attr {
 	entconst_attr  entc;          /**< For Address/Offset */
 	typeconst_attr typec;         /**< For TypeConst */
 	sel_attr       sel;           /**< For Sel. */
+	member_attr    member;        /**< For Member. */
 	call_attr      call;          /**< For Call. */
 	builtin_attr   builtin;       /**< For Builtin. */
 	alloc_attr     alloc;         /**< For Alloc. */

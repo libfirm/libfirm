@@ -1785,14 +1785,14 @@ static ir_node *gen_Call(ir_node *node)
 	return res;
 }
 
-static ir_node *gen_Sel(ir_node *node)
+static ir_node *gen_Member(ir_node *node)
 {
 	dbg_info  *dbgi      = get_irn_dbg_info(node);
 	ir_node   *block     = get_nodes_block(node);
 	ir_node   *new_block = be_transform_node(block);
-	ir_node   *ptr       = get_Sel_ptr(node);
+	ir_node   *ptr       = get_Member_ptr(node);
 	ir_node   *new_ptr   = be_transform_node(ptr);
-	ir_entity *entity    = get_Sel_entity(node);
+	ir_entity *entity    = get_Member_entity(node);
 
 	/* must be the frame pointer all other sels must have been lowered
 	 * already */
@@ -1837,13 +1837,13 @@ static void arm_register_transformers(void)
 	be_set_transform_function(op_Eor,      gen_Eor);
 	be_set_transform_function(op_Jmp,      gen_Jmp);
 	be_set_transform_function(op_Load,     gen_Load);
+	be_set_transform_function(op_Member,   gen_Member);
 	be_set_transform_function(op_Minus,    gen_Minus);
 	be_set_transform_function(op_Mul,      gen_Mul);
 	be_set_transform_function(op_Not,      gen_Not);
 	be_set_transform_function(op_Or,       gen_Or);
 	be_set_transform_function(op_Phi,      gen_Phi);
 	be_set_transform_function(op_Return,   gen_Return);
-	be_set_transform_function(op_Sel,      gen_Sel);
 	be_set_transform_function(op_Shl,      gen_Shl);
 	be_set_transform_function(op_Shr,      gen_Shr);
 	be_set_transform_function(op_Shrs,     gen_Shrs);

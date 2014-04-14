@@ -219,8 +219,8 @@ void dump_irnode_to_file(FILE *const F, const ir_node *const n)
 	case iro_Alloc:
 		ir_fprintf(F, "  alignment: %u\n", get_Alloc_alignment(n));
 		break;
-	case iro_Sel: {
-		const ir_entity *ent = get_Sel_entity(n);
+	case iro_Member: {
+		const ir_entity *ent = get_Member_entity(n);
 		if (ent != NULL) {
 			fprintf(F, "  Selecting entity %s (%ld)\n", get_entity_name(ent), get_entity_nr(ent));
 			ir_fprintf(F, "    of type    %+F\n",  get_entity_type(ent));
@@ -229,6 +229,10 @@ void dump_irnode_to_file(FILE *const F, const ir_node *const n)
 			fprintf(F, "  <NULL entity>\n");
 		}
 		break;
+	}
+	case iro_Sel: {
+		const ir_type *type = get_Sel_type(n);
+		ir_fprintf(F, "  Array type: %+F\n", type);
 	}
 	case iro_Call: {
 		const ir_type *tp = get_Call_type(n);
@@ -709,11 +713,6 @@ void dump_type_to_file(FILE *const F, const ir_type *const tp)
 			}
 			ir_fprintf(F, "] of <%+F>", elem_tp);
 			fprintf(F, "\n");
-
-			if (verbosity & dump_verbosity_fields) {
-				dump_entity_to_file_prefix(F, get_array_element_entity(tp),
-				                           "    ");
-			}
 		}
 		break;
 

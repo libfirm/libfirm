@@ -927,17 +927,8 @@ ir_type *new_type_array(ir_type *element_type)
 	res->attr.aa.size         = new_r_Unknown(get_const_code_irg(), mode_Iu);
 	set_type_alignment_bytes(res, get_type_alignment_bytes(element_type));
 
-	ident *const id = new_id_from_chars("elem_ent", 8);
-	res->attr.aa.element_ent  = new_entity(res, id, element_type);
-
 	hook_new_type(res);
 	return res;
-}
-
-void free_array_automatic_entities(ir_type *array)
-{
-	assert(is_Array_type(array));
-	free_entity(get_array_element_entity(array));
 }
 
 void set_array_size(ir_type *array, ir_node *size)
@@ -984,20 +975,6 @@ ir_type *get_array_element_type(const ir_type *array)
 {
 	assert(is_Array_type(array));
 	return array->attr.aa.element_type;
-}
-
-void set_array_element_entity(ir_type *array, ir_entity *ent)
-{
-	assert(is_Array_type(array));
-	assert((get_entity_type(ent)->type_op != type_method));
-	array->attr.aa.element_ent = ent;
-	array->attr.aa.element_type = get_entity_type(ent);
-}
-
-ir_entity *get_array_element_entity(const ir_type *array)
-{
-	assert(is_Array_type(array));
-	return array->attr.aa.element_ent;
 }
 
 int is_array_variable_size(const ir_type *array)

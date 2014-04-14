@@ -81,8 +81,6 @@ typedef struct {
 typedef struct {
 	ir_node   *size;         /**< number of elements in the array. */
 	ir_type   *element_type; /**< The type of the array elements. */
-	ir_entity *element_ent;  /**< entity for the array elements, to be used for
-	                              element selection with a Sel node. */
 } arr_attr;
 
 /** Pointer type attributes. */
@@ -162,8 +160,6 @@ void free_type_entities(ir_type *tp);
 void free_class_entities      (ir_type *clss);
 void free_struct_entities     (ir_type *strct);
 void free_union_entities      (ir_type *uni);
-
-void free_array_automatic_entities(ir_type *array);
 
 void free_class_attrs      (ir_type *clss);
 void free_struct_attrs     (ir_type *strct);

@@ -158,7 +158,6 @@ static void do_type_walk(ir_type *const tp, ir_entity *const ent,
 
 		case tpo_array:
 			do_type_walk(get_array_element_type(tp), NULL, pre, post, env);
-			do_type_walk(NULL, get_array_element_entity(tp), pre, post, env);
 			break;
 
 		case tpo_pointer:
@@ -418,8 +417,6 @@ void walk_types_entities(ir_type *tp,
 			doit(get_union_member(tp, i), env);
 		break;
 	case tpo_array:
-		doit(get_array_element_entity(tp), env);
-		break;
 	case tpo_code:
 	case tpo_method:
 	case tpo_pointer:

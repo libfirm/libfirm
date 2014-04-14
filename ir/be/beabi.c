@@ -1159,30 +1159,29 @@ static ir_node *create_be_return(be_abi_irg_t *const env, ir_node *const irn)
 	return ret;
 }
 
-typedef struct lower_frame_sels_env_t {
+typedef struct lower_frame_members_env_t {
 	ir_node      *frame;                     /**< the current frame */
 	const arch_register_class_t *sp_class;   /**< register class of the stack pointer */
-} lower_frame_sels_env_t;
+} lower_frame_members_env_t;
 
 /**
- * Walker: Replaces Sels of frame type and
+ * Walker: Replaces Member nodes of frame type and
  * value param type entities by FrameAddress.
  * Links all used entities.
  */
-static void lower_frame_sels_walker(ir_node *irn, void *data)
+static void lower_frame_members_walker(ir_node *irn, void *data)
 {
-	lower_frame_sels_env_t *ctx = (lower_frame_sels_env_t*)data;
+	lower_frame_members_env_t *ctx = (lower_frame_members_env_t*)data;
+	if (!is_Member(irn))
+		return;
 
-	if (is_Sel(irn)) {
-		ir_node *ptr = get_Sel_ptr(irn);
-
-		if (ptr == ctx->frame) {
-			ir_entity *ent = get_Sel_entity(irn);
-			ir_node   *bl  = get_nodes_block(irn);
-			ir_node   *nw
-				= be_new_FrameAddr(ctx->sp_class, bl, ctx->frame, ent);
-			exchange(irn, nw);
-		}
+	ir_node *ptr = get_Member_ptr(irn);
+	if (ptr == ctx->frame) {
+		ir_entity *ent = get_Member_entity(irn);
+		ir_node   *bl  = get_nodes_block(irn);
+		ir_node   *nw
+			= be_new_FrameAddr(ctx->sp_class, bl, ctx->frame, ent);
+		exchange(irn, nw);
 	}
 }
 
@@ -1236,7 +1235,7 @@ static void modify_irg(ir_graph *const irg, be_abi_irg_t *const env)
 	ir_type *const arg_type = compute_arg_type(irg, call, method_type);
 
 	/* Convert the Sel nodes in the irg to frame addr nodes: */
-	lower_frame_sels_env_t ctx;
+	lower_frame_members_env_t ctx;
 	ctx.frame    = get_irg_frame(irg);
 	ctx.sp_class = arch_env->sp->reg_class;
 
@@ -1259,7 +1258,7 @@ static void modify_irg(ir_graph *const irg, be_abi_irg_t *const env)
 
 	be_add_parameter_entity_stores(irg);
 
-	irg_walk_graph(irg, lower_frame_sels_walker, NULL, &ctx);
+	irg_walk_graph(irg, lower_frame_members_walker, NULL, &ctx);
 
 	irp_free_resources(irp, IRP_RESOURCE_ENTITY_LINK);
 

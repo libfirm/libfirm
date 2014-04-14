@@ -404,7 +404,10 @@ static opcode_key_t *opcode(const node_t *node, environment_t *env)
 		key.u.proj = get_Proj_proj(irn);
 		break;
 	case iro_Sel:
-		key.u.ent = get_Sel_entity(irn);
+		key.u.type = get_Sel_type(irn);
+		break;
+	case iro_Member:
+		key.u.ent = get_Member_entity(irn);
 		break;
 	case iro_Const:
 		key.u.tv  = get_Const_tarval(irn);

@@ -80,10 +80,10 @@ static void stack_frame_compute_initial_offset(be_stack_layout_t *frame)
 }
 
 /**
- * Walker: finally lower all Sels of outer frame or parameter
+ * Walker: finally lower all Members of outer frame or parameter
  * entities.
  */
-static void lower_outer_frame_sels(ir_node *sel, void *ctx)
+static void lower_outer_frame_members(ir_node *sel, void *ctx)
 {
 	ir_node           *ptr;
 	ir_entity         *ent;
@@ -92,12 +92,12 @@ static void lower_outer_frame_sels(ir_node *sel, void *ctx)
 	ir_graph          *irg;
 	(void) ctx;
 
-	if (! is_Sel(sel))
+	if (!is_Member(sel))
 		return;
 
-	ent    = get_Sel_entity(sel);
+	ent    = get_Member_entity(sel);
 	owner  = get_entity_owner(ent);
-	ptr    = get_Sel_ptr(sel);
+	ptr    = get_Member_ptr(sel);
 	irg    = get_irn_irg(sel);
 	layout = be_get_irg_stack_layout(irg);
 
@@ -238,7 +238,7 @@ void be_abi_fix_stack_bias(ir_graph *irg)
 			continue;
 		ir_graph *irg = get_entity_irg(ent);
 		if (irg != NULL)
-			irg_walk_graph(irg, NULL, lower_outer_frame_sels, NULL);
+			irg_walk_graph(irg, NULL, lower_outer_frame_members, NULL);
 	}
 }
 

@@ -986,19 +986,17 @@ static ir_node *gen_Not(ir_node *const node)
 	return gen_unop(node, n_Not_op, &new_bd_amd64_Not);
 }
 
-static ir_node *gen_Sel(ir_node *const node)
+static ir_node *gen_Member(ir_node *const node)
 {
 	ir_node   *block     = get_nodes_block(node);
 	ir_node   *new_block = be_transform_node(block);
 	dbg_info  *dbgi      = get_irn_dbg_info(node);
-	ir_node   *ptr       = get_Sel_ptr(node);
+	ir_node   *ptr       = get_Member_ptr(node);
 	ir_graph  *irg       = get_irn_irg(node);
 	ir_node   *base      = get_frame_base(irg);
-	ir_entity *entity    = get_Sel_entity(node);
+	ir_entity *entity    = get_Member_entity(node);
 	if (!is_Proj(ptr) || !is_Start(get_Proj_pred(ptr)))
 		panic("Sel not lowered");
-	if (get_Sel_n_indexs(node) > 0)
-		panic("array Sel not lowered %+F", node);
 	if (is_parameter_entity(entity) &&
 	    get_entity_parameter_number(entity) == IR_VA_START_PARAMETER_NUMBER)
 	    panic("va_start NIY");
@@ -1971,6 +1969,7 @@ static void amd64_register_transformers(void)
 	be_set_transform_function(op_IJmp,     gen_IJmp);
 	be_set_transform_function(op_Jmp,      gen_Jmp);
 	be_set_transform_function(op_Load,     gen_Load);
+	be_set_transform_function(op_Member,   gen_Member);
 	be_set_transform_function(op_Minus,    gen_Minus);
 	be_set_transform_function(op_Mod,      gen_Mod);
 	be_set_transform_function(op_Mul,      gen_Mul);
@@ -1979,7 +1978,6 @@ static void amd64_register_transformers(void)
 	be_set_transform_function(op_Or,       gen_Or);
 	be_set_transform_function(op_Phi,      gen_Phi);
 	be_set_transform_function(op_Return,   gen_Return);
-	be_set_transform_function(op_Sel,      gen_Sel);
 	be_set_transform_function(op_Shl,      gen_Shl);
 	be_set_transform_function(op_Shr,      gen_Shr);
 	be_set_transform_function(op_Shrs,     gen_Shrs);

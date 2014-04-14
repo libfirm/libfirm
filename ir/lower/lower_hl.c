@@ -25,69 +25,69 @@
  */
 static void lower_sel(ir_node *sel)
 {
-	ir_graph  *irg   = get_irn_irg(sel);
-	ir_entity *ent   = get_Sel_entity(sel);
-	ir_type   *owner = get_entity_owner(ent);
-	dbg_info  *dbg   = get_irn_dbg_info(sel);
-	ir_mode   *mode  = get_irn_mode(sel);
-	ir_node   *bl    = get_nodes_block(sel);
-	ir_node   *newn;
+	ir_node *const ptr          = get_Sel_ptr(sel);
+	ir_type *const type         = get_Sel_type(sel);
+	ir_type *const element_type = get_array_element_type(type);
+	unsigned const element_size = get_type_size_bytes(element_type);
 
-	/* we can only replace Sels when the layout of the owner type is decided. */
+	ir_node *newn;
+	if (element_size == 0) {
+		newn = ptr;
+	} else {
+		dbg_info *const dbg      = get_irn_dbg_info(sel);
+		ir_node  *const index    = get_Sel_index(sel);
+		ir_node  *const bl       = get_nodes_block(sel);
+		ir_mode  *const mode     = get_irn_mode(sel);
+		ir_mode  *const idx_mode = get_reference_mode_unsigned_eq(mode);
+		ir_node  *const idx_conv = new_rd_Conv(dbg, bl, index, idx_mode);
+
+		ir_node  *scaled_index;
+		if (element_size == 1) {
+			scaled_index = idx_conv;
+		} else {
+			ir_graph *const irg      = get_irn_irg(sel);
+			ir_node  *const el_size  = new_rd_Const_long(dbg, irg, idx_mode,
+			                                             element_size);
+			scaled_index = new_rd_Mul(dbg, bl, idx_conv, el_size, idx_mode);
+		}
+		newn = new_rd_Add(dbg, bl, ptr, scaled_index, mode);
+	}
+
+	hook_lower(sel);
+	exchange(sel, newn);
+}
+
+/**
+ * Lower a Member node. Do not touch Members accessing entities on the frame
+ * type.
+ */
+static void lower_member(ir_node *member)
+{
+	ir_graph  *const irg   = get_irn_irg(member);
+	ir_entity *const ent   = get_Member_entity(member);
+	ir_type   *const owner = get_entity_owner(ent);
+	/* we can only replace Members when the owner type layout is decided. */
 	if (get_type_state(owner) != layout_fixed)
 		return;
 
-	if (0 < get_Sel_n_indexs(sel)) {
-		/* an Array access */
-		ir_type *basetyp = get_entity_type(ent);
-		ir_mode *basemode;
-		if (is_Primitive_type(basetyp))
-			basemode = get_type_mode(basetyp);
-		else
-			basemode = mode_P_data;
+	int       const offset = get_entity_offset(ent);
+	ir_node  *const ptr   = get_Member_ptr(member);
 
-		assert(basemode && "no mode for lowering Sel");
-		assert((get_mode_size_bits(basemode) % 8 == 0) && "can not deal with unorthodox modes");
-		ir_node *index = get_Sel_index(sel, 0);
-
-		ir_mode *idx_mode;
-		unsigned size;
-		ir_node *ind;
-		if (is_Array_type(owner)) {
-			assert(get_Sel_n_indexs(sel) == 1
-				&& "array dimension must match number of indices of Sel node");
-
-			/* Size of the array element */
-			idx_mode = get_reference_mode_unsigned_eq(mode);
-			size     = get_type_size_bytes(basetyp);
-			ind      = new_rd_Conv(dbg, bl, index, idx_mode);
-		} else {
-			/* no array type */
-			idx_mode = get_irn_mode(index);
-			size     = get_mode_size_bytes(basemode);
-			ind      = index;
-		}
-
-		ir_node *const el_size = new_rd_Const_long(dbg, irg, idx_mode, size);
-		ir_node *const mul     = new_rd_Mul(dbg, bl, ind, el_size, idx_mode);
-		ir_node *const ptr     = get_Sel_ptr(sel);
-		newn = new_rd_Add(dbg, bl, ptr, mul, mode);
+	/* replace Member by add(ptr, const(ent.offset)) */
+	ir_node *newn;
+	if (offset != 0) {
+		dbg_info *const dbg       = get_irn_dbg_info(member);
+		ir_mode  *const mode      = get_irn_mode(member);
+		ir_node  *const bl        = get_nodes_block(member);
+		ir_mode  *const mode_UInt = get_reference_mode_unsigned_eq(mode);
+		ir_node  *const cnst      = new_r_Const_long(irg, mode_UInt, offset);
+		newn = new_rd_Add(dbg, bl, ptr, cnst, mode);
 	} else {
-		int offset = get_entity_offset(ent);
-
-		/* replace Sel by add(obj, const(ent.offset)) */
-		newn = get_Sel_ptr(sel);
-		if (offset != 0) {
-			ir_mode *const mode_UInt = get_reference_mode_unsigned_eq(mode);
-			ir_node *const cnst      = new_r_Const_long(irg, mode_UInt, offset);
-			newn = new_rd_Add(dbg, bl, newn, cnst, mode);
-		}
+		newn = ptr;
 	}
 
-	/* run the hooks */
-	hook_lower(sel);
-
-	exchange(sel, newn);
+	hook_lower(member);
+	exchange(member, newn);
 }
 
 static void replace_by_Const(ir_node *const node, long const value)
@@ -141,6 +141,7 @@ static void lower_irnode(ir_node *irn, void *env)
 	(void) env;
 	switch (get_irn_opcode(irn)) {
 	case iro_Align:  lower_align(irn);  break;
+	case iro_Member: lower_member(irn); break;
 	case iro_Offset: lower_offset(irn); break;
 	case iro_Sel:    lower_sel(irn);    break;
 	case iro_Size:   lower_size(irn);   break;

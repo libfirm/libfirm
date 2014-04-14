@@ -609,10 +609,6 @@ static void write_type_array(write_env_t *env, ir_type *tp)
 		write_symbol(env, "unknown");
 	else
 		panic("Upper array bound is not constant");
-	/* note that we just write a reference to the element entity
-	 * but never the entity itself */
-	ir_entity *element_entity = get_array_element_entity(tp);
-	write_entity_ref(env, element_entity);
 	fputc('\n', env->file);
 }
 
@@ -1643,11 +1639,6 @@ static void read_type(read_env_t *env)
 			set_array_size_int(type, size);
 		}
 		obstack_free(&env->obst, str);
-
-		long       element_entity_nr = read_long(env);
-		ir_entity *element_entity    = get_array_element_entity(type);
-		set_id(env, element_entity_nr, element_entity);
-
 		set_type_size_bytes(type, size);
 		goto finish_type;
 	}
@@ -1847,10 +1838,6 @@ static void read_entity(read_env_t *env, ir_entity_kind kind)
 	set_entity_volatility(entity, volatility);
 	set_entity_visibility(entity, visibility);
 	set_entity_linkage(entity, linkage);
-
-	if (owner != NULL && is_Array_type(owner)) {
-		set_array_element_entity(owner, entity);
-	}
 
 	set_id(env, entnr, entity);
 }

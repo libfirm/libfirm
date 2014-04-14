@@ -516,40 +516,19 @@ static ir_entity *find_constant_entity(ir_node *ptr)
 	for (;;) {
 		if (is_Address(ptr)) {
 			return get_Address_entity(ptr);
-		} else if (is_Sel(ptr)) {
-			ir_entity *ent = get_Sel_entity(ptr);
-			ir_type   *tp  = get_entity_owner(ent);
+		} else if (is_Member(ptr)) {
+			ir_entity *entity = get_Member_entity(ptr);
+			ir_type   *owner  = get_entity_owner(entity);
 
 			/* Do not fiddle with polymorphism. */
-			if (is_Class_type(tp) &&
-				((get_entity_n_overwrites(ent)    != 0) ||
-				(get_entity_n_overwrittenby(ent) != 0)   ) )
+			if (is_Class_type(owner) &&
+			    ((get_entity_n_overwrites(entity) > 0) ||
+			    (get_entity_n_overwrittenby(entity) > 0)))
 				return NULL;
 
-			if (is_Array_type(tp)) {
-				/* check bounds */
-				ir_node   *index = get_Sel_index(ptr, 0);
-				ir_tarval *tv    = computed_value(index);
-
-				/* check if the index is constant */
-				if (!tarval_is_constant(tv))
-					return NULL;
-
-				ir_node   *size  = get_array_size(tp);
-				ir_tarval *tsize = computed_value(size);
-
-				if (!tarval_is_constant(tsize))
-					return NULL;
-
-				if (tarval_cmp(tv, tsize) != ir_relation_less)
-					return NULL;
-				/* ok, bounds check finished */
-			}
-
-			if (get_entity_linkage(ent) == IR_LINKAGE_CONSTANT)
-				return ent;
-
 			/* try next */
+			ptr = get_Member_ptr(ptr);
+		} else if (is_Sel(ptr)) {
 			ptr = get_Sel_ptr(ptr);
 		} else if (is_Add(ptr)) {
 			ir_node *l = get_Add_left(ptr);

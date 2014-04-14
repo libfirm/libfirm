@@ -1011,12 +1011,13 @@ void ir_register_getter_ops(void)
 	register_get_type_func(op_Builtin,   get_Builtin_type);
 	register_get_type_func(op_Call,      get_Call_type);
 	register_get_type_func(op_CopyB,     get_CopyB_type);
+	register_get_type_func(op_Sel,       get_Sel_type);
 	register_get_type_func(op_Size,      get_Size_type);
 
 	register_get_entity_func(op_Address, get_Address_entity);
-	register_get_entity_func(op_Offset,  get_Offset_entity);
-	register_get_entity_func(op_Sel,     get_Sel_entity);
 	register_get_entity_func(op_Block,   get_Block_entity);
+	register_get_entity_func(op_Member,  get_Member_entity);
+	register_get_entity_func(op_Offset,  get_Offset_entity);
 }
 
 void (set_irn_dbg_info)(ir_node *n, dbg_info *db)

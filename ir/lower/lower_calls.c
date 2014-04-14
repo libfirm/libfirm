@@ -235,7 +235,7 @@ typedef struct wlk_env {
 	ir_heights_t         *heights;         /**< Heights for reachability check. */
 	bool                  only_local_mem:1;/**< Set if only local memory access was found. */
 	bool                  changed:1;       /**< Set if the current graph was changed. */
-	ir_node             **param_sels;
+	ir_node             **param_members;
 } wlk_env;
 
 /**
@@ -260,7 +260,7 @@ static cl_entry *get_call_entry(ir_node *call, wlk_env *env)
 }
 
 /**
- * Finds the base address of an address by skipping Sel's and address
+ * Finds the base address of an address by skipping Member's and address
  * calculation.
  *
  * @param adr   the address
@@ -272,8 +272,10 @@ static ir_node *find_base_adr(ir_node *ptr, ir_entity **pEnt)
 	assert(mode_is_reference(get_irn_mode(ptr)));
 
 	for (;;) {
-		if (is_Sel(ptr)) {
-			ent = get_Sel_entity(ptr);
+		if (is_Member(ptr)) {
+			ent = get_Member_entity(ptr);
+			ptr = get_Member_ptr(ptr);
+		} else if (is_Sel(ptr)) {
 			ptr = get_Sel_ptr(ptr);
 		} else if (is_Add(ptr)) {
 			ir_node *left = get_Add_left(ptr);
@@ -418,14 +420,14 @@ static void fix_args_and_collect_calls(ir_node *n, void *ctx)
 		}
 		break;
 	}
-	case iro_Sel: {
-		ir_entity *entity = get_Sel_entity(n);
+	case iro_Member: {
+		ir_entity *entity = get_Member_entity(n);
 		if (!is_parameter_entity(entity))
 			break;
 		ir_type *type = get_entity_type(entity);
 		if (is_aggregate_type(type)) {
 			if (! (env->flags & LF_DONT_LOWER_ARGUMENTS))
-				ARR_APP1(ir_node*, env->param_sels, n);
+				ARR_APP1(ir_node*, env->param_members, n);
 			/* we need to copy compound parameters */
 			env->only_local_mem = false;
 		}
@@ -445,11 +447,9 @@ static void fix_args_and_collect_calls(ir_node *n, void *ctx)
  */
 static bool is_compound_address(ir_type *ft, ir_node *adr)
 {
-	if (!is_Sel(adr))
+	if (!is_Member(adr))
 		return false;
-	if (get_Sel_n_indexs(adr) != 0)
-		return false;
-	ir_entity *ent = get_Sel_entity(adr);
+	ir_entity *ent = get_Member_entity(adr);
 	return get_entity_owner(ent) == ft;
 }
 
@@ -474,9 +474,9 @@ typedef struct copy_return_opt_env {
  */
 static void do_copy_return_opt(ir_node *n, void *ctx)
 {
-	if (is_Sel(n)) {
+	if (is_Member(n)) {
 		copy_return_opt_env *env = (copy_return_opt_env*)ctx;
-		ir_entity *ent = get_Sel_entity(n);
+		ir_entity *ent = get_Member_entity(n);
 
 		for (size_t i = 0, n_pairs = env->n_pairs; i < n_pairs; ++i) {
 			if (ent == env->arr[i].ent) {
@@ -488,12 +488,12 @@ static void do_copy_return_opt(ir_node *n, void *ctx)
 }
 
 /**
- * Return a Sel node that selects a dummy argument of type tp.
+ * Return a Member node that selects a dummy argument of type tp.
  *
- * @param block  the block where a newly create Sel should be placed
+ * @param block  the block where a newly create Member should be placed
  * @param tp     the type of the dummy entity that should be create
  */
-static ir_node *get_dummy_sel(ir_node *block, ir_type *tp)
+static ir_node *get_dummy_member(ir_node *block, ir_type *tp)
 {
 	ir_graph *irg = get_Block_irg(block);
 	ir_type  *ft  = get_irg_frame_type(irg);
@@ -504,7 +504,7 @@ static ir_node *get_dummy_sel(ir_node *block, ir_type *tp)
 
 	ident     *dummy_id = id_unique("call_result.%u");
 	ir_entity *ent      = new_entity(ft, dummy_id, tp);
-	return new_r_simpleSel(block, get_irg_frame(irg), ent);
+	return new_r_Member(block, get_irg_frame(irg), ent);
 }
 
 /**
@@ -573,7 +573,7 @@ static void get_dest_addrs(const cl_entry *entry, ir_node **ins,
 			ir_type *rtp = get_method_res_type(orig_ctp, i);
 			if (is_aggregate_type(rtp)) {
 				if (ins[j] == NULL)
-					ins[j] = get_dummy_sel(get_nodes_block(entry->call), rtp);
+					ins[j] = get_dummy_member(get_nodes_block(entry->call), rtp);
 				++j;
 			}
 		}
@@ -732,7 +732,7 @@ static void fix_call_compound_params(const cl_entry *entry, const ir_type *ctp)
 		ir_node   *arg         = get_Call_param(call, i);
 		ir_entity *arg_entity  = create_compound_arg_entity(irg, type);
 		ir_node   *block       = get_nodes_block(call);
-		ir_node   *sel         = new_rd_simpleSel(dbgi, block, frame, arg_entity);
+		ir_node   *sel         = new_rd_Member(dbgi, block, frame, arg_entity);
 		bool       is_volatile = is_partly_volatile(arg);
 		mem = new_rd_CopyB(dbgi, block, mem, sel, arg, type, is_volatile ? cons_volatile : cons_none);
 		set_Call_param(call, i, sel);
@@ -829,7 +829,7 @@ static void transform_return(ir_node *ret, size_t n_ret_com, wlk_env *env)
 		 */
 		if (env->only_local_mem && is_compound_address(frame_type, pred)) {
 			/* we can do the copy-return optimization here */
-			cr_opt[n_cr_opt].ent = get_Sel_entity(pred);
+			cr_opt[n_cr_opt].ent = get_Member_entity(pred);
 			cr_opt[n_cr_opt].arg = arg;
 			++n_cr_opt;
 		} else {
@@ -908,7 +908,7 @@ static void transform_irg(compound_call_lowering_flags flags, ir_graph *irg)
 	env.flags          = flags;
 	env.mtp            = mtp;
 	env.lowered_mtp    = lowered_mtp;
-	env.param_sels     = NEW_ARR_F(ir_node*, 0);
+	env.param_members  = NEW_ARR_F(ir_node*, 0);
 	env.only_local_mem = true;
 
 	/* scan the code, fix argument numbers and collect calls. */
@@ -917,14 +917,14 @@ static void transform_irg(compound_call_lowering_flags flags, ir_graph *irg)
 
 	/* fix parameter sels */
 	ir_node *args = get_irg_args(irg);
-	for (size_t i = 0, n = ARR_LEN(env.param_sels); i < n; ++i) {
-		ir_node   *sel    = env.param_sels[i];
-		ir_entity *entity = get_Sel_entity(sel);
+	for (size_t i = 0, n = ARR_LEN(env.param_members); i < n; ++i) {
+		ir_node   *member = env.param_members[i];
+		ir_entity *entity = get_Member_entity(member);
 		size_t     num    = get_entity_parameter_number(entity);
 		ir_node   *ptr    = new_r_Proj(args, mode_P, num);
-		exchange(sel, ptr);
+		exchange(member, ptr);
 	}
-	DEL_ARR_F(env.param_sels);
+	DEL_ARR_F(env.param_members);
 
 	if (n_param_com > 0 && !(flags & LF_DONT_LOWER_ARGUMENTS))
 		remove_compound_param_entities(irg);

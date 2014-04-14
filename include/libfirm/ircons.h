@@ -353,67 +353,6 @@ FIRM_API ir_node *new_Const_long(ir_mode *mode, long value);
 
 /** @} */
 
-/** @addtogroup Sel
- * @{
- */
-
-/** Constructor for a simpleSel node.
- *
- *  This is a shortcut for the new_rd_Sel() constructor.  To be used for
- *  Sel nodes that do not select from an array, i.e., have no index
- *  inputs.  It adds the two parameters 0, NULL.
- *
- * @param   *db        A pointer for debug information.
- * @param   *block     The IR block the node belongs to.
- * @param   *objptr    The object from that the Sel operation selects a
- *                     single attribute out.
- * @param   *ent       The entity to select.
- */
-FIRM_API ir_node *new_rd_simpleSel(dbg_info *db, ir_node *block,
-                                   ir_node *objptr, ir_entity *ent);
-
-/** Constructor for a simpleSel node.
- *
- *  This is a shortcut for the new_d_Sel() constructor.  To be used for
- *  Sel nodes that do not select from an array, i.e., have no index
- *  inputs.  It adds the two parameters 0, NULL.
- *
- * @param *block     The IR block the node belongs to.
- * @param *objptr    The object from that the Sel operation selects a
- *                   single attribute out.
- * @param *ent       The entity to select.
- * @ingroup Sel
- */
-FIRM_API ir_node *new_r_simpleSel(ir_node *block, ir_node *objptr,
-                                  ir_entity *ent);
-
-/** Constructor for a simpleSel node.
- *
- *  This is a shortcut for the new_d_Sel() constructor.  To be used for
- *  Sel nodes that do not select from an array, i.e., have no index
- *  inputs.  It adds the two parameters 0, NULL.
- *
- * @param   *db        A pointer for debug information.
- * @param   *objptr    The object from that the Sel operation selects a
- *                     single attribute out.
- * @param   *ent       The entity to select.
- */
-FIRM_API ir_node *new_d_simpleSel(dbg_info *db, ir_node *objptr,
-                                  ir_entity *ent);
-
-/** Constructor for a simpelSel node.
- *
- *  This is a shortcut for the new_Sel() constructor.  To be used for
- *  Sel nodes that do not select from an array, i.e., have no index
- *  inputs.  It adds the two parameters 0, NULL.
- *
- * @param   *objptr    The object from that the Sel operation selects a single attribute out.
- * @param   *ent       The entity to select.
- */
-FIRM_API ir_node *new_simpleSel(ir_node *objptr, ir_entity *ent);
-
-/** @} */
-
 /** @addtogroup Div
  * @{
  */

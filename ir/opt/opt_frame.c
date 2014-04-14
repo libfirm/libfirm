@@ -40,8 +40,8 @@ void opt_frame_irg(ir_graph *irg)
 	/* mark all used entities */
 	ir_node *frame = get_irg_frame(irg);
 	foreach_irn_out_r(frame, o, sel) {
-		if (is_Sel(sel)) {
-			ir_entity *entity = get_Sel_entity(sel);
+		if (is_Member(sel)) {
+			ir_entity *entity = get_Member_entity(sel);
 			/* only entities on the frame */
 			if (get_entity_owner(entity) == frame_tp)
 				set_entity_link(entity, entity);

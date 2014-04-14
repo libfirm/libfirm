@@ -114,21 +114,6 @@ static unsigned path_hash(const path_t *path)
 }
 
 /**
- * Returns non-zero, if all indices of a Sel node are constants.
- *
- * @param sel  the Sel node that will be checked
- */
-static bool is_const_sel(ir_node *sel)
-{
-	for (int i = 0, n = get_Sel_n_indexs(sel); i < n; ++i) {
-		ir_node *idx = get_Sel_index(sel, i);
-		if (!is_Const(idx))
-			return false;
-	}
-	return true;
-}
-
-/**
  * Return true if a Conv node converting from mode @p from to mode @p to
  * would have only bits from the source in the result.
  * Put another way, the conv produces the same value as a load/store pair:
@@ -148,25 +133,35 @@ static bool conv_is_bitcast(ir_mode *from, ir_mode *to)
 	    || (to_size < from_size && !be_is_big_endian());
 }
 
-/*
- * Returns non-zero, if the address of an entity
- * represented by a Sel node (or its successor Sels) is taken.
- */
-bool is_address_taken(ir_node *sel)
+static ir_type *get_addr_type(const ir_node *addr)
 {
-	if (!is_const_sel(sel))
-		return true;
+	if (is_Member(addr)) {
+		ir_entity *entity = get_Member_entity(addr);
+		return get_entity_type(entity);
+	} else {
+		assert(is_Sel(addr));
+		return get_Sel_type(addr);
+	}
+}
 
-	foreach_irn_out_r(sel, i, succ) {
+/*
+ * Returns non-zero, if the value represented by @p node "escapes", i.e. is used
+ * by anything else than a load/store.
+ */
+bool is_address_taken(ir_node *node)
+{
+	assert(is_Member(node) || is_Sel(node));
+
+	foreach_irn_out_r(node, i, succ) {
 		switch (get_irn_opcode(succ)) {
 		case iro_Load: {
 			/* do not remove volatile variables */
 			if (get_Load_volatility(succ) == volatility_is_volatile)
 				return true;
 			/* check if this load is not a hidden conversion */
-			ir_mode   *mode  = get_Load_mode(succ);
-			ir_entity *ent   = get_Sel_entity(sel);
-			ir_mode   *emode = get_type_mode(get_entity_type(ent));
+			ir_mode *mode  = get_Load_mode(succ);
+			ir_type *type  = get_addr_type(node);
+			ir_mode *emode = get_type_mode(type);
 			if (emode == NULL || !conv_is_bitcast(emode, mode))
 				return true;
 			break;
@@ -175,29 +170,29 @@ bool is_address_taken(ir_node *sel)
 		case iro_Store: {
 			/* check that Sel is not the Store's value */
 			ir_node *value = get_Store_value(succ);
-			if (value == sel)
+			if (value == node)
 				return true;
 			/* do not remove volatile variables */
 			if (get_Store_volatility(succ) == volatility_is_volatile)
 				return true;
 			/* check if this Store is not a hidden conversion */
-			ir_mode   *mode  = get_irn_mode(value);
-			ir_entity *ent   = get_Sel_entity(sel);
-			ir_mode   *emode = get_type_mode(get_entity_type(ent));
+			ir_mode *mode  = get_irn_mode(value);
+			ir_type *type  = get_addr_type(node);
+			ir_mode *emode = get_type_mode(type);
 			if (emode == NULL || !conv_is_bitcast(mode, emode))
 				return true;
 			break;
 		}
 
-		case iro_Sel: {
-			ir_entity *entity = get_Sel_entity(succ);
+		case iro_Member:;
+			ir_entity *entity = get_Member_entity(succ);
 			/* we can't handle unions correctly yet -> address taken */
 			if (is_Union_type(get_entity_owner(entity)))
 				return true;
 
-			/* Check the Sel successor of Sel */
-			if (!is_Sel(succ))
-				return true;
+			/* FALLTHROUGH */
+		case iro_Sel: {
+			/* Check the Member successor of Sel */
 			bool res = is_address_taken(succ);
 			if (res)
 				return true;
@@ -223,12 +218,12 @@ typedef enum leaf_state_t {
 } leaf_state_t;
 
 /**
- * Link all leaf Sels with the entity.
+ * Link all leaf Members with the entity.
  *
  * @param ent  the entity that will be scalar replaced
  * @param sel  a Sel node that selects some fields of this entity
  */
-static leaf_state_t link_all_leaf_sels(ir_entity *ent, ir_node *sel)
+static leaf_state_t link_all_leaf_members(ir_entity *ent, ir_node *sel)
 {
 	/** A leaf Sel is a Sel that is used directly by a Load or Store. */
 	leaf_state_t state = POSSIBLE_LEAF;
@@ -237,11 +232,11 @@ static leaf_state_t link_all_leaf_sels(ir_entity *ent, ir_node *sel)
 			state |= HAS_CHILD_LOAD_STORE;
 			continue;
 		}
-		if (is_Sel(succ)) {
-			link_all_leaf_sels(ent, succ);
+		if (is_Member(succ)) {
+			link_all_leaf_members(ent, succ);
 			state |= HAS_CHILD_SELS;
 		} else if (is_Id(succ)) {
-			state |= link_all_leaf_sels(ent, succ);
+			state |= link_all_leaf_members(ent, succ);
 		} else {
 			assert(is_End(succ));
 		}
@@ -311,9 +306,9 @@ static bool find_possible_replacements(ir_graph *irg)
 				continue;
 
 			foreach_irn_out_r(arg, k, succ) {
-				if (!is_Sel(succ))
+				if (!is_Member(succ))
 					continue;
-				ir_entity *ent = get_Sel_entity(succ);
+				ir_entity *ent = get_Member_entity(succ);
 				if (get_entity_owner(ent) == frame_tp) {
 					/* found an access to the outer frame */
 					set_entity_link(ent, ADDRESS_TAKEN);
@@ -322,17 +317,17 @@ static bool find_possible_replacements(ir_graph *irg)
 		}
 	}
 
-	/* Check the ir_graph for Sel nodes. If the entity of Sel isn't a scalar
-	 * replacement set the link of this entity to ADDRESS_TAKEN. */
+	/* Check the ir_graph for Member nodes. If the entity of Member isn't a
+	 * scalar replacement set the link of this entity to ADDRESS_TAKEN. */
 	ir_node *irg_frame = get_irg_frame(irg);
 	int      res       = 0;
 	foreach_irn_out_r(irg_frame, i, succ) {
-		if (!is_Sel(succ))
+		if (!is_Member(succ))
 			continue;
 
 		/* we are only interested in entities on the frame, NOT on the value
 		 * type */
-		ir_entity *ent = get_Sel_entity(succ);
+		ir_entity *ent = get_Member_entity(succ);
 		if (get_entity_owner(ent) != frame_tp)
 			continue;
 		if (get_entity_link(ent) == ADDRESS_TAKEN)
@@ -350,7 +345,7 @@ static bool find_possible_replacements(ir_graph *irg)
 				/* possible found one */
 				if (get_entity_link(ent) == NULL)
 					++res;
-				link_all_leaf_sels(ent, succ);
+				link_all_leaf_members(ent, succ);
 			}
 		}
 	}
@@ -364,33 +359,31 @@ static bool find_possible_replacements(ir_graph *irg)
  * @param sel  the Sel node
  * @param len  the length of the path so far
  */
-static path_t *find_path(ir_node *sel, size_t len)
+static path_t *find_path(ir_node *node, size_t len)
 {
-	/* the current Sel node will add some path elements */
-	int n = get_Sel_n_indexs(sel);
-	len += n + 1;
-
-	path_t  *res;
-	ir_node *pred = get_Sel_ptr(sel);
-	if (!is_Sel(pred)) {
+	/* the current Sel/Member node will add some path elements */
+	path_t *res;
+	if (is_Sel(node)) {
+		ir_node *index = get_Sel_index(node);
+		if (!is_Const(index))
+			goto found_root;
+		ir_node *pred = get_Sel_ptr(node);
+		res = find_path(pred, len+1);
+		size_t pos   = res->path_len - len - 1;
+		res->path[pos].tv = get_Const_tarval(index);
+	} else if (is_Member(node)) {
+		ir_node *pred = get_Member_ptr(node);
+		res = find_path(pred, len+1);
+		size_t pos = res->path_len - len - 1;
+		res->path[pos].ent = get_Member_entity(node);
+	} else {
 		/* we found the root */
+found_root:
 		res = XMALLOCF(path_t, path, len);
 		res->path_len = len;
-	} else {
-		res = find_path(pred, len);
-	}
-
-	assert(len <= res->path_len);
-	size_t pos = res->path_len - len;
-	res->path[pos++].ent = get_Sel_entity(sel);
-	for (int i = 0; i < n; ++i) {
-		ir_node *index = get_Sel_index(sel, i);
-
-		res->path[pos++].tv = get_Const_tarval(index);
 	}
 	return res;
 }
-
 
 /**
  * Allocate value numbers for the leafs in our found entities.
@@ -403,37 +396,40 @@ static path_t *find_path(ir_node *sel, size_t len)
  *
  * @return the next free value number
  */
-static unsigned allocate_value_numbers(pset *sels, ir_entity *ent,
+static unsigned allocate_value_numbers(pset *members, ir_entity *ent,
                                        unsigned vnum, ir_mode ***modes)
 {
 	set *pathes = new_set(path_cmp, 8);
 
 	DB((dbg, SET_LEVEL_3, "  Visiting Sel nodes of entity %+F\n", ent));
-	/* visit all Sel nodes in the chain of the entity */
-	for (ir_node *sel = (ir_node*)get_entity_link(ent), *next; sel != NULL;
-	     sel = next) {
-		next = (ir_node*)get_irn_link(sel);
+	/* visit all Member nodes in the chain of the entity */
+	for (ir_node *member = (ir_node*)get_entity_link(ent), *next;
+	     member != NULL; member = next) {
+		next = (ir_node*)get_irn_link(member);
 
-		/* we must mark this sel for later */
-		pset_insert_ptr(sels, sel);
+		/* we must mark this member for later */
+		pset_insert_ptr(members, member);
 
-		path_t *key  = find_path(sel, 0);
+		path_t *key  = find_path(member, 0);
 		path_t *path = set_find(path_t, pathes, key, path_size(key), path_hash(key));
 
 		if (path != NULL) {
-			set_vnum(sel, path->vnum);
-			DB((dbg, SET_LEVEL_3, "  %+F represents value %u\n", sel, path->vnum));
+			set_vnum(member, path->vnum);
+			DB((dbg, SET_LEVEL_3, "  %+F represents value %u\n", member,
+			    path->vnum));
 		} else {
 			key->vnum = vnum++;
 
 			(void)set_insert(path_t, pathes, key, path_size(key), path_hash(key));
 
-			set_vnum(sel, key->vnum);
-			DB((dbg, SET_LEVEL_3, "  %+F represents value %u\n", sel, key->vnum));
+			set_vnum(member, key->vnum);
+			DB((dbg, SET_LEVEL_3, "  %+F represents value %u\n", member,
+			    key->vnum));
 
 			ARR_EXTO(ir_mode *, *modes, (key->vnum + 15) & ~15);
 
-			(*modes)[key->vnum] = get_type_mode(get_entity_type(get_Sel_entity(sel)));
+			ir_entity *entity = get_Member_entity(member);
+			(*modes)[key->vnum] = get_type_mode(get_entity_type(entity));
 
 			assert((*modes)[key->vnum] && "Value is not atomic");
 
@@ -446,7 +442,7 @@ static unsigned allocate_value_numbers(pset *sels, ir_entity *ent,
 				else
 					DB((dbg, SET_LEVEL_2, "[%ld]", get_tarval_long(key->path[i].tv)));
 			}
-			DB((dbg, SET_LEVEL_2, " = %u (%s)\n", PTR_TO_INT(get_irn_link(sel)), get_mode_name((*modes)[key->vnum])));
+			DB((dbg, SET_LEVEL_2, " = %u (%s)\n", PTR_TO_INT(get_irn_link(member)), get_mode_name((*modes)[key->vnum])));
 #endif /* DEBUG_libfirm */
 		}
 		free(key);
@@ -463,7 +459,7 @@ static unsigned allocate_value_numbers(pset *sels, ir_entity *ent,
 typedef struct env_t {
 	unsigned  nvals;   /**< number of values */
 	ir_mode **modes;   /**< the modes of the values */
-	pset     *sels;    /**< A set of all Sel nodes that have a value number */
+	pset     *members; /**< A set of all Member nodes that have a value num */
 } env_t;
 
 /**
@@ -476,9 +472,9 @@ static void walker(ir_node *node, void *ctx)
 	if (is_Load(node)) {
 		/* a load, check if we can resolve it */
 		ir_node *addr = get_Load_ptr(node);
-		if (!is_Sel(addr))
+		if (!is_Member(addr))
 			return;
-		if (!pset_find_ptr(env->sels, addr))
+		if (!pset_find_ptr(env->members, addr))
 			return;
 
 		/* ok, we have a Load that will be replaced */
@@ -522,9 +518,9 @@ static void walker(ir_node *node, void *ctx)
 	} else if (is_Store(node)) {
 		/* a Store always can be replaced */
 		ir_node *addr = get_Store_ptr(node);
-		if (!is_Sel(addr))
+		if (!is_Member(addr))
 			return;
-		if (!pset_find_ptr(env->sels, addr))
+		if (!pset_find_ptr(env->members, addr))
 			return;
 
 		unsigned vnum = get_vnum(addr);
@@ -563,12 +559,12 @@ static void walker(ir_node *node, void *ctx)
 /**
  * Make scalar replacement.
  *
- * @param sels    A set containing all Sel nodes that have a value number
+ * @param members A set containing all Member nodes that have a value number
  * @param nvals   The number of scalars.
  * @param modes   A flexible array, containing all the modes of
  *                the value numbers.
  */
-static void do_scalar_replacements(ir_graph *irg, pset *sels, unsigned nvals,
+static void do_scalar_replacements(ir_graph *irg, pset *members, unsigned nvals,
                                    ir_mode **modes)
 {
 	ssa_cons_start(irg, (int)nvals);
@@ -579,9 +575,9 @@ static void do_scalar_replacements(ir_graph *irg, pset *sels, unsigned nvals,
 	 */
 	DB((dbg, SET_LEVEL_3, "Substituting Loads and Stores in %+F\n", irg));
 	env_t env;
-	env.nvals = nvals;
-	env.modes = modes;
-	env.sels  = sels;
+	env.nvals  = nvals;
+	env.modes  = modes;
+	env.members = members;
 	irg_walk_blkwise_graph(irg, NULL, walker, &env);
 
 	ssa_cons_finish(irg);
@@ -616,14 +612,13 @@ void scalar_replacement_opt(ir_graph *irg)
 		ir_type  *frame_tp  = get_irg_frame_type(irg);
 
 		foreach_irn_out_r(irg_frame, i, succ) {
-			if (!is_Sel(succ))
+			if (!is_Member(succ))
 				continue;
 
 			/* we are only interested in entities on the frame, NOT
 			   parameters */
-			ir_entity *ent = get_Sel_entity(succ);
-			if (get_entity_owner(ent) != frame_tp
-				|| is_parameter_entity(ent))
+			ir_entity *ent = get_Member_entity(succ);
+			if (get_entity_owner(ent) != frame_tp || is_parameter_entity(ent))
 				continue;
 
 			if (get_entity_link(ent) == NULL

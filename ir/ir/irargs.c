@@ -171,8 +171,8 @@ static int firm_emit(lc_appendable_t *app, const lc_arg_occ_t *occ,
 			} else if (is_Address(node)) {
 				snprintf(buf, sizeof(buf), "%s%s %s[%s]", A("irn"), get_irn_opname(node),
 				get_mode_name(get_irn_mode(node)), get_entity_name(get_Address_entity(node)));
-			} else if (is_Sel(node)) {
-				ir_entity *entity = get_Sel_entity(node);
+			} else if (is_Member(node)) {
+				ir_entity *entity = get_Member_entity(node);
 				const char *entity_name = "(null)";
 				if (entity != NULL)
 					entity_name = get_entity_name(entity);

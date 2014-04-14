@@ -75,23 +75,30 @@ ir_storage_class_class_t get_base_sc(ir_storage_class_class_t x)
 }
 
 /**
- * Find the base address and entity of an Sel node.
+ * Find the base address and entity of an Sel/Member node.
  *
- * @param sel  the node
+ * @param node the node
  * @param pEnt after return points to the base entity.
  *
  * @return the base address.
  */
-static ir_node *find_base_adr(const ir_node *sel, ir_entity **pEnt)
+static const ir_node *find_base_adr(const ir_node *node, ir_entity **pEnt)
 {
-	ir_node *ptr = get_Sel_ptr(sel);
-
-	while (is_Sel(ptr)) {
-		sel = ptr;
-		ptr = get_Sel_ptr(sel);
+	const ir_node *member = NULL;
+	for (;;) {
+		if (is_Sel(node)) {
+			node = get_Sel_ptr(node);
+			continue;
+		} else if (is_Member(node)) {
+			member = node;
+			node   = get_Member_ptr(node);
+		} else {
+			break;
+		}
 	}
-	*pEnt = get_Sel_entity(sel);
-	return ptr;
+	if (member != NULL)
+		*pEnt = get_Member_entity(member);
+	return node;
 }
 
 /**
@@ -347,13 +354,13 @@ static ir_alias_relation different_types(const ir_node *adr1,
 
 	if (is_Address(adr1))
 		ent1 = get_Address_entity(adr1);
-	else if (is_Sel(adr1))
-		ent1 = get_Sel_entity(adr1);
+	else if (is_Member(adr1))
+		ent1 = get_Member_entity(adr1);
 
 	if (is_Address(adr2))
 		ent2 = get_Address_entity(adr2);
-	else if (is_Sel(adr2))
-		ent2 = get_Sel_entity(adr2);
+	else if (is_Member(adr2))
+		ent2 = get_Member_entity(adr2);
 
 	if (ent1 != NULL && ent2 != NULL) {
 		ir_type *tp1 = get_entity_type(ent1);
@@ -558,19 +565,13 @@ static ir_alias_relation _get_alias_relation(
 			return ir_sure_alias;
 	}
 
-	/* skip Sels */
-	const ir_node *base1 = adr1;
-	const ir_node *base2 = adr2;
-	ir_entity *ent1  = NULL;
-	ir_entity *ent2  = NULL;
-	if (is_Sel(adr1)) {
-		base1 = find_base_adr(adr1, &ent1);
-	}
-	if (is_Sel(adr2)) {
-		base2 = find_base_adr(adr2, &ent2);
-	}
+	/* skip Sels/Members */
+	ir_entity     *ent1  = NULL;
+	ir_entity     *ent2  = NULL;
+	const ir_node *base1 = find_base_adr(adr1, &ent1);
+	const ir_node *base2 = find_base_adr(adr2, &ent2);
 
-	/* same base address -> compare Sel entities */
+	/* same base address -> compare entities */
 	if (base1 == base2 && ent1 != NULL && ent2 != NULL) {
 		if (ent1 != ent2) {
 			long offset1 = get_entity_offset(ent1);
@@ -872,20 +873,23 @@ static ir_entity_usage determine_entity_usage(const ir_node *irn,
 			break;
 		}
 
+		case iro_Sel:
 		case iro_Add:
 		case iro_Sub:
+		case iro_Id:
 			/* Check the successor of irn. */
 			res |= determine_entity_usage(succ, entity);
 			break;
-		case iro_Sel: {
-			ir_entity *sel_entity = get_Sel_entity(succ);
+
+		case iro_Member: {
+			ir_entity *member_entity = get_Member_entity(succ);
 			/* this analysis can't handle unions correctly */
-			if (is_Union_type(get_entity_owner(sel_entity))) {
+			if (is_Union_type(get_entity_owner(member_entity))) {
 				res |= ir_usage_unknown;
 				break;
 			}
 			/* Check the successor of irn. */
-			res |= determine_entity_usage(succ, sel_entity);
+			res |= determine_entity_usage(succ, member_entity);
 			break;
 		}
 
@@ -900,11 +904,6 @@ static ir_entity_usage determine_entity_usage(const ir_node *irn,
 				assert(irn != get_Call_mem(succ));
 				res |= ir_usage_unknown;
 			}
-			break;
-
-		/* skip identities */
-		case iro_Id:
-			res |= determine_entity_usage(succ, entity);
 			break;
 
 		/* skip tuples */
@@ -962,14 +961,11 @@ static void analyse_irg_entity_usage(ir_graph *irg)
 	ir_node *irg_frame = get_irg_frame(irg);
 
 	foreach_irn_out_r(irg_frame, j, succ) {
-		ir_entity      *entity;
-		unsigned        flags;
-
-		if (!is_Sel(succ))
+		if (!is_Member(succ))
 			continue;
 
-		entity = get_Sel_entity(succ);
-		flags  = get_entity_usage(entity);
+		ir_entity *entity = get_Member_entity(succ);
+		unsigned   flags  = get_entity_usage(entity);
 		flags |= determine_entity_usage(succ, entity);
 		set_entity_usage(entity, (ir_entity_usage) flags);
 	}
@@ -990,14 +986,12 @@ static void analyse_irg_entity_usage(ir_graph *irg)
 		foreach_irn_out_r(args, j, arg) {
 			if (get_Proj_proj(arg) == static_link_arg) {
 				foreach_irn_out_r(arg, k, succ) {
-					if (is_Sel(succ)) {
-						ir_entity *entity = get_Sel_entity(succ);
+					if (is_Member(succ)) {
+						ir_entity *entity = get_Member_entity(succ);
 
 						if (get_entity_owner(entity) == ft) {
 							/* found an access to the outer frame */
-							unsigned flags;
-
-							flags  = get_entity_usage(entity);
+							unsigned flags  = get_entity_usage(entity);
 							flags |= determine_entity_usage(succ, entity);
 							set_entity_usage(entity, (ir_entity_usage) flags);
 						}
@@ -1325,8 +1319,8 @@ static ir_entity *find_entity(ir_node *ptr)
 	switch (get_irn_opcode(ptr)) {
 	case iro_Address:
 		return get_Address_entity(ptr);
-	case iro_Sel:
-		return get_Sel_entity(ptr);
+	case iro_Member:
+		return get_Member_entity(ptr);
 	case iro_Sub:
 	case iro_Add: {
 		ir_node *left = get_binop_left(ptr);

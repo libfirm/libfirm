@@ -80,16 +80,16 @@ static void copy_node_inline(ir_node *node, void *env)
 	ir_node  *new_node = irn_copy_into_irg(node, new_irg);
 
 	set_new_node(node, new_node);
-	if (is_Sel(node)) {
+	if (is_Member(node)) {
 		ir_graph  *old_irg        = get_irn_irg(node);
 		ir_type   *old_frame_type = get_irg_frame_type(old_irg);
-		ir_entity *old_entity     = get_Sel_entity(node);
-		assert(is_Sel(new_node));
+		ir_entity *old_entity     = get_Member_entity(node);
+		assert(is_Member(new_node));
 		/* use copied entities from the new frame */
 		if (get_entity_owner(old_entity) == old_frame_type) {
 			ir_entity *new_entity = (ir_entity*)get_entity_link(old_entity);
 			assert(new_entity != NULL);
-			set_Sel_entity(new_node, new_entity);
+			set_Member_entity(new_node, new_entity);
 		}
 	} else if (is_Block(new_node)) {
 		new_node->attr.block.irg.irg = new_irg;
@@ -122,11 +122,11 @@ static void find_addr(ir_node *node, void *env)
 		 * when inlining
 		 */
 		*allow_inline = false;
-	} else if (is_Sel(node)) {
+	} else if (is_Member(node)) {
 		ir_graph *irg = current_ir_graph;
-		if (get_Sel_ptr(node) == get_irg_frame(irg)) {
+		if (get_Member_ptr(node) == get_irg_frame(irg)) {
 			/* access to frame */
-			ir_entity *ent = get_Sel_entity(node);
+			ir_entity *ent = get_Member_entity(node);
 			if (get_entity_owner(ent) != get_irg_frame_type(irg)) {
 				/* access to value_type */
 				*allow_inline = false;
@@ -298,7 +298,7 @@ static void copy_parameter_entities(ir_node *call, ir_graph *called_graph)
 
 		size_t   n_param_pos = get_entity_parameter_number(old_entity);
 		ir_node *param       = get_Call_param(call, n_param_pos);
-		ir_node *sel         = new_rd_simpleSel(dbgi, block, frame, new_ent);
+		ir_node *sel         = new_rd_Member(dbgi, block, frame, new_ent);
 		ir_node *new_mem;
 		if (is_aggregate_type(old_type)) {
 			/* Copy the compound parameter */
@@ -791,12 +791,10 @@ static unsigned calc_method_local_weight(ir_node *arg)
 			weight += 3;
 			break;
 		case iro_Sel:
-			/* check if all args are constant */
-			for (int j = get_Sel_n_indexs(succ); j-- > 0; ) {
-				ir_node *idx = get_Sel_index(succ, j);
-				if (!is_Const(idx))
-					return 0;
-			}
+			if (!is_Const(get_Sel_index(succ)))
+				return 0;
+			/* FALLTHROUGH */
+		case iro_Member: {
 			/* Check users on this Sel. Note: if a 0 is returned here, there was
 			   some unsupported node. */
 			unsigned v = calc_method_local_weight(succ);
@@ -805,6 +803,7 @@ static unsigned calc_method_local_weight(ir_node *arg)
 			/* we can kill one Sel with constant indexes, this is cheap */
 			weight += v + 1;
 			break;
+		}
 		case iro_Id:
 			/* when looking backward we might find Id nodes */
 			weight += calc_method_local_weight(succ);
