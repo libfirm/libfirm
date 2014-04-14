@@ -340,7 +340,7 @@ IJmp => {
 	arity     => "variable",
 	attr_type => "amd64_addr_attr_t",
 	attr      => "amd64_insn_mode_t insn_mode, amd64_op_mode_t op_mode, amd64_addr_t addr",
-	emit      => "jmp %AM",
+	emit      => "jmp %*AM",
 },
 
 Jmp => {
@@ -418,7 +418,7 @@ Call => {
 	attr_type => "amd64_addr_attr_t",
 	attr      => "amd64_op_mode_t op_mode, amd64_addr_t addr",
 	fixed     => "amd64_insn_mode_t insn_mode = INSN_MODE_64;\n",
-	emit      => "call %AM",
+	emit      => "call %*AM",
 	modified_flags => $all_flags,
 },
 

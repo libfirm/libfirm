@@ -150,10 +150,11 @@ static void emit_register_insn_mode(const arch_register_t *reg,
 }
 
 typedef enum amd64_emit_mod_t {
-	EMIT_NONE        = 0,
-	EMIT_IGNORE_MODE = 1U << 1,
-	EMIT_FORCE_32    = 1U << 2,
-	EMIT_CONV_DEST   = 1U << 3,
+	EMIT_NONE          = 0,
+	EMIT_IGNORE_MODE   = 1U << 1,
+	EMIT_FORCE_32      = 1U << 2,
+	EMIT_CONV_DEST     = 1U << 3,
+	EMIT_INDIRECT_STAR = 1U << 4,
 } amd64_emit_mod_t;
 ENUM_BITSET(amd64_emit_mod_t)
 
@@ -239,7 +240,7 @@ static void amd64_emit_addr(const ir_node *const node,
 	}
 }
 
-static void amd64_emit_am(const ir_node *const node)
+static void amd64_emit_am(const ir_node *const node, bool indirect_star)
 {
 	const amd64_addr_attr_t *const attr = get_amd64_addr_attr_const(node);
 	switch ((amd64_op_mode_t)attr->base.op_mode) {
@@ -279,6 +280,9 @@ static void amd64_emit_am(const ir_node *const node)
 		amd64_emit_addr(node, &attr->addr);
 		return;
 	case AMD64_OP_UNOP_REG:
+		if (indirect_star)
+			be_emit_char('*');
+		/* FALLTHROUGH */
 	case AMD64_OP_REG: {
 		const arch_register_t *reg = arch_get_irn_register_in(node, 0);
 		emit_register_insn_mode(reg, attr->insn_mode);
@@ -288,7 +292,8 @@ static void amd64_emit_am(const ir_node *const node)
 		amd64_emit_immediate32(&attr->addr.immediate);
 		return;
 	case AMD64_OP_UNOP_ADDR:
-		be_emit_char('*');
+		if (indirect_star)
+			be_emit_char('*');
 		amd64_emit_addr(node, &attr->addr);
 		return;
 
@@ -378,9 +383,10 @@ void amd64_emitf(ir_node const *const node, char const *fmt, ...)
 		amd64_emit_mod_t mod = EMIT_NONE;
 		for (;;) {
 			switch (*fmt) {
-			case '^': mod |= EMIT_IGNORE_MODE; break;
-			case '3': mod |= EMIT_FORCE_32;    break;
-			case '#': mod |= EMIT_CONV_DEST;   break;
+			case '^': mod |= EMIT_IGNORE_MODE;   break;
+			case '3': mod |= EMIT_FORCE_32;      break;
+			case '#': mod |= EMIT_CONV_DEST;     break;
+			case '*': mod |= EMIT_INDIRECT_STAR; break;
 			default:
 				goto end_of_mods;
 			}
@@ -398,7 +404,7 @@ end_of_mods:
 			case 'A':
 				switch (*fmt++) {
 				case 'M':
-					amd64_emit_am(node);
+					amd64_emit_am(node, mod & EMIT_INDIRECT_STAR);
 					break;
 				default: {
 					amd64_addr_attr_t const *const attr

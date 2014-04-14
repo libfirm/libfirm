@@ -386,28 +386,32 @@ static bool match_immediate_32(amd64_imm32_t *imm, const ir_node *op,
 
 static ir_heights_t *heights;
 
-static bool source_am_possible(ir_node *block, ir_node *node, ir_node *other)
+static bool input_depends_on_load(ir_node *load, ir_node *input)
+{
+	ir_node *block = get_nodes_block(load);
+	/* if the dependency is in another block, then we ignore it for now
+	   as we only match address mode loads in the same block. */
+	return get_nodes_block(input) == block
+	    && heights_reachable_in_block(heights, input, load);
+}
+
+static ir_node *source_am_possible(ir_node *block, ir_node *node)
 {
 	if (!is_Proj(node))
-		return false;
+		return NULL;
 	ir_node *load = get_Proj_pred(node);
 	if (!is_Load(load))
-		return false;
+		return NULL;
 	assert(get_Proj_proj(node) == pn_Load_res);
 	if (get_nodes_block(load) != block)
-		return false;
+		return NULL;
 	/* make sure we are the only user */
 	if (get_irn_n_edges(node) != 1)
-		return false;
+		return NULL;
 	/* ia32 backend claims this can happen, use an assert for now and see
 	 * if we hit it :) */
 	assert(!be_is_transformed(node));
-	/* make sure the other input does not depend on the load */
-	if (other != NULL && get_nodes_block(other) == block
-	    && heights_reachable_in_block(heights, other, load))
-		return false;
-
-	return true;
+	return load;
 }
 
 static bool needs_extension(ir_node *op)
@@ -452,17 +456,23 @@ static bool use_address_matching(match_flags_t flags, ir_node *block,
                                  ir_node *op1, ir_node *op2,
                                  ir_node **out_load, ir_node **out_op)
 {
-	bool flags_match = flags & match_am;
+	if (! (flags & match_am))
+		return false;
 
-	if (flags_match && source_am_possible(block, op2, op1)) {
-		(*out_load) = get_Proj_pred(op2);
+	ir_node *load2 = source_am_possible(block, op2);
+	if (load2 != NULL && !input_depends_on_load(load2, op1)) {
+		(*out_load) = load2;
 		(*out_op)   = op1;
 		return true;
-	} else if (flags_match && (flags & match_commutative)
-               && source_am_possible(block, op1, op2)) {
-		(*out_load) = get_Proj_pred(op1);
-		(*out_op)   = op2;
-		return true;
+	}
+
+	if (flags & match_commutative) {
+		ir_node *load1 = source_am_possible(block, op1);
+		if (load1 != NULL && !input_depends_on_load(load1, op2)) {
+			(*out_load) = load1;
+			(*out_op)   = op2;
+			return true;
+		}
 	}
 	return false;
 }
@@ -1025,34 +1035,36 @@ static ir_node *gen_IJmp(ir_node *node)
 		op_mode = AMD64_OP_UNOP_IMM32;
 		arity   = 0;
 		reqs    = no_reqs;
-	} else if (source_am_possible(block, op, NULL)) {
-		ir_node *load     = get_Proj_pred(op);
-		ir_node *load_ptr = get_Load_ptr(load);
-		mem_proj          = be_get_Proj_for_pn(load, pn_Load_M);
-
-		perform_address_matching(load_ptr, &arity, in, &addr);
-		assert((size_t)arity < ARRAY_SIZE(in));
-
-		reqs = mem_reqs;
-		if (addr.base_input != NO_INPUT && addr.index_input != NO_INPUT) {
-			reqs = reg_reg_mem_reqs;
-		} else if(addr.base_input != NO_INPUT || addr.index_input != NO_INPUT) {
-			reqs = reg_mem_reqs;
-		}
-		ir_node *load_mem = get_Load_mem(load);
-		ir_node *new_mem  = be_transform_node(load_mem);
-		int mem_input     = arity++;
-		in[mem_input]     = new_mem;
-		addr.mem_input    = mem_input;
-
-		op_mode = AMD64_OP_UNOP_ADDR;
 	} else {
-		op_mode          = AMD64_OP_UNOP_REG;
-		arity            = 1;
-		in[0]            = be_transform_node(op);
-		addr.base_input  = NO_INPUT;
-		addr.index_input = NO_INPUT;
-		reqs             = reg_reqs;
+		ir_node *load = source_am_possible(block, op);
+		if (load != NULL) {
+			ir_node *load_ptr = get_Load_ptr(load);
+			mem_proj          = be_get_Proj_for_pn(load, pn_Load_M);
+
+			perform_address_matching(load_ptr, &arity, in, &addr);
+			assert((size_t)arity < ARRAY_SIZE(in));
+
+			reqs = mem_reqs;
+			if (addr.base_input != NO_INPUT && addr.index_input != NO_INPUT) {
+				reqs = reg_reg_mem_reqs;
+			} else if(addr.base_input != NO_INPUT || addr.index_input != NO_INPUT) {
+				reqs = reg_mem_reqs;
+			}
+			ir_node *load_mem = get_Load_mem(load);
+			ir_node *new_mem  = be_transform_node(load_mem);
+			int mem_input     = arity++;
+			in[mem_input]     = new_mem;
+			addr.mem_input    = mem_input;
+
+			op_mode = AMD64_OP_UNOP_ADDR;
+		} else {
+			op_mode          = AMD64_OP_UNOP_REG;
+			assert(arity == 0); // UNOP_REG always outputs the first input
+			in[arity++]      = be_transform_node(op);
+			addr.base_input  = NO_INPUT;
+			addr.index_input = NO_INPUT;
+			reqs             = reg_reqs;
+		}
 	}
 
 	ir_node *jmp = new_bd_amd64_IJmp(dbgi, new_block, arity, in,
@@ -1296,7 +1308,7 @@ static ir_node *gen_Call(ir_node *node)
 	size_t           n_params     = get_Call_n_params(node);
 	size_t           n_ress       = get_method_n_ress(type);
 	/* max inputs: memory, callee, register arguments */
-	ir_node        **sync_ins     = ALLOCAN(ir_node*, n_params);
+	ir_node        **sync_ins     = ALLOCAN(ir_node*, n_params+1);
 	ir_graph        *irg          = get_irn_irg(node);
 	struct obstack  *obst         = be_get_be_obst(irg);
 	amd64_cconv_t   *cconv
@@ -1315,17 +1327,75 @@ static ir_node *gen_Call(ir_node *node)
 
 	/* construct arguments */
 
-	/* memory input */
-	in_req[in_arity] = arch_no_register_req;
-	int mem_pos      = in_arity;
-	++in_arity;
-
 	/* stack pointer input */
 	/* construct an IncSP -> we have to always be sure that the stack is
 	 * aligned even if we don't push arguments on it */
 	const arch_register_t *sp_reg = &amd64_registers[REG_RSP];
 	ir_node *incsp = create_IncSP(sp_reg, new_block, new_frame,
 	                              cconv->param_stack_size, 1);
+
+	/* match callee */
+	amd64_addr_t addr;
+	memset(&addr, 0, sizeof(addr));
+	addr.mem_input = NO_INPUT;
+	amd64_op_mode_t op_mode;
+
+	ir_node *mem_proj = NULL;
+
+	if (match_immediate_32(&addr.immediate, callee, true, true)) {
+		op_mode = AMD64_OP_UNOP_IMM32;
+	} else {
+		ir_node *load    = source_am_possible(block, callee);
+		bool     am_okay = false;
+		if (load != NULL) {
+			am_okay = true;
+			/* none of the other Call inputs must depend on the load */
+			foreach_irn_in(node, i, in) {
+				if (i == n_Call_ptr)
+					continue;
+				/* if the memory input is the load memory output, then we are
+				 * fine.
+				 * TODO: handle more complicated Sync cases
+				 */
+				if (i == n_Call_mem && is_Proj(in) && get_Proj_pred(in) == load)
+					continue;
+				if (input_depends_on_load(load, in)) {
+					am_okay = false;
+					break;
+				}
+			}
+		}
+		if (am_okay) {
+			ir_node *load_ptr = get_Load_ptr(load);
+			mem_proj = be_get_Proj_for_pn(load, pn_Load_M);
+
+			perform_address_matching(load_ptr, &in_arity, in, &addr);
+
+			if (addr.base_input != NO_INPUT) {
+				in_req[addr.base_input] = &amd64_requirement_gp;
+			}
+
+			if (addr.index_input != NO_INPUT) {
+				in_req[addr.index_input] = &amd64_requirement_gp;
+			}
+
+			ir_node *load_mem     = get_Load_mem(load);
+			ir_node *new_load_mem = be_transform_node(load_mem);
+			sync_ins[sync_arity++] = new_load_mem;
+
+			op_mode = AMD64_OP_UNOP_ADDR;
+		} else {
+			int input = in_arity++;
+			assert(input == 0); /* UNOP_REG is currently hardcoded to always
+			                     * output the register of the first input. */
+			in[input]          = be_transform_node(callee);
+			in_req[input]      = &amd64_requirement_gp;
+			addr.base_input    = NO_INPUT;
+			addr.index_input   = NO_INPUT;
+			op_mode            = AMD64_OP_UNOP_REG;
+		}
+	}
+
 	in_req[in_arity] = sp_reg->single_req;
 	in[in_arity]     = incsp;
 	++in_arity;
@@ -1369,6 +1439,12 @@ static ir_node *gen_Call(ir_node *node)
 		sync_ins[sync_arity++] = store;
 	}
 
+	/* memory input */
+	in_req[in_arity] = arch_no_register_req;
+	int mem_pos      = in_arity;
+	addr.mem_input   = mem_pos;
+	++in_arity;
+
 	/* construct memory input */
 	if (sync_arity == 0) {
 		in[mem_pos] = new_mem;
@@ -1376,46 +1452,6 @@ static ir_node *gen_Call(ir_node *node)
 		in[mem_pos] = sync_ins[0];
 	} else {
 		in[mem_pos] = new_r_Sync(new_block, sync_arity, sync_ins);
-	}
-
-	/* match callee */
-	amd64_addr_t addr;
-	memset(&addr, 0, sizeof(addr));
-	addr.mem_input = NO_INPUT;
-	amd64_op_mode_t op_mode;
-
-	ir_node *mem_proj = NULL;
-
-	if (match_immediate_32(&addr.immediate, callee, true, true)) {
-		op_mode = AMD64_OP_UNOP_IMM32;
-	} else if (source_am_possible(block, callee, NULL)) {
-		ir_node *load     = get_Proj_pred(callee);
-		ir_node *load_ptr = get_Load_ptr(load);
-		mem_proj = be_get_Proj_for_pn(load, pn_Load_M);
-
-		perform_address_matching(load_ptr, &in_arity, in, &addr);
-
-		if (addr.base_input != NO_INPUT) {
-			in_req[addr.base_input] = &amd64_requirement_gp;
-		}
-
-		if (addr.index_input != NO_INPUT) {
-			in_req[addr.index_input] = &amd64_requirement_gp;
-		}
-
-		ir_node *load_mem = get_Load_mem(load);
-		ir_node *new_mem  = be_transform_node(load_mem);
-		in[mem_pos]       = new_mem;
-		addr.mem_input    = mem_pos;
-
-		op_mode = AMD64_OP_UNOP_ADDR;
-	} else {
-		int base_input     = in_arity++;
-		in[base_input]     = be_transform_node(callee);
-		in_req[base_input] = &amd64_requirement_gp;
-		addr.base_input    = base_input;
-		addr.index_input   = NO_INPUT;
-		op_mode            = AMD64_OP_UNOP_REG;
 	}
 
 	assert(in_arity <= (int)max_inputs);
