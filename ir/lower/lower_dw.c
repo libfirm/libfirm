@@ -1484,9 +1484,9 @@ void ir_default_lower_dw_Conv(ir_node *node, ir_mode *mode)
 
 static void lower_Bitcast(ir_node *node, ir_mode *mode)
 {
-	ir_mode *dst_mode   = get_irn_mode(node);
-	ir_node *op         = get_Bitcast_op(node);
-	ir_mode *src_mode   = get_irn_mode(op);
+	ir_mode *dst_mode = get_irn_mode(node);
+	ir_node *op       = get_Bitcast_op(node);
+	ir_mode *src_mode = get_irn_mode(op);
 	ir_mode *other_mode;
 	if (dst_mode == env->high_signed || dst_mode == env->high_unsigned) {
 		other_mode = src_mode;
@@ -1544,9 +1544,10 @@ transform:
 		ir_node *store     = new_rd_Store(dbgi, block, nomem, addr, op,
 		                                  cons_floats);
 		ir_node *mem       = new_r_Proj(store, mode_M, pn_Store_M);
-		ir_node *load_low  = new_rd_Load(dbgi, block, mem, low, mode,
-		                                 cons_floats);
-		ir_node *res_low   = new_r_Proj(load_low, mode, pn_Load_res);
+		ir_node *load_low  = new_rd_Load(dbgi, block, mem, low,
+		                                 env->low_unsigned, cons_floats);
+		ir_node *res_low   = new_r_Proj(load_low, env->low_unsigned,
+		                                pn_Load_res);
 		ir_node *load_high = new_rd_Load(dbgi, block, mem, high, mode,
 		                                 cons_floats);
 		ir_node *res_high  = new_r_Proj(load_high, mode, pn_Load_res);
