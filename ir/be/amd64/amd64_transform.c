@@ -1996,6 +1996,15 @@ static void amd64_register_transformers(void)
 	be_set_transform_proj_function(op_Start,  gen_Proj_Start);
 	be_set_transform_proj_function(op_Store,  gen_Proj_Store);
 	be_set_transform_proj_function(op_Switch, be_duplicate_node);
+
+	/* upper_bits_clean can't handle different register sizes, so
+	 * arithmetic operations are problematic. Disable them. */
+	be_set_upper_bits_clean_function(op_And, NULL);
+	be_set_upper_bits_clean_function(op_Eor, NULL);
+	be_set_upper_bits_clean_function(op_Mux, NULL);
+	be_set_upper_bits_clean_function(op_Or, NULL);
+	be_set_upper_bits_clean_function(op_Shr, NULL);
+	be_set_upper_bits_clean_function(op_Shrs, NULL);
 }
 
 static ir_type *amd64_get_between_type(void)
