@@ -452,11 +452,16 @@ static ir_node *create_zext(ir_node *const node)
 	return zero;
 }
 
-static bool use_address_matching(match_flags_t flags, ir_node *block,
+static bool use_address_matching(ir_mode *mode, match_flags_t flags,
+                                 ir_node *block,
                                  ir_node *op1, ir_node *op2,
                                  ir_node **out_load, ir_node **out_op)
 {
 	if (! (flags & match_am))
+		return false;
+
+	unsigned mode_bits = get_mode_size_bits(mode);
+	if (mode_bits == 8 || mode_bits == 16)
 		return false;
 
 	ir_node *load2 = source_am_possible(block, op2);
@@ -515,9 +520,6 @@ static void match_binop(amd64_args_t *args, ir_node *block,
 	bool use_immediate = flags & match_immediate;
 	bool mode_neutral  = flags & match_mode_neutral;
 
-	unsigned mode_bits = get_mode_size_bits(mode);
-	if (mode_bits == 8 || mode_bits == 16)
-		use_am = false;
 	args->attr.base.insn_mode = get_insn_mode_from_mode(mode);
 
 	/* TODO: legalize phase */
@@ -532,7 +534,7 @@ static void match_binop(amd64_args_t *args, ir_node *block,
 	ir_node *load;
 	ir_node *op;
 
-	use_am = use_address_matching(flags, block, op1, op2, &load, &op);
+	use_am = use_address_matching(mode, flags, block, op1, op2, &load, &op);
 
 	if (use_immediate
 	    && match_immediate_32(&args->attr.u.immediate, op2, false, mode_neutral)) {
@@ -615,8 +617,6 @@ static ir_node *gen_binop_rax(ir_node *node, ir_node *op1, ir_node *op2,
 	assert(! (flags & match_immediate));
 
 	ir_mode *mode = get_irn_mode(op1);
-
-	unsigned mode_bits = get_mode_size_bits(mode);
 	amd64_insn_mode_t insn_mode = get_insn_mode_from_mode(mode);
 
 	/* TODO: legalize phase */
@@ -638,9 +638,7 @@ static ir_node *gen_binop_rax(ir_node *node, ir_node *op1, ir_node *op2,
 	amd64_addr_t    addr;
 	memset(&addr, 0, sizeof(addr));
 
-	use_am = use_address_matching(flags, block, op1, op2, &load, &op);
-	if (mode_bits == 8 || mode_bits == 16)
-		use_am = false;
+	use_am = use_address_matching(mode, flags, block, op1, op2, &load, &op);
 
 	ir_node *mem_proj = NULL;
 	if (use_am) {
