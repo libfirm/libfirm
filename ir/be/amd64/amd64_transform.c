@@ -740,13 +740,63 @@ static ir_node *gen_shift_binop(ir_node *node, ir_node *op1, ir_node *op2,
 	return new_node;
 }
 
+static ir_node *create_Lea_as_Add(ir_node *node, ir_node *op1, ir_node *op2)
+{
+	dbg_info *const dbgi = get_irn_dbg_info(node);
+	ir_node  *block      = get_nodes_block(node);
+	ir_node  *new_block  = be_transform_node(block);
+	ir_mode *mode        = get_irn_mode(node);
+
+	amd64_insn_mode_t insn_mode;
+	if (get_mode_size_bits(mode) <= 32)
+		insn_mode = INSN_MODE_32;
+	else
+		insn_mode = INSN_MODE_64;
+
+	const arch_register_req_t **reqs;
+	amd64_addr_t addr;
+	memset(&addr, 0, sizeof(addr));
+
+	ir_node *in[2];
+	int arity = 0;
+
+	if (match_immediate_32(&addr.immediate, op2, false, true)) {
+		in[arity++]      = be_transform_node(op1);
+		reqs             = reg_reqs;
+		addr.index_input = NO_INPUT;
+	} else {
+		in[arity++]      = be_transform_node(op1);
+		in[arity++]      = be_transform_node(op2);
+		addr.index_input = 0;
+		addr.base_input  = 1;
+		reqs             = reg_reg_reqs;
+	}
+
+	ir_node *res = new_bd_amd64_Lea(dbgi, new_block, arity, in, insn_mode, addr);
+	arch_set_irn_register_reqs_in(res, reqs);
+	return res;
+}
+
 static ir_node *gen_Add(ir_node *const node)
 {
+	match_flags_t flags = match_immediate | match_am | match_mode_neutral
+	                      | match_commutative;
+
 	ir_node *op1 = get_Add_left(node);
 	ir_node *op2 = get_Add_right(node);
-	ir_node *res = gen_binop_am(node, op1, op2, new_bd_amd64_Add,
-	                            match_immediate | match_am | match_mode_neutral
-	                            | match_commutative);
+
+	ir_mode *mode  = get_irn_mode(node);
+	ir_node *block = get_nodes_block(node);
+	ir_node *load, *op;
+
+	bool use_am = use_address_matching(mode, flags, block, op1, op2, &load, &op);
+
+	ir_node *res;
+	if (use_am)
+		res = gen_binop_am(node, op1, op2, new_bd_amd64_Add, flags);
+	else
+		res = create_Lea_as_Add(node, op1, op2);
+
 	x86_mark_non_am(node);
 	return res;
 }
