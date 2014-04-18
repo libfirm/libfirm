@@ -219,8 +219,6 @@ struct ir_entity {
 
 /** Initialize the entity module. */
 void ir_init_entity(ir_prog *irp);
-/** Cleanup entity module */
-void ir_finish_entity(ir_prog *irp);
 
 /**
  * Creates an entity corresponding to the start address of a basic block

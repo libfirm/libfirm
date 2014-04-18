@@ -52,8 +52,7 @@ static ir_entity *intern_new_entity(ir_type *owner, ir_entity_kind kind,
 #endif
 
 	/* Remember entity in its owner. */
-	if (is_compound_type(owner))
-		add_compound_member(owner, res);
+	add_compound_member(owner, res);
 
 	res->visit = 0;
 	return res;
@@ -936,13 +935,9 @@ void ir_init_entity(ir_prog *irp)
 {
 	ident   *const id    = new_id_from_str(UNKNOWN_ENTITY_NAME);
 	ir_type *const utype = get_unknown_type();
-	irp->unknown_entity = intern_new_entity(utype, IR_ENTITY_UNKNOWN, id, utype);
+	irp->unknown_entity = intern_new_entity(irp->dummy_owner, IR_ENTITY_UNKNOWN,
+	                                        id, utype);
 	set_entity_visibility(irp->unknown_entity, ir_visibility_external);
 	set_entity_ld_ident(irp->unknown_entity, id);
 	hook_new_entity(irp->unknown_entity);
-}
-
-void ir_finish_entity(ir_prog *irp)
-{
-	free_entity(irp->unknown_entity);
 }

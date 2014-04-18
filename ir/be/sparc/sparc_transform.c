@@ -1479,8 +1479,9 @@ static ir_node *gen_Switch(ir_node *node)
 	/* switch with smaller mode not implemented yet */
 	assert(get_mode_size_bits(get_irn_mode(selector)) == 32);
 
-	ir_type   *const utype  = get_unknown_type();
-	ir_entity *const entity = new_entity(utype, id_unique("TBL%u"), utype);
+	ir_type   *const utype = get_unknown_type();
+	ir_entity *const entity
+		= new_entity(irp->dummy_owner, id_unique("TBL%u"), utype);
 	set_entity_visibility(entity, ir_visibility_private);
 	add_entity_linkage(entity, IR_LINKAGE_CONSTANT);
 

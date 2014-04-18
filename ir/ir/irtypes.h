@@ -585,6 +585,7 @@ struct ir_prog {
 	ir_type  **types;               /**< A list of all types in the ir. */
 	ir_type   *code_type;           /**< unique 'code'-type */
 	ir_type   *unknown_type;        /**< unique 'unknown'-type */
+	ir_type   *dummy_owner;         /**< owner for internal entities */
 	ir_type   *byte_type;           /**< type for a 'byte' */
 	ident    **global_asms;         /**< An array of global ASM insertions. */
 

@@ -68,6 +68,8 @@ void ir_init_type(ir_prog *irp)
 
 	irp->unknown_type = new_type(tpop_unknown, mode_ANY);
 	set_type_state (irp->unknown_type, layout_fixed);
+
+	irp->dummy_owner = new_type_struct(new_id_from_str("$dummy_owner$"));
 }
 
 void ir_finish_type(ir_prog *irp)

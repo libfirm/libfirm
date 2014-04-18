@@ -106,8 +106,6 @@ void free_ir_prog(void)
 	for (size_t i = get_irp_n_types(); i > 0;)
 		free_type_entities(get_irp_type(--i));
 
-	ir_finish_entity(irp);
-
 	for (size_t i = get_irp_n_types(); i > 0;)
 		free_type(get_irp_type(--i));
 
