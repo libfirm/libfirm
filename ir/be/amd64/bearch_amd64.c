@@ -7,7 +7,6 @@
  * @file
  * @brief    The main amd64 backend driver file.
  */
-#include "beabi.h"
 #include "beabihelper.h"
 #include "bearch.h"
 #include "beflags.h"
@@ -410,101 +409,6 @@ static void amd64_prepare_graph(ir_graph *irg)
 	be_dump(DUMP_BE, irg, "code-selection");
 }
 
-/**
- * Get the between type for that call.
- * @param self The callback object.
- * @return The between type of for that call.
- */
-static ir_type *amd64_get_between_type(ir_graph *irg)
-{
-	static ir_type *between_type = NULL;
-	static ir_entity *old_bp_ent = NULL;
-	(void) irg;
-
-	if(!between_type) {
-		ir_entity *ret_addr_ent;
-		ir_type *ret_addr_type = new_type_primitive(mode_P);
-		ir_type *old_bp_type   = new_type_primitive(mode_P);
-
-		between_type           = new_type_class(new_id_from_str("amd64_between_type"));
-		old_bp_ent             = new_entity(between_type, new_id_from_str("old_bp"), old_bp_type);
-		ret_addr_ent           = new_entity(between_type, new_id_from_str("old_bp"), ret_addr_type);
-
-		set_entity_offset(old_bp_ent, 0);
-		set_entity_offset(ret_addr_ent, get_type_size_bytes(old_bp_type));
-		set_type_size_bytes(between_type, get_type_size_bytes(old_bp_type) + get_type_size_bytes(ret_addr_type));
-	}
-
-	return between_type;
-}
-
-static const be_abi_callbacks_t amd64_abi_callbacks = {
-	amd64_get_between_type,
-};
-
-static const arch_register_t *gpreg_param_reg_std[] = {
-	&amd64_registers[REG_RDI],
-	&amd64_registers[REG_RSI],
-	&amd64_registers[REG_RDX],
-	&amd64_registers[REG_RCX],
-	&amd64_registers[REG_R8],
-	&amd64_registers[REG_R9],
-};
-
-static const arch_register_t *amd64_get_RegParam_reg(int n)
-{
-	assert(n < 6 && n >=0 && "register param > 6 requested");
-	return gpreg_param_reg_std[n];
-}
-
-/**
- * Get the ABI restrictions for procedure calls.
- * @param self        The this pointer.
- * @param method_type The type of the method (procedure) in question.
- * @param abi         The abi object to be modified
- */
-static void amd64_get_call_abi(ir_type *method_type, be_abi_call_t *abi)
-{
-	ir_type  *tp;
-	ir_mode  *mode;
-	int       i, n = get_method_n_params(method_type);
-	int no_reg = 0;
-
-	/* set abi flags for calls */
-	be_abi_call_flags_t call_flags = be_abi_call_get_flags(abi);
-	call_flags.call_has_imm = true;
-	be_abi_call_set_flags(abi, call_flags, &amd64_abi_callbacks);
-
-	for (i = 0; i < n; i++) {
-		tp   = get_method_param_type(method_type, i);
-		mode = get_type_mode(tp);
-		//d// printf ("MODE %p %p XX %d\n", mode, mode_Iu, i);
-
-		if (!no_reg && i < 6 && mode_is_data (mode)) {
-			//d// printf("TEST%d\n", i);
-			be_abi_call_param_reg(abi, i, amd64_get_RegParam_reg (i),
-			                      ABI_CONTEXT_BOTH);
-		/* default: all parameters on stack */
-		} else {
-			no_reg = 1;
-			be_abi_call_param_stack(abi, i, mode, 8, 0, 0, ABI_CONTEXT_BOTH);
-		}
-	}
-
-	/* TODO: set correct return register */
-	/* default: return value is in R0 resp. F0 */
-	if (get_method_n_ress(method_type) > 0) {
-		tp   = get_method_res_type(method_type, 0);
-		mode = get_type_mode(tp);
-
-		if (mode_is_float(mode))
-			panic("float not supported yet");
-
-		be_abi_call_res_reg(abi, 0,
-			&amd64_registers[REG_RAX], ABI_CONTEXT_BOTH);
-	}
-}
-
 static void amd64_lower_for_target(void)
 {
 	/* lower compound param handling */
@@ -579,33 +483,6 @@ static int amd64_is_valid_clobber(const char *clobber)
 	return 0;
 }
 
-static int amd64_register_saved_by(const arch_register_t *reg, int callee)
-{
-	switch (reg->global_index) {
-	case REG_RBX:
-	case REG_RBP:
-	case REG_R12:
-	case REG_R13:
-	case REG_R14:
-	case REG_R15:
-		return callee;
-
-	case REG_RAX:
-	case REG_RCX:
-	case REG_RDX:
-	case REG_RSI:
-	case REG_RDI:
-	case REG_R8:
-	case REG_R9:
-	case REG_R10:
-	case REG_R11:
-		return !callee;
-
-	default:
-		return 0;
-	}
-}
-
 const arch_isa_if_t amd64_isa_if = {
 	amd64_init,
 	amd64_finish,
@@ -615,11 +492,11 @@ const arch_isa_if_t amd64_isa_if = {
 
 	amd64_begin_codegeneration,
 	amd64_end_codegeneration,
-	amd64_get_call_abi,
+	NULL,
 	NULL,              /* mark remat */
 	amd64_new_spill,
 	amd64_new_reload,
-	amd64_register_saved_by,
+	NULL,
 
 	NULL,              /* handle intrinsics */
 	amd64_prepare_graph,
