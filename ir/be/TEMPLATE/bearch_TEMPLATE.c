@@ -23,7 +23,6 @@
 #include "benode.h"
 #include "belower.h"
 #include "besched.h"
-#include "beabi.h"
 #include "bemodule.h"
 #include "begnuas.h"
 #include "belistsched.h"
@@ -152,77 +151,6 @@ static void TEMPLATE_end_codegeneration(void *self)
 	free(self);
 }
 
-/**
- * Get the between type for that call.
- * @param self The callback object.
- * @return The between type of for that call.
- */
-static ir_type *TEMPLATE_get_between_type(ir_graph *irg)
-{
-	static ir_type *between_type = NULL;
-	static ir_entity *old_bp_ent = NULL;
-	(void) irg;
-
-	if (!between_type) {
-		ir_entity *ret_addr_ent;
-		ir_type *ret_addr_type = new_type_primitive(mode_P);
-		ir_type *old_bp_type   = new_type_primitive(mode_P);
-
-		between_type           = new_type_class(new_id_from_str("TEMPLATE_between_type"));
-		old_bp_ent             = new_entity(between_type, new_id_from_str("old_bp"), old_bp_type);
-		ret_addr_ent           = new_entity(between_type, new_id_from_str("old_bp"), ret_addr_type);
-
-		set_entity_offset(old_bp_ent, 0);
-		set_entity_offset(ret_addr_ent, get_type_size_bytes(old_bp_type));
-		set_type_size_bytes(between_type, get_type_size_bytes(old_bp_type) + get_type_size_bytes(ret_addr_type));
-	}
-
-	return between_type;
-}
-
-static const be_abi_callbacks_t TEMPLATE_abi_callbacks = {
-	TEMPLATE_get_between_type,
-};
-
-/**
- * Get the ABI restrictions for procedure calls.
- * @param self        The this pointer.
- * @param method_type The type of the method (procedure) in question.
- * @param abi         The abi object to be modified
- */
-static void TEMPLATE_get_call_abi(ir_type *method_type, be_abi_call_t *abi)
-{
-	ir_type  *tp;
-	ir_mode  *mode;
-	int       i, n = get_method_n_params(method_type);
-
-	/* set abi flags for calls */
-	be_abi_call_flags_t call_flags = be_abi_call_get_flags(abi);
-	call_flags.call_has_imm = true;
-	be_abi_call_set_flags(abi, call_flags, &TEMPLATE_abi_callbacks);
-
-	for (i = 0; i < n; i++) {
-		/* TODO: implement register parameter: */
-		/* reg = get reg for param i;          */
-		/* be_abi_call_param_reg(abi, i, reg, ABI_CONTEXT_BOTH); */
-
-		/* default: all parameters on stack */
-		tp   = get_method_param_type(method_type, i);
-		mode = get_type_mode(tp);
-		be_abi_call_param_stack(abi, i, mode, 4, 0, 0, ABI_CONTEXT_BOTH);
-	}
-
-	/* TODO: set correct return register */
-	/* default: return value is in R0 resp. F0 */
-	if (get_method_n_ress(method_type) > 0) {
-		tp   = get_method_res_type(method_type, 0);
-		mode = get_type_mode(tp);
-
-		be_abi_call_res_reg(abi, 0,
-			mode_is_float(mode) ? &TEMPLATE_registers[REG_F0] : &TEMPLATE_registers[REG_R0], ABI_CONTEXT_BOTH);
-	}
-}
-
 static void TEMPLATE_lower_for_target(void)
 {
 	lower_builtins(0, NULL);
@@ -274,50 +202,6 @@ static int TEMPLATE_is_valid_clobber(const char *clobber)
 	return 0;
 }
 
-/**
- * Check if the given register is callee or caller save.
- */
-static int TEMPLATE_register_saved_by(const arch_register_t *reg, int callee)
-{
-	if (callee) {
-		/* check for callee saved */
-		if (reg->reg_class == &TEMPLATE_reg_classes[CLASS_TEMPLATE_gp]) {
-			switch (reg->index) {
-			case REG_GP_R7:
-			case REG_GP_R8:
-			case REG_GP_R9:
-			case REG_GP_R10:
-			case REG_GP_R11:
-			case REG_GP_R12:
-			case REG_GP_R13:
-				return 1;
-			default:
-				return 0;
-			}
-		}
-	} else {
-		/* check for caller saved */
-		if (reg->reg_class == &TEMPLATE_reg_classes[CLASS_TEMPLATE_gp]) {
-			switch (reg->index) {
-			case REG_GP_R0:
-			case REG_GP_R1:
-			case REG_GP_R2:
-			case REG_GP_R3:
-			case REG_GP_R4:
-			case REG_GP_R5:
-			case REG_GP_R6:
-				return 1;
-			default:
-				return 0;
-			}
-		} else if (reg->reg_class == &TEMPLATE_reg_classes[CLASS_TEMPLATE_fp]) {
-			/* all FP registers are caller save */
-			return 1;
-		}
-	}
-	return 0;
-}
-
 static ir_node *TEMPLATE_new_spill(ir_node *value, ir_node *after)
 {
 	(void)value;
@@ -343,11 +227,11 @@ const arch_isa_if_t TEMPLATE_isa_if = {
 
 	TEMPLATE_begin_codegeneration,
 	TEMPLATE_end_codegeneration,
-	TEMPLATE_get_call_abi,
+	NULL,
 	NULL, /* mark remat */
 	TEMPLATE_new_spill,
 	TEMPLATE_new_reload,
-	TEMPLATE_register_saved_by,
+	NULL,
 
 	NULL, /* handle intrinsics */
 	TEMPLATE_prepare_graph,
