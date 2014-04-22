@@ -875,7 +875,7 @@ static int determine_ebp_input(ir_node *ret)
 	panic("no ebp input found at %+F", ret);
 }
 
-static void introduce_epilog(ir_node *ret)
+static void introduce_epilogue(ir_node *ret)
 {
 	const arch_register_t *sp         = &ia32_registers[REG_ESP];
 	const arch_register_t *bp         = &ia32_registers[REG_EBP];
@@ -933,7 +933,7 @@ static void introduce_epilog(ir_node *ret)
 }
 
 /**
- * put the Prolog code at the beginning, epilog code before each return
+ * Put the prologue code at the beginning, epilogue code before each return
  */
 static void introduce_prologue_epilogue(ir_graph *irg)
 {
@@ -987,10 +987,10 @@ static void introduce_prologue_epilogue(ir_graph *irg)
 		sched_add_after(start, incsp);
 	}
 
-	/* introduce epilog for every return node */
+	/* introduce epilogue for every return node */
 	foreach_irn_in(get_irg_end_block(irg), i, ret) {
 		assert(be_is_Return(ret));
-		introduce_epilog(ret);
+		introduce_epilogue(ret);
 	}
 }
 
