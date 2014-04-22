@@ -766,7 +766,7 @@ static void dump_node_nodeattr(FILE *F, const ir_node *n)
 		} else if (code == iro_Switch && proj_nr != pn_Switch_default) {
 			char            const       *sep   = "case ";
 			ir_switch_table const *const table = get_Switch_table(pred);
-      for (size_t i = 0, n = ir_switch_table_get_n_entries(table); i < n; ++i) {
+			for (size_t i = 0, n = ir_switch_table_get_n_entries(table); i < n; ++i) {
 				ir_switch_table_entry const *const entry = ir_switch_table_get_entry_const(table, i);
 				if (entry->pn != proj_nr)
 					continue;
