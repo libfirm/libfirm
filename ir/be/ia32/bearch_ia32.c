@@ -935,7 +935,7 @@ static void introduce_epilog(ir_node *ret)
 /**
  * put the Prolog code at the beginning, epilog code before each return
  */
-static void introduce_prolog_epilog(ir_graph *irg)
+static void introduce_prologue_epilogue(ir_graph *irg)
 {
 	const arch_register_t *sp         = &ia32_registers[REG_ESP];
 	const arch_register_t *bp         = &ia32_registers[REG_EBP];
@@ -1013,7 +1013,7 @@ static void ia32_emit(ir_graph *irg)
 
 	irg_block_walk_graph(irg, NULL, ia32_after_ra_walker, NULL);
 
-	introduce_prolog_epilog(irg);
+	introduce_prologue_epilogue(irg);
 
 	/* fix stack entity offsets */
 	be_abi_fix_stack_nodes(irg);
