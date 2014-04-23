@@ -2034,12 +2034,9 @@ static void combine_memop(ir_node *sync, void *data)
 	if (!is_Sync(sync))
 		return;
 
-	unsigned machine_size = be_get_machine_size();
-	/* TODO: test if unaligned load/store is efficient, otherwise this isn't
-	 * really interesting. */
-
-	int       n_preds = get_Sync_n_preds(sync);
-	ir_node **new_in  = ALLOCAN(ir_node*, n_preds);
+	unsigned  machine_size = be_get_machine_size();
+	int       n_preds      = get_Sync_n_preds(sync);
+	ir_node **new_in       = ALLOCAN(ir_node*, n_preds);
 	memcpy(new_in, get_irn_in(sync)+1, n_preds * sizeof(new_in[0]));
 
 	QSORT(new_in, n_preds, cmp_ptrs);
