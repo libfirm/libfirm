@@ -205,7 +205,7 @@ ir_mode *new_int_mode(const char *name, ir_mode_arithmetic arithmetic,
                       unsigned bit_size, int sign, unsigned modulo_shift)
 {
 	if (bit_size >= (unsigned)sc_get_precision())
-		panic("Can't create mode: more bits than tarval module maximum");
+		panic("Cannot create mode: more bits than tarval module maximum");
 
 	ir_mode *result = alloc_mode(name, irms_int_number, arithmetic, bit_size,
 	                             sign, modulo_shift);
@@ -216,7 +216,7 @@ ir_mode *new_reference_mode(const char *name, ir_mode_arithmetic arithmetic,
                             unsigned bit_size, unsigned modulo_shift)
 {
 	if (bit_size >= (unsigned)sc_get_precision())
-		panic("Can't create mode: more bits than tarval module maximum");
+		panic("Cannot create mode: more bits than tarval module maximum");
 
 	ir_mode *result = alloc_mode(name, irms_reference, arithmetic, bit_size,
 	                             0, modulo_shift);
@@ -249,9 +249,9 @@ ir_mode *new_float_mode(const char *name, ir_mode_arithmetic arithmetic,
 	if (mantissa_size >= 256)
 		panic("Mantissa >= 256 bits not supported");
 	if (exponent_size >= (unsigned)sc_get_precision())
-		panic("Can't create mode: more bits than tarval module maximum");
+		panic("Cannot create mode: more bits than tarval module maximum");
 	if (mantissa_size >= (unsigned)sc_get_precision())
-		panic("Can't create mode: more bits than tarval module maximum");
+		panic("Cannot create mode: more bits than tarval module maximum");
 
 	ir_mode *result
 		= alloc_mode(name, irms_float_number, arithmetic, bit_size, 1, 0);

@@ -607,7 +607,7 @@ static void emit_arith_tarval(ir_tarval *tv, unsigned bytes)
 		return;
 	}
 
-	panic("Can't dump a tarval with %d bytes", bytes);
+	panic("Cannot dump a tarval with %d bytes", bytes);
 }
 
 /**

@@ -177,7 +177,7 @@ static void lower_builtin(ir_node *node, void *env)
 	case ir_bk_saturating_increment:
 	case ir_bk_compare_swap:
 		/* can't do anything about these, backend will probably fail now */
-		panic("Can't lower Builtin node of kind %+F", node);
+		panic("Cannot lower Builtin node of kind %+F", node);
 	}
 	panic("unexpected builtin %+F", node);
 }

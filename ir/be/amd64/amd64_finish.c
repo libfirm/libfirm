@@ -177,7 +177,7 @@ static void assure_should_be_same_requirements(ir_node *const node)
 			const arch_register_t *reg = arch_get_irn_register_in(node, i2);
 			if (reg == out_reg && (unsigned)i2 != same_pos) {
 				if (!is_amd64_irn(node))
-					panic("Can't fulfill should_be_same on non-amd64 node");
+					panic("Cannot fulfill should_be_same on non-amd64 node");
 				/* see what role this register has */
 				const amd64_attr_t *attr = get_amd64_attr_const(node);
 				if (attr->op_mode == AMD64_OP_ADDR

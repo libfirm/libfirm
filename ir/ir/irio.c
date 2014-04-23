@@ -976,7 +976,7 @@ static void write_mode(write_env_t *env, ir_mode *mode)
 		write_unsigned(env, get_mode_mantissa_size(mode));
 		write_unsigned(env, get_mode_float_int_overflow(mode));
 	} else {
-		panic("Can't write internal modes");
+		panic("Cannot write internal modes");
 	}
 }
 

@@ -984,7 +984,7 @@ void lower_calls_with_compounds(compound_call_lowering_flags flags)
 		} else if (machine_size == 64) {
 			int_return_mode = mode_Lu;
 		} else {
-			panic("Can't determine machine register mode");
+			panic("Cannot determine machine register mode");
 		}
 	}
 

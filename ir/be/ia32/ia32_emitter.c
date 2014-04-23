@@ -235,7 +235,7 @@ static void ia32_emit_mode_suffix_mode(const ir_mode *mode)
 		 * apparently */
 		case 64: be_emit_cstring("ll"); return;
 	}
-	panic("Can't output mode_suffix for %+F", mode);
+	panic("Cannot output mode_suffix for %+F", mode);
 }
 
 static void ia32_emit_x87_mode_suffix(ir_node const *const node)
@@ -269,7 +269,7 @@ static void ia32_emit_x87_mode_suffix(ir_node const *const node)
 			case 64: be_emit_cstring("ll"); return;
 		}
 	}
-	panic("Can't output mode_suffix for %+F", mode);
+	panic("Cannot output mode_suffix for %+F", mode);
 }
 
 static char get_xmm_mode_suffix(ir_mode *mode)
