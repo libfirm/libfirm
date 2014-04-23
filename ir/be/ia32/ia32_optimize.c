@@ -759,7 +759,6 @@ static void peephole_ia32_Const(ir_node *node)
 	const arch_register_t *reg = arch_get_irn_register(node);
 	assert(be_peephole_get_reg_value(reg) == NULL);
 
-	/* create xor(produceval, produceval) */
 	ir_node  *block = get_nodes_block(node);
 	dbg_info *dbgi  = get_irn_dbg_info(node);
 	ir_node  *xorn  = new_bd_ia32_Xor0(dbgi, block);
