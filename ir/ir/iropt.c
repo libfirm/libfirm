@@ -7150,7 +7150,7 @@ int identities_cmp(const void *elt, const void *key)
 	}
 
 	/*
-	 * here, we already now that the nodes are identical except their
+	 * here, we already know that the nodes are identical except their
 	 * attributes
 	 */
 	if (a->op->ops.node_cmp_attr)
