@@ -1223,13 +1223,13 @@ Call => {
 # PS: try gcc __builtin_frame_address(100000) :-)
 #
 ClimbFrame => {
-	reg_req   => { in => [ "gp", "gp", "gp"], out => [ "in_r3" ] },
-	ins       => [ "frame", "cnt", "tmp" ],
-	outs      => [ "res" ],
+	reg_req   => { in => [ "gp" ], out => [ "in_r1", "!in_r1" ] },
+	ins       => [ "frame" ],
+	outs      => [ "res", "cnt" ],
 	latency   => 4, # random number
 	attr_type => "ia32_climbframe_attr_t",
 	attr      => "unsigned count",
-	mode      => $mode_gp
+	modified_flags => $status_flags
 },
 
 #

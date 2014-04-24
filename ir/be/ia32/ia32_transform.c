@@ -4728,9 +4728,8 @@ static ir_node *gen_return_address(ir_node *node)
 	ir_tarval    *tv    = get_Const_tarval(param);
 	unsigned long value = get_tarval_long(tv);
 	if (value > 0) {
-		ir_node *cnt = new_bd_ia32_ProduceVal(dbgi, block);
-		ir_node *res = new_bd_ia32_ProduceVal(dbgi, block);
-		ptr = new_bd_ia32_ClimbFrame(dbgi, block, ptr, cnt, res, value);
+		ir_node *const cfr = new_bd_ia32_ClimbFrame(dbgi, block, ptr, value);
+		ptr = new_r_Proj(cfr, ia32_mode_gp, pn_ia32_ClimbFrame_res);
 	}
 
 	/* load the return address from this frame */
@@ -4768,9 +4767,8 @@ static ir_node *gen_frame_address(ir_node *node)
 	ir_node      *ptr   = get_irg_frame(irg);
 	unsigned long value = get_tarval_long(tv);
 	if (value > 0) {
-		ir_node *cnt = new_bd_ia32_ProduceVal(dbgi, block);
-		ir_node *res = new_bd_ia32_ProduceVal(dbgi, block);
-		ptr = new_bd_ia32_ClimbFrame(dbgi, block, ptr, cnt, res, value);
+		ir_node *const cfr = new_bd_ia32_ClimbFrame(dbgi, block, ptr, value);
+		ptr = new_r_Proj(cfr, ia32_mode_gp, pn_ia32_ClimbFrame_res);
 	}
 
 	/* load the frame address from this frame */
