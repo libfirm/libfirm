@@ -411,6 +411,8 @@ static ir_node *find_const_or_confirm(jumpthreading_env_t *env, ir_node *jump,
 				ir_node  *jmp  = new_rd_Jmp(dbgi, get_nodes_block(jump));
 				exchange(jump, jmp);
 			}
+			/* we need a bigger visited nr when going back */
+			env->visited_nr++;
 			return block;
 		}
 		if (evaluated <= 0)
