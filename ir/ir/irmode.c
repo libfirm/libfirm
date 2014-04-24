@@ -587,6 +587,8 @@ ir_mode *find_double_bits_int_mode(const ir_mode *mode)
 	       && mode->arithmetic == irma_twos_complement);
 
 	n.size = 2*mode->size;
+	if (n.modulo_shift != 0 && n.modulo_shift < n.size)
+		n.modulo_shift = n.size;
 	return find_mode(&n);
 }
 
