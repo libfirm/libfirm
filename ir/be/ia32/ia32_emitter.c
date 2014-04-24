@@ -1342,14 +1342,11 @@ static void emit_ia32_ClimbFrame(const ir_node *node)
 
 	ia32_emitf(node, "movl %S0, %D0");
 	ia32_emitf(node, "movl $%u, %S1", attr->count);
-	be_gas_emit_block_name(node);
-	be_emit_cstring(":\n");
+	be_emit_cstring("0:\n");
 	be_emit_write_line();
 	ia32_emitf(node, "movl (%D0), %D0");
 	ia32_emitf(node, "dec %S1");
-	be_emit_cstring("\tjnz ");
-	be_gas_emit_block_name(node);
-	be_emit_finish_line_gas(node);
+	ia32_emitf(node, "jnz 0b");
 }
 
 static void emit_be_Return(const ir_node *node)

@@ -4721,10 +4721,10 @@ static ir_node *gen_debugbreak(ir_node *node)
 static ir_node *gen_return_address(ir_node *node)
 {
 	ir_node      *param = get_Builtin_param(node, 0);
-	ir_node      *frame = get_Builtin_param(node, 1);
 	dbg_info     *dbgi  = get_irn_dbg_info(node);
 	ir_node      *block = be_transform_node(get_nodes_block(node));
-	ir_node      *ptr   = be_transform_node(frame);
+	ir_graph     *irg   = get_irn_irg(node);
+	ir_node      *ptr   = get_irg_frame(irg);
 	ir_tarval    *tv    = get_Const_tarval(param);
 	unsigned long value = get_tarval_long(tv);
 	if (value > 0) {
@@ -4740,7 +4740,6 @@ static ir_node *gen_return_address(ir_node *node)
 	set_ia32_op_type(load, ia32_AddrModeS);
 	set_ia32_ls_mode(load, ia32_mode_gp);
 
-	ir_graph *irg = get_irn_irg(node);
 	set_ia32_am_offs_int(load, 0);
 	set_ia32_use_frame(load);
 	set_ia32_frame_ent(load, ia32_get_return_address_entity(irg));
@@ -4762,12 +4761,11 @@ static ir_node *gen_return_address(ir_node *node)
 static ir_node *gen_frame_address(ir_node *node)
 {
 	ir_node      *param = get_Builtin_param(node, 0);
-	ir_node      *frame = get_Builtin_param(node, 1);
 	dbg_info     *dbgi  = get_irn_dbg_info(node);
 	ir_tarval    *tv    = get_Const_tarval(param);
 	ir_graph     *irg   = get_irn_irg(node);
 	ir_node      *block = be_transform_node(get_nodes_block(node));
-	ir_node      *ptr   = be_transform_node(frame);
+	ir_node      *ptr   = get_irg_frame(irg);
 	unsigned long value = get_tarval_long(tv);
 	if (value > 0) {
 		ir_node *cnt = new_bd_ia32_ProduceVal(dbgi, block);
