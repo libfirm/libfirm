@@ -280,7 +280,7 @@ static void walker(ir_node *proj, void *env)
 
 	size_t n = ir_nodeset_size(&pi.user_mem);
 	if (n > 0) { /* nothing happened otherwise */
-		ir_node **in   = XMALLOCN(ir_node*, n+1);
+		ir_node **in = XMALLOCN(ir_node*, n+1);
 
 		size_t i = 0;
 		in[i++] = proj;
@@ -303,6 +303,7 @@ static void walker(ir_node *proj, void *env)
 			}
 			assert(i == n);
 			sync = new_r_Sync(block, i, in);
+			free(in);
 		}
 		set_memop_mem(mem_op, sync);
 	}

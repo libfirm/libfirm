@@ -26,6 +26,7 @@ int obstack_vprintf(struct obstack *obst, const char *fmt, va_list ap) FIRM_NOTH
 		va_list tap;
 		va_copy(tap, ap);
 		len = vsnprintf(buffer, size, fmt, tap);
+		va_end(tap);
 
 		/* snprintf should return -1 only in the error case, but older glibcs
 		 * and probably other systems are buggy in this respect and return -1 if

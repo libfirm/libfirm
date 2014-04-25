@@ -345,6 +345,7 @@ static void merge_source_into_target(pbqp_t *pbqp, pbqp_edge_t *edge)
 #if KAPS_STATISTIC
 	pbqp->num_r1--;
 #endif
+	DEL_ARR_F(mapping);
 }
 
 /**
@@ -484,6 +485,7 @@ static void merge_target_into_source(pbqp_t *pbqp, pbqp_edge_t *edge)
 #if KAPS_STATISTIC
 	pbqp->num_r1--;
 #endif
+	DEL_ARR_F(mapping);
 }
 
 /**

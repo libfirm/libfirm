@@ -763,9 +763,9 @@ static __attribute__((unused)) void chunk_order_nodes(co_mst_env_t *env, aff_chu
 			}
 		}
 
-		del_pqueue(grow);
 		free(visited);
 	}
+	del_pqueue(grow);
 }
 
 /**

@@ -1024,6 +1024,8 @@ static void solve_lpp(ir_nodeset_t *live_nodes, ir_node *node,
 			assert(lpp_vars[l*n_regs+r] > 0);
 		}
 	}
+	free(forbidden_edges);
+
 	/* add constraints */
 	for (unsigned l = 0; l < n_regs; ++l) {
 		/* only 1 destination per register */
@@ -1054,7 +1056,11 @@ static void solve_lpp(ir_nodeset_t *live_nodes, ir_node *node,
 		}
 	}
 
-	lpp_dump_plain(lpp, fopen("lppdump.txt", "w"));
+	FILE *out = fopen("lppdump.txt", "w");
+	if (out == NULL)
+		panic("Couldn't open lppdump.txt");
+	lpp_dump_plain(lpp, out);
+	fclose(out);
 
 	/* solve lpp */
 	lpp_solve(lpp, be_options.ilp_server, be_options.ilp_solver);
@@ -1077,6 +1083,7 @@ static void solve_lpp(ir_nodeset_t *live_nodes, ir_node *node,
 		assert(dest_reg != (unsigned)-1);
 		assignment[dest_reg] = l;
 	}
+	free(lpp_vars);
 
 	fprintf(stderr, "Assignment: ");
 	for (unsigned l = 0; l < n_regs; ++l) {

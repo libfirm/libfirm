@@ -1477,6 +1477,7 @@ static void pick_delay_slots(size_t n_blocks, ir_node **blocks)
 			pmap_insert(delay_slots, node, filler);
 		}
 	}
+	free(sorted_blocks);
 }
 
 void sparc_emit_function(ir_graph *irg)
