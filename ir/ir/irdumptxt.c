@@ -233,6 +233,7 @@ void dump_irnode_to_file(FILE *const F, const ir_node *const n)
 	case iro_Sel: {
 		const ir_type *type = get_Sel_type(n);
 		ir_fprintf(F, "  Array type: %+F\n", type);
+		break;
 	}
 	case iro_Call: {
 		const ir_type *tp = get_Call_type(n);
