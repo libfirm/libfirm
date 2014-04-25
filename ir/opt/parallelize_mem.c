@@ -67,15 +67,13 @@ static void parallelize_load(parallelize_info *pi, ir_node *irn)
 				}
 			}
 		} else if (is_Sync(irn)) {
-			int n = get_Sync_n_preds(irn);
-
-			for (int i = 0; i < n; ++i) {
+			for (int i = 0, n = get_Sync_n_preds(irn); i < n; ++i) {
 				ir_node *sync_pred = get_Sync_pred(irn, i);
 				parallelize_load(pi, sync_pred);
 			}
 			return;
 		} else if (is_CopyB(irn) &&
-				get_CopyB_volatility(irn) == volatility_non_volatile) {
+		           get_CopyB_volatility(irn) == volatility_non_volatile) {
 			ir_type *org_type   = pi->origin_type;
 			ir_node *org_ptr    = pi->origin_ptr;
 			ir_type *copyB_type = get_CopyB_type(irn);
@@ -102,8 +100,8 @@ static void parallelize_store(parallelize_info *pi, ir_node *irn)
 	if (get_nodes_block(irn) == pi->origin_block) {
 		if (is_Proj(irn)) {
 			ir_node *pred = get_Proj_pred(irn);
-			if (is_Load(pred) &&
-					get_Load_volatility(pred) == volatility_non_volatile) {
+			if (is_Load(pred)
+			    && get_Load_volatility(pred) == volatility_non_volatile) {
 				ir_type *org_type  = pi->origin_type;
 				ir_node *org_ptr   = pi->origin_ptr;
 				ir_type *load_type = get_type_for_mode(get_Load_mode(pred));
@@ -114,8 +112,8 @@ static void parallelize_store(parallelize_info *pi, ir_node *irn)
 					parallelize_store(pi, mem);
 					return;
 				}
-			} else if (is_Store(pred) &&
-					get_Store_volatility(pred) == volatility_non_volatile) {
+			} else if (is_Store(pred)
+			           && get_Store_volatility(pred) == volatility_non_volatile) {
 				ir_type *org_type   = pi->origin_type;
 				ir_node *org_ptr    = pi->origin_ptr;
 				ir_type *store_type = get_type_for_mode(get_irn_mode(get_Store_value(pred)));
@@ -128,15 +126,13 @@ static void parallelize_store(parallelize_info *pi, ir_node *irn)
 				}
 			}
 		} else if (is_Sync(irn)) {
-			int n = get_Sync_n_preds(irn);
-
-			for (int i = 0; i < n; ++i) {
+			for (int i = 0, n = get_Sync_n_preds(irn); i < n; ++i) {
 				ir_node *sync_pred = get_Sync_pred(irn, i);
 				parallelize_store(pi, sync_pred);
 			}
 			return;
-		} else if (is_CopyB(irn) &&
-				get_CopyB_volatility(irn) == volatility_non_volatile) {
+		} else if (is_CopyB(irn)
+		           && get_CopyB_volatility(irn) == volatility_non_volatile) {
 			ir_type *org_type   = pi->origin_type;
 			ir_node *org_ptr    = pi->origin_ptr;
 			ir_type *copyB_type = get_CopyB_type(irn);
@@ -165,8 +161,8 @@ static void parallelize_copyB(parallelize_info *pi, ir_node *origin, ir_node *ir
 	if (get_nodes_block(irn) == pi->origin_block) {
 		if (is_Proj(irn)) {
 			ir_node *pred = get_Proj_pred(irn);
-			if (is_Load(pred) &&
-					get_Load_volatility(pred) == volatility_non_volatile) {
+			if (is_Load(pred)
+			    && get_Load_volatility(pred) == volatility_non_volatile) {
 				ir_type *org_type  = pi->origin_type;
 				ir_node *org_ptr   = get_CopyB_dst(origin);
 				ir_type *load_type = get_type_for_mode(get_Load_mode(pred));
@@ -177,8 +173,8 @@ static void parallelize_copyB(parallelize_info *pi, ir_node *origin, ir_node *ir
 					parallelize_copyB(pi, origin, mem);
 					return;
 				}
-			} else if (is_Store(pred) &&
-					get_Store_volatility(pred) == volatility_non_volatile) {
+			} else if (is_Store(pred)
+			           && get_Store_volatility(pred) == volatility_non_volatile) {
 				ir_type *org_type   = pi->origin_type;
 				ir_node *org_src    = get_CopyB_src(origin);
 				ir_node *org_dst    = get_CopyB_dst(origin);
@@ -193,15 +189,13 @@ static void parallelize_copyB(parallelize_info *pi, ir_node *origin, ir_node *ir
 				}
 			}
 		} else if (is_Sync(irn)) {
-			int n = get_Sync_n_preds(irn);
-
-			for (int i = 0; i < n; ++i) {
+			for (int i = 0, n = get_Sync_n_preds(irn); i < n; ++i) {
 				ir_node *sync_pred = get_Sync_pred(irn, i);
 				parallelize_copyB(pi, origin, sync_pred);
 			}
 			return;
-		} else if (is_CopyB(irn) &&
-				get_CopyB_volatility(irn) == volatility_non_volatile) {
+		} else if (is_CopyB(irn)
+		           && get_CopyB_volatility(irn) == volatility_non_volatile) {
 			ir_type *org_type   = pi->origin_type;
 			ir_node *org_src    = get_CopyB_src(origin);
 			ir_node *org_dst    = get_CopyB_dst(origin);
@@ -226,7 +220,6 @@ static void walker(ir_node *proj, void *env)
 	(void)env;
 
 	ir_node *mem_op;
-
 	if (is_Proj(proj) && get_irn_mode(proj) == mode_M) {
 		mem_op = get_Proj_pred(proj);
 	} else if (get_irn_mode(proj) == mode_M) {
@@ -238,7 +231,6 @@ static void walker(ir_node *proj, void *env)
 	ir_node          *pred;
 	ir_node          *block;
 	parallelize_info  pi;
-
 	if (is_Load(mem_op)) {
 		if (get_Load_volatility(mem_op) != volatility_non_volatile) return;
 
@@ -390,7 +382,7 @@ static void dfs_by_edges_from(ir_node *irn,
 
 typedef struct {
 	bool is_Sync_pred;
-	int sync_pred_count;
+	int  sync_pred_count;
 } sync_pred_info_t;
 
 static void prepare_links_Sync(ir_node *irn, void *e)
@@ -419,12 +411,11 @@ static void simplify_Sync(ir_node *irn, void *e)
 {
 	struct obstack *obst = (struct obstack*) e;
 
-	if (!is_Sync(irn)) {
+	if (!is_Sync(irn))
 		return;
-	}
 
-	ir_node **preds = get_Sync_pred_arr(irn);
-	int n_preds = get_Sync_n_preds(irn);
+	ir_node **preds   = get_Sync_pred_arr(irn);
+	int       n_preds = get_Sync_n_preds(irn);
 
 	/* Mark all direct predecessors */
 	for (int i = 0; i < n_preds; i++) {
