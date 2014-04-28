@@ -117,9 +117,10 @@ static ir_node *bool_and(cond_pair* const cpair, ir_node *dst_block)
 	ir_mode    *      mode    = cpair->lo_mode;
 	ir_graph   *      irg     = get_irn_irg(cmp_lo);
 
-	if (rel_lo == ir_relation_equal && rel_hi == rel_lo &&
-	    tarval_is_null(tv_lo) && tarval_is_null(tv_hi) &&
-	    mode == get_tarval_mode(tv_hi)) {
+	if ((rel_lo & ~ir_relation_unordered) == ir_relation_equal
+	     && (rel_hi & ~ir_relation_unordered) == rel_lo
+	     && tarval_is_null(tv_lo) && tarval_is_null(tv_hi)
+	     && mode == get_tarval_mode(tv_hi)) {
 		/* p == NULL && q == NULL ==> (p&q) == NULL) */
 		ir_node *lol, *hil, *cmp, *c, *p;
 
@@ -246,9 +247,10 @@ static ir_node *bool_or(cond_pair *const cpair, ir_node *dst_block)
 	ir_mode    *      mode    = cpair->lo_mode;
 	ir_graph   *      irg     = get_irn_irg(cmp_lo);
 
-	if (rel_lo == ir_relation_less_greater && rel_hi == ir_relation_less_greater &&
-		tarval_is_null(tv_lo) && tarval_is_null(tv_hi) &&
-		mode == get_tarval_mode(tv_hi)) {
+	if ((rel_lo & ~ir_relation_unordered) == ir_relation_less_greater
+	    && (rel_hi & ~ir_relation_unordered) == ir_relation_less_greater
+	    && tarval_is_null(tv_lo) && tarval_is_null(tv_hi)
+	    && mode == get_tarval_mode(tv_hi)) {
 		/* p != NULL || q != NULL ==> (p|q) != NULL) */
 		ir_node *lol, *hil, *cmp, *c, *p;
 
