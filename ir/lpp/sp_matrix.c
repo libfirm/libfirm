@@ -23,6 +23,7 @@
 #include "util.h"
 #include "bitset.h"
 #include "xmalloc.h"
+#include "error.h"
 
 typedef enum iter_direction_t {
 	down, right, all
@@ -693,45 +694,55 @@ void matrix_dump(sp_matrix_t *m, FILE *out, int factor)
 
 void matrix_self_test(int d)
 {
-	int i, o;
 	sp_matrix_t *m = new_matrix(10, 10);
 
-	for (i = 0; i < d; ++i)
-		for (o = 0; o < d; ++o)
+	for (int i = 0; i < d; ++i) {
+		for (int o = 0; o < d; ++o) {
 			matrix_set(m, i, o, i*o);
-
-	for (i = 0; i < d; ++i)
-		for (o = 0; o<d; ++o)
-			assert(matrix_get(m, i, o) == i*o);
-
-	i = 1;
-	matrix_foreach_in_row(m,1,e) {
-		assert(e->val == i);
-		i++;
+		}
 	}
-	assert(!matrix_next(m)); /*iter must finish */
+
+	for (int i = 0; i < d; ++i) {
+		for (int o = 0; o<d; ++o) {
+			if (matrix_get(m, i, o) != i*o)
+				panic("matrix_get/set failed");
+		}
+	}
+
+	int i = 1;
+	matrix_foreach_in_row(m,1,e) {
+		if (e->val != i)
+			panic("matrix row iter failed");
+		++i;
+	}
+	if (matrix_next(m))
+		panic("matrix_foreach ended early");
 
 	i = d-1;
 	matrix_foreach_in_col(m,d-1,e) {
-		assert(e->val == i);
+		if (e->val != i)
+			panic("matrix foreach col failed");
 		i += d-1;
 	}
-	assert(!matrix_next(m));
+	if (matrix_next(m))
+		panic("matrix_foreach_col ended early");
 	del_matrix(m);
+
 	m = new_matrix(16,16);
 	matrix_set(m, 1,1,9);
 	matrix_set(m, 1,2,8);
 	matrix_set(m, 1,3,7);
-
 	matrix_set(m, 1,3,6);
 	matrix_set(m, 1,2,5);
 	matrix_set(m, 1,1,4);
 	i = 1;
 	matrix_foreach_in_row(m, 1, e) {
-		assert(e->row == 1 && e->col == i && e->val == i+3);
+		if (e->row != 1 || e->col != i || e->val != i+3)
+			panic("matrix get/set 2 failed");
 		i++;
 	}
-	assert(i == 4);
+	if (i != 4)
+		panic("matrix foreach 2 failed");
 	del_matrix(m);
 
 	m = new_matrix(5,5);
@@ -742,10 +753,14 @@ void matrix_self_test(int d)
 	matrix_set(m, 4,4,5);
 	matrix_set(m, 5,5,6);
 	i = 0;
-	matrix_foreach(m, e)
-		assert(e->val == ++i);
-	assert(i == 6);
+	matrix_foreach(m, e) {
+		if (e->val != ++i)
+			panic("matrix foreach failed");
+	}
+	if (i != 6)
+		panic("matrix_foreach failed");
 	matrix_set(m, 1,1,0);
-	assert(5 == matrix_get_entries(m));
+	if (matrix_get_entries(m) != 5)
+		panic("matrix get/set 3 failed");
 	del_matrix(m);
 }
