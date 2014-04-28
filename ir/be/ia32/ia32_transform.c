@@ -5340,47 +5340,49 @@ static ir_node *gen_Proj_be_Call(ir_node *node)
 	dbg_info *dbgi     = get_irn_dbg_info(node);
 	long      proj     = get_Proj_proj(node);
 
-	if (proj == pn_be_Call_M) {
-		return new_rd_Proj(dbgi, new_call, mode_M, n_ia32_Call_mem);
-	}
-	/* transform call modes */
-	ir_mode *mode = get_irn_mode(node);
-	if (mode_is_data(mode)) {
-		const arch_register_class_t *cls = arch_get_irn_reg_class(node);
-		mode = cls->mode;
-	}
-
-	/* Map from be_Call to ia32_Call proj number */
-	if (proj == pn_be_Call_sp) {
-		proj = pn_ia32_Call_stack;
-	} else if (proj == pn_be_Call_M) {
-		proj = pn_ia32_Call_M;
-	} else if (proj == pn_be_Call_X_except) {
-		proj = pn_ia32_Call_X_except;
-	} else if (proj == pn_be_Call_X_regular) {
-		proj = pn_ia32_Call_X_regular;
-	} else {
+	long     new_pn;
+	ir_mode *mode;
+	switch ((pn_be_Call)proj) {
+	case pn_be_Call_M:
+		new_pn = pn_ia32_Call_M;
+		mode   = mode_M;
+		break;
+	case pn_be_Call_sp:
+		new_pn = pn_ia32_Call_stack;
+		mode   = ia32_mode_gp;
+		break;
+	case pn_be_Call_X_regular:
+		new_pn = pn_ia32_Call_X_regular;
+		mode   = mode_X;
+		break;
+	case pn_be_Call_X_except:
+		new_pn = pn_ia32_Call_X_except;
+		mode   = mode_X;
+		break;
+	default: {
+		assert(mode_is_data(get_irn_mode(node)));
 		arch_register_req_t const *const req = arch_get_irn_register_req(node);
-
 		assert(proj >= pn_be_Call_first_res);
 		assert(arch_register_req_is(req, limited));
 
 		be_foreach_out(new_call, i) {
 			arch_register_req_t const *const new_req
 				= arch_get_irn_register_req_out(new_call, i);
-			if (!arch_register_req_is(new_req, limited) ||
-			    new_req->cls      != req->cls           ||
-			    *new_req->limited != *req->limited)
+			if (!arch_register_req_is(new_req, limited)
+			    || new_req->cls      != req->cls
+			    || *new_req->limited != *req->limited)
 				continue;
 
-			proj = i;
+			new_pn = i;
+			mode   = new_req->cls->mode;
 			goto found;
 		}
 		panic("no matching out requirement found");
 found:;
 	}
+	}
 
-	ir_node *res = new_rd_Proj(dbgi, new_call, mode, proj);
+	ir_node *res = new_rd_Proj(dbgi, new_call, mode, new_pn);
 	return res;
 }
 
