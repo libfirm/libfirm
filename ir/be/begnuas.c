@@ -117,7 +117,7 @@ static void emit_section_sparc(be_gas_section_t section,
 		"debug_info",
 		"debug_abbrev",
 		"debug_line",
-		"debug_pubnames"
+		"debug_pubnames",
 		"debug_frame",
 	};
 
