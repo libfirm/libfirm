@@ -10,7 +10,6 @@ Correctness:
 - (Support 80bit long double with x87 instructions)
 
 Improve Quality:
-- Build leas instead of Adds
 - Immediate32 matching could be better and match SymConst, Add(SymConst, Const)
   combinations where possible. Be careful with PIC code this may usually not
   be legal!
