@@ -164,8 +164,84 @@ class EmitSqlite3(EmitBase):
 	def commit(self):
 		self.conn.commit()
 
+# Abstraction for postgres databases and sql syntax
+class EmitPostgres(EmitBase):
+	def execute(self, query, *args):
+#		print(query + " %s\n" % str(tuple(args)))
+                self.cursor.execute(query, *args)
+
+	def __init__(self, options, ctxcols, evcols):
+		import psycopg2
+
+		if options.database == None:
+			print("Have to specify database (file-)name for postgres")
+			sys.exit(1)
+
+		if not options.update:
+			if os.path.isfile(options.database):
+				os.unlink(options.database)
+
+		self.conn = psycopg2.connect(database=options.database, user=options.user, password=options.password, host=options.host)
+		self.cursor = self.conn.cursor()
+
+		self.types["data"] = "double precision"
+		self.types["text"] = "varchar"
+		self.types["bool"] = "bool"
+		self.ctxtab = options.prefix + "ctx"
+		self.evtab  = options.prefix + "ev"
+		self.create_table(ctxcols, self.ctxtab, "text", "serial unique primary key")
+		self.create_table(evcols, self.evtab, "data", "integer")
+                self.execute("select * from information_schema.table_constraints where constraint_name='ev_foreign_key'")
+                if self.cursor.fetchone() == None:
+                        self.execute("ALTER table %s add constraint ev_foreign_key FOREIGN KEY (id) REFERENCES %s(id);" % (self.evtab, self.ctxtab,))
+
+		keys  = "id, " + ", ".join(map(lambda col: "\"%s\"" % col, evcols)) #escape column names
+		marks = ",".join(["%s"] * (len(evcols)+1))
+		self.evinsert = "insert into %s values (%s)" % (self.evtab, marks)
+
+		keys  = ", ".join(map(lambda col: "\"%s\"" % col, ctxcols)) # escape column names
+		marks = ",".join(["%s"] * len(ctxcols))
+		self.ctxinsert = "insert into %s (%s) values (%s) returning id" % (self.ctxtab, keys, marks)
+
+		self.contextids = dict()
+
+	def create_table(self, cols, name, defaulttype, keytype, extra=""):
+                c = "create table if not exists %s (id %s" % (name, keytype)
+		for x in cols:
+			name = x
+			type = self.types[defaulttype]
+			if x[0] == '$':
+				name = x[1:]
+				type = self.types["text"]
+			elif x[0] == '?':
+				name = x[1:]
+				type = self.types["bool"]
+			c += ", \"%s\" %s" % (name, type)
+                c += " %s" % extra
+		c += ");"
+                self.execute(c)
+
+	def ev(self, curr_id, evitems):
+                self.execute(self.evinsert, (curr_id,) + tuple(evitems))
+
+	def ctx(self, ctxitems):
+		items = tuple(ctxitems)
+		if self.contextids.has_key(items):
+			return self.contextids[items]
+		else:
+			self.execute(self.ctxinsert, items)
+			self.conn.commit()
+			ctxid = self.cursor.fetchone()[0]
+                        #lastrow does not work in postgres
+			self.contextids[items] = ctxid
+			return ctxid
+
+	def commit(self):
+		self.conn.commit()
+
+
 class Conv:
-	engines = { 'sqlite3': EmitSqlite3, 'mysql': EmitMysql }
+	engines = { 'sqlite3': EmitSqlite3, 'mysql': EmitMysql, 'postgres' : EmitPostgres }
 
 	# Pass that determines event and context types
 	def find_heads(self):
@@ -331,7 +407,7 @@ class Conv:
 		parser.add_option("-h", "--host",     dest="host",     help="host",               metavar="HOST")
 		parser.add_option("-p", "--password", dest="password", help="password",           metavar="PASSWORD")
 		parser.add_option("-D", "--database", dest="database", help="database",           metavar="DB")
-		parser.add_option("-e", "--engine",   dest="engine",   help="engine (sqlite3, mysql)",             metavar="ENG", default='sqlite3')
+		parser.add_option("-e", "--engine",   dest="engine",   help="engine %s" % self.engines.keys(),             metavar="ENG", default='sqlite3')
 		parser.add_option("-P", "--prefix",   dest="prefix",   help="table prefix",       metavar="PREFIX", default='')
 		(options, args) = parser.parse_args()
 
