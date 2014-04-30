@@ -1252,14 +1252,6 @@ static bool is_live_input(ir_node *phi, int i)
 }
 
 /**
- * Return non-zero if a type is a constant.
- */
-static bool is_constant_type(lattice_elem_t type)
-{
-	return type.tv != tarval_top && type.tv != tarval_bottom;
-}
-
-/**
  * Check whether a type is neither Bottom or a constant.
  * Note: U is handled like Bottom here, R is a constant.
  *
@@ -1326,7 +1318,7 @@ static void collect_touched(list_head *list, int idx, environment_t *env)
 			if (idx == -1 && y->is_follower)
 				continue;
 
-			if (is_constant_type(y->type)) {
+			if (tarval_is_constant(y->type.tv)) {
 				unsigned  code = get_irn_opcode(succ);
 				if (code == iro_Sub || code == iro_Cmp)
 					add_to_cprop(y, env);
@@ -1375,7 +1367,7 @@ static void collect_commutative_touched(list_head *list, environment_t *env)
 				continue;
 
 			node_t *y = get_irn_node(succ);
-			if (is_constant_type(y->type)) {
+			if (tarval_is_constant(y->type.tv)) {
 				unsigned code = get_irn_opcode(succ);
 				if (code == iro_Eor)
 					add_to_cprop(y, env);
@@ -2128,7 +2120,7 @@ static void compute_Cmp(node_t *node)
 		   This happens because initially all nodes are in the same partition ... */
 		if (node->type.tv == tarval_top)
 			tv = tarval_top;
-		else if (node->type.tv != tv && is_constant_type(node->type))
+		else if (node->type.tv != tv && tarval_is_constant(node->type.tv))
 			tv = tarval_top;
 		node->type.tv = tv;
 	} else {
