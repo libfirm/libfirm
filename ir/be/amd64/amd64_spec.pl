@@ -131,7 +131,7 @@ And => {
 },
 
 Div => {
-	state     => "exc_pinned",
+	state     => "pinned",
 	reg_req   => { out => [ "rax", "flags", "none", "rdx" ] },
 	arity     => "variable",
 	outs      => [ "res_div", "flags", "M", "res_mod" ],
@@ -142,7 +142,7 @@ Div => {
 },
 
 IDiv => {
-	state     => "exc_pinned",
+	state     => "pinned",
 	reg_req   => { out => [ "rax", "flags", "none", "rdx" ] },
 	arity     => "variable",
 	outs      => [ "res_div", "flags", "M", "res_mod" ],
