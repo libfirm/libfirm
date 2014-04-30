@@ -230,8 +230,7 @@ ir_entity *copy_entity_name(ir_entity *old, ident *new_name)
 
 void free_entity(ir_entity *ent)
 {
-	if (is_compound_type(ent->owner))
-		remove_compound_member(ent->owner, ent);
+	remove_compound_member(ent->owner, ent);
 
 	assert(ent->kind == k_entity);
 	free_entity_attrs(ent);
