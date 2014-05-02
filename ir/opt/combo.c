@@ -1650,7 +1650,8 @@ static bool is_con(const lattice_elem_t type)
 	/* be conservative */
 	if (is_tarval(type.tv))
 		return tarval_is_constant(type.tv);
-	return is_entity(type.ent);
+	assert(is_entity(type.ent));
+	return true;
 }
 
 /**
@@ -3246,20 +3247,11 @@ void combo(ir_graph *irg)
 	DB((dbg, LEVEL_1, "Doing COMBO for %+F\n", irg));
 
 	environment_t env;
+	memset(&env, 0, sizeof(env));
 	obstack_init(&env.obst);
-	env.worklist       = NULL;
-	env.cprop          = NULL;
-	env.touched        = NULL;
-	env.initial        = NULL;
-#ifdef DEBUG_libfirm
-	env.dbg_list       = NULL;
-#endif
 	env.opcode2id_map  = new_set(cmp_opcode, iro_last * 4);
 	env.kept_memory    = NEW_ARR_F(ir_node *, 0);
 	env.end_idx        = get_opt_global_cse() ? 0 : -1;
-	env.lambda_input   = 0;
-	env.modified       = false;
-	env.unopt_cf       = false;
 	/* options driving the optimization */
 	env.commutative    = true;
 
