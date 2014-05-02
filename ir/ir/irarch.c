@@ -47,7 +47,8 @@ static int allow_Mulh(const ir_settings_arch_dep_t *params, ir_mode *mode)
 {
 	if (get_mode_size_bits(mode) > params->max_bits_for_mulh)
 		return 0;
-	return (mode_is_signed(mode) && params->allow_mulhs) || (!mode_is_signed(mode) && params->allow_mulhu);
+	return (mode_is_signed(mode) && params->allow_mulhs)
+	    || (!mode_is_signed(mode) && params->allow_mulhu);
 }
 
 /**
@@ -55,30 +56,30 @@ static int allow_Mulh(const ir_settings_arch_dep_t *params, ir_mode *mode)
  */
 typedef struct instruction instruction;
 struct instruction {
-	insn_kind   kind;        /**< the instruction kind */
-	instruction *in[2];      /**< the ins */
-	unsigned    shift_count; /**< shift count for LEA and SHIFT */
-	ir_node     *irn;        /**< the generated node for this instruction if any. */
-	int         costs;       /**< the costs for this instruction */
+	insn_kind    kind;        /**< the instruction kind */
+	instruction *in[2];       /**< the ins */
+	unsigned     shift_count; /**< shift count for LEA and SHIFT */
+	ir_node     *irn;         /**< the generated node for this instruction */
+	int          costs;       /**< the costs for this instruction */
 };
 
 /**
  * The environment for the strength reduction of multiplications.
  */
 typedef struct mul_env {
-	struct obstack obst;       /**< an obstack for local space. */
+	struct obstack                obst;
 	const ir_settings_arch_dep_t *params;
-	ir_mode        *mode;      /**< the mode of the multiplication constant */
-	unsigned       bits;       /**< number of bits in the mode */
-	unsigned       max_S;      /**< the maximum LEA shift value. */
-	instruction    *root;      /**< the root of the instruction tree */
-	ir_node        *op;        /**< the operand that is multiplied */
-	ir_node        *blk;       /**< the block where the new graph is built */
-	ir_graph       *irg;
-	dbg_info       *dbg;       /**< the debug info for the new graph. */
-	ir_mode        *shf_mode;  /**< the (unsigned) mode for the shift constants */
-	int            fail;       /**< set to 1 if the instruction sequence fails the constraints */
-	int            n_shift;    /**< maximum number of allowed shift instructions */
+	ir_mode     *mode;     /**< the mode of the multiplication constant */
+	unsigned     bits;     /**< number of bits in the mode */
+	unsigned     max_S;    /**< the maximum LEA shift value. */
+	instruction *root;     /**< the root of the instruction tree */
+	ir_node     *op;       /**< the operand that is multiplied */
+	ir_node     *blk;      /**< the block where the new graph is built */
+	ir_graph    *irg;
+	dbg_info    *dbg;      /**< the debug info for the new graph. */
+	ir_mode     *shf_mode; /**< the (unsigned) mode for the shift constants */
+	bool         fail;     /**< set if the insn sequence fails constraints */
+	int          n_shift;  /**< maximum number of allowed shift instructions */
 
 	evaluate_costs_func evaluate;  /**< the evaluate callback */
 } mul_env;
@@ -89,9 +90,8 @@ typedef struct mul_env {
  */
 static int default_evaluate(insn_kind kind, const ir_mode *mode, ir_tarval *tv)
 {
-	(void) mode;
-	(void) tv;
-
+	(void)mode;
+	(void)tv;
 	if (kind == MUL)
 		return 13;
 	return 1;
@@ -100,7 +100,8 @@ static int default_evaluate(insn_kind kind, const ir_mode *mode, ir_tarval *tv)
 /**
  * emit a LEA (or an Add) instruction
  */
-static instruction *emit_LEA(mul_env *env, instruction *a, instruction *b, unsigned shift)
+static instruction *emit_LEA(mul_env *env, instruction *a, instruction *b,
+                             unsigned shift)
 {
 	instruction *res = OALLOC(&env->obst, instruction);
 	res->kind = shift > 0 ? LEA : ADD;
@@ -170,20 +171,18 @@ static instruction *emit_ROOT(mul_env *env, ir_node *root_op)
 	return res;
 }
 
-
 /**
  * Returns the condensed representation of the tarval tv
  */
 static unsigned char *value_to_condensed(mul_env *env, ir_tarval *tv, int *pr)
 {
-	ir_mode *mode = get_tarval_mode(tv);
-	int     bits = get_mode_size_bits(mode);
+	ir_mode *mode   = get_tarval_mode(tv);
+	unsigned bits   = get_mode_size_bits(mode);
 	char    *bitstr = get_tarval_bitpattern(tv);
-	int     i, l, r;
-	unsigned char *R = (unsigned char*)obstack_alloc(&env->obst, bits);
+	unsigned char *R = OALLOCN(&env->obst, unsigned char, bits);
 
-	l = r = 0;
-	for (i = 0; bitstr[i] != '\0'; ++i) {
+	int r = 0;
+	for (int i = 0, l = 0; bitstr[i] != '\0'; ++i) {
 		if (bitstr[i] == '1') {
 			R[r] = i - l;
 			l = i;
@@ -202,12 +201,9 @@ static unsigned char *value_to_condensed(mul_env *env, ir_tarval *tv, int *pr)
 static int calculate_gain(unsigned char *R, int r)
 {
 	int max_gain = 0;
-	int idx = -1, i;
-	int gain;
-
-	/* the gain for r == 1 */
-	gain = 2 - 3 - R[0];
-	for (i = 2; i < r; ++i) {
+	int gain     = 2 - 3 - R[0];
+	int idx      = -1;
+	for (int i = 2; i < r; ++i) {
 		/* calculate the gain for r from the gain for r-1 */
 		gain += 2 - R[i - 1];
 
@@ -222,23 +218,20 @@ static int calculate_gain(unsigned char *R, int r)
 /**
  * Calculates the condensed complement of a given (R,r) tuple
  */
-static unsigned char *complement_condensed(mul_env *env, unsigned char *R, int r, int gain, int *prs)
+static unsigned char *complement_condensed(mul_env *env, unsigned char *R,
+                                           int gain, int *prs)
 {
-	unsigned char *value = (unsigned char*)obstack_alloc(&env->obst, env->bits);
-	int i, l, j;
-	unsigned char c;
+	unsigned char *value = OALLOCNZ(&env->obst, unsigned char, env->bits);
 
-	memset(value, 0, env->bits);
-
-	j = 0;
-	for (i = 0; i < gain; ++i) {
+	int j = 0;
+	for (int i = 0; i < gain; ++i) {
 		j += R[i];
 		value[j] = 1;
 	}
 
 	/* negate and propagate 1 */
-	c = 1;
-	for (i = 0; i <= j; ++i) {
+	unsigned char c = 1;
+	for (int i = 0; i <= j; ++i) {
 		unsigned char v = !value[i];
 
 		value[i] = v ^ c;
@@ -246,18 +239,18 @@ static unsigned char *complement_condensed(mul_env *env, unsigned char *R, int r
 	}
 
 	/* condense it again */
-	l = r = 0;
-	R = value;
-	for (i = 0; i <= j; ++i) {
+	int l = 0;
+	int r = 0;
+	for (int i = 0; i <= j; ++i) {
 		if (value[i] == 1) {
-			R[r] = i - l;
+			value[r] = i - l;
 			l = i;
 			++r;
 		}
 	}
 
 	*prs = r;
-	return R;
+	return value;
 }
 
 /**
@@ -269,30 +262,27 @@ static ir_tarval *condensed_to_value(mul_env *env, unsigned char *R, int r)
 	ir_tarval *res = NULL;
 	for (int i = 0; i < r; ++i) {
 		int j = R[i];
-		if (j)
+		if (j != 0)
 			tv = tarval_shl_unsigned(tv, j);
 		res = res ? tarval_add(res, tv) : tv;
 	}
 	return res;
 }
 
-/* forward */
-static instruction *basic_decompose_mul(mul_env *env, unsigned char *R, int r, ir_tarval *N);
+static instruction *basic_decompose_mul(mul_env *env, unsigned char *R, int r,
+                                        ir_tarval *N);
 
 /*
  * handle simple cases with up-to 2 bits set
  */
-static instruction *decompose_simple_cases(mul_env *env, unsigned char *R, int r, ir_tarval *N)
+static instruction *decompose_simple_cases(mul_env *env, unsigned char *R,
+                                           int r)
 {
-	instruction *ins, *ins2;
-
-	(void) N;
 	if (r == 1) {
 		return emit_SHIFT(env, env->root, R[0]);
 	} else {
 		assert(r == 2);
-
-		ins = env->root;
+		instruction *ins = env->root;
 		if (R[1] <= env->max_S) {
 			ins = emit_LEA(env, ins, ins, R[1]);
 			if (R[0] != 0) {
@@ -304,7 +294,7 @@ static instruction *decompose_simple_cases(mul_env *env, unsigned char *R, int r
 			ins = emit_SHIFT(env, ins, R[0]);
 		}
 
-		ins2 = emit_SHIFT(env, env->root, R[0] + R[1]);
+		instruction *ins2 = emit_SHIFT(env, env->root, R[0] + R[1]);
 		return emit_LEA(env, ins, ins2, 0);
 	}
 }
@@ -312,44 +302,39 @@ static instruction *decompose_simple_cases(mul_env *env, unsigned char *R, int r
 /**
  * Main decompose driver.
  */
-static instruction *decompose_mul(mul_env *env, unsigned char *R, int r, ir_tarval *N)
+static instruction *decompose_mul(mul_env *env, unsigned char *R, int r,
+                                  ir_tarval *N)
 {
-	unsigned i;
-	int gain;
-
 	if (r <= 2)
-		return decompose_simple_cases(env, R, r, N);
+		return decompose_simple_cases(env, R, r);
 
 	if (env->params->also_use_subs) {
-		gain = calculate_gain(R, r);
+		int gain = calculate_gain(R, r);
 		if (gain > 0) {
-			instruction *instr1, *instr2;
-			unsigned char *R1, *R2;
-			int r1, r2, i, k, j;
+			int            r1;
+			unsigned char *R1 = complement_condensed(env, R, gain, &r1);
+			int            r2 = r - gain + 1;
+			unsigned char *R2 = OALLOCN(&env->obst, unsigned char, r2);
 
-			R1 = complement_condensed(env, R, r, gain, &r1);
-			r2 = r - gain + 1;
-			R2 = (unsigned char*)obstack_alloc(&env->obst, r2);
-
-			k = 1;
-			for (i = 0; i < gain; ++i) {
+			int k = 1;
+			for (int i = 0; i < gain; ++i) {
 				k += R[i];
 			}
 			R2[0] = k;
 			R2[1] = R[gain] - 1;
-			j = 2;
+			int j = 2;
 			if (R2[1] == 0) {
 				/* Two identical bits: normalize */
 				++R2[0];
 				--j;
 				--r2;
 			}
-			for (i = gain + 1; i < r; ++i) {
+			for (int i = gain + 1; i < r; ++i) {
 				R2[j++] = R[i];
 			}
 
-			instr1 = decompose_mul(env, R1, r1, NULL);
-			instr2 = decompose_mul(env, R2, r2, NULL);
+			instruction *instr1 = decompose_mul(env, R1, r1, NULL);
+			instruction *instr2 = decompose_mul(env, R2, r2, NULL);
 			return emit_SUB(env, instr2, instr1);
 		}
 	}
@@ -357,7 +342,7 @@ static instruction *decompose_mul(mul_env *env, unsigned char *R, int r, ir_tarv
 	if (N == NULL)
 		N = condensed_to_value(env, R, r);
 
-	for (i = env->max_S; i > 0; --i) {
+	for (unsigned i = env->max_S; i > 0; --i) {
 		ir_tarval *div_res, *mod_res;
 		ir_tarval *tv = new_tarval_from_long((1 << i) + 1, env->mode);
 
@@ -379,26 +364,24 @@ static instruction *decompose_mul(mul_env *env, unsigned char *R, int r, ir_tarv
 /**
  * basic decomposition routine
  */
-static instruction *basic_decompose_mul(mul_env *env, unsigned char *R, int r, ir_tarval *N)
+static instruction *basic_decompose_mul(mul_env *env, unsigned char *R, int r,
+                                        ir_tarval *N)
 {
-	instruction *Ns;
-	unsigned t;
-
 	if (R[0] == 0) {                    /* Case 1 */
-		t = R[1] > MAX(env->max_S, R[1]);
+		unsigned t = R[1] > MAX(env->max_S, R[1]);
 		R[1] -= t;
-		Ns = decompose_mul(env, &R[1], r - 1, N);
-		return emit_LEA(env, env->root, Ns, t);
+		instruction *ns = decompose_mul(env, &R[1], r - 1, N);
+		return emit_LEA(env, env->root, ns, t);
 	} else if (R[0] <= env->max_S) {    /* Case 2 */
-		t = R[0];
+		unsigned t = R[0];
 		R[1] += t;
-		Ns = decompose_mul(env, &R[1], r - 1, N);
-		return emit_LEA(env, Ns, env->root, t);
+		instruction *ns = decompose_mul(env, &R[1], r - 1, N);
+		return emit_LEA(env, ns, env->root, t);
 	} else {
-		t = R[0];
+		unsigned t = R[0];
 		R[0] = 0;
-		Ns = decompose_mul(env, R, r, N);
-		return emit_SHIFT(env, Ns, t);
+		instruction *ns = decompose_mul(env, R, r, N);
+		return emit_SHIFT(env, ns, t);
 	}
 }
 
@@ -410,46 +393,49 @@ static instruction *basic_decompose_mul(mul_env *env, unsigned char *R, int r, i
  */
 static ir_node *build_graph(mul_env *env, instruction *inst)
 {
-	ir_node *l, *r, *c;
-	ir_graph *irg = env->irg;
-
-	if (inst->irn)
+	if (inst->irn != NULL)
 		return inst->irn;
 
+	ir_graph *irg = env->irg;
 	switch (inst->kind) {
-	case LEA:
-		l = build_graph(env, inst->in[0]);
-		r = build_graph(env, inst->in[1]);
-		c = new_r_Const_long(irg, env->shf_mode, inst->shift_count);
-		r = new_rd_Shl(env->dbg, env->blk, r, c, env->mode);
-		return inst->irn = new_rd_Add(env->dbg, env->blk, l, r, env->mode);
-	case SHIFT:
-		l = build_graph(env, inst->in[0]);
-		c = new_r_Const_long(irg, env->shf_mode, inst->shift_count);
+	case LEA: {
+		ir_node *l = build_graph(env, inst->in[0]);
+		ir_node *r = build_graph(env, inst->in[1]);
+		ir_node *c = new_r_Const_long(irg, env->shf_mode, inst->shift_count);
+		ir_node *s = new_rd_Shl(env->dbg, env->blk, r, c, env->mode);
+		return inst->irn = new_rd_Add(env->dbg, env->blk, l, s, env->mode);
+	}
+	case SHIFT: {
+		ir_node *l = build_graph(env, inst->in[0]);
+		ir_node *c = new_r_Const_long(irg, env->shf_mode, inst->shift_count);
 		return inst->irn = new_rd_Shl(env->dbg, env->blk, l, c, env->mode);
-	case SUB:
-		l = build_graph(env, inst->in[0]);
-		r = build_graph(env, inst->in[1]);
+	}
+	case SUB: {
+		ir_node *l = build_graph(env, inst->in[0]);
+		ir_node *r = build_graph(env, inst->in[1]);
 		return inst->irn = new_rd_Sub(env->dbg, env->blk, l, r, env->mode);
-	case ADD:
-		l = build_graph(env, inst->in[0]);
-		r = build_graph(env, inst->in[1]);
+	}
+	case ADD: {
+		ir_node *l = build_graph(env, inst->in[0]);
+		ir_node *r = build_graph(env, inst->in[1]);
 		return inst->irn = new_rd_Add(env->dbg, env->blk, l, r, env->mode);
+	}
 	case ZERO:
 		return inst->irn = new_r_Const_null(irg, env->mode);
-	default:
-		panic("Unsupported instruction kind");
+	case ROOT:
+	case MUL:
+		break;
 	}
+	panic("Unsupported instruction kind");
 }
 
 /**
  * Calculate the costs for the given instruction sequence.
- * Note that additional costs due to higher register pressure are NOT evaluated yet
+ * Note that additional costs due to higher register pressure are NOT
+ * evaluated yet
  */
 static int evaluate_insn(mul_env *env, instruction *inst)
 {
-	int costs;
-
 	if (inst->costs >= 0) {
 		/* was already evaluated */
 		return 0;
@@ -458,26 +444,29 @@ static int evaluate_insn(mul_env *env, instruction *inst)
 	switch (inst->kind) {
 	case LEA:
 	case SUB:
-	case ADD:
-		costs  = evaluate_insn(env, inst->in[0]);
-		costs += evaluate_insn(env, inst->in[1]);
-		costs += env->evaluate(inst->kind, env->mode, NULL);
+	case ADD: {
+		int costs = evaluate_insn(env, inst->in[0])
+		          + evaluate_insn(env, inst->in[1])
+		          + env->evaluate(inst->kind, env->mode, NULL);
 		inst->costs = costs;
 		return costs;
+	}
 	case SHIFT:
 		if (inst->shift_count > env->params->highest_shift_amount)
-			env->fail = 1;
+			env->fail = true;
 		if (env->n_shift <= 0)
-			env->fail = 1;
+			env->fail = true;
 		else
 			--env->n_shift;
-		costs  = evaluate_insn(env, inst->in[0]);
-		costs += env->evaluate(inst->kind, env->mode, NULL);
+		int costs = evaluate_insn(env, inst->in[0])
+		          + env->evaluate(inst->kind, env->mode, NULL);
 		inst->costs = costs;
 		return costs;
-	case ZERO:
-		inst->costs = costs = env->evaluate(inst->kind, env->mode, NULL);
+	case ZERO: {
+		int costs = env->evaluate(inst->kind, env->mode, NULL);
+		inst->costs = costs;
 		return costs;
+	}
 	case MUL:
 	case ROOT:
 		break;
@@ -498,29 +487,26 @@ static int evaluate_insn(mul_env *env, instruction *inst)
  */
 static ir_node *do_decomposition(ir_node *irn, ir_node *operand, ir_tarval *tv)
 {
-	mul_env       env;
-	instruction   *inst;
-	unsigned char *R;
-	int           r;
-	ir_node       *res = irn;
-	int           mul_costs;
-
+	mul_env env;
 	obstack_init(&env.obst);
 	env.params   = be_get_backend_param()->dep_param;
 	env.mode     = get_tarval_mode(tv);
 	env.bits     = (unsigned)get_mode_size_bits(env.mode);
 	env.max_S    = 3;
 	env.root     = emit_ROOT(&env, operand);
-	env.fail     = 0;
+	env.fail     = false;
 	env.n_shift  = env.params->maximum_shifts;
-	env.evaluate = env.params->evaluate != NULL ? env.params->evaluate : default_evaluate;
+	env.evaluate = env.params->evaluate != NULL ? env.params->evaluate
+	                                            : default_evaluate;
 	env.irg      = get_irn_irg(irn);
 
-	R = value_to_condensed(&env, tv, &r);
-	inst = decompose_mul(&env, R, r, tv);
+	int            r;
+	unsigned char *R    = value_to_condensed(&env, tv, &r);
+	instruction   *inst = decompose_mul(&env, R, r, tv);
 
 	/* the paper suggests 70% here */
-	mul_costs = (env.evaluate(MUL, env.mode, tv) * 7 + 5) / 10;
+	int      mul_costs = (env.evaluate(MUL, env.mode, tv) * 7 + 5) / 10;
+	ir_node *res       = irn;
 	if (evaluate_insn(&env, inst) <= mul_costs && !env.fail) {
 		env.op       = operand;
 		env.blk      = get_nodes_block(irn);
@@ -538,35 +524,28 @@ static ir_node *do_decomposition(ir_node *irn, ir_node *operand, ir_tarval *tv)
 /* Replace Muls with Shifts and Add/Subs. */
 ir_node *arch_dep_replace_mul_with_shifts(ir_node *irn)
 {
-	ir_node   *res  = irn;
-	ir_mode   *mode = get_irn_mode(irn);
-	ir_graph  *irg;
-	ir_node   *left;
-	ir_node   *right;
-	ir_node   *operand;
-	ir_tarval *tv;
 	const ir_settings_arch_dep_t *params = be_get_backend_param()->dep_param;
 
 	/* If the architecture dependent optimizations were not initialized
 	   or this optimization was not enabled. */
 	if (params == NULL || (opts & arch_dep_mul_to_shift) == 0)
-		return res;
+		return irn;
 
 	assert(is_Mul(irn));
+	ir_mode *mode = get_irn_mode(irn);
 	if (!mode_is_int(mode))
-		return res;
+		return irn;
 
 	/* we should never do the reverse transformations again
 	   (like x+x -> 2*x) */
-	irg = get_irn_irg(irn);
+	ir_graph *irg = get_irn_irg(irn);
 	add_irg_constraints(irg, IR_GRAPH_CONSTRAINT_ARCH_DEP);
 
-	left    = get_binop_left(irn);
-	right   = get_binop_right(irn);
-	tv      = NULL;
-	operand = NULL;
-
 	/* Look, if one operand is a constant. */
+	ir_node   *left    = get_binop_left(irn);
+	ir_node   *right   = get_binop_right(irn);
+	ir_tarval *tv      = NULL;
+	ir_node   *operand = NULL;
 	if (is_Const(left)) {
 		tv = get_Const_tarval(left);
 		operand = right;
@@ -578,11 +557,11 @@ ir_node *arch_dep_replace_mul_with_shifts(ir_node *irn)
 	/* multiplications with 0 are a special case which we leave for
 	 * equivalent_node_Mul because the code here can't handle them */
 	if (tv == get_mode_null(mode))
-		return res;
+		return irn;
 
+	ir_node *res = irn;
 	if (tv != NULL) {
 		res = do_decomposition(irn, operand, tv);
-
 		if (res != irn) {
 			hook_arch_dep_replace_mul_with_shifts(irn);
 			exchange(irn, res);
@@ -597,19 +576,17 @@ ir_node *arch_dep_replace_mul_with_shifts(ir_node *irn)
  */
 static int tv_ld2(ir_tarval *tv, int bits)
 {
-	int i, k = 0, num;
-
-	for (num = i = 0; i < bits; ++i) {
+	int num = 0;
+	int k   = 0;
+	for (int i = 0; i < bits; ++i) {
 		unsigned char v = get_tarval_sub_bits(tv, i);
-
-		if (v) {
-			int j;
-
-			for (j = 0; j < 8; ++j)
-				if ((1 << j) & v) {
-					++num;
-					k = 8 * i + j;
-				}
+		if (v == 0)
+			continue;
+		for (int j = 0; j < 8; ++j) {
+			if ((1 << j) & v) {
+				++num;
+				k = 8 * i + j;
+			}
 		}
 	}
 	if (num == 1)
@@ -637,59 +614,54 @@ static int tv_ld2(ir_tarval *tv, int bits)
 
 /** The result of a the magic() function. */
 struct ms {
-	ir_tarval *M;     /**< magic number */
-	int s;            /**< shift amount */
-	int need_add;     /**< an additional add is needed */
-	int need_sub;     /**< an additional sub is needed */
+	ir_tarval *M;        /**< magic number */
+	int        s;        /**< shift amount */
+	bool       need_add; /**< an additional add is needed */
+	bool       need_sub; /**< an additional sub is needed */
 };
 
 /**
- * Signed division by constant d: calculate the Magic multiplier M and the shift amount s
+ * Signed division by constant d: calculate the Magic multiplier M and the
+ * shift amount s
  *
- * see Hacker's Delight: 10-6 Integer Division by Constants: Incorporation into a Compiler
+ * see Hacker's Delight: 10-6 Integer Division by Constants: Incorporation
+ * into a Compiler
  */
 static struct ms magic(ir_tarval *d)
 {
-	ir_mode *mode   = get_tarval_mode(d);
-	ir_mode *u_mode = find_unsigned_mode(mode);
-	int bits        = get_mode_size_bits(u_mode);
-	int p;
-	ir_tarval *ad, *anc, *delta, *q1, *r1, *q2, *r2, *t;     /* unsigned */
-	ir_relation d_cmp, M_cmp;
-
-	ir_tarval *two_bits_1;
-
-	struct ms mag;
-
-	tarval_int_overflow_mode_t rem = tarval_get_integer_overflow_mode();
-
 	/* we need overflow mode to work correctly */
+	tarval_int_overflow_mode_t rem = tarval_get_integer_overflow_mode();
 	tarval_set_integer_overflow_mode(TV_OVERFLOW_WRAP);
 
+	ir_mode *mode   = get_tarval_mode(d);
+	ir_mode *u_mode = find_unsigned_mode(mode);
+	unsigned bits   = get_mode_size_bits(u_mode);
+
 	/* 2^(bits-1) */
-	two_bits_1 = SHL(get_mode_one(u_mode), bits-1);
+	ir_tarval *two_bits_1 = SHL(get_mode_one(u_mode), bits-1);
 
-	ad  = CNV(ABS(d), u_mode);
-	t   = ADD(two_bits_1, SHR(CNV(d, u_mode), bits-1));
-	anc = SUB(SUB(t, ONE(u_mode)), MOD(t, ad));   /* Absolute value of nc */
-	p   = bits - 1;                               /* Init: p */
-	q1  = DIV(two_bits_1, anc);                   /* Init: q1 = 2^p/|nc| */
-	r1  = SUB(two_bits_1, MUL(q1, anc));          /* Init: r1 = rem(2^p, |nc|) */
-	q2  = DIV(two_bits_1, ad);                    /* Init: q2 = 2^p/|d| */
-	r2  = SUB(two_bits_1, MUL(q2, ad));           /* Init: r2 = rem(2^p, |d|) */
+	ir_tarval *ad  = CNV(ABS(d), u_mode);
+	ir_tarval *t   = ADD(two_bits_1, SHR(CNV(d, u_mode), bits-1));
+	ir_tarval *anc = SUB(SUB(t, ONE(u_mode)), MOD(t, ad)); /* abs(nc) */
+	int        p   = bits - 1;
+	ir_tarval *q1  = DIV(two_bits_1, anc);          /* q1 = 2^p/|nc| */
+	ir_tarval *r1  = SUB(two_bits_1, MUL(q1, anc)); /* r1 = rem(2^p, |nc|) */
+	ir_tarval *q2  = DIV(two_bits_1, ad);           /* q2 = 2^p/|d| */
+	ir_tarval *r2  = SUB(two_bits_1, MUL(q2, ad));  /* r2 = rem(2^p, |d|) */
 
+	ir_tarval *delta;
 	do {
 		++p;
-		q1 = ADD(q1, q1);                           /* Update q1 = 2^p/|nc| */
-		r1 = ADD(r1, r1);                           /* Update r1 = rem(2^p, |nc|) */
+		q1 = ADD(q1, q1);                      /* Update q1 = 2^p/|nc| */
+		r1 = ADD(r1, r1);                      /* Update r1 = rem(2^p, |nc|) */
 
 		if (CMP(r1, anc) & ir_relation_greater_equal) {
 			q1 = ADD(q1, ONE(u_mode));
 			r1 = SUB(r1, anc);
 		}
 
-		q2 = ADD(q2, q2);                           /* Update q2 = 2^p/|d| */
-		r2 = ADD(r2, r2);                           /* Update r2 = rem(2^p, |d|) */
+		q2 = ADD(q2, q2);                      /* Update q2 = 2^p/|d| */
+		r2 = ADD(r2, r2);                      /* Update r2 = rem(2^p, |d|) */
 
 		if (CMP(r2, ad) & ir_relation_greater_equal) {
 			q2 = ADD(q2, ONE(u_mode));
@@ -697,16 +669,19 @@ static struct ms magic(ir_tarval *d)
 		}
 
 		delta = SUB(ad, r2);
-	} while (CMP(q1, delta) & ir_relation_less || (CMP(q1, delta) & ir_relation_equal && CMP(r1, ZERO(u_mode)) & ir_relation_equal));
+	} while (CMP(q1, delta) & ir_relation_less
+	         || (CMP(q1, delta) & ir_relation_equal
+	             && CMP(r1, ZERO(u_mode)) & ir_relation_equal));
 
-	d_cmp = CMP(d, ZERO(mode));
+	ir_relation d_cmp = CMP(d, ZERO(mode));
 
+	struct ms mag;
 	if (d_cmp & ir_relation_greater_equal)
 		mag.M = ADD(CNV(q2, mode), ONE(mode));
 	else
 		mag.M = SUB(ZERO(mode), ADD(CNV(q2, mode), ONE(mode)));
 
-	M_cmp = CMP(mag.M, ZERO(mode));
+	ir_relation M_cmp = CMP(mag.M, ZERO(mode));
 
 	mag.s = p - bits;
 
@@ -722,28 +697,29 @@ static struct ms magic(ir_tarval *d)
 }
 
 /**
- * Unsigned division by constant d: calculate the Magic multiplier M and the shift amount s
+ * Unsigned division by constant d: calculate the Magic multiplier M and the
+ * shift amount s
  *
- * see Faster Unsigned Division by Constants (http://ridiculousfish.com/blog/posts/labor-of-division-episode-iii.html)
+ * see Faster Unsigned Division by Constants
+ *  (http://ridiculousfish.com/blog/posts/labor-of-division-episode-iii.html)
  */
 struct magicu_info
 {
 	ir_tarval *multiplier; /* the "magic number" multiplier */
 	unsigned   pre_shift;  /* shift for the dividend before multiplying */
 	unsigned   post_shift; /* shift for the dividend after multiplying */
-	int        increment;  /* 0 or 1; if set then increment the numerator, using one of the two strategies */
+	unsigned   increment;  /* 0 or 1; if set then increment the numerator,
+	                          using one of the two strategies */
 };
 
-static struct magicu_info compute_unsigned_magic_info(ir_tarval *divisor, unsigned num_bits)
+static struct magicu_info compute_unsigned_magic_info(ir_tarval *divisor,
+                                                      unsigned num_bits)
 {
 	ir_mode *mode = get_tarval_mode(divisor);
 
 	/* divisor must be larger than zero and not a power of 2
 	 * D & (D-1) > 0 */
 	assert(get_tarval_long(AND(divisor, SUB(divisor, ONE(mode)))));
-
-	/* The eventual result */
-	struct magicu_info result;
 
 	/* Bits in ir_tarval */
 	const unsigned UINT_BITS = get_mode_size_bits(mode);
@@ -758,23 +734,22 @@ static struct magicu_info compute_unsigned_magic_info(ir_tarval *divisor, unsign
 	ir_tarval *quotient  = DIV(initial_power_of_2, divisor);
 	ir_tarval *remainder = MOD(initial_power_of_2, divisor);
 
-	/* ceil(log_2 D) */
-	unsigned ceil_log_2_D;
-
 	/* The magic info for the variant "round down" algorithm */
 	ir_tarval *down_multiplier = ZERO(mode);
 	unsigned   down_exponent   = 0;
 	int        has_magic_down  = 0;
 
 	/* Compute ceil(log_2 D) */
-	ceil_log_2_D = 0;
+	unsigned ceil_log_2_D = 0;
 	for (ir_tarval *tmp = divisor; CMP(tmp, ZERO(mode)) & ir_relation_greater; tmp = SHR(tmp, 1))
 		ceil_log_2_D++;
 
-	/* Begin a loop that increments the exponent, until we find a power of 2 that works. */
-	unsigned exponent;
-	for (exponent = 0; ; exponent++) {
-		/* Quotient and remainder is from previous exponent; compute it for this exponent. */
+	/* Begin a loop that increments the exponent, until we find a power of 2
+	 * that works. */
+	unsigned exponent = 0;
+	for (;; ++exponent) {
+		/* Quotient and remainder is from previous exponent; compute it for
+		 * this exponent. */
 		ir_tarval *two = new_tarval_from_long(2, mode);
 		if (CMP(remainder, SUB(divisor, remainder)) & ir_relation_greater_equal) {
 			/* Doubling remainder will wrap around divisor */
@@ -794,8 +769,9 @@ static struct magicu_info compute_unsigned_magic_info(ir_tarval *divisor, unsign
 				(CMP(SUB(divisor, remainder), SHL(ONE(mode), exponent + extra_shift)) & ir_relation_less_equal))
 			break;
 
-		/* Set magic_down if we have not set it yet and this exponent works for the round_down algorithm */
-		if (! has_magic_down &&
+		/* Set magic_down if we have not set it yet and this exponent works for
+		 * the round_down algorithm */
+		if (!has_magic_down &&
 				(CMP(remainder, SHL(ONE(mode), exponent + extra_shift)) &
 				ir_relation_less_equal)) {
 			has_magic_down  = 1;
@@ -804,6 +780,7 @@ static struct magicu_info compute_unsigned_magic_info(ir_tarval *divisor, unsign
 		}
 	}
 
+	struct magicu_info result;
 	if (exponent < ceil_log_2_D) {
 		/* magic_up is efficient */
 		result.multiplier = ADD(quotient, ONE(mode));
@@ -846,25 +823,23 @@ static struct magicu_info get_magic_info(ir_tarval *d)
  */
 static ir_node *replace_div_by_mulh(ir_node *div, ir_tarval *tv)
 {
-	dbg_info *dbg  = get_irn_dbg_info(div);
+	/* Beware: do not transform bad code */
 	ir_node *n     = get_binop_left(div);
 	ir_node *block = get_nodes_block(div);
-	ir_mode *mode  = get_irn_mode(n);
-	int bits       = get_mode_size_bits(mode);
-	ir_node *q;
-
-	/* Beware: do not transform bad code */
 	if (is_Bad(n) || is_Bad(block))
 		return div;
 
+	dbg_info *dbg   = get_irn_dbg_info(div);
+	ir_mode  *mode  = get_irn_mode(n);
+	int       bits  = get_mode_size_bits(mode);
+	ir_node  *res;
 	if (mode_is_signed(mode)) {
 		ir_graph *irg = get_irn_irg(div);
 		struct ms mag = magic(tv);
 
 		/* generate the Mulh instruction */
 		ir_node *c = new_r_Const(irg, mag.M);
-		ir_node *t;
-		q = new_rd_Mulh(dbg, block, n, c, mode);
+		ir_node *q = new_rd_Mulh(dbg, block, n, c, mode);
 
 		/* do we need an Add or Sub */
 		if (mag.need_add)
@@ -879,17 +854,15 @@ static ir_node *replace_div_by_mulh(ir_node *div, ir_tarval *tv)
 		}
 
 		/* final */
-		c = new_r_Const_long(irg, mode_Iu, bits - 1);
-		t = new_rd_Shr(dbg, block, q, c, mode);
-
-		q = new_rd_Add(dbg, block, q, t, mode);
+		ir_node *c2 = new_r_Const_long(irg, mode_Iu, bits - 1);
+		ir_node *t  = new_rd_Shr(dbg, block, q, c2, mode);
+		res = new_rd_Add(dbg, block, q, t, mode);
 	} else {
 		struct magicu_info mafo = get_magic_info(tv);
-		ir_graph *irg = get_irn_irg(div);
-		ir_node *c;
+		ir_graph          *irg  = get_irn_irg(div);
 
 		if (mafo.pre_shift > 0) {
-			c = new_r_Const_long(irg, mode_Iu, mafo.pre_shift);
+			ir_node *c = new_r_Const_long(irg, mode_Iu, mafo.pre_shift);
 			n = new_rd_Shr(dbg, block, n, c, mode);
 		}
 
@@ -897,120 +870,104 @@ static ir_node *replace_div_by_mulh(ir_node *div, ir_tarval *tv)
 			ir_node *no_mem    = new_rd_NoMem(dbg, irg);
 			ir_node *in[1]     = {n};
 			ir_type *utype     = get_unknown_type();
-			ir_node *increment = new_rd_Builtin(dbg, block, no_mem, 1, in, ir_bk_saturating_increment, utype);
+			ir_node *increment = new_rd_Builtin(dbg, block, no_mem, 1, in,
+			                                    ir_bk_saturating_increment, utype);
 
 			n = new_r_Proj(increment, mode_Iu, pn_Builtin_max + 1);
 		}
 
 		/* generate the Mulh instruction */
-		c = new_r_Const(irg, mafo.multiplier);
-		q = new_rd_Mulh(dbg, block, n, c, mode);
+		ir_node *c = new_r_Const(irg, mafo.multiplier);
+		ir_node *q = new_rd_Mulh(dbg, block, n, c, mode);
 		c = new_r_Const_long(irg, mode_Iu, get_mode_size_bits(get_tarval_mode(tv)));
-		q = new_rd_Shr(dbg, block, q, c, mode);
-
+		res = new_rd_Shr(dbg, block, q, c, mode);
 		if (mafo.post_shift > 0) {
 			c = new_r_Const_long(irg, mode_Iu, mafo.post_shift);
-			q = new_rd_Shr(dbg, block, q, c, mode);
+			res = new_rd_Shr(dbg, block, res, c, mode);
 		}
 	}
-	return q;
+	return res;
 }
 
 /* Replace Divs with Shifts and Add/Subs and Mulh. */
 ir_node *arch_dep_replace_div_by_const(ir_node *irn)
 {
-	const ir_settings_arch_dep_t *params = be_get_backend_param()->dep_param;
-	ir_node *res  = irn;
-
 	/* If the architecture dependent optimizations were not initialized
 		or this optimization was not enabled. */
+	const ir_settings_arch_dep_t *params = be_get_backend_param()->dep_param;
 	if (params == NULL || (opts & arch_dep_div_by_const) == 0)
 		return irn;
-
 	if (!is_Div(irn))
 		return irn;
 
 	ir_node *c = get_Div_right(irn);
-	ir_node *block, *left;
-	ir_mode *mode;
-	ir_tarval *tv, *ntv;
-	dbg_info *dbg;
-	int n, bits;
-	int k;
-	int n_flag = 0;
-
-	if (! is_Const(c))
+	if (!is_Const(c))
 		return irn;
 
-	tv = get_Const_tarval(c);
-
 	/* check for division by zero */
+	ir_tarval *tv = get_Const_tarval(c);
 	if (tarval_is_null(tv))
 		return irn;
 
-	left  = get_Div_left(irn);
-	mode  = get_irn_mode(left);
-
 	/* can only handle integer Div's */
+	ir_node *left = get_Div_left(irn);
+	ir_mode *mode = get_irn_mode(left);
 	if (!mode_is_int(mode))
 		return irn;
 
-	block = get_nodes_block(irn);
-	dbg   = get_irn_dbg_info(irn);
-
-	bits = get_mode_size_bits(mode);
-	n    = (bits + 7) / 8;
-
-	k = -1;
+	ir_node  *block  = get_nodes_block(irn);
+	dbg_info *dbg    = get_irn_dbg_info(irn);
+	int       bits   = get_mode_size_bits(mode);
+	int       n      = (bits + 7) / 8;
+	int       k      = -1;
+	bool      n_flag = false;
 	if (mode_is_signed(mode)) {
-		/* for signed divisions, the algorithm works for a / -2^k by negating the result */
-		ntv = tarval_neg(tv);
-		n_flag = 1;
+		/* for signed divisions, the algorithm works for a / -2^k by negating
+		 * the result */
+		ir_tarval *ntv = tarval_neg(tv);
+		n_flag = true;
 		k = tv_ld2(ntv, n);
 	}
-
 	if (k < 0) {
-		n_flag = 0;
+		n_flag = false;
 		k = tv_ld2(tv, n);
 	}
 
+	ir_node *res = irn;
 	if (k > 0) { /* division by 2^k or -2^k */
 		ir_graph *irg = get_irn_irg(irn);
 		if (mode_is_signed(mode)) {
-			ir_node *k_node;
 			ir_node *curr = left;
 
 			/* create the correction code for signed values only if there might be a remainder */
-			if (! get_Div_no_remainder(irn)) {
+			if (!get_Div_no_remainder(irn)) {
 				if (k != 1) {
-					k_node = new_r_Const_long(irg, mode_Iu, k - 1);
+					ir_node *k_node = new_r_Const_long(irg, mode_Iu, k - 1);
 					curr   = new_rd_Shrs(dbg, block, left, k_node, mode);
 				}
 
-				k_node = new_r_Const_long(irg, mode_Iu, bits - k);
-				curr   = new_rd_Shr(dbg, block, curr, k_node, mode);
+				ir_node *k_node = new_r_Const_long(irg, mode_Iu, bits - k);
+				curr = new_rd_Shr(dbg, block, curr, k_node, mode);
 				/* curr is now 2^(k-1) in case left <  0
 				 *          or       0 in case left >= 0
 				 *
-				 * For an example, where this fixup is necessary consider -3 / 2,
+				 * For an example, where this fixup is necessary consider -3/2,
 				 * which should compute to -1,
 				 * but simply shifting right by one computes -2.
 				 */
 
-				curr   = new_rd_Add(dbg, block, left, curr, mode);
+				curr = new_rd_Add(dbg, block, left, curr, mode);
 			}
 
-			k_node = new_r_Const_long(irg, mode_Iu, k);
-			res    = new_rd_Shrs(dbg, block, curr, k_node, mode);
+			ir_node *k_node = new_r_Const_long(irg, mode_Iu, k);
+			res = new_rd_Shrs(dbg, block, curr, k_node, mode);
 
 			if (n_flag) { /* negate the result */
-				k_node = new_r_Const_null(irg, mode);
+				ir_node *k_node = new_r_Const_null(irg, mode);
 				res = new_rd_Sub(dbg, block, k_node, res, mode);
 			}
 		} else {      /* unsigned case */
-			ir_node *k_node;
-
-			k_node = new_r_Const_long(irg, mode_Iu, k);
+			ir_node *k_node = new_r_Const_long(irg, mode_Iu, k);
 			res    = new_rd_Shr(dbg, block, left, k_node, mode);
 		}
 	} else if (k != 0) {
@@ -1030,101 +987,79 @@ ir_node *arch_dep_replace_div_by_const(ir_node *irn)
 /* Replace Mods with Shifts and Add/Subs and Mulh. */
 ir_node *arch_dep_replace_mod_by_const(ir_node *irn)
 {
-	const ir_settings_arch_dep_t *params = be_get_backend_param()->dep_param;
-	ir_node *res  = irn;
-
 	/* If the architecture dependent optimizations were not initialized
 	   or this optimization was not enabled. */
+	const ir_settings_arch_dep_t *params = be_get_backend_param()->dep_param;
 	if (params == NULL || (opts & arch_dep_mod_by_const) == 0)
 		return irn;
+	if (!is_Mod(irn))
+		return irn;
 
-	if (is_Mod(irn)) {
-		ir_node *c = get_Mod_right(irn);
-		ir_node *block, *left;
-		ir_mode *mode;
-		ir_tarval *tv, *ntv;
-		dbg_info *dbg;
-		int n, bits;
-		int k;
+	ir_node *c = get_Mod_right(irn);
+	if (!is_Const(c))
+		return irn;
 
-		if (! is_Const(c))
-			return irn;
+	/* check for division by zero */
+	ir_tarval *tv = get_Const_tarval(c);
+	if (tarval_is_null(tv))
+		return irn;
 
-		tv = get_Const_tarval(c);
+	ir_node  *left  = get_Mod_left(irn);
+	ir_mode  *mode  = get_irn_mode(left);
+	ir_node  *block = get_nodes_block(irn);
+	dbg_info *dbg   = get_irn_dbg_info(irn);
+	int       bits  = get_mode_size_bits(mode);
+	int       n     = (bits + 7) / 8;
+	int       k     = -1;
+	if (mode_is_signed(mode)) {
+		/* for signed divisions, the algorithm works for a / -2^k by
+		 * negating the result */
+		ir_tarval *ntv = tarval_neg(tv);
+		k = tv_ld2(ntv, n);
+	}
 
-		/* check for division by zero */
-		if (tarval_is_null(tv))
-			return irn;
+	if (k < 0) {
+		k = tv_ld2(tv, n);
+	}
 
-		left  = get_Mod_left(irn);
-		mode  = get_irn_mode(left);
-		block = get_nodes_block(irn);
-		dbg   = get_irn_dbg_info(irn);
-		bits = get_mode_size_bits(mode);
-		n    = (bits + 7) / 8;
-
-		k = -1;
+	/* k == 0  i.e. modulo by 1 */
+	ir_node *res = irn;
+	if (k == 0) {
+		ir_graph *irg = get_irn_irg(irn);
+		res = new_r_Const_null(irg, mode);
+	} else if (k > 0) {
+		ir_graph *irg = get_irn_irg(irn);
+		/* division by 2^k or -2^k:
+		 * we use "modulus" here, so x % y == x % -y that's why is no
+		 * difference between the case 2^k and -2^k */
 		if (mode_is_signed(mode)) {
-			/* for signed divisions, the algorithm works for a / -2^k by negating the result */
-			ntv = tarval_neg(tv);
-			k = tv_ld2(ntv, n);
-		}
-
-		if (k < 0) {
-			k = tv_ld2(tv, n);
-		}
-
-		/* k == 0  i.e. modulo by 1 */
-		if (k == 0) {
-			ir_graph *irg = get_irn_irg(irn);
-
-			res = new_r_Const_null(irg, mode);
-		} else if (k > 0) {
-			ir_graph *irg = get_irn_irg(irn);
-			/* division by 2^k or -2^k:
-			 * we use "modulus" here, so x % y == x % -y that's why is no difference between the case 2^k and -2^k
-			 */
-			if (mode_is_signed(mode)) {
-				ir_node *k_node;
-				ir_node *curr = left;
-
-				if (k != 1) {
-					k_node = new_r_Const_long(irg, mode_Iu, k - 1);
-					curr   = new_rd_Shrs(dbg, block, left, k_node, mode);
-				}
-
-				k_node = new_r_Const_long(irg, mode_Iu, bits - k);
-				curr   = new_rd_Shr(dbg, block, curr, k_node, mode);
-
-				curr   = new_rd_Add(dbg, block, left, curr, mode);
-
-				ir_tarval *k_val
-					= tarval_shl_unsigned(get_mode_all_one(mode), k);
-				k_node = new_r_Const(irg, k_val);
-				curr   = new_rd_And(dbg, block, curr, k_node, mode);
-
-				res    = new_rd_Sub(dbg, block, left, curr, mode);
-			} else {      /* unsigned case */
-				ir_node *k_node;
-
-				ir_tarval *k_val
-					= tarval_shr_unsigned(get_mode_all_one(mode),
-					                      get_mode_size_bits(mode)-k);
-				k_node = new_r_Const(irg, k_val);
-				res    = new_rd_And(dbg, block, left, k_node, mode);
+			ir_node *curr = left;
+			if (k != 1) {
+				ir_node *c = new_r_Const_long(irg, mode_Iu, k - 1);
+				curr = new_rd_Shrs(dbg, block, left, c, mode);
 			}
-		} else {
-			/* other constant */
-			if (allow_Mulh(params, mode)) {
-				res = replace_div_by_mulh(irn, tv);
 
-				res = new_rd_Mul(dbg, block, res, c, mode);
+			ir_node *k_node = new_r_Const_long(irg, mode_Iu, bits - k);
+			curr = new_rd_Shr(dbg, block, curr, k_node, mode);
+			curr = new_rd_Add(dbg, block, left, curr, mode);
 
-				/* res = arch_dep_mul_to_shift(res); */
-
-				res = new_rd_Sub(dbg, block, left, res, mode);
-			}
+			ir_tarval *k_val
+				= tarval_shl_unsigned(get_mode_all_one(mode), k);
+			k_node = new_r_Const(irg, k_val);
+			curr   = new_rd_And(dbg, block, curr, k_node, mode);
+			res    = new_rd_Sub(dbg, block, left, curr, mode);
+		} else {      /* unsigned case */
+			ir_tarval *k_val
+				= tarval_shr_unsigned(get_mode_all_one(mode),
+									  get_mode_size_bits(mode)-k);
+			ir_node *k_node = new_r_Const(irg, k_val);
+			res = new_rd_And(dbg, block, left, k_node, mode);
 		}
+	/* other constant */
+	} else if (allow_Mulh(params, mode)) {
+		res = replace_div_by_mulh(irn, tv);
+		res = new_rd_Mul(dbg, block, res, c, mode);
+		res = new_rd_Sub(dbg, block, left, res, mode);
 	}
 
 	if (res != irn)
