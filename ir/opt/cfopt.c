@@ -18,33 +18,29 @@
 #include <assert.h>
 #include <stdbool.h>
 
-#include "xmalloc.h"
-#include "irnode_t.h"
-#include "irgraph_t.h"
-#include "irprog_t.h"
-
-#include "ircons.h"
-#include "iropt_t.h"
-#include "irgwalk.h"
-#include "irgmod.h"
-#include "irdump.h"
-#include "irverify.h"
-#include "iredges.h"
-
 #include "array.h"
-
-#include "irouts_t.h"
-#include "irbackedge_t.h"
-
-#include "irflag_t.h"
 #include "firmstat.h"
+#include "irbackedge_t.h"
+#include "ircons.h"
+#include "irdump.h"
+#include "iredges.h"
+#include "irflag_t.h"
+#include "irgmod.h"
+#include "irgraph_t.h"
+#include "irgwalk.h"
 #include "irnodehashmap.h"
+#include "irnode_t.h"
 #include "iropt_dbg.h"
+#include "iropt_t.h"
+#include "irouts_t.h"
+#include "irprog_t.h"
+#include "irverify.h"
+#include "xmalloc.h"
 
 /** An environment for merge_blocks and collect nodes. */
 typedef struct merge_env {
-	bool      changed;      /**< Set if the graph was changed. */
-	bool      phis_moved;   /**< Set if Phi nodes were moved. */
+	bool changed;      /**< Set if the graph was changed. */
+	bool phis_moved;   /**< Set if Phi nodes were moved. */
 } merge_env;
 
 /** set or reset the removable property of a block. */
@@ -153,7 +149,6 @@ static unsigned test_whether_dispensable(const ir_node *b, int pos)
 {
 	ir_node *pred  = get_Block_cfgpred(b, pos);
 	ir_node *predb = get_nodes_block(pred);
-
 	if (is_Bad(pred) || !is_Block_removable(predb))
 		return 1;
 
@@ -165,22 +160,19 @@ static unsigned test_whether_dispensable(const ir_node *b, int pos)
 
 	/* Seems to be empty. At least we detected this in collect_nodes. */
 	if (get_Block_phis(b) != NULL) {
-		int n_cfgpreds = get_Block_n_cfgpreds(b);
-		int i;
 		/* there are Phi nodes */
 
 		/* b's pred blocks and pred's pred blocks must be pairwise disjunct.
 		 * Handle all pred blocks with preds < pos as if they were already
 		 * removed. */
-		for (i = 0; i < pos; i++) {
+		for (int i = 0; i < pos; ++i) {
 			ir_node *other_pred  = get_Block_cfgpred(b, i);
 			ir_node *other_predb = get_nodes_block(other_pred);
 			if (is_Bad(other_pred))
 				continue;
 			if (is_Block_removable(other_predb)
 			    && !Block_block_visited(other_predb)) {
-				int j;
-				for (j = get_Block_n_cfgpreds(other_predb) - 1; j >= 0; --j) {
+				for (int j = get_Block_n_cfgpreds(other_predb); j-- > 0; ) {
 					ir_node *other_predpred
 						= get_Block_cfgpred_block(other_predb, j);
 					if (is_pred_of(other_predpred, predb))
@@ -190,7 +182,8 @@ static unsigned test_whether_dispensable(const ir_node *b, int pos)
 				goto non_dispensable;
 			}
 		}
-		for (i = pos+1; i < n_cfgpreds; i++) {
+		for (int i = pos+1, n_cfgpreds = get_Block_n_cfgpreds(b);
+		     i < n_cfgpreds; ++i) {
 			ir_node *other_predb = get_Block_cfgpred_block(b, i);
 			if (is_pred_of(other_predb, predb))
 				goto non_dispensable;
@@ -290,7 +283,7 @@ static void optimize_blocks(ir_node *b, void *ctx)
 	ir_node **in = XMALLOCN(ir_node*, max_preds);
 
 	int        p_preds = -1;
-	merge_env *env     = (merge_env *)ctx;
+	merge_env *env     = (merge_env*)ctx;
 
 	/*- Fix the Phi nodes of the current block -*/
 	for (ir_node *phi = get_Block_phis(b), *next; phi != NULL; phi = next) {
@@ -299,8 +292,8 @@ static void optimize_blocks(ir_node *b, void *ctx)
 		/* Find the new predecessors for the Phi */
 		p_preds = 0;
 		for (int i = 0, n = get_Block_n_cfgpreds(b); i < n; ++i) {
-			ir_graph *irg = get_irn_irg(b);
-			ir_node *predx = get_Block_cfgpred(b, i);
+			ir_graph *irg   = get_irn_irg(b);
+			ir_node  *predx = get_Block_cfgpred(b, i);
 
 			/* case Phi 1: maintain Bads, as somebody else is responsible to
 			 * remove them */
@@ -317,7 +310,6 @@ static void optimize_blocks(ir_node *b, void *ctx)
 
 				for (int j = 0, k = get_Block_n_cfgpreds(pred); j < k; j++) {
 					ir_node *pred_pred = get_Block_cfgpred(pred, j);
-
 					if (is_Bad(pred_pred)) {
 						in[p_preds++] = new_r_Bad(irg, get_irn_mode(phi));
 						continue;
@@ -358,7 +350,8 @@ static void optimize_blocks(ir_node *b, void *ctx)
 
 		if (is_Block_removable(predb) && !Block_block_visited(predb)) {
 			/* we found a predecessor block at position k that will be removed */
-			for (ir_node *phi = get_Block_phis(predb), *next_phi; phi != NULL; phi = next_phi) {
+			for (ir_node *phi = get_Block_phis(predb), *next_phi; phi != NULL;
+			     phi = next_phi) {
 				int q_preds = 0;
 				next_phi = get_Phi_next(phi);
 
@@ -380,19 +373,20 @@ static void optimize_blocks(ir_node *b, void *ctx)
 					/* first, copy all 0..k-1 predecessors */
 					for (int i = 0; i < k; i++) {
 						ir_node *predx = get_Block_cfgpred(b, i);
-
 						if (is_Bad(predx)) {
 							ir_graph *irg  = get_irn_irg(b);
 							ir_mode  *mode = get_irn_mode(phi);
 							in[q_preds++] = new_r_Bad(irg, mode);
 							continue;
 						}
+
 						ir_node *pred_block = get_nodes_block(predx);
 						if (is_Block_removable(pred_block)
-						           && !Block_block_visited(pred_block)) {
-							int n_cfgpreds = get_Block_n_cfgpreds(pred_block);
+						    && !Block_block_visited(pred_block)) {
 							/* It's an empty block and not yet visited. */
-							for (int j = 0; j < n_cfgpreds; j++) {
+							for (int j = 0,
+							     n_cfgpreds = get_Block_n_cfgpreds(pred_block);
+							     j < n_cfgpreds; ++j) {
 								if (!is_Bad(get_Block_cfgpred(pred_block, j))) {
 									in[q_preds++] = phi;
 								} else {
@@ -407,12 +401,12 @@ static void optimize_blocks(ir_node *b, void *ctx)
 					}
 
 					/* now we are at k, copy the phi predecessors */
-					for (int i = 0; i < get_Phi_n_preds(phi); i++) {
+					for (int i = 0, n = get_Phi_n_preds(phi); i < n; ++i) {
 						in[q_preds++] = get_Phi_pred(phi, i);
 					}
 
 					/* and now all the rest */
-					for (int i = k+1; i < get_Block_n_cfgpreds(b); i++) {
+					for (int i = k+1, n = get_Block_n_cfgpreds(b); i < n; ++i) {
 						ir_node *phi_pred = get_Block_cfgpred_block(b, i);
 
 						if (phi_pred == NULL) {
@@ -421,8 +415,9 @@ static void optimize_blocks(ir_node *b, void *ctx)
 							in[q_preds++] = new_r_Bad(irg, mode);
 						} else if (is_Block_removable(phi_pred) && !Block_block_visited(phi_pred)) {
 							/* It's an empty block and not yet visited. */
-							for (int j = 0; j < get_Block_n_cfgpreds(phi_pred); j++) {
-								if (! is_Bad(get_Block_cfgpred(phi_pred, j))) {
+							for (int j = 0, n = get_Block_n_cfgpreds(phi_pred);
+							     j < n; ++j) {
+								if (!is_Bad(get_Block_cfgpred(phi_pred, j))) {
 									in[q_preds++] = phi;
 								} else {
 									ir_graph *irg  = get_irn_irg(b);
@@ -443,7 +438,6 @@ static void optimize_blocks(ir_node *b, void *ctx)
 					env->changed = true;
 
 					assert(q_preds <= max_preds);
-					// assert(p_preds == q_preds && "Wrong Phi Fix");
 				}
 			}
 		}
@@ -451,10 +445,10 @@ static void optimize_blocks(ir_node *b, void *ctx)
 
 	/*- Fix the block -*/
 	int n_preds = 0;
-	for (int i = 0; i < get_Block_n_cfgpreds(b); i++) {
-		ir_node *pred  = get_Block_cfgpred(b, i);
-		ir_node *predb = get_nodes_block(pred);
-		ir_graph *irg  = get_irn_irg(pred);
+	for (int i = 0, n = get_Block_n_cfgpreds(b); i < n; ++i) {
+		ir_node  *pred  = get_Block_cfgpred(b, i);
+		ir_node  *predb = get_nodes_block(pred);
+		ir_graph *irg   = get_irn_irg(pred);
 
 		/* case 1: Bad predecessor */
 		if (is_Bad(pred)) {
@@ -463,9 +457,8 @@ static void optimize_blocks(ir_node *b, void *ctx)
 		}
 		if (is_Block_removable(predb) && !Block_block_visited(predb)) {
 			/* case 2: It's an empty block and not yet visited. */
-			for (int j = 0; j < get_Block_n_cfgpreds(predb); j++) {
+			for (int j = 0, n = get_Block_n_cfgpreds(predb); j < n; ++j) {
 				ir_node *predpred = get_Block_cfgpred(predb, j);
-
 				if (is_Bad(predpred)) {
 					in[n_preds++] = new_r_Bad(irg, mode_X);
 					continue;
@@ -503,22 +496,23 @@ static void optimize_blocks(ir_node *b, void *ctx)
  */
 static bool optimize_pred_cond(ir_node *block, int i, int j)
 {
-	ir_node *projA, *projB, *cond, *pred_block, *jmp, *bad;
 	assert(i != j);
-
-	projA = get_Block_cfgpred(block, i);
-	if (!is_Proj(projA)) return false;
-	projB = get_Block_cfgpred(block, j);
-	if (!is_Proj(projB)) return false;
-	cond  = get_Proj_pred(projA);
-	if (!is_Cond(cond))  return false;
-
-	if (cond != get_Proj_pred(projB)) return false;
+	ir_node *projA = get_Block_cfgpred(block, i);
+	if (!is_Proj(projA))
+		return false;
+	ir_node *projB = get_Block_cfgpred(block, j);
+	if (!is_Proj(projB))
+		return false;
+	ir_node *cond  = get_Proj_pred(projA);
+	if (!is_Cond(cond))
+		return false;
+	if (cond != get_Proj_pred(projB))
+		return false;
 
 	/* cond should actually be a Jmp */
-	pred_block = get_nodes_block(cond);
-	jmp = new_r_Jmp(pred_block);
-	bad = new_r_Bad(get_irn_irg(block), mode_X);
+	ir_node *pred_block = get_nodes_block(cond);
+	ir_node *jmp        = new_r_Jmp(pred_block);
+	ir_node *bad        = new_r_Bad(get_irn_irg(block), mode_X);
 
 	assert(projA != projB);
 	exchange(projA, jmp);
@@ -589,8 +583,8 @@ static void compute_block_info(ir_node *n, void *x)
 	ir_nodehashmap_t *infos = (ir_nodehashmap_t*)x;
 
 	if (is_Block(n)) {
-		int i, max = get_Block_n_cfgpreds(n);
-		for (i=0; i<max; i++) {
+		for (int i = 0, n_cfgpreds = get_Block_n_cfgpreds(n); i < n_cfgpreds;
+		     ++i) {
 			ir_node *pred = get_Block_cfgpred(n,i);
 			if (is_unknown_jump(pred)) {
 				set_is_unknown_jump_target(infos, n);
@@ -625,15 +619,12 @@ typedef struct skip_env {
 static void optimize_ifs(ir_node *block, void *x)
 {
 	skip_env *env = (skip_env*)x;
-	int i, j;
-	int n_preds = get_Block_n_cfgpreds(block);
-
 	if (has_phis(&env->block_infos, block))
 		return;
 
 	/* optimize Cond predecessors (might produce Bad predecessors) */
-	for (i = 0; i < n_preds; ++i) {
-		for (j = i+1; j < n_preds; ++j) {
+	for (int i = 0, n_preds = get_Block_n_cfgpreds(block); i < n_preds; ++i) {
+		for (int j = i+1; j < n_preds; ++j) {
 			optimize_pred_cond(block, i, j);
 		}
 	}
@@ -646,17 +637,11 @@ static void optimize_ifs(ir_node *block, void *x)
 static void remove_empty_blocks(ir_node *block, void *x)
 {
 	skip_env *env = (skip_env*)x;
-	int i;
-	int n_preds = get_Block_n_cfgpreds(block);
-
-	for (i = 0; i < n_preds; ++i) {
-		ir_node *jmp, *jmp_block;
-		int n_jpreds = 0;
-
-		jmp = get_Block_cfgpred(block, i);
+	for (int i = 0, n_preds = get_Block_n_cfgpreds(block); i < n_preds; ++i) {
+		ir_node *jmp = get_Block_cfgpred(block, i);
 		if (!is_Jmp(jmp))
 			continue;
-		jmp_block = get_nodes_block(jmp);
+		ir_node *jmp_block = get_nodes_block(jmp);
 		if (jmp_block == block)
 			continue; /* this infinite loop cannot be optimized any further */
 		if (is_unknown_jump_target(&env->block_infos, jmp_block))
@@ -680,7 +665,7 @@ static void remove_empty_blocks(ir_node *block, void *x)
 
 		/* jmp_block is an empty block and can be optimized! */
 
-		n_jpreds = get_Block_n_cfgpreds(jmp_block);
+		int n_jpreds = get_Block_n_cfgpreds(jmp_block);
 		/**
 		 * If the jmp block has only one predecessor this is straightforward.
 		 * However, if there are more predecessors, we only handle this,
@@ -707,9 +692,8 @@ static void remove_empty_blocks(ir_node *block, void *x)
 			/* cleanup: jmp_block might have a Keep edge! */
 			exchange(jmp_block, pred_block);
 			env->changed = true;
-		} else if ( !has_phis(&env->block_infos, block) &&
-		            !has_operations(&env->block_infos,jmp_block))
-		{
+		} else if (!has_phis(&env->block_infos, block) &&
+		           !has_operations(&env->block_infos,jmp_block)) {
 			/* all predecessors can skip the jmp block, so block gets some new
 			 * predecessors
 			 *
@@ -720,14 +704,13 @@ static void remove_empty_blocks(ir_node *block, void *x)
 			 *      block            block
 			 */
 			ir_node **ins = ALLOCAN(ir_node*, n_preds+n_jpreds);
-			int j;
 			/* first copy the old predecessors, because the outer loop (i)
 			 * still walks over them */
-			for (j = 0; j < n_preds; ++j) {
+			for (int j = 0; j < n_preds; ++j) {
 				ins[j] = get_Block_cfgpred(block, j);
 			}
 			/* now append the new predecessors */
-			for (j = 0; j < n_jpreds; ++j) {
+			for (int j = 0; j < n_jpreds; ++j) {
 				ir_node *pred = get_Block_cfgpred(jmp_block, j);
 				ins[n_preds+j] = pred;
 			}
@@ -754,7 +737,6 @@ static void remove_empty_blocks(ir_node *block, void *x)
 static void cfgopt_ignoring_phis(ir_graph *irg)
 {
 	skip_env env;
-
 	env.changed = true;
 	ir_nodehashmap_init(&env.block_infos);
 
@@ -786,17 +768,12 @@ static void cfgopt_ignoring_phis(ir_graph *irg)
 /* Optimizations of the control flow that also require changes of Phi nodes.  */
 void optimize_cf(ir_graph *irg)
 {
-	int i, j, n;
-	ir_node *end = get_irg_end(irg);
-	ir_node *new_end;
 	merge_env env;
-
 	env.changed    = false;
 	env.phis_moved = false;
 
 	/* if the graph is not pinned, we cannot determine empty blocks */
-	assert(get_irg_pinned(irg) != op_pin_state_floats &&
-	       "Control flow optimization need a pinned graph");
+	assert(get_irg_pinned(irg) != op_pin_state_floats);
 
 	assure_irg_properties(irg, IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE);
 
@@ -813,6 +790,7 @@ void optimize_cf(ir_graph *irg)
 	 * Finally it marks all blocks that do not contain useful
 	 * computations, i.e., these blocks might be removed.
 	 */
+	ir_node *end = get_irg_end(irg);
 	irg_walk(end, clear_link_and_mark_blocks_removable, collect_nodes, NULL);
 
 	/* assert due to collect_nodes:
@@ -827,7 +805,7 @@ void optimize_cf(ir_graph *irg)
 	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 	irg_block_walk_graph(irg, optimize_blocks, merge_blocks, &env);
 
-	new_end = optimize_in_place(end);
+	ir_node *new_end = optimize_in_place(end);
 	if (new_end != end) {
 		set_irg_end(irg, new_end);
 		end = new_end;
@@ -843,14 +821,14 @@ void optimize_cf(ir_graph *irg)
 		   that are kept-alive.
 		   Some other phases cannot copy with this, so kill them.
 		 */
-		n = get_End_n_keepalives(end);
+		int n = get_End_n_keepalives(end);
 		if (n > 0) {
 			ir_node **in = ALLOCAN(ir_node*, n);
 			assure_irg_outs(irg);
 
-			for (i = j = 0; i < n; ++i) {
+			int j = 0;
+			for (int i = 0; i < n; ++i) {
 				ir_node *ka = get_End_keepalive(end, i);
-
 				if (is_Phi(ka)) {
 					foreach_irn_out_r(ka, k, user) {
 						if (user != ka && user != end) {
@@ -859,8 +837,9 @@ void optimize_cf(ir_graph *irg)
 							break;
 						}
 					}
-				} else
+				} else {
 					in[j++] = ka;
+				}
 			}
 			if (j != n) {
 				set_End_keepalives(end, j, in);

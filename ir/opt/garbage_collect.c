@@ -23,7 +23,7 @@ static void visit_entity(ir_entity *entity);
 
 static void visit_node(ir_node *node, void *env)
 {
-	(void) env;
+	(void)env;
 	ir_entity *entity = get_irn_entity_attr(node);
 	if (entity != NULL)
 		visit_entity(entity);

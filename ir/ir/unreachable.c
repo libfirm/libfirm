@@ -29,30 +29,24 @@ static bool is_block_unreachable(ir_node *block)
  */
 static void unreachable_to_bad(ir_node *node, void *env)
 {
-	bool *changed = (bool *)env;
-
+	bool *changed = (bool*)env;
 	if (is_Block(node)) {
-		ir_graph *irg;
-		int       arity;
-		int       i;
 		/* optimization: we do not have to do anything inside the unreachable
 		 * code */
 		if (is_block_unreachable(node))
 			return;
 
-		arity = get_irn_arity(node);
-		irg   = get_irn_irg(node);
-		for (i = 0; i < arity; ++i) {
-			ir_node *pred = get_Block_cfgpred(node, i);
+		ir_graph *irg = get_irn_irg(node);
+		foreach_irn_in(node, i, pred) {
 			if (is_Bad(pred) || !is_block_unreachable(get_nodes_block(pred)))
 				continue;
 			set_irn_n(node, i, new_r_Bad(irg, mode_X));
 			*changed = true;
 		}
 	} else if (is_Phi(node)) {
-		ir_node  *block = get_nodes_block(node);
 		/* optimization: we do not have to do anything inside the unreachable
 		 * code */
+		ir_node  *block = get_nodes_block(node);
 		if (is_block_unreachable(block))
 			return;
 
@@ -61,7 +55,8 @@ static void unreachable_to_bad(ir_node *node, void *env)
 			if (is_Bad(phi_pred))
 				continue;
 			ir_node *const block_pred = get_Block_cfgpred(block, i);
-			if (!is_Bad(block_pred) && !is_block_unreachable(get_nodes_block(block_pred)))
+			if (!is_Bad(block_pred)
+			    && !is_block_unreachable(get_nodes_block(block_pred)))
 				continue;
 
 			set_irn_n(node, i, new_r_Bad(irg, get_irn_mode(node)));
@@ -76,12 +71,10 @@ static void unreachable_to_bad(ir_node *node, void *env)
 static void remove_unreachable_keeps(ir_graph *irg)
 {
 	ir_node  *end       = get_irg_end(irg);
-	int       arity     = get_irn_arity(end);
+	int       arity     = get_End_n_keepalives(end);
 	ir_node **new_in    = XMALLOCN(ir_node*, arity);
 	int       new_arity = 0;
-	int       i;
-
-	for (i = 0; i < arity; ++i) {
+	for (int i = 0; i < arity; ++i) {
 		ir_node *ka    = get_End_keepalive(end, i);
 		ir_node *block = is_Block(ka) ? ka : get_nodes_block(ka);
 		if (is_block_unreachable(block))
@@ -95,10 +88,9 @@ static void remove_unreachable_keeps(ir_graph *irg)
 
 void remove_unreachable_code(ir_graph *irg)
 {
-	bool changed = false;
-
 	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 
+	bool changed = false;
 	irg_walk_graph(irg, unreachable_to_bad, NULL, &changed);
 	remove_unreachable_keeps(irg);
 

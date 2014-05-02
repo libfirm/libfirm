@@ -47,7 +47,7 @@ ir_entity *create_compilerlib_entity(ident *id, ir_type *mt)
 	ident *ld_name = compilerlib_mangler(id, mt);
 	/* search for an existing entity */
 	ir_type *glob = get_glob_type();
-	for (size_t n_members = get_compound_n_members(glob), i = 0;
+	for (size_t i = 0, n_members = get_compound_n_members(glob);
 	     i < n_members; ++i) {
 	    ir_entity *member = get_compound_member(glob, i);
 	    if (get_entity_ld_ident(member) == ld_name) {

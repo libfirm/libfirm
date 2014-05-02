@@ -9,15 +9,17 @@
  * @author   Christian Schaefer, Goetz Lindenmaier, Sebastian Felis,
  *           Michael Beck
  */
-#include "irop_t.h"
-#include "irnode_t.h"
+#include <stdbool.h>
+
 #include "ircons.h"
-#include "irgwalk.h"
 #include "irgopt.h"
+#include "irgwalk.h"
+#include "irnode_t.h"
+#include "irop_t.h"
 
 typedef struct cf_env {
-	char ignore_exc_edges; /**< set if exception edges should be ignored. */
-	char changed;          /**< flag indicates that the cf graphs has changed. */
+	bool ignore_exc_edges; /**< set if exception edges should be ignored. */
+	bool changed;          /**< indicate that the cf graph has changed. */
 } cf_env;
 
 /**
@@ -31,44 +33,46 @@ typedef struct cf_env {
  */
 static void walk_critical_cf_edges(ir_node *n, void *env)
 {
-	ir_node *block, *jmp;
 	cf_env *cenv = (cf_env*)env;
+
+	if (get_irn_arity(n) <= 1)
+		return;
+
 	ir_graph *irg = get_irn_irg(n);
+	if (n == get_irg_end_block(irg))
+		return;  /*  No use to add a block here.      */
 
-	/* Block has multiple predecessors */
-	if (get_irn_arity(n) > 1) {
-		if (n == get_irg_end_block(irg))
-			return;  /*  No use to add a block here.      */
+	foreach_irn_in(n, i, pre) {
+		/* don't count Bad's */
+		if (is_Bad(pre))
+			continue;
 
-		foreach_irn_in(n, i, pre) {
-			/* don't count Bad's */
-			if (is_Bad(pre))
+		const ir_op *const cfop = get_irn_op(skip_Proj(pre));
+		if (is_op_fragile(cfop)) {
+			if (cenv->ignore_exc_edges && is_x_except_Proj(pre))
 				continue;
-
-			const ir_op *const cfop = get_irn_op(skip_Proj(pre));
-			if (is_op_fragile(cfop)) {
-				if (cenv->ignore_exc_edges && is_x_except_Proj(pre))
-					continue;
-				goto insert;
-			}
-			if (is_unknown_jump(pre)) {
-				/* we can't add blocks in between ijmp and its destinations
-				 * TODO: What now, we can't split all critical edges because of this... */
-				fprintf(stderr, "libfirm warning: Couldn't split all critical edges (compiler will probably fail now)\n");
-				continue;
-			}
-			/* we don't want place nodes in the start block, so handle it like forking */
-			if (is_op_forking(cfop) || cfop == op_Start) {
-				/* Predecessor has multiple successors. Insert new control flow edge edges. */
-insert:
-				/* set predecessor of new block */
-				block = new_r_Block(irg, 1, &pre);
-				/* insert new jmp node to new block */
-				jmp = new_r_Jmp(block);
-				/* set successor of new block */
-				set_irn_n(n, i, jmp);
-				cenv->changed = 1;
-			}
+			goto insert;
+		}
+		if (is_unknown_jump(pre)) {
+			/* we can't add blocks in between ijmp and its destinations
+			 * TODO: What now, we can't split all critical edges because of
+			 * this... */
+			fprintf(stderr, "libfirm warning: Couldn't split all critical edges (compiler will probably fail now)\n");
+			continue;
+		}
+		/* we don't want to place nodes in the start block, so handle it like
+		 * forking */
+		if (is_op_forking(cfop) || cfop == op_Start) {
+			/* Predecessor has multiple successors. Insert new control flow
+			 * edge edges. */
+insert:;
+			/* set predecessor of new block */
+			ir_node *block = new_r_Block(irg, 1, &pre);
+			/* insert new jmp node to new block */
+			ir_node *jmp = new_r_Jmp(block);
+			/* set successor of new block */
+			set_irn_n(n, i, jmp);
+			cenv->changed = true;
 		}
 	}
 }
@@ -76,9 +80,8 @@ insert:
 void remove_critical_cf_edges_ex(ir_graph *irg, int ignore_exception_edges)
 {
 	cf_env env;
-
-	env.ignore_exc_edges = (char)ignore_exception_edges;
-	env.changed          = 0;
+	env.ignore_exc_edges = ignore_exception_edges;
+	env.changed          = false;
 
 	irg_block_walk_graph(irg, NULL, walk_critical_cf_edges, &env);
 	if (env.changed) {
@@ -92,5 +95,5 @@ void remove_critical_cf_edges_ex(ir_graph *irg, int ignore_exception_edges)
 
 void remove_critical_cf_edges(ir_graph *irg)
 {
-	remove_critical_cf_edges_ex(irg, 1);
+	remove_critical_cf_edges_ex(irg, true);
 }

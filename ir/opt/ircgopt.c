@@ -17,14 +17,14 @@
  */
 #include "ircgopt.h"
 
-#include "debug.h"
 #include "array.h"
-#include "irprog_t.h"
+#include "cgana.h"
+#include "debug.h"
+#include "ircons.h"
+#include "irflag_t.h"
 #include "irgwalk.h"
 #include "irloop_t.h"
-#include "irflag_t.h"
-#include "ircons.h"
-#include "cgana.h"
+#include "irprog_t.h"
 #include "irtools.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
@@ -35,7 +35,6 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 static void collect_call(ir_node *node, void *env)
 {
 	ir_node *head = (ir_node*)env;
-
 	if (is_Call(node)) {
 		set_irn_link(node, get_irn_link(head));
 		set_irn_link(head, node);
@@ -45,7 +44,7 @@ static void collect_call(ir_node *node, void *env)
 /* garbage collect methods: mark and remove */
 void gc_irgs(size_t n_keep, ir_entity ** keep_arr)
 {
-	void * MARK = &MARK; /* @@@ gefaehrlich!!! Aber wir markieren hoechstens zu viele ... */
+	void *MARK = &MARK; /* @@@ gefaehrlich!!! Aber wir markieren hoechstens zu viele ... */
 
 	FIRM_DBG_REGISTER(dbg, "firm.opt.cgopt");
 
@@ -59,32 +58,27 @@ void gc_irgs(size_t n_keep, ir_entity ** keep_arr)
 	/* Mark entities that are alive.  */
 	if (n_keep > 0) {
 		ir_entity **marked = NEW_ARR_F(ir_entity *, n_keep);
-		size_t    idx;
-
-		for (idx = 0; idx < n_keep; ++idx) {
+		for (size_t idx = 0; idx < n_keep; ++idx) {
 			marked[idx] = keep_arr[idx];
 			set_entity_link(marked[idx], MARK);
 			DB((dbg, LEVEL_1, "  method %+F kept alive.\n", marked[idx]));
 		}
 
-		for (idx = 0; idx < ARR_LEN(marked); ++idx) {
+		for (size_t idx = 0; idx < ARR_LEN(marked); ++idx) {
 			ir_graph *irg = get_entity_irg(marked[idx]);
-			ir_node *node;
-
 			if (irg == NULL)
 				continue;
 
-			node = get_irg_end(irg);
-
 			/* collect calls */
 			ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
-			irg_walk_graph(irg, firm_clear_link, collect_call, node);
+			ir_node *end = get_irg_end(irg);
+			irg_walk_graph(irg, firm_clear_link, collect_call, end);
 
 			/* iterate calls */
-			for (node = (ir_node*)get_irn_link(node); node != NULL;
+			for (ir_node *node = (ir_node*)get_irn_link(end); node != NULL;
 			     node = (ir_node*)get_irn_link(node)) {
-				for (size_t i = cg_get_call_n_callees(node); i > 0;) {
-					ir_entity *ent = cg_get_call_callee(node, --i);
+				for (size_t i = cg_get_call_n_callees(node); i-- > 0;) {
+					ir_entity *ent = cg_get_call_callee(node, i);
 
 					if (get_entity_irg(ent) && get_entity_link(ent) != MARK) {
 						set_entity_link(ent, MARK);

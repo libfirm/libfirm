@@ -23,11 +23,9 @@ void instrument_initcall(ir_graph *irg, ir_entity *ent)
 
 	/* find the first block */
 	ir_node *initial_exec = get_irg_initial_exec(irg);
-
-	ir_node *first_block = NULL;
+	ir_node *first_block  = NULL;
 	foreach_out_edge(initial_exec, edge) {
 		ir_node *succ = get_edge_src_irn(edge);
-
 		if (is_Block(succ)) {
 			/* found the first block */
 			first_block = succ;
@@ -41,9 +39,8 @@ void instrument_initcall(ir_graph *irg, ir_entity *ent)
 	/* check if this block has only one predecessor */
 	int  idx            = -1;
 	bool need_new_block = false;
-	for (int i = get_Block_n_cfgpreds(first_block) - 1; i >= 0; --i) {
+	for (int i = get_Block_n_cfgpreds(first_block); i-- > 0; ) {
 		ir_node *p = get_Block_cfgpred(first_block, i);
-
 		if (is_Bad(p))
 			continue;
 		if (p == initial_exec)

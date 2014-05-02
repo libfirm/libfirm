@@ -40,19 +40,9 @@
  */
 void normalize_one_return(ir_graph *irg)
 {
-	ir_node   *endbl         = get_irg_end_block(irg);
-	ir_entity *entity        = get_irg_entity(irg);
-	ir_type   *type          = get_entity_type(entity);
-	int        n_ret_vals    = get_method_n_ress(type) + 1;
-	int        n_rets        = 0;
-	bool       filter_dbgi   = false;
-	dbg_info  *combined_dbgi = NULL;
-	int i, j, k, n, last_idx;
-	ir_node **in, **retvals, **endbl_in;
-	ir_node *block;
-
 	/* look, if we have more than one return */
-	n = get_Block_n_cfgpreds(endbl);
+	ir_node *endbl = get_irg_end_block(irg);
+	int      n     = get_Block_n_cfgpreds(endbl);
 	if (n <= 0) {
 		/* The end block has no predecessors, we have an endless
 		   loop. In that case, no returns exists. */
@@ -61,8 +51,11 @@ void normalize_one_return(ir_graph *irg)
 		return;
 	}
 
-	unsigned *const returns = rbitset_alloca(n);
-	for (i = 0; i < n; ++i) {
+	unsigned *const returns       = rbitset_alloca(n);
+	unsigned        n_rets        = 0;
+	bool            filter_dbgi   = false;
+	dbg_info       *combined_dbgi = NULL;
+	for (int i = 0; i < n; ++i) {
 		ir_node *node = get_Block_cfgpred(endbl, i);
 
 		if (is_Return(node)) {
@@ -88,22 +81,24 @@ void normalize_one_return(ir_graph *irg)
 		return;
 	}
 
-	in       = ALLOCAN(ir_node*, MAX(n_rets, n_ret_vals));
-	retvals  = ALLOCAN(ir_node*, n_rets * n_ret_vals);
-	endbl_in = ALLOCAN(ir_node*, n);
+	ir_entity *entity     = get_irg_entity(irg);
+	ir_type   *type       = get_entity_type(entity);
+	unsigned   n_ret_vals = get_method_n_ress(type) + 1;
+	ir_node  **in         = ALLOCAN(ir_node*, MAX(n_rets, n_ret_vals));
+	ir_node  **retvals    = ALLOCAN(ir_node*, n_rets * n_ret_vals);
+	ir_node  **endbl_in   = ALLOCAN(ir_node*, n);
 
-	last_idx = 0;
-	for (j = i = 0; i < n; ++i) {
+	int last_idx = 0;
+	for (int i = 0, j = 0; i < n; ++i) {
 		ir_node *ret = get_Block_cfgpred(endbl, i);
 
 		if (rbitset_is_set(returns, i)) {
-			ir_node *block = get_nodes_block(ret);
-
 			/* create a new Jmp for every Ret and place the in in */
+			ir_node *block = get_nodes_block(ret);
 			in[j] = new_r_Jmp(block);
 
 			/* save the return values and shuffle them */
-			for (k = 0; k < n_ret_vals; ++k)
+			for (unsigned k = 0; k < n_ret_vals; ++k)
 				retvals[j + k*n_rets] = get_irn_n(ret, k);
 
 			++j;
@@ -113,15 +108,16 @@ void normalize_one_return(ir_graph *irg)
 	}
 
 	/* ok, create a new block with all created in's */
-	block = new_r_Block(irg, n_rets, in);
+	ir_node *block = new_r_Block(irg, n_rets, in);
 
 	/* now create the Phi nodes */
-	for (j = i = 0; i < n_ret_vals; ++i, j += n_rets) {
+	for (unsigned i = 0, j = 0; i < n_ret_vals; ++i, j += n_rets) {
 		ir_mode *mode = get_irn_mode(retvals[j]);
 		in[i] = new_r_Phi(block, n_rets, &retvals[j], mode);
 	}
 
-	endbl_in[last_idx++] = new_rd_Return(combined_dbgi, block, in[0], n_ret_vals-1, &in[1]);
+	endbl_in[last_idx++] = new_rd_Return(combined_dbgi, block, in[0],
+	                                     n_ret_vals-1, &in[1]);
 
 	set_irn_in(endbl, last_idx, endbl_in);
 
@@ -156,9 +152,8 @@ void normalize_one_return(ir_graph *irg)
 static bool can_move_ret(ir_node *ret)
 {
 	ir_node *retbl = get_nodes_block(ret);
-
 	foreach_irn_in(ret, i, pred) {
-		if (! is_Phi(pred) && retbl == get_nodes_block(pred)) {
+		if (!is_Phi(pred) && retbl == get_nodes_block(pred)) {
 			/* first condition failed, found a non-Phi predecessor
 			 * then is in the Return block */
 			return false;
@@ -174,11 +169,11 @@ static bool can_move_ret(ir_node *ret)
 		ir_node *pred = get_Block_cfgpred(retbl, i);
 
 		pred = skip_Tuple(pred);
-		if (! is_Jmp(pred) && !is_Bad(pred)) {
+		if (!is_Jmp(pred) && !is_Bad(pred)) {
 			/* simply place a new block here */
-			ir_graph *irg  = get_irn_irg(retbl);
-			ir_node *block = new_r_Block(irg, 1, &pred);
-			ir_node *jmp   = new_r_Jmp(block);
+			ir_graph *irg   = get_irn_irg(retbl);
+			ir_node  *block = new_r_Block(irg, 1, &pred);
+			ir_node  *jmp   = new_r_Jmp(block);
 			set_Block_cfgpred(retbl, i, jmp);
 		}
 	}
@@ -207,33 +202,23 @@ static bool can_move_ret(ir_node *ret)
  */
 void normalize_n_returns(ir_graph *irg)
 {
-	int i, j, n;
-	ir_node  *list     = NULL;
-	ir_node  *final    = NULL;
+	/* First, link all returns:
+	 * These must be predecessors of the endblock.
+	 * Place Returns that can be moved on list, all others
+	 * on final. */
 	unsigned  n_rets   = 0;
 	unsigned  n_finals = 0;
 	ir_node  *endbl    = get_irg_end_block(irg);
-	int       n_ret_vals;
-	ir_node **in;
-	ir_node  *end;
-
-	/*
-	 * First, link all returns:
-	 * These must be predecessors of the endblock.
-	 * Place Returns that can be moved on list, all others
-	 * on final.
-	 */
-	n = get_Block_n_cfgpreds(endbl);
-	for (i = 0; i < n; ++i) {
+	ir_node  *final    = NULL;
+	ir_node  *list     = NULL;
+	for (int i = 0, n = get_Block_n_cfgpreds(endbl); i < n; ++i) {
 		ir_node *ret = get_Block_cfgpred(endbl, i);
 
 		if (is_Bad(ret)) {
 			continue;
 		} else if (is_Return(ret) && can_move_ret(ret)) {
-			/*
-			 * Ok, all conditions met, we can move this Return, put it
-			 * on our work list.
-			 */
+			/* Ok, all conditions met, we can move this Return, put it
+			 * on our work list. */
 			set_irn_link(ret, list);
 			list = ret;
 			++n_rets;
@@ -251,15 +236,13 @@ void normalize_n_returns(ir_graph *irg)
 		return;
 	}
 
-	/*
-	 * Now move the Returns upwards. We move always one block up (and create n
+	/* Now move the Returns upwards. We move always one block up (and create n
 	 * new Returns), than we check if a newly created Return can be moved even
 	 * further. If yes, we simply add it to our work list, else to the final
-	 * list.
-	 */
-	end        = get_irg_end(irg);
-	n_ret_vals = get_irn_arity(list);
-	in         = ALLOCAN(ir_node*, n_ret_vals);
+	 * list. */
+	ir_node  *end        = get_irg_end(irg);
+	int       n_ret_vals = get_irn_arity(list);
+	ir_node **in         = ALLOCAN(ir_node*, n_ret_vals);
 	while (list != NULL) {
 		ir_node  *ret   = list;
 		ir_node  *block = get_nodes_block(ret);
@@ -269,27 +252,24 @@ void normalize_n_returns(ir_graph *irg)
 		list = (ir_node*)get_irn_link(ret);
 		--n_rets;
 
-		n = get_Block_n_cfgpreds(block);
-		for (i = 0; i < n; ++i) {
+		for (int i = 0, n = get_Block_n_cfgpreds(block); i < n; ++i) {
 			ir_node *jmp = get_Block_cfgpred(block, i);
-			ir_node *new_bl, *new_ret;
-
 			if (is_Bad(jmp))
 				continue;
 			assert(is_Jmp(jmp));
 
-			new_bl = get_nodes_block(jmp);
+			ir_node *new_bl = get_nodes_block(jmp);
 
 			/* create the in-array for the new Return */
-			for (j = 0; j < n_ret_vals; ++j) {
+			for (int j = 0; j < n_ret_vals; ++j) {
 				ir_node *pred = get_irn_n(ret, j);
-
-				in[j] = (is_Phi(pred) && get_nodes_block(pred) == block) ? get_Phi_pred(pred, i) : pred;
+				in[j] = (is_Phi(pred) && get_nodes_block(pred) == block)
+				      ? get_Phi_pred(pred, i) : pred;
 			}
 
-			new_ret = new_rd_Return(dbgi, new_bl, in[0], n_ret_vals-1, &in[1]);
-
-			if (! is_Bad(new_ret)) {
+			ir_node *new_ret = new_rd_Return(dbgi, new_bl, in[0], n_ret_vals-1,
+			                                 &in[1]);
+			if (!is_Bad(new_ret)) {
 				/*
 				 * The newly created node might be bad, if we
 				 * create it in a block with only Bad predecessors.
@@ -327,13 +307,12 @@ void normalize_n_returns(ir_graph *irg)
 	 * Last step: Create a new endblock, with all nodes on the final list as
 	 * predecessors.
 	 */
-	in = ALLOCAN(ir_node*, n_finals);
-
-	for (i = 0; final != NULL; ++i, final = (ir_node*)get_irn_link(final)) {
-		in[i] = final;
+	ir_node **endbl_in = ALLOCAN(ir_node*, n_finals);
+	for (int i = 0; final != NULL; ++i, final = (ir_node*)get_irn_link(final)) {
+		endbl_in[i] = final;
 	}
 
-	exchange(endbl, new_r_Block(irg, n_finals, in));
+	exchange(endbl, new_r_Block(irg, n_finals, endbl_in));
 
 	/* Invalidate analysis information:
 	 * Blocks become dead and new Returns were deleted, so dominator, outs and

@@ -32,18 +32,16 @@
  */
 static void rewire_inputs(ir_node *node, void *env)
 {
-	(void) env;
+	(void)env;
 	irn_rewire_inputs(node);
 }
 
 static void copy_node_dce(ir_node *node, void *env)
 {
-	ir_node  *new_node = exact_copy(node);
-	(void) env;
-
+	(void)env;
+	ir_node *new_node = exact_copy(node);
 	/* preserve the node numbers for easier debugging */
 	new_node->node_nr = node->node_nr;
-
 	set_irn_link(node, new_node);
 }
 
@@ -55,14 +53,12 @@ static void copy_node_dce(ir_node *node, void *env)
  */
 static void copy_graph_env(ir_graph *irg)
 {
-	ir_node *anchor = irg->anchor;
-	ir_node *new_anchor;
-
 	/* copy nodes */
+	ir_node *anchor = irg->anchor;
 	irg_walk_in_or_dep(anchor, copy_node_dce, rewire_inputs, NULL);
 
 	/* fix the anchor */
-	new_anchor = (ir_node*)get_irn_link(anchor);
+	ir_node *new_anchor = (ir_node*)get_irn_link(anchor);
 	assert(new_anchor != NULL);
 	irg->anchor = new_anchor;
 }

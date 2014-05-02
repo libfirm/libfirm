@@ -8,8 +8,6 @@
  * @brief   Optimizations regarding Confirm nodes.
  * @author  Michael Beck
  */
-#undef DEBUG_CONFIRM
-
 #include "tv_t.h"
 #include "irnode_t.h"
 #include "iropt_t.h"
@@ -34,43 +32,10 @@ enum range_tags {
  * all intervals.
  */
 typedef struct interval_t {
-	ir_tarval     *min;   /**< lowest border */
-	ir_tarval     *max;   /**< highest border */
-	unsigned char flags;  /**< border flags */
+	ir_tarval    *min;   /**< lowest border */
+	ir_tarval    *max;   /**< highest border */
+	unsigned char flags; /**< border flags */
 } interval_t;
-
-#ifdef DEBUG_CONFIRM
-
-#define compare_iv(l_iv, r_iv, relation)    compare_iv_dbg(l_iv, r_iv, relation)
-
-/* forward */
-static tarval *compare_iv_dbg(const interval_t *l_iv, const interval_t *r_iv, ir_relation relation);
-
-/* triangle */
-#define DBG_OUT_TR(l_relation, l_bound, r_relation, r_bound, relation, v) \
-  ir_printf("In %e:\na %= %n && b %= %n  ==>  a %= b == %s\n", \
-    get_irg_entity(get_irn_irg(l_bound)), \
-    l_relation, l_bound, r_relation, r_bound, relation, v)
-
-/* right side */
-#define DBG_OUT_R(r_relation, r_bound, left, relation, right, v) \
-  ir_printf("In %e:\na %= %n ==>  %n %= %n == %s\n", \
-    get_irg_entity(get_irn_irg(r_bound)), \
-    r_relation, r_bound, left, relation, right, v)
-
-/* left side */
-#define DBG_OUT_L(l_relation, l_bound, left, relation, right, v) \
-  ir_printf("In %e:\na %= %n ==>  %n %= %n == %s\n", \
-    get_irg_entity(get_irn_irg(l_bound)), \
-    l_relation, l_bound, left, relation, right, v)
-
-#else
-
-#define DBG_OUT_TR(l_relation, l_bound, r_relation, r_bound, relation, v)  (void)0
-#define DBG_OUT_R(r_relation, r_bound, left, relation, right, v)  (void)0
-#define DBG_OUT_L(l_relation, l_bound, left, relation, right, v)  (void)0
-
-#endif /* DEBUG_CONFIRM */
 
 /**
  * construct an interval from a value
@@ -81,7 +46,6 @@ static tarval *compare_iv_dbg(const interval_t *l_iv, const interval_t *r_iv, ir
 static interval_t *get_interval_from_tv(interval_t *iv, ir_tarval *tv)
 {
 	ir_mode *mode = get_tarval_mode(tv);
-
 	if (tv == tarval_unknown) {
 		if (mode_is_float(mode)) {
 			/* NaN could be included which we cannot handle */
@@ -110,7 +74,6 @@ static interval_t *get_interval_from_tv(interval_t *iv, ir_tarval *tv)
 	iv->min   = tv;
 	iv->max   = tv;
 	iv->flags = MIN_INCLUDED | MAX_INCLUDED;
-
 	return iv;
 }
 
@@ -124,11 +87,11 @@ static interval_t *get_interval_from_tv(interval_t *iv, ir_tarval *tv)
  * @return the filled interval or NULL if no interval
  *         can be created (happens only on floating point
  */
-static interval_t *get_interval(interval_t *iv, ir_node *bound, ir_relation relation)
+static interval_t *get_interval(interval_t *iv, ir_node *bound,
+                                ir_relation relation)
 {
 	ir_mode   *mode = get_irn_mode(bound);
 	ir_tarval *tv   = value_of(bound);
-
 	if (tv == tarval_unknown) {
 		/* There is nothing we could do here. For integer
 		 * modes we could return [-oo, +oo], but there is
@@ -146,7 +109,6 @@ static interval_t *get_interval(interval_t *iv, ir_node *bound, ir_relation rela
 		iv->min   = tarval_unknown;
 		iv->max   = tarval_unknown;
 		iv->flags = MIN_EXCLUDED | MAX_EXCLUDED;
-
 		return NULL;
 	}
 
@@ -225,45 +187,42 @@ static interval_t *get_interval(interval_t *iv, ir_node *bound, ir_relation rela
  *   tarval_b_true or tarval_b_false it it can be evaluated,
  *   tarval_unknown else
  */
-static ir_tarval *(compare_iv)(const interval_t *l_iv, const interval_t *r_iv, ir_relation relation)
+static ir_tarval *(compare_iv)(const interval_t *l_iv, const interval_t *r_iv,
+                               ir_relation relation)
 {
-	ir_relation res;
-	unsigned    flags;
-	ir_tarval  *tv_true = tarval_b_true, *tv_false = tarval_b_false;
-
 	/* if one interval contains NaNs, we cannot evaluate anything */
-	if (! l_iv || ! r_iv)
+	if (l_iv  == NULL || r_iv == NULL)
 		return tarval_unknown;
 
 	/* we can only check ordered relations */
+	ir_tarval *tv_true  = tarval_b_true;
+	ir_tarval *tv_false = tarval_b_false;
 	if (relation & ir_relation_unordered) {
-		ir_tarval *t;
-
 		relation = get_negated_relation(relation);
-		t        = tv_true;
+		ir_tarval *t = tv_true;
 		tv_true  = tv_false;
 		tv_false = t;
 	}
 
 	/* if we have > or >=, we do the inverse to save some cases */
-	if (relation == ir_relation_greater_equal || relation == ir_relation_greater) {
-		const interval_t *t;
-
+	if (relation == ir_relation_greater_equal
+	    || relation == ir_relation_greater) {
 		relation = get_inversed_relation(relation);
-		t        = l_iv;
-		l_iv     = r_iv;
-		r_iv     = t;
+		const interval_t *t = l_iv;
+		l_iv = r_iv;
+		r_iv = t;
 	}
 
 	/* now, only the following cases remains */
 	switch (relation) {
-	case ir_relation_equal:
-		/* two intervals can be compared for equality only if they are a single value */
+	case ir_relation_equal: {
+		/* two intervals can be compared for equality only if they are a single
+		 * value */
 		if (l_iv->min == l_iv->max && r_iv->min == r_iv->max)
 			return tarval_cmp(l_iv->min, r_iv->min) == ir_relation_equal ? tv_true : tv_false;
 
 		/* if both intervals do not intersect, it is never equal */
-		res = tarval_cmp(l_iv->max, r_iv->min);
+		ir_relation res = tarval_cmp(l_iv->max, r_iv->min);
 
 		/* b < c ==> [a,b] != [c,d] */
 		if (res == ir_relation_less)
@@ -285,6 +244,7 @@ static ir_tarval *(compare_iv)(const interval_t *l_iv, const interval_t *r_iv, i
 			&& (res == ir_relation_equal))
 			return tv_false;
 		break;
+	}
 
 	case ir_relation_less_greater:
 		/* two intervals can be compared for not equality only if they are a single value */
@@ -292,8 +252,8 @@ static ir_tarval *(compare_iv)(const interval_t *l_iv, const interval_t *r_iv, i
 			return tarval_cmp(l_iv->min, r_iv->min) != ir_relation_equal ? tv_true : tv_false;
 		break;
 
-	case ir_relation_less:
-		res = tarval_cmp(l_iv->max, r_iv->min);
+	case ir_relation_less: {
+		ir_relation res = tarval_cmp(l_iv->max, r_iv->min);
 
 		/* [a, b] < [c, d]  <==> b < c */
 		if (res == ir_relation_less)
@@ -314,18 +274,19 @@ static ir_tarval *(compare_iv)(const interval_t *l_iv, const interval_t *r_iv, i
 			res == ir_relation_equal)
 			return tv_false;
 		break;
+	}
 
-	case ir_relation_less_equal:
+	case ir_relation_less_equal: {
 		/* [a, b) <= [c, d] or [a, b] <= (c, d]  <==> b <= c */
-		flags = (l_iv->flags & MAX_EXCLUDED) | (r_iv->flags & MIN_EXCLUDED);
-		if (flags) {
-			res = tarval_cmp(l_iv->max, r_iv->min);
-
+		unsigned flags
+			= (l_iv->flags & MAX_EXCLUDED) | (r_iv->flags & MIN_EXCLUDED);
+		if (flags != 0) {
+			ir_relation res = tarval_cmp(l_iv->max, r_iv->min);
 			if (res == ir_relation_less || res == ir_relation_equal)
 				return tv_true;
 		}
 
-		res = tarval_cmp(l_iv->min, r_iv->max);
+		ir_relation res = tarval_cmp(l_iv->min, r_iv->max);
 
 		/* [a, b] > [c, d] <==> a > d */
 		if (res == ir_relation_greater)
@@ -336,6 +297,7 @@ static ir_tarval *(compare_iv)(const interval_t *l_iv, const interval_t *r_iv, i
 			res == ir_relation_equal)
 			return tv_false;
 		break;
+	}
 
 	case ir_relation_less_equal_greater:
 		/* Hmm. if both are intervals, we can find an order */
@@ -348,11 +310,11 @@ static ir_tarval *(compare_iv)(const interval_t *l_iv, const interval_t *r_iv, i
 }
 
 /**
- * Returns non-zero, if a given relation is transitive.
+ * Returns true, if a given relation is transitive.
  */
-static int is_transitive(ir_relation relation)
+static bool is_transitive(ir_relation relation)
 {
-	return (ir_relation_false < relation && relation < ir_relation_less_greater);
+	return ir_relation_false < relation && relation < ir_relation_less_greater;
 }
 
 /**
@@ -367,7 +329,6 @@ static int is_transitive(ir_relation relation)
 ir_tarval *computed_value_Cmp_Confirm(const ir_node *cmp, ir_node *left,
                                       ir_node *right, ir_relation relation)
 {
-	ir_tarval *tv;
 	if (is_Confirm(right)) {
 		/* we want the Confirm on the left side */
 		ir_node *t = right;
@@ -375,8 +336,9 @@ ir_tarval *computed_value_Cmp_Confirm(const ir_node *cmp, ir_node *left,
 		left  = t;
 
 		relation = get_inversed_relation(relation);
-	} else if (!is_Confirm(left))
+	} else if (!is_Confirm(left)) {
 		return tarval_unknown;
+	}
 
 	/* ok, here at least left is a Confirm, right might be */
 	ir_node    *l_bound    = get_Confirm_bound(left);
@@ -409,14 +371,12 @@ ir_tarval *computed_value_Cmp_Confirm(const ir_node *cmp, ir_node *left,
 					ir_relation res_relation = (l_relation & ~ir_relation_equal) | (l_relation & r_inc_relation & ir_relation_equal);
 
 					if ((relation == res_relation) || ((relation & ~ir_relation_equal) == res_relation)) {
-						DBG_OUT_TR(l_relation, l_bound, r_relation, r_bound, relation, "true");
 						DBG_EVAL_CONFIRM(cmp);
 						return tarval_b_true;
 					} else {
 						ir_relation neg_relation = get_negated_relation(relation);
 
 						if ((neg_relation == res_relation) || ((neg_relation & ~ir_relation_equal) == res_relation)) {
-							DBG_OUT_TR(l_relation, l_bound, r_relation, r_bound, relation, "false");
 							DBG_EVAL_CONFIRM(cmp);
 							return tarval_b_false;
 						}
@@ -436,7 +396,6 @@ ir_tarval *computed_value_Cmp_Confirm(const ir_node *cmp, ir_node *left,
 			 * We know that a CMP b and check for that
 			 */
 			if ((r_relation == relation) || (r_relation == (relation & ~ir_relation_equal))) {
-				DBG_OUT_R(r_relation, r_bound, left, relation, right, "true");
 				DBG_EVAL_CONFIRM(cmp);
 				return tarval_b_true;
 			} else {
@@ -448,7 +407,6 @@ ir_tarval *computed_value_Cmp_Confirm(const ir_node *cmp, ir_node *left,
 				ir_relation neg_relation = get_negated_relation(relation);
 
 				if ((r_relation == neg_relation) || (r_relation == (neg_relation & ~ir_relation_equal))) {
-					DBG_OUT_R(r_relation, r_bound, left, relation, right, "false");
 					DBG_EVAL_CONFIRM(cmp);
 					return tarval_b_false;
 				}
@@ -456,7 +414,7 @@ ir_tarval *computed_value_Cmp_Confirm(const ir_node *cmp, ir_node *left,
 		}
 
 		/* now, try interval magic */
-		tv = compare_iv(
+		ir_tarval *tv = compare_iv(
 			get_interval(&l_iv, l_bound, l_relation),
 			get_interval(&r_iv, r_bound, r_relation),
 			relation);
@@ -479,7 +437,6 @@ ir_tarval *computed_value_Cmp_Confirm(const ir_node *cmp, ir_node *left,
 		 * We know that a CMP b and check for that
 		 */
 		if ((l_relation == relation) || (l_relation == (relation & ~ir_relation_equal))) {
-			DBG_OUT_L(l_relation, l_bound, left, relation, right, "true");
 			DBG_EVAL_CONFIRM(cmp);
 			return tarval_b_true;
 		} else {
@@ -491,7 +448,6 @@ ir_tarval *computed_value_Cmp_Confirm(const ir_node *cmp, ir_node *left,
 			ir_relation neg_relation = get_negated_relation(relation);
 
 			if ((l_relation == neg_relation) || (l_relation == (neg_relation & ~ir_relation_equal))) {
-				DBG_OUT_L(l_relation, l_bound, left, relation, right, "false");
 				DBG_EVAL_CONFIRM(cmp);
 				return tarval_b_false;
 			}
@@ -499,8 +455,7 @@ ir_tarval *computed_value_Cmp_Confirm(const ir_node *cmp, ir_node *left,
 	}
 
 	/* now, only right == Const can help */
-	tv = value_of(right);
-
+	ir_tarval *tv = value_of(right);
 	if (tv != tarval_unknown) {
 		tv = compare_iv(
 			get_interval(&l_iv, l_bound, l_relation),
@@ -513,70 +468,3 @@ ir_tarval *computed_value_Cmp_Confirm(const ir_node *cmp, ir_node *left,
 
 	return tv;
 }
-
-#ifdef DEBUG_CONFIRM
-/**
- * For debugging. Prints an interval into a string.
- *
- * @param buf   address of a string buffer
- * @param len   length of the string buffer
- * @param iv    the interval
- */
-static int iv_snprintf(char *buf, size_t len, const interval_t *iv)
-{
-	char smin[64], smax[64];
-
-	if (iv) {
-		tarval_snprintf(smin, sizeof(smin), iv->min);
-
-		if (iv->min != iv->max || (iv->flags & (MIN_EXCLUDED|MAX_EXCLUDED))) {
-			tarval_snprintf(smax, sizeof(smax), iv->max);
-
-			return snprintf(buf, len, "%c%s, %s%c",
-				iv->flags & MIN_EXCLUDED ? '(' : '[',
-				smin, smax,
-				iv->flags & MAX_EXCLUDED ? ')' : ']'
-				);
-		} else
-			return snprintf(buf, len, "%s", smin);
-	}
-	return snprintf(buf, len, "<UNKNOWN>");
-}
-
-/**
- * For debugging. Prints an interval compare.
- *
- * @param l_iv      the left interval
- * @param r_iv      the right interval
- * @param relation  the compare relation
- */
-static void print_iv_cmp(const interval_t *l_iv, const interval_t *r_iv, ir_relation relation)
-{
-	char sl[128], sr[128];
-
-	iv_snprintf(sl, sizeof(sl), l_iv);
-	iv_snprintf(sr, sizeof(sr), r_iv);
-
-	ir_printf("%s %= %s", sl, relation, sr);
-}
-
-/**
- * For debugging. call *compare_iv() and prints inputs and result.
- *
- * @param l_iv     the left interval
- * @param r_iv     the right interval
- * @param relation the compare relation
- */
-static tarval *compare_iv_dbg(const interval_t *l_iv, const interval_t *r_iv, ir_relation relation)
-{
-	tarval *tv = (compare_iv)(l_iv, r_iv, relation);
-
-	if (tv == tarval_unknown)
-		return tv;
-
-	print_iv_cmp(l_iv, r_iv, relation);
-	ir_printf(" = %T\n", tv);
-	return tv;
-}
-
-#endif /* DEBUG_CONFIRM */
