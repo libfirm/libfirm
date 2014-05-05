@@ -20,7 +20,8 @@
 #include "irtools.h"
 #include "error.h"
 
-void turn_into_tuple(ir_node *const node, int const arity, ir_node *const *const in)
+void turn_into_tuple(ir_node *const node, int const arity,
+                     ir_node *const *const in)
 {
 	set_irn_in(node, arity, in);
 	set_irn_op(node, op_Tuple);
@@ -28,20 +29,16 @@ void turn_into_tuple(ir_node *const node, int const arity, ir_node *const *const
 
 void exchange(ir_node *old, ir_node *nw)
 {
-	ir_graph *irg;
+	assert(old != NULL && nw != NULL);
+	assert(old != nw);
 
-	assert(old && nw);
-	assert(old != nw && "Exchanging node with itself is not allowed");
-
-	irg = get_irn_irg(old);
-	assert(irg == get_irn_irg(nw) && "New node must be in same irg as old node");
+	ir_graph *irg = get_irn_irg(old);
+	assert(irg == get_irn_irg(nw));
 
 	hook_replace(old, nw);
 
-	/*
-	 * If new outs are on, we can skip the id node creation and reroute
-	 * the edges from the old node to the new directly.
-	 */
+	/* If new outs are on, we can skip the id node creation and reroute
+	 * the edges from the old node to the new directly. */
 	if (edges_activated(irg)) {
 		/* copy all dependencies from old to new */
 		add_irn_deps(nw, old);
@@ -53,15 +50,13 @@ void exchange(ir_node *old, ir_node *nw)
 		set_irn_op(old, op_Deleted);
 	} else {
 		/* Else, do it the old-fashioned way. */
-		ir_node *block;
-
 		hook_turn_into_id(old);
 
-		block = old->in[0];
-		if (! block) {
+		ir_node *block = old->in[0];
+		if (block == NULL) {
 			block = is_Block(nw) ? nw : get_nodes_block(nw);
 
-			if (! block) {
+			if (block == NULL) {
 				panic("cannot find legal block for id");
 			}
 		}
@@ -78,7 +73,7 @@ void exchange(ir_node *old, ir_node *nw)
 
 	/* update irg flags */
 	clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS
-	                   | IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO);
+	                        | IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO);
 }
 
 /**
@@ -87,14 +82,13 @@ void exchange(ir_node *old, ir_node *nw)
  */
 static void collect_phiprojs_walker(ir_node *n, void *env)
 {
-	ir_node *pred;
-	(void) env;
+	(void)env;
 
 	if (is_Phi(n)) {
 		ir_node *block = get_nodes_block(n);
 		add_Block_phi(block, n);
 	} else if (is_Proj(n)) {
-		pred = n;
+		ir_node *pred = n;
 		do {
 			pred = get_Proj_pred(pred);
 		} while (is_Proj(pred));
@@ -182,28 +176,25 @@ static void move_edges(ir_node *node, ir_node *from_bl, ir_node *to_bl)
 
 void part_block(ir_node *node)
 {
-	ir_graph *irg = get_irn_irg(node);
-	ir_node  *new_block, *old_block;
-	ir_node  *phi, *jmp;
-
 	/* Turn off optimizations so that blocks are not merged again. */
 	int rem_opt = get_opt_optimize();
 	set_optimize(0);
 
 	/* Transform the control flow */
-	old_block = get_nodes_block(node);
-	new_block = new_r_Block(irg, get_Block_n_cfgpreds(old_block),
-	                        get_Block_cfgpred_arr(old_block));
+	ir_node  *old_block = get_nodes_block(node);
+	ir_graph *irg       = get_irn_irg(node);
+	ir_node  *new_block = new_r_Block(irg, get_Block_n_cfgpreds(old_block),
+	                                  get_Block_cfgpred_arr(old_block));
 
 	/* create a jump from new_block to old_block, which is now the lower one */
-	jmp = new_r_Jmp(new_block);
+	ir_node *jmp = new_r_Jmp(new_block);
 	set_irn_in(old_block, 1, &jmp);
 
 	/* move node and its predecessors to new_block */
 	move(node, old_block, new_block);
 
 	/* move Phi nodes to new_block */
-	phi = get_Block_phis(old_block);
+	ir_node *phi = get_Block_phis(old_block);
 	set_Block_phis(new_block, phi);
 	set_Block_phis(old_block, NULL);
 	while (phi) {
@@ -216,9 +207,11 @@ void part_block(ir_node *node)
 
 ir_node *part_block_edges(ir_node *node)
 {
-	ir_graph *irg       = get_irn_irg(node);
-	ir_node  *old_block = get_nodes_block(node);
-	ir_node  *new_block = new_r_Block(irg, get_Block_n_cfgpreds(old_block), get_Block_cfgpred_arr(old_block));
+	ir_node  *old_block  = get_nodes_block(node);
+	int       n_cfgpreds = get_Block_n_cfgpreds(old_block);
+	ir_node **cfgpreds   = get_Block_cfgpred_arr(old_block);
+	ir_graph *irg        = get_irn_irg(node);
+	ir_node  *new_block  = new_r_Block(irg, n_cfgpreds, cfgpreds);
 
 	/* old_block has no predecessors anymore for now */
 	set_irn_in(old_block, 0, NULL);
@@ -240,7 +233,6 @@ ir_node *part_block_edges(ir_node *node)
 void kill_node(ir_node *node)
 {
 	ir_graph *irg = get_irn_irg(node);
-
 	if (edges_activated(irg)) {
 		edges_node_deleted(node);
 	}
