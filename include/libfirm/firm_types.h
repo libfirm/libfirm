@@ -219,22 +219,23 @@ typedef enum cond_jmp_predicate {
  * of these may be discovered by analyses.
  */
 typedef enum mtp_additional_properties {
-	/** no additional properties */
+	/** No additional properties */
 	mtp_no_property                 = 0,
-	/** This method did not access memory and calculates its return values
+	/** This method does not access memory and calculates its return values
 	 * solely from its parameters. The only observable effect of a const
 	 * function must be its return value. So they must not exhibit infinite
 	 * loops or wait for user input. The return value must not depend on any
 	 * global variables/state.
 	 * GCC: __attribute__((const)). */
 	mtp_property_const              = 1u << 0,
-	/** This method did NOT write to memory and calculates its return values
+	/** This method does not write to memory and calculates its return values
 	 * solely from its parameters and the memory they points to (or global
 	 * vars). The only observable effect of a const function must be its return
 	 * value. So they must not exhibit infinite loops or wait for user input.
 	 * GCC: __attribute__((pure)). */
 	mtp_property_pure               = 1u << 1,
-	/** This method did not return due to an aborting system call.
+	/** This method never returns. The method may for example abort or exit the
+	 * program or contain an infinite loop).
 	 * GCC: __attribute__((noreturn)). */
 	mtp_property_noreturn           = 1u << 2,
 	/** This method cannot throw an exception. GCC: __attribute__((nothrow)). */
@@ -244,21 +245,22 @@ typedef enum mtp_additional_properties {
 	/** This method returns newly allocate memory.
 	 * GCC: __attribute__((malloc)). */
 	mtp_property_malloc             = 1u << 5,
-	/** This method can return more than one (typically setjmp).
+	/** This method can return more than once (typically setjmp).
 	 * GCC: __attribute__((returns_twice)). */
 	mtp_property_returns_twice      = 1u << 6,
-	/** All method invocations are known, the backend is free to optimize the
-	 * call in any possible way. */
+	/** All method invocations are known and inside the current compilation
+	 * unit, the backend can freely choose the calling convention. */
 	mtp_property_private            = 1u << 7,
-	/** Set, if this method contains one possibly endless loop. */
+	/** Set, if this method contains one possibly endless loop. Must not be
+	 * set if all loops are guaranteed to terminate eventually. */
 	mtp_property_has_loop           = 1u << 8,
-	/** try to always inline this function, even if it seems nonprofitable */
+	/** Try to always inline this function, even if it seems nonprofitable */
 	mtp_property_always_inline      = 1u << 9,
-	/** the function should not be inlined */
+	/** The function should not be inlined */
 	mtp_property_noinline           = 1u << 10,
-	/** the programmer recommends to inline the function */
+	/** The programmer recommends to inline the function */
 	mtp_property_inline_recommended = 1u << 11,
-	/** stupid hack used by opt_funccall... */
+	/** Marker used by opt_funccall (really a hack)... */
 	mtp_temporary                   = 1u << 12,
 } mtp_additional_properties;
 ENUM_BITSET(mtp_additional_properties)
