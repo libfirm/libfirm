@@ -684,27 +684,8 @@ static void emit_be_IncSP(const ir_node *node)
 	}
 }
 
-static void emit_amd64_Start(const ir_node *node)
-{
-	ir_graph *irg        = get_irn_irg(node);
-	ir_type  *frame_type = get_irg_frame_type(irg);
-	unsigned  size       = get_type_size_bytes(frame_type);
-
-	if (size > 0) {
-		amd64_emitf(node, "subq $%u, %%rsp", size);
-	}
-}
-
 static void emit_amd64_Return(const ir_node *node)
 {
-	ir_graph *irg        = get_irn_irg(node);
-	ir_type  *frame_type = get_irg_frame_type(irg);
-	unsigned  size       = get_type_size_bytes(frame_type);
-
-	if (size > 0) {
-		amd64_emitf(node, "addq $%u, %%rsp", size);
-	}
-
 	be_emit_cstring("\tret");
 	be_emit_finish_line_gas(node);
 }
@@ -725,7 +706,7 @@ static void amd64_register_emitters(void)
 	be_set_emitter(op_amd64_Jmp,       emit_amd64_Jmp);
 	be_set_emitter(op_amd64_Mov,       emit_amd64_Mov);
 	be_set_emitter(op_amd64_Return,    emit_amd64_Return);
-	be_set_emitter(op_amd64_Start,     emit_amd64_Start);
+	be_set_emitter(op_amd64_Start,     be_emit_nothing);
 	be_set_emitter(op_amd64_SwitchJmp, emit_amd64_SwitchJmp);
 	be_set_emitter(op_be_Copy,         emit_be_Copy);
 	be_set_emitter(op_be_CopyKeep,     emit_be_Copy);

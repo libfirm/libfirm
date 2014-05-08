@@ -326,6 +326,58 @@ static void amd64_collect_frame_entity_nodes(ir_node *node, void *data)
 	}
 }
 
+static void introduce_epilogue(ir_node *ret)
+{
+	const arch_register_t *sp         = &amd64_registers[REG_RSP];
+	ir_graph              *irg        = get_irn_irg(ret);
+	ir_node               *start      = get_irg_start(irg);
+	ir_node               *block      = get_nodes_block(start);
+	ir_type               *frame_type = get_irg_frame_type(irg);
+	unsigned               frame_size = get_type_size_bytes(frame_type);
+	be_stack_layout_t     *layout     = be_get_irg_stack_layout(irg);
+	ir_node               *first_sp   = get_irn_n(ret, n_be_Return_sp);
+	ir_node               *curr_sp    = first_sp;
+
+	if(!layout->sp_relative) {
+		assert(false);
+	} else {
+		if (frame_size > 0) {
+			ir_node *incsp = be_new_IncSP(sp, block, curr_sp,
+			                              - (int) frame_size, 0);
+			sched_add_before(ret, incsp);
+			curr_sp = incsp;
+		}
+	}
+	set_irn_n(ret, n_be_Return_sp, curr_sp);
+}
+
+static void introduce_prologue_epilogue(ir_graph *irg)
+{
+	const arch_register_t *sp         = &amd64_registers[REG_RSP];
+	ir_node               *start      = get_irg_start(irg);
+	ir_node               *block      = get_nodes_block(start);
+	ir_type               *frame_type = get_irg_frame_type(irg);
+	unsigned               frame_size = get_type_size_bytes(frame_type);
+	be_stack_layout_t     *layout     = be_get_irg_stack_layout(irg);
+	ir_node               *initial_sp = be_get_initial_reg_value(irg, sp);
+
+	if (!layout->sp_relative) {
+		assert(false);
+	} else {
+		if (frame_size > 0) {
+			ir_node *const incsp = be_new_IncSP(sp, block, initial_sp,
+			                                    frame_size, 0);
+			sched_add_after(start, incsp);
+		}
+	}
+
+	/* introduce epilogue for every return node */
+	foreach_irn_in(get_irg_end_block(irg), i, ret) {
+		assert(be_is_Return(ret) || is_amd64_Return(ret));
+		introduce_epilogue(ret);
+	}
+}
+
 /**
  * Called immediatly before emit phase.
  */
@@ -345,6 +397,8 @@ static void amd64_finish_graph(ir_graph *irg)
 	/* fix stack entity offsets */
 	be_abi_fix_stack_nodes(irg);
 	be_abi_fix_stack_bias(irg);
+
+	introduce_prologue_epilogue(irg);
 
 	/* Fix 2-address code constraints. */
 	amd64_finish_irg(irg);
