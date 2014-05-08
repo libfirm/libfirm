@@ -31,6 +31,7 @@
 #include "irprog_t.h"
 #include "lower_builtins.h"
 #include "lower_calls.h"
+#include "lower_mode_b.h"
 #include "util.h"
 
 #include "bearch_amd64_t.h"
@@ -472,6 +473,12 @@ static void amd64_lower_for_target(void)
 	foreach_irp_irg(i, irg) {
 		lower_switch(irg, 4, 256, mode_Iu);
 		be_after_transform(irg, "lower-switch");
+	}
+
+	foreach_irp_irg(i, irg) {
+		/* lower for mode_b stuff */
+		ir_lower_mode_b(irg, mode_Lu);
+		be_after_transform(irg, "lower-modeb");
 	}
 
 	foreach_irp_irg(i, irg) {
