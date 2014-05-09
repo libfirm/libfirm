@@ -92,9 +92,6 @@ amd64_cconv_t *amd64_decide_calling_convention(ir_type *function_type,
 		panic("amd64: returns_twice calling convention NIY");
 	rbitset_copy(caller_saves, default_caller_saves, N_AMD64_REGISTERS);
 	rbitset_copy(callee_saves, default_callee_saves, N_AMD64_REGISTERS);
-	if (!omit_fp) {
-		rbitset_clear(callee_saves, REG_RBP);
-	}
 
 	/* determine how parameters are passed */
 	size_t              n_params = get_method_n_params(function_type);

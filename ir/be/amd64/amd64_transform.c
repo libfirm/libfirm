@@ -1189,8 +1189,6 @@ static ir_node *gen_Start(ir_node *node)
 
 	/* calculate number of outputs */
 	size_t n_outs = 2; /* memory, rsp */
-	if (!cconv->omit_fp)
-		++n_outs; /* rbp */
 	/* function parameters */
 	n_outs += cconv->n_param_regs;
 	size_t n_callee_saves
@@ -1211,11 +1209,6 @@ static ir_node *gen_Start(ir_node *node)
 	make_start_out(&start_sp, obst, start, o++, &amd64_registers[REG_RSP],
 	               arch_register_req_type_produces_sp);
 
-	if (!cconv->omit_fp) {
-		make_start_out(&start_fp, obst, start, o++, &amd64_registers[REG_RBP],
-		               arch_register_req_type_none);
-	}
-
 	/* function parameters in registers */
 	start_params_offset = o;
 	for (size_t i = 0; i < get_method_n_params(function_type); ++i) {
@@ -1233,10 +1226,15 @@ static ir_node *gen_Start(ir_node *node)
 	for (size_t i = 0; i < N_AMD64_REGISTERS; ++i) {
 		if (!rbitset_is_set(cconv->callee_saves, i))
 			continue;
-		const arch_register_t *reg = &amd64_registers[i];
-		arch_set_irn_register_req_out(start, o, reg->single_req);
-		arch_set_irn_register_out(start, o, reg);
-		++o;
+		if (!cconv->omit_fp && i == REG_RBP) {
+			make_start_out(&start_fp, obst, start, o++, &amd64_registers[REG_RBP],
+						   arch_register_req_type_none);
+		} else {
+			const arch_register_t *reg = &amd64_registers[i];
+			arch_set_irn_register_req_out(start, o, reg->single_req);
+			arch_set_irn_register_out(start, o, reg);
+			++o;
+		}
 	}
 	assert(n_outs == o);
 
@@ -1331,7 +1329,7 @@ static ir_node *gen_Return(ir_node *node)
 	for (size_t i = 0; i < N_AMD64_REGISTERS; ++i) {
 		if (!rbitset_is_set(cconv->callee_saves, i))
 			continue;
-		const arch_register_t *reg    = &amd64_registers[i];
+		const arch_register_t *reg   = &amd64_registers[i];
 		ir_mode               *mode  = reg->reg_class->mode;
 		ir_node               *value = new_r_Proj(start, mode, start_pn++);
 		in[p]   = value;
