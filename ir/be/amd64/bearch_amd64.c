@@ -96,21 +96,19 @@ static void amd64_set_frame_offset(ir_node *node, int offset)
 
 static int amd64_get_sp_bias(const ir_node *node)
 {
-	if (is_amd64_Start(node)) {
-		ir_graph *irg        = get_irn_irg(node);
-		ir_type  *frame_type = get_irg_frame_type(irg);
-		return get_type_size_bytes(frame_type);
-	} else if (is_amd64_Return(node)) {
-		ir_graph *irg        = get_irn_irg(node);
-		ir_type  *frame_type = get_irg_frame_type(irg);
-		return -(int)get_type_size_bytes(frame_type);
-	} else if (is_amd64_PushAM(node)) {
+	if (is_amd64_PushAM(node)) {
 		const amd64_addr_attr_t *attr = get_amd64_addr_attr_const(node);
 		return get_insn_mode_bytes(attr->insn_mode);
+	} else if (is_amd64_PushRbp(node)) {
+		/* 64-bit register size */
+		return 8;
 	} else if (is_amd64_PopAM(node)) {
 		const amd64_addr_attr_t *attr = get_amd64_addr_attr_const(node);
 		return -get_insn_mode_bytes(attr->insn_mode);
+	} else if (is_amd64_Leave(node)) {
+		return SP_BIAS_RESET;
 	}
+
 	return 0;
 }
 
@@ -167,7 +165,7 @@ static ir_node *create_push(ir_node *node, ir_node *schedpoint, ir_node *sp,
 
 	amd64_addr_t addr;
 	memset(&addr, 0, sizeof(addr));
-	addr.base_input       = 0;
+	addr.base_input       = 1;
 	addr.index_input      = NO_INPUT;
 	addr.immediate.entity = ent;
 	ir_node *in[] = { sp, frame, mem };
@@ -187,7 +185,7 @@ static ir_node *create_pop(ir_node *node, ir_node *schedpoint, ir_node *sp, ir_e
 
 	amd64_addr_t addr;
 	memset(&addr, 0, sizeof(addr));
-	addr.base_input  = 0;
+	addr.base_input  = 1;
 	addr.index_input = NO_INPUT;
 	addr.immediate.entity = ent;
 	ir_node *in[] = { sp, frame, get_irg_no_mem(irg) };
@@ -327,9 +325,20 @@ static void amd64_collect_frame_entity_nodes(ir_node *node, void *data)
 	}
 }
 
+static int determine_rbp_input(ir_node *ret)
+{
+	const arch_register_t *bp = &amd64_registers[REG_RSP];
+	foreach_irn_in(ret, i, input) {
+		if (arch_get_irn_register(input) == bp)
+			return i;
+	}
+    panic("no rbp input found at %+F", ret);
+}
+
 static void introduce_epilogue(ir_node *ret)
 {
 	const arch_register_t *sp         = &amd64_registers[REG_RSP];
+	const arch_register_t *bp         = &amd64_registers[REG_RBP];
 	ir_graph              *irg        = get_irn_irg(ret);
 	ir_node               *start      = get_irg_start(irg);
 	ir_node               *block      = get_nodes_block(start);
@@ -338,9 +347,20 @@ static void introduce_epilogue(ir_node *ret)
 	be_stack_layout_t     *layout     = be_get_irg_stack_layout(irg);
 	ir_node               *first_sp   = get_irn_n(ret, n_be_Return_sp);
 	ir_node               *curr_sp    = first_sp;
+	ir_mode               *mode_gp    = mode_Lu;
 
 	if(!layout->sp_relative) {
-		assert(false);
+		int n_rbp = determine_rbp_input(ret);
+		ir_node *curr_bp = get_irn_n(ret, n_rbp);
+
+		ir_node *leave = new_bd_amd64_Leave(NULL, block, curr_bp);
+		curr_bp        = new_r_Proj(leave, mode_gp, pn_amd64_Leave_frame);
+		curr_sp        = new_r_Proj(leave, mode_gp, pn_amd64_Leave_stack);
+		arch_set_irn_register(curr_bp, bp);
+		arch_set_irn_register(curr_sp, sp);
+		sched_add_before(ret, leave);
+
+		set_irn_n(ret, n_rbp, curr_bp);
 	} else {
 		if (frame_size > 0) {
 			ir_node *incsp = be_new_IncSP(sp, block, curr_sp,
@@ -350,20 +370,57 @@ static void introduce_epilogue(ir_node *ret)
 		}
 	}
 	set_irn_n(ret, n_be_Return_sp, curr_sp);
+
+	/* keep verifier happy... */
+	if (get_irn_n_edges(first_sp) == 0 && is_Proj(first_sp)) {
+		kill_node(first_sp);
+	}
 }
 
 static void introduce_prologue_epilogue(ir_graph *irg)
 {
 	const arch_register_t *sp         = &amd64_registers[REG_RSP];
+	const arch_register_t *bp         = &amd64_registers[REG_RBP];
 	ir_node               *start      = get_irg_start(irg);
 	ir_node               *block      = get_nodes_block(start);
 	ir_type               *frame_type = get_irg_frame_type(irg);
 	unsigned               frame_size = get_type_size_bytes(frame_type);
 	be_stack_layout_t     *layout     = be_get_irg_stack_layout(irg);
 	ir_node               *initial_sp = be_get_initial_reg_value(irg, sp);
+	ir_mode               *mode_gp    = mode_Lu;
+
+	if (is_Deleted(start))
+		return;
 
 	if (!layout->sp_relative) {
-		assert(false);
+		/* push rbp */
+		ir_node *push = new_bd_amd64_PushRbp(NULL, block, initial_sp);
+		ir_node *curr_sp = new_r_Proj(push, mode_gp, pn_amd64_PushRbp_stack);
+
+		arch_set_irn_register(curr_sp, sp);
+		sched_add_after(start, push);
+
+		/* move rsp to rbp */
+		ir_node *const curr_bp = be_new_Copy(block, curr_sp);
+		sched_add_after(push, curr_bp);
+		be_set_constr_single_reg_out(curr_bp, 0,
+		                             bp, arch_register_req_type_ignore);
+		curr_sp = be_new_CopyKeep_single(block, curr_sp, curr_bp);
+		sched_add_after(curr_bp, curr_sp);
+		be_set_constr_single_reg_out(curr_sp, 0,
+		                             sp, arch_register_req_type_produces_sp);
+
+		ir_node *incsp = be_new_IncSP(sp, block, curr_sp, frame_size, 0);
+		sched_add_after(curr_sp, incsp);
+
+		/* make sure the initial IncSP is really used by someone */
+		if (get_irn_n_edges(incsp) <= 1) {
+			ir_node *in[] = { incsp };
+			ir_node *keep = be_new_Keep(block, 1, in);
+			sched_add_after(incsp, keep);
+		}
+
+		layout->initial_bias = -8;
 	} else {
 		if (frame_size > 0) {
 			ir_node *const incsp = be_new_IncSP(sp, block, initial_sp,
@@ -395,11 +452,11 @@ static void amd64_finish_graph(ir_graph *irg)
 
 	irg_block_walk_graph(irg, NULL, amd64_after_ra_walker, NULL);
 
+	introduce_prologue_epilogue(irg);
+
 	/* fix stack entity offsets */
 	be_abi_fix_stack_nodes(irg);
 	be_abi_fix_stack_bias(irg);
-
-	introduce_prologue_epilogue(irg);
 
 	/* Fix 2-address code constraints. */
 	amd64_finish_irg(irg);

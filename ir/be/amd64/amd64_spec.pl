@@ -93,6 +93,16 @@ PushAM => {
 	emit      => "push%M %A",
 },
 
+PushRbp => {
+	op_flags  => [ "uses_memory" ],
+	state     => "exc_pinned",
+	reg_req   => { in => [ "rsp" ], out => [ "rsp:I|S" ] },
+	ins       => [ "stack" ],
+	outs      => [ "stack" ],
+	fixed     => "amd64_op_mode_t op_mode = AMD64_OP_NONE;\n",
+	emit      => "pushq %%rbp",
+},
+
 PopAM => {
 	op_flags  => [ "uses_memory" ],
 	state     => "exc_pinned",
@@ -103,6 +113,15 @@ PopAM => {
 	attr      => "amd64_insn_mode_t insn_mode, amd64_addr_t addr",
 	fixed     => "amd64_op_mode_t op_mode = AMD64_OP_ADDR;\n",
 	emit      => "pop%M %A",
+},
+
+Leave => {
+	op_flags  => [ "uses_memory" ],
+	state     => "exc_pinned",
+	reg_req   => { in => [ "rbp" ], out => [ "rbp:I", "rbp:I|S" ] },
+	outs      => [ "frame", "stack" ],
+	fixed     => "amd64_op_mode_t op_mode = AMD64_OP_NONE;\n",
+	emit      => "leave",
 },
 
 Add => {

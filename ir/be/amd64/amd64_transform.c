@@ -2057,17 +2057,23 @@ static void amd64_register_transformers(void)
 	be_set_upper_bits_clean_function(op_Shrs, NULL);
 }
 
-static ir_type *amd64_get_between_type(void)
+static ir_type *amd64_get_between_type(bool omit_fp)
 {
-	static ir_type *between_type = NULL;
+	static ir_type *between_type         = NULL;
+	static ir_type *omit_fp_between_type = NULL;
 
-	assert(current_cconv->omit_fp);
 	if (between_type == NULL) {
 		between_type = new_type_class(new_id_from_str("amd64_between_type"));
-		set_type_size_bytes(between_type, get_mode_size_bytes(mode_gp));
+		/* between type contains return address + saved base pointer */
+		set_type_size_bytes(between_type, 2*get_mode_size_bytes(mode_gp));
+
+		omit_fp_between_type
+			= new_type_class(new_id_from_str("amd64_between_type"));
+		/* between type contains return address */
+		set_type_size_bytes(omit_fp_between_type, get_mode_size_bytes(mode_gp));
 	}
 
-	return between_type;
+	return omit_fp ? omit_fp_between_type : between_type;
 }
 
 static void amd64_create_stacklayout(ir_graph *irg, amd64_cconv_t *cconv)
@@ -2096,7 +2102,7 @@ static void amd64_create_stacklayout(ir_graph *irg, amd64_cconv_t *cconv)
 
 	memset(layout, 0, sizeof(*layout));
 	layout->frame_type     = get_irg_frame_type(irg);
-	layout->between_type   = amd64_get_between_type();
+	layout->between_type   = amd64_get_between_type(cconv->omit_fp);
 	layout->arg_type       = arg_type;
 	layout->initial_offset = 0;
 	layout->initial_bias   = 0;
