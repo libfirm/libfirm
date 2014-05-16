@@ -121,4 +121,6 @@ struct arm_isa_t {
 	int            fpu_arch;      /**< FPU architecture */
 };
 
+void arm_finish_graph(ir_graph *irg);
+
 #endif

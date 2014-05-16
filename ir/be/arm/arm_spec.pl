@@ -556,6 +556,7 @@ Return => {
 	arity    => "variable",
 	mode     => "mode_X",
 	reg_req  => { out => [ "none" ] },
+	emit     => "bx lr",
 },
 
 ); # end of %nodes

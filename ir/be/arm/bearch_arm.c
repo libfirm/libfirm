@@ -31,7 +31,6 @@
 #include "be.h"
 #include "bemodule.h"
 #include "beirg.h"
-#include "bespillslots.h"
 #include "bespillutil.h"
 #include "beutil.h"
 #include "begnuas.h"
@@ -84,14 +83,7 @@ static void arm_set_stack_bias(ir_node *irn, int bias)
 
 static int arm_get_sp_bias(const ir_node *node)
 {
-	if (is_arm_Start(node)) {
-		ir_graph *irg        = get_irn_irg(node);
-		ir_type  *frame_type = get_irg_frame_type(irg);
-		unsigned  size       = get_type_size_bytes(frame_type);
-		return size;
-	} else if (is_arm_Return(node)) {
-		return SP_BIAS_RESET;
-	}
+	(void)node;
 	return 0;
 }
 
@@ -124,37 +116,6 @@ static void arm_prepare_graph(ir_graph *irg)
 	place_code(irg);
 }
 
-static bool is_frame_load(const ir_node *node)
-{
-	return is_arm_Ldr(node) || is_arm_Ldf(node);
-}
-
-static void arm_collect_frame_entity_nodes(ir_node *node, void *data)
-{
-	if (!is_frame_load(node))
-		return;
-
-	const arm_load_store_attr_t *attr = get_arm_load_store_attr_const(node);
-	if (!attr->is_frame_entity)
-		return;
-	const ir_entity *entity = attr->entity;
-	if (entity != NULL)
-		return;
-	const ir_mode *mode = attr->load_store_mode;
-	const ir_type *type = get_type_for_mode(mode);
-
-	be_fec_env_t *env = (be_fec_env_t*)data;
-	be_load_needs_frame_entity(env, node, type);
-}
-
-static void arm_set_frame_entity(ir_node *node, ir_entity *entity,
-                                 const ir_type *type)
-{
-	(void)type;
-	arm_load_store_attr_t *attr = get_arm_load_store_attr(node);
-	attr->entity = entity;
-}
-
 static ir_node *arm_new_reload(ir_node *value, ir_node *spill, ir_node *before)
 {
 	ir_node  *block  = get_block(before);
@@ -185,22 +146,7 @@ static ir_node *arm_new_spill(ir_node *value, ir_node *after)
 
 static void arm_emit(ir_graph *irg)
 {
-	be_stack_layout_t *stack_layout = be_get_irg_stack_layout(irg);
-	bool               at_begin     = stack_layout->sp_relative;
-	be_fec_env_t      *fec_env      = be_new_frame_entity_coalescer(irg);
-
-	irg_walk_graph(irg, NULL, arm_collect_frame_entity_nodes, fec_env);
-	be_assign_entities(fec_env, arm_set_frame_entity, at_begin);
-	be_free_frame_entity_coalescer(fec_env);
-
-	/* fix stack entity offsets */
-	be_abi_fix_stack_nodes(irg);
-	be_abi_fix_stack_bias(irg);
-
-	/* do peephole optimizations and fix stack offsets */
-	arm_peephole_optimization(irg);
-
-	/* emit code */
+	arm_finish_graph(irg);
 	arm_emit_function(irg);
 }
 
