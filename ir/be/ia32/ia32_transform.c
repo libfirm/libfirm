@@ -1692,14 +1692,16 @@ static ir_node *create_Div(ir_node *node)
 	}
 
 	ia32_address_mode_t  am;
-	ir_node             *block = get_nodes_block(node);
-	match_arguments(&am, block, op1, op2, NULL, match_am | match_upconv);
+	ir_node             *mem_pin_skip = skip_Pin(mem);
+	ir_node             *block        = get_nodes_block(node);
+	match_arguments(&am, block, op1, op2, mem_pin_skip, match_am|match_upconv);
 
 	/* Beware: We don't need a Sync, if the memory predecessor of the Div node
 	   is the memory of the consumed address. We can have only the second op as
 	   address in Div nodes, so check only op2. */
 	x86_address_t *addr    = &am.addr;
-	ir_node       *new_mem = transform_AM_mem(block, op2, mem, addr->mem);
+	ir_node       *new_mem = transform_AM_mem(block, op2, mem_pin_skip,
+	                                          addr->mem);
 
 	dbg_info *dbgi      = get_irn_dbg_info(node);
 	ir_node  *new_block = be_transform_node(block);
