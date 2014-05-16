@@ -21,18 +21,18 @@
  */
 static ir_node *random_select(void *block_env, ir_nodeset_t *ready_set)
 {
-	int only_branches_left = 1;
 	(void)block_env;
+	bool only_branches_left = true;
 
 	/* assure that branches and constants are executed last */
 	foreach_ir_nodeset(ready_set, irn, iter) {
 		if (!is_cfop(irn)) {
-			only_branches_left = 0;
+			only_branches_left = false;
 			break;
 		}
 	}
 
-	ir_node *rand_node = NULL;
+	ir_node *rand_node;
 	if (only_branches_left) {
 		/* at last: schedule branches */
 		rand_node = ir_nodeset_first(ready_set);

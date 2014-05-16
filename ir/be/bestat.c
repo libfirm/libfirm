@@ -10,14 +10,14 @@
  */
 #include <time.h>
 
-#include "../adt/util.h"
-#include "irnode_t.h"
-#include "irgwalk.h"
-#include "irhooks.h"
+#include "error.h"
 #include "execfreq.h"
 #include "firmstat_t.h"
-#include "error.h"
+#include "irgwalk.h"
+#include "irhooks.h"
+#include "irnode_t.h"
 #include "statev_t.h"
+#include "util.h"
 
 #include "bearch.h"
 #include "beirg.h"
@@ -26,15 +26,13 @@
 #include "besched.h"
 #include "benode.h"
 
-
-
 typedef struct pressure_walker_env_t pressure_walker_env_t;
 struct pressure_walker_env_t {
-	ir_graph *irg;
-	be_lv_t  *lv;
-	double    insn_count;
-	double    regpressure;
-	size_t    max_pressure;
+	ir_graph                    *irg;
+	be_lv_t                     *lv;
+	double                       insn_count;
+	double                       regpressure;
+	unsigned                     max_pressure;
 	const arch_register_class_t *cls;
 };
 
@@ -42,13 +40,10 @@ static void check_reg_pressure_class(pressure_walker_env_t *env,
                                      ir_node *block,
                                      const arch_register_class_t *cls)
 {
-	ir_graph    *irg  = env->irg;
 	ir_nodeset_t live_nodes;
-	size_t       max_live;
-
 	ir_nodeset_init(&live_nodes);
 	be_liveness_end_of_block(env->lv, cls, block, &live_nodes);
-	max_live = ir_nodeset_size(&live_nodes);
+	unsigned max_live = ir_nodeset_size(&live_nodes);
 	env->regpressure += max_live;
 
 	sched_foreach_reverse(block, irn) {
@@ -67,7 +62,7 @@ static void check_reg_pressure_class(pressure_walker_env_t *env,
 	if (max_live > env->max_pressure)
 		env->max_pressure = max_live;
 
-	stat_be_block_regpressure(irg, block, max_live, cls->name);
+	stat_be_block_regpressure(env->irg, block, max_live, cls->name);
 	ir_nodeset_destroy(&live_nodes);
 }
 
@@ -80,27 +75,22 @@ static void stat_reg_pressure_block(ir_node *block, void *data)
 
 void be_do_stat_reg_pressure(ir_graph *irg, const arch_register_class_t *cls)
 {
-	pressure_walker_env_t  env;
-	double                 average_pressure;
-
+	be_assure_live_sets(irg);
+	pressure_walker_env_t env;
 	env.irg          = irg;
 	env.insn_count   = 0;
 	env.max_pressure = 0;
 	env.regpressure  = 0;
-	be_assure_live_sets(irg);
 	env.lv           = be_get_irg_liveness(irg);
 	env.cls          = cls;
 
 	/* Collect register pressure information for each block */
 	irg_block_walk_graph(irg, stat_reg_pressure_block, NULL, &env);
 
-	average_pressure = env.regpressure / env.insn_count;
+	double average_pressure = env.regpressure / env.insn_count;
 	stat_ev_dbl("bechordal_average_register_pressure", average_pressure);
 	stat_ev_dbl("bechordal_maximum_register_pressure", env.max_pressure);
 }
-
-
-
 
 typedef struct estimate_irg_costs_env_t {
 	double costs;
@@ -124,11 +114,8 @@ double be_estimate_irg_costs(ir_graph *irg)
 	env.costs = 0.0;
 
 	irg_block_walk_graph(irg, estimate_block_costs, NULL, &env);
-
 	return env.costs;
 }
-
-
 
 static void node_stat_walker(ir_node *irn, void *data)
 {
@@ -156,8 +143,7 @@ void be_collect_node_stats(be_node_stats_t *new_stats, ir_graph *irg)
 
 void be_subtract_node_stats(be_node_stats_t *stats, be_node_stats_t *sub)
 {
-	int i;
-	for (i = 0; i < BE_STAT_COUNT; ++i) {
+	for (be_stat_tag_t i = BE_STAT_FIRST; i < BE_STAT_COUNT; ++i) {
 		(*stats)[i] -= (*sub)[i];
 	}
 }
@@ -180,16 +166,12 @@ static const char *get_stat_name(enum be_stat_tag_t tag)
 
 void be_emit_node_stats(be_node_stats_t *stats, const char *prefix)
 {
-	static char   buf[256];
-	be_stat_tag_t i;
-
-	for (i = BE_STAT_FIRST; i < BE_STAT_COUNT; ++i) {
+	for (be_stat_tag_t i = BE_STAT_FIRST; i < BE_STAT_COUNT; ++i) {
+		char buf[128];
 		snprintf(buf, sizeof(buf), "%s%s", prefix, get_stat_name(i));
 		stat_ev_dbl(buf, (*stats)[i]);
 	}
 }
-
-
 
 static void insn_count_walker(ir_node *irn, void *data)
 {

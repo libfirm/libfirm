@@ -44,9 +44,9 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
  * Scheduling environment for the whole graph.
  */
 typedef struct sched_env_t {
-	unsigned *scheduled;                   /**< bitset of already scheduled nodes */
-	const list_sched_selector_t *selector; /**< The node selector. */
-	void *selector_env;                    /**< A pointer to give to the selector. */
+	unsigned                    *scheduled;    /**< bitset of already scheduled nodes */
+	const list_sched_selector_t *selector;     /**< The node selector. */
+	void                        *selector_env; /**< A pointer to give to the selector. */
 } sched_env_t;
 
 /**
@@ -117,8 +117,6 @@ static void node_ready(block_sched_env_t *env, ir_node *pred, ir_node *irn)
  */
 static void try_make_ready(block_sched_env_t *env, ir_node *pred, ir_node *irn)
 {
-	int i, n;
-
 	/* we schedule one block at a time, so no need to consider users in other
 	 * blocks */
 	if (is_Block(irn) || get_nodes_block(irn) != env->block)
@@ -126,14 +124,13 @@ static void try_make_ready(block_sched_env_t *env, ir_node *pred, ir_node *irn)
 	if (is_Phi(irn) || is_End(irn))
 		return;
 	/* check if all operands are already available */
-	n = get_irn_ins_or_deps(irn);
-	for (i = 0; i < n; ++i) {
+	for (int i = 0, n = get_irn_ins_or_deps(irn); i < n; ++i) {
 		ir_node *op = get_irn_in_or_dep(irn, i);
 
 		/* If the operand is local to the scheduled block and not yet
 		 * scheduled, this nodes cannot be made ready, so exit. */
 		if (get_nodes_block(op) == env->block
-				&& !is_already_scheduled(env->sched_env, op))
+		 && !is_already_scheduled(env->sched_env, op))
 			return;
 	}
 
@@ -193,19 +190,18 @@ static void add_to_sched(block_sched_env_t *env, ir_node *irn)
  */
 static void list_sched_block(ir_node *block, void *env_ptr)
 {
-	sched_env_t *env                      = (sched_env_t*)env_ptr;
+	sched_env_t                 *env      = (sched_env_t*)env_ptr;
 	const list_sched_selector_t *selector = env->selector;
-
-	block_sched_env_t be;
-	ir_nodeset_t *cands = &be.cands;
 
 	/* Initialize the block's list head that will hold the schedule. */
 	sched_init_block(block);
 
 	/* Initialize the block scheduling environment */
+	block_sched_env_t be;
 	be.block     = block;
 	be.selector  = selector;
 	be.sched_env = env;
+	ir_nodeset_t *cands = &be.cands;
 	ir_nodeset_init_size(cands, get_irn_n_edges(block));
 
 	DB((dbg, LEVEL_1, "scheduling %+F\n", block));
@@ -249,19 +245,16 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 /* List schedule a graph. */
 void be_list_sched_graph(ir_graph *irg, const list_sched_selector_t *selector)
 {
-	int num_nodes;
-	sched_env_t env;
-
 	/* Matze: This is very slow, we should avoid it to improve backend speed,
 	 * we just have to make sure that we have no dangling out-edges at this
-	 * point...
-	 */
+	 * point... */
 	edges_deactivate(irg);
 	edges_activate(irg);
 
-	num_nodes = get_irg_last_idx(irg);
+	unsigned num_nodes = get_irg_last_idx(irg);
 
 	/* initialize environment for list scheduler */
+	sched_env_t env;
 	memset(&env, 0, sizeof(env));
 	env.selector  = selector;
 	env.scheduled = rbitset_malloc(num_nodes);

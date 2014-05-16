@@ -31,11 +31,10 @@
 
 static void sched_renumber(ir_node *const block)
 {
-	sched_info_t *inf;
 	sched_timestep_t step = SCHED_INITIAL_GRANULARITY;
 
 	sched_foreach(block, irn) {
-		inf = get_irn_sched_info(irn);
+		sched_info_t *inf = get_irn_sched_info(irn);
 		inf->time_step = step;
 		step += SCHED_INITIAL_GRANULARITY;
 	}
