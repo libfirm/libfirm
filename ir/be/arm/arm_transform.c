@@ -414,7 +414,6 @@ typedef enum {
 	MATCH_COMMUTATIVE  = 1 << 0,  /**< commutative node */
 	MATCH_REVERSE      = 1 << 1,  /**< support reverse opcode */
 	MATCH_SIZE_NEUTRAL = 1 << 2,
-	MATCH_SKIP_NOT     = 1 << 3,  /**< skip Not on ONE input */
 } match_flags_t;
 ENUM_BITSET(match_flags_t)
 
@@ -432,22 +431,13 @@ typedef struct arm_binop_factory_t {
 	ir_node *(*new_binop_reg_shift_imm)(dbg_info *dbgi, ir_node *block, ir_node *left, ir_node *right, arm_shift_modifier_t shift_modifier, unsigned shift_immediate);
 } arm_binop_factory_t;
 
-static ir_node *gen_int_binop(ir_node *node, match_flags_t flags,
-		const arm_binop_factory_t *factory)
+static ir_node *gen_int_binop_ops(ir_node *node, ir_node *op1, ir_node *op2,
+                                  match_flags_t flags,
+                                  const arm_binop_factory_t *factory)
 {
 	ir_node  *block = be_transform_node(get_nodes_block(node));
-	ir_node  *op1   = get_binop_left(node);
-	ir_node  *op2   = get_binop_right(node);
 	dbg_info *dbgi  = get_irn_dbg_info(node);
 
-	if (flags & MATCH_SKIP_NOT) {
-		if (is_Not(op1))
-			op1 = get_Not_op(op1);
-		else if (is_Not(op2))
-			op2 = get_Not_op(op2);
-		else
-			panic("cannot execute MATCH_SKIP_NOT");
-	}
 	if (flags & MATCH_SIZE_NEUTRAL) {
 		op1 = arm_skip_downconv(op1);
 		op2 = arm_skip_downconv(op2);
@@ -541,6 +531,14 @@ static ir_node *gen_int_binop(ir_node *node, match_flags_t flags,
 		}
 	}
 	return factory->new_binop_reg(dbgi, block, new_op1, new_op2);
+}
+
+static ir_node *gen_int_binop(ir_node *node, match_flags_t flags,
+                              const arm_binop_factory_t *factory)
+{
+	ir_node *op1 = get_binop_left(node);
+	ir_node *op2 = get_binop_right(node);
+	return gen_int_binop_ops(node, op1, op2, flags, factory);
 }
 
 static ir_node *gen_Ror(ir_node *node, ir_node *op1, ir_node *op2,
@@ -679,12 +677,18 @@ static ir_node *gen_And(ir_node *node)
 	/* check for and not */
 	ir_node *left  = get_And_left(node);
 	ir_node *right = get_And_right(node);
-	if (is_Not(left) || is_Not(right)) {
-		return gen_int_binop(node, MATCH_COMMUTATIVE | MATCH_SIZE_NEUTRAL | MATCH_SKIP_NOT,
-			&bic_factory);
+	if (is_Not(right)) {
+		ir_node *right_not = get_Not_op(right);
+		return gen_int_binop_ops(node, left, right_not, MATCH_SIZE_NEUTRAL,
+		                         &bic_factory);
+	} else if (is_Not(left)) {
+		ir_node *left_not = get_Not_op(left);
+		return gen_int_binop_ops(node, right, left_not, MATCH_SIZE_NEUTRAL,
+		                         &bic_factory);
+	} else {
+		return gen_int_binop(node, MATCH_COMMUTATIVE|MATCH_SIZE_NEUTRAL,
+		                     &and_factory);
 	}
-
-	return gen_int_binop(node, MATCH_COMMUTATIVE | MATCH_SIZE_NEUTRAL, &and_factory);
 }
 
 static ir_node *gen_Or(ir_node *node)
