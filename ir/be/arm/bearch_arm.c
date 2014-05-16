@@ -47,6 +47,8 @@
 #include "arm_optimize.h"
 #include "arm_emitter.h"
 
+static const backend_params *arm_get_libfirm_params(void);
+
 static ir_entity *arm_get_frame_entity(const ir_node *irn)
 {
 	const arm_attr_t *attr = get_arm_attr_const(irn);
@@ -186,8 +188,14 @@ static void arm_create_runtime_entities(void)
 	if (divsi3 != NULL)
 		return;
 
-	ir_type *int_tp  = get_type_for_mode(mode_Is);
-	ir_type *uint_tp = get_type_for_mode(mode_Iu);
+	unsigned modulo_shift = arm_get_libfirm_params()->modulo_shift;
+	ir_mode *mode_int = new_int_mode("arm_be_int", irma_twos_complement, 32,
+	                                 true, modulo_shift);
+	ir_mode *mode_uint = new_int_mode("arm_be_int", irma_twos_complement, 32,
+	                                  false, modulo_shift);
+
+	ir_type *int_tp  = get_type_for_mode(mode_int);
+	ir_type *uint_tp = get_type_for_mode(mode_uint);
 
 	ir_type *tp_divsi3 = new_type_method(2, 1);
 	set_method_param_type(tp_divsi3, 0, int_tp);
@@ -331,7 +339,7 @@ static const backend_params *arm_get_libfirm_params(void)
 		true,  /* big endian */
 		false, /* PIC code not supported */
 		false, /* unaligned memory access */
-		32,    /* modulo shift */
+		256,   /* modulo shift */
 		&ad,   /* will be set later */
 		arm_is_mux_allowed, /* allow_ifconv function */
 		32,    /* machine size */

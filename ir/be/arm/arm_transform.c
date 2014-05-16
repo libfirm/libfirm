@@ -784,8 +784,8 @@ static ir_node *make_shift(ir_node *node, match_flags_t flags,
 	ir_node  *op2   = get_binop_right(node);
 	dbg_info *dbgi  = get_irn_dbg_info(node);
 	ir_mode  *mode  = get_irn_mode(node);
-	if (get_mode_modulo_shift(mode) != 32)
-		panic("modulo shift!=32 not supported");
+	if (get_mode_modulo_shift(mode) != 256)
+		panic("modulo shift!=256 not supported");
 
 	if (flags & MATCH_SIZE_NEUTRAL) {
 		op1 = arm_skip_downconv(op1);

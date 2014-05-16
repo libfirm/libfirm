@@ -153,7 +153,7 @@ struct ir_mode {
 	bool               sign:1;        /**< signedness of this mode */
 	ENUMBF(float_int_conversion_overflow_style_t)
 	                   int_conv_overflow:1;
-	unsigned char      modulo_shift;  /**< number of bits a values of this mode will be shifted */
+	unsigned           modulo_shift;  /**< number of bits a values of this mode will be shifted */
 	float_descriptor_t float_desc;
 
 	/* ---------------------------------------------------------------------- */

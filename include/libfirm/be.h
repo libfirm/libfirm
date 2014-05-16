@@ -112,7 +112,7 @@ typedef struct backend_params {
 	 * the shift value are read resulting in a modulo shift value of 32.
 	 * On an architecture without modulo_shift this value is 0.
 	 */
-	unsigned char modulo_shift;
+	unsigned modulo_shift;
 
 	/** Settings for architecture dependent optimizations. */
 	const ir_settings_arch_dep_t *dep_param;
