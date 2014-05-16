@@ -152,11 +152,7 @@ static ir_node *gen_Const(ir_node *node)
 	ir_node   *new_block = be_transform_node(block);
 	dbg_info  *dbgi      = get_irn_dbg_info(node);
 	ir_tarval *value     = get_Const_tarval(node);
-	ir_node   *result;
-
-	result = new_bd_TEMPLATE_Const(dbgi, new_block, value);
-
-	return result;
+	return new_bd_TEMPLATE_Const(dbgi, new_block, value);
 }
 
 static ir_node *gen_Load(ir_node *node)
@@ -200,7 +196,6 @@ static ir_node *gen_Jmp(ir_node *node)
 	ir_node  *block     = get_nodes_block(node);
 	ir_node  *new_block = be_transform_node(block);
 	dbg_info *dbgi      = get_irn_dbg_info(node);
-
 	return new_bd_TEMPLATE_Jmp(dbgi, new_block);
 }
 
@@ -209,7 +204,6 @@ static ir_node *gen_Start(ir_node *node)
 	dbg_info *dbgi      = get_irn_dbg_info(node);
 	ir_node  *block     = get_nodes_block(node);
 	ir_node  *new_block = be_transform_node(block);
-
 	return new_bd_TEMPLATE_Start(dbgi, new_block);
 }
 
@@ -222,7 +216,6 @@ static ir_node *gen_Return(ir_node *node)
 	ir_node  *new_mem   = be_transform_node(mem);
 	ir_graph *irg       = get_irn_irg(node);
 	ir_node  *sp        = get_irg_frame(irg);
-
 	return new_bd_TEMPLATE_Return(dbgi, new_block, sp, new_mem);
 }
 
@@ -272,7 +265,6 @@ static ir_node *gen_Proj_Start(ir_node *node)
 static ir_node *gen_Proj(ir_node *node)
 {
 	ir_node *pred = get_Proj_pred(node);
-
 	switch (get_irn_opcode(pred)) {
 	case iro_Start: return gen_Proj_Start(node);
 	default:

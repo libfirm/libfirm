@@ -12,7 +12,7 @@
 
 #include "bearch.h"
 
-typedef struct TEMPLATE_attr_t  TEMPLATE_attr_t;
+typedef struct TEMPLATE_attr_t TEMPLATE_attr_t;
 
 struct TEMPLATE_attr_t
 {

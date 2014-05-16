@@ -157,7 +157,6 @@ static void emit_TEMPLATE_Jmp(const ir_node *node)
 static void emit_be_IncSP(const ir_node *node)
 {
 	int offset = be_get_IncSP_offset(node);
-
 	if (offset == 0)
 		return;
 
@@ -243,37 +242,29 @@ static void TEMPLATE_emit_block(ir_node *block)
  */
 static void TEMPLATE_gen_labels(ir_node *block, void *env)
 {
-	ir_node *pred;
-	int n = get_Block_n_cfgpreds(block);
-	(void) env;
-
-	for (n--; n >= 0; n--) {
-		pred = get_Block_cfgpred(block, n);
+	(void)env;
+	for (int n = get_Block_n_cfgpreds(block); n-- > 0; ) {
+		ir_node *pred = get_Block_cfgpred(block, n);
 		set_irn_link(pred, block);
 	}
 }
 
 void TEMPLATE_emit_function(ir_graph *irg)
 {
-	ir_node   **block_schedule;
-	ir_entity  *entity = get_irg_entity(irg);
-	size_t      i;
-	size_t      n;
-
 	/* register all emitter functions */
 	TEMPLATE_register_emitters();
 
 	/* create the block schedule */
-	block_schedule = be_create_block_schedule(irg);
+	ir_node **block_schedule = be_create_block_schedule(irg);
 
 	/* emit assembler prolog */
+	ir_entity *entity = get_irg_entity(irg);
 	be_gas_emit_function_prolog(entity, 4, NULL);
 
 	/* populate jump link fields with their destinations */
 	irg_block_walk_graph(irg, TEMPLATE_gen_labels, NULL, NULL);
 
-	n = ARR_LEN(block_schedule);
-	for (i = 0; i < n; ++i) {
+	for (size_t i = 0, n = ARR_LEN(block_schedule); i < n; ++i) {
 		ir_node *block = block_schedule[i];
 		TEMPLATE_emit_block(block);
 	}

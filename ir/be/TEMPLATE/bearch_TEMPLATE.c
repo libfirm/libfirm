@@ -38,7 +38,7 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 static ir_entity *TEMPLATE_get_frame_entity(const ir_node *node)
 {
-	(void) node;
+	(void)node;
 	/* TODO: return the ir_entity assigned to the frame */
 	return NULL;
 }
@@ -49,14 +49,14 @@ static ir_entity *TEMPLATE_get_frame_entity(const ir_node *node)
  */
 static void TEMPLATE_set_frame_offset(ir_node *irn, int offset)
 {
-	(void) irn;
-	(void) offset;
+	(void)irn;
+	(void)offset;
 	/* TODO: correct offset if irn accesses the stack */
 }
 
 static int TEMPLATE_get_sp_bias(const ir_node *irn)
 {
-	(void) irn;
+	(void)irn;
 	return 0;
 }
 
@@ -103,7 +103,7 @@ static void TEMPLATE_emit(ir_graph *irg)
 
 static void TEMPLATE_before_ra(ir_graph *irg)
 {
-	(void) irg;
+	(void)irg;
 	/* Some stuff you need to do after scheduling but before register allocation */
 }
 
@@ -164,9 +164,9 @@ static void TEMPLATE_lower_for_target(void)
 static int TEMPLATE_is_mux_allowed(ir_node *sel, ir_node *mux_false,
                                    ir_node *mux_true)
 {
-	(void) sel;
-	(void) mux_false;
-	(void) mux_true;
+	(void)sel;
+	(void)mux_false;
+	(void)mux_true;
 	return false;
 }
 
@@ -198,8 +198,8 @@ static const backend_params *TEMPLATE_get_backend_params(void)
 
 static int TEMPLATE_is_valid_clobber(const char *clobber)
 {
-	(void) clobber;
-	return 0;
+	(void)clobber;
+	return false;
 }
 
 static ir_node *TEMPLATE_new_spill(ir_node *value, ir_node *after)
