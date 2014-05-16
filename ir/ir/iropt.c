@@ -81,16 +81,18 @@ static bool is_Eor_Add(const ir_node *node)
 	if (!is_Eor(node) && !is_Add(node))
 		return false;
 
-	const ir_node *right = get_binop_right(node);
-	if (!is_Const(right))
-		return false;
-
 	const ir_mode *mode = get_irn_mode(node);
 	if (get_mode_arithmetic(mode) != irma_twos_complement)
 		return false;
 
-	ir_tarval *tv = get_Const_tarval(right);
-	return get_tarval_lowest_bit(tv) == (int)get_mode_size_bits(mode) - 1;
+	const ir_node *const left        = get_binop_left(node);
+	const ir_node *const right       = get_binop_right(node);
+	const bitinfo *const bl          = get_bitinfo(left);
+	const bitinfo *const br          = get_bitinfo(right);
+	const int            highest_bit = (int)get_mode_size_bits(mode) - 1;
+
+	return (bl && get_tarval_lowest_bit(bl->z) == highest_bit) ||
+	       (br && get_tarval_lowest_bit(br->z) == highest_bit);
 }
 
 /**
