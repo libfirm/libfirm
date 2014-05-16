@@ -490,19 +490,25 @@ static ir_tarval *computed_value_Not(const ir_node *n)
  */
 static bool is_oversize_shift(const ir_node *n)
 {
-	const ir_node   *count = get_binop_right(n);
-	const ir_mode   *mode  = get_irn_mode(n);
-	const ir_tarval *tv    = value_of(count);
+	const ir_node *count = get_binop_right(n);
+	ir_tarval     *tv    = value_of(count);
 	if (!tarval_is_constant(tv))
 		return false;
+	/* adjust for modulo shift */
+	ir_mode *mode         = get_irn_mode(n);
+	unsigned modulo_shift = get_mode_modulo_shift(mode);
+	if (modulo_shift > 0) {
+		if (modulo_shift <= get_mode_size_bits(mode))
+			return false;
+		ir_tarval *modulo_shift_val
+			= new_tarval_from_long(modulo_shift, get_tarval_mode(tv));
+		tv = tarval_mod(tv, modulo_shift_val);
+	}
 	if (!tarval_is_long(tv))
 		return false;
-	long shiftval     = get_tarval_long(tv);
-	long modulo_shift = get_mode_modulo_shift(mode);
-	if (shiftval < 0 || (modulo_shift > 0 && shiftval >= modulo_shift))
-		return false;
 
-	return shiftval >= (long)get_mode_size_bits(mode);
+	long shiftval = get_tarval_long(tv);
+	return shiftval < 0 || shiftval >= (long)get_mode_size_bits(mode);
 }
 
 /**
