@@ -325,11 +325,7 @@ int be_Return_get_emit_pop(const ir_node *ret);
  */
 void be_Return_set_emit_pop(ir_node *ret, int emit_pop);
 
-void be_return_set_destroy_stackframe(ir_node *node, bool value);
-
 ir_node *be_new_Start(dbg_info *dbgi, ir_node *block, int n_out);
-
-void be_start_set_setup_stackframe(ir_node *node, bool value);
 
 enum {
 	n_be_CopyKeep_op = 0

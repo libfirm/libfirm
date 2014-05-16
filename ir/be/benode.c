@@ -49,18 +49,12 @@ typedef struct be_node_attr_t {
 	except_attr  exc;
 } be_node_attr_t;
 
-typedef struct {
-	be_node_attr_t base;
-	bool           setup_stackframe; /**< set stackframe up */
-} be_start_attr_t;
-
 /** The be_Return nodes attribute type. */
 typedef struct {
 	be_node_attr_t base;
 	int            num_ret_vals; /**< number of return values */
 	unsigned       pop;          /**< number of bytes that should be popped */
 	int            emit_pop;     /**< if set, emit pop bytes, even if pop = 0 */
-	bool           destroy_stackframe; /**< if set destroys the stackframe */
 } be_return_attr_t;
 
 /** The be_IncSP attribute type. */
@@ -466,13 +460,6 @@ ir_node *be_new_Return(dbg_info *const dbg, ir_node *const block, int const n_re
 	return res;
 }
 
-void be_return_set_destroy_stackframe(ir_node *node, bool value)
-{
-	be_return_attr_t *attr = (be_return_attr_t*) get_irn_generic_attr(node);
-	assert(be_is_Return(node));
-	attr->destroy_stackframe = value;
-}
-
 int be_Return_get_n_rets(const ir_node *ret)
 {
 	const be_return_attr_t *a = (const be_return_attr_t*)get_irn_generic_attr_const(ret);
@@ -585,13 +572,6 @@ ir_node *be_new_Start(dbg_info *dbgi, ir_node *bl, int n_outs)
 	attr->exc.pin_state = op_pin_state_pinned;
 
 	return res;
-}
-
-void be_start_set_setup_stackframe(ir_node *node, bool value)
-{
-	be_start_attr_t *attr = (be_start_attr_t*) get_irn_generic_attr(node);
-	assert(be_is_Start(node));
-	attr->setup_stackframe = value;
 }
 
 ir_node *be_new_FrameAddr(const arch_register_class_t *cls_frame, ir_node *bl, ir_node *frame, ir_entity *ent)
@@ -864,29 +844,8 @@ static int be_node_get_sp_bias(const ir_node *irn)
 	assert(!be_is_Call(irn));
 	if (be_is_IncSP(irn))
 		return be_get_IncSP_offset(irn);
-	if (be_is_Start(irn)) {
-		const be_start_attr_t *attr
-			= (const be_start_attr_t*) get_irn_generic_attr_const(irn);
-		if (attr->setup_stackframe) {
-			ir_graph *irg = get_irn_irg(irn);
-			ir_type  *frame = get_irg_frame_type(irg);
-			return get_type_size_bytes(frame);
-		}
-	}
-	if (be_is_Return(irn)) {
-		const be_return_attr_t *attr
-			= (const be_return_attr_t*) get_irn_generic_attr_const(irn);
-		if (attr->destroy_stackframe) {
-			ir_graph *irg = get_irn_irg(irn);
-			ir_type  *frame = get_irg_frame_type(irg);
-			return -(int)get_type_size_bytes(frame);
-		}
-	}
-
 	return 0;
 }
-
-
 
 /* for be nodes */
 static const arch_irn_ops_t be_node_irn_ops = {
@@ -1185,7 +1144,7 @@ void be_init_op(void)
 	op_be_AddSP     = new_be_op(o+beo_AddSP,     "be_AddSP",     op_pin_state_exc_pinned, irop_flag_none,                          oparity_any,      sizeof(be_node_attr_t));
 	op_be_SubSP     = new_be_op(o+beo_SubSP,     "be_SubSP",     op_pin_state_exc_pinned, irop_flag_none,                          oparity_any,      sizeof(be_node_attr_t));
 	op_be_IncSP     = new_be_op(o+beo_IncSP,     "be_IncSP",     op_pin_state_exc_pinned, irop_flag_none,                          oparity_any,      sizeof(be_incsp_attr_t));
-	op_be_Start     = new_be_op(o+beo_Start,     "be_Start",     op_pin_state_exc_pinned, irop_flag_none,                          oparity_any,      sizeof(be_start_attr_t));
+	op_be_Start     = new_be_op(o+beo_Start,     "be_Start",     op_pin_state_exc_pinned, irop_flag_none,                          oparity_any,      sizeof(be_node_attr_t));
 	op_be_FrameAddr = new_be_op(o+beo_FrameAddr, "be_FrameAddr", op_pin_state_exc_pinned, irop_flag_none,                          oparity_any,      sizeof(be_frame_attr_t));
 
 	ir_op_set_memory_index(op_be_Call, n_be_Call_mem);
