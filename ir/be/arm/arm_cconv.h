@@ -20,6 +20,7 @@ typedef struct reg_or_stackslot_t
 {
 	const arch_register_t *reg0;   /**< if != NULL, the first register used for this parameter. */
 	const arch_register_t *reg1;   /**< if != NULL, the second register used. */
+	unsigned               reg_offset;
 	ir_type               *type;   /**< indicates that an entity of the specific
 									    type is needed */
 	unsigned               offset; /**< if transmitted via stack, the offset for this parameter. */
@@ -31,7 +32,7 @@ typedef struct calling_convention_t
 {
 	reg_or_stackslot_t *parameters;        /**< parameter info. */
 	unsigned            param_stack_size;  /**< needed stack size for parameters */
-	unsigned            n_reg_params;
+	unsigned            n_param_regs;
 	reg_or_stackslot_t *results;           /**< result info. */
 } calling_convention_t;
 

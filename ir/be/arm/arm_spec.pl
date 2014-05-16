@@ -542,6 +542,20 @@ fConst => {
 	mode      => "get_tarval_mode(tv)",
 	reg_req   => { out => [ "fpa" ] },
 	attr_type => "arm_fConst_attr_t",
-}
+},
+
+Start => {
+	state     => "pinned",
+	out_arity => "variable",
+	ins       => [],
+},
+
+Return => {
+	state    => "pinned",
+	op_flags => [ "cfopcode" ],
+	arity    => "variable",
+	mode     => "mode_X",
+	reg_req  => { out => [ "none" ] },
+},
 
 ); # end of %nodes

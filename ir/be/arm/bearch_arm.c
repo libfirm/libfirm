@@ -82,9 +82,16 @@ static void arm_set_stack_bias(ir_node *irn, int bias)
 	}
 }
 
-static int arm_get_sp_bias(const ir_node *irn)
+static int arm_get_sp_bias(const ir_node *node)
 {
-	(void)irn;
+	if (is_arm_Start(node)) {
+		ir_graph *irg        = get_irn_irg(node);
+		ir_type  *frame_type = get_irg_frame_type(irg);
+		unsigned  size       = get_type_size_bytes(frame_type);
+		return size;
+	} else if (is_arm_Return(node)) {
+		return SP_BIAS_RESET;
+	}
 	return 0;
 }
 

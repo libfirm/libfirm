@@ -61,8 +61,10 @@ calling_convention_t *arm_decide_calling_convention(const ir_graph *irg,
 		param->type = param_type;
 
 		if (regnum < n_param_regs) {
-			const arch_register_t *reg = param_regs[regnum++];
-			param->reg0 = reg;
+			const arch_register_t *reg = param_regs[regnum];
+			param->reg0       = reg;
+			param->reg_offset = regnum;
+			++regnum;
 		} else {
 			param->offset = stack_offset;
 			/* increase offset 4 bytes so everything is aligned */
@@ -125,7 +127,7 @@ calling_convention_t *arm_decide_calling_convention(const ir_graph *irg,
 	calling_convention_t *cconv = XMALLOCZ(calling_convention_t);
 	cconv->parameters       = params;
 	cconv->param_stack_size = stack_offset;
-	cconv->n_reg_params     = n_param_regs_used;
+	cconv->n_param_regs     = n_param_regs_used;
 	cconv->results          = results;
 
 	/* setup allocatable registers */

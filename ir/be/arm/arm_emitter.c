@@ -657,7 +657,7 @@ static void emit_be_MemPerm(const ir_node *node)
 	assert(sp_change == 0);
 }
 
-static void emit_be_Start(const ir_node *node)
+static void emit_arm_Start(const ir_node *node)
 {
 	ir_graph *irg        = get_irn_irg(node);
 	ir_type  *frame_type = get_irg_frame_type(irg);
@@ -669,7 +669,7 @@ static void emit_be_Start(const ir_node *node)
 	}
 }
 
-static void emit_be_Return(const ir_node *node)
+static void emit_arm_Return(const ir_node *node)
 {
 	ir_graph *irg        = get_irn_irg(node);
 	ir_type  *frame_type = get_irg_frame_type(irg);
@@ -714,20 +714,20 @@ static void arm_register_emitters(void)
 	arm_register_spec_emitters();
 
 	/* custom emitter */
+	be_set_emitter(op_arm_Address,   emit_arm_Address);
 	be_set_emitter(op_arm_B,         emit_arm_B);
 	be_set_emitter(op_arm_CopyB,     emit_arm_CopyB);
+	be_set_emitter(op_arm_fConst,    emit_arm_fConst);
 	be_set_emitter(op_arm_FrameAddr, emit_arm_FrameAddr);
 	be_set_emitter(op_arm_Jmp,       emit_arm_Jmp);
+	be_set_emitter(op_arm_Return,    emit_arm_Return);
+	be_set_emitter(op_arm_Start,     emit_arm_Start);
 	be_set_emitter(op_arm_SwitchJmp, emit_arm_SwitchJmp);
-	be_set_emitter(op_arm_Address,   emit_arm_Address);
-	be_set_emitter(op_arm_fConst,    emit_arm_fConst);
 	be_set_emitter(op_be_Copy,       emit_be_Copy);
 	be_set_emitter(op_be_CopyKeep,   emit_be_Copy);
 	be_set_emitter(op_be_IncSP,      emit_be_IncSP);
 	be_set_emitter(op_be_MemPerm,    emit_be_MemPerm);
 	be_set_emitter(op_be_Perm,       emit_be_Perm);
-	be_set_emitter(op_be_Return,     emit_be_Return);
-	be_set_emitter(op_be_Start,      emit_be_Start);
 
 	/* no need to emit anything for the following nodes */
 	be_set_emitter(op_Phi,     be_emit_nothing);

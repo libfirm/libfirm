@@ -40,13 +40,21 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
+typedef struct start_val_t {
+	unsigned offset;
+	ir_node *irn;
+} start_val_t;
+
 static const arch_register_t *sp_reg = &arm_registers[REG_SP];
 static ir_mode               *mode_gp;
 static ir_mode               *mode_fp;
-static beabi_helper_env_t    *abihelper;
 static be_stackorder_t       *stackorder;
 static calling_convention_t  *cconv = NULL;
 static arm_isa_t             *isa;
+static start_val_t            start_mem;
+static start_val_t            start_sp;
+static unsigned               start_params_offset;
+static unsigned               start_callee_saves_offset;
 
 static pmap                  *node_to_stack;
 
@@ -168,6 +176,31 @@ static ir_node *create_const_graph(ir_node *irn, ir_node *block)
 	}
 	long value = get_tarval_long(tv);
 	return create_const_graph_value(get_irn_dbg_info(irn), block, value);
+}
+
+static void make_start_out(start_val_t *const info, struct obstack *const obst,
+                           ir_node *const start, size_t const offset,
+                           arch_register_t const *const reg,
+                           arch_register_req_type_t const flags)
+{
+	info->offset = offset;
+	info->irn    = NULL;
+	arch_register_req_t const *const req
+		= be_create_reg_req(obst, reg, arch_register_req_type_ignore | flags);
+	arch_set_irn_register_req_out(start, offset, req);
+	arch_set_irn_register_out(start, offset, reg);
+}
+
+static ir_node *get_start_val(ir_graph *irg, start_val_t *const info)
+{
+	if (info->irn == NULL) {
+		ir_node *const start = get_irg_start(irg);
+		arch_register_class_t const *const cls
+			= arch_get_irn_register_req_out(start, info->offset)->cls;
+		ir_mode *mode = cls != NULL ? cls->mode : mode_M;
+		info->irn = new_r_Proj(start, mode, info->offset);
+	}
+	return info->irn;
 }
 
 /**
@@ -1276,13 +1309,13 @@ static ir_node *gen_Proj_Start(ir_node *node)
 		return new_bd_arm_Jmp(NULL, new_block);
 
 	case pn_Start_M:
-		return be_prolog_get_memory(abihelper);
+		return get_start_val(get_irn_irg(node), &start_mem);
 
 	case pn_Start_T_args:
 		return new_r_Bad(get_irn_irg(block), mode_T);
 
 	case pn_Start_P_frame_base:
-		return be_prolog_get_reg_value(abihelper, sp_reg);
+		return get_start_val(get_irn_irg(node), &start_sp);
 	}
 	panic("unexpected start proj: %ld\n", proj);
 }
@@ -1293,28 +1326,31 @@ static ir_node *gen_Proj_Proj_Start(ir_node *node)
 	ir_node   *block       = get_nodes_block(node);
 	ir_node   *new_block   = be_transform_node(block);
 	ir_graph  *irg         = get_Block_irg(new_block);
-	ir_entity *entity      = get_irg_entity(irg);
-	ir_type   *method_type = get_entity_type(entity);
-	ir_type   *param_type  = get_method_param_type(method_type, pn);
+	ir_node   *args        = get_Proj_pred(node);
+	ir_node   *start       = get_Proj_pred(args);
+	ir_node   *new_start   = be_transform_node(start);
 
 	/* Proj->Proj->Start must be a method argument */
-	assert(get_Proj_proj(get_Proj_pred(node)) == pn_Start_T_args);
+	assert(get_Proj_proj(args) == pn_Start_T_args);
 
 	const reg_or_stackslot_t *param = &cconv->parameters[pn];
 
-	if (param->reg0 != NULL) {
+	const arch_register_t *reg0 = param->reg0;
+	if (reg0 != NULL) {
 		/* argument transmitted in register */
-		ir_mode *mode  = get_type_mode(param_type);
-		ir_node *value = be_prolog_get_reg_value(abihelper, param->reg0);
+		ir_mode *mode   = reg0->reg_class->mode;
+		long     new_pn = param->reg_offset + start_params_offset;
+		ir_node *value  = new_r_Proj(new_start, mode, new_pn);
 
 		if (mode_is_float(mode)) {
 			ir_node *value1 = NULL;
 
-			if (param->reg1 != NULL) {
-				value1 = be_prolog_get_reg_value(abihelper, param->reg1);
+			const arch_register_t *reg1 = param->reg1;
+			if (reg1 != NULL) {
+				value1 = new_r_Proj(new_start, mode, new_pn+1);
 			} else if (param->entity != NULL) {
 				ir_node *const fp  = get_irg_frame(irg);
-				ir_node *const mem = be_prolog_get_memory(abihelper);
+				ir_node *const mem = get_start_val(irg, &start_mem);
 				ir_node *const ldr = new_bd_arm_Ldr(NULL, new_block, fp, mem, mode_gp, param->entity, 0, 0, true);
 				value1 = new_r_Proj(ldr, mode_gp, pn_arm_Ldr_res);
 			}
@@ -1330,7 +1366,7 @@ static ir_node *gen_Proj_Proj_Start(ir_node *node)
 	} else {
 		/* argument transmitted on stack */
 		ir_node *const fp   = get_irg_frame(irg);
-		ir_node *const mem  = be_prolog_get_memory(abihelper);
+		ir_node *const mem  = get_start_val(irg, &start_mem);
 		ir_mode *const mode = get_type_mode(param->type);
 
 		ir_node *load;
@@ -1510,30 +1546,56 @@ static void create_stacklayout(ir_graph *irg)
  */
 static ir_node *gen_Start(ir_node *node)
 {
-	ir_graph  *irg           = get_irn_irg(node);
-	ir_entity *entity        = get_irg_entity(irg);
-	ir_type   *function_type = get_entity_type(entity);
-	ir_node   *block         = get_nodes_block(node);
-	ir_node   *new_block     = be_transform_node(block);
-	dbg_info  *dbgi          = get_irn_dbg_info(node);
+	ir_graph       *irg           = get_irn_irg(node);
+	ir_entity      *entity        = get_irg_entity(irg);
+	ir_type        *function_type = get_entity_type(entity);
+	ir_node        *block         = get_nodes_block(node);
+	ir_node        *new_block     = be_transform_node(block);
+	dbg_info       *dbgi          = get_irn_dbg_info(node);
+	struct obstack *obst          = be_get_be_obst(irg);
 
-	/* stackpointer is important at function prolog */
-	be_prolog_add_reg(abihelper, sp_reg,
-			arch_register_req_type_produces_sp | arch_register_req_type_ignore);
+	unsigned n_outs = 2; /* memory, sp */
+	n_outs += cconv->n_param_regs;
+	n_outs += ARRAY_SIZE(callee_saves);
+	ir_node *start = new_bd_arm_Start(dbgi, new_block, n_outs);
+	unsigned o     = 0;
+
+	start_mem.offset = o++;
+	start_mem.irn    = NULL;
+	arch_set_irn_register_req_out(start, start_mem.offset,
+	                              arch_no_register_req);
+
+	make_start_out(&start_sp, obst, start, o++, &arm_registers[REG_SP],
+	               arch_register_req_type_produces_sp);
+
 	/* function parameters in registers */
+	start_params_offset = o;
 	for (size_t i = 0; i < get_method_n_params(function_type); ++i) {
 		const reg_or_stackslot_t *param = &cconv->parameters[i];
-		if (param->reg0 != NULL)
-			be_prolog_add_reg(abihelper, param->reg0, arch_register_req_type_none);
-		if (param->reg1 != NULL)
-			be_prolog_add_reg(abihelper, param->reg1, arch_register_req_type_none);
+		const arch_register_t    *reg0  = param->reg0;
+		if (reg0 != NULL) {
+			arch_set_irn_register_req_out(start, o, reg0->single_req);
+			arch_set_irn_register_out(start, o, reg0);
+			++o;
+		}
+		const arch_register_t *reg1 = param->reg1;
+		if (reg1 != NULL) {
+			arch_set_irn_register_req_out(start, o, reg1->single_req);
+			arch_set_irn_register_out(start, o, reg1);
+			++o;
+		}
 	}
-	/* announce that we need the values of the callee save regs */
+	/* callee save regs */
+	start_callee_saves_offset = o;
 	for (size_t i = 0; i < ARRAY_SIZE(callee_saves); ++i) {
-		be_prolog_add_reg(abihelper, callee_saves[i], arch_register_req_type_none);
+		const arch_register_t *reg = callee_saves[i];
+		arch_set_irn_register_req_out(start, o, reg->single_req);
+		arch_set_irn_register_out(start, o, reg);
+		++o;
 	}
+	assert(n_outs == o);
 
-	return be_prolog_create_start(abihelper, dbgi, new_block);
+	return start;
 }
 
 static ir_node *get_stack_pointer_for(ir_node *node)
@@ -1543,8 +1605,8 @@ static ir_node *get_stack_pointer_for(ir_node *node)
 	if (stack_pred == NULL) {
 		/* first stack user in the current block. We can simply use the
 		 * initial sp_proj for it */
-		ir_node *sp_proj = be_prolog_get_reg_value(abihelper, sp_reg);
-		return sp_proj;
+		ir_graph *irg = get_irn_irg(node);
+		return get_start_val(irg, &start_sp);
 	}
 
 	be_transform_node(stack_pred);
@@ -1561,22 +1623,33 @@ static ir_node *get_stack_pointer_for(ir_node *node)
  */
 static ir_node *gen_Return(ir_node *node)
 {
-	ir_node   *block          = get_nodes_block(node);
-	ir_node   *new_block      = be_transform_node(block);
-	dbg_info  *dbgi           = get_irn_dbg_info(node);
-	ir_node   *mem            = get_Return_mem(node);
-	ir_node   *new_mem        = be_transform_node(mem);
-	size_t     n_callee_saves = ARRAY_SIZE(callee_saves);
-	ir_node   *sp_proj        = get_stack_pointer_for(node);
-	size_t     n_res          = get_Return_n_ress(node);
+	ir_node        *block          = get_nodes_block(node);
+	ir_node        *new_block      = be_transform_node(block);
+	dbg_info       *dbgi           = get_irn_dbg_info(node);
+	ir_node        *mem            = get_Return_mem(node);
+	ir_node        *new_mem        = be_transform_node(mem);
+	unsigned        n_callee_saves = ARRAY_SIZE(callee_saves);
+	ir_node        *sp             = get_stack_pointer_for(node);
+	unsigned        n_res          = get_Return_n_ress(node);
+	ir_graph       *irg            = get_irn_irg(node);
+	struct obstack *obst           = be_get_be_obst(irg);
 
-	be_epilog_begin(abihelper);
-	be_epilog_set_memory(abihelper, new_mem);
-	/* connect stack pointer with initial stack pointer. fix_stack phase
-	   will later serialize all stack pointer adjusting nodes */
-	be_epilog_add_reg(abihelper, sp_reg,
-			arch_register_req_type_produces_sp | arch_register_req_type_ignore,
-			sp_proj);
+	unsigned n_ins = 2; /* memory + sp */
+	n_ins += n_res;
+	n_ins += n_callee_saves;
+
+	const arch_register_req_t **reqs
+		= OALLOCN(obst, const arch_register_req_t*, n_ins);
+	ir_node **in = ALLOCAN(ir_node*, n_ins);
+	unsigned  p  = 0;
+
+	in[p]   = new_mem;
+	reqs[p] = arch_no_register_req;
+	++p;
+
+	in[p]   = sp;
+	reqs[p] = sp_reg->single_req;
+	++p;
 
 	/* result values */
 	for (size_t i = 0; i < n_res; ++i) {
@@ -1585,20 +1658,27 @@ static ir_node *gen_Return(ir_node *node)
 		const reg_or_stackslot_t *slot          = &cconv->results[i];
 		const arch_register_t    *reg           = slot->reg0;
 		assert(slot->reg1 == NULL);
-		be_epilog_add_reg(abihelper, reg, arch_register_req_type_none, new_res_value);
+		in[p]   = new_res_value;
+		reqs[p] = reg->single_req;
+		++p;
 	}
-
 	/* connect callee saves with their values at the function begin */
-	for (size_t i = 0; i < n_callee_saves; ++i) {
+	ir_node *start = get_irg_start(irg);
+	for (unsigned i = 0; i < n_callee_saves; ++i) {
 		const arch_register_t *reg   = callee_saves[i];
-		ir_node               *value = be_prolog_get_reg_value(abihelper, reg);
-		be_epilog_add_reg(abihelper, reg, arch_register_req_type_none, value);
+		ir_mode               *mode  = reg->reg_class->mode;
+		unsigned               idx   = start_callee_saves_offset + i;
+		ir_node               *value = new_r_Proj(start, mode, idx);
+		in[p]   = value;
+		reqs[p] = reg->single_req;
+		++p;
 	}
+	assert(p == n_ins);
 
-	/* epilog code: an incsp */
-	return be_epilog_create_return(abihelper, dbgi, new_block);
+	ir_node *ret = new_bd_arm_Return(dbgi, new_block, n_ins, in);
+	arch_set_irn_register_reqs_in(ret, reqs);
+	return ret;
 }
-
 
 static ir_node *gen_Call(ir_node *node)
 {
@@ -1612,7 +1692,7 @@ static ir_node *gen_Call(ir_node *node)
 	ir_type              *type         = get_Call_type(node);
 	calling_convention_t *cconv        = arm_decide_calling_convention(NULL, type);
 	size_t                n_params     = get_Call_n_params(node);
-	size_t const          n_param_regs = cconv->n_reg_params;
+	size_t const          n_param_regs = cconv->n_param_regs;
 	/* max inputs: memory, callee, register arguments */
 	size_t const          max_inputs   = 2 + n_param_regs;
 	ir_node             **in           = ALLOCAN(ir_node*, max_inputs);
@@ -1891,17 +1971,13 @@ void arm_transform_graph(ir_graph *irg)
 
 	node_to_stack = pmap_create();
 
-	assert(abihelper == NULL);
 	assert(cconv == NULL);
-	abihelper  = be_abihelper_prepare(irg);
 	stackorder = be_collect_stacknodes(irg);
 	cconv      = arm_decide_calling_convention(irg, get_entity_type(entity));
 	create_stacklayout(irg);
 
 	be_transform_graph(irg, NULL);
 
-	be_abihelper_finish(abihelper);
-	abihelper = NULL;
 	be_free_stackorder(stackorder);
 	stackorder = NULL;
 
