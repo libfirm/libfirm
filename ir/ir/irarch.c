@@ -47,8 +47,7 @@ static int allow_Mulh(const ir_settings_arch_dep_t *params, ir_mode *mode)
 {
 	if (get_mode_size_bits(mode) > params->max_bits_for_mulh)
 		return 0;
-	return (mode_is_signed(mode) && params->allow_mulhs)
-	    || (!mode_is_signed(mode) && params->allow_mulhu);
+	return mode_is_signed(mode) ? params->allow_mulhs : params->allow_mulhu;
 }
 
 /**
