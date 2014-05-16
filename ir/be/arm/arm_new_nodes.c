@@ -294,13 +294,11 @@ static void init_arm_attributes(ir_node *node, arch_irn_flags_t flags,
 	ir_graph       *irg  = get_irn_irg(node);
 	struct obstack *obst = get_irg_obstack(irg);
 	arm_attr_t     *attr = get_arm_attr(node);
-	backend_info_t *info;
-
 	arch_set_irn_flags(node, flags);
 	arch_set_irn_register_reqs_in(node, in_reqs);
 	attr->is_load_store    = false;
 
-	info            = be_get_info(node);
+	backend_info_t *info = be_get_info(node);
 	info->out_infos = NEW_ARR_DZ(reg_out_info_t, obst, n_res);
 }
 
@@ -367,65 +365,55 @@ static void init_arm_SwitchJmp_attributes(ir_node *res,
 
 static int cmp_attr_arm(const ir_node *a, const ir_node *b)
 {
-	(void) a;
-	(void) b;
+	(void)a;
+	(void)b;
 	return 0;
 }
 
 static int cmp_attr_arm_Address(const ir_node *a, const ir_node *b)
 {
-	const arm_Address_attr_t *attr_a;
-	const arm_Address_attr_t *attr_b;
-
 	if (cmp_attr_arm(a, b))
 		return 1;
 
-	attr_a = get_arm_Address_attr_const(a);
-	attr_b = get_arm_Address_attr_const(b);
+	const arm_Address_attr_t *attr_a = get_arm_Address_attr_const(a);
+	const arm_Address_attr_t *attr_b = get_arm_Address_attr_const(b);
 	return attr_a->entity != attr_b->entity
 		|| attr_a->fp_offset != attr_b->fp_offset;
 }
 
 static int cmp_attr_arm_CopyB(const ir_node *a, const ir_node *b)
 {
-	const arm_CopyB_attr_t *attr_a;
-	const arm_CopyB_attr_t *attr_b;
-
 	if (cmp_attr_arm(a, b))
 		return 1;
 
-	attr_a = get_arm_CopyB_attr_const(a);
-	attr_b = get_arm_CopyB_attr_const(b);
+	const arm_CopyB_attr_t *attr_a = get_arm_CopyB_attr_const(a);
+	const arm_CopyB_attr_t *attr_b = get_arm_CopyB_attr_const(b);
 	return attr_a->size != attr_b->size;
 }
 
 static int cmp_attr_arm_CondJmp(const ir_node *a, const ir_node *b)
 {
-	(void) a;
-	(void) b;
+	(void)a;
+	(void)b;
 	/* never identical */
 	return 1;
 }
 
 static int cmp_attr_arm_SwitchJmp(const ir_node *a, const ir_node *b)
 {
-	(void) a;
-	(void) b;
+	(void)a;
+	(void)b;
 	/* never identical */
 	return 1;
 }
 
 static int cmp_attr_arm_fConst(const ir_node *a, const ir_node *b)
 {
-	const arm_fConst_attr_t *attr_a;
-	const arm_fConst_attr_t *attr_b;
-
 	if (cmp_attr_arm(a, b))
 		return 1;
 
-	attr_a = get_arm_fConst_attr_const(a);
-	attr_b = get_arm_fConst_attr_const(b);
-
+	const arm_fConst_attr_t *attr_a = get_arm_fConst_attr_const(a);
+	const arm_fConst_attr_t *attr_b = get_arm_fConst_attr_const(b);
 	return attr_a->tv != attr_b->tv;
 }
 
@@ -463,17 +451,14 @@ const arm_cmp_attr_t *get_arm_cmp_attr_const(const ir_node *node)
 
 static int cmp_attr_arm_load_store(const ir_node *a, const ir_node *b)
 {
-	const arm_load_store_attr_t *attr_a;
-	const arm_load_store_attr_t *attr_b;
-
 	if (cmp_attr_arm(a, b))
 		return 1;
 
-	attr_a = get_arm_load_store_attr_const(a);
-	attr_b = get_arm_load_store_attr_const(b);
+	const arm_load_store_attr_t *attr_a = get_arm_load_store_attr_const(a);
+	const arm_load_store_attr_t *attr_b = get_arm_load_store_attr_const(b);
 	if (attr_a->entity != attr_b->entity
-			|| attr_a->entity_sign != attr_b->entity_sign
-			|| attr_a->offset != attr_b->offset)
+	 || attr_a->entity_sign != attr_b->entity_sign
+	 || attr_a->offset != attr_b->offset)
 		return 1;
 
 	return 0;
@@ -481,17 +466,14 @@ static int cmp_attr_arm_load_store(const ir_node *a, const ir_node *b)
 
 static int cmp_attr_arm_shifter_operand(const ir_node *a, const ir_node *b)
 {
-	const arm_shifter_operand_t *attr_a;
-	const arm_shifter_operand_t *attr_b;
-
 	if (cmp_attr_arm(a, b))
 		return 1;
 
-	attr_a = get_arm_shifter_operand_attr_const(a);
-	attr_b = get_arm_shifter_operand_attr_const(b);
+	const arm_shifter_operand_t *attr_a = get_arm_shifter_operand_attr_const(a);
+	const arm_shifter_operand_t *attr_b = get_arm_shifter_operand_attr_const(b);
 	if (attr_a->shift_modifier != attr_b->shift_modifier
-			|| attr_a->immediate_value != attr_b->immediate_value
-			|| attr_a->shift_immediate != attr_b->shift_immediate)
+	 || attr_a->immediate_value != attr_b->immediate_value
+	 || attr_a->shift_immediate != attr_b->shift_immediate)
 		return 1;
 
 	return 0;
@@ -499,30 +481,24 @@ static int cmp_attr_arm_shifter_operand(const ir_node *a, const ir_node *b)
 
 static int cmp_attr_arm_cmp(const ir_node *a, const ir_node *b)
 {
-	const arm_cmp_attr_t *attr_a;
-	const arm_cmp_attr_t *attr_b;
-
 	if (cmp_attr_arm(a, b))
 		return 1;
 
-	attr_a = get_arm_cmp_attr_const(a);
-	attr_b = get_arm_cmp_attr_const(b);
+	const arm_cmp_attr_t *attr_a = get_arm_cmp_attr_const(a);
+	const arm_cmp_attr_t *attr_b = get_arm_cmp_attr_const(b);
 	if (attr_a->ins_permuted != attr_b->ins_permuted
-			|| attr_a->is_unsigned != attr_b->is_unsigned)
+	 || attr_a->is_unsigned != attr_b->is_unsigned)
 		return 1;
 	return 0;
 }
 
 static int cmp_attr_arm_farith(const ir_node *a, const ir_node *b)
 {
-	const arm_farith_attr_t *attr_a;
-	const arm_farith_attr_t *attr_b;
-
 	if (cmp_attr_arm(a, b))
 		return 1;
 
-	attr_a = get_arm_farith_attr_const(a);
-	attr_b = get_arm_farith_attr_const(b);
+	const arm_farith_attr_t *attr_a = get_arm_farith_attr_const(a);
+	const arm_farith_attr_t *attr_b = get_arm_farith_attr_const(b);
 	return attr_a->mode != attr_b->mode;
 }
 
@@ -530,7 +506,7 @@ static int cmp_attr_arm_farith(const ir_node *a, const ir_node *b)
 static void arm_copy_attr(ir_graph *irg, const ir_node *old_node,
                           ir_node *new_node)
 {
-	struct obstack   *obst    = get_irg_obstack(irg);
+	struct obstack   *obst     = get_irg_obstack(irg);
 	const arm_attr_t *attr_old = get_arm_attr_const(old_node);
 	arm_attr_t       *attr_new = get_arm_attr(new_node);
 	backend_info_t   *old_info = be_get_info(old_node);
@@ -540,10 +516,9 @@ static void arm_copy_attr(ir_graph *irg, const ir_node *old_node,
 	memcpy(attr_new, attr_old, get_op_attr_size(get_irn_op(old_node)));
 
 	/* copy out flags */
-	new_info->flags = old_info->flags;
-	new_info->out_infos =
-		DUP_ARR_D(reg_out_info_t, obst, old_info->out_infos);
-	new_info->in_reqs = old_info->in_reqs;
+	new_info->flags     = old_info->flags;
+	new_info->out_infos = DUP_ARR_D(reg_out_info_t, obst, old_info->out_infos);
+	new_info->in_reqs   = old_info->in_reqs;
 }
 
 

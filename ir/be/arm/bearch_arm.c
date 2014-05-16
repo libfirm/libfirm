@@ -47,7 +47,6 @@
 #include "arm_transform.h"
 #include "arm_optimize.h"
 #include "arm_emitter.h"
-#include "arm_map_regs.h"
 
 static ir_entity *arm_get_frame_entity(const ir_node *irn)
 {
@@ -85,9 +84,7 @@ static void arm_set_stack_bias(ir_node *irn, int bias)
 
 static int arm_get_sp_bias(const ir_node *irn)
 {
-	/* We don't have any nodes changing the stack pointer.
-	   We probably want to support post-/pre increment/decrement later */
-	(void) irn;
+	(void)irn;
 	return 0;
 }
 
@@ -153,13 +150,13 @@ static void arm_set_frame_entity(ir_node *node, ir_entity *entity,
 
 static ir_node *arm_new_reload(ir_node *value, ir_node *spill, ir_node *before)
 {
-	ir_node   *block  = get_block(before);
-	ir_graph  *irg    = get_Block_irg(block);
-	ir_node   *frame  = get_irg_frame(irg);
-	ir_mode   *mode   = get_irn_mode(value);
-	ir_node   *load   = new_bd_arm_Ldr(NULL, block, frame, spill, mode, NULL,
-	                                   false, 0, true);
-	ir_node   *proj   = new_r_Proj(load, mode, pn_arm_Ldr_res);
+	ir_node  *block  = get_block(before);
+	ir_graph *irg    = get_Block_irg(block);
+	ir_node  *frame  = get_irg_frame(irg);
+	ir_mode  *mode   = get_irn_mode(value);
+	ir_node  *load   = new_bd_arm_Ldr(NULL, block, frame, spill, mode, NULL,
+	                                  false, 0, true);
+	ir_node  *proj   = new_r_Proj(load, mode, pn_arm_Ldr_res);
 	arch_add_irn_flags(load, arch_irn_flag_reload);
 	sched_add_before(before, load);
 	return proj;
@@ -221,8 +218,7 @@ static void handle_intrinsic(ir_node *node, void *data)
 			                                pn_Div_X_regular, pn_Div_X_except,
 			                                pn_Div_res);
 		}
-	}
-	if (is_Mod(node)) {
+	} else if (is_Mod(node)) {
 		ir_mode *mode = get_Mod_resmode(node);
 		assert(get_mode_arithmetic(mode) == irma_twos_complement);
 		ir_entity *entity = mode_is_signed(mode) ? modsi3 : umodsi3;
@@ -330,16 +326,16 @@ static void arm_end_codegeneration(void *self)
 static int arm_is_mux_allowed(ir_node *sel, ir_node *mux_false,
                               ir_node *mux_true)
 {
-	(void) sel;
-	(void) mux_false;
-	(void) mux_true;
+	(void)sel;
+	(void)mux_false;
+	(void)mux_true;
 	return false;
 }
 
 static int arm_is_valid_clobber(const char *clobber)
 {
-	(void) clobber;
-	return 0;
+	(void)clobber;
+	return false;
 }
 
 static void arm_lower_for_target(void)
@@ -416,7 +412,7 @@ static lc_opt_enum_int_var_t arch_fpu_var = {
 };
 
 static const lc_opt_table_entry_t arm_options[] = {
-	LC_OPT_ENT_ENUM_INT("fpunit",    "select the floating point unit", &arch_fpu_var),
+	LC_OPT_ENT_ENUM_INT("fpunit", "select the floating point unit", &arch_fpu_var),
 	LC_OPT_LAST
 };
 

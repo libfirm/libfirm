@@ -35,7 +35,6 @@
 #include "gen_arm_emitter.h"
 #include "arm_nodes_attr.h"
 #include "arm_new_nodes.h"
-#include "arm_map_regs.h"
 #include "gen_arm_regalloc_if.h"
 
 #include "benode.h"

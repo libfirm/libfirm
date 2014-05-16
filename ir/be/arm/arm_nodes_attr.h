@@ -59,8 +59,8 @@ typedef struct arm_attr_t {
 typedef struct arm_shifter_operand_t {
 	arm_attr_t            base;
 	arm_shift_modifier_t  shift_modifier;
-	unsigned char         immediate_value;
-	unsigned char         shift_immediate;
+	uint8_t               immediate_value;
+	uint8_t               shift_immediate;
 } arm_shifter_operand_t;
 
 typedef struct arm_cmp_attr_t {

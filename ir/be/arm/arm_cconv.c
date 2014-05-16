@@ -45,26 +45,15 @@ static const arch_register_t* const float_result_regs[] = {
 calling_convention_t *arm_decide_calling_convention(const ir_graph *irg,
                                                     ir_type *function_type)
 {
-	unsigned              stack_offset      = 0;
-	unsigned              n_param_regs_used = 0;
-	reg_or_stackslot_t   *params;
-	reg_or_stackslot_t   *results;
-	size_t const          n_param_regs        = ARRAY_SIZE(param_regs);
-	size_t const          n_result_regs       = ARRAY_SIZE(result_regs);
-	size_t const          n_float_result_regs = ARRAY_SIZE(float_result_regs);
-	size_t                n_params;
-	size_t                n_results;
-	size_t                i;
-	size_t                regnum;
-	size_t                float_regnum;
-	calling_convention_t *cconv;
 
 	/* determine how parameters are passed */
-	n_params = get_method_n_params(function_type);
-	regnum   = 0;
-	params   = XMALLOCNZ(reg_or_stackslot_t, n_params);
+	unsigned            stack_offset = 0;
+	size_t const        n_param_regs = ARRAY_SIZE(param_regs);
+	size_t const        n_params     = get_method_n_params(function_type);
+	size_t              regnum       = 0;
+	reg_or_stackslot_t *params       = XMALLOCNZ(reg_or_stackslot_t, n_params);
 
-	for (i = 0; i < n_params; ++i) {
+	for (size_t i = 0; i < n_params; ++i) {
 		ir_type            *param_type = get_method_param_type(function_type,i);
 		ir_mode            *mode       = get_type_mode(param_type);
 		int                 bits       = get_mode_size_bits(mode);
@@ -99,13 +88,15 @@ calling_convention_t *arm_decide_calling_convention(const ir_graph *irg,
 			}
 		}
 	}
-	n_param_regs_used = regnum;
+	unsigned const n_param_regs_used = regnum;
 
-	n_results    = get_method_n_ress(function_type);
-	regnum       = 0;
-	float_regnum = 0;
-	results      = XMALLOCNZ(reg_or_stackslot_t, n_results);
-	for (i = 0; i < n_results; ++i) {
+	size_t const        n_result_regs= ARRAY_SIZE(result_regs);
+	size_t const n_float_result_regs = ARRAY_SIZE(float_result_regs);
+	size_t              n_results    = get_method_n_ress(function_type);
+	size_t              float_regnum = 0;
+	reg_or_stackslot_t *results      = XMALLOCNZ(reg_or_stackslot_t, n_results);
+	regnum = 0;
+	for (size_t i = 0; i < n_results; ++i) {
 		ir_type            *result_type = get_method_res_type(function_type, i);
 		ir_mode            *result_mode = get_type_mode(result_type);
 		reg_or_stackslot_t *result      = &results[i];
@@ -131,7 +122,7 @@ calling_convention_t *arm_decide_calling_convention(const ir_graph *irg,
 		}
 	}
 
-	cconv                   = XMALLOCZ(calling_convention_t);
+	calling_convention_t *cconv = XMALLOCZ(calling_convention_t);
 	cconv->parameters       = params;
 	cconv->param_stack_size = stack_offset;
 	cconv->n_reg_params     = n_param_regs_used;
@@ -142,12 +133,11 @@ calling_convention_t *arm_decide_calling_convention(const ir_graph *irg,
 		be_irg_t       *birg      = be_birg_from_irg(irg);
 		size_t          n_ignores = ARRAY_SIZE(ignore_regs);
 		struct obstack *obst      = &birg->obst;
-		size_t          r;
 
 		assert(birg->allocatable_regs == NULL);
 		birg->allocatable_regs = rbitset_obstack_alloc(obst, N_ARM_REGISTERS);
 		rbitset_set_all(birg->allocatable_regs, N_ARM_REGISTERS);
-		for (r = 0; r < n_ignores; ++r) {
+		for (size_t r = 0; r < n_ignores; ++r) {
 			rbitset_clear(birg->allocatable_regs, ignore_regs[r]);
 		}
 	}
