@@ -1975,6 +1975,7 @@ void arm_transform_graph(ir_graph *irg)
 	stackorder = be_collect_stacknodes(irg);
 	cconv      = arm_decide_calling_convention(irg, get_entity_type(entity));
 	create_stacklayout(irg);
+	be_add_parameter_entity_stores(irg);
 
 	be_transform_graph(irg, NULL);
 
