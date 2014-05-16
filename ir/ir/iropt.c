@@ -90,7 +90,7 @@ static bool is_Eor_Add(const ir_node *node)
 		return false;
 
 	ir_tarval *tv = get_Const_tarval(right);
-	return get_tarval_lowest_bit(tv) == (int)get_mode_size_bits(mode)-1;
+	return get_tarval_lowest_bit(tv) == (int)get_mode_size_bits(mode) - 1;
 }
 
 /**
