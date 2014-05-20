@@ -186,6 +186,16 @@ static inline arch_irn_flags_t arch_get_irn_flags(const ir_node *node)
 void arch_set_irn_flags(ir_node *node, arch_irn_flags_t flags);
 void arch_add_irn_flags(ir_node *node, arch_irn_flags_t flags);
 
+/**
+ * Returns true if the given node should not be scheduled (has
+ * arch_irn_flag_not_scheduled flag seet)
+ */
+static inline bool arch_is_irn_not_scheduled(const ir_node *node)
+{
+	return is_Proj(node)
+	    || (arch_get_irn_flags(node) & arch_irn_flag_not_scheduled);
+}
+
 #define arch_irn_is(irn, flag) ((arch_get_irn_flags(irn) & arch_irn_flag_ ## flag) != 0)
 
 static inline unsigned arch_get_irn_n_outs(const ir_node *node)
