@@ -42,20 +42,14 @@ static const arch_register_class_t *flag_class;
 static const arch_register_t       *flags_reg;
 static func_rematerialize           remat;
 static check_modifies_flags         check_modify;
-static int                          changed;
+static bool                         changed;
 
 static ir_node *default_remat(ir_node *node, ir_node *after)
 {
-	ir_node *block, *copy;
-	if (is_Block(after))
-		block = after;
-	else
-		block = get_nodes_block(after);
-
-	copy = exact_copy(node);
+	ir_node *block = is_Block(after) ? after : get_nodes_block(after);
+	ir_node *copy  = exact_copy(node);
 	set_nodes_block(copy, block);
 	sched_add_after(after, copy);
-
 	return copy;
 }
 
@@ -121,23 +115,19 @@ static bool can_move(ir_node *node, ir_node *after)
 static void rematerialize_or_move(ir_node *flags_needed, ir_node *node,
                                   ir_node *flag_consumers, int pn)
 {
-	ir_node *n;
-	ir_node *copy;
-	ir_node *value;
-
-	if (!is_Block(node) &&
-			get_nodes_block(flags_needed) == get_nodes_block(node) &&
-			can_move(flags_needed, node)) {
+	if (!is_Block(node)
+	  && get_nodes_block(flags_needed) == get_nodes_block(node)
+	  && can_move(flags_needed, node)) {
 		/* move it */
 		sched_remove(flags_needed);
 		sched_add_after(node, flags_needed);
-		/* No need to update liveness, because the node stays in the same block */
+		/* No need to update liveness, the node stays in the same block */
 		return;
 	}
 
-	changed = 1;
-	copy    = remat(flags_needed, node);
-
+	changed = true;
+	ir_node *copy = remat(flags_needed, node);
+	ir_node *value;
 	if (get_irn_mode(copy) == mode_T) {
 		ir_mode *mode = flag_class->mode;
 		value = new_r_Proj(copy, mode, pn);
@@ -146,7 +136,7 @@ static void rematerialize_or_move(ir_node *flags_needed, ir_node *node,
 		value = copy;
 	}
 
-	n = flag_consumers;
+	ir_node *n = flag_consumers;
 	do {
 		foreach_irn_in(n, i, in) {
 			if (skip_Proj(in) == flags_needed) {
@@ -159,8 +149,8 @@ static void rematerialize_or_move(ir_node *flags_needed, ir_node *node,
 
 	/* No need to introduce the copy, because it only lives in this block, but
 	 * we have to update the liveness of all operands */
-	if (is_Block(node) ||
-			get_nodes_block(node) != get_nodes_block(flags_needed)) {
+	if (is_Block(node)
+	 || get_nodes_block(node) != get_nodes_block(flags_needed)) {
 		ir_graph *irg = get_irn_irg(node);
 		be_lv_t  *lv  = be_get_irg_liveness(irg);
 		if (lv != NULL) {
@@ -180,16 +170,12 @@ static void rematerialize_or_move(ir_node *flags_needed, ir_node *node,
  */
 static void fix_flags_walker(ir_node *block, void *env)
 {
+	(void)env;
 	ir_node *flags_needed   = NULL;
 	ir_node *flag_consumers = NULL;
-	int      pn = -1;
-	(void) env;
-
-	ir_node *place = block;
+	int      pn             = -1;
+	ir_node *place          = block;
 	sched_foreach_reverse(block, node) {
-		ir_node *new_flags_needed = NULL;
-		ir_node *test;
-
 		if (is_Phi(node)) {
 			place = node;
 			break;
@@ -202,7 +188,7 @@ static void fix_flags_walker(ir_node *block, void *env)
 		}
 
 		/* test whether node destroys the flags */
-		test = node;
+		ir_node *test = node;
 		if (be_is_Keep(test))
 			test = sched_prev(test);
 
@@ -214,8 +200,10 @@ static void fix_flags_walker(ir_node *block, void *env)
 		}
 
 		/* test whether the current node needs flags */
+		ir_node *new_flags_needed = NULL;
 		foreach_irn_in(node, i, pred) {
-			const arch_register_req_t *req = arch_get_irn_register_req_in(node, i);
+			const arch_register_req_t *req
+				= arch_get_irn_register_req_in(node, i);
 			if (req->cls == flag_class) {
 				assert(new_flags_needed == NULL);
 				new_flags_needed = pred;
@@ -268,10 +256,10 @@ void be_sched_fix_flags(ir_graph *irg, const arch_register_class_t *flag_cls,
                         check_modifies_flags check_modifies_flags_func)
 {
 	flag_class   = flag_cls;
-	flags_reg    = & flag_class->regs[0];
+	flags_reg    = &flag_class->regs[0];
 	remat        = remat_func;
 	check_modify = check_modifies_flags_func;
-	changed      = 0;
+	changed      = false;
 	if (remat == NULL)
 		remat = &default_remat;
 	if (check_modify == NULL)
