@@ -73,39 +73,17 @@ static bool can_move(ir_node *node, ir_node *after)
 	/** all users have to be after the after node */
 	foreach_out_edge(node, edge) {
 		ir_node *out = get_edge_src_irn(edge);
-		if (is_Proj(out)) {
-			assert(get_irn_n_edges_kind(out, EDGE_KIND_DEP) == 0);
-			foreach_out_edge(out, edge2) {
-				ir_node *out2 = get_edge_src_irn(edge2);
-				if (get_nodes_block(out2) != node_block)
-					continue;
-				/* Phi or End represents a usage at block end. */
-				if (is_Phi(out2) || is_End(out2))
-					continue;
-				if (is_Sync(out2)) {
-					foreach_out_edge(out2, edge3) {
-						ir_node *out3 = get_edge_src_irn(edge3);
-						/* Phi or End represents a usage at block end. */
-						if (is_Phi(out3) || is_End(out3))
-							continue;
-						assert(!is_Sync(out3));
-						if (sched_get_time_step(out3) <= sched_get_time_step(after)) {
-							return false;
-						}
-					}
-				} else if (sched_get_time_step(out2) <= sched_get_time_step(after)) {
-					return false;
-				}
-			}
-		} else {
-			if (get_nodes_block(out) != node_block)
-				continue;
-			/* phi represents a usage at block end */
-			if (is_Phi(out))
-				continue;
-			if (sched_get_time_step(out) <= sched_get_time_step(after)) {
+		if (get_nodes_block(out) != node_block)
+			continue;
+		/* phi represents a usage at block end */
+		if (is_Phi(out))
+			continue;
+		if (arch_is_irn_not_scheduled(out)) {
+			if (!can_move(out, after))
 				return false;
-			}
+		} else {
+			if (sched_get_time_step(out) <= sched_get_time_step(after))
+				return false;
 		}
 	}
 
