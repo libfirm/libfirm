@@ -257,9 +257,16 @@ static ir_node *gen_Const(ir_node *node)
 	ir_node  *block = be_transform_node(get_nodes_block(node));
 	dbg_info *dbgi  = get_irn_dbg_info(node);
 	ir_mode  *mode  = get_irn_mode(node);
-	if (!mode_needs_gp_reg(mode))
-		panic("amd64: float constant not supported yet");
 	ir_tarval *tv = get_Const_tarval(node);
+
+	if (!mode_needs_gp_reg(mode)) {
+		if (tarval_is_null(tv)) {
+			return new_bd_amd64_Xorp0(dbgi, block);
+		}
+
+		panic("amd64: float constant not supported yet");
+	}
+
 	uint64_t val = get_tarval_uint64(tv);
 	amd64_insn_mode_t imode = val > UINT32_MAX ? INSN_MODE_64 : INSN_MODE_32;
 	return new_bd_amd64_MovImm(dbgi, block, imode, val, NULL);

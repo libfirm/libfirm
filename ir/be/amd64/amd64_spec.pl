@@ -1,5 +1,11 @@
 $arch = "amd64";
 
+$mode_gp      = "mode_Lu";
+$mode_flags   = "mode_Iu";
+$mode_xmm      = "mode_D"; #TODO 128bit fp-mode
+$status_flags = "all"; # TODO
+$all_flags    = "all";
+
 %reg_classes = (
 	gp => [
 		{ name => "rax", dwarf => 0 },
@@ -18,18 +24,24 @@ $arch = "amd64";
 		{ name => "r13", dwarf => 13 },
 		{ name => "r14", dwarf => 14 },
 		{ name => "r15", dwarf => 15 },
-		{ mode => "mode_Lu" }
+		{ mode => $mode_gp }
 	],
 	flags => [
 		{ name => "eflags", dwarf => 49 },
-		{ mode => "mode_Iu", flags => "manual_ra" }
+		{ mode => $mode_flags, flags => "manual_ra" }
 	],
+	xmm => [
+		{ name => "xmm0", dwarf => 17 },
+		{ name => "xmm1", dwarf => 18 },
+		{ name => "xmm2", dwarf => 19 },
+		{ name => "xmm3", dwarf => 20 },
+		{ name => "xmm4", dwarf => 21 },
+		{ name => "xmm5", dwarf => 22 },
+		{ name => "xmm6", dwarf => 23 },
+		{ name => "xmm7", dwarf => 24 },
+		{ mode => $mode_xmm }
+	]
 );
-
-$mode_gp      = "mode_Lu";
-$mode_flags   = "mode_Iu";
-$status_flags = "all"; # TODO
-$all_flags    = "all";
 
 sub amd64_custom_init_attr {
 	my $constr = shift;
@@ -455,6 +467,18 @@ Return => {
 	reg_req  => { out => [ "none" ] },
 	fixed    => "amd64_op_mode_t op_mode = AMD64_OP_NONE;\n",
 	mode     => "mode_X",
+},
+
+# SSE
+
+Xorp0 => {
+	op_flags  => [ "constlike" ],
+	irn_flags => [ "rematerializable" ],
+	reg_req   => { out => [ "xmm" ] },
+	outs      => [ "res" ],
+	fixed     => "amd64_op_mode_t op_mode = AMD64_OP_REG_REG;",
+	emit      => "xorp%MX %D0, %D0",
+	mode      => $mode_xmm,
 },
 
 );

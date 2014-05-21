@@ -34,9 +34,24 @@ static const arch_register_t* const param_regs[] = {
 	&amd64_registers[REG_R9],
 };
 
+static const arch_register_t* const float_param_regs[] = {
+	&amd64_registers[REG_XMM0],
+	&amd64_registers[REG_XMM1],
+	&amd64_registers[REG_XMM2],
+	&amd64_registers[REG_XMM3],
+	&amd64_registers[REG_XMM4],
+	&amd64_registers[REG_XMM5],
+	&amd64_registers[REG_XMM6],
+	&amd64_registers[REG_XMM7],
+};
+
 static const arch_register_t* const result_regs[] = {
 	&amd64_registers[REG_RAX],
 	&amd64_registers[REG_RDX],
+};
+
+static const arch_register_t* const float_result_regs[] = {
+	&amd64_registers[REG_XMM0],
 };
 
 static const unsigned caller_saves[] = {
@@ -49,6 +64,14 @@ static const unsigned caller_saves[] = {
 	REG_R9,
 	REG_R10,
 	REG_R11,
+	REG_XMM0,
+	REG_XMM1,
+	REG_XMM2,
+	REG_XMM3,
+	REG_XMM4,
+	REG_XMM5,
+	REG_XMM6,
+	REG_XMM7,
 };
 static unsigned default_caller_saves[BITSET_SIZE_ELEMS(N_AMD64_REGISTERS)];
 
@@ -94,11 +117,14 @@ amd64_cconv_t *amd64_decide_calling_convention(ir_type *function_type,
 	rbitset_copy(callee_saves, default_callee_saves, N_AMD64_REGISTERS);
 
 	/* determine how parameters are passed */
-	size_t              n_params = get_method_n_params(function_type);
-	size_t              regnum   = 0;
-	reg_or_stackslot_t *params   = XMALLOCNZ(reg_or_stackslot_t, n_params);
+	size_t              n_params           = get_method_n_params(function_type);
+	size_t              param_regnum       = 0;
+	size_t              float_param_regnum = 0;
+	reg_or_stackslot_t *params             = XMALLOCNZ(reg_or_stackslot_t,
+	                                                   n_params);
 
 	size_t   n_param_regs = ARRAY_SIZE(param_regs);
+	size_t   n_float_param_regs = ARRAY_SIZE(float_param_regs);
 	unsigned stack_offset = 0;
 	for (size_t i = 0; i < n_params; ++i) {
 		ir_type *param_type = get_method_param_type(function_type,i);
@@ -111,12 +137,18 @@ amd64_cconv_t *amd64_decide_calling_convention(ir_type *function_type,
 		int      bits = get_mode_size_bits(mode);
 		reg_or_stackslot_t *param = &params[i];
 
-		if (regnum < n_param_regs) {
-			const arch_register_t *reg = param_regs[regnum];
+		if (mode_is_float(mode) && float_param_regnum < n_float_param_regs) {
+			const arch_register_t *reg = float_param_regs[float_param_regnum];
+			param->reg                 = reg;
+			param->req                 = reg->single_req;
+			param->reg_offset          = float_param_regnum;
+			++float_param_regnum;
+		} else if (param_regnum < n_param_regs) {
+			const arch_register_t *reg = param_regs[param_regnum];
 			param->reg        = reg;
 			param->req        = reg->single_req;
-			param->reg_offset = regnum;
-			++regnum;
+			param->reg_offset = param_regnum;
+			++param_regnum;
 		} else {
 			param->type   = param_type;
 			param->offset = stack_offset;
@@ -125,36 +157,48 @@ amd64_cconv_t *amd64_decide_calling_convention(ir_type *function_type,
 			stack_offset += MAX(bits / 8, AMD64_REGISTER_SIZE);
 			continue;
 		}
+
 	}
-	unsigned n_param_regs_used = regnum;
+
+	unsigned n_param_regs_used = param_regnum + float_param_regnum;
 
 	/* determine how results are passed */
 	size_t              n_results           = get_method_n_ress(function_type);
 	unsigned            n_reg_results       = 0;
 	reg_or_stackslot_t *results = XMALLOCNZ(reg_or_stackslot_t, n_results);
 	unsigned            res_regnum          = 0;
+	unsigned            res_float_regnum    = 0;
 	size_t              n_result_regs       = ARRAY_SIZE(result_regs);
+	size_t              n_float_result_regs = ARRAY_SIZE(float_result_regs);
 	for (size_t i = 0; i < n_results; ++i) {
 		ir_type            *result_type = get_method_res_type(function_type, i);
 		ir_mode            *result_mode = get_type_mode(result_type);
 		reg_or_stackslot_t *result      = &results[i];
 
 		if (mode_is_float(result_mode)) {
-			panic("amd64: float return NIY");
+			if (res_float_regnum >= n_float_result_regs) {
+				panic("Too many floating points results");
+			} else {
+				const arch_register_t *reg = float_result_regs[res_float_regnum++];
+				result->req                = reg->single_req;
+				result->reg_offset         = i;
+				rbitset_clear(caller_saves, reg->global_index);
+				++n_reg_results;
+			}
 		} else {
 			if (res_regnum >= n_result_regs) {
 				panic("Too many results");
 			} else {
 				const arch_register_t *reg = result_regs[res_regnum++];
-				result->req        = reg->single_req;
-				result->reg_offset = i;
+				result->req                = reg->single_req;
+				result->reg_offset         = i;
 				rbitset_clear(caller_saves, reg->global_index);
 				++n_reg_results;
 			}
 		}
 	}
 
-	amd64_cconv_t *cconv = XMALLOCZ(amd64_cconv_t);
+	amd64_cconv_t *cconv    = XMALLOCZ(amd64_cconv_t);
 	cconv->parameters       = params;
 	cconv->param_stack_size = stack_offset;
 	cconv->n_param_regs     = n_param_regs_used;

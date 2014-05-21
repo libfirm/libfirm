@@ -58,6 +58,20 @@ static void amd64_emit_insn_mode_suffix(amd64_insn_mode_t mode)
 	be_emit_char(c);
 }
 
+static void amd64_emit_xmm_mode_suffix(ir_mode *mode)
+{
+	assert(mode_is_float(mode));
+
+	char c;
+	switch(get_mode_size_bits(mode)) {
+	case 32: c = 's'; break;
+	case 64: c = 'd'; break;
+	default:
+		panic("invalid floating point mode");
+	}
+	be_emit_char(c);
+}
+
 static const char *get_8bit_name(const arch_register_t *reg)
 {
 	switch (reg->index) {
@@ -480,30 +494,36 @@ emit_R:
 					                            ? INSN_MODE_64 : INSN_MODE_32;
 					emit_register_insn_mode(reg, dest_mode);
 				} else {
-					amd64_insn_mode_t insn_mode = get_amd64_insn_mode(node);
-					emit_register_insn_mode(reg, insn_mode);
+					ir_mode *mode = get_irn_mode(node);
+					if (mode_is_float(mode)) {
+						emit_register(reg);
+					} else {
+						amd64_insn_mode_t insn_mode = get_amd64_insn_mode(node);
+						emit_register_insn_mode(reg, insn_mode);
+					}
 				}
 				break;
 			}
 
 			case 'M': {
-				amd64_insn_mode_t insn_mode;
 				if (*fmt == 'S') {
 					++fmt;
 					const amd64_shift_attr_t *attr
 						= get_amd64_shift_attr_const(node);
-					insn_mode = attr->insn_mode;
+					amd64_emit_insn_mode_suffix(attr->insn_mode);
 				} else if (*fmt == 'M') {
 					++fmt;
 					const amd64_movimm_attr_t *attr
 						= get_amd64_movimm_attr_const(node);
-					insn_mode = attr->insn_mode;
+					amd64_emit_insn_mode_suffix(attr->insn_mode);
+				} else if (*fmt == 'X') {
+					++fmt;
+					amd64_emit_xmm_mode_suffix(get_irn_mode(node));
 				} else {
 					amd64_addr_attr_t const *const attr
 						= get_amd64_addr_attr_const(node);
-					insn_mode = attr->insn_mode;
+					amd64_emit_insn_mode_suffix(attr->insn_mode);
 				}
-				amd64_emit_insn_mode_suffix(insn_mode);
 				break;
 			}
 
