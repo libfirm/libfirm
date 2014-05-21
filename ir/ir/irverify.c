@@ -26,7 +26,7 @@
 static void warn(const ir_node *n, const char *format, ...)
 {
 	FILE *out = stderr;
-	fputs("Verify warning: ", out);
+	fputs("Verify: ", out);
 	if (n != NULL) {
 		ir_fprintf(out, "%+F: ", n);
 	}
