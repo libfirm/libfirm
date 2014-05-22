@@ -288,7 +288,7 @@ ir_tarval *new_tarval_from_str(const char *str, size_t len, ir_mode *mode)
 	}
 	case irms_reference:
 		if (!strcasecmp(str, "null"))
-			return get_tarval_null(mode);
+			return get_mode_null(mode);
 		/* FALLTHROUGH */
 	case irms_int_number:
 		return new_tarval_from_str_int(str, len, mode);
@@ -443,6 +443,11 @@ ir_mode *(get_tarval_mode)(const ir_tarval *tv)
  * therefore the irmode functions should be preferred to the functions below.
  */
 
+int (tarval_is_constant)(const ir_tarval *tv)
+{
+	return tarval_is_constant_(tv);
+}
+
 ir_tarval *(get_tarval_bad)(void)
 {
 	return get_tarval_bad_();
@@ -463,58 +468,6 @@ ir_tarval *(get_tarval_b_true)(void)
 	return get_tarval_b_true_();
 }
 
-ir_tarval *get_tarval_max(ir_mode *mode)
-{
-	switch (get_mode_sort(mode)) {
-	case irms_float_number: {
-		const float_descriptor_t *desc = get_descriptor(mode);
-		fc_get_max(desc, NULL, false);
-		return get_tarval(fc_get_buffer(), fc_get_buffer_length(), mode);
-	}
-
-	case irms_reference:
-	case irms_int_number: {
-		sc_word *temp = ALLOCAN(sc_word, sc_value_length);
-		sc_max_from_bits(get_mode_size_bits(mode), mode_is_signed(mode), temp);
-		return get_tarval(temp, sc_value_length, mode);
-	}
-
-	case irms_internal_boolean:
-		return tarval_b_true;
-
-	case irms_auxiliary:
-	case irms_data:
-		panic("mode %F does not support maximum value", mode);
-	}
-	panic("invalid mode sort");
-}
-
-ir_tarval *get_tarval_min(ir_mode *mode)
-{
-	switch (get_mode_sort(mode)) {
-	case irms_float_number: {
-		const float_descriptor_t *desc = get_descriptor(mode);
-		fc_get_max(desc, NULL, true);
-		return get_tarval(fc_get_buffer(), fc_get_buffer_length(), mode);
-	}
-
-	case irms_reference:
-	case irms_int_number: {
-		sc_word *temp = ALLOCAN(sc_word, sc_value_length);
-		sc_min_from_bits(get_mode_size_bits(mode), mode_is_signed(mode), temp);
-		return get_tarval(temp, sc_value_length, mode);
-	}
-
-	case irms_internal_boolean:
-		return tarval_b_false;
-
-	case irms_auxiliary:
-	case irms_data:
-		panic("mode %F does not support minimum value", mode);
-	}
-	panic("invalid mode sort");
-}
-
 ir_tarval *get_tarval_small(ir_mode *mode)
 {
 	if (!mode_is_float(mode))
@@ -533,111 +486,6 @@ ir_tarval *get_tarval_epsilon(ir_mode *mode)
 	return get_tarval(fc_get_buffer(), fc_get_buffer_length(), mode);
 }
 
-ir_tarval *get_tarval_null(ir_mode *mode)
-{
-	switch (get_mode_sort(mode)) {
-	case irms_float_number:
-		return new_tarval_from_double(0.0, mode);
-
-	case irms_int_number:
-	case irms_reference:
-		return new_tarval_from_long(0l, mode);
-
-	case irms_internal_boolean:
-		return tarval_b_false;
-
-	case irms_auxiliary:
-	case irms_data:
-		panic("mode %F does not support null value", mode);
-	}
-	panic("invalid mode sort");
-}
-
-ir_tarval *get_tarval_one(ir_mode *mode)
-{
-	switch (get_mode_sort(mode)) {
-	case irms_float_number:
-		return new_tarval_from_double(1.0, mode);
-
-	case irms_reference:
-	case irms_int_number:
-		return new_tarval_from_long(1l, mode);
-
-	case irms_internal_boolean:
-		return tarval_b_true;
-
-	case irms_auxiliary:
-	case irms_data:
-		panic("mode %F does not support one value", mode);
-	}
-	panic("invalid mode sort");
-}
-
-ir_tarval *get_tarval_all_one(ir_mode *mode)
-{
-	switch (get_mode_sort(mode)) {
-	case irms_int_number:
-	case irms_reference:
-		return tarval_not(new_tarval_from_long(0, mode));
-
-	case irms_internal_boolean:
-		return tarval_b_true;
-
-	case irms_float_number:
-		return tarval_bad;
-
-	case irms_auxiliary:
-	case irms_data:
-		panic("mode %F does not support all-one value", mode);
-	}
-	panic("invalid mode sort");
-}
-
-int (tarval_is_constant)(const ir_tarval *tv)
-{
-	return tarval_is_constant_(tv);
-}
-
-ir_tarval *get_tarval_minus_one(ir_mode *mode)
-{
-	switch (get_mode_sort(mode)) {
-	case irms_reference:
-		return tarval_bad;
-
-	case irms_internal_boolean:
-		return tarval_b_true;
-
-	case irms_float_number:
-		return mode_is_signed(mode) ? new_tarval_from_double(-1.0, mode) : tarval_bad;
-
-	case irms_int_number:
-		return new_tarval_from_long(-1l, mode);
-
-	case irms_auxiliary:
-	case irms_data:
-		panic("mode %F does not support minus one value", mode);
-	}
-	panic("invalid mode sort");
-}
-
-ir_tarval *get_tarval_nan(ir_mode *mode)
-{
-	if (get_mode_sort(mode) != irms_float_number)
-		panic("mode %F does not support NaN value", mode);
-	const float_descriptor_t *desc = get_descriptor(mode);
-	fc_get_qnan(desc, NULL);
-	return get_tarval(fc_get_buffer(), fc_get_buffer_length(), mode);
-}
-
-ir_tarval *get_tarval_plus_inf(ir_mode *mode)
-{
-	if (get_mode_sort(mode) != irms_float_number)
-		panic("mode %F does not support +inf value", mode);
-	const float_descriptor_t *desc = get_descriptor(mode);
-	fc_get_inf(desc, NULL, false);
-	return get_tarval(fc_get_buffer(), fc_get_buffer_length(), mode);
-}
-
 ir_tarval *get_tarval_minus_inf(ir_mode *mode)
 {
 	if (get_mode_sort(mode) != irms_float_number)
@@ -645,6 +493,79 @@ ir_tarval *get_tarval_minus_inf(ir_mode *mode)
 	const float_descriptor_t *desc = get_descriptor(mode);
 	fc_get_inf(desc, NULL, true);
 	return get_tarval(fc_get_buffer(), fc_get_buffer_length(), mode);
+}
+
+void init_mode_values(ir_mode* mode)
+{
+	switch (get_mode_sort(mode)) {
+	case irms_float_number: {
+		const float_descriptor_t *desc   = get_descriptor(mode);
+		unsigned                  buflen = fc_get_buffer_length();
+		fp_value                 *buf    = alloca(buflen);
+		mode->all_one     = tarval_bad;
+		fc_get_inf(desc, buf, false);
+		mode->infinity    = get_tarval(buf, buflen, mode);
+		fc_get_qnan(desc, buf);
+		mode->nan         = get_tarval(buf, buflen, mode);
+		fc_get_max(desc, buf, true); // min = negative maximum
+		mode->min         = get_tarval(buf, buflen, mode);
+		mode->null        = new_tarval_from_double(0.0, mode);
+		mode->one         = new_tarval_from_double(1.0, mode);
+		mode->minus_one   = mode_is_signed(mode)
+			? new_tarval_from_double(-1.0, mode) : tarval_bad;
+		break;
+	}
+
+	case irms_internal_boolean:
+		mode->all_one   = tarval_b_true;
+		mode->infinity  = tarval_bad;
+		mode->nan       = tarval_bad;
+		mode->min       = tarval_b_false;
+		mode->max       = tarval_b_true;
+		mode->null      = tarval_b_false;
+		mode->one       = tarval_b_true;
+		mode->minus_one = tarval_bad;
+		break;
+
+	case irms_reference:
+	case irms_int_number: {
+		sc_word *buf    = ALLOCAN(sc_word, sc_value_length);
+		unsigned buflen = sc_value_length * sizeof(buf[0]);
+		unsigned bits   = get_mode_size_bits(mode);
+		bool     sign   = mode_is_signed(mode);
+		sc_max_from_bits(bits, false, buf);
+		mode->all_one   = get_tarval(buf, buflen, mode);
+		mode->infinity  = tarval_bad;
+		mode->nan       = tarval_bad;
+		sc_min_from_bits(bits, sign, buf);
+		mode->min       = get_tarval(buf, buflen, mode);
+		sc_max_from_bits(bits, sign, buf);
+		mode->max       = get_tarval(buf, buflen, mode);
+		sc_zero(buf);
+		mode->null      = get_tarval(buf, buflen, mode);
+		sc_set_bit_at(buf, 0);
+		mode->one       = get_tarval(buf, buflen, mode);
+		if (sign) {
+			sc_neg(buf, buf);
+			mode->minus_one = get_tarval(buf, buflen, mode);
+		} else {
+			mode->minus_one = tarval_bad;
+		}
+		break;
+	}
+
+	case irms_auxiliary:
+	case irms_data:
+		mode->all_one   = tarval_bad;
+		mode->min       = tarval_bad;
+		mode->max       = tarval_bad;
+		mode->null      = tarval_bad;
+		mode->one       = tarval_bad;
+		mode->minus_one = tarval_bad;
+		mode->infinity  = tarval_bad;
+		mode->nan       = tarval_bad;
+		break;
+	}
 }
 
 /*

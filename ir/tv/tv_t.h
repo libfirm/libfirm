@@ -129,6 +129,8 @@ ir_tarval *get_tarval_small(ir_mode *mode);
 
 ir_tarval *get_tarval_epsilon(ir_mode *mode);
 
+ir_tarval *get_tarval_minus_inf(ir_mode *mode);
+
 /**
  * Get the @p idx'th bit of the internal representation of the given tarval @p tv.
  */
@@ -139,5 +141,7 @@ static inline unsigned get_tarval_bit(ir_tarval const *const tv, unsigned const 
 }
 
 bool tarval_in_range(ir_tarval const *min, ir_tarval const *val, ir_tarval const *max);
+
+void init_mode_values(ir_mode *mode);
 
 #endif

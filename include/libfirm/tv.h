@@ -293,36 +293,6 @@ FIRM_API ir_tarval *tarval_b_true;
 /** Returns the mode_b tarval 'true'. */
 FIRM_API ir_tarval *get_tarval_b_true(void);
 
-/** Returns the maximum value of a given mode. */
-FIRM_API ir_tarval *get_tarval_max(ir_mode *mode);
-
-/** Returns the minimum value of a given mode. */
-FIRM_API ir_tarval *get_tarval_min(ir_mode *mode);
-
-/** Returns the 0 value (additive neutral) of a given mode.
-    For reference modes, the NULL value is returned (old tarval_P_void) */
-FIRM_API ir_tarval *get_tarval_null(ir_mode *mode);
-
-/** Returns the 1 value (multiplicative neutral) of a given mode. */
-FIRM_API ir_tarval *get_tarval_one(ir_mode *mode);
-
-/** Returns the -1 value (multiplicative neutral) of a given mode.
- *  Returns tarval bad for unsigned modes */
-FIRM_API ir_tarval *get_tarval_minus_one(ir_mode *mode);
-
-/** returns the value where all bits are 1 of a given mode.
- * returns tarval_bad for float modes */
-FIRM_API ir_tarval *get_tarval_all_one(ir_mode *mode);
-
-/** Returns quite nan for float_number modes. */
-FIRM_API ir_tarval *get_tarval_nan(ir_mode *mode);
-
-/** Returns +inf for float_number modes. */
-FIRM_API ir_tarval *get_tarval_plus_inf(ir_mode *mode);
-
-/** Returns -inf for float_number modes. */
-FIRM_API ir_tarval *get_tarval_minus_inf(ir_mode *mode);
-
 /** Modes for handling integer overflows. */
 typedef enum tarval_int_overflow_mode_t {
 	TV_OVERFLOW_BAD,      /**< tarval module will return tarval_bad if an overflow occurs */

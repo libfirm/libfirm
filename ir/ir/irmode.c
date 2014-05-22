@@ -57,46 +57,6 @@ static ir_mode *find_mode(const ir_mode *m)
 	return NULL;
 }
 
-/**
- * sets special values of modes
- */
-static void set_mode_values(ir_mode* mode)
-{
-	switch (get_mode_sort(mode)) {
-	case irms_float_number:
-		mode->all_one  = tarval_bad;
-		mode->infinity = get_tarval_plus_inf(mode);
-		mode->nan      = get_tarval_nan(mode);
-		goto init_rest;
-
-	case irms_internal_boolean:
-	case irms_reference:
-	case irms_int_number:
-		mode->all_one   = get_tarval_all_one(mode);
-		mode->infinity  = tarval_bad;
-		mode->nan       = tarval_bad;
-init_rest:
-		mode->min       = get_tarval_min(mode);
-		mode->max       = get_tarval_max(mode);
-		mode->null      = get_tarval_null(mode);
-		mode->one       = get_tarval_one(mode);
-		mode->minus_one = get_tarval_minus_one(mode);
-		break;
-
-	case irms_auxiliary:
-	case irms_data:
-		mode->all_one   = tarval_bad;
-		mode->min       = tarval_bad;
-		mode->max       = tarval_bad;
-		mode->null      = tarval_bad;
-		mode->one       = tarval_bad;
-		mode->minus_one = tarval_bad;
-		mode->infinity  = tarval_bad;
-		mode->nan       = tarval_bad;
-		break;
-	}
-}
-
 ir_mode *mode_T;
 ir_mode *mode_X;
 ir_mode *mode_M;
@@ -196,7 +156,7 @@ static ir_mode *register_mode(ir_mode *mode)
 	mode->kind = k_ir_mode;
 	mode->type = new_type_primitive(mode);
 	ARR_APP1(ir_mode*, mode_list, mode);
-	set_mode_values(mode);
+	init_mode_values(mode);
 	hook_new_mode(mode);
 	return mode;
 }
