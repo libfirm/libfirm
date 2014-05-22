@@ -5459,16 +5459,14 @@ static ir_node *transform_node_shift_modulo(ir_node *n,
 	return n;
 }
 
-static bool has_all_bits_set(ir_node *n, int mask)
+static bool has_all_bits_set(ir_node *n, ir_tarval *mask)
 {
 	bitinfo *bi = get_bitinfo(n);
 	if (bi == NULL) {
 		return false;
 	}
 
-	ir_tarval *tv_mask = new_tarval_from_long(mask, mode_Iu);
-
-	return tarval_cmp(tarval_and(bi->o, tv_mask), tv_mask) == ir_relation_equal;
+	return tarval_and(bi->o, mask) == mask;
 }
 
 /**
@@ -5479,7 +5477,7 @@ static bool has_all_bits_set(ir_node *n, int mask)
 static ir_node *transform_node_shift_and(ir_node *n, new_shift_func new_shift)
 {
 	ir_mode *mode         = get_irn_mode(n);
-	int      modulo_shift = get_mode_modulo_shift(mode);
+	unsigned modulo_shift = get_mode_modulo_shift(mode);
 	if (modulo_shift == 0) {
 		return n;
 	}
@@ -5490,10 +5488,14 @@ static ir_node *transform_node_shift_and(ir_node *n, new_shift_func new_shift)
 	}
 
 	assert(is_po2(modulo_shift));
-	int      modulo_mask = modulo_shift - 1;
-	ir_node *and_l       = get_And_left(amount);
-	ir_node *and_r       = get_And_right(amount);
-	ir_node *new_amount  = NULL;
+	ir_mode   *amount_mode = get_irn_mode(amount);
+	ir_tarval *all_one     = get_mode_all_one(amount_mode);
+	unsigned   shift       = get_mode_size_bits(amount_mode)
+	                         - (32-nlz(modulo_shift-1));
+	ir_tarval *modulo_mask = tarval_shr_unsigned(all_one, shift);
+	ir_node   *and_l       = get_And_left(amount);
+	ir_node   *and_r       = get_And_right(amount);
+	ir_node   *new_amount  = NULL;
 
 	if (has_all_bits_set(and_r, modulo_mask)) {
 		new_amount = and_l;
@@ -5506,7 +5508,6 @@ static ir_node *transform_node_shift_and(ir_node *n, new_shift_func new_shift)
 	dbg_info *dbgi  = get_irn_dbg_info(n);
 	ir_node  *block = get_nodes_block(n);
 	ir_node  *left  = get_binop_left(n);
-
 	return new_shift(dbgi, block, left, new_amount, mode);
 }
 
