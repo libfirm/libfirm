@@ -5459,6 +5459,57 @@ static ir_node *transform_node_shift_modulo(ir_node *n,
 	return n;
 }
 
+static bool has_all_bits_set(ir_node *n, int mask)
+{
+	bitinfo *bi = get_bitinfo(n);
+	if (bi == NULL) {
+		return false;
+	}
+
+	ir_tarval *tv_mask = new_tarval_from_long(mask, mode_Iu);
+
+	return tarval_cmp(tarval_and(bi->o, tv_mask), tv_mask) == ir_relation_equal;
+}
+
+/**
+ * If the shift operations have modulo_shift behaviour, we can discard
+ * an explicit modulo operation before them, such as in this code (where
+ * modulo_shift == 32): result = x SHIFT (y & 0x1f)
+ */
+static ir_node *transform_node_shift_and(ir_node *n, new_shift_func new_shift)
+{
+	ir_mode *mode         = get_irn_mode(n);
+	int      modulo_shift = get_mode_modulo_shift(mode);
+	if (modulo_shift == 0) {
+		return n;
+	}
+
+	ir_node *amount = get_binop_right(n);
+	if (!is_And(amount)) {
+		return n;
+	}
+
+	assert(is_po2(modulo_shift));
+	int      modulo_mask = modulo_shift - 1;
+	ir_node *and_l       = get_And_left(amount);
+	ir_node *and_r       = get_And_right(amount);
+	ir_node *new_amount  = NULL;
+
+	if (has_all_bits_set(and_r, modulo_mask)) {
+		new_amount = and_l;
+	} else if (has_all_bits_set(and_l, modulo_mask)) {
+		new_amount = and_r;
+	} else {
+		return n;
+	}
+
+	dbg_info *dbgi  = get_irn_dbg_info(n);
+	ir_node  *block = get_nodes_block(n);
+	ir_node  *left  = get_binop_left(n);
+
+	return new_shift(dbgi, block, left, new_amount, mode);
+}
+
 /**
  * Transform a Shr.
  */
@@ -5479,6 +5530,8 @@ static ir_node *transform_node_Shr(ir_node *n)
 		n = transform_node_shl_shr(n);
 	if (is_Shr(n))
 		n = transform_node_shift_bitop(n);
+	if (is_Shr(n))
+		n = transform_node_shift_and(n, new_rd_Shr);
 
 	return n;
 }
@@ -5513,6 +5566,9 @@ static ir_node *transform_node_Shrs(ir_node *n)
 	if (n != oldn)
 		return n;
 	n = transform_node_shift_bitop(n);
+	if (n != oldn)
+		return n;
+	n = transform_node_shift_and(n, new_rd_Shrs);
 	if (n != oldn)
 		return n;
 
@@ -5569,6 +5625,8 @@ static ir_node *transform_node_Shl(ir_node *n)
 		n = transform_node_shl_shr(n);
 	if (is_Shl(n))
 		n = transform_node_shift_bitop(n);
+	if (is_Shl(n))
+		n = transform_node_shift_and(n, new_rd_Shl);
 
 	return n;
 }
