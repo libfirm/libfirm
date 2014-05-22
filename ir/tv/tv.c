@@ -509,6 +509,8 @@ void init_mode_values(ir_mode* mode)
 		mode->nan         = get_tarval(buf, buflen, mode);
 		fc_get_max(desc, buf, true); // min = negative maximum
 		mode->min         = get_tarval(buf, buflen, mode);
+		fc_get_max(desc, buf, false);
+		mode->max         = get_tarval(buf, buflen, mode);
 		mode->null        = new_tarval_from_double(0.0, mode);
 		mode->one         = new_tarval_from_double(1.0, mode);
 		break;

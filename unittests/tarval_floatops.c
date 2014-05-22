@@ -10,7 +10,7 @@ static void check_mode(ir_mode *mode)
 {
 	ir_tarval *zero       = get_mode_null(mode);
 	ir_tarval *one        = get_mode_one(mode);
-	ir_tarval *minus_one  = get_mode_minus_one(mode);
+	ir_tarval *minus_one  = tarval_neg(one);
 	ir_tarval *minus_zero = tarval_neg(zero);
 	ir_tarval *two        = new_tarval_from_str("2", 1, mode);
 	ir_tarval *half       = new_tarval_from_str("0.5", 3, mode);
@@ -124,7 +124,7 @@ static void check_mode(ir_mode *mode)
 
 	ir_tarval *int_zero      = get_mode_null(mode_Is);
 	ir_tarval *int_one       = get_mode_one(mode_Is);
-	ir_tarval *int_minus_one = get_mode_minus_one(mode_Is);
+	ir_tarval *int_minus_one = get_mode_all_one(mode_Is);
 	ir_tarval *int_min       = get_mode_min(mode_Is);
 	ir_tarval *int_max       = get_mode_max(mode_Is);
 	assert(tarval_convert_to(zero, mode_Is) == int_zero);

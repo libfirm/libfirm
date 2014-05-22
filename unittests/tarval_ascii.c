@@ -17,6 +17,11 @@ static void test_tv(ir_tarval *tv)
 	}
 }
 
+static ir_tarval *get_mode_minus_one(ir_mode *mode)
+{
+	return tarval_neg(get_mode_one(mode));
+}
+
 static void test_mode(ir_mode *mode)
 {
 	test_tv(get_mode_null(mode));

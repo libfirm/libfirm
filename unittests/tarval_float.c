@@ -39,7 +39,7 @@ int main(void)
 
 	test_float(0, get_mode_null(mode_F));
 	test_float(1, get_mode_one(mode_F));
-	test_float(-1, get_mode_minus_one(mode_F));
+	test_float(-1, tarval_neg(get_mode_one(mode_F)));
 	test_float(FLT_MAX, get_mode_max(mode_F));
 	test_float(-FLT_MAX, get_mode_min(mode_F));
 	test_float(FLT_EPSILON, NULL);
@@ -53,7 +53,7 @@ int main(void)
 
 	test_double(0, get_mode_null(mode_D));
 	test_double(1, get_mode_one(mode_D));
-	test_double(-1, get_mode_minus_one(mode_D));
+	test_double(-1, tarval_neg(get_mode_one(mode_D)));
 	test_double(DBL_MAX, get_mode_max(mode_D));
 	test_double(-DBL_MAX, get_mode_min(mode_D));
 	test_double(DBL_EPSILON, NULL);
@@ -77,7 +77,7 @@ int main(void)
 
 	test_ldouble(0, get_mode_null(mode_E));
 	test_ldouble(1, get_mode_one(mode_E));
-	test_ldouble(-1, get_mode_minus_one(mode_E));
+	test_ldouble(-1, tarval_neg(get_mode_one(mode_E)));
 	test_ldouble(LDBL_MAX, get_mode_max(mode_E));
 	test_ldouble(-LDBL_MAX, get_mode_min(mode_E));
 	test_ldouble(LDBL_EPSILON, NULL);
