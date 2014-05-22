@@ -1745,7 +1745,7 @@ static unsigned simulate_next(ir_tarval **const count_tar, ir_tarval *const step
 	DB((dbg, LEVEL_4, "comparing latest value %d\n", loop_info.latest_value));
 
 	/* Increase steps. */
-	*count_tar = tarval_add(*count_tar, get_tarval_one(get_tarval_mode(*count_tar)));
+	*count_tar = tarval_add(*count_tar, get_mode_one(get_tarval_mode(*count_tar)));
 
 	/* Next has to fail the loop condition, or we will never exit. */
 	if (!(tarval_cmp(next, end_tar) & norm_proj))
@@ -2141,7 +2141,7 @@ static unsigned get_unroll_decision_constant(void)
 	 * not yet in-/decreased iv. */
 	if (is_latest_val == 0) {
 		DB((dbg, LEVEL_4, "condition uses not latest iv value\n"));
-		count_tar = tarval_add(count_tar, get_tarval_one(mode));
+		count_tar = tarval_add(count_tar, get_mode_one(mode));
 	}
 
 	DB((dbg, LEVEL_4, "loop taken %ld times\n", get_tarval_long(count_tar)));

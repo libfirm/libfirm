@@ -44,8 +44,8 @@ static void care_for(ir_node *irn, ir_tarval *care)
 	/* Assume worst case if modes don't match and care has bits set. */
 	ir_mode *mode = get_tarval_mode(get_irn_link(irn));
 	if (mode != get_tarval_mode(care))
-		care = tarval_is_null(care) ?
-			get_tarval_null(mode) : get_tarval_all_one(mode);
+		care = tarval_is_null(care) ? get_mode_null(mode)
+		                            : get_mode_all_one(mode);
 
 	if (mode_is_int(mode)) {
 		care = tarval_or(care, get_irn_link(irn));
@@ -147,7 +147,7 @@ static void dca_transfer(ir_node *irn)
 				 * don't fit into the smaller mode. */
 				if (get_tarval_highest_bit(care) >= (int)pred_bits)
 					care = tarval_or(care,
-									 tarval_shl_unsigned(get_tarval_one(mode),
+									 tarval_shl_unsigned(get_mode_one(mode),
 												         pred_bits - 1));
 			} else {
 				/* Thwart sign extension as it doesn't make sense on
@@ -254,10 +254,10 @@ static void dca_transfer(ir_node *irn)
 				ir_tarval *right_tv = get_Const_tarval(right);
 				care_for(left, tarval_shl(care, right_tv));
 				if (is_Shrs(irn)
-					&& !tarval_is_null(tarval_and(tarval_shrs(get_tarval_min(mode), right_tv),
+					&& !tarval_is_null(tarval_and(tarval_shrs(get_mode_min(mode), right_tv),
 					                              tarval_convert_to(care, mode))))
 					/* Care bits that disappeared still care about the sign bit. */
-					care_for(left, get_tarval_min(mode));
+					care_for(left, get_mode_min(mode));
 			}
 			else
 				care_for(left, create_lsb_mask(care));
@@ -318,7 +318,7 @@ static void dca_init_node(ir_node *n, void *data)
 
 	ir_mode *m = get_irn_mode(n);
 	set_irn_link(n, (void *) (mode_is_int(m) ?
-				  get_tarval_null(m) : get_tarval_b_false()));
+				  get_mode_null(m) : tarval_b_false));
 }
 
 void dca_analyze(ir_graph *irg)

@@ -304,7 +304,7 @@ static int vrp_update_node(ir_vrp_info *info, ir_node *node)
 			if (is_Const(bound)) {
 				new_range_type = VRP_RANGE;
 				new_range_top = get_Const_tarval(bound);
-				new_range_bottom = get_tarval_min(get_irn_mode(node));
+				new_range_bottom = get_mode_min(get_irn_mode(node));
 			}
 		}
 		break;

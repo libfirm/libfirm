@@ -182,8 +182,8 @@ static bool mode_is_intb(ir_mode const *const m)
 
 static bool transfer(ir_node *const irn)
 {
-	ir_tarval *const f = get_tarval_b_false();
-	ir_tarval *const t = get_tarval_b_true();
+	ir_tarval *const f = tarval_b_false;
+	ir_tarval *const t = tarval_b_true;
 	ir_mode   *const m = get_irn_mode(irn);
 	ir_tarval       *z;
 	ir_tarval       *o;
@@ -276,13 +276,13 @@ result_unknown_X:
 
 		if (b == NULL || b->z == f) {
 undefined:
-			z = get_tarval_null(m);
-			o = get_tarval_all_one(m);
+			z = get_mode_null(m);
+			o = get_mode_all_one(m);
 		} else if (is_Phi(irn)) {
 			ir_node *const block = get_nodes_block(irn);
 
-			z = get_tarval_null(m);
-			o = get_tarval_all_one(m);
+			z = get_mode_null(m);
+			o = get_mode_all_one(m);
 			foreach_irn_in(block, i, pred_block) {
 				bitinfo *const b_cfg = get_bitinfo(pred_block);
 				if (b_cfg != NULL && b_cfg->z != f) {
@@ -455,7 +455,7 @@ undefined:
 						} else {
 							z = tarval_mul(tarval_eor(rzn, tarval_shl_unsigned(rzn, 1)), lzn);
 						}
-						o = get_tarval_null(m);
+						o = get_mode_null(m);
 					}
 					break;
 				}
@@ -618,8 +618,8 @@ undefined:
 cannot_analyse:
 					DB((dbg, LEVEL_4, "cannot analyse %+F\n", irn));
 result_unknown:
-					z = get_tarval_all_one(m);
-					o = get_tarval_null(m);
+					z = get_mode_all_one(m);
+					o = get_mode_null(m);
 					break;
 				}
 			}
