@@ -161,7 +161,6 @@ struct ir_mode {
 	ir_tarval         *max;         /**< the maximum value that can be expressed */
 	ir_tarval         *null;        /**< the value 0 */
 	ir_tarval         *one;         /**< the value 1 */
-	ir_tarval         *minus_one;   /**< the value -1 */
 	ir_tarval         *all_one;     /**< the value ~0 */
 	ir_tarval         *infinity;    /**< the infinity value */
 	ir_tarval         *nan;         /** the not a number (NaN) value */

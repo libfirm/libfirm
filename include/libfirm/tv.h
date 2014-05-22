@@ -254,14 +254,8 @@ FIRM_API int tarval_is_null(const ir_tarval *tv);
 FIRM_API int tarval_is_one(const ir_tarval *tv);
 
 /**
- * Returns 1 if tv is the "minus one"
- *
- * @param tv    the tarval
- */
-FIRM_API int tarval_is_minus_one(const ir_tarval *tv);
-
-/**
- * returns non-zero if all bits in the tarval are set
+ * returns non-zero if all bits in the tarval are set.
+ * This means the value is -1 for signed modes with irma_twos_complement.
  */
 FIRM_API int tarval_is_all_one(const ir_tarval *tv);
 

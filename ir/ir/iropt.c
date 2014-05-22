@@ -2426,11 +2426,11 @@ static ir_node *transform_node_Or_(ir_node *n)
 		const bitinfo *const ba   = get_bitinfo(a);
 		ir_tarval     *      mask;
 		if (ba) {
-			ir_tarval *const z         = ba->z;
-			ir_tarval *const minus_one = get_mode_minus_one(mode);
+			ir_tarval *const z   = ba->z;
+			ir_tarval *const one = get_mode_one(mode);
 
 			/* Create mask for rightmost may-1-bit and the trailing 0's. */
-			mask = tarval_eor(z, tarval_add(z, minus_one));
+			mask = tarval_eor(z, tarval_sub(z, one, mode));
 		} else {
 			mask = get_mode_one(mode);
 		}
@@ -2787,9 +2787,9 @@ static ir_node *transform_node_Add(ir_node *n)
 				ir_node *op = get_Not_op(a);
 
 				if (is_Const(b)) {
-					ir_tarval *const tv        = get_Const_tarval(b);
-					ir_tarval *const minus_one = get_mode_minus_one(mode);
-					ir_tarval *const add       = tarval_add(tv, minus_one);
+					ir_tarval *const tv  = get_Const_tarval(b);
+					ir_tarval *const one = get_mode_one(mode);
+					ir_tarval *const add = tarval_sub(tv, one, mode);
 
 					if (tarval_is_constant(add)) {
 						/* ~x + C = (C - 1) - x */
@@ -2906,7 +2906,7 @@ static ir_node *transform_node_Sub(ir_node *n)
 		if (mode == lmode                                     &&
 		    get_mode_arithmetic(mode) == irma_twos_complement &&
 		    is_Const(a)                                       &&
-		    tarval_is_minus_one(get_Const_tarval(a))) {
+		    tarval_is_all_one(get_Const_tarval(a))) {
 			/* -1 - x -> ~x */
 			dbg_info *dbg = get_irn_dbg_info(n);
 			n = new_rd_Not(dbg, get_nodes_block(n), b, mode);
@@ -3347,9 +3347,9 @@ static ir_node *transform_node_Mul(ir_node *n)
 		}
 
 		/* x*-1 => -x */
-		if (tarval_is_minus_one(c1) ||
-			(get_mode_arithmetic(mode) == irma_twos_complement
-		    && tarval_is_all_one(c1))) {
+		if ((get_mode_arithmetic(mode) == irma_twos_complement
+		     && tarval_is_all_one(c1))
+		  || (mode_is_float(mode) && tarval_is_minus_one(c1))) {
 			dbg_info *dbgi  = get_irn_dbg_info(n);
 			ir_node  *block = get_nodes_block(n);
 			return new_rd_Minus(dbgi, block, a, mode);
@@ -3473,7 +3473,7 @@ static ir_node *transform_node_Div(ir_node *n)
 			if (mode_is_signed(mode) && is_Const(b)) {
 				ir_tarval *tv = get_Const_tarval(b);
 
-				if (tarval_is_minus_one(tv)) {
+				if (tarval_is_all_one(tv)) {
 					/* a / -1 */
 					value = new_rd_Minus(get_irn_dbg_info(n), get_nodes_block(n), a, mode);
 					DBG_OPT_CSTEVAL(n, value);
@@ -3586,7 +3586,7 @@ static ir_node *transform_node_Mod(ir_node *n)
 			if (mode_is_signed(mode) && is_Const(b)) {
 				ir_tarval *tv = get_Const_tarval(b);
 
-				if (tarval_is_minus_one(tv)) {
+				if (tarval_is_all_one(tv)) {
 					/* a % -1 = 0 */
 					value = new_r_Const_null(irg, mode);
 					DBG_OPT_CSTEVAL(n, value);
@@ -3972,11 +3972,11 @@ absorb:;
 		const bitinfo *const ba   = get_bitinfo(a);
 		ir_tarval     *      mask;
 		if (ba) {
-			ir_tarval *const z         = ba->z;
-			ir_tarval *const minus_one = get_mode_minus_one(mode);
+			ir_tarval *const z   = ba->z;
+			ir_tarval *const one = get_mode_one(mode);
 
 			/* Create mask for rightmost may-1-bit and the trailing 0's. */
-			mask = tarval_eor(z, tarval_add(z, minus_one));
+			mask = tarval_eor(z, tarval_sub(z, one, mode));
 		} else {
 			mask = get_mode_one(mode);
 		}
@@ -4079,7 +4079,7 @@ static ir_node *transform_node_Not(ir_node *n)
 			ir_graph *irg   = get_irn_irg(n);
 			ir_node  *block = get_nodes_block(n);
 			ir_node  *add_l = get_Minus_op(a);
-			ir_node  *add_r = new_rd_Const(dbg, irg, get_mode_minus_one(mode));
+			ir_node  *add_r = new_rd_Const(dbg, irg, get_mode_all_one(mode));
 			return new_rd_Add(dbg, block, add_l, add_r, mode);
 		}
 		if (is_Add(a) || is_Or_Eor_Add(a)) {

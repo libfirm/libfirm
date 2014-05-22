@@ -511,8 +511,6 @@ void init_mode_values(ir_mode* mode)
 		mode->min         = get_tarval(buf, buflen, mode);
 		mode->null        = new_tarval_from_double(0.0, mode);
 		mode->one         = new_tarval_from_double(1.0, mode);
-		mode->minus_one   = mode_is_signed(mode)
-			? new_tarval_from_double(-1.0, mode) : tarval_bad;
 		break;
 	}
 
@@ -524,7 +522,6 @@ void init_mode_values(ir_mode* mode)
 		mode->max       = tarval_b_true;
 		mode->null      = tarval_b_false;
 		mode->one       = tarval_b_true;
-		mode->minus_one = tarval_bad;
 		break;
 
 	case irms_reference:
@@ -545,12 +542,6 @@ void init_mode_values(ir_mode* mode)
 		mode->null      = get_tarval(buf, buflen, mode);
 		sc_set_bit_at(buf, 0);
 		mode->one       = get_tarval(buf, buflen, mode);
-		if (sign) {
-			sc_neg(buf, buf);
-			mode->minus_one = get_tarval(buf, buflen, mode);
-		} else {
-			mode->minus_one = tarval_bad;
-		}
 		break;
 	}
 
@@ -561,7 +552,6 @@ void init_mode_values(ir_mode* mode)
 		mode->max       = tarval_bad;
 		mode->null      = tarval_bad;
 		mode->one       = tarval_bad;
-		mode->minus_one = tarval_bad;
 		mode->infinity  = tarval_bad;
 		mode->nan       = tarval_bad;
 		break;
@@ -596,26 +586,26 @@ int tarval_is_negative(const ir_tarval *a)
 
 int tarval_is_null(const ir_tarval *tv)
 {
-	return tv != tarval_unknown && tv != tarval_bad
-	    && tv == get_mode_null(get_tarval_mode(tv));
+	return tv == get_tarval_mode(tv)->null && tv != tarval_bad;
 }
 
 int tarval_is_one(const ir_tarval *tv)
 {
-	return tv != tarval_unknown && tv != tarval_bad
-	    && tv == get_mode_one(get_tarval_mode(tv));
+	return tv == get_tarval_mode(tv)->one && tv != tarval_bad;
 }
 
 int tarval_is_all_one(const ir_tarval *tv)
 {
-	return tv != tarval_unknown && tv != tarval_bad
-	    && tv == get_mode_all_one(get_tarval_mode(tv));
+	return tv == get_tarval_mode(tv)->all_one && tv != tarval_bad;
 }
 
-int tarval_is_minus_one(const ir_tarval *tv)
+bool tarval_is_minus_one(const ir_tarval *tv)
 {
-	return tv != tarval_unknown && tv != tarval_bad
-	    && tv == get_mode_minus_one(get_tarval_mode(tv));
+	ir_mode *mode = get_tarval_mode(tv);
+	assert(mode_is_float(mode));
+	const fp_value *val = (const fp_value*)tv->value;
+	return fc_is_negative(val) && fc_zero_mantissa(val)
+	    && fc_get_exponent(val) == 0 && !fc_is_inf(val) && !fc_is_nan(val);
 }
 
 ir_relation tarval_cmp(const ir_tarval *a, const ir_tarval *b)

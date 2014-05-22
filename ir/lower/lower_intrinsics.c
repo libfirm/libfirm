@@ -27,6 +27,7 @@
 #include "be.h"
 #include "util.h"
 #include "firmstat_t.h"
+#include "tv_t.h"
 
 /** Walker environment. */
 struct ir_intrinsics_map {
@@ -263,7 +264,7 @@ int i_mapper_cbrt(ir_node *call)
 		return 0;
 
 	tv = get_Const_tarval(op);
-	if (! tarval_is_null(tv) && !tarval_is_one(tv) && !tarval_is_minus_one(tv))
+	if (!tarval_is_null(tv) && !tarval_is_one(tv) && !tarval_is_minus_one(tv))
 		return 0;
 
 	mem = get_Call_mem(call);

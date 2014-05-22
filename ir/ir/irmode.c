@@ -298,13 +298,6 @@ ir_tarval *get_mode_one(const ir_mode *mode)
 	return mode->one;
 }
 
-ir_tarval *get_mode_minus_one(const ir_mode *mode)
-{
-	assert(mode_is_data(mode));
-
-	return mode->minus_one;
-}
-
 ir_tarval *get_mode_all_one(const ir_mode *mode)
 {
 	assert(mode_is_data(mode) || mode == mode_b);

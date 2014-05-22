@@ -3164,7 +3164,7 @@ static void find_const_transform(x86_condition_code_t cc,
 		return;
 	}
 
-	if (tarval_is_minus_one(t)) {
+	if (tarval_is_all_one(t)) {
 		res->steps[step].transform = SETCC_TR_NEG;
 		++step;
 		res->steps[step].transform = SETCC_TR_SET;

@@ -188,17 +188,10 @@ FIRM_API ir_tarval *get_mode_null(const ir_mode *mode);
 FIRM_API ir_tarval *get_mode_one(const ir_mode *mode);
 
 /**
- * Returns the value Minus One, represented in this mode.
- *
- * Minus One is defined only for modes allowing
- * multiplication with signed values, i.e. signed ints and floats.
- */
-FIRM_API ir_tarval *get_mode_minus_one(const ir_mode *mode);
-
-/**
  * Returns the value where all bits are One, represented in this mode.
  *
  * All One is defined only for modes integer, reference and boolean modes
+ * This represents the value -1 for signed modes with irma_twos_complement.
  */
 FIRM_API ir_tarval *get_mode_all_one(const ir_mode *mode);
 
