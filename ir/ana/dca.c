@@ -82,13 +82,16 @@ static ir_tarval *create_msb_mask(ir_tarval *tv)
 /** Create a mask with the bits that are relevant for shifting the given mode. */
 static ir_tarval *create_modulo_shift_mask(ir_mode *mode)
 {
-	int modulo_shift = get_mode_modulo_shift(mode);
+	unsigned modulo_shift = get_mode_modulo_shift(mode);
 	if (modulo_shift == 0) {
 		return NULL;
 	}
 
-	int mask = modulo_shift - 1;
-	return new_tarval_from_long(mask, mode_Iu);
+	assert(is_po2(modulo_shift));
+	ir_tarval *all_one = get_mode_all_one(mode);
+	unsigned   shift   = get_mode_size_bits(mode) - (32 - nlz(modulo_shift-1));
+	ir_tarval *mask    = tarval_shr_unsigned(all_one, shift);
+	return mask;
 }
 
 /** Compute cared for bits in predecessors of irn. */
