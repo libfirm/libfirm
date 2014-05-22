@@ -79,6 +79,18 @@ static ir_tarval *create_msb_mask(ir_tarval *tv)
 	return tv;
 }
 
+/** Create a mask with the bits that are relevant for shifting the given mode. */
+static ir_tarval *create_modulo_shift_mask(ir_mode *mode)
+{
+	int modulo_shift = get_mode_modulo_shift(mode);
+	if (modulo_shift == 0) {
+		return NULL;
+	}
+
+	int mask = modulo_shift - 1;
+	return new_tarval_from_long(mask, mode_Iu);
+}
+
 /** Compute cared for bits in predecessors of irn. */
 static void dca_transfer(ir_node *irn)
 {
@@ -250,8 +262,7 @@ static void dca_transfer(ir_node *irn)
 			else
 				care_for(left, create_lsb_mask(care));
 
-			// TODO Consider modulo shift
-			care_for(right, NULL);
+			care_for(right, create_modulo_shift_mask(mode));
 
 			return;
 		}
@@ -264,8 +275,7 @@ static void dca_transfer(ir_node *irn)
 			else
 				care_for(left, create_msb_mask(care));
 
-			// TODO Consider modulo shift
-			care_for(right, NULL);
+			care_for(right, create_modulo_shift_mask(mode));
 
 			return;
 		}
