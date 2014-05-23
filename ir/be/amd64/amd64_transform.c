@@ -2007,6 +2007,69 @@ static ir_node *gen_Proj_Store(ir_node *node)
 	}
 }
 
+static ir_node *gen_saturating_increment(ir_node *node)
+{
+	dbg_info *dbgi      = get_irn_dbg_info(node);
+	ir_node  *new_block = be_transform_node(get_nodes_block(node));
+	ir_node  *operand   = be_transform_node(get_Builtin_param(node, 0));
+	ir_node  *inc_in[]  = { operand };
+
+	amd64_binop_addr_attr_t inc_attr;
+	memset(&inc_attr, 0, sizeof(inc_attr));
+	inc_attr.base.base.op_mode  = AMD64_OP_REG_IMM;
+	inc_attr.u.immediate.offset = 1;
+
+	ir_node  *inc = new_bd_amd64_Add(dbgi, new_block, ARRAY_SIZE(inc_in),
+	                                 inc_in, &inc_attr);
+
+	arch_set_irn_register_reqs_in(inc, reg_reqs);
+	set_irn_mode(inc, mode_T);
+
+	ir_node *value  = new_rd_Proj(dbgi, inc, mode_gp, pn_amd64_Add_res);
+
+	ir_node  *const zero = new_bd_amd64_Xor0(dbgi, new_block);
+
+	amd64_binop_addr_attr_t sbb_attr;
+	memset(&sbb_attr, 0, sizeof(sbb_attr));
+	sbb_attr.base.base.op_mode  = AMD64_OP_REG_REG;
+
+	//TODO: Sbb should consume flags, but can't currently
+	ir_node *sbb = new_bd_amd64_Sbb(dbgi, new_block, value, zero,
+	                                &sbb_attr);
+
+	arch_set_irn_register_reqs_in(sbb, reg_reg_reqs);
+
+	return sbb;
+}
+
+static ir_node *gen_Builtin(ir_node *node)
+{
+	ir_builtin_kind kind = get_Builtin_kind(node);
+
+	switch(kind) {
+	case ir_bk_saturating_increment:
+		return gen_saturating_increment(node);
+	default:
+		break;
+	}
+	panic("Builtin %s not implemented", get_builtin_kind_name(kind));
+}
+
+static ir_node *gen_Proj_Builtin(ir_node *proj)
+{
+	ir_node   *node      = get_Proj_pred(proj);
+	ir_node   *new_node  = be_transform_node(node);
+	ir_builtin_kind kind = get_Builtin_kind(node);
+
+	switch(kind) {
+	case ir_bk_saturating_increment:
+		return new_r_Proj(new_node, mode_gp, pn_amd64_Sbb_res);
+	default:
+		break;
+	}
+	panic("Builtin %s not implemented", get_builtin_kind_name(kind));
+}
+
 /* Boilerplate code for transformation: */
 
 static void amd64_register_transformers(void)
@@ -2016,6 +2079,7 @@ static void amd64_register_transformers(void)
 	be_set_transform_function(op_Add,      gen_Add);
 	be_set_transform_function(op_Address,  gen_Address);
 	be_set_transform_function(op_And,      gen_And);
+	be_set_transform_function(op_Builtin,  gen_Builtin);
 	be_set_transform_function(op_Call,     gen_Call);
 	be_set_transform_function(op_Cmp,      gen_Cmp);
 	be_set_transform_function(op_Cond,     gen_Cond);
@@ -2044,15 +2108,16 @@ static void amd64_register_transformers(void)
 	be_set_transform_function(op_Switch,   gen_Switch);
 	be_set_transform_function(op_Unknown,  gen_Unknown);
 
-	be_set_transform_proj_function(op_Call,   gen_Proj_Call);
-	be_set_transform_proj_function(op_Cond,   be_duplicate_node);
-	be_set_transform_proj_function(op_Div,    gen_Proj_Div);
-	be_set_transform_proj_function(op_Load,   gen_Proj_Load);
-	be_set_transform_proj_function(op_Mod,    gen_Proj_Mod);
-	be_set_transform_proj_function(op_Proj,   gen_Proj_Proj);
-	be_set_transform_proj_function(op_Start,  gen_Proj_Start);
-	be_set_transform_proj_function(op_Store,  gen_Proj_Store);
-	be_set_transform_proj_function(op_Switch, be_duplicate_node);
+	be_set_transform_proj_function(op_Builtin, gen_Proj_Builtin);
+	be_set_transform_proj_function(op_Call,    gen_Proj_Call);
+	be_set_transform_proj_function(op_Cond,    be_duplicate_node);
+	be_set_transform_proj_function(op_Div,     gen_Proj_Div);
+	be_set_transform_proj_function(op_Load,    gen_Proj_Load);
+	be_set_transform_proj_function(op_Mod,     gen_Proj_Mod);
+	be_set_transform_proj_function(op_Proj,    gen_Proj_Proj);
+	be_set_transform_proj_function(op_Start,   gen_Proj_Start);
+	be_set_transform_proj_function(op_Store,   gen_Proj_Store);
+	be_set_transform_proj_function(op_Switch,  be_duplicate_node);
 
 	/* upper_bits_clean can't handle different register sizes, so
 	 * arithmetic operations are problematic. Disable them. */
