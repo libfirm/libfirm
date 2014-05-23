@@ -219,7 +219,7 @@ static ir_tarval *(compare_iv)(const interval_t *l_iv, const interval_t *r_iv,
 		/* two intervals can be compared for equality only if they are a single
 		 * value */
 		if (l_iv->min == l_iv->max && r_iv->min == r_iv->max)
-			return tarval_cmp(l_iv->min, r_iv->min) == ir_relation_equal ? tv_true : tv_false;
+			return l_iv->min == r_iv->min ? tv_true : tv_false;
 
 		/* if both intervals do not intersect, it is never equal */
 		ir_relation res = tarval_cmp(l_iv->max, r_iv->min);
@@ -249,7 +249,7 @@ static ir_tarval *(compare_iv)(const interval_t *l_iv, const interval_t *r_iv,
 	case ir_relation_less_greater:
 		/* two intervals can be compared for not equality only if they are a single value */
 		if (l_iv->min == l_iv->max && r_iv->min == r_iv->max)
-			return tarval_cmp(l_iv->min, r_iv->min) != ir_relation_equal ? tv_true : tv_false;
+			return l_iv->min != r_iv->min ? tv_true : tv_false;
 		break;
 
 	case ir_relation_less: {

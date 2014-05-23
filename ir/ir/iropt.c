@@ -2320,7 +2320,7 @@ static ir_node *transform_node_bitop_shift(ir_node *n)
 		if (!is_And(n)) {
 			ir_tarval *tv_back_again = tarval_shl(tv_bitop, tv1);
 
-			if (tarval_cmp(tv_back_again, tv2) != ir_relation_equal)
+			if (tv_back_again != tv2)
 				return n;
 		}
 	} else {
