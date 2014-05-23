@@ -59,6 +59,24 @@ static const arch_register_req_t amd64_requirement_gp = {
 	NULL,
 	0,
 	0,
+	0
+};
+
+static const arch_register_req_t amd64_requirement_flags = {
+	arch_register_req_type_normal,
+	&amd64_reg_classes[CLASS_amd64_flags],
+	NULL,
+	0,
+	0,
+	1
+};
+
+static const arch_register_req_t amd64_requirement_xmm = {
+	arch_register_req_type_normal,
+	&amd64_reg_classes[CLASS_amd64_xmm],
+	NULL,
+	0,
+	0,
 	1
 };
 
@@ -133,6 +151,12 @@ static const arch_register_req_t *reg_reg_reg_mem_reqs[] = {
 	&amd64_requirement_gp,
 	&amd64_requirement_gp,
 	&arch_no_requirement,
+};
+
+static const arch_register_req_t *reg_reg_flags_reqs[] = {
+	&amd64_requirement_gp,
+	&amd64_requirement_gp,
+	&amd64_requirement_flags,
 };
 
 static const arch_register_req_t *reg_reg_reqs[] = {
@@ -2026,18 +2050,17 @@ static ir_node *gen_saturating_increment(ir_node *node)
 	set_irn_mode(inc, mode_T);
 
 	ir_node *value  = new_rd_Proj(dbgi, inc, mode_gp, pn_amd64_Add_res);
-
-	ir_node  *const zero = new_bd_amd64_Xor0(dbgi, new_block);
+	ir_node *eflags = new_rd_Proj(dbgi, inc, mode_flags, pn_amd64_Add_flags);
+	ir_node *zero   = new_bd_amd64_Xor0(dbgi, new_block);
 
 	amd64_binop_addr_attr_t sbb_attr;
 	memset(&sbb_attr, 0, sizeof(sbb_attr));
 	sbb_attr.base.base.op_mode  = AMD64_OP_REG_REG;
 
-	//TODO: Sbb should consume flags, but can't currently
-	ir_node *sbb = new_bd_amd64_Sbb(dbgi, new_block, value, zero,
+	ir_node *sbb = new_bd_amd64_Sbb(dbgi, new_block, value, zero, eflags,
 	                                &sbb_attr);
 
-	arch_set_irn_register_reqs_in(sbb, reg_reg_reqs);
+	arch_set_irn_register_reqs_in(sbb, reg_reg_flags_reqs);
 
 	return sbb;
 }

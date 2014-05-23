@@ -282,12 +282,11 @@ Sub => {
 },
 
 Sbb => {
-	#TODO: Should consume flags
 	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp" ],
+	reg_req   => { in => [ "gp", "gp", "flags" ],
 	               out => [ "gp", "flags", "none" ] },
 	outs      => [ "res", "flags", "M" ],
-	ins       => [ "minuend", "subtrahend" ],
+	ins       => [ "minuend", "subtrahend", "eflags" ],
 	attr_type => "amd64_binop_addr_attr_t",
 	attr      => "const amd64_binop_addr_attr_t *attr_init",
 	emit      => "sbb%M %S1, %D0",
