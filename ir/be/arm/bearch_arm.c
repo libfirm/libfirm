@@ -19,6 +19,7 @@
 #include "iroptimize.h"
 #include "irdump.h"
 #include "lower_calls.h"
+#include "lower_softfloat.h"
 #include "panic.h"
 #include "debug.h"
 #include "array.h"
@@ -46,6 +47,8 @@
 #include "arm_transform.h"
 #include "arm_optimize.h"
 #include "arm_emitter.h"
+
+arm_codegen_config_t arm_cg_config;
 
 static const backend_params *arm_get_libfirm_params(void);
 
@@ -247,14 +250,24 @@ static arm_isa_t arm_isa_template = {
 		7,                       /* spill costs */
 		5,                       /* reload costs */
 	},
-	ARM_FPU_ARCH_FPE,          /* FPU architecture */
 };
+static int arm_fpu = ARM_FPU_ARCH_SOFTFLOAT;
+
+static void arm_setup_cg_config(void)
+{
+	memset(&arm_cg_config, 0, sizeof(arm_cg_config));
+	if (arm_fpu == ARM_FPU_SOFTFLOAT) {
+		arm_cg_config.use_softfloat = true;
+	}
+	arm_cg_config.use_fpa = arm_fpu & ARM_FPU_FPA_EXT_V1;
+	arm_cg_config.use_vfp = arm_fpu & ARM_FPU_VFP_EXT_V1xD;
+}
 
 static void arm_init(void)
 {
 	arm_register_init();
-
 	arm_create_opcodes(&arm_irn_ops);
+	arm_setup_cg_config();
 }
 
 static void arm_finish(void)
@@ -268,6 +281,8 @@ static arch_env_t *arm_begin_codegeneration(void)
 	*isa = arm_isa_template;
 
 	be_gas_emit_types = false;
+
+	arm_emit_file_prologue();
 
 	return &isa->base;
 }
@@ -308,16 +323,19 @@ static void arm_lower_for_target(void)
 	be_after_irp_transform("lower-calls");
 
 	foreach_irp_irg(i, irg) {
-		lower_switch(irg, 4, 256, mode_gp);
-		be_after_transform(irg, "lower-switch");
+		/* Turn all small CopyBs into loads/stores and all bigger CopyBs into
+		 * memcpy calls. */
+		lower_CopyB(irg, 31, 32, false);
+		be_after_transform(irg, "lower-copyb");
+	}
+	if (arm_cg_config.use_softfloat) {
+		lower_floating_point();
+		be_after_irp_transform("lower-fp");
 	}
 
 	foreach_irp_irg(i, irg) {
-		/* Turn all small CopyBs into loads/stores and all bigger CopyBs into
-		 * memcpy calls.
-		 * TODO:  These constants need arm-specific tuning. */
-		lower_CopyB(irg, 31, 32, false);
-		be_after_transform(irg, "lower-copyb");
+		lower_switch(irg, 4, 256, mode_gp);
+		be_after_transform(irg, "lower-switch");
 	}
 }
 
@@ -369,7 +387,7 @@ static const lc_opt_enum_int_items_t arm_fpu_items[] = {
 };
 
 static lc_opt_enum_int_var_t arch_fpu_var = {
-	&arm_isa_template.fpu_arch, arm_fpu_items
+	&arm_fpu, arm_fpu_items
 };
 
 static const lc_opt_table_entry_t arm_options[] = {

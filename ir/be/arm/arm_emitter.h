@@ -46,4 +46,6 @@ void arm_emit_function(ir_graph *irg);
 
 void arm_init_emitter(void);
 
+void arm_emit_file_prologue(void);
+
 #endif

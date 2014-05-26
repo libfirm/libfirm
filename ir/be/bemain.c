@@ -476,12 +476,13 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		}
 	}
 
+	be_emit_init(file_handle);
+
 	be_main_env_t env;
 	be_init_env(&env, cup_name);
 	be_info_init();
 	arch_env_t *arch_env = env.arch_env;
 
-	be_emit_init(file_handle);
 	be_gas_begin_compilation_unit(&env);
 
 	/* First: initialize all birgs */

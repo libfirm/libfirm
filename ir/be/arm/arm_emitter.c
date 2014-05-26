@@ -602,7 +602,7 @@ static void emit_be_Copy(const ir_node *irn)
 	}
 
 	if (mode_is_float(mode)) {
-		if (USE_FPA(isa)) {
+		if (arm_cg_config.use_fpa) {
 			arm_emitf(irn, "mvf %D0, %S0");
 		} else {
 			panic("move not supported for this mode");
@@ -847,6 +847,14 @@ void arm_emit_function(ir_graph *irg)
 	del_set(ent_or_tv);
 
 	be_gas_emit_function_epilog(entity);
+}
+
+void arm_emit_file_prologue(void)
+{
+	be_emit_cstring("\t.arch armv5t\n");
+	be_emit_write_line();
+	be_emit_cstring("\t.fpu softvfp\n");
+	be_emit_write_line();
 }
 
 void arm_init_emitter(void)

@@ -95,12 +95,6 @@ enum arm_fp_architectures {
 	ARM_FPU_MASK           = 0x7f000000,
 };
 
-/** Returns non-zero if FPA instructions should be issued. */
-#define USE_FPA(isa)     ((isa)->fpu_arch & ARM_FPU_FPA_EXT_V1)
-
-/** Returns non-zero if VFP instructions should be issued. */
-#define USE_VFP(isa)     ((isa)->fpu_arch & ARM_FPU_VFP_EXT_V1xD)
-
 /** Types of processor to generate code for. */
 enum arm_processor_types {
 	ARM_1      = ARM_ARCH_V1,
@@ -117,9 +111,16 @@ enum arm_processor_types {
 };
 
 struct arm_isa_t {
-	arch_env_t     base;      /**< must be derived from arch_env_t */
-	int            fpu_arch;      /**< FPU architecture */
+	arch_env_t base; /**< must be derived from arch_env_t */
 };
+
+typedef struct arm_codegen_config_t {
+	bool use_softfloat;
+	bool use_fpa;
+	bool use_vfp;
+} arm_codegen_config_t;
+
+extern arm_codegen_config_t arm_cg_config;
 
 void arm_finish_graph(ir_graph *irg);
 
