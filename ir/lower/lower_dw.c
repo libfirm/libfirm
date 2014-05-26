@@ -2790,7 +2790,6 @@ static void lower_irg(ir_graph *irg)
 	obstack_init(&env->obst);
 
 	unsigned n_idx = get_irg_last_idx(irg);
-	n_idx = n_idx + (n_idx >> 2);  /* add 25% */
 	env->n_entries = n_idx;
 	env->entries   = NEW_ARR_FZ(lower64_entry_t*, n_idx);
 	env->irg       = irg;
