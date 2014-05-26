@@ -440,7 +440,6 @@ Store => {
 	attr      => "const amd64_binop_addr_attr_t *attr_init",
 	mode      => "mode_M",
 	emit      => "mov%M %S0, %A",
-	mode      => "mode_M",
 },
 
 SwitchJmp => {
@@ -494,6 +493,19 @@ Adds => {
 	emit      => "adds%MX %AM",
 	mode      => $mode_xmm,
 },
+
+Stores => {
+	op_flags  => [ "uses_memory" ],
+	state     => "exc_pinned",
+	reg_req   => { out => [ "none" ] },
+	arity     => "variable",
+	outs      => [ "M" ],
+	attr_type => "amd64_binop_addr_attr_t",
+	attr      => "const amd64_binop_addr_attr_t *attr_init",
+	mode      => "mode_M",
+	emit      => "movs%MX %S0, %A",
+},
+
 
 Subs => {
 	irn_flags => [ "rematerializable" ],

@@ -149,14 +149,33 @@ static const arch_register_req_t *reg_mem_reqs[] = {
 	&arch_no_requirement,
 };
 
+static const arch_register_req_t *xmm_mem_reqs[] = {
+	&amd64_requirement_xmm,
+	&arch_no_requirement,
+};
+
+
 static const arch_register_req_t *reg_reg_mem_reqs[] = {
 	&amd64_requirement_gp,
 	&amd64_requirement_gp,
 	&arch_no_requirement,
 };
 
+static const arch_register_req_t *xmm_reg_mem_reqs[] = {
+	&amd64_requirement_xmm,
+	&amd64_requirement_gp,
+	&arch_no_requirement,
+};
+
 static const arch_register_req_t *reg_reg_reg_mem_reqs[] = {
 	&amd64_requirement_gp,
+	&amd64_requirement_gp,
+	&amd64_requirement_gp,
+	&arch_no_requirement,
+};
+
+static const arch_register_req_t *xmm_reg_reg_mem_reqs[] = {
+	&amd64_requirement_xmm,
 	&amd64_requirement_gp,
 	&amd64_requirement_gp,
 	&arch_no_requirement,
@@ -1852,12 +1871,10 @@ static ir_node *gen_Conv(ir_node *node)
 
 static ir_node *gen_Store(ir_node *node)
 {
+	dbg_info *dbgi = get_irn_dbg_info(node);
 	ir_node *block = be_transform_node(get_nodes_block(node));
 	ir_node *val   = get_Store_value(node);
 	ir_mode *mode  = get_irn_mode(val);
-	if (mode_is_float(mode))
-		panic("amd64: float store NIY");
-	assert(mode_needs_gp_reg(mode));
 
 	amd64_binop_addr_attr_t attr;
 	memset(&attr, 0, sizeof(attr));
@@ -1872,28 +1889,38 @@ static ir_node *gen_Store(ir_node *node)
 	in[reg_input]    = be_transform_node(val);
 	attr.u.reg_input = reg_input;
 
-	ir_node *ptr = get_Store_ptr(node);
+	ir_node *ptr     = get_Store_ptr(node);
 	perform_address_matching(ptr, &arity, in, addr);
 
 	ir_node *mem     = get_Store_mem(node);
 	ir_node *new_mem = be_transform_node(mem);
-	in[arity++] = new_mem;
+	in[arity++]      = new_mem;
 	assert((size_t)arity <= ARRAY_SIZE(in));
 	attr.base.insn_mode = get_insn_mode_from_mode(mode);
 
-	const arch_register_req_t **reqs[] = {
-		NULL,
-		mem_reqs,
-		reg_mem_reqs,
-		reg_reg_mem_reqs,
-		reg_reg_reg_mem_reqs
-	};
-	assert((size_t)arity < ARRAY_SIZE(reqs));
+	const arch_register_req_t **reqs;
 
-	dbg_info *dbgi = get_irn_dbg_info(node);
+	bool need_xmm = mode_is_float(mode);
 
-	ir_node *new_store = new_bd_amd64_Store(dbgi, block, arity, in, &attr);
-	arch_set_irn_register_reqs_in(new_store, reqs[arity]);
+	switch(arity) {
+	case 1: reqs = mem_reqs; break;
+	case 2: reqs = need_xmm ? xmm_mem_reqs : reg_mem_reqs; break;
+	case 3: reqs = need_xmm ? xmm_reg_mem_reqs : reg_reg_mem_reqs; break;
+	case 4: reqs = need_xmm ? xmm_reg_reg_mem_reqs : reg_reg_reg_mem_reqs;
+		break;
+	default:
+		assert(false);
+	}
+
+
+	ir_node *new_store;
+	if (mode_is_float(mode)) {
+		new_store = new_bd_amd64_Stores(dbgi, block, arity, in, &attr);
+	} else {
+		new_store = new_bd_amd64_Store(dbgi, block, arity, in, &attr);
+	}
+
+	arch_set_irn_register_reqs_in(new_store, reqs);
 	set_irn_pinned(new_store, get_irn_pinned(node));
 	return new_store;
 }
@@ -1997,7 +2024,12 @@ static ir_node *gen_Unknown(ir_node *node)
 {
 	/* for now, there should be more efficient ways to do this */
 	ir_node *block = be_transform_node(get_nodes_block(node));
-	return new_bd_amd64_Xor0(NULL, block);
+
+	if (mode_is_float(get_irn_mode(node))) {
+		return new_bd_amd64_Xorp0(NULL, block);
+	} else {
+		return new_bd_amd64_Xor0(NULL, block);
+	}
 }
 
 static const unsigned pn_amd64_mem = 2;
