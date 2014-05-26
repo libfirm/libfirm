@@ -671,6 +671,11 @@ ir_relation ir_get_possible_cmp_relations(const ir_node *left,
 		return possible;
 	}
 
+	/* NaN never compares successfully to anything */
+	if (tarval_is_nan(tv_l) || tarval_is_nan(tv_r)) {
+		return ir_relation_unordered;
+	}
+
 	/* a == a is never less or greater (but might be equal or unordered) */
 	if (left == right)
 		possible &= ~ir_relation_less_greater;
