@@ -37,6 +37,7 @@ static ir_node *random_select(void *block_env, ir_nodeset_t *ready_set)
 		/* at last: schedule branches */
 		rand_node = ir_nodeset_first(ready_set);
 	} else {
+		rand_node = NULL;
 		do {
 			/* take 1 random node */
 			int n = rand() % ir_nodeset_size(ready_set);
