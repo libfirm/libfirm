@@ -483,13 +483,37 @@ Return => {
 
 # SSE
 
+Adds => {
+	irn_flags  => [ "rematerializable" ],
+	state     => "exc_pinned",
+	reg_req   => { out => [ "xmm", "none" ] },
+	outs      => [ "res", "M" ],
+	arity     => "variable",
+	attr_type => "amd64_binop_addr_attr_t",
+	attr      => "const amd64_binop_addr_attr_t *attr_init",
+	emit      => "adds%MX %AM",
+	mode      => $mode_xmm,
+},
+
+Subs => {
+	irn_flags => [ "rematerializable" ],
+	state     => "exc_pinned",
+	reg_req   => { out => [ "xmm", "none" ] },
+	outs      => [ "res", "M" ],
+	arity     => "variable",
+	attr_type => "amd64_binop_addr_attr_t",
+	attr      => "const amd64_binop_addr_attr_t *attr_init",
+	emit      => "subs%MX %S1, %D0",
+	mode      => $mode_xmm,
+},
+
 Xorp0 => {
 	op_flags  => [ "constlike" ],
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { out => [ "xmm" ] },
 	outs      => [ "res" ],
 	fixed     => "amd64_op_mode_t op_mode = AMD64_OP_REG_REG;",
-	emit      => "xorp%MX %D0, %D0",
+	emit      => "xorpd %D0, %D0",
 	mode      => $mode_xmm,
 },
 

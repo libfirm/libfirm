@@ -91,6 +91,15 @@ static const arch_register_req_t amd64_requirement_gp_same_0 = {
 	1
 };
 
+static const arch_register_req_t amd64_requirement_xmm_same_0 = {
+	arch_register_req_type_normal | arch_register_req_type_should_be_same,
+	&amd64_reg_classes[CLASS_amd64_xmm],
+	NULL,
+	BIT(0),
+	0,
+	1
+};
+
 static const arch_register_req_t amd64_requirement_gp_same_0_not_1 = {
 	arch_register_req_type_normal | arch_register_req_type_should_be_same
 	| arch_register_req_type_must_be_different,
@@ -185,6 +194,11 @@ static const arch_register_req_t *reg_rcx_reqs[] = {
 };
 
 static const arch_register_req_t *no_reqs[] = {
+};
+
+static const arch_register_req_t *xmm_xmm_reqs[] = {
+	&amd64_requirement_xmm,
+	&amd64_requirement_xmm,
 };
 
 static inline bool mode_needs_gp_reg(ir_mode *mode)
@@ -596,14 +610,19 @@ static void match_binop(amd64_args_t *args, ir_node *block,
 		args->in[mem_input] = new_mem;
 		addr->mem_input     = mem_input;
 
-		args->mem_proj               = be_get_Proj_for_pn(load, pn_Load_M);
+		args->mem_proj      = be_get_Proj_for_pn(load, pn_Load_M);
 		args->attr.base.base.op_mode = AMD64_OP_ADDR_REG;
 	} else {
 		/* simply transform the arguments */
 		args->in[args->arity++] = be_transform_node(op1);
 		args->in[args->arity++] = be_transform_node(op2);
-		args->reqs              = reg_reg_reqs;
 		args->attr.base.base.op_mode = AMD64_OP_REG_REG;
+
+		if (mode_is_float(mode)) {
+			args->reqs = xmm_xmm_reqs;
+		} else {
+			args->reqs = reg_reg_reqs;
+		}
 	}
 }
 
@@ -620,14 +639,22 @@ static ir_node *gen_binop_am(ir_node *node, ir_node *op1, ir_node *op2,
 
 	ir_node *new_node = func(dbgi, new_block, args.arity, args.in, &args.attr);
 	arch_set_irn_register_reqs_in(new_node, args.reqs);
-	arch_set_irn_register_req_out(new_node, 0, &amd64_requirement_gp_same_0);
+
 
 	if (args.mem_proj != NULL) {
 		ir_node *load = get_Proj_pred(args.mem_proj);
 		be_set_transformed_node(load, new_node);
 	}
 
-	return new_r_Proj(new_node, mode_gp, pn_amd64_Sub_res);
+	if (mode_is_float(mode)) {
+		arch_set_irn_register_req_out(new_node, 0,
+		                              &amd64_requirement_xmm_same_0);
+		return new_node;
+	} else {
+		arch_set_irn_register_req_out(new_node, 0,
+		                              &amd64_requirement_gp_same_0);
+		return new_r_Proj(new_node, mode_gp, pn_amd64_Sub_res);
+	}
 }
 
 /* Transform arguments for a binop using RAX and register as input */
@@ -822,6 +849,11 @@ static ir_node *gen_Add(ir_node *const node)
 	ir_node *block = get_nodes_block(node);
 	ir_node *load, *op;
 
+	if (mode_is_float(mode)) {
+		return gen_binop_am(node, op1, op2, new_bd_amd64_Adds,
+		                    match_commutative | match_am);
+	}
+
 	bool use_am = use_address_matching(mode, flags, block, op1, op2, &load, &op);
 
 	ir_node *res;
@@ -836,23 +868,18 @@ static ir_node *gen_Add(ir_node *const node)
 
 static ir_node *gen_Sub(ir_node *const node)
 {
-	/* do not match AM yet until we have a sub->neg+add rule in amd64_finish */
-	dbg_info *const dbgi    = get_irn_dbg_info(node);
-	ir_node  *const block   = be_transform_node(get_nodes_block(node));
 	ir_node  *const op1     = get_Sub_left(node);
 	ir_node  *const op2     = get_Sub_right(node);
-	ir_node  *const new_op1 = be_transform_node(op1);
-	ir_node  *const new_op2 = be_transform_node(op2);
 	ir_mode  *const mode    = get_irn_mode(node);
-	ir_node *in[2] = { new_op1, new_op2 };
-	amd64_binop_addr_attr_t attr;
-	memset(&attr, 0, sizeof(attr));
-	attr.base.base.op_mode = AMD64_OP_REG_REG;
-	attr.base.insn_mode    = get_insn_mode_from_mode(mode);
-	ir_node *res = new_bd_amd64_Sub(dbgi, block, ARRAY_SIZE(in), in, &attr);
-	arch_set_irn_register_reqs_in(res, reg_reg_reqs);
-	arch_set_irn_register_req_out(res, 0, &amd64_requirement_gp_same_0);
-	return new_r_Proj(res, mode_gp, pn_amd64_Sub_res);
+
+	if (mode_is_float(mode)) {
+		return gen_binop_am(node, op1, op2, new_bd_amd64_Subs, match_am);
+	} else {
+		/* do not match AM yet until we have a sub->neg+add rule
+		 * in amd64_finish */
+		return gen_binop_am(node, op1, op2, new_bd_amd64_Sub,
+		                    /* match_am | */ match_immediate);
+	}
 }
 
 static ir_node *gen_And(ir_node *const node)
