@@ -636,6 +636,7 @@ static inline node_t *get_first_node(const partition_t *X)
 	return list_entry(X->leader.next, node_t, node_list);
 }
 
+#ifdef DEBUG_libfirm
 /**
  * Return the type of a partition (assuming partition is non-empty and
  * all elements have the same type).
@@ -649,6 +650,7 @@ static inline lattice_elem_t get_partition_type(const partition_t *X)
 	const node_t *first = get_first_node(X);
 	return first->type;
 }
+#endif
 
 /**
  * Creates a partition node for the given IR-node and place it
