@@ -125,10 +125,10 @@ static ir_entity *create_64_intrinsic_fkt(ir_type *method, const ir_op *op,
 void sparc_lower_64bit(void)
 {
 	lwrdw_param_t lower_dw_params = {
-		0,  /* big endian */
-		64, /* doubleword size */
 		create_64_intrinsic_fkt,
-		NULL
+		NULL,
+		64,    /* doubleword size */
+		be_is_big_endian(),
 	};
 
 	/* make sure opcodes are initialized */

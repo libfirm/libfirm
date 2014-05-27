@@ -301,10 +301,10 @@ void ia32_lower64(void)
 {
 	/* perform doubleword lowering */
 	lwrdw_param_t lower_dw_params = {
-		1,  /* little endian */
-		64, /* doubleword size */
 		ia32_create_intrinsic_fkt,
-		NULL
+		NULL,
+		64,    /* doubleword size */
+		be_is_big_endian(),
 	};
 
 	ir_prepare_dw_lowering(&lower_dw_params);

@@ -40,10 +40,11 @@ typedef ir_entity *(create_intrinsic_fkt)(ir_type *method, const ir_op *op,
  * The lowering parameter description.
  */
 typedef struct lwrdw_param_t {
-	unsigned              little_endian : 1; /**< if true should be lowered for little endian, else big endian */
-	unsigned              doubleword_size;   /**< bitsize of the doubleword mode */
-	create_intrinsic_fkt *create_intrinsic;  /**< callback that creates the intrinsic entity */
-	void                 *ctx;               /**< context parameter for the creator function */
+	create_intrinsic_fkt *create_intrinsic; /**< callback that creates the intrinsic entity */
+	void                 *ctx;              /**< context parameter for the creator function */
+	unsigned short        doubleword_size;  /**< bitsize of the doubleword mode */
+	bool                  big_endian:1;     /**< target is big endian if true,
+											     else little endian */
 } lwrdw_param_t;
 
 /**
