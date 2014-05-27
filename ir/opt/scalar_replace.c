@@ -184,11 +184,12 @@ bool is_address_taken(ir_node *node)
 			break;
 		}
 
-		case iro_Member:;
+		case iro_Member: {
 			ir_entity *entity = get_Member_entity(succ);
 			/* we can't handle unions correctly yet -> address taken */
 			if (is_Union_type(get_entity_owner(entity)))
 				return true;
+		}
 
 			/* FALLTHROUGH */
 		case iro_Sel: {
