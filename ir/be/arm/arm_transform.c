@@ -50,12 +50,10 @@ static ir_mode               *mode_gp;
 static ir_mode               *mode_fp;
 static be_stackorder_t       *stackorder;
 static calling_convention_t  *cconv = NULL;
-static arm_isa_t             *isa;
 static start_val_t            start_mem;
 static start_val_t            start_sp;
 static unsigned               start_params_offset;
 static unsigned               start_callee_saves_offset;
-
 static pmap                  *node_to_stack;
 
 static const arch_register_t *const callee_saves[] = {
@@ -86,11 +84,6 @@ static const arch_register_t *const caller_saves[] = {
 	&arm_registers[REG_F6],
 	&arm_registers[REG_F7],
 };
-
-static bool mode_needs_gp_reg(ir_mode *mode)
-{
-	return mode_is_int(mode) || mode_is_reference(mode);
-}
 
 void arm_gen_vals_from_word(uint32_t value, arm_vals *result)
 {
@@ -397,8 +390,8 @@ static bool is_downconv(const ir_node *node)
 
 	ir_mode *src_mode  = get_irn_mode(get_Conv_op(node));
 	ir_mode *dest_mode = get_irn_mode(node);
-	return mode_needs_gp_reg(src_mode)
-	    && mode_needs_gp_reg(dest_mode)
+	return get_mode_arithmetic(src_mode) == irma_twos_complement
+	    && get_mode_arithmetic(dest_mode) == irma_twos_complement
 	    && get_mode_size_bits(dest_mode) <= get_mode_size_bits(src_mode);
 }
 
@@ -990,11 +983,10 @@ static ir_node *gen_Switch(ir_node *node)
 
 	table = ir_switch_table_duplicate(irg, table);
 
-#ifndef NDEBUG
-	/* switch with smaller modes not implemented yet */
+	/* switch selector should be lowered to singled word already */
 	ir_mode *mode = get_irn_mode(selector);
-	assert(get_mode_size_bits(mode) == 32);
-#endif
+	if (get_mode_size_bits(mode) != 32)
+		panic("arm: unexpected switch selector mode");
 
 	return new_bd_arm_SwitchJmp(dbgi, block, new_op, n_outs, table);
 }
@@ -1084,8 +1076,8 @@ static ir_node *ints_to_double(dbg_info *dbgi, ir_node *block, ir_node *node0,
 	                                 NULL, 0, 0, true);
 	ir_node  *str1  = new_bd_arm_Str(dbgi, block, stack, node1, nomem, mode_gp,
 	                                 NULL, 0, 4, true);
-	ir_node  *in[2] = { str0, str1 };
-	ir_node  *sync  = new_r_Sync(block, 2, in);
+	ir_node  *in[]  = { str0, str1 };
+	ir_node  *sync  = new_r_Sync(block, ARRAY_SIZE(in), in);
 	set_irn_pinned(str0, op_pin_state_floats);
 	set_irn_pinned(str1, op_pin_state_floats);
 
@@ -1288,14 +1280,15 @@ static ir_node *gen_Proj_Div(ir_node *node)
 	ir_node  *new_pred = be_transform_node(pred);
 	dbg_info *dbgi     = get_irn_dbg_info(node);
 	ir_mode  *mode     = get_irn_mode(node);
-	long      proj     = get_Proj_proj(node);
+	long      pn       = get_Proj_proj(node);
 
-	switch (proj) {
+	switch ((pn_Div)pn) {
 	case pn_Div_M:
 		return new_rd_Proj(dbgi, new_pred, mode_M, pn_arm_Dvf_M);
 	case pn_Div_res:
 		return new_rd_Proj(dbgi, new_pred, mode, pn_arm_Dvf_res);
-	default:
+	case pn_Div_X_regular:
+	case pn_Div_X_except:
 		break;
 	}
 	panic("Unsupported Proj from Div");
@@ -1305,9 +1298,9 @@ static ir_node *gen_Proj_Start(ir_node *node)
 {
 	ir_node *block     = get_nodes_block(node);
 	ir_node *new_block = be_transform_node(block);
-	long     proj      = get_Proj_proj(node);
+	long     pn        = get_Proj_proj(node);
 
-	switch ((pn_Start) proj) {
+	switch ((pn_Start)pn) {
 	case pn_Start_X_initial_exec:
 		/* we exchange the ProjX with a jump */
 		return new_bd_arm_Jmp(NULL, new_block);
@@ -1321,7 +1314,7 @@ static ir_node *gen_Proj_Start(ir_node *node)
 	case pn_Start_P_frame_base:
 		return get_start_val(get_irn_irg(node), &start_sp);
 	}
-	panic("unexpected start proj: %ld\n", proj);
+	panic("unexpected start proj: %ld\n", pn);
 }
 
 static ir_node *gen_Proj_Proj_Start(ir_node *node)
@@ -1414,7 +1407,6 @@ static ir_node *gen_Proj_Proj_Call(ir_node *node)
 		= arm_decide_calling_convention(NULL, function_type);
 	const reg_or_stackslot_t *res = &cconv->results[pn];
 
-	/* TODO 64bit modes */
 	assert(res->reg0 != NULL && res->reg1 == NULL);
 	int regn = find_out_for_reg(new_call, res->reg0);
 	if (regn < 0) {
@@ -1447,11 +1439,14 @@ static ir_node *gen_Proj_Store(ir_node *node)
 {
 	ir_node *pred = get_Proj_pred(node);
 	long     pn   = get_Proj_proj(node);
-	if (pn == pn_Store_M) {
+	switch ((pn_Store)pn) {
+	case pn_Store_M:
 		return be_transform_node(pred);
-	} else {
-		panic("Unsupported Proj from Store");
+	case pn_Store_X_regular:
+	case pn_Store_X_except:
+		break;
 	}
+	panic("Unsupported Proj from Store");
 }
 
 static ir_node *gen_Proj_Proj(ir_node *node)
@@ -1478,7 +1473,7 @@ static ir_node *gen_Unknown(ir_node *node)
 		ir_tarval *tv     = get_mode_null(mode);
 		ir_node   *fconst = new_bd_arm_fConst(dbgi, new_block, tv);
 		return fconst;
-	} else if (mode_needs_gp_reg(mode)) {
+	} else if (get_mode_arithmetic(mode) == irma_twos_complement) {
 		return create_const_graph_value(dbgi, new_block, 0);
 	}
 
@@ -1515,8 +1510,8 @@ static void create_stacklayout(ir_graph *irg)
 	ident   *arg_type_id = id_mangle_u(get_entity_ident(entity),
 	                                   new_id_from_str("arg_type"));
 	ir_type *arg_type    = new_type_struct(arg_type_id);
-	unsigned n_params    = get_method_n_params(function_type);
-	for (unsigned p = 0; p < n_params; ++p) {
+	for (unsigned p = 0, n_params = get_method_n_params(function_type);
+	     p < n_params; ++p) {
 		reg_or_stackslot_t *param = &cconv->parameters[p];
 		if (param->type == NULL)
 			continue;
@@ -1531,7 +1526,6 @@ static void create_stacklayout(ir_graph *irg)
 	/* TODO: what about external functions? we don't know most of the stack
 	 * layout for them. And probably don't need all of this... */
 	memset(layout, 0, sizeof(*layout));
-
 	layout->frame_type     = get_irg_frame_type(irg);
 	layout->between_type   = arm_get_between_type();
 	layout->arg_type       = arg_type;
@@ -1865,7 +1859,7 @@ static ir_node *gen_Phi(ir_node *node)
 {
 	ir_mode                   *mode = get_irn_mode(node);
 	const arch_register_req_t *req;
-	if (mode_needs_gp_reg(mode)) {
+	if (get_mode_arithmetic(mode) == irma_twos_complement) {
 		/* we shouldn't have any 64bit stuff around anymore */
 		assert(get_mode_size_bits(mode) <= 32);
 		/* all integer operations are on 32bit registers now */
@@ -1958,26 +1952,22 @@ void arm_transform_graph(ir_graph *irg)
 	assure_irg_properties(irg, IR_GRAPH_PROPERTY_NO_TUPLES
 	                         | IR_GRAPH_PROPERTY_NO_BADS);
 
-	static int        imm_initialized = 0;
-	ir_entity        *entity          = get_irg_entity(irg);
-	const arch_env_t *arch_env        = be_get_irg_arch_env(irg);
-
 	mode_gp = mode_Iu;
 	mode_fp = mode_F;
 
-	if (! imm_initialized) {
+	static bool imm_initialized = false;
+	if (!imm_initialized) {
 		arm_init_fpa_immediate();
-		imm_initialized = 1;
+		imm_initialized = true;
 	}
 	arm_register_transformers();
-
-	isa = (arm_isa_t*) arch_env;
 
 	node_to_stack = pmap_create();
 
 	assert(cconv == NULL);
 	stackorder = be_collect_stacknodes(irg);
-	cconv      = arm_decide_calling_convention(irg, get_entity_type(entity));
+	ir_entity *entity = get_irg_entity(irg);
+	cconv = arm_decide_calling_convention(irg, get_entity_type(entity));
 	create_stacklayout(irg);
 	be_add_parameter_entity_stores(irg);
 

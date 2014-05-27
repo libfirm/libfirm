@@ -53,8 +53,8 @@ enum n_arm_Return {
 
 /** Generic ARM node attributes. */
 typedef struct arm_attr_t {
-	except_attr                 exc;                /**< the exception attribute. MUST be the first one. */
-	bool                        is_load_store : 1;  /**< if set, this is a load or store instruction */
+	except_attr exc;                /**< the exception attribute. MUST be the first one. */
+	bool        is_load_store : 1;  /**< if set, this is a load or store instruction */
 } arm_attr_t;
 
 /**
@@ -62,16 +62,16 @@ typedef struct arm_attr_t {
  * "data processing operands" also called "shifter operand" addressing modes
  */
 typedef struct arm_shifter_operand_t {
-	arm_attr_t            base;
-	arm_shift_modifier_t  shift_modifier;
-	uint8_t               immediate_value;
-	uint8_t               shift_immediate;
+	arm_attr_t           base;
+	arm_shift_modifier_t shift_modifier;
+	uint8_t              immediate_value;
+	uint8_t              shift_immediate;
 } arm_shifter_operand_t;
 
 typedef struct arm_cmp_attr_t {
-	arm_shifter_operand_t  base;
-	bool                   ins_permuted : 1;
-	bool                   is_unsigned  : 1;
+	arm_shifter_operand_t base;
+	bool                  ins_permuted : 1;
+	bool                  is_unsigned  : 1;
 } arm_cmp_attr_t;
 
 /**
@@ -108,8 +108,8 @@ typedef struct arm_SwitchJmp_attr_t {
 
 /** CopyB attributes */
 typedef struct arm_CopyB_attr_t {
-	arm_attr_t  base;
-	unsigned    size;
+	arm_attr_t base;
+	unsigned   size;
 } arm_CopyB_attr_t;
 
 /** Attributes for a fConst */

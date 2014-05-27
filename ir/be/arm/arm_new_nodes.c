@@ -180,13 +180,13 @@ static void arm_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 
 arm_attr_t *get_arm_attr(ir_node *node)
 {
-	assert(is_arm_irn(node) && "need arm node to get attributes");
+	assert(is_arm_irn(node));
 	return (arm_attr_t*)get_irn_generic_attr(node);
 }
 
 const arm_attr_t *get_arm_attr_const(const ir_node *node)
 {
-	assert(is_arm_irn(node) && "need arm node to get attributes");
+	assert(is_arm_irn(node));
 	return (const arm_attr_t*)get_irn_generic_attr_const(node);
 }
 
@@ -520,7 +520,6 @@ static void arm_copy_attr(ir_graph *irg, const ir_node *old_node,
 	new_info->out_infos = DUP_ARR_D(reg_out_info_t, obst, old_info->out_infos);
 	new_info->in_reqs   = old_info->in_reqs;
 }
-
 
 /* Include the generated constructor functions */
 #include "gen_arm_new_nodes.c.inl"

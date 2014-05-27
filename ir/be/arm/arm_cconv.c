@@ -27,25 +27,24 @@ static const arch_register_t* const param_regs[] = {
 	&arm_registers[REG_R0],
 	&arm_registers[REG_R1],
 	&arm_registers[REG_R2],
-	&arm_registers[REG_R3]
+	&arm_registers[REG_R3],
 };
 
 static const arch_register_t* const result_regs[] = {
 	&arm_registers[REG_R0],
 	&arm_registers[REG_R1],
 	&arm_registers[REG_R2],
-	&arm_registers[REG_R3]
+	&arm_registers[REG_R3],
 };
 
 static const arch_register_t* const float_result_regs[] = {
 	&arm_registers[REG_F0],
-	&arm_registers[REG_F1]
+	&arm_registers[REG_F1],
 };
 
 calling_convention_t *arm_decide_calling_convention(const ir_graph *irg,
                                                     ir_type *function_type)
 {
-
 	/* determine how parameters are passed */
 	unsigned            stack_offset = 0;
 	size_t const        n_param_regs = ARRAY_SIZE(param_regs);
