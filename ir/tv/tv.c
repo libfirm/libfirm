@@ -603,8 +603,7 @@ int tarval_is_all_one(const ir_tarval *tv)
 
 bool tarval_is_minus_one(const ir_tarval *tv)
 {
-	ir_mode *mode = get_tarval_mode(tv);
-	assert(mode_is_float(mode));
+	assert(mode_is_float(get_tarval_mode(tv)));
 	const fp_value *val = (const fp_value*)tv->value;
 	return fc_is_negative(val) && fc_zero_mantissa(val)
 	    && fc_get_exponent(val) == 0 && !fc_is_inf(val) && !fc_is_nan(val);
