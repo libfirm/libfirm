@@ -2022,7 +2022,7 @@ static ir_node *gen_Store(ir_node *node)
 	case 4: reqs = need_xmm ? xmm_reg_reg_mem_reqs : reg_reg_reg_mem_reqs;
 		break;
 	default:
-		assert(false);
+		panic("Unexpected arity %d while transforming node %+F", arity, node);
 	}
 
 
