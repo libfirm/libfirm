@@ -2941,25 +2941,3 @@ void ir_lower_dw_ops(void)
 
 	env = NULL;
 }
-
-/* Default implementation. */
-ir_entity *def_create_intrinsic_fkt(ir_type *method, const ir_op *op,
-                                    const ir_mode *imode, const ir_mode *omode,
-                                    void *context)
-{
-	(void)context;
-	char buf[64];
-	if (imode == omode) {
-		snprintf(buf, sizeof(buf), "__l%s%s", get_op_name(op),
-		         get_mode_name(imode));
-	} else {
-		snprintf(buf, sizeof(buf), "__l%s%s%s", get_op_name(op),
-		         get_mode_name(imode), get_mode_name(omode));
-	}
-
-	ident     *id  = new_id_from_str(buf);
-	ir_entity *ent = new_entity(get_glob_type(), id, method);
-	set_entity_ld_ident(ent, get_entity_ident(ent));
-	set_entity_visibility(ent, ir_visibility_external);
-	return ent;
-}

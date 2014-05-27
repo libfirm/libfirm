@@ -113,11 +113,4 @@ void set_dw_control_flow_changed(void);
  */
 ir_mode *ir_get_low_unsigned_mode(void);
 
-/**
- * Default implementation. Context is unused.
- */
-ir_entity *def_create_intrinsic_fkt(ir_type *method, const ir_op *op,
-                                    const ir_mode *imode, const ir_mode *omode,
-                                    void *context);
-
 #endif
