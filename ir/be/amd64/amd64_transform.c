@@ -167,6 +167,12 @@ static const arch_register_req_t *xmm_reg_mem_reqs[] = {
 	&arch_no_requirement,
 };
 
+static const arch_register_req_t *xmm_xmm_mem_reqs[] = {
+	&amd64_requirement_xmm,
+	&amd64_requirement_xmm,
+	&arch_no_requirement,
+};
+
 static const arch_register_req_t *reg_reg_reg_mem_reqs[] = {
 	&amd64_requirement_gp,
 	&amd64_requirement_gp,
@@ -178,6 +184,13 @@ static const arch_register_req_t *xmm_reg_reg_mem_reqs[] = {
 	&amd64_requirement_xmm,
 	&amd64_requirement_gp,
 	&amd64_requirement_gp,
+	&arch_no_requirement,
+};
+
+static const arch_register_req_t *xmm_xmm_xmm_mem_reqs[] = {
+	&amd64_requirement_xmm,
+	&amd64_requirement_xmm,
+	&amd64_requirement_xmm,
 	&arch_no_requirement,
 };
 
@@ -318,7 +331,7 @@ static ir_node *gen_Const(ir_node *node)
 
 	if (!mode_needs_gp_reg(mode)) {
 		if (tarval_is_null(tv)) {
-			return new_bd_amd64_Xorp0(dbgi, block);
+			return new_bd_amd64_xXorp0(dbgi, block);
 		}
 
 		panic("amd64: float constant not supported yet");
@@ -583,6 +596,7 @@ static void match_binop(amd64_args_t *args, ir_node *block,
 	memset(args, 0, sizeof(*args));
 
 	bool use_am;
+	bool use_xmm       = mode_is_float(mode);
 	bool use_immediate = flags & match_immediate;
 	bool mode_neutral  = flags & match_mode_neutral;
 
@@ -604,6 +618,7 @@ static void match_binop(amd64_args_t *args, ir_node *block,
 
 	if (use_immediate
 	    && match_immediate_32(&args->attr.u.immediate, op2, false, mode_neutral)) {
+		assert(!use_xmm && "Can't (yet) match binop with xmm immediate");
 		/* fine, we found an immediate */
 		args->attr.base.base.op_mode = AMD64_OP_REG_IMM;
 		args->in[args->arity++]      = be_transform_node(op1);
@@ -618,11 +633,13 @@ static void match_binop(amd64_args_t *args, ir_node *block,
 		ir_node *ptr = get_Load_ptr(load);
 		perform_address_matching(ptr, &(args->arity), args->in, addr);
 
-		args->reqs = reg_mem_reqs;
+		args->reqs = use_xmm ? xmm_mem_reqs : reg_mem_reqs;
 		if (addr->base_input != NO_INPUT && addr->index_input != NO_INPUT) {
-			args->reqs = reg_reg_reg_mem_reqs;
+			args->reqs = use_xmm ? xmm_xmm_xmm_mem_reqs
+			             : reg_reg_reg_mem_reqs;
 		} else if(addr->base_input != NO_INPUT || addr->index_input != NO_INPUT) {
-			args->reqs = reg_reg_mem_reqs;
+			args->reqs = use_xmm ? xmm_xmm_mem_reqs
+			             : reg_reg_mem_reqs;
 		}
 		ir_node *new_mem    = be_transform_node(get_Load_mem(load));
 		int mem_input       = args->arity++;
@@ -637,11 +654,7 @@ static void match_binop(amd64_args_t *args, ir_node *block,
 		args->in[args->arity++] = be_transform_node(op2);
 		args->attr.base.base.op_mode = AMD64_OP_REG_REG;
 
-		if (mode_is_float(mode)) {
-			args->reqs = xmm_xmm_reqs;
-		} else {
-			args->reqs = reg_reg_reqs;
-		}
+		args->reqs = use_xmm ? xmm_xmm_reqs : reg_reg_reqs;
 	}
 }
 
@@ -668,7 +681,7 @@ static ir_node *gen_binop_am(ir_node *node, ir_node *op1, ir_node *op2,
 	if (mode_is_float(mode)) {
 		arch_set_irn_register_req_out(new_node, 0,
 		                              &amd64_requirement_xmm_same_0);
-		return new_node;
+		return new_r_Proj(new_node, mode_D, pn_amd64_xAdds_res);
 	} else {
 		arch_set_irn_register_req_out(new_node, 0,
 		                              &amd64_requirement_gp_same_0);
@@ -869,7 +882,7 @@ static ir_node *gen_Add(ir_node *const node)
 	ir_node *load, *op;
 
 	if (mode_is_float(mode)) {
-		return gen_binop_am(node, op1, op2, new_bd_amd64_Adds,
+		return gen_binop_am(node, op1, op2, new_bd_amd64_xAdds,
 		                    match_commutative | match_am);
 	}
 
@@ -892,7 +905,7 @@ static ir_node *gen_Sub(ir_node *const node)
 	ir_mode  *const mode    = get_irn_mode(node);
 
 	if (mode_is_float(mode)) {
-		return gen_binop_am(node, op1, op2, new_bd_amd64_Subs, match_am);
+		return gen_binop_am(node, op1, op2, new_bd_amd64_xSubs, match_am);
 	} else {
 		/* do not match AM yet until we have a sub->neg+add rule
 		 * in amd64_finish */
@@ -1915,7 +1928,7 @@ static ir_node *gen_Store(ir_node *node)
 
 	ir_node *new_store;
 	if (mode_is_float(mode)) {
-		new_store = new_bd_amd64_Stores(dbgi, block, arity, in, &attr);
+		new_store = new_bd_amd64_xStores(dbgi, block, arity, in, &attr);
 	} else {
 		new_store = new_bd_amd64_Store(dbgi, block, arity, in, &attr);
 	}
@@ -1976,11 +1989,10 @@ ir_node *amd64_new_reload(ir_node *value, ir_node *spill, ir_node *before)
 
 static ir_node *gen_Load(ir_node *node)
 {
+
+	dbg_info *dbgi = get_irn_dbg_info(node);
 	ir_node *block = be_transform_node(get_nodes_block(node));
 	ir_mode *mode  = get_Load_mode(node);
-	if (mode_is_float(mode)) {
-		panic("Float not supported yet");
-	}
 
 	ir_node *ptr = get_Load_ptr(node);
 
@@ -1991,29 +2003,34 @@ static ir_node *gen_Load(ir_node *node)
 
 	perform_address_matching(ptr, &arity, in, &addr);
 
+	bool use_xmm = mode_is_float(mode);
+
 	const arch_register_req_t **reqs = mem_reqs;
 	if (addr.base_input != NO_INPUT && addr.index_input != NO_INPUT) {
-		reqs = reg_reg_mem_reqs;
+		reqs = use_xmm ? xmm_xmm_mem_reqs : reg_reg_mem_reqs;
 	} else if(addr.base_input != NO_INPUT || addr.index_input != NO_INPUT) {
-		reqs = reg_mem_reqs;
+		reqs = use_xmm ? xmm_mem_reqs : reg_mem_reqs;
 	}
 
 	ir_node *mem     = get_Load_mem(node);
 	ir_node *new_mem = be_transform_node(mem);
-	in[arity++] = new_mem;
+	in[arity++]      = new_mem;
 	assert((size_t)arity <= ARRAY_SIZE(in));
 
-	assert(mode_needs_gp_reg(mode) && "unsupported mode for Load");
 	amd64_insn_mode_t insn_mode = get_insn_mode_from_mode(mode);
-	dbg_info *dbgi  = get_irn_dbg_info(node);
 	ir_node  *new_load;
-	if (get_mode_size_bits(mode) < 64 && mode_is_signed(mode)) {
+
+	if (use_xmm) {
+		new_load = new_bd_amd64_xMovs(dbgi, block, arity, in,
+		                             insn_mode, AMD64_OP_ADDR, addr);
+	} else if (get_mode_size_bits(mode) < 64 && mode_is_signed(mode)) {
 		new_load = new_bd_amd64_Movs(dbgi, block, arity, in,
 		                             insn_mode, AMD64_OP_ADDR, addr);
 	} else {
 		new_load = new_bd_amd64_Mov(dbgi, block, arity, in,
 		                            insn_mode, AMD64_OP_ADDR, addr);
 	}
+
 	arch_set_irn_register_reqs_in(new_load, reqs);
 	set_irn_pinned(new_load, get_irn_pinned(node));
 
@@ -2026,7 +2043,7 @@ static ir_node *gen_Unknown(ir_node *node)
 	ir_node *block = be_transform_node(get_nodes_block(node));
 
 	if (mode_is_float(get_irn_mode(node))) {
-		return new_bd_amd64_Xorp0(NULL, block);
+		return new_bd_amd64_xXorp0(NULL, block);
 	} else {
 		return new_bd_amd64_Xor0(NULL, block);
 	}
@@ -2056,6 +2073,13 @@ static ir_node *gen_Proj_Load(ir_node *node)
 
 	/* renumber the proj */
 	switch (get_amd64_irn_opcode(new_load)) {
+	case iro_amd64_xMovs:
+		if (proj == pn_Load_res) {
+			return new_rd_Proj(dbgi, new_load, mode_D, pn_amd64_xMovs_res);
+		} else if (proj == pn_Load_M) {
+			return new_rd_Proj(dbgi, new_load, mode_M, pn_amd64_xMovs_M);
+		}
+		break;
 	case iro_amd64_Movs:
 	case iro_amd64_Mov:
 		assert((int)pn_amd64_Movs_res == (int)pn_amd64_Mov_res);

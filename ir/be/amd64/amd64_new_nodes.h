@@ -49,7 +49,7 @@ static inline bool amd64_has_addr_attr(const ir_node *node)
 	    || attr->op_mode == AMD64_OP_RAX_ADDR
 	    || attr->op_mode == AMD64_OP_RAX_REG)
 	    && (get_irn_op(node) != op_amd64_Xor0)
-	    && (get_irn_op(node) != op_amd64_Xorp0);
+	    && (get_irn_op(node) != op_amd64_xXorp0);
 }
 
 static inline amd64_addr_attr_t *get_amd64_addr_attr(ir_node *node)

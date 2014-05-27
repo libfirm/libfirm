@@ -482,19 +482,29 @@ Return => {
 
 # SSE
 
-Adds => {
+xAdds => {
 	irn_flags  => [ "rematerializable" ],
 	state     => "exc_pinned",
-	reg_req   => { out => [ "xmm", "none" ] },
-	outs      => [ "res", "M" ],
+	reg_req   => { out => [ "xmm", "none", "none" ] },
+	outs      => [ "res", "none", "M" ],
 	arity     => "variable",
 	attr_type => "amd64_binop_addr_attr_t",
 	attr      => "const amd64_binop_addr_attr_t *attr_init",
 	emit      => "adds%MX %AM",
-	mode      => $mode_xmm,
+#	mode      => $mode_xmm,
 },
 
-Stores => {
+xMovs => {
+	state     => "exc_pinned",
+	reg_req   => { out => [ "xmm", "none", "none" ] },
+	outs      => [ "res", "unused", "M" ],
+	arity     => "variable",
+	attr_type => "amd64_addr_attr_t",
+	attr      => "amd64_insn_mode_t insn_mode, amd64_op_mode_t op_mode, amd64_addr_t addr",
+	emit      => "movs%MX %AM, %D0",
+},
+
+xStores => {
 	op_flags  => [ "uses_memory" ],
 	state     => "exc_pinned",
 	reg_req   => { out => [ "none" ] },
@@ -503,29 +513,28 @@ Stores => {
 	attr_type => "amd64_binop_addr_attr_t",
 	attr      => "const amd64_binop_addr_attr_t *attr_init",
 	mode      => "mode_M",
-	emit      => "movs%MX %S0, %A",
+	emit      => "movs%MX %^S0, %A",
 },
 
 
-Subs => {
+xSubs => {
 	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
-	reg_req   => { out => [ "xmm", "none" ] },
-	outs      => [ "res", "M" ],
+	reg_req   => { out => [ "xmm", "none", "none" ] },
+	outs      => [ "res", "none", "M" ],
 	arity     => "variable",
 	attr_type => "amd64_binop_addr_attr_t",
 	attr      => "const amd64_binop_addr_attr_t *attr_init",
 	emit      => "subs%MX %S1, %D0",
-	mode      => $mode_xmm,
 },
 
-Xorp0 => {
+xXorp0 => {
 	op_flags  => [ "constlike" ],
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { out => [ "xmm" ] },
 	outs      => [ "res" ],
 	fixed     => "amd64_op_mode_t op_mode = AMD64_OP_REG_REG;",
-	emit      => "xorpd %D0, %D0",
+	emit      => "xorpd %^D0, %^D0",
 	mode      => $mode_xmm,
 },
 
