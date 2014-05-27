@@ -146,7 +146,7 @@ static int id_cmp(const void *elt, const void *key, size_t size)
 	return entry->id - keyentry->id;
 }
 
-static void __attribute__((format(printf, 2, 3)))
+static void FIRM_PRINTF(2, 3)
 parse_error(read_env_t *env, const char *fmt, ...)
 {
 	/* workaround read_c "feature" that a '\n' triggers the line++

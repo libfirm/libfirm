@@ -154,6 +154,8 @@ Summary:
 #include <string.h>
 #include <stdarg.h>
 
+#include "funcattr.h"
+
 struct _obstack_chunk /* Lives at front of each chunk. */
 {
 	char  *limit;                 /* 1 past end of this chunk */
@@ -206,7 +208,7 @@ FIRM_API void obstack_free (struct obstack *obstack, void *block);
    more memory.  This can be set to a user defined function which
    should either abort gracefully or use longjump - but shouldn't
    return.  The default action is to print a message and abort.  */
-FIRM_API void (*obstack_alloc_failed_handler) (void);
+FIRM_API FIRM_NORETURN (*obstack_alloc_failed_handler) (void);
 
 /* Exit value used when `print_and_abort' is used.  */
 FIRM_API int obstack_exit_failure;
@@ -513,27 +515,6 @@ __extension__                                                          \
    : (((obstack_free) ((h), (h)->temp.tempint + (char *) (h)->chunk), 0), 0)))
 
 #endif /* not __GNUC__ or not __STDC__ */
-
-/** @def FIRM_NOTHROW
- * tells that a function does not throw C++ exceptions. Currently this is only
- * necessary for obstack_printf to avoid nameclashes when linking with glibc
- * which has an obstack library with NOTHROW builtin. */
-#ifdef __cplusplus
-# define FIRM_NOTHROW throw ()
-#else
-# define FIRM_NOTHROW
-#endif
-
-/**
- * @def FIRM_PRINTF
- * Attribute with marks a function to have a printf style format
- * string and variadic argument.
- */
-#if defined(__GNUC__)
-# define FIRM_PRINTF(a,b) __attribute__((__format__(__printf__, a, b)))
-#else
-# define FIRM_PRINTF(a,b)
-#endif
 
 /** prints formated string (printf-style format) to an obstack.
  * This is done by "growing" the obstack with the obstack_*grow*

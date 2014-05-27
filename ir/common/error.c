@@ -15,7 +15,8 @@
 #include "error.h"
 #include "irprintf.h"
 
-NORETURN (panic)(char const *const file, int const line, char const *const func, char const *const fmt, ...)
+FIRM_NORETURN (panic)(char const *const file, int const line,
+                      char const *const func, char const *const fmt, ...)
 {
 	va_list ap;
 

@@ -12,10 +12,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "funcattr.h"
 #include "xmalloc.h"
-#include "error.h"
 
-static NORETURN xnomem(void)
+static FIRM_NORETURN xnomem(void)
 {
 	/* Do not use panic() here, because it might try to allocate memory! */
 	fputs("out of memory", stderr);
