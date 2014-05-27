@@ -115,9 +115,10 @@ struct arm_isa_t {
 };
 
 typedef struct arm_codegen_config_t {
-	bool use_softfloat;
-	bool use_fpa;
-	bool use_vfp;
+	unsigned version; /**< arm architecture version (5,6,7) */
+	bool     use_softfloat;
+	bool     use_fpa;
+	bool     use_vfp;
 } arm_codegen_config_t;
 
 extern arm_codegen_config_t arm_cg_config;

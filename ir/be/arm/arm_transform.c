@@ -627,7 +627,11 @@ static ir_node *gen_Mul(ir_node *node)
 		}
 	}
 	assert(mode_is_data(mode));
-	return new_bd_arm_Mul(dbg, block, new_op1, new_op2);
+	if (arm_cg_config.version < 6) {
+		return new_bd_arm_Mulv5(dbg, block, new_op1, new_op2);
+	} else {
+		return new_bd_arm_Mul(dbg, block, new_op1, new_op2);
+	}
 }
 
 static ir_node *gen_Div(ir_node *node)

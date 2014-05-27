@@ -851,7 +851,14 @@ void arm_emit_function(ir_graph *irg)
 
 void arm_emit_file_prologue(void)
 {
-	be_emit_cstring("\t.arch armv5t\n");
+	unsigned version = arm_cg_config.version;
+	if (version == 5) {
+		be_emit_cstring("\t.arch armv5t\n");
+	} else if (version == 6) {
+		be_emit_cstring("\t.arch armv6\n");
+	} else {
+		panic("no arch string for version %u known", version);
+	}
 	be_emit_write_line();
 	be_emit_cstring("\t.fpu softvfp\n");
 	be_emit_write_line();

@@ -261,6 +261,7 @@ static void arm_setup_cg_config(void)
 	}
 	arm_cg_config.use_fpa = arm_fpu & ARM_FPU_FPA_EXT_V1;
 	arm_cg_config.use_vfp = arm_fpu & ARM_FPU_VFP_EXT_V1xD;
+	arm_cg_config.version = 6;
 }
 
 static void arm_init(void)

@@ -183,6 +183,13 @@ Add => {
 
 Mul => {
 	irn_flags => [ "rematerializable" ],
+	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
+	emit      => 'mul %D0, %S0, %S1',
+	mode      => $mode_gp,
+},
+
+Mulv5 => {
+	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "gp", "gp" ], out => [ "!in_r1" ] },
 	emit      => 'mul %D0, %S0, %S1',
 	mode      => $mode_gp,
