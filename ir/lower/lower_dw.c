@@ -113,6 +113,11 @@ static lower_dw_env_t *env;
 
 static void lower_node(ir_node *node);
 
+static bool needs_lowering(const ir_mode *mode)
+{
+	return mode == env->high_signed || mode == env->high_unsigned;
+}
+
 /**
  * Create a method type for a Conv emulation from imode to omode.
  */
@@ -132,9 +137,9 @@ static ir_type *get_conv_type(ir_mode *imode, ir_mode *omode)
 
 	size_t n_param = 1;
 	size_t n_res   = 1;
-	if (imode == env->high_signed || imode == env->high_unsigned)
+	if (needs_lowering(imode))
 		n_param = 2;
-	if (omode == env->high_signed || omode == env->high_unsigned)
+	if (needs_lowering(omode))
 		n_res = 2;
 
 	/* create a new method type */
@@ -142,34 +147,38 @@ static ir_type *get_conv_type(ir_mode *imode, ir_mode *omode)
 
 	/* set param types and result types */
 	n_param = 0;
-	if (imode == env->high_signed) {
-		if (env->params->little_endian) {
-			set_method_param_type(mtd, n_param++, tp_u);
-			set_method_param_type(mtd, n_param++, tp_s);
+	if (needs_lowering(imode)) {
+		if (mode_is_signed(imode)) {
+			if (env->params->little_endian) {
+				set_method_param_type(mtd, n_param++, tp_u);
+				set_method_param_type(mtd, n_param++, tp_s);
+			} else {
+				set_method_param_type(mtd, n_param++, tp_s);
+				set_method_param_type(mtd, n_param++, tp_u);
+			}
 		} else {
-			set_method_param_type(mtd, n_param++, tp_s);
+			set_method_param_type(mtd, n_param++, tp_u);
 			set_method_param_type(mtd, n_param++, tp_u);
 		}
-	} else if (imode == env->high_unsigned) {
-		set_method_param_type(mtd, n_param++, tp_u);
-		set_method_param_type(mtd, n_param++, tp_u);
 	} else {
 		ir_type *tp = get_type_for_mode(imode);
 		set_method_param_type(mtd, n_param++, tp);
 	}
 
 	n_res = 0;
-	if (omode == env->high_signed) {
-		if (env->params->little_endian) {
-			set_method_res_type(mtd, n_res++, tp_u);
-			set_method_res_type(mtd, n_res++, tp_s);
+	if (needs_lowering(omode)) {
+		if (mode_is_signed(omode)) {
+			if (env->params->little_endian) {
+				set_method_res_type(mtd, n_res++, tp_u);
+				set_method_res_type(mtd, n_res++, tp_s);
+			} else {
+				set_method_res_type(mtd, n_res++, tp_s);
+				set_method_res_type(mtd, n_res++, tp_u);
+			}
 		} else {
-			set_method_res_type(mtd, n_res++, tp_s);
+			set_method_res_type(mtd, n_res++, tp_u);
 			set_method_res_type(mtd, n_res++, tp_u);
 		}
-	} else if (omode == env->high_unsigned) {
-		set_method_res_type(mtd, n_res++, tp_u);
-		set_method_res_type(mtd, n_res++, tp_u);
 	} else {
 		ir_type *tp = get_type_for_mode(omode);
 		set_method_res_type(mtd, n_res++, tp);
@@ -254,7 +263,7 @@ static void prepare_links(ir_node *node, void *data)
 	(void)data;
 	ir_mode *mode = get_irn_op_mode(node);
 
-	if (mode == env->high_signed || mode == env->high_unsigned) {
+	if (needs_lowering(mode)) {
 		unsigned idx = get_irn_idx(node);
 		/* ok, found a node that will be lowered */
 		lower64_entry_t *link = OALLOCZ(&env->obst, lower64_entry_t);
@@ -267,7 +276,7 @@ static void prepare_links(ir_node *node, void *data)
 		const ir_node *pred = get_Conv_op(node);
 		ir_mode *dest_mode = get_irn_mode(pred);
 
-		if (dest_mode == env->high_signed || dest_mode == env->high_unsigned) {
+		if (needs_lowering(dest_mode)) {
 			/* must lower this node either but don't need a link */
 			env->flags |= MUST_BE_LOWERED;
 		}
@@ -283,7 +292,7 @@ static void prepare_links(ir_node *node, void *data)
 			const ir_type *rtp = get_method_res_type(tp, i);
 			if (is_Primitive_type(rtp)) {
 				ir_mode *rmode = get_type_mode(rtp);
-				if (rmode == env->high_signed || rmode == env->high_unsigned) {
+				if (needs_lowering(rmode)) {
 					env->flags |= MUST_BE_LOWERED;
 				}
 			}
@@ -700,7 +709,7 @@ static void move(ir_node *node, ir_node *from_bl, ir_node *to_bl)
 		ir_mode *pred_mode = get_irn_mode(pred);
 		if (get_nodes_block(pred) == from_bl)
 			move(pred, from_bl, to_bl);
-		if (pred_mode == env->high_signed || pred_mode == env->high_unsigned) {
+		if (needs_lowering(pred_mode)) {
 			ir_node *pred_low  = get_lowered_low(pred);
 			ir_node *pred_high = get_lowered_high(pred);
 			if (get_nodes_block(pred_low) == from_bl)
@@ -776,11 +785,11 @@ static void lower_shr_helper(ir_node *node, ir_mode *mode,
 
 	/* if the right operand is a 64bit value, we're only interested in the
 	 * lower word */
-	if (get_irn_mode(right) == env->high_unsigned) {
+	assert(!mode_is_signed(get_irn_mode(right)));
+	if (needs_lowering(get_irn_mode(right))) {
 		right = get_lowered_low(right);
 	} else {
 		/* shift should never have signed mode on the right */
-		assert(get_irn_mode(right) != env->high_signed);
 		right = create_conv(block, right, low_unsigned);
 	}
 
@@ -890,11 +899,11 @@ static void lower_Shl(ir_node *node, ir_mode *mode)
 
 	/* if the right operand is a 64bit value, we're only interested in the
 	 * lower word */
-	if (get_irn_mode(right) == env->high_unsigned) {
+	assert(!mode_is_signed(get_irn_mode(right)));
+	if (needs_lowering(get_irn_mode(right))) {
 		right = get_lowered_low(right);
 	} else {
 		/* shift should never have signed mode on the right */
-		assert(get_irn_mode(right) != env->high_signed);
 		right = create_conv(lower_block, right, low_unsigned);
 	}
 
@@ -1045,7 +1054,7 @@ static void lower_Proj(ir_node *node, ir_mode *op_mode)
 {
 	(void)op_mode;
 	ir_mode *mode = get_irn_mode(node);
-	if (mode != env->high_signed && mode != env->high_unsigned)
+	if (!needs_lowering(mode))
 		return;
 	/* skip tuples */
 	ir_node *pred = get_Proj_pred(node);
@@ -1092,7 +1101,7 @@ static void lower_Switch(ir_node *node, ir_mode *high_mode)
 	(void)high_mode;
 	ir_node *selector = get_Switch_selector(node);
 	ir_mode *mode     = get_irn_mode(selector);
-	if (mode == env->high_signed || mode == env->high_unsigned) {
+	if (needs_lowering(mode)) {
 		/* we can't really handle Switch with 64bit offsets */
 		panic("Switch with 64bit jumptable not supported");
 	}
@@ -1113,7 +1122,7 @@ static void lower_Cond(ir_node *node, ir_mode *high_mode)
 
 	ir_node *left     = get_Cmp_left(sel);
 	ir_mode *cmp_mode = get_irn_mode(left);
-	if (cmp_mode != env->high_signed && cmp_mode != env->high_unsigned) {
+	if (!needs_lowering(cmp_mode)) {
 		lower_node(sel);
 		return;
 	}
@@ -1307,7 +1316,7 @@ static void lower_Conv_to_Ll(ir_node *node)
 		= mode_is_signed(omode) ? env->low_signed : low_unsigned;
 
 	if (mode_is_int(imode) || mode_is_reference(imode)) {
-		if (imode == env->high_signed || imode == env->high_unsigned) {
+		if (needs_lowering(imode)) {
 			/* a Conv from Lu to Ls or Ls to Lu */
 			const lower64_entry_t *op_entry = get_node_entry(op);
 			res_low  = op_entry->low_word;
@@ -1410,7 +1419,7 @@ static void lower_Cmp(ir_node *cmp, ir_mode *m)
 	(void)m;
 	ir_node  *l        = get_Cmp_left(cmp);
 	ir_mode  *cmp_mode = get_irn_mode(l);
-	if (cmp_mode != env->high_signed && cmp_mode != env->high_unsigned)
+	if (!needs_lowering(cmp_mode))
 		return;
 
 	ir_node               *r        = get_Cmp_right(cmp);
@@ -1471,12 +1480,12 @@ void ir_default_lower_dw_Conv(ir_node *node, ir_mode *mode)
 {
 	mode = get_irn_mode(node);
 
-	if (mode == env->high_signed || mode == env->high_unsigned) {
+	if (needs_lowering(mode)) {
 		lower_Conv_to_Ll(node);
 	} else {
 		ir_mode *op_mode = get_irn_mode(get_Conv_op(node));
 
-		if (op_mode == env->high_signed || op_mode == env->high_unsigned) {
+		if (needs_lowering(op_mode)) {
 			lower_Conv_from_Ll(node);
 		}
 	}
@@ -1488,10 +1497,10 @@ static void lower_Bitcast(ir_node *node, ir_mode *mode)
 	ir_node *op       = get_Bitcast_op(node);
 	ir_mode *src_mode = get_irn_mode(op);
 	ir_mode *other_mode;
-	if (dst_mode == env->high_signed || dst_mode == env->high_unsigned) {
+	if (needs_lowering(dst_mode)) {
 		other_mode = src_mode;
 		goto transform;
-	} else if (src_mode == env->high_signed || src_mode == env->high_unsigned) {
+	} else if (needs_lowering(src_mode)) {
 		other_mode = dst_mode;
 		goto transform;
 	}
@@ -1523,7 +1532,7 @@ transform:
 		high = tmp;
 	}
 
-	if (src_mode == env->high_signed || src_mode == env->high_unsigned) {
+	if (needs_lowering(src_mode)) {
 		const lower64_entry_t *entry = get_node_entry(op);
 
 		ir_node  *store0 = new_rd_Store(dbgi, block, nomem, high,
@@ -1540,7 +1549,7 @@ transform:
 		ir_node  *res    = new_r_Proj(load, dst_mode, pn_Load_res);
 		exchange(node, res);
 	} else {
-		assert(dst_mode == env->high_signed || dst_mode == env->high_unsigned);
+		assert(needs_lowering(dst_mode));
 		ir_node *store     = new_rd_Store(dbgi, block, nomem, addr, op,
 		                                  cons_floats);
 		ir_node *mem       = new_r_Proj(store, mode_M, pn_Store_M);
@@ -1593,7 +1602,7 @@ static void fix_parameter_entities(ir_graph *irg, ir_type *orig_mtp)
 		tp = get_method_param_type(orig_mtp, i);
 		if (is_Primitive_type(tp)) {
 			ir_mode *mode = get_type_mode(tp);
-			if (mode == env->high_signed || mode == env->high_unsigned) {
+			if (needs_lowering(mode)) {
 				++n_param;
 				/* note that we do not change the type of the parameter
 				 * entities, as calling convention fixup later still needs to
@@ -1647,7 +1656,7 @@ static ir_type *lower_mtp(ir_type *mtp)
 		if (is_Primitive_type(tp)) {
 			ir_mode *mode = get_type_mode(tp);
 
-			if (mode == env->high_signed || mode == env->high_unsigned) {
+			if (needs_lowering(mode)) {
 				++n_param;
 				must_be_lowered = true;
 			}
@@ -1661,7 +1670,7 @@ static ir_type *lower_mtp(ir_type *mtp)
 		if (is_Primitive_type(tp)) {
 			ir_mode *mode = get_type_mode(tp);
 
-			if (mode == env->high_signed || mode == env->high_unsigned) {
+			if (needs_lowering(mode)) {
 				++n_res;
 				must_be_lowered = true;
 			}
@@ -1676,55 +1685,51 @@ static ir_type *lower_mtp(ir_type *mtp)
 	set_type_dbg_info(res, get_type_dbg_info(mtp));
 
 	/* set param types and result types */
-	for (i = n_param = 0; i < orig_n_params; ++i) {
+	n_param = 0;
+	for (size_t i = 0; i < orig_n_params; ++i) {
 		ir_type *tp = get_method_param_type(mtp, i);
-
 		if (is_Primitive_type(tp)) {
 			ir_mode *mode = get_type_mode(tp);
-
-			if (mode == env->high_signed) {
-				if (env->params->little_endian) {
-					set_method_param_type(res, n_param++, tp_u);
-					set_method_param_type(res, n_param++, tp_s);
+			if (needs_lowering(mode)) {
+				if (mode_is_signed(mode)) {
+					if (env->params->little_endian) {
+						set_method_param_type(res, n_param++, tp_u);
+						set_method_param_type(res, n_param++, tp_s);
+					} else {
+						set_method_param_type(res, n_param++, tp_s);
+						set_method_param_type(res, n_param++, tp_u);
+					}
 				} else {
-					set_method_param_type(res, n_param++, tp_s);
+					set_method_param_type(res, n_param++, tp_u);
 					set_method_param_type(res, n_param++, tp_u);
 				}
-			} else if (mode == env->high_unsigned) {
-				set_method_param_type(res, n_param++, tp_u);
-				set_method_param_type(res, n_param++, tp_u);
-			} else {
-				set_method_param_type(res, n_param, tp);
-				++n_param;
+				continue;
 			}
-		} else {
-			set_method_param_type(res, n_param, tp);
-			++n_param;
 		}
+		set_method_param_type(res, n_param++, tp);
 	}
-	for (i = n_res = 0; i < orig_n_res; ++i) {
+	n_res = 0;
+	for (size_t i = 0; i < orig_n_res; ++i) {
 		ir_type *tp = get_method_res_type(mtp, i);
-
 		if (is_Primitive_type(tp)) {
 			ir_mode *mode = get_type_mode(tp);
-
-			if (mode == env->high_signed) {
-				if (env->params->little_endian) {
-					set_method_res_type(res, n_res++, tp_u);
-					set_method_res_type(res, n_res++, tp_s);
+			if (needs_lowering(mode)) {
+				if (mode_is_signed(mode)) {
+					if (env->params->little_endian) {
+						set_method_res_type(res, n_res++, tp_u);
+						set_method_res_type(res, n_res++, tp_s);
+					} else {
+						set_method_res_type(res, n_res++, tp_s);
+						set_method_res_type(res, n_res++, tp_u);
+					}
 				} else {
-					set_method_res_type(res, n_res++, tp_s);
+					set_method_res_type(res, n_res++, tp_u);
 					set_method_res_type(res, n_res++, tp_u);
 				}
-			} else if (mode == env->high_unsigned) {
-				set_method_res_type(res, n_res++, tp_u);
-				set_method_res_type(res, n_res++, tp_u);
-			} else {
-				set_method_res_type(res, n_res++, tp);
+				continue;
 			}
-		} else {
-			set_method_res_type(res, n_res++, tp);
 		}
+		set_method_res_type(res, n_res++, tp);
 	}
 
 	set_method_variadicity(res, get_method_variadicity(mtp));
@@ -1752,7 +1757,7 @@ static void lower_Return(ir_node *node, ir_mode *mode)
 		ir_node *pred  = get_Return_res(node, i);
 		ir_mode *rmode = get_irn_op_mode(pred);
 
-		if (rmode == env->high_signed || rmode == env->high_unsigned)
+		if (needs_lowering(rmode))
 			need_conv = true;
 	}
 	if (!need_conv)
@@ -1771,7 +1776,7 @@ static void lower_Return(ir_node *node, ir_mode *mode)
 		ir_node *pred      = get_Return_res(node, i);
 		ir_mode *pred_mode = get_irn_mode(pred);
 
-		if (pred_mode == env->high_signed || pred_mode == env->high_unsigned) {
+		if (needs_lowering(pred_mode)) {
 			const lower64_entry_t *entry = get_node_entry(pred);
 			if (env->params->little_endian) {
 				in[j++] = entry->low_word;
@@ -1814,7 +1819,7 @@ static void lower_Start(ir_node *node, ir_mode *high_mode)
 		new_projs[i] = j;
 		if (is_Primitive_type(ptp)) {
 			ir_mode *amode = get_type_mode(ptp);
-			if (amode == env->high_signed || amode == env->high_unsigned)
+			if (needs_lowering(amode))
 				++j;
 		}
 	}
@@ -1841,16 +1846,14 @@ static void lower_Start(ir_node *node, ir_mode *high_mode)
 
 		long     proj_nr = get_Proj_proj(proj);
 		ir_mode *mode    = get_irn_mode(proj);
-		ir_mode *mode_h;
-		if (mode == env->high_signed) {
-			mode_h = env->low_signed;
-		} else if (mode == env->high_unsigned) {
-			mode_h = env->low_unsigned;
-		} else {
+		if (!needs_lowering(mode)) {
 			long new_pn = new_projs[proj_nr];
 			set_Proj_proj(proj, new_pn);
 			continue;
 		}
+
+		ir_mode *mode_h = mode_is_signed(mode)
+		                ? env->low_signed : env->low_unsigned;
 
 		/* Switch off CSE or we might get an already existing Proj. */
 		int old_cse = get_opt_cse();
@@ -1886,7 +1889,7 @@ static void lower_Call(ir_node *node, ir_mode *mode)
 
 		if (is_Primitive_type(ptp)) {
 			ir_mode *pmode = get_type_mode(ptp);
-			if (pmode == env->high_signed || pmode == env->high_unsigned) {
+			if (needs_lowering(pmode)) {
 				need_lower = true;
 				break;
 			}
@@ -1901,7 +1904,7 @@ static void lower_Call(ir_node *node, ir_mode *mode)
 			res_numbers[i] = j;
 			if (is_Primitive_type(ptp)) {
 				ir_mode *rmode = get_type_mode(ptp);
-				if (rmode == env->high_signed || rmode == env->high_unsigned) {
+				if (needs_lowering(rmode)) {
 					need_lower = true;
 					++j;
 				}
@@ -1924,7 +1927,7 @@ static void lower_Call(ir_node *node, ir_mode *mode)
 		ir_node *pred      = get_Call_param(node, i);
 		ir_mode *pred_mode = get_irn_mode(pred);
 
-		if (pred_mode == env->high_signed || pred_mode == env->high_unsigned) {
+		if (needs_lowering(pred_mode)) {
 			const lower64_entry_t *pred_entry = get_node_entry(pred);
 			if (env->params->little_endian) {
 				in[j++] = pred_entry->low_word;
@@ -1961,17 +1964,13 @@ static void lower_Call(ir_node *node, ir_mode *mode)
 
 		long     proj_nr   = get_Proj_proj(proj);
 		ir_mode *proj_mode = get_irn_mode(proj);
-		ir_mode *mode_h;
-		if (proj_mode == env->high_signed) {
-			mode_h = env->low_signed;
-		} else if (proj_mode == env->high_unsigned) {
-			mode_h = env->low_unsigned;
-		} else {
+		if (!needs_lowering(proj_mode)) {
 			long new_nr = res_numbers[proj_nr];
 			set_Proj_proj(proj, new_nr);
 			continue;
 		}
-
+		ir_mode  *mode_h = mode_is_signed(proj_mode)
+		                 ? env->low_signed : env->low_unsigned;
 		dbg_info *dbg    = get_irn_dbg_info(proj);
 		ir_mode  *mode_l = env->low_unsigned;
 		ir_node  *pred   = get_Proj_pred(proj);
@@ -2027,7 +2026,7 @@ static void lower_Phi(ir_node *phi)
 	}
 
 	ir_mode *mode = get_irn_mode(phi);
-	if (mode != env->high_signed && mode != env->high_unsigned)
+	if (!needs_lowering(mode))
 		return;
 
 	/* first create a new in array */
@@ -2035,8 +2034,8 @@ static void lower_Phi(ir_node *phi)
 	ir_node **in_h   = ALLOCAN(ir_node*, arity);
 	ir_graph *irg    = get_irn_irg(phi);
 	ir_mode  *mode_l = env->low_unsigned;
-	ir_mode  *mode_h = mode == env->high_signed ? env->low_signed
-	                                            : env->low_unsigned;
+	ir_mode  *mode_h = mode_is_signed(mode)
+	                 ? env->low_signed : env->low_unsigned;
 	ir_node  *unk_l  = new_r_Dummy(irg, mode_l);
 	ir_node  *unk_h  = new_r_Dummy(irg, mode_h);
 	for (int i = 0; i < arity; ++i) {
@@ -2099,25 +2098,22 @@ static void lower_Mux(ir_node *mux, ir_mode *mode)
  */
 static void lower_ASM(ir_node *asmn, ir_mode *mode)
 {
-	ir_mode           *high_signed        = env->high_signed;
-	ir_mode           *high_unsigned      = env->high_unsigned;
-	int                n_outs             = get_ASM_n_output_constraints(asmn);
+	(void)mode;
+	size_t             n_outs             = get_ASM_n_output_constraints(asmn);
 	ir_asm_constraint *output_constraints = get_ASM_output_constraints(asmn);
 	ir_asm_constraint *input_constraints  = get_ASM_input_constraints(asmn);
 	unsigned           n_64bit_outs       = 0;
 
-	(void)mode;
-
 	foreach_irn_in_r(asmn, i, op) {
 		ir_mode *op_mode = get_irn_mode(op);
-		if (op_mode == high_signed || op_mode == high_unsigned) {
+		if (needs_lowering(op_mode)) {
 			panic("lowering ASM 64bit input unimplemented");
 		}
 	}
 
 	for (int o = 0; o < n_outs; ++o) {
 		const ir_asm_constraint *constraint = &output_constraints[o];
-		if (constraint->mode == high_signed || constraint->mode == high_unsigned) {
+		if (needs_lowering(constraint->mode)) {
 			const char *constr = get_id_str(constraint->constraint);
 			++n_64bit_outs;
 			/* TODO: How to do this architecture neutral? This is very
@@ -2145,7 +2141,7 @@ static void lower_ASM(ir_node *asmn, ir_mode *mode)
 
 	for (int o = 0; o < n_outs; ++o) {
 		const ir_asm_constraint *constraint = &output_constraints[o];
-		if (constraint->mode == high_signed || constraint->mode == high_unsigned) {
+		if (needs_lowering(constraint->mode)) {
 			new_outputs[new_n_outs].pos        = constraint->pos;
 			new_outputs[new_n_outs].constraint = new_id_from_str("=a");
 			new_outputs[new_n_outs].mode       = env->low_unsigned;
@@ -2153,10 +2149,8 @@ static void lower_ASM(ir_node *asmn, ir_mode *mode)
 			++new_n_outs;
 			new_outputs[new_n_outs].pos        = constraint->pos;
 			new_outputs[new_n_outs].constraint = new_id_from_str("=d");
-			if (constraint->mode == high_signed)
-				new_outputs[new_n_outs].mode = env->low_signed;
-			else
-				new_outputs[new_n_outs].mode = env->low_unsigned;
+			new_outputs[new_n_outs].mode = mode_is_signed(constraint->mode)
+			                             ? env->low_signed : env->low_unsigned;
 			++new_n_outs;
 		} else {
 			new_outputs[new_n_outs] = *constraint;
@@ -2189,11 +2183,11 @@ static void lower_ASM(ir_node *asmn, ir_mode *mode)
 		else
 			pn = new_n_outs + pn - n_outs;
 
-		if (proj_mode == high_signed || proj_mode == high_unsigned) {
-			ir_mode *high_mode
-				= proj_mode == high_signed ? env->low_signed : env->low_unsigned;
-			ir_node *np_low  = new_r_Proj(new_asm, env->low_unsigned, pn);
-			ir_node *np_high = new_r_Proj(new_asm, high_mode, pn+1);
+		if (needs_lowering(proj_mode)) {
+			ir_mode *high_mode = mode_is_signed(proj_mode)
+			                   ? env->low_signed : env->low_unsigned;
+			ir_node *np_low    = new_r_Proj(new_asm, env->low_unsigned, pn);
+			ir_node *np_high   = new_r_Proj(new_asm, high_mode, pn+1);
 			ir_set_dw_lowered(proj, np_low, np_high);
 		} else {
 			ir_node *np = new_r_Proj(new_asm, proj_mode, pn);
@@ -2226,7 +2220,7 @@ static ir_type *lower_Builtin_type_high(ir_type *mtp)
 		if (is_Primitive_type(tp)) {
 			ir_mode *mode = get_type_mode(tp);
 
-			if (mode == env->high_signed || mode == env->high_unsigned) {
+			if (needs_lowering(mode)) {
 				must_be_lowered = true;
 				break;
 			}
@@ -2244,45 +2238,41 @@ static ir_type *lower_Builtin_type_high(ir_type *mtp)
 	/* set param types and result types */
 	for (size_t i = 0; i < n_params; ++i) {
 		ir_type *tp = get_method_param_type(mtp, i);
-
 		if (is_Primitive_type(tp)) {
 			ir_mode *mode = get_type_mode(tp);
-
-			if (mode == env->high_signed) {
-				if (env->params->little_endian) {
-					set_method_param_type(res, i, tp_u);
+			if (needs_lowering(mode)) {
+				if (mode_is_signed(mode)) {
+					if (env->params->little_endian) {
+						set_method_param_type(res, i, tp_u);
+					} else {
+						set_method_param_type(res, i, tp_s);
+					}
 				} else {
-					set_method_param_type(res, i, tp_s);
+					set_method_param_type(res, i, tp_u);
 				}
-			} else if (mode == env->high_unsigned) {
-				set_method_param_type(res, i, tp_u);
-			} else {
-				set_method_param_type(res, i, tp);
+				continue;
 			}
-		} else {
-			set_method_param_type(res, i, tp);
 		}
+		set_method_param_type(res, i, tp);
 	}
 	for (size_t i = n_results = 0; i < n_results; ++i) {
 		ir_type *tp = get_method_res_type(mtp, i);
-
 		if (is_Primitive_type(tp)) {
 			ir_mode *mode = get_type_mode(tp);
-
-			if (mode == env->high_signed) {
-				if (env->params->little_endian) {
-					set_method_res_type(res, i, tp_u);
+			if (needs_lowering(mode)) {
+				if (mode_is_signed(mode)) {
+					if (env->params->little_endian) {
+						set_method_res_type(res, i, tp_u);
+					} else {
+						set_method_res_type(res, i, tp_s);
+					}
 				} else {
-					set_method_res_type(res, i, tp_s);
+					set_method_res_type(res, i, tp_u);
 				}
-			} else if (mode == env->high_unsigned) {
-				set_method_res_type(res, i, tp_u);
-			} else {
-				set_method_res_type(res, i, tp);
+				continue;
 			}
-		} else {
-			set_method_res_type(res, i, tp);
 		}
+		set_method_res_type(res, i, tp);
 	}
 
 	set_method_variadicity(res, get_method_variadicity(mtp));
@@ -2317,7 +2307,7 @@ static ir_type *lower_Builtin_type_low(ir_type *mtp)
 		if (is_Primitive_type(tp)) {
 			ir_mode *mode = get_type_mode(tp);
 
-			if (mode == env->high_signed || mode == env->high_unsigned) {
+			if (needs_lowering(mode)) {
 				must_be_lowered = true;
 				break;
 			}
@@ -2335,45 +2325,41 @@ static ir_type *lower_Builtin_type_low(ir_type *mtp)
 	/* set param types and result types */
 	for (size_t i = 0; i < n_params; ++i) {
 		ir_type *tp = get_method_param_type(mtp, i);
-
 		if (is_Primitive_type(tp)) {
 			ir_mode *mode = get_type_mode(tp);
-
-			if (mode == env->high_signed) {
-				if (env->params->little_endian) {
-					set_method_param_type(res, i, tp_s);
+			if (needs_lowering(mode)) {
+				if (mode_is_signed(mode)) {
+					if (env->params->little_endian) {
+						set_method_param_type(res, i, tp_s);
+					} else {
+						set_method_param_type(res, i, tp_u);
+					}
 				} else {
 					set_method_param_type(res, i, tp_u);
 				}
-			} else if (mode == env->high_unsigned) {
-				set_method_param_type(res, i, tp_u);
-			} else {
-				set_method_param_type(res, i, tp);
+				continue;
 			}
-		} else {
-			set_method_param_type(res, i, tp);
 		}
+		set_method_param_type(res, i, tp);
 	}
 	for (size_t i = 0; i < n_results; ++i) {
 		ir_type *tp = get_method_res_type(mtp, i);
-
 		if (is_Primitive_type(tp)) {
 			ir_mode *mode = get_type_mode(tp);
-
-			if (mode == env->high_signed) {
-				if (env->params->little_endian) {
-					set_method_res_type(res, i, tp_s);
+			if (needs_lowering(mode)) {
+				if (mode_is_signed(mode)) {
+					if (env->params->little_endian) {
+						set_method_res_type(res, i, tp_s);
+					} else {
+						set_method_res_type(res, i, tp_u);
+					}
 				} else {
 					set_method_res_type(res, i, tp_u);
 				}
-			} else if (mode == env->high_unsigned) {
-				set_method_res_type(res, i, tp_u);
-			} else {
-				set_method_res_type(res, i, tp);
+				continue;
 			}
-		} else {
-			set_method_res_type(res, i, tp);
 		}
+		set_method_res_type(res, i, tp);
 	}
 
 	set_method_variadicity(res, get_method_variadicity(mtp));
@@ -2393,7 +2379,7 @@ static void lower_reduce_builtin(ir_node *builtin, ir_mode *mode)
 	ir_builtin_kind  kind         = get_Builtin_kind(builtin);
 	ir_node         *operand      = get_Builtin_param(builtin, 0);
 	ir_mode         *operand_mode = get_irn_mode(operand);
-	if (operand_mode != env->high_signed && operand_mode != env->high_unsigned)
+	if (!needs_lowering(operand_mode))
 		return;
 
 	arch_allow_ifconv_func allow_ifconv = be_get_backend_param()->allow_ifconv;
@@ -2513,7 +2499,7 @@ static void lower_arithmetic_builtin(ir_node *builtin, ir_mode *mode)
 	ir_builtin_kind  kind         = get_Builtin_kind(builtin);
 	ir_node         *operand      = get_Builtin_param(builtin, 0);
 	ir_mode         *operand_mode = get_irn_mode(operand);
-	if (operand_mode != env->high_signed && operand_mode != env->high_unsigned)
+	if (!needs_lowering(operand_mode))
 		return;
 
 	dbg_info              *dbgi              = get_irn_dbg_info(builtin);
@@ -2757,12 +2743,9 @@ static void lower_node(ir_node *node)
 	unsigned         idx   = get_irn_idx(node);
 	lower64_entry_t *entry = idx < env->n_entries ? env->entries[idx] : NULL;
 	if (entry != NULL || always_lower(get_irn_opcode(node))) {
-		ir_mode *mode = get_irn_op_mode(node);
-		if (mode == env->high_signed) {
-			mode = env->low_signed;
-		} else {
-			mode = env->low_unsigned;
-		}
+		ir_mode *op_mode = get_irn_op_mode(node);
+		ir_mode *mode    = mode_is_signed(op_mode)
+		                 ? env->low_signed : env->low_unsigned;
 		DB((dbg, LEVEL_1, "  %+F\n", node));
 		func(node, mode);
 	}
