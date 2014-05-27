@@ -366,7 +366,7 @@ int lpp_ack(lpp_comm_t *comm, char *buf, size_t buflen)
 	int res = 0;
 	int cmd = lpp_readl(comm);
 
-	switch(cmd) {
+	switch (cmd) {
 	case LPP_CMD_OK:
 		res = 1;
 		break;
@@ -403,7 +403,7 @@ void lpp_send_ack(lpp_comm_t *comm)
 
 const char *lpp_get_cmd_name(int cmd)
 {
-	switch(cmd) {
+	switch (cmd) {
 	case LPP_CMD_BAD:       return "BAD";
 	case LPP_CMD_OK:        return "OK";
 	case LPP_CMD_PROBLEM:   return "PROBLEM";

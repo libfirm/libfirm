@@ -61,7 +61,7 @@
  */
 #define COMPILETIME_ASSERT(x, name) \
     static UNUSED void compiletime_assert_##name (int h) { \
-        switch(h) { case 0: case (x): {} } \
+        switch (h) { case 0: case (x): {} } \
     }
 
 #endif

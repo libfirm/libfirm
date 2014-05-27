@@ -285,7 +285,7 @@ static void kill_and_reduce_usage(ir_node *node)
 {
 	ir_node *ptr;
 	ir_node *value;
-	switch(get_irn_opcode(node)) {
+	switch (get_irn_opcode(node)) {
 	case iro_Load:
 		ptr   = get_Load_ptr(node);
 		value = NULL;

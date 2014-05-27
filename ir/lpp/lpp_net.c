@@ -186,7 +186,7 @@ void lpp_solve_net(lpp_t *lpp, const char *host, const char *solver)
 	ready = 0;
 	while (! ready) {
 		int cmd = lpp_readl(comm);
-		switch(cmd) {
+		switch (cmd) {
 			case LPP_CMD_SOLUTION:
 				ir_timer_push(t_recv);
 				lpp_deserialize_stats(comm, lpp);

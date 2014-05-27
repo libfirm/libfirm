@@ -134,7 +134,7 @@ static int ack(int fd, size_t buflen, char *buf)
 	int res = 0;
 	int cmd = readl(fd);
 
-	switch(cmd) {
+	switch (cmd) {
 		case LPP_CMD_OK:
 			res = 1;
 			break;

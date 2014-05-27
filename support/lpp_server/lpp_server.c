@@ -251,7 +251,7 @@ static int solve(lpp_comm_t *comm, job_t *job)
 					//break;
 				}
 
-				switch(cmd) {
+				switch (cmd) {
 					/* eat senseless data. */
 					default:
 						while(read(fd_comm, &cmd, sizeof(cmd)) > 0) {
@@ -291,7 +291,7 @@ static void *session(int fd)
 
 		DBG((dbg, LEVEL_2, "command: %s(%d)\n", lpp_get_cmd_name(cmd), cmd));
 		setproctitle("lpp_server [command %s(%d)]", lpp_get_cmd_name(cmd), cmd);
-		switch(cmd) {
+		switch (cmd) {
 			/* we could not read from the socket, so the connection died. bail out. */
 			case -1:
 			case LPP_CMD_BAD:
@@ -419,7 +419,7 @@ static void main_loop(void)
 		}
 
 		child = fork();
-		switch(child) {
+		switch (child) {
 			case 0: /* we're in the new child, start the session handler */
 				close(msock);
 				session(csock);
@@ -465,7 +465,7 @@ int main(int argc, char *argv[])
 
 	/* parse options. */
 	while((c = getopt(argc, argv, "s:g:")) != -1) {
-		switch(c) {
+		switch (c) {
 			case 's':
 				set_solver_stack_size(atoi(optarg));
 				break;

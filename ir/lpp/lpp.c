@@ -348,7 +348,7 @@ void lpp_check_startvals(lpp_t *lpp)
 				sum += lpp->vars[var_idx]->value *
 					matrix_get(lpp->m, cst_idx, var_idx);
 		}
-		switch(cst->type.cst_type) {
+		switch (cst->type.cst_type) {
 			case lpp_equal:
 				if(sum != cst_val) {
 					fprintf(stderr, "constraint %s unsatisfied: %g != %g\n", cst->name, sum, cst_val);
@@ -386,7 +386,7 @@ void lpp_set_log(lpp_t *lpp, FILE *log)
 
 static const char *lpp_cst_op_to_str(lpp_cst_t cst)
 {
-	switch(cst) {
+	switch (cst) {
 	case lpp_equal:
 		return "=";
 	case lpp_less_equal:

@@ -1103,7 +1103,7 @@ static ir_node *gen_Proj_Div(ir_node *const node)
 	else
 		mode = mode_gp;
 
-	switch((pn_Div)pn) {
+	switch ((pn_Div)pn) {
 	case pn_Div_M:
 		return new_r_Proj(new_pred, mode_M, pn_amd64_Div_M);
 	case pn_Div_res:
@@ -1132,7 +1132,7 @@ static ir_node *gen_Proj_Mod(ir_node *const node)
 
 	assert((long)pn_amd64_Div_M == (long)pn_amd64_IDiv_M);
 	assert((long)pn_amd64_Div_res_mod == (long)pn_amd64_IDiv_res_mod);
-	switch((pn_Mod)pn) {
+	switch ((pn_Mod)pn) {
 	case pn_Mod_M:
 		return new_r_Proj(new_pred, mode_M, pn_amd64_Div_M);
 	case pn_Mod_res:
@@ -2015,7 +2015,7 @@ static ir_node *gen_Store(ir_node *node)
 
 	bool need_xmm = mode_is_float(mode);
 
-	switch(arity) {
+	switch (arity) {
 	case 1: reqs = mem_reqs; break;
 	case 2: reqs = need_xmm ? xmm_mem_reqs : reg_mem_reqs; break;
 	case 3: reqs = need_xmm ? xmm_reg_mem_reqs : reg_reg_mem_reqs; break;
@@ -2253,7 +2253,7 @@ static ir_node *gen_Builtin(ir_node *node)
 {
 	ir_builtin_kind kind = get_Builtin_kind(node);
 
-	switch(kind) {
+	switch (kind) {
 	case ir_bk_saturating_increment:
 		return gen_saturating_increment(node);
 	default:
@@ -2268,7 +2268,7 @@ static ir_node *gen_Proj_Builtin(ir_node *proj)
 	ir_node   *new_node  = be_transform_node(node);
 	ir_builtin_kind kind = get_Builtin_kind(node);
 
-	switch(kind) {
+	switch (kind) {
 	case ir_bk_saturating_increment:
 		return new_r_Proj(new_node, mode_gp, pn_amd64_Sbb_res);
 	default:
