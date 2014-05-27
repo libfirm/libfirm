@@ -494,6 +494,17 @@ xAdds => {
 #	mode      => $mode_xmm,
 },
 
+xDivs => {
+	irn_flags => [ "rematerializable" ],
+	state     => "exc_pinned",
+	reg_req   => { out => [ "xmm", "none", "none" ] },
+	outs      => [ "res_div", "none", "M" ],
+	arity     => "variable",
+	attr_type => "amd64_binop_addr_attr_t",
+	attr      => "const amd64_binop_addr_attr_t *attr_init",
+	emit      => "divs%MX %AM",
+},
+
 xMovs => {
 	state     => "exc_pinned",
 	reg_req   => { out => [ "xmm", "none", "none" ] },
@@ -513,17 +524,6 @@ xMuls => {
 	attr_type => "amd64_binop_addr_attr_t",
 	attr      => "const amd64_binop_addr_attr_t *attr_init",
 	emit      => "muls%MX %AM",
-},
-
-xDivs => {
-	irn_flags => [ "rematerializable" ],
-	state     => "exc_pinned",
-	reg_req   => { out => [ "xmm", "none", "none" ] },
-	outs      => [ "res_div", "none", "M" ],
-	arity     => "variable",
-	attr_type => "amd64_binop_addr_attr_t",
-	attr      => "const amd64_binop_addr_attr_t *attr_init",
-	emit      => "divs%MX %AM",
 },
 
 xStores => {
@@ -558,6 +558,68 @@ xXorp0 => {
 	fixed     => "amd64_op_mode_t op_mode = AMD64_OP_REG_REG;",
 	emit      => "xorpd %^D0, %^D0",
 	mode      => $mode_xmm,
+},
+
+# Conversion operations
+
+CvtSS2SD => {
+	state     => "exc_pinned",
+	reg_req   => { out => [ "xmm", "none", "none" ] },
+	outs      => [ "res", "none", "M" ],
+	arity     => "variable",
+	attr_type => "amd64_addr_attr_t",
+	attr      => "amd64_insn_mode_t insn_mode, amd64_op_mode_t op_mode, amd64_addr_t addr",
+	emit      => "cvtss2sd %AM, %^D0",
+},
+
+CvtSD2SS => {
+	state     => "exc_pinned",
+	reg_req   => { out => [ "xmm", "none", "none" ] },
+	outs      => [ "res", "none", "M" ],
+	arity     => "variable",
+	attr_type => "amd64_addr_attr_t",
+	attr      => "amd64_insn_mode_t insn_mode, amd64_op_mode_t op_mode, amd64_addr_t addr",
+	emit      => "cvtsd2ss %AM, %^D0",
+},
+
+CvtSD2SI => {
+	state     => "exc_pinned",
+	reg_req   => { out => [ "gp", "none", "none" ] },
+	outs      => [ "res", "none", "M" ],
+	arity     => "variable",
+	attr_type => "amd64_addr_attr_t",
+	attr      => "amd64_insn_mode_t insn_mode, amd64_op_mode_t op_mode, amd64_addr_t addr",
+	emit      => "cvtsd2si %AM, %D0",
+},
+
+CvtSS2SI => {
+	state     => "exc_pinned",
+	reg_req   => { out => [ "gp", "none", "none" ] },
+	outs      => [ "res", "none", "M" ],
+	arity     => "variable",
+	attr_type => "amd64_addr_attr_t",
+	attr      => "amd64_insn_mode_t insn_mode, amd64_op_mode_t op_mode, amd64_addr_t addr",
+	emit      => "cvtss2si %AM, %D0",
+},
+
+CvtSI2SS => {
+	state     => "exc_pinned",
+	reg_req   => { out => [ "xmm", "none", "none" ] },
+	outs      => [ "res", "none", "M" ],
+	arity     => "variable",
+	attr_type => "amd64_addr_attr_t",
+	attr      => "amd64_insn_mode_t insn_mode, amd64_op_mode_t op_mode, amd64_addr_t addr",
+	emit      => "cvtsi2ss %AM, %^D0",
+},
+
+CvtSI2SD => {
+	state     => "exc_pinned",
+	reg_req   => { out => [ "xmm", "none", "none" ] },
+	outs      => [ "res", "none", "M" ],
+	arity     => "variable",
+	attr_type => "amd64_addr_attr_t",
+	attr      => "amd64_insn_mode_t insn_mode, amd64_op_mode_t op_mode, amd64_addr_t addr",
+	emit      => "cvtsi2sd %AM, %^D0",
 },
 
 );

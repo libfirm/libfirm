@@ -220,6 +220,10 @@ static const arch_register_req_t *reg_reqs[] = {
 	&amd64_requirement_gp,
 };
 
+static const arch_register_req_t *xmm_reqs[] = {
+	&amd64_requirement_xmm,
+};
+
 static const arch_register_req_t *reg_rcx_reqs[] = {
 	&amd64_requirement_gp,
 	&amd64_requirement_rcx,
@@ -1877,11 +1881,10 @@ static ir_node *gen_Conv(ir_node *node)
 	if (src_mode == dst_mode)
 		return be_transform_node(op);
 
-	/* TODO: implement float */
-	if (mode_is_float(src_mode) || mode_is_float(dst_mode))
-		panic("float not supported yet");
+	bool src_float = mode_is_float(src_mode);
+	bool dst_float = mode_is_float(dst_mode);
+	bool is_gp     = !src_float && !dst_float;
 
-	/* complete in gp registers */
 	int src_bits = get_mode_size_bits(src_mode);
 	int dst_bits = get_mode_size_bits(dst_mode);
 	ir_mode *min_mode;
@@ -1890,12 +1893,15 @@ static ir_node *gen_Conv(ir_node *node)
 		min_mode = src_mode;
 	} else if (src_bits > dst_bits) {
 		min_mode = dst_mode;
-	} else {
+	} else if ((src_float && dst_float) || is_gp){
 		/* skip unnecessary conv */
 		return be_transform_node(op);
+	} else {
+		/* src_bits == dst_bits, but one is float the other integer*/
+		min_mode = src_mode;
 	}
 
-	if (be_upper_bits_clean(op, min_mode))
+	if (is_gp && be_upper_bits_clean(op, min_mode))
 		return be_transform_node(op);
 
 	amd64_addr_t addr;
@@ -1904,18 +1910,75 @@ static ir_node *gen_Conv(ir_node *node)
 
 	ir_node *new_op = be_transform_node(op);
 	ir_node *in[1]  = { new_op };
-	ir_node *mov;
+	ir_node *conv;
 	ir_node *res;
-	if (!mode_is_signed(min_mode) || get_mode_size_bits(min_mode) == 64) {
-		mov = new_bd_amd64_Mov(dbgi, block, ARRAY_SIZE(in), in, insn_mode,
-							   AMD64_OP_REG, addr);
-		res = new_r_Proj(mov, mode_gp, pn_amd64_Mov_res);
+	const arch_register_req_t **reqs;
+
+	if (src_float && dst_float) {
+		/* fp conv */
+		if (src_bits < dst_bits) {
+			conv = new_bd_amd64_CvtSS2SD(dbgi, block, ARRAY_SIZE(in),
+			                             in, insn_mode, AMD64_OP_REG,
+			                             addr);
+			res  = new_r_Proj(conv, mode_D, pn_amd64_CvtSS2SD_res);
+		} else {
+			conv = new_bd_amd64_CvtSD2SS(dbgi, block, ARRAY_SIZE(in),
+			                             in, insn_mode, AMD64_OP_REG,
+			                             addr);
+			res  = new_r_Proj(conv, mode_F, pn_amd64_CvtSD2SS_res);
+		}
+		reqs = xmm_reqs;
+
+	} else if (src_float && !dst_float) {
+		/* fp to integer */
+		if (src_bits < 64) {
+			conv = new_bd_amd64_CvtSS2SI(dbgi, block, ARRAY_SIZE(in),
+			                             in, insn_mode, AMD64_OP_REG,
+			                             addr);
+		} else {
+			conv = new_bd_amd64_CvtSD2SI(dbgi, block, ARRAY_SIZE(in),
+			                             in, insn_mode, AMD64_OP_REG,
+			                             addr);
+		}
+		assert((long)pn_amd64_CvtSS2SI_res == (long)pn_amd64_CvtSD2SI_res);
+		res  = new_r_Proj(conv, mode_gp, pn_amd64_CvtSS2SI_res);
+		reqs = xmm_reqs;
+
+	} else if (!src_float && dst_float) {
+		/* integer to fp */
+		if (dst_bits < 64) {
+			conv = new_bd_amd64_CvtSI2SS(dbgi, block, ARRAY_SIZE(in),
+			                             in, insn_mode, AMD64_OP_REG,
+			                             addr);
+
+			res = new_r_Proj(conv, mode_F, pn_amd64_CvtSI2SS_res);
+		} else {
+			conv = new_bd_amd64_CvtSI2SD(dbgi, block, ARRAY_SIZE(in),
+			                             in, insn_mode, AMD64_OP_REG,
+			                             addr);
+
+			res = new_r_Proj(conv, mode_D, pn_amd64_CvtSI2SD_res);
+		}
+		reqs = reg_reqs;
+
 	} else {
-		mov = new_bd_amd64_Movs(dbgi, block, ARRAY_SIZE(in), in, insn_mode,
-								AMD64_OP_REG, addr);
-		res = new_r_Proj(mov, mode_gp, pn_amd64_Movs_res);
+		/* integer conv */
+		if (!mode_is_signed(min_mode)
+		    || get_mode_size_bits(min_mode) == 64) {
+			conv = new_bd_amd64_Mov(dbgi, block, ARRAY_SIZE(in),
+			                        in, insn_mode,
+			                        AMD64_OP_REG, addr);
+			res = new_r_Proj(conv, mode_gp, pn_amd64_Mov_res);
+		} else {
+			conv = new_bd_amd64_Movs(dbgi, block, ARRAY_SIZE(in),
+			                         in, insn_mode,
+			                         AMD64_OP_REG, addr);
+			res = new_r_Proj(conv, mode_gp, pn_amd64_Movs_res);
+		}
+		reqs = reg_reqs;
 	}
-	arch_set_irn_register_reqs_in(mov, reg_reqs);
+
+	arch_set_irn_register_reqs_in(conv, reqs);
 	return res;
 }
 
