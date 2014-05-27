@@ -350,7 +350,7 @@ static void displace(workset_t *const new_vals, bool const is_usage,
 			DB((dbg, DBG_DECIDE, "    disposing node %+F (%u)\n", val,
 			    workset_get_time(ws, i)));
 
-			if (move_spills && !USES_IS_INFINITE(ws->vals[i].time)
+			if (move_spills && !USES_IS_INFINITE(workset_get_time(ws, i))
 			    && !ws->vals[i].spilled) {
 				ir_node *after_pos = sched_prev(instr);
 				DB((dbg, DBG_DECIDE, "Spill %+F after node %+F\n", val,
