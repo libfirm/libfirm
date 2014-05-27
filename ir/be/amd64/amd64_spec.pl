@@ -504,6 +504,28 @@ xMovs => {
 	emit      => "movs%MX %AM, %D0",
 },
 
+xMuls => {
+	irn_flags => [ "rematerializable" ],
+	state     => "exc_pinned",
+	reg_req   => { out => [ "xmm", "none", "none" ] },
+	outs      => [ "res", "none", "M" ],
+	arity     => "variable",
+	attr_type => "amd64_binop_addr_attr_t",
+	attr      => "const amd64_binop_addr_attr_t *attr_init",
+	emit      => "muls%MX %AM",
+},
+
+xDivs => {
+	irn_flags => [ "rematerializable" ],
+	state     => "exc_pinned",
+	reg_req   => { out => [ "xmm", "none", "none" ] },
+	outs      => [ "res_div", "none", "M" ],
+	arity     => "variable",
+	attr_type => "amd64_binop_addr_attr_t",
+	attr      => "const amd64_binop_addr_attr_t *attr_init",
+	emit      => "divs%MX %AM",
+},
+
 xStores => {
 	op_flags  => [ "uses_memory" ],
 	state     => "exc_pinned",

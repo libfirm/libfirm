@@ -53,7 +53,8 @@ static bool try_swap_inputs(ir_node *node)
 {
 	/* commutative operation, just switch the inputs */
 	if (is_amd64_Add(node) || is_amd64_And(node) || is_amd64_Or(node)
-	 || is_amd64_Xor(node) || is_amd64_IMul(node) || is_amd64_xAdds(node)) {
+	 || is_amd64_Xor(node) || is_amd64_IMul(node) || is_amd64_xAdds(node)
+	 || is_amd64_xMuls(node)) {
 		/* TODO: support Cmp input swapping */
 		ir_node *in0 = get_irn_n(node, 0);
 		ir_node *in1 = get_irn_n(node, 1);

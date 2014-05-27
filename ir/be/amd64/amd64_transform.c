@@ -672,7 +672,6 @@ static ir_node *gen_binop_am(ir_node *node, ir_node *op1, ir_node *op2,
 	ir_node *new_node = func(dbgi, new_block, args.arity, args.in, &args.attr);
 	arch_set_irn_register_reqs_in(new_node, args.reqs);
 
-
 	if (args.mem_proj != NULL) {
 		ir_node *load = get_Proj_pred(args.mem_proj);
 		be_set_transformed_node(load, new_node);
@@ -954,6 +953,9 @@ static ir_node *gen_Mul(ir_node *const node)
 		                          match_mode_neutral
 		                          | match_commutative);
 		return new_r_Proj(new_node, mode_gp, pn_amd64_IMul1Op_res_low);
+	} else if (mode_is_float(mode)) {
+		return gen_binop_am(node, op1, op2, new_bd_amd64_xMuls,
+		                    match_commutative | match_am);
 	} else {
 		return gen_binop_am(node, op1, op2, new_bd_amd64_IMul,
 		                    match_immediate | match_am
@@ -1044,14 +1046,40 @@ static ir_node *create_div(ir_node *const node, ir_mode *const mode,
 	return res;
 }
 
+static ir_node *create_sse_div(ir_node *const node, ir_mode *const mode,
+                               ir_node *const op1, ir_node *const op2)
+{
+	dbg_info *const dbgi      = get_irn_dbg_info(node);
+	ir_node  *const block     = get_nodes_block(node);
+	ir_node  *const new_block = be_transform_node(block);
+
+	amd64_args_t args;
+	match_binop(&args, block, mode, op1, op2, match_am);
+
+	ir_node *const new_node = new_bd_amd64_xDivs(dbgi, new_block, args.arity,
+	                                             args.in, &args.attr);
+	arch_set_irn_register_reqs_in(new_node, args.reqs);
+
+	if (args.mem_proj != NULL) {
+		ir_node *load = get_Proj_pred(args.mem_proj);
+		be_set_transformed_node(load, new_node);
+	}
+
+	arch_set_irn_register_req_out(new_node, 0,
+	                              &amd64_requirement_xmm_same_0);
+	return new_node;
+}
+
 static ir_node *gen_Div(ir_node *const node)
 {
 	ir_mode *const mode = get_Div_resmode(node);
-	if (!mode_needs_gp_reg(mode))
-		panic("amd64: float div NIY");
 	ir_node *const op1 = get_Div_left(node);
 	ir_node *const op2 = get_Div_right(node);
-	return create_div(node, mode, op1, op2);
+
+	if (mode_is_float(mode))
+		return create_sse_div(node, mode, op1, op2);
+	else
+		return create_div(node, mode, op1, op2);
 }
 
 static ir_node *gen_Proj_Div(ir_node *const node)
@@ -1062,11 +1090,20 @@ static ir_node *gen_Proj_Div(ir_node *const node)
 
 	assert((long)pn_amd64_Div_M == (long)pn_amd64_IDiv_M);
 	assert((long)pn_amd64_Div_res_div == (long)pn_amd64_IDiv_res_div);
+	assert((long)pn_amd64_xDivs_M == (long)pn_amd64_IDiv_M);
+	assert((long)pn_amd64_xDivs_res_div == (long)pn_amd64_IDiv_res_div);
+
+	ir_mode *mode;
+	if (mode_is_float(get_Div_resmode(pred)))
+		mode = mode_D;
+	else
+		mode = mode_gp;
+
 	switch((pn_Div)pn) {
 	case pn_Div_M:
 		return new_r_Proj(new_pred, mode_M, pn_amd64_Div_M);
 	case pn_Div_res:
-		return new_r_Proj(new_pred, mode_gp, pn_amd64_Div_res_div);
+		return new_r_Proj(new_pred, mode, pn_amd64_Div_res_div);
 	case pn_Div_X_except:
 	case pn_Div_X_regular:
 		panic("amd64 exception NIY");
