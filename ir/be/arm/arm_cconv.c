@@ -13,7 +13,7 @@
 #include "irmode.h"
 #include "typerep.h"
 #include "xmalloc.h"
-#include "error.h"
+#include "panic.h"
 #include "util.h"
 
 static const unsigned ignore_regs[] = {

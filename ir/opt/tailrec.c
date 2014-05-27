@@ -12,7 +12,7 @@
 #include <assert.h>
 
 #include "debug.h"
-#include "error.h"
+#include "panic.h"
 #include "iroptimize.h"
 #include "scalar_replace.h"
 #include "array.h"

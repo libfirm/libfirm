@@ -11,7 +11,7 @@
  */
 #include "fltcalc.h"
 #include "strcalc.h"
-#include "error.h"
+#include "panic.h"
 
 #include <math.h>
 #include <inttypes.h>

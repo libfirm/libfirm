@@ -19,7 +19,7 @@
 #include "../../adt/util.h"
 #include "hashptr.h"
 #include "debug.h"
-#include "error.h"
+#include "panic.h"
 #include "xmalloc.h"
 
 #include "irflag_t.h"

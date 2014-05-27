@@ -18,7 +18,7 @@
 #include "adt/pdeq.h"
 #include "array.h"
 #include "debug.h"
-#include "error.h"
+#include "panic.h"
 #include "firmstat_t.h"
 #include "hashptr.h"
 #include "ircons.h"

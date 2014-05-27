@@ -17,7 +17,7 @@
 #include "array.h"
 #include "beutil.h"
 #include "debug.h"
-#include "error.h"
+#include "panic.h"
 #include "irbackedge_t.h"
 #include "ircons_t.h"
 #include "irdom.h"

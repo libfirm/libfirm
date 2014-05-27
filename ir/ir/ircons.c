@@ -13,7 +13,7 @@
 
 #include "../adt/util.h"
 #include "array.h"
-#include "error.h"
+#include "panic.h"
 #include "irbackedge_t.h"
 #include "ircons_t.h"
 #include "iredges_t.h"

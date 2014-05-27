@@ -22,7 +22,7 @@
 #include "debug.h"
 #include "set.h"
 #include "bitset.h"
-#include "error.h"
+#include "panic.h"
 
 #include "iredgeset.h"
 #include "hashptr.h"

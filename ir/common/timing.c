@@ -12,7 +12,7 @@
 
 #include "timing.h"
 #include "xmalloc.h"
-#include "error.h"
+#include "panic.h"
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN

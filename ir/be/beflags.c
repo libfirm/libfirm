@@ -27,7 +27,7 @@
 #include "irtools.h"
 #include "ircons.h"
 #include "iredges_t.h"
-#include "error.h"
+#include "panic.h"
 
 #include "beflags.h"
 #include "bearch.h"

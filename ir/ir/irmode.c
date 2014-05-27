@@ -19,7 +19,7 @@
 #include "obst.h"
 #include "irhooks.h"
 #include "array.h"
-#include "error.h"
+#include "panic.h"
 #include "pattern_dmp.h"
 #include "strcalc.h"
 

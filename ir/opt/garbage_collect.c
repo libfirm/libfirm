@@ -14,7 +14,7 @@
 #include "entity_t.h"
 #include "irprog_t.h"
 #include "irgwalk.h"
-#include "error.h"
+#include "panic.h"
 #include "debug.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)

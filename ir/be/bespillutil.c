@@ -23,7 +23,7 @@
 #include "irgwalk.h"
 #include "array.h"
 #include "execfreq.h"
-#include "error.h"
+#include "panic.h"
 #include "bearch.h"
 #include "belive_t.h"
 #include "besched.h"

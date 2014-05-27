@@ -12,7 +12,7 @@
 #include "irgwalk.h"
 #include "irnode_t.h"
 #include "ircons.h"
-#include "error.h"
+#include "panic.h"
 #include "irgmod.h"
 #include "irnodeset.h"
 

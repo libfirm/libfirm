@@ -22,7 +22,7 @@
 #include "iropt_t.h"
 #include "irgmod.h"
 #include "tv.h"
-#include "error.h"
+#include "panic.h"
 #include "lowering.h"
 #include "util.h"
 #include "array.h"

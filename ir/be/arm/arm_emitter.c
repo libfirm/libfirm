@@ -21,7 +21,7 @@
 #include "irop_t.h"
 #include "irprog_t.h"
 #include "irargs_t.h"
-#include "error.h"
+#include "panic.h"
 #include "dbginfo.h"
 
 #include "besched.h"

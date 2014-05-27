@@ -17,7 +17,7 @@
 #include "lower_calls.h"
 #include "lower_builtins.h"
 #include "debug.h"
-#include "error.h"
+#include "panic.h"
 #include "be_t.h"
 #include "bearch.h"
 #include "benode.h"

@@ -16,7 +16,7 @@
 #include "ircons.h"
 #include "irgmod.h"
 #include "heights.h"
-#include "error.h"
+#include "panic.h"
 
 #include "beirg.h"
 #include "belive_t.h"

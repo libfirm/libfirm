@@ -24,7 +24,7 @@
 #include "heights.h"
 #include "util.h"
 #include "raw_bitset.h"
-#include "error.h"
+#include "panic.h"
 #include "pset_new.h"
 #include "irmemory_t.h"
 

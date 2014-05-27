@@ -16,7 +16,7 @@
 
 #include "strcalc.h"
 #include "xmalloc.h"
-#include "error.h"
+#include "panic.h"
 #include "bitfiddle.h"
 #include "tv_t.h"
 

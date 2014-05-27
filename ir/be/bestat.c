@@ -10,7 +10,7 @@
  */
 #include <time.h>
 
-#include "error.h"
+#include "panic.h"
 #include "execfreq.h"
 #include "firmstat_t.h"
 #include "irgwalk.h"

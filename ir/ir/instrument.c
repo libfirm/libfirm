@@ -11,7 +11,7 @@
  */
 #include <stdbool.h>
 
-#include "error.h"
+#include "panic.h"
 #include "instrument.h"
 #include "ircons.h"
 #include "iredges.h"

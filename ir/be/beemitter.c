@@ -12,7 +12,7 @@
 #include "bedwarf.h"
 #include "beemitter.h"
 #include "be_t.h"
-#include "error.h"
+#include "panic.h"
 #include "irnode_t.h"
 #include "irprintf.h"
 #include "ident.h"

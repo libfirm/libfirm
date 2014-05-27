@@ -39,19 +39,19 @@
 /**
  * Allocate @p size bytes on the heap.
  * This is a wrapper for malloc which calls panic() in case of errors, so no
- * error handling is required for code using it.
+ * panic.handling is required for code using it.
  */
 FIRM_API void *xmalloc(size_t size);
 /**
  * Chane size of a previously allocated memory block to @p size bytes.
  * This is a wrapper for realloc which calls panic() in case of errors, so no
- * error handling is required for code using it.
+ * panic.handling is required for code using it.
  */
 FIRM_API void *xrealloc(void *ptr, size_t size);
 /**
  * Allocates memory and copies string @p str into it.
  * This is a wrapper for strdup which calls panic() in case of errors, so no
- * error handling is required for code using it.
+ * panic.handling is required for code using it.
  */
 FIRM_API char *xstrdup(const char *str);
 

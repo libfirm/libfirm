@@ -39,7 +39,7 @@
 #include "beirgmod.h"
 #include "bemodule.h"
 #include "be.h"
-#include "error.h"
+#include "panic.h"
 
 #include "lc_opts.h"
 #include "lc_opts_enum.h"

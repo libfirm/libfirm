@@ -14,7 +14,7 @@
 #include "irgwalk.h"
 #include "iredges.h"
 #include "pdeq.h"
-#include "error.h"
+#include "panic.h"
 #include "firmstat_t.h"
 
 #include "bearch.h"

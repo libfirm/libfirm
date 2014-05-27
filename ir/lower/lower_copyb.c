@@ -16,7 +16,7 @@
 #include "irnode_t.h"
 #include "type_t.h"
 #include "irgmod.h"
-#include "error.h"
+#include "panic.h"
 #include "be.h"
 #include "util.h"
 

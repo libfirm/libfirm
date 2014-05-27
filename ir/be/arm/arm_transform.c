@@ -18,7 +18,7 @@
 #include "dbginfo.h"
 #include "iropt_t.h"
 #include "debug.h"
-#include "error.h"
+#include "panic.h"
 #include "util.h"
 
 #include "benode.h"

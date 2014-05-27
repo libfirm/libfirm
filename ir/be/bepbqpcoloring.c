@@ -12,7 +12,7 @@
 
 /* miscellaneous includes */
 #include "debug.h"
-#include "error.h"
+#include "panic.h"
 
 #include "irdom.h"
 #include "irdump.h"

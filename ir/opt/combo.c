@@ -40,7 +40,7 @@
 #include "iropt_dbg.h"
 #include "debug.h"
 #include "array.h"
-#include "error.h"
+#include "panic.h"
 #include "irnodeset.h"
 #include "tv_t.h"
 #include "firmstat_t.h"

@@ -21,7 +21,7 @@
 #include "irnode.h"
 #include "irprog.h"
 #include "entity_t.h"
-#include "error.h"
+#include "panic.h"
 #include "util.h"
 #include "execfreq.h"
 

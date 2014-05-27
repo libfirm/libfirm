@@ -23,7 +23,7 @@
 #include "util.h"
 #include "bitset.h"
 #include "xmalloc.h"
-#include "error.h"
+#include "panic.h"
 
 typedef enum iter_direction_t {
 	down, right, all

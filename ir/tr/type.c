@@ -42,7 +42,7 @@
 #include "irhooks.h"
 #include "util.h"
 #include "entity_t.h"
-#include "error.h"
+#include "panic.h"
 #include "dbginfo.h"
 #include "irprog_t.h"
 #include "bitfiddle.h"

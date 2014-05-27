@@ -26,7 +26,7 @@
 #include "irgwalk.h"
 #include "irprintf.h"
 #include "iredges_t.h"
-#include "error.h"
+#include "panic.h"
 
 #include "beirg.h"
 #include "bespill.h"

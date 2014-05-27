@@ -19,7 +19,7 @@
 #include "irnode_t.h"
 #include "irouts_t.h"
 #include "lowering.h"
-#include "error.h"
+#include "panic.h"
 #include "irnodeset.h"
 
 typedef struct walk_env_t {

@@ -13,7 +13,7 @@
 #include "irnode.h"
 #include "util.h"
 #include "irloop_t.h"
-#include "error.h"
+#include "panic.h"
 #include "debug.h"
 
 #include "bearch.h"

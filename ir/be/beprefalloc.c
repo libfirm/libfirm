@@ -27,7 +27,7 @@
 #include <math.h>
 #include "lpp.h"
 
-#include "error.h"
+#include "panic.h"
 #include "execfreq.h"
 #include "ircons.h"
 #include "irdom.h"

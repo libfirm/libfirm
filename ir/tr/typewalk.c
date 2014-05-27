@@ -24,7 +24,7 @@
 #include "irgraph_t.h"
 #include "irnode_t.h"
 #include "irgwalk.h"
-#include "error.h"
+#include "panic.h"
 #include "ircons.h"
 
 /**

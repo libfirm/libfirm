@@ -22,7 +22,7 @@
 #include "irargs_t.h"
 #include "irprog.h"
 #include "irargs_t.h"
-#include "error.h"
+#include "panic.h"
 #include "raw_bitset.h"
 #include "dbginfo.h"
 #include "heights.h"

@@ -14,7 +14,7 @@
 #include "array.h"
 #include "be.h"
 #include "debug.h"
-#include "error.h"
+#include "panic.h"
 #include "hashptr.h"
 #include "ircons_t.h"
 #include "irflag_t.h"

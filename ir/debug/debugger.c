@@ -36,7 +36,7 @@
 #include "irdump.h"
 #include "iredges_t.h"
 #include "debug.h"
-#include "error.h"
+#include "panic.h"
 #include "util.h"
 
 void firm_debug_break(void)

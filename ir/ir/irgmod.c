@@ -18,7 +18,7 @@
 #include "irhooks.h"
 #include "iredges_t.h"
 #include "irtools.h"
-#include "error.h"
+#include "panic.h"
 
 void turn_into_tuple(ir_node *const node, int const arity,
                      ir_node *const *const in)

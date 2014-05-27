@@ -16,7 +16,7 @@
 #include "irtypes.h"
 #include "irnode_t.h"
 #include "irprintf.h"
-#include "error.h"
+#include "panic.h"
 #include "iredges_t.h"
 #include "irgwalk.h"
 

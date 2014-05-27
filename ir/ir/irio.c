@@ -25,7 +25,7 @@
 #include "irgwalk.h"
 #include "tv_t.h"
 #include "array.h"
-#include "error.h"
+#include "panic.h"
 #include "typerep.h"
 #include "set.h"
 #include "obst.h"

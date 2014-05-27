@@ -18,7 +18,7 @@
 #include "iroptimize.h"
 #include "lower_dw.h"
 #include "array.h"
-#include "error.h"
+#include "panic.h"
 #include "util.h"
 
 #include "ia32_new_nodes.h"

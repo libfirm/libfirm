@@ -23,7 +23,7 @@
 #include "counter.h"
 #include "pattern_dmp.h"
 #include "hashptr.h"
-#include "error.h"
+#include "panic.h"
 #include "lc_printf.h"
 
 /*

@@ -19,7 +19,7 @@
 #include "iroptimize.h"
 #include "irdump.h"
 #include "lower_calls.h"
-#include "error.h"
+#include "panic.h"
 #include "debug.h"
 #include "array.h"
 #include "irtools.h"

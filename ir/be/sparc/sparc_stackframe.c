@@ -9,7 +9,7 @@
  * @author  Matthias Braun
  */
 #include "beirg.h"
-#include "error.h"
+#include "panic.h"
 #include "firm_types.h"
 #include "irnode_t.h"
 #include "bearch_sparc_t.h"

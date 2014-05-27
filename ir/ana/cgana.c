@@ -33,7 +33,7 @@
 
 #include "pmap.h"
 #include "array.h"
-#include "error.h"
+#include "panic.h"
 
 #include "irdump.h"
 

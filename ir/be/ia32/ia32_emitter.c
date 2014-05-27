@@ -41,7 +41,7 @@
 #include "iredges_t.h"
 #include "irtools.h"
 #include "execfreq.h"
-#include "error.h"
+#include "panic.h"
 #include "dbginfo.h"
 #include "lc_opts.h"
 #include "ircons.h"

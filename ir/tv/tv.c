@@ -33,7 +33,7 @@
 #include "util.h"
 #include "xmalloc.h"
 #include "firm_common.h"
-#include "error.h"
+#include "panic.h"
 
 /** Size of hash tables.  Should correspond to average number of distinct
  * constant target values */

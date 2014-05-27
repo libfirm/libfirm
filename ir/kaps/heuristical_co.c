@@ -11,7 +11,7 @@
  */
 #include "adt/array.h"
 #include "assert.h"
-#include "error.h"
+#include "panic.h"
 
 #include "bucket.h"
 #include "heuristical_co.h"

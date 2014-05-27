@@ -25,7 +25,7 @@
 #include "irnodehashmap.h"
 #include "raw_bitset.h"
 #include "debug.h"
-#include "error.h"
+#include "panic.h"
 #include "type_t.h"
 
 /* maximum number of output Proj's */

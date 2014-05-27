@@ -2,7 +2,7 @@
 #include <assert.h>
 
 #include "firm.h"
-#include "error.h"
+#include "panic.h"
 #include "irmode.h"
 #include "tv.h"
 

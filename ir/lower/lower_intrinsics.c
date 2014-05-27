@@ -23,7 +23,7 @@
 #include "pmap.h"
 #include "array.h"
 #include "iropt_dbg.h"
-#include "error.h"
+#include "panic.h"
 #include "be.h"
 #include "util.h"
 #include "firmstat_t.h"

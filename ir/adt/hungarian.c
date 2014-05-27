@@ -35,7 +35,7 @@
 #include "util.h"
 #include "xmalloc.h"
 #include "debug.h"
-#include "error.h"
+#include "panic.h"
 #include "hungarian.h"
 #include "raw_bitset.h"
 

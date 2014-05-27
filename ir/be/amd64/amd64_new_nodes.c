@@ -12,7 +12,7 @@
 #include <stdlib.h>
 #include <inttypes.h>
 
-#include "error.h"
+#include "panic.h"
 #include "irprog_t.h"
 #include "irgraph_t.h"
 #include "irnode_t.h"

@@ -13,7 +13,7 @@
 #include "irnode_t.h"
 #include "type_t.h"
 #include "entity_t.h"
-#include "error.h"
+#include "panic.h"
 
 merge_pair_func *__dbg_info_merge_pair = default_dbg_info_merge_pair;
 merge_sets_func *__dbg_info_merge_sets = default_dbg_info_merge_sets;

@@ -15,7 +15,7 @@
 #include "ircons.h"
 #include "iropt_t.h"
 #include "debug.h"
-#include "error.h"
+#include "panic.h"
 
 #include "benode.h"
 #include "betranshlp.h"

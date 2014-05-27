@@ -22,7 +22,7 @@
 #include "bestack.h"
 #include "be_t.h"
 #include "debug.h"
-#include "error.h"
+#include "panic.h"
 #include "ircons.h"
 #include "irdump.h"
 #include "irgmod.h"

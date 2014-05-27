@@ -8,7 +8,7 @@
  * @brief   code selection (transform FIRM into amd64 FIRM)
  */
 #include "debug.h"
-#include "error.h"
+#include "panic.h"
 #include "heights.h"
 #include "ircons.h"
 #include "irgmod.h"

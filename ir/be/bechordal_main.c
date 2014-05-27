@@ -33,7 +33,7 @@
 #include "debug.h"
 #include "execfreq.h"
 #include "iredges_t.h"
-#include "error.h"
+#include "panic.h"
 
 #include "bechordal_t.h"
 #include "beabi.h"

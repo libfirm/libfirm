@@ -25,7 +25,7 @@
 #include "irgwalk.h"
 #include "irprintf.h"
 #include "debug.h"
-#include "error.h"
+#include "panic.h"
 #include "typerep.h"
 #include "type_t.h"
 

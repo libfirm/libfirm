@@ -10,7 +10,7 @@
  */
 #include <string.h>
 
-#include "error.h"
+#include "panic.h"
 #include "cgana.h"
 #include "irop_t.h"
 #include "irnode_t.h"

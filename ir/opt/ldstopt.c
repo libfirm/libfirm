@@ -15,7 +15,7 @@
 #include "dbginfo_t.h"
 #include "debug.h"
 #include "entity_t.h"
-#include "error.h"
+#include "panic.h"
 #include "ircons_t.h"
 #include "iredges.h"
 #include "irflag_t.h"

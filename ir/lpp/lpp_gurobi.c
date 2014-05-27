@@ -8,7 +8,7 @@
  * @author  Matthias Braun
  */
 #include "lpp_gurobi.h"
-#include "error.h"
+#include "panic.h"
 
 #ifdef WITH_GUROBI
 

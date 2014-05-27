@@ -28,7 +28,7 @@
 #include "benode.h"
 #include "besched.h"
 #include "debug.h"
-#include "error.h"
+#include "panic.h"
 #include "gen_amd64_new_nodes.h"
 #include "irgwalk.h"
 #include "util.h"

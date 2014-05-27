@@ -22,7 +22,7 @@
 #include "irdump.h"
 #include "irgraph_t.h"
 #include "callgraph.h"
-#include "error.h"
+#include "panic.h"
 
 /** The name of the unknown entity. */
 #define UNKNOWN_ENTITY_NAME "unknown_entity"

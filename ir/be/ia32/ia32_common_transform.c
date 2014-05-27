@@ -11,7 +11,7 @@
  */
 #include "bearch_ia32_t.h"
 #include "beutil.h"
-#include "error.h"
+#include "panic.h"
 #include "ircons.h"
 #include "irprintf.h"
 #include "typerep.h"

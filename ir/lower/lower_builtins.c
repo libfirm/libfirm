@@ -17,7 +17,7 @@
 #include "irgmod.h"
 #include "irgwalk.h"
 #include "iroptimize.h"
-#include "error.h"
+#include "panic.h"
 #include "irprog_t.h"
 #include "util.h"
 

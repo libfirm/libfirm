@@ -9,7 +9,7 @@
  * @author   Matthias Braun
  */
 #include "bearch_sparc_t.h"
-#include "error.h"
+#include "panic.h"
 #include "sparc_nodes_attr.h"
 #include "gen_sparc_new_nodes.h"
 #include "lower_dw.h"

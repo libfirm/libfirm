@@ -32,7 +32,7 @@
 #include "be_t.h"
 #include "beintlive_t.h"
 #include "beirg.h"
-#include "error.h"
+#include "panic.h"
 #include "raw_bitset.h"
 #include "pdeq.h"
 

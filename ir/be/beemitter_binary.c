@@ -14,7 +14,7 @@
 
 #include "beemitter_binary.h"
 #include "obst.h"
-#include "error.h"
+#include "panic.h"
 
 static code_fragment_t *first_fragment;
 static code_fragment_t *last_fragment;

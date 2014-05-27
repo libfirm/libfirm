@@ -15,7 +15,7 @@
  * - Two-address code instructions
  */
 #include "debug.h"
-#include "error.h"
+#include "panic.h"
 #include "execfreq_t.h"
 #include "irdump_t.h"
 #include "iredges_t.h"

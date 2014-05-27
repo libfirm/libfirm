@@ -36,7 +36,7 @@
 
 #include "irverify.h"
 
-#include "error.h"
+#include "panic.h"
 #include "array.h"
 #include "pmap.h"
 #include "obst.h"

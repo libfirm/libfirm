@@ -19,7 +19,7 @@
 
 #include "statev_t.h"
 #include "bemodule.h"
-#include "error.h"
+#include "panic.h"
 
 #include "lpp.h"
 

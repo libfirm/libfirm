@@ -20,7 +20,7 @@
 #include "irnode_t.h"
 #include "irdump_t.h"
 #include "irhooks.h"
-#include "error.h"
+#include "panic.h"
 
 static copy_attr_func old_phi_copy_attr;
 

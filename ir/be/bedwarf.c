@@ -14,7 +14,7 @@
 
 #include "bearch.h"
 #include "bedwarf_t.h"
-#include "error.h"
+#include "panic.h"
 #include "obst.h"
 #include "irprog.h"
 #include "tv.h"

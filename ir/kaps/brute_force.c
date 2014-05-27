@@ -12,7 +12,7 @@
 #include <stdbool.h>
 
 #include "assert.h"
-#include "error.h"
+#include "panic.h"
 
 #include "bucket.h"
 #include "brute_force.h"

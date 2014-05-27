@@ -19,7 +19,7 @@
 #include "irgwalk.h"
 #include "irnode_t.h"
 #include "beifg.h"
-#include "error.h"
+#include "panic.h"
 #include "xmalloc.h"
 
 #include "becopystat.h"

@@ -27,7 +27,7 @@
 #include "debug.h"
 #include "irdom.h"
 #include "iropt.h"
-#include "error.h"
+#include "panic.h"
 #include "array.h"
 #include "heights.h"
 

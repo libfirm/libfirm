@@ -25,7 +25,7 @@
 #include "pmap.h"
 #include "hashptr.h"
 #include "raw_bitset.h"
-#include "error.h"
+#include "panic.h"
 
 #include "irgwalk.h"
 

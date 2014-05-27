@@ -23,7 +23,7 @@
 #include "fourcc.h"
 #include "bitfiddle.h"
 #include "raw_bitset.h"
-#include "error.h"
+#include "panic.h"
 #include "array.h"
 
 #include "irop_t.h"

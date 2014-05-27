@@ -13,7 +13,7 @@
 #include "irflag_t.h"
 #include "irprintf.h"
 #include "irgwalk.h"
-#include "error.h"
+#include "panic.h"
 #include "tv.h"
 #include "ircons.h"
 

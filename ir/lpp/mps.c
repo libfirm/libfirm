@@ -10,7 +10,7 @@
 #include <stdarg.h>
 #include <assert.h>
 #include "mps.h"
-#include "error.h"
+#include "panic.h"
 
 /**
  * These must comply to the enum cst_t in lpp.h

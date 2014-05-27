@@ -12,11 +12,11 @@
 
 #include <stdio.h>
 #include <stdarg.h>
-#include "error.h"
 #include "irprintf.h"
+#include "panic.h"
 
-FIRM_NORETURN (panic)(char const *const file, int const line,
-                      char const *const func, char const *const fmt, ...)
+FIRM_NORETURN print_panic(char const *const file, int const line,
+                          char const *const func, char const *const fmt, ...)
 {
 	va_list ap;
 

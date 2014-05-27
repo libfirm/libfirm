@@ -10,7 +10,7 @@
  */
 #include "array.h"
 #include "pqueue.h"
-#include "error.h"
+#include "panic.h"
 
 /*
  * Implements a heap.

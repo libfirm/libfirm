@@ -22,7 +22,7 @@
 #include "irgwalk.h"
 #include "tv_t.h"
 #include "irprintf.h"
-#include "error.h"
+#include "panic.h"
 #include "cgana.h"
 
 #include "irdom.h"

@@ -44,7 +44,7 @@
 #include "benode.h"
 
 #include "debug.h"
-#include "error.h"
+#include "panic.h"
 #include "array.h"
 #include "irdom.h"
 #include "ircons.h"

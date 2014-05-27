@@ -8,7 +8,7 @@
  * @author  Daniel Grund
  */
 #include "lpp_cplex.h"
-#include "error.h"
+#include "panic.h"
 
 #ifdef WITH_CPLEX
 

@@ -36,7 +36,7 @@
 #include "firm_types.h"
 #include "bitfiddle.h"
 #include "be.h"
-#include "error.h"
+#include "panic.h"
 #include "firmstat_t.h"
 
 #include "entity_t.h"

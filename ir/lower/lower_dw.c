@@ -15,7 +15,7 @@
 #include <assert.h>
 
 #include "be.h"
-#include "error.h"
+#include "panic.h"
 #include "lowering.h"
 #include "irnode_t.h"
 #include "irnodeset.h"

@@ -16,7 +16,7 @@
 #include "typerep.h"
 #include "xmalloc.h"
 #include "util.h"
-#include "error.h"
+#include "panic.h"
 #include "gen_sparc_regalloc_if.h"
 #include "bitfiddle.h"
 

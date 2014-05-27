@@ -24,7 +24,7 @@
 #include "array.h"
 #include "pdeq.h"
 #include "debug.h"
-#include "error.h"
+#include "panic.h"
 
 #include "belive_t.h"
 #include "besched.h"

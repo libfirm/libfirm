@@ -32,7 +32,7 @@
 #include "irarch.h"
 #include "irflag.h"
 #include "be.h"
-#include "error.h"
+#include "panic.h"
 
 /** The bit mask, which optimizations to apply. */
 static arch_dep_opts_t opts;
