@@ -300,9 +300,13 @@ static ir_entity *ia32_create_intrinsic_fkt(ir_type *method, const ir_op *op,
 void ia32_lower64(void)
 {
 	/* perform doubleword lowering */
+	ir_mode *word_unsigned = ia32_reg_classes[CLASS_ia32_gp].mode;
+	ir_mode *word_signed   = find_signed_mode(word_unsigned);
 	lwrdw_param_t lower_dw_params = {
 		ia32_create_intrinsic_fkt,
 		NULL,
+		word_unsigned,
+		word_signed,
 		64,    /* doubleword size */
 		be_is_big_endian(),
 	};

@@ -42,6 +42,8 @@ typedef ir_entity *(create_intrinsic_fkt)(ir_type *method, const ir_op *op,
 typedef struct lwrdw_param_t {
 	create_intrinsic_fkt *create_intrinsic; /**< callback that creates the intrinsic entity */
 	void                 *ctx;              /**< context parameter for the creator function */
+	ir_mode              *word_unsigned;    /**< mode for unsigned word */
+	ir_mode              *word_signed;      /**< mode for signed word */
 	unsigned short        doubleword_size;  /**< bitsize of the doubleword mode */
 	bool                  big_endian:1;     /**< target is big endian if true,
 											     else little endian */

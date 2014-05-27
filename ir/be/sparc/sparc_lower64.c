@@ -12,6 +12,7 @@
 #include "panic.h"
 #include "sparc_nodes_attr.h"
 #include "gen_sparc_new_nodes.h"
+#include "gen_sparc_regalloc_if.h"
 #include "lower_dw.h"
 #include "ircons_t.h"
 
@@ -124,9 +125,13 @@ static ir_entity *create_64_intrinsic_fkt(ir_type *method, const ir_op *op,
 
 void sparc_lower_64bit(void)
 {
+	ir_mode *word_unsigned = sparc_reg_classes[CLASS_sparc_gp].mode;
+	ir_mode *word_signed   = find_signed_mode(word_unsigned);
 	lwrdw_param_t lower_dw_params = {
 		create_64_intrinsic_fkt,
 		NULL,
+		word_unsigned,
+		word_signed,
 		64,    /* doubleword size */
 		be_is_big_endian(),
 	};
