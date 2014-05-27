@@ -517,7 +517,7 @@ foreach my $op (keys(%nodes)) {
 		$num_outs = $#outs + 1;
 
 		if ($num_outs > 0) {
-			$obst_proj .= "\nenum pn_${op} {\n";
+			$obst_proj .= "\ntypedef enum {\n";
 
 			for (my $idx = 0; $idx <= $#outs; $idx++) {
 				# check, if we have additional flags annotated to out
@@ -528,7 +528,7 @@ foreach my $op (keys(%nodes)) {
 				$obst_proj .= "\tpn_${op}_".$outs[$idx]." = ${idx},\n";
 			}
 
-			$obst_proj .= "};\n";
+			$obst_proj .= "} pn_${op};\n";
 		}
 		# outs have names, it must be a mode_T node
 		if (!defined($n{mode})) {
