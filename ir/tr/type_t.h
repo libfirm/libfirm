@@ -108,7 +108,8 @@ typedef enum type_flags {
 	tf_global_type   = 1U << 4, /**< Set only for the global type */
 	tf_tls_type      = 1U << 5, /**< Set only for the tls type */
 	tf_info          = 1U << 6, /**< infos (for example constructor, destructor pointers) */
-	tf_variable_size = 1U << 8, /**< compound or array type may have variable size last element */
+	tf_variable_size = 1U << 7, /**< compound or array type may have variable size last element */
+	tf_lowered_dw    = 1U << 8, /**< hack to identify lowered doubleword params */
 } type_flags;
 ENUM_BITSET(type_flags)
 

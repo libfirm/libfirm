@@ -14,32 +14,33 @@
 #include <stdbool.h>
 #include <assert.h>
 
-#include "be.h"
-#include "panic.h"
-#include "lowering.h"
-#include "irnode_t.h"
-#include "irnodeset.h"
-#include "irgraph_t.h"
-#include "irmode_t.h"
-#include "iropt_t.h"
-#include "irgmod.h"
-#include "tv_t.h"
-#include "dbginfo_t.h"
-#include "iropt_dbg.h"
-#include "irflag_t.h"
-#include "firmstat.h"
-#include "irgwalk.h"
-#include "ircons_t.h"
-#include "irflag.h"
-#include "iroptimize.h"
-#include "debug.h"
-#include "irprog_t.h"
-#include "set.h"
-#include "pmap.h"
-#include "pdeq.h"
-#include "irdump.h"
 #include "array.h"
+#include "be.h"
+#include "dbginfo_t.h"
+#include "debug.h"
+#include "firmstat.h"
+#include "ircons_t.h"
+#include "irdump.h"
+#include "irflag.h"
+#include "irflag_t.h"
+#include "irgmod.h"
+#include "irgraph_t.h"
+#include "irgwalk.h"
+#include "irmode_t.h"
+#include "irnodeset.h"
+#include "irnode_t.h"
+#include "iropt_dbg.h"
+#include "iroptimize.h"
+#include "iropt_t.h"
+#include "irprog_t.h"
 #include "lower_dw.h"
+#include "lowering.h"
+#include "panic.h"
+#include "pdeq.h"
+#include "pmap.h"
+#include "set.h"
+#include "tv_t.h"
+#include "type_t.h"
 
 /** A map from (op, imode, omode) to Intrinsic functions entities. */
 static set *intrinsic_fkt;
@@ -55,7 +56,14 @@ static pmap *lowered_builtin_type_high;
 static pmap *lowered_builtin_type_low;
 
 /** The types for the binop and unop intrinsics. */
-static ir_type *binop_tp_u, *binop_tp_s, *unop_tp_u, *unop_tp_s, *tp_s, *tp_u;
+static ir_type *binop_tp_u;
+static ir_type *binop_tp_s;
+static ir_type *unop_tp_u;
+static ir_type *unop_tp_s;
+static ir_type *tp_s;
+static ir_type *tp_u;
+static ir_type *tp_l_s;
+static ir_type *tp_l_u;
 
 static ir_nodeset_t created_mux_nodes;
 
@@ -147,14 +155,14 @@ static ir_type *get_conv_type(ir_mode *imode, ir_mode *omode)
 	if (needs_lowering(imode)) {
 		if (mode_is_signed(imode)) {
 			if (env.p.big_endian) {
-				set_method_param_type(mtd, n_param++, tp_s);
+				set_method_param_type(mtd, n_param++, tp_l_s);
 				set_method_param_type(mtd, n_param++, tp_u);
 			} else {
-				set_method_param_type(mtd, n_param++, tp_u);
+				set_method_param_type(mtd, n_param++, tp_l_u);
 				set_method_param_type(mtd, n_param++, tp_s);
 			}
 		} else {
-			set_method_param_type(mtd, n_param++, tp_u);
+			set_method_param_type(mtd, n_param++, tp_l_u);
 			set_method_param_type(mtd, n_param++, tp_u);
 		}
 	} else {
@@ -166,14 +174,14 @@ static ir_type *get_conv_type(ir_mode *imode, ir_mode *omode)
 	if (needs_lowering(omode)) {
 		if (mode_is_signed(omode)) {
 			if (env.p.big_endian) {
-				set_method_res_type(mtd, n_res++, tp_s);
+				set_method_res_type(mtd, n_res++, tp_l_s);
 				set_method_res_type(mtd, n_res++, tp_u);
 			} else {
-				set_method_res_type(mtd, n_res++, tp_u);
+				set_method_res_type(mtd, n_res++, tp_l_u);
 				set_method_res_type(mtd, n_res++, tp_s);
 			}
 		} else {
-			set_method_res_type(mtd, n_res++, tp_u);
+			set_method_res_type(mtd, n_res++, tp_l_u);
 			set_method_res_type(mtd, n_res++, tp_u);
 		}
 	} else {
@@ -1679,14 +1687,14 @@ static ir_type *lower_mtp(ir_type *mtp)
 			if (needs_lowering(mode)) {
 				if (mode_is_signed(mode)) {
 					if (env.p.big_endian) {
-						set_method_param_type(res, n_param++, tp_s);
+						set_method_param_type(res, n_param++, tp_l_s);
 						set_method_param_type(res, n_param++, tp_u);
 					} else {
-						set_method_param_type(res, n_param++, tp_u);
+						set_method_param_type(res, n_param++, tp_l_u);
 						set_method_param_type(res, n_param++, tp_s);
 					}
 				} else {
-					set_method_param_type(res, n_param++, tp_u);
+					set_method_param_type(res, n_param++, tp_l_u);
 					set_method_param_type(res, n_param++, tp_u);
 				}
 				continue;
@@ -1702,14 +1710,14 @@ static ir_type *lower_mtp(ir_type *mtp)
 			if (needs_lowering(mode)) {
 				if (mode_is_signed(mode)) {
 					if (env.p.big_endian) {
-						set_method_res_type(res, n_res++, tp_s);
+						set_method_res_type(res, n_res++, tp_l_s);
 						set_method_res_type(res, n_res++, tp_u);
 					} else {
-						set_method_res_type(res, n_res++, tp_u);
+						set_method_res_type(res, n_res++, tp_l_u);
 						set_method_res_type(res, n_res++, tp_s);
 					}
 				} else {
-					set_method_res_type(res, n_res++, tp_u);
+					set_method_res_type(res, n_res++, tp_l_u);
 					set_method_res_type(res, n_res++, tp_u);
 				}
 				continue;
@@ -2801,48 +2809,52 @@ void ir_lower_dw_ops(void)
 		lowered_builtin_type_high = pmap_create();
 		tp_u = get_type_for_mode(env.p.word_unsigned);
 		tp_s = get_type_for_mode(env.p.word_signed);
+		tp_l_u = new_type_primitive(env.p.word_unsigned);
+		tp_l_u->flags |= tf_lowered_dw;
+		tp_l_s = new_type_primitive(env.p.word_signed);
+		tp_l_s->flags |= tf_lowered_dw;
 
 		binop_tp_u = new_type_method(4, 2);
-		set_method_param_type(binop_tp_u, 0, tp_u);
+		set_method_param_type(binop_tp_u, 0, tp_l_u);
 		set_method_param_type(binop_tp_u, 1, tp_u);
-		set_method_param_type(binop_tp_u, 2, tp_u);
+		set_method_param_type(binop_tp_u, 2, tp_l_u);
 		set_method_param_type(binop_tp_u, 3, tp_u);
-		set_method_res_type(binop_tp_u, 0, tp_u);
+		set_method_res_type(binop_tp_u, 0, tp_l_u);
 		set_method_res_type(binop_tp_u, 1, tp_u);
 
 		binop_tp_s = new_type_method(4, 2);
 		if (env.p.big_endian) {
-			set_method_param_type(binop_tp_s, 0, tp_s);
+			set_method_param_type(binop_tp_s, 0, tp_l_s);
 			set_method_param_type(binop_tp_s, 1, tp_u);
-			set_method_param_type(binop_tp_s, 2, tp_s);
+			set_method_param_type(binop_tp_s, 2, tp_l_s);
 			set_method_param_type(binop_tp_s, 3, tp_u);
-			set_method_res_type(binop_tp_s, 0, tp_s);
+			set_method_res_type(binop_tp_s, 0, tp_l_s);
 			set_method_res_type(binop_tp_s, 1, tp_u);
 		} else {
-			set_method_param_type(binop_tp_s, 0, tp_u);
+			set_method_param_type(binop_tp_s, 0, tp_l_u);
 			set_method_param_type(binop_tp_s, 1, tp_s);
-			set_method_param_type(binop_tp_s, 2, tp_u);
+			set_method_param_type(binop_tp_s, 2, tp_l_u);
 			set_method_param_type(binop_tp_s, 3, tp_s);
-			set_method_res_type(binop_tp_s, 0, tp_u);
+			set_method_res_type(binop_tp_s, 0, tp_l_u);
 			set_method_res_type(binop_tp_s, 1, tp_s);
 		}
 
 		unop_tp_u = new_type_method(2, 2);
-		set_method_param_type(unop_tp_u, 0, tp_u);
+		set_method_param_type(unop_tp_u, 0, tp_l_u);
 		set_method_param_type(unop_tp_u, 1, tp_u);
-		set_method_res_type(unop_tp_u, 0, tp_u);
+		set_method_res_type(unop_tp_u, 0, tp_l_u);
 		set_method_res_type(unop_tp_u, 1, tp_u);
 
 		unop_tp_s = new_type_method(2, 2);
 		if (env.p.big_endian) {
-			set_method_param_type(unop_tp_s, 0, tp_s);
+			set_method_param_type(unop_tp_s, 0, tp_l_s);
 			set_method_param_type(unop_tp_s, 1, tp_u);
-			set_method_res_type(unop_tp_s, 0, tp_s);
+			set_method_res_type(unop_tp_s, 0, tp_l_s);
 			set_method_res_type(unop_tp_s, 1, tp_u);
 		} else {
-			set_method_param_type(unop_tp_s, 0, tp_u);
+			set_method_param_type(unop_tp_s, 0, tp_l_u);
 			set_method_param_type(unop_tp_s, 1, tp_s);
-			set_method_res_type(unop_tp_s, 0, tp_u);
+			set_method_res_type(unop_tp_s, 0, tp_l_u);
 			set_method_res_type(unop_tp_s, 1, tp_s);
 		}
 	}

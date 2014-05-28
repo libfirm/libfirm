@@ -59,6 +59,18 @@ calling_convention_t *arm_decide_calling_convention(const ir_graph *irg,
 		reg_or_stackslot_t *param      = &params[i];
 		param->type = param_type;
 
+		/* doubleword modes need to be passed in even registers */
+		if (param_type->flags & tf_lowered_dw) {
+			if (regnum < n_param_regs) {
+				if ((regnum & 1) != 0)
+					++regnum;
+			} else {
+				unsigned misalign = stack_offset % 8;
+				if (misalign > 0)
+					stack_offset += 8 - misalign;
+			}
+		}
+
 		if (regnum < n_param_regs) {
 			const arch_register_t *reg = param_regs[regnum];
 			param->reg0       = reg;
