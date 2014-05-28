@@ -97,7 +97,7 @@ static int arm_get_sp_bias(const ir_node *node)
 
 /* fill register allocator interface */
 
-static const arch_irn_ops_t arm_irn_ops = {
+const arch_irn_ops_t arm_irn_ops = {
 	arm_get_frame_entity,
 	arm_set_stack_bias,
 	arm_get_sp_bias,
@@ -259,12 +259,13 @@ static int arm_fpu = ARM_FPU_ARCH_SOFTFLOAT;
 static void arm_setup_cg_config(void)
 {
 	memset(&arm_cg_config, 0, sizeof(arm_cg_config));
+	arm_cg_config.version = 6;
 	if (arm_fpu == ARM_FPU_SOFTFLOAT) {
 		arm_cg_config.use_softfloat = true;
 	}
 	arm_cg_config.use_fpa = arm_fpu & ARM_FPU_FPA_EXT_V1;
 	arm_cg_config.use_vfp = arm_fpu & ARM_FPU_VFP_EXT_V1xD;
-	arm_cg_config.version = 6;
+	arm_cg_config.big_endian = arm_get_libfirm_params()->byte_order_big_endian;
 }
 
 static void arm_init(void)
@@ -342,6 +343,9 @@ static void arm_lower_for_target(void)
 		lower_switch(irg, 4, 256, arm_mode_gp);
 		be_after_transform(irg, "lower-switch");
 	}
+
+	arm_lower_64bit();
+	be_after_irp_transform("lower-64");
 }
 
 /**

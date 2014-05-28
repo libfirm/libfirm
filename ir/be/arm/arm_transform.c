@@ -35,6 +35,7 @@
 #include "arm_cconv.h"
 
 #include "gen_arm_regalloc_if.h"
+#include "gen_arm_new_nodes.h"
 
 #include <limits.h>
 
@@ -601,6 +602,55 @@ static ir_node *gen_Add(ir_node *node)
 	}
 }
 
+static ir_node *gen_arm_AddS_t(ir_node *node)
+{
+	static const arm_binop_factory_t adds_factory = {
+		new_bd_arm_AddS_reg,
+		new_bd_arm_AddS_imm,
+		new_bd_arm_AddS_reg_shift_reg,
+		new_bd_arm_AddS_reg_shift_imm,
+	};
+	ir_node *left  = get_irn_n(node, n_arm_AddS_t_left);
+	ir_node *right = get_irn_n(node, n_arm_AddS_t_right);
+	ir_node *res   = gen_int_binop_ops(node, left, right,
+	                                   MATCH_COMMUTATIVE | MATCH_SIZE_NEUTRAL,
+	                                   &adds_factory);
+	arch_set_irn_register_out(res, pn_arm_AddS_flags, &arm_registers[REG_FL]);
+	return res;
+}
+
+static ir_node *gen_Proj_arm_AddS_t(ir_node *node)
+{
+	long     pn       = get_Proj_proj(node);
+	ir_node *pred     = get_Proj_pred(node);
+	ir_node *new_pred = be_transform_node(pred);
+	switch ((pn_arm_AddS_t)pn) {
+	case pn_arm_AddS_t_res:
+		return new_r_Proj(new_pred, arm_mode_gp, pn_arm_AddS_res);
+	case pn_arm_AddS_t_flags:
+		return new_r_Proj(new_pred, arm_mode_flags, pn_arm_AddS_flags);
+	}
+	panic("%+F: Invalid proj number", node);
+}
+
+static ir_node *gen_arm_AdC_t(ir_node *node)
+{
+	ir_node *left  = get_irn_n(node, n_arm_AdC_t_left);
+	ir_node *right = get_irn_n(node, n_arm_AdC_t_right);
+	ir_node *flags = get_irn_n(node, n_arm_AdC_t_flags);
+	/* TODO: handle complete set of shifter operands */
+	ir_node *new_left  = be_transform_node(left);
+	ir_node *new_right = be_transform_node(right);
+	ir_node *new_flags = be_transform_node(flags);
+
+	dbg_info *dbgi      = get_irn_dbg_info(node);
+	ir_node  *block     = get_nodes_block(node);
+	ir_node  *new_block = be_transform_node(block);
+	ir_node  *res       = new_bd_arm_AdC_reg(dbgi, new_block, new_left,
+	                                         new_right, new_flags);
+	return res;
+}
+
 /**
  * Creates an ARM Mul.
  *
@@ -631,6 +681,44 @@ static ir_node *gen_Mul(ir_node *node)
 	} else {
 		return new_bd_arm_Mul(dbg, block, new_op1, new_op2);
 	}
+}
+
+static ir_node *gen_arm_UMulL_t(ir_node *node)
+{
+	ir_node  *block     = be_transform_node(get_nodes_block(node));
+	ir_node  *left      = get_irn_n(node, n_arm_UMulL_t_left);
+	ir_node  *new_left  = be_transform_node(left);
+	ir_node  *right     = get_irn_n(node, n_arm_UMulL_t_right);
+	ir_node  *new_right = be_transform_node(right);
+	dbg_info *dbgi      = get_irn_dbg_info(node);
+	return new_bd_arm_UMulL(dbgi, block, new_left, new_right);
+}
+
+static ir_node *gen_Proj_arm_UMulL_t(ir_node *node)
+{
+	long     pn       = get_Proj_proj(node);
+	ir_node *pred     = get_Proj_pred(node);
+	ir_node *new_pred = be_transform_node(pred);
+	switch ((pn_arm_UMulL_t)pn) {
+	case pn_arm_UMulL_t_low:
+		return new_r_Proj(new_pred, arm_mode_gp, pn_arm_UMulL_low);
+	case pn_arm_UMulL_t_high:
+		return new_r_Proj(new_pred, arm_mode_gp, pn_arm_UMulL_high);
+	}
+	panic("%+F: Invalid proj number", node);
+}
+
+static ir_node *gen_arm_Mla_t(ir_node *node)
+{
+	ir_node  *block     = be_transform_node(get_nodes_block(node));
+	ir_node  *left      = get_irn_n(node, n_arm_Mla_t_left);
+	ir_node  *new_left  = be_transform_node(left);
+	ir_node  *right     = get_irn_n(node, n_arm_Mla_t_right);
+	ir_node  *new_right = be_transform_node(right);
+	ir_node  *add       = get_irn_n(node, n_arm_Mla_t_add);
+	ir_node  *new_add   = be_transform_node(add);
+	dbg_info *dbgi      = get_irn_dbg_info(node);
+	return new_bd_arm_Mla(dbgi, block, new_left, new_right, new_add);
 }
 
 static ir_node *gen_Div(ir_node *node)
@@ -706,6 +794,26 @@ static ir_node *gen_Or(ir_node *node)
 	return gen_int_binop(node, MATCH_COMMUTATIVE | MATCH_SIZE_NEUTRAL, &or_factory);
 }
 
+static ir_node *gen_arm_OrPl_t(ir_node *node)
+{
+	ir_node *left     = get_irn_n(node, n_arm_OrPl_t_left);
+	ir_node *right    = get_irn_n(node, n_arm_OrPl_t_right);
+	ir_node *falseval = get_irn_n(node, n_arm_OrPl_t_falseval);
+	ir_node *flags    = get_irn_n(node, n_arm_OrPl_t_flags);
+	/* TODO: handle complete set of shifter operands */
+	ir_node *new_left     = be_transform_node(left);
+	ir_node *new_right    = be_transform_node(right);
+	ir_node *new_falseval = be_transform_node(falseval);
+	ir_node *new_flags    = be_transform_node(flags);
+
+	dbg_info *dbgi      = get_irn_dbg_info(node);
+	ir_node  *block     = get_nodes_block(node);
+	ir_node  *new_block = be_transform_node(block);
+	ir_node  *res       = new_bd_arm_OrPl(dbgi, new_block, new_left, new_right,
+	                                      new_falseval, new_flags);
+	return res;
+}
+
 static ir_node *gen_Eor(ir_node *node)
 {
 	static const arm_binop_factory_t eor_factory = {
@@ -753,6 +861,66 @@ static ir_node *gen_Sub(ir_node *node)
 	} else {
 		return gen_int_binop(node, MATCH_SIZE_NEUTRAL | MATCH_REVERSE, sub_rsb_factory);
 	}
+}
+
+static ir_node *gen_arm_SubS_t(ir_node *node)
+{
+	static const arm_binop_factory_t subs_factory[2] = {
+		{
+			new_bd_arm_SubS_reg,
+			new_bd_arm_SubS_imm,
+			new_bd_arm_SubS_reg_shift_reg,
+			new_bd_arm_SubS_reg_shift_imm,
+		},
+		{
+			new_bd_arm_RsbS_reg,
+			new_bd_arm_RsbS_imm,
+			new_bd_arm_RsbS_reg_shift_reg,
+			new_bd_arm_RsbS_reg_shift_imm,
+		},
+	};
+	ir_node *left  = get_irn_n(node, n_arm_SubS_t_left);
+	ir_node *right = get_irn_n(node, n_arm_SubS_t_right);
+	ir_node *res   = gen_int_binop_ops(node, left, right,
+	                                   MATCH_SIZE_NEUTRAL | MATCH_REVERSE,
+	                                   subs_factory);
+	assert((int)pn_arm_SubS_flags == (int)pn_arm_RsbS_flags);
+	arch_set_irn_register_out(res, pn_arm_SubS_flags, &arm_registers[REG_FL]);
+	return res;
+}
+
+static ir_node *gen_Proj_arm_SubS_t(ir_node *node)
+{
+	long     pn       = get_Proj_proj(node);
+	ir_node *pred     = get_Proj_pred(node);
+	ir_node *new_pred = be_transform_node(pred);
+	assert((int)pn_arm_SubS_flags == (int)pn_arm_RsbS_flags);
+	assert((int)pn_arm_SubS_res == (int)pn_arm_RsbS_res);
+	switch ((pn_arm_SubS_t)pn) {
+	case pn_arm_SubS_t_res:
+		return new_r_Proj(new_pred, arm_mode_gp, pn_arm_SubS_res);
+	case pn_arm_SubS_t_flags:
+		return new_r_Proj(new_pred, arm_mode_flags, pn_arm_SubS_flags);
+	}
+	panic("%+F: Invalid proj number", node);
+}
+
+static ir_node *gen_arm_SbC_t(ir_node *node)
+{
+	ir_node *left  = get_irn_n(node, n_arm_SbC_t_left);
+	ir_node *right = get_irn_n(node, n_arm_SbC_t_right);
+	ir_node *flags = get_irn_n(node, n_arm_SbC_t_flags);
+	/* TODO: handle complete set of shifter operands */
+	ir_node *new_left  = be_transform_node(left);
+	ir_node *new_right = be_transform_node(right);
+	ir_node *new_flags = be_transform_node(flags);
+
+	dbg_info *dbgi      = get_irn_dbg_info(node);
+	ir_node  *block     = get_nodes_block(node);
+	ir_node  *new_block = be_transform_node(block);
+	ir_node  *res       = new_bd_arm_SbC_reg(dbgi, new_block, new_left,
+	                                         new_right, new_flags);
+	return res;
 }
 
 /**
@@ -1885,45 +2053,55 @@ static void arm_register_transformers(void)
 {
 	be_start_transform_setup();
 
-	be_set_transform_function(op_Add,      gen_Add);
-	be_set_transform_function(op_Address,  gen_Address);
-	be_set_transform_function(op_And,      gen_And);
-	be_set_transform_function(op_Call,     gen_Call);
-	be_set_transform_function(op_Cmp,      gen_Cmp);
-	be_set_transform_function(op_Cond,     gen_Cond);
-	be_set_transform_function(op_Const,    gen_Const);
-	be_set_transform_function(op_Conv,     gen_Conv);
-	be_set_transform_function(op_CopyB,    gen_CopyB);
-	be_set_transform_function(op_Div,      gen_Div);
-	be_set_transform_function(op_Eor,      gen_Eor);
-	be_set_transform_function(op_Jmp,      gen_Jmp);
-	be_set_transform_function(op_Load,     gen_Load);
-	be_set_transform_function(op_Member,   gen_Member);
-	be_set_transform_function(op_Minus,    gen_Minus);
-	be_set_transform_function(op_Mul,      gen_Mul);
-	be_set_transform_function(op_Not,      gen_Not);
-	be_set_transform_function(op_Or,       gen_Or);
-	be_set_transform_function(op_Phi,      gen_Phi);
-	be_set_transform_function(op_Return,   gen_Return);
-	be_set_transform_function(op_Shl,      gen_Shl);
-	be_set_transform_function(op_Shr,      gen_Shr);
-	be_set_transform_function(op_Shrs,     gen_Shrs);
-	be_set_transform_function(op_Start,    gen_Start);
-	be_set_transform_function(op_Store,    gen_Store);
-	be_set_transform_function(op_Sub,      gen_Sub);
-	be_set_transform_function(op_Switch,   gen_Switch);
-	be_set_transform_function(op_Unknown,  gen_Unknown);
-	be_set_transform_function(op_Builtin,  gen_Builtin);
+	be_set_transform_function(op_Add,         gen_Add);
+	be_set_transform_function(op_Address,     gen_Address);
+	be_set_transform_function(op_And,         gen_And);
+	be_set_transform_function(op_arm_AdC_t,   gen_arm_AdC_t);
+	be_set_transform_function(op_arm_AddS_t,  gen_arm_AddS_t);
+	be_set_transform_function(op_arm_Mla_t,   gen_arm_Mla_t);
+	be_set_transform_function(op_arm_OrPl_t,  gen_arm_OrPl_t);
+	be_set_transform_function(op_arm_SbC_t,   gen_arm_SbC_t);
+	be_set_transform_function(op_arm_SubS_t,  gen_arm_SubS_t);
+	be_set_transform_function(op_arm_UMulL_t, gen_arm_UMulL_t);
+	be_set_transform_function(op_Builtin,     gen_Builtin);
+	be_set_transform_function(op_Call,        gen_Call);
+	be_set_transform_function(op_Cmp,         gen_Cmp);
+	be_set_transform_function(op_Cond,        gen_Cond);
+	be_set_transform_function(op_Const,       gen_Const);
+	be_set_transform_function(op_Conv,        gen_Conv);
+	be_set_transform_function(op_CopyB,       gen_CopyB);
+	be_set_transform_function(op_Div,         gen_Div);
+	be_set_transform_function(op_Eor,         gen_Eor);
+	be_set_transform_function(op_Jmp,         gen_Jmp);
+	be_set_transform_function(op_Load,        gen_Load);
+	be_set_transform_function(op_Member,      gen_Member);
+	be_set_transform_function(op_Minus,       gen_Minus);
+	be_set_transform_function(op_Mul,         gen_Mul);
+	be_set_transform_function(op_Not,         gen_Not);
+	be_set_transform_function(op_Or,          gen_Or);
+	be_set_transform_function(op_Phi,         gen_Phi);
+	be_set_transform_function(op_Return,      gen_Return);
+	be_set_transform_function(op_Shl,         gen_Shl);
+	be_set_transform_function(op_Shr,         gen_Shr);
+	be_set_transform_function(op_Shrs,        gen_Shrs);
+	be_set_transform_function(op_Start,       gen_Start);
+	be_set_transform_function(op_Store,       gen_Store);
+	be_set_transform_function(op_Sub,         gen_Sub);
+	be_set_transform_function(op_Switch,      gen_Switch);
+	be_set_transform_function(op_Unknown,     gen_Unknown);
 
-	be_set_transform_proj_function(op_Builtin, gen_Proj_Builtin);
-	be_set_transform_proj_function(op_Call,    gen_Proj_Call);
-	be_set_transform_proj_function(op_Cond,    be_duplicate_node);
-	be_set_transform_proj_function(op_Div,     gen_Proj_Div);
-	be_set_transform_proj_function(op_Load,    gen_Proj_Load);
-	be_set_transform_proj_function(op_Proj,    gen_Proj_Proj);
-	be_set_transform_proj_function(op_Start,   gen_Proj_Start);
-	be_set_transform_proj_function(op_Store,   gen_Proj_Store);
-	be_set_transform_proj_function(op_Switch,  be_duplicate_node);
+	be_set_transform_proj_function(op_arm_AddS_t,  gen_Proj_arm_AddS_t);
+	be_set_transform_proj_function(op_arm_SubS_t,  gen_Proj_arm_SubS_t);
+	be_set_transform_proj_function(op_arm_UMulL_t, gen_Proj_arm_UMulL_t);
+	be_set_transform_proj_function(op_Builtin,     gen_Proj_Builtin);
+	be_set_transform_proj_function(op_Call,        gen_Proj_Call);
+	be_set_transform_proj_function(op_Cond,        be_duplicate_node);
+	be_set_transform_proj_function(op_Div,         gen_Proj_Div);
+	be_set_transform_proj_function(op_Load,        gen_Proj_Load);
+	be_set_transform_proj_function(op_Proj,        gen_Proj_Proj);
+	be_set_transform_proj_function(op_Start,       gen_Proj_Start);
+	be_set_transform_proj_function(op_Store,       gen_Proj_Store);
+	be_set_transform_proj_function(op_Switch,      be_duplicate_node);
 }
 
 /**

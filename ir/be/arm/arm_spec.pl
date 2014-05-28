@@ -135,6 +135,62 @@ my %binop_shifter_operand_constructors = (
 	},
 );
 
+my %binop_shifter_operand_setflags_constructors = (
+	imm => {
+		attr       => "unsigned char immediate_value, unsigned char immediate_rot",
+		custominit => "init_arm_shifter_operand(res, 1, immediate_value, ARM_SHF_IMM, immediate_rot);",
+		reg_req    => { in => [ "gp" ], out => [ "gp", "flags" ] },
+		ins        => [ "left" ],
+		outs       => [ "res", "flags" ],
+	},
+	reg => {
+		custominit => "init_arm_shifter_operand(res, 1, 0, ARM_SHF_REG, 0);",
+		reg_req    => { in => [ "gp", "gp" ], out => [ "gp", "flags" ] },
+		ins        => [ "left", "right" ],
+		outs       => [ "res", "flags" ],
+	},
+	reg_shift_reg => {
+		attr       => "arm_shift_modifier_t shift_modifier",
+		custominit => "init_arm_shifter_operand(res, 1, 0, shift_modifier, 0);",
+		reg_req    => { in => [ "gp", "gp", "gp" ], out => [ "gp", "flags" ] },
+		ins        => [ "left", "right", "shift" ],
+		outs       => [ "res", "flags" ],
+	},
+	reg_shift_imm => {
+		attr       => "arm_shift_modifier_t shift_modifier, unsigned shift_immediate",
+		custominit => "init_arm_shifter_operand(res, 1, 0, shift_modifier, shift_immediate);",
+		reg_req    => { in => [ "gp", "gp" ], out => [ "gp", "flags" ] },
+		ins        => [ "left", "right" ],
+		outs       => [ "res", "flags" ],
+	},
+);
+
+my %binop_shifter_operand_flags_constructors = (
+	imm => {
+		attr       => "unsigned char immediate_value, unsigned char immediate_rot",
+		custominit => "init_arm_shifter_operand(res, 1, immediate_value, ARM_SHF_IMM, immediate_rot);",
+		reg_req    => { in => [ "gp", "flags" ], out => [ "gp" ] },
+		ins        => [ "left", "flags" ],
+	},
+	reg => {
+		custominit => "init_arm_shifter_operand(res, 1, 0, ARM_SHF_REG, 0);",
+		reg_req    => { in => [ "gp", "gp", "flags" ], out => [ "gp" ] },
+		ins        => [ "left", "right", "flags" ],
+	},
+	reg_shift_reg => {
+		attr       => "arm_shift_modifier_t shift_modifier",
+		custominit => "init_arm_shifter_operand(res, 1, 0, shift_modifier, 0);",
+		reg_req    => { in => [ "gp", "gp", "gp", "flags" ], out => [ "gp" ] },
+		ins        => [ "left", "right", "shift", "flags" ],
+	},
+	reg_shift_imm => {
+		attr       => "arm_shift_modifier_t shift_modifier, unsigned shift_immediate",
+		custominit => "init_arm_shifter_operand(res, 1, 0, shift_modifier, shift_immediate);",
+		reg_req    => { in => [ "gp", "gp", "flags" ], out => [ "gp" ] },
+		ins        => [ "left", "right", "flags" ],
+	},
+);
+
 my %cmp_shifter_operand_constructors = (
 	imm => {
 		attr       => "unsigned char immediate_value, unsigned char immediate_rot, bool ins_permuted, bool is_unsigned",
@@ -181,6 +237,22 @@ Add => {
 	constructors => \%binop_shifter_operand_constructors,
 },
 
+AddS => {
+	irn_flags => [ "rematerializable" ],
+	emit      => 'adds %D0, %S0, %O',
+	attr_type => "arm_shifter_operand_t",
+	constructors => \%binop_shifter_operand_setflags_constructors,
+	outs      => [ "res", "flags" ],
+},
+
+AdC => {
+	#irn_flags => [ "rematerializable" ],
+	emit      => 'adc %D0, %S0, %O',
+	attr_type => "arm_shifter_operand_t",
+	constructors => \%binop_shifter_operand_flags_constructors,
+	mode      => $mode_gp,
+},
+
 Mul => {
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
@@ -195,19 +267,18 @@ Mulv5 => {
 	mode      => $mode_gp,
 },
 
-Smull => {
+SMulL => {
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp", "gp" ] },
 	emit      => 'smull %D0, %D1, %S0, %S1',
 	outs      => [ "low", "high" ],
 },
 
-Umull => {
+UMulL => {
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp", "gp" ] },
-	emit      =>'umull %D0, %D1, %S0, %S1',
+	emit      => 'umull %D0, %D1, %S0, %S1',
 	outs      => [ "low", "high" ],
-	mode      => $mode_gp,
 },
 
 Mla => {
@@ -231,6 +302,16 @@ Or => {
 	mode      => $mode_gp,
 	attr_type => "arm_shifter_operand_t",
 	constructors => \%binop_shifter_operand_constructors,
+},
+
+OrPl => {
+	#irn_flags => [ "rematerializable" ],
+	emit       => 'orrpl %D0, %S2, %O',
+	mode       => $mode_gp,
+	attr_type  => "arm_shifter_operand_t",
+	reg_req    => { in => [ "gp", "flags", "gp", "gp" ], out => [ "in_r3" ], },
+	ins        => [ "falseval", "flags", "left", "right" ],
+	custominit => "init_arm_shifter_operand(res, 3, 0, ARM_SHF_REG, 0);",
 },
 
 Eor => {
@@ -257,12 +338,44 @@ Sub => {
 	constructors => \%binop_shifter_operand_constructors,
 },
 
+SubS => {
+	irn_flags => [ "rematerializable" ],
+	emit      => 'subs %D0, %S0, %O',
+	attr_type => "arm_shifter_operand_t",
+	constructors => \%binop_shifter_operand_setflags_constructors,
+	outs      => [ "res", "flags" ],
+},
+
+SbC => {
+	#irn_flags => [ "rematerializable" ],
+	emit      => 'sbc %D0, %S0, %O',
+	attr_type => "arm_shifter_operand_t",
+	constructors => \%binop_shifter_operand_flags_constructors,
+	mode      => $mode_gp,
+},
+
+RsC => {
+	#irn_flags => [ "rematerializable" ],
+	emit      => 'rsc %D0, %S0, %O',
+	attr_type => "arm_shifter_operand_t",
+	constructors => \%binop_shifter_operand_flags_constructors,
+	mode      => $mode_gp,
+},
+
 Rsb => {
 	irn_flags => [ "rematerializable" ],
 	emit      => 'rsb %D0, %S0, %O',
 	mode      => $mode_gp,
 	attr_type => "arm_shifter_operand_t",
 	constructors => \%binop_shifter_operand_constructors,
+},
+
+RsbS => {
+	irn_flags => [ "rematerializable" ],
+	emit      => 'rsbs %D0, %S0, %O',
+	attr_type => "arm_shifter_operand_t",
+	constructors => \%binop_shifter_operand_setflags_constructors,
+	outs      => [ "res", "flags"],
 },
 
 Mov => {
@@ -564,6 +677,58 @@ Return => {
 	mode     => "mode_X",
 	reg_req  => { out => [ "none" ] },
 	emit     => "bx lr",
+},
+
+AddS_t => {
+	ins       => [ "left", "right" ],
+	outs      => [ "res", "flags" ],
+	attr_type => "",
+	dump_func => "NULL",
+},
+
+AdC_t => {
+	ins       => [ "left", "right", "flags" ],
+	attr_type => "",
+	dump_func => "NULL",
+},
+
+SubS_t => {
+	ins       => [ "left", "right" ],
+	outs      => [ "res", "flags" ],
+	attr_type => "",
+	dump_func => "NULL",
+},
+
+SbC_t => {
+	ins       => [ "left", "right", "flags" ],
+	attr_type => "",
+	dump_func => "NULL",
+},
+
+UMulL_t => {
+	ins       => [ "left", "right" ],
+	outs      => [ "low", "high" ],
+	attr_type => "",
+	dump_func => "NULL",
+},
+
+SMulL_t => {
+	ins       => [ "left", "right" ],
+	outs      => [ "low", "high" ],
+	attr_type => "",
+	dump_func => "NULL",
+},
+
+Mla_t => {
+	ins       => [ "left", "right", "add" ],
+	attr_type => "",
+	dump_func => "NULL",
+},
+
+OrPl_t => {
+	ins       => [ "falseval", "flags", "left", "right" ],
+	attr_type => "",
+	dump_func => "NULL",
 },
 
 ); # end of %nodes
