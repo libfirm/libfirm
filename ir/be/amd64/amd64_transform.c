@@ -476,6 +476,15 @@ static bool input_depends_on_load(ir_node *load, ir_node *input)
 	    && heights_reachable_in_block(heights, input, load);
 }
 
+static void fix_node_mem_proj(ir_node *node, ir_node *mem_proj)
+{
+	if (mem_proj == NULL)
+		return;
+
+	ir_node *load = get_Proj_pred(mem_proj);
+	be_set_transformed_node(load, node);
+}
+
 static ir_node *source_am_possible(ir_node *block, ir_node *node)
 {
 	if (!is_Proj(node))
@@ -676,10 +685,7 @@ static ir_node *gen_binop_am(ir_node *node, ir_node *op1, ir_node *op2,
 	ir_node *new_node = func(dbgi, new_block, args.arity, args.in, &args.attr);
 	arch_set_irn_register_reqs_in(new_node, args.reqs);
 
-	if (args.mem_proj != NULL) {
-		ir_node *load = get_Proj_pred(args.mem_proj);
-		be_set_transformed_node(load, new_node);
-	}
+	fix_node_mem_proj(new_node, args.mem_proj);
 
 	if (mode_is_float(mode)) {
 		arch_set_irn_register_req_out(new_node, 0,
@@ -1064,10 +1070,7 @@ static ir_node *create_sse_div(ir_node *const node, ir_mode *const mode,
 	                                             args.in, &args.attr);
 	arch_set_irn_register_reqs_in(new_node, args.reqs);
 
-	if (args.mem_proj != NULL) {
-		ir_node *load = get_Proj_pred(args.mem_proj);
-		be_set_transformed_node(load, new_node);
-	}
+	fix_node_mem_proj(new_node, args.mem_proj);
 
 	arch_set_irn_register_req_out(new_node, 0,
 	                              &amd64_requirement_xmm_same_0);
@@ -1251,10 +1254,7 @@ static ir_node *gen_IJmp(ir_node *node)
 	                                 INSN_MODE_64, op_mode, addr);
 
 	arch_set_irn_register_reqs_in(jmp, reqs);
-	if (mem_proj != NULL) {
-		ir_node *load = get_Proj_pred(mem_proj);
-		be_set_transformed_node(load, jmp);
-	}
+	fix_node_mem_proj(jmp, mem_proj);
 
 	ir_node *proj_X = new_r_Proj(jmp, mode_X, pn_amd64_IJmp_X);
 	return proj_X;
@@ -1649,10 +1649,7 @@ static ir_node *gen_Call(ir_node *node)
 	                                  op_mode, addr);
 	arch_set_irn_register_reqs_in(call, in_req);
 
-	if(mem_proj != NULL) {
-		ir_node *load = get_Proj_pred(mem_proj);
-		be_set_transformed_node(load, call);
-	}
+	fix_node_mem_proj(call, mem_proj);
 
 	/* create output register reqs */
 	int o = 0;
@@ -1795,24 +1792,31 @@ static ir_node *gen_Cmp(ir_node *node)
 	ir_node *op1      = get_Cmp_left(node);
 	ir_node *op2      = get_Cmp_right(node);
 	ir_mode *cmp_mode = get_irn_mode(op1);
-	if (mode_is_float(cmp_mode))
-		panic("Floating point not implemented yet!");
-
-	ir_node *block = get_nodes_block(node);
-	amd64_args_t args;
-	match_binop(&args, block, cmp_mode, op1, op2, match_immediate | match_am);
 
 	dbg_info *const dbgi      = get_irn_dbg_info(node);
+	ir_node  *block           = get_nodes_block(node);
 	ir_node  *const new_block = be_transform_node(block);
 
-	ir_node *new_node
-		= new_bd_amd64_Cmp(dbgi, new_block, args.arity, args.in, &args.attr);
+
+	amd64_args_t args;
+
+	ir_node *new_node;
+	if (mode_is_float(cmp_mode)) {
+		match_binop(&args, block, cmp_mode, op1, op2, match_am);
+
+		new_node = new_bd_amd64_xUcomis(dbgi, new_block, args.arity,
+		                                args.in, &args.attr);
+	} else {
+		match_binop(&args, block, cmp_mode, op1, op2, match_immediate
+		            | match_am);
+
+		new_node = new_bd_amd64_Cmp(dbgi, new_block, args.arity,
+		                            args.in, &args.attr);
+	}
+
 	arch_set_irn_register_reqs_in(new_node, args.reqs);
 
-	if (args.mem_proj != NULL) {
-		ir_node *load = get_Proj_pred(args.mem_proj);
-		be_set_transformed_node(load, new_node);
-	}
+	fix_node_mem_proj(new_node, args.mem_proj);
 
 	return new_r_Proj(new_node, mode_flags, pn_amd64_Cmp_flags);
 }

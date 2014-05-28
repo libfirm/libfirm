@@ -550,6 +550,18 @@ xSubs => {
 	emit      => "subs%MX %S1, %D0",
 },
 
+xUcomis => {
+	irn_flags => [ "rematerializable" ],
+	state     => "exc_pinned",
+	reg_req   => { out => [ "none", "flags", "none" ] },
+	arity     => "variable",
+	outs      => [ "dummy", "flags", "M" ],
+	attr_type => "amd64_binop_addr_attr_t",
+	attr      => "const amd64_binop_addr_attr_t *attr_init",
+	emit      => "ucomis%MX %AM",
+	modified_flags => $status_flags,
+},
+
 xXorp0 => {
 	op_flags  => [ "constlike" ],
 	irn_flags => [ "rematerializable" ],
