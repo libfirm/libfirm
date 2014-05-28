@@ -1785,10 +1785,12 @@ static ir_node *gen_Call(ir_node *node)
 	}
 
 	/* TODO: use a generic address matcher here */
+	unsigned shiftop_input = 0;
 	if (is_Address(callee)) {
 		entity = get_Address_entity(callee);
 	} else {
 		/* TODO: finish load matcher here */
+		shiftop_input    = in_arity;
 		in[in_arity]     = be_transform_node(callee);
 		in_req[in_arity] = arm_reg_classes[CLASS_arm_gp].class_req;
 		++in_arity;
@@ -1811,7 +1813,7 @@ static ir_node *gen_Call(ir_node *node)
 		 * - we could also use LinkLdrPC
 		 */
 		res = new_bd_arm_LinkMovPC(dbgi, new_block, in_arity, in, out_arity,
-		                           ARM_SHF_REG, 0, 0);
+		                           shiftop_input, ARM_SHF_REG, 0, 0);
 	}
 
 	if (incsp != NULL) {

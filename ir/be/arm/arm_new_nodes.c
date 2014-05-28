@@ -316,14 +316,16 @@ static void init_arm_load_store_attributes(ir_node *res, ir_mode *ls_mode,
 	attr->base.is_load_store = true;
 }
 
-static void init_arm_shifter_operand(ir_node *res, unsigned immediate_value,
+static void init_arm_shifter_operand(ir_node *res, unsigned shifter_op_input,
+                                     unsigned immediate_value,
                                      arm_shift_modifier_t shift_modifier,
                                      unsigned shift_immediate)
 {
 	arm_shifter_operand_t *attr = get_arm_shifter_operand_attr(res);
-	attr->immediate_value = immediate_value;
-	attr->shift_modifier  = shift_modifier;
-	attr->shift_immediate = shift_immediate;
+	attr->immediate_value  = immediate_value;
+	attr->shifter_op_input = shifter_op_input;
+	attr->shift_modifier   = shift_modifier;
+	attr->shift_immediate  = shift_immediate;
 }
 
 static void init_arm_cmp_attr(ir_node *res, bool ins_permuted, bool is_unsigned)

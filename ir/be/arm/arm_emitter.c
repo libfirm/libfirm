@@ -166,7 +166,7 @@ static void arm_emit_shifter_operand(const ir_node *node)
 
 	switch (attr->shift_modifier) {
 	case ARM_SHF_REG:
-		arm_emit_source_register(node, get_irn_arity(node) - 1);
+		arm_emit_source_register(node, attr->shifter_op_input);
 		return;
 	case ARM_SHF_IMM: {
 		unsigned val = attr->immediate_value;
@@ -180,7 +180,7 @@ static void arm_emit_shifter_operand(const ir_node *node)
 	case ARM_SHF_LSL_IMM:
 	case ARM_SHF_LSR_IMM:
 	case ARM_SHF_ROR_IMM:
-		arm_emit_source_register(node, get_irn_arity(node) - 1);
+		arm_emit_source_register(node, attr->shifter_op_input);
 		be_emit_cstring(", ");
 		emit_shf_mod_name(attr->shift_modifier);
 		be_emit_irprintf(" #0x%X", attr->shift_immediate);
@@ -190,15 +190,15 @@ static void arm_emit_shifter_operand(const ir_node *node)
 	case ARM_SHF_LSL_REG:
 	case ARM_SHF_LSR_REG:
 	case ARM_SHF_ROR_REG:
-		arm_emit_source_register(node, get_irn_arity(node) - 2);
+		arm_emit_source_register(node, attr->shifter_op_input);
 		be_emit_cstring(", ");
 		emit_shf_mod_name(attr->shift_modifier);
 		be_emit_cstring(" ");
-		arm_emit_source_register(node, get_irn_arity(node) - 1);
+		arm_emit_source_register(node, attr->shifter_op_input+1);
 		return;
 
 	case ARM_SHF_RRX:
-		arm_emit_source_register(node, get_irn_arity(node) - 1);
+		arm_emit_source_register(node, attr->shifter_op_input);
 		panic("RRX shifter emitter TODO");
 
 	case ARM_SHF_INVALID:
