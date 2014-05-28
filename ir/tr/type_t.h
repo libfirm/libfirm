@@ -79,8 +79,8 @@ typedef struct {
 
 /** Array type attributes. */
 typedef struct {
-	ir_node   *size;         /**< number of elements in the array. */
-	ir_type   *element_type; /**< The type of the array elements. */
+	ir_node *size;         /**< number of elements in the array. */
+	ir_type *element_type; /**< The type of the array elements. */
 } arr_attr;
 
 /** Pointer type attributes. */
@@ -99,16 +99,16 @@ typedef union {
 
 /** Additional type flags. */
 typedef enum type_flags {
-	tf_none             = 0, /**< No flags. */
-	tf_lowered_type     = 1U << 0, /**< Set if this is a lowered type. */
-	tf_layout_fixed     = 1U << 1, /**< Set if the layout of a type is fixed */
+	tf_none          = 0,       /**< No flags. */
+	tf_lowered_type  = 1U << 0, /**< Set if this is a lowered type. */
+	tf_layout_fixed  = 1U << 1, /**< Set if the layout of a type is fixed */
 
-	tf_frame_type       = 1U << 2, /**< Set if this is a frame type. */
-	tf_segment          = 1U << 3, /**< type represents a linker segment */
-	tf_global_type      = 1U << 4, /**< Set only for the global type */
-	tf_tls_type         = 1U << 5, /**< Set only for the tls type */
-	tf_info             = 1U << 6, /**< infos (for example constructor, destructor pointers) */
-	tf_variable_size    = 1U << 8, /**< compound or array type may have variable size last element */
+	tf_frame_type    = 1U << 2, /**< Set if this is a frame type. */
+	tf_segment       = 1U << 3, /**< type represents a linker segment */
+	tf_global_type   = 1U << 4, /**< Set only for the global type */
+	tf_tls_type      = 1U << 5, /**< Set only for the tls type */
+	tf_info          = 1U << 6, /**< infos (for example constructor, destructor pointers) */
+	tf_variable_size = 1U << 8, /**< compound or array type may have variable size last element */
 } type_flags;
 ENUM_BITSET(type_flags)
 
@@ -146,7 +146,6 @@ struct ir_type {
 	type_dbg_info *dbi;      /**< A pointer to information for debug support. */
 	ir_type *higher_type;    /**< link to highlevel type in case of lowered
 	                              types */
-
 #ifdef DEBUG_libfirm
 	long nr;                 /**< An unique node number for each node to make
 	                              output readable. */
@@ -157,14 +156,14 @@ struct ir_type {
 
 void free_type_entities(ir_type *tp);
 
-void free_class_entities      (ir_type *clss);
-void free_struct_entities     (ir_type *strct);
-void free_union_entities      (ir_type *uni);
+void free_class_entities(ir_type *clss);
+void free_struct_entities(ir_type *strct);
+void free_union_entities(ir_type *uni);
 
-void free_class_attrs      (ir_type *clss);
-void free_struct_attrs     (ir_type *strct);
-void free_method_attrs     (ir_type *method);
-void free_union_attrs      (ir_type *uni);
+void free_class_attrs(ir_type *clss);
+void free_struct_attrs(ir_type *strct);
+void free_method_attrs(ir_type *method);
+void free_union_attrs(ir_type *uni);
 
 void set_class_mode(ir_type *tp, ir_mode *mode);
 void set_struct_mode(ir_type *tp, ir_mode *mode);
@@ -421,7 +420,8 @@ ir_type *new_type_segment(ident *name, type_flags flags);
 
 static inline ir_mode *get_type_pointer_mode(ir_type *const type)
 {
-	return is_Method_type(type) || is_code_type(type) ? mode_P_code : mode_P_data;
+	return is_Method_type(type)
+	    || is_code_type(type) ? mode_P_code : mode_P_data;
 }
 
 #endif /* FIRM_TR_TYPE_T_H */
