@@ -139,45 +139,47 @@ static ir_type *get_softfloat_type(const ir_node *n)
 		if (operand_mode == mode_D) {
 			if (mode == mode_F)
 				return unop_tp_d_f;
-			else if (mode == mode_Is || mode == mode_Hs || mode == mode_Bs)
-				return unop_tp_d_is;
-			else if (mode == mode_Iu || mode == mode_Hu || mode == mode_Bu)
-				return unop_tp_d_iu;
-			else if (mode == mode_Ls)
-				return unop_tp_d_ls;
-			else if (mode == mode_Lu)
-				return unop_tp_d_lu;
+			else if (get_mode_arithmetic(mode) == irma_twos_complement) {
+				if (get_mode_size_bits(mode) <= 32)
+					return mode_is_signed(mode) ? unop_tp_d_is : unop_tp_d_iu;
+				else if (get_mode_size_bits(mode) == 64)
+					return mode_is_signed(mode) ? unop_tp_d_ls : unop_tp_d_lu;
+			}
 		} else if (operand_mode == mode_F) {
 			if (mode == mode_D)
 				return unop_tp_f_d;
-			else if (mode == mode_Is || mode == mode_Hs || mode == mode_Bs)
-				return unop_tp_f_is;
-			else if (mode == mode_Iu || mode == mode_Hu || mode == mode_Bu)
-				return unop_tp_f_iu;
-			else if (mode == mode_Ls)
-				return unop_tp_f_ls;
-			else if (mode == mode_Lu)
-				return unop_tp_f_lu;
-		} else if (operand_mode == mode_Is || operand_mode == mode_Hs || operand_mode == mode_Bs) {
-			if (mode == mode_D)
-				return unop_tp_is_d;
-			else if (mode == mode_F)
-				return unop_tp_is_f;
-		} else if (operand_mode == mode_Iu || operand_mode == mode_Hu || operand_mode == mode_Bu) {
-			if (mode == mode_D)
-				return unop_tp_iu_d;
-			else if (mode == mode_F)
-				return unop_tp_iu_f;
-		} else if (operand_mode == mode_Ls) {
-			if (mode == mode_D)
-				return unop_tp_ls_d;
-			else if (mode == mode_F)
-				return unop_tp_ls_f;
-		} else if (operand_mode == mode_Lu) {
-			if (mode == mode_D)
-				return unop_tp_lu_d;
-			else if (mode == mode_F)
-				return unop_tp_lu_f;
+			else if (get_mode_arithmetic(mode) == irma_twos_complement) {
+				if (get_mode_size_bits(mode) <= 32)
+					return mode_is_signed(mode) ? unop_tp_f_is : unop_tp_f_iu;
+				else if (get_mode_size_bits(mode) == 64)
+					return mode_is_signed(mode) ? unop_tp_f_ls : unop_tp_f_lu;
+			}
+		} else if (get_mode_arithmetic(operand_mode) == irma_twos_complement) {
+			if (mode_is_signed(operand_mode)) {
+				if (get_mode_size_bits(operand_mode) <= 32) {
+					if (mode == mode_D)
+						return unop_tp_is_d;
+					else if (mode == mode_F)
+						return unop_tp_is_f;
+				} else if (get_mode_size_bits(operand_mode) == 64) {
+					if (mode == mode_D)
+						return unop_tp_ls_d;
+					else if (mode == mode_F)
+						return unop_tp_ls_f;
+				}
+			} else {
+				if (get_mode_size_bits(operand_mode) <= 32) {
+					if (mode == mode_D)
+						return unop_tp_iu_d;
+					else if (mode == mode_F)
+						return unop_tp_iu_f;
+				} else if (get_mode_size_bits(operand_mode) == 64) {
+					if (mode == mode_D)
+						return unop_tp_lu_d;
+					else if (mode == mode_F)
+						return unop_tp_lu_f;
+				}
+			}
 		}
 		break;
 	}
