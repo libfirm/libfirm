@@ -23,13 +23,11 @@
 #include "irprintf.h"
 #include "xmalloc.h"
 
-#include "bearch.h"
-
-#include "arm_nodes_attr.h"
 #include "arm_new_nodes.h"
+#include "arm_nodes_attr.h"
 #include "arm_optimize.h"
-
-#include "beabi.h"
+#include "bearch_arm_t.h"
+#include "bearch.h"
 
 static bool arm_has_address_attr(const ir_node *node)
 {

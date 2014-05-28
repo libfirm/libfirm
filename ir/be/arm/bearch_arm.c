@@ -50,6 +50,9 @@
 
 arm_codegen_config_t arm_cg_config;
 
+ir_mode *arm_mode_gp;
+ir_mode *arm_mode_flags;
+
 static const backend_params *arm_get_libfirm_params(void);
 
 static ir_entity *arm_get_frame_entity(const ir_node *irn)
@@ -266,6 +269,9 @@ static void arm_setup_cg_config(void)
 
 static void arm_init(void)
 {
+	arm_mode_gp    = new_int_mode("arm_gp", irma_twos_complement, 32, 0, 256);
+	arm_mode_flags = new_non_arithmetic_mode("arm_flags");
+
 	arm_register_init();
 	arm_create_opcodes(&arm_irn_ops);
 	arm_setup_cg_config();
@@ -317,8 +323,6 @@ static int arm_is_valid_clobber(const char *clobber)
 
 static void arm_lower_for_target(void)
 {
-	ir_mode *mode_gp = arm_reg_classes[CLASS_arm_gp].mode;
-
 	/* lower compound param handling */
 	lower_calls_with_compounds(LF_RETURN_HIDDEN);
 	be_after_irp_transform("lower-calls");
@@ -335,7 +339,7 @@ static void arm_lower_for_target(void)
 	}
 
 	foreach_irp_irg(i, irg) {
-		lower_switch(irg, 4, 256, mode_gp);
+		lower_switch(irg, 4, 256, arm_mode_gp);
 		be_after_transform(irg, "lower-switch");
 	}
 }

@@ -123,6 +123,9 @@ typedef struct arm_codegen_config_t {
 
 extern arm_codegen_config_t arm_cg_config;
 
+extern ir_mode *arm_mode_gp;
+extern ir_mode *arm_mode_flags;
+
 void arm_finish_graph(ir_graph *irg);
 
 #endif

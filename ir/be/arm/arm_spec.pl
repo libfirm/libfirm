@@ -6,8 +6,8 @@ $arch = "arm";
 #
 # Modes
 #
-$mode_gp    = "mode_Iu";
-$mode_flags = "mode_Bu";
+$mode_gp    = "arm_mode_gp";
+$mode_flags = "arm_mode_flags";
 $mode_fp    = "mode_F";
 
 # NOTE: Last entry of each class is the largest Firm-Mode a register can hold

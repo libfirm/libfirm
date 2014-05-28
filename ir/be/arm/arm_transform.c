@@ -46,7 +46,6 @@ typedef struct start_val_t {
 } start_val_t;
 
 static const arch_register_t *sp_reg = &arm_registers[REG_SP];
-static ir_mode               *mode_gp;
 static ir_mode               *mode_fp;
 static be_stackorder_t       *stackorder;
 static calling_convention_t  *cconv = NULL;
@@ -164,8 +163,8 @@ static ir_node *create_const_graph(ir_node *irn, ir_node *block)
 	ir_mode   *mode = get_tarval_mode(tv);
 	if (mode_is_reference(mode)) {
 		/* ARM is 32bit, so we can safely convert a reference tarval into Iu */
-		assert(get_mode_size_bits(mode) == get_mode_size_bits(mode_Iu));
-		tv = tarval_convert_to(tv, mode_Iu);
+		assert(get_mode_size_bits(mode) == get_mode_size_bits(arm_mode_gp));
+		tv = tarval_convert_to(tv, arm_mode_gp);
 	}
 	long value = get_tarval_long(tv);
 	return create_const_graph_value(get_irn_dbg_info(irn), block, value);
@@ -927,7 +926,7 @@ static ir_node *gen_Load(ir_node *node)
 	/* check for special case: the loaded value might not be used */
 	if (be_get_Proj_for_pn(node, pn_Load_res) == NULL) {
 		/* add a result proj and a Keep to produce a pseudo use */
-		ir_node *proj = new_r_Proj(new_load, mode_Iu, pn_arm_Ldr_res);
+		ir_node *proj = new_r_Proj(new_load, arm_mode_gp, pn_arm_Ldr_res);
 		be_new_Keep(block, 1, &proj);
 	}
 
@@ -1076,10 +1075,10 @@ static ir_node *ints_to_double(dbg_info *dbgi, ir_node *block, ir_node *node0,
 	ir_graph *irg   = get_Block_irg(block);
 	ir_node  *stack = get_irg_frame(irg);
 	ir_node  *nomem = get_irg_no_mem(irg);
-	ir_node  *str0  = new_bd_arm_Str(dbgi, block, stack, node0, nomem, mode_gp,
-	                                 NULL, 0, 0, true);
-	ir_node  *str1  = new_bd_arm_Str(dbgi, block, stack, node1, nomem, mode_gp,
-	                                 NULL, 0, 4, true);
+	ir_node  *str0  = new_bd_arm_Str(dbgi, block, stack, node0, nomem,
+	                                 arm_mode_gp, NULL, 0, 0, true);
+	ir_node  *str1  = new_bd_arm_Str(dbgi, block, stack, node1, nomem,
+	                                 arm_mode_gp, NULL, 0, 4, true);
 	ir_node  *in[]  = { str0, str1 };
 	ir_node  *sync  = new_r_Sync(block, ARRAY_SIZE(in), in);
 	set_irn_pinned(str0, op_pin_state_floats);
@@ -1097,8 +1096,8 @@ static ir_node *int_to_float(dbg_info *dbgi, ir_node *block, ir_node *node)
 	ir_graph *irg   = get_Block_irg(block);
 	ir_node  *stack = get_irg_frame(irg);
 	ir_node  *nomem = get_irg_no_mem(irg);
-	ir_node  *str   = new_bd_arm_Str(dbgi, block, stack, node, nomem, mode_gp,
-	                                 NULL, 0, 0, true);
+	ir_node  *str   = new_bd_arm_Str(dbgi, block, stack, node, nomem,
+	                                 arm_mode_gp, NULL, 0, 0, true);
 	set_irn_pinned(str, op_pin_state_floats);
 
 	ir_node *ldf = new_bd_arm_Ldf(dbgi, block, stack, str, mode_F, NULL, 0, 0,
@@ -1117,11 +1116,11 @@ static ir_node *float_to_int(dbg_info *dbgi, ir_node *block, ir_node *node)
 	                                 NULL, 0, 0, true);
 	set_irn_pinned(stf, op_pin_state_floats);
 
-	ir_node *ldr = new_bd_arm_Ldr(dbgi, block, stack, stf, mode_gp, NULL, 0, 0,
-	                              true);
+	ir_node *ldr = new_bd_arm_Ldr(dbgi, block, stack, stf, arm_mode_gp,
+	                              NULL, 0, 0, true);
 	set_irn_pinned(ldr, op_pin_state_floats);
 
-	return new_r_Proj(ldr, mode_gp, pn_arm_Ldr_res);
+	return new_r_Proj(ldr, arm_mode_gp, pn_arm_Ldr_res);
 }
 
 static void double_to_ints(dbg_info *dbgi, ir_node *block, ir_node *node,
@@ -1134,15 +1133,15 @@ static void double_to_ints(dbg_info *dbgi, ir_node *block, ir_node *node,
 	                                 NULL, 0, 0, true);
 	set_irn_pinned(stf, op_pin_state_floats);
 
-	ir_node *ldr0 = new_bd_arm_Ldr(dbgi, block, stack, stf, mode_gp, NULL, 0, 0,
-	                               true);
+	ir_node *ldr0 = new_bd_arm_Ldr(dbgi, block, stack, stf, arm_mode_gp, NULL,
+	                               0, 0, true);
 	set_irn_pinned(ldr0, op_pin_state_floats);
-	ir_node *ldr1 = new_bd_arm_Ldr(dbgi, block, stack, stf, mode_gp, NULL, 0, 4,
-	                               true);
+	ir_node *ldr1 = new_bd_arm_Ldr(dbgi, block, stack, stf, arm_mode_gp, NULL,
+	                               0, 4, true);
 	set_irn_pinned(ldr1, op_pin_state_floats);
 
-	*out_value0 = new_r_Proj(ldr0, mode_gp, pn_arm_Ldr_res);
-	*out_value1 = new_r_Proj(ldr1, mode_gp, pn_arm_Ldr_res);
+	*out_value0 = new_r_Proj(ldr0, arm_mode_gp, pn_arm_Ldr_res);
+	*out_value1 = new_r_Proj(ldr1, arm_mode_gp, pn_arm_Ldr_res);
 }
 
 static ir_node *gen_CopyB(ir_node *node)
@@ -1259,7 +1258,7 @@ static ir_node *gen_Proj_Load(ir_node *node)
 	case iro_arm_Ldr:
 		/* handle all gp loads equal: they have the same proj numbers. */
 		if (proj == pn_Load_res) {
-			return new_rd_Proj(dbgi, new_load, mode_Iu, pn_arm_Ldr_res);
+			return new_rd_Proj(dbgi, new_load, arm_mode_gp, pn_arm_Ldr_res);
 		} else if (proj == pn_Load_M) {
 			return new_rd_Proj(dbgi, new_load, mode_M, pn_arm_Ldr_M);
 		}
@@ -1352,8 +1351,10 @@ static ir_node *gen_Proj_Proj_Start(ir_node *node)
 			} else if (param->entity != NULL) {
 				ir_node *const fp  = get_irg_frame(irg);
 				ir_node *const mem = get_start_val(irg, &start_mem);
-				ir_node *const ldr = new_bd_arm_Ldr(NULL, new_block, fp, mem, mode_gp, param->entity, 0, 0, true);
-				value1 = new_r_Proj(ldr, mode_gp, pn_arm_Ldr_res);
+				ir_node *const ldr = new_bd_arm_Ldr(NULL, new_block, fp, mem,
+				                                    arm_mode_gp, param->entity,
+				                                    0, 0, true);
+				value1 = new_r_Proj(ldr, arm_mode_gp, pn_arm_Ldr_res);
 			}
 
 			/* convert integer value to float */
@@ -1379,7 +1380,7 @@ static ir_node *gen_Proj_Proj_Start(ir_node *node)
 		} else {
 			load  = new_bd_arm_Ldr(NULL, new_block, fp, mem, mode,
 			                       param->entity, 0, 0, true);
-			value = new_r_Proj(load, mode_gp, pn_arm_Ldr_res);
+			value = new_r_Proj(load, arm_mode_gp, pn_arm_Ldr_res);
 		}
 		set_irn_pinned(load, op_pin_state_floats);
 
@@ -1754,7 +1755,7 @@ static ir_node *gen_Call(ir_node *node)
 		/* we need a store if we're here */
 		if (new_value1 != NULL) {
 			new_value = new_value1;
-			mode      = mode_gp;
+			mode      = arm_mode_gp;
 		}
 
 		/* create a parameter frame if necessary */
@@ -1958,8 +1959,7 @@ void arm_transform_graph(ir_graph *irg)
 	assure_irg_properties(irg, IR_GRAPH_PROPERTY_NO_TUPLES
 	                         | IR_GRAPH_PROPERTY_NO_BADS);
 
-	mode_gp = mode_Iu;
-	mode_fp = mode_F;
+	mode_fp = arm_reg_classes[CLASS_arm_fpa].mode;
 
 	static bool imm_initialized = false;
 	if (!imm_initialized) {
