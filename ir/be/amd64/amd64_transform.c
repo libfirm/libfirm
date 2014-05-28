@@ -2245,6 +2245,7 @@ static ir_node *gen_saturating_increment(ir_node *node)
 	                                &sbb_attr);
 
 	arch_set_irn_register_reqs_in(sbb, reg_reg_flags_reqs);
+	arch_set_irn_register_req_out(sbb, 0, &amd64_requirement_gp_same_0);
 
 	return sbb;
 }
