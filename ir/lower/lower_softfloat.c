@@ -66,7 +66,7 @@ static ir_nodeset_t created_mux_nodes;
  */
 static ir_mode *get_lowered_mode(ir_mode *mode)
 {
-	if (! mode_is_float(mode))
+	if (!mode_is_float(mode))
 		return mode;
 
 	if (mode == mode_F)
@@ -82,12 +82,10 @@ static ir_mode *get_lowered_mode(ir_mode *mode)
  */
 static void lower_mode(ir_node *n, void *env)
 {
+	(void)env;
 	ir_op                *op         = get_irn_op(n);
 	lower_softfloat_func  lower_func = (lower_softfloat_func) op->ops.generic;
 	ir_mode              *mode       = get_irn_mode(n);
-
-	(void) env;
-
 	if (lower_func != NULL) {
 		lower_func(n);
 		return;
@@ -103,7 +101,6 @@ static void lower_node(ir_node *n, void *env)
 {
 	ir_op                *op         = get_irn_op(n);
 	lower_softfloat_func  lower_func = (lower_softfloat_func) op->ops.generic;
-
 	if (lower_func != NULL) {
 		bool *changed = (bool*)env;
 		*changed |= lower_func(n);
@@ -213,7 +210,6 @@ static ir_node *create_softfloat_address(const ir_node *n, const char *name)
 	case 2: {
 		ir_type *const param_type = get_method_param_type(method, 1);
 		ir_mode *const mode       = get_type_mode(param_type);
-
 		if (mode == mode_F) {
 			second_param = "sf";
 			float_types++;
@@ -230,7 +226,6 @@ static ir_node *create_softfloat_address(const ir_node *n, const char *name)
 	case 1: {
 		ir_type *const param_type = get_method_param_type(method, 0);
 		ir_mode *const mode       = get_type_mode(param_type);
-
 		if (mode == mode_F) {
 			first_param = float_types > 0 ? "" : "sf";
 			float_types++;
@@ -269,9 +264,11 @@ static ir_node *create_softfloat_address(const ir_node *n, const char *name)
 
 	char buf[16];
 	if (float_types + double_types > 1)
-		snprintf(buf, sizeof(buf), "__%s%s%s%s%u", name, first_param, second_param, result, float_types + double_types);
+		snprintf(buf, sizeof(buf), "__%s%s%s%s%u", name, first_param,
+		         second_param, result, float_types + double_types);
 	else
-		snprintf(buf, sizeof(buf), "__%s%s%s%s", name, first_param, second_param, result);
+		snprintf(buf, sizeof(buf), "__%s%s%s%s", name, first_param,
+		         second_param, result);
 
 	ir_graph  *const irg = get_irn_irg(n);
 	ident     *const id  = new_id_from_str(buf);
@@ -279,7 +276,9 @@ static ir_node *create_softfloat_address(const ir_node *n, const char *name)
 	return new_r_Address(irg, ent);
 }
 
-static ir_node *make_softfloat_call(ir_node *const n, char const *const name, size_t const arity, ir_node *const *const in)
+static ir_node *make_softfloat_call(ir_node *const n, char const *const name,
+                                    size_t const arity,
+                                    ir_node *const *const in)
 {
 	dbg_info *const dbgi     = get_irn_dbg_info(n);
 	ir_node  *const block    = get_nodes_block(n);
@@ -288,7 +287,8 @@ static ir_node *make_softfloat_call(ir_node *const n, char const *const name, si
 	ir_node  *const callee   = create_softfloat_address(n, name);
 	ir_type  *const type     = get_softfloat_type(n);
 	ir_mode  *const res_mode = get_type_mode(get_method_res_type(type, 0));
-	ir_node  *const call     = new_rd_Call(dbgi, block, nomem, callee, arity, in, type);
+	ir_node  *const call     = new_rd_Call(dbgi, block, nomem, callee, arity,
+	                                       in, type);
 	ir_node  *const results  = new_r_Proj(call, mode_T, pn_Call_T_result);
 	ir_node  *const result   = new_r_Proj(results, res_mode, 0);
 	return result;
@@ -318,7 +318,6 @@ static ir_type *lower_type(ir_type *tp)
 {
 	ir_mode *mode         = get_type_mode(tp);
 	ir_mode *lowered_mode = get_lowered_mode(mode);
-
 	return get_type_for_mode(lowered_mode);
 }
 
@@ -500,7 +499,8 @@ static bool lower_Cmp(ir_node *const n)
 
 		ir_node *const mux = new_rd_Mux(dbgi, block, cmp, result, zero, mode_Is);
 
-		arch_allow_ifconv_func const allow_ifconv = be_get_backend_param()->allow_ifconv;
+		arch_allow_ifconv_func const allow_ifconv
+			= be_get_backend_param()->allow_ifconv;
 		if (!allow_ifconv(cmp, result, zero))
 			ir_nodeset_insert(&created_mux_nodes, mux);
 
@@ -626,7 +626,6 @@ static bool lower_Div(ir_node *const n)
 	ir_node *const in[]   = { left, right };
 	ir_node *const result = make_softfloat_call(n, "div", ARRAY_SIZE(in), in);
 	ir_node *const call   = skip_Proj(skip_Proj(result));
-
 	set_irn_pinned(call, get_irn_pinned(n));
 
 	foreach_out_edge_safe(n, edge) {
@@ -634,25 +633,24 @@ static bool lower_Div(ir_node *const n)
 		if (!is_Proj(proj))
 			continue;
 
-		switch (get_Proj_proj(proj)) {
+		switch ((pn_Div)get_Proj_proj(proj)) {
 		case pn_Div_M:
 			set_Proj_pred(proj, call);
 			set_Proj_proj(proj, pn_Call_M);
-			break;
+			continue;
 		case pn_Div_X_regular:
 			set_Proj_pred(proj, call);
 			set_Proj_proj(proj, pn_Call_X_regular);
-			break;
+			continue;
 		case pn_Div_X_except:
 			set_Proj_pred(proj, call);
 			set_Proj_proj(proj, pn_Call_X_except);
-			break;
+			continue;
 		case pn_Div_res:
 			exchange(proj, result);
-			break;
-		default:
-			panic("unexpected Proj number");
+			continue;
 		}
+		panic("unexpected Proj number");
 	}
 	return true;
 }
@@ -666,7 +664,6 @@ static bool lower_Div_mode(ir_node *n)
 	ir_mode *lowered_res_mode = get_lowered_mode(res_mode);
 	ir_mode *mode             = get_irn_mode(n);
 	ir_mode *lowered_mode     = get_lowered_mode(mode);
-
 	if (lowered_mode == mode && lowered_res_mode == res_mode)
 		return false;
 
@@ -684,7 +681,6 @@ static bool lower_Load(ir_node *n)
 	ir_mode *lowered_ls_mode = get_lowered_mode(ls_mode);
 	ir_mode *mode            = get_irn_mode(n);
 	ir_mode *lowered_mode    = get_lowered_mode(mode);
-
 	if (ls_mode == lowered_ls_mode && mode == lowered_mode)
 		return false;
 
@@ -702,9 +698,9 @@ static bool lower_Minus(ir_node *n)
 	if (!mode_is_float(mode))
 		return false;
 
-	ir_node  *const op     = get_Minus_op(n);
-	ir_node  *const in[]   = { op };
-	ir_node  *const result = make_softfloat_call(n, "neg", ARRAY_SIZE(in), in);
+	ir_node *const op     = get_Minus_op(n);
+	ir_node *const in[]   = { op };
+	ir_node *const result = make_softfloat_call(n, "neg", ARRAY_SIZE(in), in);
 	exchange(n, result);
 	return true;
 }
@@ -746,12 +742,14 @@ static bool lower_Sub(ir_node *n)
 /**
  * Enter a lowering function into an ir_op.
  */
-static void ir_register_softloat_lower_function(ir_op *op, lower_softfloat_func func)
+static void ir_register_softloat_lower_function(ir_op *op,
+                                                lower_softfloat_func func)
 {
 	op->ops.generic = (op_func)func;
 }
 
-static void make_binop_type(ir_type **const memoized, ir_type *const left, ir_type *const right, ir_type *const res)
+static void make_binop_type(ir_type **const memoized, ir_type *const left,
+                            ir_type *const right, ir_type *const res)
 {
 	if (!*memoized) {
 		ir_type *const type = *memoized = new_type_method(2, 1);
@@ -761,7 +759,8 @@ static void make_binop_type(ir_type **const memoized, ir_type *const left, ir_ty
 	}
 }
 
-static void make_unop_type(ir_type **const memoized, ir_type *const op, ir_type *const res)
+static void make_unop_type(ir_type **const memoized, ir_type *const op,
+                           ir_type *const res)
 {
 	if (!*memoized) {
 		ir_type *const type = *memoized = new_type_method(1, 1);
