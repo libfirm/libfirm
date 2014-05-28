@@ -10,19 +10,18 @@
  */
 #include "bearch_arm_t.h"
 
-#include "firm_types.h"
-#include "irgwalk.h"
-
-#include "bespillslots.h"
-#include "bestack.h"
-#include "be_types.h"
+#include "arm_new_nodes.h"
+#include "arm_optimize.h"
 #include "beirg.h"
 #include "benode.h"
 #include "besched.h"
-
-#include "arm_new_nodes.h"
+#include "bespillslots.h"
+#include "bestack.h"
+#include "be_types.h"
+#include "firm_types.h"
 #include "gen_arm_regalloc_if.h"
-#include "arm_optimize.h"
+#include "irgwalk.h"
+#include "panic.h"
 
 static bool is_frame_load(const ir_node *node)
 {
@@ -94,6 +93,42 @@ static void introduce_prolog_epilog(ir_graph *irg)
 	sched_add_after(schedpoint, incsp);
 }
 
+static int get_first_same(const arch_register_req_t* req)
+{
+	const unsigned other = req->other_same;
+	for (int i = 0; i < 32; ++i) {
+		if (other & (1U << i))
+			return i;
+	}
+	panic("same position not found");
+}
+
+static void fix_should_be_same(ir_node *block, void *data)
+{
+	(void)data;
+	sched_foreach(block, node) {
+		/* ignore non-arm nodes like Copy */
+		if (!is_arm_irn(node))
+			continue;
+
+		be_foreach_out(node, i) {
+			const arch_register_req_t *req
+				= arch_get_irn_register_req_out(node, i);
+			if (!arch_register_req_is(req, should_be_same))
+				continue;
+
+			int same_pos = get_first_same(req);
+
+			const arch_register_t *out_reg = arch_get_irn_register_out(node, i);
+			ir_node               *in_node = get_irn_n(node, same_pos);
+			const arch_register_t *in_reg  = arch_get_irn_register(in_node);
+			if (in_reg == out_reg)
+				continue;
+			panic("arm: should_be_same fixup not implemented yet");
+		}
+	}
+}
+
 void arm_finish_graph(ir_graph *irg)
 {
 	be_stack_layout_t *stack_layout = be_get_irg_stack_layout(irg);
@@ -112,4 +147,6 @@ void arm_finish_graph(ir_graph *irg)
 
 	/* do peephole optimizations and fix stack offsets */
 	arm_peephole_optimization(irg);
+
+	irg_block_walk_graph(irg, NULL, fix_should_be_same, NULL);
 }
