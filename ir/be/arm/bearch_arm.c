@@ -249,7 +249,7 @@ static arm_isa_t arm_isa_template = {
 		arm_reg_classes,
 		&arm_registers[REG_SP],  /* stack pointer */
 		&arm_registers[REG_R11], /* base pointer */
-		2,                       /* power of two stack alignment for calls, 2^2 == 4 */
+		3,                       /* power of two stack alignment for calls, 2^3 == 8 */
 		7,                       /* spill costs */
 		5,                       /* reload costs */
 	},

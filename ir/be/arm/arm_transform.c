@@ -1875,15 +1875,21 @@ static ir_node *gen_Call(ir_node *node)
 	size_t                sync_arity     = 0;
 	size_t const          n_caller_saves = ARRAY_SIZE(caller_saves);
 	ir_entity            *entity         = NULL;
-	ir_node              *incsp          = NULL;
 
 	assert(n_params == get_method_n_params(type));
-
-	/* construct arguments */
 
 	/* memory input */
 	int mem_pos     = in_arity++;
 	in_req[mem_pos] = arch_no_register_req;
+	/* stack pointer (create parameter stackframe + align stack)
+	 * Note that we always need an IncSP to ensure stack alignment */
+	ir_node *new_frame = get_stack_pointer_for(node);
+	ir_node *incsp     = be_new_IncSP(sp_reg, new_block, new_frame,
+	                                  cconv->param_stack_size, 1);
+	int sp_pos = in_arity++;
+	in_req[sp_pos] = sp_reg->single_req;
+	in[sp_pos]     = incsp;
+
 	/* parameters */
 	for (size_t p = 0; p < n_params; ++p) {
 		ir_node                  *value      = get_Call_param(node, p);
@@ -1927,11 +1933,6 @@ static ir_node *gen_Call(ir_node *node)
 		}
 
 		/* create a parameter frame if necessary */
-		if (incsp == NULL) {
-			ir_node *new_frame = get_stack_pointer_for(node);
-			incsp = be_new_IncSP(sp_reg, new_block, new_frame,
-								 cconv->param_stack_size, 1);
-		}
 		ir_node *str;
 		if (mode_is_float(mode)) {
 			str = new_bd_arm_Stf(dbgi, new_block, incsp, new_value, new_mem,
@@ -1985,19 +1986,6 @@ static ir_node *gen_Call(ir_node *node)
 		                           shiftop_input, ARM_SHF_REG, 0, 0);
 	}
 
-	if (incsp != NULL) {
-		/* IncSP to destroy the call stackframe */
-		incsp = be_new_IncSP(sp_reg, new_block, incsp, -cconv->param_stack_size,
-		                     0);
-		/* if we are the last IncSP producer in a block then we have to keep
-		 * the stack value.
-		 * Note: This here keeps all producers which is more than necessary */
-		add_irn_dep(incsp, res);
-		keep_alive(incsp);
-
-		pmap_insert(node_to_stack, node, incsp);
-	}
-
 	arch_set_irn_register_reqs_in(res, in_req);
 
 	/* create output register reqs */
@@ -2009,6 +1997,16 @@ static ir_node *gen_Call(ir_node *node)
 
 	/* copy pinned attribute */
 	set_irn_pinned(res, get_irn_pinned(node));
+
+	/* IncSP to destroy the call stackframe */
+	incsp = be_new_IncSP(sp_reg, new_block, incsp, -cconv->param_stack_size, 0);
+	/* if we are the last IncSP producer in a block then we have to keep
+	 * the stack value.
+	 * Note: This here keeps all producers which is more than necessary */
+	add_irn_dep(incsp, res);
+	keep_alive(incsp);
+
+	pmap_insert(node_to_stack, node, incsp);
 
 	arm_free_calling_convention(cconv);
 	return res;
