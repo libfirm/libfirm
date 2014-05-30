@@ -873,16 +873,20 @@ void arm_emit_function(ir_graph *irg)
 	be_gas_emit_function_epilog(entity);
 }
 
+static const char *get_variant_string(arm_variant_t variant)
+{
+	switch (variant) {
+	case ARM_VARIANT_4:  return "armv4";
+	case ARM_VARIANT_5T: return "armv5t";
+	case ARM_VARIANT_6:  return "armv6";
+	case ARM_VARIANT_7:  return "armv7";
+	}
+	panic("invalid arm variant");
+}
+
 void arm_emit_file_prologue(void)
 {
-	unsigned version = arm_cg_config.version;
-	if (version == 5) {
-		be_emit_cstring("\t.arch armv5t\n");
-	} else if (version == 6) {
-		be_emit_cstring("\t.arch armv6\n");
-	} else {
-		panic("no arch string for version %u known", version);
-	}
+	be_emit_irprintf("\t.arch %s\n", get_variant_string(arm_cg_config.variant));
 	be_emit_write_line();
 	be_emit_cstring("\t.fpu softvfp\n");
 	be_emit_write_line();
