@@ -32,6 +32,7 @@
 
 #include "arm_emitter.h"
 #include "arm_optimize.h"
+#include "arm_cconv.h"
 #include "gen_arm_emitter.h"
 #include "arm_nodes_attr.h"
 #include "arm_new_nodes.h"
@@ -773,6 +774,30 @@ static int cmp_ent_or_tv(const void *elt, const void *key, size_t size)
 	return p1->u.generic != p2->u.generic;
 }
 
+static parameter_dbg_info_t *construct_parameter_infos(ir_graph *irg)
+{
+
+	ir_entity            *entity   = get_irg_entity(irg);
+	ir_type              *type     = get_entity_type(entity);
+	calling_convention_t *cconv    = arm_decide_calling_convention(NULL, type);
+	size_t                n_params = get_method_n_params(type);
+	parameter_dbg_info_t *infos    = XMALLOCNZ(parameter_dbg_info_t, n_params);
+
+	for (size_t i = 0; i < n_params; ++i) {
+		const reg_or_stackslot_t *slot = &cconv->parameters[i];
+
+		assert(infos[i].entity == NULL && infos[i].reg == NULL);
+		if (slot->reg0 != NULL) {
+			infos[i].reg = slot->reg0;
+		} else {
+			infos[i].entity = slot->entity;
+		}
+	}
+	arm_free_calling_convention(cconv);
+
+	return infos;
+}
+
 void arm_emit_function(ir_graph *irg)
 {
 	ir_node          *last_block = NULL;
@@ -784,14 +809,13 @@ void arm_emit_function(ir_graph *irg)
 	isa = (arm_isa_t*) arch_env;
 	ent_or_tv = new_set(cmp_ent_or_tv, 8);
 
-	be_gas_elf_type_char = '%';
-
 	arm_register_emitters();
 
 	/* create the block schedule */
 	blk_sched = be_create_block_schedule(irg);
 
-	be_gas_emit_function_prolog(entity, 4, NULL);
+	parameter_dbg_info_t *infos = construct_parameter_infos(irg);
+	be_gas_emit_function_prolog(entity, 4, infos);
 
 	irg_block_walk_graph(irg, arm_gen_labels, NULL, NULL);
 

@@ -289,6 +289,7 @@ static arch_env_t *arm_begin_codegeneration(void)
 	*isa = arm_isa_template;
 
 	be_gas_emit_types = false;
+	be_gas_elf_type_char = '%';
 
 	arm_emit_file_prologue();
 
