@@ -876,10 +876,11 @@ void arm_emit_function(ir_graph *irg)
 static const char *get_variant_string(arm_variant_t variant)
 {
 	switch (variant) {
-	case ARM_VARIANT_4:  return "armv4";
-	case ARM_VARIANT_5T: return "armv5t";
-	case ARM_VARIANT_6:  return "armv6";
-	case ARM_VARIANT_7:  return "armv7";
+	case ARM_VARIANT_4:   return "armv4";
+	case ARM_VARIANT_5T:  return "armv5t";
+	case ARM_VARIANT_6:   return "armv6";
+	case ARM_VARIANT_6T2: return "armv6t2";
+	case ARM_VARIANT_7:   return "armv7";
 	}
 	panic("invalid arm variant");
 }

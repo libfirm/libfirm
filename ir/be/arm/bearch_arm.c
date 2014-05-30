@@ -261,7 +261,7 @@ static int arm_fpu = ARM_FPU_ARCH_SOFTFLOAT;
 static void arm_setup_cg_config(void)
 {
 	memset(&arm_cg_config, 0, sizeof(arm_cg_config));
-	arm_cg_config.variant = ARM_VARIANT_6;
+	arm_cg_config.variant = ARM_VARIANT_6T2;
 	if (arm_fpu == ARM_FPU_SOFTFLOAT) {
 		arm_cg_config.use_softfloat = true;
 	}

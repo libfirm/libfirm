@@ -574,13 +574,6 @@ static ir_node *gen_Add(ir_node *node)
 		return gen_Ror(node, rotl_left, rotl_right, true);
 	}
 
-	static const arm_binop_factory_t add_factory = {
-		new_bd_arm_Add_reg,
-		new_bd_arm_Add_imm,
-		new_bd_arm_Add_reg_shift_reg,
-		new_bd_arm_Add_reg_shift_imm
-	};
-
 	ir_mode *mode = get_irn_mode(node);
 	if (mode_is_float(mode)) {
 		ir_node  *block   = be_transform_node(get_nodes_block(node));
@@ -597,8 +590,43 @@ static ir_node *gen_Add(ir_node *node)
 			panic("Softfloat not supported yet");
 		}
 	} else {
-		/* TODO: check for MLA */
-		return gen_int_binop(node, MATCH_COMMUTATIVE | MATCH_SIZE_NEUTRAL, &add_factory);
+		ir_node *left  = get_Add_left(node);
+		ir_node *right = get_Add_right(node);
+		ir_node *mul_left;
+		ir_node *mul_right;
+		ir_node *other;
+		if (is_Mul(left)) {
+			mul_left  = get_Mul_left(left);
+			mul_right = get_Mul_right(left);
+			other     = right;
+			goto create_mla;
+		} else if (is_Mul(right)) {
+			mul_left  = get_Mul_left(right);
+			mul_right = get_Mul_right(right);
+			other     = left;
+create_mla:;
+			dbg_info *dbgi      = get_irn_dbg_info(node);
+			ir_node  *block     = get_nodes_block(node);
+			ir_node  *new_left  = be_transform_node(mul_left);
+			ir_node  *new_right = be_transform_node(mul_right);
+			ir_node  *new_add   = be_transform_node(other);
+			if (arm_cg_config.variant < ARM_VARIANT_6)
+				return new_bd_arm_MlaV5(dbgi, block, new_left, new_right,
+				                        new_add);
+			else
+				return new_bd_arm_Mla(dbgi, block, new_left, new_right,
+				                      new_add);
+		}
+
+		static const arm_binop_factory_t add_factory = {
+			new_bd_arm_Add_reg,
+			new_bd_arm_Add_imm,
+			new_bd_arm_Add_reg_shift_reg,
+			new_bd_arm_Add_reg_shift_imm
+		};
+		return gen_int_binop_ops(node, left, right,
+		                         MATCH_COMMUTATIVE | MATCH_SIZE_NEUTRAL,
+		                         &add_factory);
 	}
 }
 
@@ -827,38 +855,48 @@ static ir_node *gen_Eor(ir_node *node)
 
 static ir_node *gen_Sub(ir_node *node)
 {
-	static const arm_binop_factory_t sub_rsb_factory[2] = {
-		{
-			new_bd_arm_Sub_reg,
-			new_bd_arm_Sub_imm,
-			new_bd_arm_Sub_reg_shift_reg,
-			new_bd_arm_Sub_reg_shift_imm
-		},
-		{
-			new_bd_arm_Rsb_reg,
-			new_bd_arm_Rsb_imm,
-			new_bd_arm_Rsb_reg_shift_reg,
-			new_bd_arm_Rsb_reg_shift_imm
-		}
-	};
-
-	ir_node  *block   = be_transform_node(get_nodes_block(node));
-	ir_node  *op1     = get_Sub_left(node);
-	ir_node  *new_op1 = be_transform_node(op1);
-	ir_node  *op2     = get_Sub_right(node);
-	ir_node  *new_op2 = be_transform_node(op2);
-	ir_mode  *mode    = get_irn_mode(node);
-	dbg_info *dbgi    = get_irn_dbg_info(node);
-
+	ir_mode *mode  = get_irn_mode(node);
+	ir_node *left  = get_Sub_left(node);
+	ir_node *right = get_Sub_right(node);
 	if (mode_is_float(mode)) {
+		ir_node  *block     = be_transform_node(get_nodes_block(node));
+		ir_node  *new_left  = be_transform_node(left);
+		ir_node  *new_right = be_transform_node(right);
+		dbg_info *dbgi      = get_irn_dbg_info(node);
+
 		if (arm_cg_config.use_fpa) {
-			return new_bd_arm_Suf(dbgi, block, new_op1, new_op2, mode);
+			return new_bd_arm_Suf(dbgi, block, new_left, new_right, mode);
 		} else if (arm_cg_config.use_vfp) {
 			panic("VFP not supported yet");
 		} else {
 			panic("Softfloat not supported yet");
 		}
 	} else {
+		if (is_Mul(right) && arm_cg_config.variant >= ARM_VARIANT_6T2) {
+			dbg_info *dbgi      = get_irn_dbg_info(node);
+			ir_node  *block     = be_transform_node(get_nodes_block(node));
+			ir_node  *mul_left  = get_Mul_left(right);
+			ir_node  *mul_right = get_Mul_right(right);
+			ir_node  *new_left  = be_transform_node(mul_left);
+			ir_node  *new_right = be_transform_node(mul_right);
+			ir_node  *new_sub   = be_transform_node(left);
+			return new_bd_arm_Mls(dbgi, block, new_left, new_right, new_sub);
+		}
+
+		static const arm_binop_factory_t sub_rsb_factory[2] = {
+			{
+				new_bd_arm_Sub_reg,
+				new_bd_arm_Sub_imm,
+				new_bd_arm_Sub_reg_shift_reg,
+				new_bd_arm_Sub_reg_shift_imm
+			},
+			{
+				new_bd_arm_Rsb_reg,
+				new_bd_arm_Rsb_imm,
+				new_bd_arm_Rsb_reg_shift_reg,
+				new_bd_arm_Rsb_reg_shift_imm
+			}
+		};
 		return gen_int_binop(node, MATCH_SIZE_NEUTRAL | MATCH_REVERSE, sub_rsb_factory);
 	}
 }

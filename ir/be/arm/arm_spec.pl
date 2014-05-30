@@ -262,6 +262,9 @@ Mul => {
 
 Mulv5 => {
 	irn_flags => [ "rematerializable" ],
+	# TODO: !in_r1 for out constrains the register allocator more than
+	# necessary, as usually you can fix the problem by swapping the inputs. But
+	# for this scheme we would need a special if both inputs are the same value.
 	reg_req   => { in => [ "gp", "gp" ], out => [ "!in_r1" ] },
 	emit      => 'mul %D0, %S0, %S1',
 	mode      => $mode_gp,
@@ -283,8 +286,26 @@ UMulL => {
 
 Mla => {
 	irn_flags => [ "rematerializable" ],
+	reg_req   => { in => [ "gp", "gp", "gp" ], out => [ "gp" ] },
+	ins       => [ "left", "right", "add" ],
+	emit      => 'mla %D0, %S0, %S1, %S2',
+	mode      => $mode_gp,
+},
+
+MlaV5 => {
+	irn_flags => [ "rematerializable" ],
+	# See comments for Mulv5 out register constraint
 	reg_req   => { in => [ "gp", "gp", "gp" ], out => [ "!in_r1" ] },
-	emit      =>'mla %D0, %S0, %S1, %S2',
+	ins       => [ "left", "right", "add" ],
+	emit      => 'mla %D0, %S0, %S1, %S2',
+	mode      => $mode_gp,
+},
+
+Mls => {
+	irn_flags => [ "rematerializable" ],
+	reg_req   => { in => [ "gp", "gp", "gp" ], out => [ "gp" ] },
+	ins       => [ "left", "right", "sub" ],
+	emit      => 'mls %D0, %S0, %S1, %S2',
 	mode      => $mode_gp,
 },
 

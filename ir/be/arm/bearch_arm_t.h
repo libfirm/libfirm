@@ -49,6 +49,7 @@ typedef enum {
 	ARM_VARIANT_4,
 	ARM_VARIANT_5T,
 	ARM_VARIANT_6,
+	ARM_VARIANT_6T2,
 	ARM_VARIANT_7,
 } arm_variant_t;
 
