@@ -615,7 +615,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 
 		if (be_options.do_verify) {
 			be_timer_push(T_VERIFY);
-			be_verify_register_allocation(irg);
+			be_verify_register_allocation(irg, true);
 			be_timer_pop(T_VERIFY);
 		}
 

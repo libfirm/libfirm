@@ -581,6 +581,7 @@ static bool my_values_interfere(const ir_node *a, const ir_node *b)
 static const arch_env_t  *arch_env;
 static ir_graph          *irg;
 static be_lv_t           *lv;
+static bool               ignore_sp_problems;
 static bool               problem_found;
 static const ir_node    **registers;
 
@@ -668,7 +669,9 @@ static void value_used(const ir_node *block, const ir_node *node)
 	unsigned idx = reg->global_index;
 	for (unsigned i = 0; i < req->width; ++i) {
 		const ir_node *reg_node = registers[idx+i];
-		if (reg_node != NULL && reg_node != node) {
+		if (reg_node != NULL && reg_node != node
+			&& (!ignore_sp_problems
+			    || !(req->type & arch_register_req_type_produces_sp))) {
 			ir_fprintf(stderr, "Verify warning: Register %s assigned more than once in block %+F(%s) (nodes %+F %+F)\n",
 					   reg->name, block, get_irg_name(irg),
 					   node, reg_node);
@@ -696,7 +699,9 @@ static void value_def(const ir_node *node)
 		if (reg_node == NULL && get_irn_n_edges(node) == 0)
 			return;
 
-		if (reg_node != node) {
+		if (reg_node != node
+		    && (!ignore_sp_problems
+		        || !(req->type & arch_register_req_type_produces_sp))) {
 			ir_fprintf(stderr, "Verify warning: Node %+F not registered as value for Register %s (but %+F) in block %+F(%s)\n",
 			           node, reg->name, reg_node, get_nodes_block(node),
 			           get_irg_name(irg));
@@ -750,12 +755,14 @@ static void verify_block_register_allocation(ir_node *block, void *data)
 	}
 }
 
-bool be_verify_register_allocation(ir_graph *new_irg)
+bool be_verify_register_allocation(ir_graph *new_irg,
+                                   bool new_ignore_sp_problems)
 {
-	irg           = new_irg;
-	arch_env      = be_get_irg_arch_env(irg);
-	lv            = be_liveness_new(irg);
-	problem_found = false;
+	irg                = new_irg;
+	arch_env           = be_get_irg_arch_env(irg);
+	lv                 = be_liveness_new(irg);
+	ignore_sp_problems = new_ignore_sp_problems;
+	problem_found      = false;
 
 	be_liveness_compute_sets(lv);
 	irg_block_walk_graph(irg, verify_block_register_allocation, NULL, NULL);

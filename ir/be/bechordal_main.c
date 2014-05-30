@@ -204,7 +204,6 @@ static void post_spill(be_chordal_env_t *const chordal_env, ir_graph *const irg)
 	*/
 	be_timer_push(T_RA_SPILL_APPLY);
 	check_for_memory_operands(irg);
-	be_abi_fix_stack_nodes(irg);
 	be_timer_pop(T_RA_SPILL_APPLY);
 
 	/* verify schedule and register pressure */
