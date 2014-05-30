@@ -35,41 +35,35 @@ ir_node                **register_values;
 
 static void clear_reg_value(ir_node *node)
 {
-	const arch_register_t *reg;
-	unsigned               reg_idx;
-
 	if (!mode_is_data(get_irn_mode(node)))
 		return;
 
-	reg = arch_get_irn_register(node);
+	const arch_register_t *reg = arch_get_irn_register(node);
 	if (reg == NULL) {
 		panic("No register assigned at %+F", node);
 	}
 	if (reg->type & arch_register_type_virtual)
 		return;
-	reg_idx = reg->global_index;
 
 	DB((dbg, LEVEL_1, "Clear Register %s\n", reg->name));
+	unsigned reg_idx = reg->global_index;
 	register_values[reg_idx] = NULL;
 }
 
 static void set_reg_value(ir_node *node)
 {
-	const arch_register_t *reg;
-	unsigned               reg_idx;
-
 	if (!mode_is_data(get_irn_mode(node)))
 		return;
 
-	reg = arch_get_irn_register(node);
+	const arch_register_t *reg = arch_get_irn_register(node);
 	if (reg == NULL) {
 		panic("No register assigned at %+F", node);
 	}
 	if (reg->type & arch_register_type_virtual)
 		return;
-	reg_idx = reg->global_index;
 
 	DB((dbg, LEVEL_1, "Set Register %s: %+F\n", reg->name, node));
+	unsigned reg_idx = reg->global_index;
 	register_values[reg_idx] = node;
 }
 
@@ -100,15 +94,13 @@ static void set_uses(ir_node *node)
 static void be_peephole_before_exchange(const ir_node *old_node,
                                         ir_node *new_node)
 {
-	const arch_register_t *reg;
-	unsigned               reg_idx;
-	bool                   old_is_current = false;
-
-	DB((dbg, LEVEL_1, "About to exchange and kill %+F with %+F\n", old_node, new_node));
+	DB((dbg, LEVEL_1, "About to exchange and kill %+F with %+F\n", old_node,
+	    new_node));
 
 	assert(sched_is_scheduled(skip_Proj_const(old_node)));
 	assert(sched_is_scheduled(skip_Proj(new_node)));
 
+	bool old_is_current = false;
 	if (current_node == old_node) {
 		old_is_current = true;
 
@@ -125,14 +117,14 @@ static void be_peephole_before_exchange(const ir_node *old_node,
 	if (!mode_is_data(get_irn_mode(old_node)))
 		return;
 
-	reg = arch_get_irn_register(old_node);
+	const arch_register_t *reg = arch_get_irn_register(old_node);
 	if (reg == NULL) {
 		panic("No register assigned at %+F", old_node);
 	}
 	assert(reg == arch_get_irn_register(new_node) &&
 	      "KILLING a node and replacing by different register is not allowed");
 
-	reg_idx = reg->global_index;
+	unsigned reg_idx = reg->global_index;
 	if (register_values[reg_idx] == old_node || old_is_current) {
 		register_values[reg_idx] = new_node;
 	}
@@ -153,7 +145,7 @@ void be_peephole_exchange(ir_node *old, ir_node *nw)
  */
 static void process_block(ir_node *block, void *data)
 {
-	(void) data;
+	(void)data;
 
 	/* construct initial register assignment */
 	memset(register_values, 0, sizeof(ir_node*) * arch_env->n_registers);
@@ -167,11 +159,8 @@ static void process_block(ir_node *block, void *data)
 
 	/* walk the block from last insn to the first */
 	current_node = sched_last(block);
-	for ( ; !sched_is_begin(current_node);
-			current_node = sched_prev(current_node)) {
-		ir_op             *op;
-		peephole_opt_func  peephole_node;
-
+	for (; !sched_is_begin(current_node);
+	     current_node = sched_prev(current_node)) {
 		assert(!is_Bad(current_node));
 		if (is_Phi(current_node))
 			break;
@@ -179,8 +168,8 @@ static void process_block(ir_node *block, void *data)
 		clear_defs(current_node);
 		set_uses(current_node);
 
-		op            = get_irn_op(current_node);
-		peephole_node = (peephole_opt_func)op->ops.generic;
+		ir_op            *op            = get_irn_op(current_node);
+		peephole_opt_func peephole_node = (peephole_opt_func)op->ops.generic;
 		if (peephole_node == NULL)
 			continue;
 
@@ -196,12 +185,10 @@ static void process_block(ir_node *block, void *data)
 bool be_has_only_one_user(ir_node *node)
 {
 	int n = get_irn_n_edges(node);
-	int n_users;
-
 	if (n <= 1)
-		return 1;
+		return true;
 
-	n_users = 0;
+	unsigned n_users = 0;
 	foreach_out_edge(node, edge) {
 		ir_node *src = get_edge_src_irn(edge);
 		/* ignore anchor and keep-alive edges */
@@ -209,7 +196,6 @@ bool be_has_only_one_user(ir_node *node)
 			continue;
 		n_users++;
 	}
-
 	return n_users == 1;
 }
 
@@ -230,7 +216,6 @@ bool be_can_move_down(ir_heights_t *heights, const ir_node *node,
 	assert(sched_get_time_step(node) < sched_get_time_step(before));
 
 	ir_node *schedpoint = sched_next(node);
-
 	while (schedpoint != before) {
 		/* schedpoint must not use our computed values */
 		if (heights_reachable_in_block(heights, schedpoint, node))
@@ -369,22 +354,17 @@ bool be_can_move_up(ir_heights_t *heights, const ir_node *node,
  */
 ir_node *be_peephole_IncSP_IncSP(ir_node *node)
 {
-	int      pred_offs;
-	int      curr_offs;
-	int      offs;
 	ir_node *pred = be_get_IncSP_pred(node);
-
 	if (!be_is_IncSP(pred))
 		return node;
 
 	if (!be_has_only_one_user(pred))
 		return node;
 
-	pred_offs = be_get_IncSP_offset(pred);
-	curr_offs = be_get_IncSP_offset(node);
-	offs = curr_offs + pred_offs;
-
 	/* add node offset to pred and remove our IncSP */
+	int curr_offs = be_get_IncSP_offset(node);
+	int pred_offs = be_get_IncSP_offset(pred);
+	int offs = curr_offs + pred_offs;
 	be_set_IncSP_offset(pred, offs);
 
 	be_peephole_exchange(node, pred);
