@@ -18,12 +18,14 @@
 #include "irgopt.h"
 #include "iroptimize.h"
 #include "irdump.h"
+#include "lower_builtins.h"
 #include "lower_calls.h"
 #include "lower_softfloat.h"
 #include "panic.h"
 #include "debug.h"
 #include "array.h"
 #include "irtools.h"
+#include "util.h"
 
 #include "bearch.h"
 #include "benode.h"
@@ -339,6 +341,13 @@ static void arm_lower_for_target(void)
 		lower_floating_point();
 		be_after_irp_transform("lower-fp");
 	}
+
+	ir_builtin_kind supported[1];
+	size_t s = 0;
+	supported[s++] = ir_bk_clz;
+	assert(s <= ARRAY_SIZE(supported));
+	lower_builtins(s, supported);
+	be_after_irp_transform("lower-builtins");
 
 	foreach_irp_irg(i, irg) {
 		lower_switch(irg, 4, 256, arm_mode_gp);
