@@ -557,6 +557,60 @@ static ir_node *gen_Ror(ir_node *node, ir_node *op1, ir_node *op2,
 											ARM_SHF_ROR_REG);
 }
 
+static bool is_low_mask(ir_tarval *tv)
+{
+	return get_tarval_popcount(tv) == 16 && get_tarval_highest_bit(tv) == 15;
+}
+
+static bool is_high_mask(ir_tarval *tv)
+{
+	return get_tarval_popcount(tv) == 16 && get_tarval_lowest_bit(tv) == 16;
+}
+
+static ir_node *match_pkh(ir_node *node)
+{
+	assert(is_Or(node) || is_Add(node));
+	ir_node *left  = get_binop_left(node);
+	ir_node *right = get_binop_right(node);
+	if (!is_And(left) || !is_And(right))
+		return NULL;
+	ir_node *left_right  = get_And_right(left);
+	ir_node *right_right = get_And_right(right);
+	if (!is_Const(left_right) || !is_Const(right_right))
+		return NULL;
+	/* we want the low-mask on the right side */
+	if (is_high_mask(get_Const_tarval(left_right))) {
+		ir_node *tmp = left;
+		left  = right;
+		right = tmp;
+		ir_node *tmp2 = left_right;
+		left_right = right_right;
+		right_right = tmp2;
+	} else if (!is_high_mask(get_Const_tarval(right_right))) {
+		return NULL;
+	}
+	if (!is_low_mask(get_Const_tarval(left_right)))
+		return NULL;
+	ir_node *left_left  = get_And_left(left);
+	ir_node *right_left = get_And_left(right);
+	static const arm_binop_factory_t pkhbt_pkhtb_factory[2] = {
+		{
+			new_bd_arm_Pkhbt_reg,
+			new_bd_arm_Pkhbt_imm,
+			new_bd_arm_Pkhbt_reg_shift_reg,
+			new_bd_arm_Pkhbt_reg_shift_imm
+		},
+		{
+			new_bd_arm_Pkhtb_reg,
+			new_bd_arm_Pkhtb_imm,
+			new_bd_arm_Pkhtb_reg_shift_reg,
+			new_bd_arm_Pkhtb_reg_shift_imm
+		}
+	};
+	return gen_int_binop_ops(node, left_left, right_left, MATCH_REVERSE,
+	                         pkhbt_pkhtb_factory);
+}
+
 /**
  * Creates an ARM Add.
  *
@@ -571,6 +625,9 @@ static ir_node *gen_Add(ir_node *node)
 			return gen_Ror(node, rotl_left, get_Minus_op(rotl_right), false);
 		return gen_Ror(node, rotl_left, rotl_right, true);
 	}
+	ir_node *pkh = match_pkh(node);
+	if (pkh != NULL)
+		return pkh;
 
 	ir_mode *mode = get_irn_mode(node);
 	if (mode_is_float(mode)) {
@@ -791,6 +848,9 @@ static ir_node *gen_Or(ir_node *node)
 			return gen_Ror(node, rotl_left, get_Minus_op(rotl_right), false);
 		return gen_Ror(node, rotl_left, rotl_right, true);
 	}
+	ir_node *pkh = match_pkh(node);
+	if (pkh != NULL)
+		return pkh;
 
 	static const arm_binop_factory_t or_factory = {
 		new_bd_arm_Or_reg,

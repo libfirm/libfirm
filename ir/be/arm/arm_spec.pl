@@ -415,6 +415,22 @@ Mvn => {
 	constructors => \%unop_shifter_operand_constructors,
 },
 
+Pkhbt => {
+	irn_flags => [ "rematerializable" ],
+	emit      => 'pkhbt %D0, %S0, %O',
+	mode      => $mode_gp,
+	attr_type => "arm_shifter_operand_t",
+	constructors => \%binop_shifter_operand_constructors,
+},
+
+Pkhtb => {
+	irn_flags => [ "rematerializable" ],
+	emit      => 'pkhtb %D0, %S0, %O',
+	mode      => $mode_gp,
+	attr_type => "arm_shifter_operand_t",
+	constructors => \%binop_shifter_operand_constructors,
+},
+
 Clz => {
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
