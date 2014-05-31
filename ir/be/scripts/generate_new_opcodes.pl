@@ -517,7 +517,7 @@ foreach my $op (keys(%nodes)) {
 		$num_outs = $#outs + 1;
 
 		if ($num_outs > 0) {
-			$obst_proj .= "\ntypedef enum {\n";
+			$obst_proj .= "\ntypedef enum pn_$op {\n";
 
 			for (my $idx = 0; $idx <= $#outs; $idx++) {
 				# check, if we have additional flags annotated to out
