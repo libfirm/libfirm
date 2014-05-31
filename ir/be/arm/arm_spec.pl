@@ -740,12 +740,6 @@ SMulL_t => {
 	dump_func => "NULL",
 },
 
-Mla_t => {
-	ins       => [ "left", "right", "add" ],
-	attr_type => "",
-	dump_func => "NULL",
-},
-
 OrPl_t => {
 	ins       => [ "falseval", "flags", "left", "right" ],
 	attr_type => "",

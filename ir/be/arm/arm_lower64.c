@@ -86,16 +86,17 @@ static void lower64_mul(ir_node *node, ir_mode *mode)
 	ir_node  *right_low  = get_lowered_low(right);
 	ir_node  *right_high = get_lowered_high(right);
 	ir_node  *conv_l_low = new_rd_Conv(dbgi, block, left_low, mode);
-	ir_node  *mul        = new_rd_Mul(dbgi, block, conv_l_low, right_high,
+	ir_node  *mul1       = new_rd_Mul(dbgi, block, conv_l_low, right_high,
 	                                  mode);
 	ir_node  *umull      = new_bd_arm_UMulL_t(dbgi, block, left_low, right_low);
 	ir_mode  *umode      = get_irn_mode(right_low);
 	ir_node  *umull_low  = new_r_Proj(umull, umode, pn_arm_UMulL_t_low);
 	ir_node  *umull_high = new_r_Proj(umull, mode, pn_arm_UMulL_t_high);
-	ir_node  *mla        = new_bd_arm_Mla_t(dbgi, block, right_low, left_high,
-	                                        mul, mode);
-	ir_node  *add        = new_rd_Add(dbgi, block, mla, umull_high, mode);
-	ir_set_dw_lowered(node, umull_low, add);
+	ir_node  *conv_r_low = new_rd_Conv(dbgi, block, right_low, mode);
+	ir_node  *mul2       = new_rd_Mul(dbgi, block, conv_r_low, left_high, mode);
+	ir_node  *add1       = new_rd_Add(dbgi, block, mul2, mul1, mode);
+	ir_node  *add2       = new_rd_Add(dbgi, block, add1, umull_high, mode);
+	ir_set_dw_lowered(node, umull_low, add2);
 }
 
 static ir_entity *ldivmod;

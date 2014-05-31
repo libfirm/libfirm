@@ -736,19 +736,6 @@ static ir_node *gen_Proj_arm_UMulL_t(ir_node *node)
 	panic("%+F: Invalid proj number", node);
 }
 
-static ir_node *gen_arm_Mla_t(ir_node *node)
-{
-	ir_node  *block     = be_transform_node(get_nodes_block(node));
-	ir_node  *left      = get_irn_n(node, n_arm_Mla_t_left);
-	ir_node  *new_left  = be_transform_node(left);
-	ir_node  *right     = get_irn_n(node, n_arm_Mla_t_right);
-	ir_node  *new_right = be_transform_node(right);
-	ir_node  *add       = get_irn_n(node, n_arm_Mla_t_add);
-	ir_node  *new_add   = be_transform_node(add);
-	dbg_info *dbgi      = get_irn_dbg_info(node);
-	return new_bd_arm_Mla(dbgi, block, new_left, new_right, new_add);
-}
-
 static ir_node *gen_Div(ir_node *node)
 {
 	ir_node  *block   = be_transform_node(get_nodes_block(node));
@@ -2094,7 +2081,6 @@ static void arm_register_transformers(void)
 	be_set_transform_function(op_And,         gen_And);
 	be_set_transform_function(op_arm_AdC_t,   gen_arm_AdC_t);
 	be_set_transform_function(op_arm_AddS_t,  gen_arm_AddS_t);
-	be_set_transform_function(op_arm_Mla_t,   gen_arm_Mla_t);
 	be_set_transform_function(op_arm_OrPl_t,  gen_arm_OrPl_t);
 	be_set_transform_function(op_arm_SbC_t,   gen_arm_SbC_t);
 	be_set_transform_function(op_arm_SubS_t,  gen_arm_SubS_t);
