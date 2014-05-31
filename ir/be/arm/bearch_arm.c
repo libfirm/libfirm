@@ -50,12 +50,13 @@
 #include "arm_optimize.h"
 #include "arm_emitter.h"
 
+#define ARM_MODULO_SHIFT 256
+#define ARM_MACHINE_SIZE 32
+
 arm_codegen_config_t arm_cg_config;
 
 ir_mode *arm_mode_gp;
 ir_mode *arm_mode_flags;
-
-static const backend_params *arm_get_libfirm_params(void);
 
 static ir_entity *arm_get_frame_entity(const ir_node *irn)
 {
@@ -196,11 +197,11 @@ static void arm_create_runtime_entities(void)
 	if (divsi3 != NULL)
 		return;
 
-	unsigned modulo_shift = arm_get_libfirm_params()->modulo_shift;
-	ir_mode *mode_int = new_int_mode("arm_be_int", irma_twos_complement, 32,
-	                                 true, modulo_shift);
-	ir_mode *mode_uint = new_int_mode("arm_be_int", irma_twos_complement, 32,
-	                                  false, modulo_shift);
+	ir_mode *mode_int = new_int_mode("arm_be_int", irma_twos_complement,
+	                                 ARM_MACHINE_SIZE, true, ARM_MODULO_SHIFT);
+	ir_mode *mode_uint = new_int_mode("arm_be_int", irma_twos_complement,
+	                                  ARM_MACHINE_SIZE, false,
+	                                  ARM_MODULO_SHIFT);
 
 	ir_type *int_tp  = get_type_for_mode(mode_int);
 	ir_type *uint_tp = get_type_for_mode(mode_uint);
@@ -251,39 +252,11 @@ static arm_isa_t arm_isa_template = {
 		arm_reg_classes,
 		&arm_registers[REG_SP],  /* stack pointer */
 		&arm_registers[REG_R11], /* base pointer */
-		3,                       /* power of two stack alignment for calls, 2^3 == 8 */
+		3,                       /* stack alignment: 2^3 (== 8) */
 		7,                       /* spill costs */
 		5,                       /* reload costs */
 	},
 };
-static int arm_fpu = ARM_FPU_ARCH_SOFTFLOAT;
-
-static void arm_setup_cg_config(void)
-{
-	memset(&arm_cg_config, 0, sizeof(arm_cg_config));
-	arm_cg_config.variant = ARM_VARIANT_6T2;
-	if (arm_fpu == ARM_FPU_SOFTFLOAT) {
-		arm_cg_config.use_softfloat = true;
-	}
-	arm_cg_config.use_fpa = arm_fpu & ARM_FPU_FPA_EXT_V1;
-	arm_cg_config.use_vfp = arm_fpu & ARM_FPU_VFP_EXT_V1xD;
-	arm_cg_config.big_endian = arm_get_libfirm_params()->byte_order_big_endian;
-}
-
-static void arm_init(void)
-{
-	arm_mode_gp    = new_int_mode("arm_gp", irma_twos_complement, 32, 0, 256);
-	arm_mode_flags = new_non_arithmetic_mode("arm_flags");
-
-	arm_register_init();
-	arm_create_opcodes(&arm_irn_ops);
-	arm_setup_cg_config();
-}
-
-static void arm_finish(void)
-{
-	arm_free_opcodes();
-}
 
 static arch_env_t *arm_begin_codegeneration(void)
 {
@@ -337,7 +310,7 @@ static void arm_lower_for_target(void)
 		lower_CopyB(irg, 31, 32, false);
 		be_after_transform(irg, "lower-copyb");
 	}
-	if (arm_cg_config.use_softfloat) {
+	if (arm_cg_config.fpu == ARM_FPU_SOFTFLOAT) {
 		lower_floating_point();
 		be_after_irp_transform("lower-fp");
 	}
@@ -358,61 +331,59 @@ static void arm_lower_for_target(void)
 	be_after_irp_transform("lower-64");
 }
 
-/**
- * Returns the libFirm configuration parameter for this backend.
- */
-static const backend_params *arm_get_libfirm_params(void)
-{
-	static ir_settings_arch_dep_t ad = {
-		1,    /* allow subs */
-		1,    /* Muls are fast enough on ARM but ... */
-		31,   /* ... one shift would be possible better */
-		NULL, /* no evaluator function */
-		0,    /* SMUL is needed, only in Arch M */
-		0,    /* UMUL is needed, only in Arch M */
-		32,   /* SMUL & UMUL available for 32 bit */
-	};
-	static backend_params p = {
-		false, /* big endian */
-		false, /* PIC code not supported */
-		false, /* unaligned memory access */
-		256,   /* modulo shift */
-		&ad,   /* will be set later */
-		arm_is_mux_allowed, /* allow_ifconv function */
-		32,    /* machine size */
-		NULL,  /* float arithmetic mode (TODO) */
-		NULL,  /* long long type */
-		NULL,  /* unsigned long long type */
-		NULL,  /* long double type */
-		0,     /* no trampoline support: size 0 */
-		0,     /* no trampoline support: align 0 */
-		NULL,  /* no trampoline support: no trampoline builder */
-		4,     /* alignment of stack parameter */
-		ir_overflow_min_max
-	};
+static const ir_settings_arch_dep_t arm_arch_dep = {
+	1,                /* allow subs */
+	1,                /* Muls are fast enough on ARM but ... */
+	31,               /* ... one shift would be possible better */
+	NULL,             /* no evaluator function */
+	0,                /* SMUL is needed, only in Arch M */
+	0,                /* UMUL is needed, only in Arch M */
+	ARM_MACHINE_SIZE, /* SMUL & UMUL available for 32 bit */
+};
+static backend_params arm_backend_params = {
+	false,              /* big endian */
+	false,              /* PIC code not supported */
+	false,              /* unaligned memory access */
+	ARM_MODULO_SHIFT,   /* modulo shift */
+	&arm_arch_dep,
+	arm_is_mux_allowed, /* allow_ifconv function */
+	ARM_MACHINE_SIZE,   /* machine size */
+	NULL,               /* float arithmetic mode */
+	NULL,               /* long long type */
+	NULL,               /* unsigned long long type */
+	NULL,               /* long double type */
+	0,                  /* no trampoline support: size 0 */
+	0,                  /* no trampoline support: align 0 */
+	NULL,               /* no trampoline support: no trampoline builder */
+	4,                  /* alignment of stack parameter */
+	ir_overflow_min_max
+};
 
-	return &p;
+static void arm_init_backend_params(void)
+{
+	arm_backend_params.byte_order_big_endian = arm_cg_config.big_endian;
 }
 
-/* fpu set architectures. */
-static const lc_opt_enum_int_items_t arm_fpu_items[] = {
-	{ "softfloat", ARM_FPU_ARCH_SOFTFLOAT },
-	{ "fpe",       ARM_FPU_ARCH_FPE },
-	{ "fpa",       ARM_FPU_ARCH_FPA },
-	{ "vfp1xd",    ARM_FPU_ARCH_VFP_V1xD },
-	{ "vfp1",      ARM_FPU_ARCH_VFP_V1 },
-	{ "vfp2",      ARM_FPU_ARCH_VFP_V2 },
-	{ NULL,        0 }
-};
+static const backend_params *arm_get_libfirm_params(void)
+{
+	return &arm_backend_params;
+}
 
-static lc_opt_enum_int_var_t arch_fpu_var = {
-	&arm_fpu, arm_fpu_items
-};
+static void arm_finish(void)
+{
+	arm_free_opcodes();
+}
 
-static const lc_opt_table_entry_t arm_options[] = {
-	LC_OPT_ENT_ENUM_INT("fpunit", "select the floating point unit", &arch_fpu_var),
-	LC_OPT_LAST
-};
+static void arm_init(void)
+{
+	arm_mode_gp    = new_int_mode("arm_gp", irma_twos_complement,
+	                              ARM_MACHINE_SIZE, 0, ARM_MODULO_SHIFT);
+	arm_mode_flags = new_non_arithmetic_mode("arm_flags");
+
+	arm_register_init();
+	arm_create_opcodes(&arm_irn_ops);
+	arm_init_backend_params();
+}
 
 const arch_isa_if_t arm_isa_if = {
 	arm_init,
@@ -435,16 +406,51 @@ const arch_isa_if_t arm_isa_if = {
 	arm_emit,
 };
 
+static const lc_opt_enum_int_items_t arm_fpu_items[] = {
+	{ "softfloat", ARM_FPU_SOFTFLOAT },
+	{ "fpa",       ARM_FPU_FPA       },
+	{ NULL,        0                 },
+};
+static lc_opt_enum_int_var_t arch_fpu_var = {
+	(int*)&arm_cg_config.fpu, arm_fpu_items
+};
+
+static const lc_opt_enum_int_items_t arm_arch_items[] = {
+	{ "armv4",   ARM_VARIANT_4   },
+	{ "armv5t",  ARM_VARIANT_5T  },
+	{ "armv6",   ARM_VARIANT_6   },
+	{ "armv6t2", ARM_VARIANT_6T2 },
+	{ "armv7",   ARM_VARIANT_7   },
+	{ NULL,      0               },
+};
+static lc_opt_enum_int_var_t arch_var = {
+	(int*)&arm_cg_config.variant, arm_arch_items
+};
+
+static const lc_opt_table_entry_t arm_options[] = {
+	LC_OPT_ENT_ENUM_INT("fpu", "select the floating point unit", &arch_fpu_var),
+	LC_OPT_ENT_ENUM_INT("arch", "select architecture variant", &arch_var),
+	LC_OPT_LAST
+};
+
+static void arm_init_architecture(void)
+{
+	memset(&arm_cg_config, 0, sizeof(arm_cg_config));
+	arm_cg_config.variant    = ARM_VARIANT_6T2;
+	arm_cg_config.fpu        = ARM_FPU_SOFTFLOAT;
+	arm_cg_config.big_endian = false;
+
+	lc_opt_entry_t *be_grp  = lc_opt_get_grp(firm_opt_get_root(), "be");
+	lc_opt_entry_t *arm_grp = lc_opt_get_grp(be_grp, "arm");
+	lc_opt_add_table(arm_grp, arm_options);
+}
+
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_arm)
 void be_init_arch_arm(void)
 {
-	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
-	lc_opt_entry_t *arm_grp = lc_opt_get_grp(be_grp, "arm");
-
-	lc_opt_add_table(arm_grp, arm_options);
-
-	be_register_isa_if("arm", &arm_isa_if);
-
 	arm_init_transform();
 	arm_init_emitter();
+	arm_init_architecture();
+
+	be_register_isa_if("arm", &arm_isa_if);
 }

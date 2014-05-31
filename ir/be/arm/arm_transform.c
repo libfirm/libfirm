@@ -276,7 +276,7 @@ static ir_node *gen_Conv(ir_node *node)
 		return new_op;
 
 	if (mode_is_float(src_mode) || mode_is_float(dst_mode)) {
-		if (arm_cg_config.use_fpa) {
+		if (arm_cg_config.fpu == ARM_FPU_FPA) {
 			if (mode_is_float(src_mode)) {
 				if (mode_is_float(dst_mode)) {
 					/* from float to float */
@@ -293,10 +293,8 @@ static ir_node *gen_Conv(ir_node *node)
 					return new_bd_arm_FltX(dbg, block, new_op, dst_mode);
 				}
 			}
-		} else if (arm_cg_config.use_vfp) {
-			panic("VFP not supported yet");
 		} else {
-			panic("Softfloat not supported yet");
+			panic("softfloat not lowered");
 		}
 	} else { /* complete in gp registers */
 		unsigned src_bits = get_mode_size_bits(src_mode);
@@ -582,12 +580,10 @@ static ir_node *gen_Add(ir_node *node)
 		dbg_info *dbgi    = get_irn_dbg_info(node);
 		ir_node  *new_op1 = be_transform_node(op1);
 		ir_node  *new_op2 = be_transform_node(op2);
-		if (arm_cg_config.use_fpa) {
+		if (arm_cg_config.fpu == ARM_FPU_FPA) {
 			return new_bd_arm_Adf(dbgi, block, new_op1, new_op2, mode);
-		} else if (arm_cg_config.use_vfp) {
-			panic("VFP not supported yet");
 		} else {
-			panic("Softfloat not supported yet");
+			panic("softfloat not lowered");
 		}
 	} else {
 		ir_node *left  = get_Add_left(node);
@@ -695,12 +691,10 @@ static ir_node *gen_Mul(ir_node *node)
 	dbg_info *dbg     = get_irn_dbg_info(node);
 
 	if (mode_is_float(mode)) {
-		if (arm_cg_config.use_fpa) {
+		if (arm_cg_config.fpu == ARM_FPU_FPA) {
 			return new_bd_arm_Muf(dbg, block, new_op1, new_op2, mode);
-		} else if (arm_cg_config.use_vfp) {
-			panic("VFP not supported yet");
 		} else {
-			panic("Softfloat not supported yet");
+			panic("softfloat not lowered");
 		}
 	}
 	assert(mode_is_data(mode));
@@ -749,12 +743,10 @@ static ir_node *gen_Div(ir_node *node)
 	/* integer division should be replaced by builtin call */
 	assert(mode_is_float(mode));
 
-	if (arm_cg_config.use_fpa) {
+	if (arm_cg_config.fpu == ARM_FPU_FPA) {
 		return new_bd_arm_Dvf(dbg, block, new_op1, new_op2, mode);
-	} else if (arm_cg_config.use_vfp) {
-		panic("VFP not supported yet");
 	} else {
-		panic("Softfloat not supported yet");
+		panic("softfloat not lowered");
 	}
 }
 
@@ -851,12 +843,10 @@ static ir_node *gen_Sub(ir_node *node)
 		ir_node  *new_right = be_transform_node(right);
 		dbg_info *dbgi      = get_irn_dbg_info(node);
 
-		if (arm_cg_config.use_fpa) {
+		if (arm_cg_config.fpu == ARM_FPU_FPA) {
 			return new_bd_arm_Suf(dbgi, block, new_left, new_right, mode);
-		} else if (arm_cg_config.use_vfp) {
-			panic("VFP not supported yet");
 		} else {
-			panic("Softfloat not supported yet");
+			panic("softfloat not lowered");
 		}
 	} else {
 		if (is_Mul(right) && arm_cg_config.variant >= ARM_VARIANT_6T2) {
@@ -1075,12 +1065,10 @@ static ir_node *gen_Minus(ir_node *node)
 	ir_mode  *mode   = get_irn_mode(node);
 
 	if (mode_is_float(mode)) {
-		if (arm_cg_config.use_fpa) {
+		if (arm_cg_config.fpu == ARM_FPU_FPA) {
 			return new_bd_arm_Mvf(dbgi, block, op, mode);
-		} else if (arm_cg_config.use_vfp) {
-			panic("VFP not supported yet");
 		} else {
-			panic("Softfloat not supported yet");
+			panic("softfloat not lowered");
 		}
 	}
 	assert(mode_is_data(mode));
@@ -1101,13 +1089,11 @@ static ir_node *gen_Load(ir_node *node)
 
 	ir_node *new_load;
 	if (mode_is_float(mode)) {
-		if (arm_cg_config.use_fpa) {
+		if (arm_cg_config.fpu == ARM_FPU_FPA) {
 			new_load = new_bd_arm_Ldf(dbgi, block, new_ptr, new_mem, mode,
 			                          NULL, 0, 0, false);
-		} else if (arm_cg_config.use_vfp) {
-			panic("VFP not supported yet");
 		} else {
-			panic("Softfloat not supported yet");
+			panic("softfloat not lowered");
 		}
 	} else {
 		assert(mode_is_data(mode) && "unsupported mode for Load");
@@ -1142,13 +1128,11 @@ static ir_node *gen_Store(ir_node *node)
 
 	ir_node *new_store;
 	if (mode_is_float(mode)) {
-		if (arm_cg_config.use_fpa) {
+		if (arm_cg_config.fpu == ARM_FPU_FPA) {
 			new_store = new_bd_arm_Stf(dbgi, block, new_ptr, new_val,
 			                           new_mem, mode, NULL, 0, 0, false);
-		} else if (arm_cg_config.use_vfp) {
-			panic("VFP not supported yet");
 		} else {
-			panic("Softfloat not supported yet");
+			panic("softfloat not lowered");
 		}
 	} else {
 		assert(mode_is_data(mode) && "unsupported mode for Store");
@@ -1239,13 +1223,11 @@ static ir_node *gen_Const(ir_node *node)
 	dbg_info *dbg   = get_irn_dbg_info(node);
 
 	if (mode_is_float(mode)) {
-		if (arm_cg_config.use_fpa) {
+		if (arm_cg_config.fpu == ARM_FPU_FPA) {
 			ir_tarval *tv = get_Const_tarval(node);
 			return new_bd_arm_fConst(dbg, block, tv);
-		} else if (arm_cg_config.use_vfp) {
-			panic("VFP not supported yet");
 		} else {
-			panic("Softfloat not supported yet");
+			panic("softfloat not lowered");
 		}
 	}
 	return create_const_graph(node, block);

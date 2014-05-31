@@ -603,11 +603,7 @@ static void emit_be_Copy(const ir_node *irn)
 	}
 
 	if (mode_is_float(mode)) {
-		if (arm_cg_config.use_fpa) {
-			arm_emitf(irn, "mvf %D0, %S0");
-		} else {
-			panic("move not supported for this mode");
-		}
+		arm_emitf(irn, "mvf %D0, %S0");
 	} else if (mode_is_data(mode)) {
 		arm_emitf(irn, "mov %D0, %S0");
 	} else {
