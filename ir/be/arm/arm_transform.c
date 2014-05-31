@@ -400,6 +400,26 @@ static ir_node *arm_skip_downconv(ir_node *node)
 	return node;
 }
 
+static bool is_sameconv(const ir_node *node)
+{
+	if (!is_Conv(node))
+		return false;
+	if (get_irn_n_edges(node) > 1)
+		return false;
+	ir_mode *src_mode = get_irn_mode(get_Conv_op(node));
+	ir_mode *dst_mode = get_irn_mode(node);
+	return get_mode_arithmetic(src_mode) == irma_twos_complement
+	    && get_mode_arithmetic(dst_mode) == irma_twos_complement
+	    && get_mode_size_bits(src_mode) == get_mode_size_bits(dst_mode);
+}
+
+static ir_node *arm_skip_sameconv(ir_node *node)
+{
+	while (is_sameconv(node))
+		node = get_Conv_op(node);
+	return node;
+}
+
 typedef enum {
 	MATCH_NONE         = 0,
 	MATCH_COMMUTATIVE  = 1 << 0,  /**< commutative node */
@@ -434,6 +454,8 @@ static ir_node *gen_int_binop_ops(ir_node *node, ir_node *op1, ir_node *op2,
 		op2 = arm_skip_downconv(op2);
 	} else {
 		assert(get_mode_size_bits(get_irn_mode(node)) == 32);
+		op1 = arm_skip_sameconv(op1);
+		op2 = arm_skip_sameconv(op2);
 	}
 
 	arm_immediate_t imm;
@@ -889,7 +911,8 @@ static ir_node *gen_Eor(ir_node *node)
 		new_bd_arm_Eor_reg_shift_reg,
 		new_bd_arm_Eor_reg_shift_imm
 	};
-	return gen_int_binop(node, MATCH_COMMUTATIVE | MATCH_SIZE_NEUTRAL, &eor_factory);
+	return gen_int_binop(node, MATCH_COMMUTATIVE | MATCH_SIZE_NEUTRAL,
+	                     &eor_factory);
 }
 
 static ir_node *gen_Sub(ir_node *node)
