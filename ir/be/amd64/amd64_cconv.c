@@ -143,7 +143,7 @@ amd64_cconv_t *amd64_decide_calling_convention(ir_type *function_type,
 			param->req                 = reg->single_req;
 			param->reg_offset          = float_param_regnum + param_regnum;
 			++float_param_regnum;
-		} else if (param_regnum < n_param_regs) {
+		} else if (!mode_is_float(mode) && param_regnum < n_param_regs) {
 			const arch_register_t *reg = param_regs[param_regnum];
 			param->reg        = reg;
 			param->req        = reg->single_req;

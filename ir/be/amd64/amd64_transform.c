@@ -1765,7 +1765,12 @@ static ir_node *gen_Proj_Proj_Start(ir_node *node)
 		ir_node *in[]  = { base };
 		ir_node *load;
 		ir_node *value;
-		if (get_mode_size_bits(mode) < 64 && mode_is_signed(mode)) {
+
+		if (mode_is_float(mode)) {
+			load  = new_bd_amd64_xMovs(NULL, new_block, ARRAY_SIZE(in),
+			                           in, insn_mode, AMD64_OP_ADDR, addr);
+			value = new_r_Proj(load, mode_D, pn_amd64_xMovs_res);
+		} else if (get_mode_size_bits(mode) < 64 && mode_is_signed(mode)) {
 			load  = new_bd_amd64_Movs(NULL, new_block, ARRAY_SIZE(in),
 			                          in, insn_mode, AMD64_OP_ADDR, addr);
 			value = new_r_Proj(load, mode_gp, pn_amd64_Movs_res);
