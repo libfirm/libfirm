@@ -491,7 +491,6 @@ xAdds => {
 	attr_type => "amd64_binop_addr_attr_t",
 	attr      => "const amd64_binop_addr_attr_t *attr_init",
 	emit      => "adds%MX %AM",
-#	mode      => $mode_xmm,
 },
 
 xDivs => {
