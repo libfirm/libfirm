@@ -1591,7 +1591,6 @@ static ir_node *gen_Call(ir_node *node)
 	for (size_t p = 0; p < n_params; ++p) {
 		ir_node                  *value = get_Call_param(node, p);
 		const reg_or_stackslot_t *param = &cconv->parameters[p];
-		assert(mode_needs_gp_reg(get_type_mode(get_method_param_type(type, p))));
 
 		ir_node *new_value = be_transform_node(value);
 
@@ -1602,6 +1601,10 @@ static ir_node *gen_Call(ir_node *node)
 			++in_arity;
 			continue;
 		}
+
+		ir_mode *mode  = get_type_mode(get_method_param_type(type, p));
+		assert(!mode_is_float(mode) && "NYI floating point store for Call");
+
 		/* we need a store if we're here */
 		amd64_binop_addr_attr_t attr;
 		memset(&attr, 0, sizeof(attr));
@@ -1613,7 +1616,9 @@ static ir_node *gen_Call(ir_node *node)
 		ir_node *in[] = { new_value, incsp, new_mem };
 		ir_node *store = new_bd_amd64_Store(dbgi, new_block, ARRAY_SIZE(in), in,
 		                                    &attr);
+
 		arch_set_irn_register_reqs_in(store, reg_reg_mem_reqs);
+
 		set_irn_pinned(store, op_pin_state_floats);
 		sync_ins[sync_arity++] = store;
 	}
