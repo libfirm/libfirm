@@ -1910,7 +1910,15 @@ static ir_node *gen_Conv(ir_node *node)
 
 	amd64_addr_t addr;
 	memset(&addr, 0, sizeof(addr));
-	amd64_insn_mode_t insn_mode = get_insn_mode_from_mode(min_mode);
+
+	amd64_insn_mode_t insn_mode;
+	if (!is_gp && get_mode_size_bits(min_mode) < 32) {
+		/* Only 32-bit and 64-bit register size allowed for
+		   floating point conversion */
+		insn_mode = INSN_MODE_32;
+	} else {
+		insn_mode = get_insn_mode_from_mode(min_mode);
+	}
 
 	ir_node *new_op = be_transform_node(op);
 	ir_node *in[1]  = { new_op };
