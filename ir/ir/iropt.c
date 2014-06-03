@@ -5356,11 +5356,16 @@ static ir_node *transform_node_shl_shr(ir_node *n)
 	assert(tarval_is_constant(tv_mask));
 	assert(get_tarval_mode(tv_mask) == mode);
 
-	ir_node     *block     = get_nodes_block(n);
-	ir_graph    *irg       = get_irn_irg(block);
-	dbg_info    *dbgi      = get_irn_dbg_info(n);
-	ir_relation  relation  = tarval_cmp(tv_shl, tv_shr);
-	ir_node     *new_shift;
+	ir_node     *block    = get_nodes_block(n);
+	ir_graph    *irg      = get_irn_irg(block);
+	dbg_info    *dbgi     = get_irn_dbg_info(n);
+	ir_relation  relation = tarval_cmp(tv_shl, tv_shr);
+
+	/* Reusing the original shift operand is still cheaper. */
+	if (relation != ir_relation_equal && !only_one_user(left))
+		return n;
+
+	ir_node *new_shift;
 	if (relation == ir_relation_less || relation == ir_relation_equal) {
 		ir_tarval *tv_shift  = tarval_sub(tv_shr, tv_shl, NULL);
 		ir_node   *new_const = new_r_Const(irg, tv_shift);
