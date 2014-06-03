@@ -16,6 +16,7 @@ typedef struct amd64_isa_t            amd64_isa_t;
 
 struct amd64_isa_t {
 	arch_env_t  base;      /**< must be derived from arch_isa */
+	pmap       *constants; /**< A map of entities that store const tarvals */
 };
 
 #define AMD64_REGISTER_SIZE 8

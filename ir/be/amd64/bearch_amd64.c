@@ -479,6 +479,7 @@ static amd64_isa_t amd64_isa_template = {
 		7,                         /* costs for a spill instruction */
 		5,                         /* costs for a reload instruction */
 	},
+	NULL,                              /* constants */
 };
 
 static void amd64_init(void)
@@ -496,7 +497,8 @@ static void amd64_finish(void)
 static arch_env_t *amd64_begin_codegeneration(void)
 {
 	amd64_isa_t *isa = XMALLOC(amd64_isa_t);
-	*isa = amd64_isa_template;
+	*isa             = amd64_isa_template;
+	isa->constants   = pmap_create();
 
 	return &isa->base;
 }
@@ -506,7 +508,9 @@ static arch_env_t *amd64_begin_codegeneration(void)
  */
 static void amd64_end_codegeneration(void *self)
 {
-	free(self);
+	amd64_isa_t *isa = (amd64_isa_t*)self;
+	pmap_destroy(isa->constants);
+	free(isa);
 }
 
 /**

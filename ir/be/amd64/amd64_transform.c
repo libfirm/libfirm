@@ -326,6 +326,68 @@ static ir_node *get_frame_base(ir_graph *irg)
 	}
 }
 
+static amd64_insn_mode_t get_insn_mode_from_mode(const ir_mode *mode)
+{
+	switch (get_mode_size_bits(mode)) {
+	case  8: return INSN_MODE_8;
+	case 16: return INSN_MODE_16;
+	case 32: return INSN_MODE_32;
+	case 64: return INSN_MODE_64;
+	}
+	panic("unexpected mode");
+}
+
+static ir_entity *create_float_const_entity(ir_graph *const irg,
+                                            ir_tarval *const tv)
+{
+	const arch_env_t *arch_env = be_get_irg_arch_env(irg);
+	amd64_isa_t      *isa      = (amd64_isa_t*) arch_env;
+	ir_entity        *entity   = pmap_get(ir_entity, isa->constants, tv);
+	if (entity != NULL)
+		return entity;
+
+	ir_mode *mode = get_tarval_mode(tv);
+	ir_type *type = get_type_for_mode(mode);
+	ir_type *glob = get_glob_type();
+
+	entity = new_entity(glob, id_unique("C%u"), type);
+	set_entity_visibility(entity, ir_visibility_private);
+	add_entity_linkage(entity, IR_LINKAGE_CONSTANT);
+
+	ir_initializer_t *initializer = create_initializer_tarval(tv);
+	set_entity_initializer(entity, initializer);
+
+	pmap_insert(isa->constants, tv, entity);
+	return entity;
+}
+
+static ir_node *create_float_const(dbg_info *dbgi, ir_node *block,
+                                   ir_tarval *tv)
+{
+	ir_graph  *irg     = get_Block_irg(block);
+	ir_mode   *tv_mode = get_tarval_mode(tv);
+	ir_entity *entity  = create_float_const_entity(irg, tv);
+	ir_node   *nomem   = get_irg_no_mem(irg);
+
+	ir_node *in[] = { nomem };
+	amd64_addr_t addr;
+	memset(&addr, 0, sizeof(addr));
+
+	addr.immediate.entity       = entity;
+	amd64_insn_mode_t insn_mode = get_insn_mode_from_mode(tv_mode);
+
+	addr.base_input  = NO_INPUT;
+	addr.index_input = NO_INPUT;
+
+	ir_node *load = new_bd_amd64_xMovs(dbgi, block, ARRAY_SIZE(in), in,
+	                                   insn_mode, AMD64_OP_ADDR, addr);
+
+	arch_set_irn_register_reqs_in(load, mem_reqs);
+	set_irn_pinned(load, op_pin_state_floats);
+
+	return new_r_Proj(load, tv_mode, pn_amd64_xMovs_res);
+}
+
 static ir_node *gen_Const(ir_node *node)
 {
 	ir_node  *block = be_transform_node(get_nodes_block(node));
@@ -338,7 +400,7 @@ static ir_node *gen_Const(ir_node *node)
 			return new_bd_amd64_xXorp0(dbgi, block);
 		}
 
-		panic("amd64: float constant not supported yet");
+		return create_float_const(dbgi, block, tv);
 	}
 
 	uint64_t val = get_tarval_uint64(tv);
@@ -422,17 +484,6 @@ typedef struct amd64_args_t {
 	int                         arity;
 	const arch_register_req_t **reqs;
 } amd64_args_t;
-
-static amd64_insn_mode_t get_insn_mode_from_mode(const ir_mode *mode)
-{
-	switch (get_mode_size_bits(mode)) {
-	case  8: return INSN_MODE_8;
-	case 16: return INSN_MODE_16;
-	case 32: return INSN_MODE_32;
-	case 64: return INSN_MODE_64;
-	}
-	panic("unexpected mode");
-}
 
 static bool match_immediate_32(amd64_imm32_t *imm, const ir_node *op,
                                bool can_match_ip_relative,
