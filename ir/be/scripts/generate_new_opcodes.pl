@@ -544,11 +544,11 @@ foreach my $op (keys(%nodes)) {
 		}
 
 		if ($#ins >= 0) {
-			$obst_proj .= "\nenum n_$op {\n";
+			$obst_proj .= "\ntypedef enum n_$op {\n";
 			for (my $idx = 0; $idx <= $#ins; $idx++) {
 				$obst_proj .= "\tn_${op}_".$ins[$idx]." = ${idx},\n";
 			}
-			$obst_proj .= "};\n";
+			$obst_proj .= "} n_$op;\n";
 		}
 	}
 
