@@ -1956,8 +1956,8 @@ static ir_node *gen_Call(ir_node *node)
 	calling_convention_t *cconv        = arm_decide_calling_convention(NULL, type);
 	size_t                n_params     = get_Call_n_params(node);
 	size_t const          n_param_regs = cconv->n_param_regs;
-	/* max inputs: memory, callee, register arguments */
-	size_t const          max_inputs   = 2 + n_param_regs;
+	/* max inputs: memory, stack, callee, register arguments */
+	size_t const          max_inputs   = 3 + n_param_regs;
 	ir_node             **in           = ALLOCAN(ir_node*, max_inputs);
 	ir_node             **sync_ins     = ALLOCAN(ir_node*, n_params);
 	struct obstack       *obst         = be_get_be_obst(irg);
@@ -2035,8 +2035,6 @@ static ir_node *gen_Call(ir_node *node)
 		}
 		sync_ins[sync_arity++] = str;
 	}
-	assert(sync_arity <= n_params);
-	assert(in_arity <= max_inputs);
 
 	/* construct memory input */
 	if (sync_arity == 0) {
@@ -2058,6 +2056,8 @@ static ir_node *gen_Call(ir_node *node)
 		in_req[in_arity] = arm_reg_classes[CLASS_arm_gp].class_req;
 		++in_arity;
 	}
+	assert(sync_arity <= n_params);
+	assert(in_arity <= max_inputs);
 
 	/* outputs:
 	 *  - memory
