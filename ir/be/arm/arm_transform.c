@@ -1957,7 +1957,7 @@ static ir_node *gen_Call(ir_node *node)
 	/* max inputs: memory, callee, register arguments */
 	size_t const          max_inputs   = 2 + n_param_regs;
 	ir_node             **in           = ALLOCAN(ir_node*, max_inputs);
-	ir_node             **sync_ins     = ALLOCAN(ir_node*, max_inputs);
+	ir_node             **sync_ins     = ALLOCAN(ir_node*, n_params);
 	struct obstack       *obst         = be_get_be_obst(irg);
 	const arch_register_req_t **in_req
 		= OALLOCNZ(obst, const arch_register_req_t*, max_inputs);
@@ -2033,6 +2033,7 @@ static ir_node *gen_Call(ir_node *node)
 		}
 		sync_ins[sync_arity++] = str;
 	}
+	assert(sync_arity <= n_params);
 	assert(in_arity <= max_inputs);
 
 	/* construct memory input */
