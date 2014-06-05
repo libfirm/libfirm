@@ -608,8 +608,8 @@ static void set_am_attributes(ir_node *node, const ia32_address_mode_t *am)
 }
 
 /**
- * Check, if a given node is a Down-Conv, i.e. a integer Conv
- * from a mode with a mode with more bits to a mode with fewer bits.
+ * Check, if a given node is a Down-Conv, i.e. an integer Conv
+ * from a mode with more bits to a mode with fewer bits.
  *
  * @param node   the node
  * @return non-zero if node is a Down-Conv
