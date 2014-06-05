@@ -189,7 +189,7 @@ static void arm_emit_shifter_operand(const ir_node *node)
 	case ARM_SHF_IMM: {
 		unsigned val = attr->immediate_value;
 		val = (val >> attr->shift_immediate)
-			| (val << (32-attr->shift_immediate));
+			| (val << ((32-attr->shift_immediate) & 31));
 		val &= 0xFFFFFFFF;
 		be_emit_irprintf("#0x%X", val);
 		return;
