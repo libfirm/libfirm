@@ -12,11 +12,6 @@
 #define FIRM_BE_ARM_ARM_EMITTER_H
 
 #include "firm_types.h"
-#include "set.h"
-#include "irargs_t.h"
-#include "debug.h"
-
-#include "bearch.h"
 
 /**
  * emit assembler instructions with format string. Automatically indents

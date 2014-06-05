@@ -6,10 +6,11 @@
 /**
  * @file
  * @brief   arm emitter
- * @author  Oliver Richter, Tobias Gneist, Michael Beck
+ * @author  Oliver Richter, Tobias Gneist, Michael Beck, Matthias Braun
  */
 #include <limits.h>
 #include <stdbool.h>
+#include <inttypes.h>
 
 #include "bearch_arm_t.h"
 #include "dbginfo.h"
@@ -253,7 +254,6 @@ static ir_node *get_cfop_target_block(const ir_node *irn)
 static void arm_emit_cfop_target(const ir_node *irn)
 {
 	ir_node *block = get_cfop_target_block(irn);
-
 	be_gas_emit_block_name(block);
 }
 
@@ -453,21 +453,18 @@ static ir_node *sched_next_block(const ir_node *block)
  */
 static void emit_arm_B(const ir_node *irn)
 {
-	const ir_node *proj_true  = NULL;
-	const ir_node *proj_false = NULL;
-	const ir_node *block;
-	const ir_node *next_block;
-	ir_node *op1 = get_irn_n(irn, 0);
-	const char *suffix;
-	ir_relation relation = get_arm_CondJmp_relation(irn);
-	const arm_cmp_attr_t *cmp_attr = get_arm_cmp_attr_const(op1);
-	bool is_signed = !cmp_attr->is_unsigned;
+	ir_node              *op1       = get_irn_n(irn, 0);
+	ir_relation           relation  = get_arm_CondJmp_relation(irn);
+	const arm_cmp_attr_t *cmp_attr  = get_arm_cmp_attr_const(op1);
+	bool                  is_signed = !cmp_attr->is_unsigned;
 
 	assert(is_arm_Cmp(op1) || is_arm_Tst(op1));
 
+	const ir_node *proj_true  = NULL;
+	const ir_node *proj_false = NULL;
 	foreach_out_edge(irn, edge) {
 		ir_node *proj = get_edge_src_irn(edge);
-		long nr = get_Proj_proj(proj);
+		long     nr   = get_Proj_proj(proj);
 		if (nr == pn_Cond_true) {
 			proj_true = proj;
 		} else {
@@ -480,10 +477,8 @@ static void emit_arm_B(const ir_node *irn)
 	}
 
 	/* for now, the code works for scheduled and non-schedules blocks */
-	block = get_nodes_block(irn);
-
-	/* we have a block schedule */
-	next_block = sched_next_block(block);
+	const ir_node *block      = get_nodes_block(irn);
+	const ir_node *next_block = sched_next_block(block);
 
 	assert(relation != ir_relation_false);
 	assert(relation != ir_relation_true);
@@ -497,6 +492,7 @@ static void emit_arm_B(const ir_node *irn)
 		relation   = get_negated_relation(relation);
 	}
 
+	const char *suffix;
 	switch (relation & (ir_relation_less_equal_greater)) {
 		case ir_relation_equal:         suffix = "eq"; break;
 		case ir_relation_less:          suffix = is_signed ? "lt" : "lo"; break;
@@ -523,9 +519,8 @@ static void emit_arm_B(const ir_node *irn)
 /** Sort register in ascending order. */
 static int reg_cmp(const void *a, const void *b)
 {
-	const arch_register_t * const *ra = (const arch_register_t**)a;
-	const arch_register_t * const *rb = (const arch_register_t**)b;
-
+	const arch_register_t *const *ra = (const arch_register_t**)a;
+	const arch_register_t *const *rb = (const arch_register_t**)b;
 	return *ra < *rb ? -1 : (*ra != *rb);
 }
 
@@ -535,16 +530,17 @@ static int reg_cmp(const void *a, const void *b)
 static void emit_arm_CopyB(const ir_node *irn)
 {
 	const arm_CopyB_attr_t *attr = get_arm_CopyB_attr_const(irn);
-	unsigned size = attr->size;
-	const arch_register_t *tmpregs[4];
-
+	unsigned                size = attr->size;
 	/* collect the temporary registers and sort them, we need ascending order */
-	tmpregs[0] = arch_get_irn_register_in(irn, 2);
-	tmpregs[1] = arch_get_irn_register_in(irn, 3);
-	tmpregs[2] = arch_get_irn_register_in(irn, 4);
-	tmpregs[3] = &arm_registers[REG_R12];
+	const arch_register_t *tmpregs[] = {
+		arch_get_irn_register_in(irn, 2),
+		arch_get_irn_register_in(irn, 3),
+		arch_get_irn_register_in(irn, 4),
+		&arm_registers[REG_R12],
+	};
 
-	/* Note: R12 is always the last register because the RA did not assign higher ones */
+	/* Note: R12 is always the last register because the RA did not assign
+	 * higher ones */
 	QSORT(tmpregs, 3, reg_cmp);
 
 	if (be_options.verbose_asm) {
@@ -572,14 +568,18 @@ static void emit_arm_CopyB(const ir_node *irn)
 		arm_emitf(irn, "stmia %S0!, {%r, %r}", tmpregs[0], tmpregs[1]);
 		break;
 	case 3:
-		arm_emitf(irn, "ldmia %S1!, {%r, %r, %r}", tmpregs[0], tmpregs[1], tmpregs[2]);
-		arm_emitf(irn, "stmia %S0!, {%r, %r, %r}", tmpregs[0], tmpregs[1], tmpregs[2]);
+		arm_emitf(irn, "ldmia %S1!, {%r, %r, %r}", tmpregs[0], tmpregs[1],
+		          tmpregs[2]);
+		arm_emitf(irn, "stmia %S0!, {%r, %r, %r}", tmpregs[0], tmpregs[1],
+		          tmpregs[2]);
 		break;
 	}
 	size >>= 2;
 	while (size) {
-		arm_emitf(irn, "ldmia %S1!, {%r, %r, %r}", tmpregs[0], tmpregs[1], tmpregs[2], tmpregs[3]);
-		arm_emitf(irn, "stmia %S0!, {%r, %r, %r}", tmpregs[0], tmpregs[1], tmpregs[2], tmpregs[3]);
+		arm_emitf(irn, "ldmia %S1!, {%r, %r, %r}", tmpregs[0], tmpregs[1],
+		          tmpregs[2], tmpregs[3]);
+		arm_emitf(irn, "stmia %S0!, {%r, %r, %r}", tmpregs[0], tmpregs[1],
+		          tmpregs[2], tmpregs[3]);
 		--size;
 	}
 }
@@ -596,7 +596,6 @@ static void emit_arm_SwitchJmp(const ir_node *irn)
 static void emit_be_IncSP(const ir_node *irn)
 {
 	int offs = -be_get_IncSP_offset(irn);
-
 	if (offs == 0)
 		return;
 
@@ -611,7 +610,6 @@ static void emit_be_IncSP(const ir_node *irn)
 static void emit_be_Copy(const ir_node *irn)
 {
 	ir_mode *mode = get_irn_mode(irn);
-
 	if (arch_get_irn_register_in(irn, 0) == arch_get_irn_register_out(irn, 0)) {
 		/* omitted Copy */
 		return;
@@ -636,18 +634,15 @@ static void emit_be_Perm(const ir_node *irn)
 
 static void emit_be_MemPerm(const ir_node *node)
 {
-	int i;
-	int memperm_arity;
-	int sp_change = 0;
-
 	/* TODO: this implementation is slower than necessary.
 	   The longterm goal is however to avoid the memperm node completely */
 
-	memperm_arity = be_get_MemPerm_entity_arity(node);
+	int memperm_arity = be_get_MemPerm_entity_arity(node);
 	if (memperm_arity > 12)
 		panic("memperm with more than 12 inputs not supported yet");
 
-	for (i = 0; i < memperm_arity; ++i) {
+	int sp_change = 0;
+	for (int i = 0; i < memperm_arity; ++i) {
 		/* spill register */
 		arm_emitf(node, "str r%d, [sp, #-4]!", i);
 		sp_change += 4;
@@ -657,7 +652,7 @@ static void emit_be_MemPerm(const ir_node *node)
 		arm_emitf(node, "ldr r%d, [sp, #%d]", i, offset);
 	}
 
-	for (i = memperm_arity-1; i >= 0; --i) {
+	for (int i = memperm_arity; i-- > 0; ) {
 		/* store to new entity */
 		ir_entity *entity = be_get_MemPerm_out_entity(node, i);
 		int        offset = get_entity_offset(entity) + sp_change;
@@ -671,13 +666,9 @@ static void emit_be_MemPerm(const ir_node *node)
 
 static void emit_arm_Jmp(const ir_node *node)
 {
-	ir_node *block, *next_block;
-
 	/* for now, the code works for scheduled and non-schedules blocks */
-	block = get_nodes_block(node);
-
-	/* we have a block schedule */
-	next_block = sched_next_block(block);
+	const ir_node *block      = get_nodes_block(node);
+	const ir_node *next_block = sched_next_block(block);
 	if (get_cfop_target_block(node) != next_block) {
 		arm_emitf(node, "b %t", node);
 	} else {
@@ -722,13 +713,11 @@ static void arm_register_emitters(void)
  */
 static void arm_emit_block_header(ir_node *block, ir_node *prev)
 {
-	bool need_label = false;
-	int  n_cfgpreds;
-
-	n_cfgpreds = get_Block_n_cfgpreds(block);
+	int  n_cfgpreds = get_Block_n_cfgpreds(block);
+	bool need_label;
 	if (n_cfgpreds == 1) {
-		ir_node *pred       = get_Block_cfgpred(block, 0);
-		ir_node *pred_block = get_nodes_block(pred);
+		const ir_node *pred       = get_Block_cfgpred(block, 0);
+		const ir_node *pred_block = get_nodes_block(pred);
 
 		/* we don't need labels for fallthrough blocks, however switch-jmps
 		 * are no fallthroughs */
@@ -761,12 +750,9 @@ static void arm_gen_block(ir_node *block, ir_node *prev_block)
  */
 static void arm_gen_labels(ir_node *block, void *env)
 {
-	ir_node *pred;
-	int n = get_Block_n_cfgpreds(block);
 	(void)env;
-
-	for (n--; n >= 0; n--) {
-		pred = get_Block_cfgpred(block, n);
+	for (int n = get_Block_n_cfgpreds(block); n-- > 0; ) {
+		ir_node *pred = get_Block_cfgpred(block, n);
 		set_irn_link(pred, block);
 	}
 }
@@ -800,8 +786,6 @@ void arm_emit_function(ir_graph *irg)
 	ir_node          *last_block = NULL;
 	ir_entity        *entity     = get_irg_entity(irg);
 	const arch_env_t *arch_env   = be_get_irg_arch_env(irg);
-	ir_node          **blk_sched;
-	size_t           i, n;
 
 	isa = (arm_isa_t*) arch_env;
 	ent_or_tv = pmap_create();
@@ -812,20 +796,16 @@ void arm_emit_function(ir_graph *irg)
 	arm_register_emitters();
 
 	/* create the block schedule */
-	blk_sched = be_create_block_schedule(irg);
+	ir_node **blk_sched = be_create_block_schedule(irg);
 
 	parameter_dbg_info_t *infos = construct_parameter_infos(irg);
 	be_gas_emit_function_prolog(entity, 4, infos);
 
 	irg_block_walk_graph(irg, arm_gen_labels, NULL, NULL);
 
-	n = ARR_LEN(blk_sched);
-	for (i = 0; i < n;) {
-		ir_node *block, *next_bl;
-
-		block   = blk_sched[i];
-		++i;
-		next_bl = i < n ? blk_sched[i] : NULL;
+	for (size_t i = 0, n = ARR_LEN(blk_sched); i < n; ) {
+		ir_node *block   = blk_sched[i++];
+		ir_node *next_bl = i < n ? blk_sched[i] : NULL;
 
 		/* set here the link. the emitter expects to find the next block here */
 		set_irn_link(block, next_bl);
@@ -849,19 +829,17 @@ void arm_emit_function(ir_graph *irg)
 				be_emit_char('\n');
 				be_emit_write_line();
 			} else {
-				ir_tarval *tv = entry->u.tv;
-				int vi;
-				int size = get_mode_size_bytes(get_tarval_mode(tv));
+				ir_tarval *tv   = entry->u.tv;
+				unsigned   size = get_mode_size_bytes(get_tarval_mode(tv));
 
 				/* beware: ARM fpa uses big endian format */
-				for (vi = ((size + 3) & ~3) - 4; vi >= 0; vi -= 4) {
+				for (int vi = ((size + 3) & ~3) - 4; vi >= 0; vi -= 4) {
 					/* get 32 bits */
-					unsigned v;
-					v =            get_tarval_sub_bits(tv, vi+3);
+					uint32_t v = get_tarval_sub_bits(tv, vi+3);
 					v = (v << 8) | get_tarval_sub_bits(tv, vi+2);
 					v = (v << 8) | get_tarval_sub_bits(tv, vi+1);
 					v = (v << 8) | get_tarval_sub_bits(tv, vi+0);
-					be_emit_irprintf("\t.word\t%u\n", v);
+					be_emit_irprintf("\t.word\t%" PRIu32 "\n", v);
 					be_emit_write_line();
 				}
 			}
