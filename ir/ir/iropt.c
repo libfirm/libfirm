@@ -6322,10 +6322,28 @@ static ir_node *transform_node_Mux(ir_node *n)
 				inverted = true;
 			}
 
-			if (is_Const_null(f) && is_Const(t) && is_Const_one(t)) {
-				n = transform_Mux_set(n, relation);
-				if (n != oldn)
-					return n;
+			if (is_Const_null(f) && is_Const(t)) {
+				if (is_Const_one(t)) {
+					n = transform_Mux_set(n, relation);
+					if (n != oldn)
+						return n;
+				} else if (is_Const_all_one(t) && is_Const(cmp_r) && is_Const_null(cmp_r) &&
+					   mode_is_signed(mode) && get_mode_arithmetic(mode) == irma_twos_complement &&
+				           (relation == ir_relation_less || relation == ir_relation_greater_equal)) {
+					ir_node  *block = get_nodes_block(n);
+					dbg_info *dbgi  = get_irn_dbg_info(n);
+
+					if (relation == ir_relation_greater_equal) {
+						/* Mux(a >= 0, 0, 0xFFFFFFFF) => ~a >>s 31 */
+						cmp_l = new_rd_Not(dbgi, block, cmp_l, mode);
+					}
+
+					/* Mux(a < 0, 0, 0xFFFFFFFF) => a >>s 31 */
+					long     size_bits = get_mode_size_bits(mode);
+					ir_node *c         = new_rd_Const_long(dbgi, irg, mode_Iu, size_bits - 1U);
+					return new_rd_Shrs(dbgi, block, cmp_l, c, mode);
+
+				}
 			}
 		}
 
