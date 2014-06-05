@@ -11,18 +11,19 @@
 #include <limits.h>
 #include <stdbool.h>
 
-#include "../../adt/util.h"
 #include "bearch_arm_t.h"
-#include "xmalloc.h"
-#include "tv.h"
-#include "iredges.h"
+#include "dbginfo.h"
 #include "debug.h"
+#include "irargs_t.h"
+#include "iredges.h"
 #include "irgwalk.h"
 #include "irop_t.h"
 #include "irprog_t.h"
-#include "irargs_t.h"
 #include "panic.h"
-#include "dbginfo.h"
+#include "pmap.h"
+#include "tv.h"
+#include "util.h"
+#include "xmalloc.h"
 
 #include "besched.h"
 #include "beblocksched.h"
@@ -40,10 +41,26 @@
 
 #include "benode.h"
 
+/** An entry in the ent_or_tv set. */
+typedef struct ent_or_tv_t ent_or_tv_t;
+struct ent_or_tv_t {
+	union {
+		ir_entity  *entity;  /**< An entity. */
+		ir_tarval  *tv;      /**< A tarval. */
+		const void *generic; /**< For generic compare. */
+	} u;
+	unsigned     label;      /**< the associated label. */
+	bool         is_entity;  /**< true if an entity is stored. */
+	ent_or_tv_t *next;       /**< next in list. */
+};
+
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
-static set       *ent_or_tv;
-static arm_isa_t *isa;
+static struct obstack obst;
+static pmap          *ent_or_tv;
+static ent_or_tv_t   *ent_or_tv_first;
+static ent_or_tv_t   *ent_or_tv_last;
+static arm_isa_t     *isa;
 
 static void arm_emit_register(const arch_register_t *reg)
 {
@@ -208,17 +225,6 @@ static void arm_emit_shifter_operand(const ir_node *node)
 	panic("Invalid shift_modifier while emitting %+F", node);
 }
 
-/** An entry in the ent_or_tv set. */
-typedef struct ent_or_tv_t {
-	union {
-		ir_entity  *entity;  /**< An entity. */
-		ir_tarval  *tv;      /**< A tarval. */
-		const void *generic; /**< For generic compare. */
-	} u;
-	unsigned label;      /**< the associated label. */
-	bool     is_entity;  /**< true if an entity is stored. */
-} ent_or_tv_t;
-
 /**
  * Returns a unique label. This number will not be used a second time.
  */
@@ -377,22 +383,36 @@ unknown:
 	be_emit_finish_line_gas(node);
 }
 
+static ent_or_tv_t *get_ent_or_tv_entry(const ent_or_tv_t *key)
+{
+	ent_or_tv_t *entry = pmap_get(ent_or_tv_t, ent_or_tv, key->u.generic);
+	if (entry == NULL) {
+		entry = OALLOC(&obst, ent_or_tv_t);
+		*entry = *key;
+		entry->label = get_unique_label();
+		entry->next  = NULL;
+		if (ent_or_tv_last != NULL) {
+			ent_or_tv_last->next = entry;
+		} else {
+			ent_or_tv_first = entry;
+		}
+		ent_or_tv_last = entry;
+		pmap_insert(ent_or_tv, key->u.generic, entry);
+	}
+	return entry;
+}
+
 /**
  * Emit an Address.
  */
 static void emit_arm_Address(const ir_node *irn)
 {
 	const arm_Address_attr_t *attr = get_arm_Address_attr_const(irn);
-	ent_or_tv_t key, *entry;
-
+	ent_or_tv_t key;
 	key.u.entity  = attr->entity;
 	key.is_entity = true;
 	key.label     = 0;
-	entry = set_insert(ent_or_tv_t, ent_or_tv, &key, sizeof(key), hash_ptr(key.u.generic));
-	if (entry->label == 0) {
-		/* allocate a label */
-		entry->label = get_unique_label();
-	}
+	ent_or_tv_t *entry = get_ent_or_tv_entry(&key);
 
 	/* load the symbol indirect */
 	arm_emitf(irn, "ldr %D0, %C", entry);
@@ -410,15 +430,10 @@ static void emit_arm_FrameAddr(const ir_node *irn)
 static void emit_arm_fConst(const ir_node *irn)
 {
 	ent_or_tv_t key;
-
 	key.u.tv      = get_fConst_value(irn);
 	key.is_entity = false;
 	key.label     = 0;
-	ent_or_tv_t *entry = set_insert(ent_or_tv_t, ent_or_tv, &key, sizeof(key), hash_ptr(key.u.generic));
-	if (entry->label == 0) {
-		/* allocate a label */
-		entry->label = get_unique_label();
-	}
+	ent_or_tv_t *entry = get_ent_or_tv_entry(&key);
 
 	/* load the tarval indirect */
 	ir_mode *mode = get_irn_mode(irn);
@@ -756,20 +771,6 @@ static void arm_gen_labels(ir_node *block, void *env)
 	}
 }
 
-/**
- * Compare two entries of the entity or tarval set.
- */
-static int cmp_ent_or_tv(const void *elt, const void *key, size_t size)
-{
-	const ent_or_tv_t *p1 = (const ent_or_tv_t*)elt;
-	const ent_or_tv_t *p2 = (const ent_or_tv_t*)key;
-	(void) size;
-
-	/* as an identifier NEVER can point to a tarval, it's enough
-	   to compare it this way */
-	return p1->u.generic != p2->u.generic;
-}
-
 static parameter_dbg_info_t *construct_parameter_infos(ir_graph *irg)
 {
 
@@ -803,7 +804,10 @@ void arm_emit_function(ir_graph *irg)
 	size_t           i, n;
 
 	isa = (arm_isa_t*) arch_env;
-	ent_or_tv = new_set(cmp_ent_or_tv, 8);
+	ent_or_tv = pmap_create();
+	obstack_init(&obst);
+	ent_or_tv_first = NULL;
+	ent_or_tv_last  = NULL;
 
 	arm_register_emitters();
 
@@ -830,10 +834,11 @@ void arm_emit_function(ir_graph *irg)
 	}
 
 	/* emit entity and tarval values */
-	if (set_count(ent_or_tv) > 0) {
+	if (ent_or_tv_first != NULL) {
 		be_emit_cstring("\t.align 2\n");
 
-		foreach_set(ent_or_tv, ent_or_tv_t, entry) {
+		for (ent_or_tv_t *entry = ent_or_tv_first; entry != NULL;
+		     entry = entry->next) {
 			emit_constant_name(entry);
 			be_emit_cstring(":\n");
 			be_emit_write_line();
@@ -864,7 +869,8 @@ void arm_emit_function(ir_graph *irg)
 		be_emit_char('\n');
 		be_emit_write_line();
 	}
-	del_set(ent_or_tv);
+	pmap_destroy(ent_or_tv);
+	obstack_free(&obst, NULL);
 
 	be_gas_emit_function_epilog(entity);
 }
