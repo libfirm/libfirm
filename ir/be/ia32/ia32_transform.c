@@ -610,7 +610,6 @@ static void set_am_attributes(ir_node *node, const ia32_address_mode_t *am)
 /**
  * Check, if a given node is a Down-Conv, i.e. a integer Conv
  * from a mode with a mode with more bits to a mode with fewer bits.
- * Moreover, we return only true if the node has not more than 1 user.
  *
  * @param node   the node
  * @return non-zero if node is a Down-Conv
@@ -628,7 +627,11 @@ static bool is_downconv(const ir_node *node)
 		get_mode_size_bits(dest_mode) <= get_mode_size_bits(src_mode);
 }
 
-/** Skip all Down-Conv's on a given node and return the resulting node. */
+/**
+ * Skip all Down-Conv's on a given node and return the resulting node.
+ *
+ * Moreover, we only skip Conv nodes that has at most one user.
+ */
 ir_node *ia32_skip_downconv(ir_node *node)
 {
 	while (is_downconv(node)) {
