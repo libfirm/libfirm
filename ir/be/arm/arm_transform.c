@@ -1321,6 +1321,8 @@ static ir_node *gen_Address(ir_node *node)
 	ir_node   *block  = be_transform_node(get_nodes_block(node));
 	ir_entity *entity = get_Address_entity(node);
 	dbg_info  *dbgi   = get_irn_dbg_info(node);
+	if (is_tls_entity(entity))
+		panic("TLS not supported yet");
 	return new_bd_arm_Address(dbgi, block, entity, 0);
 }
 
