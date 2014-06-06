@@ -60,7 +60,7 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 static struct obstack obst;
 static pmap          *ent_or_tv;
 static ent_or_tv_t   *ent_or_tv_first;
-static ent_or_tv_t   *ent_or_tv_last;
+static ent_or_tv_t  **ent_or_tv_anchor;
 
 static void arm_emit_register(const arch_register_t *reg)
 {
@@ -390,12 +390,8 @@ static ent_or_tv_t *get_ent_or_tv_entry(const ent_or_tv_t *key)
 		*entry = *key;
 		entry->label = get_unique_label();
 		entry->next  = NULL;
-		if (ent_or_tv_last != NULL) {
-			ent_or_tv_last->next = entry;
-		} else {
-			ent_or_tv_first = entry;
-		}
-		ent_or_tv_last = entry;
+		*ent_or_tv_anchor = entry;
+		ent_or_tv_anchor  = &entry->next;
 		pmap_insert(ent_or_tv, key->u.generic, entry);
 	}
 	return entry;
@@ -787,8 +783,8 @@ void arm_emit_function(ir_graph *irg)
 
 	ent_or_tv = pmap_create();
 	obstack_init(&obst);
-	ent_or_tv_first = NULL;
-	ent_or_tv_last  = NULL;
+	ent_or_tv_first  = NULL;
+	ent_or_tv_anchor = &ent_or_tv_first;
 
 	arm_register_emitters();
 
