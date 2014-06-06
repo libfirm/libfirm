@@ -61,7 +61,6 @@ static struct obstack obst;
 static pmap          *ent_or_tv;
 static ent_or_tv_t   *ent_or_tv_first;
 static ent_or_tv_t   *ent_or_tv_last;
-static arm_isa_t     *isa;
 
 static void arm_emit_register(const arch_register_t *reg)
 {
@@ -785,9 +784,7 @@ void arm_emit_function(ir_graph *irg)
 {
 	ir_node          *last_block = NULL;
 	ir_entity        *entity     = get_irg_entity(irg);
-	const arch_env_t *arch_env   = be_get_irg_arch_env(irg);
 
-	isa = (arm_isa_t*) arch_env;
 	ent_or_tv = pmap_create();
 	obstack_init(&obst);
 	ent_or_tv_first = NULL;
