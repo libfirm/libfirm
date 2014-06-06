@@ -448,13 +448,6 @@ static ir_node *sched_next_block(const ir_node *block)
  */
 static void emit_arm_B(const ir_node *irn)
 {
-	ir_node              *op1       = get_irn_n(irn, 0);
-	ir_relation           relation  = get_arm_CondJmp_relation(irn);
-	const arm_cmp_attr_t *cmp_attr  = get_arm_cmp_attr_const(op1);
-	bool                  is_signed = !cmp_attr->is_unsigned;
-
-	assert(is_arm_Cmp(op1) || is_arm_Tst(op1));
-
 	const ir_node *proj_true  = NULL;
 	const ir_node *proj_false = NULL;
 	foreach_out_edge(irn, edge) {
@@ -467,9 +460,14 @@ static void emit_arm_B(const ir_node *irn)
 		}
 	}
 
-	if (cmp_attr->ins_permuted) {
+	ir_node *const op1 = get_irn_n(irn, 0);
+	assert(is_arm_Cmp(op1) || is_arm_Tst(op1));
+
+	arm_cmp_attr_t const *const cmp_attr = get_arm_cmp_attr_const(op1);
+
+	ir_relation relation = get_arm_CondJmp_relation(irn);
+	if (cmp_attr->ins_permuted)
 		relation = get_inversed_relation(relation);
-	}
 
 	/* for now, the code works for scheduled and non-schedules blocks */
 	const ir_node *block      = get_nodes_block(irn);
@@ -487,7 +485,8 @@ static void emit_arm_B(const ir_node *irn)
 		relation   = get_negated_relation(relation);
 	}
 
-	const char *suffix;
+	char const *suffix;
+	bool const  is_signed = !cmp_attr->is_unsigned;
 	switch (relation & (ir_relation_less_equal_greater)) {
 		case ir_relation_equal:         suffix = "eq"; break;
 		case ir_relation_less:          suffix = is_signed ? "lt" : "lo"; break;
@@ -604,12 +603,12 @@ static void emit_be_IncSP(const ir_node *irn)
 
 static void emit_be_Copy(const ir_node *irn)
 {
-	ir_mode *mode = get_irn_mode(irn);
 	if (arch_get_irn_register_in(irn, 0) == arch_get_irn_register_out(irn, 0)) {
 		/* omitted Copy */
 		return;
 	}
 
+	ir_mode *const mode = get_irn_mode(irn);
 	if (mode_is_float(mode)) {
 		arm_emitf(irn, "mvf %D0, %S0");
 	} else if (mode_is_data(mode)) {
@@ -754,7 +753,6 @@ static void arm_gen_labels(ir_node *block, void *env)
 
 static parameter_dbg_info_t *construct_parameter_infos(ir_graph *irg)
 {
-
 	ir_entity            *entity   = get_irg_entity(irg);
 	ir_type              *type     = get_entity_type(entity);
 	calling_convention_t *cconv    = arm_decide_calling_convention(NULL, type);
@@ -778,9 +776,6 @@ static parameter_dbg_info_t *construct_parameter_infos(ir_graph *irg)
 
 void arm_emit_function(ir_graph *irg)
 {
-	ir_node          *last_block = NULL;
-	ir_entity        *entity     = get_irg_entity(irg);
-
 	ent_or_tv = pmap_create();
 	obstack_init(&obst);
 	ent_or_tv_first  = NULL;
@@ -791,12 +786,14 @@ void arm_emit_function(ir_graph *irg)
 	/* create the block schedule */
 	ir_node **blk_sched = be_create_block_schedule(irg);
 
-	parameter_dbg_info_t *infos = construct_parameter_infos(irg);
+	ir_entity            *const entity = get_irg_entity(irg);
+	parameter_dbg_info_t *const infos  = construct_parameter_infos(irg);
 	be_gas_emit_function_prolog(entity, 4, infos);
 
 	irg_block_walk_graph(irg, arm_gen_labels, NULL, NULL);
 
-	for (size_t i = 0, n = ARR_LEN(blk_sched); i < n; ) {
+	ir_node *last_block = NULL;
+	for (size_t i = 0, n = ARR_LEN(blk_sched); i < n;) {
 		ir_node *block   = blk_sched[i++];
 		ir_node *next_bl = i < n ? blk_sched[i] : NULL;
 
@@ -810,8 +807,7 @@ void arm_emit_function(ir_graph *irg)
 	if (ent_or_tv_first != NULL) {
 		be_emit_cstring("\t.align 2\n");
 
-		for (ent_or_tv_t *entry = ent_or_tv_first; entry != NULL;
-		     entry = entry->next) {
+		for (ent_or_tv_t *entry = ent_or_tv_first; entry; entry = entry->next) {
 			emit_constant_name(entry);
 			be_emit_cstring(":\n");
 			be_emit_write_line();
@@ -826,12 +822,13 @@ void arm_emit_function(ir_graph *irg)
 				unsigned   size = get_mode_size_bytes(get_tarval_mode(tv));
 
 				/* beware: ARM fpa uses big endian format */
-				for (int vi = ((size + 3) & ~3) - 4; vi >= 0; vi -= 4) {
+				for (unsigned vi = round_up2(size, 4); vi != 0;) {
 					/* get 32 bits */
-					uint32_t v = get_tarval_sub_bits(tv, vi+3);
-					v = (v << 8) | get_tarval_sub_bits(tv, vi+2);
-					v = (v << 8) | get_tarval_sub_bits(tv, vi+1);
-					v = (v << 8) | get_tarval_sub_bits(tv, vi+0);
+					uint32_t v;
+					v  = get_tarval_sub_bits(tv, --vi) << 24;
+					v |= get_tarval_sub_bits(tv, --vi) << 16;
+					v |= get_tarval_sub_bits(tv, --vi) <<  8;
+					v |= get_tarval_sub_bits(tv, --vi) <<  0;
 					be_emit_irprintf("\t.word\t%" PRIu32 "\n", v);
 					be_emit_write_line();
 				}
