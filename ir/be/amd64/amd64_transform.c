@@ -2017,6 +2017,17 @@ static ir_node *gen_Conv(ir_node *node)
 
 	} else if (src_float && !dst_float) {
 		/* fp to integer */
+
+		if (!mode_is_signed(dst_mode) && dst_bits <= 32) {
+			/* The conversion is signed only; simply use 64-bit register*/
+			insn_mode = INSN_MODE_64;
+		} else if (!mode_is_signed(dst_mode) && dst_bits == 64) {
+			//TODO Tobias Rapp, 10.06.2014:
+			// Convert floating point to unsigned 64-bit, whilst using the
+			// (only) signed conversion operation
+			panic("Conversion of floating point to 64-bit unsigned NIY\n");
+		}
+
 		if (src_bits < 64) {
 			conv = new_bd_amd64_CvtSS2SI(dbgi, block, ARRAY_SIZE(in),
 			                             in, insn_mode, AMD64_OP_REG,
@@ -2032,6 +2043,24 @@ static ir_node *gen_Conv(ir_node *node)
 
 	} else if (!src_float && dst_float) {
 		/* integer to fp */
+
+		if(!mode_is_signed(src_mode) && src_bits <= 32) {
+			/* Conversion is signed only, therefore use 64-bit register size
+			 * and require that the upper bits are zero. This is done with
+			 * an explicit 32-bit Mov instruction */
+			insn_mode = INSN_MODE_64;
+
+			ir_node *ext = new_bd_amd64_Mov(dbgi, block, ARRAY_SIZE(in),
+			                                in, INSN_MODE_32,
+			                                AMD64_OP_REG, addr);
+			arch_set_irn_register_reqs_in(ext, reg_reqs);
+			in[0] = new_r_Proj(ext, mode_gp, pn_amd64_Mov_res);
+
+		} else if (!mode_is_signed(src_mode) && src_bits == 64) {
+			//TODO Tobias Rapp, 10.06.2014
+			panic("Conversion of 64-bit unsigned to floating point NIY\n");
+		}
+
 		if (dst_bits < 64) {
 			conv = new_bd_amd64_CvtSI2SS(dbgi, block, ARRAY_SIZE(in),
 			                             in, insn_mode, AMD64_OP_REG,
