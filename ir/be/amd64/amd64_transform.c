@@ -2393,6 +2393,12 @@ static ir_node *gen_Proj_Builtin(ir_node *proj)
 	panic("Builtin %s not implemented", get_builtin_kind_name(kind));
 }
 
+static ir_node *gen_Bitcast(ir_node *node)
+{
+	(void)node;
+	panic("Bitcast NIY\n");
+}
+
 /* Boilerplate code for transformation: */
 
 static void amd64_register_transformers(void)
@@ -2402,6 +2408,7 @@ static void amd64_register_transformers(void)
 	be_set_transform_function(op_Add,      gen_Add);
 	be_set_transform_function(op_Address,  gen_Address);
 	be_set_transform_function(op_And,      gen_And);
+	be_set_transform_function(op_Bitcast,  gen_Bitcast);
 	be_set_transform_function(op_Builtin,  gen_Builtin);
 	be_set_transform_function(op_Call,     gen_Call);
 	be_set_transform_function(op_Cmp,      gen_Cmp);
