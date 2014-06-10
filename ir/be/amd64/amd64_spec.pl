@@ -600,7 +600,7 @@ CvtSD2SI => {
 	arity     => "variable",
 	attr_type => "amd64_addr_attr_t",
 	attr      => "amd64_insn_mode_t insn_mode, amd64_op_mode_t op_mode, amd64_addr_t addr",
-	emit      => "cvtsd2si %AM, %D0",
+	emit      => "cvttsd2si %AM, %D0",
 },
 
 CvtSS2SI => {
@@ -610,7 +610,7 @@ CvtSS2SI => {
 	arity     => "variable",
 	attr_type => "amd64_addr_attr_t",
 	attr      => "amd64_insn_mode_t insn_mode, amd64_op_mode_t op_mode, amd64_addr_t addr",
-	emit      => "cvtss2si %AM, %D0",
+	emit      => "cvttss2si %AM, %D0",
 },
 
 CvtSI2SS => {
