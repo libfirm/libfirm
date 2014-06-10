@@ -40,7 +40,8 @@ typedef struct amd64_cconv_t
 	reg_or_stackslot_t *parameters;       /**< parameter info. */
 	unsigned            param_stack_size; /**< stack size for parameters */
 	unsigned            n_param_regs;     /**< number of values passed in a
-	                                           register */
+	                                           register (gp + xmm) */
+	unsigned            n_xmm_regs;       /**< number of xmm registers used */
 	reg_or_stackslot_t *results;          /**< result info. */
 	unsigned            n_reg_results;
 	unsigned           *caller_saves;     /**< bitset of caller saved registers */

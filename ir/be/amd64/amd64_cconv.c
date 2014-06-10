@@ -202,6 +202,7 @@ amd64_cconv_t *amd64_decide_calling_convention(ir_type *function_type,
 	cconv->parameters       = params;
 	cconv->param_stack_size = stack_offset;
 	cconv->n_param_regs     = n_param_regs_used;
+	cconv->n_xmm_regs       = float_param_regnum;
 	cconv->results          = results;
 	cconv->omit_fp          = omit_fp;
 	cconv->caller_saves     = caller_saves;

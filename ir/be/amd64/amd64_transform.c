@@ -1632,9 +1632,11 @@ static ir_node *gen_Call(ir_node *node)
 
 	/* vararg calls need the number of SSE registers used */
 	if (get_method_variadicity(type) == variadicity_variadic) {
-		ir_node *zero = new_bd_amd64_Xor0(NULL, block);
+		unsigned xmm_regs = cconv->n_xmm_regs;
+		ir_node *xmm_imm  = new_bd_amd64_MovImm(dbgi, block, INSN_MODE_32,
+		                                         xmm_regs, NULL);
 		in_req[in_arity] = amd64_registers[REG_RAX].single_req;
-		in[in_arity] = zero;
+		in[in_arity] = xmm_imm;
 		++in_arity;
 	}
 
