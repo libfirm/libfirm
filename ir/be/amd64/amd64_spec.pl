@@ -277,7 +277,7 @@ Sub => {
 	arity     => "variable",
 	attr_type => "amd64_binop_addr_attr_t",
 	attr      => "const amd64_binop_addr_attr_t *attr_init",
-	emit      => "sub%M %S1, %D0",
+	emit      => "sub%M %AM",
 	modified_flags => $status_flags,
 },
 
