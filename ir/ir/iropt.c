@@ -1311,20 +1311,40 @@ static ir_node *equivalent_node_Conv(ir_node *n)
 	ir_node       *oldn   = n;
 	ir_node       *a      = get_Conv_op(n);
 	const ir_mode *n_mode = get_irn_mode(n);
-	const ir_mode *a_mode = get_irn_mode(a);
+	ir_mode       *a_mode = get_irn_mode(a);
 
 	if (n_mode == a_mode) { /* No Conv necessary */
 		n = a;
 		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_CONV);
 		return n;
 	} else if (is_Conv(a)) { /* Conv(Conv(b)) */
-		ir_node       *b      = get_Conv_op(a);
-		const ir_mode *b_mode = get_irn_mode(b);
+		ir_node *b      = get_Conv_op(a);
+		ir_mode *b_mode = get_irn_mode(b);
 
-		if (n_mode == b_mode && values_in_mode(b_mode, a_mode)) {
-			n = b;
-			DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_CONV);
-			return n;
+		if (n_mode == b_mode) {
+			if (values_in_mode(b_mode, a_mode)) {
+				n = b;
+				DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_CONV);
+				return n;
+			}
+
+			const bitinfo *const bb = get_bitinfo(b);
+			if (bb != NULL && smaller_mode(a_mode, b_mode) &&
+			    get_mode_arithmetic(a_mode) == irma_twos_complement &&
+			    get_mode_arithmetic(b_mode) == irma_twos_complement) {
+				ir_tarval  *const bz          = bb->z;
+				const long        highest_bit = get_tarval_highest_bit(bz);
+				const long        mode_bits   = get_mode_size_bits(a_mode);
+				const int         both_signed = mode_is_signed(a_mode) && mode_is_signed(b_mode);
+
+				/* If both modes are signed, the highest bit of the smaller mode
+				 * must be zero to ensure that no sign extension occurs. */
+				if (highest_bit + both_signed < mode_bits) {
+					n = b;
+					DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_CONV);
+					return n;
+				}
+			}
 		}
 	}
 	return n;
