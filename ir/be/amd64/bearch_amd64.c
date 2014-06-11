@@ -101,7 +101,7 @@ static int amd64_get_sp_bias(const ir_node *node)
 		return get_insn_mode_bytes(attr->insn_mode);
 	} else if (is_amd64_PushRbp(node)) {
 		/* 64-bit register size */
-		return 8;
+		return AMD64_REGISTER_SIZE;
 	} else if (is_amd64_PopAM(node)) {
 		const amd64_addr_attr_t *attr = get_amd64_addr_attr_const(node);
 		return -get_insn_mode_bytes(attr->insn_mode);
