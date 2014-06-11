@@ -2333,13 +2333,16 @@ static ir_node *gen_saturating_increment(ir_node *node)
 {
 	dbg_info *dbgi      = get_irn_dbg_info(node);
 	ir_node  *new_block = be_transform_node(get_nodes_block(node));
-	ir_node  *operand   = be_transform_node(get_Builtin_param(node, 0));
+	ir_node  *param0    = get_Builtin_param(node, 0);
+	ir_node  *operand   = be_transform_node(param0);
+	ir_mode  *mode      = get_irn_mode(param0);
 	ir_node  *inc_in[]  = { operand };
 
 	amd64_binop_addr_attr_t inc_attr;
 	memset(&inc_attr, 0, sizeof(inc_attr));
 	inc_attr.base.base.op_mode  = AMD64_OP_REG_IMM;
 	inc_attr.u.immediate.offset = 1;
+	inc_attr.base.insn_mode     = get_insn_mode_from_mode(mode);
 
 	ir_node  *inc = new_bd_amd64_Add(dbgi, new_block, ARRAY_SIZE(inc_in),
 	                                 inc_in, &inc_attr);
@@ -2355,6 +2358,7 @@ static ir_node *gen_saturating_increment(ir_node *node)
 	amd64_binop_addr_attr_t sbb_attr;
 	memset(&sbb_attr, 0, sizeof(sbb_attr));
 	sbb_attr.base.base.op_mode  = AMD64_OP_REG_REG;
+	sbb_attr.base.insn_mode     = get_insn_mode_from_mode(mode);
 
 	ir_node *sbb = new_bd_amd64_Sbb(dbgi, new_block, value, zero, eflags,
 	                                &sbb_attr);
