@@ -29,8 +29,15 @@ static bitset_t *non_address_mode_nodes;
 
 static bool tarval_possible(ir_tarval *tv)
 {
+	ir_mode *mode = get_tarval_mode(tv);
+	if (get_mode_size_bits(mode) <= 32) {
+		assert(tarval_is_long(tv));
+		return true;
+	}
+
 	if (!tarval_is_long(tv))
 		return false;
+	/* immediates on x86_64 are at most 32bit and get sign extended */
 	long    val   = get_tarval_long(tv);
 	int32_t val32 = (long)val;
 	return val == (long)val32;
