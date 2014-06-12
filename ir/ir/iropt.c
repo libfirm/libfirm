@@ -3599,29 +3599,28 @@ static ir_node *transform_node_Mod(ir_node *n)
 
 		DBG_OPT_CSTEVAL(n, value);
 		goto make_tuple;
-	} else {
-		ir_node *a = get_Mod_left(n);
-		ir_node *b = get_Mod_right(n);
-		if (a == b && value_not_null(a, NULL)) {
-			/* BEWARE: we can optimize a%a to 0 only if this cannot cause a exception */
+	}
+
+	if (a == b && value_not_null(a, NULL)) {
+		/* BEWARE: we can optimize a%a to 0 only if this cannot cause a exception */
+		value = new_r_Const_null(irg, mode);
+		DBG_OPT_CSTEVAL(n, value);
+		goto make_tuple;
+	}
+
+	if (is_Const(b)) {
+		ir_tarval *tv = get_Const_tarval(b);
+
+		if (mode_is_signed(mode) && tarval_is_all_one(tv)) {
+			/* a % -1 = 0 */
 			value = new_r_Const_null(irg, mode);
 			DBG_OPT_CSTEVAL(n, value);
 			goto make_tuple;
-		} else {
-			if (mode_is_signed(mode) && is_Const(b)) {
-				ir_tarval *tv = get_Const_tarval(b);
-
-				if (tarval_is_all_one(tv)) {
-					/* a % -1 = 0 */
-					value = new_r_Const_null(irg, mode);
-					DBG_OPT_CSTEVAL(n, value);
-					goto make_tuple;
-				}
-			}
-			/* Try architecture dependent optimization */
-			value = arch_dep_replace_mod_by_const(n);
 		}
 	}
+
+	/* Try architecture dependent optimization */
+	value = arch_dep_replace_mod_by_const(n);
 
 	if (value != n) {
 make_tuple:;
