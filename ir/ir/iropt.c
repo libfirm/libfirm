@@ -3611,12 +3611,35 @@ static ir_node *transform_node_Mod(ir_node *n)
 	if (is_Const(b)) {
 		ir_tarval *tv = get_Const_tarval(b);
 
-		if (mode_is_signed(mode) && tarval_is_all_one(tv)) {
-			/* a % -1 = 0 */
-			value = new_r_Const_null(irg, mode);
-			DBG_OPT_CSTEVAL(n, value);
-			goto make_tuple;
+		if (mode_is_signed(mode)) {
+			if (tarval_is_all_one(tv)) {
+				/* a % -1 = 0 */
+				value = new_r_Const_null(irg, mode);
+				DBG_OPT_CSTEVAL(n, value);
+				goto make_tuple;
+			}
+		} else if (get_mode_arithmetic(mode) == irma_twos_complement) {
+			bitinfo *ba = get_bitinfo(a);
+
+			if (ba != NULL) {
+				ir_tarval *const baz = ba->z;
+				ir_tarval *const bao = ba->o;
+				ir_tarval *const divz = tarval_div(baz, tv);
+				ir_tarval *const divo = tarval_div(bao, tv);
+
+				if (divz == divo && tarval_is_constant(divz)) {
+					/* a/b is constant, so use equation a % b = a - a/b */
+					ir_tarval *tv_mul = tarval_mul(divz, tv);
+					dbg_info  *dbgi   = get_irn_dbg_info(n);
+					ir_node   *c      = new_rd_Const(dbgi, irg, tv_mul);
+					ir_node   *block  = get_nodes_block(n);
+
+					value = new_rd_Sub(dbgi, block, a, c, mode);
+					goto make_tuple;
+				}
+			}
 		}
+
 	}
 
 	/* Try architecture dependent optimization */
