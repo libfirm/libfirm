@@ -194,8 +194,7 @@ static const arch_register_req_t *xmm_xmm_xmm_mem_reqs[] = {
 	&arch_no_requirement,
 };
 
-static const arch_register_req_t *reg_reg_flags_reqs[] = {
-	&amd64_requirement_gp,
+static const arch_register_req_t *reg_flags_reqs[] = {
 	&amd64_requirement_gp,
 	&amd64_requirement_flags,
 };
@@ -2336,13 +2335,13 @@ static ir_node *gen_saturating_increment(ir_node *node)
 	ir_node  *param0    = get_Builtin_param(node, 0);
 	ir_node  *operand   = be_transform_node(param0);
 	ir_mode  *mode      = get_irn_mode(param0);
-	ir_node  *inc_in[]  = { operand };
 
 	amd64_binop_addr_attr_t inc_attr;
 	memset(&inc_attr, 0, sizeof(inc_attr));
 	inc_attr.base.base.op_mode  = AMD64_OP_REG_IMM;
 	inc_attr.u.immediate.offset = 1;
 	inc_attr.base.insn_mode     = get_insn_mode_from_mode(mode);
+	ir_node  *inc_in[]          = { operand };
 
 	ir_node  *inc = new_bd_amd64_Add(dbgi, new_block, ARRAY_SIZE(inc_in),
 	                                 inc_in, &inc_attr);
@@ -2353,17 +2352,18 @@ static ir_node *gen_saturating_increment(ir_node *node)
 
 	ir_node *value  = new_rd_Proj(dbgi, inc, mode_gp, pn_amd64_Add_res);
 	ir_node *eflags = new_rd_Proj(dbgi, inc, mode_flags, pn_amd64_Add_flags);
-	ir_node *zero   = new_bd_amd64_Xor0(dbgi, new_block);
 
 	amd64_binop_addr_attr_t sbb_attr;
 	memset(&sbb_attr, 0, sizeof(sbb_attr));
-	sbb_attr.base.base.op_mode  = AMD64_OP_REG_REG;
+	sbb_attr.base.base.op_mode  = AMD64_OP_REG_IMM;
+	sbb_attr.u.immediate.offset = 0;
 	sbb_attr.base.insn_mode     = get_insn_mode_from_mode(mode);
+	ir_node *in[2]              = { value, eflags };
 
-	ir_node *sbb = new_bd_amd64_Sbb(dbgi, new_block, value, zero, eflags,
+	ir_node *sbb = new_bd_amd64_Sbb(dbgi, new_block, ARRAY_SIZE(in), in,
 	                                &sbb_attr);
 
-	arch_set_irn_register_reqs_in(sbb, reg_reg_flags_reqs);
+	arch_set_irn_register_reqs_in(sbb, reg_flags_reqs);
 	arch_set_irn_register_req_out(sbb, 0, &amd64_requirement_gp_same_0);
 
 	return sbb;

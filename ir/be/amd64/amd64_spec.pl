@@ -283,13 +283,12 @@ Sub => {
 
 Sbb => {
 	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "flags" ],
-	               out => [ "gp", "flags", "none" ] },
+	reg_req   => { out => [ "gp", "flags", "none" ] },
 	outs      => [ "res", "flags", "M" ],
-	ins       => [ "minuend", "subtrahend", "eflags" ],
+	arity     => "variable",
 	attr_type => "amd64_binop_addr_attr_t",
 	attr      => "const amd64_binop_addr_attr_t *attr_init",
-	emit      => "sbb%M %S1, %D0",
+	emit      => "sbb%M %AM",
 	modified_flags => $status_flags,
 },
 
