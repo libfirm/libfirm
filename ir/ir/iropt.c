@@ -6070,9 +6070,19 @@ bool ir_is_optimizable_mux(const ir_node *sel, const ir_node *mux_false,
 				relation = get_negated_relation(relation);
 			}
 
-			if (is_Const_null(f) && is_Const(t) && is_Const_one(t)
-			    && ir_is_optimizable_mux_set(sel, relation, dest_mode)) {
-				return true;
+			if (is_Const_null(f) && is_Const(t)) {
+				if (is_Const_one(t)) {
+					if (ir_is_optimizable_mux_set(sel, relation, dest_mode)) {
+						return true;
+					}
+				} else if (is_Const_all_one(t) && is_Const(cmp_r) && is_Const_null(cmp_r) &&
+					   mode_is_signed(mode) && get_mode_arithmetic(mode) == irma_twos_complement &&
+				           (relation == ir_relation_less || relation == ir_relation_greater_equal)) {
+					/* Mux(a >= 0, 0, 0xFFFFFFFF) => ~a >>s 31 */
+					/* Mux(a <  0, 0, 0xFFFFFFFF) =>  a >>s 31 */
+					return true;
+
+				}
 			}
 		}
 
