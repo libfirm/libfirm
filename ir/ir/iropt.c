@@ -832,19 +832,26 @@ static ir_tarval *do_computed_value_Div(const ir_node *a, const ir_node *b)
 static ir_tarval *do_computed_value_Mod(const ir_node *a, const ir_node *b)
 {
 	ir_tarval *tb = value_of(b);
-	/* Compute a % 1 or c1 % c2 */
-	if (tarval_is_one(tb))
-		return get_mode_null(get_irn_mode(a));
+	/* a % 1 == 0 */
+	/* a % -1 == 0 */
+	ir_mode *mode = get_irn_mode(a);
+	if (tarval_is_one(tb)
+	    || (mode_is_signed(mode) && tarval_is_all_one(tb)))
+		return get_mode_null(mode);
 
+	/* constant folding */
 	ir_tarval *ta = value_of(a);
-	/* 0 % b == 0 if b != 0 */
-	if (tarval_is_null(ta)) {
-		assert(get_mode_arithmetic(get_irn_mode(a)) == irma_twos_complement);
-		if (value_not_null(b, NULL))
-			return ta;
-	}
 	if (ta != tarval_unknown && tb != tarval_unknown)
 		return tarval_mod(ta, tb);
+
+	/* 0 % b == 0 if b != 0 */
+	/* a % a == 0 if a != 0 */
+	if (tarval_is_null(ta) || a == b) {
+		assert(get_mode_arithmetic(mode) == irma_twos_complement);
+		if (value_not_null(b, NULL))
+			return get_mode_null(mode);
+	}
+
 	return tarval_unknown;
 }
 
@@ -3601,45 +3608,28 @@ static ir_node *transform_node_Mod(ir_node *n)
 		goto make_tuple;
 	}
 
-	if (a == b && value_not_null(a, NULL)) {
-		/* BEWARE: we can optimize a%a to 0 only if this cannot cause a exception */
-		value = new_r_Const_null(irg, mode);
-		DBG_OPT_CSTEVAL(n, value);
-		goto make_tuple;
-	}
-
-	if (is_Const(b)) {
+	if (is_Const(b) && !mode_is_signed(mode)) {
 		ir_tarval *tv = get_Const_tarval(b);
+		assert(get_mode_arithmetic(mode) == irma_twos_complement);
 
-		if (mode_is_signed(mode)) {
-			if (tarval_is_all_one(tv)) {
-				/* a % -1 = 0 */
-				value = new_r_Const_null(irg, mode);
-				DBG_OPT_CSTEVAL(n, value);
+		bitinfo *ba = get_bitinfo(a);
+		if (ba != NULL) {
+			ir_tarval *const baz = ba->z;
+			ir_tarval *const bao = ba->o;
+			ir_tarval *const divz = tarval_div(baz, tv);
+			ir_tarval *const divo = tarval_div(bao, tv);
+
+			if (divz == divo && tarval_is_constant(divz)) {
+				/* a/b is constant, so use equation a % b = a - a/b */
+				ir_tarval *tv_mul = tarval_mul(divz, tv);
+				dbg_info  *dbgi   = get_irn_dbg_info(n);
+				ir_node   *c      = new_rd_Const(dbgi, irg, tv_mul);
+				ir_node   *block  = get_nodes_block(n);
+
+				value = new_rd_Sub(dbgi, block, a, c, mode);
 				goto make_tuple;
 			}
-		} else if (get_mode_arithmetic(mode) == irma_twos_complement) {
-			bitinfo *ba = get_bitinfo(a);
-
-			if (ba != NULL) {
-				ir_tarval *const baz = ba->z;
-				ir_tarval *const bao = ba->o;
-				ir_tarval *const divz = tarval_div(baz, tv);
-				ir_tarval *const divo = tarval_div(bao, tv);
-
-				if (divz == divo && tarval_is_constant(divz)) {
-					/* a/b is constant, so use equation a % b = a - a/b */
-					ir_tarval *tv_mul = tarval_mul(divz, tv);
-					dbg_info  *dbgi   = get_irn_dbg_info(n);
-					ir_node   *c      = new_rd_Const(dbgi, irg, tv_mul);
-					ir_node   *block  = get_nodes_block(n);
-
-					value = new_rd_Sub(dbgi, block, a, c, mode);
-					goto make_tuple;
-				}
-			}
 		}
-
 	}
 
 	/* Try architecture dependent optimization */
