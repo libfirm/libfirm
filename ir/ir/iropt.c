@@ -3354,6 +3354,7 @@ static ir_node *transform_node_Mul(ir_node *n)
 	ir_node *c;
 	HANDLE_BINOP_PHI((eval_func) tarval_mul, a, b, c, mode);
 
+	ir_mode_arithmetic arith = get_mode_arithmetic(mode);
 	if (is_Const(b)) {
 		ir_tarval *c1 = get_Const_tarval(b);
 
@@ -3362,8 +3363,7 @@ static ir_node *transform_node_Mul(ir_node *n)
 		if (is_Add(a) && only_one_user(a)) {
 			ir_mode *mode      = get_irn_mode(a);
 			ir_node *add_right = get_Add_right(a);
-			if (is_Const(add_right)
-			    && get_mode_arithmetic(mode) == irma_twos_complement) {
+			if (is_Const(add_right) && arith == irma_twos_complement) {
 			    ir_tarval *c2       = get_Const_tarval(add_right);
 				ir_node   *add_left = get_Add_left(a);
 
@@ -3379,8 +3379,7 @@ static ir_node *transform_node_Mul(ir_node *n)
 		}
 
 		/* x*-1 => -x */
-		if ((get_mode_arithmetic(mode) == irma_twos_complement
-		     && tarval_is_all_one(c1))
+		if ((arith == irma_twos_complement && tarval_is_all_one(c1))
 		  || (mode_is_float(mode) && tarval_is_minus_one(c1))) {
 			dbg_info *dbgi  = get_irn_dbg_info(n);
 			ir_node  *block = get_nodes_block(n);
@@ -3434,8 +3433,7 @@ static ir_node *transform_node_Mul(ir_node *n)
 		}
 	}
 	ir_graph *irg = get_irn_irg(n);
-	if ((get_mode_arithmetic(mode) == irma_ieee754
-	    || get_mode_arithmetic(mode) == irma_x86_extended_float)
+	if ((arith == irma_ieee754 || arith == irma_x86_extended_float)
 	    && irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_ARCH_DEP)) {
 		if (is_Const(a)) {
 			const ir_tarval *tv = get_Const_tarval(a);
@@ -3457,6 +3455,53 @@ static ir_node *transform_node_Mul(ir_node *n)
 			}
 		}
 	}
+	/* (a/b)*b == a-(a%b) */
+	if (arith == irma_twos_complement) {
+		ir_node *div;
+		ir_node *div_proj;
+		ir_node *div_right;
+		if (is_Proj(a)) {
+			div_proj = a;
+			div      = get_Proj_pred(div_proj);
+			if (is_Div(div)) {
+				div_right = get_Div_right(div);
+				if (div_right == b) {
+					goto transform_div_mul;
+				}
+			}
+		} else if (is_Proj(b)) {
+			div_proj = b;
+			div      = get_Proj_pred(div_proj);
+			if (is_Div(div)) {
+				div_right = get_Div_right(div);
+				if (div_right == a) {
+transform_div_mul:
+					if (only_one_user(div_proj)) {
+						dbg_info    *dbgi      = get_irn_dbg_info(n);
+						ir_node     *div_block = get_nodes_block(div);
+						ir_node     *div_left  = get_Div_left(div);
+						ir_node     *div_mem   = get_Div_mem(div);
+						op_pin_state pinned    = get_irn_pinned(div);
+						ir_node     *mod
+							= new_rd_Mod(dbgi, div_block, div_mem, div_left,
+							             div_right, mode, pinned);
+						/* we are crazy and exchange the Div with the Mod. We
+						 * can only do this because: We know we are the only
+						 * user and the Proj numbers match up */
+						assert((int)pn_Div_res       == (int)pn_Mod_res);
+						assert((int)pn_Div_M         == (int)pn_Mod_M);
+						assert((int)pn_Div_X_regular == (int)pn_Mod_X_regular);
+						assert((int)pn_Div_X_except  == (int)pn_Mod_X_except);
+						exchange(div, mod);
+						ir_node  *block = get_nodes_block(n);
+						return new_rd_Sub(dbgi, block, div_left, div_proj,
+						                  mode);
+					}
+				}
+			}
+		}
+	}
+
 	return arch_dep_replace_mul_with_shifts(n);
 }
 
