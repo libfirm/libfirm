@@ -3653,18 +3653,21 @@ static ir_node *transform_node_Mod(ir_node *n)
 		goto make_tuple;
 	}
 
-	if (is_Const(b) && !mode_is_signed(mode)) {
+	if (is_Const(b)) {
 		ir_tarval *tv = get_Const_tarval(b);
 		assert(get_mode_arithmetic(mode) == irma_twos_complement);
 
 		bitinfo *ba = get_bitinfo(a);
 		if (ba != NULL) {
-			ir_tarval *const baz = ba->z;
-			ir_tarval *const bao = ba->o;
+			ir_tarval *const baz  = ba->z;
+			ir_tarval *const bao  = ba->o;
 			ir_tarval *const divz = tarval_div(baz, tv);
 			ir_tarval *const divo = tarval_div(bao, tv);
+			ir_tarval *const min  = get_mode_min(mode);
+			ir_tarval *const beor = tarval_eor(baz, bao);
+			ir_tarval *const sign = tarval_and(beor, min);
 
-			if (divz == divo && tarval_is_constant(divz)) {
+			if (divz == divo && tarval_is_constant(divz) && tarval_is_null(sign)) {
 				/* a/b and b are constant, so use equation a % b = a - (a/b)*b */
 				ir_tarval *tv_mul = tarval_mul(divz, tv);
 				dbg_info  *dbgi   = get_irn_dbg_info(n);
