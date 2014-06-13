@@ -3665,7 +3665,7 @@ static ir_node *transform_node_Mod(ir_node *n)
 			ir_tarval *const divo = tarval_div(bao, tv);
 
 			if (divz == divo && tarval_is_constant(divz)) {
-				/* a/b is constant, so use equation a % b = a - a/b */
+				/* a/b and b are constant, so use equation a % b = a - (a/b)*b */
 				ir_tarval *tv_mul = tarval_mul(divz, tv);
 				dbg_info  *dbgi   = get_irn_dbg_info(n);
 				ir_node   *c      = new_rd_Const(dbgi, irg, tv_mul);
