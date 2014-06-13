@@ -791,11 +791,9 @@ static void ia32_emit_exc_label(const ir_node *node)
 	be_emit_irprintf("%lu", get_ia32_exc_label_id(node));
 }
 
-static int can_be_fallthrough(const ir_node *node)
+static bool fallthrough_possible(const ir_node *block, const ir_node *target)
 {
-	ir_node *target_block = get_cfop_target_block(node);
-	ir_node *block        = get_nodes_block(node);
-	return get_prev_block_sched(target_block) == block;
+	return get_prev_block_sched(target) == block;
 }
 
 /**
@@ -803,19 +801,15 @@ static int can_be_fallthrough(const ir_node *node)
  */
 static void emit_ia32_Jcc(const ir_node *node)
 {
-	int                  need_parity_label = 0;
-	x86_condition_code_t cc                = get_ia32_condcode(node);
-
+	x86_condition_code_t cc = get_ia32_condcode(node);
 	cc = determine_final_cc(node, 0, cc);
 
 	/* get both Projs */
-	ir_node const *proj_true = be_get_Proj_for_pn(node, pn_ia32_Jcc_true);
-	assert(proj_true && "Jcc without true Proj");
-
-	ir_node const *proj_false = be_get_Proj_for_pn(node, pn_ia32_Jcc_false);
-	assert(proj_false && "Jcc without false Proj");
-
-	if (can_be_fallthrough(proj_true)) {
+	ir_node const *proj_true   = be_get_Proj_for_pn(node, pn_ia32_Jcc_true);
+	ir_node const *target_true = get_cfop_target_block(proj_true);
+	ir_node const *proj_false  = be_get_Proj_for_pn(node, pn_ia32_Jcc_false);
+	ir_node const *block       = get_nodes_block(node);
+	if (fallthrough_possible(block, target_true)) {
 		/* exchange both proj's so the second one can be omitted */
 		const ir_node *t = proj_true;
 
@@ -823,7 +817,23 @@ static void emit_ia32_Jcc(const ir_node *node)
 		proj_false = t;
 		cc         = x86_negate_condition_code(cc);
 	}
+	const ir_node *target_false = get_cfop_target_block(proj_false);
+	bool           fallthrough  = fallthrough_possible(block, target_false);
+	/* if we can't have a fallthrough anyway, put the more likely case first */
+	if (!fallthrough) {
+		/* We would need execfreq for the concrete edge, but don't have it
+		 * available here, so we use the block execfreq :-( */
+		double freq_true  = get_block_execfreq(target_true);
+		double freq_false = get_block_execfreq(target_false);
+		if (freq_false > freq_true) {
+			const ir_node *t = proj_true;
+			proj_true  = proj_false;
+			proj_false = t;
+			cc         = x86_negate_condition_code(cc);
+		}
+	}
 
+	bool need_parity_label = false;
 	if (cc & x86_cc_float_parity_cases) {
 		/* Some floating point comparisons require a test of the parity flag,
 		 * which indicates that the result is unordered */
@@ -832,8 +842,8 @@ static void emit_ia32_Jcc(const ir_node *node)
 		} else {
 			/* we need a local label if the false proj is a fallthrough
 			 * as the falseblock might have no label emitted then */
-			if (can_be_fallthrough(proj_false)) {
-				need_parity_label = 1;
+			if (fallthrough) {
+				need_parity_label = true;
 				ia32_emitf(proj_false, "jp 1f");
 			} else {
 				ia32_emitf(proj_false, "jp %L");
@@ -847,7 +857,7 @@ static void emit_ia32_Jcc(const ir_node *node)
 	}
 
 	/* the second Proj might be a fallthrough */
-	if (can_be_fallthrough(proj_false)) {
+	if (fallthrough) {
 		if (be_options.verbose_asm)
 			ia32_emitf(proj_false, "/* fallthrough to %L */");
 	} else {
@@ -942,7 +952,9 @@ static void emit_ia32_SwitchJmp(const ir_node *node)
 static void emit_ia32_Jmp(const ir_node *node)
 {
 	/* we have a block schedule */
-	if (can_be_fallthrough(node)) {
+	ir_node *block  = get_nodes_block(node);
+	ir_node *target = get_cfop_target_block(node);
+	if (fallthrough_possible(block, target)) {
 		if (be_options.verbose_asm)
 			ia32_emitf(node, "/* fallthrough to %L */");
 	} else {
@@ -1555,13 +1567,11 @@ static void ia32_emit_block_header(ir_node *block)
 		} else {
 			/* if the predecessor block has no fall-through,
 			   we can always align the label. */
-			int i;
-			int has_fallthrough = 0;
-
-			for (i = get_Block_n_cfgpreds(block) - 1; i >= 0; --i) {
-				ir_node *cfg_pred = get_Block_cfgpred(block, i);
-				if (can_be_fallthrough(cfg_pred)) {
-					has_fallthrough = 1;
+			bool has_fallthrough = false;
+			for (int i = get_Block_n_cfgpreds(block); i-- > 0; ) {
+				ir_node *pred_block = get_Block_cfgpred_block(block, i);
+				if (fallthrough_possible(pred_block, block)) {
+					has_fallthrough = true;
 					break;
 				}
 			}
@@ -2855,7 +2865,9 @@ static void bemit_jmp(const ir_node *dest_block)
 
 static void bemit_jump(const ir_node *node)
 {
-	if (can_be_fallthrough(node))
+	ir_node *block  = get_nodes_block(node);
+	ir_node *target = get_cfop_target_block(node);
+	if (fallthrough_possible(block, target))
 		return;
 
 	bemit_jmp(get_cfop_target_block(node));
@@ -2878,20 +2890,15 @@ static void bemit_jp(bool odd, const ir_node *dest_block)
 
 static void bemit_ia32_jcc(const ir_node *node)
 {
-	x86_condition_code_t  cc = get_ia32_condcode(node);
-	const ir_node        *dest_true;
-	const ir_node        *dest_false;
-
+	x86_condition_code_t cc = get_ia32_condcode(node);
 	cc = determine_final_cc(node, 0, cc);
 
 	/* get both Projs */
-	ir_node const *proj_true = be_get_Proj_for_pn(node, pn_ia32_Jcc_true);
-	assert(proj_true && "Jcc without true Proj");
-
-	ir_node const *proj_false = be_get_Proj_for_pn(node, pn_ia32_Jcc_false);
-	assert(proj_false && "Jcc without false Proj");
-
-	if (can_be_fallthrough(proj_true)) {
+	ir_node const *proj_true    = be_get_Proj_for_pn(node, pn_ia32_Jcc_true);
+	ir_node const *proj_false   = be_get_Proj_for_pn(node, pn_ia32_Jcc_false);
+	ir_node const *block        = get_nodes_block(node);
+	ir_node const *target_true  = get_cfop_target_block(proj_true);
+	if (fallthrough_possible(block, target_true)) {
 		/* exchange both proj's so the second one can be omitted */
 		const ir_node *t = proj_true;
 
@@ -2900,32 +2907,48 @@ static void bemit_ia32_jcc(const ir_node *node)
 		cc         = x86_negate_condition_code(cc);
 	}
 
-	dest_true  = get_cfop_target_block(proj_true);
-	dest_false = get_cfop_target_block(proj_false);
+	ir_node const *target_false = get_cfop_target_block(proj_false);
+	bool const     fallthrough  = fallthrough_possible(block, target_false);
+	/* if we can't have a fallthrough anyway, put the more likely case first */
+	if (!fallthrough) {
+		/* We would need execfreq for the concrete edge, but don't have it
+		 * available here, so we use the block execfreq :-( */
+		double freq_true  = get_block_execfreq(target_true);
+		double freq_false = get_block_execfreq(target_false);
+		if (freq_false > freq_true) {
+			const ir_node *t = proj_true;
+			proj_true  = proj_false;
+			proj_false = t;
+			cc         = x86_negate_condition_code(cc);
+		}
+	}
+
+	target_true  = get_cfop_target_block(proj_true);
+	target_false = get_cfop_target_block(proj_false);
 
 	if (cc & x86_cc_float_parity_cases) {
 		/* Some floating point comparisons require a test of the parity flag,
 		 * which indicates that the result is unordered */
 		if (cc & x86_cc_negated) {
-			bemit_jp(false, dest_true);
+			bemit_jp(false, target_true);
 		} else {
 			/* we need a local label if the false proj is a fallthrough
 			 * as the falseblock might have no label emitted then */
-			if (can_be_fallthrough(proj_false)) {
+			if (fallthrough) {
 				bemit8(0x7A);
 				bemit8(0x06);  // jp + 6
 			} else {
-				bemit_jp(false, dest_false);
+				bemit_jp(false, target_false);
 			}
 		}
 	}
-	bemit_jcc(cc, dest_true);
+	bemit_jcc(cc, target_true);
 
 	/* the second Proj might be a fallthrough */
-	if (can_be_fallthrough(proj_false)) {
+	if (fallthrough) {
 		/* it's a fallthrough */
 	} else {
-		bemit_jmp(dest_false);
+		bemit_jmp(target_false);
 	}
 }
 
