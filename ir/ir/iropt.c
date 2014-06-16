@@ -4707,7 +4707,7 @@ cmp_x_eq_0:;
 					relation == ir_relation_equal ? ir_relation_less_greater
 					                              : ir_relation_equal;
 				right = new_r_Const_null(irg, mode);
-				changed |= 1;
+				changed = true;
 				goto is_bittest;
 			}
 		}
@@ -4730,7 +4730,7 @@ is_bittest: {
 						ir_node  *block = get_nodes_block(left);
 						relation = get_negated_relation(relation);
 						left = new_rd_And(dbgi, block, flipped, and1, mode);
-						changed |= 1;
+						changed = true;
 					}
 				}
 			}
