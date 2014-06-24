@@ -743,6 +743,22 @@ ir_relation ir_get_possible_cmp_relations(const ir_node *left,
 	return possible;
 }
 
+/**
+ * Checks whether we can use @p relation instead of @p cmp_relation,
+ * if only some relations are @p possible.
+ *
+ * @param relation      The relation to check for
+ * @param cmp_relation  The current relation of the Cmp
+ * @param possible      The possible relations of the Cmp
+ */
+static bool is_relation(ir_relation relation, ir_relation cmp_relation, ir_relation possible)
+{
+	ir_relation min           = cmp_relation & possible;
+	ir_relation possible_bits = relation & ~possible;
+
+	return (min | possible_bits) == relation;
+}
+
 static ir_tarval *compute_cmp(const ir_node *cmp)
 {
 	ir_node     *left     = get_Cmp_left(cmp);
@@ -758,14 +774,11 @@ static ir_tarval *compute_cmp(const ir_node *cmp)
 		return tarval_b_true;
 
 	/* we have some special rules for == 0 and != 0 */
-	if ((relation == ir_relation_equal
-		 || relation == ir_relation_less_greater
-		 || (relation == ir_relation_greater && !mode_is_signed(get_irn_mode(left)))) &&
-		is_Const(right) && is_Const_null(right)) {
-		if (value_not_null(left, NULL)) {
-			return relation == ir_relation_equal
-			     ? tarval_b_false : tarval_b_true;
-		}
+	bool is_relation_equal        = is_relation(ir_relation_equal, relation, possible);
+	bool is_relation_less_greater = is_relation(ir_relation_less_greater, relation, possible);
+	if ((is_relation_equal || is_relation_less_greater) &&
+	    is_Const(right) && is_Const_null(right) && value_not_null(left, NULL)) {
+		return is_relation_equal ? tarval_b_false : tarval_b_true;
 	}
 
 	return computed_value_Cmp_Confirm(cmp, left, right, relation);
@@ -2060,10 +2073,11 @@ static bool is_cmp_equality_zero(const ir_node *node, ir_relation relation)
 	if (!is_Const(right) || !is_Const_null(right))
 		return false;
 
-	return relation == ir_relation_equal
-		|| relation == ir_relation_less_greater
-		|| (!mode_is_signed(get_irn_mode(right))
-		    && relation == ir_relation_greater);
+	const ir_node *left     = get_Cmp_left(node);
+	ir_relation    possible = ir_get_possible_cmp_relations(left, right);
+
+	return is_relation(ir_relation_equal, relation, possible) ||
+	       is_relation(ir_relation_less_greater, relation, possible);
 }
 
 static bool is_binop_const(ir_node *const irn, ir_node *const left, ir_tarval *const val)
@@ -4713,9 +4727,8 @@ cmp_x_eq_0:;
 		}
 
 		if (is_Const(right) && is_Const_null(right) &&
-		    (relation == ir_relation_equal
-		    || (relation == ir_relation_less_greater)
-		    || (!mode_is_signed(mode) && relation == ir_relation_greater))) {
+		    (is_relation(ir_relation_equal, relation, possible) ||
+		     is_relation(ir_relation_less_greater, relation, possible))) {
 is_bittest: {
 			/* instead of flipping the bit before the bit-test operation negate
 			 * pnc */
@@ -6447,13 +6460,15 @@ static ir_node *transform_node_Mux(ir_node *n)
 			ir_node *and_r = get_And_right(cmp_l);
 
 			if ((and_l == t || and_r == t) && is_single_bit(t)) {
-				if (relation == ir_relation_equal) {
+				ir_relation possible = ir_get_possible_cmp_relations(cmp_l, cmp_r);
+				if (is_relation(ir_relation_equal, relation, possible)) {
 					/* Mux((a & (1<<n)) == 0, 0, (1<<n)) == (a & (1<<n)) xor ((1<<n)) */
 					ir_node *block = get_nodes_block(n);
 					n = new_rd_Eor(get_irn_dbg_info(n), block, cmp_l, t, mode);
 					DBG_OPT_ALGSIM1(oldn, sel, sel, n, FS_OPT_MUX_TO_BITOP);
 				} else {
 					/* Mux((a & (1<<n)) != 0, 0, (1<<n)) == a & (1<<n) */
+					assert(is_relation(ir_relation_less_greater, relation, possible));
 					n = cmp_l;
 					DBG_OPT_ALGSIM1(oldn, sel, sel, n, FS_OPT_MUX_TO_BITOP);
 				}
