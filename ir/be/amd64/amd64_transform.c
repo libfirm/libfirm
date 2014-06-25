@@ -2217,13 +2217,11 @@ static ir_node *gen_Load(ir_node *node)
 
 	perform_address_matching(ptr, &arity, in, &addr);
 
-	bool use_xmm = mode_is_float(mode);
-
 	const arch_register_req_t **reqs = mem_reqs;
 	if (addr.base_input != NO_INPUT && addr.index_input != NO_INPUT) {
-		reqs = use_xmm ? xmm_xmm_mem_reqs : reg_reg_mem_reqs;
+		reqs = reg_reg_mem_reqs;
 	} else if(addr.base_input != NO_INPUT || addr.index_input != NO_INPUT) {
-		reqs = use_xmm ? xmm_mem_reqs : reg_mem_reqs;
+		reqs = reg_mem_reqs;
 	}
 
 	ir_node *mem     = get_Load_mem(node);
@@ -2234,7 +2232,7 @@ static ir_node *gen_Load(ir_node *node)
 	amd64_insn_mode_t insn_mode = get_insn_mode_from_mode(mode);
 	ir_node  *new_load;
 
-	if (use_xmm) {
+	if (mode_is_float(mode)) {
 		new_load = new_bd_amd64_xMovs(dbgi, block, arity, in,
 		                             insn_mode, AMD64_OP_ADDR, addr);
 	} else if (get_mode_size_bits(mode) < 64 && mode_is_signed(mode)) {
