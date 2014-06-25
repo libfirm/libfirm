@@ -198,11 +198,6 @@ amd64_cconv_t *amd64_decide_calling_convention(ir_type *function_type,
 		}
 	}
 
-	/* vararg calls need additional stack space */
-	if (get_method_variadicity(function_type) == variadicity_variadic) {
-		stack_offset += AMD64_REGISTER_SIZE;
-	}
-
 	amd64_cconv_t *cconv    = XMALLOCZ(amd64_cconv_t);
 	cconv->parameters       = params;
 	cconv->param_stack_size = stack_offset;
