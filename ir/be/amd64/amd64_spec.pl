@@ -414,7 +414,6 @@ Lea => {
 	attr      => "amd64_insn_mode_t insn_mode, amd64_addr_t addr",
 	fixed     => "amd64_op_mode_t op_mode = AMD64_OP_ADDR;\n",
 	emit      => "lea%M %A, %D0",
-	mode      => $mode_gp,
 },
 
 Jcc => {
