@@ -1790,6 +1790,8 @@ static ir_node *gen_Proj_Proj_Call(ir_node *node)
 	assert(res->req != NULL);
 	if (mode_needs_gp_reg(mode))
 		mode = mode_gp;
+	else if (mode_is_float(mode))
+		mode = mode_D;
 	amd64_free_calling_convention(cconv);
 	return new_r_Proj(new_call, mode, new_pn);
 }
@@ -1940,7 +1942,9 @@ static ir_node *gen_Phi(ir_node *node)
 	const arch_register_req_t *req;
 	if (mode_needs_gp_reg(mode)) {
 		/* all integer operations are on 64bit registers now */
-		req  = amd64_reg_classes[CLASS_amd64_gp].class_req;
+		req = amd64_reg_classes[CLASS_amd64_gp].class_req;
+	} else if (mode_is_float(mode)) {
+		req = amd64_reg_classes[CLASS_amd64_xmm].class_req;
 	} else {
 		req = arch_no_register_req;
 	}
