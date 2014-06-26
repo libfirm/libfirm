@@ -1146,7 +1146,7 @@ static void print_edge_vcgattr(FILE *F, const ir_node *from, int to)
 }
 
 /** dump edges to our inputs */
-static void dump_ir_data_edges(FILE *F, const ir_node *n)
+void dump_ir_data_edges(FILE *F, const ir_node *n)
 {
 	if (dump_node_edge_hook)
 		dump_node_edge_hook(F, n);
@@ -1265,12 +1265,7 @@ static void dump_const_expression(FILE *F, ir_node *value)
 	ir_set_dump_flags(old_flags);
 }
 
-/** Dump a block as graph containing its nodes.
- *
- *  Expects to find nodes belonging to the block as list in its
- *  link field.
- *  Dumps the edges of all nodes including itself. */
-static void dump_whole_block(FILE *F, const ir_node *block)
+void dump_begin_block_subgraph(FILE *F, const ir_node *block)
 {
 	assert(is_Block(block));
 
@@ -1290,12 +1285,34 @@ static void dump_whole_block(FILE *F, const ir_node *block)
 	/* yComp can show attributes for blocks, XVCG parses but ignores them */
 	dump_node_info(F, block);
 	print_dbg_info(F, get_irn_dbg_info(block));
+}
 
+void dump_end_block_subgraph(FILE *F, const ir_node *block)
+{
+	(void)block;
+	/* Close the vcg information for the block */
+	fprintf(F, "}\n");
+	dump_const_node_local(F, block);
+	fprintf(F, "\n");
+}
+
+void dump_block_edges(FILE *F, const ir_node *block)
+{
 	/* dump the blocks edges */
 	dump_ir_data_edges(F, block);
 
 	if (dump_block_edge_hook)
 		dump_block_edge_hook(F, block);
+}
+
+/** Dump a block as graph containing its nodes.
+ *
+ *  Expects to find nodes belonging to the block as list in its
+ *  link field.
+ *  Dumps the edges of all nodes including itself. */
+static void dump_whole_block(FILE *F, const ir_node *block)
+{
+	dump_begin_block_subgraph(F, block);
 
 	/* dump the nodes that go into the block */
 	for (ir_node *node = (ir_node*)ird_get_irn_link(block); node != NULL;
@@ -1305,9 +1322,8 @@ static void dump_whole_block(FILE *F, const ir_node *block)
 	}
 
 	/* Close the vcg information for the block */
-	fprintf(F, "}\n");
-	dump_const_node_local(F, block);
-	fprintf(F, "\n");
+	dump_end_block_subgraph(F, block);
+	dump_block_edges(F, block);
 }
 
 /** dumps a graph block-wise. Expects all blockless nodes in arr in irgs link.

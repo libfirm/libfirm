@@ -36,6 +36,10 @@ void dump_vcg_footer(FILE *out);
 void dump_vcg_header_colors(FILE *out);
 void dump_vcg_infonames(FILE *out);
 void dump_node(FILE *out, const ir_node *node);
+void dump_ir_data_edges(FILE *F, const ir_node *n);
+void dump_begin_block_subgraph(FILE *F, const ir_node *block);
+void dump_end_block_subgraph(FILE *F, const ir_node *block);
+void dump_block_edges(FILE *F, const ir_node *block);
 
 /** Write the irnode and all its attributes to the file passed.
  * (plain text format) */
