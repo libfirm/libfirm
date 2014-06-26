@@ -752,10 +752,6 @@ static void dump_node_nodeattr(FILE *F, const ir_node *n)
 	}
 
 	switch (get_irn_opcode(n)) {
-	case iro_Const:
-		ir_fprintf(F, "%T ", get_Const_tarval(n));
-		break;
-
 	case iro_Proj: {
 		ir_node *pred    = get_Proj_pred(n);
 		long     proj_nr = get_Proj_proj(n);
