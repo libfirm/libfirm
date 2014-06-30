@@ -6045,11 +6045,12 @@ static bool ir_is_optimizable_mux_set(const ir_node *cond, ir_relation relation,
 	if (get_mode_arithmetic(dest_mode) != irma_twos_complement)
 		return false;
 
-	ir_node *right = get_Cmp_right(cond);
-	relation &= ~ir_relation_unordered;
-
-	if (relation == ir_relation_equal || relation == ir_relation_less_greater) {
-		if (relation == ir_relation_less_greater) {
+	ir_node     *right                    = get_Cmp_right(cond);
+	ir_relation  possible                 = ir_get_possible_cmp_relations(left, right);
+	bool         is_relation_equal        = is_relation(ir_relation_equal, relation, possible);
+	bool         is_relation_less_greater = is_relation(ir_relation_less_greater, relation, possible);
+	if (is_relation_equal || is_relation_less_greater) {
+		if (is_relation_less_greater) {
 			bitinfo *bl = get_bitinfo(left);
 			bitinfo *br = get_bitinfo(right);
 
@@ -6080,62 +6081,39 @@ static bool ir_is_optimizable_mux_set(const ir_node *cond, ir_relation relation,
 				}
 			}
 		}
-
-		ir_relation possible = ir_get_possible_cmp_relations(left, right);
-
-		/* Try to use an appropriate relation. */
-		if (relation == ir_relation_equal) {
-			if (!(possible & ir_relation_less)) {
-				relation |= ir_relation_less;
-			} else if (!(possible & ir_relation_greater)) {
-				relation |= ir_relation_greater;
-			}
-		} else {
-			if (!(possible & ir_relation_less)) {
-				relation &= ~ir_relation_less;
-			} else if (!(possible & ir_relation_greater)) {
-				relation &= ~ir_relation_greater;
-			}
-		}
 	}
+
+	bool is_relation_less          = is_relation(ir_relation_less, relation, possible);
+	bool is_relation_less_equal    = is_relation(ir_relation_less_equal, relation, possible);
+	bool is_relation_greater       = is_relation(ir_relation_greater, relation, possible);
+	bool is_relation_greater_equal = is_relation(ir_relation_greater_equal, relation, possible);
 
 	if (get_mode_size_bits(mode) >= get_mode_size_bits(dest_mode)) {
 		/* Due to possible overflows, we can only transform compares with special constants. */
 		if (!mode_is_signed(mode) || !is_Const(right))
 			return false;
 
-		switch (relation) {
-		case ir_relation_less:
-		case ir_relation_greater_equal:
-			if (!is_Const_null(right))
-				return false;
-			break;
-		case ir_relation_less_equal:
-		case ir_relation_greater:
-			if (!is_Const_all_one(right))
-				return false;
-			break;
-		default:
+		if (!((is_relation_less || is_relation_greater_equal) && is_Const_null(right)) &&
+		    !((is_relation_less_equal || is_relation_greater) && is_Const_all_one(right))) {
 			return false;
 		}
 	} else if (!mode_is_signed(dest_mode)) {
 		return false;
 	}
 
-	switch (relation) {
-	case ir_relation_less:
+	if (is_relation_less) {
 		/* a < b <=> (a - b) < 0 <=> (a - b) >> 31 */
 		return true;
-	case ir_relation_less_equal:
-		/* a <= b <=> !(a > b) <=> !((b - a) < 0) <=> ~(b - a) >> 31 */
-		return true;
-	case ir_relation_greater:
+	} else if (is_relation_greater) {
 		/* a > b <=> (b - a) < 0 <=> (b - a) >> 31 */
 		return true;
-	case ir_relation_greater_equal:
+	} else if (is_relation_less_equal) {
+		/* a <= b <=> !(a > b) <=> !((b - a) < 0) <=> ~(b - a) >> 31 */
+		return true;
+	} else if (is_relation_greater_equal) {
 		/* a >= b <=> !(a < b) <=> !((a - b) < 0) <=> ~(a - b) >> 31 */
 		return true;
-	default:
+	} else {
 		return false;
 	}
 }
@@ -6237,11 +6215,12 @@ static ir_node *transform_Mux_set(ir_node *n, ir_relation relation)
 	if (get_mode_arithmetic(dest_mode) != irma_twos_complement)
 		return n;
 
-	ir_node *right = get_Cmp_right(cond);
-	relation &= ~ir_relation_unordered;
-
-	if (relation == ir_relation_equal || relation == ir_relation_less_greater) {
-		if (relation == ir_relation_less_greater) {
+	ir_node     *right                    = get_Cmp_right(cond);
+	ir_relation  possible                 = ir_get_possible_cmp_relations(left, right);
+	bool         is_relation_equal        = is_relation(ir_relation_equal, relation, possible);
+	bool         is_relation_less_greater = is_relation(ir_relation_less_greater, relation, possible);
+	if (is_relation_equal || is_relation_less_greater) {
+		if (is_relation_less_greater) {
 			bitinfo *bl = get_bitinfo(left);
 			bitinfo *br = get_bitinfo(right);
 
@@ -6295,7 +6274,7 @@ static ir_node *transform_Mux_set(ir_node *n, ir_relation relation)
 						calc_mode = dest_mode;
 					}
 
-					if (relation == ir_relation_equal) {
+					if (is_relation_equal) {
 						a = new_rd_Not(dbgi, block, a, calc_mode);
 					}
 
@@ -6313,42 +6292,20 @@ static ir_node *transform_Mux_set(ir_node *n, ir_relation relation)
 				}
 			}
 		}
-
-		ir_relation possible = ir_get_possible_cmp_relations(left, right);
-
-		/* Try to use an appropriate relation. */
-		if (relation == ir_relation_equal) {
-			if (!(possible & ir_relation_less)) {
-				relation |= ir_relation_less;
-			} else if (!(possible & ir_relation_greater)) {
-				relation |= ir_relation_greater;
-			}
-		} else {
-			if (!(possible & ir_relation_less)) {
-				relation &= ~ir_relation_less;
-			} else if (!(possible & ir_relation_greater)) {
-				relation &= ~ir_relation_greater;
-			}
-		}
 	}
+
+	bool is_relation_less          = is_relation(ir_relation_less, relation, possible);
+	bool is_relation_less_equal    = is_relation(ir_relation_less_equal, relation, possible);
+	bool is_relation_greater       = is_relation(ir_relation_greater, relation, possible);
+	bool is_relation_greater_equal = is_relation(ir_relation_greater_equal, relation, possible);
 
 	if (get_mode_size_bits(mode) >= get_mode_size_bits(dest_mode)) {
 		/* Due to possible overflows, we can only transform compares with special constants. */
 		if (!mode_is_signed(mode) || !is_Const(right))
 			return n;
 
-		switch (relation) {
-		case ir_relation_less:
-		case ir_relation_greater_equal:
-			if (!is_Const_null(right))
-				return n;
-			break;
-		case ir_relation_less_equal:
-		case ir_relation_greater:
-			if (!is_Const_all_one(right))
-				return n;
-			break;
-		default:
+		if (!((is_relation_less || is_relation_greater_equal) && is_Const_null(right)) &&
+		    !((is_relation_less_equal || is_relation_greater) && is_Const_all_one(right))) {
 			return n;
 		}
 	} else if (!mode_is_signed(dest_mode)) {
@@ -6358,30 +6315,25 @@ static ir_node *transform_Mux_set(ir_node *n, ir_relation relation)
 	bool     need_not = false;
 	ir_node *a;
 	ir_node *b;
-	switch (relation) {
-	case ir_relation_less:
+	if (is_relation_less) {
 		/* a < b <=> (a - b) < 0 <=> (a - b) >> 31 */
 		a = left;
 		b = right;
-		break;
-	case ir_relation_less_equal:
+	} else if (is_relation_greater) {
+		/* a > b <=> (b - a) < 0 <=> (b - a) >> 31 */
+		a = right;
+		b = left;
+	} else if (is_relation_less_equal) {
 		/* a <= b <=> !(a > b) <=> !((b - a) < 0) <=> ~(b - a) >> 31 */
 		a        = right;
 		b        = left;
 		need_not = true;
-		break;
-	case ir_relation_greater:
-		/* a > b <=> (b - a) < 0 <=> (b - a) >> 31 */
-		a = right;
-		b = left;
-		break;
-	case ir_relation_greater_equal:
+	} else if (is_relation_greater_equal) {
 		/* a >= b <=> !(a < b) <=> !((a - b) < 0) <=> ~(a - b) >> 31 */
 		a        = left;
 		b        = right;
 		need_not = true;
-		break;
-	default:
+	} else {
 		return n;
 	}
 
