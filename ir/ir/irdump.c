@@ -1324,10 +1324,8 @@ static void dump_whole_block(FILE *F, const ir_node *block)
 
 /** dumps a graph block-wise. Expects all blockless nodes in arr in irgs link.
  *  The outermost nodes: blocks and nodes not op_pin_state_pinned, Bad, Unknown. */
-static void dump_block_graph(FILE *F, ir_graph *irg)
+static void dump_block_graph(FILE *F, ir_graph *irg, ir_node **arr)
 {
-	ir_node **arr = (ir_node**)ird_get_irg_link(irg);
-
 	for (size_t i = 0, n = ARR_LEN(arr); i < n; ++i) {
 		ir_node *node = arr[i];
 		if (is_Block(node)) {
@@ -1401,27 +1399,6 @@ static void dump_graph_info(FILE *F, ir_graph *irg)
 	if (irg_has_properties(irg, IR_GRAPH_PROPERTY_MANY_RETURNS))
 		fprintf(F, " many_returns");
 	fprintf(F, "\"\n");
-}
-
-/** Dumps an irg as a graph clustered by block nodes.
- *  If interprocedural view edges can point to nodes out of this graph.
- */
-static void dump_graph_from_list(FILE *F, ir_graph *irg)
-{
-	ir_entity *ent = get_irg_entity(irg);
-
-	fprintf(F, "graph: { title: ");
-	print_irgid(F, irg);
-	fprintf(F, " label: \"%s\" status:clustered color:%s\n",
-	  get_ent_dump_name(ent), color_names[ird_color_prog_background]);
-
-	dump_graph_info(F, irg);
-	print_dbg_info(F, get_entity_dbg_info(ent));
-
-	dump_block_graph(F, irg);
-
-	/* Close the vcg information for the irg */
-	fprintf(F, "}\n\n");
 }
 
 /*******************************************************************/
@@ -1794,30 +1771,24 @@ void dump_vcg_footer(FILE *F)
 	fprintf(F, "}\n");
 }
 
-
-
-static void dump_blocks_as_subgraphs(FILE *out, ir_graph *irg)
+void dump_blocks_as_subgraphs(FILE *out, ir_graph *irg)
 {
-	construct_block_lists(irg);
-
-	/*
-	 * If we are in the interprocedural view, we dump not
-	 * only the requested irg but also all irgs that can be reached
-	 * from irg.
-	 */
-	foreach_irp_irg_r(i, other_irg) {
-		ir_node **arr = (ir_node**)ird_get_irg_link(other_irg);
-		if (arr == NULL)
-			continue;
-
-		dump_graph_from_list(out, other_irg);
-		DEL_ARR_F(arr);
-	}
+	ir_node **arr = construct_block_lists(irg);
+	dump_block_graph(out, irg, arr);
+	DEL_ARR_F(arr);
 }
 
 void dump_ir_graph_file(FILE *out, ir_graph *irg)
 {
 	dump_vcg_header(out, get_irg_dump_name(irg), NULL, NULL);
+
+	ir_entity *ent = get_irg_entity(irg);
+	fprintf(out, "graph: { title: ");
+	print_irgid(out, irg);
+	fprintf(out, " label: \"%s\" status:clustered color:%s\n",
+	  get_ent_dump_name(ent), color_names[ird_color_prog_background]);
+	dump_graph_info(out, irg);
+	print_dbg_info(out, get_entity_dbg_info(ent));
 
 	/* dump nodes */
 	if (flags & ir_dump_flag_blocks_as_subgraphs) {
@@ -1826,6 +1797,9 @@ void dump_ir_graph_file(FILE *out, ir_graph *irg)
 		/* dump_node_with_edges must be called in post visiting predecessors */
 		ird_walk_graph(irg, NULL, dump_node_with_edges, out);
 	}
+
+	/* Close the vcg information for the irg */
+	fprintf(out, "}\n\n");
 
 	/* dump type info */
 	if (flags & ir_dump_flag_with_typegraph) {

@@ -40,6 +40,7 @@ void dump_ir_data_edges(FILE *F, const ir_node *n);
 void dump_begin_block_subgraph(FILE *F, const ir_node *block);
 void dump_end_block_subgraph(FILE *F, const ir_node *block);
 void dump_block_edges(FILE *F, const ir_node *block);
+void dump_blocks_as_subgraphs(FILE *out, ir_graph *irg);
 
 /** Write the irnode and all its attributes to the file passed.
  * (plain text format) */
