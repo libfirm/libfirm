@@ -1992,8 +1992,12 @@ static ir_node *gen_Conv(ir_node *node)
 	amd64_insn_mode_t insn_mode;
 	if (!is_gp && get_mode_size_bits(min_mode) < 32) {
 		/* Only 32-bit and 64-bit register size allowed for
-		   floating point conversion */
+		 * floating point conversion */
 		insn_mode = INSN_MODE_32;
+	} else if (!src_float && dst_float) {
+		 /* In this case the size of the the floating point mode is irrelevant
+		  * and could result in invalid register sizes. */
+		insn_mode = get_insn_mode_from_mode(src_mode);
 	} else {
 		insn_mode = get_insn_mode_from_mode(min_mode);
 	}
@@ -2026,10 +2030,7 @@ static ir_node *gen_Conv(ir_node *node)
 			/* The conversion is signed only; simply use 64-bit register*/
 			insn_mode = INSN_MODE_64;
 		} else if (!mode_is_signed(dst_mode) && dst_bits == 64) {
-			//TODO Tobias Rapp, 10.06.2014:
-			// Convert floating point to unsigned 64-bit, whilst using the
-			// (only) signed conversion operation
-			panic("Conversion of floating point to 64-bit unsigned NIY\n");
+			panic("Cannot convert floating point to 64-bit unsigned\n");
 		}
 
 		if (src_bits < 64) {
@@ -2049,20 +2050,21 @@ static ir_node *gen_Conv(ir_node *node)
 		/* integer to fp */
 
 		if(!mode_is_signed(src_mode) && src_bits <= 32) {
-			/* Conversion is signed only, therefore use 64-bit register size
-			 * and require that the upper bits are zero. This is done with
-			 * an explicit 32-bit Mov instruction */
+			/* Conversion is signed only, therefore use up to 64-bit register
+			 * size and require that the upper bits are zero. This is done with
+			 * an explicit move instruction */
+
 			insn_mode = INSN_MODE_64;
+			amd64_insn_mode_t move_mode = get_insn_mode_from_mode(src_mode);
 
 			ir_node *ext = new_bd_amd64_Mov(dbgi, block, ARRAY_SIZE(in),
-			                                in, INSN_MODE_32,
+			                                in, move_mode,
 			                                AMD64_OP_REG, addr);
 			arch_set_irn_register_reqs_in(ext, reg_reqs);
 			in[0] = new_r_Proj(ext, mode_gp, pn_amd64_Mov_res);
 
 		} else if (!mode_is_signed(src_mode) && src_bits == 64) {
-			//TODO Tobias Rapp, 10.06.2014
-			panic("Conversion of 64-bit unsigned to floating point NIY\n");
+			panic("Cannot convert 64-bit unsigned to floating point\n");
 		}
 
 		if (dst_bits < 64) {
