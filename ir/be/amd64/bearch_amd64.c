@@ -23,7 +23,7 @@
 #include "be_t.h"
 #include "debug.h"
 #include "panic.h"
-#include "ircons.h"
+#include "ircons_t.h"
 #include "irdump.h"
 #include "irgmod.h"
 #include "irgwalk.h"
@@ -289,6 +289,111 @@ static void amd64_after_ra_walker(ir_node *block, void *data)
 		if (be_is_MemPerm(node)) {
 			transform_MemPerm(node);
 		}
+	}
+}
+
+/**
+ * rewrite unsigned long -> float/double conversion
+ * x86_64 only has a signed conversion
+ */
+static void rewrite_unsigned_float_Conv(ir_node *node)
+{
+	ir_graph *irg        = get_irn_irg(node);
+	dbg_info *dbgi       = get_irn_dbg_info(node);
+	ir_node *lower_block = get_nodes_block(node);
+	ir_mode *dest_mode   = get_irn_mode(node);
+
+	part_block(node);
+
+	ir_node *block       = get_nodes_block(node);
+	ir_node *unsigned_x  = get_Conv_op(node);
+	ir_mode *mode_u      = get_irn_mode(unsigned_x);
+	ir_mode *mode_s      = find_signed_mode(mode_u);
+	ir_node *signed_x    = new_rd_Conv(dbgi, block, unsigned_x, mode_s);
+	ir_node *zero        = new_r_Const_null(irg, mode_s);
+	ir_node *cmp         = new_rd_Cmp(dbgi, block, signed_x, zero,
+	                                 ir_relation_less);
+	ir_node *cond        = new_rd_Cond(dbgi, block, cmp);
+	ir_node *proj_true   = new_r_Proj(cond, mode_X, pn_Cond_true);
+	ir_node *proj_false  = new_r_Proj(cond, mode_X, pn_Cond_false);
+	ir_node *in_true[1]  = { proj_true };
+	ir_node *in_false[1] = { proj_false };
+
+	/* true block: Do some arithmetic to use the signed conversion */
+	ir_node *true_block  = new_r_Block(irg, ARRAY_SIZE(in_true), in_true);
+	ir_node *true_jmp    = new_r_Jmp(true_block);
+	ir_node *one         = new_r_Const_one(irg, mode_u);
+	ir_node *and         = new_r_And(true_block, unsigned_x, one, mode_u);
+	ir_node *shr         = new_r_Shr(true_block, unsigned_x, one, mode_u);
+	ir_node *or          = new_r_Or(true_block, and, shr, mode_u);
+	ir_node *or_signed   = new_rd_Conv(dbgi, true_block, or, mode_s);
+	ir_node *half        = new_rd_Conv(dbgi, true_block, or_signed, dest_mode);
+	ir_node *true_res    = new_r_Add(true_block, half, half, dest_mode);
+
+	/* false block: Simply convert to floating point */
+	ir_node *false_block = new_r_Block(irg, ARRAY_SIZE(in_false), in_false);
+	ir_node *false_jmp   = new_r_Jmp(false_block);
+	ir_node *false_res   = new_rd_Conv(dbgi, false_block, signed_x, dest_mode);
+
+	/* lower block */
+	ir_node *lower_in[2] = { true_jmp, false_jmp };
+	ir_node *phi_in[2]   = { true_res, false_res };
+
+	set_irn_in(lower_block, ARRAY_SIZE(lower_in), lower_in);
+	ir_node *phi = new_r_Phi(lower_block, ARRAY_SIZE(phi_in), phi_in,
+	                         dest_mode);
+
+	assert(get_Block_phis(lower_block) == NULL);
+	set_Block_phis(lower_block, phi);
+	set_Phi_next(phi, NULL);
+
+	exchange(node, phi);
+}
+
+static bool amd64_rewrite_Conv(ir_node *node)
+{
+	ir_mode *to_mode    = get_irn_mode(node);
+	ir_node *op         = get_Conv_op(node);
+	ir_mode *from_mode  = get_irn_mode(op);
+	bool     to_float   = mode_is_float(to_mode);
+	bool     from_float = mode_is_float(from_mode);
+
+	if (to_float && !from_float && !mode_is_signed(from_mode)
+	    && get_mode_size_bits(from_mode) == 64) {
+		rewrite_unsigned_float_Conv(node);
+		return true;
+	} else if (from_float && !to_float && !mode_is_signed(to_mode)
+	           && get_mode_size_bits(to_mode) == 64) {
+		panic("Cannot yet convert floating point to unsigned long!\n");
+		return true;
+	}
+
+	return false;
+}
+
+static void amd64_intrinsics_walker(ir_node *node, void *data)
+{
+	bool *changed = (bool*)data;
+	if (is_Conv(node)) {
+		if (amd64_rewrite_Conv(node))
+			*changed = true;
+	}
+}
+
+static void amd64_handle_intrinsics(ir_graph *irg)
+{
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST);
+	collect_phiprojs(irg);
+	bool changed = false;
+	irg_walk_graph(irg, amd64_intrinsics_walker, NULL, &changed);
+	ir_free_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST);
+
+	if (changed) {
+		confirm_irg_properties(irg,
+		        IR_GRAPH_PROPERTY_NO_BADS
+		        | IR_GRAPH_PROPERTY_NO_CRITICAL_EDGES
+		        | IR_GRAPH_PROPERTY_MANY_RETURNS
+		        | IR_GRAPH_PROPERTY_ONE_RETURN);
 	}
 }
 
@@ -625,7 +730,7 @@ const arch_isa_if_t amd64_isa_if = {
 	amd64_new_reload,
 	NULL,
 
-	NULL,              /* handle intrinsics */
+	amd64_handle_intrinsics,
 	amd64_prepare_graph,
 	amd64_before_ra,
 	amd64_finish_graph,
