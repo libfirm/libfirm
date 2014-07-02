@@ -5015,7 +5015,8 @@ is_bittest: {
 						 * And(x, C1) == C2 ==> FALSE if C2 & C1 != C2
 						 * And(x, C1) != C2 ==> TRUE if C2 & C1 != C2
 						 */
-						ir_tarval *mask = tarval_and(get_Const_tarval(c1), tv);
+						ir_tarval *tv1  = get_Const_tarval(c1);
+						ir_tarval *mask = tarval_and(tv1, tv);
 						if (mask != tv) {
 							/* TODO: move to constant evaluation */
 							c1 = create_bool_const(irg, !is_relation_equal);
@@ -5043,6 +5044,20 @@ is_bittest: {
 								DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_CNST_MAGN);
 							}
 						}
+
+						if (mode_is_signed(mode) &&
+						    get_mode_arithmetic(mode) == irma_twos_complement &&
+						    get_mode_min(mode) == tv1 && tarval_is_null(tv)) {
+							/*
+							 * And(x, 0x80000000) == 0 ==> x >= 0
+							 * And(x, 0x80000000) != 0 ==> x <  0
+							 */
+							left     = get_And_left(left);
+							relation = is_relation_equal ? ir_relation_greater_equal
+							                             : ir_relation_less;
+							changedc = true;
+						}
+
 					}
 					break;
 				case iro_Or:
