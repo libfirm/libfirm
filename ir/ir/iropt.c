@@ -4896,21 +4896,28 @@ is_bittest: {
 			 * be optimized, see this:
 			 * -MININT < 0 =/=> MININT > 0 !!!
 			 */
-			if (is_Minus(left) &&
-				(!mode_overflow_on_unary_Minus(mode) ||
-				(mode_is_int(mode) && (is_relation_equal || is_relation_less_greater)))) {
-				tv = tarval_neg(tv);
+			if (is_Minus(left)) {
+				ir_node   *op  = get_Minus_op(left);
+				bitinfo   *b   = get_bitinfo(op);
+				ir_tarval *max = get_mode_max(mode);
+				if (!mode_overflow_on_unary_Minus(mode) ||
+				    (mode_is_int(mode) && (is_relation_equal || is_relation_less_greater)) ||
+				    (get_mode_arithmetic(mode) == irma_twos_complement && b != NULL &&
+				     (!tarval_is_all_one(tarval_or(max, b->z)) ||
+				      !tarval_is_null(tarval_and(b->o, max))))) {
+					tv = tarval_neg(tv);
 
-				if (tarval_is_constant(tv)) {
-					left = get_Minus_op(left);
-					if (mode_is_int(mode) && (is_relation_equal || is_relation_less_greater)) {
-						relation = is_relation_equal ? ir_relation_equal
-						                             : ir_relation_less_greater;
-					} else {
-						relation = get_inversed_relation(relation);
+					if (tarval_is_constant(tv)) {
+						left = op;
+						if (mode_is_int(mode) && (is_relation_equal || is_relation_less_greater)) {
+							relation = is_relation_equal ? ir_relation_equal
+							                             : ir_relation_less_greater;
+						} else {
+							relation = get_inversed_relation(relation);
+						}
+						changedc = true;
+						DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_OP_C);
 					}
-					changedc = true;
-					DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_OP_C);
 				}
 			} else if (is_Not(left) && (is_relation_equal || is_relation_less_greater)) {
 				/* Not(a) ==/!= c  ==>  a ==/!= Not(c) */
