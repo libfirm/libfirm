@@ -402,12 +402,13 @@ Cmp => {
 Lea => {
 	irn_flags => [ "rematerializable" ],
 	arity     => "variable",
-	outs      => [ "res", "flags", "M" ],
-	reg_req   => { out => [ "gp", "flags", "none" ] },
+	outs      => [ "res" ],
+	reg_req   => { out => [ "gp" ] },
 	attr_type => "amd64_addr_attr_t",
 	attr      => "amd64_insn_mode_t insn_mode, amd64_addr_t addr",
 	fixed     => "amd64_op_mode_t op_mode = AMD64_OP_ADDR;\n",
 	emit      => "lea%M %A, %D0",
+	mode      => $mode_gp,
 },
 
 Jcc => {

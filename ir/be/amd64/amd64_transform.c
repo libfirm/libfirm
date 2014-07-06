@@ -354,8 +354,7 @@ static ir_node *gen_Address(ir_node *node)
 
 	if (mode == REFERENCE_IP_RELATIVE) {
 		addr.immediate.entity = entity;
-		ir_node *lea = new_bd_amd64_Lea(dbgi, block, 0, NULL, INSN_MODE_64, addr);
-		return new_r_Proj(lea, mode_gp, pn_amd64_Lea_res);
+		return new_bd_amd64_Lea(dbgi, block, 0, NULL, INSN_MODE_64, addr);
 	} else {
 		assert(mode == REFERENCE_GOT);
 		addr.immediate.entity = new_got_entry_entity(entity);
@@ -836,7 +835,7 @@ static ir_node *create_Lea_as_Add(ir_node *node, ir_node *op1, ir_node *op2)
 
 	ir_node *res = new_bd_amd64_Lea(dbgi, new_block, arity, in, insn_mode, addr);
 	arch_set_irn_register_reqs_in(res, reqs);
-	return new_r_Proj(res, mode_gp, pn_amd64_Lea_res);
+	return res;
 }
 
 static ir_node *gen_Add(ir_node *const node)
@@ -1179,7 +1178,7 @@ static ir_node *gen_Member(ir_node *const node)
 	ir_node *res = new_bd_amd64_Lea(dbgi, new_block, ARRAY_SIZE(in), in,
 	                                INSN_MODE_64, addr);
 	arch_set_irn_register_reqs_in(res, reg_reqs);
-	return new_r_Proj(res, mode_gp, pn_amd64_Lea_res);
+	return res;
 }
 
 static ir_node *gen_IJmp(ir_node *node)
