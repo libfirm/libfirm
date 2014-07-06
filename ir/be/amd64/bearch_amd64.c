@@ -350,6 +350,90 @@ static void rewrite_unsigned_float_Conv(ir_node *node)
 	exchange(node, phi);
 }
 
+static ir_node *create_conv_const(ir_graph *irg, ir_mode *src_mode)
+{
+	assert(mode_is_float(src_mode));
+
+	ir_node *result = NULL;
+	if(get_mode_size_bits(src_mode) == 32) {
+		double fconst = 1593835520;
+		ir_tarval *tv = new_tarval_from_double(fconst, src_mode);
+		result        = new_r_Const(irg, tv);
+	} else if (get_mode_size_bits(src_mode) == 64) {
+		double dconst = 1138753536;
+		ir_tarval *tv = new_tarval_from_double(dconst, src_mode);
+		result        = new_r_Const(irg, tv);
+	}
+	return result;
+}
+
+/* Creates a 64-bit constant with only the sign bit set,
+ * i.e. returns 0x8000000000000000
+ */
+static ir_node *create_sign_bit_const(ir_graph *irg)
+{
+	ir_tarval *one_tv  = new_tarval_from_long(1, mode_Ls);
+	ir_tarval *sign_tv = tarval_shl_unsigned(one_tv, 63);
+	return new_r_Const(irg, sign_tv);
+}
+
+/* rewrite float/double -> unsigned long conversion
+ * x86_64 only has a signed conversion
+ */
+static void rewrite_float_unsigned_Conv(ir_node *node)
+{
+	ir_graph *irg        = get_irn_irg(node);
+	dbg_info *dbgi       = get_irn_dbg_info(node);
+	ir_node *lower_block = get_nodes_block(node);
+	ir_mode *dest_mode   = get_irn_mode(node);
+
+	part_block(node);
+
+	ir_node *block       = get_nodes_block(node);
+	ir_node *fp_x        = get_Conv_op(node);
+	ir_mode *src_mode    = get_irn_mode(fp_x);
+	ir_node *fp_const    = create_conv_const(irg, src_mode);
+
+	/* Test if the sign bit is needed */
+	ir_node *cmp         = new_rd_Cmp(dbgi, block, fp_x, fp_const,
+	                                 ir_relation_greater_equal);
+	ir_node *cond        = new_rd_Cond(dbgi, block, cmp);
+	ir_node *proj_true   = new_r_Proj(cond, mode_X, pn_Cond_true);
+	ir_node *proj_false  = new_r_Proj(cond, mode_X, pn_Cond_false);
+	ir_node *in_true[1]  = { proj_true };
+	ir_node *in_false[1] = { proj_false };
+
+	/* true block: Do some arithmetic to use the signed conversion */
+	ir_node *true_block  = new_r_Block(irg, ARRAY_SIZE(in_true), in_true);
+	ir_node *true_jmp    = new_r_Jmp(true_block);
+	ir_node *sub         = new_r_Sub(true_block, fp_const, fp_x, src_mode);
+	ir_node *sub_conv    = new_rd_Conv(dbgi, true_block, sub, mode_Ls);
+	ir_node *sign_bit    = create_sign_bit_const(irg);
+	ir_node *xor         = new_r_Eor(true_block, sub_conv, sign_bit, mode_Ls);
+	ir_node *true_res    = new_rd_Conv(dbgi, true_block, xor, dest_mode);
+
+	/* false block: Simply convert */
+	ir_node *false_block  = new_r_Block(irg, ARRAY_SIZE(in_false), in_false);
+	ir_node *false_jmp    = new_r_Jmp(false_block);
+	ir_node *false_signed = new_rd_Conv(dbgi, false_block, fp_x, mode_Ls);
+	ir_node *false_res    = new_rd_Conv(dbgi, false_block, false_signed,
+	                                    dest_mode);
+
+	/* lower block */
+	ir_node *lower_in[2] = { true_jmp, false_jmp };
+	ir_node *phi_in[2]   = { true_res, false_res };
+
+	set_irn_in(lower_block, ARRAY_SIZE(lower_in), lower_in);
+	ir_node *phi = new_r_Phi(lower_block, ARRAY_SIZE(phi_in), phi_in,
+	                         dest_mode);
+
+	assert(get_Block_phis(lower_block) == NULL);
+	set_Block_phis(lower_block, phi);
+	set_Phi_next(phi, NULL);
+
+	exchange(node, phi);
+}
+
 static bool amd64_rewrite_Conv(ir_node *node)
 {
 	ir_mode *to_mode    = get_irn_mode(node);
@@ -364,7 +448,7 @@ static bool amd64_rewrite_Conv(ir_node *node)
 		return true;
 	} else if (from_float && !to_float && !mode_is_signed(to_mode)
 	           && get_mode_size_bits(to_mode) == 64) {
-		panic("Cannot yet convert floating point to unsigned long!\n");
+		rewrite_float_unsigned_Conv(node);
 		return true;
 	}
 
