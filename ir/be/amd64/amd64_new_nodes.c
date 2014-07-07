@@ -87,9 +87,15 @@ static void amd64_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 		arch_dump_reqs_and_registers(F, n);
 		const amd64_attr_t *attr = get_amd64_attr_const(n);
 		fprintf(F, "mode = %s\n", get_op_mode_string(attr->op_mode));
-		if (attr->op_mode == AMD64_OP_ADDR_REG) {
+		amd64_op_mode_t op_mode = attr->op_mode;
+		if (op_mode == AMD64_OP_ADDR_REG) {
 			const amd64_binop_addr_attr_t *binop_attr = get_amd64_binop_addr_attr_const(n);
 			fprintf(F, "reg input: %d\n", binop_attr->u.reg_input);
+		} else if (op_mode == AMD64_OP_IMM64) {
+			const amd64_imm64_t *const imm
+				= &get_amd64_movimm_attr_const(n)->immediate;
+			ir_fprintf(F, "imm64 entity: %+F\n", imm->entity);
+			fprintf(F, "imm64 offset: 0x%" PRIX64 "\n", (uint64_t)imm->offset);
 		}
 		if (amd64_has_addr_attr(n)) {
 			const amd64_addr_attr_t *addr_attr = get_amd64_addr_attr_const(n);
