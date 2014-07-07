@@ -59,5 +59,9 @@ unsigned long be_count_insns(ir_graph *irg);
  */
 unsigned long be_count_blocks(ir_graph *irg);
 
+/**
+ * Count values
+ */
+void be_stat_values(ir_graph *irg);
 
 #endif

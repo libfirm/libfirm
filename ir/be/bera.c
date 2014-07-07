@@ -28,7 +28,7 @@
 #include "besched.h"
 #include "beutil.h"
 
-DEBUG_ONLY(static firm_dbg_module_t *dbg);
+DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
 static be_irg_t *birg;
 static be_lv_t  *lv;

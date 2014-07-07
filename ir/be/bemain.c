@@ -617,6 +617,10 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		be_timer_pop(T_RA_CONSTR);
 		be_dump(DUMP_RA, irg, "spillprepare");
 
+		if (stat_ev_enabled) {
+			be_stat_values(irg);
+		}
+
 		/* Do register allocation */
 		be_allocate_registers(irg);
 

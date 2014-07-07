@@ -209,3 +209,65 @@ unsigned long be_count_blocks(ir_graph *irg)
 	irg_block_walk_graph(irg, block_count_walker, NULL, &cnt);
 	return cnt;
 }
+
+typedef struct stat_t {
+	unsigned long values;
+	unsigned long unused_values;
+	unsigned long uses;
+	unsigned long should_be_sames;
+	unsigned long constrained_values;
+	unsigned long constrained_uses;
+	unsigned long unused_constrained_values;
+} stat_t;
+
+static void block_count_values(ir_node *block, void *data)
+{
+	stat_t *stats = (stat_t*)data;
+
+	sched_foreach(block, node) {
+		be_foreach_value(node, value,
+			arch_register_req_t const *const req
+				= arch_get_irn_register_req(value);
+			if (req->cls == NULL)
+				continue;
+			++stats->values;
+			if (arch_register_req_is(req, should_be_same) || is_Phi(value))
+				++stats->should_be_sames;
+			if (arch_register_req_is(req, limited))
+				++stats->constrained_values;
+		);
+		for (int i = 0, arity = get_irn_arity(node); i < arity; ++i) {
+			const arch_register_req_t *req = arch_get_irn_register_req_in(node, i);
+			if (req->cls == NULL)
+				continue;
+			++stats->uses;
+			if (be_is_Keep(node)) {
+				ir_node *value = get_irn_n(node, i);
+				if (get_irn_n_edges(value) <= 1) {
+					++stats->unused_values;
+					const arch_register_req_t *const req
+						= arch_get_irn_register_req(value);
+					if (arch_register_req_is(req, limited))
+						++stats->unused_constrained_values;
+				}
+			}
+			if (arch_register_req_is(req, limited))
+				++stats->constrained_uses;
+		}
+	}
+}
+
+void be_stat_values(ir_graph *irg)
+{
+	stat_t stats;
+	memset(&stats, 0, sizeof(stats));
+	irg_block_walk_graph(irg, block_count_values, NULL, &stats);
+	stat_ev_ull("valstat_values", stats.values);
+	stat_ev_ull("valstat_unused", stats.unused_values);
+	stat_ev_ull("valstat_uses", stats.uses);
+	stat_ev_ull("valstat_should_be_sames", stats.should_be_sames);
+	stat_ev_ull("valstat_constrained_values", stats.constrained_values);
+	stat_ev_ull("valstat_constrained_uses", stats.constrained_uses);
+	stat_ev_ull("valstat_unused_constrained_values",
+	            stats.unused_constrained_values);
+}
