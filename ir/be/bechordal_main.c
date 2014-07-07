@@ -184,12 +184,6 @@ static void pre_spill(be_chordal_env_t *const chordal_env, arch_register_class_t
 
 	/* put all ignore registers into the ignore register set. */
 	be_get_allocatable_regs(irg, cls, chordal_env->allocatable_regs->data);
-
-	be_timer_push(T_RA_CONSTR);
-	be_pre_spill_prepare_constr(irg, cls);
-	be_timer_pop(T_RA_CONSTR);
-
-	dump(BE_CH_DUMP_CONSTR, irg, cls, "constr-pre");
 }
 
 /**
@@ -219,7 +213,7 @@ static void post_spill(be_chordal_env_t *const chordal_env, ir_graph *const irg)
 	be_ra_chordal_coloring(chordal_env);
 	be_timer_pop(T_RA_COLOR);
 
-	dump(BE_CH_DUMP_CONSTR, irg, chordal_env->cls, "color");
+	dump(BE_CH_DUMP_COLOR, irg, chordal_env->cls, "color");
 
 	/* Create the ifg with the selected flavor */
 	be_timer_push(T_RA_IFG);

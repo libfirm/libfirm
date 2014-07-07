@@ -25,4 +25,10 @@ void be_register_allocator(const char *name, be_ra_t *allocator);
  */
 void be_allocate_registers(ir_graph *irg);
 
+/**
+ * Adds additional copies in cases where special register constraints make them
+ * unavailable and therefore increase the actual register pressure.
+ */
+void be_add_missing_copies(ir_graph *irg);
+
 #endif

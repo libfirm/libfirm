@@ -610,6 +610,13 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 			stat_ev_ull("bemain_blocks_before_ra", be_count_blocks(irg));
 		}
 
+		/* add missing copies to make hidden register pressure increases
+		 * explicit */
+		be_timer_push(T_RA_CONSTR);
+		be_add_missing_copies(irg);
+		be_timer_pop(T_RA_CONSTR);
+		be_dump(DUMP_RA, irg, "spillprepare");
+
 		/* Do register allocation */
 		be_allocate_registers(irg);
 

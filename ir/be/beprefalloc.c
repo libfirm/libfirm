@@ -1801,13 +1801,6 @@ static void dump(int mask, ir_graph *irg, const char *suffix)
  */
 static void spill(void)
 {
-	/* make sure all nodes show their real register pressure */
-	be_timer_push(T_RA_CONSTR);
-	be_pre_spill_prepare_constr(irg, cls);
-	be_timer_pop(T_RA_CONSTR);
-
-	dump(DUMP_RA, irg, "spillprepare");
-
 	/* spill */
 	be_timer_push(T_RA_SPILL);
 	be_do_spill(irg, cls);

@@ -36,11 +36,4 @@ void be_register_spiller(const char *name, be_spill_func spiller);
  */
 void be_do_spill(ir_graph *irg, const arch_register_class_t *cls);
 
-/**
- * Adds additional copies, so constraints needing additional registers to be
- * solved correctly induce the additional register pressure.
- */
-void be_pre_spill_prepare_constr(ir_graph *irg,
-                                 const arch_register_class_t *cls);
-
 #endif
