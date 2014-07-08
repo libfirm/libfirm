@@ -30,8 +30,11 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
-static be_irg_t *birg;
-static be_lv_t  *lv;
+static be_irg_t      *birg;
+static be_lv_t       *lv;
+static unsigned long  precol_copies;
+static unsigned long  multi_precol_copies;
+static unsigned long  constrained_livethrough_copies;
 
 static void prepare_constr_insn(ir_node *const node)
 {
@@ -64,7 +67,7 @@ static void prepare_constr_insn(ir_node *const node)
 		ir_node *copy  = be_new_Copy(block, op);
 		sched_add_before(node, copy);
 		set_irn_n(node, i, copy);
-		stat_ev_int("constr_copy", 1);
+		++precol_copies;
 		DBG((dbg, LEVEL_3, "inserting ignore arg copy %+F for %+F pos %d\n",
 		     copy, node, i));
 	}
@@ -105,7 +108,7 @@ static void prepare_constr_insn(ir_node *const node)
 			ir_node *copy  = be_new_Copy(block, in);
 			sched_add_before(node, copy);
 			set_irn_n(node, i2, copy);
-			stat_ev_int("constr_copy", 1);
+			++multi_precol_copies;
 			DBG((dbg, LEVEL_3,
 			     "inserting multiple constr copy %+F for %+F pos %d\n",
 			     copy, node, i2));
@@ -177,6 +180,7 @@ static void prepare_constr_insn(ir_node *const node)
 		ir_node *copy  = be_new_Copy(block, in);
 		sched_add_before(node, copy);
 		set_irn_n(node, i, copy);
+		++constrained_livethrough_copies;
 		DBG((dbg, LEVEL_3, "inserting constr copy %+F for %+F pos %d\n",
 		     copy, node, i));
 		be_liveness_update(lv, in);
@@ -195,9 +199,18 @@ void be_add_missing_copies(ir_graph *irg)
 {
 	be_assure_live_sets(irg);
 
+	precol_copies                  = 0;
+	multi_precol_copies            = 0;
+	constrained_livethrough_copies = 0;
+
 	birg = be_birg_from_irg(irg);
 	lv   = be_get_irg_liveness(irg);
 	irg_block_walk_graph(irg, add_missing_copies_in_block, NULL, NULL);
+
+	stat_ev_ull("ra_precol_copies", precol_copies);
+	stat_ev_ull("ra_multi_precol_copies", multi_precol_copies);
+	stat_ev_ull("ra_constrained_livethrough_copies",
+	            constrained_livethrough_copies);
 }
 
 /** The list of register allocators */
