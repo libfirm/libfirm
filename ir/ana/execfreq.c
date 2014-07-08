@@ -35,7 +35,6 @@
 #include "set.h"
 #include "hashptr.h"
 #include "debug.h"
-#include "statev_t.h"
 #include "dfs_t.h"
 #include "absgraph.h"
 
@@ -103,16 +102,10 @@ static double *solve_lgs(gs_matrix_t *mat, double *x, int size)
 	for (int i = 0; i < size; ++i)
 		x[i] = init;
 
-	stat_ev_dbl("execfreq_matrix_size", size);
-	stat_ev_tim_push();
-	int    iter = 0;
 	double dev;
 	do {
-		++iter;
 		dev = gs_matrix_gauss_seidel(mat, x);
 	} while (dev > SEIDEL_TOLERANCE);
-	stat_ev_tim_pop("execfreq_seidel_time");
-	stat_ev_dbl("execfreq_seidel_iter", iter);
 
 	return x;
 }

@@ -135,8 +135,6 @@ ir_node *pre_process_constraints(be_chordal_env_t *env, be_insn_t **the_insn)
 	if (perm == NULL)
 		return NULL;
 
-	stat_ev_int("constr_perm", get_irn_arity(perm));
-
 	/*
 	 * We also have to re-build the insn since the input operands are now the Projs of
 	 * the Perm. Recomputing liveness is also a good idea if a Perm is inserted, since
