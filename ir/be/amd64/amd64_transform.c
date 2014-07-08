@@ -2166,6 +2166,10 @@ ir_node *amd64_new_spill(ir_node *value, ir_node *after)
 	ir_node  *frame = get_irg_frame(irg);
 	ir_node  *mem   = get_irg_no_mem(irg);
 
+	ir_mode  *mode  = get_irn_mode(value);
+	if (mode_is_float(mode))
+		panic("amd64: spilling float values not implemented yet");
+
 	amd64_binop_addr_attr_t attr;
 	memset(&attr, 0, sizeof(attr));
 	attr.base.base.op_mode    = AMD64_OP_ADDR_REG;
@@ -2190,6 +2194,9 @@ ir_node *amd64_new_reload(ir_node *value, ir_node *spill, ir_node *before)
 	ir_graph *irg   = get_irn_irg(block);
 	ir_node  *frame = get_irg_frame(irg);
 	ir_mode  *mode  = get_irn_mode(value);
+
+	if (mode_is_float(mode))
+		panic("amd64: spilling float values not implemented yet");
 
 	amd64_addr_t addr;
 	memset(&addr, 0, sizeof(addr));
