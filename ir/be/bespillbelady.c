@@ -310,7 +310,7 @@ static void displace(workset_t *const new_vals, bool const is_usage,
 			DB((dbg, DBG_DECIDE, "    insert %+F\n", val));
 			if (is_usage) {
 				DB((dbg, DBG_SPILL, "Reload %+F before %+F\n", val, instr));
-				be_add_reload(senv, val, instr, cls, 1);
+				be_add_reload(senv, val, instr);
 				reloaded = true;
 			}
 		} else {
@@ -827,7 +827,7 @@ static void fix_block_borders(ir_node *block, void *data)
 				/* node is not in register at the end of pred -> reload it */
 				DB((dbg, DBG_FIX, "    reload %+F\n", node));
 				DB((dbg, DBG_SPILL, "Reload %+F before %+F,%d\n", node, block, i));
-				be_add_reload_on_edge(senv, node, block, i, cls, 1);
+				be_add_reload_on_edge(senv, node, block, i);
 			}
 		}
 	}

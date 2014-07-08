@@ -108,9 +108,9 @@ static void spill_node(ir_node *node)
 			int      in    = get_edge_src_pos(edge);
 			ir_node *block = get_nodes_block(use);
 
-			be_add_reload_on_edge(spill_env, node, block, in, cls, 1);
+			be_add_reload_on_edge(spill_env, node, block, in);
 		} else {
-			be_add_reload(spill_env, node, use, cls, 1);
+			be_add_reload(spill_env, node, use);
 		}
 	}
 
