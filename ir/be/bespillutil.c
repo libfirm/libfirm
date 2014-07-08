@@ -16,6 +16,7 @@
 #include "ircons_t.h"
 #include "iredges_t.h"
 #include "irbackedge_t.h"
+#include "irnodehashmap.h"
 #include "ident_t.h"
 #include "type_t.h"
 #include "entity_t.h"
@@ -62,23 +63,25 @@ struct spill_t {
 
 typedef struct spill_info_t spill_info_t;
 struct spill_info_t {
-	ir_node    *to_spill;    /**< the value that should get spilled */
-	reloader_t *reloaders;   /**< list of places where the value should get
+	ir_node      *to_spill;  /**< the value that should get spilled */
+	reloader_t   *reloaders; /**< list of places where the value should get
 	                              reloaded */
-	spill_t    *spills;      /**< list of latest places where spill must be
+	spill_t      *spills;    /**< list of latest places where spill must be
 	                              placed */
-	double      spill_costs; /**< costs needed for spilling the value */
-	bool        spilled_phi; /* true when the whole Phi has been spilled and
-	                            will be replaced with a PhiM. false if only the
-	                            value of the Phi gets spilled */
+	spill_info_t *next;
+	spill_info_t *next_mem_phi;
+	double        spill_costs; /**< costs needed for spilling the value */
+	bool          spilled_phi; /**< true when the whole Phi has been spilled and
+	                                will be replaced with a PhiM. false if only
+	                                the value of the Phi gets spilled */
 };
 
 struct spill_env_t {
 	const arch_env_t *arch_env;
 	ir_graph         *irg;
-	set              *spills;      /**< all spill_info_t's, which must be
-	                                    placed */
-	spill_info_t    **mem_phis;    /**< set of all spilled phis. */
+	ir_nodehashmap_t  spillmap;
+	spill_info_t     *spills;
+	spill_info_t     *mem_phis;
 	struct obstack    obst;
 	int               spill_cost;  /**< the cost of a single spill node */
 	int               reload_cost; /**< the cost of a reload node */
@@ -89,62 +92,42 @@ struct spill_env_t {
 };
 
 /**
- * Compare two spill infos.
- */
-static int cmp_spillinfo(const void *x, const void *y, size_t size)
-{
-	(void)size;
-	const spill_info_t *xx = (const spill_info_t*)x;
-	const spill_info_t *yy = (const spill_info_t*)y;
-	return xx->to_spill != yy->to_spill;
-}
-
-/**
  * Returns spill info for a specific value (the value that is to be spilled)
  */
-static spill_info_t *get_spillinfo(const spill_env_t *env, ir_node *value)
+static spill_info_t *get_spillinfo(spill_env_t *env, ir_node *value)
 {
-	spill_info_t info;
-	info.to_spill = value;
-	int hash = hash_irn(value);
-	spill_info_t *res = set_find(spill_info_t, env->spills, &info, sizeof(info), hash);
+	spill_info_t *info = ir_nodehashmap_get(spill_info_t, &env->spillmap,
+	                                        value);
+	if (info == NULL) {
+		info = OALLOCZ(&env->obst, spill_info_t);
+		info->to_spill    = value;
+		info->spill_costs = -1;
+		ir_nodehashmap_insert(&env->spillmap, value, info);
 
-	if (res == NULL) {
-		info.reloaders   = NULL;
-		info.spills      = NULL;
-		info.spill_costs = -1;
-		info.spilled_phi = false;
-		res = set_insert(spill_info_t, env->spills, &info, sizeof(info), hash);
+		info->next = env->spills;
+		env->spills = info;
 	}
 
-	return res;
+	return info;
 }
 
 spill_env_t *be_new_spill_env(ir_graph *irg)
 {
 	const arch_env_t *arch_env = be_get_irg_arch_env(irg);
 
-	spill_env_t *env = XMALLOC(spill_env_t);
-	env->spills         = new_set(cmp_spillinfo, 1024);
-	env->irg            = irg;
-	env->arch_env       = arch_env;
-	env->mem_phis       = NEW_ARR_F(spill_info_t*, 0);
-	env->spill_cost     = arch_env->spill_cost;
-	env->reload_cost    = arch_env->reload_cost;
+	spill_env_t *env = XMALLOCZ(spill_env_t);
+	env->irg         = irg;
+	env->arch_env    = arch_env;
+	env->spill_cost  = arch_env->spill_cost;
+	env->reload_cost = arch_env->reload_cost;
+	ir_nodehashmap_init(&env->spillmap);
 	obstack_init(&env->obst);
-
-	env->spill_count       = 0;
-	env->reload_count      = 0;
-	env->remat_count       = 0;
-	env->spilled_phi_count = 0;
-
 	return env;
 }
 
 void be_delete_spill_env(spill_env_t *env)
 {
-	del_set(env->spills);
-	DEL_ARR_F(env->mem_phis);
+	ir_nodehashmap_destroy(&env->spillmap);
 	obstack_free(&env->obst, NULL);
 	free(env);
 }
@@ -276,8 +259,9 @@ void be_spill_phi(spill_env_t *env, ir_node *node)
 	assert(is_Phi(node));
 
 	spill_info_t *info = get_spillinfo(env, node);
-	info->spilled_phi = true;
-	ARR_APP1(spill_info_t*, env->mem_phis, info);
+	info->spilled_phi  = true;
+	info->next_mem_phi = env->mem_phis;
+	env->mem_phis      = info;
 
 	/* create spills for the phi arguments */
 	ir_node *block = get_nodes_block(node);
@@ -681,14 +665,13 @@ void be_insert_spills_reloads(spill_env_t *env)
 
 	/* create all phi-ms first, this is needed so, that phis, hanging on
 	   spilled phis work correctly */
-	size_t n_mem_phis = ARR_LEN(env->mem_phis);
-	for (size_t i = 0; i < n_mem_phis; ++i) {
-		spill_info_t *info = env->mem_phis[i];
+	for (spill_info_t *info = env->mem_phis; info != NULL;
+	     info = info->next_mem_phi) {
 		spill_node(env, info);
 	}
 
 	/* process each spilled node */
-	foreach_set(env->spills, spill_info_t, si) {
+	for (spill_info_t *si = env->spills; si != NULL; si = si->next) {
 		ir_node  *to_spill        = si->to_spill;
 		ir_node **copies          = NEW_ARR_F(ir_node*, 0);
 		double    all_remat_costs = 0; /** costs when we would remat all nodes */
