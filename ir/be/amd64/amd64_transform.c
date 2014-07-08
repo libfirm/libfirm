@@ -701,7 +701,7 @@ static void match_binop(amd64_args_t *args, ir_node *block,
 		if (addr->base_input != NO_INPUT && addr->index_input != NO_INPUT) {
 			args->reqs = use_xmm ? xmm_xmm_xmm_mem_reqs
 			             : reg_reg_reg_mem_reqs;
-		} else if(addr->base_input != NO_INPUT || addr->index_input != NO_INPUT) {
+		} else if (addr->base_input != NO_INPUT || addr->index_input != NO_INPUT) {
 			args->reqs = use_xmm ? xmm_xmm_mem_reqs
 			             : reg_reg_mem_reqs;
 		}
@@ -804,7 +804,7 @@ static ir_node *gen_binop_rax(ir_node *node, ir_node *op1, ir_node *op2,
 		reqs = reg_mem_reqs;
 		if (addr.base_input != NO_INPUT && addr.index_input != NO_INPUT) {
 			reqs = reg_reg_reg_mem_reqs;
-		} else if(addr.base_input != NO_INPUT || addr.index_input != NO_INPUT) {
+		} else if (addr.base_input != NO_INPUT || addr.index_input != NO_INPUT) {
 			reqs = reg_reg_mem_reqs;
 		}
 
@@ -1031,7 +1031,7 @@ static ir_node *gen_Mulh(ir_node *const node)
 	ir_mode *mode = get_irn_mode(op1);
 	ir_node *new_node;
 
-	if(mode_is_signed(mode)) {
+	if (mode_is_signed(mode)) {
 		new_node = gen_binop_rax(node, op1, op2, new_bd_amd64_IMul1Op,
                         /* match_am TODO */
                         match_mode_neutral | match_commutative);
@@ -1281,7 +1281,7 @@ static ir_node *gen_IJmp(ir_node *node)
 			reqs = mem_reqs;
 			if (addr.base_input != NO_INPUT && addr.index_input != NO_INPUT) {
 				reqs = reg_reg_mem_reqs;
-			} else if(addr.base_input != NO_INPUT || addr.index_input != NO_INPUT) {
+			} else if (addr.base_input != NO_INPUT || addr.index_input != NO_INPUT) {
 				reqs = reg_mem_reqs;
 			}
 			ir_node *load_mem = get_Load_mem(load);
@@ -2049,7 +2049,7 @@ static ir_node *gen_Conv(ir_node *node)
 	} else if (!src_float && dst_float) {
 		/* integer to fp */
 
-		if(!mode_is_signed(src_mode) && src_bits <= 32) {
+		if (!mode_is_signed(src_mode) && src_bits <= 32) {
 			/* Conversion is signed only, therefore use up to 64-bit register
 			 * size and require that the upper bits are zero. This is done with
 			 * an explicit move instruction */
@@ -2234,7 +2234,7 @@ static ir_node *gen_Load(ir_node *node)
 	const arch_register_req_t **reqs = mem_reqs;
 	if (addr.base_input != NO_INPUT && addr.index_input != NO_INPUT) {
 		reqs = reg_reg_mem_reqs;
-	} else if(addr.base_input != NO_INPUT || addr.index_input != NO_INPUT) {
+	} else if (addr.base_input != NO_INPUT || addr.index_input != NO_INPUT) {
 		reqs = reg_mem_reqs;
 	}
 

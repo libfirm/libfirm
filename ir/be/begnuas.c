@@ -192,7 +192,7 @@ static void emit_section(be_gas_section_t section, const ir_entity *entity)
 	if (be_gas_object_file_format == OBJECT_FILE_FORMAT_MACH_O) {
 		emit_section_macho(section);
 		return;
-	} else if(be_gas_elf_variant == ELF_VARIANT_SPARC) {
+	} else if (be_gas_elf_variant == ELF_VARIANT_SPARC) {
 		emit_section_sparc(section, entity);
 		return;
 	}

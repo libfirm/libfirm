@@ -349,7 +349,7 @@ static void create_pbqp_coloring_instance(ir_node *block, void *data)
 				/* insert pbqp node into temp rpeo list of this block */
 				plist_insert_front(temp_list, get_node(pbqp_inst, get_irn_idx(proj)));
 
-				if(is_Perm_Proj(proj)) {
+				if (is_Perm_Proj(proj)) {
 					/* add proj to clique */
 					pbqp_node *clique_member = get_node(pbqp_inst,proj->node_idx);
 					vector    *costs         = clique_member->costs;
@@ -357,8 +357,8 @@ static void create_pbqp_coloring_instance(ir_node *block, void *data)
 
 					clique[clique_size] = clique_member;
 
-					for(idx = 0; idx < costs->len; idx++) {
-						if(costs->entries[idx].data != INF_COSTS) {
+					for (idx = 0; idx < costs->len; idx++) {
+						if (costs->entries[idx].data != INF_COSTS) {
 							bipartite_add(bp, clique_size, idx);
 						}
 					}
@@ -369,38 +369,38 @@ static void create_pbqp_coloring_instance(ir_node *block, void *data)
 				}
 			}
 
-			if(clique_size > 0) {
+			if (clique_size > 0) {
 				foreach_plist(temp_list, listElement) {
 					pbqp_node *clique_candidate  = listElement->data;
 					unsigned   idx               = 0;
 					bool       isMember          = true;
 
 					/* clique size not bigger then register class size */
-					if(clique_size >= cls->n_regs) break;
+					if (clique_size >= cls->n_regs) break;
 
-					for(idx = 0; idx < clique_size; idx++) {
+					for (idx = 0; idx < clique_size; idx++) {
 						pbqp_node *member = clique[idx];
 
-						if(member == clique_candidate) {
+						if (member == clique_candidate) {
 							isMember = false;
 							break;
 						}
 
-						if(get_edge(pbqp_inst, member->index, clique_candidate->index) == NULL && get_edge(pbqp_inst, clique_candidate->index, member->index) == NULL) {
+						if (get_edge(pbqp_inst, member->index, clique_candidate->index) == NULL && get_edge(pbqp_inst, clique_candidate->index, member->index) == NULL) {
 							isMember = false;
 							break;
 						}
 					}
 
 					/* goto next list element if current node is not a member of the clique */
-					if(!isMember) { continue; }
+					if (!isMember) { continue; }
 
 					/* add candidate to clique */
 					clique[clique_size] = clique_candidate;
 
 					vector *costs = clique_candidate->costs;
-					for(idx = 0; idx < costs->len; idx++) {
-						if(costs->entries[idx].data != INF_COSTS) {
+					for (idx = 0; idx < costs->len; idx++) {
+						if (costs->entries[idx].data != INF_COSTS) {
 							bipartite_add(bp, clique_size, idx);
 						}
 					}
@@ -415,11 +415,11 @@ static void create_pbqp_coloring_instance(ir_node *block, void *data)
 
 			/* assign colors */
 			unsigned nodeIdx = 0;
-			for(nodeIdx = 0; nodeIdx < clique_size; nodeIdx++) {
+			for (nodeIdx = 0; nodeIdx < clique_size; nodeIdx++) {
 				vector *costs = clique[nodeIdx]->costs;
 				int     idx;
-				for(idx = 0; idx < (int)costs->len; idx++) {
-					if(assignment[nodeIdx] != idx) {
+				for (idx = 0; idx < (int)costs->len; idx++) {
+					if (assignment[nodeIdx] != idx) {
 						costs->entries[idx].data = INF_COSTS;
 					}
 				}
@@ -450,16 +450,16 @@ static void create_pbqp_coloring_instance(ir_node *block, void *data)
 				}
 
 				/* skip last step if there is no last_element */
-				if(last_element == NULL)
+				if (last_element == NULL)
 					continue;
 
 				/* check if proj has an if edge to last_element (at this time pbqp contains only if edges) */
-				if(get_edge(pbqp_inst, proj->node_idx, last_element->node_idx) == NULL && get_edge(pbqp_inst, last_element->node_idx, proj->node_idx) == NULL) {
+				if (get_edge(pbqp_inst, proj->node_idx, last_element->node_idx) == NULL && get_edge(pbqp_inst, last_element->node_idx, proj->node_idx) == NULL) {
 					allHaveIFEdges = false; /* there is no if edge between proj and last_element */
 				}
 			}
 
-			if(last_element != NULL && allHaveIFEdges) {
+			if (last_element != NULL && allHaveIFEdges) {
 				if (get_free_regs(restr_nodes, cls, last_element) <= 4) {
 					pqueue_put(restr_nodes_queue, last_element, pbqp_alloc_env->ife_edge_num[get_irn_idx(last_element)]);
 				} else {
@@ -643,7 +643,7 @@ static void be_pbqp_coloring(be_chordal_env_t *env)
 #if TIMER
 	ir_timer_reset_and_start(t_ra_pbqp_alloc_solve);
 #endif
-	if(use_late_decision) {
+	if (use_late_decision) {
 		solve_pbqp_heuristical_co_ld(pbqp_alloc_env.pbqp_inst,pbqp_alloc_env.rpeo);
 	} else {
 		solve_pbqp_heuristical_co(pbqp_alloc_env.pbqp_inst,pbqp_alloc_env.rpeo);

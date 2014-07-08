@@ -69,9 +69,9 @@ int      be_ifg_degree(const be_ifg_t *ifg, const ir_node *irn);
 			for (ir_node *pos; (pos = be_ifg_nodes_next(&pos##__iter));)
 
 #define be_ifg_foreach_clique(ifg, iter, buf, count) \
-	for(*(count) = be_ifg_cliques_begin(ifg, iter, buf); \
-        *(count) != -1 ; \
-        *(count) = be_ifg_cliques_next(iter))
+	for (*(count) = be_ifg_cliques_begin(ifg, iter, buf); \
+	     *(count) != -1 ; \
+	     *(count) = be_ifg_cliques_next(iter))
 
 typedef struct {
 	int n_nodes;

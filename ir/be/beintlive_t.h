@@ -52,7 +52,7 @@ static inline int value_dominates(const ir_node *a, const ir_node *b)
 	 * a and b are not in the same block,
 	 * so dominance is determined by the dominance of the blocks.
 	 */
-	if(block_a != block_b) {
+	if (block_a != block_b) {
 		return block_dominates(block_a, block_b);
 	}
 

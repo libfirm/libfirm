@@ -355,7 +355,7 @@ static ir_node *create_conv_const(ir_graph *irg, ir_mode *src_mode)
 	assert(mode_is_float(src_mode));
 
 	ir_node *result = NULL;
-	if(get_mode_size_bits(src_mode) == 32) {
+	if (get_mode_size_bits(src_mode) == 32) {
 		double fconst = 1593835520;
 		ir_tarval *tv = new_tarval_from_double(fconst, src_mode);
 		result        = new_r_Const(irg, tv);
@@ -538,7 +538,7 @@ static void introduce_epilogue(ir_node *ret)
 	ir_node               *curr_sp    = first_sp;
 	ir_mode               *mode_gp    = mode_Lu;
 
-	if(!layout->sp_relative) {
+	if (!layout->sp_relative) {
 		int n_rbp = determine_rbp_input(ret);
 		ir_node *curr_bp = get_irn_n(ret, n_rbp);
 

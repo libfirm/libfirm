@@ -53,7 +53,7 @@ static inline void sched_set_time_stamp(const ir_node *irn)
 	 * else we have to compute our time step from our
 	 * neighbours.
 	 */
-	if(before_ts >= after_ts) {
+	if (before_ts >= after_ts) {
 		info->time_step = before_ts + SCHED_INITIAL_GRANULARITY;
 		/* overflow? */
 		if (info->time_step <= before_ts) {
@@ -66,7 +66,7 @@ static inline void sched_set_time_stamp(const ir_node *irn)
 		 * If the resolution went out, we have to renumber
 		 * this block.
 		 */
-		if(ts == before_ts || ts == after_ts)
+		if (ts == before_ts || ts == after_ts)
 			sched_renumber(get_nodes_block(irn));
 		else
 			info->time_step = ts;
