@@ -2165,10 +2165,7 @@ ir_node *amd64_new_spill(ir_node *value, ir_node *after)
 	ir_graph *irg   = get_irn_irg(block);
 	ir_node  *frame = get_irg_frame(irg);
 	ir_node  *mem   = get_irg_no_mem(irg);
-
 	ir_mode  *mode  = get_irn_mode(value);
-	if (mode_is_float(mode))
-		panic("amd64: spilling float values not implemented yet");
 
 	amd64_binop_addr_attr_t attr;
 	memset(&attr, 0, sizeof(attr));
@@ -2177,12 +2174,22 @@ ir_node *amd64_new_spill(ir_node *value, ir_node *after)
 	attr.base.needs_frame_ent = true;
 
 	amd64_addr_t *addr = &attr.base.addr;
-	addr->base_input  = 1;
-	addr->index_input = NO_INPUT;
+	addr->base_input   = 1;
+	addr->index_input  = NO_INPUT;
+	ir_node *in[]      = { value, frame, mem };
 
-	ir_node *in[] = { value, frame, mem };
-	ir_node *store = new_bd_amd64_Store(NULL, block, ARRAY_SIZE(in), in, &attr);
-	arch_set_irn_register_reqs_in(store, reg_reg_mem_reqs);
+	const arch_register_req_t **reqs;
+	ir_node *store;
+
+	if (mode_is_float(mode)) {
+		store = new_bd_amd64_xStores(NULL, block, ARRAY_SIZE(in), in, &attr);
+		reqs  = xmm_reg_mem_reqs;
+	} else {
+		store = new_bd_amd64_Store(NULL, block, ARRAY_SIZE(in), in, &attr);
+		reqs  = reg_reg_mem_reqs;
+	}
+
+	arch_set_irn_register_reqs_in(store, reqs);
 	arch_add_irn_flags(store, arch_irn_flag_spill);
 	sched_add_after(after, store);
 	return store;
@@ -2194,9 +2201,6 @@ ir_node *amd64_new_reload(ir_node *value, ir_node *spill, ir_node *before)
 	ir_graph *irg   = get_irn_irg(block);
 	ir_node  *frame = get_irg_frame(irg);
 	ir_mode  *mode  = get_irn_mode(value);
-
-	if (mode_is_float(mode))
-		panic("amd64: spilling float values not implemented yet");
 
 	amd64_addr_t addr;
 	memset(&addr, 0, sizeof(addr));
