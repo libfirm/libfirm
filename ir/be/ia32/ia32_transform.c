@@ -3697,6 +3697,10 @@ static ir_node *create_I2I_Conv(ir_mode *src_mode, ir_mode *tgt_mode,
 	}
 #endif
 
+	while(is_downconv(op)) {
+		op = get_Conv_op(op);
+	}
+
 	if (be_upper_bits_clean(op, src_mode)) {
 		return be_transform_node(op);
 	}
