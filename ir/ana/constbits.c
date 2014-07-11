@@ -30,7 +30,7 @@
 #include "constbits.h"
 
 /* TODO:
- * - Implement cleared/set bit calculation for Mul, Div, Mod, Shl, Shr, Shrs
+ * - Implement cleared/set bit calculation for Div, Mod, Shl, Shr, Shrs
  * - Implement min/max calculation for And, Eor, Or, Not, Conv, Shl, Shr, Shrs, Mux
  * - Implement min/max calculation for Add, Sub, Minus, Mul, Div, Mod, Conv, Shl, Shr, Shrs, Mux
  */
@@ -438,24 +438,39 @@ undefined:
 				case iro_Mul: {
 					bitinfo   *const l  = get_bitinfo(get_Mul_left(irn));
 					bitinfo   *const r  = get_bitinfo(get_Mul_right(irn));
-					ir_tarval *const lz = l->z;
-					ir_tarval *const lo = l->o;
-					ir_tarval *const rz = r->z;
-					ir_tarval *const ro = r->o;
+					ir_tarval *      lz = l->z;
+					ir_tarval *      lo = l->o;
+					ir_tarval *      rz = r->z;
+					ir_tarval *      ro = r->o;
 					if (lz == lo && rz == ro) {
 						z = o = tarval_mul(lz, rz);
 					} else {
-						// TODO improve
-						// Determine safe lower zeroes: x | -x.
-						ir_tarval *const lzn = tarval_or(lz, tarval_neg(lz));
-						ir_tarval *const rzn = tarval_or(rz, tarval_neg(rz));
-						// Concatenate safe lower zeroes.
-						if (tarval_cmp(lzn, rzn) == ir_relation_less) {
-							z = tarval_mul(tarval_eor(lzn, tarval_shl_unsigned(lzn, 1)), rzn);
-						} else {
-							z = tarval_mul(tarval_eor(rzn, tarval_shl_unsigned(rzn, 1)), lzn);
+						ir_tarval *one = get_mode_one(m);
+						z = o = get_mode_null(m);
+						while (!tarval_is_null(rz)) {
+							if (!tarval_is_null(tarval_and(rz, one))) {
+								ir_tarval *const vz  = tarval_add(lz, z);
+								ir_tarval *const vo  = tarval_add(lo, o);
+								ir_tarval *const lnc = tarval_eor(lz, lo);
+								ir_tarval *const rnc = tarval_eor(z, o);
+								ir_tarval *const vnc = tarval_eor(vz, vo);
+								ir_tarval *const nc  = tarval_or(tarval_or(lnc, rnc), vnc);
+								ir_tarval *const az  = tarval_or(vz, nc);
+								ir_tarval *const ao  = tarval_andnot(vz, nc);
+
+								if (tarval_is_null(tarval_andnot(one, ro))) {
+									z = az;
+									o = ao;
+								} else {
+									z = tarval_or(z, az);
+									o = tarval_and(o, ao);
+								}
+							}
+							lz = tarval_shl(lz, one);
+							lo = tarval_shl(lo, one);
+							rz = tarval_shr(rz, one);
+							ro = tarval_shr(ro, one);
 						}
-						o = get_mode_null(m);
 					}
 					break;
 				}
