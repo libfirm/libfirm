@@ -1817,7 +1817,7 @@ static ir_node *gen_Shrs(ir_node *node)
 	if (is_Const(right)) {
 		ir_tarval *tv  = get_Const_tarval(right);
 		long       val = get_tarval_long(tv);
-		if (val == 31) {
+		if (val == 31 && get_irn_n_edges(left) > 1) {
 			/* this is a sign extension */
 			dbg_info *dbgi   = get_irn_dbg_info(node);
 			ir_node  *block  = be_transform_node(get_nodes_block(node));
