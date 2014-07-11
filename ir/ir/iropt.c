@@ -1732,6 +1732,15 @@ ir_node *equivalent_node(ir_node *n)
 	return n;
 }
 
+/** Returns true if we can be sure that @p node only has a single read user. */
+static bool only_one_user(const ir_node *node)
+{
+	ir_graph *irg = get_irn_irg(node);
+	if (!edges_activated(irg))
+		return false;
+	return get_irn_n_edges(node) <= 1;
+}
+
 /**
  * Returns non-zero if a node is a Phi node
  * with all predecessors constant.
@@ -1745,6 +1754,17 @@ static int is_const_Phi(ir_node *n)
 			return 0;
 	}
 	return 1;
+}
+
+/**
+ * Returns non-zero if a node is a Mux node
+ * with true and false predecessors constant.
+ */
+static int is_const_Mux(ir_node *n)
+{
+	return is_Mux(n) &&
+		is_Const(get_Mux_false(n)) &&
+		is_Const(get_Mux_true(n));
 }
 
 typedef ir_tarval *(*tarval_sub_type)(ir_tarval *a, ir_tarval *b, ir_mode *mode);
@@ -1921,6 +1941,159 @@ static ir_node *apply_conv_on_phi(ir_node *phi, ir_mode *mode)
 }
 
 /**
+ * Apply an evaluator on a binop with a constant operators (and one Mux).
+ *
+ * @param mux    the Mux node
+ * @param other  the other operand
+ * @param eval   an evaluator function
+ * @param mode   the mode of the result, may be different from the mode of the Mux!
+ * @param left   if non-zero, other is the left operand, else the right
+ *
+ * @return a new Mux node if the conversion was successful, NULL else
+ */
+static ir_node *apply_binop_on_mux(ir_node *mux, ir_tarval *other, eval_func eval, ir_mode *mode, int left)
+{
+	if (!only_one_user(mux)) {
+		return NULL;
+	}
+
+	ir_tarval *true_val  = get_Const_tarval(get_Mux_true(mux));
+	ir_tarval *false_val = get_Const_tarval(get_Mux_false(mux));
+
+	ir_tarval *new_true, *new_false;
+	if (left) {
+		new_true  = do_eval(eval, other, true_val, mode);
+		new_false = do_eval(eval, other, false_val, mode);
+	} else {
+		new_true  = do_eval(eval, true_val, other, mode);
+		new_false = do_eval(eval, false_val, other, mode);
+	}
+
+	if (!tarval_is_constant(new_true) || !tarval_is_constant(new_false)) {
+		return NULL;
+	}
+
+	ir_node  *sel       = get_Mux_sel(mux);
+	ir_graph *irg       = get_irn_irg(mux);
+	ir_node  *irn_true  = new_r_Const(irg, new_true);
+	ir_node  *irn_false = new_r_Const(irg, new_false);
+	ir_node  *block     = get_nodes_block(mux);
+	return new_r_Mux(block, sel, irn_false, irn_true, mode);
+}
+
+/**
+ * Apply an evaluator on a binop with two constant Mux.
+ *
+ * @param a      the left Mux node
+ * @param b      the right Mux node
+ * @param eval   an evaluator function
+ * @param mode   the mode of the result, may be different from the mode of the Mux!
+ *
+ * @return a new Mux node if the conversion was successful, NULL else
+ */
+static ir_node *apply_binop_on_2_muxs(ir_node *a, ir_node *b, eval_func eval, ir_mode *mode)
+{
+	if (!only_one_user(a) || !only_one_user(b)) {
+		return NULL;
+	}
+	if (get_nodes_block(a) != get_nodes_block(b)) {
+		return NULL;
+	}
+
+	ir_node *sel_a = get_Mux_sel(a);
+	ir_node *sel_b = get_Mux_sel(b);
+
+	// More complex logical analysis could be added here:
+	if (sel_a == sel_b) {
+		// a's and b's sel nodes are logically equivalent
+		// ==> Either both false or both true
+		ir_tarval *false_a = get_Const_tarval(get_Mux_false(a));
+		ir_tarval *false_b = get_Const_tarval(get_Mux_false(b));
+		ir_tarval *true_a  = get_Const_tarval(get_Mux_true(a));
+		ir_tarval *true_b  = get_Const_tarval(get_Mux_true(b));
+
+		ir_tarval *new_false = do_eval(eval, false_a, false_b, mode);
+		ir_tarval *new_true  = do_eval(eval, true_a, true_b, mode);
+
+		if (!tarval_is_constant(new_true) || !tarval_is_constant(new_false)) {
+			return NULL;
+		}
+
+		ir_graph *irg       = get_irn_irg(a);
+		ir_node  *irn_false = new_r_Const(irg, new_false);
+		ir_node  *irn_true  = new_r_Const(irg, new_true);
+		ir_node  *block     = get_nodes_block(a);
+		return new_r_Mux(block, sel_a, irn_false, irn_true, mode);
+	} else {
+		return NULL;
+	}
+}
+
+/**
+ * Apply an evaluator on a unop with a constant operator (a Mux).
+ *
+ * @param mux    the Mux node
+ * @param eval   an evaluator function
+ *
+ * @return a new Mux node if the conversion was successful, NULL else
+ */
+static ir_node *apply_unop_on_mux(ir_node *mux, ir_tarval *(*eval)(ir_tarval *))
+{
+	if (!only_one_user(mux)) {
+		return NULL;
+	}
+
+	ir_tarval *true_val  = get_Const_tarval(get_Mux_true(mux));
+	ir_tarval *false_val = get_Const_tarval(get_Mux_false(mux));
+
+	ir_tarval *new_true  = eval(true_val);
+	ir_tarval *new_false = eval(false_val);
+
+	if (!tarval_is_constant(new_true) || !tarval_is_constant(new_false)) {
+		return NULL;
+	}
+
+	ir_node  *sel       = get_Mux_sel(mux);
+	ir_graph *irg       = get_irn_irg(mux);
+	ir_node  *irn_true  = new_r_Const(irg, new_true);
+	ir_node  *irn_false = new_r_Const(irg, new_false);
+	ir_node  *block     = get_nodes_block(mux);
+	ir_mode  *mode      = get_irn_mode(mux);
+	return new_r_Mux(block, sel, irn_false, irn_true, mode);
+}
+
+/**
+ * Apply a conversion on a constant operator (a Mux).
+ *
+ * @param mux    the Mux node
+ *
+ * @return a new Mux node if the conversion was successful, NULL else
+ */
+static ir_node *apply_conv_on_mux(ir_node *mux, ir_mode *mode)
+{
+	if (!only_one_user(mux)) {
+		return NULL;
+	}
+
+	ir_tarval *true_val  = get_Const_tarval(get_Mux_true(mux));
+	ir_tarval *false_val = get_Const_tarval(get_Mux_false(mux));
+
+	ir_tarval *new_true  = tarval_convert_to(true_val, mode);
+	ir_tarval *new_false = tarval_convert_to(false_val, mode);
+
+	if (!tarval_is_constant(new_true) || !tarval_is_constant(new_false)) {
+		return NULL;
+	}
+
+	ir_node  *sel       = get_Mux_sel(mux);
+	ir_graph *irg       = get_irn_irg(mux);
+	ir_node  *irn_true  = new_r_Const(irg, new_true);
+	ir_node  *irn_false = new_r_Const(irg, new_false);
+	ir_node  *block     = get_nodes_block(mux);
+	return new_r_Mux(block, sel, irn_false, irn_true, mode);
+}
+
+/**
  * Transform AddP(P, ConvIs(Iu)), AddP(P, ConvIu(Is)) and
  * SubP(P, ConvIs(Iu)), SubP(P, ConvIu(Is)).
  * If possible, remove the Conv's.
@@ -1997,7 +2170,12 @@ static ir_node *transform_node_AddSub(ir_node *n)
 	return n;
 }
 
-#define HANDLE_BINOP_PHI(eval, a, b, c, mode)                     \
+/*
+ * Macros to include the constant folding optimizations for nodes with
+ * a choice of data (i.e. Phi and Mux).
+ */
+
+#define HANDLE_BINOP_CHOICE(eval, a, b, c, mode)                  \
   do {                                                            \
   c = NULL;                                                       \
   if (is_Const(b) && is_const_Phi(a)) {                           \
@@ -2009,6 +2187,15 @@ static ir_node *transform_node_AddSub(ir_node *n)
   } else if (is_const_Phi(a) && is_const_Phi(b)) {                \
     /* check for Op(Phi, Phi) */                                  \
     c = apply_binop_on_2_phis(a, b, eval, mode);                  \
+  } else if (is_Const(b) && is_const_Mux(a)) {                    \
+    /* check for Op(Mux, Const) */                                \
+    c = apply_binop_on_mux(a, get_Const_tarval(b), eval, mode, 0);\
+  } else if (is_Const(a) && is_const_Mux(b)) {                    \
+    /* check for Op(Const, Phi) */                                \
+    c = apply_binop_on_mux(b, get_Const_tarval(a), eval, mode, 1);\
+  } else if (is_const_Mux(a) && is_const_Mux(b)) {                \
+    /* check for Op(Mux, Mux) */                                  \
+    c = apply_binop_on_2_muxs(a, b, eval, mode);                  \
   }                                                               \
   if (c) {                                                        \
     DBG_OPT_ALGSIM0(oldn, c, FS_OPT_CONST_PHI);                   \
@@ -2016,16 +2203,19 @@ static ir_node *transform_node_AddSub(ir_node *n)
   }                                                               \
   } while(0)
 
-#define HANDLE_UNOP_PHI(eval, a, c)               \
+#define HANDLE_UNOP_CHOICE(eval, a, c)            \
   do {                                            \
   c = NULL;                                       \
   if (is_const_Phi(a)) {                          \
     /* check for Op(Phi) */                       \
     c = apply_unop_on_phi(a, eval);               \
-    if (c) {                                      \
-      DBG_OPT_ALGSIM0(oldn, c, FS_OPT_CONST_PHI); \
-      return c;                                   \
-    }                                             \
+  } else if (is_const_Mux(a)) {                   \
+    /* check for Op(Mux) */                       \
+    c = apply_unop_on_mux(a, eval);               \
+  }                                               \
+  if (c) {                                        \
+    DBG_OPT_ALGSIM0(oldn, c, FS_OPT_CONST_PHI);   \
+    return c;                                     \
   }                                               \
   } while(0)
 
@@ -2571,7 +2761,7 @@ static ir_node *transform_node_Or_(ir_node *n)
 	}
 
 	ir_node *c;
-	HANDLE_BINOP_PHI((eval_func) tarval_or, a, b, c, mode);
+	HANDLE_BINOP_CHOICE((eval_func) tarval_or, a, b, c, mode);
 
 	n = transform_bitop_chain(n);
 	if (n != oldn)
@@ -2631,7 +2821,7 @@ static ir_node *transform_node_Eor_(ir_node *n)
 	}
 
 	ir_node *c;
-	HANDLE_BINOP_PHI((eval_func) tarval_eor, a, b, c, mode);
+	HANDLE_BINOP_CHOICE((eval_func) tarval_eor, a, b, c, mode);
 
 	/* normalize not nodes... ~a ^ b <=> a ^ ~b */
 	if (is_Not(a) && operands_are_normalized(get_Not_op(a), b)) {
@@ -2798,7 +2988,7 @@ static ir_node *transform_node_Add(ir_node *n)
 	}
 
 	ir_node *c;
-	HANDLE_BINOP_PHI((eval_func) tarval_add, a, b, c, mode);
+	HANDLE_BINOP_CHOICE((eval_func) tarval_add, a, b, c, mode);
 
 	/* these optimizations are imprecise for floating-point ops */
 	if (mode_is_float(mode) && !ir_imprecise_float_transforms_allowed())
@@ -2976,7 +3166,7 @@ static ir_node *transform_node_Sub(ir_node *n)
 
 	ir_node *c;
 restart:
-	HANDLE_BINOP_PHI((eval_func) tarval_sub, a, b, c, mode);
+	HANDLE_BINOP_CHOICE((eval_func) tarval_sub, a, b, c, mode);
 
 	/* these optimizations are imprecise for floating-point ops */
 	if (mode_is_float(mode) && !ir_imprecise_float_transforms_allowed())
@@ -3358,15 +3548,6 @@ static ir_node *can_negate_cheaply(ir_node *node)
 
 static ir_node *transform_node_shl_shr(ir_node *n);
 
-/** Returns true if we can be sure that @p node only has a single read user. */
-static bool only_one_user(const ir_node *node)
-{
-	ir_graph *irg = get_irn_irg(node);
-	if (!edges_activated(irg))
-		return false;
-	return get_irn_n_edges(node) <= 1;
-}
-
 static ir_node *transform_node_Mul(ir_node *n)
 {
 	ir_node *oldn = n;
@@ -3379,7 +3560,7 @@ static ir_node *transform_node_Mul(ir_node *n)
 	ir_node *a    = get_Mul_left(n);
 	ir_node *b    = get_Mul_right(n);
 	ir_node *c;
-	HANDLE_BINOP_PHI((eval_func) tarval_mul, a, b, c, mode);
+	HANDLE_BINOP_CHOICE((eval_func) tarval_mul, a, b, c, mode);
 
 	ir_mode_arithmetic arith = get_mode_arithmetic(mode);
 	if (is_Const(b)) {
@@ -4006,7 +4187,7 @@ static ir_node *transform_node_And(ir_node *n)
 
 	ir_node *c;
 	ir_mode *mode = get_irn_mode(n);
-	HANDLE_BINOP_PHI((eval_func) tarval_and, a, b, c, mode);
+	HANDLE_BINOP_CHOICE((eval_func) tarval_and, a, b, c, mode);
 
 	if (is_Or(a) || is_Or_Eor_Add(a)) {
 		ir_node *or_left  = get_binop_left(a);
@@ -4149,7 +4330,7 @@ static ir_node *transform_node_Not(ir_node *n)
 	ir_node *a    = get_Not_op(n);
 
 	ir_node *c;
-	HANDLE_UNOP_PHI(tarval_not,a,c);
+	HANDLE_UNOP_CHOICE(tarval_not,a,c);
 
 	/* check for a boolean Not */
 	if (is_Cmp(a)) {
@@ -4278,7 +4459,7 @@ static ir_node *transform_node_Minus(ir_node *n)
 	ir_node *op   = get_Minus_op(n);
 
 	ir_node *c;
-	HANDLE_UNOP_PHI(tarval_neg, op, c);
+	HANDLE_UNOP_CHOICE(tarval_neg, op, c);
 
 	ir_node *negated_op = can_negate_cheaply(op);
 	if (negated_op != NULL)
@@ -5714,7 +5895,7 @@ static ir_node *transform_node_Shr(ir_node *n)
 	ir_mode *mode  = get_irn_mode(n);
 
 	ir_node *c;
-	HANDLE_BINOP_PHI((eval_func) tarval_shr, left, right, c, mode);
+	HANDLE_BINOP_CHOICE((eval_func) tarval_shr, left, right, c, mode);
 	n = transform_node_shift(n);
 
 	if (is_Shr(n))
@@ -5750,7 +5931,7 @@ static ir_node *transform_node_Shrs(ir_node *n)
 	}
 
 	ir_node *c;
-	HANDLE_BINOP_PHI((eval_func) tarval_shrs, a, b, c, mode);
+	HANDLE_BINOP_CHOICE((eval_func) tarval_shrs, a, b, c, mode);
 	n = transform_node_shift(n);
 	if (n != oldn)
 		return n;
@@ -5809,7 +5990,7 @@ static ir_node *transform_node_Shl(ir_node *n)
 		}
 	}
 
-	HANDLE_BINOP_PHI((eval_func) tarval_shl, a, b, c, mode);
+	HANDLE_BINOP_CHOICE((eval_func) tarval_shl, a, b, c, mode);
 	n = transform_node_shift(n);
 
 	if (is_Shl(n))
@@ -5907,12 +6088,17 @@ static ir_node *transform_node_Conv(ir_node *n)
 		}
 	}
 
-	if (mode != mode_b && is_const_Phi(a)) {
+	if (mode != mode_b) {
 		/* Do NOT optimize mode_b Conv's, this leads to remaining
 		 * Phib nodes later, because the conv_b_lower operation
 		 * is instantly reverted, when it tries to insert a Convb.
 		 */
-		ir_node *c = apply_conv_on_phi(a, mode);
+		ir_node *c = NULL;
+		if (is_const_Phi(a)) {
+			c = apply_conv_on_phi(a, mode);
+		} else if (is_const_Mux(a)) {
+			c = apply_conv_on_mux(a, mode);
+		}
 		if (c) {
 			DBG_OPT_ALGSIM0(oldn, c, FS_OPT_CONST_PHI);
 			return c;
