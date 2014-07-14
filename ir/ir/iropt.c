@@ -4653,9 +4653,10 @@ static ir_node *transform_node_Cmp(ir_node *n)
 				}
 				if (x) {
 cmp_x_eq_0:;
-					left    = x;
-					right   = new_r_Const_null(irg, mode);
-					changed = true;
+					left     = x;
+					right    = new_r_Const_null(irg, mode);
+					relation = is_relation_equal ? ir_relation_equal : ir_relation_less_greater;
+					changed  = true;
 					DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_OP_OP);
 				}
 			}
