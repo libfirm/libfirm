@@ -6452,14 +6452,6 @@ static ir_node *transform_node_Mux(ir_node *n)
 					if (is_relation_less || is_relation_greater_equal) {
 						ir_node  *block     = get_nodes_block(n);
 						dbg_info *dbgi      = get_irn_dbg_info(n);
-						unsigned  cmp_bits  = get_mode_size_bits(cmp_mode);
-						unsigned  dest_bits = get_mode_size_bits(mode);
-						ir_mode  *curr_mode = cmp_mode;
-
-						if (cmp_mode != mode && cmp_bits >= dest_bits) {
-							curr_mode = mode;
-							cmp_l     = new_rd_Conv(dbgi, block, cmp_l, curr_mode);
-						}
 
 						if (is_relation_less) {
 							/* Mux(a < 0, 0, 0xFFFFFFFF) => a >>s 31 */
@@ -6467,14 +6459,15 @@ static ir_node *transform_node_Mux(ir_node *n)
 						} else {
 							/* Mux(a >= 0, 0, 0xFFFFFFFF) => ~a >>s 31 */
 							assert(is_relation_greater_equal);
-							cmp_l = new_rd_Not(dbgi, block, cmp_l, curr_mode);
+							cmp_l = new_rd_Not(dbgi, block, cmp_l, cmp_mode);
 							relation = ir_relation_greater_equal;
 						}
 
-						ir_node *c    = new_rd_Const_long(dbgi, irg, mode_Iu, dest_bits - 1U);
-						ir_node *shrs = new_rd_Shrs(dbgi, block, cmp_l, c, curr_mode);
+						unsigned  bits = get_mode_size_bits(cmp_mode);
+						ir_node  *c    = new_rd_Const_long(dbgi, irg, mode_Iu, bits - 1U);
+						ir_node  *shrs = new_rd_Shrs(dbgi, block, cmp_l, c, cmp_mode);
 
-						if (curr_mode != mode) {
+						if (cmp_mode != mode) {
 							shrs = new_rd_Conv(dbgi, block, shrs, mode);
 						}
 
