@@ -60,7 +60,7 @@ static void pair_up_operands(be_chordal_env_t const *const env, be_insn_t *const
 		be_operand_t *const out_op          = &insn->ops[j];
 		for (int i = insn->use_start; i < insn->n_ops; ++i) {
 			be_operand_t *const op = &insn->ops[i];
-			if (op->partner || be_values_interfere(insn->irn, op->carrier))
+			if (op->partner || be_value_live_after(op->carrier, insn->irn))
 				continue;
 
 			rbitset_copy(bs, op->regs, n_regs);
@@ -169,7 +169,7 @@ static void handle_constraints(be_chordal_env_t *const env, ir_node *const irn)
 			ir_node *const proj = get_edge_src_irn(edge);
 			assert(is_Proj(proj));
 
-			if (!be_values_interfere(proj, irn) || pmap_contains(partners, proj))
+			if (!be_value_live_after(proj, irn) || pmap_contains(partners, proj))
 				continue;
 
 			/* Don't insert a node twice. */

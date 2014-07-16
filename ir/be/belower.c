@@ -728,7 +728,7 @@ static int push_through_perm(ir_node *perm)
 			goto found_front;
 		}
 		be_foreach_use(irn, cls, in_req_, op, op_req_,
-			if (!be_values_interfere(op, one_proj)) {
+			if (!be_value_live_after(op, perm)) {
 				frontier = irn;
 				goto found_front;
 			}

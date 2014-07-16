@@ -161,7 +161,7 @@ static void prepare_constr_insn(ir_node *const node)
 		 * results. Additional copies here would destroy this. */
 		if (be_is_Copy(in))
 			continue;
-		if (!be_values_interfere(node, in))
+		if (!be_value_live_after(in, node))
 			continue;
 
 		bool common_limits = false;
