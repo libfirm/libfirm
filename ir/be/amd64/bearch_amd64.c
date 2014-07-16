@@ -372,8 +372,9 @@ static ir_node *create_conv_const(ir_graph *irg, ir_mode *src_mode)
  */
 static ir_node *create_sign_bit_const(ir_graph *irg)
 {
-	ir_tarval *one_tv  = new_tarval_from_long(1, mode_Ls);
-	ir_tarval *sign_tv = tarval_shl_unsigned(one_tv, 63);
+	const char *sign_str = "0x8000000000000000";
+	ir_tarval *sign_tv = new_tarval_from_str(sign_str, strlen(sign_str),
+	                                         mode_Ls);
 	return new_r_Const(irg, sign_tv);
 }
 
