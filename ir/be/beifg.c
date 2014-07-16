@@ -26,7 +26,7 @@
 #include "becopyopt.h"
 #include "beirg.h"
 #include "bemodule.h"
-#include "beintlive_t.h"
+#include "belive_t.h"
 
 void be_ifg_free(be_ifg_t *self)
 {

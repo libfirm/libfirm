@@ -36,7 +36,6 @@
 #include "bedump.h"
 #include "beifg.h"
 #include "beinsn_t.h"
-#include "beintlive_t.h"
 #include "beirg.h"
 #include "belive_t.h"
 #include "bemodule.h"

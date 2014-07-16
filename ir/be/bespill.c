@@ -25,7 +25,6 @@
 #include "benode.h"
 #include "besched.h"
 #include "bera.h"
-#include "beintlive_t.h"
 
 #include "lc_opts.h"
 #include "lc_opts_enum.h"

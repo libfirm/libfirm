@@ -122,6 +122,15 @@ void be_liveness_end_of_block(const be_lv_t *lv,
                               const ir_node *bl, ir_nodeset_t *nodeset);
 
 /**
+ * Check, if two values interfere.
+ * @param lv Liveness information
+ * @param a The first value.
+ * @param b The second value.
+ * @return true, if a and b interfere, false if not.
+ */
+bool be_values_interfere(const be_lv_t *lv, const ir_node *a, const ir_node *b);
+
+/**
  * Compute a set of nodes which are live just before the given node.
  * @param cls      The register class to consider.
  * @param pos      The node.

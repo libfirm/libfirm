@@ -23,11 +23,10 @@
 #include "iredges.h"
 
 #include "beverify.h"
-#include "belive.h"
+#include "belive_t.h"
 #include "besched.h"
 #include "benode.h"
 #include "beirg.h"
-#include "beintlive_t.h"
 #include "belistsched.h"
 
 static bool my_values_interfere(const ir_node *a, const ir_node *b);

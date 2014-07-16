@@ -433,8 +433,6 @@ void be_liveness_end_of_block(const be_lv_t *lv,
 	}
 }
 
-
-
 void be_liveness_nodes_live_before(be_lv_t const *const lv, arch_register_class_t const *const cls, ir_node const *const pos, ir_nodeset_t *const live)
 {
 	ir_node *const bl = get_nodes_block(pos);
@@ -444,6 +442,43 @@ void be_liveness_nodes_live_before(be_lv_t const *const lv, arch_register_class_
 		if (irn == pos)
 			return;
 	}
+}
+
+bool be_values_interfere(const be_lv_t *lv, const ir_node *a, const ir_node *b)
+{
+	assert(a != b);
+	if (value_strictly_dominates(b, a)) {
+		/* Adjust a and b so, that a dominates b if
+		 * a dominates b or vice versa. */
+		const ir_node *const t = a;
+		a = b;
+		b = t;
+	} else if (!value_strictly_dominates(a, b)) {
+		/* If there is no dominance relation, they do not interfere. */
+		return false;
+	}
+
+	/* If a is live end in b's block it is
+	 * live at b's definition (a dominates b) */
+	const ir_node *const bb = get_nodes_block(b);
+	if (be_is_live_end(lv, bb, a))
+		return true;
+
+	/* Look at all usages of a.
+	 * If there's one usage of a in the block of b, then we check, if this use
+	 * is dominated by b, if that's true a and b interfere. Note that b must
+	 * strictly dominate the user, since if b is the last user of in the block,
+	 * b and a do not interfere.
+	 * Uses of a not in b's block can be disobeyed, because the check for a
+	 * being live at the end of b's block is already performed. */
+	foreach_out_edge(a, edge) {
+		const ir_node *const user = get_edge_src_irn(edge);
+		if (get_nodes_block(user) == bb && !is_Phi(user)
+		    && sched_comes_before(b, user))
+			return true;
+	}
+
+	return false;
 }
 
 static void collect_node(ir_node *irn, void *data)

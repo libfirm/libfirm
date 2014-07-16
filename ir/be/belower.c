@@ -32,7 +32,7 @@
 #include "besched.h"
 #include "bestat.h"
 #include "bessaconstr.h"
-#include "beintlive_t.h"
+#include "belive_t.h"
 
 #undef KEEP_ALIVE_COPYKEEP_HACK
 

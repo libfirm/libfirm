@@ -30,7 +30,7 @@
  *     x_nc, y_ij \in N,   w_ij \in R^+
  */
 #include "be_t.h"
-#include "beintlive_t.h"
+#include "belive_t.h"
 #include "beirg.h"
 #include "panic.h"
 #include "raw_bitset.h"

@@ -19,7 +19,6 @@
 #include "irtools.h"
 #include "statev_t.h"
 
-#include "beintlive_t.h"
 #include "beirg.h"
 #include "belive_t.h"
 #include "bemodule.h"

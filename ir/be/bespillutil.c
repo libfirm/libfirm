@@ -26,7 +26,6 @@
 #include "execfreq.h"
 #include "panic.h"
 #include "bearch.h"
-#include "belive_t.h"
 #include "besched.h"
 #include "bespill.h"
 #include "bespillutil.h"
@@ -37,7 +36,6 @@
 #include "bessaconstr.h"
 #include "beirg.h"
 #include "beirgmod.h"
-#include "beintlive_t.h"
 #include "bemodule.h"
 #include "be_t.h"
 

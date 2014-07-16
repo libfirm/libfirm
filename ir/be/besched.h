@@ -14,6 +14,8 @@
 #include <stdbool.h>
 
 #include "beinfo.h"
+#include "beutil.h"
+#include "irdom.h"
 
 static sched_info_t *get_irn_sched_info(const ir_node *node)
 {
@@ -155,6 +157,27 @@ static inline bool sched_comes_before(const ir_node *a, const ir_node *b)
 	sched_timestep_t const as = sched_get_time_step(a);
 	sched_timestep_t const bs = sched_get_time_step(b);
 	return as < bs;
+}
+
+/**
+ * Check, if one value dominates the other.
+ * The dominance is not strict here.
+ * @param a The first node.
+ * @param b The second node.
+ * @return true if a dominates b or if a == b.
+ */
+static inline bool value_strictly_dominates(const ir_node *a,
+                                            const ir_node *b)
+{
+	/* if a and b are not in the same block, dominance is determined by the
+	 * dominance of the blocks. */
+	const ir_node *block_a = get_block_const(a);
+	const ir_node *block_b = get_block_const(b);
+	if (block_a != block_b)
+		return block_dominates(block_a, block_b);
+
+	/* Dominance is determined by schedule. */
+	return sched_comes_before(a, b);
 }
 
 #define sched_foreach_after(after, irn) \
