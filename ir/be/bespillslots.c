@@ -273,9 +273,40 @@ static int merge_interferences(be_fec_env_t *env, bitset_t** interferences,
 	return res;
 }
 
-static bool my_values_interfere2(ir_graph *const irg, ir_node const *a,
-                                 ir_node const *b)
+static bool live_at_user(const ir_node *const users_of,
+                         const ir_node *const node, const ir_node *const bb)
 {
+	foreach_out_edge(users_of, edge) {
+		const ir_node *const user = get_edge_src_irn(edge);
+		if (is_Sync(user))
+			return live_at_user(user, node, bb);
+		if (get_nodes_block(user) == bb && !is_Phi(user)
+		    && sched_comes_before(node, user))
+			return true;
+	}
+	return false;
+}
+
+static const ir_node *get_highest_sync_op(const ir_node *sync)
+{
+	const ir_node *best = get_irn_n(sync, 0);
+	for (int i = 1, arity = get_irn_arity(sync); i < arity; ++i) {
+		const ir_node *other = get_irn_n(sync, i);
+		if (is_Sync(other))
+			other = get_highest_sync_op(other);
+		if (value_strictly_dominates(other, best))
+			best = other;
+	}
+	return best;
+}
+
+static bool memory_values_interfere(const ir_node *a, const ir_node *b)
+{
+	if (is_Sync(a))
+		a = get_highest_sync_op(a);
+	if (is_Sync(b))
+		b = get_highest_sync_op(b);
+
 	if (value_strictly_dominates(b, a)) {
 		/* Adjust a and b so, that a dominates b if
 		 * a dominates b or vice versa. */
@@ -284,13 +315,14 @@ static bool my_values_interfere2(ir_graph *const irg, ir_node const *a,
 		b = t;
 	} else if (!value_strictly_dominates(a, b)) {
 		/* If there is no dominance relation, they do not interfere. */
-		return 0;
+		return false;
 	}
 
 	/* If a is live end in b's block it is
 	 * live at b's definition (a dominates b) */
-	ir_node *const bb = get_nodes_block(b);
-	be_lv_t *const lv = be_get_irg_liveness(irg);
+	const ir_node  *const bb  = get_nodes_block(b);
+	const ir_graph *const irg = get_Block_irg(bb);
+	const be_lv_t  *const lv  = be_get_irg_liveness(irg);
 	if (be_is_live_end(lv, bb, a))
 		return true;
 
@@ -303,47 +335,7 @@ static bool my_values_interfere2(ir_graph *const irg, ir_node const *a,
 	 * Uses of a not in b's block can be disobeyed, because the
 	 * check for a being live at the end of b's block is already
 	 * performed. */
-	foreach_out_edge(a, edge) {
-		ir_node const *const user = get_edge_src_irn(edge);
-		if (is_Sync(user)) {
-			foreach_out_edge(user, edge2) {
-				ir_node const *const user2 = get_edge_src_irn(edge2);
-				assert(!is_Sync(user2));
-				if (get_nodes_block(user2) == bb && !is_Phi(user2) &&
-				    sched_comes_before(b, user2))
-					return true;
-			}
-		} else {
-			if (get_nodes_block(user) == bb && !is_Phi(user) &&
-			    sched_comes_before(b, user))
-				return true;
-		}
-	}
-
-	return false;
-}
-
-/**
- * same as values_interfere but with special handling for Syncs
- */
-static int my_values_interfere(ir_graph *irg, ir_node *a, ir_node *b)
-{
-	if (is_Sync(a)) {
-		foreach_irn_in(a, i, in) {
-			if (my_values_interfere(irg, in, b))
-				return 1;
-		}
-		return 0;
-	} else if (is_Sync(b)) {
-		foreach_irn_in(b, i, in) {
-			/* a is not a sync, so no need for my_values_interfere */
-			if (my_values_interfere2(irg, a, in))
-				return 1;
-		}
-		return 0;
-	}
-
-	return my_values_interfere2(irg, a, b);
+	return live_at_user(a, b, bb);
 }
 
 /**
@@ -384,7 +376,7 @@ static void do_greedy_coalescing(be_fec_env_t *env)
 			if (is_NoMem(spill2))
 				continue;
 
-			if (my_values_interfere(env->irg, spill1, spill2)) {
+			if (memory_values_interfere(spill1, spill2)) {
 				DB((dbg, DBG_INTERFERENCES,
 				     "Slot %d and %d interfere\n", i, i2));
 
