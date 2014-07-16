@@ -130,8 +130,6 @@ amd64_cconv_t *amd64_decide_calling_convention(ir_type *function_type,
 		ir_type *param_type = get_method_param_type(function_type,i);
 		if (is_compound_type(param_type))
 			panic("amd64: compound arguments NIY");
-		if (get_method_calling_convention(function_type) & cc_compound_ret)
-			panic("amd64: compound return NIY");
 
 		ir_mode *mode = get_type_mode(param_type);
 		int      bits = get_mode_size_bits(mode);
