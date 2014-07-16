@@ -53,7 +53,6 @@ static void pair_up_operands(be_chordal_env_t const *const env, be_insn_t *const
 	 * same register as the out operand. */
 	int       const n_regs = env->cls->n_regs;
 	unsigned *const bs     = rbitset_alloca(n_regs);
-	be_lv_t  *const lv     = be_get_irg_liveness(env->irg);
 	for (int j = 0; j < insn->use_start; ++j) {
 		/* Try to find an in operand which has ... */
 		be_operand_t       *smallest        = NULL;
@@ -61,7 +60,7 @@ static void pair_up_operands(be_chordal_env_t const *const env, be_insn_t *const
 		be_operand_t *const out_op          = &insn->ops[j];
 		for (int i = insn->use_start; i < insn->n_ops; ++i) {
 			be_operand_t *const op = &insn->ops[i];
-			if (op->partner || be_values_interfere(lv, insn->irn, op->carrier))
+			if (op->partner || be_values_interfere(insn->irn, op->carrier))
 				continue;
 
 			rbitset_copy(bs, op->regs, n_regs);
@@ -166,12 +165,11 @@ static void handle_constraints(be_chordal_env_t *const env, ir_node *const irn)
 	/* Put all nodes which live through the constrained instruction also to the
 	 * allocation bipartite graph. They are considered unconstrained. */
 	if (perm != NULL) {
-		be_lv_t *const lv = be_get_irg_liveness(env->irg);
 		foreach_out_edge(perm, edge) {
 			ir_node *const proj = get_edge_src_irn(edge);
 			assert(is_Proj(proj));
 
-			if (!be_values_interfere(lv, proj, irn) || pmap_contains(partners, proj))
+			if (!be_values_interfere(proj, irn) || pmap_contains(partners, proj))
 				continue;
 
 			/* Don't insert a node twice. */

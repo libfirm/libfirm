@@ -26,6 +26,7 @@
 #include "belive_t.h"
 #include "besched.h"
 #include "bemodule.h"
+#include "beirg.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
@@ -444,7 +445,7 @@ void be_liveness_nodes_live_before(be_lv_t const *const lv, arch_register_class_
 	}
 }
 
-bool be_values_interfere(const be_lv_t *lv, const ir_node *a, const ir_node *b)
+bool be_values_interfere(const ir_node *a, const ir_node *b)
 {
 	assert(a != b);
 	if (value_strictly_dominates(b, a)) {
@@ -460,7 +461,9 @@ bool be_values_interfere(const be_lv_t *lv, const ir_node *a, const ir_node *b)
 
 	/* If a is live end in b's block it is
 	 * live at b's definition (a dominates b) */
-	const ir_node *const bb = get_nodes_block(b);
+	const ir_node  *const bb  = get_nodes_block(b);
+	const ir_graph *const irg = get_Block_irg(bb);
+	const be_lv_t  *const lv  = be_get_irg_liveness(irg);
 	if (be_is_live_end(lv, bb, a))
 		return true;
 

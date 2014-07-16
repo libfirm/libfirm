@@ -110,8 +110,7 @@ static inline int qnode_are_conflicting(const qnode_t *qn, const ir_node *n1, co
 	conflict_t c;
 	/* search for live range interference */
 	if (n1 != n2) {
-		be_lv_t *const lv = be_get_irg_liveness(get_irn_irg(n1));
-		if (be_values_interfere(lv, n1, n2))
+		if (be_values_interfere(n1, n2))
 			return 1;
 	}
 	/* search for recoloring conflicts */

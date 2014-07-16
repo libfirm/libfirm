@@ -269,7 +269,7 @@ static int co_get_costs_all_one(const ir_node *root, int pos)
  * Determines a maximum weighted independent set with respect to
  * the interference and conflict edges of all nodes in a qnode.
  */
-static int ou_max_ind_set_costs(unit_t *const ou, be_lv_t const *const lv)
+static int ou_max_ind_set_costs(unit_t *const ou)
 {
 	/* assign the nodes into two groups.
 	 * safe: node has no interference, hence it is in every max stable set.
@@ -287,7 +287,7 @@ static int ou_max_ind_set_costs(unit_t *const ou, be_lv_t const *const lv)
 			ir_node *o_node = ou->nodes[o];
 			if (i_node == o_node)
 				continue;
-			if (be_values_interfere(lv, i_node, o_node)) {
+			if (be_values_interfere(i_node, o_node)) {
 				unsafe_costs[unsafe_count] = ou->costs[i];
 				unsafe[unsafe_count] = i_node;
 				++unsafe_count;
@@ -310,7 +310,7 @@ static int ou_max_ind_set_costs(unit_t *const ou, be_lv_t const *const lv)
 			bitset_set(best, i);
 			/* check if it is a stable set */
 			for (int o=bitset_next_set(best, 0); o!=-1 && o<i; o=bitset_next_set(best, o+1))
-				if (be_values_interfere(lv, unsafe[i], unsafe[o])) {
+				if (be_values_interfere(unsafe[i], unsafe[o])) {
 					bitset_clear(best, i); /* clear the bit and try next one */
 					break;
 				}
@@ -326,7 +326,7 @@ static int ou_max_ind_set_costs(unit_t *const ou, be_lv_t const *const lv)
 			/* check if curr is a stable set */
 			for (int i=bitset_next_set(curr, 0); i!=-1; i=bitset_next_set(curr, i+1))
 				for (int o=bitset_next_set(curr, i+1); o!=-1; o=bitset_next_set(curr, o+1)) /* !!!!! difference to qnode_max_ind_set(): NOT (curr, i) */
-						if (be_values_interfere(lv, unsafe[i], unsafe[o]))
+						if (be_values_interfere(unsafe[i], unsafe[o]))
 							goto no_stable_set;
 
 			/* if we arrive here, we have a stable set */
@@ -364,7 +364,6 @@ static void co_collect_units(ir_node *irn, void *env)
 	unit->node_count = 1;
 	INIT_LIST_HEAD(&unit->queue);
 
-	be_lv_t *const lv = be_get_irg_liveness(co->irg);
 	/* Phi with some/all of its arguments */
 	if (is_Phi(irn)) {
 		/* init */
@@ -378,7 +377,7 @@ static void co_collect_units(ir_node *irn, void *env)
 			assert(arch_get_irn_reg_class(arg) == co->cls && "Argument not in same register class.");
 			if (arg == irn)
 				continue;
-			if (be_values_interfere(lv, irn, arg)) {
+			if (be_values_interfere(irn, arg)) {
 				unit->inevitable_costs += co->get_costs(irn, i);
 				continue;
 			}
@@ -412,7 +411,7 @@ static void co_collect_units(ir_node *irn, void *env)
 		unit->costs = XREALLOC(unit->costs, int,      unit->node_count);
 	} else if (is_Perm_Proj(irn)) {
 		/* Proj of a perm with corresponding arg */
-		assert(!be_values_interfere(lv, irn, get_Perm_src(irn)));
+		assert(!be_values_interfere(irn, get_Perm_src(irn)));
 		unit->nodes      = XMALLOCN(ir_node*, 2);
 		unit->costs      = XMALLOCN(int,      2);
 		unit->node_count = 2;
@@ -429,7 +428,7 @@ static void co_collect_units(ir_node *irn, void *env)
 				ir_node *o = get_irn_n(skip_Proj(irn), i);
 				if (arch_irn_is_ignore(o))
 					continue;
-				if (be_values_interfere(lv, irn, o))
+				if (be_values_interfere(irn, o))
 					continue;
 				++count;
 			}
@@ -447,7 +446,7 @@ static void co_collect_units(ir_node *irn, void *env)
 				if (other & (1U << i)) {
 					ir_node *o = get_irn_n(skip_Proj(irn), i);
 					if (!arch_irn_is_ignore(o) &&
-							!be_values_interfere(lv, irn, o)) {
+							!be_values_interfere(irn, o)) {
 						unit->nodes[k] = o;
 						unit->costs[k] = co->get_costs(irn, -1);
 						++k;
@@ -468,7 +467,7 @@ static void co_collect_units(ir_node *irn, void *env)
 		}
 
 		/* Determine the minimal costs this unit will cause: min_nodes_costs */
-		unit->min_nodes_costs += unit->all_nodes_costs - ou_max_ind_set_costs(unit, lv);
+		unit->min_nodes_costs += unit->all_nodes_costs - ou_max_ind_set_costs(unit);
 		/* Insert the new ou according to its sort_key */
 		struct list_head *tmp = &co->units;
 		while (tmp->next != &co->units
@@ -561,7 +560,6 @@ void co_complete_stats(const copy_opt_t *co, co_complete_stats_t *stat)
 	memset(stat, 0, sizeof(stat[0]));
 
 	/* count affinity edges. */
-	be_lv_t *const lv = be_get_irg_liveness(co->irg);
 	co_gs_foreach_aff_node(co, an) {
 		stat->aff_nodes += 1;
 		bitset_set(seen, get_irn_idx(an->irn));
@@ -575,7 +573,7 @@ void co_complete_stats(const copy_opt_t *co, co_complete_stats_t *stat)
 					stat->unsatisfied_edges += 1;
 				}
 
-				if (be_values_interfere(lv, an->irn, neigh->irn)) {
+				if (be_values_interfere(an->irn, neigh->irn)) {
 					stat->aff_int += 1;
 					stat->inevit_costs += neigh->costs;
 				}
@@ -628,8 +626,7 @@ static void add_edge(copy_opt_t *co, ir_node *n1, ir_node *n2, int costs)
 
 static inline void add_edges(copy_opt_t *co, ir_node *n1, ir_node *n2, int costs)
 {
-	be_lv_t *const lv = be_get_irg_liveness(co->irg);
-	if (n1 != n2 && !be_values_interfere(lv, n1, n2)) {
+	if (n1 != n2 && !be_values_interfere(n1, n2)) {
 		add_edge(co, n1, n2, costs);
 		add_edge(co, n2, n1, costs);
 	}

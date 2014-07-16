@@ -81,7 +81,6 @@ static inline bool sr_is_simplicial(ilp_env_t *const ienv, ir_node const *const 
 {
 	bool              res = true;
 	ir_node         **all = NEW_ARR_F(ir_node*, 0);
-	be_lv_t    *const lv  = be_get_irg_liveness(ienv->co->irg);
 	neighbours_iter_t iter;
 	be_ifg_foreach_neighbour(ienv->co->cenv->ifg, &iter, ifn, curr) {
 		/* Only consider non-removed neighbours. */
@@ -90,7 +89,7 @@ static inline bool sr_is_simplicial(ilp_env_t *const ienv, ir_node const *const 
 
 		/* Check whether the current node forms a clique with all previous nodes. */
 		for (size_t i = ARR_LEN(all); i-- != 0;) {
-			if (!be_values_interfere(lv, curr, all[i])) {
+			if (!be_values_interfere(curr, all[i])) {
 				res = false;
 				goto end;
 			}

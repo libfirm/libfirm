@@ -710,11 +710,10 @@ static void populate_cloud(co2_t *env, co2_cloud_t *cloud, affinity_node_t *a, i
 	DB((env->dbg, LEVEL_2, "\t%+F\n", ci->inh.irn));
 
 	/* determine the nodes costs */
-	be_lv_t *const lv = be_get_irg_liveness(env->co->irg);
 	co_gs_foreach_neighb(a, n) {
 		costs += n->costs;
 		DB((env->dbg, LEVEL_3, "\t\tneigh %+F cost %d\n", n->irn, n->costs));
-		if (be_values_interfere(lv, a->irn, n->irn))
+		if (be_values_interfere(a->irn, n->irn))
 			cloud->inevit += n->costs;
 	}
 

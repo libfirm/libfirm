@@ -128,7 +128,7 @@ void be_liveness_end_of_block(const be_lv_t *lv,
  * @param b The second value.
  * @return true, if a and b interfere, false if not.
  */
-bool be_values_interfere(const be_lv_t *lv, const ir_node *a, const ir_node *b);
+bool be_values_interfere(const ir_node *a, const ir_node *b);
 
 /**
  * Compute a set of nodes which are live just before the given node.
