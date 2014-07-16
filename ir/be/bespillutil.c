@@ -145,12 +145,12 @@ void be_add_spill(spill_env_t *env, ir_node *to_spill, ir_node *after)
 	for (spill_t *s = spill_info->spills, *last = NULL ; s != NULL;
 	     s = s->next) {
 		/* no need to add this spill if it is dominated by another */
-		if (value_dominates(s->after, after)) {
+		if (value_strictly_dominates(s->after, after)) {
 			DB((dbg, LEVEL_1, "...dominated by %+F, not added\n", s->after));
 			return;
 		}
 		/* remove spills that we dominate */
-		if (value_dominates(after, s->after)) {
+		if (value_strictly_dominates(after, s->after)) {
 			DB((dbg, LEVEL_1, "...remove old spill at %+F\n", s->after));
 			if (last != NULL) {
 				last->next         = s->next;

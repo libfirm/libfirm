@@ -523,8 +523,9 @@ bool be_verify_spillslots(ir_graph *irg)
  */
 static bool my_values_interfere(const ir_node *a, const ir_node *b)
 {
-	int a2b = value_dominates(a, b);
-	int b2a = value_dominates(b, a);
+	assert(a != b);
+	int a2b = value_strictly_dominates(a, b);
+	int b2a = value_strictly_dominates(b, a);
 
 	/* If there is no dominance relation, they do not interfere. */
 	if (!a2b && !b2a)
@@ -569,7 +570,7 @@ static bool my_values_interfere(const ir_node *a, const ir_node *b)
 			user = get_irn_n(phiblock, get_edge_src_pos(edge));
 		}
 
-		if (value_dominates(b, user))
+		if (value_strictly_dominates(b, user))
 			return true;
 	}
 

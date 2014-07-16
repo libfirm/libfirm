@@ -111,7 +111,7 @@ static void be_peephole_before_exchange(const ir_node *old_node,
 
 		/* we can't handle liveness updates correctly when exchange current node
 		 * with something behind it */
-		assert(value_dominates(skip_Proj(new_node), skip_Proj_const(old_node)));
+		assert(value_strictly_dominates(skip_Proj(new_node), skip_Proj_const(old_node)));
 	}
 
 	if (!mode_is_data(get_irn_mode(old_node)))

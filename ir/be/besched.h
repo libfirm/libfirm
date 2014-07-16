@@ -144,16 +144,17 @@ void sched_remove(ir_node *irn);
 void sched_replace(ir_node *old, ir_node *irn);
 
 /**
- * Checks, if one node is scheduled before another.
- * @param n1   A node.
- * @param n2   Another node.
- * @return     true, if n1 is in front of n2 in the schedule, false else.
- * @note       Both nodes must be in the same block.
+ * Checks, if node @p a comes before node @p b.
+ * @param a   A node.
+ * @param b   Another node.
+ * @return    true, if a is in front of b in the schedule, false else.
+ * @note      Both nodes must be in the same block.
  */
-static inline bool sched_comes_after(const ir_node *n1, const ir_node *n2)
+static inline bool sched_comes_before(const ir_node *a, const ir_node *b)
 {
-	assert((is_Block(n1) ? n1 : get_nodes_block(n1)) == (is_Block(n2) ? n2 : get_nodes_block(n2)));
-	return sched_get_time_step(n1) < sched_get_time_step(n2);
+	sched_timestep_t const as = sched_get_time_step(a);
+	sched_timestep_t const bs = sched_get_time_step(b);
+	return as < bs;
 }
 
 #define sched_foreach_after(after, irn) \

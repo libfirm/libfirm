@@ -282,13 +282,15 @@ static int ou_max_ind_set_costs(unit_t *const ou, be_lv_t const *const lv)
 	int      *unsafe_costs = ALLOCAN(int,      ou->node_count - 1);
 	int       unsafe_count = 0;
 	for (int i=1; i<ou->node_count; ++i) {
-		bool is_safe = true;
+		bool     is_safe = true;
+		ir_node *i_node  = ou->nodes[i];
 		for (int o=1; o<ou->node_count; ++o) {
-			if (i==o)
+			ir_node *o_node = ou->nodes[o];
+			if (i_node == o_node)
 				continue;
-			if (be_values_interfere(lv, ou->nodes[i], ou->nodes[o])) {
+			if (be_values_interfere(lv, i_node, o_node)) {
 				unsafe_costs[unsafe_count] = ou->costs[i];
-				unsafe[unsafe_count] = ou->nodes[i];
+				unsafe[unsafe_count] = i_node;
 				++unsafe_count;
 				is_safe = false;
 				break;
@@ -296,7 +298,7 @@ static int ou_max_ind_set_costs(unit_t *const ou, be_lv_t const *const lv)
 		}
 		if (is_safe) {
 			safe_costs += ou->costs[i];
-			safe[safe_count++] = ou->nodes[i];
+			safe[safe_count++] = i_node;
 		}
 	}
 
@@ -628,7 +630,7 @@ static void add_edge(copy_opt_t *co, ir_node *n1, ir_node *n2, int costs)
 static inline void add_edges(copy_opt_t *co, ir_node *n1, ir_node *n2, int costs)
 {
 	be_lv_t *const lv = be_get_irg_liveness(co->irg);
-	if (!be_values_interfere(lv, n1, n2)) {
+	if (n1 != n2 && !be_values_interfere(lv, n1, n2)) {
 		add_edge(co, n1, n2, costs);
 		add_edge(co, n2, n1, costs);
 	}

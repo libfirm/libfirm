@@ -276,13 +276,13 @@ static int merge_interferences(be_fec_env_t *env, bitset_t** interferences,
 static bool my_values_interfere2(ir_graph *const irg, ir_node const *a,
                                  ir_node const *b)
 {
-	if (value_dominates(b, a)) {
+	if (value_strictly_dominates(b, a)) {
 		/* Adjust a and b so, that a dominates b if
 		 * a dominates b or vice versa. */
 		ir_node const *const t = a;
 		a = b;
 		b = t;
-	} else if (!value_dominates(a, b)) {
+	} else if (!value_strictly_dominates(a, b)) {
 		/* If there is no dominance relation, they do not interfere. */
 		return 0;
 	}
@@ -310,12 +310,12 @@ static bool my_values_interfere2(ir_graph *const irg, ir_node const *a,
 				ir_node const *const user2 = get_edge_src_irn(edge2);
 				assert(!is_Sync(user2));
 				if (get_nodes_block(user2) == bb && !is_Phi(user2) &&
-				    _value_strictly_dominates_intrablock(b, user2))
+				    sched_comes_before(b, user2))
 					return true;
 			}
 		} else {
 			if (get_nodes_block(user) == bb && !is_Phi(user) &&
-			    _value_strictly_dominates_intrablock(b, user))
+			    sched_comes_before(b, user))
 				return true;
 		}
 	}
