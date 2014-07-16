@@ -131,6 +131,11 @@ void be_liveness_end_of_block(const be_lv_t *lv,
 bool be_values_interfere(const ir_node *a, const ir_node *b);
 
 /**
+ * Similar to by_values_interfere() but with special handling for Sync nodes.
+ */
+bool be_memory_values_interfere(const ir_node *a, const ir_node *b);
+
+/**
  * Compute a set of nodes which are live just before the given node.
  * @param cls      The register class to consider.
  * @param pos      The node.
