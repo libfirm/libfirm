@@ -221,8 +221,8 @@ static void collect_nodes(ir_node *node, void *env)
 				update_exc(ldst_info, node, i);
 			}
 		}
-	} else if (opcode == iro_CopyB) {
-		/* Just initialize a ldst_info for the CopyB node. */
+	} else if (is_memop(node)) {
+		/* Just initialize a ldst_info */
 		(void) get_ldst_info(node, &wenv->obst);
 	}
 }
@@ -303,25 +303,6 @@ static void kill_and_reduce_usage(ir_node *node)
 	if (value != NULL) {
 		reduce_node_usage(value);
 	}
-}
-
-/**
- * Check whether a Call is at least pure, i.e. does only read memory.
- */
-static bool is_Call_pure(ir_node *call)
-{
-	ir_type *call_tp = get_Call_type(call);
-	unsigned prop    = get_method_additional_properties(call_tp);
-
-	/* check first the call type */
-	if ((prop & (mtp_property_const|mtp_property_pure)) == 0) {
-		/* try the called entity */
-		ir_entity *callee = get_Call_callee(call);
-		if (callee != NULL) {
-			prop = get_entity_additional_properties(callee);
-		}
-	}
-	return prop & (mtp_property_const|mtp_property_pure);
 }
 
 static void get_base_and_offset(ir_node *ptr, base_offset_t *base_offset)
@@ -617,13 +598,6 @@ static changes_t follow_load_mem_chain(track_load_env_t *env, ir_node *start)
 				return changes | res;
 			/* we can skip any load */
 			node = skip_Proj(get_Load_mem(node));
-		} else if (is_Call(node)) {
-			/* there might be Store's in non-pure graph, stop here */
-			if (!is_Call_pure(node))
-				break;
-			/* The called graph is at least pure, so there are no Store's
-			   in it. We can handle it like a Load and skip it. */
-			node = skip_Proj(get_Call_mem(node));
 		} else if (is_CopyB(node)) {
 			/*
 			 * We cannot replace the Load with another
@@ -655,6 +629,8 @@ static changes_t follow_load_mem_chain(track_load_env_t *env, ir_node *start)
 			if (rel != ir_no_alias)
 				break;
 			node = skip_Proj(get_CopyB_mem(node));
+		} else if (is_irn_const_memory(node)) {
+			node = skip_Proj(get_memop_mem(node));
 		} else {
 			/* be conservative about any other node and assume aliasing
 			 * that changes the loaded value */
@@ -1757,7 +1733,7 @@ static void process_loop(scc *pscc, loop_env *env)
 
 		switch (get_irn_opcode(irn)) {
 		case iro_Call:
-			if (is_Call_pure(irn)) {
+			if (is_irn_const_memory(irn)) {
 				/* pure calls can be treated like loads */
 				only_phi = false;
 				break;

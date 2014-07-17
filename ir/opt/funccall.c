@@ -375,6 +375,10 @@ static mtp_additional_properties follow_mem_(ir_node *node)
 		}
 
 		default:
+			if (is_irn_const_memory(node)) {
+				node = get_memop_mem(node);
+				break;
+			}
 			return mtp_no_property;
 		}
 	}
