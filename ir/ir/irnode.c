@@ -948,6 +948,56 @@ int (is_irn_forking)(const ir_node *node)
 	return is_irn_forking_(node);
 }
 
+static bool is_call_no_write(const ir_node *node)
+{
+	ir_type *call_tp = get_Call_type(node);
+	unsigned prop    = get_method_additional_properties(call_tp);
+
+	/* check first the call type */
+	if ((prop & (mtp_property_const|mtp_property_pure)) == 0) {
+		/* try the called entity */
+		ir_entity *callee = get_Call_callee(node);
+		if (callee != NULL) {
+			prop = get_entity_additional_properties(callee);
+		}
+	}
+	return prop & (mtp_property_const|mtp_property_pure);
+}
+
+int is_irn_const_memory(const ir_node *node)
+{
+	const ir_op *op = get_irn_op(node);
+	if (get_op_flags(op) & irop_flag_const_memory)
+		return true;
+	if (is_Builtin(node)) {
+		switch (get_Builtin_kind(node)) {
+		case ir_bk_trap:
+		case ir_bk_debugbreak:
+		case ir_bk_compare_swap:
+			return false;
+		case ir_bk_return_address:
+		case ir_bk_frame_address:
+		case ir_bk_prefetch:
+		case ir_bk_ffs:
+		case ir_bk_clz:
+		case ir_bk_ctz:
+		case ir_bk_popcount:
+		case ir_bk_parity:
+		case ir_bk_bswap:
+		case ir_bk_inport:
+		case ir_bk_outport:
+		case ir_bk_inner_trampoline:
+		case ir_bk_saturating_increment:
+		case ir_bk_may_alias:
+			return true;
+		}
+		panic("invalid Builtin %+F", node);
+	}
+	if (is_Call(node))
+		return is_call_no_write(node);
+	return false;
+}
+
 void (copy_node_attr)(ir_graph *irg, const ir_node *old_node, ir_node *new_node)
 {
 	copy_node_attr_(irg, old_node, new_node);

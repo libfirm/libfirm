@@ -472,6 +472,10 @@ FIRM_API int is_fragile_op(const ir_node *node);
  *  operation: Cond. */
 FIRM_API int is_irn_forking(const ir_node *node);
 
+/** Returns true if the operation does not change anymemory contents although
+ * it has a memory input/output. */
+FIRM_API int is_irn_const_memory(const ir_node *node);
+
 /**
  * Copies attributes stored in the old node to a new node.
  * Assumes both have the same opcode and sufficient size.

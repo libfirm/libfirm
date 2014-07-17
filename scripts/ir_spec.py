@@ -78,7 +78,7 @@ class Alloc:
 		Attribute("alignment", type="unsigned",
 		          comment="alignment of the memory block (must be a power of 2)"),
 	]
-	flags       = [ "uses_memory" ]
+	flags       = [ "uses_memory", "const_memory" ]
 	pinned      = "yes"
 	attr_struct = "alloc_attr"
 
@@ -433,7 +433,7 @@ class Div:
 		("X_regular", "control flow when no exception occurs"),
 		("X_except",  "control flow when exception occured"),
 	]
-	flags = [ "fragile", "uses_memory" ]
+	flags = [ "fragile", "uses_memory", "const_memory" ]
 	attrs = [
 		Attribute("resmode", type="ir_mode*",
 		          comment="mode of the result value"),
@@ -482,7 +482,7 @@ class Free:
 		("ptr", "pointer to the object to free"),
 	]
 	mode   = "mode_M"
-	flags  = [ "uses_memory" ]
+	flags  = [ "uses_memory", "const_memory" ]
 	pinned = "yes"
 
 @op
@@ -530,7 +530,7 @@ class Load:
 		("X_regular", "control flow when no exception occurs"),
 		("X_except",  "control flow when exception occured"),
 	]
-	flags    = [ "fragile", "uses_memory" ]
+	flags    = [ "fragile", "uses_memory", "const_memory" ]
 	pinned   = "exception"
 	attrs    = [
 		Attribute("mode", type="ir_mode*",
@@ -583,7 +583,7 @@ class Mod:
 		("X_regular", "control flow when no exception occurs"),
 		("X_except",  "control flow when exception occured"),
 	]
-	flags = [ "fragile", "uses_memory" ]
+	flags = [ "fragile", "uses_memory", "const_memory" ]
 	attrs = [
 		Attribute("resmode", type="ir_mode*", comment="mode of the result"),
 	]

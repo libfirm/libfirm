@@ -61,6 +61,10 @@ typedef enum {
 	 * conservative aproximation in this case. You cannot change the destination
 	 * of an unknown_jump */
 	irop_flag_unknown_jump = 1U << 11,
+	/** The opcode has a memory input/output but does not actually change the
+	 * contents of any memory block known to the program. The input/output is
+	 * just necessary for scheduling reasons. Implies irop_flag_uses_memory. */
+	irop_flag_const_memory = 1U << 12,
 } irop_flags;
 ENUM_BITSET(irop_flags)
 
