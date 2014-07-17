@@ -21,10 +21,8 @@
  * @ingroup ir_node
  * @defgroup ir_op  Node Opcodes
  *
- * This module specifies the opcodes possible for ir nodes.  Their
- * definition is close to the operations specified in UKA Tech-Report
- * 1999-14
- *
+ * This module specifies the opcodes for ir nodes. Each node has an associated
+ * opcode. An opcode specifies basic attributes and properties of a node.
  * @{
  */
 
