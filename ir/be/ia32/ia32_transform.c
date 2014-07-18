@@ -4483,6 +4483,10 @@ static ir_node *gen_Proj_Store(ir_node *node)
 	dbg_info *dbgi     = get_irn_dbg_info(node);
 	long      pn       = get_Proj_proj(node);
 
+	if (is_Proj(new_pred)) {
+		new_pred = get_Proj_pred(new_pred);
+	}
+
 	if (is_ia32_Store(new_pred)) {
 		switch ((pn_Store)pn) {
 		case pn_Store_M:
@@ -4537,7 +4541,11 @@ static ir_node *gen_Proj_Store(ir_node *node)
 	} else if (get_ia32_op_type(new_pred) == ia32_AddrModeD) {
 		/* destination address mode */
 		if (pn == pn_Store_M) {
-			return new_pred;
+			if (get_irn_mode(new_pred) == mode_T) {
+				return new_rd_Proj(dbgi, new_pred, mode_M, pn_ia32_destAM_M);
+			} else {
+				return new_pred;
+			}
 		}
 		panic("exception control flow for destination AM not implemented yet");
 	}

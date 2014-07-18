@@ -1,5 +1,16 @@
 # This is the specification for the ia32 assembler Firm-operations
 
+# Note on Proj numbers:
+# If possible, Nodes should follow these rules for assigning proj numbers:
+# "Normal" instructions:
+#  0 => result
+#  1 => flags
+#  2 => memory
+# instructions with destination address mode:
+#  0 => unused
+#  1 => flags
+#  2 => memory
+
 $arch = "ia32";
 
 $mode_xmm           = "ia32_mode_float64";
@@ -159,8 +170,8 @@ my %binop_flags_constructors = (
 );
 
 my %binop_mem_constructors = (
-	""     => { reg_req   => { in => [ "gp", "gp", "none", "gp" ],              out => [ "none" ] } },
-	"8bit" => { reg_req   => { in => [ "gp", "gp", "none", "eax ebx ecx edx" ], out => [ "none" ] } },
+	""     => { reg_req   => { in => [ "gp", "gp", "none", "gp" ],              out => [ "none", "flags", "none" ] } },
+	"8bit" => { reg_req   => { in => [ "gp", "gp", "none", "eax ebx ecx edx" ], out => [ "none", "flags", "none" ] } },
 );
 
 %nodes = (
@@ -219,9 +230,10 @@ AddMem => {
 	state     => "exc_pinned",
 	constructors => \%binop_mem_constructors,
 	ins       => [ "base", "index", "mem", "val" ],
+	outs      => [ "unused", "flags", "M" ],
 	emit      => "add%M %#S3, %AM",
 	latency   => 1,
-	mode      => "mode_M",
+	mode      => "mode_T",
 	modified_flags => $status_flags
 },
 
@@ -326,9 +338,10 @@ AndMem => {
 	state     => "exc_pinned",
 	constructors => \%binop_mem_constructors,
 	ins       => [ "base", "index", "mem", "val" ],
+	outs      => [ "unused", "flags", "M" ],
 	emit      => "and%M %#S3, %AM",
 	latency   => 1,
-	mode      => "mode_M",
+	mode      => "mode_T",
 	modified_flags => $status_flags
 },
 
@@ -351,9 +364,10 @@ OrMem => {
 	state     => "exc_pinned",
 	constructors => \%binop_mem_constructors,
 	ins       => [ "base", "index", "mem", "val" ],
+	outs      => [ "unused", "flags", "M" ],
 	emit      => "or%M %#S3, %AM",
 	latency   => 1,
-	mode      => "mode_M",
+	mode      => "mode_T",
 	modified_flags => $status_flags
 },
 
@@ -387,9 +401,10 @@ XorMem => {
 	state     => "exc_pinned",
 	constructors => \%binop_mem_constructors,
 	ins       => [ "base", "index", "mem", "val" ],
+	outs      => [ "unused", "flags", "M" ],
 	emit      => "xor%M %#S3, %AM",
 	latency   => 1,
-	mode      => "mode_M",
+	mode      => "mode_T",
 	modified_flags => $status_flags
 },
 
@@ -412,9 +427,10 @@ SubMem => {
 	state     => "exc_pinned",
 	constructors => \%binop_mem_constructors,
 	ins       => [ "base", "index", "mem", "subtrahend" ],
+	outs      => [ "unused", "flags", "M" ],
 	emit      => "sub%M %#S3, %AM",
 	latency   => 1,
-	mode      => "mode_M",
+	mode      => "mode_T",
 	modified_flags => $status_flags
 },
 
@@ -496,11 +512,12 @@ Shl => {
 ShlMem => {
 	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "ecx" ], out => [ "none" ] },
+	reg_req   => { in => [ "gp", "gp", "none", "ecx" ], out => [ "none", "flags", "none" ] },
 	ins       => [ "base", "index", "mem", "count" ],
+	outs      => [ "unused", "flags", "M" ],
 	emit      => "shl%M %<,S3 %AM",
 	latency   => 1,
-	mode      => "mode_M",
+	mode      => "mode_T",
 	modified_flags => $status_flags
 },
 
@@ -531,10 +548,11 @@ Shr => {
 ShrMem => {
 	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "ecx" ], out => [ "none" ] },
+	reg_req   => { in => [ "gp", "gp", "none", "ecx" ], out => [ "none", "flags", "none" ] },
 	ins       => [ "base", "index", "mem", "count" ],
+	outs      => [ "unused", "flags", "M" ],
 	emit      => "shr%M %<,S3 %AM",
-	mode      => "mode_M",
+	mode      => "mode_T",
 	latency   => 1,
 	modified_flags => $status_flags
 },
@@ -566,11 +584,12 @@ Sar => {
 SarMem => {
 	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "ecx" ], out => [ "none" ] },
+	reg_req   => { in => [ "gp", "gp", "none", "ecx" ], out => [ "none", "flags", "none" ] },
 	ins       => [ "base", "index", "mem", "count" ],
+	outs      => [ "unused", "flags", "M" ],
 	emit      => "sar%M %<,S3 %AM",
 	latency   => 1,
-	mode      => "mode_M",
+	mode      => "mode_T",
 	modified_flags => $status_flags
 },
 
@@ -589,11 +608,12 @@ Ror => {
 RorMem => {
 	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "ecx" ], out => [ "none" ] },
+	reg_req   => { in => [ "gp", "gp", "none", "ecx" ], out => [ "none", "flags", "none" ] },
 	ins       => [ "base", "index", "mem", "count" ],
+	outs      => [ "unused", "flags", "M" ],
 	emit      => "ror%M %<,S3 %AM",
 	latency   => 1,
-	mode      => "mode_M",
+	mode      => "mode_T",
 	modified_flags => $status_flags
 },
 
@@ -612,11 +632,12 @@ Rol => {
 RolMem => {
 	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "ecx" ], out => [ "none" ] },
+	reg_req   => { in => [ "gp", "gp", "none", "ecx" ], out => [ "none", "flags", "none" ] },
 	ins       => [ "base", "index", "mem", "count" ],
+	outs      => [ "unused", "flags", "M" ],
 	emit      => "rol%M %<,S3 %AM",
 	latency   => 1,
-	mode      => "mode_M",
+	mode      => "mode_T",
 	modified_flags => $status_flags
 },
 
@@ -635,11 +656,12 @@ Neg => {
 NegMem => {
 	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none" ] },
+	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none", "flags", "none" ] },
 	ins       => [ "base", "index", "mem" ],
+	outs      => [ "unused", "flags", "M" ],
 	emit      => "neg%M %AM",
 	latency   => 1,
-	mode      => "mode_M",
+	mode      => "mode_T",
 	modified_flags => $status_flags
 },
 
@@ -673,10 +695,11 @@ Inc => {
 IncMem => {
 	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none" ] },
+	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none", "flags", "none" ] },
 	ins       => [ "base", "index", "mem" ],
+	outs      => [ "unused", "flags", "M" ],
 	emit      => "inc%M %AM",
-	mode      => "mode_M",
+	mode      => "mode_T",
 	latency   => 1,
 	modified_flags => $status_flags_wo_cf
 },
@@ -696,10 +719,11 @@ Dec => {
 DecMem => {
 	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none" ] },
+	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none", "flags", "none" ] },
 	ins       => [ "base", "index", "mem" ],
+	outs      => [ "unused", "flags", "M" ],
 	emit      => "dec%M %AM",
-	mode      => "mode_M",
+	mode      => "mode_T",
 	latency   => 1,
 	modified_flags => $status_flags_wo_cf
 },
