@@ -41,15 +41,15 @@ static const bitflag_name_t ir_linkage_names[] = {
 	{ 0,                          NULL              },
 };
 static const bitflag_name_t mtp_property_names[] = {
-	{ mtp_property_const,              "const"              },
+	{ mtp_property_no_write,           "no_write"           },
 	{ mtp_property_pure,               "pure"               },
 	{ mtp_property_noreturn,           "noreturn"           },
+	{ mtp_property_terminates,         "terminates"         },
 	{ mtp_property_nothrow,            "nothrow"            },
 	{ mtp_property_naked,              "naked"              },
 	{ mtp_property_malloc,             "malloc"             },
 	{ mtp_property_returns_twice,      "returns_twice"      },
 	{ mtp_property_private,            "private"            },
-	{ mtp_property_has_loop,           "has_loop"           },
 	{ mtp_property_always_inline,      "always_inline"      },
 	{ mtp_property_noinline,           "noinline"           },
 	{ mtp_property_inline_recommended, "inline_recommended" },

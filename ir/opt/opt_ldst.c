@@ -482,26 +482,11 @@ static memop_t *clone_memop_phi(memop_t *op, ir_node *phi)
 	return m;
 }
 
-/**
- * Return the memory properties of a call node.
- *
- * @param call  the call node
- *
- * return a bitset of mtp_property_const and mtp_property_pure
- */
-static unsigned get_Call_memory_properties(ir_node *call)
+static bool is_Call_pure(const ir_node *call)
 {
 	ir_type *call_tp = get_Call_type(call);
-	unsigned prop = get_method_additional_properties(call_tp);
-
-	/* check first the call type */
-	if ((prop & (mtp_property_const|mtp_property_pure)) == 0) {
-		/* try the called entity */
-		ir_entity *callee = get_Call_callee(call);
-		if (callee != NULL)
-			prop = get_entity_additional_properties(callee);
-	}
-	return prop & (mtp_property_const|mtp_property_pure);
+	mtp_additional_properties prop = get_method_additional_properties(call_tp);
+	return prop & mtp_property_pure;
 }
 
 /**
@@ -709,17 +694,12 @@ static void update_Store_memop(memop_t *m)
  */
 static void update_Call_memop(memop_t *m)
 {
-	ir_node  *call = m->node;
-	unsigned prop  = get_Call_memory_properties(call);
-
-	if (prop & mtp_property_const) {
-		/* A constant call did NOT use memory at all, we
-		   can kick it from the list. */
-	} else if (prop & mtp_property_pure) {
-		/* pure calls READ memory */
+	ir_node *call = m->node;
+	if (is_Call_pure(call)) {
 		m->flags = 0;
-	} else
+	} else {
 		m->flags = FLAG_KILL_ALL;
+	}
 
 	foreach_irn_out_r(call, i, proj) {
 		/* beware of keep edges */

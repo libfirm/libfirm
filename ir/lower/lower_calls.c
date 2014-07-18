@@ -196,9 +196,9 @@ static ir_type *lower_mtp(compound_call_lowering_flags flags, ir_type *mtp)
 	set_method_calling_convention(lowered, cconv);
 
 	mtp_additional_properties mtp_properties = get_method_additional_properties(mtp);
-	/* after lowering the call is not const anymore, since it writes to the
+	/* after lowering the call is not const/pure anymore, since it writes to the
 	 * memory for the return value passed to it */
-	mtp_properties &= ~mtp_property_const;
+	mtp_properties &= ~(mtp_property_no_write | mtp_property_pure);
 	set_method_additional_properties(lowered, mtp_properties);
 
 	/* associate the lowered type with the original one for easier access */

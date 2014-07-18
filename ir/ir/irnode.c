@@ -952,16 +952,12 @@ static bool is_call_no_write(const ir_node *node)
 {
 	ir_type *call_tp = get_Call_type(node);
 	unsigned prop    = get_method_additional_properties(call_tp);
-
-	/* check first the call type */
-	if ((prop & (mtp_property_const|mtp_property_pure)) == 0) {
-		/* try the called entity */
-		ir_entity *callee = get_Call_callee(node);
-		if (callee != NULL) {
-			prop = get_entity_additional_properties(callee);
-		}
-	}
-	return prop & (mtp_property_const|mtp_property_pure);
+	if (prop & mtp_property_no_write)
+		return true;
+	ir_entity *entity = get_Call_callee(node);
+	if (entity == NULL)
+		return false;
+	return get_entity_additional_properties(entity) & mtp_property_no_write;
 }
 
 int is_irn_const_memory(const ir_node *node)

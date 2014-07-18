@@ -29,6 +29,7 @@
 #include "irtools.h"
 #include "raw_bitset.h"
 #include "debug.h"
+#include "panic.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
@@ -36,10 +37,8 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg;)
  * The walker environment for updating function calls.
  */
 typedef struct env_t {
-	ir_node  **float_const_call_list;    /**< The list of all floating const function calls that will be changed. */
-	ir_node  **nonfloat_const_call_list; /**< The list of all non-floating const function calls that will be changed. */
-	ir_node  **pure_call_list;           /**< The list of all pure function calls that will be changed. */
-	ir_node  **nothrow_call_list;        /**< The list of all nothrow function calls that will be changed. */
+	ir_node **pure_call_list;    /**< The list of all floating const function calls that will be changed. */
+	ir_node **nothrow_call_list; /**< The list of all nothrow function calls that will be changed. */
 } env_t;
 
 /** Ready IRG's are marked in the ready set. */
@@ -73,35 +72,20 @@ static void collect_const_and_pure_calls(ir_node *node, void *env)
 	env_t *ctx = (env_t*)env;
 
 	if (is_Call(node)) {
-		ir_type *type = get_Call_type(node);
+		ir_type   *type   = get_Call_type(node);
 		unsigned   prop   = get_method_additional_properties(type);
 		ir_entity *callee = get_Call_callee(node);
 		if (callee != NULL)
 			prop |= get_entity_additional_properties(callee);
-		/* stop on aggregates (see comment in check_const_or_pure_function()) */
-		if ((prop & mtp_property_const) != 0
-		    && method_type_contains_aggregate(type)) {
-			prop &= ~mtp_property_const;
-			if ((prop & (mtp_property_const|mtp_property_pure)) == 0)
-				return;
-		}
 
-		if ((prop & (mtp_property_const|mtp_property_pure)) == 0)
-			return;
-
-		/* ok, if we get here we found a call to a const or a pure function */
-		if (prop & mtp_property_pure) {
+		/* ok, if we get here we found a call to a const or a pure function,
+		 * if it also terminates then we can transform it */
+		if ((prop & mtp_property_pure) && (prop & mtp_property_terminates)) {
 			ARR_APP1(ir_node*, ctx->pure_call_list, node);
-		} else if (prop & mtp_property_has_loop) {
-			ARR_APP1(ir_node*, ctx->nonfloat_const_call_list, node);
-		} else {
-			ARR_APP1(ir_node*, ctx->float_const_call_list, node);
 		}
 	} else if (is_Proj(node)) {
-		/*
-		 * Collect all memory and exception Proj's from
-		 * calls.
-		 */
+		/* Collect all memory and exception Proj's from
+		 * calls. */
 		ir_node *call = get_Proj_pred(node);
 		if (!is_Call(call))
 			return;
@@ -132,8 +116,15 @@ static void fix_const_call_lists(ir_graph *irg, env_t *ctx)
 	/* Fix all calls by removing their memory input, let them float and fix
 	 * their Projs. */
 	bool exc_changed = false;
-	for (size_t i = ARR_LEN(ctx->float_const_call_list); i-- > 0;) {
-		ir_node *const call = ctx->float_const_call_list[i];
+	for (size_t i = ARR_LEN(ctx->pure_call_list); i-- > 0;) {
+		ir_node *const call = ctx->pure_call_list[i];
+		/* currently we cannot change the call if it contains aggregate
+		 * parameters or results (as firm uses memory with known addresses
+		 * to transfer them. */
+		ir_type *const type = get_Call_type(call);
+		if (method_type_contains_aggregate(type))
+			continue;
+
 		for (ir_node *next, *proj = (ir_node*)get_irn_link(call); proj != NULL;
 		     proj = next) {
 			next = (ir_node*)get_irn_link(proj);
@@ -165,21 +156,6 @@ static void fix_const_call_lists(ir_graph *irg, env_t *ctx)
 		}
 
 		set_Call_mem(call, get_irg_no_mem(irg));
-
-		/*
-		 * Unfortunately we cannot simply set the node to 'float'.
-		 * There is a reason for that:
-		 *
-		 * - The call might be inside a loop/if that is NOT entered
-		 *   and calls a endless function. Setting the call to float
-		 *   would allow to move it out from the loop/if causing this
-		 *   function be called even if the loop/if is not entered ...
-		 *
-		 * This could be fixed using post-dominators for calls and Pin nodes
-		 * but need some more analyzes to ensure that a call that potential
-		 * never returns is not executed before some code that generates
-		 * observable states...
-		 */
 
 		/* finally, this call can float */
 		set_irn_pinned(call, op_pin_state_floats);
@@ -286,23 +262,72 @@ static void fix_nothrow_call_list(ir_graph *irg, ir_node **call_list)
 #define CLEAR_IRG_BUSY(irg) rbitset_clear(busy_set, get_irg_idx(irg))
 #define IS_IRG_BUSY(irg)    rbitset_is_set(busy_set, get_irg_idx(irg))
 
-/* forward */
-static mtp_additional_properties check_const_or_pure_function(ir_graph *irg, bool top);
+static mtp_additional_properties analyze_irg_recursive(ir_graph *irg);
 
 /**
- * Calculate the bigger property of two. Handle the temporary flag right.
+ * Performs a depth-first traversal through the CFG to detect loops. We use 2
+ * visited flags for this:
+ * block_visited marks blocks that we have already checked before (but not
+ * necessarily on the currently followed path in the search.
+ * irn_visited is only set for blocks that are on the current path
+ *   (a parent has_loop call on the stack works on it)
+ * We have found a loop if we hit a block with irn_visited set.
  */
-static mtp_additional_properties max_property(mtp_additional_properties a,
-                                              mtp_additional_properties b)
+static bool has_loop(ir_node *cfgpred)
 {
-	mtp_additional_properties t = (a | b) & mtp_temporary;
-	a &= ~mtp_temporary;
-	b &= ~mtp_temporary;
+	ir_node *block = get_nodes_block(cfgpred);
+	if (Block_block_visited(block)) {
+		/* if the block is on the current path, then we have a loop */
+		return irn_visited(block);
+	}
 
-	if (a == mtp_no_property || b == mtp_no_property)
-		return mtp_no_property;
-	mtp_additional_properties r = MAX(a, b);
-	return r | t;
+	mark_Block_block_visited(block); /* block visited */
+	mark_irn_visited(block);         /* block is on current path */
+
+	foreach_irn_in(block, i, pred) {
+		if (is_Bad(pred))
+			continue;
+		if (has_loop(pred))
+			return true;
+	}
+
+	/* block is not on current path anymore */
+	set_irn_visited(block, get_irg_visited(get_Block_irg(block))-1);
+	return false;
+}
+
+/** Check if a function always terminates or never returns.
+ * This function returns mtp_property_terminates if the graph contains no
+ * control flow loops. Note that this is preliminary, it may still contain calls
+ * to functions which do not terminate. */
+static mtp_additional_properties check_termination(ir_graph *irg)
+{
+	/* the visited flags are used by has_loop */
+	ir_reserve_resources(irg, IR_RESOURCE_BLOCK_VISITED
+	                        | IR_RESOURCE_IRN_VISITED);
+	inc_irg_block_visited(irg);
+	inc_irg_visited(irg);
+
+	bool found_return = false;
+	bool found_loop   = false;
+	ir_node *end_block = get_irg_end_block(irg);
+	foreach_irn_in(end_block, i, pred) {
+		if (is_Bad(pred))
+			continue;
+		found_return = true;
+		if (has_loop(pred)) {
+			found_loop = true;
+			break;
+		}
+	}
+
+	ir_free_resources(irg, IR_RESOURCE_BLOCK_VISITED | IR_RESOURCE_IRN_VISITED);
+
+	if (!found_return)
+		return mtp_property_noreturn;
+	if (!found_loop)
+		return mtp_property_terminates; /* TODO: disallow recursion */
+	return mtp_no_property;
 }
 
 /**
@@ -313,63 +338,100 @@ static mtp_additional_properties max_property(mtp_additional_properties a,
  *         mtp_property_pure  if only Loads and const/pure calls detected
  *         mtp_no_property    else
  */
-static mtp_additional_properties follow_mem_(ir_node *node)
+static mtp_additional_properties follow_mem(ir_node *node,
+	const mtp_additional_properties min_prop,
+	mtp_additional_properties max_prop)
 {
-	mtp_additional_properties mode = mtp_property_const;
-
 	for (;;) {
-		if (mode == mtp_no_property)
-			return mtp_no_property;
-
+next_no_change:
 		if (irn_visited_else_mark(node))
-			return mode;
+			return max_prop;
 
 		switch (get_irn_opcode(node)) {
 		case iro_Proj:
 			node = get_Proj_pred(node);
-			break;
+			goto next_no_change;
 
+		case iro_Start:
 		case iro_NoMem:
-			/* finish here */
-			return mode;
+			goto finish;
 
 		case iro_Phi:
 		case iro_Sync:
 			/* do a dfs search */
 			foreach_irn_in_r(node, i, pred) {
-				mtp_additional_properties const m = follow_mem_(pred);
-				mode = max_property(mode, m);
-				if (mode == mtp_no_property)
-					return mtp_no_property;
+				max_prop &= follow_mem(pred, min_prop, max_prop);
+				if ((max_prop & ~min_prop) == mtp_no_property)
+					goto finish;
 			}
-			return mode;
+			goto finish;
+
+		case iro_Store:
+			max_prop &= ~(mtp_property_no_write | mtp_property_pure);
+			node = get_Store_mem(node);
+			break;
 
 		case iro_Load:
 			/* Beware volatile Loads are NOT allowed in pure functions. */
-			if (get_Load_volatility(node) == volatility_is_volatile)
-				return mtp_no_property;
-			mode = max_property(mode, mtp_property_pure);
+			max_prop &= ~mtp_property_pure;
 			node = get_Load_mem(node);
 			break;
 
+		case iro_Builtin: {
+			ir_builtin_kind kind = get_Builtin_kind(node);
+			node = get_Builtin_mem(node);
+			switch (kind) {
+			case ir_bk_debugbreak:
+			case ir_bk_trap:
+				/* abort function in a special way -> no clean termination */
+				max_prop &= ~mtp_property_terminates;
+				break;
+			case ir_bk_return_address:
+			case ir_bk_frame_address:
+			case ir_bk_inner_trampoline:
+				/* Access context information => not pure anymore */
+				max_prop &= ~mtp_property_pure;
+				break;
+			case ir_bk_prefetch:
+			case ir_bk_ffs:
+			case ir_bk_clz:
+			case ir_bk_ctz:
+			case ir_bk_popcount:
+			case ir_bk_parity:
+			case ir_bk_bswap:
+			case ir_bk_saturating_increment:
+			case ir_bk_may_alias:
+				/* just arithmetic/no semantic change => no problem */
+				goto next_no_change;
+			case ir_bk_compare_swap:
+				/* write access */
+				max_prop &= ~(mtp_property_pure | mtp_property_no_write);
+				break;
+			case ir_bk_inport:
+			case ir_bk_outport:
+				/* anything can happen when accessing periphery... */
+				return mtp_no_property;
+			}
+			break;
+		}
+
 		case iro_Call: {
 			/* A call is only tolerable if its either constant or pure. */
+			ir_type *type = get_Call_type(node);
+			mtp_additional_properties callprops
+				= get_method_additional_properties(type);
+			/* shortcut */
+			if ((max_prop & callprops) == max_prop)
+				goto call_next;
 			ir_entity *callee = get_Call_callee(node);
 			if (callee == NULL)
 				return mtp_no_property;
-
 			ir_graph *irg = get_entity_linktime_irg(callee);
-			if (irg == NULL) {
-				mtp_additional_properties m
-					= get_entity_additional_properties(callee)
-				    & (mtp_property_const|mtp_property_pure);
-				mode = max_property(mode, m);
-			} else {
-				/* we have a graph, analyze it. */
-				mtp_additional_properties m
-					= check_const_or_pure_function(irg, false);
-				mode = max_property(mode, m);
-			}
+			if (irg == NULL)
+				return mtp_no_property;
+			/* we have a graph, analyze it. */
+			max_prop &= analyze_irg_recursive(irg);
+call_next:
 			node = get_Call_mem(node);
 			break;
 		}
@@ -377,133 +439,116 @@ static mtp_additional_properties follow_mem_(ir_node *node)
 		default:
 			if (is_irn_const_memory(node)) {
 				node = get_memop_mem(node);
-				break;
+				goto next_no_change;
 			}
 			return mtp_no_property;
 		}
+
+		if ((max_prop & ~min_prop) == mtp_no_property)
+			goto finish;
 	}
+finish:
+	return max_prop;
 }
 
 /**
- * Follow the memory chain starting at node and determine
- * the mtp_property.
- *
- * @return mtp_property_const if only calls of const functions are detected
- *         mtp_property_pure  if only Loads and const/pure calls detected
- *         mtp_no_property else
- */
-static mtp_additional_properties follow_mem(ir_node *node, mtp_additional_properties mode)
-{
-	mtp_additional_properties m = follow_mem_(node);
-	return max_property(mode, m);
-}
-
-/**
- * Check if a graph represents a const or a pure function.
+ * Check if a graph may be a const or a pure function. This checks memory
+ * accesses as well as calls to other functions. It does not check for
+ * potentially endless loops yet.
  *
  * @param irg  the graph to check
- * @param top  if set, this is the top call
  */
-static mtp_additional_properties check_const_or_pure_function(ir_graph *irg, bool top)
+static mtp_additional_properties analyze_irg_recursive(ir_graph *irg)
 {
-	ir_entity *entity = get_irg_entity(irg);
-	ir_type   *type   = get_entity_type(entity);
-	mtp_additional_properties may_be_const = mtp_property_const;
-	mtp_additional_properties prop = get_entity_additional_properties(entity);
+	ir_entity                *entity = get_irg_entity(irg);
+	mtp_additional_properties prop   = get_entity_additional_properties(entity);
+	/* already checked? */
+	if (IS_IRG_READY(irg))
+		return prop;
 
-	/* libfirm handles aggregate parameters by passing around pointers to
-	 * stuff in memory, so if we have compound parameters or return types
-	 * we are never const */
-	if (method_type_contains_aggregate(type)) {
-		prop        &= ~mtp_property_const;
-		may_be_const = mtp_no_property;
-	}
+	/* the minimum are the properties that are guaranteed by the programmer
+	 * or previous analysis passes. We can't get worse than that. */
+	const mtp_additional_properties min_prop
+		= prop & (mtp_property_no_write | mtp_property_pure
+		         | mtp_property_terminates);
+	/* The maximum is the most precise properties we could achieve by our
+	 * current knowledge, we'll remove properties from the max_prop until we
+	 * reach min_prop or can't find any more reason to remove a property. */
+	mtp_additional_properties max_prop
+		= mtp_property_pure | mtp_property_no_write | mtp_property_terminates;
+	/* we can stop if we can't get better than the minimum anyway */
+	if ((max_prop & ~min_prop) == mtp_no_property)
+		goto early_finish;
 
-	if (prop & mtp_property_const) {
-		/* already marked as a const function */
-		return mtp_property_const;
-	}
-	if (prop & mtp_property_pure) {
-		/* already marked as a pure function */
-		return mtp_property_pure;
-	}
-
-	if (IS_IRG_READY(irg)) {
-		/* already checked */
-		return mtp_no_property;
-	}
+	/* loop in callgraph? We are optimistic about pure+no_write
+	 * but can't guarantee termination. */
 	if (IS_IRG_BUSY(irg)) {
-		/* We are still evaluate this method.
-		 * The function (indirectly) calls itself and thus may not terminate. */
-		return mtp_no_property;
+		max_prop &= ~mtp_property_terminates;
+		goto early_finish;
 	}
 	SET_IRG_BUSY(irg);
 
-	ir_node *end   = get_irg_end(irg);
-	ir_node *endbl = get_nodes_block(end);
-	prop = may_be_const;
+	/* check for termination and loops */
+	const mtp_additional_properties termination_props = check_termination(irg);
+	/* we can immediately set the noreturn property, as it does not depend on
+	 * recursive function calls, bypassing the min_prop/max_prop logic */
+	if (termination_props & mtp_property_noreturn) {
+		DB((dbg, LEVEL_2, "%+F: set mtp_property_noreturn\n", irg));
+		add_entity_additional_properties(entity, mtp_property_noreturn);
+	}
+
+	/* if check_termination found no loop then we can possibly add
+	 * mtp_property_terminates */
+	if (!(termination_props & mtp_property_terminates))
+		max_prop &= ~mtp_property_terminates;
+	/* we can stop if we can't get better than the minimum anyway */
+	if ((max_prop & ~min_prop) == mtp_no_property)
+		goto early_finish;
 
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_VISITED);
 	inc_irg_visited(irg);
-	/* mark the initial mem: recursion of follow_mem() stops here */
-	mark_irn_visited(get_irg_initial_mem(irg));
 
-	/* visit every Return */
-	for (int j = get_Block_n_cfgpreds(endbl); j-- > 0;) {
-		ir_node  *node = get_Block_cfgpred(endbl, j);
-		unsigned  code = get_irn_opcode(node);
-
-		/* Bad nodes usually do NOT produce anything, so it's ok */
-		if (code == iro_Bad)
+	/* visit every memory chain */
+	ir_node *endbl = get_irg_end_block(irg);
+	foreach_irn_in(endbl, i, pred) {
+		if (is_Bad(pred))
+			continue;
+		if (is_Return(pred)) {
+			ir_node *mem = get_Return_mem(pred);
+			max_prop &= follow_mem(mem, min_prop, max_prop);
+		} else if (is_Raise(pred)) {
+			ir_node *mem = get_Raise_mem(pred);
+			max_prop &= ~mtp_property_terminates;
+			max_prop &= follow_mem(mem, min_prop, max_prop);
+		} else {
+			panic("unexpected end block predecessor %+F", pred);
+		}
+		/* if we can't get better than min_prop anymore, abort */
+		if ((max_prop & ~min_prop) == mtp_no_property)
+			goto finish;
+	}
+	ir_node *end = get_irg_end(irg);
+	/* check, if a memory keep-alive exists */
+	for (int j = get_End_n_keepalives(end); j-- > 0;) {
+		ir_node *kept = get_End_keepalive(end, j);
+		if (is_Bad(kept))
+			continue;
+		if (get_irn_mode(kept) != mode_M && !is_memop(kept))
 			continue;
 
-		if (code == iro_Return) {
-			ir_node *mem = get_Return_mem(node);
-
-			/* Bad nodes usually do NOT produce anything, so it's ok */
-			if (is_Bad(mem))
-				continue;
-
-			if (mem != get_irg_initial_mem(irg))
-				prop = max_property(prop, follow_mem(mem, prop));
-		} else {
-			/* Exception found. Cannot be const or pure. */
-			prop = mtp_no_property;
-			break;
-		}
-		if (prop == mtp_no_property)
-			break;
+		max_prop &= follow_mem(kept, min_prop, max_prop);
+		/* if we can't get better than min_prop anymore, abort */
+		if ((max_prop & ~min_prop) == mtp_no_property)
+			goto finish;
 	}
 
-	if (prop != mtp_no_property) {
-		/* check, if a keep-alive exists */
-		for (int j = get_End_n_keepalives(end); j-- > 0;) {
-			ir_node *kept = get_End_keepalive(end, j);
-
-			if (is_Block(kept)) {
-				prop = mtp_no_property;
-				break;
-			}
-
-			if (mode_M != get_irn_mode(kept))
-				continue;
-
-			prop = max_property(prop, follow_mem(kept, prop));
-			if (prop == mtp_no_property)
-				break;
-		}
-	}
-
-	if (top) {
-		/* Set the property only if we are at top-level. */
-		if (prop != mtp_no_property) {
-			add_entity_additional_properties(entity, prop);
-		}
-		SET_IRG_READY(irg);
-	}
-	CLEAR_IRG_BUSY(irg);
+finish:
 	ir_free_resources(irg, IR_RESOURCE_IRN_VISITED);
-	return prop;
+early_finish:
+	CLEAR_IRG_BUSY(irg);
+	SET_IRG_READY(irg);
+	add_entity_additional_properties(entity, max_prop);
+	return min_prop | max_prop;
 }
 
 /**
@@ -515,9 +560,7 @@ static void handle_const_Calls(env_t *ctx)
 {
 	/* all calls of const functions can be transformed */
 	foreach_irp_irg(i, irg) {
-		ctx->float_const_call_list    = NEW_ARR_F(ir_node*, 0);
-		ctx->nonfloat_const_call_list = NEW_ARR_F(ir_node*, 0);
-		ctx->pure_call_list           = NEW_ARR_F(ir_node*, 0);
+		ctx->pure_call_list = NEW_ARR_F(ir_node*, 0);
 
 		ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 		irg_walk_graph(irg, firm_clear_link, collect_const_and_pure_calls, ctx);
@@ -525,13 +568,10 @@ static void handle_const_Calls(env_t *ctx)
 		ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 
 		DEL_ARR_F(ctx->pure_call_list);
-		DEL_ARR_F(ctx->nonfloat_const_call_list);
-		DEL_ARR_F(ctx->float_const_call_list);
 
-		confirm_irg_properties(irg,
-			IR_GRAPH_PROPERTIES_CONTROL_FLOW
-			| IR_GRAPH_PROPERTY_ONE_RETURN
-			| IR_GRAPH_PROPERTY_MANY_RETURNS);
+		confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_CONTROL_FLOW
+		                          | IR_GRAPH_PROPERTY_ONE_RETURN
+								  | IR_GRAPH_PROPERTY_MANY_RETURNS);
 	}
 }
 
@@ -572,7 +612,9 @@ static bool is_malloc_call_result(const ir_node *node)
 /**
  * Update a property depending on a call property.
  */
-static mtp_additional_properties update_property(mtp_additional_properties orig_prop, mtp_additional_properties call_prop)
+static mtp_additional_properties update_property(
+		mtp_additional_properties orig_prop,
+		mtp_additional_properties call_prop)
 {
 	mtp_additional_properties t = (orig_prop | call_prop) & mtp_temporary;
 	mtp_additional_properties r = orig_prop & call_prop;
@@ -792,25 +834,26 @@ static mtp_additional_properties check_nothrow_or_malloc(ir_graph *irg, bool top
 	return curr_prop;
 }
 
-/**
- * When a function was detected as "const", it might be moved out of loops.
- * This might be dangerous if the graph can contain endless loops.
- */
-static void check_for_possible_endless_loops(ir_graph *irg)
+static void analyze_irg(ir_graph *irg)
 {
-	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO);
+	mtp_additional_properties prop = analyze_irg_recursive(irg);
+	if (prop == mtp_no_property)
+		return;
 
-	ir_loop *loop = get_irg_loop(irg);
-	for (size_t i = 0, n_elems = get_loop_n_elements(loop); i < n_elems; ++i) {
-		loop_element e = get_loop_element(loop, i);
-		if (*e.kind == k_ir_loop) {
-			ir_entity *ent = get_irg_entity(irg);
-			add_entity_additional_properties(ent, mtp_property_has_loop);
-			break;
-		}
+	if (prop & mtp_property_pure) {
+		assert(prop & mtp_property_no_write);
+		DB((dbg, LEVEL_2, "%+F: set mtp_property_pure\n", irg));
 	}
+	if (prop & mtp_property_no_write)
+		DB((dbg, LEVEL_2, "%+F: set mtp_property_no_write\n", irg));
+	if (prop & mtp_property_noreturn)
+		DB((dbg, LEVEL_2, "%+F: set mtp_property_noreturn\n", irg));
+	if (prop & mtp_property_terminates)
+		DB((dbg, LEVEL_2, "%+F: set mtp_property_terminates\n", irg));
 
-	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_ALL);
+	ir_entity *entity = get_irg_entity(irg);
+	add_entity_additional_properties(entity, prop);
+	SET_IRG_READY(irg);
 }
 
 void optimize_funccalls(void)
@@ -821,13 +864,13 @@ void optimize_funccalls(void)
 	busy_set  = rbitset_malloc(last_idx);
 
 	/* first step: detect, which functions are nothrow or malloc */
-	DB((dbg, LEVEL_2, "Detecting nothrow and malloc properties ...\n"));
 	foreach_irp_irg(i, irg) {
-		unsigned const prop = check_nothrow_or_malloc(irg, true);
+		const mtp_additional_properties prop
+			= check_nothrow_or_malloc(irg, true);
 		if (prop & mtp_property_nothrow) {
-			DB((dbg, LEVEL_2, "%+F has the nothrow property\n", irg));
+			DB((dbg, LEVEL_2, "%+F: set mtp_property_nothrow\n", irg));
 		} else if (prop & mtp_property_malloc) {
-			DB((dbg, LEVEL_2, "%+F has the malloc property\n", irg));
+			DB((dbg, LEVEL_2, "%+F: set mtp_property_malloc\n", irg));
 		}
 	}
 
@@ -840,17 +883,9 @@ void optimize_funccalls(void)
 	rbitset_clear_all(busy_set, last_idx);
 
 	/* third step: detect, which functions are const or pure */
-	DB((dbg, LEVEL_2, "Detecting const and pure properties ...\n"));
 	foreach_irp_irg(i, irg) {
-		unsigned const prop = check_const_or_pure_function(irg, true);
-		if (prop & mtp_property_const) {
-			DB((dbg, LEVEL_2, "%+F has the const property\n", irg));
-			check_for_possible_endless_loops(irg);
-		} else if (prop & mtp_property_pure) {
-			DB((dbg, LEVEL_2, "%+F has the pure property\n", irg));
-		}
+		analyze_irg(irg);
 	}
-
 	handle_const_Calls(&ctx);
 
 	free(busy_set);

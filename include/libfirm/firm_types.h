@@ -221,39 +221,35 @@ typedef enum cond_jmp_predicate {
 typedef enum mtp_additional_properties {
 	/** No additional properties */
 	mtp_no_property                 = 0,
-	/** This method does not access memory and calculates its return values
-	 * solely from its parameters. The only observable effect of a const
-	 * function must be its return value. So they must not exhibit infinite
-	 * loops or wait for user input. The return value must not depend on any
-	 * global variables/state.
-	 * GCC: __attribute__((const)). */
-	mtp_property_const              = 1u << 0,
-	/** This method does not write to memory and calculates its return values
-	 * solely from its parameters and the memory they points to (or global
-	 * vars). The only observable effect of a const function must be its return
-	 * value. So they must not exhibit infinite loops or wait for user input.
-	 * GCC: __attribute__((pure)). */
+	/** This method does not change any memory known to the rest of the
+	 * program. */
+	mtp_property_no_write           = 1u << 0,
+	/** The behaviour of the method does not depend on any global/external
+	 * state. This mostly means that no waiting/reading of user input
+	 * is performed, no global variables read, or pointers to memory visible
+	 * outside of the function dereferenced. The result of the function
+	 * solely depends on its arguments. */
 	mtp_property_pure               = 1u << 1,
 	/** This method never returns. The method may for example abort or exit the
 	 * program or contain an infinite loop).
 	 * GCC: __attribute__((noreturn)). */
 	mtp_property_noreturn           = 1u << 2,
+	/** The function is guaranteed not to end in an endless and to not abort
+	 * the program. */
+	mtp_property_terminates         = 1u << 3,
 	/** This method cannot throw an exception. GCC: __attribute__((nothrow)). */
-	mtp_property_nothrow            = 1u << 3,
+	mtp_property_nothrow            = 1u << 4,
 	/** This method is naked. GCC: __attribute__((naked)). */
-	mtp_property_naked              = 1u << 4,
+	mtp_property_naked              = 1u << 5,
 	/** This method returns newly allocate memory.
 	 * GCC: __attribute__((malloc)). */
-	mtp_property_malloc             = 1u << 5,
+	mtp_property_malloc             = 1u << 6,
 	/** This method can return more than once (typically setjmp).
 	 * GCC: __attribute__((returns_twice)). */
-	mtp_property_returns_twice      = 1u << 6,
+	mtp_property_returns_twice      = 1u << 7,
 	/** All method invocations are known and inside the current compilation
 	 * unit, the backend can freely choose the calling convention. */
-	mtp_property_private            = 1u << 7,
-	/** Set, if this method contains one possibly endless loop. Must not be
-	 * set if all loops are guaranteed to terminate eventually. */
-	mtp_property_has_loop           = 1u << 8,
+	mtp_property_private            = 1u << 8,
 	/** Try to always inline this function, even if it seems nonprofitable */
 	mtp_property_always_inline      = 1u << 9,
 	/** The function should not be inlined */
