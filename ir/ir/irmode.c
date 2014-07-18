@@ -79,9 +79,6 @@ ir_mode *mode_Lu;
 ir_mode *mode_b;
 ir_mode *mode_P;
 
-ir_mode *mode_P_code;
-ir_mode *mode_P_data;
-
 ir_mode *get_modeT(void)   { return mode_T;   }
 ir_mode *get_modeF(void)   { return mode_F;   }
 ir_mode *get_modeD(void)   { return mode_D;   }
@@ -101,27 +98,9 @@ ir_mode *get_modeBB(void)  { return mode_BB;  }
 ir_mode *get_modeANY(void) { return mode_ANY; }
 ir_mode *get_modeBAD(void) { return mode_BAD; }
 
-
-ir_mode *(get_modeP_code)(void)
-{
-	return get_modeP_code_();
-}
-
-ir_mode *(get_modeP_data)(void)
-{
-	return get_modeP_data_();
-}
-
-void set_modeP_code(ir_mode *p)
+void set_modeP(ir_mode *p)
 {
 	assert(mode_is_reference(p));
-	mode_P_code = p;
-}
-
-void set_modeP_data(ir_mode *p)
-{
-	assert(mode_is_reference(p));
-	mode_P_data = p;
 	mode_P = p;
 }
 
@@ -504,10 +483,6 @@ void init_mode(void)
 	mode_Lu  = new_int_mode("Lu",  irma_twos_complement, 64,  0, 64);
 
 	mode_P   = new_reference_mode("P", irma_twos_complement, 32, 32);
-
-	/* set the machine specific modes to the predefined ones */
-	mode_P_code = mode_P;
-	mode_P_data = mode_P;
 }
 
 ir_mode *find_unsigned_mode(const ir_mode *mode)
@@ -639,7 +614,5 @@ void finish_mode(void)
 
 	mode_b   = NULL;
 
-	mode_P      = NULL;
-	mode_P_code = NULL;
-	mode_P_data = NULL;
+	mode_P   = NULL;
 }

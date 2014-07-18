@@ -533,7 +533,7 @@ static bool inline_method(ir_node *const call, ir_graph *called_graph)
 		for (int j = 0; j < n_res; j++) {
 			ir_type *res_type     = get_method_res_type(ctp, j);
 			bool     is_aggregate = is_aggregate_type(res_type);
-			ir_mode *res_mode     = is_aggregate ? mode_P_data
+			ir_mode *res_mode     = is_aggregate ? mode_P
 			                                     : get_type_mode(res_type);
 			int n_ret = 0;
 			for (int i = 0; i < arity; i++) {

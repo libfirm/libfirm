@@ -15,8 +15,6 @@
 #include "irtypes.h"
 #include "irmode.h"
 
-#define get_modeP_code()               get_modeP_code_()
-#define get_modeP_data()               get_modeP_data_()
 #define get_mode_ident(mode)           get_mode_ident_(mode)
 #define get_mode_sort(mode)            get_mode_sort_(mode)
 #define get_mode_size_bits(mode)       get_mode_size_bits_(mode)
@@ -33,10 +31,6 @@
 #define get_type_for_mode(mode)        get_type_for_mode_(mode)
 #define get_mode_mantissa_size(mode)   get_mode_mantissa_size_(mode)
 #define get_mode_exponent_size(mode)   get_mode_exponent_size_(mode)
-
-static inline ir_mode *get_modeP_code_(void) { return mode_P_code; }
-
-static inline ir_mode *get_modeP_data_(void) { return mode_P_data; }
 
 static inline ident *get_mode_ident_(const ir_mode *mode) { return mode->name; }
 

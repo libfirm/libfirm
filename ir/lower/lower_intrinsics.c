@@ -225,7 +225,7 @@ int i_mapper_alloca(ir_node *call)
 
 	irn    = new_rd_Alloc(dbg, block, mem, op, 1);
 	mem    = new_rd_Proj(dbg, irn, mode_M, pn_Alloc_M);
-	irn    = new_rd_Proj(dbg, irn, get_modeP_data(), pn_Alloc_res);
+	irn    = new_rd_Proj(dbg, irn, mode_P, pn_Alloc_res);
 	assert(!ir_throws_exception(call));
 
 	DBG_OPT_ALGSIM0(call, irn, FS_OPT_RTS_ALLOCA);

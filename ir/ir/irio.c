@@ -2159,10 +2159,8 @@ static void read_modes(read_env_t *env)
 			ir_mode *mode = new_reference_mode(name, arith, size, modulo_shift);
 			set_reference_mode_unsigned_eq(mode, read_mode_ref(env));
 			int is_mode_P = read_int(env);
-			if (is_mode_P) {
-				set_modeP_data(mode);
-				set_modeP_code(mode);
-			}
+			if (is_mode_P)
+				set_modeP(mode);
 			break;
 		}
 		case kw_float_mode: {

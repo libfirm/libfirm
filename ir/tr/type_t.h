@@ -419,10 +419,4 @@ static inline bool is_aggregate_type(const ir_type *type)
 
 ir_type *new_type_segment(ident *name, type_flags flags);
 
-static inline ir_mode *get_type_pointer_mode(ir_type *const type)
-{
-	return is_Method_type(type)
-	    || is_code_type(type) ? mode_P_code : mode_P_data;
-}
-
 #endif /* FIRM_TR_TYPE_T_H */

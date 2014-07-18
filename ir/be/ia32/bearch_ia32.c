@@ -1620,7 +1620,7 @@ static void ia32_get_call_abi(ir_type *method_type, be_abi_call_t *abi)
 	/* we have to pop the shadow parameter ourself for compound calls */
 	if ( (get_method_calling_convention(method_type) & cc_compound_ret)
 			&& !(cc & cc_reg_param)) {
-		pop_amount += get_mode_size_bytes(mode_P_data);
+		pop_amount += get_mode_size_bytes(mode_P);
 	}
 
 	n = get_method_n_params(method_type);

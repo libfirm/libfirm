@@ -146,9 +146,9 @@ static ir_graph *new_r_ir_graph(ir_entity *ent, int n_loc)
 
 	/* Proj results of start node */
 	projX                   = new_r_Proj(start, mode_X, pn_Start_X_initial_exec);
-	set_irg_initial_exec    (res, projX);
-	set_irg_frame           (res, new_r_Proj(start, mode_P_data, pn_Start_P_frame_base));
-	set_irg_args            (res, new_r_Proj(start, mode_T,      pn_Start_T_args));
+	set_irg_initial_exec(res, projX);
+	set_irg_frame       (res, new_r_Proj(start, mode_P, pn_Start_P_frame_base));
+	set_irg_args        (res, new_r_Proj(start, mode_T, pn_Start_T_args));
 	initial_mem             = new_r_Proj(start, mode_M, pn_Start_M);
 	set_irg_initial_mem(res, initial_mem);
 

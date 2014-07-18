@@ -224,7 +224,7 @@ static void instrument_block(ir_node *const bb, ir_node *const address, unsigned
 
 	ir_node *const unknown = new_r_Unknown(irg, mode_M);
 	ir_node *const cnst    = new_r_Const_long(irg, mode_Iu, get_mode_size_bytes(mode_Iu) * id);
-	ir_node *const offset  = new_r_Add(bb, address, cnst, get_modeP_data());
+	ir_node *const offset  = new_r_Add(bb, address, cnst, mode_P);
 	ir_node *const load    = new_r_Load(bb, unknown, offset, mode_Iu, cons_none);
 	ir_node *const lmem    = new_r_Proj(load, mode_M, pn_Load_M);
 	ir_node *const proji   = new_r_Proj(load, mode_Iu, pn_Load_res);

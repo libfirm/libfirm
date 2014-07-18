@@ -225,14 +225,7 @@ FIRM_API ir_mode *mode_Is;  /**< int32 */
 FIRM_API ir_mode *mode_Iu;  /**< uint32 */
 FIRM_API ir_mode *mode_Ls;  /**< int64 */
 FIRM_API ir_mode *mode_Lu;  /**< uint64 */
-
 FIRM_API ir_mode *mode_P;   /**< pointer */
-FIRM_API ir_mode *mode_P_code; /**< A pointer mode that is set by the client of libfirm.  This mode
-                                  represents the pointer size of the target machine code addresses. Is initialized
-                                  to mode_P. */
-FIRM_API ir_mode *mode_P_data; /**< A pointer mode that is set by the client of libfirm.  This mode
-                                  represents the pointer size of the target machine data addresses. Is initialized
-                                  to mode_P. */
 
 /**
  * This mode represents (parts of) the processor status flag queried in
@@ -288,23 +281,8 @@ FIRM_API ir_mode *get_modeANY(void);
 /** Returns BAD mode */
 FIRM_API ir_mode *get_modeBAD(void);
 
-/** Returns the machine specific pointer mode for code addresses. */
-FIRM_API ir_mode *get_modeP_code(void);
-
-/** Returns the machine specific pointer mode for data addresses. */
-FIRM_API ir_mode *get_modeP_data(void);
-
-/**
- * Sets the machine specific pointer mode for code addresses.
- * If not set, the predefined mode mode_P will be used.
- */
-FIRM_API void set_modeP_code(ir_mode *p);
-
-/**
- * Sets the machine specific pointer mode for data addresses.
- * If not set, the predefined mode mode_P will be used.
- */
-FIRM_API void set_modeP_data(ir_mode *p);
+/** Sets the machine specific pointer mode. */
+FIRM_API void set_modeP(ir_mode *p);
 
 /** Returns 1 if @p mode is signed, 0 otherwise */
 FIRM_API int mode_is_signed (const ir_mode *mode);

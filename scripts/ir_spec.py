@@ -57,7 +57,7 @@ class Add(Binop):
 @op
 class Address(EntConst):
 	"""Symbolic constant that represents the address of an entity (variable or method)"""
-	mode = "get_type_pointer_mode(get_entity_type(entity))"
+	mode = "mode_P"
 
 @op
 class Align(TypeConst):
@@ -723,7 +723,7 @@ class Sel:
 		("index", "index to select"),
 	]
 	flags  = []
-	mode   = "mode_P_data"
+	mode   = "mode_P"
 	pinned = "no"
 	attrs  = [
 		Attribute("type", type="ir_type*",
@@ -741,7 +741,7 @@ class Member:
 		("ptr", "pointer to object to select from"),
 	]
 	flags   = []
-	mode    = "is_Method_type(get_entity_type(entity)) ? mode_P_code : mode_P_data"
+	mode    = "mode_P"
 	pinned  = "no"
 	attrs   = [
 		Attribute("entity", type="ir_entity*",

@@ -519,8 +519,7 @@ static int mode_is_datab(const ir_mode *mode)
 static int verify_node_Address(const ir_node *n)
 {
 	ir_entity *ent  = get_Address_entity(n);
-	ir_type   *type = get_entity_type(ent);
-	bool       fine = check_mode(n, get_type_pointer_mode(type));
+	bool       fine = check_mode_func(n, mode_is_reference, "reference");
 	if (!(get_entity_owner(ent)->flags & tf_segment) && !is_method_entity(ent)) {
 		warn(n, "entity of %+F is not in a segment type but %+F", ent, get_entity_owner(ent));
 		fine = false;

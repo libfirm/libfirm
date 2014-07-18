@@ -812,7 +812,7 @@ static void transform_return(ir_node *ret, size_t n_ret_com, wlk_env *env)
 			continue;
 		}
 
-		ir_node *arg = new_r_Proj(args, mode_P_data, k++);
+		ir_node *arg = new_r_Proj(args, mode_P, k++);
 		if (env->flags & LF_RETURN_HIDDEN)
 			new_in[n_in++] = arg;
 

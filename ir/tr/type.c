@@ -679,9 +679,9 @@ void set_struct_mode(ir_type *tp, ir_mode *mode)
 
 ir_type *new_type_method(size_t n_param, size_t n_res)
 {
-	ir_type *res = new_type(type_method, mode_P_code);
+	ir_type *res = new_type(type_method, mode_P);
 	res->flags               |= tf_layout_fixed;
-	res->size                 = get_mode_size_bytes(mode_P_code);
+	res->size                 = get_mode_size_bytes(mode_P);
 	res->attr.ma.n_params     = n_param;
 	res->attr.ma.params       = XMALLOCNZ(ir_type*, n_param);
 	res->attr.ma.n_res        = n_res;
@@ -1000,7 +1000,7 @@ int (is_Array_type)(const ir_type *array)
 
 ir_type *new_type_pointer(ir_type *points_to)
 {
-	ir_mode *const mode = get_type_pointer_mode(points_to);
+	ir_mode *const mode = mode_P;
 	ir_type *const res  = new_type(type_pointer, mode);
 	res->attr.pa.points_to = points_to;
 	unsigned size = get_mode_size_bytes(mode);
