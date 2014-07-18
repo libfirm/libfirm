@@ -87,8 +87,13 @@ static const ir_node *find_base_addr(const ir_node *node, ir_entity **pEnt)
 			node = get_Sel_ptr(node);
 			continue;
 		} else if (is_Member(node)) {
+			ir_node *pred = get_Member_ptr(node);
+			/** local variables are members of the frame type, but all disjunct
+			 * so we regard them as base addresses */
+			if (is_Proj(pred) && pred == get_irg_frame(get_irn_irg(pred)))
+				break;
 			member = node;
-			node   = get_Member_ptr(node);
+			node   = pred;
 		} else {
 			break;
 		}
@@ -166,38 +171,56 @@ static bool is_malloc_Result(const ir_node *node)
 	    && (get_entity_additional_properties(callee) & mtp_property_malloc);
 }
 
-ir_storage_class_class_t classify_pointer(const ir_node *irn,
-                                          const ir_entity *ent)
+ir_storage_class_class_t classify_pointer(const ir_node *const addr,
+                                          const ir_node *const base)
 {
-	ir_graph                *irg = get_irn_irg(irn);
-	ir_storage_class_class_t res = ir_sc_pointer;
-	if (is_Address(irn)) {
-		ir_entity *entity = get_Address_entity(irn);
-		ir_type   *owner  = get_entity_owner(entity);
+	/* part1: determine class */
+	ir_storage_class_class_t res;
+	ir_entity               *entity;
+	if (is_Address(base)) {
+		entity = get_Address_entity(base);
+		ir_type *owner = get_entity_owner(entity);
 		res = owner == get_tls_type() ? ir_sc_tls : ir_sc_globalvar;
-		if (!(get_entity_usage(entity) & ir_usage_address_taken))
-			res |= ir_sc_modifier_nottaken;
-	} else if (irn == get_irg_frame(irg)) {
-		res = ir_sc_localvar;
-		if (ent != NULL) {
-			if (is_parameter_entity(ent))
-				res = ir_sc_argument;
-			if (!(get_entity_usage(ent) & ir_usage_address_taken))
-				res |= ir_sc_modifier_nottaken;
-		}
-	} else if (is_Proj(irn)) {
-		if (is_malloc_Result(irn))
-			return ir_sc_malloced;
-		else if (is_arg_Proj(irn))
-			return ir_sc_argument;
-	} else if (is_Const(irn)) {
-		ir_tarval *tv = get_Const_tarval(irn);
-		if (tarval_is_null(tv))
-			return ir_sc_null;
+		goto analyze_entity;
+	} else if (is_Member(base)) {
+		/* should only happen for local vars */
+		assert(get_Member_ptr(base) == get_irg_frame(get_irn_irg(base)));
+		entity = get_Member_entity(base);
+		res    = is_parameter_entity(entity) ? ir_sc_argument : ir_sc_localvar;
+		goto analyze_entity;
+	} else if (is_Proj(base)) {
+		if (is_malloc_Result(base))
+			res = ir_sc_malloced;
+		else if (is_arg_Proj(base))
+			res = ir_sc_argument;
 		else
-			return ir_sc_globaladdr;
+			res = ir_sc_pointer;
+	} else if (is_Const(base)) {
+		ir_tarval *tv = get_Const_tarval(base);
+		if (tarval_is_null(tv))
+			res = ir_sc_null;
+		else
+			res = ir_sc_globaladdr;
+	} else {
+		/* we always should have Member(irg_frame) as base address */
+		assert(base != get_irg_frame(get_irn_irg(base)));
+		res = ir_sc_pointer;
 	}
 
+	/* part2: modifiers */
+
+	/* if we select a member/array elem from addr, then it must have been
+	 * a compound type */
+	if (is_Sel(addr) || is_Member(addr))
+		res |= ir_sc_modifier_obj_comp;
+	return res;
+
+analyze_entity:
+	if (!(get_entity_usage(entity) & ir_usage_address_taken))
+		res |= ir_sc_modifier_nottaken;
+	const ir_type *type = get_entity_type(entity);
+	res |= is_compound_type(type) ? ir_sc_modifier_obj_comp
+	                              : ir_sc_modifier_obj_prim;
 	return res;
 }
 
@@ -374,10 +397,15 @@ follow_ptr2:
 	}
 
 check_classes:;
-	ir_storage_class_class_t mod1   = classify_pointer(base1, ent1);
-	ir_storage_class_class_t mod2   = classify_pointer(base2, ent2);
+	ir_storage_class_class_t mod1   = classify_pointer(addr1, base1);
+	ir_storage_class_class_t mod2   = classify_pointer(addr2, base2);
 	ir_storage_class_class_t class1 = mod1 & ~ir_sc_modifiers;
 	ir_storage_class_class_t class2 = mod2 & ~ir_sc_modifiers;
+
+	/* no alias if 1 is a primitive object and the other a compound object */
+	if (((mod1|mod2) & (ir_sc_modifier_obj_comp|ir_sc_modifier_obj_prim))
+	    == (ir_sc_modifier_obj_comp|ir_sc_modifier_obj_prim))
+		return ir_no_alias;
 
 	if (class1 == ir_sc_pointer || class2 == ir_sc_pointer) {
 		/* swap pointer class to class1 */
@@ -404,11 +432,11 @@ check_classes:;
 		if (class1 == ir_sc_globalvar) {
 			ir_entity *entity1 = get_Address_entity(base1);
 			ir_entity *entity2 = get_Address_entity(base2);
-			if (entity1 != entity2)
-				return ir_no_alias;
-
-			/* for some reason CSE didn't happen yet for the 2 Addresses... */
-			return ir_sure_alias;
+			return entity1 != entity2 ? ir_no_alias : ir_may_alias;
+		} else if (class1 == ir_sc_localvar) {
+			ir_entity *entity1 = get_Member_entity(base1);
+			ir_entity *entity2 = get_Member_entity(base2);
+			return entity1 != entity2 ? ir_no_alias : ir_may_alias;
 		} else if (class1 == ir_sc_globaladdr) {
 			ir_tarval *tv = get_Const_tarval(base1);
 			offset1      += get_tarval_long(tv);

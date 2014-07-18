@@ -302,7 +302,8 @@ static void check_ptr(ir_node *ptr, wlk_env *env)
 	/* still alias free */
 	ir_entity *ent;
 	ir_node *base_ptr = find_base_adr(ptr, &ent);
-	ir_storage_class_class_t sc = get_base_sc(classify_pointer(base_ptr, ent));
+	ir_storage_class_class_t sc
+		= get_base_sc(classify_pointer(ptr, base_ptr));
 	if (sc != ir_sc_localvar && sc != ir_sc_malloced) {
 		/* non-local memory access */
 		env->only_local_mem = false;
