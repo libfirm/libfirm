@@ -451,7 +451,9 @@ check_classes:;
 			/* cheap test: if arithmetic is different, no alias */
 			if (get_mode_arithmetic(mode1) != get_mode_arithmetic(mode2))
 				return ir_no_alias;
-
+			/* no alias if 1 is a reference and the other isn't */
+			if (mode_is_reference(mode1) != mode_is_reference(mode2))
+				return ir_no_alias;
 		}
 
 		rel = different_types(orig_addr1, orig_addr2);
