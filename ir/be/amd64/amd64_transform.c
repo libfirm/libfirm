@@ -1213,9 +1213,44 @@ static ir_node *gen_unop(ir_node *const node, int op_pos, unop_constructor gen)
 	return gen(dbgi, block, new_op, insn_mode);
 }
 
+/** Create a floating point negation by switching the sign bit using a Xor.
+  */
+static ir_node *gen_float_neg(ir_node *const node)
+{
+	dbg_info *const dbgi = get_irn_dbg_info(node);
+	ir_node  *block      = get_nodes_block(node);
+	ir_node  *new_block  = be_transform_node(block);
+	ir_node  *op         = get_irn_n(node, n_Minus_op);
+	ir_node  *new_op     = be_transform_node(op);
+
+	const char *sign_str = "0x8000000000000000";
+	ir_tarval  *tv       = new_tarval_from_str(sign_str, strlen(sign_str),
+	                                           mode_Lu);
+	ir_node    *load     = create_float_const(dbgi, new_block, tv);
+
+	ir_node *in[] = { new_op, load };
+
+	amd64_binop_addr_attr_t attr;
+	memset(&attr, 0, sizeof(attr));
+	attr.base.base.op_mode = AMD64_OP_REG_REG;
+
+	ir_node *xor = new_bd_amd64_xXorp(dbgi, new_block, ARRAY_SIZE(in),
+	                                  in, &attr);
+	arch_set_irn_register_reqs_in(xor, xmm_xmm_reqs);
+	arch_set_irn_register_req_out(xor, 0, &amd64_requirement_xmm_same_0);
+
+	return new_r_Proj(xor, mode_D, pn_amd64_xXorp_res);
+}
+
 static ir_node *gen_Minus(ir_node *const node)
 {
-	return gen_unop(node, n_Minus_op, &new_bd_amd64_Neg);
+	ir_mode *mode = get_irn_mode(node);
+
+	if (mode_is_float(mode)) {
+		return gen_float_neg(node);
+	} else {
+		return gen_unop(node, n_Minus_op, &new_bd_amd64_Neg);
+	}
 }
 static ir_node *gen_Not(ir_node *const node)
 {

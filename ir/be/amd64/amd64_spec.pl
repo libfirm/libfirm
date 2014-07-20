@@ -569,6 +569,17 @@ xXorp0 => {
 	mode      => $mode_xmm,
 },
 
+xXorp  => {
+	irn_flags => [ "rematerializable" ],
+	state     => "exc_pinned",
+	reg_req   => { out => [ "xmm", "none", "none" ] },
+	arity     => "variable",
+	outs      => [ "res", "none", "M" ],
+	attr_type => "amd64_binop_addr_attr_t",
+	attr      => "const amd64_binop_addr_attr_t *attr_init",
+	emit      => "xorp%MX %AM",
+},
+
 # Conversion operations
 
 CvtSS2SD => {
