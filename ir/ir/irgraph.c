@@ -636,6 +636,8 @@ void confirm_irg_properties(ir_graph *irg, ir_graph_properties_t props)
 	if (! (props & IR_GRAPH_PROPERTY_CONSISTENT_OUTS)
 	    && (irg->properties & IR_GRAPH_PROPERTY_CONSISTENT_OUTS))
 	    free_irg_outs(irg);
+	if (! (props & IR_GRAPH_PROPERTY_CONSISTENT_ENTITY_USAGE))
+		set_irp_globals_entity_usage_state(ir_entity_usage_not_computed);
 	if (! (props & IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE_FRONTIERS))
 		ir_free_dominance_frontiers(irg);
 }
