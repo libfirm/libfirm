@@ -58,60 +58,44 @@ static int cmp_node_nr(const void *a, const void *b)
 	return (n1>n2) - (n1<n2);
 }
 
-/*
-  ___                     _     ____
- |_ _|_ __  ___  ___ _ __| |_  |  _ \ ___ _ __ _ __ ___
-  | || '_ \/ __|/ _ \ '__| __| | |_) / _ \ '__| '_ ` _ \
-  | || | | \__ \  __/ |  | |_  |  __/  __/ |  | | | | | |
- |___|_| |_|___/\___|_|   \__| |_|   \___|_|  |_| |_| |_|
-
-*/
-
 ir_node *insert_Perm_before(ir_graph *irg, const arch_register_class_t *cls,
-						   ir_node *pos)
+                            ir_node *const pos)
 {
-	be_lv_t     *lv = be_get_irg_liveness(irg);
-	ir_nodeset_t live;
-
-	ir_node *perm, **nodes;
-	size_t i, n;
-
 	DBG((dbg, LEVEL_1, "Insert Perm before: %+F\n", pos));
 
+	ir_nodeset_t live;
 	ir_nodeset_init(&live);
+	be_lv_t *lv = be_get_irg_liveness(irg);
 	be_liveness_nodes_live_before(lv, cls, pos, &live);
 
-	n = ir_nodeset_size(&live);
+	size_t n = ir_nodeset_size(&live);
 	if (n == 0) {
 		ir_nodeset_destroy(&live);
 		return NULL;
 	}
 
-	nodes = XMALLOCN(ir_node*, n);
-
 	DBG((dbg, LEVEL_1, "live:\n"));
-	i = 0;
+	ir_node **nodes = XMALLOCN(ir_node*, n);
+	size_t    p     = 0;
 	foreach_ir_nodeset(&live, irn, iter) {
 		DBG((dbg, LEVEL_1, "\t%+F\n", irn));
-		nodes[i] = irn;
-		i++;
+		nodes[p++] = irn;
 	}
 	ir_nodeset_destroy(&live);
 	/* make the input order deterministic */
 	QSORT(nodes, n, cmp_node_nr);
 
-	ir_node *const bl = get_nodes_block(pos);
-	perm = be_new_Perm(cls, bl, n, nodes);
+	ir_node *const block = get_nodes_block(pos);
+	ir_node *const perm  = be_new_Perm(cls, block, n, nodes);
 	sched_add_before(pos, perm);
 	free(nodes);
 
-	for (i = 0; i < n; ++i) {
+	for (size_t i = 0; i < n; ++i) {
 		ir_node *perm_op = get_irn_n(perm, i);
+		ir_mode *mode    = get_irn_mode(perm_op);
+		ir_node *proj    = new_r_Proj(perm, mode, i);
+
 		be_ssa_construction_env_t senv;
-
-		ir_mode *mode = get_irn_mode(perm_op);
-		ir_node *proj = new_r_Proj(perm, mode, i);
-
 		be_ssa_construction_init(&senv, irg);
 		be_ssa_construction_add_copy(&senv, perm_op);
 		be_ssa_construction_add_copy(&senv, proj);
@@ -121,11 +105,10 @@ ir_node *insert_Perm_before(ir_graph *irg, const arch_register_class_t *cls,
 		be_liveness_update(lv, proj);
 		be_ssa_construction_destroy(&senv);
 	}
-
 	return perm;
 }
 
-static int blocks_removed;
+static bool blocks_removed;
 
 /**
  * Post-block-walker: Find blocks containing only one jump and
@@ -133,23 +116,16 @@ static int blocks_removed;
  */
 static void remove_empty_block(ir_node *block)
 {
-	int        i;
-	int        arity;
-	ir_node   *pred;
-	ir_node   *succ_block;
-	ir_node   *jump = NULL;
-	ir_graph  *irg = get_irn_irg(block);
-	ir_entity *entity;
-
 	if (irn_visited_else_mark(block))
 		return;
 
 	if (get_Block_n_cfgpreds(block) != 1)
 		goto check_preds;
 
+	ir_node *jump = NULL;
 	sched_foreach(block, node) {
-		if (! is_Jmp(node)
-				&& !(arch_get_irn_flags(node) & arch_irn_flag_simple_jump))
+		if (!is_Jmp(node)
+		    && !(arch_get_irn_flags(node) & arch_irn_flag_simple_jump))
 			goto check_preds;
 		if (jump != NULL) {
 			/* we should never have 2 jumps in a block */
@@ -157,23 +133,20 @@ static void remove_empty_block(ir_node *block)
 		}
 		jump = node;
 	}
-
 	if (jump == NULL)
 		goto check_preds;
 
-	entity     = get_Block_entity(block);
-	pred       = get_Block_cfgpred(block, 0);
-	succ_block = NULL;
+	ir_entity *entity     = get_Block_entity(block);
+	ir_node   *pred       = get_Block_cfgpred(block, 0);
+	ir_node   *succ_block = NULL;
 	foreach_out_edge_safe(jump, edge) {
 		int pos = get_edge_src_pos(edge);
 
 		assert(succ_block == NULL);
 		succ_block = get_edge_src_irn(edge);
 		if (get_Block_entity(succ_block) != NULL && entity != NULL) {
-			/*
-			 * Currently we can add only one label for a block.
-			 * Therefore we cannot combine them if  both block already have one.
-			 */
+			/* Currently we can add only one label for a block. Therefore we
+			 * cannot combine them if both block already have one. :-( */
 			goto check_preds;
 		}
 
@@ -209,17 +182,17 @@ static void remove_empty_block(ir_node *block)
 		panic("Unexpected node %+F in block %+F with empty schedule", node, block);
 	}
 
+	ir_graph *irg = get_Block_irg(block);
 	set_Block_cfgpred(block, 0, new_r_Bad(irg, mode_X));
 	kill_node(jump);
-	blocks_removed = 1;
+	blocks_removed = true;
 
 	/* check predecessor */
 	remove_empty_block(get_nodes_block(pred));
 	return;
 
 check_preds:
-	arity = get_Block_n_cfgpreds(block);
-	for (i = 0; i < arity; ++i) {
+	for (int i = 0, arity = get_Block_n_cfgpreds(block); i < arity; ++i) {
 		ir_node *pred = get_Block_cfgpred_block(block, i);
 		remove_empty_block(pred);
 	}
@@ -228,7 +201,7 @@ check_preds:
 /* removes basic blocks that just contain a jump instruction */
 int be_remove_empty_blocks(ir_graph *irg)
 {
-	blocks_removed = 0;
+	blocks_removed = false;
 
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_VISITED);
 	inc_irg_visited(irg);
@@ -300,10 +273,10 @@ void be_remove_dead_nodes_from_schedule(ir_graph *irg)
 	env.reachable = bitset_alloca(get_irg_last_idx(irg));
 	env.lv        = be_get_irg_liveness(irg);
 
-	// mark all reachable nodes
+	/* mark all reachable nodes */
 	irg_walk_graph(irg, mark_dead_nodes_walker, NULL, &env);
 
-	// walk schedule and remove non-marked nodes
+	/* walk schedule and remove non-marked nodes */
 	irg_block_walk_graph(irg, remove_dead_nodes_walker, NULL, &env);
 }
 

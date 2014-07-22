@@ -146,18 +146,17 @@ static bool set_opt_module(const char *name, lc_opt_type_t type, void *data,
                            size_t length, ...)
 {
 	(void)length;
-	module_opt_data_t            *moddata = (module_opt_data_t*)data;
-	bool                         res      = false;
-	va_list                      args;
-	const char                   *opt;
-	const be_module_list_entry_t *module;
-	(void) type;
-	(void) name;
+	(void)type;
+	(void)name;
 
+	va_list args;
 	va_start(args, length);
-	opt = va_arg(args, const char*);
+	const char *opt = va_arg(args, const char*);
 
-	for (module = *(moddata->list_head); module != NULL; module = module->next) {
+	const module_opt_data_t *moddata = (module_opt_data_t*)data;
+	bool                     res     = false;
+	for (const be_module_list_entry_t *module = *(moddata->list_head);
+	     module != NULL; module = module->next) {
 		if (strcmp(module->name, opt) == 0) {
 			*(moddata->var) = module->data;
 			res = true;
@@ -175,13 +174,13 @@ static bool set_opt_module(const char *name, lc_opt_type_t type, void *data,
 static int dump_opt_module(char *buf, size_t buflen, const char *name,
                            lc_opt_type_t type, void *data, size_t length)
 {
-	module_opt_data_t            *moddata = (module_opt_data_t*)data;
-	const be_module_list_entry_t *module;
-	(void) name;
-	(void) type;
-	(void) length;
+	(void)name;
+	(void)type;
+	(void)length;
 
-	for (module = *(moddata->list_head); module != NULL; module = module->next) {
+	const module_opt_data_t *moddata = (module_opt_data_t*)data;
+	for (const be_module_list_entry_t *module = *(moddata->list_head);
+	     module != NULL; module = module->next) {
 		if (module->data == *(moddata->var)) {
 			snprintf(buf, buflen, "%s", module->name);
 			return strlen(buf);
@@ -198,14 +197,14 @@ static int dump_opt_module(char *buf, size_t buflen, const char *name,
 static int dump_opt_module_vals(char *buf, size_t buflen, const char *name,
                                 lc_opt_type_t type, void *data, size_t len)
 {
-	module_opt_data_t            *moddata = (module_opt_data_t*)data;
-	char                         *p       = buf;
-	const be_module_list_entry_t *module;
-	(void) name;
-	(void) type;
-	(void) len;
+	(void)name;
+	(void)type;
+	(void)len;
 
-	for (module = *(moddata->list_head); module != NULL; module = module->next) {
+	const module_opt_data_t *moddata = (module_opt_data_t*)data;
+	char                    *p       = buf;
+	for (const be_module_list_entry_t *module = *(moddata->list_head);
+	     module != NULL; module = module->next) {
 		size_t name_len = strlen(module->name);
 
 		if (module != *(moddata->list_head)) {
@@ -214,7 +213,6 @@ static int dump_opt_module_vals(char *buf, size_t buflen, const char *name,
 		}
 
 		p = strncat(p, module->name, buflen - 1);
-
 		if (name_len >= buflen)
 			break;
 
@@ -250,6 +248,6 @@ void be_add_module_list_opt(lc_opt_entry_t *grp, const char *name,
 	moddata->list_head = list_head;
 
 	lc_opt_add_opt(grp, name, description, lc_opt_type_enum,
-	               moddata, sizeof(moddata[0]),
-	               set_opt_module, dump_opt_module, dump_opt_module_vals);
+	               moddata, sizeof(moddata[0]), set_opt_module,
+	               dump_opt_module, dump_opt_module_vals);
 }
