@@ -127,18 +127,16 @@ static bool be_is_phi_argument(const ir_node *block, const ir_node *def)
 	if (get_irn_n_edges_kind(block, EDGE_KIND_BLOCK) < 1)
 		return false;
 
-	ir_node *const succ_block = get_first_block_succ(block);
+	const ir_edge_t *edge = get_irn_out_edge_first_kind(block, EDGE_KIND_BLOCK);
+	ir_node *const succ_block = get_edge_src_irn(edge);
 	if (get_Block_n_cfgpreds(succ_block) <= 1) {
 		/* no Phis in the successor */
 		return false;
 	}
 
-	/* find the index of block in its successor */
-	int const i = get_Block_cfgpred_pos(succ_block, block);
-	assert(i >= 0);
-
 	/* iterate over the Phi nodes in the successor and check if def is
 	 * one of its arguments */
+	const int i = get_edge_src_pos(edge);
 	sched_foreach(succ_block, node) {
 		/* we can stop the search on the first non-phi node */
 		if (!is_Phi(node))

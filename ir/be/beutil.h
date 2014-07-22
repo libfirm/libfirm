@@ -50,12 +50,6 @@ ir_node *be_get_Proj_for_pn(const ir_node *irn, long pn);
  */
 ir_node **be_get_cfgpostorder(ir_graph *irg);
 
-/**
- * convenience function to return the first successor block
- * (it is often known that there is exactly 1 successor anyway)
- */
-ir_node *get_first_block_succ(const ir_node *block);
-
 static inline bool is_tls_entity(ir_entity *const ent)
 {
 	return get_entity_owner(ent) == get_tls_type();
