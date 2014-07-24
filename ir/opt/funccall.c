@@ -262,7 +262,7 @@ static void fix_nothrow_call_list(ir_graph *irg, ir_node **call_list)
 #define CLEAR_IRG_BUSY(irg) rbitset_clear(busy_set, get_irg_idx(irg))
 #define IS_IRG_BUSY(irg)    rbitset_is_set(busy_set, get_irg_idx(irg))
 
-static mtp_additional_properties analyze_irg_recursive(ir_graph *irg);
+static mtp_additional_properties analyze_irg(ir_graph *irg);
 
 /**
  * Performs a depth-first traversal through the CFG to detect loops. We use 2
@@ -429,8 +429,20 @@ next_no_change:
 			ir_graph *irg = get_entity_linktime_irg(callee);
 			if (irg == NULL)
 				return mtp_no_property;
-			/* we have a graph, analyze it. */
-			max_prop &= analyze_irg_recursive(irg);
+			/* recursively analyze graph, unless we found a loop in which case
+			 * we can't guarantee termination and have to live with the
+			 * currently set flags */
+			if (IS_IRG_BUSY(irg)) {
+				mtp_additional_properties entprops
+					= get_entity_additional_properties(callee);
+				if (entprops & mtp_property_terminates) {
+					entprops &= ~mtp_property_terminates;
+					set_entity_additional_properties(callee, entprops);
+				}
+				max_prop &= entprops;
+			} else {
+				max_prop &= analyze_irg(irg);
+			}
 call_next:
 			node = get_Call_mem(node);
 			break;
@@ -458,10 +470,12 @@ finish:
  *
  * @param irg  the graph to check
  */
-static mtp_additional_properties analyze_irg_recursive(ir_graph *irg)
+static mtp_additional_properties analyze_irg(ir_graph *irg)
 {
-	ir_entity                *entity = get_irg_entity(irg);
-	mtp_additional_properties prop   = get_entity_additional_properties(entity);
+	assert(!IS_IRG_BUSY(irg));
+	ir_entity *entity = get_irg_entity(irg);
+	const mtp_additional_properties prop
+		= get_entity_additional_properties(entity);
 	/* already checked? */
 	if (IS_IRG_READY(irg))
 		return prop;
@@ -480,14 +494,6 @@ static mtp_additional_properties analyze_irg_recursive(ir_graph *irg)
 	if ((max_prop & ~min_prop) == mtp_no_property)
 		goto early_finish;
 
-	/* loop in callgraph? We are optimistic about pure+no_write
-	 * but can't guarantee termination. */
-	if (IS_IRG_BUSY(irg)) {
-		max_prop &= ~mtp_property_terminates;
-		goto early_finish;
-	}
-	SET_IRG_BUSY(irg);
-
 	/* check for termination and loops */
 	const mtp_additional_properties termination_props = check_termination(irg);
 	/* we can immediately set the noreturn property, as it does not depend on
@@ -505,6 +511,10 @@ static mtp_additional_properties analyze_irg_recursive(ir_graph *irg)
 	if ((max_prop & ~min_prop) == mtp_no_property)
 		goto early_finish;
 
+	/* be optimistic and set maximum properties now for the case of a loop
+	 * in the callgraph */
+	SET_IRG_BUSY(irg);
+	set_entity_additional_properties(entity, prop | max_prop);
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_VISITED);
 	inc_irg_visited(irg);
 
@@ -547,8 +557,22 @@ finish:
 early_finish:
 	CLEAR_IRG_BUSY(irg);
 	SET_IRG_READY(irg);
-	add_entity_additional_properties(entity, max_prop);
-	return min_prop | max_prop;
+	const mtp_additional_properties final_prop = prop | max_prop;
+	set_entity_additional_properties(entity, final_prop);
+
+	const mtp_additional_properties new_prop = max_prop & ~prop;
+	if (new_prop & mtp_property_pure) {
+		assert(final_prop & mtp_property_no_write);
+		DB((dbg, LEVEL_2, "%+F: set mtp_property_pure\n", irg));
+	}
+	if (new_prop & mtp_property_no_write)
+		DB((dbg, LEVEL_2, "%+F: set mtp_property_no_write\n", irg));
+	if (new_prop & mtp_property_noreturn)
+		DB((dbg, LEVEL_2, "%+F: set mtp_property_noreturn\n", irg));
+	if (new_prop & mtp_property_terminates)
+		DB((dbg, LEVEL_2, "%+F: set mtp_property_terminates\n", irg));
+
+	return final_prop;
 }
 
 /**
@@ -832,28 +856,6 @@ static mtp_additional_properties check_nothrow_or_malloc(ir_graph *irg, bool top
 		SET_IRG_READY(irg);
 	CLEAR_IRG_BUSY(irg);
 	return curr_prop;
-}
-
-static void analyze_irg(ir_graph *irg)
-{
-	mtp_additional_properties prop = analyze_irg_recursive(irg);
-	if (prop == mtp_no_property)
-		return;
-
-	if (prop & mtp_property_pure) {
-		assert(prop & mtp_property_no_write);
-		DB((dbg, LEVEL_2, "%+F: set mtp_property_pure\n", irg));
-	}
-	if (prop & mtp_property_no_write)
-		DB((dbg, LEVEL_2, "%+F: set mtp_property_no_write\n", irg));
-	if (prop & mtp_property_noreturn)
-		DB((dbg, LEVEL_2, "%+F: set mtp_property_noreturn\n", irg));
-	if (prop & mtp_property_terminates)
-		DB((dbg, LEVEL_2, "%+F: set mtp_property_terminates\n", irg));
-
-	ir_entity *entity = get_irg_entity(irg);
-	add_entity_additional_properties(entity, prop);
-	SET_IRG_READY(irg);
 }
 
 void optimize_funccalls(void)
