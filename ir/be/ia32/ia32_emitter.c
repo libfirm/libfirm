@@ -27,6 +27,7 @@
  *   pnc_Ne  => P || NE
  */
 #include <limits.h>
+#include <inttypes.h>
 
 #include "../../adt/util.h"
 #include "xmalloc.h"
@@ -211,10 +212,10 @@ static void emit_ia32_Immediate_no_prefix(const ir_node *node)
 	if (entity != NULL) {
 		ia32_emit_entity(entity, attr->no_pic_adjust);
 		if (attr->offset != 0) {
-			be_emit_irprintf("%+d", attr->offset);
+			be_emit_irprintf("%+"PRId32, attr->offset);
 		}
 	} else {
-		be_emit_irprintf("0x%lX", attr->offset);
+		be_emit_irprintf("0x%"PRIX32, (uint32_t)attr->offset);
 	}
 }
 
@@ -361,7 +362,7 @@ ENUM_BITSET(ia32_emit_mod_t)
 static void ia32_emit_am(ir_node const *const node)
 {
 	ir_entity *ent       = get_ia32_am_ent(node);
-	int        offs      = get_ia32_am_offs_int(node);
+	int32_t    offs      = get_ia32_am_offs_int(node);
 	ir_node   *base      = get_irn_n(node, n_ia32_base);
 	int        has_base  = !is_ia32_NoReg_GP(base);
 	ir_node   *idx       = get_irn_n(node, n_ia32_index);
@@ -382,9 +383,9 @@ static void ia32_emit_am(ir_node const *const node)
 	/* also handle special case if nothing is set */
 	if (offs != 0 || (ent == NULL && !has_base && !has_index)) {
 		if (ent != NULL) {
-			be_emit_irprintf("%+d", offs);
+			be_emit_irprintf("%+"PRId32, offs);
 		} else {
-			be_emit_irprintf("%d", offs);
+			be_emit_irprintf("%"PRId32, offs);
 		}
 	}
 
@@ -1810,19 +1811,19 @@ enum Mod {
    We will change this when enough infrastructure is there to create complete
    machine code in memory/object files */
 
-static void bemit8(const unsigned char byte)
+static void bemit8(const uint8_t byte)
 {
 	be_emit_irprintf("\t.byte 0x%x\n", byte);
 	be_emit_write_line();
 }
 
-static void bemit16(const unsigned short u16)
+static void bemit16(const uint16_t u16)
 {
 	be_emit_irprintf("\t.word 0x%x\n", u16);
 	be_emit_write_line();
 }
 
-static void bemit32(const unsigned u32)
+static void bemit32(const uint32_t u32)
 {
 	be_emit_irprintf("\t.long 0x%x\n", u32);
 	be_emit_write_line();
@@ -1832,7 +1833,7 @@ static void bemit32(const unsigned u32)
  * Emit address of an entity. If @p is_relative is true then a relative
  * offset from behind the address to the entity is created.
  */
-static void bemit_entity(ir_entity *entity, int offset, bool is_relative)
+static void bemit_entity(ir_entity *entity, int32_t offset, bool is_relative)
 {
 	if (entity == NULL) {
 		bemit32(offset);
@@ -1858,7 +1859,7 @@ static void bemit_entity(ir_entity *entity, int offset, bool is_relative)
 	}
 
 	if (offset != 0) {
-		be_emit_irprintf("%+d", offset);
+		be_emit_irprintf("%+"PRId32, offset);
 	}
 	be_emit_char('\n');
 	be_emit_write_line();
@@ -1934,7 +1935,7 @@ static bool ia32_is_8bit_imm(ia32_immediate_attr_t const *const imm)
 static void bemit_mod_am(unsigned reg, const ir_node *node)
 {
 	ir_entity *ent       = get_ia32_am_ent(node);
-	int        offs      = get_ia32_am_offs_int(node);
+	int32_t    offs      = get_ia32_am_offs_int(node);
 	ir_node   *base      = get_irn_n(node, n_ia32_base);
 	int        has_base  = !is_ia32_NoReg_GP(base);
 	ir_node   *idx       = get_irn_n(node, n_ia32_index);
@@ -2716,7 +2717,7 @@ static void bemit_load(const ir_node *node)
 		int        has_index = !is_ia32_NoReg_GP(idx);
 		if (!has_base && !has_index) {
 			ir_entity *ent  = get_ia32_am_ent(node);
-			int        offs = get_ia32_am_offs_int(node);
+			int32_t    offs = get_ia32_am_offs_int(node);
 			/* load from constant address to EAX can be encoded
 			   as 0xA1 [offset] */
 			bemit8(0xA1);

@@ -105,7 +105,7 @@ struct ia32_attr_t {
 		unsigned is_remat : 1;
 	} data;
 
-	int        am_offs;       /**< offsets for AddrMode */
+	int32_t    am_offs;       /**< offsets for AddrMode */
 	ir_entity *am_ent;        /**< entity for AddrMode */
 
 	ir_mode   *ls_mode;       /**< Load/Store mode: This is the mode of the
@@ -166,7 +166,7 @@ typedef struct ia32_immediate_attr_t ia32_immediate_attr_t;
 struct ia32_immediate_attr_t {
 	ia32_attr_t  attr;              /**< generic attribute */
 	ir_entity   *entity;            /**< An entity if any. */
-	long         offset;            /**< An offset if any. */
+	int32_t      offset;            /**< An offset if any. */
 	unsigned     no_pic_adjust : 1; /**< constant can be relative to EIP */
 };
 

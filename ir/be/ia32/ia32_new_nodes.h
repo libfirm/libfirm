@@ -100,14 +100,14 @@ void set_ia32_am_support(ir_node *node, ia32_am_type_t am_arity);
 /**
  * Gets the addressmode offset as long.
  */
-int get_ia32_am_offs_int(const ir_node *node);
+int32_t get_ia32_am_offs_int(const ir_node *node);
 
 /**
  * Sets the addressmode offset
  */
-void set_ia32_am_offs_int(ir_node *node, int offset);
+void set_ia32_am_offs_int(ir_node *node, int32_t offset);
 
-void add_ia32_am_offs_int(ir_node *node, int offset);
+void add_ia32_am_offs_int(ir_node *node, int32_t offset);
 
 /**
  * Returns the entity associated to addrmode.

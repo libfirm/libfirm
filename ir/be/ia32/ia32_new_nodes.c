@@ -13,6 +13,7 @@
  */
 #include <stdlib.h>
 #include <stdbool.h>
+#include <inttypes.h>
 
 #include "irargs_t.h"
 #include "irprog_t.h"
@@ -66,7 +67,7 @@ static void ia32_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 					if (attr->offset > 0 && attr->entity != NULL) {
 						fputc('+', F);
 					}
-					fprintf(F, "%ld", attr->offset);
+					fprintf(F, "%"PRId32, attr->offset);
 					if (attr->no_pic_adjust) {
 						fputs("(no_pic_adjust)", F);
 					}
@@ -368,7 +369,7 @@ void set_ia32_am_support(ir_node *node, ia32_am_type_t arity)
 /**
  * Gets the address mode offset as int.
  */
-int get_ia32_am_offs_int(const ir_node *node)
+int32_t get_ia32_am_offs_int(const ir_node *node)
 {
 	const ia32_attr_t *attr = get_ia32_attr_const(node);
 	return attr->am_offs;
@@ -377,13 +378,13 @@ int get_ia32_am_offs_int(const ir_node *node)
 /**
  * Sets the address mode offset from an int.
  */
-void set_ia32_am_offs_int(ir_node *node, int offset)
+void set_ia32_am_offs_int(ir_node *node, int32_t offset)
 {
 	ia32_attr_t *attr = get_ia32_attr(node);
 	attr->am_offs = offset;
 }
 
-void add_ia32_am_offs_int(ir_node *node, int offset)
+void add_ia32_am_offs_int(ir_node *node, int32_t offset)
 {
 	ia32_attr_t *attr = get_ia32_attr(node);
 	attr->am_offs += offset;
@@ -754,7 +755,7 @@ static void init_ia32_asm_attributes(ir_node *res)
 }
 
 static void init_ia32_immediate_attributes(ir_node *res, ir_entity *entity,
-                                           int no_pic_adjust, long offset)
+                                           bool no_pic_adjust, int32_t offset)
 {
 	ia32_immediate_attr_t *attr = (ia32_immediate_attr_t*)get_irn_generic_attr(res);
 
@@ -948,7 +949,7 @@ static unsigned ia32_hash_Immediate(const ir_node *irn)
 {
 	const ia32_immediate_attr_t *a = get_ia32_immediate_attr_const(irn);
 
-	return hash_ptr(a->entity) + a->offset;
+	return hash_ptr(a->entity) + (unsigned)a->offset;
 }
 
 /** Compare node attributes for Immediates. */
