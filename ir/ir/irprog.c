@@ -58,8 +58,10 @@ static ir_prog *new_incomplete_ir_prog(void)
  */
 static void complete_ir_prog(ir_prog *irp, const char *module_name)
 {
-#define IDENT(x)  new_id_from_chars(x, sizeof(x) - 1)
+	ir_init_type(irp);
+	ir_init_entity(irp);
 
+#define IDENT(x)  new_id_from_chars(x, sizeof(x) - 1)
 	irp->name = new_id_from_str(module_name);
 	irp->segment_types[IR_SEGMENT_GLOBAL]       = new_type_segment(IDENT("GlobalType"),           tf_global_type);
 	irp->segment_types[IR_SEGMENT_THREAD_LOCAL] = new_type_segment(IDENT("ThreadLocal"),          tf_tls_type);
@@ -80,8 +82,6 @@ void init_irprog_1(void)
 void init_irprog_2(void)
 {
 	complete_ir_prog(irp, INITAL_PROG_NAME);
-	ir_init_type(irp);
-	ir_init_entity(irp);
 }
 
 ir_prog *new_ir_prog(const char *name)
