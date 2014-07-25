@@ -6452,11 +6452,13 @@ static ir_node *transform_node_Mux(ir_node *n)
 				relation = get_negated_relation(relation);
 				inverted = true;
 			}
+		}
 
-			ir_mode *cmp_mode = get_irn_mode(cmp_l);
-			if (is_Const_null(f) && is_Const(t) &&
-			    get_mode_arithmetic(mode) == irma_twos_complement &&
-			    get_mode_arithmetic(cmp_mode) == irma_twos_complement) {
+		ir_mode *cmp_mode = get_irn_mode(cmp_l);
+		if (is_Const(f) && is_Const_null(f) &&
+		    get_mode_arithmetic(mode) == irma_twos_complement &&
+		    get_mode_arithmetic(cmp_mode) == irma_twos_complement) {
+			if (is_Const(t)) {
 				if (is_Const_one(t)) {
 					n = transform_Mux_set(n, relation);
 					if (n != oldn)
@@ -6490,6 +6492,34 @@ static ir_node *transform_node_Mux(ir_node *n)
 
 						return shrs;
 					}
+				}
+			}
+
+			if (is_Const(cmp_r) && (is_Const_null(cmp_r) || is_Const_one(cmp_r))) {
+				bitinfo *bl = get_bitinfo(cmp_l);
+
+				if (bl && tarval_is_one(bl->z)) {
+					ir_relation  possible                 = ir_get_possible_cmp_relations(cmp_l, cmp_r);
+					bool         is_relation_equal        = is_relation(ir_relation_equal, relation, possible);
+					bool         is_relation_less_greater = is_relation(ir_relation_less_greater, relation, possible);
+					ir_node     *block                    = get_nodes_block(n);
+					dbg_info    *dbgi                     = get_irn_dbg_info(n);
+
+					if (mode != cmp_mode) {
+						cmp_l = new_rd_Conv(dbgi, block, cmp_l, mode);
+					}
+
+					if ((is_relation_equal && is_Const_one(cmp_r)) ||
+					    (is_relation_less_greater && is_Const_null(cmp_r))) {
+						/* Mux((a & 1) != 0, 0, b) => -a & b */
+						cmp_l = new_rd_Minus(dbgi, block, cmp_l, mode);
+					} else {
+						/* Mux((a & 1) == 0, 0, b) => (a - 1) & b */
+						ir_node *one = new_rd_Const_one(dbgi, irg, mode);
+						cmp_l = new_rd_Sub(dbgi, block, cmp_l, one, mode);
+					}
+
+					return new_rd_And(dbgi, block, cmp_l, t, mode);
 				}
 			}
 		}
