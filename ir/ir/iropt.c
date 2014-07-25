@@ -3399,6 +3399,29 @@ static ir_node *transform_node_Mul(ir_node *n)
 				return n;
 		}
 	}
+
+	if (mode_is_int(mode)) {
+		bitinfo *ba    = get_bitinfo(a);
+		bitinfo *bb    = get_bitinfo(b);
+		ir_node *bit   = NULL;
+		ir_node *other = NULL;
+		if (ba && tarval_is_one(ba->z)) {
+			bit   = a;
+			other = b;
+		} else if (bb && tarval_is_one(bb->z)) {
+			bit   = b;
+			other = a;
+		}
+
+		if (bit) {
+			/* a * (b & 1) -> a & -(b & 1) */
+			dbg_info *dbgi  = get_irn_dbg_info(n);
+			ir_node  *block = get_nodes_block(n);
+			ir_node  *minus = new_rd_Minus(dbgi, block, bit, mode);
+			return new_rd_And(dbgi, block, other, minus, mode);
+		}
+	}
+
 	/* distribute minus:
 	 * -x * y => x * (-y) if -y can be computed cheaply
 	 */
