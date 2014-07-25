@@ -6251,16 +6251,10 @@ bool ir_is_optimizable_mux(const ir_node *sel, const ir_node *mux_false,
  */
 static ir_node *transform_Mux_set(ir_node *n, ir_relation relation)
 {
-	ir_node *cond = get_Mux_sel(n);
-	ir_node *left = get_Cmp_left(cond);
-	ir_mode *mode = get_irn_mode(left);
-	if (get_mode_arithmetic(mode) != irma_twos_complement)
-		return n;
-
-	ir_mode *dest_mode = get_irn_mode(n);
-	if (get_mode_arithmetic(dest_mode) != irma_twos_complement)
-		return n;
-
+	ir_node     *cond                     = get_Mux_sel(n);
+	ir_node     *left                     = get_Cmp_left(cond);
+	ir_mode     *mode                     = get_irn_mode(left);
+	ir_mode     *dest_mode                = get_irn_mode(n);
 	ir_node     *right                    = get_Cmp_right(cond);
 	ir_relation  possible                 = ir_get_possible_cmp_relations(left, right);
 	bool         is_relation_equal        = is_relation(ir_relation_equal, relation, possible);
@@ -6459,16 +6453,16 @@ static ir_node *transform_node_Mux(ir_node *n)
 				inverted = true;
 			}
 
-			if (is_Const_null(f) && is_Const(t)) {
-				ir_mode *cmp_mode = get_irn_mode(cmp_l);
-
+			ir_mode *cmp_mode = get_irn_mode(cmp_l);
+			if (is_Const_null(f) && is_Const(t) &&
+			    get_mode_arithmetic(mode) == irma_twos_complement &&
+			    get_mode_arithmetic(cmp_mode) == irma_twos_complement) {
 				if (is_Const_one(t)) {
 					n = transform_Mux_set(n, relation);
 					if (n != oldn)
 						return n;
 				} else if (is_Const_all_one(t) && is_Const(cmp_r) && is_Const_null(cmp_r) &&
-					   mode_is_signed(cmp_mode) && get_mode_arithmetic(cmp_mode) == irma_twos_complement &&
-					   mode_is_signed(mode) && get_mode_arithmetic(mode) == irma_twos_complement) {
+					   mode_is_signed(cmp_mode) && mode_is_signed(mode)) {
 					ir_relation possible                  = ir_get_possible_cmp_relations(cmp_l, cmp_r);
 					bool        is_relation_less          = is_relation(ir_relation_less, relation, possible);
 					bool        is_relation_greater_equal = is_relation(ir_relation_greater_equal, relation, possible);
