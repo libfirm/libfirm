@@ -618,7 +618,7 @@ class Mux:
 class NoMem:
 	"""Placeholder node for cases where you don't need any memory input"""
 	mode          = "mode_M"
-	flags         = [ "dump_noblock" ]
+	flags         = [ "dump_noblock", "start_block" ]
 	pinned        = "yes"
 	block         = "get_irg_start_block(irg)"
 	singleton     = True
