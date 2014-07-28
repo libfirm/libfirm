@@ -376,6 +376,12 @@ static int verify_node_Block(const ir_node *n)
 			     skipped_pred);
 			fine = false;
 		}
+
+		if (is_IJmp(skipped_pred) && get_Block_entity(n) == NULL) {
+			warn(n, "succesor block of IJmp %+F has no entity assigned",
+			     skipped_pred);
+			fine = false;
+		}
 	}
 
 	ir_graph *irg = get_irn_irg(n);
