@@ -453,8 +453,6 @@ FIRM_API ir_node *skip_Tuple(ir_node *node);
 FIRM_API ir_node *skip_Pin(ir_node *node);
 /** Returns operand of node if node is a Confirm */
 FIRM_API ir_node *skip_Confirm(ir_node *node);
-/** Skip all high-level Operations (including Confirm). */
-FIRM_API ir_node *skip_HighLevel_ops(ir_node *node);
 /** Returns true if the operation manipulates control flow */
 FIRM_API int is_cfop(const ir_node *node);
 /** Returns true if the operation jumps to an unknown destination.

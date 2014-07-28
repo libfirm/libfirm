@@ -354,7 +354,7 @@ class Confirm:
 		("bound",  "value to compare against"),
 	]
 	mode     = "get_irn_mode(irn_value)"
-	flags    = [ "highlevel" ]
+	flags    = [ ]
 	pinned   = "yes"
 	attrs    = [
 		Attribute("relation", type="ir_relation",
@@ -664,7 +664,7 @@ class Pin:
 		("op", "value which is pinned"),
 	]
 	mode     = "get_irn_mode(irn_op)"
-	flags    = [ "highlevel" ]
+	flags    = [ ]
 	pinned   = "yes"
 
 @op
@@ -696,7 +696,7 @@ class Raise:
 		("M", "memory result"),
 		("X", "control flow to exception handler"),
 	]
-	flags  = [ "highlevel", "cfopcode" ]
+	flags  = [ "cfopcode" ]
 	pinned = "yes"
 
 @op

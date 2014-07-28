@@ -764,7 +764,7 @@ static mtp_additional_properties check_nothrow_or_malloc(ir_graph *irg, bool top
 					ir_node *res = get_Return_res(pred, j);
 
 					/* skip Confirms */
-					res = skip_HighLevel_ops(res);
+					res = skip_Confirm(res);
 					/* skip Proj's */
 					while (is_Proj(res))
 						res = get_Proj_pred(res);

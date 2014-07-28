@@ -877,15 +877,6 @@ ir_node *skip_Confirm(ir_node *node)
 	return node;
 }
 
-ir_node *skip_HighLevel_ops(ir_node *node)
-{
-	while (is_op_highlevel(get_irn_op(node))) {
-		node = get_irn_n(node, 0);
-	}
-	return node;
-}
-
-
 ir_node *skip_Id(ir_node *node)
 {
 	/* This should compact Id-cycles to self-cycles. It has the same (or less?) complexity

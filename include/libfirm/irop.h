@@ -48,8 +48,6 @@ typedef enum {
 	                                       control flow because of an exception.
 	                                   */
 	irop_flag_forking      = 1U <<  3, /**< Forking control flow at this operation. */
-	irop_flag_highlevel    = 1U <<  4, /**< This operation is a pure high-level one and can be
-	                                      skipped in low-level optimizations. */
 	irop_flag_constlike    = 1U <<  5, /**< This operation has no arguments and is some
 	                                       kind of a constant. */
 	irop_flag_keep         = 1U <<  6, /**< This operation can be kept in End's keep-alive list. */

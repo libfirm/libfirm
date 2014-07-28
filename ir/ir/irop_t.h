@@ -76,12 +76,6 @@ static inline bool is_op_forking(const ir_op *op)
 	return op->flags & irop_flag_forking;
 }
 
-/** Returns non-zero if operation is a high-level op */
-static inline bool is_op_highlevel(const ir_op *op)
-{
-	return op->flags & irop_flag_highlevel;
-}
-
 /** Returns non-zero if operation is a const-like op */
 static inline bool is_op_constlike(const ir_op *op)
 {
