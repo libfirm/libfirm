@@ -6495,7 +6495,7 @@ static ir_node *transform_node_Mux(ir_node *n)
 				}
 			}
 
-			if (is_Const(cmp_r) && (is_Const_null(cmp_r) || is_Const_one(cmp_r))) {
+			if (mode_is_int(mode) && is_Const(cmp_r) && (is_Const_null(cmp_r) || is_Const_one(cmp_r))) {
 				bitinfo *bl = get_bitinfo(cmp_l);
 
 				if (bl && tarval_is_one(bl->z)) {
