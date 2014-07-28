@@ -31,18 +31,17 @@ typedef struct cf_env {
  * @param n   IR node
  * @param env Environment of walker.
  */
-static void walk_critical_cf_edges(ir_node *n, void *env)
+static void walk_critical_cf_edges(ir_node *block, void *env)
 {
-	cf_env *cenv = (cf_env*)env;
-
-	if (get_irn_arity(n) <= 1)
+	if (get_Block_n_cfgpreds(block) <= 1)
 		return;
 
-	ir_graph *irg = get_irn_irg(n);
-	if (n == get_irg_end_block(irg))
-		return;  /*  No use to add a block here.      */
+	ir_graph *irg = get_irn_irg(block);
+	if (block == get_irg_end_block(irg))
+		return;
 
-	foreach_irn_in(n, i, pre) {
+	cf_env *cenv = (cf_env*)env;
+	foreach_irn_in(block, i, pre) {
 		/* don't count Bad's */
 		if (is_Bad(pre))
 			continue;
@@ -60,18 +59,18 @@ static void walk_critical_cf_edges(ir_node *n, void *env)
 			fprintf(stderr, "libfirm warning: Couldn't split all critical edges (compiler will probably fail now)\n");
 			continue;
 		}
-		/* we don't want to place nodes in the start block, so handle it like
-		 * forking */
+		/* Insert critical edge if predecessor has multiple successors. Also
+		 * ensure that Start jumps into a block with exactly 1 predecessor. */
 		if (is_op_forking(cfop) || cfop == op_Start) {
 			/* Predecessor has multiple successors. Insert new control flow
 			 * edge edges. */
 insert:;
 			/* set predecessor of new block */
-			ir_node *block = new_r_Block(irg, 1, &pre);
+			ir_node *new_block = new_r_Block(irg, 1, &pre);
 			/* insert new jmp node to new block */
-			ir_node *jmp = new_r_Jmp(block);
+			ir_node *jmp = new_r_Jmp(new_block);
 			/* set successor of new block */
-			set_irn_n(n, i, jmp);
+			set_irn_n(block, i, jmp);
 			cenv->changed = true;
 		}
 	}
