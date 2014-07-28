@@ -6083,14 +6083,8 @@ ir_node *ir_get_abs_op(const ir_node *sel, ir_node *mux_false,
 
 static bool ir_is_optimizable_mux_set(const ir_node *cond, ir_relation relation, const ir_mode *dest_mode)
 {
-	ir_node *left = get_Cmp_left(cond);
-	ir_mode *mode = get_irn_mode(left);
-	if (get_mode_arithmetic(mode) != irma_twos_complement)
-		return false;
-
-	if (get_mode_arithmetic(dest_mode) != irma_twos_complement)
-		return false;
-
+	ir_node     *left                     = get_Cmp_left(cond);
+	ir_mode     *mode                     = get_irn_mode(left);
 	ir_node     *right                    = get_Cmp_right(cond);
 	ir_relation  possible                 = ir_get_possible_cmp_relations(left, right);
 	bool         is_relation_equal        = is_relation(ir_relation_equal, relation, possible);
@@ -6195,8 +6189,13 @@ bool ir_is_optimizable_mux(const ir_node *sel, const ir_node *mux_false,
 				f        = mux_true;
 				relation = get_negated_relation(relation);
 			}
+		}
 
-			if (is_Const_null(f) && is_Const(t)) {
+		ir_mode *cmp_mode = get_irn_mode(cmp_l);
+		if (is_Const(f) && is_Const_null(f) &&
+		    get_mode_arithmetic(mode) == irma_twos_complement &&
+		    get_mode_arithmetic(cmp_mode) == irma_twos_complement) {
+			if (is_Const(t)) {
 				if (is_Const_one(t)) {
 					if (ir_is_optimizable_mux_set(sel, relation, dest_mode)) {
 						return true;
@@ -6210,6 +6209,16 @@ bool ir_is_optimizable_mux(const ir_node *sel, const ir_node *mux_false,
 						/* Mux(a <  0, 0, 0xFFFFFFFF) =>  a >>s 31 */
 						return true;
 					}
+				}
+			}
+
+			if (mode_is_int(mode) && is_Const(cmp_r) && (is_Const_null(cmp_r) || is_Const_one(cmp_r))) {
+				bitinfo *bl = get_bitinfo(cmp_l);
+
+				if (bl && tarval_is_one(bl->z)) {
+					/* Mux((a & 1) != 0, 0, b) => -a & b */
+					/* Mux((a & 1) == 0, 0, b) => (a - 1) & b */
+					return true;
 				}
 			}
 		}
