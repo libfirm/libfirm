@@ -68,11 +68,6 @@
 #define ir_resources_reserved(irg)            ir_resources_reserved_(irg)
 
 /**
- * Initializes the graph construction module.
- */
-void firm_init_irgraph(void);
-
-/**
  * Set the number of locals for a given graph.
  *
  * @param irg    the graph

@@ -72,8 +72,6 @@ void ir_init(void)
 	init_tarval_2();
 	/* initialize node opcodes */
 	firm_init_op();
-	/* init graph construction */
-	firm_init_irgraph();
 	/* kind of obstack initialization */
 	firm_init_mangle();
 	/* initialize reassociation */

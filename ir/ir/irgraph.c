@@ -32,10 +32,9 @@
 #include "irgopt.h"
 
 #define INITIAL_IDX_IRN_MAP_SIZE 1024
-/** Suffix that is added to every frame type. */
-#define FRAME_TP_SUFFIX "frame_tp"
 
 ir_graph *current_ir_graph;
+
 ir_graph *get_current_ir_graph(void)
 {
 	return current_ir_graph;
@@ -43,16 +42,9 @@ ir_graph *get_current_ir_graph(void)
 
 void set_current_ir_graph(ir_graph *graph)
 {
-	assert(!graph || irg_is_constrained(graph, IR_GRAPH_CONSTRAINT_CONSTRUCTION));
+	assert(graph == NULL
+	       || irg_is_constrained(graph, IR_GRAPH_CONSTRAINT_CONSTRUCTION));
 	current_ir_graph = graph;
-}
-
-/** contains the suffix for frame type names */
-static ident *frame_type_suffix = NULL;
-
-void firm_init_irgraph(void)
-{
-	frame_type_suffix = new_id_from_str(FRAME_TP_SUFFIX);
 }
 
 /**
@@ -93,10 +85,10 @@ void irg_set_nloc(ir_graph *res, int n_loc)
 {
 	assert(irg_is_constrained(res, IR_GRAPH_CONSTRAINT_CONSTRUCTION));
 
-	res->n_loc = n_loc + 1;     /* number of local variables that are never
-	                               dereferenced in this graph plus one for
-	                               the store. This is not the number of
-	                               parameters to the procedure!  */
+	/* number of local variables that are never dereferenced in this graph plus
+	 * one for the store. This is not the number of parameters to the
+	 * procedure! */
+	res->n_loc = n_loc + 1;
 
 	if (res->loc_descriptions) {
 		free(res->loc_descriptions);
@@ -106,11 +98,7 @@ void irg_set_nloc(ir_graph *res, int n_loc)
 
 static ir_graph *new_r_ir_graph(ir_entity *ent, int n_loc)
 {
-	ir_graph *res;
-	ir_node  *first_block;
-	ir_node  *start, *start_block, *initial_mem, *projX;
-
-	res = alloc_graph();
+	ir_graph *const res = alloc_graph();
 
 	/* inform statistics here, as blocks will be already build on this graph */
 	hook_new_graph(res, ent);
@@ -119,9 +107,9 @@ static ir_graph *new_r_ir_graph(ir_entity *ent, int n_loc)
 	add_irg_constraints(res, IR_GRAPH_CONSTRAINT_CONSTRUCTION);
 	irg_set_nloc(res, n_loc);
 
-	res->irg_pinned_state    = op_pin_state_pinned;
-	res->callee_info_state   = irg_callee_info_none;
-	res->mem_disambig_opt    = aa_opt_inherited;
+	res->irg_pinned_state  = op_pin_state_pinned;
+	res->callee_info_state = irg_callee_info_none;
+	res->mem_disambig_opt  = aa_opt_inherited;
 
 	/*-- Type information for the procedure of the graph --*/
 	res->ent = ent;
@@ -138,30 +126,30 @@ static ir_graph *new_r_ir_graph(ir_entity *ent, int n_loc)
 	set_irg_end_block(res, new_r_immBlock(res));
 	set_irg_end(res, new_r_End(res, 0, NULL));
 
-	start_block = new_r_Block_noopt(res, 0, NULL);
+	ir_node *const start_block = new_r_Block_noopt(res, 0, NULL);
 	set_irg_start_block(res, start_block);
-	set_irg_no_mem     (res, new_r_NoMem(res));
-	start = new_r_Start(res);
-	set_irg_start      (res, start);
+	set_irg_no_mem(res, new_r_NoMem(res));
+	ir_node *const start = new_r_Start(res);
+	set_irg_start(res, start);
 
 	/* Proj results of start node */
-	projX                   = new_r_Proj(start, mode_X, pn_Start_X_initial_exec);
+	ir_node *const projX = new_r_Proj(start, mode_X, pn_Start_X_initial_exec);
 	set_irg_initial_exec(res, projX);
-	set_irg_frame       (res, new_r_Proj(start, mode_P, pn_Start_P_frame_base));
-	set_irg_args        (res, new_r_Proj(start, mode_T, pn_Start_T_args));
-	initial_mem             = new_r_Proj(start, mode_M, pn_Start_M);
+	set_irg_frame(res, new_r_Proj(start, mode_P, pn_Start_P_frame_base));
+	set_irg_args(res, new_r_Proj(start, mode_T, pn_Start_T_args));
+	ir_node *const initial_mem = new_r_Proj(start, mode_M, pn_Start_M);
 	set_irg_initial_mem(res, initial_mem);
 
-	res->index       = get_irp_new_irg_idx();
+	res->index = get_irp_new_irg_idx();
 #ifdef DEBUG_libfirm
-	res->graph_nr    = get_irp_new_node_nr();
+	res->graph_nr = get_irp_new_node_nr();
 #endif
 
 	set_r_cur_block(res, start_block);
 	set_r_store(res, initial_mem);
 
 	/*-- Make a block to start with --*/
-	first_block = new_r_Block(res, 1, &projX);
+	ir_node *const first_block = new_r_Block(res, 1, &projX);
 	set_r_cur_block(res, first_block);
 
 	return res;
@@ -227,20 +215,18 @@ static void copy_all_nodes(ir_node *node, void *env)
  */
 static void rewire(ir_node *irn, void *env)
 {
-	(void) env;
+	(void)env;
 	irn_rewire_inputs(irn);
 }
 
 static ir_node *get_new_node(const ir_node *old_node)
 {
-	return (ir_node*) get_irn_link(old_node);
+	return (ir_node*)get_irn_link(old_node);
 }
 
 ir_graph *create_irg_copy(ir_graph *irg)
 {
-	ir_graph *res;
-
-	res = alloc_graph();
+	ir_graph *res = alloc_graph();
 
 	res->irg_pinned_state = irg->irg_pinned_state;
 
@@ -535,7 +521,7 @@ void set_irg_loc_description(ir_graph *irg, int n, void *description)
 {
 	assert(0 <= n && n < irg->n_loc);
 
-	if (! irg->loc_descriptions)
+	if (!irg->loc_descriptions)
 		irg->loc_descriptions = XMALLOCNZ(void*, irg->n_loc);
 
 	irg->loc_descriptions[n] = description;
@@ -619,8 +605,7 @@ void assure_irg_properties(ir_graph *irg, ir_graph_properties_t props)
 		{ IR_GRAPH_PROPERTY_CONSISTENT_ENTITY_USAGE,  assure_irg_entity_usage_computed },
 		{ IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE_FRONTIERS, ir_compute_dominance_frontiers },
 	};
-	size_t i;
-	for (i = 0; i < ARRAY_SIZE(property_functions); ++i) {
+	for (size_t i = 0; i < ARRAY_SIZE(property_functions); ++i) {
 		ir_graph_properties_t missing = props & ~irg->properties;
 		if (missing & property_functions[i].property)
 			property_functions[i].func(irg);
@@ -631,13 +616,13 @@ void assure_irg_properties(ir_graph *irg, ir_graph_properties_t props)
 void confirm_irg_properties(ir_graph *irg, ir_graph_properties_t props)
 {
 	clear_irg_properties(irg, ~props);
-	if (! (props & IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES))
+	if (!(props & IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES))
 		edges_deactivate(irg);
-	if (! (props & IR_GRAPH_PROPERTY_CONSISTENT_OUTS)
+	if (!(props & IR_GRAPH_PROPERTY_CONSISTENT_OUTS)
 	    && (irg->properties & IR_GRAPH_PROPERTY_CONSISTENT_OUTS))
 	    free_irg_outs(irg);
-	if (! (props & IR_GRAPH_PROPERTY_CONSISTENT_ENTITY_USAGE))
+	if (!(props & IR_GRAPH_PROPERTY_CONSISTENT_ENTITY_USAGE))
 		set_irp_globals_entity_usage_state(ir_entity_usage_not_computed);
-	if (! (props & IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE_FRONTIERS))
+	if (!(props & IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE_FRONTIERS))
 		ir_free_dominance_frontiers(irg);
 }
