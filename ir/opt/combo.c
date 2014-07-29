@@ -1757,8 +1757,7 @@ static void default_compute(node_t *node)
 		node->type.tv = tarval_top; /* reachable */
 
 	/* if any of the data inputs have type bottom, the result is type bottom */
-	ir_node *op = skip_Proj(irn);
-	if (!is_memop(op) || is_Mod(op) || is_Div(op)) {
+	if (!is_memop(irn)) {
 		foreach_irn_in_r(irn, i, pred) {
 			node_t *const p = get_irn_node(pred);
 			if (p->type.tv == tarval_bottom) {
@@ -2192,11 +2191,28 @@ static void compute_Proj_Switch(node_t *node, ir_node *switchn)
 	}
 }
 
+static void compute_DivMod_res(node_t *node)
+{
+	/* if any of the data inputs have type bottom, the result is type bottom */
+	ir_node *irn = node->node;
+	foreach_irn_in_r(irn, i, pred) {
+		node_t *const p = get_irn_node(pred);
+		if (p->type.tv == tarval_bottom) {
+			node->type.tv = tarval_bottom;
+			return;
+		}
+	}
+
+	node->type.tv = computed_value(irn);
+	if (!tarval_is_constant(node->type.tv))
+		node->type.tv = tarval_unknown;
+}
+
 /**
-* (Re-)compute the type for a Proj-Node.
-*
-* @param node  the node
-*/
+ * (Re-)compute the type for a Proj-Node.
+ *
+ * @param node  the node
+ */
 static void compute_Proj(node_t *node)
 {
 	ir_node *proj  = node->node;
@@ -2235,13 +2251,20 @@ static void compute_Proj(node_t *node)
 		}
 	}
 
-	if (get_irn_node(pred)->type.tv == tarval_bottom) {
+	node_t *pred_node = get_irn_node(pred);
+	if (pred_node->type.tv == tarval_bottom) {
 		/* if the predecessor is Bottom, its Proj follow */
 		node->type.tv = tarval_bottom;
 		return;
 	}
 
-	default_compute(node);
+	if ((is_Div(pred) && get_Proj_proj(proj) == pn_Div_res)
+	 || (is_Mod(pred) && get_Proj_proj(proj) == pn_Mod_res)) {
+		compute_DivMod_res(pred_node);
+	} else {
+		default_compute(pred_node);
+	}
+	node->type.tv = pred_node->type.tv;
 }
 
 /**
@@ -3176,7 +3199,7 @@ static void apply_end(ir_node *end, environment_t *env)
 	}
 }
 
-static void set_compute_func(ir_op *op, void (*func)(node_t *))
+static void set_compute_func(ir_op *op, compute_func func)
 {
 	op->ops.generic = (op_func)func;
 }
