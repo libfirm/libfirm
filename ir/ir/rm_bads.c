@@ -21,19 +21,6 @@
 #include "irtools.h"
 
 /**
- * Return the number of non-Bad predecessors of the given node.
- */
-static unsigned count_non_bads(ir_node *node)
-{
-	unsigned count = 0;
-	foreach_irn_in(node, i, pred) {
-		if (!is_Bad(pred))
-			++count;
-	}
-	return count;
-}
-
-/**
  * Block-walker, remove Bad block predecessors and shorten Phis.
  * Phi links must be up-to-date.
  */
@@ -42,17 +29,14 @@ static void block_remove_bads(ir_node *block)
 	/* 1. Create a new block without Bad inputs */
 	ir_graph  *irg     = get_irn_irg(block);
 	const int  max     = get_Block_n_cfgpreds(block);
-	const int  new_max = count_non_bads(block);
-	assert(max >= new_max);
-	ir_node  **new_in  = ALLOCAN(ir_node*, new_max);
-	int        j       = 0;
+	ir_node  **new_in  = ALLOCAN(ir_node*, max);
+	unsigned   new_max = 0;
 	for (int i = 0; i < max; ++i) {
 		ir_node *const block_pred = get_Block_cfgpred(block, i);
 		if (!is_Bad(block_pred)) {
-			new_in[j++] = block_pred;
+			new_in[new_max++] = block_pred;
 		}
 	}
-	assert(j == new_max);
 
 	/* If the end block is unreachable, it might have zero predecessors. */
 	if (new_max == 0) {
@@ -74,7 +58,7 @@ static void block_remove_bads(ir_node *block)
 
 		assert(get_irn_arity(phi) == max);
 
-		int j = 0;
+		unsigned j = 0;
 		foreach_irn_in(phi, i, pred) {
 			ir_node *const block_pred = get_Block_cfgpred(block, i);
 			if (!is_Bad(block_pred)) {
@@ -83,25 +67,38 @@ static void block_remove_bads(ir_node *block)
 		}
 		assert(j == new_max);
 
-		dbg_info *dbgi    = get_irn_dbg_info(phi);
-		ir_mode  *mode    = get_irn_mode(phi);
-		ir_node  *new_phi = new_rd_Phi(dbgi, new_block, new_max, new_in, mode);
-		exchange(phi, new_phi);
+		/* shortcut if only 1 phi input is left */
+		if (new_max == 1) {
+			ir_node *new_node = new_in[0];
+			/* can happen inside unreachable endless loops */
+			if (new_node == phi)
+				return;
+			exchange(phi, new_node);
+		} else {
+			set_irn_in(phi, new_max, new_in);
+		}
 	}
 
 	exchange(block, new_block);
 }
 
+static bool has_bad_input(const ir_node *node)
+{
+	foreach_irn_in(node, i, pred) {
+		if (is_Bad(pred))
+			return true;
+	}
+	return false;
+}
+
 static void collect(ir_node *node, void *env)
 {
 	firm_collect_block_phis(node, NULL);
-	if (!is_Block(node))
-		return;
-	ir_node ***blocks_to_process = (ir_node***)env;
-	int        arity    = get_Block_n_cfgpreds(node);
-	int        non_bads = count_non_bads(node);
-	if (arity != non_bads)
+
+	if (is_Block(node) && has_bad_input(node)) {
+		ir_node ***blocks_to_process = (ir_node***)env;
 		ARR_APP1(ir_node*, *blocks_to_process, node);
+	}
 }
 
 void remove_bads(ir_graph *irg)
