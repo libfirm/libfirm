@@ -582,7 +582,7 @@ void remove_End_n(ir_node *n, int idx)
 	remove_irn_n(n, idx);
 }
 
-void remove_End_keepalive(ir_node *end, ir_node *irn)
+void remove_End_keepalive(ir_node *end, const ir_node *irn)
 {
 	int n = get_End_n_keepalives(end);
 	int idx = -1;

@@ -294,7 +294,7 @@ FIRM_API void add_End_keepalive(ir_node *end, ir_node *ka);
 FIRM_API void set_End_keepalives(ir_node *end, int n, ir_node *in[]);
 
 /** Removes irn from the keep-alive set. */
-FIRM_API void remove_End_keepalive(ir_node *end, ir_node *irn);
+FIRM_API void remove_End_keepalive(ir_node *end, const ir_node *irn);
 
 /** Removes predecessor (a keepalive) at index @p idx from End node @p end. */
 FIRM_API void remove_End_n(ir_node *end, int idx);
