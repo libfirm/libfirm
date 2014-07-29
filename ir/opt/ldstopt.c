@@ -1310,6 +1310,7 @@ static changes_t optimize_phi(ir_node *phi, walk_env_t *wenv)
 	}
 
 	/* sixth step: replace old Phi */
+	remove_keep_alive(phi);
 	exchange(phi, projM);
 
 	return res | DF_CHANGED;

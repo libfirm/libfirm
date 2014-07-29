@@ -69,6 +69,8 @@ static void block_remove_bads(ir_node *block)
 
 		/* shortcut if only 1 phi input is left */
 		if (new_max == 1) {
+			if (get_irn_mode(phi) == mode_M)
+				remove_keep_alive(phi);
 			ir_node *new_node = new_in[0];
 			/* can happen inside unreachable endless loops */
 			if (new_node == phi)
@@ -113,6 +115,8 @@ void remove_bads(ir_graph *irg)
 		block_remove_bads(block);
 	}
 	DEL_ARR_F(blocks_to_process);
+
+	remove_End_Bads_and_doublets(get_irg_end(irg));
 
 	if (n_to_process > 0) {
 		confirm_irg_properties(irg,

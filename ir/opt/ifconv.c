@@ -193,6 +193,8 @@ static void split_block(ir_node *block, int i, int j)
 		for (k = 0; k != j;              ++k) pred_ins[k] = get_irn_n(phi, k);
 		for (;      k != new_pred_arity; ++k) pred_ins[k] = get_irn_n(phi, k + 1);
 		if (k == 1) {
+			if (get_irn_mode(phi) == mode_M)
+				remove_keep_alive(phi);
 			exchange(phi, pred_ins[0]);
 		} else {
 			set_irn_in(phi, k, pred_ins);
@@ -221,6 +223,8 @@ static void prepare_path(ir_node *block, int i, const ir_node *dependency)
 			next = get_Phi_next(phi);
 
 			ir_node *operand = get_irn_n(phi, 0);
+			if (get_irn_mode(phi) == mode_M)
+				remove_keep_alive(phi);
 			exchange(phi, operand);
 		}
 
@@ -331,6 +335,8 @@ restart:;
 					if (val_i == val_j) {
 						mux = val_i;
 						DB((dbg, LEVEL_2,  "Generating no Mux, because both values are equal\n"));
+						if (get_irn_mode(phi) == mode_M)
+							remove_keep_alive(phi);
 					} else {
 						ir_node *t, *f;
 

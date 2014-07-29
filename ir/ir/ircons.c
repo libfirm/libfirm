@@ -104,9 +104,12 @@ static void try_remove_unnecessary_phi(ir_node *phi)
 
 	/* See if all inputs are either pointing to a single value or
 	 * are self references. */
+	bool have_self_loop = false;
 	foreach_irn_in(phi, i, in) {
-		if (in == phi)
+		if (in == phi) {
+			have_self_loop = true;
 			continue;
+		}
 		if (in == phi_value)
 			continue;
 		/** found a different value from the one we already found, can't remove
@@ -116,6 +119,11 @@ static void try_remove_unnecessary_phi(ir_node *phi)
 		phi_value = in;
 	}
 	if (phi_value == NULL)
+		return;
+
+	/* Do not remove PhiM with self-loops as potentially endless loops are
+	 * observable, see comment in equivalent_node_Phi() to learn more. */
+	if (have_self_loop && get_irn_mode(phi) == mode_M)
 		return;
 
 	/* if we're here then all phi inputs have been either phi_value
@@ -164,6 +172,12 @@ static ir_node *set_phi_arguments(ir_node *phi, int pos)
 	verify_new_node(irg, phi);
 
 	try_remove_unnecessary_phi(phi);
+
+	/* To solve the problem of (potentially) endless loops being observable
+	 * behaviour we add a keep-alive edge too all PhiM nodes. */
+	if (mode == mode_M && !is_Id(phi))
+		keep_alive(phi);
+
 	return phi;
 }
 

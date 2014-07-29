@@ -737,7 +737,7 @@ static void classify_iv(scc *pscc, iv_env *env)
 	}
 	/* found an induction variable */
 	DB((dbg, LEVEL_2, "  Found an induction variable:\n  "));
-	if (only_phi && num_outside == 1) {
+	if (only_phi && num_outside == 1 && get_irn_mode(pscc->head) != mode_M) {
 		/* a phi cycle with only one real predecessor can be collapsed */
 		DB((dbg, LEVEL_2, "  Found an USELESS Phi cycle:\n  "));
 

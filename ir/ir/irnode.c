@@ -602,6 +602,23 @@ void remove_End_keepalive(ir_node *end, const ir_node *irn)
 	remove_irn_n(end, idx);
 }
 
+void remove_keep_alive(const ir_node *irn)
+{
+	ir_graph *irg = get_irn_irg(irn);
+	ir_node  *end = get_irg_end(irg);
+
+	for (int i = get_End_n_keepalives(end);;) {
+		if (i-- == 0)
+			return;
+
+		ir_node *old_ka = end->in[1 + END_KEEPALIVE_OFFSET + i];
+
+		/* find irn */
+		if (old_ka == irn)
+			set_irn_n(end, END_KEEPALIVE_OFFSET+i, new_r_Bad(irg, get_irn_mode(irn)));
+	}
+}
+
 void remove_End_Bads_and_doublets(ir_node *end)
 {
 	pset_new_t keeps;
@@ -1127,21 +1144,4 @@ ir_switch_table *ir_switch_table_duplicate(ir_graph *irg,
 		*new_entry = *entry;
 	}
 	return res;
-}
-
-bool only_used_by_keepalive(const ir_node *node)
-{
-	bool kept = false;
-
-	foreach_out_edge(node, edge) {
-		ir_node *succ = get_edge_src_irn(edge);
-		if (is_End(succ) || (is_Proj(succ) && only_used_by_keepalive(succ))) {
-			kept = true;
-			continue;
-		}
-		/* found a real user */
-		return false;
-	}
-
-	return kept;
 }

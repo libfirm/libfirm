@@ -417,6 +417,30 @@ static int verify_node_Start(const ir_node *n)
 	return check_mode(n, mode_T);
 }
 
+static int verify_node_End(const ir_node *n)
+{
+	bool fine = check_mode(n, mode_X);
+	/* check that only blocks, PhiM and (noreturn) Call nodes are connected
+	 * by keep-alive edges */
+	ir_graph *irg = get_irn_irg(n);
+	if (!irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_BACKEND)) {
+		foreach_irn_in(n, i, kept) {
+			/* endless loop handling may keep PhiM and Block nodes */
+			if (is_Block(kept) || (is_Phi(kept) && get_irn_mode(kept) == mode_M))
+				continue;
+			/* noreturn calls are currently kept with keep-alive edges */
+			if (is_Call(kept))
+				continue;
+			if (is_Bad(kept))
+				continue;
+			warn(n, "keep-alive edge only allowed on Block, PhiM and Call node, found %+F",
+			     kept);
+			fine = false;
+		}
+	}
+	return fine;
+}
+
 static int verify_node_Jmp(const ir_node *n)
 {
 	return check_mode(n, mode_X);
@@ -1297,6 +1321,7 @@ void ir_register_verify_node_ops(void)
 	register_verify_node_func(op_CopyB,    verify_node_CopyB);
 	register_verify_node_func(op_Deleted,  verify_node_Deleted);
 	register_verify_node_func(op_Div,      verify_node_Div);
+	register_verify_node_func(op_End,      verify_node_End);
 	register_verify_node_func(op_Eor,      verify_node_Eor);
 	register_verify_node_func(op_Free,     verify_node_Free);
 	register_verify_node_func(op_IJmp,     verify_node_IJmp);

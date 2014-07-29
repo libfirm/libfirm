@@ -111,6 +111,7 @@ struct node_t {
 	bool            on_cprop:1;     /**< Set, if this node is on the partition.cprop list. */
 	bool            on_fallen:1;    /**< Set, if this node is on the fallen list. */
 	bool            is_follower:1;  /**< Set, if this node is a follower. */
+	bool            is_kept_alive:1;/**< node has a keep-alive edge. */
 	unsigned        flagged:2;      /**< 2 Bits, set if this node was visited by race 1 or 2. */
 };
 
@@ -2341,6 +2342,13 @@ static node_t *identity_Phi(node_t *node)
 	ir_node *block  = get_nodes_block(phi);
 	node_t  *n_part = NULL;
 
+	/* special rule: kept PhiM nodes have to create their own partition
+	 * (as they represent the observable behaviour of a loop running endless) */
+	if (node->is_kept_alive) {
+		assert(get_irn_mode(phi) == mode_M);
+		return node;
+	}
+
 	for (int i = get_Phi_n_preds(phi); i-- > 0; ) {
 		node_t *pred_X = get_irn_node(get_Block_cfgpred(block, i));
 		if (pred_X->type.tv == tarval_bottom)
@@ -2789,15 +2797,6 @@ static void apply_cf(ir_node *block, void *ctx)
 
 					if (pred_bl->flagged == 0) {
 						pred_bl->flagged = 3;
-
-						if (is_reachable(pred_bl)) {
-							/*
-							 * We will remove an edge from block to its pred.
-							 * This might leave the pred block as an endless loop
-							 */
-							if (!is_backedge(block, i))
-								keep_alive(pred_bl->node);
-						}
 					}
 				}
 			}
@@ -2844,15 +2843,6 @@ static void apply_cf(ir_node *block, void *ctx)
 
 					if (!is_Bad(pred_bl->node) && pred_bl->flagged == 0) {
 						pred_bl->flagged = 3;
-
-						if (is_reachable(pred_bl)) {
-							/*
-							 * We will remove an edge from block to its pred.
-							 * This might leave the pred block as an endless loop
-							 */
-							if (!is_backedge(block, i))
-								keep_alive(pred_bl->node);
-						}
 					}
 				}
 			}
@@ -2862,15 +2852,15 @@ static void apply_cf(ir_node *block, void *ctx)
 		return;
 
 	/* fix Phi's */
+	ir_graph *irg = get_Block_irg(block);
 	ir_node **ins = ALLOCAN(ir_node*, n);
 	for (ir_node *next, *phi = get_Block_phis(block); phi != NULL; phi = next) {
-		node_t *node = get_irn_node(phi);
+		node_t   *node = get_irn_node(phi);
 
 		next = get_Phi_next(phi);
 		if (is_tarval(node->type.tv) && tarval_is_constant(node->type.tv)) {
 			/* this Phi is replaced by a constant */
 			ir_tarval *tv  = node->type.tv;
-			ir_graph  *irg = get_Block_irg(block);
 			ir_node   *c   = new_r_Const(irg, tv);
 
 			set_irn_node(c, node);
@@ -2892,6 +2882,10 @@ static void apply_cf(ir_node *block, void *ctx)
 				/* this Phi is replaced by a single predecessor */
 				ir_node *s        = ins[0];
 				node_t  *phi_node = get_irn_node(phi);
+
+				if (get_irn_mode(phi) == mode_M) {
+					remove_keep_alive(phi);
+				}
 
 				node->node = s;
 				DB((dbg, LEVEL_1, "%+F is replaced by %+F because of cf change\n", phi, s));
@@ -3293,6 +3287,13 @@ void combo(ir_graph *irg)
 	add_to_worklist(env.initial, &env);
 	irg_walk_graph(irg, create_initial_partitions, init_block_phis, &env);
 
+	/* mark all kept PhiM nodes, as we must not remove them */
+	ir_node *end = get_irg_end(irg);
+	for (int i = 0, n_keeps = get_End_n_keepalives(end); i < n_keeps; ++i) {
+		ir_node *kept = get_End_keepalive(end, i);
+		get_irn_node(kept)->is_kept_alive = true;
+	}
+
 	/* set the hook: from now, every node has a partition and a type */
 	DEBUG_ONLY(set_dump_node_vcgattr_hook(dump_partition_hook);)
 
@@ -3324,7 +3325,7 @@ void combo(ir_graph *irg)
 	/* Kill keep-alives of dead blocks: this speeds up apply_result()
 	 * and fixes assertion because dead cf to dead blocks is NOT removed by
 	 * apply_cf(). */
-	apply_end(get_irg_end(irg), &env);
+	apply_end(end, &env);
 
 	/* need a freshly computed dominance tree (after killing unreachable code
 	 * it is not valid anymore) */

@@ -58,7 +58,7 @@ static void place_floats_early(ir_node *n, waitq *worklist)
 	 * This works because in firm each cycle contains a Phi or Block node
 	 * (which are pinned)
 	 */
-	if (get_irn_pinned(n) != op_pin_state_floats || only_used_by_keepalive(n)) {
+	if (get_irn_pinned(n) != op_pin_state_floats) {
 		/* we cannot move pinned nodes */
 		foreach_irn_in(n, i, pred) {
 			pdeq_putr(worklist, pred);
@@ -255,12 +255,8 @@ static ir_node *get_deepest_common_dom_ancestor(ir_node *node, ir_node *dca)
 			dca = consumer_dom_dca(dca, succ, node);
 		}
 	}
-	/* respect the keepalive rule: if our only user is a keepalive, then we must
-	 * not move the node any further */
-	if (dca == NULL) {
-		assert(only_used_by_keepalive(node));
+	if (dca == NULL)
 		return get_nodes_block(node);
-	}
 
 	foreach_out_edge_kind(node, edge, EDGE_KIND_DEP) {
 		ir_node *succ = get_edge_src_irn(edge);

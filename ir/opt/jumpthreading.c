@@ -311,7 +311,7 @@ static void copy_and_fix(const jumpthreading_env_t *env, ir_node *block,
 		construct_ssa(block, node, copy_block, copy_node);
 	}
 
-	/* make sure new nodes are kept alive if old nodes were */
+	/* make sure copied PhiM nodes are kept alive if old nodes were */
 	ir_graph *irg = get_irn_irg(block);
 	ir_node  *end = get_irg_end(irg);
 	for (int i = 0, arity = get_End_n_keepalives(end); i < arity; ++i) {
@@ -319,7 +319,10 @@ static void copy_and_fix(const jumpthreading_env_t *env, ir_node *block,
 		if (get_irn_visited(keep) < env->visited_nr || is_Block(keep))
 			continue;
 		ir_node *copy = get_irn_link(keep);
-		add_End_keepalive(end, copy);
+		if (is_Phi(keep) && is_Phi(copy)) {
+			assert(get_irn_mode(keep) == mode_M);
+			add_End_keepalive(end, copy);
+		}
 	}
 }
 

@@ -1382,27 +1382,35 @@ static ir_node *equivalent_node_Bitcast(ir_node *n)
 	return n;
 }
 
+static bool is_kept_alive(const ir_node *node)
+{
+	const ir_graph *const irg = get_irn_irg(node);
+	const ir_node  *const end = get_irg_end(irg);
+	foreach_irn_in(end, i, kept) {
+		if (node == kept)
+			return true;
+	}
+	return false;
+}
+
 /**
  * - fold Phi-nodes, iff they have only one predecessor except
  *   themselves.
  */
 static ir_node *equivalent_node_Phi(ir_node *n)
 {
-	ir_node *oldn      = n;
-	ir_node *first_val = NULL; /* to shutup gcc */
-
 	if (!get_opt_optimize() &&
 	    !irg_is_constrained(get_irn_irg(n), IR_GRAPH_CONSTRAINT_CONSTRUCTION))
 		return n;
 
-	int n_preds = get_Phi_n_preds(n);
-
 	/* Phi of dead Region without predecessors. */
+	int n_preds = get_Phi_n_preds(n);
 	if (n_preds == 0)
 		return n;
 
 	/* Find first non-self-referencing input */
-	int i;
+	ir_node *first_val = NULL;
+	int      i;
 	for (i = 0; i < n_preds; ++i) {
 		first_val = get_Phi_pred(n, i);
 		/* not self pointer */
@@ -1413,20 +1421,40 @@ static ir_node *equivalent_node_Phi(ir_node *n)
 	}
 
 	/* search for rest of inputs, determine if any of these
-	are non-self-referencing */
-	while (++i < n_preds) {
+	 * are non-self-referencing */
+	bool had_self_loop = false;
+	for (++i; i < n_preds; ++i) {
 		const ir_node *scnd_val = get_Phi_pred(n, i);
-		if (scnd_val != n && scnd_val != first_val) {
-			break;
+		if (scnd_val == n) {
+			had_self_loop = true;
+			continue;
 		}
+		/* more than 1 unique value found? abort */
+		if (scnd_val != first_val)
+			return n;
 	}
 
-	if (i >= n_preds && !is_Dummy(first_val)) {
-		/* Fold, if no multiple distinct non-self-referencing inputs */
-		n = first_val;
-		DBG_OPT_PHI(oldn, n);
+	/* if we are here then all inputs are either self-loops or first_val */
+	if (is_Dummy(first_val))
+		return n;
+	/* Subtle special case: (Potentially) endless loops are observable behaviour
+	 * and must be part of the memory chain. If there are no other memory
+	 * operations in a loop we still are not allowed to remove the PhiM unless
+	 * we can prove that the loop terminates. */
+	if (get_irn_mode(n) == mode_M) {
+		/* We currently assume that PhiMs that have a keep-alive edge are in a
+		 * potentially endless loops. PhiM without a keep alive edge is a sign
+		 * that we are sure that the loop terminates. */
+		if (had_self_loop && is_kept_alive(n)) {
+			return n;
+		}
+		/* The PhiM will be removed, we can remove keep-alive edges to it as
+		 * well. */
+		remove_keep_alive(n);
 	}
-	return n;
+
+	DBG_OPT_PHI(n, first_val);
+	return first_val;
 }
 
 /**
@@ -3775,8 +3803,6 @@ static ir_node *transform_node_Cond(ir_node *n)
 		};
 		turn_into_tuple(n, ARRAY_SIZE(in), in);
 
-		/* Since we may produce an endless loop, we have to keep the block. */
-		keep_alive(blk);
 		clear_irg_properties(irg, IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE);
 	}
 	return n;
@@ -7409,10 +7435,6 @@ int identities_cmp(const void *elt, const void *key)
 			if (!block_dominates(block_a, block_b)
 			    && !block_dominates(block_b, block_a))
 			    return 1;
-			/* respect the workaround rule: do not move nodes which are only
-			 * held by keepalive edges */
-			if (only_used_by_keepalive(a) || only_used_by_keepalive(b))
-				return 1;
 		}
 	}
 

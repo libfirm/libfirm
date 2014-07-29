@@ -538,12 +538,10 @@ static inline const ir_switch_table_entry *ir_switch_table_get_entry_const(
 
 void ir_register_getter_ops(void);
 
-/**
- * because firm keepalive edges are a broken concept, we have to make sure that
- * nodes which are only held by a keepalive edges are never moved again.
- * This function returns true in this case.
- */
-bool only_used_by_keepalive(const ir_node *node);
+/** remove keep alive edge to node by rerouting the edge to a Bad node.
+ * (rerouting is preferable to removing when we are in a walker which also
+ *  accesses the End node) */
+void remove_keep_alive(const ir_node *kept_node);
 
 /**
  * Create a node similar to @p old.  Except for @p block and @p in all aspects
