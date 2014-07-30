@@ -629,6 +629,18 @@ undefined:
 					break;
 				}
 
+				case iro_Proj: {
+					ir_node *const pred = get_Proj_pred(irn);
+					if (is_Tuple(pred)) {
+						long           pn = get_Proj_proj(irn);
+						ir_node *const op = get_Tuple_pred(pred, pn);
+						bitinfo *const b  = get_bitinfo(op);
+						z = b->z;
+						o = b->o;
+						goto set_info;
+					}
+				}
+
 				default: {
 cannot_analyse:
 					DB((dbg, LEVEL_4, "cannot analyse %+F\n", irn));
