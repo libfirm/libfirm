@@ -5334,6 +5334,10 @@ static ir_node *transform_node_Phi(ir_node *phi)
 	ir_graph *irg   = get_irn_irg(phi);
 	ir_node  *bad   = NULL;
 
+	/* do not optimize Phi0 */
+	if (n == 0)
+		return phi;
+
 	/* Set phi-operands for bad-block inputs to bad */
 	for (int i = 0; i < n; ++i) {
 		if (!is_Bad(get_Phi_pred(phi, i))) {
@@ -5348,69 +5352,59 @@ static ir_node *transform_node_Phi(ir_node *phi)
 
 	/* Move Pin nodes down through Phi nodes. */
 	if (mode == mode_M) {
-		n = get_irn_arity(phi);
+		bool      has_pin = false;
+		ir_node **in      = ALLOCAN(ir_node*, n);
 
-		/* Beware of Phi0 */
-		if (n > 0) {
-			bool      has_pin = false;
-			ir_node **in      = ALLOCAN(ir_node*, n);
-
-			foreach_irn_in(phi, i, pred) {
-				if (is_Pin(pred)) {
-					in[i]   = get_Pin_op(pred);
-					has_pin = true;
-				} else if (is_Bad(pred)) {
-					in[i] = pred;
-				} else {
-					return phi;
-				}
-			}
-
-			if (!has_pin)
+		foreach_irn_in(phi, i, pred) {
+			if (is_Pin(pred)) {
+				in[i]   = get_Pin_op(pred);
+				has_pin = true;
+			} else if (is_Bad(pred)) {
+				in[i] = pred;
+			} else {
 				return phi;
-
-			/* Move the Pin nodes "behind" the Phi. */
-			ir_node *new_phi = new_r_Phi(block, n, in, mode_M);
-			return new_r_Pin(block, new_phi);
+			}
 		}
+
+		if (!has_pin)
+			return phi;
+
+		/* Move the Pin nodes "behind" the Phi. */
+		ir_node *new_phi = new_r_Phi(block, n, in, mode_M);
+		return new_r_Pin(block, new_phi);
 	} else if (mode_is_reference(mode)) {
 		/* Move Confirms down through Phi nodes. */
-		n = get_irn_arity(phi);
+		ir_node *pred = get_irn_n(phi, 0);
+		if (!is_Confirm(pred))
+			return phi;
 
-		/* Beware of Phi0 */
-		if (n > 0) {
-			ir_node *pred = get_irn_n(phi, 0);
-			if (! is_Confirm(pred))
+		ir_node      *bound       = get_Confirm_bound(pred);
+		bool          has_confirm = false;
+		ir_relation   relation    = get_Confirm_relation(pred);
+		ir_node     **in          = ALLOCAN(ir_node*, n);
+		in[0] = get_Confirm_value(pred);
+
+		for (int i = 1; i < n; ++i) {
+			pred = get_irn_n(phi, i);
+
+			if (is_Confirm(pred) &&
+					get_Confirm_bound(pred) == bound &&
+					get_Confirm_relation(pred) == relation) {
+				in[i]       = get_Confirm_value(pred);
+				has_confirm = true;
+			} else if (is_Bad(pred)) {
+				in[i] = pred;
+			} else {
 				return phi;
-
-			ir_node      *bound       = get_Confirm_bound(pred);
-			bool          has_confirm = false;
-			ir_relation   relation    = get_Confirm_relation(pred);
-			ir_node     **in          = ALLOCAN(ir_node*, n);
-			in[0] = get_Confirm_value(pred);
-
-			for (int i = 1; i < n; ++i) {
-				pred = get_irn_n(phi, i);
-
-				if (is_Confirm(pred) &&
-						get_Confirm_bound(pred) == bound &&
-						get_Confirm_relation(pred) == relation) {
-					in[i]       = get_Confirm_value(pred);
-					has_confirm = true;
-				} else if (is_Bad(pred)) {
-					in[i] = pred;
-				} else {
-					return phi;
-				}
 			}
-
-			if (!has_confirm)
-				return phi;
-
-			/* move the Confirm nodes "behind" the Phi */
-			ir_node *new_phi = new_r_Phi(block, n, in, get_irn_mode(phi));
-			return new_r_Confirm(block, new_phi, bound, relation);
 		}
+
+		if (!has_confirm)
+			return phi;
+
+		/* move the Confirm nodes "behind" the Phi */
+		ir_node *new_phi = new_r_Phi(block, n, in, get_irn_mode(phi));
+		return new_r_Confirm(block, new_phi, bound, relation);
 	}
 	return phi;
 }
