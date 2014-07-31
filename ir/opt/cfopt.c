@@ -828,16 +828,18 @@ void optimize_cf(ir_graph *irg)
 			for (int i = 0; i < n; ++i) {
 				ir_node *ka = get_End_keepalive(end, i);
 				if (is_Phi(ka)) {
+					bool found_real_user = false;
 					foreach_irn_out_r(ka, k, user) {
-						if (user != ka && user != end) {
+						if (user != end) {
 							/* Is it a real user or just a self loop ? */
-							in[j++] = ka;
+							found_real_user = true;
 							break;
 						}
 					}
-				} else {
-					in[j++] = ka;
+					if (!found_real_user)
+						continue;
 				}
+				in[j++] = ka;
 			}
 			if (j != n) {
 				set_End_keepalives(end, j, in);
