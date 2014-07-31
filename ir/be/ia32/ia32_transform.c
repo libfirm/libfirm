@@ -2242,8 +2242,10 @@ static bool use_dest_am(ir_node *block, ir_node *node, ir_node *mem,
 	if (!is_Proj(node))
 		return false;
 
-	/* we only use address mode if we're the only user of the load */
-	if (get_irn_n_edges(node) != (flags & match_two_users ? 2 : 1))
+	/* we only use address mode if we're the only user of the load
+	 * or the users will be merged later anyway */
+	if (get_irn_n_edges(node) != (flags & match_two_users ? 2 : 1) &&
+	    !users_will_merge(node))
 		return false;
 
 	ir_node *load = get_Proj_pred(node);
