@@ -40,6 +40,41 @@
 
 struct obstack opcodes_obst;
 
+static const char *condition_code_name(x86_condition_code_t cc)
+{
+	switch (cc) {
+	case x86_cc_overflow:                    return "overflow";
+	case x86_cc_not_overflow:                return "not overflow";
+	case x86_cc_float_below:                 return "float below";
+	case x86_cc_float_unordered_below:       return "float unordered or below";
+	case x86_cc_below:                       return "below";
+	case x86_cc_float_above_equal:           return "float above or equal";
+	case x86_cc_float_unordered_above_equal: return "float unordered or above or equal";
+	case x86_cc_above_equal:                 return "above or equal";
+	case x86_cc_float_equal:                 return "float equal";
+	case x86_cc_equal:                       return "equal";
+	case x86_cc_float_not_equal:             return "float not equal";
+	case x86_cc_not_equal:                   return "not equal";
+	case x86_cc_float_below_equal:           return "float below or equal";
+	case x86_cc_float_unordered_below_equal: return "float unordered or below or equal";
+	case x86_cc_below_equal:                 return "below or equal";
+	case x86_cc_float_above:                 return "float above";
+	case x86_cc_float_unordered_above:       return "float unordered or above";
+	case x86_cc_above:                       return "above";
+	case x86_cc_sign:                        return "sign";
+	case x86_cc_not_sign:                    return "no sign";
+	case x86_cc_parity:                      return "parity";
+	case x86_cc_not_parity:                  return "no parity";
+	case x86_cc_less:                        return "less";
+	case x86_cc_greater_equal:               return "greater or equal";
+	case x86_cc_less_equal:                  return "less or equal";
+	case x86_cc_greater:                     return "greater";
+	case x86_cc_float_parity_cases:          return "float parity cases";
+	case x86_cc_additional_float_cases:      return "additional float cases";
+	default:                                 return NULL;
+	}
+}
+
 /**
  * Dumper interface for dumping ia32 nodes in vcg.
  * @param n        the node to dump
@@ -163,7 +198,13 @@ static void ia32_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 			/* dump pn code */
 			if (is_ia32_CMovcc(n) || is_ia32_Setcc(n) || is_ia32_Jcc(n)) {
 				const ia32_attr_t *attr = get_ia32_attr_const(n);
-				fprintf(F, "condition_code = 0x%X\n", (unsigned)get_ia32_condcode(n));
+				const char *cc_name = condition_code_name(get_ia32_condcode(n));
+				if (cc_name) {
+					fprintf(F, "condition_code = %s\n", cc_name);
+				} else {
+					fprintf(F, "condition_code = <invalid (0x%X)>\n",
+					        (unsigned)get_ia32_condcode(n));
+				}
 				fprintf(F, "ins_permuted = %u\n", (unsigned)attr->data.ins_permuted);
 			} else if (is_ia32_CopyB(n) || is_ia32_CopyB_i(n)) {
 				fprintf(F, "size = %u\n", get_ia32_copyb_size(n));
