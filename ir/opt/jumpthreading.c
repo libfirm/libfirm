@@ -112,6 +112,9 @@ static ir_node *search_def_and_create_phis(ir_node *block, ir_mode *mode,
 		}
 		set_irn_n(phi, i, pred_val);
 	}
+	/* we might have created a potential endless loop, so keep the Phi */
+	if (get_irn_mode(phi) == mode_M)
+		keep_alive(phi);
 
 	return phi;
 }
