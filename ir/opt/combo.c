@@ -2994,7 +2994,7 @@ static void find_kept_memory(ir_node *irn, void *ctx)
 		return;
 
 	/* ok, we found a live memory node. */
-	if (all_users_are_dead(irn)) {
+	if (all_users_are_dead(irn) && is_Phi(irn)) {
 		environment_t *env = (environment_t*)ctx;
 		DB((dbg, LEVEL_1, "%+F must be kept\n", irn));
 		ARR_APP1(ir_node *, env->kept_memory, irn);
