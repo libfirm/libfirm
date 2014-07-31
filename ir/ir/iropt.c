@@ -5370,6 +5370,7 @@ static ir_node *transform_node_Phi(ir_node *phi)
 			return phi;
 
 		/* Move the Pin nodes "behind" the Phi. */
+		remove_keep_alive(phi); /* no self-loop => we can remove the Phi+keep */
 		ir_node *new_phi = new_r_Phi(block, n, in, mode_M);
 		return new_r_Pin(block, new_phi);
 	} else if (mode_is_reference(mode)) {
