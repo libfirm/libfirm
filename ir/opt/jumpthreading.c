@@ -37,12 +37,13 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 /**
  * Add the new predecessor x to node node, which is either a Block or a Phi
  */
-static void add_pred(ir_node* node, ir_node* x)
+static void add_pred(ir_node *node, ir_node *x)
 {
-	int const  n   = get_Block_n_cfgpreds(node);
-	ir_node  **ins = ALLOCAN(ir_node*, n+1);
-	foreach_irn_in(node, i, pred)
+	int        const n   = get_Block_n_cfgpreds(node);
+	ir_node  **const ins = ALLOCAN(ir_node*, n+1);
+	foreach_irn_in(node, i, pred) {
 		ins[i] = pred;
+	}
 	ins[n] = x;
 	set_irn_in(node, n + 1, ins);
 }
@@ -60,9 +61,8 @@ static ir_node *search_def_and_create_phis(ir_node *block, ir_mode *mode,
 	 * In this case we mustn't use the alternative definition.
 	 * So we keep a flag that indicated whether we walked at least 1 block
 	 * away and may use the alternative definition */
-	if (block == ssa_second_def_block && !first) {
+	if (block == ssa_second_def_block && !first)
 		return ssa_second_def;
-	}
 
 	/* already processed this block? */
 	if (irn_visited(block)) {
@@ -92,8 +92,9 @@ static ir_node *search_def_and_create_phis(ir_node *block, ir_mode *mode,
 	/* create a new Phi */
 	ir_node **in    = ALLOCAN(ir_node*, n_cfgpreds);
 	ir_node  *dummy = new_r_Dummy(irg, mode);
-	for (int i = 0; i < n_cfgpreds; ++i)
+	for (int i = 0; i < n_cfgpreds; ++i) {
 		in[i] = dummy;
+	}
 
 	ir_node *phi = new_r_Phi(block, n_cfgpreds, in, mode);
 	set_irn_link(block, phi);
@@ -212,9 +213,8 @@ static ir_node *copy_and_fix_node(const jumpthreading_env_t *env,
 	if (is_Phi(node)) {
 		copy = get_Phi_pred(node, j);
 		/* we might have to evaluate a Phi-cascade */
-		if (get_irn_visited(copy) >= env->visited_nr) {
+		if (get_irn_visited(copy) >= env->visited_nr)
 			copy = (ir_node*)get_irn_link(copy);
-		}
 	} else {
 		copy = exact_copy(node);
 		set_nodes_block(copy, copy_block);
@@ -237,14 +237,13 @@ static ir_node *copy_and_fix_node(const jumpthreading_env_t *env,
 
 	set_irn_link(node, copy);
 	set_irn_visited(node, env->visited_nr);
-
 	return copy;
 }
 
 static void copy_and_fix(const jumpthreading_env_t *env, ir_node *block,
                          ir_node *copy_block, int j)
 {
-	/* Look at all nodes in the cond_block and copy them into pred */
+	/* Look at all nodes in the cond_block and copy them into copy_block */
 	foreach_out_edge(block, edge) {
 		ir_node *node = get_edge_src_irn(edge);
 		if (is_End(node)) {
@@ -266,15 +265,13 @@ static void copy_and_fix(const jumpthreading_env_t *env, ir_node *block,
 			long     const pn   = get_Proj_proj(node);
 
 			foreach_out_edge_safe(node, edge) {
-				ir_node *cmp_copy;
 				ir_node *user       = get_edge_src_irn(edge);
-				int pos             = get_edge_src_pos(edge);
 				ir_node *user_block = get_nodes_block(user);
-
 				if (user_block == block)
 					continue;
 
-				cmp_copy = exact_copy(pred);
+				int      pos      = get_edge_src_pos(edge);
+				ir_node *cmp_copy = exact_copy(pred);
 				set_nodes_block(cmp_copy, user_block);
 				ir_node *copy = new_r_Proj(cmp_copy, mode_b, pn);
 				set_irn_n(user, pos, copy);
@@ -306,7 +303,6 @@ static void copy_and_fix(const jumpthreading_env_t *env, ir_node *block,
 #endif
 
 		DB((dbg, LEVEL_2, ">> Fixing users of %+F\n", node));
-
 		ir_node *copy_node = (ir_node*)get_irn_link(node);
 		construct_ssa(block, node, copy_block, copy_node);
 	}
@@ -337,9 +333,8 @@ static void copy_and_fix(const jumpthreading_env_t *env, ir_node *block,
 static int eval_cmp_tv(ir_relation relation, ir_tarval *tv_left,
                        ir_tarval *tv_right)
 {
-	ir_relation cmp_result = tarval_cmp(tv_left, tv_right);
-
 	/* does the compare evaluate to true? */
+	ir_relation cmp_result = tarval_cmp(tv_left, tv_right);
 	if (cmp_result == ir_relation_false)
 		return -1;
 	if ((cmp_result & relation) != 0)
@@ -526,10 +521,8 @@ static ir_node *find_candidate(jumpthreading_env_t *env, ir_node *jump,
 
 		if (!is_Const(right))
 			return NULL;
-
 		if (get_nodes_block(left) != block)
 			return NULL;
-
 		/* negate condition when we're looking for the false block */
 		if (env->tv == tarval_b_false)
 			relation = get_negated_relation(relation);
