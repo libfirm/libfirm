@@ -1409,7 +1409,8 @@ static ir_node *equivalent_node_Phi(ir_node *n)
 		return n;
 
 	/* Find first non-self-referencing input */
-	ir_node *first_val = NULL;
+	bool     had_self_loop = false;
+	ir_node *first_val     = NULL;
 	int      i;
 	for (i = 0; i < n_preds; ++i) {
 		first_val = get_Phi_pred(n, i);
@@ -1417,12 +1418,13 @@ static ir_node *equivalent_node_Phi(ir_node *n)
 		if (first_val != n) {
 			/* then found first value. */
 			break;
+		} else {
+			had_self_loop = true;
 		}
 	}
 
 	/* search for rest of inputs, determine if any of these
 	 * are non-self-referencing */
-	bool had_self_loop = false;
 	for (++i; i < n_preds; ++i) {
 		const ir_node *scnd_val = get_Phi_pred(n, i);
 		if (scnd_val == n) {
