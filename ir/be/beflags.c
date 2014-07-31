@@ -114,10 +114,11 @@ static void rematerialize_or_move(ir_node *flags_needed, ir_node *node,
 		value = copy;
 	}
 
-	ir_node *n = flag_consumers;
+	ir_mode *value_mode = get_irn_mode(value);
+	ir_node *n          = flag_consumers;
 	do {
 		foreach_irn_in(n, i, in) {
-			if (skip_Proj(in) == flags_needed) {
+			if (get_irn_mode(in) == value_mode && skip_Proj(in) == flags_needed) {
 				set_irn_n(n, i, value);
 				break;
 			}
