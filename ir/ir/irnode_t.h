@@ -540,8 +540,9 @@ void ir_register_getter_ops(void);
 
 /** remove keep alive edge to node by rerouting the edge to a Bad node.
  * (rerouting is preferable to removing when we are in a walker which also
- *  accesses the End node) */
-void remove_keep_alive(const ir_node *kept_node);
+ *  accesses the End node)
+ * @return true if an edge was removed */
+bool remove_keep_alive(const ir_node *kept_node);
 
 /**
  * Create a node similar to @p old.  Except for @p block and @p in all aspects
