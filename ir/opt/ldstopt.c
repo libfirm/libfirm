@@ -1311,7 +1311,7 @@ static changes_t optimize_phi(ir_node *phi, walk_env_t *wenv)
 
 	/* sixth step: replace old Phi */
 	bool kept = remove_keep_alive(phi);
-	if (kept)
+	if (kept && is_Phi(phiM))
 		keep_alive(phiM);
 	exchange(phi, projM);
 
