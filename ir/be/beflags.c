@@ -27,6 +27,7 @@
 #include "irtools.h"
 #include "ircons.h"
 #include "iredges_t.h"
+#include "irouts_t.h"
 #include "panic.h"
 
 #include "beflags.h"
@@ -90,6 +91,40 @@ static bool can_move(ir_node *node, ir_node *after)
 	return true;
 }
 
+/**
+ * After node has been rematerialized as copy, this checks all
+ * other uses of node to see if they can use copy instead (this
+ * reduces the lifetime of node's results).
+ */
+static void move_other_uses(ir_node *node, ir_node *copy)
+{
+	/* copy_prev already has its visited flag set, but is still
+	 * scheduled before copy. */
+	ir_node *copy_prev  = get_irn_sched_info(copy)->prev;
+	ir_node *copy_block = get_nodes_block(copy);
+
+	foreach_irn_out(node, i, proj) {
+		if (get_irn_mode(proj) == flag_class->mode) {
+			continue;
+		}
+
+		ir_node *new_proj = NULL;
+		foreach_out_edge_safe(proj, edge) {
+			ir_node *succ = get_edge_src_irn(edge);
+			if (irn_visited(succ) && succ != copy_prev &&
+			    block_dominates(copy_block, get_nodes_block(succ))) {
+				if (new_proj == NULL) {
+					ir_mode *proj_mode = get_irn_mode(proj);
+					int      pn        = get_Proj_proj(proj);
+					new_proj = new_r_Proj(copy, proj_mode, pn);
+				}
+				int n = get_edge_src_pos(edge);
+				set_irn_n(succ, n, new_proj);
+			}
+		}
+	}
+}
+
 static void rematerialize_or_move(ir_node *flags_needed, ir_node *node,
                                   ir_node *flag_consumers, int pn)
 {
@@ -107,6 +142,7 @@ static void rematerialize_or_move(ir_node *flags_needed, ir_node *node,
 	ir_node *copy = remat(flags_needed, node);
 	ir_node *value;
 	if (get_irn_mode(copy) == mode_T) {
+		move_other_uses(flags_needed, copy);
 		ir_mode *mode = flag_class->mode;
 		value = new_r_Proj(copy, mode, pn);
 		be_add_missing_keeps_node(copy);
@@ -155,6 +191,8 @@ static void fix_flags_walker(ir_node *block, void *env)
 	int      pn             = -1;
 	ir_node *place          = block;
 	sched_foreach_reverse(block, node) {
+		mark_irn_visited(node);
+
 		if (is_Phi(node)) {
 			place = node;
 			break;
@@ -244,9 +282,13 @@ void be_sched_fix_flags(ir_graph *irg, const arch_register_class_t *flag_cls,
 	if (check_modify == NULL)
 		check_modify = &default_check_modifies;
 
-	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
+	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK |
+	                          IR_RESOURCE_IRN_VISITED);
+	inc_irg_visited(irg);
 	irg_block_walk_graph(irg, fix_flags_walker, NULL, NULL);
-	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
+	ir_free_resources(irg, IR_RESOURCE_IRN_LINK |
+		               IR_RESOURCE_IRN_VISITED);
 
 	if (changed) {
 		be_remove_dead_nodes_from_schedule(irg);
