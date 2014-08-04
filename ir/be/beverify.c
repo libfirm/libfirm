@@ -72,7 +72,7 @@ static void verify_liveness_walker(ir_node *block, void *data)
 
 	unsigned pressure = ir_nodeset_size(&live_nodes);
 	if (pressure > env->registers_available) {
-		ir_fprintf(stderr, "Verify Warning: Register pressure too high at end of block %+F(%s) (%d/%d):\n",
+		ir_fprintf(stderr, "Verify warning: Register pressure too high at end of block %+F(%s) (%d/%d):\n",
 			block, get_irg_name(env->irg), pressure, env->registers_available);
 		print_living_values(stderr, &live_nodes);
 		env->problem_found = true;
@@ -88,7 +88,7 @@ static void verify_liveness_walker(ir_node *block, void *data)
 		pressure = ir_nodeset_size(&live_nodes);
 
 		if (pressure > env->registers_available) {
-			ir_fprintf(stderr, "Verify Warning: Register pressure too high before node %+F in %+F(%s) (%d/%d):\n",
+			ir_fprintf(stderr, "Verify warning: Register pressure too high before node %+F in %+F(%s) (%d/%d):\n",
 				irn, block, get_irg_name(env->irg), pressure, env->registers_available);
 			print_living_values(stderr, &live_nodes);
 			env->problem_found = true;
@@ -168,7 +168,7 @@ static void verify_schedule_walker(ir_node *block, void *data)
 		/* Check that phis come before any other node */
 		if (is_Phi(node)) {
 			if (non_phi_found != NULL) {
-				ir_fprintf(stderr, "Verify Warning: Phi node %+F scheduled after non-Phi nodes (for example %+F) in block %+F (%s)\n",
+				ir_fprintf(stderr, "Verify warning: Phi node %+F scheduled after non-Phi nodes (for example %+F) in block %+F (%s)\n",
 					node, non_phi_found, block, get_irg_name(env->irg));
 				env->problem_found = true;
 			}
@@ -180,7 +180,7 @@ static void verify_schedule_walker(ir_node *block, void *data)
 		if (is_cfop(node)) {
 			/* check, that only one CF operation is scheduled */
 			if (cfchange_found != NULL) {
-				ir_fprintf(stderr, "Verify Warning: Additional control flow changing node %+F scheduled after %+F in block %+F (%s)\n",
+				ir_fprintf(stderr, "Verify warning: Additional control flow changing node %+F scheduled after %+F in block %+F (%s)\n",
 					node, block, cfchange_found, get_irg_name(env->irg));
 				env->problem_found = true;
 			} else {
@@ -189,7 +189,7 @@ static void verify_schedule_walker(ir_node *block, void *data)
 		} else if (cfchange_found != NULL) {
 			/* keepany isn't a real instruction. */
 			if (!be_is_Keep(node)) {
-				ir_fprintf(stderr, "Verify Warning: Node %+F scheduled after control flow changing node in block %+F (%s)\n",
+				ir_fprintf(stderr, "Verify warning: Node %+F scheduled after control flow changing node in block %+F (%s)\n",
 				           node, block, get_irg_name(env->irg));
 				env->problem_found = true;
 			}
@@ -203,7 +203,7 @@ static void verify_schedule_walker(ir_node *block, void *data)
 					continue;
 
 				if (sched_get_time_step(arg) >= nodetime) {
-					ir_fprintf(stderr, "Verify Warning: Value %+F used by %+F before it was defined in block %+F (%s)\n",
+					ir_fprintf(stderr, "Verify warning: Value %+F used by %+F before it was defined in block %+F (%s)\n",
 					           arg, node, block, get_irg_name(env->irg));
 					env->problem_found = true;
 				}
