@@ -38,7 +38,7 @@ static void warn(const ir_node *n, const char *format, ...)
 }
 
 /**
- * Checks if node @p n has mode @p expected. Sisplays a message and returns
+ * Checks if node @p n has mode @p expected. Displays a message and returns
  * false in case of mismatch.
  */
 static bool check_mode(const ir_node *n, const ir_mode *expected)
