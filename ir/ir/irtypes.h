@@ -186,15 +186,17 @@ typedef struct irg_attr {
 	ir_graph *irg;              /**< The graph this block like node belongs to. */
 } irg_attr;
 
+/** Attributes for Bad nodes. */
 typedef struct bad_attr {
-	irg_attr    irg;
+	irg_attr irg;
 } bad_attr;
 
+/** Attributes for Anchor nodes. */
 typedef struct anchor_attr {
-	irg_attr  irg;
+	irg_attr irg;
 } anchor_attr;
 
-/** Block attributes */
+/** Attributes for Block nodes. */
 typedef struct block_attr {
 	/* General attributes */
 	irg_attr     irg;           /**< The graph this block belongs to. */
@@ -213,37 +215,37 @@ typedef struct block_attr {
 	double    execfreq;         /**< block execution frequency */
 } block_attr;
 
-/** Cond attributes. */
+/** Attributes for Cond nodes. */
 typedef struct cond_attr {
 	cond_jmp_predicate jmp_pred; /**< only for binary Conds: The jump predication. */
 } cond_attr;
 
-/** Const attributes. */
+/** Attributes for Const nodes. */
 typedef struct const_attr {
 	ir_tarval *tarval;  /**< the target value */
 } const_attr;
 
-/** Address and Offset attributes. */
+/** Attributes for Address and Offset nodes. */
 typedef struct entconst_attr {
 	ir_entity *entity;
 } entconst_attr;
 
-/** TypeConst attributes. */
+/** Attributes for TypeConst nodes. */
 typedef struct typeconst_attr {
 	ir_type *type;
 } typeconst_attr;
 
-/** Member attributes. */
+/** Attributes for Member nodes. */
 typedef struct member_attr {
-	ir_entity *entity;    /**< entity to select */
+	ir_entity *entity; /**< entity to select */
 } member_attr;
 
-/** Sel attributes. */
+/** Attributes for Sel nodes. */
 typedef struct sel_attr {
 	ir_type *type;
 } sel_attr;
 
-/** Exception attributes. */
+/** Attributes for nodes with exceptions (fragile flag). */
 typedef struct except_attr {
 	unsigned  pin_state : 2;         /**< the pin state for operations with
 	                                      variable pinned state. Contains a
@@ -253,26 +255,26 @@ typedef struct except_attr {
 	                                     values */
 } except_attr;
 
-/** Call attributes. */
+/** Attributes for Call nodes. */
 typedef struct call_attr {
 	except_attr exc;               /**< the exception attribute. MUST be the first one. */
 	ir_type     *type;             /**< type of called procedure */
 	ir_entity   **callee_arr;      /**< result of callee analysis */
 } call_attr;
 
-/** Builtin attributes. */
+/** Attributes for Builtin nodes. */
 typedef struct builtin_attr {
 	except_attr     exc;           /**< the exception attribute. MUST be the first one. */
 	ir_builtin_kind kind;          /**< kind of the called builtin procedure */
 	ir_type         *type;         /**< type of called builtin procedure */
 } builtin_attr;
 
-/** Alloc attributes. */
+/** Attributes for Alloc nodes. */
 typedef struct alloc_attr {
 	unsigned alignment;
 } alloc_attr;
 
-/** Load attributes. */
+/** Attributes for Load nodes. */
 typedef struct load_attr {
 	except_attr   exc;            /**< The exception attribute. MUST be the first one. */
 	ENUMBF(ir_volatility) volatility:1;   /**< The volatility of this Load operation. */
@@ -280,102 +282,104 @@ typedef struct load_attr {
 	ir_mode       *mode;          /**< The mode of this Load operation. */
 } load_attr;
 
-/** Store attributes. */
+/** Attributes for Store nodes. */
 typedef struct store_attr {
 	except_attr   exc;            /**< the exception attribute. MUST be the first one. */
 	ENUMBF(ir_volatility) volatility:1;   /**< The volatility of this Store operation. */
 	ENUMBF(ir_align)      unaligned:1;    /**< The align attribute of this Store operation. */
 } store_attr;
 
+/** Attributes for Phi nodes. */
 typedef struct phi_attr {
-	ir_node        *next;         /**< Points to the next Phi in the Phi list of a block. */
+	ir_node *next; /**< Points to the next Phi in the Phi list of a block. */
 	union {
-		bitset_t      *backedge;     /**< Raw Bitfield: bit n is set to true if pred n is backedge. */
-		int            pos;           /**< For Phi0. Used to remember the value defined by
-		                               this Phi node.  Needed when the Phi is completed
-		                               to call get_r_internal_value() to find the
-		                               predecessors. If this attribute is set, the Phi
-		                               node takes the role of the obsolete Phi0 node,
-		                               therefore the name. */
+		bitset_t *backedge; /**< Raw Bitset: pred n is backedge iff n is set. */
+		/** For Phi0. Used to remember the value defined by this Phi node.
+		 * Needed when the Phi is completed to call get_r_internal_value() to
+		 * find the predecessors. If this attribute is set, the Phi node takes
+		 * the role of the obsolete Phi0 node, therefore the name. */
+		int       pos;
 	} u;
 } phi_attr;
 
-/**< Cmp attribute. */
+/** Attributes for Cmp nodes. */
 typedef struct cmp_attr {
-	ir_relation relation;         /**< comparison condition. */
+	ir_relation relation; /**< comparison condition. */
 } cmp_attr;
 
-/**< Confirm attribute. */
+/** Attributes for Confirm nodes. */
 typedef struct confirm_attr {
-	ir_relation relation;         /**< relation between value and bound */
+	ir_relation relation; /**< relation between value and bound */
 } confirm_attr;
 
-/** CopyB attribute. */
+/** Attributes for CopyB nodes. */
 typedef struct copyb_attr {
-	ir_type      *type;           /**< Type of the copied entity. */
-	ENUMBF(ir_volatility) volatility:1;  /**< The volatility of this CopyB operation. */
+	ir_type *type;                      /**< Type of the copied entity. */
+	ENUMBF(ir_volatility) volatility:1; /**< Volatility of this CopyB. */
 } copyb_attr;
 
-/** Div attribute. */
+/** Attributes for Div nodes. */
 typedef struct div_attr {
-	except_attr    exc;           /**< The exception attribute. MUST be the first one. */
-	ir_mode        *resmode;      /**< Result mode for the division. */
-	char           no_remainder;  /**< Set, if known that a division can be done without a remainder. */
+	except_attr exc;          /**< The exception attribute. MUST be first. */
+	ir_mode    *resmode;      /**< Result mode for the division. */
+	char        no_remainder; /**< Set, if known that a division can be done
+	                               without a remainder. */
 } div_attr;
 
-/** Mod attribute. */
+/** Attributes for Mod nodes. */
 typedef struct mod_attr {
-	except_attr    exc;           /**< The exception attribute. MUST be the first one. */
-	ir_mode        *resmode;      /**< Result mode for the division. */
+	except_attr exc;     /**< The exception attribute. MUST be first. */
+	ir_mode    *resmode; /**< Result mode for the division. */
 } mod_attr;
 
-/** Inline Assembler support attribute. */
+/** Attributes for ASM nodes. */
 typedef struct asm_attr {
 	/* BEWARE: pin state MUST be the first attribute */
-	op_pin_state      pin_state;            /**< the pin state for operations that might generate a exception */
-	ident             *text;                /**< The inline assembler text. */
-	ir_asm_constraint *input_constraints;   /**< Input constraints. */
-	ir_asm_constraint *output_constraints;  /**< Output constraints. */
-	ident             **clobbers;           /**< List of clobbered registers. */
+	op_pin_state       pin_state;
+	ident             *text;               /**< The inline assembler text. */
+	ir_asm_constraint *input_constraints;  /**< Input constraints. */
+	ir_asm_constraint *output_constraints; /**< Output constraints. */
+	ident            **clobbers;           /**< List of clobbered registers. */
 } asm_attr;
 
+/** Attributes for Proj nodes. */
 typedef struct proj_attr {
-	long  proj;           /**< position of tuple sub-value which is projected */
+	long proj; /**< number of tuple sub-value which is projected */
 } proj_attr;
 
+/** Attributes for Switch nodes. */
 typedef struct switch_attr {
 	unsigned         n_outs;
 	ir_switch_table *table;
 } switch_attr;
 
-/** Some IR-nodes just have one attribute, these are stored here,
-   some have more. Their name is 'irnodename_attr' */
+/** Union with all possible node attributes. */
 typedef union ir_attr {
-	irg_attr       irg;           /**< For Blocks and Bad: its belonging irg */
-	bad_attr       bad;           /**< for Bads: irg reference */
-	anchor_attr    anchor;        /**< for Anchor: irg reference */
-	block_attr     block;         /**< For Block: Fields needed to construct it */
-	cmp_attr       cmp;           /**< For Cmp. */
-	cond_attr      cond;          /**< For Cond. */
-	const_attr     con;           /**< For Const: contains the value of the constant and a type */
-	entconst_attr  entc;          /**< For Address/Offset */
-	typeconst_attr typec;         /**< For TypeConst */
-	sel_attr       sel;           /**< For Sel. */
-	member_attr    member;        /**< For Member. */
-	call_attr      call;          /**< For Call. */
-	builtin_attr   builtin;       /**< For Builtin. */
-	alloc_attr     alloc;         /**< For Alloc. */
-	load_attr      load;          /**< For Load. */
-	store_attr     store;         /**< For Store. */
-	phi_attr       phi;           /**< For Phi. */
-	proj_attr      proj;          /**< For Proj. */
-	confirm_attr   confirm;       /**< For Confirm: compare operation and region. */
-	except_attr    except;        /**< For Phi node construction in case of exceptions */
-	copyb_attr     copyb;         /**< For CopyB operation */
-	div_attr       div;           /**< For Div operation */
-	mod_attr       mod;           /**< For Mod operation */
-	asm_attr       assem;         /**< For ASM operation. */
-	switch_attr    switcha;       /**< For Switch operation. */
+	irg_attr       irg;
+	bad_attr       bad;
+	anchor_attr    anchor;
+	block_attr     block;
+	cmp_attr       cmp;
+	cond_attr      cond;
+	const_attr     con;
+	entconst_attr  entc;
+	typeconst_attr typec;
+	sel_attr       sel;
+	member_attr    member;
+	call_attr      call;
+	builtin_attr   builtin;
+	alloc_attr     alloc;
+	load_attr      load;
+	store_attr     store;
+	phi_attr       phi;
+	proj_attr      proj;
+	confirm_attr   confirm;
+	except_attr    except;
+	copyb_attr     copyb;
+	div_attr       div;
+	mod_attr       mod;
+	asm_attr       assem;
+	switch_attr    switcha;
 } ir_attr;
 
 /**
