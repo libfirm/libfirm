@@ -175,8 +175,10 @@ static ir_node *set_phi_arguments(ir_node *phi, int pos)
 
 	/* To solve the problem of (potentially) endless loops being observable
 	 * behaviour we add a keep-alive edge too all PhiM nodes. */
-	if (mode == mode_M && !is_Id(phi))
+	if (mode == mode_M && !is_Id(phi)) {
+		phi->attr.phi.loop = true;
 		keep_alive(phi);
+	}
 
 	return phi;
 }
@@ -331,6 +333,37 @@ ir_node *new_d_DivRL(dbg_info *dbgi, ir_node * irn_mem, ir_node * irn_left, ir_n
 ir_node *new_DivRL(ir_node * irn_mem, ir_node * irn_left, ir_node * irn_right, ir_mode* resmode, op_pin_state pin_state)
 {
 	return new_d_DivRL(NULL, irn_mem, irn_left, irn_right, resmode, pin_state);
+}
+
+ir_node *new_rd_Phi_loop(dbg_info *db, ir_node *block, int arity,
+                             ir_node *in[])
+{
+	ir_graph *const irg = get_Block_irg(block);
+	ir_node *res = new_ir_node(db, irg, block, op_Phi, mode_M, arity, in);
+	res->attr.phi.u.backedge = new_backedge_arr(get_irg_obstack(irg), arity);
+	res->attr.phi.loop = true;
+	verify_new_node(irg, res);
+	ir_node *optimized = optimize_node(res);
+	if (optimized == res)
+		keep_alive(optimized);
+	return optimized;
+}
+
+ir_node *new_r_Phi_loop(ir_node *block, int arity, ir_node *in[])
+{
+	return new_rd_Phi_loop(NULL, block, arity, in);
+}
+
+ir_node *new_d_Phi_loop(dbg_info *db, int arity, ir_node *in[])
+{
+	assert(irg_is_constrained(current_ir_graph, IR_GRAPH_CONSTRAINT_CONSTRUCTION));
+	return new_rd_Phi_loop(db, current_ir_graph->current_block, arity, in);
+}
+
+ir_node *new_Phi_loop(int arity, ir_node *in[])
+{
+	assert(irg_is_constrained(current_ir_graph, IR_GRAPH_CONSTRAINT_CONSTRUCTION));
+	return new_rd_Phi_loop(NULL, current_ir_graph->current_block, arity, in);
 }
 
 ir_node *new_rd_immBlock(dbg_info *dbgi, ir_graph *irg)

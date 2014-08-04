@@ -111,7 +111,6 @@ struct node_t {
 	bool            on_cprop:1;     /**< Set, if this node is on the partition.cprop list. */
 	bool            on_fallen:1;    /**< Set, if this node is on the fallen list. */
 	bool            is_follower:1;  /**< Set, if this node is a follower. */
-	bool            is_kept_alive:1;/**< node has a keep-alive edge. */
 	unsigned        flagged:2;      /**< 2 Bits, set if this node was visited by race 1 or 2. */
 };
 
@@ -2344,7 +2343,7 @@ static node_t *identity_Phi(node_t *node)
 
 	/* special rule: kept PhiM nodes have to create their own partition
 	 * (as they represent the observable behaviour of a loop running endless) */
-	if (node->is_kept_alive) {
+	if (get_Phi_loop(phi)) {
 		assert(get_irn_mode(phi) == mode_M);
 		return node;
 	}
@@ -2883,9 +2882,8 @@ static void apply_cf(ir_node *block, void *ctx)
 				ir_node *s        = ins[0];
 				node_t  *phi_node = get_irn_node(phi);
 
-				if (get_irn_mode(phi) == mode_M) {
+				if (get_Phi_loop(phi))
 					remove_keep_alive(phi);
-				}
 
 				node->node = s;
 				DB((dbg, LEVEL_1, "%+F is replaced by %+F because of cf change\n", phi, s));
@@ -3287,13 +3285,6 @@ void combo(ir_graph *irg)
 	add_to_worklist(env.initial, &env);
 	irg_walk_graph(irg, create_initial_partitions, init_block_phis, &env);
 
-	/* mark all kept PhiM nodes, as we must not remove them */
-	ir_node *end = get_irg_end(irg);
-	for (int i = 0, n_keeps = get_End_n_keepalives(end); i < n_keeps; ++i) {
-		ir_node *kept = get_End_keepalive(end, i);
-		get_irn_node(kept)->is_kept_alive = true;
-	}
-
 	/* set the hook: from now, every node has a partition and a type */
 	DEBUG_ONLY(set_dump_node_vcgattr_hook(dump_partition_hook);)
 
@@ -3325,6 +3316,7 @@ void combo(ir_graph *irg)
 	/* Kill keep-alives of dead blocks: this speeds up apply_result()
 	 * and fixes assertion because dead cf to dead blocks is NOT removed by
 	 * apply_cf(). */
+	ir_node *end = get_irg_end(irg);
 	apply_end(end, &env);
 
 	/* need a freshly computed dominance tree (after killing unreachable code

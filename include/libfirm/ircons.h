@@ -353,6 +353,25 @@ FIRM_API ir_node *new_Const_long(ir_mode *mode, long value);
 
 /** @} */
 
+/** @addtogroup Phi
+ * @{
+ */
+
+/** Constructor for memory Phi with keep-alive edge. */
+FIRM_API ir_node *new_rd_Phi_loop(dbg_info *db, ir_node *block,
+                                      int arity, ir_node *in[]);
+
+/** Constructor for memory Phi with keep-alive edge. */
+FIRM_API ir_node *new_r_Phi_loop(ir_node *block, int arity, ir_node *in[]);
+
+/** Constructor for memory Phi with keep-alive edge. */
+FIRM_API ir_node *new_d_Phi_loop(dbg_info *db, int arity, ir_node *in[]);
+
+/** Constructor for memory Phi with keep-alive edge. */
+FIRM_API ir_node *new_Phi_loop(int arity, ir_node *in[]);
+
+/** @} */
+
 /** @addtogroup Div
  * @{
  */

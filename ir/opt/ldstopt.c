@@ -1266,8 +1266,9 @@ static changes_t optimize_phi(ir_node *phi, walk_env_t *wenv)
 		idx[i] = info->exc_idx;
 	}
 
-	/* second step: create a new memory Phi */
-	ir_node *phiM = new_r_Phi(phi_block, n, inM, mode_M);
+	/* second step: remove keep edge from old Phi and create a new memory Phi */
+	ir_node *phiM = get_Phi_loop(phi) ? new_r_Phi_loop(phi_block, n, inM)
+	                                  : new_r_Phi(phi_block, n, inM, mode_M);
 
 	/* third step: create a new data Phi */
 	ir_node *phiD = new_r_Phi(phi_block, n, inD, mode);
@@ -1310,9 +1311,8 @@ static changes_t optimize_phi(ir_node *phi, walk_env_t *wenv)
 	}
 
 	/* sixth step: replace old Phi */
-	bool kept = remove_keep_alive(phi);
-	if (kept && is_Phi(phiM))
-		keep_alive(phiM);
+	if (get_Phi_loop(phi))
+		remove_keep_alive(phi);
 	exchange(phi, projM);
 
 	return res | DF_CHANGED;

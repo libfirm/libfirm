@@ -38,8 +38,8 @@ void exchange(ir_node *old, ir_node *nw)
 	/* When replacing a PhiM node, it must not be hold by a keep-alive edge.
 	 * => Keep-alive edges are not normal users and should not move along when
 	 * exchanging. */
-	if (is_Phi(old) && get_irn_mode(old) == mode_M && !is_Bad(nw)
-	    && (!is_Phi(nw) || get_nodes_block(old) != get_nodes_block(nw))) {
+	if (is_Phi(old) && get_Phi_loop(old) && !(is_Phi(nw) && get_Phi_loop(nw))
+	    && !is_Bad(nw)) {
 		ir_node *end = get_irg_end(irg);
 		foreach_irn_in(end, i, kept) {
 			assert(kept != old);

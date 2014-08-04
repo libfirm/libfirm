@@ -675,6 +675,12 @@ void dump_node_opcode(FILE *F, const ir_node *n)
 		fprintf(F, "[%s]", get_mode_name(get_Div_resmode(n)));
 		break;
 
+	case iro_Phi:
+		fprintf(F, "%s", name);
+		if (get_Phi_loop(n))
+			fprintf(F, "[loop]");
+		break;
+
 	case iro_Load: {
 		char const *const prefix = get_Load_unaligned(n) == align_non_aligned ? "ua" : "";
 		fprintf(F, "%s%s[%s]", prefix, name, get_mode_name(get_Load_mode(n)));

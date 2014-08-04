@@ -602,23 +602,20 @@ void remove_End_keepalive(ir_node *end, const ir_node *irn)
 	remove_irn_n(end, idx);
 }
 
-bool remove_keep_alive(const ir_node *irn)
+void remove_keep_alive(const ir_node *irn)
 {
 	ir_graph *irg = get_irn_irg(irn);
 	ir_node  *end = get_irg_end(irg);
 
-	bool found = false;
 	for (int i = get_End_n_keepalives(end);;) {
 		if (i-- == 0)
-			return found;
+			return;
 
 		ir_node *old_ka = end->in[1 + END_KEEPALIVE_OFFSET + i];
 
 		/* find irn */
-		if (old_ka == irn) {
+		if (old_ka == irn)
 			set_irn_n(end, END_KEEPALIVE_OFFSET+i, new_r_Bad(irg, get_irn_mode(irn)));
-			found = true;
-		}
 	}
 }
 

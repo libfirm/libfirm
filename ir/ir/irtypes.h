@@ -300,6 +300,7 @@ typedef struct phi_attr {
 		 * the role of the obsolete Phi0 node, therefore the name. */
 		int       pos;
 	} u;
+	unsigned loop:1; /**< Set to true if this is a loop PhiM node. */
 } phi_attr;
 
 /** Attributes for Cmp nodes. */

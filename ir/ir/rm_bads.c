@@ -69,12 +69,12 @@ static void block_remove_bads(ir_node *block)
 
 		/* shortcut if only 1 phi input is left */
 		if (new_max == 1) {
-			if (get_irn_mode(phi) == mode_M)
-				remove_keep_alive(phi);
 			ir_node *new_node = new_in[0];
 			/* can happen inside unreachable endless loops */
 			if (new_node == phi)
 				return;
+			if (get_Phi_loop(phi))
+				remove_keep_alive(phi);
 			exchange(phi, new_node);
 		} else {
 			set_irn_in(phi, new_max, new_in);

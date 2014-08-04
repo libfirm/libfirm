@@ -650,6 +650,10 @@ class Phi:
 	arity         = "variable"
 	input_name    = "pred"
 	flags         = []
+	attrs         = [
+		Attribute("loop", type="int", init="0",
+		          comment="wether Phi represents the observable effect of a (possibly) nonterminating loop"),
+	]
 	attr_struct   = "phi_attr"
 	init          = '''
 	res->attr.phi.u.backedge = new_backedge_arr(get_irg_obstack(irg), arity);'''

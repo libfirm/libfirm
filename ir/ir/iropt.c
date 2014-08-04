@@ -1382,17 +1382,6 @@ static ir_node *equivalent_node_Bitcast(ir_node *n)
 	return n;
 }
 
-static bool is_kept_alive(const ir_node *node)
-{
-	const ir_graph *const irg = get_irn_irg(node);
-	const ir_node  *const end = get_irg_end(irg);
-	foreach_irn_in(end, i, kept) {
-		if (node == kept)
-			return true;
-	}
-	return false;
-}
-
 /**
  * - fold Phi-nodes, iff they have only one predecessor except
  *   themselves.
@@ -1443,13 +1432,13 @@ static ir_node *equivalent_node_Phi(ir_node *n)
 	 * and must be part of the memory chain. If there are no other memory
 	 * operations in a loop we still are not allowed to remove the PhiM unless
 	 * we can prove that the loop terminates. */
-	if (get_irn_mode(n) == mode_M) {
+	if (get_Phi_loop(n)) {
+		assert(get_irn_mode(n) == mode_M);
 		/* We currently assume that PhiMs that have a keep-alive edge are in a
 		 * potentially endless loops. PhiM without a keep alive edge is a sign
 		 * that we are sure that the loop terminates. */
-		if (had_self_loop && is_kept_alive(n)) {
+		if (had_self_loop)
 			return n;
-		}
 		/* The PhiM will be removed, we can remove keep-alive edges to it as
 		 * well. */
 		remove_keep_alive(n);
@@ -5372,10 +5361,10 @@ static ir_node *transform_node_Phi(ir_node *phi)
 			return phi;
 
 		/* Move the Pin nodes "behind" the Phi. */
-		bool kept = remove_keep_alive(phi);
-		ir_node *new_phi = new_r_Phi(block, n, in, mode_M);
-		if (kept)
-			keep_alive(new_phi);
+		ir_node *new_phi = get_Phi_loop(phi) ? new_r_Phi_loop(block, n, in)
+		                                     : new_r_Phi(block, n, in, mode_M);
+		if (get_Phi_loop(phi))
+			remove_keep_alive(phi);
 		return new_r_Pin(block, new_phi);
 	} else if (mode_is_reference(mode)) {
 		/* Move Confirms down through Phi nodes. */

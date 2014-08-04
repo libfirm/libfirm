@@ -426,14 +426,16 @@ static int verify_node_End(const ir_node *n)
 	if (!irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_BACKEND)) {
 		foreach_irn_in(n, i, kept) {
 			/* endless loop handling may keep PhiM and Block nodes */
-			if (is_Block(kept) || (is_Phi(kept) && get_irn_mode(kept) == mode_M))
+			if (is_Block(kept))
+				continue;
+			if (is_Phi(kept) && get_Phi_loop(kept))
 				continue;
 			/* noreturn calls are currently kept with keep-alive edges */
 			if (is_Call(kept))
 				continue;
 			if (is_Bad(kept))
 				continue;
-			warn(n, "keep-alive edge only allowed on Block, PhiM and Call node, found %+F",
+			warn(n, "keep-alive edge only allowed on Block, PhiLoop and Call node, found %+F",
 			     kept);
 			fine = false;
 		}
@@ -877,6 +879,9 @@ static int verify_node_Phi(const ir_node *n)
 	for (int i = 0, n_preds = get_Phi_n_preds(n); i < n_preds; ++i) {
 		fine &= check_mode_same_input(n, i, NULL);
 	}
+
+	if (get_Phi_loop(n))
+		check_mode(n, mode_M);
 	return fine;
 }
 
