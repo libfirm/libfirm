@@ -1753,9 +1753,7 @@ void opt_ldst(ir_graph *irg)
 		| IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE
 		| IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 
-	if (get_opt_alias_analysis()) {
-		assure_irp_globals_entity_usage_computed();
-	}
+	assure_irp_globals_entity_usage_computed();
 
 	obstack_init(&env.obst);
 	ir_nodehashmap_init(&env.adr_map);

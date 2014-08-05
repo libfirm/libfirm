@@ -34,7 +34,7 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 DEBUG_ONLY(static firm_dbg_module_t *dbgcall = NULL;)
 
 /** The global memory disambiguator options. */
-static unsigned global_mem_disamgig_opt = aa_opt_no_opt;
+static unsigned global_mem_disamgig_opt = aa_opt_none;
 
 const char *get_ir_alias_relation_name(ir_alias_relation rel)
 {
@@ -238,15 +238,12 @@ static ir_alias_relation _get_alias_relation(
 	const ir_node *addr1, const ir_type *const type1,
 	const ir_node *addr2, const ir_type *const type2)
 {
-	if (!get_opt_alias_analysis())
-		return ir_may_alias;
-
 	if (addr1 == addr2)
 		return ir_sure_alias;
-
 	ir_graph *const irg     = get_irn_irg(addr1);
 	unsigned  const options = get_irg_memory_disambiguator_options(irg);
-
+	if (options & aa_opt_always_alias)
+		return ir_may_alias;
 	/* The Armageddon switch */
 	if (options & aa_opt_no_alias)
 		return ir_no_alias;

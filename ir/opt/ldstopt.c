@@ -2171,8 +2171,7 @@ void optimize_load_store(ir_graph *irg)
 
 	assert(get_irg_pinned(irg) != op_pin_state_floats);
 
-	if (get_opt_alias_analysis())
-		assure_irp_globals_entity_usage_computed();
+	assure_irp_globals_entity_usage_computed();
 
 	walk_env_t env;
 	obstack_init(&env.obst);

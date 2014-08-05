@@ -100,12 +100,6 @@ FIRM_API void set_opt_global_cse(int value);
  */
 FIRM_API void set_opt_global_null_ptr_elimination(int value);
 
-/** Enable/Disable Alias analysis.
- *
- * If enabled, memory disambiguation by alias analysis is used.
- */
-FIRM_API void set_opt_alias_analysis(int value);
-
 /** Enable/Disable closed world assumption.
  *
  * If enabled, optimizations expect to know the "whole world", i.e. no
