@@ -502,30 +502,6 @@ void set_r_store(ir_graph *const irg, ir_node *store)
 	   the construction phase. */
 	assert((get_irn_mode(store) == mode_M || is_Bad(store)) && "storing non-memory node");
 
-	if (get_opt_auto_create_sync()) {
-		/* handle non-volatile Load nodes by automatically creating Sync's */
-		ir_node *const load = skip_Proj(store);
-		if (is_Load(load) && get_Load_volatility(load) == volatility_non_volatile) {
-			ir_node *const pred = get_Load_mem(load);
-			if (is_Sync(pred)) {
-				/* a Load after a Sync: move it up */
-				ir_node *mem = skip_Proj(get_Sync_pred(pred, 0));
-
-				set_Load_mem(load, get_memop_mem(mem));
-				add_Sync_pred(pred, store);
-				store = pred;
-			} else {
-				ir_node *const pload = skip_Proj(pred);
-				if (is_Load(pload) && get_Load_volatility(pload) == volatility_non_volatile) {
-					/* a Load after a Load: create a new Sync */
-					set_Load_mem(load, get_Load_mem(pload));
-
-					ir_node *in[] = { pred, store };
-					store = new_r_Sync(irg->current_block, ARRAY_SIZE(in), in);
-				}
-			}
-		}
-	}
 	irg->current_block->attr.block.graph_arr[0] = store;
 }
 

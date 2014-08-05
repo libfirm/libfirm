@@ -100,17 +100,6 @@ FIRM_API void set_opt_global_cse(int value);
  */
 FIRM_API void set_opt_global_null_ptr_elimination(int value);
 
-/**
- * Enable/Disable Automatic construction of Sync nodes during
- * Firm construction.
- *
- * If this flags is set, sequential non-volatile Loads are automatically
- * rearranged so that they can be executed in parallel by creating Sync nodes.
- *
- * This flag should be set for Java style languages.
- */
-FIRM_API void set_opt_auto_create_sync(int value);
-
 /** Enable/Disable Alias analysis.
  *
  * If enabled, memory disambiguation by alias analysis is used.

@@ -36,9 +36,6 @@ I_FLAG(algebraic_simplification           , 4, ON)
 /** Use Global Null Pointer Test elimination. */
 I_FLAG(global_null_ptr_elimination        , 5, ON)
 
-/** Automatically create Sync node during construction. */
-I_FLAG(auto_create_sync                   , 10, OFF)
-
 /** Enable Alias-analysis. */
 I_FLAG(alias_analysis                     , 11, ON)
 
