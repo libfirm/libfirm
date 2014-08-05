@@ -3161,7 +3161,7 @@ restart:
 		}
 	}
 	/* do NOT execute this code if reassociation is enabled, it does the inverse! */
-	if (!is_reassoc_running() && is_Mul(a)) {
+	if (is_Mul(a)) {
 		ir_node *const x = b;
 		ir_node *const y = get_commutative_other_op(a, x);
 		if (y) {

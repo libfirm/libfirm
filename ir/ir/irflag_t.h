@@ -19,13 +19,11 @@
 typedef enum {
 #define E_FLAG(name, value, def)    irf_##name = (1 << value),
 #define I_FLAG(name, value, def)    irf_##name = (1 << value),
-#define R_FLAG(name, value)
 
 #include "irflag_t.def"
 	irf_last
 #undef I_FLAG
 #undef E_FLAG
-#undef R_FLAG
 } libfirm_opts_t;
 
 /**
@@ -34,13 +32,11 @@ typedef enum {
 typedef enum {
 #define E_FLAG(name, value, def)
 #define I_FLAG(name, value, def)
-#define R_FLAG(name, value)         ir_rf_##name = (1 << value),
 
 #include "irflag_t.def"
 	ir_rf_last
 #undef I_FLAG
 #undef E_FLAG
-#undef R_FLAG
 } libfirm_running_t;
 
 extern optimization_state_t libFIRM_opt, libFIRM_running, libFIRM_verb;
@@ -60,21 +56,10 @@ static inline int get_opt_##name(void) {           \
   return libFIRM_opt & irf_##name;                 \
 }
 
-/* generate getter and setter functions for running flags */
-#define R_FLAG(name, value)                        \
-static inline int is_##name##_running(void) {      \
-  return libFIRM_running & ir_rf_##name;           \
-}                                                  \
-static inline void set_##name##_running(int flag) {\
-  if (flag) libFIRM_running |= ir_rf_##name;       \
-  else      libFIRM_running &= ~ir_rf_##name;      \
-}
-
 #include "irflag_t.def"
 
 #undef I_FLAG
 #undef E_FLAG
-#undef R_FLAG
 
 static inline int get_optimize_(void)
 {

@@ -24,7 +24,6 @@
 #define FLAG(name, value, def)     (irf_##name & def) |
 #define E_FLAG(name, value, def)    FLAG(name, value, def)
 #define I_FLAG(name, value, def)    FLAG(name, value, def)
-#define R_FLAG(name, value)
 
 optimization_state_t libFIRM_opt =
 #include "irflag_t.def"
@@ -33,7 +32,6 @@ optimization_state_t libFIRM_opt =
 #undef FLAG
 #undef E_FLAG
 #undef I_FLAG
-#undef R_FLAG
 
 optimization_state_t libFIRM_running = 0;
 
@@ -58,14 +56,11 @@ void set_opt_##name(int flag) {           \
   else      libFIRM_opt &= ~irf_##name;   \
 }                                         \
 
-#define R_FLAG(name, value)
-
 /* generate them */
 #include "irflag_t.def"
 
 #undef I_FLAG
 #undef E_FLAG
-#undef R_FLAG
 
 void set_optimize(int value)
 {
@@ -95,11 +90,9 @@ void all_optimizations_off(void)
 static const lc_opt_table_entry_t firm_flags[] = {
 #define I_FLAG(name, val, def) LC_OPT_ENT_BIT(#name, #name, &libFIRM_opt, (1 << val)),
 #define E_FLAG(name, val, def) LC_OPT_ENT_BIT(#name, #name, &libFIRM_opt, (1 << val)),
-#define R_FLAG(name, val)
 #include "irflag_t.def"
 #undef I_FLAG
 #undef E_FLAG
-#undef R_FLAG
 	LC_OPT_LAST
 };
 

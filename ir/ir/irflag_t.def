@@ -13,7 +13,6 @@
  * We have 3 kinds of flags:
  * I_FLAGS are INTERNAL flags: There is only a public set_opt_<flag> function
  * E_FLAGS are EXTERNAL flags: Public get_opt_<flag> and set_opt_<flag> fucntions exists
- * R_FLAGS are RUNNING flags: Use only internally in libfirm to indicate running states
  */
 
 /** Turn off all optimizations. */
@@ -45,8 +44,3 @@ I_FLAG(alias_analysis                     , 11, ON)
 
 /** Closed world assumption. */
 I_FLAG(closed_world                       , 12, OFF)
-
-/* -------------------- RUNNING flags ------------------- */
-
-/** This flag is set while the reassociation optimizations are running */
-R_FLAG(reassoc                            , 0)

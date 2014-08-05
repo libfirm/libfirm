@@ -602,18 +602,12 @@ void optimize_reassociation(ir_graph *irg)
 
 	waitq *const wq = new_waitq();
 
-	/* disable some optimizations while reassoc is running to prevent endless
-	 * loops */
-	set_reassoc_running(1);
-
 	/* now we have collected enough information, optimize */
 	irg_walk_graph(irg, NULL, wq_walker, wq);
 	do_reassociation(wq);
 
 	/* reverse those rules that do not result in collapsed constants */
 	irg_walk_graph(irg, NULL, reverse_rules, NULL);
-
-	set_reassoc_running(0);
 
 	del_waitq(wq);
 
