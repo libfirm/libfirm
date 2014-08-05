@@ -68,6 +68,9 @@ FIRM_API int get_opt_constant_folding(void);
  */
 FIRM_API void set_opt_algebraic_simplification(int value);
 
+/** Returns algebraic simplification setting. */
+FIRM_API int get_opt_algebraic_simplification(void);
+
 /** Enables/Disables common subexpression elimination.
  *
  * If opt_cse == 1 perform common subexpression elimination.
@@ -89,6 +92,9 @@ FIRM_API int get_opt_cse(void);
  */
 FIRM_API void set_opt_global_cse(int value);
 
+/** Returns global constant subexpression elimination setting. */
+FIRM_API int get_opt_global_cse(void);
+
 /**
  * Enable/Disable Global Null Pointer Test Elimination.
  *
@@ -100,6 +106,9 @@ FIRM_API void set_opt_global_cse(int value);
  */
 FIRM_API void set_opt_global_null_ptr_elimination(int value);
 
+/** Returns global null pointer test elimination setting. */
+FIRM_API int get_opt_global_null_ptr_elimination(void);
+
 /** Enable/Disable closed world assumption.
  *
  * If enabled, optimizations expect to know the "whole world", i.e. no
@@ -107,6 +116,9 @@ FIRM_API void set_opt_global_null_ptr_elimination(int value);
  * This enables some powerful optimizations.
  */
 FIRM_API void set_opt_closed_world(int value);
+
+/** Returns closed world assumption setting. */
+FIRM_API int get_opt_closed_world(void);
 
 /**
  * Save the current optimization state.

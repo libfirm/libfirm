@@ -1399,7 +1399,7 @@ static bool is_kept_alive(const ir_node *node)
  */
 static ir_node *equivalent_node_Phi(ir_node *n)
 {
-	if (!get_opt_optimize() &&
+	if (!get_optimize() &&
 	    !irg_is_constrained(get_irn_irg(n), IR_GRAPH_CONSTRAINT_CONSTRUCTION))
 		return n;
 
@@ -7588,7 +7588,7 @@ ir_node *optimize_node(ir_node *n)
 	unsigned  iro  = get_irn_opcode(n);
 
 	/* Always optimize Phi nodes: part of the construction. */
-	if ((!get_opt_optimize()) && (iro != iro_Phi)) return n;
+	if ((!get_optimize()) && (iro != iro_Phi)) return n;
 
 	ir_graph *irg = get_irn_irg(n);
 
@@ -7674,7 +7674,7 @@ ir_node *optimize_node(ir_node *n)
 
 ir_node *optimize_in_place_2(ir_node *n)
 {
-	if (!get_opt_optimize() && !is_Phi(n)) return n;
+	if (!get_optimize() && !is_Phi(n)) return n;
 
 	if (is_Deleted(n))
 		return n;

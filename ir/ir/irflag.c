@@ -21,46 +21,29 @@
 #define ON   -1
 #define OFF   0
 
-#define FLAG(name, value, def)     (irf_##name & def) |
-#define E_FLAG(name, value, def)    FLAG(name, value, def)
-#define I_FLAG(name, value, def)    FLAG(name, value, def)
-
 optimization_state_t libFIRM_opt =
+#define FLAG(name, value, def)   (irf_##name & def) |
 #include "irflag_t.def"
+#undef FLAG
   0;
 
-#undef FLAG
-#undef E_FLAG
-#undef I_FLAG
-
-optimization_state_t libFIRM_running = 0;
-
-optimization_state_t libFIRM_verb = 0;
-
 void set_opt_optimize(int value);
+int get_opt_optimize(void);
 
 /* an external flag can be set and get from outside */
-#define E_FLAG(name, value, def)           \
+#define FLAG(name, value, def)           \
 void set_opt_##name(int flag) {            \
   if (flag) libFIRM_opt |= irf_##name;     \
   else      libFIRM_opt &= ~irf_##name;    \
 }                                          \
 int (get_opt_##name)(void) {               \
-  return get_opt_##name##_();              \
+  return (libFIRM_opt & irf_##name) != 0;  \
 }
-
-/* an internal flag can only be set from outside */
-#define I_FLAG(name, value, def)          \
-void set_opt_##name(int flag) {           \
-  if (flag) libFIRM_opt |= irf_##name;    \
-  else      libFIRM_opt &= ~irf_##name;   \
-}                                         \
 
 /* generate them */
 #include "irflag_t.def"
 
-#undef I_FLAG
-#undef E_FLAG
+#undef FLAG
 
 void set_optimize(int value)
 {
@@ -88,11 +71,9 @@ void all_optimizations_off(void)
 }
 
 static const lc_opt_table_entry_t firm_flags[] = {
-#define I_FLAG(name, val, def) LC_OPT_ENT_BIT(#name, #name, &libFIRM_opt, (1 << val)),
-#define E_FLAG(name, val, def) LC_OPT_ENT_BIT(#name, #name, &libFIRM_opt, (1 << val)),
+#define FLAG(name, val, def) LC_OPT_ENT_BIT(#name, #name, &libFIRM_opt, (1 << val)),
 #include "irflag_t.def"
-#undef I_FLAG
-#undef E_FLAG
+#undef FLAG
 	LC_OPT_LAST
 };
 

@@ -189,7 +189,7 @@ static void move_edges(ir_node *node, ir_node *from_bl, ir_node *to_bl)
 void part_block(ir_node *node)
 {
 	/* Turn off optimizations so that blocks are not merged again. */
-	int rem_opt = get_opt_optimize();
+	int rem_opt = get_optimize();
 	set_optimize(0);
 
 	/* Transform the control flow */

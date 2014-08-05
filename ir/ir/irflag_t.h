@@ -13,60 +13,45 @@
 
 #include "irflag.h"
 
+#define get_opt_cse()                      get_opt_cse_()
+#define get_optimize()                     get_optimize_()
+#define get_opt_constant_folding()         get_opt_constant_folding_()
+#define get_opt_algebraic_simplification() get_opt_algebraic_simplification_()
+
 /**
  * libFIRM optimizations flags
  */
 typedef enum {
-#define E_FLAG(name, value, def)    irf_##name = (1 << value),
-#define I_FLAG(name, value, def)    irf_##name = (1 << value),
+#define FLAG(name, value, def)    irf_##name = (1 << value),
 
 #include "irflag_t.def"
 	irf_last
-#undef I_FLAG
-#undef E_FLAG
+#undef FLAG
 } libfirm_opts_t;
 
-/**
- * libFIRM running flags
- */
-typedef enum {
-#define E_FLAG(name, value, def)
-#define I_FLAG(name, value, def)
-
-#include "irflag_t.def"
-	ir_rf_last
-#undef I_FLAG
-#undef E_FLAG
-} libfirm_running_t;
-
-extern optimization_state_t libFIRM_opt, libFIRM_running, libFIRM_verb;
+extern optimization_state_t libFIRM_opt;
 
 /** initialises the flags */
 void firm_init_flags(void);
 
-/* generate the getter functions for external access */
-#define E_FLAG(name, value, def)                    \
-static inline int get_opt_##name##_(void) {         \
-  return libFIRM_opt & irf_##name;                  \
+static inline int get_opt_cse_(void)
+{
+	return (libFIRM_opt & irf_cse) != 0;
 }
 
-/* generate the getter functions for internal access */
-#define I_FLAG(name, value, def)                   \
-static inline int get_opt_##name(void) {           \
-  return libFIRM_opt & irf_##name;                 \
+static inline int get_opt_constant_folding_(void)
+{
+	return (libFIRM_opt & irf_constant_folding) != 0;
 }
 
-#include "irflag_t.def"
-
-#undef I_FLAG
-#undef E_FLAG
+static inline int get_opt_algebraic_simplification_(void)
+{
+	return (libFIRM_opt & irf_algebraic_simplification) != 0;
+}
 
 static inline int get_optimize_(void)
 {
-	return get_opt_optimize();
+	return (libFIRM_opt & irf_optimize) != 0;
 }
-
-#define get_optimize()                           get_optimize_()
-#define get_opt_cse()                            get_opt_cse_()
 
 #endif

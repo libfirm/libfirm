@@ -356,7 +356,7 @@ static bool inline_method(ir_node *const call, ir_graph *called_graph)
 	DB((dbg, LEVEL_1, "Inlining %+F(%+F) into %+F\n", call, called_graph, irg));
 
 	/* optimizations can cause problems when allocating new nodes */
-	int rem_opt = get_opt_optimize();
+	int rem_opt = get_optimize();
 	set_optimize(0);
 
 	/* Handle graph state */

@@ -9,32 +9,26 @@
  * @author    Michael Beck, Sebastian Hack
  */
 
-/*
- * We have 3 kinds of flags:
- * I_FLAGS are INTERNAL flags: There is only a public set_opt_<flag> function
- * E_FLAGS are EXTERNAL flags: Public get_opt_<flag> and set_opt_<flag> fucntions exists
- */
-
 /** Turn off all optimizations. */
-I_FLAG(optimize                           , 0, ON)
+FLAG(optimize                           , 0, ON)
 
 /** Common subexpression eliminations: Hash the nodes. */
-E_FLAG(cse                                , 1, ON)
+FLAG(cse                                , 1, ON)
 
 /** Don't use block predecessor for comparison.
  *  Default must be zero as code placement must
  *  be run right after a local optimize walk with
  *  global_cse on. */
-I_FLAG(global_cse                         , 2, OFF)
+FLAG(global_cse                         , 2, OFF)
 
 /** Evaluate operations. */
-E_FLAG(constant_folding                   , 3, ON)
+FLAG(constant_folding                   , 3, ON)
 
 /** Algebraic simplifications. */
-I_FLAG(algebraic_simplification           , 4, ON)
+FLAG(algebraic_simplification           , 4, ON)
 
 /** Use Global Null Pointer Test elimination. */
-I_FLAG(global_null_ptr_elimination        , 5, ON)
+FLAG(global_null_ptr_elimination        , 5, ON)
 
 /** Closed world assumption. */
-I_FLAG(closed_world                       , 12, OFF)
+FLAG(closed_world                       , 12, OFF)
