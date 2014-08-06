@@ -99,99 +99,6 @@ static void collect_nodes(ir_node *n, void *ctx)
 	}
 }
 
-/** Returns true if pred is predecessor of block b. */
-static bool is_pred_of(const ir_node *pred, const ir_node *b)
-{
-	for (int i = get_Block_n_cfgpreds(b); i-- > 0; ) {
-		ir_node *b_pred = get_Block_cfgpred_block(b, i);
-		if (b_pred == pred)
-			return true;
-	}
-	return false;
-}
-
-/** Test whether we can optimize away pred block pos of b.
- *
- *  @param  b    A block node.
- *  @param  pos  The position of the predecessor block to judge about.
- *
- *  @returns     The number of predecessors
- *
- *  The test is rather tricky.
- *
- *  The situation is something like the following:
- *  @verbatim
- *                 if-block
- *                  /   \
- *              then-b  else-b
- *                  \   /
- *                    b
- *  @endverbatim
- *
- *  b merges the control flow of an if-then-else.  We may not remove
- *  the 'then' _and_ the 'else' block of an 'if' if there is a Phi
- *  node in b, even if both are empty.  The destruction of this Phi
- *  requires that a copy is added before the merge.  We have to
- *  keep one of the case blocks to place the copies in.
- *
- *  To perform the test for pos, we must regard predecessors before pos
- *  as already removed.
- **/
-static unsigned test_whether_dispensable(const ir_node *b, int pos)
-{
-	ir_node *pred  = get_Block_cfgpred(b, pos);
-	ir_node *predb = get_nodes_block(pred);
-	if (is_Bad(pred) || !is_Block_removable(predb))
-		return 1;
-
-	/* can't remove self-loops */
-	if (predb == b)
-		goto non_dispensable;
-	if (is_unknown_jump(pred))
-		goto non_dispensable;
-
-	/* Seems to be empty. At least we detected this in collect_nodes. */
-	if (get_Block_phis(b) != NULL) {
-		/* there are Phi nodes */
-
-		/* b's pred blocks and pred's pred blocks must be pairwise disjunct.
-		 * Handle all pred blocks with preds < pos as if they were already
-		 * removed. */
-		for (int i = 0; i < pos; ++i) {
-			ir_node *other_pred  = get_Block_cfgpred(b, i);
-			ir_node *other_predb = get_nodes_block(other_pred);
-			if (is_Bad(other_pred))
-				continue;
-			if (is_Block_removable(other_predb)
-			    && !Block_block_visited(other_predb)) {
-				for (int j = get_Block_n_cfgpreds(other_predb); j-- > 0; ) {
-					ir_node *other_predpred
-						= get_Block_cfgpred_block(other_predb, j);
-					if (is_pred_of(other_predpred, predb))
-						goto non_dispensable;
-				}
-			} else if (is_pred_of(other_predb, predb)) {
-				goto non_dispensable;
-			}
-		}
-		for (int i = pos+1, n_cfgpreds = get_Block_n_cfgpreds(b);
-		     i < n_cfgpreds; ++i) {
-			ir_node *other_predb = get_Block_cfgpred_block(b, i);
-			if (is_pred_of(other_predb, predb))
-				goto non_dispensable;
-		}
-	}
-	/* we will not dispense already visited blocks */
-	if (Block_block_visited(predb))
-		return 1;
-	/* if we get here, the block is dispensable, count useful preds */
-	return get_irn_arity(predb);
-
-non_dispensable:
-	set_Block_removable(predb, false);
-	return 1;
-}
-
 /**
  * This method merges blocks. A block is applicable to be merged, if it
  * has only one predecessor with an unconditional jump to this block;
@@ -267,7 +174,17 @@ static void optimize_blocks(ir_node *b, void *ctx)
 	   that are empty. */
 	int max_preds = 0;
 	for (int i = 0, k = get_Block_n_cfgpreds(b); i < k; ++i) {
-		max_preds += test_whether_dispensable(b, i);
+		ir_node *pred = get_Block_cfgpred(b, i);
+		if (is_Bad(pred)) {
+			++max_preds;
+			continue;
+		}
+		ir_node *predb = get_nodes_block(pred);
+		if (!is_Block_removable(predb) || Block_block_visited(predb)) {
+			++max_preds;
+			continue;
+		}
+		max_preds += get_Block_n_cfgpreds(predb);
 	}
 	ir_node **in = XMALLOCN(ir_node*, max_preds);
 
