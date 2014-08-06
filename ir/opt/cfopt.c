@@ -262,10 +262,6 @@ static void merge_blocks(ir_node *b, void *env)
 static void optimize_blocks(ir_node *b, void *ctx)
 {
 	bool *changed = (bool*)ctx;
-	if (get_Block_dom_depth(b) < 0) {
-		/* ignore unreachable blocks */
-		return;
-	}
 
 	/* Count the number of predecessor if this block is merged with pred blocks
 	   that are empty. */
