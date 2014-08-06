@@ -87,7 +87,6 @@ static void collect_nodes(ir_node *n, void *ctx)
 	} else {
 		/* Check for non-empty block. */
 		ir_node *block = get_nodes_block(n);
-
 		set_Block_removable(block, false);
 
 		if (is_Proj(n)) {
@@ -107,16 +106,14 @@ static void collect_nodes(ir_node *n, void *ctx)
 static void merge_blocks(ir_node *b, void *env)
 {
 	(void)env;
-
 	if (get_Block_n_cfgpreds(b) != 1)
 		return;
-	ir_node* pred = get_Block_cfgpred(b, 0);
+	ir_node *pred = get_Block_cfgpred(b, 0);
 	if (!is_Jmp(pred))
 		return;
-	ir_node* pred_block = get_nodes_block(pred);
-	if (get_Block_phis(b) == NULL) {
+	ir_node *pred_block = get_nodes_block(pred);
+	if (get_Block_phis(b) == NULL)
 		exchange(b, pred_block);
-	}
 }
 
 /**
@@ -188,9 +185,8 @@ static void optimize_blocks(ir_node *b, void *ctx)
 	}
 	ir_node **in = XMALLOCN(ir_node*, max_preds);
 
-	int        p_preds = -1;
-
 	/*- Fix the Phi nodes of the current block -*/
+	int p_preds = -1;
 	for (ir_node *phi = get_Block_phis(b), *next; phi != NULL; phi = next) {
 		next = get_Phi_next(phi);
 
@@ -573,36 +569,33 @@ static void remove_empty_blocks(ir_node *block, void *x)
 			continue; /* unknown jump target must not be optimized */
 		if (has_phis(&env->block_infos,jmp_block))
 			continue; /* this block contains Phis and is not skipped */
-		if (Block_block_visited(jmp_block)) {
+		/* otherwise we could break the walker,
+		 * if block was reached via
+		 *     KeepAlive edge -> jmp_block -> A ---> block,
+		 * because the walker cannot handle Id nodes.
+		 *
+		 *   A      B
+		 *    \    /
+		 *   jmp_block
+		 *    /    \
+		 * block    End
+		 */
+		if (Block_block_visited(jmp_block))
 			continue;
-			/* otherwise we could break the walker,
-			 * if block was reached via
-			 *     KeepAlive edge -> jmp_block -> A ---> block,
-			 * because the walker cannot handle Id nodes.
-			 *
-			 *   A      B
-			 *    \    /
-			 *   jmp_block
-			 *    /    \
-			 * block    End
-			 */
-		}
 
 		/* jmp_block is an empty block and can be optimized! */
 
-		int n_jpreds = get_Block_n_cfgpreds(jmp_block);
 		/**
 		 * If the jmp block has only one predecessor this is straightforward.
 		 * However, if there are more predecessors, we only handle this,
 		 * if block has no Phis.
 		 */
+		int n_jpreds = get_Block_n_cfgpreds(jmp_block);
 		if (n_jpreds == 1) {
 			ir_node *pred       = get_Block_cfgpred(jmp_block, 0);
 			ir_node *pred_block = get_nodes_block(pred);
-			if (has_operations(&env->block_infos,jmp_block)) {
-				if (!is_Jmp(pred))
-					continue; /* must not create partially dead code, especially when it is mode_M */
-			}
+			if (has_operations(&env->block_infos,jmp_block) && !is_Jmp(pred))
+				continue; /* must not create partially dead code, especially when it is mode_M */
 
 			/* skip jmp block by rerouting its predecessor to block
 			 *
@@ -648,15 +641,12 @@ static void remove_empty_blocks(ir_node *block, void *x)
 			n_preds += n_jpreds;
 			env->changed = true;
 			// TODO What if jmp_block had a KeepAlive edge?
-		} else {
-			/* This would involve Phis ... */
 		}
 	}
 }
 
-/*
+/**
  * All cfg optimizations, which do not touch Phi nodes.
- *
  * Note that this might create critical edges.
  */
 static void cfgopt_ignoring_phis(ir_graph *irg)
@@ -689,7 +679,6 @@ static void cfgopt_ignoring_phis(ir_graph *irg)
 	ir_nodehashmap_destroy(&env.block_infos);
 }
 
-/* Optimizations of the control flow that also require changes of Phi nodes.  */
 void optimize_cf(ir_graph *irg)
 {
 	bool changed = false;
@@ -698,13 +687,12 @@ void optimize_cf(ir_graph *irg)
 	assert(get_irg_pinned(irg) != op_pin_state_floats);
 
 	assure_irg_properties(irg, IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE);
-
-	/* First the "simple" optimizations, which do not touch Phis */
-	cfgopt_ignoring_phis(irg);
-
 	/* we use the mark flag to mark removable blocks */
 	ir_reserve_resources(irg, IR_RESOURCE_BLOCK_MARK | IR_RESOURCE_IRN_LINK
 	                     | IR_RESOURCE_PHI_LIST);
+
+	/* First the "simple" optimizations, which do not touch Phis */
+	cfgopt_ignoring_phis(irg);
 
 	/* This pass collects all Phi nodes in a link list in the block
 	 * nodes. Further it performs simple control flow optimizations.
