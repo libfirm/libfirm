@@ -37,12 +37,6 @@
 #include "irverify.h"
 #include "xmalloc.h"
 
-/** An environment for merge_blocks and collect nodes. */
-typedef struct merge_env {
-	bool changed;      /**< Set if the graph was changed. */
-	bool phis_moved;   /**< Set if Phi nodes were moved. */
-} merge_env;
-
 /** set or reset the removable property of a block. */
 static void set_Block_removable(ir_node *block, bool removable)
 {
@@ -267,6 +261,7 @@ static void merge_blocks(ir_node *b, void *env)
  */
 static void optimize_blocks(ir_node *b, void *ctx)
 {
+	bool *changed = (bool*)ctx;
 	if (get_Block_dom_depth(b) < 0) {
 		/* ignore unreachable blocks */
 		return;
@@ -281,7 +276,6 @@ static void optimize_blocks(ir_node *b, void *ctx)
 	ir_node **in = XMALLOCN(ir_node*, max_preds);
 
 	int        p_preds = -1;
-	merge_env *env     = (merge_env*)ctx;
 
 	/*- Fix the Phi nodes of the current block -*/
 	for (ir_node *phi = get_Block_phis(b), *next; phi != NULL; phi = next) {
@@ -334,13 +328,13 @@ static void optimize_blocks(ir_node *b, void *ctx)
 		} else {
 			set_irn_in(phi, p_preds, in);
 		}
-		env->changed = true;
+		*changed = true;
 	}
 
 	/*- This happens only if merge between loop backedge and single loop entry.
 	    Moreover, it is only needed if predb is the direct dominator of b,
 	    else there can be no uses of the Phi's in predb ... -*/
-	for (int k = 0, n = get_Block_n_cfgpreds(b); k < n; ++k) {
+	for (int k = 0, n_cfgpreds = get_Block_n_cfgpreds(b); k < n_cfgpreds; ++k) {
 		ir_node *pred  = get_Block_cfgpred(b, k);
 		ir_node *predb = get_nodes_block(pred);
 		if (is_Bad(pred))
@@ -366,7 +360,21 @@ static void optimize_blocks(ir_node *b, void *ctx)
 					set_nodes_block(phi, b);
 					set_Phi_next(phi, get_Block_phis(b));
 					set_Block_phis(b, phi);
-					env->phis_moved = true;
+
+					/* If b has multiple predecessors, then we have 2
+					 * possibilities:
+					 *  1) predb does not dominate b, this means the Phis value
+					 *     can't be used anywhere in predb except as a Phi input
+					 *     => the Phi will disappear anyway
+					 *  2) predb dominates b, this means all other inputs of
+					 *     b must be in a loop and therefore backedges,
+					 *     the existing loop must have PhiM[loop] already anyway
+					 *     so there is no need to have this PhiM be a loop PhiM
+					 */
+					if (n_cfgpreds > 1) {
+						remove_keep_alive(phi);
+						set_Phi_loop(phi, false);
+					}
 
 					/* first, copy all 0..k-1 predecessors */
 					for (int i = 0; i < k; i++) {
@@ -433,7 +441,7 @@ static void optimize_blocks(ir_node *b, void *ctx)
 						exchange(phi, in[0]);
 					else
 						set_irn_in(phi, q_preds, in);
-					env->changed = true;
+					*changed = true;
 
 					assert(q_preds <= max_preds);
 				}
@@ -475,7 +483,7 @@ static void optimize_blocks(ir_node *b, void *ctx)
 	assert(n_preds == max_preds);
 
 	set_irn_in(b, n_preds, in);
-	env->changed = true;
+	*changed = true;
 
 	/* see if phi-fix was correct */
 	assert(get_Block_phis(b) == NULL || p_preds == -1 || (n_preds == p_preds));
@@ -771,9 +779,7 @@ static void cfgopt_ignoring_phis(ir_graph *irg)
 /* Optimizations of the control flow that also require changes of Phi nodes.  */
 void optimize_cf(ir_graph *irg)
 {
-	merge_env env;
-	env.changed    = false;
-	env.phis_moved = false;
+	bool changed = false;
 
 	/* if the graph is not pinned, we cannot determine empty blocks */
 	assert(get_irg_pinned(irg) != op_pin_state_floats);
@@ -802,52 +808,19 @@ void optimize_cf(ir_graph *irg)
 	 * It walks only over block nodes and adapts these and the Phi nodes in
 	 * these blocks, which it finds in a linked list computed before. */
 	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
-	irg_block_walk_graph(irg, optimize_blocks, merge_blocks, &env);
+	irg_block_walk_graph(irg, optimize_blocks, merge_blocks, &changed);
 
 	ir_node *new_end = optimize_in_place(end);
 	if (new_end != end) {
 		set_irg_end(irg, new_end);
 		end = new_end;
-		env.changed = true;
+		changed = true;
 	}
 	remove_End_Bads_and_doublets(end);
 
 	ir_free_resources(irg, IR_RESOURCE_BLOCK_MARK | IR_RESOURCE_IRN_LINK
 	                  | IR_RESOURCE_PHI_LIST);
 
-	if (env.phis_moved) {
-		/* Bad: when we moved Phi's, we might produce dead Phi nodes
-		 * that are kept-alive.
-		 * Some other phases cannot copy with this, so kill them. */
-		int n = get_End_n_keepalives(end);
-		if (n > 0) {
-			ir_node **in = ALLOCAN(ir_node*, n);
-			assure_irg_outs(irg);
-
-			int j = 0;
-			for (int i = 0; i < n; ++i) {
-				ir_node *ka = get_End_keepalive(end, i);
-				if (is_Phi(ka)) {
-					bool found_real_user = false;
-					foreach_irn_out_r(ka, k, user) {
-						if (user != end) {
-							/* Is it a real user or just a self loop ? */
-							found_real_user = true;
-							break;
-						}
-					}
-					if (!found_real_user)
-						continue;
-				}
-				in[j++] = ka;
-			}
-			if (j != n) {
-				set_End_keepalives(end, j, in);
-				env.changed = true;
-			}
-		}
-	}
-
-	confirm_irg_properties(irg,
-		env.changed ? IR_GRAPH_PROPERTIES_NONE : IR_GRAPH_PROPERTIES_ALL);
+	confirm_irg_properties(irg, changed ? IR_GRAPH_PROPERTIES_NONE
+	                                    : IR_GRAPH_PROPERTIES_ALL);
 }
