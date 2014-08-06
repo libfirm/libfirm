@@ -175,7 +175,7 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env)
 	}
 	assert(i == env->n_tail_calls + 1);
 
-	phis[0] = new_r_Phi(block, env->n_tail_calls + 1, in, mode_M);
+	phis[0] = new_r_Phi_loop(block, env->n_tail_calls + 1, in);
 
 	/* build the data Phi's */
 	const ir_entity *ent       = get_irg_entity(irg);
