@@ -154,7 +154,9 @@ static void rematerialize_or_move(ir_node *flags_needed, ir_node *node,
 	ir_node *n          = flag_consumers;
 	do {
 		foreach_irn_in(n, i, in) {
-			if (get_irn_mode(in) == value_mode && skip_Proj(in) == flags_needed) {
+			/* Assume that each node has at most one flag
+			 * input. */
+			if (get_irn_mode(in) == value_mode) {
 				set_irn_n(n, i, value);
 				break;
 			}

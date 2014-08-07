@@ -458,6 +458,94 @@ static const arch_irn_ops_t ia32_irn_ops = {
 
 static int gprof = 0;
 
+static ir_node *ia32_turn_back_dest_am(ir_node *node)
+{
+	typedef ir_node *construct_binop_func(
+		dbg_info *db, ir_node *block,
+		ir_node *base, ir_node *index, ir_node *mem,
+		ir_node *op1, ir_node *op2);
+
+	int operand_n;
+	construct_binop_func *func;
+
+	if (is_ia32_AddMem(node)) {
+		operand_n = n_ia32_AddMem_val;
+		func      = new_bd_ia32_Add;
+	} else if (is_ia32_AndMem(node)) {
+		operand_n = n_ia32_AndMem_val;
+		func      = new_bd_ia32_And;
+	} else if (is_ia32_OrMem(node)) {
+		operand_n = n_ia32_OrMem_val;
+		func      = new_bd_ia32_Or;
+	} else if (is_ia32_XorMem(node)) {
+		operand_n = n_ia32_XorMem_val;
+		func      = new_bd_ia32_Xor;
+	} else if (is_ia32_SubMem(node)) {
+		operand_n = n_ia32_SubMem_subtrahend;
+		func      = new_bd_ia32_Sub;
+	} else {
+		panic("Cannot turn back DestAM for %+F\n", node);
+	}
+
+	dbg_info *dbgi     = get_irn_dbg_info(node);
+	ir_graph *irg      = get_irn_irg(node);
+	ir_node  *block    = get_nodes_block(node);
+	ir_node  *base     = get_irn_n(node, n_ia32_base);
+	ir_node  *idx      = get_irn_n(node, n_ia32_index);
+	ir_node  *mem      = get_irn_n(node, n_ia32_mem);
+	ir_node  *operand  = get_irn_n(node, operand_n);
+
+	ir_node  *load     = new_bd_ia32_Load(dbgi, block, base, idx, mem);
+	ir_node  *load_res = new_rd_Proj(dbgi, load, ia32_mode_gp, pn_ia32_Load_res);
+	ir_node  *load_mem = new_rd_Proj(dbgi, load, mode_M, pn_ia32_Load_M);
+
+	ia32_copy_am_attrs(load, node);
+	if (is_ia32_is_reload(node))
+		set_ia32_is_reload(load);
+
+	ir_node *new_node = func(dbgi, block, base, idx, get_irg_no_mem(irg), load_res, operand);
+	set_ia32_ls_mode(new_node, get_ia32_ls_mode(node));
+
+	ir_mode *old_mode = get_irn_mode(new_node);
+	set_irn_mode(new_node, mode_T);
+	ir_node *res_proj = new_rd_Proj(dbgi, new_node, old_mode, pn_ia32_res);
+
+	ir_node *store = new_bd_ia32_Store(dbgi, block, base, idx, load_mem, res_proj);
+	ia32_copy_am_attrs(store, node);
+	set_ia32_op_type(store, ia32_AddrModeD);
+
+	foreach_out_edge_safe(node, edge) {
+		ir_node *out      = get_edge_src_irn(edge);
+		ir_mode *out_mode = get_irn_mode(out);
+
+		if (out_mode == ia32_mode_flags) {
+			const arch_register_t *flags_reg = arch_get_irn_register_out(node, get_Proj_proj(out));
+			set_Proj_pred(out, new_node);
+			set_Proj_proj(out, pn_ia32_flags);
+			arch_set_irn_register(out, flags_reg);
+		} else if (out_mode == mode_M) {
+			set_Proj_pred(out, store);
+			set_Proj_proj(out, pn_ia32_Store_M);
+		} else {
+			panic("Unexpected Proj mode at DestAM node");
+		}
+	}
+	ir_node *noreg = ia32_new_NoReg_gp(irg);
+	set_irn_n(node, n_ia32_base,  noreg);
+	set_irn_n(node, n_ia32_index, noreg);
+	set_ia32_am_offs_int(node, 0);
+	set_ia32_am_ent(node, NULL);
+	set_ia32_am_scale(node, 0);
+	set_ia32_frame_ent(node, NULL);
+	clear_ia32_use_frame(node);
+
+	sched_replace(node, load);
+	sched_add_after(load, new_node);
+	sched_add_after(new_node, store);
+
+	return new_node;
+}
+
 ir_node *ia32_turn_back_am(ir_node *node)
 {
 	dbg_info *dbgi  = get_irn_dbg_info(node);
@@ -522,7 +610,7 @@ ir_node *ia32_turn_back_am(ir_node *node)
 
 static ir_node *flags_remat(ir_node *node, ir_node *after)
 {
-	/* we should turn back source address mode when rematerializing nodes */
+	/* we should turn back address modes when rematerializing nodes */
 	ia32_op_type_t type;
 	ir_node        *block;
 	ir_node        *copy;
@@ -540,8 +628,8 @@ static ir_node *flags_remat(ir_node *node, ir_node *after)
 		break;
 
 	case ia32_AddrModeD:
-		/* TODO implement this later... */
-		panic("found DestAM with flag user %+F this should not happen", node);
+		node = ia32_turn_back_dest_am(node);
+		break;
 
 	default: assert(type == ia32_Normal); break;
 	}
