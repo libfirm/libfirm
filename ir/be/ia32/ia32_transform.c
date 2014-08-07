@@ -20,6 +20,7 @@
 #include "irop_t.h"
 #include "irprog_t.h"
 #include "iredges_t.h"
+#include "irouts.h"
 #include "irgmod.h"
 #include "ircons.h"
 #include "irgwalk.h"
@@ -458,18 +459,20 @@ ir_entity *ia32_gen_fp_known_const(ir_graph *const irg, ia32_known_const_t kct)
  */
 static bool users_will_merge(ir_node *proj)
 {
+	ir_node *first     = NULL;
+	ir_node *block     = NULL;
 	ir_node *left      = NULL;
 	ir_node *right     = NULL;
-	ir_node *block     = NULL;
 	bool     found_sub = false;
 
 	foreach_out_edge(proj, edge) {
 		ir_node *user = get_edge_src_irn(edge);
 
-		if (left == NULL) {
+		if (first == NULL) {
 			if (is_Cmp(user) || is_Sub(user)) {
 				// Take the first user as a sample to compare
 				// the next ones to.
+				first     = user;
 				block     = get_nodes_block(user);
 				left      = get_binop_left(user);
 				right     = get_binop_right(user);
@@ -490,11 +493,15 @@ static bool users_will_merge(ir_node *proj)
 					// Two subs will not be merged
 					return false;
 				}
+				found_sub |= is_Sub(user);
+
+				if ((is_Sub(user) || is_Sub(first)) &&
+				    user_left == right && user_right == left) {
+					continue;
+				}
 				if (user_left != left || user_right != right) {
 					return false;
 				}
-
-				found_sub |= is_Sub(user);
 			} else {
 				return false;
 			}
@@ -1644,8 +1651,24 @@ static ir_node *gen_Sub(ir_node *node)
 		           node);
 	}
 
-	return gen_binop(node, op1, op2, new_bd_ia32_Sub, match_mode_neutral
-			| match_am | match_immediate);
+	ir_node *ia32_sub = gen_binop(node, op1, op2, new_bd_ia32_Sub, match_mode_neutral
+	                              | match_am | match_immediate);
+
+	/* A Cmp node that has the same operands as this Sub will use
+	 * this Sub's flags result. To be prepared for that, we change
+	 * every Sub's mode to mode_T. If gen_binop has produced a Sub
+	 * with source address mode, this has already happened and
+	 * get_binop returns a Proj rather than a Sub. */
+	if (is_ia32_Sub(ia32_sub)) {
+		ir_mode *old_mode = get_irn_mode(ia32_sub);
+		set_irn_mode(ia32_sub, mode_T);
+		return new_r_Proj(ia32_sub, old_mode, pn_ia32_Sub_res);
+	} else {
+		/* ia32_sub is actually a Proj, the Sub itself is
+		 * already in mode_T. */
+		assert(is_Proj(ia32_sub));
+		return ia32_sub;
+	}
 }
 
 static ir_node *transform_AM_mem(ir_node *const block,
@@ -2139,6 +2162,13 @@ static ir_node *get_flags_node(ir_node *cmp, x86_condition_code_t *cc_out)
 		}
 	}
 
+	ir_node *flags = be_transform_node(cmp);
+
+	/* If cmp has merged with a Sub during the transformation, its
+	 * relation may have turned around. This is why we can set
+	 * *cc_out only now. */
+	relation = get_Cmp_relation(cmp);
+
 	/* the middle-end tries to eliminate impossible relations, so a ptr <> 0
 	 * test becomes ptr > 0. But for x86 an equal comparison is preferable to
 	 * a >0 (we can sometimes eliminate the cmp in favor of flags produced by
@@ -2155,7 +2185,7 @@ static ir_node *get_flags_node(ir_node *cmp, x86_condition_code_t *cc_out)
 	/* just do a normal transformation of the Cmp */
 	*cc_out = ir_relation_to_x86_condition_code(relation, mode,
 	                                            overflow_possible);
-	ir_node *flags = be_transform_node(cmp);
+
 	return flags;
 }
 
@@ -2931,7 +2961,86 @@ static bool ia32_mux_upper_bits_clean(const ir_node *node, ir_mode *mode)
 }
 
 /**
+ * If the given Sub node is used by a Store, transforms the Store,
+ * otherwise transforms the Sub node.
+ *
+ * Thus, a SubMem is generated if possible.
+ */
+static ir_node *transform_sub_or_store(ir_node *sub)
+{
+	int outs = get_irn_n_outs(sub);
+
+	if (outs == 1) {
+		ir_node *succ = get_irn_out(sub, 0);
+		if (is_Store(succ)) {
+			ir_node *new_store = be_transform_node(succ);
+			if (is_ia32_SubMem(new_store)) {
+				return new_store;
+			} else {
+				ir_node *result = get_irn_n(new_store, n_ia32_Store_val);
+				if (is_Proj(result)) result = get_Proj_pred(result);
+				return result;
+			}
+		}
+	}
+	return be_transform_node(sub);
+}
+
+static ir_node *try_get_sub_flags(ir_node *cmp, ir_node *sub, bool *swap)
+{
+	ir_node *cmp_block = get_nodes_block(cmp);
+	ir_node *sub_block = get_nodes_block(sub);
+
+	if (!(block_dominates(cmp_block, sub_block) ||
+	      block_dominates(sub_block, cmp_block))) {
+		    return NULL;
+	    }
+
+	ir_node *cmp_left  = get_Cmp_left(cmp);
+	ir_node *cmp_right = get_Cmp_right(cmp);
+	ir_node *sub_left  = get_Sub_left(sub);
+	ir_node *sub_right = get_Sub_right(sub);
+
+	if (cmp_left == sub_left && cmp_right == sub_right) {
+		*swap = false;
+	} else if (cmp_left == sub_right && cmp_right == sub_left) {
+		*swap = true;
+	} else {
+		return NULL;
+	}
+
+	ir_node *ia32_sub = skip_Proj(transform_sub_or_store(sub));
+	if (is_ia32_Sub(ia32_sub)) {
+		return new_r_Proj(ia32_sub, ia32_mode_flags, pn_ia32_Sub_flags);
+	} else if (is_ia32_SubMem(ia32_sub)) {
+		return new_r_Proj(ia32_sub, ia32_mode_flags, pn_ia32_SubMem_flags);
+	} else {
+		panic("Unknown variant of Sub at %+F\n", ia32_sub);
+	}
+}
+
+static ir_node *find_parallel_sub(ir_node *cmp, bool *swap)
+{
+	ir_node *cmp_left = get_Cmp_left(cmp);
+	foreach_out_edge(cmp_left, outedge) {
+		ir_node *succ = get_edge_src_irn(outedge);
+
+		if (is_Sub(succ)) {
+			ir_node *flags = try_get_sub_flags(cmp, succ, swap);
+			if (flags) {
+				return flags;
+			}
+		}
+	}
+
+	return NULL;
+}
+
+/**
  * Generate code for a Cmp.
+ *
+ * Cmp nodes must only be transformed in @c get_flags_node, or the
+ * caller must make sure to recheck the Cmp's relation.
  */
 static ir_node *gen_Cmp(ir_node *node)
 {
@@ -2978,13 +3087,33 @@ static ir_node *gen_Cmp(ir_node *node)
 			: new_bd_ia32_Test     (dbgi, new_block, addr->base, addr->index, addr->mem, am.new_op1, am.new_op2, am.ins_permuted);
 	} else {
 		/* Cmp(left, right) */
+
+		/* Try to find a Sub whose flags we can use. */
+		bool swap = false;
+		ir_node *sub_flags = find_parallel_sub(node, &swap);
+		if (sub_flags) {
+			/* A matching Sub was found, but the Cmp lies
+			 * the wrong way round. Turn the Cmp. We trust
+			 * that the caller pays attention to that
+			 * (get_flags_node does). */
+			if (swap) {
+				ir_relation rel = get_Cmp_relation(node);
+				ir_node *left = get_Cmp_left(node);
+				ir_node *right = get_Cmp_right(node);
+				set_Cmp_relation(node, get_inversed_relation(rel));
+				set_Cmp_left(node, right);
+				set_Cmp_right(node, left);
+			}
+			new_node = sub_flags;
+			return new_node;
+		}
 		match_arguments(&am, block, left, right, NULL,
 		                match_commutative |
 		                match_am | match_8bit_am | match_16bit_am |
 		                match_am_and_immediates | match_immediate);
 		/* use 32bit compare mode if possible since the opcode is smaller */
 		if (am.op_type == ia32_Normal &&
-			be_upper_bits_clean(left, cmp_mode) &&
+		    be_upper_bits_clean(left, cmp_mode) &&
 		    be_upper_bits_clean(right, cmp_mode)) {
 			cmp_mode = ia32_mode_gp;
 		}
@@ -5722,7 +5851,8 @@ void ia32_transform_graph(ir_graph *irg)
 	ia32_no_pic_adjust = false;
 
 	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES
-	                         | IR_GRAPH_PROPERTY_NO_TUPLES);
+	                         | IR_GRAPH_PROPERTY_NO_TUPLES
+	                         | IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 
 	old_initial_fpcw = be_get_initial_reg_value(irg, &ia32_registers[REG_FPCW]);
 
