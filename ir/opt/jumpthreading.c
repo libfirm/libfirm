@@ -322,7 +322,9 @@ static void copy_and_fix(const jumpthreading_env_t *env, ir_node *block,
 		ir_node *copy = get_irn_link(keep);
 		if (is_Phi(keep) && is_Phi(copy)) {
 			assert(get_irn_mode(keep) == mode_M);
+			assert(get_Phi_loop(keep));
 			add_End_keepalive(end, copy);
+			set_Phi_loop(copy, true);
 		}
 	}
 }
