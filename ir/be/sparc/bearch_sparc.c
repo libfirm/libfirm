@@ -224,9 +224,9 @@ static void sparc_before_ra(ir_graph *irg)
 {
 	/* fixup flags register */
 	be_sched_fix_flags(irg, &sparc_reg_classes[CLASS_sparc_flags_class],
-	                   NULL, sparc_modifies_flags);
+	                   NULL, sparc_modifies_flags, NULL);
 	be_sched_fix_flags(irg, &sparc_reg_classes[CLASS_sparc_fpflags_class],
-	                   NULL, sparc_modifies_fp_flags);
+	                   NULL, sparc_modifies_fp_flags, NULL);
 
 	be_add_missing_keeps(irg);
 }

@@ -24,6 +24,12 @@ typedef ir_node * (*func_rematerialize) (ir_node *node, ir_node *after);
 typedef bool (*check_modifies_flags) (const ir_node *node);
 
 /**
+ * Callback function that checks whether consumers can use the
+ * available flags instead of their original ones.
+ */
+typedef bool (*try_replace_flags) (ir_node *consumers, ir_node *flags_needed, ir_node *available_flags, int pn);
+
+/**
  * Walks the schedule and ensures that flags aren't destroyed between producer
  * and consumer of flags. It does so by moving down/rematerialising of the
  * nodes. This does not work across blocks.
@@ -32,6 +38,7 @@ typedef bool (*check_modifies_flags) (const ir_node *node);
  */
 void be_sched_fix_flags(ir_graph *irg, const arch_register_class_t *flag_cls,
                         func_rematerialize remat_func,
-                        check_modifies_flags check_modifies_flags_func);
+                        check_modifies_flags check_modifies_flags_func,
+                        try_replace_flags try_replace_flags_func);
 
 #endif

@@ -641,6 +641,45 @@ static ir_node *flags_remat(ir_node *node, ir_node *after)
 	return copy;
 }
 
+COMPILETIME_ASSERT((int)(n_ia32_Sub_minuend)    == (int)(n_ia32_Cmp_left) &&
+                   (int)(n_ia32_Sub_subtrahend) == (int)(n_ia32_Cmp_right),
+                   Cmp_and_Sub_operand_numbers_equal);
+
+static bool ia32_try_replace_flags(ir_node *consumers, ir_node *flags, ir_node *available, int pn)
+{
+	if ((is_ia32_Sub(flags) || is_ia32_Cmp(flags)) &&
+	    (is_ia32_Sub(available) || is_ia32_Cmp(available))) {
+
+		ir_node *flags_left  = get_irn_n(flags,     n_ia32_Cmp_left);
+		ir_node *flags_right = get_irn_n(flags,     n_ia32_Cmp_right);
+		ir_node *avail_left  = get_irn_n(available, n_ia32_Cmp_left);
+		ir_node *avail_right = get_irn_n(available, n_ia32_Cmp_right);
+
+		/* Assuming CSE would have found the more obvious case */
+		if (flags_left == avail_right && avail_left == flags_right) {
+			/* We can use available if we reverse the
+			 * consumers' condition codes. */
+			ir_mode               *flag_mode =  ia32_reg_classes[CLASS_ia32_flags].mode;
+			const arch_register_t *flag_reg  = &ia32_reg_classes[CLASS_ia32_flags].regs[0];
+
+			for (ir_node *c = consumers; c != NULL; c = get_irn_link(c)) {
+				x86_condition_code_t cc = get_ia32_condcode(c);
+				set_ia32_condcode(c, x86_invert_condition_code(cc));
+
+				foreach_irn_in(c, i, in) {
+					if (get_irn_mode(in) == flag_mode) {
+						ir_node *proj = new_r_Proj(available, flag_mode, pn);
+						arch_set_irn_register(proj, flag_reg);
+						set_irn_n(c, i, proj);
+					}
+				}
+			}
+			return true;
+		}
+	}
+	return false;
+}
+
 static void remat_simplifier(ir_node *block, void *env)
 {
 	(void)env;
@@ -726,7 +765,7 @@ static void ia32_before_ra(ir_graph *irg)
 
 	/* fixup flags */
 	be_sched_fix_flags(irg, &ia32_reg_classes[CLASS_ia32_flags],
-	                   &flags_remat, NULL);
+	                   &flags_remat, NULL, &ia32_try_replace_flags);
 	simplify_remat_nodes(irg);
 
 	be_add_missing_keeps(irg);

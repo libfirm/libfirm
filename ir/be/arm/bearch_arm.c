@@ -163,7 +163,7 @@ static void arm_emit(ir_graph *irg)
 
 static void arm_before_ra(ir_graph *irg)
 {
-	be_sched_fix_flags(irg, &arm_reg_classes[CLASS_arm_flags], NULL, NULL);
+	be_sched_fix_flags(irg, &arm_reg_classes[CLASS_arm_flags], NULL, NULL, NULL);
 }
 
 static ir_entity *divsi3;

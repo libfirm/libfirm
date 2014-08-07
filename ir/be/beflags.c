@@ -43,6 +43,7 @@ static const arch_register_class_t *flag_class;
 static const arch_register_t       *flags_reg;
 static func_rematerialize           remat;
 static check_modifies_flags         check_modify;
+static try_replace_flags            try_replace;
 static bool                         changed;
 
 static ir_node *default_remat(ir_node *node, ir_node *after)
@@ -57,6 +58,15 @@ static ir_node *default_remat(ir_node *node, ir_node *after)
 static bool default_check_modifies(const ir_node *node)
 {
 	return arch_irn_is(node, modify_flags);
+}
+
+static bool default_try_replace(ir_node *consumers, ir_node *flags, ir_node *available, int pn)
+{
+	(void)consumers;
+	(void)flags;
+	(void)available;
+	(void)pn;
+	return false;
 }
 
 /**
@@ -125,8 +135,16 @@ static void move_other_uses(ir_node *node, ir_node *copy)
 	}
 }
 
-static void rematerialize_or_move(ir_node *flags_needed, ir_node *node,
-                                  ir_node *flag_consumers, int pn)
+/**
+ * Tries the following solutions in order:
+ * 1. Move flags_needed behind node
+ * 2. Modify flag_consumers to use available_flags instead of flags_needed
+ * 3. Rematerialize flags_needed behind node
+ *
+ * Returns true, if flag_consumers now use available_flags.
+ */
+static bool rematerialize_or_move(ir_node *flags_needed, ir_node *node,
+                                  ir_node *flag_consumers, int pn, ir_node *available_flags)
 {
 	if (!is_Block(node)
 	  && get_nodes_block(flags_needed) == get_nodes_block(node)
@@ -135,7 +153,13 @@ static void rematerialize_or_move(ir_node *flags_needed, ir_node *node,
 		sched_remove(flags_needed);
 		sched_add_after(node, flags_needed);
 		/* No need to update liveness, the node stays in the same block */
-		return;
+		return false;
+	}
+
+	/* Try to use the flags available at this point. */
+	if (available_flags != NULL &&
+	    try_replace(flag_consumers, flags_needed, available_flags, pn)) {
+		return true;
 	}
 
 	changed = true;
@@ -176,6 +200,8 @@ static void rematerialize_or_move(ir_node *flags_needed, ir_node *node,
 			}
 		}
 	}
+
+	return false;
 }
 
 /**
@@ -213,7 +239,7 @@ static void fix_flags_walker(ir_node *block, void *env)
 
 		if (flags_needed != NULL && check_modify(test)) {
 			/* rematerialize */
-			rematerialize_or_move(flags_needed, node, flag_consumers, pn);
+			rematerialize_or_move(flags_needed, node, flag_consumers, pn, test);
 			flags_needed   = NULL;
 			flag_consumers = NULL;
 		}
@@ -238,9 +264,14 @@ static void fix_flags_walker(ir_node *block, void *env)
 		if (skip_Proj(new_flags_needed) != flags_needed) {
 			if (flags_needed != NULL) {
 				/* rematerialize node */
-				rematerialize_or_move(flags_needed, node, flag_consumers, pn);
-				flags_needed   = NULL;
-				flag_consumers = NULL;
+				bool use_new_flags = rematerialize_or_move(
+					flags_needed, node, flag_consumers, pn, new_flags_needed);
+				/* We are only done with
+				 * flag_consumers, if flags_needed has
+				 * actually been rematerialized. */
+				if (!use_new_flags) {
+					flag_consumers = NULL;
+				}
 			}
 
 			flags_needed = new_flags_needed;
@@ -261,7 +292,7 @@ static void fix_flags_walker(ir_node *block, void *env)
 
 	if (flags_needed != NULL) {
 		assert(get_nodes_block(flags_needed) != block);
-		rematerialize_or_move(flags_needed, place, flag_consumers, pn);
+		rematerialize_or_move(flags_needed, place, flag_consumers, pn, NULL);
 		flags_needed   = NULL;
 		flag_consumers = NULL;
 	}
@@ -272,17 +303,21 @@ static void fix_flags_walker(ir_node *block, void *env)
 
 void be_sched_fix_flags(ir_graph *irg, const arch_register_class_t *flag_cls,
                         func_rematerialize remat_func,
-                        check_modifies_flags check_modifies_flags_func)
+                        check_modifies_flags check_modifies_flags_func,
+                        try_replace_flags try_replace_flags_func)
 {
 	flag_class   = flag_cls;
 	flags_reg    = &flag_class->regs[0];
 	remat        = remat_func;
 	check_modify = check_modifies_flags_func;
+	try_replace  = try_replace_flags_func;
 	changed      = false;
 	if (remat == NULL)
 		remat = &default_remat;
 	if (check_modify == NULL)
 		check_modify = &default_check_modifies;
+	if (try_replace == NULL)
+		try_replace = &default_try_replace;
 
 	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK |

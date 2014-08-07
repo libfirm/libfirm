@@ -125,7 +125,7 @@ static const arch_irn_ops_t amd64_irn_ops = {
 
 static void amd64_before_ra(ir_graph *irg)
 {
-	be_sched_fix_flags(irg, &amd64_reg_classes[CLASS_amd64_flags], NULL, NULL);
+	be_sched_fix_flags(irg, &amd64_reg_classes[CLASS_amd64_flags], NULL, NULL, NULL);
 
 	be_add_missing_keeps(irg);
 }
