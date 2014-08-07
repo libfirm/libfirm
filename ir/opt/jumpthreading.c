@@ -96,7 +96,9 @@ static ir_node *search_def_and_create_phis(ir_node *block, ir_mode *mode,
 		in[i] = dummy;
 	}
 
-	ir_node *phi = new_r_Phi(block, n_cfgpreds, in, mode);
+	/* we might have created a potential endless loop, and need a PhiLoop */
+	ir_node *phi = mode == mode_M ? new_r_Phi_loop(block, n_cfgpreds, in)
+	                              : new_r_Phi(block, n_cfgpreds, in, mode);
 	set_irn_link(block, phi);
 	mark_irn_visited(block);
 
@@ -111,11 +113,6 @@ static ir_node *search_def_and_create_phis(ir_node *block, ir_mode *mode,
 			pred_val = search_def_and_create_phis(pred_block, mode, false);
 		}
 		set_irn_n(phi, i, pred_val);
-	}
-	/* we might have created a potential endless loop, so keep the Phi */
-	if (get_irn_mode(phi) == mode_M) {
-		keep_alive(phi);
-		set_Phi_loop(phi, true);
 	}
 
 	return phi;
@@ -320,12 +317,9 @@ static void copy_and_fix(const jumpthreading_env_t *env, ir_node *block,
 		if (get_irn_visited(keep) < env->visited_nr || is_Block(keep))
 			continue;
 		ir_node *copy = get_irn_link(keep);
-		if (is_Phi(keep) && is_Phi(copy)) {
-			assert(get_irn_mode(keep) == mode_M);
-			assert(get_Phi_loop(keep));
+		/* exact copy does not reproduce the keep alive edges */
+		if (is_Phi(copy) && get_Phi_loop(copy))
 			add_End_keepalive(end, copy);
-			set_Phi_loop(copy, true);
-		}
 	}
 }
 
