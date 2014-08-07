@@ -641,6 +641,81 @@ static ir_node *flags_remat(ir_node *node, ir_node *after)
 	return copy;
 }
 
+static void remat_simplifier(ir_node *block, void *env)
+{
+	(void)env;
+	const arch_register_t *flags_reg = &(ia32_reg_classes[CLASS_ia32_flags].regs[0]);
+
+	sched_foreach(block, node) {
+		/* A Sub with unused result is a Cmp. */
+		if (is_ia32_Sub(node) && get_irn_mode(node) == mode_T) {
+			bool has_res_users = false;
+			ir_node *res_keep = NULL;
+			ir_node **flag_users = NEW_ARR_F(ir_node*, 0);
+			int *flag_users_pos = NEW_ARR_F(int, 0);
+
+			foreach_out_edge(node, out) {
+				ir_node *proj = get_edge_src_irn(out);
+				ir_mode *proj_mode = get_irn_mode(proj);
+				if (proj_mode == ia32_mode_flags) {
+					foreach_out_edge(proj, out2) {
+						ir_node *user = get_edge_src_irn(out2);
+						ARR_APP1(ir_node*, flag_users, user);
+						ARR_APP1(int, flag_users_pos, get_edge_src_pos(out2));
+					}
+				} else if (proj_mode == ia32_mode_gp) {
+					foreach_out_edge(proj, out2) {
+						ir_node *user = get_edge_src_irn(out2);
+						if (!be_is_Keep(user)) {
+							has_res_users = true;
+						} else {
+							assert(res_keep == NULL && "Proj has two be_Keep");
+							res_keep = user;
+						}
+					}
+				}
+			}
+
+			if (!has_res_users) {
+				ir_node *cmp = new_bd_ia32_Cmp(
+					get_irn_dbg_info(node),
+					get_nodes_block(node),
+					get_irn_n(node, n_ia32_Sub_base),
+					get_irn_n(node, n_ia32_Sub_index),
+					get_irn_n(node, n_ia32_Sub_mem),
+					get_irn_n(node, n_ia32_Sub_minuend),
+					get_irn_n(node, n_ia32_Sub_subtrahend),
+					false);
+				arch_set_irn_register(cmp, flags_reg);
+
+				sched_replace(node, cmp);
+
+				for (unsigned i = 0; i < ARR_LEN(flag_users); i++) {
+					set_irn_n(flag_users[i], flag_users_pos[i], cmp);
+				}
+
+				if (res_keep) {
+					sched_remove(res_keep);
+					remove_keep_alive(res_keep);
+					kill_node(res_keep);
+				}
+				kill_node(node);
+				node = cmp;
+			}
+
+			DEL_ARR_F(flag_users);
+			DEL_ARR_F(flag_users_pos);
+		}
+	}
+
+	remove_End_Bads_and_doublets(get_irg_end(get_irn_irg(block)));
+}
+
+static void simplify_remat_nodes(ir_graph *irg)
+{
+	irg_block_walk_graph(irg, remat_simplifier, NULL, NULL);
+}
+
 /**
  * Called before the register allocator.
  */
@@ -652,6 +727,7 @@ static void ia32_before_ra(ir_graph *irg)
 	/* fixup flags */
 	be_sched_fix_flags(irg, &ia32_reg_classes[CLASS_ia32_flags],
 	                   &flags_remat, NULL);
+	simplify_remat_nodes(irg);
 
 	be_add_missing_keeps(irg);
 }
