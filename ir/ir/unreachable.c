@@ -66,9 +66,11 @@ static void unreachable_to_bad(ir_node *node, void *env)
 }
 
 /**
- * remove kept nodes in unreachable blocks
+ * Remove kept nodes in unreachable blocks.
+ *
+ * @return whether we modified the End node.
  */
-static void remove_unreachable_keeps(ir_graph *irg)
+static bool remove_unreachable_keeps(ir_graph *irg)
 {
 	ir_node  *end       = get_irg_end(irg);
 	int       arity     = get_End_n_keepalives(end);
@@ -81,9 +83,15 @@ static void remove_unreachable_keeps(ir_graph *irg)
 			continue;
 		new_in[new_arity++] = ka;
 	}
-	if (new_arity != arity)
+
+	bool changed = false;
+	if (new_arity != arity) {
 		set_End_keepalives(end, new_arity, new_in);
+		changed = true;
+	}
 	free(new_in);
+
+	return changed;
 }
 
 void remove_unreachable_code(ir_graph *irg)
@@ -92,7 +100,7 @@ void remove_unreachable_code(ir_graph *irg)
 
 	bool changed = false;
 	irg_walk_graph(irg, unreachable_to_bad, NULL, &changed);
-	remove_unreachable_keeps(irg);
+	changed |= remove_unreachable_keeps(irg);
 
 	confirm_irg_properties(irg, changed
 		? IR_GRAPH_PROPERTY_NO_CRITICAL_EDGES
