@@ -185,16 +185,15 @@ void optimize_graph_df(ir_graph *irg)
 
 	constbits_clear(irg);
 
-	ir_graph_properties_t confirm_properties = IR_GRAPH_PROPERTY_ONE_RETURN
-	                                           | IR_GRAPH_PROPERTY_MANY_RETURNS
-	                                           | IR_GRAPH_PROPERTY_NO_CRITICAL_EDGES;
+	confirm_irg_properties(irg, IR_GRAPH_PROPERTY_ONE_RETURN
+	                            | IR_GRAPH_PROPERTY_MANY_RETURNS
+	                            | IR_GRAPH_PROPERTY_NO_CRITICAL_EDGES);
 
 	if (get_opt_algebraic_simplification()) {
 		/* Unreachable code elimination was enabled. */
 		clear_irg_constraints(irg, IR_GRAPH_CONSTRAINT_OPTIMIZE_UNREACHABLE_CODE);
-		confirm_properties |= IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE;
+		add_irg_properties(irg, IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE);
 	}
-	confirm_irg_properties(irg, confirm_properties);
 
 	/* Finally kill BAD and doublets from the keep alives.
 	 * Doing this AFTER edges where deactivated saves cycles */
