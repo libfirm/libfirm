@@ -643,7 +643,7 @@ static ir_node *flags_remat(ir_node *node, ir_node *after)
 
 COMPILETIME_ASSERT((int)(n_ia32_Sub_minuend)    == (int)(n_ia32_Cmp_left) &&
                    (int)(n_ia32_Sub_subtrahend) == (int)(n_ia32_Cmp_right),
-                   Cmp_and_Sub_operand_numbers_equal);
+                   Cmp_and_Sub_operand_numbers_equal)
 
 static bool ia32_try_replace_flags(ir_node *consumers, ir_node *flags, ir_node *available, int pn)
 {
