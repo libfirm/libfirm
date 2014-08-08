@@ -130,7 +130,7 @@ carry:;
 
 			if (flags_proj != NULL) {
 				set_irn_mode(adc, mode_T);
-				ir_node *adc_flags = new_r_Proj(adc, ia32_mode_gp, pn_ia32_Adc_flags);
+				ir_node *adc_flags = new_r_Proj(adc, ia32_mode_flags, pn_ia32_Adc_flags);
 				arch_set_irn_register(adc_flags, &ia32_registers[REG_EFLAGS]);
 
 				ir_node *cmc = new_bd_ia32_Cmc(dbgi, block, adc_flags);
