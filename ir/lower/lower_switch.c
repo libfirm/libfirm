@@ -11,16 +11,16 @@
 #include <limits.h>
 #include <stdbool.h>
 
-#include "../../adt/util.h"
 #include "array.h"
 #include "ircons.h"
 #include "irgopt.h"
 #include "irgwalk.h"
+#include "irnodeset.h"
 #include "irnode_t.h"
 #include "irouts_t.h"
 #include "lowering.h"
 #include "panic.h"
-#include "irnodeset.h"
+#include "util.h"
 
 typedef struct walk_env_t {
 	ir_nodeset_t  processed;
@@ -60,7 +60,7 @@ static void analyse_switch0(switch_info_t *info, ir_node *switchn)
 	for (size_t e = 0; e < n_entries; ++e) {
 		const ir_switch_table_entry *entry
 			= ir_switch_table_get_entry_const(table, e);
-		if (entry->pn == 0)
+		if (entry->pn == pn_Switch_default)
 			continue;
 
 		if (tarval_cmp(entry->min, switch_min) == ir_relation_less)
@@ -99,16 +99,9 @@ static int casecmp(const void *a, const void *b)
  */
 static void analyse_switch1(switch_info_t *info)
 {
-	const ir_node         *switchn   = info->switchn;
-	const ir_switch_table *table     = get_Switch_table(switchn);
-	size_t                 n_entries = ir_switch_table_get_n_entries(table);
-	unsigned               n_outs    = get_Switch_n_outs(switchn);
-	ir_node              **targets   = XMALLOCNZ(ir_node*, n_outs);
-	unsigned               num_cases = info->num_cases;
-	case_data_t           *cases     = XMALLOCN(case_data_t, num_cases);
-	unsigned               c         = 0;
-	size_t                 e;
-
+	const ir_node  *switchn   = info->switchn;
+	unsigned        n_outs    = get_Switch_n_outs(switchn);
+	ir_node       **targets   = XMALLOCNZ(ir_node*, n_outs);
 	foreach_irn_out_r(switchn, i, proj) {
 		long     pn     = get_Proj_proj(proj);
 		ir_node *target = get_irn_out(proj, 0);
@@ -118,10 +111,15 @@ static void analyse_switch1(switch_info_t *info)
 		targets[(unsigned)pn] = target;
 	}
 
-	for (e = 0; e < n_entries; ++e) {
+	const ir_switch_table *table     = get_Switch_table(switchn);
+	unsigned               num_cases = info->num_cases;
+	case_data_t           *cases     = XMALLOCN(case_data_t, num_cases);
+	unsigned               c         = 0;
+	for (size_t e = 0, n_entries = ir_switch_table_get_n_entries(table);
+	     e < n_entries; ++e) {
 		const ir_switch_table_entry *entry
 			= ir_switch_table_get_entry_const(table, e);
-		if (entry->pn == 0)
+		if (entry->pn == pn_Switch_default)
 			continue;
 
 		cases[c].entry  = entry;
@@ -144,17 +142,15 @@ static void analyse_switch1(switch_info_t *info)
 static void normalize_table(ir_node *switchn, ir_mode *new_mode,
                             ir_tarval *delta)
 {
-	ir_switch_table *table     = get_Switch_table(switchn);
-	size_t           n_entries = ir_switch_table_get_n_entries(table);
-	size_t           e;
 	/* adapt switch_table */
-	for (e = 0; e < n_entries; ++e) {
+	ir_switch_table *table = get_Switch_table(switchn);
+	for (size_t e = 0, n_entries = ir_switch_table_get_n_entries(table);
+	     e < n_entries; ++e) {
 		ir_switch_table_entry *entry = ir_switch_table_get_entry(table, e);
-		ir_tarval *min = entry->min;
-
-		if (entry->pn == 0)
+		if (entry->pn == pn_Switch_default)
 			continue;
 
+		ir_tarval *min = entry->min;
 		min = tarval_convert_to(min, new_mode);
 		if (delta != NULL)
 			min = tarval_sub(min, delta, NULL);
@@ -175,39 +171,32 @@ static void normalize_table(ir_node *switchn, ir_mode *new_mode,
 
 static void create_out_of_bounds_check(switch_info_t *info)
 {
-	ir_node    *switchn       = info->switchn;
-	ir_graph   *irg           = get_irn_irg(switchn);
-	dbg_info   *dbgi          = get_irn_dbg_info(switchn);
-	ir_node    *selector      = get_Switch_selector(switchn);
-	ir_node    *block         = get_nodes_block(switchn);
-	ir_node   **default_preds = NEW_ARR_F(ir_node*, 0);
-	ir_node    *default_block = NULL;
-	ir_node    *max_const;
-	ir_node    *proj_true;
-	ir_node    *proj_false;
-	ir_node    *cmp;
-	ir_node    *oob_cond;
-	ir_node    *in[1];
-	ir_node    *new_block;
-	size_t      n_default_preds;
-
+	/* should already be normalized to zero */
 	assert(tarval_is_null(info->switch_min));
 
-	/* check for out-of-bounds */
-	max_const  = new_r_Const(irg, info->switch_max);
-	cmp        = new_rd_Cmp(dbgi, block, selector, max_const, ir_relation_less_equal);
-	oob_cond   = new_rd_Cond(dbgi, block, cmp);
-	proj_true  = new_r_Proj(oob_cond, mode_X, pn_Cond_true);
-	proj_false = new_r_Proj(oob_cond, mode_X, pn_Cond_false);
+	/* create out-of-bounds check */
+	ir_node  *switchn    = info->switchn;
+	ir_graph *irg        = get_irn_irg(switchn);
+	dbg_info *dbgi       = get_irn_dbg_info(switchn);
+	ir_node  *selector   = get_Switch_selector(switchn);
+	ir_node  *block      = get_nodes_block(switchn);
+	ir_node  *max_const  = new_r_Const(irg, info->switch_max);
+	ir_node  *cmp        = new_rd_Cmp(dbgi, block, selector, max_const,
+	                                  ir_relation_less_equal);
+	ir_node  *oob_cond   = new_rd_Cond(dbgi, block, cmp);
+	ir_node  *proj_true  = new_r_Proj(oob_cond, mode_X, pn_Cond_true);
+	ir_node  *proj_false = new_r_Proj(oob_cond, mode_X, pn_Cond_false);
 
+	ir_node **default_preds = NEW_ARR_F(ir_node*, 0);
 	ARR_APP1(ir_node*, default_preds, proj_false);
 
 	/* create new block containing the switch */
-	in[0] = proj_true;
-	new_block = new_r_Block(irg, 1, in);
+	ir_node *in[]      = { proj_true };
+	ir_node *new_block = new_r_Block(irg, ARRAY_SIZE(in), in);
 	set_nodes_block(switchn, new_block);
 
 	/* adjust projs */
+	ir_node *default_block = NULL;
 	foreach_irn_out_r(switchn, i, proj) {
 		long pn = get_Proj_proj(proj);
 		if (pn == pn_Switch_default) {
@@ -219,17 +208,13 @@ static void create_out_of_bounds_check(switch_info_t *info)
 	}
 
 	/* adapt default block */
-	n_default_preds = ARR_LEN(default_preds);
+	size_t n_default_preds = ARR_LEN(default_preds);
 	if (n_default_preds > 1) {
 		/* create new intermediate blocks so we don't have critical edges */
-		size_t p;
-		for (p = 0; p < n_default_preds; ++p) {
-			ir_node *pred = default_preds[p];
-			ir_node *split_block;
-			ir_node *block_in[1];
-
-			block_in[0] = pred;
-			split_block = new_r_Block(irg, 1, block_in);
+		for (size_t p = 0; p < n_default_preds; ++p) {
+			ir_node *pred        = default_preds[p];
+			ir_node *bin[]       = { pred };
+			ir_node *split_block = new_r_Block(irg, ARRAY_SIZE(bin), bin);
 
 			default_preds[p] = new_r_Jmp(split_block);
 		}
@@ -245,14 +230,11 @@ static void create_out_of_bounds_check(switch_info_t *info)
 static bool normalize_switch(switch_info_t *info, ir_mode *selector_mode)
 {
 	ir_node   *switchn         = info->switchn;
-	ir_graph  *irg             = get_irn_irg(switchn);
 	ir_node   *block           = get_nodes_block(switchn);
 	ir_node   *selector        = get_Switch_selector(switchn);
 	ir_mode   *mode            = get_irn_mode(selector);
-	ir_tarval *delta           = NULL;
+	ir_tarval *min             = info->switch_min;
 	bool       needs_normalize = false;
-
-	ir_tarval *min = info->switch_min;
 	if (mode_is_signed(mode)) {
 		mode             = find_unsigned_mode(mode);
 		selector         = new_r_Conv(block, selector, mode);
@@ -263,7 +245,9 @@ static bool normalize_switch(switch_info_t *info, ir_mode *selector_mode)
 	}
 
 	/* normalize so switch_min is at 0 */
+	ir_tarval *delta           = NULL;
 	if (min != get_mode_null(mode)) {
+		ir_graph *irg       = get_irn_irg(switchn);
 		ir_node  *min_const = new_r_Const(irg, min);
 		dbg_info *dbgi      = get_irn_dbg_info(switchn);
 		selector = new_rd_Sub(dbgi, block, selector, min_const, mode);
@@ -309,8 +293,8 @@ static ir_node *create_case_cond(const ir_switch_table_entry *entry,
 {
 	ir_graph *irg      = get_irn_irg(block);
 	ir_node  *minconst = new_r_Const(irg, entry->min);
-	ir_node  *cmp;
 
+	ir_node  *cmp;
 	if (entry->min == entry->max) {
 		cmp = new_rd_Cmp(dbgi, block, selector, minconst, ir_relation_equal);
 	} else {
@@ -320,7 +304,6 @@ static ir_node *create_case_cond(const ir_switch_table_entry *entry,
 		ir_node   *maxconst     = new_r_Const(irg, adjusted_max);
 		cmp = new_rd_Cmp(dbgi, block, sub, maxconst, ir_relation_less_equal);
 	}
-
 	return new_rd_Cond(dbgi, block, cmp);
 }
 
@@ -354,20 +337,17 @@ static void create_if_cascade(switch_info_t *info, ir_node *block,
 		ir_node *cond      = create_case_cond(entry0, dbgi, block, selector);
 		ir_node *trueproj  = new_r_Proj(cond, mode_X, pn_Cond_true);
 		ir_node *falseproj = new_r_Proj(cond, mode_X, pn_Cond_false);
-		ir_node *in[1];
-		ir_node *neblock;
-
 		set_Block_cfgpred(curcases[0].target, 0, trueproj);
 
-		in[0] = falseproj;
-		neblock = new_r_Block(irg, 1, in);
+		ir_node *in[]    = { falseproj };
+		ir_node *neblock = new_r_Block(irg, ARRAY_SIZE(in), in);
 
 		/* second part: "else if (sel == val[1]) goto target[1] else goto default;" */
-		cond      = create_case_cond(entry1, dbgi, neblock, selector);
-		trueproj  = new_r_Proj(cond, mode_X, pn_Cond_true);
-		falseproj = new_r_Proj(cond, mode_X, pn_Cond_false);
-		set_Block_cfgpred(curcases[1].target, 0, trueproj);
-		ARR_APP1(ir_node*, info->defusers, falseproj);
+		ir_node *cond1      = create_case_cond(entry1, dbgi, neblock, selector);
+		ir_node *trueproj1  = new_r_Proj(cond1, mode_X, pn_Cond_true);
+		ir_node *falseproj1 = new_r_Proj(cond1, mode_X, pn_Cond_false);
+		set_Block_cfgpred(curcases[1].target, 0, trueproj1);
+		ARR_APP1(ir_node*, info->defusers, falseproj1);
 	} else {
 		/* recursive case: split cases in the middle */
 		unsigned midcase = numcases / 2;
@@ -375,15 +355,12 @@ static void create_if_cascade(switch_info_t *info, ir_node *block,
 		ir_node *val = new_r_Const(irg, entry->min);
 		ir_node *cmp = new_rd_Cmp(dbgi, block, selector, val, ir_relation_less);
 		ir_node *cond = new_rd_Cond(dbgi, block, cmp);
-		ir_node *in[1];
-		ir_node *ltblock;
-		ir_node *geblock;
 
-		in[0]   = new_r_Proj(cond, mode_X, pn_Cond_true);
-		ltblock = new_r_Block(irg, 1, in);
+		ir_node *ltin[]  = { new_r_Proj(cond, mode_X, pn_Cond_true) };
+		ir_node *ltblock = new_r_Block(irg, ARRAY_SIZE(ltin), ltin);
 
-		in[0]   = new_r_Proj(cond, mode_X, pn_Cond_false);
-		geblock = new_r_Block(irg, 1, in);
+		ir_node *gein[]  = { new_r_Proj(cond, mode_X, pn_Cond_false) };
+		ir_node *geblock = new_r_Block(irg, ARRAY_SIZE(gein), gein);
 
 		create_if_cascade(info, ltblock, curcases, midcase);
 		create_if_cascade(info, geblock, curcases + midcase, numcases - midcase);
@@ -395,28 +372,25 @@ static void create_if_cascade(switch_info_t *info, ir_node *block,
  */
 static void find_switch_nodes(ir_node *block, void *ctx)
 {
-	walk_env_t   *env = (walk_env_t *)ctx;
-	ir_node      *projx;
-	ir_node      *switchn;
-	switch_info_t info;
+	walk_env_t *env = (walk_env_t*)ctx;
 
 	/* because we split critical blocks only blocks with 1 predecessors may
 	 * contain Proj->Cond nodes */
 	if (get_Block_n_cfgpreds(block) != 1)
 		return;
 
-	projx = get_Block_cfgpred(block, 0);
+	ir_node *projx = get_Block_cfgpred(block, 0);
 	if (!is_Proj(projx))
 		return;
 	assert(get_irn_mode(projx) == mode_X);
 
-	switchn = get_Proj_pred(projx);
+	ir_node *switchn = get_Proj_pred(projx);
 	if (!is_Switch(switchn))
 		return;
-
 	if (!ir_nodeset_insert(&env->processed, switchn))
 		return;
 
+	switch_info_t info;
 	analyse_switch0(&info, switchn);
 
 	/*
@@ -431,8 +405,8 @@ static void find_switch_nodes(ir_node *block, void *ctx)
 		= new_tarval_from_long(info.num_cases-1, mode);
 	spare = tarval_sub(spare, num_cases_minus_one, mode);
 	ir_tarval *spare_size = new_tarval_from_long(env->spare_size, mode);
-	bool lower_switch = (info.num_cases <= env->small_switch
-	 || (tarval_cmp(spare, spare_size) & ir_relation_greater_equal));
+	bool lower_switch = info.num_cases <= env->small_switch
+		|| (tarval_cmp(spare, spare_size) & ir_relation_greater_equal);
 
 	if (!lower_switch) {
 		/* we won't decompose the switch. But we must add an out-of-bounds
@@ -470,9 +444,8 @@ void lower_switch(ir_graph *irg, unsigned small_switch, unsigned spare_size,
 	env.changed             = false;
 	ir_nodeset_init(&env.processed);
 
-	assure_irg_properties(irg,
-		IR_GRAPH_PROPERTY_NO_CRITICAL_EDGES
-		| IR_GRAPH_PROPERTY_CONSISTENT_OUTS);
+	assure_irg_properties(irg, IR_GRAPH_PROPERTY_NO_CRITICAL_EDGES
+	                         | IR_GRAPH_PROPERTY_CONSISTENT_OUTS);
 
 	irg_block_walk_graph(irg, find_switch_nodes, NULL, &env);
 	ir_nodeset_destroy(&env.processed);
