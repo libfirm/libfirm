@@ -2349,10 +2349,12 @@ static ir_node *dest_am_binop(ir_node *node, ir_node *op1, ir_node *op2,
 	set_ia32_ls_mode(new_node, mode);
 	SET_IA32_ORIG_NODE(new_node, node);
 
-	be_set_transformed_node(get_Proj_pred(am.mem_proj), new_node);
+	ir_node *new_proj = new_r_Proj(new_node, mode_M, pn_ia32_destAM_M);
+
+	be_set_transformed_node(get_Proj_pred(am.mem_proj), new_proj);
 	ir_node *mem_proj = be_transform_node(am.mem_proj);
-	be_set_transformed_node(am.mem_proj, new_node);
-	be_set_transformed_node(mem_proj, new_node);
+	be_set_transformed_node(am.mem_proj, new_proj);
+	be_set_transformed_node(mem_proj, new_proj);
 
 	return new_node;
 }
@@ -2382,10 +2384,12 @@ static ir_node *dest_am_unop(ir_node *node, ir_node *op, ir_node *mem,
 	set_ia32_ls_mode(new_node, mode);
 	SET_IA32_ORIG_NODE(new_node, node);
 
-	be_set_transformed_node(get_Proj_pred(am.mem_proj), new_node);
+	ir_node *new_proj = new_r_Proj(new_node, mode_M, pn_ia32_destAM_M);
+
+	be_set_transformed_node(get_Proj_pred(am.mem_proj), new_proj);
 	ir_node *mem_proj = be_transform_node(am.mem_proj);
-	be_set_transformed_node(am.mem_proj, new_node);
-	be_set_transformed_node(mem_proj, new_node);
+	be_set_transformed_node(am.mem_proj, new_proj);
+	be_set_transformed_node(mem_proj, new_proj);
 
 	return new_node;
 }
