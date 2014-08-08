@@ -452,6 +452,58 @@ ir_entity *ia32_gen_fp_known_const(ir_graph *const irg, ia32_known_const_t kct)
 }
 
 /**
+ * return true if the users of the given value will be merged by later
+ * optimization. This applies to multiple Cmp nodes (and maybe a Sub
+ * node) with the same inputs.
+ */
+static bool users_will_merge(ir_node *proj)
+{
+	ir_node *left      = NULL;
+	ir_node *right     = NULL;
+	ir_node *block     = NULL;
+	bool     found_sub = false;
+
+	foreach_out_edge(proj, edge) {
+		ir_node *user = get_edge_src_irn(edge);
+
+		if (left == NULL) {
+			if (is_Cmp(user) || is_Sub(user)) {
+				// Take the first user as a sample to compare
+				// the next ones to.
+				block     = get_nodes_block(user);
+				left      = get_binop_left(user);
+				right     = get_binop_right(user);
+				found_sub = is_Sub(user);
+			} else {
+				return false;
+			}
+		} else {
+			if (get_nodes_block(user) != block) {
+				return false;
+			}
+
+			if (is_Cmp(user) || is_Sub(user)) {
+				ir_node *user_left  = get_binop_left(user);
+				ir_node *user_right = get_binop_right(user);
+
+				if (found_sub && is_Sub(user)) {
+					// Two subs will not be merged
+					return false;
+				}
+				if (user_left != left || user_right != right) {
+					return false;
+				}
+
+				found_sub |= is_Sub(user);
+			} else {
+				return false;
+			}
+		}
+	}
+	return true;
+}
+
+/**
  * return true if the node is a Proj(Load) and could be used in source address
  * mode for another node. Will return only true if the @p other node is not
  * dependent on the memory of the Load (for binary operations use the other
@@ -494,8 +546,10 @@ static bool ia32_use_source_address_mode(ir_node *block, ir_node *node,
 	/* we can't fold mode_E AM */
 	if (mode == ia32_mode_E)
 		return false;
-	/* we only use address mode if we're the only user of the load */
-	if (get_irn_n_edges(node) != (flags & match_two_users ? 2 : 1))
+	/* we only use address mode if we're the only user of the load
+	 * or the users will be merged later anyway */
+	if (get_irn_n_edges(node) != (flags & match_two_users ? 2 : 1) &&
+	    !users_will_merge(node))
 		return false;
 	/* in some edge cases with address mode we might reach the load normally
 	 * and through some AM sequence, if it is already materialized then we
