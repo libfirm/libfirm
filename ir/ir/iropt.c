@@ -4005,6 +4005,16 @@ static ir_node *transform_node_Confirm(ir_node *n)
 
 static ir_node *transform_node_Switch(ir_node *n)
 {
+	unsigned n_outs = get_Switch_n_outs(n);
+	/* switch with just default proj is a Jmp */
+	if (n_outs == 1) {
+		dbg_info *dbgi  = get_irn_dbg_info(n);
+		ir_node  *block = get_nodes_block(n);
+		ir_node  *in[]  = { new_rd_Jmp(dbgi, block) };
+		return new_r_Tuple(block, ARRAY_SIZE(in), in);
+	}
+
+	/* evaluate constant switch input */
 	ir_node         *op  = get_Switch_selector(n);
 	const ir_tarval *val = value_of(op);
 	if (tarval_is_constant(val)) {
@@ -4025,7 +4035,6 @@ static ir_node *transform_node_Switch(ir_node *n)
 
 		dbg_info  *dbgi   = get_irn_dbg_info(n);
 		ir_graph  *irg    = get_irn_irg(n);
-		unsigned   n_outs = get_Switch_n_outs(n);
 		ir_node   *block  = get_nodes_block(n);
 		ir_node   *bad    = new_r_Bad(irg, mode_X);
 		ir_node  **in     = XMALLOCN(ir_node*, n_outs);
