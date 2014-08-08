@@ -733,6 +733,7 @@ static void remat_simplifier(ir_node *node, void *env)
 				get_irn_n(node, n_ia32_Sub_subtrahend),
 				false);
 			arch_set_irn_register(cmp, flags_reg);
+			ia32_copy_am_attrs(cmp, node);
 
 			sched_replace(node, cmp);
 
