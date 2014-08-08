@@ -688,10 +688,12 @@ static void remat_simplifier(ir_node *block, void *env)
 	sched_foreach(block, node) {
 		/* A Sub with unused result is a Cmp. */
 		if (is_ia32_Sub(node) && get_irn_mode(node) == mode_T) {
-			bool has_res_users = false;
-			ir_node *res_keep = NULL;
-			ir_node **flag_users = NEW_ARR_F(ir_node*, 0);
-			int *flag_users_pos = NEW_ARR_F(int, 0);
+			bool      has_res_users  = false;
+			ir_node  *res_keep       = NULL;
+			ir_node **flag_users     = NEW_ARR_F(ir_node*, 0);
+			int      *flag_users_pos = NEW_ARR_F(int, 0);
+			ir_node **mem_users      = NEW_ARR_F(ir_node*, 0);
+			int      *mem_users_pos  = NEW_ARR_F(int, 0);
 
 			foreach_out_edge(node, out) {
 				ir_node *proj = get_edge_src_irn(out);
@@ -712,6 +714,12 @@ static void remat_simplifier(ir_node *block, void *env)
 							res_keep = user;
 						}
 					}
+				} else if (proj_mode == mode_M) {
+					foreach_out_edge(proj, out2) {
+						ir_node *user = get_edge_src_irn(out2);
+						ARR_APP1(ir_node*, mem_users, user);
+						ARR_APP1(int, mem_users_pos, get_edge_src_pos(out2));
+					}
 				}
 			}
 
@@ -729,6 +737,21 @@ static void remat_simplifier(ir_node *block, void *env)
 
 				sched_replace(node, cmp);
 
+				if (get_ia32_op_type(node) == ia32_AddrModeD) {
+					panic("Unexpected DestAM node %+F", node);
+				}
+				if (get_ia32_op_type(node) == ia32_AddrModeS) {
+					set_ia32_op_type(cmp, ia32_AddrModeS);
+					set_irn_mode(cmp, mode_T);
+
+					ir_node *proj_M = new_r_Proj(cmp, mode_M, pn_ia32_Cmp_M);
+					for(unsigned i = 0; i < ARR_LEN(mem_users); i++) {
+						set_irn_n(mem_users[i], mem_users_pos[i], proj_M);
+					}
+
+					cmp = new_r_Proj(cmp, mode_M, pn_ia32_Cmp_eflags);
+				}
+
 				for (unsigned i = 0; i < ARR_LEN(flag_users); i++) {
 					set_irn_n(flag_users[i], flag_users_pos[i], cmp);
 				}
@@ -744,6 +767,8 @@ static void remat_simplifier(ir_node *block, void *env)
 
 			DEL_ARR_F(flag_users);
 			DEL_ARR_F(flag_users_pos);
+			DEL_ARR_F(mem_users);
+			DEL_ARR_F(mem_users_pos);
 		}
 	}
 
