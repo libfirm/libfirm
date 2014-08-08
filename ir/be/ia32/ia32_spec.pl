@@ -743,11 +743,12 @@ Not => {
 NotMem => {
 	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none" ] },
+	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none", "none", "none" ] },
 	ins       => [ "base", "index", "mem" ],
+	outs      => [ "unused0", "unused1", "M" ],
 	emit      => "not%M %AM",
 	latency   => 1,
-	mode      => "mode_M",
+	mode      => "mode_T",
 	# no flags modified
 },
 
