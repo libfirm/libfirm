@@ -7396,18 +7396,18 @@ restart:;
 						return n;
 					}
 				}
-			} else {
-				/* try to evaluate */
-				ir_tarval *tv = computed_value(n);
-				if (tarval_is_constant(tv)) {
-					/* evaluation was successful -- replace the node. */
-					ir_graph *const irg = get_irn_irg(n);
+			}
 
-					n = new_r_Const(irg, tv);
+			/* try to evaluate */
+			ir_tarval *tv = computed_value(n);
+			if (tarval_is_constant(tv)) {
+				/* evaluation was successful -- replace the node. */
+				ir_graph *const irg = get_irn_irg(n);
 
-					DBG_OPT_CSTEVAL(old_n, n);
-					return n;
-				}
+				n = new_r_Const(irg, tv);
+
+				DBG_OPT_CSTEVAL(old_n, n);
+				return n;
 			}
 		}
 	}
