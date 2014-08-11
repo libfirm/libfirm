@@ -7292,11 +7292,33 @@ static ir_node *transform_node_Load(ir_node *n)
 
 static ir_node *transform_node_Store(ir_node *n)
 {
+	ir_node *mem = get_Store_mem(n);
+	ir_node *ptr = get_Store_ptr(n);
+	if (is_Proj(mem)) {
+		ir_node *pred_store = get_Proj_pred(mem);
+		if (is_Store(pred_store) && get_Store_ptr(pred_store) == ptr &&
+		    get_Store_volatility(pred_store) != volatility_is_volatile) {
+			ir_node  *value          = get_Store_value(n);
+			ir_mode  *mode           = get_irn_mode(value);
+			unsigned  mode_size      = get_mode_size_bits(mode);
+			ir_node  *pred_value     = get_Store_value(pred_store);
+			ir_mode  *pred_mode      = get_irn_mode(pred_value);
+			unsigned  pred_mode_size = get_mode_size_bits(pred_mode);
+			if (pred_mode_size <= mode_size) {
+				/* If our memory predecessor is a (smaller) store to the same address,
+				 * we can remove the dead predecessor store. */
+				ir_node *new_store = exact_copy(n);
+				set_Store_mem(new_store, get_Store_mem(pred_store));
+
+				return new_store;
+			}
+		}
+	}
+
 	/* don't touch volatile stores */
 	if (get_Store_volatility(n) == volatility_is_volatile)
 		return n;
 
-	ir_node       *ptr     = get_Store_ptr(n);
 	const ir_node *confirm;
 	if (value_not_null(ptr, &confirm) && confirm == NULL) {
 		set_irn_pinned(n, op_pin_state_floats);
