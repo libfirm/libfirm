@@ -30,10 +30,11 @@ typedef struct walk_env_t {
 	bool          changed;    /**< indicates whether a change was performed */
 } walk_env_t;
 
-typedef struct case_data_t {
-	const ir_switch_table_entry *entry;
-	ir_node                     *target;
-} case_data_t;
+typedef struct target_t {
+	ir_node *block;     /**< block that is targetted */
+	uint16_t n_entries; /**< number of table entries targetting this block */
+	uint16_t i;
+} target_t;
 
 typedef struct switch_info_t {
 	ir_node     *switchn;
@@ -41,7 +42,7 @@ typedef struct switch_info_t {
 	ir_tarval   *switch_max;
 	ir_node     *default_block;
 	unsigned     num_cases;
-	case_data_t *cases;
+	target_t    *targets;
 	ir_node    **defusers;    /**< the Projs pointing to the default case */
 } switch_info_t;
 
@@ -77,23 +78,6 @@ static void analyse_switch0(switch_info_t *info, ir_node *switchn)
 	info->num_cases  = num_cases;
 }
 
-static int casecmp(const void *a, const void *b)
-{
-	const case_data_t           *cda = (const case_data_t*)a;
-	const case_data_t           *cdb = (const case_data_t*)b;
-	const ir_switch_table_entry *ea  = cda->entry;
-	const ir_switch_table_entry *eb  = cdb->entry;
-
-	if (ea == eb)
-		return 0;
-
-	if (tarval_cmp(ea->max, eb->min) == ir_relation_less)
-		return -1;
-	/* cases must be non overlapping, so the only remaining case is greater */
-	assert(tarval_cmp(ea->min, eb->max) == ir_relation_greater);
-	return 1;
-}
-
 /**
  * Analyse the stuff that anayse_switch0() left out
  */
@@ -101,20 +85,17 @@ static void analyse_switch1(switch_info_t *info)
 {
 	const ir_node  *switchn   = info->switchn;
 	unsigned        n_outs    = get_Switch_n_outs(switchn);
-	ir_node       **targets   = XMALLOCNZ(ir_node*, n_outs);
+	target_t       *targets   = XMALLOCNZ(target_t, n_outs);
 	foreach_irn_out_r(switchn, i, proj) {
 		long     pn     = get_Proj_proj(proj);
 		ir_node *target = get_irn_out(proj, 0);
 
 		assert((unsigned)pn < n_outs);
-		assert(targets[(unsigned)pn] == NULL);
-		targets[(unsigned)pn] = target;
+		assert(targets[(unsigned)pn].block == NULL);
+		targets[(unsigned)pn].block = target;
 	}
 
-	const ir_switch_table *table     = get_Switch_table(switchn);
-	unsigned               num_cases = info->num_cases;
-	case_data_t           *cases     = XMALLOCN(case_data_t, num_cases);
-	unsigned               c         = 0;
+	const ir_switch_table *table = get_Switch_table(switchn);
 	for (size_t e = 0, n_entries = ir_switch_table_get_n_entries(table);
 	     e < n_entries; ++e) {
 		const ir_switch_table_entry *entry
@@ -122,33 +103,48 @@ static void analyse_switch1(switch_info_t *info)
 		if (entry->pn == pn_Switch_default)
 			continue;
 
-		cases[c].entry  = entry;
-		cases[c].target = targets[entry->pn];
-		++c;
+		target_t *target = &targets[entry->pn];
+		++target->n_entries;
 	}
-	assert(c == num_cases);
 
-	/*
-	 * Switch should be transformed into an if cascade.
-	 * So first order the cases, so we can do a binary search on them.
-	 */
-	QSORT(cases, num_cases, casecmp);
+	info->default_block = targets[pn_Switch_default].block;
+	info->targets       = targets;
+}
 
-	info->default_block = targets[pn_Switch_default];
-	info->cases         = cases;
-	free(targets);
+static int compare_entries(const void *a, const void *b)
+{
+	const ir_switch_table_entry *entry0 = (const ir_switch_table_entry*)a;
+	const ir_switch_table_entry *entry1 = (const ir_switch_table_entry*)b;
+
+	/* sort default targets to the end */
+	if (entry0->pn == pn_Switch_default)
+		return 1;
+	if (entry1->pn == pn_Switch_default)
+		return -1;
+
+	if (tarval_cmp(entry0->max, entry1->min) == ir_relation_less)
+		return -1;
+	/* cases must be non overlapping, so the only remaining case is greater */
+	assert(tarval_cmp(entry0->min, entry1->max) == ir_relation_greater);
+	return 1;
 }
 
 static void normalize_table(ir_node *switchn, ir_mode *new_mode,
                             ir_tarval *delta)
 {
-	/* adapt switch_table */
 	ir_switch_table *table = get_Switch_table(switchn);
+	QSORT(table->entries, table->n_entries, compare_entries);
+
+	/* subtract delta from min/max values and remove default pn entries */
 	for (size_t e = 0, n_entries = ir_switch_table_get_n_entries(table);
 	     e < n_entries; ++e) {
 		ir_switch_table_entry *entry = ir_switch_table_get_entry(table, e);
-		if (entry->pn == pn_Switch_default)
-			continue;
+
+		/* default entries have been sorted to the end, cut off list there */
+		if (entry->pn == pn_Switch_default) {
+			table->n_entries = e;
+			break;
+		}
 
 		ir_tarval *min = entry->min;
 		min = tarval_convert_to(min, new_mode);
@@ -229,23 +225,21 @@ static void create_out_of_bounds_check(switch_info_t *info)
  */
 static bool normalize_switch(switch_info_t *info, ir_mode *selector_mode)
 {
-	ir_node   *switchn         = info->switchn;
-	ir_node   *block           = get_nodes_block(switchn);
-	ir_node   *selector        = get_Switch_selector(switchn);
-	ir_mode   *mode            = get_irn_mode(selector);
-	ir_tarval *min             = info->switch_min;
-	bool       needs_normalize = false;
+	ir_node   *switchn  = info->switchn;
+	ir_node   *block    = get_nodes_block(switchn);
+	ir_node   *selector = get_Switch_selector(switchn);
+	ir_mode   *mode     = get_irn_mode(selector);
+	ir_tarval *min      = info->switch_min;
 	if (mode_is_signed(mode)) {
 		mode             = find_unsigned_mode(mode);
 		selector         = new_r_Conv(block, selector, mode);
 		min              = tarval_convert_to(min, mode);
 		info->switch_min = min;
 		info->switch_max = tarval_convert_to(info->switch_max, mode);
-		needs_normalize  = true;
 	}
 
 	/* normalize so switch_min is at 0 */
-	ir_tarval *delta           = NULL;
+	ir_tarval *delta = NULL;
 	if (min != get_mode_null(mode)) {
 		ir_graph *irg       = get_irn_irg(switchn);
 		ir_node  *min_const = new_r_Const(irg, min);
@@ -255,8 +249,6 @@ static bool normalize_switch(switch_info_t *info, ir_mode *selector_mode)
 		info->switch_max = tarval_sub(info->switch_max, min, mode);
 		info->switch_min = get_mode_null(mode);
 		delta            = min;
-
-		needs_normalize = true;
 	}
 
 	/* if we have a selector_mode set, then the we will have a switch node,
@@ -272,13 +264,9 @@ static bool normalize_switch(switch_info_t *info, ir_mode *selector_mode)
 		info->switch_max = tarval_convert_to(info->switch_max, mode);
 		if (delta != NULL)
 			delta = tarval_convert_to(delta, mode);
-		needs_normalize = true;
+		set_Switch_selector(switchn, selector);
 	}
 
-	if (!needs_normalize)
-		return false;
-
-	set_Switch_selector(switchn, selector);
 	normalize_table(switchn, mode, delta);
 	return true;
 }
@@ -307,11 +295,30 @@ static ir_node *create_case_cond(const ir_switch_table_entry *entry,
 	return new_rd_Cond(dbgi, block, cmp);
 }
 
+static void connect_to_target(target_t *target, ir_node *cf)
+{
+	ir_node *block     = target->block;
+	unsigned n_entries = target->n_entries;
+	if (get_Block_n_cfgpreds(block) != (int)n_entries) {
+		ir_node **new_in = ALLOCAN(ir_node*, n_entries);
+		ir_graph *irg    = get_Block_irg(block);
+		ir_node  *dummy  = new_r_Dummy(irg, mode_X);
+		for (unsigned i = 0; i < n_entries; ++i) {
+			new_in[i] = dummy;
+		}
+		set_irn_in(block, n_entries, new_in);
+		assert(target->i == 0);
+	}
+	assert(target->i < n_entries);
+	set_Block_cfgpred(target->block, target->i++, cf);
+}
+
 /**
  * Creates an if cascade realizing binary search.
  */
 static void create_if_cascade(switch_info_t *info, ir_node *block,
-                              case_data_t *curcases, unsigned numcases)
+                              ir_switch_table_entry *curcases,
+                              unsigned numcases)
 {
 	ir_graph      *irg      = get_irn_irg(block);
 	const ir_node *switchn  = info->switchn;
@@ -323,21 +330,21 @@ static void create_if_cascade(switch_info_t *info, ir_node *block,
 		ARR_APP1(ir_node*, info->defusers, new_r_Jmp(block));
 	} else if (numcases == 1) {
 		/*only one case: "if (sel == val) goto target else goto default;"*/
-		const ir_switch_table_entry *entry = curcases[0].entry;
+		const ir_switch_table_entry *entry = &curcases[0];
 		ir_node *cond      = create_case_cond(entry, dbgi, block, selector);
 		ir_node *trueproj  = new_r_Proj(cond, mode_X, pn_Cond_true);
 		ir_node *falseproj = new_r_Proj(cond, mode_X, pn_Cond_false);
 
-		set_Block_cfgpred(curcases[0].target, 0, trueproj);
+		connect_to_target(&info->targets[entry->pn], trueproj);
 		ARR_APP1(ir_node*, info->defusers, falseproj);
 	} else if (numcases == 2) {
 		/* only two cases: "if (sel == val[0]) goto target[0];" */
-		const ir_switch_table_entry *entry0 = curcases[0].entry;
-		const ir_switch_table_entry *entry1 = curcases[1].entry;
+		const ir_switch_table_entry *entry0 = &curcases[0];
+		const ir_switch_table_entry *entry1 = &curcases[1];
 		ir_node *cond      = create_case_cond(entry0, dbgi, block, selector);
 		ir_node *trueproj  = new_r_Proj(cond, mode_X, pn_Cond_true);
 		ir_node *falseproj = new_r_Proj(cond, mode_X, pn_Cond_false);
-		set_Block_cfgpred(curcases[0].target, 0, trueproj);
+		connect_to_target(&info->targets[entry0->pn], trueproj);
 
 		ir_node *in[]    = { falseproj };
 		ir_node *neblock = new_r_Block(irg, ARRAY_SIZE(in), in);
@@ -346,12 +353,12 @@ static void create_if_cascade(switch_info_t *info, ir_node *block,
 		ir_node *cond1      = create_case_cond(entry1, dbgi, neblock, selector);
 		ir_node *trueproj1  = new_r_Proj(cond1, mode_X, pn_Cond_true);
 		ir_node *falseproj1 = new_r_Proj(cond1, mode_X, pn_Cond_false);
-		set_Block_cfgpred(curcases[1].target, 0, trueproj1);
+		connect_to_target(&info->targets[entry1->pn], trueproj1);
 		ARR_APP1(ir_node*, info->defusers, falseproj1);
 	} else {
 		/* recursive case: split cases in the middle */
 		unsigned midcase = numcases / 2;
-		const ir_switch_table_entry *entry = curcases[midcase].entry;
+		const ir_switch_table_entry *entry = &curcases[midcase];
 		ir_node *val = new_r_Const(irg, entry->min);
 		ir_node *cmp = new_rd_Cmp(dbgi, block, selector, val, ir_relation_less);
 		ir_node *cond = new_rd_Cond(dbgi, block, cmp);
@@ -397,9 +404,9 @@ static void find_switch_nodes(ir_node *block, void *ctx)
 	 * Here we have: num_cases and [switch_min, switch_max] interval.
 	 * We do an if-cascade if there are too many spare numbers.
 	 */
-	ir_mode   *mode  = get_irn_mode(get_Switch_selector(switchn));
-	ir_tarval *spare = tarval_sub(info.switch_max, info.switch_min, mode);
-	mode  = find_unsigned_mode(mode);
+	ir_mode   *selector_mode = get_irn_mode(get_Switch_selector(switchn));
+	ir_tarval *spare = tarval_sub(info.switch_max, info.switch_min, selector_mode);
+	ir_mode   *mode  = find_unsigned_mode(selector_mode);
 	spare = tarval_convert_to(spare, mode);
 	ir_tarval *num_cases_minus_one
 		= new_tarval_from_long(info.num_cases-1, mode);
@@ -415,20 +422,21 @@ static void find_switch_nodes(ir_node *block, void *ctx)
 		return;
 	}
 
-	normalize_switch(&info, NULL);
+	normalize_table(switchn, selector_mode, NULL);
 	analyse_switch1(&info);
 
 	/* Now create the if cascade */
 	env->changed  = true;
 	info.defusers = NEW_ARR_F(ir_node*, 0);
 	block         = get_nodes_block(switchn);
-	create_if_cascade(&info, block, info.cases, info.num_cases);
+	ir_switch_table *table = get_Switch_table(switchn);
+	create_if_cascade(&info, block, table->entries, table->n_entries);
 
 	/* Connect new default case users */
 	set_irn_in(info.default_block, ARR_LEN(info.defusers), info.defusers);
 
 	DEL_ARR_F(info.defusers);
-	free(info.cases);
+	free(info.targets);
 }
 
 void lower_switch(ir_graph *irg, unsigned small_switch, unsigned spare_size,
