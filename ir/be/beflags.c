@@ -110,8 +110,7 @@ static void move_other_uses(ir_node *node, ir_node *copy)
 {
 	/* copy_prev already has its visited flag set, but is still
 	 * scheduled before copy. */
-	ir_node *copy_prev  = get_irn_sched_info(copy)->prev;
-	ir_node *copy_block = get_nodes_block(copy);
+	ir_node *copy_prev = get_irn_sched_info(copy)->prev;
 
 	foreach_irn_out(node, i, proj) {
 		if (get_irn_mode(proj) == flag_class->mode) {
@@ -122,7 +121,7 @@ static void move_other_uses(ir_node *node, ir_node *copy)
 		foreach_out_edge_safe(proj, edge) {
 			ir_node *succ = get_edge_src_irn(edge);
 			if (irn_visited(succ) && succ != copy_prev &&
-			    block_dominates(copy_block, get_nodes_block(succ))) {
+			    value_strictly_dominates(copy, succ)) {
 				if (new_proj == NULL) {
 					ir_mode *proj_mode = get_irn_mode(proj);
 					int      pn        = get_Proj_proj(proj);
