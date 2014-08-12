@@ -22,6 +22,7 @@
 #include "irnode_t.h"
 #include "irverify.h"
 #include "panic.h"
+#include "util.h"
 #include "xmalloc.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
@@ -45,6 +46,8 @@ static void clear_link_and_mark_blocks_removable(ir_node *node, void *ctx)
 	if (is_Block(node)) {
 		set_Block_removable(node, true);
 		set_Block_phis(node, NULL);
+	} else if (is_Switch(node)) {
+		set_irn_link(node, INT_TO_PTR(0));
 	} else if (is_Phi(node)) {
 		set_Phi_next(node, NULL);
 	}
@@ -63,20 +66,32 @@ static void collect_nodes(ir_node *n, void *ctx)
 	if (is_Phi(n)) {
 		ir_node *block = get_nodes_block(n);
 		add_Block_phi(block, n);
-	} else if (is_Block(n)) {
+		return;
+	}
+	if (is_Block(n)) {
 		/* do not merge blocks with Jump labels for now (we cannot currently
 		 * have multiple labels on a block) */
 		if (get_Block_entity(n) != NULL)
 			set_Block_removable(n, false);
-	} else if (is_Bad(n) || is_Jmp(n)) {
-		/* these nodes are fine and still allow us to potentially remove the
-		 * block */
 		return;
-	} else {
-		/* Any other node leads to the block not being removable. */
-		ir_node *block = get_nodes_block(n);
-		set_Block_removable(block, false);
 	}
+	/* these nodes are fine and still allow us to potentially remove the
+	 * block (Switch will be decided based on its ProjX nodes) */
+	if (is_Bad(n) || is_Jmp(n) || is_Switch(n))
+		return;
+	if (is_Proj(n)) {
+		ir_node *pred = get_Proj_pred(n);
+		if (is_Switch(pred)) {
+			/* Switch with just default Proj is fine too */
+			if (get_Proj_proj(n) == pn_Switch_default)
+				return;
+			/* mark switch as having a non-default Proj */
+			set_irn_link(pred, INT_TO_PTR(1));
+		}
+	}
+	/* Any other node leads to the block not being removable. */
+	ir_node *block = get_nodes_block(n);
+	set_Block_removable(block, false);
 }
 
 /**
@@ -100,17 +115,21 @@ static unsigned optimize_pointless_forks(ir_node *block, unsigned n_cfgpreds,
 	unsigned new_n_cfgpreds = n_cfgpreds;
 	for (unsigned i = 0; i < n_cfgpreds; ++i) {
 		ir_node *pred0 = cfgpreds[i];
-		if (pred0 == NULL || !is_Proj(pred0))
+		if (new_cfgpreds != NULL && new_cfgpreds[i] == NULL)
 			continue;
-		ir_node *cond = get_Proj_pred(pred0);
-		if (!is_Cond(cond))
+		if (!is_Proj(pred0))
+			continue;
+		ir_node *cfop = get_Proj_pred(pred0);
+		if (!is_Cond(cfop) && !is_Switch(cfop))
 			continue;
 
 		for (unsigned j = i+1; j < n_cfgpreds; ++j) {
 			ir_node *pred1 = cfgpreds[j];
-			if (pred1 == NULL || !is_Proj(pred1))
+			if (new_cfgpreds != NULL && new_cfgpreds[j] == NULL)
 				continue;
-			if (get_Proj_pred(pred1) != cond)
+			if (!is_Proj(pred1))
+				continue;
+			if (get_Proj_pred(pred1) != cfop)
 				continue;
 			/* Both variants jump into the same block, check if all
 			 * Phi nodes have the same inputs */
@@ -127,21 +146,55 @@ static unsigned optimize_pointless_forks(ir_node *block, unsigned n_cfgpreds,
 			if (!phis_ok)
 				continue;
 
-			/* perform the replacement */
-			ir_node *predb1 = get_nodes_block(pred1);
-			ir_node *jmp    = new_r_Jmp(predb1);
-
 			if (new_cfgpreds == NULL) {
 				new_cfgpreds = XMALLOCN(ir_node*, n_cfgpreds);
 				memcpy(new_cfgpreds, cfgpreds, n_cfgpreds*sizeof(cfgpreds[0]));
 			}
+			if (is_Cond(cfop)) {
+				/* replace Cond with Jmp */
+				ir_node *predb1 = get_nodes_block(pred1);
+				ir_node *jmp    = new_r_Jmp(predb1);
 
-			new_cfgpreds[i] = jmp;
-			new_cfgpreds[j] = NULL;
-			--new_n_cfgpreds;
-			DB((dbg, LEVEL_1, "Pointless fork %+F to %+F => replace %+F with %+F\n",
-			    predb1, block, cond, jmp));
-			break;
+				new_cfgpreds[i] = jmp;
+				new_cfgpreds[j] = NULL;
+				--new_n_cfgpreds;
+				DB((dbg, LEVEL_1, "Pointless fork %+F to %+F => replace %+F with %+F\n",
+					predb1, block, cfop, jmp));
+				break;
+			} else {
+				/* merge Switch table->Proj mapping entries */
+				assert(is_Switch(cfop));
+
+				long pn0 = get_Proj_proj(pred0);
+				long pn1 = get_Proj_proj(pred1);
+				/* we merge into pn0, make sure we always merge into the default
+				 * case and switch if necessary */
+				if (pn1 == pn_Switch_default) {
+					long t = pn0;
+					pn0 = pn1;
+					pn1 = t;
+					ir_node *tp = pred0;
+					pred0 = pred1;
+					pred1 = tp;
+					new_cfgpreds[i] = pred0;
+				}
+				/* remove 2nd ProjX */
+				new_cfgpreds[j] = NULL;
+				--new_n_cfgpreds;
+
+				ir_switch_table *table = get_Switch_table(cfop);
+				for (size_t i = 0, n = ir_switch_table_get_n_entries(table);
+				     i < n; ++i) {
+					if (ir_switch_table_get_pn(table, i) == pn1) {
+						ir_tarval *min = ir_switch_table_get_min(table, i);
+						ir_tarval *max = ir_switch_table_get_max(table, i);
+						ir_switch_table_set(table, i, min, max, pn0);
+					}
+				}
+				DB((dbg, LEVEL_1,
+				    "Merge switch %+F table entry for %+F, %+F (pn %ld into %ld)\n",
+				    cfop, pred1, pred0, pn1, pn0));
+			}
 		}
 	}
 
@@ -182,10 +235,36 @@ static void exchange_phi(ir_node *old, ir_node *new)
 	exchange(old, new);
 }
 
+#ifndef NDEBUG
+static bool is_default_switch(const ir_node *node)
+{
+	ir_switch_table *table = get_Switch_table(node);
+	for (size_t i = 0, n_entries = ir_switch_table_get_n_entries(table);
+	     i < n_entries; ++i) {
+		if (ir_switch_table_get_pn(table, i) != pn_Switch_default)
+			return false;
+	}
+	return true;
+}
+#endif
+
 /** Merge the single predecessor of @p block at position @p pred_pos.
  * The predecessor has to end with a Jmp for this to be legal. */
-static void merge_blocks(ir_node *block, unsigned pred_pos)
+static bool try_merge_blocks(ir_node *block, unsigned pred_pos)
 {
+	if (get_Block_entity(block) != NULL)
+		return false;
+	ir_node *pred = get_Block_cfgpred(block, pred_pos);
+	if (is_Proj(pred)) {
+		ir_node *cfop = get_Proj_pred(pred);
+		/* is it a switch with just a default Proj? */
+		if (!is_Switch(cfop) || get_irn_link(cfop) != INT_TO_PTR(0))
+			return false;
+		assert(is_default_switch(cfop));
+	} else if (!is_Jmp(pred)) {
+		return false;
+	}
+
 	/* We can simply remove the Phi nodes and replace them by their single
 	 * real input. */
 	for (ir_node *phi = get_Block_phis(block), *next_phi; phi != NULL;
@@ -200,6 +279,7 @@ static void merge_blocks(ir_node *block, unsigned pred_pos)
 		set_Block_removable(pred_block, false);
 	assert(get_Block_entity(block) == NULL);
 	exchange(block, pred_block);
+	return true;
 }
 
 /**
@@ -441,13 +521,9 @@ again:;
 
 	/* If we only have a single predecessor which jumps into this block,
 	 * then we can simply merge the blocks even if they are not empty. */
-	if (real_preds == 1) {
-		ir_node *pred = get_Block_cfgpred(block, single_pred_pos);
-		if (is_Jmp(pred) && get_Block_entity(block) == NULL) {
-			merge_blocks(block, single_pred_pos);
-			*changed = true;
-			return true;
-		}
+	if (real_preds == 1 && try_merge_blocks(block, single_pred_pos)) {
+		*changed = true;
+		return true;
 	}
 
 	if (!can_opt) {
@@ -469,7 +545,8 @@ again:;
 void optimize_cf(ir_graph *irg)
 {
 	assure_irg_properties(irg, IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE);
-	ir_reserve_resources(irg, IR_RESOURCE_BLOCK_MARK | IR_RESOURCE_PHI_LIST);
+	ir_reserve_resources(irg, IR_RESOURCE_BLOCK_MARK | IR_RESOURCE_PHI_LIST
+	                        | IR_RESOURCE_IRN_LINK);
 
 	FIRM_DBG_REGISTER(dbg, "firm.opt.controlflow");
 	DB((dbg, LEVEL_1, "===> Performing control flow opt on %+F\n", irg));
@@ -500,7 +577,8 @@ void optimize_cf(ir_graph *irg)
 
 	remove_End_Bads_and_doublets(end);
 
-	ir_free_resources(irg, IR_RESOURCE_BLOCK_MARK | IR_RESOURCE_PHI_LIST);
+	ir_free_resources(irg, IR_RESOURCE_BLOCK_MARK | IR_RESOURCE_PHI_LIST
+	                     | IR_RESOURCE_IRN_LINK);
 	confirm_irg_properties(irg, global_changed ? IR_GRAPH_PROPERTIES_NONE
 	                                           : IR_GRAPH_PROPERTIES_ALL);
 }
