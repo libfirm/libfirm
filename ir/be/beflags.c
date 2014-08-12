@@ -112,7 +112,8 @@ static void move_other_uses(ir_node *node, ir_node *copy)
 	 * scheduled before copy. */
 	ir_node *copy_prev = get_irn_sched_info(copy)->prev;
 
-	foreach_irn_out(node, i, proj) {
+	foreach_out_edge(node, out) {
+		ir_node *proj = get_edge_src_irn(out);
 		if (get_irn_mode(proj) == flag_class->mode) {
 			continue;
 		}
