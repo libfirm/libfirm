@@ -28,7 +28,7 @@ static void warn(const ir_node *n, const char *format, ...)
 	FILE *out = stderr;
 	fputs("Verify warning: ", out);
 	if (n != NULL) {
-		ir_fprintf(out, "%+F: ", n);
+		ir_fprintf(out, "%+F(%+F): ", n, get_irn_irg(n));
 	}
 	va_list ap;
 	va_start(ap, format);
