@@ -196,7 +196,8 @@ static void ia32_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 			fprintf(F, "AM scale = %u\n", get_ia32_am_scale(n));
 
 			/* dump pn code */
-			if (is_ia32_CMovcc(n) || is_ia32_Setcc(n) || is_ia32_Jcc(n)) {
+			if (is_ia32_CMovcc(n) || is_ia32_Jcc(n) ||
+			    is_ia32_Setcc(n) || is_ia32_SetccMem(n)) {
 				const ia32_attr_t *attr = get_ia32_attr_const(n);
 				const char *cc_name = condition_code_name(get_ia32_condcode(n));
 				if (cc_name) {
