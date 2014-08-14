@@ -84,7 +84,8 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn)
 		res = new_bd_ia32_xAdd(dbgi, block, noreg, noreg, nomem, res, in1);
 		set_ia32_ls_mode(res, get_ia32_ls_mode(irn));
 	} else {
-		ir_node *flags_proj = NULL;
+		ir_node *flags_proj       = NULL;
+		bool     only_needs_value = true;
 		if (get_irn_mode(irn) == mode_T) {
 			/* collect the Proj uses */
 			foreach_out_edge(irn, edge) {
@@ -93,6 +94,23 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn)
 				if (pn == pn_ia32_flags) {
 					assert(flags_proj == NULL);
 					flags_proj = proj;
+					foreach_out_edge(flags_proj, edge) {
+						ir_node *user = get_edge_src_irn(edge);
+						if (is_ia32_CMovcc(user) || is_ia32_Jcc(user) ||
+						    is_ia32_Setcc(user) || is_ia32_SetccMem(user)) {
+							/* If the users only need the sign/zero flags,
+							 * we just have to compute the right value. */
+							x86_condition_code_t cc = get_ia32_condcode(user);
+							if (cc != x86_cc_equal && cc != x86_cc_not_equal &&
+							    cc != x86_cc_sign && cc != x86_cc_not_sign) {
+								only_needs_value = false;
+								break;
+							}
+						} else {
+							only_needs_value = false;
+							break;
+						}
+					}
 					break;
 				}
 			}
@@ -104,7 +122,7 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn)
 			carry = get_irn_n(irn, n_ia32_Sbb_eflags);
 			carry = new_bd_ia32_Cmc(dbgi, block, carry);
 			goto carry;
-		} else if (flags_proj != 0) {
+		} else if (flags_proj != NULL && !only_needs_value) {
 			/*
 			 * ARG, the above technique does NOT set the flags right.
 			 * So, we must produce the following code:
@@ -149,7 +167,12 @@ carry:;
 
 			/* generate the add */
 			res = new_bd_ia32_Add(dbgi, block, noreg, noreg, nomem, res, in1);
-			arch_set_irn_register(res, out_reg);
+			if (flags_proj != NULL) {
+				arch_set_irn_register_out(res, pn_ia32_res, out_reg);
+				arch_set_irn_register_out(res, pn_ia32_flags, &ia32_registers[REG_EFLAGS]);
+			} else {
+				arch_set_irn_register(res, out_reg);
+			}
 			set_ia32_commutative(res);
 		}
 	}
