@@ -1635,9 +1635,9 @@ static ir_node *gen_Eor(ir_node *node)
  */
 static ir_node *gen_Sub(ir_node *node)
 {
-	ir_node  *op1  = get_Sub_left(node);
-	ir_node  *op2  = get_Sub_right(node);
-	ir_mode  *mode = get_irn_mode(node);
+	ir_node *op1  = get_Sub_left(node);
+	ir_node *op2  = get_Sub_right(node);
+	ir_mode *mode = get_irn_mode(node);
 
 	if (mode_is_float(mode)) {
 		if (ia32_cg_config.use_sse2)
@@ -1672,9 +1672,9 @@ static ir_node *gen_Sub(ir_node *node)
 }
 
 static ir_node *transform_AM_mem(ir_node *const block,
-                                 ir_node  *const src_val,
-                                 ir_node  *const src_mem,
-                                 ir_node  *const am_mem)
+                                 ir_node *const src_val,
+                                 ir_node *const src_mem,
+                                 ir_node *const am_mem)
 {
 	if (is_NoMem(am_mem)) {
 		return be_transform_node(src_mem);
