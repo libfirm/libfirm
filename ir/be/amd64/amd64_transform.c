@@ -741,7 +741,7 @@ static ir_node *gen_binop_am(ir_node *node, ir_node *op1, ir_node *op2,
 	if (mode_is_float(mode)) {
 		arch_set_irn_register_req_out(new_node, 0,
 		                              &amd64_requirement_xmm_same_0);
-		return new_r_Proj(new_node, mode_D, pn_amd64_xAdds_res);
+		return new_r_Proj(new_node, mode_D, pn_amd64_xSubs_res);
 	} else {
 		arch_set_irn_register_req_out(new_node, 0,
 		                              &amd64_requirement_gp_same_0);
@@ -2243,8 +2243,15 @@ ir_node *amd64_new_reload(ir_node *value, ir_node *spill, ir_node *before)
 	addr.index_input = NO_INPUT;
 
 	ir_node *in[] = { frame, spill };
-	ir_node *load = new_bd_amd64_Mov(NULL, block, ARRAY_SIZE(in), in,
-	                                 INSN_MODE_64, AMD64_OP_ADDR, addr);
+
+	ir_node *load;
+	if (mode_is_float(mode)) {
+		load = new_bd_amd64_xMovs(NULL, block, ARRAY_SIZE(in), in,
+		                          INSN_MODE_64, AMD64_OP_ADDR, addr);
+	} else {
+		load = new_bd_amd64_Mov(NULL, block, ARRAY_SIZE(in), in,
+	                            INSN_MODE_64, AMD64_OP_ADDR, addr);
+	}
 	arch_set_irn_register_reqs_in(load, reg_mem_reqs);
 	arch_add_irn_flags(load, arch_irn_flag_reload);
 	sched_add_before(before, load);

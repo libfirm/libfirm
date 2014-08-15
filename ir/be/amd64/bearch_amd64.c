@@ -487,14 +487,15 @@ static void amd64_set_frame_entity(ir_node *node, ir_entity *entity,
 {
 	(void)type;
 	assert(is_amd64_Store(node) || is_amd64_Mov(node)
-	    || is_amd64_Movs(node));
+	    || is_amd64_Movs(node) || is_amd64_xMovs(node)
+	    || is_amd64_xStores(node));
 	amd64_addr_attr_t *attr = get_amd64_addr_attr(node);
 	attr->addr.immediate.entity = entity;
 }
 
 static bool is_frame_load(const ir_node *node)
 {
-	return is_amd64_Mov(node) || is_amd64_Movs(node);
+	return is_amd64_Mov(node) || is_amd64_Movs(node) || is_amd64_xMovs(node);
 }
 
 /**

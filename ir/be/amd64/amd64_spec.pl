@@ -544,7 +544,7 @@ xSubs => {
 	arity     => "variable",
 	attr_type => "amd64_binop_addr_attr_t",
 	attr      => "const amd64_binop_addr_attr_t *attr_init",
-	emit      => "subs%MX %S1, %D0",
+	emit      => "subs%MX %AM",
 },
 
 xUcomis => {
