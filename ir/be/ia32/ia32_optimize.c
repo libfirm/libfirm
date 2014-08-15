@@ -206,14 +206,17 @@ static void peephole_ia32_Test(ir_node *node)
 
 		/* make sure users only look at the sign/zero flag */
 		foreach_out_edge(node, edge) {
-			ir_node              *user = get_edge_src_irn(edge);
-			x86_condition_code_t  cc  = get_ia32_condcode(user);
+			ir_node *user = get_edge_src_irn(edge);
+			if (is_ia32_CMovcc(user) || is_ia32_Jcc(user) ||
+			    is_ia32_Setcc(user) || is_ia32_SetccMem(user)) {
+				x86_condition_code_t  cc  = get_ia32_condcode(user);
 
-			if (cc == x86_cc_equal || cc == x86_cc_not_equal)
-				continue;
-			if (produced == produces_zero_sign
-				&& (cc == x86_cc_sign || cc == x86_cc_not_sign)) {
-				continue;
+				if (cc == x86_cc_equal || cc == x86_cc_not_equal)
+					continue;
+				if (produced == produces_zero_sign
+					&& (cc == x86_cc_sign || cc == x86_cc_not_sign)) {
+					continue;
+				}
 			}
 			return;
 		}
