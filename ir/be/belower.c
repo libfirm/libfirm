@@ -163,6 +163,14 @@ static arch_register_t const *get_free_register(ir_node *const perm, lower_env_t
 	return NULL;
 }
 
+static bool is_same_value(const ir_node *a, const ir_node *b)
+{
+	return (be_is_Copy(a) && be_get_Copy_op(a) == b)
+	    || (be_is_CopyKeep(a) && be_get_CopyKeep_op(a) == b)
+	    || (be_is_Copy(b) && be_get_Copy_op(b) == a)
+	    || (be_is_CopyKeep(b) && be_get_CopyKeep_op(b) == a);
+}
+
 /**
  * Lowers a perm node.  Resolves cycles and creates a bunch of
  * copy and swap operations to permute registers.
@@ -321,15 +329,23 @@ static void lower_perm_node(ir_node *const perm, lower_env_t *env)
 				rbitset_clear(inregs, q->out_reg->index);
 				p->in_reg = q->in_reg;
 
-				ir_node *const in[]  = { p->in_node, q->in_node };
-				ir_node *const xchg  = be_new_Perm(cls, block, ARRAY_SIZE(in), in);
-				DBG((dbg, LEVEL_2, "%+F: inserting %+F for %+F (%s) and %+F (%s)\n", perm, xchg, in[0], arch_get_irn_register(in[0]), in[1], arch_get_irn_register(in[1])));
-				p->in_node = new_r_Proj(xchg, mode, 0);
-				ir_node *const projq = new_r_Proj(xchg, mode, 1);
-				arch_set_irn_register_out(xchg, 0, q->in_reg);
-				arch_set_irn_register_out(xchg, 1, q->out_reg);
-				exchange(q->out_node, projq);
-				sched_add_before(perm, xchg);
+				ir_node *new_p;
+				ir_node *new_q;
+				if (is_same_value(p->in_node, q->in_node)) {
+					new_p = q->in_node;
+					new_q = p->in_node;
+				} else {
+					ir_node *const in[]  = { p->in_node, q->in_node };
+					ir_node *const xchg  = be_new_Perm(cls, block, ARRAY_SIZE(in), in);
+					DBG((dbg, LEVEL_2, "%+F: inserting %+F for %+F (%s) and %+F (%s)\n", perm, xchg, in[0], arch_get_irn_register(in[0]), in[1], arch_get_irn_register(in[1])));
+					new_p = new_r_Proj(xchg, mode, 0);
+					new_q = new_r_Proj(xchg, mode, 1);
+					arch_set_irn_register_out(xchg, 0, q->in_reg);
+					arch_set_irn_register_out(xchg, 1, q->out_reg);
+					sched_add_before(perm, xchg);
+				}
+				p->in_node = new_p;
+				exchange(q->out_node, new_q);
 
 				p = oregmap[q->in_reg->index];
 				if (p == start) {
