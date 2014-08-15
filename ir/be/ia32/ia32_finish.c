@@ -32,6 +32,15 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
+static bool reads_carry(x86_condition_code_t code)
+{
+	x86_condition_code_t c2 = code & ~x86_cc_negated;
+	return c2 == x86_cc_below || c2 == x86_cc_below_equal
+	    || c2 == x86_cc_float_below || c2 == x86_cc_float_below_equal
+	    || c2 == x86_cc_float_unordered_below_equal
+	    || c2 == x86_cc_float_unordered_below;
+}
+
 /**
  * Transforms a Sub or xSub into Neg--Add iff OUT_REG != SRC1_REG && OUT_REG == SRC2_REG.
  * THIS FUNCTIONS MUST BE CALLED AFTER REGISTER ALLOCATION.
@@ -84,10 +93,10 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn)
 		res = new_bd_ia32_xAdd(dbgi, block, noreg, noreg, nomem, res, in1);
 		set_ia32_ls_mode(res, get_ia32_ls_mode(irn));
 	} else {
-		ir_node *flags_proj       = NULL;
-		bool     only_needs_value = true;
+		ir_node *flags_proj  = NULL;
+		bool     needs_carry = false;
+		/** See if someone is interested in a correctly set carry flag */
 		if (get_irn_mode(irn) == mode_T) {
-			/* collect the Proj uses */
 			foreach_out_edge(irn, edge) {
 				ir_node *proj = get_edge_src_irn(edge);
 				long     pn   = get_Proj_proj(proj);
@@ -96,18 +105,9 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn)
 					flags_proj = proj;
 					foreach_out_edge(flags_proj, edge) {
 						ir_node *user = get_edge_src_irn(edge);
-						if (is_ia32_CMovcc(user) || is_ia32_Jcc(user) ||
-						    is_ia32_Setcc(user) || is_ia32_SetccMem(user)) {
-							/* If the users only need the sign/zero flags,
-							 * we just have to compute the right value. */
-							x86_condition_code_t cc = get_ia32_condcode(user);
-							if (cc != x86_cc_equal && cc != x86_cc_not_equal &&
-							    cc != x86_cc_sign && cc != x86_cc_not_sign) {
-								only_needs_value = false;
-								break;
-							}
-						} else {
-							only_needs_value = false;
+						x86_condition_code_t cc = get_ia32_condcode(user);
+						if (reads_carry(cc)) {
+							needs_carry = true;
 							break;
 						}
 					}
@@ -122,7 +122,7 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn)
 			carry = get_irn_n(irn, n_ia32_Sbb_eflags);
 			carry = new_bd_ia32_Cmc(dbgi, block, carry);
 			goto carry;
-		} else if (flags_proj != NULL && !only_needs_value) {
+		} else if (flags_proj != NULL && needs_carry) {
 			/*
 			 * ARG, the above technique does NOT set the flags right.
 			 * So, we must produce the following code:

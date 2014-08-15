@@ -7,6 +7,7 @@ typedef enum x86_condition_code_t {
 
 	x86_cc_overflow      = 0x00,                              /**< OF=1 */
 	x86_cc_below         = 0x02,                              /**< CF=1 */
+	x86_cc_carry         = x86_cc_below,
 	x86_cc_equal         = 0x04,                              /**< ZF=1 */
 	x86_cc_below_equal   = 0x06,                              /**< ZF=1 or CF=1 */
 	x86_cc_sign          = 0x08,                              /**< SF=1 */

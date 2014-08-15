@@ -75,6 +75,13 @@ static const char *condition_code_name(x86_condition_code_t cc)
 	}
 }
 
+static bool has_ia32_condcode_attr(const ir_node *node)
+{
+	return is_ia32_Setcc(node) || is_ia32_SetccMem(node) || is_ia32_CMovcc(node)
+	    || is_ia32_Jcc(node) || is_ia32_Adc(node) || is_ia32_Sbb(node)
+	    || is_ia32_Sbb0(node) || is_ia32_Cmc(node);
+}
+
 /**
  * Dumper interface for dumping ia32 nodes in vcg.
  * @param n        the node to dump
@@ -196,8 +203,7 @@ static void ia32_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 			fprintf(F, "AM scale = %u\n", get_ia32_am_scale(n));
 
 			/* dump pn code */
-			if (is_ia32_CMovcc(n) || is_ia32_Jcc(n) ||
-			    is_ia32_Setcc(n) || is_ia32_SetccMem(n)) {
+			if (has_ia32_condcode_attr(n)) {
 				const ia32_attr_t *attr = get_ia32_attr_const(n);
 				const char *cc_name = condition_code_name(get_ia32_condcode(n));
 				if (cc_name) {
@@ -299,6 +305,7 @@ const ia32_immediate_attr_t *get_ia32_immediate_attr_const(const ir_node *node)
 
 ia32_condcode_attr_t *get_ia32_condcode_attr(ir_node *node)
 {
+	assert(has_ia32_condcode_attr(node));
 	ia32_attr_t          *attr    = get_ia32_attr(node);
 	ia32_condcode_attr_t *cc_attr = CAST_IA32_ATTR(ia32_condcode_attr_t, attr);
 
@@ -307,6 +314,7 @@ ia32_condcode_attr_t *get_ia32_condcode_attr(ir_node *node)
 
 const ia32_condcode_attr_t *get_ia32_condcode_attr_const(const ir_node *node)
 {
+	assert(has_ia32_condcode_attr(node));
 	const ia32_attr_t          *attr    = get_ia32_attr_const(node);
 	const ia32_condcode_attr_t *cc_attr = CONST_CAST_IA32_ATTR(ia32_condcode_attr_t, attr);
 
