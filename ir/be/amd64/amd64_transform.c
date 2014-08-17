@@ -1222,13 +1222,18 @@ static ir_node *gen_float_neg(ir_node *const node)
 	ir_node  *new_block  = be_transform_node(block);
 	ir_node  *op         = get_irn_n(node, n_Minus_op);
 	ir_node  *new_op     = be_transform_node(op);
+	ir_mode  *mode       = get_irn_mode(node);
 
-	const char *sign_str = "0x8000000000000000";
-	ir_tarval  *tv       = new_tarval_from_str(sign_str, strlen(sign_str),
-	                                           mode_Lu);
-	ir_node    *load     = create_float_const(dbgi, new_block, tv);
+	const char *sign_str;
+	if (get_mode_size_bits(mode) == 32) {
+		sign_str = "0x80000000";
+	} else {
+		sign_str = "0x8000000000000000";
+	}
 
-	ir_node *in[] = { new_op, load };
+	ir_tarval *tv   = new_tarval_from_str(sign_str, strlen(sign_str), mode_Lu);
+	ir_node   *load = create_float_const(dbgi, new_block, tv);
+	ir_node   *in[] = { new_op, load };
 
 	amd64_binop_addr_attr_t attr;
 	memset(&attr, 0, sizeof(attr));
@@ -1239,7 +1244,7 @@ static ir_node *gen_float_neg(ir_node *const node)
 	arch_set_irn_register_reqs_in(xor, xmm_xmm_reqs);
 	arch_set_irn_register_req_out(xor, 0, &amd64_requirement_xmm_same_0);
 
-	return new_r_Proj(xor, mode_D, pn_amd64_xXorp_res);
+	return new_r_Proj(xor, mode, pn_amd64_xXorp_res);
 }
 
 static ir_node *gen_Minus(ir_node *const node)
