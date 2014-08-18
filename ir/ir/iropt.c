@@ -5211,7 +5211,8 @@ is_bittest: {
 									DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_OP_C);
 								}
 							}
-						} else if (is_Add(left) || is_Or_Eor_Add(left)) {
+						} else if ((is_Add(left) || is_Or_Eor_Add(left))
+						           && only_one_user(left)) {
 							/* a + c1 ==/!= c2  ==>  a ==/!= c2 - c1 */
 							ir_tarval *tv2 = value_of(get_binop_right(left));
 							if (tarval_is_constant(tv2)) {
