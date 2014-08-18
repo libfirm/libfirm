@@ -375,35 +375,36 @@ void x86_create_address_mode(x86_address_t *addr, ir_node *node,
 
 		/* (x & 0xFFFFFFFC) + (x >> 2) -> lea(x >> 2, x >> 2, 4) */
 		if (left != NULL && right != NULL) {
-			ir_node *and = NULL;
-			ir_node *shr = NULL;
-
+			ir_node *and;
+			ir_node *shr;
 			if (is_And(left) && (is_Shr(right) || is_Shrs(right))) {
 				and = left;
 				shr = right;
-			} else if (is_And(right) && (is_Shr(left) || is_Shrs(left))) {
+				goto tryit;
+			}
+			if (is_And(right) && (is_Shr(left) || is_Shrs(left))) {
 				and = right;
 				shr = left;
-			}
+tryit:
+				if (get_And_left(and) == get_binop_left(shr)) {
+					ir_node *and_right = get_And_right(and);
+					ir_node *shr_right = get_binop_right(shr);
 
-			if (and != NULL && get_And_left(and) == get_binop_left(shr)) {
-				ir_node *and_right = get_And_right(and);
-				ir_node *shr_right = get_binop_right(shr);
+					if (is_Const(and_right) && is_Const(shr_right)) {
+						ir_tarval *and_mask     = get_Const_tarval(and_right);
+						ir_tarval *shift_amount = get_Const_tarval(shr_right);
+						ir_mode   *mode         = get_irn_mode(and);
+						ir_tarval *all_one      = get_mode_all_one(mode);
+						ir_tarval *shift_mask   = tarval_shl(tarval_shr(all_one, shift_amount), shift_amount);
+						assert(tarval_is_long(shift_amount));
+						long       val          = get_tarval_long(shift_amount);
 
-				if (is_Const(and_right) && is_Const(shr_right)) {
-					ir_tarval *and_mask     = get_Const_tarval(and_right);
-					ir_tarval *shift_amount = get_Const_tarval(shr_right);
-					ir_mode   *mode         = get_irn_mode(and);
-					ir_tarval *all_one      = get_mode_all_one(mode);
-					ir_tarval *shift_mask   = tarval_shl(tarval_shr(all_one, shift_amount), shift_amount);
-					assert(tarval_is_long(shift_amount));
-					long       val          = get_tarval_long(shift_amount);
-
-					if (and_mask == shift_mask && val >= 0 && val <= 3) {
-						addr->base  = shr;
-						addr->index = shr;
-						addr->scale = val;
-						return;
+						if (and_mask == shift_mask && val >= 0 && val <= 3) {
+							addr->base  = shr;
+							addr->index = shr;
+							addr->scale = val;
+							return;
+						}
 					}
 				}
 			}
