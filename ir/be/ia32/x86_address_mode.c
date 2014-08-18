@@ -23,8 +23,6 @@
 #include "benode.h"
 #include "belive.h"
 
-#define AGGRESSIVE_AM
-
 static bitset_t *non_address_mode_nodes;
 
 static bool tarval_possible(ir_tarval *tv)
@@ -252,10 +250,6 @@ static bool eat_shl(x86_address_t *addr, ir_node *node)
 
 	if (x86_is_non_address_mode_node(node))
 		return false;
-#ifndef AGGRESSIVE_AM
-	if (get_irn_n_edges(node) > 1)
-		return false;
-#endif
 
 	addr->scale = val;
 	addr->index = shifted_val;
@@ -311,13 +305,6 @@ void x86_create_address_mode(x86_address_t *addr, ir_node *node,
 		return;
 	}
 
-#ifndef AGGRESSIVE_AM
-	if (!(flags & x86_create_am_force) && get_irn_n_edges(node) > 1) {
-		addr->base = node;
-		return;
-	}
-#endif
-
 	if (!(flags & x86_create_am_force)
 	    && x86_is_non_address_mode_node(node)
 	    && (!(flags & x86_create_am_double_use) || get_irn_n_edges(node) > 2)) {
@@ -332,12 +319,6 @@ void x86_create_address_mode(x86_address_t *addr, ir_node *node,
 		}
 
 		node = eat_imms;
-#ifndef AGGRESSIVE_AM
-		if (get_irn_n_edges(node) > 1) {
-			addr->base = node;
-			return;
-		}
-#endif
 		if (x86_is_non_address_mode_node(node)) {
 			addr->base = node;
 			return;
