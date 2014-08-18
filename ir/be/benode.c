@@ -66,13 +66,6 @@ typedef struct {
 	                               IncSP */
 } be_incsp_attr_t;
 
-/** The be_Frame attribute type. */
-typedef struct {
-	be_node_attr_t  base;
-	ir_entity      *ent;
-	int             offset;
-} be_frame_attr_t;
-
 /** The be_Call attribute type. */
 typedef struct {
 	be_node_attr_t  base;
@@ -100,25 +93,8 @@ ir_op *op_be_IncSP;
 ir_op *op_be_AddSP;
 ir_op *op_be_SubSP;
 ir_op *op_be_Start;
-ir_op *op_be_FrameAddr;
 
 #define be_op_tag FOURCC('B', 'E', '\0', '\0')
-
-/**
- * Compare the attributes of two be_FrameAddr nodes.
- *
- * @return zero if both nodes have identically attributes
- */
-static int FrameAddr_cmp_attr(const ir_node *a, const ir_node *b)
-{
-	const be_frame_attr_t *a_attr = (const be_frame_attr_t*)get_irn_generic_attr_const(a);
-	const be_frame_attr_t *b_attr = (const be_frame_attr_t*)get_irn_generic_attr_const(b);
-
-	if (a_attr->ent != b_attr->ent || a_attr->offset != b_attr->offset)
-		return 1;
-
-	return be_nodes_equal(a, b);
-}
 
 /**
  * Compare the attributes of two be_Return nodes.
@@ -574,38 +550,6 @@ ir_node *be_new_Start(dbg_info *dbgi, ir_node *bl, int n_outs)
 	return res;
 }
 
-ir_node *be_new_FrameAddr(const arch_register_class_t *cls_frame, ir_node *bl, ir_node *frame, ir_entity *ent)
-{
-	be_frame_attr_t *a;
-	ir_node *irn;
-	ir_node *in[1];
-	ir_graph *irg = get_Block_irg(bl);
-
-	in[0]  = frame;
-	irn    = new_ir_node(NULL, irg, bl, op_be_FrameAddr, get_irn_mode(frame), 1, in);
-	init_node_attr(irn, 1, 1);
-	a                     = (be_frame_attr_t*)get_irn_generic_attr(irn);
-	a->ent                = ent;
-	a->offset             = 0;
-	a->base.exc.pin_state = op_pin_state_floats;
-	be_node_set_reg_class_in(irn, 0, cls_frame);
-	be_node_set_reg_class_out(irn, 0, cls_frame);
-
-	return optimize_node(irn);
-}
-
-ir_node *be_get_FrameAddr_frame(const ir_node *node)
-{
-	assert(be_is_FrameAddr(node));
-	return get_irn_n(node, n_be_FrameAddr_ptr);
-}
-
-ir_entity *be_get_FrameAddr_entity(const ir_node *node)
-{
-	const be_frame_attr_t *attr = (const be_frame_attr_t*)get_irn_generic_attr_const(node);
-	return attr->ent;
-}
-
 ir_node *be_new_CopyKeep(ir_node *bl, ir_node *src, int n, ir_node *in_keep[])
 {
 	ir_node  *irn;
@@ -647,11 +591,6 @@ ir_node *be_get_CopyKeep_op(const ir_node *cpy)
 void be_set_CopyKeep_op(ir_node *cpy, ir_node *op)
 {
 	set_irn_n(cpy, n_be_CopyKeep_op, op);
-}
-
-static bool be_has_frame_entity(const ir_node *irn)
-{
-	return be_is_FrameAddr(irn);
 }
 
 void be_set_MemPerm_in_entity(const ir_node *irn, int n, ir_entity *ent)
@@ -817,10 +756,7 @@ int be_get_IncSP_align(const ir_node *irn)
 
 static ir_entity *be_node_get_frame_entity(const ir_node *irn)
 {
-	if (be_has_frame_entity(irn)) {
-		const be_frame_attr_t *a = (const be_frame_attr_t*)get_irn_generic_attr_const(irn);
-		return a->ent;
-	} else if (be_is_MemPerm(irn)) {
+	if (be_is_MemPerm(irn)) {
 		return be_get_MemPerm_in_entity(irn, 0);
 	}
 	return NULL;
@@ -830,13 +766,7 @@ static void be_node_set_frame_offset(ir_node *irn, int offset)
 {
 	if (be_is_MemPerm(irn)) {
 		be_set_MemPerm_offset(irn, offset);
-		return;
 	}
-	if (!be_has_frame_entity(irn))
-		return;
-
-	be_frame_attr_t *a = (be_frame_attr_t*)get_irn_generic_attr(irn);
-	a->offset = offset;
 }
 
 static int be_node_get_sp_bias(const ir_node *irn)
@@ -1022,16 +952,6 @@ static void dump_node(FILE *f, const ir_node *irn, dump_reason_t reason)
 		case dump_node_info_txt:
 			arch_dump_reqs_and_registers(f, irn);
 
-			if (be_has_frame_entity(irn)) {
-				const be_frame_attr_t *a = (const be_frame_attr_t*)get_irn_generic_attr_const(irn);
-				if (a->ent) {
-					unsigned size = get_type_size_bytes(get_entity_type(a->ent));
-					ir_fprintf(f, "frame entity: %+F, offset 0x%x (%d), size 0x%x (%d) bytes\n",
-					  a->ent, a->offset, a->offset, size, size);
-				}
-
-			}
-
 			switch (get_be_irn_opcode(irn)) {
 			case beo_IncSP: {
 				const be_incsp_attr_t *a = (const be_incsp_attr_t*)get_irn_generic_attr_const(irn);
@@ -1145,8 +1065,6 @@ void be_init_op(void)
 	op_be_SubSP     = new_be_op(o+beo_SubSP,     "be_SubSP",     op_pin_state_exc_pinned, irop_flag_none,                          oparity_any,      sizeof(be_node_attr_t));
 	op_be_IncSP     = new_be_op(o+beo_IncSP,     "be_IncSP",     op_pin_state_exc_pinned, irop_flag_none,                          oparity_any,      sizeof(be_incsp_attr_t));
 	op_be_Start     = new_be_op(o+beo_Start,     "be_Start",     op_pin_state_exc_pinned, irop_flag_none,                          oparity_any,      sizeof(be_node_attr_t));
-	op_be_FrameAddr = new_be_op(o+beo_FrameAddr, "be_FrameAddr", op_pin_state_exc_pinned, irop_flag_none,                          oparity_any,      sizeof(be_frame_attr_t));
-
 	ir_op_set_memory_index(op_be_Call, n_be_Call_mem);
 	ir_op_set_fragile_indices(op_be_Call, pn_be_Call_X_regular, pn_be_Call_X_except);
 
@@ -1161,7 +1079,6 @@ void be_init_op(void)
 	op_be_SubSP->ops.node_cmp_attr     = be_nodes_equal;
 	op_be_IncSP->ops.node_cmp_attr     = IncSP_cmp_attr;
 	op_be_Start->ops.node_cmp_attr     = be_nodes_equal;
-	op_be_FrameAddr->ops.node_cmp_attr = FrameAddr_cmp_attr;
 
 	/* attach out dummy_ops to middle end nodes */
 	for (unsigned opc = iro_first; opc <= iro_last; ++opc) {
@@ -1186,5 +1103,4 @@ void be_finish_op(void)
 	free_ir_op(op_be_AddSP);     op_be_AddSP     = NULL;
 	free_ir_op(op_be_SubSP);     op_be_SubSP     = NULL;
 	free_ir_op(op_be_Start);     op_be_Start     = NULL;
-	free_ir_op(op_be_FrameAddr); op_be_FrameAddr = NULL;
 }

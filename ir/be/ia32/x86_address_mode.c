@@ -262,12 +262,20 @@ static bool eat_shl(x86_address_t *addr, ir_node *node)
 	return true;
 }
 
+static bool is_frame_addr(const ir_node *const node)
+{
+	if (!is_Member(node))
+		return false;
+	ir_node *base = get_Member_ptr(node);
+	return base == get_irg_frame(get_irn_irg(node));
+}
+
 static void set_frame_addr(x86_address_t *const addr, ir_node *const frame)
 {
 	assert(!addr->base);
 	assert(!addr->frame_entity);
-	addr->base         = be_get_FrameAddr_frame(frame);
-	addr->frame_entity = be_get_FrameAddr_entity(frame);
+	addr->base         = get_Member_ptr(frame);
+	addr->frame_entity = get_Member_entity(frame);
 	addr->use_frame    = true;
 }
 
@@ -346,7 +354,7 @@ void x86_create_address_mode(x86_address_t *addr, ir_node *node,
 		/* we can hit this case in x86_create_am_force mode */
 		eat_immediate(addr, node, false);
 		return;
-	} else if (be_is_FrameAddr(node)) {
+	} else if (is_frame_addr(node)) {
 		set_frame_addr(addr, node);
 		return;
 	} else if (is_Add(node)) {
@@ -363,11 +371,11 @@ void x86_create_address_mode(x86_address_t *addr, ir_node *node,
 		} else if (eat_shl(addr, right)) {
 			right = NULL;
 		}
-		if (left != NULL && be_is_FrameAddr(left)
+		if (left != NULL && is_frame_addr(left)
 		    && !x86_is_non_address_mode_node(left)) {
 			set_frame_addr(addr, left);
 			left = NULL;
-		} else if (right != NULL && be_is_FrameAddr(right)
+		} else if (right != NULL && is_frame_addr(right)
 		           && !x86_is_non_address_mode_node(right)) {
 			set_frame_addr(addr, right);
 			right = NULL;

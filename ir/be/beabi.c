@@ -1159,32 +1159,6 @@ static ir_node *create_be_return(be_abi_irg_t *const env, ir_node *const irn)
 	return ret;
 }
 
-typedef struct lower_frame_members_env_t {
-	ir_node      *frame;                     /**< the current frame */
-	const arch_register_class_t *sp_class;   /**< register class of the stack pointer */
-} lower_frame_members_env_t;
-
-/**
- * Walker: Replaces Member nodes of frame type and
- * value param type entities by FrameAddress.
- * Links all used entities.
- */
-static void lower_frame_members_walker(ir_node *irn, void *data)
-{
-	lower_frame_members_env_t *ctx = (lower_frame_members_env_t*)data;
-	if (!is_Member(irn))
-		return;
-
-	ir_node *ptr = get_Member_ptr(irn);
-	if (ptr == ctx->frame) {
-		ir_entity *ent = get_Member_entity(irn);
-		ir_node   *bl  = get_nodes_block(irn);
-		ir_node   *nw
-			= be_new_FrameAddr(ctx->sp_class, bl, ctx->frame, ent);
-		exchange(irn, nw);
-	}
-}
-
 /**
  * The start block has no jump, instead it has an initial exec Proj.
  * The backend wants to handle all blocks the same way, so we replace
@@ -1234,11 +1208,6 @@ static void modify_irg(ir_graph *const irg, be_abi_irg_t *const env)
 
 	ir_type *const arg_type = compute_arg_type(irg, call, method_type);
 
-	/* Convert the Sel nodes in the irg to frame addr nodes: */
-	lower_frame_members_env_t ctx;
-	ctx.frame    = get_irg_frame(irg);
-	ctx.sp_class = arch_env->sp->reg_class;
-
 	ir_type *const frame_tp = get_irg_frame_type(irg);
 	/* layout the stackframe now */
 	if (get_type_state(frame_tp) == layout_undefined) {
@@ -1257,8 +1226,6 @@ static void modify_irg(ir_graph *const irg, be_abi_irg_t *const env)
 	ir_node **const args     = OALLOCNZ(obst, ir_node*, n_params);
 
 	be_add_parameter_entity_stores(irg);
-
-	irg_walk_graph(irg, lower_frame_members_walker, NULL, &ctx);
 
 	irp_free_resources(irp, IRP_RESOURCE_ENTITY_LINK);
 
@@ -1381,8 +1348,16 @@ static void modify_irg(ir_graph *const irg, be_abi_irg_t *const env)
 		ir_node *repl;
 		if (arg->in_reg) {
 			repl = pmap_get(ir_node, env->regs, arg->reg);
+
+			/* Beware: the mode of the register parameters is always the mode of
+			 * the register class which may be wrong. Add Conv's then. */
+			ir_mode *mode = get_irn_mode(args[i]);
+			if (mode != get_irn_mode(repl)) {
+				repl = new_r_Conv(get_nodes_block(repl), repl, mode);
+			}
 		} else {
-			ir_node *addr = be_new_FrameAddr(sp->reg_class, start_bl, frame_pointer, arg->stack_ent);
+			ir_node *addr = new_r_Member(start_bl, frame_pointer,
+			                             arg->stack_ent);
 
 			/* For atomic parameters which are actually used, we create a Load
 			 * node. */
@@ -1407,12 +1382,6 @@ static void modify_irg(ir_graph *const irg, be_abi_irg_t *const env)
 
 		assert(repl != NULL);
 
-		/* Beware: the mode of the register parameters is always the mode of
-		 * the register class which may be wrong. Add Conv's then. */
-		ir_mode *mode = get_irn_mode(args[i]);
-		if (mode != get_irn_mode(repl)) {
-			repl = new_r_Conv(get_nodes_block(repl), repl, mode);
-		}
 		exchange(args[i], repl);
 	}
 

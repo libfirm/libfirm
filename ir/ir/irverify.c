@@ -596,7 +596,11 @@ static int verify_node_Sel(const ir_node *n)
 static int verify_node_Member(const ir_node *n)
 {
 	bool fine = check_mode_func(n, mode_is_reference, "reference");
-	fine &= check_input_func(n, n_Member_ptr, "ptr", mode_is_reference, "reference");
+	/* do not check in backend until beabi.c is gone */
+	if (!irg_is_constrained(get_irn_irg(n), IR_GRAPH_CONSTRAINT_BACKEND)) {
+		fine &= check_input_func(n, n_Member_ptr, "ptr", mode_is_reference,
+		                         "reference");
+	}
 	ir_entity *entity = get_Member_entity(n);
 	if (entity == NULL) {
 		warn(n, "entity is NULL");

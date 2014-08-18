@@ -34,8 +34,7 @@ typedef enum be_opcode {
 	beo_AddSP,
 	beo_SubSP,
 	beo_Start,
-	beo_FrameAddr,
-	beo_last  = beo_FrameAddr
+	beo_last  = beo_Start
 } be_opcode;
 
 /**
@@ -52,7 +51,6 @@ extern ir_op *op_be_IncSP;
 extern ir_op *op_be_AddSP;
 extern ir_op *op_be_SubSP;
 extern ir_op *op_be_Start;
-extern ir_op *op_be_FrameAddr;
 
 /**
  * Determines if irn is a be_node.
@@ -115,22 +113,6 @@ ir_node *be_new_Keep(ir_node *block, int arity, ir_node *const *in);
 
 void be_Keep_add_node(ir_node *keep, const arch_register_class_t *cls,
                       ir_node *node);
-
-/**
- * Position numbers for the be_FrameAddr inputs
- */
-enum {
-	n_be_FrameAddr_ptr = 0
-};
-
-/** Create a new FrameAddr node. */
-ir_node *be_new_FrameAddr(const arch_register_class_t *cls_frame,
-                          ir_node *block, ir_node *frame, ir_entity *ent);
-
-/** Return the frame input of a FrameAddr node. */
-ir_node *be_get_FrameAddr_frame(const ir_node *node);
-
-ir_entity *be_get_FrameAddr_entity(const ir_node *node);
 
 /**
  * Position numbers for the be_AddSP inputs
@@ -417,6 +399,5 @@ static inline bool be_is_IncSP    (const ir_node *irn) { return get_irn_op(irn) 
 static inline bool be_is_AddSP    (const ir_node *irn) { return get_irn_op(irn) == op_be_AddSP    ; }
 static inline bool be_is_SubSP    (const ir_node *irn) { return get_irn_op(irn) == op_be_SubSP    ; }
 static inline bool be_is_Start    (const ir_node *irn) { return get_irn_op(irn) == op_be_Start    ; }
-static inline bool be_is_FrameAddr(const ir_node *irn) { return get_irn_op(irn) == op_be_FrameAddr; }
 
 #endif
