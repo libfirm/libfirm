@@ -459,8 +459,7 @@ static bool value_last_used_here(be_lv_t *lv, ir_node *here, ir_node *value)
 
 static bool simple_is_immediate(const ir_node *node)
 {
-	bool symconst_ok = true;
-	return do_is_immediate(node, &symconst_ok, false);
+	return is_immediate(node, false, true);
 }
 
 /**
