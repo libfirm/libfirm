@@ -196,6 +196,13 @@ static ir_node *eat_immediates(x86_address_t *addr, ir_node *node,
 			eat_immediate(addr, right, true);
 			return eat_immediates(addr, left, x86_create_am_normal);
 		}
+	} else if (is_Member(node)) {
+		assert(addr->frame_entity == NULL);
+		addr->frame_entity = get_Member_entity(node);
+		addr->use_frame    = true;
+		ir_node *ptr = get_Member_ptr(node);
+		assert(is_Start(get_Proj_pred(ptr)) || be_is_Start(get_Proj_pred(ptr)));
+		return ptr;
 	}
 
 	return node;
@@ -254,23 +261,6 @@ static bool eat_shl(x86_address_t *addr, ir_node *node)
 	addr->scale = val;
 	addr->index = shifted_val;
 	return true;
-}
-
-static bool is_frame_addr(const ir_node *const node)
-{
-	if (!is_Member(node))
-		return false;
-	ir_node *base = get_Member_ptr(node);
-	return base == get_irg_frame(get_irn_irg(node));
-}
-
-static void set_frame_addr(x86_address_t *const addr, ir_node *const frame)
-{
-	assert(!addr->base);
-	assert(!addr->frame_entity);
-	addr->base         = get_Member_ptr(frame);
-	addr->frame_entity = get_Member_entity(frame);
-	addr->use_frame    = true;
 }
 
 static bool is_downconv(const ir_node *node)
@@ -335,9 +325,6 @@ void x86_create_address_mode(x86_address_t *addr, ir_node *node,
 		/* we can hit this case in x86_create_am_force mode */
 		eat_immediate(addr, node, false);
 		return;
-	} else if (is_frame_addr(node)) {
-		set_frame_addr(addr, node);
-		return;
 	} else if (is_Add(node)) {
 		ir_node *left  = get_Add_left(node);
 		ir_node *right = get_Add_right(node);
@@ -346,19 +333,12 @@ void x86_create_address_mode(x86_address_t *addr, ir_node *node,
 			left  = skip_downconv(left);
 			right = skip_downconv(right);
 		}
+		left  = eat_immediates(addr, left, flags);
+		right = eat_immediates(addr, right, flags);
 
 		if (eat_shl(addr, left)) {
 			left = NULL;
 		} else if (eat_shl(addr, right)) {
-			right = NULL;
-		}
-		if (left != NULL && is_frame_addr(left)
-		    && !x86_is_non_address_mode_node(left)) {
-			set_frame_addr(addr, left);
-			left = NULL;
-		} else if (right != NULL && is_frame_addr(right)
-		           && !x86_is_non_address_mode_node(right)) {
-			set_frame_addr(addr, right);
 			right = NULL;
 		}
 
@@ -400,20 +380,36 @@ tryit:
 		}
 
 		if (left != NULL) {
-			if (addr->base != NULL) {
+			ir_node *base = addr->base;
+			if (base == NULL) {
+				addr->base = left;
+			} else {
 				assert(addr->index == NULL && addr->scale == 0);
 				assert(right == NULL);
-				addr->index = left;
-			} else {
-				addr->base = left;
+				/* esp must be used as base */
+				if (is_Proj(left) && (is_Start(get_Proj_pred(left))
+				                      || be_is_Start(get_Proj_pred(left)))) {
+					addr->index = base;
+					addr->base  = left;
+				} else {
+					addr->index = left;
+				}
 			}
 		}
 		if (right != NULL) {
-			if (addr->base == NULL) {
+			ir_node *base = addr->base;
+			if (base == NULL) {
 				addr->base = right;
 			} else {
 				assert(addr->index == NULL && addr->scale == 0);
-				addr->index = right;
+				/* esp must be used as base */
+				if (is_Proj(right) && (is_Start(get_Proj_pred(right))
+				                      || be_is_Start(get_Proj_pred(right)))) {
+				    addr->index = base;
+				    addr->base  = right;
+				} else {
+					addr->index = right;
+				}
 			}
 		}
 		return;

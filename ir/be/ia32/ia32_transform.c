@@ -4120,25 +4120,16 @@ static ir_node *create_immediate_or_transform(ir_node *const node)
 	return new_node;
 }
 
-/**
- * Transforms a FrameAddr into an ia32 Add.
- */
 static ir_node *gen_Member(ir_node *node)
 {
-
 	ir_node  *block = be_transform_node(get_nodes_block(node));
-	ir_node  *ptr   = get_Member_ptr(node);
-	/* the only non-lowered member nodes should select entities from the
-	 * stackframe */
-	if (!is_Proj(ptr) || !be_is_Start(get_Proj_pred(ptr)))
-		panic("%+F not lowered", node);
-	ir_node   *new_ptr  = be_transform_node(ptr);
-	dbg_info  *dbgi     = get_irn_dbg_info(node);
-	ir_node   *new_node = new_bd_ia32_Lea(dbgi, block, new_ptr, noreg_GP);
-	ir_entity *entity   = get_Member_entity(node);
-	set_ia32_frame_ent(new_node, entity);
-	set_ia32_use_frame(new_node);
+	dbg_info *dbgi  = get_irn_dbg_info(node);
 
+	x86_address_t addr;
+	memset(&addr, 0, sizeof(addr));
+	x86_create_address_mode(&addr, node, x86_create_am_force);
+
+	ir_node *new_node = create_lea_from_address(dbgi, block, &addr);
 	SET_IA32_ORIG_NODE(new_node, node);
 	return new_node;
 }
