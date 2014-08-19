@@ -855,7 +855,7 @@ static ir_node *gen_shift_binop(ir_node *node, ir_node *op1, ir_node *op2,
 	 * 5/6 bits anyway */
 	while (is_Conv(op2) && get_irn_n_edges(op2) == 1) {
 		ir_node *const op = get_Conv_op(op2);
-		if (mode_is_float(get_irn_mode(op)))
+		if (get_mode_arithmetic(get_irn_mode(op)) != irma_twos_complement)
 			break;
 		op2 = op;
 	}
