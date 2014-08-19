@@ -167,12 +167,6 @@ static const arch_register_req_t *xmm_reg_mem_reqs[] = {
 	&arch_no_requirement,
 };
 
-static const arch_register_req_t *xmm_xmm_mem_reqs[] = {
-	&amd64_requirement_xmm,
-	&amd64_requirement_xmm,
-	&arch_no_requirement,
-};
-
 static const arch_register_req_t *reg_reg_reg_mem_reqs[] = {
 	&amd64_requirement_gp,
 	&amd64_requirement_gp,
@@ -184,13 +178,6 @@ static const arch_register_req_t *xmm_reg_reg_mem_reqs[] = {
 	&amd64_requirement_xmm,
 	&amd64_requirement_gp,
 	&amd64_requirement_gp,
-	&arch_no_requirement,
-};
-
-static const arch_register_req_t *xmm_xmm_xmm_mem_reqs[] = {
-	&amd64_requirement_xmm,
-	&amd64_requirement_xmm,
-	&amd64_requirement_xmm,
 	&arch_no_requirement,
 };
 
@@ -699,10 +686,10 @@ static void match_binop(amd64_args_t *args, ir_node *block,
 
 		args->reqs = use_xmm ? xmm_mem_reqs : reg_mem_reqs;
 		if (addr->base_input != NO_INPUT && addr->index_input != NO_INPUT) {
-			args->reqs = use_xmm ? xmm_xmm_xmm_mem_reqs
+			args->reqs = use_xmm ? xmm_reg_reg_mem_reqs
 			             : reg_reg_reg_mem_reqs;
 		} else if (addr->base_input != NO_INPUT || addr->index_input != NO_INPUT) {
-			args->reqs = use_xmm ? xmm_xmm_mem_reqs
+			args->reqs = use_xmm ? xmm_reg_mem_reqs
 			             : reg_reg_mem_reqs;
 		}
 		ir_node *new_mem    = be_transform_node(get_Load_mem(load));
