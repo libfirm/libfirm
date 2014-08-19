@@ -617,9 +617,7 @@ static void perform_address_matching(ir_node *ptr, int *arity,
 {
 	x86_address_t maddr;
 	memset(&maddr, 0, sizeof(maddr));
-
 	x86_create_address_mode(&maddr, ptr, x86_create_am_normal);
-	assert(maddr.frame_entity == NULL);
 
 	if (maddr.base != NULL) {
 		int base_input   = (*arity)++;
@@ -635,7 +633,16 @@ static void perform_address_matching(ir_node *ptr, int *arity,
 	} else {
 		addr->index_input = NO_INPUT;
 	}
-	addr->immediate.entity = maddr.entity;
+	if (maddr.frame_entity != NULL) {
+		assert(maddr.entity == NULL);
+		addr->immediate.entity = maddr.frame_entity;
+		/* not supported yet */
+		assert(!is_parameter_entity(maddr.frame_entity)
+		       || get_entity_parameter_number(maddr.frame_entity)
+		          != IR_VA_START_PARAMETER_NUMBER);
+	} else {
+		addr->immediate.entity = maddr.entity;
+	}
 	addr->immediate.offset = maddr.offset;
 	addr->log_scale        = maddr.scale;
 }
