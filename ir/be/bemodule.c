@@ -31,8 +31,6 @@ void be_init_pbqp_coloring(void);
 void be_init_chordal_main(void);
 void be_init_chordal_common(void);
 void be_init_copyopt(void);
-void be_init_copyheur(void);
-void be_init_copyheur2(void);
 void be_init_copyheur4(void);
 void be_init_copyilp2(void);
 void be_init_copynone(void);
@@ -92,8 +90,6 @@ void be_init_modules(void)
 	be_init_chordal();
 	be_init_copyopt();
 	be_init_copyheur4();
-	be_init_copyheur();
-	be_init_copyheur2();
 	be_init_copyilp2();
 	be_init_pbqp_coloring();
 	be_init_copynone();
