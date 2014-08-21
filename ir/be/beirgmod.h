@@ -31,16 +31,6 @@ ir_node *insert_Perm_before(ir_graph *irg, const arch_register_class_t *cls,
 						   ir_node *irn);
 
 /**
- * Removes basic blocks that only contain a jump instruction
- * (this will potentially create critical edges).
- *
- * @param irg  the graph that will be changed
- *
- * @return non-zero if the graph was changed, zero else
- */
-int be_remove_empty_blocks(ir_graph *irg);
-
-/**
  * Removes dead nodes from schedule
  * @param irg  the graph
  */

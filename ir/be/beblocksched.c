@@ -31,13 +31,16 @@
 #include "irgwalk.h"
 #include "irnode_t.h"
 #include "irgraph_t.h"
+#include "irgmod.h"
 #include "irloop.h"
 #include "execfreq.h"
 #include "irdump_t.h"
 #include "irtools.h"
 #include "debug.h"
+#include "bearch.h"
 #include "beirgmod.h"
 #include "bemodule.h"
+#include "besched.h"
 #include "be.h"
 #include "panic.h"
 
@@ -70,6 +73,117 @@ static const lc_opt_table_entry_t be_blocksched_options[] = {
 	LC_OPT_ENT_ENUM_INT ("blockscheduler", "the block scheduling algorithm", &algo_var),
 	LC_OPT_LAST
 };
+
+static bool blocks_removed;
+
+/**
+ * Post-block-walker: Find blocks containing only one jump and
+ * remove them.
+ */
+static void remove_empty_block(ir_node *block)
+{
+	if (irn_visited_else_mark(block))
+		return;
+
+	if (get_Block_n_cfgpreds(block) != 1)
+		goto check_preds;
+
+	ir_node *jump = NULL;
+	sched_foreach(block, node) {
+		if (!is_Jmp(node)
+		    && !(arch_get_irn_flags(node) & arch_irn_flag_simple_jump))
+			goto check_preds;
+		if (jump != NULL) {
+			/* we should never have 2 jumps in a block */
+			panic("found 2 jumps in a block");
+		}
+		jump = node;
+	}
+	if (jump == NULL)
+		goto check_preds;
+
+	ir_entity *entity     = get_Block_entity(block);
+	ir_node   *pred       = get_Block_cfgpred(block, 0);
+	ir_node   *succ_block = NULL;
+	foreach_out_edge_safe(jump, edge) {
+		int pos = get_edge_src_pos(edge);
+
+		assert(succ_block == NULL);
+		succ_block = get_edge_src_irn(edge);
+		if (get_Block_entity(succ_block) != NULL && entity != NULL) {
+			/* Currently we can add only one label for a block. Therefore we
+			 * cannot combine them if both block already have one. :-( */
+			goto check_preds;
+		}
+
+		set_irn_n(succ_block, pos, pred);
+	}
+
+	/* move the label to the successor block */
+	set_Block_entity(succ_block, entity);
+
+	/* there can be some non-scheduled Pin nodes left in the block, move them
+	 * to the succ block (Pin) or pred block (Sync) */
+	foreach_out_edge_safe(block, edge) {
+		ir_node *const node = get_edge_src_irn(edge);
+
+		if (node == jump)
+			continue;
+		/* we simply kill Pins, because there are some strange interactions
+		 * between jump threading, which produce PhiMs with Pins, we simply
+		 * kill the pins here, everything is scheduled anyway */
+		if (is_Pin(node)) {
+			exchange(node, get_Pin_op(node));
+			continue;
+		}
+		if (is_Sync(node)) {
+			set_nodes_block(node, get_nodes_block(pred));
+			continue;
+		}
+		if (is_End(node)) { /* End-keep, reroute it to the successor */
+			int pos = get_edge_src_pos(edge);
+			set_irn_n(node, pos, succ_block);
+			continue;
+		}
+		panic("Unexpected node %+F in block %+F with empty schedule", node, block);
+	}
+
+	ir_graph *irg = get_Block_irg(block);
+	set_Block_cfgpred(block, 0, new_r_Bad(irg, mode_X));
+	kill_node(jump);
+	blocks_removed = true;
+
+	/* check predecessor */
+	remove_empty_block(get_nodes_block(pred));
+	return;
+
+check_preds:
+	for (int i = 0, arity = get_Block_n_cfgpreds(block); i < arity; ++i) {
+		ir_node *pred = get_Block_cfgpred_block(block, i);
+		remove_empty_block(pred);
+	}
+}
+
+/* removes basic blocks that just contain a jump instruction */
+static void remove_empty_blocks(ir_graph *irg)
+{
+	blocks_removed = false;
+
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_VISITED);
+	inc_irg_visited(irg);
+	remove_empty_block(get_irg_end_block(irg));
+	foreach_irn_in(get_irg_end(irg), i, pred) {
+		if (!is_Block(pred))
+			continue;
+		remove_empty_block(pred);
+	}
+	ir_free_resources(irg, IR_RESOURCE_IRN_VISITED);
+
+	if (blocks_removed) {
+		/* invalidate analysis info */
+		clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
+	}
+}
 
 /*
  *   ____                   _
@@ -517,7 +631,7 @@ static ir_node **create_block_schedule_greedy(ir_graph *irg)
 	// collect edge execution frequencies
 	irg_block_walk_graph(irg, collect_egde_frequency, NULL, &env);
 
-	(void)be_remove_empty_blocks(irg);
+	remove_empty_blocks(irg);
 
 	if (algo != BLOCKSCHED_NAIV)
 		coalesce_blocks(&env);
@@ -702,7 +816,7 @@ static ir_node **create_block_schedule_ilp(ir_graph *irg)
 
 	irg_block_walk_graph(irg, collect_egde_frequency_ilp, NULL, &env);
 
-	(void)be_remove_empty_blocks(irg);
+	remove_empty_blocks(irg);
 	coalesce_blocks_ilp(&env);
 
 	start_entry = finish_block_schedule(&env.env);
