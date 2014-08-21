@@ -1238,7 +1238,7 @@ static void collect_reachable_blocks(ir_node *block, void *data)
 /**
  * Checks CFG well-formedness
  */
-static int check_cfg(ir_graph *irg)
+static bool check_cfg(ir_graph *irg)
 {
 	check_cfg_env_t env;
 	env.branch_nodes = pmap_create(); /**< map blocks to branch nodes */
@@ -1269,6 +1269,24 @@ static int check_cfg(ir_graph *irg)
 	return env.fine;
 }
 
+static bool check_has_memory(ir_graph *irg)
+{
+	/* see if we can find any memory edge (either through a Return node
+	 * or an endless loop) */
+	ir_node *end_block = get_irg_end_block(irg);
+	foreach_irn_in(end_block, i, ret) {
+		if (!is_Bad(ret))
+			return true;
+	}
+	ir_node *end = get_irg_end(irg);
+	foreach_irn_in(end, i, kept) {
+		if (get_irn_mode(kept) == mode_M || is_Call(kept))
+			return true;
+	}
+	warn(NULL, "could not find any memory chain in graph %+F", irg);
+	return false;
+}
+
 static bool check_graph_properties(ir_graph *irg);
 
 int irg_verify(ir_graph *irg)
@@ -1287,8 +1305,10 @@ int irg_verify(ir_graph *irg)
 		NULL, &fine
 	);
 
-	if (fine)
+	if (fine) {
 		fine = check_graph_properties(irg);
+		fine &= check_has_memory(irg);
+	}
 
 	return fine;
 }
