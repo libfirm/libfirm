@@ -842,7 +842,7 @@ static void be_spill_belady(ir_graph *irg, const arch_register_class_t *rcls)
 	stat_ev_tim_pop("belady_time_backedges");
 
 	stat_ev_tim_push();
-	be_clear_links(irg);
+	irg_walk_graph(irg, firm_clear_link, NULL, NULL);
 	stat_ev_tim_pop("belady_time_clear_links");
 
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);

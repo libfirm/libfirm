@@ -21,6 +21,7 @@
 #include "array.h"
 
 #include "irprintf.h"
+#include "irtools.h"
 
 //#define NORMAL_DBG
 
@@ -322,7 +323,7 @@ static void normal_sched_block(ir_node *block, void *env)
 
 static void *normal_init_graph(ir_graph *irg)
 {
-	be_clear_links(irg);
+	irg_walk_graph(irg, firm_clear_link, NULL, NULL);
 
 	instance_t *inst = XMALLOC(instance_t);
 	obstack_init(&inst->obst);

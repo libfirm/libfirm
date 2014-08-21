@@ -33,12 +33,6 @@ static inline const ir_node *get_block_const(const ir_node *irn)
 }
 
 /**
- * Clears the link fields of all nodes of the given graph.
- * @param irg The graph.
- */
-void be_clear_links(ir_graph *irg);
-
-/**
  * Gets the Proj with number pn from irn.
  */
 ir_node *be_get_Proj_for_pn(const ir_node *irn, long pn);

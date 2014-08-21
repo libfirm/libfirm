@@ -36,6 +36,7 @@
 #include "irgwalk.h"
 #include "irnode_t.h"
 #include "irdump.h"
+#include "irtools.h"
 #include "util.h"
 #include "obst.h"
 #include "raw_bitset.h"
@@ -1777,7 +1778,7 @@ static void be_pref_alloc_cls(void)
 
 	DB((dbg, LEVEL_2, "=== Allocating registers of %s ===\n", cls->name));
 
-	be_clear_links(irg);
+	irg_walk_graph(irg, firm_clear_link, NULL, NULL);
 
 	irg_block_walk_graph(irg, NULL, analyze_block, NULL);
 	combine_congruence_classes();

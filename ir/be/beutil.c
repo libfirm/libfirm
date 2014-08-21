@@ -22,11 +22,6 @@
 #include "besched.h"
 #include "bearch.h"
 
-void be_clear_links(ir_graph *irg)
-{
-	irg_walk_graph(irg, firm_clear_link, NULL, NULL);
-}
-
 /**
  * Gets the Proj with number pn from irn.
  */
