@@ -22,4 +22,4 @@
  */
 bool is_address_taken(ir_node *sel);
 
-#endif /* FIRM_OPT_SCALAR_REPLACE_H */
+#endif

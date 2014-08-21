@@ -17,4 +17,4 @@
  */
 void count_dags_in_graph(graph_entry_t *global, graph_entry_t *graph);
 
-#endif /* FIRM_STAT_DAGS_H */
+#endif

@@ -25,4 +25,4 @@ void pbqp_dump_section(FILE *f, int level, const char *txt);
 void pbqp_dump_node(FILE *file, pbqp_node_t *node);
 void pbqp_dump_edge(FILE *file, pbqp_edge_t *edge);
 
-#endif /* KAPS_HTML_DUMPER_H */
+#endif

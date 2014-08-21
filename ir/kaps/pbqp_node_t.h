@@ -22,4 +22,4 @@ struct pbqp_node_t {
 	unsigned      index;
 };
 
-#endif /* KAPS_PBQP_NODE_T_H */
+#endif

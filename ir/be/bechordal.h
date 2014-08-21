@@ -22,4 +22,4 @@ typedef struct be_ra_chordal_coloring_t {
 
 void be_register_chordal_coloring(const char *name, be_ra_chordal_coloring_t *coloring);
 
-#endif /* FIRM_BE_BECHORDAL_H */
+#endif

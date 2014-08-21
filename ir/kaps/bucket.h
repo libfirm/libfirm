@@ -33,4 +33,4 @@ void node_bucket_remove(pbqp_node_bucket_t *bucket, pbqp_node_t *node);
 void node_bucket_shrink(pbqp_node_bucket_t *bucket, unsigned len);
 void node_bucket_update(pbqp_t *pbqp, pbqp_node_bucket_t bucket);
 
-#endif /* KAPS_BUCKET_H */
+#endif

@@ -419,4 +419,4 @@ static inline bool is_aggregate_type(const ir_type *type)
 
 ir_type *new_type_segment(ident *name, type_flags flags);
 
-#endif /* FIRM_TR_TYPE_T_H */
+#endif

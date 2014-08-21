@@ -75,4 +75,4 @@ static inline int _dfs_is_ancestor(const dfs_t *dfs, const void *a, const void *
 #define dfs_get_post_num_node(dfs, num) ((dfs)->post_order[num]->node)
 #define dfs_is_ancestor(dfs, n, m)      _dfs_is_ancestor((n), (m))
 
-#endif /* FIRM_ANA_DFS_T_H */
+#endif

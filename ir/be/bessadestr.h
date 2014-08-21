@@ -21,4 +21,4 @@
 void be_ssa_destruction(ir_graph *irg, const arch_register_class_t *cls);
 void be_ssa_destruction_check(ir_graph *irg, const arch_register_class_t *cls);
 
-#endif /* FIRM_BE_BESSADESTR_H */
+#endif

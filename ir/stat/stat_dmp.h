@@ -25,4 +25,4 @@ extern const dumper_t simple_dumper;
  */
 extern const dumper_t csv_dumper;
 
-#endif /* FIRM_STAT_STAT_DMP_H */
+#endif

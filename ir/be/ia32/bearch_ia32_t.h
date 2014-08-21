@@ -17,9 +17,9 @@
 
 #ifdef NDEBUG
 #define SET_IA32_ORIG_NODE(n, o) ((void)(n), (void)(o), (void)0)
-#else  /* ! NDEBUG */
+#else
 #define SET_IA32_ORIG_NODE(n, o) set_ia32_orig_node(n, o)
-#endif /* NDEBUG */
+#endif
 
 typedef struct ia32_isa_t            ia32_isa_t;
 typedef struct ia32_intrinsic_env_t  ia32_intrinsic_env_t;

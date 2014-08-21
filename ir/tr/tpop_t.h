@@ -142,4 +142,4 @@ static inline ident *_get_tpop_ident(const tp_op *op)
 	return op->name;
 }
 
-#endif /* FIRM_TR_TPOP_T_H */
+#endif

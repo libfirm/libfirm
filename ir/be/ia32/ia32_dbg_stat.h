@@ -214,4 +214,4 @@
 		__dbg_info_merge_pair(nadd, lea, dbg_backend);           \
 	} while(0)
 
-#endif /* FIRM_BE_IA32_IA32_DBG_STAT_H */
+#endif

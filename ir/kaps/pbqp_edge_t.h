@@ -21,4 +21,4 @@ struct pbqp_edge_t {
 	unsigned       bucket_index;         /* Index of edge bucket. */
 };
 
-#endif /* KAPS_PBQP_EDGE_T_H */
+#endif

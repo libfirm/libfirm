@@ -18,4 +18,4 @@
  */
 void be_pbqp_coloring(be_chordal_env_t *env);
 
-#endif /* BEPBQPALLOC_H_ */
+#endif

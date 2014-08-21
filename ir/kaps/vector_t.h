@@ -30,4 +30,4 @@ struct vector_t {
 	vec_elem_t entries[];
 };
 
-#endif /* KAPS_VECTOR_T_H */
+#endif

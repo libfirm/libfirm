@@ -43,4 +43,4 @@ struct be_insn_t {
  */
 be_insn_t *be_scan_insn(be_chordal_env_t *env, ir_node *irn);
 
-#endif /* FIRM_BE_BEINSN_T_H */
+#endif

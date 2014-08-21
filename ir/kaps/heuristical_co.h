@@ -18,4 +18,4 @@
 
 void solve_pbqp_heuristical_co(pbqp_t *pbqp, plist_t *rpeo);
 
-#endif /* KAPS_HEURISTICAL_H */
+#endif

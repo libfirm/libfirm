@@ -26,4 +26,4 @@ unsigned pbqp_node_get_degree(pbqp_node_t *node);
 pbqp_node_t *pbqp_node_deep_copy(pbqp_t *pbqp, pbqp_node_bucket_t new_bucket,
                                  pbqp_node_t *node);
 
-#endif /* KAPS_PBQP_NODE_H */
+#endif

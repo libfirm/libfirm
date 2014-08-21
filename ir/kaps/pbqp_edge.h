@@ -23,4 +23,4 @@ pbqp_edge_t *pbqp_edge_deep_copy(pbqp_t *pbqp, pbqp_edge_t *edge,
 void delete_edge(pbqp_edge_t *edge);
 unsigned is_deleted(pbqp_edge_t *edge);
 
-#endif /* KAPS_PBQP_EDGE_H */
+#endif

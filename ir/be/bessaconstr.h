@@ -89,4 +89,4 @@ ir_node **be_ssa_construction_get_new_phis(be_ssa_construction_env_t *env);
  */
 void be_ssa_construction_destroy(be_ssa_construction_env_t *env);
 
-#endif /* FIRM_BE_BESSACONSTR_H */
+#endif

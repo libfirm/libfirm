@@ -629,4 +629,4 @@ void stat_be_block_stat_permcycle(const char *class_name, ir_node *perm, ir_node
  */
 void stat_register_dumper_func(dump_graph_FUNC *func);
 
-#endif /* FIRM_STAT_FIRMSTAT_T_H */
+#endif

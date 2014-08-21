@@ -29,4 +29,4 @@ typedef struct absgraph_t {
 extern const absgraph_t absgraph_irg_cfg_succ;
 extern const absgraph_t absgraph_irg_cfg_pred;
 
-#endif /* FIRM_ANA_ABSGRAPH_H */
+#endif

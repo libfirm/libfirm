@@ -32,4 +32,4 @@ void create_borders(ir_node *block, void *env_ptr);
  */
 ir_node *pre_process_constraints(be_chordal_env_t *_env, be_insn_t **the_insn);
 
-#endif /* BECHORDAL_COMMON_H_ */
+#endif

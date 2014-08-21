@@ -38,4 +38,4 @@ void vector_add_matrix_row(vector_t *vec, pbqp_matrix_t *mat, unsigned row_index
 num vector_get_min(vector_t *vec);
 unsigned vector_get_min_index(vector_t *vec);
 
-#endif /* KAPS_VECTOR_H */
+#endif

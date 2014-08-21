@@ -47,4 +47,4 @@ int pbqp_matrix_is_zero(pbqp_matrix_t *mat, vector_t *src_vec, vector_t *tgt_vec
 void pbqp_matrix_add_to_all_cols(pbqp_matrix_t *mat, vector_t *vec);
 void pbqp_matrix_add_to_all_rows(pbqp_matrix_t *mat, vector_t *vec);
 
-#endif /* KAPS_MATRIX_H */
+#endif

@@ -32,4 +32,4 @@ void stat_init_pattern_history(int enable);
  */
 void stat_finish_pattern_history(const char *fname);
 
-#endif /* FIRM_STAT_PATTERN_H */
+#endif

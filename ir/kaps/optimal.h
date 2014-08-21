@@ -39,4 +39,4 @@ void reorder_node_after_edge_insertion(pbqp_node_t *node);
 
 int node_is_reduced(pbqp_node_t *node);
 
-#endif /* KAPS_OPTIMAL_H */
+#endif

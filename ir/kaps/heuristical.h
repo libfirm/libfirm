@@ -16,4 +16,4 @@
 
 void solve_pbqp_heuristical(pbqp_t *pbqp);
 
-#endif /* KAPS_HEURISTICAL_CO_H */
+#endif

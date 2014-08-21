@@ -56,4 +56,4 @@ FIRM_API void bipartite_dump(const char *name, const bipartite_t *gr);
 
 #include "../end.h"
 
-#endif /* _BIPARTITE_H */
+#endif

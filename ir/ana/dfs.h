@@ -33,4 +33,4 @@ extern dfs_t *dfs_new(const absgraph_t *graph_impl, void *graph);
 extern void dfs_free(dfs_t *dfs);
 extern void dfs_dump(const dfs_t *dfs, FILE *file);
 
-#endif /* FIRM_ANA_DFS_H */
+#endif

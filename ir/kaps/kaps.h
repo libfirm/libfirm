@@ -43,4 +43,4 @@ num get_solution(pbqp_t *pbqp);
 
 void set_dumpfile(pbqp_t *pbqp, FILE *f);
 
-#endif /* KAPS_KAPS_H */
+#endif

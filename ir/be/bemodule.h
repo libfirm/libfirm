@@ -53,4 +53,4 @@ void be_add_module_list_opt(lc_opt_entry_t *grp, const char *name,
                             be_module_list_entry_t * const * first,
                             void **var);
 
-#endif /* FIRM_BE_BEMODULE_H */
+#endif

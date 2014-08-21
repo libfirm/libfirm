@@ -73,4 +73,4 @@ pattern_dumper_t *new_text_dumper(void);
  */
 pattern_dumper_t *new_vcg_dumper(const char *vcg_name, unsigned max_pattern);
 
-#endif /* FIRM_STAT_PATTERN_DMP_H */
+#endif

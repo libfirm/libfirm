@@ -17,4 +17,4 @@
 typedef pbqp_node_t** pbqp_node_bucket_t;
 typedef pbqp_edge_t** pbqp_edge_bucket_t;
 
-#endif /* KAPS_BUCKET_T_H */
+#endif

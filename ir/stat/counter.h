@@ -183,4 +183,4 @@ static inline int cnt_gt(const counter_t *a, unsigned value)
 	return a->cnt[0] > value;
 }
 
-#endif /* FIRM_STAT_COUNTER_H */
+#endif

@@ -22,4 +22,4 @@ struct pbqp_matrix_t {
 	num entries[];
 };
 
-#endif /* KAPS_MATRIX_T_H */
+#endif

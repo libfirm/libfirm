@@ -56,4 +56,4 @@ struct pbqp_t {
 #endif
 };
 
-#endif /* KAPS_PBQP_T_H */
+#endif

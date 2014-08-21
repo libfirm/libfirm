@@ -84,4 +84,4 @@ struct be_ra_chordal_opts_t {
 
 void check_for_memory_operands(ir_graph *irg);
 
-#endif /* FIRM_BE_BECHORDAL_T_H */
+#endif
