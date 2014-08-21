@@ -142,6 +142,7 @@ static ir_node *copy_to(ir_node *node, ir_node *src_block, int i)
  */
 static void rewire(ir_node *node, int i, int j, ir_node *new_pred)
 {
+	assert(i < j);
 	int arity = get_irn_arity(node);
 	ir_node **ins = ALLOCAN(ir_node*, arity - 1);
 	int k;
@@ -334,7 +335,7 @@ restart:;
 
 					if (val_i == val_j) {
 						mux = val_i;
-						DB((dbg, LEVEL_2,  "Generating no Mux, because both values are equal\n"));
+						DB((dbg, LEVEL_2,  "Generating no Mux for %+F, because both values are equal\n", phi));
 					} else {
 						ir_node *t, *f;
 
