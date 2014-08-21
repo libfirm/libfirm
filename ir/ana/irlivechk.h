@@ -21,10 +21,9 @@
 #include <stdbool.h>
 
 typedef enum {
-	lv_chk_state_in  = 1,
-	lv_chk_state_end = 2,
-	lv_chk_state_out = 4,
-	lv_chk_state_through = lv_chk_state_in | lv_chk_state_out | lv_chk_state_end,
+	lv_chk_state_in  = 1u << 0,
+	lv_chk_state_end = 1u << 1,
+	lv_chk_state_out = 1u << 2,
 } lv_chk_state_t;
 
 typedef struct lv_chk_t lv_chk_t;
@@ -43,9 +42,9 @@ static inline bool is_liveness_node(const ir_node *irn)
 	case iro_End:
 	case iro_Anchor:
 	case iro_NoMem:
-		return 0;
+		return false;
 	default:
-		return 1;
+		return true;
 	}
 }
 
@@ -76,4 +75,4 @@ extern unsigned lv_chk_bl_xxx(lv_chk_t *lv, const ir_node *bl, const ir_node *ir
 #define lv_chk_bl_end(lv, bl, irn) ((lv_chk_bl_xxx((lv), (bl), (irn)) & lv_chk_state_end) != 0)
 #define lv_chk_bl_out(lv, bl, irn) ((lv_chk_bl_xxx((lv), (bl), (irn)) & lv_chk_state_out) != 0)
 
-#endif /* FIRM_ANA_IRLIVECHK_H */
+#endif

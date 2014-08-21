@@ -17,9 +17,9 @@
 
 typedef enum {
 	be_lv_state_none = 0,
-	be_lv_state_in   = 1,
-	be_lv_state_end  = 2,
-	be_lv_state_out  = 4,
+	be_lv_state_in   = 1u << 0,
+	be_lv_state_end  = 1u << 1,
+	be_lv_state_out  = 1u << 2,
 } be_lv_state_t;
 ENUM_BITSET(be_lv_state_t)
 
@@ -77,25 +77,25 @@ void be_liveness_introduce(be_lv_t *lv, ir_node *irn);
  * Check, if a node is live in at a block.
  * @param block The block.
  * @param irn The node to check for.
- * @return 1, if @p irn is live at the entrance of @p block, 0 if not.
+ * @return true, if @p irn is live at the entrance of @p block
  */
-int (be_is_live_in)(const be_lv_t *lv, const ir_node *block, const ir_node *irn);
+bool (be_is_live_in)(const be_lv_t *lv, const ir_node *block, const ir_node *irn);
 
 /**
  * Check, if a node is live out at a block.
  * @param block The block.
  * @param irn The node to check for.
- * @return 1, if @p irn is live at the exit of @p block, 0 if not.
+ * @return true, if @p irn is live at the exit of @p block
  */
-int (be_is_live_out)(const be_lv_t *lv, const ir_node *block, const ir_node *irn);
+bool (be_is_live_out)(const be_lv_t *lv, const ir_node *block, const ir_node *irn);
 
 /**
  * Check, if a node is live at the end of a block.
  * @param block The block.
  * @param irn The node to check for.
- * @return 1, if @p irn is live at the end of the block, 0 if not.
+ * @return true, if @p irn is live at the end of the block
  */
-int (be_is_live_end)(const be_lv_t *lv, const ir_node *block, const ir_node *irn);
+bool (be_is_live_end)(const be_lv_t *lv, const ir_node *block, const ir_node *irn);
 
 /**
  * The liveness transfer function.
@@ -146,6 +146,8 @@ bool be_memory_values_interfere(const ir_node *a, const ir_node *b);
  * @param pos      The node.
  * @param live     The set to put them into.
  */
-void be_liveness_nodes_live_before(be_lv_t const *lv, arch_register_class_t const *cls, ir_node const *pos, ir_nodeset_t *live);
+void be_liveness_nodes_live_before(be_lv_t const *lv,
+                                   arch_register_class_t const *cls,
+                                   ir_node const *pos, ir_nodeset_t *live);
 
 #endif
