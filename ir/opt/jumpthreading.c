@@ -127,7 +127,7 @@ static void construct_ssa(ir_node *orig_block, ir_node *orig_val,
                           ir_node *second_block, ir_node *second_val)
 {
 	/* no need to do anything */
-	if (orig_val == second_val)
+	if (orig_val == second_val && !(is_Phi(orig_val) && get_Phi_loop(orig_val)))
 		return;
 
 	ir_graph *irg = get_irn_irg(orig_val);
@@ -137,8 +137,13 @@ static void construct_ssa(ir_node *orig_block, ir_node *orig_val,
 	set_irn_link(orig_block, orig_val);
 	mark_irn_visited(orig_block);
 
-	ssa_second_def_block = second_block;
-	ssa_second_def       = second_val;
+	if (orig_val == second_val) {
+		/* In the loop-phi case setting a 2nd def is wrong */
+		ssa_second_def_block = NULL;
+	} else {
+		ssa_second_def_block = second_block;
+		ssa_second_def       = second_val;
+	}
 
 	/* Only fix the users of the first, i.e. the original node */
 	foreach_out_edge_safe(orig_val, edge) {
@@ -304,8 +309,8 @@ static void copy_and_fix(const jumpthreading_env_t *env, ir_node *block,
 			continue;
 #endif
 
-		DB((dbg, LEVEL_2, ">> Fixing users of %+F\n", node));
 		ir_node *copy_node = (ir_node*)get_irn_link(node);
+		DB((dbg, LEVEL_2, ">> Fixing users of %+F (copy %+F)\n", node, copy_node));
 		construct_ssa(block, node, copy_block, copy_node);
 	}
 
@@ -649,6 +654,11 @@ void opt_jumpthreading(ir_graph* irg)
 
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_IRN_VISITED);
 
-	confirm_irg_properties(irg,
-		changed ? IR_GRAPH_PROPERTIES_NONE : IR_GRAPH_PROPERTIES_ALL);
+	if (changed) {
+		/* we tend to produce alot of duplicated keep edges, remove them */
+		remove_End_Bads_and_doublets(get_irg_end(irg));
+		confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_NONE);
+	} else {
+		confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_ALL);
+	}
 }
