@@ -14,7 +14,7 @@
 #include "irgwalk.h"
 #include "beifg.h"
 #include "becopyopt_t.h"
-#include "belive_t.h"
+#include "belive.h"
 
 static void dump_ifg_nodes(FILE *F, const be_ifg_t *ifg)
 {

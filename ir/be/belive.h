@@ -14,6 +14,9 @@
 
 #include "be_types.h"
 #include "irnodeset.h"
+#include "irnodehashmap.h"
+#include "irlivechk.h"
+#include "bearch.h"
 
 typedef enum {
 	be_lv_state_none = 0,
@@ -74,30 +77,6 @@ void be_liveness_remove(be_lv_t *lv, const ir_node *irn);
 void be_liveness_introduce(be_lv_t *lv, ir_node *irn);
 
 /**
- * Check, if a node is live in at a block.
- * @param block The block.
- * @param irn The node to check for.
- * @return true, if @p irn is live at the entrance of @p block
- */
-bool (be_is_live_in)(const be_lv_t *lv, const ir_node *block, const ir_node *irn);
-
-/**
- * Check, if a node is live out at a block.
- * @param block The block.
- * @param irn The node to check for.
- * @return true, if @p irn is live at the exit of @p block
- */
-bool (be_is_live_out)(const be_lv_t *lv, const ir_node *block, const ir_node *irn);
-
-/**
- * Check, if a node is live at the end of a block.
- * @param block The block.
- * @param irn The node to check for.
- * @return true, if @p irn is live at the end of the block
- */
-bool (be_is_live_end)(const be_lv_t *lv, const ir_node *block, const ir_node *irn);
-
-/**
  * The liveness transfer function.
  * Updates a live set over a single step from a given node to its predecessor.
  * Everything defined at the node is removed from the set, the uses of the node get inserted.
@@ -149,5 +128,132 @@ bool be_memory_values_interfere(const ir_node *a, const ir_node *b);
 void be_liveness_nodes_live_before(be_lv_t const *lv,
                                    arch_register_class_t const *cls,
                                    ir_node const *pos, ir_nodeset_t *live);
+
+struct be_lv_t {
+	ir_nodehashmap_t map;
+	struct obstack   obst;
+	bool             sets_valid;
+	ir_graph        *irg;
+	lv_chk_t        *lvc;
+};
+
+typedef struct be_lv_info_node_t be_lv_info_node_t;
+struct be_lv_info_node_t {
+	ir_node *node;
+	unsigned flags;
+};
+
+struct be_lv_info_head_t {
+	unsigned n_members;
+	unsigned n_size;
+};
+
+union be_lv_info_t {
+	struct be_lv_info_head_t head;
+	struct be_lv_info_node_t node;
+};
+
+be_lv_info_node_t *be_lv_get(const be_lv_t *li, const ir_node *block,
+                             const ir_node *irn);
+
+static inline bool _be_is_live_xxx(const be_lv_t *li, const ir_node *block,
+                                   const ir_node *irn, unsigned flags)
+{
+	if (li->sets_valid) {
+		be_lv_info_node_t *info = be_lv_get(li, block, irn);
+		return info != NULL ? (info->flags & flags) : false;
+	} else {
+		return lv_chk_bl_xxx(li->lvc, block, irn) & flags;
+	}
+}
+
+/**
+ * Check, if a node is live in at a block.
+ * @param block The block.
+ * @param irn The node to check for.
+ * @return true, if @p irn is live at the entrance of @p block
+ */
+static inline bool be_is_live_in(const be_lv_t *li, const ir_node *block,
+                                 const ir_node *node)
+{
+	return _be_is_live_xxx(li, block, node, be_lv_state_in);
+}
+
+/**
+ * Check, if a node is live out at a block.
+ * @param block The block.
+ * @param irn The node to check for.
+ * @return true, if @p irn is live at the exit of @p block
+ */
+static inline bool be_is_live_out(const be_lv_t *li, const ir_node *block,
+                                  const ir_node *node)
+{
+	return _be_is_live_xxx(li, block, node, be_lv_state_out);
+}
+
+/**
+ * Check, if a node is live at the end of a block.
+ * @param block The block.
+ * @param irn The node to check for.
+ * @return true, if @p irn is live at the end of the block
+ */
+static inline bool be_is_live_end(const be_lv_t *li, const ir_node *block,
+                                  const ir_node *node)
+{
+	return _be_is_live_xxx(li, block, node, be_lv_state_end);
+}
+
+typedef struct lv_iterator_t
+{
+	be_lv_info_t *info;
+	size_t        i;
+} lv_iterator_t;
+
+static inline lv_iterator_t be_lv_iteration_begin(const be_lv_t *lv,
+                                                  const ir_node *block)
+{
+	lv_iterator_t res;
+	res.info  = ir_nodehashmap_get(be_lv_info_t, &lv->map, block);
+	res.i     = res.info != NULL ? res.info[0].head.n_members : 0;
+	return res;
+}
+
+static inline ir_node *be_lv_iteration_next(lv_iterator_t *iterator,
+                                            be_lv_state_t flags)
+{
+	while (iterator->i != 0) {
+		const be_lv_info_t *info = iterator->info + iterator->i--;
+		if (info->node.flags & flags)
+			return info->node.node;
+	}
+	return NULL;
+}
+
+static inline ir_node *be_lv_iteration_cls_next(lv_iterator_t *iterator,
+                                                be_lv_state_t flags,
+                                                const arch_register_class_t *cls)
+{
+	while (iterator->i != 0) {
+		const be_lv_info_t *info = iterator->info + iterator->i--;
+		if (!(info->node.flags & flags))
+			continue;
+
+		ir_node *node = info->node.node;
+		if (!arch_irn_consider_in_reg_alloc(cls, node))
+			continue;
+		return node;
+	}
+	return NULL;
+}
+
+#define be_lv_foreach(lv, block, flags, node) \
+	for (bool once = true; once;) \
+		for (lv_iterator_t iter = be_lv_iteration_begin((lv), (block)); once; once = false) \
+			for (ir_node *node; (node = be_lv_iteration_next(&iter, (flags))) != NULL;)
+
+#define be_lv_foreach_cls(lv, block, flags, cls, node) \
+	for (bool once = true; once;) \
+		for (lv_iterator_t iter = be_lv_iteration_begin((lv), (block)); once; once = false) \
+			for (ir_node *node; (node = be_lv_iteration_cls_next(&iter, (flags), (cls))) != NULL;)
 
 #endif

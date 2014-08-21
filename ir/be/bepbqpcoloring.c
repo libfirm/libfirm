@@ -36,7 +36,7 @@
 #include "beinsn_t.h"
 #include "benode.h"
 #include "belive.h"
-#include "belive_t.h"
+#include "belive.h"
 #include "beutil.h"
 #include "plist.h"
 #include "pqueue.h"

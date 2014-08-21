@@ -29,7 +29,7 @@
 #include "besched.h"
 #include "bespill.h"
 #include "bespillutil.h"
-#include "belive_t.h"
+#include "belive.h"
 #include "benode.h"
 #include "bechordal_t.h"
 #include "statev_t.h"

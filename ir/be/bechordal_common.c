@@ -24,7 +24,7 @@
 #include "benode.h"
 #include "bemodule.h"
 #include "belive.h"
-#include "belive_t.h"
+#include "belive.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 

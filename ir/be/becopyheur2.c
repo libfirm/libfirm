@@ -15,7 +15,7 @@
 #include <stdlib.h>
 #include <limits.h>
 
-#include "belive_t.h"
+#include "belive.h"
 #include "beirg.h"
 #include "list.h"
 #include "pdeq.h"

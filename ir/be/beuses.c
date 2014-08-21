@@ -26,7 +26,7 @@
 
 #include "be_t.h"
 #include "beutil.h"
-#include "belive_t.h"
+#include "belive.h"
 #include "benode.h"
 #include "besched.h"
 #include "beirgmod.h"

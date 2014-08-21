@@ -40,7 +40,7 @@
 #include "beutil.h"
 #include "besched.h"
 #include "besched.h"
-#include "belive_t.h"
+#include "belive.h"
 #include "bearch.h"
 #include "beifg.h"
 #include "benode.h"

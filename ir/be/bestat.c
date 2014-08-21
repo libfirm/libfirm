@@ -22,7 +22,7 @@
 #include "bearch.h"
 #include "beirg.h"
 #include "bestat.h"
-#include "belive_t.h"
+#include "belive.h"
 #include "besched.h"
 #include "benode.h"
 

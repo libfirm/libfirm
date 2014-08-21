@@ -38,7 +38,7 @@
 #include "bechordal_t.h"
 #include "bearch.h"
 #include "besched.h"
-#include "belive_t.h"
+#include "belive.h"
 #include "benode.h"
 #include "beutil.h"
 #include "beinsn_t.h"

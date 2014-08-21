@@ -27,7 +27,7 @@
 #include "beuses.h"
 #include "besched.h"
 #include "beirgmod.h"
-#include "belive_t.h"
+#include "belive.h"
 #include "benode.h"
 #include "bechordal_t.h"
 #include "bespill.h"

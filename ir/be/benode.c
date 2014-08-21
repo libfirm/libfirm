@@ -38,7 +38,7 @@
 #include "irgopt.h"
 
 #include "be_t.h"
-#include "belive_t.h"
+#include "belive.h"
 #include "besched.h"
 #include "benode.h"
 #include "bearch.h"

@@ -24,7 +24,7 @@
 
 #include "becopyopt_t.h"
 #include "becopystat.h"
-#include "belive_t.h"
+#include "belive.h"
 #include "beirg.h"
 #include "bemodule.h"
 

@@ -20,7 +20,7 @@
 #include "statev_t.h"
 
 #include "beirg.h"
-#include "belive_t.h"
+#include "belive.h"
 #include "bemodule.h"
 #include "benode.h"
 #include "bera.h"

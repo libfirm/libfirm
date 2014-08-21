@@ -26,7 +26,7 @@
 #include "debug.h"
 #include "panic.h"
 
-#include "belive_t.h"
+#include "belive.h"
 #include "besched.h"
 #include "benode.h"
 #include "bessaconstr.h"

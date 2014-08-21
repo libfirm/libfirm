@@ -12,7 +12,7 @@
 #include <stdbool.h>
 
 #include "be_t.h"
-#include "belive_t.h"
+#include "belive.h"
 #include "beirg.h"
 #include "irtools.h"
 #include "irprintf.h"

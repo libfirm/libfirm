@@ -30,7 +30,7 @@
 #include "bemodule.h"
 #include "besched.h"
 #include "beutil.h"
-#include "belive_t.h"
+#include "belive.h"
 #include "belistsched.h"
 #include "bearch.h"
 #include "bestat.h"

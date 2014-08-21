@@ -15,7 +15,7 @@
 #include "benode.h"
 #include "besched.h"
 #include "bedump.h"
-#include "belive_t.h"
+#include "belive.h"
 #include "irgwalk.h"
 #include "irnode_t.h"
 #include "irdump_t.h"

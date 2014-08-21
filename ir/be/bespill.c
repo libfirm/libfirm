@@ -19,7 +19,7 @@
 #include "bespill.h"
 #include "bemodule.h"
 #include "be.h"
-#include "belive_t.h"
+#include "belive.h"
 #include "beirg.h"
 #include "bearch.h"
 #include "benode.h"

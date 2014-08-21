@@ -41,7 +41,7 @@
 #include "be.h"
 #include "be_t.h"
 #include "beirgmod.h"
-#include "belive_t.h"
+#include "belive.h"
 #include "beblocksched.h"
 #include "bespillutil.h"
 #include "bespillslots.h"

@@ -18,7 +18,7 @@
 #include "util.h"
 
 #include "bearch.h"
-#include "belive_t.h"
+#include "belive.h"
 #include "bechordal_t.h"
 #include "besched.h"
 #include "bechordal_draw.h"

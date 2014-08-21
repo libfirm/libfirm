@@ -41,7 +41,7 @@
 #include "beirgmod.h"
 #include "besched.h"
 #include "belistsched.h"
-#include "belive_t.h"
+#include "belive.h"
 #include "bera.h"
 #include "bechordal_t.h"
 #include "beifg.h"

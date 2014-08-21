@@ -27,7 +27,7 @@
 #include "bechordal_t.h"
 #include "statev_t.h"
 #include "bemodule.h"
-#include "belive_t.h"
+#include "belive.h"
 #include "beirg.h"
 #include "bearch.h"
 #include "bespillutil.h"

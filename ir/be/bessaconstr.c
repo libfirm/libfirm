@@ -38,7 +38,7 @@
 #include "bessaconstr.h"
 #include "bemodule.h"
 #include "besched.h"
-#include "belive_t.h"
+#include "belive.h"
 #include "beirg.h"
 #include "be_t.h"
 #include "benode.h"

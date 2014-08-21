@@ -23,7 +23,7 @@
 #include "be_t.h"
 #include "bearch.h"
 #include "beutil.h"
-#include "belive_t.h"
+#include "belive.h"
 #include "besched.h"
 #include "bemodule.h"
 #include "beirg.h"
@@ -31,21 +31,6 @@
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 #define LV_STD_SIZE             64
-
-bool (be_is_live_in)(const be_lv_t *lv, const ir_node *block, const ir_node *irn)
-{
-	return _be_is_live_xxx(lv, block, irn, be_lv_state_in);
-}
-
-bool (be_is_live_out)(const be_lv_t *lv, const ir_node *block, const ir_node *irn)
-{
-	return _be_is_live_xxx(lv, block, irn, be_lv_state_out);
-}
-
-bool (be_is_live_end)(const be_lv_t *lv, const ir_node *block, const ir_node *irn)
-{
-	return _be_is_live_xxx(lv, block, irn, be_lv_state_end);
-}
 
 static unsigned _be_liveness_bsearch(const be_lv_info_t *arr,
                                      const ir_node *node)

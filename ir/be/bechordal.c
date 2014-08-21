@@ -13,7 +13,7 @@
 #include "bechordal_draw.h"
 #include "bechordal_t.h"
 #include "beinsn_t.h"
-#include "belive_t.h"
+#include "belive.h"
 #include "besched.h"
 #include "beirg.h"
 #include "bemodule.h"

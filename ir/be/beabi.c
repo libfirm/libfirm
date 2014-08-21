@@ -33,7 +33,7 @@
 #include "beabihelper.h"
 #include "bearch.h"
 #include "benode.h"
-#include "belive_t.h"
+#include "belive.h"
 #include "besched.h"
 #include "beirg.h"
 #include "bessaconstr.h"
