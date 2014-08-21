@@ -335,8 +335,6 @@ restart:;
 					if (val_i == val_j) {
 						mux = val_i;
 						DB((dbg, LEVEL_2,  "Generating no Mux, because both values are equal\n"));
-						if (get_Phi_loop(phi))
-							remove_keep_alive(phi);
 					} else {
 						ir_node *t, *f;
 
@@ -359,6 +357,8 @@ restart:;
 					ir_node *next_phi = get_Phi_next(phi);
 
 					if (arity == 2) {
+						if (get_Phi_loop(phi))
+							remove_keep_alive(phi);
 						exchange(phi, mux);
 					} else {
 						rewire(phi, i, j, mux);
