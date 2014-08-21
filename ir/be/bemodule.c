@@ -12,8 +12,17 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-#include "bemodule_t.h"
+#include "bemodule.h"
 #include "xmalloc.h"
+
+/**
+ * A module list entry.
+ */
+struct be_module_list_entry_t {
+	const char *name;                    /**< The name of the entry. */
+	void *data;                          /**< Some data associated with this entry. */
+	struct be_module_list_entry_t *next; /**< Points to the next entry. */
+};
 
 void be_init_abi(void);
 void be_init_sched(void);
