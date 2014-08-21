@@ -123,6 +123,8 @@ static void move_other_uses(ir_node *node, ir_node *copy)
 			ir_node *succ = get_edge_src_irn(edge);
 			if (irn_visited(succ) && succ != copy_prev &&
 			    value_strictly_dominates(copy, succ)) {
+				ir_graph *irg = get_irn_irg(succ);
+				be_lv_t *lv = be_get_irg_liveness(irg);
 				if (new_proj == NULL) {
 					ir_mode *proj_mode = get_irn_mode(proj);
 					int      pn        = get_Proj_proj(proj);
@@ -130,6 +132,8 @@ static void move_other_uses(ir_node *node, ir_node *copy)
 				}
 				int n = get_edge_src_pos(edge);
 				set_irn_n(succ, n, new_proj);
+				be_liveness_update(lv, proj);
+				be_liveness_update(lv, new_proj);
 			}
 		}
 	}

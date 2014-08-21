@@ -41,6 +41,7 @@
 #include "be.h"
 #include "be_t.h"
 #include "beirgmod.h"
+#include "belive_t.h"
 #include "beblocksched.h"
 #include "bespillutil.h"
 #include "bespillslots.h"
@@ -671,6 +672,10 @@ static bool ia32_try_replace_flags(ir_node *consumers, ir_node *flags, ir_node *
 						ir_node *proj = new_r_Proj(available, flag_mode, pn);
 						arch_set_irn_register(proj, flag_reg);
 						set_irn_n(c, i, proj);
+						ir_graph *irg = get_irn_irg(in);
+						be_lv_t *lv = be_get_irg_liveness(irg);
+						be_liveness_introduce(lv, proj);
+						be_liveness_update(lv, in);
 					}
 				}
 			}
