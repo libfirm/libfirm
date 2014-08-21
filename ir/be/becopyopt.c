@@ -47,14 +47,27 @@
 #include "lc_opts.h"
 #include "lc_opts_enum.h"
 
+#define MIS_HEUR_TRIGGER 8
+
 #define DUMP_BEFORE 1
 #define DUMP_AFTER  2
 #define DUMP_APPEL  4
 #define DUMP_ALL    2 * DUMP_APPEL - 1
 
-#define COST_FUNC_FREQ     1
-#define COST_FUNC_LOOP     2
-#define COST_FUNC_ALL_ONE  3
+#define list_entry_units(lh) list_entry(lh, unit_t, units)
+
+/**
+ * Statistics over a copy optimization module.
+ */
+typedef struct {
+	unsigned long long aff_edges;            /**< number of affinity edges. */
+	unsigned long long aff_nodes;            /**< number of nodes with incident affinity edges. */
+	unsigned long long aff_int;              /**< number of affinity edges whose nodes also interfere. */
+	unsigned long long inevit_costs;         /**< costs which cannot be evited (due to interfering affinities). */
+	unsigned long long max_costs;            /**< all costs of the affinities. */
+	unsigned long long costs;                /**< The costs of the current coloring. */
+	unsigned long long unsatisfied_edges;    /**< The number of unequally colored affinity edges. */
+} co_complete_stats_t;
 
 /**
  * Flags for dumping the IFG.
@@ -65,6 +78,8 @@ enum {
 	CO_IFG_DUMP_SHAPE  = 1 << 2, /**< Give constrained nodes special shapes. */
 	CO_IFG_DUMP_CONSTR = 1 << 3, /**< Dump the node constraints in the label. */
 };
+
+DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 static int co_get_costs_loop_depth(const ir_node *root, int pos);
 static int co_get_costs_exec_freq(const ir_node *root, int pos);
@@ -161,10 +176,7 @@ void be_init_copynone(void)
 	be_register_copyopt("none", &copyheur);
 }
 
-DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
-
-
-copy_opt_t *new_copy_opt(be_chordal_env_t *chordal_env, cost_fct_t get_costs)
+static copy_opt_t *new_copy_opt(be_chordal_env_t *chordal_env, cost_fct_t get_costs)
 {
 	FIRM_DBG_REGISTER(dbg, "ir.be.copyopt");
 
@@ -176,7 +188,7 @@ copy_opt_t *new_copy_opt(be_chordal_env_t *chordal_env, cost_fct_t get_costs)
 	return co;
 }
 
-void free_copy_opt(copy_opt_t *co)
+static void free_copy_opt(copy_opt_t *co)
 {
 	free(co);
 }
@@ -185,7 +197,7 @@ void free_copy_opt(copy_opt_t *co)
  * Checks if a node is optimizable, viz. has something to do with coalescing
  * @param irn  The irn to check
  */
-static bool co_is_optimizable_root(ir_node *irn)
+static bool co_is_optimizable_root(const ir_node *irn)
 {
 	arch_register_req_t const *const req = arch_get_irn_register_req(irn);
 	if (arch_register_req_is(req, ignore))
@@ -208,18 +220,18 @@ static bool co_is_optimizable_root(ir_node *irn)
 static int co_get_costs_loop_depth(const ir_node *root, int pos)
 {
 	ir_node *block = get_nodes_block(root);
-	if (is_Phi(root)) {
+	if (is_Phi(root))
 		block = get_Block_cfgpred_block(block, pos);
-	}
+
 	ir_loop *loop = get_irn_loop(block);
 	int cost;
-	if (loop) {
+	if (loop != NULL) {
 		int d = get_loop_depth(loop);
 		cost = d*d;
 	} else {
 		cost = 0;
 	}
-	return 1+cost;
+	return cost+1;
 }
 
 static ir_execfreq_int_factors factors;
@@ -253,17 +265,6 @@ static int co_get_costs_all_one(const ir_node *root, int pos)
 	(void)pos;
 	return 1;
 }
-
-/******************************************************************************
-   ____        _   _    _       _ _          _____ _
-  / __ \      | | | |  | |     (_) |        / ____| |
- | |  | |_ __ | |_| |  | |_ __  _| |_ ___  | (___ | |_ ___  _ __ __ _  __ _  ___
- | |  | | '_ \| __| |  | | '_ \| | __/ __|  \___ \| __/ _ \| '__/ _` |/ _` |/ _ \
- | |__| | |_) | |_| |__| | | | | | |_\__ \  ____) | || (_) | | | (_| | (_| |  __/
-  \____/| .__/ \__|\____/|_| |_|_|\__|___/ |_____/ \__\___/|_|  \__,_|\__, |\___|
-        | |                                                            __/ |
-        |_|                                                           |___/
- ******************************************************************************/
 
 /**
  * Determines a maximum weighted independent set with respect to
@@ -480,14 +481,14 @@ static void co_collect_units(ir_node *irn, void *env)
 	}
 }
 
-void co_build_ou_structure(copy_opt_t *co)
+static void co_build_ou_structure(copy_opt_t *co)
 {
 	DBG((dbg, LEVEL_1, "\tCollecting optimization units\n"));
 	INIT_LIST_HEAD(&co->units);
 	irg_walk_graph(co->irg, co_collect_units, NULL, co);
 }
 
-void co_free_ou_structure(copy_opt_t *co)
+static void co_free_ou_structure(copy_opt_t *co)
 {
 	ASSERT_OU_AVAIL(co);
 	list_for_each_entry_safe(unit_t, curr, tmp, &co->units, units) {
@@ -498,21 +499,6 @@ void co_free_ou_structure(copy_opt_t *co)
 	co->units.next = NULL;
 }
 
-/* co_solve_heuristic() is implemented in becopyheur.c */
-
-int co_get_max_copy_costs(const copy_opt_t *co)
-{
-	ASSERT_OU_AVAIL(co);
-
-	int res = 0;
-	list_for_each_entry(unit_t, curr, &co->units, units) {
-		res += curr->inevitable_costs;
-		for (int i=1; i<curr->node_count; ++i)
-			res += curr->costs[i];
-	}
-	return res;
-}
-
 int co_get_inevit_copy_costs(const copy_opt_t *co)
 {
 	ASSERT_OU_AVAIL(co);
@@ -520,26 +506,6 @@ int co_get_inevit_copy_costs(const copy_opt_t *co)
 	int res = 0;
 	list_for_each_entry(unit_t, curr, &co->units, units)
 		res += curr->inevitable_costs;
-	return res;
-}
-
-int co_get_copy_costs(const copy_opt_t *co)
-{
-	ASSERT_OU_AVAIL(co);
-
-	int res = 0;
-	list_for_each_entry(unit_t, curr, &co->units, units) {
-		int root_col = get_irn_col(curr->nodes[0]);
-		DBG((dbg, LEVEL_1, "  %3d costs for root %+F color %d\n", curr->inevitable_costs, curr->nodes[0], root_col));
-		res += curr->inevitable_costs;
-		for (int i=1; i<curr->node_count; ++i) {
-			int arg_col = get_irn_col(curr->nodes[i]);
-			if (root_col != arg_col) {
-				DBG((dbg, LEVEL_1, "  %3d for arg %+F color %d\n", curr->costs[i], curr->nodes[i], arg_col));
-				res += curr->costs[i];
-			}
-		}
-	}
 	return res;
 }
 
@@ -553,7 +519,7 @@ int co_get_lower_bound(const copy_opt_t *co)
 	return res;
 }
 
-void co_complete_stats(const copy_opt_t *co, co_complete_stats_t *stat)
+static void co_complete_stats(const copy_opt_t *co, co_complete_stats_t *stat)
 {
 	bitset_t *seen = bitset_malloc(get_irg_last_idx(co->irg));
 
@@ -577,7 +543,6 @@ void co_complete_stats(const copy_opt_t *co, co_complete_stats_t *stat)
 					stat->aff_int += 1;
 					stat->inevit_costs += neigh->costs;
 				}
-
 			}
 		}
 	}
@@ -660,7 +625,10 @@ static void build_graph_walker(ir_node *irn, void *env)
 	}
 }
 
-void co_build_graph_structure(copy_opt_t *co)
+/**
+ * Constructs another internal representation of the affinity edges
+ */
+static void co_build_graph_structure(copy_opt_t *co)
 {
 	obstack_init(&co->obst);
 	co->nodes = new_set(compare_affinity_node_t, 32);
@@ -668,7 +636,11 @@ void co_build_graph_structure(copy_opt_t *co)
 	irg_walk_graph(co->irg, build_graph_walker, NULL, co);
 }
 
-void co_free_graph_structure(copy_opt_t *co)
+/**
+ * Frees the space used by the graph representation.
+ * Does NOT free the whole copyopt structure
+ */
+static void co_free_graph_structure(copy_opt_t *co)
 {
 	ASSERT_GS_AVAIL(co);
 
@@ -677,7 +649,7 @@ void co_free_graph_structure(copy_opt_t *co)
 	co->nodes = NULL;
 }
 
-int co_gs_is_optimizable(copy_opt_t const *const co, ir_node *const irn)
+bool co_gs_is_optimizable(copy_opt_t const *const co, ir_node *const irn)
 {
 	ASSERT_GS_AVAIL(co);
 
@@ -757,8 +729,8 @@ static void co_dump_appel_graph(const copy_opt_t *co, FILE *f)
 
 		neighbours_iter_t nit;
 		be_ifg_foreach_neighbour(ifg, &nit, irn, adj) {
-			if (!arch_irn_is_ignore(adj) &&
-					!co_dump_appel_disjoint_constraints(irn, adj)) {
+			if (!arch_irn_is_ignore(adj)
+			    && !co_dump_appel_disjoint_constraints(irn, adj)) {
 				int adj_idx = node_map[get_irn_idx(adj)];
 				if (idx < adj_idx)
 					fprintf(f, "%d %d -1\n", idx, adj_idx);
@@ -793,7 +765,8 @@ static FILE *my_open(const be_chordal_env_t *env, const char *prefix,
 
 
 	char buf[1024];
-	ir_snprintf(buf, sizeof(buf), "%s%s_%F_%s%s", prefix, tu_name, env->irg, env->cls->name, suffix);
+	ir_snprintf(buf, sizeof(buf), "%s%s_%F_%s%s", prefix, tu_name, env->irg,
+	            env->cls->name, suffix);
 	free(tu_name);
 	FILE *result = fopen(buf, "wt");
 	if (result == NULL) {
@@ -840,6 +813,7 @@ void co_driver(be_chordal_env_t *cenv)
 		fclose(f);
 	}
 
+#if 0
 	/* if the algo can improve results, provide an initial solution with heur1 */
 	if (improve && selected_copyopt->can_improve_existing) {
 		co_complete_stats_t stats;
@@ -851,6 +825,7 @@ void co_driver(be_chordal_env_t *cenv)
 		co_complete_stats(co, &stats);
 		stat_ev_ull("co_prepare_costs", stats.costs);
 	}
+#endif
 
 	/* perform actual copy minimization */
 	ir_timer_reset_and_start(timer);

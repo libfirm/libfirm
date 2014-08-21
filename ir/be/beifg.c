@@ -23,7 +23,6 @@
 #include "xmalloc.h"
 
 #include "becopystat.h"
-#include "becopyopt.h"
 #include "beirg.h"
 #include "bemodule.h"
 #include "belive.h"
