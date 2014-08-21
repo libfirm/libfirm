@@ -546,6 +546,9 @@ void optimize_cf(ir_graph *irg)
 {
 	assure_irg_properties(irg, IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE
 	                         | IR_GRAPH_PROPERTY_ONE_RETURN);
+	/* we have some hacky is_Id() checks here so exchange must not use Deleted
+	 * nodes because out edges are active. */
+	edges_deactivate(irg);
 	ir_reserve_resources(irg, IR_RESOURCE_BLOCK_MARK | IR_RESOURCE_PHI_LIST
 	                        | IR_RESOURCE_IRN_LINK);
 
