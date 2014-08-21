@@ -30,7 +30,7 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 typedef struct be_loop_info_t {
 	ir_loop                     *loop;
 	const arch_register_class_t *cls;
-	unsigned                    max_pressure;
+	unsigned                     max_pressure;
 } be_loop_info_t;
 
 struct be_loopana_t {
@@ -39,11 +39,10 @@ struct be_loopana_t {
 
 static int cmp_loop_info(const void *a, const void *b, size_t size)
 {
+	(void)size;
 	const be_loop_info_t *i1 = (const be_loop_info_t*)a;
 	const be_loop_info_t *i2 = (const be_loop_info_t*)b;
-	(void) size;
-
-	return ! (i1->loop == i2->loop && i1->cls == i2->cls);
+	return i1->loop != i2->loop || i1->cls != i2->cls;
 }
 
 /**
@@ -54,29 +53,27 @@ static int cmp_loop_info(const void *a, const void *b, size_t size)
  */
 static unsigned be_compute_block_pressure(ir_node *const block, arch_register_class_t const *const cls)
 {
-	ir_nodeset_t live_nodes;
-	size_t       max_live;
 
 	DBG((dbg, LEVEL_1, "Processing Block %+F\n", block));
 
 	/* determine largest pressure with this block */
+	ir_nodeset_t live_nodes;
 	ir_nodeset_init(&live_nodes);
 	be_lv_t *const lv = be_get_irg_liveness(get_Block_irg(block));
 	be_liveness_end_of_block(lv, cls, block, &live_nodes);
-	max_live   = ir_nodeset_size(&live_nodes);
+	unsigned max_live = (unsigned)ir_nodeset_size(&live_nodes);
 
 	sched_foreach_reverse(block, irn) {
-		size_t cnt;
-
 		if (is_Phi(irn))
 			break;
 
 		be_liveness_transfer(cls, irn, &live_nodes);
-		cnt      = ir_nodeset_size(&live_nodes);
+		unsigned cnt = (unsigned)ir_nodeset_size(&live_nodes);
 		max_live = MAX(cnt, max_live);
 	}
 
-	DBG((dbg, LEVEL_1, "Finished with Block %+F (%s %zu)\n", block, cls->name, max_live));
+	DBG((dbg, LEVEL_1, "Finished with Block %+F (%s %zu)\n", block, cls->name,
+	     max_live));
 
 	ir_nodeset_destroy(&live_nodes);
 	return max_live;
@@ -92,16 +89,11 @@ static unsigned be_compute_block_pressure(ir_node *const block, arch_register_cl
 static unsigned be_compute_loop_pressure(be_loopana_t *loop_ana, ir_loop *loop,
                                          const arch_register_class_t *cls)
 {
-	size_t         i, max;
-	unsigned       pressure;
-	be_loop_info_t *entry, key;
-
 	DBG((dbg, LEVEL_1, "\nProcessing Loop %ld\n", loop->loop_nr));
-	assert(get_loop_n_elements(loop) > 0);
-	pressure = 0;
 
 	/* determine maximal pressure in all loop elements */
-	for (i = 0, max = get_loop_n_elements(loop); i < max; ++i) {
+	unsigned pressure = 0;
+	for (size_t i = 0, max = get_loop_n_elements(loop); i < max; ++i) {
 		unsigned     son_pressure;
 		loop_element elem = get_loop_element(loop, i);
 
@@ -117,10 +109,12 @@ static unsigned be_compute_loop_pressure(be_loopana_t *loop_ana, ir_loop *loop,
 	DBG((dbg, LEVEL_1, "Done with loop %ld, pressure %u for class %s\n", loop->loop_nr, pressure, cls->name));
 
 	/* update info in set */
+	be_loop_info_t key;
 	key.loop            = loop;
 	key.cls             = cls;
 	key.max_pressure    = 0;
-	entry               = set_insert(be_loop_info_t, loop_ana->data, &key, sizeof(key), HASH_LOOP_INFO(&key));
+	be_loop_info_t *entry
+		= set_insert(be_loop_info_t, loop_ana->data, &key, sizeof(key), HASH_LOOP_INFO(&key));
 	entry->max_pressure = MAX(entry->max_pressure, pressure);
 
 	return pressure;
@@ -129,12 +123,10 @@ static unsigned be_compute_loop_pressure(be_loopana_t *loop_ana, ir_loop *loop,
 be_loopana_t *be_new_loop_pressure(ir_graph *const irg, arch_register_class_t const *const cls)
 {
 	be_loopana_t *loop_ana = XMALLOC(be_loopana_t);
-
 	loop_ana->data = new_set(cmp_loop_info, 16);
 
-	DBG((dbg, LEVEL_1, "\n=====================================================\n", cls->name));
-	DBG((dbg, LEVEL_1, " Computing register pressure for class %s:\n", cls->name));
-	DBG((dbg, LEVEL_1, "=====================================================\n", cls->name));
+	DBG((dbg, LEVEL_1, "Computing loop register pressure for class %s:\n",
+	     cls->name));
 
 	assure_loopinfo(irg);
 
@@ -145,21 +137,13 @@ be_loopana_t *be_new_loop_pressure(ir_graph *const irg, arch_register_class_t co
 
 unsigned be_get_loop_pressure(be_loopana_t *loop_ana, const arch_register_class_t *cls, ir_loop *loop)
 {
-	unsigned pressure = INT_MAX;
-	be_loop_info_t *entry, key;
-
-	assert(cls && loop);
-
+	be_loop_info_t key;
 	key.loop = loop;
 	key.cls  = cls;
-	entry    = set_find(be_loop_info_t, loop_ana->data, &key, sizeof(key), HASH_LOOP_INFO(&key));
+	be_loop_info_t *entry
+		= set_find(be_loop_info_t, loop_ana->data, &key, sizeof(key), HASH_LOOP_INFO(&key));
 
-	if (entry)
-		pressure = entry->max_pressure;
-	else
-		panic("Pressure not computed for given class and loop object.");
-
-	return pressure;
+	return entry->max_pressure;
 }
 
 void be_free_loop_pressure(be_loopana_t *loop_ana)
