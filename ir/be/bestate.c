@@ -30,9 +30,9 @@
 #include "belive.h"
 #include "bemodule.h"
 #include "benode.h"
-#include "beirgmod.h"
 #include "bespillutil.h"
 #include "bessaconstr.h"
+#include "beutil.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 

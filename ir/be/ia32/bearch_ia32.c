@@ -40,7 +40,6 @@
 #include "besched.h"
 #include "be.h"
 #include "be_t.h"
-#include "beirgmod.h"
 #include "belive.h"
 #include "beblocksched.h"
 #include "bespillutil.h"

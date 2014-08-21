@@ -35,7 +35,7 @@
 #include "statev_t.h"
 #include "bessaconstr.h"
 #include "beirg.h"
-#include "beirgmod.h"
+#include "beutil.h"
 #include "bemodule.h"
 #include "be_t.h"
 

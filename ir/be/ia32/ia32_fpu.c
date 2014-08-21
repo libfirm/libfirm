@@ -24,7 +24,6 @@
 #include "tv.h"
 #include "array.h"
 
-#include "beirgmod.h"
 #include "bearch.h"
 #include "besched.h"
 #include "beabi.h"

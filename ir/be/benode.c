@@ -43,8 +43,6 @@
 #include "benode.h"
 #include "bearch.h"
 
-#include "beirgmod.h"
-
 typedef struct be_node_attr_t {
 	except_attr  exc;
 } be_node_attr_t;

@@ -50,7 +50,6 @@ void be_init_ra(void);
 void be_init_spillbelady(void);
 void be_init_ssaconstr(void);
 void be_init_pref_alloc(void);
-void be_init_irgmod(void);
 void be_init_loopana(void);
 void be_init_spillslots(void);
 void be_init_live(void);
@@ -73,7 +72,6 @@ void be_init_modules(void)
 	run_once = true;
 
 	be_init_abi();
-	be_init_irgmod();
 	be_init_loopana();
 	be_init_live();
 	be_init_spillslots();

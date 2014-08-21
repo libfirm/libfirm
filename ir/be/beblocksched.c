@@ -38,9 +38,9 @@
 #include "irtools.h"
 #include "debug.h"
 #include "bearch.h"
-#include "beirgmod.h"
 #include "bemodule.h"
 #include "besched.h"
+#include "beutil.h"
 #include "be.h"
 #include "panic.h"
 

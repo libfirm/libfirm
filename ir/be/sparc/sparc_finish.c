@@ -37,7 +37,7 @@
 #include "besched.h"
 #include "bespillslots.h"
 #include "bestack.h"
-#include "beirgmod.h"
+#include "beutil.h"
 #include "panic.h"
 
 static int get_first_same(const arch_register_req_t *req)
