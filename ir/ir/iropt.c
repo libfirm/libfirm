@@ -4536,6 +4536,29 @@ static ir_node *transform_node_Proj_Store(ir_node *proj)
 	return proj;
 }
 
+static ir_node *transform_node_Proj_Builtin(ir_node *proj)
+{
+	ir_node *builtin = get_Proj_pred(proj);
+	if (get_Builtin_kind(builtin) != ir_bk_saturating_increment)
+		return proj;
+
+	assert(get_Builtin_n_params(builtin) == 1);
+	ir_node *op = get_Builtin_param(builtin, 0);
+	bitinfo *b  = get_bitinfo(op);
+	if (b && !tarval_is_all_one(b->z)) {
+		/* Increment cannot overflow -> use a simple add. */
+		ir_graph  *const irg   = get_irn_irg(proj);
+		dbg_info  *const dbgi  = get_irn_dbg_info(proj);
+		ir_node   *const block = get_nodes_block(proj);
+		ir_mode   *const mode  = get_irn_mode(proj);
+		ir_tarval *const one   = get_mode_one(mode);
+		ir_node   *const c     = new_rd_Const(dbgi, irg, one);
+		return new_rd_Add(dbgi, block, op, c, mode);
+	}
+
+	return proj;
+}
+
 /**
  * Transform a Proj(Div) with a non-zero value.
  * Removes the exceptions and routes the memory to the NoMem node.
@@ -7590,10 +7613,11 @@ void ir_register_opt_node_ops(void)
 	register_transform_node_func(op_Sub,     transform_node_Sub);
 	register_transform_node_func(op_Switch,  transform_node_Switch);
 	register_transform_node_func(op_Sync,    transform_node_Sync);
-	register_transform_node_func_proj(op_Div,   transform_node_Proj_Div);
-	register_transform_node_func_proj(op_Load,  transform_node_Proj_Load);
-	register_transform_node_func_proj(op_Mod,   transform_node_Proj_Mod);
-	register_transform_node_func_proj(op_Store, transform_node_Proj_Store);
+	register_transform_node_func_proj(op_Builtin, transform_node_Proj_Builtin);
+	register_transform_node_func_proj(op_Div,     transform_node_Proj_Div);
+	register_transform_node_func_proj(op_Load,    transform_node_Proj_Load);
+	register_transform_node_func_proj(op_Mod,     transform_node_Proj_Mod);
+	register_transform_node_func_proj(op_Store,   transform_node_Proj_Store);
 }
 
 /* **************** Common Subexpression Elimination **************** */
