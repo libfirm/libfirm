@@ -803,7 +803,7 @@ static void transform_return(ir_node *ret, size_t n_ret_com, wlk_env *env)
 						addr = new_r_Add(block, addr, offset_cnst, mode_ref);
 					}
 					ir_node *load = new_r_Load(block, mem, addr,
-					                           int_return_mode, cons_none);
+					                           int_return_mode, type, cons_none);
 					sync_in[i] = new_r_Proj(load, mode_M, pn_Load_M);
 					new_in[n_in++] = new_r_Proj(load, int_return_mode,
 					                            pn_Load_res);

@@ -79,7 +79,7 @@ static void lower_small_copyb_node(ir_node *irn)
 			ir_node *add        = new_r_Add(block, addr_src, addr_const,
 			                                mode_ref);
 
-			ir_node *load     = new_r_Load(block, mem, add, mode, cons_none);
+			ir_node *load     = new_r_Load(block, mem, add, mode, tp, cons_none);
 			ir_node *load_res = new_r_Proj(load, mode, pn_Load_res);
 			ir_node *load_mem = new_r_Proj(load, mode_M, pn_Load_M);
 

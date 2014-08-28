@@ -352,6 +352,7 @@ static void lower_Load(ir_node *node, ir_mode *mode)
 	ir_graph *irg      = get_irn_irg(node);
 	ir_node  *adr      = get_Load_ptr(node);
 	ir_node  *mem      = get_Load_mem(node);
+	ir_type  *type     = get_Load_type(node);
 	ir_node  *cnst     = new_r_Const(irg, env.tv_mode_bytes);
 	ir_mode  *adr_mode = get_irn_mode(adr);
 	ir_node  *block    = get_nodes_block(node);
@@ -370,9 +371,9 @@ static void lower_Load(ir_node *node, ir_mode *mode)
 		= get_Load_volatility(node) == volatility_is_volatile ? cons_volatile
 		                                                      : cons_none;
 	dbg_info *dbg   = get_irn_dbg_info(node);
-	low             = new_rd_Load(dbg, block, mem,  low,  low_mode, volatility);
+	low             = new_rd_Load(dbg, block, mem,    low,  low_mode, type, volatility);
 	ir_node *proj_m = new_r_Proj(low, mode_M, pn_Load_M);
-	high            = new_rd_Load(dbg, block, proj_m, high, mode, volatility);
+	high            = new_rd_Load(dbg, block, proj_m, high, mode,     type, volatility);
 
 	foreach_out_edge_safe(node, edge) {
 		ir_node *proj = get_edge_src_irn(edge);
@@ -1529,6 +1530,7 @@ transform:
 	ir_node   *cnst        = new_r_Const(irg, env.tv_mode_bytes);
 	ir_node   *low         = addr;
 	ir_node   *high        = new_r_Add(block, addr, cnst, addr_mode);
+	ir_type   *src_type    = get_type_for_mode(src_mode);
 	/* big endian requires different order for lower/higher word */
 	if (env.p.big_endian) {
 		ir_node *tmp = low;
@@ -1548,8 +1550,8 @@ transform:
 		ir_node  *in[]   = { mem0, mem1 };
 		ir_node  *sync   = new_r_Sync(block, ARRAY_SIZE(in), in);
 
-		ir_node  *load   = new_rd_Load(dbgi, block, sync,  addr, dst_mode,
-									   cons_floats);
+		ir_node  *load   = new_rd_Load(dbgi, block, sync,  addr,
+		                               dst_mode, src_type, cons_floats);
 		ir_node  *res    = new_r_Proj(load, dst_mode, pn_Load_res);
 		exchange(node, res);
 	} else {
@@ -1558,11 +1560,11 @@ transform:
 		                                  cons_floats);
 		ir_node *mem       = new_r_Proj(store, mode_M, pn_Store_M);
 		ir_node *load_low  = new_rd_Load(dbgi, block, mem, low,
-		                                 env.p.word_unsigned, cons_floats);
+		                                 env.p.word_unsigned, src_type, cons_floats);
 		ir_node *res_low   = new_r_Proj(load_low, env.p.word_unsigned,
 		                                pn_Load_res);
-		ir_node *load_high = new_rd_Load(dbgi, block, mem, high, mode,
-		                                 cons_floats);
+		ir_node *load_high = new_rd_Load(dbgi, block, mem, high,
+		                                 mode, src_type, cons_floats);
 		ir_node *res_high  = new_r_Proj(load_high, mode, pn_Load_res);
 		ir_set_dw_lowered(node, res_low, res_high);
 	}

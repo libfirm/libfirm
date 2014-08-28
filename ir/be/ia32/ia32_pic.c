@@ -136,8 +136,9 @@ static void fix_pic_addresses(ir_node *node, void *data)
 		/* we need an extra indirection for global data outside our current
 		   module. The loads are always safe and can therefore float
 		   and need no memory input */
+		ir_type *const type = get_entity_type(entity);
 		ir_node *const load
-			= new_r_Load(block, get_irg_no_mem(irg), add, mode, cons_floats);
+			= new_r_Load(block, get_irg_no_mem(irg), add, mode, type, cons_floats);
 		ir_node *const load_res = new_r_Proj(load, mode, pn_Load_res);
 
 		set_irn_n(node, i, load_res);

@@ -57,6 +57,7 @@ struct value_t {
 	ir_node  *address;    /**< the address of this value */
 	ir_node  *value;      /**< the value itself */
 	ir_mode  *mode;       /**< the mode of the value */
+	ir_type  *type;       /**< the type of the value */
 	unsigned id;          /**< address id */
 };
 
@@ -446,6 +447,7 @@ static memop_t *alloc_memop(ir_node *irn)
 	m->value.address = NULL;
 	m->value.value   = NULL;
 	m->value.mode    = NULL;
+	m->value.type    = NULL;
 
 	m->node          = irn;
 	m->mem           = NULL;
@@ -585,6 +587,7 @@ static void update_Load_memop(memop_t *m)
 	ptr = get_Load_ptr(load);
 
 	m->value.address = ptr;
+	m->value.type    = get_Load_type(load);
 
 	foreach_irn_out_r(load, i, proj) {
 		/* beware of keep edges */
@@ -1170,6 +1173,7 @@ static int backward_antic(block_t *bl)
 					new_op->value.address = trans_adr;
 					new_op->value.id      = register_address(trans_adr);
 					new_op->value.mode    = op->value.mode;
+					new_op->value.type    = op->value.type;
 					new_op->node          = op->node; /* we need the node to decide if Load/Store */
 					new_op->flags         = op->flags;
 
@@ -1630,6 +1634,7 @@ static int insert_Load(block_t *bl)
 			}
 			if (have_some && !all_same) {
 				ir_mode *mode = op->value.mode;
+				ir_type *type = op->value.type;
 				ir_node **in  = ALLOCAN(ir_node*, n);
 				ir_node  *phi;
 				memop_t *phi_op;
@@ -1647,7 +1652,7 @@ static int insert_Load(block_t *bl)
 
 						assert(last_mem != NULL);
 						adr  = phi_translate(op->value.address, block, i);
-						load = new_rd_Load(db, pred, last_mem, adr, mode, cons_none);
+						load = new_rd_Load(db, pred, last_mem, adr, mode, type, cons_none);
 						def  = new_r_Proj(load, mode, pn_Load_res);
 						DB((dbg, LEVEL_1, "Created new %+F in %+F for party redundant %+F\n", load, pred, op->node));
 
@@ -1656,6 +1661,7 @@ static int insert_Load(block_t *bl)
 						new_op->value.address = adr;
 						new_op->value.id      = op->value.id;
 						new_op->value.mode    = mode;
+						new_op->value.type    = type;
 						new_op->value.value   = def;
 
 						new_op->projs[pn_Load_M]   = new_op->mem;

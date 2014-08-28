@@ -827,7 +827,7 @@ replace_by_call:
 			mode  = get_type_mode(char_tp);
 
 			/* replace the strcmp by (*x) */
-			irn = new_rd_Load(dbg, block, mem, v, mode, cons_none);
+			irn = new_rd_Load(dbg, block, mem, v, mode, char_tp, cons_none);
 			mem = new_r_Proj(irn, mode_M, pn_Load_M);
 			irn = new_r_Proj(irn, mode, pn_Load_res);
 			if (ir_throws_exception(call)) {

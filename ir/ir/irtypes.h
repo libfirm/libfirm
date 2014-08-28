@@ -264,6 +264,7 @@ typedef struct load_attr {
 	ENUMBF(ir_volatility) volatility:1;   /**< The volatility of this Load operation. */
 	ENUMBF(ir_align)      unaligned:1;    /**< The align attribute of this Load operation. */
 	ir_mode       *mode;          /**< The mode of this Load operation. */
+	ir_type       *type;          /**< The type of the object loaded. */
 } load_attr;
 
 /** Attributes for Store nodes. */

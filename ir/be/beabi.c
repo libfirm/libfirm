@@ -1365,7 +1365,7 @@ static void modify_irg(ir_graph *const irg, be_abi_irg_t *const env)
 				ir_mode *load_mode = arg->load_mode;
 				ir_node *nomem     = get_irg_no_mem(irg);
 
-				ir_node *load = new_r_Load(start_bl, nomem, addr, load_mode, cons_floats);
+				ir_node *load = new_r_Load(start_bl, nomem, addr, load_mode, param_type, cons_floats);
 				repl = new_r_Proj(load, load_mode, pn_Load_res);
 
 				if (mode != load_mode) {

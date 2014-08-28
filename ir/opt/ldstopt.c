@@ -1621,6 +1621,7 @@ static void move_loads_out_of_loops(scc *pscc, loop_env *env)
 			if (!is_Address(ptr))
 				continue;
 			ir_mode *load_mode = get_Load_mode(load);
+			ir_type *load_type = get_Load_type(load);
 			ir_node *other;
 			ir_node *next_other;
 			for (other = pscc->head; other != NULL; other = next_other) {
@@ -1632,7 +1633,6 @@ static void move_loads_out_of_loops(scc *pscc, loop_env *env)
 					ir_node *store_value = get_Store_value(other);
 					ir_type *store_type
 						= get_type_for_mode(get_irn_mode(store_value));
-					ir_type *load_type = get_type_for_mode(load_mode);
 					ir_alias_relation rel
 						= get_alias_relation(store_ptr, store_type, ptr,
 						                     load_type);
@@ -1665,7 +1665,7 @@ static void move_loads_out_of_loops(scc *pscc, loop_env *env)
 					if (res != NULL) {
 						irn = res->load;
 					} else {
-						irn = new_rd_Load(db, pred, get_Phi_pred(phi, pos), ptr, load_mode, cons_none);
+						irn = new_rd_Load(db, pred, get_Phi_pred(phi, pos), ptr, load_mode, load_type, cons_none);
 						entry.load = irn;
 						(void)set_insert(avail_entry_t, avail, &entry, sizeof(entry), hash_cache_entry(&entry));
 						DB((dbg, LEVEL_1, "  Created %+F in %+F\n", irn, pred));

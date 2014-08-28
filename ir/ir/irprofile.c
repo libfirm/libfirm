@@ -222,10 +222,11 @@ static void instrument_block(ir_node *const bb, ir_node *const address, unsigned
 	if (bb == get_irg_end_block(irg))
 		return;
 
+	ir_type *const type_Iu = get_entity_type(get_irn_entity_attr(address));
 	ir_node *const unknown = new_r_Unknown(irg, mode_M);
 	ir_node *const cnst    = new_r_Const_long(irg, mode_Iu, get_mode_size_bytes(mode_Iu) * id);
 	ir_node *const offset  = new_r_Add(bb, address, cnst, mode_P);
-	ir_node *const load    = new_r_Load(bb, unknown, offset, mode_Iu, cons_none);
+	ir_node *const load    = new_r_Load(bb, unknown, offset, mode_Iu, type_Iu, cons_none);
 	ir_node *const lmem    = new_r_Proj(load, mode_M, pn_Load_M);
 	ir_node *const proji   = new_r_Proj(load, mode_Iu, pn_Load_res);
 	ir_node *const one     = new_r_Const_one(irg, mode_Iu);
