@@ -2739,6 +2739,8 @@ static void lower_irg(ir_graph *irg)
 		!(env.flags & MUST_BE_LOWERED) ? IR_GRAPH_PROPERTIES_ALL :
 		env.flags & CF_CHANGED ? IR_GRAPH_PROPERTIES_NONE
 		                       : IR_GRAPH_PROPERTIES_CONTROL_FLOW);
+
+	constbits_clear(irg);
 }
 
 void ir_prepare_dw_lowering(const lwrdw_param_t *params)
