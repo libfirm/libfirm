@@ -20,11 +20,95 @@
 #include "array.h"
 #include "panic.h"
 #include "util.h"
+#include "constbits.h"
+#include "tv.h"
 
 #include "ia32_new_nodes.h"
 #include "bearch_ia32_t.h"
 #include "gen_ia32_regalloc_if.h"
 #include "begnuas.h"
+
+static ir_tarval *bitinfo_max(bitinfo *info)
+{
+	ir_tarval *z    = info->z;
+	ir_tarval *o    = info->o;
+	ir_mode   *mode = get_tarval_mode(z);
+	ir_tarval *min  = get_mode_min(mode);
+
+	assert(get_mode_arithmetic(mode) == irma_twos_complement);
+	return tarval_and(z, tarval_ornot(o, min));
+}
+
+static ir_tarval *bitinfo_min(bitinfo *info)
+{
+	ir_tarval *z    = info->z;
+	ir_tarval *o    = info->o;
+	ir_mode   *mode = get_tarval_mode(z);
+	ir_tarval *min  = get_mode_min(mode);
+
+	assert(get_mode_arithmetic(mode) == irma_twos_complement);
+	return tarval_or(o, tarval_and(z, min));
+}
+
+static bool lower_add_can_carry(ir_node *left, ir_node *right, ir_mode *mode)
+{
+	bitinfo *bi_left = get_bitinfo(left);
+	if (!bi_left) {
+		return true;
+	}
+	bitinfo *bi_right = get_bitinfo(right);
+	// If we have bitinfo for one node, we should also have it for
+	// the other
+	assert(bi_right);
+
+	ir_tarval *lmin   = tarval_convert_to(bitinfo_min(bi_left),  mode);
+	ir_tarval *rmin   = tarval_convert_to(bitinfo_min(bi_right), mode);
+	ir_tarval *lmax   = tarval_convert_to(bitinfo_max(bi_left),  mode);
+	ir_tarval *rmax   = tarval_convert_to(bitinfo_max(bi_right), mode);
+	bool       result = false;
+
+	tarval_int_overflow_mode_t ofm = tarval_get_integer_overflow_mode();
+	tarval_set_integer_overflow_mode(TV_OVERFLOW_BAD);
+
+	if (tarval_add(lmin, rmin) == tarval_bad ||
+	    tarval_add(lmax, rmax) == tarval_bad) {
+		result = true;
+	}
+
+	tarval_set_integer_overflow_mode(ofm);
+
+	return result;
+}
+
+static bool lower_sub_can_borrow(ir_node *left, ir_node *right, ir_mode *mode)
+{
+	bitinfo *bi_left = get_bitinfo(left);
+	if (!bi_left) {
+		return true;
+	}
+	bitinfo *bi_right = get_bitinfo(right);
+	// If we have bitinfo for one node, we should also have it for
+	// the other
+	assert(bi_right);
+
+	ir_tarval *lmin   = tarval_convert_to(bitinfo_min(bi_left),  mode);
+	ir_tarval *rmin   = tarval_convert_to(bitinfo_min(bi_right), mode);
+	ir_tarval *lmax   = tarval_convert_to(bitinfo_max(bi_left),  mode);
+	ir_tarval *rmax   = tarval_convert_to(bitinfo_max(bi_right), mode);
+	bool       result = false;
+
+	tarval_int_overflow_mode_t ofm = tarval_get_integer_overflow_mode();
+	tarval_set_integer_overflow_mode(TV_OVERFLOW_BAD);
+
+	if (tarval_sub(lmin, rmax, NULL) == tarval_bad ||
+	    tarval_sub(lmax, rmin, NULL) == tarval_bad) {
+		result = true;
+	}
+
+	tarval_set_integer_overflow_mode(ofm);
+
+	return result;
+}
 
 /**
  * lower 64bit addition: an 32bit add for the lower parts, an add with
@@ -40,18 +124,27 @@ static void ia32_lower_add64(ir_node *node, ir_mode *mode)
 	ir_node  *left_high  = get_lowered_high(left);
 	ir_node  *right_low  = get_lowered_low(right);
 	ir_node  *right_high = get_lowered_high(right);
+	ir_mode  *low_mode   = get_irn_mode(left_low);
 
-	/* l_res = a_l + b_l */
-	ir_node  *add_low
-		= new_bd_ia32_l_Add(dbg, block, left_low, right_low);
-	ir_mode  *mode_flags = ia32_reg_classes[CLASS_ia32_flags].mode;
-	ir_node  *res_low    = new_r_Proj(add_low, ia32_mode_gp, pn_ia32_l_Add_res);
-	ir_node  *flags      = new_r_Proj(add_low, mode_flags, pn_ia32_l_Add_flags);
+	assert(get_irn_mode(left_low)  == get_irn_mode(right_low));
+	assert(get_irn_mode(left_high) == get_irn_mode(right_high));
 
-	/* h_res = a_h + b_h + carry */
-	ir_node  *add_high
-		= new_bd_ia32_l_Adc(dbg, block, left_high, right_high, flags, mode);
-	ir_set_dw_lowered(node, res_low, add_high);
+	if (!lower_add_can_carry(left, right, low_mode)) {
+		ir_node *add_low  = new_rd_Add(dbg, block, left_low,  right_low, low_mode);
+		ir_node *add_high = new_rd_Add(dbg, block, left_high, right_high, get_irn_mode(left_high));
+		ir_set_dw_lowered(node, add_low, add_high);
+	} else {
+		/* l_res = a_l + b_l */
+		ir_node  *add_low    = new_bd_ia32_l_Add(dbg, block, left_low, right_low);
+		ir_mode  *mode_flags = ia32_reg_classes[CLASS_ia32_flags].mode;
+		ir_node  *res_low    = new_r_Proj(add_low, ia32_mode_gp, pn_ia32_l_Add_res);
+		ir_node  *flags      = new_r_Proj(add_low, mode_flags, pn_ia32_l_Add_flags);
+
+		/* h_res = a_h + b_h + carry */
+		ir_node  *add_high
+			= new_bd_ia32_l_Adc(dbg, block, left_high, right_high, flags, mode);
+		ir_set_dw_lowered(node, res_low, add_high);
+	}
 }
 
 /**
@@ -68,18 +161,27 @@ static void ia32_lower_sub64(ir_node *node, ir_mode *mode)
 	ir_node  *left_high  = get_lowered_high(left);
 	ir_node  *right_low  = get_lowered_low(right);
 	ir_node  *right_high = get_lowered_high(right);
+	ir_mode  *low_mode   = get_irn_mode(left_low);
 
-	/* l_res = a_l - b_l */
-	ir_node  *sub_low
-		= new_bd_ia32_l_Sub(dbg, block, left_low, right_low);
-	ir_mode  *mode_flags = ia32_reg_classes[CLASS_ia32_flags].mode;
-	ir_node  *res_low    = new_r_Proj(sub_low, ia32_mode_gp, pn_ia32_l_Sub_res);
-	ir_node  *flags      = new_r_Proj(sub_low, mode_flags, pn_ia32_l_Sub_flags);
+	assert(get_irn_mode(left_low)  == get_irn_mode(right_low));
+	assert(get_irn_mode(left_high) == get_irn_mode(right_high));
 
-	/* h_res = a_h - b_h - carry */
-	ir_node  *sub_high
-		= new_bd_ia32_l_Sbb(dbg, block, left_high, right_high, flags, mode);
-	ir_set_dw_lowered(node, res_low, sub_high);
+	if (!lower_sub_can_borrow(left, right, low_mode)) {
+		ir_node *sub_low  = new_rd_Sub(dbg, block, left_low,  right_low, low_mode);
+		ir_node *sub_high = new_rd_Sub(dbg, block, left_high, right_high, get_irn_mode(left_high));
+		ir_set_dw_lowered(node, sub_low, sub_high);
+	} else {
+		/* l_res = a_l - b_l */
+		ir_node  *sub_low    = new_bd_ia32_l_Sub(dbg, block, left_low, right_low);
+		ir_mode  *mode_flags = ia32_reg_classes[CLASS_ia32_flags].mode;
+		ir_node  *res_low    = new_r_Proj(sub_low, ia32_mode_gp, pn_ia32_l_Sub_res);
+		ir_node  *flags      = new_r_Proj(sub_low, mode_flags, pn_ia32_l_Sub_flags);
+
+		/* h_res = a_h - b_h - carry */
+		ir_node  *sub_high
+			= new_bd_ia32_l_Sbb(dbg, block, left_high, right_high, flags, mode);
+		ir_set_dw_lowered(node, res_low, sub_high);
+	}
 }
 
 /**

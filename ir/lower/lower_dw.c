@@ -16,6 +16,7 @@
 
 #include "array.h"
 #include "be.h"
+#include "constbits.h"
 #include "dbginfo_t.h"
 #include "debug.h"
 #include "firmstat.h"
@@ -2678,6 +2679,8 @@ static void clear_node_and_phi_links(ir_node *node, void *data)
 
 static void lower_irg(ir_graph *irg)
 {
+	constbits_analyze(irg);
+
 	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
 
 	/* just here for debugging */
