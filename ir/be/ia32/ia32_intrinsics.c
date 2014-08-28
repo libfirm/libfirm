@@ -28,6 +28,12 @@
 #include "gen_ia32_regalloc_if.h"
 #include "begnuas.h"
 
+typedef enum {
+	no_carry = 0,
+	can_carry,
+	must_carry
+} carry_result;
+
 static ir_tarval *bitinfo_max(bitinfo *info)
 {
 	ir_tarval *z    = info->z;
@@ -50,8 +56,10 @@ static ir_tarval *bitinfo_min(bitinfo *info)
 	return tarval_or(o, tarval_and(z, min));
 }
 
-static bool lower_add_can_carry(ir_node *left, ir_node *right, ir_mode *mode)
+static carry_result lower_add_carry(ir_node *left, ir_node *right, ir_mode *mode)
 {
+	assert(!mode_is_signed(mode));
+
 	bitinfo *bi_left = get_bitinfo(left);
 	if (!bi_left) {
 		return true;
@@ -61,18 +69,20 @@ static bool lower_add_can_carry(ir_node *left, ir_node *right, ir_mode *mode)
 	// the other
 	assert(bi_right);
 
-	ir_tarval *lmin   = tarval_convert_to(bitinfo_min(bi_left),  mode);
-	ir_tarval *rmin   = tarval_convert_to(bitinfo_min(bi_right), mode);
-	ir_tarval *lmax   = tarval_convert_to(bitinfo_max(bi_left),  mode);
-	ir_tarval *rmax   = tarval_convert_to(bitinfo_max(bi_right), mode);
-	bool       result = false;
+	ir_tarval    *lmin   = tarval_convert_to(bitinfo_min(bi_left),  mode);
+	ir_tarval    *rmin   = tarval_convert_to(bitinfo_min(bi_right), mode);
+	ir_tarval    *lmax   = tarval_convert_to(bitinfo_max(bi_left),  mode);
+	ir_tarval    *rmax   = tarval_convert_to(bitinfo_max(bi_right), mode);
+	carry_result  result = no_carry;
 
 	tarval_int_overflow_mode_t ofm = tarval_get_integer_overflow_mode();
 	tarval_set_integer_overflow_mode(TV_OVERFLOW_BAD);
 
-	if (tarval_add(lmin, rmin) == tarval_bad ||
-	    tarval_add(lmax, rmax) == tarval_bad) {
-		result = true;
+	if (tarval_add(lmax, rmax) == tarval_bad) {
+		result = can_carry;
+		if (tarval_add(lmin, rmin) == tarval_bad) {
+			result = must_carry;
+		}
 	}
 
 	tarval_set_integer_overflow_mode(ofm);
@@ -80,8 +90,10 @@ static bool lower_add_can_carry(ir_node *left, ir_node *right, ir_mode *mode)
 	return result;
 }
 
-static bool lower_sub_can_borrow(ir_node *left, ir_node *right, ir_mode *mode)
+static carry_result lower_sub_borrow(ir_node *left, ir_node *right, ir_mode *mode)
 {
+	assert(!mode_is_signed(mode));
+
 	bitinfo *bi_left = get_bitinfo(left);
 	if (!bi_left) {
 		return true;
@@ -91,18 +103,20 @@ static bool lower_sub_can_borrow(ir_node *left, ir_node *right, ir_mode *mode)
 	// the other
 	assert(bi_right);
 
-	ir_tarval *lmin   = tarval_convert_to(bitinfo_min(bi_left),  mode);
-	ir_tarval *rmin   = tarval_convert_to(bitinfo_min(bi_right), mode);
-	ir_tarval *lmax   = tarval_convert_to(bitinfo_max(bi_left),  mode);
-	ir_tarval *rmax   = tarval_convert_to(bitinfo_max(bi_right), mode);
-	bool       result = false;
+	ir_tarval    *lmin   = tarval_convert_to(bitinfo_min(bi_left),  mode);
+	ir_tarval    *rmin   = tarval_convert_to(bitinfo_min(bi_right), mode);
+	ir_tarval    *lmax   = tarval_convert_to(bitinfo_max(bi_left),  mode);
+	ir_tarval    *rmax   = tarval_convert_to(bitinfo_max(bi_right), mode);
+	carry_result  result = no_carry;
 
 	tarval_int_overflow_mode_t ofm = tarval_get_integer_overflow_mode();
 	tarval_set_integer_overflow_mode(TV_OVERFLOW_BAD);
 
-	if (tarval_sub(lmin, rmax, NULL) == tarval_bad ||
-	    tarval_sub(lmax, rmin, NULL) == tarval_bad) {
-		result = true;
+	if (tarval_sub(lmin, rmax, NULL) == tarval_bad) {
+		result = can_carry;
+		if (tarval_sub(lmax, rmin, NULL) == tarval_bad) {
+			result = must_carry;
+		}
 	}
 
 	tarval_set_integer_overflow_mode(ofm);
@@ -112,26 +126,48 @@ static bool lower_sub_can_borrow(ir_node *left, ir_node *right, ir_mode *mode)
 
 /**
  * lower 64bit addition: an 32bit add for the lower parts, an add with
- * carry for the higher parts.
+ * carry for the higher parts. If the carry's value is known, fold it
+ * into the upper add.
  */
 static void ia32_lower_add64(ir_node *node, ir_mode *mode)
 {
-	dbg_info *dbg        = get_irn_dbg_info(node);
-	ir_node  *block      = get_nodes_block(node);
-	ir_node  *left       = get_Add_left(node);
-	ir_node  *right      = get_Add_right(node);
-	ir_node  *left_low   = get_lowered_low(left);
-	ir_node  *left_high  = get_lowered_high(left);
-	ir_node  *right_low  = get_lowered_low(right);
-	ir_node  *right_high = get_lowered_high(right);
-	ir_mode  *low_mode   = get_irn_mode(left_low);
+	dbg_info     *dbg        = get_irn_dbg_info(node);
+	ir_node      *block      = get_nodes_block(node);
+	ir_node      *left       = get_Add_left(node);
+	ir_node      *right      = get_Add_right(node);
+	ir_node      *left_low   = get_lowered_low(left);
+	ir_node      *left_high  = get_lowered_high(left);
+	ir_node      *right_low  = get_lowered_low(right);
+	ir_node      *right_high = get_lowered_high(right);
+	ir_mode      *low_mode   = get_irn_mode(left_low);
+	ir_mode      *high_mode  = get_irn_mode(left_high);
+	carry_result  cr         = lower_add_carry(left, right, low_mode);
 
 	assert(get_irn_mode(left_low)  == get_irn_mode(right_low));
 	assert(get_irn_mode(left_high) == get_irn_mode(right_high));
 
-	if (!lower_add_can_carry(left, right, low_mode)) {
+	if (cr == no_carry) {
 		ir_node *add_low  = new_rd_Add(dbg, block, left_low,  right_low, low_mode);
-		ir_node *add_high = new_rd_Add(dbg, block, left_high, right_high, get_irn_mode(left_high));
+		ir_node *add_high = new_rd_Add(dbg, block, left_high, right_high, high_mode);
+		ir_set_dw_lowered(node, add_low, add_high);
+	} else if (cr == must_carry && (is_Const(left_high) || is_Const(right_high))) {
+		// We cannot assume that left_high and right_high form a normalized Add.
+		ir_node *constant;
+		ir_node *other;
+
+		if (is_Const(left_high)) {
+			constant = left_high;
+			other    = right_high;
+		} else {
+			constant = right_high;
+			other    = left_high;
+		}
+
+		ir_graph *irg            = get_irn_irg(right_high);
+		ir_node  *one            = new_rd_Const(dbg, irg, get_mode_one(high_mode));
+		ir_node  *const_plus_one = new_rd_Add(dbg, block, constant, one, high_mode);
+		ir_node  *add_high       = new_rd_Add(dbg, block, other, const_plus_one, high_mode);
+		ir_node  *add_low        = new_rd_Add(dbg, block, left_low, right_low, low_mode);
 		ir_set_dw_lowered(node, add_low, add_high);
 	} else {
 		/* l_res = a_l + b_l */
@@ -148,27 +184,47 @@ static void ia32_lower_add64(ir_node *node, ir_mode *mode)
 }
 
 /**
- * lower 64bit subtraction: a 32bit sub for the lower parts, a sub borrow
- * for the higher parts.
+ * lower 64bit subtraction: a 32bit sub for the lower parts, a sub
+ * with borrow for the higher parts. If the borrow's value is known,
+ * fold it into the upper sub.
  */
 static void ia32_lower_sub64(ir_node *node, ir_mode *mode)
 {
-	dbg_info *dbg        = get_irn_dbg_info(node);
-	ir_node  *block      = get_nodes_block(node);
-	ir_node  *left       = get_Sub_left(node);
-	ir_node  *right      = get_Sub_right(node);
-	ir_node  *left_low   = get_lowered_low(left);
-	ir_node  *left_high  = get_lowered_high(left);
-	ir_node  *right_low  = get_lowered_low(right);
-	ir_node  *right_high = get_lowered_high(right);
-	ir_mode  *low_mode   = get_irn_mode(left_low);
+	dbg_info     *dbg        = get_irn_dbg_info(node);
+	ir_node      *block      = get_nodes_block(node);
+	ir_node      *left       = get_Sub_left(node);
+	ir_node      *right      = get_Sub_right(node);
+	ir_node      *left_low   = get_lowered_low(left);
+	ir_node      *left_high  = get_lowered_high(left);
+	ir_node      *right_low  = get_lowered_low(right);
+	ir_node      *right_high = get_lowered_high(right);
+	ir_mode      *low_mode   = get_irn_mode(left_low);
+	ir_mode      *high_mode  = get_irn_mode(left_high);
+	carry_result  cr         = lower_sub_borrow(left, right, low_mode);
 
 	assert(get_irn_mode(left_low)  == get_irn_mode(right_low));
 	assert(get_irn_mode(left_high) == get_irn_mode(right_high));
 
-	if (!lower_sub_can_borrow(left, right, low_mode)) {
+	if (cr == no_carry) {
 		ir_node *sub_low  = new_rd_Sub(dbg, block, left_low,  right_low, low_mode);
-		ir_node *sub_high = new_rd_Sub(dbg, block, left_high, right_high, get_irn_mode(left_high));
+		ir_node *sub_high = new_rd_Sub(dbg, block, left_high, right_high, high_mode);
+		ir_set_dw_lowered(node, sub_low, sub_high);
+	} else if (cr == must_carry && (is_Const(left_high) || is_Const(right_high))) {
+		ir_node  *sub_high;
+		ir_graph *irg        = get_irn_irg(right_high);
+		ir_node  *one        = new_rd_Const(dbg, irg, get_mode_one(high_mode));
+
+		if (is_Const(right_high)) {
+			ir_node *new_const = new_rd_Add(dbg, block, right_high, one, high_mode);
+			sub_high = new_rd_Sub(dbg, block, left_high, new_const, high_mode);
+		} else if (is_Const(left_high)) {
+			ir_node *new_const = new_rd_Sub(dbg, block, left_high, one, high_mode);
+			sub_high = new_rd_Sub(dbg, block, new_const, right_high, high_mode);
+		} else {
+			panic("Logic error. This should never happen.");
+		}
+
+		ir_node  *sub_low  = new_rd_Sub(dbg, block, left_low, right_low, low_mode);
 		ir_set_dw_lowered(node, sub_low, sub_high);
 	} else {
 		/* l_res = a_l - b_l */
