@@ -721,7 +721,8 @@ void constbits_analyze(ir_graph *const irg)
 	DB((dbg, LEVEL_1,
 	    "===> Performing constant propagation on %+F (analysis)\n", irg));
 
-	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
+	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES
+	                         | IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 	ir_reserve_resources(irg, IR_RESOURCE_PHI_LIST);
 
 	obstack_init(&irg->bitinfo.obst);
