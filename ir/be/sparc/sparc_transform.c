@@ -2473,6 +2473,54 @@ static ir_node *gen_Proj_Builtin(ir_node *proj)
 }
 
 /**
+ * Transform Bitcast node.
+ */
+static ir_node *gen_Bitcast(ir_node *node)
+{
+	ir_mode  *dst_mode  = get_irn_mode(node);
+	ir_node  *op        = get_Bitcast_op(node);
+	ir_mode  *src_mode  = get_irn_mode(op);
+	ir_node  *new_op    = be_transform_node(op);
+	dbg_info *dbgi      = get_irn_dbg_info(node);
+	ir_node  *block     = get_nodes_block(node);
+	ir_node  *new_block = be_transform_node(block);
+	ir_graph *irg       = get_irn_irg(new_block);
+	ir_node  *sp        = get_irg_frame(irg);
+	ir_node  *nomem     = get_irg_no_mem(irg);
+
+	switch (get_mode_arithmetic(src_mode)) {
+	case irma_twos_complement: {
+		assert(get_mode_arithmetic(dst_mode) == irma_ieee754);
+
+		ir_node *st  = new_bd_sparc_St_imm(dbgi, new_block, new_op, sp, nomem,
+		                                   src_mode, NULL, 0, true);
+		arch_add_irn_flags(st, arch_irn_flag_spill);
+		ir_node *ldf = create_ldf(dbgi, new_block, sp, st, dst_mode, NULL, 0,
+		                          true);
+		ir_node *res = new_r_Proj(ldf, dst_mode, pn_sparc_Ldf_res);
+		set_irn_pinned(st, op_pin_state_floats);
+		set_irn_pinned(ldf, op_pin_state_floats);
+		return res;
+	}
+	case irma_ieee754: {
+		assert(get_mode_arithmetic(dst_mode) == irma_twos_complement);
+
+		ir_node *stf = create_stf(dbgi, new_block, new_op, sp, nomem, src_mode,
+		                          NULL, 0, true);
+		arch_add_irn_flags(stf, arch_irn_flag_spill);
+		ir_node *ld  = new_bd_sparc_Ld_imm(dbgi, new_block, sp, stf, dst_mode,
+		                                   NULL, 0, true);
+		ir_node *res = new_r_Proj(ld, dst_mode, pn_sparc_Ld_res);
+		set_irn_pinned(stf, op_pin_state_floats);
+		set_irn_pinned(ld, op_pin_state_floats);
+		return res;
+	}
+	default:
+		panic("sparc: unexpected src mode in Bitcast");
+	}
+}
+
+/**
  * Transform a Proj from a Load.
  */
 static ir_node *gen_Proj_Load(ir_node *node)
@@ -2752,6 +2800,7 @@ static void sparc_register_transformers(void)
 	be_set_transform_function(op_Alloc,        gen_Alloc);
 	be_set_transform_function(op_And,          gen_And);
 	be_set_transform_function(op_Builtin,      gen_Builtin);
+	be_set_transform_function(op_Bitcast,      gen_Bitcast);
 	be_set_transform_function(op_Call,         gen_Call);
 	be_set_transform_function(op_Cmp,          gen_Cmp);
 	be_set_transform_function(op_Cond,         gen_Cond);
