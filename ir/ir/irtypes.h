@@ -270,6 +270,7 @@ typedef struct load_attr {
 /** Attributes for Store nodes. */
 typedef struct store_attr {
 	except_attr   exc;            /**< the exception attribute. MUST be the first one. */
+	ir_type       *type;          /**< The type of the object stored at the node's address. */
 	ENUMBF(ir_volatility) volatility:1;   /**< The volatility of this Store operation. */
 	ENUMBF(ir_align)      unaligned:1;    /**< The align attribute of this Store operation. */
 } store_attr;

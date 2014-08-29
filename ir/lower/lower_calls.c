@@ -637,8 +637,9 @@ static void fix_int_return(const cl_entry *entry, ir_node *base_addr,
 			addr = new_r_Add(block, addr, offset_cnst, mode_ref);
 		}
 		ir_node *const value     = new_r_Proj(proj_res, int_return_mode, pn+i);
+		ir_type *const type      = get_method_res_type(get_Call_type(call), 0);
 		ir_node *const store     = new_r_Store(block, proj_mem, addr, value,
-		                                       cons_none);
+		                                       type, cons_none);
 		ir_node *const store_mem = new_r_Proj(store, mode_M, pn_Store_M);
 		sync_in[i] = store_mem;
 	}

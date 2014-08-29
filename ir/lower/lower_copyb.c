@@ -88,7 +88,7 @@ static void lower_small_copyb_node(ir_node *irn)
 			                                 mode_ref);
 
 			ir_node *store     = new_r_Store(block, load_mem, add2, load_res,
-			                                 cons_none);
+			                                 tp, cons_none);
 			ir_node *store_mem = new_r_Proj(store, mode_M, pn_Store_M);
 
 			mem = store_mem;

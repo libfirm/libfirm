@@ -417,6 +417,7 @@ static void lower_Store(ir_node *node, ir_mode *mode)
 	ir_graph *irg      = get_irn_irg(node);
 	ir_node  *adr      = get_Store_ptr(node);
 	ir_node  *mem      = get_Store_mem(node);
+	ir_type  *type     = get_Store_type(node);
 	ir_node  *block    = get_nodes_block(node);
 	ir_node  *cnst     = new_r_Const(irg, env.tv_mode_bytes);
 	ir_mode  *adr_mode = get_irn_mode(adr);
@@ -435,9 +436,9 @@ static void lower_Store(ir_node *node, ir_mode *mode)
 		= get_Store_volatility(node) == volatility_is_volatile ? cons_volatile
 		                                                       : cons_none;
 	dbg_info *dbg   = get_irn_dbg_info(node);
-	low = new_rd_Store(dbg, block, mem, low,  entry->low_word, volatility);
+	low = new_rd_Store(dbg, block, mem, low,  entry->low_word, type, volatility);
 	ir_node *proj_m = new_r_Proj(low, mode_M, pn_Store_M);
-	high = new_rd_Store(dbg, block, proj_m, high, entry->high_word, volatility);
+	high = new_rd_Store(dbg, block, proj_m, high, entry->high_word, type, volatility);
 
 	foreach_out_edge_safe(node, edge) {
 		ir_node *proj = get_edge_src_irn(edge);
@@ -1542,10 +1543,10 @@ transform:
 		const lower64_entry_t *entry = get_node_entry(op);
 
 		ir_node  *store0 = new_rd_Store(dbgi, block, nomem, high,
-		                                entry->high_word, cons_floats);
+		                                entry->high_word, src_type, cons_floats);
 		ir_node  *mem0   = new_r_Proj(store0, mode_M, pn_Store_M);
 		ir_node  *store1 = new_rd_Store(dbgi, block, nomem, low,
-		                                entry->low_word, cons_floats);
+		                                entry->low_word, src_type, cons_floats);
 		ir_node  *mem1   = new_r_Proj(store1, mode_M, pn_Store_M);
 		ir_node  *in[]   = { mem0, mem1 };
 		ir_node  *sync   = new_r_Sync(block, ARRAY_SIZE(in), in);
@@ -1557,7 +1558,7 @@ transform:
 	} else {
 		assert(needs_lowering(dst_mode));
 		ir_node *store     = new_rd_Store(dbgi, block, nomem, addr, op,
-		                                  cons_floats);
+		                                  src_type, cons_floats);
 		ir_node *mem       = new_r_Proj(store, mode_M, pn_Store_M);
 		ir_node *load_low  = new_rd_Load(dbgi, block, mem, low,
 		                                 env.p.word_unsigned, src_type, cons_floats);

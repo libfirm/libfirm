@@ -1249,6 +1249,7 @@ static changes_t optimize_phi(ir_node *phi, walk_env_t *wenv)
 	ir_node **projMs = ALLOCAN(ir_node*, n);
 	ir_node **inM    = ALLOCAN(ir_node*, n);
 	ir_node **inD    = ALLOCAN(ir_node*, n);
+	ir_type  *type   = NULL;
 	int      *idx    = ALLOCAN(int, n);
 
 	/* Prepare: Collect all Store nodes.  We must do this
@@ -1264,6 +1265,12 @@ static changes_t optimize_phi(ir_node *phi, walk_env_t *wenv)
 		inM[i] = get_Store_mem(store);
 		inD[i] = get_Store_value(store);
 		idx[i] = info->exc_idx;
+
+		if (i == n-1) {
+			type = get_Store_type(store);
+		} else {
+			assert(type == get_Store_type(store));
+		}
 	}
 
 	/* second step: remove keep edge from old Phi and create a new memory Phi */
@@ -1274,7 +1281,7 @@ static changes_t optimize_phi(ir_node *phi, walk_env_t *wenv)
 	ir_node *phiD = new_r_Phi(phi_block, n, inD, mode);
 
 	/* fourth step: create the Store */
-	store = new_r_Store(phi_block, phiM, ptr, phiD, cons_none);
+	store = new_r_Store(phi_block, phiM, ptr, phiD, type, cons_none);
 	projM = new_r_Proj(store, mode_M, pn_Store_M);
 
 	/* rewire memory and kill the old nodes */
@@ -2103,6 +2110,24 @@ again:;
 					continue;
 			}
 
+			/* Combine types if necessary */
+			ir_type *type0 = get_Store_type(store0);
+			ir_type *type1 = get_Store_type(store1);
+			ir_type *type;
+			if (type0 != type1) {
+				/* Construct an anonymous struct type
+				 * for the combined Store.
+				 */
+				ident *struct_id = id_unique("__combined_Store_%u");
+				type = new_type_struct(struct_id);
+				ident *member0_id = id_unique("__Store_part_%u");
+				new_entity(type, member0_id, type0);
+				ident *member1_id = id_unique("__Store_part_%u");
+				new_entity(type, member1_id, type1);
+			} else {
+				type = type0;
+			}
+
 			/* combine values */
 			dbg_info *dbgi   = get_irn_dbg_info(store0);
 			ir_node  *block  = get_nodes_block(store0);
@@ -2121,7 +2146,7 @@ again:;
 			 || get_irn_pinned(store1) == op_pin_state_floats)
 				flags |= cons_floats;
 			ir_node *new_store
-				= new_rd_Store(dbgi, block, mem, store_ptr0, or, flags);
+				= new_rd_Store(dbgi, block, mem, store_ptr0, or, type, flags);
 			exchange(store0, new_store);
 			exchange(store1, new_store);
 			new_in[i] = pred0;

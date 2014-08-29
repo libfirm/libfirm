@@ -327,6 +327,7 @@ static void create_stores_for_type(ir_graph *irg, ir_type *type)
 	 * (The ones passed on the stack have been moved to the arg type) */
 	for (i = 0; i < n; ++i) {
 		ir_entity *entity = get_compound_member(type, i);
+		ir_type   *tp     = get_entity_type(entity);
 		ir_node   *addr;
 		size_t     arg;
 		if (!is_parameter_entity(entity))
@@ -342,7 +343,7 @@ static void create_stores_for_type(ir_graph *irg, ir_type *type)
 			ir_node *val0      = new_r_Proj(args, mode, arg);
 			ir_node *val1      = new_r_Proj(args, mode, arg+1);
 			ir_node *store0    = new_r_Store(start_block, mem, addr, val0,
-			                                 cons_none);
+			                                 tp, cons_none);
 			ir_node *mem0      = new_r_Proj(store0, mode_M, pn_Store_M);
 			size_t   offset    = get_mode_size_bits(mode)/8;
 			ir_mode *mode_ref  = get_irn_mode(addr);
@@ -350,15 +351,14 @@ static void create_stores_for_type(ir_graph *irg, ir_type *type)
 			ir_node *cnst      = new_r_Const_long(irg, mode_offs, offset);
 			ir_node *next_addr = new_r_Add(start_block, addr, cnst, mode_ref);
 			ir_node *store1    = new_r_Store(start_block, mem0, next_addr, val1,
-			                                 cons_none);
+			                                 tp, cons_none);
 			mem = new_r_Proj(store1, mode_M, pn_Store_M);
 			if (first_store == NULL)
 				first_store = store0;
 		} else {
-			ir_type *tp    = get_entity_type(entity);
 			ir_mode *mode  = is_compound_type(tp) ? mode_P : get_type_mode(tp);
 			ir_node *val   = new_r_Proj(args, mode, arg);
-			ir_node *store = new_r_Store(start_block, mem, addr, val, cons_none);
+			ir_node *store = new_r_Store(start_block, mem, addr, val, tp, cons_none);
 			mem = new_r_Proj(store, mode_M, pn_Store_M);
 			if (first_store == NULL)
 				first_store = store;

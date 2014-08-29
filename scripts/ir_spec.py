@@ -804,6 +804,8 @@ class Store:
 	pinned_init = "flags & cons_floats ? op_pin_state_floats : op_pin_state_pinned"
 	throws_init = "(flags & cons_throws_exception) != 0"
 	attrs = [
+                Attribute("type", type="ir_type*",
+                          comment="The type of the object which is stored at ptr (need not match with value's type)"),
 		Attribute("volatility", type="ir_volatility",
 		          init="flags & cons_volatile ? volatility_is_volatile : volatility_non_volatile",
 		          to_flags="%s == volatility_is_volatile ? cons_volatile : cons_none",

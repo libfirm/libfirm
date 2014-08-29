@@ -315,7 +315,7 @@ static void copy_parameter_entities(ir_node *call, ir_graph *called_graph)
 			}
 		} else {
 			/* Store the parameter onto the frame */
-			ir_node *store = new_rd_Store(dbgi, block, call_mem, sel, param, cons_none);
+			ir_node *store = new_rd_Store(dbgi, block, call_mem, sel, param, old_type, cons_none);
 			new_mem = new_r_Proj(store, mode_M, pn_Store_M);
 			ARR_APP1(ir_node*, sync_mem, new_mem);
 		}

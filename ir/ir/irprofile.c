@@ -231,7 +231,7 @@ static void instrument_block(ir_node *const bb, ir_node *const address, unsigned
 	ir_node *const proji   = new_r_Proj(load, mode_Iu, pn_Load_res);
 	ir_node *const one     = new_r_Const_one(irg, mode_Iu);
 	ir_node *const add     = new_r_Add(bb, proji, one, mode_Iu);
-	ir_node *const store   = new_r_Store(bb, lmem, offset, add, cons_none);
+	ir_node *const store   = new_r_Store(bb, lmem, offset, add, type_Iu, cons_none);
 	ir_node *const smem    = new_r_Proj(store, mode_M, pn_Store_M);
 
 	set_irn_link(bb, smem);

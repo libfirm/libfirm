@@ -302,6 +302,7 @@ void dump_irnode_to_file(FILE *const F, const ir_node *const n)
 		fprintf(F, "  align: %s\n", get_align_name(get_Load_unaligned(n)));
 		break;
 	case iro_Store:
+		ir_fprintf(F, "  type of object stored to: %+F\n", get_Store_type(n));
 		fprintf(F, "  volatility: %s\n", get_volatility_name(get_Store_volatility(n)));
 		fprintf(F, "  align: %s\n", get_align_name(get_Store_unaligned(n)));
 		break;

@@ -409,7 +409,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 			if (is_atomic_type(param_type)) {
 				ir_node *nomem     = get_irg_no_mem(irg);
 				ir_node *mem_input = nomem;
-				ir_node *store     = new_rd_Store(dbgi, bl, mem_input, addr, param, cons_none);
+				ir_node *store     = new_rd_Store(dbgi, bl, mem_input, addr, param, param_type, cons_none);
 				mem   = new_r_Proj(store, mode_M, pn_Store_M);
 			} else {
 				/* Make a mem copy for compound arguments. */
