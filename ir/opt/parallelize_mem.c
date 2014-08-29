@@ -464,7 +464,8 @@ static void eliminate_sync_edges(ir_graph *irg)
 
 void opt_parallelize_mem(ir_graph *irg)
 {
-	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
+	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES
+	                           | IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 	irg_walk_blkwise_dom_top_down(irg, NULL, walker, NULL);
 	eliminate_sync_edges(irg);
 	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_CONTROL_FLOW);
