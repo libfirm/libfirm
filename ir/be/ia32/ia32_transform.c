@@ -3571,7 +3571,7 @@ static ir_node *gen_Mux(ir_node *node)
 			ir_node    *val_true  = mux_true;
 			ir_node    *val_false = mux_false;
 
-			if (is_Const(val_true) && is_Const_null(val_true)) {
+			if (is_Const_0(val_true)) {
 				ir_node *tmp = val_false;
 				val_false = val_true;
 				val_true  = tmp;
