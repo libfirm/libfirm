@@ -78,6 +78,7 @@ typedef enum typetag_t {
 	tt_initializer,
 	tt_keyword,
 	tt_linkage,
+	tt_loop,
 	tt_mode_arithmetic,
 	tt_pin_state,
 	tt_segment,
@@ -204,6 +205,9 @@ static void symtbl_init(void)
 	INSERT(tt_linkage, "garbage_collect", IR_LINKAGE_GARBAGE_COLLECT);
 	INSERT(tt_linkage, "merge", IR_LINKAGE_MERGE);
 	INSERT(tt_linkage, "hidden_user", IR_LINKAGE_HIDDEN_USER);
+
+	INSERT(tt_loop, "loop",   true);
+	INSERT(tt_loop, "noloop", false);
 
 	INSERT(tt_visibility, "local", ir_visibility_local);
 	INSERT(tt_visibility, "external", ir_visibility_external);
@@ -449,6 +453,11 @@ static void write_relation(write_env_t *env, ir_relation relation)
 static void write_throws(write_env_t *env, bool throws)
 {
 	write_symbol(env, throws ? "throw" : "nothrow");
+}
+
+static void write_loop(write_env_t *env, bool loop)
+{
+	write_symbol(env, loop ? "loop" : "noloop");
 }
 
 static void write_list_begin(write_env_t *env)
@@ -861,6 +870,7 @@ static void write_Phi(write_env_t *env, const ir_node *node)
 	write_node_nr(env, node);
 	write_node_ref(env, get_nodes_block(node));
 	write_mode_ref(env, get_irn_mode(node));
+	write_loop(env, get_Phi_loop(node));
 	write_pred_refs(env, node, 0);
 }
 
@@ -1462,6 +1472,7 @@ static const char *get_typetag_name(typetag_t typetag)
 	case tt_initializer:         return "initializer kind";
 	case tt_keyword:             return "keyword";
 	case tt_linkage:             return "linkage";
+	case tt_loop:                return "loop";
 	case tt_mode_arithmetic:     return "mode_arithmetic";
 	case tt_pin_state:           return "pin state";
 	case tt_segment:             return "segment";
@@ -1544,6 +1555,11 @@ static ir_volatility read_volatility(read_env_t *env)
 static bool read_throws(read_env_t *env)
 {
 	return (bool)read_enum(env, tt_throws);
+}
+
+static bool read_loop(read_env_t *env)
+{
+	return (bool)read_enum(env, tt_loop);
 }
 
 static keyword_t read_keyword(read_env_t *env)
@@ -2004,9 +2020,11 @@ static ir_node *read_ASM(read_env_t *env)
 
 static ir_node *read_Phi(read_env_t *env)
 {
-	ir_node *block = read_node_ref(env);
-	ir_mode *mode  = read_mode_ref(env);
-	ir_node *res   = new_r_Phi(block, 0, NULL, mode);
+	ir_node   *block = read_node_ref(env);
+	ir_mode   *mode  = read_mode_ref(env);
+	const bool loop  = read_loop(env);
+	ir_node   *res   = loop ? new_r_Phi_loop(block, 0, NULL)
+	                        : new_r_Phi(block, 0, NULL, mode);
 	read_preds_delayed(env, res);
 	return res;
 }
