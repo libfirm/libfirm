@@ -1789,7 +1789,7 @@ static ir_node *apply_binop_on_phi(ir_node *phi, ir_tarval *other, eval_func eva
 
 			if (!tarval_is_constant(evaluated)) {
 				/* folding failed, abort */
-				return 0;
+				return NULL;
 			}
 			tvs[i] = evaluated;
 		}
