@@ -4460,7 +4460,6 @@ absorb:;
 	if (is_Not(a) && is_Not(b) && (only_one_user(a) || only_one_user(b))) {
 		/* ~a & ~b = ~(a|b) */
 		ir_node *block = get_nodes_block(n);
-		ir_mode *mode = get_irn_mode(n);
 
 		a = get_Not_op(a);
 		b = get_Not_op(b);
