@@ -1709,15 +1709,15 @@ static bool only_one_user(const ir_node *node)
  * Returns non-zero if a node is a Phi node
  * with all predecessors constant.
  */
-static int is_const_Phi(ir_node *n)
+static bool is_const_Phi(ir_node *n)
 {
 	if (! is_Phi(n) || get_irn_arity(n) == 0)
-		return 0;
+		return false;
 	foreach_irn_in_r(n, i, pred) {
 		if (!is_Const(pred))
-			return 0;
+			return false;
 	}
-	return 1;
+	return true;
 }
 
 /**
