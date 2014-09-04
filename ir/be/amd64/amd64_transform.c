@@ -1157,14 +1157,12 @@ static ir_node *gen_float_neg(ir_node *const node)
 	ir_node  *new_op     = be_transform_node(op);
 	ir_mode  *mode       = get_irn_mode(node);
 
-	const char *sign_str;
-	if (get_mode_size_bits(mode) == 32) {
-		sign_str = "0x80000000";
-	} else {
-		sign_str = "0x8000000000000000";
-	}
+	ir_tarval *tv;
+	if (get_mode_size_bits(mode) <= 32)
+		tv = create_sign_tv(mode_Iu);
+	else
+		tv = create_sign_tv(mode_Lu);
 
-	ir_tarval *tv   = new_tarval_from_str(sign_str, strlen(sign_str), mode_Lu);
 	ir_node   *load = create_float_const(dbgi, new_block, tv);
 	ir_node   *in[] = { new_op, load };
 

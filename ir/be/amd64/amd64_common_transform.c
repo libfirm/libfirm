@@ -39,7 +39,6 @@
 #include "bearch_amd64_t.h"
 #include "beirg.h"
 
-#include "amd64_cconv.h"
 #include "amd64_new_nodes.h"
 #include "amd64_nodes_attr.h"
 
@@ -107,4 +106,17 @@ ir_node *create_float_const(dbg_info *dbgi, ir_node *block,
 	set_irn_pinned(load, op_pin_state_floats);
 
 	return new_r_Proj(load, tv_mode, pn_amd64_xMovs_res);
+}
+
+ir_tarval *create_sign_tv(ir_mode *mode) {
+	assert(!mode_is_float(mode));
+	const char *sign_str;
+	if (get_mode_size_bits(mode) <= 32) {
+		sign_str = "0x80000000";
+	} else {
+		sign_str = "0x8000000000000000";
+	}
+
+	ir_tarval *tv = new_tarval_from_str(sign_str, strlen(sign_str), mode);
+	return tv;
 }

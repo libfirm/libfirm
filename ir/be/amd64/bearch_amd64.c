@@ -39,6 +39,7 @@
 #include "amd64_finish.h"
 #include "amd64_new_nodes.h"
 #include "gen_amd64_regalloc_if.h"
+#include "amd64_common_transform.h"
 #include "amd64_transform.h"
 #include "amd64_emitter.h"
 #include "amd64_cconv.h"
@@ -372,9 +373,7 @@ static ir_node *create_conv_const(ir_graph *irg, ir_mode *src_mode)
  */
 static ir_node *create_sign_bit_const(ir_graph *irg)
 {
-	const char *sign_str = "0x8000000000000000";
-	ir_tarval *sign_tv = new_tarval_from_str(sign_str, strlen(sign_str),
-	                                         mode_Ls);
+	ir_tarval *sign_tv = create_sign_tv(mode_Ls);
 	return new_r_Const(irg, sign_tv);
 }
 
