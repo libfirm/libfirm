@@ -256,7 +256,7 @@ static ir_node *get_deepest_common_dom_ancestor(ir_node *node, ir_node *dca)
 		}
 	}
 	if (dca == NULL)
-		return get_nodes_block(node);
+		return NULL;
 
 	foreach_out_edge_kind(node, edge, EDGE_KIND_DEP) {
 		ir_node *succ = get_edge_src_irn(edge);
@@ -331,12 +331,14 @@ static void place_floats_late(ir_node *n, pdeq *worklist)
 	   blocks depending on us; our final placement has to dominate
 	   DCA. */
 	ir_node *dca = get_deepest_common_dom_ancestor(n, NULL);
-	assert(dca != NULL);
+	/* this node had no user? This can happen if a node is only kept alive,
+	 * do nothing in this case. */
+	if (dca == NULL)
+		return;
 	set_nodes_block(n, dca);
 	move_out_of_loops(n, block);
-	if (get_irn_mode(n) == mode_T) {
+	if (get_irn_mode(n) == mode_T)
 		set_projs_block(n, get_nodes_block(n));
-	}
 }
 
 /**
