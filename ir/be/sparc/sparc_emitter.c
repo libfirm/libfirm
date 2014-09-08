@@ -9,6 +9,7 @@
  * @author  Hannes Rapp, Matthias Braun
  */
 #include <limits.h>
+#include <inttypes.h>
 
 #include "../../adt/util.h"
 #include "beutil.h"
@@ -67,7 +68,7 @@ static void sparc_emit_immediate(int32_t value, ir_entity *entity)
 {
 	if (entity == NULL) {
 		assert(sparc_is_value_imm_encodeable(value));
-		be_emit_irprintf("%d", value);
+		be_emit_irprintf("%"PRId32, value);
 	} else {
 		if (is_tls_entity(entity)) {
 			be_emit_cstring("%tle_lox10(");
@@ -76,7 +77,7 @@ static void sparc_emit_immediate(int32_t value, ir_entity *entity)
 		}
 		be_gas_emit_entity(entity);
 		if (value != 0) {
-			be_emit_irprintf("%+d", value);
+			be_emit_irprintf("%+"PRId32, value);
 		}
 		be_emit_char(')');
 	}
@@ -98,7 +99,7 @@ static void sparc_emit_high_immediate(ir_node const *node)
 		}
 		be_gas_emit_entity(entity);
 		if (attr->immediate_value != 0) {
-			be_emit_irprintf("%+d", attr->immediate_value);
+			be_emit_irprintf("%+"PRId32, attr->immediate_value);
 		}
 		be_emit_char(')');
 	}
@@ -139,7 +140,7 @@ static void sparc_emit_offset(const ir_node *node, int offset_node_pos)
 		int32_t offset = attr->base.immediate_value;
 		if (offset != 0) {
 			assert(sparc_is_value_imm_encodeable(offset));
-			be_emit_irprintf("%+ld", offset);
+			be_emit_irprintf("%+"PRId32, offset);
 		}
 	} else if (attr->base.immediate_value != 0
 			|| attr->base.immediate_value_entity != NULL) {
@@ -598,7 +599,7 @@ void sparc_emitf(ir_node const *const node, char const *fmt, ...)
 			sparc_attr_t const *const attr = get_sparc_attr_const(node);
 			be_gas_emit_entity(attr->immediate_value_entity);
 			if (attr->immediate_value != 0) {
-				be_emit_irprintf(plus ? "%+d" : "%d", attr->immediate_value);
+				be_emit_irprintf(plus ? "%+"PRId32 : "%"PRId32, attr->immediate_value);
 			}
 			break;
 		}
@@ -1160,7 +1161,7 @@ static void emit_sparc_FrameAddr(const ir_node *node)
 
 	char const *const insn = offset > 0 ? offset = -offset, "sub" : "add";
 	assert(sparc_is_value_imm_encodeable(offset));
-	sparc_emitf(node, "%s %S0, %d, %D0", insn, offset);
+	sparc_emitf(node, "%s %S0, %d, %D0", insn, (int)offset);
 }
 
 static const char *get_icc_unsigned(ir_relation relation)
