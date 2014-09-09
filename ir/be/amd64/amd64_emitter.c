@@ -687,9 +687,13 @@ static void emit_be_Perm(const ir_node *node)
 	arch_register_class_t const* const cls0 = reg0->reg_class;
 	assert(cls0 == reg1->reg_class && "Register class mismatch at Perm");
 
-	amd64_emitf(node, "xchg %^R, %^R", reg0, reg1);
-
-	if (cls0 != &amd64_reg_classes[CLASS_amd64_gp]) {
+	if (cls0 == &amd64_reg_classes[CLASS_amd64_gp]) {
+	     amd64_emitf(node, "xchg %^R, %^R", reg0, reg1);
+     } else if (cls0 == &amd64_reg_classes[CLASS_amd64_xmm]) {
+          amd64_emitf(node, "pxor %^R, %^R", reg0, reg1);
+          amd64_emitf(node, "pxor %^R, %^R", reg1, reg0);
+          amd64_emitf(node, "pxor %^R, %^R", reg0, reg1);
+     } else {
 		panic("unexpected register class in be_Perm (%+F)", node);
 	}
 }
