@@ -134,19 +134,30 @@ foreach my $class_name (keys(%reg_classes)) {
 
 	$single_constraints .= <<EOF;
 static const arch_register_req_t ${arch}_class_reg_req_${old_classname} = {
-	arch_register_req_type_normal,
-	&${arch}_reg_classes[CLASS_${arch}_${old_classname}],
-	NULL,
-	0,
-	0,
-	1
+	.cls             = &${arch}_reg_classes[CLASS_${arch}_${old_classname}],
+	.limited         = NULL,
+	.type            = arch_register_req_type_normal,
+	.other_same      = 0,
+	.other_different = 0,
+	.width           = 1,
 };
 EOF
 
 	$classdef .= "\tCLASS_$class_name = $class_idx,\n";
 	my $numregs = @class;
 	my $first_reg = "&${arch}_registers[REG_". uc($class[0]->{"name"}) . "]";
-	push(@regclasses, "{ $class_idx, \"$class_name\", $numregs, NULL, $first_reg, $flags_prepared, &${arch}_class_reg_req_${old_classname} }");
+	my $rcdef = <<EOF;
+	{
+		.name      = \"$class_name\",
+		.mode      = NULL,
+		.regs      = $first_reg,
+		.class_req = &${arch}_class_reg_req_${old_classname},
+		.index     = $class_idx,
+		.n_regs    = $numregs,
+		.flags     = $flags_prepared,
+	},
+EOF
+	push(@regclasses, $rcdef);
 
 	my $idx = 0;
 	$reginit .= "\t$arch\_reg_classes[CLASS_".$class_name."].mode = $class_mode;\n";
@@ -173,14 +184,14 @@ EOF
 
 		$regtypes_def .= <<EOF;
 	{
-		"${realname}",
-		${class_ptr},
-		REG_${classuc}_${ucname},
-		REG_${ucname},
-		${type},
-		&${arch}_single_reg_req_${old_classname}_${name},
-		${dwarf_number},
-		${encoding}
+		.name         = "${realname}",
+		.reg_class    = ${class_ptr},
+		.single_req   = &${arch}_single_reg_req_${old_classname}_${name},
+		.type         = ${type},
+		.index        = REG_${classuc}_${ucname},
+		.global_index = REG_${ucname},
+		.dwarf_number = ${dwarf_number},
+		.encoding     = ${encoding},
 	},
 EOF
 
@@ -188,12 +199,12 @@ EOF
 		$single_constraints .= <<EOF;
 static const unsigned ${arch}_limited_${old_classname}_${name} [] = ${limitedarray};
 static const arch_register_req_t ${arch}_single_reg_req_${old_classname}_${name} = {
-	arch_register_req_type_limited,
-	${class_ptr},
-	${arch}_limited_${old_classname}_${name},
-	0,
-	0,
-	1
+	.type            = arch_register_req_type_limited,
+	.cls             = ${class_ptr},
+	.limited         = ${arch}_limited_${old_classname}_${name},
+	.other_same      = 0,
+	.other_different = 0,
+	.width           = 1,
 };
 EOF
 
@@ -280,7 +291,7 @@ print OUT<<EOF;
 ${single_constraints}
 EOF
 
-print OUT "arch_register_class_t ${arch}_reg_classes[] = {\n\t".join(",\n\t", @regclasses)."\n};\n\n";
+print OUT "arch_register_class_t ${arch}_reg_classes[] = {\n".join("",@regclasses)."\n};\n\n";
 
 print OUT<<EOF;
 

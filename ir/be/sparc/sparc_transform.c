@@ -2292,30 +2292,31 @@ static ir_node *gen_Free(ir_node *node)
 }
 
 static const arch_register_req_t float1_req = {
-	arch_register_req_type_normal,
-	&sparc_reg_classes[CLASS_sparc_fp],
-	NULL,
-	0,
-	0,
-	1
+	.cls             = &sparc_reg_classes[CLASS_sparc_fp],
+	.limited         = NULL,
+	.type            = arch_register_req_type_normal,
+	.other_same      = 0,
+	.other_different = 0,
+	.width           = 1,
 };
 static const arch_register_req_t float2_req = {
-	arch_register_req_type_normal | arch_register_req_type_aligned,
-	&sparc_reg_classes[CLASS_sparc_fp],
-	NULL,
-	0,
-	0,
-	2
+	.cls             = &sparc_reg_classes[CLASS_sparc_fp],
+	.limited         = NULL,
+	.type            = arch_register_req_type_normal
+	                   | arch_register_req_type_aligned,
+	.other_same      = 0,
+	.other_different = 0,
+	.width           = 2,
 };
 static const arch_register_req_t float4_req = {
-	arch_register_req_type_normal | arch_register_req_type_aligned,
-	&sparc_reg_classes[CLASS_sparc_fp],
-	NULL,
-	0,
-	0,
-	4
+	.cls             = &sparc_reg_classes[CLASS_sparc_fp],
+	.limited         = NULL,
+	.type            = arch_register_req_type_normal
+	                   | arch_register_req_type_aligned,
+	.other_same      = 0,
+	.other_different = 0,
+	.width           = 4,
 };
-
 
 static const arch_register_req_t *get_float_req(ir_mode *mode)
 {

@@ -55,90 +55,93 @@ static pmap            *node_to_stack;
 static be_stackorder_t *stackorder;
 
 static const arch_register_req_t amd64_requirement_gp = {
-	arch_register_req_type_normal,
-	&amd64_reg_classes[CLASS_amd64_gp],
-	NULL,
-	0,
-	0,
-	0
+	.cls             = &amd64_reg_classes[CLASS_amd64_gp],
+	.limited         = NULL,
+	.type            = arch_register_req_type_normal,
+	.other_same      = 0,
+	.other_different = 0,
+	.width           = 1,
 };
 
 static const arch_register_req_t amd64_requirement_flags = {
-	arch_register_req_type_normal,
-	&amd64_reg_classes[CLASS_amd64_flags],
-	NULL,
-	0,
-	0,
-	1
+	.cls             = &amd64_reg_classes[CLASS_amd64_flags],
+	.limited         = NULL,
+	.type            = arch_register_req_type_normal,
+	.other_same      = 0,
+	.other_different = 0,
+	.width           = 1,
 };
 
 static const arch_register_req_t amd64_requirement_xmm = {
-	arch_register_req_type_normal,
-	&amd64_reg_classes[CLASS_amd64_xmm],
-	NULL,
-	0,
-	0,
-	1
+	.cls             = &amd64_reg_classes[CLASS_amd64_xmm],
+	.limited         = NULL,
+	.type            = arch_register_req_type_normal,
+	.other_same      = 0,
+	.other_different = 0,
+	.width           = 1,
 };
 
 #define BIT(x)    (1u << x)
 
 static const arch_register_req_t amd64_requirement_gp_same_0 = {
-	arch_register_req_type_normal | arch_register_req_type_should_be_same,
-	&amd64_reg_classes[CLASS_amd64_gp],
-	NULL,
-	BIT(0),
-	0,
-	1
+	.cls             = &amd64_reg_classes[CLASS_amd64_gp],
+	.limited         = NULL,
+	.type            = arch_register_req_type_normal
+	                   | arch_register_req_type_should_be_same,
+	.other_same      = BIT(0),
+	.other_different = 0,
+	.width           = 1,
 };
 
 static const arch_register_req_t amd64_requirement_xmm_same_0 = {
-	arch_register_req_type_normal | arch_register_req_type_should_be_same,
-	&amd64_reg_classes[CLASS_amd64_xmm],
-	NULL,
-	BIT(0),
-	0,
-	1
+	.cls             = &amd64_reg_classes[CLASS_amd64_xmm],
+	.limited         = NULL,
+	.type            = arch_register_req_type_normal
+	                   | arch_register_req_type_should_be_same,
+	.other_same      = BIT(0),
+	.other_different = 0,
+	.width           = 1,
 };
 
 static const arch_register_req_t amd64_requirement_gp_same_0_not_1 = {
-	arch_register_req_type_normal | arch_register_req_type_should_be_same
-	| arch_register_req_type_must_be_different,
-	&amd64_reg_classes[CLASS_amd64_gp],
-	NULL,
-	BIT(0),
-	BIT(1),
-	1
+	.cls             = &amd64_reg_classes[CLASS_amd64_gp],
+	.limited         = NULL,
+	.type            = arch_register_req_type_normal
+	                   | arch_register_req_type_should_be_same
+	                   | arch_register_req_type_must_be_different,
+	.other_same      = BIT(0),
+	.other_different = BIT(1),
+	.width           = 1,
 };
 
 static const unsigned amd64_limited_gp_rcx [] = { BIT(REG_GP_RCX) };
 static const arch_register_req_t amd64_requirement_rcx = {
-	arch_register_req_type_limited,
-	&amd64_reg_classes[CLASS_amd64_gp],
-	amd64_limited_gp_rcx,
-	0,
-	0,
-	1
+	.cls             = &amd64_reg_classes[CLASS_amd64_gp],
+	.limited         = amd64_limited_gp_rcx,
+	.type            = arch_register_req_type_limited,
+	.other_same      = 0,
+	.other_different = 0,
+	.width           = 1,
 };
 
 static const unsigned amd64_limited_gp_rax [] = { BIT(REG_GP_RAX) };
 static const arch_register_req_t amd64_requirement_rax = {
-	arch_register_req_type_limited,
-	&amd64_reg_classes[CLASS_amd64_gp],
-	amd64_limited_gp_rax,
-	0,
-	0,
-	1
+	.cls             = &amd64_reg_classes[CLASS_amd64_gp],
+	.limited         = amd64_limited_gp_rax,
+	.type            = arch_register_req_type_limited,
+	.other_same      = 0,
+	.other_different = 0,
+	.width           = 1,
 };
 
 static const unsigned amd64_limited_gp_rdx [] = { BIT(REG_GP_RDX) };
 static const arch_register_req_t amd64_requirement_rdx = {
-	arch_register_req_type_limited,
-	&amd64_reg_classes[CLASS_amd64_gp],
-	amd64_limited_gp_rdx,
-	0,
-	0,
-	1
+	.cls             = &amd64_reg_classes[CLASS_amd64_gp],
+	.limited         = amd64_limited_gp_rdx,
+	.type            = arch_register_req_type_limited,
+	.other_same      = 0,
+	.other_different = 0,
+	.width           = 1,
 };
 
 static const arch_register_req_t *mem_reqs[] = {
@@ -154,7 +157,6 @@ static const arch_register_req_t *xmm_mem_reqs[] = {
 	&amd64_requirement_xmm,
 	&arch_no_requirement,
 };
-
 
 static const arch_register_req_t *reg_reg_mem_reqs[] = {
 	&amd64_requirement_gp,

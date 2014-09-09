@@ -132,22 +132,22 @@ static void amd64_before_ra(ir_graph *irg)
 }
 
 static const arch_register_req_t amd64_requirement_gp = {
-	arch_register_req_type_normal,
-	&amd64_reg_classes[CLASS_amd64_gp],
-	NULL,
-	0,
-	0,
-	1
+	.cls             = &amd64_reg_classes[CLASS_amd64_gp],
+	.limited         = NULL,
+	.type            = arch_register_req_type_normal,
+	.other_same      = 0,
+	.other_different = 0,
+	.width           = 1,
 };
 
 static const unsigned amd64_limited_gp_rsp [] = { (1 << REG_GP_RSP) };
 static const arch_register_req_t amd64_single_reg_req_gp_rsp = {
-	arch_register_req_type_limited,
-	&amd64_reg_classes[CLASS_amd64_gp],
-	amd64_limited_gp_rsp,
-	0,
-	0,
-	1
+	.type            = arch_register_req_type_limited,
+	.cls             = &amd64_reg_classes[CLASS_amd64_gp],
+	.limited         = amd64_limited_gp_rsp,
+	.other_same      = 0,
+	.other_different = 0,
+	.width           = 1,
 };
 
 static const arch_register_req_t *am_pushpop_base_reqs[] = {

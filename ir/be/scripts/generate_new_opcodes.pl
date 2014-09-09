@@ -1143,12 +1143,12 @@ sub generate_requirements {
 
 		$result = <<EOF;
 {
-	arch_register_req_type_none,
-	NULL,                         /* regclass */
-	NULL,                         /* limit bitset */
-	0,                            /* same pos */
-	0,                            /* different pos */
-	0                             /* width */
+	.cls             = NULL,
+	.limited         = NULL,
+	.type            = arch_register_req_type_none,
+	.other_same      = 0,
+	.other_different = 0,
+	.width           = 0,
 };
 
 EOF
@@ -1158,12 +1158,12 @@ EOF
 		$class  = $reqs;
 		$result = <<EOF;
 {
-	${reqtype},
-	& ${arch}_reg_classes[CLASS_${arch}_${class}],
-	NULL,        /* limit bitset */
-	0,           /* same pos */
-	0,           /* different pos */
-	$width            /* width */
+	.cls             = &${arch}_reg_classes[CLASS_${arch}_${class}],
+	.limited         = NULL,
+	.type            = ${reqtype},
+	.other_same      = 0,
+	.other_different = 0,
+	.width           = $width,
 };
 
 EOF
@@ -1194,12 +1194,12 @@ EOF
 		$class  = $regclass;
 		$result = <<EOF;
 {
-	${reqtype},
-	& ${arch}_reg_classes[CLASS_${arch}_${class}],
-	${limit_bitset},
-	${same_pos},        /* same pos */
-	${different_pos},       /* different pos */
-	$width             /* width */
+	.cls             = &${arch}_reg_classes[CLASS_${arch}_${class}],
+	.limited         = ${limit_bitset},
+	.type            = ${reqtype},
+	.other_same      = ${same_pos},
+	.other_different = ${different_pos},
+	.width           = $width,
 };
 
 EOF
