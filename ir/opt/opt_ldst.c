@@ -1753,7 +1753,11 @@ void opt_ldst(ir_graph *irg)
 		| IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE
 		| IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 
-	assure_irp_globals_entity_usage_computed();
+	const ir_disambiguator_options opts =
+		get_irg_memory_disambiguator_options(irg);
+	if ((opts & aa_opt_always_alias) == 0) {
+		assure_irp_globals_entity_usage_computed();
+	}
 
 	obstack_init(&env.obst);
 	ir_nodehashmap_init(&env.adr_map);

@@ -2171,7 +2171,11 @@ void optimize_load_store(ir_graph *irg)
 
 	assert(get_irg_pinned(irg) != op_pin_state_floats);
 
-	assure_irp_globals_entity_usage_computed();
+	const ir_disambiguator_options opts =
+		get_irg_memory_disambiguator_options(irg);
+	if ((opts & aa_opt_always_alias) == 0) {
+		assure_irp_globals_entity_usage_computed();
+	}
 
 	walk_env_t env;
 	obstack_init(&env.obst);
