@@ -214,6 +214,8 @@ bool be_can_move_down(ir_heights_t *heights, const ir_node *node,
 	assert(get_nodes_block(node) == get_nodes_block(before));
 	assert(sched_get_time_step(node) < sched_get_time_step(before));
 
+	const ir_entity *const entity = arch_get_frame_entity(node);
+
 	ir_node *schedpoint = sched_next(node);
 	while (schedpoint != before) {
 		/* schedpoint must not use our computed values */
@@ -234,6 +236,25 @@ bool be_can_move_down(ir_heights_t *heights, const ir_node *node,
 					= arch_get_irn_register_req_out(schedpoint, o);
 				if (overlapping_regs(reg, in_req, outreg, outreq))
 					return false;
+			}
+		}
+
+		/* schedpoint must not overwrite our entity... TODO: we lack a good
+		 * API to query all entities involved with an isntruction, this is
+		 * kinda preliminary but enough for the sparc backend. */
+		if (entity != NULL) {
+			const ir_entity *const schedpoint_entity
+				= arch_get_frame_entity(schedpoint);
+			if (schedpoint_entity == entity)
+				return false;
+			if (be_is_MemPerm(schedpoint)) {
+				int arity = be_get_MemPerm_entity_arity(schedpoint);
+				for (int i = 0; i < arity; ++i) {
+					if (be_get_MemPerm_out_entity(schedpoint, i) == entity)
+						return false;
+					if (be_get_MemPerm_in_entity(schedpoint, i) == entity)
+						return false;
+				}
 			}
 		}
 
