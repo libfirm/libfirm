@@ -37,16 +37,16 @@ typedef enum arch_register_class_flags_t {
 ENUM_BITSET(arch_register_class_flags_t)
 
 typedef enum arch_register_type_t {
-	arch_register_type_none         = 0,
+	arch_register_type_none    = 0,
 	/** Do not consider this register when allocating. */
-	arch_register_type_ignore       = 1U << 0,
+	arch_register_type_ignore  = 1U << 0,
 	/** This is just a virtual register. Virtual registers fulfill any register
 	 * constraints as long as the register class matches. It is a allowed to
 	 * have multiple definitions for the same virtual register at a point */
-	arch_register_type_virtual      = 1U << 1,
+	arch_register_type_virtual = 1U << 1,
 	/** The register represents a state that should be handled by bestate
 	 * code */
-	arch_register_type_state        = 1U << 2,
+	arch_register_type_state   = 1U << 2,
 } arch_register_type_t;
 ENUM_BITSET(arch_register_type_t)
 
@@ -84,12 +84,14 @@ void arch_dump_reqs_and_registers(FILE *F, const ir_node *node);
 void arch_set_frame_offset(ir_node *irn, int bias);
 
 ir_entity *arch_get_frame_entity(const ir_node *irn);
-int        arch_get_sp_bias(ir_node *irn);
 
-int             arch_get_op_estimated_cost(const ir_node *irn);
-int             arch_possible_memory_operand(const ir_node *irn,
-                                             unsigned int i);
-void            arch_perform_memory_operand(ir_node *irn, unsigned int i);
+int arch_get_sp_bias(ir_node *irn);
+
+int arch_get_op_estimated_cost(const ir_node *irn);
+
+int arch_possible_memory_operand(const ir_node *irn, unsigned i);
+
+void arch_perform_memory_operand(ir_node *irn, unsigned i);
 
 /**
  * Get the register allocated for a value.
@@ -153,15 +155,14 @@ static inline const arch_register_req_t **arch_get_irn_register_reqs_in(
 
 static inline reg_out_info_t *get_out_info(const ir_node *node)
 {
-	size_t                pos = 0;
-	const backend_info_t *info;
 	assert(get_irn_mode(node) != mode_T);
+	size_t pos = 0;
 	if (is_Proj(node)) {
 		pos  = get_Proj_proj(node);
 		node = get_Proj_pred(node);
 	}
 
-	info = be_get_info(node);
+	const backend_info_t *info = be_get_info(node);
 	assert(pos < ARR_LEN(info->out_infos));
 	return &info->out_infos[pos];
 }
@@ -184,6 +185,7 @@ static inline arch_irn_flags_t arch_get_irn_flags(const ir_node *node)
 }
 
 void arch_set_irn_flags(ir_node *node, arch_irn_flags_t flags);
+
 void arch_add_irn_flags(ir_node *node, arch_irn_flags_t flags);
 
 /**
@@ -218,13 +220,13 @@ void be_register_isa_if(const char *name, const arch_isa_if_t *isa);
 struct arch_register_t {
 	const char                  *name;         /**< The name of the register. */
 	const arch_register_class_t *reg_class;    /**< The class of the register */
+	/** register constraint allowing just this register */
+	const arch_register_req_t   *single_req;
+	arch_register_type_t         type;         /**< The type of the register. */
 	unsigned short               index;        /**< The index of the register in
 	                                                the class. */
 	unsigned short               global_index; /**< The global index this
 												    register in the architecture. */
-	arch_register_type_t         type;         /**< The type of the register. */
-	/** register constraint allowing just this register */
-	const arch_register_req_t   *single_req;
 	/** register number in dwarf debugging format */
 	unsigned short               dwarf_number;
 	/** register number in instruction encoding */
@@ -236,14 +238,14 @@ struct arch_register_t {
  * Like general purpose or floating point.
  */
 struct arch_register_class_t {
-	unsigned                     index;   /**< index of this register class */
-	const char                  *name;    /**< The name of the register class.*/
-	unsigned                     n_regs;  /**< Number of registers in this
-	                                           class. */
-	ir_mode                     *mode;    /**< The mode of the register class.*/
-	const arch_register_t       *regs;    /**< The array of registers. */
-	arch_register_class_flags_t  flags;   /**< register class flags. */
+	const char                  *name;   /**< The name of the register class.*/
+	ir_mode                     *mode;   /**< The mode of the register class.*/
+	const arch_register_t       *regs;   /**< The array of registers. */
 	const arch_register_req_t   *class_req;
+	unsigned                     index;  /**< index of this register class */
+	unsigned                     n_regs; /**< Number of registers in this
+	                                          class. */
+	arch_register_class_flags_t  flags;  /**< register class flags. */
 };
 
 /** return the number of registers in this register class */
@@ -282,19 +284,18 @@ static inline const arch_register_t *arch_register_for_index(
  * Expresses requirements to register allocation for an operand.
  */
 struct arch_register_req_t {
+	/** The register class this constraint belongs to. */
+	const arch_register_class_t *cls;
+	/** allowed register bitset (in case of wide-values this is only about the
+	 * first register) */
+	const unsigned              *limited;
 	arch_register_req_type_t     type; /**< The type of the constraint. */
-	const arch_register_class_t *cls;  /**< The register class this constraint
-	                                        belongs to. */
-	const unsigned *limited;           /**< allowed register bitset
-	                                        (in case of wide-values this is
-	                                         only about the first register) */
-	unsigned other_same;               /**< Bitmask of ins which should use the
-	                                        same register (should_be_same). */
-	unsigned other_different;          /**< Bitmask of ins which shall use a
-	                                        different register
-	                                        (must_be_different) */
-	unsigned char width;               /**< specifies how many sequential
-	                                        registers are required */
+	/** Bitmask of ins which should use the same register (should_be_same). */
+	unsigned                     other_same;
+	/** Bitmask of ins which shall use a different register (must_be_different) */
+	unsigned                     other_different;
+	/** Specifies how many sequential registers are required */
+	unsigned char                width;
 };
 
 static inline bool reg_reqs_equal(const arch_register_req_t *req1,
@@ -320,7 +321,6 @@ static inline bool reg_reqs_equal(const arch_register_req_t *req1,
 }
 
 struct arch_irn_ops_t {
-
 	/**
 	 * Get the entity on the stack frame this node depends on.
 	 * @param irn  The node in question.
@@ -366,7 +366,7 @@ struct arch_irn_ops_t {
 	 *             can load it form memory internally
 	 * @return     nonzero if argument can be loaded or zero otherwise
 	 */
-	int (*possible_memory_operand)(const ir_node *irn, unsigned int i);
+	int (*possible_memory_operand)(const ir_node *irn, unsigned i);
 
 	/**
 	 * Ask the backend to assimilate @p reload of operand @p i into @p irn.
@@ -374,7 +374,7 @@ struct arch_irn_ops_t {
 	 * @param irn    The node.
 	 * @param i      The position of the reload.
 	 */
-	void (*perform_memory_operand)(ir_node *irn, unsigned int i);
+	void (*perform_memory_operand)(ir_node *irn, unsigned i);
 };
 
 /**
@@ -433,9 +433,8 @@ struct arch_isa_if_t {
 	void (*mark_remat)(ir_node *node);
 
 	/**
-	 * Create a spill instruction. We assume that spill instructions
-	 * do not need any additional registers and do not affect cpu-flags in any
-	 * way.
+	 * Create a spill instruction. We assume that spill instructions do not need
+	 * any additional registers and do not affect cpu-flags in any way.
 	 * Construct a sequence of instructions after @p after (the resulting nodes
 	 * are already scheduled).
 	 * Returns a mode_M value which is used as input for a reload instruction.
@@ -497,15 +496,17 @@ struct arch_isa_if_t {
  */
 struct arch_env_t {
 	const arch_isa_if_t   *impl;
-	unsigned               n_registers;      /**< number of registers */
-	const arch_register_t *registers;        /**< register array */
-	unsigned               n_register_classes; /**< number of register classes*/
-	const arch_register_class_t *register_classes; /**< register classes */
-	const arch_register_t *sp;               /**< The stack pointer register. */
-	const arch_register_t *bp;               /**< The base pointer register. */
-	int                    stack_alignment;  /**< power of 2 stack alignment */
-	int                    spill_cost;       /**< cost for a be_Spill node */
-	int                    reload_cost;      /**< cost for a be_Reload node */
+	unsigned               n_registers;     /**< number of registers */
+	const arch_register_t *registers;       /**< register array */
+	/** number of register classes*/
+	unsigned               n_register_classes;
+	/** register classes */
+	const arch_register_class_t *register_classes;
+	const arch_register_t *sp;              /**< The stack pointer register. */
+	const arch_register_t *bp;              /**< The base pointer register. */
+	unsigned               stack_alignment; /**< power of 2 stack alignment */
+	unsigned               spill_cost;      /**< cost for a be_Spill node */
+	unsigned               reload_cost;     /**< cost for a be_Reload node */
 };
 
 static inline bool arch_irn_is_ignore(const ir_node *irn)
@@ -536,12 +537,6 @@ static inline bool arch_irn_consider_in_reg_alloc(
 		} \
 	} while (0)
 
-/**
- * Iterate over all values defined by an instruction.
- * Only looks at values in a certain register class where the requirements
- * are not marked as ignore.
- * Executes @p code for each definition.
- */
 #define be_foreach_definition_(node, ccls, value, req, code) \
 	be_foreach_value(node, value, \
 		arch_register_req_t const *const req = arch_get_irn_register_req(value); \
@@ -550,6 +545,12 @@ static inline bool arch_irn_consider_in_reg_alloc(
 		code \
 	)
 
+/**
+ * Iterate over all values defined by an instruction.
+ * Only looks at values in a certain register class where the requirements
+ * are not marked as ignore.
+ * Executes @p code for each definition.
+ */
 #define be_foreach_definition(node, ccls, value, req, code) \
 	be_foreach_definition_(node, ccls, value, req, \
 		if (arch_register_req_is(req, ignore)) \

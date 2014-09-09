@@ -56,7 +56,6 @@ static int compare_spill_candidates_desc(const void *d1, const void *d2)
 {
 	const spill_candidate_t *c1 = (const spill_candidate_t*)d1;
 	const spill_candidate_t *c2 = (const spill_candidate_t*)d2;
-
 	return (int) (c1->costs - c2->costs);
 }
 
@@ -66,12 +65,10 @@ static double get_spill_costs(ir_node *node)
 	double   costs       = be_get_spill_costs(spill_env, node, spill_place);
 
 	foreach_out_edge(node, edge) {
-		ir_node *use = get_edge_src_irn(edge);
-
 		/* keeps should be directly below the node */
-		if (be_is_Keep(use)) {
+		ir_node *use = get_edge_src_irn(edge);
+		if (be_is_Keep(use))
 			continue;
-		}
 
 		if (is_Phi(use)) {
 			int      in    = get_edge_src_pos(edge);
@@ -160,13 +157,11 @@ static void do_spilling(ir_nodeset_t *live_nodes, ir_node *node)
 	/* construct array with spill candidates and calculate their costs */
 	size_t c = 0;
 	foreach_ir_nodeset(live_nodes, n, iter) {
-		spill_candidate_t *candidate = & candidates[c];
-
 		assert(!bitset_is_set(spilled_nodes, get_irn_idx(n)));
 
+		spill_candidate_t *candidate = &candidates[c++];
 		candidate->node  = n;
 		candidate->costs = get_spill_costs(n);
-		++c;
 	}
 	assert(c == n_live_nodes);
 
@@ -176,9 +171,8 @@ static void do_spilling(ir_nodeset_t *live_nodes, ir_node *node)
 	/* spill cheapest ones */
 	size_t cand_idx = 0;
 	while (spills_needed > 0) {
-		if (cand_idx >= n_live_nodes) {
+		if (cand_idx >= n_live_nodes)
 			panic("can't spill enough values for node %+F", node);
-		}
 
 		spill_candidate_t *candidate = &candidates[cand_idx];
 		ir_node           *cand_node = candidate->node;
@@ -220,10 +214,9 @@ static void remove_defs(ir_node *node, ir_nodeset_t *nodeset)
 static void add_uses(ir_node *node, ir_nodeset_t *nodeset)
 {
 	foreach_irn_in(node, i, op) {
-		if (arch_irn_consider_in_reg_alloc(cls, op) &&
-				!bitset_is_set(spilled_nodes, get_irn_idx(op))) {
+		if (arch_irn_consider_in_reg_alloc(cls, op)
+		    && !bitset_is_set(spilled_nodes, get_irn_idx(op)))
 			ir_nodeset_insert(nodeset, op);
-		}
 	}
 }
 
@@ -242,7 +235,7 @@ void print_nodeset(ir_nodeset_t *nodeset)
  */
 static void spill_block(ir_node *block, void *data)
 {
-	(void) data;
+	(void)data;
 	DBG((dbg, LEVEL_1, "spilling block %+F\n", block));
 
 	/* construct set of live nodes at end of block */
@@ -280,9 +273,8 @@ static void spill_block(ir_node *block, void *data)
 		if (!is_Phi(node))
 			break;
 
-		if (bitset_is_set(spilled_nodes, get_irn_idx(node))) {
+		if (bitset_is_set(spilled_nodes, get_irn_idx(node)))
 			n_phi_values_spilled += get_value_width(node);
-		}
 	}
 
 	int live_nodes_pressure = 0;

@@ -2081,7 +2081,7 @@ static const lc_opt_table_entry_t ia32_options[] = {
 	LC_OPT_ENT_ENUM_INT("transformer", "the transformer used for code selection", &transformer_var),
 #endif
 	LC_OPT_ENT_INT ("stackalign", "set power of two stack alignment for calls",
-	                &ia32_isa_template.base.stack_alignment),
+	                (int*)&ia32_isa_template.base.stack_alignment),
 	LC_OPT_ENT_BOOL("gprof",      "create gprof profiling code",                                    &gprof),
 	LC_OPT_ENT_BOOL("precise_float_spill", "Spill floatingpoint values precisely (the whole 80 bits)", &precise_x87_spills),
 	LC_OPT_LAST
