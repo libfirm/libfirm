@@ -108,7 +108,6 @@ static unsigned optimize_pointless_forks(ir_node *block, unsigned n_cfgpreds,
 		cfgpreds     = get_Block_cfgpred_arr(block);
 		new_cfgpreds = NULL;
 	} else {
-		cfgpreds     = cfgpreds;
 		new_cfgpreds = cfgpreds;
 	}
 
