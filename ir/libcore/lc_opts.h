@@ -74,7 +74,7 @@ typedef struct {
 	_LC_OPT_ENT(name, desc, lc_opt_type_bit, unsigned, addr, mask, lc_opt_std_cb, lc_opt_std_dump, NULL)
 
 #define LC_OPT_ENT_BOOL(name, desc, addr) \
-	_LC_OPT_ENT(name, desc, lc_opt_type_boolean, int, addr, 0, lc_opt_std_cb, lc_opt_std_dump, lc_opt_bool_dump_vals)
+	_LC_OPT_ENT(name, desc, lc_opt_type_boolean, bool, addr, 0, lc_opt_std_cb, lc_opt_std_dump, lc_opt_bool_dump_vals)
 
 typedef char lc_opt_str_t[];
 #define LC_OPT_ENT_STR(name, desc, buf) \

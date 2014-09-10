@@ -134,23 +134,23 @@ typedef enum cpu_arch_features {
 } cpu_arch_features;
 ENUM_BITSET(cpu_arch_features)
 
-static int               opt_size             = 0;
-static int               emit_machcode        = 0;
-static int               use_softfloat        = 0;
-static int               use_sse              = 0;
-static int               use_sse2             = 0;
-static int               use_sse3             = 0;
-static int               use_sse4             = 0;
-static int               use_sse4_1           = 0;
-static int               use_sse4_2           = 0;
-static int               use_sse4a            = 0;
-static int               use_sse5             = 0;
-static int               use_ssse3            = 0;
+static bool              opt_size             = false;
+static bool              emit_machcode        = false;
+static bool              use_softfloat        = false;
+static bool              use_sse              = false;
+static bool              use_sse2             = false;
+static bool              use_sse3             = false;
+static bool              use_sse4             = false;
+static bool              use_sse4_1           = false;
+static bool              use_sse4_2           = false;
+static bool              use_sse4a            = false;
+static bool              use_sse5             = false;
+static bool              use_ssse3            = false;
 static cpu_arch_features arch                 = cpu_generic;
 static cpu_arch_features opt_arch             = 0;
 static int               fpu_arch             = 0;
-static int               opt_cc               = 1;
-static int               opt_unsafe_floatconv = 0;
+static bool              opt_cc               = true;
+static bool              opt_unsafe_floatconv = false;
 
 /* instruction set architectures. */
 static const lc_opt_enum_int_items_t arch_items[] = {

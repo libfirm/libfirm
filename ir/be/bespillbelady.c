@@ -73,9 +73,9 @@ static spill_env_t                 *senv;   /**< see bespill.h */
 static ir_node                    **blocklist;
 static workset_t                   *temp_workset;
 
-static int                          move_spills      = true;
-static int                          respectloopdepth = true;
-static int                          improve_known_preds = true;
+static bool                         move_spills      = true;
+static bool                         respectloopdepth = true;
+static bool                         improve_known_preds = true;
 /* factor to weight the different costs of reloading/rematerializing a node
    (see bespill.h be_get_reload_costs_no_weight) */
 static int                          remat_bonus      = 10;

@@ -87,9 +87,9 @@ static int co_get_costs_all_one(const ir_node *root, int pos);
 
 static unsigned   dump_flags  = 0;
 static unsigned   style_flags = CO_IFG_DUMP_COLORS;
-static int        do_stats    = 0;
+static bool       do_stats    = false;
 static cost_fct_t cost_func   = co_get_costs_exec_freq;
-static int        improve     = 1;
+static bool       improve     = true;
 
 static const lc_opt_enum_mask_items_t dump_items[] = {
 	{ "before",  DUMP_BEFORE },

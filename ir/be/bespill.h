@@ -14,8 +14,8 @@
 
 #include "bearch.h"
 
-extern int be_coalesce_spill_slots;
-extern int be_do_remats;
+extern bool be_coalesce_spill_slots;
+extern bool be_do_remats;
 
 typedef void (*be_spill_func)(ir_graph *irg, const arch_register_class_t *cls);
 

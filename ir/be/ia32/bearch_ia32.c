@@ -89,7 +89,7 @@ static ir_type *between_type           = NULL;
 static ir_entity *old_bp_ent           = NULL;
 static ir_entity *ret_addr_ent         = NULL;
 static ir_entity *omit_fp_ret_addr_ent = NULL;
-static int        precise_x87_spills;
+static bool       precise_x87_spills;
 
 typedef ir_node *(*create_const_node_func) (dbg_info *dbgi, ir_node *block);
 
@@ -456,7 +456,7 @@ static const arch_irn_ops_t ia32_irn_ops = {
 	ia32_perform_memory_operand,
 };
 
-static int gprof = 0;
+static bool gprof = 0;
 
 static ir_node *ia32_turn_back_dest_am(ir_node *node)
 {

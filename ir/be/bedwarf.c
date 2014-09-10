@@ -42,7 +42,7 @@ enum {
 };
 static int debug_level = LEVEL_NONE;
 
-static int has_cfi_sections = true;
+static bool has_cfi_sections = true;
 
 /**
  * Usually we simply use the DW_TAG_xxx numbers for our abbrev IDs, but for

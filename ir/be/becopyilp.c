@@ -28,8 +28,8 @@
 
 #define DUMP_ILP 1
 
-static int time_limit = 60;
-static int solve_log  = 0;
+static int  time_limit = 60;
+static bool solve_log  = false;
 static unsigned dump_flags = 0;
 
 static const lc_opt_enum_mask_items_t dump_items[] = {
@@ -43,8 +43,8 @@ static lc_opt_enum_mask_var_t dump_var = {
 
 static const lc_opt_table_entry_t options[] = {
 	LC_OPT_ENT_INT      ("limit", "time limit for solving in seconds (0 for unlimited)", &time_limit),
-	LC_OPT_ENT_BOOL     ("log",   "show ilp solving log",              &solve_log),
-	LC_OPT_ENT_ENUM_MASK("dump",  "dump flags",             &dump_var),
+	LC_OPT_ENT_BOOL     ("log",   "show ilp solving log", &solve_log),
+	LC_OPT_ENT_ENUM_MASK("dump",  "dump flags", &dump_var),
 	LC_OPT_LAST
 };
 

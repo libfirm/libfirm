@@ -60,8 +60,8 @@
 #define DO_USEFUL_OPT         1
 
 
-static int use_exec_freq     = true;
-static int use_late_decision = false;
+static bool use_exec_freq     = true;
+static bool use_late_decision = false;
 
 typedef struct be_pbqp_alloc_env_t {
 	pbqp_t                      *pbqp_inst;         /**< PBQP instance for register allocation */

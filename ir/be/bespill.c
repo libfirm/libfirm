@@ -29,8 +29,8 @@
 #include "lc_opts.h"
 #include "lc_opts_enum.h"
 
-int be_coalesce_spill_slots = 1;
-int be_do_remats = 1;
+bool be_coalesce_spill_slots = true;
+bool be_do_remats            = true;
 
 static const lc_opt_table_entry_t be_spill_options[] = {
 	LC_OPT_ENT_BOOL ("coalesce_slots", "coalesce the spill slots", &be_coalesce_spill_slots),

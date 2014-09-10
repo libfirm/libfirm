@@ -6,6 +6,7 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 #include <ctype.h>
 
 #include "lc_opts_t.h"
@@ -15,8 +16,6 @@
 #include "util.h"
 #include "xmalloc.h"
 #include "obst.h"
-
-#define ERR_STRING "In argument \"%s\": "
 
 #define OPT_DELIM '-'
 
@@ -53,7 +52,7 @@ static lc_opt_entry_t *init_entry(lc_opt_entry_t *ent, lc_opt_entry_t *parent,
 
 static lc_opt_entry_t *init_grp(lc_opt_entry_t *ent)
 {
-	ent->is_grp = 1;
+	ent->is_grp = true;
 	INIT_LIST_HEAD(&ent->v.grp.grps);
 	INIT_LIST_HEAD(&ent->v.grp.opts);
 
@@ -72,7 +71,7 @@ static lc_opt_entry_t *init_opt(lc_opt_entry_t *ent,
 {
 	lc_opt_special_t *s = lc_get_opt_special(ent);
 
-	ent->is_grp = 0;
+	ent->is_grp = false;
 	list_add_tail(&ent->list, &lc_get_grp_special(ent->parent)->opts);
 
 	s->type      = type;
@@ -81,7 +80,6 @@ static lc_opt_entry_t *init_opt(lc_opt_entry_t *ent,
 	s->dump      = dump;
 	s->dump_vals = dump_vals;
 	s->length    = length;
-
 	return ent;
 }
 
@@ -89,11 +87,11 @@ static lc_opt_entry_t *init_opt(lc_opt_entry_t *ent,
 lc_opt_entry_t *lc_opt_root_grp(void)
 {
 	static lc_opt_entry_t root_group;
-	static int inited = 0;
+	static bool inited = 0;
 
 	if (!inited) {
 		obstack_init(&obst);
-		inited = 1;
+		inited = true;
 
 		init_entry(&root_group, NULL, "root", "The root node");
 		init_grp(&root_group);
@@ -256,26 +254,26 @@ static char *strtolower(char *buf, size_t n, const char *str)
 bool lc_opt_std_cb(const char *name, lc_opt_type_t type, void *data,
                    size_t length, ...)
 {
-	va_list args;
-	bool res = false;
-	int  integer;
-	(void) name;
+	(void)name;
 
+	va_list args;
 	va_start(args, length);
 
+	bool res = false;
 	if (data) {
 		res = true;
 		switch (type) {
-		case lc_opt_type_bit:
-			integer = va_arg(args, int);
-			if (integer)
+		case lc_opt_type_bit: {
+			bool val = va_arg(args, int);
+			if (val)
 				*(unsigned*)data |= length;
 			else
 				*(unsigned*)data &= ~length;
 			break;
+		}
 
 		case lc_opt_type_boolean:
-			*((int *) data) = va_arg(args, int);
+			*((bool*) data) = va_arg(args, int);
 			break;
 
 		case lc_opt_type_string:
@@ -300,17 +298,17 @@ bool lc_opt_std_cb(const char *name, lc_opt_type_t type, void *data,
 
 int lc_opt_std_dump(char *buf, size_t n, const char *name, lc_opt_type_t type, void *data, size_t length)
 {
-	int res;
-	(void) name;
-	(void) length;
+	(void)name;
+	(void)length;
 
+	int res;
 	if (data) {
 		switch (type) {
 		case lc_opt_type_bit:
-			res = snprintf(buf, n, "%x", *((unsigned *) data));
+			res = snprintf(buf, n, "%x", *((bool*) data));
 			break;
 		case lc_opt_type_boolean:
-			res = snprintf(buf, n, "%s", *((int *) data) ? "true" : "false");
+			res = snprintf(buf, n, "%s", *((bool*) data) ? "true" : "false");
 			break;
 		case lc_opt_type_string:
 			strncpy(buf, (const char*)data, n);
@@ -336,10 +334,10 @@ int lc_opt_std_dump(char *buf, size_t n, const char *name, lc_opt_type_t type, v
 
 int lc_opt_bool_dump_vals(char *buf, size_t n, const char *name, lc_opt_type_t type, void *data, size_t length)
 {
-	(void) name;
-	(void) type;
-	(void) data;
-	(void) length;
+	(void)name;
+	(void)type;
+	(void)data;
+	(void)length;
 	strncpy(buf, "true, false", n);
 	return n;
 }
@@ -360,14 +358,12 @@ bool lc_opt_occurs(lc_opt_entry_t *opt, const char *value)
 		{ "0",     0 },
 	};
 
-	if (opt == NULL) {
-		return 0;
-	}
+	if (opt == NULL)
+		return false;
 
 	lc_opt_special_t *s = lc_get_opt_special(opt);
-	if (!s->cb) {
-		return 0;
-	}
+	if (!s->cb)
+		return false;
 
 	s->is_set = true;
 
@@ -375,24 +371,22 @@ bool lc_opt_occurs(lc_opt_entry_t *opt, const char *value)
 	switch (s->type) {
 	case lc_opt_type_int: {
 		int val;
-		if (sscanf(value, "%i", &val)) {
+		if (sscanf(value, "%i", &val))
 			fine = s->cb(opt->name, s->type, s->value, s->length, val);
-		}
 		break;
 	}
 
 	case lc_opt_type_double: {
 		double val;
-		if (sscanf(value, "%lf", &val)) {
+		if (sscanf(value, "%lf", &val))
 			fine = s->cb(opt->name, s->type, s->value, s->length, val);
-		}
 		break;
 	}
 
 	case lc_opt_type_boolean:
 	case lc_opt_type_bit: {
 		char buf[16];
-		int  val = 0;
+		bool val = false;
 		strtolower(buf, sizeof(buf), value);
 		for (unsigned i = 0; i < ARRAY_SIZE(bool_strings); ++i) {
 			if (strcmp(buf, bool_strings[i].str) == 0) {
@@ -402,9 +396,8 @@ bool lc_opt_occurs(lc_opt_entry_t *opt, const char *value)
 			}
 		}
 
-		if (fine) {
+		if (fine)
 			fine = s->cb(opt->name, s->type, s->value, s->length, val);
-		}
 
 		break;
 	}
@@ -427,7 +420,6 @@ char *lc_opt_value_to_string(char *buf, size_t len, const lc_opt_entry_t *ent)
 		s->dump(buf, len, ent->name, s->type, s->value, s->length);
 	else
 		strncpy(buf, "<n/a>", len);
-
 	return buf;
 }
 
@@ -437,14 +429,12 @@ static char *lc_opt_values_to_string(char *buf, size_t len,
 	const lc_opt_special_t *s = lc_get_opt_special(ent);
 	if (s->dump_vals)
 		s->dump_vals(buf, len, ent->name, s->type, s->value, s->length);
-
 	return buf;
 }
 
 bool lc_opt_add_table(lc_opt_entry_t *root, const lc_opt_table_entry_t *table)
 {
 	bool res = false;
-
 	for (int i = 0; table[i].name != NULL; ++i) {
 		const char *name;
 		const lc_opt_table_entry_t *tab = &table[i];
@@ -527,7 +517,6 @@ void lc_opt_print_help_for_entry(lc_opt_entry_t *ent, char separator, FILE *f)
 	fprintf(f, HELP_TEMPL_VALS "\n", "option", "type", "description", "default", "possible options");
 	lc_opt_print_help_rec(ent, separator, ent, f);
 }
-
 
 static void indent(FILE *f, int n)
 {

@@ -69,8 +69,8 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 static const ia32_isa_t *isa;
 static char              pic_base_label[128];
 static ir_label_t        exc_label_id;
-static int               mark_spill_reload = 0;
-static int               do_pic;
+static bool              mark_spill_reload;
+static bool              do_pic;
 
 static bool              sp_relative;
 static int               frame_type_size;

@@ -58,16 +58,16 @@
 
 /* options visible for anyone */
 be_options_t be_options = {
-	DUMP_NONE,                         /* dump flags */
-	BE_TIME_OFF,                       /* no timing */
-	false,                             /* profile_generate */
-	false,                             /* profile_use */
-	0,                                 /* try to omit frame pointer */
-	0,                                 /* create PIC code */
-	true,                              /* do verification */
-	"",                                /* ilp server */
-	"",                                /* ilp solver */
-	1,                                 /* verbose assembler output */
+	.dump_flags           = DUMP_NONE,
+	.timing               = false,
+	.opt_profile_generate = false,
+	.opt_profile_use      = false,
+	.omit_fp              = false,
+	.pic                  = false,
+	.do_verify            = true,
+	.ilp_server           = "",
+	.ilp_solver           = "",
+	.verbose_asm          = true,
 };
 
 /* back end instruction set architecture to use */
@@ -96,9 +96,9 @@ static const lc_opt_table_entry_t be_main_options[] = {
 	LC_OPT_ENT_BOOL     ("pic",        "create PIC code",                                     &be_options.pic),
 	LC_OPT_ENT_BOOL     ("verify",     "verify the backend irg",                              &be_options.do_verify),
 	LC_OPT_ENT_BOOL     ("time",       "get backend timing statistics",                       &be_options.timing),
-	LC_OPT_ENT_BOOL     ("profilegenerate", "instrument the code for execution count profiling",   &be_options.opt_profile_generate),
-	LC_OPT_ENT_BOOL     ("profileuse",      "use existing profile data",                           &be_options.opt_profile_use),
-	LC_OPT_ENT_BOOL     ("verboseasm", "enable verbose assembler output",                     &be_options.verbose_asm),
+	LC_OPT_ENT_BOOL     ("profilegenerate", "instrument the code for execution count profiling", &be_options.opt_profile_generate),
+	LC_OPT_ENT_BOOL     ("profileuse",      "use existing profile data",                         &be_options.opt_profile_use),
+	LC_OPT_ENT_BOOL     ("verboseasm", "enable verbose assembler output",                        &be_options.verbose_asm),
 
 	LC_OPT_ENT_STR("ilp.server", "the ilp server name", &be_options.ilp_server),
 	LC_OPT_ENT_STR("ilp.solver", "the ilp solver name", &be_options.ilp_solver),
@@ -462,7 +462,7 @@ void be_lower_for_target(void)
  */
 static void be_main_loop(FILE *file_handle, const char *cup_name)
 {
-	be_timing = (be_options.timing == BE_TIME_ON);
+	be_timing = be_options.timing;
 
 	/* perform target lowering if it didn't happen yet */
 	if (get_irp_n_irgs() > 0 && !irg_is_constrained(get_irp_irg(0), IR_GRAPH_CONSTRAINT_TARGET_LOWERED))
@@ -693,7 +693,7 @@ void be_main(FILE *file_handle, const char *cup_name)
 {
 	ir_timer_t *t = NULL;
 
-	if (be_options.timing == BE_TIME_ON) {
+	if (be_options.timing) {
 		t = ir_timer_new();
 
 		if (ir_timer_enter_high_priority()) {
@@ -715,7 +715,7 @@ void be_main(FILE *file_handle, const char *cup_name)
 
 	be_main_loop(file_handle, cup_name);
 
-	if (be_options.timing == BE_TIME_ON) {
+	if (be_options.timing) {
 		ir_timer_stop(t);
 		ir_timer_leave_high_priority();
 		if (stat_ev_enabled) {

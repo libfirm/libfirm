@@ -117,7 +117,7 @@ static lc_opt_enum_int_var_t arch_fpu_var = {
 	&fpu, fpu_items
 };
 
-static int use_softfloat;
+static bool use_softfloat;
 
 static const lc_opt_table_entry_t sparc_options[] = {
 	LC_OPT_ENT_ENUM_INT("fpunit",     "select the floating point unit", &arch_fpu_var),
