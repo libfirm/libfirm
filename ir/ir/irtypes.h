@@ -47,7 +47,7 @@ typedef struct {
 	equivalent_node_func  equivalent_node_Proj; /**< Optimizes the Proj node by returning an equivalent one. */
 	transform_node_func   transform_node;       /**< Optimizes the node by transforming it. */
 	transform_node_func   transform_node_Proj;  /**< Optimizes the Proj node by transforming it. */
-	node_cmp_attr_func    node_cmp_attr;        /**< Compares two node attributes. */
+	node_attrs_equal_func  attrs_equal;         /**< Compares two node attributes. */
 	reassociate_func      reassociate;          /**< Reassociate a tree. */
 	copy_attr_func        copy_attr;            /**< Copy node attributes. */
 	get_type_attr_func    get_type_attr;        /**< Returns the type attribute of a node. */
@@ -335,8 +335,7 @@ typedef struct mod_attr {
 
 /** Attributes for ASM nodes. */
 typedef struct asm_attr {
-	/* BEWARE: pin state MUST be the first attribute */
-	op_pin_state       pin_state;
+	except_attr        exc; /**< The exception attribute. MUST be first. */
 	ident             *text;               /**< The inline assembler text. */
 	ir_asm_constraint *input_constraints;  /**< Input constraints. */
 	ir_asm_constraint *output_constraints; /**< Output constraints. */

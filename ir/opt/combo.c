@@ -217,14 +217,9 @@ static int cmp_irn_opcode(const ir_node *a, const ir_node *b)
 		return 1;
 	}
 
-	/*
-	 * here, we already know that the nodes are identical except their
-	 * attributes
-	 */
-	if (a->op->ops.node_cmp_attr)
-		return a->op->ops.node_cmp_attr(a, b);
-
-	return 0;
+	/* here, we already know that the nodes are identical except their
+	 * attributes */
+	return !a->op->ops.attrs_equal(a, b);
 }
 
 #ifdef CHECK_PARTITIONS

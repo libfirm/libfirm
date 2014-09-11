@@ -7679,14 +7679,9 @@ int identities_cmp(const void *elt, const void *key)
 		}
 	}
 
-	/*
-	 * here, we already know that the nodes are identical except their
-	 * attributes
-	 */
-	if (a->op->ops.node_cmp_attr)
-		return a->op->ops.node_cmp_attr(a, b);
-
-	return 0;
+	/* here, we already know that the nodes are identical except their
+	 * attributes */
+	return !a->op->ops.attrs_equal(a, b);
 }
 
 unsigned ir_node_hash(const ir_node *node)

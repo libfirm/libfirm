@@ -78,26 +78,22 @@ static void new_phi_copy_attr(ir_graph *irg, const ir_node *old_node,
 	old_phi_copy_attr(irg, old_node, new_node);
 }
 
-int be_nodes_equal(const ir_node *node1, const ir_node *node2)
+int attrs_equal_be_node(const ir_node *node1, const ir_node *node2)
 {
 	const backend_info_t *info1 = be_get_info(node1);
 	const backend_info_t *info2 = be_get_info(node2);
 	size_t                len   = ARR_LEN(info1->out_infos);
-	int                   arity = get_irn_arity(node1);
-	int                   in;
-	size_t                i;
-
 	if (ARR_LEN(info2->out_infos) != len)
 		return false;
 
+	int arity = get_irn_arity(node1);
 	assert(arity == get_irn_arity(node2));
-
-	for (in = 0; in < arity; ++in) {
+	for (int in = 0; in < arity; ++in) {
 		if (info1->in_reqs[in] != info2->in_reqs[in])
 			return false;
 	}
 
-	for (i = 0; i < len; ++i) {
+	for (size_t i = 0; i < len; ++i) {
 		const reg_out_info_t *out1 = &info1->out_infos[i];
 		const reg_out_info_t *out2 = &info2->out_infos[i];
 		if (out1->reg != out2->reg)

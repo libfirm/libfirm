@@ -57,7 +57,7 @@ ir_node *new_rd_ASM(dbg_info *db, ir_node *block, ir_node *mem,
 
 	struct obstack *const obst = get_irg_obstack(irg);
 	asm_attr       *const a    = &res->attr.assem;
-	a->pin_state          = op_pin_state_pinned;
+	a->exc.pin_state      = op_pin_state_pinned;
 	a->input_constraints  = NEW_ARR_D(ir_asm_constraint, obst, arity);
 	a->output_constraints = NEW_ARR_D(ir_asm_constraint, obst, n_outs);
 	a->clobbers           = NEW_ARR_D(ident*,            obst, n_clobber);

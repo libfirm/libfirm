@@ -277,14 +277,9 @@ static int compare_gvn_identities(const void *elt, const void *key)
 		}
 	}
 
-	/*
-	 * here, we already now that the nodes are identical except their
-	 * attributes
-	 */
-	if (a->op->ops.node_cmp_attr)
-		return a->op->ops.node_cmp_attr(a, b);
-
-	return 0;
+	/* here, we already now that the nodes are identical except their
+	 * attributes */
+	return !a->op->ops.attrs_equal(a, b);
 }
 
 /**

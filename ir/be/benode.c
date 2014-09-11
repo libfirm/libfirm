@@ -96,55 +96,35 @@ ir_op *op_be_Start;
 
 /**
  * Compare the attributes of two be_Return nodes.
- *
- * @return zero if both nodes have identically attributes
  */
-static int Return_cmp_attr(const ir_node *a, const ir_node *b)
+static int be_return_attrs_equal(const ir_node *a, const ir_node *b)
 {
-	const be_return_attr_t *a_attr = (const be_return_attr_t*)get_irn_generic_attr_const(a);
-	const be_return_attr_t *b_attr = (const be_return_attr_t*)get_irn_generic_attr_const(b);
-
-	if (a_attr->num_ret_vals != b_attr->num_ret_vals)
-		return 1;
-	if (a_attr->pop != b_attr->pop)
-		return 1;
-	if (a_attr->emit_pop != b_attr->emit_pop)
-		return 1;
-
-	return be_nodes_equal(a, b);
+	const be_return_attr_t *attr_a = (const be_return_attr_t*)get_irn_generic_attr_const(a);
+	const be_return_attr_t *attr_b = (const be_return_attr_t*)get_irn_generic_attr_const(b);
+	return attr_a->num_ret_vals == attr_b->num_ret_vals
+	    && attr_a->pop == attr_b->pop && attr_a->emit_pop == attr_b->emit_pop
+	    && attrs_equal_be_node(a, b);
 }
 
 /**
  * Compare the attributes of two be_IncSP nodes.
- *
- * @return zero if both nodes have identically attributes
  */
-static int IncSP_cmp_attr(const ir_node *a, const ir_node *b)
+static int be_incsp_attrs_equal(const ir_node *a, const ir_node *b)
 {
-	const be_incsp_attr_t *a_attr = (const be_incsp_attr_t*)get_irn_generic_attr_const(a);
-	const be_incsp_attr_t *b_attr = (const be_incsp_attr_t*)get_irn_generic_attr_const(b);
-
-	if (a_attr->offset != b_attr->offset)
-		return 1;
-
-	return be_nodes_equal(a, b);
+	const be_incsp_attr_t *attr_a = (const be_incsp_attr_t*)get_irn_generic_attr_const(a);
+	const be_incsp_attr_t *attr_b = (const be_incsp_attr_t*)get_irn_generic_attr_const(b);
+	return attr_a->offset == attr_b->offset && attrs_equal_be_node(a, b);
 }
 
 /**
  * Compare the attributes of two be_Call nodes.
- *
- * @return zero if both nodes have identically attributes
  */
-static int Call_cmp_attr(const ir_node *a, const ir_node *b)
+static int be_call_attrs_equal(const ir_node *a, const ir_node *b)
 {
-	const be_call_attr_t *a_attr = (const be_call_attr_t*)get_irn_generic_attr_const(a);
-	const be_call_attr_t *b_attr = (const be_call_attr_t*)get_irn_generic_attr_const(b);
-
-	if (a_attr->ent != b_attr->ent ||
-		a_attr->call_tp != b_attr->call_tp)
-		return 1;
-
-	return be_nodes_equal(a, b);
+	const be_call_attr_t *attr_a = (const be_call_attr_t*)get_irn_generic_attr_const(a);
+	const be_call_attr_t *attr_b = (const be_call_attr_t*)get_irn_generic_attr_const(b);
+	return attr_a->ent == attr_b->ent && attr_a->call_tp == attr_b->call_tp
+	    && attrs_equal_be_node(a, b);
 }
 
 static arch_register_req_t *allocate_reg_req(ir_graph *const irg)
@@ -1066,17 +1046,17 @@ void be_init_op(void)
 	ir_op_set_memory_index(op_be_Call, n_be_Call_mem);
 	ir_op_set_fragile_indices(op_be_Call, pn_be_Call_X_regular, pn_be_Call_X_except);
 
-	op_be_Perm->ops.node_cmp_attr      = be_nodes_equal;
-	op_be_MemPerm->ops.node_cmp_attr   = be_nodes_equal;
-	op_be_Copy->ops.node_cmp_attr      = be_nodes_equal;
-	op_be_Keep->ops.node_cmp_attr      = be_nodes_equal;
-	op_be_CopyKeep->ops.node_cmp_attr  = be_nodes_equal;
-	op_be_Call->ops.node_cmp_attr      = Call_cmp_attr;
-	op_be_Return->ops.node_cmp_attr    = Return_cmp_attr;
-	op_be_AddSP->ops.node_cmp_attr     = be_nodes_equal;
-	op_be_SubSP->ops.node_cmp_attr     = be_nodes_equal;
-	op_be_IncSP->ops.node_cmp_attr     = IncSP_cmp_attr;
-	op_be_Start->ops.node_cmp_attr     = be_nodes_equal;
+	set_op_attrs_equal(op_be_Perm,     attrs_equal_be_node);
+	set_op_attrs_equal(op_be_MemPerm,  attrs_equal_be_node);
+	set_op_attrs_equal(op_be_Copy,     attrs_equal_be_node);
+	set_op_attrs_equal(op_be_Keep,     attrs_equal_be_node);
+	set_op_attrs_equal(op_be_CopyKeep, attrs_equal_be_node);
+	set_op_attrs_equal(op_be_Call,     be_call_attrs_equal);
+	set_op_attrs_equal(op_be_Return,   be_return_attrs_equal);
+	set_op_attrs_equal(op_be_AddSP,    attrs_equal_be_node);
+	set_op_attrs_equal(op_be_SubSP,    attrs_equal_be_node);
+	set_op_attrs_equal(op_be_IncSP,    be_incsp_attrs_equal);
+	set_op_attrs_equal(op_be_Start,    attrs_equal_be_node);
 
 	/* attach out dummy_ops to middle end nodes */
 	for (unsigned opc = iro_first; opc <= iro_last; ++opc) {

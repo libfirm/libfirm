@@ -22,7 +22,6 @@ $mode_fp  = "mode_F";  # mode used by floatingpoint registers
 #                  ],
 #   comment   => "any comment for constructor",  # optional
 #   reg_req   => { in => [ "reg_class|register" ], out => [ "reg_class|register|in_rX" ] },
-#   cmp_attr  => "c source code for comparing node attributes", # optional
 #   outs      => { "out1", "out2" },# optional, creates pn_op_out1, ... consts
 #   ins       => { "in1", "in2" },  # optional, creates n_op_in1, ... consts
 #   mode      => "mode_Iu",         # optional, predefines the mode
@@ -187,12 +186,7 @@ Const => {
 	custominit => "set_TEMPLATE_value(res, value);",
 	reg_req    => { out => [ "gp" ] },
 	emit       => 'mov %I, %D1',
-	cmp_attr   =>
-'
-	/* TODO: compare Const attributes */
-    return 1;
-',
-	mode    => $mode_gp,
+	mode       => $mode_gp,
 },
 
 # Control Flow
@@ -278,11 +272,6 @@ fConst => {
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { out => [ "fp" ] },
 	emit      => 'fmov %I, %D1',
-	cmp_attr  =>
-'
-	/* TODO: compare fConst attributes */
-	return 1;
-',
 	mode      => $mode_fp,
 },
 

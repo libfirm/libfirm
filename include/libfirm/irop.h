@@ -145,9 +145,9 @@ typedef ir_node *(*transform_node_func)(ir_node *self);
 /**
  * The node attribute compare operation.
  * Compares the nodes attributes of two nodes of identical opcode
- * and returns 0 if the attributes are identical, 1 if they differ.
+ * and returns 1 if the attributes are identical, 0 if they differ.
  */
-typedef int (*node_cmp_attr_func)(const ir_node *a, const ir_node *b);
+typedef int (*node_attrs_equal_func)(const ir_node *a, const ir_node *b);
 
 /**
  * The reassociation operation.
@@ -227,8 +227,8 @@ FIRM_API void set_op_equivalent_node_proj(ir_op *op, equivalent_node_func func);
 FIRM_API void set_op_transform_node(ir_op *op, transform_node_func func);
 /** Sets transform Proj node callback @p func for operation @p op */
 FIRM_API void set_op_transform_node_proj(ir_op *op, transform_node_func func);
-/** Sets cmp_attr callback @p func for operation @p op */
-FIRM_API void set_op_cmp_attr(ir_op *op, node_cmp_attr_func func);
+/** Sets attrs_equal callback @p func for operation @p op */
+FIRM_API void set_op_attrs_equal(ir_op *op, node_attrs_equal_func func);
 /** Sets reassociation callback @p func for operation @p op */
 FIRM_API void set_op_reassociate(ir_op *op, reassociate_func func);
 /** Sets attribute copy callback @p func for operation @p op */

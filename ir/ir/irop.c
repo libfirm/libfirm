@@ -35,6 +35,20 @@ static unsigned default_hash_node(const ir_node *node);
 static void default_copy_attr(ir_graph *irg, const ir_node *old_node,
                               ir_node *new_node);
 
+int attrs_equal_false(const ir_node *a, const ir_node *b)
+{
+	(void)a;
+	(void)b;
+	return false;
+}
+
+static int attrs_equal_true(const ir_node *a, const ir_node *b)
+{
+	(void)a;
+	(void)b;
+	return true;
+}
+
 ir_op *new_ir_op(unsigned code, const char *name, op_pin_state p,
                  irop_flags flags, op_arity opar, int op_index,
                  size_t attr_size)
@@ -53,6 +67,7 @@ ir_op *new_ir_op(unsigned code, const char *name, op_pin_state p,
 	memset(&res->ops, 0, sizeof(res->ops));
 	res->ops.hash            = default_hash_node;
 	res->ops.copy_attr       = default_copy_attr;
+	res->ops.attrs_equal     = attrs_equal_true;
 	res->ops.get_type_attr   = default_get_type_attr;
 	res->ops.get_entity_attr = default_get_entity_attr;
 
@@ -238,175 +253,164 @@ static unsigned hash_typeconst(const ir_node *node)
 }
 
 /** Compares two exception attributes */
-static int node_cmp_exception(const ir_node *a, const ir_node *b)
+static bool except_attrs_equal(const except_attr *a, const except_attr *b)
 {
-	const except_attr *ea = &a->attr.except;
-	const except_attr *eb = &b->attr.except;
-	return ea->pin_state != eb->pin_state;
+	return a->pin_state == b->pin_state;
 }
 
 /** Compares the attributes of two Const nodes. */
-static int node_cmp_attr_Const(const ir_node *a, const ir_node *b)
+static int attrs_equal_Const(const ir_node *a, const ir_node *b)
 {
-	return get_Const_tarval(a) != get_Const_tarval(b);
+	return get_Const_tarval(a) == get_Const_tarval(b);
 }
 
 /** Compares the attributes of two Proj nodes. */
-static int node_cmp_attr_Proj(const ir_node *a, const ir_node *b)
+static int attrs_equal_Proj(const ir_node *a, const ir_node *b)
 {
-	return a->attr.proj.proj != b->attr.proj.proj;
+	return a->attr.proj.proj == b->attr.proj.proj;
 }
 
 /** Compares the attributes of two Alloc nodes. */
-static int node_cmp_attr_Alloc(const ir_node *a, const ir_node *b)
+static int attrs_equal_Alloc(const ir_node *a, const ir_node *b)
 {
 	const alloc_attr *pa = &a->attr.alloc;
 	const alloc_attr *pb = &b->attr.alloc;
-	return pa->alignment != pb->alignment;
+	return pa->alignment == pb->alignment;
 }
 
 /** Compares the attributes of two Address/Offset nodes. */
-static int node_cmp_attr_entconst(const ir_node *a, const ir_node *b)
+static int attrs_equal_entconst(const ir_node *a, const ir_node *b)
 {
 	const entconst_attr *pa = &a->attr.entc;
 	const entconst_attr *pb = &b->attr.entc;
-	return pa->entity != pb->entity;
+	return pa->entity == pb->entity;
 }
 
 /** Compares the attributes of two Align/Size nodes. */
-static int node_cmp_attr_typeconst(const ir_node *a, const ir_node *b)
+static int attrs_equal_typeconst(const ir_node *a, const ir_node *b)
 {
 	const typeconst_attr *pa = &a->attr.typec;
 	const typeconst_attr *pb = &b->attr.typec;
-	return pa->type != pb->type;
+	return pa->type == pb->type;
 }
 
 /** Compares the attributes of two Call nodes. */
-static int node_cmp_attr_Call(const ir_node *a, const ir_node *b)
+static int attrs_equal_Call(const ir_node *a, const ir_node *b)
 {
 	const call_attr *pa = &a->attr.call;
 	const call_attr *pb = &b->attr.call;
-	if (pa->type != pb->type)
-		return 1;
-	return node_cmp_exception(a, b);
+	return pa->type == pb->type && except_attrs_equal(&pa->exc, &pb->exc);
 }
 
 /** Compares the attributes of two Sel nodes. */
-static int node_cmp_attr_Sel(const ir_node *a, const ir_node *b)
+static int attrs_equal_Sel(const ir_node *a, const ir_node *b)
 {
 	const ir_type *a_type = get_Sel_type(a);
 	const ir_type *b_type = get_Sel_type(b);
-	return a_type != b_type;
+	return a_type == b_type;
 }
 
-static int node_cmp_attr_Member(const ir_node *a, const ir_node *b)
+static int attrs_equal_Member(const ir_node *a, const ir_node *b)
 {
 	const ir_entity *a_ent = get_Member_entity(a);
 	const ir_entity *b_ent = get_Member_entity(b);
-	return a_ent != b_ent;
+	return a_ent == b_ent;
 }
 
 /** Compares the attributes of two Phi nodes. */
-static int node_cmp_attr_Phi(const ir_node *a, const ir_node *b)
+static int attrs_equal_Phi(const ir_node *a, const ir_node *b)
 {
-	(void) b;
+	(void)b;
 	/* do not CSE Phi-nodes without any inputs when building new graphs */
 	if (get_irn_arity(a) == 0 &&
-		irg_is_constrained(get_irn_irg(a), IR_GRAPH_CONSTRAINT_CONSTRUCTION)) {
-	    return 1;
-	}
-	return 0;
+		irg_is_constrained(get_irn_irg(a), IR_GRAPH_CONSTRAINT_CONSTRUCTION))
+	    return false;
+	return true;
 }
 
 /** Compares the attributes of two Load nodes. */
-static int node_cmp_attr_Load(const ir_node *a, const ir_node *b)
+static int attrs_equal_Load(const ir_node *a, const ir_node *b)
 {
-	if (get_Load_volatility(a) == volatility_is_volatile ||
-	    get_Load_volatility(b) == volatility_is_volatile)
-		/* NEVER do CSE on volatile Loads */
-		return 1;
-	/* do not CSE Loads with different alignment. Be conservative. */
-	if (get_Load_unaligned(a) != get_Load_unaligned(b))
-		return 1;
-	if (get_Load_mode(a) != get_Load_mode(b))
-		return 1;
-	return node_cmp_exception(a, b);
+	const load_attr *attr_a = &a->attr.load;
+	const load_attr *attr_b = &b->attr.load;
+	return attr_a->volatility == attr_b->volatility
+	    && attr_a->unaligned == attr_b->unaligned
+	    && attr_a->mode == attr_b->mode
+	    && except_attrs_equal(&attr_a->exc, &attr_b->exc);
 }
 
 /** Compares the attributes of two Store nodes. */
-static int node_cmp_attr_Store(const ir_node *a, const ir_node *b)
+static int attrs_equal_Store(const ir_node *a, const ir_node *b)
 {
-	/* do not CSE Stores with different alignment. Be conservative. */
-	if (get_Store_unaligned(a) != get_Store_unaligned(b))
-		return 1;
-	/* NEVER do CSE on volatile Stores */
-	if (get_Store_volatility(a) == volatility_is_volatile ||
-	    get_Store_volatility(b) == volatility_is_volatile)
-		return 1;
-	return node_cmp_exception(a, b);
+	const store_attr *attr_a = &a->attr.store;
+	const store_attr *attr_b = &b->attr.store;
+	return attr_a->unaligned == attr_b->unaligned
+	    && attr_a->volatility == attr_b->volatility
+	    && except_attrs_equal(&attr_a->exc, &attr_b->exc);
 }
 
-static int node_cmp_attr_CopyB(const ir_node *a, const ir_node *b)
+static int attrs_equal_CopyB(const ir_node *a, const ir_node *b)
 {
-	if (get_CopyB_type(a) != get_CopyB_type(b))
-		return 1;
-	return node_cmp_exception(a, b);
+	const copyb_attr *attr_a = &a->attr.copyb;
+	const copyb_attr *attr_b = &b->attr.copyb;
+	return attr_a->type == attr_b->type
+	    && attr_a->volatility == attr_b->volatility;
 }
 
 /** Compares the attributes of two Div nodes. */
-static int node_cmp_attr_Div(const ir_node *a, const ir_node *b)
+static int attrs_equal_Div(const ir_node *a, const ir_node *b)
 {
-	const div_attr *ma = &a->attr.div;
-	const div_attr *mb = &b->attr.div;
-	if (ma->resmode != mb->resmode || ma->no_remainder  != mb->no_remainder)
-		return 1;
-	return node_cmp_exception(a, b);
+	const div_attr *attr_a = &a->attr.div;
+	const div_attr *attr_b = &b->attr.div;
+	return attr_a->resmode == attr_b->resmode
+	    && attr_a->no_remainder == attr_b->no_remainder
+	    && except_attrs_equal(&attr_a->exc, &attr_b->exc);
 }
 
 /** Compares the attributes of two Mod nodes. */
-static int node_cmp_attr_Mod(const ir_node *a, const ir_node *b)
+static int attrs_equal_Mod(const ir_node *a, const ir_node *b)
 {
-	const mod_attr *ma = &a->attr.mod;
-	const mod_attr *mb = &b->attr.mod;
-	if (ma->resmode != mb->resmode)
-		return 1;
-	return node_cmp_exception(a, b);
+	const mod_attr *attr_a = &a->attr.mod;
+	const mod_attr *attr_b = &b->attr.mod;
+	return attr_a->resmode == attr_b->resmode
+	    && except_attrs_equal(&attr_a->exc, &attr_b->exc);
 }
 
-static int node_cmp_attr_Cmp(const ir_node *a, const ir_node *b)
+static int attrs_equal_Cmp(const ir_node *a, const ir_node *b)
 {
-	const cmp_attr *ma = &a->attr.cmp;
-	const cmp_attr *mb = &b->attr.cmp;
-	return ma->relation != mb->relation;
+	const cmp_attr *attr_a = &a->attr.cmp;
+	const cmp_attr *attr_b = &b->attr.cmp;
+	return attr_a->relation == attr_b->relation;
 }
 
 /** Compares the attributes of two Confirm nodes. */
-static int node_cmp_attr_Confirm(const ir_node *a, const ir_node *b)
+static int attrs_equal_Confirm(const ir_node *a, const ir_node *b)
 {
-	const confirm_attr *ma = &a->attr.confirm;
-	const confirm_attr *mb = &b->attr.confirm;
-	return ma->relation != mb->relation;
+	const confirm_attr *attr_a = &a->attr.confirm;
+	const confirm_attr *attr_b = &b->attr.confirm;
+	return attr_a->relation == attr_b->relation;
 }
 
 /** Compares the attributes of two Builtin nodes. */
-static int node_cmp_attr_Builtin(const ir_node *a, const ir_node *b)
+static int attrs_equal_Builtin(const ir_node *a, const ir_node *b)
 {
-	if (get_Builtin_kind(a) != get_Builtin_kind(b))
-		return 1;
-	if (get_Builtin_type(a) != get_Builtin_type(b))
-		return 1;
-	return node_cmp_exception(a, b);
+	const builtin_attr *attr_a = &a->attr.builtin;
+	const builtin_attr *attr_b = &b->attr.builtin;
+	return attr_a->kind == attr_b->kind && attr_a->type == attr_b->type
+	    && except_attrs_equal(&attr_a->exc, &attr_b->exc);
 }
 
 /** Compares the attributes of two ASM nodes. */
-static int node_cmp_attr_ASM(const ir_node *a, const ir_node *b)
+static int attrs_equal_ASM(const ir_node *a, const ir_node *b)
 {
-	if (get_ASM_text(a) != get_ASM_text(b))
-		return 1;
+	const asm_attr *attr_a = &a->attr.assem;
+	const asm_attr *attr_b = &b->attr.assem;
+	if (attr_a->text != attr_b->text)
+		return false;
 
 	int n_inputs = get_ASM_n_inputs(a);
 	if (n_inputs != get_ASM_n_inputs(b))
-		return 1;
+		return false;
 
 	const ir_asm_constraint *in_a = get_ASM_input_constraints(a);
 	const ir_asm_constraint *in_b = get_ASM_input_constraints(b);
@@ -414,12 +418,12 @@ static int node_cmp_attr_ASM(const ir_node *a, const ir_node *b)
 		if (in_a[i].pos != in_b[i].pos
 		    || in_a[i].constraint != in_b[i].constraint
 		    || in_a[i].mode != in_b[i].mode)
-			return 1;
+			return false;
 	}
 
 	size_t n_outputs = get_ASM_n_output_constraints(a);
 	if (n_outputs != get_ASM_n_output_constraints(b))
-		return 1;
+		return false;
 
 	const ir_asm_constraint *out_a = get_ASM_output_constraints(a);
 	const ir_asm_constraint *out_b = get_ASM_output_constraints(b);
@@ -427,29 +431,21 @@ static int node_cmp_attr_ASM(const ir_node *a, const ir_node *b)
 		if (out_a[i].pos != out_b[i].pos
 		    || out_a[i].constraint != out_b[i].constraint
 		    || out_a[i].mode != out_b[i].mode)
-			return 1;
+			return false;
 	}
 
 	size_t n_clobbers = get_ASM_n_clobbers(a);
 	if (n_clobbers != get_ASM_n_clobbers(b))
-		return 1;
+		return false;
 
 	ident **cla = get_ASM_clobbers(a);
 	ident **clb = get_ASM_clobbers(b);
 	for (size_t i = 0; i < n_clobbers; ++i) {
 		if (cla[i] != clb[i])
-			return 1;
+			return false;
 	}
 
-	return node_cmp_exception(a, b);
-}
-
-/** Use this for nodes that should not CSE. */
-static int node_cmp_attr_unequal(const ir_node *a, const ir_node *b)
-{
-	(void) a;
-	(void) b;
-	return 1;
+	return except_attrs_equal(&attr_a->exc, &attr_b->exc);
 }
 
 static void default_copy_attr(ir_graph *irg, const ir_node *old_node,
@@ -559,9 +555,9 @@ void set_op_transform_node_proj(ir_op *op, transform_node_func func)
 	op->ops.transform_node_Proj = func;
 }
 
-void set_op_cmp_attr(ir_op *op, node_cmp_attr_func func)
+void set_op_attrs_equal(ir_op *op, node_attrs_equal_func func)
 {
-	op->ops.node_cmp_attr = func;
+	op->ops.attrs_equal = func;
 }
 
 void set_op_reassociate(ir_op *op, reassociate_func func)
@@ -605,28 +601,28 @@ void firm_init_op(void)
 	ir_init_opcodes();
 	be_init_op();
 
-	set_op_cmp_attr(op_ASM,     node_cmp_attr_ASM);
-	set_op_cmp_attr(op_Address, node_cmp_attr_entconst);
-	set_op_cmp_attr(op_Align,   node_cmp_attr_typeconst);
-	set_op_cmp_attr(op_Alloc,   node_cmp_attr_Alloc);
-	set_op_cmp_attr(op_Builtin, node_cmp_attr_Builtin);
-	set_op_cmp_attr(op_Call,    node_cmp_attr_Call);
-	set_op_cmp_attr(op_Cmp,     node_cmp_attr_Cmp);
-	set_op_cmp_attr(op_Confirm, node_cmp_attr_Confirm);
-	set_op_cmp_attr(op_Const,   node_cmp_attr_Const);
-	set_op_cmp_attr(op_CopyB,   node_cmp_attr_CopyB);
-	set_op_cmp_attr(op_Div,     node_cmp_attr_Div);
-	set_op_cmp_attr(op_Dummy,   node_cmp_attr_unequal);
-	set_op_cmp_attr(op_Load,    node_cmp_attr_Load);
-	set_op_cmp_attr(op_Member,  node_cmp_attr_Member);
-	set_op_cmp_attr(op_Mod,     node_cmp_attr_Mod);
-	set_op_cmp_attr(op_Offset,  node_cmp_attr_entconst);
-	set_op_cmp_attr(op_Phi,     node_cmp_attr_Phi);
-	set_op_cmp_attr(op_Proj,    node_cmp_attr_Proj);
-	set_op_cmp_attr(op_Sel,     node_cmp_attr_Sel);
-	set_op_cmp_attr(op_Size,    node_cmp_attr_typeconst);
-	set_op_cmp_attr(op_Store,   node_cmp_attr_Store);
-	set_op_cmp_attr(op_Unknown, node_cmp_attr_unequal);
+	set_op_attrs_equal(op_ASM,     attrs_equal_ASM);
+	set_op_attrs_equal(op_Address, attrs_equal_entconst);
+	set_op_attrs_equal(op_Align,   attrs_equal_typeconst);
+	set_op_attrs_equal(op_Alloc,   attrs_equal_Alloc);
+	set_op_attrs_equal(op_Builtin, attrs_equal_Builtin);
+	set_op_attrs_equal(op_Call,    attrs_equal_Call);
+	set_op_attrs_equal(op_Cmp,     attrs_equal_Cmp);
+	set_op_attrs_equal(op_Confirm, attrs_equal_Confirm);
+	set_op_attrs_equal(op_Const,   attrs_equal_Const);
+	set_op_attrs_equal(op_CopyB,   attrs_equal_CopyB);
+	set_op_attrs_equal(op_Div,     attrs_equal_Div);
+	set_op_attrs_equal(op_Dummy,   attrs_equal_false);
+	set_op_attrs_equal(op_Load,    attrs_equal_Load);
+	set_op_attrs_equal(op_Member,  attrs_equal_Member);
+	set_op_attrs_equal(op_Mod,     attrs_equal_Mod);
+	set_op_attrs_equal(op_Offset,  attrs_equal_entconst);
+	set_op_attrs_equal(op_Phi,     attrs_equal_Phi);
+	set_op_attrs_equal(op_Proj,    attrs_equal_Proj);
+	set_op_attrs_equal(op_Sel,     attrs_equal_Sel);
+	set_op_attrs_equal(op_Size,    attrs_equal_typeconst);
+	set_op_attrs_equal(op_Store,   attrs_equal_Store);
+	set_op_attrs_equal(op_Unknown, attrs_equal_false);
 
 	set_op_hash(op_Address, hash_entconst);
 	set_op_hash(op_Align,   hash_typeconst);

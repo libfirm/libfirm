@@ -319,83 +319,69 @@ static void sparc_copy_attr(ir_graph *irg, const ir_node *old_node,
 	new_info->in_reqs = old_info->in_reqs;
 }
 
-/**
- * compare some node's attributes
- */
-static int cmp_attr_sparc(const ir_node *a, const ir_node *b)
+static int sparc_attrs_equal(const ir_node *a, const ir_node *b)
 {
 	const sparc_attr_t *attr_a = get_sparc_attr_const(a);
 	const sparc_attr_t *attr_b = get_sparc_attr_const(b);
-
-	return attr_a->immediate_value != attr_b->immediate_value
-		|| attr_a->immediate_value_entity != attr_b->immediate_value_entity;
+	return attr_a->immediate_value == attr_b->immediate_value
+	    && attr_a->immediate_value_entity == attr_b->immediate_value_entity;
 }
 
-static int cmp_attr_sparc_load_store(const ir_node *a, const ir_node *b)
+static int sparc_load_store_attrs_equal(const ir_node *a, const ir_node *b)
 {
 	const sparc_load_store_attr_t *attr_a = get_sparc_load_store_attr_const(a);
 	const sparc_load_store_attr_t *attr_b = get_sparc_load_store_attr_const(b);
-
-	if (cmp_attr_sparc(a, b))
-		return 1;
-
-	return attr_a->is_frame_entity != attr_b->is_frame_entity
-			|| attr_a->load_store_mode != attr_b->load_store_mode;
+	return sparc_attrs_equal(a, b)
+	    && attr_a->is_frame_entity == attr_b->is_frame_entity
+	    && attr_a->load_store_mode == attr_b->load_store_mode;
 }
 
-static int cmp_attr_sparc_jmp_cond(const ir_node *a, const ir_node *b)
+static int sparc_jmp_cond_attrs_equal(const ir_node *a, const ir_node *b)
 {
 	const sparc_jmp_cond_attr_t *attr_a = get_sparc_jmp_cond_attr_const(a);
 	const sparc_jmp_cond_attr_t *attr_b = get_sparc_jmp_cond_attr_const(b);
-
-	if (cmp_attr_sparc(a, b))
-		return 1;
-
-	return attr_a->relation != attr_b->relation
-	    || attr_a->is_unsigned != attr_b->is_unsigned;
+	return sparc_attrs_equal(a, b)
+	    && attr_a->relation == attr_b->relation
+	    && attr_a->is_unsigned == attr_b->is_unsigned;
 }
 
-static int cmp_attr_sparc_fp(const ir_node *a, const ir_node *b)
+static int sparc_fp_attrs_equal(const ir_node *a, const ir_node *b)
 {
 	const sparc_fp_attr_t *attr_a = get_sparc_fp_attr_const(a);
 	const sparc_fp_attr_t *attr_b = get_sparc_fp_attr_const(b);
-
-	if (cmp_attr_sparc(a, b))
-		return 1;
-
-	return attr_a->fp_mode != attr_b->fp_mode;
+	return sparc_attrs_equal(a, b) && attr_a->fp_mode == attr_b->fp_mode;
 }
 
-static int cmp_attr_sparc_fp_conv(const ir_node *a, const ir_node *b)
+static int sparc_fp_conv_attrs_equal(const ir_node *a, const ir_node *b)
 {
 	const sparc_fp_conv_attr_t *attr_a = get_sparc_fp_conv_attr_const(a);
 	const sparc_fp_conv_attr_t *attr_b = get_sparc_fp_conv_attr_const(b);
-
-	if (cmp_attr_sparc(a, b))
-		return 1;
-
-	return attr_a->src_mode != attr_b->src_mode
-	    || attr_a->dest_mode != attr_b->dest_mode;
+	return sparc_attrs_equal(a, b)
+	    && attr_a->src_mode == attr_b->src_mode
+	    && attr_a->dest_mode == attr_b->dest_mode;
 }
 
-static int cmp_attr_sparc_asm(const ir_node *a, const ir_node *b)
+static int sparc_asm_attrs_equal(const ir_node *a, const ir_node *b)
 {
-	if (cmp_attr_sparc(a, b))
-		return 1;
-
 	const sparc_asm_attr_t *attr_a = get_sparc_asm_attr_const(a);
 	const sparc_asm_attr_t *attr_b = get_sparc_asm_attr_const(b);
-	return attr_a->text != attr_b->text;
+	return sparc_attrs_equal(a, b) && attr_a->text == attr_b->text;
 }
 
-static int cmp_attr_sparc_call(const ir_node *a, const ir_node *b)
+static int sparc_call_attrs_equal(const ir_node *a, const ir_node *b)
 {
-	if (cmp_attr_sparc(a, b))
-		return 1;
-
 	const sparc_call_attr_t *attr_a = get_sparc_call_attr_const(a);
 	const sparc_call_attr_t *attr_b = get_sparc_call_attr_const(b);
-	return attr_a->call_type != attr_b->call_type;
+	return sparc_attrs_equal(a, b) && attr_a->call_type == attr_b->call_type;
+}
+
+static int sparc_switch_jmp_attrs_equal(const ir_node *a, const ir_node *b)
+{
+	const sparc_switch_jmp_attr_t *attr_a = get_sparc_switch_jmp_attr_const(a);
+	const sparc_switch_jmp_attr_t *attr_b = get_sparc_switch_jmp_attr_const(b);
+	return sparc_attrs_equal(a, b)
+	    && attr_a->table == attr_b->table
+	    && attr_a->table_entity == attr_b->table_entity;
 }
 
 /* Include the generated constructor functions */

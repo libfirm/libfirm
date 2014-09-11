@@ -158,100 +158,96 @@ static void init_amd64_movimm_attributes(ir_node *node,
 	attr->immediate.offset = offset;
 }
 
-static int cmp_imm32(const amd64_imm32_t *const imm0,
-                     const amd64_imm32_t *const imm1)
+static bool imm32s_equal(const amd64_imm32_t *const imm0,
+                         const amd64_imm32_t *const imm1)
 {
-	return imm0->offset != imm1->offset || imm0->entity != imm1->entity;
+	return imm0->offset == imm1->offset && imm0->entity == imm1->entity;
 }
 
-static int cmp_imm64(const amd64_imm64_t *const imm0,
-                     const amd64_imm64_t *const imm1)
+static bool imm64s_equal(const amd64_imm64_t *const imm0,
+                         const amd64_imm64_t *const imm1)
 {
-	return imm0->offset != imm1->offset || imm0->entity != imm1->entity;
+	return imm0->offset == imm1->offset && imm0->entity == imm1->entity;
 }
 
-static int cmp_addr(const amd64_addr_t *const am0,
-                    const amd64_addr_t *const am1)
+static bool amd64_addrs_equal(const amd64_addr_t *const am0,
+                              const amd64_addr_t *const am1)
 {
-	return cmp_imm32(&am0->immediate, &am1->immediate)
-	    || am0->base_input != am1->base_input
-	    || am0->index_input != am1->index_input
-	    || am0->log_scale != am1->log_scale
-	    || am0->segment != am1->segment;
+	return imm32s_equal(&am0->immediate, &am1->immediate)
+	    && am0->base_input == am1->base_input
+	    && am0->index_input == am1->index_input
+	    && am0->log_scale == am1->log_scale
+	    && am0->segment == am1->segment;
 }
 
-static int cmp_amd64_attr(const ir_node *a, const ir_node *b)
+static int amd64_attrs_equal(const ir_node *a, const ir_node *b)
 {
 	const amd64_attr_t *attr_a = get_amd64_attr_const(a);
 	const amd64_attr_t *attr_b = get_amd64_attr_const(b);
-	return attr_a->op_mode != attr_b->op_mode;
+	return attr_a->op_mode == attr_b->op_mode;
 }
 
-static int cmp_amd64_addr_attr(const ir_node *a, const ir_node *b)
+static int amd64_addr_attrs_equal(const ir_node *a, const ir_node *b)
 {
 	const amd64_addr_attr_t *attr_a = get_amd64_addr_attr_const(a);
 	const amd64_addr_attr_t *attr_b = get_amd64_addr_attr_const(b);
-	return cmp_amd64_attr(a, b)
-	    || cmp_addr(&attr_a->addr, &attr_b->addr)
-	    || attr_a->insn_mode != attr_b->insn_mode
-	    || attr_a->needs_frame_ent != attr_b->needs_frame_ent;
+	return amd64_attrs_equal(a, b)
+	    && amd64_addrs_equal(&attr_a->addr, &attr_b->addr)
+	    && attr_a->insn_mode == attr_b->insn_mode
+	    && attr_a->needs_frame_ent == attr_b->needs_frame_ent;
 }
 
-static int cmp_amd64_binop_addr_attr(const ir_node *a,
-                                     const ir_node *b)
+static int amd64_binop_addr_attrs_equal(const ir_node *a,
+                                        const ir_node *b)
 {
 	const amd64_binop_addr_attr_t *attr_a = get_amd64_binop_addr_attr_const(a);
 	const amd64_binop_addr_attr_t *attr_b = get_amd64_binop_addr_attr_const(b);
-	if (cmp_amd64_addr_attr(a, b))
-		return 1;
+	if (!amd64_addr_attrs_equal(a, b))
+		return false;
 	amd64_op_mode_t op_mode = attr_a->base.base.op_mode;
 	if (op_mode == AMD64_OP_REG_IMM || op_mode == AMD64_OP_ADDR_IMM) {
-		return cmp_imm32(&attr_a->u.immediate, &attr_b->u.immediate);
+		return imm32s_equal(&attr_a->u.immediate, &attr_b->u.immediate);
 	} else {
-		return attr_a->u.reg_input != attr_b->u.reg_input;
+		return attr_a->u.reg_input == attr_b->u.reg_input;
 	}
 }
 
-static int cmp_amd64_movimm_attr(const ir_node *const a,
-                                 const ir_node *const b)
+static int amd64_movimm_attrs_equal(const ir_node *const a,
+                                    const ir_node *const b)
 {
 	const amd64_movimm_attr_t *const attr_a = get_amd64_movimm_attr_const(a);
 	const amd64_movimm_attr_t *const attr_b = get_amd64_movimm_attr_const(b);
-	return cmp_amd64_attr(a, b)
-	    || cmp_imm64(&attr_a->immediate, &attr_b->immediate)
-	    || attr_a->insn_mode != attr_b->insn_mode;
+	return amd64_attrs_equal(a, b)
+	    && imm64s_equal(&attr_a->immediate, &attr_b->immediate)
+	    && attr_a->insn_mode == attr_b->insn_mode;
 }
 
-static int cmp_amd64_shift_attr(const ir_node *const a,
-                                const ir_node *const b)
+static int amd64_shift_attrs_equal(const ir_node *const a,
+                                   const ir_node *const b)
 {
 	const amd64_shift_attr_t *const attr_a = get_amd64_shift_attr_const(a);
 	const amd64_shift_attr_t *const attr_b = get_amd64_shift_attr_const(b);
-	return cmp_amd64_attr(a, b)
-	    || attr_a->immediate != attr_b->immediate
-	    || attr_a->insn_mode != attr_b->insn_mode;
+	return amd64_attrs_equal(a, b)
+	    && attr_a->immediate == attr_b->immediate
+	    && attr_a->insn_mode == attr_b->insn_mode;
 }
 
-static int cmp_amd64_cc_attr(const ir_node *const a,
-                             const ir_node *const b)
+static int amd64_cc_attrs_equal(const ir_node *const a,
+                                const ir_node *const b)
 {
-	if (cmp_amd64_attr(a, b))
-		return true;
 	const amd64_cc_attr_t *const attr_a = get_amd64_cc_attr_const(a);
 	const amd64_cc_attr_t *const attr_b = get_amd64_cc_attr_const(b);
-	return attr_a->cc != attr_b->cc;
+	return amd64_attrs_equal(a, b) && attr_a->cc == attr_b->cc;
 }
 
-static int cmp_amd64_switch_jmp_attr(const ir_node *const a,
-                                    const ir_node *const b)
+static int amd64_switch_jmp_attrs_equal(const ir_node *const a,
+                                        const ir_node *const b)
 {
-	if (cmp_amd64_attr(a, b))
-		return true;
 	const amd64_switch_jmp_attr_t *const attr_a
 		= get_amd64_switch_jmp_attr_const(a);
 	const amd64_switch_jmp_attr_t *const attr_b
 		= get_amd64_switch_jmp_attr_const(b);
-	return attr_a->table != attr_b->table;
+	return amd64_attrs_equal(a, b) && attr_a->table == attr_b->table;
 }
 
 static void amd64_copy_attr(ir_graph *irg, const ir_node *old_node,

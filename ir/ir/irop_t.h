@@ -155,4 +155,7 @@ static inline void *get_op_attr_(const ir_op *op)
 	return op->attr;
 }
 
+/** An attr_equals function that always returns 0/false */
+int attrs_equal_false(const ir_node *a, const ir_node *b);
+
 #endif

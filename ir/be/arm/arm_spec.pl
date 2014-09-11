@@ -74,19 +74,6 @@ $default_copy_attr = "arm_copy_attr";
 		"\tinit_arm_CopyB_attributes(res, size);",
 );
 
-%compare_attr = (
-	arm_attr_t            => "cmp_attr_arm",
-	arm_Address_attr_t    => "cmp_attr_arm_Address",
-	arm_CondJmp_attr_t    => "cmp_attr_arm_CondJmp",
-	arm_SwitchJmp_attr_t  => "cmp_attr_arm_SwitchJmp",
-	arm_fConst_attr_t     => "cmp_attr_arm_fConst",
-	arm_load_store_attr_t => "cmp_attr_arm_load_store",
-	arm_shifter_operand_t => "cmp_attr_arm_shifter_operand",
-	arm_CopyB_attr_t      => "cmp_attr_arm_CopyB",
-	arm_cmp_attr_t        => "cmp_attr_arm_cmp",
-	arm_farith_attr_t     => "cmp_attr_arm_farith",
-);
-
 my %unop_shifter_operand_constructors = (
 	imm => {
 		attr       => "unsigned char immediate_value, unsigned char immediate_rot",
@@ -477,12 +464,12 @@ Bl => {
 
 # this node produces ALWAYS an empty (tempary) gp reg and cannot be CSE'd
 EmptyReg => {
-	op_flags  => [ "constlike" ],
-	irn_flags => [ "rematerializable" ],
-	reg_req   => { out => [ "gp" ] },
-	emit      => '/* %D0 now available for calculations */',
-	cmp_attr  => 'return 1;',
-	mode      => $mode_gp,
+	op_flags    => [ "constlike" ],
+	irn_flags   => [ "rematerializable" ],
+	reg_req     => { out => [ "gp" ] },
+	emit        => '/* %D0 now available for calculations */',
+	attrs_equal => 'attrs_equal_false',
+	mode        => $mode_gp,
 },
 
 CopyB => {

@@ -141,18 +141,6 @@ $custom_init_attr_func = \&ia32_custom_init_attr;
 		"\tinit_ia32_climbframe_attributes(res, count);",
 );
 
-%compare_attr = (
-	ia32_asm_attr_t        => "ia32_compare_asm_attr",
-	ia32_attr_t            => "ia32_compare_nodes_attr",
-	ia32_call_attr_t       => "ia32_compare_call_attr",
-	ia32_condcode_attr_t   => "ia32_compare_condcode_attr",
-	ia32_copyb_attr_t      => "ia32_compare_copyb_attr",
-	ia32_switch_attr_t     => "ia32_compare_nodes_attr",
-	ia32_immediate_attr_t  => "ia32_compare_immediate_attr",
-	ia32_x87_attr_t        => "ia32_compare_x87_attr",
-	ia32_climbframe_attr_t => "ia32_compare_climbframe_attr",
-);
-
 $status_flags       = [ "CF", "PF", "AF", "ZF", "SF", "OF" ];
 $status_flags_wo_cf = [       "PF", "AF", "ZF", "SF", "OF" ];
 $fpcw_flags         = [ "FP_IM", "FP_DM", "FP_ZM", "FP_OM", "FP_UM", "FP_PM",
@@ -208,7 +196,7 @@ ProduceVal => {
 	emit      => "",
 	latency   => 0,
 	mode      => $mode_gp,
-	cmp_attr  => "return 1;",
+	attrs_equal => "attrs_equal_false",
 },
 
 Add => {
@@ -2101,7 +2089,7 @@ Sahf => {
 fxch => {
 	op_flags  => [ "keep" ],
 	reg_req   => { out => [ "none" ] },
-	cmp_attr  => "return 1;",
+	attrs_equal => "attrs_equal_false",
 	emit      => "fxch %F0",
 	attr_type => "ia32_x87_attr_t",
 	mode      => "mode_ANY",
@@ -2111,7 +2099,7 @@ fxch => {
 fpush => {
 	op_flags  => [ "keep" ],
 	reg_req   => { out => [ "none" ] },
-	cmp_attr  => "return 1;",
+	attrs_equal => "attrs_equal_false",
 	emit      => "fld %F0",
 	attr_type => "ia32_x87_attr_t",
 	mode      => "mode_ANY",
@@ -2120,7 +2108,7 @@ fpush => {
 
 fpushCopy => {
 	reg_req   => { in => [ "fp"], out => [ "fp" ] },
-	cmp_attr  => "return 1;",
+	attrs_equal => "attrs_equal_false",
 	emit      => "fld %F0",
 	attr_type => "ia32_x87_attr_t",
 	latency   => 1,
@@ -2129,7 +2117,7 @@ fpushCopy => {
 fpop => {
 	op_flags  => [ "keep" ],
 	reg_req   => { out => [ "none" ] },
-	cmp_attr  => "return 1;",
+	attrs_equal => "attrs_equal_false",
 	emit      => "fstp %F0",
 	attr_type => "ia32_x87_attr_t",
 	mode      => "mode_ANY",
@@ -2139,7 +2127,7 @@ fpop => {
 ffreep => {
 	op_flags  => [ "keep" ],
 	reg_req   => { out => [ "none" ] },
-	cmp_attr  => "return 1;",
+	attrs_equal => "attrs_equal_false",
 	emit      => "ffreep %F0",
 	attr_type => "ia32_x87_attr_t",
 	mode      => "mode_ANY",
@@ -2149,7 +2137,7 @@ ffreep => {
 emms => {
 	op_flags  => [ "keep" ],
 	reg_req   => { out => [ "none" ] },
-	cmp_attr  => "return 1;",
+	attrs_equal => "attrs_equal_false",
 	emit      => "emms",
 	attr_type => "ia32_x87_attr_t",
 	mode      => "mode_ANY",
@@ -2159,7 +2147,7 @@ emms => {
 femms => {
 	op_flags  => [ "keep" ],
 	reg_req   => { out => [ "none" ] },
-	cmp_attr  => "return 1;",
+	attrs_equal => "attrs_equal_false",
 	emit      => "femms",
 	attr_type => "ia32_x87_attr_t",
 	mode      => "mode_ANY",

@@ -82,16 +82,6 @@ $default_copy_attr = "amd64_copy_attr";
 		."\t*attr = *attr_init;\n",
 );
 
-%compare_attr = (
-	amd64_addr_attr_t       => "cmp_amd64_addr_attr",
-	amd64_attr_t            => "cmp_amd64_attr",
-	amd64_binop_addr_attr_t => "cmp_amd64_binop_addr_attr",
-	amd64_cc_attr_t         => "cmp_amd64_cc_attr",
-	amd64_movimm_attr_t     => "cmp_amd64_movimm_attr",
-	amd64_shift_attr_t      => "cmp_amd64_shift_attr",
-	amd64_switch_jmp_attr_t => "cmp_amd64_switch_jmp_attr",
-);
-
 %nodes = (
 PushAM => {
 	op_flags  => [ "uses_memory" ],

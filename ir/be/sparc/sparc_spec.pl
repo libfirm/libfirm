@@ -120,17 +120,6 @@ $default_copy_attr = "sparc_copy_attr";
 	                            "\tinit_sparc_call_attributes(res, call_type);",
 );
 
-%compare_attr = (
-	sparc_attr_t            => "cmp_attr_sparc",
-	sparc_asm_attr_t        => "cmp_attr_sparc_asm",
-	sparc_call_attr_t       => "cmp_attr_sparc_call",
-	sparc_fp_attr_t         => "cmp_attr_sparc_fp",
-	sparc_fp_conv_attr_t    => "cmp_attr_sparc_fp_conv",
-	sparc_jmp_cond_attr_t   => "cmp_attr_sparc_jmp_cond",
-	sparc_load_store_attr_t => "cmp_attr_sparc_load_store",
-	sparc_switch_jmp_attr_t => "cmp_attr_sparc",
-);
-
 %custom_irn_flags = (
 	has_delay_slot    => "(arch_irn_flags_t)sparc_arch_irn_flag_has_delay_slot",
 );

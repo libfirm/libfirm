@@ -33,11 +33,9 @@ my $target_dir = $ARGV[1];
 our $arch;
 our %nodes;
 our $default_attr_type;
-our $default_cmp_attr;
 our $default_copy_attr;
 our %init_attr;
 our $custom_init_attr_func;
-our %compare_attr;
 our %copy_attr;
 our %reg_classes;
 our %custom_irn_flags;
@@ -65,14 +63,6 @@ if(! %init_attr) {
 		"$default_attr_type" => "\tinit_${arch}_attributes(res, irn_flags_, in_reqs, n_res);",
 	);
 }
-if(!defined($default_cmp_attr)) {
-	$default_cmp_attr = "${arch}_compare_attr";
-}
-if(! %compare_attr) {
-	%compare_attr = (
-		"${default_attr_type}" => "${default_cmp_attr}",
-	);
-}
 
 # create c code file from specs
 
@@ -85,7 +75,7 @@ my $obst_new_irop    = ""; # buffer for the new_ir_op calls
 my $obst_free_irop   = ""; # buffer for free_ir_op calls
 my $obst_enum_op     = ""; # buffer for creating the <arch>_opcode enum
 my $obst_header      = ""; # buffer for function prototypes
-my $obst_cmp_attr    = ""; # buffer for the compare attribute functions
+my $obst_attrs_equal = ""; # buffer for the compare attribute functions
 my $obst_proj        = ""; # buffer for the pn_ numbers
 my $orig_op;
 my $arity;
@@ -577,34 +567,15 @@ EOF
 	}
 
 	# determine compare function
-	my $cmp_attr_func;
-	if (exists($n{"cmp_attr"})) {
-		my $cmpcode = $n{"cmp_attr"};
-
-		$obst_cmp_attr .= "static int cmp_attr_$op(const ir_node *a, const ir_node *b)\n";
-		$obst_cmp_attr .= "{\n";
-		if($cmpcode =~ m/attr_a/) {
-			$obst_cmp_attr .= "\tconst ${attr_type} *attr_a = get_irn_generic_attr_const(a);\n";
-		} else {
-			$obst_cmp_attr .= "\t(void) a;\n";
-		}
-		if($cmpcode =~ m/attr_b/) {
-			$obst_cmp_attr .= "\tconst ${attr_type} *attr_b = get_irn_generic_attr_const(b);\n";
-		} else {
-			$obst_cmp_attr .= "\t(void) b;\n";
-		}
-		$obst_cmp_attr .= "\t${cmpcode}\n";
-		$obst_cmp_attr .= "}\n\n";
-
-		$cmp_attr_func = "cmp_attr_${op}";
+	my $attrs_equal_func;
+	if (exists($n{"attrs_equal"})) {
+		$attrs_equal_func = $n{"attrs_equal"};
 	} elsif ($attr_type eq "") {
-		$cmp_attr_func = "NULL";
+		# do nothing
 	} else {
-		if(defined($compare_attr{${attr_type}})) {
-			$cmp_attr_func = $compare_attr{${attr_type}};
-		} else {
-			die "Fatal error: No compare function defined for ${attr_type} attributes.";
-		}
+		$attrs_equal_func = $attr_type;
+		$attrs_equal_func =~ s/_t$//;
+		$attrs_equal_func .= "s_equal";
 	}
 
 	my %constructors;
@@ -666,8 +637,8 @@ EOF
 	$obst_new_irop .= $temp;
 	$obst_new_irop .= "\top->ops.be_ops        = be_ops;\n";
 	$obst_new_irop .= "\top->ops.dump_node     = ${dump_func};\n";
-	if (defined($cmp_attr_func)) {
-		$obst_new_irop .= "\top->ops.node_cmp_attr = ${cmp_attr_func};\n";
+	if (defined($attrs_equal_func)) {
+		$obst_new_irop .= "\tset_op_attrs_equal(op, ${attrs_equal_func});\n";
 	}
 	my $copy_attr_func = $copy_attr{$attr_type};
 	if (!defined($copy_attr_func)) {
@@ -712,7 +683,7 @@ print OUT<<EOF;
 #include "fourcc.h"
 #include "irgopt.h"
 
-$obst_cmp_attr
+$obst_attrs_equal
 $obst_opvar
 $obst_get_opvar
 
