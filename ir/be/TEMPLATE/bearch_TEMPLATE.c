@@ -63,15 +63,10 @@ static int TEMPLATE_get_sp_bias(const ir_node *irn)
 /* fill register allocator interface */
 
 static const arch_irn_ops_t TEMPLATE_irn_ops = {
-	TEMPLATE_get_frame_entity,
-	TEMPLATE_set_frame_offset,
-	TEMPLATE_get_sp_bias,
-	NULL,    /* get_op_estimated_cost   */
-	NULL,    /* possible_memory_operand */
-	NULL,    /* perform_memory_operand  */
+	.get_frame_entity = TEMPLATE_get_frame_entity,
+	.set_frame_offset = TEMPLATE_set_frame_offset,
+	.get_sp_bias      = TEMPLATE_get_sp_bias,
 };
-
-
 
 /**
  * Transforms the standard firm graph into

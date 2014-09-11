@@ -448,12 +448,12 @@ static const be_abi_callbacks_t ia32_abi_callbacks = {
 
 /* register allocator interface */
 static const arch_irn_ops_t ia32_irn_ops = {
-	ia32_get_frame_entity,
-	ia32_set_frame_offset,
-	ia32_get_sp_bias,
-	ia32_get_op_estimated_cost,
-	ia32_possible_memory_operand,
-	ia32_perform_memory_operand,
+	.get_frame_entity        = ia32_get_frame_entity,
+	.set_frame_offset        = ia32_set_frame_offset,
+	.get_sp_bias             = ia32_get_sp_bias,
+	.get_op_estimated_cost   = ia32_get_op_estimated_cost,
+	.possible_memory_operand = ia32_possible_memory_operand,
+	.perform_memory_operand  = ia32_perform_memory_operand,
 };
 
 static bool gprof = 0;

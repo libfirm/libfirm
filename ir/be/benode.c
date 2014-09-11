@@ -695,12 +695,9 @@ static int be_node_get_sp_bias(const ir_node *irn)
 
 /* for be nodes */
 static const arch_irn_ops_t be_node_irn_ops = {
-	be_node_get_frame_entity,
-	be_node_set_frame_offset,
-	be_node_get_sp_bias,
-	NULL,    /* get_op_estimated_cost   */
-	NULL,    /* possible_memory_operand */
-	NULL,    /* perform_memory_operand  */
+	.get_frame_entity = be_node_get_frame_entity,
+	.set_frame_offset = be_node_set_frame_offset,
+	.get_sp_bias      = be_node_get_sp_bias,
 };
 
 static int get_start_reg_index(ir_graph *irg, const arch_register_t *reg)
@@ -758,12 +755,9 @@ static int dummy_get_sp_bias(const ir_node *node)
 
 /* for "middleend" nodes */
 static const arch_irn_ops_t dummy_be_irn_ops = {
-	dummy_get_frame_entity,
-	dummy_set_frame_offset,
-	dummy_get_sp_bias,
-	NULL,      /* get_op_estimated_cost */
-	NULL,      /* possible_memory_operand */
-	NULL,      /* perform_memory_operand */
+	.get_frame_entity = dummy_get_frame_entity,
+	.set_frame_offset = dummy_set_frame_offset,
+	.get_sp_bias      = dummy_get_sp_bias,
 };
 
 ir_node *be_new_Phi(ir_node *block, int n_ins, ir_node **ins, ir_mode *mode,

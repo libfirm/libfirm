@@ -175,12 +175,9 @@ static int sparc_get_sp_bias(const ir_node *node)
 /* fill register allocator interface */
 
 const arch_irn_ops_t sparc_irn_ops = {
-	sparc_get_frame_entity,
-	sparc_set_frame_offset,
-	sparc_get_sp_bias,
-	NULL,    /* get_op_estimated_cost   */
-	NULL,    /* possible_memory_operand */
-	NULL,    /* perform_memory_operand  */
+	.get_frame_entity = sparc_get_frame_entity,
+	.set_frame_offset = sparc_set_frame_offset,
+	.get_sp_bias      = sparc_get_sp_bias,
 };
 
 /**

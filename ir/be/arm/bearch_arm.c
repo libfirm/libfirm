@@ -80,7 +80,7 @@ static ir_entity *arm_get_frame_entity(const ir_node *irn)
  * This function is called by the generic backend to correct offsets for
  * nodes accessing the stack.
  */
-static void arm_set_stack_bias(ir_node *irn, int bias)
+static void arm_set_frame_offset(ir_node *irn, int bias)
 {
 	if (is_arm_FrameAddr(irn)) {
 		arm_Address_attr_t *attr = get_arm_Address_attr(irn);
@@ -101,12 +101,9 @@ static int arm_get_sp_bias(const ir_node *node)
 /* fill register allocator interface */
 
 const arch_irn_ops_t arm_irn_ops = {
-	arm_get_frame_entity,
-	arm_set_stack_bias,
-	arm_get_sp_bias,
-	NULL,    /* get_op_estimated_cost   */
-	NULL,    /* possible_memory_operand */
-	NULL,    /* perform_memory_operand  */
+	.get_frame_entity = arm_get_frame_entity,
+	.set_frame_offset = arm_set_frame_offset,
+	.get_sp_bias      = arm_get_sp_bias,
 };
 
 /**
