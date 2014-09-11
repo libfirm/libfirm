@@ -71,8 +71,6 @@ typedef struct be_irg_t {
 	be_stack_layout_t          stack_layout;
 	unsigned                  *allocatable_regs; /**< registers available for the
 	                                                  allocator */
-	arch_register_req_t const *sp_req;           /**< requirements for stackpointer producing
-	                                                  nodes. */
 	struct obstack             obst;             /**< birg obstack (mainly used to keep
 	                                                  register constraints which we can't keep
 	                                                  in the irg obst, because it gets replaced
