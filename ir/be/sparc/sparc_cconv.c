@@ -168,6 +168,13 @@ calling_convention_t *sparc_decide_calling_convention(ir_type *function_type,
 		 * args 0-5 in it */
 		if (get_method_variadicity(function_type) == variadicity_variadic)
 			omit_fp = false;
+		/* The pointer to the aggregate return value belongs to the 92 magic bytes.
+		 * Thus, if the called functions increases the stack size,
+		 * it must copy the value to the appropriate location.
+		 * This is not implemented yet, so we forbid to omit the frame pointer.
+		 */
+		if (get_method_calling_convention(function_type) & cc_compound_ret)
+			omit_fp = false;
 		if (omit_fp == true) {
 			irg_walk_graph(irg, check_omit_fp, NULL, &omit_fp);
 		}
