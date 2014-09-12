@@ -32,8 +32,6 @@ void be_init_spilloptions(void);
 void be_init_listsched(void);
 void be_init_sched_rand(void);
 void be_init_sched_normal(void);
-void be_init_sched_regpress(void);
-void be_init_sched_trace(void);
 void be_init_sched_trivial(void);
 void be_init_chordal(void);
 void be_init_pbqp_coloring(void);
@@ -89,8 +87,6 @@ void be_init_modules(void)
 
 	be_init_listsched();
 	be_init_sched_normal();
-	be_init_sched_trace();
-	be_init_sched_regpress();
 	be_init_sched_rand();
 	be_init_sched_trivial();
 
