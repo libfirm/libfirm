@@ -150,7 +150,8 @@ void be_set_constr_out(ir_node *node, int pos, const arch_register_req_t *req)
 /**
  * Initializes the generic attribute of all be nodes and return it.
  */
-static void init_node_attr(ir_node *node, int n_inputs, int n_outputs)
+static void init_node_attr(ir_node *node, int n_inputs, int n_outputs,
+                           arch_irn_flags_t flags)
 {
 	assert(n_outputs >= 0);
 	ir_graph       *irg  = get_irn_irg(node);
@@ -174,6 +175,7 @@ static void init_node_attr(ir_node *node, int n_inputs, int n_outputs)
 	for (int i = 0; i < n_outputs; ++i) {
 		info->out_infos[i].req = arch_no_register_req;
 	}
+	info->flags = flags;
 }
 
 static void add_register_req_in(ir_node *node, const arch_register_req_t *req)
@@ -186,7 +188,7 @@ ir_node *be_new_Perm(arch_register_class_t const *const cls, ir_node *const bloc
 {
 	ir_graph *irg = get_Block_irg(block);
 	ir_node  *irn = new_ir_node(NULL, irg, block, op_be_Perm, mode_T, n, in);
-	init_node_attr(irn, n, n);
+	init_node_attr(irn, n, n, arch_irn_flags_none);
 	be_node_attr_t *attr = (be_node_attr_t*)get_irn_generic_attr(irn);
 	attr->exc.pin_state = op_pin_state_pinned;
 	for (int i = 0; i < n; ++i) {
@@ -246,7 +248,7 @@ ir_node *be_new_MemPerm(ir_node *const block, int n, ir_node *const *const in)
 
 	ir_node *irn = new_ir_node(NULL, irg, block, op_be_MemPerm, mode_T, n+1, real_in);
 
-	init_node_attr(irn, n + 1, n);
+	init_node_attr(irn, n + 1, n, arch_irn_flags_none);
 	be_node_set_reg_class_in(irn, 0, sp->reg_class);
 
 	be_memperm_attr_t *attr = (be_memperm_attr_t*)get_irn_generic_attr(irn);
@@ -262,7 +264,7 @@ ir_node *be_new_Copy(ir_node *bl, ir_node *op)
 	ir_node  *in[] = { op };
 	ir_node  *res  = new_ir_node(NULL, irg, bl, op_be_Copy, get_irn_mode(op),
 	                             ARRAY_SIZE(in), in);
-	init_node_attr(res, 1, 1);
+	init_node_attr(res, 1, 1, arch_irn_flags_none);
 	be_node_attr_t *attr = (be_node_attr_t*) get_irn_generic_attr(res);
 	attr->exc.pin_state = op_pin_state_floats;
 
@@ -290,7 +292,7 @@ ir_node *be_new_Keep(ir_node *const block, int const n, ir_node *const *const in
 {
 	ir_graph *irg = get_Block_irg(block);
 	ir_node  *res = new_ir_node(NULL, irg, block, op_be_Keep, mode_ANY, -1, NULL);
-	init_node_attr(res, -1, 1);
+	init_node_attr(res, -1, 1, arch_irn_flag_schedule_first);
 	be_node_attr_t *attr = (be_node_attr_t*) get_irn_generic_attr(res);
 	attr->exc.pin_state = op_pin_state_pinned;
 
@@ -328,7 +330,7 @@ ir_node *be_new_Call(dbg_info *const dbg, ir_node *const bl, ir_node *const mem,
 
 	ir_graph *const irg = get_Block_irg(bl);
 	ir_node  *const irn = new_ir_node(dbg, irg, bl, op_be_Call, mode_T, real_n, real_in);
-	init_node_attr(irn, real_n, n_outs);
+	init_node_attr(irn, real_n, n_outs, arch_irn_flags_none);
 	be_call_attr_t *a     = (be_call_attr_t*)get_irn_generic_attr(irn);
 	a->ent                = NULL;
 	a->call_tp            = call_tp;
@@ -385,7 +387,7 @@ ir_node *be_new_Return(dbg_info *const dbg, ir_node *const block,
 {
 	ir_graph *const irg = get_Block_irg(block);
 	ir_node  *const res = new_ir_node(dbg, irg, block, op_be_Return, mode_X, n, in);
-	init_node_attr(res, n, 1);
+	init_node_attr(res, n, 1, arch_irn_flags_none);
 	be_set_constr_out(res, 0, arch_no_register_req);
 
 	be_return_attr_t *const a = (be_return_attr_t*)get_irn_generic_attr(res);
@@ -427,7 +429,7 @@ ir_node *be_new_IncSP(const arch_register_t *sp, ir_node *bl,
 	ir_node  *in[] = { old_sp };
 	ir_node  *irn  = new_ir_node(NULL, irg, bl, op_be_IncSP, sp->reg_class->mode,
 	                             ARRAY_SIZE(in), in);
-	init_node_attr(irn, 1, 1);
+	init_node_attr(irn, 1, 1, arch_irn_flags_none);
 	be_incsp_attr_t *a    = (be_incsp_attr_t*)get_irn_generic_attr(irn);
 	a->offset             = offset;
 	a->align              = align;
@@ -447,7 +449,7 @@ ir_node *be_new_AddSP(const arch_register_t *sp, ir_node *bl, ir_node *old_sp,
 	assert(ARRAY_SIZE(in) == n_be_AddSP_max+1);
 	ir_node  *irn  = new_ir_node(NULL, irg, bl, op_be_AddSP, mode_T,
 	                             ARRAY_SIZE(in), in);
-	init_node_attr(irn, ARRAY_SIZE(in), pn_be_AddSP_max+1);
+	init_node_attr(irn, ARRAY_SIZE(in), pn_be_AddSP_max+1, arch_irn_flags_none);
 	be_node_attr_t *attr = (be_node_attr_t*)get_irn_generic_attr(irn);
 	attr->exc.pin_state = op_pin_state_pinned;
 
@@ -467,7 +469,7 @@ ir_node *be_new_SubSP(const arch_register_t *sp, ir_node *bl, ir_node *old_sp, i
 	assert(ARRAY_SIZE(in) == n_be_SubSP_max+1);
 	ir_node  *irn = new_ir_node(NULL, irg, bl, op_be_SubSP, mode_T,
 	                            ARRAY_SIZE(in), in);
-	init_node_attr(irn, ARRAY_SIZE(in), pn_be_SubSP_max+1);
+	init_node_attr(irn, ARRAY_SIZE(in), pn_be_SubSP_max+1, arch_irn_flags_none);
 	be_node_attr_t *attr = (be_node_attr_t*)get_irn_generic_attr(irn);
 	attr->exc.pin_state = op_pin_state_pinned;
 
@@ -483,7 +485,7 @@ ir_node *be_new_Start(dbg_info *dbgi, ir_node *bl, int n_outs)
 {
 	ir_graph *irg = get_Block_irg(bl);
 	ir_node  *res = new_ir_node(dbgi, irg, bl, op_be_Start, mode_T, 0, NULL);
-	init_node_attr(res, 0, n_outs);
+	init_node_attr(res, 0, n_outs, arch_irn_flag_schedule_first);
 	be_node_attr_t *attr = (be_node_attr_t*) get_irn_generic_attr(res);
 	attr->exc.pin_state = op_pin_state_pinned;
 	return res;
@@ -498,7 +500,7 @@ ir_node *be_new_CopyKeep(ir_node *bl, ir_node *src, int n, ir_node *in_keep[])
 	in[0] = src;
 	memcpy(&in[1], in_keep, n * sizeof(in[0]));
 	ir_node *irn = new_ir_node(NULL, irg, bl, op_be_CopyKeep, mode, arity, in);
-	init_node_attr(irn, arity, 1);
+	init_node_attr(irn, arity, 1, arch_irn_flag_schedule_first);
 	be_node_attr_t *attr = (be_node_attr_t*)get_irn_generic_attr(irn);
 	attr->exc.pin_state = op_pin_state_floats;
 	const arch_register_req_t   *req  = arch_get_irn_register_req(src);

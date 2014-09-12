@@ -58,6 +58,7 @@ void be_info_new_node(ir_graph *irg, ir_node *node)
 	case iro_Phi:
 		info->out_infos        = NEW_ARR_DZ(reg_out_info_t, obst, 1);
 		info->out_infos[0].req = arch_no_register_req;
+		info->flags |= arch_irn_flag_schedule_first;
 		break;
 	default:
 		break;

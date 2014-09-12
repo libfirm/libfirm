@@ -33,12 +33,16 @@ typedef enum arch_irn_flags_t {
 	                                               implementation in beflags */
 	arch_irn_flag_simple_jump      = 1U << 3, /**< a simple jump instruction */
 	arch_irn_flag_not_scheduled    = 1U << 4, /**< node must not be scheduled*/
+	/** node is scheduled as soon as possible. Note that the schedule
+	 * algorithms cannot decide the order if multiple schedule_first nodes are
+	 * ready. */
+	arch_irn_flag_schedule_first   = 1U << 5,
 	/** node writes to a spillslot, this means we can load from the spillslot
 	 * anytime (important when deciding wether we can rematerialize) */
-	arch_irn_flag_spill            = 1U << 5,
+	arch_irn_flag_spill            = 1U << 6,
 	/** node performs a reload like operation */
-	arch_irn_flag_reload           = 1U << 6,
-	arch_irn_flag_backend          = 1U << 7, /**< begin of custom backend
+	arch_irn_flag_reload           = 1U << 7,
+	arch_irn_flag_backend          = 1U << 8, /**< begin of custom backend
 	                                               flags */
 } arch_irn_flags_t;
 ENUM_BITSET(arch_irn_flags_t)

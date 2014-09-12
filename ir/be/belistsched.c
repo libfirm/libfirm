@@ -6,7 +6,7 @@
 /**
  * @file
  * @brief       Primitive list scheduling with different node selectors.
- * @author      Sebastian Hack
+ * @author      Sebastian Hack, Matthias Braun
  * @date        20.10.2004
  */
 #include <stdio.h>
@@ -40,119 +40,85 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
-/**
- * Scheduling environment for the whole graph.
- */
-typedef struct sched_env_t {
-	unsigned                    *scheduled;    /**< bitset of already scheduled nodes */
-	const list_sched_selector_t *selector;     /**< The node selector. */
-	void                        *selector_env; /**< A pointer to give to the selector. */
-} sched_env_t;
+static ir_node     *current_block;
+static unsigned    *available;
+static ir_nodeset_t ready_set;
 
 /**
- * Environment for a block scheduler.
+ * Returns non-zero if the node is already available
  */
-typedef struct block_sched_env_t {
-	/** scheduling info per node, copied from the global scheduler object */
-	unsigned                    *scheduled;
-	/** the set of candidates */
-	ir_nodeset_t                 cands;
-	ir_node                     *block;     /**< the current block */
-	sched_env_t                 *sched_env; /**< the scheduler environment */
-	const list_sched_selector_t *selector;
-	void                        *selector_block_env;
-} block_sched_env_t;
-
-/**
- * Returns non-zero if the node is already scheduled
- */
-static bool is_already_scheduled(const sched_env_t *env, ir_node *n)
+static bool is_available(const ir_node *const node)
 {
-	unsigned idx = get_irn_idx(n);
-	return rbitset_is_set(env->scheduled, idx);
+	unsigned idx = get_irn_idx(node);
+	return rbitset_is_set(available, idx);
 }
 
-/**
- * Mark a node as already scheduled
- */
-static void set_already_scheduled(sched_env_t *env, ir_node *n)
-{
-	unsigned idx = get_irn_idx(n);
-	rbitset_set(env->scheduled, idx);
-}
-
-static void selected(block_sched_env_t *env, ir_node *irn);
-static void add_to_sched(block_sched_env_t *env, ir_node *irn);
+static void make_available(ir_node *node);
+static void add_to_sched(ir_node *node);
 
 /**
  * Put a node in the ready set, or make it available immediately if it doesn't
  * need to be scheduled
  */
-static void node_ready(block_sched_env_t *env, ir_node *pred, ir_node *irn)
+static void node_ready(ir_node *node)
 {
-	if (arch_is_irn_not_scheduled(irn)) {
-		selected(env, irn);
-		DB((dbg, LEVEL_3, "\tmaking immediately available: %+F\n", irn));
-	} else if (be_is_Keep(irn) || be_is_CopyKeep(irn)) {
-		/* Keeps must be scheduled immediately */
-		add_to_sched(env, irn);
+	if (is_Proj(node) || arch_irn_is(node, not_scheduled)) {
+		/* not_scheduled nodes are already available */
+		DB((dbg, LEVEL_3, "\tmaking available: %+F\n", node));
+		make_available(node);
+	} else if (arch_irn_is(node, schedule_first)) {
+		/* schedule schedule_first nodes immediately */
+		DB((dbg, LEVEL_3, "\tschedule immediately: %+F\n", node));
+		add_to_sched(node);
 	} else {
-		ir_nodeset_insert(&env->cands, irn);
-
-		/* Notify selector about the ready node. */
-		if (env->selector->node_ready)
-			env->selector->node_ready(env->selector_block_env, irn, pred);
-
-		DB((dbg, LEVEL_2, "\tmaking ready: %+F\n", irn));
+		/* all other nodes go into the ready set */
+		DB((dbg, LEVEL_2, "\tmaking ready: %+F\n", node));
+		ir_nodeset_insert(&ready_set, node);
 	}
 }
 
 /**
  * Try to put a node in the ready set.
- * @param env   The block scheduler environment.
- * @param pred  The previous scheduled node.
- * @param irn   The node to make ready.
- * @return 1, if the node could be made ready, 0 else.
+ * @param node   The node to make ready.
  */
-static void try_make_ready(block_sched_env_t *env, ir_node *pred, ir_node *irn)
+static void try_make_ready(ir_node *node)
 {
-	/* we schedule one block at a time, so no need to consider users in other
-	 * blocks */
-	if (is_Block(irn) || get_nodes_block(irn) != env->block)
-		return;
-	if (is_Phi(irn) || is_End(irn))
-		return;
-	/* check if all operands are already available */
-	for (int i = 0, n = get_irn_ins_or_deps(irn); i < n; ++i) {
-		ir_node *op = get_irn_in_or_dep(irn, i);
-
-		/* If the operand is local to the scheduled block and not yet
-		 * scheduled, this nodes cannot be made ready, so exit. */
-		if (get_nodes_block(op) == env->block
-		 && !is_already_scheduled(env->sched_env, op))
-			return;
+	/* ensure that all operands are either in another block or already
+	 * scheduled, if not abort */
+	if (!is_Phi(node)) {
+		foreach_irn_in(node, i, op) {
+			if (!is_Block(op) && get_nodes_block(op) == current_block
+			    && !is_available(op))
+				return;
+		}
+		for (int i = 0, n_deps = get_irn_n_deps(node); i < n_deps; ++i) {
+			ir_node *op = get_irn_dep(node, i);
+			if (!is_Block(op) && get_nodes_block(op) == current_block
+			    && !is_available(op))
+				return;
+		}
 	}
-
-	node_ready(env, pred, irn);
+	node_ready(node);
 }
 
-static void selected(block_sched_env_t *env, ir_node *node)
+static void make_available(ir_node *node)
 {
-	/* notify the selector about the finally selected node. */
-	if (env->selector->node_selected)
-		env->selector->node_selected(env->selector_block_env, node);
-
-    /* Insert the node in the set of all available scheduled nodes. */
-    set_already_scheduled(env->sched_env, node);
+    /* Insert the node in the set of all available nodes. */
+	unsigned idx = get_irn_idx(node);
+	rbitset_set(available, idx);
 
     /* check users, they might be ready now */
 	foreach_out_edge(node, edge) {
 		ir_node *user = get_edge_src_irn(edge);
-		try_make_ready(env, node, user);
+		if (!is_Block(user) && get_nodes_block(user) == current_block
+		    && !is_Phi(user))
+			try_make_ready(user);
 	}
 	foreach_out_edge_kind(node, edge, EDGE_KIND_DEP) {
 		ir_node *user = get_edge_src_irn(edge);
-		try_make_ready(env, node, user);
+		if (!is_Block(user) && get_nodes_block(user) == current_block
+		    && !is_Phi(user))
+			try_make_ready(user);
 	}
 }
 
@@ -162,116 +128,63 @@ static void selected(block_sched_env_t *env, ir_node *node)
  * @param irn The node to add to the schedule.
  * @return    The given node.
  */
-static void add_to_sched(block_sched_env_t *env, ir_node *irn)
+static void add_to_sched(ir_node *node)
 {
-	assert(! (arch_get_irn_flags(irn) & arch_irn_flag_not_scheduled));
+	/* append node to schedule */
+	sched_add_before(current_block, node);
 
-	sched_add_before(env->block, irn);
-
-	DB((dbg, LEVEL_2, "\tschedule %+F\n", irn));
-
-	/* Remove the node from the ready set */
-	ir_nodeset_remove(&env->cands, irn);
-
-	selected(env, irn);
+	ir_nodeset_remove(&ready_set, node);
+	make_available(node);
 }
 
-/**
- * Perform list scheduling on a block.
- *
- * Note, that the caller must compute a linked list of nodes in the block
- * using the link field before calling this function.
- *
- * Also the outs must have been computed.
- *
- * @param block The block node.
- * @param env Scheduling environment.
- */
-static void list_sched_block(ir_node *block, void *env_ptr)
+void be_list_sched_schedule(ir_node *node)
 {
-	sched_env_t                 *env      = (sched_env_t*)env_ptr;
-	const list_sched_selector_t *selector = env->selector;
+	DB((dbg, LEVEL_1, "\tpicked %+F\n", node));
+	add_to_sched(node);
+}
 
-	/* Initialize the block's list head that will hold the schedule. */
+ir_nodeset_t *be_list_sched_begin_block(ir_node *block)
+{
+	assert(current_block == NULL);
+	current_block = block;
+
 	sched_init_block(block);
-
-	/* Initialize the block scheduling environment */
-	block_sched_env_t be;
-	be.block     = block;
-	be.selector  = selector;
-	be.sched_env = env;
-	ir_nodeset_t *cands = &be.cands;
-	ir_nodeset_init_size(cands, get_irn_n_edges(block));
-
+	ir_nodeset_init(&ready_set);
 	DB((dbg, LEVEL_1, "scheduling %+F\n", block));
 
-	if (selector->init_block)
-		be.selector_block_env = selector->init_block(env->selector_env, block);
-
-	/* Then one can add all nodes are ready to the set. */
+	/* fill ready set */
 	foreach_out_edge(block, edge) {
-		ir_node *irn = get_edge_src_irn(edge);
-
-		if (is_Phi(irn)) {
-			/* Phi functions are scheduled immediately, since they only
-			 * transfer data flow from the predecessors to this block. */
-			add_to_sched(&be, irn);
-		} else if (be_is_Start(irn)) {
-			/* The start block will be scheduled as the first node */
-			add_to_sched(&be, irn);
-		} else {
-			try_make_ready(&be, NULL, irn);
-		}
+		ir_node *node = get_edge_src_irn(edge);
+		try_make_ready(node);
 	}
 
-	/* Iterate over all remaining nodes */
-	while (ir_nodeset_size(cands) > 0) {
-		ir_node *irn = be.selector->select(be.selector_block_env, cands);
-		DB((dbg, LEVEL_2, "\tpicked node %+F\n", irn));
-
-		/* remove the scheduled node from the ready list. */
-		ir_nodeset_remove(cands, irn);
-		/* Add the node to the schedule. */
-		add_to_sched(&be, irn);
-	}
-
-	ir_nodeset_destroy(cands);
-
-	if (selector->finish_block)
-		selector->finish_block(be.selector_block_env);
+	return &ready_set;
 }
 
-/* List schedule a graph. */
-void be_list_sched_graph(ir_graph *irg, const list_sched_selector_t *selector)
+void be_list_sched_end_block(void)
 {
-	/* Matze: This is very slow, we should avoid it to improve backend speed,
-	 * we just have to make sure that we have no dangling out-edges at this
-	 * point... */
+	assert(ir_nodeset_size(&ready_set) == 0);
+	ir_nodeset_destroy(&ready_set);
+	current_block = NULL;
+}
+
+void be_list_sched_begin(ir_graph *irg)
+{
+	/* make sure we have no danging out-edges. TODO: avoid this in the future */
 	edges_deactivate(irg);
 	edges_activate(irg);
 
-	unsigned num_nodes = get_irg_last_idx(irg);
+	unsigned last_idx = get_irg_last_idx(irg);
+	available = rbitset_malloc(last_idx);
+}
 
-	/* initialize environment for list scheduler */
-	sched_env_t env;
-	memset(&env, 0, sizeof(env));
-	env.selector  = selector;
-	env.scheduled = rbitset_malloc(num_nodes);
-
-	if (selector->init_graph != NULL)
-		env.selector_env = selector->init_graph(irg);
-
-	/* Schedule each single block. */
-	irg_block_walk_graph(irg, list_sched_block, NULL, &env);
-
-	if (selector->finish_graph != NULL)
-		selector->finish_graph(env.selector_env);
-
-	free(env.scheduled);
+void be_list_sched_finish(void)
+{
+	free(available);
 }
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_listsched)
 void be_init_listsched(void)
 {
-	FIRM_DBG_REGISTER(dbg, "firm.be.sched");
+	FIRM_DBG_REGISTER(dbg, "firm.be.listsched");
 }
