@@ -21,6 +21,7 @@
  * @file
  * @brief   This file implements functions to finalize the irg for emit.
  */
+#include "amd64_common_transform.h"
 #include "amd64_finish.h"
 #include "amd64_new_nodes.h"
 #include "amd64_nodes_attr.h"
@@ -72,24 +73,63 @@ static bool try_swap_inputs(ir_node *node)
 static void transform_sub_to_neg_add(ir_node *node,
                                      const arch_register_t *out_reg)
 {
-	assert(is_amd64_Sub(node));
-
 	ir_node  *block = get_nodes_block(node);
 	dbg_info *dbgi  = get_irn_dbg_info(node);
+
+	ir_graph *irg = get_irn_irg(node);
+	ir_node  *in1 = get_irn_n(node, 0);
+	ir_node  *in2 = get_irn_n(node, 1);
+
+	const arch_register_t *in2_reg = arch_get_irn_register(in2);
+
 	const amd64_binop_addr_attr_t *attr = get_amd64_binop_addr_attr(node);
+	ir_node *add, *add_res;
 
-	ir_node *in1  = get_irn_n(node, 0);
-	ir_node *in2  = get_irn_n(node, 1);
+	if (is_amd64_xSubs(node)) {
+		ir_mode *mode = get_irn_mode(in2);
+		ir_tarval *tv;
+		if (get_mode_size_bits(mode) <= 32)
+			tv = create_sign_tv(mode_Iu);
+		else
+			tv = create_sign_tv(mode_Lu);
 
-	ir_node *neg  = new_bd_amd64_Neg(dbgi, block, in2, attr->base.insn_mode);
-	arch_set_irn_register(neg, out_reg);
+		ir_entity *sign_bit_const = create_float_const_entity(irg, tv);
 
-	sched_add_before(node, neg);
+		/* xXorp needs a 128-bit memory address since it's a vector instruction.
+		 * Setting the alignment works in this case, but is not the nice way.
+		 * TODO: Create and set correct mode/type for the entity.
+		 */
+		set_entity_alignment(sign_bit_const, 16);
 
-	ir_node *in[2]   = { neg, in1 };
-	ir_node *add     = new_bd_amd64_Add(dbgi, block, ARRAY_SIZE(in), in, attr);
-	ir_node *add_res = new_r_Proj(add, mode_Lu, pn_amd64_Add_res);
+		amd64_binop_addr_attr_t xor_attr;
+		memset(&xor_attr, 0, sizeof(xor_attr));
+		xor_attr.base.addr.base_input       = NO_INPUT;
+		xor_attr.base.addr.index_input      = NO_INPUT;
+		xor_attr.base.addr.immediate.entity = sign_bit_const;
+		xor_attr.base.base.op_mode          = AMD64_OP_ADDR_REG;
 
+		ir_node *xor_in[] = { in2 };
+		ir_node *xor = new_bd_amd64_xXorp(dbgi, block, ARRAY_SIZE(xor_in),
+		                                  xor_in, &xor_attr);
+		ir_node *neg = new_r_Proj(xor, mode_D, pn_amd64_xXorp_res);
+
+		sched_add_before(node, xor);
+		arch_set_irn_register(neg, in2_reg);
+
+		ir_node *in[] = { neg, in1 };
+		add     = new_bd_amd64_xAdds(dbgi, block, ARRAY_SIZE(in), in, attr);
+		add_res = new_r_Proj(add, mode_D, pn_amd64_xAdds_res);
+	} else {
+		assert(is_amd64_Sub(node));
+		ir_node *neg  = new_bd_amd64_Neg(dbgi, block, in2,
+		                                 attr->base.insn_mode);
+		arch_set_irn_register(neg, out_reg);
+		sched_add_before(node, neg);
+
+		ir_node *in[2] = { neg, in1 };
+		add     = new_bd_amd64_Add(dbgi, block, ARRAY_SIZE(in), in, attr);
+		add_res = new_r_Proj(add, mode_Lu, pn_amd64_Add_res);
+	}
 	arch_set_irn_register(add_res, out_reg);
 
 	/* exchange the add and the sub */
@@ -191,7 +231,7 @@ swap:;
 					if (res)
 						return;
 
-					if (is_amd64_Sub(node)) {
+					if (is_amd64_Sub(node) || is_amd64_xSubs(node)) {
 						transform_sub_to_neg_add(node, out_reg);
 						return;
 					}

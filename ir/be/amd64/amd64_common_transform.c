@@ -57,8 +57,8 @@ amd64_insn_mode_t get_insn_mode_from_mode(const ir_mode *mode)
 	panic("unexpected mode");
 }
 
-static ir_entity *create_float_const_entity(ir_graph *const irg,
-                                            ir_tarval *const tv)
+ir_entity *create_float_const_entity(ir_graph *const irg,
+                                     ir_tarval *const tv)
 {
 	const arch_env_t *arch_env = be_get_irg_arch_env(irg);
 	amd64_isa_t      *isa      = (amd64_isa_t*) arch_env;

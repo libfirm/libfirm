@@ -20,6 +20,11 @@
   */
 amd64_insn_mode_t get_insn_mode_from_mode(const ir_mode *mode);
 
+/** Creates an entity for a constant floating point value.
+  */
+ir_entity *create_float_const_entity(ir_graph *const irg,
+                                     ir_tarval *const tv);
+
 /** Creates an amd64 floating point constant from a given tarval.
   */
 ir_node *create_float_const(dbg_info *dbgi, ir_node *block,
