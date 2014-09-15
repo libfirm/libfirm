@@ -27,7 +27,6 @@ class EntConst(object):
 	"""Symbolic constant that represents an aspect of an entity"""
 	name       = "entconst"
 	flags      = [ "constlike", "start_block" ]
-	block      = "get_irg_start_block(irg)"
 	pinned     = "no"
 	attrs      = [
 		Attribute("entity", type="ir_entity*", comment="entity to operate on"),
@@ -41,7 +40,6 @@ class TypeConst(object):
 	"""A symbolic constant that represents an aspect of a type"""
 	name       = "typeconst"
 	flags      = [ "constlike", "start_block" ]
-	block      = "get_irg_start_block(irg)"
 	pinned     = "no"
 	attrs      = [
 		Attribute("type", type="ir_type*", comment="type to operate on"),
@@ -186,7 +184,6 @@ class Bad:
 	from undefined behaviour like reading uninitialized local variables in C."""
 	flags         = [ "start_block", "dump_noblock" ]
 	pinned        = "yes"
-	block         = "get_irg_start_block(irg)"
 	attr_struct   = "bad_attr"
 	init = '''
 	res->attr.bad.irg.irg = irg;
@@ -366,7 +363,6 @@ class Confirm:
 class Const:
 	"""Returns a constant value."""
 	flags      = [ "constlike", "start_block" ]
-	block      = "get_irg_start_block(irg)"
 	mode       = "get_tarval_mode(tarval)"
 	pinned     = "no"
 	attrs      = [
@@ -453,7 +449,6 @@ class Dummy:
 	ins        = []
 	flags      = [ "cfopcode", "start_block", "constlike", "dump_noblock" ]
 	pinned     = "yes"
-	block      = "get_irg_start_block(irg)"
 
 @op
 class End:
@@ -620,7 +615,6 @@ class NoMem:
 	mode          = "mode_M"
 	flags         = [ "dump_noblock", "start_block" ]
 	pinned        = "yes"
-	block         = "get_irg_start_block(irg)"
 	singleton     = True
 
 @op
@@ -792,9 +786,8 @@ class Start:
 	]
 	mode             = "mode_T"
 	pinned           = "yes"
-	flags            = [ "cfopcode" ]
+	flags            = [ "cfopcode", "start_block" ]
 	singleton        = True
-	block            = "get_irg_start_block(irg)"
 
 @op
 class Store:
@@ -876,5 +869,4 @@ class Unknown:
 	Unknown+x or Unknown<x with a new Unknown node if there are multiple
 	users of the original unknown node!"""
 	pinned     = "yes"
-	block      = "get_irg_start_block(irg)"
 	flags      = [ "start_block", "constlike", "dump_noblock" ]

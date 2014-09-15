@@ -92,13 +92,15 @@ def setnodedefaults(node):
 	setdefault(node, "constructor_args", [])
 	setdefault(node, "customSerializer", False)
 	setdefault(node, "block", None)
-	setdefault(node, "usesGraph", node.block != None)
 	if hasattr(node, "__doc__"):
 		node.doc = trim_docstring(node.__doc__)
 	else:
 		node.doc = ""
 	if hasattr(node, "outs"):
 		node.mode = "mode_T"
+	if "start_block" in node.flags:
+		node.block = "get_irg_start_block(irg)"
+	setdefault(node, "usesGraph", node.block != None)
 
 def load_spec(filename):
 	module = imp.load_source('spec', filename)
