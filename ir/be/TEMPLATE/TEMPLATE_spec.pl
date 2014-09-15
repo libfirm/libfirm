@@ -200,6 +200,7 @@ Jmp => {
 },
 
 Start => {
+	irn_flags => [ "schedule_first" ],
 	state     => "pinned",
 	reg_req   => { in => [], out => [ "sp:I|S", "none" ] },
 	outs      => [ "stack", "M" ],

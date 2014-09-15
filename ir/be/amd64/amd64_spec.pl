@@ -453,6 +453,7 @@ Call => {
 },
 
 Start => {
+	irn_flags => [ "schedule_first" ],
 	state     => "pinned",
 	out_arity => "variable",
 	ins       => [],

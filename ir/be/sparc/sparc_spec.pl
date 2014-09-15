@@ -384,6 +384,7 @@ St => {
 },
 
 Save => {
+	irn_flags => [ "schedule_first" ],
 	emit      => "save %S0, %SI1, %D0",
 	outs      => [ "stack" ],
 	ins       => [ "stack" ],
@@ -498,6 +499,7 @@ Ba => {
 },
 
 Start => {
+	irn_flags => [ "schedule_first" ],
 	state     => "pinned",
 	out_arity => "variable",
 	ins       => [],

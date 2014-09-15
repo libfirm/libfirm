@@ -348,6 +348,7 @@ EOF
 			"rematerializable" => "arch_irn_flag_rematerializable",
 			"modify_flags"     => "arch_irn_flag_modify_flags",
 			"simple_jump"      => "arch_irn_flag_simple_jump",
+			"schedule_first"   => "arch_irn_flag_schedule_first",
 			"not_scheduled"    => "arch_irn_flag_not_scheduled",
 		);
 		if (%custom_irn_flags) {
