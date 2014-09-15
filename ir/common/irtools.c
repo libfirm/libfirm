@@ -107,11 +107,6 @@ void copy_irn_to_irg(ir_node *n, ir_graph *irg)
 	   frees e.g. the memory of the graph_arr allocated in new_immBlock. */
 	copy_node_attr(irg, n, nn);
 	set_irn_link(n, nn);
-
-	/* fix the irg for nodes containing a reference to it */
-	if (ir_has_irg_ref(nn)) {
-		nn->attr.block.irg.irg = irg;
-	}
 }
 
 ir_node *irn_copy_into_irg(const ir_node *node, ir_graph *irg)
@@ -134,10 +129,6 @@ ir_node *irn_copy_into_irg(const ir_node *node, ir_graph *irg)
 
 	/* copy the attributes */
 	copy_node_attr(irg, node, res);
-
-	/* fix irg attribute */
-	if (ir_has_irg_ref(res))
-		res->attr.irg.irg = irg;
 
 	/* duplicate dependency edges */
 	for (int i = 0, n_deps = get_irn_n_deps(node); i < n_deps; ++i) {

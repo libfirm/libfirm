@@ -205,7 +205,7 @@ static void mark_iterated_dominance_frontiers(
 static ir_node *insert_dummy_phi(be_ssa_construction_env_t *env, ir_node *block)
 {
 	int i, n_preds = get_Block_n_cfgpreds(block);
-	ir_graph *irg = get_Block_irg(block);
+	ir_graph *irg = get_irn_irg(block);
 	ir_node **ins = ALLOCAN(ir_node*, n_preds);
 	ir_node  *dummy;
 	ir_node  *phi;

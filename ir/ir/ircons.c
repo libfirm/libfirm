@@ -308,7 +308,7 @@ ir_node *new_d_ASM(dbg_info *db, ir_node *mem, int arity, ir_node *in[],
 
 ir_node *new_rd_DivRL(dbg_info *dbgi, ir_node *block, ir_node * irn_mem, ir_node * irn_left, ir_node * irn_right, ir_mode* resmode, op_pin_state pin_state)
 {
-	ir_graph *const irg = get_Block_irg(block);
+	ir_graph *const irg = get_irn_irg(block);
 	ir_node  *const in[] = { irn_mem, irn_left, irn_right };
 	ir_node        *res  = new_ir_node(dbgi, irg, block, op_Div, mode_T, 3, in);
 	res->attr.div.resmode       = resmode;
@@ -338,7 +338,7 @@ ir_node *new_DivRL(ir_node * irn_mem, ir_node * irn_left, ir_node * irn_right, i
 ir_node *new_rd_Phi_loop(dbg_info *db, ir_node *block, int arity,
                              ir_node *in[])
 {
-	ir_graph *const irg = get_Block_irg(block);
+	ir_graph *const irg = get_irn_irg(block);
 	ir_node *res = new_ir_node(db, irg, block, op_Phi, mode_M, arity, in);
 	res->attr.phi.u.backedge = new_backedge_arr(get_irg_obstack(irg), arity);
 	res->attr.phi.loop = true;
@@ -375,7 +375,6 @@ ir_node *new_rd_immBlock(dbg_info *dbgi, ir_graph *irg)
 	set_Block_matured(res, 0);
 	block_attr *const b = &res->attr.block;
 	b->dynamic_ins = true;
-	b->irg.irg     = irg;
 	b->backedge    = NULL;
 	b->entity      = NULL;
 
@@ -586,7 +585,6 @@ ir_node *new_ASM(ir_node *mem, int arity, ir_node *in[],
 ir_node *new_r_Anchor(ir_graph *irg)
 {
 	ir_node *const res = new_ir_node(NULL, irg, NULL, op_Anchor, mode_ANY, 0, NULL);
-	res->attr.anchor.irg.irg = irg;
 
 	/* hack to get get_irn_irg in set_irn_in() working */
 	res->in[0] = res;
@@ -605,7 +603,6 @@ ir_node *new_r_Anchor(ir_graph *irg)
 ir_node *new_r_Block_noopt(ir_graph *irg, int arity, ir_node *in[])
 {
 	ir_node *res = new_ir_node(NULL, irg, NULL, op_Block, mode_BB, arity, in);
-	res->attr.block.irg.irg = irg;
 	res->attr.block.backedge = new_backedge_arr(get_irg_obstack(irg), arity);
 	set_Block_matured(res, 1);
 	/* Create and initialize array for Phi-node construction. */

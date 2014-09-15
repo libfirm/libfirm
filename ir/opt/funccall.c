@@ -292,7 +292,7 @@ static bool has_loop(ir_node *cfgpred)
 	}
 
 	/* block is not on current path anymore */
-	set_irn_visited(block, get_irg_visited(get_Block_irg(block))-1);
+	set_irn_visited(block, get_irg_visited(get_irn_irg(cfgpred))-1);
 	return false;
 }
 

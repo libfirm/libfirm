@@ -2363,7 +2363,7 @@ chain_end:;
 	ir_node        *res   = current;
 	dbg_info *const dbgi  = get_irn_dbg_info(irn);
 	ir_node  *const block = get_nodes_block(irn);
-	ir_graph *const irg   = get_Block_irg(block);
+	ir_graph *const irg   = get_irn_irg(irn);
 	if (!tarval_is_all_one(keep)) {
 		if (tarval_is_all_one(tarval_eor(keep, flip))) {
 			/* Chain is an Or. */
@@ -2419,7 +2419,7 @@ flip:
 static ir_node *new_binop(ir_node *const old, ir_node *const block, ir_node *const l, ir_node *const r)
 {
 	dbg_info *const dbgi = get_irn_dbg_info(old);
-	ir_graph *const irg  = get_Block_irg(block);
+	ir_graph *const irg  = get_irn_irg(block);
 	ir_op    *const op   = get_irn_op(old);
 	ir_mode  *const mode = get_irn_mode(l /* sic */);
 	ir_node  *const in[] = { l, r };
@@ -3579,7 +3579,7 @@ static ir_node *transform_node_Mul(ir_node *n)
 				ir_node   *block = get_nodes_block(n);
 				ir_node   *mul   = new_rd_Mul(dbgi, block, add_left, b, mode);
 				ir_tarval *c1_c2 = tarval_mul(c1, c2);
-				ir_graph  *irg   = get_Block_irg(block);
+				ir_graph  *irg   = get_irn_irg(n);
 				ir_node   *cnst  = new_r_Const(irg, c1_c2);
 				ir_node   *add   = new_rd_Add(dbgi, block, mul, cnst, mode);
 				return add;

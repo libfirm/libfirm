@@ -957,7 +957,7 @@ static void fix_head_inversion(void)
 			ins[pos++] = pred;
 	}
 
-	ir_graph *const irg      = get_Block_irg(loop_head);
+	ir_graph *const irg      = get_irn_irg(loop_head);
 	ir_node  *const new_head = new_r_Block(irg, new_arity, ins);
 	ir_node       **phis     = NEW_ARR_F(ir_node *, 0);
 
@@ -1417,7 +1417,7 @@ static ir_node *clone_block_sans_bes(ir_graph *const irg, ir_node *const node, i
 static ir_node *new_Abs(ir_node *const op, ir_mode *const mode)
 {
 	ir_node  *const block    = get_nodes_block(op);
-	ir_graph *const irg      = get_Block_irg(block);
+	ir_graph *const irg      = get_irn_irg(op);
 	ir_node  *const zero     = new_r_Const_null(irg, mode);
 	ir_node  *const cmp      = new_r_Cmp(block, op, zero, ir_relation_less);
 	ir_node  *const minus_op = new_r_Minus(block, op, mode);

@@ -92,7 +92,6 @@ class Anchor:
 	arity            = "variable"
 	flags            = [ "dump_noblock" ]
 	pinned           = "yes"
-	attr_struct      = "irg_attr"
 	singleton        = True
 	noconstructor    = True
 	customSerializer = True
@@ -184,10 +183,6 @@ class Bad:
 	from undefined behaviour like reading uninitialized local variables in C."""
 	flags         = [ "start_block", "dump_noblock" ]
 	pinned        = "yes"
-	attr_struct   = "bad_attr"
-	init = '''
-	res->attr.bad.irg.irg = irg;
-	'''
 
 @op
 class Deleted:
@@ -216,7 +211,6 @@ class Block:
 	customSerializer = True
 
 	init = '''
-	res->attr.block.irg.irg     = irg;
 	res->attr.block.backedge    = new_backedge_arr(get_irg_obstack(irg), arity);
 	set_Block_matured(res, 1);
 

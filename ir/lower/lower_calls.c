@@ -496,7 +496,7 @@ static void do_copy_return_opt(ir_node *n, void *ctx)
  */
 static ir_node *get_dummy_member(ir_node *block, ir_type *tp)
 {
-	ir_graph *irg = get_Block_irg(block);
+	ir_graph *irg = get_irn_irg(block);
 	ir_type  *ft  = get_irg_frame_type(irg);
 	if (get_type_state(ft) == layout_fixed) {
 		/* Fix the layout again */
@@ -536,7 +536,7 @@ static void get_dest_addrs(const cl_entry *entry, ir_node **ins,
 		if (dst_block == call_block) {
 			ir_heights_t *heights = env->heights;
 			if (heights == NULL) {
-				ir_graph *irg = get_Block_irg(call_block);
+				ir_graph *irg = get_irn_irg(call_block);
 				heights = heights_new(irg);
 				env->heights = heights;
 			}
@@ -764,7 +764,7 @@ static void fix_calls(wlk_env *env)
 static void transform_return(ir_node *ret, size_t n_ret_com, wlk_env *env)
 {
 	ir_node   *block      = get_nodes_block(ret);
-	ir_graph  *irg        = get_Block_irg(block);
+	ir_graph  *irg        = get_irn_irg(ret);
 	ir_type   *mtp        = env->mtp;
 	size_t     n_ress     = get_method_n_ress(mtp);
 	ir_node   *mem        = get_Return_mem(ret);

@@ -128,7 +128,7 @@ static void find_dag_roots(ir_node *node, void *env)
 	block = get_nodes_block(node);
 
 	/* ignore start end end blocks */
-	ir_graph *const irg = get_Block_irg(block);
+	ir_graph *const irg = get_irn_irg(node);
 	if (block == get_irg_start_block(irg) || block == get_irg_end_block(irg))
 		return;
 
@@ -198,7 +198,7 @@ static void connect_dags(ir_node *node, void *env)
 	block = get_nodes_block(node);
 
 	/* ignore start end end blocks */
-	ir_graph *const irg = get_Block_irg(block);
+	ir_graph *const irg = get_irn_irg(node);
 	if (block == get_irg_start_block(irg) || block == get_irg_end_block(irg))
 		return;
 

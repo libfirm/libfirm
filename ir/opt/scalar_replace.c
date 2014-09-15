@@ -485,7 +485,7 @@ static void walker(ir_node *node, void *ctx)
 		DB((dbg, SET_LEVEL_3, "replacing %+F by value %u\n", node, vnum));
 
 		ir_node  *block = get_nodes_block(node);
-		ir_graph *irg   = get_Block_irg(block);
+		ir_graph *irg   = get_irn_irg(node);
 		set_r_cur_block(irg, block);
 
 		/* check, if we can replace this Load */
@@ -529,8 +529,8 @@ static void walker(ir_node *node, void *ctx)
 
 		DB((dbg, SET_LEVEL_3, "replacing %+F by value %u\n", node, vnum));
 
-		ir_node *block = get_nodes_block(node);
-		ir_graph *irg  = get_Block_irg(block);
+		ir_node  *block = get_nodes_block(node);
+		ir_graph *irg   = get_irn_irg(node);
 		set_r_cur_block(irg, block);
 
 		/* Beware: A Store can contain a hidden conversion in Firm. */

@@ -1773,7 +1773,7 @@ static void default_compute(node_t *node)
 static void compute_Block(node_t *node)
 {
 	ir_node  *const block = node->node;
-	ir_graph *const irg   = get_Block_irg(block);
+	ir_graph *const irg   = get_irn_irg(block);
 
 	if (block == get_irg_start_block(irg)) {
 		/* The start block is always reachable. */
@@ -2796,7 +2796,7 @@ static void apply_cf(ir_node *block, void *ctx)
 			}
 		}
 
-		ir_graph *const irg = get_Block_irg(block);
+		ir_graph *const irg = get_irn_irg(block);
 		if (block == get_irg_end_block(irg)) {
 			/* Analysis found out that the end block is unreachable,
 			 * hence we remove all its control flow predecessors. */
@@ -2846,7 +2846,7 @@ static void apply_cf(ir_node *block, void *ctx)
 		return;
 
 	/* fix Phi's */
-	ir_graph *irg = get_Block_irg(block);
+	ir_graph *irg = get_irn_irg(block);
 	ir_node **ins = ALLOCAN(ir_node*, n);
 	for (ir_node *next, *phi = get_Block_phis(block); phi != NULL; phi = next) {
 		node_t   *node = get_irn_node(phi);

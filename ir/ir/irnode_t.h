@@ -46,7 +46,6 @@
 #define set_Block_block_visited(node, visit)  set_Block_block_visited_(node, visit)
 #define mark_Block_block_visited(node)        mark_Block_block_visited_(node)
 #define Block_block_visited(node)             Block_block_visited_(node)
-#define get_Block_irg(block)                  get_Block_irg_(block)
 #define is_Const_null(node)                   is_Const_null_(node)
 #define is_Const_one(node)                    is_Const_one_(node)
 #define is_Const_all_one(node)                is_Const_all_one_(node)
@@ -240,10 +239,7 @@ static inline ir_node *get_nodes_block_(const ir_node *node)
 
 static inline ir_graph *get_irn_irg_(const ir_node *node)
 {
-	if (! is_Block(node))
-		node = get_nodes_block(node);
-	assert(ir_has_irg_ref(node));
-	return node->attr.irg.irg;
+	return node->irg;
 }
 
 /**
@@ -364,22 +360,14 @@ static inline void set_Block_block_visited_(ir_node *node, ir_visited_t visit)
 	node->attr.block.block_visited = visit;
 }
 
-static inline ir_graph *get_Block_irg_(const ir_node *block)
-{
-	assert(is_Block(block));
-	return block->attr.irg.irg;
-}
-
 static inline void mark_Block_block_visited_(ir_node *node)
 {
-	ir_graph *irg = get_Block_irg(node);
-	node->attr.block.block_visited = get_irg_block_visited(irg);
+	node->attr.block.block_visited = get_irg_block_visited(node->irg);
 }
 
 static inline int Block_block_visited_(const ir_node *node)
 {
-	ir_graph *irg = get_Block_irg(node);
-	return node->attr.block.block_visited >= get_irg_block_visited(irg);
+	return node->attr.block.block_visited >= get_irg_block_visited(node->irg);
 }
 
 static inline int is_Const_null_(const ir_node *node)

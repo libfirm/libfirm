@@ -238,7 +238,7 @@ static void set_preds(ir_node *irn, void *env)
 	irn_copy = (ir_node*)get_irn_link(irn);
 
 	if (is_Block(irn)) {
-		ir_graph *const irg = get_Block_irg(irn);
+		ir_graph *const irg = get_irn_irg(irn);
 		for (i = get_Block_n_cfgpreds(irn) - 1; i >= 0; --i) {
 			pred = get_Block_cfgpred(irn, i);
 			/* "End" block must be handled extra, because it is not matured.*/

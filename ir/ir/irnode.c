@@ -87,6 +87,7 @@ ir_node *new_ir_node(dbg_info *db, ir_graph *irg, ir_node *block, ir_op *op,
 	res->kind     = k_ir_node;
 	res->op       = op;
 	res->mode     = mode;
+	res->irg      = irg;
 	res->visited  = 0;
 	res->node_idx = irg_register_node_idx(irg, res);
 	res->link     = NULL;
@@ -131,7 +132,7 @@ ir_node *new_ir_node(dbg_info *db, ir_graph *irg, ir_node *block, ir_op *op,
 ir_node *new_similar_node(ir_node *const old, ir_node *const block, ir_node **const in)
 {
 	dbg_info *const dbgi  = get_irn_dbg_info(old);
-	ir_graph *const irg   = get_Block_irg(block);
+	ir_graph *const irg   = get_irn_irg(old);
 	ir_op    *const op    = get_irn_op(old);
 	ir_mode  *const mode  = get_irn_mode(old);
 	int       const arity = get_irn_arity(old);
@@ -500,11 +501,6 @@ void (mark_Block_block_visited)(ir_node *node)
 int (Block_block_visited)(const ir_node *node)
 {
 	return Block_block_visited_(node);
-}
-
-ir_graph *(get_Block_irg)(const ir_node *block)
-{
-	return get_Block_irg_(block);
 }
 
 ir_entity *create_Block_entity(ir_node *block)

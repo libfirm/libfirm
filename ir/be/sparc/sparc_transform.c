@@ -1417,7 +1417,7 @@ static ir_entity *create_float_const_entity(ir_graph *const irg, ir_tarval *cons
 
 static ir_node *gen_float_const(dbg_info *dbgi, ir_node *block, ir_tarval *tv)
 {
-	ir_graph  *irg    = get_Block_irg(block);
+	ir_graph  *irg    = get_irn_irg(block);
 	ir_entity *entity = create_float_const_entity(irg, tv);
 	ir_node   *hi     = new_bd_sparc_SetHi(dbgi, block, entity, 0);
 	ir_node   *mem    = get_irg_no_mem(irg);
@@ -1952,7 +1952,7 @@ static ir_node *gen_Return(ir_node *node)
 static ir_node *bitcast_int_to_float(dbg_info *dbgi, ir_node *block,
                                      ir_node *value0, ir_node *value1)
 {
-	ir_graph *irg   = get_Block_irg(block);
+	ir_graph *irg   = get_irn_irg(block);
 	ir_node  *sp    = get_irg_frame(irg);
 	ir_node  *nomem = get_irg_no_mem(irg);
 	ir_node  *st    = new_bd_sparc_St_imm(dbgi, block, value0, sp, nomem,
@@ -2008,7 +2008,7 @@ static void bitcast_float_to_int(dbg_info *dbgi, ir_node *block,
 			result[1] = NULL;
 		}
 	} else {
-		ir_graph *irg   = get_Block_irg(block);
+		ir_graph *irg   = get_irn_irg(block);
 		ir_node  *stack = get_irg_frame(irg);
 		ir_node  *nomem = get_irg_no_mem(irg);
 		ir_node  *new_value = be_transform_node(value);
@@ -2358,7 +2358,7 @@ static ir_node *gen_saturating_increment(ir_node *node)
 	ir_node  *increment = new_bd_sparc_AddCC_imm(dbgi, block, operand, NULL, 1);
 	ir_node  *value     = new_rd_Proj(dbgi, increment, mode_Iu, pn_sparc_AddCC_res);
 	ir_node  *eflags    = new_rd_Proj(dbgi, increment, mode_Iu, pn_sparc_AddCC_flags);
-	ir_graph *irg       = get_Block_irg(block);
+	ir_graph *irg       = get_irn_irg(block);
 	ir_node  *zero      = get_g0(irg);
 	ir_node  *sbb       = new_bd_sparc_SubX_reg(dbgi, block, value, zero, eflags);
 

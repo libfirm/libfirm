@@ -256,7 +256,7 @@ result_unknown_X:
 		}
 
 		if (!reachable) {
-			ir_graph *const irg = get_Block_irg(irn);
+			ir_graph *const irg = get_irn_irg(irn);
 			reachable =
 				irn == get_irg_start_block(irg) ||
 				irn == get_irg_end_block(irg);

@@ -148,7 +148,7 @@ static void remove_empty_block(ir_node *block)
 		panic("Unexpected node %+F in block %+F with empty schedule", node, block);
 	}
 
-	ir_graph *irg = get_Block_irg(block);
+	ir_graph *irg = get_irn_irg(block);
 	set_Block_cfgpred(block, 0, new_r_Bad(irg, mode_X));
 	kill_node(jump);
 	blocks_removed = true;

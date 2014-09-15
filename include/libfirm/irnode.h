@@ -262,8 +262,6 @@ FIRM_API void mark_Block_block_visited(ir_node *node);
 /** Returns 1 if a block is marked as visited */
 FIRM_API int Block_block_visited(const ir_node *node);
 
-/** Returns the ir_graph this Block belongs to. */
-FIRM_API ir_graph *get_Block_irg(const ir_node *block);
 /** Returns the entity for a Block (creating it if necessary) */
 FIRM_API ir_entity *create_Block_entity(ir_node *block);
 /** Returns the head of the Phi list for this block. */

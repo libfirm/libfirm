@@ -59,7 +59,7 @@ static unsigned be_compute_block_pressure(ir_node *const block, arch_register_cl
 	/* determine largest pressure with this block */
 	ir_nodeset_t live_nodes;
 	ir_nodeset_init(&live_nodes);
-	be_lv_t *const lv = be_get_irg_liveness(get_Block_irg(block));
+	be_lv_t *const lv = be_get_irg_liveness(get_irn_irg(block));
 	be_liveness_end_of_block(lv, cls, block, &live_nodes);
 	unsigned max_live = (unsigned)ir_nodeset_size(&live_nodes);
 

@@ -74,7 +74,7 @@ void be_duplicate_deps(ir_node *old_node, ir_node *new_node)
 ir_node *be_transform_phi(ir_node *node, const arch_register_req_t *req)
 {
 	ir_node  *block = be_transform_node(get_nodes_block(node));
-	ir_graph *irg   = get_Block_irg(block);
+	ir_graph *irg   = get_irn_irg(block);
 	dbg_info *dbgi  = get_irn_dbg_info(node);
 
 	/* phi nodes allow loops, so we use the old arguments for now

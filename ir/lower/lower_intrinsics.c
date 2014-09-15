@@ -191,15 +191,14 @@ int i_mapper_abs(ir_node *call)
 
 int i_mapper_bswap(ir_node *call)
 {
-	ir_node *mem   = get_Call_mem(call);
-	ir_node *block = get_nodes_block(call);
-	ir_node *op    = get_Call_param(call, 0);
-	ir_type *tp    = get_Call_type(call);
-	dbg_info *dbg  = get_irn_dbg_info(call);
-	ir_node *irn;
-
-	ir_graph *const irg = get_Block_irg(block);
-	irn = new_rd_Builtin(dbg, block, get_irg_no_mem(irg), 1, &op, ir_bk_bswap, tp);
+	ir_node  *mem   = get_Call_mem(call);
+	ir_node  *block = get_nodes_block(call);
+	ir_graph *irg   = get_irn_irg(call);
+	ir_node  *op    = get_Call_param(call, 0);
+	ir_type  *tp    = get_Call_type(call);
+	dbg_info *dbg   = get_irn_dbg_info(call);
+	ir_node  *irn   = new_rd_Builtin(dbg, block, get_irg_no_mem(irg), 1, &op,
+	                                 ir_bk_bswap, tp);
 	set_irn_pinned(irn, op_pin_state_floats);
 	irn = new_r_Proj(irn, get_irn_mode(op), pn_Builtin_max+1);
 	replace_call(irn, call, mem, NULL, NULL);

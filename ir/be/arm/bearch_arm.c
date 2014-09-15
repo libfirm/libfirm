@@ -127,7 +127,7 @@ static void arm_prepare_graph(ir_graph *irg)
 static ir_node *arm_new_reload(ir_node *value, ir_node *spill, ir_node *before)
 {
 	ir_node  *block  = get_block(before);
-	ir_graph *irg    = get_Block_irg(block);
+	ir_graph *irg    = get_irn_irg(before);
 	ir_node  *frame  = get_irg_frame(irg);
 	ir_mode  *mode   = get_irn_mode(value);
 	ir_node  *load   = new_bd_arm_Ldr(NULL, block, frame, spill, mode, NULL,
@@ -141,7 +141,7 @@ static ir_node *arm_new_reload(ir_node *value, ir_node *spill, ir_node *before)
 static ir_node *arm_new_spill(ir_node *value, ir_node *after)
 {
 	ir_node  *block  = get_block(after);
-	ir_graph *irg    = get_Block_irg(block);
+	ir_graph *irg    = get_irn_irg(after);
 	ir_node  *frame  = get_irg_frame(irg);
 	ir_node  *mem    = get_irg_no_mem(irg);
 	ir_mode  *mode   = get_irn_mode(value);

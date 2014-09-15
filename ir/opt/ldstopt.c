@@ -397,7 +397,7 @@ static ir_node *transform_previous_value(ir_mode *const load_mode,
 			: delta;
 		ir_node *new_value = prev_value;
 		if (shift != 0) {
-			ir_graph *const irg   = get_Block_irg(block);
+			ir_graph *const irg   = get_irn_irg(block);
 			ir_node  *const cnst  = new_r_Const_long(irg, mode_Iu, shift * 8);
 			new_value = new_r_Shr(block, new_value, cnst, prev_mode);
 		}
@@ -2106,7 +2106,7 @@ again:;
 			/* combine values */
 			dbg_info *dbgi   = get_irn_dbg_info(store0);
 			ir_node  *block  = get_nodes_block(store0);
-			ir_graph *irg    = get_Block_irg(block);
+			ir_graph *irg    = get_irn_irg(store0);
 			ir_node  *convu0 = new_r_Conv(block, store_val, mode_unsigned);
 			ir_node  *conv0  = new_r_Conv(block, convu0, double_mode);
 			ir_node  *convu1 = new_r_Conv(block, store_val1, mode_unsigned);

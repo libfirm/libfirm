@@ -181,25 +181,9 @@ struct ir_switch_table {
 
 /* ir node attributes */
 
-/** first attribute of Bad, Block, Anchor nodes */
-typedef struct irg_attr {
-	ir_graph *irg;              /**< The graph this block like node belongs to. */
-} irg_attr;
-
-/** Attributes for Bad nodes. */
-typedef struct bad_attr {
-	irg_attr irg;
-} bad_attr;
-
-/** Attributes for Anchor nodes. */
-typedef struct anchor_attr {
-	irg_attr irg;
-} anchor_attr;
-
 /** Attributes for Block nodes. */
 typedef struct block_attr {
 	/* General attributes */
-	irg_attr     irg;           /**< The graph this block belongs to. */
 	ir_visited_t block_visited; /**< For the walker that walks over all blocks. */
 	/* Attributes private to construction: */
 	unsigned is_matured:1;      /**< If set, all in-nodes of the block are fixed. */
@@ -355,9 +339,6 @@ typedef struct switch_attr {
 
 /** Union with all possible node attributes. */
 typedef union ir_attr {
-	irg_attr       irg;
-	bad_attr       bad;
-	anchor_attr    anchor;
 	block_attr     block;
 	cmp_attr       cmp;
 	cond_attr      cond;
@@ -417,6 +398,7 @@ struct ir_node {
 	ir_op *op;               /**< The Opcode of this node. */
 	ir_mode *mode;           /**< The Mode of this node. */
 	struct ir_node **in;     /**< The array of predecessors / operands. */
+	ir_graph *irg;
 	ir_visited_t visited;    /**< The visited counter for walks of the graph. */
 	void *link;              /**< To attach additional information to the node, e.g.
 	                              used during optimization to link to nodes that

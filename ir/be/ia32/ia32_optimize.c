@@ -138,7 +138,7 @@ static void peephole_ia32_Cmp(ir_node *const node)
 
 	dbg_info *const dbgi         = get_irn_dbg_info(node);
 	ir_node  *const block        = get_nodes_block(node);
-	ir_graph *const irg          = get_Block_irg(block);
+	ir_graph *const irg          = get_irn_irg(node);
 	ir_node  *const noreg        = ia32_new_NoReg_gp(irg);
 	ir_node  *const nomem        = get_irg_no_mem(irg);
 	ir_node  *const op           = get_irn_n(node, n_ia32_Cmp_left);

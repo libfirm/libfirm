@@ -415,7 +415,7 @@ static bool value_live_after(const ir_node *const value,
 	/* If value is live end in after's block it is
 	 * live at after's definition (value dominates after) */
 	const ir_node  *const bb  = get_nodes_block(after);
-	const ir_graph *const irg = get_Block_irg(bb);
+	const ir_graph *const irg = get_irn_irg(after);
 	const be_lv_t  *const lv  = be_get_irg_liveness(irg);
 	if (be_is_live_end(lv, bb, value))
 		return true;
@@ -504,7 +504,7 @@ bool be_memory_values_interfere(const ir_node *a, const ir_node *b)
 	/* If a is live end in b's block it is
 	 * live at b's definition (a dominates b) */
 	const ir_node  *const bb  = get_nodes_block(b);
-	const ir_graph *const irg = get_Block_irg(bb);
+	const ir_graph *const irg = get_irn_irg(b);
 	const be_lv_t  *const lv  = be_get_irg_liveness(irg);
 	if (be_is_live_end(lv, bb, a))
 		return true;

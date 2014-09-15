@@ -1162,7 +1162,7 @@ static void lower_Cond(ir_node *node, ir_mode *high_mode)
 
 	/* create a new high compare */
 	ir_node    *block    = get_nodes_block(node);
-	ir_graph   *irg      = get_Block_irg(block);
+	ir_graph   *irg      = get_irn_irg(node);
 	dbg_info   *dbg      = get_irn_dbg_info(sel);
 	ir_relation relation = get_Cmp_relation(sel);
 

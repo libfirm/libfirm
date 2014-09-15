@@ -84,7 +84,7 @@ ir_entity *create_float_const_entity(ir_graph *const irg,
 ir_node *create_float_const(dbg_info *dbgi, ir_node *block,
                                    ir_tarval *tv)
 {
-	ir_graph  *irg     = get_Block_irg(block);
+	ir_graph  *irg     = get_irn_irg(block);
 	ir_mode   *tv_mode = get_tarval_mode(tv);
 	ir_entity *entity  = create_float_const_entity(irg, tv);
 	ir_node   *nomem   = get_irg_no_mem(irg);

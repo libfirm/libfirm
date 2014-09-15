@@ -91,8 +91,6 @@ static void copy_node_inline(ir_node *node, void *env)
 			assert(new_entity != NULL);
 			set_Member_entity(new_node, new_entity);
 		}
-	} else if (is_Block(new_node)) {
-		new_node->attr.block.irg.irg = new_irg;
 	}
 }
 

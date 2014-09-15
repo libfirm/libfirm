@@ -1508,7 +1508,7 @@ static bool should_align_block(const ir_node *block)
  */
 static void ia32_emit_block_header(ir_node *block)
 {
-	ir_graph *const irg = get_Block_irg(block);
+	ir_graph *const irg = get_irn_irg(block);
 	if (block == get_irg_end_block(irg))
 		return;
 

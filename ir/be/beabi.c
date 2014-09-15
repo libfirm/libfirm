@@ -687,7 +687,7 @@ static ir_node *adjust_alloc_size(unsigned stack_alignment, ir_node *size,
 		return size;
 
 	ir_mode  *mode = get_irn_mode(size);
-	ir_graph *irg  = get_Block_irg(block);
+	ir_graph *irg  = get_irn_irg(block);
 	ir_node  *mask = new_r_Const_long(irg, mode, stack_alignment - 1);
 	size = new_rd_Add(dbg, block, size, mask, mode);
 	mask = new_r_Const_long(irg, mode, -(long)stack_alignment);
@@ -702,7 +702,7 @@ static ir_node *adjust_alloc_size(unsigned stack_alignment, ir_node *size,
 static ir_node *adjust_alloc(be_abi_irg_t *env, ir_node *alloc, ir_node *curr_sp)
 {
 	ir_node          *block     = get_nodes_block(alloc);
-	ir_graph         *irg       = get_Block_irg(block);
+	ir_graph         *irg       = get_irn_irg(alloc);
 	const arch_env_t *arch_env  = be_get_irg_arch_env(irg);
 
 	ir_node *alloc_mem = NULL;
@@ -1070,7 +1070,7 @@ static ir_node *create_be_return(be_abi_irg_t *const env, ir_node *const irn)
 {
 	ir_node          *const bl = get_nodes_block(irn);
 	be_abi_call_t    *call     = env->call;
-	ir_graph         *irg      = get_Block_irg(bl);
+	ir_graph         *irg      = get_irn_irg(irn);
 	const arch_env_t *arch_env = be_get_irg_arch_env(irg);
 
 	/* get the valid stack node in this block.

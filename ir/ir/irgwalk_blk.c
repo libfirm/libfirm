@@ -286,7 +286,7 @@ static void collect_walk(ir_node *node, blk_collect_data_t *env)
 		}
 
 		/* it's a block, put it into the block list */
-		if (node == get_irg_end_block(get_Block_irg(node))) {
+		if (node == get_irg_end_block(get_irn_irg(node))) {
 			/* Put the end block always last. If we don't do it here,
 			 * it might be placed elsewhere if the graph contains
 			 * endless loops.

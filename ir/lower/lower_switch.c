@@ -301,7 +301,7 @@ static void connect_to_target(target_t *target, ir_node *cf)
 	unsigned n_entries = target->n_entries;
 	if (get_Block_n_cfgpreds(block) != (int)n_entries) {
 		ir_node **new_in = ALLOCAN(ir_node*, n_entries);
-		ir_graph *irg    = get_Block_irg(block);
+		ir_graph *irg    = get_irn_irg(block);
 		ir_node  *dummy  = new_r_Dummy(irg, mode_X);
 		for (unsigned i = 0; i < n_entries; ++i) {
 			new_in[i] = dummy;

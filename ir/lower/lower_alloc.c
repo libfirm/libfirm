@@ -37,7 +37,7 @@ static ir_node *adjust_alloc_size(dbg_info *dbgi, ir_node *size, ir_node *block)
 		return size;
 
 	ir_mode  *mode = get_irn_mode(size);
-	ir_graph *irg  = get_Block_irg(block);
+	ir_graph *irg  = get_irn_irg(block);
 	ir_node  *mask = new_r_Const_long(irg, mode, stack_alignment - 1);
 	size = new_rd_Add(dbgi, block, size, mask, mode);
 	mask = new_r_Const_long(irg, mode, -(long)stack_alignment);
