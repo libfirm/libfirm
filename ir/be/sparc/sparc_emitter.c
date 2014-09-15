@@ -257,7 +257,7 @@ static bool is_no_instruction(const ir_node *node)
 	if (is_sparc_Ba(node) && ba_is_fallthrough(node))
 		return true;
 
-	return be_is_Keep(node) || be_is_Start(node) || is_Phi(node);
+	return be_is_Keep(node) || is_sparc_Start(node) || is_Phi(node);
 }
 
 static bool has_delay_slot(const ir_node *node)
@@ -325,6 +325,8 @@ static bool is_legal_delay_slot_filler(const ir_node *node)
 	if (emits_multiple_instructions(node))
 		return false;
 	if (rbitset_is_set(delay_slot_fillers, get_irn_idx(node)))
+		return false;
+	if (is_sparc_Save(node))
 		return false;
 	return true;
 }
