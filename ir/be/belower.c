@@ -730,7 +730,7 @@ static int push_through_perm(ir_node *perm)
 	 * the Perm, increasing the register pressure by one.
 	 */
 	sched_foreach_reverse_before(perm, irn) {
-		if (is_Phi(irn)) {
+		if (is_Phi(irn) || arch_irn_is(irn, schedule_first)) {
 			frontier = irn;
 			goto found_front;
 		}
