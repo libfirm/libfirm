@@ -20,15 +20,13 @@
 
 be_insn_t *be_scan_insn(be_chordal_env_t *const env, ir_node *const irn)
 {
-	struct obstack *const obst = &env->obst;
-	be_operand_t o;
+	struct obstack              *const obst = &env->obst;
+	const arch_register_class_t *const cls = env->cls;
 
-	be_insn_t *insn = OALLOCZ(obst, be_insn_t);
-
-	bool has_constraints = false;
-
-	const arch_register_class_t *cls = env->cls;
+	be_insn_t *const insn = OALLOCZ(obst, be_insn_t);
 	insn->irn = irn;
+	be_operand_t o;
+	bool has_constraints = false;
 	be_foreach_definition(irn, cls, p, req,
 		/* found a def: create a new operand */
 		if (arch_register_req_is(req, limited)) {
@@ -43,7 +41,6 @@ be_insn_t *be_scan_insn(be_chordal_env_t *const env, ir_node *const irn)
 		obstack_grow(obst, &o, sizeof(o));
 		insn->n_ops++;
 	);
-
 	insn->use_start = insn->n_ops;
 
 	/* now collect the uses for this node */

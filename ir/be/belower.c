@@ -469,7 +469,6 @@ static void assure_different_constraints(ir_node *irn, ir_node *skipped_irn, con
 
 	if (arch_register_req_is(req, must_be_different)) {
 		const unsigned other = req->other_different;
-		int i;
 
 		if (arch_register_req_is(req, should_be_same)) {
 			const unsigned same = req->other_same;
@@ -487,7 +486,7 @@ static void assure_different_constraints(ir_node *irn, ir_node *skipped_irn, con
 				}
 			}
 		}
-		for (i = 0; 1U << i <= other; ++i) {
+		for (int i = 0; 1U << i <= other; ++i) {
 			if (other & (1U << i)) {
 				ir_node *different_from = get_irn_n(skipped_irn, i);
 				gen_assure_different_pattern(irn, different_from, env);
@@ -520,20 +519,17 @@ static void assure_constraints_walker(ir_node *block, void *walk_env)
  */
 static void melt_copykeeps(constraint_env_t *cenv)
 {
-	ir_nodehashmap_iterator_t map_iter;
-	ir_nodehashmap_entry_t    map_entry;
+	struct obstack obst;
+	obstack_init(&obst);
 
 	/* for all */
+	ir_nodehashmap_entry_t    map_entry;
+	ir_nodehashmap_iterator_t map_iter;
 	foreach_ir_nodehashmap(&cenv->op_set, map_entry, map_iter) {
 		op_copy_assoc_t *entry = (op_copy_assoc_t*)map_entry.data;
-		int     idx, num_ck;
-		struct obstack obst;
-		ir_node **ck_arr, **melt_arr;
-
-		obstack_init(&obst);
 
 		/* collect all copykeeps */
-		num_ck = idx = 0;
+		unsigned num_ck = 0;
 		foreach_ir_nodeset(&entry->copies, cp, iter) {
 			if (be_is_CopyKeep(cp)) {
 				obstack_grow(&obst, &cp, sizeof(cp));
@@ -547,95 +543,88 @@ static void melt_copykeeps(constraint_env_t *cenv)
 		}
 
 		/* compare each copykeep with all other copykeeps */
-		ck_arr = (ir_node **)obstack_finish(&obst);
-		for (idx = 0; idx < num_ck; ++idx) {
-			ir_node *ref, *ref_mode_T;
+		ir_node **ck_arr = (ir_node **)obstack_finish(&obst);
+		for (unsigned idx = 0; idx < num_ck; ++idx) {
+			if (ck_arr[idx] == NULL)
+				continue;
+			int      n_melt     = 1;
+			ir_node *ref        = ck_arr[idx];
+			ir_node *ref_mode_T = skip_Proj(get_irn_n(ref, 1));
+			obstack_grow(&obst, &ref, sizeof(ref));
 
-			if (ck_arr[idx]) {
-				int j, n_melt;
-				ir_node *sched_pt = NULL;
+			DB((dbg_constr, LEVEL_1, "Trying to melt %+F:\n", ref));
 
-				n_melt     = 1;
-				ref        = ck_arr[idx];
-				ref_mode_T = skip_Proj(get_irn_n(ref, 1));
-				obstack_grow(&obst, &ref, sizeof(ref));
+			/* check for copykeeps pointing to the same mode_T node as the reference copykeep */
+			for (unsigned j = 0; j < num_ck; ++j) {
+				ir_node *cur_ck = ck_arr[j];
 
-				DB((dbg_constr, LEVEL_1, "Trying to melt %+F:\n", ref));
-
-				/* check for copykeeps pointing to the same mode_T node as the reference copykeep */
-				for (j = 0; j < num_ck; ++j) {
-					ir_node *cur_ck = ck_arr[j];
-
-					if (j != idx && cur_ck && skip_Proj(get_irn_n(cur_ck, 1)) == ref_mode_T) {
-						obstack_grow(&obst, &cur_ck, sizeof(cur_ck));
-						ir_nodeset_remove(&entry->copies, cur_ck);
-						DB((dbg_constr, LEVEL_1, "\t%+F\n", cur_ck));
-						ck_arr[j] = NULL;
-						++n_melt;
-						sched_remove(cur_ck);
-					}
+				if (j != idx && cur_ck && skip_Proj(get_irn_n(cur_ck, 1)) == ref_mode_T) {
+					obstack_grow(&obst, &cur_ck, sizeof(cur_ck));
+					ir_nodeset_remove(&entry->copies, cur_ck);
+					DB((dbg_constr, LEVEL_1, "\t%+F\n", cur_ck));
+					ck_arr[j] = NULL;
+					++n_melt;
+					sched_remove(cur_ck);
 				}
-				ck_arr[idx] = NULL;
+			}
+			ck_arr[idx] = NULL;
 
-				/* check, if we found some candidates for melting */
-				if (n_melt == 1) {
-					DB((dbg_constr, LEVEL_1, "\tno candidate found\n"));
-					continue;
-				}
+			/* check, if we found some candidates for melting */
+			if (n_melt == 1) {
+				DB((dbg_constr, LEVEL_1, "\tno candidate found\n"));
+				continue;
+			}
 
-				ir_nodeset_remove(&entry->copies, ref);
-				sched_remove(ref);
+			ir_nodeset_remove(&entry->copies, ref);
+			sched_remove(ref);
 
-				melt_arr = (ir_node **)obstack_finish(&obst);
-				/* melt all found copykeeps */
-				ir_node **new_ck_in = ALLOCAN(ir_node*,n_melt);
-				for (j = 0; j < n_melt; ++j) {
-					new_ck_in[j] = get_irn_n(melt_arr[j], 1);
+			ir_node **melt_arr = (ir_node **)obstack_finish(&obst);
+			/* melt all found copykeeps */
+			ir_node **new_ck_in = ALLOCAN(ir_node*,n_melt);
+			for (int j = 0; j < n_melt; ++j) {
+				new_ck_in[j] = get_irn_n(melt_arr[j], 1);
 
-					/* now, we can kill the melted keep, except the */
-					/* ref one, we still need some information      */
-					if (melt_arr[j] != ref)
-						kill_node(melt_arr[j]);
-				}
+				/* now, we can kill the melted keep, except the */
+				/* ref one, we still need some information      */
+				if (melt_arr[j] != ref)
+					kill_node(melt_arr[j]);
+			}
 
-				ir_node *const new_ck = be_new_CopyKeep(get_nodes_block(ref), be_get_CopyKeep_op(ref), n_melt, new_ck_in);
+			ir_node *const new_ck = be_new_CopyKeep(get_nodes_block(ref), be_get_CopyKeep_op(ref), n_melt, new_ck_in);
 #ifdef KEEP_ALIVE_COPYKEEP_HACK
-				keep_alive(new_ck);
+			keep_alive(new_ck);
 #endif /* KEEP_ALIVE_COPYKEEP_HACK */
 
-				/* set register class for all kept inputs */
-				for (j = 1; j <= n_melt; ++j)
-					be_node_set_reg_class_in(new_ck, j, entry->cls);
+			/* set register class for all kept inputs */
+			for (int j = 1; j <= n_melt; ++j)
+				be_node_set_reg_class_in(new_ck, j, entry->cls);
 
-				ir_nodeset_insert(&entry->copies, new_ck);
+			ir_nodeset_insert(&entry->copies, new_ck);
 
-				/* find scheduling point */
-				sched_pt = ref_mode_T;
-				do {
-					/* just walk along the schedule until a non-Keep/CopyKeep node is found */
-					sched_pt = sched_next(sched_pt);
-				} while (be_is_Keep(sched_pt) || be_is_CopyKeep(sched_pt));
+			/* find scheduling point */
+			ir_node *sched_pt = ref_mode_T;
+			do {
+				/* just walk along the schedule until a non-Keep/CopyKeep node is found */
+				sched_pt = sched_next(sched_pt);
+			} while (be_is_Keep(sched_pt) || be_is_CopyKeep(sched_pt));
 
-				sched_add_before(sched_pt, new_ck);
-				DB((dbg_constr, LEVEL_1, "created %+F, scheduled before %+F\n", new_ck, sched_pt));
+			sched_add_before(sched_pt, new_ck);
+			DB((dbg_constr, LEVEL_1, "created %+F, scheduled before %+F\n", new_ck, sched_pt));
 
-				/* finally: kill the reference copykeep */
-				kill_node(ref);
-			}
+			/* finally: kill the reference copykeep */
+			kill_node(ref);
+
+			obstack_free(&obst, ck_arr);
 		}
-
-		obstack_free(&obst, NULL);
 	}
+	obstack_free(&obst, NULL);
 }
 
 void assure_constraints(ir_graph *irg)
 {
-	constraint_env_t          cenv;
-	ir_nodehashmap_iterator_t map_iter;
-	ir_nodehashmap_entry_t    map_entry;
-
 	FIRM_DBG_REGISTER(dbg_constr, "firm.be.lower.constr");
 
+	constraint_env_t cenv;
 	cenv.irg = irg;
 	ir_nodehashmap_init(&cenv.op_set);
 	obstack_init(&cenv.obst);
@@ -648,6 +637,8 @@ void assure_constraints(ir_graph *irg)
 	melt_copykeeps(&cenv);
 
 	/* for all */
+	ir_nodehashmap_iterator_t map_iter;
+	ir_nodehashmap_entry_t    map_entry;
 	foreach_ir_nodehashmap(&cenv.op_set, map_entry, map_iter) {
 		op_copy_assoc_t          *entry = (op_copy_assoc_t*)map_entry.data;
 		size_t                    n     = ir_nodeset_size(&entry->copies);

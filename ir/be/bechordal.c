@@ -58,7 +58,7 @@ static void pair_up_operands(be_chordal_env_t const *const env, be_insn_t *const
 		be_operand_t       *smallest        = NULL;
 		int                 smallest_n_regs = n_regs + 1;
 		be_operand_t *const out_op          = &insn->ops[j];
-		for (int i = insn->use_start; i < insn->n_ops; ++i) {
+		for (int i = insn->use_start, n_ops = insn->n_ops; i < n_ops; ++i) {
 			be_operand_t *const op = &insn->ops[i];
 			if (op->partner || be_value_live_after(op->carrier, insn->irn))
 				continue;
@@ -73,7 +73,7 @@ static void pair_up_operands(be_chordal_env_t const *const env, be_insn_t *const
 		}
 
 		if (smallest != NULL) {
-			for (int i = insn->use_start; i < insn->n_ops; ++i) {
+			for (int i = insn->use_start, n_ops = insn->n_ops; i < n_ops; ++i) {
 				if (insn->ops[i].carrier == smallest->carrier)
 					insn->ops[i].partner = out_op;
 			}
@@ -122,7 +122,7 @@ static void handle_constraints(be_chordal_env_t *const env, ir_node *const irn)
 #else
 	bipartite_t         *const bp          = bipartite_new(n_regs, n_regs);
 #endif
-	for (int i = 0; i < insn->n_ops; ++i) {
+	for (int i = 0, n_ops = insn->n_ops; i < n_ops; ++i) {
 		/* If the operand has no partner or the partner has not been marked
 		 * for allocation, determine the admissible registers and mark it
 		 * for allocation by associating the node and its partner with the
@@ -306,11 +306,11 @@ static void assign(ir_node *const block, void *const env_ptr)
 			assert(reg && "Register must have been assigned");
 			bitset_set(available, reg->index);
 		} else {
-			int                    col;
 			arch_register_t const *reg = arch_get_irn_register(irn);
 			/* All live-ins must have a register assigned. (The dominators were
 			 * allocated before.) */
 			assert(b->is_real || reg);
+			unsigned col;
 			if (reg) {
 				DBG((dbg, LEVEL_4, "%+F has reg %s\n", irn, reg->name));
 				col = reg->index;
@@ -330,9 +330,7 @@ static void assign(ir_node *const block, void *const env_ptr)
 
 static void be_ra_chordal_color(be_chordal_env_t *const chordal_env)
 {
-	char            buf[256];
 	ir_graph *const irg = chordal_env->irg;
-
 	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 	be_assure_live_sets(irg);
 
@@ -342,6 +340,7 @@ static void be_ra_chordal_color(be_chordal_env_t *const chordal_env)
 	dom_tree_walk_irg(irg, constraints, NULL, chordal_env);
 
 	if (chordal_env->opts->dump_flags & BE_CH_DUMP_CONSTR) {
+		char buf[256];
 		snprintf(buf, sizeof(buf), "%s-constr", chordal_env->cls->name);
 		dump_ir_graph(irg, buf);
 	}
@@ -355,6 +354,7 @@ static void be_ra_chordal_color(be_chordal_env_t *const chordal_env)
 	dom_tree_walk_irg(irg, assign, NULL, chordal_env);
 
 	if (chordal_env->opts->dump_flags & BE_CH_DUMP_TREE_INTV) {
+		char buf[256];
 		ir_snprintf(buf, sizeof(buf), "ifg_%s_%F.eps", chordal_env->cls->name, irg);
 		plotter_t *const plotter = new_plotter_ps(buf);
 		draw_interval_tree(&draw_chordal_def_opts, chordal_env, plotter);

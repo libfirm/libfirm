@@ -127,7 +127,7 @@ static void dump(unsigned mask, ir_graph *irg,
 				 const char *suffix)
 {
 	if ((options.dump_flags & mask) == mask) {
-		if (cls) {
+		if (cls != NULL) {
 			char buf[256];
 			snprintf(buf, sizeof(buf), "%s-%s", cls->name, suffix);
 			dump_ir_graph(irg, buf);
@@ -168,22 +168,21 @@ void check_for_memory_operands(ir_graph *irg)
 	irg_walk_graph(irg, NULL, memory_operand_walker, NULL);
 }
 
-
 static be_node_stats_t last_node_stats;
 
 /**
  * Perform things which need to be done per register class before spilling.
  */
-static void pre_spill(be_chordal_env_t *const chordal_env, arch_register_class_t const *const cls, ir_graph *const irg)
+static void pre_spill(be_chordal_env_t *const chordal_env,
+                      arch_register_class_t const *const cls,
+                      ir_graph *const irg)
 {
 	chordal_env->cls              = cls;
 	chordal_env->border_heads     = pmap_create();
 	chordal_env->allocatable_regs = bitset_malloc(cls->n_regs);
-
-	be_assure_live_chk(irg);
-
 	/* put all ignore registers into the ignore register set. */
 	be_get_allocatable_regs(irg, cls, chordal_env->allocatable_regs->data);
+	be_assure_live_chk(irg);
 }
 
 /**
@@ -191,11 +190,9 @@ static void pre_spill(be_chordal_env_t *const chordal_env, arch_register_class_t
  */
 static void post_spill(be_chordal_env_t *const chordal_env, ir_graph *const irg)
 {
-	/*
-		If we have a backend provided spiller, post spill is
-		called in a loop after spilling for each register class.
-		But we only need to fix stack nodes once in this case.
-	*/
+	/* If we have a backend provided spiller, post spill is
+	 * called in a loop after spilling for each register class.
+	 * But we only need to fix stack nodes once in this case. */
 	be_timer_push(T_RA_SPILL_APPLY);
 	check_for_memory_operands(irg);
 	be_timer_pop(T_RA_SPILL_APPLY);
@@ -221,14 +218,13 @@ static void post_spill(be_chordal_env_t *const chordal_env, ir_graph *const irg)
 	be_timer_pop(T_RA_IFG);
 
 	if (stat_ev_enabled) {
-		be_ifg_stat_t   stat;
-		be_node_stats_t node_stats;
-
+		be_ifg_stat_t stat;
 		be_ifg_stat(irg, chordal_env->ifg, &stat);
 		stat_ev_dbl("bechordal_ifg_nodes", stat.n_nodes);
 		stat_ev_dbl("bechordal_ifg_edges", stat.n_edges);
 		stat_ev_dbl("bechordal_ifg_comps", stat.n_comps);
 
+		be_node_stats_t node_stats;
 		be_collect_node_stats(&node_stats, irg);
 		be_subtract_node_stats(&node_stats, &last_node_stats);
 
@@ -272,10 +268,6 @@ static void post_spill(be_chordal_env_t *const chordal_env, ir_graph *const irg)
  */
 static void be_ra_chordal_main(ir_graph *irg)
 {
-	const arch_env_t *arch_env = be_get_irg_arch_env(irg);
-	int               j;
-	int               m;
-
 	be_timer_push(T_RA_OTHER);
 
 	be_chordal_env_t chordal_env;
@@ -286,19 +278,17 @@ static void be_ra_chordal_main(ir_graph *irg)
 	chordal_env.ifg              = NULL;
 	chordal_env.allocatable_regs = NULL;
 
-	if (stat_ev_enabled) {
+	if (stat_ev_enabled)
 		be_collect_node_stats(&last_node_stats, irg);
-	}
 
 	/* use one of the generic spiller */
 
 	/* Perform the following for each register class. */
-	for (j = 0, m = arch_env->n_register_classes; j < m; ++j) {
+	const arch_env_t *arch_env = be_get_irg_arch_env(irg);
+	for (int j = 0, m = arch_env->n_register_classes; j < m; ++j) {
 		const arch_register_class_t *cls = &arch_env->register_classes[j];
-
 		if (arch_register_class_flags(cls) & arch_register_class_flag_manual_ra)
 			continue;
-
 
 		stat_ev_ctx_push_str("bechordal_cls", cls->name);
 
@@ -313,20 +303,16 @@ static void be_ra_chordal_main(ir_graph *irg)
 		be_timer_push(T_RA_SPILL);
 		be_do_spill(irg, cls);
 		be_timer_pop(T_RA_SPILL);
-
 		dump(BE_CH_DUMP_SPILL, irg, cls, "spill");
-
 		stat_ev_dbl("bechordal_spillcosts", be_estimate_irg_costs(irg) - pre_spill_cost);
 
 		post_spill(&chordal_env, irg);
 
 		if (stat_ev_enabled) {
 			be_node_stats_t node_stats;
-
 			be_collect_node_stats(&node_stats, irg);
 			be_subtract_node_stats(&node_stats, &last_node_stats);
 			be_emit_node_stats(&node_stats, "bechordal_");
-
 			be_copy_node_stats(&last_node_stats, &node_stats);
 			stat_ev_ctx_pop("bechordal_cls");
 		}
@@ -346,16 +332,16 @@ static void be_ra_chordal_main(ir_graph *irg)
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_chordal_main)
 void be_init_chordal_main(void)
 {
+	lc_opt_entry_t *be_grp      = lc_opt_get_grp(firm_opt_get_root(), "be");
+	lc_opt_entry_t *ra_grp      = lc_opt_get_grp(be_grp, "ra");
+	lc_opt_entry_t *chordal_grp = lc_opt_get_grp(ra_grp, "chordal");
+
 	static be_ra_t be_ra_chordal_allocator = {
 		be_ra_chordal_main,
 	};
-
-	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
-	lc_opt_entry_t *ra_grp = lc_opt_get_grp(be_grp, "ra");
-	lc_opt_entry_t *chordal_grp = lc_opt_get_grp(ra_grp, "chordal");
-
 	be_register_allocator("chordal", &be_ra_chordal_allocator);
 
 	lc_opt_add_table(chordal_grp, be_chordal_options);
-	be_add_module_list_opt(chordal_grp, "coloring", "select coloring method", &colorings, (void**) &selected_coloring);
+	be_add_module_list_opt(chordal_grp, "coloring", "select coloring method",
+	                       &colorings, (void**) &selected_coloring);
 }

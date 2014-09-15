@@ -247,19 +247,13 @@ static void ssa_destruction_check_walker(ir_node *block, void *data)
 		if (!arch_irn_consider_in_reg_alloc(cls, phi))
 			continue;
 
-#ifndef NDEBUG
-		const arch_register_t *phi_reg = arch_get_irn_register(phi);
-#endif
 		/* iterate over all args of phi */
 		foreach_irn_in(phi, i, arg) {
 			const arch_register_req_t *req = arch_get_irn_register_req(arg);
 			if (arch_register_req_is(req, ignore))
 				continue;
 
-#ifndef NDEBUG
-			const arch_register_t *arg_reg = arch_get_irn_register(arg);
-			assert(phi_reg == arg_reg && "Error: Registers of phi and arg differ");
-#endif
+			assert(arch_get_irn_register(phi) == arch_get_irn_register(arg));
 		}
 	}
 }

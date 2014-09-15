@@ -50,7 +50,7 @@ int be_get_stack_entity_offset(be_stack_layout_t *frame, ir_entity *ent,
  */
 static ir_entity *search_ent_with_offset(ir_type *t, int offset)
 {
-	for (int i = 0, n = get_compound_n_members(t); i < n; ++i) {
+	for (size_t i = 0, n = get_compound_n_members(t); i < n; ++i) {
 		ir_entity *ent = get_compound_member(t, i);
 		if (get_entity_offset(ent) == offset)
 			return ent;
@@ -225,7 +225,6 @@ typedef struct fix_stack_walker_env_t {
 static void collect_stack_nodes_walker(ir_node *node, void *data)
 {
 	fix_stack_walker_env_t *const env = (fix_stack_walker_env_t*)data;
-
 	if (get_irn_mode(node) == mode_T)
 		return;
 
@@ -259,22 +258,19 @@ void be_abi_fix_stack_nodes(ir_graph *irg)
 	 * continue, as for endless loops incsp might have had no users and is bad
 	 * now.
 	 */
-	int len = ARR_LEN(walker_env.sp_nodes);
-	if (len == 0) {
+	size_t n_sp_nodes = ARR_LEN(walker_env.sp_nodes);
+	if (n_sp_nodes == 0) {
 		DEL_ARR_F(walker_env.sp_nodes);
 		return;
 	}
 
 	be_ssa_construction_env_t senv;
 	be_ssa_construction_init(&senv, irg);
-	be_ssa_construction_add_copies(&senv, walker_env.sp_nodes,
-                                   ARR_LEN(walker_env.sp_nodes));
-	be_ssa_construction_fix_users_array(&senv, walker_env.sp_nodes,
-	                                    ARR_LEN(walker_env.sp_nodes));
+	be_ssa_construction_add_copies(&senv, walker_env.sp_nodes, n_sp_nodes);
+	be_ssa_construction_fix_users_array(&senv, walker_env.sp_nodes, n_sp_nodes);
 
 	if (lv != NULL) {
-		len = ARR_LEN(walker_env.sp_nodes);
-		for (int i = 0; i < len; ++i) {
+		for (size_t i = 0; i < n_sp_nodes; ++i) {
 			be_liveness_update(lv, walker_env.sp_nodes[i]);
 		}
 		be_ssa_construction_update_liveness_phis(&senv, lv);
@@ -283,8 +279,7 @@ void be_abi_fix_stack_nodes(ir_graph *irg)
 	ir_node **phis = be_ssa_construction_get_new_phis(&senv);
 
 	/* set register requirements for stack phis */
-	len = ARR_LEN(phis);
-	for (int i = 0; i < len; ++i) {
+	for (size_t i = 0, n_phis = ARR_LEN(phis); i < n_phis; ++i) {
 		ir_node *phi = phis[i];
 		be_set_phi_reg_req(phi, sp_req);
 		arch_set_irn_register(phi, arch_env->sp);
