@@ -519,13 +519,13 @@ static ir_node *ia32_turn_back_dest_am(ir_node *node)
 		ir_mode *out_mode = get_irn_mode(out);
 
 		if (out_mode == ia32_mode_flags) {
-			const arch_register_t *flags_reg = arch_get_irn_register_out(node, get_Proj_proj(out));
+			const arch_register_t *flags_reg = arch_get_irn_register_out(node, get_Proj_num(out));
 			set_Proj_pred(out, new_node);
-			set_Proj_proj(out, pn_ia32_flags);
+			set_Proj_num(out, pn_ia32_flags);
 			arch_set_irn_register(out, flags_reg);
 		} else if (out_mode == mode_M) {
 			set_Proj_pred(out, store);
-			set_Proj_proj(out, pn_ia32_Store_M);
+			set_Proj_num(out, pn_ia32_Store_M);
 		} else {
 			panic("Unexpected Proj mode at DestAM node");
 		}
@@ -595,7 +595,7 @@ ir_node *ia32_turn_back_am(ir_node *node)
 			ir_node *out = get_edge_src_irn(edge);
 			if (get_irn_mode(out) == mode_M) {
 				set_Proj_pred(out, load);
-				set_Proj_proj(out, pn_ia32_Load_M);
+				set_Proj_num(out, pn_ia32_Load_M);
 				break;
 			}
 		}
@@ -645,7 +645,7 @@ COMPILETIME_ASSERT((int)(n_ia32_Sub_minuend)    == (int)(n_ia32_Cmp_left) &&
                    (int)(n_ia32_Sub_subtrahend) == (int)(n_ia32_Cmp_right),
                    Cmp_and_Sub_operand_numbers_equal)
 
-static bool ia32_try_replace_flags(ir_node *consumers, ir_node *flags, ir_node *available, int pn)
+static bool ia32_try_replace_flags(ir_node *consumers, ir_node *flags, ir_node *available, unsigned pn)
 {
 	if ((is_ia32_Sub(flags) || is_ia32_Cmp(flags)) &&
 	    (is_ia32_Sub(available) || is_ia32_Cmp(available))) {
@@ -1020,12 +1020,12 @@ static void transform_MemPerm(ir_node *node)
 	/* exchange memprojs */
 	foreach_out_edge_safe(node, edge) {
 		ir_node *proj = get_edge_src_irn(edge);
-		int p = get_Proj_proj(proj);
+		unsigned p = get_Proj_num(proj);
 
-		assert(p < arity);
+		assert(p < (unsigned)arity);
 
 		set_Proj_pred(proj, pops[p]);
-		set_Proj_proj(proj, pn_ia32_Pop_M);
+		set_Proj_num(proj, pn_ia32_Pop_M);
 	}
 
 	/* remove memperm */

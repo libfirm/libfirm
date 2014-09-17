@@ -293,7 +293,7 @@ restart:;
 				ir_node *sel       = get_Cond_selector(cond);
 				ir_node *phi       = get_Block_phis(block);
 				bool     supported = true;
-				bool     negated   = get_Proj_proj(projx0) == pn_Cond_false;
+				bool     negated   = get_Proj_num(projx0) == pn_Cond_false;
 				for (ir_node *p = phi; p != NULL; p = get_Phi_next(p)) {
 					ir_node *mux_false;
 					ir_node *mux_true;

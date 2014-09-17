@@ -60,7 +60,7 @@ static bool default_check_modifies(const ir_node *node)
 	return arch_irn_is(node, modify_flags);
 }
 
-static bool default_try_replace(ir_node *consumers, ir_node *flags, ir_node *available, int pn)
+static bool default_try_replace(ir_node *consumers, ir_node *flags, ir_node *available, unsigned pn)
 {
 	(void)consumers;
 	(void)flags;
@@ -127,7 +127,7 @@ static void move_other_uses(ir_node *node, ir_node *copy)
 				be_lv_t *lv = be_get_irg_liveness(irg);
 				if (new_proj == NULL) {
 					ir_mode *proj_mode = get_irn_mode(proj);
-					int      pn        = get_Proj_proj(proj);
+					unsigned pn        = get_Proj_num(proj);
 					new_proj = new_r_Proj(copy, proj_mode, pn);
 				}
 				int n = get_edge_src_pos(edge);
@@ -148,7 +148,8 @@ static void move_other_uses(ir_node *node, ir_node *copy)
  * Returns true, if flag_consumers now use available_flags.
  */
 static bool rematerialize_or_move(ir_node *flags_needed, ir_node *node,
-                                  ir_node *flag_consumers, int pn, ir_node *available_flags)
+                                  ir_node *flag_consumers, unsigned pn,
+                                  ir_node *available_flags)
 {
 	if (!is_Block(node)
 	  && get_nodes_block(flags_needed) == get_nodes_block(node)
@@ -220,7 +221,7 @@ static void fix_flags_walker(ir_node *block, void *env)
 	(void)env;
 	ir_node *flags_needed   = NULL;
 	ir_node *flag_consumers = NULL;
-	int      pn             = -1;
+	unsigned pn             = (unsigned)-1;
 	ir_node *place          = block;
 	sched_foreach_reverse(block, node) {
 		mark_irn_visited(node);
@@ -281,7 +282,7 @@ static void fix_flags_walker(ir_node *block, void *env)
 			flags_needed = new_flags_needed;
 			arch_set_irn_register(flags_needed, flags_reg);
 			if (is_Proj(flags_needed)) {
-				pn           = get_Proj_proj(flags_needed);
+				pn           = get_Proj_num(flags_needed);
 				flags_needed = get_Proj_pred(flags_needed);
 			}
 			flag_consumers = node;

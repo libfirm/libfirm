@@ -267,12 +267,12 @@ static void transform_MemPerm(ir_node *node)
 	/* exchange memprojs */
 	foreach_out_edge_safe(node, edge) {
 		ir_node *proj = get_edge_src_irn(edge);
-		int p = get_Proj_proj(proj);
+		int p = get_Proj_num(proj);
 
 		assert(p < arity);
 
 		set_Proj_pred(proj, pops[p]);
-		set_Proj_proj(proj, pn_amd64_PopAM_M);
+		set_Proj_num(proj, pn_amd64_PopAM_M);
 	}
 
 	/* remove memperm */

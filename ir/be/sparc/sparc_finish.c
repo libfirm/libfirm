@@ -638,7 +638,7 @@ static bool has_flags_user(ir_node *node)
 	foreach_out_edge(node, edge) {
 		ir_node *src = get_edge_src_irn(edge);
 
-		if (is_Proj(src) && get_Proj_proj(src) == pn_sparc_AddCC_flags)
+		if (is_Proj(src) && get_Proj_num(src) == pn_sparc_AddCC_flags)
 			return true;
 	}
 

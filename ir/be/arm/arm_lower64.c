@@ -183,19 +183,19 @@ static void lower_divmod(ir_node *node, ir_node *left, ir_node *right,
 		if (!is_Proj(proj))
 			continue;
 
-		switch ((pn_Div)get_Proj_proj(proj)) {
+		switch ((pn_Div)get_Proj_num(proj)) {
 		case pn_Div_M:
 			/* reroute to the call */
 			set_Proj_pred(proj, call);
-			set_Proj_proj(proj, pn_Call_M);
+			set_Proj_num(proj, pn_Call_M);
 			break;
 		case pn_Div_X_regular:
 			set_Proj_pred(proj, call);
-			set_Proj_proj(proj, pn_Call_X_regular);
+			set_Proj_num(proj, pn_Call_X_regular);
 			break;
 		case pn_Div_X_except:
 			set_Proj_pred(proj, call);
-			set_Proj_proj(proj, pn_Call_X_except);
+			set_Proj_num(proj, pn_Call_X_except);
 			break;
 		case pn_Div_res: {
 			ir_mode *low_mode = get_irn_mode(left_low);

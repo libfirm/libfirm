@@ -58,7 +58,6 @@ static ir_node *add_to_keep(ir_node *last_keep,
 
 void be_add_missing_keeps_node(ir_node *node)
 {
-	int       n_outs, i;
 	ir_mode  *mode = get_irn_mode(node);
 	ir_node  *last_keep;
 
@@ -76,7 +75,7 @@ void be_add_missing_keeps_node(ir_node *node)
 		return;
 	}
 
-	n_outs = arch_get_irn_n_outs(node);
+	unsigned n_outs = arch_get_irn_n_outs(node);
 	if (n_outs <= 0)
 		return;
 
@@ -85,14 +84,13 @@ void be_add_missing_keeps_node(ir_node *node)
 	foreach_out_edge(node, edge) {
 		ir_node *succ = get_edge_src_irn(edge);
 		ir_mode *mode = get_irn_mode(succ);
-		int      pn;
 
 		/* The node could be kept */
 		if (is_End(succ) || is_Anchor(succ))
 			continue;
 		if (mode == mode_M || mode == mode_X)
 			continue;
-		pn                 = get_Proj_proj(succ);
+		unsigned pn = get_Proj_num(succ);
 		existing_projs[pn] = succ;
 		if (!has_real_user(succ))
 			continue;
@@ -103,7 +101,7 @@ void be_add_missing_keeps_node(ir_node *node)
 
 	/* are keeps missing? */
 	last_keep = NULL;
-	for (i = 0; i < n_outs; ++i) {
+	for (unsigned i = 0; i < n_outs; ++i) {
 		ir_node                     *value;
 		const arch_register_req_t   *req;
 		const arch_register_class_t *cls;

@@ -611,7 +611,7 @@ static void emit_amd64_Jcc(const ir_node *irn)
 
 	foreach_out_edge(irn, edge) {
 		ir_node *proj = get_edge_src_irn(edge);
-		long nr = get_Proj_proj(proj);
+		unsigned nr = get_Proj_num(proj);
 		if (nr == pn_Cond_true) {
 			proj_true = proj;
 		} else {

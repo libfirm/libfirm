@@ -40,7 +40,7 @@
 /** The debug handle. */
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
-#define MAX_PROJ MAX(MAX((long)pn_Load_max, (long)pn_Store_max), (long)pn_Call_max)
+#define MAX_PROJ MAX(MAX((unsigned)pn_Load_max, (unsigned)pn_Store_max), (unsigned)pn_Call_max)
 
 typedef enum changes_t {
 	NO_CHANGES = 0,
@@ -132,8 +132,8 @@ static block_info_t *get_block_info(ir_node *node, struct obstack *obst)
  */
 static changes_t update_projs(ldst_info_t *info, ir_node *proj)
 {
-	long nr = get_Proj_proj(proj);
-	assert(0 <= nr && nr <= MAX_PROJ);
+	unsigned nr = get_Proj_num(proj);
+	assert(nr <= MAX_PROJ);
 
 	if (info->projs[nr] != NULL) {
 		/* there is already one, do CSE */
@@ -270,7 +270,7 @@ static void reduce_node_usage(ir_node *ptr)
 	ir_node *pred = get_Proj_pred(ptr);
 	if (is_Load(pred)) {
 		ldst_info_t *info = (ldst_info_t*)get_irn_link(pred);
-		info->projs[get_Proj_proj(ptr)] = NULL;
+		info->projs[get_Proj_num(ptr)] = NULL;
 
 		/* this node lost its result proj, handle that */
 		handle_load_update(pred);

@@ -618,7 +618,7 @@ restart:
 
 			/* normalize pncs: we need the true case to jump into the
 			 * common block (i.e. conjunctive normal form) */
-			if (get_Proj_proj(lower_cf) == pn_Cond_false) {
+			if (get_Proj_num(lower_cf) == pn_Cond_false) {
 				if (cpair.cmp_lo == cond_selector) {
 					ir_node  *cmp   = cpair.cmp_lo;
 					ir_node  *block = get_nodes_block(cmp);
@@ -636,7 +636,7 @@ restart:
 							get_Cmp_left(cmp), get_Cmp_right(cmp), cpair.rel_hi);
 				}
 			}
-			if (get_Proj_proj(upper_cf) == pn_Cond_false) {
+			if (get_Proj_num(upper_cf) == pn_Cond_false) {
 				if (cpair.cmp_lo == upper_cond_selector) {
 					ir_node  *cmp   = cpair.cmp_lo;
 					ir_node  *block = get_nodes_block(cmp);
@@ -676,7 +676,7 @@ restart:
 			--n_cfgpreds;
 
 			/* the optimizations expected the true case to jump */
-			if (get_Proj_proj(lower_cf) == pn_Cond_false) {
+			if (get_Proj_num(lower_cf) == pn_Cond_false) {
 				ir_node *block = get_nodes_block(replacement);
 				replacement    = new_r_Not(block, replacement, mode_b);
 			}

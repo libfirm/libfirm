@@ -502,7 +502,7 @@ static inline int is_arg_Proj_(const ir_node *node)
 	node = get_Proj_pred(node);
 	if (! is_Proj(node))
 		return 0;
-	return pn_Start_T_args == get_Proj_proj(node) && is_Start(get_Proj_pred(node));
+	return pn_Start_T_args == get_Proj_num(node) && is_Start(get_Proj_pred(node));
 }
 
 static inline size_t ir_switch_table_get_n_entries_(const ir_switch_table *table)

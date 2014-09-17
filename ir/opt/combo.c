@@ -525,7 +525,7 @@ static unsigned opcode_hash(const opcode_key_t *entry)
 	if (code == iro_Const)
 		hash ^= hash_ptr(get_Const_tarval(n));
 	else if (code == iro_Proj)
-		hash += (unsigned)get_Proj_proj(n);
+		hash += get_Proj_num(n);
 	return hash;
 }
 
@@ -2141,15 +2141,15 @@ static void compute_Proj_Cond(node_t *node, ir_node *cond)
 	}
 
 	ir_node *proj = node->node;
-	long     pnc  = get_Proj_proj(proj);
-	if (pnc == pn_Cond_true) {
+	unsigned pn   = get_Proj_num(proj);
+	if (pn == pn_Cond_true) {
 		if (selector->type.tv == tarval_b_false) {
 			node->type.tv = tarval_bottom; /* unreachable */
 		} else {
 			node->type.tv = tarval_top; /* reachable */
 		}
 	} else {
-		assert(pnc == pn_Cond_false);
+		assert(pn == pn_Cond_false);
 		if (selector->type.tv == tarval_b_true) {
 			node->type.tv = tarval_bottom; /* unreachable */
 		} else {
@@ -2168,21 +2168,21 @@ static void compute_Proj_Switch(node_t *node, ir_node *switchn)
 		node->type.tv = tarval_top; /* reachable */
 	} else {
 		ir_node               *proj      = node->node;
-		long                   pnc       = get_Proj_proj(proj);
+		unsigned               pn        = get_Proj_num(proj);
 		const ir_switch_table *table     = get_Switch_table(switchn);
 		size_t                 n_entries = ir_switch_table_get_n_entries(table);
 
 		for (size_t e = 0; e < n_entries; ++e) {
 			ir_switch_table_entry const *const entry = ir_switch_table_get_entry_const(table, e);
 			if (tarval_in_range(entry->min, selector->type.tv, entry->max)) {
-				node->type.tv = entry->pn == pnc ? tarval_top : tarval_bottom;
+				node->type.tv = entry->pn == pn ? tarval_top : tarval_bottom;
 				return;
 			}
 		}
 
 		/* no entry matched: default */
 		node->type.tv
-			= pnc == pn_Switch_default ? tarval_top : tarval_bottom;
+			= pn == pn_Switch_default ? tarval_top : tarval_bottom;
 	}
 }
 
@@ -2253,8 +2253,8 @@ static void compute_Proj(node_t *node)
 		return;
 	}
 
-	if ((is_Div(pred) && get_Proj_proj(proj) == pn_Div_res)
-	 || (is_Mod(pred) && get_Proj_proj(proj) == pn_Mod_res)) {
+	if ((is_Div(pred) && get_Proj_num(proj) == pn_Div_res)
+	 || (is_Mod(pred) && get_Proj_num(proj) == pn_Mod_res)) {
 		compute_DivMod_res(pred_node);
 	} else {
 		default_compute(pred_node);

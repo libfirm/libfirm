@@ -158,7 +158,7 @@ static inline reg_out_info_t *get_out_info(const ir_node *node)
 	assert(get_irn_mode(node) != mode_T);
 	size_t pos = 0;
 	if (is_Proj(node)) {
-		pos  = get_Proj_proj(node);
+		pos  = get_Proj_num(node);
 		node = get_Proj_pred(node);
 	}
 

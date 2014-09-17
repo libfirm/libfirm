@@ -629,7 +629,7 @@ static ir_entity_usage determine_entity_usage(const ir_node *irn,
 		/* skip tuples */
 		case iro_Tuple:
 			foreach_irn_out_r(succ, k, proj) {
-				if (is_Proj(proj) && get_Proj_proj(proj) == succ_pos) {
+				if (is_Proj(proj) && get_Proj_num(proj) == (unsigned)succ_pos) {
 					res |= determine_entity_usage(proj, entity);
 					break;
 				}
@@ -690,7 +690,7 @@ static void analyse_irg_entity_usage(ir_graph *irg)
 	}
 
 	/* check inner functions accessing outer frame */
-	int static_link_arg = 0;
+	unsigned static_link_arg = 0;
 	for (size_t i = 0, n = get_class_n_members(frame_type); i < n; ++i) {
 		ir_entity *ent = get_class_member(frame_type, i);
 		if (!is_method_entity(ent))
@@ -703,7 +703,7 @@ static void analyse_irg_entity_usage(ir_graph *irg)
 		assure_irg_outs(inner_irg);
 		ir_node *args = get_irg_args(inner_irg);
 		foreach_irn_out_r(args, j, arg) {
-			if (get_Proj_proj(arg) == static_link_arg) {
+			if (get_Proj_num(arg) == static_link_arg) {
 				foreach_irn_out_r(arg, k, succ) {
 					if (is_Member(succ)) {
 						ir_entity *entity = get_Member_entity(succ);

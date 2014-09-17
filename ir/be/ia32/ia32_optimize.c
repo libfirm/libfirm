@@ -64,7 +64,7 @@ typedef enum produces_flag_t {
  * @param node  the node to check
  * @param pn    the projection number of the used result
  */
-static produces_flag_t check_produces_zero_sign(ir_node *node, int pn)
+static produces_flag_t check_produces_zero_sign(ir_node *node, unsigned pn)
 {
 	if (!is_ia32_irn(node))
 		return produces_no_flag;
@@ -180,10 +180,10 @@ static void peephole_ia32_Test(ir_node *node)
 		if (get_nodes_block(left) != block)
 			return;
 
-		int      pn = pn_ia32_res;
+		unsigned pn = pn_ia32_res;
 		ir_node *op = left;
 		if (is_Proj(op)) {
-			pn = get_Proj_proj(op);
+			pn = get_Proj_num(op);
 			op = get_Proj_pred(op);
 		}
 
@@ -447,7 +447,7 @@ static void peephole_IncSP_Store_to_push(ir_node *irn)
 			ir_node *proj = get_edge_src_irn(edge);
 			if (!is_Proj(proj))
 				continue;
-			switch (get_Proj_proj(proj)) {
+			switch (get_Proj_num(proj)) {
 			case pn_ia32_Store_M:
 				exchange(proj, mem_proj);
 				break;

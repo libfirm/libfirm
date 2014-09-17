@@ -83,7 +83,7 @@ static void collect_nodes(ir_node *n, void *ctx)
 		ir_node *pred = get_Proj_pred(n);
 		if (is_Switch(pred)) {
 			/* Switch with just default Proj is fine too */
-			if (get_Proj_proj(n) == pn_Switch_default)
+			if (get_Proj_num(n) == pn_Switch_default)
 				return;
 			/* mark switch as having a non-default Proj */
 			set_irn_link(pred, INT_TO_PTR(1));
@@ -164,12 +164,12 @@ static unsigned optimize_pointless_forks(ir_node *block, unsigned n_cfgpreds,
 				/* merge Switch table->Proj mapping entries */
 				assert(is_Switch(cfop));
 
-				long pn0 = get_Proj_proj(pred0);
-				long pn1 = get_Proj_proj(pred1);
+				unsigned pn0 = get_Proj_num(pred0);
+				unsigned pn1 = get_Proj_num(pred1);
 				/* we merge into pn0, make sure we always merge into the default
 				 * case and switch if necessary */
 				if (pn1 == pn_Switch_default) {
-					long t = pn0;
+					unsigned t = pn0;
 					pn0 = pn1;
 					pn1 = t;
 					ir_node *tp = pred0;
@@ -191,7 +191,7 @@ static unsigned optimize_pointless_forks(ir_node *block, unsigned n_cfgpreds,
 					}
 				}
 				DB((dbg, LEVEL_1,
-				    "Merge switch %+F table entry for %+F, %+F (pn %ld into %ld)\n",
+				    "Merge switch %+F table entry for %+F, %+F (pn %u into %u)\n",
 				    cfop, pred1, pred0, pn1, pn0));
 			}
 		}

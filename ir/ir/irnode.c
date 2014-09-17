@@ -783,7 +783,7 @@ int is_x_except_Proj(const ir_node *node)
 	pred = get_Proj_pred(node);
 	if (!is_fragile_op(pred))
 		return false;
-	return get_Proj_proj(node) == pred->op->pn_x_except;
+	return get_Proj_num(node) == pred->op->pn_x_except;
 }
 
 int is_x_regular_Proj(const ir_node *node)
@@ -794,7 +794,7 @@ int is_x_regular_Proj(const ir_node *node)
 	pred = get_Proj_pred(node);
 	if (!is_fragile_op(pred))
 		return false;
-	return get_Proj_proj(node) == pred->op->pn_x_regular;
+	return get_Proj_num(node) == pred->op->pn_x_regular;
 }
 
 void ir_set_throws_exception(ir_node *node, int throws_exception)
@@ -865,11 +865,11 @@ restart:
 		    pred = skip_Tuple(pred);
 
 			if (is_Tuple(pred)) {
-				node = get_Tuple_pred(pred, get_Proj_proj(node));
+				node = get_Tuple_pred(pred, get_Proj_num(node));
 				goto restart;
 			}
 		} else if (is_Tuple(pred)) {
-			node = get_Tuple_pred(pred, get_Proj_proj(node));
+			node = get_Tuple_pred(pred, get_Proj_num(node));
 			goto restart;
 		}
 	}
@@ -1099,7 +1099,7 @@ ir_switch_table *ir_new_switch_table(ir_graph *irg, size_t n_entries)
 }
 
 void ir_switch_table_set(ir_switch_table *table, size_t n,
-                         ir_tarval *min, ir_tarval *max, long pn)
+                         ir_tarval *min, ir_tarval *max, unsigned pn)
 {
 	ir_switch_table_entry *entry = ir_switch_table_get_entry(table, n);
 	entry->min = min;
@@ -1122,7 +1122,7 @@ ir_tarval *ir_switch_table_get_min(const ir_switch_table *table, size_t e)
 	return ir_switch_table_get_entry_const(table, e)->min;
 }
 
-long ir_switch_table_get_pn(const ir_switch_table *table, size_t e)
+unsigned ir_switch_table_get_pn(const ir_switch_table *table, size_t e)
 {
 	return ir_switch_table_get_entry_const(table, e)->pn;
 }

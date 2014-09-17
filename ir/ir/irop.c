@@ -123,7 +123,8 @@ void ir_op_set_memory_index(ir_op *op, int memory_index)
 	op->memory_index = memory_index;
 }
 
-void ir_op_set_fragile_indices(ir_op *op, int pn_x_regular, int pn_x_except)
+void ir_op_set_fragile_indices(ir_op *op, unsigned pn_x_regular,
+                               unsigned pn_x_except)
 {
 	assert(op->flags & irop_flag_fragile);
 	op->pn_x_regular = pn_x_regular;
@@ -267,7 +268,7 @@ static int attrs_equal_Const(const ir_node *a, const ir_node *b)
 /** Compares the attributes of two Proj nodes. */
 static int attrs_equal_Proj(const ir_node *a, const ir_node *b)
 {
-	return a->attr.proj.proj == b->attr.proj.proj;
+	return a->attr.proj.num == b->attr.proj.num;
 }
 
 /** Compares the attributes of two Alloc nodes. */

@@ -72,9 +72,9 @@ struct ir_op {
 	int op_index;             /**< The index of the first data operand, 0 for
 	                               most cases, 1 for Div etc. */
 	int memory_index;         /**< index of memory input for memory nodes */
-	int pn_x_regular;         /**< for fragile ops the position of the
+	unsigned pn_x_regular;    /**< for fragile ops the position of the
 	                               X_regular output */
-	int pn_x_except;          /**< for fragile ops the position of the
+	unsigned pn_x_except;     /**< for fragile ops the position of the
 	                               X_except output */
 	unsigned flags;           /**< Flags describing the behavior of the ir_op,
 	                               a bitmasks of irop_flags. */
@@ -171,7 +171,7 @@ struct ir_mode {
 typedef struct ir_switch_table_entry {
 	ir_tarval *min;
 	ir_tarval *max;
-	long       pn;
+	unsigned   pn;
 } ir_switch_table_entry;
 
 struct ir_switch_table {
@@ -328,7 +328,7 @@ typedef struct asm_attr {
 
 /** Attributes for Proj nodes. */
 typedef struct proj_attr {
-	long proj; /**< number of tuple sub-value which is projected */
+	unsigned num; /**< number of tuple sub-value which is projected */
 } proj_attr;
 
 /** Attributes for Switch nodes. */

@@ -356,7 +356,7 @@ static void collect_spill(be_verify_spillslots_env_t *env, ir_node *node, ir_nod
 static void collect_memperm(be_verify_spillslots_env_t *env, ir_node *node, ir_node *reload, ir_entity* ent)
 {
 	ir_node *memperm = get_Proj_pred(node);
-	int      out     = get_Proj_proj(node);
+	unsigned out     = get_Proj_num(node);
 
 	ir_entity *spillent = be_get_MemPerm_out_entity(memperm, out);
 	be_check_entity(env, memperm, spillent);

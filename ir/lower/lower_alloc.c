@@ -50,7 +50,7 @@ static bool transform_Proj_Alloc(ir_node *node)
 	/* we might need a result adjustment */
 	if (addr_delta == 0)
 		return false;
-	if (get_Proj_proj(node) != pn_Alloc_res)
+	if (get_Proj_num(node) != pn_Alloc_res)
 		return false;
 	if (ir_nodeset_contains(&transformed, node))
 		return false;

@@ -50,7 +50,7 @@ typedef struct be_abi_call_arg_t {
 	bool callee   : 1;  /**< true: someone called us.
 	                         false: We call another function */
 
-	int                    pos;
+	unsigned               pos;
 	const arch_register_t *reg;
 	ir_entity             *stack_ent;
 	ir_mode               *load_mode;
@@ -148,8 +148,8 @@ static int cmp_call_arg(const void *a, const void *b, size_t n)
  * @param pos       position of the argument
  * @param callee    context type - if we are callee or caller
  */
-static be_abi_call_arg_t *get_call_arg(be_abi_call_t *call, int is_res, int pos,
-                                       int callee)
+static be_abi_call_arg_t *get_call_arg(be_abi_call_t *call, int is_res,
+                                       unsigned pos, int callee)
 {
 	be_abi_call_arg_t arg;
 	memset(&arg, 0, sizeof(arg));
@@ -466,15 +466,15 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	foreach_out_edge(irn, edge) {
 		ir_node *irn = get_edge_src_irn(edge);
 
-		if (!is_Proj(irn) || get_Proj_proj(irn) != pn_Call_T_result)
+		if (!is_Proj(irn) || get_Proj_num(irn) != pn_Call_T_result)
 			continue;
 
 		foreach_out_edge(irn, res_edge) {
-			ir_node *const res  = get_edge_src_irn(res_edge);
-			long     const proj = get_Proj_proj(res);
-			assert(proj < (long)n_res);
-			assert(res_projs[proj] == NULL);
-			res_projs[proj] = res;
+			ir_node *const res = get_edge_src_irn(res_edge);
+			unsigned const pn  = get_Proj_num(res);
+			assert(pn < n_res);
+			assert(res_projs[pn] == NULL);
+			res_projs[pn] = res;
 		}
 		res_proj = irn;
 		break;
@@ -544,7 +544,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 			unspeakable Proj_T from the Call. Therefore, all real argument
 			Proj numbers must be increased by pn_be_Call_first_res
 		*/
-		long pn = i + pn_be_Call_first_res;
+		unsigned pn = i + pn_be_Call_first_res;
 
 		if (proj == NULL) {
 			ir_type *res_type = get_method_res_type(call_tp, i);
@@ -553,7 +553,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 			res_projs[i]      = proj;
 		} else {
 			set_Proj_pred(proj, low_call);
-			set_Proj_proj(proj, pn);
+			set_Proj_num(proj, pn);
 		}
 
 		if (arg->in_reg) {
@@ -584,7 +584,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	for (size_t i = 0; i < n_res; ++i) {
 		ir_node                 *proj = res_projs[i];
 		const be_abi_call_arg_t *arg  = get_call_arg(call, 1, i, 0);
-		int                      pn   = get_Proj_proj(proj);
+		unsigned                 pn   = get_Proj_num(proj);
 
 		assert(arg->in_reg);
 		be_set_constr_single_reg_out(low_call, pn, arg->reg,
@@ -647,7 +647,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 
 		foreach_out_edge(low_call, edge) {
 			ir_node *irn = get_edge_src_irn(edge);
-			if (is_Proj(irn) && get_Proj_proj(irn) == pn_Call_M) {
+			if (is_Proj(irn) && get_Proj_num(irn) == pn_Call_M) {
 				mem_proj = irn;
 				break;
 			}
@@ -710,7 +710,7 @@ static ir_node *adjust_alloc(be_abi_irg_t *env, ir_node *alloc, ir_node *curr_sp
 	foreach_out_edge(alloc, edge) {
 		ir_node *irn = get_edge_src_irn(edge);
 
-		switch (get_Proj_proj(irn)) {
+		switch (get_Proj_num(irn)) {
 		case pn_Alloc_M:
 			alloc_mem = irn;
 			break;
@@ -756,7 +756,7 @@ static ir_node *adjust_alloc(be_abi_irg_t *env, ir_node *alloc, ir_node *curr_sp
 	exchange(alloc, new_alloc);
 
 	/* fix projnum of alloca res */
-	set_Proj_proj(alloc_res, pn_be_AddSP_res);
+	set_Proj_num(alloc_res, pn_be_AddSP_res);
 
 	curr_sp = new_r_Proj(new_alloc,  get_irn_mode(curr_sp), pn_be_AddSP_sp);
 
@@ -1234,9 +1234,9 @@ static void modify_irg(ir_graph *const irg, be_abi_irg_t *const env)
 	foreach_out_edge(arg_tuple, edge) {
 		ir_node *irn = get_edge_src_irn(edge);
 		if (! is_Anchor(irn)) {
-			int nr       = get_Proj_proj(irn);
-			args[nr]     = irn;
-			DBG((dbg, LEVEL_2, "\treating arg: %d -> %+F\n", nr, irn));
+			unsigned nr = get_Proj_num(irn);
+			args[nr]    = irn;
+			DBG((dbg, LEVEL_2, "\treating arg: %u -> %+F\n", nr, irn));
 		}
 	}
 
@@ -1250,7 +1250,7 @@ static void modify_irg(ir_graph *const irg, be_abi_irg_t *const env)
 		be_abi_call_arg_t *arg = get_call_arg(call, 0, i, 1);
 		if (arg->in_reg && args[i]) {
 			assert(arg->reg != sp && "cannot use stack pointer as parameter register");
-			assert((int)i == get_Proj_proj(args[i]));
+			assert(i == get_Proj_num(args[i]));
 
 			/* For now, associate the register with the old Proj from Start representing that argument. */
 			pmap_insert(env->regs, (void *) arg->reg, args[i]);
@@ -1296,7 +1296,7 @@ static void modify_irg(ir_graph *const irg, be_abi_irg_t *const env)
 	for (size_t i = 0, n = pmap_count(env->regs); i < n; ++i) {
 		const arch_register_t    *reg      = regs[i];
 		ir_mode                  *mode     = reg->reg_class->mode;
-		long                      nr       = i;
+		unsigned                  nr       = i;
 		arch_register_req_type_t  add_type = arch_register_req_type_none;
 
 		if (reg == sp)
@@ -1305,7 +1305,6 @@ static void modify_irg(ir_graph *const irg, be_abi_irg_t *const env)
 			add_type |= arch_register_req_type_ignore;
 		}
 
-		assert(nr >= 0);
 		ir_node *const proj = new_r_Proj(start, mode, nr + 1);
 		pmap_insert(env->regs, (void *) reg, proj);
 		be_set_constr_single_reg_out(start, nr + 1, reg, add_type);
@@ -1340,8 +1339,8 @@ static void modify_irg(ir_graph *const irg, be_abi_irg_t *const env)
 		if (arg_proj == NULL)
 			continue;
 
-		int nr = get_Proj_proj(arg_proj);
-		nr     = MIN(nr, (int)n_params);
+		unsigned nr = get_Proj_num(arg_proj);
+		nr = MIN(nr, n_params);
 		be_abi_call_arg_t *arg = get_call_arg(call, 0, nr, 1);
 		ir_type *const param_type = get_method_param_type(method_type, nr);
 

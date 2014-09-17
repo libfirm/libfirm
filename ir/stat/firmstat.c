@@ -834,7 +834,7 @@ static void stat_update_address(ir_node *node, graph_entry_t *graph)
 					ir_type *ent_tp = get_entity_type(ent);
 
 					if (get_method_calling_convention(ent_tp) & cc_this_call) {
-						if (get_Proj_proj(base) == 0) {
+						if (get_Proj_num(base) == 0) {
 							/* THIS pointer */
 							cnt_inc(&graph->cnt[gcnt_this_adr]);
 							goto end_parameter;

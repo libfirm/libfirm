@@ -1812,7 +1812,7 @@ static ir_node *is_simple_loop(void)
 
 	DB((dbg, LEVEL_5, "projection is %s\n", get_relation_string(get_Cmp_relation(cmp))));
 
-	switch (get_Proj_proj(projx)) {
+	switch (get_Proj_num(projx)) {
 	case pn_Cond_false: loop_info.exit_cond = 0; break;
 	case pn_Cond_true:  loop_info.exit_cond = 1; break;
 	default: panic("Cond Proj_proj other than true/false");

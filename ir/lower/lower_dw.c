@@ -379,7 +379,7 @@ static void lower_Load(ir_node *node, ir_mode *mode)
 		if (!is_Proj(proj))
 			continue;
 
-		switch ((pn_Load)get_Proj_proj(proj)) {
+		switch ((pn_Load)get_Proj_num(proj)) {
 		case pn_Load_M:
 			/* put it to the second one */
 			set_Proj_pred(proj, high);
@@ -443,7 +443,7 @@ static void lower_Store(ir_node *node, ir_mode *mode)
 		if (!is_Proj(proj))
 			continue;
 
-		switch ((pn_Store)get_Proj_proj(proj)) {
+		switch ((pn_Store)get_Proj_num(proj)) {
 		case pn_Store_M:         /* Memory result. */
 			/* put it to the second one */
 			set_Proj_pred(proj, high);
@@ -532,19 +532,19 @@ static void lower_Div(ir_node *node, ir_mode *mode)
 		if (!is_Proj(proj))
 			continue;
 
-		switch ((pn_Div)get_Proj_proj(proj)) {
+		switch ((pn_Div)get_Proj_num(proj)) {
 		case pn_Div_M:
 			/* reroute to the call */
 			set_Proj_pred(proj, call);
-			set_Proj_proj(proj, pn_Call_M);
+			set_Proj_num(proj, pn_Call_M);
 			break;
 		case pn_Div_X_regular:
 			set_Proj_pred(proj, call);
-			set_Proj_proj(proj, pn_Call_X_regular);
+			set_Proj_num(proj, pn_Call_X_regular);
 			break;
 		case pn_Div_X_except:
 			set_Proj_pred(proj, call);
-			set_Proj_proj(proj, pn_Call_X_except);
+			set_Proj_num(proj, pn_Call_X_except);
 			break;
 		case pn_Div_res:
 			if (env.p.big_endian) {
@@ -601,19 +601,19 @@ static void lower_Mod(ir_node *node, ir_mode *mode)
 		if (!is_Proj(proj))
 			continue;
 
-		switch ((pn_Mod)get_Proj_proj(proj)) {
+		switch ((pn_Mod)get_Proj_num(proj)) {
 		case pn_Mod_M:
 			/* reroute to the call */
 			set_Proj_pred(proj, call);
-			set_Proj_proj(proj, pn_Call_M);
+			set_Proj_num(proj, pn_Call_M);
 			break;
 		case pn_Mod_X_regular:
 			set_Proj_pred(proj, call);
-			set_Proj_proj(proj, pn_Call_X_regular);
+			set_Proj_num(proj, pn_Call_X_regular);
 			break;
 		case pn_Mod_X_except:
 			set_Proj_pred(proj, call);
-			set_Proj_proj(proj, pn_Call_X_except);
+			set_Proj_num(proj, pn_Call_X_except);
 			break;
 		case pn_Mod_res:
 			if (env.p.big_endian) {
@@ -1064,7 +1064,7 @@ static void lower_Proj(ir_node *node, ir_mode *op_mode)
 	/* skip tuples */
 	ir_node *pred = get_Proj_pred(node);
 	if (is_Tuple(pred)) {
-		long                   pn    = get_Proj_proj(node);
+		unsigned               pn    = get_Proj_num(node);
 		ir_node               *op    = get_irn_n(pred, pn);
 		const lower64_entry_t *entry = get_node_entry(op);
 		ir_set_dw_lowered(node, entry->low_word, entry->high_word);
@@ -1142,11 +1142,10 @@ static void lower_Cond(ir_node *node, ir_mode *high_mode)
 	ir_node *projT = NULL;
 	ir_node *projF = NULL;
 	foreach_out_edge_safe(node, edge) {
-		ir_node *proj    = get_edge_src_irn(edge);
-		long     proj_nr;
+		ir_node *proj = get_edge_src_irn(edge);
 		if (!is_Proj(proj))
 			continue;
-		proj_nr = get_Proj_proj(proj);
+		unsigned proj_nr = get_Proj_num(proj);
 
 		if (proj_nr == pn_Cond_true) {
 			assert(projT == NULL && "more than one Proj(true)");
@@ -1806,8 +1805,8 @@ static void lower_Start(ir_node *node, ir_mode *high_mode)
 
 
 	/* Calculate mapping of proj numbers in new_projs */
-	size_t n_params  = get_method_n_params(orig_mtp);
-	long  *new_projs = ALLOCAN(long, n_params);
+	size_t    n_params  = get_method_n_params(orig_mtp);
+	unsigned *new_projs = ALLOCAN(unsigned, n_params);
 	for (size_t i = 0, j = 0; i < n_params; ++i, ++j) {
 		ir_type *ptp = get_method_param_type(orig_mtp, i);
 
@@ -1825,7 +1824,7 @@ static void lower_Start(ir_node *node, ir_mode *high_mode)
 		ir_node *proj = get_edge_src_irn(edge);
 		if (!is_Proj(proj))
 			continue;
-		if (get_Proj_proj(proj) == pn_Start_T_args) {
+		if (get_Proj_num(proj) == pn_Start_T_args) {
 			args = proj;
 			break;
 		}
@@ -1839,11 +1838,11 @@ static void lower_Start(ir_node *node, ir_mode *high_mode)
 		if (!is_Proj(proj))
 			continue;
 
-		long     proj_nr = get_Proj_proj(proj);
+		unsigned proj_nr = get_Proj_num(proj);
 		ir_mode *mode    = get_irn_mode(proj);
 		if (!needs_lowering(mode)) {
-			long new_pn = new_projs[proj_nr];
-			set_Proj_proj(proj, new_pn);
+			unsigned new_pn = new_projs[proj_nr];
+			set_Proj_num(proj, new_pn);
 			continue;
 		}
 
@@ -1890,8 +1889,8 @@ static void lower_Call(ir_node *node, ir_mode *mode)
 			}
 		}
 	}
-	size_t n_res       = get_method_n_ress(tp);
-	long  *res_numbers = ALLOCAN(long, n_res);
+	size_t    n_res       = get_method_n_ress(tp);
+	unsigned *res_numbers = ALLOCAN(unsigned, n_res);
 	if (n_res > 0) {
 		for (size_t i = 0, j = 0; i < n_res; ++i, ++j) {
 			ir_type *ptp = get_method_res_type(tp, i);
@@ -1943,7 +1942,7 @@ static void lower_Call(ir_node *node, ir_mode *mode)
 		ir_node *proj = get_edge_src_irn(edge);
 		if (!is_Proj(proj))
 			continue;
-		if (get_Proj_proj(proj) == pn_Call_T_result) {
+		if (get_Proj_num(proj) == pn_Call_T_result) {
 			resproj = proj;
 			break;
 		}
@@ -1957,11 +1956,11 @@ static void lower_Call(ir_node *node, ir_mode *mode)
 		if (!is_Proj(proj))
 			continue;
 
-		long     proj_nr   = get_Proj_proj(proj);
+		unsigned proj_nr   = get_Proj_num(proj);
 		ir_mode *proj_mode = get_irn_mode(proj);
 		if (!needs_lowering(proj_mode)) {
-			long new_nr = res_numbers[proj_nr];
-			set_Proj_proj(proj, new_nr);
+			unsigned new_nr = res_numbers[proj_nr];
+			set_Proj_num(proj, new_nr);
 			continue;
 		}
 		ir_mode  *mode_h = mode_is_signed(proj_mode)
@@ -2127,7 +2126,7 @@ static void lower_ASM(ir_node *asmn, ir_mode *mode)
 	ir_node           *mem        = get_ASM_mem(asmn);
 	size_t             new_n_outs = 0;
 	size_t             n_clobber  = get_ASM_n_clobbers(asmn);
-	long              *proj_map   = ALLOCAN(long, n_outs);
+	unsigned          *proj_map   = ALLOCAN(unsigned, n_outs);
 	ident            **clobbers   = get_ASM_clobbers(asmn);
 	ident             *asm_text   = get_ASM_text(asmn);
 	ir_asm_constraint *new_outputs
@@ -2170,8 +2169,8 @@ static void lower_ASM(ir_node *asmn, ir_mode *mode)
 		if (!is_Proj(proj))
 			continue;
 
-		long pn = get_Proj_proj(proj);
-		if (pn < (long)n_outs)
+		unsigned pn = get_Proj_num(proj);
+		if (pn < n_outs)
 			pn = proj_map[pn];
 		else
 			pn = new_n_outs + pn - n_outs;
@@ -2520,7 +2519,7 @@ static void lower_arithmetic_builtin(ir_node *builtin, ir_mode *mode)
 		if (!is_Proj(proj))
 			continue;
 
-		if (get_Proj_proj(proj) == pn_Builtin_max+1) {
+		if (get_Proj_num(proj) == pn_Builtin_max+1) {
 			ir_set_dw_lowered(proj, res_low, res_high);
 		}
 	}

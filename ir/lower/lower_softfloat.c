@@ -635,18 +635,18 @@ static bool lower_Div(ir_node *const n)
 		if (!is_Proj(proj))
 			continue;
 
-		switch ((pn_Div)get_Proj_proj(proj)) {
+		switch ((pn_Div)get_Proj_num(proj)) {
 		case pn_Div_M:
 			set_Proj_pred(proj, call);
-			set_Proj_proj(proj, pn_Call_M);
+			set_Proj_num(proj, pn_Call_M);
 			continue;
 		case pn_Div_X_regular:
 			set_Proj_pred(proj, call);
-			set_Proj_proj(proj, pn_Call_X_regular);
+			set_Proj_num(proj, pn_Call_X_regular);
 			continue;
 		case pn_Div_X_except:
 			set_Proj_pred(proj, call);
-			set_Proj_proj(proj, pn_Call_X_except);
+			set_Proj_num(proj, pn_Call_X_except);
 			continue;
 		case pn_Div_res:
 			exchange(proj, result);

@@ -579,7 +579,7 @@ FIRM_API size_t ir_switch_table_get_n_entries(const ir_switch_table *table);
  * @param pn     Proj number taken on match
  */
 FIRM_API void ir_switch_table_set(ir_switch_table *table, size_t entry,
-                                  ir_tarval *min, ir_tarval *max, long pn);
+                                  ir_tarval *min, ir_tarval *max, unsigned pn);
 
 /** Returns maximum tarval value of switch table entry @p entry */
 FIRM_API ir_tarval *ir_switch_table_get_max(const ir_switch_table *table,
@@ -590,7 +590,8 @@ FIRM_API ir_tarval *ir_switch_table_get_min(const ir_switch_table *table,
                                             size_t entry);
 
 /** Returns proj number taken if switch table entry @p entry matches */
-FIRM_API long ir_switch_table_get_pn(const ir_switch_table *table, size_t entry);
+FIRM_API unsigned ir_switch_table_get_pn(const ir_switch_table *table,
+                                         size_t entry);
 
 /** Duplicates switch table @p table on obstack of @p irg */
 FIRM_API ir_switch_table *ir_switch_table_duplicate(ir_graph *irg, const ir_switch_table *table);

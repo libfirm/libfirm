@@ -157,14 +157,14 @@ static bool check_mode_same_size_input(const ir_node *n, int input,
  */
 static bool invalid_proj(const ir_node *proj)
 {
-	warn(proj, "invalid proj number %ld for predecessor %+F",
-	     get_Proj_proj(proj), get_Proj_pred(proj));
+	warn(proj, "invalid proj number %u for predecessor %+F",
+	     get_Proj_num(proj), get_Proj_pred(proj));
 	return false;
 }
 
 static int verify_node_Proj_Start(const ir_node *p)
 {
-	switch ((pn_Start)get_Proj_proj(p)) {
+	switch ((pn_Start)get_Proj_num(p)) {
 	case pn_Start_X_initial_exec: return check_mode(p, mode_X);
 	case pn_Start_M:              return check_mode(p, mode_M);
 	case pn_Start_P_frame_base:   return check_mode_func(p, mode_is_reference, "reference");
@@ -175,7 +175,7 @@ static int verify_node_Proj_Start(const ir_node *p)
 
 static int verify_node_Proj_Cond(const ir_node *p)
 {
-	switch ((pn_Cond)get_Proj_proj(p)) {
+	switch ((pn_Cond)get_Proj_num(p)) {
 	case pn_Cond_true:
 	case pn_Cond_false: return check_mode(p, mode_X);
 	}
@@ -184,11 +184,11 @@ static int verify_node_Proj_Cond(const ir_node *p)
 
 static int verify_node_Proj_Switch(const ir_node *p)
 {
-	long     pn   = get_Proj_proj(p);
+	unsigned pn   = get_Proj_num(p);
 	ir_node *pred = get_Proj_pred(p);
 	bool     fine = check_mode(p, mode_X);
-	if (pn < 0 || pn >= (long)get_Switch_n_outs(pred)) {
-		warn(p, "invalid proj number %ld for predecessor %+F", pn, pred);
+	if (pn >= get_Switch_n_outs(pred)) {
+		warn(p, "invalid proj number %u for predecessor %+F", pn, pred);
 		fine = false;
 	}
 	return fine;
@@ -196,7 +196,7 @@ static int verify_node_Proj_Switch(const ir_node *p)
 
 static int verify_node_Proj_Raise(const ir_node *p)
 {
-	switch ((pn_Raise)get_Proj_proj(p)) {
+	switch ((pn_Raise)get_Proj_num(p)) {
 	case pn_Raise_X: return check_mode(p, mode_X);
 	case pn_Raise_M: return check_mode(p, mode_M);
 	}
@@ -205,7 +205,7 @@ static int verify_node_Proj_Raise(const ir_node *p)
 
 static int verify_node_Proj_Call(const ir_node *p)
 {
-	switch ((pn_Call)get_Proj_proj(p)) {
+	switch ((pn_Call)get_Proj_num(p)) {
 	case pn_Call_M:         return check_mode(p, mode_M);
 	case pn_Call_X_except:  return check_mode(p, mode_X);
 	case pn_Call_X_regular: return check_mode(p, mode_X);
@@ -216,7 +216,7 @@ static int verify_node_Proj_Call(const ir_node *p)
 
 static int verify_node_Proj_Div(const ir_node *p)
 {
-	switch ((pn_Div)get_Proj_proj(p)) {
+	switch ((pn_Div)get_Proj_num(p)) {
 	case pn_Div_M:         return check_mode(p, mode_M);
 	case pn_Div_X_regular: return check_mode(p, mode_X);
 	case pn_Div_X_except:  return check_mode(p, mode_X);
@@ -227,7 +227,7 @@ static int verify_node_Proj_Div(const ir_node *p)
 
 static int verify_node_Proj_Mod(const ir_node *p)
 {
-	switch ((pn_Mod)get_Proj_proj(p)) {
+	switch ((pn_Mod)get_Proj_num(p)) {
 	case pn_Mod_M:         return check_mode(p, mode_M);
 	case pn_Mod_X_regular: return check_mode(p, mode_X);
 	case pn_Mod_X_except:  return check_mode(p, mode_X);
@@ -238,7 +238,7 @@ static int verify_node_Proj_Mod(const ir_node *p)
 
 static int verify_node_Proj_Load(const ir_node *p)
 {
-	switch ((pn_Load)get_Proj_proj(p)) {
+	switch ((pn_Load)get_Proj_num(p)) {
 	case pn_Load_M:         return check_mode(p, mode_M);
 	case pn_Load_X_regular: return check_mode(p, mode_X);
 	case pn_Load_X_except:  return check_mode(p, mode_X);
@@ -249,7 +249,7 @@ static int verify_node_Proj_Load(const ir_node *p)
 
 static int verify_node_Proj_Store(const ir_node *p)
 {
-	switch ((pn_Store)get_Proj_proj(p)) {
+	switch ((pn_Store)get_Proj_num(p)) {
 	case pn_Store_M:         return check_mode(p, mode_M);
 	case pn_Store_X_regular: return check_mode(p, mode_X);
 	case pn_Store_X_except:  return check_mode(p, mode_X);
@@ -259,7 +259,7 @@ static int verify_node_Proj_Store(const ir_node *p)
 
 static int verify_node_Proj_Alloc(const ir_node *p)
 {
-	switch ((pn_Alloc)get_Proj_proj(p)) {
+	switch ((pn_Alloc)get_Proj_num(p)) {
 	case pn_Alloc_M:   return check_mode(p, mode_M);
 	case pn_Alloc_res: return check_mode_func(p, mode_is_reference, "reference");
 	}
@@ -272,9 +272,9 @@ static int verify_node_Proj_Proj_Start(const ir_node *p)
 	ir_type  *mt  = get_entity_type(get_irg_entity(irg));
 	if (!is_Method_type(mt))
 		return true;
-	long pn = get_Proj_proj(p);
-	if (pn < 0 || pn >= (long)get_method_n_params(mt)) {
-		warn(p, "invalid proj number %ld after Proj(%+F)", pn,
+	unsigned pn = get_Proj_num(p);
+	if (pn >= get_method_n_params(mt)) {
+		warn(p, "invalid proj number %u after Proj(%+F)", pn,
 		     get_Proj_pred(get_Proj_pred(p)));
 		return false;
 	}
@@ -292,9 +292,9 @@ static int verify_node_Proj_Proj_Call(const ir_node *p)
 	ir_type *mt   = get_Call_type(call);
 	if (!is_Method_type(mt))
 		return true;
-	long pn = get_Proj_proj(p);
-	if (pn < 0 || pn >= (long)get_method_n_ress(mt)) {
-		warn(p, "invalid proj number %ld after %+F", pn, call);
+	unsigned pn = get_Proj_num(p);
+	if (pn >= get_method_n_ress(mt)) {
+		warn(p, "invalid proj number %u after %+F", pn, call);
 		return false;
 	}
 	ir_type *type = get_method_res_type(mt, pn);
@@ -316,8 +316,8 @@ static int verify_node_Proj_Proj(const ir_node *p)
 static int verify_node_Proj_Tuple(const ir_node *p)
 {
 	ir_node *tuple = get_Proj_pred(p);
-	long     pn    = get_Proj_proj(p);
-	if (pn < 0 || pn >= get_irn_arity(tuple)) {
+	unsigned pn    = get_Proj_num(p);
+	if (pn >= (unsigned)get_irn_arity(tuple)) {
 		warn(p, "invalid proj number on %+F", tuple);
 		return false;
 	}
@@ -493,7 +493,7 @@ static bool verify_switch_table(const ir_node *n)
 			warn(n, "switch table entry %zu min is not less or equal than max", e);
 			fine = false;
 		}
-		if (entry->pn < 0 || entry->pn >= (long)n_outs) {
+		if (entry->pn >= n_outs) {
 			warn(n, "switch table entry %zu has invalid proj number", e);
 			fine = false;
 		}
@@ -1161,13 +1161,13 @@ static int check_block_cfg(const ir_node *block, check_cfg_env_t *env)
 		pmap_insert(branch_nodes, branch_block, branch);
 
 		if (is_Cond(branch)) {
-			long pn = get_Proj_proj(branch_proj);
+			unsigned pn = get_Proj_num(branch_proj);
 			if (pn == pn_Cond_true)
 				ir_nodeset_insert(&env->true_projs, branch);
 			if (pn == pn_Cond_false)
 				ir_nodeset_insert(&env->false_projs, branch);
 		} else if (is_Switch(branch)) {
-			long pn = get_Proj_proj(branch_proj);
+			unsigned pn = get_Proj_num(branch_proj);
 			if (pn == pn_Switch_default)
 				ir_nodeset_insert(&env->true_projs, branch);
 		}

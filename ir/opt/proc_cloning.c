@@ -202,7 +202,6 @@ static void copy_nodes(ir_node *irn, void *env)
 	ir_node  *arg       = (ir_node*)get_irg_link(clone_irg);
 	ir_node  *irg_args  = get_Proj_pred(arg);
 	ir_node  *irn_copy;
-	long      proj_nr;
 
 	/* Copy all nodes except the arg. */
 	if (irn != arg)
@@ -212,9 +211,9 @@ static void copy_nodes(ir_node *irn, void *env)
 
 	/* Fix argument numbers */
 	if (is_Proj(irn) && get_Proj_pred(irn) == irg_args) {
-		proj_nr = get_Proj_proj(irn);
-		if (get_Proj_proj(arg) < proj_nr)
-			set_Proj_proj(irn_copy, proj_nr - 1);
+		unsigned proj_nr = get_Proj_num(irn);
+		if (get_Proj_num(arg) < proj_nr)
+			set_Proj_num(irn_copy, proj_nr - 1);
 	}
 }
 
@@ -278,7 +277,7 @@ static ir_node *get_irg_arg(ir_graph *irg, size_t pos)
 
 	/* Search the argument with the number pos.*/
 	foreach_irn_out_r(irg_args, i, proj) {
-		if ((int)pos == get_Proj_proj(proj)) {
+		if (pos == get_Proj_num(proj)) {
 			if (arg) {
 				/*
 				 * More than one arg node found:

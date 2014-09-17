@@ -57,7 +57,7 @@ static ir_node *get_effective_use_block(ir_node *node, int pos)
 	return get_nodes_block(node);
 }
 
-static ir_node *get_case_value(ir_node *switchn, long pn)
+static ir_node *get_case_value(ir_node *switchn, unsigned pn)
 {
 	ir_graph              *irg       = get_irn_irg(switchn);
 	const ir_switch_table *table     = get_Switch_table(switchn);
@@ -87,7 +87,7 @@ static ir_node *get_case_value(ir_node *switchn, long pn)
  * Branch labels are a simple case. We can replace the value
  * by a Const with the branch label.
  */
-static void handle_case(ir_node *block, ir_node *switchn, long pn, env_t *env)
+static void handle_case(ir_node *block, ir_node *switchn, unsigned pn, env_t *env)
 {
 	ir_node *c        = NULL;
 	ir_node *selector = get_Switch_selector(switchn);
@@ -165,7 +165,7 @@ static void handle_modeb(ir_node *block, ir_node *selector, pn_Cond pnc, env_t *
 				ir_node *cond = get_Proj_pred(get_Block_cfgpred(block, 0));
 				foreach_out_edge(cond, edge) {
 					ir_node *proj = get_edge_src_irn(edge);
-					if (get_Proj_proj(proj) == (long)pnc)
+					if (get_Proj_num(proj) == pnc)
 						continue;
 					edge = get_irn_out_edge_first(proj);
 					other_blk = get_edge_src_irn(edge);
@@ -411,20 +411,20 @@ static void insert_Confirm_in_block(ir_node *block, void *data)
 	env_t   *env = (env_t*)data;
 	ir_node *cond = get_Proj_pred(proj);
 	if (is_Switch(cond)) {
-		long proj_nr = get_Proj_proj(proj);
+		unsigned proj_nr = get_Proj_num(proj);
 		handle_case(block, cond, proj_nr, env);
 	} else if (is_Cond(cond)) {
 		ir_node *selector = get_Cond_selector(cond);
 		ir_relation rel;
 
-		handle_modeb(block, selector, (pn_Cond) get_Proj_proj(proj), env);
+		handle_modeb(block, selector, (pn_Cond) get_Proj_num(proj), env);
 
 		if (! is_Cmp(selector))
 			return;
 
 		rel = get_Cmp_relation(selector);
 
-		if (get_Proj_proj(proj) != pn_Cond_true) {
+		if (get_Proj_num(proj) != pn_Cond_true) {
 			/* it's the false branch */
 			rel = get_negated_relation(rel);
 		}

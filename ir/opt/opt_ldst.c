@@ -29,7 +29,7 @@
 #include "type_t.h"
 
 /* maximum number of output Proj's */
-#define MAX_PROJ MAX((long)pn_Load_max, (long)pn_Store_max)
+#define MAX_PROJ MAX((unsigned)pn_Load_max, (unsigned)pn_Store_max)
 
 /**
  * Mapping an address to an dense ID.
@@ -591,7 +591,7 @@ static void update_Load_memop(memop_t *m)
 		if (is_End(proj))
 			continue;
 
-		long const pn = get_Proj_proj(proj);
+		unsigned const pn = get_Proj_num(proj);
 		m->projs[pn] = proj;
 		switch (pn) {
 		case pn_Load_res:
@@ -668,7 +668,7 @@ static void update_Store_memop(memop_t *m)
 		if (is_End(proj))
 			continue;
 
-		long const pn = get_Proj_proj(proj);
+		unsigned const pn = get_Proj_num(proj);
 		m->projs[pn] = proj;
 		switch (pn) {
 		case pn_Store_X_except:
@@ -706,7 +706,7 @@ static void update_Call_memop(memop_t *m)
 		if (is_End(proj))
 			continue;
 
-		switch (get_Proj_proj(proj)) {
+		switch (get_Proj_num(proj)) {
 		case pn_Call_X_except:
 			m->flags |= FLAG_EXCEPTION;
 			break;
@@ -731,7 +731,7 @@ static void update_Div_memop(memop_t *m)
 		if (is_End(proj))
 			continue;
 
-		switch (get_Proj_proj(proj)) {
+		switch (get_Proj_num(proj)) {
 		case pn_Div_X_except:
 			m->flags |= FLAG_EXCEPTION;
 			break;
@@ -751,7 +751,7 @@ static void update_Mod_memop(memop_t *m)
 		if (is_End(proj))
 			continue;
 
-		switch (get_Proj_proj(proj)) {
+		switch (get_Proj_num(proj)) {
 		case pn_Mod_X_except:
 			m->flags |= FLAG_EXCEPTION;
 			break;

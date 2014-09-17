@@ -130,8 +130,8 @@ void dump_irnode_to_file(FILE *const F, const ir_node *const n)
 
 	if (is_Proj(n)) {
 		const ir_node *pred = get_Proj_pred(n);
-		long           pn   = get_Proj_proj(n);
-		fprintf(F, "  proj nr: %ld\n", pn);
+		unsigned       pn   = get_Proj_num(n);
+		fprintf(F, "  proj nr: %u\n", pn);
 		if (is_Switch(pred)) {
 			const ir_switch_table *table = get_Switch_table(pred);
 			for (size_t i = 0, n_entries = ir_switch_table_get_n_entries(table);

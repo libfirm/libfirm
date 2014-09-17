@@ -99,7 +99,7 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn)
 		if (get_irn_mode(irn) == mode_T) {
 			foreach_out_edge(irn, edge) {
 				ir_node *proj = get_edge_src_irn(edge);
-				long     pn   = get_Proj_proj(proj);
+				unsigned pn   = get_Proj_num(proj);
 				if (pn == pn_ia32_flags) {
 					assert(flags_proj == NULL);
 					flags_proj = proj;

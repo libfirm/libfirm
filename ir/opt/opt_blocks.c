@@ -43,7 +43,7 @@ struct opcode_key_t {
 	ir_mode     *mode;  /**< The mode of all nodes in the partition. */
 	int         arity;  /**< The arity of this opcode (needed for Phi etc. */
 	union {
-		long            proj;   /**< For Proj nodes, its proj number */
+		unsigned         proj;   /**< For Proj nodes, its proj number */
 		ir_entity       *ent;   /**< For Address/Offset/Sel nodes, its entity */
 		ir_tarval       *tv;    /**< For Const nodes, its tarval */
 		ir_type         *type;  /**< For TypeConst nodes, its type. */
@@ -401,7 +401,7 @@ static opcode_key_t *opcode(const node_t *node, environment_t *env)
 		key.u.ent = get_Offset_entity(irn);
 		break;
 	case iro_Proj:
-		key.u.proj = get_Proj_proj(irn);
+		key.u.proj = get_Proj_num(irn);
 		break;
 	case iro_Sel:
 		key.u.type = get_Sel_type(irn);

@@ -198,7 +198,7 @@ static void lower_perm_node(ir_node *const perm, lower_env_t *env)
 	/* Collect all input-output pairs of the Perm. */
 	foreach_out_edge_safe(perm, edge) {
 		ir_node               *const out  = get_edge_src_irn(edge);
-		unsigned               const pos  = get_Proj_proj(out);
+		unsigned               const pos  = get_Proj_num(out);
 		ir_node               *const in   = get_irn_n(perm, pos);
 		arch_register_t const *const ireg = arch_get_irn_register(in);
 		arch_register_t const *const oreg = arch_get_irn_register_out(perm, pos);
@@ -706,7 +706,6 @@ static int push_through_perm(ir_node *perm)
 	ir_node *bl       = get_nodes_block(perm);
 	int  arity        = get_irn_arity(perm);
 	int *map;
-	int *proj_map;
 	bitset_t *moved   = bitset_alloca(arity);
 	int n_moved;
 	int new_size;
@@ -770,7 +769,7 @@ found_front:
 		/* Rewire Perm results to pushed through instruction. */
 		foreach_out_edge_safe(perm, edge) {
 			ir_node *const proj = get_edge_src_irn(edge);
-			int      const pn   = get_Proj_proj(proj);
+			unsigned const pn   = get_Proj_num(proj);
 			ir_node *const in   = get_irn_n(perm, pn);
 			if (in == node || (is_Proj(in) && get_Proj_pred(in) == node)) {
 				/* Give it the proj's register. */
@@ -796,8 +795,7 @@ done:
 	}
 
 	map      = ALLOCAN(int, new_size);
-	proj_map = ALLOCAN(int, arity);
-	memset(proj_map, -1, sizeof(proj_map[0]));
+	unsigned *proj_map = ALLOCAN(unsigned, arity);
 	n   = 0;
 	for (i = 0; i < arity; ++i) {
 		if (bitset_is_set(moved, i))
@@ -809,10 +807,9 @@ done:
 	assert(n == new_size);
 	foreach_out_edge(perm, edge) {
 		ir_node *proj = get_edge_src_irn(edge);
-		int      pn   = get_Proj_proj(proj);
+		unsigned pn   = get_Proj_num(proj);
 		pn = proj_map[pn];
-		assert(pn >= 0);
-		set_Proj_proj(proj, pn);
+		set_Proj_num(proj, pn);
 	}
 
 	be_Perm_reduce(perm, new_size, map);

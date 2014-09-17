@@ -471,7 +471,7 @@ static ir_node *source_am_possible(ir_node *block, ir_node *node)
 	ir_node *load = get_Proj_pred(node);
 	if (!is_Load(load))
 		return NULL;
-	assert(get_Proj_proj(node) == pn_Load_res);
+	assert(get_Proj_num(node) == pn_Load_res);
 	if (get_nodes_block(load) != block)
 		return NULL;
 	/* make sure we are the only user */
@@ -1079,12 +1079,12 @@ static ir_node *gen_Proj_Div(ir_node *const node)
 {
 	ir_node *pred     = get_Proj_pred(node);
 	ir_node *new_pred = be_transform_node(pred);
-	long     pn       = get_Proj_proj(node);
+	unsigned pn       = get_Proj_num(node);
 
-	assert((long)pn_amd64_Div_M == (long)pn_amd64_IDiv_M);
-	assert((long)pn_amd64_Div_res_div == (long)pn_amd64_IDiv_res_div);
-	assert((long)pn_amd64_xDivs_M == (long)pn_amd64_IDiv_M);
-	assert((long)pn_amd64_xDivs_res_div == (long)pn_amd64_IDiv_res_div);
+	assert((unsigned)pn_amd64_Div_M == (unsigned)pn_amd64_IDiv_M);
+	assert((unsigned)pn_amd64_Div_res_div == (unsigned)pn_amd64_IDiv_res_div);
+	assert((unsigned)pn_amd64_xDivs_M == (unsigned)pn_amd64_IDiv_M);
+	assert((unsigned)pn_amd64_xDivs_res_div == (unsigned)pn_amd64_IDiv_res_div);
 
 	ir_mode *mode;
 	if (mode_is_float(get_Div_resmode(pred)))
@@ -1117,10 +1117,10 @@ static ir_node *gen_Proj_Mod(ir_node *const node)
 {
 	ir_node *pred     = get_Proj_pred(node);
 	ir_node *new_pred = be_transform_node(pred);
-	long     pn       = get_Proj_proj(node);
+	unsigned pn       = get_Proj_num(node);
 
-	assert((long)pn_amd64_Div_M == (long)pn_amd64_IDiv_M);
-	assert((long)pn_amd64_Div_res_mod == (long)pn_amd64_IDiv_res_mod);
+	assert((unsigned)pn_amd64_Div_M == (unsigned)pn_amd64_IDiv_M);
+	assert((unsigned)pn_amd64_Div_res_mod == (unsigned)pn_amd64_IDiv_res_mod);
 	switch ((pn_Mod)pn) {
 	case pn_Mod_M:
 		return new_r_Proj(new_pred, mode_M, pn_amd64_Div_M);
@@ -1401,7 +1401,7 @@ static ir_node *gen_Proj_Start(ir_node *node)
 	ir_graph *irg       = get_irn_irg(node);
 	ir_node  *block     = get_nodes_block(node);
 	ir_node  *new_block = be_transform_node(block);
-	long      pn        = get_Proj_proj(node);
+	unsigned  pn        = get_Proj_num(node);
 	be_transform_node(get_Proj_pred(node));
 
 	switch ((pn_Start)pn) {
@@ -1414,7 +1414,7 @@ static ir_node *gen_Proj_Start(ir_node *node)
 	case pn_Start_P_frame_base:
 		return get_frame_base(irg);
 	}
-	panic("Unexpected Start Proj: %ld\n", pn);
+	panic("Unexpected Start Proj: %u\n", pn);
 }
 
 static ir_node *get_stack_pointer_for(ir_node *node)
@@ -1480,7 +1480,7 @@ static ir_node *gen_Return(ir_node *node)
 	}
 	/* callee saves */
 	ir_node *start = get_irg_start(irg);
-	long start_pn = start_callee_saves_offset;
+	unsigned start_pn = start_callee_saves_offset;
 	for (size_t i = 0; i < N_AMD64_REGISTERS; ++i) {
 		if (!rbitset_is_set(cconv->callee_saves, i))
 			continue;
@@ -1735,7 +1735,7 @@ static ir_node *gen_Call(ir_node *node)
 
 static ir_node *gen_Proj_Call(ir_node *node)
 {
-	long     pn       = get_Proj_proj(node);
+	unsigned pn       = get_Proj_num(node);
 	ir_node *call     = get_Proj_pred(node);
 	ir_node *new_call = be_transform_node(call);
 	switch ((pn_Call)pn) {
@@ -1751,14 +1751,14 @@ static ir_node *gen_Proj_Call(ir_node *node)
 
 static ir_node *gen_Proj_Proj_Call(ir_node *node)
 {
-	long           pn       = get_Proj_proj(node);
+	unsigned       pn       = get_Proj_num(node);
 	ir_node       *call     = get_Proj_pred(get_Proj_pred(node));
 	ir_node       *new_call = be_transform_node(call);
 	ir_type       *tp       = get_Call_type(call);
 	amd64_cconv_t *cconv    = amd64_decide_calling_convention(tp, NULL);
 	const reg_or_stackslot_t *res  = &cconv->results[pn];
 	ir_mode                  *mode = get_irn_mode(node);
-	long                      new_pn = 1 + res->reg_offset;
+	unsigned                  new_pn = 1 + res->reg_offset;
 
 	assert(res->req != NULL);
 	if (mode_needs_gp_reg(mode))
@@ -1773,19 +1773,19 @@ static ir_node *gen_Proj_Proj_Start(ir_node *node)
 {
 	ir_node *block     = get_nodes_block(node);
 	ir_node *new_block = be_transform_node(block);
-	long     pn        = get_Proj_proj(node);
+	unsigned pn        = get_Proj_num(node);
 	ir_node *args      = get_Proj_pred(node);
 	ir_node *start     = get_Proj_pred(args);
 	ir_node *new_start = be_transform_node(start);
 
-	assert(get_Proj_proj(args) == pn_Start_T_args);
+	assert(get_Proj_num(args) == pn_Start_T_args);
 
 	const reg_or_stackslot_t *param = &current_cconv->parameters[pn];
 	if (param->reg != NULL) {
 		/* argument transmitted in register */
 		const arch_register_t *reg    = param->reg;
 		ir_mode               *mode   = reg->reg_class->mode;
-		long                   new_pn = param->reg_offset + start_params_offset;
+		unsigned               new_pn = param->reg_offset + start_params_offset;
 		ir_node               *value  = new_r_Proj(new_start, mode, new_pn);
 		return value;
 	} else {
@@ -2015,7 +2015,7 @@ static ir_node *gen_Conv(ir_node *node)
 			                             in, insn_mode, AMD64_OP_REG,
 			                             addr);
 		}
-		assert((long)pn_amd64_CvtSS2SI_res == (long)pn_amd64_CvtSD2SI_res);
+		assert((unsigned)pn_amd64_CvtSS2SI_res == (unsigned)pn_amd64_CvtSD2SI_res);
 		res  = new_r_Proj(conv, mode_gp, pn_amd64_CvtSS2SI_res);
 		reqs = xmm_reqs;
 
@@ -2266,27 +2266,27 @@ static ir_node *gen_Proj_Load(ir_node *node)
 	ir_node  *load     = get_Proj_pred(node);
 	ir_node  *new_load = be_transform_node(load);
 	dbg_info *dbgi     = get_irn_dbg_info(node);
-	long      proj     = get_Proj_proj(node);
+	unsigned  pn       = get_Proj_num(node);
 
 	/* loads might be part of source address mode matches, so we don't
 	   transform the ProjMs yet (with the exception of loads whose result is
 	   not used) */
-	if (is_Load(load) && proj == pn_Load_M && get_irn_n_edges(load) > 1) {
+	if (is_Load(load) && pn == pn_Load_M && get_irn_n_edges(load) > 1) {
 		/* this is needed, because sometimes we have loops that are only
 		   reachable through the ProjM */
 		be_enqueue_preds(node);
 		/* do it in 2 steps, to silence firm verifier */
 		ir_node *res = new_rd_Proj(dbgi, load, mode_M, pn_Load_M);
-		set_Proj_proj(res, pn_amd64_mem);
+		set_Proj_num(res, pn_amd64_mem);
 		return res;
 	}
 
 	/* renumber the proj */
 	switch (get_amd64_irn_opcode(new_load)) {
 	case iro_amd64_xMovs:
-		if (proj == pn_Load_res) {
+		if (pn == pn_Load_res) {
 			return new_rd_Proj(dbgi, new_load, mode_D, pn_amd64_xMovs_res);
-		} else if (proj == pn_Load_M) {
+		} else if (pn == pn_Load_M) {
 			return new_rd_Proj(dbgi, new_load, mode_M, pn_amd64_xMovs_M);
 		}
 		break;
@@ -2295,16 +2295,16 @@ static ir_node *gen_Proj_Load(ir_node *node)
 		assert((int)pn_amd64_Movs_res == (int)pn_amd64_Mov_res);
 		assert((int)pn_amd64_Movs_M   == (int)pn_amd64_Mov_M);
 		/* handle all gp loads equal: they have the same proj numbers. */
-		if (proj == pn_Load_res) {
+		if (pn == pn_Load_res) {
 			return new_rd_Proj(dbgi, new_load, mode_Lu, pn_amd64_Movs_res);
-		} else if (proj == pn_Load_M) {
+		} else if (pn == pn_Load_M) {
 			return new_rd_Proj(dbgi, new_load, mode_M, pn_amd64_Movs_M);
 		}
 		break;
 	case iro_amd64_Add:
 	case iro_amd64_And:
 	case iro_amd64_Cmp:
-		assert(proj == pn_Load_M);
+		assert(pn == pn_Load_M);
 		return new_r_Proj(new_load, mode_M, pn_amd64_mem);
 	default:
 		panic("Unsupported Proj from Load");
@@ -2316,7 +2316,7 @@ static ir_node *gen_Proj_Load(ir_node *node)
 static ir_node *gen_Proj_Store(ir_node *node)
 {
 	ir_node *pred = get_Proj_pred(node);
-	long     pn   = get_Proj_proj(node);
+	unsigned pn   = get_Proj_num(node);
 	if (pn == pn_Store_M) {
 		return be_transform_node(pred);
 	} else {

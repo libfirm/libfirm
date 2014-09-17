@@ -851,17 +851,17 @@ static ir_node *gen_Proj_ASM(ir_node *node)
 	ir_mode *mode     = get_irn_mode(node);
 	ir_node *pred     = get_Proj_pred(node);
 	ir_node *new_pred = be_transform_node(pred);
-	long     pos      = get_Proj_proj(node);
+	unsigned pn       = get_Proj_num(node);
 
 	if (mode == mode_M) {
-		pos = arch_get_irn_n_outs(new_pred)-1;
+		pn = arch_get_irn_n_outs(new_pred)-1;
 	} else if (mode_needs_gp_reg(mode)) {
 		mode = mode_gp;
 	} else {
 		panic("unexpected proj mode at ASM");
 	}
 
-	return new_r_Proj(new_pred, mode, pos);
+	return new_r_Proj(new_pred, mode, pn);
 }
 
 /**
@@ -925,7 +925,7 @@ static ir_node *gen_AddCC_t(ir_node *node)
 
 static ir_node *gen_Proj_AddCC_t(ir_node *node)
 {
-	long     pn       = get_Proj_proj(node);
+	unsigned pn       = get_Proj_num(node);
 	ir_node *pred     = get_Proj_pred(node);
 	ir_node *new_pred = be_transform_node(pred);
 
@@ -976,7 +976,7 @@ static ir_node *gen_SubCC_t(ir_node *node)
 
 static ir_node *gen_Proj_SubCC_t(ir_node *node)
 {
-	long     pn       = get_Proj_proj(node);
+	unsigned pn       = get_Proj_num(node);
 	ir_node *pred     = get_Proj_pred(node);
 	ir_node *new_pred = be_transform_node(pred);
 
@@ -2276,7 +2276,7 @@ static ir_node *gen_Proj_Alloc(ir_node *node)
 {
 	ir_node *alloc     = get_Proj_pred(node);
 	ir_node *new_alloc = be_transform_node(alloc);
-	long     pn        = get_Proj_proj(node);
+	unsigned pn        = get_Proj_num(node);
 
 	switch ((pn_Alloc)pn) {
 	case pn_Alloc_M:   return new_r_Proj(new_alloc, mode_M,  pn_sparc_SubSP_M);
@@ -2438,7 +2438,7 @@ static ir_node *gen_Proj_Builtin(ir_node *proj)
 	ir_node         *pred     = get_Proj_pred(proj);
 	ir_node         *new_pred = be_transform_node(pred);
 	ir_builtin_kind  kind     = get_Builtin_kind(pred);
-	long             pn       = get_Proj_proj(proj);
+	unsigned         pn       = get_Proj_num(proj);
 
 	switch (kind) {
 	case ir_bk_return_address:
@@ -2529,7 +2529,7 @@ static ir_node *gen_Proj_Load(ir_node *node)
 	ir_node  *load     = get_Proj_pred(node);
 	ir_node  *new_load = be_transform_node(load);
 	dbg_info *dbgi     = get_irn_dbg_info(node);
-	long      pn       = get_Proj_proj(node);
+	unsigned  pn       = get_Proj_num(node);
 
 	/* renumber the proj */
 	switch (get_sparc_irn_opcode(new_load)) {
@@ -2561,7 +2561,7 @@ static ir_node *gen_Proj_Store(ir_node *node)
 {
 	ir_node  *store     = get_Proj_pred(node);
 	ir_node  *new_store = be_transform_node(store);
-	long      pn        = get_Proj_proj(node);
+	unsigned  pn        = get_Proj_num(node);
 
 	/* renumber the proj */
 	switch (get_sparc_irn_opcode(new_store)) {
@@ -2598,11 +2598,11 @@ static ir_node *gen_Proj_Div(ir_node *node)
 		panic("Div transformed to something unexpected: %+F",
 		      new_pred);
 	}
-	assert((int)pn_sparc_SDiv_res == (int)pn_sparc_UDiv_res);
-	assert((int)pn_sparc_SDiv_M   == (int)pn_sparc_UDiv_M);
-	assert((int)pn_sparc_SDiv_res == (int)pn_sparc_fdiv_res);
-	assert((int)pn_sparc_SDiv_M   == (int)pn_sparc_fdiv_M);
-	long pn = get_Proj_proj(node);
+	assert((unsigned)pn_sparc_SDiv_res == (unsigned)pn_sparc_UDiv_res);
+	assert((unsigned)pn_sparc_SDiv_M   == (unsigned)pn_sparc_UDiv_M);
+	assert((unsigned)pn_sparc_SDiv_res == (unsigned)pn_sparc_fdiv_res);
+	assert((unsigned)pn_sparc_SDiv_M   == (unsigned)pn_sparc_fdiv_M);
+	unsigned pn = get_Proj_num(node);
 	switch (pn) {
 	case pn_Div_res:
 		return new_r_Proj(new_pred, res_mode, pn_sparc_SDiv_res);
@@ -2630,7 +2630,7 @@ static ir_node *gen_Proj_Start(ir_node *node)
 {
 	ir_node *block     = get_nodes_block(node);
 	ir_node *new_block = be_transform_node(block);
-	long     pn        = get_Proj_proj(node);
+	unsigned pn        = get_Proj_num(node);
 	/* make sure prolog is constructed */
 	be_transform_node(get_Proj_pred(node));
 
@@ -2649,12 +2649,12 @@ static ir_node *gen_Proj_Start(ir_node *node)
 	case pn_Start_P_frame_base:
 		return get_frame_base(get_irn_irg(block));
 	}
-	panic("Unexpected start proj: %ld\n", pn);
+	panic("Unexpected start proj: %u\n", pn);
 }
 
 static ir_node *gen_Proj_Proj_Start(ir_node *node)
 {
-	long      pn        = get_Proj_proj(node);
+	unsigned  pn        = get_Proj_num(node);
 	ir_node  *block     = get_nodes_block(node);
 	ir_graph *irg       = get_irn_irg(node);
 	ir_node  *new_block = be_transform_node(block);
@@ -2663,7 +2663,7 @@ static ir_node *gen_Proj_Proj_Start(ir_node *node)
 	ir_node  *new_start = be_transform_node(start);
 
 	/* Proj->Proj->Start must be a method argument */
-	assert(get_Proj_proj(get_Proj_pred(node)) == pn_Start_T_args);
+	assert(get_Proj_num(get_Proj_pred(node)) == pn_Start_T_args);
 
 	const reg_or_stackslot_t *param = &current_cconv->parameters[pn];
 
@@ -2671,13 +2671,13 @@ static ir_node *gen_Proj_Proj_Start(ir_node *node)
 		/* argument transmitted in register */
 		const arch_register_t *reg      = param->reg0;
 		ir_mode               *reg_mode = reg->reg_class->mode;
-		long                   new_pn   = param->reg_offset + start_params_offset;
+		unsigned               new_pn   = param->reg_offset + start_params_offset;
 		ir_node               *value    = new_r_Proj(new_start, reg_mode, new_pn);
 		bool                   is_float = false;
 
 		ir_entity *entity      = get_irg_entity(irg);
 		ir_type   *method_type = get_entity_type(entity);
-		if (pn < (long)get_method_n_params(method_type)) {
+		if (pn < get_method_n_params(method_type)) {
 			ir_type *param_type = get_method_param_type(method_type, pn);
 			ir_mode *mode       = get_type_mode(param_type);
 			is_float = mode_is_float(mode);
@@ -2728,7 +2728,7 @@ static ir_node *gen_Proj_Proj_Start(ir_node *node)
 
 static ir_node *gen_Proj_Call(ir_node *node)
 {
-	long     pn        = get_Proj_proj(node);
+	unsigned pn        = get_Proj_num(node);
 	ir_node *call      = get_Proj_pred(node);
 	ir_node *new_call  = be_transform_node(call);
 
@@ -2740,12 +2740,12 @@ static ir_node *gen_Proj_Call(ir_node *node)
 	case pn_Call_T_result:
 		break;
 	}
-	panic("Unexpected Call proj %ld\n", pn);
+	panic("Unexpected Call proj %u\n", pn);
 }
 
 static ir_node *gen_Proj_Proj_Call(ir_node *node)
 {
-	long                  pn            = get_Proj_proj(node);
+	unsigned              pn            = get_Proj_num(node);
 	ir_node              *call          = get_Proj_pred(get_Proj_pred(node));
 	ir_node              *new_call      = be_transform_node(call);
 	ir_type              *function_type = get_Call_type(call);
@@ -2753,7 +2753,7 @@ static ir_node *gen_Proj_Proj_Call(ir_node *node)
 		= sparc_decide_calling_convention(function_type, NULL);
 	const reg_or_stackslot_t  *res  = &cconv->results[pn];
 	ir_mode                   *mode = get_irn_mode(node);
-	long                       new_pn = 1 + res->reg_offset;
+	unsigned                   new_pn = 1 + res->reg_offset;
 
 	assert(res->req0 != NULL && res->req1 == NULL);
 	if (mode_needs_gp_reg(mode)) {

@@ -377,7 +377,7 @@ static bool inline_method(ir_node *const call, ir_graph *called_graph)
 	ir_node *Xproj = NULL;
 	for (ir_node *proj = (ir_node*)get_irn_link(call); proj != NULL;
 		 proj = (ir_node*)get_irn_link(proj)) {
-		long proj_nr = get_Proj_proj(proj);
+		unsigned proj_nr = get_Proj_num(proj);
 		if (proj_nr == pn_Call_X_except) Xproj = proj;
 	}
 	enum exc_mode exc_handling = Xproj != NULL ? exc_handler : exc_no_handler;
@@ -808,13 +808,13 @@ static unsigned calc_method_local_weight(ir_node *arg)
 			break;
 		case iro_Tuple:
 			/* unoptimized tuple */
-			for (int j = get_Tuple_n_preds(succ); j-- > 0; ) {
+			for (unsigned j = get_Tuple_n_preds(succ); j-- > 0; ) {
 				ir_node *pred = get_Tuple_pred(succ, j);
 				if (pred == arg) {
 					/* look for Proj(j) */
 					foreach_irn_out_r(succ, k, succ_succ) {
 						if (is_Proj(succ_succ)) {
-							if (get_Proj_proj(succ_succ) == j) {
+							if (get_Proj_num(succ_succ) == j) {
 								/* found */
 								weight += calc_method_local_weight(succ_succ);
 							}
@@ -848,7 +848,7 @@ static void analyze_irg_local_weights(inline_irg_env *env, ir_graph *irg)
 	assure_irg_outs(irg);
 	ir_node *irg_args = get_irg_args(irg);
 	foreach_irn_out_r(irg_args, i, arg) {
-		long const pn = get_Proj_proj(arg);
+		unsigned const pn = get_Proj_num(arg);
 		env->local_weights[pn] = calc_method_local_weight(arg);
 	}
 }

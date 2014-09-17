@@ -295,8 +295,8 @@ FIRM_API void ir_op_set_memory_index(ir_op *op, int memory_index);
  * Sets proj-number for X_regular and X_except projs of fragile nodes.
  * Note: should only be used immediately after new_ir_op
  */
-FIRM_API void ir_op_set_fragile_indices(ir_op *op, int pn_x_regular,
-                                        int pn_x_except);
+FIRM_API void ir_op_set_fragile_indices(ir_op *op, unsigned pn_x_regular,
+                                        unsigned pn_x_except);
 
 /** @} */
 

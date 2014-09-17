@@ -1502,7 +1502,7 @@ void be_emit_jump_table(const ir_node *node, const ir_switch_table *table,
 	const ir_node **targets = XMALLOCNZ(const ir_node*, n_outs);
 	foreach_out_edge(node, edge) {
 		ir_node *proj   = get_edge_src_irn(edge);
-		long     pn     = get_Proj_proj(proj);
+		unsigned pn     = get_Proj_num(proj);
 		ir_node *target = get_cfop_target(proj);
 		assert(targets[pn] == NULL);
 		targets[pn] = target;
@@ -1542,7 +1542,7 @@ void be_emit_jump_table(const ir_node *node, const ir_switch_table *table,
 		ir_tarval     *min    = entry->min;
 		ir_tarval     *max    = entry->max;
 		const ir_node *target = targets[entry->pn];
-		assert(entry->pn < (long)n_outs);
+		assert(entry->pn < n_outs);
 		if (min == max) {
 			unsigned long val = (unsigned long)get_tarval_long(max);
 			labels[val] = target;

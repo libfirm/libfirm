@@ -291,7 +291,7 @@ static bool find_possible_replacements(ir_graph *irg)
 
 	/* check for inner functions:
 	 * FIXME: need a way to get the argument position for the static link */
-	long static_link_arg = 0;
+	unsigned static_link_arg = 0;
 	for (size_t i = get_class_n_members(frame_tp); i-- > 0;) {
 		ir_entity *ent = get_class_member(frame_tp, i);
 		if (!is_method_entity(ent))
@@ -303,7 +303,7 @@ static bool find_possible_replacements(ir_graph *irg)
 									   | IR_GRAPH_PROPERTY_NO_TUPLES);
 		args = get_irg_args(inner_irg);
 		foreach_irn_out_r(args, j, arg) {
-			if (get_Proj_proj(arg) != static_link_arg)
+			if (get_Proj_num(arg) != static_link_arg)
 				continue;
 
 			foreach_irn_out_r(arg, k, succ) {

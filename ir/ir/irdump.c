@@ -101,7 +101,7 @@ typedef enum ird_color_t {
 #define TYPE_MEMBER_EDGE_ATTR    "class: 12 label: \"member\""
 
 typedef struct pns_lookup {
-	long       nr;      /**< the proj number */
+	unsigned    nr;     /**< the proj number */
 	const char *name;   /**< the name of the Proj */
 } pns_lookup_t;
 
@@ -760,11 +760,11 @@ static void dump_node_nodeattr(FILE *F, const ir_node *n)
 	switch (get_irn_opcode(n)) {
 	case iro_Proj: {
 		ir_node *pred    = get_Proj_pred(n);
-		long     proj_nr = get_Proj_proj(n);
+		unsigned proj_nr = get_Proj_num(n);
 		unsigned code    = get_irn_opcode(pred);
 
 		if (code == iro_Proj && is_Start(get_Proj_pred(pred))) {
-			fprintf(F, "Arg %ld ", proj_nr);
+			fprintf(F, "Arg %u ", proj_nr);
 		} else if (code == iro_Switch && proj_nr != pn_Switch_default) {
 			char            const       *sep   = "case ";
 			ir_switch_table const *const table = get_Switch_table(pred);
@@ -793,7 +793,7 @@ static void dump_node_nodeattr(FILE *F, const ir_node *n)
 				break;
 			}
 			if (!found)
-				fprintf(F, "%ld ", proj_nr);
+				fprintf(F, "%u ", proj_nr);
 			if (code == iro_Cond && get_Cond_jmp_pred(pred) != COND_JMP_PRED_NONE) {
 				if (proj_nr == pn_Cond_false && get_Cond_jmp_pred(pred) == COND_JMP_PRED_FALSE)
 					fprintf(F, "PRED ");

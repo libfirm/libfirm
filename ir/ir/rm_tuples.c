@@ -33,7 +33,7 @@ static void exchange_tuple_projs(ir_node *node, void *env)
 	if (!is_Tuple(pred))
 		return;
 
-	int      pn         = get_Proj_proj(node);
+	unsigned pn         = get_Proj_num(node);
 	ir_node *tuple_pred = get_Tuple_pred(pred, pn);
 	exchange(node, tuple_pred);
 	*changed = true;

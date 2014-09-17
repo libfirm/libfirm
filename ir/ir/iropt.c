@@ -224,7 +224,7 @@ confirmed:
 
 	/* the frame pointer is never NULL */
 	if (is_Proj(n) && is_Start(get_Proj_pred(n))
-	    && get_Proj_proj(n) == pn_Start_P_frame_base)
+	    && get_Proj_num(n) == pn_Start_P_frame_base)
 	    return true;
 
 	/* alloc never returns NULL (but throws an exception in the error case) */
@@ -873,7 +873,7 @@ static ir_tarval *do_computed_value_Mod(const ir_node *a, const ir_node *b)
  */
 static ir_tarval *computed_value_Proj_Div(const ir_node *n)
 {
-	long proj_nr = get_Proj_proj(n);
+	unsigned proj_nr = get_Proj_num(n);
 	if (proj_nr != pn_Div_res)
 		return tarval_unknown;
 
@@ -888,7 +888,7 @@ static ir_tarval *computed_value_Proj_Div(const ir_node *n)
  */
 static ir_tarval *computed_value_Proj_Mod(const ir_node *n)
 {
-	long proj_nr = get_Proj_proj(n);
+	unsigned proj_nr = get_Proj_num(n);
 
 	if (proj_nr == pn_Mod_res) {
 		const ir_node *mod = get_Proj_pred(n);
@@ -1481,7 +1481,7 @@ static ir_node *equivalent_node_Proj_Tuple(ir_node *proj)
 	ir_node *tuple = get_Proj_pred(proj);
 
 	/* Remove the Tuple/Proj combination. */
-	proj = get_Tuple_pred(tuple, get_Proj_proj(proj));
+	proj = get_Tuple_pred(tuple, get_Proj_num(proj));
 	DBG_OPT_TUPLE(oldn, tuple, proj);
 
 	return proj;
@@ -1499,7 +1499,7 @@ static ir_node *equivalent_node_Proj_Div(ir_node *proj)
 
 	/* Div is not commutative. */
 	if (tarval_is_one(tb)) { /* div(x, 1) == x */
-		switch (get_Proj_proj(proj)) {
+		switch (get_Proj_num(proj)) {
 		case pn_Div_M:
 			proj = get_Div_mem(div);
 			DBG_OPT_ALGSIM0(oldn, proj, FS_OPT_NEUTRAL_1);
@@ -4020,7 +4020,7 @@ static ir_node *transform_node_Switch(ir_node *n)
 	if (tarval_is_constant(val)) {
 		const ir_switch_table *table     = get_Switch_table(n);
 		size_t                 n_entries = ir_switch_table_get_n_entries(table);
-		long                   jmp_pn    = 0;
+		unsigned               jmp_pn    = 0;
 		for (size_t i = 0; i < n_entries; ++i) {
 			const ir_switch_table_entry *entry
 				= ir_switch_table_get_entry_const(table, i);
@@ -4039,7 +4039,7 @@ static ir_node *transform_node_Switch(ir_node *n)
 		ir_node   *bad    = new_r_Bad(irg, mode_X);
 		ir_node  **in     = XMALLOCN(ir_node*, n_outs);
 		for (unsigned o = 0; o < n_outs; ++o) {
-			if (o == (unsigned)jmp_pn) {
+			if (o == jmp_pn) {
 				in[o] = new_rd_Jmp(dbgi, block);
 			} else {
 				in[o] = bad;
@@ -4493,7 +4493,7 @@ static ir_node *transform_node_Proj_Load(ir_node *proj)
 				/* this node may float if it did not depend on a Confirm */
 				set_irn_pinned(load, op_pin_state_floats);
 			}
-			if (get_Proj_proj(proj) == pn_Load_X_except) {
+			if (get_Proj_num(proj) == pn_Load_X_except) {
 				ir_graph *irg = get_irn_irg(proj);
 				DBG_OPT_EXC_REM(proj);
 				return new_r_Bad(irg, mode_X);
@@ -4523,7 +4523,7 @@ static ir_node *transform_node_Proj_Store(ir_node *proj)
 				/* this node may float if it did not depend on a Confirm */
 				set_irn_pinned(store, op_pin_state_floats);
 			}
-			if (get_Proj_proj(proj) == pn_Store_X_except) {
+			if (get_Proj_num(proj) == pn_Store_X_except) {
 				ir_graph *irg = get_irn_irg(proj);
 				DBG_OPT_EXC_REM(proj);
 				return new_r_Bad(irg, mode_X);
@@ -4579,7 +4579,7 @@ static ir_node *transform_node_Proj_Div(ir_node *proj)
 			set_irn_pinned(div, op_pin_state_floats);
 		}
 
-		long proj_nr = get_Proj_proj(proj);
+		unsigned proj_nr = get_Proj_num(proj);
 		switch (proj_nr) {
 		case pn_Div_X_regular:
 			return new_r_Jmp(get_nodes_block(div));
@@ -4631,7 +4631,7 @@ static ir_node *transform_node_Proj_Mod(ir_node *proj)
 			set_irn_pinned(mod, op_pin_state_floats);
 		}
 
-		long proj_nr = get_Proj_proj(proj);
+		unsigned proj_nr = get_Proj_num(proj);
 		switch (proj_nr) {
 
 		case pn_Mod_X_regular:
@@ -5446,7 +5446,7 @@ is_bittest: {
 	if ((is_relation_equal || is_relation_less_greater) && is_Const(right) && is_Const_null(right) && is_Proj(left)) {
 		ir_node *op = get_Proj_pred(left);
 
-		if (is_Mod(op) && get_Proj_proj(left) == pn_Mod_res) {
+		if (is_Mod(op) && get_Proj_num(left) == pn_Mod_res) {
 			ir_node *c = get_binop_right(op);
 
 			if (is_Const(c)) {

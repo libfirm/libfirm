@@ -190,7 +190,7 @@ static void analyze_ent_args(ir_entity *ent)
 	   to analyze them.*/
 	foreach_irn_out_r(irg_args, i, arg) {
 		ir_mode *arg_mode = get_irn_mode(arg);
-		long     proj_nr  = get_Proj_proj(arg);
+		unsigned proj_nr  = get_Proj_num(arg);
 
 		if (mode_is_reference(arg_mode))
 			rw_info[proj_nr] |= analyze_arg(arg, rw_info[proj_nr]);
@@ -299,13 +299,13 @@ static unsigned calc_method_param_weight(ir_node *arg)
 			break;
 		case iro_Tuple:
 			/* unoptimized tuple */
-			for (int j = get_Tuple_n_preds(succ); j-- > 0; ) {
+			for (unsigned j = get_Tuple_n_preds(succ); j-- > 0; ) {
 				ir_node *pred = get_Tuple_pred(succ, j);
 				if (pred == arg) {
 					/* look for Proj(j) */
 					foreach_irn_out_r(succ, k, succ_succ) {
 						if (is_Proj(succ_succ)) {
-							if (get_Proj_proj(succ_succ) == j) {
+							if (get_Proj_num(succ_succ) == j) {
 								/* found */
 								weight += calc_method_param_weight(succ_succ);
 							}
@@ -379,7 +379,7 @@ static void analyze_method_params_weight(ir_entity *ent)
 
 	ir_node *irg_args = get_irg_args(irg);
 	foreach_irn_out_r(irg_args, i, arg) {
-		long const proj_nr = get_Proj_proj(arg);
+		unsigned const proj_nr = get_Proj_num(arg);
 		ent->attr.mtd_attr.param_weight[proj_nr] += calc_method_param_weight(arg);
 	}
 }

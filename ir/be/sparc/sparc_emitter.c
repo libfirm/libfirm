@@ -418,7 +418,7 @@ static bool can_move_up_into_delayslot(const ir_node *node, const ir_node *to)
 		/* node will be inserted between wr and div so it must not overwrite
 		 * anything except the wr input */
 		for (int i = 0, arity = get_irn_arity(to); i < arity; ++i) {
-			assert((long)n_sparc_SDiv_dividend_high == (long)n_sparc_UDiv_dividend_high);
+			assert((unsigned)n_sparc_SDiv_dividend_high == (unsigned)n_sparc_UDiv_dividend_high);
 			if (i == n_sparc_SDiv_dividend_high)
 				continue;
 			const arch_register_t *reg = arch_get_irn_register_in(to, i);
@@ -437,15 +437,15 @@ static void optimize_fallthrough(ir_node *node)
 	ir_node *proj_true  = NULL;
 	ir_node *proj_false = NULL;
 
-	assert((long)pn_sparc_Bicc_false == (long)pn_sparc_fbfcc_false);
-	assert((long)pn_sparc_Bicc_true  == (long)pn_sparc_fbfcc_true);
+	assert((unsigned)pn_sparc_Bicc_false == (unsigned)pn_sparc_fbfcc_false);
+	assert((unsigned)pn_sparc_Bicc_true  == (unsigned)pn_sparc_fbfcc_true);
 	foreach_out_edge(node, edge) {
 		ir_node *proj = get_edge_src_irn(edge);
-		long nr = get_Proj_proj(proj);
-		if (nr == pn_sparc_Bicc_true) {
+		unsigned pn   = get_Proj_num(proj);
+		if (pn == pn_sparc_Bicc_true) {
 			proj_true = proj;
 		} else {
-			assert(nr == pn_sparc_Bicc_false);
+			assert(pn == pn_sparc_Bicc_false);
 			proj_false = proj;
 		}
 	}
@@ -459,8 +459,8 @@ static void optimize_fallthrough(ir_node *node)
 
 	if (get_jump_target(proj_true) == next_block) {
 		/* exchange both proj destinations so the second one can be omitted */
-		set_Proj_proj(proj_true,  pn_sparc_Bicc_false);
-		set_Proj_proj(proj_false, pn_sparc_Bicc_true);
+		set_Proj_num(proj_true,  pn_sparc_Bicc_false);
+		set_Proj_num(proj_false, pn_sparc_Bicc_true);
 
 		sparc_jmp_cond_attr_t *attr = get_sparc_jmp_cond_attr(node);
 		attr->relation = get_negated_relation(attr->relation);
@@ -541,7 +541,7 @@ static ir_node *pick_delay_slot_for(ir_node *node)
 				return schedpoint;
 			} else if (is_sparc_Bicc(node) || is_sparc_fbfcc(node)) {
 				ir_node *proj = get_Block_cfgpred(succ, 0);
-				long     nr   = get_Proj_proj(proj);
+				unsigned nr   = get_Proj_num(proj);
 				if ((nr == pn_sparc_Bicc_true || nr == pn_sparc_fbfcc_true)
 					&& be_can_move_up(heights, schedpoint, succ)) {
 					/* we can use it with the annul flag */
@@ -1228,11 +1228,11 @@ static void emit_sparc_branch(const ir_node *node, get_cc_func get_cc)
 	const ir_node *proj_true   = NULL;
 	const ir_node *proj_false  = NULL;
 
-	assert((long)pn_sparc_Bicc_false == (long)pn_sparc_fbfcc_false);
-	assert((long)pn_sparc_Bicc_true  == (long)pn_sparc_fbfcc_true);
+	assert((unsigned)pn_sparc_Bicc_false == (unsigned)pn_sparc_fbfcc_false);
+	assert((unsigned)pn_sparc_Bicc_true  == (unsigned)pn_sparc_fbfcc_true);
 	foreach_out_edge(node, edge) {
 		ir_node *proj = get_edge_src_irn(edge);
-		long nr = get_Proj_proj(proj);
+		unsigned nr   = get_Proj_num(proj);
 		if (nr == pn_sparc_Bicc_true) {
 			proj_true = proj;
 		} else {

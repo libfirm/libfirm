@@ -1342,7 +1342,7 @@ static ir_node *get_call_result_proj(ir_node *call)
 	/* search the result proj */
 	foreach_out_edge(call, edge) {
 		ir_node *proj = get_edge_src_irn(edge);
-		long pn = get_Proj_proj(proj);
+		unsigned pn   = get_Proj_num(proj);
 
 		if (pn == pn_ia32_Call_st0)
 			return proj;
@@ -1453,7 +1453,7 @@ static int sim_Perm(x87_state *state, ir_node *irn)
 	   All inputs must be on the FPU stack and are pairwise
 	   different from each other.
 	   So, all we need to do is to permutate the stack state. */
-	int const n = get_irn_arity(irn);
+	unsigned const n = (unsigned)get_irn_arity(irn);
 	int *stack_pos = ALLOCAN(int, n);
 
 	/* collect old stack positions */
@@ -1469,9 +1469,9 @@ static int sim_Perm(x87_state *state, ir_node *irn)
 	foreach_out_edge(irn, edge) {
 		ir_node               *proj = get_edge_src_irn(edge);
 		const arch_register_t *out  = x87_get_irn_register(proj);
-		long                  num   = get_Proj_proj(proj);
+		unsigned               num  = get_Proj_num(proj);
 
-		assert(0 <= num && num < n && "More Proj's than Perm inputs");
+		assert(num < n && "More Proj's than Perm inputs");
 		x87_set_st(state, out->index, proj, stack_pos[(unsigned)num]);
 	}
 	DB((dbg, LEVEL_1, "<<< %+F\n", irn));

@@ -670,7 +670,7 @@ class Proj:
 	block      = "get_nodes_block(irn_pred)"
 	usesGraph  = False
 	attrs      = [
-		Attribute("proj", type="long",
+		Attribute("num", type="unsigned",
 		          comment="number of tuple component to be extracted"),
 	]
 	attr_struct = "proj_attr"

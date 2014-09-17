@@ -212,7 +212,7 @@ unreachable_X:
 					if (is_undefined(b))
 						goto unreachable_X;
 					if (b->z == b->o) {
-						if ((b->z == t) == get_Proj_proj(irn)) {
+						if ((b->z == t) == get_Proj_num(irn)) {
 							z = o = t;
 						} else {
 							z = o = f;
@@ -632,7 +632,7 @@ undefined:
 				case iro_Proj: {
 					ir_node *const pred = get_Proj_pred(irn);
 					if (is_Tuple(pred)) {
-						long           pn = get_Proj_proj(irn);
+						unsigned       pn = get_Proj_num(irn);
 						ir_node *const op = get_Tuple_pred(pred, pn);
 						bitinfo *const b  = get_bitinfo(op);
 						z = b->z;

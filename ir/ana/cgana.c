@@ -241,7 +241,7 @@ static ir_entity *get_member_method(ir_node *member, size_t pos)
 /* forward */
 static void free_mark(ir_node *node, pset *set);
 
-static void free_mark_proj(ir_node *node, long n, pset *set)
+static void free_mark_proj(ir_node *node, unsigned n, pset *set)
 {
 	assert(get_irn_mode(node) == mode_T);
 	if (get_irn_link(node) == MARK) {
@@ -255,7 +255,7 @@ static void free_mark_proj(ir_node *node, long n, pset *set)
 		 * which is handled by free_ana_walker(). */
 		ir_node *pred = get_Proj_pred(node);
 		if (get_irn_link(pred) != MARK && is_Tuple(pred)) {
-			free_mark_proj(get_Tuple_pred(pred, get_Proj_proj(node)), n, set);
+			free_mark_proj(get_Tuple_pred(pred, get_Proj_num(node)), n, set);
 		}
 		break;
 	}
@@ -319,7 +319,7 @@ static void free_mark(ir_node *node, pset *set)
 		break;
 
 	case iro_Proj:
-		free_mark_proj(get_Proj_pred(node), get_Proj_proj(node), set);
+		free_mark_proj(get_Proj_pred(node), get_Proj_num(node), set);
 		break;
 	default:
 		break;
@@ -504,7 +504,7 @@ static size_t get_free_methods(ir_entity ***free_methods)
 
 static void callee_ana_node(ir_node *node, pset *methods);
 
-static void callee_ana_proj(ir_node *node, long n, pset *methods)
+static void callee_ana_proj(ir_node *node, unsigned n, pset *methods)
 {
 	assert(get_irn_mode(node) == mode_T);
 	if (get_irn_link(node) == MARK) {
@@ -520,7 +520,7 @@ static void callee_ana_proj(ir_node *node, long n, pset *methods)
 		ir_node *pred = get_Proj_pred(node);
 		if (get_irn_link(pred) != MARK) {
 			if (is_Tuple(pred)) {
-				callee_ana_proj(get_Tuple_pred(pred, get_Proj_proj(node)), n, methods);
+				callee_ana_proj(get_Tuple_pred(pred, get_Proj_num(node)), n, methods);
 			} else {
 				pset_insert_ptr(methods, get_unknown_entity()); /* free method -> unknown */
 			}
@@ -599,7 +599,7 @@ static void callee_ana_node(ir_node *node, pset *methods)
 		break;
 
 	case iro_Proj:
-		callee_ana_proj(get_Proj_pred(node), get_Proj_proj(node), methods);
+		callee_ana_proj(get_Proj_pred(node), get_Proj_num(node), methods);
 		break;
 
 	case iro_Add:

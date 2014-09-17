@@ -531,28 +531,28 @@ void be_set_CopyKeep_op(ir_node *cpy, ir_node *op)
 	set_irn_n(cpy, n_be_CopyKeep_op, op);
 }
 
-void be_set_MemPerm_in_entity(const ir_node *irn, int n, ir_entity *ent)
+void be_set_MemPerm_in_entity(const ir_node *irn, unsigned n, ir_entity *ent)
 {
 	assert(n < be_get_MemPerm_entity_arity(irn));
 	const be_memperm_attr_t *attr = (const be_memperm_attr_t*)get_irn_generic_attr_const(irn);
 	attr->in_entities[n] = ent;
 }
 
-ir_entity* be_get_MemPerm_in_entity(const ir_node* irn, int n)
+ir_entity* be_get_MemPerm_in_entity(const ir_node* irn, unsigned n)
 {
 	assert(n < be_get_MemPerm_entity_arity(irn));
 	const be_memperm_attr_t *attr = (const be_memperm_attr_t*)get_irn_generic_attr_const(irn);
 	return attr->in_entities[n];
 }
 
-void be_set_MemPerm_out_entity(const ir_node *irn, int n, ir_entity *ent)
+void be_set_MemPerm_out_entity(const ir_node *irn, unsigned n, ir_entity *ent)
 {
 	assert(n < be_get_MemPerm_entity_arity(irn));
 	const be_memperm_attr_t *attr = (const be_memperm_attr_t*)get_irn_generic_attr_const(irn);
 	attr->out_entities[n] = ent;
 }
 
-ir_entity* be_get_MemPerm_out_entity(const ir_node* irn, int n)
+ir_entity* be_get_MemPerm_out_entity(const ir_node* irn, unsigned n)
 {
 	assert(n < be_get_MemPerm_entity_arity(irn));
 	const be_memperm_attr_t *attr = (const be_memperm_attr_t*)get_irn_generic_attr_const(irn);
@@ -573,7 +573,7 @@ int be_get_MemPerm_offset(const ir_node *irn)
 	return attr->offset;
 }
 
-int be_get_MemPerm_entity_arity(const ir_node *irn)
+unsigned be_get_MemPerm_entity_arity(const ir_node *irn)
 {
 	assert(be_is_MemPerm(irn));
 	return get_irn_arity(irn) - 1;
@@ -702,7 +702,7 @@ static const arch_irn_ops_t be_node_irn_ops = {
 	.get_sp_bias      = be_node_get_sp_bias,
 };
 
-static int get_start_reg_index(ir_graph *irg, const arch_register_t *reg)
+static unsigned get_start_reg_index(ir_graph *irg, const arch_register_t *reg)
 {
 	/* do a naive linear search... */
 	ir_node *start  = get_irg_start(irg);
@@ -721,7 +721,7 @@ static int get_start_reg_index(ir_graph *irg, const arch_register_t *reg)
 
 ir_node *be_get_initial_reg_value(ir_graph *irg, const arch_register_t *reg)
 {
-	int      i     = get_start_reg_index(irg, reg);
+	unsigned i     = get_start_reg_index(irg, reg);
 	ir_node *start = get_irg_start(irg);
 	ir_mode *mode  = arch_register_class_mode(reg->reg_class);
 
@@ -729,7 +729,7 @@ ir_node *be_get_initial_reg_value(ir_graph *irg, const arch_register_t *reg)
 		ir_node *proj = get_edge_src_irn(edge);
 		if (!is_Proj(proj)) // maybe End/Anchor
 			continue;
-		if (get_Proj_proj(proj) == i) {
+		if (get_Proj_num(proj) == i) {
 			return proj;
 		}
 	}
@@ -864,13 +864,13 @@ static void dump_node(FILE *f, const ir_node *irn, dump_reason_t reason)
 			break;
 		}
 		case beo_MemPerm: {
-			for (int i = 0; i < be_get_MemPerm_entity_arity(irn); ++i) {
+			for (unsigned i = 0; i < be_get_MemPerm_entity_arity(irn); ++i) {
 				ir_entity *in  = be_get_MemPerm_in_entity(irn, i);
 				ir_entity *out = be_get_MemPerm_out_entity(irn, i);
 				if (in != NULL)
-					fprintf(f, "\nin[%d]: %s\n", i, get_entity_name(in));
+					fprintf(f, "\nin[%u]: %s\n", i, get_entity_name(in));
 				if (out != NULL)
-					fprintf(f, "\nout[%d]: %s\n", i, get_entity_name(out));
+					fprintf(f, "\nout[%u]: %s\n", i, get_entity_name(out));
 			}
 			break;
 		}

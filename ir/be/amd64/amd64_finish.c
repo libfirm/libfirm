@@ -181,7 +181,7 @@ static ir_node *amd64_turn_back_am(ir_node *node)
 		ir_node *out = get_edge_src_irn(edge);
 		if (get_irn_mode(out) == mode_M) {
 			set_Proj_pred(out, load);
-			set_Proj_proj(out, pn_amd64_Mov_M);
+			set_Proj_num(out, pn_amd64_Mov_M);
 			break;
 		}
 	}

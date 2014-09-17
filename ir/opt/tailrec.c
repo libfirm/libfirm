@@ -56,13 +56,13 @@ static void collect_data(ir_node *node, void *env)
 		if (opcode == iro_Proj) {
 			ir_node *start = get_Proj_pred(pred);
 
-			if (is_Start(start) && get_Proj_proj(pred) == pn_Start_T_args) {
+			if (is_Start(start) && get_Proj_num(pred) == pn_Start_T_args) {
 				/* found Proj(ProjT(Start)) */
 				set_irn_link(node, data->proj_data);
 				data->proj_data = node;
 			}
 		} else if (opcode == iro_Start
-		           && get_Proj_proj(node) == pn_Start_X_initial_exec) {
+		           && get_Proj_num(node) == pn_Start_X_initial_exec) {
 			/* found ProjX(Start) */
 			data->proj_X = node;
 		}
@@ -126,7 +126,7 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env)
 	/* check number of arguments */
 	const ir_node *end_block = get_irg_end_block(irg);
 	ir_node       *calls     = (ir_node *)get_irn_link(end_block);
-	int            n_params  = get_Call_n_params(calls);
+	unsigned       n_params  = get_Call_n_params(calls);
 
 	assert(data.proj_X && "Could not find initial exec from Start");
 	assert(data.block  && "Could not find first block");
@@ -193,7 +193,7 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env)
 		/* build new Proj's and Phi's */
 		ir_node *args         = get_irg_args(irg);
 		int      n_tail_calls = env->n_tail_calls;
-		for (int p = 0; p < n_params; ++p) {
+		for (unsigned p = 0; p < n_params; ++p) {
 			ir_mode *mode = get_type_mode(get_method_param_type(method_tp, p));
 
 			in[0] = new_r_Proj(args, mode, p);
@@ -212,8 +212,8 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env)
 	for (ir_node *next, *p = data.proj_data; p; p = next) {
 		next = (ir_node *)get_irn_link(p);
 
-		long proj = get_Proj_proj(p);
-		assert(0 <= proj && proj < n_params);
+		unsigned proj = get_Proj_num(p);
+		assert(proj < n_params);
 		exchange(p, phis[proj + 1]);
 	}
 

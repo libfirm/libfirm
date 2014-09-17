@@ -87,7 +87,7 @@ static void analyse_switch1(switch_info_t *info)
 	unsigned        n_outs    = get_Switch_n_outs(switchn);
 	target_t       *targets   = XMALLOCNZ(target_t, n_outs);
 	foreach_irn_out_r(switchn, i, proj) {
-		long     pn     = get_Proj_proj(proj);
+		unsigned pn     = get_Proj_num(proj);
 		ir_node *target = get_irn_out(proj, 0);
 
 		assert((unsigned)pn < n_outs);
@@ -194,7 +194,7 @@ static void create_out_of_bounds_check(switch_info_t *info)
 	/* adjust projs */
 	ir_node *default_block = NULL;
 	foreach_irn_out_r(switchn, i, proj) {
-		long pn = get_Proj_proj(proj);
+		unsigned pn = get_Proj_num(proj);
 		if (pn == pn_Switch_default) {
 			assert(default_block == NULL);
 			default_block = get_irn_out(proj, 0);

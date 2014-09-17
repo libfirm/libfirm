@@ -724,7 +724,7 @@ static ir_node *gen_arm_AddS_t(ir_node *node)
 
 static ir_node *gen_Proj_arm_AddS_t(ir_node *node)
 {
-	long     pn       = get_Proj_proj(node);
+	unsigned pn       = get_Proj_num(node);
 	ir_node *pred     = get_Proj_pred(node);
 	ir_node *new_pred = be_transform_node(pred);
 	switch ((pn_arm_AddS_t)pn) {
@@ -797,7 +797,7 @@ static ir_node *gen_arm_UMulL_t(ir_node *node)
 
 static ir_node *gen_Proj_arm_UMulL_t(ir_node *node)
 {
-	long     pn       = get_Proj_proj(node);
+	unsigned pn       = get_Proj_num(node);
 	ir_node *pred     = get_Proj_pred(node);
 	ir_node *new_pred = be_transform_node(pred);
 	switch ((pn_arm_UMulL_t)pn) {
@@ -989,7 +989,7 @@ static ir_node *gen_arm_SubS_t(ir_node *node)
 
 static ir_node *gen_Proj_arm_SubS_t(ir_node *node)
 {
-	long     pn       = get_Proj_proj(node);
+	unsigned pn       = get_Proj_num(node);
 	ir_node *pred     = get_Proj_pred(node);
 	ir_node *new_pred = be_transform_node(pred);
 	assert((int)pn_arm_SubS_flags == (int)pn_arm_RsbS_flags);
@@ -1488,13 +1488,13 @@ static ir_node *gen_Proj_Builtin(ir_node *proj)
 	case ir_bk_parity:
 	case ir_bk_popcount:
 	case ir_bk_bswap:
-		assert(get_Proj_proj(proj) == pn_Builtin_max+1);
+		assert(get_Proj_num(proj) == pn_Builtin_max+1);
 		return new_node;
 	case ir_bk_trap:
 	case ir_bk_debugbreak:
 	case ir_bk_prefetch:
 	case ir_bk_outport:
-		assert(get_Proj_proj(proj) == pn_Builtin_M);
+		assert(get_Proj_num(proj) == pn_Builtin_M);
 		return new_node;
 	case ir_bk_inport:
 	case ir_bk_inner_trampoline:
@@ -1511,23 +1511,23 @@ static ir_node *gen_Proj_Load(ir_node *node)
 	ir_node  *load     = get_Proj_pred(node);
 	ir_node  *new_load = be_transform_node(load);
 	dbg_info *dbgi     = get_irn_dbg_info(node);
-	long      proj     = get_Proj_proj(node);
+	unsigned  pn       = get_Proj_num(node);
 
 	/* renumber the proj */
 	switch (get_arm_irn_opcode(new_load)) {
 	case iro_arm_Ldr:
 		/* handle all gp loads equal: they have the same proj numbers. */
-		if (proj == pn_Load_res) {
+		if (pn == pn_Load_res) {
 			return new_rd_Proj(dbgi, new_load, arm_mode_gp, pn_arm_Ldr_res);
-		} else if (proj == pn_Load_M) {
+		} else if (pn == pn_Load_M) {
 			return new_rd_Proj(dbgi, new_load, mode_M, pn_arm_Ldr_M);
 		}
 		break;
 	case iro_arm_Ldf:
-		if (proj == pn_Load_res) {
+		if (pn == pn_Load_res) {
 			ir_mode *mode = get_Load_mode(load);
 			return new_rd_Proj(dbgi, new_load, mode, pn_arm_Ldf_res);
-		} else if (proj == pn_Load_M) {
+		} else if (pn == pn_Load_M) {
 			return new_rd_Proj(dbgi, new_load, mode_M, pn_arm_Ldf_M);
 		}
 		break;
@@ -1543,7 +1543,7 @@ static ir_node *gen_Proj_Div(ir_node *node)
 	ir_node  *new_pred = be_transform_node(pred);
 	dbg_info *dbgi     = get_irn_dbg_info(node);
 	ir_mode  *mode     = get_irn_mode(node);
-	long      pn       = get_Proj_proj(node);
+	unsigned  pn       = get_Proj_num(node);
 
 	switch ((pn_Div)pn) {
 	case pn_Div_M:
@@ -1561,7 +1561,7 @@ static ir_node *gen_Proj_Start(ir_node *node)
 {
 	ir_node *block     = get_nodes_block(node);
 	ir_node *new_block = be_transform_node(block);
-	long     pn        = get_Proj_proj(node);
+	unsigned pn        = get_Proj_num(node);
 
 	switch ((pn_Start)pn) {
 	case pn_Start_X_initial_exec:
@@ -1577,12 +1577,12 @@ static ir_node *gen_Proj_Start(ir_node *node)
 	case pn_Start_P_frame_base:
 		return get_start_val(get_irn_irg(node), &start_sp);
 	}
-	panic("unexpected start proj: %ld\n", pn);
+	panic("unexpected start proj: %u\n", pn);
 }
 
 static ir_node *gen_Proj_Proj_Start(ir_node *node)
 {
-	long       pn          = get_Proj_proj(node);
+	unsigned   pn          = get_Proj_num(node);
 	ir_node   *block       = get_nodes_block(node);
 	ir_node   *new_block   = be_transform_node(block);
 	ir_graph  *irg         = get_irn_irg(new_block);
@@ -1591,7 +1591,7 @@ static ir_node *gen_Proj_Proj_Start(ir_node *node)
 	ir_node   *new_start   = be_transform_node(start);
 
 	/* Proj->Proj->Start must be a method argument */
-	assert(get_Proj_proj(args) == pn_Start_T_args);
+	assert(get_Proj_num(args) == pn_Start_T_args);
 
 	const reg_or_stackslot_t *param = &cconv->parameters[pn];
 
@@ -1599,7 +1599,7 @@ static ir_node *gen_Proj_Proj_Start(ir_node *node)
 	if (reg0 != NULL) {
 		/* argument transmitted in register */
 		ir_mode *mode   = reg0->reg_class->mode;
-		long     new_pn = param->reg_offset + start_params_offset;
+		unsigned new_pn = param->reg_offset + start_params_offset;
 		ir_node *value  = new_r_Proj(new_start, mode, new_pn);
 
 		if (mode_is_float(mode)) {
@@ -1664,7 +1664,7 @@ static int find_out_for_reg(ir_node *node, const arch_register_t *reg)
 
 static ir_node *gen_Proj_Proj_Call(ir_node *node)
 {
-	long                  pn            = get_Proj_proj(node);
+	unsigned              pn            = get_Proj_num(node);
 	ir_node              *call          = get_Proj_pred(get_Proj_pred(node));
 	ir_node              *new_call      = be_transform_node(call);
 	ir_type              *function_type = get_Call_type(call);
@@ -1686,7 +1686,7 @@ static ir_node *gen_Proj_Proj_Call(ir_node *node)
 
 static ir_node *gen_Proj_Call(ir_node *node)
 {
-	long     pn        = get_Proj_proj(node);
+	unsigned pn        = get_Proj_num(node);
 	ir_node *call      = get_Proj_pred(node);
 	ir_node *new_call  = be_transform_node(call);
 	switch ((pn_Call)pn) {
@@ -1697,13 +1697,13 @@ static ir_node *gen_Proj_Call(ir_node *node)
 	case pn_Call_T_result:
 		break;
 	}
-	panic("Unexpected Call proj %ld\n", pn);
+	panic("Unexpected Call proj %u\n", pn);
 }
 
 static ir_node *gen_Proj_Store(ir_node *node)
 {
 	ir_node *pred = get_Proj_pred(node);
-	long     pn   = get_Proj_proj(node);
+	unsigned pn   = get_Proj_num(node);
 	switch ((pn_Store)pn) {
 	case pn_Store_M:
 		return be_transform_node(pred);

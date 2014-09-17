@@ -247,7 +247,7 @@ static ir_node *gen_Proj_Start(ir_node *node)
 	ir_node  *new_block = be_transform_node(block);
 	ir_node  *start     = get_Proj_pred(node);
 	ir_node  *new_start = be_transform_node(start);
-	long      pn        = get_Proj_proj(node);
+	unsigned  pn        = get_Proj_num(node);
 
 	switch ((pn_Start) pn) {
 	case pn_Start_X_initial_exec:
@@ -259,7 +259,7 @@ static ir_node *gen_Proj_Start(ir_node *node)
 	case pn_Start_P_frame_base:
 		return new_rd_Proj(dbgi, new_start, gp_regs_mode, pn_TEMPLATE_Start_stack);
 	}
-	panic("unexpected Start proj %ld\n", pn);
+	panic("unexpected Start proj %u\n", pn);
 }
 
 static ir_node *gen_Proj(ir_node *node)

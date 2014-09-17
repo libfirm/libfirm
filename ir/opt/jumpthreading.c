@@ -269,7 +269,7 @@ static void copy_and_fix(const jumpthreading_env_t *env, ir_node *block,
 		 * the node and move it to its users */
 		if (mode == mode_b) {
 			ir_node *const pred = get_Proj_pred(node);
-			long     const pn   = get_Proj_proj(node);
+			unsigned const pn   = get_Proj_num(node);
 
 			foreach_out_edge_safe(node, edge) {
 				ir_node *user       = get_edge_src_irn(edge);
@@ -594,7 +594,7 @@ static void thread_jumps(ir_node* block, void* data)
 	inc_irg_visited(irg);
 	jumpthreading_env_t env;
 	env.cnst_pred  = NULL;
-	env.tv         = get_Proj_proj(projx) == pn_Cond_false
+	env.tv         = get_Proj_num(projx) == pn_Cond_false
 	                 ? tarval_b_false : tarval_b_true;
 	env.true_block = block;
 	env.visited_nr = get_irg_visited(irg);

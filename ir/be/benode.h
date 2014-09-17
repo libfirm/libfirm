@@ -323,16 +323,16 @@ ir_node *be_get_CopyKeep_op(const ir_node *cpy);
 
 void be_set_CopyKeep_op(ir_node *cpy, ir_node *op);
 
-void be_set_MemPerm_in_entity(const ir_node *irn, int n, ir_entity* ent);
-ir_entity *be_get_MemPerm_in_entity(const ir_node *irn, int n);
+void be_set_MemPerm_in_entity(const ir_node *irn, unsigned n, ir_entity* ent);
+ir_entity *be_get_MemPerm_in_entity(const ir_node *irn, unsigned n);
 
-void be_set_MemPerm_out_entity(const ir_node *irn, int n, ir_entity* ent);
-ir_entity *be_get_MemPerm_out_entity(const ir_node *irn, int n);
+void be_set_MemPerm_out_entity(const ir_node *irn, unsigned n, ir_entity* ent);
+ir_entity *be_get_MemPerm_out_entity(const ir_node *irn, unsigned n);
 
 void be_set_MemPerm_offset(ir_node *irn, int offset);
 int be_get_MemPerm_offset(const ir_node *irn);
 
-int be_get_MemPerm_entity_arity(const ir_node *irn);
+unsigned be_get_MemPerm_entity_arity(const ir_node *irn);
 
 /**
  * Impose a register constraint on a backend node.

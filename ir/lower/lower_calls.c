@@ -49,7 +49,7 @@ static ir_type *get_pointer_type(ir_type *dest_type)
 	return res;
 }
 
-static void fix_parameter_entities(ir_graph *irg, size_t arg_shift)
+static void fix_parameter_entities(ir_graph *irg, unsigned arg_shift)
 {
 	ir_type *frame_type = get_irg_frame_type(irg);
 	size_t   n_members  = get_compound_n_members(frame_type);
@@ -226,7 +226,7 @@ struct cl_entry {
  * Walker environment for fix_args_and_collect_calls().
  */
 typedef struct wlk_env {
-	long                 arg_shift;        /**< The Argument index shift for parameters. */
+	unsigned             arg_shift;        /**< The Argument index shift for parameters. */
 	struct obstack       obst;             /**< An obstack to allocate the data on. */
 	cl_entry             *cl_list;         /**< The call list. */
 	compound_call_lowering_flags flags;
@@ -347,14 +347,14 @@ static void fix_args_and_collect_calls(ir_node *n, void *ctx)
 		ir_node  *pred = get_Proj_pred(n);
 		ir_graph *irg  = get_irn_irg(n);
 		if (pred == get_irg_args(irg)) {
-			long arg_shift = env->arg_shift;
+			unsigned arg_shift = env->arg_shift;
 			if (arg_shift > 0) {
-				long pn = get_Proj_proj(n);
-				set_Proj_proj(n, pn + arg_shift);
+				unsigned pn = get_Proj_num(n);
+				set_Proj_num(n, pn + arg_shift);
 				env->changed = true;
 			}
 		} else if (is_Call(pred)) {
-			long pn = get_Proj_proj(n);
+			unsigned pn = get_Proj_num(n);
 			if (pn == pn_Call_M) {
 				cl_entry *entry = get_call_entry(pred, env);
 				entry->proj_M = n;
@@ -406,11 +406,11 @@ static void fix_args_and_collect_calls(ir_node *n, void *ctx)
 		/* check for compound returns */
 		if (is_Proj(src)) {
 			ir_node *proj = get_Proj_pred(src);
-			if (is_Proj(proj) && get_Proj_proj(proj) == pn_Call_T_result) {
+			if (is_Proj(proj) && get_Proj_num(proj) == pn_Call_T_result) {
 				ir_node *call = get_Proj_pred(proj);
 				if (is_Call(call)) {
 					ir_type *ctp = get_Call_type(call);
-					if (is_aggregate_type(get_method_res_type(ctp, get_Proj_proj(src)))) {
+					if (is_aggregate_type(get_method_res_type(ctp, get_Proj_num(src)))) {
 						/* found a CopyB from compound Call result */
 						cl_entry *e = get_call_entry(call, env);
 						set_irn_link(n, e->copyb);
@@ -517,7 +517,7 @@ static void get_dest_addrs(const cl_entry *entry, ir_node **ins,
 	unsigned n_args = 0;
 	for (ir_node *next, *copyb = entry->copyb; copyb != NULL; copyb = next) {
 		ir_node *src = get_CopyB_src(copyb);
-		size_t   idx = get_Proj_proj(src);
+		size_t   idx = get_Proj_num(src);
 		next = (ir_node*)get_irn_link(copyb);
 
 		/* consider only the first CopyB */
@@ -588,7 +588,7 @@ static ir_node *find_proj(ir_node *node, long search_pn)
 		ir_node *src = get_edge_src_irn(edge);
 		if (!is_Proj(src))
 			continue;
-		long pn = get_Proj_proj(src);
+		long pn = get_Proj_num(src);
 		if (pn == search_pn)
 			return src;
 	}
@@ -874,8 +874,8 @@ static void transform_irg(compound_call_lowering_flags flags, ir_graph *irg)
 	size_t     n_param_com = 0;
 
 	/* calculate the number of compound returns */
-	size_t n_ret_com = 0;
-	long   arg_shift = 0;
+	size_t   n_ret_com = 0;
+	unsigned arg_shift = 0;
 	for (size_t i = 0; i < n_ress; ++i) {
 		ir_type *type = get_method_res_type(mtp, i);
 		if (is_aggregate_type(type)) {
