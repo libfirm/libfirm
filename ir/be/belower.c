@@ -547,7 +547,7 @@ static void melt_copykeeps(constraint_env_t *cenv)
 		for (unsigned idx = 0; idx < num_ck; ++idx) {
 			if (ck_arr[idx] == NULL)
 				continue;
-			int      n_melt     = 1;
+			unsigned n_melt     = 1;
 			ir_node *ref        = ck_arr[idx];
 			ir_node *ref_mode_T = skip_Proj(get_irn_n(ref, 1));
 			obstack_grow(&obst, &ref, sizeof(ref));
@@ -556,16 +556,18 @@ static void melt_copykeeps(constraint_env_t *cenv)
 
 			/* check for copykeeps pointing to the same mode_T node as the reference copykeep */
 			for (unsigned j = 0; j < num_ck; ++j) {
+				if (j == idx)
+					continue;
 				ir_node *cur_ck = ck_arr[j];
+				if (cur_ck == NULL || skip_Proj(get_irn_n(cur_ck, 1)) != ref_mode_T)
+					continue;
 
-				if (j != idx && cur_ck && skip_Proj(get_irn_n(cur_ck, 1)) == ref_mode_T) {
-					obstack_grow(&obst, &cur_ck, sizeof(cur_ck));
-					ir_nodeset_remove(&entry->copies, cur_ck);
-					DB((dbg_constr, LEVEL_1, "\t%+F\n", cur_ck));
-					ck_arr[j] = NULL;
-					++n_melt;
-					sched_remove(cur_ck);
-				}
+				obstack_grow(&obst, &cur_ck, sizeof(cur_ck));
+				ir_nodeset_remove(&entry->copies, cur_ck);
+				DB((dbg_constr, LEVEL_1, "\t%+F\n", cur_ck));
+				ck_arr[j] = NULL;
+				++n_melt;
+				sched_remove(cur_ck);
 			}
 			ck_arr[idx] = NULL;
 
@@ -581,7 +583,7 @@ static void melt_copykeeps(constraint_env_t *cenv)
 			ir_node **melt_arr = (ir_node **)obstack_finish(&obst);
 			/* melt all found copykeeps */
 			ir_node **new_ck_in = ALLOCAN(ir_node*,n_melt);
-			for (int j = 0; j < n_melt; ++j) {
+			for (unsigned j = 0; j < n_melt; ++j) {
 				new_ck_in[j] = get_irn_n(melt_arr[j], 1);
 
 				/* now, we can kill the melted keep, except the */
@@ -596,8 +598,9 @@ static void melt_copykeeps(constraint_env_t *cenv)
 #endif /* KEEP_ALIVE_COPYKEEP_HACK */
 
 			/* set register class for all kept inputs */
-			for (int j = 1; j <= n_melt; ++j)
+			for (unsigned j = 1; j <= n_melt; ++j) {
 				be_node_set_reg_class_in(new_ck, j, entry->cls);
+			}
 
 			ir_nodeset_insert(&entry->copies, new_ck);
 
@@ -613,9 +616,8 @@ static void melt_copykeeps(constraint_env_t *cenv)
 
 			/* finally: kill the reference copykeep */
 			kill_node(ref);
-
-			obstack_free(&obst, ck_arr);
 		}
+		obstack_free(&obst, ck_arr);
 	}
 	obstack_free(&obst, NULL);
 }
