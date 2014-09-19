@@ -796,7 +796,7 @@ FIRM_API tp_opcode get_tpop_code(const tp_op *op);
  *  a subclass of high.  I.e, we search in all subtypes of high for low.
  *  @@@ this can be implemented more efficient if we know the set of all
  *  subclasses of high.  */
-FIRM_API int is_SubClass_of(ir_type *low, ir_type *high);
+FIRM_API int is_SubClass_of(const ir_type *low, const ir_type *high);
 
 /** Subclass check for pointers to classes.
  *

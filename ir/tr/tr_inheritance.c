@@ -375,7 +375,7 @@ ir_entity *get_entity_trans_overwrites_next(const ir_entity *ent)
 /* ----------------------------------------------------------------------- */
 
 /** Returns true if low is subclass of high. */
-static int check_is_SubClass_of(ir_type *low, ir_type *high)
+static int check_is_SubClass_of(const ir_type *low, const ir_type *high)
 {
 	/* depth first search from high downwards. */
 	for (size_t i = 0, n_subtypes = get_class_n_subtypes(high);
@@ -388,7 +388,7 @@ static int check_is_SubClass_of(ir_type *low, ir_type *high)
 	return 0;
 }
 
-int is_SubClass_of(ir_type *low, ir_type *high)
+int is_SubClass_of(const ir_type *low, const ir_type *high)
 {
 	assert(is_Class_type(low) && is_Class_type(high));
 	if (low == high)
