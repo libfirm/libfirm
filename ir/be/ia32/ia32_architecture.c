@@ -30,7 +30,7 @@
 #endif
 #endif
 
-ia32_code_gen_config_t  ia32_cg_config;
+ia32_code_gen_config_t ia32_cg_config;
 
 /**
  * CPU architectures and features.
@@ -798,12 +798,11 @@ static void autodetect_arch(void)
 
 	/* We use the cpuid instruction to detect the CPU features */
 	if (x86_toogle_cpuid()) {
-		cpuid_registers   regs;
-		char              vendorid[13];
-		x86_cpu_info_t    cpu_info;
 
 		/* get vendor ID */
+		cpuid_registers regs;
 		x86_cpuid(&regs, 0);
+		char vendorid[13];
 		memcpy(&vendorid[0], &regs.r.ebx, 4);
 		memcpy(&vendorid[4], &regs.r.edx, 4);
 		memcpy(&vendorid[8], &regs.r.ecx, 4);
@@ -812,6 +811,7 @@ static void autodetect_arch(void)
 		/* get processor info and feature bits */
 		x86_cpuid(&regs, 1);
 
+		x86_cpu_info_t cpu_info;
 		cpu_info.cpu_stepping   = (regs.r.eax >>  0) & 0x0F;
 		cpu_info.cpu_model      = (regs.r.eax >>  4) & 0x0F;
 		cpu_info.cpu_family     = (regs.r.eax >>  8) & 0x0F;
@@ -923,12 +923,9 @@ void ia32_setup_cg_config(void)
 
 void ia32_init_architecture(void)
 {
-	lc_opt_entry_t *be_grp, *ia32_grp;
-
 	memset(&ia32_cg_config, 0, sizeof(ia32_cg_config));
 
-	be_grp   = lc_opt_get_grp(firm_opt_get_root(), "be");
-	ia32_grp = lc_opt_get_grp(be_grp, "ia32");
-
+	lc_opt_entry_t *be_grp   = lc_opt_get_grp(firm_opt_get_root(), "be");
+	lc_opt_entry_t *ia32_grp = lc_opt_get_grp(be_grp, "ia32");
 	lc_opt_add_table(ia32_grp, ia32_architecture_options);
 }
