@@ -252,7 +252,6 @@ static void symtbl_init(void)
 	INSERTENUM(tt_builtin_kind, ir_bk_bswap);
 	INSERTENUM(tt_builtin_kind, ir_bk_inport);
 	INSERTENUM(tt_builtin_kind, ir_bk_outport);
-	INSERTENUM(tt_builtin_kind, ir_bk_inner_trampoline);
 	INSERTENUM(tt_builtin_kind, ir_bk_saturating_increment);
 	INSERTENUM(tt_builtin_kind, ir_bk_compare_swap);
 

@@ -349,9 +349,6 @@ static backend_params arm_backend_params = {
 	NULL,               /* long long type */
 	NULL,               /* unsigned long long type */
 	NULL,               /* long double type */
-	0,                  /* no trampoline support: size 0 */
-	0,                  /* no trampoline support: align 0 */
-	NULL,               /* no trampoline support: no trampoline builder */
 	4,                  /* alignment of stack parameter */
 	ir_overflow_min_max
 };

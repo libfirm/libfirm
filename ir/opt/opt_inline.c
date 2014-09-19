@@ -219,13 +219,11 @@ static bool can_inline(ir_node *call, ir_graph *called_graph)
 		}
 	}
 
-	/* check for nested functions and variable number of parameters */
+	/* check for variable number of parameters */
 	ir_type *frame_type = get_irg_frame_type(called_graph);
 	for (size_t i = 0, n_entities = get_class_n_members(frame_type);
 	     i < n_entities; ++i) {
 		ir_entity *ent = get_class_member(frame_type, i);
-		if (is_method_entity(ent))
-			return false;
 		if (is_parameter_entity(ent) && (get_entity_parameter_number(ent) == IR_VA_START_PARAMETER_NUMBER))
 			return false;
 	}

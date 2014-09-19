@@ -2535,7 +2535,6 @@ static void lower_Builtin(ir_node *builtin, ir_mode *mode)
 	case ir_bk_compare_swap:
 	case ir_bk_debugbreak:
 	case ir_bk_frame_address:
-	case ir_bk_inner_trampoline:
 	case ir_bk_inport:
 	case ir_bk_may_alias:
 	case ir_bk_outport:

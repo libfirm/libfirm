@@ -2417,7 +2417,6 @@ static ir_node *gen_Builtin(ir_node *node)
 	case ir_bk_frame_address:
 	case ir_bk_outport:
 	case ir_bk_inport:
-	case ir_bk_inner_trampoline:
 		/* not supported */
 		break;
 	case ir_bk_compare_swap:
@@ -2454,7 +2453,6 @@ static ir_node *gen_Proj_Builtin(ir_node *proj)
 	case ir_bk_prefetch:
 	case ir_bk_outport:
 	case ir_bk_inport:
-	case ir_bk_inner_trampoline:
 		/* not supported / should be lowered */
 		break;
 	case ir_bk_saturating_increment:

@@ -689,37 +689,6 @@ static void analyse_irg_entity_usage(ir_graph *irg)
 		set_entity_usage(entity, (ir_entity_usage) flags);
 	}
 
-	/* check inner functions accessing outer frame */
-	unsigned static_link_arg = 0;
-	for (size_t i = 0, n = get_class_n_members(frame_type); i < n; ++i) {
-		ir_entity *ent = get_class_member(frame_type, i);
-		if (!is_method_entity(ent))
-			continue;
-
-		ir_graph *inner_irg = get_entity_irg(ent);
-		if (inner_irg == NULL)
-			continue;
-
-		assure_irg_outs(inner_irg);
-		ir_node *args = get_irg_args(inner_irg);
-		foreach_irn_out_r(args, j, arg) {
-			if (get_Proj_num(arg) == static_link_arg) {
-				foreach_irn_out_r(arg, k, succ) {
-					if (is_Member(succ)) {
-						ir_entity *entity = get_Member_entity(succ);
-
-						if (get_entity_owner(entity) == frame_type) {
-							/* found an access to the outer frame */
-							unsigned flags  = get_entity_usage(entity);
-							flags |= determine_entity_usage(succ, entity);
-							set_entity_usage(entity, (ir_entity_usage) flags);
-						}
-					}
-				}
-			}
-		}
-	}
-
 	/* now computed */
 	add_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_ENTITY_USAGE);
 }

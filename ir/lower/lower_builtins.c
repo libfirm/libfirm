@@ -40,7 +40,6 @@ static const char *get_builtin_name(ir_builtin_kind kind)
 	case ir_bk_frame_address:
 	case ir_bk_inport:
 	case ir_bk_outport:
-	case ir_bk_inner_trampoline:
 	case ir_bk_saturating_increment:
 	case ir_bk_compare_swap:
 	case ir_bk_may_alias:
@@ -173,7 +172,6 @@ static void lower_builtin(ir_node *node, void *env)
 	case ir_bk_frame_address:
 	case ir_bk_inport:
 	case ir_bk_outport:
-	case ir_bk_inner_trampoline:
 	case ir_bk_saturating_increment:
 	case ir_bk_compare_swap:
 		/* can't do anything about these, backend will probably fail now */

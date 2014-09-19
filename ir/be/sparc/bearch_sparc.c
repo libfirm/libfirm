@@ -569,9 +569,6 @@ static const backend_params *sparc_get_backend_params(void)
 		NULL,  /* long long type */
 		NULL,  /* usigned long long type */
 		NULL,  /* long double type */
-		0,     /* no trampoline support: size 0 */
-		0,     /* no trampoline support: align 0 */
-		NULL,  /* no trampoline support: no trampoline builder */
 		4,     /* alignment of stack parameter: typically 4 (32bit) or 8 (64bit) */
 		ir_overflow_min_max
 	};

@@ -5354,78 +5354,6 @@ static ir_node *gen_compare_swap(ir_node *node)
 }
 
 /**
- * Transform a builtin inner trampoline
- */
-static ir_node *gen_inner_trampoline(ir_node *node)
-{
-	ir_node  *ptr       = get_Builtin_param(node, 0);
-	ir_node  *callee    = get_Builtin_param(node, 1);
-	ir_node  *env       = be_transform_node(get_Builtin_param(node, 2));
-	ir_node  *mem       = get_Builtin_mem(node);
-	ir_node  *block     = get_nodes_block(node);
-	ir_node  *new_block = be_transform_node(block);
-	dbg_info *dbgi      = get_irn_dbg_info(node);
-
-	/* construct store address */
-	x86_address_t addr;
-	create_transformed_address_mode(&addr, ptr, x86_create_am_normal);
-	addr.mem = be_transform_node(mem);
-
-	ir_graph *const irg = get_irn_irg(new_block);
-	/* mov  ecx, <env> */
-	ir_node *val   = ia32_create_Immediate(irg, NULL, 0xB9);
-	ir_node *store = new_bd_ia32_Store_8bit(dbgi, new_block, addr.base,
-	                                        addr.index, addr.mem, val);
-	set_irn_pinned(store, get_irn_pinned(node));
-	set_ia32_op_type(store, ia32_AddrModeD);
-	set_ia32_ls_mode(store, mode_Bu);
-	set_address(store, &addr);
-	addr.mem = store;
-	addr.offset += 1;
-
-	store = new_bd_ia32_Store(dbgi, new_block, addr.base,
-	                          addr.index, addr.mem, env);
-	set_irn_pinned(store, get_irn_pinned(node));
-	set_ia32_op_type(store, ia32_AddrModeD);
-	set_ia32_ls_mode(store, ia32_mode_gp);
-	set_address(store, &addr);
-	addr.mem = store;
-	addr.offset += 4;
-
-	/* jmp rel <callee> */
-	val   = ia32_create_Immediate(irg, NULL, 0xE9);
-	store = new_bd_ia32_Store_8bit(dbgi, new_block, addr.base, addr.index, addr.mem, val);
-	set_irn_pinned(store, get_irn_pinned(node));
-	set_ia32_op_type(store, ia32_AddrModeD);
-	set_ia32_ls_mode(store, mode_Bu);
-	set_address(store, &addr);
-	addr.mem = store;
-	addr.offset += 1;
-
-	ir_node *trampoline = be_transform_node(ptr);
-
-	/* the callee is typically an immediate */
-	ir_node *rel;
-	if (is_Address(callee)) {
-		rel = new_bd_ia32_Const(dbgi, new_block, get_Address_entity(callee), 0, -10);
-	} else {
-		rel = new_bd_ia32_Lea(dbgi, new_block, be_transform_node(callee), noreg_GP);
-		add_ia32_am_offs_int(rel, -10);
-	}
-	rel = new_bd_ia32_Sub(dbgi, new_block, noreg_GP, noreg_GP, nomem, rel, trampoline);
-
-	store = new_bd_ia32_Store(dbgi, new_block, addr.base,
-	                          addr.index, addr.mem, rel);
-	set_irn_pinned(store, get_irn_pinned(node));
-	set_ia32_op_type(store, ia32_AddrModeD);
-	set_ia32_ls_mode(store, ia32_mode_gp);
-	set_address(store, &addr);
-
-	ir_node *in[] = { store, trampoline };
-	return new_r_Tuple(new_block, ARRAY_SIZE(in), in);
-}
-
-/**
  * Transform Builtin node.
  */
 static ir_node *gen_Builtin(ir_node *node)
@@ -5459,8 +5387,6 @@ static ir_node *gen_Builtin(ir_node *node)
 		return gen_outport(node);
 	case ir_bk_inport:
 		return gen_inport(node);
-	case ir_bk_inner_trampoline:
-		return gen_inner_trampoline(node);
 	case ir_bk_saturating_increment:
 		return gen_saturating_increment(node);
 	case ir_bk_compare_swap:
@@ -5504,13 +5430,6 @@ static ir_node *gen_Proj_Builtin(ir_node *proj)
 		} else {
 			assert(get_Proj_num(proj) == pn_Builtin_M);
 			return new_r_Proj(new_node, mode_M, pn_ia32_Inport_M);
-		}
-	case ir_bk_inner_trampoline:
-		if (get_Proj_num(proj) == pn_Builtin_max+1) {
-			return get_Tuple_pred(new_node, 1);
-		} else {
-			assert(get_Proj_num(proj) == pn_Builtin_M);
-			return get_Tuple_pred(new_node, 0);
 		}
 	case ir_bk_compare_swap:
 		assert(is_ia32_CmpXChgMem(new_node));

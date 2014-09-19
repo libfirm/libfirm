@@ -388,7 +388,6 @@ next_no_change:
 				break;
 			case ir_bk_return_address:
 			case ir_bk_frame_address:
-			case ir_bk_inner_trampoline:
 				/* Access context information => not pure anymore */
 				max_prop &= ~mtp_property_pure;
 				break;

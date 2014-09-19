@@ -689,7 +689,6 @@ const char *get_builtin_kind_name(ir_builtin_kind kind)
 		X(ir_bk_bswap);
 		X(ir_bk_inport);
 		X(ir_bk_outport);
-		X(ir_bk_inner_trampoline);
 		X(ir_bk_saturating_increment);
 		X(ir_bk_compare_swap);
 		X(ir_bk_may_alias);
@@ -986,7 +985,6 @@ int is_irn_const_memory(const ir_node *node)
 		case ir_bk_bswap:
 		case ir_bk_inport:
 		case ir_bk_outport:
-		case ir_bk_inner_trampoline:
 		case ir_bk_saturating_increment:
 		case ir_bk_may_alias:
 			return true;

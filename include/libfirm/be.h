@@ -82,18 +82,6 @@ typedef enum {
 } dwarf_source_language;
 
 /**
- * Build a Trampoline for the closure.
- * @param block       the block where to build the trampoline
- * @param mem         memory
- * @param trampoline  address of a trampoline region
- * @param env         address of the environment
- * @param callee      address of the function to call
- *
- * @return modified memory
- */
-typedef ir_node *(create_trampoline_fkt)(ir_node *block, ir_node *mem, ir_node *trampoline, ir_node *env, ir_node *callee);
-
-/**
  * This structure contains parameters that should be
  * propagated to the libFirm parameter set.
  */
@@ -144,15 +132,6 @@ typedef struct backend_params {
 	 * type used for long double or NULL if none available.
 	 */
 	ir_type *type_long_double;
-
-	/** Size of the trampoline code. */
-	unsigned trampoline_size;
-
-	/** Alignment of the trampoline code. */
-	unsigned trampoline_align;
-
-	/** If non-zero, build the trampoline. */
-	create_trampoline_fkt *build_trampoline;
 
 	/** Alignment of stack parameters */
 	unsigned stack_param_align;

@@ -1573,35 +1573,6 @@ static int ia32_is_mux_allowed(ir_node *sel, ir_node *mux_false,
 	return true;
 }
 
-/**
- * Create the trampoline code.
- */
-static ir_node *ia32_create_trampoline_fkt(ir_node *block, ir_node *mem, ir_node *trampoline, ir_node *env, ir_node *callee)
-{
-	ir_graph *const irg  = get_irn_irg(block);
-	ir_node  *      p    = trampoline;
-	ir_mode  *const mode = get_irn_mode(p);
-	ir_node  *const one  = new_r_Const_one(irg, ia32_mode_gp);
-	ir_node  *const four = new_r_Const_long(irg, ia32_mode_gp, 4);
-	ir_node  *      st;
-
-	/* mov  ecx,<env> */
-	st  = new_r_Store(block, mem, p, new_r_Const_long(irg, mode_Bu, 0xb9), cons_none);
-	mem = new_r_Proj(st, mode_M, pn_Store_M);
-	p   = new_r_Add(block, p, one, mode);
-	st  = new_r_Store(block, mem, p, env, cons_none);
-	mem = new_r_Proj(st, mode_M, pn_Store_M);
-	p   = new_r_Add(block, p, four, mode);
-	/* jmp  <callee> */
-	st  = new_r_Store(block, mem, p, new_r_Const_long(irg, mode_Bu, 0xe9), cons_none);
-	mem = new_r_Proj(st, mode_M, pn_Store_M);
-	p   = new_r_Add(block, p, one, mode);
-	st  = new_r_Store(block, mem, p, callee, cons_none);
-	mem = new_r_Proj(st, mode_M, pn_Store_M);
-
-	return mem;
-}
-
 static const ir_settings_arch_dep_t ia32_arch_dep = {
 	1,                   /* also use subs */
 	4,                   /* maximum shifts */
@@ -1624,9 +1595,6 @@ static backend_params ia32_backend_params = {
 	NULL,  /* long long type */
 	NULL,  /* unsigned long long type */
 	NULL,  /* long double type */
-	12,    /* size of trampoline code */
-	4,     /* alignment of trampoline code */
-	ia32_create_trampoline_fkt,
 	4,     /* alignment of stack parameter */
 	ir_overflow_indefinite
 };
@@ -1970,7 +1938,6 @@ static void ia32_lower_for_target(void)
 	supported[s++] = ir_bk_bswap;
 	supported[s++] = ir_bk_outport;
 	supported[s++] = ir_bk_inport;
-	supported[s++] = ir_bk_inner_trampoline;
 	supported[s++] = ir_bk_saturating_increment;
 	if (ia32_cg_config.use_popcnt)
 		supported[s++] = ir_bk_popcount;

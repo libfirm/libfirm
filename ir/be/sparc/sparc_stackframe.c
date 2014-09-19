@@ -96,14 +96,9 @@ static void process_bias(ir_node *block, bool sp_relative, int bias,
 
 static void adjust_entity_offsets(ir_type *type, long offset)
 {
-	size_t n_members = get_compound_n_members(type);
-	size_t i;
-
-	for (i = 0; i < n_members; ++i) {
+	for (size_t i = 0, n_members = get_compound_n_members(type);
+	     i < n_members; ++i) {
 		ir_entity *member        = get_compound_member(type, i);
-		/* ignore nested functions */
-		if (member->entity_kind == IR_ENTITY_METHOD)
-			continue;
 		int        member_offset = get_entity_offset(member);
 		set_entity_offset(member, member_offset + offset);
 	}

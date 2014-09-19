@@ -289,8 +289,6 @@ typedef enum ir_builtin_kind {
 	ir_bk_bswap,                /**< byte swap */
 	ir_bk_inport,               /**< in port */
 	ir_bk_outport,              /**< out port */
-	ir_bk_inner_trampoline,     /**< address of a trampoline for GCC inner
-	                                 functions */
 	ir_bk_saturating_increment, /**< saturating increment */
 	ir_bk_compare_swap,         /**< compare exchange (aka. compare and swap) */
 	ir_bk_may_alias,            /**< replaced by 0 if args cannot alias,

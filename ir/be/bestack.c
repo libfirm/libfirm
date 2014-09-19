@@ -70,37 +70,6 @@ static void stack_frame_compute_initial_offset(be_stack_layout_t *frame)
 }
 
 /**
- * Walker: finally lower all Members of outer frame or parameter
- * entities.
- */
-static void lower_outer_frame_members(ir_node *sel, void *ctx)
-{
-	(void)ctx;
-	if (!is_Member(sel))
-		return;
-
-	ir_entity         *ent    = get_Member_entity(sel);
-	ir_type           *owner  = get_entity_owner(ent);
-	ir_node           *ptr    = get_Member_ptr(sel);
-	ir_graph          *irg    = get_irn_irg(sel);
-	be_stack_layout_t *layout = be_get_irg_stack_layout(irg);
-
-	if (owner == layout->frame_type || owner == layout->arg_type) {
-		/* found access to outer frame or arguments */
-		int offset = be_get_stack_entity_offset(layout, ent, 0);
-		if (offset != 0) {
-			ir_node  *bl        = get_nodes_block(sel);
-			dbg_info *dbgi      = get_irn_dbg_info(sel);
-			ir_mode  *mode      = get_irn_mode(sel);
-			ir_mode  *mode_UInt = get_reference_mode_unsigned_eq(mode);
-			ir_node  *cnst      = new_r_Const_long(irg, mode_UInt, offset);
-			ptr = new_rd_Add(dbgi, bl, ptr, cnst, mode);
-		}
-		exchange(sel, ptr);
-	}
-}
-
-/**
  * A helper struct for the bias walker.
  */
 typedef struct bias_walk {
@@ -201,18 +170,6 @@ void be_abi_fix_stack_bias(ir_graph *irg)
 
 	/* fix the bias is all other blocks */
 	irg_block_walk_graph(irg, stack_bias_walker, NULL, &bw);
-
-	/* fix now inner functions: these still have Sel node to outer
-	   frame and parameter entities */
-	ir_type *frame_tp = get_irg_frame_type(irg);
-	for (unsigned i = get_class_n_members(frame_tp); i-- > 0; ) {
-		ir_entity *ent = get_class_member(frame_tp, i);
-		if (!is_method_entity(ent))
-			continue;
-		ir_graph *irg = get_entity_irg(ent);
-		if (irg != NULL)
-			irg_walk_graph(irg, NULL, lower_outer_frame_members, NULL);
-	}
 }
 
 typedef struct fix_stack_walker_env_t {

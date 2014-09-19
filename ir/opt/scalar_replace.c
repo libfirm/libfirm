@@ -289,35 +289,6 @@ static bool find_possible_replacements(ir_graph *irg)
 		set_entity_link(ent, NULL);
 	}
 
-	/* check for inner functions:
-	 * FIXME: need a way to get the argument position for the static link */
-	unsigned static_link_arg = 0;
-	for (size_t i = get_class_n_members(frame_tp); i-- > 0;) {
-		ir_entity *ent = get_class_member(frame_tp, i);
-		if (!is_method_entity(ent))
-			continue;
-
-		ir_graph *inner_irg = get_entity_irg(ent);
-		ir_node  *args;
-		assure_irg_properties(inner_irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS
-									   | IR_GRAPH_PROPERTY_NO_TUPLES);
-		args = get_irg_args(inner_irg);
-		foreach_irn_out_r(args, j, arg) {
-			if (get_Proj_num(arg) != static_link_arg)
-				continue;
-
-			foreach_irn_out_r(arg, k, succ) {
-				if (!is_Member(succ))
-					continue;
-				ir_entity *ent = get_Member_entity(succ);
-				if (get_entity_owner(ent) == frame_tp) {
-					/* found an access to the outer frame */
-					set_entity_link(ent, ADDRESS_TAKEN);
-				}
-			}
-		}
-	}
-
 	/* Check the ir_graph for Member nodes. If the entity of Member isn't a
 	 * scalar replacement set the link of this entity to ADDRESS_TAKEN. */
 	ir_node *irg_frame = get_irg_frame(irg);

@@ -7360,68 +7360,6 @@ static ir_node *transform_node_Store(ir_node *n)
 }
 
 /**
- * optimize a trampoline Call into a direct Call
- */
-static ir_node *transform_node_Call(ir_node *call)
-{
-	ir_node *callee = get_Call_ptr(call);
-	if (! is_Proj(callee))
-		return call;
-
-	callee = get_Proj_pred(callee);
-	if (! is_Builtin(callee))
-		return call;
-
-	if (get_Builtin_kind(callee) != ir_bk_inner_trampoline)
-		return call;
-
-	ir_node *mem = get_Call_mem(call);
-	if (skip_Proj(mem) == callee) {
-		/* memory is routed to the trampoline, skip */
-		mem = get_Builtin_mem(callee);
-	}
-
-	/* build a new call type */
-	ir_type       *mtp     = get_Call_type(call);
-	type_dbg_info *tdb     = get_type_dbg_info(mtp);
-	size_t         n_res   = get_method_n_ress(mtp);
-	size_t         n_param = get_method_n_params(mtp);
-	ir_type       *ctp     = new_type_method(n_param + 1, n_res);
-	set_type_dbg_info(ctp, tdb);
-
-	for (size_t i = 0; i < n_res; ++i)
-		set_method_res_type(ctp, i, get_method_res_type(mtp, i));
-
-	ir_node **in = ALLOCAN(ir_node*, n_param+1);
-
-	/* FIXME: we do not need a new pointer type in every step */
-	ir_graph *irg = get_irn_irg(call);
-	ir_type  *tp  = get_irg_frame_type(irg);
-	tp = new_type_pointer(tp);
-	set_method_param_type(ctp, 0, tp);
-
-	in[0] = get_Builtin_param(callee, 2);
-	for (size_t i = 0; i < n_param; ++i) {
-		set_method_param_type(ctp, i + 1, get_method_param_type(mtp, i));
-		in[i + 1] = get_Call_param(call, i);
-	}
-	ir_variadicity var = get_method_variadicity(mtp);
-	set_method_variadicity(ctp, var);
-	/* When we resolve a trampoline, the function must be called by a this-call */
-	set_method_calling_convention(ctp, get_method_calling_convention(mtp) | cc_this_call);
-	set_method_additional_properties(ctp, get_method_additional_properties(mtp));
-
-	ir_node  *adr = get_Builtin_param(callee, 1);
-	dbg_info *db  = get_irn_dbg_info(call);
-	ir_node  *bl  = get_nodes_block(call);
-
-	ir_node *res = new_rd_Call(db, bl, mem, adr, n_param + 1, in, ctp);
-	if (get_irn_pinned(call) == op_pin_state_floats)
-		set_irn_pinned(res, op_pin_state_floats);
-	return res;
-}
-
-/**
  * Tries several [inplace] [optimizing] transformations and returns an
  * equivalent node.  The difference to equivalent_node() is that these
  * transformations _do_ generate new nodes, and thus the old node must
@@ -7589,7 +7527,6 @@ void ir_register_opt_node_ops(void)
 	register_transform_node_func(op_And,     transform_node_And);
 	register_transform_node_func(op_Bitcast, transform_node_Bitcast);
 	register_transform_node_func(op_Block,   transform_node_Block);
-	register_transform_node_func(op_Call,    transform_node_Call);
 	register_transform_node_func(op_Cmp,     transform_node_Cmp);
 	register_transform_node_func(op_Cond,    transform_node_Cond);
 	register_transform_node_func(op_Confirm, transform_node_Confirm);
