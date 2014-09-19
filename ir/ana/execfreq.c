@@ -335,7 +335,7 @@ void ir_estimate_execfreq(ir_graph *irg)
 				double sum      = get_sum_succ_factors(keep, inv_loop_weight);
 				double fac      = KEEP_FAC/sum;
 				int    keep_idx = size - dfs_get_post_num(dfs, keep)-1;
-				gs_matrix_set(mat, start_idx, keep_idx, fac);
+				gs_matrix_set(mat, idx, keep_idx, fac);
 			}
 		}
 	}
