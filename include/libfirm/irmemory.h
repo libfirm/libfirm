@@ -61,8 +61,10 @@ FIRM_API const char *get_ir_alias_relation_name(ir_alias_relation rel);
  *
  * @param addr1   The first address.
  * @param type1   The type of the first memory access.
+ * @param objt1   The type of the object found at addr1 ("object type")
  * @param addr2   The second address.
  * @param type2   The type of the second memory access.
+ * @param objt2   The type of the object found at addr2 ("object type")
  *
  * The memory disambiguator tries to determine the alias state between
  * two memory addresses. The following rules are used:
@@ -90,8 +92,8 @@ FIRM_API const char *get_ir_alias_relation_name(ir_alias_relation rel);
  * interrogated to detect the alias relation.
  */
 FIRM_API ir_alias_relation get_alias_relation(
-	const ir_node *addr1, const ir_type *type1,
-	const ir_node *addr2, const ir_type *type2);
+	const ir_node *addr1, const ir_type *type1, const ir_type *objt1,
+	const ir_node *addr2, const ir_type *type2, const ir_type *objt2);
 
 /**
  * Assure that the entity usage flags have been computed for the given graph.

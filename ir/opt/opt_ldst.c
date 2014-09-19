@@ -922,8 +922,11 @@ static void kill_memops(const value_t *value)
 	for (pos = rbitset_next(env.curr_set, 0, 1); pos < end; pos = rbitset_next(env.curr_set, pos + 1, 1)) {
 		memop_t *op = env.curr_id_2_memop[pos];
 
-		if (ir_no_alias != get_alias_relation(value->address, get_type_for_mode(value->mode),
-						      op->value.address, get_type_for_mode(op->value.mode))) {
+		ir_type *value_type = get_type_for_mode(value->mode);
+		ir_type *op_type    = get_type_for_mode(op->value.mode);
+
+		if (ir_no_alias != get_alias_relation(value->address, value_type, value_type,
+		                                      op->value.address, op_type, op_type)) {
 			rbitset_clear(env.curr_set, pos);
 			env.curr_id_2_memop[pos] = NULL;
 			DB((dbg, LEVEL_2, "KILLING %+F because of possible alias address %+F\n", op->node, value->address));

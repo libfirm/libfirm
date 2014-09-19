@@ -118,7 +118,7 @@ static void replace_may_alias(ir_node *node)
 	ir_type *rtype = get_method_res_type(type, 0);
 	ir_mode *rmode = get_type_mode(rtype);
 
-	ir_alias_relation alias = get_alias_relation(in0, type0, in1, type1);
+	ir_alias_relation alias = get_alias_relation(in0, type0, type0, in1, type1, type1);
 
 	ir_graph *const irg    = get_irn_irg(node);
 	ir_node  *const result = (alias != ir_no_alias ? new_r_Const_one : new_r_Const_null)(irg, rmode);

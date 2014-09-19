@@ -104,53 +104,66 @@ static const ir_node *find_base_addr(const ir_node *node, ir_entity **pEnt)
 }
 
 /**
- * Determine the alias relation by checking if addr1 and addr2 are pointer
- * to different type.
+ * Returns true if @c compound is a compound type that contains a
+ * member with type @c member, including recursively, or if @c
+ * compound is an array type with a base type equal to or containing
+ * @c member.
  *
- * @param addr1    The first address.
- * @param addr2    The second address.
+ * @param compound  The compound type
+ * @param member    The member type
+ *
+ * @return true, if @c compound contains @c member
  */
-static ir_alias_relation different_types(const ir_node *addr1,
-                                         const ir_node *addr2)
+static bool type_contains(const ir_type *compound,
+                          const ir_type *member)
 {
-	ir_entity *ent1 = NULL;
-	if (is_Address(addr1))
-		ent1 = get_Address_entity(addr1);
-	else if (is_Member(addr1))
-		ent1 = get_Member_entity(addr1);
+	if (is_Array_type(compound)) {
+		ir_type *elem = get_array_element_type(compound);
+		return elem == member ||
+		       type_contains(elem, member);
 
-	ir_entity *ent2 = NULL;
-	if (is_Address(addr2))
-		ent2 = get_Address_entity(addr2);
-	else if (is_Member(addr2))
-		ent2 = get_Member_entity(addr2);
-
-	if (ent1 != NULL && ent2 != NULL) {
-		ir_type *tp1 = get_entity_type(ent1);
-		ir_type *tp2 = get_entity_type(ent2);
-
-		if (tp1 != tp2) {
-			/* do deref until no pointer types are found */
-			while (is_Pointer_type(tp1) && is_Pointer_type(tp2)) {
-				tp1 = get_pointer_points_to_type(tp1);
-				tp2 = get_pointer_points_to_type(tp2);
-			}
-
-			if (get_type_tpop(tp1) != get_type_tpop(tp2)) {
-				/* different type structure */
-				return ir_no_alias;
-			}
-			if (is_Class_type(tp1)) {
-				/* check class hierarchy */
-				if (!is_SubClass_of(tp1, tp2) && !is_SubClass_of(tp2, tp1))
-					return ir_no_alias;
-			} else {
-				/* different types */
-				return ir_no_alias;
+	} else if (is_compound_type(compound)) {
+		size_t n = get_compound_n_members(compound);
+		for (size_t pos = 0; pos < n; pos++) {
+			ir_entity *ent = get_compound_member(compound, pos);
+			ir_type *pos_type = get_entity_type(ent);
+			if (pos_type == member ||
+			    type_contains(pos_type, member)) {
+				return true;
 			}
 		}
+		return false;
+	} else {
+		return false;
 	}
-	return ir_may_alias;
+}
+
+/**
+ * Determine the alias relation by checking if type1 and type2 are
+ * different types.
+ *
+ * @param addr1    The first type.
+ * @param addr2    The second type.
+ */
+static ir_alias_relation different_types(const ir_type *type1,
+                                         const ir_type *type2)
+{
+	if (type1 == type2) {
+		return ir_may_alias;
+	}
+	/* do deref until no pointer types are found */
+	while (is_Pointer_type(type1) && is_Pointer_type(type2)) {
+		type1 = get_pointer_points_to_type(type1);
+		type2 = get_pointer_points_to_type(type2);
+	}
+	if (type_contains(type1, type2) || type_contains(type2, type1)) {
+		return ir_may_alias;
+	}
+	if (is_Class_type(type1) && is_Class_type(type2) &&
+	    (is_SubClass_of(type1, type2) || is_SubClass_of(type2, type1))) {
+		return ir_may_alias;
+	}
+	return ir_no_alias;
 }
 
 /**
@@ -228,15 +241,17 @@ analyze_entity:
  * Determine the alias relation between two addresses.
  *
  * @param addr1  pointer address of the first memory operation
- * @param type1  the type of the accessed data through addr1
+ * @param type1  the type of the operation accessing addr1
+ * @param objt1  the type of the object found at addr1 ("object type")
  * @param addr2  pointer address of the second memory operation
- * @param type2  the type of the accessed data through addr2
+ * @param type2  the type of the operation accessing addr2
+ * @param objt2  the type of the object found at addr2 ("object type")
  *
  * @return found memory relation
  */
 static ir_alias_relation _get_alias_relation(
-	const ir_node *addr1, const ir_type *const type1,
-	const ir_node *addr2, const ir_type *const type2)
+	const ir_node *addr1, const ir_type *const type1, const ir_type *const objt1,
+	const ir_node *addr2, const ir_type *const type2, const ir_type *const objt2)
 {
 	if (addr1 == addr2)
 		return ir_sure_alias;
@@ -255,8 +270,6 @@ static ir_alias_relation _get_alias_relation(
 	long           offset2            = 0;
 	const ir_node *sym_offset1        = NULL;
 	const ir_node *sym_offset2        = NULL;
-	const ir_node *orig_addr1         = addr1;
-	const ir_node *orig_addr2         = addr2;
 	bool           have_const_offsets = true;
 
 	/*
@@ -454,7 +467,7 @@ check_classes:;
 		ir_alias_relation rel;
 
 		if (options & aa_opt_byte_type_may_alias) {
-			if (get_type_size_bytes(type1) == 1 || get_type_size_bytes(type2) == 1) {
+			if (get_type_size_bytes(objt1) == 1 || get_type_size_bytes(objt2) == 1) {
 				/* One of the types address a byte. Assume a ir_may_alias and leave
 				   the type based check. */
 				goto leave_type_based_alias;
@@ -462,16 +475,18 @@ check_classes:;
 		}
 
 		/* cheap check: If the type sizes did not match, the types MUST be different */
-		if (get_type_size_bytes(type1) != get_type_size_bytes(type2))
-			return ir_no_alias;
+		/* No, one might be part of the other. */
+		/* if (get_type_size_bytes(objt1) != get_type_size_bytes(objt2)) */
+		/*         return ir_no_alias; */
 
 		/* cheap test: if only one is a reference type, no alias */
-		if (is_Pointer_type(type1) != is_Pointer_type(type2))
+		if (is_Pointer_type(objt1) != is_Pointer_type(objt2)) {
 			return ir_no_alias;
+		}
 
-		if (is_Primitive_type(type1) && is_Primitive_type(type2)) {
-			const ir_mode *const mode1 = get_type_mode(type1);
-			const ir_mode *const mode2 = get_type_mode(type2);
+		if (is_Primitive_type(objt1) && is_Primitive_type(objt2)) {
+			const ir_mode *const mode1 = get_type_mode(objt1);
+			const ir_mode *const mode2 = get_type_mode(objt2);
 
 			/* cheap test: if arithmetic is different, no alias */
 			if (get_mode_arithmetic(mode1) != get_mode_arithmetic(mode2))
@@ -481,7 +496,7 @@ check_classes:;
 				return ir_no_alias;
 		}
 
-		rel = different_types(orig_addr1, orig_addr2);
+		rel = different_types(objt1, objt2);
 		if (rel != ir_may_alias)
 			return rel;
 leave_type_based_alias:;
@@ -491,10 +506,10 @@ leave_type_based_alias:;
 }
 
 ir_alias_relation get_alias_relation(
-	const ir_node *const addr1, const ir_type *const type1,
-	const ir_node *const addr2, const ir_type *const type2)
+	const ir_node *const addr1, const ir_type *const type1, const ir_type *const objt1,
+	const ir_node *const addr2, const ir_type *const type2, const ir_type *const objt2)
 {
-	ir_alias_relation rel = _get_alias_relation(addr1, type1, addr2, type2);
+	ir_alias_relation rel = _get_alias_relation(addr1, type1, objt1, addr2, type2, objt2);
 	DB((dbg, LEVEL_1, "alias(%+F, %+F) = %s\n", addr1, addr2,
 	    get_ir_alias_relation_name(rel)));
 	return rel;

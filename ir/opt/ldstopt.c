@@ -553,6 +553,14 @@ static bool try_update_ptr_CopyB(track_load_env_t *env, ir_node *copyb)
 	return true;
 }
 
+/* Note on terminology:
+ * In the following functions, two types are associated with each Load
+ * and Store: load_type/store_type are the types of the actual
+ * operations (derived from the modes of the IR nodes), whereas
+ * load_objt/store_objt are the types of the objects in memory which are
+ * accessed by the Load/Store nodes.
+ */
+
 /**
  * Follow the memory chain as long as there are only Loads,
  * alias free Stores, and constant Calls and try to replace the
@@ -567,6 +575,7 @@ static changes_t follow_load_mem_chain(track_load_env_t *env, ir_node *start)
 {
 	ir_node *load      = env->load;
 	ir_mode *load_mode = get_Load_mode(load);
+	ir_type *load_objt = get_Load_type(load);
 
 	ir_node  *node = start;
 	changes_t res  = NO_CHANGES;
@@ -580,13 +589,15 @@ static changes_t follow_load_mem_chain(track_load_env_t *env, ir_node *start)
 				return changes | res;
 
 			/* check if we can pass through this store */
-			const ir_node *ptr       = get_Store_ptr(node);
-			const ir_node *value     = get_Store_value(node);
-			const ir_mode *mode      = get_irn_mode(value);
-			const ir_type *type      = get_type_for_mode(mode);
-			const ir_type *load_type = get_type_for_mode(load_mode);
-			ir_alias_relation rel = get_alias_relation(ptr, type, env->ptr,
-			                                           load_type);
+			const ir_node *ptr        = get_Store_ptr(node);
+			const ir_node *value      = get_Store_value(node);
+			const ir_type *store_objt = get_Store_type(node);
+			const ir_mode *mode       = get_irn_mode(value);
+			const ir_type *store_type = get_type_for_mode(mode);
+			const ir_type *load_type  = get_type_for_mode(load_mode);
+			ir_alias_relation rel = get_alias_relation(
+				ptr, store_type, store_objt,
+				env->ptr, load_type, load_objt);
 			/* if the might be an alias, we cannot pass this Store */
 			if (rel != ir_no_alias)
 				break;
@@ -623,8 +634,9 @@ static changes_t follow_load_mem_chain(track_load_env_t *env, ir_node *start)
 			ir_node *dst       = get_CopyB_dst(node);
 			ir_type *type      = get_CopyB_type(node);
 			ir_type *load_type = get_type_for_mode(load_mode);
-			ir_alias_relation rel = get_alias_relation(dst, type, env->ptr,
-			                                           load_type);
+			ir_alias_relation rel = get_alias_relation(
+				dst, type, type,
+				env->ptr, load_type, load_objt);
 			/* possible alias => we cannot continue */
 			if (rel != ir_no_alias)
 				break;
@@ -764,6 +776,7 @@ static changes_t follow_store_mem_chain(ir_node *store, ir_node *start,
 	ir_node     *ptr   = get_Store_ptr(store);
 	ir_node     *mem   = get_Store_mem(store);
 	ir_node     *value = get_Store_value(store);
+	ir_type     *objt  = get_Store_type(store);
 	ir_mode     *mode  = get_irn_mode(value);
 	ir_type     *type  = get_type_for_mode(mode);
 	ir_node     *block = get_nodes_block(store);
@@ -853,8 +866,10 @@ static changes_t follow_store_mem_chain(ir_node *store, ir_node *start,
 			ir_node *store_ptr   = get_Store_ptr(node);
 			ir_node *store_value = get_Store_value(node);
 			ir_type *store_type  = get_type_for_mode(get_irn_mode(store_value));
-			ir_alias_relation rel
-				= get_alias_relation(store_ptr, store_type, ptr, type);
+			ir_type *store_objt  = get_Store_type(node);
+			ir_alias_relation rel = get_alias_relation(
+				store_ptr, store_type, store_objt,
+				ptr, type, objt);
 			/* if the might be an alias, we cannot pass this Store */
 			if (rel != ir_no_alias)
 				break;
@@ -862,8 +877,10 @@ static changes_t follow_store_mem_chain(ir_node *store, ir_node *start,
 		} else if (is_Load(node)) {
 			ir_node *load_ptr  = get_Load_ptr(node);
 			ir_type *load_type = get_type_for_mode(get_Load_mode(node));
-			ir_alias_relation rel
-				= get_alias_relation(load_ptr, load_type, ptr, type);
+			ir_type *load_objt = get_Load_type(node);
+			ir_alias_relation rel = get_alias_relation(
+				load_ptr, load_type, load_objt,
+				ptr, type, objt);
 			if (rel != ir_no_alias)
 				break;
 
@@ -871,13 +888,15 @@ static changes_t follow_store_mem_chain(ir_node *store, ir_node *start,
 		} else if (is_CopyB(node)) {
 			ir_node *copyb_src  = get_CopyB_src(node);
 			ir_type *copyb_type = get_CopyB_type(node);
-			ir_alias_relation src_rel
-				= get_alias_relation(copyb_src, copyb_type, ptr, type);
+			ir_alias_relation src_rel = get_alias_relation(
+				copyb_src, copyb_type, copyb_type,
+				ptr, type, objt);
 			if (src_rel != ir_no_alias)
 				break;
 			ir_node *copyb_dst = get_CopyB_dst(node);
-			ir_alias_relation dst_rel
-				= get_alias_relation(copyb_dst, copyb_type, ptr, type);
+			ir_alias_relation dst_rel = get_alias_relation(
+				copyb_dst, copyb_type, copyb_type,
+				ptr, type, objt);
 			if (dst_rel != ir_no_alias)
 				break;
 		} else {
@@ -1014,7 +1033,10 @@ static changes_t follow_copyb_mem_chain(ir_node *copyb, ir_node *start,
 			 */
 			ir_node           *store_ptr  = get_Store_ptr(node);
 			ir_type           *store_type = get_type_for_mode(get_irn_mode(store_ptr));
-			ir_alias_relation  src_rel    = get_alias_relation(src, type, store_ptr, store_type);
+			ir_type           *store_objt = get_Store_type(node);
+			ir_alias_relation  src_rel    = get_alias_relation(
+				src, type, type,
+				store_ptr, store_type, store_objt);
 
 			if (src_rel == ir_no_alias
 			    && ptr_is_in_struct(store_ptr, store_type, dst, type)) {
@@ -1031,13 +1053,16 @@ static changes_t follow_copyb_mem_chain(ir_node *copyb, ir_node *start,
 			ir_node *store_ptr   = get_Store_ptr(node);
 			ir_node *store_value = get_Store_value(node);
 			ir_type *store_type  = get_type_for_mode(get_irn_mode(store_value));
+			ir_type *store_objt  = get_Store_type(node);
 			/* check if we can pass through this store */
-			ir_alias_relation src_rel
-				= get_alias_relation(store_ptr, store_type, src, type);
+			ir_alias_relation src_rel = get_alias_relation(
+				store_ptr, store_type, store_objt,
+				src, type, type);
 			if (src_rel != ir_no_alias)
 				break;
-			ir_alias_relation dst_rel
-				= get_alias_relation(store_ptr, store_type, dst, type);
+			ir_alias_relation dst_rel = get_alias_relation(
+				store_ptr, store_type, store_objt,
+				dst, type, type);
 			if (dst_rel != ir_no_alias)
 				break;
 
@@ -1045,8 +1070,10 @@ static changes_t follow_copyb_mem_chain(ir_node *copyb, ir_node *start,
 		} else if (is_Load(node)) {
 			ir_node *load_ptr  = get_Load_ptr(node);
 			ir_type *load_type = get_type_for_mode(get_Load_mode(node));
-			ir_alias_relation rel
-				= get_alias_relation(load_ptr, load_type, dst, type);
+			ir_type *load_objt = get_Load_type(node);
+			ir_alias_relation rel = get_alias_relation(
+				load_ptr, load_type, load_objt,
+				dst, type, type);
 			if (rel != ir_no_alias)
 				break;
 
@@ -1074,16 +1101,19 @@ static changes_t follow_copyb_mem_chain(ir_node *copyb, ir_node *start,
 					return res | DF_CHANGED;
 				}
 			} else {
-				ir_alias_relation dst_dst_rel
-					= get_alias_relation(pred_dst, pred_type, dst, type);
+				ir_alias_relation dst_dst_rel = get_alias_relation(
+					pred_dst, pred_type, pred_type,
+					dst, type, type);
 				if (dst_dst_rel != ir_no_alias)
 					break;
-				ir_alias_relation src_dst_rel
-					= get_alias_relation(pred_src, pred_type, dst, type);
+				ir_alias_relation src_dst_rel = get_alias_relation(
+					pred_src, pred_type, pred_type,
+					dst, type, type);
 				if (src_dst_rel != ir_no_alias)
 					break;
-				ir_alias_relation dst_src_rel
-					= get_alias_relation(pred_dst, pred_type, src, type);
+				ir_alias_relation dst_src_rel = get_alias_relation(
+					pred_dst, pred_type, pred_type,
+					src, type, type);
 				if (dst_src_rel != ir_no_alias)
 					break;
 			}
@@ -1628,7 +1658,8 @@ static void move_loads_out_of_loops(scc *pscc, loop_env *env)
 			if (!is_Address(ptr))
 				continue;
 			ir_mode *load_mode = get_Load_mode(load);
-			ir_type *load_type = get_Load_type(load);
+			ir_type *load_type = get_type_for_mode(load_mode);
+			ir_type *load_objt = get_Load_type(load);
 			ir_node *other;
 			ir_node *next_other;
 			for (other = pscc->head; other != NULL; other = next_other) {
@@ -1640,9 +1671,11 @@ static void move_loads_out_of_loops(scc *pscc, loop_env *env)
 					ir_node *store_value = get_Store_value(other);
 					ir_type *store_type
 						= get_type_for_mode(get_irn_mode(store_value));
-					ir_alias_relation rel
-						= get_alias_relation(store_ptr, store_type, ptr,
-						                     load_type);
+					ir_type *store_objt  = get_Store_type(other);
+
+					ir_alias_relation rel = get_alias_relation(
+						store_ptr, store_type, store_objt,
+						ptr, load_type, load_objt);
 					/* if the might be an alias, we cannot pass this Store */
 					if (rel != ir_no_alias)
 						break;
@@ -1672,7 +1705,7 @@ static void move_loads_out_of_loops(scc *pscc, loop_env *env)
 					if (res != NULL) {
 						irn = res->load;
 					} else {
-						irn = new_rd_Load(db, pred, get_Phi_pred(phi, pos), ptr, load_mode, load_type, cons_none);
+						irn = new_rd_Load(db, pred, get_Phi_pred(phi, pos), ptr, load_mode, load_objt, cons_none);
 						entry.load = irn;
 						(void)set_insert(avail_entry_t, avail, &entry, sizeof(entry), hash_cache_entry(&entry));
 						DB((dbg, LEVEL_1, "  Created %+F in %+F\n", irn, pred));
