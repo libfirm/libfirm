@@ -30,7 +30,7 @@
 #include <limits.h>
 #include <math.h>
 
-#include "gaussseidel.h"
+#include "gaussjordan.h"
 
 #include "set.h"
 #include "hashptr.h"
@@ -54,7 +54,6 @@
 
 #define EPSILON          1e-5
 #define UNDEF(x)         (fabs(x) < EPSILON)
-#define SEIDEL_TOLERANCE 1e-7
 #define KEEP_FAC         0.1
 
 #define MAX_INT_FREQ 1000000
@@ -95,7 +94,7 @@ void exit_execfreq(void)
 }
 
 
-static double *solve_lgs(gs_matrix_t *mat, double *x, int size)
+static double *solve_lgs(double *mat, double *x, int size)
 {
 	/* better convergence. */
 	double init = 1.0 / size;
@@ -104,8 +103,8 @@ static double *solve_lgs(gs_matrix_t *mat, double *x, int size)
 
 	double dev;
 	do {
-		dev = gs_matrix_gauss_seidel(mat, x);
-	} while (dev > SEIDEL_TOLERANCE);
+		dev = firm_gaussjordansolve(mat, x, size);
+	} while (fabs(dev) > SEIDEL_TOLERANCE);
 
 	return x;
 }
@@ -263,6 +262,11 @@ static void block_walk_no_keeps(ir_node *block)
 	}
 }
 
+static void matrix_set(double *m, int size, int row, int col, double val)
+{
+	m[row * size + col] = val;
+}
+
 void ir_estimate_execfreq(ir_graph *irg)
 {
 	double loop_weight = 10.0;
@@ -280,7 +284,7 @@ void ir_estimate_execfreq(ir_graph *irg)
 	dfs_t *dfs = dfs_new(&absgraph_irg_cfg_succ, irg);
 
 	int          size = dfs_get_n_nodes(dfs);
-	gs_matrix_t *mat  = gs_new_matrix(size, size);
+	double *mat  = (double *)malloc(size * size * sizeof(double));
 
 	ir_node *const start_block = get_irg_start_block(irg);
 	ir_node *const end_block   = get_irg_end_block(irg);
@@ -312,17 +316,17 @@ void ir_estimate_execfreq(ir_graph *irg)
 			const ir_node *pred           = get_Block_cfgpred_block(bb, i);
 			int            pred_idx       = size - dfs_get_post_num(dfs, pred)-1;
 			double         cf_probability = get_cf_probability(bb, i, inv_loop_weight);
-			gs_matrix_set(mat, idx, pred_idx, cf_probability);
+			matrix_set(mat, size, idx, pred_idx, cf_probability);
 		}
 		/* ... equals my execution frequency */
-		gs_matrix_set(mat, idx, idx, -1.0);
+		matrix_set(mat, size, idx, idx, -1.0);
 
 		if (bb == end_block) {
 			/* Add an edge from end to start.
 			 * The problem is then an eigenvalue problem:
 			 * Solve A*x = 1*x => (A-I)x = 0
 			 */
-			gs_matrix_set(mat, start_idx, idx, 1.0);
+			matrix_set(mat, size, start_idx, idx, 1.0);
 
 			/* add artifical edges from "kept blocks without a path to end"
 			 * to end */
@@ -335,7 +339,7 @@ void ir_estimate_execfreq(ir_graph *irg)
 				double sum      = get_sum_succ_factors(keep, inv_loop_weight);
 				double fac      = KEEP_FAC/sum;
 				int    keep_idx = size - dfs_get_post_num(dfs, keep)-1;
-				gs_matrix_set(mat, idx, keep_idx, fac);
+				matrix_set(mat, size, idx, keep_idx, fac);
 			}
 		}
 	}
@@ -345,7 +349,7 @@ void ir_estimate_execfreq(ir_graph *irg)
 	//ir_fprintf(stderr, "%+F:\n", irg);
 	//gs_matrix_dump(mat, stderr);
 	solve_lgs(mat, x, size);
-	gs_delete_matrix(mat);
+	free(mat);
 
 	/* compute the normalization factor.
 	 * 1.0 / exec freq of start block.
