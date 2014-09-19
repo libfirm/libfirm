@@ -94,19 +94,14 @@ void exit_execfreq(void)
 }
 
 
-static double *solve_lgs(double *mat, double *x, int size)
+static int solve_lgs(double *mat, double *x, int size)
 {
 	/* better convergence. */
 	double init = 1.0 / size;
 	for (int i = 0; i < size; ++i)
 		x[i] = init;
 
-	double dev;
-	do {
-		dev = firm_gaussjordansolve(mat, x, size);
-	} while (fabs(dev) > SEIDEL_TOLERANCE);
-
-	return x;
+	return firm_gaussjordansolve(mat, x, size);
 }
 
 static bool has_path_to_end(const ir_node *block)
@@ -345,10 +340,16 @@ void ir_estimate_execfreq(ir_graph *irg)
 	}
 
 	/* solve the system and delete the matrix */
-	double *x = XMALLOCN(double, size);
-	//ir_fprintf(stderr, "%+F:\n", irg);
-	//gs_matrix_dump(mat, stderr);
-	solve_lgs(mat, x, size);
+	double *x          = XMALLOCN(double, size);
+	bool    valid_freq = true;
+
+	if (lgs_size == 1) {
+		lgs_x[0] = 1.0;
+	} else {
+		int  lgs_result = solve_lgs(lgs_matrix, lgs_x);
+		valid_freq = !lgs_result; /* solve_lgs returns -1 on error. */
+	}
+
 	free(mat);
 
 	/* compute the normalization factor.
@@ -356,21 +357,22 @@ void ir_estimate_execfreq(ir_graph *irg)
 	 * (note: start_idx is != 0 in strange cases involving endless loops,
 	 *  probably a misfeature/bug)
 	 */
-	double start_freq = x[start_idx];
-	double norm       = start_freq != 0.0 ? 1.0 / start_freq : 1.0;
-	bool   valid_freq = true;
-	for (int idx = size - 1; idx >= 0; --idx) {
-		ir_node *bb = (ir_node *) dfs_get_post_num_node(dfs, size - idx - 1);
+	if (valid_freq) {
+		double start_freq = x[start_idx];
+		double norm       = start_freq != 0.0 ? 1.0 / start_freq : 1.0;
+		for (int idx = size - 1; idx >= 0; --idx) {
+			ir_node *bb = (ir_node *) dfs_get_post_num_node(dfs, size - idx - 1);
 
-		/* take abs because it sometimes can be -0 in case of endless loops */
-		double freq = fabs(x[idx]) * norm;
+			/* take abs because it sometimes can be -0 in case of endless loops */
+			double freq = fabs(x[idx]) * norm;
 
-		/* Check for inf, nan and negative values. */
-		if (isinf(freq) || !(freq >= 0)) {
-			valid_freq = false;
-			break;
+			/* Check for inf, nan and negative values. */
+			if (isinf(freq) || !(freq >= 0)) {
+				valid_freq = false;
+				break;
+			}
+			set_block_execfreq(bb, freq);
 		}
-		set_block_execfreq(bb, freq);
 	}
 
 	/* Fallback solution: Use loop weight. */
