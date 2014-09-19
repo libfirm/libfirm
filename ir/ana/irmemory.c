@@ -278,7 +278,7 @@ static ir_alias_relation _get_alias_relation(
 	 * sym_offset{1,2} to be sets, and compare the sets.
 	 */
 
-	while (is_Add(addr1)) {
+	while (have_const_offsets && is_Add(addr1)) {
 		ir_mode *mode_left = get_irn_mode(get_Add_left(addr1));
 
 		ir_node *ptr_node;
@@ -311,7 +311,7 @@ follow_ptr1:
 		addr1 = ptr_node;
 	}
 
-	while (is_Add(addr2)) {
+	while (have_const_offsets && is_Add(addr2)) {
 		ir_mode *mode_left = get_irn_mode(get_Add_left(addr2));
 
 		ir_node *ptr_node;
@@ -342,11 +342,6 @@ follow_ptr1:
 
 follow_ptr2:
 		addr2 = ptr_node;
-	}
-
-	unsigned type_size = get_type_size_bytes(type1);
-	if (get_type_size_bytes(type2) > type_size) {
-		type_size = get_type_size_bytes(type2);
 	}
 
 	/* same base address -> compare offsets if possible.
@@ -452,6 +447,11 @@ check_classes:;
 			offset1      += get_tarval_long(tv);
 			tv            = get_Const_tarval(base2);
 			offset2      += get_tarval_long(tv);
+
+			unsigned type_size = get_type_size_bytes(type1);
+			if (get_type_size_bytes(type2) > type_size) {
+				type_size = get_type_size_bytes(type2);
+			}
 
 			if ((unsigned long)labs(offset2 - offset1) >= type_size)
 				return ir_no_alias;
