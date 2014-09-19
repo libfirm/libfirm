@@ -75,6 +75,94 @@ static square_matrix *mat_create(int n)
 	return result;
 }
 
+/*
+ * Algorithm for QR decomposition taken from JAMA/C++ Linear Algebra
+ * Library.
+ * See http://math.nist.gov/tnt/jama_doxygen/jama_qr_h-source.html.
+ * License: Public domain (U.S. government work).
+ */
+
+/**
+ * Use QR decomposition to find the nullspace of a (size n * n). This
+ * function assumes that rank(a) = n-1.
+ */
+static void nullspace(square_matrix *a, double *nullspace)
+{
+	// The nullspace of a is the n-th column of q, where q * r is
+	// the QR decomposition of transpose(a).
+
+	int            n  = a->size;
+	square_matrix *qr = mat_create(n);
+
+	// Transpose a
+	for (int x = 0; x < n; x++) {
+		for (int y = 0; y < n; y++) {
+			MAT_ENTRY(qr, x, y) = MAT_ENTRY(a, y, x);
+		}
+	}
+
+	// In-place computation of qr.
+	for (int k = 0; k < n; k++) {
+		// Compute 2-norm of k-th column without under/overflow.
+		double nrm = 0;
+		for (int i = k; i < n; i++) {
+			nrm = hypot(nrm, MAT_ENTRY(qr, i, k));
+		}
+
+		if (nrm != 0.0) {
+			// Form k-th Householder vector.
+			if (MAT_ENTRY(qr, k, k) < 0) {
+				nrm = -nrm;
+			}
+			for (int i = k; i < n; i++) {
+				MAT_ENTRY(qr, i, k) /= nrm;
+			}
+			MAT_ENTRY(qr, k, k) += 1.0;
+
+			// Apply transformation to remaining columns.
+			for (int j = k+1; j < n; j++) {
+				double s = 0.0;
+				for (int i = k; i < n; i++) {
+					s += MAT_ENTRY(qr, i, k) * MAT_ENTRY(qr, i, j);
+				}
+				s = -s / MAT_ENTRY(qr, k, k);
+				for (int i = k; i < n; i++) {
+					MAT_ENTRY(qr, i, j) += s * MAT_ENTRY(qr, i, k);
+				}
+			}
+		}
+	}
+
+	square_matrix *q = mat_create(n);
+
+	// Computation of Q from QR.
+	for (int k = n-1; k >= 0; k--) {
+		for (int i = 0; i < n; i++) {
+			MAT_ENTRY(q, i, k) = 0.0;
+		}
+		MAT_ENTRY(q, k, k) = 1.0;
+		for (int j = k; j < n; j++) {
+			if (MAT_ENTRY(qr, k, k) != 0) {
+				double s = 0.0;
+				for (int i = k; i < n; i++) {
+					s += MAT_ENTRY(qr, i, k) * MAT_ENTRY(q, i, j);
+				}
+				s = -s / MAT_ENTRY(qr, k, k);
+				for (int i = k; i < n; i++) {
+					MAT_ENTRY(q, i, j) += s * MAT_ENTRY(qr, i, k);
+				}
+			}
+		}
+	}
+
+	// Fill nullspace with required information
+	for (int i = 0; i < n; i++) {
+		nullspace[i] = MAT_ENTRY(q, i, n-1);
+	}
+	free(qr);
+	free(q);
+}
+
 double get_block_execfreq(const ir_node *block)
 {
 	return block->attr.block.execfreq;
@@ -106,17 +194,6 @@ void init_execfreq(void)
 void exit_execfreq(void)
 {
 	unregister_hook(hook_node_info, &hook);
-}
-
-
-static int solve_lgs(square_matrix *mat, double *x)
-{
-	/* better convergence. */
-	double init = 1.0 / mat->size;
-	for (int i = 0; i < mat->size; ++i)
-		x[i] = init;
-
-	return firm_gaussjordansolve(mat->entries, x, mat->size);
 }
 
 static bool has_path_to_end(const ir_node *block)
@@ -448,62 +525,57 @@ void ir_estimate_execfreq(ir_graph *irg)
 		MAT_ENTRY(lgs_matrix, x, x) -= 1.0; /* RHS of the equation */
 	}
 
-	bool valid_freq;
 	if (lgs_size == 1) {
 		lgs_x[0] = 1.0;
-		valid_freq = true;
 	} else {
-		int  lgs_result = solve_lgs(lgs_matrix, lgs_x);
-		valid_freq = !lgs_result; /* solve_lgs returns -1 on error. */
+		nullspace(lgs_matrix, lgs_x);
 	}
 
 	/* compute the normalization factor.
 	 * 1.0 / exec freq of end block.
 	 */
-	double end_freq = lgs_x[mat_to_lgs[end_idx]];
-	double norm     = end_freq != 0.0 ? 1.0 / end_freq : 1.0;
+	double  end_freq   = lgs_x[mat_to_lgs[end_idx]];
+	double  norm       = end_freq != 0.0 ? 1.0 / end_freq : 1.0;
+	double *freqs      = NEW_ARR_F(double, size);
+	bool    valid_freq = true;
+
+	/* First get the frequency for the nodes which were
+	 * explicitly computed. */
+	for (int idx = size - 1; idx >= 0; --idx) {
+		ir_node *bb = (ir_node *) dfs_get_post_num_node(dfs, size - idx - 1);
+
+		if (mat_to_lgs[idx] != -1) {
+			double freq = lgs_x[mat_to_lgs[idx]] * norm;
+			/* Check for inf, nan and negative values. */
+			if (isinf(freq) || !(freq >= 0)) {
+				valid_freq = false;
+				break;
+			}
+			set_block_execfreq(bb, freq);
+			freqs[idx] = freq;
+		} else {
+			freqs[idx] = nan("");
+		}
+	}
 
 	if (valid_freq) {
-		double *freqs = NEW_ARR_F(double, size);
-
-		/* First get the frequency for the nodes which were
-		 * explicitly computed. */
+		/* Now get the rest of the frequencies using the factors in in_fac */
 		for (int idx = size - 1; idx >= 0; --idx) {
 			ir_node *bb = (ir_node *) dfs_get_post_num_node(dfs, size - idx - 1);
 
-			if (mat_to_lgs[idx] != -1) {
-				double freq = lgs_x[mat_to_lgs[idx]] * norm;
+			if (mat_to_lgs[idx] == -1) {
+				double freq = mat_dot_vec_entry(in_fac, freqs, idx);
 				/* Check for inf, nan and negative values. */
 				if (isinf(freq) || !(freq >= 0)) {
 					valid_freq = false;
 					break;
 				}
 				set_block_execfreq(bb, freq);
-				freqs[idx] = freq;
-			} else {
-				freqs[idx] = nan("");
 			}
 		}
-
-		if (valid_freq) {
-			/* Now get the rest of the frequencies using the factors in in_fac */
-			for (int idx = size - 1; idx >= 0; --idx) {
-				ir_node *bb = (ir_node *) dfs_get_post_num_node(dfs, size - idx - 1);
-
-				if (mat_to_lgs[idx] == -1) {
-					double freq = mat_dot_vec_entry(in_fac, freqs, idx);
-					/* Check for inf, nan and negative values. */
-					if (isinf(freq) || !(freq >= 0)) {
-						valid_freq = false;
-						break;
-					}
-					set_block_execfreq(bb, freq);
-				}
-			}
-		}
-
-		DEL_ARR_F(freqs);
 	}
+
+	DEL_ARR_F(freqs);
 
 	/* Fallback solution: Use loop weight. */
 	if (!valid_freq) {
