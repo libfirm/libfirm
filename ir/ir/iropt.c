@@ -1799,11 +1799,11 @@ static ir_tarval *do_eval(eval_func eval, ir_tarval *a, ir_tarval *b, ir_mode *m
  * @param other  the other operand
  * @param eval   an evaluator function
  * @param mode   the mode of the result, may be different from the mode of the Phi!
- * @param left   if non-zero, other is the left operand, else the right
+ * @param left   if true, other is the left operand, else the right
  *
  * @return a new Phi node if the conversion was successful, NULL else
  */
-static ir_node *apply_binop_on_phi(ir_node *phi, ir_tarval *other, eval_func eval, ir_mode *mode, int left)
+static ir_node *apply_binop_on_phi(ir_node *phi, ir_tarval *other, eval_func eval, ir_mode *mode, bool left)
 {
 	int         n   = get_irn_arity(phi);
 	ir_tarval **tvs = ALLOCAN(ir_tarval*, n);
@@ -1947,11 +1947,11 @@ static ir_node *apply_conv_on_phi(ir_node *phi, ir_mode *mode)
  * @param other  the other operand
  * @param eval   an evaluator function
  * @param mode   the mode of the result, may be different from the mode of the Mux!
- * @param left   if non-zero, other is the left operand, else the right
+ * @param left   if true, other is the left operand, else the right
  *
  * @return a new Mux node if the conversion was successful, NULL else
  */
-static ir_node *apply_binop_on_mux(ir_node *mux, ir_tarval *other, eval_func eval, ir_mode *mode, int left)
+static ir_node *apply_binop_on_mux(ir_node *mux, ir_tarval *other, eval_func eval, ir_mode *mode, bool left)
 {
 	if (!only_one_user(mux)) {
 		return NULL;
