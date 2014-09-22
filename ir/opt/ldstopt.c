@@ -574,8 +574,8 @@ static bool try_update_ptr_CopyB(track_load_env_t *env, ir_node *copyb)
 static changes_t follow_load_mem_chain(track_load_env_t *env, ir_node *start)
 {
 	ir_node *load      = env->load;
-	ir_mode *load_mode = get_Load_mode(load);
-	ir_type *load_objt = get_Load_type(load);
+	ir_type *load_type = get_Load_type(load);
+	unsigned load_size = get_mode_size_bytes(get_Load_mode(load));
 
 	ir_node  *node = start;
 	changes_t res  = NO_CHANGES;
@@ -591,13 +591,11 @@ static changes_t follow_load_mem_chain(track_load_env_t *env, ir_node *start)
 			/* check if we can pass through this store */
 			const ir_node *ptr        = get_Store_ptr(node);
 			const ir_node *value      = get_Store_value(node);
-			const ir_type *store_objt = get_Store_type(node);
-			const ir_mode *mode       = get_irn_mode(value);
-			const ir_type *store_type = get_type_for_mode(mode);
-			const ir_type *load_type  = get_type_for_mode(load_mode);
+			const ir_type *store_type = get_Store_type(node);
+			unsigned       store_size = get_mode_size_bytes(get_irn_mode(value));
 			ir_alias_relation rel = get_alias_relation(
-				ptr, store_type, store_objt,
-				env->ptr, load_type, load_objt);
+				ptr, store_type, store_size,
+				env->ptr, load_type, load_size);
 			/* if the might be an alias, we cannot pass this Store */
 			if (rel != ir_no_alias)
 				break;
@@ -625,18 +623,19 @@ static changes_t follow_load_mem_chain(track_load_env_t *env, ir_node *start)
 				 * Load immediately.
 				 */
 				res |= NODES_CREATED;
+				ir_mode *load_mode = get_Load_mode(load);
 				ir_node *new_value = predict_load(env->ptr, load_mode);
 				if (new_value != NULL)
 					return replace_load(load, new_value) | res;
 			}
 
 			/* check aliasing with the CopyB */
-			ir_node *dst       = get_CopyB_dst(node);
-			ir_type *type      = get_CopyB_type(node);
-			ir_type *load_type = get_type_for_mode(load_mode);
+			ir_node *dst  = get_CopyB_dst(node);
+			ir_type *type = get_CopyB_type(node);
+			unsigned size = get_type_size_bytes(type);
 			ir_alias_relation rel = get_alias_relation(
-				dst, type, type,
-				env->ptr, load_type, load_objt);
+				dst, type, size,
+				env->ptr, load_type, load_size);
 			/* possible alias => we cannot continue */
 			if (rel != ir_no_alias)
 				break;
@@ -740,15 +739,6 @@ static changes_t optimize_load(ir_node *load)
 }
 
 /**
- * Check whether a value of mode new_mode would completely overwrite a value
- * of mode old_mode in memory.
- */
-static bool is_completely_overwritten(ir_mode *old_mode, ir_mode *new_mode)
-{
-	return get_mode_size_bits(new_mode) >= get_mode_size_bits(old_mode);
-}
-
-/**
  * Check whether small is a part of large (starting at same address).
  */
 static bool is_partially_same(ir_node *small, ir_node *large)
@@ -776,9 +766,8 @@ static changes_t follow_store_mem_chain(ir_node *store, ir_node *start,
 	ir_node     *ptr   = get_Store_ptr(store);
 	ir_node     *mem   = get_Store_mem(store);
 	ir_node     *value = get_Store_value(store);
-	ir_type     *objt  = get_Store_type(store);
-	ir_mode     *mode  = get_irn_mode(value);
-	ir_type     *type  = get_type_for_mode(mode);
+	ir_type     *type  = get_Store_type(store);
+	unsigned     size  = get_mode_size_bytes(get_irn_mode(value));
 	ir_node     *block = get_nodes_block(store);
 
 	ir_node *node = start;
@@ -811,9 +800,9 @@ static changes_t follow_store_mem_chain(ir_node *store, ir_node *start,
 			    && !node_info->projs[pn_Store_X_except]) {
 				ir_node *predvalue = get_Store_value(node);
 				ir_mode *predmode  = get_irn_mode(predvalue);
+				unsigned predsize  = get_mode_size_bytes(predmode);
 
-				if (is_completely_overwritten(predmode, mode)
-				    || is_partially_same(predvalue, value)) {
+				if (predsize <= size || is_partially_same(predvalue, value)) {
 					DBG_OPT_WAW(node, store);
 					DB((dbg, LEVEL_1, "  killing store %+F (override by %+F)\n",
 					    node, store));
@@ -865,22 +854,22 @@ static changes_t follow_store_mem_chain(ir_node *store, ir_node *start,
 			/* check if we can pass through this store */
 			ir_node *store_ptr   = get_Store_ptr(node);
 			ir_node *store_value = get_Store_value(node);
-			ir_type *store_type  = get_type_for_mode(get_irn_mode(store_value));
-			ir_type *store_objt  = get_Store_type(node);
+			unsigned store_size  = get_mode_size_bytes(get_irn_mode(store_value));
+			ir_type *store_type  = get_Store_type(node);
 			ir_alias_relation rel = get_alias_relation(
-				store_ptr, store_type, store_objt,
-				ptr, type, objt);
+				store_ptr, store_type, store_size,
+				ptr, type, size);
 			/* if the might be an alias, we cannot pass this Store */
 			if (rel != ir_no_alias)
 				break;
 			node = skip_Proj(get_Store_mem(node));
 		} else if (is_Load(node)) {
 			ir_node *load_ptr  = get_Load_ptr(node);
-			ir_type *load_type = get_type_for_mode(get_Load_mode(node));
-			ir_type *load_objt = get_Load_type(node);
+			ir_type *load_type = get_Load_type(node);
+			unsigned load_size = get_mode_size_bytes(get_Load_mode(node));
 			ir_alias_relation rel = get_alias_relation(
-				load_ptr, load_type, load_objt,
-				ptr, type, objt);
+				load_ptr, load_type, load_size,
+				ptr, type, size);
 			if (rel != ir_no_alias)
 				break;
 
@@ -888,15 +877,16 @@ static changes_t follow_store_mem_chain(ir_node *store, ir_node *start,
 		} else if (is_CopyB(node)) {
 			ir_node *copyb_src  = get_CopyB_src(node);
 			ir_type *copyb_type = get_CopyB_type(node);
+			unsigned copyb_size = get_type_size_bytes(copyb_type);
 			ir_alias_relation src_rel = get_alias_relation(
-				copyb_src, copyb_type, copyb_type,
-				ptr, type, objt);
+				copyb_src, copyb_type, copyb_size,
+				ptr, type, size);
 			if (src_rel != ir_no_alias)
 				break;
 			ir_node *copyb_dst = get_CopyB_dst(node);
 			ir_alias_relation dst_rel = get_alias_relation(
-				copyb_dst, copyb_type, copyb_type,
-				ptr, type, objt);
+				copyb_dst, copyb_type, copyb_size,
+				ptr, type, size);
 			if (dst_rel != ir_no_alias)
 				break;
 		} else {
@@ -1009,12 +999,12 @@ static bool ptr_is_in_struct(ir_node *ptr, ir_type *ptr_type,
 static changes_t follow_copyb_mem_chain(ir_node *copyb, ir_node *start,
                                         bool had_split)
 {
-	changes_t res       = NO_CHANGES;
-	ir_node  *src       = get_CopyB_src(copyb);
-	ir_node  *dst       = get_CopyB_dst(copyb);
-	ir_type  *type      = get_CopyB_type(copyb);
-	unsigned  type_size = get_type_size_bytes(type);
-	ir_node  *block     = get_nodes_block(copyb);
+	changes_t res   = NO_CHANGES;
+	ir_node  *src   = get_CopyB_src(copyb);
+	ir_node  *dst   = get_CopyB_dst(copyb);
+	ir_type  *type  = get_CopyB_type(copyb);
+	unsigned  size  = get_type_size_bytes(type);
+	ir_node  *block = get_nodes_block(copyb);
 
 	ir_node *node = start;
 	while (node != copyb) {
@@ -1024,19 +1014,17 @@ static changes_t follow_copyb_mem_chain(ir_node *copyb, ir_node *start,
 		    && get_Store_volatility(node) != volatility_is_volatile
 		    && !node_info->projs[pn_Store_X_except] && !had_split
 		    && get_nodes_block(node) == block) {
-			/*
-			 * If the CopyB completely overwrites the Store,
+			/* If the CopyB completely overwrites the Store,
 			 * and the Store does not modify the CopyB's source memory,
 			 * and the Store has no exception handler,
 			 * the Store can be removed.
-			 * This is basically a write-after-write.
-			 */
+			 * This is basically a write-after-write. */
 			ir_node           *store_ptr  = get_Store_ptr(node);
-			ir_type           *store_type = get_type_for_mode(get_irn_mode(store_ptr));
-			ir_type           *store_objt = get_Store_type(node);
+			ir_type           *store_type = get_Store_type(node);
+			unsigned           store_size = get_mode_size_bytes(get_irn_mode(store_ptr));
 			ir_alias_relation  src_rel    = get_alias_relation(
-				src, type, type,
-				store_ptr, store_type, store_objt);
+				src, type, size,
+				store_ptr, store_type, store_size);
 
 			if (src_rel == ir_no_alias
 			    && ptr_is_in_struct(store_ptr, store_type, dst, type)) {
@@ -1051,40 +1039,40 @@ static changes_t follow_copyb_mem_chain(ir_node *copyb, ir_node *start,
 
 		if (is_Store(node)) {
 			ir_node *store_ptr   = get_Store_ptr(node);
+			ir_type *store_type  = get_Store_type(node);
 			ir_node *store_value = get_Store_value(node);
-			ir_type *store_type  = get_type_for_mode(get_irn_mode(store_value));
-			ir_type *store_objt  = get_Store_type(node);
+			unsigned store_size  = get_mode_size_bytes(get_irn_mode(store_value));
 			/* check if we can pass through this store */
 			ir_alias_relation src_rel = get_alias_relation(
-				store_ptr, store_type, store_objt,
-				src, type, type);
+				store_ptr, store_type, store_size,
+				src, type, size);
 			if (src_rel != ir_no_alias)
 				break;
 			ir_alias_relation dst_rel = get_alias_relation(
-				store_ptr, store_type, store_objt,
-				dst, type, type);
+				store_ptr, store_type, store_size,
+				dst, type, size);
 			if (dst_rel != ir_no_alias)
 				break;
 
 			node = skip_Proj(get_Store_mem(node));
 		} else if (is_Load(node)) {
 			ir_node *load_ptr  = get_Load_ptr(node);
-			ir_type *load_type = get_type_for_mode(get_Load_mode(node));
-			ir_type *load_objt = get_Load_type(node);
+			ir_type *load_type = get_Load_type(node);
+			unsigned load_size = get_mode_size_bytes(get_Load_mode(node));
 			ir_alias_relation rel = get_alias_relation(
-				load_ptr, load_type, load_objt,
-				dst, type, type);
+				load_ptr, load_type, load_size,
+				dst, type, size);
 			if (rel != ir_no_alias)
 				break;
 
 			node = skip_Proj(get_Load_mem(node));
 		} else if (is_CopyB(node)) {
-			ir_node  *pred_dst       = get_CopyB_dst(node);
-			ir_node  *pred_src       = get_CopyB_src(node);
-			ir_type  *pred_type      = get_CopyB_type(node);
-			unsigned  pred_type_size = get_type_size_bytes(pred_type);
+			ir_node  *pred_dst  = get_CopyB_dst(node);
+			ir_node  *pred_src  = get_CopyB_src(node);
+			ir_type  *pred_type = get_CopyB_type(node);
+			unsigned  pred_size = get_type_size_bytes(pred_type);
 
-			if (src == pred_dst && type_size == pred_type_size
+			if (src == pred_dst && size == pred_size
 			    && get_CopyB_volatility(node) == volatility_non_volatile) {
 				src = pred_src;
 
@@ -1102,18 +1090,18 @@ static changes_t follow_copyb_mem_chain(ir_node *copyb, ir_node *start,
 				}
 			} else {
 				ir_alias_relation dst_dst_rel = get_alias_relation(
-					pred_dst, pred_type, pred_type,
-					dst, type, type);
+					pred_dst, pred_type, pred_size,
+					dst, type, size);
 				if (dst_dst_rel != ir_no_alias)
 					break;
 				ir_alias_relation src_dst_rel = get_alias_relation(
-					pred_src, pred_type, pred_type,
-					dst, type, type);
+					pred_src, pred_type, pred_size,
+					dst, type, size);
 				if (src_dst_rel != ir_no_alias)
 					break;
 				ir_alias_relation dst_src_rel = get_alias_relation(
-					pred_dst, pred_type, pred_type,
-					src, type, type);
+					pred_dst, pred_type, pred_size,
+					src, type, size);
 				if (dst_src_rel != ir_no_alias)
 					break;
 			}
@@ -1657,9 +1645,9 @@ static void move_loads_out_of_loops(scc *pscc, loop_env *env)
 			/* for now, we can only move Load(Global) */
 			if (!is_Address(ptr))
 				continue;
+			ir_type *load_type = get_Load_type(load);
 			ir_mode *load_mode = get_Load_mode(load);
-			ir_type *load_type = get_type_for_mode(load_mode);
-			ir_type *load_objt = get_Load_type(load);
+			unsigned load_size = get_mode_size_bytes(load_mode);
 			ir_node *other;
 			ir_node *next_other;
 			for (other = pscc->head; other != NULL; other = next_other) {
@@ -1669,13 +1657,12 @@ static void move_loads_out_of_loops(scc *pscc, loop_env *env)
 				if (is_Store(other)) {
 					ir_node *store_ptr   = get_Store_ptr(other);
 					ir_node *store_value = get_Store_value(other);
-					ir_type *store_type
-						= get_type_for_mode(get_irn_mode(store_value));
-					ir_type *store_objt  = get_Store_type(other);
+					ir_type *store_type  = get_Store_type(other);
+					unsigned store_size  = get_mode_size_bytes(get_irn_mode(store_value));
 
 					ir_alias_relation rel = get_alias_relation(
-						store_ptr, store_type, store_objt,
-						ptr, load_type, load_objt);
+						store_ptr, store_type, store_size,
+						ptr, load_type, load_size);
 					/* if the might be an alias, we cannot pass this Store */
 					if (rel != ir_no_alias)
 						break;
@@ -1705,7 +1692,7 @@ static void move_loads_out_of_loops(scc *pscc, loop_env *env)
 					if (res != NULL) {
 						irn = res->load;
 					} else {
-						irn = new_rd_Load(db, pred, get_Phi_pred(phi, pos), ptr, load_mode, load_objt, cons_none);
+						irn = new_rd_Load(db, pred, get_Phi_pred(phi, pos), ptr, load_mode, load_type, cons_none);
 						entry.load = irn;
 						(void)set_insert(avail_entry_t, avail, &entry, sizeof(entry), hash_cache_entry(&entry));
 						DB((dbg, LEVEL_1, "  Created %+F in %+F\n", irn, pred));

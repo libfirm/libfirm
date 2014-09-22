@@ -924,9 +924,13 @@ static void kill_memops(const value_t *value)
 
 		ir_type *value_type = get_type_for_mode(value->mode);
 		ir_type *op_type    = get_type_for_mode(op->value.mode);
+		/* TODO: determining the access size by the type of the accessed objects
+		 * is too conservative... */
+		unsigned value_size = get_type_size_bytes(value_type);
+		unsigned op_size    = get_type_size_bytes(op_type);
 
-		if (ir_no_alias != get_alias_relation(value->address, value_type, value_type,
-		                                      op->value.address, op_type, op_type)) {
+		if (ir_no_alias != get_alias_relation(value->address, value_type, value_size,
+		                                      op->value.address, op_type, op_size)) {
 			rbitset_clear(env.curr_set, pos);
 			env.curr_id_2_memop[pos] = NULL;
 			DB((dbg, LEVEL_2, "KILLING %+F because of possible alias address %+F\n", op->node, value->address));

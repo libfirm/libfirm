@@ -111,14 +111,10 @@ static void replace_may_alias(ir_node *node)
 	ir_type *type  = get_Builtin_type(node);
 	ir_type *type0 = get_pointer_points_to_type(get_method_param_type(type, 0));
 	ir_type *type1 = get_pointer_points_to_type(get_method_param_type(type, 1));
-	if (is_unknown_type(type0))
-		type0 = get_type_for_mode(mode_P);
-	if (is_unknown_type(type1))
-		type1 = get_type_for_mode(mode_P);
 	ir_type *rtype = get_method_res_type(type, 0);
 	ir_mode *rmode = get_type_mode(rtype);
 
-	ir_alias_relation alias = get_alias_relation(in0, type0, type0, in1, type1, type1);
+	ir_alias_relation alias = get_alias_relation(in0, type0, 1, in1, type1, 1);
 
 	ir_graph *const irg    = get_irn_irg(node);
 	ir_node  *const result = (alias != ir_no_alias ? new_r_Const_one : new_r_Const_null)(irg, rmode);

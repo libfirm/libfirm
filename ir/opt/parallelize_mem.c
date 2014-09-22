@@ -30,8 +30,8 @@ typedef struct parallelize_info
 {
 	ir_node      *origin_block;
 	ir_node      *origin_ptr;
-	ir_type      *origin_ldst_type; /**< Type derived from Load/Store mode */
-	ir_type      *origin_obj_type;  /**< Type of the object in memory */
+	ir_type      *origin_type;  /**< Type if ptr destination. */
+	unsigned      origin_size;  /**< size of memory access. */
 	ir_nodeset_t  this_mem;
 	ir_nodeset_t  user_mem;
 	ir_nodeset_t  all_visited;
@@ -56,14 +56,14 @@ static void parallelize_load(parallelize_info *pi, ir_node *irn)
 				return;
 			} else if (is_Store(pred) &&
 					get_Store_volatility(pred) == volatility_non_volatile) {
-				ir_type *org_type   = pi->origin_ldst_type;
-				ir_type *org_objt   = pi->origin_obj_type;
+				ir_type *org_type   = pi->origin_type;
+				unsigned org_size   = pi->origin_size;
 				ir_node *org_ptr    = pi->origin_ptr;
-				ir_type *store_type = get_type_for_mode(get_irn_mode(get_Store_value(pred)));
-				ir_type *store_objt = get_Store_type(pred);
+				ir_type *store_type = get_Store_type(pred);
+				unsigned store_size = get_mode_size_bytes(get_irn_mode(get_Store_value(pred)));
 				ir_node *store_ptr  = get_Store_ptr(pred);
-				if (get_alias_relation(org_ptr, org_type, org_objt,
-				                       store_ptr, store_type, store_objt) == ir_no_alias) {
+				if (get_alias_relation(org_ptr, org_type, org_size,
+				                       store_ptr, store_type, store_size) == ir_no_alias) {
 					ir_node *mem = get_Store_mem(pred);
 					ir_nodeset_insert(&pi->user_mem, irn);
 					parallelize_load(pi, mem);
@@ -78,13 +78,14 @@ static void parallelize_load(parallelize_info *pi, ir_node *irn)
 			return;
 		} else if (is_CopyB(irn) &&
 		           get_CopyB_volatility(irn) == volatility_non_volatile) {
-			ir_type *org_type   = pi->origin_ldst_type;
-			ir_type *org_objt   = pi->origin_obj_type;
+			ir_type *org_type   = pi->origin_type;
+			unsigned org_size   = pi->origin_size;
 			ir_node *org_ptr    = pi->origin_ptr;
 			ir_type *copyB_type = get_CopyB_type(irn);
 			ir_node *copyB_dst  = get_CopyB_dst(irn);
-			if (get_alias_relation(org_ptr, org_type, org_objt,
-			                       copyB_dst, copyB_type, copyB_type) == ir_no_alias) {
+			unsigned copyB_size = get_type_size_bytes(copyB_type);
+			if (get_alias_relation(org_ptr, org_type, org_size,
+			                       copyB_dst, copyB_type, copyB_size) == ir_no_alias) {
 				ir_node *mem = get_CopyB_mem(irn);
 				ir_nodeset_insert(&pi->user_mem, irn);
 				parallelize_load(pi, mem);
@@ -108,14 +109,14 @@ static void parallelize_store(parallelize_info *pi, ir_node *irn)
 			ir_node *pred = get_Proj_pred(irn);
 			if (is_Load(pred)
 			    && get_Load_volatility(pred) == volatility_non_volatile) {
-				ir_type *org_type  = pi->origin_ldst_type;
-				ir_type *org_objt  = pi->origin_obj_type;
 				ir_node *org_ptr   = pi->origin_ptr;
-				ir_type *load_type = get_type_for_mode(get_Load_mode(pred));
-				ir_type *load_objt = get_Load_type(pred);
+				ir_type *org_type  = pi->origin_type;
+				unsigned org_size  = pi->origin_size;
 				ir_node *load_ptr  = get_Load_ptr(pred);
-				if (get_alias_relation(org_ptr, org_type, org_objt,
-				                       load_ptr, load_type, load_objt) == ir_no_alias) {
+				ir_type *load_type = get_Load_type(pred);
+				unsigned load_size = get_mode_size_bytes(get_Load_mode(pred));
+				if (get_alias_relation(org_ptr, org_type, org_size,
+				                       load_ptr, load_type, load_size) == ir_no_alias) {
 					ir_node *mem = get_Load_mem(pred);
 					ir_nodeset_insert(&pi->user_mem, irn);
 					parallelize_store(pi, mem);
@@ -123,14 +124,14 @@ static void parallelize_store(parallelize_info *pi, ir_node *irn)
 				}
 			} else if (is_Store(pred)
 			           && get_Store_volatility(pred) == volatility_non_volatile) {
-				ir_type *org_type   = pi->origin_ldst_type;
-				ir_type *org_objt   = pi->origin_obj_type;
 				ir_node *org_ptr    = pi->origin_ptr;
-				ir_type *store_type = get_type_for_mode(get_irn_mode(get_Store_value(pred)));
-				ir_type *store_objt = get_Store_type(pred);
+				ir_type *org_type   = pi->origin_type;
+				unsigned org_size   = pi->origin_size;
 				ir_node *store_ptr  = get_Store_ptr(pred);
-				if (get_alias_relation(org_ptr, org_type, org_objt,
-				                       store_ptr, store_type, store_objt) == ir_no_alias) {
+				ir_type *store_type = get_Store_type(pred);
+				unsigned store_size = get_mode_size_bytes(get_irn_mode(get_Store_value(pred)));
+				if (get_alias_relation(org_ptr, org_type, org_size,
+				                       store_ptr, store_type, store_size) == ir_no_alias) {
 					ir_node *mem = get_Store_mem(pred);
 					ir_nodeset_insert(&pi->user_mem, irn);
 					parallelize_store(pi, mem);
@@ -145,16 +146,17 @@ static void parallelize_store(parallelize_info *pi, ir_node *irn)
 			return;
 		} else if (is_CopyB(irn)
 		           && get_CopyB_volatility(irn) == volatility_non_volatile) {
-			ir_type *org_type   = pi->origin_ldst_type;
-			ir_type *org_objt   = pi->origin_obj_type;
 			ir_node *org_ptr    = pi->origin_ptr;
-			ir_type *copyB_type = get_CopyB_type(irn);
+			ir_type *org_type   = pi->origin_type;
+			unsigned org_size   = pi->origin_size;
 			ir_node *copyB_src  = get_CopyB_src(irn);
 			ir_node *copyB_dst  = get_CopyB_dst(irn);
-			if (get_alias_relation(org_ptr, org_type, org_objt,
-			                       copyB_src, copyB_type, copyB_type) == ir_no_alias &&
-			    get_alias_relation(org_ptr, org_type, org_objt,
-			                       copyB_dst, copyB_type, copyB_type) == ir_no_alias) {
+			ir_type *copyB_type = get_CopyB_type(irn);
+			unsigned copyB_size = get_type_size_bytes(copyB_type);
+			if (get_alias_relation(org_ptr, org_type, org_size,
+			                       copyB_src, copyB_type, copyB_size) == ir_no_alias &&
+			    get_alias_relation(org_ptr, org_type, org_size,
+			                       copyB_dst, copyB_type, copyB_size) == ir_no_alias) {
 				ir_node *mem = get_CopyB_mem(irn);
 				ir_nodeset_insert(&pi->user_mem, irn);
 				parallelize_store(pi, mem);
@@ -178,14 +180,14 @@ static void parallelize_copyB(parallelize_info *pi, ir_node *origin, ir_node *ir
 			ir_node *pred = get_Proj_pred(irn);
 			if (is_Load(pred)
 			    && get_Load_volatility(pred) == volatility_non_volatile) {
-				ir_type *org_type  = pi->origin_ldst_type;
-				ir_type *org_objt  = pi->origin_obj_type;
 				ir_node *org_ptr   = get_CopyB_dst(origin);
-				ir_type *load_type = get_type_for_mode(get_Load_mode(pred));
+				ir_type *org_type  = pi->origin_type;
+				unsigned org_size  = pi->origin_size;
 				ir_node *load_ptr  = get_Load_ptr(pred);
-				ir_type *load_objt = get_Load_type(pred);
-				if (get_alias_relation(org_ptr, org_type, org_objt,
-				                       load_ptr, load_type, load_objt) == ir_no_alias) {
+				ir_type *load_type = get_Load_type(pred);
+				unsigned load_size = get_mode_size_bytes(get_Load_mode(pred));
+				if (get_alias_relation(org_ptr, org_type, org_size,
+				                       load_ptr, load_type, load_size) == ir_no_alias) {
 					ir_node *mem = get_Load_mem(pred);
 					ir_nodeset_insert(&pi->user_mem, irn);
 					parallelize_copyB(pi, origin, mem);
@@ -193,17 +195,17 @@ static void parallelize_copyB(parallelize_info *pi, ir_node *origin, ir_node *ir
 				}
 			} else if (is_Store(pred)
 			           && get_Store_volatility(pred) == volatility_non_volatile) {
-				ir_type *org_type   = pi->origin_ldst_type;
-				ir_type *org_objt   = pi->origin_obj_type;
 				ir_node *org_src    = get_CopyB_src(origin);
 				ir_node *org_dst    = get_CopyB_dst(origin);
-				ir_type *store_type = get_type_for_mode(get_irn_mode(get_Store_value(pred)));
+				ir_type *org_type   = pi->origin_type;
+				unsigned org_size   = pi->origin_size;
 				ir_node *store_ptr  = get_Store_ptr(pred);
-				ir_type *store_objt = get_Store_type(pred);
-				if (get_alias_relation(org_src, org_type, org_objt,
-				                       store_ptr, store_type, store_objt) == ir_no_alias &&
-				    get_alias_relation(org_dst, org_type, org_objt,
-				                       store_ptr, store_type, store_objt) == ir_no_alias) {
+				ir_type *store_type = get_Store_type(pred);
+				unsigned store_size = get_mode_size_bytes(get_irn_mode(get_Store_value(pred)));
+				if (get_alias_relation(org_src, org_type, org_size,
+				                       store_ptr, store_type, store_size) == ir_no_alias &&
+				    get_alias_relation(org_dst, org_type, org_size,
+				                       store_ptr, store_type, store_size) == ir_no_alias) {
 					ir_node *mem = get_Store_mem(pred);
 					ir_nodeset_insert(&pi->user_mem, irn);
 					parallelize_copyB(pi, origin, mem);
@@ -218,19 +220,20 @@ static void parallelize_copyB(parallelize_info *pi, ir_node *origin, ir_node *ir
 			return;
 		} else if (is_CopyB(irn)
 		           && get_CopyB_volatility(irn) == volatility_non_volatile) {
-			ir_type *org_type   = pi->origin_ldst_type;
-			ir_type *org_objt   = pi->origin_obj_type;
 			ir_node *org_src    = get_CopyB_src(origin);
 			ir_node *org_dst    = get_CopyB_dst(origin);
-			ir_type *copyB_type = get_CopyB_type(irn);
+			ir_type *org_type   = pi->origin_type;
+			unsigned org_size   = pi->origin_size;
 			ir_node *copyB_src  = get_CopyB_src(irn);
 			ir_node *copyB_dst  = get_CopyB_dst(irn);
-			if (get_alias_relation(org_src, org_type, org_objt,
-			                       copyB_dst, copyB_type, copyB_type) == ir_no_alias &&
-			    get_alias_relation(org_dst, org_type, org_objt,
-			                       copyB_src, copyB_type, copyB_type) == ir_no_alias &&
-			    get_alias_relation(org_dst, org_type, org_objt,
-			                       copyB_dst, copyB_type, copyB_type) == ir_no_alias) {
+			ir_type *copyB_type = get_CopyB_type(irn);
+			unsigned copyB_size = get_type_size_bytes(copyB_type);
+			if (get_alias_relation(org_src, org_type, org_size,
+			                       copyB_dst, copyB_type, copyB_size) == ir_no_alias &&
+			    get_alias_relation(org_dst, org_type, org_size,
+			                       copyB_src, copyB_type, copyB_size) == ir_no_alias &&
+			    get_alias_relation(org_dst, org_type, org_size,
+			                       copyB_dst, copyB_type, copyB_size) == ir_no_alias) {
 				ir_node *mem = get_CopyB_mem(irn);
 				ir_nodeset_insert(&pi->user_mem, irn);
 				parallelize_copyB(pi, origin, mem);
@@ -263,10 +266,10 @@ static void walker(ir_node *proj, void *env)
 		block = get_nodes_block(mem_op);
 		pred  = get_Load_mem(mem_op);
 
-		pi.origin_block     = block,
-		pi.origin_ptr       = get_Load_ptr(mem_op);
-		pi.origin_ldst_type = get_type_for_mode(get_Load_mode(mem_op));
-		pi.origin_obj_type  = get_Load_type(mem_op);
+		pi.origin_block = block,
+		pi.origin_ptr   = get_Load_ptr(mem_op);
+		pi.origin_size  = get_mode_size_bytes(get_Load_mode(mem_op));
+		pi.origin_type  = get_Load_type(mem_op);
 		ir_nodeset_init(&pi.this_mem);
 		ir_nodeset_init(&pi.user_mem);
 		ir_nodeset_init(&pi.all_visited);
@@ -278,10 +281,10 @@ static void walker(ir_node *proj, void *env)
 		block = get_nodes_block(mem_op);
 		pred  = get_Store_mem(mem_op);
 
-		pi.origin_block     = block,
-		pi.origin_ptr       = get_Store_ptr(mem_op);
-		pi.origin_ldst_type = get_type_for_mode(get_irn_mode(get_Store_value(mem_op)));
-		pi.origin_obj_type  = get_Store_type(mem_op);
+		pi.origin_block = block,
+		pi.origin_ptr   = get_Store_ptr(mem_op);
+		pi.origin_size  = get_mode_size_bytes(get_irn_mode(get_Store_value(mem_op)));
+		pi.origin_type  = get_Store_type(mem_op);
 		ir_nodeset_init(&pi.this_mem);
 		ir_nodeset_init(&pi.user_mem);
 		ir_nodeset_init(&pi.all_visited);
@@ -293,9 +296,9 @@ static void walker(ir_node *proj, void *env)
 		block = get_nodes_block(mem_op);
 		pred  = get_CopyB_mem(mem_op);
 
-		pi.origin_block     = block;
-		pi.origin_ldst_type = get_CopyB_type(mem_op);
-		pi.origin_obj_type  = get_CopyB_type(mem_op);
+		pi.origin_block = block;
+		pi.origin_type  = get_CopyB_type(mem_op);
+		pi.origin_size  = get_type_size_bytes(pi.origin_type);
 		/* parallelize_copyB uses the node itself, because the
 		 * information does not fit in a parallelize_info. */
 		ir_nodeset_init(&pi.this_mem);

@@ -28,6 +28,7 @@
 #include "panic.h"
 #include "typerep.h"
 #include "type_t.h"
+#include "util.h"
 
 /** The debug handle. */
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
@@ -237,21 +238,9 @@ analyze_entity:
 	return res;
 }
 
-/**
- * Determine the alias relation between two addresses.
- *
- * @param addr1  pointer address of the first memory operation
- * @param type1  the type of the operation accessing addr1
- * @param objt1  the type of the object found at addr1 ("object type")
- * @param addr2  pointer address of the second memory operation
- * @param type2  the type of the operation accessing addr2
- * @param objt2  the type of the object found at addr2 ("object type")
- *
- * @return found memory relation
- */
 static ir_alias_relation _get_alias_relation(
-	const ir_node *addr1, const ir_type *const type1, const ir_type *const objt1,
-	const ir_node *addr2, const ir_type *const type2, const ir_type *const objt2)
+	const ir_node *addr1, const ir_type *const objt1, unsigned size1,
+	const ir_node *addr2, const ir_type *const objt2, unsigned size2)
 {
 	if (addr1 == addr2)
 		return ir_sure_alias;
@@ -264,8 +253,7 @@ static ir_alias_relation _get_alias_relation(
 		return ir_no_alias;
 
 	/* do the addresses have constants offsets from the same base?
-	 *  Note: sub X, C is normalized to add X, -C
-	 */
+	 *  Note: sub X, C is normalized to add X, -C */
 	long           offset1            = 0;
 	long           offset2            = 0;
 	const ir_node *sym_offset1        = NULL;
@@ -345,24 +333,23 @@ follow_ptr2:
 	}
 
 	/* same base address -> compare offsets if possible.
-	 * FIXME: type long is not sufficient for this task ...
-	 */
+	 * FIXME: type long is not sufficient for this task ... */
 	if (addr1 == addr2 && sym_offset1 == sym_offset2 && have_const_offsets) {
 		unsigned long first_offset;
 		unsigned long last_offset;
-		unsigned first_type_size;
+		unsigned first_size;
 
 		if (offset1 <= offset2) {
 			first_offset = offset1;
 			last_offset = offset2;
-			first_type_size = get_type_size_bytes(type1);
+			first_size = size1;
 		} else {
 			first_offset = offset2;
 			last_offset = offset1;
-			first_type_size = get_type_size_bytes(type2);
+			first_size = size2;
 		}
 
-		return first_offset + first_type_size <= last_offset
+		return first_offset + first_size <= last_offset
 		     ? ir_no_alias : ir_sure_alias;
 	}
 
@@ -448,11 +435,7 @@ check_classes:;
 			tv            = get_Const_tarval(base2);
 			offset2      += get_tarval_long(tv);
 
-			unsigned type_size = get_type_size_bytes(type1);
-			if (get_type_size_bytes(type2) > type_size) {
-				type_size = get_type_size_bytes(type2);
-			}
-
+			unsigned type_size = MAX(size1, size2);
 			if ((unsigned long)labs(offset2 - offset1) >= type_size)
 				return ir_no_alias;
 			else
@@ -506,10 +489,10 @@ leave_type_based_alias:;
 }
 
 ir_alias_relation get_alias_relation(
-	const ir_node *const addr1, const ir_type *const type1, const ir_type *const objt1,
-	const ir_node *const addr2, const ir_type *const type2, const ir_type *const objt2)
+	const ir_node *const addr1, const ir_type *const type1, unsigned size1,
+	const ir_node *const addr2, const ir_type *const type2, unsigned size2)
 {
-	ir_alias_relation rel = _get_alias_relation(addr1, type1, objt1, addr2, type2, objt2);
+	ir_alias_relation rel = _get_alias_relation(addr1, type1, size1, addr2, type2, size2);
 	DB((dbg, LEVEL_1, "alias(%+F, %+F) = %s\n", addr1, addr2,
 	    get_ir_alias_relation_name(rel)));
 	return rel;

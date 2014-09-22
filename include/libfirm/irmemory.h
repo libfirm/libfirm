@@ -57,43 +57,20 @@ ENUM_BITSET(ir_disambiguator_options)
 FIRM_API const char *get_ir_alias_relation_name(ir_alias_relation rel);
 
 /**
- * Determine the alias relation between two addresses.
+ * Determine if two memory addresses may point to the same memory location.
+ * This is determined by looking at the structure of the values or language
+ * rules determined by looking at the object types accessed.
  *
  * @param addr1   The first address.
- * @param type1   The type of the first memory access.
- * @param objt1   The type of the object found at addr1 ("object type")
+ * @param type1   The type of the object found at @p addr1 ("object type").
+ * @param size1   The size in bytes of the first memory access.
  * @param addr2   The second address.
- * @param type2   The type of the second memory access.
- * @param objt2   The type of the object found at addr2 ("object type")
- *
- * The memory disambiguator tries to determine the alias state between
- * two memory addresses. The following rules are used:
- *
- * - different variable from the same segment never alias (R1 a)
- * - variables from different segments never alias when:
- *   - a global variable and a local one never alias (R1 b)
- *   - a global variable and a TLS one never alias (R1 c)
- *   - a local variable and a TLS one never alias (R1 d)
- *   - a local variable and a parameter never alias (R1 e)
- *   - a global variable and the result of a malloc routine never alias (R1 f)
- *   - a local variable and the result of a malloc routine never alias (R1 g)
- *   - a TLS variable and the result of a malloc routine never alias (R1 h)
- *   - a parameter and the result of a malloc routine (obtained in the
- *     same routine as the parameter) never alias (R1 i)
- * - two different variables never alias (R2)
- * - if one is a variable whose address has never been taken
- *   there is no alias (R3)
- * - if two memory addresses have the same base and their offsets
- *   do not describe overlapping regions there is no alias (R4)
- * - if opt_strong_typed is set and both addresses describe entities,
- *   different types never alias (R5)
- *
- * If none of these rules apply, the points-to framework must be
- * interrogated to detect the alias relation.
+ * @param type2   The type of the object found at @p addr2 ("object type").
+ * @param size2   The size in bytes of the second memory access.
  */
 FIRM_API ir_alias_relation get_alias_relation(
-	const ir_node *addr1, const ir_type *type1, const ir_type *objt1,
-	const ir_node *addr2, const ir_type *type2, const ir_type *objt2);
+	const ir_node *addr1, const ir_type *type1, unsigned size1,
+	const ir_node *addr2, const ir_type *type2, unsigned size2);
 
 /**
  * Assure that the entity usage flags have been computed for the given graph.
