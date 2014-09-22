@@ -2852,6 +2852,19 @@ static ir_node *transform_node_Eor_(ir_node *n)
 			return n;
 		}
 
+		if (is_Add(a) && get_Add_right(a) == b) {
+			ir_tarval *tb       = get_Const_tarval(b);
+			ir_tarval *all_one  = get_mode_all_one(mode);
+			ir_tarval *expected = tarval_shr_unsigned(all_one, 1);
+			if (tb == expected) {
+				/* (x + 0x7F...F) ^ 0x7F...F -> -x */
+				dbg_info *dbgi  = get_irn_dbg_info(n);
+				ir_node  *block = get_nodes_block(n);
+				ir_node  *aa    = get_Add_left(a);
+				return new_rd_Minus(dbgi, block, aa, mode);
+			}
+		}
+
 		if (is_Minus(a) && get_mode_arithmetic(mode) == irma_twos_complement) {
 			ir_tarval *tv   = get_Const_tarval(b);
 			int        bits = (int)get_mode_size_bits(mode);
