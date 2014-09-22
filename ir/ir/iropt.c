@@ -3154,13 +3154,25 @@ static ir_node *transform_node_Sub(ir_node *n)
 
 		if (mode == lmode                                     &&
 		    get_mode_arithmetic(mode) == irma_twos_complement &&
-		    is_Const(a)                                       &&
-		    tarval_is_all_one(get_Const_tarval(a))) {
-			/* -1 - x -> ~x */
-			dbg_info *dbg = get_irn_dbg_info(n);
-			n = new_rd_Not(dbg, get_nodes_block(n), b, mode);
-			DBG_OPT_ALGSIM0(oldn, n, FS_OPT_SUB_TO_NOT);
-			return n;
+		    is_Const(a)) {
+			ir_tarval *ta = get_Const_tarval(a);
+			if (tarval_is_all_one(ta)) {
+				/* -1 - x -> ~x */
+				dbg_info *dbgi  = get_irn_dbg_info(n);
+				ir_node  *block = get_nodes_block(n);
+				n = new_rd_Not(dbgi, block, b, mode);
+				DBG_OPT_ALGSIM0(oldn, n, FS_OPT_SUB_TO_NOT);
+				return n;
+			}
+
+			ir_tarval *all_one  = get_mode_all_one(mode);
+			ir_tarval *expected = tarval_shr_unsigned(all_one, 1);
+			if (tarval_and(ta, expected) == expected) {
+				/* 0x7F...F - x -> x ^ 0x7F...F */
+				dbg_info *dbgi  = get_irn_dbg_info(n);
+				ir_node  *block = get_nodes_block(n);
+				return new_rd_Eor(dbgi, block, b, a, mode);
+			}
 		}
 	}
 
