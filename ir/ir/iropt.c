@@ -3451,6 +3451,23 @@ restart:
 			ir_node  *not   = new_rd_Not(dbgi, block, add, mode);
 			return not;
 		}
+		/* (x & 0x7F...F) - x -> x & 0x80...0 */
+		if (is_And(a) && get_And_left(a) == b) {
+			ir_node *ab = get_And_right(a);
+			if (is_Const(ab)) {
+				ir_tarval *tv       = get_Const_tarval(ab);
+				ir_tarval *all_one  = get_mode_all_one(mode);
+				ir_tarval *expected = tarval_shr_unsigned(all_one, 1);
+				if (tv == expected) {
+					dbg_info  *const dbgi   = get_irn_dbg_info(n);
+					ir_node   *const block  = get_nodes_block(n);
+					ir_graph  *const irg    = get_irn_irg(n);
+					ir_tarval *const tv_not = tarval_not(tv);
+					ir_node   *const not_c  = new_rd_Const(dbgi, irg, tv_not);
+					return new_rd_And(dbgi, block, b, not_c, mode);
+				}
+			}
+		}
 		/* x-(x&y) = x & ~y */
 		if (is_And(b)) {
 			ir_node *and_left  = get_And_left(b);
