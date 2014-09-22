@@ -1093,18 +1093,32 @@ static ir_node *equivalent_node_Sub(ir_node *n)
 	if (mode_is_float(mode) && !ir_imprecise_float_transforms_allowed())
 		return n;
 
+	ir_node         *a  = get_Sub_left(n);
 	ir_node         *b  = get_Sub_right(n);
 	const ir_tarval *tb = value_of(b);
 
 	/* Beware: modes might be different */
 	if (tarval_is_null(tb)) {
-		ir_node *a = get_Sub_left(n);
 		if (mode == get_irn_mode(a)) {
 			n = a;
 
 			DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_NEUTRAL_0);
+			return n;
 		}
 	}
+
+	if (is_Const(a) && is_Or(b)) {
+		ir_tarval *ta        = get_Const_tarval(a);
+		ir_tarval *all_one   = get_mode_all_one(mode);
+		ir_tarval *expect_a  = tarval_shl_unsigned(all_one, 1);
+		ir_tarval *expect_bb = tarval_shr_unsigned(all_one, 1);
+		ir_node   *bb        = get_Or_right(b);
+		if (ta == expect_a && is_Const(bb) && get_Const_tarval(bb) == expect_bb) {
+			/* 0xF...FE - (x | 0x7F...F) -> x | 0x7F...F */
+			return b;
+		}
+	}
+
 	return n;
 }
 
