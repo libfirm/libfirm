@@ -990,12 +990,12 @@ static ir_node *equivalent_node_Eor(ir_node *n)
 
 	ir_node *x;
 	ir_node *z;
-	if (is_Eor(a) || is_Or_Eor_Add(a)) {
+	if (is_Eor(a) || is_Or_Eor_Add(a) || is_Eor_Add(a)) {
 		x = b;
 		z = a;
 		goto inverse;
 	}
-	if (is_Eor(b) || is_Or_Eor_Add(b)) {
+	if (is_Eor(b) || is_Or_Eor_Add(b) || is_Eor_Add(b)) {
 		x = a;
 		z = b;
 inverse:;
