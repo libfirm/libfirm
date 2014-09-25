@@ -263,9 +263,14 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env)
 					continue;
 
 				case TR_ADD: {
-					ir_node *v = get_r_value(irg, r, modes[r]);
-					ir_node *n = new_r_Add(pred_block, v, pred, modes[r]);
-					set_Return_res(ret, r, n);
+					ir_mode *mode = modes[r];
+					ir_node *v    = get_r_value(irg, r, mode);
+					if (mode_is_reference(mode)) {
+						ir_mode *mode_iu = get_reference_mode_unsigned_eq(mode);
+						v = new_r_Conv(pred_block, v, mode_iu);
+					}
+					ir_node *add = new_r_Add(pred_block, pred, v, mode);
+					set_Return_res(ret, r, add);
 					continue;
 				}
 
