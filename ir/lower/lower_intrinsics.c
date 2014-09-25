@@ -104,7 +104,7 @@ void ir_lower_intrinsics(ir_graph *irg, ir_intrinsics_map *map)
 {
 	if (map->part_block_used) {
 		ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST);
-		collect_phiprojs(irg);
+		collect_phiprojs_and_start_block_nodes(irg);
 	}
 	map->n_intrinsics = 0;
 	irg_walk_graph(irg, NULL, call_mapper, map);

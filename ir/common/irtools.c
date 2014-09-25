@@ -76,9 +76,7 @@ void copy_irn_to_irg(ir_node *n, ir_graph *irg)
 
 	case iro_Proj: {
 		ir_graph *old_irg = get_irn_irg(n);
-		if (n == get_irg_initial_exec(old_irg))
-			nn = get_irg_initial_exec(irg);
-		else if (n == get_irg_frame(old_irg))
+		if (n == get_irg_frame(old_irg))
 			nn = get_irg_frame(irg);
 		else if (n == get_irg_initial_mem(old_irg))
 			nn = get_irg_initial_mem(irg);

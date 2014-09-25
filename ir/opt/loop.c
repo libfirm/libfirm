@@ -2324,7 +2324,7 @@ static void loop_optimization(ir_graph *const irg, loop_op_t const loop_op)
 	reset_stats();
 
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST);
-	collect_phiprojs(irg);
+	collect_phiprojs_and_start_block_nodes(irg);
 
 	ir_loop *const loop = get_irg_loop(irg);
 
@@ -2350,7 +2350,7 @@ static void loop_optimization(ir_graph *const irg, loop_op_t const loop_op)
 		init_analyze(irg, loop, loop_op);
 
 		/* Copied blocks do not have their phi list yet */
-		collect_phiprojs(irg);
+		collect_phiprojs_and_start_block_nodes(irg);
 
 		/* Set links to NULL
 		 * TODO Still necessary? */

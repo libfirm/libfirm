@@ -174,12 +174,6 @@ FIRM_API ir_node *get_irg_end(const ir_graph *irg);
 /** Sets the End node of an IR graph. */
 FIRM_API void set_irg_end(ir_graph *irg, ir_node *node);
 
-/** Returns the node that represents the initial control flow of the given
- * IR graph. */
-FIRM_API ir_node *get_irg_initial_exec(const ir_graph *irg);
-/** Sets the node that represents the initial control of the given IR graph. */
-FIRM_API void set_irg_initial_exec(ir_graph *irg, ir_node *node);
-
 /** Returns the node that represents the frame pointer of the given IR graph. */
 FIRM_API ir_node *get_irg_frame(const ir_graph *irg);
 /** Sets the node that represents the frame pointer of the given IR graph. */

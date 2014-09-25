@@ -70,6 +70,7 @@ static void lower_mux_node(ir_node* mux)
 	ir_mode *mode = get_irn_mode(mux);
 	ir_node *phi  = new_r_Phi(lower_block, ARRAY_SIZE(mux_values), mux_values,
 	                          mode);
+	collect_new_phi_node(phi);
 	exchange(mux, phi);
 
 	/* Add links and update phi node lists, for the next part_block() call.
@@ -78,8 +79,6 @@ static void lower_mux_node(ir_node* mux)
 	set_irn_link(trueProj,  get_irn_link(cond));
 	set_irn_link(falseProj, trueProj);
 	set_irn_link(cond,      falseProj);
-
-	add_Block_phi(lower_block, phi);
 }
 
 void lower_mux(ir_graph *irg, lower_mux_callback *cb_func)
@@ -96,7 +95,7 @@ void lower_mux(ir_graph *irg, lower_mux_callback *cb_func)
 
 		/* This is required by part_block() later. */
 		ir_reserve_resources(irg, resources);
-		collect_phiprojs(irg);
+		collect_phiprojs_and_start_block_nodes(irg);
 
 		for (size_t i = 0; i < n_muxes; ++i) {
 			lower_mux_node(env.muxes[i]);

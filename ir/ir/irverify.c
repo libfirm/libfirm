@@ -165,10 +165,9 @@ static bool invalid_proj(const ir_node *proj)
 static int verify_node_Proj_Start(const ir_node *p)
 {
 	switch ((pn_Start)get_Proj_num(p)) {
-	case pn_Start_X_initial_exec: return check_mode(p, mode_X);
-	case pn_Start_M:              return check_mode(p, mode_M);
-	case pn_Start_P_frame_base:   return check_mode_func(p, mode_is_reference, "reference");
-	case pn_Start_T_args:         return check_mode(p, mode_T);
+	case pn_Start_M:            return check_mode(p, mode_M);
+	case pn_Start_P_frame_base: return check_mode_func(p, mode_is_reference, "reference");
+	case pn_Start_T_args:       return check_mode(p, mode_T);
 	}
 	return invalid_proj(p);
 }

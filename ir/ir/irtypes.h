@@ -449,7 +449,6 @@ typedef enum irg_anchors {
 	anchor_start_block,      /**< block the start node will belong to */
 	anchor_end,              /**< end node of this ir_graph */
 	anchor_start,            /**< start node of this ir_graph */
-	anchor_initial_exec,     /**< methods initial control flow */
 	anchor_frame,            /**< methods frame */
 	anchor_initial_mem,      /**< initial memory of this graph */
 	anchor_args,             /**< methods arguments */

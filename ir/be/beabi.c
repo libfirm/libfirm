@@ -1160,34 +1160,6 @@ static ir_node *create_be_return(be_abi_irg_t *const env, ir_node *const irn)
 }
 
 /**
- * The start block has no jump, instead it has an initial exec Proj.
- * The backend wants to handle all blocks the same way, so we replace
- * the out cfg edge with a real jump.
- */
-static void fix_start_block(ir_graph *irg)
-{
-	ir_node *initial_X   = get_irg_initial_exec(irg);
-	ir_node *start_block = get_irg_start_block(irg);
-	ir_node *jmp         = new_r_Jmp(start_block);
-
-	assert(is_Proj(initial_X));
-	exchange(initial_X, jmp);
-	set_irg_initial_exec(irg, new_r_Bad(irg, mode_X));
-
-	/* merge start block with successor if possible */
-	foreach_out_edge(jmp, edge) {
-		ir_node *succ = get_edge_src_irn(edge);
-		if (!is_Block(succ))
-			continue;
-
-		if (get_irn_arity(succ) == 1) {
-			exchange(succ, start_block);
-		}
-		break;
-	}
-}
-
-/**
  * Modify the irg itself and the frame type.
  */
 static void modify_irg(ir_graph *const irg, be_abi_irg_t *const env)
@@ -1272,9 +1244,6 @@ static void modify_irg(ir_graph *const irg, be_abi_irg_t *const env)
 	const arch_register_t *fp_reg
 		= call->flags.try_omit_fp ? arch_env->sp : arch_env->bp;
 	rbitset_clear(birg->allocatable_regs, fp_reg->global_index);
-
-	/* handle start block here (place a jump in the block) */
-	fix_start_block(irg);
 
 	pmap_insert(env->regs, (void *) sp, NULL);
 	pmap_insert(env->regs, (void *) arch_env->bp, NULL);

@@ -243,19 +243,15 @@ static ir_node *gen_Phi(ir_node *node)
 static ir_node *gen_Proj_Start(ir_node *node)
 {
 	dbg_info *dbgi      = get_irn_dbg_info(node);
-	ir_node  *block     = get_nodes_block(node);
-	ir_node  *new_block = be_transform_node(block);
 	ir_node  *start     = get_Proj_pred(node);
 	ir_node  *new_start = be_transform_node(start);
 	unsigned  pn        = get_Proj_num(node);
 
-	switch ((pn_Start) pn) {
-	case pn_Start_X_initial_exec:
-		return new_bd_TEMPLATE_Jmp(dbgi, new_block);
+	switch ((pn_Start)pn) {
 	case pn_Start_M:
 		return new_rd_Proj(dbgi, new_start, mode_M, pn_TEMPLATE_Start_M);
 	case pn_Start_T_args:
-		return new_r_Bad(get_irn_irg(block), mode_T);
+		return new_r_Bad(get_irn_irg(node), mode_T);
 	case pn_Start_P_frame_base:
 		return new_rd_Proj(dbgi, new_start, gp_regs_mode, pn_TEMPLATE_Start_stack);
 	}

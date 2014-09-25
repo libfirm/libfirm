@@ -88,16 +88,6 @@ static void place_floats_early(ir_node *n, waitq *worklist)
 		}
 	}
 
-	/* avoid moving nodes into the start block if we are not in the backend */
-	ir_graph *irg         = get_irn_irg(n);
-	ir_node  *start_block = get_irg_start_block(irg);
-	if (new_block == start_block && block != start_block &&
-		!irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_BACKEND)) {
-		assert(get_irn_n_edges_kind(start_block, EDGE_KIND_BLOCK) == 1);
-		const ir_edge_t *edge = get_block_succ_first(start_block);
-		new_block = get_edge_src_irn(edge);
-	}
-
 	/* Set the new block */
 	if (new_block != NULL)
 		set_nodes_block(n, new_block);

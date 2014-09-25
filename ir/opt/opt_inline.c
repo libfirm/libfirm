@@ -414,7 +414,6 @@ static bool inline_method(ir_node *const call, ir_graph *called_graph)
 	/* XxMxPxPxPxT of Start + parameter of Call */
 	ir_node *in[pn_Start_max+1];
 	in[pn_Start_M]              = get_Call_mem(call);
-	in[pn_Start_X_initial_exec] = new_r_Jmp(post_bl);
 	in[pn_Start_P_frame_base]   = get_irg_frame(irg);
 	in[pn_Start_T_args]         = new_r_Tuple(post_bl, n_params, args_in);
 	ir_node *pre_call = new_r_Tuple(post_bl, pn_Start_max+1, in);
@@ -680,7 +679,7 @@ static inline_irg_env *alloc_inline_irg_env(void)
 	INIT_LIST_HEAD(&env->calls);
 	env->local_weights     = NULL;
 	env->n_nodes           = -2; /* do not count count Start, End */
-	env->n_blocks          = -2; /* do not count count Start, End Block */
+	env->n_blocks          = -1; /* do not count count End Block */
 	env->n_nodes_orig      = -2; /* do not count Start, End */
 	env->n_call_nodes      = 0;
 	env->n_call_nodes_orig = 0;
@@ -1177,7 +1176,7 @@ static void inline_into(ir_graph *irg, unsigned maxsize,
 		}
 		if (!phiproj_computed) {
 			phiproj_computed = true;
-			collect_phiprojs(current_ir_graph);
+			collect_phiprojs_and_start_block_nodes(current_ir_graph);
 		}
 		bool did_inline = inline_method(curr_call->call, callee);
 		if (!did_inline)

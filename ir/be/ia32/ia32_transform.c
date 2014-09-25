@@ -5528,24 +5528,6 @@ static ir_node *gen_Proj_ASM(ir_node *node)
 	return new_r_Proj(new_pred, mode, pn);
 }
 
-static ir_node *gen_Proj_Start(ir_node *node)
-{
-	ir_node *pred = get_Proj_pred(node);
-	unsigned pn   = get_Proj_num(node);
-	switch (pn) {
-	case pn_Start_X_initial_exec: {
-		ir_node  *block     = get_nodes_block(pred);
-		ir_node  *new_block = be_transform_node(block);
-		dbg_info *dbgi      = get_irn_dbg_info(node);
-		/* we exchange the ProjX with a jump */
-		ir_node  *jump      = new_rd_Jmp(dbgi, new_block);
-
-		return jump;
-	}
-	}
-	return be_duplicate_node(node);
-}
-
 static ir_node *gen_Proj_default(ir_node *node)
 {
 	ir_node *pred = get_Proj_pred(node);
@@ -5644,7 +5626,7 @@ static void register_transformers(void)
 	be_set_transform_proj_function(op_ia32_l_Minus64,   gen_Proj_default);
 	be_set_transform_proj_function(op_Load,             gen_Proj_Load);
 	be_set_transform_proj_function(op_Mod,              gen_Proj_Mod);
-	be_set_transform_proj_function(op_Start,            gen_Proj_Start);
+	be_set_transform_proj_function(op_Start,            be_duplicate_node);
 	be_set_transform_proj_function(op_Store,            gen_Proj_Store);
 
 	be_set_upper_bits_clean_function(op_Mux, ia32_mux_upper_bits_clean);

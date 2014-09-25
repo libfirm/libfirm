@@ -774,16 +774,15 @@ class Shrs(Binop):
 @op
 class Start:
 	"""The first node of a graph. Execution starts with this node."""
-	outs       = [
-		("X_initial_exec", "control flow"),
+	outs = [
 		("M",              "initial memory"),
 		("P_frame_base",   "frame base pointer"),
 		("T_args",         "function arguments")
 	]
-	mode             = "mode_T"
-	pinned           = "yes"
-	flags            = [ "cfopcode", "start_block" ]
-	singleton        = True
+	mode      = "mode_T"
+	pinned    = "yes"
+	flags     = [ "start_block" ]
+	singleton = True
 
 @op
 class Store:

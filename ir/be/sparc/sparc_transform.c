@@ -2626,16 +2626,11 @@ static ir_node *get_frame_base(ir_graph *irg)
 
 static ir_node *gen_Proj_Start(ir_node *node)
 {
-	ir_node *block     = get_nodes_block(node);
-	ir_node *new_block = be_transform_node(block);
-	unsigned pn        = get_Proj_num(node);
+	unsigned pn = get_Proj_num(node);
 	/* make sure prolog is constructed */
 	be_transform_node(get_Proj_pred(node));
 
 	switch ((pn_Start) pn) {
-	case pn_Start_X_initial_exec:
-		/* exchange ProjX with a jump */
-		return new_bd_sparc_Ba(NULL, new_block);
 	case pn_Start_M: {
 		ir_graph *irg = get_irn_irg(node);
 		ir_node  *mem = get_initial_mem(irg);
@@ -2643,9 +2638,9 @@ static ir_node *gen_Proj_Start(ir_node *node)
 		return mem;
 	}
 	case pn_Start_T_args:
-		return new_r_Bad(get_irn_irg(block), mode_T);
+		return new_r_Bad(get_irn_irg(node), mode_T);
 	case pn_Start_P_frame_base:
-		return get_frame_base(get_irn_irg(block));
+		return get_frame_base(get_irn_irg(node));
 	}
 	panic("Unexpected start proj: %u\n", pn);
 }

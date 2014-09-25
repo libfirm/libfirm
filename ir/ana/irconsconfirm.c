@@ -202,7 +202,7 @@ static void handle_modeb(ir_node *block, ir_node *selector, pn_Cond pnc, env_t *
 					break;
 				}
 			}
-			if (i < 0) {
+			if (i < 0 && n > 0) {
 				ir_node **in = ALLOCAN(ir_node*, n);
 				/* ok, ALL predecessors are either dominated by block OR other block */
 				if (c_b == NULL) {

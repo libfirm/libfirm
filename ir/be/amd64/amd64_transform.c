@@ -1398,15 +1398,11 @@ static ir_node *gen_Start(ir_node *node)
 
 static ir_node *gen_Proj_Start(ir_node *node)
 {
-	ir_graph *irg       = get_irn_irg(node);
-	ir_node  *block     = get_nodes_block(node);
-	ir_node  *new_block = be_transform_node(block);
-	unsigned  pn        = get_Proj_num(node);
+	ir_graph *irg = get_irn_irg(node);
+	unsigned  pn  = get_Proj_num(node);
 	be_transform_node(get_Proj_pred(node));
 
 	switch ((pn_Start)pn) {
-	case pn_Start_X_initial_exec:
-		return new_bd_amd64_Jmp(NULL, new_block);
 	case pn_Start_M:
 		return get_initial_mem(irg);
 	case pn_Start_T_args:

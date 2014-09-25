@@ -133,8 +133,6 @@ static ir_graph *new_r_ir_graph(ir_entity *ent, int n_loc)
 	set_irg_start(res, start);
 
 	/* Proj results of start node */
-	ir_node *const projX = new_r_Proj(start, mode_X, pn_Start_X_initial_exec);
-	set_irg_initial_exec(res, projX);
 	set_irg_frame(res, new_r_Proj(start, mode_P, pn_Start_P_frame_base));
 	set_irg_args(res, new_r_Proj(start, mode_T, pn_Start_T_args));
 	ir_node *const initial_mem = new_r_Proj(start, mode_M, pn_Start_M);
@@ -147,10 +145,6 @@ static ir_graph *new_r_ir_graph(ir_entity *ent, int n_loc)
 
 	set_r_cur_block(res, start_block);
 	set_r_store(res, initial_mem);
-
-	/*-- Make a block to start with --*/
-	ir_node *const first_block = new_r_Block(res, 1, &projX);
-	set_r_cur_block(res, first_block);
 
 	return res;
 }
@@ -344,16 +338,6 @@ ir_node *(get_irg_end)(const ir_graph *irg)
 void (set_irg_end)(ir_graph *irg, ir_node *node)
 {
 	set_irg_end_(irg, node);
-}
-
-ir_node *(get_irg_initial_exec)(const ir_graph *irg)
-{
-	return get_irg_initial_exec_(irg);
-}
-
-void (set_irg_initial_exec)(ir_graph *irg, ir_node *node)
-{
-	set_irg_initial_exec_(irg, node);
 }
 
 ir_node *(get_irg_frame)(const ir_graph *irg)

@@ -1557,20 +1557,13 @@ static ir_node *gen_Proj_Div(ir_node *node)
 
 static ir_node *gen_Proj_Start(ir_node *node)
 {
-	ir_node *block     = get_nodes_block(node);
-	ir_node *new_block = be_transform_node(block);
-	unsigned pn        = get_Proj_num(node);
-
+	unsigned pn = get_Proj_num(node);
 	switch ((pn_Start)pn) {
-	case pn_Start_X_initial_exec:
-		/* we exchange the ProjX with a jump */
-		return new_bd_arm_Jmp(NULL, new_block);
-
 	case pn_Start_M:
 		return get_start_val(get_irn_irg(node), &start_mem);
 
 	case pn_Start_T_args:
-		return new_r_Bad(get_irn_irg(block), mode_T);
+		return new_r_Bad(get_irn_irg(node), mode_T);
 
 	case pn_Start_P_frame_base:
 		return get_start_val(get_irn_irg(node), &start_sp);

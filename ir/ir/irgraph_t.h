@@ -167,16 +167,6 @@ static inline void set_irg_end_(ir_graph *irg, ir_node *node)
 	set_irn_n(irg->anchor, anchor_end, node);
 }
 
-static inline ir_node *get_irg_initial_exec_(const ir_graph *irg)
-{
-	return get_irn_n(irg->anchor, anchor_initial_exec);
-}
-
-static inline void set_irg_initial_exec_(ir_graph *irg, ir_node *node)
-{
-	set_irn_n(irg->anchor, anchor_initial_exec, node);
-}
-
 static inline ir_node *get_irg_frame_(const ir_graph *irg)
 {
 	return get_irn_n(irg->anchor, anchor_frame);

@@ -309,6 +309,7 @@ static void rewrite_unsigned_float_Conv(ir_node *node)
 	ir_mode *mode_s      = find_signed_mode(mode_u);
 	ir_node *signed_x    = new_rd_Conv(dbgi, block, unsigned_x, mode_s);
 	ir_node *zero        = new_r_Const_null(irg, mode_s);
+	collect_new_start_block_node(zero);
 	ir_node *cmp         = new_rd_Cmp(dbgi, block, signed_x, zero,
 	                                 ir_relation_less);
 	ir_node *cond        = new_rd_Cond(dbgi, block, cmp);
@@ -321,6 +322,7 @@ static void rewrite_unsigned_float_Conv(ir_node *node)
 	ir_node *true_block  = new_r_Block(irg, ARRAY_SIZE(in_true), in_true);
 	ir_node *true_jmp    = new_r_Jmp(true_block);
 	ir_node *one         = new_r_Const_one(irg, mode_u);
+	collect_new_start_block_node(one);
 	ir_node *and         = new_r_And(true_block, unsigned_x, one, mode_u);
 	ir_node *shr         = new_r_Shr(true_block, unsigned_x, one, mode_u);
 	ir_node *or          = new_r_Or(true_block, and, shr, mode_u);
@@ -340,11 +342,7 @@ static void rewrite_unsigned_float_Conv(ir_node *node)
 	set_irn_in(lower_block, ARRAY_SIZE(lower_in), lower_in);
 	ir_node *phi = new_r_Phi(lower_block, ARRAY_SIZE(phi_in), phi_in,
 	                         dest_mode);
-
-	assert(get_Block_phis(lower_block) == NULL);
-	set_Block_phis(lower_block, phi);
-	set_Phi_next(phi, NULL);
-
+	collect_new_phi_node(phi);
 	exchange(node, phi);
 }
 
@@ -390,6 +388,7 @@ static void rewrite_float_unsigned_Conv(ir_node *node)
 	ir_node *fp_x        = get_Conv_op(node);
 	ir_mode *src_mode    = get_irn_mode(fp_x);
 	ir_node *fp_const    = create_conv_const(irg, src_mode);
+	collect_new_start_block_node(fp_const);
 
 	/* Test if the sign bit is needed */
 	ir_node *cmp         = new_rd_Cmp(dbgi, block, fp_x, fp_const,
@@ -406,6 +405,7 @@ static void rewrite_float_unsigned_Conv(ir_node *node)
 	ir_node *sub         = new_r_Sub(true_block, fp_const, fp_x, src_mode);
 	ir_node *sub_conv    = new_rd_Conv(dbgi, true_block, sub, mode_Ls);
 	ir_node *sign_bit    = create_sign_bit_const(irg);
+	collect_new_start_block_node(sign_bit);
 	ir_node *xor         = new_r_Eor(true_block, sub_conv, sign_bit, mode_Ls);
 	ir_node *true_res    = new_rd_Conv(dbgi, true_block, xor, dest_mode);
 
@@ -423,11 +423,7 @@ static void rewrite_float_unsigned_Conv(ir_node *node)
 	set_irn_in(lower_block, ARRAY_SIZE(lower_in), lower_in);
 	ir_node *phi = new_r_Phi(lower_block, ARRAY_SIZE(phi_in), phi_in,
 	                         dest_mode);
-
-	assert(get_Block_phis(lower_block) == NULL);
-	set_Block_phis(lower_block, phi);
-	set_Phi_next(phi, NULL);
-
+	collect_new_phi_node(phi);
 	exchange(node, phi);
 }
 
@@ -464,7 +460,7 @@ static void amd64_intrinsics_walker(ir_node *node, void *data)
 static void amd64_handle_intrinsics(ir_graph *irg)
 {
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST);
-	collect_phiprojs(irg);
+	collect_phiprojs_and_start_block_nodes(irg);
 	bool changed = false;
 	irg_walk_graph(irg, amd64_intrinsics_walker, NULL, &changed);
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST);

@@ -88,33 +88,70 @@ void exchange(ir_node *old, ir_node *nw)
 	                        | IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO);
 }
 
+static void collect_new_start_block_node_(ir_node *node)
+{
+	/* misuse link field of End node to collect all start-block nodes */
+	ir_node *end = get_irg_end(get_irn_irg(node));
+	set_irn_link(node, get_irn_link(end));
+	set_irn_link(end, node);
+}
+
+void collect_new_start_block_node(ir_node *node)
+{
+	if (is_Start(node))
+		return;
+	assert(is_irn_start_block_placed(node));
+	/* alreayd in list? */
+	if (get_irn_link(node) != NULL)
+		return;
+	collect_new_start_block_node_(node);
+}
+
+void collect_new_phi_node(ir_node *node)
+{
+	ir_node *block = get_nodes_block(node);
+	add_Block_phi(block, node);
+}
+
 /**
  * Walker: links all Phi nodes to their Blocks lists,
  *         all Proj nodes to there predecessors.
  */
-static void collect_phiprojs_walker(ir_node *n, void *env)
+static void collect_nodes(ir_node *node, void *env)
 {
 	(void)env;
 
-	if (is_Phi(n)) {
-		ir_node *block = get_nodes_block(n);
-		add_Block_phi(block, n);
-	} else if (is_Proj(n)) {
-		ir_node *pred = n;
+	if (is_Phi(node)) {
+		collect_new_phi_node(node);
+	} else if (is_Proj(node)) {
+		ir_node *pred = node;
 		do {
 			pred = get_Proj_pred(pred);
 		} while (is_Proj(pred));
 
-		set_irn_link(n, get_irn_link(pred));
-		set_irn_link(pred, n);
+		assert(!is_irn_start_block_placed(pred) || is_Start(pred));
+		set_irn_link(node, get_irn_link(pred));
+		set_irn_link(pred, node);
+	} else if (is_irn_start_block_placed(node) && !is_Start(node)) {
+		collect_new_start_block_node_(node);
 	}
 }
 
-void collect_phiprojs(ir_graph *irg)
+static void init_links(ir_node *node, void *data)
+{
+	(void)data;
+	if (is_End(node))
+		return;
+	firm_clear_node_and_phi_links(node, data);
+}
+
+void collect_phiprojs_and_start_block_nodes(ir_graph *irg)
 {
 	assert((ir_resources_reserved(irg) & (IR_RESOURCE_IRN_LINK|IR_RESOURCE_PHI_LIST)) ==
 		(IR_RESOURCE_IRN_LINK|IR_RESOURCE_PHI_LIST));
-	irg_walk_graph(irg, firm_clear_node_and_phi_links, collect_phiprojs_walker, NULL);
+	ir_node *end = get_irg_end(irg);
+	set_irn_link(end, end);
+	irg_walk_anchors(irg, init_links, collect_nodes, NULL);
 }
 
 /**
@@ -128,11 +165,10 @@ static void move(ir_node *node, ir_node *from_bl, ir_node *to_bl)
 
 	/* move its Projs */
 	if (get_irn_mode(node) == mode_T) {
-		ir_node *proj = (ir_node*)get_irn_link(node);
-		while (proj) {
+		for (ir_node *proj = (ir_node*)get_irn_link(node);
+		     proj != NULL; proj = (ir_node*)get_irn_link(proj)) {
 			if (get_nodes_block(proj) == from_bl)
 				set_nodes_block(proj, to_bl);
-			proj = (ir_node*)get_irn_link(proj);
 		}
 	}
 
@@ -186,6 +222,18 @@ static void move_edges(ir_node *node, ir_node *from_bl, ir_node *to_bl)
 	}
 }
 
+static void update_startblock(ir_node *old_block, ir_node *new_block)
+{
+	ir_graph *irg = get_irn_irg(old_block);
+	set_irg_start_block(irg, new_block);
+	/* move constants around */
+	ir_node *end = get_irg_end(irg);
+	for (ir_node *cnst = get_irn_link(end); cnst != end;
+	     cnst = (ir_node*)get_irn_link(cnst)) {
+		set_nodes_block(cnst, new_block);
+	}
+}
+
 void part_block(ir_node *node)
 {
 	/* Turn off optimizations so that blocks are not merged again. */
@@ -214,6 +262,9 @@ void part_block(ir_node *node)
 		phi = get_Phi_next(phi);
 	}
 
+	if (old_block == get_irg_start_block(irg))
+		update_startblock(old_block, new_block);
+
 	set_optimize(rem_opt);
 }
 
@@ -231,13 +282,16 @@ ir_node *part_block_edges(ir_node *node)
 	/* move node and its predecessors to new_block */
 	move_edges(node, old_block, new_block);
 
-	/* move Phi nodes to new_block */
+	/* move Phi nodes and constants to new_block */
 	foreach_out_edge_safe(old_block, edge) {
-		ir_node *phi = get_edge_src_irn(edge);
-		if (!is_Phi(phi))
+		ir_node *blnode = get_edge_src_irn(edge);
+		if (!is_Phi(blnode) && !is_irn_start_block_placed(blnode))
 			continue;
-		set_nodes_block(phi, new_block);
+		set_nodes_block(blnode, new_block);
 	}
+
+	if (old_block == get_irg_start_block(irg))
+		set_irg_start_block(irg, new_block);
 
 	return old_block;
 }

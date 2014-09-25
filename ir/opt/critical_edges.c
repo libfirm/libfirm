@@ -61,7 +61,7 @@ static void walk_critical_cf_edges(ir_node *block, void *env)
 		}
 		/* Insert critical edge if predecessor has multiple successors. Also
 		 * ensure that Start jumps into a block with exactly 1 predecessor. */
-		if (is_op_forking(cfop) || cfop == op_Start) {
+		if (is_op_forking(cfop)) {
 			/* Predecessor has multiple successors. Insert new control flow
 			 * edge edges. */
 insert:;

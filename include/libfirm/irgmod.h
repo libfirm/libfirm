@@ -42,7 +42,17 @@ FIRM_API void turn_into_tuple(ir_node *node, int arity, ir_node *const in[]);
   * node producing the outermost Tuple.
   * All other link fields are cleared afterwards.
   */
-FIRM_API void collect_phiprojs(ir_graph *irg);
+FIRM_API void collect_phiprojs_and_start_block_nodes(ir_graph *irg);
+
+/** Introduce a new node with "start_block_placed" attribute. It is necesary
+ * to call this function so the next part_block() works without running
+ * collect_phiprojs_and_start_block_nodes() again. */
+FIRM_API void collect_new_start_block_node(ir_node *node);
+
+/** Introduce a new phi node. It is necessary to call this function so the next
+ * part_block() works without running collect_phiprojs_and_start_block_nodes()
+ * again. */
+FIRM_API void collect_new_phi_node(ir_node *node);
 
 /** Parts a block into two.  This is useful to insert other blocks within a
  *  given block.

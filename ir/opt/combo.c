@@ -2230,11 +2230,6 @@ static void compute_Proj(node_t *node)
 	if (mode == mode_X) {
 		/* handle mode_X nodes */
 		switch (get_irn_opcode(pred)) {
-		case iro_Start:
-			/* the Proj_X from the Start is always reachable.
-			   However this is already handled at the top. */
-			node->type.tv = tarval_top;
-			return;
 		case iro_Cond:
 			compute_Proj_Cond(node, pred);
 			return;
@@ -2752,7 +2747,7 @@ static bool only_one_reachable_proj(ir_node *n)
  */
 static bool can_exchange(ir_node *pred, ir_node *block)
 {
-	if (is_Start(pred) || get_Block_entity(block) != NULL) {
+	if (get_Block_entity(block) != NULL) {
 		return false;
 	} else if (is_Jmp(pred)) {
 		return true;

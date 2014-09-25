@@ -254,6 +254,7 @@ static void rewrite_unsigned_float_Conv(ir_node *node)
 	ir_node   *signed_x    = new_rd_Conv(dbgi, block, unsigned_x, mode_s);
 	ir_node   *res         = new_rd_Conv(dbgi, block, signed_x, mode_d);
 	ir_node   *zero        = new_r_Const_null(irg, mode_s);
+	collect_new_start_block_node(zero);
 	ir_node   *cmp         = new_rd_Cmp(dbgi, block, signed_x, zero,
 	                                    ir_relation_less);
 	ir_node   *cond        = new_rd_Cond(dbgi, block, cmp);
@@ -267,6 +268,7 @@ static void rewrite_unsigned_float_Conv(ir_node *node)
 	ir_node   *false_jmp   = new_r_Jmp(false_block);
 	ir_tarval *correction  = new_tarval_from_double(4294967296., mode_d);
 	ir_node   *c_const     = new_r_Const(irg, correction);
+	collect_new_start_block_node(c_const);
 	ir_node   *fadd        = new_rd_Add(dbgi, true_block, res, c_const, mode_d);
 
 	ir_node  *lower_in[2] = { true_jmp, false_jmp };
@@ -275,9 +277,7 @@ static void rewrite_unsigned_float_Conv(ir_node *node)
 
 	set_irn_in(lower_block, ARRAY_SIZE(lower_in), lower_in);
 	ir_node *phi = new_r_Phi(lower_block, ARRAY_SIZE(phi_in), phi_in, mode_d);
-	assert(get_Block_phis(lower_block) == NULL);
-	set_Block_phis(lower_block, phi);
-	set_Phi_next(phi, NULL);
+	collect_new_phi_node(phi);
 
 	ir_node *res_conv = new_rd_Conv(dbgi, lower_block, phi, dest_mode);
 	exchange(node, res_conv);
@@ -309,6 +309,7 @@ static void rewrite_float_unsigned_Conv(ir_node *node)
 	ir_mode   *mode_f      = get_irn_mode(float_x);
 	ir_tarval *limit       = new_tarval_from_double(2147483648., mode_f);
 	ir_node   *limitc      = new_r_Const(irg, limit);
+	collect_new_start_block_node(limitc);
 	ir_node   *cmp         = new_rd_Cmp(dbgi, block, float_x, limitc,
 	                                    ir_relation_greater_equal);
 	ir_node   *cond        = new_rd_Cond(dbgi, block, cmp);
@@ -322,6 +323,7 @@ static void rewrite_float_unsigned_Conv(ir_node *node)
 	ir_node   *false_jmp   = new_r_Jmp(false_block);
 
 	ir_node   *c_const     = new_r_Const_long(irg, mode_s, 0x80000000L);
+	collect_new_start_block_node(c_const);
 	ir_node   *sub         = new_rd_Sub(dbgi, true_block, float_x, limitc,
 										mode_f);
 	ir_node   *sub_conv    = new_rd_Conv(dbgi, true_block, sub, mode_s);
@@ -335,9 +337,7 @@ static void rewrite_float_unsigned_Conv(ir_node *node)
 
 	set_irn_in(lower_block, ARRAY_SIZE(lower_in), lower_in);
 	ir_node *phi = new_r_Phi(lower_block, ARRAY_SIZE(phi_in), phi_in, mode_s);
-	assert(get_Block_phis(lower_block) == NULL);
-	set_Block_phis(lower_block, phi);
-	set_Phi_next(phi, NULL);
+	collect_new_phi_node(phi);
 
 	ir_node *res_conv = new_rd_Conv(dbgi, lower_block, phi, mode_u);
 	exchange(node, res_conv);
@@ -410,7 +410,7 @@ static void sparc_handle_intrinsics(ir_graph *irg)
 {
 	sparc_create_runtime_entities();
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST);
-	collect_phiprojs(irg);
+	collect_phiprojs_and_start_block_nodes(irg);
 	bool changed = false;
 	irg_walk_graph(irg, handle_intrinsic, NULL, &changed);
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST);
