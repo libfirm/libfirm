@@ -37,7 +37,7 @@
 #include "debug.h"
 #include "dfs_t.h"
 #include "absgraph.h"
-#include "error.h"
+#include "panic.h"
 #include "xmalloc.h"
 
 #include "irprog_t.h"
