@@ -678,9 +678,9 @@ static inline_irg_env *alloc_inline_irg_env(void)
 	inline_irg_env *env = OALLOC(&temp_obst, inline_irg_env);
 	INIT_LIST_HEAD(&env->calls);
 	env->local_weights     = NULL;
-	env->n_nodes           = -2; /* do not count count Start, End */
+	env->n_nodes           = 0;
 	env->n_blocks          = -1; /* do not count count End Block */
-	env->n_nodes_orig      = -2; /* do not count Start, End */
+	env->n_nodes_orig      = 0;
 	env->n_call_nodes      = 0;
 	env->n_call_nodes_orig = 0;
 	env->n_callers         = 0;
@@ -695,34 +695,59 @@ typedef struct walker_env {
 	bool            ignore_callers; /**< if set, do change callers data */
 } wenv_t;
 
+static bool is_nop(const ir_node *node)
+{
+	unsigned code = get_irn_opcode(node);
+	switch (code) {
+	case iro_Anchor:
+	case iro_Bad:
+	case iro_Confirm:
+	case iro_Deleted:
+	case iro_Dummy:
+	case iro_End:
+	case iro_Id:
+	case iro_NoMem:
+	case iro_Pin:
+	case iro_Proj:
+	case iro_Start:
+	case iro_Sync:
+	case iro_Tuple:
+	case iro_Unknown:
+		return true;
+	case iro_Phi:
+		return get_irn_mode(node) == mode_M;
+	default:
+		return false;
+	}
+}
+
 /**
  * post-walker: collect all calls in the inline-environment
  * of a graph and sum some statistics.
  */
-static void collect_calls2(ir_node *call, void *ctx)
+static void collect_calls2(ir_node *node, void *ctx)
 {
 	wenv_t         *env = (wenv_t*)ctx;
 	inline_irg_env *x   = env->x;
 
-	/* count meaningful nodes in irg */
-	unsigned code = get_irn_opcode(call);
-	if (code != iro_Proj && code != iro_Tuple && code != iro_Sync) {
-		if (code != iro_Block) {
-			++x->n_nodes;
-			++x->n_nodes_orig;
-		} else {
-			++x->n_blocks;
-		}
+	if (is_nop(node))
+		return;
+
+	if (is_Block(node)) {
+		++x->n_blocks;
+	} else {
+		++x->n_nodes;
+		++x->n_nodes_orig;
 	}
 
-	if (code != iro_Call)
+	if (!is_Call(node))
 		return;
 
 	/* collect all call nodes */
 	++x->n_call_nodes;
 	++x->n_call_nodes_orig;
 
-	ir_entity *callee_ent = get_Call_callee(call);
+	ir_entity *callee_ent = get_Call_callee(node);
 	if (callee_ent == NULL)
 		return;
 	ir_graph *callee = get_entity_linktime_irg(callee_ent);
@@ -738,9 +763,9 @@ static void collect_calls2(ir_node *call, void *ctx)
 
 		/* link it in the list of possible inlinable entries */
 		call_entry *entry = OALLOC(&temp_obst, call_entry);
-		entry->call       = call;
+		entry->call       = node;
 		entry->callee     = callee;
-		entry->loop_depth = get_irn_loop(get_nodes_block(call))->depth;
+		entry->loop_depth = get_irn_loop(get_nodes_block(node))->depth;
 		entry->benefice   = 0;
 		entry->local_adr  = false;
 		entry->all_const  = false;
