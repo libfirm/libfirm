@@ -3085,6 +3085,23 @@ static ir_node *transform_node_Add(ir_node *n)
 					}
 				}
 			}
+			if (is_Or(a) && is_Const(b)) {
+				ir_node *const ab = get_Or_right(a);
+				if (is_Const(ab)) {
+					ir_tarval *const tab = get_Const_tarval(ab);
+					ir_tarval *const tb  = get_Const_tarval(b);
+					if (tarval_is_null(tarval_add(tab, tb))) {
+						/* (x | c) + -c -> x & ~c */
+						dbg_info  *const dbgi  = get_irn_dbg_info(n);
+						ir_graph  *const irg   = get_irn_irg(n);
+						ir_node   *const block = get_nodes_block(n);
+						ir_node   *const aa    = get_Or_left(a);
+						ir_tarval *const tc    = tarval_not(tab);
+						ir_node   *const c     = new_rd_Const(dbgi, irg, tc);
+						return new_rd_And(dbgi, block, aa, c, mode);
+					}
+				}
+			}
 			if (!irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_ARCH_DEP)) {
 				ir_node *x;
 				ir_node *y;
