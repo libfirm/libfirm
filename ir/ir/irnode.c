@@ -77,9 +77,7 @@ ir_relation get_inversed_relation(ir_relation relation)
 ir_node *new_ir_node(dbg_info *db, ir_graph *irg, ir_node *block, ir_op *op,
                      ir_mode *mode, int arity, ir_node *const *in)
 {
-	assert(irg);
-	assert(op);
-	assert(mode);
+	assert(mode != NULL);
 
 	size_t   const node_size = offsetof(ir_node, attr) + op->attr_size;
 	ir_node *const res       = (ir_node*)OALLOCNZ(get_irg_obstack(irg), char, node_size);
@@ -122,9 +120,8 @@ ir_node *new_ir_node(dbg_info *db, ir_graph *irg, ir_node *block, ir_op *op,
 		edges_notify_edge(res, i, res->in[i+1], NULL, irg);
 
 	hook_new_node(res);
-	if (irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_BACKEND)) {
+	if (irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_BACKEND))
 		be_info_new_node(irg, res);
-	}
 
 	return res;
 }
@@ -153,20 +150,17 @@ ir_node **get_irn_in(const ir_node *node)
 
 void set_irn_in(ir_node *const node, int const arity, ir_node *const *const in)
 {
-	int i;
-	ir_node *** pOld_in;
-	ir_graph *irg = get_irn_irg(node);
-
-	pOld_in = &node->in;
-
-#ifndef NDEBUG
 	assert(node != NULL && node->kind == k_ir_node);
 	assert(arity >= 0);
-	for (i = 0; i < arity; ++i) {
+#ifndef NDEBUG
+	for (int i = 0; i < arity; ++i) {
 		assert(in[i] != NULL && in[0]->kind == k_ir_node);
 	}
 #endif
 
+	ir_graph  *irg     = get_irn_irg(node);
+	ir_node ***pOld_in = &node->in;
+	int        i;
 	for (i = 0; i < arity; i++) {
 		if (i < (int)ARR_LEN(*pOld_in)-1)
 			edges_notify_edge(node, i, in[i], (*pOld_in)[i+1], irg);
@@ -218,11 +212,10 @@ void set_irn_n(ir_node *node, int n, ir_node *in)
 
 int add_irn_n(ir_node *node, ir_node *in)
 {
-	int pos;
 	ir_graph *irg = get_irn_irg(node);
 
 	assert(node->op->opar == oparity_dynamic);
-	pos = ARR_LEN(node->in) - 1;
+	int pos = ARR_LEN(node->in) - 1;
 	ARR_APP1(ir_node *, node->in, in);
 	edges_notify_edge(node, pos, node->in[pos + 1], NULL, irg);
 
@@ -274,41 +267,33 @@ ir_node *(get_irn_dep)(const ir_node *node, int pos)
 
 void set_irn_dep(ir_node *node, int pos, ir_node *dep)
 {
-	ir_node *old;
-	ir_graph *irg;
-
-	assert(node->deps && "dependency array node yet allocated. use add_irn_dep()");
-	assert(pos >= 0 && pos < (int)ARR_LEN(node->deps) && "dependency index out of range");
+	assert(node->deps != NULL);
+	assert(pos >= 0 && pos < (int)ARR_LEN(node->deps));
 	assert(dep != NULL);
-	old = node->deps[pos];
+	ir_node *old = node->deps[pos];
 	node->deps[pos] = dep;
-	irg = get_irn_irg(node);
+	ir_graph *irg = get_irn_irg(node);
 	if (edges_activated_kind(irg, EDGE_KIND_DEP))
 		edges_notify_edge_kind(node, pos, dep, old, EDGE_KIND_DEP, irg);
 }
 
 void add_irn_dep(ir_node *node, ir_node *dep)
 {
-	ir_graph *irg;
 	assert(dep != NULL);
-	if (node->deps == NULL) {
+	if (node->deps == NULL)
 		node->deps = NEW_ARR_F(ir_node *, 0);
-	}
 	ARR_APP1(ir_node*, node->deps, dep);
-	irg = get_irn_irg(node);
+	ir_graph *irg = get_irn_irg(node);
 	if (edges_activated_kind(irg, EDGE_KIND_DEP))
 		edges_notify_edge_kind(node, ARR_LEN(node->deps)-1, dep, NULL, EDGE_KIND_DEP, irg);
 }
 
 void delete_irn_dep(ir_node *node, ir_node *dep)
 {
-	size_t i;
-	size_t n_deps;
 	if (node->deps == NULL)
 		return;
 
-	n_deps = ARR_LEN(node->deps);
-	for (i = 0; i < n_deps; ++i) {
+	for (size_t i = 0, n_deps = ARR_LEN(node->deps); i < n_deps; ++i) {
 		if (node->deps[i] == dep) {
 			set_irn_dep(node, i, node->deps[n_deps-1]);
 			edges_notify_edge(node, i, NULL, dep, get_irn_irg(node));
@@ -320,9 +305,7 @@ void delete_irn_dep(ir_node *node, ir_node *dep)
 
 void add_irn_deps(ir_node *tgt, ir_node *src)
 {
-	int i, n;
-
-	for (i = 0, n = get_irn_n_deps(src); i < n; ++i)
+	for (int i = 0, n = get_irn_n_deps(src); i < n; ++i)
 		add_irn_dep(tgt, get_irn_dep(src, i));
 }
 
@@ -409,7 +392,7 @@ void set_irn_pinned(ir_node *node, op_pin_state state)
 	if (is_Tuple(node))
 		return;
 
-	assert(node && get_op_pinned(get_irn_op(node)) >= op_pin_state_exc_pinned);
+	assert(get_op_pinned(get_irn_op(node)) >= op_pin_state_exc_pinned);
 	assert(state == op_pin_state_pinned || state == op_pin_state_floats);
 
 	node->attr.except.pin_state = state;
@@ -417,7 +400,7 @@ void set_irn_pinned(ir_node *node, op_pin_state state)
 
 long get_irn_node_nr(const ir_node *node)
 {
-	assert(node);
+	assert(node->kind == k_ir_node);
 	return node->node_nr;
 }
 
@@ -452,9 +435,7 @@ void set_nodes_block(ir_node *node, ir_node *block)
 
 int get_Block_cfgpred_pos(const ir_node *block, const ir_node *pred)
 {
-	int i;
-
-	for (i = get_Block_n_cfgpreds(block) - 1; i >= 0; --i) {
+	for (int i = get_Block_n_cfgpreds(block); i-- > 0; ) {
 		if (get_Block_cfgpred_block(block, i) == pred)
 			return i;
 	}
@@ -549,17 +530,14 @@ void add_End_keepalive(ir_node *end, ir_node *ka)
 
 void set_End_keepalives(ir_node *end, int n, ir_node *in[])
 {
-	size_t e;
-	int    i;
-	ir_graph *irg = get_irn_irg(end);
-
 	/* notify that edges are deleted */
-	for (e = END_KEEPALIVE_OFFSET; e < ARR_LEN(end->in) - 1; ++e) {
+	ir_graph *irg = get_irn_irg(end);
+	for (size_t e = END_KEEPALIVE_OFFSET; e < ARR_LEN(end->in) - 1; ++e) {
 		edges_notify_edge(end, e, NULL, end->in[e + 1], irg);
 	}
 	ARR_RESIZE(ir_node *, end->in, n + 1 + END_KEEPALIVE_OFFSET);
 
-	for (i = 0; i < n; ++i) {
+	for (int i = 0; i < n; ++i) {
 		end->in[1 + END_KEEPALIVE_OFFSET + i] = in[i];
 		edges_notify_edge(end, END_KEEPALIVE_OFFSET + i, end->in[1 + END_KEEPALIVE_OFFSET + i], NULL, irg);
 	}
@@ -575,9 +553,8 @@ void remove_End_n(ir_node *n, int idx)
 
 void remove_End_keepalive(ir_node *end, const ir_node *irn)
 {
-	int n = get_End_n_keepalives(end);
 	int idx = -1;
-	for (int i = n;;) {
+	for (int i = get_End_n_keepalives(end);;) {
 		if (i-- == 0)
 			return;
 
@@ -612,18 +589,16 @@ void remove_keep_alive(const ir_node *irn)
 
 void remove_End_Bads_and_doublets(ir_node *end)
 {
-	pset_new_t keeps;
-	int        idx, n = get_End_n_keepalives(end);
-	ir_graph   *irg;
-	bool       changed = false;
-
+	int n = get_End_n_keepalives(end);
 	if (n <= 0)
 		return;
 
-	irg = get_irn_irg(end);
+	ir_graph *irg = get_irn_irg(end);
+	pset_new_t keeps;
 	pset_new_init(&keeps);
 
-	for (idx = n - 1; idx >= 0; --idx) {
+	bool changed = false;
+	for (int idx = n; idx-- > 0; ) {
 		ir_node *ka = get_End_keepalive(end, idx);
 
 		if (is_Bad(ka) || is_NoMem(ka) || pset_new_contains(&keeps, ka)) {
@@ -636,9 +611,8 @@ void remove_End_Bads_and_doublets(ir_node *end)
 	}
 	pset_new_destroy(&keeps);
 
-	if (changed) {
+	if (changed)
 		clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS);
-	}
 }
 
 void free_End(ir_node *end)
@@ -664,8 +638,6 @@ int (is_Const_all_one)(const ir_node *node)
 {
 	return is_Const_all_one_(node);
 }
-
-
 
 const char *get_builtin_kind_name(ir_builtin_kind kind)
 {
@@ -771,10 +743,9 @@ int (is_arg_Proj)(const ir_node *node)
 
 int is_x_except_Proj(const ir_node *node)
 {
-	ir_node *pred;
 	if (!is_Proj(node))
 		return false;
-	pred = get_Proj_pred(node);
+	ir_node *pred = get_Proj_pred(node);
 	if (!is_fragile_op(pred))
 		return false;
 	return get_Proj_num(node) == pred->op->pn_x_except;
@@ -782,10 +753,9 @@ int is_x_except_Proj(const ir_node *node)
 
 int is_x_regular_Proj(const ir_node *node)
 {
-	ir_node *pred;
 	if (!is_Proj(node))
 		return false;
-	pred = get_Proj_pred(node);
+	ir_node *pred = get_Proj_pred(node);
 	if (!is_fragile_op(pred))
 		return false;
 	return get_Proj_num(node) == pred->op->pn_x_regular;
@@ -834,8 +804,7 @@ ir_node *skip_Proj(ir_node *node)
 	return node;
 }
 
-const ir_node *
-skip_Proj_const(const ir_node *node)
+const ir_node *skip_Proj_const(const ir_node *node)
 {
 	/* don't assert node !!! */
 	if (node == NULL)
@@ -849,11 +818,9 @@ skip_Proj_const(const ir_node *node)
 
 ir_node *skip_Tuple(ir_node *node)
 {
-  ir_node *pred;
-
 restart:
 	if (is_Proj(node)) {
-	    pred = get_Proj_pred(node);
+		ir_node *pred = get_Proj_pred(node);
 
 		if (is_Proj(pred)) { /* nested Tuple ? */
 		    pred = skip_Tuple(pred);
@@ -888,33 +855,28 @@ ir_node *skip_Id(ir_node *node)
 {
 	/* This should compact Id-cycles to self-cycles. It has the same (or less?) complexity
 	 * than any other approach, as Id chains are resolved and all point to the real node, or
-	 * all id's are self loops.
-	 *
-	 * Note: This function takes 10% of mostly ANY the compiler run, so it's
-	 * a little bit "hand optimized".
-	 */
-	ir_node *pred;
-	/* don't assert node !!! */
-
-	if (!node || (node->op != op_Id)) return node;
+	 * all id's are self loops. */
+	if (node->op != op_Id)
+		return node;
 
 	/* Don't use get_Id_pred():  We get into an endless loop for
 	   self-referencing Ids. */
-	pred = node->in[0+1];
-
-	if (pred->op != op_Id) return pred;
+	ir_node *pred = node->in[0+1];
+	if (pred->op != op_Id)
+		return pred;
 
 	if (node != pred) {  /* not a self referencing Id. Resolve Id chain. */
-		ir_node *rem_pred, *res;
-
-		if (pred->op != op_Id) return pred; /* shortcut */
-		rem_pred = pred;
+		if (pred->op != op_Id)
+			return pred; /* shortcut */
+		ir_node *rem_pred = pred;
 
 		assert(get_irn_arity (node) > 0);
 
 		node->in[0+1] = node;   /* turn us into a self referencing Id:  shorten Id cycles. */
-		res = skip_Id(rem_pred);
-		if (is_Id(res)) /* self-loop */ return node;
+		ir_node *res = skip_Id(rem_pred);
+		/* self-loop */
+		if (is_Id(res))
+			return node;
 
 		node->in[0+1] = res;    /* Turn Id chain into Ids all referencing the chain end. */
 		return res;
@@ -1124,9 +1086,8 @@ ir_switch_table *ir_switch_table_duplicate(ir_graph *irg,
                                            const ir_switch_table *table)
 {
 	size_t n_entries = ir_switch_table_get_n_entries(table);
-	size_t e;
 	ir_switch_table *res = ir_new_switch_table(irg, n_entries);
-	for (e = 0; e < n_entries; ++e) {
+	for (size_t e = 0; e < n_entries; ++e) {
 		const ir_switch_table_entry *entry
 			= ir_switch_table_get_entry_const(table, e);
 		ir_switch_table_entry *new_entry = ir_switch_table_get_entry(res, e);
