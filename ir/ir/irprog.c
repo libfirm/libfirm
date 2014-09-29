@@ -35,7 +35,6 @@ static ir_prog *new_incomplete_ir_prog(void)
 {
 	ir_prog *res = XMALLOCZ(ir_prog);
 
-	res->kind           = k_ir_prog;
 	res->graphs         = NEW_ARR_F(ir_graph *, 0);
 	res->types          = NEW_ARR_F(ir_type *, 0);
 	res->global_asms    = NEW_ARR_F(ident *, 0);
@@ -121,7 +120,6 @@ void free_ir_prog(void)
 	pmap_destroy(irp->compilerlib_entities);
 	irp->name           = NULL;
 	irp->const_code_irg = NULL;
-	irp->kind           = k_BAD;
 	free(irp);
 	irp = NULL;
 }

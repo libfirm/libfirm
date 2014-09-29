@@ -56,7 +56,6 @@ typedef enum firm_kind {
 	k_ir_mode,                /**< An IR mode. */
 	k_tarval,                 /**< A tarval. */
 	k_ir_loop,                /**< A loop. */
-	k_ir_prog,                /**< A program representation (irp). */
 	k_ir_max                  /**< maximum value -- illegal for firm nodes. */
 } firm_kind;
 

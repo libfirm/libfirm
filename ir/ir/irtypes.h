@@ -557,7 +557,6 @@ struct ir_graph {
  *              using exchange_types()).
  */
 struct ir_prog {
-	firm_kind kind;                 /**< must be k_ir_prog */
 	ident     *name;                /**< A file name or the like. */
 	ir_graph  *main_irg;            /**< The entry point to the compiled program
 	                                     or NULL if no point exists. */
