@@ -1567,8 +1567,9 @@ static void *lambda_opcode(const node_t *node, environment_t *env)
 /** lambda n.(n[i].partition) */
 static void *lambda_partition(const node_t *node, environment_t *env)
 {
-	int i = env->lambda_input;
-	if (i >= get_irn_arity(node->node)) {
+	int      i   = env->lambda_input;
+	ir_node *irn = node->node;
+	if (i >= get_irn_arity(irn) || (i == -1 && is_Block(irn))) {
 		/*
 		 * We are outside the allowed range: This can happen even
 		 * if we have split by opcode first: doing so might move follower
@@ -1581,11 +1582,11 @@ static void *lambda_partition(const node_t *node, environment_t *env)
 
 	/* ignore the "control input" for non-pinned nodes
 	   if we are running in GCSE mode */
-	ir_node *skipped = skip_Proj(node->node);
+	ir_node *skipped = skip_Proj(irn);
 	if (i < env->end_idx && get_irn_pinned(skipped) != op_pin_state_pinned)
 		return NULL;
 
-	ir_node *pred = i == -1 ? get_irn_n(skipped, i) : get_irn_n(node->node, i);
+	ir_node *pred = i == -1 ? get_irn_n(skipped, i) : get_irn_n(irn, i);
 	node_t  *p    = get_irn_node(pred);
 	return p->part;
 }
