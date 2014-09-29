@@ -10,7 +10,7 @@
  * @date        06.04.2006, 11.11.2010
  */
 
-#include "../adt/util.h"
+#include "util.h"
 #include "debug.h"
 #include "execfreq_t.h"
 #include "hashptr.h"

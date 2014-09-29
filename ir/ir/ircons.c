@@ -11,7 +11,7 @@
  *          Michael Beck, Matthias Braun
  */
 
-#include "../adt/util.h"
+#include "util.h"
 #include "array.h"
 #include "panic.h"
 #include "irbackedge_t.h"

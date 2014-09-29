@@ -11,7 +11,7 @@
  */
 #include <stdlib.h>
 
-#include "../adt/util.h"
+#include "util.h"
 #include "callgraph.h"
 
 #include "irloop_t.h"

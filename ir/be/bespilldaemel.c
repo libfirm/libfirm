@@ -18,15 +18,13 @@
  *   Spilling in this context means placing a spill instruction behind the
  *   definition of the value and a reload before each usage.
  */
-
-#include "../../adt/util.h"
 #include "debug.h"
-
-#include "irnodeset.h"
-#include "irgwalk.h"
-#include "irprintf.h"
 #include "iredges_t.h"
+#include "irgwalk.h"
+#include "irnodeset.h"
+#include "irprintf.h"
 #include "panic.h"
+#include "util.h"
 
 #include "beirg.h"
 #include "bespill.h"

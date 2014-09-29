@@ -8,10 +8,10 @@
  * @brief   Optimization of function calls.
  * @author  Michael Beck
  */
-
-#include "../adt/util.h"
-#include "opt_init.h"
 #include <stdbool.h>
+
+#include "util.h"
+#include "opt_init.h"
 
 #include "irnode_t.h"
 #include "irgraph_t.h"

@@ -9,19 +9,18 @@
  *              selection phase.
  * @author      Matthias Braun
  */
-
-#include "../../adt/util.h"
+#include "util.h"
 #include "beabihelper.h"
 #include "bearch.h"
 #include "beirg.h"
 #include "benode.h"
 #include "besched.h"
+#include "heights.h"
 #include "ircons.h"
 #include "iredges.h"
 #include "irgwalk.h"
 #include "irnodemap.h"
 #include "irtools.h"
-#include "heights.h"
 
 /**
  * Tests whether a node has a real user and is not just kept by the End or

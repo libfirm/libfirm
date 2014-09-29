@@ -10,7 +10,7 @@
  * @author  Michael Beck
  */
 
-#include "../adt/util.h"
+#include "util.h"
 #include "irnode_t.h"
 #include "irflag_t.h"
 #include "array.h"

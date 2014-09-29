@@ -23,7 +23,7 @@
 
 #include <stdlib.h>
 
-#include "../../adt/util.h"
+#include "util.h"
 #include "array.h"
 #include "pdeq.h"
 #include "beirg.h"

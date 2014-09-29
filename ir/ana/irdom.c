@@ -11,7 +11,7 @@
  */
 #include <string.h>
 
-#include "../adt/util.h"
+#include "util.h"
 #include "irouts.h"
 
 #include "xmalloc.h"

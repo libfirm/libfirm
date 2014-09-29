@@ -21,11 +21,11 @@
  * TODO: * try to optimize cmp modes
  *       * decide when it is useful to move the convs through phis
  */
+#include <stdbool.h>
 
-#include "../adt/util.h"
+#include "util.h"
 #include "iroptimize.h"
 
-#include <stdbool.h>
 #include "debug.h"
 #include "ircons.h"
 #include "irgmod.h"

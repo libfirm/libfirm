@@ -11,7 +11,7 @@
 #include <limits.h>
 #include <inttypes.h>
 
-#include "../../adt/util.h"
+#include "util.h"
 #include "beutil.h"
 #include "bitfiddle.h"
 #include "xmalloc.h"

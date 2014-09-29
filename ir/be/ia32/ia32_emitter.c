@@ -29,7 +29,7 @@
 #include <limits.h>
 #include <inttypes.h>
 
-#include "../../adt/util.h"
+#include "util.h"
 #include "xmalloc.h"
 #include "tv.h"
 #include "iredges.h"

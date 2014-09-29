@@ -12,7 +12,7 @@
 #include <stdlib.h>
 #include <limits.h>
 
-#include "../../adt/util.h"
+#include "util.h"
 #include "pattern.h"
 #include "ident.h"
 #include "irnode_t.h"

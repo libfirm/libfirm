@@ -13,7 +13,7 @@
 #include <math.h>
 #include <stdbool.h>
 
-#include "../adt/util.h"
+#include "util.h"
 #include "array.h"
 #include "beutil.h"
 #include "debug.h"
