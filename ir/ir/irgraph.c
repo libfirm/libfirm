@@ -256,7 +256,7 @@ ir_graph *create_irg_copy(ir_graph *irg)
 
 void free_ir_graph(ir_graph *irg)
 {
-	assert(is_ir_graph(irg));
+	assert(irg->kind == k_ir_graph);
 
 	remove_irp_irg(irg);
 	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_NONE);
@@ -274,11 +274,6 @@ void free_ir_graph(ir_graph *irg)
 		free(irg->loc_descriptions);
 	irg->kind = k_BAD;
 	free_graph(irg);
-}
-
-int (is_ir_graph)(const void *thing)
-{
-	return is_ir_graph_(thing);
 }
 
 long get_irg_graph_nr(const ir_graph *irg)

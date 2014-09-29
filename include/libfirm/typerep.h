@@ -582,16 +582,6 @@ FIRM_API void set_entity_overwrittenby(ir_entity *ent, size_t pos,
 FIRM_API void remove_entity_overwrittenby(ir_entity *ent,
                                           ir_entity *overwrites);
 
-/**
- *   Checks whether a pointer points to an entity.
- *
- *   @param thing     an arbitrary pointer
- *
- *   @return
- *       true if the thing is an entity, else false
- */
-FIRM_API int is_entity(const void *thing);
-
 /** Returns true if the type of the entity is a primitive, pointer
  * or method type.
  *
@@ -1062,16 +1052,6 @@ FIRM_API void set_type_dbg_info(ir_type *tp, type_dbg_info *db);
  * @param tp  The type.
  */
 FIRM_API type_dbg_info *get_type_dbg_info(const ir_type *tp);
-
-/**
- * Checks whether a pointer points to a type.
- *
- * @param thing     an arbitrary pointer
- *
- * @return
- *     true if the thing is a type, else false
- */
-FIRM_API int is_type(const void *thing);
 
 /**
  *  Outputs a unique number for this type if libfirm is compiled for

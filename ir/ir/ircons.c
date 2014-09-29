@@ -408,7 +408,7 @@ void add_immBlock_pred(ir_node *block, ir_node *jmp)
 {
 	assert(is_Block(block) && "Error: Must be a Block");
 	assert(!get_Block_matured(block) && "Error: Block already matured!\n");
-	assert(is_ir_node(jmp));
+	assert(jmp->kind == k_ir_node);
 
 	int const n = ARR_LEN(block->in) - 1;
 	ARR_APP1(ir_node *, block->in, jmp);
@@ -507,7 +507,7 @@ void set_r_value(ir_graph *irg, int pos, ir_node *value)
 	assert(irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_CONSTRUCTION));
 	assert(pos >= 0);
 	assert(pos + 1 < irg->n_loc);
-	assert(is_ir_node(value));
+	assert(value->kind == k_ir_node);
 	irg->current_block->attr.block.graph_arr[pos + 1] = value;
 }
 

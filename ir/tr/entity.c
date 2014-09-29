@@ -200,7 +200,7 @@ static ir_entity *deep_entity_copy(ir_entity *old)
 
 ir_entity *copy_entity_own(ir_entity *old, ir_type *new_owner)
 {
-	assert(is_entity(old));
+	assert(old->kind == k_entity);
 	assert(is_compound_type(new_owner));
 	assert(get_type_state(new_owner) != layout_fixed);
 	if (old->owner == new_owner)
@@ -272,7 +272,7 @@ ir_type *(get_entity_owner)(const ir_entity *ent)
 
 void set_entity_owner(ir_entity *ent, ir_type *owner)
 {
-	assert(is_entity(ent));
+	assert(ent->kind == k_entity);
 	assert(is_compound_type(owner));
 
 	remove_compound_member(ent->owner, ent);
@@ -802,11 +802,6 @@ void set_entity_vtable_number(ir_entity *ent, unsigned vtable_number)
 int is_unknown_entity(const ir_entity *entity)
 {
 	return entity->entity_kind == IR_ENTITY_UNKNOWN;
-}
-
-int (is_entity)(const void *thing)
-{
-	return _is_entity(thing);
 }
 
 int is_atomic_entity(const ir_entity *ent)

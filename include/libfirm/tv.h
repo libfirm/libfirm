@@ -699,16 +699,6 @@ FIRM_API int tarval_is_minus_inf(const ir_tarval *tv);
  */
 FIRM_API int tarval_is_finite(const ir_tarval *tv);
 
-/**
- *   Checks whether a pointer points to a tarval.
- *
- *   @param thing     an arbitrary pointer
- *
- *   @return
- *       true if the thing is a tarval, else false
- */
-FIRM_API int is_tarval(const void *thing);
-
 /** @} */
 
 #include "end.h"

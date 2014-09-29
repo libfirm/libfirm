@@ -113,16 +113,6 @@ FIRM_API ir_mode *new_float_mode(const char *name,
  */
 FIRM_API ir_mode *new_non_arithmetic_mode(const char *name);
 
-/**
- * Checks whether a pointer points to a mode.
- *
- * @param thing     an arbitrary pointer
- *
- * @return
- *     true if the thing is a mode, else false
- */
-FIRM_API int is_mode(const void *thing);
-
 /** Returns the ident* of the mode */
 FIRM_API ident *get_mode_ident(const ir_mode *mode);
 

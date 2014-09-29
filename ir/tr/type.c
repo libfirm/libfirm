@@ -182,6 +182,11 @@ ident *(get_type_tpop_nameid)(const ir_type *tp)
 	return get_type_tpop_nameid_(tp);
 }
 
+static inline bool is_type(const void *thing)
+{
+	return get_kind(thing) == k_type;
+}
+
 const char* get_type_tpop_name(const ir_type *tp)
 {
 	assert(is_type(tp));
@@ -339,11 +344,6 @@ type_dbg_info *(get_type_dbg_info)(const ir_type *tp)
 void (set_type_dbg_info)(ir_type *tp, type_dbg_info *db)
 {
 	set_type_dbg_info_(tp, db);
-}
-
-int (is_type)(const void *thing)
-{
-	return is_type_(thing);
 }
 
 static void compound_init(ir_type *type)

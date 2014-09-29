@@ -295,11 +295,6 @@ ir_tarval *get_mode_NAN(const ir_mode *mode)
 	return mode->nan;
 }
 
-int is_mode(const void *thing)
-{
-	return get_kind(thing) == k_ir_mode;
-}
-
 int (mode_is_signed)(const ir_mode *mode)
 {
 	return mode_is_signed_(mode);

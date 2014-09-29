@@ -141,11 +141,6 @@ ir_node *new_similar_node(ir_node *const old, ir_node *const block, ir_node **co
 	return n;
 }
 
-int (is_ir_node)(const void *thing)
-{
-	return is_ir_node_(thing);
-}
-
 int (get_irn_arity)(const ir_node *node)
 {
 	return get_irn_arity_(node);
@@ -428,19 +423,19 @@ long get_irn_node_nr(const ir_node *node)
 
 void *(get_irn_generic_attr)(ir_node *node)
 {
-	assert(is_ir_node(node));
+	assert(node->kind == k_ir_node);
 	return get_irn_generic_attr_(node);
 }
 
 const void *(get_irn_generic_attr_const)(const ir_node *node)
 {
-	assert(is_ir_node(node));
+	assert(node->kind == k_ir_node);
 	return get_irn_generic_attr_const_(node);
 }
 
 unsigned (get_irn_idx)(const ir_node *node)
 {
-	assert(is_ir_node(node));
+	assert(node->kind == k_ir_node);
 	return get_irn_idx_(node);
 }
 

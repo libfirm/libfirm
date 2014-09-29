@@ -134,16 +134,6 @@ FIRM_API ir_graph *new_ir_graph(ir_entity *ent, int n_loc);
  */
 FIRM_API void free_ir_graph(ir_graph *irg);
 
-/**
- *   Checks whether a pointer points to a ir graph.
- *
- *   @param thing     an arbitrary pointer
- *
- *   @return
- *       true if the thing is a IR graph, else false
- */
-FIRM_API int is_ir_graph(const void *thing);
-
 /** Returns the entity of an IR graph. */
 FIRM_API ir_entity *get_irg_entity(const ir_graph *irg);
 /** Sets the entity of an IR graph. */

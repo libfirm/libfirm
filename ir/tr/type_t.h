@@ -35,7 +35,6 @@
 #define type_visited(tp)                  type_visited_(tp)
 #define get_type_dbg_info(tp)             get_type_dbg_info_(tp)
 #define set_type_dbg_info(tp, db)         set_type_dbg_info_(tp, db)
-#define is_type(thing)                    is_type_(thing)
 #define is_Class_type(clss)               is_class_type_(clss)
 #define get_class_n_members(clss)         get_class_n_members_(clss)
 #define get_class_member(clss, pos)       get_class_member_(clss, pos)
@@ -198,11 +197,6 @@ static inline ir_visited_t get_master_type_visited_(void)
 	return firm_type_visited;
 }
 
-static inline int is_type_(const void *thing)
-{
-	return get_kind(thing) == k_type;
-}
-
 static inline int is_lowered_type(const ir_type *tp)
 {
 	return tp->flags & tf_lowered_type;
@@ -257,7 +251,7 @@ static inline ir_mode *get_type_mode_(const ir_type *tp)
 
 static inline unsigned get_type_alignment_bytes_(const ir_type *type)
 {
-	assert(is_type(type));
+	assert(type->kind == k_type);
 	return type->align;
 }
 

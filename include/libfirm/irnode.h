@@ -42,17 +42,6 @@
  */
 
 /**
- * Checks whether a pointer points to a ir node. This is guessed by looking
- * at the few bytes of the thing. Most things used in firm have a firm_kind
- * attribute there. This function might falsely return true though for things
- * without a firm_kind at the beginning.
- *
- * @param thing   an arbitrary pointer
- * @return        non-zero if the thing is a ir mode, else zero
- */
-FIRM_API int is_ir_node(const void *thing);
-
-/**
  * Returns the number of predecessors without the block predecessor.
  *
  * @param node   the IR-node

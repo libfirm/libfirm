@@ -234,7 +234,7 @@ static void irg_walk_in_or_dep_2(ir_node *node, irg_walk_func *pre,
 void irg_walk_in_or_dep(ir_node *node, irg_walk_func *pre, irg_walk_func *post,
                         void *env)
 {
-	assert(is_ir_node(node));
+	assert(node->kind == k_ir_node);
 
 	ir_graph *const irg = get_irn_irg(node);
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_VISITED);

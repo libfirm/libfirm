@@ -20,7 +20,6 @@
 #include "iredges_t.h"
 
 /* This section MUST come first, so the inline functions get used in this header. */
-#define is_ir_node(thing)                     is_ir_node_(thing)
 #define get_irn_arity(node)                   get_irn_arity_(node)
 #define get_irn_n(node, n)                    get_irn_n_(node, n)
 #define get_irn_mode(node)                    get_irn_mode_(node)
@@ -94,15 +93,6 @@ ir_node **get_irn_in(const ir_node *node);
 /*  These function are most used in libfirm.  Give them as static    */
 /*  functions so they can be inlined.                                */
 /*-------------------------------------------------------------------*/
-
-/**
- * Checks whether a pointer points to a ir node.
- * Intern version for libFirm.
- */
-static inline int is_ir_node_(const void *thing)
-{
-	return (get_kind(thing) == k_ir_node);
-}
 
 static inline unsigned get_irn_idx_(const ir_node *node)
 {
@@ -302,7 +292,7 @@ static inline void set_irn_link_(ir_node *node, void *link)
  */
 static inline void *get_irn_link_(const ir_node *node)
 {
-	assert(is_ir_node_(node));
+	assert(node->kind == k_ir_node);
 	return node->link;
 }
 
@@ -315,7 +305,7 @@ static inline void *get_irn_link_(const ir_node *node)
 static inline op_pin_state get_irn_pinned_(const ir_node *node)
 {
 	op_pin_state state;
-	assert(is_ir_node_(node));
+	assert(node->kind == k_ir_node);
 	/* Check opcode */
 	state = get_op_pinned_(get_irn_op_(node));
 
@@ -327,7 +317,7 @@ static inline op_pin_state get_irn_pinned_(const ir_node *node)
 
 static inline int is_binop_(const ir_node *node)
 {
-	assert(is_ir_node_(node));
+	assert(node->kind == k_ir_node);
 	return (node->op->opar == oparity_binary);
 }
 

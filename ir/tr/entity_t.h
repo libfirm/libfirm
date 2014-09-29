@@ -18,7 +18,6 @@
 #include "type_t.h"
 #include "ident.h"
 
-#define is_entity(thing)                         _is_entity(thing)
 #define get_entity_name(ent)                     _get_entity_name(ent)
 #define get_entity_ident(ent)                    _get_entity_ident(ent)
 #define set_entity_ident(ent, id)                _set_entity_ident(ent, id)
@@ -235,7 +234,7 @@ ir_entity *new_got_entry_entity(ir_entity *reference);
 void set_entity_irg(ir_entity *ent, ir_graph *irg);
 
 /* ----------------------- inline functions ------------------------ */
-static inline int _is_entity(const void *thing)
+static inline bool is_entity(const void *thing)
 {
 	return get_kind(thing) == k_entity;
 }

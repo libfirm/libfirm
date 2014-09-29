@@ -110,11 +110,6 @@ void *get_loop_link(const ir_loop *loop)
 	return loop->link;
 }
 
-int (is_ir_loop)(const void *thing)
-{
-	return _is_ir_loop(thing);
-}
-
 void (set_irg_loop)(ir_graph *irg, ir_loop *loop)
 {
 	_set_irg_loop(irg, loop);

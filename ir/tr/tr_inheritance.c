@@ -116,7 +116,6 @@ static pset *get_entity_map(const ir_entity *ent, dir d)
 
 static pset *get_type_map(const ir_type *tp, dir d)
 {
-	assert(is_type(tp));
 	tr_inh_trans_tp *found = get_firm_kind_entry((const firm_kind *)tp);
 	return found->directions[d];
 }

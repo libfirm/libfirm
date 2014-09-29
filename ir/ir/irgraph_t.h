@@ -22,7 +22,6 @@
 #include "irloop.h"
 #include "obst.h"
 
-#define is_ir_graph(thing)                    is_ir_graph_(thing)
 #define get_irg_start_block(irg)              get_irg_start_block_(irg)
 #define set_irg_start_block(irg, node)        set_irg_start_block_(irg, node)
 #define get_irg_start(irg)                    get_irg_start_(irg)
@@ -120,11 +119,6 @@ int node_is_in_irgs_storage(const ir_graph *irg, const ir_node *n);
 /*-------------------------------------------------------------------*/
 /* inline functions for graphs                                       */
 /*-------------------------------------------------------------------*/
-
-static inline int is_ir_graph_(const void *thing)
-{
-	return (get_kind(thing) == k_ir_graph);
-}
 
 /** Returns the start block of a graph. */
 static inline ir_node *get_irg_start_block_(const ir_graph *irg)

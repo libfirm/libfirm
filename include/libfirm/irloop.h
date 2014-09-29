@@ -48,11 +48,6 @@ typedef union {
 	ir_graph *irg;   /**< Pointer to an ir_graph element (only callgraph loop trees) */
 } loop_element;
 
-/** Tests whether a given pointer points to a loop.
- * @note only works reliably if @p thing points to something with a ::firm_kind
- * header */
-FIRM_API int is_ir_loop(const void *thing);
-
 /** Sets the outermost loop in ir graph as basic access to loop tree. */
 FIRM_API void set_irg_loop(ir_graph *irg, ir_loop *l);
 
