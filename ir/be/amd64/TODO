@@ -9,6 +9,9 @@ Correctness:
 - Support ASM node
 - (Support 80bit long double with x87 instructions)
 
+Variants:
+- Implement Position Independent Code (PIC)
+
 Improve Quality:
 - Immediate32 matching could be better and match SymConst, Add(SymConst, Const)
   combinations where possible. Be careful with PIC code this may usually not
@@ -25,3 +28,8 @@ Improve Quality:
   spills where possible.
 - Perform some benchmark comparison with clang/gcc and distill more issues to
   put on this list.
+- Support folding reloads into nodes (amd64_irn_ops: possible_memory_operand()
+   perform_memory_operand())
+- Report instruction costs (amd64_irn_ops: get_op_estimated_cost())
+- Transform IncSP+Store/Load to Push/Pop peephole pass
+- Use stack red zone where possible to avoid IncSP at begin/end of function
