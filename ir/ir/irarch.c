@@ -29,7 +29,7 @@
 #include "irflag_t.h"
 #include "irhooks.h"
 #include "ircons.h"
-#include "irarch.h"
+#include "irarch_t.h"
 #include "irflag.h"
 #include "be.h"
 #include "panic.h"

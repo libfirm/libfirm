@@ -11,6 +11,7 @@
 #include "lc_opts.h"
 #include "lc_opts_enum.h"
 
+#include "irarch_t.h"
 #include "irgwalk.h"
 #include "irprog.h"
 #include "ircons_t.h"

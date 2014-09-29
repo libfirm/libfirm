@@ -23,6 +23,7 @@
 #include "be_t.h"
 #include "debug.h"
 #include "panic.h"
+#include "irarch_t.h"
 #include "ircons_t.h"
 #include "irdump.h"
 #include "irgmod.h"

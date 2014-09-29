@@ -11,7 +11,7 @@
 #ifndef FIRM_BE_IA32_ARCHITECTURE_H
 #define FIRM_BE_IA32_ARCHITECTURE_H
 
-#include "irarch.h"
+#include "irarch_t.h"
 
 typedef struct {
 	/** optimize for size */
