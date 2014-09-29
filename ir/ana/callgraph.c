@@ -647,7 +647,7 @@ static ir_graph *find_tail(const ir_graph *n)
 
 			if (is_head(m, n)) {
 				found = smallest_dfn_pred(m, get_irg_dfn(m) + 1, &res_index);
-				if (! found)  /* no smallest dfn pred found. */
+				if (!found)  /* no smallest dfn pred found. */
 					found = largest_dfn_pred(m, &res_index);
 
 				break;
@@ -662,7 +662,7 @@ static ir_graph *find_tail(const ir_graph *n)
 
 		}
 
-		if (! found) {
+		if (!found) {
 			/* A dead loop not reachable from Start. */
 			for (size_t i = tos-1; i > 0;) {
 				m = stack[--i];

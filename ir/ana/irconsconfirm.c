@@ -98,7 +98,7 @@ static void handle_case(ir_node *block, ir_node *switchn, unsigned pn, env_t *en
 
 	foreach_out_edge_safe(selector, edge) {
 		ir_node *succ = get_edge_src_irn(edge);
-		int     pos   = get_edge_src_pos(edge);
+		int      pos  = get_edge_src_pos(edge);
 		ir_node *blk  = get_effective_use_block(succ, pos);
 
 		if (block_dominates(block, blk)) {
@@ -138,7 +138,7 @@ static void handle_modeb(ir_node *block, ir_node *selector, pn_Cond pnc, env_t *
 
 	foreach_out_edge_safe(selector, edge) {
 		ir_node *user     = get_edge_src_irn(edge);
-		int     pos       = get_edge_src_pos(edge);
+		int      pos      = get_edge_src_pos(edge);
 		ir_node *user_blk = get_effective_use_block(user, pos);
 
 		if (block_dominates(block, user_blk)) {
@@ -243,11 +243,9 @@ static void handle_modeb(ir_node *block, ir_node *selector, pn_Cond pnc, env_t *
  */
 static void handle_if(ir_node *block, ir_node *cmp, ir_relation rel, env_t *env)
 {
+	/* Beware of Bads */
 	ir_node *left  = get_Cmp_left(cmp);
 	ir_node *right = get_Cmp_right(cmp);
-	ir_node *cond_block;
-
-	/* Beware of Bads */
 	if (is_Bad(left) || is_Bad(right))
 		return;
 
@@ -280,7 +278,7 @@ static void handle_if(ir_node *block, ir_node *cmp, ir_relation rel, env_t *env)
 	 * replace the left one by the right (potentially const) one.
 	 */
 	if (rel == ir_relation_equal) {
-		cond_block = get_Block_cfgpred_block(block, 0);
+		ir_node *cond_block = get_Block_cfgpred_block(block, 0);
 		foreach_out_edge_safe(left, edge) {
 			ir_node *user = get_edge_src_irn(edge);
 			int     pos   = get_edge_src_pos(edge);
@@ -339,7 +337,7 @@ static void handle_if(ir_node *block, ir_node *cmp, ir_relation rel, env_t *env)
 
 		foreach_out_edge_safe(left, edge) {
 			ir_node *succ = get_edge_src_irn(edge);
-			int     pos   = get_edge_src_pos(edge);
+			int      pos  = get_edge_src_pos(edge);
 			ir_node *blk  = get_effective_use_block(succ, pos);
 
 			if (block_dominates(block, blk)) {
@@ -348,7 +346,7 @@ static void handle_if(ir_node *block, ir_node *cmp, ir_relation rel, env_t *env)
 				 * dominated by the branch block.
 				 * We can replace the input with a Confirm(left, pnc, right).
 				 */
-				if (! c)
+				if (c == NULL)
 					c = new_r_Confirm(block, left, right, rel);
 
 				pos = get_edge_src_pos(edge);
@@ -359,7 +357,7 @@ static void handle_if(ir_node *block, ir_node *cmp, ir_relation rel, env_t *env)
 			}
 		}
 
-		if (! is_Const(right)) {
+		if (!is_Const(right)) {
 			/* also construct inverse Confirms */
 			ir_node *rc = NULL;
 
@@ -378,7 +376,7 @@ static void handle_if(ir_node *block, ir_node *cmp, ir_relation rel, env_t *env)
 					 * dominated by the branch block.
 					 * We can replace the input with a Confirm(right, rel^-1, left).
 					 */
-					if (! rc)
+					if (rc == NULL)
 						rc = new_r_Confirm(block, right, left, rel);
 
 					pos = get_edge_src_pos(edge);
@@ -405,7 +403,7 @@ static void insert_Confirm_in_block(ir_node *block, void *data)
 		return;
 
 	ir_node *proj = get_Block_cfgpred(block, 0);
-	if (! is_Proj(proj))
+	if (!is_Proj(proj))
 		return;
 
 	env_t   *env = (env_t*)data;
@@ -415,19 +413,15 @@ static void insert_Confirm_in_block(ir_node *block, void *data)
 		handle_case(block, cond, proj_nr, env);
 	} else if (is_Cond(cond)) {
 		ir_node *selector = get_Cond_selector(cond);
-		ir_relation rel;
-
 		handle_modeb(block, selector, (pn_Cond) get_Proj_num(proj), env);
-
-		if (! is_Cmp(selector))
+		if (!is_Cmp(selector))
 			return;
 
-		rel = get_Cmp_relation(selector);
+		ir_relation rel = get_Cmp_relation(selector);
 
-		if (get_Proj_num(proj) != pn_Cond_true) {
-			/* it's the false branch */
+		/* it's the false branch */
+		if (get_Proj_num(proj) != pn_Cond_true)
 			rel = get_negated_relation(rel);
-		}
 		DB((dbg, LEVEL_2, "At %+F using %+F Confirm %=\n", block, selector, rel));
 
 		handle_if(block, selector, rel, env);
@@ -440,7 +434,7 @@ static void insert_Confirm_in_block(ir_node *block, void *data)
 static bool is_non_null_Confirm(const ir_node *ptr)
 {
 	for (;;) {
-		if (! is_Confirm(ptr))
+		if (!is_Confirm(ptr))
 			break;
 		if (get_Confirm_relation(ptr) == ir_relation_less_greater) {
 			ir_node *bound = get_Confirm_bound(ptr);
@@ -474,7 +468,7 @@ static void insert_non_null(ir_node *ptr, ir_node *block, env_t *env)
 	foreach_out_edge_safe(ptr, edge) {
 		/* for now, we place a Confirm only in front of a Cmp */
 		ir_node *succ = get_edge_src_irn(edge);
-		if (! is_Cmp(succ))
+		if (!is_Cmp(succ))
 			continue;
 
 		int      pos = get_edge_src_pos(edge);
@@ -514,13 +508,13 @@ static void insert_Confirm(ir_node *node, void *data)
 		break;
 	case iro_Load: {
 		ir_node *ptr = get_Load_ptr(node);
-		if (! is_non_null_Confirm(ptr))
+		if (!is_non_null_Confirm(ptr))
 			insert_non_null(ptr, get_nodes_block(node), env);
 		break;
 	}
 	case iro_Store: {
 		ir_node *ptr = get_Store_ptr(node);
-		if (! is_non_null_Confirm(ptr))
+		if (!is_non_null_Confirm(ptr))
 			insert_non_null(ptr, get_nodes_block(node), env);
 		break;
 	}
@@ -539,8 +533,7 @@ void construct_confirms(ir_graph *irg)
 		| IR_GRAPH_PROPERTY_NO_BADS
 		| IR_GRAPH_PROPERTY_NO_CRITICAL_EDGES);
 
-	assert(get_irg_pinned(irg) == op_pin_state_pinned &&
-	       "Nodes must be placed to insert Confirms");
+	assert(get_irg_pinned(irg) == op_pin_state_pinned);
 
 	env_t env;
 	env.num_confirms = 0;
@@ -566,7 +559,7 @@ void construct_confirms(ir_graph *irg)
 
 static void remove_confirm(ir_node *n, void *env)
 {
-	(void) env;
+	(void)env;
 	if (!is_Confirm(n))
 		return;
 

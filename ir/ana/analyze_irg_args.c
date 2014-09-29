@@ -207,10 +207,10 @@ void analyze_irg_args(ir_graph *irg)
 		return;
 
 	ir_entity *entity = get_irg_entity(irg);
-	if (! entity)
+	if (entity == NULL)
 		return;
 
-	if (! entity->attr.mtd_attr.param_access)
+	if (!entity->attr.mtd_attr.param_access)
 		analyze_ent_args(entity);
 }
 

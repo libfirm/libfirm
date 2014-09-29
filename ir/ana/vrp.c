@@ -482,7 +482,7 @@ static void vrp_first_pass(ir_node *n, void *e)
 
 static void dump_vrp_info(void *ctx, FILE *F, const ir_node *node)
 {
-	(void) ctx;
+	(void)ctx;
 	if (!mode_is_int(get_irn_mode(node)))
 		return;
 

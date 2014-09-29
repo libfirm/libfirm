@@ -360,7 +360,7 @@ static bool is_head(ir_node *n, ir_node *root)
 			if (is_backedge(n, i))
 				continue;
 			pred = get_irn_n(n, i);
-			if (! irn_is_in_stack(pred)) {
+			if (!irn_is_in_stack(pred)) {
 				some_outof_loop = true;
 			} else {
 				assert(get_irn_uplink(pred) >= uplink);

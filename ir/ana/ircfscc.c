@@ -42,9 +42,9 @@ static int current_dfn = 1;
  * construction.
  */
 typedef struct scc_info {
-	int in_stack;          /**< Marks whether node is on the stack. */
-	int dfn;               /**< Depth first search number. */
-	int uplink;            /**< dfn number of ancestor. */
+	bool in_stack;          /**< Marks whether node is on the stack. */
+	int  dfn;               /**< Depth first search number. */
+	int  uplink;            /**< dfn number of ancestor. */
 } scc_info;
 
 /** Allocate a new scc_info on the given obstack */
@@ -59,7 +59,7 @@ static inline scc_info *new_scc_info(struct obstack *obst)
 static inline void mark_irn_in_stack(ir_node *n)
 {
 	scc_info *info = (scc_info*) get_irn_link(n);
-	info->in_stack = 1;
+	info->in_stack = true;
 }
 
 /**
@@ -68,13 +68,13 @@ static inline void mark_irn_in_stack(ir_node *n)
 static inline void mark_irn_not_in_stack(ir_node *n)
 {
 	scc_info *info = (scc_info*) get_irn_link(n);
-	info->in_stack = 0;
+	info->in_stack = false;
 }
 
 /**
  * Returns whether node n is on the stack.
  */
-static inline int irn_is_in_stack(ir_node *n)
+static inline bool irn_is_in_stack(const ir_node *n)
 {
 	scc_info *info = (scc_info*) get_irn_link(n);
 	return info->in_stack;
@@ -293,10 +293,9 @@ static inline void finish_scc(void)
  */
 static int is_head(ir_node *n, ir_node *root)
 {
-	(void) root;
+	(void)root;
 	bool some_outof_loop = false;
 	bool some_in_loop    = false;
-
 	for (int i = 0, arity = get_Block_n_cfgpreds(n); i < arity; i++) {
 		ir_node *pred = get_Block_cfgpred_block(n, i);
 		/* ignore Bad control flow: it cannot happen */
@@ -325,11 +324,11 @@ static int is_head(ir_node *n, ir_node *root)
  */
 static int is_endless_head(ir_node *n, ir_node *root)
 {
-	(void) root;
-	bool none_outof_loop = true;
-	bool some_in_loop    = false;
+	(void)root;
 
 	/* Test for legal loop header: Block, Phi, ... */
+	bool none_outof_loop = true;
+	bool some_in_loop    = false;
 	for (int i = 0, arity = get_Block_n_cfgpreds(n); i < arity; i++) {
 		ir_node *pred = get_Block_cfgpred_block(n, i);
 		/* ignore Bad control flow: it cannot happen */
@@ -400,7 +399,7 @@ static int largest_dfn_pred(ir_node *n)
  */
 static ir_node *find_tail(ir_node *n)
 {
-	int      res_index = -2;
+	int res_index = -2;
 
 	ir_node *m = stack[tos - 1];  /* tos = top of stack */
 	if (is_head(m, n)) {
@@ -458,7 +457,7 @@ static ir_node *find_tail(ir_node *n)
 /**
  * returns non.zero if l is the outermost loop.
  */
-inline static int is_outermost_loop(ir_loop *l)
+inline static bool is_outermost_loop(const ir_loop *l)
 {
 	return l == get_loop_outer_loop(l);
 }

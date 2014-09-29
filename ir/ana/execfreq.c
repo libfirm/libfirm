@@ -277,7 +277,7 @@ static double  max_freq;
 
 static void collect_freqs(ir_node *node, void *data)
 {
-	(void) data;
+	(void)data;
 	double freq = get_block_execfreq(node);
 	if (freq > max_freq)
 		max_freq = freq;

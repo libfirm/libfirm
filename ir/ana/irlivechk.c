@@ -308,7 +308,7 @@ unsigned lv_chk_bl_xxx(lv_chk_t *lv, const ir_node *bl, const ir_node *var)
 		 */
 		const bl_info_t *bli = get_block_info(lv, bl);
 		const bl_info_t *def = get_block_info(lv, def_bl);
-		(void) def;
+		(void)def;
 		DBG((lv->dbg, LEVEL_2,
 		     "lv check %+F (def in %+F #%d) in different block %+F #%d\n",
 		     var, def_bl, def->id, bl, bli->id));

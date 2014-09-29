@@ -837,7 +837,7 @@ static void print_entity_usage_flags(const ir_type *tp)
  */
 static void check_global_address(ir_node *irn, void *data)
 {
-	(void) data;
+	(void)data;
 	if (!is_Address(irn))
 		return;
 

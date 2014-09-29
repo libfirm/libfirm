@@ -620,7 +620,7 @@ static void callee_ana_node(ir_node *node, pset *methods)
  */
 static void callee_walker(ir_node *call, void *env)
 {
-	(void) env;
+	(void)env;
 	if (!is_Call(call))
 		return;
 
