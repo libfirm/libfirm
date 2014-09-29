@@ -154,7 +154,10 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env)
 		ir_node *args = get_irg_args(irg);
 		for (unsigned p = 0; p < n_parameters; ++p) {
 			ir_node *parameter_proj = env->parameter_projs[p];
-			ir_mode *mode           = get_irn_mode(parameter_proj);
+			if (parameter_proj == NULL)
+				continue;
+
+			ir_mode *mode = get_irn_mode(parameter_proj);
 
 			phi_in[0] = env->parameter_projs[p];
 			for (unsigned j = 0; j < n_tail_calls; ++j)
