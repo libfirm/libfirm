@@ -27,38 +27,35 @@
  */
 static int firm_get_arg_type(const lc_arg_occ_t *occ)
 {
-	(void) occ;
+	(void)occ;
 	/* Firm objects are always pointer */
 	return lc_arg_type_ptr;
 }
 
 static int firm_get_arg_type_int(const lc_arg_occ_t *occ)
 {
-	(void) occ;
+	(void)occ;
 	return lc_arg_type_int;
 }
 
 
 static int bitset_get_arg_type(const lc_arg_occ_t *occ)
 {
-	(void) occ;
+	(void)occ;
 	return lc_arg_type_ptr;
 }
 
-static int bitset_emit(lc_appendable_t *app,
-    const lc_arg_occ_t *occ, const lc_arg_value_t *arg)
+static int bitset_emit(lc_appendable_t *app, const lc_arg_occ_t *occ,
+                       const lc_arg_value_t *arg)
 {
-	bitset_t *b = (bitset_t*)arg->v_ptr;
-	char buf[32];
-	const char *prefix = "";
-
 	int res = 0;
 	lc_arg_append(app, occ, "[", 1);
 	++res;
+	const char *prefix = "";
+	bitset_t *b = (bitset_t*)arg->v_ptr;
 	bitset_foreach(b, p) {
-		int n;
-
-		n = snprintf(buf, sizeof(buf), "%s%d", prefix, (int) p);
+		char buf[32];
+		int  n = snprintf(buf, sizeof(buf), "%s%d", prefix, (int) p);
 		lc_arg_append(app, occ, buf, n);
 		prefix = ", ";
 		res += n;
@@ -72,13 +69,13 @@ static int bitset_emit(lc_appendable_t *app,
 /**
  * emit an opaque Firm dbg_info object
  */
-static int firm_emit_dbg(lc_appendable_t *app,
-    const lc_arg_occ_t *occ, const lc_arg_value_t *arg)
+static int firm_emit_dbg(lc_appendable_t *app, const lc_arg_occ_t *occ,
+                         const lc_arg_value_t *arg)
 {
-	char buf[1024];
-	ir_node *irn = (ir_node*)arg->v_ptr;
+	ir_node  *irn = (ir_node*)arg->v_ptr;
 	dbg_info *dbg = get_irn_dbg_info(irn);
 
+	char buf[1024];
 	ir_dbg_info_snprint(buf, sizeof(buf), dbg);
 	size_t size = strlen(buf);
 	lc_arg_append(app, occ, buf, size);
@@ -90,7 +87,7 @@ static int firm_emit_dbg(lc_appendable_t *app,
  */
 static const char *get_entity_ld_name_ex(ir_entity *ent)
 {
-	if (ent->ld_name)
+	if (ent->ld_name != NULL)
 		return get_entity_ld_name(ent);
 	return get_entity_name(ent);
 }
@@ -101,22 +98,17 @@ static const char *get_entity_ld_name_ex(ir_entity *ent)
 static int firm_emit(lc_appendable_t *app, const lc_arg_occ_t *occ,
                      const lc_arg_value_t *arg)
 {
-#define A(s)    occ->flag_hash ? s " ": ""
-
 	void *X = (void*)arg->v_ptr;
-	firm_kind *obj = (firm_kind*)X;
-	ir_node *block;
-	char add[64];
-	char buf[256];
-	char tv_buf[256];
+	if (X == NULL)
+		return lc_arg_append(app, occ, "(null)", 6);
 
+	char buf[256];
 	buf[0] = '\0';
+	char add[64];
 	add[0] = '\0';
 
-	if (X == NULL) {
-		return lc_arg_append(app, occ, "(null)", 6);
-	}
-
+#define A(s)    occ->flag_hash ? s " ": ""
+	firm_kind *obj = (firm_kind*)X;
 	switch (*obj) {
 	case k_BAD:
 		snprintf(buf, sizeof(buf), "BAD");
@@ -150,17 +142,19 @@ static int firm_emit(lc_appendable_t *app, const lc_arg_occ_t *occ,
 	case k_ir_node: {
 		ir_node *node = (ir_node*)X;
 		switch (occ->conversion) {
-		case 'B':
-			block = !is_Block(node) ? get_nodes_block(node) : node;
+		case 'B': {
+			ir_node *block = !is_Block(node) ? get_nodes_block(node) : node;
 			snprintf(buf, sizeof(buf), "%s%s %s", A("irn"),
 			         get_irn_opname(block), get_mode_name(get_irn_mode(block)));
 			snprintf(add, sizeof(add), "[%ld]", get_irn_node_nr(block));
 			break;
+		}
 		case 'N':
 			snprintf(buf, sizeof(buf), "%ld", get_irn_node_nr(node));
 			break;
 		default:
 			if (is_Const(node)) {
+				char tv_buf[256];
 				ir_tarval *tv = get_Const_tarval(node);
 				if (tv)
 					tarval_snprintf(tv_buf, sizeof(tv_buf), tv);
@@ -196,6 +190,7 @@ static int firm_emit(lc_appendable_t *app, const lc_arg_occ_t *occ,
 	}
 	case k_tarval: {
 		ir_tarval *tarval = (ir_tarval*)X;
+		char tv_buf[256];
 		tarval_snprintf(tv_buf, sizeof(tv_buf), tarval);
 		snprintf(buf, sizeof(buf), "%s%s", A("tv"), tv_buf);
 		break;
@@ -226,10 +221,9 @@ static int firm_emit(lc_appendable_t *app, const lc_arg_occ_t *occ,
 static int firm_emit_ident(lc_appendable_t *app, const lc_arg_occ_t *occ,
                            const lc_arg_value_t *arg)
 {
-	ident *id = (ident *)arg->v_ptr;
-	const char *p = id ? get_id_str(id) : "(null)";
-
-	size_t size = strlen(p);
+	ident      *id   = (ident *)arg->v_ptr;
+	const char *p    = id != NULL ? get_id_str(id) : "(null)";
+	size_t      size = strlen(p);
 	lc_arg_append(app, occ, p, size);
 	return size;
 }
@@ -240,13 +234,10 @@ static int firm_emit_ident(lc_appendable_t *app, const lc_arg_occ_t *occ,
 static int firm_emit_indent(lc_appendable_t *app, const lc_arg_occ_t *occ,
                             const lc_arg_value_t *arg)
 {
-	int i;
 	int width  = MAX(1, occ->width);
 	int amount = arg->v_int * width;
-
-	for (i = 0; i < amount; ++i)
+	for (int i = 0; i < amount; ++i)
 		lc_appendable_chadd(app, (i % width) == 0 ? '|' : ' ');
-
 	return amount;
 }
 
@@ -266,15 +257,12 @@ static int firm_emit_pnc(lc_appendable_t *app, const lc_arg_occ_t *occ,
 
 lc_arg_env_t *firm_get_arg_env(void)
 {
-
-	static lc_arg_env_t *env = NULL;
-
-	static lc_arg_handler_t firm_handler   = { firm_get_arg_type, firm_emit };
-	static lc_arg_handler_t ident_handler  = { firm_get_arg_type, firm_emit_ident };
-	static lc_arg_handler_t indent_handler = { firm_get_arg_type_int, firm_emit_indent };
-	static lc_arg_handler_t pnc_handler    = { firm_get_arg_type_int, firm_emit_pnc };
-	static lc_arg_handler_t bitset_handler = { bitset_get_arg_type, bitset_emit };
-	static lc_arg_handler_t debug_handler  = { firm_get_arg_type, firm_emit_dbg };
+	static lc_arg_handler_t const firm_handler   = { firm_get_arg_type, firm_emit };
+	static lc_arg_handler_t const ident_handler  = { firm_get_arg_type, firm_emit_ident };
+	static lc_arg_handler_t const indent_handler = { firm_get_arg_type_int, firm_emit_indent };
+	static lc_arg_handler_t const pnc_handler    = { firm_get_arg_type_int, firm_emit_pnc };
+	static lc_arg_handler_t const bitset_handler = { bitset_get_arg_type, bitset_emit };
+	static lc_arg_handler_t const debug_handler  = { firm_get_arg_type, firm_emit_dbg };
 
 	static struct {
 		const char *name;
@@ -291,14 +279,13 @@ lc_arg_env_t *firm_get_arg_env(void)
 		{"firm:block",     'B'},
 	};
 
-	size_t i;
-
+	static lc_arg_env_t *env = NULL;
 	if (env == NULL) {
 		env = lc_arg_new_env();
 		lc_arg_add_std(env);
 
 		lc_arg_register(env, "firm", 'F', &firm_handler);
-		for (i = 0; i != ARRAY_SIZE(args); ++i)
+		for (size_t i = 0; i != ARRAY_SIZE(args); ++i)
 			lc_arg_register(env, args[i].name, args[i].letter, &firm_handler);
 
 		lc_arg_register(env, "firm:ident",    'I', &ident_handler);
