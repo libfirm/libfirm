@@ -241,17 +241,17 @@ static void arm_handle_intrinsics(ir_graph *irg)
 
 extern const arch_isa_if_t arm_isa_if;
 static arm_isa_t arm_isa_template = {
-	{
-		&arm_isa_if,             /* isa interface */
-		N_ARM_REGISTERS,
-		arm_registers,
-		N_ARM_CLASSES,
-		arm_reg_classes,
-		&arm_registers[REG_SP],  /* stack pointer */
-		&arm_registers[REG_R11], /* base pointer */
-		3,                       /* stack alignment: 2^3 (== 8) */
-		7,                       /* spill costs */
-		5,                       /* reload costs */
+	.base = {
+		.impl               = &arm_isa_if,
+		.n_registers        = N_ARM_REGISTERS,
+		.registers          = arm_registers,
+		.n_register_classes = N_ARM_CLASSES,
+		.register_classes   = arm_reg_classes,
+		.sp                 = &arm_registers[REG_SP],
+		.bp                 = &arm_registers[REG_R11],
+		.stack_alignment    = 3, /* power of two alignment */
+		.spill_cost         = 7,
+		.reload_cost        = 5,
 	},
 };
 

@@ -1590,20 +1590,19 @@ static void ia32_finish(void)
  * arguments.
  */
 static ia32_isa_t ia32_isa_template = {
-	{
-		&ia32_isa_if,             /* isa interface implementation */
-		N_IA32_REGISTERS,
-		ia32_registers,
-		N_IA32_CLASSES,
-		ia32_reg_classes,
-		&ia32_registers[REG_ESP], /* stack pointer register */
-		&ia32_registers[REG_EBP], /* base pointer register */
-		2,                        /* power of two stack alignment, 2^2 == 4 */
-		7,                        /* costs for a spill instruction */
-		5,                        /* costs for a reload instruction */
+	.base = {
+		.impl               = &ia32_isa_if,
+		.n_registers        = N_IA32_REGISTERS,
+		.registers          = ia32_registers,
+		.n_register_classes = N_IA32_CLASSES,
+		.register_classes   = ia32_reg_classes,
+		.sp                 = &ia32_registers[REG_ESP],
+		.bp                 = &ia32_registers[REG_EBP],
+		.stack_alignment    = 2, /* power of two stack alignment */
+		.spill_cost         = 7,
+		.reload_cost        = 5,
 	},
-	NULL,                       /* tv_ents */
-	IA32_FPU_ARCH_X87,          /* FPU architecture */
+	.fpu_arch = IA32_FPU_ARCH_X87,
 };
 
 static arch_env_t *ia32_begin_codegeneration(void)

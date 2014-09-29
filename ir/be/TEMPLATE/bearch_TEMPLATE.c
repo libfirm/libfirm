@@ -105,17 +105,17 @@ static void TEMPLATE_before_ra(ir_graph *irg)
 
 extern const arch_isa_if_t TEMPLATE_isa_if;
 static TEMPLATE_isa_t TEMPLATE_isa_template = {
-	{
-		&TEMPLATE_isa_if,            /* isa interface implementation */
-		N_TEMPLATE_REGISTERS,
-		TEMPLATE_registers,
-		N_TEMPLATE_CLASSES,
-		TEMPLATE_reg_classes,
-		&TEMPLATE_registers[REG_SP], /* stack pointer register */
-		&TEMPLATE_registers[REG_BP], /* base pointer register */
-		2,                           /* power of two stack alignment for calls, 2^2 == 4 */
-		7,                           /* costs for a spill instruction */
-		5,                           /* costs for a reload instruction */
+	.base = {
+		.impl               = &TEMPLATE_isa_if,
+		.n_registers        = N_TEMPLATE_REGISTERS,
+		.registers          = TEMPLATE_registers,
+		.n_register_classes = N_TEMPLATE_CLASSES,
+		.register_classes   = TEMPLATE_reg_classes,
+		.sp                 = &TEMPLATE_registers[REG_SP],
+		.bp                 = &TEMPLATE_registers[REG_BP],
+		.stack_alignment    = 2, /* power of two stack alignment */
+		.spill_cost         = 7,
+		.reload_cost        = 5,
 	},
 };
 

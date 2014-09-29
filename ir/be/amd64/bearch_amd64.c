@@ -650,19 +650,18 @@ static void amd64_finish_graph(ir_graph *irg)
 
 extern const arch_isa_if_t amd64_isa_if;
 static amd64_isa_t amd64_isa_template = {
-	{
-		&amd64_isa_if,             /* isa interface implementation */
-		N_AMD64_REGISTERS,
-		amd64_registers,
-		N_AMD64_CLASSES,
-		amd64_reg_classes,
-		&amd64_registers[REG_RSP], /* stack pointer register */
-		&amd64_registers[REG_RBP], /* base pointer register */
-		4,                         /* power of two stack alignment for calls */
-		7,                         /* costs for a spill instruction */
-		5,                         /* costs for a reload instruction */
+	.base = {
+		.impl               = &amd64_isa_if,
+		.n_registers        = N_AMD64_REGISTERS,
+		.registers          = amd64_registers,
+		.n_register_classes = N_AMD64_CLASSES,
+		.register_classes   = amd64_reg_classes,
+		.sp                 = &amd64_registers[REG_RSP],
+		.bp                 = &amd64_registers[REG_RBP],
+		.stack_alignment    = 4, /* power of two stack alignment for calls */
+		.spill_cost         = 7,
+		.reload_cost        = 5,
 	},
-	NULL,                              /* constants */
 };
 
 static void amd64_init(void)

@@ -57,20 +57,18 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 extern const arch_isa_if_t sparc_isa_if;
 static sparc_isa_t sparc_isa_template = {
-	{
-		&sparc_isa_if,                       /* isa interface implementation */
-		N_SPARC_REGISTERS,
-		sparc_registers,
-		N_SPARC_CLASSES,
-		sparc_reg_classes,
-		&sparc_registers[REG_SP],            /* stack pointer register */
-		&sparc_registers[REG_FRAME_POINTER], /* base pointer register */
-		3,                                   /* power of two stack alignment
-		                                        for calls */
-		7,                                   /* costs for a spill instruction */
-		5,                                   /* costs for a reload instruction */
+	.base = {
+		.impl        = &sparc_isa_if,
+		.n_registers = N_SPARC_REGISTERS,
+		.registers   = sparc_registers,
+		.n_register_classes = N_SPARC_CLASSES,
+		.register_classes   = sparc_reg_classes,
+		.sp                 = &sparc_registers[REG_SP],
+		.bp                 = &sparc_registers[REG_FRAME_POINTER],
+		.stack_alignment    = 3, /* power of two alignment */
+		.spill_cost         = 7,
+		.reload_cost        = 5,
 	},
-	NULL,                                  /* constants */
 };
 
 ir_mode *sparc_mode_Q;
