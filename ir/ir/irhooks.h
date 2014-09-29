@@ -224,12 +224,12 @@ extern hook_entry_t *hooks[hook_last];
  * Executes the hook @p what with the args @p args
  * Do not use this macro directly.
  */
-#define hook_exec(what, args) do {           \
-  hook_entry_t *_p;                          \
-  for (_p = hooks[what]; _p; _p = _p->next){ \
-    void *hook_ctx_ = _p->context;           \
-    _p->hook._##what args;                   \
-  }                                          \
+#define hook_exec(what, args) do {             \
+	hook_entry_t *_p;                          \
+	for (_p = hooks[what]; _p; _p = _p->next){ \
+		void *hook_ctx_ = _p->context;         \
+		_p->hook._##what args;                 \
+	}                                          \
 } while (0)
 
 /** Called when a new node opcode has been created */
