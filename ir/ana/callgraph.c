@@ -164,8 +164,8 @@ size_t get_irg_callee_loop_depth(const ir_graph *irg, size_t pos)
  */
 static void ana_Call(ir_node *n, void *env)
 {
-	(void) env;
-	if (! is_Call(n))
+	(void)env;
+	if (!is_Call(n))
 		return;
 
 	ir_graph *irg = get_irn_irg(n);

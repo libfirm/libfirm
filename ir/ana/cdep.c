@@ -22,8 +22,8 @@
 #include "irdump.h"
 
 typedef struct cdep_info {
-	pmap   *cdep_map;     /**< A map to find the list of all control dependence nodes for a block. */
-	struct obstack obst;  /**< An obstack where all cdep data lives on. */
+	pmap          *cdep_map; /**< A map to find the list of all control dependence nodes for a block. */
+	struct obstack obst;     /**< An obstack where all cdep data lives on. */
 } cdep_info;
 
 static cdep_info *cdep_data;
@@ -138,7 +138,7 @@ void compute_cdep(ir_graph *irg)
 
 	irg_block_walk_graph(irg, cdep_pre, NULL, NULL);
 
-	(void) cdep_edge_hook;
+	(void)cdep_edge_hook;
 
 	/* restore the post dominator relation */
 	set_Block_ipostdom(start_block, rem);
@@ -146,7 +146,7 @@ void compute_cdep(ir_graph *irg)
 
 void free_cdep(ir_graph *irg)
 {
-	(void) irg;
+	(void)irg;
 	if (cdep_data != NULL) {
 		pmap_destroy(cdep_data->cdep_map);
 		obstack_free(&cdep_data->obst, NULL);

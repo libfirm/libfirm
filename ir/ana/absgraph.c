@@ -32,7 +32,7 @@ static void irg_cfg_succ_grow_succs(void *self, void *node, struct obstack *obst
 {
 	ir_node *bl = (ir_node*) node;
 
-	(void) self;
+	(void)self;
 	foreach_block_succ(bl, edge) {
 		obstack_ptr_grow(obst, get_edge_src_irn(edge));
 	}
@@ -56,7 +56,7 @@ static void *irg_cfg_pred_get_end(void *self)
 
 static void irg_cfg_pred_grow_succs(void *self, void *node, struct obstack *obst)
 {
-	(void) self;
+	(void)self;
 	foreach_irn_in((ir_node*)node, i, pred) {
 		obstack_ptr_grow(obst, pred);
 	}

@@ -42,9 +42,9 @@ static int current_dfn = 1;
 /**********************************************************************/
 
 typedef struct scc_info {
-	int in_stack;          /**< Marks whether node is on the stack. */
-	int dfn;               /**< Depth first search number. */
-	int uplink;            /**< dfn number of ancestor. */
+	bool in_stack;          /**< Marks whether node is on the stack. */
+	int  dfn;               /**< Depth first search number. */
+	int  uplink;            /**< dfn number of ancestor. */
 } scc_info;
 
 /**
@@ -62,7 +62,7 @@ static inline void mark_irn_in_stack(ir_node *n)
 {
 	scc_info *scc = (scc_info*) get_irn_link(n);
 	assert(scc);
-	scc->in_stack = 1;
+	scc->in_stack = true;
 }
 
 /**
@@ -72,13 +72,13 @@ static inline void mark_irn_not_in_stack(ir_node *n)
 {
 	scc_info *scc = (scc_info*) get_irn_link(n);
 	assert(scc);
-	scc->in_stack = 0;
+	scc->in_stack = false;
 }
 
 /**
  * Checks if a node is on the SCC stack.
  */
-static inline int irn_is_in_stack(ir_node *n)
+static inline bool irn_is_in_stack(ir_node *n)
 {
 	scc_info *scc = (scc_info*) get_irn_link(n);
 	assert(scc);
@@ -130,14 +130,14 @@ static int get_irn_dfn(ir_node *n)
 /**********************************************************************/
 
 static ir_node **stack = NULL;
-static size_t tos = 0;                /* top of stack */
+static size_t    tos   = 0;      /**< top of stack */
 
 /**
  * initializes the stack
  */
 static inline void init_stack(void)
 {
-	if (stack) {
+	if (stack != NULL) {
 		ARR_RESIZE(ir_node *, stack, 1000);
 	} else {
 		stack = NEW_ARR_F(ir_node *, 1000);
@@ -176,10 +176,8 @@ static inline void push(ir_node *n)
  */
 static inline ir_node *pop(void)
 {
-	ir_node *n;
-
 	assert(tos > 0);
-	n = stack[--tos];
+	ir_node *n = stack[--tos];
 	mark_irn_not_in_stack(n);
 	return n;
 }
@@ -191,7 +189,6 @@ static inline ir_node *pop(void)
 static inline void pop_scc_to_loop(ir_node *n)
 {
 	ir_node *m;
-
 	do {
 		m = pop();
 
@@ -211,20 +208,18 @@ static void close_loop(ir_loop *l)
 	loop_element lelement = get_loop_element(l, last);
 	ir_loop *last_son = lelement.son;
 
-	if (get_kind(last_son) == k_ir_loop &&
-		get_loop_n_elements(last_son) == 1) {
-			ir_loop *gson;
+	if (get_kind(last_son) == k_ir_loop
+	    && get_loop_n_elements(last_son) == 1) {
+		lelement = get_loop_element(last_son, 0);
+		ir_loop *gson = lelement.son;
 
-			lelement = get_loop_element(last_son, 0);
-			gson = lelement.son;
+		if (get_kind(gson) == k_ir_loop) {
+			loop_element new_last_son;
 
-			if (get_kind(gson) == k_ir_loop) {
-				loop_element new_last_son;
-
-				gson->outer_loop = l;
-				new_last_son.son = gson;
-				l->children[last] = new_last_son;
-			}
+			gson->outer_loop = l;
+			new_last_son.son = gson;
+			l->children[last] = new_last_son;
+		}
 	}
 
 	current_loop = l;
@@ -272,7 +267,7 @@ static inline void init_node(ir_node *n, void *env)
 
 static inline void init_scc_common(void)
 {
-	current_dfn = 1;
+	current_dfn   = 1;
 	loop_node_cnt = 0;
 	init_stack();
 }
@@ -298,15 +293,15 @@ static inline void finish_scc(void)
  *
  * This is the condition for breaking the scc recursion.
  */
-static int is_outermost_Start(ir_node *n)
+static bool is_outermost_Start(ir_node *n)
 {
 	/* Test whether this is the outermost Start node. */
 	if (is_Block(n) && get_Block_n_cfgpreds(n) == 1) {
 		ir_node *pred = skip_Proj(get_Block_cfgpred(n, 0));
 	    if (is_Start(pred) && get_nodes_block(pred) == n)
-			return 1;
+			return true;
 	}
-	return 0;
+	return false;
 }
 
 /* When to walk from nodes to blocks. Only for Control flow operations? */
@@ -333,7 +328,7 @@ static inline int get_start_index(ir_node *n)
  *
  * @param n  the node to check
  */
-static inline int is_possible_loop_head(ir_node *n)
+static inline bool is_possible_loop_head(ir_node *n)
 {
 	return is_Block(n) || is_Phi(n);
 }
@@ -345,32 +340,31 @@ static inline int is_possible_loop_head(ir_node *n)
  * @param n    the node to check
  * @param root only needed for assertion.
  */
-static int is_head(ir_node *n, ir_node *root)
+static bool is_head(ir_node *n, ir_node *root)
 {
-	int i, arity;
-	int some_outof_loop = 0, some_in_loop = 0;
-
 	/* Test for legal loop header: Block, Phi, ... */
 	if (!is_possible_loop_head(n))
-		return 0;
+		return false;
 
+	bool some_outof_loop = false;
+	bool some_in_loop    = false;
 	if (!is_outermost_Start(n)) {
 #ifndef NDEBUG
 		int uplink = get_irn_uplink(root);
 #else
-		(void) root;
+		(void)root;
 #endif
-		arity = get_irn_arity(n);
-		for (i = get_start_index(n); i < arity; i++) {
+		for (int i = get_start_index(n), arity = get_irn_arity(n);
+		     i < arity; i++) {
 			ir_node *pred;
 			if (is_backedge(n, i))
 				continue;
 			pred = get_irn_n(n, i);
 			if (! irn_is_in_stack(pred)) {
-				some_outof_loop = 1;
+				some_outof_loop = true;
 			} else {
 				assert(get_irn_uplink(pred) >= uplink);
-				some_in_loop = 1;
+				some_in_loop = true;
 			}
 		}
 	}
@@ -387,30 +381,29 @@ static int is_head(ir_node *n, ir_node *root)
  */
 static int is_endless_head(ir_node *n, ir_node *root)
 {
-	int i, arity;
-	int none_outof_loop = 1, some_in_loop = 0;
-
 	/* Test for legal loop header: Block, Phi, ... */
 	if (!is_possible_loop_head(n))
-		return 0;
+		return false;
 
+	bool none_outof_loop = true;
+	bool some_in_loop    = false;
 	if (!is_outermost_Start(n)) {
 #ifndef NDEBUG
 		int uplink = get_irn_uplink(root);
 #else
-		(void) root;
+		(void)root;
 #endif
-		arity = get_irn_arity(n);
-		for (i = get_start_index(n); i < arity; i++) {
+		for (int i = get_start_index(n), arity = get_irn_arity(n);
+		     i < arity; i++) {
 			ir_node *pred;
 			if (is_backedge(n, i))
 				continue;
 			pred = get_irn_n(n, i);
 			if (!irn_is_in_stack(pred)) {
-				none_outof_loop = 0;
+				none_outof_loop = false;
 			} else {
 				assert(get_irn_uplink(pred) >= uplink);
-				some_in_loop = 1;
+				some_in_loop = true;
 			}
 		}
 	}
@@ -421,11 +414,11 @@ static int is_endless_head(ir_node *n, ir_node *root)
     greater-equal than limit. */
 static int smallest_dfn_pred(ir_node *n, int limit)
 {
-	int i, index = -2, min = -1;
-
+	int index = -2;
 	if (!is_outermost_Start(n)) {
-		int arity = get_irn_arity(n);
-		for (i = get_start_index(n); i < arity; i++) {
+		int min = -1;
+		for (int i = get_start_index(n), arity = get_irn_arity(n);
+		     i < arity; i++) {
 			ir_node *pred = get_irn_n(n, i);
 			if (is_backedge(n, i) || !irn_is_in_stack(pred))
 				continue;
@@ -443,11 +436,11 @@ static int smallest_dfn_pred(ir_node *n, int limit)
  */
 static int largest_dfn_pred(ir_node *n)
 {
-	int i, index = -2, max = -1;
-
+	int index = -2;
 	if (!is_outermost_Start(n)) {
-		int arity = get_irn_arity(n);
-		for (i = get_start_index(n); i < arity; i++) {
+		int max = -1;
+		for (int i = get_start_index(n), arity = get_irn_arity(n);
+		     i < arity; i++) {
 			ir_node *pred = get_irn_n(n, i);
 			if (is_backedge (n, i) || !irn_is_in_stack(pred))
 				continue;
@@ -471,10 +464,8 @@ static int largest_dfn_pred(ir_node *n)
  */
 static ir_node *find_tail(ir_node *n)
 {
-	ir_node *m;
-	int i, res_index = -2;
-
-	m = stack[tos-1];  /* tos = top of stack */
+	int      res_index = -2;
+	ir_node *m         = stack[tos-1];  /* tos = top of stack */
 	if (is_head(m, n)) {
 		res_index = smallest_dfn_pred(m, 0);
 		if ((res_index == -2) &&  /* no smallest dfn pred found. */
@@ -482,6 +473,8 @@ static ir_node *find_tail(ir_node *n)
 			return NULL;
 	} else {
 		if (m == n) return NULL;    // Is this to catch Phi - self loops?
+
+		int i;
 		for (i = tos-2; i >= 0; --i) {
 			m = stack[i];
 
@@ -529,8 +522,7 @@ static ir_node *find_tail(ir_node *n)
 		ir_graph *irg   = get_irn_irg(n);
 		ir_mode  *mode  = get_irn_mode(n);
 		ir_node  *bad   = new_r_Bad(irg, mode);
-		int       arity = get_irn_arity(n);
-		for (i = -1; i < arity; ++i) {
+		for (int i = -1, arity = get_irn_arity(n); i < arity; ++i) {
 			set_irn_n(n, i, bad);
 		}
 		return NULL;
@@ -572,13 +564,11 @@ static void scc(ir_node *n)
 	   so is_backedge does not access array[-1] but correctly returns false! */
 
 	if (!is_outermost_Start(n)) {
-		int i, arity = get_irn_arity(n);
-
-		for (i = get_start_index(n); i < arity; ++i) {
-			ir_node *m;
+		for (int i = get_start_index(n), arity = get_irn_arity(n);
+		     i < arity; ++i) {
 			if (is_backedge(n, i))
 				continue;
-			m = get_irn_n(n, i);
+			ir_node *m = get_irn_n(n, i);
 			scc(m);
 			if (irn_is_in_stack(m)) {
 				/* Uplink of m is smaller if n->m is a backedge.
@@ -619,13 +609,13 @@ static void scc(ir_node *n)
 			 * an endless recursion. */
 
 			ir_loop *l;
-			int close;
+			bool     close;
 			if ((get_loop_n_elements(current_loop) > 0) || (is_outermost_loop(current_loop))) {
-				l = new_loop();
-				close = 1;
+				l     = new_loop();
+				close = true;
 			} else {
-				l = current_loop;
-				close = 0;
+				l     = current_loop;
+				close = false;
 			}
 
 			/* Remove the loop from the stack ... */
@@ -650,10 +640,9 @@ static void scc(ir_node *n)
 
 void construct_backedges(ir_graph *irg)
 {
-	struct obstack temp;
-
 	outermost_ir_graph = irg;
 
+	struct obstack temp;
 	obstack_init(&temp);
 	init_scc(irg, &temp);
 
@@ -680,14 +669,13 @@ void construct_backedges(ir_graph *irg)
 
 static void reset_backedges(ir_node *n)
 {
-	if (is_possible_loop_head(n)) {
+	if (is_possible_loop_head(n))
 		clear_backedges(n);
-	}
 }
 
 static void loop_reset_node(ir_node *n, void *env)
 {
-	(void) env;
+	(void)env;
 	set_irn_loop(n, NULL);
 	reset_backedges(n);
 }
@@ -711,21 +699,18 @@ void free_all_loop_information(void)
 /* Simple analyses based on the loop information                       */
 /* ------------------------------------------------------------------- */
 
-static int is_loop_variant(ir_loop *l, ir_loop *b)
+static bool is_loop_variant(ir_loop *l, ir_loop *b)
 {
-	size_t i, n_elems;
+	if (l == b)
+		return true;
 
-	if (l == b) return 1;
-
-	n_elems = get_loop_n_elements(l);
-	for (i = 0; i < n_elems; ++i) {
+	for (size_t i = 0, n_elems = get_loop_n_elements(l); i < n_elems; ++i) {
 		loop_element e = get_loop_element(l, i);
-		if (is_ir_loop(e.kind))
-			if (is_loop_variant(e.son, b))
-				return 1;
+		if (is_ir_loop(e.kind) && is_loop_variant(e.son, b))
+			return true;
 	}
 
-	return 0;
+	return false;
 }
 
 int is_loop_invariant(const ir_node *n, const ir_node *block)
