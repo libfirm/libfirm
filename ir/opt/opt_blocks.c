@@ -179,10 +179,9 @@ static void dump_list(const char *msg, const block_t *block)
  */
 static int listmap_cmp_ptr(const void *elt, const void *key, size_t size)
 {
+	(void)size;
 	const listmap_entry_t *e1 = (const listmap_entry_t*)elt;
 	const listmap_entry_t *e2 = (const listmap_entry_t*)key;
-
-	(void) size;
 	return e1->id != e2->id;
 }
 
@@ -250,10 +249,9 @@ static unsigned opcode_hash(const opcode_key_t *entry)
  */
 static int cmp_opcode(const void *elt, const void *key, size_t size)
 {
+	(void)size;
 	const opcode_key_t *o1 = (opcode_key_t*)elt;
 	const opcode_key_t *o2 = (opcode_key_t*)key;
-
-	(void) size;
 	return o1->code != o2->code || o1->mode != o2->mode ||
 	       o1->arity != o2->arity ||
 	       o1->u.proj != o2->u.proj || o1->u.addr != o2->u.addr;
@@ -1000,7 +998,7 @@ static void partition_for_block(ir_node *block, pred_t preds[], int n_preds, env
  */
 static void clear_phi_links(ir_node *irn, void *env)
 {
-	(void) env;
+	(void)env;
 	if (is_Block(irn)) {
 		set_Block_phis(irn, NULL);
 		set_irn_link(irn, NULL);

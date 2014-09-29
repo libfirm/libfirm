@@ -130,7 +130,7 @@ static set *symtbl;
  */
 static int symbol_cmp(const void *elt, const void *key, size_t size)
 {
-	(void) size;
+	(void)size;
 	const symbol_t *entry = (const symbol_t *) elt;
 	const symbol_t *keyentry = (const symbol_t *) key;
 	int res = entry->typetag - keyentry->typetag;
@@ -141,7 +141,7 @@ static int symbol_cmp(const void *elt, const void *key, size_t size)
 
 static int id_cmp(const void *elt, const void *key, size_t size)
 {
-	(void) size;
+	(void)size;
 	const id_entry *entry = (const id_entry *) elt;
 	const id_entry *keyentry = (const id_entry *) key;
 	return entry->id - keyentry->id;

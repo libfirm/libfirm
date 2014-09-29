@@ -118,7 +118,7 @@ static unsigned int get_irp_n_blocks(void)
 /* vcg helper */
 static void dump_profile_node_info(void *ctx, FILE *f, const ir_node *irn)
 {
-	(void) ctx;
+	(void)ctx;
 	if (is_Block(irn)) {
 		unsigned int execcount = ir_profile_get_block_execcount(irn);
 		fprintf(f, "profiled execution count: %u\n", execcount);

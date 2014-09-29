@@ -455,7 +455,7 @@ static block_info *get_block_info(ir_node *block)
  */
 static void clear_block_mark_loop_link(ir_node *block, void *env)
 {
-	(void) env;
+	(void)env;
 
 	if (is_Block(block)) {
 		set_Block_mark(block, 0);
@@ -506,7 +506,7 @@ static void infinite_loop_walker(ir_node *block, void *env)
 {
 	int arity;
 	int i;
-	(void) env;
+	(void)env;
 
 	if (! is_Block(block))
 		return;
@@ -704,7 +704,7 @@ static void topo_walker(ir_node *irn, void *ctx)
 	ir_node    *block;
 	block_info *info;
 	ir_node    *value;
-	(void) ctx;
+	(void)ctx;
 
 	if (is_Block(irn))
 		return;

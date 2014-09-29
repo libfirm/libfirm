@@ -33,12 +33,11 @@
  */
 static void optimize_in_place_wrapper(ir_node *n, void *env)
 {
+	(void)env;
 	ir_node *optimized = optimize_in_place_2(n);
-	(void) env;
 
-	if (optimized != n) {
+	if (optimized != n)
 		exchange(n, optimized);
-	}
 }
 
 void local_optimize_node(ir_node *n)

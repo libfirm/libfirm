@@ -452,7 +452,7 @@ static int attrs_equal_ASM(const ir_node *a, const ir_node *b)
 static void default_copy_attr(ir_graph *irg, const ir_node *old_node,
                               ir_node *new_node)
 {
-	(void) irg;
+	(void)irg;
 	assert(get_irn_op(old_node) == get_irn_op(new_node));
 	size_t size = get_op_attr_size(get_irn_op(old_node));
 	memcpy(&new_node->attr, &old_node->attr, size);

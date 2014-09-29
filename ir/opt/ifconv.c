@@ -405,7 +405,7 @@ static void init_block_link(ir_node *block, void *env)
  */
 static void collect_phis(ir_node *node, void *env)
 {
-	(void) env;
+	(void)env;
 
 	if (is_Phi(node)) {
 		ir_node *block = get_nodes_block(node);

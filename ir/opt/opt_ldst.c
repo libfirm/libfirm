@@ -186,12 +186,12 @@ static void dump_curr(block_t *bl, const char *s)
 #else
 static void dump_block_list(ldst_env *env)
 {
-	(void) env;
+	(void)env;
 }
 static void dump_curr(block_t *bl, const char *s)
 {
-	(void) bl;
-	(void) s;
+	(void)bl;
+	(void)s;
 }
 #endif /* DEBUG_libfirm */
 
@@ -785,7 +785,7 @@ static void collect_memops(ir_node *irn, void *ctx)
 	ir_node  *block;
 	block_t  *entry;
 
-	(void) ctx;
+	(void)ctx;
 	if (is_Proj(irn)) {
 		/* we can safely ignore ProjM's except the initial memory */
 		ir_graph *irg = get_irn_irg(irn);
@@ -1857,7 +1857,7 @@ void opt_ldst(ir_graph *irg)
 		bl->id_2_memop_antic = NEW_ARR_DZ(memop_t*, &env.obst, env.rbs_size);
 	}
 
-	(void) dump_block_list;
+	(void)dump_block_list;
 
 	calcAvail();
 	calcAntic();

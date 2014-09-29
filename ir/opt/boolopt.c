@@ -405,7 +405,7 @@ static void bool_walk(ir_node *n, void *ctx)
  */
 static void clear_block_infos(ir_node *node, void *env)
 {
-	(void) env;
+	(void)env;
 
 	/* we visit blocks before any other nodes (from the block) */
 	if (!is_Block(node))
@@ -421,7 +421,7 @@ static void clear_block_infos(ir_node *node, void *env)
  */
 static void collect_phis(ir_node *node, void *env)
 {
-	(void) env;
+	(void)env;
 
 	if (is_Phi(node)) {
 		ir_node *block = get_nodes_block(node);

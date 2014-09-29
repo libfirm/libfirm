@@ -513,7 +513,7 @@ static void ird_set_irg_link(const ir_graph *irg, void *x)
  */
 static void clear_link(ir_node *node, void *env)
 {
-	(void) env;
+	(void)env;
 	ird_set_irn_link(node, NULL);
 }
 
@@ -1025,8 +1025,8 @@ static void print_dbg_info(FILE *F, dbg_info *dbg)
 
 static void print_type_dbg_info(FILE *F, type_dbg_info *dbg)
 {
-	(void) F;
-	(void) dbg;
+	(void)F;
+	(void)dbg;
 	/* TODO */
 }
 
@@ -1480,8 +1480,8 @@ static void dump_entity_node(FILE *F, ir_entity *ent)
 static void dump_entity_initializer(FILE *F, const ir_entity *ent)
 {
 	/* TODO */
-	(void) F;
-	(void) ent;
+	(void)F;
+	(void)ent;
 }
 
 /**
