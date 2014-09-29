@@ -38,7 +38,7 @@ static pdeq *worklist;
  */
 static void care_for(ir_node *irn, ir_tarval *care)
 {
-	if (!care)
+	if (care == NULL)
 		care = tarval_b_true;
 
 	/* Assume worst case if modes don't match and care has bits set. */
@@ -47,9 +47,8 @@ static void care_for(ir_node *irn, ir_tarval *care)
 		care = tarval_is_null(care) ? get_mode_null(mode)
 		                            : get_mode_all_one(mode);
 
-	if (mode_is_int(mode)) {
+	if (mode_is_int(mode))
 		care = tarval_or(care, get_irn_link(irn));
-	}
 
 	if (care != get_irn_link(irn)) {
 		DBG((dbg, LEVEL_3, "queueing %+F: %T->%T\n", irn, get_irn_link(irn), care));
@@ -83,9 +82,8 @@ static ir_tarval *create_msb_mask(ir_tarval *tv)
 static ir_tarval *create_modulo_shift_mask(ir_mode *mode)
 {
 	unsigned modulo_shift = get_mode_modulo_shift(mode);
-	if (modulo_shift == 0) {
+	if (modulo_shift == 0)
 		return NULL;
-	}
 
 	assert(is_po2(modulo_shift));
 	ir_tarval *all_one = get_mode_all_one(mode);

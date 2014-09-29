@@ -25,7 +25,7 @@
 
 static int cmp_edge(const void *a, const void *b, size_t sz)
 {
-	(void) sz;
+	(void)sz;
 	const dfs_edge_t *p = (const dfs_edge_t*) a;
 	const dfs_edge_t *q = (const dfs_edge_t*) b;
 	return !(p->src == q->src && p->tgt == q->tgt);
@@ -33,7 +33,7 @@ static int cmp_edge(const void *a, const void *b, size_t sz)
 
 static int cmp_node(const void *a, const void *b, size_t sz)
 {
-	(void) sz;
+	(void)sz;
 	const dfs_node_t *p = (const dfs_node_t*) a;
 	const dfs_node_t *q = (const dfs_node_t*) b;
 	return p->node != q->node;
@@ -127,7 +127,7 @@ dfs_edge_kind_t dfs_get_edge_kind(const dfs_t *dfs, const void *a, const void *b
 	if (!dfs->edges_classified) {
 		dfs_t *urg = (dfs_t *) dfs;
 		classify_edges(urg);
-		urg->edges_classified = 1;
+		urg->edges_classified = true;
 	}
 	return get_edge(dfs, a, b)->kind;
 }
@@ -135,15 +135,13 @@ dfs_edge_kind_t dfs_get_edge_kind(const dfs_t *dfs, const void *a, const void *b
 dfs_t *dfs_new(const absgraph_t *graph_impl, void *graph_self)
 {
 	dfs_t *res = XMALLOC(dfs_t);
-
-	res->graph_impl = graph_impl;
-	res->graph      = graph_self;
-	res->nodes      = new_set(cmp_node, 64);
-	res->edges      = new_set(cmp_edge, 128);
-
-	res->pre_num  = 0;
-	res->post_num = 0;
-	res->edges_classified = 0;
+	res->graph_impl       = graph_impl;
+	res->graph            = graph_self;
+	res->nodes            = new_set(cmp_node, 64);
+	res->edges            = new_set(cmp_edge, 128);
+	res->pre_num          = 0;
+	res->post_num         = 0;
+	res->edges_classified = false;
 
 	obstack_init(&res->obst);
 
@@ -238,8 +236,6 @@ void dfs_dump(const dfs_t *dfs, FILE *file)
 		for (; i < n && nodes[i]->level == level; ++i)
 			ir_fprintf(file, "n%d;", nodes[i]->pre_num);
 		ir_fprintf(file, "}\n");
-
-
 	}
 
 	for (int i = 0; i < n; ++i) {
