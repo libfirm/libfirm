@@ -329,28 +329,28 @@ static void arm_lower_for_target(void)
 }
 
 static const ir_settings_arch_dep_t arm_arch_dep = {
-	1,                /* allow subs */
-	1,                /* Muls are fast enough on ARM but ... */
-	31,               /* ... one shift would be possible better */
-	NULL,             /* no evaluator function */
-	0,                /* SMUL is needed, only in Arch M */
-	0,                /* UMUL is needed, only in Arch M */
-	ARM_MACHINE_SIZE, /* SMUL & UMUL available for 32 bit */
+	.also_use_subs        = true,
+	.maximum_shifts       = 1,
+	.highest_shift_amount = 31,
+	.evaluate             = NULL,
+	.allow_mulhs          = false,
+	.allow_mulhu          = false,
+	.max_bits_for_mulh    = ARM_MACHINE_SIZE,
 };
 static backend_params arm_backend_params = {
-	false,              /* big endian */
-	false,              /* PIC code not supported */
-	false,              /* unaligned memory access */
-	ARM_MODULO_SHIFT,   /* modulo shift */
-	&arm_arch_dep,
-	arm_is_mux_allowed, /* allow_ifconv function */
-	ARM_MACHINE_SIZE,   /* machine size */
-	NULL,               /* float arithmetic mode */
-	NULL,               /* long long type */
-	NULL,               /* unsigned long long type */
-	NULL,               /* long double type */
-	4,                  /* alignment of stack parameter */
-	ir_overflow_min_max
+	.byte_order_big_endian         = false,
+	.pic_supported                 = false,
+	.unaligned_memaccess_supported = false,
+	.modulo_shift                  = ARM_MODULO_SHIFT,
+	.dep_param                     = &arm_arch_dep,
+	.allow_ifconv                  = arm_is_mux_allowed,
+	.machine_size                  = ARM_MACHINE_SIZE,
+	.mode_float_arithmetic         = NULL,
+	.type_long_long                = NULL,
+	.type_unsigned_long_long       = NULL,
+	.type_long_double              = NULL,
+	.stack_param_align             = 4,
+	.float_int_overflow            = ir_overflow_min_max,
 };
 
 static void arm_init_backend_params(void)

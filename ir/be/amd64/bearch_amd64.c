@@ -752,33 +752,32 @@ static int amd64_is_mux_allowed(ir_node *sel, ir_node *mux_false,
 }
 
 static const ir_settings_arch_dep_t amd64_arch_dep = {
-	1,     /* also use subs */
-	4,     /* maximum shifts */
-	63,    /* maximum shift amount */
-	NULL,  /* evaluate the instruction sequence */
-
-	1,  /* allow Mulhs */
-	1,  /* allow Mulus */
-	32, /* Mulh allowed up to 32 bit */
+	.also_use_subs        = true,
+	.maximum_shifts       = 4,
+	.highest_shift_amount = 63,
+	.evaluate             = NULL,
+	.allow_mulhs          = true,
+	.allow_mulhu          = true,
+	.max_bits_for_mulh    = 32,
 };
 /**
  * Returns the libFirm configuration parameter for this backend.
  */
 static const backend_params *amd64_get_backend_params(void) {
 	static backend_params p = {
-		false,     /* little endian */
-		false,     /* PIC code not supported */
-		true,      /* unaligned memory */
-		32,    /* modulo shift */
-		&amd64_arch_dep,
-		amd64_is_mux_allowed,  /* parameter for if conversion */
-		64,    /* machine size */
-		NULL,  /* float arithmetic mode */
-		NULL,  /* long long type */
-		NULL,  /* unsigned long long type */
-		NULL,  /* long double type (not supported yet) */
-		8,     /* alignment of stack parameter: typically 4 (32bit) or 8 (64bit) */
-		ir_overflow_indefinite
+		.byte_order_big_endian         = false,
+		.pic_supported                 = false,
+		.unaligned_memaccess_supported = true,
+		.modulo_shift                  = 32,
+		.dep_param                     = &amd64_arch_dep,
+		.allow_ifconv                  = amd64_is_mux_allowed,
+		.machine_size                  = 64,
+		.mode_float_arithmetic         = NULL,  /* will be set later */
+		.type_long_long                = NULL,  /* will be set later */
+		.type_unsigned_long_long       = NULL,  /* will be set later */
+		.type_long_double              = NULL,  /* will be set later */
+		.stack_param_align             = 8,
+		.float_int_overflow            = ir_overflow_indefinite
 	};
 	return &p;
 }

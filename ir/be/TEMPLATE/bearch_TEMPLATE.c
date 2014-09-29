@@ -171,19 +171,19 @@ static int TEMPLATE_is_mux_allowed(ir_node *sel, ir_node *mux_false,
 static const backend_params *TEMPLATE_get_backend_params(void)
 {
 	static backend_params p = {
-		false, /* false: little-endian, true: big-endian */
-		false, /* PIC code supported */
-		false, /* unaligned memory access supported */
-		32,    /* modulo_shift */
-		NULL,  /* architecture dependent settings, will be set later */
-		TEMPLATE_is_mux_allowed,  /* parameter for if conversion */
-		32,    /* machine size - a 32bit CPU */
-		NULL,  /* float arithmetic mode */
-		NULL,  /* long long type */
-		NULL,  /* unsigned long long type */
-		NULL,  /* long double type */
-		4,     /* alignment of stack parameter: typically 4 (32bit) or 8 (64bit) */
-		ir_overflow_min_max
+		.byte_order_big_endian         = false,
+		.pic_supported                 = false,
+		.unaligned_memaccess_supported = false,
+		.modulo_shift                  = 32,
+		.dep_param                     = NULL,
+		.allow_ifconv                  = TEMPLATE_is_mux_allowed,
+		.machine_size                  = 32,
+		.mode_float_arithmetic         = NULL,
+		.type_long_long                = NULL,
+		.type_unsigned_long_long       = NULL,
+		.type_long_double              = NULL,
+		.stack_param_align             = 4,
+		.float_int_overflow            = ir_overflow_min_max,
 	};
 	return &p;
 }

@@ -547,28 +547,28 @@ static int sparc_is_mux_allowed(ir_node *sel, ir_node *mux_false,
 static const backend_params *sparc_get_backend_params(void)
 {
 	static const ir_settings_arch_dep_t arch_dep = {
-		1,     /* also_use_subs */
-		1,     /* maximum_shifts */
-		31,    /* highest_shift_amount */
-		NULL,  /* evaluate_cost_func */
-		1,     /* allow mulhs */
-		1,     /* allow mulhu */
-		32,    /* max_bits_for_mulh */
+		.also_use_subs        = true,
+		.maximum_shifts       = 1,
+		.highest_shift_amount = 31,
+		.evaluate             = NULL,
+		.allow_mulhs          = true,
+		.allow_mulhu          = true,
+		.max_bits_for_mulh    = 32,
 	};
 	static backend_params p = {
-		true,  /* big endian */
-		false, /* PIC code supported */
-		false, /* unaligned memory access */
-		32,    /* modulo shift */
-		&arch_dep,              /* will be set later */
-		sparc_is_mux_allowed,   /* parameter for if conversion */
-		32,    /* machine size */
-		NULL,  /* float arithmetic mode */
-		NULL,  /* long long type */
-		NULL,  /* usigned long long type */
-		NULL,  /* long double type */
-		4,     /* alignment of stack parameter: typically 4 (32bit) or 8 (64bit) */
-		ir_overflow_min_max
+		.byte_order_big_endian         = true,
+		.pic_supported                 = false,
+		.unaligned_memaccess_supported = false,
+		.modulo_shift                  = 32,
+		.dep_param                     = &arch_dep,
+		.allow_ifconv                  = sparc_is_mux_allowed,
+		.machine_size                  = 32,
+		.mode_float_arithmetic         = NULL,  /* will be set later */
+		.type_long_long                = NULL,  /* will be set later */
+		.type_unsigned_long_long       = NULL,  /* will be set later */
+		.type_long_double              = NULL,  /* will be set later */
+		.stack_param_align             = 4,
+		.float_int_overflow            = ir_overflow_min_max,
 	};
 
 	ir_mode *mode_long_long

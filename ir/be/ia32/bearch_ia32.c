@@ -1499,29 +1499,28 @@ static int ia32_is_mux_allowed(ir_node *sel, ir_node *mux_false,
 }
 
 static const ir_settings_arch_dep_t ia32_arch_dep = {
-	1,                   /* also use subs */
-	4,                   /* maximum shifts */
-	63,                  /* maximum shift amount */
-	ia32_evaluate_insn,  /* evaluate the instruction sequence */
-
-	1,  /* allow Mulhs */
-	1,  /* allow Mulus */
-	32, /* Mulh allowed up to 32 bit */
+	.also_use_subs        = true,
+	.maximum_shifts       = 4,
+	.highest_shift_amount = 63,
+	.evaluate             = ia32_evaluate_insn,
+	.allow_mulhs          = true,
+	.allow_mulhu          = true,
+	.max_bits_for_mulh    = 32,
 };
 static backend_params ia32_backend_params = {
-	false, /* little endian */
-	true,  /* PIC code supported */
-	true,  /* unaligned memory access */
-	32,    /* modulo shift */
-	&ia32_arch_dep, /* will be set later */
-	ia32_is_mux_allowed,
-	32,    /* machine_size */
-	NULL,  /* float arithmetic mode, will be set below */
-	NULL,  /* long long type */
-	NULL,  /* unsigned long long type */
-	NULL,  /* long double type */
-	4,     /* alignment of stack parameter */
-	ir_overflow_indefinite
+	.byte_order_big_endian         = false,
+	.pic_supported                 = true,
+	.unaligned_memaccess_supported = true,
+	.modulo_shift                  = 32,
+	.dep_param                     = &ia32_arch_dep,
+	.allow_ifconv                  = ia32_is_mux_allowed,
+	.machine_size                  = 32,
+	.mode_float_arithmetic         = NULL,  /* will be set later */
+	.type_long_long                = NULL,  /* will be set later */
+	.type_unsigned_long_long       = NULL,  /* will be set later */
+	.type_long_double              = NULL,  /* will be set later */
+	.stack_param_align             = 4,
+	.float_int_overflow            = ir_overflow_indefinite,
 };
 
 /**
