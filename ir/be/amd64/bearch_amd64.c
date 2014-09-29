@@ -791,24 +791,19 @@ static int amd64_is_valid_clobber(const char *clobber)
 }
 
 const arch_isa_if_t amd64_isa_if = {
-	amd64_init,
-	amd64_finish,
-    amd64_get_backend_params,
-	amd64_lower_for_target,
-	amd64_is_valid_clobber,
-
-	amd64_begin_codegeneration,
-	amd64_end_codegeneration,
-	NULL,
-	NULL,              /* mark remat */
-	amd64_new_spill,
-	amd64_new_reload,
-	NULL,
-
-	amd64_handle_intrinsics,
-	amd64_prepare_graph,
-	amd64_before_ra,
-	amd64_finish_graph,
+	.init                 = amd64_init,
+	.finish               = amd64_finish,
+	.get_params           = amd64_get_backend_params,
+	.lower_for_target     = amd64_lower_for_target,
+	.is_valid_clobber     = amd64_is_valid_clobber,
+	.begin_codegeneration = amd64_begin_codegeneration,
+	.end_codegeneration   = amd64_end_codegeneration,
+	.new_spill            = amd64_new_spill,
+	.new_reload           = amd64_new_reload,
+	.handle_intrinsics    = amd64_handle_intrinsics,
+	.prepare_graph        = amd64_prepare_graph,
+	.before_ra            = amd64_before_ra,
+	.emit                 = amd64_finish_graph,
 };
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_amd64)

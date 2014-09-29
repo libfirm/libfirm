@@ -1956,24 +1956,21 @@ static const lc_opt_table_entry_t ia32_options[] = {
 };
 
 const arch_isa_if_t ia32_isa_if = {
-	ia32_init,
-	ia32_finish,
-	ia32_get_libfirm_params,
-	ia32_lower_for_target,
-	ia32_is_valid_clobber,
-
-	ia32_begin_codegeneration,
-	ia32_end_codegeneration,
-	ia32_get_call_abi,
-	ia32_mark_remat,
-	ia32_new_spill,
-	ia32_new_reload,
-	ia32_register_saved_by,
-
-	NULL,
-	ia32_prepare_graph,
-	ia32_before_ra,      /* before register allocation hook */
-	ia32_emit,           /* emit && done */
+	.init                 = ia32_init,
+	.finish               = ia32_finish,
+	.get_params           = ia32_get_libfirm_params,
+	.lower_for_target     = ia32_lower_for_target,
+	.is_valid_clobber     = ia32_is_valid_clobber,
+	.begin_codegeneration = ia32_begin_codegeneration,
+	.end_codegeneration   = ia32_end_codegeneration,
+	.get_call_abi         = ia32_get_call_abi,
+	.mark_remat           = ia32_mark_remat,
+	.new_spill            = ia32_new_spill,
+	.new_reload           = ia32_new_reload,
+	.register_saved_by    = ia32_register_saved_by,
+	.prepare_graph        = ia32_prepare_graph,
+	.before_ra            = ia32_before_ra,
+	.emit                 = ia32_emit,
 };
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_ia32)

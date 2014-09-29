@@ -637,24 +637,19 @@ static ir_node *sparc_new_reload(ir_node *value, ir_node *spill,
 }
 
 const arch_isa_if_t sparc_isa_if = {
-	sparc_init,
-	sparc_finish,
-	sparc_get_backend_params,
-	sparc_lower_for_target,
-	sparc_is_valid_clobber,
-
-	sparc_begin_codegeneration,
-	sparc_end_codegeneration,
-	NULL,                /* get call abi */
-	NULL,                /* mark remat */
-	sparc_new_spill,
-	sparc_new_reload,
-	NULL,                /* register_saved_by */
-
-	sparc_handle_intrinsics,
-	sparc_prepare_graph,
-	sparc_before_ra,
-	sparc_emit,
+	.init                 = sparc_init,
+	.finish               = sparc_finish,
+	.get_params           = sparc_get_backend_params,
+	.lower_for_target     = sparc_lower_for_target,
+	.is_valid_clobber     = sparc_is_valid_clobber,
+	.begin_codegeneration = sparc_begin_codegeneration,
+	.end_codegeneration   = sparc_end_codegeneration,
+	.new_spill            = sparc_new_spill,
+	.new_reload           = sparc_new_reload,
+	.handle_intrinsics    = sparc_handle_intrinsics,
+	.prepare_graph        = sparc_prepare_graph,
+	.before_ra            = sparc_before_ra,
+	.emit                 = sparc_emit,
 };
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_sparc)

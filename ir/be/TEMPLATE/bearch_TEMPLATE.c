@@ -211,24 +211,18 @@ static ir_node *TEMPLATE_new_reload(ir_node *value, ir_node *spill,
 }
 
 const arch_isa_if_t TEMPLATE_isa_if = {
-	TEMPLATE_init,
-	TEMPLATE_finish,
-    TEMPLATE_get_backend_params,
-	TEMPLATE_lower_for_target,
-	TEMPLATE_is_valid_clobber,
-
-	TEMPLATE_begin_codegeneration,
-	TEMPLATE_end_codegeneration,
-	NULL,
-	NULL, /* mark remat */
-	TEMPLATE_new_spill,
-	TEMPLATE_new_reload,
-	NULL,
-
-	NULL, /* handle intrinsics */
-	TEMPLATE_prepare_graph,
-	TEMPLATE_before_ra,
-	TEMPLATE_emit,
+	.init                 = TEMPLATE_init,
+	.finish               = TEMPLATE_finish,
+	.get_params           = TEMPLATE_get_backend_params,
+	.lower_for_target     = TEMPLATE_lower_for_target,
+	.is_valid_clobber     = TEMPLATE_is_valid_clobber,
+	.begin_codegeneration = TEMPLATE_begin_codegeneration,
+	.end_codegeneration   = TEMPLATE_end_codegeneration,
+	.new_spill            = TEMPLATE_new_spill,
+	.new_reload           = TEMPLATE_new_reload,
+	.prepare_graph        = TEMPLATE_prepare_graph,
+	.before_ra            = TEMPLATE_before_ra,
+	.emit                 = TEMPLATE_emit,
 };
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_TEMPLATE)

@@ -380,24 +380,19 @@ static void arm_init(void)
 }
 
 const arch_isa_if_t arm_isa_if = {
-	arm_init,
-	arm_finish,
-	arm_get_libfirm_params,
-	arm_lower_for_target,
-	arm_is_valid_clobber,
-
-	arm_begin_codegeneration,
-	arm_end_codegeneration,
-	NULL,  /* get call abi */
-	NULL,  /* mark remat */
-	arm_new_spill,
-	arm_new_reload,
-	NULL,  /* register_saved_by */
-
-	arm_handle_intrinsics, /* handle_intrinsics */
-	arm_prepare_graph,
-	arm_before_ra,
-	arm_emit,
+	.init                 = arm_init,
+	.finish               = arm_finish,
+	.get_params           = arm_get_libfirm_params,
+	.lower_for_target     = arm_lower_for_target,
+	.is_valid_clobber     = arm_is_valid_clobber,
+	.begin_codegeneration = arm_begin_codegeneration,
+	.end_codegeneration   = arm_end_codegeneration,
+	.new_spill            = arm_new_spill,
+	.new_reload           = arm_new_reload,
+	.handle_intrinsics    = arm_handle_intrinsics,
+	.prepare_graph        = arm_prepare_graph,
+	.before_ra            = arm_before_ra,
+	.emit                 = arm_emit,
 };
 
 static const lc_opt_enum_int_items_t arm_fpu_items[] = {
