@@ -8,53 +8,52 @@
  * @brief       This is the main ia32 firm backend driver.
  * @author      Christian Wuerdig
  */
-#include "lc_opts.h"
-#include "lc_opts_enum.h"
+#include "bearch_ia32_t.h"
+
+#include "beabi.h"
+#include "beabihelper.h"
+#include "beblocksched.h"
+#include "beflags.h"
+#include "begnuas.h"
+#include "be.h"
+#include "belistsched.h"
+#include "belive.h"
+#include "belower.h"
+#include "bemodule.h"
+#include "benode.h"
+#include "besched.h"
+#include "bespillslots.h"
+#include "bespillutil.h"
+#include "bestack.h"
+#include "bestate.h"
+#include "be_t.h"
+#include "betranshlp.h"
+#include "beutil.h"
+#include "debug.h"
+#include "firmstat_t.h"
+#include "instrument.h"
 #include "irarch.h"
-#include "irgwalk.h"
-#include "irprog_t.h"
-#include "iredges_t.h"
 #include "ircons_t.h"
+#include "irdump.h"
+#include "iredges_t.h"
 #include "irflag.h"
 #include "irgmod.h"
 #include "irgopt.h"
 #include "irgopt.h"
-#include "irdump.h"
-#include "debug.h"
-#include "panic.h"
-#include "xmalloc.h"
-#include "irtools.h"
+#include "irgwalk.h"
 #include "iroptimize.h"
-#include "instrument.h"
 #include "iropt_t.h"
-#include "lower_dw.h"
+#include "irprog_t.h"
+#include "irtools.h"
+#include "lc_opts_enum.h"
+#include "lc_opts.h"
+#include "lower_builtins.h"
 #include "lower_calls.h"
+#include "lower_dw.h"
 #include "lower_mode_b.h"
 #include "lower_softfloat.h"
-#include "lower_builtins.h"
-#include "firmstat_t.h"
-
-#include "beabi.h"
-#include "benode.h"
-#include "belower.h"
-#include "besched.h"
-#include "be.h"
-#include "be_t.h"
-#include "belive.h"
-#include "beblocksched.h"
-#include "bespillutil.h"
-#include "bespillslots.h"
-#include "bemodule.h"
-#include "begnuas.h"
-#include "bestate.h"
-#include "beflags.h"
-#include "betranshlp.h"
-#include "belistsched.h"
-#include "beabihelper.h"
-#include "bestack.h"
-#include "beutil.h"
-
-#include "bearch_ia32_t.h"
+#include "panic.h"
+#include "xmalloc.h"
 
 #include "ia32_new_nodes.h"
 #include "ia32_nodes_attr.h"
@@ -69,12 +68,6 @@
 #include "ia32_fpu.h"
 #include "ia32_architecture.h"
 
-#ifdef FIRM_GRGEN_BE
-#include "ia32_pbqp_transform.h"
-
-transformer_t be_transformer = TRANSFORMER_DEFAULT;
-#endif
-
 ir_mode *ia32_mode_fpcw;
 ir_mode *ia32_mode_flags;
 ir_mode *ia32_mode_E;
@@ -84,11 +77,11 @@ ir_mode *ia32_mode_float64;
 ir_mode *ia32_mode_float32;
 
 /** The current omit-fp state */
-static ir_type *omit_fp_between_type   = NULL;
-static ir_type *between_type           = NULL;
-static ir_entity *old_bp_ent           = NULL;
-static ir_entity *ret_addr_ent         = NULL;
-static ir_entity *omit_fp_ret_addr_ent = NULL;
+static ir_type   *omit_fp_between_type;
+static ir_type   *between_type;
+static ir_entity *old_bp_ent;
+static ir_entity *ret_addr_ent;
+static ir_entity *omit_fp_ret_addr_ent;
 static bool       precise_x87_spills;
 
 typedef ir_node *(*create_const_node_func) (dbg_info *dbgi, ir_node *block);
@@ -100,20 +93,16 @@ static inline ir_node *create_const(ir_graph *irg, ir_node **place,
                                     create_const_node_func func,
                                     const arch_register_t* reg)
 {
-	ir_node *block, *res;
-
 	if (*place != NULL)
 		return *place;
 
-	block = get_irg_start_block(irg);
-	res = func(NULL, block);
+	ir_node *block = get_irg_start_block(irg);
+	ir_node *res   = func(NULL, block);
 	arch_set_irn_register(res, reg);
 	*place = res;
-
 	return res;
 }
 
-/* Creates the unique per irg GP NoReg node. */
 ir_node *ia32_new_NoReg_gp(ir_graph *irg)
 {
 	ia32_irg_data_t *irg_data = ia32_get_irg_data(irg);
@@ -142,7 +131,6 @@ ir_node *ia32_new_Fpu_truncate(ir_graph *irg)
                         &ia32_registers[REG_FPCW]);
 }
 
-
 /**
  * Returns the admissible noreg register node for input register pos of node irn.
  */
@@ -150,8 +138,6 @@ static ir_node *ia32_get_admissible_noreg(ir_node *irn, int pos)
 {
 	ir_graph                  *irg = get_irn_irg(irn);
 	const arch_register_req_t *req = arch_get_irn_register_req_in(irn, pos);
-
-	assert(req != NULL && "Missing register requirements");
 	if (req->cls == &ia32_reg_classes[CLASS_ia32_gp])
 		return ia32_new_NoReg_gp(irg);
 
@@ -221,9 +207,8 @@ static int ia32_get_sp_bias(const ir_node *node)
 		return -get_mode_size_bytes(ls_mode);
 	}
 
-	if (is_ia32_Leave(node) || is_ia32_CopyEbpEsp(node)) {
+	if (is_ia32_Leave(node) || is_ia32_CopyEbpEsp(node))
 		return SP_BIAS_RESET;
-	}
 
 	return 0;
 }
@@ -344,7 +329,7 @@ static int ia32_possible_memory_operand(const ir_node *irn, unsigned int i)
 	if (!is_ia32_irn(irn)                    || /* must be an ia32 irn */
 	    get_ia32_op_type(irn) != ia32_Normal || /* must not already be a addressmode irn */
 	    is_ia32_use_frame(irn))                 /* must not already use frame */
-		return 0;
+		return false;
 
 	ir_node *op   = get_irn_n(irn, i);
 	ir_node *load = get_Proj_pred(op);
@@ -352,34 +337,34 @@ static int ia32_possible_memory_operand(const ir_node *irn, unsigned int i)
 	const ir_mode *mode = get_ia32_ls_mode(load);
 	if (mode_is_float(mode)) {
 		if (mode != ia32_mode_float64 && mode != mode_F)
-			return 0;
+			return false;
 		/* Don't do reload folding for x87 nodes for now, as we can't predict
 		 * yet wether the spillslot must be widened to 80bit for which no AM
 		 * operations exist. */
 		if (is_ia32_fld(load))
-			return 0;
+			return false;
 	}
 
 	switch (get_ia32_am_support(irn)) {
 	case ia32_am_none:
-		return 0;
+		return false;
 
 	case ia32_am_unary:
 		if (i != n_ia32_unary_op)
-			return 0;
+			return false;
 		break;
 
 	case ia32_am_binary:
 		switch (i) {
 		case n_ia32_binary_left: {
 			if (!is_ia32_commutative(irn))
-				return 0;
+				return false;
 
 			/* we can't swap left/right for limited registers
 			 * (As this (currently) breaks constraint handling copies) */
 			arch_register_req_t const *const req = arch_get_irn_register_req_in(irn, n_ia32_binary_left);
 			if (arch_register_req_is(req, limited))
-				return 0;
+				return false;
 			break;
 		}
 
@@ -387,7 +372,7 @@ static int ia32_possible_memory_operand(const ir_node *irn, unsigned int i)
 			break;
 
 		default:
-			return 0;
+			return false;
 		}
 		break;
 
@@ -398,9 +383,9 @@ static int ia32_possible_memory_operand(const ir_node *irn, unsigned int i)
 	/* HACK: must not already use "real" memory.
 	 * This can happen for Call and Div */
 	if (!is_NoMem(get_irn_n(irn, n_ia32_mem)))
-		return 0;
+		return false;
 
-	return 1;
+	return true;
 }
 
 static void ia32_perform_memory_operand(ir_node *irn, unsigned int i)
@@ -412,9 +397,8 @@ static void ia32_perform_memory_operand(ir_node *irn, unsigned int i)
 	ir_mode *load_mode    = get_ia32_ls_mode(load);
 	ir_node *spill        = get_irn_n(load, n_ia32_mem);
 	ir_mode *dest_op_mode = get_ia32_ls_mode(irn);
-	if (get_mode_size_bits(load_mode) <= get_mode_size_bits(dest_op_mode)) {
+	if (get_mode_size_bits(load_mode) <= get_mode_size_bits(dest_op_mode))
 		set_ia32_ls_mode(irn, load_mode);
-	}
 	set_ia32_op_type(irn, ia32_AddrModeS);
 	set_ia32_use_frame(irn);
 	set_ia32_need_stackent(irn);
@@ -456,7 +440,7 @@ static const arch_irn_ops_t ia32_irn_ops = {
 	.perform_memory_operand  = ia32_perform_memory_operand,
 };
 
-static bool gprof = 0;
+static bool gprof;
 
 static ir_node *ia32_turn_back_dest_am(ir_node *node)
 {
@@ -465,9 +449,8 @@ static ir_node *ia32_turn_back_dest_am(ir_node *node)
 		ir_node *base, ir_node *index, ir_node *mem,
 		ir_node *op1, ir_node *op2);
 
-	int operand_n;
+	int                   operand_n;
 	construct_binop_func *func;
-
 	if (is_ia32_AddMem(node)) {
 		operand_n = n_ia32_AddMem_val;
 		func      = new_bd_ia32_Add;
@@ -548,14 +531,12 @@ static ir_node *ia32_turn_back_dest_am(ir_node *node)
 
 ir_node *ia32_turn_back_am(ir_node *node)
 {
-	dbg_info *dbgi  = get_irn_dbg_info(node);
-	ir_graph *irg   = get_irn_irg(node);
-	ir_node  *block = get_nodes_block(node);
-	ir_node  *base  = get_irn_n(node, n_ia32_base);
-	ir_node  *idx   = get_irn_n(node, n_ia32_index);
-	ir_node  *mem   = get_irn_n(node, n_ia32_mem);
-	ir_node  *noreg;
-
+	dbg_info *dbgi     = get_irn_dbg_info(node);
+	ir_graph *irg      = get_irn_irg(node);
+	ir_node  *block    = get_nodes_block(node);
+	ir_node  *base     = get_irn_n(node, n_ia32_base);
+	ir_node  *idx      = get_irn_n(node, n_ia32_index);
+	ir_node  *mem      = get_irn_n(node, n_ia32_mem);
 	ir_node  *load     = new_bd_ia32_Load(dbgi, block, base, idx, mem);
 	ir_node  *load_res = new_rd_Proj(dbgi, load, ia32_mode_gp, pn_ia32_Load_res);
 
@@ -580,7 +561,7 @@ ir_node *ia32_turn_back_am(ir_node *node)
 	default:
 		panic("Unknown AM type");
 	}
-	noreg = ia32_new_NoReg_gp(irg);
+	ir_node *noreg = ia32_new_NoReg_gp(irg);
 	set_irn_n(node, n_ia32_base,  noreg);
 	set_irn_n(node, n_ia32_index, noreg);
 	set_ia32_am_offs_int(node, 0);
@@ -611,17 +592,14 @@ ir_node *ia32_turn_back_am(ir_node *node)
 static ir_node *flags_remat(ir_node *node, ir_node *after)
 {
 	/* we should turn back address modes when rematerializing nodes */
-	ia32_op_type_t type;
-	ir_node        *block;
-	ir_node        *copy;
-
+	ir_node *block;
 	if (is_Block(after)) {
 		block = after;
 	} else {
 		block = get_nodes_block(after);
 	}
 
-	type = get_ia32_op_type(node);
+	ia32_op_type_t type = get_ia32_op_type(node);
 	switch (type) {
 	case ia32_AddrModeS:
 		ia32_turn_back_am(node);
@@ -631,13 +609,14 @@ static ir_node *flags_remat(ir_node *node, ir_node *after)
 		node = ia32_turn_back_dest_am(node);
 		break;
 
-	default: assert(type == ia32_Normal); break;
+	default:
+		assert(type == ia32_Normal);
+		break;
 	}
 
-	copy = exact_copy(node);
+	ir_node *copy = exact_copy(node);
 	set_nodes_block(copy, block);
 	sched_add_after(after, copy);
-
 	return copy;
 }
 
@@ -898,31 +877,24 @@ static ir_node *create_pop(ir_node *node, ir_node *schedpoint, ir_node *sp,
 	ir_graph *irg   = get_irn_irg(node);
 	ir_node  *noreg = ia32_new_NoReg_gp(irg);
 	ir_node  *frame = get_irg_frame(irg);
-
-	ir_node *pop = new_bd_ia32_PopMem(dbgi, block, frame, noreg,
-	                                  get_irg_no_mem(irg), sp);
-
+	ir_node  *pop   = new_bd_ia32_PopMem(dbgi, block, frame, noreg,
+	                                     get_irg_no_mem(irg), sp);
 	set_ia32_frame_ent(pop, ent);
 	set_ia32_use_frame(pop);
 	set_ia32_op_type(pop, ia32_AddrModeD);
 	set_ia32_ls_mode(pop, mode);
 	set_ia32_is_reload(pop);
-
 	sched_add_before(schedpoint, pop);
-
 	return pop;
 }
 
 static ir_node* create_spproj(ir_node *node, ir_node *pred, int pos)
 {
-	dbg_info *dbgi   = get_irn_dbg_info(node);
-	ir_mode  *spmode = ia32_mode_gp;
-	const arch_register_t *spreg = &ia32_registers[REG_ESP];
-	ir_node *sp;
-
-	sp = new_rd_Proj(dbgi, pred, spmode, pos);
+	dbg_info              *dbgi   = get_irn_dbg_info(node);
+	ir_mode               *spmode = ia32_mode_gp;
+	const arch_register_t *spreg  = &ia32_registers[REG_ESP];
+	ir_node               *sp     = new_rd_Proj(dbgi, pred, spmode, pos);
 	arch_set_irn_register(sp, spreg);
-
 	return sp;
 }
 
@@ -938,12 +910,9 @@ static void transform_MemPerm(ir_node *node)
 	ir_node  *sp    = be_get_initial_reg_value(irg, &ia32_registers[REG_ESP]);
 	int       arity = be_get_MemPerm_entity_arity(node);
 	ir_node **pops  = ALLOCAN(ir_node*, arity);
-	ir_node  *in[1];
-	ir_node  *keep;
-	int       i;
 
 	/* create Pushs */
-	for (i = 0; i < arity; ++i) {
+	for (int i = 0; i < arity; ++i) {
 		ir_entity *inent = be_get_MemPerm_in_entity(node, i);
 		ir_entity *outent = be_get_MemPerm_out_entity(node, i);
 		ir_type *enttype = get_entity_type(inent);
@@ -979,7 +948,7 @@ static void transform_MemPerm(ir_node *node)
 	}
 
 	/* create pops */
-	for (i = arity - 1; i >= 0; --i) {
+	for (int i = arity; i-- > 0; ) {
 		ir_entity *inent = be_get_MemPerm_in_entity(node, i);
 		ir_entity *outent = be_get_MemPerm_out_entity(node, i);
 		ir_type *enttype = get_entity_type(outent);
@@ -1013,8 +982,8 @@ static void transform_MemPerm(ir_node *node)
 		pops[i] = pop;
 	}
 
-	in[0] = sp;
-	keep  = be_new_Keep(block, 1, in);
+	ir_node *in[] = { sp };
+	ir_node *keep = be_new_Keep(block, ARRAY_SIZE(in), in);
 	sched_replace(node, keep);
 
 	/* exchange memprojs */
@@ -1037,7 +1006,7 @@ static void transform_MemPerm(ir_node *node)
  */
 static void ia32_after_ra_walker(ir_node *block, void *env)
 {
-	(void) env;
+	(void)env;
 
 	/* beware: the schedule is changed here */
 	sched_foreach_reverse_safe(block, node) {
@@ -1157,9 +1126,8 @@ static void introduce_epilogue(ir_node *ret)
 	set_irn_n(ret, n_be_Return_sp, curr_sp);
 
 	/* keep verifier happy... */
-	if (get_irn_n_edges(first_sp) == 0 && is_Proj(first_sp)) {
+	if (get_irn_n_edges(first_sp) == 0 && is_Proj(first_sp))
 		kill_node(first_sp);
-	}
 }
 
 /**
@@ -1307,25 +1275,7 @@ static void ia32_prepare_graph(ir_graph *irg)
 	be_dump(DUMP_BE, irg, "abi");
 
 	be_timer_push(T_CODEGEN);
-#ifdef FIRM_GRGEN_BE
-	switch (be_transformer) {
-	case TRANSFORMER_DEFAULT:
-		/* transform remaining nodes into assembler instructions */
-		ia32_transform_graph(irg);
-		break;
-
-	case TRANSFORMER_PBQP:
-	case TRANSFORMER_RAND:
-		/* transform nodes into assembler instructions by PBQP magic */
-		ia32_transform_graph_by_pbqp(irg);
-		break;
-
-	default:
-		panic("invalid transformer");
-	}
-#else
 	ia32_transform_graph(irg);
-#endif
 	be_timer_pop(T_CODEGEN);
 
 	be_dump(DUMP_BE, irg, "code-selection");
@@ -1383,15 +1333,11 @@ static void init_asm_constraints(void)
 static bool mux_is_float_min_max(ir_node *sel, ir_node *mux_true,
                                  ir_node *mux_false)
 {
-	ir_node    *cmp_l;
-	ir_node    *cmp_r;
-	ir_relation relation;
-
 	if (!is_Cmp(sel))
 		return false;
 
-	cmp_l = get_Cmp_left(sel);
-	cmp_r = get_Cmp_right(sel);
+	ir_node *cmp_l = get_Cmp_left(sel);
+	ir_node *cmp_r = get_Cmp_right(sel);
 	if (!mode_is_float(get_irn_mode(cmp_l)))
 		return false;
 
@@ -1400,9 +1346,8 @@ static bool mux_is_float_min_max(ir_node *sel, ir_node *mux_true,
 	 *  or min(a, b) = a <= b ? a : b
 	 *  max(a, b) = a > b ? a : b
 	 *  or max(a, b) = a >= b ? a : b
-	 * (Note we only handle float min/max here)
-	 */
-	relation = get_Cmp_relation(sel);
+	 * (Note we only handle float min/max here) */
+	ir_relation relation = get_Cmp_relation(sel);
 	switch (relation) {
 	case ir_relation_greater_equal:
 	case ir_relation_greater:
@@ -1438,18 +1383,16 @@ static bool mux_is_float_min_max(ir_node *sel, ir_node *mux_true,
 
 static bool mux_is_set(ir_node *sel, ir_node *mux_true, ir_node *mux_false)
 {
+	(void)sel;
 	ir_mode *mode = get_irn_mode(mux_true);
-	(void) sel;
-
 	if (!mode_is_int(mode) && !mode_is_reference(mode)
-			&& mode != mode_b)
+	    && mode != mode_b)
 		return false;
 
-	if (is_Const(mux_true) && is_Const(mux_false)) {
-		/* we can create a set plus up two 3 instructions for any combination
-		 * of constants */
+	/* we can create a set plus up two 3 instructions for any combination
+	 * of constants */
+	if (is_Const(mux_true) && is_Const(mux_false))
 		return true;
-	}
 
 	return false;
 }
@@ -1457,8 +1400,7 @@ static bool mux_is_set(ir_node *sel, ir_node *mux_true, ir_node *mux_false)
 static bool mux_is_float_const_const(ir_node *sel, ir_node *mux_true,
                                      ir_node *mux_false)
 {
-	(void) sel;
-
+	(void)sel;
 	if (!mode_is_float(get_irn_mode(mux_true)))
 		return false;
 
@@ -1467,45 +1409,38 @@ static bool mux_is_float_const_const(ir_node *sel, ir_node *mux_true,
 
 static bool mux_is_doz(ir_node *sel, ir_node *mux_true, ir_node *mux_false)
 {
-	ir_node    *cmp_left;
-	ir_node    *cmp_right;
-	ir_node    *sub_left;
-	ir_node    *sub_right;
-	ir_mode    *mode;
-	ir_relation relation;
-
 	if (!is_Cmp(sel))
 		return false;
 
-	mode = get_irn_mode(mux_true);
+	ir_mode *mode = get_irn_mode(mux_true);
 	if (mode_is_signed(mode) || mode_is_float(mode))
 		return false;
 
-	relation  = get_Cmp_relation(sel);
-	cmp_left  = get_Cmp_left(sel);
-	cmp_right = get_Cmp_right(sel);
+	ir_relation relation  = get_Cmp_relation(sel);
+	ir_node    *cmp_left  = get_Cmp_left(sel);
+	ir_node    *cmp_right = get_Cmp_right(sel);
 
 	/* "move" zero constant to false input */
 	if (is_Const(mux_true) && is_Const_null(mux_true)) {
 		ir_node *tmp = mux_false;
 		mux_false = mux_true;
 		mux_true  = tmp;
-		relation = get_negated_relation(relation);
+		relation  = get_negated_relation(relation);
 	}
 	if (!is_Const(mux_false) || !is_Const_null(mux_false))
 		return false;
 	if (!is_Sub(mux_true))
 		return false;
-	sub_left  = get_Sub_left(mux_true);
-	sub_right = get_Sub_right(mux_true);
+	ir_node *sub_left  = get_Sub_left(mux_true);
+	ir_node *sub_right = get_Sub_right(mux_true);
 
 	/* Mux(a >=u b, 0, a-b) */
 	if ((relation & ir_relation_greater)
-			&& sub_left == cmp_left && sub_right == cmp_right)
+	    && sub_left == cmp_left && sub_right == cmp_right)
 		return true;
 	/* Mux(a <=u b, 0, b-a) */
 	if ((relation & ir_relation_less)
-			&& sub_left == cmp_right && sub_right == cmp_left)
+	    && sub_left == cmp_right && sub_right == cmp_left)
 		return true;
 
 	return false;
@@ -1514,8 +1449,6 @@ static bool mux_is_doz(ir_node *sel, ir_node *mux_true, ir_node *mux_false)
 static int ia32_is_mux_allowed(ir_node *sel, ir_node *mux_false,
                                ir_node *mux_true)
 {
-	ir_mode *mode;
-
 	/* middleend can handle some things */
 	if (ir_is_optimizable_mux(sel, mux_false, mux_true))
 		return true;
@@ -1527,19 +1460,11 @@ static int ia32_is_mux_allowed(ir_node *sel, ir_node *mux_false,
 			&& mux_is_float_min_max(sel, mux_true, mux_false))
 		return true;
 	/* we can handle Mux(?, Const[f], Const[f]) */
-	if (mux_is_float_const_const(sel, mux_true, mux_false)) {
-#ifdef FIRM_GRGEN_BE
-		/* well, some code selectors can't handle it */
-		if (be_transformer != TRANSFORMER_PBQP
-				|| be_transformer != TRANSFORMER_RAND)
-			return true;
-#else
+	if (mux_is_float_const_const(sel, mux_true, mux_false))
 		return true;
-#endif
-	}
 
 	/* no support for 64bit inputs to cmov */
-	mode = get_irn_mode(mux_true);
+	ir_mode *mode = get_irn_mode(mux_true);
 	if (get_mode_size_bits(mode) > 32)
 		return false;
 	/* we can handle Abs for all modes and compares (except 64bit) */
@@ -1604,11 +1529,6 @@ static backend_params ia32_backend_params = {
  */
 static void ia32_init(void)
 {
-	ir_mode *mode_long_long;
-	ir_mode *mode_unsigned_long_long;
-	ir_type *type_long_long;
-	ir_type *type_unsigned_long_long;
-
 	ia32_setup_cg_config();
 
 	init_asm_constraints();
@@ -1630,11 +1550,13 @@ static void ia32_init(void)
 	ia32_mode_float32 = new_float_mode("fp32", irma_ieee754, 8, 23,
 	                                   ir_overflow_indefinite);
 
-	mode_long_long = new_int_mode("long long", irma_twos_complement, 64, 1, 64);
-	type_long_long = new_type_primitive(mode_long_long);
-	mode_unsigned_long_long
+	ir_mode *mode_long_long
+		= new_int_mode("long long", irma_twos_complement, 64, 1, 64);
+	ir_type *type_long_long = new_type_primitive(mode_long_long);
+	ir_mode *mode_unsigned_long_long
 		= new_int_mode("unsigned long long", irma_twos_complement, 64, 0, 64);
-	type_unsigned_long_long = new_type_primitive(mode_unsigned_long_long);
+	ir_type *type_unsigned_long_long
+		= new_type_primitive(mode_unsigned_long_long);
 
 	ia32_backend_params.type_long_long          = type_long_long;
 	ia32_backend_params.type_unsigned_long_long = type_unsigned_long_long;
@@ -1757,9 +1679,8 @@ static const arch_register_t *ia32_get_RegParam_reg(unsigned cc, unsigned nr,
 		if (nr >= MAXNUM_SSE_ARGS)
 			return NULL;
 
-		if (cc & cc_this_call) {
+		if (cc & cc_this_call)
 			return fpreg_sse_param_reg_this[nr];
-		}
 		return fpreg_sse_param_reg_std[nr];
 	} else if (mode_is_int(mode) || mode_is_reference(mode)) {
 		unsigned num_regparam;
@@ -1774,10 +1695,9 @@ static const arch_register_t *ia32_get_RegParam_reg(unsigned cc, unsigned nr,
 			return gpreg_param_reg_this[nr];
 		}
 		num_regparam = cc & ~cc_bits;
-		if (num_regparam == 0) {
-			/* default fastcall */
+		/* default fastcall */
+		if (num_regparam == 0)
 			return gpreg_param_reg_fastcall[nr];
-		}
 		if (nr < num_regparam)
 			return gpreg_param_reg_regparam[nr];
 		return NULL;
@@ -1791,9 +1711,6 @@ static const arch_register_t *ia32_get_RegParam_reg(unsigned cc, unsigned nr,
  */
 static void ia32_get_call_abi(ir_type *method_type, be_abi_call_t *abi)
 {
-	unsigned  cc;
-	int       n, i, regnum;
-	int                 pop_amount = 0;
 	be_abi_call_flags_t call_flags = be_abi_call_get_flags(abi);
 
 	/* set abi flags for calls */
@@ -1803,7 +1720,7 @@ static void ia32_get_call_abi(ir_type *method_type, be_abi_call_t *abi)
 	/* set parameter passing style */
 	be_abi_call_set_flags(abi, call_flags, &ia32_abi_callbacks);
 
-	cc = get_method_calling_convention(method_type);
+	unsigned cc = get_method_calling_convention(method_type);
 	if (get_method_variadicity(method_type) == variadicity_variadic) {
 		/* pass all parameters of a variadic function on the stack */
 		cc = cc_cdecl_set | (cc & cc_this_call);
@@ -1816,13 +1733,14 @@ static void ia32_get_call_abi(ir_type *method_type, be_abi_call_t *abi)
 	}
 
 	/* we have to pop the shadow parameter ourself for compound calls */
+	unsigned pop_amount = 0;
 	if ( (get_method_calling_convention(method_type) & cc_compound_ret)
 			&& !(cc & cc_reg_param)) {
 		pop_amount += get_mode_size_bytes(mode_P);
 	}
 
-	n = get_method_n_params(method_type);
-	for (i = regnum = 0; i < n; i++) {
+	for (unsigned i = 0, regnum = 0, n = get_method_n_params(method_type);
+	     i < n; i++) {
 		const arch_register_t *reg  = NULL;
 		ir_type               *tp   = get_method_param_type(method_type, i);
 		ir_mode               *mode = get_type_mode(tp);
@@ -1855,12 +1773,12 @@ static void ia32_get_call_abi(ir_type *method_type, be_abi_call_t *abi)
 	be_abi_call_set_pop(abi, pop_amount);
 
 	/* set return registers */
-	n = get_method_n_ress(method_type);
-
-	assert(n <= 2 && "more than two results not supported");
+	unsigned n_res = get_method_n_ress(method_type);
+	if (n_res > 2)
+		panic("ia32: more than two results not supported");
 
 	/* In case of 64bit returns, we will have two 32bit values */
-	if (n == 2) {
+	if (n_res == 2) {
 #ifndef NDEBUG
 		ir_type *tp   = get_method_res_type(method_type, 0);
 		ir_mode *mode = get_type_mode(tp);
@@ -1875,7 +1793,7 @@ static void ia32_get_call_abi(ir_type *method_type, be_abi_call_t *abi)
 
 		be_abi_call_res_reg(abi, 0, &ia32_registers[REG_EAX], ABI_CONTEXT_BOTH);
 		be_abi_call_res_reg(abi, 1, &ia32_registers[REG_EDX], ABI_CONTEXT_BOTH);
-	} else if (n == 1) {
+	} else if (n_res == 1) {
 		ir_type *tp   = get_method_res_type(method_type, 0);
 		ir_mode *mode = get_type_mode(tp);
 		const arch_register_t *reg;
@@ -1889,9 +1807,8 @@ static void ia32_get_call_abi(ir_type *method_type, be_abi_call_t *abi)
 
 static void ia32_mark_remat(ir_node *node)
 {
-	if (is_ia32_irn(node)) {
+	if (is_ia32_irn(node))
 		set_ia32_is_remat(node);
-	}
 }
 
 static int ia32_is_valid_clobber(const char *clobber)
@@ -2029,24 +1946,8 @@ static lc_opt_enum_int_var_t gas_var = {
 	(int*) &be_gas_object_file_format, gas_items
 };
 
-#ifdef FIRM_GRGEN_BE
-static const lc_opt_enum_int_items_t transformer_items[] = {
-	{ "default", TRANSFORMER_DEFAULT },
-	{ "pbqp",    TRANSFORMER_PBQP    },
-	{ "random",  TRANSFORMER_RAND    },
-	{ NULL,      0                   }
-};
-
-static lc_opt_enum_int_var_t transformer_var = {
-	(int*)&be_transformer, transformer_items
-};
-#endif
-
 static const lc_opt_table_entry_t ia32_options[] = {
 	LC_OPT_ENT_ENUM_INT("gasmode", "set the GAS compatibility mode", &gas_var),
-#ifdef FIRM_GRGEN_BE
-	LC_OPT_ENT_ENUM_INT("transformer", "the transformer used for code selection", &transformer_var),
-#endif
 	LC_OPT_ENT_INT ("stackalign", "set power of two stack alignment for calls",
 	                (int*)&ia32_isa_template.base.stack_alignment),
 	LC_OPT_ENT_BOOL("gprof",      "create gprof profiling code",                                    &gprof),

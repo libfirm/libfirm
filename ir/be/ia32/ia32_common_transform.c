@@ -377,25 +377,12 @@ static bool match_requirement(arch_register_req_t const **reqs, size_t const n_r
 	return false;
 }
 
-static inline ir_node *get_new_node(ir_node *node)
-{
-#ifdef FIRM_GRGEN_BE
-	if (be_transformer == TRANSFORMER_DEFAULT) {
-		return be_transform_node(node);
-	} else {
-		return node;
-	}
-#else
-	return be_transform_node(node);
-#endif
-}
-
 static arch_register_req_t const *ia32_make_register_req(ir_graph *irg, constraint_t const *constraint, int n_outs, arch_register_req_t const **out_reqs, int pos);
 
 ir_node *ia32_gen_ASM(ir_node *node)
 {
 	ir_node        *block        = get_nodes_block(node);
-	ir_node        *new_block    = get_new_node(block);
+	ir_node        *new_block    = be_transform_node(block);
 	dbg_info       *dbgi         = get_irn_dbg_info(node);
 	int             n_inputs     = get_ASM_n_inputs(node);
 	int             n_ins        = n_inputs+1;
@@ -498,7 +485,7 @@ ir_node *ia32_gen_ASM(ir_node *node)
 		}
 
 		if (input == NULL) {
-			input = get_new_node(pred);
+			input = be_transform_node(pred);
 
 			if (parsed_constraint.cls == NULL
 					&& parsed_constraint.same_as < 0) {
@@ -633,13 +620,13 @@ ir_node *ia32_gen_ASM(ir_node *node)
 
 ir_node *ia32_gen_CopyB(ir_node *node)
 {
-	ir_node  *block    = get_new_node(get_nodes_block(node));
+	ir_node  *block    = be_transform_node(get_nodes_block(node));
 	ir_node  *src      = get_CopyB_src(node);
-	ir_node  *new_src  = get_new_node(src);
+	ir_node  *new_src  = be_transform_node(src);
 	ir_node  *dst      = get_CopyB_dst(node);
-	ir_node  *new_dst  = get_new_node(dst);
+	ir_node  *new_dst  = be_transform_node(dst);
 	ir_node  *mem      = get_CopyB_mem(node);
-	ir_node  *new_mem  = get_new_node(mem);
+	ir_node  *new_mem  = be_transform_node(mem);
 	dbg_info *dbgi     = get_irn_dbg_info(node);
 	int      size      = get_type_size_bytes(get_CopyB_type(node));
 	int      rem;
@@ -670,7 +657,7 @@ ir_node *ia32_gen_CopyB(ir_node *node)
 
 ir_node *ia32_gen_Proj_tls(ir_node *node)
 {
-	ir_node *block = get_new_node(get_nodes_block(node));
+	ir_node *block = be_transform_node(get_nodes_block(node));
 	ir_node *res   = new_bd_ia32_LdTls(NULL, block);
 	return res;
 }

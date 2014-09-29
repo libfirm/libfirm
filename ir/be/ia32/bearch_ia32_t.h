@@ -54,22 +54,6 @@ struct ia32_intrinsic_env_t {
 	ir_entity  *umoddi3; /**< entity for __umoddi3 library call */
 };
 
-typedef enum transformer_t {
-	TRANSFORMER_DEFAULT,
-#ifdef FIRM_GRGEN_BE
-	TRANSFORMER_PBQP,
-	TRANSFORMER_RAND
-#endif
-} transformer_t;
-
-#ifdef FIRM_GRGEN_BE
-/** The selected transformer. */
-extern transformer_t be_transformer;
-
-#else
-#define be_transformer TRANSFORMER_DEFAULT
-#endif
-
 /** The mode for the floating point control word. */
 extern ir_mode *ia32_mode_fpcw;
 /** extended floatingpoint mode */
