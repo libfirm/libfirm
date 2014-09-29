@@ -205,11 +205,6 @@ static int firm_emit(lc_appendable_t *app, const lc_arg_occ_t *occ,
 		snprintf(buf, sizeof(buf), "loop[%ld:%u]", get_loop_loop_nr(loop), get_loop_depth(loop));
 		break;
 	}
-	case k_ir_op: {
-		ir_op *op = (ir_op*)X;
-		snprintf(buf, sizeof(buf), "%s%s", A("op"), get_op_name(op));
-		break;
-	}
 
 	default:
 		snprintf(buf, sizeof(buf), "UNKWN");

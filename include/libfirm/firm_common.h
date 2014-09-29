@@ -54,7 +54,6 @@ typedef enum firm_kind {
 	k_ir_graph,               /**< An IR graph. */
 	k_ir_node,                /**< An IR node. */
 	k_ir_mode,                /**< An IR mode. */
-	k_ir_op,                  /**< An IR opcode. */
 	k_tarval,                 /**< A tarval. */
 	k_ir_loop,                /**< A loop. */
 	k_ir_prog,                /**< A program representation (irp). */
