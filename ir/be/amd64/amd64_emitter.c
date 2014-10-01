@@ -634,6 +634,16 @@ static void emit_amd64_Jcc(const ir_node *irn)
 		cc         = x86_negate_condition_code(cc);
 	}
 
+	if (cc & x86_cc_float_parity_cases) {
+		/* Some floating point comparisons require a test of the parity flag,
+		 * which indicates that the result is unordered */
+		if (cc & x86_cc_negated) {
+			amd64_emitf(proj_true, "jp %L");
+		} else {
+			amd64_emitf(proj_false, "jp %L");
+		}
+	}
+
 	/* emit the true proj */
 	amd64_emitf(proj_true, "j%PX %L", (int)cc);
 
