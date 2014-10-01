@@ -1,16 +1,17 @@
 amd64 backend TODO:
 Correctness:
 - Implement 32/64bit floatingpoint with SSE instructions
-- Implement more builtins (libgcc lacks several of them that gcc provides
-  natively on amd64 so cparser/libfirm when linking to the compilerlib fallback)
 - Handle Alloc nodes (used by alloca and C99 VLA). See ia32/sparc backend on
   how to do this.
-- Support non-omit_fp modes.
+- SSE Division is not commutative and we have no neg-add style workaround like
+  for the Sub node. So maybe we need finally need a must_be_same constraint.
+- stdarg.h/varargs va_start
+- compound return calling convention
+- Implement more builtins (libgcc lacks several of them that gcc provides
+  natively on amd64 so cparser/libfirm when linking to the compilerlib fallback)
 - Support ASM node
 - (Support 80bit long double with x87 instructions)
-
-Variants:
-- Implement Position Independent Code (PIC)
+- (Implement Position Independent Code (PIC))
 
 Improve Quality:
 - Immediate32 matching could be better and match SymConst, Add(SymConst, Const)
@@ -18,7 +19,6 @@ Improve Quality:
   be legal!
 - Support Destination Address Mode
 - Match Immediate + Address mode for Cmp
-- Support swapping of cmp arguments (see ins_permuted in ia32 backend)
 - Support Read-Modify-Store operations (aka destination address mode)
 - Leave out labels that are not jumped at (improves assembly readability, see
   ia32 backend output)
@@ -33,3 +33,6 @@ Improve Quality:
 - Report instruction costs (amd64_irn_ops: get_op_estimated_cost())
 - Transform IncSP+Store/Load to Push/Pop peephole pass
 - Use stack red zone where possible to avoid IncSP at begin/end of function
+- Compare node inputs can be swapped if we remember this in the compare node
+  attributes, this allows us to think of them as associative operations and
+  for example swap inputs to enable load folding, or immediates.
