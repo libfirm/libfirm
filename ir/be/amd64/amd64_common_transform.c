@@ -82,7 +82,7 @@ ir_entity *create_float_const_entity(ir_graph *const irg,
 }
 
 ir_node *create_float_const(dbg_info *dbgi, ir_node *block,
-                                   ir_tarval *tv)
+                            ir_tarval *tv)
 {
 	ir_graph  *irg     = get_irn_irg(block);
 	ir_mode   *tv_mode = get_tarval_mode(tv);
@@ -108,15 +108,17 @@ ir_node *create_float_const(dbg_info *dbgi, ir_node *block,
 	return new_r_Proj(load, tv_mode, pn_amd64_xMovs_res);
 }
 
-ir_tarval *create_sign_tv(ir_mode *mode) {
-	assert(!mode_is_float(mode));
-	const char *sign_str;
-	if (get_mode_size_bits(mode) <= 32) {
-		sign_str = "0x80000000";
+ir_tarval *create_sign_tv(ir_mode *mode)
+{
+	unsigned size = get_mode_size_bits(mode);
+	ir_tarval *tv;
+	if (size == 32) {
+		tv = get_mode_one(mode_Iu);
+		tv = tarval_shl_unsigned(tv, 31);
 	} else {
-		sign_str = "0x8000000000000000";
+		assert(size == 64);
+		tv = get_mode_one(mode_Lu);
+		tv = tarval_shl_unsigned(tv, 63);
 	}
-
-	ir_tarval *tv = new_tarval_from_str(sign_str, strlen(sign_str), mode);
-	return tv;
+	return tarval_bitcast(tv, mode);
 }

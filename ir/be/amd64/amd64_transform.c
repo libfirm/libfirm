@@ -1152,21 +1152,15 @@ static ir_node *gen_unop(ir_node *const node, int op_pos, unop_constructor gen)
   */
 static ir_node *gen_float_neg(ir_node *const node)
 {
-	dbg_info *const dbgi = get_irn_dbg_info(node);
-	ir_node  *block      = get_nodes_block(node);
-	ir_node  *new_block  = be_transform_node(block);
-	ir_node  *op         = get_irn_n(node, n_Minus_op);
-	ir_node  *new_op     = be_transform_node(op);
-	ir_mode  *mode       = get_irn_mode(node);
-
-	ir_tarval *tv;
-	if (get_mode_size_bits(mode) <= 32)
-		tv = create_sign_tv(mode_Iu);
-	else
-		tv = create_sign_tv(mode_Lu);
-
-	ir_node   *load = create_float_const(dbgi, new_block, tv);
-	ir_node   *in[] = { new_op, load };
+	dbg_info  *const dbgi = get_irn_dbg_info(node);
+	ir_node   *block      = get_nodes_block(node);
+	ir_node   *new_block  = be_transform_node(block);
+	ir_node   *op         = get_irn_n(node, n_Minus_op);
+	ir_node   *new_op     = be_transform_node(op);
+	ir_mode   *mode       = get_irn_mode(node);
+	ir_tarval *tv         = create_sign_tv(mode);
+	ir_node   *load       = create_float_const(dbgi, new_block, tv);
+	ir_node   *in[]       = { new_op, load };
 
 	amd64_binop_addr_attr_t attr;
 	memset(&attr, 0, sizeof(attr));
