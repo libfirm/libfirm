@@ -28,13 +28,8 @@ typedef enum be_opcode {
 	beo_Copy,
 	beo_Keep,
 	beo_CopyKeep,
-	beo_Call,
-	beo_Return,
 	beo_IncSP,
-	beo_AddSP,
-	beo_SubSP,
-	beo_Start,
-	beo_last  = beo_Start
+	beo_last  = beo_IncSP
 } be_opcode;
 
 /**
@@ -45,12 +40,7 @@ extern ir_op *op_be_MemPerm;
 extern ir_op *op_be_Copy;
 extern ir_op *op_be_Keep;
 extern ir_op *op_be_CopyKeep;
-extern ir_op *op_be_Call;
-extern ir_op *op_be_Return;
 extern ir_op *op_be_IncSP;
-extern ir_op *op_be_AddSP;
-extern ir_op *op_be_SubSP;
-extern ir_op *op_be_Start;
 
 /**
  * Determines if irn is a be_node.
@@ -115,67 +105,6 @@ void be_Keep_add_node(ir_node *keep, const arch_register_class_t *cls,
                       ir_node *node);
 
 /**
- * Position numbers for the be_AddSP inputs
- */
-enum {
-	n_be_AddSP_old_sp,
-	n_be_AddSP_size,
-	n_be_AddSP_max = n_be_AddSP_size
-};
-
-enum {
-	pn_be_AddSP_sp,
-	pn_be_AddSP_res,
-	pn_be_AddSP_M,
-	pn_be_AddSP_max = pn_be_AddSP_M
-};
-
-/**
- * Make a new AddSP node.
- * An AddSP node expresses an increase of the stack pointer in the direction
- * the stack grows. In contrast to IncSP, the amount of bytes the stack pointer
- * is grown, is not given by a constant but an ordinary Firm node.
- * @param sp     The stack pointer register.
- * @param block  The block.
- * @param old_sp The node representing the old stack pointer value.
- * @param size   The node expressing the size by which the stack pointer shall
- *               be grown.
- * @return       A new AddSP node.
- */
-ir_node *be_new_AddSP(const arch_register_t *sp, ir_node *block,
-                      ir_node *old_sp, ir_node *size);
-
-/**
- * Position numbers for the be_SubSP inputs
- */
-enum {
-	n_be_SubSP_old_sp,
-	n_be_SubSP_size,
-	n_be_SubSP_max = n_be_SubSP_size
-};
-
-enum {
-	pn_be_SubSP_sp,
-	pn_be_SubSP_M,
-	pn_be_SubSP_max = pn_be_SubSP_M
-};
-
-/**
- * Make a new SubSP node.
- * A SubSP node expresses a decrease of the stack pointer in the direction the
- * stack grows. In contrast to IncSP, the amount of bytes the stack pointer is
- * grown, is not given by a constant but an ordinary Firm node.
- * @param sp     The stack pointer register.
- * @param block  The block.
- * @param old_sp The node representing the old stack pointer value.
- * @param size   The node expressing the size by which the stack pointer shall
- *               be grown.
- * @return       A new DecSP node.
- */
-ir_node *be_new_SubSP(const arch_register_t *sp, ir_node *block,
-                      ir_node *old_sp, ir_node *size);
-
-/**
  * Make a stack pointer increase/decrease node.
  * @param sp     The stack pointer register.
  * @param block  The block to insert the node into.
@@ -210,105 +139,6 @@ void     be_set_IncSP_offset(ir_node *irn, int offset);
 /** Gets the offset from a IncSP node. */
 int be_get_IncSP_offset(const ir_node *irn);
 int be_get_IncSP_align(const ir_node *irn);
-
-/** Gets the call entity or NULL if this is no static call. */
-ir_entity  *be_Call_get_entity(const ir_node *call);
-/** Sets the call entity. */
-void     be_Call_set_entity(ir_node *call, ir_entity *ent);
-/** Gets the call type. */
-ir_type *be_Call_get_type(ir_node *call);
-/** Sets the call type. */
-void     be_Call_set_type(ir_node *call, ir_type *call_tp);
-
-void     be_Call_set_pop(ir_node *call, unsigned pop);
-
-unsigned be_Call_get_pop(const ir_node *call);
-
-/**
- * Position numbers for the be_Call inputs.
- */
-enum {
-	n_be_Call_mem,      /**< memory input of a be_Call node */
-	n_be_Call_sp,       /**< stack pointer input of a be_Call node */
-	n_be_Call_ptr,      /**< call pointer input of a be_Call node */
-	n_be_Call_first_arg /**< first argument input of a be_Call node */
-};
-
-/**
- * Projection numbers for result of be_Call node: use for Proj nodes!
- */
-typedef enum {
-	pn_be_Call_M         = pn_Call_M, /**< The memory result of a be_Call. */
-	pn_be_Call_X_regular = pn_Call_X_regular,
-	pn_be_Call_X_except  = pn_Call_X_except,
-	pn_be_Call_sp        = pn_Call_max+1,
-	pn_be_Call_first_res     /**< The first result proj number of a be_Call. */
-} pn_be_Call;
-
-/**
- * Construct a new be_Call.
- *
- * @param dbg      debug info
- * @param block    the block where the call is placed
- * @param mem      the memory input of the call
- * @param sp       the stack pointer input of the call
- * @param ptr      the address of the called function, if immediate call set
- *                 to sp
- * @param n_outs   the number of outcoming values from this call
- * @param n        the number of (register) inputs of this call
- * @param in       the (register) inputs of this call
- * @param call_tp  the call type of this call
- */
-ir_node *be_new_Call(dbg_info *dbg, ir_node *block, ir_node *mem, arch_register_req_t const *sp_req, ir_node *sp, arch_register_req_t const *ptr_req, ir_node *ptr, int n_outs, int n, ir_node *const *in, ir_type *call_tp);
-
-/**
- * Position numbers for the be_Return inputs.
- */
-enum {
-	n_be_Return_mem, /**< memory input of a be_Return node */
-	n_be_Return_sp,  /**< stack pointer input of a be_Return node */
-	n_be_Return_val, /**< first "real" return value if any */
-	n_be_Return_max = n_be_Return_val
-};
-
-/**
- * Construct a new be_Return.
- *
- * @param dbg    debug info
- * @param block  the block where the new node will be placed
- * @param n_res  number of "real" results
- * @param pop    pop number of bytes on return
- * @param n      number of inputs
- * @param in     input array
- */
-ir_node *be_new_Return(dbg_info *dbg, ir_node *block, int n_res, unsigned pop, int n, ir_node *const *in);
-
-/** Returns the number of real returns values */
-int be_Return_get_n_rets(const ir_node *ret);
-
-/**
- * Return the number of bytes that should be popped from stack when executing
- * the Return.
- *
- * @param ret  the be_Return node
- */
-unsigned be_Return_get_pop(const ir_node *ret);
-
-/**
- * Return non-zero, if number of popped bytes must be always emitted.
- *
- * @param ret  the be_Return node
- */
-int be_Return_get_emit_pop(const ir_node *ret);
-
-/**
- * Set the emit_pop flag.
- *
- * @param ret  the be_Return node
- */
-void be_Return_set_emit_pop(ir_node *ret, int emit_pop);
-
-ir_node *be_new_Start(dbg_info *dbgi, ir_node *block, int n_out);
 
 enum {
 	n_be_CopyKeep_op,
@@ -395,11 +225,6 @@ static inline bool be_is_CopyKeep (const ir_node *irn) { return get_irn_op(irn) 
 static inline bool be_is_Perm     (const ir_node *irn) { return get_irn_op(irn) == op_be_Perm     ; }
 static inline bool be_is_MemPerm  (const ir_node *irn) { return get_irn_op(irn) == op_be_MemPerm  ; }
 static inline bool be_is_Keep     (const ir_node *irn) { return get_irn_op(irn) == op_be_Keep     ; }
-static inline bool be_is_Call     (const ir_node *irn) { return get_irn_op(irn) == op_be_Call     ; }
-static inline bool be_is_Return   (const ir_node *irn) { return get_irn_op(irn) == op_be_Return   ; }
 static inline bool be_is_IncSP    (const ir_node *irn) { return get_irn_op(irn) == op_be_IncSP    ; }
-static inline bool be_is_AddSP    (const ir_node *irn) { return get_irn_op(irn) == op_be_AddSP    ; }
-static inline bool be_is_SubSP    (const ir_node *irn) { return get_irn_op(irn) == op_be_SubSP    ; }
-static inline bool be_is_Start    (const ir_node *irn) { return get_irn_op(irn) == op_be_Start    ; }
 
 #endif

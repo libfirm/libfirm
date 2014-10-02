@@ -170,7 +170,7 @@ static void emit_be_IncSP(const ir_node *node)
 	TEMPLATE_emitf(node, "%s %S0, %d, %D0", op, offset);
 }
 
-static void emit_be_Start(const ir_node *node)
+static void emit_Start(const ir_node *node)
 {
 	ir_graph *irg        = get_irn_irg(node);
 	ir_type  *frame_type = get_irg_frame_type(irg);
@@ -184,7 +184,7 @@ static void emit_be_Start(const ir_node *node)
 	}
 }
 
-static void emit_be_Return(const ir_node *node)
+static void emit_Return(const ir_node *node)
 {
 	ir_graph *irg        = get_irn_irg(node);
 	ir_type  *frame_type = get_irg_frame_type(irg);
@@ -216,8 +216,8 @@ static void TEMPLATE_register_emitters(void)
 	/* custom emitters not provided by the spec */
 	be_set_emitter(op_TEMPLATE_Jmp, emit_TEMPLATE_Jmp);
 	be_set_emitter(op_be_IncSP,     emit_be_IncSP);
-	be_set_emitter(op_be_Return,    emit_be_Return);
-	be_set_emitter(op_be_Start,     emit_be_Start);
+	be_set_emitter(op_Return,       emit_Return);
+	be_set_emitter(op_Start,        emit_Start);
 
 	/* no need to emit anything for the following nodes */
 	be_set_emitter(op_Phi,     be_emit_nothing);

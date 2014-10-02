@@ -509,8 +509,6 @@ void be_start_transform_setup(void)
 	be_set_transform_function(op_be_CopyKeep, be_duplicate_node);
 	be_set_transform_function(op_be_IncSP,    be_duplicate_node);
 	be_set_transform_function(op_be_Keep,     be_duplicate_node);
-	be_set_transform_function(op_be_Return,   be_duplicate_node);
-	be_set_transform_function(op_be_Start,    be_duplicate_node);
 	be_set_transform_function(op_Block,       transform_block);
 	be_set_transform_function(op_End,         transform_end);
 	be_set_transform_function(op_NoMem,       be_duplicate_node);

@@ -63,14 +63,6 @@ typedef struct {
 	int            align;  /**< alignment after the IncSP (0=no alignment) */
 } be_incsp_attr_t;
 
-/** The be_Call attribute type. */
-typedef struct {
-	be_node_attr_t  base;
-	ir_entity      *ent;      /**< called entity if this is a static call. */
-	ir_type        *call_tp;  /**< call type, copied from the original Call */
-	unsigned        pop;
-} be_call_attr_t;
-
 typedef struct {
 	be_node_attr_t base;
 	ir_entity    **in_entities;
@@ -84,26 +76,9 @@ ir_op *op_be_MemPerm;
 ir_op *op_be_Copy;
 ir_op *op_be_Keep;
 ir_op *op_be_CopyKeep;
-ir_op *op_be_Call;
-ir_op *op_be_Return;
 ir_op *op_be_IncSP;
-ir_op *op_be_AddSP;
-ir_op *op_be_SubSP;
-ir_op *op_be_Start;
 
 #define be_op_tag FOURCC('B', 'E', '\0', '\0')
-
-/**
- * Compare the attributes of two be_Return nodes.
- */
-static int be_return_attrs_equal(const ir_node *a, const ir_node *b)
-{
-	const be_return_attr_t *attr_a = (const be_return_attr_t*)get_irn_generic_attr_const(a);
-	const be_return_attr_t *attr_b = (const be_return_attr_t*)get_irn_generic_attr_const(b);
-	return attr_a->num_ret_vals == attr_b->num_ret_vals
-	    && attr_a->pop == attr_b->pop && attr_a->emit_pop == attr_b->emit_pop
-	    && attrs_equal_be_node(a, b);
-}
 
 /**
  * Compare the attributes of two be_IncSP nodes.
@@ -113,17 +88,6 @@ static int be_incsp_attrs_equal(const ir_node *a, const ir_node *b)
 	const be_incsp_attr_t *attr_a = (const be_incsp_attr_t*)get_irn_generic_attr_const(a);
 	const be_incsp_attr_t *attr_b = (const be_incsp_attr_t*)get_irn_generic_attr_const(b);
 	return attr_a->offset == attr_b->offset && attrs_equal_be_node(a, b);
-}
-
-/**
- * Compare the attributes of two be_Call nodes.
- */
-static int be_call_attrs_equal(const ir_node *a, const ir_node *b)
-{
-	const be_call_attr_t *attr_a = (const be_call_attr_t*)get_irn_generic_attr_const(a);
-	const be_call_attr_t *attr_b = (const be_call_attr_t*)get_irn_generic_attr_const(b);
-	return attr_a->ent == attr_b->ent && attr_a->call_tp == attr_b->call_tp
-	    && attrs_equal_be_node(a, b);
 }
 
 static arch_register_req_t *allocate_reg_req(ir_graph *const irg)
@@ -314,114 +278,6 @@ void be_Keep_add_node(ir_node *keep, const arch_register_class_t *cls, ir_node *
 	add_register_req_in(keep, cls->class_req);
 }
 
-ir_node *be_new_Call(dbg_info *const dbg, ir_node *const bl, ir_node *const mem,
-                     arch_register_req_t const *const sp_req, ir_node *const sp,
-                     arch_register_req_t const *const ptr_req,
-                     ir_node *const ptr, int const n_outs, int const n,
-                     ir_node *const *const in, ir_type *const call_tp)
-{
-	int       real_n  = n_be_Call_first_arg + n;
-	ir_node **real_in = ALLOCAN(ir_node*, real_n);
-
-	real_in[n_be_Call_mem] = mem;
-	real_in[n_be_Call_sp]  = sp;
-	real_in[n_be_Call_ptr] = ptr;
-	memcpy(&real_in[n_be_Call_first_arg], in, n * sizeof(in[0]));
-
-	ir_graph *const irg = get_irn_irg(bl);
-	ir_node  *const irn = new_ir_node(dbg, irg, bl, op_be_Call, mode_T, real_n, real_in);
-	init_node_attr(irn, real_n, n_outs, arch_irn_flags_none);
-	be_call_attr_t *a     = (be_call_attr_t*)get_irn_generic_attr(irn);
-	a->ent                = NULL;
-	a->call_tp            = call_tp;
-	a->pop                = 0;
-	a->base.exc.pin_state = op_pin_state_pinned;
-	be_set_constr_in(irn, n_be_Call_sp, sp_req);
-	be_set_constr_in(irn, n_be_Call_ptr, ptr_req);
-	return irn;
-}
-
-ir_entity *be_Call_get_entity(const ir_node *call)
-{
-	const be_call_attr_t *a = (const be_call_attr_t*)get_irn_generic_attr_const(call);
-	assert(be_is_Call(call));
-	return a->ent;
-}
-
-void be_Call_set_entity(ir_node *call, ir_entity *ent)
-{
-	be_call_attr_t *a = (be_call_attr_t*)get_irn_generic_attr(call);
-	assert(be_is_Call(call));
-	a->ent = ent;
-}
-
-ir_type *be_Call_get_type(ir_node *call)
-{
-	const be_call_attr_t *a = (const be_call_attr_t*)get_irn_generic_attr_const(call);
-	assert(be_is_Call(call));
-	return a->call_tp;
-}
-
-void be_Call_set_type(ir_node *call, ir_type *call_tp)
-{
-	be_call_attr_t *a = (be_call_attr_t*)get_irn_generic_attr(call);
-	assert(be_is_Call(call));
-	a->call_tp = call_tp;
-}
-
-void be_Call_set_pop(ir_node *call, unsigned pop)
-{
-	be_call_attr_t *a = (be_call_attr_t*)get_irn_generic_attr(call);
-	a->pop = pop;
-}
-
-unsigned be_Call_get_pop(const ir_node *call)
-{
-	const be_call_attr_t *a = (const be_call_attr_t*)get_irn_generic_attr_const(call);
-	return a->pop;
-}
-
-ir_node *be_new_Return(dbg_info *const dbg, ir_node *const block,
-                       int const n_res, unsigned const pop, int const n,
-                       ir_node *const *const in)
-{
-	ir_graph *const irg = get_irn_irg(block);
-	ir_node  *const res = new_ir_node(dbg, irg, block, op_be_Return, mode_X, n, in);
-	init_node_attr(res, n, 1, arch_irn_flags_none);
-	be_set_constr_out(res, 0, arch_no_register_req);
-
-	be_return_attr_t *const a = (be_return_attr_t*)get_irn_generic_attr(res);
-	a->num_ret_vals       = n_res;
-	a->pop                = pop;
-	a->emit_pop           = 0;
-	a->base.exc.pin_state = op_pin_state_pinned;
-	return res;
-}
-
-int be_Return_get_n_rets(const ir_node *ret)
-{
-	const be_return_attr_t *a = (const be_return_attr_t*)get_irn_generic_attr_const(ret);
-	return a->num_ret_vals;
-}
-
-unsigned be_Return_get_pop(const ir_node *ret)
-{
-	const be_return_attr_t *a = (const be_return_attr_t*)get_irn_generic_attr_const(ret);
-	return a->pop;
-}
-
-int be_Return_get_emit_pop(const ir_node *ret)
-{
-	const be_return_attr_t *a = (const be_return_attr_t*)get_irn_generic_attr_const(ret);
-	return a->emit_pop;
-}
-
-void be_Return_set_emit_pop(ir_node *ret, int emit_pop)
-{
-	be_return_attr_t *a = (be_return_attr_t*)get_irn_generic_attr(ret);
-	a->emit_pop = emit_pop;
-}
-
 ir_node *be_new_IncSP(const arch_register_t *sp, ir_node *bl,
                       ir_node *old_sp, int offset, int align)
 {
@@ -439,56 +295,6 @@ ir_node *be_new_IncSP(const arch_register_t *sp, ir_node *bl,
 	be_node_set_reg_class_in(irn, 0, sp->reg_class);
 	be_set_constr_single_reg_out(irn, 0, sp, arch_register_req_type_produces_sp);
 	return irn;
-}
-
-ir_node *be_new_AddSP(const arch_register_t *sp, ir_node *bl, ir_node *old_sp,
-                      ir_node *sz)
-{
-	ir_graph *irg  = get_irn_irg(bl);
-	ir_node  *in[] = { old_sp, sz };
-	assert(ARRAY_SIZE(in) == n_be_AddSP_max+1);
-	ir_node  *irn  = new_ir_node(NULL, irg, bl, op_be_AddSP, mode_T,
-	                             ARRAY_SIZE(in), in);
-	init_node_attr(irn, ARRAY_SIZE(in), pn_be_AddSP_max+1, arch_irn_flags_none);
-	be_node_attr_t *attr = (be_node_attr_t*)get_irn_generic_attr(irn);
-	attr->exc.pin_state = op_pin_state_pinned;
-
-	/* Set output constraint to stack register. */
-	be_set_constr_single_reg_in(irn, n_be_AddSP_old_sp, sp,
-	                            arch_register_req_type_none);
-	be_node_set_reg_class_in(irn, n_be_AddSP_size, sp->reg_class);
-	be_set_constr_single_reg_out(irn, pn_be_AddSP_sp, sp,
-	                             arch_register_req_type_produces_sp);
-	return irn;
-}
-
-ir_node *be_new_SubSP(const arch_register_t *sp, ir_node *bl, ir_node *old_sp, ir_node *sz)
-{
-	ir_graph *irg  = get_irn_irg(bl);
-	ir_node  *in[] = { old_sp, sz };
-	assert(ARRAY_SIZE(in) == n_be_SubSP_max+1);
-	ir_node  *irn = new_ir_node(NULL, irg, bl, op_be_SubSP, mode_T,
-	                            ARRAY_SIZE(in), in);
-	init_node_attr(irn, ARRAY_SIZE(in), pn_be_SubSP_max+1, arch_irn_flags_none);
-	be_node_attr_t *attr = (be_node_attr_t*)get_irn_generic_attr(irn);
-	attr->exc.pin_state = op_pin_state_pinned;
-
-	/* Set output constraint to stack register. */
-	be_set_constr_single_reg_in(irn, n_be_SubSP_old_sp, sp,
-	                            arch_register_req_type_none);
-	be_node_set_reg_class_in(irn, n_be_SubSP_size, sp->reg_class);
-	be_set_constr_single_reg_out(irn, pn_be_SubSP_sp, sp, arch_register_req_type_produces_sp);
-	return irn;
-}
-
-ir_node *be_new_Start(dbg_info *dbgi, ir_node *bl, int n_outs)
-{
-	ir_graph *irg = get_irn_irg(bl);
-	ir_node  *res = new_ir_node(dbgi, irg, bl, op_be_Start, mode_T, 0, NULL);
-	init_node_attr(res, 0, n_outs, arch_irn_flag_schedule_first);
-	be_node_attr_t *attr = (be_node_attr_t*) get_irn_generic_attr(res);
-	attr->exc.pin_state = op_pin_state_pinned;
-	return res;
 }
 
 ir_node *be_new_CopyKeep(ir_node *bl, ir_node *src, int n, ir_node *in_keep[])
@@ -838,11 +644,7 @@ static void dump_node(FILE *f, const ir_node *irn, dump_reason_t reason)
 			fprintf(f, "%s", get_mode_name(get_irn_mode(irn)));
 		break;
 	case dump_node_nodeattr_txt:
-		if (be_is_Call(irn)) {
-			const be_call_attr_t *a = (const be_call_attr_t*)get_irn_generic_attr_const(irn);
-			if (a->ent)
-				fprintf(f, " [%s] ", get_entity_name(a->ent));
-		} else if (be_is_IncSP(irn)) {
+		if (be_is_IncSP(irn)) {
 			const be_incsp_attr_t *attr = (const be_incsp_attr_t*)get_irn_generic_attr_const(irn);
 			fprintf(f, " [%d] ", attr->offset);
 		}
@@ -855,12 +657,6 @@ static void dump_node(FILE *f, const ir_node *irn, dump_reason_t reason)
 			const be_incsp_attr_t *a = (const be_incsp_attr_t*)get_irn_generic_attr_const(irn);
 			fprintf(f, "align: %d\n", a->align);
 			fprintf(f, "offset: %d\n", a->offset);
-			break;
-		}
-		case beo_Call: {
-			const be_call_attr_t *a = (const be_call_attr_t*)get_irn_generic_attr_const(irn);
-			if (a->ent != NULL)
-				fprintf(f, "\nentity: %s\n", get_entity_name(a->ent));
 			break;
 		}
 		case beo_MemPerm: {
@@ -950,26 +746,14 @@ void be_init_op(void)
 	op_be_Copy     = new_be_op(o+beo_Copy,     "be_Copy",     op_pin_state_exc_pinned, irop_flag_none,                          oparity_any,      sizeof(be_node_attr_t));
 	op_be_Keep     = new_be_op(o+beo_Keep,     "be_Keep",     op_pin_state_exc_pinned, irop_flag_keep,                          oparity_dynamic,  sizeof(be_node_attr_t));
 	op_be_CopyKeep = new_be_op(o+beo_CopyKeep, "be_CopyKeep", op_pin_state_exc_pinned, irop_flag_keep,                          oparity_variable, sizeof(be_node_attr_t));
-	op_be_Call     = new_be_op(o+beo_Call,     "be_Call",     op_pin_state_exc_pinned, irop_flag_fragile|irop_flag_uses_memory, oparity_variable, sizeof(be_call_attr_t));
-	op_be_Return   = new_be_op(o+beo_Return,   "be_Return",   op_pin_state_exc_pinned, irop_flag_cfopcode,                      oparity_variable, sizeof(be_return_attr_t));
-	op_be_AddSP    = new_be_op(o+beo_AddSP,    "be_AddSP",    op_pin_state_exc_pinned, irop_flag_none,                          oparity_any,      sizeof(be_node_attr_t));
-	op_be_SubSP    = new_be_op(o+beo_SubSP,    "be_SubSP",    op_pin_state_exc_pinned, irop_flag_none,                          oparity_any,      sizeof(be_node_attr_t));
 	op_be_IncSP    = new_be_op(o+beo_IncSP,    "be_IncSP",    op_pin_state_exc_pinned, irop_flag_none,                          oparity_any,      sizeof(be_incsp_attr_t));
-	op_be_Start    = new_be_op(o+beo_Start,    "be_Start",    op_pin_state_exc_pinned, irop_flag_none,                          oparity_any,      sizeof(be_node_attr_t));
-	ir_op_set_memory_index(op_be_Call, n_be_Call_mem);
-	ir_op_set_fragile_indices(op_be_Call, pn_be_Call_X_regular, pn_be_Call_X_except);
 
 	set_op_attrs_equal(op_be_Perm,     attrs_equal_be_node);
 	set_op_attrs_equal(op_be_MemPerm,  attrs_equal_be_node);
 	set_op_attrs_equal(op_be_Copy,     attrs_equal_be_node);
 	set_op_attrs_equal(op_be_Keep,     attrs_equal_be_node);
 	set_op_attrs_equal(op_be_CopyKeep, attrs_equal_be_node);
-	set_op_attrs_equal(op_be_Call,     be_call_attrs_equal);
-	set_op_attrs_equal(op_be_Return,   be_return_attrs_equal);
-	set_op_attrs_equal(op_be_AddSP,    attrs_equal_be_node);
-	set_op_attrs_equal(op_be_SubSP,    attrs_equal_be_node);
 	set_op_attrs_equal(op_be_IncSP,    be_incsp_attrs_equal);
-	set_op_attrs_equal(op_be_Start,    attrs_equal_be_node);
 
 	/* attach out dummy_ops to middle end nodes */
 	for (unsigned opc = iro_first; opc <= iro_last; ++opc) {
@@ -987,10 +771,5 @@ void be_finish_op(void)
 	free_ir_op(op_be_Copy);     op_be_Copy     = NULL;
 	free_ir_op(op_be_Keep);     op_be_Keep     = NULL;
 	free_ir_op(op_be_CopyKeep); op_be_CopyKeep = NULL;
-	free_ir_op(op_be_Call);     op_be_Call     = NULL;
-	free_ir_op(op_be_Return);   op_be_Return   = NULL;
 	free_ir_op(op_be_IncSP);    op_be_IncSP    = NULL;
-	free_ir_op(op_be_AddSP);    op_be_AddSP    = NULL;
-	free_ir_op(op_be_SubSP);    op_be_SubSP    = NULL;
-	free_ir_op(op_be_Start);    op_be_Start    = NULL;
 }

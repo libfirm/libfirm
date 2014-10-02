@@ -180,7 +180,6 @@ static void insn_count_walker(ir_node *irn, void *data)
 	switch (get_irn_opcode(irn)) {
 	case iro_Proj:
 	case iro_Phi:
-	case beo_Start:
 	case iro_End:
 		break;
 	default:
