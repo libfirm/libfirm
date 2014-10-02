@@ -533,8 +533,6 @@ void be_ssa_construction_fix_users_array(be_ssa_construction_env_t *env,
 		}
 	}
 
-	assert(!waitq_empty(env->worklist));
-
 	while (!waitq_empty(env->worklist)) {
 		ir_node     *use  = (ir_node *)waitq_get(env->worklist);
 		constr_info *info = get_info(env, use);
