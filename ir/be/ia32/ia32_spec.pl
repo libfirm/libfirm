@@ -14,7 +14,6 @@
 $arch = "ia32";
 
 $mode_xmm           = "ia32_mode_float64";
-$mode_mmx           = "ia32_mode_float64";
 $mode_fp87          = "ia32_mode_E";
 $mode_gp            = "ia32_mode_gp";
 $mode_flags         = "ia32_mode_flags";
@@ -32,17 +31,6 @@ $mode_fpcw          = "ia32_mode_fpcw";
 		{ name => "esp", encoding => 4, dwarf => 4, type => "ignore" },
 		{ name => "gp_NOREG", type => "ignore | virtual" }, # we need a dummy register for NoReg nodes
 		{ mode => $mode_gp }
-	],
-	mmx => [
-		{ name => "mm0", dwarf => 29, type => "ignore" },
-		{ name => "mm1", dwarf => 30, type => "ignore" },
-		{ name => "mm2", dwarf => 31, type => "ignore" },
-		{ name => "mm3", dwarf => 32, type => "ignore" },
-		{ name => "mm4", dwarf => 33, type => "ignore" },
-		{ name => "mm5", dwarf => 34, type => "ignore" },
-		{ name => "mm6", dwarf => 35, type => "ignore" },
-		{ name => "mm7", dwarf => 36, type => "ignore" },
-		{ mode => $mode_mmx, flags => "manual_ra" }
 	],
 	xmm => [
 		{ name => "xmm0", dwarf => 21 },
