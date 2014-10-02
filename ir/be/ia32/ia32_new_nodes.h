@@ -23,7 +23,7 @@ enum {
 	n_ia32_mem          = 2,
 	n_ia32_unary_op     = 3,
 	n_ia32_binary_left  = 3,
-	n_ia32_binary_right = 4
+	n_ia32_binary_right = 4,
 };
 
 /** proj numbers for "normal" one-result nodes (for the complicated cases where we not only
@@ -31,13 +31,21 @@ enum {
 enum {
 	pn_ia32_res   = 0,
 	pn_ia32_flags = 1,
-	pn_ia32_mem   = 2
+	pn_ia32_mem   = 2,
 };
 
 /** proj numbers for nodes with destination address mode */
 enum {
 	pn_ia32_destAM_flags = 1,
-	pn_ia32_destAM_M     = 2
+	pn_ia32_destAM_M     = 2,
+};
+enum {
+	pn_ia32_Call_mem          = 0,
+	pn_ia32_Call_first_result = 3,
+};
+enum {
+	n_ia32_Return_mem   = 0,
+	n_ia32_Return_stack = 1,
 };
 
 extern struct obstack opcodes_obst;
@@ -82,6 +90,9 @@ const ia32_climbframe_attr_t *get_ia32_climbframe_attr_const(const ir_node *node
 
 ia32_switch_attr_t *get_ia32_switch_attr(ir_node *node);
 const ia32_switch_attr_t *get_ia32_switch_attr_const(const ir_node *node);
+
+ia32_return_attr_t *get_ia32_return_attr(ir_node *node);
+const ia32_return_attr_t *get_ia32_return_attr_const(const ir_node *node);
 
 /**
  * Gets the type of an ia32 node.

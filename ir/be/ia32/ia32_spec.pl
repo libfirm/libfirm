@@ -127,6 +127,9 @@ $custom_init_attr_func = \&ia32_custom_init_attr;
 	ia32_climbframe_attr_t =>
 		"\tinit_ia32_attributes(res, irn_flags_, in_reqs, n_res);\n".
 		"\tinit_ia32_climbframe_attributes(res, count);",
+	ia32_return_attr_t =>
+		"\tinit_ia32_attributes(res, irn_flags_, in_reqs, n_res);\n".
+		"\tinit_ia32_return_attributes(res, pop);",
 );
 
 $status_flags       = [ "CF", "PF", "AF", "ZF", "SF", "OF" ];
@@ -1209,15 +1212,30 @@ Popcnt => {
 	modified_flags => $status_flags
 },
 
+Start => {
+	irn_flags => [ "schedule_first" ],
+	state     => "pinned",
+	out_arity => "variable",
+	ins       => [],
+	latency   => 0,
+},
+
+Return => {
+	state     => "pinned",
+	op_flags  => [ "cfopcode" ],
+	arity     => "variable",
+	reg_req   => { out => [ "none" ] },
+	mode      => "mode_X",
+	attr_type => "ia32_return_attr_t",
+	attr      => "uint16_t pop",
+	latency   => 0,
+},
+
 Call => {
-	op_flags  => [ "uses_memory", "fragile" ],
+	op_flags  => [ "uses_memory" ],
 	state     => "exc_pinned",
-	reg_req   => {
-		in  => [ "gp", "gp", "none", "gp", "esp", "fpcw", "eax", "ecx", "edx" ],
-		out => [ "esp:I|S", "fpcw", "none", "eax", "ecx", "edx", "st0", "st1", "st2", "st3", "st4", "st5", "st6", "st7", "xmm0", "xmm1", "xmm2", "xmm3", "xmm4", "xmm5", "xmm6", "xmm7", "none", "none" ]
-	},
-	ins       => [ "base", "index", "mem", "addr", "stack", "fpcw", "eax", "ecx", "edx" ],
-	outs      => [ "stack", "fpcw", "M", "eax", "ecx", "edx", "st0", "st1", "st2", "st3", "st4", "st5", "st6", "st7", "xmm0", "xmm1", "xmm2", "xmm3", "xmm4", "xmm5", "xmm6", "xmm7", "X_regular", "X_except" ],
+	arity     => "variable",
+	out_arity => "variable",
 	emit      => "call %*AS3",
 	attr_type => "ia32_call_attr_t",
 	attr      => "unsigned pop, ir_type *call_tp",

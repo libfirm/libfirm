@@ -34,22 +34,22 @@
 
 #include "benode.h"
 #include "besched.h"
-#include "beabi.h"
+#include "beabihelper.h"
 #include "beutil.h"
 #include "betranshlp.h"
 #include "be_t.h"
 
 #include "bearch_ia32_t.h"
-#include "ia32_common_transform.h"
-#include "ia32_nodes_attr.h"
-#include "ia32_transform.h"
-#include "ia32_new_nodes.h"
-#include "ia32_dbg_stat.h"
-#include "ia32_optimize.h"
-#include "ia32_architecture.h"
-#include "x86_address_mode.h"
-
 #include "gen_ia32_regalloc_if.h"
+#include "ia32_architecture.h"
+#include "ia32_cconv.h"
+#include "ia32_common_transform.h"
+#include "ia32_dbg_stat.h"
+#include "ia32_new_nodes.h"
+#include "ia32_nodes_attr.h"
+#include "ia32_optimize.h"
+#include "ia32_transform.h"
+#include "x86_address_mode.h"
 
 /* define this to construct SSE constants instead of load them */
 #undef CONSTRUCT_SSE_CONST
@@ -59,9 +59,21 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
-static ir_node *old_initial_fpcw;
-static ir_node *initial_fpcw;
-bool            ia32_no_pic_adjust;
+typedef struct reg_info_t {
+	unsigned pn;
+	ir_node *irn;
+} reg_info_t;
+
+static ia32_cconv_t    *current_cconv;
+static reg_info_t       start_mem;
+static reg_info_t       start_sp;
+static reg_info_t       start_fp;
+static reg_info_t       start_fpcw;
+static unsigned         start_callee_saves_offset;
+static unsigned         start_params_offset;
+static pmap            *node_to_stack;
+static be_stackorder_t *stackorder;
+bool                    ia32_no_pic_adjust;
 
 typedef ir_node *construct_binop_func(dbg_info *db, ir_node *block,
         ir_node *base, ir_node *index, ir_node *mem, ir_node *op1,
@@ -95,10 +107,6 @@ static ir_node *create_I2I_Conv(ir_mode *src_mode, ir_mode *tgt_mode,
 /* its enough to have those once */
 static ir_node *nomem;
 static ir_node *noreg_GP;
-
-/** a list to postprocess all calls */
-static ir_node **call_list;
-static ir_type **call_types;
 
 /** Return non-zero is a node represents the 0 constant. */
 static bool is_Const_0(ir_node *node)
@@ -189,6 +197,39 @@ static ir_node *get_global_base(ir_graph *const irg)
 	}
 
 	return noreg_GP;
+}
+
+static ir_node *get_reg(ir_graph *const irg, reg_info_t *const reg)
+{
+	if (!reg->irn) {
+		/* this is already the transformed start node */
+		ir_node *const start = get_irg_start(irg);
+		assert(is_ia32_Start(start));
+		arch_register_class_t const *const cls
+			= arch_get_irn_register_req_out(start, reg->pn)->cls;
+		reg->irn = new_r_Proj(start, cls ? cls->mode : mode_M, reg->pn);
+	}
+	return reg->irn;
+}
+
+static ir_node *get_initial_sp(ir_graph *irg)
+{
+	return get_reg(irg, &start_sp);
+}
+
+static ir_node *get_initial_fp(ir_graph *irg)
+{
+	return get_reg(irg, &start_fp);
+}
+
+static ir_node *get_initial_mem(ir_graph *irg)
+{
+	return get_reg(irg, &start_mem);
+}
+
+static ir_node *get_initial_fpcw(ir_graph *irg)
+{
+	return get_reg(irg, &start_fpcw);
 }
 
 /**
@@ -1046,15 +1087,6 @@ static ir_node *gen_binop_flags(ir_node *node, construct_binop_flags_func *func,
 	return new_node;
 }
 
-static ir_node *get_fpcw(void)
-{
-	if (initial_fpcw != NULL)
-		return initial_fpcw;
-
-	initial_fpcw = be_transform_node(old_initial_fpcw);
-	return initial_fpcw;
-}
-
 static ir_node *skip_float_upconv(ir_node *node)
 {
 	ir_mode *mode = get_irn_mode(node);
@@ -1114,10 +1146,11 @@ static ir_node *gen_binop_x87_float(ir_node *node, ir_node *op1, ir_node *op2,
 
 	dbg_info      *dbgi      = get_irn_dbg_info(node);
 	ir_node       *new_block = be_transform_node(block);
-	x86_address_t *addr = &am.addr;
+	ir_graph      *irg       = get_irn_irg(node);
+	ir_node       *fpcw      = get_initial_fpcw(irg);
+	x86_address_t *addr      = &am.addr;
 	ir_node       *new_node  = func(dbgi, new_block, addr->base, addr->index,
-	                                addr->mem, am.new_op1, am.new_op2,
-	                                get_fpcw());
+	                                addr->mem, am.new_op1, am.new_op2, fpcw);
 	if (am.op_type == ia32_Normal)
 		am.ls_mode = ia32_mode_E;
 	set_am_attributes(new_node, &am);
@@ -2733,77 +2766,55 @@ static ir_node *gen_fist(dbg_info *dbgi, ir_node *block, ir_node *base,
 }
 
 /**
- * Transforms a general (no special case) Store.
- *
+ * Create a store of a value.
  * @return the created ia32 Store node
  */
-static ir_node *gen_general_Store(ir_node *node)
+static ir_node *create_store(dbg_info *dbgi, ir_node *new_block,
+                             ir_node *value, const x86_address_t *addr)
 {
-	/* check for destination address mode */
-	ir_node *new_node = try_create_dest_am(node);
-	if (new_node != NULL)
-		return new_node;
-
-	/* construct store address */
-	ir_node *ptr = get_Store_ptr(node);
-	x86_address_t addr;
-	create_transformed_address_mode(&addr, ptr, x86_create_am_normal);
-	ir_node *mem = get_Store_mem(node);
-	addr.mem = be_transform_node(mem);
-
-	dbg_info *dbgi      = get_irn_dbg_info(node);
-	ir_node  *block     = get_nodes_block(node);
-	ir_node  *new_block = be_transform_node(block);
-	ir_node  *val       = get_Store_value(node);
-	ir_mode  *mode      = get_irn_mode(val);
+	ir_node *store;
+	ir_mode *mode = get_irn_mode(value);
 	if (mode_is_float(mode)) {
 		if (ia32_cg_config.use_sse2) {
-			ir_node *new_val = be_transform_node(val);
-			new_node = new_bd_ia32_xStore(dbgi, new_block, addr.base,
-			                              addr.index, addr.mem, new_val);
+			ir_node *new_val = be_transform_node(value);
+			store = new_bd_ia32_xStore(dbgi, new_block, addr->base, addr->index,
+			                           addr->mem, new_val);
 		} else {
-			val = ia32_skip_float_downconv(val);
-			ir_node *new_val = be_transform_node(val);
-			new_node = new_bd_ia32_fst(dbgi, new_block, addr.base,
-			                            addr.index, addr.mem, new_val, mode);
+			value = ia32_skip_float_downconv(value);
+			ir_node *new_val = be_transform_node(value);
+			store = new_bd_ia32_fst(dbgi, new_block, addr->base, addr->index,
+			                        addr->mem, new_val, mode);
 		}
-	} else if (!ia32_cg_config.use_sse2 && is_float_to_int_conv(val)) {
-		val = get_Conv_op(val);
-		ir_node *new_val = be_transform_node(val);
-		new_node = gen_fist(dbgi, new_block, addr.base, addr.index, addr.mem,
-		                    new_val);
-	} else if (!ia32_cg_config.use_sse2 && is_Bitcast(val)) {
-		ir_node *op      = get_Bitcast_op(val);
+	} else if (!ia32_cg_config.use_sse2 && is_float_to_int_conv(value)) {
+		value = get_Conv_op(value);
+		ir_node *new_val = be_transform_node(value);
+		store = gen_fist(dbgi, new_block, addr->base, addr->index, addr->mem,
+		                 new_val);
+	} else if (!ia32_cg_config.use_sse2 && is_Bitcast(value)) {
+		ir_node *op      = get_Bitcast_op(value);
 		ir_mode *op_mode = get_irn_mode(op);
 		assert(mode_is_float(op_mode));
 		ir_node *new_op  = be_transform_node(op);
-		new_node = new_bd_ia32_fst(dbgi, new_block, addr.base, addr.index,
-		                           addr.mem, new_op, op_mode);
+		store = new_bd_ia32_fst(dbgi, new_block, addr->base, addr->index,
+		                        addr->mem, new_op, op_mode);
 		mode = op_mode;
 	} else {
 		unsigned dest_bits = get_mode_size_bits(mode);
-		while (is_downconv(val)
-		       && get_mode_size_bits(get_irn_mode(val)) >= dest_bits) {
-		    val = get_Conv_op(val);
+		while (is_downconv(value)
+		       && get_mode_size_bits(get_irn_mode(value)) >= dest_bits) {
+		    value = get_Conv_op(value);
 		}
-		ir_node *new_val = create_immediate_or_transform(val);
+		ir_node *new_val = create_immediate_or_transform(value);
 		assert(mode != mode_b);
 
-		new_node = dest_bits == 8
-			? new_bd_ia32_Store_8bit(dbgi, new_block, addr.base, addr.index, addr.mem, new_val)
-			: new_bd_ia32_Store     (dbgi, new_block, addr.base, addr.index, addr.mem, new_val);
+		store = dest_bits == 8
+			? new_bd_ia32_Store_8bit(dbgi, new_block, addr->base, addr->index, addr->mem, new_val)
+			: new_bd_ia32_Store     (dbgi, new_block, addr->base, addr->index, addr->mem, new_val);
 	}
-	int throws_exception = ir_throws_exception(node);
-	ir_set_throws_exception(new_node, throws_exception);
-
-	set_irn_pinned(new_node, get_irn_pinned(node));
-	set_ia32_op_type(new_node, ia32_AddrModeD);
-	set_ia32_ls_mode(new_node, mode);
-
-	set_address(new_node, &addr);
-	SET_IA32_ORIG_NODE(new_node, node);
-
-	return new_node;
+	set_ia32_op_type(store, ia32_AddrModeD);
+	set_ia32_ls_mode(store, mode);
+	set_address(store, addr);
+	return store;
 }
 
 /**
@@ -2824,7 +2835,31 @@ static ir_node *gen_Store(ir_node *node)
 		   have this information here. */
 		return gen_float_const_Store(node, val);
 	}
-	return gen_general_Store(node);
+
+	/* check for destination address mode */
+	ir_node *destam_node = try_create_dest_am(node);
+	if (destam_node != NULL)
+		return destam_node;
+
+	/* construct address */
+	ir_node *ptr = get_Store_ptr(node);
+	x86_address_t addr;
+	create_transformed_address_mode(&addr, ptr, x86_create_am_normal);
+	ir_node *mem = get_Store_mem(node);
+	addr.mem = be_transform_node(mem);
+
+	dbg_info *dbgi      = get_irn_dbg_info(node);
+	ir_node  *block     = get_nodes_block(node);
+	ir_node  *new_block = be_transform_node(block);
+	ir_node  *value     = get_Store_value(node);
+	ir_node  *store     = create_store(dbgi, new_block, value, &addr);
+
+	int throws_exception = ir_throws_exception(node);
+	ir_set_throws_exception(store, throws_exception);
+	set_irn_pinned(store, get_irn_pinned(node));
+	SET_IA32_ORIG_NODE(store, node);
+
+	return store;
 }
 
 /**
@@ -4134,108 +4169,264 @@ static ir_node *gen_Member(ir_node *node)
 	return new_node;
 }
 
-/**
- * In case SSE is used we need to copy the result from XMM0 to FPU TOS before return.
- */
-static ir_node *gen_be_Return(ir_node *node)
+static void make_start_out(reg_info_t *const info, struct obstack *const obst,
+                           ir_node *const start, unsigned const pn,
+                           arch_register_t const *const reg,
+                           arch_register_req_type_t const flags)
 {
-	if (be_Return_get_n_rets(node) < 1 || !ia32_cg_config.use_sse2) {
-		return be_duplicate_node(node);
-	}
+	info->pn  = pn;
+	info->irn = NULL;
+	arch_register_req_t const *const req
+		= be_create_reg_req(obst, reg, flags);
+	arch_set_irn_register_req_out(start, pn, req);
+	arch_set_irn_register_out(start, pn, reg);
+}
 
-	ir_node   *block    = be_transform_node(get_nodes_block(node));
-	ir_graph  *irg      = get_irn_irg(block);
-	ir_entity *ent      = get_irg_entity(irg);
-	ir_type   *tp       = get_entity_type(ent);
-	ir_type   *res_type = get_method_res_type(tp, 0);
+static ir_node *gen_Start(ir_node *node)
+{
+	ir_graph  *irg           = get_irn_irg(node);
+	ir_entity *entity        = get_irg_entity(irg);
+	ir_type   *function_type = get_entity_type(entity);
+	ir_node   *block         = get_nodes_block(node);
+	ir_node   *new_block     = be_transform_node(block);
+	dbg_info  *dbgi          = get_irn_dbg_info(node);
+	struct obstack *obst     = be_get_be_obst(irg);
 
-	if (!is_Primitive_type(res_type)) {
-		return be_duplicate_node(node);
-	}
+	ia32_cconv_t const *const cconv = current_cconv;
 
-	ir_mode *mode = get_type_mode(res_type);
-	if (!mode_is_float(mode)) {
-		return be_duplicate_node(node);
-	}
+	/* start building list of start constraints */
 
-	assert(get_method_n_ress(tp) == 1);
+	/* calculate number of outputs */
+	unsigned n_outs = 2; /* memory, esp */
+	/* function parameters */
+	n_outs += cconv->n_param_regs;
+	unsigned n_callee_saves
+		= rbitset_popcount(cconv->callee_saves, N_IA32_REGISTERS);
+	n_outs += n_callee_saves;
 
-	ir_node *frame = get_irg_frame(irg);
+	ir_node *start = new_bd_ia32_Start(dbgi, new_block, n_outs);
 
-	/* store xmm0 onto stack */
-	ir_node  *ret_val     = get_irn_n(node, n_be_Return_val);
-	assert(ret_val != NULL);
-	ir_node  *ret_mem     = get_irn_n(node, n_be_Return_mem);
-	ir_node  *new_ret_val = be_transform_node(ret_val);
-	ir_node  *new_ret_mem = be_transform_node(ret_mem);
-	dbg_info *dbgi        = get_irn_dbg_info(node);
-	ir_node  *sse_store   = new_bd_ia32_xStoreSimple(dbgi, block, frame,
-	                                                 noreg_GP, new_ret_mem,
-	                                                 new_ret_val);
-	set_irn_pinned(sse_store, op_pin_state_floats);
-	set_ia32_ls_mode(sse_store, mode);
-	set_ia32_op_type(sse_store, ia32_AddrModeD);
-	set_ia32_use_frame(sse_store);
-	arch_add_irn_flags(sse_store, arch_irn_flag_spill);
-	ir_node *store_mem = new_r_Proj(sse_store, mode_M, pn_ia32_xStoreSimple_M);
+	unsigned o = 0;
 
-	/* load into x87 register */
-	ir_node *fld = new_bd_ia32_fld(dbgi, block, frame, noreg_GP, store_mem,
-	                               mode);
-	set_irn_pinned(fld, op_pin_state_floats);
-	set_ia32_op_type(fld, ia32_AddrModeS);
-	set_ia32_use_frame(fld);
+	/* first output is memory */
+	start_mem.pn  = o++;
+	start_mem.irn = NULL;
+	arch_set_irn_register_req_out(start, start_mem.pn, arch_no_register_req);
 
-	ir_node *mproj = new_r_Proj(fld, mode_M, pn_ia32_fld_M);
-	fld   = new_r_Proj(fld, mode_fp, pn_ia32_fld_res);
+	/* the stack pointer */
+	make_start_out(&start_sp, obst, start, o++, &ia32_registers[REG_ESP],
+	               arch_register_req_type_ignore
+	               | arch_register_req_type_produces_sp);
 
-	/* create a new return */
-	int       arity = get_irn_arity(node);
-	ir_node **in    = ALLOCAN(ir_node*, arity);
-	unsigned  pop   = be_Return_get_pop(node);
-	foreach_irn_in(node, i, op) {
-		if (op == ret_val) {
-			in[i] = fld;
-		} else if (op == ret_mem) {
-			in[i] = mproj;
-		} else {
-			in[i] = be_transform_node(op);
+	/* function parameters in registers */
+	start_params_offset = o;
+	for (size_t i = 0; i < get_method_n_params(function_type); ++i) {
+		const reg_or_stackslot_t *param = &current_cconv->parameters[i];
+		const arch_register_t    *reg   = param->reg;
+		if (reg != NULL) {
+			arch_set_irn_register_req_out(start, o, reg->single_req);
+			arch_set_irn_register_out(start, o, reg);
+			++o;
 		}
 	}
-	ir_node *const new_node = be_new_Return(dbgi, block, arity, pop, arity, in);
-	copy_node_attr(irg, node, new_node);
 
-	return new_node;
+	/* callee saves */
+	start_callee_saves_offset = o;
+	for (size_t i = 0; i < N_IA32_REGISTERS; ++i) {
+		if (!rbitset_is_set(cconv->callee_saves, i))
+			continue;
+		if (!cconv->omit_fp && i == REG_EBP) {
+			make_start_out(&start_fp, obst, start, o++, &ia32_registers[REG_EBP],
+						   arch_register_req_type_ignore|arch_register_req_type_none);
+		} else if (i == REG_FPCW) {
+			/* floating point control word (fpcw) */
+			make_start_out(&start_fpcw, obst, start, o++,
+			               &ia32_registers[REG_FPCW],
+			               arch_register_req_type_none);
+		} else {
+			const arch_register_t *reg = &ia32_registers[i];
+			arch_set_irn_register_req_out(start, o, reg->single_req);
+			arch_set_irn_register_out(start, o, reg);
+			++o;
+		}
+	}
+	assert(n_outs == o);
+
+	return start;
 }
 
-/**
- * Transform a be_AddSP into an ia32_SubSP.
- */
-static ir_node *gen_be_AddSP(ir_node *node)
+static ir_node *gen_Proj_Start(ir_node *node)
 {
-	ir_node *sz       = get_irn_n(node, n_be_AddSP_size);
-	ir_node *sp       = get_irn_n(node, n_be_AddSP_old_sp);
-	ir_node *new_node = gen_binop(node, sp, sz, new_bd_ia32_SubSP,
-	                              match_am | match_immediate);
-	assert(is_ia32_SubSP(new_node));
+	ir_graph *irg = get_irn_irg(node);
+	unsigned  pn  = get_Proj_num(node);
+	be_transform_node(get_Proj_pred(node));
+
+	switch ((pn_Start)pn) {
+	case pn_Start_M:
+		return get_initial_mem(irg);
+	case pn_Start_T_args:
+		return new_r_Bad(irg, mode_T);
+	case pn_Start_P_frame_base:
+		return current_cconv->omit_fp ? get_initial_sp(irg)
+		                              : get_initial_fp(irg);
+	}
+	panic("Unexpected Start Proj: %u\n", pn);
+}
+
+static ir_node *gen_Proj_Proj_Start(ir_node *node)
+{
+	unsigned pn        = get_Proj_num(node);
+	ir_node *args      = get_Proj_pred(node);
+	ir_node *start     = get_Proj_pred(args);
+	ir_node *new_start = be_transform_node(start);
+
+	assert(get_Proj_num(args) == pn_Start_T_args);
+
+	const reg_or_stackslot_t *param = &current_cconv->parameters[pn];
+	/* stack paramter should have been lowered to loads already */
+	assert(param->reg != NULL);
+	/* argument transmitted in register */
+	const arch_register_t *reg    = param->reg;
+	ir_mode               *mode   = reg->reg_class->mode;
+	unsigned               new_pn = param->reg_offset + start_params_offset;
+	ir_node               *value  = new_r_Proj(new_start, mode, new_pn);
+	return value;
+}
+
+static ir_node *get_stack_pointer_for(ir_node *node)
+{
+	/* get predecessor in stack_order list */
+	ir_node *stack_pred = be_get_stack_pred(stackorder, node);
+	if (stack_pred == NULL) {
+		/* first stack user in the current block. We can simply use the
+		 * initial sp_proj for it */
+		ir_graph *irg = get_irn_irg(node);
+		return get_initial_sp(irg);
+	}
+
+	be_transform_node(stack_pred);
+	ir_node *stack = pmap_get(ir_node, node_to_stack, stack_pred);
+	if (stack == NULL)
+		return get_stack_pointer_for(stack_pred);
+
+	return stack;
+}
+
+static ir_node *gen_Return(ir_node *node)
+{
+	ir_node  *block     = get_nodes_block(node);
+	ir_graph *irg       = get_irn_irg(node);
+	ir_node  *new_block = be_transform_node(block);
+	dbg_info *dbgi      = get_irn_dbg_info(node);
+	ir_node  *mem       = get_Return_mem(node);
+	ir_node  *new_mem   = be_transform_node(mem);
+	ir_node  *sp        = get_stack_pointer_for(node);
+	unsigned  n_res     = get_Return_n_ress(node);
+	struct obstack *obst = be_get_be_obst(irg);
+	ia32_cconv_t   *cconv   = current_cconv;
+
+	/* estimate number of return values */
+	unsigned n_ins = 2 + n_res; /* memory + stackpointer, return values */
+	unsigned n_callee_saves
+		= rbitset_popcount(cconv->callee_saves, N_IA32_REGISTERS);
+	n_ins += n_callee_saves;
+
+	const arch_register_req_t **reqs
+		= OALLOCN(obst, const arch_register_req_t*, n_ins);
+	ir_node **in = ALLOCAN(ir_node*, n_ins);
+	unsigned  p  = 0;
+
+	unsigned n_mem = p++;
+	assert(n_mem == n_ia32_Return_mem);
+	in[n_mem]   = new_mem;
+	reqs[n_mem] = arch_no_register_req;
+
+	unsigned n_sp = p++;
+	assert(n_sp == n_ia32_Return_stack);
+	in[n_sp]   = sp;
+	reqs[n_sp] = ia32_registers[REG_ESP].single_req;
+
+	/* result values */
+	for (size_t i = 0; i < n_res; ++i) {
+		ir_node                  *res_value     = get_Return_res(node, i);
+		ir_node                  *new_res_value = be_transform_node(res_value);
+		const reg_or_stackslot_t *slot          = &current_cconv->results[i];
+		in[p]   = new_res_value;
+		reqs[p] = slot->req;
+		++p;
+	}
+	/* callee saves */
+	ir_node *start = get_irg_start(irg);
+	unsigned start_pn = start_callee_saves_offset;
+	for (unsigned i = 0; i < N_IA32_REGISTERS; ++i) {
+		if (!rbitset_is_set(cconv->callee_saves, i))
+			continue;
+		const arch_register_t *reg   = &ia32_registers[i];
+		ir_mode               *mode  = reg->reg_class->mode;
+
+		ir_node *value;
+		if (!cconv->omit_fp && i == REG_EBP) {
+			value = get_initial_fp(irg);
+			start_pn++;
+		} else if (i == REG_FPCW) {
+			value = get_initial_fpcw(irg);
+			start_pn++;
+		} else {
+			value = new_r_Proj(start, mode, start_pn++);
+		}
+		in[p]   = value;
+		reqs[p] = reg->single_req;
+		++p;
+	}
+	assert(p == n_ins);
+
+	ir_node *returnn = new_bd_ia32_Return(dbgi, new_block, n_ins, in,
+	                                      current_cconv->sp_delta);
+	arch_set_irn_register_reqs_in(returnn, reqs);
+
+	return returnn;
+}
+
+static ir_node *gen_Alloc(ir_node *node)
+{
+	ir_node *stack    = get_stack_pointer_for(node);
+	ir_node *size     = get_Alloc_size(node);
+	ir_node *new_size = ia32_try_create_Immediate(size, 'i');
+	ir_node *mem      = get_Alloc_mem(node);
+	ir_node *new_mem  = be_transform_node(mem);
+	if (new_size == NULL)
+		new_size = be_transform_node(size);
+	/* TODO: match address mode for size... */
+
+	dbg_info *dbgi      = get_irn_dbg_info(node);
+	ir_node  *block     = get_nodes_block(node);
+	ir_node  *new_block = be_transform_node(block);
+	ir_node *new_node
+		= new_bd_ia32_SubSP(dbgi, new_block, noreg_GP, noreg_GP, new_mem, stack,
+		                    new_size);
+	set_ia32_op_type(new_node, ia32_Normal);
+	set_ia32_ls_mode(new_node, ia32_mode_gp);
+	SET_IA32_ORIG_NODE(new_node, node);
 	arch_set_irn_register_out(new_node, pn_ia32_SubSP_stack,
 	                          &ia32_registers[REG_ESP]);
+
+	ir_node *stack_proj = new_r_Proj(new_node, ia32_mode_gp, pn_ia32_SubSP_stack);
+	keep_alive(stack_proj);
+	pmap_insert(node_to_stack, node, stack_proj);
+
 	return new_node;
 }
 
-/**
- * Transform a be_SubSP into an ia32_AddSP
- */
-static ir_node *gen_be_SubSP(ir_node *node)
+static ir_node *gen_Proj_Alloc(ir_node *node)
 {
-	ir_node *sz       = get_irn_n(node, n_be_SubSP_size);
-	ir_node *sp       = get_irn_n(node, n_be_SubSP_old_sp);
-	ir_node *new_node = gen_binop(node, sp, sz, new_bd_ia32_AddSP,
-	                              match_am | match_immediate);
-	assert(is_ia32_AddSP(new_node));
-	arch_set_irn_register_out(new_node, pn_ia32_AddSP_stack,
-	                          &ia32_registers[REG_ESP]);
-	return new_node;
+
+	ir_node *alloc = get_Proj_pred(node);
+	ir_node *subsp = be_transform_node(alloc);
+	switch ((pn_Alloc)get_Proj_num(node)) {
+	case pn_Alloc_M:   return new_r_Proj(subsp, mode_M, pn_ia32_SubSP_M);
+	case pn_Alloc_res: return new_r_Proj(subsp, ia32_mode_gp, pn_ia32_SubSP_addr);
+	}
+	panic("invalid Proj->Alloc %+F", node);
 }
 
 static ir_node *gen_Phi(ir_node *node)
@@ -4383,9 +4574,8 @@ static ir_node *gen_ia32_l_Minus64(ir_node *node)
 
 static ir_node *gen_ia32_l_LLtoFloat(ir_node *node)
 {
-	if (ia32_cg_config.use_sse2) {
+	if (ia32_cg_config.use_sse2)
 		panic("not implemented for SSE2");
-	}
 
 	ir_node  *src_block    = get_nodes_block(node);
 	ir_node  *block        = be_transform_node(src_block);
@@ -4459,9 +4649,10 @@ static ir_node *gen_ia32_l_LLtoFloat(ir_node *node)
 		am.commutative       = 1;
 		am.ins_permuted      = false;
 
+		ir_node *fpcw = get_initial_fpcw(irg);
 		ir_node *fadd = new_bd_ia32_fadd(dbgi, block, am.addr.base,
 		                                 am.addr.index, am.addr.mem,
-		                                 am.new_op1, am.new_op2, get_fpcw());
+		                                 am.new_op1, am.new_op2, fpcw);
 		set_am_attributes(fadd, &am);
 
 		set_irn_mode(fadd, mode_T);
@@ -4519,53 +4710,6 @@ static ir_node *gen_Proj_l_FloattoLL(ir_node *node)
 
 	ir_node *proj = new_r_Proj(load, ia32_mode_gp, pn_ia32_Load_res);
 	return proj;
-}
-
-/**
- * Transform the Projs of an AddSP.
- */
-static ir_node *gen_Proj_be_AddSP(ir_node *node)
-{
-	ir_node  *pred     = get_Proj_pred(node);
-	ir_node  *new_pred = be_transform_node(pred);
-	dbg_info *dbgi     = get_irn_dbg_info(node);
-	unsigned  pn       = get_Proj_num(node);
-
-	if (pn == pn_be_AddSP_sp) {
-		ir_node *res = new_rd_Proj(dbgi, new_pred, ia32_mode_gp,
-		                           pn_ia32_SubSP_stack);
-		arch_set_irn_register(res, &ia32_registers[REG_ESP]);
-		return res;
-	} else if (pn == pn_be_AddSP_res) {
-		return new_rd_Proj(dbgi, new_pred, ia32_mode_gp,
-		                   pn_ia32_SubSP_addr);
-	} else if (pn == pn_be_AddSP_M) {
-		return new_rd_Proj(dbgi, new_pred, mode_M, pn_ia32_SubSP_M);
-	}
-
-	panic("No idea how to transform proj->AddSP");
-}
-
-/**
- * Transform the Projs of a SubSP.
- */
-static ir_node *gen_Proj_be_SubSP(ir_node *node)
-{
-	ir_node  *pred     = get_Proj_pred(node);
-	ir_node  *new_pred = be_transform_node(pred);
-	dbg_info *dbgi     = get_irn_dbg_info(node);
-	unsigned  pn       = get_Proj_num(node);
-
-	if (pn == pn_be_SubSP_sp) {
-		ir_node *res = new_rd_Proj(dbgi, new_pred, ia32_mode_gp,
-		                           pn_ia32_AddSP_stack);
-		arch_set_irn_register(res, &ia32_registers[REG_ESP]);
-		return res;
-	} else if (pn == pn_be_SubSP_M) {
-		return new_rd_Proj(dbgi, new_pred, mode_M, pn_ia32_AddSP_M);
-	}
-
-	panic("No idea how to transform proj->SubSP");
 }
 
 /**
@@ -4653,90 +4797,92 @@ static ir_node *gen_Proj_Load(ir_node *node)
 		/* however it should not be the result proj, as that would mean the
 		   load had multiple users and should not have been used for
 		   SourceAM */
-		if (pn != pn_Load_M) {
+		if (pn != pn_Load_M)
 			panic("internal error: transformed node not a Load");
-		}
 		return new_rd_Proj(dbgi, new_pred, mode_M, 1);
 	}
 
 	panic("No idea how to transform Proj(Load) %+F", node);
 }
 
-static ir_node *gen_Proj_Store(ir_node *node)
+static ir_node *create_proj_for_store(ir_node *store, pn_Store pn)
 {
-	ir_node  *pred     = get_Proj_pred(node);
-	ir_node  *new_pred = be_transform_node(pred);
-	dbg_info *dbgi     = get_irn_dbg_info(node);
-	unsigned  pn       = get_Proj_num(node);
-
-	if (is_Proj(new_pred)) {
-		new_pred = get_Proj_pred(new_pred);
-	}
-
-	if (is_ia32_Store(new_pred)) {
+	if (is_ia32_Store(store)) {
 		switch ((pn_Store)pn) {
 		case pn_Store_M:
-			return new_rd_Proj(dbgi, new_pred, mode_M, pn_ia32_Store_M);
+			return new_r_Proj(store, mode_M, pn_ia32_Store_M);
 		case pn_Store_X_except:
-			return new_rd_Proj(dbgi, new_pred, mode_X, pn_ia32_Store_X_except);
+			return new_r_Proj(store, mode_X, pn_ia32_Store_X_except);
 		case pn_Store_X_regular:
-			return new_rd_Proj(dbgi, new_pred, mode_X, pn_ia32_Store_X_regular);
+			return new_r_Proj(store, mode_X, pn_ia32_Store_X_regular);
 		}
-	} else if (is_ia32_fist(new_pred)) {
+	} else if (is_ia32_fist(store)) {
 		switch ((pn_Store)pn) {
 		case pn_Store_M:
-			return new_rd_Proj(dbgi, new_pred, mode_M, pn_ia32_fist_M);
+			return new_r_Proj(store, mode_M, pn_ia32_fist_M);
 		case pn_Store_X_except:
-			return new_rd_Proj(dbgi, new_pred, mode_X, pn_ia32_fist_X_except);
+			return new_r_Proj(store, mode_X, pn_ia32_fist_X_except);
 		case pn_Store_X_regular:
-			return new_rd_Proj(dbgi, new_pred, mode_X, pn_ia32_fist_X_regular);
+			return new_r_Proj(store, mode_X, pn_ia32_fist_X_regular);
 		}
-	} else if (is_ia32_fisttp(new_pred)) {
+	} else if (is_ia32_fisttp(store)) {
 		switch ((pn_Store)pn) {
 		case pn_Store_M:
-			return new_rd_Proj(dbgi, new_pred, mode_M, pn_ia32_fisttp_M);
+			return new_r_Proj(store, mode_M, pn_ia32_fisttp_M);
 		case pn_Store_X_except:
-			return new_rd_Proj(dbgi, new_pred, mode_X, pn_ia32_fisttp_X_except);
+			return new_r_Proj(store, mode_X, pn_ia32_fisttp_X_except);
 		case pn_Store_X_regular:
-			return new_rd_Proj(dbgi, new_pred, mode_X, pn_ia32_fisttp_X_regular);
+			return new_r_Proj(store, mode_X, pn_ia32_fisttp_X_regular);
 		}
-	} else if (is_ia32_fst(new_pred)) {
+	} else if (is_ia32_fst(store)) {
 		switch ((pn_Store)pn) {
 		case pn_Store_M:
-			return new_rd_Proj(dbgi, new_pred, mode_M, pn_ia32_fst_M);
+			return new_r_Proj(store, mode_M, pn_ia32_fst_M);
 		case pn_Store_X_except:
-			return new_rd_Proj(dbgi, new_pred, mode_X, pn_ia32_fst_X_except);
+			return new_r_Proj(store, mode_X, pn_ia32_fst_X_except);
 		case pn_Store_X_regular:
-			return new_rd_Proj(dbgi, new_pred, mode_X, pn_ia32_fst_X_regular);
+			return new_r_Proj(store, mode_X, pn_ia32_fst_X_regular);
 		}
-	} else if (is_ia32_xStore(new_pred)) {
+	} else if (is_ia32_xStore(store)) {
 		switch ((pn_Store)pn) {
 		case pn_Store_M:
-			return new_rd_Proj(dbgi, new_pred, mode_M, pn_ia32_xStore_M);
+			return new_r_Proj(store, mode_M, pn_ia32_xStore_M);
 		case pn_Store_X_except:
-			return new_rd_Proj(dbgi, new_pred, mode_X, pn_ia32_xStore_X_except);
+			return new_r_Proj(store, mode_X, pn_ia32_xStore_X_except);
 		case pn_Store_X_regular:
-			return new_rd_Proj(dbgi, new_pred, mode_X, pn_ia32_xStore_X_regular);
+			return new_r_Proj(store, mode_X, pn_ia32_xStore_X_regular);
 		}
-	} else if (is_Sync(new_pred)) {
+	} else if (is_Sync(store)) {
 		/* hack for the case that gen_float_const_Store produced a Sync */
 		if (pn == pn_Store_M) {
-			return new_pred;
+			return store;
 		}
 		panic("exception control flow not implemented yet");
-	} else if (get_ia32_op_type(new_pred) == ia32_AddrModeD) {
+	} else if (get_ia32_op_type(store) == ia32_AddrModeD) {
 		/* destination address mode */
 		if (pn == pn_Store_M) {
-			if (get_irn_mode(new_pred) == mode_T) {
-				return new_rd_Proj(dbgi, new_pred, mode_M, pn_ia32_destAM_M);
+			if (get_irn_mode(store) == mode_T) {
+				return new_r_Proj(store, mode_M, pn_ia32_destAM_M);
 			} else {
-				return new_pred;
+				return store;
 			}
 		}
 		panic("exception control flow for destination AM not implemented yet");
 	}
 
-	panic("No idea how to transform Proj(Store) %+F", node);
+	panic("No idea how to transform Proj(Store) at %+F", store);
+}
+
+static ir_node *gen_Proj_Store(ir_node *node)
+{
+	ir_node  *pred     = get_Proj_pred(node);
+	ir_node  *new_pred = be_transform_node(pred);
+	pn_Store  pn       = get_Proj_num(node);
+	/* in case of DestAM we might have to skip the result Proj */
+	if (is_Proj(new_pred))
+		new_pred = get_Proj_pred(new_pred);
+
+	return create_proj_for_store(new_pred, pn);
 }
 
 /**
@@ -4811,90 +4957,246 @@ static ir_node *gen_Proj_Mod(ir_node *node)
 	panic("No idea how to transform proj->Mod");
 }
 
-static ir_node *gen_be_Call(ir_node *node)
+static ir_node *gen_Call(ir_node *node)
 {
-	ir_node        *const src_block = get_nodes_block(node);
-	ir_node        *const block     = be_transform_node(src_block);
-	ir_type        *const call_tp   = be_Call_get_type(node);
+	ir_node         *callee       = get_Call_ptr(node);
+	ir_node         *block        = get_nodes_block(node);
+	dbg_info        *dbgi         = get_irn_dbg_info(node);
+	ir_node         *mem          = get_Call_mem(node);
+	ir_type         *type         = get_Call_type(node);
+	unsigned         n_params     = get_Call_n_params(node);
+	unsigned         n_ress       = get_method_n_ress(type);
+	/* max inputs: memory, callee, register arguments */
+	ir_graph        *irg          = get_irn_irg(node);
+	struct obstack  *obst         = be_get_be_obst(irg);
+	ia32_cconv_t    *cconv
+		= ia32_decide_calling_convention(type, NULL);
+	unsigned         n_param_regs = cconv->n_param_regs;
+	/* base,index,mem,callee,esp,fpcw + regparams*/
+	unsigned         max_inputs   = 6 + n_param_regs;
+	ir_node        **in           = ALLOCAN(ir_node*, max_inputs);
+	const arch_register_req_t **in_req
+		= OALLOCNZ(obst, const arch_register_req_t*, max_inputs);
+	unsigned         in_arity     = 0;
+	ir_node        **sync_ins     = ALLOCAN(ir_node*, n_params+1);
+	unsigned         sync_arity   = 0;
+	ir_node         *new_frame    = get_stack_pointer_for(node);
+
+	assert(n_params == get_method_n_params(type));
 
 	/* Run the x87 simulator if the call returns a float value */
-	if (get_method_n_ress(call_tp) > 0) {
-		ir_type *const res_type = get_method_res_type(call_tp, 0);
-		ir_mode *const res_mode = get_type_mode(res_type);
-
-		if (res_mode != NULL && mode_is_float(res_mode)) {
-			ir_graph *const irg = get_irn_irg(block);
+	for (unsigned r = 0; r < n_ress; ++r) {
+		const reg_or_stackslot_t *res = &cconv->results[r];
+		if (res->reg == NULL)
+			continue;
+		unsigned reg_index = res->reg->global_index;
+		if (REG_ST0 <= (int)reg_index && reg_index <= REG_ST7) {
 			ia32_request_x87_sim(irg);
+			break;
 		}
 	}
 
-	/* We do not want be_Call direct calls */
-	assert(be_Call_get_entity(node) == NULL);
+	/* construct arguments */
+	ir_node *callframe;
+	unsigned callframe_size = cconv->param_stack_size;
+	if (callframe_size == 0) {
+		callframe = new_frame;
+	} else {
+		callframe = ia32_new_IncSP(block, new_frame, callframe_size, 0);
+	}
 
 	/* special case for PIC trampoline calls */
 	bool old_no_pic_adjust = ia32_no_pic_adjust;
 	ia32_no_pic_adjust     = be_options.pic;
 
-	ir_node *const src_ptr = get_irn_n(node, n_be_Call_ptr);
-	ir_node *const src_mem = get_irn_n(node, n_be_Call_mem);
 	ia32_address_mode_t am;
-	match_arguments(&am, src_block, NULL, src_ptr, src_mem,
+	match_arguments(&am, block, NULL, callee, mem,
 	                match_am | match_immediate | match_upconv);
+	x86_address_t *const addr = &am.addr;
+	ir_node *new_mem = transform_AM_mem(block, callee, mem, addr->mem);
 
-	ia32_no_pic_adjust = old_no_pic_adjust;
+	const arch_register_t *sp = &ia32_registers[REG_ESP];
 
-	int      i    = get_irn_arity(node)-1;
-	ir_node *fpcw = be_transform_node(get_irn_n(node, i--));
-	ir_node *eax  = noreg_GP;
-	ir_node *ecx  = noreg_GP;
-	ir_node *edx  = noreg_GP;
-	for (; i >= n_be_Call_first_arg; --i) {
-		arch_register_req_t const *const req
-			= arch_get_irn_register_req_in(node, i);
-		ir_node *const reg_parm = be_transform_node(get_irn_n(node, i));
+	unsigned base = in_arity++;
+	in[base]     = addr->base;
+	in_req[base] = ia32_reg_classes[CLASS_ia32_gp].class_req;
+	unsigned index = in_arity++;
+	in[index]     = addr->index;
+	in_req[index] = ia32_reg_classes[CLASS_ia32_gp].class_req;
+	unsigned memp = in_arity++;
+	/* memp input will be set later */
+	/* TODO: only add this when op_type == ia32_Normal */
+	unsigned dest = in_arity++;
+	in[dest]     = am.new_op2;
+	in_req[dest] = ia32_reg_classes[CLASS_ia32_gp].class_req;
+	unsigned spi = in_arity++;
+	in[spi]     = callframe;
+	in_req[spi] = sp->single_req;
+	unsigned fpcwi = in_arity++;
+	in[fpcwi]     = get_initial_fpcw(irg);
+	in_req[fpcwi] = ia32_registers[REG_FPCW].single_req;
 
-		assert(req->type == arch_register_req_type_limited);
-		assert(req->cls == &ia32_reg_classes[CLASS_ia32_gp]);
+	sync_ins[sync_arity++] = new_mem;
+	for (unsigned p = 0; p < n_params; ++p) {
+		ir_node                  *value = get_Call_param(node, p);
+		const reg_or_stackslot_t *param = &cconv->parameters[p];
 
-		switch (*req->limited) {
-		case 1 << REG_GP_EAX: assert(eax == noreg_GP); eax = reg_parm; break;
-		case 1 << REG_GP_ECX: assert(ecx == noreg_GP); ecx = reg_parm; break;
-		case 1 << REG_GP_EDX: assert(edx == noreg_GP); edx = reg_parm; break;
-		default: panic("Invalid GP register for register parameter");
+		ir_type *param_type = get_method_param_type(type, p);
+		if (is_aggregate_type(param_type)) {
+			/* copy aggregate arguments into the callframe */
+			ir_node *lea = new_bd_ia32_Lea(dbgi, block, callframe, noreg_GP);
+			set_ia32_am_offs_int(lea, param->offset);
+			set_ia32_ls_mode(lea, ia32_mode_gp);
+
+			unsigned size = get_type_size_bytes(param_type);
+			ir_node *new_value = be_transform_node(value);
+			ir_node *copyb     = new_bd_ia32_CopyB_i(dbgi, block, lea,
+			                                         new_value, nomem, size);
+			ir_node *projm = new_r_Proj(copyb, mode_M, pn_ia32_CopyB_i_M);
+			sync_ins[sync_arity++] = projm;
+		} else if (param->reg != NULL) {
+			/* value transmitted in register */
+			unsigned parami = in_arity++;
+			in[parami]     = be_transform_node(value);
+			in_req[parami] = param->reg->single_req;
+		} else {
+			/* value transmitted on callframe */
+			x86_address_t store_addr;
+			memset(&store_addr, 0, sizeof(store_addr));
+			store_addr.base   = callframe;
+			store_addr.index  = noreg_GP;
+			store_addr.mem    = nomem;
+			store_addr.offset = param->offset;
+
+			ir_node *store = create_store(NULL, block, value, &store_addr);
+			set_irn_pinned(store, op_pin_state_floats);
+			ir_node *store_m = create_proj_for_store(store, pn_Store_M);
+			sync_ins[sync_arity++] = store_m;
 		}
 	}
+	assert(in_arity <= max_inputs);
+	assert(sync_arity <= n_params+1);
 
-	unsigned  const pop    = be_Call_get_pop(node);
-	ir_node  *const src_sp = get_irn_n(node, n_be_Call_sp);
-	ir_node  *const sp     = be_transform_node(src_sp);
-	dbg_info *const dbgi   = get_irn_dbg_info(node);
+	/* memory input */
+	ir_node *memin;
+	if (sync_arity == 1) {
+		memin = sync_ins[0];
+	} else {
+		memin = new_r_Sync(block, sync_arity, sync_ins);
+	}
+	in[memp]     = memin;
+	in_req[memp] = arch_no_register_req;
 
-	x86_address_t *const addr = &am.addr;
-	ir_node *mem  = transform_AM_mem(block, src_ptr, src_mem, addr->mem);
-	ir_node *call = new_bd_ia32_Call(dbgi, block, addr->base, addr->index, mem,
-	                                 am.new_op2, sp, fpcw, eax, ecx, edx, pop,
-	                                 call_tp);
-	int throws_exception = ir_throws_exception(node);
-	ir_set_throws_exception(call, throws_exception);
-	set_am_attributes(call, &am);
-	arch_set_irn_register_out(call, pn_ia32_Call_stack,
-	                          &ia32_registers[REG_ESP]);
-	arch_set_irn_register_out(call, pn_ia32_Call_fpcw,
-	                          &ia32_registers[REG_FPCW]);
-	call = fix_mem_proj(call, &am);
+	/* count outputs */
+	unsigned n_reg_results = cconv->n_reg_results;
+	unsigned n_caller_saves
+		= rbitset_popcount(cconv->caller_saves, N_IA32_REGISTERS);
+	/* mem, sp, fpcw, results + caller saves + X_regular + X_except */
+	unsigned n_out = 3 + n_reg_results + n_caller_saves;
 
+	/* create node */
+	ir_node *call = new_bd_ia32_Call(dbgi, block, in_arity, in, n_out,
+	                                 cconv->sp_delta, type);
+	arch_set_irn_register_reqs_in(call, in_req);
+
+	SET_IA32_ORIG_NODE(call, node);
 	if (get_irn_pinned(node) == op_pin_state_pinned)
 		set_irn_pinned(call, op_pin_state_pinned);
 
-	SET_IA32_ORIG_NODE(call, node);
+	set_am_attributes(call, &am);
+	ir_node *res = fix_mem_proj(call, &am);
 
-	if (ia32_cg_config.use_sse2) {
-		/* remember this call for post-processing */
-		ARR_APP1(ir_node *, call_list, call);
-		ARR_APP1(ir_type *, call_types, be_Call_get_type(node));
+	/* construct outputs */
+	unsigned o = 0;
+
+	unsigned memo = o++;
+	arch_set_irn_register_req_out(call, memo, arch_no_register_req);
+	assert(memo == pn_ia32_Call_mem);
+
+	unsigned spo = o++;
+	const arch_register_req_t *req
+		= be_create_reg_req(obst, sp, arch_register_req_type_ignore
+		                              | arch_register_req_type_produces_sp);
+	arch_set_irn_register_req_out(call, spo, req);
+	arch_set_irn_register_out(call, spo, sp);
+
+	unsigned fpcwo = o++;
+	const arch_register_t *fpcw_reg = &ia32_registers[REG_FPCW];
+	arch_set_irn_register_req_out(call, fpcwo, fpcw_reg->single_req);
+	arch_set_irn_register_out(call, fpcwo, &ia32_registers[REG_FPCW]);
+
+	assert(o == pn_ia32_Call_first_result);
+	for (unsigned r = 0; r < n_ress; ++r) {
+		const reg_or_stackslot_t  *res = &cconv->results[r];
+		const arch_register_req_t *req = res->req;
+		assert(req != NULL);
+		arch_set_irn_register_req_out(call, o++, req);
+	}
+	/* caller saves */
+	const unsigned *allocatable_regs = be_birg_from_irg(irg)->allocatable_regs;
+	for (unsigned i = 0; i < N_IA32_REGISTERS; ++i) {
+		if (!rbitset_is_set(cconv->caller_saves, i))
+			continue;
+		const arch_register_t *reg = &ia32_registers[i];
+		unsigned               op  = o++;
+		arch_set_irn_register_req_out(call, op, reg->single_req);
+		if (!rbitset_is_set(allocatable_regs, reg->global_index))
+			arch_set_irn_register_out(call, op, reg);
+	}
+	assert(o == n_out);
+
+	/* incsp to destroy callframe */
+	ir_node *new_stack        = new_r_Proj(call, ia32_mode_gp, spo);
+	unsigned param_stack_size = cconv->param_stack_size - cconv->sp_delta;
+	if (param_stack_size > 0) {
+		ir_node *new_block = be_transform_node(block);
+		ir_node *incsp     = ia32_new_IncSP(new_block, new_stack,
+		                                    -(int)param_stack_size, 0);
+		keep_alive(incsp);
+		new_stack = incsp;
 	}
 
-	return call;
+	pmap_insert(node_to_stack, node, new_stack);
+	ia32_free_calling_convention(cconv);
+
+	ia32_no_pic_adjust = old_no_pic_adjust;
+	return res;
+}
+
+static ir_node *gen_Proj_Call(ir_node *node)
+{
+	unsigned pn       = get_Proj_num(node);
+	ir_node *call     = get_Proj_pred(node);
+	ir_node *new_call = be_transform_node(call);
+	switch ((pn_Call)pn) {
+	case pn_Call_M:
+		return new_r_Proj(new_call, mode_M, pn_ia32_Call_mem);
+	case pn_Call_X_regular:
+	case pn_Call_X_except:
+	case pn_Call_T_result:
+		break;
+	}
+	panic("Unexpected Call proj %+F\n", node);
+}
+
+static ir_node *gen_Proj_Proj_Call(ir_node *node)
+{
+	unsigned      pn       = get_Proj_num(node);
+	ir_node      *call     = get_Proj_pred(get_Proj_pred(node));
+	ir_node      *new_call = be_transform_node(call);
+	ir_type      *tp       = get_Call_type(call);
+	ia32_cconv_t *cconv    = ia32_decide_calling_convention(tp, NULL);
+	const reg_or_stackslot_t *res    = &cconv->results[pn];
+	ir_mode                  *mode   = get_irn_mode(node);
+	unsigned                  new_pn = pn_ia32_Call_first_result + res->reg_offset;
+
+	assert(res->req != NULL);
+	if (ia32_mode_needs_gp_reg(mode))
+		mode = ia32_mode_gp;
+	else if (mode_is_float(mode))
+		mode = ia32_mode_E;
+	ia32_free_calling_convention(cconv);
+	return new_r_Proj(new_call, mode, new_pn);
 }
 
 /**
@@ -5445,67 +5747,12 @@ static ir_node *gen_Proj_Builtin(ir_node *proj)
 	panic("Builtin %s not implemented", get_builtin_kind_name(kind));
 }
 
-static ir_node *gen_be_IncSP(ir_node *node)
+ir_node *ia32_new_IncSP(ir_node *block, ir_node *old_sp, int offset, int align)
 {
-	ir_node *res = be_duplicate_node(node);
-	arch_add_irn_flags(res, arch_irn_flag_modify_flags);
-	return res;
-}
-
-/**
- * Transform the Projs from a be_Call.
- */
-static ir_node *gen_Proj_be_Call(ir_node *node)
-{
-	ir_node  *call     = get_Proj_pred(node);
-	ir_node  *new_call = be_transform_node(call);
-	dbg_info *dbgi     = get_irn_dbg_info(node);
-	unsigned  pn       = get_Proj_num(node);
-
-	unsigned new_pn;
-	ir_mode *mode;
-	switch ((pn_be_Call)pn) {
-	case pn_be_Call_M:
-		new_pn = pn_ia32_Call_M;
-		mode   = mode_M;
-		break;
-	case pn_be_Call_sp:
-		new_pn = pn_ia32_Call_stack;
-		mode   = ia32_mode_gp;
-		break;
-	case pn_be_Call_X_regular:
-		new_pn = pn_ia32_Call_X_regular;
-		mode   = mode_X;
-		break;
-	case pn_be_Call_X_except:
-		new_pn = pn_ia32_Call_X_except;
-		mode   = mode_X;
-		break;
-	default: {
-		assert(mode_is_data(get_irn_mode(node)));
-		arch_register_req_t const *const req = arch_get_irn_register_req(node);
-		assert(pn >= pn_be_Call_first_res);
-		assert(arch_register_req_is(req, limited));
-
-		be_foreach_out(new_call, i) {
-			arch_register_req_t const *const new_req
-				= arch_get_irn_register_req_out(new_call, i);
-			if (!arch_register_req_is(new_req, limited)
-			    || new_req->cls      != req->cls
-			    || *new_req->limited != *req->limited)
-				continue;
-
-			new_pn = i;
-			mode   = new_req->cls->mode;
-			goto found;
-		}
-		panic("no matching out requirement found");
-found:;
-	}
-	}
-
-	ir_node *res = new_rd_Proj(dbgi, new_call, mode, new_pn);
-	return res;
+	ir_node *incsp = be_new_IncSP(&ia32_registers[REG_ESP], block, old_sp,
+	                              offset, align);
+	arch_add_irn_flags(incsp, arch_irn_flag_modify_flags);
+	return incsp;
 }
 
 static ir_node *gen_Proj_ASM(ir_node *node)
@@ -5526,6 +5773,18 @@ static ir_node *gen_Proj_ASM(ir_node *node)
 	}
 
 	return new_r_Proj(new_pred, mode, pn);
+}
+
+static ir_node *gen_Proj_Proj(ir_node *node)
+{
+	ir_node *pred      = get_Proj_pred(node);
+	ir_node *pred_pred = get_Proj_pred(pred);
+	if (is_Start(pred_pred)) {
+		return gen_Proj_Proj_Start(node);
+	} else if (is_Call(pred_pred)) {
+		return gen_Proj_Proj_Call(node);
+	}
+	panic("ia32: unexpected Proj(Proj(%+F))", pred_pred);
 }
 
 static ir_node *gen_Proj_default(ir_node *node)
@@ -5557,15 +5816,12 @@ static void register_transformers(void)
 
 	be_set_transform_function(op_Add,              gen_Add);
 	be_set_transform_function(op_Address,          gen_Address);
+	be_set_transform_function(op_Alloc,            gen_Alloc);
 	be_set_transform_function(op_And,              gen_And);
 	be_set_transform_function(op_ASM,              ia32_gen_ASM);
-	be_set_transform_function(op_be_AddSP,         gen_be_AddSP);
-	be_set_transform_function(op_be_Call,          gen_be_Call);
-	be_set_transform_function(op_be_IncSP,         gen_be_IncSP);
-	be_set_transform_function(op_be_Return,        gen_be_Return);
-	be_set_transform_function(op_be_SubSP,         gen_be_SubSP);
 	be_set_transform_function(op_Bitcast,          gen_Bitcast);
 	be_set_transform_function(op_Builtin,          gen_Builtin);
+	be_set_transform_function(op_Call,             gen_Call);
 	be_set_transform_function(op_Cmp,              gen_Cmp);
 	be_set_transform_function(op_Cond,             gen_Cond);
 	be_set_transform_function(op_Const,            gen_Const);
@@ -5584,11 +5840,6 @@ static void register_transformers(void)
 	be_set_transform_function(op_ia32_l_Mul,       gen_ia32_l_Mul);
 	be_set_transform_function(op_ia32_l_Sbb,       gen_ia32_l_Sbb);
 	be_set_transform_function(op_ia32_l_Sub,       gen_ia32_l_Sub);
-	be_set_transform_function(op_ia32_NoReg_FP,    be_duplicate_node);
-	be_set_transform_function(op_ia32_NoReg_GP,    be_duplicate_node);
-	be_set_transform_function(op_ia32_NoReg_XMM,   be_duplicate_node);
-	be_set_transform_function(op_ia32_PopEbp,      be_duplicate_node);
-	be_set_transform_function(op_ia32_Push,        be_duplicate_node);
 	be_set_transform_function(op_IJmp,             gen_IJmp);
 	be_set_transform_function(op_Jmp,              gen_Jmp);
 	be_set_transform_function(op_Load,             gen_Load);
@@ -5601,44 +5852,153 @@ static void register_transformers(void)
 	be_set_transform_function(op_Not,              gen_Not);
 	be_set_transform_function(op_Or,               gen_Or);
 	be_set_transform_function(op_Phi,              gen_Phi);
+	be_set_transform_function(op_Return,           gen_Return);
 	be_set_transform_function(op_Shl,              gen_Shl);
 	be_set_transform_function(op_Shr,              gen_Shr);
 	be_set_transform_function(op_Shrs,             gen_Shrs);
+	be_set_transform_function(op_Start,            gen_Start);
 	be_set_transform_function(op_Store,            gen_Store);
 	be_set_transform_function(op_Sub,              gen_Sub);
 	be_set_transform_function(op_Switch,           gen_Switch);
 	be_set_transform_function(op_Unknown,          ia32_gen_Unknown);
+	be_set_transform_proj_function(op_Alloc,            gen_Proj_Alloc);
 	be_set_transform_proj_function(op_ASM,              gen_Proj_ASM);
-	be_set_transform_proj_function(op_be_AddSP,         gen_Proj_be_AddSP);
-	be_set_transform_proj_function(op_be_Call,          gen_Proj_be_Call);
-	be_set_transform_proj_function(op_be_Start,         be_duplicate_node);
-	be_set_transform_proj_function(op_be_SubSP,         gen_Proj_be_SubSP);
 	be_set_transform_proj_function(op_Builtin,          gen_Proj_Builtin);
+	be_set_transform_proj_function(op_Call,             gen_Proj_Call);
 	be_set_transform_proj_function(op_Div,              gen_Proj_Div);
 	be_set_transform_proj_function(op_ia32_l_Adc,       gen_Proj_default);
 	be_set_transform_proj_function(op_ia32_l_Add,       gen_Proj_default);
 	be_set_transform_proj_function(op_ia32_l_FloattoLL, gen_Proj_l_FloattoLL);
 	be_set_transform_proj_function(op_ia32_l_IMul,      gen_Proj_default);
 	be_set_transform_proj_function(op_ia32_l_LLtoFloat, gen_Proj_default);
+	be_set_transform_proj_function(op_ia32_l_Minus64,   gen_Proj_default);
 	be_set_transform_proj_function(op_ia32_l_Mul,       gen_Proj_default);
 	be_set_transform_proj_function(op_ia32_l_Sbb,       gen_Proj_default);
 	be_set_transform_proj_function(op_ia32_l_Sub,       gen_Proj_default);
-	be_set_transform_proj_function(op_ia32_l_Minus64,   gen_Proj_default);
 	be_set_transform_proj_function(op_Load,             gen_Proj_Load);
 	be_set_transform_proj_function(op_Mod,              gen_Proj_Mod);
-	be_set_transform_proj_function(op_Start,            be_duplicate_node);
+	be_set_transform_proj_function(op_Proj,             gen_Proj_Proj);
+	be_set_transform_proj_function(op_Start,            gen_Proj_Start);
 	be_set_transform_proj_function(op_Store,            gen_Proj_Store);
 
 	be_set_upper_bits_clean_function(op_Mux, ia32_mux_upper_bits_clean);
 }
 
-/**
- * Pre-transform all unknown and noreg nodes.
- */
-static void ia32_pretransform_node(ir_graph *const irg)
+static void add_parameter_loads(ir_graph *irg, const ia32_cconv_t *cconv)
+{
+	ir_node *start       = get_irg_start(irg);
+	ir_node *start_block = get_irg_start_block(irg);
+	ir_node *nomem       = get_irg_no_mem(irg);
+	ir_node *frame       = get_irg_frame(irg);
+	ir_node *proj_args   = be_get_Proj_for_pn(start, pn_Start_T_args);
+	foreach_out_edge_safe(proj_args, edge) {
+		ir_node *proj = get_edge_src_irn(edge);
+		if (!is_Proj(proj))
+			continue;
+		unsigned pn   = get_Proj_num(proj);
+		const reg_or_stackslot_t *param = &cconv->parameters[pn];
+		ir_entity *entity = param->entity;
+		if (entity == NULL)
+			continue;
+		ir_type *type   = get_entity_type(entity);
+		ir_mode *mode   = get_type_mode(type);
+		ir_node *member = new_r_Member(start_block, frame, entity);
+		ir_node *load   = new_r_Load(start_block, nomem, member, mode, type,
+		                             cons_none);
+		ir_node *res    = new_r_Proj(load, mode, pn_Load_res);
+		exchange(proj, res);
+	}
+}
+
+static ir_type *ia32_get_between_type(bool omit_fp)
+{
+	static ir_type *between_type         = NULL;
+	static ir_type *omit_fp_between_type = NULL;
+
+	if (between_type == NULL) {
+		between_type = new_type_class(new_id_from_str("amd64_between_type"));
+		/* between type contains return address + saved base pointer */
+		unsigned gp_size = get_mode_size_bytes(ia32_mode_gp);
+		set_type_size_bytes(between_type, 2*gp_size);
+
+		omit_fp_between_type
+			= new_type_class(new_id_from_str("amd64_between_type"));
+		/* between type contains return address */
+		set_type_size_bytes(omit_fp_between_type, gp_size);
+	}
+
+	return omit_fp ? omit_fp_between_type : between_type;
+}
+
+static void ia32_create_stacklayout(ir_graph *irg, ia32_cconv_t *cconv)
+{
+	ir_entity         *entity        = get_irg_entity(irg);
+	ir_type           *function_type = get_entity_type(entity);
+	be_stack_layout_t *layout        = be_get_irg_stack_layout(irg);
+
+	/* construct argument type */
+	assert(cconv != NULL);
+	ident      *arg_type_id     = new_id_from_str("arg_type");
+	ident      *arg_id          = id_mangle_u(get_entity_ident(entity), arg_type_id);
+	ir_type    *arg_type        = new_type_struct(arg_id);
+	ir_type    *frame_type      = get_irg_frame_type(irg);
+	ir_entity  *va_start_entity = NULL;
+	size_t      n_params        = get_method_n_params(function_type);
+	ir_entity **param_map       = ALLOCANZ(ir_entity*, n_params);
+	for (size_t f = get_compound_n_members(frame_type); f-- > 0; ) {
+		ir_entity *member = get_compound_member(frame_type, f);
+		if (!is_parameter_entity(member))
+			continue;
+		set_entity_owner(member, arg_type);
+
+		size_t num = get_entity_parameter_number(member);
+		if (num == IR_VA_START_PARAMETER_NUMBER) {
+			if (va_start_entity != NULL)
+				panic("multiple va_start entities found (%+F,%+F)",
+				      va_start_entity, member);
+			va_start_entity = member;
+			continue;
+		}
+		assert(num < n_params);
+		if (param_map[num] != NULL)
+			panic("multiple entities for parameter %u in %+F found", f, irg);
+		param_map[num] = member;
+	}
+
+	/* calculate offsets */
+	for (size_t p = 0; p < n_params; ++p) {
+		reg_or_stackslot_t *param = &cconv->parameters[p];
+		if (param->type == NULL)
+			continue;
+
+		ir_entity *entity = param_map[p];
+		if (entity == NULL)
+			entity = new_parameter_entity(arg_type, p, param->type);
+		param->entity = entity;
+		set_entity_offset(param->entity, param->offset);
+	}
+	if (va_start_entity != NULL) {
+		set_entity_offset(va_start_entity, cconv->param_stack_size);
+	}
+	set_type_size_bytes(arg_type, cconv->param_stack_size);
+
+	memset(layout, 0, sizeof(*layout));
+	layout->frame_type     = frame_type;
+	layout->between_type   = ia32_get_between_type(cconv->omit_fp);
+	layout->arg_type       = arg_type;
+	layout->initial_offset = 0;
+	layout->initial_bias   = 0;
+	layout->sp_relative    = cconv->omit_fp;
+
+	assert(N_FRAME_TYPES == 3);
+	layout->order[0] = layout->frame_type;
+	layout->order[1] = layout->between_type;
+	layout->order[2] = layout->arg_type;
+}
+
+static void ia32_pretransform_node(ir_graph *irg)
 {
 	ia32_irg_data_t *irg_data = ia32_get_irg_data(irg);
-
 	irg_data->noreg_gp       = be_pre_transform_node(irg_data->noreg_gp);
 	irg_data->noreg_fp       = be_pre_transform_node(irg_data->noreg_fp);
 	irg_data->noreg_xmm      = be_pre_transform_node(irg_data->noreg_xmm);
@@ -5649,114 +6009,29 @@ static void ia32_pretransform_node(ir_graph *const irg)
 	noreg_GP = ia32_new_NoReg_gp(irg);
 }
 
-/**
- * Post-process all calls if we are in SSE mode.
- * The ABI requires that the results are in st0, copy them
- * to a xmm register.
- */
-static void postprocess_fp_call_results(void)
-{
-	for (size_t i = 0, n = ARR_LEN(call_list); i < n; ++i) {
-		ir_node *call = call_list[i];
-		ir_type *mtp  = call_types[i];
-
-		for (int j = get_method_n_ress(mtp) - 1; j >= 0; --j) {
-			ir_type *res_tp = get_method_res_type(mtp, j);
-			if (!is_atomic_type(res_tp)) {
-				/* no floating point return */
-				continue;
-			}
-			ir_mode *res_mode = get_type_mode(res_tp);
-			if (!mode_is_float(res_mode)) {
-				/* no floating point return */
-				continue;
-			}
-
-			ir_node *res     = be_get_Proj_for_pn(call, pn_ia32_Call_st0 + j);
-			ir_node *new_res = NULL;
-
-			/* now patch the users */
-			foreach_out_edge_safe(res, edge) {
-				ir_node *succ = get_edge_src_irn(edge);
-
-				/* ignore Keeps */
-				if (be_is_Keep(succ))
-					continue;
-
-				if (is_ia32_xStore(succ)) {
-					/* an xStore can be patched into an vfst */
-					dbg_info *db    = get_irn_dbg_info(succ);
-					ir_node  *block = get_nodes_block(succ);
-					ir_node  *base  = get_irn_n(succ, n_ia32_xStore_base);
-					ir_node  *idx   = get_irn_n(succ, n_ia32_xStore_index);
-					ir_node  *mem   = get_irn_n(succ, n_ia32_xStore_mem);
-					ir_node  *value = get_irn_n(succ, n_ia32_xStore_val);
-					ir_mode  *mode  = get_ia32_ls_mode(succ);
-					ir_node  *st    = new_bd_ia32_fst(db, block, base, idx,
-					                                  mem, value, mode);
-					ia32_copy_am_attrs(st, succ);
-					set_irn_pinned(st, get_irn_pinned(succ));
-					set_ia32_op_type(st, ia32_AddrModeD);
-
-					assert((unsigned)pn_ia32_xStore_M == (unsigned)pn_ia32_fst_M);
-					assert((unsigned)pn_ia32_xStore_X_regular == (unsigned)pn_ia32_fst_X_regular);
-					assert((unsigned)pn_ia32_xStore_X_except == (unsigned)pn_ia32_fst_X_except);
-
-					exchange(succ, st);
-					continue;
-				}
-
-				if (new_res == NULL) {
-					ir_node  *const block    = get_nodes_block(call);
-					ir_graph *const irg      = get_irn_irg(block);
-					ir_node  *const frame    = get_irg_frame(irg);
-					ir_node  *const old_mem  = be_get_Proj_for_pn(call, pn_ia32_Call_M);
-					ir_node  *const call_mem = new_r_Proj(call, mode_M, pn_ia32_Call_M);
-
-					/* store st(0) on stack */
-					dbg_info *db   = get_irn_dbg_info(call);
-					ir_node  *vfst = new_bd_ia32_fst(db, block, frame, noreg_GP,
-					                                 call_mem, res, res_mode);
-					set_irn_pinned(vfst, op_pin_state_floats);
-					set_ia32_op_type(vfst, ia32_AddrModeD);
-					set_ia32_use_frame(vfst);
-					arch_add_irn_flags(vfst, arch_irn_flag_spill);
-
-					ir_node *vfst_mem = new_r_Proj(vfst, mode_M, pn_ia32_fst_M);
-
-					/* load into SSE register */
-					ir_node *xld = new_bd_ia32_xLoad(db, block, frame, noreg_GP,
-					                                 vfst_mem, res_mode);
-					set_irn_pinned(xld, op_pin_state_floats);
-					set_ia32_op_type(xld, ia32_AddrModeS);
-					set_ia32_use_frame(xld);
-
-					new_res = new_r_Proj(xld, res_mode, pn_ia32_xLoad_res);
-					ir_node *new_mem = new_r_Proj(xld, mode_M, pn_ia32_xLoad_M);
-
-					if (old_mem != NULL) {
-						edges_reroute(old_mem, new_mem);
-						kill_node(old_mem);
-					}
-				}
-				set_irn_n(succ, get_edge_src_pos(edge), new_res);
-			}
-		}
-	}
-}
-
 /* do the transformation */
 void ia32_transform_graph(ir_graph *irg)
 {
-	register_transformers();
-	initial_fpcw       = NULL;
-	ia32_no_pic_adjust = false;
-
 	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES
 	                         | IR_GRAPH_PROPERTY_NO_TUPLES
 	                         | IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 
-	old_initial_fpcw = be_get_initial_reg_value(irg, &ia32_registers[REG_FPCW]);
+	ia32_no_pic_adjust = false;
+	start_mem.irn      = NULL;
+	start_sp.irn       = NULL;
+	start_fp.irn       = NULL;
+	start_fpcw.irn     = NULL;
+
+	register_transformers();
+
+	stackorder    = be_collect_stacknodes(irg);
+	node_to_stack = pmap_create();
+	ir_entity *entity = get_irg_entity(irg);
+	ir_type   *mtp    = get_entity_type(entity);
+	current_cconv = ia32_decide_calling_convention(mtp, irg);
+	ia32_create_stacklayout(irg, current_cconv);
+	be_add_parameter_entity_stores(irg);
+	add_parameter_loads(irg, current_cconv);
 
 	be_timer_push(T_HEIGHTS);
 	ia32_heights = heights_new(irg);
@@ -5768,20 +6043,17 @@ void ia32_transform_graph(ir_graph *irg)
 	int cse_last = get_opt_cse();
 	set_opt_cse(0);
 
-	call_list  = NEW_ARR_F(ir_node *, 0);
-	call_types = NEW_ARR_F(ir_type *, 0);
 	be_transform_graph(irg, ia32_pretransform_node);
-
-	if (ia32_cg_config.use_sse2)
-		postprocess_fp_call_results();
-	DEL_ARR_F(call_types);
-	DEL_ARR_F(call_list);
 
 	set_opt_cse(cse_last);
 
 	x86_free_non_address_mode_nodes();
 	heights_free(ia32_heights);
 	ia32_heights = NULL;
+	be_free_stackorder(stackorder);
+	ia32_free_calling_convention(current_cconv);
+	pmap_destroy(node_to_stack);
+	node_to_stack = NULL;
 }
 
 void ia32_init_transform(void)

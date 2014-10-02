@@ -74,6 +74,7 @@ typedef enum {
 	IA32_ATTR_ia32_call_attr_t       = 1 << 6,
 	IA32_ATTR_ia32_climbframe_attr_t = 1 << 7,
 	IA32_ATTR_ia32_switch_attr_t     = 1 << 8,
+	IA32_ATTR_ia32_return_attr_t     = 1 << 9,
 } ia32_attr_type_t;
 #endif
 
@@ -211,6 +212,13 @@ struct ia32_climbframe_attr_t {
 	unsigned    count;     /**< number of frames to climb up */
 };
 
+typedef struct ia32_return_attr_t ia32_return_attr_t;
+struct ia32_return_attr_t {
+	ia32_attr_t attr;
+	uint16_t    pop;
+	bool        emit_pop;
+};
+
 /* the following union is necessary to indicate to the compiler that we might want to cast
  * the structs (we use them to simulate OO-inheritance) */
 union allow_casts_attr_t_ {
@@ -223,6 +231,7 @@ union allow_casts_attr_t_ {
 	ia32_immediate_attr_t  immediate_attr;
 	ia32_climbframe_attr_t climbframe_attr;
 	ia32_switch_attr_t     switch_attr;
+	ia32_return_attr_t     return_attr;
 };
 
 #ifndef NDEBUG

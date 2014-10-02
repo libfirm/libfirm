@@ -895,7 +895,7 @@ static bool sim_fprem(x87_state *const state, ir_node *const n)
  */
 static bool sim_fisttp(x87_state *state, ir_node *n)
 {
-	ir_node               *val = get_irn_n(n, n_ia32_fst_val);
+	ir_node               *val = get_irn_n(n, n_ia32_fisttp_val);
 	const arch_register_t *op2 = arch_get_irn_register(val);
 
 	unsigned const op2_idx = x87_on_stack(state, op2->index);
@@ -1246,7 +1246,7 @@ static ir_node *get_call_result_proj(ir_node *call)
 	foreach_out_edge(call, edge) {
 		ir_node *proj = get_edge_src_irn(edge);
 		unsigned pn   = get_Proj_num(proj);
-		if (pn == pn_ia32_Call_st0)
+		if (pn == pn_ia32_Call_first_result)
 			return proj;
 	}
 
@@ -1310,8 +1310,7 @@ static bool sim_Return(x87_state *state, ir_node *n)
 #ifdef DEBUG_libfirm
 	/* only floating point return values must reside on stack */
 	unsigned n_float_res = 0;
-	for (unsigned i = 0, n_res = be_Return_get_n_rets(n); i < n_res; ++i) {
-		ir_node *const res = get_irn_n(n, n_be_Return_val + i);
+	foreach_irn_in(n, i, res) {
 		if (mode_is_float(get_irn_mode(res)))
 			++n_float_res;
 	}
@@ -1539,29 +1538,29 @@ static void x87_init_simulator(x87_simulator *sim, ir_graph *irg)
 	/* set the generic function pointer of instruction we must simulate */
 	ir_clear_opcodes_generic_func();
 
+	register_sim(op_be_Copy,           sim_Copy);
+	register_sim(op_be_Keep,           sim_Keep);
+	register_sim(op_be_Perm,           sim_Perm);
 	register_sim(op_ia32_Asm,          sim_Asm);
 	register_sim(op_ia32_Call,         sim_Call);
-	register_sim(op_ia32_fld,          sim_load);
-	register_sim(op_ia32_fild,         sim_load);
-	register_sim(op_ia32_fld1,         sim_load);
-	register_sim(op_ia32_fldz,         sim_load);
-	register_sim(op_ia32_fadd,         sim_binop);
-	register_sim(op_ia32_fsub,         sim_binop);
-	register_sim(op_ia32_fmul,         sim_binop);
-	register_sim(op_ia32_fdiv,         sim_binop);
-	register_sim(op_ia32_fprem,        sim_fprem);
 	register_sim(op_ia32_fabs,         sim_unop);
+	register_sim(op_ia32_fadd,         sim_binop);
 	register_sim(op_ia32_fchs,         sim_unop);
+	register_sim(op_ia32_fdiv,         sim_binop);
+	register_sim(op_ia32_fild,         sim_load);
 	register_sim(op_ia32_fist,         sim_store);
 	register_sim(op_ia32_fisttp,       sim_fisttp);
+	register_sim(op_ia32_fld1,         sim_load);
+	register_sim(op_ia32_fld,          sim_load);
+	register_sim(op_ia32_fldz,         sim_load);
+	register_sim(op_ia32_fmul,         sim_binop);
+	register_sim(op_ia32_fprem,        sim_fprem);
 	register_sim(op_ia32_fst,          sim_store);
+	register_sim(op_ia32_fsub,         sim_binop);
 	register_sim(op_ia32_FtstFnstsw,   sim_FtstFnstsw);
 	register_sim(op_ia32_FucomFnstsw,  sim_Fucom);
 	register_sim(op_ia32_Fucomi,       sim_Fucom);
-	register_sim(op_be_Copy,           sim_Copy);
-	register_sim(op_be_Return,         sim_Return);
-	register_sim(op_be_Perm,           sim_Perm);
-	register_sim(op_be_Keep,           sim_Keep);
+	register_sim(op_ia32_Return,       sim_Return);
 }
 
 /**

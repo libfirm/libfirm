@@ -26,7 +26,6 @@
 
 #include "bearch.h"
 #include "besched.h"
-#include "beabi.h"
 #include "benode.h"
 #include "bestate.h"
 #include "beutil.h"
@@ -210,13 +209,22 @@ typedef struct collect_fpu_mode_nodes_env_t {
 
 static void collect_fpu_mode_nodes_walker(ir_node *node, void *data)
 {
-	if (!mode_is_data(get_irn_mode(node)))
+	if (is_Proj(node) || is_ia32_ChangeCW(node))
 		return;
 
 	collect_fpu_mode_nodes_env_t *env = (collect_fpu_mode_nodes_env_t*)data;
-	const arch_register_t        *reg = arch_get_irn_register(node);
-	if (reg == &ia32_registers[REG_FPCW] && !is_ia32_ChangeCW(node))
-		ARR_APP1(ir_node*, env->state_nodes, node);
+	for (unsigned o = 0, n = arch_get_irn_n_outs(node); o < n; ++o) {
+		const arch_register_t *reg = arch_get_irn_register_out(node, o);
+		if (reg != &ia32_registers[REG_FPCW])
+			continue;
+		ir_node *value = node;
+		if (get_irn_mode(value) == mode_T) {
+			value = be_get_Proj_for_pn(node, o);
+			if (value == NULL)
+				value = new_r_Proj(node, ia32_mode_fpcw, o);
+		}
+		ARR_APP1(ir_node*, env->state_nodes, value);
+	}
 }
 
 static void rewire_fpu_mode_nodes(ir_graph *irg)

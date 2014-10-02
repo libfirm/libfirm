@@ -49,7 +49,6 @@
 
 #include "besched.h"
 #include "benode.h"
-#include "beabi.h"
 #include "bedwarf.h"
 #include "beemitter.h"
 #include "begnuas.h"
@@ -1340,10 +1339,11 @@ static void emit_ia32_ClimbFrame(const ir_node *node)
 	ia32_emitf(node, "jnz 0b");
 }
 
-static void emit_be_Return(const ir_node *node)
+static void emit_ia32_Return(const ir_node *node)
 {
-	unsigned pop = be_Return_get_pop(node);
-	if (pop > 0 || be_Return_get_emit_pop(node)) {
+	const ia32_return_attr_t *attr = get_ia32_return_attr_const(node);
+	unsigned pop = attr->pop;
+	if (attr->emit_pop || pop > 0) {
 		ia32_emitf(node, "ret $%u", pop);
 	} else {
 		ia32_emitf(node, "ret");
@@ -1367,8 +1367,8 @@ static void ia32_register_emitters(void)
 	be_set_emitter(op_be_IncSP,        emit_be_IncSP);
 	be_set_emitter(op_be_Keep,         be_emit_nothing);
 	be_set_emitter(op_be_Perm,         emit_be_Perm);
-	be_set_emitter(op_be_Return,       emit_be_Return);
-	be_set_emitter(op_be_Start,        be_emit_nothing);
+	be_set_emitter(op_ia32_Return,     emit_ia32_Return);
+	be_set_emitter(op_ia32_Start,      be_emit_nothing);
 	be_set_emitter(op_ia32_Asm,        emit_ia32_Asm);
 	be_set_emitter(op_ia32_ClimbFrame, emit_ia32_ClimbFrame);
 	be_set_emitter(op_ia32_CMovcc,     emit_ia32_CMovcc);
@@ -2789,6 +2789,9 @@ static void bemit_popmem(const ir_node *node)
 
 static void bemit_call(const ir_node *node)
 {
+	(void)node;
+	panic("bemit_call NIY");
+#if 0
 	ir_node *proc = get_irn_n(node, n_ia32_Call_addr);
 
 	if (is_ia32_Immediate(proc)) {
@@ -2797,6 +2800,7 @@ static void bemit_call(const ir_node *node)
 	} else {
 		bemit_unop(node, 0xFF, 2, n_ia32_Call_addr);
 	}
+#endif
 }
 
 static void bemit_jmp(const ir_node *dest_block)
@@ -2905,15 +2909,12 @@ static void bemit_switchjmp(const ir_node *node)
 	be_emit_jump_table(node, table, jump_table, get_cfop_target_block);
 }
 
-/**
- * Emits a return.
- */
 static void bemit_return(const ir_node *node)
 {
-	unsigned pop = be_Return_get_pop(node);
-	if (pop > 0 || be_Return_get_emit_pop(node)) {
+	const ia32_return_attr_t *attr = get_ia32_return_attr_const(node);
+	unsigned pop = attr->pop;
+	if (attr->emit_pop || pop > 0) {
 		bemit8(0xC2);
-		assert(pop <= 0xffff);
 		bemit16(pop);
 	} else {
 		bemit8(0xC3);
@@ -3227,7 +3228,7 @@ static void ia32_register_binary_emitters(void)
 	be_set_emitter(op_be_CopyKeep,        bemit_copy);
 	be_set_emitter(op_be_IncSP,           bemit_incsp);
 	be_set_emitter(op_be_Perm,            bemit_perm);
-	be_set_emitter(op_be_Return,          bemit_return);
+	be_set_emitter(op_ia32_Return,        bemit_return);
 	be_set_emitter(op_ia32_Adc,           bemit_adc);
 	be_set_emitter(op_ia32_Add,           bemit_add);
 	be_set_emitter(op_ia32_AddMem,        bemit_addmem);
@@ -3329,11 +3330,11 @@ static void ia32_register_binary_emitters(void)
 	be_set_emitter(op_ia32_fxch,          bemit_fxch);
 
 	/* ignore the following nodes */
-	be_set_emitter(op_Phi,             be_emit_nothing);
 	be_set_emitter(op_be_Keep,         be_emit_nothing);
-	be_set_emitter(op_be_Start,        be_emit_nothing);
 	be_set_emitter(op_ia32_ProduceVal, be_emit_nothing);
+	be_set_emitter(op_ia32_Start,      be_emit_nothing);
 	be_set_emitter(op_ia32_Unknown,    be_emit_nothing);
+	be_set_emitter(op_Phi,             be_emit_nothing);
 }
 
 static void gen_binary_block(ir_node *block)

@@ -201,7 +201,7 @@ static ir_node *eat_immediates(x86_address_t *addr, ir_node *node,
 		addr->frame_entity = get_Member_entity(node);
 		addr->use_frame    = true;
 		ir_node *ptr = get_Member_ptr(node);
-		assert(is_Start(get_Proj_pred(ptr)) || be_is_Start(get_Proj_pred(ptr)));
+		assert(is_Start(get_Proj_pred(ptr)));
 		return ptr;
 	}
 
@@ -387,8 +387,7 @@ tryit:
 				assert(addr->index == NULL && addr->scale == 0);
 				assert(right == NULL);
 				/* esp must be used as base */
-				if (is_Proj(left) && (is_Start(get_Proj_pred(left))
-				                      || be_is_Start(get_Proj_pred(left)))) {
+				if (is_Proj(left) && is_Start(get_Proj_pred(left))) {
 					addr->index = base;
 					addr->base  = left;
 				} else {
@@ -403,8 +402,7 @@ tryit:
 			} else {
 				assert(addr->index == NULL && addr->scale == 0);
 				/* esp must be used as base */
-				if (is_Proj(right) && (is_Start(get_Proj_pred(right))
-				                      || be_is_Start(get_Proj_pred(right)))) {
+				if (is_Proj(right) && is_Start(get_Proj_pred(right))) {
 				    addr->index = base;
 				    addr->base  = right;
 				} else {

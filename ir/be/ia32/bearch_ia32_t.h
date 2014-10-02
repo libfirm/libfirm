@@ -21,6 +21,8 @@
 #define SET_IA32_ORIG_NODE(n, o) set_ia32_orig_node(n, o)
 #endif
 
+#define IA32_REGISTER_SIZE 4
+
 typedef struct ia32_isa_t            ia32_isa_t;
 typedef struct ia32_intrinsic_env_t  ia32_intrinsic_env_t;
 

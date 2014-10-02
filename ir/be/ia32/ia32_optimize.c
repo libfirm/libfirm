@@ -24,7 +24,6 @@
 #include "firmstat_t.h"
 
 #include "be_t.h"
-#include "beabi.h"
 #include "benode.h"
 #include "besched.h"
 #include "bepeephole.h"
@@ -329,7 +328,7 @@ static void peephole_ia32_Return(ir_node *node)
 
 	/* check if this return is the first on the block */
 	sched_foreach_reverse_before(node, irn) {
-		if (is_Phi(irn) || be_is_Start(irn))
+		if (is_Phi(irn) || is_ia32_Start(irn))
 			continue;
 		/* arg, IncSP 0 nodes might occur, ignore these */
 		if (be_is_IncSP(irn) && be_get_IncSP_offset(irn) == 0)
@@ -338,7 +337,8 @@ static void peephole_ia32_Return(ir_node *node)
 	}
 
 	/* ensure, that the 3 byte return is generated */
-	be_Return_set_emit_pop(node, 1);
+	ia32_return_attr_t *attr = get_ia32_return_attr(node);
+	attr->emit_pop = true;
 }
 
 /* only optimize up to 48 stores behind IncSPs */
@@ -587,7 +587,7 @@ static void peephole_Load_IncSP_to_pop(ir_node *irn)
 	const arch_register_t *esp   = &ia32_registers[REG_ESP];
 	ir_node               *const   block = get_nodes_block(irn);
 	if (inc_ofs > 0) {
-		pred_sp = be_new_IncSP(esp, block, pred_sp, -inc_ofs, be_get_IncSP_align(irn));
+		pred_sp = ia32_new_IncSP(block, pred_sp, -inc_ofs, be_get_IncSP_align(irn));
 		sched_add_before(irn, pred_sp);
 	}
 
@@ -1050,10 +1050,10 @@ void ia32_peephole_optimization(ir_graph *irg)
 
 	/* pass 2 */
 	ir_clear_opcodes_generic_func();
-	register_peephole_optimization(op_ia32_Const, peephole_ia32_Const);
-	register_peephole_optimization(op_be_IncSP,   peephole_be_IncSP);
-	register_peephole_optimization(op_ia32_Test,  peephole_ia32_Test);
-	register_peephole_optimization(op_be_Return,  peephole_ia32_Return);
+	register_peephole_optimization(op_ia32_Const,   peephole_ia32_Const);
+	register_peephole_optimization(op_be_IncSP,     peephole_be_IncSP);
+	register_peephole_optimization(op_ia32_Test,    peephole_ia32_Test);
+	register_peephole_optimization(op_ia32_Return,  peephole_ia32_Return);
 	be_peephole_opt(irg);
 }
 

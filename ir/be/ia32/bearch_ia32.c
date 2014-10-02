@@ -10,7 +10,6 @@
  */
 #include "bearch_ia32_t.h"
 
-#include "beabi.h"
 #include "beabihelper.h"
 #include "beblocksched.h"
 #include "beflags.h"
@@ -47,6 +46,7 @@
 #include "irtools.h"
 #include "lc_opts_enum.h"
 #include "lc_opts.h"
+#include "lower_alloc.h"
 #include "lower_builtins.h"
 #include "lower_calls.h"
 #include "lower_dw.h"
@@ -55,18 +55,19 @@
 #include "panic.h"
 #include "xmalloc.h"
 
-#include "ia32_new_nodes.h"
-#include "ia32_nodes_attr.h"
 #include "gen_ia32_regalloc_if.h"
+#include "ia32_architecture.h"
+#include "ia32_cconv.h"
 #include "ia32_common_transform.h"
-#include "ia32_transform.h"
-#include "ia32_emitter.h"
-#include "ia32_optimize.h"
-#include "ia32_x87.h"
 #include "ia32_dbg_stat.h"
+#include "ia32_emitter.h"
 #include "ia32_finish.h"
 #include "ia32_fpu.h"
-#include "ia32_architecture.h"
+#include "ia32_new_nodes.h"
+#include "ia32_nodes_attr.h"
+#include "ia32_optimize.h"
+#include "ia32_transform.h"
+#include "ia32_x87.h"
 
 ir_mode *ia32_mode_fpcw;
 ir_mode *ia32_mode_flags;
@@ -243,18 +244,6 @@ static void ia32_build_between_type(void)
 }
 
 /**
- * Produces the type which sits between the stack args and the locals on the stack.
- * it will contain the return address and space to store the old base pointer.
- * @return The Firm type modeling the ABI between type.
- */
-static ir_type *ia32_abi_get_between_type(ir_graph *irg)
-{
-	const be_stack_layout_t *layout = be_get_irg_stack_layout(irg);
-	ia32_build_between_type();
-	return layout->sp_relative ? omit_fp_between_type : between_type;
-}
-
-/**
  * Return the stack entity that contains the return address.
  */
 ir_entity *ia32_get_return_address_entity(ir_graph *irg)
@@ -425,10 +414,6 @@ static void ia32_perform_memory_operand(ir_node *irn, unsigned int i)
 	kill_node(op);
 	kill_node(load);
 }
-
-static const be_abi_callbacks_t ia32_abi_callbacks = {
-	ia32_abi_get_between_type,
-};
 
 /* register allocator interface */
 static const arch_irn_ops_t ia32_irn_ops = {
@@ -1083,7 +1068,7 @@ static void introduce_epilogue(ir_node *ret)
 	unsigned               frame_size = get_type_size_bytes(frame_type);
 	be_stack_layout_t     *layout     = be_get_irg_stack_layout(irg);
 	ir_node               *block      = get_nodes_block(ret);
-	ir_node               *first_sp   = get_irn_n(ret, n_be_Return_sp);
+	ir_node               *first_sp   = get_irn_n(ret, n_ia32_Return_stack);
 	ir_node               *curr_sp    = first_sp;
 	ir_mode               *mode_gp    = ia32_reg_classes[CLASS_ia32_gp].mode;
 
@@ -1099,7 +1084,7 @@ static void introduce_epilogue(ir_node *ret)
 			sched_add_before(ret, leave);
 		} else {
 			ir_node *pop;
-			ir_node *curr_mem = get_irn_n(ret, n_be_Return_mem);
+			ir_node *curr_mem = get_irn_n(ret, n_ia32_Return_mem);
 			/* copy ebp to esp */
 			curr_sp = new_bd_ia32_CopyEbpEsp(NULL, block, curr_bp);
 			arch_set_irn_register(curr_sp, sp);
@@ -1115,15 +1100,15 @@ static void introduce_epilogue(ir_node *ret)
 			arch_set_irn_register(curr_sp, sp);
 			sched_add_before(ret, pop);
 
-			set_irn_n(ret, n_be_Return_mem, curr_mem);
+			set_irn_n(ret, n_ia32_Return_mem, curr_mem);
 		}
 		set_irn_n(ret, n_ebp, curr_bp);
 	} else {
-		ir_node *incsp = be_new_IncSP(sp, block, curr_sp, -(int)frame_size, 0);
+		ir_node *incsp = ia32_new_IncSP(block, curr_sp, -(int)frame_size, 0);
 		sched_add_before(ret, incsp);
 		curr_sp = incsp;
 	}
-	set_irn_n(ret, n_be_Return_sp, curr_sp);
+	set_irn_n(ret, n_ia32_Return_stack, curr_sp);
 
 	/* keep verifier happy... */
 	if (get_irn_n_edges(first_sp) == 0 && is_Proj(first_sp))
@@ -1167,7 +1152,7 @@ static void introduce_prologue_epilogue(ir_graph *irg)
 		be_set_constr_single_reg_out(curr_sp, 0, sp, arch_register_req_type_produces_sp);
 		edges_reroute_except(initial_bp, curr_bp, push);
 
-		ir_node *incsp = be_new_IncSP(sp, block, curr_sp, frame_size, 0);
+		ir_node *incsp = ia32_new_IncSP(block, curr_sp, frame_size, 0);
 		edges_reroute_except(initial_sp, incsp, push);
 		sched_add_after(curr_sp, incsp);
 
@@ -1180,14 +1165,14 @@ static void introduce_prologue_epilogue(ir_graph *irg)
 
 		layout->initial_bias = -4;
 	} else {
-		ir_node *const incsp = be_new_IncSP(sp, block, initial_sp, frame_size, 0);
+		ir_node *const incsp = ia32_new_IncSP(block, initial_sp, frame_size, 0);
 		edges_reroute_except(initial_sp, incsp, incsp);
 		sched_add_after(start, incsp);
 	}
 
 	/* introduce epilogue for every return node */
 	foreach_irn_in(get_irg_end_block(irg), i, ret) {
-		assert(be_is_Return(ret));
+		assert(is_ia32_Return(ret));
 		introduce_epilogue(ret);
 	}
 }
@@ -1221,9 +1206,8 @@ static void ia32_emit(ir_graph *irg)
 	ia32_finish_irg(irg);
 
 	/* we might have to rewrite x87 virtual registers */
-	if (irg_data->do_x87_sim) {
+	if (irg_data->do_x87_sim)
 		ia32_x87_simulate_graph(irg);
-	}
 
 	/* do peephole optimizations */
 	ia32_peephole_optimization(irg);
@@ -1267,12 +1251,8 @@ static void ia32_prepare_graph(ir_graph *irg)
 		}
 		instrument_initcall(irg, mcount);
 	}
-	if (be_options.pic) {
+	if (be_options.pic)
 		ia32_adjust_pic(irg);
-	}
-
-	be_abi_introduce(irg);
-	be_dump(DUMP_BE, irg, "abi");
 
 	be_timer_push(T_CODEGEN);
 	ia32_transform_graph(irg);
@@ -1289,6 +1269,10 @@ static void ia32_prepare_graph(ir_graph *irg)
 	ia32_optimize_graph(irg);
 
 	be_dump(DUMP_BE, irg, "opt");
+
+	ir_type *frame_type = get_irg_frame_type(irg);
+	if (get_type_state(frame_type) == layout_undefined)
+		default_layout_compound_type(frame_type);
 
 	/* do code placement, to optimize the position of constants */
 	place_code(irg);
@@ -1571,6 +1555,7 @@ static void ia32_init(void)
 	ia32_register_init();
 	obstack_init(&opcodes_obst);
 	ia32_create_opcodes(&ia32_irn_ops);
+	ia32_cconv_init();
 }
 
 static void ia32_finish(void)
@@ -1622,185 +1607,6 @@ static void ia32_end_codegeneration(void *self)
 	ia32_isa_t *isa = (ia32_isa_t*)self;
 	pmap_destroy(isa->tv_ent);
 	free(self);
-}
-
-/**
- * Returns the register for parameter nr.
- */
-static const arch_register_t *ia32_get_RegParam_reg(unsigned cc, unsigned nr,
-                                                    const ir_mode *mode)
-{
-	static const arch_register_t *gpreg_param_reg_fastcall[] = {
-		&ia32_registers[REG_ECX],
-		&ia32_registers[REG_EDX],
-		NULL
-	};
-	static const unsigned MAXNUM_GPREG_ARGS = 3;
-
-	static const arch_register_t *gpreg_param_reg_regparam[] = {
-		&ia32_registers[REG_EAX],
-		&ia32_registers[REG_EDX],
-		&ia32_registers[REG_ECX]
-	};
-
-	static const arch_register_t *gpreg_param_reg_this[] = {
-		&ia32_registers[REG_ECX],
-		NULL,
-		NULL
-	};
-
-	static const arch_register_t *fpreg_sse_param_reg_std[] = {
-		&ia32_registers[REG_XMM0],
-		&ia32_registers[REG_XMM1],
-		&ia32_registers[REG_XMM2],
-		&ia32_registers[REG_XMM3],
-		&ia32_registers[REG_XMM4],
-		&ia32_registers[REG_XMM5],
-		&ia32_registers[REG_XMM6],
-		&ia32_registers[REG_XMM7]
-	};
-
-	static const arch_register_t *fpreg_sse_param_reg_this[] = {
-		NULL,  /* in case of a "this" pointer, the first parameter must not be a float */
-	};
-	static const unsigned MAXNUM_SSE_ARGS = 8;
-
-	if ((cc & cc_this_call) && nr == 0)
-		return gpreg_param_reg_this[0];
-
-	if (! (cc & cc_reg_param))
-		return NULL;
-
-	if (mode_is_float(mode)) {
-		if (!ia32_cg_config.use_sse2 || (cc & cc_fpreg_param) == 0)
-			return NULL;
-		if (nr >= MAXNUM_SSE_ARGS)
-			return NULL;
-
-		if (cc & cc_this_call)
-			return fpreg_sse_param_reg_this[nr];
-		return fpreg_sse_param_reg_std[nr];
-	} else if (mode_is_int(mode) || mode_is_reference(mode)) {
-		unsigned num_regparam;
-
-		if (get_mode_size_bits(mode) > 32)
-			return NULL;
-
-		if (nr >= MAXNUM_GPREG_ARGS)
-			return NULL;
-
-		if (cc & cc_this_call) {
-			return gpreg_param_reg_this[nr];
-		}
-		num_regparam = cc & ~cc_bits;
-		/* default fastcall */
-		if (num_regparam == 0)
-			return gpreg_param_reg_fastcall[nr];
-		if (nr < num_regparam)
-			return gpreg_param_reg_regparam[nr];
-		return NULL;
-	}
-
-	panic("unknown argument mode");
-}
-
-/**
- * Get the ABI restrictions for procedure calls.
- */
-static void ia32_get_call_abi(ir_type *method_type, be_abi_call_t *abi)
-{
-	be_abi_call_flags_t call_flags = be_abi_call_get_flags(abi);
-
-	/* set abi flags for calls */
-	/* call_flags.try_omit_fp                 not changed: can handle both settings */
-	call_flags.call_has_imm = false;  /* No call immediate, we handle this by ourselves */
-
-	/* set parameter passing style */
-	be_abi_call_set_flags(abi, call_flags, &ia32_abi_callbacks);
-
-	unsigned cc = get_method_calling_convention(method_type);
-	if (get_method_variadicity(method_type) == variadicity_variadic) {
-		/* pass all parameters of a variadic function on the stack */
-		cc = cc_cdecl_set | (cc & cc_this_call);
-	} else {
-		if (get_method_additional_properties(method_type) & mtp_property_private &&
-		    ia32_cg_config.optimize_cc) {
-			/* set the fast calling conventions (allowing up to 3) */
-			cc = SET_FASTCALL(cc) | 3;
-		}
-	}
-
-	/* we have to pop the shadow parameter ourself for compound calls */
-	unsigned pop_amount = 0;
-	if ( (get_method_calling_convention(method_type) & cc_compound_ret)
-			&& !(cc & cc_reg_param)) {
-		pop_amount += get_mode_size_bytes(mode_P);
-	}
-
-	for (unsigned i = 0, regnum = 0, n = get_method_n_params(method_type);
-	     i < n; i++) {
-		const arch_register_t *reg  = NULL;
-		ir_type               *tp   = get_method_param_type(method_type, i);
-		ir_mode               *mode = get_type_mode(tp);
-
-		if (mode != NULL) {
-			reg  = ia32_get_RegParam_reg(cc, regnum, mode);
-		}
-		if (reg != NULL) {
-			be_abi_call_param_reg(abi, i, reg, ABI_CONTEXT_BOTH);
-			++regnum;
-		} else {
-			/* Micro optimization: if the mode is shorter than 4 bytes,
-			 * load 4 bytes. movl has a shorter opcode than mov[sz][bw]l */
-			ir_mode *load_mode = mode;
-
-			if (mode != NULL) {
-				unsigned size = get_mode_size_bytes(mode);
-
-				if (cc & cc_callee_clear_stk) {
-					pop_amount += (size + 3U) & ~3U;
-				}
-
-				if (size < 4) load_mode = ia32_mode_gp;
-			}
-
-			be_abi_call_param_stack(abi, i, load_mode, 4, 0, 0, ABI_CONTEXT_BOTH);
-		}
-	}
-
-	be_abi_call_set_pop(abi, pop_amount);
-
-	/* set return registers */
-	unsigned n_res = get_method_n_ress(method_type);
-	if (n_res > 2)
-		panic("ia32: more than two results not supported");
-
-	/* In case of 64bit returns, we will have two 32bit values */
-	if (n_res == 2) {
-#ifndef NDEBUG
-		ir_type *tp   = get_method_res_type(method_type, 0);
-		ir_mode *mode = get_type_mode(tp);
-
-		assert(!mode_is_float(mode) && "two FP results not supported");
-
-		tp   = get_method_res_type(method_type, 1);
-		mode = get_type_mode(tp);
-
-		assert(!mode_is_float(mode) && "mixed INT, FP results not supported");
-#endif
-
-		be_abi_call_res_reg(abi, 0, &ia32_registers[REG_EAX], ABI_CONTEXT_BOTH);
-		be_abi_call_res_reg(abi, 1, &ia32_registers[REG_EDX], ABI_CONTEXT_BOTH);
-	} else if (n_res == 1) {
-		ir_type *tp   = get_method_res_type(method_type, 0);
-		ir_mode *mode = get_type_mode(tp);
-		const arch_register_t *reg;
-		assert(is_atomic_type(tp));
-
-		reg = mode_is_float(mode) ? &ia32_registers[REG_ST0] : &ia32_registers[REG_EAX];
-
-		be_abi_call_res_reg(abi, 0, reg, ABI_CONTEXT_BOTH);
-	}
 }
 
 static void ia32_mark_remat(ir_node *node)
@@ -1875,6 +1681,8 @@ static void ia32_lower_for_target(void)
 		/* lower for mode_b stuff */
 		ir_lower_mode_b(irg, ia32_mode_gp);
 		be_after_transform(irg, "lower-modeb");
+		lower_alloc(irg, IA32_REGISTER_SIZE, true, 0);
+		be_after_transform(irg, "lower-alloc");
 	}
 
 	foreach_irp_irg(i, irg) {
@@ -1892,45 +1700,6 @@ static void ia32_lower_for_target(void)
 static const backend_params *ia32_get_libfirm_params(void)
 {
 	return &ia32_backend_params;
-}
-
-/**
- * Check if the given register is callee or caller save.
- */
-static int ia32_register_saved_by(const arch_register_t *reg, int callee)
-{
-	switch (reg->global_index) {
-	case REG_EBX:
-	case REG_EBP:
-	case REG_ESI:
-	case REG_EDI:
-	case REG_FPCW:
-		return callee;
-
-	case REG_EAX:
-	case REG_ECX:
-	case REG_EDX:
-	case REG_ST0:
-	case REG_ST1:
-	case REG_ST2:
-	case REG_ST3:
-	case REG_ST4:
-	case REG_ST5:
-	case REG_ST6:
-	case REG_ST7:
-	case REG_XMM0:
-	case REG_XMM1:
-	case REG_XMM2:
-	case REG_XMM3:
-	case REG_XMM4:
-	case REG_XMM5:
-	case REG_XMM6:
-	case REG_XMM7:
-		return !callee;
-
-	default:
-		return 0;
-	}
 }
 
 static const lc_opt_enum_int_items_t gas_items[] = {
@@ -1961,11 +1730,9 @@ const arch_isa_if_t ia32_isa_if = {
 	.is_valid_clobber     = ia32_is_valid_clobber,
 	.begin_codegeneration = ia32_begin_codegeneration,
 	.end_codegeneration   = ia32_end_codegeneration,
-	.get_call_abi         = ia32_get_call_abi,
 	.mark_remat           = ia32_mark_remat,
 	.new_spill            = ia32_new_spill,
 	.new_reload           = ia32_new_reload,
-	.register_saved_by    = ia32_register_saved_by,
 	.prepare_graph        = ia32_prepare_graph,
 	.before_ra            = ia32_before_ra,
 	.emit                 = ia32_emit,

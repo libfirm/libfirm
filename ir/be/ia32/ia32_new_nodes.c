@@ -335,6 +335,20 @@ const ia32_switch_attr_t *get_ia32_switch_attr_const(const ir_node *node)
 	return switch_attr;
 }
 
+ia32_return_attr_t *get_ia32_return_attr(ir_node *node)
+{
+	ia32_attr_t        *attr        = get_ia32_attr(node);
+	ia32_return_attr_t *return_attr = CAST_IA32_ATTR(ia32_return_attr_t, attr);
+	return return_attr;
+}
+
+const ia32_return_attr_t *get_ia32_return_attr_const(const ir_node *node)
+{
+	const ia32_attr_t        *attr        = get_ia32_attr_const(node);
+	const ia32_return_attr_t *return_attr = CONST_CAST_IA32_ATTR(ia32_return_attr_t, attr);
+	return return_attr;
+}
+
 ia32_call_attr_t *get_ia32_call_attr(ir_node *node)
 {
 	ia32_attr_t      *attr      = get_ia32_attr(node);
@@ -874,6 +888,15 @@ static void init_ia32_switch_attributes(ir_node *node,
 	}
 }
 
+static void init_ia32_return_attributes(ir_node *node, uint16_t pop)
+{
+	ia32_return_attr_t *attr = (ia32_return_attr_t*)get_irn_generic_attr(node);
+#ifndef NDEBUG
+	attr->attr.attr_type |= IA32_ATTR_ia32_return_attr_t;
+#endif
+	attr->pop = pop;
+}
+
 static int ia32_attrs_equal_(const ia32_attr_t *a, const ia32_attr_t *b)
 {
 	/* nodes with not yet assigned entities shouldn't be CSEd (important for
@@ -981,6 +1004,14 @@ static int ia32_switch_attrs_equal(const ir_node *a, const ir_node *b)
 	return ia32_attrs_equal_(&attr_a->attr, &attr_b->attr)
 	    && attr_a->table == attr_b->table
 	    && attr_a->jump_table == attr_b->jump_table;
+}
+
+static int ia32_return_attrs_equal(const ir_node *a, const ir_node *b)
+{
+	const ia32_return_attr_t *attr_a = get_ia32_return_attr_const(a);
+	const ia32_return_attr_t *attr_b = get_ia32_return_attr_const(b);
+	return ia32_attrs_equal_(&attr_a->attr, &attr_b->attr)
+	    && attr_a->pop == attr_b->pop;
 }
 
 /* copies the ia32 attributes */
