@@ -529,7 +529,7 @@ static void introduce_epilogue(ir_node *ret)
 	ir_type               *frame_type = get_irg_frame_type(irg);
 	unsigned               frame_size = get_type_size_bytes(frame_type);
 	be_stack_layout_t     *layout     = be_get_irg_stack_layout(irg);
-	ir_node               *first_sp   = get_irn_n(ret, n_be_Return_sp);
+	ir_node               *first_sp   = get_irn_n(ret, n_amd64_Return_stack);
 	ir_node               *curr_sp    = first_sp;
 	ir_mode               *mode_gp    = mode_Lu;
 
@@ -553,7 +553,7 @@ static void introduce_epilogue(ir_node *ret)
 			curr_sp = incsp;
 		}
 	}
-	set_irn_n(ret, n_be_Return_sp, curr_sp);
+	set_irn_n(ret, n_amd64_Return_stack, curr_sp);
 
 	/* keep verifier happy... */
 	if (get_irn_n_edges(first_sp) == 0 && is_Proj(first_sp)) {
@@ -615,7 +615,7 @@ static void introduce_prologue_epilogue(ir_graph *irg)
 
 	/* introduce epilogue for every return node */
 	foreach_irn_in(get_irg_end_block(irg), i, ret) {
-		assert(be_is_Return(ret) || is_amd64_Return(ret));
+		assert(is_amd64_Return(ret));
 		introduce_epilogue(ret);
 	}
 }

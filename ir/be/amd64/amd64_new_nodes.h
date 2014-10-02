@@ -16,6 +16,14 @@
 #include "amd64_nodes_attr.h"
 #include "gen_amd64_new_nodes.h"
 
+enum {
+	pn_amd64_Call_mem       = 0,
+	pn_amd64_Call_first_res = 1,
+};
+enum {
+	n_amd64_Return_stack = 1,
+};
+
 static inline amd64_attr_t *get_amd64_attr(ir_node *node)
 {
 	assert(is_amd64_irn(node));
