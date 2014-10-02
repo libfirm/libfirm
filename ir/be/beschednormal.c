@@ -219,9 +219,9 @@ static int root_cmp(const void *a, const void *b)
 	const irn_cost_pair *const a1 = (const irn_cost_pair*)a;
 	const irn_cost_pair *const b1 = (const irn_cost_pair*)b;
 	int ret;
-	if (is_irn_forking(a1->irn) && !is_irn_forking(b1->irn)) {
+	if (is_cfop(a1->irn) && !is_cfop(b1->irn)) {
 		ret = 1;
-	} else if (is_irn_forking(b1->irn) && !is_irn_forking(a1->irn)) {
+	} else if (is_cfop(b1->irn) && !is_cfop(a1->irn)) {
 		ret = -1;
 	} else {
 		ret = (int)b1->cost - (int)a1->cost;
@@ -295,10 +295,8 @@ static void real_sched_block(ir_node *block, void *data)
 	 * anyway. */
 	for (int i = ARR_LEN(sched); i-- > 0; ) {
 		ir_node *irn = sched[i];
-		if (!is_cfop(irn)) {
-			set_irn_link(irn, first);
-			first = irn;
-		}
+		set_irn_link(irn, first);
+		first = irn;
 	}
 	/* note: we can free sched here, there should be no attempt to schedule
 	 * a block twice */

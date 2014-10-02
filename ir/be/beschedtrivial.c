@@ -20,20 +20,10 @@
 #include "irnodeset.h"
 
 /**
- * The trivial selector:
- * Just assure that branches are executed last, otherwise select
- * the first node ready.
+ * The trivial selector: select first node
  */
 static ir_node *trivial_select(ir_nodeset_t *ready_set)
 {
-	/* assure that branches and constants are executed last */
-	foreach_ir_nodeset(ready_set, irn, iter) {
-		if (!is_cfop(irn)) {
-			return irn;
-		}
-	}
-
-	/* at last: schedule branches */
 	return ir_nodeset_first(ready_set);
 }
 

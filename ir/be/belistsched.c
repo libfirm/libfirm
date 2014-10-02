@@ -42,6 +42,9 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 static ir_node     *current_block;
 static unsigned    *available;
+static ir_node     *ready_cfop;
+/** Set of ready nodes (nodes where all dependencies are already fulfilled).
+ * Does not contain cfops. */
 static ir_nodeset_t ready_set;
 
 /**
@@ -73,7 +76,13 @@ static void node_ready(ir_node *node)
 	} else {
 		/* all other nodes go into the ready set */
 		DB((dbg, LEVEL_2, "\tmaking ready: %+F\n", node));
-		ir_nodeset_insert(&ready_set, node);
+		if (is_cfop(node)) {
+			/* we must not have multiple cfops in a block */
+			assert(ready_cfop == NULL || ready_cfop == node);
+			ready_cfop = node;
+		} else {
+			ir_nodeset_insert(&ready_set, node);
+		}
 	}
 }
 
@@ -122,6 +131,15 @@ static void make_available(ir_node *node)
 	}
 }
 
+static void maybe_add_cfop(void)
+{
+	/* if we ran out of other nodes we can finally take the cfop */
+	if (ir_nodeset_size(&ready_set) == 0 && ready_cfop != NULL) {
+		ir_nodeset_insert(&ready_set, ready_cfop);
+		ready_cfop = NULL;
+	}
+}
+
 /**
  * Append an instruction to a schedule.
  * @param env The block scheduling environment.
@@ -141,6 +159,7 @@ void be_list_sched_schedule(ir_node *node)
 {
 	DB((dbg, LEVEL_1, "\tpicked %+F\n", node));
 	add_to_sched(node);
+	maybe_add_cfop();
 }
 
 ir_nodeset_t *be_list_sched_begin_block(ir_node *block)
@@ -150,6 +169,7 @@ ir_nodeset_t *be_list_sched_begin_block(ir_node *block)
 
 	sched_init_block(block);
 	ir_nodeset_init(&ready_set);
+	ready_cfop = NULL;
 	DB((dbg, LEVEL_1, "scheduling %+F\n", block));
 
 	/* fill ready set */
@@ -157,6 +177,7 @@ ir_nodeset_t *be_list_sched_begin_block(ir_node *block)
 		ir_node *node = get_edge_src_irn(edge);
 		try_make_ready(node);
 	}
+	maybe_add_cfop();
 
 	return &ready_set;
 }

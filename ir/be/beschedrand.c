@@ -22,36 +22,16 @@
  */
 static ir_node *random_select(ir_nodeset_t *ready_set)
 {
-	bool only_branches_left = true;
-
-	/* assure that branches and constants are executed last */
+	ir_node *rand_node = NULL;
+	/* take 1 random node */
+	int n = rand() % ir_nodeset_size(ready_set);
+	int i = 0;
 	foreach_ir_nodeset(ready_set, irn, iter) {
-		if (!is_cfop(irn)) {
-			only_branches_left = false;
+		rand_node = irn;
+		if (i == n)
 			break;
-		}
+		++i;
 	}
-
-	ir_node *rand_node;
-	if (only_branches_left) {
-		/* at last: schedule branches */
-		rand_node = ir_nodeset_first(ready_set);
-	} else {
-		rand_node = NULL;
-		do {
-			/* take 1 random node */
-			int n = rand() % ir_nodeset_size(ready_set);
-			int i = 0;
-			foreach_ir_nodeset(ready_set, irn, iter) {
-				rand_node = irn;
-				if (i == n) {
-					break;
-				}
-				++i;
-			}
-		} while (is_cfop(rand_node));
-	}
-
 	return rand_node;
 }
 
