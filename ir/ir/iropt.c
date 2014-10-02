@@ -4453,7 +4453,7 @@ static ir_node *transform_node_Not(ir_node *n)
 	if (is_And(a) || is_Or(a)) {
 		ir_node *left  = get_binop_left(a);
 		ir_node *right = get_binop_right(a);
-		if (is_Not(left)) {
+		if (is_Not(left) && only_one_user(a)) {
 			dbg_info *dbgi   = get_irn_dbg_info(n);
 			ir_node  *block  = get_nodes_block(n);
 			ir_node  *not_op = get_Not_op(left);
