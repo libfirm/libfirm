@@ -53,13 +53,6 @@ $mode_fp  = "mode_F";  # mode used by floatingpoint registers
 #        nodes having outs having automatically the mode mode_T
 #
 # comment: OPTIONAL comment for the node constructor
-#
-# register types:
-#   none    - no special type
-#   ignore  - ignore (do not assign this register)
-#   virtual - the register is a virtual one
-#   state   - register represents a state
-# NOTE: Last entry of each class is the largest Firm-Mode a register can hold
 %reg_classes = (
 	gp => [
 		{ name => "r0" },
@@ -76,8 +69,8 @@ $mode_fp  = "mode_F";  # mode used by floatingpoint registers
 		{ name => "r11" },
 		{ name => "r12" },
 		{ name => "r13" },
-		{ name => "sp", realname => "r14", type => "ignore" }, # stackpointer
-		{ name => "bp", realname => "r15", type => "ignore" }, # basepointer
+		{ name => "sp", realname => "r14" }, # stackpointer
+		{ name => "bp", realname => "r15" }, # basepointer
 		{ mode => $mode_gp }
 	],
 	fp => [

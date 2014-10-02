@@ -36,15 +36,10 @@ ENUM_BITSET(arch_register_class_flags_t)
 
 typedef enum arch_register_type_t {
 	arch_register_type_none    = 0,
-	/** Do not consider this register when allocating. */
-	arch_register_type_ignore  = 1U << 0,
 	/** This is just a virtual register. Virtual registers fulfill any register
 	 * constraints as long as the register class matches. It is a allowed to
 	 * have multiple definitions for the same virtual register at a point */
-	arch_register_type_virtual = 1U << 1,
-	/** The register represents a state that should be handled by bestate
-	 * code */
-	arch_register_type_state   = 1U << 2,
+	arch_register_type_virtual = 1U << 0,
 } arch_register_type_t;
 ENUM_BITSET(arch_register_type_t)
 

@@ -28,8 +28,8 @@ $mode_fpcw          = "ia32_mode_fpcw";
 		{ name => "esi", encoding => 6, dwarf => 6 },
 		{ name => "edi", encoding => 7, dwarf => 7 },
 		{ name => "ebp", encoding => 5, dwarf => 5 },
-		{ name => "esp", encoding => 4, dwarf => 4, type => "ignore" },
-		{ name => "gp_NOREG", type => "ignore | virtual" }, # we need a dummy register for NoReg nodes
+		{ name => "esp", encoding => 4, dwarf => 4 },
+		{ name => "gp_NOREG", type => "virtual" }, # we need a dummy register for NoReg nodes
 		{ mode => $mode_gp }
 	],
 	xmm => [
@@ -41,7 +41,7 @@ $mode_fpcw          = "ia32_mode_fpcw";
 		{ name => "xmm5", dwarf => 26 },
 		{ name => "xmm6", dwarf => 27 },
 		{ name => "xmm7", dwarf => 28 },
-		{ name => "xmm_NOREG", type => "ignore | virtual" }, # we need a dummy register for NoReg nodes
+		{ name => "xmm_NOREG", type => "virtual" }, # we need a dummy register for NoReg nodes
 		{ mode => $mode_xmm }
 	],
 	fp => [
@@ -53,11 +53,11 @@ $mode_fpcw          = "ia32_mode_fpcw";
 		{ name => "st5", realname => "st(5)", encoding => 5, dwarf => 16 },
 		{ name => "st6", realname => "st(6)", encoding => 6, dwarf => 17 },
 		{ name => "st7", realname => "st(7)", encoding => 7, dwarf => 18 },
-		{ name => "fp_NOREG", type => "ignore | virtual" }, # we need a dummy register for NoReg nodes
+		{ name => "fp_NOREG", type => "virtual" }, # we need a dummy register for NoReg nodes
 		{ mode => $mode_fp87 }
 	],
 	fp_cw => [	# the floating point control word
-		{ name => "fpcw", dwarf => 37, type => "state" },
+		{ name => "fpcw", dwarf => 37 },
 		{ mode => $mode_fpcw, flags => "manual_ra" }
 	],
 	flags => [
