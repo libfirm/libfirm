@@ -4486,7 +4486,7 @@ static ir_node *transform_node_Not(ir_node *n)
 	}
 
 	/* normalize ~(a ^ b) => a ^ ~b */
-	if (is_Eor(a) || is_Or_Eor_Add(a)) {
+	if ((is_Eor(a) || is_Or_Eor_Add(a)) && only_one_user(a)) {
 		dbg_info *dbg       = get_irn_dbg_info(n);
 		ir_node  *block     = get_nodes_block(n);
 		ir_node  *eor_right = get_binop_right(a);
