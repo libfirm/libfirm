@@ -55,10 +55,11 @@ static ir_node *add_to_keep(ir_node *last_keep,
 	return last_keep;
 }
 
-void be_add_missing_keeps_node(ir_node *node)
+static void add_missing_keep_walker(ir_node *node, void *data)
 {
-	ir_mode  *mode = get_irn_mode(node);
-	ir_node  *last_keep;
+	(void)data;
+	ir_mode *mode = get_irn_mode(node);
+	ir_node *last_keep;
 
 	if (mode != mode_T) {
 		if (!has_real_user(node)) {
@@ -120,12 +121,6 @@ void be_add_missing_keeps_node(ir_node *node)
 			value = new_r_Proj(node, arch_register_class_mode(cls), i);
 		last_keep = add_to_keep(last_keep, cls, value);
 	}
-}
-
-static void add_missing_keep_walker(ir_node *node, void *data)
-{
-	(void)data;
-	be_add_missing_keeps_node(node);
 }
 
 void be_add_missing_keeps(ir_graph *irg)

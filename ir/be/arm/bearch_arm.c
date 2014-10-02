@@ -28,6 +28,7 @@
 #include "irtools.h"
 #include "util.h"
 
+#include "beabihelper.h"
 #include "bearch.h"
 #include "benode.h"
 #include "belower.h"
@@ -162,6 +163,8 @@ static void arm_emit(ir_graph *irg)
 static void arm_before_ra(ir_graph *irg)
 {
 	be_sched_fix_flags(irg, &arm_reg_classes[CLASS_arm_flags], NULL, NULL, NULL);
+
+	be_add_missing_keeps(irg);
 }
 
 static ir_entity *divsi3;

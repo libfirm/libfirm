@@ -174,7 +174,6 @@ static bool rematerialize_or_move(ir_node *flags_needed, ir_node *node,
 		move_other_uses(flags_needed, copy);
 		ir_mode *mode = flag_class->mode;
 		value = new_r_Proj(copy, mode, pn);
-		be_add_missing_keeps_node(copy);
 	} else {
 		value = copy;
 	}

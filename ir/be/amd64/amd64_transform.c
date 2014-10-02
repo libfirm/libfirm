@@ -2553,8 +2553,6 @@ void amd64_transform_graph(ir_graph *irg)
 	place_code(irg);
 
 	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
-
-	be_add_missing_keeps(irg);
 }
 
 void amd64_init_transform(void)

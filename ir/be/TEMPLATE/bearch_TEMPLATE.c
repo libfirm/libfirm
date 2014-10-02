@@ -19,6 +19,7 @@
 #include "debug.h"
 #include "panic.h"
 #include "be_t.h"
+#include "beabihelper.h"
 #include "bearch.h"
 #include "benode.h"
 #include "belower.h"
@@ -98,8 +99,7 @@ static void TEMPLATE_emit(ir_graph *irg)
 
 static void TEMPLATE_before_ra(ir_graph *irg)
 {
-	(void)irg;
-	/* Some stuff you need to do after scheduling but before register allocation */
+	be_add_missing_keeps(irg);
 }
 
 
