@@ -199,10 +199,11 @@ static const arch_register_req_t *rax_reg_reqs[] = {
 	&amd64_requirement_gp,
 };
 
-static const arch_register_req_t *rax_reg_rdx_reqs[] = {
+static const arch_register_req_t *rax_reg_rdx_mem_reqs[] = {
 	&amd64_requirement_rax,
 	&amd64_requirement_gp,
 	&amd64_requirement_rdx,
+	&arch_no_requirement,
 };
 
 static const arch_register_req_t *reg_reqs[] = {
@@ -684,17 +685,6 @@ static ir_node *gen_binop_am(ir_node *node, ir_node *op1, ir_node *op2,
 	}
 }
 
-/* Transform arguments for a binop using RAX and register as input */
-static void gen_binop_rax_reg(ir_node *op1, ir_node *op2, ir_node **in,
-                              int *arity, amd64_op_mode_t *op_mode,
-                              const arch_register_req_t ***reqs)
-{
-	in[(*arity)++] = be_transform_node(op1);
-	in[(*arity)++] = be_transform_node(op2);
-	*reqs          = rax_reg_reqs;
-	*op_mode       = AMD64_OP_RAX_REG;
-}
-
 static ir_node *gen_binop_rax(ir_node *node, ir_node *op1, ir_node *op2,
                               construct_rax_binop_func make_node,
                               match_flags_t flags)
@@ -752,7 +742,10 @@ static ir_node *gen_binop_rax(ir_node *node, ir_node *op1, ir_node *op2,
 		op_mode                 = AMD64_OP_RAX_ADDR;
 	} else {
 		/* simply transform the arguments */
-		gen_binop_rax_reg(op1, op2, in, &arity, &op_mode, &reqs);
+		in[arity++] = be_transform_node(op1);
+		in[arity++] = be_transform_node(op2);
+		reqs        = rax_reg_reqs;
+		op_mode     = AMD64_OP_RAX_REG;
 	}
 
 	assert((size_t)arity <= ARRAY_SIZE(in));
@@ -1004,7 +997,8 @@ static ir_node *gen_Shrs(ir_node *const node)
 }
 
 static ir_node *create_div(ir_node *const node, ir_mode *const mode,
-                           ir_node *const op1, ir_node *const op2)
+                           ir_node *const op1, ir_node *const op2,
+                           ir_node *const mem)
 {
 	dbg_info *const dbgi      = get_irn_dbg_info(node);
 	ir_node  *const block     = get_nodes_block(node);
@@ -1012,33 +1006,22 @@ static ir_node *create_div(ir_node *const node, ir_mode *const mode,
 	amd64_insn_mode_t insn_mode
 		= get_mode_size_bits(mode) > 32 ? INSN_MODE_64 : INSN_MODE_32;
 
-	ir_node *res;
-	ir_node *in[3];
-	int      arity = 0;
-	const arch_register_req_t **reqs;
-
-	amd64_op_mode_t op_mode;
-	amd64_addr_t    addr;
-	memset(&addr, 0, sizeof(addr));
-
-	gen_binop_rax_reg(op1, op2, in, &arity, &op_mode, &reqs);
-	reqs = rax_reg_rdx_reqs;
-
+	ir_node *new_op1 = be_transform_node(op1);
+	ir_node *new_op2 = be_transform_node(op2);
+	ir_node *new_mem = be_transform_node(mem);
+	ir_node *upper_value;
+	ir_node *(*constructor)(dbg_info*,ir_node*,int,ir_node**,amd64_insn_mode_t);
 	if (mode_is_signed(mode)) {
-		/* Sign extend RAX to RDX */
-		in[arity++] = create_sext(block, op1, mode);
-
-		res = new_bd_amd64_IDiv(dbgi, new_block, arity, in, insn_mode,
-                                op_mode, addr);
+		upper_value = create_sext(block, op1, mode);
+		constructor = new_bd_amd64_IDiv;
 	} else {
-		/* Zero extend to register RDX */
-		in[arity++] = create_zext(block, node);
-
-		res = new_bd_amd64_Div(dbgi, new_block, arity, in, insn_mode,
-                               op_mode, addr);
+		upper_value = create_zext(block, node);
+		constructor = new_bd_amd64_Div;
 	}
 
-	arch_set_irn_register_reqs_in(res, reqs);
+	ir_node *in[] = { new_op1, new_op2, upper_value, new_mem };
+	ir_node *res = constructor(dbgi, new_block, ARRAY_SIZE(in), in, insn_mode);
+	arch_set_irn_register_reqs_in(res, rax_reg_rdx_mem_reqs);
 	return res;
 }
 
@@ -1066,13 +1049,14 @@ static ir_node *create_sse_div(ir_node *const node, ir_mode *const mode,
 static ir_node *gen_Div(ir_node *const node)
 {
 	ir_mode *const mode = get_Div_resmode(node);
-	ir_node *const op1 = get_Div_left(node);
-	ir_node *const op2 = get_Div_right(node);
+	ir_node *const op1  = get_Div_left(node);
+	ir_node *const op2  = get_Div_right(node);
+	ir_node *const mem  = get_Div_mem(node);
 
 	if (mode_is_float(mode))
 		return create_sse_div(node, mode, op1, op2);
 	else
-		return create_div(node, mode, op1, op2);
+		return create_div(node, mode, op1, op2, mem);
 }
 
 static ir_node *gen_Proj_Div(ir_node *const node)
@@ -1109,8 +1093,9 @@ static ir_node *gen_Mod(ir_node *const node)
 	ir_mode *const mode = get_Mod_resmode(node);
 	ir_node *const op1  = get_Mod_left(node);
 	ir_node *const op2  = get_Mod_right(node);
+	ir_node *const mem  = get_Mod_mem(node);
 	assert(mode_needs_gp_reg(mode));
-	return create_div(node, mode, op1, op2);
+	return create_div(node, mode, op1, op2, mem);
 }
 
 static ir_node *gen_Proj_Mod(ir_node *const node)
