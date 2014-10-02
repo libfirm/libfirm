@@ -70,7 +70,7 @@ $mode_fpcw          = "ia32_mode_fpcw";
 	],
 	fp_cw => [	# the floating point control word
 		{ name => "fpcw", dwarf => 37, type => "state" },
-		{ mode => $mode_fpcw, flags => "manual_ra | state" }
+		{ mode => $mode_fpcw, flags => "manual_ra" }
 	],
 	flags => [
 		{ name => "eflags", dwarf => 9 },
