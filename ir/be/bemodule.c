@@ -24,7 +24,6 @@ struct be_module_list_entry_t {
 	struct be_module_list_entry_t *next; /**< Points to the next entry. */
 };
 
-void be_init_abi(void);
 void be_init_sched(void);
 void be_init_blocksched(void);
 void be_init_spill(void);
@@ -76,7 +75,6 @@ void be_init_modules(void)
 		return;
 	run_once = true;
 
-	be_init_abi();
 	be_init_loopana();
 	be_init_live();
 	be_init_spillslots();

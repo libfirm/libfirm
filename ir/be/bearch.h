@@ -419,13 +419,6 @@ struct arch_isa_if_t {
 	void (*end_codegeneration)(void *self);
 
 	/**
-	 * Get the ABI restrictions for procedure calls.
-	 * @param call_type   The call type of the method (procedure) in question.
-	 * @param p           The array of parameter locations to be filled.
-	 */
-	void (*get_call_abi)(ir_type *call_type, be_abi_call_t *abi);
-
-	/**
 	 * mark node as rematerialized
 	 */
 	void (*mark_remat)(ir_node *node);
@@ -449,12 +442,6 @@ struct arch_isa_if_t {
 	 */
 	ir_node *(*new_reload)(ir_node *value, ir_node *spilled_value,
 	                       ir_node *before);
-
-	/**
-	 * Checks if the given register is callee/caller saved.
-	 * @deprecated, only necessary if backend still uses beabi functions
-	 */
-	int (*register_saved_by)(const arch_register_t *reg, int callee);
 
 	/**
 	 * Called directly after initialization. Backend should handle all

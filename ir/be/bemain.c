@@ -46,7 +46,6 @@
 #include "beifg.h"
 #include "becopystat.h"
 #include "bessadestr.h"
-#include "beabi.h"
 #include "belower.h"
 #include "bestat.h"
 #include "beverify.h"

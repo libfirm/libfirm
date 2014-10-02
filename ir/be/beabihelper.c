@@ -376,3 +376,26 @@ void be_add_parameter_entity_stores(ir_graph *irg)
 		create_stores_for_type(irg, between_type);
 	}
 }
+
+unsigned be_get_n_allocatable_regs(const ir_graph *irg,
+                                   const arch_register_class_t *cls)
+{
+	unsigned *const bs = rbitset_alloca(cls->n_regs);
+	be_get_allocatable_regs(irg, cls, bs);
+	return rbitset_popcount(bs, cls->n_regs);
+}
+
+void be_get_allocatable_regs(ir_graph const *const irg,
+                             arch_register_class_t const *const cls,
+                             unsigned *const raw_bitset)
+{
+	be_irg_t *birg             = be_birg_from_irg(irg);
+	unsigned *allocatable_regs = birg->allocatable_regs;
+
+	rbitset_clear_all(raw_bitset, cls->n_regs);
+	for (unsigned i = 0; i < cls->n_regs; ++i) {
+		const arch_register_t *reg = &cls->regs[i];
+		if (rbitset_is_set(allocatable_regs, reg->global_index))
+			rbitset_set(raw_bitset, i);
+	}
+}

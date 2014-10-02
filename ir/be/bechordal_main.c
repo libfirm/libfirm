@@ -36,7 +36,6 @@
 #include "panic.h"
 
 #include "bechordal_t.h"
-#include "beabi.h"
 #include "beutil.h"
 #include "besched.h"
 #include "besched.h"

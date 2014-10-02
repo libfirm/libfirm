@@ -27,7 +27,6 @@
 #include "irtools.h"
 #include "lc_opts.h"
 #include "lc_opts_enum.h"
-#include "beabi.h"
 #include "bemodule.h"
 #include "beemitter.h"
 #include "dbginfo.h"

@@ -47,23 +47,15 @@ typedef enum arch_irn_flags_t {
 } arch_irn_flags_t;
 ENUM_BITSET(arch_irn_flags_t)
 
-typedef struct be_lv_t                  be_lv_t;
-typedef union  be_lv_info_t             be_lv_info_t;
-
-typedef struct be_abi_call_flags_bits_t be_abi_call_flags_bits_t;
-typedef struct be_abi_call_flags_t      be_abi_call_flags_t;
-typedef struct be_abi_callbacks_t       be_abi_callbacks_t;
-typedef struct be_abi_call_t            be_abi_call_t;
-typedef struct be_abi_irg_t             be_abi_irg_t;
-typedef struct be_stack_layout_t        be_stack_layout_t;
-
-typedef struct backend_info_t           backend_info_t;
-typedef struct sched_info_t             sched_info_t;
-typedef struct reg_out_info_t           reg_out_info_t;
-typedef struct be_ifg_t                 be_ifg_t;
-typedef struct copy_opt_t               copy_opt_t;
-
-typedef struct be_main_env_t be_main_env_t;
-typedef struct be_options_t  be_options_t;
+typedef struct be_lv_t           be_lv_t;
+typedef union  be_lv_info_t      be_lv_info_t;
+typedef struct be_stack_layout_t be_stack_layout_t;
+typedef struct backend_info_t    backend_info_t;
+typedef struct sched_info_t      sched_info_t;
+typedef struct reg_out_info_t    reg_out_info_t;
+typedef struct be_ifg_t          be_ifg_t;
+typedef struct copy_opt_t        copy_opt_t;
+typedef struct be_main_env_t     be_main_env_t;
+typedef struct be_options_t      be_options_t;
 
 #endif

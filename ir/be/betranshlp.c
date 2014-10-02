@@ -23,8 +23,8 @@
 #include "debug.h"
 #include "execfreq_t.h"
 
+#include "bearch.h"
 #include "beirg.h"
-#include "beabi.h"
 #include "betranshlp.h"
 #include "belive.h"
 #include "benode.h"
