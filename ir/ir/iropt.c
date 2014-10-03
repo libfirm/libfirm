@@ -2457,6 +2457,9 @@ static ir_node *transform_bitwise_distributive(ir_node *n)
 	if (op != get_irn_op(b))
 		return n;
 
+	if (!only_one_user(a) && !only_one_user(b))
+		return n;
+
 	/* and(conv(a), conv(b)) -> conv(and(a,b)) */
 	if (op == op_Conv) {
 		ir_node       *a_op   = get_Conv_op(a);
