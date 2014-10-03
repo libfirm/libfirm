@@ -144,7 +144,7 @@ ia32_cconv_t *ia32_decide_calling_convention(ir_type *function_type,
 	for (unsigned i = 0; i < n_params; ++i) {
 		ir_type            *param_type = get_method_param_type(function_type, i);
 		reg_or_stackslot_t *param      = &params[i];
-		if (is_compound_type(param_type)) {
+		if (is_aggregate_type(param_type)) {
 			param->type   = param_type;
 			param->offset = stack_offset;
 			stack_offset += get_type_size_bytes(param_type);
