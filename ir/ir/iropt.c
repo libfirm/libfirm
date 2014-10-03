@@ -2841,7 +2841,8 @@ static ir_node *transform_node_Eor_(ir_node *n)
 	HANDLE_BINOP_CHOICE((eval_func) tarval_eor, a, b, c, mode);
 
 	/* normalize not nodes... ~a ^ b <=> a ^ ~b */
-	if (is_Not(a) && operands_are_normalized(get_Not_op(a), b)) {
+	if (is_Not(a) && only_one_user(a) &&
+	    operands_are_normalized(get_Not_op(a), b)) {
 		dbg_info *dbg      = get_irn_dbg_info(n);
 		ir_node  *block    = get_nodes_block(n);
 		ir_node  *new_not  = new_rd_Not(dbg, block, b, mode);
@@ -2849,7 +2850,8 @@ static ir_node *transform_node_Eor_(ir_node *n)
 		n = new_rd_Eor(dbg, block, new_left, new_not, mode);
 		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_EOR_TO_NOT);
 		return n;
-	} else if (is_Not(b) && !operands_are_normalized(a, get_Not_op(b))) {
+	} else if (is_Not(b) && only_one_user(b) &&
+	           !operands_are_normalized(a, get_Not_op(b))) {
 		dbg_info *dbg       = get_irn_dbg_info(n);
 		ir_node  *block     = get_nodes_block(n);
 		ir_node  *new_not   = new_rd_Not(dbg, block, a, mode);
