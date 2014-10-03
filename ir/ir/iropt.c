@@ -2672,7 +2672,7 @@ static ir_node *transform_node_Or_(ir_node *n)
 		return n;
 
 	ir_mode *mode = get_irn_mode(n);
-	if (is_Not(a) && is_Not(b)) {
+	if (is_Not(a) && is_Not(b) && (only_one_user(a) || only_one_user(b))) {
 		/* ~a | ~b = ~(a&b) */
 		ir_node *block = get_nodes_block(n);
 
@@ -4377,7 +4377,7 @@ absorb:;
 			return n;
 		}
 	}
-	if (is_Not(a) && is_Not(b)) {
+	if (is_Not(a) && is_Not(b) && (only_one_user(a) || only_one_user(b))) {
 		/* ~a & ~b = ~(a|b) */
 		ir_node *block = get_nodes_block(n);
 		ir_mode *mode = get_irn_mode(n);
@@ -4468,7 +4468,7 @@ static ir_node *transform_node_Not(ir_node *n)
 			DBG_OPT_ALGSIM0(oldn, n, FS_OPT_DEMORGAN);
 			return n;
 		}
-		if (is_Not(right)) {
+		if (is_Not(right) && only_one_user(a)) {
 			dbg_info *dbgi   = get_irn_dbg_info(n);
 			ir_node  *block  = get_nodes_block(n);
 			ir_node  *not_op = get_Not_op(right);
