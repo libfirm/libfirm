@@ -2917,7 +2917,7 @@ static ir_node *transform_node_Eor_(ir_node *n)
 		}
 	}
 
-	if (is_And(a)) {
+	if (is_And(a) && only_one_user(a)) {
 		ir_node *const o = get_commutative_other_op(a, b);
 		if (o) {
 			/* (x & y) ^ y => ~x & y */
@@ -2927,7 +2927,7 @@ static ir_node *transform_node_Eor_(ir_node *n)
 			return new_rd_And(dbgi, block, not, b, mode);
 		}
 	}
-	if (is_And(b)) {
+	if (is_And(b) && only_one_user(b)) {
 		ir_node *const o = get_commutative_other_op(b, a);
 		if (o) {
 			/* x ^ (x & y) => x & ~y */
@@ -2938,7 +2938,7 @@ static ir_node *transform_node_Eor_(ir_node *n)
 		}
 	}
 
-	if (is_Or(a)) {
+	if (is_Or(a) && only_one_user(a)) {
 		ir_node *const o = get_commutative_other_op(a, b);
 		if (o) {
 			/* (x | y) ^ y => x & ~y */
@@ -2948,7 +2948,7 @@ static ir_node *transform_node_Eor_(ir_node *n)
 			return new_rd_And(dbgi, block, o, not, mode);
 		}
 	}
-	if (is_Or(b)) {
+	if (is_Or(b) && only_one_user(b)) {
 		ir_node *const o = get_commutative_other_op(b, a);
 		if (o) {
 			/* x ^ (x | y) => ~x & y */
