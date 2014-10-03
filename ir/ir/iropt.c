@@ -3284,7 +3284,7 @@ restart:
 	}
 
 	/* (-a) - b -> -(a + b) */
-	if (is_Minus(a)) {
+	if (is_Minus(a) && only_one_user(a)) {
 		dbg_info *dbg   = get_irn_dbg_info(n);
 		ir_node  *block = get_nodes_block(n);
 		ir_node  *left  = get_Minus_op(a);
