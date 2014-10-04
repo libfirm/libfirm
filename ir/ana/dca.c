@@ -42,21 +42,22 @@ static void care_for(ir_node *irn, ir_tarval *care)
 		care = tarval_b_true;
 
 	/* Assume worst case if modes don't match and care has bits set. */
-	ir_mode *mode = get_tarval_mode(get_irn_link(irn));
+	ir_tarval *old_care = (ir_tarval *)get_irn_link(irn);
+	ir_mode   *mode     = get_tarval_mode(old_care);
 	if (mode != get_tarval_mode(care))
 		care = tarval_is_null(care) ? get_mode_null(mode)
 		                            : get_mode_all_one(mode);
 
 	if (mode_is_int(mode))
-		care = tarval_or(care, get_irn_link(irn));
+		care = tarval_or(care, old_care);
 
-	if (care != get_irn_link(irn)) {
-		DBG((dbg, LEVEL_3, "queueing %+F: %T->%T\n", irn, get_irn_link(irn), care));
-		assert(get_irn_link(irn) != tarval_b_true || care == tarval_b_true);
+	if (care != old_care) {
+		DBG((dbg, LEVEL_3, "queueing %+F: %T->%T\n", irn, old_care, care));
+		assert(old_care != tarval_b_true || care == tarval_b_true);
 		set_irn_link(irn, (void *)care);
 		pdeq_putr(worklist, irn);
 	} else {
-		DBG((dbg, LEVEL_3, "no change on %+F: %T\n", irn, get_irn_link(irn), care));
+		DBG((dbg, LEVEL_3, "no change on %+F: %T\n", irn, old_care, care));
 	}
 }
 
