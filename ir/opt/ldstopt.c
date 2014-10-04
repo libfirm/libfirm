@@ -403,8 +403,8 @@ static ir_node *transform_previous_value(ir_mode *const load_mode,
 		}
 
 		return new_r_Conv(block, new_value, load_mode);
-	} else if(prev_arithmetic != load_arithmetic
-	          && load_mode_len == prev_mode_len) {
+	} else if (prev_arithmetic != load_arithmetic
+	           && load_mode_len == prev_mode_len) {
 		return new_r_Bitcast(block, prev_value, load_mode);
 	}
 
