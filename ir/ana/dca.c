@@ -48,7 +48,7 @@ static void care_for(ir_node *irn, ir_tarval *care)
 		care = tarval_is_null(care) ? get_mode_null(mode)
 		                            : get_mode_all_one(mode);
 
-	if (mode_is_int(mode))
+	if (mode_is_int(mode) || mode == mode_b)
 		care = tarval_or(care, old_care);
 
 	if (care != old_care) {
