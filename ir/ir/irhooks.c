@@ -29,18 +29,11 @@ void register_hook(hook_type_t hook, hook_entry_t *entry)
 
 void unregister_hook(hook_type_t hook, hook_entry_t *entry)
 {
-	if (hooks[hook] == entry) {
-		hooks[hook] = entry->next;
-		entry->next = NULL;
-		return;
-	}
-
-	hook_entry_t *p;
-	for (p = hooks[hook]; p && p->next != entry; p = p->next) {
-	}
-
-	if (p != NULL) {
-		p->next     = entry->next;
-		entry->next = NULL;
+	for (hook_entry_t **p = &hooks[hook]; *p; p = &(*p)->next) {
+		if (*p == entry) {
+			*p          = entry->next;
+			entry->next = NULL;
+			break;
+		}
 	}
 }
