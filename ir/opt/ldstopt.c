@@ -360,38 +360,62 @@ static void get_base_and_offset(ir_node *ptr, base_offset_t *base_offset)
 }
 
 /**
+ * Checks whether the memory of the first access
+ * is contained within the second one.
+ */
+static bool is_contained_in(
+	ir_mode *const load_mode, const base_offset_t *const load_bo,
+	ir_mode *const prev_mode, const base_offset_t *const prev_bo)
+{
+	if (load_bo->base != prev_bo->base)
+		return false;
+
+	/* ensure the load value is completely contained in the previous one */
+	long delta = load_bo->offset - prev_bo->offset;
+	if (delta < 0)
+		return false;
+	long load_mode_len = get_mode_size_bytes(load_mode);
+	long prev_mode_len = get_mode_size_bytes(prev_mode);
+	if (delta+load_mode_len > prev_mode_len)
+		return false;
+
+	/* simple case: previous value has the same mode */
+	if (load_mode == prev_mode)
+		return true;
+
+	ir_mode_arithmetic prev_arithmetic = get_mode_arithmetic(prev_mode);
+	ir_mode_arithmetic load_arithmetic = get_mode_arithmetic(load_mode);
+	return (prev_arithmetic == irma_twos_complement &&
+	        load_arithmetic == irma_twos_complement)
+	       || (prev_arithmetic != load_arithmetic
+	           && load_mode_len == prev_mode_len);
+}
+
+
+/**
  * This is called for load-after-load and load-after-store.
  * If possible the value of the previous load/store is transformed in a way
  * so the 2nd load can be left out/replaced by arithmetic on the previous
  * value.
  */
 static ir_node *transform_previous_value(ir_mode *const load_mode,
-	const base_offset_t *const load_bo, ir_mode *const prev_mode,
-	const base_offset_t *const prev_bo, ir_node *const prev_value,
+	const long load_offset, ir_mode *const prev_mode,
+	const long prev_offset, ir_node *const prev_value,
 	ir_node *const block)
 {
-	if (load_bo->base != prev_bo->base)
-		return NULL;
-
-	/* ensure the load value is completely contained in the previous one */
-	long delta = load_bo->offset - prev_bo->offset;
-	if (delta < 0)
-		return NULL;
-	long load_mode_len = get_mode_size_bytes(load_mode);
-	long prev_mode_len = get_mode_size_bytes(prev_mode);
-	if (delta+load_mode_len > prev_mode_len)
-		return NULL;
-
 	/* simple case: previous value has the same mode */
 	if (load_mode == prev_mode)
 		return prev_value;
 
 	/* two complement values can be transformed with bitops */
+	long               load_mode_len   = get_mode_size_bytes(load_mode);
+	long               prev_mode_len   = get_mode_size_bytes(prev_mode);
 	ir_mode_arithmetic prev_arithmetic = get_mode_arithmetic(prev_mode);
 	ir_mode_arithmetic load_arithmetic = get_mode_arithmetic(load_mode);
 	if (prev_arithmetic == irma_twos_complement &&
-		load_arithmetic == irma_twos_complement) {
+	    load_arithmetic == irma_twos_complement) {
 		/* produce a shift to adjust offset delta */
+		long           delta = load_offset - prev_offset;
 		unsigned const shift = be_get_backend_param()->byte_order_big_endian
 			? prev_mode_len - load_mode_len - delta
 			: delta;
@@ -403,13 +427,10 @@ static ir_node *transform_previous_value(ir_mode *const load_mode,
 		}
 
 		return new_r_Conv(block, new_value, load_mode);
-	} else if (prev_arithmetic != load_arithmetic
-	           && load_mode_len == prev_mode_len) {
+	} else {
+		assert(prev_arithmetic != load_arithmetic && load_mode_len == prev_mode_len);
 		return new_r_Bitcast(block, prev_value, load_mode);
 	}
-
-	/* we would need some kind of bitcast to handle non two complement values */
-	return NULL;
 }
 
 static changes_t replace_load(ir_node *load, ir_node *new_value)
@@ -458,23 +479,25 @@ static changes_t try_load_after_store(track_load_env_t *env, ir_node *store)
 		return NO_CHANGES;
 
 	ir_node      *store_ptr = get_Store_ptr(store);
-	base_offset_t base_offset;
-	get_base_and_offset(store_ptr, &base_offset);
+	base_offset_t prev_base_offset;
+	get_base_and_offset(store_ptr, &prev_base_offset);
+	ir_mode       *const load_mode   = get_Load_mode(load);
+	ir_mode       *const store_mode  = get_irn_mode(get_Store_value(store));
+	base_offset_t *const base_offset = &env->base_offset;
 
-	ir_mode *const load_mode   = get_Load_mode(load);
-	ir_mode *const store_mode  = get_irn_mode(get_Store_value(store));
-	ir_node *const store_value = get_Store_value(store);
-	ir_node *const block       = get_nodes_block(load);
+	/* load value completely contained in previous store? */
+	if (is_contained_in(load_mode, base_offset, store_mode, &prev_base_offset)) {
+		ir_node *const store_value = get_Store_value(store);
+		ir_node *const block       = get_nodes_block(load);
+		ir_node *const new_value
+			= transform_previous_value(load_mode, base_offset->offset, store_mode,
+			                           prev_base_offset.offset, store_value, block);
+		DBG_OPT_RAW(load, new_value);
+		return replace_load(load, new_value);
+	}
 
-	/* load value completely contained in previsou store? */
-	ir_node *const new_value
-		= transform_previous_value(load_mode, &env->base_offset, store_mode,
-		                           &base_offset, store_value, block);
-	if (new_value == NULL)
-		return NO_CHANGES;
+	return NO_CHANGES;
 
-	DBG_OPT_RAW(load, new_value);
-	return replace_load(load, new_value);
 }
 
 static changes_t try_load_after_load(track_load_env_t *env, ir_node *prev_load)
@@ -490,21 +513,24 @@ static changes_t try_load_after_load(track_load_env_t *env, ir_node *prev_load)
 		return NO_CHANGES;
 
 	ir_node *const prev_ptr = get_Load_ptr(prev_load);
-	base_offset_t base_offset;
-	get_base_and_offset(prev_ptr, &base_offset);
-	ir_mode *const load_mode = get_Load_mode(load);
-	ir_mode *const prev_mode = get_Load_mode(prev_load);
-	ir_node *const block     = get_nodes_block(load);
+	base_offset_t prev_base_offset;
+	get_base_and_offset(prev_ptr, &prev_base_offset);
+	ir_mode       *const load_mode   = get_Load_mode(load);
+	ir_mode       *const prev_mode   = get_Load_mode(prev_load);
+	base_offset_t *const base_offset = &env->base_offset;
 
 	/* load value completely contained in previous load? */
-	ir_node *const new_value
-		= transform_previous_value(load_mode, &env->base_offset, prev_mode,
-		                           &base_offset, prev_value, block);
-	if (new_value == NULL)
-		return NO_CHANGES;
+	if (is_contained_in(load_mode, base_offset, prev_mode, &prev_base_offset)) {
+		ir_node *const block     = get_nodes_block(load);
+		ir_node *const new_value
+			= transform_previous_value(load_mode, base_offset->offset, prev_mode,
+			                           prev_base_offset.offset, prev_value, block);
+		DBG_OPT_RAR(prev_load, load);
+		return replace_load(load, new_value);
+	}
 
-	DBG_OPT_RAR(prev_load, load);
-	return replace_load(load, new_value);
+	return NO_CHANGES;
+
 }
 
 static bool try_update_ptr_CopyB(track_load_env_t *env, ir_node *copyb)
