@@ -828,8 +828,8 @@ static ir_node *create_Lea_as_Add(ir_node *node, ir_node *op1, ir_node *op2)
 	} else {
 		in[arity++]      = be_transform_node(op1);
 		in[arity++]      = be_transform_node(op2);
-		addr.index_input = 0;
-		addr.base_input  = 1;
+		addr.base_input  = 0;
+		addr.index_input = 1;
 		reqs             = reg_reg_reqs;
 	}
 
