@@ -1078,9 +1078,8 @@ static void lower_Proj(ir_node *node, ir_mode *op_mode)
 static bool is_equality_cmp(const ir_node *node)
 {
 	ir_relation relation = get_Cmp_relation(node);
-	ir_node    *left     = get_Cmp_left(node);
 	ir_node    *right    = get_Cmp_right(node);
-	ir_mode    *mode     = get_irn_mode(left);
+	ir_mode    *mode     = get_irn_mode(right);
 
 	/* this probably makes no sense if unordered is involved */
 	assert(!mode_is_float(mode));
@@ -1088,13 +1087,11 @@ static bool is_equality_cmp(const ir_node *node)
 	if (relation == ir_relation_equal || relation == ir_relation_less_greater)
 		return true;
 
-	if (!is_Const(right) || !is_Const_null(right))
-		return false;
-	if (mode_is_signed(mode)) {
-		return relation == ir_relation_less_greater;
-	} else {
+	/* Unsigned x > 0 behaves like !=. */
+	if (is_Const(right) && is_Const_null(right) && !mode_is_signed(mode))
 		return relation == ir_relation_greater;
-	}
+
+	return false;
 }
 
 static ir_node *get_cfop_destination(const ir_node *cfop)
