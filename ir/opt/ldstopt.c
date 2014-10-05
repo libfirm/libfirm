@@ -506,8 +506,8 @@ static changes_t try_load_after_load(track_load_env_t *env, ir_node *prev_load)
 	if (!on_regular_path(load, prev_load))
 		return NO_CHANGES;
 
-	const ldst_info_t *info = (ldst_info_t*)get_irn_link(prev_load);
-	ir_node *const prev_value = info->projs[pn_Load_res];
+	ldst_info_t *const info       = (ldst_info_t*)get_irn_link(prev_load);
+	ir_node     *const prev_value = info->projs[pn_Load_res];
 	/* the other load is unused and will get removed later anyway */
 	if (prev_value == NULL)
 		return NO_CHANGES;
@@ -527,6 +527,35 @@ static changes_t try_load_after_load(track_load_env_t *env, ir_node *prev_load)
 			                           prev_base_offset.offset, prev_value, block);
 		DBG_OPT_RAR(prev_load, load);
 		return replace_load(load, new_value);
+	}
+
+	/* previous load value completely contained in current load? */
+	if (is_contained_in(prev_mode, &prev_base_offset, load_mode, base_offset)) {
+		ir_graph *const irg   = get_irn_irg(prev_load);
+		ir_node  *const block = get_nodes_block(prev_load);
+
+		/* Adapt pointer of previous load. */
+		const long        delta         = base_offset->offset - prev_base_offset.offset;
+		assert(delta <= 0);
+		ir_mode    *const ptr_mode      = get_irn_mode(prev_ptr);
+		ir_mode    *const ptr_mode_offs = get_reference_mode_unsigned_eq(ptr_mode);
+		ir_node    *const c             = new_r_Const_long(irg, ptr_mode_offs, delta);
+		ir_node    *const add           = new_r_Add(block, prev_ptr, c, ptr_mode);
+		set_Load_ptr(prev_load, add);
+
+		/* Change mode of previous load. */
+		set_Load_mode(prev_load, load_mode);
+		ir_node   *const original_proj = info->projs[pn_Load_res];
+		ir_node   *const result_proj   = new_r_Proj(prev_load, load_mode, pn_Load_res);
+		changes_t        changed       = replace_load(load, result_proj);
+		ir_node   *const new_prev_value
+			= transform_previous_value(prev_mode, prev_base_offset.offset, load_mode,
+			                           base_offset->offset, result_proj, block);
+		exchange(original_proj, new_prev_value);
+		info->projs[pn_Load_res] = result_proj;
+		changed |= DF_CHANGED;
+		DBG_OPT_RAR(prev_load, load);
+		return changed;
 	}
 
 	return NO_CHANGES;
