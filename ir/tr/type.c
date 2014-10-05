@@ -32,6 +32,7 @@
 #include <stddef.h>
 #include <stdbool.h>
 
+#include "irnode_t.h"
 #include "type_t.h"
 
 #include "xmalloc.h"
@@ -962,7 +963,7 @@ unsigned get_array_size_int(const ir_type *array)
 {
 	assert(is_Array_type(array));
 	ir_node *node = array->attr.aa.size;
-	return get_tarval_long(get_Const_tarval(node));
+	return get_Const_long(node);
 }
 
 void set_array_element_type(ir_type *array, ir_type *tp)

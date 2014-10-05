@@ -319,7 +319,7 @@ static void get_base_and_offset(ir_node *ptr, base_offset_t *base_offset)
 			if (get_irn_mode(l) != mode || !is_Const(r))
 				break;
 
-			offset += get_tarval_long(get_Const_tarval(r));
+			offset += get_Const_long(r);
 			ptr     = l;
 		} else if (is_Sub(ptr)) {
 			ir_node *l = get_Sub_left(ptr);
@@ -328,7 +328,7 @@ static void get_base_and_offset(ir_node *ptr, base_offset_t *base_offset)
 			if (get_irn_mode(l) != mode || !is_Const(r))
 				break;
 
-			offset -= get_tarval_long(get_Const_tarval(r));
+			offset -= get_Const_long(r);
 			ptr     = l;
 		} else if (is_Sel(ptr)) {
 			ir_node *index = get_Sel_index(ptr);
@@ -342,7 +342,7 @@ static void get_base_and_offset(ir_node *ptr, base_offset_t *base_offset)
 
 			/* TODO: may overflow here */
 			int size = get_type_size_bytes(element_type);
-			offset += size * get_tarval_long(get_Const_tarval(index));
+			offset += size * get_Const_long(index);
 			ptr = get_Sel_ptr(ptr);
 		} else if (is_Member(ptr)) {
 			ir_entity *entity = get_Member_entity(ptr);

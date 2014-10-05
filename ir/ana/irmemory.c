@@ -428,10 +428,8 @@ check_classes:;
 			ir_entity *entity2 = get_Member_entity(base2);
 			return entity1 != entity2 ? ir_no_alias : ir_may_alias;
 		} else if (class1 == ir_sc_globaladdr) {
-			ir_tarval *tv = get_Const_tarval(base1);
-			offset1      += get_tarval_long(tv);
-			tv            = get_Const_tarval(base2);
-			offset2      += get_tarval_long(tv);
+			offset1 += get_Const_long(base1);
+			offset2 += get_Const_long(base2);
 
 			unsigned type_size = MAX(size1, size2);
 			if ((unsigned long)labs(offset2 - offset1) >= type_size)

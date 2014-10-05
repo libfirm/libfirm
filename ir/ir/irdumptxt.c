@@ -709,7 +709,7 @@ void dump_type_to_file(FILE *const F, const ir_type *const tp)
 			fprintf(F, "[");
 			const ir_node *size = get_array_size(tp);
 			if (is_Const(size)) {
-				fprintf(F, "%ld", get_tarval_long(get_Const_tarval(size)));
+				fprintf(F, "%ld", get_Const_long(size));
 			} else {
 				dump_node_opcode(F, size);
 				fprintf(F, " %ld", get_irn_node_nr(size));

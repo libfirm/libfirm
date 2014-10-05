@@ -859,7 +859,7 @@ static ir_node *gen_shift_binop(ir_node *node, ir_node *op1, ir_node *op2,
 		attr.base.op_mode = AMD64_OP_SHIFT_IMM;
 		reqs              = reg_reqs;
 		out_req0          = &amd64_requirement_gp_same_0;
-		attr.immediate    = get_tarval_long(get_Const_tarval(op2));
+		attr.immediate    = get_Const_long(op2);
 	} else {
 		attr.base.op_mode = AMD64_OP_SHIFT_REG;
 		in[arity++]       = be_transform_node(op2);

@@ -307,7 +307,7 @@ static bool try_encode_as_immediate(const ir_node *node, arm_immediate_t *res)
 	if (!is_Const(node))
 		return false;
 
-	uint32_t val = get_tarval_long(get_Const_tarval(node));
+	uint32_t val = get_Const_long(node);
 
 	if (val == 0) {
 		res->imm_8 = 0;
@@ -1031,9 +1031,7 @@ static ir_node *make_shift(ir_node *node, match_flags_t flags,
 
 	ir_node *new_op1 = be_transform_node(op1);
 	if (is_Const(op2)) {
-		ir_tarval   *tv  = get_Const_tarval(op2);
-		unsigned int val = get_tarval_long(tv);
-		assert(tarval_is_long(tv));
+		unsigned int const val = get_Const_long(op2);
 		if (can_use_shift_constant(val, shift_modifier)) {
 			switch (shift_modifier) {
 			case ARM_SHF_LSL_REG: shift_modifier = ARM_SHF_LSL_IMM; break;

@@ -612,7 +612,7 @@ static void write_type_array(write_env_t *env, ir_type *tp)
 	write_type_ref(env, element_type);
 	ir_node *size = get_array_size(tp);
 	if (is_Const(size))
-		write_long(env, get_tarval_long(get_Const_tarval(size)));
+		write_long(env, get_Const_long(size));
 	else if (is_Unknown(size))
 		write_symbol(env, "unknown");
 	else

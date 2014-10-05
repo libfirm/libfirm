@@ -428,8 +428,7 @@ static bool shr_upper_bits_clean(const ir_node *node, ir_mode *mode)
 	} else {
 		const ir_node *right = get_Shr_right(node);
 		if (is_Const(right)) {
-			ir_tarval *tv  = get_Const_tarval(right);
-			long       val = get_tarval_long(tv);
+			long const val = get_Const_long(right);
 			if (val >= 32 - (long)get_mode_size_bits(mode))
 				return true;
 		}
@@ -444,8 +443,7 @@ static bool shrs_upper_bits_clean(const ir_node *node, ir_mode *mode)
 
 static bool const_upper_bits_clean(const ir_node *node, ir_mode *mode)
 {
-	ir_tarval *tv  = get_Const_tarval(node);
-	long       val = get_tarval_long(tv);
+	long const val = get_Const_long(node);
 	if (mode_is_signed(mode)) {
 		long    shifted = val >> (get_mode_size_bits(mode)-1);
 		return shifted == 0 || shifted == -1;

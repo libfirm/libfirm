@@ -115,8 +115,7 @@ static void eat_immediate(x86_address_t *addr, ir_node *node, bool negate)
 	switch (get_irn_opcode(node)) {
 	case iro_Const: {
 		/* simply add the value to the offset */
-		ir_tarval *tv  = get_Const_tarval(node);
-		long       val = get_tarval_long(tv);
+		long const val = get_Const_long(node);
 		if (negate) {
 			addr->offset -= val;
 		} else {

@@ -1332,13 +1332,9 @@ static ir_node *gen_64bit_shifts(dbg_info *dbgi, ir_node *block,
 static bool is_complementary_shifts(ir_node *value1, ir_node *value2)
 {
 	if (is_Const(value1) && is_Const(value2)) {
-		ir_tarval *tv1 = get_Const_tarval(value1);
-		ir_tarval *tv2 = get_Const_tarval(value2);
-		if (tarval_is_long(tv1) && tarval_is_long(tv2)) {
-			long v1 = get_tarval_long(tv1);
-			long v2 = get_tarval_long(tv2);
-			return v1 <= v2 && v2 == 32-v1;
-		}
+		long const v1 = get_Const_long(value1);
+		long const v2 = get_Const_long(value2);
+		return v1 <= v2 && v2 == 32 - v1;
 	}
 	return false;
 }
@@ -1582,9 +1578,7 @@ static ir_node *gen_And(ir_node *node)
 
 	/* is it a zero extension? */
 	if (is_Const(op2)) {
-		ir_tarval *tv = get_Const_tarval(op2);
-		long       v  = get_tarval_long(tv);
-
+		long const v = get_Const_long(op2);
 		if (v == 0xFF || v == 0xFFFF) {
 			ir_mode *src_mode;
 			if (v == 0xFF) {
@@ -1905,8 +1899,7 @@ static ir_node *gen_Shrs(ir_node *node)
 	ir_node *right = get_Shrs_right(node);
 
 	if (is_Const(right)) {
-		ir_tarval *tv  = get_Const_tarval(right);
-		long       val = get_tarval_long(tv);
+		long const val = get_Const_long(right);
 		if (val == 31 && get_irn_n_edges(left) > 1) {
 			/* this is a sign extension */
 			dbg_info *dbgi   = get_irn_dbg_info(node);
@@ -5169,8 +5162,7 @@ static ir_node *gen_return_address(ir_node *node)
 	ir_node      *block = be_transform_node(get_nodes_block(node));
 	ir_graph     *irg   = get_irn_irg(node);
 	ir_node      *ptr   = get_irg_frame(irg);
-	ir_tarval    *tv    = get_Const_tarval(param);
-	unsigned long value = get_tarval_long(tv);
+	unsigned long value = get_Const_long(param);
 	if (value > 0) {
 		ir_node *const cfr = new_bd_ia32_ClimbFrame(dbgi, block, ptr, value);
 		ptr = new_r_Proj(cfr, ia32_mode_gp, pn_ia32_ClimbFrame_res);
@@ -5205,11 +5197,10 @@ static ir_node *gen_frame_address(ir_node *node)
 {
 	ir_node      *param = get_Builtin_param(node, 0);
 	dbg_info     *dbgi  = get_irn_dbg_info(node);
-	ir_tarval    *tv    = get_Const_tarval(param);
 	ir_graph     *irg   = get_irn_irg(node);
 	ir_node      *block = be_transform_node(get_nodes_block(node));
 	ir_node      *ptr   = get_irg_frame(irg);
-	unsigned long value = get_tarval_long(tv);
+	unsigned long value = get_Const_long(param);
 	if (value > 0) {
 		ir_node *const cfr = new_bd_ia32_ClimbFrame(dbgi, block, ptr, value);
 		ptr = new_r_Proj(cfr, ia32_mode_gp, pn_ia32_ClimbFrame_res);
@@ -5253,9 +5244,8 @@ static ir_node *gen_prefetch(ir_node *node)
 		return be_transform_node(get_Builtin_mem(node));
 	}
 
-	ir_node   *param = get_Builtin_param(node, 1);
-	ir_tarval *tv    = get_Const_tarval(param);
-	long       rw    = get_tarval_long(tv);
+	ir_node *const param = get_Builtin_param(node, 1);
+	long     const rw    = get_Const_long(param);
 
 	/* construct load address */
 	ir_node      *ptr = get_Builtin_param(node, 0);
@@ -5273,9 +5263,8 @@ static ir_node *gen_prefetch(ir_node *node)
 		new_node = new_bd_ia32_PrefetchW(dbgi, block, base, idx, mem);
 	} else if (ia32_cg_config.use_sse_prefetch) {
 		/* note: rw == 1 is IGNORED in that case */
-		ir_node   *param    = get_Builtin_param(node, 2);
-		ir_tarval *tv       = get_Const_tarval(param);
-		long       locality = get_tarval_long(tv);
+		ir_node *const param    = get_Builtin_param(node, 2);
+		long     const locality = get_Const_long(param);
 
 		/* SSE style prefetch */
 		switch (locality) {

@@ -175,7 +175,7 @@ static bool is_imm_encodeable(const ir_node *node)
 	if (!is_Const(node))
 		return false;
 
-	long value = get_tarval_long(get_Const_tarval(node));
+	long const value = get_Const_long(node);
 	return sparc_is_value_imm_encodeable(value);
 }
 
@@ -495,7 +495,7 @@ static ir_node *gen_ASM(ir_node *node)
 		if (imm_type == 'I') {
 			if (is_imm_encodeable(pred)) {
 				operand->kind = ASM_OPERAND_IMMEDIATE;
-				operand->immediate_value = get_tarval_long(get_Const_tarval(pred));
+				operand->immediate_value = get_Const_long(pred);
 				continue;
 			}
 		} else if (imm_type == 'A') {
@@ -506,7 +506,7 @@ static ir_node *gen_ASM(ir_node *node)
 				continue;
 			} else if (is_Const(pred)) {
 				operand->kind = ASM_OPERAND_IMMEDIATE;
-				operand->immediate_value = get_tarval_long(get_Const_tarval(pred));
+				operand->immediate_value = get_Const_long(pred);
 				continue;
 			}
 		}
@@ -635,8 +635,8 @@ static ir_node *gen_helper_binop_args(ir_node *node,
 	assert(get_mode_size_bits(mode2) <= 32);
 
 	if (is_imm_encodeable(op2)) {
-		int32_t  immediate = get_tarval_long(get_Const_tarval(op2));
-		ir_node *new_op1   = gen_helper_binop_left(op1, dbgi, block, flags);
+		int32_t  const immediate = get_Const_long(op2);
+		ir_node *const new_op1   = gen_helper_binop_left(op1, dbgi, block, flags);
 		return new_imm(dbgi, block, new_op1, NULL, immediate);
 	}
 	ir_node *new_op2 = be_transform_node(op2);
@@ -645,7 +645,7 @@ static ir_node *gen_helper_binop_args(ir_node *node,
 	}
 
 	if ((flags & MATCH_COMMUTATIVE) && is_imm_encodeable(op1)) {
-		int32_t immediate = get_tarval_long(get_Const_tarval(op1));
+		int32_t const immediate = get_Const_long(op1);
 		return new_imm(dbgi, block, new_op2, NULL, immediate);
 	}
 
@@ -714,13 +714,13 @@ static ir_node *gen_helper_binopx(ir_node *node, match_flags_t match_flags,
 	assert(match_flags & MATCH_MODE_NEUTRAL);
 
 	if (is_imm_encodeable(op2)) {
-		int32_t  immediate = get_tarval_long(get_Const_tarval(op2));
-		ir_node *new_op1   = be_transform_node(op1);
+		int32_t  const immediate = get_Const_long(op2);
+		ir_node *const new_op1   = be_transform_node(op1);
 		return new_binopx_imm(dbgi, block, new_op1, new_flags, NULL, immediate);
 	}
 	ir_node *new_op2 = be_transform_node(op2);
 	if ((match_flags & MATCH_COMMUTATIVE) && is_imm_encodeable(op1)) {
-		int32_t immediate = get_tarval_long(get_Const_tarval(op1));
+		int32_t const immediate = get_Const_long(op1);
 		return new_binopx_imm(dbgi, block, new_op2, new_flags, NULL, immediate);
 	}
 	ir_node *new_op1 = be_transform_node(op1);
@@ -781,7 +781,7 @@ static void match_address(ir_node *ptr, address_t *address, bool use_ptr2)
 		ir_node *add_right = get_Add_right(base);
 		if (is_Const(add_right)) {
 			base    = get_Add_left(base);
-			offset += get_tarval_long(get_Const_tarval(add_right));
+			offset += get_Const_long(add_right);
 		}
 	}
 	/* Note that we don't match sub(x, Const) or chains of adds/subs
@@ -879,8 +879,7 @@ static ir_node *gen_Add(ir_node *node)
 			                           address.entity, address.offset);
 		}
 
-		ir_tarval *tv  = get_Const_tarval(right);
-		uint32_t   val = get_tarval_long(tv);
+		uint32_t const val = get_Const_long(right);
 		if (val == 0x1000) {
 			dbg_info *dbgi   = get_irn_dbg_info(node);
 			ir_node  *block  = be_transform_node(get_nodes_block(node));
@@ -1192,7 +1191,7 @@ static ir_node *gen_Div(ir_node *node)
 		ir_node *left_high = gen_sign_extension_value(left);
 
 		if (is_imm_encodeable(right)) {
-			int32_t immediate = get_tarval_long(get_Const_tarval(right));
+			int32_t const immediate = get_Const_long(right);
 			res = new_bd_sparc_SDiv_imm(dbgi, new_block, new_mem, left_high, left_low,
 			                            NULL, immediate);
 		} else {
@@ -1204,7 +1203,7 @@ static ir_node *gen_Div(ir_node *node)
 		ir_graph *irg       = get_irn_irg(node);
 		ir_node  *left_high = get_g0(irg);
 		if (is_imm_encodeable(right)) {
-			int32_t immediate = get_tarval_long(get_Const_tarval(right));
+			int32_t const immediate = get_Const_long(right);
 			res = new_bd_sparc_UDiv_imm(dbgi, new_block, new_mem, left_high, left_low,
 			                            NULL, immediate);
 		} else {
@@ -1258,8 +1257,7 @@ static ir_node *gen_helper_bitop(ir_node *node,
 		                             new_not_reg, new_not_imm);
 	}
 	if (is_Const(op2) && get_irn_n_edges(op2) == 1) {
-		ir_tarval *tv    = get_Const_tarval(op2);
-		long       value = get_tarval_long(tv);
+		long const value = get_Const_long(op2);
 		if (!sparc_is_value_imm_encodeable(value)) {
 			long notvalue = ~value;
 			if ((notvalue & 0x3ff) == 0) {
@@ -2223,9 +2221,7 @@ static ir_node *gen_Alloc(ir_node *node)
 
 	ir_node *subsp;
 	if (is_Const(size)) {
-		ir_tarval *tv    = get_Const_tarval(size);
-		long       sizel = get_tarval_long(tv);
-
+		long const sizel = get_Const_long(size);
 		assert((sizel & (SPARC_STACK_ALIGNMENT - 1)) == 0 && "Found Alloc with misaligned constant");
 		subsp = new_bd_sparc_SubSP_imm(dbgi, new_block, stack_pred, new_mem, NULL, sizel);
 	} else {

@@ -359,6 +359,11 @@ static inline int Block_block_visited_(const ir_node *node)
 	return node->attr.block.block_visited >= get_irg_block_visited(node->irg);
 }
 
+static inline long get_Const_long(ir_node const *const node)
+{
+	return get_tarval_long(get_Const_tarval_(node));
+}
+
 static inline int is_Const_null_(const ir_node *node)
 {
 	return tarval_is_null(get_Const_tarval_(node));

@@ -162,9 +162,8 @@ static void link_ops_in_block_walker(ir_node *node, void *data)
 		break;
 	case iro_Builtin:
 		if (get_Builtin_kind(node) == ir_bk_return_address) {
-			ir_node   *param = get_Builtin_param(node, 0);
-			ir_tarval *tv    = get_Const_tarval(param); /* must be Const */
-			long       value = get_tarval_long(tv);
+			ir_node *const param = get_Builtin_param(node, 0);
+			long     const value = get_Const_long(param); /* must be Const */
 			if (value > 0) {
 				/* not the return address of the current function:
 				 * we need the stack pointer for the frame climbing */
