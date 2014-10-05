@@ -34,28 +34,28 @@
    in the in array */
 #define END_KEEPALIVE_OFFSET  0
 
-static const char *relation_names [] = {
-	"false",
-	"equal",
-	"less",
-	"less_equal",
-	"greater",
-	"greater_equal",
-	"less_greater",
-	"less_equal_greater",
-	"unordered",
-	"unordered_equal",
-	"unordered_less",
-	"unordered_less_equal",
-	"unordered_greater",
-	"unordered_greater_equal",
-	"not_equal",
-	"true"
-};
-
 const char *get_relation_string(ir_relation relation)
 {
-	assert(relation < (ir_relation)ARRAY_SIZE(relation_names));
+	static char const *const relation_names[] = {
+		"false",
+		"equal",
+		"less",
+		"less_equal",
+		"greater",
+		"greater_equal",
+		"less_greater",
+		"less_equal_greater",
+		"unordered",
+		"unordered_equal",
+		"unordered_less",
+		"unordered_less_equal",
+		"unordered_greater",
+		"unordered_greater_equal",
+		"not_equal",
+		"true"
+	};
+
+	assert((size_t)relation < ARRAY_SIZE(relation_names));
 	return relation_names[relation];
 }
 
