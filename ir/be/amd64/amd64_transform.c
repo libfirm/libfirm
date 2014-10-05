@@ -1823,9 +1823,7 @@ static ir_node *get_flags_node(ir_node *cmp, x86_condition_code_t *cc_out)
 	if (!(relation & ir_relation_equal) && relation & ir_relation_less_greater)
 		relation |= get_negated_relation(ir_get_possible_cmp_relations(l, r)) & ir_relation_less_greater;
 
-	bool overflow_possible = true;
-	if (is_Const(r) && is_Const_null(r))
-		overflow_possible = false;
+	bool const overflow_possible = !is_Const(r) || !is_Const_null(r);
 
 	/* just do a normal transformation of the Cmp */
 	*cc_out = ir_relation_to_x86_condition_code(relation, mode,
