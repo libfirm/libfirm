@@ -5128,6 +5128,38 @@ is_bittest: {
 		}
 	}
 
+	if (((is_Shr(left) && is_Shr(right)) || (is_Shrs(left) && is_Shrs(right))) &&
+	    get_mode_arithmetic(mode) == irma_twos_complement) {
+		ir_node *const lr = get_binop_right(left);
+		ir_node *const rr = get_binop_right(right);
+		if (lr == rr && is_Const(lr)) {
+			bitinfo *const bl = get_bitinfo(left);
+			bitinfo *const br = get_bitinfo(right);
+			if (bl != NULL && br != NULL) {
+				ir_tarval *const lz  = bl->z;
+				ir_tarval *const lo  = bl->o;
+				ir_tarval *const rz  = br->z;
+				ir_tarval *const ro  = br->o;
+				ir_tarval *const min = get_mode_min(mode);
+				ir_tarval *const leq = tarval_eor(lz, lo);
+				ir_tarval *const req = tarval_eor(rz, ro);
+				if (tarval_is_null(tarval_and(tarval_or(leq, req), min))) {
+					ir_tarval *const c     = get_Const_tarval(lr);
+					ir_tarval *const one   = get_mode_one(mode);
+					ir_tarval *const mask  = tarval_sub(tarval_shl(one, c), one, NULL);
+					ir_tarval *const lmask = tarval_and(leq, mask);
+					ir_tarval *const rmask = tarval_and(req, mask);
+					if (tarval_is_null(tarval_or(lmask, rmask)) &&
+					    tarval_is_null(tarval_eor(lz, rz))) {
+						/* Cmp(x >> c, y >> c) -> Cmp(x,y) */
+						left  = get_binop_left(left);
+						right = get_binop_left(right);
+					}
+				}
+			}
+		}
+	}
+
 	/* replace mode_b compares with ands/ors */
 	if (!irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_MODEB_LOWERED) && mode == mode_b) {
 		ir_node  *block = get_nodes_block(n);
