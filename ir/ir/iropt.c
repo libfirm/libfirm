@@ -5740,7 +5740,7 @@ static ir_node *transform_node_Phi(ir_node *phi)
 }
 
 /**
- * Optimize (a >> c1) >> c2), works for Shr, Shrs, Shl.
+ * Optimize (a >> c1) >> c2, works for Shr, Shrs, Shl.
  *
  * Should be moved to reassociation?
  */
