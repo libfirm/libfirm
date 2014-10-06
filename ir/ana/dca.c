@@ -137,6 +137,34 @@ static void dca_transfer(ir_node *irn)
 
 	if (mode_is_int(mode) || mode==mode_b) {
 		switch (get_irn_opcode(irn)) {
+		case iro_Cmp: {
+			ir_node *const left  = get_Cmp_left(irn);
+			ir_node *const right = get_Cmp_right(irn);
+			bitinfo *const bl    = get_bitinfo(left);
+			bitinfo *const br    = get_bitinfo(right);
+			if (bl != NULL && br != NULL) {
+				/* If we know that one bit of the operands differ
+				 * all less significant bits are irrelevant. */
+				assert(get_mode_arithmetic(get_irn_mode(left)) == irma_twos_complement);
+				ir_tarval *const diff = tarval_or(tarval_andnot(bl->z, br->o),
+				                                  tarval_andnot(br->z, bl->o));
+				if (!tarval_is_null(diff)) {
+					/* Create mask with msb and more significant bits. */
+					ir_mode        *const cmp_mode     = get_irn_mode(left);
+					const unsigned        bits         = get_mode_size_bits(cmp_mode);
+					unsigned              shift_amount = 1;
+					const int             highest_bit  = get_tarval_highest_bit(diff);
+					ir_tarval      *      care         = tarval_shl_unsigned(get_mode_one(mode), highest_bit);
+					for (int msb = bits - 1 - highest_bit; msb != 0; msb /= 2) {
+						care          = tarval_or(care, tarval_shl_unsigned(care, shift_amount));
+						shift_amount *= 2;
+					}
+					care_for(left, care);
+					care_for(right, care);
+				}
+			}
+			break;
+		}
 		case iro_Conv: {
 			ir_node *pred = get_Conv_op(irn);
 			ir_mode *pred_mode = get_irn_mode(pred);
