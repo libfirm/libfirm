@@ -542,11 +542,6 @@ static int verify_node_Raise(const ir_node *n)
 	return fine;
 }
 
-static int mode_is_datab(const ir_mode *mode)
-{
-	return mode_is_data(mode) || mode == mode_b;
-}
-
 static int verify_node_Address(const ir_node *n)
 {
 	ir_entity *ent  = get_Address_entity(n);
@@ -560,7 +555,7 @@ static int verify_node_Address(const ir_node *n)
 
 static int verify_node_Const(const ir_node *n)
 {
-	bool     fine    = check_mode_func(n, mode_is_datab, "data or b");
+	bool     fine    = check_mode_func(n, mode_is_data, "data");
 	ir_mode *mode    = get_irn_mode(n);
 	ir_mode *tv_mode = get_tarval_mode(get_Const_tarval(n));
 	if (fine && tv_mode != mode) {
@@ -792,8 +787,8 @@ static int verify_node_Not(const ir_node *n)
 static int verify_node_Cmp(const ir_node *n)
 {
 	bool fine = check_mode(n, mode_b);
-	fine &= check_input_func(n, n_Cmp_left, "left", mode_is_datab, "datab");
-	fine &= check_input_func(n, n_Cmp_right, "right", mode_is_datab, "datab");
+	fine &= check_input_func(n, n_Cmp_left, "left", mode_is_data, "data");
+	fine &= check_input_func(n, n_Cmp_right, "right", mode_is_data, "data");
 	ir_mode *model = get_irn_mode(get_Cmp_left(n));
 	ir_mode *moder = get_irn_mode(get_Cmp_right(n));
 	if (model != moder) {
@@ -859,7 +854,7 @@ static int verify_node_Bitcast(const ir_node *n)
 
 static int mode_is_dataMb(const ir_mode *mode)
 {
-	return mode_is_data(mode) || mode == mode_M || mode == mode_b;
+	return mode_is_data(mode) || mode == mode_M;
 }
 
 static int verify_node_Phi(const ir_node *n)
@@ -954,7 +949,7 @@ static int verify_node_Confirm(const ir_node *n)
 
 static int verify_node_Mux(const ir_node *n)
 {
-	bool fine = check_mode_func(n, mode_is_datab, "data or mode_b");
+	bool fine = check_mode_func(n, mode_is_data, "data");
 	fine &= check_input_mode(n, n_Mux_sel, "sel", mode_b);
 	fine &= check_mode_same_input(n, n_Mux_true, "true");
 	fine &= check_mode_same_input(n, n_Mux_false, "false");

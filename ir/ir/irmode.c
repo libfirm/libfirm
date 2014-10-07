@@ -265,21 +265,19 @@ ir_tarval *get_mode_max(const ir_mode *mode)
 
 ir_tarval *get_mode_null(const ir_mode *mode)
 {
-	assert(mode_is_data(mode) || mode == mode_b);
-
+	assert(mode_is_data(mode));
 	return mode->null;
 }
 
 ir_tarval *get_mode_one(const ir_mode *mode)
 {
-	assert(mode_is_data(mode) || mode == mode_b);
-
+	assert(mode_is_data(mode));
 	return mode->one;
 }
 
 ir_tarval *get_mode_all_one(const ir_mode *mode)
 {
-	assert(mode_is_data(mode) || mode == mode_b);
+	assert(mode_is_data(mode));
 	return mode->all_one;
 }
 
