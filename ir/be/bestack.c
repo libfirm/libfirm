@@ -107,12 +107,13 @@ static int process_stack_bias(ir_node *bl, int real_bias)
 		/* If the node modifies the stack pointer by a constant offset,
 		 * record that in the bias. */
 		if (be_is_IncSP(irn)) {
-			int ofs = be_get_IncSP_offset(irn);
+			int      ofs   = be_get_IncSP_offset(irn);
+			unsigned align = be_get_IncSP_align(irn);
 			/* fill in real stack frame size */
-			if (be_get_IncSP_align(irn)) {
+			if (align > 0) {
 				/* patch IncSP to produce an aligned stack pointer */
 				int const between_size = get_type_size_bytes(layout->between_type);
-				int const alignment    = 1 << arch_env->stack_alignment;
+				int const alignment    = 1 << align;
 				int const delta        = (real_bias + ofs + between_size) & (alignment - 1);
 				assert(ofs >= 0);
 				if (delta > 0) {

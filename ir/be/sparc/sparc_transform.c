@@ -2081,7 +2081,8 @@ static ir_node *gen_Call(ir_node *node)
 	/* construct an IncSP -> we have to always be sure that the stack is
 	 * aligned even if we don't push arguments on it */
 	ir_node *incsp = be_new_IncSP(sp_reg, new_block, new_frame,
-	                              cconv->param_stack_size, 1);
+	                              cconv->param_stack_size,
+	                              SPARC_PO2_STACK_ALIGNMENT);
 	in_req[in_arity] = sp_reg->single_req;
 	in[in_arity]     = incsp;
 	++in_arity;

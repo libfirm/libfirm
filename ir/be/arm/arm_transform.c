@@ -38,6 +38,8 @@
 
 #include <limits.h>
 
+#define ARM_PO2_STACK_ALIGNMENT 3
+
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 typedef struct start_val_t {
@@ -1967,7 +1969,8 @@ static ir_node *gen_Call(ir_node *node)
 	 * Note that we always need an IncSP to ensure stack alignment */
 	ir_node *new_frame = get_stack_pointer_for(node);
 	ir_node *incsp     = be_new_IncSP(sp_reg, new_block, new_frame,
-	                                  cconv->param_stack_size, 1);
+	                                  cconv->param_stack_size,
+	                                  ARM_PO2_STACK_ALIGNMENT);
 	int sp_pos = in_arity++;
 	in_req[sp_pos] = sp_reg->single_req;
 	in[sp_pos]     = incsp;

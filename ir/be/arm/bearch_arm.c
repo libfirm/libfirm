@@ -253,7 +253,6 @@ static arm_isa_t arm_isa_template = {
 		.register_classes   = arm_reg_classes,
 		.sp                 = &arm_registers[REG_SP],
 		.bp                 = &arm_registers[REG_R11],
-		.stack_alignment    = 3, /* power of two alignment */
 		.spill_cost         = 7,
 		.reload_cost        = 5,
 	},

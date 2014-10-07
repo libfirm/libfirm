@@ -484,7 +484,6 @@ struct arch_env_t {
 	const arch_register_class_t *register_classes;
 	const arch_register_t *sp;              /**< The stack pointer register. */
 	const arch_register_t *bp;              /**< The base pointer register. */
-	unsigned               stack_alignment; /**< power of 2 stack alignment */
 	unsigned               spill_cost;      /**< cost for a be_Spill node */
 	unsigned               reload_cost;     /**< cost for a be_Reload node */
 };

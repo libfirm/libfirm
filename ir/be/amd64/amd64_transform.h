@@ -18,4 +18,7 @@ ir_node *amd64_new_reload(ir_node *value, ir_node *spill, ir_node *before);
 
 void amd64_transform_graph(ir_graph *irg);
 
+ir_node *amd64_new_IncSP(ir_node *block, ir_node *old_sp, int offset,
+                         unsigned align);
+
 #endif

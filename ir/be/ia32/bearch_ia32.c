@@ -1582,7 +1582,6 @@ static ia32_isa_t ia32_isa_template = {
 		.register_classes   = ia32_reg_classes,
 		.sp                 = &ia32_registers[REG_ESP],
 		.bp                 = &ia32_registers[REG_EBP],
-		.stack_alignment    = 2, /* power of two stack alignment */
 		.spill_cost         = 7,
 		.reload_cost        = 5,
 	},
@@ -1715,8 +1714,6 @@ static lc_opt_enum_int_var_t gas_var = {
 
 static const lc_opt_table_entry_t ia32_options[] = {
 	LC_OPT_ENT_ENUM_INT("gasmode", "set the GAS compatibility mode", &gas_var),
-	LC_OPT_ENT_INT ("stackalign", "set power of two stack alignment for calls",
-	                (int*)&ia32_isa_template.base.stack_alignment),
 	LC_OPT_ENT_BOOL("gprof",      "create gprof profiling code",                                    &gprof),
 	LC_OPT_ENT_BOOL("precise_float_spill", "Spill floatingpoint values precisely (the whole 80 bits)", &precise_x87_spills),
 	LC_OPT_LAST

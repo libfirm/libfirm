@@ -45,6 +45,7 @@ ir_node *ia32_skip_downconv(ir_node *node);
 /** Initialize the ia32 instruction selector. */
 void ia32_init_transform(void);
 
-ir_node *ia32_new_IncSP(ir_node *block, ir_node *old_sp, int offset, int align);
+ir_node *ia32_new_IncSP(ir_node *block, ir_node *old_sp, int offset,
+                        unsigned align);
 
 #endif

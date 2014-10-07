@@ -66,7 +66,6 @@ static sparc_isa_t sparc_isa_template = {
 		.register_classes   = sparc_reg_classes,
 		.sp                 = &sparc_registers[REG_SP],
 		.bp                 = &sparc_registers[REG_FRAME_POINTER],
-		.stack_alignment    = 3, /* power of two alignment */
 		.spill_cost         = 7,
 		.reload_cost        = 5,
 	},

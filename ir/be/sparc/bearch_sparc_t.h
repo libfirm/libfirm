@@ -53,7 +53,8 @@ extern ir_mode *sparc_mode_Q;
 #define SPARC_PARAMS_SPILL_OFFSET        68
 #define SPARC_SAVE_AREA_SIZE             64
 #define SPARC_N_PARAM_REGS                6
-#define SPARC_STACK_ALIGNMENT             8
+#define SPARC_PO2_STACK_ALIGNMENT         3
+#define SPARC_STACK_ALIGNMENT             (1<<SPARC_PO2_STACK_ALIGNMENT)
 #define SPARC_REGISTER_SIZE               4
 
 static inline bool sparc_is_value_imm_encodeable(int32_t value)

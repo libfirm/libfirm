@@ -5002,7 +5002,8 @@ static ir_node *gen_Call(ir_node *node)
 	if (callframe_size == 0) {
 		callframe = new_frame;
 	} else {
-		callframe = ia32_new_IncSP(block, new_frame, callframe_size, 0);
+		callframe = ia32_new_IncSP(block, new_frame, callframe_size,
+		                           ia32_cg_config.stack_alignment);
 	}
 
 	/* special case for PIC trampoline calls */
@@ -5747,7 +5748,8 @@ static ir_node *gen_Proj_Builtin(ir_node *proj)
 	panic("Builtin %s not implemented", get_builtin_kind_name(kind));
 }
 
-ir_node *ia32_new_IncSP(ir_node *block, ir_node *old_sp, int offset, int align)
+ir_node *ia32_new_IncSP(ir_node *block, ir_node *old_sp, int offset,
+                        unsigned align)
 {
 	ir_node *incsp = be_new_IncSP(&ia32_registers[REG_ESP], block, old_sp,
 	                              offset, align);

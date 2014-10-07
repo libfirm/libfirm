@@ -19,6 +19,8 @@ struct amd64_isa_t {
 	pmap       *constants; /**< A map of entities that store const tarvals */
 };
 
-#define AMD64_REGISTER_SIZE 8
+#define AMD64_REGISTER_SIZE   8
+/** power of two stack alignment on calls */
+#define AMD64_PO2_STACK_ALIGNMENT 4
 
 #endif

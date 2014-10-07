@@ -547,8 +547,8 @@ static void introduce_epilogue(ir_node *ret)
 		set_irn_n(ret, n_rbp, curr_bp);
 	} else {
 		if (frame_size > 0) {
-			ir_node *incsp = be_new_IncSP(sp, block, curr_sp,
-			                              - (int) frame_size, 0);
+			ir_node *incsp = amd64_new_IncSP(block, curr_sp,
+			                                 -(int)frame_size, 0);
 			sched_add_before(ret, incsp);
 			curr_sp = incsp;
 		}
@@ -594,7 +594,7 @@ static void introduce_prologue_epilogue(ir_graph *irg)
 		be_set_constr_single_reg_out(curr_sp, 0,
 		                             sp, arch_register_req_type_produces_sp);
 
-		ir_node *incsp = be_new_IncSP(sp, block, curr_sp, frame_size, 0);
+		ir_node *incsp = amd64_new_IncSP(block, curr_sp, frame_size, 0);
 		sched_add_after(curr_sp, incsp);
 
 		/* make sure the initial IncSP is really used by someone */
@@ -607,8 +607,8 @@ static void introduce_prologue_epilogue(ir_graph *irg)
 		layout->initial_bias = -8;
 	} else {
 		if (frame_size > 0) {
-			ir_node *const incsp = be_new_IncSP(sp, block, initial_sp,
-			                                    frame_size, 0);
+			ir_node *const incsp = amd64_new_IncSP(block, initial_sp,
+			                                       frame_size, 0);
 			sched_add_after(start, incsp);
 		}
 	}
@@ -659,7 +659,6 @@ static amd64_isa_t amd64_isa_template = {
 		.register_classes   = amd64_reg_classes,
 		.sp                 = &amd64_registers[REG_RSP],
 		.bp                 = &amd64_registers[REG_RBP],
-		.stack_alignment    = 4, /* power of two stack alignment for calls */
 		.spill_cost         = 7,
 		.reload_cost        = 5,
 	},

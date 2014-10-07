@@ -60,7 +60,7 @@ typedef struct {
 	be_node_attr_t base;
 	int            offset; /**< The offset by which the stack shall be
 	                            expanded/shrinked. */
-	int            align;  /**< alignment after the IncSP (0=no alignment) */
+	unsigned       align;  /**< alignment after the IncSP (0=no alignment) */
 } be_incsp_attr_t;
 
 typedef struct {
@@ -279,7 +279,7 @@ void be_Keep_add_node(ir_node *keep, const arch_register_class_t *cls, ir_node *
 }
 
 ir_node *be_new_IncSP(const arch_register_t *sp, ir_node *bl,
-                      ir_node *old_sp, int offset, int align)
+                      ir_node *old_sp, int offset, unsigned align)
 {
 	ir_graph *irg = get_irn_irg(bl);
 	ir_node  *in[] = { old_sp };
@@ -474,7 +474,7 @@ int be_get_IncSP_offset(const ir_node *irn)
 	return a->offset;
 }
 
-int be_get_IncSP_align(const ir_node *irn)
+unsigned be_get_IncSP_align(const ir_node *irn)
 {
 	assert(be_is_IncSP(irn));
 	const be_incsp_attr_t *a = (const be_incsp_attr_t*)get_irn_generic_attr_const(irn);
@@ -655,7 +655,7 @@ static void dump_node(FILE *f, const ir_node *irn, dump_reason_t reason)
 		switch (get_be_irn_opcode(irn)) {
 		case beo_IncSP: {
 			const be_incsp_attr_t *a = (const be_incsp_attr_t*)get_irn_generic_attr_const(irn);
-			fprintf(f, "align: %d\n", a->align);
+			fprintf(f, "align: %u\n", a->align);
 			fprintf(f, "offset: %d\n", a->offset);
 			break;
 		}
