@@ -154,7 +154,7 @@ static void dca_transfer(ir_node *irn)
 					const unsigned        bits         = get_mode_size_bits(cmp_mode);
 					unsigned              shift_amount = 1;
 					const int             highest_bit  = get_tarval_highest_bit(diff);
-					ir_tarval      *      care         = tarval_shl_unsigned(get_mode_one(mode), highest_bit);
+					ir_tarval      *      care         = tarval_shl_unsigned(get_mode_one(cmp_mode), highest_bit);
 					for (int msb = bits - 1 - highest_bit; msb != 0; msb /= 2) {
 						care          = tarval_or(care, tarval_shl_unsigned(care, shift_amount));
 						shift_amount *= 2;
