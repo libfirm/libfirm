@@ -1127,6 +1127,19 @@ static int check_block_cfg(const ir_node *block, check_cfg_env_t *env)
 		fine = false;
 	}
 
+	if (!get_Block_matured(block)) {
+		warn(block, "imature block found");
+		fine = false;
+	}
+
+	ir_graph *irg = get_irn_irg(block);
+	if (get_Block_n_cfgpreds(block) == 0 && block != get_irg_start_block(irg)
+	    && block != get_irg_end_block(irg)) {
+		/* normal blocks must have at least 1 input (which may be a Bad node) */
+		warn(block, "normal block must have at least 1 input");
+		fine = false;
+	}
+
 	pmap *branch_nodes = env->branch_nodes;
 	for (int i = 0, n_cfgpreds = get_Block_n_cfgpreds(block);
 	     i < n_cfgpreds; ++i) {
