@@ -1134,13 +1134,15 @@ ir_tarval *tarval_eor(ir_tarval *a, ir_tarval *b)
 
 ir_tarval *tarval_shl(ir_tarval *a, ir_tarval *b)
 {
-	assert(mode_is_int(a->mode) && mode_is_int(b->mode));
+	ir_mode *a_mode = a->mode;
+	ir_mode *b_mode = b->mode;
+	assert(mode_is_int(a_mode) && mode_is_int(b_mode));
 
 	sc_word *temp_val;
-	if (get_mode_modulo_shift(a->mode) != 0) {
+	if (get_mode_modulo_shift(a_mode) != 0) {
 		temp_val = ALLOCAN(sc_word, sc_value_length);
 		sc_word *temp2 = ALLOCAN(sc_word, sc_value_length);
-		sc_val_from_ulong(get_mode_modulo_shift(a->mode), temp2);
+		sc_val_from_ulong(get_mode_modulo_shift(a_mode), temp2);
 		sc_mod(b->value, temp2, temp_val);
 	} else {
 		temp_val = (sc_word*)b->value;
@@ -1148,12 +1150,13 @@ ir_tarval *tarval_shl(ir_tarval *a, ir_tarval *b)
 
 	sc_word *temp = ALLOCAN(sc_word, sc_value_length);
 	sc_shl(a->value, temp_val, temp);
-	return get_tarval(temp, sc_value_length, a->mode);
+	return get_tarval(temp, sc_value_length, a_mode);
 }
 
 ir_tarval *tarval_shl_unsigned(ir_tarval *a, unsigned b)
 {
-	ir_mode *mode   = a->mode;
+	ir_mode *mode = a->mode;
+	assert(mode_is_int(mode));
 	unsigned modulo = get_mode_modulo_shift(mode);
 	if (modulo != 0)
 		b %= modulo;
@@ -1166,13 +1169,15 @@ ir_tarval *tarval_shl_unsigned(ir_tarval *a, unsigned b)
 
 ir_tarval *tarval_shr(ir_tarval *a, ir_tarval *b)
 {
-	assert(mode_is_int(a->mode) && mode_is_int(b->mode));
+	ir_mode *a_mode = a->mode;
+	ir_mode *b_mode = b->mode;
+	assert(mode_is_int(a_mode) && mode_is_int(b_mode));
 
 	sc_word *temp_val;
-	if (get_mode_modulo_shift(a->mode) != 0) {
+	if (get_mode_modulo_shift(a_mode) != 0) {
 		temp_val = ALLOCAN(sc_word, sc_value_length);
 		sc_word *temp2 = ALLOCAN(sc_word, sc_value_length);
-		sc_val_from_ulong(get_mode_modulo_shift(a->mode), temp2);
+		sc_val_from_ulong(get_mode_modulo_shift(a_mode), temp2);
 		sc_mod(b->value, temp2, temp_val);
 	} else {
 		temp_val = (sc_word*)b->value;
@@ -1181,14 +1186,15 @@ ir_tarval *tarval_shr(ir_tarval *a, ir_tarval *b)
 	sc_word *temp = ALLOCAN(sc_word, sc_value_length);
 	/* workaround for unnecessary internal higher precision */
 	memcpy(temp, a->value, sc_value_length);
-	sc_zero_extend(temp, get_mode_size_bits(a->mode));
+	sc_zero_extend(temp, get_mode_size_bits(a_mode));
 	sc_shr(temp, temp_val, temp);
-	return get_tarval(temp, sc_value_length, a->mode);
+	return get_tarval(temp, sc_value_length, a_mode);
 }
 
 ir_tarval *tarval_shr_unsigned(ir_tarval *a, unsigned b)
 {
-	ir_mode *mode   = a->mode;
+	ir_mode *mode = a->mode;
+	assert(mode_is_int(mode));
 	unsigned modulo = get_mode_modulo_shift(mode);
 	if (modulo != 0)
 		b %= modulo;
@@ -1204,13 +1210,15 @@ ir_tarval *tarval_shr_unsigned(ir_tarval *a, unsigned b)
 
 ir_tarval *tarval_shrs(ir_tarval *a, ir_tarval *b)
 {
-	assert(mode_is_int(a->mode) && mode_is_int(b->mode));
+	ir_mode *a_mode = a->mode;
+	ir_mode *b_mode = b->mode;
+	assert(mode_is_int(a_mode) && mode_is_int(b_mode));
 
 	sc_word *temp_val;
-	if (get_mode_modulo_shift(a->mode) != 0) {
+	if (get_mode_modulo_shift(a_mode) != 0) {
 		temp_val = ALLOCAN(sc_word, sc_value_length);
 		sc_word *temp2 = ALLOCAN(sc_word, sc_value_length);
-		sc_val_from_ulong(get_mode_modulo_shift(a->mode), temp2);
+		sc_val_from_ulong(get_mode_modulo_shift(a_mode), temp2);
 		sc_mod(b->value, temp2, temp_val);
 	} else {
 		temp_val = (sc_word*)b->value;
@@ -1223,7 +1231,8 @@ ir_tarval *tarval_shrs(ir_tarval *a, ir_tarval *b)
 
 ir_tarval *tarval_shrs_unsigned(ir_tarval *a, unsigned b)
 {
-	ir_mode *mode   = a->mode;
+	ir_mode *mode = a->mode;
+	assert(mode_is_int(mode));
 	unsigned modulo = get_mode_modulo_shift(mode);
 	if (modulo != 0)
 		b %= modulo;
