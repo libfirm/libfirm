@@ -46,22 +46,6 @@
 	((type*)memset(NEW_ARR_F(type, (nelts)), 0, sizeof(type) * (nelts)))
 
 /**
- * Creates a new flexible array with the same number of elements as a
- * given one.
- *
- * @param type     The element type of the new array.
- * @param arr      An array from which the number of elements will be taken
- *
- * This macro creates a flexible array of a given type at runtime.
- * The size of the array can be changed later.
- *
- * @return A pointer to the flexible array (can be used as a pointer to the
- *         first element of this array).
- */
-#define CLONE_ARR_F(type, arr) \
-  NEW_ARR_F(type, ARR_LEN((arr)))
-
-/**
  * Duplicates an array and returns the new flexible one.
  *
  * @param type     The element type of the new array.
@@ -74,7 +58,7 @@
  *         first element of this array).
  */
 #define DUP_ARR_F(type, arr) \
-  ((type*) memcpy(CLONE_ARR_F(type, (arr)), (arr), sizeof(type) * ARR_LEN((arr))))
+  ((type*)memcpy(NEW_ARR_F(type, ARR_LEN((arr))), (arr), sizeof(type) * ARR_LEN((arr))))
 
 /**
  * Delete a flexible array.
@@ -108,23 +92,6 @@
 	((type*)memset(NEW_ARR_D(type, (obstack), (nelts)), 0, sizeof(type) * (nelts)))
 
 /**
- * Creates a new dynamic array with the same number of elements as a
- * given one.
- *
- * @param type     The element type of the new array.
- * @param obstack  An struct obstack * were the data will be allocated
- * @param arr      An array from which the number of elements will be taken
- *
- * This macro creates a dynamic array of a given type at runtime.
- * The size of the array cannot be changed later.
- *
- * @return A pointer to the dynamic array (can be used as a pointer to the
- *         first element of this array).
- */
-#define CLONE_ARR_D(type, obstack, arr) \
-  NEW_ARR_D(type, (obstack), ARR_LEN((arr)))
-
-/**
  * Duplicates an array and returns the new dynamic one.
  *
  * @param type     The element type of the new array.
@@ -138,7 +105,7 @@
  *         first element of this array).
  */
 #define DUP_ARR_D(type, obstack, arr) \
-  ((type*)memcpy(CLONE_ARR_D(type, (obstack), (arr)), (arr), sizeof(type) * ARR_LEN ((arr))))
+  ((type*)memcpy(NEW_ARR_D(type, (obstack), ARR_LEN((arr))), (arr), sizeof(type) * ARR_LEN ((arr))))
 
 /**
  * Returns the length of an array
