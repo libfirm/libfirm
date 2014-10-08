@@ -493,7 +493,13 @@ static bool inline_method(ir_node *const call, ir_graph *called_graph)
 			n_ret++;
 		}
 	}
-	set_irn_in(post_bl, n_ret, cf_pred);
+	/* avoid blocks without any inputs */
+	if (n_ret == 0) {
+		ir_node *in[] = { new_r_Bad(irg, mode_X) };
+		set_irn_in(post_bl, ARRAY_SIZE(in), in);
+	} else {
+		set_irn_in(post_bl, n_ret, cf_pred);
+	}
 
 	/* build a Tuple for all results of the method.
 	 * add Phi node if there was more than one Return. */
@@ -515,7 +521,9 @@ static bool inline_method(ir_node *const call, ir_graph *called_graph)
 			cf_pred[n_mem_phi++] = new_r_Proj(ret, mode_M, 1);
 		}
 	}
-	ir_node *const call_mem = new_r_Phi(post_bl, n_mem_phi, cf_pred, mode_M);
+	ir_node *const call_mem =
+		arity > 0 ? new_r_Phi(post_bl, n_mem_phi, cf_pred, mode_M)
+		          : new_r_Bad(irg, mode_M);
 	/* Conserve Phi-list for further inlining -- but might be optimized */
 	if (get_nodes_block(call_mem) == post_bl) {
 		set_irn_link(call_mem, get_irn_link(post_bl));
