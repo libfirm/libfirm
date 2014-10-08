@@ -1477,12 +1477,11 @@ tarval_int_overflow_mode_t tarval_get_integer_overflow_mode(void)
 
 static ir_tarval *make_b_tarval(unsigned char const val)
 {
-	size_t     const length = 1;
-	ir_tarval *const tv     = XMALLOCF(ir_tarval, value, length);
+	ir_tarval *const tv = XMALLOCFZ(ir_tarval, value, sc_value_length);
 	tv->kind     = k_tarval;
-	tv->mode     = NULL;
-	tv->length   = length;
+	tv->length   = sc_value_length;
 	tv->value[0] = val;
+	/* mode will be set later */
 	return tv;
 }
 
