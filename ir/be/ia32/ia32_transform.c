@@ -4934,8 +4934,9 @@ static ir_node *gen_Call(ir_node *node)
 
 	/* construct arguments */
 	ir_node *callframe;
-	unsigned callframe_size = cconv->param_stack_size;
-	if (callframe_size == 0) {
+	unsigned stack_alignment = ia32_cg_config.stack_alignment;
+	unsigned callframe_size  = cconv->param_stack_size;
+	if (callframe_size == 0 && stack_alignment <= 1) {
 		callframe = new_frame;
 	} else {
 		callframe = ia32_new_IncSP(block, new_frame, callframe_size,
@@ -5083,12 +5084,12 @@ static ir_node *gen_Call(ir_node *node)
 	assert(o == n_out);
 
 	/* incsp to destroy callframe */
-	ir_node *new_stack        = new_r_Proj(call, ia32_mode_gp, spo);
-	unsigned param_stack_size = cconv->param_stack_size - cconv->sp_delta;
-	if (param_stack_size > 0) {
+	ir_node *new_stack   = new_r_Proj(call, ia32_mode_gp, spo);
+	unsigned reduce_size = callframe_size - cconv->sp_delta;
+	if (reduce_size > 0 || stack_alignment > 1) {
 		ir_node *new_block = be_transform_node(block);
 		ir_node *incsp     = ia32_new_IncSP(new_block, new_stack,
-		                                    -(int)param_stack_size, 0);
+		                                    -(int)reduce_size, 0);
 		keep_alive(incsp);
 		new_stack = incsp;
 	}
