@@ -90,6 +90,11 @@ void exchange(ir_node *old, ir_node *nw)
 
 static void collect_new_start_block_node_(ir_node *node)
 {
+	/* special handling for the Start node: it needs to be at the beginning
+	 * of the list of Projs, and in the start_block node list. Do not put it
+	 * into the start block node list. */
+	if (is_Start(node))
+		return;
 	/* misuse link field of End node to collect all start-block nodes */
 	ir_node *end = get_irg_end(get_irn_irg(node));
 	set_irn_link(node, get_irn_link(end));
@@ -98,8 +103,6 @@ static void collect_new_start_block_node_(ir_node *node)
 
 void collect_new_start_block_node(ir_node *node)
 {
-	if (is_Start(node))
-		return;
 	assert(is_irn_start_block_placed(node));
 	/* alreayd in list? */
 	if (get_irn_link(node) != NULL)
@@ -132,7 +135,7 @@ static void collect_nodes(ir_node *node, void *env)
 		assert(!is_irn_start_block_placed(pred) || is_Start(pred));
 		set_irn_link(node, get_irn_link(pred));
 		set_irn_link(pred, node);
-	} else if (is_irn_start_block_placed(node) && !is_Start(node)) {
+	} else if (is_irn_start_block_placed(node)) {
 		collect_new_start_block_node_(node);
 	}
 }
@@ -154,23 +157,28 @@ void collect_phiprojs_and_start_block_nodes(ir_graph *irg)
 	irg_walk_anchors(irg, init_links, collect_nodes, NULL);
 }
 
+static void move_node(ir_node *node, ir_node *to_bl)
+{
+	set_nodes_block(node, to_bl);
+	/* if no mode_T node, do not move Projs, not that BadT shouldn't have
+	 * any Projs as well and is part of the start_block list and therefore
+	 * doesn't have a valid Proj list */
+	if (get_irn_mode(node) != mode_T || is_Bad(node))
+		return;
+
+	for (ir_node *proj = (ir_node*)get_irn_link(node);
+	     proj != NULL; proj = (ir_node*)get_irn_link(proj)) {
+		set_nodes_block(proj, to_bl);
+	}
+}
+
 /**
  * Moves node and all predecessors of node from from_bl to to_bl.
  * Does not move predecessors of Phi nodes (or block nodes).
  */
 static void move(ir_node *node, ir_node *from_bl, ir_node *to_bl)
 {
-	/* move this node */
-	set_nodes_block(node, to_bl);
-
-	/* move its Projs */
-	if (get_irn_mode(node) == mode_T) {
-		for (ir_node *proj = (ir_node*)get_irn_link(node);
-		     proj != NULL; proj = (ir_node*)get_irn_link(proj)) {
-			if (get_nodes_block(proj) == from_bl)
-				set_nodes_block(proj, to_bl);
-		}
-	}
+	move_node(node, to_bl);
 
 	if (is_Phi(node))
 		return;
@@ -182,8 +190,9 @@ static void move(ir_node *node, ir_node *from_bl, ir_node *to_bl)
 	}
 }
 
-static void move_projs(const ir_node *node, ir_node *to_bl)
+static void move_node_edges(ir_node *node, ir_node *to_bl)
 {
+	set_nodes_block(node, to_bl);
 	if (get_irn_mode(node) != mode_T)
 		return;
 
@@ -191,8 +200,7 @@ static void move_projs(const ir_node *node, ir_node *to_bl)
 		ir_node *proj = get_edge_src_irn(edge);
 		if (!is_Proj(proj))
 			continue;
-		set_nodes_block(proj, to_bl);
-		move_projs(proj, to_bl);
+		move_node_edges(proj, to_bl);
 	}
 }
 
@@ -202,16 +210,11 @@ static void move_projs(const ir_node *node, ir_node *to_bl)
  */
 static void move_edges(ir_node *node, ir_node *from_bl, ir_node *to_bl)
 {
-	/* move this node */
-	set_nodes_block(node, to_bl);
-
-	/* move its Projs */
-	move_projs(node, to_bl);
+	move_node_edges(node, to_bl);
 
 	/* We must not move predecessors of Phi nodes, even if they are in
 	 * from_bl. (because these are values from an earlier loop iteration
-	 * which are not predecessors of node here)
-	 */
+	 * which are not predecessors of node here) */
 	if (is_Phi(node))
 		return;
 
@@ -230,8 +233,10 @@ static void update_startblock(ir_node *old_block, ir_node *new_block)
 	ir_node *end = get_irg_end(irg);
 	for (ir_node *cnst = get_irn_link(end); cnst != end;
 	     cnst = (ir_node*)get_irn_link(cnst)) {
-		set_nodes_block(cnst, new_block);
+		move_node(cnst, new_block);
 	}
+	ir_node *start = get_irg_start(irg);
+	move_node(start, new_block);
 }
 
 void part_block(ir_node *node)
@@ -287,7 +292,7 @@ ir_node *part_block_edges(ir_node *node)
 		ir_node *blnode = get_edge_src_irn(edge);
 		if (!is_Phi(blnode) && !is_irn_start_block_placed(blnode))
 			continue;
-		set_nodes_block(blnode, new_block);
+		move_node_edges(blnode, new_block);
 	}
 
 	if (old_block == get_irg_start_block(irg))

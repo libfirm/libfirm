@@ -685,29 +685,30 @@ static ir_node *create_conv(ir_node *block, ir_node *node, ir_mode *dest_mode)
 	return new_r_Conv(block, node, dest_mode);
 }
 
+static void move_node(ir_node *node, ir_node *to_bl)
+{
+	set_nodes_block(node, to_bl);
+	if (get_irn_mode(node) != mode_T)
+		return;
+	foreach_out_edge(node, edge) {
+		ir_node *proj = get_edge_src_irn(edge);
+		if (!is_Proj(proj))
+			continue;
+		move_node(proj, to_bl);
+	}
+}
+
 /**
  * Moves node and all predecessors of node from from_bl to to_bl.
  * Does not move predecessors of Phi nodes (or block nodes).
  */
 static void move(ir_node *node, ir_node *from_bl, ir_node *to_bl)
 {
-	/* move this node */
-	set_nodes_block(node, to_bl);
-
-	/* move its Projs */
-	if (get_irn_mode(node) == mode_T) {
-		foreach_out_edge(node, edge) {
-			ir_node *proj = get_edge_src_irn(edge);
-			if (!is_Proj(proj))
-				continue;
-			move(proj, from_bl, to_bl);
-		}
-	}
+	move_node(node, to_bl);
 
 	/* We must not move predecessors of Phi nodes, even if they are in
 	 * from_bl. (because these are values from an earlier loop iteration
-	 * which are not predecessors of node here)
-	 */
+	 * which are not predecessors of node here) */
 	if (is_Phi(node))
 		return;
 
