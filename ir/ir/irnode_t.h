@@ -402,7 +402,8 @@ static inline int is_irn_keep_(const ir_node *node)
 
 static inline int is_irn_start_block_placed_(const ir_node *node)
 {
-	return is_op_start_block_placed(get_irn_op_(node));
+	const ir_node *const skip = skip_Proj_const(node);
+	return is_op_start_block_placed(get_irn_op_(skip));
 }
 
 static inline int is_irn_cse_neutral_(const ir_node *node)
