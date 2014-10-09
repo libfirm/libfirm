@@ -530,7 +530,8 @@ static changes_t try_load_after_load(track_load_env_t *env, ir_node *prev_load)
 	}
 
 	/* previous load value completely contained in current load? */
-	if (is_contained_in(prev_mode, &prev_base_offset, load_mode, base_offset)) {
+	if (get_Load_type(load) == get_Load_type(prev_load) &&
+	    is_contained_in(prev_mode, &prev_base_offset, load_mode, base_offset)) {
 		ir_graph *const irg   = get_irn_irg(prev_load);
 		ir_node  *const block = get_nodes_block(prev_load);
 
