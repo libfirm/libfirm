@@ -300,10 +300,37 @@ static void dca_transfer(ir_node *irn)
 			ir_node *left  = get_Shl_left(irn);
 			ir_node *right = get_Shl_right(irn);
 
-			if (is_Const(right))
+			bitinfo *const br = get_bitinfo(right);
+			if (is_Const(right)) {
 				care_for(left, tarval_shr(care, get_Const_tarval(right)));
-			else
+			} else if (br != NULL) {
+				const long        size_bits     = get_mode_size_bits(mode);
+				const long        modulo_shift  = get_mode_modulo_shift(mode);
+				ir_mode    *const rmode         = get_irn_mode(right);
+				ir_tarval  *const rone          = get_mode_one(rmode);
+				ir_tarval  *const size_mask     = tarval_sub(new_tarval_from_long(size_bits, rmode), rone, NULL);
+				ir_tarval  *const modulo_mask   = tarval_sub(new_tarval_from_long(modulo_shift, rmode), rone, NULL);
+				ir_tarval  *const oversize_mask = tarval_andnot(modulo_mask, size_mask);
+				ir_tarval  *const ro            = br->o;
+				ir_tarval  *const rz            = br->z;
+				if (tarval_is_null(tarval_and(ro, oversize_mask))) {
+					ir_tarval *const rmask     = tarval_and(size_mask, modulo_mask);
+					ir_tarval *const rsure     = tarval_and(tarval_not(tarval_eor(ro, rz)), rmask);
+					ir_tarval *const rbound    = tarval_add(rmask, rone);
+					ir_tarval *const rzero     = get_mode_null(rmode);
+					ir_tarval *      care_left = get_mode_null(mode);
+					for (ir_tarval *shift_amount = rzero; shift_amount != rbound; shift_amount = tarval_add(shift_amount, rone)) {
+						if (tarval_is_null(tarval_and(rsure, tarval_eor(shift_amount, rz)))) {
+							care_left = tarval_or(care_left, tarval_shr(care, shift_amount));
+						}
+					}
+					care_for(left, care_left);
+				} else {
+					care_for(left, get_mode_null(mode));
+				}
+			} else {
 				care_for(left, create_msb_mask(care));
+			}
 
 			care_for(right, create_modulo_shift_mask(mode));
 
