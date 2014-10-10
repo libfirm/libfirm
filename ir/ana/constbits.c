@@ -30,7 +30,7 @@
 #include "constbits.h"
 
 /* TODO:
- * - Implement cleared/set bit calculation for Div, Mod, Shl, Shr, Shrs
+ * - Implement cleared/set bit calculation for Div, Mod, Shr, Shrs
  * - Implement min/max calculation for And, Eor, Or, Not, Conv, Shl, Shr, Shrs, Mux
  * - Implement min/max calculation for Add, Sub, Minus, Mul, Div, Mod, Conv, Shl, Shr, Shrs, Mux
  */
@@ -333,14 +333,45 @@ undefined:
 				}
 
 				case iro_Shl: {
-					bitinfo   *const l  = get_bitinfo(get_Shl_left(irn));
-					bitinfo   *const r  = get_bitinfo(get_Shl_right(irn));
-					ir_tarval *const rz = r->z;
-					if (rz == r->o) {
-						z = tarval_shl(l->z, rz);
-						o = tarval_shl(l->o, rz);
+					ir_node   *const right = get_Shl_right(irn);
+					bitinfo   *const l     = get_bitinfo(get_Shl_left(irn));
+					bitinfo   *const r     = get_bitinfo(right);
+					ir_tarval *const lo    = l->o;
+					ir_tarval *const lz    = l->z;
+					ir_tarval *const ro    = r->o;
+					ir_tarval *const rz    = r->z;
+					if (rz == ro) {
+						z = tarval_shl(lz, rz);
+						o = tarval_shl(lo, rz);
 					} else {
-						goto cannot_analyse;
+						const long        size_bits     = get_mode_size_bits(m);
+						const long        modulo_shift  = get_mode_modulo_shift(m);
+						ir_mode    *const rmode         = get_irn_mode(right);
+						ir_tarval  *const rone          = get_mode_one(rmode);
+						ir_tarval  *const size_mask     = tarval_sub(new_tarval_from_long(size_bits, rmode), rone, NULL);
+						ir_tarval  *const modulo_mask   = tarval_sub(new_tarval_from_long(modulo_shift, rmode), rone, NULL);
+						ir_tarval  *const zero          = get_mode_null(m);
+						ir_tarval  *const all_one       = get_mode_all_one(m);
+						ir_tarval  *const oversize_mask = tarval_andnot(modulo_mask, size_mask);
+
+						z = zero;
+						o = tarval_is_null(tarval_and(rz, oversize_mask)) ? all_one : zero;
+
+						if (tarval_is_null(tarval_and(ro, oversize_mask))) {
+							ir_tarval *const rmask  = tarval_and(size_mask, modulo_mask);
+							ir_tarval *const rsure  = tarval_and(tarval_not(tarval_eor(ro, rz)), rmask);
+							ir_tarval *const rbound = tarval_add(rmask, rone);
+							ir_tarval *const rzero  = get_mode_null(rmode);
+							for (ir_tarval *shift_amount = rzero; shift_amount != rbound; shift_amount = tarval_add(shift_amount, rone)) {
+								if (tarval_is_null(tarval_and(rsure, tarval_eor(shift_amount, rz)))) {
+									z = tarval_or(z, tarval_shl(lz, shift_amount));
+									o = tarval_and(o, tarval_shl(lo, shift_amount));
+								}
+							}
+						}
+
+						/* Ensure that we do not create undefined bit information. */
+						assert(!tarval_is_null(z) || !tarval_is_all_one(o));
 					}
 					break;
 				}
