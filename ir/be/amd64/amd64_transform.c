@@ -42,8 +42,7 @@ static ir_mode         *mode_gp;
 static ir_mode         *mode_flags;
 static amd64_cconv_t   *current_cconv = NULL;
 static be_start_info_t  start_mem;
-static be_start_info_t  start_sp;
-static be_start_info_t  start_fp;
+static be_start_info_t  start_val[N_AMD64_REGISTERS];
 static size_t           start_callee_saves_offset;
 static size_t           start_params_offset;
 static pmap            *node_to_stack;
@@ -276,12 +275,12 @@ static ir_node *skip_sameconv(ir_node *node)
 
 static ir_node *get_initial_sp(ir_graph *irg)
 {
-	return be_get_start_proj(irg, &start_sp);
+	return be_get_start_proj(irg, &start_val[REG_RSP]);
 }
 
 static ir_node *get_initial_fp(ir_graph *irg)
 {
-	return be_get_start_proj(irg, &start_fp);
+	return be_get_start_proj(irg, &start_val[REG_RBP]);
 }
 
 static ir_node *get_initial_mem(ir_graph *irg)
@@ -1307,7 +1306,7 @@ static ir_node *gen_Start(ir_node *node)
 	be_make_start_mem(&start_mem, start, o++);
 
 	/* the stack pointer */
-	be_make_start_out(&start_sp, obst, start, o++, &amd64_registers[REG_RSP], arch_register_req_type_ignore | arch_register_req_type_produces_sp);
+	be_make_start_out(&start_val[REG_RSP], obst, start, o++, &amd64_registers[REG_RSP], arch_register_req_type_ignore | arch_register_req_type_produces_sp);
 
 	/* function parameters in registers */
 	start_params_offset = o;
@@ -1326,14 +1325,10 @@ static ir_node *gen_Start(ir_node *node)
 	for (size_t i = 0; i < N_AMD64_REGISTERS; ++i) {
 		if (!rbitset_is_set(cconv->callee_saves, i))
 			continue;
-		if (!cconv->omit_fp && i == REG_RBP) {
-			be_make_start_out(&start_fp, obst, start, o++, &amd64_registers[REG_RBP], arch_register_req_type_ignore);
-		} else {
-			const arch_register_t *reg = &amd64_registers[i];
-			arch_set_irn_register_req_out(start, o, reg->single_req);
-			arch_set_irn_register_out(start, o, reg);
-			++o;
-		}
+		arch_register_req_type_t const flags =
+			i == REG_RBP && !cconv->omit_fp ? arch_register_req_type_ignore :
+			arch_register_req_type_none;
+		be_make_start_out(&start_val[i], obst, start, o++, &amd64_registers[i], flags);
 	}
 	assert(n_outs == o);
 
@@ -1420,16 +1415,11 @@ static ir_node *gen_Return(ir_node *node)
 		++p;
 	}
 	/* callee saves */
-	ir_node *start = get_irg_start(irg);
-	unsigned start_pn = start_callee_saves_offset;
 	for (size_t i = 0; i < N_AMD64_REGISTERS; ++i) {
 		if (!rbitset_is_set(cconv->callee_saves, i))
 			continue;
-		const arch_register_t *reg   = &amd64_registers[i];
-		ir_mode               *mode  = reg->reg_class->mode;
-		ir_node               *value = new_r_Proj(start, mode, start_pn++);
-		in[p]   = value;
-		reqs[p] = reg->single_req;
+		in[p]   = be_get_start_proj(irg, &start_val[i]);
+		reqs[p] = amd64_registers[i].single_req;
 		++p;
 	}
 	assert(p == n_ins);
@@ -2470,8 +2460,7 @@ void amd64_transform_graph(ir_graph *irg)
 	                         | IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
 
 	start_mem.irn = NULL;
-	start_sp.irn  = NULL;
-	start_fp.irn  = NULL;
+	memset(&start_val, 0, sizeof(start_val));
 
 	amd64_register_transformers();
 	mode_gp    = mode_Lu;
