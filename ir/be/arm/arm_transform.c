@@ -42,17 +42,12 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
-typedef struct start_val_t {
-	unsigned offset;
-	ir_node *irn;
-} start_val_t;
-
 static const arch_register_t *sp_reg = &arm_registers[REG_SP];
 static ir_mode               *mode_fp;
 static be_stackorder_t       *stackorder;
 static calling_convention_t  *cconv = NULL;
-static start_val_t            start_mem;
-static start_val_t            start_sp;
+static be_start_info_t        start_mem;
+static be_start_info_t        start_sp;
 static unsigned               start_params_offset;
 static unsigned               start_callee_saves_offset;
 static pmap                  *node_to_stack;
@@ -170,31 +165,6 @@ static ir_node *create_const_graph(ir_node *irn, ir_node *block)
 	}
 	long value = get_tarval_long(tv);
 	return create_const_graph_value(get_irn_dbg_info(irn), block, value);
-}
-
-static void make_start_out(start_val_t *const info, struct obstack *const obst,
-                           ir_node *const start, size_t const offset,
-                           arch_register_t const *const reg,
-                           arch_register_req_type_t const flags)
-{
-	info->offset = offset;
-	info->irn    = NULL;
-	arch_register_req_t const *const req
-		= be_create_reg_req(obst, reg, arch_register_req_type_ignore | flags);
-	arch_set_irn_register_req_out(start, offset, req);
-	arch_set_irn_register_out(start, offset, reg);
-}
-
-static ir_node *get_start_val(ir_graph *irg, start_val_t *const info)
-{
-	if (info->irn == NULL) {
-		ir_node *const start = get_irg_start(irg);
-		arch_register_class_t const *const cls
-			= arch_get_irn_register_req_out(start, info->offset)->cls;
-		ir_mode *mode = cls != NULL ? cls->mode : mode_M;
-		info->irn = new_r_Proj(start, mode, info->offset);
-	}
-	return info->irn;
 }
 
 /**
@@ -1561,13 +1531,13 @@ static ir_node *gen_Proj_Start(ir_node *node)
 	unsigned pn = get_Proj_num(node);
 	switch ((pn_Start)pn) {
 	case pn_Start_M:
-		return get_start_val(get_irn_irg(node), &start_mem);
+		return be_get_start_proj(get_irn_irg(node), &start_mem);
 
 	case pn_Start_T_args:
 		return new_r_Bad(get_irn_irg(node), mode_T);
 
 	case pn_Start_P_frame_base:
-		return get_start_val(get_irn_irg(node), &start_sp);
+		return be_get_start_proj(get_irn_irg(node), &start_sp);
 	}
 	panic("unexpected start proj: %u\n", pn);
 }
@@ -1602,7 +1572,7 @@ static ir_node *gen_Proj_Proj_Start(ir_node *node)
 				value1 = new_r_Proj(new_start, mode, new_pn+1);
 			} else if (param->entity != NULL) {
 				ir_node *const fp  = get_irg_frame(irg);
-				ir_node *const mem = get_start_val(irg, &start_mem);
+				ir_node *const mem = be_get_start_proj(irg, &start_mem);
 				ir_node *const ldr = new_bd_arm_Ldr(NULL, new_block, fp, mem,
 				                                    arm_mode_gp, param->entity,
 				                                    0, 0, true);
@@ -1620,7 +1590,7 @@ static ir_node *gen_Proj_Proj_Start(ir_node *node)
 	} else {
 		/* argument transmitted on stack */
 		ir_node *const fp   = get_irg_frame(irg);
-		ir_node *const mem  = get_start_val(irg, &start_mem);
+		ir_node *const mem  = be_get_start_proj(irg, &start_mem);
 		ir_mode *const mode = get_type_mode(param->type);
 
 		ir_node *load;
@@ -1815,13 +1785,9 @@ static ir_node *gen_Start(ir_node *node)
 	ir_node *start = new_bd_arm_Start(dbgi, new_block, n_outs);
 	unsigned o     = 0;
 
-	start_mem.offset = o++;
-	start_mem.irn    = NULL;
-	arch_set_irn_register_req_out(start, start_mem.offset,
-	                              arch_no_register_req);
+	be_make_start_mem(&start_mem, start, o++);
 
-	make_start_out(&start_sp, obst, start, o++, &arm_registers[REG_SP],
-	               arch_register_req_type_produces_sp);
+	be_make_start_out(&start_sp, obst, start, o++, &arm_registers[REG_SP], arch_register_req_type_ignore | arch_register_req_type_produces_sp);
 
 	/* function parameters in registers */
 	start_params_offset = o;
@@ -1861,7 +1827,7 @@ static ir_node *get_stack_pointer_for(ir_node *node)
 		/* first stack user in the current block. We can simply use the
 		 * initial sp_proj for it */
 		ir_graph *irg = get_irn_irg(node);
-		return get_start_val(irg, &start_sp);
+		return be_get_start_proj(irg, &start_sp);
 	}
 
 	be_transform_node(stack_pred);

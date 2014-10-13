@@ -43,11 +43,6 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
-typedef struct reg_info_t {
-	size_t   offset;
-	ir_node *irn;
-} reg_info_t;
-
 static const arch_register_t *sp_reg = &sparc_registers[REG_SP];
 static const arch_register_t *fp_reg = &sparc_registers[REG_FRAME_POINTER];
 static calling_convention_t  *current_cconv = NULL;
@@ -58,11 +53,11 @@ static ir_mode               *mode_fp;
 static ir_mode               *mode_fp2;
 //static ir_mode               *mode_fp4;
 static pmap                  *node_to_stack;
-static reg_info_t             start_mem;
-static reg_info_t             start_g0;
-static reg_info_t             start_g7;
-static reg_info_t             start_sp;
-static reg_info_t             start_fp;
+static be_start_info_t        start_mem;
+static be_start_info_t        start_g0;
+static be_start_info_t        start_g7;
+static be_start_info_t        start_sp;
+static be_start_info_t        start_fp;
 static ir_node               *frame_base;
 static size_t                 start_params_offset;
 static size_t                 start_callee_saves_offset;
@@ -733,26 +728,14 @@ static ir_node *gen_helper_binopx(ir_node *node, match_flags_t match_flags,
 
 }
 
-static ir_node *get_reg(ir_graph *const irg, reg_info_t *const reg)
-{
-	if (!reg->irn) {
-		/* this is already the transformed start node */
-		ir_node *const start = get_irg_start(irg);
-		assert(is_sparc_Start(start));
-		arch_register_class_t const *const cls = arch_get_irn_register_req_out(start, reg->offset)->cls;
-		reg->irn = new_r_Proj(start, cls ? cls->mode : mode_M, reg->offset);
-	}
-	return reg->irn;
-}
-
 static ir_node *get_g0(ir_graph *irg)
 {
-	return get_reg(irg, &start_g0);
+	return be_get_start_proj(irg, &start_g0);
 }
 
 static ir_node *get_g7(ir_graph *irg)
 {
-	return get_reg(irg, &start_g7);
+	return be_get_start_proj(irg, &start_g7);
 }
 
 static ir_node *make_tls_offset(dbg_info *dbgi, ir_node *block,
@@ -1757,15 +1740,6 @@ static ir_node *gen_Unknown(ir_node *node)
 	panic("Unexpected Unknown mode");
 }
 
-static void make_start_out(reg_info_t *const info, struct obstack *const obst, ir_node *const start, size_t const offset, arch_register_t const *const reg, arch_register_req_type_t const flags)
-{
-	info->offset = offset;
-	info->irn    = NULL;
-	arch_register_req_t const *const req = be_create_reg_req(obst, reg, arch_register_req_type_ignore | flags);
-	arch_set_irn_register_req_out(start, offset, req);
-	arch_set_irn_register_out(start, offset, reg);
-}
-
 /**
  * transform the start node to the prolog code
  */
@@ -1797,22 +1771,19 @@ static ir_node *gen_Start(ir_node *node)
 	size_t o = 0;
 
 	/* first output is memory */
-	start_mem.offset = o;
-	start_mem.irn    = NULL;
-	arch_set_irn_register_req_out(start, o, arch_no_register_req);
-	++o;
+	be_make_start_mem(&start_mem, start, o++);
 
 	/* the zero register */
-	make_start_out(&start_g0, obst, start, o++, &sparc_registers[REG_G0], arch_register_req_type_none);
+	be_make_start_out(&start_g0, obst, start, o++, &sparc_registers[REG_G0], arch_register_req_type_ignore);
 
 	/* g7 is used for TLS data */
-	make_start_out(&start_g7, obst, start, o++, &sparc_registers[REG_G7], arch_register_req_type_none);
+	be_make_start_out(&start_g7, obst, start, o++, &sparc_registers[REG_G7], arch_register_req_type_ignore);
 
 	/* we need an output for the stack pointer */
-	make_start_out(&start_sp, obst, start, o++, sp_reg, arch_register_req_type_produces_sp);
+	be_make_start_out(&start_sp, obst, start, o++, sp_reg, arch_register_req_type_ignore | arch_register_req_type_produces_sp);
 
 	if (!current_cconv->omit_fp) {
-		make_start_out(&start_fp, obst, start, o++, fp_reg, arch_register_req_type_none);
+		be_make_start_out(&start_fp, obst, start, o++, fp_reg, arch_register_req_type_ignore);
 	}
 
 	/* function parameters in registers */
@@ -1851,17 +1822,17 @@ static ir_node *gen_Start(ir_node *node)
 
 static ir_node *get_initial_sp(ir_graph *irg)
 {
-	return get_reg(irg, &start_sp);
+	return be_get_start_proj(irg, &start_sp);
 }
 
 static ir_node *get_initial_fp(ir_graph *irg)
 {
-	return get_reg(irg, &start_fp);
+	return be_get_start_proj(irg, &start_fp);
 }
 
 static ir_node *get_initial_mem(ir_graph *irg)
 {
-	return get_reg(irg, &start_mem);
+	return be_get_start_proj(irg, &start_mem);
 }
 
 static ir_node *get_stack_pointer_for(ir_node *node)

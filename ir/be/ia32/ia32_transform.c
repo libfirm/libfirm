@@ -59,16 +59,11 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
-typedef struct reg_info_t {
-	unsigned pn;
-	ir_node *irn;
-} reg_info_t;
-
 static ia32_cconv_t    *current_cconv;
-static reg_info_t       start_mem;
-static reg_info_t       start_sp;
-static reg_info_t       start_fp;
-static reg_info_t       start_fpcw;
+static be_start_info_t  start_mem;
+static be_start_info_t  start_sp;
+static be_start_info_t  start_fp;
+static be_start_info_t  start_fpcw;
 static unsigned         start_callee_saves_offset;
 static unsigned         start_params_offset;
 static pmap            *node_to_stack;
@@ -199,37 +194,24 @@ static ir_node *get_global_base(ir_graph *const irg)
 	return noreg_GP;
 }
 
-static ir_node *get_reg(ir_graph *const irg, reg_info_t *const reg)
-{
-	if (!reg->irn) {
-		/* this is already the transformed start node */
-		ir_node *const start = get_irg_start(irg);
-		assert(is_ia32_Start(start));
-		arch_register_class_t const *const cls
-			= arch_get_irn_register_req_out(start, reg->pn)->cls;
-		reg->irn = new_r_Proj(start, cls ? cls->mode : mode_M, reg->pn);
-	}
-	return reg->irn;
-}
-
 static ir_node *get_initial_sp(ir_graph *irg)
 {
-	return get_reg(irg, &start_sp);
+	return be_get_start_proj(irg, &start_sp);
 }
 
 static ir_node *get_initial_fp(ir_graph *irg)
 {
-	return get_reg(irg, &start_fp);
+	return be_get_start_proj(irg, &start_fp);
 }
 
 static ir_node *get_initial_mem(ir_graph *irg)
 {
-	return get_reg(irg, &start_mem);
+	return be_get_start_proj(irg, &start_mem);
 }
 
 static ir_node *get_initial_fpcw(ir_graph *irg)
 {
-	return get_reg(irg, &start_fpcw);
+	return be_get_start_proj(irg, &start_fpcw);
 }
 
 /**
@@ -4169,19 +4151,6 @@ static ir_node *gen_Member(ir_node *node)
 	return new_node;
 }
 
-static void make_start_out(reg_info_t *const info, struct obstack *const obst,
-                           ir_node *const start, unsigned const pn,
-                           arch_register_t const *const reg,
-                           arch_register_req_type_t const flags)
-{
-	info->pn  = pn;
-	info->irn = NULL;
-	arch_register_req_t const *const req
-		= be_create_reg_req(obst, reg, flags);
-	arch_set_irn_register_req_out(start, pn, req);
-	arch_set_irn_register_out(start, pn, reg);
-}
-
 static ir_node *gen_Start(ir_node *node)
 {
 	ir_graph  *irg           = get_irn_irg(node);
@@ -4209,14 +4178,10 @@ static ir_node *gen_Start(ir_node *node)
 	unsigned o = 0;
 
 	/* first output is memory */
-	start_mem.pn  = o++;
-	start_mem.irn = NULL;
-	arch_set_irn_register_req_out(start, start_mem.pn, arch_no_register_req);
+	be_make_start_mem(&start_mem, start, o++);
 
 	/* the stack pointer */
-	make_start_out(&start_sp, obst, start, o++, &ia32_registers[REG_ESP],
-	               arch_register_req_type_ignore
-	               | arch_register_req_type_produces_sp);
+	be_make_start_out(&start_sp, obst, start, o++, &ia32_registers[REG_ESP], arch_register_req_type_ignore | arch_register_req_type_produces_sp);
 
 	/* function parameters in registers */
 	start_params_offset = o;
@@ -4236,13 +4201,10 @@ static ir_node *gen_Start(ir_node *node)
 		if (!rbitset_is_set(cconv->callee_saves, i))
 			continue;
 		if (!cconv->omit_fp && i == REG_EBP) {
-			make_start_out(&start_fp, obst, start, o++, &ia32_registers[REG_EBP],
-						   arch_register_req_type_ignore|arch_register_req_type_none);
+			be_make_start_out(&start_fp, obst, start, o++, &ia32_registers[REG_EBP], arch_register_req_type_ignore);
 		} else if (i == REG_FPCW) {
 			/* floating point control word (fpcw) */
-			make_start_out(&start_fpcw, obst, start, o++,
-			               &ia32_registers[REG_FPCW],
-			               arch_register_req_type_none);
+			be_make_start_out(&start_fpcw, obst, start, o++, &ia32_registers[REG_FPCW], arch_register_req_type_none);
 		} else {
 			const arch_register_t *reg = &ia32_registers[i];
 			arch_set_irn_register_req_out(start, o, reg->single_req);

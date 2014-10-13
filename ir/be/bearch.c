@@ -258,3 +258,32 @@ void arch_dump_reqs_and_registers(FILE *F, const ir_node *node)
 	}
 	fprintf(F, " (0x%x)\n", (unsigned)flags);
 }
+
+void be_make_start_mem(be_start_info_t *const info, ir_node *const start, unsigned const pos)
+{
+  info->pos = pos;
+  info->irn = NULL;
+  arch_set_irn_register_req_out(start, pos, arch_no_register_req);
+}
+
+void be_make_start_out(be_start_info_t *const info, struct obstack *const obst, ir_node *const start, unsigned const pos, arch_register_t const *const reg, arch_register_req_type_t const flags)
+{
+	info->pos = pos;
+	info->irn = NULL;
+	arch_register_req_t const *const req =
+		flags == arch_register_req_type_none ? reg->single_req :
+		be_create_reg_req(obst, reg, flags);
+	arch_set_irn_register_req_out(start, pos, req);
+	arch_set_irn_register_out(start, pos, reg);
+}
+
+ir_node *be_get_start_proj(ir_graph *const irg, be_start_info_t *const info)
+{
+	if (!info->irn) {
+		/* This is already the transformed start node. */
+		ir_node                     *const start = get_irg_start(irg);
+		arch_register_class_t const *const cls   = arch_get_irn_register_req_out(start, info->pos)->cls;
+		info->irn = new_r_Proj(start, cls ? cls->mode : mode_M, info->pos);
+	}
+	return info->irn;
+}
