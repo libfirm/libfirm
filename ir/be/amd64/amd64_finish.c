@@ -21,10 +21,10 @@
  * @file
  * @brief   This file implements functions to finalize the irg for emit.
  */
-#include "amd64_common_transform.h"
 #include "amd64_finish.h"
 #include "amd64_new_nodes.h"
 #include "amd64_nodes_attr.h"
+#include "amd64_transform.h"
 #include "bearch.h"
 #include "benode.h"
 #include "besched.h"
