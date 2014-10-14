@@ -78,7 +78,6 @@
 #define set_Phi_next(node, phi)               set_Phi_next_(node, phi)
 #define get_Phi_next(node)                    get_Phi_next_(node)
 
-#define is_arg_Proj(node)                     is_arg_Proj_(node)
 #define ir_switch_table_get_n_entries(table)  ir_switch_table_get_n_entries_(table)
 
 /**
@@ -482,17 +481,6 @@ static inline void set_Block_mark_(ir_node *block, unsigned mark)
 {
 	assert(is_Block_(block));
 	block->attr.block.marked = mark;
-}
-
-/** Returns non-zero if a node is a routine parameter. */
-static inline int is_arg_Proj_(const ir_node *node)
-{
-	if (! is_Proj(node))
-		return 0;
-	node = get_Proj_pred(node);
-	if (! is_Proj(node))
-		return 0;
-	return pn_Start_T_args == get_Proj_num(node) && is_Start(get_Proj_pred(node));
 }
 
 static inline size_t ir_switch_table_get_n_entries_(const ir_switch_table *table)

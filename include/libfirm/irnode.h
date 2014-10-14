@@ -410,13 +410,6 @@ FIRM_API void remove_Sync_n(ir_node *n, int i);
 
 /** @} */
 
-/**
- * Returns non-zero if a node is a routine parameter.
- *
- * @param node  the Proj node to test
- */
-FIRM_API int is_arg_Proj(const ir_node *node);
-
 /** @addtogroup ASM
  * @{
  */
