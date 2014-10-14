@@ -205,8 +205,6 @@ ir_storage_class_class_t classify_pointer(const ir_node *const addr,
 	} else if (is_Proj(base)) {
 		if (is_malloc_Result(base))
 			res = ir_sc_malloced;
-		else if (is_arg_Proj(base))
-			res = ir_sc_argument;
 		else
 			res = ir_sc_pointer;
 	} else if (is_Const(base)) {
