@@ -3526,20 +3526,14 @@ restart:
 				}
 			}
 		}
-		/* x-(x&y) = x & ~y */
 		if (is_And(b)) {
-			ir_node *and_left  = get_And_left(b);
-			ir_node *and_right = get_And_right(b);
-			if (and_right == a) {
-				ir_node *tmp = and_left;
-				and_left  = and_right;
-				and_right = tmp;
-			}
-			if (and_left == a) {
+			ir_node *const y = get_commutative_other_op(b, a);
+			if (y) {
+				/* a - (a & y) = a & ~y */
 				dbg_info *dbgi  = get_irn_dbg_info(n);
 				ir_node  *block = get_nodes_block(n);
 				ir_mode  *mode  = get_irn_mode(n);
-				ir_node  *notn  = new_rd_Not(dbgi, block, and_right, mode);
+				ir_node  *notn  = new_rd_Not(dbgi, block, y, mode);
 				ir_node  *andn  = new_rd_And(dbgi, block, a, notn, mode);
 				return andn;
 			}
