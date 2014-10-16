@@ -34,7 +34,6 @@ typedef struct be_transform_env_t {
 	ir_graph *irg;         /**< The irg, the node should be created in */
 	waitq    *worklist;    /**< worklist of nodes that still need to be
 	                            transformed */
-	ir_node  *old_anchor;  /**< the old anchor node in the old irg */
 } be_transform_env_t;
 
 
@@ -306,9 +305,9 @@ static void transform_nodes(ir_graph *irg, arch_pretrans_nodes *pre_transform)
 
 	env.irg        = irg;
 	env.worklist   = new_waitq();
-	env.old_anchor = irg->anchor;
 
-	ir_node *old_end = get_irg_end(irg);
+	ir_node *const old_anchor = irg->anchor;
+	ir_node *const old_end    = get_irg_end(irg);
 
 	/* put all anchor nodes in the worklist */
 	for (int i = get_irg_n_anchors(irg) - 1; i >= 0; --i) {
@@ -334,7 +333,7 @@ static void transform_nodes(ir_graph *irg, arch_pretrans_nodes *pre_transform)
 	};
 	for (size_t i = 0; i != ARRAY_SIZE(pre_anchors); ++i) {
 		irg_anchors const idx = pre_anchors[i];
-		ir_node    *const old = get_irn_n(env.old_anchor, idx);
+		ir_node    *const old = get_irn_n(old_anchor, idx);
 		ir_node    *const nw  = be_transform_node(old);
 		set_irg_anchor(irg, idx, nw);
 	}
@@ -351,7 +350,7 @@ static void transform_nodes(ir_graph *irg, arch_pretrans_nodes *pre_transform)
 	/* fix loops and set new anchors*/
 	inc_irg_visited(irg);
 	for (int i = get_irg_n_anchors(irg) - 1; i >= 0; --i) {
-		ir_node *anchor = get_irn_n(env.old_anchor, i);
+		ir_node *anchor = get_irn_n(old_anchor, i);
 
 		if (anchor == NULL)
 			continue;
