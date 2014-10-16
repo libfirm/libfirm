@@ -340,8 +340,7 @@ void be_liveness_free(be_lv_t *lv)
 
 void be_liveness_remove(be_lv_t *lv, const ir_node *irn)
 {
-	if (!lv->sets_valid)
-		return;
+	assert(lv->sets_valid);
 
 	/* Removes a single irn from the liveness information.
 	 * Since an irn can only be live at blocks dominated by the block of its
@@ -352,8 +351,9 @@ void be_liveness_remove(be_lv_t *lv, const ir_node *irn)
 
 void be_liveness_introduce(be_lv_t *lv, ir_node *irn)
 {
+	assert(lv->sets_valid);
 	/* Don't compute liveness information for non-data nodes. */
-	if (lv->sets_valid && is_liveness_node(irn)) {
+	if (is_liveness_node(irn)) {
 		re.lv = lv;
 		liveness_for_node(irn);
 	}
