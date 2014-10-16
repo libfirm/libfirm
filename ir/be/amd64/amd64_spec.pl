@@ -229,37 +229,34 @@ Or => {
 
 Shl => {
 	irn_flags => [ "rematerializable" ],
-	reg_req   => { out => [ "gp" ] },
-	out       => [ "res" ],
+	reg_req   => { out => [ "gp", "flags" ] },
+	outs      => [ "res", "flags" ],
 	arity     => "variable",
 	attr_type => "amd64_shift_attr_t",
 	attr      => "const amd64_shift_attr_t *attr_init",
 	emit      => "shl%MS %SO",
-	mode      => $mode_gp,
 	modified_flags => $status_flags
 },
 
 Shr => {
 	irn_flags => [ "rematerializable" ],
-	reg_req   => { out => [ "gp" ] },
-	out       => [ "res" ],
+	reg_req   => { out => [ "gp", "flags" ] },
+	outs      => [ "res", "flags" ],
 	arity     => "variable",
 	attr_type => "amd64_shift_attr_t",
 	attr      => "const amd64_shift_attr_t *attr_init",
 	emit      => "shr%MS %SO",
-	mode      => $mode_gp,
 	modified_flags => $status_flags
 },
 
 Sar => {
 	irn_flags => [ "rematerializable" ],
-	reg_req   => { out => [ "gp" ] },
-	out       => [ "res" ],
+	reg_req   => { out => [ "gp", "flags" ] },
+	outs      => [ "res", "flags" ],
 	arity     => "variable",
 	attr_type => "amd64_shift_attr_t",
 	attr      => "const amd64_shift_attr_t *attr_init",
 	emit      => "sar%MS %SO",
-	mode      => $mode_gp,
 	modified_flags => $status_flags
 },
 
@@ -288,15 +285,14 @@ Sbb => {
 
 Neg => {
 	irn_flags => [ "rematerializable" ],
-	reg_req   => { in => [ "gp" ], out => [ "in_r1" ] },
+	reg_req   => { in => [ "gp" ], out => [ "in_r1", "flags" ] },
 	ins       => [ "val" ],
-	outs      => [ "res" ],
+	outs      => [ "res", "flags" ],
 	attr_type => "amd64_addr_attr_t",
 	attr      => "amd64_insn_mode_t insn_mode",
 	fixed     => "amd64_op_mode_t op_mode = AMD64_OP_UNOP_REG;\n"
 	            ."amd64_addr_t addr = { { NULL, 0 }, NO_INPUT, NO_INPUT, NO_INPUT, 0, AMD64_SEGMENT_DEFAULT };",
 	emit      => "neg%M %AM",
-	mode      => $mode_gp,
 	modified_flags => $status_flags
 },
 
@@ -304,14 +300,13 @@ Not => {
 	irn_flags => [ "rematerializable" ],
 	attr      => "amd64_insn_mode_t insn_mode",
 	init_attr => "attr->insn_mode = insn_mode;",
-	reg_req   => { in => [ "gp" ], out => [ "in_r1" ] },
+	reg_req   => { in => [ "gp" ], out => [ "in_r1", "flags" ] },
 	ins       => [ "val" ],
-	outs      => [ "res" ],
+	outs      => [ "res", "flags" ],
 	attr_type => "amd64_addr_attr_t",
 	fixed     => "amd64_op_mode_t op_mode = AMD64_OP_UNOP_REG;\n"
 	            ."amd64_addr_t addr = { { NULL, 0 }, NO_INPUT, NO_INPUT, NO_INPUT, 0, AMD64_SEGMENT_DEFAULT };",
 	emit      => "not%M %AM",
-	mode      => $mode_gp,
 	modified_flags => $status_flags
 },
 
@@ -330,11 +325,10 @@ Xor => {
 Xor0 => {
 	op_flags  => [ "constlike" ],
 	irn_flags => [ "rematerializable" ],
-	reg_req   => { out => [ "gp" ] },
-	outs      => [ "res" ],
+	reg_req   => { out => [ "gp", "flags" ] },
+	outs      => [ "res", "flags" ],
 	fixed     => "amd64_op_mode_t op_mode = AMD64_OP_REG_REG;",
 	emit      => "xorl %3D0, %3D0",
-	mode      => $mode_gp,
 	modified_flags => $status_flags,
 },
 

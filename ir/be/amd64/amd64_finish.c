@@ -31,6 +31,7 @@
 #include "debug.h"
 #include "panic.h"
 #include "gen_amd64_new_nodes.h"
+#include "gen_amd64_regalloc_if.h"
 #include "irgwalk.h"
 #include "util.h"
 #include "irgmod.h"
@@ -121,12 +122,14 @@ static void transform_sub_to_neg_add(ir_node *node,
 		add_res = new_r_Proj(add, mode_D, pn_amd64_xAdds_res);
 	} else {
 		assert(is_amd64_Sub(node));
-		ir_node *neg  = new_bd_amd64_Neg(dbgi, block, in2,
-		                                 attr->base.insn_mode);
-		arch_set_irn_register(neg, out_reg);
+		ir_node *neg = new_bd_amd64_Neg(dbgi, block, in2, attr->base.insn_mode);
+		arch_set_irn_register_out(neg, pn_amd64_Neg_res, out_reg);
 		sched_add_before(node, neg);
+		ir_node *neg_res
+			= new_r_Proj(neg, amd64_reg_classes[CLASS_amd64_gp].mode,
+			             pn_amd64_Neg_res);
 
-		ir_node *in[2] = { neg, in1 };
+		ir_node *in[] = { neg_res, in1 };
 		add     = new_bd_amd64_Add(dbgi, block, ARRAY_SIZE(in), in, attr);
 		add_res = new_r_Proj(add, mode_Lu, pn_amd64_Add_res);
 	}
