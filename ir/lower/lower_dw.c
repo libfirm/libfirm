@@ -745,9 +745,8 @@ ir_node *part_block_dw(ir_node *node)
 	/* move Phi nodes and constants to new_block */
 	foreach_out_edge_safe(old_block, edge) {
 		ir_node *blnode = get_edge_src_irn(edge);
-		if (!is_Phi(blnode) && !is_irn_start_block_placed(blnode))
-			continue;
-		set_nodes_block(blnode, new_block);
+		if (is_Phi(blnode) || is_irn_start_block_placed(blnode))
+			move_node(blnode, new_block);
 	}
 	if (old_block == get_irg_start_block(irg))
 		set_irg_start_block(irg, new_block);
