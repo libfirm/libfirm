@@ -38,7 +38,6 @@ typedef struct be_transform_env_t {
 	                            transformed */
 } be_transform_env_t;
 
-
 static be_transform_env_t env;
 
 void be_set_transformed_node(ir_node *old_node, ir_node *new_node)
@@ -47,7 +46,7 @@ void be_set_transformed_node(ir_node *old_node, ir_node *new_node)
 	mark_irn_visited(old_node);
 }
 
-int be_is_transformed(const ir_node *node)
+bool be_is_transformed(const ir_node *node)
 {
 	return irn_visited(node);
 }
@@ -682,7 +681,6 @@ static ir_heights_t *heights;
 static int dependent_on(const ir_node *n1, const ir_node *n2)
 {
 	assert(get_nodes_block(n1) == get_nodes_block(n2));
-
 	return heights_reachable_in_block(heights, n1, n2);
 }
 
@@ -697,11 +695,8 @@ static int cmp_call_dependency(const void *c1, const void *c2)
 {
 	const ir_node *n1 = *(const ir_node **) c1;
 	const ir_node *n2 = *(const ir_node **) c2;
-	unsigned h1, h2;
-
 	if (dependent_on(n1, n2))
 		return 1;
-
 	if (dependent_on(n2, n1))
 		return -1;
 
@@ -711,10 +706,12 @@ static int cmp_call_dependency(const void *c1, const void *c2)
 	 * Additionally, we need to respect transitive dependencies. Consider a
 	 * Call a depending on Call b and an independent Call c.
 	 * We MUST NOT order c > a and b > c. */
-	h1 = get_irn_height(heights, n1);
-	h2 = get_irn_height(heights, n2);
-	if (h1 < h2) return  1;
-	if (h1 > h2) return -1;
+	unsigned h1 = get_irn_height(heights, n1);
+	unsigned h2 = get_irn_height(heights, n2);
+	if (h1 < h2)
+		return 1;
+	if (h1 > h2)
+		return -1;
 	/* Same height, so use a random (but stable) order */
 	return get_irn_idx(n2) - get_irn_idx(n1);
 }
@@ -724,24 +721,18 @@ static int cmp_call_dependency(const void *c1, const void *c2)
  */
 static void process_ops_in_block(ir_node *block, void *data)
 {
-	ir_nodemap *map = (ir_nodemap*)data;
-	unsigned    n;
-	unsigned    n_nodes;
-	ir_node    *node;
-	ir_node   **nodes;
-
-	n_nodes = 0;
-	for (node = (ir_node*)get_irn_link(block); node != NULL;
+	ir_nodemap *map     = (ir_nodemap*)data;
+	unsigned    n_nodes = 0;
+	for (ir_node *node = (ir_node*)get_irn_link(block); node != NULL;
 	     node = (ir_node*)get_irn_link(node)) {
 		++n_nodes;
 	}
-
 	if (n_nodes == 0)
 		return;
 
-	nodes = XMALLOCN(ir_node*, n_nodes);
-	n = 0;
-	for (node = (ir_node*)get_irn_link(block); node != NULL;
+	ir_node **nodes = XMALLOCN(ir_node*, n_nodes);
+	unsigned  n     = 0;
+	for (ir_node *node = (ir_node*)get_irn_link(block); node != NULL;
 	     node = (ir_node*)get_irn_link(node)) {
 		nodes[n++] = node;
 	}
@@ -799,30 +790,26 @@ void be_free_stackorder(be_stackorder_t *env)
 
 static void create_stores_for_type(ir_graph *irg, ir_type *type)
 {
-	size_t   n           = get_compound_n_members(type);
 	ir_node *frame       = get_irg_frame(irg);
 	ir_node *initial_mem = get_irg_initial_mem(irg);
 	ir_node *mem         = initial_mem;
 	ir_node *first_store = NULL;
 	ir_node *start_block = get_irg_start_block(irg);
 	ir_node *args        = get_irg_args(irg);
-	size_t   i;
 
 	/* all parameter entities left in the frame type require stores.
 	 * (The ones passed on the stack have been moved to the arg type) */
-	for (i = 0; i < n; ++i) {
+	for (size_t i = 0, n = get_compound_n_members(type); i < n; ++i) {
 		ir_entity *entity = get_compound_member(type, i);
 		ir_type   *tp     = get_entity_type(entity);
-		ir_node   *addr;
-		size_t     arg;
 		if (!is_parameter_entity(entity))
 			continue;
 
-		arg = get_entity_parameter_number(entity);
+		size_t arg = get_entity_parameter_number(entity);
 		if (arg == IR_VA_START_PARAMETER_NUMBER)
 			continue;
 
-		addr = new_r_Member(start_block, frame, entity);
+		ir_node *addr = new_r_Member(start_block, frame, entity);
 		if (entity->attr.parameter.doubleword_low_mode != NULL) {
 			ir_mode *mode      = entity->attr.parameter.doubleword_low_mode;
 			ir_node *val0      = new_r_Proj(args, mode, arg);
@@ -863,9 +850,8 @@ void be_add_parameter_entity_stores(ir_graph *irg)
 	ir_type           *between_type = layout->between_type;
 
 	create_stores_for_type(irg, frame_type);
-	if (between_type != NULL) {
+	if (between_type != NULL)
 		create_stores_for_type(irg, between_type);
-	}
 }
 
 unsigned be_get_n_allocatable_regs(const ir_graph *irg,

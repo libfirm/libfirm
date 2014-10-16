@@ -67,9 +67,9 @@ void be_set_transform_proj_function(ir_op *pred_op, be_transform_func func);
 void be_set_transformed_node(ir_node *old_node, ir_node *new_node);
 
 /**
- * returns 1 if the node is already transformed
+ * returns true if the node is already transformed
  */
-int be_is_transformed(const ir_node *node);
+bool be_is_transformed(const ir_node *node);
 
 /**
  * enqueue all inputs into the transform queue.
