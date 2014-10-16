@@ -118,7 +118,7 @@ void collect_new_phi_node(ir_node *node)
 
 /**
  * Walker: links all Phi nodes to their Blocks lists,
- *         all Proj nodes to there predecessors.
+ *         all Proj nodes to their predecessors.
  */
 static void collect_nodes(ir_node *node, void *env)
 {
@@ -160,7 +160,7 @@ void collect_phiprojs_and_start_block_nodes(ir_graph *irg)
 static void move_node(ir_node *node, ir_node *to_bl)
 {
 	set_nodes_block(node, to_bl);
-	/* if no mode_T node, do not move Projs, not that BadT shouldn't have
+	/* if no mode_T node, do not move Projs. Note that BadT shouldn't have
 	 * any Projs as well and is part of the start_block list and therefore
 	 * doesn't have a valid Proj list */
 	if (get_irn_mode(node) != mode_T || is_Bad(node))
