@@ -28,6 +28,7 @@
 #include "betranshlp.h"
 #include "belive.h"
 #include "benode.h"
+#include "util.h"
 
 typedef struct be_transform_env_t {
 	ir_graph *irg;         /**< The irg, the node should be created in */
@@ -294,13 +295,6 @@ ir_node *be_pre_transform_node(ir_node *place)
 	return be_transform_node(place);
 }
 
-static void pre_transform_anchor(ir_graph *irg, int anchor)
-{
-	ir_node *old_anchor_node = get_irn_n(env.old_anchor, anchor);
-	ir_node *transformed     = be_transform_node(old_anchor_node);
-	set_irg_anchor(irg, anchor, transformed);
-}
-
 /**
  * Transforms all nodes. Deletes the old obstack and creates a new one.
  */
@@ -330,12 +324,20 @@ static void transform_nodes(ir_graph *irg, arch_pretrans_nodes *pre_transform)
 
 	/* pre transform some anchors (so they are available in the other transform
 	 * functions) */
-	pre_transform_anchor(irg, anchor_no_mem);
-	pre_transform_anchor(irg, anchor_end_block);
-	pre_transform_anchor(irg, anchor_end);
-	pre_transform_anchor(irg, anchor_start_block);
-	pre_transform_anchor(irg, anchor_start);
-	pre_transform_anchor(irg, anchor_frame);
+	static irg_anchors const pre_anchors[] = {
+		anchor_no_mem,
+		anchor_end_block,
+		anchor_end,
+		anchor_start_block,
+		anchor_start,
+		anchor_frame,
+	};
+	for (size_t i = 0; i != ARRAY_SIZE(pre_anchors); ++i) {
+		irg_anchors const idx = pre_anchors[i];
+		ir_node    *const old = get_irn_n(env.old_anchor, idx);
+		ir_node    *const nw  = be_transform_node(old);
+		set_irg_anchor(irg, idx, nw);
+	}
 
 	if (pre_transform)
 		pre_transform(irg);
