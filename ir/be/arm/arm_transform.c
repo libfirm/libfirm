@@ -454,7 +454,7 @@ static ir_node *gen_int_binop_ops(ir_node *node, ir_node *op1, ir_node *op2,
 		case ARM_SHF_LSR_IMM:
 		case ARM_SHF_ROR_IMM:
 			if (factory->new_binop_reg_shift_imm) {
-				ir_node *mov_op = get_irn_n(new_op2, 0);
+				ir_node *mov_op = get_irn_n(new_op2, n_arm_Mov_Rm);
 				return factory->new_binop_reg_shift_imm(dbgi, block, new_op1, mov_op,
 					attr->shift_modifier, attr->shift_immediate);
 			}
@@ -465,8 +465,8 @@ static ir_node *gen_int_binop_ops(ir_node *node, ir_node *op1, ir_node *op2,
 		case ARM_SHF_LSR_REG:
 		case ARM_SHF_ROR_REG:
 			if (factory->new_binop_reg_shift_reg) {
-				ir_node *mov_op  = get_irn_n(new_op2, 0);
-				ir_node *mov_sft = get_irn_n(new_op2, 1);
+				ir_node *mov_op  = get_irn_n(new_op2, n_arm_Mov_Rm);
+				ir_node *mov_sft = get_irn_n(new_op2, n_arm_Mov_Rs);
 				return factory->new_binop_reg_shift_reg(dbgi, block, new_op1, mov_op, mov_sft,
 					attr->shift_modifier);
 			}
@@ -489,7 +489,7 @@ static ir_node *gen_int_binop_ops(ir_node *node, ir_node *op1, ir_node *op2,
 		case ARM_SHF_LSR_IMM:
 		case ARM_SHF_ROR_IMM:
 			if (factory[idx].new_binop_reg_shift_imm) {
-				ir_node *mov_op = get_irn_n(new_op1, 0);
+				ir_node *mov_op = get_irn_n(new_op1, n_arm_Mov_Rm);
 				return factory[idx].new_binop_reg_shift_imm(dbgi, block, new_op2, mov_op,
 					attr->shift_modifier, attr->shift_immediate);
 			}
@@ -500,8 +500,8 @@ static ir_node *gen_int_binop_ops(ir_node *node, ir_node *op1, ir_node *op2,
 		case ARM_SHF_LSR_REG:
 		case ARM_SHF_ROR_REG:
 			if (factory[idx].new_binop_reg_shift_reg) {
-				ir_node *mov_op  = get_irn_n(new_op1, 0);
-				ir_node *mov_sft = get_irn_n(new_op1, 1);
+				ir_node *mov_op  = get_irn_n(new_op1, n_arm_Mov_Rm);
+				ir_node *mov_sft = get_irn_n(new_op1, n_arm_Mov_Rs);
 				return factory[idx].new_binop_reg_shift_reg(dbgi, block, new_op2, mov_op, mov_sft,
 					attr->shift_modifier);
 			}
@@ -1082,7 +1082,7 @@ static ir_node *gen_Not(ir_node *node)
 		case ARM_SHF_LSL_IMM:
 		case ARM_SHF_LSR_IMM:
 		case ARM_SHF_ROR_IMM: {
-			ir_node *mov_op = get_irn_n(new_op, 0);
+			ir_node *mov_op = get_irn_n(new_op, n_arm_Mov_Rm);
 			return new_bd_arm_Mvn_reg_shift_imm(dbgi, block, mov_op,
 				attr->shift_modifier, attr->shift_immediate);
 		}
@@ -1091,8 +1091,8 @@ static ir_node *gen_Not(ir_node *node)
 		case ARM_SHF_LSL_REG:
 		case ARM_SHF_LSR_REG:
 		case ARM_SHF_ROR_REG: {
-			ir_node *mov_op  = get_irn_n(new_op, 0);
-			ir_node *mov_sft = get_irn_n(new_op, 1);
+			ir_node *mov_op  = get_irn_n(new_op, n_arm_Mov_Rm);
+			ir_node *mov_sft = get_irn_n(new_op, n_arm_Mov_Rs);
 			return new_bd_arm_Mvn_reg_shift_reg(dbgi, block, mov_op, mov_sft,
 				attr->shift_modifier);
 		}

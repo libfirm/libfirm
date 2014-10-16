@@ -83,16 +83,19 @@ my %unop_shifter_operand_constructors = (
 	reg => {
 		custominit => "init_arm_shifter_operand(res, 0, 0, ARM_SHF_REG, 0);",
 		reg_req    => { in => [ "gp" ], out => [ "gp" ] },
+		ins        => [ "Rm" ],
 	},
 	reg_shift_reg => {
 		attr       => "arm_shift_modifier_t shift_modifier",
 		custominit => "init_arm_shifter_operand(res, 0, 0, shift_modifier, 0);",
 		reg_req    => { in => [ "gp", "gp" ], out => [ "gp" ] },
+		ins        => [ "Rm", "Rs" ],
 	},
 	reg_shift_imm => {
 		attr       => "arm_shift_modifier_t shift_modifier, unsigned shift_immediate",
 		custominit => "init_arm_shifter_operand(res, 0, 0, shift_modifier, shift_immediate);",
 		reg_req    => { in => [ "gp" ], out => [ "gp" ] },
+		ins        => [ "Rm" ],
 	},
 );
 
@@ -392,6 +395,7 @@ Mov => {
 	mode      => $mode_gp,
 	attr_type => "arm_shifter_operand_t",
 	constructors => \%unop_shifter_operand_constructors,
+	ins       => [ "Rm", "Rs" ],
 },
 
 Mvn => {
@@ -521,6 +525,7 @@ B => {
 	state     => "pinned",
 	mode      => "mode_T",
 	reg_req   => { in => [ "flags" ], out => [ "none", "none" ] },
+	ins       => [ "flags" ],
 	attr      => "ir_relation relation",
 	attr_type => "arm_CondJmp_attr_t",
 	init_attr => "\tset_arm_CondJmp_relation(res, relation);",
