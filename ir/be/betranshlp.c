@@ -308,9 +308,6 @@ static void transform_nodes(ir_graph *irg, arch_pretrans_nodes *pre_transform)
 	/* put all anchor nodes in the worklist */
 	for (int i = get_irg_n_anchors(irg) - 1; i >= 0; --i) {
 		ir_node *anchor = get_irg_anchor(irg, i);
-
-		if (anchor == NULL)
-			continue;
 		waitq_put(env.worklist, anchor);
 	}
 
@@ -347,10 +344,6 @@ static void transform_nodes(ir_graph *irg, arch_pretrans_nodes *pre_transform)
 	inc_irg_visited(irg);
 	for (int i = get_irg_n_anchors(irg) - 1; i >= 0; --i) {
 		ir_node *anchor = get_irn_n(old_anchor, i);
-
-		if (anchor == NULL)
-			continue;
-
 		anchor = (ir_node*)get_irn_link(anchor);
 		fix_loops(anchor);
 		set_irn_n(new_anchor, i, anchor);
