@@ -30,6 +30,7 @@
 #include "irgwalk.h"
 #include "iropt_t.h"
 #include "irprog_t.h"
+#include "lower_alloc.h"
 #include "lower_builtins.h"
 #include "lower_calls.h"
 #include "lower_mode_b.h"
@@ -721,6 +722,8 @@ static void amd64_lower_for_target(void)
 		/* lower for mode_b stuff */
 		ir_lower_mode_b(irg, mode_Lu);
 		be_after_transform(irg, "lower-modeb");
+		lower_alloc(irg, AMD64_PO2_STACK_ALIGNMENT);
+		be_after_transform(irg, "lower-alloc");
 	}
 
 	foreach_irp_irg(i, irg) {
