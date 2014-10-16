@@ -28,7 +28,6 @@
 #include "irtools.h"
 #include "util.h"
 
-#include "beabihelper.h"
 #include "bearch.h"
 #include "benode.h"
 #include "belower.h"
@@ -41,6 +40,7 @@
 #include "begnuas.h"
 #include "belistsched.h"
 #include "beflags.h"
+#include "bera.h"
 #include "bestack.h"
 #include "betranshlp.h"
 

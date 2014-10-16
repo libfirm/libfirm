@@ -7,7 +7,6 @@
  * @file
  * @brief    The main amd64 backend driver file.
  */
-#include "beabihelper.h"
 #include "bearch.h"
 #include "beflags.h"
 #include "begnuas.h"
@@ -16,6 +15,7 @@
 #include "belower.h"
 #include "bemodule.h"
 #include "benode.h"
+#include "bera.h"
 #include "besched.h"
 #include "bespillslots.h"
 #include "bespillutil.h"

@@ -37,7 +37,6 @@
 #include "beutil.h"
 #include "benode.h"
 #include "belive.h"
-#include "beabihelper.h"
 
 static const arch_register_class_t *flag_class;
 static const arch_register_t       *flags_reg;

@@ -19,7 +19,6 @@
 #include "debug.h"
 #include "panic.h"
 #include "be_t.h"
-#include "beabihelper.h"
 #include "bearch.h"
 #include "benode.h"
 #include "belower.h"
@@ -27,6 +26,7 @@
 #include "bemodule.h"
 #include "begnuas.h"
 #include "belistsched.h"
+#include "bera.h"
 #include "bestack.h"
 #include "bespillutil.h"
 

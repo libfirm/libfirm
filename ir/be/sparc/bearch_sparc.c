@@ -34,7 +34,6 @@
 #include "panic.h"
 #include "util.h"
 #include "be_t.h"
-#include "beabihelper.h"
 #include "bearch.h"
 #include "benode.h"
 #include "belower.h"
@@ -44,6 +43,7 @@
 #include "belistsched.h"
 #include "beflags.h"
 #include "beutil.h"
+#include "bera.h"
 #include "betranshlp.h"
 
 #include "bearch_sparc_t.h"

@@ -31,4 +31,9 @@ void be_allocate_registers(ir_graph *irg);
  */
 void be_add_missing_copies(ir_graph *irg);
 
+/**
+ * Adds a X->Proj->Keep for each output value of X which has no Proj yet
+ */
+void be_add_missing_keeps(ir_graph *irg);
+
 #endif

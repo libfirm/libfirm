@@ -10,7 +10,6 @@
  */
 #include "bearch_ia32_t.h"
 
-#include "beabihelper.h"
 #include "beblocksched.h"
 #include "beflags.h"
 #include "begnuas.h"
@@ -20,6 +19,7 @@
 #include "belower.h"
 #include "bemodule.h"
 #include "benode.h"
+#include "bera.h"
 #include "besched.h"
 #include "bespillslots.h"
 #include "bespillutil.h"

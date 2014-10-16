@@ -5,15 +5,17 @@
 
 /**
  * @file
- * @brief       be transform helper extracted from the ia32 backend.
- * @author      Matthias Braun, Michael Beck
- * @date        14.06.2007
+ * @brief    Helper functions for code selection.
+ * @author   Matthias Braun, Michael Beck
+ * @date     14.06.2007
  */
 #ifndef FIRM_BE_BETRANSHLP_H
 #define FIRM_BE_BETRANSHLP_H
 
 #include "be_types.h"
 #include "firm_types.h"
+
+typedef struct be_stackorder_t be_stackorder_t;
 
 /**
  * A callback to pre-transform some nodes before the transformation starts.
@@ -109,5 +111,36 @@ void be_map_exc_node_to_runtime_call(ir_node *node, ir_mode *res_mode,
                                      ir_entity *runtime_entity,
                                      long pn_M, long pn_X_regular,
                                      long pn_X_except, long pn_res);
+
+/**
+ * In the normal firm representation some nodes like pure calls, builtins
+ * have no memory inputs+outputs. However in the backend these sometimes have to
+ * access the stack to work and therefore suddenly need to be enqueued into the
+ * memory edge again.
+ * This API creates a possible order to enqueue them so we can be sure to create
+ * a legal dependency graph when transforming them.
+ */
+be_stackorder_t *be_collect_stacknodes(ir_graph *irg);
+
+/**
+ * return node that should produce the predecessor stack node in a block.
+ * returns NULL if there's no predecessor in the current block.
+ */
+ir_node *be_get_stack_pred(const be_stackorder_t *env, const ir_node *node);
+
+/**
+ * free memory associated with a stackorder structure
+ */
+void be_free_stackorder(be_stackorder_t *env);
+
+/**
+ * In case where a parameter is transmitted via register but someone takes its
+ * address a store to the frame which can be references is necessary.
+ * This function can be used as a preprocessing phase before transformation to
+ * do this. The assumption is that all parameter_entities which are passed
+ * through the stack are already moved to the arg_type and all remaining
+ * parameter_entities on the frame type need stores.
+ */
+void be_add_parameter_entity_stores(ir_graph *irg);
 
 #endif

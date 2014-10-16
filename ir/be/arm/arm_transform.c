@@ -25,7 +25,6 @@
 #include "beirg.h"
 #include "beutil.h"
 #include "betranshlp.h"
-#include "beabihelper.h"
 
 #include "arm_nodes_attr.h"
 #include "arm_transform.h"

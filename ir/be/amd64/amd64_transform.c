@@ -24,7 +24,6 @@
 #include "beutil.h"
 #include "bearch_amd64_t.h"
 #include "beirg.h"
-#include "beabihelper.h"
 #include "besched.h"
 
 #include "amd64_cconv.h"
