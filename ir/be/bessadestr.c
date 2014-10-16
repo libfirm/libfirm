@@ -128,8 +128,10 @@ static void impl_parcopy(const arch_register_class_t *cls,
 			set_irn_n(phi, pred_nr, proj);
 			phi_args[dst] = proj;
 
-			be_liveness_introduce(lv, proj);
-			be_liveness_update(lv, in);
+			if (lv->sets_valid) {
+				be_liveness_introduce(lv, proj);
+				be_liveness_update(lv, in);
+			}
 
 			++i;
 		}
@@ -150,8 +152,10 @@ static void impl_parcopy(const arch_register_class_t *cls,
 		set_irn_n(phi, pred_nr, copy);
 		phi_args[src_reg] = copy;
 
-		be_liveness_introduce(lv, copy);
-		be_liveness_update(lv, src);
+		if (lv->sets_valid) {
+			be_liveness_introduce(lv, copy);
+			be_liveness_update(lv, src);
+		}
 	}
 }
 

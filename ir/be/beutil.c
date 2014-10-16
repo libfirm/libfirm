@@ -152,7 +152,7 @@ static void remove_dead_nodes_walker(ir_node *block, void *data)
 		if (bitset_is_set(env->reachable, get_irn_idx(node)))
 			continue;
 
-		if (env->lv != NULL)
+		if (env->lv->sets_valid)
 			be_liveness_remove(env->lv, node);
 		sched_remove(node);
 
@@ -162,7 +162,7 @@ static void remove_dead_nodes_walker(ir_node *block, void *data)
 				ir_node *proj = get_edge_src_irn(edge);
 				if (!is_Proj(proj))
 					continue;
-				if (env->lv != NULL)
+				if (env->lv->sets_valid)
 					be_liveness_remove(env->lv, proj);
 				kill_node(proj);
 			}

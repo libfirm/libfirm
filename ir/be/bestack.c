@@ -226,7 +226,7 @@ void be_abi_fix_stack_nodes(ir_graph *irg)
 	be_ssa_construction_add_copies(&senv, walker_env.sp_nodes, n_sp_nodes);
 	be_ssa_construction_fix_users_array(&senv, walker_env.sp_nodes, n_sp_nodes);
 
-	if (lv != NULL) {
+	if (lv->sets_valid) {
 		for (size_t i = 0; i < n_sp_nodes; ++i) {
 			be_liveness_update(lv, walker_env.sp_nodes[i]);
 		}
