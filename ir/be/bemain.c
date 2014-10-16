@@ -591,16 +591,6 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 			arch_env->impl->before_ra(irg);
 		be_timer_pop(T_RA_PREPARATION);
 
-		/* connect all stack modifying nodes together (see beabi.c) */
-		be_timer_push(T_ABI);
-		be_abi_fix_stack_nodes(irg);
-		be_timer_pop(T_ABI);
-
-		be_dump(DUMP_SCHED, irg, "fix_stack");
-
-		/* check schedule */
-		be_sched_verify(irg);
-
 		if (stat_ev_enabled) {
 			stat_ev_dbl("bemain_costs_before_ra", be_estimate_irg_costs(irg));
 			stat_ev_ull("bemain_insns_before_ra", be_count_insns(irg));
