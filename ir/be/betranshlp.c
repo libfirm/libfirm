@@ -331,7 +331,7 @@ static void transform_nodes(ir_graph *irg, arch_pretrans_nodes *pre_transform)
 		irg_anchors const idx = pre_anchors[i];
 		ir_node    *const old = get_irn_n(old_anchor, idx);
 		ir_node    *const nw  = be_transform_node(old);
-		set_irg_anchor(irg, idx, nw);
+		set_irn_n(new_anchor, idx, nw);
 	}
 
 	if (pre_transform)

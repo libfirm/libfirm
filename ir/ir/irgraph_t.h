@@ -401,12 +401,4 @@ static inline ir_node *get_irg_anchor(const ir_graph *irg, int idx)
 	return get_irn_n(irg->anchor, idx);
 }
 
-/**
- * Set anchor for given index
- */
-static inline void set_irg_anchor(ir_graph *irg, int idx, ir_node *irn)
-{
-	set_irn_n(irg->anchor, idx, irn);
-}
-
 #endif
