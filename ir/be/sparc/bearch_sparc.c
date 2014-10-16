@@ -528,9 +528,7 @@ static void sparc_lower_for_target(void)
 	foreach_irp_irg(i, irg) {
 		ir_lower_mode_b(irg, mode_Iu);
 		be_after_transform(irg, "lower-modeb");
-		/* TODO: Pass SPARC_MIN_STACKSIZE as addr_delta as soon as
-		 * Alloc nodes are implemented more efficiently. */
-		lower_alloc(irg, SPARC_STACK_ALIGNMENT, true, 0);
+		lower_alloc(irg, SPARC_PO2_STACK_ALIGNMENT);
 		be_after_transform(irg, "lower-alloc");
 	}
 }
