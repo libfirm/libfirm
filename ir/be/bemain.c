@@ -570,20 +570,11 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		/* check schedule */
 		be_sched_verify(irg);
 
-		/* introduce patterns to assure constraints */
-		be_timer_push(T_CONSTR);
 		/* we switch off optimizations here, because they might cause trouble */
 		optimization_state_t state;
 		save_optimization_state(&state);
 		set_optimize(0);
 		set_opt_cse(0);
-
-		/* add Keeps for should_be_different constrained nodes  */
-		/* beware: needs schedule due to usage of be_ssa_constr */
-		assure_constraints(irg);
-		be_timer_pop(T_CONSTR);
-
-		be_dump(DUMP_SCHED, irg, "assured");
 
 		/* stuff needs to be done after scheduling but before register allocation */
 		be_timer_push(T_RA_PREPARATION);
@@ -597,9 +588,12 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 			stat_ev_ull("bemain_blocks_before_ra", be_count_blocks(irg));
 		}
 
+		be_timer_push(T_RA_CONSTR);
+		/* add CopyKeeps for should_be_different constrained nodes  */
+		/* beware: needs schedule due to usage of be_ssa_constr */
+		assure_constraints(irg);
 		/* add missing copies to make hidden register pressure increases
 		 * explicit */
-		be_timer_push(T_RA_CONSTR);
 		be_add_missing_copies(irg);
 		be_timer_pop(T_RA_CONSTR);
 		be_dump(DUMP_RA, irg, "spillprepare");
