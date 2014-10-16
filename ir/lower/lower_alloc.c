@@ -72,7 +72,7 @@ void lower_alloc(ir_graph *irg, unsigned new_po2_stack_alignment)
 
 	po2_stack_alignment = new_po2_stack_alignment;
 	bool changed = false;
-	irg_walk_graph(irg, lower_node, NULL, &changed);
+	irg_walk_graph(irg, NULL, lower_node, &changed);
 
 	confirm_irg_properties(irg, changed ? IR_GRAPH_PROPERTIES_CONTROL_FLOW
 	                                    : IR_GRAPH_PROPERTIES_ALL);
