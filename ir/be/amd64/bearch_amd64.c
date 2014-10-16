@@ -15,7 +15,6 @@
 #include "belower.h"
 #include "bemodule.h"
 #include "benode.h"
-#include "bera.h"
 #include "besched.h"
 #include "bespillslots.h"
 #include "bespillutil.h"
@@ -125,8 +124,6 @@ static const arch_irn_ops_t amd64_irn_ops = {
 static void amd64_before_ra(ir_graph *irg)
 {
 	be_sched_fix_flags(irg, &amd64_reg_classes[CLASS_amd64_flags], NULL, NULL, NULL);
-
-	be_add_missing_keeps(irg);
 }
 
 static const arch_register_req_t amd64_requirement_gp = {

@@ -19,7 +19,6 @@
 #include "belower.h"
 #include "bemodule.h"
 #include "benode.h"
-#include "bera.h"
 #include "besched.h"
 #include "bespillslots.h"
 #include "bespillutil.h"
@@ -754,8 +753,6 @@ static void ia32_before_ra(ir_graph *irg)
 	be_sched_fix_flags(irg, &ia32_reg_classes[CLASS_ia32_flags],
 	                   &flags_remat, NULL, &ia32_try_replace_flags);
 	simplify_remat_nodes(irg);
-
-	be_add_missing_keeps(irg);
 }
 
 static ir_node *ia32_new_spill(ir_node *value, ir_node *after)

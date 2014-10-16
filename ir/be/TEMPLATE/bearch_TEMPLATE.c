@@ -26,7 +26,6 @@
 #include "bemodule.h"
 #include "begnuas.h"
 #include "belistsched.h"
-#include "bera.h"
 #include "bestack.h"
 #include "bespillutil.h"
 
@@ -99,7 +98,7 @@ static void TEMPLATE_emit(ir_graph *irg)
 
 static void TEMPLATE_before_ra(ir_graph *irg)
 {
-	be_add_missing_keeps(irg);
+	(void)irg;
 }
 
 
