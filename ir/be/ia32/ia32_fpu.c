@@ -250,17 +250,6 @@ static void rewire_fpu_mode_nodes(ir_graph *irg)
 	                               ARR_LEN(env.state_nodes));
 	be_ssa_construction_fix_users(&senv, initial_value);
 
-	be_lv_t *lv = be_get_irg_liveness(irg);
-	if (lv != NULL) {
-		be_ssa_construction_update_liveness_phis(&senv, lv);
-		be_liveness_update(lv, initial_value);
-		for (size_t i = 0, len = ARR_LEN(env.state_nodes); i < len; ++i) {
-			be_liveness_update(lv, env.state_nodes[i]);
-		}
-	} else {
-		be_invalidate_live_sets(irg);
-	}
-
 	/* set registers for the phis */
 	ir_node **phis = be_ssa_construction_get_new_phis(&senv);
 	for (size_t i = 0, len = ARR_LEN(phis); i < len; ++i) {

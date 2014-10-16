@@ -422,8 +422,6 @@ void be_assure_state(ir_graph *irg, const arch_register_t *reg, void *func_env,
                      create_spill_func create_spill,
                      create_reload_func create_reload)
 {
-	be_lv_t *lv = be_get_irg_liveness(irg);
-
 	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO
 	                         | IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 	be_assure_live_sets(irg);
@@ -461,16 +459,6 @@ void be_assure_state(ir_graph *irg, const arch_register_t *reg, void *func_env,
 		                               info->reloads, ARR_LEN(info->reloads));
 		be_ssa_construction_fix_users(&senv, info->value);
 
-		if (lv != NULL) {
-			be_ssa_construction_update_liveness_phis(&senv, lv);
-
-			be_liveness_update(lv, info->value);
-			for (size_t i = 0, len = ARR_LEN(info->reloads); i < len; ++i) {
-				ir_node *reload = info->reloads[i];
-				be_liveness_update(lv, reload);
-			}
-		}
-
 		ir_node **phis = be_ssa_construction_get_new_phis(&senv);
 
 		/* set register requirements for phis */
@@ -489,6 +477,7 @@ void be_assure_state(ir_graph *irg, const arch_register_t *reg, void *func_env,
 	ir_nodehashmap_destroy(&env.spill_infos);
 	be_end_uses(env.uses);
 	obstack_free(&env.obst, NULL);
+	be_invalidate_live_sets(irg);
 }
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_state)
