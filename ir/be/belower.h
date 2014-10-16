@@ -16,13 +16,6 @@
 #include "firm_types.h"
 
 /**
- * Walks over all nodes to assure register constraints.
- *
- * @param irg  The graph
- */
-void assure_constraints(ir_graph *irg);
-
-/**
  * Walks over all blocks in an irg and performs lowering need to be
  * done after register allocation (e.g. perm lowering).
  *

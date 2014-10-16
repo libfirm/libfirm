@@ -47,6 +47,7 @@
 #include "becopystat.h"
 #include "bessadestr.h"
 #include "belower.h"
+#include "bespillutil.h"
 #include "bestat.h"
 #include "beverify.h"
 #include "beirg.h"
@@ -591,10 +592,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		be_timer_push(T_RA_CONSTR);
 		/* add CopyKeeps for should_be_different constrained nodes  */
 		/* beware: needs schedule due to usage of be_ssa_constr */
-		assure_constraints(irg);
-		/* add missing copies to make hidden register pressure increases
-		 * explicit */
-		be_add_missing_copies(irg);
+		be_spill_prepare_for_constraints(irg);
 		be_timer_pop(T_RA_CONSTR);
 		be_dump(DUMP_RA, irg, "spillprepare");
 

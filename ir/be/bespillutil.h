@@ -147,4 +147,12 @@ ir_node *be_new_spill(ir_node *value, ir_node *after);
  */
 ir_node *be_new_reload(ir_node *value, ir_node *spilled, ir_node *before);
 
+/**
+ * Prepare graph for spilling: This adds explicit copies where this is
+ * unavoidable because of register constraints. This also makes the real
+ * register pressure explicit which is necessary for correct spilling.
+ * @param irg  The graph
+ */
+void be_spill_prepare_for_constraints(ir_graph *irg);
+
 #endif

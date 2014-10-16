@@ -22,6 +22,7 @@
 #include "entity_t.h"
 #include "debug.h"
 #include "irgwalk.h"
+#include "irgmod.h"
 #include "array.h"
 #include "execfreq.h"
 #include "panic.h"
@@ -39,7 +40,8 @@
 #include "bemodule.h"
 #include "be_t.h"
 
-DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
+DEBUG_ONLY(static firm_dbg_module_t *dbg;)
+DEBUG_ONLY(static firm_dbg_module_t *dbg_constr;)
 
 #define REMAT_COST_INFINITE  1000
 
@@ -805,6 +807,529 @@ void be_insert_spills_reloads(spill_env_t *env)
 	be_remove_dead_nodes_from_schedule(env->irg);
 
 	be_timer_pop(T_RA_SPILL_APPLY);
+}
+
+static be_irg_t      *birg;
+static be_lv_t       *lv;
+static unsigned long  precol_copies;
+static unsigned long  multi_precol_copies;
+static unsigned long  constrained_livethrough_copies;
+
+static void prepare_constr_insn(ir_node *const node)
+{
+	/* Insert a copy for constraint inputs attached to a value which can't
+	 * fulfill the constraint
+	 * (typical example: stack pointer as input to copyb)
+	 * TODO: This really just checks precolored registers at the moment and
+	 *       ignores the general case of not matching in/out constraints */
+	foreach_irn_in(node, i, op) {
+		const arch_register_req_t *const req
+			= arch_get_irn_register_req_in(node, i);
+		if (req->cls == NULL)
+			continue;
+
+		const arch_register_t *const reg = arch_get_irn_register(op);
+		if (reg == NULL)
+			continue;
+
+		/* Precolored with an ignore register (which is not virtual). */
+		if ((reg->type & arch_register_type_virtual) ||
+		    rbitset_is_set(birg->allocatable_regs, reg->global_index))
+			continue;
+
+		if (!arch_register_req_is(req, limited))
+			continue;
+		if (rbitset_is_set(req->limited, reg->index))
+			continue;
+
+		ir_node *block = get_nodes_block(node);
+		ir_node *copy  = be_new_Copy(block, op);
+		sched_add_before(node, copy);
+		set_irn_n(node, i, copy);
+		++precol_copies;
+		DBG((dbg_constr, LEVEL_3, "inserting ignore arg copy %+F for %+F pos %d\n",
+		     copy, node, i));
+	}
+
+	/* insert copies for nodes that occur constrained more than once. */
+	for (int i = 0, arity = get_irn_arity(node); i < arity; ++i) {
+		const arch_register_req_t *const req
+			= arch_get_irn_register_req_in(node, i);
+		const arch_register_class_t *const cls = req->cls;
+		if (cls == NULL)
+			continue;
+		if (!arch_register_req_is(req, limited))
+			continue;
+
+		ir_node *in = get_irn_n(node, i);
+		const arch_register_req_t *const in_req
+			= arch_get_irn_register_req(in);
+		if (arch_register_req_is(in_req, ignore))
+			continue;
+		for (int i2 = i + 1; i2 < arity; ++i2) {
+			const arch_register_req_t *const req2
+				= arch_get_irn_register_req_in(node, i2);
+			if (req2->cls != cls)
+				continue;
+			if (!arch_register_req_is(req2, limited))
+				continue;
+
+			ir_node *in2 = get_irn_n(node, i2);
+			if (in2 != in)
+				continue;
+
+			/* if the constraint is the same, no copy is necessary
+			 * TODO generalise to unequal but overlapping constraints */
+			if (rbitsets_equal(req->limited, req2->limited, cls->n_regs))
+				continue;
+
+			ir_node *block = get_nodes_block(node);
+			ir_node *copy  = be_new_Copy(block, in);
+			sched_add_before(node, copy);
+			set_irn_n(node, i2, copy);
+			++multi_precol_copies;
+			DBG((dbg_constr, LEVEL_3,
+			     "inserting multiple constr copy %+F for %+F pos %d\n",
+			     copy, node, i2));
+		}
+	}
+
+	/* collect all registers occurring in out constraints. */
+	unsigned *def_constr = NULL;
+	be_foreach_value(node, value,
+		const arch_register_req_t *const req = arch_get_irn_register_req(value);
+		const arch_register_class_t *const cls = req->cls;
+		if (cls == NULL)
+			continue;
+		if (!arch_register_req_is(req, limited))
+			continue;
+		if (def_constr == NULL) {
+			const arch_env_t *const arch_env = birg->main_env->arch_env;
+			def_constr = rbitset_alloca(arch_env->n_registers);
+		}
+		rbitset_foreach(req->limited, cls->n_regs, e) {
+			const arch_register_t *reg = arch_register_for_index(cls, e);
+			rbitset_set(def_constr, reg->global_index);
+		}
+	);
+	/* no output constraints => we're good */
+	if (def_constr == NULL)
+		return;
+
+	/* Insert copies for all constrained arguments living through the node and
+	 * being constrained to a register which also occurs in out constraints. */
+	for (int i = 0, arity = get_irn_arity(node); i < arity; ++i) {
+		/* Check, if
+		 * 1) the operand is constrained.
+		 * 2) lives through the node.
+		 * 3) is constrained to a register occurring in out constraints. */
+		const arch_register_req_t *const req
+			= arch_get_irn_register_req_in(node, i);
+		const arch_register_class_t *const cls = req->cls;
+		if (cls == NULL)
+			continue;
+		if (!arch_register_req_is(req, limited))
+			continue;
+		ir_node *in = get_irn_n(node, i);
+		const arch_register_req_t *const in_req
+			= arch_get_irn_register_req(in);
+		if (arch_register_req_is(in_req, ignore))
+			continue;
+		/* Only create the copy if the operand is no copy.
+		 * this is necessary since the assure constraints phase inserts
+		 * Copies and Keeps for operands which must be different from the
+		 * results. Additional copies here would destroy this. */
+		if (be_is_Copy(in))
+			continue;
+		if (!be_value_live_after(in, node))
+			continue;
+
+		bool common_limits = false;
+		rbitset_foreach(req->limited, cls->n_regs, e) {
+			const arch_register_t *reg = arch_register_for_index(cls, e);
+			if (rbitset_is_set(def_constr, reg->global_index)) {
+				common_limits = true;
+				break;
+			}
+		}
+		if (!common_limits)
+			continue;
+
+		ir_node *block = get_nodes_block(node);
+		ir_node *copy  = be_new_Copy(block, in);
+		sched_add_before(node, copy);
+		set_irn_n(node, i, copy);
+		++constrained_livethrough_copies;
+		DBG((dbg_constr, LEVEL_3, "inserting constr copy %+F for %+F pos %d\n",
+		     copy, node, i));
+		be_liveness_update(lv, in);
+	}
+}
+
+static void add_missing_copies_in_block(ir_node *block, void *data)
+{
+	(void)data;
+	sched_foreach(block, node) {
+		prepare_constr_insn(node);
+	}
+}
+
+static void be_add_missing_copies(ir_graph *irg)
+{
+	be_assure_live_sets(irg);
+
+	precol_copies                  = 0;
+	multi_precol_copies            = 0;
+	constrained_livethrough_copies = 0;
+
+	birg = be_birg_from_irg(irg);
+	lv   = be_get_irg_liveness(irg);
+	irg_block_walk_graph(irg, add_missing_copies_in_block, NULL, NULL);
+
+	stat_ev_ull("ra_precol_copies", precol_copies);
+	stat_ev_ull("ra_multi_precol_copies", multi_precol_copies);
+	stat_ev_ull("ra_constrained_livethrough_copies",
+	            constrained_livethrough_copies);
+}
+
+static bool has_irn_users(const ir_node *irn)
+{
+	return get_irn_out_edge_first_kind(irn, EDGE_KIND_NORMAL) != 0;
+}
+
+static ir_node *find_copy(ir_node *irn, ir_node *op)
+{
+	ir_node *cur_node;
+
+	for (cur_node = irn;;) {
+		cur_node = sched_prev(cur_node);
+		if (! be_is_Copy(cur_node))
+			return NULL;
+		if (be_get_Copy_op(cur_node) == op && arch_irn_is(cur_node, dont_spill))
+			return cur_node;
+	}
+}
+
+/** Environment for constraints. */
+typedef struct {
+	ir_graph        *irg;
+	ir_nodehashmap_t op_set;
+	struct obstack   obst;
+} constraint_env_t;
+
+/** Associates an ir_node with its copy and CopyKeep. */
+typedef struct {
+	ir_nodeset_t copies; /**< all non-spillable copies of this irn */
+	const arch_register_class_t *cls;
+} op_copy_assoc_t;
+
+static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different, constraint_env_t *env)
+{
+	ir_nodehashmap_t            *op_set;
+	ir_node                     *block;
+	const arch_register_class_t *cls;
+	ir_node                     *keep, *cpy;
+	op_copy_assoc_t             *entry;
+
+	arch_register_req_t const *const req = arch_get_irn_register_req(other_different);
+	if (arch_register_req_is(req, ignore) ||
+			!mode_is_data(get_irn_mode(other_different))) {
+		DB((dbg_constr, LEVEL_1, "ignore constraint for %+F because other_irn is ignore or not a data node\n", irn));
+		return;
+	}
+
+	op_set = &env->op_set;
+	block  = get_nodes_block(irn);
+	cls    = req->cls;
+
+	/* Make a not spillable copy of the different node   */
+	/* this is needed because the different irn could be */
+	/* in block far far away                             */
+	/* The copy is optimized later if not needed         */
+
+	/* check if already exists such a copy in the schedule immediately before */
+	cpy = find_copy(skip_Proj(irn), other_different);
+	if (! cpy) {
+		cpy = be_new_Copy(block, other_different);
+		arch_set_irn_flags(cpy, arch_irn_flag_dont_spill);
+		DB((dbg_constr, LEVEL_1, "created non-spillable %+F for value %+F\n", cpy, other_different));
+	} else {
+		DB((dbg_constr, LEVEL_1, "using already existing %+F for value %+F\n", cpy, other_different));
+	}
+
+	/* Add the Keep resp. CopyKeep and reroute the users */
+	/* of the other_different irn in case of CopyKeep.   */
+	if (has_irn_users(other_different)) {
+		keep = be_new_CopyKeep_single(block, cpy, irn);
+		be_node_set_reg_class_in(keep, 1, cls);
+	} else {
+		ir_node *in[2];
+
+		in[0] = irn;
+		in[1] = cpy;
+		keep = be_new_Keep(block, 2, in);
+	}
+
+	DB((dbg_constr, LEVEL_1, "created %+F(%+F, %+F)\n\n", keep, irn, cpy));
+
+	/* insert copy and keep into schedule */
+	assert(sched_is_scheduled(irn) && "need schedule to assure constraints");
+	if (! sched_is_scheduled(cpy))
+		sched_add_before(skip_Proj(irn), cpy);
+	sched_add_after(skip_Proj(irn), keep);
+
+	/* insert the other different and its copies into the map */
+	entry = ir_nodehashmap_get(op_copy_assoc_t, op_set, other_different);
+	if (! entry) {
+		entry      = OALLOC(&env->obst, op_copy_assoc_t);
+		entry->cls = cls;
+		ir_nodeset_init(&entry->copies);
+
+		ir_nodehashmap_insert(op_set, other_different, entry);
+	}
+
+	/* insert copy */
+	ir_nodeset_insert(&entry->copies, cpy);
+
+	/* insert keep in case of CopyKeep */
+	if (be_is_CopyKeep(keep))
+		ir_nodeset_insert(&entry->copies, keep);
+}
+
+/**
+ * Checks if node has a must_be_different constraint in output and adds a Keep
+ * then to assure the constraint.
+ *
+ * @param irn          the node to check
+ * @param skipped_irn  if irn is a Proj node, its predecessor, else irn
+ * @param env          the constraint environment
+ */
+static void assure_different_constraints(ir_node *irn, ir_node *skipped_irn, constraint_env_t *env)
+{
+	const arch_register_req_t *req = arch_get_irn_register_req(irn);
+
+	if (arch_register_req_is(req, must_be_different)) {
+		const unsigned other = req->other_different;
+
+		if (arch_register_req_is(req, should_be_same)) {
+			const unsigned same = req->other_same;
+
+			if (is_po2(other) && is_po2(same)) {
+				int idx_other = ntz(other);
+				int idx_same  = ntz(same);
+
+				/*
+				 * We can safely ignore a should_be_same x must_be_different y
+				 * IFF both inputs are equal!
+				 */
+				if (get_irn_n(skipped_irn, idx_other) == get_irn_n(skipped_irn, idx_same)) {
+					return;
+				}
+			}
+		}
+		for (int i = 0; 1U << i <= other; ++i) {
+			if (other & (1U << i)) {
+				ir_node *different_from = get_irn_n(skipped_irn, i);
+				gen_assure_different_pattern(irn, different_from, env);
+			}
+		}
+	}
+}
+
+/**
+ * Calls the functions to assure register constraints.
+ *
+ * @param block    The block to be checked
+ * @param walk_env The walker environment
+ */
+static void assure_constraints_walker(ir_node *block, void *walk_env)
+{
+	constraint_env_t *env = (constraint_env_t*)walk_env;
+
+	sched_foreach_reverse(block, irn) {
+		be_foreach_value(irn, value,
+			if (mode_is_data(get_irn_mode(value)))
+				assure_different_constraints(value, irn, env);
+		);
+	}
+}
+
+/**
+ * Melt all copykeeps pointing to the same node
+ * (or Projs of the same node), copying the same operand.
+ */
+static void melt_copykeeps(constraint_env_t *cenv)
+{
+	struct obstack obst;
+	obstack_init(&obst);
+
+	/* for all */
+	ir_nodehashmap_entry_t    map_entry;
+	ir_nodehashmap_iterator_t map_iter;
+	foreach_ir_nodehashmap(&cenv->op_set, map_entry, map_iter) {
+		op_copy_assoc_t *entry = (op_copy_assoc_t*)map_entry.data;
+
+		/* collect all copykeeps */
+		unsigned num_ck = 0;
+		foreach_ir_nodeset(&entry->copies, cp, iter) {
+			if (be_is_CopyKeep(cp)) {
+				obstack_grow(&obst, &cp, sizeof(cp));
+				++num_ck;
+#ifdef KEEP_ALIVE_COPYKEEP_HACK
+			} else {
+				set_irn_mode(cp, mode_ANY);
+				keep_alive(cp);
+#endif
+			}
+		}
+
+		/* compare each copykeep with all other copykeeps */
+		ir_node **ck_arr = (ir_node **)obstack_finish(&obst);
+		for (unsigned idx = 0; idx < num_ck; ++idx) {
+			if (ck_arr[idx] == NULL)
+				continue;
+			unsigned n_melt     = 1;
+			ir_node *ref        = ck_arr[idx];
+			ir_node *ref_mode_T = skip_Proj(get_irn_n(ref, 1));
+			obstack_grow(&obst, &ref, sizeof(ref));
+
+			DB((dbg_constr, LEVEL_1, "Trying to melt %+F:\n", ref));
+
+			/* check for copykeeps pointing to the same mode_T node as the reference copykeep */
+			for (unsigned j = 0; j < num_ck; ++j) {
+				if (j == idx)
+					continue;
+				ir_node *cur_ck = ck_arr[j];
+				if (cur_ck == NULL || skip_Proj(get_irn_n(cur_ck, 1)) != ref_mode_T)
+					continue;
+
+				obstack_grow(&obst, &cur_ck, sizeof(cur_ck));
+				ir_nodeset_remove(&entry->copies, cur_ck);
+				DB((dbg_constr, LEVEL_1, "\t%+F\n", cur_ck));
+				ck_arr[j] = NULL;
+				++n_melt;
+				sched_remove(cur_ck);
+			}
+			ck_arr[idx] = NULL;
+
+			/* check, if we found some candidates for melting */
+			if (n_melt == 1) {
+				DB((dbg_constr, LEVEL_1, "\tno candidate found\n"));
+				continue;
+			}
+
+			ir_nodeset_remove(&entry->copies, ref);
+			sched_remove(ref);
+
+			ir_node **melt_arr = (ir_node **)obstack_finish(&obst);
+			/* melt all found copykeeps */
+			ir_node **new_ck_in = ALLOCAN(ir_node*,n_melt);
+			for (unsigned j = 0; j < n_melt; ++j) {
+				new_ck_in[j] = get_irn_n(melt_arr[j], 1);
+
+				/* now, we can kill the melted keep, except the */
+				/* ref one, we still need some information      */
+				if (melt_arr[j] != ref)
+					kill_node(melt_arr[j]);
+			}
+
+			ir_node *const new_ck = be_new_CopyKeep(get_nodes_block(ref), be_get_CopyKeep_op(ref), n_melt, new_ck_in);
+#ifdef KEEP_ALIVE_COPYKEEP_HACK
+			keep_alive(new_ck);
+#endif /* KEEP_ALIVE_COPYKEEP_HACK */
+
+			/* set register class for all kept inputs */
+			for (unsigned j = 1; j <= n_melt; ++j) {
+				be_node_set_reg_class_in(new_ck, j, entry->cls);
+			}
+
+			ir_nodeset_insert(&entry->copies, new_ck);
+
+			/* find scheduling point */
+			ir_node *sched_pt = ref_mode_T;
+			do {
+				/* just walk along the schedule until a non-Keep/CopyKeep node is found */
+				sched_pt = sched_next(sched_pt);
+			} while (be_is_Keep(sched_pt) || be_is_CopyKeep(sched_pt));
+
+			sched_add_before(sched_pt, new_ck);
+			DB((dbg_constr, LEVEL_1, "created %+F, scheduled before %+F\n", new_ck, sched_pt));
+
+			/* finally: kill the reference copykeep */
+			kill_node(ref);
+		}
+		obstack_free(&obst, ck_arr);
+	}
+	obstack_free(&obst, NULL);
+}
+
+void be_spill_prepare_for_constraints(ir_graph *irg)
+{
+	FIRM_DBG_REGISTER(dbg_constr, "firm.be.lower.constr");
+
+	constraint_env_t cenv;
+	cenv.irg = irg;
+	ir_nodehashmap_init(&cenv.op_set);
+	obstack_init(&cenv.obst);
+
+	irg_block_walk_graph(irg, NULL, assure_constraints_walker, &cenv);
+
+	/* melt copykeeps, pointing to projs of */
+	/* the same mode_T node and keeping the */
+	/* same operand                         */
+	melt_copykeeps(&cenv);
+
+	/* for all */
+	ir_nodehashmap_iterator_t map_iter;
+	ir_nodehashmap_entry_t    map_entry;
+	foreach_ir_nodehashmap(&cenv.op_set, map_entry, map_iter) {
+		op_copy_assoc_t          *entry = (op_copy_assoc_t*)map_entry.data;
+		size_t                    n     = ir_nodeset_size(&entry->copies);
+		ir_node                 **nodes = ALLOCAN(ir_node*, n);
+		be_ssa_construction_env_t senv;
+
+		/* put the node in an array */
+		DBG((dbg_constr, LEVEL_1, "introduce copies for %+F ", map_entry.node));
+
+		/* collect all copies */
+		n = 0;
+		foreach_ir_nodeset(&entry->copies, cp, iter) {
+			nodes[n++] = cp;
+			DB((dbg_constr, LEVEL_1, ", %+F ", cp));
+		}
+
+		DB((dbg_constr, LEVEL_1, "\n"));
+
+		/* introduce the copies for the operand and its copies */
+		be_ssa_construction_init(&senv, irg);
+		be_ssa_construction_add_copy(&senv, map_entry.node);
+		be_ssa_construction_add_copies(&senv, nodes, n);
+		be_ssa_construction_fix_users(&senv, map_entry.node);
+		be_ssa_construction_destroy(&senv);
+
+		/* Could be that not all CopyKeeps are really needed, */
+		/* so we transform unnecessary ones into Keeps.       */
+		foreach_ir_nodeset(&entry->copies, cp, iter) {
+			if (be_is_CopyKeep(cp) && get_irn_n_edges(cp) < 1) {
+				int      n   = get_irn_arity(cp);
+				ir_node *keep;
+
+				keep = be_new_Keep(get_nodes_block(cp), n, get_irn_in(cp) + 1);
+				sched_replace(cp, keep);
+
+				/* Set all ins (including the block) of the CopyKeep BAD to keep the verifier happy. */
+				kill_node(cp);
+			}
+		}
+
+		ir_nodeset_destroy(&entry->copies);
+	}
+
+	ir_nodehashmap_destroy(&cenv.op_set);
+	obstack_free(&cenv.obst, NULL);
+	be_invalidate_live_sets(irg);
+
+	be_add_missing_copies(irg);
 }
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_spill)
