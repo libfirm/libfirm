@@ -975,24 +975,6 @@ static void add_missing_copies_in_block(ir_node *block, void *data)
 	}
 }
 
-static void be_add_missing_copies(ir_graph *irg)
-{
-	be_assure_live_sets(irg);
-
-	precol_copies                  = 0;
-	multi_precol_copies            = 0;
-	constrained_livethrough_copies = 0;
-
-	birg = be_birg_from_irg(irg);
-	lv   = be_get_irg_liveness(irg);
-	irg_block_walk_graph(irg, add_missing_copies_in_block, NULL, NULL);
-
-	stat_ev_ull("ra_precol_copies", precol_copies);
-	stat_ev_ull("ra_multi_precol_copies", multi_precol_copies);
-	stat_ev_ull("ra_constrained_livethrough_copies",
-	            constrained_livethrough_copies);
-}
-
 static bool has_irn_users(const ir_node *irn)
 {
 	return get_irn_out_edge_first_kind(irn, EDGE_KIND_NORMAL) != 0;
@@ -1312,7 +1294,19 @@ void be_spill_prepare_for_constraints(ir_graph *irg)
 	obstack_free(&cenv.obst, NULL);
 	be_invalidate_live_sets(irg);
 
-	be_add_missing_copies(irg);
+	/* part2: add missing copies */
+	precol_copies                  = 0;
+	multi_precol_copies            = 0;
+	constrained_livethrough_copies = 0;
+	be_assure_live_sets(irg);
+	birg = be_birg_from_irg(irg);
+	lv   = be_get_irg_liveness(irg);
+	irg_block_walk_graph(irg, add_missing_copies_in_block, NULL, NULL);
+
+	stat_ev_ull("ra_precol_copies", precol_copies);
+	stat_ev_ull("ra_multi_precol_copies", multi_precol_copies);
+	stat_ev_ull("ra_constrained_livethrough_copies",
+	            constrained_livethrough_copies);
 }
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_spill)
