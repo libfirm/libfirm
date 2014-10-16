@@ -151,7 +151,7 @@ static cpu_arch_features opt_arch             = 0;
 static int               fpu_arch             = 0;
 static bool              opt_cc               = true;
 static bool              opt_unsafe_floatconv = false;
-static int               stack_alignment      = 2;
+static int               po2_stack_alignment  = 2;
 
 /* instruction set architectures. */
 static const lc_opt_enum_int_items_t arch_items[] = {
@@ -233,7 +233,7 @@ static lc_opt_enum_int_var_t fp_unit_var = {
 };
 
 static const lc_opt_table_entry_t ia32_architecture_options[] = {
-	LC_OPT_ENT_INT     ("stackalign",       "set power of two stack alignment for calls",         &stack_alignment),
+	LC_OPT_ENT_INT     ("stackalign",       "set power of two stack alignment for calls",         &po2_stack_alignment),
 	LC_OPT_ENT_BOOL    ("size",             "optimize for size",                                  &opt_size),
 	LC_OPT_ENT_ENUM_INT("arch",             "select the instruction architecture",                &arch_var),
 	LC_OPT_ENT_ENUM_INT("tune",             "optimize for instruction architecture",              &opt_arch_var),
@@ -921,7 +921,7 @@ void ia32_setup_cg_config(void)
 		flags(opt_arch, arch_i386 | arch_i486) || opt_size ? 0 :
 		opt_arch & arch_all_amd                            ? 3 :
 		2;
-	c->stack_alignment = stack_alignment;
+	c->po2_stack_alignment = po2_stack_alignment;
 }
 
 void ia32_init_architecture(void)

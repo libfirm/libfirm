@@ -1680,7 +1680,7 @@ static void ia32_lower_for_target(void)
 		/* lower for mode_b stuff */
 		ir_lower_mode_b(irg, ia32_mode_gp);
 		be_after_transform(irg, "lower-modeb");
-		lower_alloc(irg, ia32_cg_config.stack_alignment);
+		lower_alloc(irg, ia32_cg_config.po2_stack_alignment);
 		be_after_transform(irg, "lower-alloc");
 	}
 

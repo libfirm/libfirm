@@ -90,7 +90,7 @@ typedef struct {
 	 *  the blocks label (0 switches off label alignment) */
 	double label_alignment_factor;
 	/** stack alignment required at calls */
-	unsigned stack_alignment;
+	unsigned po2_stack_alignment;
 } ia32_code_gen_config_t;
 
 extern ia32_code_gen_config_t  ia32_cg_config;
