@@ -22,6 +22,7 @@
 #include "xmalloc.h"
 
 #include "bearch.h"
+#include "bedump.h"
 
 #include "TEMPLATE_nodes_attr.h"
 #include "TEMPLATE_new_nodes.h"
@@ -52,7 +53,7 @@ static void TEMPLATE_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 		break;
 
 	case dump_node_info_txt:
-		arch_dump_reqs_and_registers(F, n);
+		be_dump_reqs_and_registers(F, n);
 		break;
 	}
 }

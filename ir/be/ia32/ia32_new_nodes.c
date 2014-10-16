@@ -30,6 +30,7 @@
 #include "xmalloc.h"
 
 #include "bearch.h"
+#include "bedump.h"
 #include "beinfo.h"
 
 #include "bearch_ia32_t.h"
@@ -155,7 +156,7 @@ static void ia32_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 			break;
 
 		case dump_node_info_txt:
-			arch_dump_reqs_and_registers(F, n);
+			be_dump_reqs_and_registers(F, n);
 
 			/* dump op type */
 			fprintf(F, "op = ");

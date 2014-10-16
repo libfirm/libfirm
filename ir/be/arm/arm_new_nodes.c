@@ -28,6 +28,7 @@
 #include "arm_optimize.h"
 #include "bearch_arm_t.h"
 #include "bearch.h"
+#include "bedump.h"
 
 static bool arm_has_address_attr(const ir_node *node)
 {
@@ -89,7 +90,7 @@ static void arm_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 		break;
 
 	case dump_node_info_txt:
-		arch_dump_reqs_and_registers(F, n);
+		be_dump_reqs_and_registers(F, n);
 
 		if (has_load_store_attr(n)) {
 			const arm_load_store_attr_t *attr

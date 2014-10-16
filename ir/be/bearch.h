@@ -71,9 +71,6 @@ ENUM_BITSET(arch_register_req_type_t)
 extern arch_register_req_t const arch_no_requirement;
 #define arch_no_register_req (&arch_no_requirement)
 
-void arch_dump_register_reqs(FILE *F, const ir_node *node);
-void arch_dump_reqs_and_registers(FILE *F, const ir_node *node);
-
 void arch_set_frame_offset(ir_node *irn, int bias);
 
 ir_entity *arch_get_frame_entity(const ir_node *irn);

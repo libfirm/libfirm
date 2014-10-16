@@ -24,6 +24,7 @@
 #include "xmalloc.h"
 
 #include "bearch.h"
+#include "bedump.h"
 
 #include "amd64_nodes_attr.h"
 #include "amd64_new_nodes.h"
@@ -84,7 +85,7 @@ static void amd64_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 		break;
 
 	case dump_node_info_txt:
-		arch_dump_reqs_and_registers(F, n);
+		be_dump_reqs_and_registers(F, n);
 		const amd64_attr_t *attr = get_amd64_attr_const(n);
 		fprintf(F, "mode = %s\n", get_op_mode_string(attr->op_mode));
 		amd64_op_mode_t op_mode = attr->op_mode;

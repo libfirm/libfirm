@@ -40,4 +40,6 @@ void be_liveness_dump(FILE *F, const be_lv_t *lv);
  */
 void be_dump_liveness_block(be_lv_t *lv, FILE *F, const ir_node *block);
 
+void be_dump_reqs_and_registers(FILE *F, const ir_node *node);
+
 #endif
