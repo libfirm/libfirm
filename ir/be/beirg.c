@@ -41,11 +41,8 @@ void be_assure_live_chk(ir_graph *irg)
 void be_free_birg(ir_graph *irg)
 {
 	be_irg_t *birg = be_birg_from_irg(irg);
-
-	if (birg->lv != NULL) {
-		be_liveness_free(birg->lv);
-		birg->lv = NULL;
-	}
+	be_liveness_free(birg->lv);
+	birg->lv = NULL;
 
 	obstack_free(&birg->obst, NULL);
 	irg->be_data = NULL;

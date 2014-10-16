@@ -126,8 +126,6 @@ static void dump_liveness_info_hook(void *context, FILE *F, const ir_node *node)
 		return;
 
 	be_lv_t *lv = be_get_irg_liveness(irg);
-	if (lv == NULL)
-		return;
 	if (!lv->sets_valid)
 		return;
 
