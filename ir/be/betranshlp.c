@@ -31,7 +31,6 @@
 #include "util.h"
 
 typedef struct be_transform_env_t {
-	ir_graph *irg;         /**< The irg, the node should be created in */
 	waitq    *worklist;    /**< worklist of nodes that still need to be
 	                            transformed */
 } be_transform_env_t;
@@ -172,8 +171,8 @@ static ir_node *transform_proj(ir_node *node)
 ir_node *be_duplicate_node(ir_node *node)
 {
 	ir_node  *block = be_transform_node(get_nodes_block(node));
-	ir_graph *irg   = env.irg;
 	dbg_info *dbgi  = get_irn_dbg_info(node);
+	ir_graph *irg   = get_irn_irg(node);
 	ir_mode  *mode  = get_irn_mode(node);
 	ir_op    *op    = get_irn_op(node);
 
@@ -233,8 +232,6 @@ static void fix_loops(ir_node *node)
 {
 	if (irn_visited_else_mark(node))
 		return;
-
-	assert(node_is_in_irgs_storage(env.irg, node));
 
 	bool changed = false;
 	if (! is_Block(node)) {
@@ -303,8 +300,7 @@ static void transform_nodes(ir_graph *irg, arch_pretrans_nodes *pre_transform)
 
 	inc_irg_visited(irg);
 
-	env.irg        = irg;
-	env.worklist   = new_waitq();
+	env.worklist = new_waitq();
 
 	ir_node *const old_anchor = irg->anchor;
 	ir_node *const old_end    = get_irg_end(irg);
