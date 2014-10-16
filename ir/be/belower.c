@@ -34,8 +34,6 @@
 #include "bessaconstr.h"
 #include "belive.h"
 
-#undef KEEP_ALIVE_COPYKEEP_HACK
-
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 DEBUG_ONLY(static firm_dbg_module_t *dbg_permmove;)
 

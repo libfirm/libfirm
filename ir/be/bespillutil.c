@@ -12,33 +12,34 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-#include "irnode_t.h"
-#include "ircons_t.h"
-#include "iredges_t.h"
-#include "irbackedge_t.h"
-#include "irnodehashmap.h"
-#include "ident_t.h"
-#include "type_t.h"
-#include "entity_t.h"
-#include "debug.h"
-#include "irgwalk.h"
-#include "irgmod.h"
 #include "array.h"
-#include "execfreq.h"
-#include "panic.h"
 #include "bearch.h"
+#include "bechordal_t.h"
+#include "beirg.h"
+#include "belive.h"
+#include "bemodule.h"
+#include "benode.h"
 #include "besched.h"
 #include "bespill.h"
 #include "bespillutil.h"
-#include "belive.h"
-#include "benode.h"
-#include "bechordal_t.h"
-#include "statev_t.h"
 #include "bessaconstr.h"
-#include "beirg.h"
-#include "beutil.h"
-#include "bemodule.h"
 #include "be_t.h"
+#include "beutil.h"
+#include "debug.h"
+#include "entity_t.h"
+#include "execfreq.h"
+#include "ident_t.h"
+#include "irbackedge_t.h"
+#include "ircons_t.h"
+#include "iredges_t.h"
+#include "irgmod.h"
+#include "irgwalk.h"
+#include "irnodehashmap.h"
+#include "irnode_t.h"
+#include "panic.h"
+#include "statev_t.h"
+#include "type_t.h"
+#include "util.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 DEBUG_ONLY(static firm_dbg_module_t *dbg_constr;)
@@ -999,11 +1000,9 @@ static bool has_irn_users(const ir_node *irn)
 
 static ir_node *find_copy(ir_node *irn, ir_node *op)
 {
-	ir_node *cur_node;
-
-	for (cur_node = irn;;) {
+	for (ir_node *cur_node = irn;;) {
 		cur_node = sched_prev(cur_node);
-		if (! be_is_Copy(cur_node))
+		if (!be_is_Copy(cur_node))
 			return NULL;
 		if (be_get_Copy_op(cur_node) == op && arch_irn_is(cur_node, dont_spill))
 			return cur_node;
@@ -1025,12 +1024,6 @@ typedef struct {
 
 static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different, constraint_env_t *env)
 {
-	ir_nodehashmap_t            *op_set;
-	ir_node                     *block;
-	const arch_register_class_t *cls;
-	ir_node                     *keep, *cpy;
-	op_copy_assoc_t             *entry;
-
 	arch_register_req_t const *const req = arch_get_irn_register_req(other_different);
 	if (arch_register_req_is(req, ignore) ||
 			!mode_is_data(get_irn_mode(other_different))) {
@@ -1038,9 +1031,9 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
 		return;
 	}
 
-	op_set = &env->op_set;
-	block  = get_nodes_block(irn);
-	cls    = req->cls;
+	ir_nodehashmap_t            *op_set = &env->op_set;
+	ir_node                     *block  = get_nodes_block(irn);
+	const arch_register_class_t *cls    = req->cls;
 
 	/* Make a not spillable copy of the different node   */
 	/* this is needed because the different irn could be */
@@ -1048,8 +1041,8 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
 	/* The copy is optimized later if not needed         */
 
 	/* check if already exists such a copy in the schedule immediately before */
-	cpy = find_copy(skip_Proj(irn), other_different);
-	if (! cpy) {
+	ir_node *cpy = find_copy(skip_Proj(irn), other_different);
+	if (cpy == NULL) {
 		cpy = be_new_Copy(block, other_different);
 		arch_set_irn_flags(cpy, arch_irn_flag_dont_spill);
 		DB((dbg_constr, LEVEL_1, "created non-spillable %+F for value %+F\n", cpy, other_different));
@@ -1059,28 +1052,27 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
 
 	/* Add the Keep resp. CopyKeep and reroute the users */
 	/* of the other_different irn in case of CopyKeep.   */
+	ir_node *keep;
 	if (has_irn_users(other_different)) {
 		keep = be_new_CopyKeep_single(block, cpy, irn);
 		be_node_set_reg_class_in(keep, 1, cls);
 	} else {
-		ir_node *in[2];
-
-		in[0] = irn;
-		in[1] = cpy;
-		keep = be_new_Keep(block, 2, in);
+		ir_node *in[] = { irn, cpy };
+		keep = be_new_Keep(block, ARRAY_SIZE(in), in);
 	}
 
 	DB((dbg_constr, LEVEL_1, "created %+F(%+F, %+F)\n\n", keep, irn, cpy));
 
 	/* insert copy and keep into schedule */
 	assert(sched_is_scheduled(irn) && "need schedule to assure constraints");
-	if (! sched_is_scheduled(cpy))
+	if (!sched_is_scheduled(cpy))
 		sched_add_before(skip_Proj(irn), cpy);
 	sched_add_after(skip_Proj(irn), keep);
 
 	/* insert the other different and its copies into the map */
-	entry = ir_nodehashmap_get(op_copy_assoc_t, op_set, other_different);
-	if (! entry) {
+	op_copy_assoc_t *entry
+		= ir_nodehashmap_get(op_copy_assoc_t, op_set, other_different);
+	if (entry == NULL) {
 		entry      = OALLOC(&env->obst, op_copy_assoc_t);
 		entry->cls = cls;
 		ir_nodeset_init(&entry->copies);
@@ -1127,7 +1119,7 @@ static void assure_different_constraints(ir_node *irn, ir_node *skipped_irn, con
 				}
 			}
 		}
-		for (int i = 0; 1U << i <= other; ++i) {
+		for (unsigned i = 0; 1U << i <= other; ++i) {
 			if (other & (1U << i)) {
 				ir_node *different_from = get_irn_n(skipped_irn, i);
 				gen_assure_different_pattern(irn, different_from, env);
@@ -1175,11 +1167,6 @@ static void melt_copykeeps(constraint_env_t *cenv)
 			if (be_is_CopyKeep(cp)) {
 				obstack_grow(&obst, &cp, sizeof(cp));
 				++num_ck;
-#ifdef KEEP_ALIVE_COPYKEEP_HACK
-			} else {
-				set_irn_mode(cp, mode_ANY);
-				keep_alive(cp);
-#endif
 			}
 		}
 
@@ -1234,9 +1221,6 @@ static void melt_copykeeps(constraint_env_t *cenv)
 			}
 
 			ir_node *const new_ck = be_new_CopyKeep(get_nodes_block(ref), be_get_CopyKeep_op(ref), n_melt, new_ck_in);
-#ifdef KEEP_ALIVE_COPYKEEP_HACK
-			keep_alive(new_ck);
-#endif /* KEEP_ALIVE_COPYKEEP_HACK */
 
 			/* set register class for all kept inputs */
 			for (unsigned j = 1; j <= n_melt; ++j) {
@@ -1283,16 +1267,15 @@ void be_spill_prepare_for_constraints(ir_graph *irg)
 	ir_nodehashmap_iterator_t map_iter;
 	ir_nodehashmap_entry_t    map_entry;
 	foreach_ir_nodehashmap(&cenv.op_set, map_entry, map_iter) {
-		op_copy_assoc_t          *entry = (op_copy_assoc_t*)map_entry.data;
-		size_t                    n     = ir_nodeset_size(&entry->copies);
-		ir_node                 **nodes = ALLOCAN(ir_node*, n);
-		be_ssa_construction_env_t senv;
+		op_copy_assoc_t *entry    = (op_copy_assoc_t*)map_entry.data;
+		size_t           n_copies = ir_nodeset_size(&entry->copies);
+		ir_node        **nodes    = ALLOCAN(ir_node*, n_copies);
 
 		/* put the node in an array */
 		DBG((dbg_constr, LEVEL_1, "introduce copies for %+F ", map_entry.node));
 
 		/* collect all copies */
-		n = 0;
+		size_t n = 0;
 		foreach_ir_nodeset(&entry->copies, cp, iter) {
 			nodes[n++] = cp;
 			DB((dbg_constr, LEVEL_1, ", %+F ", cp));
@@ -1301,6 +1284,7 @@ void be_spill_prepare_for_constraints(ir_graph *irg)
 		DB((dbg_constr, LEVEL_1, "\n"));
 
 		/* introduce the copies for the operand and its copies */
+		be_ssa_construction_env_t senv;
 		be_ssa_construction_init(&senv, irg);
 		be_ssa_construction_add_copy(&senv, map_entry.node);
 		be_ssa_construction_add_copies(&senv, nodes, n);
@@ -1311,10 +1295,9 @@ void be_spill_prepare_for_constraints(ir_graph *irg)
 		/* so we transform unnecessary ones into Keeps.       */
 		foreach_ir_nodeset(&entry->copies, cp, iter) {
 			if (be_is_CopyKeep(cp) && get_irn_n_edges(cp) < 1) {
-				int      n   = get_irn_arity(cp);
-				ir_node *keep;
-
-				keep = be_new_Keep(get_nodes_block(cp), n, get_irn_in(cp) + 1);
+				int      arity = get_irn_arity(cp);
+				ir_node *block = get_nodes_block(cp);
+				ir_node *keep  = be_new_Keep(block, arity, get_irn_in(cp) + 1);
 				sched_replace(cp, keep);
 
 				/* Set all ins (including the block) of the CopyKeep BAD to keep the verifier happy. */
