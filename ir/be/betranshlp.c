@@ -305,32 +305,16 @@ static void transform_nodes(ir_graph *irg, arch_pretrans_nodes *pre_transform)
 	env.worklist = new_waitq();
 
 	ir_node *const old_anchor = irg->anchor;
+	ir_node *const new_anchor = new_r_Anchor(irg);
 	ir_node *const old_end    = get_irg_end(irg);
-
-	/* put all anchor nodes in the worklist */
-	for (int i = get_irg_n_anchors(irg) - 1; i >= 0; --i) {
-		ir_node *anchor = get_irg_anchor(irg, i);
-		waitq_put(env.worklist, anchor);
-	}
-
-	ir_node *new_anchor  = new_r_Anchor(irg);
 	irg->anchor = new_anchor;
 
-	/* pre transform some anchors (so they are available in the other transform
-	 * functions) */
-	static irg_anchors const pre_anchors[] = {
-		anchor_no_mem,
-		anchor_end_block,
-		anchor_end,
-		anchor_start_block,
-		anchor_start,
-		anchor_frame,
-	};
-	for (size_t i = 0; i != ARRAY_SIZE(pre_anchors); ++i) {
-		irg_anchors const idx = pre_anchors[i];
-		ir_node    *const old = get_irn_n(old_anchor, idx);
-		ir_node    *const nw  = be_transform_node(old);
-		set_irn_n(new_anchor, idx, nw);
+	/* Pre-transform all anchors (so they are available in the other transform
+	 * functions) and put them into the worklist. */
+	for (size_t i = 0, n = get_irg_n_anchors(irg); i != n; ++i) {
+		ir_node *const old = get_irn_n(old_anchor, i);
+		ir_node *const nw  = be_transform_node(old);
+		set_irn_n(new_anchor, i, nw);
 	}
 
 	if (pre_transform)
@@ -348,7 +332,6 @@ static void transform_nodes(ir_graph *irg, arch_pretrans_nodes *pre_transform)
 		ir_node *anchor = get_irn_n(old_anchor, i);
 		anchor = (ir_node*)get_irn_link(anchor);
 		fix_loops(anchor);
-		set_irn_n(new_anchor, i, anchor);
 	}
 
 	del_waitq(env.worklist);
