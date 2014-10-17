@@ -61,7 +61,6 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 static ia32_cconv_t    *current_cconv;
 static be_start_info_t  start_mem;
 static be_start_info_t  start_val[N_IA32_REGISTERS];
-static unsigned         start_callee_saves_offset;
 static unsigned         start_params_offset;
 static pmap            *node_to_stack;
 static be_stackorder_t *stackorder;
@@ -4184,7 +4183,6 @@ static ir_node *gen_Start(ir_node *node)
 	}
 
 	/* callee saves */
-	start_callee_saves_offset = o;
 	for (size_t i = 0; i < N_IA32_REGISTERS; ++i) {
 		if (!rbitset_is_set(cconv->callee_saves, i))
 			continue;
