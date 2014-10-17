@@ -5825,12 +5825,12 @@ static void add_parameter_loads(ir_graph *irg, const ia32_cconv_t *cconv)
 		ir_entity *entity = param->entity;
 		if (entity == NULL)
 			continue;
-		ir_type *type   = get_entity_type(entity);
-		ir_mode *mode   = get_type_mode(type);
-		ir_node *member = new_r_Member(start_block, frame, entity);
-		ir_node *load   = new_r_Load(start_block, nomem, member, mode, type,
-		                             cons_none);
-		ir_node *res    = new_r_Proj(load, mode, pn_Load_res);
+		ir_type  *const type   = get_entity_type(entity);
+		ir_mode  *const mode   = get_type_mode(type);
+		dbg_info *const dbgi   = get_irn_dbg_info(proj);
+		ir_node  *const member = new_rd_Member(dbgi, start_block, frame, entity);
+		ir_node  *const load   = new_rd_Load(dbgi, start_block, nomem, member, mode, type, cons_none);
+		ir_node  *const res    = new_r_Proj(load, mode, pn_Load_res);
 		exchange(proj, res);
 	}
 }
