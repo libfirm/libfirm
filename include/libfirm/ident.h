@@ -61,9 +61,6 @@ FIRM_API const char *get_id_str(ident *id);
  */
 FIRM_API ident *id_unique(const char *tag);
 
-/** mangle underscore: Returns a new ident that represents first_scnd. */
-FIRM_API ident *id_mangle_u(ident *first, ident* scnd);
-
 /** Returns a new ident that represents 'prefixscndsuffix'. */
 FIRM_API ident *id_mangle3(const char *prefix, ident *middle,
                            const char *suffix);
