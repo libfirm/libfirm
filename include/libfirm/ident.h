@@ -64,9 +64,6 @@ FIRM_API ident *id_unique(const char *tag);
 /** mangle underscore: Returns a new ident that represents first_scnd. */
 FIRM_API ident *id_mangle_u(ident *first, ident* scnd);
 
-/** mangle dot: Returns a new ident that represents first.scnd. */
-FIRM_API ident *id_mangle_dot(ident *first, ident* scnd);
-
 /** mangle: Returns a new ident that represents firstscnd. */
 FIRM_API ident *id_mangle(ident *first, ident* scnd);
 

@@ -70,12 +70,6 @@ ident *id_mangle_u(ident *first, ident* scnd)
 	return id_mangle_3(first, '_', scnd);
 }
 
-/* Returns a new ident that represents first.scnd. */
-ident *id_mangle_dot(ident *first, ident *scnd)
-{
-	return id_mangle_3(first, '.', scnd);
-}
-
 void firm_init_mangle(void)
 {
 	obstack_init(&mangle_obst);
