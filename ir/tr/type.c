@@ -347,8 +347,9 @@ void (set_type_dbg_info)(ir_type *tp, type_dbg_info *db)
 	set_type_dbg_info_(tp, db);
 }
 
-static void compound_init(ir_type *type)
+static void compound_init(ir_type *const type, ident *const name)
 {
+	type->name            = name;
 	type->attr.ca.members = NEW_ARR_F(ir_entity*, 0);
 }
 
@@ -406,8 +407,7 @@ static void compound_remove_member(ir_type *type, const ir_entity *member)
 ir_type *new_type_class(ident *name)
 {
 	ir_type *res = new_type(type_class, NULL);
-	res->name = name;
-	compound_init(res);
+	compound_init(res, name);
 	res->attr.cla.subtypes   = NEW_ARR_F(ir_type*, 0);
 	res->attr.cla.supertypes = NEW_ARR_F(ir_type*, 0);
 	hook_new_type(res);
@@ -601,8 +601,7 @@ void set_class_mode(ir_type *tp, ir_mode *mode)
 ir_type *new_type_struct(ident *name)
 {
 	ir_type *res = new_type(type_struct, NULL);
-	res->name = name;
-	compound_init(res);
+	compound_init(res, name);
 	hook_new_type(res);
 	return res;
 }
@@ -842,8 +841,7 @@ int (is_Method_type)(const ir_type *method)
 ir_type *new_type_union(ident *name)
 {
 	ir_type *res = new_type(type_union, NULL);
-	res->name = name;
-	compound_init(res);
+	compound_init(res, name);
 	hook_new_type(res);
 	return res;
 }
