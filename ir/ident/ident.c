@@ -8,17 +8,12 @@
  * @brief     Hash table to store names.
  * @author    Goetz Lindenmaier
  */
-#include <assert.h>
-#include <ctype.h>
 #include <stdio.h>
 #include <string.h>
-#include <stddef.h>
-#include <stdlib.h>
 
+#include "hashptr.h"
 #include "ident_t.h"
 #include "set.h"
-#include "xmalloc.h"
-#include "hashptr.h"
 
 static set *id_set;
 
@@ -37,7 +32,6 @@ ident *new_id_from_chars(const char *str, size_t len)
 
 ident *new_id_from_str(const char *str)
 {
-	assert(str != NULL);
 	return new_id_from_chars(str, strlen(str));
 }
 

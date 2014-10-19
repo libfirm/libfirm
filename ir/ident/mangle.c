@@ -8,26 +8,11 @@
  * @brief   Methods to manipulate names.
  * @author  Martin Trapp, Christian Schaefer, Goetz Lindenmaier, Michael Beck
  */
-#include <stdio.h>
-
 #include "ident_t.h"
 #include "obst.h"
 
-/* Make types visible to allow most efficient access */
-#include "entity_t.h"
-#include "type_t.h"
-#include "tpop_t.h"
-
 /** An obstack used for temporary space */
 static struct obstack mangle_obst;
-
-static void obstack_grow_ident(struct obstack *obst, ident *id)
-{
-	const char *c = get_id_str(id);
-	for ( ; *c != '\0'; ++c) {
-		obstack_1grow(obst, *c);
-	}
-}
 
 static ident *new_ident_from_obst(struct obstack *obst)
 {
@@ -38,12 +23,17 @@ static ident *new_ident_from_obst(struct obstack *obst)
 	return res;
 }
 
-/** Returns a new ident that represents 'prefixscndsuffix'. */
-ident *id_mangle3(const char *prefix, ident *scnd, const char *suffix)
+static void grow_string(char const *const s)
 {
-	obstack_grow(&mangle_obst, prefix, strlen(prefix));
-	obstack_grow_ident(&mangle_obst, scnd);
-	obstack_grow(&mangle_obst, suffix, strlen(suffix));
+	obstack_grow(&mangle_obst, s, strlen(s));
+}
+
+/** Returns a new ident that represents 'prefixscndsuffix'. */
+ident *id_mangle3(char const *const prefix, ident *const middle, char const *const suffix)
+{
+	grow_string(prefix);
+	grow_string(get_id_str(middle));
+	grow_string(suffix);
 	return new_ident_from_obst(&mangle_obst);
 }
 
