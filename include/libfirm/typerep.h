@@ -226,8 +226,7 @@ FIRM_API void set_entity_alias(ir_entity *alias, ir_entity *aliased);
 FIRM_API ir_entity *get_entity_alias(const ir_entity *alias);
 
 /**
- * Check an entity. Currently, we check only if initialized constants
- * are build on the const irg graph.
+ * Check an entity.
  *
  * @return non-zero if no errors were found
  */
