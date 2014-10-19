@@ -1964,11 +1964,7 @@ void stat_be_block_stat_permcycle(const char *class_name, ir_node *perm, ir_node
 /* Dumps a statistics snapshot. */
 void stat_dump_snapshot(const char *name, const char *phase)
 {
-	char fname[2048];
-	const char *p;
-	size_t l;
-
-	if (! status->stat_options)
+	if (!status->stat_options)
 		return;
 
 	STAT_ENTER;
@@ -1984,35 +1980,19 @@ void stat_dump_snapshot(const char *name, const char *phase)
 			stat_const_clear(status);
 
 		/* build the name */
-		p = strrchr(name, '/');
+		char const *p = strrchr(name, '/');
 #ifdef _WIN32
 		{
-			const char *q;
-
-			q = strrchr(name, '\\');
-
+			char const *const q = strrchr(name, '\\');
 			/* NULL might be not the smallest pointer */
 			if (q && (!p || q > p))
 				p = q;
 		}
 #endif /* _WIN32 */
-		if (p) {
-			++p;
-			l = p - name;
+		p = p ? p + 1 : name;
 
-			if (l > (int) (sizeof(fname) - 1))
-				l = sizeof(fname) - 1;
-
-			memcpy(fname, name, l);
-			fname[l] = '\0';
-		} else {
-			fname[0] = '\0';
-			p = name;
-		}
-		strncat(fname, "firmstat-", sizeof(fname)-strlen(fname)-1);
-		strncat(fname, phase,       sizeof(fname)-strlen(fname)-1);
-		strncat(fname, "-",         sizeof(fname)-strlen(fname)-1);
-		strncat(fname, p,           sizeof(fname)-strlen(fname)-1);
+		char fname[2048];
+		snprintf(fname, sizeof(fname), "%.*sfirmstat-%s-%s", (int)(p - name), name, phase, p);
 
 		stat_dump_init(fname);
 
