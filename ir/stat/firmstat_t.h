@@ -209,15 +209,17 @@ typedef struct address_mark_entry_t {
   unsigned mark;                /**< the mark, a bitmask of enum adr_marker_t */
 } address_mark_entry_t;
 
+typedef char const *op_id_t;
+
 /**
  * An entry for ir_nodes, used in ir_graph statistics.
  */
 typedef struct node_entry_t {
-	counter_t   cnt_alive;    /**< amount of nodes in this entry */
-	counter_t   new_node;     /**< amount of new nodes for this entry */
-	counter_t   into_Id;      /**< amount of nodes that turned into Id's for this entry */
-	counter_t   normalized;   /**< amount of nodes that normalized for this entry */
-	const ir_op *op;          /**< the op for this entry */
+	counter_t cnt_alive;  /**< amount of nodes in this entry */
+	counter_t new_node;   /**< amount of new nodes for this entry */
+	counter_t into_Id;    /**< amount of nodes that turned into Id's for this entry */
+	counter_t normalized; /**< amount of nodes that normalized for this entry */
+	op_id_t   op_id;      /**< the op for this entry */
 } node_entry_t;
 
 enum leaf_call_state_t {
@@ -288,8 +290,8 @@ typedef struct graph_entry_t {
  * An entry for optimized ir_nodes
  */
 typedef struct opt_entry_t {
-	counter_t   count;    /**< optimization counter */
-	const ir_op *op;      /**< the op for this entry */
+	counter_t count; /**< optimization counter */
+	op_id_t   op_id; /**< the op for this entry */
 } opt_entry_t;
 
 /**
@@ -435,14 +437,14 @@ typedef struct statistic_info_t {
 	pdeq                    *wait_q;             /**< wait queue for leaf call decision */
 	unsigned                recursive:1;         /**< flag for detecting recursive hook calls */
 	unsigned                in_dead_node_elim:1; /**< flag for dead node elimination runs */
-	ir_op                   *op_Phi0;            /**< pseudo op for Phi0 */
-	ir_op                   *op_PhiM;            /**< pseudo op for memory Phi */
-	ir_op                   *op_ProjM;           /**< pseudo op for memory Proj */
-	ir_op                   *op_MulC;            /**< pseudo op for multiplication by const */
-	ir_op                   *op_DivC;            /**< pseudo op for division by const */
-	ir_op                   *op_ModC;            /**< pseudo op for modulo by const */
-	ir_op                   *op_SelSel;          /**< pseudo op for Sel(Sel) */
-	ir_op                   *op_SelSelSel;       /**< pseudo op for Sel(Sel(Sel)) */
+	op_id_t                 op_Phi0;             /**< pseudo op for Phi0 */
+	op_id_t                 op_PhiM;             /**< pseudo op for memory Phi */
+	op_id_t                 op_ProjM;            /**< pseudo op for memory Proj */
+	op_id_t                 op_MulC;             /**< pseudo op for multiplication by const */
+	op_id_t                 op_DivC;             /**< pseudo op for division by const */
+	op_id_t                 op_ModC;             /**< pseudo op for modulo by const */
+	op_id_t                 op_SelSel;           /**< pseudo op for Sel(Sel) */
+	op_id_t                 op_SelSelSel;        /**< pseudo op for Sel(Sel(Sel)) */
 	dumper_t                *dumper;             /**< list of dumper */
 	int                     reassoc_run;         /**< if set, reassociation is running */
 	constant_info_t         const_info;          /**< statistic info for constants */

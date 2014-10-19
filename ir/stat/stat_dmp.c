@@ -187,7 +187,7 @@ static void simple_dump_opcode_hash(dumper_t *dmp, pset *set)
 	fprintf(dmp->f, "%-16s %-8s %-8s %-8s %-8s\n", "Opcode", "alive", "created", "->Id", "normalized");
 	foreach_pset(set, node_entry_t, entry) {
 		fprintf(dmp->f, "%-16s %8u %8u %8u %8u\n",
-			get_id_str(entry->op->name),
+			entry->op_id,
 			cnt_to_uint(&entry->cnt_alive),
 			cnt_to_uint(&entry->new_node),
 			cnt_to_uint(&entry->into_Id),
@@ -230,8 +230,7 @@ static void simple_dump_opt_hash(dumper_t *dmp, pset *set, int index)
 		fprintf(dmp->f, "%-16s %-8s\n", "Opcode", "deref");
 
 		foreach_pset(set, opt_entry_t, entry) {
-			fprintf(dmp->f, "%-16s %8u\n",
-				get_id_str(entry->op->name), cnt_to_uint(&entry->count));
+			fprintf(dmp->f, "%-16s %8u\n", entry->op_id, cnt_to_uint(&entry->count));
 		}
 	}
 }
@@ -704,13 +703,14 @@ static void csv_count_nodes(dumper_t *dmp, graph_entry_t *graph, counter_t cnt[]
 		cnt_clr(&cnt[i]);
 
 	foreach_pset(graph->opcode_hash, node_entry_t, entry) {
-		if (entry->op == op_Phi) {
+		op_id_t const op_id = entry->op_id;
+		if (op_id == get_op_name(op_Phi)) {
 			/* normal Phi */
 			cnt_add(&cnt[1], &entry->cnt_alive);
-		} else if (entry->op == dmp->status->op_PhiM) {
+		} else if (op_id == dmp->status->op_PhiM) {
 			/* memory Phi */
 			cnt_add(&cnt[2], &entry->cnt_alive);
-		} else if (entry->op == op_Proj) {
+		} else if (op_id == get_op_name(op_Proj)) {
 			/* Proj */
 			cnt_add(&cnt[3], &entry->cnt_alive);
 		} else {

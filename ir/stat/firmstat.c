@@ -33,32 +33,6 @@
  * Special pseudo Opcodes that we need to count some interesting cases
  */
 
-/**
- * The Phi0, a node that is created during SSA construction
- */
-static ir_op _op_Phi0;
-
-/** The PhiM, just to count memory Phi's. */
-static ir_op _op_PhiM;
-
-/** The Mul by Const node. */
-static ir_op _op_MulC;
-
-/** The Div by Const node. */
-static ir_op _op_DivC;
-
-/** The Div by Const node. */
-static ir_op _op_ModC;
-
-/** The memory Proj node. */
-static ir_op _op_ProjM;
-
-/** A Sel of a Sel */
-static ir_op _op_SelSel;
-
-/** A Sel of a Sel of a Sel */
-static ir_op _op_SelSelSel;
-
 static unsigned stat_options;
 
 /* ---------------------------------------------------------------------------------- */
@@ -86,7 +60,7 @@ static int opcode_cmp(const void *elt, const void *key)
 	const node_entry_t *e1 = (const node_entry_t*)elt;
 	const node_entry_t *e2 = (const node_entry_t*)key;
 
-	return e1->op->code - e2->op->code;
+	return e1->op_id != e2->op_id;
 }
 
 /**
@@ -108,7 +82,7 @@ static int opt_cmp(const void *elt, const void *key)
 	const opt_entry_t *e1 = (const opt_entry_t*)elt;
 	const opt_entry_t *e2 = (const opt_entry_t*)key;
 
-	return e1->op->code != e2->op->code;
+	return e1->op_id != e2->op_id;
 }
 
 /**
@@ -206,17 +180,17 @@ static void opcode_clear_entry(node_entry_t *elem)
  * Returns the associates node_entry_t for an ir_op (and allocates
  * one if not yet available).
  *
- * @param op    the IR operation
- * @param hmap  a hash map containing ir_op* -> node_entry_t*
+ * @param op_id  the IR operation
+ * @param hmap   a hash map containing ir_op* -> node_entry_t*
  */
-static node_entry_t *opcode_get_entry(const ir_op *op, hmap_node_entry_t *hmap)
+static node_entry_t *opcode_get_entry(op_id_t const op_id, hmap_node_entry_t *const hmap)
 {
 	node_entry_t key;
 	node_entry_t *elem;
 
-	key.op = op;
+	key.op_id = op_id;
 
-	elem = (node_entry_t*)pset_find(hmap, &key, op->code);
+	elem = (node_entry_t*)pset_find(hmap, &key, hash_ptr(op_id));
 	if (elem)
 		return elem;
 
@@ -225,9 +199,9 @@ static node_entry_t *opcode_get_entry(const ir_op *op, hmap_node_entry_t *hmap)
 	/* clear counter */
 	opcode_clear_entry(elem);
 
-	elem->op = op;
+	elem->op_id = op_id;
 
-	return (node_entry_t*)pset_insert(hmap, elem, op->code);
+	return (node_entry_t*)pset_insert(hmap, elem, hash_ptr(op_id));
 }
 
 /**
@@ -324,17 +298,17 @@ static void opt_clear_entry(opt_entry_t *elem)
 /**
  * Returns the associated opt_entry_t for an IR operation.
  *
- * @param op    the IR operation
- * @param hmap  the hash map containing ir_op* -> opt_entry_t*
+ * @param op_id  the IR operation
+ * @param hmap   the hash map containing ir_op* -> opt_entry_t*
  */
-static opt_entry_t *opt_get_entry(const ir_op *op, hmap_opt_entry_t *hmap)
+static opt_entry_t *opt_get_entry(op_id_t const op_id, hmap_opt_entry_t *const hmap)
 {
 	opt_entry_t key;
 	opt_entry_t *elem;
 
-	key.op = op;
+	key.op_id = op_id;
 
-	elem = (opt_entry_t*)pset_find(hmap, &key, op->code);
+	elem = (opt_entry_t*)pset_find(hmap, &key, hash_ptr(op_id));
 	if (elem)
 		return elem;
 
@@ -343,9 +317,9 @@ static opt_entry_t *opt_get_entry(const ir_op *op, hmap_opt_entry_t *hmap)
 	/* clear new counter */
 	opt_clear_entry(elem);
 
-	elem->op = op;
+	elem->op_id = op_id;
 
-	return (opt_entry_t*)pset_insert(hmap, elem, op->code);
+	return (opt_entry_t*)pset_insert(hmap, elem, hash_ptr(op_id));
 }
 
 /**
@@ -529,52 +503,51 @@ static void clear_optimization_counter(void)
  *
  * @param none  an IR node
  */
-static ir_op *stat_get_irn_op(ir_node *node)
+static op_id_t stat_get_irn_op(ir_node *node)
 {
-	ir_op *op = get_irn_op(node);
-	unsigned opc = op->code;
-
-	switch (opc) {
+	ir_op *const op    = get_irn_op(node);
+	op_id_t      op_id = get_op_name(op);
+	switch (op->code) {
 	case iro_Phi:
 		if (get_irn_arity(node) == 0) {
 			/* special case, a Phi0 node, count on extra counter */
-			op = status->op_Phi0 ? status->op_Phi0 : op;
+			op_id = status->op_Phi0 ? status->op_Phi0 : op_id;
 		} else if (get_irn_mode(node) == mode_M) {
 			/* special case, a Memory Phi node, count on extra counter */
-			op = status->op_PhiM ? status->op_PhiM : op;
+			op_id = status->op_PhiM ? status->op_PhiM : op_id;
 		}
 		break;
 	case iro_Proj:
 		if (get_irn_mode(node) == mode_M) {
 			/* special case, a Memory Proj node, count on extra counter */
-			op = status->op_ProjM ? status->op_ProjM : op;
+			op_id = status->op_ProjM ? status->op_ProjM : op_id;
 		}
 		break;
 	case iro_Mul:
 		if (is_Const(get_Mul_left(node)) || is_Const(get_Mul_right(node))) {
 			/* special case, a Multiply by a const, count on extra counter */
-			op = status->op_MulC ? status->op_MulC : op;
+			op_id = status->op_MulC ? status->op_MulC : op_id;
 		}
 		break;
 	case iro_Div:
 		if (is_Const(get_Div_right(node))) {
 			/* special case, a division by a const, count on extra counter */
-			op = status->op_DivC ? status->op_DivC : op;
+			op_id = status->op_DivC ? status->op_DivC : op_id;
 		}
 		break;
 	case iro_Mod:
 		if (is_Const(get_Mod_right(node))) {
 			/* special case, a module by a const, count on extra counter */
-			op = status->op_ModC ? status->op_ModC : op;
+			op_id = status->op_ModC ? status->op_ModC : op_id;
 		}
 		break;
 	case iro_Sel:
 		if (is_Sel(get_Sel_ptr(node))) {
 			/* special case, a Sel of a Sel, count on extra counter */
-			op = status->op_SelSel ? status->op_SelSel : op;
+			op_id = status->op_SelSel ? status->op_SelSel : op_id;
 			if (is_Sel(get_Sel_ptr(get_Sel_ptr(node)))) {
 				/* special case, a Sel of a Sel of a Sel, count on extra counter */
-				op = status->op_SelSelSel ? status->op_SelSelSel : op;
+				op_id = status->op_SelSelSel ? status->op_SelSelSel : op_id;
 			}
 		}
 		break;
@@ -582,7 +555,7 @@ static ir_op *stat_get_irn_op(ir_node *node)
 		break;
 	}
 
-	return op;
+	return op_id;
 }
 
 /**
@@ -862,12 +835,11 @@ end_parameter: ;
 static void update_node_stat(ir_node *node, void *env)
 {
 	graph_entry_t *graph = (graph_entry_t*)env;
-	node_entry_t *entry;
 
-	ir_op *op = stat_get_irn_op(node);
 	int arity = get_irn_arity(node);
 
-	entry = opcode_get_entry(op, graph->opcode_hash);
+	op_id_t       const op    = stat_get_irn_op(node);
+	node_entry_t *const entry = opcode_get_entry(op, graph->opcode_hash);
 
 	cnt_inc(&entry->cnt_alive);
 	cnt_add_i(&graph->cnt[gcnt_edges], arity);
@@ -877,7 +849,7 @@ static void update_node_stat(ir_node *node, void *env)
 
 	/* handle statistics for special node types */
 
-	switch (op->code) {
+	switch (get_irn_opcode(node)) {
 	case iro_Call:
 		/* check for properties that depends on calls like recursion/leaf/indirect call */
 		stat_update_call(node, graph);
@@ -1100,7 +1072,7 @@ static void update_graph_stat(graph_entry_t *global, graph_entry_t *graph)
 
 	/* assume we walk every graph only ONCE, we could sum here the global count */
 	foreach_pset(graph->opcode_hash, node_entry_t, entry) {
-		node_entry_t *g_entry = opcode_get_entry(entry->op, global->opcode_hash);
+		node_entry_t *g_entry = opcode_get_entry(entry->op_id, global->opcode_hash);
 
 		/* update the node counter */
 		cnt_add(&g_entry->cnt_alive, &entry->cnt_alive);
@@ -1319,7 +1291,7 @@ static void stat_new_ir_op(void *ctx, ir_op *op)
 		graph_entry_t *graph = graph_get_entry(NULL, status->irg_hash);
 
 		/* execute for side effect :-) */
-		(void)opcode_get_entry(op, graph->opcode_hash);
+		opcode_get_entry(get_op_name(op), graph->opcode_hash);
 
 		pset_insert(status->ir_op_hash, op, op->code);
 	}
@@ -1365,17 +1337,17 @@ static void stat_new_node(void *ctx, ir_node *node)
 	{
 		node_entry_t *entry;
 		graph_entry_t *graph;
-		ir_op *op = stat_get_irn_op(node);
+		op_id_t const op_id = stat_get_irn_op(node);
 
 		/* increase global value */
 		graph = graph_get_entry(NULL, status->irg_hash);
-		entry = opcode_get_entry(op, graph->opcode_hash);
+		entry = opcode_get_entry(op_id, graph->opcode_hash);
 		cnt_inc(&entry->new_node);
 
 		/* increase local value */
 		ir_graph *const irg = get_irn_irg(node);
 		graph = graph_get_entry(irg, status->irg_hash);
-		entry = opcode_get_entry(op, graph->opcode_hash);
+		entry = opcode_get_entry(op_id, graph->opcode_hash);
 		cnt_inc(&entry->new_node);
 	}
 	STAT_LEAVE;
@@ -1397,17 +1369,17 @@ static void stat_turn_into_id(void *ctx, ir_node *node)
 	{
 		node_entry_t *entry;
 		graph_entry_t *graph;
-		ir_op *op = stat_get_irn_op(node);
+		op_id_t const op_id = stat_get_irn_op(node);
 
 		/* increase global value */
 		graph = graph_get_entry(NULL, status->irg_hash);
-		entry = opcode_get_entry(op, graph->opcode_hash);
+		entry = opcode_get_entry(op_id, graph->opcode_hash);
 		cnt_inc(&entry->into_Id);
 
 		/* increase local value */
 		ir_graph *const irg = get_irn_irg(node);
 		graph = graph_get_entry(irg, status->irg_hash);
-		entry = opcode_get_entry(op, graph->opcode_hash);
+		entry = opcode_get_entry(op_id, graph->opcode_hash);
 		cnt_inc(&entry->into_Id);
 	}
 	STAT_LEAVE;
@@ -1429,17 +1401,17 @@ static void stat_normalize(void *ctx, ir_node *node)
 	{
 		node_entry_t *entry;
 		graph_entry_t *graph;
-		ir_op *op = stat_get_irn_op(node);
+		op_id_t const op_id = stat_get_irn_op(node);
 
 		/* increase global value */
 		graph = graph_get_entry(NULL, status->irg_hash);
-		entry = opcode_get_entry(op, graph->opcode_hash);
+		entry = opcode_get_entry(op_id, graph->opcode_hash);
 		cnt_inc(&entry->normalized);
 
 		/* increase local value */
 		ir_graph *const irg = get_irn_irg(node);
 		graph = graph_get_entry(irg, status->irg_hash);
-		entry = opcode_get_entry(op, graph->opcode_hash);
+		entry = opcode_get_entry(op_id, graph->opcode_hash);
 		cnt_inc(&entry->normalized);
 	}
 	STAT_LEAVE;
@@ -1595,15 +1567,13 @@ static bool is_const(ir_node *const node)
  */
 static void removed_due_opt(ir_node *n, hmap_opt_entry_t *hmap, hook_opt_kind kind)
 {
-	opt_entry_t *entry;
-	ir_op *op = stat_get_irn_op(n);
-
 	/* ignore CSE for Constants */
 	if (kind == HOOK_OPT_CSE && is_const(n))
 		return;
 
 	/* increase global value */
-	entry = opt_get_entry(op, hmap);
+	op_id_t      const op_id = stat_get_irn_op(n);
+	opt_entry_t *const entry = opt_get_entry(op_id, hmap);
 	cnt_inc(&entry->count);
 }
 
@@ -2117,10 +2087,8 @@ static hook_entry_t stat_hooks[hook_last];
 /* initialize the statistics module. */
 void firm_init_stat(void)
 {
-#define X(a)  a, sizeof(a)-1
 #define HOOK(h, fkt) \
 	stat_hooks[h].hook._##h = fkt; register_hook(h, &stat_hooks[h])
-	unsigned num = 0;
 
 	if (! (stat_options & FIRMSTAT_ENABLED))
 		return;
@@ -2164,51 +2132,25 @@ void firm_init_stat(void)
 	status->wait_q     = new_pdeq();
 
 	if (stat_options & FIRMSTAT_COUNT_STRONG_OP) {
-		/* build the pseudo-ops */
-
-		_op_Phi0.code    = --num;
-		_op_Phi0.name    = new_id_from_chars(X("Phi0"));
-
-		_op_PhiM.code    = --num;
-		_op_PhiM.name    = new_id_from_chars(X("PhiM"));
-
-		_op_ProjM.code   = --num;
-		_op_ProjM.name   = new_id_from_chars(X("ProjM"));
-
-		_op_MulC.code    = --num;
-		_op_MulC.name    = new_id_from_chars(X("MulC"));
-
-		_op_DivC.code    = --num;
-		_op_DivC.name    = new_id_from_chars(X("DivC"));
-
-		_op_ModC.code    = --num;
-		_op_ModC.name    = new_id_from_chars(X("ModC"));
-
-		status->op_Phi0    = &_op_Phi0;
-		status->op_PhiM    = &_op_PhiM;
-		status->op_ProjM   = &_op_ProjM;
-		status->op_MulC    = &_op_MulC;
-		status->op_DivC    = &_op_DivC;
-		status->op_ModC    = &_op_ModC;
+		status->op_Phi0  = "Phi0";
+		status->op_PhiM  = "PhiM";
+		status->op_ProjM = "ProjM";
+		status->op_MulC  = "MulC";
+		status->op_DivC  = "DivC";
+		status->op_ModC  = "ModC";
 	} else {
-		status->op_Phi0    = NULL;
-		status->op_PhiM    = NULL;
-		status->op_ProjM   = NULL;
-		status->op_MulC    = NULL;
-		status->op_DivC    = NULL;
-		status->op_ModC    = NULL;
+		status->op_Phi0  = NULL;
+		status->op_PhiM  = NULL;
+		status->op_ProjM = NULL;
+		status->op_MulC  = NULL;
+		status->op_DivC  = NULL;
+		status->op_ModC  = NULL;
 	}
 
 	/* for Florian: count the Sel depth */
 	if (stat_options & FIRMSTAT_COUNT_SELS) {
-		_op_SelSel.code    = --num;
-		_op_SelSel.name    = new_id_from_chars(X("Sel(Sel)"));
-
-		_op_SelSelSel.code = --num;
-		_op_SelSelSel.name = new_id_from_chars(X("Sel(Sel(Sel))"));
-
-		status->op_SelSel    = &_op_SelSel;
-		status->op_SelSelSel = &_op_SelSelSel;
+		status->op_SelSel    = "Sel(Sel)";
+		status->op_SelSelSel = "Sel(Sel(Sel))";
 	} else {
 		status->op_SelSel    = NULL;
 		status->op_SelSelSel = NULL;
@@ -2233,7 +2175,6 @@ void firm_init_stat(void)
 	clear_optimization_counter();
 
 #undef HOOK
-#undef X
 }
 
 /**
