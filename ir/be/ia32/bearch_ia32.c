@@ -29,6 +29,7 @@
 #include "beutil.h"
 #include "debug.h"
 #include "firmstat_t.h"
+#include "ident_t.h"
 #include "instrument.h"
 #include "irarch.h"
 #include "ircons_t.h"
@@ -218,28 +219,26 @@ static int ia32_get_sp_bias(const ir_node *node)
  */
 static void ia32_build_between_type(void)
 {
-#define IDENT(s) new_id_from_chars(s, sizeof(s)-1)
 	if (between_type == NULL) {
 		ir_type *old_bp_type   = new_type_primitive(ia32_mode_gp);
 		ir_type *ret_addr_type = new_type_primitive(ia32_mode_gp);
 
-		between_type           = new_type_struct(IDENT("ia32_between_type"));
-		old_bp_ent             = new_entity(between_type, IDENT("old_bp"), old_bp_type);
-		ret_addr_ent           = new_entity(between_type, IDENT("ret_addr"), ret_addr_type);
+		between_type = new_type_struct(NEW_IDENT("ia32_between_type"));
+		old_bp_ent   = new_entity(between_type, NEW_IDENT("old_bp"), old_bp_type);
+		ret_addr_ent = new_entity(between_type, NEW_IDENT("ret_addr"), ret_addr_type);
 
 		set_entity_offset(old_bp_ent, 0);
 		set_entity_offset(ret_addr_ent, get_type_size_bytes(old_bp_type));
 		set_type_size_bytes(between_type, get_type_size_bytes(old_bp_type) + get_type_size_bytes(ret_addr_type));
 		set_type_state(between_type, layout_fixed);
 
-		omit_fp_between_type = new_type_struct(IDENT("ia32_between_type_omit_fp"));
-		omit_fp_ret_addr_ent = new_entity(omit_fp_between_type, IDENT("ret_addr"), ret_addr_type);
+		omit_fp_between_type = new_type_struct(NEW_IDENT("ia32_between_type_omit_fp"));
+		omit_fp_ret_addr_ent = new_entity(omit_fp_between_type, NEW_IDENT("ret_addr"), ret_addr_type);
 
 		set_entity_offset(omit_fp_ret_addr_ent, 0);
 		set_type_size_bytes(omit_fp_between_type, get_type_size_bytes(ret_addr_type));
 		set_type_state(omit_fp_between_type, layout_fixed);
 	}
-#undef IDENT
 }
 
 /**

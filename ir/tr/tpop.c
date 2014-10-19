@@ -8,10 +8,10 @@
  * @brief   Opcode of types.
  * @author  Goetz Lindenmaier, Michael Beck
  */
+#include "ident_t.h"
 #include "xmalloc.h"
 #include "tpop_t.h"
 #include "type_t.h"
-#include "ident.h"
 
 const tp_op *type_class;         const tp_op *get_tpop_class      (void) { return type_class;       }
 const tp_op *type_struct;        const tp_op *get_tpop_struct     (void) { return type_struct;      }
@@ -137,17 +137,15 @@ static const tp_op_ops
 
 void init_tpop(void)
 {
-#define ID(s) new_id_from_chars(s, sizeof(s) - 1)
-	type_class       = new_tpop(tpo_class      , ID("class"),       TP_OP_FLAG_COMPOUND, sizeof(cls_attr),      &class_ops);
-	type_struct      = new_tpop(tpo_struct     , ID("struct"),      TP_OP_FLAG_COMPOUND, sizeof(compound_attr), &struct_ops);
-	type_method      = new_tpop(tpo_method     , ID("method"),      0,                   sizeof(mtd_attr),      &method_ops);
-	type_union       = new_tpop(tpo_union      , ID("union"),       TP_OP_FLAG_COMPOUND, sizeof(compound_attr), &union_ops);
-	type_array       = new_tpop(tpo_array      , ID("array"),       0,                   sizeof(arr_attr),      &array_ops);
-	type_pointer     = new_tpop(tpo_pointer    , ID("pointer"),     0,                   sizeof(ptr_attr),      &pointer_ops);
-	type_primitive   = new_tpop(tpo_primitive  , ID("primitive"),   0,                   0,                     &primitive_ops);
-	tpop_code        = new_tpop(tpo_code       , ID("code"),        0,                   0,                     &null_ops);
-	tpop_unknown     = new_tpop(tpo_unknown    , ID("Unknown"),     0,                   0,                     &null_ops);
-#undef ID
+	type_class     = new_tpop(tpo_class,     NEW_IDENT("class"),     TP_OP_FLAG_COMPOUND, sizeof(cls_attr),      &class_ops);
+	type_struct    = new_tpop(tpo_struct,    NEW_IDENT("struct"),    TP_OP_FLAG_COMPOUND, sizeof(compound_attr), &struct_ops);
+	type_method    = new_tpop(tpo_method,    NEW_IDENT("method"),    0,                   sizeof(mtd_attr),      &method_ops);
+	type_union     = new_tpop(tpo_union,     NEW_IDENT("union"),     TP_OP_FLAG_COMPOUND, sizeof(compound_attr), &union_ops);
+	type_array     = new_tpop(tpo_array,     NEW_IDENT("array"),     0,                   sizeof(arr_attr),      &array_ops);
+	type_pointer   = new_tpop(tpo_pointer,   NEW_IDENT("pointer"),   0,                   sizeof(ptr_attr),      &pointer_ops);
+	type_primitive = new_tpop(tpo_primitive, NEW_IDENT("primitive"), 0,                   0,                     &primitive_ops);
+	tpop_code      = new_tpop(tpo_code,      NEW_IDENT("code"),      0,                   0,                     &null_ops);
+	tpop_unknown   = new_tpop(tpo_unknown,   NEW_IDENT("Unknown"),   0,                   0,                     &null_ops);
 }
 
 void finish_tpop(void)

@@ -14,6 +14,7 @@
 #include "debug.h"
 #include "execfreq_t.h"
 #include "hashptr.h"
+#include "ident_t.h"
 #include "ircons_t.h"
 #include "irdump_t.h"
 #include "irgwalk.h"
@@ -138,7 +139,7 @@ static void add_constructor(ir_entity *method)
 	ir_graph  *const irg          = get_const_code_irg();
 	ir_node   *const val          = new_r_Address(irg, method);
 
-	set_entity_ld_ident(ptr, new_id_from_chars("", 0));
+	set_entity_ld_ident(ptr, NEW_IDENT(""));
 	set_entity_compiler_generated(ptr, 1);
 	set_entity_linkage(ptr, IR_LINKAGE_CONSTANT | IR_LINKAGE_HIDDEN_USER);
 	set_entity_visibility(ptr, ir_visibility_private);

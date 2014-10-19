@@ -15,6 +15,7 @@
 #include "lc_opts.h"
 #include "lc_opts_enum.h"
 
+#include "ident_t.h"
 #include "obst.h"
 #include "statev.h"
 #include "irprog.h"
@@ -53,8 +54,6 @@
 #include "beirg.h"
 #include "bestack.h"
 #include "beemitter.h"
-
-#define NEW_ID(s) new_id_from_chars(s, sizeof(s) - 1)
 
 /* options visible for anyone */
 be_options_t be_options = {
@@ -336,9 +335,9 @@ static be_main_env_t *be_init_env(be_main_env_t *const env,
 {
 	memset(env, 0, sizeof(*env));
 	env->ent_trampoline_map   = pmap_create();
-	env->pic_trampolines_type = new_type_segment(NEW_ID("$PIC_TRAMPOLINE_TYPE"), tf_none);
+	env->pic_trampolines_type = new_type_segment(NEW_IDENT("$PIC_TRAMPOLINE_TYPE"), tf_none);
 	env->ent_pic_symbol_map   = pmap_create();
-	env->pic_symbols_type     = new_type_segment(NEW_ID("$PIC_SYMBOLS_TYPE"), tf_none);
+	env->pic_symbols_type     = new_type_segment(NEW_IDENT("$PIC_SYMBOLS_TYPE"), tf_none);
 	env->cup_name             = compilation_unit_name;
 	env->arch_env             = isa_if->begin_codegeneration();
 
