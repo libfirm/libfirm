@@ -214,7 +214,7 @@ static int ia32_get_sp_bias(const ir_node *node)
 }
 
 /**
- * Build the between type and entities if not already build.
+ * Build the between type and entities if not already built.
  */
 static void ia32_build_between_type(void)
 {

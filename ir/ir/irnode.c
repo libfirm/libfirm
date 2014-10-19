@@ -108,7 +108,7 @@ ir_node *new_ir_node(dbg_info *db, ir_graph *irg, ir_node *block, ir_op *op,
 
 	for (ir_edge_kind_t i = EDGE_KIND_FIRST; i <= EDGE_KIND_LAST; ++i) {
 		INIT_LIST_HEAD(&res->edge_info[i].outs_head);
-		/* edges will be build immediately */
+		/* Edges will be built immediately. */
 		res->edge_info[i].edges_built = 1;
 		res->edge_info[i].out_count = 0;
 	}

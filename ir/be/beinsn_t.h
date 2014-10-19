@@ -37,7 +37,7 @@ struct be_insn_t {
  * Create a be_insn_t for an IR node.
  *
  * @param env      the insn construction environment
- * @param irn      the irn for which the be_insn should be build
+ * @param irn      the irn for which the be_insn should be built
  *
  * @return the be_insn for the IR node
  */

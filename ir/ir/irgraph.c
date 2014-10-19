@@ -100,7 +100,7 @@ static ir_graph *new_r_ir_graph(ir_entity *ent, int n_loc)
 {
 	ir_graph *const res = alloc_graph();
 
-	/* inform statistics here, as blocks will be already build on this graph */
+	/* Inform statistics here, as blocks will be already built on this graph. */
 	hook_new_graph(res, ent);
 
 	/* graphs are in construction mode by default */

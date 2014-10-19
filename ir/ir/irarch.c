@@ -385,7 +385,7 @@ static instruction *basic_decompose_mul(mul_env *env, unsigned char *R, int r,
 }
 
 /**
- * recursive build the graph form the instructions.
+ * Recursively build the graph for the instructions.
  *
  * @param env   the environment
  * @param inst  the instruction

@@ -94,7 +94,7 @@ struct hook_entry {
 		void (*_hook_normalize)(void *context, ir_node *node);
 
 		/** This hook is called, after a new graph was created and before the first block
-		*  on this graph is build. */
+		 * on this graph is built. */
 		void (*_hook_new_graph)(void *context, ir_graph *irg, ir_entity *ent);
 
 		/** This hook is called before a graph is freed. */
