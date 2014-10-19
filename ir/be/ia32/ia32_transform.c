@@ -5841,13 +5841,12 @@ static ir_type *ia32_get_between_type(bool omit_fp)
 	static ir_type *omit_fp_between_type = NULL;
 
 	if (between_type == NULL) {
-		between_type = new_type_class(new_id_from_str("amd64_between_type"));
+		between_type = new_type_class(new_id_from_str("ia32_between_type"));
 		/* between type contains return address + saved base pointer */
 		unsigned gp_size = get_mode_size_bytes(ia32_mode_gp);
 		set_type_size_bytes(between_type, 2*gp_size);
 
-		omit_fp_between_type
-			= new_type_class(new_id_from_str("amd64_between_type"));
+		omit_fp_between_type = new_type_class(new_id_from_str("ia32_between_type"));
 		/* between type contains return address */
 		set_type_size_bytes(omit_fp_between_type, gp_size);
 	}
