@@ -47,15 +47,6 @@ ident *id_mangle3(const char *prefix, ident *scnd, const char *suffix)
 	return new_ident_from_obst(&mangle_obst);
 }
 
-/** Returns a new ident that represents first<c>scnd. */
-static ident *id_mangle_3(ident *first, char c, ident *scnd)
-{
-	obstack_grow_ident(&mangle_obst, first);
-	obstack_1grow(&mangle_obst, c);
-	obstack_grow_ident(&mangle_obst, scnd);
-	return new_ident_from_obst(&mangle_obst);
-}
-
 void firm_init_mangle(void)
 {
 	obstack_init(&mangle_obst);
