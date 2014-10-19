@@ -38,14 +38,6 @@ static ident *new_ident_from_obst(struct obstack *obst)
 	return res;
 }
 
-/* Returns a new ident that represents 'firstscnd'. */
-ident *id_mangle(ident *first, ident *scnd)
-{
-	obstack_grow_ident(&mangle_obst, first);
-	obstack_grow_ident(&mangle_obst, scnd);
-	return new_ident_from_obst(&mangle_obst);
-}
-
 /** Returns a new ident that represents 'prefixscndsuffix'. */
 ident *id_mangle3(const char *prefix, ident *scnd, const char *suffix)
 {
