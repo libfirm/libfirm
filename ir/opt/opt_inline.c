@@ -657,7 +657,6 @@ typedef struct call_entry {
 	list_head  list;        /**< List head for linking the next one. */
 	int        loop_depth;  /**< The loop depth of this call. */
 	int        benefice;    /**< The calculated benefice of this call. */
-	bool       local_adr:1; /**< Set if this call gets an address of a local variable. */
 	bool       all_const:1; /**< Set if this call has only constant parameters. */
 } call_entry;
 
@@ -775,7 +774,6 @@ static void collect_calls2(ir_node *node, void *ctx)
 		entry->callee     = callee;
 		entry->loop_depth = get_irn_loop(get_nodes_block(node))->depth;
 		entry->benefice   = 0;
-		entry->local_adr  = false;
 		entry->all_const  = false;
 
 		list_add_tail(&entry->list, &x->calls);
@@ -798,7 +796,6 @@ static call_entry *duplicate_call_entry(const call_entry *entry,
 	nentry->callee     = entry->callee;
 	nentry->benefice   = entry->benefice;
 	nentry->loop_depth = entry->loop_depth + loop_depth_delta;
-	nentry->local_adr  = entry->local_adr;
 	nentry->all_const  = entry->all_const;
 
 	return nentry;
@@ -959,10 +956,7 @@ static int calc_inline_benefice(call_entry *entry, ir_graph *callee)
 				 * inlining, scalar_replacement might be able to remove the
 				 * local variable, so honor this.
 				 */
-				unsigned v = get_method_local_adress_weight(callee, i);
-				weight += v;
-				if (v > 0)
-					entry->local_adr = true;
+				weight += get_method_local_adress_weight(callee, i);
 			}
 		}
 	}
