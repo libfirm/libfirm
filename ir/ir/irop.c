@@ -56,7 +56,7 @@ ir_op *new_ir_op(unsigned code, const char *name, op_pin_state p,
 	ir_op *res = XMALLOCZ(ir_op);
 
 	res->code      = code;
-	res->name      = new_id_from_chars(name, strlen(name));
+	res->name      = new_id_from_str(name);
 	res->pin_state = p;
 	res->attr_size = attr_size;
 	res->flags     = flags;
