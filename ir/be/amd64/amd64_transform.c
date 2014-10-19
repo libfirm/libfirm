@@ -2502,10 +2502,9 @@ static void amd64_create_stacklayout(ir_graph *irg, amd64_cconv_t *cconv)
 
 	/* construct argument type */
 	assert(cconv != NULL);
-	ident   *arg_type_id = new_id_from_str("arg_type");
-	ident   *arg_id      = id_mangle_u(get_entity_ident(entity), arg_type_id);
-	ir_type *arg_type    = new_type_struct(arg_id);
-	size_t n_params = get_method_n_params(function_type);
+	ident   *const arg_id   = id_mangle3("", get_entity_ident(entity), "_arg_type");
+	ir_type *const arg_type = new_type_struct(arg_id);
+	size_t   const n_params = get_method_n_params(function_type);
 	for (size_t p = 0; p < n_params; ++p) {
 		reg_or_stackslot_t *param = &cconv->parameters[p];
 		if (param->type == NULL)

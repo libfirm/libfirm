@@ -5863,8 +5863,7 @@ static void ia32_create_stacklayout(ir_graph *irg, ia32_cconv_t *cconv)
 
 	/* construct argument type */
 	assert(cconv != NULL);
-	ident      *arg_type_id     = new_id_from_str("arg_type");
-	ident      *arg_id          = id_mangle_u(get_entity_ident(entity), arg_type_id);
+	ident      *arg_id          = id_mangle3("", get_entity_ident(entity), "_arg_type");
 	ir_type    *arg_type        = new_type_struct(arg_id);
 	ir_type    *frame_type      = get_irg_frame_type(irg);
 	ir_entity  *va_start_entity = NULL;

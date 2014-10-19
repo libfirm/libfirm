@@ -1731,9 +1731,8 @@ static void create_stacklayout(ir_graph *irg)
 	assert(cconv != NULL);
 
 	/* construct argument type */
-	ident   *arg_type_id = id_mangle_u(get_entity_ident(entity),
-	                                   new_id_from_str("arg_type"));
-	ir_type *arg_type    = new_type_struct(arg_type_id);
+	ident   *const arg_type_id = id_mangle3("", get_entity_ident(entity), "_arg_type");
+	ir_type *const arg_type    = new_type_struct(arg_type_id);
 	for (unsigned p = 0, n_params = get_method_n_params(function_type);
 	     p < n_params; ++p) {
 		reg_or_stackslot_t *param = &cconv->parameters[p];
