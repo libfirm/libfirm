@@ -3609,64 +3609,65 @@ static ir_node *gen_Mux(ir_node *node)
 			find_const_transform(cc, tv_true, tv_false, &res);
 			new_node = node;
 			for (unsigned step = res.num_steps; step-- != 0;) {
-				ir_node *imm;
-
 				switch (res.steps[step].transform) {
 				case SETCC_TR_ADD:
 					new_node = new_bd_ia32_Lea(dbgi, new_block, new_node, noreg_GP);
 					add_ia32_am_offs_int(new_node, res.steps[step].val);
 					SET_IA32_ORIG_NODE(new_node, node);
-					break;
+					continue;
+
 				case SETCC_TR_ADDxx:
 					new_node = new_bd_ia32_Lea(dbgi, new_block, new_node, new_node);
 					SET_IA32_ORIG_NODE(new_node, node);
-					break;
+					continue;
+
 				case SETCC_TR_LEA:
 					new_node = new_bd_ia32_Lea(dbgi, new_block, noreg_GP, new_node);
 					set_ia32_am_scale(new_node, res.steps[step].scale);
 					set_ia32_am_offs_int(new_node, res.steps[step].val);
 					SET_IA32_ORIG_NODE(new_node, node);
-					break;
+					continue;
+
 				case SETCC_TR_LEAxx:
 					new_node = new_bd_ia32_Lea(dbgi, new_block, new_node, new_node);
 					set_ia32_am_scale(new_node, res.steps[step].scale);
 					set_ia32_am_offs_int(new_node, res.steps[step].val);
 					SET_IA32_ORIG_NODE(new_node, node);
-					break;
+					continue;
 
 				case SETCC_TR_SHL: {
 					ir_graph *const irg = get_irn_irg(new_block);
-					imm = ia32_immediate_from_long(irg, res.steps[step].scale);
+					ir_node  *const imm = ia32_immediate_from_long(irg, res.steps[step].scale);
 					SET_IA32_ORIG_NODE(imm, node);
 					new_node = new_bd_ia32_Shl(dbgi, new_block, new_node, imm);
 					SET_IA32_ORIG_NODE(new_node, node);
-					break;
+					continue;
 				}
 
 				case SETCC_TR_NEG:
 					new_node = new_bd_ia32_Neg(dbgi, new_block, new_node);
 					SET_IA32_ORIG_NODE(new_node, node);
-					break;
+					continue;
+
 				case SETCC_TR_NOT:
 					new_node = new_bd_ia32_Not(dbgi, new_block, new_node);
 					SET_IA32_ORIG_NODE(new_node, node);
-					break;
+					continue;
 
 				case SETCC_TR_AND: {
 					ir_graph *const irg = get_irn_irg(new_block);
-					imm = ia32_immediate_from_long(irg, res.steps[step].val);
+					ir_node  *const imm = ia32_immediate_from_long(irg, res.steps[step].val);
 					SET_IA32_ORIG_NODE(imm, node);
 					new_node = new_bd_ia32_And(dbgi, new_block, noreg_GP, noreg_GP, nomem, new_node, imm);
 					SET_IA32_ORIG_NODE(new_node, node);
-					break;
+					continue;
 				}
 
 				case SETCC_TR_SET:
 					new_node = create_set_32bit(dbgi, new_block, flags, res.cc, node);
-					break;
-				default:
-					panic("unknown setcc transform");
+					continue;
 				}
+				panic("unknown setcc transform");
 			}
 		} else {
 			new_node = create_CMov(node, sel, flags, cc);
