@@ -3296,6 +3296,7 @@ enum setcc_transform_insn {
 	SETCC_TR_NOT,
 	SETCC_TR_AND,
 	SETCC_TR_SET,
+	SETCC_TR_OR,
 };
 
 typedef struct setcc_transform {
@@ -3338,15 +3339,20 @@ static void find_const_transform(x86_condition_code_t cc,
 	}
 	res->cc = cc;
 
-	/* Normalize f to zero. */
 	if (!tarval_is_null(f)) {
-		ir_tarval *t_sub = tarval_sub(t, f, NULL);
+		if (tarval_is_all_one(t)) {
+			res->steps[step].transform = SETCC_TR_OR;
+		} else {
+			/* Normalize f to zero. */
+			ir_tarval *t_sub = tarval_sub(t, f, NULL);
 
-		t = t_sub;
-		res->steps[step].transform = SETCC_TR_ADD;
+			t = t_sub;
+			res->steps[step].transform = SETCC_TR_ADD;
 
-		if (t == tarval_bad)
-			panic("constant subtract failed");
+			if (t == tarval_bad)
+				panic("constant subtract failed");
+		}
+
 		if (!tarval_is_long(f))
 			panic("tarval is not long");
 
@@ -3666,6 +3672,15 @@ static ir_node *gen_Mux(ir_node *node)
 				case SETCC_TR_SET:
 					new_node = create_set_32bit(dbgi, new_block, flags, res.cc, node);
 					continue;
+
+				case SETCC_TR_OR: {
+					ir_graph *const irg = get_irn_irg(new_block);
+					ir_node  *const imm = ia32_immediate_from_long(irg, res.steps[step].val);
+					SET_IA32_ORIG_NODE(imm, node);
+					new_node = new_bd_ia32_Or(dbgi, new_block, noreg_GP, noreg_GP, nomem, new_node, imm);
+					SET_IA32_ORIG_NODE(new_node, node);
+					continue;
+				}
 				}
 				panic("unknown setcc transform");
 			}
