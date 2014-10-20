@@ -271,18 +271,12 @@ static void copy_parameter_entities(ir_node *call, ir_graph *called_graph)
 	ir_type  *frame_type   = get_irg_frame_type(irg);
 	ir_node  *call_mem     = get_Call_mem(call);
 	ir_node **sync_mem     = NULL;
-	bool      have_copyb   = false;
 
 	for (size_t i = 0, n_entities = get_class_n_members(called_frame);
 	     i < n_entities; ++i) {
 		ir_entity *old_entity = get_class_member(called_frame, i);
 		if (!is_parameter_entity(old_entity))
 			continue;
-
-		if (sync_mem == NULL) {
-			sync_mem = NEW_ARR_F(ir_node*, 1);
-			sync_mem[0] = get_Call_mem(call);
-		}
 
 		ir_type   *old_type    = get_entity_type(old_entity);
 		dbg_info  *entity_dbgi = get_entity_dbg_info(old_entity);
@@ -303,21 +297,17 @@ static void copy_parameter_entities(ir_node *call, ir_graph *called_graph)
 
 			new_mem = new_rd_CopyB(dbgi, block, call_mem, sel, param, old_type, is_volatile ? cons_volatile : cons_none);
 			set_Call_param(call, n_param_pos, sel);
-			if (have_copyb) {
-				ARR_APP1(ir_node*, sync_mem, new_mem);
-			} else {
-				/*
-				 * The first time a CopyB node is added it may overwrite
-				 * sync_mem[0], because the CopyB node itself references it.
-				 */
-				sync_mem[0] = new_mem;
-				have_copyb = true;
-			}
 		} else {
 			/* Store the parameter onto the frame */
 			ir_node *store = new_rd_Store(dbgi, block, call_mem, sel, param, old_type, cons_none);
 			new_mem = new_r_Proj(store, mode_M, pn_Store_M);
+		}
+
+		if (sync_mem) {
 			ARR_APP1(ir_node*, sync_mem, new_mem);
+		} else {
+			sync_mem = NEW_ARR_F(ir_node*, 1);
+			sync_mem[0] = new_mem;
 		}
 	}
 
