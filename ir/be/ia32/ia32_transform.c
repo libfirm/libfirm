@@ -2171,6 +2171,8 @@ static ir_node *get_flags_node(ir_node *cmp, x86_condition_code_t *cc_out)
 	/* If cmp has merged with a Sub during the transformation, its
 	 * relation may have turned around. This is why we can set
 	 * *cc_out only now. */
+	l        = get_Cmp_left(cmp);
+	r        = get_Cmp_right(cmp);
 	relation = get_Cmp_relation(cmp);
 
 	/* the middle-end tries to eliminate impossible relations, so a ptr <> 0
