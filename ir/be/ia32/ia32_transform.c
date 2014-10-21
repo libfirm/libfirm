@@ -2129,6 +2129,14 @@ x86_condition_code_t ir_relation_to_x86_condition_code(ir_relation relation,
 	}
 }
 
+static bool is_bt_relation(ir_relation const relation, ir_mode *const mode)
+{
+	return
+		relation == ir_relation_equal ? true :
+		mode_is_signed(mode)          ? relation == ir_relation_less_greater :
+		(relation & ir_relation_greater_equal) == ir_relation_greater;
+}
+
 static ir_node *get_flags_node(ir_node *cmp, x86_condition_code_t *cc_out)
 {
 	/* must have a Cmp as input */
@@ -2138,11 +2146,7 @@ static ir_node *get_flags_node(ir_node *cmp, x86_condition_code_t *cc_out)
 	ir_mode    *mode     = get_irn_mode(l);
 
 	/* check for bit-test */
-	if (ia32_cg_config.use_bt
-	    && (relation == ir_relation_equal
-	        || (mode_is_signed(mode) && relation == ir_relation_less_greater)
-	        || (!mode_is_signed(mode) && ((relation & ir_relation_greater_equal) == ir_relation_greater)))
-	    && is_And(l)) {
+	if (ia32_cg_config.use_bt && is_bt_relation(relation, mode) && is_And(l)) {
 		ir_node *la = get_And_left(l);
 		ir_node *ra = get_And_right(l);
 		if (is_Shl(ra)) {
