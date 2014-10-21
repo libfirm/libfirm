@@ -277,7 +277,7 @@ static void arm_end_codegeneration(void *self)
 }
 
 /**
- * Allows or disallows the creation of Psi nodes for the given Phi nodes.
+ * Allows or disallows the creation of Mux nodes for the given Phi nodes.
  * @return 1 if allowed, 0 otherwise
  */
 static int arm_is_mux_allowed(ir_node *sel, ir_node *mux_false,

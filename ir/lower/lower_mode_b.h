@@ -25,9 +25,9 @@
 /**
  * Lowers mode_b operations to integer arithmetic. After the lowering the only
  * operations with mode_b are the Projs of Cmps; the only nodes with mode_b
- * inputs are Cond and Psi nodes.
+ * inputs are Cond and Mux nodes.
  *
- * Example: Psi(a < 0, 1, 0) => a >> 31
+ * Example: Mux(a < 0, 0, 1) => a >> 31
  *
  * @param irg           the firm graph to lower
  * @param lowered_mode  mode that is used to transport 0/1 values
