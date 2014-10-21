@@ -326,8 +326,7 @@ restart:;
 				prepare_path(block, j, dependency);
 				arity = get_irn_arity(block);
 
-				ir_node  *mux_block = get_nodes_block(cond);
-				dbg_info *cond_dbg  = get_irn_dbg_info(cond);
+				ir_node *const mux_block = get_nodes_block(cond);
 				do { /* generate Mux nodes in mux_block for Phis in block */
 					ir_node *val_i = get_irn_n(phi, i);
 					ir_node *val_j = get_irn_n(phi, j);
@@ -351,7 +350,8 @@ restart:;
 							f = val_j;
 						}
 
-						mux = new_rd_Mux(cond_dbg, mux_block, sel, f, t, get_irn_mode(phi));
+						dbg_info *const dbgi = get_irn_dbg_info(phi);
+						mux = new_rd_Mux(dbgi, mux_block, sel, f, t, get_irn_mode(phi));
 						DB((dbg, LEVEL_2, "Generating %+F for %+F\n", mux, phi));
 					}
 
