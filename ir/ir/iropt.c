@@ -3546,7 +3546,7 @@ restart:
  * Returns a negated version of @p node if it is possible to get one
  * without any additional operations.
  */
-static ir_node *can_negate_cheaply(ir_node *node)
+static ir_node *can_negate_cheaply(dbg_info *const dbgi, ir_node *const node)
 {
 	/* -C => eval(-C) */
 	if (is_Const(node)) {
@@ -3562,7 +3562,6 @@ static ir_node *can_negate_cheaply(ir_node *node)
 	/* -(a-b) => b-a */
 	ir_mode  *mode  = get_irn_mode(node);
 	if (is_Sub(node)) {
-		dbg_info *dbgi  = get_irn_dbg_info(node);
 		ir_node  *block = get_nodes_block(node);
 		ir_node  *left  = get_Sub_left(node);
 		ir_node  *right = get_Sub_right(node);
@@ -3577,7 +3576,6 @@ static ir_node *can_negate_cheaply(ir_node *node)
 			ir_tarval *negtv = tarval_neg(tv);
 			ir_graph  *irg   = get_irn_irg(node);
 			ir_node   *newc  = new_r_Const(irg, negtv);
-			dbg_info  *dbgi  = get_irn_dbg_info(node);
 			ir_node   *block = get_nodes_block(node);
 			return new_rd_Mul(dbgi, block, left, newc, mode);
 		}
@@ -3592,7 +3590,6 @@ static ir_node *can_negate_cheaply(ir_node *node)
 			ir_graph  *irg   = get_irn_irg(node);
 			ir_node   *newc  = new_r_Const(irg, negtv);
 			ir_node   *block = get_nodes_block(node);
-			dbg_info  *dbgi  = get_irn_dbg_info(node);
 			return new_rd_Sub(dbgi, block, newc, left, mode);
 		}
 	}
@@ -3601,7 +3598,6 @@ static ir_node *can_negate_cheaply(ir_node *node)
 		assert(get_mode_arithmetic(mode) == irma_twos_complement);
 		ir_graph  *irg   = get_irn_irg(node);
 		ir_node   *c1    = new_r_Const_one(irg, mode);
-		dbg_info  *dbgi  = get_irn_dbg_info(node);
 		ir_node   *block = get_nodes_block(node);
 		ir_node   *op    = get_Not_op(node);
 		return new_rd_Add(dbgi, block, op, c1, mode);
@@ -3617,7 +3613,6 @@ static ir_node *can_negate_cheaply(ir_node *node)
 			    && get_tarval_long(tv) == (int)get_mode_size_bits(mode)-1) {
 			    ir_node  *left  = get_Shr_left(node);
 			    ir_node  *block = get_nodes_block(node);
-			    dbg_info *dbgi  = get_irn_dbg_info(node);
 			    return new_rd_Shrs(dbgi, block, left, right, mode);
 			}
 		}
@@ -3630,7 +3625,6 @@ static ir_node *can_negate_cheaply(ir_node *node)
 			    && get_tarval_long(tv) == (int)get_mode_size_bits(mode)-1) {
 			    ir_node  *left  = get_Shrs_left(node);
 			    ir_node  *block = get_nodes_block(node);
-			    dbg_info *dbgi  = get_irn_dbg_info(node);
 			    return new_rd_Shr(dbgi, block, left, right, mode);
 			}
 		}
@@ -3720,7 +3714,7 @@ static ir_node *transform_node_Mul(ir_node *n)
 	 * -x * y => x * (-y) if -y can be computed cheaply
 	 */
 	if (is_Minus(a)) {
-		ir_node *neg_b = can_negate_cheaply(b);
+		ir_node *neg_b = can_negate_cheaply(NULL, b);
 		if (neg_b != NULL) {
 			dbg_info *dbgi  = get_irn_dbg_info(n);
 			ir_node  *block = get_nodes_block(n);
@@ -3729,7 +3723,7 @@ static ir_node *transform_node_Mul(ir_node *n)
 	}
 	/* distribute minus: x * -y => -x * y */
 	if (is_Minus(b)) {
-		ir_node *neg_a = can_negate_cheaply(a);
+		ir_node *neg_a = can_negate_cheaply(NULL, a);
 		if (neg_a != NULL) {
 			dbg_info *dbgi  = get_irn_dbg_info(n);
 			ir_node  *block = get_nodes_block(n);
@@ -4564,25 +4558,24 @@ static ir_node *transform_node_Minus(ir_node *n)
 	ir_node *c;
 	HANDLE_UNOP_CHOICE(tarval_neg, op, c);
 
-	ir_node *negated_op = can_negate_cheaply(op);
+	dbg_info *const dbgi       = get_irn_dbg_info(n);
+	ir_node  *const negated_op = can_negate_cheaply(dbgi, op);
 	if (negated_op != NULL)
 		return negated_op;
 
 	if (is_Add(op) && only_one_user(op)) {
 		ir_node  *l         = get_Add_left(op);
 		ir_node  *r         = get_Add_right(op);
-		ir_node  *negated_l = can_negate_cheaply(l);
+		ir_node  *negated_l = can_negate_cheaply(NULL, l);
 		if (negated_l != NULL) {
 			/* -((a - b) + c) -> (b - a) - c */
-			dbg_info *dbgi  = get_irn_dbg_info(n);
 			ir_node  *block = get_nodes_block(n);
 			ir_mode  *mode  = get_irn_mode(n);
 			return new_rd_Sub(dbgi, block, negated_l, r, mode);
 		}
-		ir_node *negated_r = can_negate_cheaply(r);
+		ir_node *negated_r = can_negate_cheaply(NULL, r);
 		if (negated_r != NULL) {
 			/* -(a + (b - c)) -> (c - b) - a */
-			dbg_info *dbgi  = get_irn_dbg_info(n);
 			ir_node  *block = get_nodes_block(n);
 			ir_mode  *mode  = get_irn_mode(n);
 			return new_rd_Sub(dbgi, block, negated_r, l, mode);
