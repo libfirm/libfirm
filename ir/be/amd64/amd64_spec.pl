@@ -117,6 +117,18 @@ PopAM => {
 	emit      => "pop%M %A",
 },
 
+SubSP => {
+	state     => "pinned",
+	reg_req   => { out => [ "rsp:I|S", "gp", "none" ] },
+	outs      => [ "stack", "addr", "M" ],
+	arity     => "variable",
+	attr_type => "amd64_binop_addr_attr_t",
+	attr      => "const amd64_binop_addr_attr_t *attr_init",
+	emit      => "subq %AM\n".
+	             "movq %%rsp, %D1",
+	modified_flags => $status_flags,
+},
+
 Leave => {
 	op_flags  => [ "uses_memory" ],
 	state     => "exc_pinned",

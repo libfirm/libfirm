@@ -135,11 +135,32 @@ static const arch_register_req_t amd64_requirement_rdx = {
 	.width           = 1,
 };
 
+static const unsigned amd64_limited_gp_rsp [] = { BIT(REG_GP_RSP) };
+static const arch_register_req_t amd64_requirement_rsp = {
+	.cls             = &amd64_reg_classes[CLASS_amd64_gp],
+	.limited         = amd64_limited_gp_rsp,
+	.type            = arch_register_req_type_limited,
+	.other_same      = 0,
+	.other_different = 0,
+	.width           = 1,
+};
+
 static const arch_register_req_t *mem_reqs[] = {
 	&arch_no_requirement,
 };
 
 static const arch_register_req_t *reg_mem_reqs[] = {
+	&amd64_requirement_gp,
+	&arch_no_requirement,
+};
+
+static const arch_register_req_t *rsp_mem_reqs[] = {
+	&amd64_requirement_rsp,
+	&arch_no_requirement,
+};
+
+static const arch_register_req_t *rsp_reg_mem_reqs[] = {
+	&amd64_requirement_rsp,
 	&amd64_requirement_gp,
 	&arch_no_requirement,
 };
@@ -2340,6 +2361,67 @@ static ir_node *gen_Proj_Store(ir_node *node)
 	}
 }
 
+static ir_node *gen_Alloc(ir_node *node)
+{
+	dbg_info *dbgi      = get_irn_dbg_info(node);
+	ir_node  *block     = get_nodes_block(node);
+	ir_node  *new_block = be_transform_node(block);
+	ir_node  *size      = get_Alloc_size(node);
+	ir_node  *mem       = get_Alloc_mem(node);
+	ir_node  *new_mem   = be_transform_node(mem);
+	ir_node  *sp        = get_stack_pointer_for(node);
+
+	const arch_register_req_t **reqs;
+	amd64_binop_addr_attr_t attr;
+	memset(&attr, 0, sizeof(attr));
+	attr.base.insn_mode = INSN_MODE_64;
+
+	ir_node *subsp;
+	ir_node *in[3];
+	unsigned arity = 0;
+	in[arity++]    = sp;
+
+	if (is_Const(size)) {
+		ir_tarval *tv           = get_Const_tarval(size);
+		long       sizel        = get_tarval_long(tv);
+
+		attr.base.base.op_mode  = AMD64_OP_REG_IMM;
+		attr.u.immediate.offset = sizel;
+		reqs                    = rsp_mem_reqs;
+	} else {
+		attr.base.base.op_mode  = AMD64_OP_REG_REG;
+		in[arity++]             = be_transform_node(size);
+		reqs                    = rsp_reg_mem_reqs;
+	}
+	in[arity++] = new_mem;
+	subsp = new_bd_amd64_SubSP(dbgi, new_block, arity, in, &attr);
+
+	arch_set_irn_register_reqs_in(subsp, reqs);
+	arch_set_irn_register_out(subsp, pn_amd64_SubSP_stack,
+	                          &amd64_registers[REG_RSP]);
+
+	ir_node *stack_proj = new_r_Proj(subsp, mode_gp, pn_amd64_SubSP_stack);
+
+	keep_alive(stack_proj);
+	pmap_insert(node_to_stack, node, stack_proj);
+
+	return subsp;
+}
+
+static ir_node *gen_Proj_Alloc(ir_node *node)
+{
+	ir_node *alloc     = get_Proj_pred(node);
+	ir_node *new_alloc = be_transform_node(alloc);
+	unsigned pn        = get_Proj_num(node);
+
+	switch ((pn_Alloc)pn) {
+	case pn_Alloc_M:   return new_r_Proj(new_alloc, mode_M, pn_amd64_SubSP_M);
+	case pn_Alloc_res: return new_r_Proj(new_alloc, mode_gp,
+	                                     pn_amd64_SubSP_addr);
+	}
+	panic("invalid Proj->Alloc");
+}
+
 static ir_node *gen_saturating_increment(ir_node *node)
 {
 	dbg_info *dbgi      = get_irn_dbg_info(node);
@@ -2423,6 +2505,7 @@ static void amd64_register_transformers(void)
 
 	be_set_transform_function(op_Add,      gen_Add);
 	be_set_transform_function(op_Address,  gen_Address);
+	be_set_transform_function(op_Alloc,    gen_Alloc);
 	be_set_transform_function(op_And,      gen_And);
 	be_set_transform_function(op_Bitcast,  gen_Bitcast);
 	be_set_transform_function(op_Builtin,  gen_Builtin);
@@ -2454,6 +2537,7 @@ static void amd64_register_transformers(void)
 	be_set_transform_function(op_Switch,   gen_Switch);
 	be_set_transform_function(op_Unknown,  gen_Unknown);
 
+	be_set_transform_proj_function(op_Alloc,   gen_Proj_Alloc);
 	be_set_transform_proj_function(op_Builtin, gen_Proj_Builtin);
 	be_set_transform_proj_function(op_Call,    gen_Proj_Call);
 	be_set_transform_proj_function(op_Cond,    be_duplicate_node);
