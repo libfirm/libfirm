@@ -1751,28 +1751,6 @@ static void stat_dead_node_elim(void *ctx, ir_graph *irg, int start)
 }
 
 /**
- * Hook: if-conversion was tried.
- */
-static void stat_if_conversion(void *context, ir_graph *irg, ir_node *phi,
-                               int pos, ir_node *mux, if_result_t reason)
-{
-	(void) context;
-	(void) phi;
-	(void) pos;
-	(void) mux;
-	if (! status->stat_options)
-		return;
-
-	STAT_ENTER;
-	{
-		graph_entry_t *graph = graph_get_entry(irg, status->irg_hash);
-
-		cnt_inc(&graph->cnt[gcnt_if_conv + reason]);
-	}
-	STAT_LEAVE;
-}
-
-/**
  * Hook: real function call was optimized.
  */
 static void stat_func_call(void *context, ir_graph *irg, ir_node *call)
@@ -2096,7 +2074,6 @@ void firm_init_stat(void)
 	HOOK(hook_tail_rec,                           stat_tail_rec);
 	HOOK(hook_strength_red,                       stat_strength_red);
 	HOOK(hook_dead_node_elim,                     stat_dead_node_elim);
-	HOOK(hook_if_conversion,                      stat_if_conversion);
 	HOOK(hook_func_call,                          stat_func_call);
 	HOOK(hook_arch_dep_replace_mul_with_shifts,   stat_arch_dep_replace_mul_with_shifts);
 	HOOK(hook_arch_dep_replace_division_by_const, stat_arch_dep_replace_division_by_const);

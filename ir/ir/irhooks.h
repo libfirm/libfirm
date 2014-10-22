@@ -49,17 +49,6 @@ typedef enum {
 	HOOK_OPT_LAST
 } hook_opt_kind;
 
-/** Result of an if-conversion attempt */
-typedef enum if_result_t {
-	IF_RESULT_SUCCESS         = 0,  /**< if conversion could be done */
-	IF_RESULT_SIDE_EFFECT     = 1,  /**< if conversion failed because of side effect */
-	IF_RESULT_SIDE_EFFECT_PHI = 2,  /**< if conversion failed because of Phi node found */
-	IF_RESULT_TOO_DEEP        = 3,  /**< if conversion failed because of to deep DAG's */
-	IF_RESULT_BAD_CF          = 4,  /**< if conversion failed because of bad control flow */
-	IF_RESULT_DENIED          = 5,  /**< if conversion failed because of architecture deny */
-	IF_RESULT_LAST
-} if_result_t;
-
 /**
  * A generic function type.
  */
@@ -133,9 +122,6 @@ struct hook_entry {
 		/** This hook is called, when dead node elimination is started/stopped. */
 		void (*_hook_dead_node_elim)(void *context, ir_graph *irg, int start);
 
-		/** This hook is called after if conversion has run. */
-		void (*_hook_if_conversion)(void *context, ir_graph *irg, ir_node *phi, int pos, ir_node *mux, if_result_t reason);
-
 		/** This hook is called after a call was detected as const call */
 		void (*_hook_func_call)(void *context, ir_graph *irg, ir_node *call);
 
@@ -188,7 +174,6 @@ typedef enum {
 	hook_tail_rec,             /**< type for hook_tail_rec() hook */
 	hook_strength_red,         /**< type for hook_strength_red() hook */
 	hook_dead_node_elim,       /**< type for hook_dead_node_elim() hook */
-	hook_if_conversion,        /**< type for hook_if_conversion() hook */
 	hook_func_call,            /**< type for hook_func_call() hook */
 	/** type for hook_arch_dep_replace_mul_with_shifts() hook */
 	hook_arch_dep_replace_mul_with_shifts,
@@ -275,9 +260,6 @@ extern hook_entry_t *hooks[hook_last];
   hook_exec(hook_strength_red, (hook_ctx_, irg, node))
 /** Called before dead node elimination is performed */
 #define hook_dead_node_elim(irg, start)   hook_exec(hook_dead_node_elim, (hook_ctx_, irg, start))
-/** Called when if-conversion creates a Mux node */
-#define hook_if_conversion(irg, phi, pos, mux, reason) \
-  hook_exec(hook_if_conversion, (hook_ctx_, irg, phi, pos, mux, reason))
 /** Called when a function call is optimized */
 #define hook_func_call(irg, call) \
   hook_exec(hook_func_call, (hook_ctx_, irg, call))

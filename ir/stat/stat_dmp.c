@@ -149,15 +149,6 @@ static const struct {
 	{ (hook_opt_kind)FS_OPT_RTS_MEMCMP,     "RTS optimization: call to memcmp() replaced" },
 };
 
-static const char *if_conv_names[IF_RESULT_LAST] = {
-	"if conv done             ",
-	"if conv side effect      ",
-	"if conv Phi node found   ",
-	"if conv to deep DAG's    ",
-	"if conv bad control flow ",
-	"if conv denied by arch   ",
-};
-
 /**
  * dumps a opcode hash into human readable form
  */
@@ -435,8 +426,6 @@ static void simple_dump_graph(dumper_t *dmp, graph_entry_t *entry)
 
 	if (entry->irg) {
 		ir_graph *const_irg = get_const_code_irg();
-		int       i;
-
 		if (entry->irg == const_irg) {
 			fprintf(dmp->f, "\nConst code Irg %p", (void *)entry->irg);
 		} else {
@@ -472,10 +461,6 @@ static void simple_dump_graph(dumper_t *dmp, graph_entry_t *entry)
 			cnt_to_uint(&entry->cnt[gcnt_indirect_calls]),
 			cnt_to_uint(&entry->cnt[gcnt_external_calls])
 		);
-
-		for (i = 0; i < IF_RESULT_LAST; ++i) {
-			fprintf(dmp->f, " %s : %u\n", if_conv_names[i], cnt_to_uint(&entry->cnt[gcnt_if_conv + i]));
-		}
 	} else {
 		fprintf(dmp->f, "\nGlobals counts:\n");
 		fprintf(dmp->f, "--------------\n");

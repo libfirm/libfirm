@@ -246,10 +246,9 @@ enum graph_counter_names {
 	gcnt_param_adr,                /**< number of parameter load/store addresses. */
 	gcnt_this_adr,                 /**< number of this load/store addresses. */
 	gcnt_other_adr,                /**< number of other load/store addresses. */
-	gcnt_if_conv,                  /**< number of if conversions */
 
 	/* --- must be the last enum constant --- */
-	_gcnt_last = gcnt_if_conv + IF_RESULT_LAST                 /**< number of counters */
+	_gcnt_last = gcnt_other_adr    /**< number of counters */
 };
 
 /**
