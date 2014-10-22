@@ -1,6 +1,5 @@
 amd64 backend TODO:
 Correctness:
-- Implement 32/64bit floatingpoint with SSE instructions
 - Handle Alloc nodes (used by alloca and C99 VLA). See ia32/sparc backend on
   how to do this.
 - SSE Division is not commutative and we have no neg-add style workaround like
@@ -36,3 +35,4 @@ Improve Quality:
 - Compare node inputs can be swapped if we remember this in the compare node
   attributes, this allows us to think of them as associative operations and
   for example swap inputs to enable load folding, or immediates.
+- Lea needs to support all address modes (base, index +shifts, symconsts)
