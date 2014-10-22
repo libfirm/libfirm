@@ -157,15 +157,7 @@ enum firmstat_optimizations_t {
 	FS_OPT_RTS_MEMMOVE,                       /**< RTS optimization: call to memmove() replaced */
 	FS_OPT_RTS_MEMSET,                        /**< RTS optimization: call to memset() replaced */
 	FS_OPT_RTS_MEMCMP,                        /**< RTS optimization: call to memcmp() replaced */
-	FS_BE_IA32_LEA,                           /**< Lea was created */
-	FS_BE_IA32_LOAD_LEA,                      /**< Load merged with a Lea */
-	FS_BE_IA32_STORE_LEA,                     /**< Store merged with a Lea */
-	FS_BE_IA32_AM_S,                          /**< Source address mode node created */
-	FS_BE_IA32_AM_D,                          /**< Destination address mode node created */
-	FS_BE_IA32_CJMP,                          /**< CJmp created to save a cmp/test */
 	FS_BE_IA32_2ADDRCPY,                      /**< Copy created due to 2-Addresscode constraints */
-	FS_BE_IA32_SPILL2ST,                      /**< Created Store for a Spill */
-	FS_BE_IA32_RELOAD2LD,                     /**< Created Load for a Reload */
 	FS_BE_IA32_SUB2NEGADD,                    /**< Created Neg-Add for a Sub due to 2-Addresscode constraints */
 	FS_BE_IA32_LEA2ADD,                       /**< Transformed Lea back into Add */
 	FS_OPT_MAX
