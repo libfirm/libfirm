@@ -34,7 +34,6 @@
 #include "gen_ia32_regalloc_if.h"
 #include "ia32_common_transform.h"
 #include "ia32_transform.h"
-#include "ia32_dbg_stat.h"
 #include "ia32_architecture.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
@@ -958,9 +957,6 @@ make_shl:
 
 exchange:
 	SET_IA32_ORIG_NODE(res, node);
-
-	/* add new ADD/SHL to schedule */
-	DBG_OPT_LEA2ADD(node, res);
 
 	/* exchange the Add and the LEA */
 	sched_add_before(node, res);

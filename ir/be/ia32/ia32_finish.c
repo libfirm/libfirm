@@ -26,7 +26,6 @@
 #include "ia32_new_nodes.h"
 #include "ia32_common_transform.h"
 #include "ia32_transform.h"
-#include "ia32_dbg_stat.h"
 #include "ia32_optimize.h"
 #include "gen_ia32_regalloc_if.h"
 
@@ -187,8 +186,6 @@ carry:;
 
 	/* remove the old sub */
 	kill_node(irn);
-
-	DBG_OPT_SUB2NEGADD(irn, res);
 }
 
 static inline int need_constraint_copy(ir_node *irn)
@@ -279,7 +276,6 @@ static void assure_should_be_same_requirements(ir_node *node)
 		 *  anyway) */
 		if (uses_out_reg == NULL) {
 			ir_node *copy = be_new_Copy(block, in_node);
-			DBG_OPT_2ADDRCPY(copy);
 
 			/* destination is the out register */
 			arch_set_irn_register(copy, out_reg);

@@ -43,11 +43,11 @@
 #include "ia32_architecture.h"
 #include "ia32_cconv.h"
 #include "ia32_common_transform.h"
-#include "ia32_dbg_stat.h"
 #include "ia32_new_nodes.h"
 #include "ia32_nodes_attr.h"
 #include "ia32_optimize.h"
 #include "ia32_transform.h"
+#include "util.h"
 #include "x86_address_mode.h"
 
 /* define this to construct SSE constants instead of load them */

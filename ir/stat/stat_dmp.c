@@ -147,9 +147,6 @@ static const struct {
 	{ (hook_opt_kind)FS_OPT_RTS_MEMMOVE,    "RTS optimization: call to memmove() replaced" },
 	{ (hook_opt_kind)FS_OPT_RTS_MEMSET,     "RTS optimization: call to memset() replaced" },
 	{ (hook_opt_kind)FS_OPT_RTS_MEMCMP,     "RTS optimization: call to memcmp() replaced" },
-	{ (hook_opt_kind)FS_BE_IA32_2ADDRCPY,   "ia32 Backend transformation: Copy created due to 2-Addresscode constraints" },
-	{ (hook_opt_kind)FS_BE_IA32_SUB2NEGADD, "ia32 Backend transformation: Created Neg-Add for a Sub due to 2-Addresscode constraints" },
-	{ (hook_opt_kind)FS_BE_IA32_LEA2ADD,    "ia32 Backend transformation: Transformed Lea back into Add" },
 };
 
 static const char *if_conv_names[IF_RESULT_LAST] = {

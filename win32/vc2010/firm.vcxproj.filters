@@ -1467,9 +1467,6 @@
     <ClInclude Include="$(FirmRoot)\ir\be\ia32\ia32_common_transform.h">
       <Filter>ir\be\ia32</Filter>
     </ClInclude>
-    <ClInclude Include="$(FirmRoot)\ir\be\ia32\ia32_dbg_stat.h">
-      <Filter>ir\be\ia32</Filter>
-    </ClInclude>
     <ClInclude Include="$(FirmRoot)\ir\be\ia32\ia32_emitter.h">
       <Filter>ir\be\ia32</Filter>
     </ClInclude>
@@ -6547,9 +6544,6 @@
       <Filter>ir\be\ia32</Filter>
     </ClInclude>
     <ClInclude Include="$(FirmRoot)\ir\be\ia32\ia32_common_transform.h">
-      <Filter>ir\be\ia32</Filter>
-    </ClInclude>
-    <ClInclude Include="$(FirmRoot)\ir\be\ia32\ia32_dbg_stat.h">
       <Filter>ir\be\ia32</Filter>
     </ClInclude>
     <ClInclude Include="$(FirmRoot)\ir\be\ia32\ia32_emitter.h">

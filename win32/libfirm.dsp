@@ -394,10 +394,6 @@ SOURCE=..\ir\be\ia32\ia32_architecture.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\ir\be\ia32\ia32_dbg_stat.h
-# End Source File
-# Begin Source File
-
 SOURCE=..\ir\be\ia32\ia32_emitter.c
 # End Source File
 # Begin Source File

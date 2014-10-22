@@ -443,7 +443,6 @@ EXTRA_DIST += \
 	be/ia32/ia32_address_mode.h \
 	be/ia32/ia32_architecture.h \
 	be/ia32/ia32_common_transform.h \
-	be/ia32/ia32_dbg_stat.h \
 	be/ia32/ia32_emitter.h \
 	be/ia32/ia32_finish.h \
 	be/ia32/ia32_fpu.h \

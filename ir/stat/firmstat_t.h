@@ -157,9 +157,6 @@ enum firmstat_optimizations_t {
 	FS_OPT_RTS_MEMMOVE,                       /**< RTS optimization: call to memmove() replaced */
 	FS_OPT_RTS_MEMSET,                        /**< RTS optimization: call to memset() replaced */
 	FS_OPT_RTS_MEMCMP,                        /**< RTS optimization: call to memcmp() replaced */
-	FS_BE_IA32_2ADDRCPY,                      /**< Copy created due to 2-Addresscode constraints */
-	FS_BE_IA32_SUB2NEGADD,                    /**< Created Neg-Add for a Sub due to 2-Addresscode constraints */
-	FS_BE_IA32_LEA2ADD,                       /**< Transformed Lea back into Add */
 	FS_OPT_MAX
 };
 
