@@ -995,7 +995,7 @@ int i_mapper_memcmp(ir_node *call)
 		ir_mode   *mode    = get_type_mode(res_tp);
 
 		irn = new_r_Const_null(irg, mode);
-		DBG_OPT_ALGSIM0(call, irn, FS_OPT_RTS_STRNCMP);
+		DBG_OPT_ALGSIM0(call, irn, FS_OPT_RTS_MEMCMP);
 		replace_call(irn, call, mem, NULL, NULL);
 		return 1;
 	}
