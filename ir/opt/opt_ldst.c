@@ -1197,7 +1197,7 @@ static int backward_antic(block_t *bl)
 		int i;
 
 		rbitset_copy(env.curr_set, succ_bl->anticL_in, env.rbs_size);
-		memcpy(env.curr_id_2_memop, succ_bl->id_2_memop_antic, env.rbs_size * sizeof(env.curr_id_2_memop[0]));
+		MEMCPY(env.curr_id_2_memop, succ_bl->id_2_memop_antic, env.rbs_size);
 
 		/* Hmm: probably we want kill merges of Loads ans Stores here */
 		for (i = n - 1; i > 0; --i) {
@@ -1239,7 +1239,7 @@ static int backward_antic(block_t *bl)
 		}
 	}
 
-	memcpy(bl->id_2_memop_antic, env.curr_id_2_memop, env.rbs_size * sizeof(env.curr_id_2_memop[0]));
+	MEMCPY(bl->id_2_memop_antic, env.curr_id_2_memop, env.rbs_size);
 	if (! rbitsets_equal(bl->anticL_in, env.curr_set, env.rbs_size)) {
 		/* changed */
 		rbitset_copy(bl->anticL_in, env.curr_set, env.rbs_size);
@@ -1577,7 +1577,7 @@ static int insert_Load(block_t *bl)
 
 		rbitset_copy(env.curr_set, pred_bl->avail_out, env.rbs_size);
 
-		memcpy(env.curr_id_2_memop, pred_bl->id_2_memop_avail, env.rbs_size * sizeof(bl->id_2_memop_avail[0]));
+		MEMCPY(env.curr_id_2_memop, pred_bl->id_2_memop_avail, env.rbs_size);
 	}
 
 	if (n > 1) {
@@ -1712,7 +1712,7 @@ static int insert_Load(block_t *bl)
 	calc_gen_kill_avail(bl);
 
 	/* always update the map after gen/kill, as values might have been changed due to RAR/WAR/WAW */
-	memcpy(bl->id_2_memop_avail, env.curr_id_2_memop, env.rbs_size * sizeof(env.curr_id_2_memop[0]));
+	MEMCPY(bl->id_2_memop_avail, env.curr_id_2_memop, env.rbs_size);
 
 	if (!rbitsets_equal(bl->avail_out, env.curr_set, env.rbs_size)) {
 		/* the avail set has changed */

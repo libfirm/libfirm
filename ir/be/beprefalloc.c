@@ -173,7 +173,7 @@ static void mark_as_copy_of(ir_node *copy, ir_node *value)
 	copy_info->original_value = original;
 
 	/* copy over allocation preferences */
-	memcpy(copy_info->prefs, info->prefs, n_regs * sizeof(copy_info->prefs[0]));
+	MEMCPY(copy_info->prefs, info->prefs, n_regs);
 }
 
 /**
@@ -467,7 +467,7 @@ static void set_congruence_prefs(ir_node *node, void *data)
 	allocation_info_t *head_info = get_allocation_info(head);
 	allocation_info_t *info      = get_allocation_info(node);
 
-	memcpy(info->prefs, head_info->prefs, n_regs * sizeof(info->prefs[0]));
+	MEMCPY(info->prefs, head_info->prefs, n_regs);
 }
 
 static void combine_congruence_classes(void)

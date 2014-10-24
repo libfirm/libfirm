@@ -2099,7 +2099,7 @@ static void combine_memop(ir_node *sync, void *data)
 	unsigned  machine_size = be_get_machine_size();
 	int       n_preds      = get_Sync_n_preds(sync);
 	ir_node **new_in       = ALLOCAN(ir_node*, n_preds);
-	memcpy(new_in, get_irn_in(sync)+1, n_preds * sizeof(new_in[0]));
+	MEMCPY(new_in, get_irn_in(sync) + 1, n_preds);
 
 	QSORT(new_in, n_preds, cmp_ptrs);
 

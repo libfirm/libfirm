@@ -16,6 +16,7 @@
 
 #include "fourcc.h"
 #include "pdeq.h"
+#include "util.h"
 #include "xmalloc.h"
 
 /* Pointer Double Ended Queue */
@@ -401,11 +402,11 @@ void **pdeq_copyl(pdeq *dq, const void **dst)
 		if (n + p > NDATA) {
 			/* p is always < NDATA */
 			size_t nn = NDATA - p;
-			memcpy((void *) d, &q->data[p], nn * sizeof(void *)); d += nn;
+			MEMCPY(d, &q->data[p], nn); d += nn;
 			p = 0; n -= nn;
 		}
 
-		memcpy((void *) d, &q->data[p], n * sizeof(void *)); d += n;
+		MEMCPY(d, &q->data[p], n); d += n;
 
 		q = q->r;
 	}

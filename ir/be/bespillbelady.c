@@ -123,7 +123,7 @@ static void workset_copy(workset_t *dest, const workset_t *src)
 static void workset_bulk_fill(workset_t *workset, int count, const loc_t *locs)
 {
 	workset->len = count;
-	memcpy(&(workset->vals[0]), locs, count * sizeof(locs[0]));
+	MEMCPY(&workset->vals[0], locs, count);
 }
 
 /**

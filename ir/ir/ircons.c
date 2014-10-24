@@ -51,7 +51,7 @@ ir_node *new_rd_ASM(dbg_info *db, ir_node *block, ir_node *mem,
 	int       const r_arity = arity + 1;
 	ir_node **const r_in    = ALLOCAN(ir_node*, r_arity);
 	r_in[0] = mem;
-	memcpy(&r_in[1], in, arity * sizeof(r_in[1]));
+	MEMCPY(&r_in[1], in, arity);
 
 	ir_node *res = new_ir_node(db, irg, block, op_ASM, mode_T, r_arity, r_in);
 
@@ -63,9 +63,9 @@ ir_node *new_rd_ASM(dbg_info *db, ir_node *block, ir_node *mem,
 	a->clobbers           = NEW_ARR_D(ident*,            obst, n_clobber);
 	a->text               = text;
 
-	memcpy(a->input_constraints,  inputs,  sizeof(inputs[0])  * arity);
-	memcpy(a->output_constraints, outputs, sizeof(outputs[0]) * n_outs);
-	memcpy(a->clobbers,           clobber, sizeof(clobber[0]) * n_clobber);
+	MEMCPY(a->input_constraints,  inputs,  arity);
+	MEMCPY(a->output_constraints, outputs, n_outs);
+	MEMCPY(a->clobbers,           clobber, n_clobber);
 
 	verify_new_node(irg, res);
 	res = optimize_node(res);

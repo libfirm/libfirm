@@ -99,7 +99,7 @@ ir_node *new_ir_node(dbg_info *db, ir_graph *irg, ir_node *block, ir_op *op,
 			res->in = NEW_ARR_F(ir_node *, (arity+1));
 		else
 			res->in = NEW_ARR_D(ir_node*, get_irg_obstack(irg), arity + 1);
-		memcpy(&res->in[1], in, sizeof(ir_node *) * arity);
+		MEMCPY(&res->in[1], in, arity);
 	}
 
 	res->in[0]   = block;
@@ -178,10 +178,7 @@ void set_irn_in(ir_node *const node, int const arity, ir_node *const *const in)
 	}
 	fix_backedges(get_irg_obstack(irg), node);
 
-	/* Calling memcpy with a null pointer leads to undefined behavior,
-	 * even if we copy zero bytes (C99 7.21.1.p2). */
-	if (arity > 0)
-		memcpy((*pOld_in) + 1, in, sizeof(ir_node *) * arity);
+	MEMCPY(*pOld_in + 1, in, arity);
 
 	/* update irg flags */
 	clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS | IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO);

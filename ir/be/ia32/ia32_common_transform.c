@@ -23,6 +23,7 @@
 #include "ia32_architecture.h"
 #include "ia32_common_transform.h"
 #include "ia32_new_nodes.h"
+#include "util.h"
 
 #include "gen_ia32_new_nodes.h"
 #include "gen_ia32_regalloc_if.h"
@@ -548,7 +549,7 @@ ir_node *ia32_gen_ASM(ir_node *node)
 				memcpy(new_in_reg_reqs, in_reg_reqs,
 				       n_ins*sizeof(new_in_reg_reqs[0]));
 				ir_node **new_in = ALLOCANZ(ir_node*, in_size);
-				memcpy(new_in, in, n_ins*sizeof(new_in[0]));
+				MEMCPY(new_in, in, n_ins);
 
 				in_reg_reqs = new_in_reg_reqs;
 				in          = new_in;

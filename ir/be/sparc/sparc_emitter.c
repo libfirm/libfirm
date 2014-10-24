@@ -1466,7 +1466,7 @@ static void pick_delay_slots(size_t n_blocks, ir_node **blocks)
 {
 	/* create blocklist sorted by execution frequency */
 	ir_node **sorted_blocks = XMALLOCN(ir_node*, n_blocks);
-	memcpy(sorted_blocks, blocks, n_blocks*sizeof(sorted_blocks[0]));
+	MEMCPY(sorted_blocks, blocks, n_blocks);
 	QSORT(sorted_blocks, n_blocks, cmp_block_execfreqs);
 
 	for (size_t i = 0; i < n_blocks; ++i) {

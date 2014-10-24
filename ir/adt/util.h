@@ -13,6 +13,7 @@
 #define FIRM_ADT_UTIL_H
 
 #include <stddef.h>
+#include <string.h>
 
 /**
  * Returns size of a static array. Warning: This returns invalid values for
@@ -48,5 +49,14 @@
 #define QSORT(base, n, cmp) (qsort((base), (n), sizeof(*(base)), cmp))
 
 #define QSORT_ARR(base, cmp) QSORT((base), ARR_LEN((base)), (cmp))
+
+static inline void *safe_memcpy(void* const dst, void const* const src, size_t const n)
+{
+	/* Calling memcpy with a null pointer leads to undefined behavior,
+	 * even if we copy zero bytes (C99 7.21.1.p2). */
+	return n != 0 ? memcpy(dst, src, n) : dst;
+}
+
+#define MEMCPY(dst, src, n) safe_memcpy((dst), (src), (n) * sizeof(*(1 ? (dst) : (src))))
 
 #endif

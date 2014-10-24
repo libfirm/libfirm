@@ -415,7 +415,7 @@ int lc_evpprintf(const lc_arg_env_t *env, lc_appendable_t *app, const char *fmt,
 					lc_arg_t tmp;
 
 					name = (char*) malloc(sizeof(char) * (n + 1));
-					memcpy(name, named, sizeof(char) * n);
+					MEMCPY(name, named, n);
 					name[n] = '\0';
 					tmp.name = name;
 

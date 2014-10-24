@@ -187,8 +187,8 @@ void be_Perm_reduce(ir_node *perm, int new_size, int *map)
 	ir_node       **new_in    = ALLOCAN(ir_node*, new_size);
 
 	/* save the old register data */
-	memcpy(old_in_reqs, info->in_reqs, arity * sizeof(old_in_reqs[0]));
-	memcpy(old_infos, info->out_infos, arity * sizeof(old_infos[0]));
+	MEMCPY(old_in_reqs, info->in_reqs, arity);
+	MEMCPY(old_infos, info->out_infos, arity);
 
 	/* compose the new in array and set the new register data directly */
 	for (int i = 0; i < new_size; ++i) {
@@ -209,7 +209,7 @@ ir_node *be_new_MemPerm(ir_node *const block, int n, ir_node *const *const in)
 
 	ir_node **real_in = ALLOCAN(ir_node*, n + 1);
 	real_in[0] = frame;
-	memcpy(&real_in[1], in, n * sizeof(real_in[0]));
+	MEMCPY(&real_in[1], in, n);
 
 	ir_node *irn = new_ir_node(NULL, irg, block, op_be_MemPerm, mode_T, n+1, real_in);
 
@@ -305,7 +305,7 @@ ir_node *be_new_CopyKeep(ir_node *bl, ir_node *src, int n, ir_node *in_keep[])
 	int       arity = n+1;
 	ir_node **in    = ALLOCAN(ir_node*, arity);
 	in[0] = src;
-	memcpy(&in[1], in_keep, n * sizeof(in[0]));
+	MEMCPY(&in[1], in_keep, n);
 	ir_node *irn = new_ir_node(NULL, irg, bl, op_be_CopyKeep, mode, arity, in);
 	init_node_attr(irn, arity, 1, arch_irn_flag_schedule_first);
 	be_node_attr_t *attr = (be_node_attr_t*)get_irn_generic_attr(irn);

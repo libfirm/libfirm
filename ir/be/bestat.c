@@ -150,7 +150,7 @@ void be_subtract_node_stats(be_node_stats_t *stats, be_node_stats_t *sub)
 
 void be_copy_node_stats(be_node_stats_t *dest, be_node_stats_t *src)
 {
-	memcpy(dest, src, sizeof(be_node_stats_t));
+	MEMCPY(dest, src, 1);
 }
 
 static const char *get_stat_name(enum be_stat_tag_t tag)

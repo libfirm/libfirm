@@ -68,7 +68,7 @@ void cg_set_call_callee_arr(ir_node *node, size_t n, ir_entity **arr)
 		ir_graph *const irg = get_irn_irg(node);
 		node->attr.call.callee_arr = NEW_ARR_D(ir_entity*, get_irg_obstack(irg), n);
 	}
-	memcpy(node->attr.call.callee_arr, arr, n * sizeof(ir_entity *));
+	MEMCPY(node->attr.call.callee_arr, arr, n);
 }
 
 void cg_remove_call_callee_arr(ir_node *node)

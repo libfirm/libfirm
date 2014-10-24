@@ -7822,7 +7822,7 @@ void ir_normalize_node(ir_node *n)
 		if (!ins_sorted) {
 			ir_node **ins     = get_irn_in(n)+1;
 			ir_node **new_ins = XMALLOCN(ir_node*, arity);
-			memcpy(new_ins, ins, arity*sizeof(ins[0]));
+			MEMCPY(new_ins, ins, arity);
 			QSORT(new_ins, arity, cmp_node_nr);
 			set_irn_in(n, arity, new_ins);
 			free(new_ins);
@@ -7915,7 +7915,7 @@ ir_node *optimize_node(ir_node *n)
 				oldn->in = ALLOCAN(ir_node*, n_in);
 
 				/* ARG, copy the in array, we need it for statistics */
-				memcpy(oldn->in, n->in, n_in * sizeof(n->in[0]));
+				MEMCPY(oldn->in, n->in, n_in);
 
 				/* note the inplace edges module */
 				edges_node_deleted(n);

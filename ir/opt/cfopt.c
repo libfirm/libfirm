@@ -147,7 +147,7 @@ static unsigned optimize_pointless_forks(ir_node *block, unsigned n_cfgpreds,
 
 			if (new_cfgpreds == NULL) {
 				new_cfgpreds = XMALLOCN(ir_node*, n_cfgpreds);
-				memcpy(new_cfgpreds, cfgpreds, n_cfgpreds*sizeof(cfgpreds[0]));
+				MEMCPY(new_cfgpreds, cfgpreds, n_cfgpreds);
 			}
 			if (is_Cond(cfop)) {
 				/* replace Cond with Jmp */

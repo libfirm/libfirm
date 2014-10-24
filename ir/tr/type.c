@@ -708,10 +708,10 @@ ir_type *clone_type_method(ir_type *tp)
 	res->size                     = tp->size;
 	res->attr.ma.n_params         = n_params;
 	res->attr.ma.params           = XMALLOCN(ir_type*, n_params);
-	memcpy(res->attr.ma.params, tp->attr.ma.params, n_params * sizeof(res->attr.ma.params[0]));
+	MEMCPY(res->attr.ma.params, tp->attr.ma.params, n_params);
 	res->attr.ma.n_res            = n_res;
 	res->attr.ma.res_type         = XMALLOCN(ir_type*, n_res);
-	memcpy(res->attr.ma.res_type, tp->attr.ma.res_type, n_res * sizeof(res->attr.ma.res_type[0]));
+	MEMCPY(res->attr.ma.res_type, tp->attr.ma.res_type, n_res);
 	res->attr.ma.variadicity      = tp->attr.ma.variadicity;
 	res->attr.ma.properties       = tp->attr.ma.properties;
 	res->attr.ma.irg_calling_conv = tp->attr.ma.irg_calling_conv;

@@ -387,7 +387,7 @@ pattern_dumper_t *new_vcg_dumper(const char *vcg_name, unsigned max_pattern)
 	if (res) {
 		FILE *f;
 
-		memcpy(res, &vcg_dump, sizeof(*res));
+		*res = vcg_dump;
 
 		priv = (vcg_private_t *)(res + 1);
 		memset(priv, 0, sizeof(*priv));

@@ -39,6 +39,7 @@
 #include "bestack.h"
 #include "beutil.h"
 #include "panic.h"
+#include "util.h"
 
 static int get_first_same(const arch_register_req_t *req)
 {
@@ -133,7 +134,7 @@ static void kill_unused_stacknodes(ir_node *node)
 		int       arity = get_irn_arity(node);
 		ir_node **ins   = ALLOCAN(ir_node*, arity);
 		sched_remove(node);
-		memcpy(ins, get_irn_in(node), arity*sizeof(ins[0]));
+		MEMCPY(ins, get_irn_in(node), arity);
 		kill_node(node);
 
 		for (int i = 0; i < arity; ++i)
