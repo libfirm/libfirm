@@ -178,7 +178,10 @@ void set_irn_in(ir_node *const node, int const arity, ir_node *const *const in)
 	}
 	fix_backedges(get_irg_obstack(irg), node);
 
-	memcpy((*pOld_in) + 1, in, sizeof(ir_node *) * arity);
+	/* Calling memcpy with a null pointer leads to undefined behavior,
+	 * even if we copy zero bytes (C99 7.21.1.p2). */
+	if (arity > 0)
+		memcpy((*pOld_in) + 1, in, sizeof(ir_node *) * arity);
 
 	/* update irg flags */
 	clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS | IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO);
