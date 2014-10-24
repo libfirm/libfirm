@@ -77,10 +77,9 @@ static ir_node *create_cond_set(ir_node *cond_value, ir_mode *dest_mode)
 	ir_node  *one         = new_r_Const_one(irg, dest_mode);
 	ir_node  *zero        = new_r_Const_null(irg, dest_mode);
 	ir_node  *phi_in[2]   = { one, zero };
-	ir_node  *phi;
 
 	set_irn_in(lower_block, ARRAY_SIZE(lower_in), lower_in);
-	phi = new_r_Phi(lower_block, ARRAY_SIZE(phi_in), phi_in, dest_mode);
+	ir_node *phi = new_r_Phi(lower_block, ARRAY_SIZE(phi_in), phi_in, dest_mode);
 
 	return phi;
 }
