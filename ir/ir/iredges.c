@@ -759,9 +759,11 @@ int edges_verify(ir_graph *irg)
 	bool                fine = edges_verify_kind(irg, EDGE_KIND_NORMAL);
 	struct build_walker w    = { .kind = EDGE_KIND_NORMAL, .fine = fine };
 
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 	/* verify counter */
 	irg_walk_anchors(irg, clear_links, count_user, NULL);
 	irg_walk_anchors(irg, NULL, verify_edge_counter, &w);
+	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 
 	return w.fine;
 }
