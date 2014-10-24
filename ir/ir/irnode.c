@@ -94,8 +94,8 @@ ir_node *new_ir_node(dbg_info *db, ir_graph *irg, ir_node *block, ir_op *op,
 	if (arity < 0) {
 		res->in = NEW_ARR_F(ir_node *, 1);  /* 1: space for block */
 	} else {
-		/* not nice but necessary: End and Sync must always have a flexible array */
-		if (op == op_End || op == op_Sync)
+		/* Nodes with dynamic arity must always have a flexible array. */
+		if (op->opar == oparity_dynamic)
 			res->in = NEW_ARR_F(ir_node *, (arity+1));
 		else
 			res->in = NEW_ARR_D(ir_node*, get_irg_obstack(irg), arity + 1);
