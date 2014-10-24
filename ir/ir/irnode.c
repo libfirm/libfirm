@@ -154,7 +154,7 @@ void set_irn_in(ir_node *const node, int const arity, ir_node *const *const in)
 	assert(arity >= 0);
 #ifndef NDEBUG
 	for (int i = 0; i < arity; ++i) {
-		assert(in[i] != NULL && in[0]->kind == k_ir_node);
+		assert(in[i] != NULL && in[i]->kind == k_ir_node);
 	}
 #endif
 
