@@ -2243,7 +2243,10 @@ again:;
 				new_in[new_arity++] = in;
 		}
 
-		set_irn_in(sync, new_arity, new_in);
+		if (new_arity == 1)
+			exchange(sync, new_in[0]);
+		else
+			set_irn_in(sync, new_arity, new_in);
 	}
 }
 
