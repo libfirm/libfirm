@@ -102,10 +102,8 @@ ir_node *be_transform_phi(ir_node *node, const arch_register_req_t *req)
 
 void be_set_transform_function(ir_op *op, be_transform_func func)
 {
-	/* shouldn't be assigned twice (except for exchanging the default
-	 * be_duplicate_node entries) */
-	assert(op->ops.generic == NULL
-			|| op->ops.generic == (op_func) be_duplicate_node);
+	/* Shouldn't be assigned twice. */
+	assert(!op->ops.generic);
 	op->ops.generic = (op_func) func;
 }
 
