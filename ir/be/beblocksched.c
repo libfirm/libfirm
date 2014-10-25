@@ -669,10 +669,7 @@ typedef struct blocksched_ilp_env_t {
 
 typedef struct blocksched_ilp_entry_t {
 	ir_node *block;
-	struct blocksched_entry_t *next;
-	struct blocksched_entry_t *prev;
-
-	int out_cst;
+	int      out_cst;
 } blocksched_ilp_entry_t;
 
 static int add_ilp_edge(ir_node *block, int pos, double execfreq, blocksched_ilp_env_t *env)
@@ -706,8 +703,6 @@ static void collect_egde_frequency_ilp(ir_node *block, void *data)
 
 	entry          = OALLOC(&env->env.obst, blocksched_ilp_entry_t);
 	entry->block   = block;
-	entry->next    = NULL;
-	entry->prev    = NULL;
 	entry->out_cst = lpp_add_cst_uniq(env->lpp, name, lpp_greater_equal, out_count - 1);
 	set_irn_link(block, entry);
 
