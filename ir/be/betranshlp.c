@@ -487,7 +487,6 @@ void be_start_transform_setup(void)
 	be_set_transform_function(op_NoMem,       be_duplicate_node);
 	be_set_transform_function(op_Pin,         be_duplicate_node);
 	be_set_transform_function(op_Proj,        transform_proj);
-	be_set_transform_function(op_Start,       be_duplicate_node);
 	be_set_transform_function(op_Sync,        be_duplicate_node);
 
 	be_set_upper_bits_clean_function(op_And,   and_upper_bits_clean);
