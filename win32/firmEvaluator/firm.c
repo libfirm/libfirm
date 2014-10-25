@@ -640,8 +640,6 @@ HRESULT format_arr_descr(DEBUGHELPER *pHelper, int nBase, const void *addr, char
   switch (desc.magic) {
   case ARR_D_MAGIC:
     _tcsncpy(pResult, "DynArr ", max); break;
-  case ARR_A_MAGIC:
-    _tcsncpy(pResult, "AutoArr ", max); break;
   case ARR_F_MAGIC:
     _tcsncpy(pResult, "FlexArr ", max); break;
   default:

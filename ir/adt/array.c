@@ -16,7 +16,6 @@
 #include "fourcc.h"
 
 #define ARR_D_MAGIC FOURCC('A','R','R','D')
-#define ARR_A_MAGIC FOURCC('A','R','R','A')
 #define ARR_F_MAGIC FOURCC('A','R','R','F')
 
 #ifdef NDEBUG
@@ -36,8 +35,7 @@ void ir_verify_arr(const void *arr)
 {
 #ifndef NDEBUG
 	ir_arr_descr *descr = ARR_DESCR(arr);
-	assert(descr->magic == ARR_D_MAGIC || descr->magic == ARR_A_MAGIC
-			 || descr->magic == ARR_F_MAGIC);
+	assert(descr->magic == ARR_D_MAGIC || descr->magic == ARR_F_MAGIC);
 	assert(descr->magic != ARR_F_MAGIC || descr->allocated >= descr->nelts);
 #else
 	(void) arr;
