@@ -147,7 +147,6 @@ EOF
 
 	my $idx = 0;
 	$reginit .= "\t$arch\_reg_classes[CLASS_".$class_name."].mode = $class_mode;\n";
-	my $lastreg;
 	foreach (@class) {
 		my $name   = $_->{"name"};
 		my $ucname = uc($name);
@@ -194,7 +193,6 @@ static const arch_register_req_t ${arch}_single_reg_req_${old_classname}_${name}
 };
 EOF
 
-		$lastreg = $ucname;
 		$idx++;
 	}
 	$regcounts .= "\tN_${class_name}_REGS = $numregs,\n";
