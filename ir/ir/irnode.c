@@ -230,20 +230,18 @@ int add_irn_n(ir_node *node, ir_node *in)
 
 static void remove_irn_n(ir_node *node, int n)
 {
-	ir_graph *irg = get_irn_irg(node);
-
-	/* remove the edge */
-	ir_node *pred = node->in[n+1];
-	edges_notify_edge(node, n, NULL, pred, irg);
-
-	int arity = get_irn_arity(node);
-	if (n != arity-1) {
-		/* exchange with the last one */
-		ir_node *old = node->in[arity];
-		edges_notify_edge(node, arity-1, NULL, old, irg);
-		node->in[n+1] = old;
-		edges_notify_edge(node, n, old, NULL, irg);
+	ir_graph *const irg   = get_irn_irg(node);
+	int       const arity = get_irn_arity(node);
+	ir_node  *const last  = node->in[arity];
+	if (n != arity - 1) {
+		/* Replace by last edge. */
+		ir_node **const slot = &node->in[n + 1];
+		ir_node  *const pred = *slot;
+		*slot = last;
+		edges_notify_edge(node, n, pred, last, irg);
 	}
+	/* Remove last edge. */
+	edges_notify_edge(node, arity - 1, NULL, last, irg);
 	ARR_SHRINKLEN(node->in, arity);
 
 	/* update irg flags */
