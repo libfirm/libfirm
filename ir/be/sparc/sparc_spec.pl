@@ -503,6 +503,7 @@ Start => {
 	state     => "pinned",
 	out_arity => "variable",
 	ins       => [],
+	emit      => "",
 },
 
 # This is a Jump instruction, but with the addition that you can add custom

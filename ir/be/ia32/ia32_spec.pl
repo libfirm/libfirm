@@ -1218,6 +1218,7 @@ Start => {
 	out_arity => "variable",
 	ins       => [],
 	latency   => 0,
+	emit      => "",
 },
 
 Return => {

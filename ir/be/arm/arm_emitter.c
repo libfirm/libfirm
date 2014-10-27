@@ -690,7 +690,6 @@ static void arm_register_emitters(void)
 	be_set_emitter(op_arm_fConst,    emit_arm_fConst);
 	be_set_emitter(op_arm_FrameAddr, emit_arm_FrameAddr);
 	be_set_emitter(op_arm_Jmp,       emit_arm_Jmp);
-	be_set_emitter(op_arm_Start,     be_emit_nothing);
 	be_set_emitter(op_arm_SwitchJmp, emit_arm_SwitchJmp);
 	be_set_emitter(op_be_Copy,       emit_be_Copy);
 	be_set_emitter(op_be_CopyKeep,   emit_be_Copy);

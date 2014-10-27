@@ -746,7 +746,6 @@ static void amd64_register_emitters(void)
 	be_set_emitter(op_amd64_Jmp,       emit_amd64_Jmp);
 	be_set_emitter(op_amd64_Mov,       emit_amd64_Mov);
 	be_set_emitter(op_amd64_Return,    emit_amd64_Return);
-	be_set_emitter(op_amd64_Start,     be_emit_nothing);
 	be_set_emitter(op_amd64_SwitchJmp, emit_amd64_SwitchJmp);
 	be_set_emitter(op_be_Copy,         emit_be_Copy);
 	be_set_emitter(op_be_CopyKeep,     emit_be_Copy);

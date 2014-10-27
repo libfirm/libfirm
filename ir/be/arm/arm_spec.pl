@@ -698,6 +698,7 @@ Start => {
 	state     => "pinned",
 	out_arity => "variable",
 	ins       => [],
+	emit      => "",
 },
 
 Return => {

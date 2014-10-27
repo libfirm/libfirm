@@ -1366,7 +1366,6 @@ static void ia32_register_emitters(void)
 	be_set_emitter(op_be_IncSP,        emit_be_IncSP);
 	be_set_emitter(op_be_Perm,         emit_be_Perm);
 	be_set_emitter(op_ia32_Return,     emit_ia32_Return);
-	be_set_emitter(op_ia32_Start,      be_emit_nothing);
 	be_set_emitter(op_ia32_Asm,        emit_ia32_Asm);
 	be_set_emitter(op_ia32_ClimbFrame, emit_ia32_ClimbFrame);
 	be_set_emitter(op_ia32_CMovcc,     emit_ia32_CMovcc);
@@ -3325,11 +3324,6 @@ static void ia32_register_binary_emitters(void)
 	be_set_emitter(op_ia32_fst,           bemit_fst);
 	be_set_emitter(op_ia32_fsub,          bemit_fsub);
 	be_set_emitter(op_ia32_fxch,          bemit_fxch);
-
-	/* ignore the following nodes */
-	be_set_emitter(op_ia32_ProduceVal, be_emit_nothing);
-	be_set_emitter(op_ia32_Start,      be_emit_nothing);
-	be_set_emitter(op_ia32_Unknown,    be_emit_nothing);
 }
 
 static void gen_binary_block(ir_node *block)

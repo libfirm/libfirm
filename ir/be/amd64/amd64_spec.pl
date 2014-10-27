@@ -469,6 +469,7 @@ Start => {
 	out_arity => "variable",
 	ins       => [],
 	fixed     => "amd64_op_mode_t op_mode = AMD64_OP_NONE;\n",
+	emit      => "",
 },
 
 Return => {

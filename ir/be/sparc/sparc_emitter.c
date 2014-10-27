@@ -1378,9 +1378,6 @@ static void sparc_register_emitters(void)
 	be_set_emitter(op_sparc_SwitchJmp, emit_sparc_SwitchJmp);
 	be_set_emitter(op_sparc_UDiv,      emit_sparc_UDiv);
 	be_set_emitter(op_sparc_fbfcc,     emit_sparc_fbfcc);
-
-	/* no need to emit anything for the following nodes */
-	be_set_emitter(op_sparc_Start, be_emit_nothing);
 }
 
 static bool block_needs_label(const ir_node *block, const ir_node *sched_prev)
