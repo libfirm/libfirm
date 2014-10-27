@@ -213,10 +213,10 @@ static void TEMPLATE_register_emitters(void)
 	TEMPLATE_register_spec_emitters();
 
 	/* custom emitters not provided by the spec */
-	be_set_emitter(op_TEMPLATE_Jmp, emit_TEMPLATE_Jmp);
-	be_set_emitter(op_be_IncSP,     emit_be_IncSP);
-	be_set_emitter(op_Return,       emit_Return);
-	be_set_emitter(op_Start,        emit_Start);
+	be_set_emitter(op_TEMPLATE_Jmp,    emit_TEMPLATE_Jmp);
+	be_set_emitter(op_TEMPLATE_Return, emit_Return);
+	be_set_emitter(op_TEMPLATE_Start,  emit_Start);
+	be_set_emitter(op_be_IncSP,        emit_be_IncSP);
 }
 
 /**
