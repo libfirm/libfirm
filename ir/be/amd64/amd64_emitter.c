@@ -737,8 +737,7 @@ static void emit_amd64_Return(const ir_node *node)
  */
 static void amd64_register_emitters(void)
 {
-	/* first clear the generic function pointer for all ops */
-	ir_clear_opcodes_generic_func();
+	be_init_emitters();
 
 	/* register all emitter functions defined in spec */
 	amd64_register_spec_emitters();
@@ -752,9 +751,7 @@ static void amd64_register_emitters(void)
 	be_set_emitter(op_be_Copy,         emit_be_Copy);
 	be_set_emitter(op_be_CopyKeep,     emit_be_Copy);
 	be_set_emitter(op_be_IncSP,        emit_be_IncSP);
-	be_set_emitter(op_be_Keep,         be_emit_nothing);
 	be_set_emitter(op_be_Perm,         emit_be_Perm);
-	be_set_emitter(op_Phi,             be_emit_nothing);
 }
 
 /**

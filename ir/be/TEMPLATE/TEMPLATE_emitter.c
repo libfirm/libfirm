@@ -207,8 +207,7 @@ static void emit_Return(const ir_node *node)
  */
 static void TEMPLATE_register_emitters(void)
 {
-	/* first clear the generic function pointer for all ops */
-	ir_clear_opcodes_generic_func();
+	be_init_emitters();
 
 	/* register all emitter functions defined in spec */
 	TEMPLATE_register_spec_emitters();
@@ -218,10 +217,6 @@ static void TEMPLATE_register_emitters(void)
 	be_set_emitter(op_be_IncSP,     emit_be_IncSP);
 	be_set_emitter(op_Return,       emit_Return);
 	be_set_emitter(op_Start,        emit_Start);
-
-	/* no need to emit anything for the following nodes */
-	be_set_emitter(op_Phi,     be_emit_nothing);
-	be_set_emitter(op_be_Keep, be_emit_nothing);
 }
 
 /**

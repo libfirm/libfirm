@@ -117,6 +117,8 @@ static inline void be_set_emitter(ir_op *const op, emit_func *const func)
 	set_generic_function_ptr(op, func);
 }
 
+void be_init_emitters(void);
+
 void be_emit_nothing(ir_node const *node);
 
 /**

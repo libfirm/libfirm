@@ -1354,8 +1354,8 @@ static void emit_be_Copy(const ir_node *node)
  */
 static void sparc_register_emitters(void)
 {
-	/* first clear the generic function pointer for all ops */
-	ir_clear_opcodes_generic_func();
+	be_init_emitters();
+
 	/* register all emitter functions defined in spec */
 	sparc_register_spec_emitters();
 
@@ -1380,8 +1380,6 @@ static void sparc_register_emitters(void)
 	be_set_emitter(op_sparc_fbfcc,     emit_sparc_fbfcc);
 
 	/* no need to emit anything for the following nodes */
-	be_set_emitter(op_Phi,         be_emit_nothing);
-	be_set_emitter(op_be_Keep,     be_emit_nothing);
 	be_set_emitter(op_sparc_Start, be_emit_nothing);
 }
 

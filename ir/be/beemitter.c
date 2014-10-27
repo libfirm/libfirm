@@ -11,6 +11,7 @@
  */
 #include "bedwarf.h"
 #include "beemitter.h"
+#include "benode.h"
 #include "be_t.h"
 #include "panic.h"
 #include "irnode_t.h"
@@ -79,6 +80,13 @@ void be_emit_finish_line_gas(const ir_node *node)
 		be_emit_char('\n');
 	}
 	be_emit_write_line();
+}
+
+void be_init_emitters(void)
+{
+	ir_clear_opcodes_generic_func();
+	be_set_emitter(op_Phi,     be_emit_nothing);
+	be_set_emitter(op_be_Keep, be_emit_nothing);
 }
 
 void be_emit_nothing(ir_node const *const node)
