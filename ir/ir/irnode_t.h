@@ -86,7 +86,10 @@
  * Note that this function returns the whole in array including the
  * block predecessor. So, it is NOT symmetric with set_irn_in().
  */
-ir_node **get_irn_in(const ir_node *node);
+static inline ir_node **get_irn_in(ir_node const *const node)
+{
+	return node->in;
+}
 
 /*-------------------------------------------------------------------*/
 /*  These function are most used in libfirm.  Give them as static    */

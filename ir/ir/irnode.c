@@ -143,11 +143,6 @@ int (get_irn_arity)(const ir_node *node)
 	return get_irn_arity_(node);
 }
 
-ir_node **get_irn_in(const ir_node *node)
-{
-	return node->in;
-}
-
 void set_irn_in(ir_node *const node, int const arity, ir_node *const *const in)
 {
 	assert(node != NULL && node->kind == k_ir_node);
