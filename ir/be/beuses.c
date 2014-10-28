@@ -49,7 +49,6 @@ typedef struct be_use_t {
  */
 struct be_uses_t {
 	set           *uses; /**< cache: contains all computed uses so far. */
-	ir_graph      *irg;  /**< the graph for this environment. */
 	const be_lv_t *lv;   /**< the liveness for the graph. */
 	ir_visited_t   visited_counter; /**< current search counter. */
 };
@@ -327,7 +326,6 @@ be_uses_t *be_begin_uses(ir_graph *irg, const be_lv_t *lv)
 
 	be_uses_t *env = XMALLOCZ(be_uses_t);
 	env->uses = new_set(cmp_use, 512);
-	env->irg  = irg;
 	env->lv   = lv;
 
 	return env;
