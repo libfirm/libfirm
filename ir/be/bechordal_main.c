@@ -153,9 +153,7 @@ static void memory_operand_walker(ir_node *irn, void *env)
 		/* only use memory operands, if the reload is only used by 1 node */
 		if (get_irn_n_edges(in) > 1)
 			continue;
-		if (arch_possible_memory_operand(irn, i)) {
-			arch_perform_memory_operand(irn, i);
-		}
+		arch_perform_memory_operand(irn, i);
 	}
 }
 

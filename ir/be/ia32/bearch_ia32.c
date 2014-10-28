@@ -309,9 +309,9 @@ static ir_mode *get_spill_mode(const ir_node *value)
  * Check if irn can load its operand at position i from memory (source addressmode).
  * @param irn    The irn to be checked
  * @param i      The operands position
- * @return Non-Zero if operand can be loaded
+ * @return whether operand can be loaded
  */
-static int ia32_possible_memory_operand(const ir_node *irn, unsigned int i)
+static bool ia32_possible_memory_operand(const ir_node *irn, unsigned int i)
 {
 	if (!is_ia32_irn(irn)                    || /* must be an ia32 irn */
 	    get_ia32_op_type(irn) != ia32_Normal || /* must not already be a addressmode irn */
@@ -377,7 +377,8 @@ static int ia32_possible_memory_operand(const ir_node *irn, unsigned int i)
 
 static void ia32_perform_memory_operand(ir_node *irn, unsigned int i)
 {
-	assert(ia32_possible_memory_operand(irn, i));
+	if (!ia32_possible_memory_operand(irn, i))
+		return;
 
 	ir_node *op           = get_irn_n(irn, i);
 	ir_node *load         = get_Proj_pred(op);
@@ -419,7 +420,6 @@ static const arch_irn_ops_t ia32_irn_ops = {
 	.set_frame_offset        = ia32_set_frame_offset,
 	.get_sp_bias             = ia32_get_sp_bias,
 	.get_op_estimated_cost   = ia32_get_op_estimated_cost,
-	.possible_memory_operand = ia32_possible_memory_operand,
 	.perform_memory_operand  = ia32_perform_memory_operand,
 };
 

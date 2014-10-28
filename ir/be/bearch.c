@@ -56,21 +56,11 @@ int arch_get_sp_bias(ir_node *irn)
 	return ops->get_sp_bias(irn);
 }
 
-int arch_possible_memory_operand(const ir_node *irn, unsigned int i)
-{
-	const arch_irn_ops_t *ops = get_irn_ops(irn);
-
-	if (ops->possible_memory_operand) {
-		return ops->possible_memory_operand(irn, i);
-	} else {
-		return 0;
-	}
-}
-
 void arch_perform_memory_operand(ir_node *irn, unsigned int i)
 {
 	const arch_irn_ops_t *ops = get_irn_ops(irn);
-	ops->perform_memory_operand(irn, i);
+	if (ops->perform_memory_operand)
+		ops->perform_memory_operand(irn, i);
 }
 
 int arch_get_op_estimated_cost(const ir_node *irn)

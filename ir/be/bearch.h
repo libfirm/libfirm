@@ -79,8 +79,6 @@ int arch_get_sp_bias(ir_node *irn);
 
 int arch_get_op_estimated_cost(const ir_node *irn);
 
-int arch_possible_memory_operand(const ir_node *irn, unsigned i);
-
 void arch_perform_memory_operand(ir_node *irn, unsigned i);
 
 /**
@@ -346,17 +344,6 @@ struct arch_irn_ops_t {
 	 * @return     The estimated cycle count for this operation
 	 */
 	int (*get_op_estimated_cost)(const ir_node *irn);
-
-	/**
-	 * Asks the backend whether operand @p i of @p irn can be loaded form memory
-	 * internally
-	 *
-	 * @param irn  The node.
-	 * @param i    Index of the argument we would like to know whether @p irn
-	 *             can load it form memory internally
-	 * @return     nonzero if argument can be loaded or zero otherwise
-	 */
-	int (*possible_memory_operand)(const ir_node *irn, unsigned i);
 
 	/**
 	 * Ask the backend to assimilate @p reload of operand @p i into @p irn.
