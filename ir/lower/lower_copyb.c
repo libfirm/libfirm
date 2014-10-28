@@ -182,7 +182,6 @@ static void find_copyb_nodes(ir_node *irn, void *ctx)
 	entry_t *entry = OALLOC(&env->obst, entry_t);
 	entry->copyb = irn;
 	INIT_LIST_HEAD(&entry->list);
-	set_irn_link(irn, entry);
 	list_add_tail(&entry->list, &env->list);
 }
 
