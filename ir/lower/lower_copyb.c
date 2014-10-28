@@ -20,12 +20,6 @@
 #include "be.h"
 #include "util.h"
 
-typedef struct entry entry_t;
-struct entry {
-	struct list_head list;
-	ir_node *copyb;
-};
-
 static unsigned max_small_size; /**< The maximum size of a CopyB node
                                      so that it is regarded as 'small'. */
 static unsigned min_large_size; /**< The minimum size of a CopyB node
@@ -35,9 +29,7 @@ static bool allow_misalignments; /**< Whether backend can handle misaligned
                                       loads and stores. */
 
 typedef struct walk_env {
-	struct obstack   obst;           /**< the obstack where data is allocated
-	                                      on. */
-	struct list_head list;           /**< the list of copyb nodes. */
+	ir_node **copybs; /**< The list of CopyB nodes. */
 } walk_env_t;
 
 static ir_mode *get_ir_mode(unsigned mode_bytes)
@@ -179,10 +171,7 @@ static void find_copyb_nodes(ir_node *irn, void *ctx)
 
 	/* Okay, either small or large CopyB, so link it in and lower it later. */
 	walk_env_t *env = (walk_env_t*)ctx;
-	entry_t *entry = OALLOC(&env->obst, entry_t);
-	entry->copyb = irn;
-	INIT_LIST_HEAD(&entry->list);
-	list_add_tail(&entry->list, &env->list);
+	ARR_APP1(ir_node*, env->copybs, irn);
 }
 
 void lower_CopyB(ir_graph *irg, unsigned max_small_sz, unsigned min_large_sz,
@@ -197,18 +186,16 @@ void lower_CopyB(ir_graph *irg, unsigned max_small_sz, unsigned min_large_sz,
 	native_mode_bytes   = bparams->machine_size / 8;
 	allow_misalignments = allow_misaligns;
 
-	walk_env_t env;
-	obstack_init(&env.obst);
-	INIT_LIST_HEAD(&env.list);
+	walk_env_t env = { .copybs = NEW_ARR_F(ir_node*, 0) };
 	irg_walk_graph(irg, NULL, find_copyb_nodes, &env);
 
 	bool changed = false;
-	list_for_each_entry(entry_t, entry, &env.list, list) {
-		lower_copyb_node(entry->copyb);
+	for (size_t i = 0, n = ARR_LEN(env.copybs); i != n; ++i) {
+		lower_copyb_node(env.copybs[i]);
 		changed = true;
 	}
 	confirm_irg_properties(irg, changed ? IR_GRAPH_PROPERTIES_CONTROL_FLOW
 	                                    : IR_GRAPH_PROPERTIES_ALL);
 
-	obstack_free(&env.obst, NULL);
+	DEL_ARR_F(env.copybs);
 }
