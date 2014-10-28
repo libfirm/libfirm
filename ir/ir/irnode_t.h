@@ -81,10 +81,10 @@
 #define ir_switch_table_get_n_entries(table)  ir_switch_table_get_n_entries_(table)
 
 /**
- * Returns the array with the ins.  The content of the array may not be
+ * Returns the array with the ins.  The content of the array must not be
  * changed.
  * Note that this function returns the whole in array including the
- * block predecessor. So, it is NOT symmetric with set_irn_in().
+ * block predecessor. So, it is NOT symmetric to set_irn_in().
  */
 static inline ir_node **get_irn_in(ir_node const *const node)
 {
