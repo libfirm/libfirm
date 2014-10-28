@@ -140,7 +140,6 @@ static ptr_access_kind analyze_arg(ir_node *arg, ptr_access_kind bits)
 		/* follow further the address calculation */
 		bits = analyze_arg(succ, bits);
 	}
-	set_irn_link(arg, NULL);
 	return bits;
 }
 
@@ -344,7 +343,6 @@ static unsigned calc_method_param_weight(ir_node *arg)
 			break;
 		}
 	}
-	set_irn_link(arg, NULL);
 	return weight;
 }
 
