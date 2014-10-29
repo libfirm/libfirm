@@ -512,8 +512,8 @@ static bool inline_method(ir_node *const call, ir_graph *called_graph)
 		}
 	}
 	ir_node *const call_mem =
-		arity > 0 ? new_r_Phi(post_bl, n_mem_phi, cf_pred, mode_M)
-		          : new_r_Bad(irg, mode_M);
+		n_mem_phi > 0 ? new_r_Phi(post_bl, n_mem_phi, cf_pred, mode_M)
+		              : new_r_Bad(irg, mode_M);
 	/* Conserve Phi-list for further inlining -- but might be optimized */
 	if (get_nodes_block(call_mem) == post_bl) {
 		set_irn_link(call_mem, get_irn_link(post_bl));
