@@ -17,6 +17,7 @@
 #include "iredgekinds.h"
 #include "iredges_t.h"
 #include "irgwalk.h"
+#include "irnodemap.h"
 #include "irdump_t.h"
 #include "irprintf.h"
 #include "debug.h"
@@ -672,20 +673,22 @@ int edges_verify_kind(ir_graph *irg, ir_edge_kind_t kind)
 	return w.fine;
 }
 
+static ir_nodemap usermap;
+
 /**
- * Clear link field of all nodes.
+ * Initializes the user node map for each node.
  */
-static void clear_links(ir_node *irn, void *env)
+static void init_users(ir_node *irn, void *env)
 {
 	(void)env;
 
 	ir_graph *irg = get_irn_irg(irn);
 	bitset_t *bs  = bitset_malloc(get_irg_last_idx(irg));
-	set_irn_link(irn, bs);
+	ir_nodemap_insert(&usermap, irn, bs);
 }
 
 /**
- * Increases count (stored in link field) for all operands of a node.
+ * Increases count for all operands of a node.
  */
 static void count_user(ir_node *irn, void *env)
 {
@@ -694,7 +697,7 @@ static void count_user(ir_node *irn, void *env)
 	int first = is_Block(irn) ? 0 : -1;
 	for (int i = get_irn_arity(irn); i-- > first; ) {
 		ir_node  *op = get_irn_n(irn, i);
-		bitset_t *bs = (bitset_t*)get_irn_link(op);
+		bitset_t *bs = ir_nodemap_get(bitset_t, &usermap, op);
 
 		if (bs)
 			bitset_set(bs, get_irn_idx(irn));
@@ -709,7 +712,7 @@ static void verify_edge_counter(ir_node *irn, void *env)
 {
 	build_walker *w = (build_walker*)env;
 
-	bitset_t *bs       = (bitset_t*)get_irn_link(irn);
+	bitset_t *bs       = ir_nodemap_get(bitset_t, &usermap, irn);
 	int       list_cnt = 0;
 	int       edge_cnt = get_irn_edge_info(irn, EDGE_KIND_NORMAL)->out_count;
 	const struct list_head *head
@@ -759,11 +762,12 @@ int edges_verify(ir_graph *irg)
 	bool                fine = edges_verify_kind(irg, EDGE_KIND_NORMAL);
 	struct build_walker w    = { .kind = EDGE_KIND_NORMAL, .fine = fine };
 
-	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
+	ir_nodemap_init(&usermap, irg);
+
 	/* verify counter */
-	irg_walk_anchors(irg, clear_links, count_user, NULL);
+	irg_walk_anchors(irg, init_users, count_user, NULL);
 	irg_walk_anchors(irg, NULL, verify_edge_counter, &w);
-	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
+	ir_nodemap_destroy(&usermap);
 
 	return w.fine;
 }
