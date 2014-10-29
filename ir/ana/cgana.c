@@ -430,13 +430,6 @@ static void add_method_address_inititializer(ir_initializer_t *initializer,
  */
 static void add_method_address(ir_entity *ent, pset *set)
 {
-	/* ignore methods: these of course reference their addresses
-	 * TODO: remove this later once this incorrect self-initialisation is gone
-	 */
-	ir_type *tp = get_entity_type(ent);
-	if (is_Method_type(tp))
-		return;
-
 	if (ent->initializer != NULL) {
 		add_method_address_inititializer(get_entity_initializer(ent), set);
 	}

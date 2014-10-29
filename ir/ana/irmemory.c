@@ -773,13 +773,6 @@ static void check_initializer_nodes(ir_initializer_t *initializer)
  */
 static void check_initializer(ir_entity *ent)
 {
-	/* Beware: Methods are always initialized with "themself". This does not
-	 * count as a taken address.
-	 * TODO: this initialisation with "themself" is wrong and should be removed
-	 */
-	if (is_Method_type(get_entity_type(ent)))
-		return;
-
 	if (ent->initializer != NULL) {
 		check_initializer_nodes(ent->initializer);
 	}

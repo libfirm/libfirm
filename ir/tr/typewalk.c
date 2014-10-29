@@ -101,13 +101,14 @@ static void do_type_walk(ir_type *const tp, ir_entity *const ent,
 			break;
 		}
 
-		case IR_ENTITY_METHOD:
 		case IR_ENTITY_NORMAL:
 			/* walk over the value types */
 			if (ent->initializer != NULL) {
 				walk_initializer(ent->initializer, pre, post, env);
 			}
 			break;
+
+		case IR_ENTITY_METHOD:
 		case IR_ENTITY_UNKNOWN:
 		case IR_ENTITY_PARAMETER:
 		case IR_ENTITY_LABEL:

@@ -185,8 +185,7 @@ FIRM_API int entity_has_definition(const ir_entity *entity);
  *
  * Automatically inserts the entity as a member of owner.
  * Entity is automatic_allocated and uninitialized except if the type
- * is type_method, then it is static_allocated and constant.  The constant
- * value is a pointer to the method.
+ * is type_method, then it is static_allocated and constant.
  * Visibility is local, offset -1, and it is not volatile.
  */
 FIRM_API ir_entity *new_entity(ir_type *owner, ident *name, ir_type *tp);
