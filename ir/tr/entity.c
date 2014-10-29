@@ -607,9 +607,9 @@ void set_entity_initializer(ir_entity *entity, ir_initializer_t *initializer)
 	check_entity_initializer(entity);
 }
 
-ir_initializer_t *get_entity_initializer(const ir_entity *entity)
+ir_initializer_t *(get_entity_initializer)(const ir_entity *entity)
 {
-	return entity->initializer;
+	return _get_entity_initializer(entity);
 }
 
 int (get_entity_offset)(const ir_entity *ent)

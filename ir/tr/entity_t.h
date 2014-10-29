@@ -37,6 +37,7 @@
 #define set_entity_compiler_generated(ent, flag) _set_entity_compiler_generated(ent, flag)
 #define get_entity_usage(ent)                    _get_entity_usage(ent)
 #define set_entity_usage(ent, flags)             _set_entity_usage(ent, flags)
+#define get_entity_initializer(ent)              _get_entity_initializer(ent)
 #define get_entity_offset(ent)                   _get_entity_offset(ent)
 #define set_entity_offset(ent, offset)           _set_entity_offset(ent, offset)
 #define get_entity_bitfield_offset(ent)          _get_entity_bitfield_offset(ent)
@@ -364,6 +365,11 @@ static inline bool is_entity_compound_member(const ir_entity *entity)
 {
 	return entity->entity_kind == IR_ENTITY_COMPOUND_MEMBER
 	    || entity->entity_kind == IR_ENTITY_PARAMETER;
+}
+
+static inline ir_initializer_t *_get_entity_initializer(ir_entity const *const ent)
+{
+	return ent->initializer;
 }
 
 static inline int _get_entity_offset(const ir_entity *ent)
