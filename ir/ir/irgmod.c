@@ -290,9 +290,9 @@ ir_node *part_block_edges(ir_node *node)
 	/* move Phi nodes and constants to new_block */
 	foreach_out_edge_safe(old_block, edge) {
 		ir_node *blnode = get_edge_src_irn(edge);
-		if (!is_Phi(blnode) && !is_irn_start_block_placed(blnode))
-			continue;
-		move_node_edges(blnode, new_block);
+		ir_node *skip   = skip_Proj(skip_Proj(blnode));
+		if (is_Phi(skip) || is_irn_start_block_placed(skip))
+			set_nodes_block(blnode, new_block);
 	}
 
 	if (old_block == get_irg_start_block(irg))
