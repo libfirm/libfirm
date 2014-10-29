@@ -96,7 +96,8 @@ static bool remove_unreachable_keeps(ir_graph *irg)
 
 void remove_unreachable_code(ir_graph *irg)
 {
-	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
+	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE
+	                         | IR_GRAPH_PROPERTY_NO_TUPLES);
 
 	bool changed = false;
 	irg_walk_graph(irg, unreachable_to_bad, NULL, &changed);
