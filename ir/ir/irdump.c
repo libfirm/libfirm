@@ -1475,16 +1475,6 @@ static void dump_entity_node(FILE *F, ir_entity *ent)
 }
 
 /**
- * Dumps a new style initializer.
- */
-static void dump_entity_initializer(FILE *F, const ir_entity *ent)
-{
-	/* TODO */
-	(void)F;
-	(void)ent;
-}
-
-/**
  * type-walker: Dumps a type or entity and its edges.
  */
 static void dump_type_info(ir_type *const tp, ir_entity *const ent, void *const env)
@@ -1504,10 +1494,7 @@ static void dump_type_info(ir_type *const tp, ir_entity *const ent, void *const 
 		}
 		/* attached subgraphs */
 		if (! (flags & ir_dump_flag_no_entity_values)) {
-			if (ent->initializer != NULL) {
-				/* new style initializers */
-				dump_entity_initializer(F, ent);
-			}
+			/* TODO dump initializer */
 		}
 	} else  {
 		dump_type_node(F, tp);

@@ -484,7 +484,7 @@ static void write_node_ref(write_env_t *env, const ir_node *node)
 	write_long(env, get_irn_node_nr(node));
 }
 
-static void write_initializer(write_env_t *env, ir_initializer_t *ini)
+static void write_initializer(write_env_t *const env, ir_initializer_t const *const ini)
 {
 	FILE *f = env->file;
 	ir_initializer_kind_t ini_kind = get_initializer_kind(ini);
@@ -752,14 +752,18 @@ static void write_entity(write_env_t *env, ir_entity *ent)
 	case IR_ENTITY_GOTENTRY:
 		write_entity_ref(env, ent->attr.got.referenced);
 		break;
-	case IR_ENTITY_NORMAL:
-		if (ent->initializer != NULL) {
+
+	case IR_ENTITY_NORMAL: {
+		ir_initializer_t const *const init = get_entity_initializer(ent);
+		if (init) {
 			write_symbol(env, "initializer");
-			write_initializer(env, get_entity_initializer(ent));
+			write_initializer(env, init);
 		} else {
 			write_symbol(env, "none");
 		}
 		break;
+	}
+
 	case IR_ENTITY_COMPOUND_MEMBER:
 		write_long(env, get_entity_offset(ent));
 		write_unsigned(env, get_entity_bitfield_offset(ent));

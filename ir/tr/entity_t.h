@@ -95,6 +95,10 @@ union ir_initializer_t {
 	ir_initializer_tarval_t    tarval;
 };
 
+typedef struct normal_ent_attr {
+	ir_initializer_t *initializer; /**< entity initializer */
+} normal_ent_attr;
+
 /** The attributes for methods. */
 typedef struct method_ent_attr {
 	mtp_additional_properties properties; /**< Additional graph properties can
@@ -193,13 +197,14 @@ struct ir_entity {
 	ir_entity **overwrittenby; /**< A list of entities that overwrite this
 	                                entity. */
 
-	ir_initializer_t *initializer; /**< entity initializer */
 #ifdef DEBUG_libfirm
 	long nr;             /**< A unique node number for each node to make output
 	                          readable. */
 #endif
 
 	union {
+		/** attributes for normal entities */
+		normal_ent_attr          normal;
 		/** attributes for method entities */
 		method_ent_attr          mtd_attr;
 		/** fields for code entities */
@@ -369,7 +374,8 @@ static inline bool is_entity_compound_member(const ir_entity *entity)
 
 static inline ir_initializer_t *_get_entity_initializer(ir_entity const *const ent)
 {
-	return ent->initializer;
+	assert(ent->entity_kind == IR_ENTITY_NORMAL);
+	return ent->attr.normal.initializer;
 }
 
 static inline int _get_entity_offset(const ir_entity *ent)

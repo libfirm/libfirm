@@ -155,9 +155,8 @@ static void free_entity_attrs(ir_entity *ent)
 		ent->overwrittenby = NULL;
 	}
 
-	if (ent->initializer != NULL) {
-		/* TODO: free initializers */
-	}
+	/* TODO: free initializers */
+
 	if (ent->entity_kind == IR_ENTITY_METHOD) {
 		if (ent->attr.mtd_attr.param_access) {
 			DEL_ARR_F(ent->attr.mtd_attr.param_access);
@@ -178,9 +177,8 @@ static ir_entity *deep_entity_copy(ir_entity *old)
 	ir_entity *newe = XMALLOC(ir_entity);
 
 	*newe = *old;
-	if (old->initializer != NULL) {
-		/* FIXME: the initializers are NOT copied */
-	} else if (is_method_entity(old)) {
+	/* FIXME: the initializers are NOT copied */
+	if (is_method_entity(old)) {
 		/* do NOT copy them, reanalyze. This might be the best solution */
 		newe->attr.mtd_attr.param_access = NULL;
 		newe->attr.mtd_attr.param_weight = NULL;
@@ -468,7 +466,7 @@ void set_atomic_ent_value(ir_entity *entity, ir_node *val)
 	assert(is_atomic_entity(entity));
 	assert(is_Dummy(val) || get_irn_mode(val) == get_type_mode(entity->type));
 	ir_initializer_t *initializer = create_initializer_const(val);
-	entity->initializer = initializer;
+	set_entity_initializer(entity, initializer);
 }
 
 const char *get_initializer_kind_name(ir_initializer_kind_t ini)
@@ -579,7 +577,7 @@ ir_initializer_kind_t get_initializer_kind(const ir_initializer_t *initializer)
 static void check_entity_initializer(ir_entity *entity)
 {
 #ifndef NDEBUG
-	ir_initializer_t *initializer = entity->initializer;
+	ir_initializer_t *initializer = get_entity_initializer(entity);
 	if (initializer == NULL)
 		return;
 	ir_type          *entity_tp   = get_entity_type(entity);
@@ -603,7 +601,7 @@ static void check_entity_initializer(ir_entity *entity)
 
 void set_entity_initializer(ir_entity *entity, ir_initializer_t *initializer)
 {
-	entity->initializer = initializer;
+	entity->attr.normal.initializer = initializer;
 	check_entity_initializer(entity);
 }
 
@@ -902,8 +900,10 @@ int entity_has_definition(const ir_entity *entity)
 	case IR_ENTITY_METHOD:
 		return get_entity_irg(entity) != NULL
 		    && (get_entity_linkage(entity) & IR_LINKAGE_NO_CODEGEN) == 0;
+
 	case IR_ENTITY_NORMAL:
-		return entity->initializer != NULL;
+		return get_entity_initializer(entity) != NULL;
+
 	case IR_ENTITY_LABEL:
 	case IR_ENTITY_ALIAS:
 		return true;

@@ -773,8 +773,10 @@ static void check_initializer_nodes(ir_initializer_t *initializer)
  */
 static void check_initializer(ir_entity *ent)
 {
-	if (ent->initializer != NULL) {
-		check_initializer_nodes(ent->initializer);
+	if (get_entity_kind(ent) == IR_ENTITY_NORMAL) {
+		ir_initializer_t *const init = get_entity_initializer(ent);
+		if (init != NULL)
+			check_initializer_nodes(init);
 	}
 }
 

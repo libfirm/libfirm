@@ -354,8 +354,10 @@ static void walk_entity(ir_entity *ent, void *env)
 {
 	walk_env *my_env = (walk_env*)env;
 
-	if (ent->initializer != NULL) {
-		walk_initializer(ent->initializer, my_env);
+	if (get_entity_kind(ent) == IR_ENTITY_NORMAL) {
+		ir_initializer_t *const init = get_entity_initializer(ent);
+		if (init)
+			walk_initializer(init, my_env);
 	}
 }
 

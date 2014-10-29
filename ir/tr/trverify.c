@@ -222,11 +222,7 @@ static bool is_data_type(const ir_type *type)
 
 int check_entity(const ir_entity *entity)
 {
-	bool                    fine        = true;
-	const ir_initializer_t *initializer = get_entity_initializer(entity);
-	const ir_type          *type        = get_entity_type(entity);
-	if (initializer != NULL)
-		fine &= check_initializer(initializer, type, entity);
+	bool fine = true;
 
 	ir_linkage linkage = get_entity_linkage(entity);
 	if (linkage & IR_LINKAGE_NO_CODEGEN) {
@@ -247,7 +243,8 @@ int check_entity(const ir_entity *entity)
 	                       "GARBAGE_COLLECT");
 	check_external_linkage(entity, IR_LINKAGE_MERGE, "MERGE");
 
-	const ir_type *owner = get_entity_owner(entity);
+	ir_type const *const type  = get_entity_type(entity);
+	ir_type const *const owner = get_entity_owner(entity);
 	switch (get_entity_kind(entity)) {
 	case IR_ENTITY_ALIAS:
 		if (!is_segment_type(owner)) {
@@ -255,40 +252,37 @@ int check_entity(const ir_entity *entity)
 			             owner);
 			fine = false;
 		}
-		if (initializer != NULL) {
-			report_error("alias entity %+F has initializer", entity);
-			fine = false;
-		}
 		break;
-	case IR_ENTITY_NORMAL:
+
+	case IR_ENTITY_NORMAL: {
+		ir_initializer_t const *const init = get_entity_initializer(entity);
+		if (init)
+			fine &= check_initializer(init, type, entity);
+
 		if (!is_data_type(type)) {
 			report_error("normal entity %+F has non-data type %+F", entity,
 			             type);
 			fine = false;
 		}
 		break;
+	}
+
 	case IR_ENTITY_COMPOUND_MEMBER:
 		if (!is_compound_type(owner)) {
 			report_error("compound member entity %+F has non-compound owner %+F",
 			             entity, owner);
 			fine = false;
 		}
-		if (initializer != NULL) {
-			report_error("compound member entity %+F has initializer", entity);
-			fine = false;
-		}
 		break;
+
 	case IR_ENTITY_LABEL:
 		if (type != get_code_type()) {
 			report_error("label entity %+F has non-code type %+F", entity,
 			             type);
 			fine = false;
 		}
-		if (initializer != NULL) {
-			report_error("label entity %+F has initializer", entity);
-			fine = false;
-		}
 		break;
+
 	case IR_ENTITY_METHOD:
 		if (!is_Method_type(type)) {
 			report_error("method entity %+F has non-method type %+F", entity,
@@ -316,11 +310,8 @@ int check_entity(const ir_entity *entity)
 			             type);
 			fine = false;
 		}
-		if (initializer != NULL) {
-			report_error("parameter entity %+F has initializer", entity);
-			fine = false;
-		}
 		break;
+
 	case IR_ENTITY_UNKNOWN:
 	case IR_ENTITY_GOTENTRY:
 		break;

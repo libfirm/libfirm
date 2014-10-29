@@ -374,10 +374,11 @@ static bool entity_is_string_const(const ir_entity *ent, bool only_suffix_null)
 	if (!mode_is_int(mode) || get_mode_size_bits(mode) != 8)
 		return false;
 
-	if (ent->initializer == NULL)
+	ir_initializer_t const *const init = get_entity_initializer(ent);
+	if (!init)
 		return false;
 
-	return initializer_is_string_const(ent->initializer, only_suffix_null);
+	return initializer_is_string_const(init, only_suffix_null);
 }
 
 static bool entity_is_null(const ir_entity *entity)
@@ -1087,7 +1088,7 @@ static void emit_node_data(be_gas_decl_env_t *env, ir_node *init, ir_type *type)
 
 static void emit_initializer(be_gas_decl_env_t *env, const ir_entity *entity)
 {
-	const ir_initializer_t *initializer = entity->initializer;
+	ir_initializer_t const *const initializer = get_entity_initializer(entity);
 	if (initializer_is_string_const(initializer, false)) {
 		emit_string_initializer(initializer);
 		return;
@@ -1444,7 +1445,6 @@ static void emit_global(be_gas_decl_env_t *env, const ir_entity *entity)
 			be_emit_write_line();
 		}
 	} else {
-		assert(entity->initializer != NULL);
 		emit_initializer(env, entity);
 	}
 }

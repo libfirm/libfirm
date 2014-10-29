@@ -66,19 +66,29 @@ static void visit_entity(ir_entity *entity)
 		return;
 	mark_entity_visited(entity);
 
-	if (entity->initializer != NULL) {
-		visit_initializer(entity->initializer);
+	switch (get_entity_kind(entity)) {
+	case IR_ENTITY_NORMAL: {
+		ir_initializer_t *const init = get_entity_initializer(entity);
+		if (init)
+			visit_initializer(init);
+		break;
 	}
 
-	if (is_method_entity(entity)) {
+	case IR_ENTITY_METHOD: {
 		ir_graph *irg = get_entity_irg(entity);
 		if (irg != NULL)
 			start_visit_node(get_irg_end(irg));
+		break;
 	}
 
-	if (is_alias_entity(entity)) {
+	case IR_ENTITY_ALIAS: {
 		ir_entity *aliased = get_entity_alias(entity);
 		visit_entity(aliased);
+		break;
+	}
+
+	default:
+		break;
 	}
 }
 

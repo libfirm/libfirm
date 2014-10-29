@@ -387,8 +387,7 @@ static void free_ana_walker(ir_node *node, void *env)
  *
  * which is sometimes used to anchor functions.
  */
-static void add_method_address_inititializer(ir_initializer_t *initializer,
-                                             pset *set)
+static void add_method_address_inititializer(ir_initializer_t const *const initializer, pset *const set)
 {
 	switch (initializer->kind) {
 	case IR_INITIALIZER_CONST: {
@@ -430,8 +429,10 @@ static void add_method_address_inititializer(ir_initializer_t *initializer,
  */
 static void add_method_address(ir_entity *ent, pset *set)
 {
-	if (ent->initializer != NULL) {
-		add_method_address_inititializer(get_entity_initializer(ent), set);
+	if (get_entity_kind(ent) == IR_ENTITY_NORMAL) {
+		ir_initializer_t const *const init = get_entity_initializer(ent);
+		if (init)
+			add_method_address_inititializer(init, set);
 	}
 }
 

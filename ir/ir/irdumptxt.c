@@ -600,12 +600,14 @@ static void dump_entity_to_file_prefix(FILE *const F,
 	}
 
 	if (verbosity & dump_verbosity_entconsts) {
-		if (ent->initializer != NULL) {
-			const ir_initializer_t *initializer = get_entity_initializer(ent);
-			fprintf(F, "\n%s  Initializers:", prefix);
-			need_nl = true;
-			dump_ir_initializers_to_file(F, prefix, initializer, get_entity_type(ent));
-			fputc('\n', F);
+		if (get_entity_kind(ent) == IR_ENTITY_NORMAL) {
+			ir_initializer_t const *const initializer = get_entity_initializer(ent);
+			if (initializer) {
+				fprintf(F, "\n%s  Initializers:", prefix);
+				need_nl = true;
+				dump_ir_initializers_to_file(F, prefix, initializer, get_entity_type(ent));
+				fputc('\n', F);
+			}
 		}
 	}
 
