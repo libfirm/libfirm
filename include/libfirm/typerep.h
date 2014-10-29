@@ -543,9 +543,6 @@ FIRM_API ir_initializer_t *get_initializer_compound_value(
 /** Sets the new style initializers of an entity. */
 FIRM_API void set_entity_initializer(ir_entity *entity, ir_initializer_t *initializer);
 
-/** Returns true, if an entity has new style initializers. */
-FIRM_API int has_entity_initializer(const ir_entity *entity);
-
 /** Returns the new style initializers of an entity. */
 FIRM_API ir_initializer_t *get_entity_initializer(const ir_entity *entity);
 

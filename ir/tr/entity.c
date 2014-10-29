@@ -611,11 +611,6 @@ void set_entity_initializer(ir_entity *entity, ir_initializer_t *initializer)
 	check_entity_initializer(entity);
 }
 
-int has_entity_initializer(const ir_entity *entity)
-{
-	return entity->initializer != NULL;
-}
-
 ir_initializer_t *get_entity_initializer(const ir_entity *entity)
 {
 	return entity->initializer;
