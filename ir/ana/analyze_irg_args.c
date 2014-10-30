@@ -17,8 +17,8 @@
 #include "cgana.h"
 #include "irprog.h"
 #include "entity_t.h"
-
 #include "analyze_irg_args.h"
+#include "util.h"
 
 /**
  * Walk recursive the successors of a graph argument
@@ -196,8 +196,7 @@ static void analyze_ent_args(ir_entity *ent)
 	}
 
 	/* copy the temporary info */
-	memcpy(ent->attr.mtd_attr.param_access, rw_info,
-	       nparams * sizeof(ent->attr.mtd_attr.param_access[0]));
+	MEMCPY(ent->attr.mtd_attr.param_access, rw_info, nparams);
 }
 
 void analyze_irg_args(ir_graph *irg)

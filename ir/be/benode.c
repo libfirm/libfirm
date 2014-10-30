@@ -704,8 +704,7 @@ static void copy_attr(ir_graph *irg, const ir_node *old_node, ir_node *new_node)
 		} else {
 			new_info->in_reqs = OALLOCN(obst,const arch_register_req_t*, n_ins);
 		}
-		memcpy(new_info->in_reqs, old_info->in_reqs,
-		       n_ins * sizeof(new_info->in_reqs[0]));
+		MEMCPY(new_info->in_reqs, old_info->in_reqs, n_ins);
 	} else {
 		new_info->in_reqs = NULL;
 	}

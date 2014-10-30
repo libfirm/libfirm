@@ -546,8 +546,7 @@ ir_node *ia32_gen_ASM(ir_node *node)
 				const arch_register_req_t **new_in_reg_reqs
 					= OALLOCN(obst, const arch_register_req_t*,
 				                          in_size);
-				memcpy(new_in_reg_reqs, in_reg_reqs,
-				       n_ins*sizeof(new_in_reg_reqs[0]));
+				MEMCPY(new_in_reg_reqs, in_reg_reqs, n_ins);
 				ir_node **new_in = ALLOCANZ(ir_node*, in_size);
 				MEMCPY(new_in, in, n_ins);
 
@@ -576,8 +575,7 @@ ir_node *ia32_gen_ASM(ir_node *node)
 				out_size *= 2;
 				new_out_reg_reqs
 					= OALLOCN(obst, const arch_register_req_t*, out_size);
-				memcpy(new_out_reg_reqs, out_reg_reqs,
-				       out_arity * sizeof(new_out_reg_reqs[0]));
+				MEMCPY(new_out_reg_reqs, out_reg_reqs, out_arity);
 				out_reg_reqs = new_out_reg_reqs;
 			}
 
@@ -595,8 +593,7 @@ ir_node *ia32_gen_ASM(ir_node *node)
 		out_size = out_arity + 1;
 		new_out_reg_reqs
 			= OALLOCN(obst, const arch_register_req_t*, out_size);
-		memcpy(new_out_reg_reqs, out_reg_reqs,
-			   out_arity * sizeof(new_out_reg_reqs[0]));
+		MEMCPY(new_out_reg_reqs, out_reg_reqs, out_arity);
 		out_reg_reqs = new_out_reg_reqs;
 	}
 

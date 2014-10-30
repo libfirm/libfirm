@@ -550,8 +550,7 @@ static ir_node *gen_ASM(ir_node *node)
 		out_size = n_outs + 1;
 		const arch_register_req_t **new_out_reg_reqs
 			= OALLOCN(obst, const arch_register_req_t*, out_size);
-		memcpy(new_out_reg_reqs, out_reg_reqs,
-			   n_outs * sizeof(new_out_reg_reqs[0]));
+		MEMCPY(new_out_reg_reqs, out_reg_reqs, n_outs);
 		out_reg_reqs = new_out_reg_reqs;
 	}
 

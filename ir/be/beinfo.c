@@ -21,6 +21,7 @@
 #include "irdump_t.h"
 #include "irhooks.h"
 #include "panic.h"
+#include "util.h"
 
 static copy_attr_func old_phi_copy_attr;
 
@@ -72,9 +73,8 @@ static void new_phi_copy_attr(ir_graph *irg, const ir_node *old_node,
 	backend_info_t *new_info = be_get_info(new_node);
 
 	new_info->in_reqs = old_info->in_reqs;
-	size_t n_outs = arch_get_irn_n_outs(old_node);
-	memcpy(new_info->out_infos, old_info->out_infos,
-	       n_outs * sizeof(old_info->out_infos[0]));
+	size_t const n_outs = arch_get_irn_n_outs(old_node);
+	MEMCPY(new_info->out_infos, old_info->out_infos, n_outs);
 
 	old_phi_copy_attr(irg, old_node, new_node);
 }
