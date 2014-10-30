@@ -1136,7 +1136,7 @@ static void keep_float_node_alive(ir_node *node)
 static ir_node *create_Copy(x87_state *state, ir_node *n)
 {
 	/* Do not copy constants, recreate them. */
-	ir_node *pred                            = get_irn_n(n, 0);
+	ir_node *pred                            = be_get_Copy_op(n);
 	ir_node *(*cnstr)(dbg_info *, ir_node *) = NULL;
 	if (is_ia32_irn(pred)) {
 		switch (get_ia32_irn_opcode(pred)) {
@@ -1166,24 +1166,23 @@ static ir_node *create_Copy(x87_state *state, ir_node *n)
 		}
 	}
 
-	const arch_register_t *out   = arch_get_irn_register(n);
-	const arch_register_t *op1   = arch_get_irn_register(pred);
-	ir_mode               *mode  = get_irn_mode(n);
-	dbg_info              *dbgi  = get_irn_dbg_info(n);
-	ir_node               *block = get_nodes_block(n);
-	ir_node               *res;
+	ir_node  *res;
+	dbg_info *dbgi  = get_irn_dbg_info(n);
+	ir_node  *block = get_nodes_block(n);
 	if (cnstr != NULL) {
-		/* copy a constant */
+		/* Copy a constant. */
 		res = (*cnstr)(dbgi, block);
-		x87_push(state, out->index, res);
 	} else {
-		unsigned op1_idx = x87_on_stack(state, op1->index);
+		ir_mode *const mode  = get_irn_mode(n);
 		res = new_bd_ia32_fpushCopy(dbgi, block, pred, mode);
-		x87_push(state, out->index, res);
 
-		ia32_x87_attr_t *const attr = get_ia32_x87_attr(res);
+		ia32_x87_attr_t       *const attr    = get_ia32_x87_attr(res);
+		arch_register_t const *const op1     = arch_get_irn_register(pred);
+		unsigned               const op1_idx = x87_on_stack(state, op1->index);
 		attr->reg = get_st_reg(op1_idx);
 	}
+	arch_register_t const *const out = arch_get_irn_register(n);
+	x87_push(state, out->index, res);
 	arch_set_irn_register(res, out);
 	return res;
 }
