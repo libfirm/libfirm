@@ -1944,6 +1944,7 @@ fisttp => {
 },
 
 fldz => {
+	op_flags  => [ "constlike" ],
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { out => [ "fp" ] },
 	outs      => [ "res" ],
@@ -1955,6 +1956,7 @@ fldz => {
 },
 
 fld1 => {
+	op_flags  => [ "constlike" ],
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { out => [ "fp" ] },
 	outs      => [ "res" ],
@@ -1966,6 +1968,7 @@ fld1 => {
 },
 
 fldpi => {
+	op_flags  => [ "constlike" ],
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { out => [ "fp" ] },
 	outs      => [ "res" ],
@@ -1977,6 +1980,7 @@ fldpi => {
 },
 
 fldln2 => {
+	op_flags  => [ "constlike" ],
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { out => [ "fp" ] },
 	outs      => [ "res" ],
@@ -1988,6 +1992,7 @@ fldln2 => {
 },
 
 fldlg2 => {
+	op_flags  => [ "constlike" ],
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { out => [ "fp" ] },
 	emit      => "fldlg2",
@@ -1999,6 +2004,7 @@ fldlg2 => {
 },
 
 fldl2t => {
+	op_flags  => [ "constlike" ],
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { out => [ "fp" ] },
 	emit      => "fldll2t",
@@ -2010,6 +2016,7 @@ fldl2t => {
 },
 
 fldl2e => {
+	op_flags  => [ "constlike" ],
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { out => [ "fp" ] },
 	emit      => "fldl2e",

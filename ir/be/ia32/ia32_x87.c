@@ -19,6 +19,7 @@
 #include "irgmod.h"
 #include "ircons.h"
 #include "irgwalk.h"
+#include "irtools.h"
 #include "obst.h"
 #include "pmap.h"
 #include "array.h"
@@ -1136,44 +1137,16 @@ static void keep_float_node_alive(ir_node *node)
 static ir_node *create_Copy(x87_state *state, ir_node *n)
 {
 	/* Do not copy constants, recreate them. */
-	ir_node *pred                            = be_get_Copy_op(n);
-	ir_node *(*cnstr)(dbg_info *, ir_node *) = NULL;
-	if (is_ia32_irn(pred)) {
-		switch (get_ia32_irn_opcode(pred)) {
-		case iro_ia32_fldz:
-			cnstr = new_bd_ia32_fldz;
-			break;
-		case iro_ia32_fld1:
-			cnstr = new_bd_ia32_fld1;
-			break;
-		case iro_ia32_fldpi:
-			cnstr = new_bd_ia32_fldpi;
-			break;
-		case iro_ia32_fldl2e:
-			cnstr = new_bd_ia32_fldl2e;
-			break;
-		case iro_ia32_fldl2t:
-			cnstr = new_bd_ia32_fldl2t;
-			break;
-		case iro_ia32_fldlg2:
-			cnstr = new_bd_ia32_fldlg2;
-			break;
-		case iro_ia32_fldln2:
-			cnstr = new_bd_ia32_fldln2;
-			break;
-		default:
-			break;
-		}
-	}
-
-	ir_node  *res;
-	dbg_info *dbgi  = get_irn_dbg_info(n);
-	ir_node  *block = get_nodes_block(n);
-	if (cnstr != NULL) {
+	ir_node       *res;
+	ir_node *const block = get_nodes_block(n);
+	ir_node *const pred  = be_get_Copy_op(n);
+	if (is_irn_constlike(pred)) {
 		/* Copy a constant. */
-		res = (*cnstr)(dbgi, block);
+		res = exact_copy(pred);
+		set_nodes_block(res, block);
 	} else {
-		ir_mode *const mode  = get_irn_mode(n);
+		dbg_info *const dbgi    = get_irn_dbg_info(n);
+		ir_mode  *const mode    = get_irn_mode(n);
 		res = new_bd_ia32_fpushCopy(dbgi, block, pred, mode);
 
 		ia32_x87_attr_t       *const attr    = get_ia32_x87_attr(res);
