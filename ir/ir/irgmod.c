@@ -25,6 +25,9 @@ void turn_into_tuple(ir_node *const node, int const arity,
 {
 	set_irn_in(node, arity, in);
 	set_irn_op(node, op_Tuple);
+
+	/* update irg flags */
+	clear_irg_properties(get_irn_irg(node), IR_GRAPH_PROPERTY_NO_TUPLES);
 }
 
 void exchange(ir_node *old, ir_node *nw)
