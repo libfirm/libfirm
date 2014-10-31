@@ -270,20 +270,20 @@ void mature_immBlock(ir_node *block)
 		/* Attach a Bad predecessor if there is no other. This is necessary to
 		 * fulfill the invariant that all nodes can be found through reverse
 		 * edges from the start block. */
+		ir_node             **new_in;
 		struct obstack *const obst    = get_irg_obstack(irg);
-		size_t          const n_preds = ARR_LEN(block->in) - 1;
+		size_t                n_preds = ARR_LEN(block->in) - 1;
 		if (n_preds == 0) {
-			ir_node **const new_in = NEW_ARR_D(ir_node*, obst, 2);
+			n_preds   = 1;
+			new_in    = NEW_ARR_D(ir_node*, obst, 2);
 			new_in[0] = NULL;
 			new_in[1] = new_r_Bad(irg, mode_X);
-			block->in = new_in;
-			block->attr.block.backedge = new_backedge_arr(obst, n_preds + 1);
 		} else {
-			ir_node **const new_in = DUP_ARR_D(ir_node*, obst, block->in);
+			new_in = DUP_ARR_D(ir_node*, obst, block->in);
 			DEL_ARR_F(block->in);
-			block->in = new_in;
-			block->attr.block.backedge = new_backedge_arr(obst, n_preds);
 		}
+		block->in                     = new_in;
+		block->attr.block.backedge    = new_backedge_arr(obst, n_preds);
 		block->attr.block.dynamic_ins = false;
 	}
 
