@@ -1135,8 +1135,7 @@ ir_tarval *tarval_eor(ir_tarval *a, ir_tarval *b)
 ir_tarval *tarval_shl(ir_tarval *a, ir_tarval *b)
 {
 	ir_mode *a_mode = a->mode;
-	ir_mode *b_mode = b->mode;
-	assert(mode_is_int(a_mode) && mode_is_int(b_mode));
+	assert(mode_is_int(a_mode) && mode_is_int(b->mode));
 
 	sc_word *temp_val;
 	if (get_mode_modulo_shift(a_mode) != 0) {
@@ -1170,8 +1169,7 @@ ir_tarval *tarval_shl_unsigned(ir_tarval *a, unsigned b)
 ir_tarval *tarval_shr(ir_tarval *a, ir_tarval *b)
 {
 	ir_mode *a_mode = a->mode;
-	ir_mode *b_mode = b->mode;
-	assert(mode_is_int(a_mode) && mode_is_int(b_mode));
+	assert(mode_is_int(a_mode) && mode_is_int(b->mode));
 
 	sc_word *temp_val;
 	if (get_mode_modulo_shift(a_mode) != 0) {
@@ -1211,8 +1209,7 @@ ir_tarval *tarval_shr_unsigned(ir_tarval *a, unsigned b)
 ir_tarval *tarval_shrs(ir_tarval *a, ir_tarval *b)
 {
 	ir_mode *a_mode = a->mode;
-	ir_mode *b_mode = b->mode;
-	assert(mode_is_int(a_mode) && mode_is_int(b_mode));
+	assert(mode_is_int(a_mode) && mode_is_int(b->mode));
 
 	sc_word *temp_val;
 	if (get_mode_modulo_shift(a_mode) != 0) {
