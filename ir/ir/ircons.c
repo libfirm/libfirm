@@ -251,12 +251,6 @@ void mature_immBlock(ir_node *block)
 	if (get_Block_matured(block))
 		return;
 
-	ir_graph       *const irg     = get_irn_irg(block);
-	struct obstack *const obst    = get_irg_obstack(irg);
-	size_t          const n_preds = ARR_LEN(block->in) - 1;
-	/* Fix block parameters. */
-	block->attr.block.backedge = new_backedge_arr(obst, n_preds);
-
 	/* Traverse a chain of Phi nodes attached to this block and mature these,
 	 * too. */
 	for (ir_node *phi = block->attr.block.phis; phi != NULL;) {
@@ -271,22 +265,26 @@ void mature_immBlock(ir_node *block)
 	set_Block_matured(block, 1);
 
 	/* Create final in-array for the block. */
+	ir_graph *const irg = get_irn_irg(block);
 	if (block->attr.block.dynamic_ins) {
 		/* Attach a Bad predecessor if there is no other. This is necessary to
 		 * fulfill the invariant that all nodes can be found through reverse
 		 * edges from the start block. */
+		struct obstack *const obst    = get_irg_obstack(irg);
+		size_t          const n_preds = ARR_LEN(block->in) - 1;
 		if (n_preds == 0) {
 			ir_node **const new_in = NEW_ARR_D(ir_node*, obst, 2);
 			new_in[0] = NULL;
 			new_in[1] = new_r_Bad(irg, mode_X);
 			block->in = new_in;
-			block->attr.block.dynamic_ins = false;
+			block->attr.block.backedge = new_backedge_arr(obst, n_preds + 1);
 		} else {
 			ir_node **const new_in = DUP_ARR_D(ir_node*, obst, block->in);
 			DEL_ARR_F(block->in);
 			block->in = new_in;
-			block->attr.block.dynamic_ins = false;
+			block->attr.block.backedge = new_backedge_arr(obst, n_preds);
 		}
+		block->attr.block.dynamic_ins = false;
 	}
 
 	/* Now, as the block is a finished Firm node, we can optimize it.
