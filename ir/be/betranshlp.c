@@ -168,31 +168,17 @@ static ir_node *transform_proj(ir_node *node)
 	return proj_transform(node);
 }
 
-ir_node *be_duplicate_node(ir_node *node)
+ir_node *be_duplicate_node(ir_node *const node)
 {
-	ir_node  *block = be_transform_node(get_nodes_block(node));
-	dbg_info *dbgi  = get_irn_dbg_info(node);
-	ir_graph *irg   = get_irn_irg(node);
-	ir_mode  *mode  = get_irn_mode(node);
-	ir_op    *op    = get_irn_op(node);
-
-	ir_node *new_node;
-	if (op->opar == oparity_dynamic) {
-		new_node = new_ir_node(dbgi, irg, block, op, mode, -1, NULL);
-		foreach_irn_in(node, i, in) {
-			add_irn_n(new_node, be_transform_node(in));
-		}
-	} else {
-		int       arity = get_irn_arity(node);
-		ir_node **ins   = ALLOCAN(ir_node*, arity);
-		foreach_irn_in(node, i, in) {
-			ins[i] = be_transform_node(in);
-		}
-
-		new_node = new_ir_node(dbgi, irg, block, op, mode, arity, ins);
+	int       const arity = get_irn_arity(node);
+	ir_node **const ins   = ALLOCAN(ir_node*, arity);
+	foreach_irn_in(node, i, in) {
+		ins[i] = be_transform_node(in);
 	}
 
-	copy_node_attr(irg, node, new_node);
+	ir_node *const block    = be_transform_node(get_nodes_block(node));
+	ir_node *const new_node = new_similar_node(node, block, ins);
+
 	be_duplicate_deps(node, new_node);
 
 	new_node->node_nr = node->node_nr;
