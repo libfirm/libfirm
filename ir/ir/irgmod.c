@@ -76,9 +76,8 @@ void exchange(ir_node *old, ir_node *nw)
 			}
 		}
 
-		if (get_irn_op(old)->opar == oparity_dynamic) {
+		if (is_irn_dynamic(old))
 			DEL_ARR_F(get_irn_in(old));
-		}
 
 		old->op    = op_Id;
 		old->in    = NEW_ARR_D(ir_node*, get_irg_obstack(irg), 2);

@@ -209,7 +209,7 @@ int add_irn_n(ir_node *node, ir_node *in)
 {
 	ir_graph *irg = get_irn_irg(node);
 
-	assert(node->op->opar == oparity_dynamic);
+	assert(is_irn_dynamic(node));
 	int pos = ARR_LEN(node->in) - 1;
 	ARR_APP1(ir_node *, node->in, in);
 	edges_notify_edge(node, pos, node->in[pos + 1], NULL, irg);

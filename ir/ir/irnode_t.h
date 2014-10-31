@@ -323,6 +323,11 @@ static inline int is_binop_(const ir_node *node)
 	return (node->op->opar == oparity_binary);
 }
 
+static inline bool is_irn_dynamic(ir_node const *const n)
+{
+	return get_irn_op(n)->opar == oparity_dynamic;
+}
+
 /**
  * Get the predecessor block.
  *

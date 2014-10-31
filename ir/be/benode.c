@@ -699,7 +699,7 @@ static void copy_attr(ir_graph *irg, const ir_node *old_node, ir_node *new_node)
 	if (old_info->in_reqs != NULL) {
 		unsigned n_ins = get_irn_arity(old_node);
 		/* need dynamic in infos? */
-		if (get_irn_op(old_node)->opar == oparity_dynamic) {
+		if (is_irn_dynamic(old_node)) {
 			new_info->in_reqs = NEW_ARR_F(const arch_register_req_t*, n_ins);
 		} else {
 			new_info->in_reqs = OALLOCN(obst,const arch_register_req_t*, n_ins);
