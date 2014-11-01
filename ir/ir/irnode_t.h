@@ -218,11 +218,6 @@ static inline void set_irn_mode_(ir_node *node, ir_mode *mode)
 	node->mode = mode;
 }
 
-static inline int ir_has_irg_ref(const ir_node *node)
-{
-	return is_Block(node) || is_Bad(node) || is_Anchor(node);
-}
-
 static inline ir_node *get_nodes_block_(const ir_node *node)
 {
 	assert(!is_Block(node));
