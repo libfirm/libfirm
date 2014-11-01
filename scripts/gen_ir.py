@@ -75,10 +75,9 @@ def format_curblock(node):
 
 def format_insdecl(node):
 	arity = node.arity
-	if arity == "variable" and len(node.ins) == 0 or arity == "dynamic" or arity == 0:
-		return ""
-
-	if arity == "variable":
+	if arity == "dynamic" or arity == "variable":
+		if len(node.ins) == 0:
+			return ""
 		insarity = len(node.ins)
 		res  = "int r_arity = arity + " + repr(insarity) + ";"
 		res += "\n\tir_node **r_in= ALLOCAN(ir_node*, r_arity);"
@@ -87,6 +86,8 @@ def format_insdecl(node):
 			res += "\n\tr_in[" + repr(i) + "] = irn_" + input[0] + ";"
 			i += 1
 		res += "\n\tmemcpy(&r_in[" + repr(insarity) + "], in, sizeof(ir_node *) * arity);\n\t"
+	elif arity == 0:
+		return ""
 	else:
 		res = "ir_node *in[" + repr(arity) + "];"
 		i = 0
@@ -97,9 +98,7 @@ def format_insdecl(node):
 
 def format_arity_and_ins(node):
 	arity = node.arity
-	if arity == "dynamic":
-		return "-1, NULL"
-	elif arity == "variable":
+	if arity == "dynamic" or arity == "variable":
 		if len(node.ins) == 0:
 			return "arity, in"
 		else:

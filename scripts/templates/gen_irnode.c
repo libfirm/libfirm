@@ -65,11 +65,6 @@ ir_node *new_rd_{{node.name}}(
 			{%- endif %}
 			{{node|arity_and_ins}}
 		{% endfilter %});
-	{%- if node.arity == "dynamic" %}
-	for (int i = 0; i < arity; ++i) {
-		add_irn_n(res, in[i]);
-	}
-	{%- endif %}
 	{% if len(node.attrs) + len(node.initattrs) > 0 -%}
 	{% if spec.external -%}
 	{{node.attr_struct}} *attr = ({{node.attr_struct}}*) get_irn_generic_attr(res);
