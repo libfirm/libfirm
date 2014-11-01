@@ -116,7 +116,7 @@ FIRM_API void delete_irn_dep(ir_node *node, ir_node *dep);
 FIRM_API void set_irn_n(ir_node *node, int n, ir_node *in);
 /**
  * Appends a new predecessor to a node. This only works for nodes with
- * variable arity!
+ * dynamic arity!
  * @returns   the number of the new input
  */
 FIRM_API int add_irn_n(ir_node *node, ir_node *in);
