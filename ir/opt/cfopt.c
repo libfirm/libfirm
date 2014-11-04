@@ -418,7 +418,7 @@ static void merge_empty_predecessors(ir_node *block, unsigned new_n_cfgpreds)
 				set_Phi_next(phi, get_Block_phis(block));
 				set_Block_phis(block, phi);
 
-				/* We have two possibilties here:
+				/* We have two possibilities here:
 				 *  1) predb does not dominate block -> the Phi is unused
 				 *     -> it doesn't matter what we do
 				 *  2) predb dominates block -> we merge into a loop which must
