@@ -175,6 +175,11 @@ static void construct_ssa(ir_node *orig_block, ir_node *orig_val,
 			DB((dbg, LEVEL_4, ">>>> Setting input %d of %+F to %+F\n", j, user,
 			    newval));
 			set_irn_n(user, j, newval);
+			if (is_Phi(user) && get_irn_mode(user) == mode_M && !get_Phi_loop(user)) {
+				set_Phi_loop(user, true);
+				keep_alive(user);
+				keep_alive(user_block);
+			}
 		}
 	}
 }
