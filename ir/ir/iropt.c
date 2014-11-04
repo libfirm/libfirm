@@ -7065,9 +7065,8 @@ static ir_node *transform_node_Sync(ir_node *n)
 		int pred_arity = get_Sync_n_preds(pred);
 		for (int j = 0; j < pred_arity; ++j) {
 			ir_node *pred_pred = get_Sync_pred(pred, j);
-			int      k;
 
-			for (k = 0;; ++k) {
+			for (int k = 0;; ++k) {
 				if (k >= arity) {
 					add_irn_n(n, pred_pred);
 					++arity;
