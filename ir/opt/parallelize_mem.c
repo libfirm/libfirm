@@ -319,7 +319,7 @@ static void walker(ir_node *proj, void *env)
 		foreach_ir_nodeset(&pi.user_mem, node, iter) {
 			in[i++] = node;
 		}
-		assert(i == n+1);
+		assert(i == n + 1);
 		ir_node *sync = new_r_Sync(block, i, in);
 		free(in);
 		edges_reroute_except(proj, sync, sync);
