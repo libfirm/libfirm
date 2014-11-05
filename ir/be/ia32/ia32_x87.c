@@ -1184,19 +1184,16 @@ static bool sim_Copy(x87_state *state, ir_node *n)
 		/* Operand is still live, a real copy. We need here an fpush that can
 		   hold a a register, so use the fpushCopy or recreate constants */
 		ir_node *const node = create_Copy(state, n);
+		sched_replace(n, node);
+		exchange(n, node);
 
 		/* We have to make sure the old value doesn't go dead (which can happen
 		 * when we recreate constants). As the simulator expected that value in
 		 * the pred blocks. This is unfortunate as removing it would save us 1
 		 * instruction, but we would have to rerun all the simulation to get
-		 * this correct...
-		 */
-		sched_replace(n, node);
-		exchange(n, node);
-
-		if (get_irn_n_edges(pred) == 0) {
+		 * this correct. */
+		if (get_irn_n_edges(pred) == 0)
 			keep_float_node_alive(pred);
-		}
 
 		DB((dbg, LEVEL_1, "<<< %+F %s -> ?\n", node, op1->name));
 	} else {
