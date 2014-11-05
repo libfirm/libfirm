@@ -1364,26 +1364,23 @@ static void x87_kill_deads(x87_simulator *const sim, ir_node *const block, x87_s
 	}
 	/* now kill registers */
 	while (kill_mask != 0) {
-		/* we can only kill from TOS, so bring them up */
-		if ((kill_mask & 1) == 0) {
-			/* search from behind, because we can to a double-pop */
-			unsigned i;
-			for (i = depth; i-- > 0; ) {
+		unsigned i;
+		if (kill_mask & 1) {
+			/* Pop from TOS, if possible, looks nicer. */
+			i = 0;
+		} else {
+			/* Remove deepest dead value from stack, so TOS gets moved there and later
+			 * more pops from TOS might follow. */
+			for (i = depth; i-- > 0;) {
 				if (kill_mask & (1 << i)) {
 					kill_mask &= ~(1 << i);
-					kill_mask |= 1;
 					break;
 				}
 			}
-
-			if (keep != NULL)
-				x87_set_st(state, -1, keep, i);
-			x87_create_fxch(state, first_insn, i);
 		}
-
+		keep        = x87_create_fpop(state, first_insn, i);
 		depth      -= 1;
 		kill_mask >>= 1;
-		keep        = x87_create_fpop(state, first_insn, 0);
 	}
 	keep_alive(keep);
 }
