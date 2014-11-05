@@ -1345,10 +1345,10 @@ static void x87_kill_deads(x87_simulator *const sim, ir_node *const block, x87_s
 	DEBUG_ONLY(x87_dump_stack(state);)
 
 	ir_node *first_insn = sched_first(block);
-	ir_node *keep       = NULL;
 	if (kill_mask != 0 && live == 0) {
 		/* special case: kill all registers */
 		if (ia32_cg_config.use_femms || ia32_cg_config.use_emms) {
+			ir_node *keep;
 			if (ia32_cg_config.use_femms) {
 				/* use FEMMS on AMD processors to clear all */
 				keep = new_bd_ia32_femms(NULL, block);
@@ -1378,11 +1378,10 @@ static void x87_kill_deads(x87_simulator *const sim, ir_node *const block, x87_s
 				}
 			}
 		}
-		keep        = x87_create_fpop(state, first_insn, i);
+		x87_create_fpop(state, first_insn, i);
 		depth      -= 1;
 		kill_mask >>= 1;
 	}
-	keep_alive(keep);
 }
 
 /**
