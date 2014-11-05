@@ -460,7 +460,7 @@ static void x87_create_fpush(x87_state *state, ir_node *n, unsigned pos,
  * This overwrites st(pos) with st(0) and pops st(0).
  *
  * @param state   the x87 state
- * @param n       the node after the fpop
+ * @param n       the node after which to schedule the fpop
  * @param pos     the index of the entry to remove the register stack
  * @return the fpop node
  */
@@ -473,7 +473,7 @@ static ir_node *x87_create_fpop(x87_state *const state, ir_node *const n,
 		*dst = *src;
 	}
 	x87_pop(state);
-	ir_node *const block = get_nodes_block(n);
+	ir_node *const block = get_block(n);
 	ir_node *const fpop  = pos == 0 && ia32_cg_config.use_ffreep ?
 		new_bd_ia32_ffreep(NULL, block) :
 		new_bd_ia32_fpop(  NULL, block);
@@ -481,7 +481,7 @@ static ir_node *x87_create_fpop(x87_state *const state, ir_node *const n,
 	attr->reg = get_st_reg(pos);
 
 	keep_alive(fpop);
-	sched_add_before(n, fpop);
+	sched_add_after(n, fpop);
 	DB((dbg, LEVEL_1, "<<< %s %s\n", get_irn_opname(fpop), attr->reg->name));
 	return fpop;
 }
@@ -943,7 +943,7 @@ static bool sim_FtstFnstsw(x87_state *state, ir_node *n)
 		x87_create_fxch(state, n, op1_idx);
 
 	if (!is_fp_live(reg_index_1, live))
-		x87_create_fpop(state, sched_next(n), 0);
+		x87_create_fpop(state, n, 0);
 	return false;
 }
 
@@ -1071,7 +1071,7 @@ static bool sim_Fucom(x87_state *state, ir_node *n)
 			x87_pop(state);
 		if (pops == 2) {
 			unsigned const idx = (op1_idx != 0 ? op1_idx : op2_idx) - 1 /* Due to prior pop. */;
-			x87_create_fpop(state, sched_next(n), idx);
+			x87_create_fpop(state, n, idx);
 		}
 	}
 
@@ -1107,7 +1107,7 @@ static bool sim_Keep(x87_state *state, ir_node *node)
 		fp_liveness live         = fp_live_args_after(state->sim, node, 0);
 		unsigned    op_stack_idx = x87_on_stack(state, reg_id);
 		if (op_stack_idx != (unsigned)-1 && !is_fp_live(reg_id, live))
-			x87_create_fpop(state, sched_next(node), 0);
+			x87_create_fpop(state, node, 0);
 	}
 
 	DB((dbg, LEVEL_1, "Stack after: "));
@@ -1339,7 +1339,6 @@ static void x87_kill_deads(x87_simulator *const sim, ir_node *const block, x87_s
 	DEBUG_ONLY(fp_dump_live(live);)
 	DEBUG_ONLY(x87_dump_stack(state);)
 
-	ir_node *first_insn = sched_first(block);
 	if (live == 0) {
 		/* special case: kill all registers */
 		ir_node *free_all;
@@ -1351,7 +1350,7 @@ static void x87_kill_deads(x87_simulator *const sim, ir_node *const block, x87_s
 			/* use EMMS to clear all */
 			free_all = new_bd_ia32_emms(NULL, block);
 sched_free_all:
-			sched_add_before(first_insn, free_all);
+			sched_add_after(block, free_all);
 			keep_alive(free_all);
 			x87_emms(state);
 			return;
@@ -1366,6 +1365,7 @@ sched_free_all:
 	}
 
 	/* now kill registers */
+	ir_node *insert = block;
 	while (kill_mask != 0) {
 		unsigned i;
 		if (kill_mask & 1) {
@@ -1381,7 +1381,7 @@ sched_free_all:
 				}
 			}
 		}
-		x87_create_fpop(state, first_insn, i);
+		insert      = x87_create_fpop(state, insert, i);
 		depth      -= 1;
 		kill_mask >>= 1;
 	}
