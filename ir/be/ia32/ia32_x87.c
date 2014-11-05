@@ -79,8 +79,8 @@ typedef bool (*sim_func)(x87_state *state, ir_node *n);
  * A block state: Every block has a x87 state at the beginning and at the end.
  */
 typedef struct blk_state {
-	x87_state *begin;   /**< state at the begin or NULL if not assigned */
-	x87_state *end;     /**< state at the end or NULL if not assigned */
+	x87_state const *begin; /**< state at the begin or NULL if not assigned */
+	x87_state const *end;   /**< state at the end or NULL if not assigned */
 } blk_state;
 
 /** liveness bitset for fp registers. */
@@ -1392,19 +1392,19 @@ sched_free_all:
  */
 static void x87_simulate_block(x87_simulator *sim, ir_node *block)
 {
-	blk_state *bl_state = x87_get_bl_state(sim, block);
-	x87_state *state    = bl_state->begin;
-	assert(state != NULL);
+	blk_state       *const bl_state = x87_get_bl_state(sim, block);
+	x87_state const *const begin    = bl_state->begin;
+	assert(begin);
 	/* already processed? */
 	if (bl_state->end != NULL)
 		return;
 
 	DB((dbg, LEVEL_1, "Simulate %+F\n", block));
 	DB((dbg, LEVEL_2, "State at Block begin:\n "));
-	DEBUG_ONLY(x87_dump_stack(state);)
+	DEBUG_ONLY(x87_dump_stack(begin);)
 
 	/* create a new state, will be changed */
-	state = x87_clone_state(sim, state);
+	x87_state *const state = x87_clone_state(sim, begin);
 	/* at block begin, kill all dead registers */
 	x87_kill_deads(sim, block, state);
 
