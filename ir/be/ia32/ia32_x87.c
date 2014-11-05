@@ -67,10 +67,8 @@ typedef struct x87_state {
  *
  * @param state  the x87 state
  * @param n      the node to be simulated
- * @return true if a node was added AFTER n in schedule that MUST be simulated
- *         further
  */
-typedef bool (*sim_func)(x87_state *state, ir_node *n);
+typedef void (*sim_func)(x87_state *state, ir_node *n);
 
 /**
  * A block state: Every block has a x87 state at the beginning and at the end.
@@ -610,7 +608,7 @@ static void fp_dump_live(fp_liveness live)
  * @param state  the x87 state
  * @param n      the node that should be simulated (and patched)
  */
-static bool sim_binop(x87_state *const state, ir_node *const n)
+static void sim_binop(x87_state *const state, ir_node *const n)
 {
 	x87_simulator         *sim     = state->sim;
 	ir_node               *op1     = get_irn_n(n, n_ia32_binary_left);
@@ -735,7 +733,6 @@ static bool sim_binop(x87_state *const state, ir_node *const n)
 		char const *const o = get_st_reg(out_idx)->name;
 		DB((dbg, LEVEL_1, "<<< %s %s, %s -> %s\n", get_irn_opname(n), l, r, o));
 	)
-	return false;
 }
 
 /**
@@ -744,7 +741,7 @@ static bool sim_binop(x87_state *const state, ir_node *const n)
  * @param state  the x87 state
  * @param n      the node that should be simulated (and patched)
  */
-static bool sim_unop(x87_state *state, ir_node *n)
+static void sim_unop(x87_state *state, ir_node *n)
 {
 	arch_register_t const *const out  = arch_get_irn_register(n);
 	fp_liveness            const live = fp_live_args_after(state->sim, n, REGMASK(out));
@@ -767,7 +764,6 @@ static bool sim_unop(x87_state *state, ir_node *n)
 
 	x87_set_st(state, out_reg_idx, n, 0);
 	DB((dbg, LEVEL_1, "<<< %s -> %s\n", get_irn_opname(n), get_st_reg(0)->name));
-	return false;
 }
 
 /**
@@ -776,7 +772,7 @@ static bool sim_unop(x87_state *state, ir_node *n)
  * @param state  the x87 state
  * @param n      the node that should be simulated (and patched)
  */
-static bool sim_load(x87_state *state, ir_node *n)
+static void sim_load(x87_state *state, ir_node *n)
 {
 	assert((unsigned)pn_ia32_fld_res == (unsigned)pn_ia32_fild_res
 	    && (unsigned)pn_ia32_fld_res == (unsigned)pn_ia32_fld1_res
@@ -787,7 +783,6 @@ static bool sim_load(x87_state *state, ir_node *n)
 	x87_push(state, out->index, n);
 	assert(out == arch_get_irn_register_out(n, pn_ia32_fld_res));
 	DB((dbg, LEVEL_1, "<<< %s -> %s\n", get_irn_opname(n), get_st_reg(0)->name));
-	return false;
 }
 
 /**
@@ -796,14 +791,13 @@ static bool sim_load(x87_state *state, ir_node *n)
  * @param state  the x87 state
  * @param n      the node that should be simulated (and patched)
  */
-static bool sim_store(x87_state *state, ir_node *n)
+static void sim_store(x87_state *state, ir_node *n)
 {
 	ir_node               *const val = get_irn_n(n, n_ia32_fst_val);
 	arch_register_t const *const op2 = arch_get_irn_register(val);
 	DB((dbg, LEVEL_1, ">>> %+F %s ->\n", n, op2->name));
 
 	bool              do_pop          = false;
-	bool              node_added      = false;
 	unsigned    const op2_reg_idx     = op2->index;
 	unsigned    const op2_idx         = x87_on_stack(state, op2_reg_idx);
 	fp_liveness const live            = fp_live_args_after(state->sim, n, 0);
@@ -840,6 +834,8 @@ static bool sim_store(x87_state *state, ir_node *n)
 				ir_node *const mproj = new_r_Proj(vfld, mode_M, pn_ia32_fld_M);
 
 				arch_set_irn_register(rproj, op2);
+				/* Replace TOS by the reloaded value. */
+				x87_set_st(state, op2->index, vfld, 0);
 
 				/* reroute all former users of the store memory to the load memory */
 				edges_reroute_except(mem, mproj, vfld);
@@ -854,7 +850,7 @@ static bool sim_store(x87_state *state, ir_node *n)
 				be_ssa_construction_fix_users(&env, val);
 				be_ssa_construction_destroy(&env);
 
-				node_added = true;
+				goto set_attr;
 			}
 		} else {
 			/* we can only store the tos to memory */
@@ -872,13 +868,13 @@ static bool sim_store(x87_state *state, ir_node *n)
 	if (do_pop)
 		x87_pop(state);
 
+set_attr:;
 	ia32_x87_attr_t *const attr = get_ia32_x87_attr(n);
 	attr->pop = do_pop;
 	DB((dbg, LEVEL_1, "<<< %s %s ->\n", get_irn_opname(n), get_st_reg(0)->name));
-	return node_added;
 }
 
-static bool sim_fprem(x87_state *const state, ir_node *const n)
+static void sim_fprem(x87_state *const state, ir_node *const n)
 {
 	(void)state;
 	(void)n;
@@ -891,7 +887,7 @@ static bool sim_fprem(x87_state *const state, ir_node *const n)
  * @param state  the x87 state
  * @param n      the node that should be simulated (and patched)
  */
-static bool sim_fisttp(x87_state *state, ir_node *n)
+static void sim_fisttp(x87_state *state, ir_node *n)
 {
 	ir_node               *val = get_irn_n(n, n_ia32_fisttp_val);
 	const arch_register_t *op2 = arch_get_irn_register(val);
@@ -911,7 +907,6 @@ static bool sim_fisttp(x87_state *state, ir_node *n)
 	x87_pop(state);
 
 	DB((dbg, LEVEL_1, "<<< %s %s ->\n", get_irn_opname(n), get_st_reg(0)->name));
-	return false;
 }
 
 /**
@@ -920,7 +915,7 @@ static bool sim_fisttp(x87_state *state, ir_node *n)
  * @param state  the x87 state
  * @param n      the node that should be simulated (and patched)
  */
-static bool sim_FtstFnstsw(x87_state *state, ir_node *n)
+static void sim_FtstFnstsw(x87_state *state, ir_node *n)
 {
 	x87_simulator         *sim         = state->sim;
 	ir_node               *op1_node    = get_irn_n(n, n_ia32_FtstFnstsw_left);
@@ -941,7 +936,6 @@ static bool sim_FtstFnstsw(x87_state *state, ir_node *n)
 
 	if (!is_fp_live(reg_index_1, live))
 		x87_create_fpop(state, n, 0);
-	return false;
 }
 
 /**
@@ -950,7 +944,7 @@ static bool sim_FtstFnstsw(x87_state *state, ir_node *n)
  * @param state  the x87 state
  * @param n      the node that should be simulated (and patched)
  */
-static bool sim_Fucom(x87_state *state, ir_node *n)
+static void sim_Fucom(x87_state *state, ir_node *n)
 {
 	ia32_x87_attr_t       *attr        = get_ia32_x87_attr(n);
 	x87_simulator         *sim         = state->sim;
@@ -1082,7 +1076,6 @@ static bool sim_Fucom(x87_state *state, ir_node *n)
 		char const *const r = op2_idx != (unsigned)-1 ? get_st_reg(op2_idx)->name : "[AM]";
 		DB((dbg, LEVEL_1, "<<< %s %s, %s\n", get_irn_opname(n), l, r));
 	)
-	return false;
 }
 
 /**
@@ -1091,7 +1084,7 @@ static bool sim_Fucom(x87_state *state, ir_node *n)
  * @param state  the x87 state
  * @param n      the node that should be simulated (and patched)
  */
-static bool sim_Keep(x87_state *state, ir_node *node)
+static void sim_Keep(x87_state *state, ir_node *node)
 {
 	DB((dbg, LEVEL_1, ">>> %+F\n", node));
 
@@ -1109,7 +1102,6 @@ static bool sim_Keep(x87_state *state, ir_node *node)
 
 	DB((dbg, LEVEL_1, "Stack after: "));
 	DEBUG_ONLY(x87_dump_stack(state);)
-	return false;
 }
 
 /**
@@ -1163,11 +1155,11 @@ static ir_node *create_Copy(x87_state *state, ir_node *n)
  * @param state  the x87 state
  * @param n      the node that should be simulated (and patched)
  */
-static bool sim_Copy(x87_state *state, ir_node *n)
+static void sim_Copy(x87_state *state, ir_node *n)
 {
 	arch_register_class_t const *const cls = arch_get_irn_register_req(n)->cls;
 	if (cls != &ia32_reg_classes[CLASS_ia32_fp])
-		return false;
+		return;
 
 	ir_node               *const pred = be_get_Copy_op(n);
 	arch_register_t const *const op1  = arch_get_irn_register(pred);
@@ -1198,10 +1190,9 @@ static bool sim_Copy(x87_state *state, ir_node *n)
 		unsigned const op1_idx = x87_on_stack(state, op1->index);
 		x87_set_st(state, out->index, n, op1_idx);
 	}
-	return false;
 }
 
-static bool sim_Asm(x87_state *const state, ir_node *const n)
+static void sim_Asm(x87_state *const state, ir_node *const n)
 {
 	(void)state;
 	be_foreach_use(n, &ia32_reg_classes[CLASS_ia32_fp], in_req, value, value_req,
@@ -1213,7 +1204,6 @@ static bool sim_Asm(x87_state *const state, ir_node *const n)
 		if (req->cls == &ia32_reg_classes[CLASS_ia32_fp])
 			panic("cannot handle %+F with x87 constraints", n);
 	}
-	return false;
 }
 
 /**
@@ -1222,7 +1212,7 @@ static bool sim_Asm(x87_state *const state, ir_node *const n)
  * @param state      the x87 state
  * @param n          the node that should be simulated (and patched)
  */
-static bool sim_Call(x87_state *state, ir_node *n)
+static void sim_Call(x87_state *state, ir_node *n)
 {
 	DB((dbg, LEVEL_1, ">>> %+F\n", n));
 
@@ -1244,7 +1234,6 @@ static bool sim_Call(x87_state *state, ir_node *n)
 	}
 	DB((dbg, LEVEL_1, "Stack after: "));
 	DEBUG_ONLY(x87_dump_stack(state);)
-	return false;
 }
 
 /**
@@ -1253,7 +1242,7 @@ static bool sim_Call(x87_state *state, ir_node *n)
  * @param state  the x87 state
  * @param n      the node that should be simulated (and patched)
  */
-static bool sim_Return(x87_state *state, ir_node *n)
+static void sim_Return(x87_state *state, ir_node *n)
 {
 #ifdef DEBUG_libfirm
 	/* only floating point return values must reside on stack */
@@ -1269,7 +1258,6 @@ static bool sim_Return(x87_state *state, ir_node *n)
 
 	/* pop them virtually */
 	x87_emms(state);
-	return false;
 }
 
 /**
@@ -1278,12 +1266,12 @@ static bool sim_Return(x87_state *state, ir_node *n)
  * @param state  the x87 state
  * @param irn    the node that should be simulated (and patched)
  */
-static bool sim_Perm(x87_state *state, ir_node *irn)
+static void sim_Perm(x87_state *state, ir_node *irn)
 {
 	/* handle only floating point Perms */
 	ir_node *pred = get_irn_n(irn, 0);
 	if (! mode_is_float(get_irn_mode(pred)))
-		return false;
+		return;
 
 	DB((dbg, LEVEL_1, ">>> %+F\n", irn));
 
@@ -1311,7 +1299,6 @@ static bool sim_Perm(x87_state *state, ir_node *irn)
 		x87_set_st(state, out->index, proj, stack_pos[num]);
 	}
 	DB((dbg, LEVEL_1, "<<< %+F\n", irn));
-	return false;
 }
 
 /**
@@ -1405,25 +1392,13 @@ static void x87_simulate_block(x87_simulator *sim, ir_node *block)
 	/* at block begin, kill all dead registers */
 	x87_kill_deads(sim, block, state);
 
-	/* beware, n might change */
-	for (ir_node *n = sched_first(block), *next; !sched_is_end(n); n = next) {
-		next = sched_next(n);
-
-		/* get the next node to be simulated here.
-		 * n might be completely removed from the schedule- */
+	sched_foreach_safe(block, n) {
 		const ir_op *op = get_irn_op(n);
 		if (op->ops.generic != NULL) {
 			sim_func func = (sim_func)op->ops.generic;
 
 			/* simulate it */
-			bool node_added = (*func)(state, n);
-
-			/* sim_func might have added an additional node after n,
-			 * so update next node
-			 * beware: n must not be changed by sim_func
-			 * (i.e. removed from schedule) in this case */
-			if (node_added)
-				next = sched_next(n);
+			func(state, n);
 		}
 	}
 
