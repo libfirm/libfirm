@@ -1347,17 +1347,17 @@ static void x87_kill_deads(x87_simulator *const sim, ir_node *const block, x87_s
 	ir_node *first_insn = sched_first(block);
 	if (kill_mask != 0 && live == 0) {
 		/* special case: kill all registers */
-		if (ia32_cg_config.use_femms || ia32_cg_config.use_emms) {
-			ir_node *keep;
-			if (ia32_cg_config.use_femms) {
-				/* use FEMMS on AMD processors to clear all */
-				keep = new_bd_ia32_femms(NULL, block);
-			} else {
-				/* use EMMS to clear all */
-				keep = new_bd_ia32_emms(NULL, block);
-			}
-			sched_add_before(first_insn, keep);
-			keep_alive(keep);
+		ir_node *free_all;
+		if (ia32_cg_config.use_femms) {
+			/* use FEMMS on AMD processors to clear all */
+			free_all = new_bd_ia32_femms(NULL, block);
+			goto sched_free_all;
+		} else if (ia32_cg_config.use_emms) {
+			/* use EMMS to clear all */
+			free_all = new_bd_ia32_emms(NULL, block);
+sched_free_all:
+			sched_add_before(first_insn, free_all);
+			keep_alive(free_all);
 			x87_emms(state);
 			return;
 		}
