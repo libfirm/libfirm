@@ -1329,23 +1329,18 @@ static bool sim_Perm(x87_state *state, ir_node *irn)
  */
 static void x87_kill_deads(x87_simulator *const sim, ir_node *const block, x87_state *const state)
 {
-	fp_liveness live       = fp_live_args_after(sim, block, 0);
-	unsigned    kill_mask  = 0;
-	unsigned    depth      = x87_get_depth(state);
-	for (unsigned i = depth; i-- > 0; ) {
-		unsigned reg = x87_get_st_reg(state, i);
-		if (!is_fp_live(reg, live))
-			kill_mask |= (1 << i);
-	}
-	if (kill_mask == 0)
+	unsigned depth = x87_get_depth(state);
+	if (depth == 0)
 		return;
+
+	fp_liveness const live = fp_live_args_after(sim, block, 0);
 
 	DB((dbg, LEVEL_1, "Killing deads:\n"));
 	DEBUG_ONLY(fp_dump_live(live);)
 	DEBUG_ONLY(x87_dump_stack(state);)
 
 	ir_node *first_insn = sched_first(block);
-	if (kill_mask != 0 && live == 0) {
+	if (live == 0) {
 		/* special case: kill all registers */
 		ir_node *free_all;
 		if (ia32_cg_config.use_femms) {
@@ -1362,6 +1357,14 @@ sched_free_all:
 			return;
 		}
 	}
+
+	unsigned kill_mask = 0;
+	for (unsigned i = depth; i-- > 0;) {
+		unsigned const reg = x87_get_st_reg(state, i);
+		if (!is_fp_live(reg, live))
+			kill_mask |= (1 << i);
+	}
+
 	/* now kill registers */
 	while (kill_mask != 0) {
 		unsigned i;
