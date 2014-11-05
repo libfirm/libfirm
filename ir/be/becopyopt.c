@@ -375,7 +375,7 @@ static void co_collect_units(ir_node *irn, void *env)
 
 		/* fill */
 		foreach_irn_in(irn, i, arg) {
-			assert(arch_get_irn_reg_class(arg) == co->cls && "Argument not in same register class.");
+			assert(arch_get_irn_register_req(arg)->cls == co->cls && "Argument not in same register class.");
 			if (arg == irn)
 				continue;
 			if (be_values_interfere(irn, arg)) {

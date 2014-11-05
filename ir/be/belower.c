@@ -373,13 +373,10 @@ static int push_through_perm(ir_node *perm)
 	ir_node *frontier = bl;
 	int i, n;
 
-	/* get some Proj and find out the register class of that Proj. */
-	ir_node                     *one_proj = get_edge_src_irn(get_irn_out_edge_first_kind(perm, EDGE_KIND_NORMAL));
-	const arch_register_class_t *cls      = arch_get_irn_reg_class(one_proj);
-	assert(is_Proj(one_proj));
-
 	(void)irg;
 	DB((dbg_permmove, LEVEL_1, "perm move %+F irg %+F\n", perm, irg));
+
+	arch_register_class_t const *const cls = arch_get_irn_register_req_out(perm, 0)->cls;
 
 	/* Find the point in the schedule after which the
 	 * potentially movable nodes must be defined.

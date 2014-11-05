@@ -535,13 +535,6 @@ static inline bool arch_irn_consider_in_reg_alloc(
 	}                                                                        \
 	} while (0)
 
-static inline const arch_register_class_t *arch_get_irn_reg_class(
-		const ir_node *node)
-{
-	const arch_register_req_t *req = arch_get_irn_register_req(node);
-	return req->cls;
-}
-
 bool arch_reg_is_allocatable(const arch_register_req_t *req,
                              const arch_register_t *reg);
 

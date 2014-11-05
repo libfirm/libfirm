@@ -587,12 +587,12 @@ static const ir_node    **registers;
 
 static void check_output_constraints(const ir_node *node)
 {
-	if (arch_get_irn_reg_class(node) == NULL)
+	arch_register_req_t const *const req = arch_get_irn_register_req(node);
+	if (!req->cls)
 		return;
 
 	/* verify output register */
-	const arch_register_req_t *req = arch_get_irn_register_req(node);
-	const arch_register_t     *reg = arch_get_irn_register(node);
+	arch_register_t const *const reg = arch_get_irn_register(node);
 	if (reg == NULL) {
 		ir_fprintf(stderr, "Verify warning: Node %+F in block %+F(%s) should have a register assigned\n",
 				node, get_nodes_block(node), get_irg_name(irg));

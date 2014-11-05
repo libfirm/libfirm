@@ -1168,7 +1168,7 @@ static ir_node *create_Copy(x87_state *state, ir_node *n)
  */
 static bool sim_Copy(x87_state *state, ir_node *n)
 {
-	arch_register_class_t const *const cls = arch_get_irn_reg_class(n);
+	arch_register_class_t const *const cls = arch_get_irn_register_req(n)->cls;
 	if (cls != &ia32_reg_classes[CLASS_ia32_fp])
 		return false;
 
