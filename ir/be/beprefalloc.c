@@ -1790,12 +1790,6 @@ static void be_pref_alloc_cls(void)
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 }
 
-static void dump(int mask, ir_graph *irg, const char *suffix)
-{
-	if (be_options.dump_flags & mask)
-		dump_ir_graph(irg, suffix);
-}
-
 /**
  * Run the spiller on the current graph.
  */
@@ -1810,7 +1804,7 @@ static void spill(void)
 	check_for_memory_operands(irg);
 	be_timer_pop(T_RA_SPILL_APPLY);
 
-	dump(DUMP_RA, irg, "spill");
+	be_dump(DUMP_RA, irg, "spill");
 }
 
 /**
