@@ -21,7 +21,7 @@
 #include "timing.h"
 #include "irdump.h"
 
-enum {
+typedef enum be_dump_flags_t {
 	DUMP_NONE     = 0,
 	DUMP_INITIAL  = 1 << 0,
 	DUMP_SCHED    = 1 << 2,
@@ -29,7 +29,7 @@ enum {
 	DUMP_RA       = 1 << 4,
 	DUMP_FINAL    = 1 << 5,
 	DUMP_BE       = 1 << 6
-};
+} be_dump_flags_t;
 
 /** Backend options */
 struct be_options_t {
@@ -126,7 +126,7 @@ static inline void be_timer_pop(be_timer_id_t id)
  * @param irg     the IR graph to dump
  * @param suffix  the suffix for the dumper
  */
-static inline void be_dump(int mask, ir_graph *irg, const char *suffix)
+static inline void be_dump(be_dump_flags_t const mask, ir_graph *const irg, char const *const suffix)
 {
 	if (be_options.dump_flags & mask)
 		dump_ir_graph(irg, suffix);
