@@ -1190,10 +1190,13 @@ static void ia32_emit(ir_graph *irg)
 
 	/* fix 2-address code constraints */
 	ia32_finish_irg(irg);
+	be_dump(DUMP_RA, irg, "2addr");
 
 	/* we might have to rewrite x87 virtual registers */
-	if (irg_data->do_x87_sim)
+	if (irg_data->do_x87_sim) {
 		ia32_x87_simulate_graph(irg);
+		be_dump(DUMP_RA, irg, "x87");
+	}
 
 	/* do peephole optimizations */
 	ia32_peephole_optimization(irg);
