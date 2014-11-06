@@ -35,11 +35,6 @@ static inline const ir_node *get_block_const(const ir_node *irn)
 }
 
 /**
- * Gets the Proj with number pn from irn.
- */
-ir_node *be_get_Proj_for_pn(const ir_node *irn, unsigned pn);
-
-/**
  * Returns an array (an ARR_F) of the programs blocks in reverse postorder
  * (note: caller has to free the memory with DEL_ARR_F after use;
  *  of course you can use ARR_LEN on the array too.)

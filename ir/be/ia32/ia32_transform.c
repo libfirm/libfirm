@@ -34,7 +34,6 @@
 
 #include "benode.h"
 #include "besched.h"
-#include "beutil.h"
 #include "betranshlp.h"
 #include "be_t.h"
 
@@ -647,7 +646,7 @@ static void build_address(ia32_address_mode_t *am, ir_node *node,
 	ir_node *new_mem = be_transform_node(mem);
 	am->pinned       = get_irn_pinned(load);
 	am->ls_mode      = get_Load_mode(load);
-	am->mem_proj     = be_get_Proj_for_pn(load, pn_Load_M);
+	am->mem_proj     = get_Proj_for_pn(load, pn_Load_M);
 	am->am_node      = node;
 
 	/* construct load address */
@@ -5834,7 +5833,7 @@ static void add_parameter_loads(ir_graph *irg, const x86_cconv_t *cconv)
 	ir_node *start_block = get_irg_start_block(irg);
 	ir_node *nomem       = get_irg_no_mem(irg);
 	ir_node *frame       = get_irg_frame(irg);
-	ir_node *proj_args   = be_get_Proj_for_pn(start, pn_Start_T_args);
+	ir_node *proj_args   = get_Proj_for_pn(start, pn_Start_T_args);
 	foreach_out_edge_safe(proj_args, edge) {
 		ir_node *proj = get_edge_src_irn(edge);
 		if (!is_Proj(proj))

@@ -21,7 +21,6 @@
 
 #include "benode.h"
 #include "betranshlp.h"
-#include "beutil.h"
 #include "bearch_amd64_t.h"
 #include "beirg.h"
 #include "besched.h"
@@ -720,7 +719,7 @@ static void match_binop(amd64_args_t *args, ir_node *block,
 		args->in[mem_input] = new_mem;
 		addr->mem_input     = mem_input;
 
-		args->mem_proj      = be_get_Proj_for_pn(load, pn_Load_M);
+		args->mem_proj      = get_Proj_for_pn(load, pn_Load_M);
 		args->attr.base.base.op_mode = AMD64_OP_ADDR_REG;
 	} else {
 		/* simply transform the arguments */
@@ -812,7 +811,7 @@ static ir_node *gen_binop_rax(ir_node *node, ir_node *op1, ir_node *op2,
 		in[mem_input]    = new_mem;
 		addr.mem_input   = mem_input;
 
-		mem_proj                = be_get_Proj_for_pn(load, pn_Load_M);
+		mem_proj                = get_Proj_for_pn(load, pn_Load_M);
 		op_mode                 = AMD64_OP_RAX_ADDR;
 	} else {
 		/* simply transform the arguments */
@@ -1303,7 +1302,7 @@ static ir_node *gen_IJmp(ir_node *node)
 		ir_node *load = source_am_possible(block, op);
 		if (load != NULL) {
 			ir_node *load_ptr = get_Load_ptr(load);
-			mem_proj          = be_get_Proj_for_pn(load, pn_Load_M);
+			mem_proj          = get_Proj_for_pn(load, pn_Load_M);
 
 			perform_address_matching(load_ptr, &arity, in, &addr);
 			assert((size_t)arity < ARRAY_SIZE(in));
@@ -1597,7 +1596,7 @@ static ir_node *gen_Call(ir_node *node)
 		}
 		if (am_okay) {
 			ir_node *load_ptr = get_Load_ptr(load);
-			mem_proj = be_get_Proj_for_pn(load, pn_Load_M);
+			mem_proj = get_Proj_for_pn(load, pn_Load_M);
 
 			perform_address_matching(load_ptr, &in_arity, in, &addr);
 

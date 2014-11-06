@@ -523,6 +523,11 @@ void remove_keep_alive(const ir_node *kept_node);
  */
 ir_node *new_similar_node(ir_node *old, ir_node *block, ir_node **in);
 
+/**
+ * Gets the Proj with number pn from irn.
+ */
+ir_node *get_Proj_for_pn(ir_node const *irn, unsigned pn);
+
 #define foreach_irn_in(irn, idx, pred) \
 	for (bool pred##__b = true; pred##__b;) \
 		for (ir_node const *const pred##__irn = (irn); pred##__b; pred##__b = false) \

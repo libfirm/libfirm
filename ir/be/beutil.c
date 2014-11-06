@@ -29,22 +29,6 @@
 #include "util.h"
 
 /**
- * Gets the Proj with number pn from irn.
- */
-ir_node *be_get_Proj_for_pn(const ir_node *irn, unsigned pn)
-{
-	assert(get_irn_mode(irn) == mode_T && "need mode_T");
-	foreach_out_edge(irn, edge) {
-		ir_node *proj = get_edge_src_irn(edge);
-
-		if (is_Proj(proj) && get_Proj_num(proj) == pn)
-			return proj;
-	}
-
-	return NULL;
-}
-
-/**
  * Block-walker: adds the visited block to a flexible array.
  */
 static void add_to_postorder(ir_node *block, void *data)

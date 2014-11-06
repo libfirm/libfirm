@@ -28,7 +28,6 @@
 #include "besched.h"
 #include "benode.h"
 #include "bestate.h"
-#include "beutil.h"
 #include "bessaconstr.h"
 
 static ir_entity *fpcw_round    = NULL;
@@ -219,7 +218,7 @@ static void collect_fpu_mode_nodes_walker(ir_node *node, void *data)
 			continue;
 		ir_node *value = node;
 		if (get_irn_mode(value) == mode_T) {
-			value = be_get_Proj_for_pn(node, o);
+			value = get_Proj_for_pn(node, o);
 			if (value == NULL)
 				value = new_r_Proj(node, ia32_mode_fpcw, o);
 		}

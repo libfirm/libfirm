@@ -1076,3 +1076,14 @@ ir_switch_table *ir_switch_table_duplicate(ir_graph *irg,
 	}
 	return res;
 }
+
+ir_node *get_Proj_for_pn(ir_node const *const irn, unsigned const pn)
+{
+	assert(get_irn_mode(irn) == mode_T && "need mode_T");
+	foreach_out_edge(irn, edge) {
+		ir_node *const proj = get_edge_src_irn(edge);
+		if (is_Proj(proj) && get_Proj_num(proj) == pn)
+			return proj;
+	}
+	return NULL;
+}

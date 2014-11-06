@@ -52,7 +52,6 @@
 #include "bedwarf.h"
 #include "beemitter.h"
 #include "begnuas.h"
-#include "beutil.h"
 
 #include "ia32_emitter.h"
 #include "ia32_common_transform.h"
@@ -793,9 +792,9 @@ static void emit_ia32_Jcc(const ir_node *node)
 	cc = determine_final_cc(node, 0, cc);
 
 	/* get both Projs */
-	ir_node const *proj_true   = be_get_Proj_for_pn(node, pn_ia32_Jcc_true);
+	ir_node const *proj_true   = get_Proj_for_pn(node, pn_ia32_Jcc_true);
 	ir_node const *target_true = get_cfop_target_block(proj_true);
-	ir_node const *proj_false  = be_get_Proj_for_pn(node, pn_ia32_Jcc_false);
+	ir_node const *proj_false  = get_Proj_for_pn(node, pn_ia32_Jcc_false);
 	ir_node const *block       = get_nodes_block(node);
 	if (fallthrough_possible(block, target_true)) {
 		/* exchange both proj's so the second one can be omitted */
@@ -2836,8 +2835,8 @@ static void bemit_ia32_jcc(const ir_node *node)
 	cc = determine_final_cc(node, 0, cc);
 
 	/* get both Projs */
-	ir_node const *proj_true    = be_get_Proj_for_pn(node, pn_ia32_Jcc_true);
-	ir_node const *proj_false   = be_get_Proj_for_pn(node, pn_ia32_Jcc_false);
+	ir_node const *proj_true    = get_Proj_for_pn(node, pn_ia32_Jcc_true);
+	ir_node const *proj_false   = get_Proj_for_pn(node, pn_ia32_Jcc_false);
 	ir_node const *block        = get_nodes_block(node);
 	ir_node const *target_true  = get_cfop_target_block(proj_true);
 	if (fallthrough_possible(block, target_true)) {
