@@ -797,25 +797,28 @@ static void sim_store(x87_state *state, ir_node *n)
 	arch_register_t const *const op2 = arch_get_irn_register(val);
 	DB((dbg, LEVEL_1, ">>> %+F %s ->\n", n, op2->name));
 
-	bool              do_pop          = false;
-	unsigned    const op2_reg_idx     = op2->index;
-	unsigned    const op2_idx         = x87_on_stack(state, op2_reg_idx);
-	fp_liveness const live            = fp_live_args_after(state->sim, n, 0);
-	bool        const live_after_node = is_fp_live(op2_reg_idx, live);
+	unsigned    const op2_reg_idx = op2->index;
+	unsigned    const op2_idx     = x87_on_stack(state, op2_reg_idx);
+	fp_liveness const live        = fp_live_args_after(state->sim, n, 0);
 	assert(op2_idx != (unsigned)-1);
-	if (live_after_node) {
+	if (!is_fp_live(op2_reg_idx, live)) {
+		/* we can only store the tos to memory */
+		if (op2_idx != 0)
+			x87_create_fxch(state, n, op2_idx);
+		goto do_pop;
+	} else {
 		/* Problem: fst doesn't support 80bit modes (spills), only fstp does
 		 *          fist doesn't support 64bit mode, only fistp
 		 * Solution:
 		 *   - stack not full: push value and fstp
-		 *   - stack full: fstp value and load again
-		 * Note that we cannot test on mode_E, because floats might be 80bit ... */
+		 *   - stack full: fstp value and load again */
 		ir_mode *const mode = get_ia32_ls_mode(n);
 		if (get_mode_size_bits(mode) > (mode_is_int(mode) ? 32U : 64U)) {
-			do_pop = true;
 			if (x87_get_depth(state) < N_FLOAT_REGS) {
 				/* ok, we have a free register: push + fstp */
 				x87_create_fpush(state, n, op2_idx, REG_FP_FP_NOREG, val);
+do_pop:
+				x87_pop(state);
 			} else {
 				/* we can only store the tos to memory */
 				if (op2_idx != 0)
@@ -849,28 +852,16 @@ static void sim_store(x87_state *state, ir_node *n)
 				be_ssa_construction_add_copy(&env, rproj);
 				be_ssa_construction_fix_users(&env, val);
 				be_ssa_construction_destroy(&env);
-
-				goto set_attr;
 			}
+
+			get_ia32_x87_attr(n)->pop = true;
 		} else {
 			/* we can only store the tos to memory */
 			if (op2_idx != 0)
 				x87_create_fxch(state, n, op2_idx);
 		}
-	} else {
-		/* we can only store the tos to memory */
-		if (op2_idx != 0)
-			x87_create_fxch(state, n, op2_idx);
-
-		do_pop = true;
 	}
 
-	if (do_pop)
-		x87_pop(state);
-
-set_attr:;
-	ia32_x87_attr_t *const attr = get_ia32_x87_attr(n);
-	attr->pop = do_pop;
 	DB((dbg, LEVEL_1, "<<< %s %s ->\n", get_irn_opname(n), get_st_reg(0)->name));
 }
 
