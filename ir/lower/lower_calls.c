@@ -581,20 +581,6 @@ static void get_dest_addrs(const cl_entry *entry, ir_node **ins,
 	}
 }
 
-static ir_node *find_proj(ir_node *node, long search_pn)
-{
-	assert(get_irn_mode(node) == mode_T);
-	foreach_out_edge(node, edge) {
-		ir_node *src = get_edge_src_irn(edge);
-		if (!is_Proj(src))
-			continue;
-		long pn = get_Proj_num(src);
-		if (pn == search_pn)
-			return src;
-	}
-	return NULL;
-}
-
 static void fix_int_return(const cl_entry *entry, ir_node *base_addr,
                            unsigned n_int_rets, long orig_pn, long pn)
 {
@@ -617,7 +603,7 @@ static void fix_int_return(const cl_entry *entry, ir_node *base_addr,
 	if (proj_res == NULL)
 		proj_res = new_r_Proj(call, mode_T, pn_Call_T_result);
 	/* reroute old users */
-	ir_node *res_user = find_proj(proj_res, orig_pn);
+	ir_node *const res_user = get_Proj_for_pn(proj_res, orig_pn);
 	if (res_user != NULL)
 		edges_reroute(res_user, base_addr);
 

@@ -532,15 +532,8 @@ ir_node *be_get_initial_reg_value(ir_graph *irg, const arch_register_t *reg)
 	ir_node *start = get_irg_start(irg);
 	ir_mode *mode  = arch_register_class_mode(reg->reg_class);
 
-	foreach_out_edge(start, edge) {
-		ir_node *proj = get_edge_src_irn(edge);
-		if (!is_Proj(proj)) // maybe End/Anchor
-			continue;
-		if (get_Proj_num(proj) == i) {
-			return proj;
-		}
-	}
-	return new_r_Proj(start, mode, i);
+	ir_node *const proj = get_Proj_for_pn(start, i);
+	return proj ? proj : new_r_Proj(start, mode, i);
 }
 
 static ir_entity* dummy_get_frame_entity(const ir_node *node)

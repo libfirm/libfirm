@@ -441,19 +441,10 @@ static void peephole_IncSP_Store_to_push(ir_node *irn)
 		/* create memory Proj */
 		ir_node *mem_proj = new_r_Proj(push, mode_M, pn_ia32_Push_M);
 
-		/* rewire Store Projs */
-		foreach_out_edge_safe(store, edge) {
-			ir_node *proj = get_edge_src_irn(edge);
-			if (!is_Proj(proj))
-				continue;
-			switch (get_Proj_num(proj)) {
-			case pn_ia32_Store_M:
+		/* Rewire Store Proj. */
+		ir_node *const proj = get_Proj_for_pn(store, pn_ia32_Store_M);
+		if (proj)
 				exchange(proj, mem_proj);
-				break;
-			default:
-				panic("unexpected Proj on Store->IncSp");
-			}
-		}
 
 		/* use the memproj now */
 		be_peephole_exchange(store, push);

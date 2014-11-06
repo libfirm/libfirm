@@ -1207,24 +1207,6 @@ static bool sim_Copy(x87_state *state, ir_node *n)
 	return false;
 }
 
-/**
- * Returns the vf0 result Proj of a Call.
- *
- * @para call  the Call node
- */
-static ir_node *get_call_result_proj(ir_node *call)
-{
-	/* search the result proj */
-	foreach_out_edge(call, edge) {
-		ir_node *proj = get_edge_src_irn(edge);
-		unsigned pn   = get_Proj_num(proj);
-		if (pn == pn_ia32_Call_first_result)
-			return proj;
-	}
-
-	panic("result Proj missing");
-}
-
 static bool sim_Asm(x87_state *const state, ir_node *const n)
 {
 	(void)state;
@@ -1261,7 +1243,7 @@ static bool sim_Call(x87_state *state, ir_node *n)
 		ir_type *const res_type = get_method_res_type(call_tp, 0);
 		ir_mode *const mode     = get_type_mode(res_type);
 		if (mode && mode_is_float(mode)) {
-			ir_node               *const resproj = get_call_result_proj(n);
+			ir_node               *const resproj = get_Proj_for_pn(n, pn_ia32_Call_first_result);
 			arch_register_t const *const reg     = arch_get_irn_register(resproj);
 			x87_push(state, reg->index, resproj);
 		}

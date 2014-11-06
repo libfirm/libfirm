@@ -1822,16 +1822,7 @@ static void lower_Start(ir_node *node, ir_mode *high_mode)
 	}
 
 	/* find args Proj */
-	ir_node *args = NULL;
-	foreach_out_edge(node, edge) {
-		ir_node *proj = get_edge_src_irn(edge);
-		if (!is_Proj(proj))
-			continue;
-		if (get_Proj_num(proj) == pn_Start_T_args) {
-			args = proj;
-			break;
-		}
-	}
+	ir_node *const args = get_Proj_for_pn(node, pn_Start_T_args);
 	if (args == NULL)
 		return;
 
@@ -1940,16 +1931,7 @@ static void lower_Call(ir_node *node, ir_mode *mode)
 	set_irn_in(node, j, in);
 
 	/* find results T */
-	ir_node *resproj = NULL;
-	foreach_out_edge(node, edge) {
-		ir_node *proj = get_edge_src_irn(edge);
-		if (!is_Proj(proj))
-			continue;
-		if (get_Proj_num(proj) == pn_Call_T_result) {
-			resproj = proj;
-			break;
-		}
-	}
+	ir_node *resproj = get_Proj_for_pn(node, pn_Call_T_result);
 	if (resproj == NULL)
 		return;
 
@@ -2517,15 +2499,9 @@ static void lower_arithmetic_builtin(ir_node *builtin, ir_mode *mode)
 	}
 
 	/* search result Proj */
-	foreach_out_edge_safe(builtin, edge) {
-		ir_node *proj = get_edge_src_irn(edge);
-		if (!is_Proj(proj))
-			continue;
-
-		if (get_Proj_num(proj) == pn_Builtin_max+1) {
-			ir_set_dw_lowered(proj, res_low, res_high);
-		}
-	}
+	ir_node *const proj = get_Proj_for_pn(builtin, pn_Builtin_max + 1);
+	if (proj)
+		ir_set_dw_lowered(proj, res_low, res_high);
 }
 
 /**

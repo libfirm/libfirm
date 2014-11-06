@@ -162,16 +162,10 @@ static void handle_modeb(ir_node *block, ir_node *selector, pn_Cond pnc, env_t *
 			/* get the other block */
 			if (other_blk == NULL) {
 				/* we have already tested, that block has only ONE Cond predecessor */
-				ir_node *cond = get_Proj_pred(get_Block_cfgpred(block, 0));
-				foreach_out_edge(cond, edge) {
-					ir_node *proj = get_edge_src_irn(edge);
-					if (get_Proj_num(proj) == pnc)
-						continue;
-					edge = get_irn_out_edge_first(proj);
-					other_blk = get_edge_src_irn(edge);
-					break;
-				}
-				assert(other_blk);
+				ir_node *const cond = get_Proj_pred(get_Block_cfgpred(block, 0));
+				ir_node *const proj = get_Proj_for_pn(cond, pn_Cond_false + pn_Cond_true - pnc);
+				assert(proj);
+				other_blk = get_edge_src_irn(get_irn_out_edge_first(proj));
 
 				/*
 				 * Note the special case here: if block is a then, there might be no else

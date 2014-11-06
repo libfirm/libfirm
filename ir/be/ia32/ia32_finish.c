@@ -96,21 +96,15 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn)
 		bool     needs_carry = false;
 		/** See if someone is interested in a correctly set carry flag */
 		if (get_irn_mode(irn) == mode_T) {
-			foreach_out_edge(irn, edge) {
-				ir_node *proj = get_edge_src_irn(edge);
-				unsigned pn   = get_Proj_num(proj);
-				if (pn == pn_ia32_flags) {
-					assert(flags_proj == NULL);
-					flags_proj = proj;
-					foreach_out_edge(flags_proj, edge) {
-						ir_node *user = get_edge_src_irn(edge);
-						x86_condition_code_t cc = get_ia32_condcode(user);
-						if (reads_carry(cc)) {
-							needs_carry = true;
-							break;
-						}
+			flags_proj = get_Proj_for_pn(irn, pn_ia32_flags);
+			if (flags_proj) {
+				foreach_out_edge(flags_proj, edge) {
+					ir_node *user = get_edge_src_irn(edge);
+					x86_condition_code_t cc = get_ia32_condcode(user);
+					if (reads_carry(cc)) {
+						needs_carry = true;
+						break;
 					}
-					break;
 				}
 			}
 		}
