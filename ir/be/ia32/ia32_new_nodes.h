@@ -34,12 +34,6 @@ enum {
 	pn_ia32_M     = 2,
 };
 
-/** proj numbers for nodes with destination address mode */
-enum {
-	pn_ia32_destAM_flags = 1,
-	pn_ia32_destAM_M     = 2,
-};
-
 extern struct obstack opcodes_obst;
 
 /**
