@@ -39,10 +39,6 @@ enum {
 	pn_ia32_destAM_flags = 1,
 	pn_ia32_destAM_M     = 2,
 };
-enum {
-	pn_ia32_Call_mem          = 0,
-	pn_ia32_Call_first_result = 3,
-};
 
 extern struct obstack opcodes_obst;
 

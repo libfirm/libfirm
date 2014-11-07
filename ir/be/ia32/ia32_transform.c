@@ -5032,11 +5032,11 @@ static ir_node *gen_Call(ir_node *node)
 	in_req[memp] = arch_no_register_req;
 
 	/* count outputs */
-	unsigned n_reg_results = cconv->n_reg_results;
-	unsigned n_caller_saves
-		= rbitset_popcount(cconv->caller_saves, N_IA32_REGISTERS);
+	unsigned       o              = pn_ia32_Call_first_result;
+	unsigned const n_reg_results  = cconv->n_reg_results;
+	unsigned const n_caller_saves = rbitset_popcount(cconv->caller_saves, N_IA32_REGISTERS);
 	/* mem, sp, fpcw, results + caller saves + X_regular + X_except */
-	unsigned n_out = 3 + n_reg_results + n_caller_saves;
+	unsigned const n_out          = o + n_reg_results + n_caller_saves;
 
 	/* create node */
 	ir_node *call = new_bd_ia32_Call(dbgi, block, in_arity, in, n_out,
@@ -5051,25 +5051,18 @@ static ir_node *gen_Call(ir_node *node)
 	ir_node *res = fix_mem_proj(call, &am);
 
 	/* construct outputs */
-	unsigned o = 0;
+	arch_set_irn_register_req_out(call, pn_ia32_Call_mem, arch_no_register_req);
 
-	unsigned memo = o++;
-	arch_set_irn_register_req_out(call, memo, arch_no_register_req);
-	assert(memo == pn_ia32_Call_mem);
-
-	unsigned spo = o++;
 	const arch_register_req_t *req
 		= be_create_reg_req(obst, sp, arch_register_req_type_ignore
 		                              | arch_register_req_type_produces_sp);
-	arch_set_irn_register_req_out(call, spo, req);
-	arch_set_irn_register_out(call, spo, sp);
+	arch_set_irn_register_req_out(call, pn_ia32_Call_stack, req);
+	arch_set_irn_register_out(call, pn_ia32_Call_stack, sp);
 
-	unsigned fpcwo = o++;
 	const arch_register_t *fpcw_reg = &ia32_registers[REG_FPCW];
-	arch_set_irn_register_req_out(call, fpcwo, fpcw_reg->single_req);
-	arch_set_irn_register_out(call, fpcwo, &ia32_registers[REG_FPCW]);
+	arch_set_irn_register_req_out(call, pn_ia32_Call_fpcw, fpcw_reg->single_req);
+	arch_set_irn_register_out(call, pn_ia32_Call_fpcw, fpcw_reg);
 
-	assert(o == pn_ia32_Call_first_result);
 	for (unsigned r = 0; r < n_ress; ++r) {
 		const reg_or_stackslot_t *res = &cconv->results[r];
 		arch_set_irn_register_req_out(call, o++, res->reg->single_req);
@@ -5088,7 +5081,7 @@ static ir_node *gen_Call(ir_node *node)
 	assert(o == n_out);
 
 	/* incsp to destroy callframe */
-	ir_node *new_stack   = new_r_Proj(call, ia32_mode_gp, spo);
+	ir_node *new_stack   = new_r_Proj(call, ia32_mode_gp, pn_ia32_Call_stack);
 	unsigned reduce_size = callframe_size - cconv->sp_delta;
 	if (reduce_size > 0 || po2_stack_alignment != 0) {
 		ir_node *new_block = be_transform_node(block);
