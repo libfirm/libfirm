@@ -1066,7 +1066,7 @@ Pop => {
 	state     => "exc_pinned",
 	reg_req   => { in => [ "none", "esp" ], out => [ "gp", "none", "none", "esp:I|S" ] },
 	ins       => [ "mem", "stack" ],
-	outs      => [ "res", "M", "unused", "stack" ],
+	outs      => [ "res", "unused", "M", "stack" ],
 	emit      => "pop%M %D0",
 	latency   => 3, # Pop is more expensive than Push on Athlon
 },
@@ -1075,7 +1075,7 @@ PopEbp => {
 	state     => "exc_pinned",
 	reg_req   => { in => [ "none", "esp" ], out => [ "ebp:I", "none", "none", "esp:I|S" ] },
 	ins       => [ "mem", "stack" ],
-	outs      => [ "res", "M", "unused", "stack" ],
+	outs      => [ "res", "unused", "M", "stack" ],
 	emit      => "pop%M %D0",
 	latency   => 3, # Pop is more expensive than Push on Athlon
 },
@@ -1094,7 +1094,7 @@ PopMem => {
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "esp" ], out => [ "none", "none", "none", "esp:I|S" ] },
 	ins       => [ "base", "index", "mem", "stack" ],
-	outs      => [ "unused0", "M", "unused1", "stack" ],
+	outs      => [ "unused0", "unused1", "M", "stack" ],
 	emit      => "pop%M %AM",
 	latency   => 3, # Pop is more expensive than Push on Athlon
 },
