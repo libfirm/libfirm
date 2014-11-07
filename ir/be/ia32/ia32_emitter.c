@@ -52,6 +52,7 @@
 #include "bedwarf.h"
 #include "beemitter.h"
 #include "begnuas.h"
+#include "beutil.h"
 
 #include "ia32_emitter.h"
 #include "ia32_common_transform.h"

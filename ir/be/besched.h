@@ -14,7 +14,6 @@
 #include <stdbool.h>
 
 #include "beinfo.h"
-#include "beutil.h"
 #include "irdom.h"
 
 static sched_info_t *get_irn_sched_info(const ir_node *node)

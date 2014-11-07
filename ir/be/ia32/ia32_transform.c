@@ -36,6 +36,7 @@
 #include "besched.h"
 #include "betranshlp.h"
 #include "be_t.h"
+#include "beutil.h"
 
 #include "bearch_ia32_t.h"
 #include "gen_ia32_regalloc_if.h"

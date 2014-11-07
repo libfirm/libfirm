@@ -528,6 +528,23 @@ ir_node *new_similar_node(ir_node *old, ir_node *block, ir_node **in);
  */
 ir_node *get_Proj_for_pn(ir_node const *irn, unsigned pn);
 
+/**
+ * Convenient block getter.
+ * Works also, if the given node is a block.
+ * @param  irn The node.
+ * @return The block of the node, or the node itself, if the node is a
+ *         block.
+ */
+static inline ir_node *get_block(ir_node *const irn)
+{
+	return is_Block(irn) ? irn : get_nodes_block(irn);
+}
+
+static inline ir_node const *get_block_const(ir_node const *const irn)
+{
+	return is_Block(irn) ? irn : get_nodes_block(irn);
+}
+
 #define foreach_irn_in(irn, idx, pred) \
 	for (bool pred##__b = true; pred##__b;) \
 		for (ir_node const *const pred##__irn = (irn); pred##__b; pred##__b = false) \
