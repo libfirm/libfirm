@@ -4673,7 +4673,7 @@ static ir_node *gen_Proj_Load(ir_node *node)
 		be_enqueue_preds(node);
 		/* do it in 2 steps, to silence firm verifier */
 		ir_node *res = new_rd_Proj(dbgi, pred, mode_M, pn_Load_M);
-		set_Proj_num(res, pn_ia32_mem);
+		set_Proj_num(res, pn_ia32_M);
 		return res;
 	}
 
@@ -4698,7 +4698,7 @@ static ir_node *gen_Proj_Load(ir_node *node)
 		case pn_Load_res:
 			return new_rd_Proj(dbgi, new_pred, ia32_mode_gp, pn_ia32_res);
 		case pn_Load_M:
-			return new_rd_Proj(dbgi, new_pred, mode_M, pn_ia32_mem);
+			return new_rd_Proj(dbgi, new_pred, mode_M, pn_ia32_M);
 		case pn_Load_X_except:
 			/* This Load might raise an exception. Mark it. */
 			set_ia32_exc_label(new_pred, 1);

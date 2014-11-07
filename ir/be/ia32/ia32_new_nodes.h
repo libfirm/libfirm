@@ -31,7 +31,7 @@ enum {
 enum {
 	pn_ia32_res   = 0,
 	pn_ia32_flags = 1,
-	pn_ia32_mem   = 2,
+	pn_ia32_M     = 2,
 };
 
 /** proj numbers for nodes with destination address mode */
