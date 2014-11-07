@@ -257,12 +257,9 @@ static void amd64_finish_irg_walker(ir_node *const block, void *const env)
 	(void) env;
 
 	/* Insert should_be_same copies. */
-	for (ir_node *irn = sched_first(block), *next; !sched_is_end(irn);
-	     irn = next) {
-		next = sched_next(irn);
-		if (is_amd64_irn(irn)) {
+	sched_foreach_safe(block, irn) {
+		if (is_amd64_irn(irn))
 			assure_should_be_same_requirements(irn);
-		}
 	}
 }
 
