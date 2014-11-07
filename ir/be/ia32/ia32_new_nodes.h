@@ -43,10 +43,6 @@ enum {
 	pn_ia32_Call_mem          = 0,
 	pn_ia32_Call_first_result = 3,
 };
-enum {
-	n_ia32_Return_mem   = 0,
-	n_ia32_Return_stack = 1,
-};
 
 extern struct obstack opcodes_obst;
 

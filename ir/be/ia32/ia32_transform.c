@@ -4289,25 +4289,19 @@ static ir_node *gen_Return(ir_node *node)
 	x86_cconv_t    *cconv = current_cconv;
 
 	/* estimate number of return values */
-	unsigned n_ins = 2 + n_res; /* memory + stackpointer, return values */
-	unsigned n_callee_saves
-		= rbitset_popcount(cconv->callee_saves, N_IA32_REGISTERS);
-	n_ins += n_callee_saves;
+	unsigned       p              = n_ia32_Return_first_result;
+	unsigned const n_callee_saves = rbitset_popcount(cconv->callee_saves, N_IA32_REGISTERS);
+	unsigned const n_ins          = p + n_res + n_callee_saves;
 
 	const arch_register_req_t **reqs
 		= OALLOCN(obst, const arch_register_req_t*, n_ins);
 	ir_node **in = ALLOCAN(ir_node*, n_ins);
-	unsigned  p  = 0;
 
-	unsigned n_mem = p++;
-	assert(n_mem == n_ia32_Return_mem);
-	in[n_mem]   = new_mem;
-	reqs[n_mem] = arch_no_register_req;
+	in[n_ia32_Return_mem]   = new_mem;
+	reqs[n_ia32_Return_mem] = arch_no_register_req;
 
-	unsigned n_sp = p++;
-	assert(n_sp == n_ia32_Return_stack);
-	in[n_sp]   = sp;
-	reqs[n_sp] = ia32_registers[REG_ESP].single_req;
+	in[n_ia32_Return_stack]   = sp;
+	reqs[n_ia32_Return_stack] = ia32_registers[REG_ESP].single_req;
 
 	/* result values */
 	for (size_t i = 0; i < n_res; ++i) {

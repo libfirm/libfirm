@@ -1226,6 +1226,7 @@ Return => {
 	op_flags  => [ "cfopcode" ],
 	arity     => "variable",
 	reg_req   => { out => [ "none" ] },
+	ins       => [ "mem", "stack", "first_result" ],
 	mode      => "mode_X",
 	attr_type => "ia32_return_attr_t",
 	attr      => "uint16_t pop",
