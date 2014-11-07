@@ -69,8 +69,7 @@ void exchange(ir_node *old, ir_node *nw)
 
 		ir_node *block = old->in[0];
 		if (block == NULL) {
-			block = is_Block(nw) ? nw : get_nodes_block(nw);
-
+			block = get_block(nw);
 			if (block == NULL) {
 				panic("cannot find legal block for id");
 			}

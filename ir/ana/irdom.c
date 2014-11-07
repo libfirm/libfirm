@@ -174,8 +174,8 @@ int block_strictly_dominates(const ir_node *a, const ir_node *b)
 
 ir_node *node_smallest_common_dominator(ir_node *a, ir_node *b)
 {
-	ir_node *bl_a   = is_Block(a) ? a : get_nodes_block(a);
-	ir_node *bl_b   = is_Block(b) ? b : get_nodes_block(b);
+	ir_node *bl_a   = get_block(a);
+	ir_node *bl_b   = get_block(b);
 	ir_node *dom_bl = NULL;
 
 	/* Check if block of a dominates block of b */

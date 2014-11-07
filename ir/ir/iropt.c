@@ -6349,12 +6349,11 @@ static ir_node *transform_node_End(ir_node *n)
 
 	for (int i = j = 0; i < n_keepalives; ++i) {
 		ir_node *ka = get_End_keepalive(n, i);
-		ir_node *block;
 		/* no need to keep Bad */
 		if (is_Bad(ka))
 			continue;
 		/* do not keep unreachable code */
-		block = is_Block(ka) ? ka : get_nodes_block(ka);
+		ir_node *const block = get_block(ka);
 		if (is_block_unreachable(block))
 			continue;
 		in[j++] = ka;

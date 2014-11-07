@@ -3163,16 +3163,8 @@ static void apply_end(ir_node *end, environment_t *env)
 		if (is_Bad(ka))
 			continue;
 
-		ir_node *block;
-		if (!is_Block(ka)) {
-			block = get_nodes_block(ka);
-			if (is_Bad(block))
-				continue;
-		} else {
-			block = ka;
-		}
-
-		node_t *node = get_irn_node(block);
+		ir_node *const block = get_block(ka);
+		node_t  *const node  = get_irn_node(block);
 		if (is_reachable(node))
 			in[j++] = ka;
 	}

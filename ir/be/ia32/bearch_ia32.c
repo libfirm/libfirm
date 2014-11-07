@@ -574,12 +574,7 @@ ir_node *ia32_turn_back_am(ir_node *node)
 static ir_node *flags_remat(ir_node *node, ir_node *after)
 {
 	/* we should turn back address modes when rematerializing nodes */
-	ir_node *block;
-	if (is_Block(after)) {
-		block = after;
-	} else {
-		block = get_nodes_block(after);
-	}
+	ir_node *const block = get_block(after);
 
 	ia32_op_type_t type = get_ia32_op_type(node);
 	switch (type) {

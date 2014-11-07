@@ -77,8 +77,8 @@ static bool remove_unreachable_keeps(ir_graph *irg)
 	ir_node **new_in    = XMALLOCN(ir_node*, arity);
 	int       new_arity = 0;
 	for (int i = 0; i < arity; ++i) {
-		ir_node *ka    = get_End_keepalive(end, i);
-		ir_node *block = is_Block(ka) ? ka : get_nodes_block(ka);
+		ir_node *const ka    = get_End_keepalive(end, i);
+		ir_node *const block = get_block(ka);
 		if (is_block_unreachable(block))
 			continue;
 		new_in[new_arity++] = ka;

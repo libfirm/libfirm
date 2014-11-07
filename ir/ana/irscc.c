@@ -715,7 +715,7 @@ static bool is_loop_variant(ir_loop *l, ir_loop *b)
 
 int is_loop_invariant(const ir_node *n, const ir_node *block)
 {
-	ir_loop *l = get_irn_loop(block);
-	const ir_node *b = is_Block(n) ? n : get_nodes_block(n);
+	ir_loop       *const l = get_irn_loop(block);
+	ir_node const *const b = get_block_const(n);
 	return !is_loop_variant(l, get_irn_loop(b));
 }

@@ -47,8 +47,8 @@ static bool                         changed;
 
 static ir_node *default_remat(ir_node *node, ir_node *after)
 {
-	ir_node *block = is_Block(after) ? after : get_nodes_block(after);
-	ir_node *copy  = exact_copy(node);
+	ir_node *const block = get_block(after);
+	ir_node *const copy  = exact_copy(node);
 	set_nodes_block(copy, block);
 	sched_add_after(after, copy);
 	return copy;

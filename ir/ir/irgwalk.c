@@ -287,8 +287,8 @@ static void irg_block_walk_2(ir_node *node, irg_walk_func *pre,
 void irg_block_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post,
                     void *env)
 {
-	ir_graph *irg   = get_irn_irg(node);
-	ir_node  *block = is_Block(node) ? node : get_nodes_block(node);
+	ir_graph *const irg   = get_irn_irg(node);
+	ir_node  *const block = get_block(node);
 
 	hook_irg_block_walk(irg, node, (generic_func *)pre, (generic_func *)post);
 
