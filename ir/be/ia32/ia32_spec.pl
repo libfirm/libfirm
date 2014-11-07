@@ -1044,10 +1044,10 @@ Lea => {
 
 Push => {
 	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "gp", "esp" ], out => [ "esp:I|S", "none" ] },
+	reg_req   => { in => [ "gp", "gp", "none", "gp", "esp" ], out => [ "none", "esp:I|S" ] },
 	ins       => [ "base", "index", "mem", "val", "stack" ],
 	emit      => "push%M %AS3",
-	outs      => [ "stack", "M" ],
+	outs      => [ "M", "stack" ],
 	am        => "source,unary",
 	latency   => 2,
 },

@@ -438,14 +438,6 @@ static void peephole_IncSP_Store_to_push(ir_node *irn)
 		curr_sp = new_r_Proj(push, spmode, pn_ia32_Push_stack);
 		arch_set_irn_register(curr_sp, spreg);
 
-		/* create memory Proj */
-		ir_node *mem_proj = new_r_Proj(push, mode_M, pn_ia32_Push_M);
-
-		/* Rewire Store Proj. */
-		ir_node *const proj = get_Proj_for_pn(store, pn_ia32_Store_M);
-		if (proj)
-				exchange(proj, mem_proj);
-
 		/* use the memproj now */
 		be_peephole_exchange(store, push);
 
