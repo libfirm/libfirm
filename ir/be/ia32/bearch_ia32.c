@@ -943,7 +943,7 @@ static void transform_MemPerm(ir_node *node)
 				mode = ia32_mode_gp;
 			}
 			pop = create_pop(node, node, sp, outent, mode);
-			sp  = create_spproj(node, pop, pn_ia32_Pop_stack);
+			sp  = create_spproj(node, pop, pn_ia32_PopMem_stack);
 
 			unsigned size = get_mode_size_bytes(mode);
 			offset  -= size;
@@ -965,7 +965,7 @@ static void transform_MemPerm(ir_node *node)
 		assert(p < (unsigned)arity);
 
 		set_Proj_pred(proj, pops[p]);
-		set_Proj_num(proj, pn_ia32_Pop_M);
+		set_Proj_num(proj, pn_ia32_PopMem_M);
 	}
 
 	/* remove memperm */
@@ -1081,7 +1081,7 @@ static void introduce_epilogue(ir_node *ret)
 			set_ia32_ls_mode(pop, ia32_mode_gp);
 			curr_bp  = new_r_Proj(pop, mode_gp, pn_ia32_PopEbp_res);
 			curr_sp  = new_r_Proj(pop, mode_gp, pn_ia32_PopEbp_stack);
-			curr_mem = new_r_Proj(pop, mode_M, pn_ia32_Pop_M);
+			curr_mem = new_r_Proj(pop, mode_M,  pn_ia32_PopEbp_M);
 			arch_set_irn_register(curr_bp, bp);
 			arch_set_irn_register(curr_sp, sp);
 			sched_add_before(ret, pop);
