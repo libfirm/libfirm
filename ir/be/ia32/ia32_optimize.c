@@ -598,17 +598,7 @@ static void peephole_Load_IncSP_to_pop(ir_node *irn)
 		arch_set_irn_register(pred_sp, esp);
 
 		sched_add_before(irn, pop);
-
-		/* rewire now */
-		foreach_out_edge_safe(load, edge) {
-			ir_node *proj = get_edge_src_irn(edge);
-
-			set_Proj_pred(proj, pop);
-		}
-
-		/* we can remove the Load now */
-		sched_remove(load);
-		kill_node(load);
+		be_peephole_exchange(load, pop);
 	}
 
 	be_set_IncSP_offset(irn, -ofs);
