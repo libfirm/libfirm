@@ -1859,7 +1859,7 @@ fprem => {
 
 fabs => {
 	irn_flags => [ "rematerializable" ],
-	reg_req   => { in => [ "fp"], out => [ "fp" ] },
+	reg_req   => { in => [ "fp" ], out => [ "fp" ] },
 	ins       => [ "value" ],
 	emit      => "fabs",
 	init_attr => "attr->attr.ls_mode = ia32_mode_E;",
@@ -1870,7 +1870,7 @@ fabs => {
 
 fchs => {
 	irn_flags => [ "rematerializable" ],
-	reg_req   => { in => [ "fp"], out => [ "fp" ] },
+	reg_req   => { in => [ "fp" ], out => [ "fp" ] },
 	ins       => [ "value" ],
 	emit      => "fchs",
 	init_attr => "attr->attr.ls_mode = ia32_mode_E;",
@@ -2123,7 +2123,7 @@ fpush => {
 },
 
 fpushCopy => {
-	reg_req   => { in => [ "fp"], out => [ "fp" ] },
+	reg_req   => { in => [ "fp" ], out => [ "fp" ] },
 	attrs_equal => "attrs_equal_false",
 	emit      => "fld %F0",
 	attr_type => "ia32_x87_attr_t",
