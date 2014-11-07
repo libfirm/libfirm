@@ -1093,7 +1093,7 @@ static ir_node *create_Copy(x87_state *state, ir_node *n)
 	} else {
 		dbg_info *const dbgi    = get_irn_dbg_info(n);
 		ir_mode  *const mode    = get_irn_mode(n);
-		res = new_bd_ia32_fpushCopy(dbgi, block, pred, mode);
+		res = new_bd_ia32_fdup(dbgi, block, pred, mode);
 
 		ia32_x87_attr_t       *const attr    = get_ia32_x87_attr(res);
 		arch_register_t const *const op1     = arch_get_irn_register(pred);
@@ -1128,7 +1128,7 @@ static void sim_Copy(x87_state *state, ir_node *n)
 
 	if (is_fp_live(op1->index, live)) {
 		/* Operand is still live, a real copy. We need here an fpush that can
-		   hold a a register, so use the fpushCopy or recreate constants */
+		   hold a a register, so use a fdup or recreate constants */
 		ir_node *const node = create_Copy(state, n);
 		sched_replace(n, node);
 		exchange(n, node);

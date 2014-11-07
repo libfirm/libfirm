@@ -2089,7 +2089,7 @@ fpush => {
 	latency   => 1,
 },
 
-fpushCopy => {
+fdup => {
 	reg_req   => { in => [ "fp" ], out => [ "fp" ] },
 	attrs_equal => "attrs_equal_false",
 	emit      => "fld %F0",
