@@ -664,7 +664,7 @@ static void set_address(ir_node *node, const x86_address_t *addr)
 	set_ia32_am_tls_segment(node, addr->tls_segment);
 	set_ia32_frame_ent(node, addr->frame_entity);
 	if (addr->use_frame)
-		set_ia32_use_frame(node);
+		set_ia32_frame_use(node, IA32_FRAME_USE_AUTO);
 }
 
 /**
@@ -3691,13 +3691,14 @@ static ir_node *gen_Mux(ir_node *node)
 
 static void force_int_stackent(ir_node *node, ir_mode *mode)
 {
-	ia32_attr_t *attr = get_ia32_attr(node);
+	ia32_frame_use_t frame_use;
 	if (get_mode_size_bits(mode) == 64) {
-		attr->need_64bit_stackent = true;
+		frame_use = IA32_FRAME_USE_64BIT;
 	} else {
 		assert(get_mode_size_bits(mode) == 32);
-		attr->need_32bit_stackent = true;
+		frame_use = IA32_FRAME_USE_32BIT;
 	}
+	set_ia32_frame_use(node, frame_use);
 }
 
 /**
@@ -3714,7 +3715,6 @@ static ir_node *gen_x87_fp_to_gp(ir_node *node)
 
 	ir_node *fist = gen_fist(dbgi, block, frame, noreg_GP, nomem, new_op);
 	set_irn_pinned(fist, op_pin_state_floats);
-	set_ia32_use_frame(fist);
 	set_ia32_op_type(fist, ia32_AddrModeD);
 	arch_add_irn_flags(fist, arch_irn_flag_spill);
 
@@ -3737,7 +3737,6 @@ static ir_node *gen_x87_fp_to_gp(ir_node *node)
 	ir_node *load = new_bd_ia32_Load(dbgi, block, frame, noreg_GP, mem);
 
 	set_irn_pinned(load, op_pin_state_floats);
-	set_ia32_use_frame(load);
 	set_ia32_op_type(load, ia32_AddrModeS);
 	set_ia32_ls_mode(load, ia32_mode_gp);
 	force_int_stackent(load, ls_mode);
@@ -3759,7 +3758,7 @@ static ir_node *gen_x87_conv(ir_mode *tgt_mode, ir_node *node)
 	ir_node *store = new_bd_ia32_fst(dbgi, block, frame, noreg_GP, nomem, node,
 	                                 tgt_mode);
 	set_irn_pinned(store, op_pin_state_floats);
-	set_ia32_use_frame(store);
+	set_ia32_frame_use(store, IA32_FRAME_USE_AUTO);
 	set_ia32_op_type(store, ia32_AddrModeD);
 	arch_add_irn_flags(store, arch_irn_flag_spill);
 	SET_IA32_ORIG_NODE(store, node);
@@ -3769,7 +3768,7 @@ static ir_node *gen_x87_conv(ir_mode *tgt_mode, ir_node *node)
 	ir_node *load = new_bd_ia32_fld(dbgi, block, frame, noreg_GP, store_mem,
 	                                tgt_mode);
 	set_irn_pinned(load, op_pin_state_floats);
-	set_ia32_use_frame(load);
+	set_ia32_frame_use(load, IA32_FRAME_USE_AUTO);
 	set_ia32_op_type(load, ia32_AddrModeS);
 	SET_IA32_ORIG_NODE(load, node);
 
@@ -3811,7 +3810,6 @@ static void store_gp(dbg_info *dbgi, ia32_address_mode_t *am, ir_node *block,
 	                                        nomem, new_node);
 
 	set_irn_pinned(store, op_pin_state_floats);
-	set_ia32_use_frame(store);
 	set_ia32_op_type(store, ia32_AddrModeD);
 	set_ia32_ls_mode(store, ia32_mode_gp);
 	arch_add_irn_flags(store, arch_irn_flag_spill);
@@ -3830,13 +3828,11 @@ static void store_gp(dbg_info *dbgi, ia32_address_mode_t *am, ir_node *block,
 		ir_node *zero_store_mem = new_r_Proj(zero_store, mode_M, pn_ia32_Store_M);
 
 		set_irn_pinned(zero_store, op_pin_state_floats);
-		set_ia32_use_frame(zero_store);
 		set_ia32_op_type(zero_store, ia32_AddrModeD);
 		add_ia32_am_offs_int(zero_store, 4);
 		set_ia32_ls_mode(zero_store, ia32_mode_gp);
 		arch_add_irn_flags(zero_store, arch_irn_flag_spill);
-		ia32_attr_t *zero_store_attr = get_ia32_attr(zero_store);
-		zero_store_attr->need_64bit_stackent = true;
+		set_ia32_frame_use(zero_store, IA32_FRAME_USE_64BIT);
 
 		in[0] = zero_store_mem;
 		in[1] = store_mem;
@@ -3876,11 +3872,11 @@ static ir_node *gen_x87_gp_to_fp(ir_node *node)
 	ir_node *fild     = new_bd_ia32_fild(dbgi, new_block, addr->base,
 	                                     addr->index, addr->mem);
 	ir_node *new_node = new_r_Proj(fild, mode_fp, pn_ia32_fild_res);
+	set_am_attributes(fild, &am);
 	if (addr->use_frame && addr->entity == NULL
 	    && get_mode_arithmetic(am.ls_mode) != irma_twos_complement)
 		force_int_stackent(fild, am.ls_mode);
 
-	set_am_attributes(fild, &am);
 	SET_IA32_ORIG_NODE(fild, node);
 
 	fix_mem_proj(fild, &am);
@@ -4050,7 +4046,6 @@ static void store_fp(dbg_info *dbgi, ia32_address_mode_t *am, ir_node *block,
 	ir_node *fst = new_bd_ia32_fst(dbgi, new_block, frame, noreg_GP, nomem,
 	                               new_value, mode);
 	set_irn_pinned(fst, op_pin_state_floats);
-	set_ia32_use_frame(fst);
 	set_ia32_op_type(fst, ia32_AddrModeD);
 	arch_add_irn_flags(fst, arch_irn_flag_spill);
 	force_int_stackent(fst, mode);
@@ -4099,11 +4094,11 @@ static ir_node *gen_Bitcast(ir_node *const node)
 		const x86_address_t *addr = &am.addr;
 		ir_node *fld      = new_bd_ia32_fld(dbgi, new_block, addr->base,
 		                                    addr->index, addr->mem, dst_mode);
-		force_int_stackent(fld, dst_mode);
 		res = new_r_Proj(fld, mode_fp, pn_ia32_fld_res);
 
 		am.ls_mode = dst_mode;
 		set_am_attributes(fld, &am);
+		force_int_stackent(fld, dst_mode);
 		SET_IA32_ORIG_NODE(fld, node);
 		fix_mem_proj(fld, &am);
 		break;
@@ -4112,10 +4107,10 @@ static ir_node *gen_Bitcast(ir_node *const node)
 		const x86_address_t *addr = &am.addr;
 		ir_node *ld = new_bd_ia32_Load(dbgi, new_block, addr->base, addr->index,
 		                               addr->mem);
-		force_int_stackent(ld, dst_mode);
 		res = new_r_Proj(ld, ia32_mode_gp, pn_ia32_Load_res);
 		am.ls_mode = dst_mode;
 		set_am_attributes(ld, &am);
+		force_int_stackent(ld, dst_mode);
 		SET_IA32_ORIG_NODE(ld, node);
 		fix_mem_proj(ld, &am);
 		break;
@@ -4530,8 +4525,6 @@ static ir_node *gen_ia32_l_LLtoFloat(ir_node *node)
 
 	set_irn_pinned(store_low, op_pin_state_floats);
 	set_irn_pinned(store_high, op_pin_state_floats);
-	set_ia32_use_frame(store_low);
-	set_ia32_use_frame(store_high);
 	set_ia32_op_type(store_low, ia32_AddrModeD);
 	set_ia32_op_type(store_high, ia32_AddrModeD);
 	set_ia32_ls_mode(store_low, ia32_mode_gp);
@@ -4548,7 +4541,6 @@ static ir_node *gen_ia32_l_LLtoFloat(ir_node *node)
 	/* do a fild */
 	ir_node *fild = new_bd_ia32_fild(dbgi, block, frame, noreg_GP, sync);
 	set_irn_pinned(fild, op_pin_state_floats);
-	set_ia32_use_frame(fild);
 	set_ia32_op_type(fild, ia32_AddrModeS);
 	set_ia32_ls_mode(fild, mode_Ls);
 	force_int_stackent(fild, mode_Ls);
@@ -4604,7 +4596,6 @@ static ir_node *gen_ia32_l_FloattoLL(ir_node *node)
 	ir_node *fist = gen_fist(dbgi, block, frame, noreg_GP, nomem, new_val);
 	set_irn_pinned(fist, op_pin_state_floats);
 	SET_IA32_ORIG_NODE(fist, node);
-	set_ia32_use_frame(fist);
 	set_ia32_op_type(fist, ia32_AddrModeD);
 	set_ia32_ls_mode(fist, mode_Ls);
 	arch_add_irn_flags(fist, arch_irn_flag_spill);
@@ -4627,7 +4618,6 @@ static ir_node *gen_Proj_l_FloattoLL(ir_node *node)
 	ir_node *load = new_bd_ia32_Load(dbgi, block, frame, noreg_GP, new_pred);
 	set_irn_pinned(load, op_pin_state_floats);
 	SET_IA32_ORIG_NODE(load, node);
-	set_ia32_use_frame(load);
 	set_ia32_op_type(load, ia32_AddrModeS);
 	set_ia32_ls_mode(load, ia32_mode_gp);
 	force_int_stackent(load, mode_Ls);

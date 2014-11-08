@@ -158,10 +158,9 @@ static void ia32_set_frame_entity(ir_node *node, ir_entity *entity,
 {
 	set_ia32_frame_ent(node, entity);
 
-	ia32_attr_t *attr = get_ia32_attr(node);
 	/* set ls_mode based on entity unless we explicitely requested
 	 * a certain mode */
-	if (attr->need_32bit_stackent || attr->need_64bit_stackent || is_ia32_Conv_I2I(node))
+	if (get_ia32_frame_use(node) != IA32_FRAME_USE_AUTO || is_ia32_Conv_I2I(node))
 		return;
 	ir_mode *mode = get_type_mode(type);
 	/** we 8bit stores have a special register requirement, so we can't simply
@@ -277,7 +276,7 @@ static int ia32_get_op_estimated_cost(ir_node const *const irn)
 
 	/* in case of address mode operations add additional cycles */
 	if (get_ia32_op_type(irn) != ia32_Normal) {
-		if (is_ia32_use_frame(irn) || (
+		if (get_ia32_frame_use(irn) != IA32_FRAME_USE_NONE || (
 		      is_ia32_NoReg_GP(get_irn_n(irn, n_ia32_base)) &&
 		      is_ia32_NoReg_GP(get_irn_n(irn, n_ia32_index))
 		    )) {
@@ -313,7 +312,7 @@ static bool ia32_possible_memory_operand(const ir_node *irn, unsigned int i)
 {
 	if (!is_ia32_irn(irn)                    || /* must be an ia32 irn */
 	    get_ia32_op_type(irn) != ia32_Normal || /* must not already be a addressmode irn */
-	    is_ia32_use_frame(irn))                 /* must not already use frame */
+	    get_ia32_frame_use(irn) != IA32_FRAME_USE_NONE) /* must not already use frame */
 		return false;
 
 	ir_node *op   = get_irn_n(irn, i);
@@ -386,8 +385,7 @@ static void ia32_perform_memory_operand(ir_node *irn, unsigned int i)
 	if (get_mode_size_bits(load_mode) <= get_mode_size_bits(dest_op_mode))
 		set_ia32_ls_mode(irn, load_mode);
 	set_ia32_op_type(irn, ia32_AddrModeS);
-	set_ia32_use_frame(irn);
-	set_ia32_need_stackent(irn);
+	set_ia32_frame_use(irn, IA32_FRAME_USE_AUTO);
 
 	if (i == n_ia32_binary_left                    &&
 	    get_ia32_am_support(irn) == ia32_am_binary &&
@@ -776,7 +774,7 @@ static ir_node *ia32_new_spill(ir_node *value, ir_node *after)
 	}
 	set_ia32_op_type(store, ia32_AddrModeD);
 	set_ia32_ls_mode(store, mode);
-	set_ia32_use_frame(store);
+	set_ia32_frame_use(store, IA32_FRAME_USE_AUTO);
 	set_ia32_is_spill(store);
 	sched_add_after(after, store);
 
@@ -807,7 +805,7 @@ static ir_node *ia32_new_reload(ir_node *value, ir_node *spill, ir_node *before)
 	}
 	set_ia32_op_type(load, ia32_AddrModeS);
 	set_ia32_ls_mode(load, spillmode);
-	set_ia32_use_frame(load);
+	set_ia32_frame_use(load, IA32_FRAME_USE_AUTO);
 	set_ia32_is_reload(load);
 	arch_add_irn_flags(load, arch_irn_flag_reload);
 	sched_add_before(before, load);
@@ -1000,18 +998,18 @@ static void ia32_collect_frame_entity_nodes(ir_node *node, void *data)
 			be_forbid_coalescing(env);
 	}
 
-	if (!is_ia32_irn(node) || !is_ia32_use_frame(node)
+	if (!is_ia32_irn(node)
 	    || get_ia32_frame_ent(node) != NULL
 	    || get_ia32_op_type(node) != ia32_AddrModeS)
 		return;
 
-	const ia32_attr_t *attr = get_ia32_attr_const(node);
-	const ir_type     *type;
-	if (attr->need_32bit_stackent) {
-		type = get_type_for_mode(ia32_mode_gp);
-	} else if (attr->need_64bit_stackent) {
-		type = get_type_for_mode(mode_Ls);
-	} else {
+	ir_type const *type;
+	switch (get_ia32_frame_use(node)) {
+	case IA32_FRAME_USE_NONE:  return;
+	case IA32_FRAME_USE_32BIT: type = get_type_for_mode(ia32_mode_gp); break;
+	case IA32_FRAME_USE_64BIT: type = get_type_for_mode(mode_Ls);      break;
+
+	default: {
 		ir_mode *mode = get_ia32_ls_mode(node);
 		/* stupid hack: in some situations (like reloads folded into ConvI2I
 		 * with 8bit mode, an 8bit entity and reload+spill would suffice, but
@@ -1026,6 +1024,8 @@ static void ia32_collect_frame_entity_nodes(ir_node *node, void *data)
 		} else {
 			type = get_type_for_mode(mode);
 		}
+		break;
+	}
 	}
 	be_load_needs_frame_entity(env, node, type);
 }

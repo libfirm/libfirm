@@ -361,7 +361,7 @@ static void ia32_emit_am(ir_node const *const node)
 	bool       has_index = !is_ia32_NoReg_GP(idx);
 
 	/* just to be sure... */
-	assert(!is_ia32_use_frame(node) || get_ia32_frame_ent(node) != NULL);
+	assert(get_ia32_frame_use(node) == IA32_FRAME_USE_NONE || get_ia32_frame_ent(node));
 
 	if (get_ia32_am_tls_segment(node))
 		be_emit_cstring("%gs:");

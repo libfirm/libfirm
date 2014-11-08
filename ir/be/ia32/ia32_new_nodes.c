@@ -83,6 +83,17 @@ static bool has_ia32_condcode_attr(const ir_node *node)
 	    || is_ia32_Sbb0(node) || is_ia32_Cmc(node);
 }
 
+static char const *get_frame_use_str(ir_node const *const node)
+{
+	switch (get_ia32_frame_use(node)) {
+	case IA32_FRAME_USE_NONE:  return "none";
+	case IA32_FRAME_USE_32BIT: return "32bit";
+	case IA32_FRAME_USE_64BIT: return "64bit";
+	case IA32_FRAME_USE_AUTO:  return "auto";
+	}
+	return "invalid";
+}
+
 /**
  * Dumper interface for dumping ia32 nodes in vcg.
  * @param n        the node to dump
@@ -218,13 +229,12 @@ static void ia32_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 				fprintf(F, "size = %u\n", get_ia32_copyb_size(n));
 			}
 
-			fprintf(F, "use_frame = %d\n",     is_ia32_use_frame(n));
-			fprintf(F, "commutative = %d\n",   is_ia32_commutative(n));
-			fprintf(F, "need stackent = %d\n", is_ia32_need_stackent(n));
-			fprintf(F, "is reload = %d\n",     is_ia32_is_reload(n));
-			fprintf(F, "latency = %u\n",       get_ia32_latency(n));
+			fprintf(F, "commutative = %d\n", is_ia32_commutative(n));
+			fprintf(F, "is reload = %d\n", is_ia32_is_reload(n));
+			fprintf(F, "latency = %u\n", get_ia32_latency(n));
 
 			/* dump frame entity */
+			fprintf(F, "frame use = %s\n", get_frame_use_str(n));
 			fprintf(F, "frame entity = ");
 			if (get_ia32_frame_ent(n)) {
 				ir_fprintf(F, "%+F", get_ia32_frame_ent(n));
@@ -505,35 +515,7 @@ void ia32_copy_am_attrs(ir_node *to, const ir_node *from)
 	set_ia32_am_ent(to, get_ia32_am_ent(from));
 	add_ia32_am_offs_int(to, get_ia32_am_offs_int(from));
 	set_ia32_frame_ent(to, get_ia32_frame_ent(from));
-	if (is_ia32_use_frame(from))
-		set_ia32_use_frame(to);
-}
-
-/**
- * Sets the uses_frame flag.
- */
-void set_ia32_use_frame(ir_node *node)
-{
-	ia32_attr_t *const attr = get_ia32_attr(node);
-	attr->use_frame = 1;
-}
-
-/**
- * Clears the uses_frame flag.
- */
-void clear_ia32_use_frame(ir_node *node)
-{
-	ia32_attr_t *const attr = get_ia32_attr(node);
-	attr->use_frame = 0;
-}
-
-/**
- * Gets the uses_frame flag.
- */
-int is_ia32_use_frame(const ir_node *node)
-{
-	const ia32_attr_t *attr = get_ia32_attr_const(node);
-	return attr->use_frame;
+	set_ia32_frame_use(to, get_ia32_frame_use(from));
 }
 
 /**
@@ -561,24 +543,6 @@ int is_ia32_commutative(const ir_node *node)
 {
 	const ia32_attr_t *attr = get_ia32_attr_const(node);
 	return attr->is_commutative;
-}
-
-void set_ia32_need_stackent(ir_node *node)
-{
-	ia32_attr_t *const attr = get_ia32_attr(node);
-	attr->need_stackent = 1;
-}
-
-void clear_ia32_need_stackent(ir_node *node)
-{
-	ia32_attr_t *const attr = get_ia32_attr(node);
-	attr->need_stackent = 0;
-}
-
-int is_ia32_need_stackent(const ir_node *node)
-{
-	const ia32_attr_t *attr = get_ia32_attr_const(node);
-	return attr->need_stackent;
 }
 
 void set_ia32_is_reload(ir_node *node)
@@ -651,10 +615,13 @@ void set_ia32_frame_ent(ir_node *node, ir_entity *ent)
 {
 	ia32_attr_t *attr = get_ia32_attr(node);
 	attr->frame_ent   = ent;
-	if (ent != NULL)
-		set_ia32_use_frame(node);
-	else
-		clear_ia32_use_frame(node);
+	if (!ent) {
+		set_ia32_frame_use(node, IA32_FRAME_USE_NONE);
+	} else if (get_ia32_frame_use(node) == IA32_FRAME_USE_NONE) {
+		/* Only set frame use to auto, if it is not set to something more specific
+		 * already. */
+		set_ia32_frame_use(node, IA32_FRAME_USE_AUTO);
+	}
 }
 
 
@@ -902,7 +869,7 @@ static int ia32_attrs_equal_(const ia32_attr_t *a, const ia32_attr_t *b)
 {
 	/* nodes with not yet assigned entities shouldn't be CSEd (important for
 	 * unsigned int -> double conversions */
-	if (a->use_frame && a->frame_ent == NULL)
+	if (a->frame_use != IA32_FRAME_USE_NONE && !a->frame_ent)
 		return false;
 
 	return a->tp == b->tp
@@ -911,7 +878,7 @@ static int ia32_attrs_equal_(const ia32_attr_t *a, const ia32_attr_t *b)
 	    && a->am_ent == b->am_ent
 	    && a->am_sc_no_pic_adjust == b->am_sc_no_pic_adjust
 	    && a->ls_mode == b->ls_mode
-	    && a->use_frame == b->use_frame
+	    && a->frame_use == b->frame_use
 	    && a->frame_ent == b->frame_ent
 	    && a->has_except_label == b->has_except_label
 	    && a->ins_permuted == b->ins_permuted;

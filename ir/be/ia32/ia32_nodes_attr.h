@@ -78,6 +78,13 @@ typedef enum {
 } ia32_attr_type_t;
 #endif
 
+typedef enum ia32_frame_use_t {
+	IA32_FRAME_USE_NONE,
+	IA32_FRAME_USE_32BIT,
+	IA32_FRAME_USE_64BIT,
+	IA32_FRAME_USE_AUTO,
+} ia32_frame_use_t;
+
 /**
  * The generic ia32 attributes. Every node has them.
  */
@@ -91,14 +98,11 @@ struct ia32_attr_t {
 
 	unsigned am_sc_no_pic_adjust:1; /**< AM entity can be relative to EIP */
 	unsigned am_tls_segment:1;      /**< addresses are relative to TLS */
-	unsigned use_frame:1;           /**< Indicates whether the operation uses the frame pointer or not. */
+	ENUMBF(ia32_frame_use_t) frame_use:2; /**< Whether an entity on the frame is used and its size. */
 	unsigned has_except_label:1;        /**< Set if this node needs a label because of possible exception. */
 
 	unsigned is_commutative:1;      /**< Indicates whether op is commutative or not. */
 
-	unsigned need_stackent:1;       /**< Set to 1 if node need space on stack. */
-	unsigned need_64bit_stackent:1; /**< needs a 64bit stack entity (see double->unsigned int conv) */
-	unsigned need_32bit_stackent:1; /**< needs a 32bit stack entity */
 	unsigned ins_permuted:1;        /**< inputs of node have been permuted (for commutative nodes) */
 	unsigned is_reload:1;           /**< node performs a reload */
 	unsigned is_spill:1;

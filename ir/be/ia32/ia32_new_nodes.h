@@ -137,21 +137,6 @@ unsigned get_ia32_am_scale(const ir_node *node);
 void set_ia32_am_scale(ir_node *node, unsigned scale);
 
 /**
- * Sets the uses_frame flag.
- */
-void set_ia32_use_frame(ir_node *node);
-
-/**
- * Clears the uses_frame flag.
- */
-void clear_ia32_use_frame(ir_node *node);
-
-/**
- * Gets the uses_frame flag.
- */
-int is_ia32_use_frame(const ir_node *node);
-
-/**
  * copies all address-mode attributes from one node to the other
  */
 void ia32_copy_am_attrs(ir_node *to, const ir_node *from);
@@ -171,20 +156,19 @@ void clear_ia32_commutative(ir_node *node);
  */
 int is_ia32_commutative(const ir_node *node);
 
-/**
- * Sets node needs_stackent
- */
-void set_ia32_need_stackent(ir_node *node);
+static inline void set_ia32_frame_use(ir_node *const node, ia32_frame_use_t const val)
+{
+	ia32_attr_t *const attr = get_ia32_attr(node);
+	/* Only allow more specific, the same or reset. */
+	assert(attr->frame_use == IA32_FRAME_USE_NONE || attr->frame_use == IA32_FRAME_USE_AUTO || attr->frame_use == val || val == IA32_FRAME_USE_NONE);
+	attr->frame_use = val;
+}
 
-/**
- * Clears node needs_stackent
- */
-void clear_ia32_need_stackent(ir_node *node);
-
-/**
- * Checks if node needs a stack entity assigned
- */
-int is_ia32_need_stackent(const ir_node *node);
+static inline ia32_frame_use_t get_ia32_frame_use(ir_node const *const node)
+{
+	ia32_attr_t const *const attr = get_ia32_attr_const(node);
+	return (ia32_frame_use_t)attr->frame_use;
+}
 
 void set_ia32_is_reload(ir_node *node);
 int is_ia32_is_reload(const ir_node *node);

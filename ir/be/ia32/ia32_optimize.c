@@ -821,7 +821,7 @@ static void peephole_ia32_Lea(ir_node *node)
 	int                    has_immediates;
 	ir_node               *op1;
 	ir_node               *op2;
-	assert(!is_ia32_need_stackent(node) || get_ia32_frame_ent(node) != NULL);
+	assert(get_ia32_frame_use(node) == IA32_FRAME_USE_NONE || get_ia32_frame_ent(node));
 	/* check if we have immediates values (frame entities should already be
 	 * expressed in the offsets) */
 	if (get_ia32_am_offs_int(node) != 0 || get_ia32_am_ent(node) != NULL) {

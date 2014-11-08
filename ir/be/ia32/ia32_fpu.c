@@ -84,18 +84,12 @@ static ir_node *create_fpu_mode_spill(void *env, ir_node *state, bool force,
 		set_ia32_op_type(spill, ia32_AddrModeD);
 		/* use ia32_mode_gp, as movl has a shorter opcode than movw */
 		set_ia32_ls_mode(spill, ia32_mode_gp);
-		set_ia32_use_frame(spill);
+		set_ia32_frame_use(spill, IA32_FRAME_USE_AUTO);
 
 		sched_add_after(skip_Proj(after), spill);
 		return spill;
 	}
 	return NULL;
-}
-
-static void set_32bit_stackent(ir_node *node)
-{
-	ia32_attr_t *attr = get_ia32_attr(node);
-	attr->need_32bit_stackent = true;
 }
 
 static ir_node *create_fldcw_ent(ir_node *block, ir_entity *entity)
@@ -107,9 +101,8 @@ static ir_node *create_fldcw_ent(ir_node *block, ir_entity *entity)
 	set_ia32_op_type(reload, ia32_AddrModeS);
 	set_ia32_ls_mode(reload, ia32_reg_classes[CLASS_ia32_fp_cw].mode);
 	set_ia32_am_ent(reload, entity);
-	set_ia32_use_frame(reload);
+	set_ia32_frame_use(reload, IA32_FRAME_USE_32BIT);
 	arch_set_irn_register(reload, &ia32_registers[REG_FPCW]);
-	set_32bit_stackent(reload);
 
 	return reload;
 }
@@ -141,8 +134,7 @@ static ir_node *create_fpu_mode_reload(void *env, ir_node *state,
 		reload = new_bd_ia32_FldCW(NULL, block, frame, noreg, spill);
 		set_ia32_op_type(reload, ia32_AddrModeS);
 		set_ia32_ls_mode(reload, ia32_reg_classes[CLASS_ia32_fp_cw].mode);
-		set_ia32_use_frame(reload);
-		set_32bit_stackent(reload);
+		set_ia32_frame_use(reload, IA32_FRAME_USE_32BIT);
 		arch_set_irn_register(reload, &ia32_registers[REG_FPCW]);
 
 		sched_add_before(before, reload);
@@ -158,15 +150,13 @@ static ir_node *create_fpu_mode_reload(void *env, ir_node *state,
 		                             last_state);
 		set_ia32_op_type(cwstore, ia32_AddrModeD);
 		set_ia32_ls_mode(cwstore, lsmode);
-		set_ia32_use_frame(cwstore);
-		set_32bit_stackent(cwstore);
+		set_ia32_frame_use(cwstore, IA32_FRAME_USE_32BIT);
 		sched_add_before(before, cwstore);
 
 		load = new_bd_ia32_Load(NULL, block, frame, noreg, cwstore);
 		set_ia32_op_type(load, ia32_AddrModeS);
 		set_ia32_ls_mode(load, lsmode);
-		set_ia32_use_frame(load);
-		set_32bit_stackent(load);
+		set_ia32_frame_use(load, IA32_FRAME_USE_32BIT);
 		sched_add_before(before, load);
 
 		load_res = new_r_Proj(load, ia32_mode_gp, pn_ia32_Load_res);
@@ -183,16 +173,14 @@ static ir_node *create_fpu_mode_reload(void *env, ir_node *state,
 		set_ia32_op_type(store, ia32_AddrModeD);
 		/* use ia32_mode_gp, as movl has a shorter opcode than movw */
 		set_ia32_ls_mode(store, ia32_mode_gp);
-		set_ia32_use_frame(store);
-		set_32bit_stackent(store);
+		set_ia32_frame_use(store, IA32_FRAME_USE_32BIT);
 		store_proj = new_r_Proj(store, mode_M, pn_ia32_Store_M);
 		sched_add_before(before, store);
 
 		fldcw = new_bd_ia32_FldCW(NULL, block, frame, noreg, store_proj);
 		set_ia32_op_type(fldcw, ia32_AddrModeS);
 		set_ia32_ls_mode(fldcw, lsmode);
-		set_ia32_use_frame(fldcw);
-		set_32bit_stackent(fldcw);
+		set_ia32_frame_use(fldcw, IA32_FRAME_USE_32BIT);
 		arch_set_irn_register(fldcw, &ia32_registers[REG_FPCW]);
 		sched_add_before(before, fldcw);
 
