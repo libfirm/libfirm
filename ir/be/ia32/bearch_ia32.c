@@ -501,7 +501,6 @@ static ir_node *ia32_turn_back_dest_am(ir_node *node)
 	set_ia32_am_ent(node, NULL);
 	set_ia32_am_scale(node, 0);
 	set_ia32_frame_ent(node, NULL);
-	clear_ia32_use_frame(node);
 
 	sched_replace(node, load);
 	sched_add_after(load, new_node);
@@ -549,7 +548,6 @@ ir_node *ia32_turn_back_am(ir_node *node)
 	set_ia32_am_ent(node, NULL);
 	set_ia32_am_scale(node, 0);
 	set_ia32_frame_ent(node, NULL);
-	clear_ia32_use_frame(node);
 
 	/* rewire mem-proj */
 	if (get_irn_mode(node) == mode_T) {
@@ -830,7 +828,6 @@ static ir_node *create_push(ir_node *node, ir_node *schedpoint, ir_node *sp,
 	ir_node *push = new_bd_ia32_Push(dbgi, block, frame, noreg, mem, noreg, sp);
 
 	set_ia32_frame_ent(push, ent);
-	set_ia32_use_frame(push);
 	set_ia32_op_type(push, ia32_AddrModeS);
 	set_ia32_ls_mode(push, mode);
 	set_ia32_is_spill(push);
@@ -850,7 +847,6 @@ static ir_node *create_pop(ir_node *node, ir_node *schedpoint, ir_node *sp,
 	ir_node  *pop   = new_bd_ia32_PopMem(dbgi, block, frame, noreg,
 	                                     get_irg_no_mem(irg), sp);
 	set_ia32_frame_ent(pop, ent);
-	set_ia32_use_frame(pop);
 	set_ia32_op_type(pop, ia32_AddrModeD);
 	set_ia32_ls_mode(pop, mode);
 	set_ia32_is_reload(pop);

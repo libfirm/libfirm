@@ -5178,7 +5178,6 @@ static ir_node *gen_return_address(ir_node *node)
 	set_ia32_ls_mode(load, ia32_mode_gp);
 
 	set_ia32_am_offs_int(load, 0);
-	set_ia32_use_frame(load);
 	set_ia32_frame_ent(load, ia32_get_return_address_entity(irg));
 
 	if (get_irn_pinned(node) == op_pin_state_floats) {
@@ -5218,7 +5217,6 @@ static ir_node *gen_frame_address(ir_node *node)
 	ir_entity *ent = ia32_get_frame_address_entity(irg);
 	if (ent != NULL) {
 		set_ia32_am_offs_int(load, 0);
-		set_ia32_use_frame(load);
 		set_ia32_frame_ent(load, ent);
 	} else {
 		/* will fail anyway, but gcc does this: */
