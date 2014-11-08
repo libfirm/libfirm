@@ -764,7 +764,7 @@ Cmp => {
 	am        => "source,binary",
 	emit      => "cmp%M %B",
 	attr      => "bool ins_permuted",
-	init_attr => "attr->data.ins_permuted   = ins_permuted;",
+	init_attr => "attr->ins_permuted = ins_permuted;",
 	latency   => 1,
 	mode      => $mode_flags,
 	modified_flags => $status_flags
@@ -792,7 +792,7 @@ Test => {
 	am        => "source,binary",
 	emit      => "test%M %B",
 	attr      => "bool ins_permuted",
-	init_attr => "attr->data.ins_permuted = ins_permuted;",
+	init_attr => "attr->ins_permuted = ins_permuted;",
 	latency   => 1,
 	mode      => $mode_flags,
 	modified_flags => $status_flags
@@ -1629,7 +1629,7 @@ Ucomi => {
 	outs      => [ "flags" ],
 	am        => "source,binary",
 	attr      => "bool ins_permuted",
-	init_attr => "attr->data.ins_permuted = ins_permuted;",
+	init_attr => "attr->ins_permuted = ins_permuted;",
 	emit      => "ucomis%FX %B",
 	latency   => 3,
 	mode      => $mode_flags,
@@ -2039,7 +2039,7 @@ FucomFnstsw => {
 	emit      => "fucom%FP %F0\n".
 	             "fnstsw %%ax",
 	attr      => "bool ins_permuted",
-	init_attr => "attr->attr.data.ins_permuted = ins_permuted;",
+	init_attr => "attr->attr.ins_permuted = ins_permuted;",
 	latency   => 3,
 	attr_type => "ia32_x87_attr_t",
 	mode      => $mode_gp
@@ -2055,7 +2055,7 @@ FucomppFnstsw => {
 	emit      => "fucompp\n".
 	             "fnstsw %%ax",
 	attr      => "bool ins_permuted",
-	init_attr => "attr->attr.data.ins_permuted = ins_permuted;",
+	init_attr => "attr->attr.ins_permuted = ins_permuted;",
 	latency   => 3,
 	attr_type => "ia32_x87_attr_t",
 	mode      => $mode_gp
@@ -2068,7 +2068,7 @@ Fucomi => {
 	outs      => [ "flags" ],
 	emit      => "fucom%FPi %F0",
 	attr      => "bool ins_permuted",
-	init_attr => "attr->attr.data.ins_permuted = ins_permuted;",
+	init_attr => "attr->attr.ins_permuted = ins_permuted;",
 	latency   => 3,
 	attr_type => "ia32_x87_attr_t",
 	mode      => $mode_gp
@@ -2082,7 +2082,7 @@ FtstFnstsw => {
 	emit      => "ftst\n".
 	             "fnstsw %%ax",
 	attr      => "bool ins_permuted",
-	init_attr => "attr->attr.data.ins_permuted = ins_permuted;",
+	init_attr => "attr->attr.ins_permuted = ins_permuted;",
 	latency   => 3,
 	attr_type => "ia32_x87_attr_t",
 	mode      => $mode_gp

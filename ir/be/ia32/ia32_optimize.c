@@ -140,7 +140,7 @@ static void peephole_ia32_Cmp(ir_node *const node)
 	ir_node  *const noreg        = ia32_new_NoReg_gp(irg);
 	ir_node  *const nomem        = get_irg_no_mem(irg);
 	ir_node  *const op           = get_irn_n(node, n_ia32_Cmp_left);
-	int       const ins_permuted = get_ia32_attr(node)->data.ins_permuted;
+	int       const ins_permuted = get_ia32_attr(node)->ins_permuted;
 
 	ir_mode *const ls_mode = get_ia32_ls_mode(node);
 	ir_node *const test    = get_mode_size_bits(ls_mode) == 8
@@ -764,7 +764,7 @@ static ir_node *create_immediate_from_am(const ir_node *node)
 	ir_node           *block            = get_nodes_block(node);
 	int                offset           = get_ia32_am_offs_int(node);
 	const ia32_attr_t *attr             = get_ia32_attr_const(node);
-	int                sc_no_pic_adjust = attr->data.am_sc_no_pic_adjust;
+	int                sc_no_pic_adjust = attr->am_sc_no_pic_adjust;
 	ir_entity         *entity           = get_ia32_am_ent(node);
 
 	ir_node *res = new_bd_ia32_Immediate(NULL, block, entity, sc_no_pic_adjust, offset);

@@ -369,7 +369,7 @@ static void ia32_emit_am(ir_node const *const node)
 	/* emit offset */
 	if (ent != NULL) {
 		const ia32_attr_t *attr = get_ia32_attr_const(node);
-		ia32_emit_entity(ent, attr->data.am_sc_no_pic_adjust);
+		ia32_emit_entity(ent, attr->am_sc_no_pic_adjust);
 	}
 
 	/* also handle special case if nothing is set */
@@ -552,7 +552,7 @@ destination_operand:
 					 * This means that it is sufficient to test whether the operands are
 					 * permuted.  In particular it is not necessary to consider wether the
 					 * result is to be placed into the explicit register operand. */
-					if (get_ia32_x87_attr_const(node)->attr.data.ins_permuted)
+					if (get_ia32_x87_attr_const(node)->attr.ins_permuted)
 						be_emit_char('r');
 				} else if (*fmt == 'X') {
 					ia32_emit_xmm_mode_suffix(node);
@@ -765,7 +765,7 @@ static x86_condition_code_t determine_final_cc(const ir_node *node,
 		flags_attr = get_ia32_attr_const(flags);
 	}
 
-	if (flags_attr->data.ins_permuted)
+	if (flags_attr->ins_permuted)
 		cc = x86_invert_condition_code(cc);
 	return cc;
 }
@@ -889,7 +889,7 @@ static void emit_ia32_CMovcc(const ir_node *node)
 	 * be set by memory operand folding
 	 * Permuting inputs of a cmov means the condition is negated!
 	 */
-	if (attr->data.ins_permuted)
+	if (attr->ins_permuted)
 		cc = x86_negate_condition_code(cc);
 
 	const arch_register_t *in_true
@@ -2359,7 +2359,7 @@ static void bemit_bt(ir_node const *const node)
 static void bemit_cmovcc(const ir_node *node)
 {
 	const ia32_attr_t     *attr         = get_ia32_attr_const(node);
-	int                    ins_permuted = attr->data.ins_permuted;
+	int                    ins_permuted = attr->ins_permuted;
 	const arch_register_t *out          = arch_get_irn_register_out(node, pn_ia32_res);
 	x86_condition_code_t   cc           = get_ia32_condcode(node);
 	cc = determine_final_cc(node, n_ia32_CMovcc_eflags, cc);
@@ -2973,7 +2973,7 @@ static void bemit_copybi(const ir_node *node)
 static void bemit_fbinop(ir_node const *const node, unsigned const op_fwd, unsigned const op_rev)
 {
 	ia32_x87_attr_t const *const attr = get_ia32_x87_attr_const(node);
-	unsigned               const op   = attr->attr.data.ins_permuted ? op_rev : op_fwd;
+	unsigned               const op   = attr->attr.ins_permuted ? op_rev : op_fwd;
 	if (get_ia32_op_type(node) == ia32_Normal) {
 		assert(!attr->pop || attr->res_in_reg);
 

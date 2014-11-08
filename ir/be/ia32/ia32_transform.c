@@ -1134,7 +1134,7 @@ static ir_node *gen_binop_x87_float(ir_node *node, ir_node *op1, ir_node *op2,
 	set_am_attributes(new_node, &am);
 
 	ia32_x87_attr_t *attr = get_ia32_x87_attr(new_node);
-	attr->attr.data.ins_permuted = am.ins_permuted;
+	attr->attr.ins_permuted = am.ins_permuted;
 
 	SET_IA32_ORIG_NODE(new_node, node);
 
@@ -2875,7 +2875,7 @@ static ir_node *gen_Switch(ir_node *node)
 	set_ia32_ls_mode(new_node, ia32_mode_gp);
 	SET_IA32_ORIG_NODE(new_node, node);
 	// FIXME This seems wrong. GCC uses PIC for switch on OS X.
-	get_ia32_attr(new_node)->data.am_sc_no_pic_adjust = true;
+	get_ia32_attr(new_node)->am_sc_no_pic_adjust = true;
 
 	return new_node;
 }
@@ -3699,10 +3699,10 @@ static void force_int_stackent(ir_node *node, ir_mode *mode)
 {
 	ia32_attr_t *attr = get_ia32_attr(node);
 	if (get_mode_size_bits(mode) == 64) {
-		attr->data.need_64bit_stackent = true;
+		attr->need_64bit_stackent = true;
 	} else {
 		assert(get_mode_size_bits(mode) == 32);
-		attr->data.need_32bit_stackent = true;
+		attr->need_32bit_stackent = true;
 	}
 }
 
@@ -3842,7 +3842,7 @@ static void store_gp(dbg_info *dbgi, ia32_address_mode_t *am, ir_node *block,
 		set_ia32_ls_mode(zero_store, ia32_mode_gp);
 		arch_add_irn_flags(zero_store, arch_irn_flag_spill);
 		ia32_attr_t *zero_store_attr = get_ia32_attr(zero_store);
-		zero_store_attr->data.need_64bit_stackent = true;
+		zero_store_attr->need_64bit_stackent = true;
 
 		in[0] = zero_store_mem;
 		in[1] = store_mem;

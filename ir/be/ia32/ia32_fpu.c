@@ -95,7 +95,7 @@ static ir_node *create_fpu_mode_spill(void *env, ir_node *state, bool force,
 static void set_32bit_stackent(ir_node *node)
 {
 	ia32_attr_t *attr = get_ia32_attr(node);
-	attr->data.need_32bit_stackent = true;
+	attr->need_32bit_stackent = true;
 }
 
 static ir_node *create_fldcw_ent(ir_node *block, ir_entity *entity)

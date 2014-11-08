@@ -709,8 +709,8 @@ static void sim_binop(x87_state *const state, ir_node *const n)
 				x87_create_fxch(state, n, op1_idx);
 		}
 
-		op1_idx = attr->attr.data.ins_permuted ? -1 :  0;
-		op2_idx = attr->attr.data.ins_permuted ?  0 : (unsigned)-1;
+		op1_idx = attr->attr.ins_permuted ? -1 :  0;
+		op2_idx = attr->attr.ins_permuted ?  0 : (unsigned)-1;
 		out_idx = 0;
 	}
 	assert(op1_idx == 0       || op2_idx == 0);
@@ -722,10 +722,10 @@ static void sim_binop(x87_state *const state, ir_node *const n)
 
 	/* patch the operation */
 	unsigned const reg_idx = op1_idx != 0 ? op1_idx : op2_idx;
-	attr->reg                    = reg_idx != (unsigned)-1 ? get_st_reg(reg_idx) : NULL;
-	attr->attr.data.ins_permuted = op1_idx != 0;
-	attr->res_in_reg             = out_idx != 0;
-	attr->pop                    = pop;
+	attr->reg               = reg_idx != (unsigned)-1 ? get_st_reg(reg_idx) : NULL;
+	attr->attr.ins_permuted = op1_idx != 0;
+	attr->res_in_reg        = out_idx != 0;
+	attr->pop               = pop;
 
 	DEBUG_ONLY(
 		char const *const l = op1_idx != (unsigned)-1 ? get_st_reg(op1_idx)->name : "[AM]";
@@ -1038,8 +1038,8 @@ static void sim_Fucom(x87_state *state, ir_node *n)
 		if (!is_fp_live(reg_index_1, live))
 			pops = 1;
 
-		op1_idx = attr->attr.data.ins_permuted ? (unsigned)-1 :            0;
-		op2_idx = attr->attr.data.ins_permuted ?            0 : (unsigned)-1;
+		op1_idx = attr->attr.ins_permuted ? (unsigned)-1 :            0;
+		op2_idx = attr->attr.ins_permuted ?            0 : (unsigned)-1;
 	}
 	assert(op1_idx == 0 || op2_idx == 0);
 
@@ -1058,9 +1058,9 @@ static void sim_Fucom(x87_state *state, ir_node *n)
 	}
 
 	unsigned const reg_idx = op1_idx != 0 ? op1_idx : op2_idx;
-	attr->reg                    = reg_idx != (unsigned)-1 ? get_st_reg(reg_idx) : NULL;
-	attr->attr.data.ins_permuted = op1_idx != 0;
-	attr->pop                    = pops != 0;
+	attr->reg               = reg_idx != (unsigned)-1 ? get_st_reg(reg_idx) : NULL;
+	attr->attr.ins_permuted = op1_idx != 0;
+	attr->pop               = pops != 0;
 
 	DEBUG_ONLY(
 		char const *const l = op1_idx != (unsigned)-1 ? get_st_reg(op1_idx)->name : "[AM]";

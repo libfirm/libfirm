@@ -84,27 +84,25 @@ typedef enum {
 typedef struct ia32_attr_t ia32_attr_t;
 struct ia32_attr_t {
 	except_attr  exc;               /**< the exception attribute. MUST be the first one. */
-	struct ia32_attr_data_bitfield {
-		unsigned tp:3;                  /**< ia32 node type. */
-		unsigned am_arity:2;            /**< Indicates the address mode type supported by this node. */
-		unsigned am_scale:2;            /**< The address mode scale for index register. */
 
-		unsigned am_sc_no_pic_adjust : 1;/**< AM entity can be relative to EIP */
-		unsigned am_tls_segment:1;       /**< addresses are relative to TLS */
-		unsigned use_frame:1;           /**< Indicates whether the operation uses the frame pointer or not. */
-		unsigned has_except_label:1;        /**< Set if this node needs a label because of possible exception. */
+	unsigned tp:3;                  /**< ia32 node type. */
+	unsigned am_arity:2;            /**< Indicates the address mode type supported by this node. */
+	unsigned am_scale:2;            /**< The address mode scale for index register. */
 
-		unsigned is_commutative:1;      /**< Indicates whether op is commutative or not. */
+	unsigned am_sc_no_pic_adjust:1; /**< AM entity can be relative to EIP */
+	unsigned am_tls_segment:1;      /**< addresses are relative to TLS */
+	unsigned use_frame:1;           /**< Indicates whether the operation uses the frame pointer or not. */
+	unsigned has_except_label:1;        /**< Set if this node needs a label because of possible exception. */
 
-		unsigned need_stackent:1;       /**< Set to 1 if node need space on stack. */
-		unsigned need_64bit_stackent:1; /**< needs a 64bit stack entity (see double->unsigned int conv) */
-		unsigned need_32bit_stackent:1; /**< needs a 32bit stack entity */
-		unsigned ins_permuted : 1;      /**< inputs of node have been permuted
-		                                     (for commutative nodes) */
-		unsigned is_reload : 1;         /**< node performs a reload */
-		unsigned is_spill : 1;
-		unsigned is_remat : 1;
-	} data;
+	unsigned is_commutative:1;      /**< Indicates whether op is commutative or not. */
+
+	unsigned need_stackent:1;       /**< Set to 1 if node need space on stack. */
+	unsigned need_64bit_stackent:1; /**< needs a 64bit stack entity (see double->unsigned int conv) */
+	unsigned need_32bit_stackent:1; /**< needs a 32bit stack entity */
+	unsigned ins_permuted:1;        /**< inputs of node have been permuted (for commutative nodes) */
+	unsigned is_reload:1;           /**< node performs a reload */
+	unsigned is_spill:1;
+	unsigned is_remat:1;
 
 	int32_t    am_offs;       /**< offsets for AddrMode */
 	ir_entity *am_ent;        /**< entity for AddrMode */

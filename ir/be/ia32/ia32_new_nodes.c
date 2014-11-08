@@ -123,7 +123,7 @@ static void ia32_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 
 					if (attr->am_ent != NULL) {
 						fputs(get_entity_name(attr->am_ent), F);
-						if (attr->data.am_sc_no_pic_adjust) {
+						if (attr->am_sc_no_pic_adjust) {
 							fputs("(no_pic_adjust)", F);
 						}
 					}
@@ -213,7 +213,7 @@ static void ia32_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 					fprintf(F, "condition_code = <invalid (0x%X)>\n",
 					        (unsigned)get_ia32_condcode(n));
 				}
-				fprintf(F, "ins_permuted = %u\n", (unsigned)attr->data.ins_permuted);
+				fprintf(F, "ins_permuted = %u\n", (unsigned)attr->ins_permuted);
 			} else if (is_ia32_CopyB(n) || is_ia32_CopyB_i(n)) {
 				fprintf(F, "size = %u\n", get_ia32_copyb_size(n));
 			}
@@ -404,7 +404,7 @@ const ia32_climbframe_attr_t *get_ia32_climbframe_attr_const(const ir_node *node
 ia32_op_type_t get_ia32_op_type(const ir_node *node)
 {
 	const ia32_attr_t *attr = get_ia32_attr_const(node);
-	return (ia32_op_type_t)attr->data.tp;
+	return (ia32_op_type_t)attr->tp;
 }
 
 /**
@@ -413,13 +413,13 @@ ia32_op_type_t get_ia32_op_type(const ir_node *node)
 void set_ia32_op_type(ir_node *node, ia32_op_type_t tp)
 {
 	ia32_attr_t *attr = get_ia32_attr(node);
-	attr->data.tp     = tp;
+	attr->tp = tp;
 }
 
 ia32_am_type_t get_ia32_am_support(const ir_node *node)
 {
 	const ia32_attr_t *attr = get_ia32_attr_const(node);
-	return (ia32_am_type_t)attr->data.am_arity;
+	return (ia32_am_type_t)attr->am_arity;
 }
 
 /**
@@ -427,8 +427,8 @@ ia32_am_type_t get_ia32_am_support(const ir_node *node)
  */
 void set_ia32_am_support(ir_node *node, ia32_am_type_t arity)
 {
-	ia32_attr_t *attr   = get_ia32_attr(node);
-	attr->data.am_arity = arity;
+	ia32_attr_t *const attr = get_ia32_attr(node);
+	attr->am_arity = arity;
 }
 
 /**
@@ -470,13 +470,13 @@ void set_ia32_am_ent(ir_node *node, ir_entity *entity)
 void set_ia32_am_tls_segment(ir_node *node, bool value)
 {
 	ia32_attr_t *attr = get_ia32_attr(node);
-	attr->data.am_tls_segment = value;
+	attr->am_tls_segment = value;
 }
 
 bool get_ia32_am_tls_segment(const ir_node *node)
 {
 	const ia32_attr_t *attr = get_ia32_attr_const(node);
-	return attr->data.am_tls_segment;
+	return attr->am_tls_segment;
 }
 
 /**
@@ -485,7 +485,7 @@ bool get_ia32_am_tls_segment(const ir_node *node)
 unsigned get_ia32_am_scale(const ir_node *node)
 {
 	const ia32_attr_t *attr = get_ia32_attr_const(node);
-	return attr->data.am_scale;
+	return attr->am_scale;
 }
 
 /**
@@ -495,7 +495,7 @@ void set_ia32_am_scale(ir_node *node, unsigned scale)
 {
 	ia32_attr_t *attr = get_ia32_attr(node);
 	assert(scale <= 3 && "AM scale out of range [0 ... 3]");
-	attr->data.am_scale = scale;
+	attr->am_scale = scale;
 }
 
 void ia32_copy_am_attrs(ir_node *to, const ir_node *from)
@@ -514,8 +514,8 @@ void ia32_copy_am_attrs(ir_node *to, const ir_node *from)
  */
 void set_ia32_use_frame(ir_node *node)
 {
-	ia32_attr_t *attr    = get_ia32_attr(node);
-	attr->data.use_frame = 1;
+	ia32_attr_t *const attr = get_ia32_attr(node);
+	attr->use_frame = 1;
 }
 
 /**
@@ -523,8 +523,8 @@ void set_ia32_use_frame(ir_node *node)
  */
 void clear_ia32_use_frame(ir_node *node)
 {
-	ia32_attr_t *attr    = get_ia32_attr(node);
-	attr->data.use_frame = 0;
+	ia32_attr_t *const attr = get_ia32_attr(node);
+	attr->use_frame = 0;
 }
 
 /**
@@ -533,7 +533,7 @@ void clear_ia32_use_frame(ir_node *node)
 int is_ia32_use_frame(const ir_node *node)
 {
 	const ia32_attr_t *attr = get_ia32_attr_const(node);
-	return attr->data.use_frame;
+	return attr->use_frame;
 }
 
 /**
@@ -541,8 +541,8 @@ int is_ia32_use_frame(const ir_node *node)
  */
 void set_ia32_commutative(ir_node *node)
 {
-	ia32_attr_t *attr         = get_ia32_attr(node);
-	attr->data.is_commutative = 1;
+	ia32_attr_t *const attr = get_ia32_attr(node);
+	attr->is_commutative = 1;
 }
 
 /**
@@ -550,8 +550,8 @@ void set_ia32_commutative(ir_node *node)
  */
 void clear_ia32_commutative(ir_node *node)
 {
-	ia32_attr_t *attr         = get_ia32_attr(node);
-	attr->data.is_commutative = 0;
+	ia32_attr_t *const attr = get_ia32_attr(node);
+	attr->is_commutative = 0;
 }
 
 /**
@@ -560,61 +560,61 @@ void clear_ia32_commutative(ir_node *node)
 int is_ia32_commutative(const ir_node *node)
 {
 	const ia32_attr_t *attr = get_ia32_attr_const(node);
-	return attr->data.is_commutative;
+	return attr->is_commutative;
 }
 
 void set_ia32_need_stackent(ir_node *node)
 {
-	ia32_attr_t *attr     = get_ia32_attr(node);
-	attr->data.need_stackent = 1;
+	ia32_attr_t *const attr = get_ia32_attr(node);
+	attr->need_stackent = 1;
 }
 
 void clear_ia32_need_stackent(ir_node *node)
 {
-	ia32_attr_t *attr     = get_ia32_attr(node);
-	attr->data.need_stackent = 0;
+	ia32_attr_t *const attr = get_ia32_attr(node);
+	attr->need_stackent = 0;
 }
 
 int is_ia32_need_stackent(const ir_node *node)
 {
 	const ia32_attr_t *attr = get_ia32_attr_const(node);
-	return attr->data.need_stackent;
+	return attr->need_stackent;
 }
 
 void set_ia32_is_reload(ir_node *node)
 {
 	ia32_attr_t *attr = get_ia32_attr(node);
-	attr->data.is_reload = 1;
+	attr->is_reload = 1;
 }
 
 int is_ia32_is_reload(const ir_node *node)
 {
 	const ia32_attr_t *attr = get_ia32_attr_const(node);
-	return attr->data.is_reload;
+	return attr->is_reload;
 }
 
 void set_ia32_is_spill(ir_node *node)
 {
 	ia32_attr_t *attr = get_ia32_attr(node);
-	attr->data.is_spill = 1;
+	attr->is_spill = 1;
 }
 
 int is_ia32_is_spill(const ir_node *node)
 {
 	const ia32_attr_t *attr = get_ia32_attr_const(node);
-	return attr->data.is_spill;
+	return attr->is_spill;
 }
 
 void set_ia32_is_remat(ir_node *node)
 {
 	ia32_attr_t *attr = get_ia32_attr(node);
-	attr->data.is_remat = 1;
+	attr->is_remat = 1;
 }
 
 int is_ia32_is_remat(const ir_node *node)
 {
 	const ia32_attr_t *attr = get_ia32_attr_const(node);
-	return attr->data.is_remat;
+	return attr->is_remat;
 }
 
 /**
@@ -705,7 +705,7 @@ unsigned get_ia32_copyb_size(const ir_node *node)
 unsigned get_ia32_exc_label(const ir_node *node)
 {
 	const ia32_attr_t *attr = get_ia32_attr_const(node);
-	return attr->data.has_except_label;
+	return attr->has_except_label;
 }
 
 /**
@@ -714,7 +714,7 @@ unsigned get_ia32_exc_label(const ir_node *node)
 void set_ia32_exc_label(ir_node *node, unsigned flag)
 {
 	ia32_attr_t *attr = get_ia32_attr(node);
-	attr->data.has_except_label = flag;
+	attr->has_except_label = flag;
 }
 
 /**
@@ -724,7 +724,7 @@ ir_label_t get_ia32_exc_label_id(const ir_node *node)
 {
 	const ia32_attr_t *attr = get_ia32_attr_const(node);
 
-	assert(attr->data.has_except_label);
+	assert(attr->has_except_label);
 	return attr->exc_label;
 }
 
@@ -735,7 +735,7 @@ void set_ia32_exc_label_id(ir_node *node, ir_label_t id)
 {
 	ia32_attr_t *attr = get_ia32_attr(node);
 
-	assert(attr->data.has_except_label);
+	assert(attr->has_except_label);
 	attr->exc_label = id;
 }
 
@@ -770,7 +770,7 @@ void ia32_swap_left_right(ir_node *node)
 	ir_node     *right = get_irn_n(node, n_ia32_binary_right);
 
 	assert(is_ia32_commutative(node));
-	attr->data.ins_permuted = !attr->data.ins_permuted;
+	attr->ins_permuted = !attr->ins_permuted;
 	set_irn_n(node, n_ia32_binary_left,  right);
 	set_irn_n(node, n_ia32_binary_right, left);
 }
@@ -902,19 +902,19 @@ static int ia32_attrs_equal_(const ia32_attr_t *a, const ia32_attr_t *b)
 {
 	/* nodes with not yet assigned entities shouldn't be CSEd (important for
 	 * unsigned int -> double conversions */
-	if (a->data.use_frame && a->frame_ent == NULL)
+	if (a->use_frame && a->frame_ent == NULL)
 		return false;
 
-	return a->data.tp == b->data.tp
-	    && a->data.am_scale == b->data.am_scale
+	return a->tp == b->tp
+	    && a->am_scale == b->am_scale
 	    && a->am_offs == b->am_offs
 	    && a->am_ent == b->am_ent
-	    && a->data.am_sc_no_pic_adjust == b->data.am_sc_no_pic_adjust
+	    && a->am_sc_no_pic_adjust == b->am_sc_no_pic_adjust
 	    && a->ls_mode == b->ls_mode
-	    && a->data.use_frame == b->data.use_frame
+	    && a->use_frame == b->use_frame
 	    && a->frame_ent == b->frame_ent
-	    && a->data.has_except_label == b->data.has_except_label
-	    && a->data.ins_permuted == b->data.ins_permuted;
+	    && a->has_except_label == b->has_except_label
+	    && a->ins_permuted == b->ins_permuted;
 }
 
 /** Compare nodes attributes for all "normal" nodes. */

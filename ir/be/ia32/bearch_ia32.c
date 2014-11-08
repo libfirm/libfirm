@@ -161,8 +161,7 @@ static void ia32_set_frame_entity(ir_node *node, ir_entity *entity,
 	ia32_attr_t *attr = get_ia32_attr(node);
 	/* set ls_mode based on entity unless we explicitely requested
 	 * a certain mode */
-	if (attr->data.need_32bit_stackent || attr->data.need_64bit_stackent
-	    || is_ia32_Conv_I2I(node))
+	if (attr->need_32bit_stackent || attr->need_64bit_stackent || is_ia32_Conv_I2I(node))
 		return;
 	ir_mode *mode = get_type_mode(type);
 	/** we 8bit stores have a special register requirement, so we can't simply
@@ -1012,9 +1011,9 @@ static void ia32_collect_frame_entity_nodes(ir_node *node, void *data)
 
 	const ia32_attr_t *attr = get_ia32_attr_const(node);
 	const ir_type     *type;
-	if (attr->data.need_32bit_stackent) {
+	if (attr->need_32bit_stackent) {
 		type = get_type_for_mode(ia32_mode_gp);
-	} else if (attr->data.need_64bit_stackent) {
+	} else if (attr->need_64bit_stackent) {
 		type = get_type_for_mode(mode_Ls);
 	} else {
 		ir_mode *mode = get_ia32_ls_mode(node);
