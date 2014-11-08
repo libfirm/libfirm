@@ -3849,7 +3849,6 @@ static void store_gp(dbg_info *dbgi, ia32_address_mode_t *am, ir_node *block,
 
 		store_mem  = new_rd_Sync(dbgi, new_block, 2, in);
 		store_mode = mode_Ls;
-		force_int_stackent(zero_store, store_mode);
 	} else {
 		store_mode = ia32_mode_gp;
 	}
