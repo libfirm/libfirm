@@ -763,166 +763,99 @@ static ir_node *create_immediate_from_am(const ir_node *node)
 	return res;
 }
 
-static int is_am_one(const ir_node *node)
+static bool is_disp_const(ir_node const *const node, int32_t const val)
 {
-	int        offset  = get_ia32_am_offs_int(node);
-	ir_entity *entity  = get_ia32_am_ent(node);
-
-	return offset == 1 && entity == NULL;
-}
-
-static int is_am_minus_one(const ir_node *node)
-{
-	int        offset  = get_ia32_am_offs_int(node);
-	ir_entity *entity  = get_ia32_am_ent(node);
-
-	return offset == -1 && entity == NULL;
+	return !get_ia32_am_ent(node) && get_ia32_am_offs_int(node) == val;
 }
 
 /**
- * Transforms a LEA into an Add or SHL if possible.
+ * Transforms a Lea into an Add or Shl if possible.
  */
 static void peephole_ia32_Lea(ir_node *node)
 {
 	assert(is_ia32_Lea(node));
 
-	/* we can only do this if it is allowed to clobber the flags */
-	if (be_peephole_get_value(REG_EFLAGS) != NULL)
+	/* We can only do this if it is allowed to clobber the flags. */
+	if (be_peephole_get_value(REG_EFLAGS))
 		return;
 
-	ir_node *base  = get_irn_n(node, n_ia32_Lea_base);
-	ir_node *index = get_irn_n(node, n_ia32_Lea_index);
-	const arch_register_t *base_reg;
-	const arch_register_t *index_reg;
-
-	if (is_noreg(base)) {
-		base     = NULL;
-		base_reg = NULL;
-	} else {
-		base_reg = arch_get_irn_register(base);
-	}
-	if (is_noreg(index)) {
-		index     = NULL;
-		index_reg = NULL;
-	} else {
-		index_reg = arch_get_irn_register(index);
-	}
-
-	if (base == NULL && index == NULL) {
-		/* we shouldn't construct these in the first place... */
-#ifdef DEBUG_libfirm
-		ir_fprintf(stderr, "Optimization warning: found immediate only lea\n");
-#endif
-		return;
-	}
-
-	const arch_register_t *out_reg        = arch_get_irn_register(node);
-	int                    scale          = get_ia32_am_scale(node);
-	int                    has_immediates;
-	ir_node               *op1;
-	ir_node               *op2;
+	/* Frame entities should already be expressed in the offsets. */
 	assert(get_ia32_frame_use(node) == IA32_FRAME_USE_NONE || get_ia32_frame_ent(node));
-	/* check if we have immediates values (frame entities should already be
-	 * expressed in the offsets) */
-	if (get_ia32_am_offs_int(node) != 0 || get_ia32_am_ent(node) != NULL) {
-		has_immediates = 1;
+
+	/* We can transform Leas where the out register is the same as either the
+	 * base or index register back to an Add or Shl. */
+	ir_node                     *op1;
+	ir_node                     *op2;
+	ir_node               *const base    = get_irn_n(node, n_ia32_Lea_base);
+	ir_node               *const index   = get_irn_n(node, n_ia32_Lea_index);
+	arch_register_t const *const out_reg = arch_get_irn_register(node);
+	if (out_reg == arch_get_irn_register(base)) {
+		op1 = base;
+		op2 = index;
+	} else if (out_reg == arch_get_irn_register(index)) {
+		op1 = index;
+		op2 = base;
 	} else {
-		has_immediates = 0;
+#ifdef DEBUG_libfirm
+		/* We shouldn't construct these in the first place. */
+		if (is_noreg(base) && is_noreg(index))
+			ir_fprintf(stderr, "Optimization warning: found Lea which is a Const\n");
+#endif
+		return; /* Neither base nor index use the same register as the Lea. */
 	}
 
-	/* we can transform leas where the out register is the same as either the
-	 * base or index register back to an Add or Shl */
-	if (out_reg == base_reg) {
-		if (index == NULL) {
+	ir_node       *res;
+	bool     const has_2ops = !is_noreg(op2);
+	bool     const has_disp = !is_disp_const(node, 0);
+	unsigned const scale    = get_ia32_am_scale(node);
+	if (scale == 0) {
+		if (!has_2ops) {
+			/* Lea base/index + disp -> Add+Imm. */
 #ifdef DEBUG_libfirm
-			if (!has_immediates) {
-				ir_fprintf(stderr, "Optimization warning: found lea which is "
-				           "just a copy\n");
-			}
+			if (!has_disp)
+				ir_fprintf(stderr, "Optimization warning: found Lea which is a Nop\n");
 #endif
-			op1 = base;
-			goto make_add_immediate;
-		}
-		if (scale == 0 && !has_immediates) {
-			op1 = base;
-			op2 = index;
-			goto make_add;
-		}
-		/* can't create an add */
-		return;
-	} else if (out_reg == index_reg) {
-		if (base == NULL) {
-			if (has_immediates && scale == 0) {
-				op1 = index;
-				goto make_add_immediate;
-			} else if (!has_immediates && scale > 0) {
-				ir_graph *const irg = get_irn_irg(node);
-				op1 = index;
-				op2 = ia32_immediate_from_long(irg, scale);
-				goto make_shl;
-			} else if (!has_immediates) {
-#ifdef DEBUG_libfirm
-				ir_fprintf(stderr, "Optimization warning: found lea which is "
-				           "just a copy\n");
-#endif
+			if (ia32_cg_config.use_incdec) {
+				if (is_disp_const(node, 1)) {
+					dbg_info *const dbgi  = get_irn_dbg_info(node);
+					ir_node  *const block = get_nodes_block(node);
+					res = new_bd_ia32_Inc(dbgi, block, op1);
+					goto exchange;
+				} else if (is_disp_const(node, -1)) {
+					dbg_info *const dbgi  = get_irn_dbg_info(node);
+					ir_node  *const block = get_nodes_block(node);
+					res = new_bd_ia32_Dec(dbgi, block, op1);
+					goto exchange;
+				}
 			}
-		} else if (scale == 0 && !has_immediates) {
-			op1 = index;
-			op2 = base;
-			goto make_add;
+			op2 = create_immediate_from_am(node);
+		} else if (has_disp) {
+			return; /* Lea has base, index and displacement. */
 		}
-		/* can't create an add */
-		return;
+		/* Lea base + index, base/index + disp -> Add. */
+		dbg_info *const dbgi  = get_irn_dbg_info(node);
+		ir_node  *const block = get_nodes_block(node);
+		ir_graph *const irg   = get_irn_irg(node);
+		ir_node  *const noreg = ia32_new_NoReg_gp(irg);
+		ir_node  *const nomem = get_irg_no_mem(irg);
+		res = new_bd_ia32_Add(dbgi, block, noreg, noreg, nomem, op1, op2);
+		set_ia32_commutative(res);
+	} else if (!has_2ops && !has_disp) {
+		/* Lea index * scale -> Shl+Imm. */
+		assert(op1 == index);
+		dbg_info *const dbgi  = get_irn_dbg_info(node);
+		ir_node  *const block = get_nodes_block(node);
+		ir_graph *const irg   = get_irn_irg(node);
+		ir_node  *const amt   = ia32_immediate_from_long(irg, scale);
+		res = new_bd_ia32_Shl(dbgi, block, op1, amt);
 	} else {
-		/* can't create an add */
-		return;
+		return; /* Lea has scaled index as well as base and/or displacement. */
 	}
-
-	dbg_info *dbgi;
-	ir_node  *block;
-	ir_node  *res;
-
-make_add_immediate:
-	if (ia32_cg_config.use_incdec) {
-		if (is_am_one(node)) {
-			dbgi  = get_irn_dbg_info(node);
-			block = get_nodes_block(node);
-			res   = new_bd_ia32_Inc(dbgi, block, op1);
-			arch_set_irn_register(res, out_reg);
-			goto exchange;
-		}
-		if (is_am_minus_one(node)) {
-			dbgi  = get_irn_dbg_info(node);
-			block = get_nodes_block(node);
-			res   = new_bd_ia32_Dec(dbgi, block, op1);
-			arch_set_irn_register(res, out_reg);
-			goto exchange;
-		}
-	}
-	op2 = create_immediate_from_am(node);
-
-make_add:
-	dbgi  = get_irn_dbg_info(node);
-	block = get_nodes_block(node);
-	ir_graph *irg   = get_irn_irg(node);
-	ir_node  *noreg = ia32_new_NoReg_gp(irg);
-	ir_node  *nomem = get_irg_no_mem(irg);
-	res   = new_bd_ia32_Add(dbgi, block, noreg, noreg, nomem, op1, op2);
-	arch_set_irn_register(res, out_reg);
-	set_ia32_commutative(res);
-	goto exchange;
-
-make_shl:
-	dbgi  = get_irn_dbg_info(node);
-	block = get_nodes_block(node);
-	res   = new_bd_ia32_Shl(dbgi, block, op1, op2);
-	arch_set_irn_register(res, out_reg);
-	goto exchange;
 
 exchange:
+	/* Replace the Lea by Add/Shl. */
+	arch_set_irn_register(res, out_reg);
 	SET_IA32_ORIG_NODE(res, node);
-
-	/* exchange the Add and the LEA */
 	sched_add_before(node, res);
 	copy_mark(node, res);
 	be_peephole_exchange(node, res);
