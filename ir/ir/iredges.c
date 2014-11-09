@@ -156,18 +156,6 @@ void edges_init_graph_kind(ir_graph *irg, ir_edge_kind_t kind)
 }
 
 /**
- * Change the out count
- *
- * @param tgt  the edge target
- * @param kind the kind of the edge
- */
-static inline void edge_change_cnt(ir_node *tgt, ir_edge_kind_t kind, int ofs)
-{
-	irn_edge_info_t *info = get_irn_edge_info(tgt, kind);
-	info->out_count += ofs;
-}
-
-/**
  * Verify the edge list of a node, i.e. ensure it's a loop:
  * head -> e_1 -> ... -> e_n -> head
  */
@@ -218,7 +206,8 @@ static void add_edge(ir_node *src, int pos, ir_node *tgt, ir_edge_kind_t kind,
 	irg_edge_info_t *info  = get_irg_edge_info(irg, kind);
 	ir_edgeset_t    *edges = &info->edges;
 
-	struct list_head *head = &get_irn_edge_info(tgt, kind)->outs_head;
+	irn_edge_info_t  *tgt_info = get_irn_edge_info(tgt, kind);
+	struct list_head *head     = &tgt_info->outs_head;
 	assert(head->next && head->prev &&
 		   "target list head must have been initialized");
 
@@ -231,18 +220,17 @@ static void add_edge(ir_node *src, int pos, ir_node *tgt, ir_edge_kind_t kind,
 		list_del(&edge->list);
 	}
 
-	edge->src       = src;
-	edge->pos       = pos;
+	edge->src     = src;
+	edge->pos     = pos;
 #ifdef DEBUG_libfirm
-	edge->present   = false;
+	edge->present = false;
 #endif
 
 	ir_edge_t *new_edge = ir_edgeset_insert(edges, edge);
 	assert(new_edge == edge);
 
 	list_add(&new_edge->list, head);
-
-	edge_change_cnt(tgt, kind, +1);
+	tgt_info->out_count += 1;
 }
 
 static void delete_edge(ir_node *src, int pos, ir_node *old_tgt,
@@ -272,7 +260,8 @@ static void delete_edge(ir_node *src, int pos, ir_node *old_tgt,
 	list_add(&edge->list, &info->free_edges);
 	edge->pos = -2;
 	edge->src = NULL;
-	edge_change_cnt(old_tgt, kind, -1);
+	irn_edge_info_t *old_tgt_info = get_irn_edge_info(old_tgt, kind);
+	old_tgt_info->out_count -= 1;
 }
 
 void edges_notify_edge_kind(ir_node *src, int pos, ir_node *tgt,
@@ -295,14 +284,12 @@ void edges_notify_edge_kind(ir_node *src, int pos, ir_node *tgt,
 	irg_edge_info_t *info  = get_irg_edge_info(irg, kind);
 	ir_edgeset_t    *edges = &info->edges;
 
-	/*
-	 * The target is not NULL and the old target differs
+	/* The target is not NULL and the old target differs
 	 * from the new target, the edge shall be moved (if the
 	 * old target was != NULL) or added (if the old target was
-	 * NULL).
-	 */
-	struct list_head *head = &get_irn_edge_info(tgt, kind)->outs_head;
-
+	 * NULL). */
+	irn_edge_info_t  *tgt_info = get_irn_edge_info(tgt, kind);
+	struct list_head *head     = &tgt_info->outs_head;
 	assert(head->next && head->prev &&
 			"target list head must have been initialized");
 
@@ -315,8 +302,9 @@ void edges_notify_edge_kind(ir_node *src, int pos, ir_node *tgt,
 	assert(edge && "edge to redirect not found!");
 
 	list_move(&edge->list, head);
-	edge_change_cnt(old_tgt, kind, -1);
-	edge_change_cnt(tgt, kind, +1);
+	irn_edge_info_t *old_tgt_info = get_irn_edge_info(old_tgt, kind);
+	old_tgt_info->out_count -= 1;
+	tgt_info->out_count += 1;
 
 #ifndef DEBUG_libfirm
 	/* verify list heads */
