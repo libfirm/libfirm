@@ -1506,7 +1506,7 @@ static ir_node *gen_Return(ir_node *node)
 		ir_node                  *new_res_value = be_transform_node(res_value);
 		const reg_or_stackslot_t *slot          = &current_cconv->results[i];
 		in[p]   = new_res_value;
-		reqs[p] = slot->req;
+		reqs[p] = slot->reg->single_req;
 		++p;
 	}
 	/* callee saves */
@@ -1737,10 +1737,9 @@ static ir_node *gen_Call(ir_node *node)
 	assert(o == pn_amd64_Call_first_res);
 	for (size_t r = 0; r < n_ress; ++r) {
 		const reg_or_stackslot_t  *result_info = &cconv->results[r];
-		const arch_register_req_t *req         = result_info->req;
-		if (req != NULL) {
-			arch_set_irn_register_req_out(call, o++, req);
-		}
+		const arch_register_t     *reg         = result_info->reg;
+		if (reg != NULL)
+			arch_set_irn_register_req_out(call, o++, reg->single_req);
 	}
 	const unsigned *allocatable_regs = be_birg_from_irg(irg)->allocatable_regs;
 	for (size_t i = 0; i < N_AMD64_REGISTERS; ++i) {
@@ -1798,7 +1797,7 @@ static ir_node *gen_Proj_Proj_Call(ir_node *node)
 	ir_mode                  *mode   = get_irn_mode(node);
 	unsigned                  new_pn = pn_amd64_Call_first_res+res->reg_offset;
 
-	assert(res->req != NULL);
+	assert(res->reg != NULL);
 	if (mode_needs_gp_reg(mode))
 		mode = mode_gp;
 	else if (mode_is_float(mode))

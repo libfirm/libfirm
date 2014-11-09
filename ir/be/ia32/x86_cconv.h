@@ -18,15 +18,13 @@
 /** Information about a single function parameter or result */
 typedef struct reg_or_stackslot_t
 {
-	/** Register requirement or NULL if no register should be used. */
-	const arch_register_req_t *req;
-	const arch_register_t     *reg;
-	unsigned                   reg_offset;
-	ir_type                   *type;   /**< indicates that an entity of the
-	                                        specific type is needed */
-	unsigned                   offset; /**< if transmitted via stack, the offset
-	                                        for this parameter. */
-	ir_entity                 *entity; /**< entity in frame type */
+	const arch_register_t *reg;
+	unsigned               reg_offset;
+	ir_type               *type;   /**< indicates that an entity of the
+	                                    specific type is needed */
+	unsigned               offset; /**< if transmitted via stack, the offset
+	                                    for this parameter. */
+	ir_entity             *entity; /**< entity in frame type */
 } reg_or_stackslot_t;
 
 /** The calling convention info for one call site. */

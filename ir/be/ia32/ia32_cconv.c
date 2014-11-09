@@ -156,13 +156,11 @@ x86_cconv_t *ia32_decide_calling_convention(ir_type *function_type,
 		if (mode_is_float(mode) && float_param_regnum < n_float_param_regs) {
 			const arch_register_t *reg = float_param_regs[float_param_regnum];
 			param->reg                 = reg;
-			param->req                 = reg->single_req;
 			param->reg_offset          = float_param_regnum + param_regnum;
 			++float_param_regnum;
 		} else if (!mode_is_float(mode) && param_regnum < n_param_regs) {
 			const arch_register_t *reg = default_param_regs[param_regnum];
 			param->reg        = reg;
-			param->req        = reg->single_req;
 			param->reg_offset = float_param_regnum + param_regnum;
 			++param_regnum;
 		} else {
@@ -193,27 +191,22 @@ align_stack:;
 		ir_mode            *result_mode = get_type_mode(result_type);
 		reg_or_stackslot_t *result      = &results[i];
 
+		const arch_register_t *reg;
 		if (mode_is_float(result_mode)) {
 			if (res_float_regnum >= n_float_result_regs) {
 				panic("Too many floating points results");
-			} else {
-				const arch_register_t *reg = float_result_regs[res_float_regnum++];
-				result->req                = reg->single_req;
-				result->reg_offset         = i;
-				rbitset_clear(caller_saves, reg->global_index);
-				++n_reg_results;
 			}
+			reg = float_result_regs[res_float_regnum++];
 		} else {
 			if (res_regnum >= n_result_regs) {
 				panic("Too many results");
-			} else {
-				const arch_register_t *reg = result_regs[res_regnum++];
-				result->req                = reg->single_req;
-				result->reg_offset         = i;
-				rbitset_clear(caller_saves, reg->global_index);
-				++n_reg_results;
 			}
+			reg = result_regs[res_regnum++];
 		}
+		result->reg        = reg;
+		result->reg_offset = i;
+		rbitset_clear(caller_saves, reg->global_index);
+		++n_reg_results;
 	}
 
 	calling_convention cc = get_method_calling_convention(function_type);

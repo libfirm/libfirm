@@ -4315,7 +4315,7 @@ static ir_node *gen_Return(ir_node *node)
 		ir_node                  *new_res_value = be_transform_node(res_value);
 		const reg_or_stackslot_t *slot          = &current_cconv->results[i];
 		in[p]   = new_res_value;
-		reqs[p] = slot->req;
+		reqs[p] = slot->reg->single_req;
 		++p;
 	}
 	/* callee saves */
@@ -5077,10 +5077,8 @@ static ir_node *gen_Call(ir_node *node)
 
 	assert(o == pn_ia32_Call_first_result);
 	for (unsigned r = 0; r < n_ress; ++r) {
-		const reg_or_stackslot_t  *res = &cconv->results[r];
-		const arch_register_req_t *req = res->req;
-		assert(req != NULL);
-		arch_set_irn_register_req_out(call, o++, req);
+		const reg_or_stackslot_t *res = &cconv->results[r];
+		arch_set_irn_register_req_out(call, o++, res->reg->single_req);
 	}
 	/* caller saves */
 	const unsigned *allocatable_regs = be_birg_from_irg(irg)->allocatable_regs;
@@ -5140,7 +5138,6 @@ static ir_node *gen_Proj_Proj_Call(ir_node *node)
 	ir_mode                  *mode   = get_irn_mode(node);
 	unsigned                  new_pn = pn_ia32_Call_first_result + res->reg_offset;
 
-	assert(res->req != NULL);
 	if (ia32_mode_needs_gp_reg(mode))
 		mode = ia32_mode_gp;
 	else if (mode_is_float(mode))
