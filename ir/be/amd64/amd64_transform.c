@@ -26,11 +26,11 @@
 #include "beirg.h"
 #include "besched.h"
 
-#include "amd64_cconv.h"
 #include "amd64_new_nodes.h"
 #include "amd64_nodes_attr.h"
 #include "amd64_transform.h"
 #include "../ia32/x86_address_mode.h"
+#include "../ia32/x86_cconv.h"
 
 #include "gen_amd64_regalloc_if.h"
 
@@ -38,7 +38,7 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 static ir_mode         *mode_gp;
 static ir_mode         *mode_flags;
-static amd64_cconv_t   *current_cconv = NULL;
+static x86_cconv_t     *current_cconv = NULL;
 static be_start_info_t  start_mem;
 static be_start_info_t  start_val[N_AMD64_REGISTERS];
 static size_t           start_params_offset;
@@ -1382,7 +1382,7 @@ static ir_node *gen_Start(ir_node *node)
 	dbg_info  *dbgi          = get_irn_dbg_info(node);
 	struct obstack *obst     = be_get_be_obst(irg);
 
-	amd64_cconv_t const *const cconv = current_cconv;
+	x86_cconv_t const *const cconv = current_cconv;
 
 	/* start building list of start constraints */
 
@@ -1478,7 +1478,7 @@ static ir_node *gen_Return(ir_node *node)
 	ir_node  *sp        = get_stack_pointer_for(node);
 	size_t    n_res     = get_Return_n_ress(node);
 	struct obstack *be_obst = be_get_be_obst(irg);
-	amd64_cconv_t  *cconv   = current_cconv;
+	x86_cconv_t    *cconv   = current_cconv;
 
 	/* estimate number of return values */
 	size_t n_ins = 2 + n_res; /* memory + stackpointer, return values */
@@ -1540,7 +1540,7 @@ static ir_node *gen_Call(ir_node *node)
 	ir_node        **sync_ins     = ALLOCAN(ir_node*, n_params+1);
 	ir_graph        *irg          = get_irn_irg(node);
 	struct obstack  *obst         = be_get_be_obst(irg);
-	amd64_cconv_t   *cconv
+	x86_cconv_t   *cconv
 		= amd64_decide_calling_convention(type, NULL);
 	size_t           n_param_regs = cconv->n_param_regs;
 	/* param-regs + mem + stackpointer + callee(2) + n_sse_regs */
@@ -1767,7 +1767,7 @@ static ir_node *gen_Call(ir_node *node)
 
 	pmap_insert(node_to_stack, node, incsp);
 
-	amd64_free_calling_convention(cconv);
+	x86_free_calling_convention(cconv);
 	return call;
 }
 
@@ -1789,11 +1789,11 @@ static ir_node *gen_Proj_Call(ir_node *node)
 
 static ir_node *gen_Proj_Proj_Call(ir_node *node)
 {
-	unsigned       pn       = get_Proj_num(node);
-	ir_node       *call     = get_Proj_pred(get_Proj_pred(node));
-	ir_node       *new_call = be_transform_node(call);
-	ir_type       *tp       = get_Call_type(call);
-	amd64_cconv_t *cconv    = amd64_decide_calling_convention(tp, NULL);
+	unsigned     pn       = get_Proj_num(node);
+	ir_node     *call     = get_Proj_pred(get_Proj_pred(node));
+	ir_node     *new_call = be_transform_node(call);
+	ir_type     *tp       = get_Call_type(call);
+	x86_cconv_t *cconv    = amd64_decide_calling_convention(tp, NULL);
 	const reg_or_stackslot_t *res    = &cconv->results[pn];
 	ir_mode                  *mode   = get_irn_mode(node);
 	unsigned                  new_pn = pn_amd64_Call_first_res+res->reg_offset;
@@ -1803,7 +1803,7 @@ static ir_node *gen_Proj_Proj_Call(ir_node *node)
 		mode = mode_gp;
 	else if (mode_is_float(mode))
 		mode = mode_D;
-	amd64_free_calling_convention(cconv);
+	x86_free_calling_convention(cconv);
 	return new_r_Proj(new_call, mode, new_pn);
 }
 
@@ -2578,14 +2578,13 @@ static ir_type *amd64_get_between_type(bool omit_fp)
 	return omit_fp ? omit_fp_between_type : between_type;
 }
 
-static void amd64_create_stacklayout(ir_graph *irg, amd64_cconv_t *cconv)
+static void amd64_create_stacklayout(ir_graph *irg, const x86_cconv_t *cconv)
 {
 	ir_entity         *entity        = get_irg_entity(irg);
 	ir_type           *function_type = get_entity_type(entity);
 	be_stack_layout_t *layout        = be_get_irg_stack_layout(irg);
 
 	/* construct argument type */
-	assert(cconv != NULL);
 	ident   *const arg_id   = id_mangle3("", get_entity_ident(entity), "_arg_type");
 	ir_type *const arg_type = new_type_struct(arg_id);
 	size_t   const n_params = get_method_n_params(function_type);
@@ -2644,7 +2643,7 @@ void amd64_transform_graph(ir_graph *irg)
 	heights = NULL;
 
 	be_free_stackorder(stackorder);
-	amd64_free_calling_convention(current_cconv);
+	x86_free_calling_convention(current_cconv);
 	pmap_destroy(node_to_stack);
 	node_to_stack = NULL;
 

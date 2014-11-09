@@ -14,6 +14,7 @@
 #include "bearch.h"
 #include "beirg.h"
 #include "pmap.h"
+#include "x86_cconv.h"
 
 #ifdef NDEBUG
 #define SET_IA32_ORIG_NODE(n, o) ((void)(n), (void)(o), (void)0)
@@ -119,5 +120,18 @@ static inline bool ia32_is_8bit_val(int32_t const v)
 {
 	return -128 <= v && v < 128;
 }
+
+/**
+ * Determine how function parameters and return values are passed.
+ * Decides what goes to register or to stack and what stack offsets/
+ * datatypes are used.
+ *
+ * @param function_type  the type of the caller/callee function
+ * @param caller         true for convention for the caller, false for callee
+ */
+x86_cconv_t *ia32_decide_calling_convention(ir_type *function_type,
+                                             ir_graph *irg);
+
+void ia32_cconv_init(void);
 
 #endif

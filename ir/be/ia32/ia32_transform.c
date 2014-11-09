@@ -41,7 +41,6 @@
 #include "bearch_ia32_t.h"
 #include "gen_ia32_regalloc_if.h"
 #include "ia32_architecture.h"
-#include "ia32_cconv.h"
 #include "ia32_common_transform.h"
 #include "ia32_new_nodes.h"
 #include "ia32_nodes_attr.h"
@@ -49,6 +48,7 @@
 #include "ia32_transform.h"
 #include "util.h"
 #include "x86_address_mode.h"
+#include "x86_cconv.h"
 
 /* define this to construct SSE constants instead of load them */
 #undef CONSTRUCT_SSE_CONST
@@ -58,7 +58,7 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
-static ia32_cconv_t    *current_cconv;
+static x86_cconv_t     *current_cconv;
 static be_start_info_t  start_mem;
 static be_start_info_t  start_val[N_IA32_REGISTERS];
 static unsigned         start_params_offset;
@@ -4170,7 +4170,7 @@ static ir_node *gen_Start(ir_node *node)
 	dbg_info  *dbgi          = get_irn_dbg_info(node);
 	struct obstack *obst     = be_get_be_obst(irg);
 
-	ia32_cconv_t const *const cconv = current_cconv;
+	x86_cconv_t const *const cconv = current_cconv;
 
 	/* start building list of start constraints */
 
@@ -4285,8 +4285,8 @@ static ir_node *gen_Return(ir_node *node)
 	ir_node  *new_mem   = be_transform_node(mem);
 	ir_node  *sp        = get_stack_pointer_for(node);
 	unsigned  n_res     = get_Return_n_ress(node);
-	struct obstack *obst = be_get_be_obst(irg);
-	ia32_cconv_t   *cconv   = current_cconv;
+	struct obstack *obst  = be_get_be_obst(irg);
+	x86_cconv_t    *cconv = current_cconv;
 
 	/* estimate number of return values */
 	unsigned n_ins = 2 + n_res; /* memory + stackpointer, return values */
@@ -4917,7 +4917,7 @@ static ir_node *gen_Call(ir_node *node)
 	/* max inputs: memory, callee, register arguments */
 	ir_graph        *irg          = get_irn_irg(node);
 	struct obstack  *obst         = be_get_be_obst(irg);
-	ia32_cconv_t    *cconv
+	x86_cconv_t     *cconv
 		= ia32_decide_calling_convention(type, NULL);
 	unsigned         n_param_regs = cconv->n_param_regs;
 	/* base,index,mem,callee,esp,fpcw + regparams*/
@@ -5107,7 +5107,7 @@ static ir_node *gen_Call(ir_node *node)
 	}
 
 	pmap_insert(node_to_stack, node, new_stack);
-	ia32_free_calling_convention(cconv);
+	x86_free_calling_convention(cconv);
 
 	ia32_no_pic_adjust = old_no_pic_adjust;
 	return res;
@@ -5131,11 +5131,11 @@ static ir_node *gen_Proj_Call(ir_node *node)
 
 static ir_node *gen_Proj_Proj_Call(ir_node *node)
 {
-	unsigned      pn       = get_Proj_num(node);
-	ir_node      *call     = get_Proj_pred(get_Proj_pred(node));
-	ir_node      *new_call = be_transform_node(call);
-	ir_type      *tp       = get_Call_type(call);
-	ia32_cconv_t *cconv    = ia32_decide_calling_convention(tp, NULL);
+	unsigned     pn       = get_Proj_num(node);
+	ir_node     *call     = get_Proj_pred(get_Proj_pred(node));
+	ir_node     *new_call = be_transform_node(call);
+	ir_type     *tp       = get_Call_type(call);
+	x86_cconv_t *cconv    = ia32_decide_calling_convention(tp, NULL);
 	const reg_or_stackslot_t *res    = &cconv->results[pn];
 	ir_mode                  *mode   = get_irn_mode(node);
 	unsigned                  new_pn = pn_ia32_Call_first_result + res->reg_offset;
@@ -5145,7 +5145,7 @@ static ir_node *gen_Proj_Proj_Call(ir_node *node)
 		mode = ia32_mode_gp;
 	else if (mode_is_float(mode))
 		mode = ia32_mode_E;
-	ia32_free_calling_convention(cconv);
+	x86_free_calling_convention(cconv);
 	return new_r_Proj(new_call, mode, new_pn);
 }
 
@@ -5831,7 +5831,7 @@ static void register_transformers(void)
 	be_set_upper_bits_clean_function(op_Mux, ia32_mux_upper_bits_clean);
 }
 
-static void add_parameter_loads(ir_graph *irg, const ia32_cconv_t *cconv)
+static void add_parameter_loads(ir_graph *irg, const x86_cconv_t *cconv)
 {
 	ir_node *start       = get_irg_start(irg);
 	ir_node *start_block = get_irg_start_block(irg);
@@ -5876,14 +5876,13 @@ static ir_type *ia32_get_between_type(bool omit_fp)
 	return omit_fp ? omit_fp_between_type : between_type;
 }
 
-static void ia32_create_stacklayout(ir_graph *irg, ia32_cconv_t *cconv)
+static void ia32_create_stacklayout(ir_graph *irg, const x86_cconv_t *cconv)
 {
 	ir_entity         *entity        = get_irg_entity(irg);
 	ir_type           *function_type = get_entity_type(entity);
 	be_stack_layout_t *layout        = be_get_irg_stack_layout(irg);
 
 	/* construct argument type */
-	assert(cconv != NULL);
 	ident      *arg_id          = id_mangle3("", get_entity_ident(entity), "_arg_type");
 	ir_type    *arg_type        = new_type_struct(arg_id);
 	ir_type    *frame_type      = get_irg_frame_type(irg);
@@ -5994,7 +5993,7 @@ void ia32_transform_graph(ir_graph *irg)
 	heights_free(ia32_heights);
 	ia32_heights = NULL;
 	be_free_stackorder(stackorder);
-	ia32_free_calling_convention(current_cconv);
+	x86_free_calling_convention(current_cconv);
 	pmap_destroy(node_to_stack);
 	node_to_stack = NULL;
 }

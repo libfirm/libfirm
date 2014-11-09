@@ -42,7 +42,6 @@
 #include "gen_amd64_regalloc_if.h"
 #include "amd64_transform.h"
 #include "amd64_emitter.h"
-#include "amd64_cconv.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 

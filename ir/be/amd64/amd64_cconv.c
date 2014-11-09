@@ -10,7 +10,6 @@
  */
 #include "be_t.h"
 #include "beirg.h"
-#include "amd64_cconv.h"
 #include "irmode.h"
 #include "irgwalk.h"
 #include "typerep.h"
@@ -19,6 +18,8 @@
 #include "panic.h"
 #include "gen_amd64_regalloc_if.h"
 #include "bitfiddle.h"
+#include "bearch_amd64_t.h"
+#include "../ia32/x86_cconv.h"
 
 static const unsigned ignore_regs[] = {
 	REG_RSP,
@@ -96,8 +97,8 @@ static void check_omit_fp(ir_node *node, void *env)
 	}
 }
 
-amd64_cconv_t *amd64_decide_calling_convention(ir_type *function_type,
-                                               ir_graph *irg)
+x86_cconv_t *amd64_decide_calling_convention(ir_type *function_type,
+                                             ir_graph *irg)
 {
 	bool omit_fp = false;
 	if (irg != NULL) {
@@ -196,7 +197,7 @@ amd64_cconv_t *amd64_decide_calling_convention(ir_type *function_type,
 		}
 	}
 
-	amd64_cconv_t *cconv    = XMALLOCZ(amd64_cconv_t);
+	x86_cconv_t *cconv      = XMALLOCZ(x86_cconv_t);
 	cconv->parameters       = params;
 	cconv->param_stack_size = stack_offset;
 	cconv->n_param_regs     = n_param_regs_used;
@@ -222,15 +223,6 @@ amd64_cconv_t *amd64_decide_calling_convention(ir_type *function_type,
 	}
 
 	return cconv;
-}
-
-void amd64_free_calling_convention(amd64_cconv_t *cconv)
-{
-	free(cconv->parameters);
-	free(cconv->results);
-	free(cconv->caller_saves);
-	free(cconv->callee_saves);
-	free(cconv);
 }
 
 void amd64_cconv_init(void)

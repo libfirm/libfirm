@@ -58,7 +58,6 @@
 
 #include "gen_ia32_regalloc_if.h"
 #include "ia32_architecture.h"
-#include "ia32_cconv.h"
 #include "ia32_common_transform.h"
 #include "ia32_emitter.h"
 #include "ia32_finish.h"

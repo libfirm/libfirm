@@ -9,8 +9,9 @@
  * @author  Matthias Braun
  */
 #include "be_t.h"
+#include "bearch_ia32_t.h"
 #include "beirg.h"
-#include "ia32_cconv.h"
+#include "x86_cconv.h"
 #include "irmode.h"
 #include "irgwalk.h"
 #include "typerep.h"
@@ -110,8 +111,8 @@ static void check_omit_fp(ir_node *node, void *env)
 	}
 }
 
-ia32_cconv_t *ia32_decide_calling_convention(ir_type *function_type,
-                                             ir_graph *irg)
+x86_cconv_t *ia32_decide_calling_convention(ir_type *function_type,
+                                            ir_graph *irg)
 {
 	bool omit_fp = false;
 	if (irg != NULL) {
@@ -217,7 +218,7 @@ align_stack:;
 
 	calling_convention cc = get_method_calling_convention(function_type);
 
-	ia32_cconv_t *cconv     = XMALLOCZ(ia32_cconv_t);
+	x86_cconv_t *cconv      = XMALLOCZ(x86_cconv_t);
 	cconv->sp_delta         = (cc & cc_compound_ret) && !(cc & cc_reg_param)
 	                          ? IA32_REGISTER_SIZE : 0;
 	cconv->parameters       = params;
@@ -245,15 +246,6 @@ align_stack:;
 	}
 
 	return cconv;
-}
-
-void ia32_free_calling_convention(ia32_cconv_t *cconv)
-{
-	free(cconv->parameters);
-	free(cconv->results);
-	free(cconv->caller_saves);
-	free(cconv->callee_saves);
-	free(cconv);
 }
 
 void ia32_cconv_init(void)
