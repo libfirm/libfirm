@@ -914,7 +914,6 @@ GetEIP => {
 	reg_req  => { out => [ "gp" ] },
 	latency  => 5,
 	mode     => $mode_gp,
-	modified_flags => $status_flags,
 },
 
 NoReg_GP => {
