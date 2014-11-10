@@ -233,7 +233,7 @@ static void remove_irn_n(ir_node *node, int n)
 		ir_node **const slot = &node->in[n + 1];
 		ir_node  *const pred = *slot;
 		*slot = last;
-		edges_notify_edge(node, n, pred, last, irg);
+		edges_notify_edge(node, n, last, pred, irg);
 	}
 	/* Remove last edge. */
 	edges_notify_edge(node, arity - 1, NULL, last, irg);
