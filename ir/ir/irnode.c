@@ -546,21 +546,14 @@ void remove_End_n(ir_node *n, int idx)
 
 void remove_End_keepalive(ir_node *end, const ir_node *irn)
 {
-	int idx = -1;
-	for (int i = get_End_n_keepalives(end);;) {
-		if (i-- == 0)
+	assert(END_KEEPALIVE_OFFSET == 0);
+	for (unsigned i = get_irn_arity(end); i-- > 0; ) {
+		const ir_node *ka = get_irn_n(end, i);
+		if (ka == irn) {
+			remove_irn_n(end, i);
 			return;
-
-		ir_node *old_ka = end->in[1 + END_KEEPALIVE_OFFSET + i];
-
-		/* find irn */
-		if (old_ka == irn) {
-			idx = END_KEEPALIVE_OFFSET + i;
-			break;
 		}
 	}
-	assert(idx != -1);
-	remove_irn_n(end, idx);
 }
 
 void remove_keep_alive(const ir_node *irn)
