@@ -261,6 +261,7 @@ static void delete_edge(ir_node *src, int pos, ir_node *old_tgt,
 	edge->pos = -2;
 	edge->src = NULL;
 	irn_edge_info_t *old_tgt_info = get_irn_edge_info(old_tgt, kind);
+	assert(old_tgt_info->out_count > 0);
 	old_tgt_info->out_count -= 1;
 }
 
@@ -303,6 +304,7 @@ void edges_notify_edge_kind(ir_node *src, int pos, ir_node *tgt,
 
 	list_move(&edge->list, head);
 	irn_edge_info_t *old_tgt_info = get_irn_edge_info(old_tgt, kind);
+	assert(old_tgt_info->out_count > 0);
 	old_tgt_info->out_count -= 1;
 	tgt_info->out_count += 1;
 
