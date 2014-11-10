@@ -1062,32 +1062,6 @@ static void sim_Fucom(x87_state *state, ir_node *n)
 }
 
 /**
- * Simulate a Keep.
- *
- * @param state  the x87 state
- * @param n      the node that should be simulated (and patched)
- */
-static void sim_Keep(x87_state *state, ir_node *node)
-{
-	DB((dbg, LEVEL_1, ">>> %+F\n", node));
-
-	foreach_irn_in(node, i, op) {
-		const arch_register_t *op_reg = arch_get_irn_register(op);
-		if (op_reg->cls != &ia32_reg_classes[CLASS_ia32_fp])
-			continue;
-
-		unsigned    reg_id       = op_reg->index;
-		fp_liveness live         = fp_live_args_after(state->sim, node, 0);
-		unsigned    op_stack_idx = x87_on_stack(state, reg_id);
-		if (op_stack_idx != (unsigned)-1 && !is_fp_live(reg_id, live))
-			x87_create_fpop(state, node, 0);
-	}
-
-	DB((dbg, LEVEL_1, "Stack after: "));
-	DEBUG_ONLY(x87_dump_stack(state);)
-}
-
-/**
  * Keep the given node alive by adding a be_Keep.
  *
  * @param node  the node to kept alive
@@ -1285,19 +1259,19 @@ static void sim_Perm(x87_state *state, ir_node *irn)
 }
 
 /**
- * Kill any dead registers at block start by popping them from the stack.
+ * Kill any dead registers after @p after by popping them from the stack.
  *
  * @param sim    the simulator handle
- * @param block  the current block
- * @param state  the x87 state at the begin of the block
+ * @param after  the node after which values might be dead
+ * @param state  the x87 state after @p after
  */
-static void x87_kill_deads(x87_simulator *const sim, ir_node *const block, x87_state *const state)
+static void x87_kill_deads(x87_simulator *const sim, ir_node *const after, x87_state *const state)
 {
 	unsigned depth = x87_get_depth(state);
 	if (depth == 0)
 		return;
 
-	fp_liveness const live = fp_live_args_after(sim, block, 0);
+	fp_liveness const live = fp_live_args_after(sim, after, 0);
 
 	DB((dbg, LEVEL_1, "Killing deads:\n"));
 	DEBUG_ONLY(fp_dump_live(live);)
@@ -1305,16 +1279,18 @@ static void x87_kill_deads(x87_simulator *const sim, ir_node *const block, x87_s
 
 	if (live == 0) {
 		/* special case: kill all registers */
-		ir_node *free_all;
+		ir_node *(*cons)(dbg_info*, ir_node*);
 		if (ia32_cg_config.use_femms) {
 			/* use FEMMS on AMD processors to clear all */
-			free_all = new_bd_ia32_femms(NULL, block);
-			goto sched_free_all;
+			cons = &new_bd_ia32_femms;
+			goto free_all;
 		} else if (ia32_cg_config.use_emms) {
 			/* use EMMS to clear all */
-			free_all = new_bd_ia32_emms(NULL, block);
-sched_free_all:
-			sched_add_after(block, free_all);
+			cons = &new_bd_ia32_emms;
+free_all:;
+			ir_node *const block    = get_block(after);
+			ir_node *const free_all = cons(NULL, block);
+			sched_add_after(after, free_all);
 			keep_alive(free_all);
 			x87_emms(state);
 			return;
@@ -1329,7 +1305,7 @@ sched_free_all:
 	}
 
 	/* now kill registers */
-	ir_node *insert = block;
+	ir_node *insert = after;
 	while (kill_mask != 0) {
 		unsigned i;
 		if (kill_mask & 1) {
@@ -1349,6 +1325,20 @@ sched_free_all:
 		depth      -= 1;
 		kill_mask >>= 1;
 	}
+}
+
+/**
+ * Simulate a Keep.
+ *
+ * @param state  the x87 state
+ * @param n      the node that should be simulated (and patched)
+ */
+static void sim_Keep(x87_state *state, ir_node *node)
+{
+	DB((dbg, LEVEL_1, ">>> %+F\n", node));
+	x87_kill_deads(state->sim, node, state);
+	DB((dbg, LEVEL_1, "Stack after: "));
+	DEBUG_ONLY(x87_dump_stack(state);)
 }
 
 /**
