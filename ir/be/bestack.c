@@ -254,7 +254,7 @@ void be_abi_fix_stack_nodes(ir_graph *irg)
 		if (!be_is_IncSP(in))
 			continue;
 
-		remove_End_keepalive(end, in);
+		remove_End_n(end, i);
 		if (get_irn_n_edges(in) == 0) {
 			sched_remove(in);
 			kill_node(in);
