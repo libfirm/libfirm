@@ -16,6 +16,10 @@
 #include "compiler.h"
 #include "../ia32/x86_cc.h"
 
+enum amd64_arch_irn_flags_t {
+	amd64_arch_irn_flag_commutative_binop = arch_irn_flag_backend << 0,
+};
+
 typedef enum {
 	INSN_MODE_64,
 	INSN_MODE_32,

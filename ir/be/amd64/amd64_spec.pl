@@ -56,6 +56,10 @@ sub amd64_custom_init_attr {
 }
 $custom_init_attr_func = \&amd64_custom_init_attr;
 
+%custom_irn_flags = (
+	commutative => "(arch_irn_flags_t)amd64_arch_irn_flag_commutative_binop",
+);
+
 $default_copy_attr = "amd64_copy_attr";
 
 %init_attr = (
@@ -139,7 +143,7 @@ Leave => {
 },
 
 Add => {
-	irn_flags => [ "rematerializable" ],
+	irn_flags => [ "rematerializable", "commutative" ],
 	state     => "exc_pinned",
 	reg_req   => { out => [ "gp", "flags", "none" ] },
 	arity     => "variable",
@@ -151,7 +155,7 @@ Add => {
 },
 
 And => {
-	irn_flags => [ "rematerializable" ],
+	irn_flags => [ "rematerializable", "commutative" ],
 	state     => "exc_pinned",
 	reg_req   => { out => [ "gp", "flags", "none" ] },
 	arity     => "variable",
@@ -190,7 +194,7 @@ IDiv => {
 },
 
 IMul => {
-	irn_flags => [ "rematerializable" ],
+	irn_flags => [ "rematerializable", "commutative" ],
 	state     => "exc_pinned",
 	reg_req   => { out => [ "gp", "flags", "none" ] },
 	outs      => [ "res", "flags", "M" ],
@@ -203,6 +207,8 @@ IMul => {
 
 IMul1Op => {
 	# Do not rematerialize this node
+	# TODO: should mark this commutative as soon as the backend code
+	#       can handle this special case
 	# It produces 2 results and has strict constraints
 	state     => "exc_pinned",
 	reg_req   => { out => [ "rax", "flags", "none", "rdx" ] },
@@ -228,7 +234,7 @@ Mul => {
 },
 
 Or => {
-	irn_flags => [ "rematerializable" ],
+	irn_flags => [ "rematerializable", "commutative" ],
 	state     => "exc_pinned",
 	reg_req   => { out => [ "gp", "flags", "none" ] },
 	outs      => [ "res", "flags", "M" ],
@@ -323,7 +329,7 @@ Not => {
 },
 
 Xor => {
-	irn_flags => [ "rematerializable" ],
+	irn_flags => [ "rematerializable", "commutative" ],
 	state     => "exc_pinned",
 	reg_req   => { out => [ "gp", "flags", "none" ] },
 	arity     => "variable",
@@ -482,7 +488,7 @@ Return => {
 # SSE
 
 xAdds => {
-	irn_flags  => [ "rematerializable" ],
+	irn_flags  => [ "rematerializable", "commutative" ],
 	state     => "exc_pinned",
 	reg_req   => { out => [ "xmm", "none", "none" ] },
 	outs      => [ "res", "none", "M" ],
@@ -514,7 +520,7 @@ xMovs => {
 },
 
 xMuls => {
-	irn_flags => [ "rematerializable" ],
+	irn_flags => [ "rematerializable", "commutative" ],
 	state     => "exc_pinned",
 	reg_req   => { out => [ "xmm", "none", "none" ] },
 	outs      => [ "res", "none", "M" ],
@@ -571,7 +577,7 @@ xXorp0 => {
 },
 
 xXorp  => {
-	irn_flags => [ "rematerializable" ],
+	irn_flags => [ "rematerializable", "commutative" ],
 	state     => "exc_pinned",
 	reg_req   => { out => [ "xmm", "none", "none" ] },
 	arity     => "variable",
