@@ -156,6 +156,18 @@ void edges_init_graph_kind(ir_graph *irg, ir_edge_kind_t kind)
 }
 
 /**
+ * Change the out count
+ *
+ * @param info  the edge info
+ * @param ofs   amount to change the edge count
+ */
+static inline void edge_change_cnt(irn_edge_info_t *const info, int const ofs)
+{
+	assert((unsigned)info->out_count + ofs < 1U << 31);
+	info->out_count += ofs;
+}
+
+/**
  * Verify the edge list of a node, i.e. ensure it's a loop:
  * head -> e_1 -> ... -> e_n -> head
  */
@@ -230,7 +242,7 @@ static void add_edge(ir_node *src, int pos, ir_node *tgt, ir_edge_kind_t kind,
 	assert(new_edge == edge);
 
 	list_add(&new_edge->list, head);
-	tgt_info->out_count += 1;
+	edge_change_cnt(tgt_info, +1);
 }
 
 static void delete_edge(ir_node *src, int pos, ir_node *old_tgt,
@@ -261,8 +273,7 @@ static void delete_edge(ir_node *src, int pos, ir_node *old_tgt,
 	edge->pos = -2;
 	edge->src = NULL;
 	irn_edge_info_t *old_tgt_info = get_irn_edge_info(old_tgt, kind);
-	assert(old_tgt_info->out_count > 0);
-	old_tgt_info->out_count -= 1;
+	edge_change_cnt(old_tgt_info, -1);
 }
 
 void edges_notify_edge_kind(ir_node *src, int pos, ir_node *tgt,
@@ -304,9 +315,8 @@ void edges_notify_edge_kind(ir_node *src, int pos, ir_node *tgt,
 
 	list_move(&edge->list, head);
 	irn_edge_info_t *old_tgt_info = get_irn_edge_info(old_tgt, kind);
-	assert(old_tgt_info->out_count > 0);
-	old_tgt_info->out_count -= 1;
-	tgt_info->out_count += 1;
+	edge_change_cnt(old_tgt_info, -1);
+	edge_change_cnt(tgt_info,     +1);
 
 #ifndef DEBUG_libfirm
 	/* verify list heads */
