@@ -150,6 +150,7 @@ static void parse_asm_constraints(constraint_t *const constraint, ident *const c
 	}
 
 	arch_register_class_t const *const gp = &ia32_reg_classes[CLASS_ia32_gp];
+	arch_register_class_t const *const fp = &ia32_reg_classes[CLASS_ia32_fp];
 
 	/* TODO: improve error messages with node and source info. (As users can
 	 * easily hit these) */
@@ -213,13 +214,9 @@ static void parse_asm_constraints(constraint_t *const constraint, ident *const c
 			all_registers_allowed = true;
 			break;
 
-		case 'f':
-		case 't':
-		case 'u':
-			/* TODO: mark values so the x87 simulator knows about t and u */
-			new_cls               = &ia32_reg_classes[CLASS_ia32_fp];
-			all_registers_allowed = true;
-			break;
+		case 'f': new_cls = fp; all_registers_allowed = true; break;
+		case 't': new_cls = fp; limited |= 1 << REG_FP_ST0;   break;
+		case 'u': new_cls = fp; limited |= 1 << REG_FP_ST1;   break;
 
 		case 'Y':
 		case 'x':

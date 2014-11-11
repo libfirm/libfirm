@@ -1101,20 +1101,6 @@ static void sim_Copy(x87_state *state, ir_node *n)
 	}
 }
 
-static void sim_Asm(x87_state *const state, ir_node *const n)
-{
-	(void)state;
-	be_foreach_use(n, &ia32_reg_classes[CLASS_ia32_fp], in_req, value, value_req,
-		panic("cannot handle %+F with x87 constraints", n);
-	);
-
-	be_foreach_out(n, i) {
-		arch_register_req_t const *const req = arch_get_irn_register_req_out(n, i);
-		if (req->cls == &ia32_reg_classes[CLASS_ia32_fp])
-			panic("cannot handle %+F with x87 constraints", n);
-	}
-}
-
 /**
  * Simulate a ia32_Call.
  *
@@ -1274,6 +1260,88 @@ free_all:;
 		depth      -= 1;
 		kill_mask >>= 1;
 	}
+}
+
+static bool reg_req_same_limited(arch_register_req_t const *const req, arch_register_req_t const *const ref_req)
+{
+	if (req == ref_req)
+		return true;
+
+	if (req->cls != ref_req->cls ||
+	    !req->limited ||
+	    !rbitsets_equal(req->limited, ref_req->limited, req->cls->n_regs))
+		return false;
+
+	return true;
+}
+
+static void sim_Asm(x87_state *const state, ir_node *const n)
+{
+	arch_register_req_t const *const req_t = ia32_registers[REG_ST0].single_req;
+	arch_register_req_t const *const req_u = ia32_registers[REG_ST1].single_req;
+
+	/* Collect in requirements. */
+	ir_node *in_t = NULL;
+	ir_node *in_u = NULL;
+	be_foreach_use(n, &ia32_reg_classes[CLASS_ia32_fp], req, value, value_req,
+		if (reg_req_same_limited(req, req_t)) {
+			assert(!in_t);
+			in_t = value;
+		} else if (reg_req_same_limited(req, req_u)) {
+			assert(!in_u);
+			in_u = value;
+		} else {
+			panic("cannot handle %+F with x87 constraints", n);
+		}
+	);
+
+	/* Move inputs to the correct place in the x87 stack and remove them from the
+	 * simulator stack.  If they are not overwritten, they get pushed back later. */
+	if (in_u) {
+		if (!in_t)
+			panic("\"u\" input constraint without \"t\" input constraint in %+F", n);
+		move_to_pos(state, n, in_u, 1);
+	}
+
+	if (in_t) {
+		move_to_tos(state, n, in_t);
+		x87_pop(state);
+	}
+
+	if (in_u)
+		x87_pop(state);
+
+	/* Collect out requirements.
+	 * If inputs are not overweritten, it is assumed that they remain on the
+	 * stack.
+	 * Extension: GCC only allows an output "u" if there is an output "t".
+	 * Here it is also ok, if it is just an input "t". */
+	ir_node *out_t = in_t;
+	ir_node *out_u = in_u;
+	be_foreach_definition(n, &ia32_reg_classes[CLASS_ia32_fp], value, req,
+		if (reg_req_same_limited(req, req_t)) {
+			assert(out_t == in_t);
+			out_t = value;
+		} else if (reg_req_same_limited(req, req_u)) {
+			assert(out_u == in_u);
+			out_u = value;
+		} else {
+			panic("cannot handle %+F with x87 constraints", n);
+		}
+	);
+
+	/* Put outputs (or non-overwritten inputs back) onto the simulator stack. */
+	if (out_u) {
+		if (!out_t)
+			panic("\"u\" output constraint without \"t\" constraint in %+F", n);
+		x87_push(state, out_u);
+	}
+
+	if (out_t)
+		x87_push(state, out_t);
+
+	/* Remove dying values. */
+	x87_kill_deads(state->sim, n, state);
 }
 
 /**
