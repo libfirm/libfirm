@@ -781,7 +781,6 @@ static void sim_load(x87_state *state, ir_node *n)
 
 	DB((dbg, LEVEL_1, ">>> %+F -> %s\n", n, out->name));
 	x87_push(state, out->index, n);
-	assert(out == arch_get_irn_register_out(n, pn_ia32_fld_res));
 	DB((dbg, LEVEL_1, "<<< %s -> %s\n", get_irn_opname(n), get_st_reg(0)->name));
 }
 
