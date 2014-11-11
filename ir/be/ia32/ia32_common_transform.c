@@ -378,6 +378,7 @@ static bool match_requirement(arch_register_req_t const **reqs, size_t const n_r
 }
 
 static arch_register_req_t const *ia32_make_register_req(ir_graph *irg, constraint_t const *constraint, int n_outs, arch_register_req_t const **out_reqs, int pos);
+static arch_register_req_t const *ia32_parse_clobber(char const *clobber);
 
 ir_node *ia32_gen_ASM(ir_node *node)
 {
@@ -723,7 +724,7 @@ static arch_register_req_t const *ia32_make_register_req(ir_graph *const irg, co
 	return req;
 }
 
-const arch_register_req_t *ia32_parse_clobber(const char *clobber)
+static arch_register_req_t const *ia32_parse_clobber(char const *const clobber)
 {
 	if (strcmp(clobber, "memory") == 0 || strcmp(clobber, "cc") == 0)
 		return NULL;

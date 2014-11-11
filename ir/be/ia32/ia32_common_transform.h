@@ -71,8 +71,6 @@ ir_node *ia32_gen_Proj_tls(ir_node *node);
  */
 ir_node *ia32_gen_Unknown(ir_node *node);
 
-const arch_register_req_t *ia32_parse_clobber(const char *clobber);
-
 /**
  * Checks whether other node inputs depend on the am_candidate (via mem-proj).
  */
