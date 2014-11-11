@@ -120,7 +120,7 @@ const arch_register_t *ia32_get_clobber_register(const char *clobber)
 	for (size_t i = 0; i != N_IA32_REGISTERS; ++i) {
 		arch_register_t const *const reg = &ia32_registers[i];
 		if (strcmp(reg->name, clobber) == 0 ||
-		    (reg->reg_class == &ia32_reg_classes[CLASS_ia32_gp] && strcmp(reg->name + 1, clobber) == 0)) {
+		    (reg->cls == &ia32_reg_classes[CLASS_ia32_gp] && strcmp(reg->name + 1, clobber) == 0)) {
 			return reg;
 		}
 	}

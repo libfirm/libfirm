@@ -269,7 +269,7 @@ static block_info_t *compute_block_start_state(minibelady_env_t *env,
 	}
 
 	/* check all Live-Ins */
-	be_lv_foreach_cls(env->lv, block, be_lv_state_in, env->reg->reg_class, node) {
+	be_lv_foreach_cls(env->lv, block, be_lv_state_in, env->reg->cls, node) {
 		if (arch_get_irn_register(node) != env->reg)
 			continue;
 

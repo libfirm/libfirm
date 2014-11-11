@@ -1181,7 +1181,7 @@ static void Copy_emitter(const ir_node *node, const ir_node *op)
 		return;
 
 	/* copies of fp nodes aren't real... */
-	if (in->reg_class == &ia32_reg_classes[CLASS_ia32_fp])
+	if (in->cls == &ia32_reg_classes[CLASS_ia32_fp])
 		return;
 
 	ia32_emitf(node, "movl %R, %R", in, out);
@@ -1205,16 +1205,16 @@ static void emit_be_Perm(const ir_node *node)
 	arch_register_t const *const reg0 = arch_get_irn_register_out(node, 0);
 	arch_register_t const *const reg1 = arch_get_irn_register_out(node, 1);
 
-	arch_register_class_t const *const cls0 = reg0->reg_class;
-	assert(cls0 == reg1->reg_class && "Register class mismatch at Perm");
+	arch_register_class_t const *const cls = reg0->cls;
+	assert(cls == reg1->cls && "Register class mismatch at Perm");
 
-	if (cls0 == &ia32_reg_classes[CLASS_ia32_gp]) {
+	if (cls == &ia32_reg_classes[CLASS_ia32_gp]) {
 		ia32_emitf(node, "xchg %R, %R", reg1, reg0);
-	} else if (cls0 == &ia32_reg_classes[CLASS_ia32_xmm]) {
+	} else if (cls == &ia32_reg_classes[CLASS_ia32_xmm]) {
 		ia32_emitf(NULL, "xorpd %R, %R", reg1, reg0);
 		ia32_emitf(NULL, "xorpd %R, %R", reg0, reg1);
 		ia32_emitf(node, "xorpd %R, %R", reg1, reg0);
-	} else if (cls0 == &ia32_reg_classes[CLASS_ia32_fp]) {
+	} else if (cls == &ia32_reg_classes[CLASS_ia32_fp]) {
 		/* is a NOP */
 	} else {
 		panic("unexpected register class in be_Perm (%+F)", node);
@@ -2000,10 +2000,10 @@ static void bemit_copy(const ir_node *copy)
 	if (in == out)
 		return;
 	/* copies of fp nodes aren't real... */
-	if (in->reg_class == &ia32_reg_classes[CLASS_ia32_fp])
+	if (in->cls == &ia32_reg_classes[CLASS_ia32_fp])
 		return;
 
-	assert(in->reg_class == &ia32_reg_classes[CLASS_ia32_gp]);
+	assert(in->cls == &ia32_reg_classes[CLASS_ia32_gp]);
 	bemit8(0x8B);
 	bemit_modrr(in, out);
 }
@@ -2012,11 +2012,11 @@ static void bemit_perm(const ir_node *node)
 {
 	arch_register_t       const *const reg0 = arch_get_irn_register_out(node, 0);
 	arch_register_t       const *const reg1 = arch_get_irn_register_out(node, 1);
-	arch_register_class_t const *const cls0 = reg0->reg_class;
+	arch_register_class_t const *const cls  = reg0->cls;
 
-	assert(cls0 == reg1->reg_class && "Register class mismatch at Perm");
+	assert(cls == reg1->cls && "Register class mismatch at Perm");
 
-	if (cls0 == &ia32_reg_classes[CLASS_ia32_gp]) {
+	if (cls == &ia32_reg_classes[CLASS_ia32_gp]) {
 		if (reg0->index == REG_GP_EAX) {
 			bemit8(0x90 + reg1->encoding);
 		} else if (reg1->index == REG_GP_EAX) {
@@ -2025,12 +2025,12 @@ static void bemit_perm(const ir_node *node)
 			bemit8(0x87);
 			bemit_modrr(reg0, reg1);
 		}
-	} else if (cls0 == &ia32_reg_classes[CLASS_ia32_xmm]) {
+	} else if (cls == &ia32_reg_classes[CLASS_ia32_xmm]) {
 		panic("unimplemented"); // TODO implement
 		//ia32_emitf(NULL, "xorpd %R, %R", reg1, reg0);
 		//ia32_emitf(NULL, "xorpd %R, %R", reg0, reg1);
 		//ia32_emitf(node, "xorpd %R, %R", reg1, reg0);
-	} else if (cls0 == &ia32_reg_classes[CLASS_ia32_fp]) {
+	} else if (cls == &ia32_reg_classes[CLASS_ia32_fp]) {
 		/* is a NOP */
 	} else {
 		panic("unexpected register class in be_Perm (%+F)", node);

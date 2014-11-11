@@ -1820,7 +1820,7 @@ static ir_node *gen_Proj_Proj_Start(ir_node *node)
 	if (param->reg != NULL) {
 		/* argument transmitted in register */
 		const arch_register_t *reg    = param->reg;
-		ir_mode               *mode   = reg->reg_class->mode;
+		ir_mode               *mode   = reg->cls->mode;
 		unsigned               new_pn = param->reg_offset + start_params_offset;
 		ir_node               *value  = new_r_Proj(new_start, mode, new_pn);
 		return value;

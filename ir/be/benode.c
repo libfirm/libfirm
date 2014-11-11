@@ -214,7 +214,7 @@ ir_node *be_new_MemPerm(ir_node *const block, int n, ir_node *const *const in)
 	ir_node *irn = new_ir_node(NULL, irg, block, op_be_MemPerm, mode_T, n+1, real_in);
 
 	init_node_attr(irn, n + 1, n, arch_irn_flags_none);
-	be_node_set_reg_class_in(irn, 0, sp->reg_class);
+	be_node_set_reg_class_in(irn, 0, sp->cls);
 
 	be_memperm_attr_t *attr = (be_memperm_attr_t*)get_irn_generic_attr(irn);
 	attr->in_entities  = OALLOCNZ(get_irg_obstack(irg), ir_entity*, n);
@@ -284,8 +284,7 @@ ir_node *be_new_IncSP(const arch_register_t *sp, ir_node *bl,
 {
 	ir_graph *irg = get_irn_irg(bl);
 	ir_node  *in[] = { old_sp };
-	ir_node  *irn  = new_ir_node(NULL, irg, bl, op_be_IncSP, sp->reg_class->mode,
-	                             ARRAY_SIZE(in), in);
+	ir_node  *irn  = new_ir_node(NULL, irg, bl, op_be_IncSP, sp->cls->mode, ARRAY_SIZE(in), in);
 	init_node_attr(irn, 1, 1, arch_irn_flags_none);
 	be_incsp_attr_t *a    = (be_incsp_attr_t*)get_irn_generic_attr(irn);
 	a->offset             = offset;
@@ -293,7 +292,7 @@ ir_node *be_new_IncSP(const arch_register_t *sp, ir_node *bl,
 	a->base.exc.pin_state = op_pin_state_pinned;
 
 	/* Set output constraint to stack register. */
-	be_node_set_reg_class_in(irn, 0, sp->reg_class);
+	be_node_set_reg_class_in(irn, 0, sp->cls);
 	be_set_constr_single_reg_out(irn, 0, sp, arch_register_req_type_produces_sp);
 	return irn;
 }
@@ -389,7 +388,7 @@ unsigned be_get_MemPerm_entity_arity(const ir_node *irn)
 const arch_register_req_t *be_create_reg_req(struct obstack *obst,
 		const arch_register_t *reg, arch_register_req_type_t additional_types)
 {
-	const arch_register_class_t *cls     = reg->reg_class;
+	arch_register_class_t const *cls     = reg->cls;
 	unsigned                     n_regs  = arch_register_class_n_regs(cls);
 	unsigned                    *limited = rbitset_obstack_alloc(obst, n_regs);
 	rbitset_set(limited, reg->index);
@@ -517,7 +516,7 @@ static unsigned get_start_reg_index(ir_graph *irg, const arch_register_t *reg)
 		arch_register_req_t const *const out_req = arch_get_irn_register_req_out(start, i);
 		if (!arch_register_req_is(out_req, limited))
 			continue;
-		if (out_req->cls != reg->reg_class)
+		if (out_req->cls != reg->cls)
 			continue;
 		if (!rbitset_is_set(out_req->limited, reg->index))
 			continue;
@@ -530,7 +529,7 @@ ir_node *be_get_initial_reg_value(ir_graph *irg, const arch_register_t *reg)
 {
 	unsigned i     = get_start_reg_index(irg, reg);
 	ir_node *start = get_irg_start(irg);
-	ir_mode *mode  = arch_register_class_mode(reg->reg_class);
+	ir_mode *mode  = arch_register_class_mode(reg->cls);
 
 	ir_node *const proj = get_Proj_for_pn(start, i);
 	return proj ? proj : new_r_Proj(start, mode, i);

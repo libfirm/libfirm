@@ -4248,10 +4248,9 @@ static ir_node *gen_Proj_Proj_Start(ir_node *node)
 	/* stack paramter should have been lowered to loads already */
 	assert(param->reg != NULL);
 	/* argument transmitted in register */
-	const arch_register_t *reg    = param->reg;
-	ir_mode               *mode   = reg->reg_class->mode;
-	unsigned               new_pn = param->reg_offset + start_params_offset;
-	ir_node               *value  = new_r_Proj(new_start, mode, new_pn);
+	ir_mode *const mode   = param->reg->cls->mode;
+	unsigned const new_pn = param->reg_offset + start_params_offset;
+	ir_node *const value  = new_r_Proj(new_start, mode, new_pn);
 	return value;
 }
 

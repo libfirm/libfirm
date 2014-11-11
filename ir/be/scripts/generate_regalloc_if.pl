@@ -170,7 +170,7 @@ EOF
 		$regtypes_def .= <<EOF;
 	{
 		.name         = "${realname}",
-		.reg_class    = ${class_ptr},
+		.cls          = ${class_ptr},
 		.single_req   = &${arch}_single_reg_req_${old_classname}_${name},
 		.type         = ${type},
 		.index        = REG_${classuc}_${ucname},

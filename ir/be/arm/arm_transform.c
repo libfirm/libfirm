@@ -1557,7 +1557,7 @@ static ir_node *gen_Proj_Proj_Start(ir_node *node)
 	const arch_register_t *reg0 = param->reg0;
 	if (reg0 != NULL) {
 		/* argument transmitted in register */
-		ir_mode *mode   = reg0->reg_class->mode;
+		ir_mode *mode   = reg0->cls->mode;
 		unsigned new_pn = param->reg_offset + start_params_offset;
 		ir_node *value  = new_r_Proj(new_start, mode, new_pn);
 
@@ -1636,7 +1636,7 @@ static ir_node *gen_Proj_Proj_Call(ir_node *node)
 	if (regn < 0) {
 		panic("Internal error in calling convention for return %+F", node);
 	}
-	ir_mode *mode = res->reg0->reg_class->mode;
+	ir_mode *const mode = res->reg0->cls->mode;
 
 	arm_free_calling_convention(cconv);
 
@@ -1883,7 +1883,7 @@ static ir_node *gen_Return(ir_node *node)
 	ir_node *start = get_irg_start(irg);
 	for (unsigned i = 0; i < n_callee_saves; ++i) {
 		const arch_register_t *reg   = callee_saves[i];
-		ir_mode               *mode  = reg->reg_class->mode;
+		ir_mode               *mode  = reg->cls->mode;
 		unsigned               idx   = start_callee_saves_offset + i;
 		ir_node               *value = new_r_Proj(start, mode, idx);
 		in[p]   = value;

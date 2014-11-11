@@ -488,7 +488,7 @@ static void peephole_Load_IncSP_to_pop(ir_node *irn)
 		if (!is_ia32_Load(node)) {
 			if (be_is_Copy(node)) {
 				const arch_register_t *dreg = arch_get_irn_register(node);
-				if (dreg->reg_class != &ia32_reg_classes[CLASS_ia32_gp]) {
+				if (dreg->cls != &ia32_reg_classes[CLASS_ia32_gp]) {
 					/* not a GP copy, ignore */
 					continue;
 				}

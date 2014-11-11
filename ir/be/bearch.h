@@ -207,7 +207,7 @@ void be_register_isa_if(const char *name, const arch_isa_if_t *isa);
  */
 struct arch_register_t {
 	const char                  *name;         /**< The name of the register. */
-	const arch_register_class_t *reg_class;    /**< The class of the register */
+	arch_register_class_t const *cls;          /**< The class of the register */
 	/** register constraint allowing just this register */
 	const arch_register_req_t   *single_req;
 	arch_register_type_t         type;         /**< The type of the register. */

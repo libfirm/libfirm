@@ -196,7 +196,7 @@ static ir_node *create_pop(ir_node *node, ir_node *schedpoint, ir_node *sp, ir_e
 static ir_node* create_spproj(ir_node *pred, int pos)
 {
 	const arch_register_t *spreg = &amd64_registers[REG_RSP];
-	ir_mode               *spmode = spreg->reg_class->mode;
+	ir_mode               *spmode = spreg->cls->mode;
 	ir_node               *sp     = new_r_Proj(pred, spmode, pos);
 	arch_set_irn_register(sp, spreg);
 	return sp;

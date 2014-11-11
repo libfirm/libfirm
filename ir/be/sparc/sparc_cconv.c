@@ -249,7 +249,7 @@ calling_convention_t *sparc_decide_calling_convention(ir_type *function_type,
 				param->req1       = reg->single_req;
 				++regnum;
 			} else {
-				ir_mode *regmode = param_regs[0]->reg_class->mode;
+				ir_mode *regmode = param_regs[0]->cls->mode;
 				ir_type *type    = get_type_for_mode(regmode);
 				param->type      = type;
 				param->offset    = stack_offset;

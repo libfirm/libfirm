@@ -1900,7 +1900,7 @@ static ir_node *gen_Return(ir_node *node)
 		size_t    n_callee_saves = ARRAY_SIZE(omit_fp_callee_saves);
 		for (size_t i = 0; i < n_callee_saves; ++i) {
 			const arch_register_t *reg   = omit_fp_callee_saves[i];
-			ir_mode               *mode  = reg->reg_class->mode;
+			ir_mode               *mode  = reg->cls->mode;
 			ir_node               *value
 					= new_r_Proj(start, mode, i + start_callee_saves_offset);
 			in[p]   = value;
@@ -2629,7 +2629,7 @@ static ir_node *gen_Proj_Proj_Start(ir_node *node)
 	if (param->reg0 != NULL) {
 		/* argument transmitted in register */
 		const arch_register_t *reg      = param->reg0;
-		ir_mode               *reg_mode = reg->reg_class->mode;
+		ir_mode               *reg_mode = reg->cls->mode;
 		unsigned               new_pn   = param->reg_offset + start_params_offset;
 		ir_node               *value    = new_r_Proj(new_start, reg_mode, new_pn);
 		bool                   is_float = false;
@@ -2647,7 +2647,7 @@ static ir_node *gen_Proj_Proj_Start(ir_node *node)
 			ir_node *value1 = NULL;
 
 			if (reg1 != NULL) {
-				ir_mode *reg1_mode = reg1->reg_class->mode;
+				ir_mode *const reg1_mode = reg1->cls->mode;
 				value1 = new_r_Proj(new_start, reg1_mode, new_pn+1);
 			} else if (param->entity != NULL) {
 				ir_node *fp  = get_initial_fp(irg);

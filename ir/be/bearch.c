@@ -130,7 +130,7 @@ bool arch_reg_is_allocatable(const arch_register_req_t *req,
                              const arch_register_t *reg)
 {
 	assert(req->type != arch_register_req_type_none);
-	if (req->cls != reg->reg_class)
+	if (req->cls != reg->cls)
 		return false;
 	if (reg->type & arch_register_type_virtual)
 		return true;

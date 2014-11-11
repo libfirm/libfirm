@@ -76,7 +76,7 @@ static void assure_should_be_same_requirements(ir_node *node)
 		/* requirement already fulfilled? */
 		if (in_reg == out_reg)
 			continue;
-		assert(in_reg->reg_class == out_reg->reg_class);
+		assert(in_reg->cls == out_reg->cls);
 
 		/* check if any other input operands uses the out register */
 		ir_node *uses_out_reg     = NULL;

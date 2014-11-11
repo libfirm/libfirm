@@ -164,7 +164,7 @@ static void emit_register_insn_mode(const arch_register_t *reg,
 static void emit_register_mode(const arch_register_t *reg,
                                amd64_insn_mode_t insn_mode)
 {
-	if (reg->reg_class == &amd64_reg_classes[CLASS_amd64_xmm]) {
+	if (reg->cls == &amd64_reg_classes[CLASS_amd64_xmm]) {
 		emit_register(reg);
 	} else {
 		emit_register_insn_mode(reg, insn_mode);
@@ -694,16 +694,16 @@ static void emit_be_Perm(const ir_node *node)
 	arch_register_t const *const reg0 = arch_get_irn_register_out(node, 0);
 	arch_register_t const *const reg1 = arch_get_irn_register_out(node, 1);
 
-	arch_register_class_t const* const cls0 = reg0->reg_class;
-	assert(cls0 == reg1->reg_class && "Register class mismatch at Perm");
+	arch_register_class_t const* const cls = reg0->cls;
+	assert(cls == reg1->cls && "Register class mismatch at Perm");
 
-	if (cls0 == &amd64_reg_classes[CLASS_amd64_gp]) {
-	     amd64_emitf(node, "xchg %^R, %^R", reg0, reg1);
-     } else if (cls0 == &amd64_reg_classes[CLASS_amd64_xmm]) {
-          amd64_emitf(node, "pxor %^R, %^R", reg0, reg1);
-          amd64_emitf(node, "pxor %^R, %^R", reg1, reg0);
-          amd64_emitf(node, "pxor %^R, %^R", reg0, reg1);
-     } else {
+	if (cls == &amd64_reg_classes[CLASS_amd64_gp]) {
+		amd64_emitf(node, "xchg %^R, %^R", reg0, reg1);
+	} else if (cls == &amd64_reg_classes[CLASS_amd64_xmm]) {
+		amd64_emitf(node, "pxor %^R, %^R", reg0, reg1);
+		amd64_emitf(node, "pxor %^R, %^R", reg1, reg0);
+		amd64_emitf(node, "pxor %^R, %^R", reg0, reg1);
+	} else {
 		panic("unexpected register class in be_Perm (%+F)", node);
 	}
 }

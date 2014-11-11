@@ -92,7 +92,7 @@ calling_convention_t *arm_decide_calling_convention(const ir_graph *irg,
 				const arch_register_t *reg = param_regs[regnum++];
 				param->reg1 = reg;
 			} else {
-				ir_mode *pmode = param_regs[0]->reg_class->mode;
+				ir_mode *pmode = param_regs[0]->cls->mode;
 				ir_type *type  = get_type_for_mode(pmode);
 				param->type    = type;
 				param->offset  = stack_offset;

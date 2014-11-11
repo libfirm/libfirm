@@ -1081,7 +1081,7 @@ static void sim_Keep(x87_state *state, ir_node *node)
 
 	foreach_irn_in(node, i, op) {
 		const arch_register_t *op_reg = arch_get_irn_register(op);
-		if (op_reg->reg_class != &ia32_reg_classes[CLASS_ia32_fp])
+		if (op_reg->cls != &ia32_reg_classes[CLASS_ia32_fp])
 			continue;
 
 		unsigned    reg_id       = op_reg->index;
