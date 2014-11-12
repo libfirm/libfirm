@@ -239,12 +239,6 @@ struct arch_register_class_t {
 /** return the number of registers in this register class */
 #define arch_register_class_n_regs(cls) ((cls)->n_regs)
 
-/** return the name of this register class */
-#define arch_register_class_name(cls) ((cls)->name)
-
-/** return the index of this register class */
-#define arch_register_class_index(cls)  ((cls)->index)
-
 /** return the register class flags */
 #define arch_register_class_flags(cls) ((cls)->flags)
 
