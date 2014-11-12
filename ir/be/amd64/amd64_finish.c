@@ -186,10 +186,8 @@ static ir_node *amd64_turn_back_am(ir_node *node)
  */
 static void assure_should_be_same_requirements(ir_node *const node)
 {
-	unsigned const n_res = arch_get_irn_n_outs(node);
-
 	/* Check all OUT requirements, if there is a should_be_same. */
-	for (unsigned i = 0; i < n_res; ++i) {
+	be_foreach_out(node, i) {
 		arch_register_req_t const *const req
 			= arch_get_irn_register_req_out(node, i);
 		if (!arch_register_req_is(req, should_be_same))

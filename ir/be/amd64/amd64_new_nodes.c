@@ -138,7 +138,7 @@ static void init_amd64_switch_attributes(ir_node *node,
 	attr->table        = table;
 	attr->table_entity = table_entity;
 
-	for (unsigned o = 0, n_outs = arch_get_irn_n_outs(node); o < n_outs; o++) {
+	be_foreach_out(node, o) {
 		arch_set_irn_register_req_out(node, o, arch_no_register_req);
 	}
 }

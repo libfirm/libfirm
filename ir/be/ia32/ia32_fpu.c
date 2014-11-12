@@ -212,7 +212,7 @@ static void collect_fpu_mode_nodes_walker(ir_node *node, void *data)
 		return;
 
 	collect_fpu_mode_nodes_env_t *env = (collect_fpu_mode_nodes_env_t*)data;
-	for (unsigned o = 0, n = arch_get_irn_n_outs(node); o < n; ++o) {
+	be_foreach_out(node, o) {
 		const arch_register_t *reg = arch_get_irn_register_out(node, o);
 		if (reg != &ia32_registers[REG_FPCW])
 			continue;
