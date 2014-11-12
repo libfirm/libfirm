@@ -1325,7 +1325,7 @@ static void add_missing_keep_walker(ir_node *node, void *data)
 
 		value = existing_projs[i];
 		if (value == NULL)
-			value = new_r_Proj(node, arch_register_class_mode(cls), i);
+			value = new_r_Proj(node, cls->mode, i);
 		last_keep = add_to_keep(last_keep, cls, value);
 	}
 }
