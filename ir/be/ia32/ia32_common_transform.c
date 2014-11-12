@@ -378,7 +378,7 @@ static bool match_requirement(arch_register_req_t const **reqs, size_t const n_r
 }
 
 static arch_register_req_t const *ia32_make_register_req(ir_graph *irg, constraint_t const *constraint, int n_outs, arch_register_req_t const **out_reqs, int pos);
-static arch_register_req_t const *ia32_parse_clobber(char const *clobber);
+static arch_register_t const *ia32_parse_clobber(char const *clobber);
 
 ir_node *ia32_gen_ASM(ir_node *node)
 {
@@ -397,14 +397,13 @@ ir_node *ia32_gen_ASM(ir_node *node)
 	memset(&clobber_bits, 0, sizeof(clobber_bits));
 
 	for (size_t c = 0; c < get_ASM_n_clobbers(node); ++c) {
-		const char                *clobber = get_id_str(clobbers[c]);
-		const arch_register_req_t *req     = ia32_parse_clobber(clobber);
-		if (req == NULL)
-			continue;
-
-		clobber_bits[req->cls->index] |= *req->limited;
-		assert(req->cls->n_regs <= sizeof(unsigned)*8);
-		++n_clobbers;
+		char            const *const clobber = get_id_str(clobbers[c]);
+		arch_register_t const *const reg     = ia32_parse_clobber(clobber);
+		if (reg) {
+			assert(reg->cls->n_regs <= sizeof(unsigned) * 8);
+			clobber_bits[reg->cls->index] |= 1U << reg->index;
+			++n_clobbers;
+		}
 	}
 	size_t n_out_constraints = get_ASM_n_output_constraints(node);
 	size_t out_arity         = n_out_constraints + n_clobbers;
@@ -512,12 +511,10 @@ ir_node *ia32_gen_ASM(ir_node *node)
 
 	/* parse clobbers */
 	for (size_t c = 0; c < get_ASM_n_clobbers(node); ++c) {
-		const char                *clobber = get_id_str(clobbers[c]);
-		const arch_register_req_t *req     = ia32_parse_clobber(clobber);
-		if (req == NULL)
-			continue;
-		out_reg_reqs[out_idx] = req;
-		++out_idx;
+		char            const *const clobber = get_id_str(clobbers[c]);
+		arch_register_t const *const reg     = ia32_parse_clobber(clobber);
+		if (reg)
+			out_reg_reqs[out_idx++] = reg->single_req;
 	}
 
 	/* Attempt to make ASM node register pressure faithful.
@@ -724,7 +721,7 @@ static arch_register_req_t const *ia32_make_register_req(ir_graph *const irg, co
 	return req;
 }
 
-static arch_register_req_t const *ia32_parse_clobber(char const *const clobber)
+static arch_register_t const *ia32_parse_clobber(char const *const clobber)
 {
 	if (strcmp(clobber, "memory") == 0 || strcmp(clobber, "cc") == 0)
 		return NULL;
@@ -733,7 +730,7 @@ static arch_register_req_t const *ia32_parse_clobber(char const *const clobber)
 	if (!reg)
 		panic("Register '%s' mentioned in asm clobber is unknown", clobber);
 
-	return reg->single_req;
+	return reg;
 }
 
 
