@@ -239,9 +239,6 @@ struct arch_register_class_t {
 /** return the number of registers in this register class */
 #define arch_register_class_n_regs(cls) ((cls)->n_regs)
 
-/** return the register class flags */
-#define arch_register_class_flags(cls) ((cls)->flags)
-
 static inline const arch_register_t *arch_register_for_index(
 		const arch_register_class_t *cls, unsigned idx)
 {

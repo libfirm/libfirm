@@ -1823,7 +1823,7 @@ static void be_pref_alloc(ir_graph *new_irg)
 	int               n_cls    = arch_env->n_register_classes;
 	for (int c = 0; c < n_cls; ++c) {
 		cls = &arch_env->register_classes[c];
-		if (arch_register_class_flags(cls) & arch_register_class_flag_manual_ra)
+		if (cls->flags & arch_register_class_flag_manual_ra)
 			continue;
 
 		stat_ev_ctx_push_str("regcls", cls->name);

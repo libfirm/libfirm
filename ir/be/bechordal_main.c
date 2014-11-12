@@ -284,7 +284,7 @@ static void be_ra_chordal_main(ir_graph *irg)
 	const arch_env_t *arch_env = be_get_irg_arch_env(irg);
 	for (int j = 0, m = arch_env->n_register_classes; j < m; ++j) {
 		const arch_register_class_t *cls = &arch_env->register_classes[j];
-		if (arch_register_class_flags(cls) & arch_register_class_flag_manual_ra)
+		if (cls->flags & arch_register_class_flag_manual_ra)
 			continue;
 
 		stat_ev_ctx_push_str("bechordal_cls", cls->name);
