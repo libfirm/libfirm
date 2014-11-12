@@ -228,7 +228,7 @@ int be_ifg_cliques_begin(const be_ifg_t *ifg, cliques_iter_t *it,
 	it->blocks   = (ir_node**)obstack_finish(&it->ob);
 	it->blk      = 0;
 	it->bor      = NULL;
-	it->living   = pset_new_ptr(2 * arch_register_class_n_regs(it->cenv->cls));
+	it->living   = pset_new_ptr(2 * it->cenv->cls->n_regs);
 
 	return get_next_clique(it);
 }

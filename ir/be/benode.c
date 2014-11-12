@@ -389,8 +389,7 @@ const arch_register_req_t *be_create_reg_req(struct obstack *obst,
 		const arch_register_t *reg, arch_register_req_type_t additional_types)
 {
 	arch_register_class_t const *cls     = reg->cls;
-	unsigned                     n_regs  = arch_register_class_n_regs(cls);
-	unsigned                    *limited = rbitset_obstack_alloc(obst, n_regs);
+	unsigned                    *limited = rbitset_obstack_alloc(obst, cls->n_regs);
 	rbitset_set(limited, reg->index);
 	arch_register_req_t *req = OALLOC(obst, arch_register_req_t);
 	req->type    = arch_register_req_type_limited | additional_types;

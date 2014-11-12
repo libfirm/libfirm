@@ -80,7 +80,7 @@ typedef struct be_pbqp_alloc_env_t {
 
 
 #define insert_edge(pbqp, src_node, trg_node, template_matrix) (add_edge_costs(pbqp, get_irn_idx(src_node), get_irn_idx(trg_node), pbqp_matrix_copy(pbqp, template_matrix)))
-#define get_free_regs(restr_nodes, cls, irn)                   (arch_register_class_n_regs(cls) - restr_nodes[get_irn_idx(irn)])
+#define get_free_regs(restr_nodes, cls, irn)                   ((cls)->n_regs - restr_nodes[get_irn_idx(irn)])
 
 static const lc_opt_table_entry_t options[] = {
 	LC_OPT_ENT_BOOL("exec_freq", "use exec_freq",  &use_exec_freq),
@@ -122,7 +122,7 @@ static void create_pbqp_node(be_pbqp_alloc_env_t *pbqp_alloc_env, ir_node *irn)
 	arch_register_class_t const *const cls              = pbqp_alloc_env->cls;
 	pbqp_t                      *const pbqp_inst        = pbqp_alloc_env->pbqp_inst;
 	bitset_t              const *const allocatable_regs = pbqp_alloc_env->allocatable_regs;
-	unsigned                     const colors_n         = arch_register_class_n_regs(cls);
+	unsigned                     const colors_n         = cls->n_regs;
 	unsigned                           cntConstrains    = 0;
 
 	/* create costs vector depending on register constrains */
@@ -188,8 +188,8 @@ static void insert_afe_edge(be_pbqp_alloc_env_t *pbqp_alloc_env, ir_node *src_no
 	pbqp_t                      *pbqp        = pbqp_alloc_env->pbqp_inst;
 	const arch_register_class_t *cls         = pbqp_alloc_env->cls;
 	unsigned                    *restr_nodes = pbqp_alloc_env->restr_nodes;
-	pbqp_matrix_t               *afe_matrix  = pbqp_matrix_alloc(pbqp, arch_register_class_n_regs(cls), arch_register_class_n_regs(cls));
-	unsigned                     colors_n    = arch_register_class_n_regs(cls);
+	unsigned                     colors_n    = cls->n_regs;
+	pbqp_matrix_t               *afe_matrix  = pbqp_matrix_alloc(pbqp, colors_n, colors_n);
 
 	if (get_edge(pbqp, get_irn_idx(src_node), get_irn_idx(trg_node)) == NULL) {
 		if (use_exec_freq) {
@@ -532,7 +532,7 @@ static void be_pbqp_coloring(be_chordal_env_t *env)
 	ir_graph                    *irg            = env->irg;
 	const arch_register_class_t *cls            = env->cls;
 	be_lv_t                     *lv             = NULL;
-	unsigned                     colors_n       = arch_register_class_n_regs(cls);
+	unsigned                     colors_n       = cls->n_regs;
 	be_pbqp_alloc_env_t          pbqp_alloc_env;
 	unsigned                     col;
 	unsigned                     row;

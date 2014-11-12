@@ -137,7 +137,7 @@ static void sr_remove(ilp_env_t *const ienv)
 static void sr_reinsert(ilp_env_t *const ienv)
 {
 	/* color the removed nodes in right order */
-	unsigned        const n_regs           = arch_register_class_n_regs(ienv->co->cls);
+	unsigned        const n_regs           = ienv->co->cls->n_regs;
 	unsigned       *const possible_cols    = rbitset_alloca(n_regs);
 	unsigned const *const allocatable_cols = ienv->co->cenv->allocatable_regs->data;
 	be_ifg_t const *const ifg              = ienv->co->cenv->ifg;

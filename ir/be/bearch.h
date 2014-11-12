@@ -236,9 +236,6 @@ struct arch_register_class_t {
 	arch_register_class_flags_t  flags;  /**< register class flags. */
 };
 
-/** return the number of registers in this register class */
-#define arch_register_class_n_regs(cls) ((cls)->n_regs)
-
 static inline const arch_register_t *arch_register_for_index(
 		const arch_register_class_t *cls, unsigned idx)
 {
@@ -288,8 +285,7 @@ static inline bool reg_reqs_equal(const arch_register_req_t *req1,
 		return false;
 
 	if (req1->limited != NULL) {
-		size_t const n_regs = arch_register_class_n_regs(req1->cls);
-		if (!rbitsets_equal(req1->limited, req2->limited, n_regs))
+		if (!rbitsets_equal(req1->limited, req2->limited, req1->cls->n_regs))
 			return false;
 	}
 

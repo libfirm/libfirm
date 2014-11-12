@@ -70,7 +70,7 @@ static void build_coloring_cstr(ilp_env_t *ienv)
 {
 	local_env_t    *lenv   = (local_env_t*)ienv->env;
 	be_ifg_t       *ifg    = ienv->co->cenv->ifg;
-	unsigned        n_regs = arch_register_class_n_regs(ienv->co->cls);
+	unsigned        n_regs = ienv->co->cls->n_regs;
 	const unsigned *allocatable_colors = lenv->allocatable_colors;
 	char            buf[32];
 
@@ -144,7 +144,7 @@ static void build_interference_cstr(ilp_env_t *ienv)
 	lpp_t          *lpp      = ienv->lp;
 	local_env_t    *lenv     = (local_env_t*)ienv->env;
 	be_ifg_t       *ifg      = ienv->co->cenv->ifg;
-	unsigned        n_colors = arch_register_class_n_regs(ienv->co->cls);
+	unsigned        n_colors = ienv->co->cls->n_regs;
 	ir_node       **clique   = ALLOCAN(ir_node*, n_colors);
 	const unsigned *allocatable_colors = lenv->allocatable_colors;
 	cliques_iter_t iter;
@@ -219,7 +219,7 @@ static void make_affinity_var_name(char *buf, size_t buf_size,
  */
 static void build_affinity_cstr(ilp_env_t *ienv)
 {
-	unsigned  n_colors = arch_register_class_n_regs(ienv->co->cls);
+	unsigned const n_colors = ienv->co->cls->n_regs;
 
 	/* for all optimization units */
 	list_for_each_entry(unit_t, curr, &ienv->co->units, units) {
