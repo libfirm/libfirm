@@ -424,9 +424,7 @@ static void peephole_IncSP_Store_to_push(ir_node *irn)
 		ir_node               *mem   = get_irn_n(store, n_ia32_mem);
 		const arch_register_t *spreg = arch_get_irn_register(curr_sp);
 
-		ir_node *push = new_bd_ia32_Push(get_irn_dbg_info(store), block, noreg, noreg,
-		                                 mem, val, curr_sp);
-		set_ia32_ls_mode(push, ia32_mode_gp);
+		ir_node *const push = new_bd_ia32_Push(get_irn_dbg_info(store), block, noreg, noreg, mem, val, curr_sp, ia32_mode_gp);
 		copy_mark(store, push);
 
 		if (first_push == NULL)

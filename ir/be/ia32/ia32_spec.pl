@@ -1034,6 +1034,8 @@ Push => {
 	outs      => [ "M", "stack" ],
 	am        => "source,unary",
 	latency   => 2,
+	attr      => "ir_mode *store_mode",
+	init_attr => "attr->ls_mode = store_mode;",
 },
 
 PushEax => {

@@ -823,11 +823,10 @@ static ir_node *create_push(ir_node *node, ir_node *schedpoint, ir_node *sp,
 	ir_node  *noreg = ia32_new_NoReg_gp(irg);
 	ir_node  *frame = get_irg_frame(irg);
 
-	ir_node *push = new_bd_ia32_Push(dbgi, block, frame, noreg, mem, noreg, sp);
+	ir_node *const push = new_bd_ia32_Push(dbgi, block, frame, noreg, mem, noreg, sp, mode);
 
 	set_ia32_frame_ent(push, ent);
 	set_ia32_op_type(push, ia32_AddrModeS);
-	set_ia32_ls_mode(push, mode);
 	set_ia32_is_spill(push);
 
 	sched_add_before(schedpoint, push);
@@ -1108,10 +1107,8 @@ static void introduce_prologue(ir_graph *const irg)
 		ir_node *mem        = get_irg_initial_mem(irg);
 		ir_node *noreg      = ia32_new_NoReg_gp(irg);
 		ir_node *initial_bp = be_get_initial_reg_value(irg, bp);
-		ir_node *push       = new_bd_ia32_Push(NULL, block, noreg, noreg, mem,
-		                                       initial_bp, initial_sp);
+		ir_node *push       = new_bd_ia32_Push(NULL, block, noreg, noreg, mem, initial_bp, initial_sp, mode_gp);
 		ir_node *curr_sp    = new_r_Proj(push, mode_gp, pn_ia32_Push_stack);
-		set_ia32_ls_mode(push, ia32_mode_gp);
 
 		arch_set_irn_register(curr_sp, sp);
 		sched_add_after(start, push);
