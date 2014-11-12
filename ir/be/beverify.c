@@ -248,8 +248,8 @@ static void verify_schedule_walker(ir_node *block, void *data)
 static void check_schedule(ir_node *node, void *data)
 {
 	be_verify_schedule_env_t *env = (be_verify_schedule_env_t*)data;
-	bool should_be = !is_Proj(node) && !(arch_get_irn_flags(node) & arch_irn_flag_not_scheduled);
-	bool scheduled = bitset_is_set(env->scheduled, get_irn_idx(node));
+	bool const should_be = !arch_is_irn_not_scheduled(node);
+	bool const scheduled = bitset_is_set(env->scheduled, get_irn_idx(node));
 
 	if (should_be != scheduled) {
 		ir_fprintf(stderr, "Verify warning: Node %+F in block %+F(%s) should%s be scheduled\n",

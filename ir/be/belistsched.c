@@ -65,7 +65,7 @@ static void add_to_sched(ir_node *node);
  */
 static void node_ready(ir_node *node)
 {
-	if (is_Proj(node) || arch_irn_is(node, not_scheduled)) {
+	if (arch_is_irn_not_scheduled(node)) {
 		/* not_scheduled nodes are already available */
 		DB((dbg, LEVEL_3, "\tmaking available: %+F\n", node));
 		make_available(node);

@@ -49,11 +49,6 @@ static void set_irn_flag_and_cost(ir_node *node, flag_and_cost *fc)
 	set_irn_link(node, fc);
 }
 
-static bool must_be_scheduled(const ir_node *const irn)
-{
-	return !is_Proj(irn) && !arch_irn_is(irn, not_scheduled);
-}
-
 static ir_node *normal_select(ir_nodeset_t *ready_set)
 {
 	for (ir_node *irn = curr_list, *last = NULL, *next; irn != NULL;
@@ -167,7 +162,7 @@ static void normal_cost_walker(ir_node *irn, void *data)
 		set_irn_link(irn, roots);
 		return;
 	}
-	if (!must_be_scheduled(irn))
+	if (arch_is_irn_not_scheduled(irn))
 		return;
 	normal_tree_cost(irn);
 }
@@ -175,7 +170,7 @@ static void normal_cost_walker(ir_node *irn, void *data)
 static void collect_roots(ir_node *irn, void *env)
 {
 	(void)env;
-	if (!must_be_scheduled(irn))
+	if (arch_is_irn_not_scheduled(irn))
 		return;
 
 	bool is_root = be_is_Keep(irn) || !get_irn_flag_and_cost(irn)->no_root;
@@ -270,7 +265,7 @@ static void normal_sched_block(ir_node *block, void *env)
 	ir_node **sched = NEW_ARR_F(ir_node*, 0);
 	for (int i = 0; i < root_count; ++i) {
 		ir_node *irn = root_costs[i].irn;
-		assert(must_be_scheduled(irn));
+		assert(!arch_is_irn_not_scheduled(irn));
 		sched = sched_node(sched, irn);
 	}
 	set_irn_link(block, sched);
