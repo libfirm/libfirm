@@ -444,16 +444,7 @@ static void peephole_IncSP_Store_to_push(ir_node *irn)
 		inc_ofs -= 4;
 	}
 
-	foreach_out_edge_safe(irn, edge) {
-		ir_node *const src = get_edge_src_irn(edge);
-
-		if (src == first_push)
-			continue;
-
-		const int pos = get_edge_src_pos(edge);
-		set_irn_n(src, pos, curr_sp);
-	}
-
+	edges_reroute_except(irn, curr_sp, first_push);
 	be_set_IncSP_offset(irn, inc_ofs);
 }
 

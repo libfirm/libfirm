@@ -70,15 +70,7 @@ static void peephole_be_IncSP(ir_node *node)
 	}
 
 	/* reattach IncSP users */
-	ir_node *last = node;
-	node = sched_next(first);
-	foreach_out_edge_safe(first, edge) {
-		ir_node *user = get_edge_src_irn(edge);
-		int      pos  = get_edge_src_pos(edge);
-		if (user == node)
-			continue;
-		set_irn_n(user, pos, last);
-	}
+	edges_reroute_except(first, node, sched_next(first));
 }
 
 /**
