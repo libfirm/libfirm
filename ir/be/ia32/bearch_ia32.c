@@ -884,7 +884,7 @@ static void transform_MemPerm(ir_node *node)
 		ir_type *enttype = get_entity_type(inent);
 		unsigned entsize = get_type_size_bytes(enttype);
 		unsigned entsize2 = get_type_size_bytes(get_entity_type(outent));
-		ir_node *mem = get_irn_n(node, i + 1);
+		ir_node *mem = get_irn_n(node, i);
 
 		/* work around cases where entities have different sizes */
 		if (entsize2 < entsize)

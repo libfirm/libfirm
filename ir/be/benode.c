@@ -202,19 +202,10 @@ void be_Perm_reduce(ir_node *perm, int new_size, int *map)
 
 ir_node *be_new_MemPerm(ir_node *const block, int n, ir_node *const *const in)
 {
-	ir_graph              *irg      = get_irn_irg(block);
-	const arch_env_t      *arch_env = be_get_irg_arch_env(irg);
-	ir_node               *frame    = get_irg_frame(irg);
-	const arch_register_t *sp       = arch_env->sp;
+	ir_graph *const irg = get_irn_irg(block);
+	ir_node  *const irn = new_ir_node(NULL, irg, block, op_be_MemPerm, mode_T, n, in);
 
-	ir_node **real_in = ALLOCAN(ir_node*, n + 1);
-	real_in[0] = frame;
-	MEMCPY(&real_in[1], in, n);
-
-	ir_node *irn = new_ir_node(NULL, irg, block, op_be_MemPerm, mode_T, n+1, real_in);
-
-	init_node_attr(irn, n + 1, n, arch_irn_flags_none);
-	be_node_set_reg_class_in(irn, 0, sp->cls);
+	init_node_attr(irn, n, n, arch_irn_flags_none);
 
 	be_memperm_attr_t *attr = (be_memperm_attr_t*)get_irn_generic_attr(irn);
 	attr->in_entities  = OALLOCNZ(get_irg_obstack(irg), ir_entity*, n);
@@ -382,7 +373,7 @@ int be_get_MemPerm_offset(const ir_node *irn)
 unsigned be_get_MemPerm_entity_arity(const ir_node *irn)
 {
 	assert(be_is_MemPerm(irn));
-	return get_irn_arity(irn) - 1;
+	return get_irn_arity(irn);
 }
 
 const arch_register_req_t *be_create_reg_req(struct obstack *obst,

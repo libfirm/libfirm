@@ -379,8 +379,8 @@ static void collect_memperm(be_verify_spillslots_env_t *env, ir_node *node, ir_n
 
 	int arity = be_get_MemPerm_entity_arity(memperm);
 	for (int i = 0; i < arity; ++i) {
-		ir_node* arg = get_irn_n(memperm, i + 1);
-		ir_entity* argent = be_get_MemPerm_in_entity(memperm, i);
+		ir_node   *const arg    = get_irn_n(memperm, i);
+		ir_entity *const argent = be_get_MemPerm_in_entity(memperm, i);
 
 		collect(env, arg, memperm, argent);
 	}

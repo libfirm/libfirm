@@ -718,7 +718,7 @@ static ir_node *find_original_value(ir_node *node)
 		if (be_is_Perm(pred)) {
 			return find_original_value(get_irn_n(pred, get_Proj_num(node)));
 		} else if (be_is_MemPerm(pred)) {
-			return find_original_value(get_irn_n(pred, get_Proj_num(node) + 1));
+			return find_original_value(get_irn_n(pred, get_Proj_num(node)));
 		} else if (is_ia32_Load(pred)) {
 			return find_original_value(get_irn_n(pred, n_ia32_Load_mem));
 		} else if (is_ia32_Store(pred)) {
