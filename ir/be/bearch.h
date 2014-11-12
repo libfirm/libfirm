@@ -432,7 +432,6 @@ struct arch_isa_if_t {
 };
 
 #define arch_env_end_codegeneration(env)               ((env)->impl->end_codegeneration(env))
-#define arch_env_get_call_abi(env,tp,abi)              ((env)->impl->get_call_abi((tp), (abi)))
 #define arch_env_mark_remat(env,node) \
 	do { if ((env)->impl->mark_remat != NULL) (env)->impl->mark_remat((node)); } while(0)
 
