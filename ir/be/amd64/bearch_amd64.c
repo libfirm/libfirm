@@ -635,7 +635,7 @@ static void amd64_finish_graph(ir_graph *irg)
 	introduce_prologue_epilogue(irg);
 
 	/* fix stack entity offsets */
-	be_abi_fix_stack_nodes(irg);
+	be_fix_stack_nodes(irg, &amd64_registers[REG_RSP]);
 	be_abi_fix_stack_bias(irg);
 
 	/* Fix 2-address code constraints. */

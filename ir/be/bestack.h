@@ -17,9 +17,9 @@
 
 /**
  * Rewire all stack modifying nodes and their users to assure SSA property.
- * @param env   The abi
+ * @param sp    The stack pointer register
  */
-void be_abi_fix_stack_nodes(ir_graph *irg);
+void be_fix_stack_nodes(ir_graph *irg, arch_register_t const *sp);
 
 /**
  * Fix the stack bias for all nodes accessing the stack frame using the

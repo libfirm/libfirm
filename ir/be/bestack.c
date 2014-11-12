@@ -192,12 +192,9 @@ static void collect_stack_nodes_walker(ir_node *node, void *data)
 	ARR_APP1(ir_node*, env->sp_nodes, node);
 }
 
-void be_abi_fix_stack_nodes(ir_graph *irg)
+void be_fix_stack_nodes(ir_graph *const irg, arch_register_t const *const sp)
 {
-	be_lv_t               *lv       = be_get_irg_liveness(irg);
-	const arch_env_t      *arch_env = be_get_irg_arch_env(irg);
-	be_irg_t              *birg     = be_birg_from_irg(irg);
-	const arch_register_t *sp       = arch_env->sp;
+	be_irg_t *const birg = be_birg_from_irg(irg);
 
 	arch_register_req_type_t type = arch_register_req_type_produces_sp;
 	if (!rbitset_is_set(birg->allocatable_regs, sp->global_index))
@@ -226,6 +223,7 @@ void be_abi_fix_stack_nodes(ir_graph *irg)
 	be_ssa_construction_add_copies(&senv, walker_env.sp_nodes, n_sp_nodes);
 	be_ssa_construction_fix_users_array(&senv, walker_env.sp_nodes, n_sp_nodes);
 
+	be_lv_t *const lv = be_get_irg_liveness(irg);
 	if (lv->sets_valid) {
 		for (size_t i = 0; i < n_sp_nodes; ++i) {
 			be_liveness_update(lv, walker_env.sp_nodes[i]);
@@ -239,7 +237,7 @@ void be_abi_fix_stack_nodes(ir_graph *irg)
 	for (size_t i = 0, n_phis = ARR_LEN(phis); i < n_phis; ++i) {
 		ir_node *phi = phis[i];
 		be_set_phi_reg_req(phi, sp_req);
-		arch_set_irn_register(phi, arch_env->sp);
+		arch_set_irn_register(phi, sp);
 	}
 	be_ssa_construction_destroy(&senv);
 	DEL_ARR_F(walker_env.sp_nodes);

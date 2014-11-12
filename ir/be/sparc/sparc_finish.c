@@ -751,7 +751,7 @@ void sparc_finish_graph(ir_graph *irg)
 	sparc_introduce_prolog_epilog(irg);
 
 	/* fix stack entity offsets */
-	be_abi_fix_stack_nodes(irg);
+	be_fix_stack_nodes(irg, &sparc_registers[REG_SP]);
 	sparc_fix_stack_bias(irg);
 
 	heights = heights_new(irg);

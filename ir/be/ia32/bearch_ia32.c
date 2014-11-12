@@ -1180,7 +1180,7 @@ static void ia32_emit(ir_graph *irg)
 	introduce_prologue_epilogue(irg);
 
 	/* fix stack entity offsets */
-	be_abi_fix_stack_nodes(irg);
+	be_fix_stack_nodes(irg, &ia32_registers[REG_ESP]);
 	be_abi_fix_stack_bias(irg);
 
 	/* fix 2-address code constraints */

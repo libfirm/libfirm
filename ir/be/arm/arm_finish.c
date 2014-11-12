@@ -142,7 +142,7 @@ void arm_finish_graph(ir_graph *irg)
 	introduce_prolog_epilog(irg);
 
 	/* fix stack entity offsets */
-	be_abi_fix_stack_nodes(irg);
+	be_fix_stack_nodes(irg, &arm_registers[REG_SP]);
 	be_abi_fix_stack_bias(irg);
 
 	/* do peephole optimizations and fix stack offsets */

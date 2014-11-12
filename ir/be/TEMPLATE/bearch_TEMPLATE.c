@@ -89,7 +89,7 @@ static void TEMPLATE_prepare_graph(ir_graph *irg)
 static void TEMPLATE_emit(ir_graph *irg)
 {
 	/* fix stack entity offsets */
-	be_abi_fix_stack_nodes(irg);
+	be_fix_stack_nodes(irg, &TEMPLATE_registers[REG_SP]);
 	be_abi_fix_stack_bias(irg);
 	/* emit code */
 	TEMPLATE_emit_function(irg);
