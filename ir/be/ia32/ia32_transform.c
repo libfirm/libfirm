@@ -91,9 +91,7 @@ typedef ir_node *construct_unop_func(dbg_info *db, ir_node *block, ir_node *op);
 
 static ir_node *create_immediate_or_transform(ir_node *node);
 
-static ir_node *create_I2I_Conv(ir_mode *src_mode, ir_mode *tgt_mode,
-                                dbg_info *dbgi, ir_node *block,
-                                ir_node *op, ir_node *orig_node);
+static ir_node *create_I2I_Conv(ir_mode *src_mode, dbg_info *dbgi, ir_node *block, ir_node *op, ir_node *orig_node);
 
 /* its enough to have those once */
 static ir_node *nomem;
@@ -787,7 +785,7 @@ static ir_node *transform_sext(ir_node *node, ir_node *orig_node)
 	default:
 		panic("ia32: invalid mode in sest: %+F", node);
 	}
-	return create_I2I_Conv(mode, ia32_mode_gp, dbgi, block, node, orig_node);
+	return create_I2I_Conv(mode, dbgi, block, node, orig_node);
 }
 
 static ir_node *transform_zext(ir_node *node, ir_node *orig_node)
@@ -802,7 +800,7 @@ static ir_node *transform_zext(ir_node *node, ir_node *orig_node)
 	default:
 		panic("ia32: invalid mode in zest: %+F", node);
 	}
-	return create_I2I_Conv(mode, ia32_mode_gp, dbgi, block, node, orig_node);
+	return create_I2I_Conv(mode, dbgi, block, node, orig_node);
 }
 
 static ir_node *transform_upconv(ir_node *node, ir_node *orig_node)
@@ -1585,11 +1583,9 @@ static ir_node *gen_And(ir_node *node)
 				assert(v == 0xFFFF);
 				src_mode = mode_Hu;
 			}
-			dbg_info *dbgi   = get_irn_dbg_info(node);
-			ir_node  *block  = get_nodes_block(node);
-			ir_node  *res    = create_I2I_Conv(src_mode, ia32_mode_gp, dbgi,
-			                                   block, op1, node);
-			return res;
+			dbg_info *dbgi  = get_irn_dbg_info(node);
+			ir_node  *block = get_nodes_block(node);
+			return create_I2I_Conv(src_mode, dbgi, block, op1, node);
 		}
 	}
 	return gen_binop(node, op1, op2, new_bd_ia32_And,
@@ -1928,9 +1924,7 @@ static ir_node *gen_Shrs(ir_node *node)
 						assert(val == 16);
 						src_mode = mode_Hs;
 					}
-					ir_node *res = create_I2I_Conv(src_mode, ia32_mode_gp, dbgi,
-					                               block, shl_left, node);
-					return res;
+					return create_I2I_Conv(src_mode, dbgi, block, shl_left, node);
 				}
 			}
 		}
@@ -3896,13 +3890,9 @@ static ir_node *gen_x87_gp_to_fp(ir_node *node)
 /**
  * Create a conversion from one integer mode into another one
  */
-static ir_node *create_I2I_Conv(ir_mode *src_mode, ir_mode *tgt_mode,
-                                dbg_info *dbgi, ir_node *block, ir_node *op,
-                                ir_node *node)
+static ir_node *create_I2I_Conv(ir_mode *const src_mode, dbg_info *const dbgi, ir_node *const block, ir_node *op, ir_node *const node)
 {
 	(void)node;
-	(void)tgt_mode;
-	assert(get_mode_size_bits(src_mode) < get_mode_size_bits(tgt_mode));
 
 #ifdef DEBUG_libfirm
 	if (is_Const(op)) {
@@ -4036,7 +4026,7 @@ static ir_node *gen_Conv(ir_node *node)
 				return be_transform_node(op);
 			}
 
-			res = create_I2I_Conv(src_mode, tgt_mode, dbgi, block, op, node);
+			res = create_I2I_Conv(src_mode, dbgi, block, op, node);
 			return res;
 		}
 	}
