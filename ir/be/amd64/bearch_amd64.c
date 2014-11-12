@@ -654,7 +654,6 @@ static amd64_isa_t amd64_isa_template = {
 		.n_register_classes = N_AMD64_CLASSES,
 		.register_classes   = amd64_reg_classes,
 		.sp                 = &amd64_registers[REG_RSP],
-		.bp                 = &amd64_registers[REG_RBP],
 		.spill_cost         = 7,
 		.reload_cost        = 5,
 	},

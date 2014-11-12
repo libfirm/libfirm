@@ -1565,7 +1565,6 @@ static ia32_isa_t ia32_isa_template = {
 		.n_register_classes = N_IA32_CLASSES,
 		.register_classes   = ia32_reg_classes,
 		.sp                 = &ia32_registers[REG_ESP],
-		.bp                 = &ia32_registers[REG_EBP],
 		.spill_cost         = 7,
 		.reload_cost        = 5,
 	},
