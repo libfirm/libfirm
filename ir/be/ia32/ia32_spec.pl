@@ -1746,6 +1746,8 @@ Conv_I2FP => {
 	ins       => [ "base", "index", "mem", "val" ],
 	am        => "source,unary",
 	latency   => 10,
+	attr      => "ir_mode *tgt_mode",
+	init_attr => "attr->ls_mode = tgt_mode;",
 	mode      => $mode_xmm,
 },
 
@@ -1755,6 +1757,8 @@ Conv_FP2I => {
 	ins       => [ "base", "index", "mem", "val" ],
 	am        => "source,unary",
 	latency   => 10,
+	attr      => "ir_mode *src_mode",
+	init_attr => "attr->ls_mode = src_mode;",
 	mode      => $mode_gp,
 },
 
@@ -1764,6 +1768,8 @@ Conv_FP2FP => {
 	ins       => [ "base", "index", "mem", "val" ],
 	am        => "source,unary",
 	latency   => 8,
+	attr      => "ir_mode *tgt_mode",
+	init_attr => "attr->ls_mode = tgt_mode;",
 	mode      => $mode_xmm,
 },
 

@@ -3962,9 +3962,7 @@ static ir_node *gen_Conv(ir_node *node)
 			/* ... to float */
 			if (ia32_cg_config.use_sse2) {
 				DB((dbg, LEVEL_1, "create Conv(float, float) ..."));
-				res = new_bd_ia32_Conv_FP2FP(dbgi, new_block, noreg_GP,
-				                             noreg_GP, nomem, new_op);
-				set_ia32_ls_mode(res, tgt_mode);
+				res = new_bd_ia32_Conv_FP2FP(dbgi, new_block, noreg_GP, noreg_GP, nomem, new_op, tgt_mode);
 			} else {
 				if (src_bits < tgt_bits) {
 					DB((dbg, LEVEL_1, "killed Conv(float, float) ..."));
@@ -3979,9 +3977,7 @@ static ir_node *gen_Conv(ir_node *node)
 			/* ... to int */
 			DB((dbg, LEVEL_1, "create Conv(float, int) ..."));
 			if (ia32_cg_config.use_sse2) {
-				res = new_bd_ia32_Conv_FP2I(dbgi, new_block, noreg_GP, noreg_GP,
-				                            nomem, new_op);
-				set_ia32_ls_mode(res, src_mode);
+				res = new_bd_ia32_Conv_FP2I(dbgi, new_block, noreg_GP, noreg_GP, nomem, new_op, src_mode);
 			} else {
 				return gen_x87_fp_to_gp(node);
 			}
@@ -3993,9 +3989,7 @@ static ir_node *gen_Conv(ir_node *node)
 			DB((dbg, LEVEL_1, "create Conv(int, float) ..."));
 			if (ia32_cg_config.use_sse2) {
 				ir_node *new_op = be_transform_node(op);
-				res = new_bd_ia32_Conv_I2FP(dbgi, new_block, noreg_GP, noreg_GP,
-				                            nomem, new_op);
-				set_ia32_ls_mode(res, tgt_mode);
+				res = new_bd_ia32_Conv_I2FP(dbgi, new_block, noreg_GP, noreg_GP, nomem, new_op, tgt_mode);
 			} else {
 				unsigned int_mantissa   = get_mode_size_bits(src_mode) - (mode_is_signed(src_mode) ? 1 : 0);
 				unsigned float_mantissa = get_mode_mantissa_size(tgt_mode);
