@@ -110,7 +110,6 @@ static TEMPLATE_isa_t TEMPLATE_isa_template = {
 		.registers          = TEMPLATE_registers,
 		.n_register_classes = N_TEMPLATE_CLASSES,
 		.register_classes   = TEMPLATE_reg_classes,
-		.sp                 = &TEMPLATE_registers[REG_SP],
 		.spill_cost         = 7,
 		.reload_cost        = 5,
 	},

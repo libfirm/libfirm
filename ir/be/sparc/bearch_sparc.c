@@ -63,7 +63,6 @@ static sparc_isa_t sparc_isa_template = {
 		.registers   = sparc_registers,
 		.n_register_classes = N_SPARC_CLASSES,
 		.register_classes   = sparc_reg_classes,
-		.sp                 = &sparc_registers[REG_SP],
 		.spill_cost         = 7,
 		.reload_cost        = 5,
 	},

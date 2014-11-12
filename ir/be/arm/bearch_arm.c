@@ -248,7 +248,6 @@ static arm_isa_t arm_isa_template = {
 		.registers          = arm_registers,
 		.n_register_classes = N_ARM_CLASSES,
 		.register_classes   = arm_reg_classes,
-		.sp                 = &arm_registers[REG_SP],
 		.spill_cost         = 7,
 		.reload_cost        = 5,
 	},
