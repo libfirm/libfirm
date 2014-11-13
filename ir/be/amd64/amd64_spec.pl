@@ -426,7 +426,6 @@ Jcc => {
 	attr_type => "amd64_cc_attr_t",
 	attr      => "x86_condition_code_t cc",
 	fixed     => "amd64_op_mode_t op_mode = AMD64_OP_NONE;\n",
-	mode      => "mode_T",
 },
 
 Store => {
@@ -444,7 +443,6 @@ Store => {
 SwitchJmp => {
 	op_flags  => [ "cfopcode", "forking" ],
 	state     => "pinned",
-	mode      => "mode_T",
 	reg_req   => { in => [ "gp" ], out => [ "none" ] },
 	out_arity => "variable",
 	attr_type => "amd64_switch_jmp_attr_t",

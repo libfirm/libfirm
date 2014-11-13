@@ -168,7 +168,6 @@ Immediate => {
 },
 
 Asm => {
-	mode      => "mode_T",
 	arity     => "variable",
 	out_arity => "variable",
 	attr_type => "ia32_asm_attr_t",
@@ -212,7 +211,6 @@ AddMem => {
 	outs      => [ "unused", "flags", "M" ],
 	emit      => "add%M %#S3, %AM",
 	latency   => 1,
-	mode      => "mode_T",
 	modified_flags => $status_flags
 },
 
@@ -322,7 +320,6 @@ AndMem => {
 	outs      => [ "unused", "flags", "M" ],
 	emit      => "and%M %#S3, %AM",
 	latency   => 1,
-	mode      => "mode_T",
 	modified_flags => $status_flags
 },
 
@@ -348,7 +345,6 @@ OrMem => {
 	outs      => [ "unused", "flags", "M" ],
 	emit      => "or%M %#S3, %AM",
 	latency   => 1,
-	mode      => "mode_T",
 	modified_flags => $status_flags
 },
 
@@ -385,7 +381,6 @@ XorMem => {
 	outs      => [ "unused", "flags", "M" ],
 	emit      => "xor%M %#S3, %AM",
 	latency   => 1,
-	mode      => "mode_T",
 	modified_flags => $status_flags
 },
 
@@ -411,7 +406,6 @@ SubMem => {
 	outs      => [ "unused", "flags", "M" ],
 	emit      => "sub%M %#S3, %AM",
 	latency   => 1,
-	mode      => "mode_T",
 	modified_flags => $status_flags
 },
 
@@ -502,7 +496,6 @@ ShlMem => {
 	outs      => [ "unused", "flags", "M" ],
 	emit      => "shl%M %<,S3 %AM",
 	latency   => 1,
-	mode      => "mode_T",
 	modified_flags => $status_flags
 },
 
@@ -537,7 +530,6 @@ ShrMem => {
 	ins       => [ "base", "index", "mem", "count" ],
 	outs      => [ "unused", "flags", "M" ],
 	emit      => "shr%M %<,S3 %AM",
-	mode      => "mode_T",
 	latency   => 1,
 	modified_flags => $status_flags
 },
@@ -574,7 +566,6 @@ SarMem => {
 	outs      => [ "unused", "flags", "M" ],
 	emit      => "sar%M %<,S3 %AM",
 	latency   => 1,
-	mode      => "mode_T",
 	modified_flags => $status_flags
 },
 
@@ -598,7 +589,6 @@ RorMem => {
 	outs      => [ "unused", "flags", "M" ],
 	emit      => "ror%M %<,S3 %AM",
 	latency   => 1,
-	mode      => "mode_T",
 	modified_flags => $status_flags
 },
 
@@ -622,7 +612,6 @@ RolMem => {
 	outs      => [ "unused", "flags", "M" ],
 	emit      => "rol%M %<,S3 %AM",
 	latency   => 1,
-	mode      => "mode_T",
 	modified_flags => $status_flags
 },
 
@@ -646,7 +635,6 @@ NegMem => {
 	outs      => [ "unused", "flags", "M" ],
 	emit      => "neg%M %AM",
 	latency   => 1,
-	mode      => "mode_T",
 	modified_flags => $status_flags
 },
 
@@ -684,7 +672,6 @@ IncMem => {
 	ins       => [ "base", "index", "mem" ],
 	outs      => [ "unused", "flags", "M" ],
 	emit      => "inc%M %AM",
-	mode      => "mode_T",
 	latency   => 1,
 	modified_flags => $status_flags_wo_cf
 },
@@ -708,7 +695,6 @@ DecMem => {
 	ins       => [ "base", "index", "mem" ],
 	outs      => [ "unused", "flags", "M" ],
 	emit      => "dec%M %AM",
-	mode      => "mode_T",
 	latency   => 1,
 	modified_flags => $status_flags_wo_cf
 },
@@ -733,7 +719,6 @@ NotMem => {
 	outs      => [ "unused0", "unused1", "M" ],
 	emit      => "not%M %AM",
 	latency   => 1,
-	mode      => "mode_T",
 	# no flags modified
 },
 
@@ -1341,7 +1326,6 @@ Inport => {
 	outs      => [ "res", "M" ],
 	emit      => "in%M %^S0, %#D0",
 	latency   => 1,
-	mode      => mode_T,
 	modified_flags => $status_flags
 },
 
