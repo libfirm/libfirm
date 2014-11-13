@@ -1341,8 +1341,9 @@ static changes_t optimize_phi(ir_node *phi, walk_env_t *wenv)
 
 		if (i == n - 1) {
 			type = get_Store_type(store);
-		} else {
-			assert(type == get_Store_type(store));
+		} else if (get_Store_type(store) != type) {
+			/* We cannot merge Stores with different types. */
+			return NO_CHANGES;
 		}
 	}
 
