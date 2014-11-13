@@ -988,8 +988,13 @@ static void fix_head_inversion(void)
 	pos = 0;
 	for_each_phi_safe(loop_head, phi, next) {
 		DB((dbg, LEVEL_5, "fix inverted head exchange %+F by %+F\n", phi, phis[pos]));
-		if (phis[pos] != phi)
+		if (phis[pos] != phi) {
+			if (get_Phi_loop(phi)) {
+				remove_keep_alive(phi);
+				set_Phi_loop(phi, false);
+			}
 			exchange(phi, phis[pos++]);
+		}
 	}
 
 	DEL_ARR_F(phis);
