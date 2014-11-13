@@ -2617,27 +2617,13 @@ static void bemit_ ## op(const ir_node *node) { \
 	bemit8(code);                               \
 }
 
-//EMIT_SINGLEOP(daa,  0x27)
-//EMIT_SINGLEOP(das,  0x2F)
-//EMIT_SINGLEOP(aaa,  0x37)
-//EMIT_SINGLEOP(aas,  0x3F)
-//EMIT_SINGLEOP(nop,  0x90)
 EMIT_SINGLEOP(cwtl,  0x98)
 EMIT_SINGLEOP(cltd,  0x99)
-//EMIT_SINGLEOP(fwait, 0x9B)
 EMIT_SINGLEOP(sahf,  0x9E)
-//EMIT_SINGLEOP(popf, 0x9D)
 EMIT_SINGLEOP(leave, 0xC9)
 EMIT_SINGLEOP(int3,  0xCC)
-//EMIT_SINGLEOP(iret, 0xCF)
-//EMIT_SINGLEOP(xlat, 0xD7)
-//EMIT_SINGLEOP(lock, 0xF0)
-//EMIT_SINGLEOP(halt, 0xF4)
 EMIT_SINGLEOP(cmc,   0xF5)
 EMIT_SINGLEOP(stc,   0xF9)
-//EMIT_SINGLEOP(cli,  0xFA)
-//EMIT_SINGLEOP(sti,  0xFB)
-//EMIT_SINGLEOP(std,  0xFD)
 
 /**
  * Emits a MOV out, [MEM].
