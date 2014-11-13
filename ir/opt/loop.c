@@ -982,19 +982,19 @@ static void fix_head_inversion(void)
 		ir_node  *const new_phi = new_rd_Phi(dbgi, new_head, new_arity, ins, mode);
 		ARR_APP1(ir_node*, phis, new_phi);
 
-		DB((dbg, LEVEL_5, "fix inverted head should exch %N by %N (pos %d)\n", phi, new_phi, pos));
+		DB((dbg, LEVEL_5, "fix inverted head should exchange %+F by %+F (pos %d)\n", phi, new_phi, pos));
 	}
 
 	pos = 0;
 	for_each_phi_safe(loop_head, phi, next) {
-		DB((dbg, LEVEL_5, "fix inverted exch phi %N by %N\n", phi, phis[pos]));
+		DB((dbg, LEVEL_5, "fix inverted head exchange %+F by %+F\n", phi, phis[pos]));
 		if (phis[pos] != phi)
 			exchange(phi, phis[pos++]);
 	}
 
 	DEL_ARR_F(phis);
 
-	DB((dbg, LEVEL_5, "fix inverted head exch head block %N by %N\n", loop_head, new_head));
+	DB((dbg, LEVEL_5, "fix inverted head exchange head block %N by %N\n", loop_head, new_head));
 	exchange(loop_head, new_head);
 }
 
