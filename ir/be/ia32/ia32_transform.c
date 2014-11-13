@@ -5143,31 +5143,26 @@ static ir_node *gen_debugbreak(ir_node *node)
 	return new_bd_ia32_Breakpoint(dbgi, block, mem);
 }
 
-/**
- * Transform Builtin return_address
- */
-static ir_node *gen_return_address(ir_node *node)
+static ir_node *make_load_from_frame(ir_node *const node, ir_entity *(*const get_ent)(ir_graph*))
 {
-	ir_node      *param = get_Builtin_param(node, 0);
-	dbg_info     *dbgi  = get_irn_dbg_info(node);
-	ir_node      *block = be_transform_node(get_nodes_block(node));
-	ir_graph     *irg   = get_irn_irg(node);
-	ir_node      *ptr   = get_irg_frame(irg);
-	unsigned long value = get_Const_long(param);
-	if (value > 0) {
+	dbg_info *const dbgi  = get_irn_dbg_info(node);
+	ir_node  *const block = be_transform_node(get_nodes_block(node));
+	ir_graph *const irg   = get_irn_irg(node);
+
+	ir_node            *ptr      = get_irg_frame(irg);
+	ir_node      *const n_frames = get_Builtin_param(node, 0);
+	unsigned long const value    = get_Const_long(n_frames);
+	if (value != 0) {
 		ir_node *const cfr = new_bd_ia32_ClimbFrame(dbgi, block, ptr, value);
 		ptr = new_r_Proj(cfr, ia32_mode_gp, pn_ia32_ClimbFrame_res);
 	}
 
-	/* load the return address from this frame */
-	ir_node *load = new_bd_ia32_Load(dbgi, block, ptr, noreg_GP, nomem);
-
+	ir_node *const load = new_bd_ia32_Load(dbgi, block, ptr, noreg_GP, nomem);
 	set_irn_pinned(load, get_irn_pinned(node));
 	set_ia32_op_type(load, ia32_AddrModeS);
 	set_ia32_ls_mode(load, ia32_mode_gp);
-
 	set_ia32_am_offs_int(load, 0);
-	set_ia32_frame_ent(load, ia32_get_return_address_entity(irg));
+	set_ia32_frame_ent(load, get_ent(irg));
 
 	if (get_irn_pinned(node) == op_pin_state_floats) {
 		assert((int)pn_ia32_xLoad_res == (int)pn_ia32_fld_res
@@ -5181,46 +5176,22 @@ static ir_node *gen_return_address(ir_node *node)
 }
 
 /**
+ * Transform Builtin return_address
+ */
+static ir_node *gen_return_address(ir_node *node)
+{
+	/* Load the return address from this frame. */
+	return make_load_from_frame(node, &ia32_get_return_address_entity);
+}
+
+/**
  * Transform Builtin frame_address
  */
 static ir_node *gen_frame_address(ir_node *node)
 {
-	ir_node      *param = get_Builtin_param(node, 0);
-	dbg_info     *dbgi  = get_irn_dbg_info(node);
-	ir_graph     *irg   = get_irn_irg(node);
-	ir_node      *block = be_transform_node(get_nodes_block(node));
-	ir_node      *ptr   = get_irg_frame(irg);
-	unsigned long value = get_Const_long(param);
-	if (value > 0) {
-		ir_node *const cfr = new_bd_ia32_ClimbFrame(dbgi, block, ptr, value);
-		ptr = new_r_Proj(cfr, ia32_mode_gp, pn_ia32_ClimbFrame_res);
-	}
-
-	/* load the frame address from this frame */
-	ir_node *load = new_bd_ia32_Load(dbgi, block, ptr, noreg_GP, nomem);
-
-	set_irn_pinned(load, get_irn_pinned(node));
-	set_ia32_op_type(load, ia32_AddrModeS);
-	set_ia32_ls_mode(load, ia32_mode_gp);
-
-	ir_entity *ent = ia32_get_frame_address_entity(irg);
-	if (ent != NULL) {
-		set_ia32_am_offs_int(load, 0);
-		set_ia32_frame_ent(load, ent);
-	} else {
-		/* will fail anyway, but gcc does this: */
-		set_ia32_am_offs_int(load, 0);
-	}
-
-	if (get_irn_pinned(node) == op_pin_state_floats) {
-		assert((int)pn_ia32_xLoad_res == (int)pn_ia32_fld_res
-				&& (int)pn_ia32_fld_res == (int)pn_ia32_Load_res
-				&& (int)pn_ia32_Load_res == (int)pn_ia32_res);
-		arch_add_irn_flags(load, arch_irn_flag_rematerializable);
-	}
-
-	SET_IA32_ORIG_NODE(load, node);
-	return new_r_Proj(load, ia32_mode_gp, pn_ia32_Load_res);
+	/* Load the frame address from this frame.
+	 * Will fail if frame pointer is omitted, but gcc does this. */
+	return make_load_from_frame(node, &ia32_get_frame_address_entity);
 }
 
 /**
