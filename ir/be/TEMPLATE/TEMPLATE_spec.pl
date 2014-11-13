@@ -213,10 +213,10 @@ Start => {
 Return => {
 	state    => "pinned",
 	op_flags => [ "cfopcode" ],
-	# This is fixed to 1 result in a gp register
-	ins      => [ "result", "stack", "mem" ],
+	arity    => "variable",
+	reg_req  => { out => [ "none" ] },
+	ins      => [ "mem", "stack", "first_result" ],
 	outs     => [ "X" ],
-	reg_req  => { in => [ "gp", "sp", "none", ], out => [ "none" ] },
 	mode     => "mode_X",
 },
 

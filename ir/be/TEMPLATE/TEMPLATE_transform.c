@@ -232,22 +232,32 @@ static ir_node *gen_Start(ir_node *node)
 
 static ir_node *gen_Return(ir_node *node)
 {
-	dbg_info *dbgi      = get_irn_dbg_info(node);
-	ir_node  *block     = get_nodes_block(node);
-	ir_node  *new_block = be_transform_node(block);
-	ir_node  *mem       = get_Return_mem(node);
-	ir_node  *new_mem   = be_transform_node(mem);
-	ir_graph *irg       = get_irn_irg(node);
-	ir_node  *sp        = get_irg_frame(irg);
+	int                               p     = n_TEMPLATE_Return_first_result;
+	unsigned                    const n_res = get_Return_n_ress(node);
+	unsigned                    const n_ins = p + n_res;
+	ir_node                   **const in    = ALLOCAN(ir_node*, n_ins);
+	ir_graph                   *const irg   = get_irn_irg(node);
+	struct obstack             *const obst  = be_get_be_obst(irg);
+	arch_register_req_t const **const reqs  = OALLOCN(obst, arch_register_req_t const*, n_ins);
 
-	if (get_Return_n_ress(node) != 1)
-		panic("TEMPLATE: only return with 1 result supported");
-	ir_node *result = get_Return_res(node, 0);
-	if (!mode_needs_gp_reg(get_irn_mode(result)))
-		panic("TEMPLATE: return result must have gp mode");
-	ir_node *new_result = be_transform_node(result);
+	in[n_TEMPLATE_Return_mem]   = be_transform_node(get_Return_mem(node));
+	reqs[n_TEMPLATE_Return_mem] = arch_no_register_req;
 
-	return new_bd_TEMPLATE_Return(dbgi, new_block, new_result, sp, new_mem);
+	in[n_TEMPLATE_Return_stack]   = get_irg_frame(irg);
+	reqs[n_TEMPLATE_Return_stack] = TEMPLATE_registers[REG_SP].single_req;
+
+	for (unsigned i = 0; i != n_res; ++p, ++i) {
+		ir_node *const res = get_Return_res(node, i);
+		in[p]   = be_transform_node(res);
+		reqs[p] = arch_get_irn_register_req(in[p])->cls->class_req;
+	}
+
+	dbg_info *const dbgi  = get_irn_dbg_info(node);
+	ir_node  *const block = be_transform_node(get_nodes_block(node));
+	ir_node  *const ret   = new_bd_TEMPLATE_Return(dbgi, block, n_ins, in);
+	arch_set_irn_register_reqs_in(ret, reqs);
+
+	return ret;
 }
 
 static ir_node *gen_Phi(ir_node *node)

@@ -208,7 +208,12 @@ static void emit_Return(const ir_node *node)
 	}
 
 	/* return */
-	TEMPLATE_emitf(node, "ret %S0");
+	unsigned    const n_res = get_irn_arity(node) - n_TEMPLATE_Return_first_result;
+	char const *const fmt   =
+		n_res == 0 ? "ret" :
+		n_res == 1 ? "ret %S2" :
+		"ret %S2, ...";
+	TEMPLATE_emitf(node, fmt);
 }
 
 /**
