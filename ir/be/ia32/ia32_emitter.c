@@ -2632,7 +2632,6 @@ EMIT_SINGLEOP(int3,  0xCC)
 //EMIT_SINGLEOP(iret, 0xCF)
 //EMIT_SINGLEOP(xlat, 0xD7)
 //EMIT_SINGLEOP(lock, 0xF0)
-EMIT_SINGLEOP(rep,   0xF3)
 //EMIT_SINGLEOP(halt, 0xF4)
 EMIT_SINGLEOP(cmc,   0xF5)
 EMIT_SINGLEOP(stc,   0xF9)
@@ -3279,7 +3278,6 @@ static void ia32_register_binary_emitters(void)
 	be_set_emitter(op_ia32_PopMem,        bemit_popmem);
 	be_set_emitter(op_ia32_Popcnt,        bemit_popcnt);
 	be_set_emitter(op_ia32_Push,          bemit_push);
-	be_set_emitter(op_ia32_RepPrefix,     bemit_rep);
 	be_set_emitter(op_ia32_Rol,           bemit_rol);
 	be_set_emitter(op_ia32_RolMem,        bemit_rolmem);
 	be_set_emitter(op_ia32_Ror,           bemit_ror);

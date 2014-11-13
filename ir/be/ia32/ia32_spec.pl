@@ -1136,14 +1136,6 @@ SubSP => {
 	modified_flags => $status_flags
 },
 
-RepPrefix => {
-	op_flags  => [ "keep" ],
-	state     => "pinned",
-	mode      => "mode_M",
-	emit      => "rep",
-	latency   => 0,
-},
-
 LdTls => {
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { out => [ "gp" ] },
