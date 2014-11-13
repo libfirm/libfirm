@@ -726,7 +726,7 @@ static void copy_walk_n(ir_node *const node, walker_condition *const walk_condit
 	set_irn_in(cp, arity, cpin);
 }
 
-/* Removes alle Blocks with non marked predecessors from the condition chain. */
+/* Removes all Blocks with non marked predecessors from the condition chain. */
 static void unmark_not_allowed_cc_blocks(void)
 {
 	size_t const blocks = ARR_LEN(cc_blocks);
