@@ -1286,7 +1286,7 @@ Breakpoint => {
 	ins       => [ "mem" ],
 	latency   => 0,
 	emit      => "int3",
-	mode      => mode_M,
+	mode      => "mode_M",
 },
 
 #
@@ -1298,7 +1298,7 @@ UD2 => {
 	ins       => [ "mem" ],
 	latency   => 0,
 	emit      => "ud2",
-	mode      => mode_M,
+	mode      => "mode_M",
 },
 
 #
@@ -1311,7 +1311,7 @@ Outport => {
 	ins       => [ "port", "value", "mem" ],
 	emit      => "out%M %#S1, %^S0",
 	latency   => 1,
-	mode      => mode_M,
+	mode      => "mode_M",
 	modified_flags => $status_flags
 },
 
