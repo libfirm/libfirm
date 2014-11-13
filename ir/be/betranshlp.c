@@ -30,6 +30,7 @@
 #include "iropt_t.h"
 #include "irouts.h"
 #include "irtools.h"
+#include "panic.h"
 #include "pdeq.h"
 #include "util.h"
 
@@ -167,7 +168,18 @@ static ir_node *transform_proj(ir_node *node)
 	be_transform_func *proj_transform
 		= (be_transform_func*)pred_op->ops.generic1;
 	/* we should have a Proj transformer registered */
-	assert(proj_transform != NULL);
+#ifdef DEBUG_libfirm
+	if (!proj_transform) {
+		unsigned const node_pn = get_Proj_num(node);
+		if (is_Proj(pred)) {
+			unsigned const pred_pn   = get_Proj_num(pred);
+			ir_node *const pred_pred = get_Proj_pred(pred);
+			panic("no transformer for %+F (%u) -> %+F (%u) -> %+F", node, node_pn, pred, pred_pn, pred_pred);
+		} else {
+			panic("no transformer for %+F (%u) -> %+F", node, node_pn, pred);
+		}
+	}
+#endif
 	return proj_transform(node);
 }
 
@@ -198,6 +210,10 @@ ir_node *be_transform_node(ir_node *node)
 
 	ir_op *op = get_irn_op(node);
 	be_transform_func *transform = (be_transform_func *)op->ops.generic;
+#ifdef DEBUG_libfirm
+	if (!transform)
+		panic("no transformer for %+F", node);
+#endif
 
 	new_node = transform(node);
 	assert(new_node != NULL);
