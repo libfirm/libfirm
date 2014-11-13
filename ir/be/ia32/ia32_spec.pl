@@ -1332,7 +1332,7 @@ Outport => {
 	state     => "pinned",
 	reg_req   => { in => [ "edx", "eax", "none" ], out => [ "none" ] },
 	ins       => [ "port", "value", "mem" ],
-	emit      => "out%M %^S0, %#S1",
+	emit      => "out%M %#S1, %^S0",
 	latency   => 1,
 	mode      => mode_M,
 	modified_flags => $status_flags
@@ -1347,7 +1347,7 @@ Inport => {
 	reg_req   => { in => [ "edx", "none" ], out => [ "eax", "none" ] },
 	ins       => [ "port", "mem" ],
 	outs      => [ "res", "M" ],
-	emit      => "in%M %#D0, %^S0",
+	emit      => "in%M %^S0, %#D0",
 	latency   => 1,
 	mode      => mode_T,
 	modified_flags => $status_flags
