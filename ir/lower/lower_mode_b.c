@@ -61,8 +61,14 @@ static ir_node *convert_to_modeb(ir_node *node)
  */
 static ir_node *create_cond_set(ir_node *cond_value, ir_mode *dest_mode)
 {
-	ir_node  *lower_block = part_block_edges(cond_value);
-	ir_node  *upper_block = get_nodes_block(cond_value);
+	ir_node *lower_block = part_block_edges(cond_value);
+	ir_node *upper_block = get_nodes_block(cond_value);
+	foreach_out_edge_safe(upper_block, edge) {
+		/* The cached nodes might belong to the lower block, so we have
+		 * to clear the cache for moved nodes to avoid dominance problems. */
+		ir_node *node = get_edge_src_irn(edge);
+		set_irn_link(node, NULL);
+	}
 	ir_graph *irg         = get_irn_irg(cond_value);
 	ir_node  *cond        = new_r_Cond(upper_block, cond_value);
 	ir_node  *proj_true   = new_r_Proj(cond, mode_X, pn_Cond_true);
