@@ -335,7 +335,7 @@ FIRM_API ir_relation tarval_cmp(const ir_tarval *a, const ir_tarval *b);
  *   constructed and returned
  *
  * @note
- *    Illegal convertions will trigger a panic
+ *    Illegal conversions will trigger a panic
  *
  * @sa
  *    FIRM documentation for conversion rules
