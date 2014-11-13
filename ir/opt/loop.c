@@ -1208,28 +1208,25 @@ static void loop_inversion(ir_graph *const irg)
 /* Fix the original loop_heads ins for invariant unrolling case. */
 static void unrolling_fix_loop_head_inv(void)
 {
-	ir_node *ins[2];
 
 	/* Original loop_heads ins are:
 	 * duff block and the own backedge */
 
-	ir_node *const proj           = new_r_Proj(loop_info.duff_cond, mode_X, 0);
-	ir_node *const head_pred      = get_Block_cfgpred(loop_head, loop_info.be_src_pos);
-	ir_node *const loop_condition = get_unroll_copy(head_pred, unroll_nr - 1);
-	ins[0] = loop_condition;
-	ins[1] = proj;
-	set_irn_in(loop_head, 2, ins);
-	DB((dbg, LEVEL_4, "Rewire ins of block loophead %N to pred %N and duffs entry %N \n" , loop_head, ins[0], ins[1]));
+	ir_node *const proj            = new_r_Proj(loop_info.duff_cond, mode_X, 0);
+	ir_node *const head_pred       = get_Block_cfgpred(loop_head, loop_info.be_src_pos);
+	ir_node *const loop_condition  = get_unroll_copy(head_pred, unroll_nr - 1);
+	ir_node *const loop_head_ins[] = { loop_condition, proj };
+	set_irn_in(loop_head, ARRAY_SIZE(loop_head_ins), loop_head_ins);
+	DB((dbg, LEVEL_4, "Rewire ins of block loophead %N to pred %N and duffs entry %N \n" , loop_head, loop_head_ins[0], loop_head_ins[1]));
 
 	for_each_phi(loop_head, phi) {
 		ir_node *const pred      = get_Phi_pred(phi, loop_info.be_src_pos);
 		/* TODO we think it is a phi, but for Mergesort it is not the case.*/
 		ir_node *const last_pred = get_unroll_copy(pred, unroll_nr - 1);
 
-		ins[0] = last_pred;
-		ins[1] = (ir_node*)get_irn_link(phi);
-		set_irn_in(phi, 2, ins);
-		DB((dbg, LEVEL_4, "Rewire ins of loophead phi %N to pred %N and duffs entry %N \n" , phi, ins[0], ins[1]));
+		ir_node *const phi_ins[] = { last_pred, (ir_node*)get_irn_link(phi) };
+		set_irn_in(phi, ARRAY_SIZE(phi_ins), phi_ins);
+		DB((dbg, LEVEL_4, "Rewire ins of loophead phi %N to pred %N and duffs entry %N \n" , phi, phi_ins[0], phi_ins[1]));
 	}
 }
 
@@ -1272,9 +1269,8 @@ static void place_copies(int const copies)
 		DB((dbg, LEVEL_5, "topmost be block %N \n", topmost_be_block));
 
 		if (loop_info.unroll_kind == constant) {
-			ir_node *ins[1];
-			ins[0] = new_jmp;
-			set_irn_in(lower, 1, ins);
+			ir_node *ins[] = { new_jmp };
+			set_irn_in(lower, ARRAY_SIZE(ins), ins);
 
 			for_each_phi(loophead, phi) {
 				ir_node *const topmost_def = get_Phi_pred(phi, be_src_pos);
@@ -1288,21 +1284,19 @@ static void place_copies(int const copies)
 				else
 					ins[0] = topmost_def;
 
-				set_irn_in(lower_phi, 1, ins);
+				set_irn_in(lower_phi, ARRAY_SIZE(ins), ins);
 				/* Need to replace phis with 1 in later. */
 			}
 		} else {
-			/* Invariant case */
-			/* Every node has 2 ins. One from the duff blocks
-			 * and one from the previously unrolled loop. */
-			ir_node *ins[2];
 			/* Calculate corresponding projection of mod result for this copy c */
 			ir_node *proj = new_r_Proj(loop_info.duff_cond, mode_X, unroll_nr - c - 1);
 			DB((dbg, LEVEL_4, "New duff proj %N\n" , proj));
 
-			ins[0] = new_jmp;
-			ins[1] = proj;
-			set_irn_in(lower, 2, ins);
+			/* Invariant case */
+			/* Every node has 2 ins. One from the duff blocks
+			 * and one from the previously unrolled loop. */
+			ir_node *ins[] = { new_jmp, proj };
+			set_irn_in(lower, ARRAY_SIZE(ins), ins);
 			DB((dbg, LEVEL_4, "Rewire ins of Block %N to pred %N and duffs entry %N \n" , lower, ins[0], ins[1]));
 
 			for_each_phi(loophead, phi) {
@@ -1314,10 +1308,9 @@ static void place_copies(int const copies)
 				ir_node *const upper_phi_pred   = is_in_loop(topmost_phi_pred) ?
 					get_unroll_copy(topmost_phi_pred, c) : topmost_phi_pred;
 
-				ins[0] = upper_phi_pred;
-				ins[1] = duff_phi;
-				set_irn_in(lower_phi, 2, ins);
-				DB((dbg, LEVEL_4, "Rewire ins of %N to pred %N and duffs entry %N \n" , lower_phi, ins[0], ins[1]));
+				ir_node *phi_ins[] = { upper_phi_pred, duff_phi };
+				set_irn_in(lower_phi, ARRAY_SIZE(phi_ins), phi_ins);
+				DB((dbg, LEVEL_4, "Rewire ins of %N to pred %N and duffs entry %N \n" , lower_phi, phi_ins[0], phi_ins[1]));
 			}
 		}
 	}
@@ -1431,8 +1424,6 @@ static ir_node *new_Abs(ir_node *const op, ir_mode *const mode)
  * TODO split */
 static void create_duffs_block(ir_graph *const irg)
 {
-	ir_node *ins[2];
-
 	/* TODO naming
 	 * 1. Calculate first approach to count.
 	 *    Condition: (end - start) % step == 0 */
@@ -1479,9 +1470,8 @@ static void create_duffs_block(ir_graph *const irg)
 	 *     decreasing: count < 0
 	 *     increasing: count > 0
 	 */
-	ins[0] = x_true;
-	ins[1] = x_false;
-	ir_node *const count_block = new_r_Block(irg, ARRAY_SIZE(ins), ins);
+	ir_node *const count_block_ins[] = { x_true, x_false };
+	ir_node *const count_block       = new_r_Block(irg, ARRAY_SIZE(count_block_ins), count_block_ins);
 	DB((dbg, LEVEL_4, "Duff block 2 %N\n", count_block));
 
 
@@ -1502,9 +1492,8 @@ static void create_duffs_block(ir_graph *const irg)
 		false_val = new_r_Const_long(irg, mode, 2);
 	}
 
-	ins[0] = true_val;
-	ins[1] = false_val;
-	ir_node *const correction = new_r_Phi(count_block, ARRAY_SIZE(ins), ins, mode);
+	ir_node *const correction_ins[] = { true_val, false_val };
+	ir_node *const correction       = new_r_Phi(count_block, ARRAY_SIZE(correction_ins), correction_ins, mode);
 
 	/* (end - start) / step  +  correction */
 	ir_node *const count = new_r_Add(count_block ,div_res, correction, mode);
@@ -1525,16 +1514,15 @@ static void create_duffs_block(ir_graph *const irg)
 	/* 3. Duff Block
 	 *    Contains module to decide which loop to start from. */
 
-	ins[0] = good_count;
-	ins[1] = bad_count;
-	ir_node *const duff_block = new_r_Block(irg, ARRAY_SIZE(ins), ins);
+	ir_node *const duff_block_ins[] = { good_count, bad_count };
+	ir_node *const duff_block       = new_r_Block(irg, ARRAY_SIZE(duff_block_ins), duff_block_ins);
 	DB((dbg, LEVEL_4, "Duff block 3 %N\n", duff_block));
 
 	/* Get absolute value */
-	ins[0] = new_Abs(count, mode);
+	ir_node *const abs = new_Abs(count, mode);
 	/* Manually feed the aforementioned count = 1 (bad case)*/
-	ins[1] = one;
-	ir_node *const count_phi = new_r_Phi(duff_block, ARRAY_SIZE(ins), ins, mode);
+	ir_node *const count_phi_ins[] = { abs, one };
+	ir_node *const count_phi       = new_r_Phi(duff_block, ARRAY_SIZE(count_phi_ins), count_phi_ins, mode);
 
 	/* count % unroll_nr */
 	ir_node *const unroll_c = new_r_Const_long(irg, mode, (long)unroll_nr);
