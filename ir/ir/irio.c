@@ -293,7 +293,7 @@ static const char *get_segment_name(ir_segment_t segment)
 	case IR_SEGMENT_DESTRUCTORS:  return "destructors";
 	case IR_SEGMENT_JCR:          return "jcr";
 	}
-	panic("INVALID_SEGMENT");
+	panic("invalid segment");
 }
 
 static const char *get_visibility_name(ir_visibility visibility)
@@ -303,7 +303,7 @@ static const char *get_visibility_name(ir_visibility visibility)
 	case ir_visibility_external: return "external";
 	case ir_visibility_private:  return "private";
 	}
-	panic("INVALID_VISIBILITY");
+	panic("invalid visibility");
 }
 
 static const char *get_mode_arithmetic_name(ir_mode_arithmetic arithmetic)
@@ -512,7 +512,7 @@ static void write_initializer(write_env_t *const env, ir_initializer_t const *co
 		return;
 	}
 	}
-	panic("Unknown initializer kind");
+	panic("unknown initializer kind");
 }
 
 static void write_pin_state(write_env_t *env, op_pin_state state)
@@ -616,7 +616,7 @@ static void write_type_array(write_env_t *env, ir_type *tp)
 	else if (is_Unknown(size))
 		write_symbol(env, "unknown");
 	else
-		panic("Upper array bound is not constant");
+		panic("upper array bound is not constant");
 	fputc('\n', env->file);
 }
 
@@ -678,7 +678,7 @@ static void write_type(write_env_t *env, ir_type *tp)
 	case tpo_pointer:   write_type_pointer(env, tp);   return;
 	case tpo_array:     write_type_array(env, tp);     return;
 	}
-	panic("can't write invalid type %+F\n", tp);
+	panic("can't write invalid type %+F", tp);
 }
 
 static void write_entity(write_env_t *env, ir_entity *ent)
@@ -923,7 +923,7 @@ static void write_node(const ir_node *node, write_env_t *env)
 
 	fputc('\t', env->file);
 	if (func == NULL)
-		panic("No write_node_func for %+F", node);
+		panic("no write_node_func for %+F", node);
 	func(env, node);
 	fputc('\n', env->file);
 }
@@ -989,7 +989,7 @@ static void write_mode(write_env_t *env, ir_mode *mode)
 		write_unsigned(env, get_mode_mantissa_size(mode));
 		write_unsigned(env, get_mode_float_int_overflow(mode));
 	} else {
-		panic("Cannot write internal modes");
+		panic("cannot write internal modes");
 	}
 }
 
@@ -1634,7 +1634,7 @@ static ir_initializer_t *read_initializer(read_env_t *env)
 	}
 	}
 
-	panic("Unknown initializer kind");
+	panic("unknown initializer kind");
 }
 
 /** Reads a type description and remembers it by its id. */
@@ -1851,7 +1851,7 @@ static void read_entity(read_env_t *env, ir_entity_kind kind)
 		break;
 	}
 	case IR_ENTITY_UNKNOWN:
-		panic("read_entity with IR_ENTITY_UNKNOWN?");
+		panic("read_entity with IR_ENTITY_UNKNOWN");
 	}
 
 	set_entity_compiler_generated(entity, compiler_generated);

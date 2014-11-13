@@ -194,7 +194,7 @@ static ir_node *TEMPLATE_new_spill(ir_node *value, ir_node *after)
 {
 	(void)value;
 	(void)after;
-	panic("TEMPLATE: spilling not implemented yet");
+	panic("spilling not implemented yet");
 }
 
 static ir_node *TEMPLATE_new_reload(ir_node *value, ir_node *spill,
@@ -203,7 +203,7 @@ static ir_node *TEMPLATE_new_reload(ir_node *value, ir_node *spill,
 	(void)value;
 	(void)spill;
 	(void)before;
-	panic("TEMPLATE: reload not implemented yet");
+	panic("reload not implemented yet");
 }
 
 const arch_isa_if_t TEMPLATE_isa_if = {

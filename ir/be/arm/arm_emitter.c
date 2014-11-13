@@ -222,7 +222,7 @@ static void arm_emit_shifter_operand(const ir_node *node)
 	case ARM_SHF_INVALID:
 		break;
 	}
-	panic("Invalid shift_modifier while emitting %+F", node);
+	panic("invalid shift_modifier while emitting %+F", node);
 }
 
 /**

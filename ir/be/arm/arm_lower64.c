@@ -365,7 +365,7 @@ static ir_entity *create_64_intrinsic_fkt(ir_type *method, const ir_op *op,
 			panic("can't lower 64bit Conv");
 		}
 	} else {
-		panic("Cannot lower unexpected 64bit operation %s", get_op_name(op));
+		panic("cannot lower unexpected 64bit operation %s", get_op_name(op));
 	}
 	ident     *id     = new_id_from_str(name);
 	ir_type   *glob   = get_glob_type();

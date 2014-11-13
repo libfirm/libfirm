@@ -126,7 +126,7 @@ static void eat_immediate(x86_address_t *addr, ir_node *node, bool negate)
 	case iro_Address:
 		/* place the entity into the immediate */
 		if (addr->entity != NULL) {
-			panic("Internal error: more than 1 entity in address calculation");
+			panic("internal error: more than 1 entity in address calculation");
 		}
 		addr->entity = get_Address_entity(node);
 		if (is_tls_entity(addr->entity))
@@ -152,7 +152,7 @@ static void eat_immediate(x86_address_t *addr, ir_node *node, bool negate)
 		break;
 	}
 	default:
-		panic("Internal error in immediate address calculation");
+		panic("internal error in immediate address calculation");
 	}
 }
 

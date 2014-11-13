@@ -295,7 +295,7 @@ static void kill_and_reduce_usage(ir_node *node)
 		value = get_Store_value(node);
 		break;
 	default:
-		panic("Cannot handle node %+F", node);
+		panic("cannot handle node %+F", node);
 	}
 
 	kill_node(node);
@@ -2018,7 +2018,7 @@ static void do_dfs(ir_graph *irg, loop_env *env)
 		} else if (is_Bad(pred)) {
 			/* ignore non-optimized block predecessor */
 		} else {
-			panic("Unknown EndBlock predecessor");
+			panic("unknown EndBlock predecessor");
 		}
 	}
 

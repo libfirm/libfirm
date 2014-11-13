@@ -74,7 +74,7 @@ static ir_mode *get_lowered_mode(ir_mode *mode)
 	else if (mode == mode_D)
 		return mode_Lu;
 
-	panic("Unsupported floating point type");
+	panic("unsupported floating point type");
 }
 
 /**
@@ -193,7 +193,7 @@ static ir_type *get_softfloat_type(const ir_node *n)
 	default: break;
 	}
 
-	panic("Could not determine a suitable type");
+	panic("could not determine a suitable type");
 }
 
 /**

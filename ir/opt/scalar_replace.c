@@ -611,7 +611,7 @@ void scalar_replacement_opt(ir_graph *irg)
 			} else if (is_atomic_type(ent_type)) {
 				DB((dbg, SET_LEVEL_1, "  found atomic value %s\n", get_entity_name(ent)));
 			} else {
-				panic("Neither an array nor a struct or atomic value found in scalar replace");
+				panic("neither an array nor a struct or atomic value found in scalar replace");
 			}
 #endif
 

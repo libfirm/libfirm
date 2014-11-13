@@ -545,7 +545,7 @@ static void ilp2_apply(ilp_env_t *ienv)
 		if (state != lpp_optimal) {
 			ir_printf("WARNING: Solution state of %F register class %s is not 'optimal': %d\n", ienv->co->irg, ienv->co->cls->name, (int)state);
 			if (state < lpp_feasible) {
-				panic("Copy coalescing solution not feasible!");
+				panic("copy coalescing solution not feasible");
 			}
 		}
 
@@ -562,7 +562,7 @@ static void ilp2_apply(ilp_env_t *ienv)
 				ir_node *irn = get_idx_irn(irg, nodenr);
 				set_irn_col(ienv->co->cls, irn, color);
 			} else {
-				panic("This should be a x-var");
+				panic("this should be a x-var");
 			}
 		}
 

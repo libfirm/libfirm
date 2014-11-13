@@ -115,7 +115,7 @@ void *pqueue_pop_front(pqueue_t *q)
 {
 	switch (ARR_LEN(q->elems)) {
 		case 0:
-			panic("Attempt to retrieve element from empty priority queue.");
+			panic("attempt to retrieve element from empty priority queue");
 		case 1:
 			ARR_SHRINKLEN(q->elems, 0);
 			return q->elems[0].data;

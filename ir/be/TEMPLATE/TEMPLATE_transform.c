@@ -255,7 +255,7 @@ static ir_node *gen_Proj_Start(ir_node *node)
 	case pn_Start_P_frame_base:
 		return new_rd_Proj(dbgi, new_start, gp_regs_mode, pn_TEMPLATE_Start_stack);
 	}
-	panic("unexpected Start proj %u\n", pn);
+	panic("unexpected Start proj %u", pn);
 }
 
 static ir_node *gen_Proj(ir_node *node)
@@ -264,7 +264,7 @@ static ir_node *gen_Proj(ir_node *node)
 	switch (get_irn_opcode(pred)) {
 	case iro_Start: return gen_Proj_Start(node);
 	default:
-		panic("code selection can't handle Proj after %+F\n", pred);
+		panic("code selection can't handle Proj after %+F", pred);
 	}
 }
 

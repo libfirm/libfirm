@@ -2073,7 +2073,7 @@ x86_condition_code_t ir_relation_to_x86_condition_code(ir_relation relation,
 			/* should we introduce a jump always/jump never? */
 			break;
 		}
-		panic("Unexpected float pnc");
+		panic("unexpected float pnc");
 	} else if (mode_is_signed(mode)) {
 		switch (relation) {
 		case ir_relation_unordered_equal:
@@ -2097,7 +2097,7 @@ x86_condition_code_t ir_relation_to_x86_condition_code(ir_relation relation,
 			/* introduce jump always/jump never? */
 			break;
 		}
-		panic("Unexpected pnc");
+		panic("unexpected pnc");
 	} else {
 		switch (relation) {
 		case ir_relation_unordered_equal:
@@ -2119,7 +2119,7 @@ x86_condition_code_t ir_relation_to_x86_condition_code(ir_relation relation,
 			/* introduce jump always/jump never? */
 			break;
 		}
-		panic("Unexpected pnc");
+		panic("unexpected pnc");
 	}
 }
 
@@ -3023,7 +3023,7 @@ static ir_node *try_get_sub_flags(ir_node *cmp, ir_node *sub, bool *swap)
 	} else if (is_ia32_SubMem(ia32_sub)) {
 		return new_r_Proj(ia32_sub, ia32_mode_flags, pn_ia32_SubMem_flags);
 	} else {
-		panic("Unknown variant of Sub at %+F\n", ia32_sub);
+		panic("unknown variant of Sub at %+F", ia32_sub);
 	}
 }
 
@@ -3535,7 +3535,7 @@ static ir_node *gen_Mux(ir_node *node)
 				scale = 3;
 				new_node = new_bd_ia32_Lea(dbgi, new_block, new_node, new_node);
 			} else {
-				panic("Unsupported constant size");
+				panic("unsupported constant size");
 			}
 
 			ir_graph *const irg = get_irn_irg(new_block);
@@ -4222,7 +4222,7 @@ static ir_node *gen_Proj_Start(ir_node *node)
 		return current_cconv->omit_fp ? get_initial_sp(irg)
 		                              : get_initial_fp(irg);
 	}
-	panic("Unexpected Start Proj: %u\n", pn);
+	panic("unexpected Start Proj: %u", pn);
 }
 
 static ir_node *gen_Proj_Proj_Start(ir_node *node)
@@ -4732,7 +4732,7 @@ static ir_node *gen_Proj_Load(ir_node *node)
 		return new_rd_Proj(dbgi, new_pred, mode_M, 1);
 	}
 
-	panic("No idea how to transform Proj(Load) %+F", node);
+	panic("no idea how to transform Proj(Load) %+F", node);
 }
 
 static ir_node *create_proj_for_store(ir_node *store, pn_Store pn)
@@ -4800,7 +4800,7 @@ static ir_node *create_proj_for_store(ir_node *store, pn_Store pn)
 		panic("exception control flow for destination AM not implemented yet");
 	}
 
-	panic("No idea how to transform Proj(Store) at %+F", store);
+	panic("no idea how to transform Proj(Store) at %+F", store);
 }
 
 static ir_node *gen_Proj_Store(ir_node *node)
@@ -4856,7 +4856,7 @@ static ir_node *gen_Proj_Div(ir_node *node)
 		return new_rd_Proj(dbgi, new_pred, mode_X, pn_ia32_Div_X_regular);
 	}
 
-	panic("No idea how to transform proj->Div");
+	panic("no idea how to transform proj->Div");
 }
 
 /**
@@ -4884,7 +4884,7 @@ static ir_node *gen_Proj_Mod(ir_node *node)
 	case pn_Mod_X_regular:
 		return new_rd_Proj(dbgi, new_pred, mode_X, pn_ia32_Div_X_regular);
 	}
-	panic("No idea how to transform proj->Mod");
+	panic("no idea how to transform proj->Mod");
 }
 
 static ir_node *gen_Call(ir_node *node)
@@ -5099,7 +5099,7 @@ static ir_node *gen_Proj_Call(ir_node *node)
 	case pn_Call_T_result:
 		break;
 	}
-	panic("Unexpected Call proj %+F\n", node);
+	panic("unexpected Call proj %+F", node);
 }
 
 static ir_node *gen_Proj_Proj_Call(ir_node *node)
@@ -5446,7 +5446,7 @@ static ir_node *gen_bswap(ir_node *node)
 		return new_bd_ia32_Bswap16(dbgi, new_block, param);
 
 	default:
-		panic("Invalid bswap size (%d)", size);
+		panic("invalid bswap size (%d)", size);
 	}
 }
 

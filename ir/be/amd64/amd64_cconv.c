@@ -175,12 +175,12 @@ x86_cconv_t *amd64_decide_calling_convention(ir_type *function_type,
 		const arch_register_t *reg;
 		if (mode_is_float(result_mode)) {
 			if (res_float_regnum >= n_float_result_regs) {
-				panic("Too many floating points results");
+				panic("too many floating points results");
 			}
 			reg = float_result_regs[res_float_regnum++];
 		} else {
 			if (res_regnum >= n_result_regs) {
-				panic("Too many results");
+				panic("too many results");
 			}
 			reg = result_regs[res_regnum++];
 		}

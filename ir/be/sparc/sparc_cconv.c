@@ -154,7 +154,7 @@ static unsigned determine_n_float_regs(ir_mode *mode)
 	case 128:
 		return 4;
 	default:
-		panic("Unexpected floatingpoint mode %+F", mode);
+		panic("unexpected floatingpoint mode %+F", mode);
 	}
 }
 
@@ -277,7 +277,7 @@ calling_convention_t *sparc_decide_calling_convention(ir_type *function_type,
 			unsigned next_reg = round_up2(float_regnum, n_regs);
 
 			if (next_reg >= n_float_result_regs) {
-				panic("Too many float results");
+				panic("too many float results");
 			} else {
 				const arch_register_t *reg = float_result_regs[next_reg];
 				rbitset_clear(caller_saves, reg->global_index);
@@ -301,11 +301,11 @@ calling_convention_t *sparc_decide_calling_convention(ir_type *function_type,
 			}
 		} else {
 			if (get_mode_size_bits(result_mode) > 32) {
-				panic("Results with more than 32bits not supported yet");
+				panic("results with more than 32bits not supported yet");
 			}
 
 			if (regnum >= n_param_regs) {
-				panic("Too many results");
+				panic("too many results");
 			} else {
 				const arch_register_t *reg = param_regs[regnum++];
 				if (irg == NULL || omit_fp)

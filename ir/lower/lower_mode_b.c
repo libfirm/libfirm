@@ -197,7 +197,7 @@ static ir_node *lower_node(ir_node *node)
 		break;
 
 	default:
-		panic("Don't know how to lower mode_b node %+F", node);
+		panic("don't know how to lower mode_b node %+F", node);
 	}
 
 	set_irn_link(node, res);

@@ -447,7 +447,7 @@ static be_gas_section_t determine_section(be_gas_decl_env_t *env,
 		return determine_basic_section(entity);
 	}
 
-	panic("Couldn't determine section for %+F?!?", entity);
+	panic("couldn't determine section for %+F", entity);
 }
 
 static void emit_weak(const ir_entity *entity)
@@ -608,7 +608,7 @@ static void emit_arith_tarval(ir_tarval *tv, unsigned bytes)
 		return;
 	}
 
-	panic("Cannot dump a tarval with %d bytes", bytes);
+	panic("cannot dump a tarval with %d bytes", bytes);
 }
 
 /**
@@ -665,7 +665,7 @@ static void emit_init_expression(be_gas_decl_env_t *env, ir_node *init)
 
 	case iro_Add:
 		if (!mode_is_int(mode) && !mode_is_reference(mode)) {
-			panic("Constant must be int or pointer for '+' to work");
+			panic("constant must be int or pointer for '+' to work");
 		}
 		emit_init_expression(env, get_Add_left(init));
 		be_emit_cstring(" + ");
@@ -674,7 +674,7 @@ static void emit_init_expression(be_gas_decl_env_t *env, ir_node *init)
 
 	case iro_Sub:
 		if (!mode_is_int(mode) && !mode_is_reference(mode)) {
-			panic("Constant must be int or pointer for '-' to work");
+			panic("constant must be int or pointer for '-' to work");
 		}
 		emit_init_expression(env, get_Sub_left(init));
 		be_emit_cstring(" - ");
@@ -683,7 +683,7 @@ static void emit_init_expression(be_gas_decl_env_t *env, ir_node *init)
 
 	case iro_Mul:
 		if (!mode_is_int(mode) && !mode_is_reference(mode)) {
-			panic("Constant must be int or pointer for '*' to work");
+			panic("constant must be int or pointer for '*' to work");
 		}
 		emit_init_expression(env, get_Mul_left(init));
 		be_emit_cstring(" * ");
@@ -713,7 +713,7 @@ static void emit_size_type(size_t size)
 	case 8: be_emit_cstring("\t.quad\t");  break;
 
 	default:
-		panic("Try to dump a type with %u bytes", (unsigned)size);
+		panic("try to dump a type with %u bytes", (unsigned)size);
 	}
 }
 
@@ -865,7 +865,7 @@ static void emit_bitfield(normal_or_bitfield *vals, unsigned offset_bits,
 		panic("bitfield initializer is compound");
 	}
 	if (tv == NULL || tv == tarval_bad) {
-		panic("Couldn't get numeric value for bitfield initializer");
+		panic("couldn't get numeric value for bitfield initializer");
 	}
 
 	int    value_len  = get_type_size_bytes(type);

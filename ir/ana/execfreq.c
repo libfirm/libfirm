@@ -514,7 +514,7 @@ void ir_estimate_execfreq(ir_graph *irg)
 			continue;
 		for (int x = 0; x < size; x++) {
 			if (getm(in_fac, x, y) != 0)
-				panic("Expect entry at (%d, %d) to be 0.\n", x, y);
+				panic("expect entry at (%d, %d) to be 0", x, y);
 		}
 	}
 #endif

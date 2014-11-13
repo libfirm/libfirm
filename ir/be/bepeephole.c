@@ -39,7 +39,7 @@ static void clear_reg_value(ir_node *node)
 
 	const arch_register_t *reg = arch_get_irn_register(node);
 	if (reg == NULL) {
-		panic("No register assigned at %+F", node);
+		panic("no register assigned at %+F", node);
 	}
 	if (reg->type & arch_register_type_virtual)
 		return;
@@ -56,7 +56,7 @@ static void set_reg_value(ir_node *node)
 
 	const arch_register_t *reg = arch_get_irn_register(node);
 	if (reg == NULL) {
-		panic("No register assigned at %+F", node);
+		panic("no register assigned at %+F", node);
 	}
 	if (reg->type & arch_register_type_virtual)
 		return;
@@ -118,7 +118,7 @@ static void be_peephole_before_exchange(const ir_node *old_node,
 
 	const arch_register_t *reg = arch_get_irn_register(old_node);
 	if (reg == NULL) {
-		panic("No register assigned at %+F", old_node);
+		panic("no register assigned at %+F", old_node);
 	}
 	assert(reg == arch_get_irn_register(new_node) &&
 	      "KILLING a node and replacing by different register is not allowed");

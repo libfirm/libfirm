@@ -512,7 +512,7 @@ static unsigned get_start_reg_index(ir_graph *irg, const arch_register_t *reg)
 			continue;
 		return i;
 	}
-	panic("Tried querying undefined register '%s' at Start", reg->name);
+	panic("tried querying undefined register '%s' at Start", reg->name);
 }
 
 ir_node *be_get_initial_reg_value(ir_graph *irg, const arch_register_t *reg)

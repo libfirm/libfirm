@@ -109,7 +109,7 @@ static FILE *my_open(const be_chordal_env_t *env, const char *prefix, const char
 	free(tu_name);
 	result = fopen(buf, "wt");
 	if (result == NULL) {
-		panic("Couldn't open '%s' for writing.", buf);
+		panic("couldn't open '%s' for writing", buf);
 	}
 
 	return result;
@@ -655,7 +655,7 @@ static void be_pbqp_coloring(be_chordal_env_t *env)
 
 	solution = get_solution(pbqp_alloc_env.pbqp_inst);
 	if (solution == INF_COSTS)
-		panic("No PBQP solution found");
+		panic("no PBQP solution found");
 
 
 	/* assign colors */

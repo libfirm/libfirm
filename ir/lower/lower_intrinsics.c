@@ -217,7 +217,7 @@ int i_mapper_alloca(ir_node *call)
 		ir_mode *mode = get_irn_mode(op);
 		mode = find_unsigned_mode(mode);
 		if (mode == NULL) {
-			panic("Cannot find unsigned mode for %M", mode);
+			panic("cannot find unsigned mode for %M", mode);
 		}
 		op = new_rd_Conv(dbg, block, op, mode);
 	}

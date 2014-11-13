@@ -56,7 +56,7 @@ const char *dbg_action_2_str(dbg_action a)
 		if (a <= dbg_max)
 			return "string conversion not implemented";
 		else
-			panic("Missing debug action");
+			panic("missing debug action");
 	}
 #undef CASE
 }

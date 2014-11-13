@@ -2258,7 +2258,7 @@ static void init_analyze(ir_graph *const irg, ir_loop *const loop, loop_op_t con
 	switch (loop_op) {
 		case loop_op_inversion: loop_inversion(irg); break;
 		case loop_op_unrolling: unroll_loop(irg);    break;
-		default: panic("Loop optimization not implemented.");
+		default: panic("loop optimization not implemented");
 	}
 	DB((dbg, LEVEL_1, "       <<<< end of loop with node %ld >>>>\n", get_loop_loop_nr(loop)));
 }

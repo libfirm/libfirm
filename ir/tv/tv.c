@@ -293,7 +293,7 @@ ir_tarval *new_tarval_from_str(const char *str, size_t len, ir_mode *mode)
 	case irms_int_number:
 		return new_tarval_from_str_int(str, len, mode);
 	default:
-		panic("Unsupported tarval creation with mode %F", mode);
+		panic("unsupported tarval creation with mode %F", mode);
 	}
 }
 

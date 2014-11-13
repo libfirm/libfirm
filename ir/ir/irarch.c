@@ -425,7 +425,7 @@ static ir_node *build_graph(mul_env *env, instruction *inst)
 	case MUL:
 		break;
 	}
-	panic("Unsupported instruction kind");
+	panic("unsupported instruction kind");
 }
 
 /**
@@ -470,7 +470,7 @@ static int evaluate_insn(mul_env *env, instruction *inst)
 	case ROOT:
 		break;
 	}
-	panic("Unsupported instruction kind");
+	panic("unsupported instruction kind");
 }
 
 /**

@@ -915,7 +915,7 @@ static ir_node *gen_Proj_AddCC_t(ir_node *node)
 	case pn_sparc_AddCC_t_flags:
 		return new_r_Proj(new_pred, mode_flags, pn_sparc_AddCC_flags);
 	default:
-		panic("Invalid proj found");
+		panic("invalid proj found");
 	}
 }
 
@@ -966,7 +966,7 @@ static ir_node *gen_Proj_SubCC_t(ir_node *node)
 	case pn_sparc_SubCC_t_flags:
 		return new_r_Proj(new_pred, mode_flags, pn_sparc_SubCC_flags);
 	default:
-		panic("Invalid proj found");
+		panic("invalid proj found");
 	}
 }
 
@@ -1698,7 +1698,7 @@ static ir_node *gen_Conv(ir_node *node)
 			if (src_bits < 32) {
 				new_op = gen_extension(dbgi, block, new_op, src_mode);
 			} else if (src_bits == 32 && !mode_is_signed(src_mode)) {
-				panic("unsigned to float not lowered!");
+				panic("unsigned to float not lowered");
 			}
 			return create_itof(dbgi, block, new_op, dst_mode);
 		}
@@ -1733,7 +1733,7 @@ static ir_node *gen_Unknown(ir_node *node)
 		return get_g0(irg);
 	}
 
-	panic("Unexpected Unknown mode");
+	panic("unexpected Unknown mode");
 }
 
 /**
@@ -2518,7 +2518,7 @@ static ir_node *gen_Proj_Load(ir_node *node)
 	default:
 		break;
 	}
-	panic("Unsupported Proj from Load");
+	panic("unsupported Proj from Load");
 }
 
 static ir_node *gen_Proj_Store(ir_node *node)
@@ -2542,7 +2542,7 @@ static ir_node *gen_Proj_Store(ir_node *node)
 	default:
 		break;
 	}
-	panic("Unsupported Proj from Store");
+	panic("unsupported Proj from Store");
 }
 
 /**
@@ -2575,7 +2575,7 @@ static ir_node *gen_Proj_Div(ir_node *node)
 	default:
 		break;
 	}
-	panic("Unsupported Proj from Div");
+	panic("unsupported Proj from Div");
 }
 
 static ir_node *get_frame_base(ir_graph *irg)
@@ -2608,7 +2608,7 @@ static ir_node *gen_Proj_Start(ir_node *node)
 	case pn_Start_P_frame_base:
 		return get_frame_base(get_irn_irg(node));
 	}
-	panic("Unexpected start proj: %u\n", pn);
+	panic("unexpected start proj: %u", pn);
 }
 
 static ir_node *gen_Proj_Proj_Start(ir_node *node)
@@ -2699,7 +2699,7 @@ static ir_node *gen_Proj_Call(ir_node *node)
 	case pn_Call_T_result:
 		break;
 	}
-	panic("Unexpected Call proj %u\n", pn);
+	panic("unexpected Call proj %u", pn);
 }
 
 static ir_node *gen_Proj_Proj_Call(ir_node *node)
@@ -2732,7 +2732,7 @@ static ir_node *gen_Proj_Proj(ir_node *node)
 	} else if (is_Start(pred_pred)) {
 		return gen_Proj_Proj_Start(node);
 	}
-	panic("code selection didn't expect Proj(Proj) after %+F\n", pred_pred);
+	panic("code selection didn't expect Proj(Proj) after %+F", pred_pred);
 }
 
 /**

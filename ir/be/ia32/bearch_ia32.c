@@ -362,7 +362,7 @@ static bool ia32_possible_memory_operand(const ir_node *irn, unsigned int i)
 		break;
 
 	default:
-		panic("Unknown AM type");
+		panic("unknown AM type");
 	}
 
 	/* HACK: must not already use "real" memory.
@@ -448,7 +448,7 @@ static ir_node *ia32_turn_back_dest_am(ir_node *node)
 		operand_n = n_ia32_SubMem_subtrahend;
 		func      = new_bd_ia32_Sub;
 	} else {
-		panic("Cannot turn back DestAM for %+F\n", node);
+		panic("cannot turn back DestAM for %+F", node);
 	}
 
 	dbg_info *dbgi     = get_irn_dbg_info(node);
@@ -491,7 +491,7 @@ static ir_node *ia32_turn_back_dest_am(ir_node *node)
 			set_Proj_pred(out, store);
 			set_Proj_num(out, pn_ia32_Store_M);
 		} else {
-			panic("Unexpected Proj mode at DestAM node");
+			panic("unexpected Proj mode at DestAM node");
 		}
 	}
 	ir_node *noreg = ia32_new_NoReg_gp(irg);
@@ -539,7 +539,7 @@ ir_node *ia32_turn_back_am(ir_node *node)
 		break;
 
 	default:
-		panic("Unknown AM type");
+		panic("unknown AM type");
 	}
 	ir_node *noreg = ia32_new_NoReg_gp(irg);
 	set_irn_n(node, n_ia32_base,  noreg);
@@ -691,7 +691,7 @@ static void remat_simplifier(ir_node *node, void *env)
 			sched_replace(node, cmp);
 
 			if (get_ia32_op_type(node) == ia32_AddrModeD) {
-				panic("Unexpected DestAM node %+F", node);
+				panic("unexpected DestAM node %+F", node);
 			}
 			if (get_ia32_op_type(node) == ia32_AddrModeS) {
 				set_ia32_op_type(cmp, ia32_AddrModeS);

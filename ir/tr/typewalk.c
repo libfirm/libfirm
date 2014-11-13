@@ -172,7 +172,7 @@ static void do_type_walk(ir_type *const tp, ir_entity *const ent,
 			/* a leave. */
 			break;
 		case tpo_uninitialized:
-			panic("Faulty type");
+			panic("faulty type");
 		}
 	}
 

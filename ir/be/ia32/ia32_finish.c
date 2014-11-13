@@ -295,7 +295,7 @@ static void assure_should_be_same_requirements(ir_node *node)
 			continue;
 		}
 
-		panic("Unresolved should_be_same constraint");
+		panic("uNresolved should_be_same constraint");
 	}
 }
 

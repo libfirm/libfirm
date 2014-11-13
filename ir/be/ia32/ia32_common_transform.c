@@ -45,7 +45,7 @@ static bool check_immediate_constraint(long val, char immediate_constraint_type)
 	case 'N': return 0 <= val && val <= 255;
 	case 'O': return 0 <= val && val <= 127;
 
-	default: panic("Invalid immediate constraint found");
+	default: panic("invalid immediate constraint found");
 	}
 }
 
@@ -728,7 +728,7 @@ static arch_register_t const *ia32_parse_clobber(char const *const clobber)
 
 	arch_register_t const *const reg = ia32_get_clobber_register(clobber);
 	if (!reg)
-		panic("Register '%s' mentioned in asm clobber is unknown", clobber);
+		panic("register '%s' mentioned in asm clobber is unknown", clobber);
 
 	return reg;
 }

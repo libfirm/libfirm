@@ -6192,7 +6192,7 @@ static unsigned get_significand_size(ir_mode *mode)
 	case irma_twos_complement:
 		return get_mode_size_bits(mode);
 	case irma_none:
-		panic("Conv node with irma_none mode?");
+		panic("Conv node with irma_none mode");
 	}
 	panic("unexpected mode_arithmetic in get_significand_size");
 }

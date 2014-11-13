@@ -46,7 +46,7 @@ const char *get_ir_alias_relation_name(ir_alias_relation rel)
 	X(ir_sure_alias);
 	}
 #undef X
-	panic("UNKNOWN alias relation");
+	panic("unknown alias relation");
 }
 
 unsigned get_irg_memory_disambiguator_options(const ir_graph *irg)

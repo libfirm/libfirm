@@ -816,7 +816,7 @@ char *sc_print_buf(char *buf, size_t buf_len, const sc_word *value,
 	}
 
 	default:
-		panic("Unsupported base %d", base);
+		panic("unsupported base %d", base);
 	}
 	return pos;
 }

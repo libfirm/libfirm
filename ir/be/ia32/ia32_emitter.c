@@ -230,7 +230,7 @@ static void ia32_emit_mode_suffix_mode(const ir_mode *mode)
 		 * apparently */
 		case 64: be_emit_cstring("ll"); return;
 	}
-	panic("Cannot output mode_suffix for %+F", mode);
+	panic("cannot output mode_suffix for %+F", mode);
 }
 
 static void ia32_emit_x87_mode_suffix(ir_node const *const node)
@@ -262,7 +262,7 @@ static void ia32_emit_x87_mode_suffix(ir_node const *const node)
 			case 64: be_emit_cstring("ll"); return;
 		}
 	}
-	panic("Cannot output mode_suffix for %+F", mode);
+	panic("cannot output mode_suffix for %+F", mode);
 }
 
 static char get_xmm_mode_suffix(ir_mode *mode)
@@ -271,7 +271,7 @@ static char get_xmm_mode_suffix(ir_mode *mode)
 	switch (get_mode_size_bits(mode)) {
 	case 32: return 's';
 	case 64: return 'd';
-	default: panic("Invalid XMM mode");
+	default: panic("invalid XMM mode");
 	}
 }
 
@@ -333,7 +333,7 @@ void x86_emit_condition_code(x86_condition_code_t cc)
 	case x86_cc_additional_float_cases:
 		break;
 	}
-	panic("Invalid ia32 condition code");
+	panic("invalid ia32 condition code");
 }
 
 typedef enum ia32_emit_mod_t {
@@ -1052,7 +1052,7 @@ static const char* emit_asm_operand(const ir_node *node, const char *s)
 		case  'b': emit_8bit_register(reg);           break;
 		case  'h': emit_8bit_register_high(reg);      break;
 		case  'w': emit_16bit_register(reg);          break;
-		default:   panic("Invalid asm op modifier");
+		default:   panic("invalid asm op modifier");
 		}
 	}
 
@@ -3059,7 +3059,7 @@ static void bemit_fisttp(ir_node const *const node)
 	case 16: bemit8(0xDF); break; // fisttps
 	case 32: bemit8(0xDB); break; // fisttpl
 	case 64: bemit8(0xDD); break; // fisttpll
-	default: panic("Invalid mode size");
+	default: panic("invalid mode size");
 	}
 	bemit_mod_am(1, node);
 }

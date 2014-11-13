@@ -312,7 +312,7 @@ static ir_node *do_apply(unsigned code, dbg_info *db, ir_node *op1,
 	default:
 		break;
 	}
-	panic("Unsupported opcode");
+	panic("unsupported opcode");
 }
 
 /**
@@ -1067,7 +1067,7 @@ static ir_node *apply_one_edge(ir_node *iv, ir_node *rc, ldtr_edge_t *e,
 			DB((dbg, LEVEL_4, " - %+F", tv_r));
 			break;
 		default:
-			panic("Unsupported opcode");
+			panic("unsupported opcode");
 		}
 
 		if (tv == tarval_bad || tv_init == tarval_bad) {

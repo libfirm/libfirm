@@ -221,7 +221,7 @@ static void ia32_lower_sub64(ir_node *node, ir_mode *mode)
 			ir_node *new_const = new_rd_Sub(dbg, block, left_high, one, high_mode);
 			sub_high = new_rd_Sub(dbg, block, new_const, right_high, high_mode);
 		} else {
-			panic("Logic error. This should never happen.");
+			panic("logic error");
 		}
 
 		ir_node  *sub_low  = new_rd_Sub(dbg, block, left_low, right_low, low_mode);

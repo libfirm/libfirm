@@ -835,7 +835,7 @@ void back_propagate(pbqp_t *pbqp)
 				back_propagate_RII(pbqp, node);
 				break;
 			default:
-				panic("Only nodes with degree one or two should be in this bucket");
+				panic("only nodes with degree one or two should be in this bucket");
 		}
 	}
 }

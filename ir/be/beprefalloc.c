@@ -293,7 +293,7 @@ static void analyze_block(ir_node *block, void *data)
 		   32 inputs. */
 		allocation_info_t *info = get_allocation_info(node);
 		if (get_irn_arity(node) >= (int)sizeof(info->last_uses) * 8) {
-			panic("Node with more than %d inputs not supported yet",
+			panic("node with more than %d inputs not supported yet",
 					(int) sizeof(info->last_uses) * 8);
 		}
 
@@ -729,7 +729,7 @@ static void assign_reg(ir_node const *const block, ir_node *const node, arch_reg
 	if (r >= n_regs) {
 		/* the common reason to hit this panic is when 1 of your nodes is not
 		 * register pressure faithful */
-		panic("No register left for %+F\n", node);
+		panic("no register left for %+F", node);
 	}
 
 	final_reg = arch_register_for_index(cls, final_reg_index);
@@ -1058,14 +1058,14 @@ static void solve_lpp(ir_nodeset_t *live_nodes, ir_node *node,
 
 	FILE *out = fopen("lppdump.txt", "w");
 	if (out == NULL)
-		panic("Couldn't open lppdump.txt");
+		panic("couldn't open lppdump.txt");
 	lpp_dump_plain(lpp, out);
 	fclose(out);
 
 	/* solve lpp */
 	lpp_solve(lpp, be_options.ilp_server, be_options.ilp_solver);
 	if (!lpp_is_sol_valid(lpp))
-		panic("ilp solution not valid!");
+		panic("ilp solution not valid");
 
 	unsigned *assignment = ALLOCAN(unsigned, n_regs);
 	for (unsigned l = 0; l < n_regs; ++l) {

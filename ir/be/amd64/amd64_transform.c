@@ -1443,7 +1443,7 @@ static ir_node *gen_Proj_Start(ir_node *node)
 	case pn_Start_P_frame_base:
 		return get_frame_base(irg);
 	}
-	panic("Unexpected Start Proj: %u\n", pn);
+	panic("unexpected Start Proj: %u", pn);
 }
 
 static ir_node *get_stack_pointer_for(ir_node *node)
@@ -1782,7 +1782,7 @@ static ir_node *gen_Proj_Call(ir_node *node)
 	case pn_Call_T_result:
 		break;
 	}
-	panic("Unexpected Call proj %+F\n", node);
+	panic("unexpected Call proj %+F", node);
 }
 
 static ir_node *gen_Proj_Proj_Call(ir_node *node)
@@ -2037,7 +2037,7 @@ static ir_node *gen_Conv(ir_node *node)
 			/* The conversion is signed only; simply use 64-bit register*/
 			insn_mode = INSN_MODE_64;
 		} else if (!mode_is_signed(dst_mode) && dst_bits == 64) {
-			panic("Cannot convert floating point to 64-bit unsigned\n");
+			panic("cannot convert floating point to 64-bit unsigned");
 		}
 
 		if (src_bits < 64) {
@@ -2071,7 +2071,7 @@ static ir_node *gen_Conv(ir_node *node)
 			in[0] = new_r_Proj(ext, mode_gp, pn_amd64_Mov_res);
 
 		} else if (!mode_is_signed(src_mode) && src_bits == 64) {
-			panic("Cannot convert 64-bit unsigned to floating point\n");
+			panic("cannot convert 64-bit unsigned to floating point");
 		}
 
 		if (dst_bits < 64) {
@@ -2150,7 +2150,7 @@ static ir_node *gen_Store(ir_node *node)
 	case 4: reqs = need_xmm ? xmm_reg_reg_mem_reqs : reg_reg_reg_mem_reqs;
 		break;
 	default:
-		panic("Unexpected arity %d while transforming node %+F", arity, node);
+		panic("unexpected arity %d while transforming node %+F", arity, node);
 	}
 
 
@@ -2342,7 +2342,7 @@ static ir_node *gen_Proj_Load(ir_node *node)
 		assert(pn == pn_Load_M);
 		return new_r_Proj(new_load, mode_M, pn_amd64_mem);
 	default:
-		panic("Unsupported Proj from Load");
+		panic("unsupported Proj from Load");
 	}
 
     return be_duplicate_node(node);
@@ -2355,7 +2355,7 @@ static ir_node *gen_Proj_Store(ir_node *node)
 	if (pn == pn_Store_M) {
 		return be_transform_node(pred);
 	} else {
-		panic("Unsupported Proj from Store");
+		panic("unsupported Proj from Store");
 	}
 }
 
@@ -2492,7 +2492,7 @@ static ir_node *gen_Proj_Builtin(ir_node *proj)
 static ir_node *gen_Bitcast(ir_node *node)
 {
 	(void)node;
-	panic("Bitcast NIY\n");
+	panic("Bitcast NIY");
 }
 
 /* Boilerplate code for transformation: */

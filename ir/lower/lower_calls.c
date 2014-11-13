@@ -500,7 +500,7 @@ static ir_node *get_dummy_member(ir_node *block, ir_type *tp)
 	ir_type  *ft  = get_irg_frame_type(irg);
 	if (get_type_state(ft) == layout_fixed) {
 		/* Fix the layout again */
-		panic("Fixed layout not implemented");
+		panic("fixed layout not implemented");
 	}
 
 	ident     *dummy_id = id_unique("call_result.%u");
@@ -972,7 +972,7 @@ void lower_calls_with_compounds(compound_call_lowering_flags flags)
 		} else if (machine_size == 64) {
 			int_return_mode = mode_Lu;
 		} else {
-			panic("Cannot determine machine register mode");
+			panic("cannot determine machine register mode");
 		}
 	}
 

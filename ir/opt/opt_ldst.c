@@ -610,7 +610,7 @@ static void update_Load_memop(memop_t *m)
 		case pn_Load_X_regular:
 			break;
 		default:
-			panic("Unsupported Proj from Load %+F", proj);
+			panic("unsupported Proj from Load %+F", proj);
 		}
 	}
 
@@ -683,7 +683,7 @@ static void update_Store_memop(memop_t *m)
 		case pn_Store_X_regular:
 			break;
 		default:
-			panic("Unsupported Proj from Store %+F", proj);
+			panic("unsupported Proj from Store %+F", proj);
 		}
 	}
 	m->value.value = get_Store_value(store);

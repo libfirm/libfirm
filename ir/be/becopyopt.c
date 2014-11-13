@@ -456,7 +456,7 @@ static void co_collect_units(ir_node *irn, void *env)
 			}
 		}
 	} else {
-		panic("This is not an optimizable node!");
+		panic("this is not an optimizable node");
 	}
 
 	/* Insert the new unit at a position according to its costs */
@@ -770,7 +770,7 @@ static FILE *my_open(const be_chordal_env_t *env, const char *prefix,
 	free(tu_name);
 	FILE *result = fopen(buf, "wt");
 	if (result == NULL) {
-		panic("Couldn't open '%s' for writing.", buf);
+		panic("couldn't open '%s' for writing", buf);
 	}
 
 	return result;

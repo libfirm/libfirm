@@ -224,7 +224,7 @@ lpp_sol_state_t ilp_go(ilp_env_t *ienv)
 		            ienv->co->cenv->cls->name);
 		f = fopen(buf, "wt");
 		if (f == NULL) {
-			panic("Couldn't open '%s' for writing", buf);
+			panic("couldn't open '%s' for writing", buf);
 		}
 		lpp_dump_plain(ienv->lp, f);
 		fclose(f);

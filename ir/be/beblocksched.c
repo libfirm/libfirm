@@ -145,7 +145,7 @@ static void remove_empty_block(ir_node *block)
 			set_irn_n(node, pos, succ_block);
 			continue;
 		}
-		panic("Unexpected node %+F in block %+F with empty schedule", node, block);
+		panic("unexpected node %+F in block %+F with empty schedule", node, block);
 	}
 
 	ir_graph *irg = get_irn_irg(block);

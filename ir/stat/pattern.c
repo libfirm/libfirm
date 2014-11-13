@@ -314,7 +314,7 @@ static unsigned get_code(CODE_BUFFER *buf)
 		return code;
 	}
 	/* should not happen */
-	panic("Wrong code in buffer");
+	panic("wrong code in buffer");
 }
 
 /**
