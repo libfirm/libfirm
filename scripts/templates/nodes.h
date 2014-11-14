@@ -55,8 +55,7 @@ typedef enum {
  */
 typedef enum {
 	{% for out in node.outs -%}
-	pn_{{node.name}}_{{out[0]}}
-	{%- if out.__len__() > 2 %} = {{out[2]}}{% endif %}, /**< {{out[1]}} */
+	pn_{{node.name}}_{{out[0]}}, /**< {{out[1]}} */
 	{% endfor -%}
 	pn_{{node.name}}_max = pn_{{node.name}}_{{node.outs[-1][0]}}
 } pn_{{node.name}};
