@@ -447,6 +447,7 @@ static ir_node *gen_Address(ir_node *node)
 	addr.mem_input   = NO_INPUT;
 
 	if (mode == REFERENCE_IP_RELATIVE) {
+		addr.base_input       = RIP_INPUT;
 		addr.immediate.entity = entity;
 		return new_bd_amd64_Lea(dbgi, block, 0, NULL, INSN_MODE_64, addr);
 	} else {
