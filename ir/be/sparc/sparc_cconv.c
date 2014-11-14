@@ -175,9 +175,8 @@ calling_convention_t *sparc_decide_calling_convention(ir_type *function_type,
 		 */
 		if (get_method_calling_convention(function_type) & cc_compound_ret)
 			omit_fp = false;
-		if (omit_fp == true) {
+		if (omit_fp)
 			irg_walk_graph(irg, check_omit_fp, NULL, &omit_fp);
-		}
 	}
 
 	mtp_additional_properties mtp
