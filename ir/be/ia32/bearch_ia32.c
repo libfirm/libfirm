@@ -1040,58 +1040,53 @@ static int determine_ebp_input(ir_node *ret)
 	panic("no ebp input found at %+F", ret);
 }
 
-static void introduce_epilogue(ir_node *ret)
+static void introduce_epilogue(ir_node *const ret)
 {
-	const arch_register_t *sp         = &ia32_registers[REG_ESP];
-	const arch_register_t *bp         = &ia32_registers[REG_EBP];
-	ir_graph              *irg        = get_irn_irg(ret);
-	ir_type               *frame_type = get_irg_frame_type(irg);
-	unsigned               frame_size = get_type_size_bytes(frame_type);
-	be_stack_layout_t     *layout     = be_get_irg_stack_layout(irg);
-	ir_node               *block      = get_nodes_block(ret);
-	ir_node               *first_sp   = get_irn_n(ret, n_ia32_Return_stack);
-	ir_node               *curr_sp    = first_sp;
-	ir_mode               *mode_gp    = ia32_reg_classes[CLASS_ia32_gp].mode;
-
+	ir_node                 *curr_sp;
+	ir_node           *const first_sp = get_irn_n(ret, n_ia32_Return_stack);
+	ir_node           *const block    = get_nodes_block(ret);
+	ir_graph          *const irg      = get_irn_irg(ret);
+	be_stack_layout_t *const layout   = be_get_irg_stack_layout(irg);
 	if (!layout->sp_relative) {
-		int      n_ebp   = determine_ebp_input(ret);
-		ir_node *curr_bp = get_irn_n(ret, n_ebp);
+		arch_register_t const *const sp      = &ia32_registers[REG_ESP];
+		arch_register_t const *const bp      = &ia32_registers[REG_EBP];
+		ir_mode               *const mode_gp = ia32_reg_classes[CLASS_ia32_gp].mode;
+
+		ir_node  *restore;
+		int const n_ebp   = determine_ebp_input(ret);
+		ir_node  *curr_bp = get_irn_n(ret, n_ebp);
 		if (ia32_cg_config.use_leave) {
-			ir_node *leave = new_bd_ia32_Leave(NULL, block, curr_bp);
-			curr_bp        = new_r_Proj(leave, mode_gp, pn_ia32_Leave_frame);
-			curr_sp        = new_r_Proj(leave, mode_gp, pn_ia32_Leave_stack);
-			arch_set_irn_register(curr_bp, bp);
-			arch_set_irn_register(curr_sp, sp);
-			sched_add_before(ret, leave);
+			restore = new_bd_ia32_Leave(NULL, block, curr_bp);
+			curr_bp = new_r_Proj(restore, mode_gp, pn_ia32_Leave_frame);
+			curr_sp = new_r_Proj(restore, mode_gp, pn_ia32_Leave_stack);
 		} else {
-			ir_node *pop;
 			ir_node *curr_mem = get_irn_n(ret, n_ia32_Return_mem);
-			/* copy ebp to esp */
+			/* Copy ebp to esp. */
 			curr_sp = new_bd_ia32_CopyEbpEsp(NULL, block, curr_bp);
 			arch_set_irn_register(curr_sp, sp);
 			sched_add_before(ret, curr_sp);
 
-			/* pop ebp */
-			pop      = new_bd_ia32_PopEbp(NULL, block, curr_mem, curr_sp);
-			set_ia32_ls_mode(pop, ia32_mode_gp);
-			curr_bp  = new_r_Proj(pop, mode_gp, pn_ia32_PopEbp_res);
-			curr_sp  = new_r_Proj(pop, mode_gp, pn_ia32_PopEbp_stack);
-			curr_mem = new_r_Proj(pop, mode_M,  pn_ia32_PopEbp_M);
-			arch_set_irn_register(curr_bp, bp);
-			arch_set_irn_register(curr_sp, sp);
-			sched_add_before(ret, pop);
+			/* Pop ebp. */
+			restore  = new_bd_ia32_PopEbp(NULL, block, curr_mem, curr_sp);
+			curr_bp  = new_r_Proj(restore, mode_gp, pn_ia32_PopEbp_res);
+			curr_sp  = new_r_Proj(restore, mode_gp, pn_ia32_PopEbp_stack);
+			curr_mem = new_r_Proj(restore, mode_M,  pn_ia32_PopEbp_M);
 
 			set_irn_n(ret, n_ia32_Return_mem, curr_mem);
 		}
+		sched_add_before(ret, restore);
+		arch_set_irn_register(curr_bp, bp);
+		arch_set_irn_register(curr_sp, sp);
 		set_irn_n(ret, n_ebp, curr_bp);
 	} else {
-		ir_node *incsp = ia32_new_IncSP(block, curr_sp, -(int)frame_size, 0);
-		sched_add_before(ret, incsp);
-		curr_sp = incsp;
+		ir_type *const frame_type = get_irg_frame_type(irg);
+		unsigned const frame_size = get_type_size_bytes(frame_type);
+		curr_sp = ia32_new_IncSP(block, first_sp, -(int)frame_size, 0);
+		sched_add_before(ret, curr_sp);
 	}
 	set_irn_n(ret, n_ia32_Return_stack, curr_sp);
 
-	/* keep verifier happy... */
+	/* Keep verifier happy. */
 	if (get_irn_n_edges(first_sp) == 0 && is_Proj(first_sp))
 		kill_node(first_sp);
 }

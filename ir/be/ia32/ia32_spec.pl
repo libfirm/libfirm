@@ -1061,6 +1061,7 @@ PopEbp => {
 	ins       => [ "mem", "stack" ],
 	outs      => [ "res", "unused", "M", "stack" ],
 	emit      => "pop%M %D0",
+	init_attr => "attr->ls_mode = ia32_mode_gp;",
 	latency   => 3, # Pop is more expensive than Push on Athlon
 },
 
