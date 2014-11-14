@@ -45,6 +45,9 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
+ir_mode *amd64_mode_E;
+ir_type *amd64_type_E;
+
 static ir_entity *amd64_get_frame_entity(const ir_node *node)
 {
 	if (!is_amd64_irn(node))
@@ -658,13 +661,6 @@ static amd64_isa_t amd64_isa_template = {
 	},
 };
 
-static void amd64_init(void)
-{
-	amd64_register_init();
-	amd64_create_opcodes(&amd64_irn_ops);
-	amd64_cconv_init();
-}
-
 static void amd64_finish(void)
 {
 	amd64_free_opcodes();
@@ -756,32 +752,50 @@ static const ir_settings_arch_dep_t amd64_arch_dep = {
 	.allow_mulhu          = true,
 	.max_bits_for_mulh    = 32,
 };
-/**
- * Returns the libFirm configuration parameter for this backend.
- */
+
+static backend_params amd64_backend_params = {
+	.byte_order_big_endian         = false,
+	.pic_supported                 = false,
+	.unaligned_memaccess_supported = true,
+	.modulo_shift                  = 32,
+	.dep_param                     = &amd64_arch_dep,
+	.allow_ifconv                  = amd64_is_mux_allowed,
+	.machine_size                  = 64,
+	.mode_float_arithmetic         = NULL,  /* will be set later */
+	.type_long_long                = NULL,  /* will be set later */
+	.type_unsigned_long_long       = NULL,  /* will be set later */
+	.type_long_double              = NULL,  /* will be set later */
+	.stack_param_align             = 8,
+	.float_int_overflow            = ir_overflow_indefinite
+};
+
 static const backend_params *amd64_get_backend_params(void) {
-	static backend_params p = {
-		.byte_order_big_endian         = false,
-		.pic_supported                 = false,
-		.unaligned_memaccess_supported = true,
-		.modulo_shift                  = 32,
-		.dep_param                     = &amd64_arch_dep,
-		.allow_ifconv                  = amd64_is_mux_allowed,
-		.machine_size                  = 64,
-		.mode_float_arithmetic         = NULL,  /* will be set later */
-		.type_long_long                = NULL,  /* will be set later */
-		.type_unsigned_long_long       = NULL,  /* will be set later */
-		.type_long_double              = NULL,  /* will be set later */
-		.stack_param_align             = 8,
-		.float_int_overflow            = ir_overflow_indefinite
-	};
-	return &p;
+	return &amd64_backend_params;
 }
 
 static int amd64_is_valid_clobber(const char *clobber)
 {
 	(void) clobber;
 	return 0;
+}
+
+static void amd64_init_types(void)
+{
+	amd64_mode_E = new_float_mode("E", irma_x86_extended_float, 15, 64,
+	                              ir_overflow_indefinite);
+	amd64_type_E = new_type_primitive(amd64_mode_E);
+	set_type_size_bytes(amd64_type_E, 16);
+	set_type_alignment_bytes(amd64_type_E, 16);
+
+	amd64_backend_params.type_long_double = amd64_type_E;
+}
+
+static void amd64_init(void)
+{
+	amd64_init_types();
+	amd64_register_init();
+	amd64_create_opcodes(&amd64_irn_ops);
+	amd64_cconv_init();
 }
 
 const arch_isa_if_t amd64_isa_if = {
