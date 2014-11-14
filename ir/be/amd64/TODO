@@ -1,14 +1,17 @@
 amd64 backend TODO:
 Correctness:
-- Handle Alloc nodes (used by alloca and C99 VLA). See ia32/sparc backend on
-  how to do this.
 - SSE Division is not commutative and we have no neg-add style workaround like
   for the Sub node. So maybe we need finally need a must_be_same constraint.
 - stdarg.h/varargs va_start
 - compound return calling convention
 - Implement more builtins (libgcc lacks several of them that gcc provides
   natively on amd64 so cparser/libfirm when linking to the compilerlib fallback)
+- Builtins not implemented: clz, ctz, ffs, parity, popcount
+- Bitcast not implemented
+- Thread local storage not implemented
+- support for setjmp
 - Support ASM node
+- fail on long double
 - (Support 80bit long double with x87 instructions)
 - (Implement Position Independent Code (PIC))
 
@@ -36,3 +39,4 @@ Improve Quality:
   attributes, this allows us to think of them as associative operations and
   for example swap inputs to enable load folding, or immediates.
 - Lea needs to support all address modes (base, index +shifts, symconsts)
+- Match RCPxx SSE instruction
