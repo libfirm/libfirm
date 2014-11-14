@@ -4873,139 +4873,107 @@ static ir_node *gen_Proj_Mod(ir_node *node)
 
 static ir_node *gen_Call(ir_node *node)
 {
-	ir_node         *callee       = get_Call_ptr(node);
-	ir_node         *block        = get_nodes_block(node);
-	dbg_info        *dbgi         = get_irn_dbg_info(node);
-	ir_node         *mem          = get_Call_mem(node);
-	ir_type         *type         = get_Call_type(node);
-	unsigned         n_params     = get_Call_n_params(node);
-	unsigned         n_ress       = get_method_n_ress(type);
-	/* max inputs: memory, callee, register arguments */
-	ir_graph        *irg          = get_irn_irg(node);
-	struct obstack  *obst         = be_get_be_obst(irg);
-	x86_cconv_t     *cconv
-		= ia32_decide_calling_convention(type, NULL);
-	unsigned         n_param_regs = cconv->n_param_regs;
-	/* base,index,mem,callee,esp,fpcw + regparams*/
-	unsigned         in_arity     = n_ia32_Call_first_argument;
-	unsigned         max_inputs   = in_arity + n_param_regs;
-	ir_node        **in           = ALLOCAN(ir_node*, max_inputs);
-	const arch_register_req_t **in_req
-		= OALLOCNZ(obst, const arch_register_req_t*, max_inputs);
-	ir_node        **sync_ins     = ALLOCAN(ir_node*, n_params+1);
-	unsigned         sync_arity   = 0;
-	ir_node         *new_frame    = get_stack_pointer_for(node);
-
-	assert(n_params == get_method_n_params(type));
-
-	/* Run the x87 simulator if the call returns a float value */
-	for (unsigned r = 0; r < n_ress; ++r) {
-		const reg_or_stackslot_t *res = &cconv->results[r];
-		if (res->reg == NULL)
-			continue;
-		unsigned reg_index = res->reg->global_index;
-		if (REG_ST0 <= (int)reg_index && reg_index <= REG_ST7) {
-			ia32_request_x87_sim(irg);
-			break;
-		}
-	}
-
-	/* construct arguments */
-	ir_node *callframe;
-	unsigned po2_stack_alignment = ia32_cg_config.po2_stack_alignment;
-	unsigned callframe_size      = cconv->param_stack_size;
-	if (callframe_size == 0 && po2_stack_alignment == 0) {
-		callframe = new_frame;
-	} else {
-		callframe = ia32_new_IncSP(block, new_frame, callframe_size,
-		                           ia32_cg_config.po2_stack_alignment);
-	}
+	arch_register_req_t const *const req_gp = ia32_reg_classes[CLASS_ia32_gp].class_req;
+	arch_register_t     const *const sp     = &ia32_registers[REG_ESP];
+	arch_register_t     const *const fpcw   = &ia32_registers[REG_FPCW];
 
 	/* special case for PIC trampoline calls */
-	bool old_no_pic_adjust = ia32_no_pic_adjust;
-	ia32_no_pic_adjust     = be_options.pic;
+	bool const old_no_pic_adjust = ia32_no_pic_adjust;
+	ia32_no_pic_adjust = be_options.pic;
 
+	/* Construct arguments. */
 	ia32_address_mode_t am;
-	match_arguments(&am, block, NULL, callee, mem,
-	                match_am | match_immediate | match_upconv);
-	x86_address_t *const addr = &am.addr;
-	ir_node *new_mem = transform_AM_mem(block, callee, mem, addr->mem);
+	ir_node      *const old_block = get_nodes_block(node);
+	ir_node      *const callee    = get_Call_ptr(node);
+	ir_node      *const mem       = get_Call_mem(node);
+	match_arguments(&am, old_block, NULL, callee, mem, match_am | match_immediate | match_upconv);
 
-	const arch_register_t *sp = &ia32_registers[REG_ESP];
+	ir_type                    *const type     = get_Call_type(node);
+	x86_cconv_t                *const cconv    = ia32_decide_calling_convention(type, NULL);
+	ir_graph                   *const irg      = get_irn_irg(node);
+	struct obstack             *const obst     = be_get_be_obst(irg);
+	unsigned                          in_arity = n_ia32_Call_first_argument;
+	unsigned                    const n_ins    = in_arity + cconv->n_param_regs;
+	ir_node                   **const in       = ALLOCAN(ir_node*, n_ins);
+	arch_register_req_t const **const in_req   = OALLOCNZ(obst, arch_register_req_t const*, n_ins);
 
-	in[n_ia32_Call_base]       = addr->base;
-	in_req[n_ia32_Call_base]   = ia32_reg_classes[CLASS_ia32_gp].class_req;
-	in[n_ia32_Call_index]      = addr->index;
-	in_req[n_ia32_Call_index]  = ia32_reg_classes[CLASS_ia32_gp].class_req;
+	in[n_ia32_Call_base]       = am.addr.base;
+	in_req[n_ia32_Call_base]   = req_gp;
+	in[n_ia32_Call_index]      = am.addr.index;
+	in_req[n_ia32_Call_index]  = req_gp;
 	/* Memory input will be set later. */
 	in[n_ia32_Call_callee]     = am.new_op2;
-	in_req[n_ia32_Call_callee] = ia32_reg_classes[CLASS_ia32_gp].class_req;
-	in[n_ia32_Call_stack]      = callframe;
-	in_req[n_ia32_Call_stack]  = sp->single_req;
-	in[n_ia32_Call_fpcw]       = get_initial_fpcw(irg);
-	in_req[n_ia32_Call_fpcw]   = ia32_registers[REG_FPCW].single_req;
+	in_req[n_ia32_Call_callee] = req_gp;
 
-	sync_ins[sync_arity++] = new_mem;
+	ir_node *const block               = be_transform_node(old_block);
+	ir_node *const new_frame           = get_stack_pointer_for(node);
+	unsigned const po2_stack_alignment = ia32_cg_config.po2_stack_alignment;
+	unsigned const callframe_size      = cconv->param_stack_size;
+	ir_node *const callframe           =
+		callframe_size == 0 && po2_stack_alignment == 0 ? new_frame:
+		ia32_new_IncSP(block, new_frame, callframe_size, ia32_cg_config.po2_stack_alignment);
+	in[n_ia32_Call_stack]     = callframe;
+	in_req[n_ia32_Call_stack] = sp->single_req;
+
+	in[n_ia32_Call_fpcw]     = get_initial_fpcw(irg);
+	in_req[n_ia32_Call_fpcw] = fpcw->single_req;
+
+	unsigned        sync_arity = 0;
+	unsigned  const n_params   = get_Call_n_params(node);
+	ir_node **const sync_ins   = ALLOCAN(ir_node*, n_params + 1);
+	sync_ins[sync_arity++] = transform_AM_mem(block, callee, mem, am.addr.mem);
+
+	dbg_info *const dbgi = get_irn_dbg_info(node);
 	for (unsigned p = 0; p < n_params; ++p) {
-		ir_node                  *value = get_Call_param(node, p);
-		const reg_or_stackslot_t *param = &cconv->parameters[p];
-
-		ir_type *param_type = get_method_param_type(type, p);
+		ir_node                  *const value      = get_Call_param(node, p);
+		reg_or_stackslot_t const *const param      = &cconv->parameters[p];
+		ir_type                  *const param_type = get_method_param_type(type, p);
 		if (is_aggregate_type(param_type)) {
-			/* copy aggregate arguments into the callframe */
-			ir_node *lea = new_bd_ia32_Lea(dbgi, block, callframe, noreg_GP);
+			/* Copy aggregate arguments into the callframe. */
+			ir_node *const lea = new_bd_ia32_Lea(dbgi, block, callframe, noreg_GP);
 			set_ia32_am_offs_int(lea, param->offset);
 			set_ia32_ls_mode(lea, ia32_mode_gp);
 
-			unsigned size = get_type_size_bytes(param_type);
-			ir_node *new_value = be_transform_node(value);
-			ir_node *copyb     = new_bd_ia32_CopyB_i(dbgi, block, lea,
-			                                         new_value, nomem, size);
-			ir_node *projm = new_r_Proj(copyb, mode_M, pn_ia32_CopyB_i_M);
-			sync_ins[sync_arity++] = projm;
-		} else if (param->reg != NULL) {
-			/* value transmitted in register */
-			unsigned parami = in_arity++;
+			ir_node *const new_value = be_transform_node(value);
+			unsigned const size      = get_type_size_bytes(param_type);
+			ir_node *const copyb     = new_bd_ia32_CopyB_i(dbgi, block, lea, new_value, nomem, size);
+			sync_ins[sync_arity++] = new_r_Proj(copyb, mode_M, pn_ia32_CopyB_i_M);
+		} else if (param->reg) {
+			/* Value transmitted in register. */
+			unsigned const parami = in_arity++;
 			in[parami]     = be_transform_node(value);
 			in_req[parami] = param->reg->single_req;
 		} else {
-			/* value transmitted on callframe */
-			x86_address_t store_addr;
-			memset(&store_addr, 0, sizeof(store_addr));
-			store_addr.base   = callframe;
-			store_addr.index  = noreg_GP;
-			store_addr.mem    = nomem;
-			store_addr.offset = param->offset;
-
-			ir_node *store = create_store(NULL, block, value, &store_addr);
+			/* Value transmitted on callframe. */
+			x86_address_t const store_addr = {
+				.base   = callframe,
+				.index  = noreg_GP,
+				.mem    = nomem,
+				.offset = param->offset,
+			};
+			ir_node *const store = create_store(dbgi, block, value, &store_addr);
 			set_irn_pinned(store, op_pin_state_floats);
-			ir_node *store_m = create_proj_for_store(store, pn_Store_M);
-			sync_ins[sync_arity++] = store_m;
+			sync_ins[sync_arity++] = create_proj_for_store(store, pn_Store_M);
 		}
 	}
-	assert(in_arity <= max_inputs);
-	assert(sync_arity <= n_params+1);
+	assert(in_arity == n_ins);
+	assert(sync_arity <= n_params + 1);
 
-	/* memory input */
-	ir_node *memin;
-	if (sync_arity == 1) {
-		memin = sync_ins[0];
-	} else {
-		memin = new_r_Sync(block, sync_arity, sync_ins);
-	}
+	/* Memory input. */
+	ir_node *const memin =
+		sync_arity == 1 ? sync_ins[0] :
+		new_r_Sync(block, sync_arity, sync_ins);
 	in[n_ia32_Call_mem]     = memin;
 	in_req[n_ia32_Call_mem] = arch_no_register_req;
 
-	/* count outputs */
+	/* Count outputs. */
 	unsigned       o              = pn_ia32_Call_first_result;
 	unsigned const n_reg_results  = cconv->n_reg_results;
 	unsigned const n_caller_saves = rbitset_popcount(cconv->caller_saves, N_IA32_REGISTERS);
-	/* mem, sp, fpcw, results + caller saves + X_regular + X_except */
 	unsigned const n_out          = o + n_reg_results + n_caller_saves;
 
-	/* create node */
-	ir_node *call = new_bd_ia32_Call(dbgi, block, in_arity, in, n_out,
-	                                 cconv->sp_delta, type);
+	/* Create node. */
+	ir_node *const call = new_bd_ia32_Call(dbgi, block, in_arity, in, n_out, cconv->sp_delta, type);
 	arch_set_irn_register_reqs_in(call, in_req);
 
 	SET_IA32_ORIG_NODE(call, node);
@@ -5013,47 +4981,45 @@ static ir_node *gen_Call(ir_node *node)
 		set_irn_pinned(call, op_pin_state_pinned);
 
 	set_am_attributes(call, &am);
-	ir_node *res = fix_mem_proj(call, &am);
+	ir_node *const res = fix_mem_proj(call, &am);
 
-	/* construct outputs */
+	/* Construct outputs. */
 	arch_set_irn_register_req_out(call, pn_ia32_Call_mem, arch_no_register_req);
 
-	const arch_register_req_t *req
-		= be_create_reg_req(obst, sp, arch_register_req_type_ignore
-		                              | arch_register_req_type_produces_sp);
+	arch_register_req_t const *const req = be_create_reg_req(obst, sp, arch_register_req_type_ignore | arch_register_req_type_produces_sp);
 	arch_set_irn_register_req_out(call, pn_ia32_Call_stack, req);
 	arch_set_irn_register_out(call, pn_ia32_Call_stack, sp);
 
-	const arch_register_t *fpcw_reg = &ia32_registers[REG_FPCW];
-	arch_set_irn_register_req_out(call, pn_ia32_Call_fpcw, fpcw_reg->single_req);
-	arch_set_irn_register_out(call, pn_ia32_Call_fpcw, fpcw_reg);
+	arch_set_irn_register_req_out(call, pn_ia32_Call_fpcw, fpcw->single_req);
+	arch_set_irn_register_out(call, pn_ia32_Call_fpcw, fpcw);
 
+	unsigned const n_ress = get_method_n_ress(type);
 	for (unsigned r = 0; r < n_ress; ++r) {
-		const reg_or_stackslot_t *res = &cconv->results[r];
-		arch_set_irn_register_req_out(call, o++, res->reg->single_req);
+		arch_register_t const *const reg = cconv->results[r].reg;
+		arch_set_irn_register_req_out(call, o++, reg->single_req);
+		/* Run the x87 simulator, if the call returns a float value. */
+		if (reg->cls == &ia32_reg_classes[CLASS_ia32_fp])
+			ia32_request_x87_sim(irg);
 	}
-	/* caller saves */
-	const unsigned *allocatable_regs = be_birg_from_irg(irg)->allocatable_regs;
+	/* Caller saves. */
+	unsigned const *const allocatable_regs = be_birg_from_irg(irg)->allocatable_regs;
 	for (unsigned i = 0; i < N_IA32_REGISTERS; ++i) {
 		if (!rbitset_is_set(cconv->caller_saves, i))
 			continue;
-		const arch_register_t *reg = &ia32_registers[i];
-		unsigned               op  = o++;
+		arch_register_t const *const reg = &ia32_registers[i];
+		unsigned               const op  = o++;
 		arch_set_irn_register_req_out(call, op, reg->single_req);
 		if (!rbitset_is_set(allocatable_regs, reg->global_index))
 			arch_set_irn_register_out(call, op, reg);
 	}
 	assert(o == n_out);
 
-	/* incsp to destroy callframe */
-	ir_node *new_stack   = new_r_Proj(call, ia32_mode_gp, pn_ia32_Call_stack);
-	unsigned reduce_size = callframe_size - cconv->sp_delta;
+	/* IncSp to destroy callframe. */
+	ir_node       *new_stack   = new_r_Proj(call, ia32_mode_gp, pn_ia32_Call_stack);
+	unsigned const reduce_size = callframe_size - cconv->sp_delta;
 	if (reduce_size > 0 || po2_stack_alignment != 0) {
-		ir_node *new_block = be_transform_node(block);
-		ir_node *incsp     = ia32_new_IncSP(new_block, new_stack,
-		                                    -(int)reduce_size, 0);
-		keep_alive(incsp);
-		new_stack = incsp;
+		new_stack = ia32_new_IncSP(block, new_stack, -(int)reduce_size, 0);
+		keep_alive(new_stack);
 	}
 
 	pmap_insert(node_to_stack, node, new_stack);
