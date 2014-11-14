@@ -232,6 +232,7 @@ class Builtin:
 		("M", "memory result"),
 		# results follow here
 	]
+	mode        = "mode_T"
 	flags       = [ "uses_memory" ]
 	attrs       = [
 		Attribute("kind", type="ir_builtin_kind", comment="kind of builtin"),
@@ -318,6 +319,7 @@ class Switch:
 	outs   = [
 		("default", "control flow if no other case matches"),
 	]
+	mode   = "mode_T"
 	flags  = [ "cfopcode", "forking" ]
 	pinned = "yes"
 	attrs  = [

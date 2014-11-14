@@ -111,7 +111,7 @@ def setnodedefaults(node):
 		node.doc = trim_docstring(node.__doc__)
 	else:
 		node.doc = ""
-	if hasattr(node, "outs"):
+	if hasattr(node, "outs") and len(node.outs) > 1:
 		node.mode = "mode_T"
 	if "start_block" in node.flags:
 		node.block = "get_irg_start_block(irg)"
