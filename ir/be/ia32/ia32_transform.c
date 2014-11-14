@@ -4887,11 +4887,11 @@ static ir_node *gen_Call(ir_node *node)
 		= ia32_decide_calling_convention(type, NULL);
 	unsigned         n_param_regs = cconv->n_param_regs;
 	/* base,index,mem,callee,esp,fpcw + regparams*/
-	unsigned         max_inputs   = 6 + n_param_regs;
+	unsigned         in_arity     = n_ia32_Call_first_argument;
+	unsigned         max_inputs   = in_arity + n_param_regs;
 	ir_node        **in           = ALLOCAN(ir_node*, max_inputs);
 	const arch_register_req_t **in_req
 		= OALLOCNZ(obst, const arch_register_req_t*, max_inputs);
-	unsigned         in_arity     = 0;
 	ir_node        **sync_ins     = ALLOCAN(ir_node*, n_params+1);
 	unsigned         sync_arity   = 0;
 	ir_node         *new_frame    = get_stack_pointer_for(node);
@@ -4933,24 +4933,17 @@ static ir_node *gen_Call(ir_node *node)
 
 	const arch_register_t *sp = &ia32_registers[REG_ESP];
 
-	unsigned base = in_arity++;
-	in[base]     = addr->base;
-	in_req[base] = ia32_reg_classes[CLASS_ia32_gp].class_req;
-	unsigned index = in_arity++;
-	in[index]     = addr->index;
-	in_req[index] = ia32_reg_classes[CLASS_ia32_gp].class_req;
-	unsigned memp = in_arity++;
-	/* memp input will be set later */
-	/* TODO: only add this when op_type == ia32_Normal */
-	unsigned dest = in_arity++;
-	in[dest]     = am.new_op2;
-	in_req[dest] = ia32_reg_classes[CLASS_ia32_gp].class_req;
-	unsigned spi = in_arity++;
-	in[spi]     = callframe;
-	in_req[spi] = sp->single_req;
-	unsigned fpcwi = in_arity++;
-	in[fpcwi]     = get_initial_fpcw(irg);
-	in_req[fpcwi] = ia32_registers[REG_FPCW].single_req;
+	in[n_ia32_Call_base]       = addr->base;
+	in_req[n_ia32_Call_base]   = ia32_reg_classes[CLASS_ia32_gp].class_req;
+	in[n_ia32_Call_index]      = addr->index;
+	in_req[n_ia32_Call_index]  = ia32_reg_classes[CLASS_ia32_gp].class_req;
+	/* Memory input will be set later. */
+	in[n_ia32_Call_callee]     = am.new_op2;
+	in_req[n_ia32_Call_callee] = ia32_reg_classes[CLASS_ia32_gp].class_req;
+	in[n_ia32_Call_stack]      = callframe;
+	in_req[n_ia32_Call_stack]  = sp->single_req;
+	in[n_ia32_Call_fpcw]       = get_initial_fpcw(irg);
+	in_req[n_ia32_Call_fpcw]   = ia32_registers[REG_FPCW].single_req;
 
 	sync_ins[sync_arity++] = new_mem;
 	for (unsigned p = 0; p < n_params; ++p) {
@@ -5000,8 +4993,8 @@ static ir_node *gen_Call(ir_node *node)
 	} else {
 		memin = new_r_Sync(block, sync_arity, sync_ins);
 	}
-	in[memp]     = memin;
-	in_req[memp] = arch_no_register_req;
+	in[n_ia32_Call_mem]     = memin;
+	in_req[n_ia32_Call_mem] = arch_no_register_req;
 
 	/* count outputs */
 	unsigned       o              = pn_ia32_Call_first_result;

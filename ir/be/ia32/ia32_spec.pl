@@ -1217,6 +1217,7 @@ Call => {
 	state     => "exc_pinned",
 	arity     => "variable",
 	out_arity => "variable",
+	ins       => [ "base", "index", "mem", "callee", "stack", "fpcw", "first_argument" ],
 	outs      => [ "mem", "stack", "fpcw", "first_result" ],
 	emit      => "call %*AS3",
 	attr_type => "ia32_call_attr_t",
