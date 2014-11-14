@@ -1053,14 +1053,15 @@ static void introduce_epilogue(ir_node *const ret)
 		ir_mode               *const mode_gp = ia32_reg_classes[CLASS_ia32_gp].mode;
 
 		ir_node  *restore;
-		int const n_ebp   = determine_ebp_input(ret);
-		ir_node  *curr_bp = get_irn_n(ret, n_ebp);
+		int const n_ebp    = determine_ebp_input(ret);
+		ir_node  *curr_bp  = get_irn_n(ret, n_ebp);
+		ir_node  *curr_mem = get_irn_n(ret, n_ia32_Return_mem);
 		if (ia32_cg_config.use_leave) {
-			restore = new_bd_ia32_Leave(NULL, block, curr_bp);
-			curr_bp = new_r_Proj(restore, mode_gp, pn_ia32_Leave_frame);
-			curr_sp = new_r_Proj(restore, mode_gp, pn_ia32_Leave_stack);
+			restore  = new_bd_ia32_Leave(NULL, block, curr_mem, curr_bp);
+			curr_bp  = new_r_Proj(restore, mode_gp, pn_ia32_Leave_frame);
+			curr_sp  = new_r_Proj(restore, mode_gp, pn_ia32_Leave_stack);
+			curr_mem = new_r_Proj(restore, mode_M,  pn_ia32_Leave_M);
 		} else {
-			ir_node *curr_mem = get_irn_n(ret, n_ia32_Return_mem);
 			/* Copy ebp to esp. */
 			curr_sp = new_bd_ia32_CopyEbpEsp(NULL, block, curr_bp);
 			arch_set_irn_register(curr_sp, sp);
@@ -1071,13 +1072,12 @@ static void introduce_epilogue(ir_node *const ret)
 			curr_bp  = new_r_Proj(restore, mode_gp, pn_ia32_PopEbp_res);
 			curr_sp  = new_r_Proj(restore, mode_gp, pn_ia32_PopEbp_stack);
 			curr_mem = new_r_Proj(restore, mode_M,  pn_ia32_PopEbp_M);
-
-			set_irn_n(ret, n_ia32_Return_mem, curr_mem);
 		}
 		sched_add_before(ret, restore);
 		arch_set_irn_register(curr_bp, bp);
 		arch_set_irn_register(curr_sp, sp);
-		set_irn_n(ret, n_ebp, curr_bp);
+		set_irn_n(ret, n_ia32_Return_mem, curr_mem);
+		set_irn_n(ret, n_ebp,             curr_bp);
 	} else {
 		ir_type *const frame_type = get_irg_frame_type(irg);
 		unsigned const frame_size = get_type_size_bytes(frame_type);

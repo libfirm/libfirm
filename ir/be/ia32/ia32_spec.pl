@@ -1092,9 +1092,9 @@ Enter => {
 },
 
 Leave => {
-	reg_req   => { in => [ "ebp" ], out => [ "ebp:I", "esp:I|S" ] },
+	reg_req   => { in => [ "none", "ebp" ], out => [ "ebp:I", "none", "esp:I|S" ] },
 	emit      => "leave",
-	outs      => [ "frame", "stack" ],
+	outs      => [ "frame", "M", "stack" ],
 	latency   => 3,
 	state     => "exc_pinned",
 },
