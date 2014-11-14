@@ -1096,10 +1096,7 @@ static void introduce_epilogue(ir_node *ret)
 		kill_node(first_sp);
 }
 
-/**
- * Put the prologue code at the beginning, epilogue code before each return
- */
-static void introduce_prologue_epilogue(ir_graph *irg)
+static void introduce_prologue(ir_graph *const irg)
 {
 	const arch_register_t *sp         = &ia32_registers[REG_ESP];
 	const arch_register_t *bp         = &ia32_registers[REG_EBP];
@@ -1150,6 +1147,14 @@ static void introduce_prologue_epilogue(ir_graph *irg)
 		edges_reroute_except(initial_sp, incsp, incsp);
 		sched_add_after(start, incsp);
 	}
+}
+
+/**
+ * Put the prologue code at the beginning, epilogue code before each return
+ */
+static void introduce_prologue_epilogue(ir_graph *const irg)
+{
+	introduce_prologue(irg);
 
 	/* introduce epilogue for every return node */
 	foreach_irn_in(get_irg_end_block(irg), i, ret) {
