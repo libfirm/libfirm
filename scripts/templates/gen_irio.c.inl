@@ -6,7 +6,7 @@ static ir_node *read_{{node.name}}(read_env_t *env)
 	ir_node *block = read_node_ref(env);
 	{%- endif %}
 	{%- for input in node.ins %}
-	ir_node *irn_{{input[0]}} = read_node_ref(env);
+	ir_node *irn_{{input.name}} = read_node_ref(env);
 	{%- endfor %}
 	{%- if not hasattr(node, "mode") %}
 	ir_mode *mode = read_mode_ref(env);
@@ -72,7 +72,7 @@ static void write_{{node.name}}(write_env_t *env, const ir_node *node)
 	write_node_ref(env, get_nodes_block(node));
 	{%- endif %}
 	{%- for input in node.ins %}
-	write_node_ref(env, get_{{node.name}}_{{input[0]}}(node));
+	write_node_ref(env, get_{{node.name}}_{{input.name}}(node));
 	{%- endfor %}
 	{%- if not hasattr(node, "mode") %}
 	write_mode_ref(env, get_irn_mode(node));

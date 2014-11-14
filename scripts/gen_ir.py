@@ -83,7 +83,7 @@ def format_insdecl(node):
 		res += "\n\tir_node **r_in= ALLOCAN(ir_node*, r_arity);"
 		i = 0
 		for input in node.ins:
-			res += "\n\tr_in[" + repr(i) + "] = irn_" + input[0] + ";"
+			res += "\n\tr_in[" + repr(i) + "] = irn_" + input.name + ";"
 			i += 1
 		res += "\n\tmemcpy(&r_in[" + repr(insarity) + "], in, sizeof(ir_node *) * arity);\n\t"
 	elif arity == 0:
@@ -92,7 +92,7 @@ def format_insdecl(node):
 		res = "ir_node *in[" + repr(arity) + "];"
 		i = 0
 		for input in node.ins:
-			res += "\n\tin[" + repr(i) + "] = irn_" + input[0] + ";"
+			res += "\n\tin[" + repr(i) + "] = irn_" + input.name + ";"
 			i += 1
 	return res
 
@@ -230,8 +230,8 @@ def preprocess_node(node):
 	initattrs = [ ]
 	for input in node.ins:
 		arguments.append(
-			Attribute("irn_" + input[0], type="ir_node *",
-			          comment=input[1]))
+			Attribute("irn_" + input.name, type="ir_node *",
+			          comment=input.name))
 
 	if node.arity == "variable" or node.arity == "dynamic":
 		arguments.append(

@@ -36,7 +36,7 @@ def is_fragile(node):
 
 def inout_contains(l, name):
 	for entry in l:
-		if entry[0] == name:
+		if entry.name == name:
 			return True
 	return False
 
@@ -81,6 +81,21 @@ def setdefault(node, attr, val):
 	if not hasattr(node, attr):
 		setattr(node, attr, val)
 
+class Operand(object):
+	pass
+
+def Input(name, comment=None):
+	op = Operand()
+	op.name = name
+	op.comment = comment
+	return op
+
+def Output(name, comment=None):
+	op = Operand()
+	op.name = name
+	op.comment = comment
+	return op
+
 def setnodedefaults(node):
 	setldefault(node, "name", node.__name__)
 	if isAbstract(node):
@@ -101,6 +116,40 @@ def setnodedefaults(node):
 	if "start_block" in node.flags:
 		node.block = "get_irg_start_block(irg)"
 	setdefault(node, "usesGraph", node.block != None)
+
+	# As a shortcut you can specify inputs either as a list of strings or
+	# as a list of (name, comment) tuples. Normalize it to Input objects
+	new_ins = []
+	for i in node.ins:
+		if isinstance(i, basestring):
+			i = Input(i)
+		elif isinstance(i, tuple):
+			i = Input(name=i[0], comment=i[1])
+		new_ins.append(i)
+	node.ins = new_ins
+	if hasattr(node, "outs"):
+		new_outs = []
+		for o in node.outs:
+			if isinstance(o, basestring):
+				o = Output(o)
+			elif isinstance(o, tuple):
+				o = Output(name=o[0], comment=o[1])
+			new_outs.append(o)
+		node.outs = new_outs
+
+def collect_ops(moduledict):
+	return [node for node in moduledict.values() if isOp(node) ]
+
+def setdefaults(nodes):
+	for node in nodes:
+		setnodedefaults(node)
+	return nodes
+
+def verify_spec(spec):
+	if len(spec.nodes) == 0:
+		sys.stderr.write("Warning: No nodes found in spec\n")
+	if not hasattr(spec, "name"):
+		sys.stderr.write("Warning: No name specified in node spec\n")
 
 def load_spec(filename):
 	module = imp.load_source('spec', filename)

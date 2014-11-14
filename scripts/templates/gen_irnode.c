@@ -132,14 +132,14 @@ ir_node *new_{{node.name}}(
 {% endif %}
 
 {%- for input in node.ins %}
-ir_node *(get_{{node.name}}_{{input[0]}})(const ir_node *node)
+ir_node *(get_{{node.name}}_{{input.name}})(const ir_node *node)
 {
-	return get_{{node.name}}_{{input[0]}}(node);
+	return get_{{node.name}}_{{input.name}}(node);
 }
 
-void (set_{{node.name}}_{{input[0]}})(ir_node *node, ir_node *{{input[0]|escape_keywords}})
+void (set_{{node.name}}_{{input.name}})(ir_node *node, ir_node *{{input.name|escape_keywords}})
 {
-	set_{{node.name}}_{{input[0]}}_(node, {{input[0]|escape_keywords}});
+	set_{{node.name}}_{{input.name}}_(node, {{input.name|escape_keywords}});
 }
 {% endfor %}
 

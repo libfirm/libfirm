@@ -3,7 +3,7 @@
 {%- if node.outs %}
 static const pns_lookup_t {{node.name}}_lut[] = {
 	{%- for out in node.outs %}
-	{ pn_{{node.name}}_{{out[0]}}, "{{out[0]}}" },
+	{ pn_{{node.name}}_{{out.name}}, "{{out.name}}" },
 	{%- endfor %}
 };
 {% endif -%}

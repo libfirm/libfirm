@@ -44,9 +44,9 @@ int is_{{spec.name}}_node(const ir_node *node);
  */
 typedef enum {
 	{%- for input in node.ins %}
-	n_{{node.name}}_{{input[0]}},
+	n_{{node.name}}_{{input.name}}, /**< {{input.comment}} */
 	{%- endfor %}
-	n_{{node.name}}_max = n_{{node.name}}_{{node.ins[-1][0]}}
+	n_{{node.name}}_max = n_{{node.name}}_{{node.ins[-1].name}}
 } n_{{node.name}};
 {% endif -%}
 {% if node.outs %}
@@ -55,9 +55,9 @@ typedef enum {
  */
 typedef enum {
 	{% for out in node.outs -%}
-	pn_{{node.name}}_{{out[0]}}, /**< {{out[1]}} */
+	pn_{{node.name}}_{{out.name}}, /**< {{out.comment}} */
 	{% endfor -%}
-	pn_{{node.name}}_max = pn_{{node.name}}_{{node.outs[-1][0]}}
+	pn_{{node.name}}_max = pn_{{node.name}}_{{node.outs[-1].name}}
 } pn_{{node.name}};
 {% endif %}
 {%- if not node.noconstructor %}
@@ -117,10 +117,10 @@ typedef enum {
 {{FIRM_API}} int is_{{node.name}}(const ir_node *node);
 
 {% for input in node.ins -%}
-/** Returns {{input[0]}} input of {{node.name|a_an}} node. */
-{{FIRM_API}} ir_node *get_{{node.name}}_{{input[0]}}(const ir_node *node);
-/** Sets {{input[0]}} input of {{node.name|a_an}} node. */
-{{FIRM_API}} void set_{{node.name}}_{{input[0]}}(ir_node *node, ir_node *{{input[0]|escape_keywords}});
+/** Returns {{input.name}} input of {{node.name|a_an}} node. */
+{{FIRM_API}} ir_node *get_{{node.name}}_{{input.name}}(const ir_node *node);
+/** Sets {{input.name}} input of {{node.name|a_an}} node. */
+{{FIRM_API}} void set_{{node.name}}_{{input.name}}(ir_node *node, ir_node *{{input.name|escape_keywords}});
 {% endfor -%}
 {%- if node.input_name -%}
 /** Get the number of {{node.name}} {{node.input_name}}s. */

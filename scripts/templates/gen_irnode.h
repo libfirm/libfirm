@@ -17,8 +17,8 @@
 #define set_{{node.name}}_{{attr.name}}(node, {{attr.name}}) set_{{node.name}}_{{attr.name}}_(node, {{attr.name}})
 {%- endfor -%}
 {%- for input in node.ins %}
-#define get_{{node.name}}_{{input[0]}}(node) get_{{node.name}}_{{input[0]}}_(node)
-#define set_{{node.name}}_{{input[0]}}(node, {{input[0]|escape_keywords}}) set_{{node.name}}_{{input[0]}}_(node, {{input[0]|escape_keywords}})
+#define get_{{node.name}}_{{input.name}}(node) get_{{node.name}}_{{input.name}}_(node)
+#define set_{{node.name}}_{{input.name}}(node, {{input.name|escape_keywords}}) set_{{node.name}}_{{input.name}}_(node, {{input.name|escape_keywords}})
 {%- endfor -%}
 {%- if node.input_name %}
 #define get_{{node.name}}_n_{{node.input_name}}s(node) get_{{node.name}}_n_{{node.input_name}}s_(node)
@@ -42,16 +42,16 @@ static inline int is_{{node.name}}_(const ir_node *node)
 }
 
 {%- for input in node.ins %}
-static inline ir_node *get_{{node.name}}_{{input[0]}}_(const ir_node *node)
+static inline ir_node *get_{{node.name}}_{{input.name}}_(const ir_node *node)
 {
 	assert(is_{{node.name}}(node));
-	return get_irn_n(node, n_{{node.name}}_{{input[0]}});
+	return get_irn_n(node, n_{{node.name}}_{{input.name}});
 }
 
-static inline void set_{{node.name}}_{{input[0]}}_(ir_node *node, ir_node *{{input[0]|escape_keywords}})
+static inline void set_{{node.name}}_{{input.name}}_(ir_node *node, ir_node *{{input.name|escape_keywords}})
 {
 	assert(is_{{node.name}}(node));
-	set_irn_n(node, n_{{node.name}}_{{input[0]}}, {{input[0]|escape_keywords}});
+	set_irn_n(node, n_{{node.name}}_{{input.name}}, {{input.name|escape_keywords}});
 }
 {% endfor %}
 
