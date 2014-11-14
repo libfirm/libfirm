@@ -41,9 +41,7 @@ def inout_contains(l, name):
 	return False
 
 def verify_node(node):
-	if not hasattr(node, "pinned"):
-		print("%s: NO PINNED SET" % node.name)
-	elif node.pinned not in ["yes", "no", "exception"]:
+	if node.pinned not in ["yes", "no", "exception"]:
 		print("%s: UNKNOWN PINNED MODE: %s" % (node.name, node.pinned))
 
 	if not hasattr(node, "flags"):
@@ -98,6 +96,7 @@ def Output(name, comment=None):
 
 def setnodedefaults(node):
 	setldefault(node, "name", node.__name__)
+	setdefault(node, "pinned", "no")
 	if isAbstract(node):
 		return
 

@@ -18,7 +18,6 @@ class Binop(object):
 		("right", "second operand"),
 	]
 	op_index       = 0
-	pinned         = "no"
 	arity_override = "oparity_binary"
 
 @abstract
@@ -27,7 +26,6 @@ class EntConst(object):
 	"""Symbolic constant that represents an aspect of an entity"""
 	name       = "entconst"
 	flags      = [ "constlike", "start_block" ]
-	pinned     = "no"
 	attrs      = [
 		Attribute("entity", type="ir_entity*", comment="entity to operate on"),
 	]
@@ -40,7 +38,6 @@ class TypeConst(object):
 	"""A symbolic constant that represents an aspect of a type"""
 	name       = "typeconst"
 	flags      = [ "constlike", "start_block" ]
-	pinned     = "no"
 	attrs      = [
 		Attribute("type", type="ir_type*", comment="type to operate on"),
 	]
@@ -360,7 +357,6 @@ class Const:
 	"""Returns a constant value."""
 	flags      = [ "constlike", "start_block" ]
 	mode       = "get_tarval_mode(tarval)"
-	pinned     = "no"
 	attrs      = [
 		Attribute("tarval", type="ir_tarval*",
 		          comment="constant value (a tarval object)"),
@@ -372,7 +368,6 @@ class Const:
 class Conv:
 	"""Converts values between modes"""
 	flags  = []
-	pinned = "no"
 	ins    = [
 		("op", "operand")
 	]
@@ -382,7 +377,6 @@ class Bitcast:
 	"""Converts a value between modes with different arithmetics but same
 	number of bits by reinterpreting the bits in the new mode"""
 	flags = []
-	pinned = "no"
 	ins = [
 		("op", "operand")
 	]
@@ -409,7 +403,6 @@ class CopyB:
 		Attribute("flags", type="ir_cons_flags",
 		          comment="specifies volatility"),
 	]
-	pinned      = "no"
 
 @op
 class Div:
@@ -485,7 +478,6 @@ class Id:
 	ins    = [
 	   ("pred", "the value which is returned unchanged")
 	]
-	pinned = "no"
 	flags  = []
 
 @op
@@ -549,7 +541,6 @@ class Load:
 class Minus:
 	"""returns the additive inverse of its operand"""
 	flags  = []
-	pinned = "no"
 	ins    = [
 		("op", "operand")
 	]
@@ -605,7 +596,6 @@ class Mux:
 	   ("true",  "selected if sel input is true"),
 	]
 	flags  = []
-	pinned = "no"
 
 @op
 class NoMem:
@@ -619,7 +609,6 @@ class NoMem:
 class Not:
 	"""returns the bitwise complement of a value. Works for boolean values, too."""
 	flags  = []
-	pinned = "no"
 	ins    = [
 		("op", "operand")
 	]
@@ -670,7 +659,6 @@ class Proj:
 		("pred", "the tuple value from which a part is extracted"),
 	]
 	flags      = []
-	pinned     = "no"
 	block      = "get_nodes_block(irn_pred)"
 	usesGraph  = False
 	attrs      = [
@@ -720,7 +708,6 @@ class Sel:
 	]
 	flags  = []
 	mode   = "mode_P"
-	pinned = "no"
 	attrs  = [
 		Attribute("type", type="ir_type*",
 		          comment="array type"),
@@ -738,7 +725,6 @@ class Member:
 	]
 	flags   = []
 	mode    = "mode_P"
-	pinned  = "no"
 	attrs   = [
 		Attribute("entity", type="ir_entity*",
 		          comment="entity which is selected"),
@@ -839,7 +825,6 @@ class Sync:
 	entrance by unifying the memories with a preceding Sync operation."""
 	mode       = "mode_M"
 	flags      = []
-	pinned     = "no"
 	arity      = "dynamic"
 	input_name = "pred"
 
@@ -856,7 +841,6 @@ class Tuple:
 	arity      = "variable"
 	input_name = "pred"
 	mode       = "mode_T"
-	pinned     = "no"
 	flags      = []
 
 @op
