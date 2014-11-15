@@ -1130,7 +1130,7 @@ static void introduce_prologue(ir_graph *const irg)
 		sched_add_after(curr_sp, incsp);
 
 		/* make sure the initial IncSP is really used by someone */
-		if (get_irn_n_edges(incsp) <= 1) {
+		if (get_irn_n_edges(incsp) == 0) {
 			ir_node *in[] = { incsp };
 			ir_node *keep = be_new_Keep(block, 1, in);
 			sched_add_after(incsp, keep);
@@ -1149,13 +1149,13 @@ static void introduce_prologue(ir_graph *const irg)
  */
 static void introduce_prologue_epilogue(ir_graph *const irg)
 {
-	introduce_prologue(irg);
-
 	/* introduce epilogue for every return node */
 	foreach_irn_in(get_irg_end_block(irg), i, ret) {
 		assert(is_ia32_Return(ret));
 		introduce_epilogue(ret);
 	}
+
+	introduce_prologue(irg);
 }
 
 static void ia32_emit(ir_graph *irg)
