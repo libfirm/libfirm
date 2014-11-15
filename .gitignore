@@ -1,12 +1,15 @@
+/.ninja_deps
+/.ninja_log
 /aclocal.m4
 /autom4te.cache/
 /build
+/build.ninja
 /config.guess
 /config.h.in
 /config.mak
 /config.sub
-/configure
 /depcomp
+/firm-homepage
 /install-sh
 /ltmain.sh
 /missing
@@ -15,5 +18,4 @@
 /win32/vc2010/firm.suo
 /win32/vc2010/firm.vcxproj.user
 /win32/vc2010/win32/
-/firm-homepage
 Makefile.in
