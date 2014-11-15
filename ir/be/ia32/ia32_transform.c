@@ -3106,8 +3106,6 @@ static ir_node *gen_Cmp(ir_node *node)
 			 * (get_flags_node does). */
 			if (swap) {
 				ir_relation rel = get_Cmp_relation(node);
-				ir_node *left = get_Cmp_left(node);
-				ir_node *right = get_Cmp_right(node);
 				set_Cmp_relation(node, get_inversed_relation(rel));
 				set_Cmp_left(node, right);
 				set_Cmp_right(node, left);
