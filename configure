@@ -180,9 +180,10 @@ for gen_cfile in [x for x in generated if x.endswith(".c")]:
 	objects += [ compile_c(gen_cfile) ]
 
 # Rules for the backends
-def begen(generator, specfile, outs):
-	outdir = dirname(outs[0])
-	return multibuild("GEN", outs, ins=[generator, specfile], generator=generator, outdir=outdir, specfile=specfile)
+def begen(generator, specfile, targets):
+	outdir = dirname(targets[0])
+	deps = [generator, specfile]
+	return multibuild("GEN", targets, deps, generator=generator, outdir=outdir, specfile=specfile)
 
 backends = [ "TEMPLATE", "amd64", "arm", "ia32", "sparc" ]
 for be in backends:
@@ -191,14 +192,14 @@ for be in backends:
 	spec = "$srcdir/ir/be/%(be)s/%(be)s_spec.pl" % locals()
 	be_generated = []
 	be_generated += begen("$srcdir/ir/be/scripts/generate_regalloc_if.pl", spec,
-		outs = [ "$gendir/ir/be/%(be)s/gen_%(be)s_regalloc_if.h" % locals(),
-	             "$gendir/ir/be/%(be)s/gen_%(be)s_regalloc_if.c" % locals() ])
+		targets = [ "$gendir/ir/be/%(be)s/gen_%(be)s_regalloc_if.h" % locals(),
+	                "$gendir/ir/be/%(be)s/gen_%(be)s_regalloc_if.c" % locals()])
 	be_generated += begen("$srcdir/ir/be/scripts/generate_emitter.pl", spec,
-		outs = [ "$gendir/ir/be/%(be)s/gen_%(be)s_emitter.h" % locals(),
-	             "$gendir/ir/be/%(be)s/gen_%(be)s_emitter.c" % locals() ])
+		targets = [ "$gendir/ir/be/%(be)s/gen_%(be)s_emitter.h" % locals(),
+	                "$gendir/ir/be/%(be)s/gen_%(be)s_emitter.c" % locals() ])
 	be_generated += begen("$srcdir/ir/be/scripts/generate_new_opcodes.pl", spec,
-		outs = [ "$gendir/ir/be/%(be)s/gen_%(be)s_new_nodes.h" % locals(),
-	             "$gendir/ir/be/%(be)s/gen_%(be)s_new_nodes.c.inl" % locals()])
+		targets = [ "$gendir/ir/be/%(be)s/gen_%(be)s_new_nodes.h" % locals(),
+	                "$gendir/ir/be/%(be)s/gen_%(be)s_new_nodes.c.inl" % locals()])
 	be_sources += [x for x in be_generated if x.endswith(".c") ]
 	for f in be_sources:
 		objects += [ compile_c(f, extradeps=be_generated,
