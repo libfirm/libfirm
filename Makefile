@@ -9,7 +9,6 @@
 # Some build configuration defaults
 top_srcdir   ?= .
 top_builddir ?= build
-host         ?= unknown-host
 variant      ?= debug
 
 srcdir       ?= $(top_srcdir)
