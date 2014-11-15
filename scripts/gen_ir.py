@@ -3,7 +3,7 @@
 # This file is part of libFirm.
 # Copyright (C) 2012 Karlsruhe Institute of Technology.
 import sys
-from jinja2 import Environment, Template, FileSystemLoader
+from jinja2 import Environment, Template, BaseLoader
 from spec_util import is_dynamic_pinned, isAbstract, setdefault, load_spec, Attribute
 from filters import format_arguments, format_filtjoin, filter_has, filter_hasnot
 
@@ -178,7 +178,21 @@ def format_simplify_type(string):
 		res = res[3:]
 	return res
 
-env = Environment(loader=FileSystemLoader([".", "/"]), keep_trailing_newline=True)
+# simple FileSystemLoader variant. Compared to the default loader in jinja
+# it does not perform searchpath magic and does not reject paths containig ".."
+# for security.
+# Note that we want to use a loader instead of simply env.from_string because
+# we want to see the filename in error messages from jinja
+class SimpleLoader(BaseLoader):
+	def get_source(self, environment, name):
+		contents = open(name).read()
+		def uptodate():
+			return False
+		return contents, name, uptodate
+	def list_template(self):
+		return []
+
+env = Environment(loader=SimpleLoader(), keep_trailing_newline=True)
 env.filters['a_an']               = format_a_an
 env.filters['args']               = format_args
 env.filters['arguments']          = format_arguments
@@ -280,11 +294,11 @@ def main(argv):
 		print("usage: %s specfile templatefile" % argv[0])
 		sys.exit(1)
 
-	specfile = argv[1]
-	spec     = load_spec(specfile)
-	(nodes, abstract_nodes) = prepare_nodes(spec.nodes)
-
+	specfile     = argv[1]
 	templatefile = argv[2]
+
+	spec = load_spec(specfile)
+	(nodes, abstract_nodes) = prepare_nodes(spec.nodes)
 
 	env.globals['nodes']          = nodes
 	env.globals['abstract_nodes'] = abstract_nodes
@@ -293,7 +307,6 @@ def main(argv):
 	env.globals['hasattr'] = hasattr
 	env.globals['is_dynamic_pinned'] = is_dynamic_pinned
 	env.globals['warning'] = "/* Warning: automatically generated file */"
-
 	template = env.get_template(templatefile)
 	result = template.render()
 	sys.stdout.write(result)
