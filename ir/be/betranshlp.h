@@ -42,11 +42,6 @@ ir_node *be_transform_node(ir_node *node);
 ir_node *be_transform_phi(ir_node *node, const arch_register_req_t *req);
 
 /**
- * Duplicate all dependency edges of a node.
- */
-void be_duplicate_deps(ir_node *old_node, ir_node *new_node);
-
-/**
  * Duplicate a node during transformation.
  */
 ir_node *be_duplicate_node(ir_node *node);

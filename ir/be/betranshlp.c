@@ -61,7 +61,10 @@ static inline ir_node *be_get_transformed_node(ir_node *old_node)
 	return NULL;
 }
 
-void be_duplicate_deps(ir_node *old_node, ir_node *new_node)
+/**
+ * Duplicate all dependency edges of a node.
+ */
+static void be_duplicate_deps(ir_node *old_node, ir_node *new_node)
 {
 	int deps = get_irn_n_deps(old_node);
 	for (int i = 0; i < deps; ++i) {
