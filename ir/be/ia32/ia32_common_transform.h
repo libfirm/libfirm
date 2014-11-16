@@ -28,13 +28,24 @@ ir_entity *ia32_create_float_const_entity(ia32_isa_t *isa, ir_tarval *tv,
                                           ident *name);
 
 /**
- * Creates an immediate.
+ * Create an immediate.
  *
  * @param irg     The IR graph the node belongs to.
  * @param entity  if set, entity for the immediate
  * @param val     integer value for the immediate
  */
-ir_node *ia32_create_Immediate(ir_graph *irg, ir_entity *entity, long val);
+ir_node *ia32_create_Immediate_full(ir_graph *irg, ir_entity *entity, bool no_pic_adjust, int32_t val);
+
+/**
+ * Create an immediate.
+ *
+ * @param irg     The IR graph the node belongs to.
+ * @param val     integer value for the immediate
+ */
+static inline ir_node *ia32_create_Immediate(ir_graph *const irg, int32_t const val)
+{
+	return ia32_create_Immediate_full(irg, NULL, false, val);
+}
 
 /**
  * returns register by name (used for determining clobber specifications in

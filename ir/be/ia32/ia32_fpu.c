@@ -17,7 +17,7 @@
 #include "ia32_fpu.h"
 #include "ia32_new_nodes.h"
 #include "ia32_architecture.h"
-#include "ia32_optimize.h"
+#include "ia32_common_transform.h"
 #include "gen_ia32_regalloc_if.h"
 
 #include "ircons.h"
@@ -122,7 +122,7 @@ static ir_node *create_fpu_mode_reload(void *const env, ir_node *const state, ir
 			ir_node *const load_res = new_r_Proj(load, ia32_mode_gp, pn_ia32_Load_res);
 
 			/* TODO: Make the actual mode configurable in ChangeCW. */
-			ir_node *const or_const = ia32_immediate_from_long(irg, 0xC00);
+			ir_node *const or_const = ia32_create_Immediate(irg, 0xC00);
 			ir_node *const orn      = new_bd_ia32_Or(NULL, block, noreg, noreg, nomem, load_res, or_const);
 			sched_add_before(before, orn);
 

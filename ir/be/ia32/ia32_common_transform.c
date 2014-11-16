@@ -102,14 +102,11 @@ ir_entity *ia32_create_float_const_entity(ia32_isa_t *isa, ir_tarval *tv,
 	return res;
 }
 
-ir_node *ia32_create_Immediate(ir_graph *const irg, ir_entity *const entity,
-                               long const val)
+ir_node *ia32_create_Immediate_full(ir_graph *const irg, ir_entity *const entity, bool const no_pic_adjust, int32_t const val)
 {
-	ir_node  *start_block = get_irg_start_block(irg);
-	ir_node  *immediate   = new_bd_ia32_Immediate(NULL, start_block, entity,
-	                                              ia32_no_pic_adjust, val);
+	ir_node *const start_block = get_irg_start_block(irg);
+	ir_node *const immediate   = new_bd_ia32_Immediate(NULL, start_block, entity, no_pic_adjust, val);
 	arch_set_irn_register(immediate, &ia32_registers[REG_GP_NOREG]);
-
 	return immediate;
 }
 
@@ -824,5 +821,5 @@ ir_node *ia32_try_create_Immediate(ir_node *node, char immediate_constraint_type
 	}
 
 	ir_graph *const irg = get_irn_irg(node);
-	return ia32_create_Immediate(irg, entity, val);
+	return ia32_create_Immediate_full(irg, entity, ia32_no_pic_adjust, val);
 }

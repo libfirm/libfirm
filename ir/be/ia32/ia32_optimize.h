@@ -35,9 +35,4 @@ void ia32_peephole_optimization(ir_graph *irg);
 /** Initialize the ia32 address mode optimizer. */
 void ia32_init_optimize(void);
 
-/**
- * Creates an immediate node.
- */
-ir_node *ia32_immediate_from_long(ir_graph *irg, long val);
-
 #endif

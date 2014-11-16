@@ -44,7 +44,6 @@
 #include "ia32_common_transform.h"
 #include "ia32_new_nodes.h"
 #include "ia32_nodes_attr.h"
-#include "ia32_optimize.h"
 #include "ia32_transform.h"
 #include "util.h"
 #include "x86_address_mode.h"
@@ -234,8 +233,8 @@ static ir_node *gen_Const(ir_node *node)
 #ifdef CONSTRUCT_SSE_CONST
 			} else if (tarval_is_one(tv)) {
 				int     cnst  = mode == ia32_mode_float32 ? 26 : 55;
-				ir_node *imm1 = ia32_create_Immediate(irg, NULL, cnst);
-				ir_node *imm2 = ia32_create_Immediate(irg, NULL, 2);
+				ir_node *imm1 = ia32_create_Immediate(irg, cnst);
+				ir_node *imm2 = ia32_create_Immediate(irg, 2);
 				ir_node *pslld, *psrld;
 
 				load = new_bd_ia32_xAllOnes(dbgi, block);
@@ -264,7 +263,7 @@ static ir_node *gen_Const(ir_node *node)
 						(get_tarval_sub_bits(tv, 2) << 16) |
 						(get_tarval_sub_bits(tv, 3) << 24);
 					if (val == 0) {
-						ir_node *imm32 = ia32_create_Immediate(irg, NULL, 32);
+						ir_node *imm32 = ia32_create_Immediate(irg, 32);
 						ir_node *cnst, *psllq;
 
 						/* fine, lower 32bit are zero, produce 32bit value */
@@ -1725,7 +1724,7 @@ static ir_node *create_sex_32_64(dbg_info *dbgi, ir_node *block,
 		res = new_bd_ia32_Cltd(dbgi, block, val, pval);
 	} else {
 		ir_graph *const irg   = get_irn_irg(block);
-		ir_node  *const imm31 = ia32_create_Immediate(irg, NULL, 31);
+		ir_node  *const imm31 = ia32_create_Immediate(irg, 31);
 		res = new_bd_ia32_Sar(dbgi, block, val, imm31);
 	}
 	SET_IA32_ORIG_NODE(res, orig);
@@ -2674,7 +2673,7 @@ static ir_node *gen_float_const_Store(ir_node *node, ir_node *cns)
 			panic("invalid size of Store float to mem (%+F)", node);
 		}
 		ir_graph *const irg = get_irn_irg(new_block);
-		ir_node  *const imm = ia32_create_Immediate(irg, NULL, val);
+		ir_node  *const imm = ia32_create_Immediate(irg, val);
 
 		ir_node *new_node = new_bd_ia32_Store(dbgi, new_block, addr.base,
 			addr.index, addr.mem, imm);
@@ -3627,7 +3626,7 @@ static ir_node *gen_Mux(ir_node *node)
 
 				case SETCC_TR_SHL: {
 					ir_graph *const irg = get_irn_irg(new_block);
-					ir_node  *const imm = ia32_immediate_from_long(irg, res.steps[step].scale);
+					ir_node  *const imm = ia32_create_Immediate(irg, res.steps[step].scale);
 					SET_IA32_ORIG_NODE(imm, node);
 					new_node = new_bd_ia32_Shl(dbgi, new_block, new_node, imm);
 					SET_IA32_ORIG_NODE(new_node, node);
@@ -3646,7 +3645,7 @@ static ir_node *gen_Mux(ir_node *node)
 
 				case SETCC_TR_AND: {
 					ir_graph *const irg = get_irn_irg(new_block);
-					ir_node  *const imm = ia32_immediate_from_long(irg, res.steps[step].val);
+					ir_node  *const imm = ia32_create_Immediate(irg, res.steps[step].val);
 					SET_IA32_ORIG_NODE(imm, node);
 					new_node = new_bd_ia32_And(dbgi, new_block, noreg_GP, noreg_GP, nomem, new_node, imm);
 					SET_IA32_ORIG_NODE(new_node, node);
@@ -3659,7 +3658,7 @@ static ir_node *gen_Mux(ir_node *node)
 
 				case SETCC_TR_OR: {
 					ir_graph *const irg = get_irn_irg(new_block);
-					ir_node  *const imm = ia32_immediate_from_long(irg, res.steps[step].val);
+					ir_node  *const imm = ia32_create_Immediate(irg, res.steps[step].val);
 					SET_IA32_ORIG_NODE(imm, node);
 					new_node = new_bd_ia32_Or(dbgi, new_block, noreg_GP, noreg_GP, nomem, new_node, imm);
 					SET_IA32_ORIG_NODE(new_node, node);
@@ -3807,7 +3806,7 @@ static void store_gp(dbg_info *dbgi, ia32_address_mode_t *am, ir_node *block,
 	if (!mode_is_signed(mode) && extend_unsigned) {
 		ir_node *in[2];
 		/* store a zero */
-		ir_node *zero_const = ia32_create_Immediate(irg, NULL, 0);
+		ir_node *zero_const = ia32_create_Immediate(irg, 0);
 
 		ir_node *zero_store = new_bd_ia32_Store(dbgi, new_block, frame,
 		                                        noreg_GP, nomem, zero_const);
@@ -4530,7 +4529,7 @@ static ir_node *gen_ia32_l_LLtoFloat(ir_node *node)
 	ir_node *res = new_r_Proj(fild, mode_fp, pn_ia32_fild_res);
 
 	if (!mode_is_signed(get_irn_mode(val_high))) {
-		ir_node *count = ia32_create_Immediate(irg, NULL, 31);
+		ir_node *const count = ia32_create_Immediate(irg, 31);
 
 		ia32_address_mode_t am;
 		am.addr.base         = get_global_base(irg);
@@ -5260,7 +5259,7 @@ static ir_node *gen_clz(ir_node *node)
 	dbg_info *dbgi  = get_irn_dbg_info(real);
 	ir_node  *block = get_nodes_block(real);
 	ir_graph *irg   = get_irn_irg(block);
-	ir_node  *imm   = ia32_create_Immediate(irg, NULL, 31);
+	ir_node  *imm   = ia32_create_Immediate(irg, 31);
 
 	return new_bd_ia32_Xor(dbgi, block, noreg_GP, noreg_GP, nomem, bsr, imm);
 }
@@ -5290,7 +5289,7 @@ static ir_node *gen_parity(ir_node *node)
 	 * chance for CSE, constant folding and other goodies for some of these
 	 * operations) */
 	ir_graph *const irg   = get_irn_irg(new_block);
-	ir_node  *const count = ia32_create_Immediate(irg, NULL, 16);
+	ir_node  *const count = ia32_create_Immediate(irg, 16);
 	ir_node  *const shr   = new_bd_ia32_Shr(dbgi, new_block, new_param, count);
 	ir_node  *const xorn  = new_bd_ia32_Xor(dbgi, new_block, noreg_GP,
 	                                        noreg_GP, nomem, shr, new_param);
@@ -5359,9 +5358,9 @@ static ir_node *gen_bswap(ir_node *node)
 			return new_bd_ia32_Bswap(dbgi, new_block, param);
 		} else {
 			ir_graph *const irg  = get_irn_irg(new_block);
-			ir_node  *const i8   = ia32_create_Immediate(irg, NULL, 8);
+			ir_node  *const i8   = ia32_create_Immediate(irg, 8);
 			ir_node  *const rol1 = new_bd_ia32_Rol(dbgi, new_block, param, i8);
-			ir_node  *const i16  = ia32_create_Immediate(irg, NULL, 16);
+			ir_node  *const i16  = ia32_create_Immediate(irg, 16);
 			ir_node  *const rol2 = new_bd_ia32_Rol(dbgi, new_block, rol1, i16);
 			ir_node  *const rol3 = new_bd_ia32_Rol(dbgi, new_block, rol2, i8);
 			set_ia32_ls_mode(rol1, mode_Hu);
@@ -5422,7 +5421,7 @@ static ir_node *gen_saturating_increment(ir_node *node)
 	ir_node  *block     = be_transform_node(get_nodes_block(node));
 	ir_node  *operand   = be_transform_node(get_Builtin_param(node, 0));
 	ir_graph *irg       = get_irn_irg(block);
-	ir_node  *one       = ia32_create_Immediate(irg, NULL, 1);
+	ir_node  *one       = ia32_create_Immediate(irg, 1);
 	ir_node  *increment = new_bd_ia32_Add(dbgi, block, noreg_GP, noreg_GP,
 	                                      nomem, operand, one);
 	set_irn_mode(increment, mode_T);
@@ -5434,7 +5433,7 @@ static ir_node *gen_saturating_increment(ir_node *node)
 
 	ir_node *value  = new_rd_Proj(dbgi, increment, ia32_mode_gp, pn_ia32_Add_res);
 	ir_node *eflags = new_rd_Proj(dbgi, increment, ia32_mode_gp, pn_ia32_Add_flags);
-	ir_node *zero   = ia32_create_Immediate(irg, NULL, 0);
+	ir_node *zero   = ia32_create_Immediate(irg, 0);
 	ir_node *sbb    = new_bd_ia32_Sbb(dbgi, block, noreg_GP, noreg_GP, nomem,
 	                                  value, zero, eflags);
 	set_ia32_ls_mode(sbb, ia32_mode_gp);
