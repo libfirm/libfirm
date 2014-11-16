@@ -1824,15 +1824,6 @@ fdiv => {
 	attr_type => "ia32_x87_attr_t",
 },
 
-fprem => {
-	reg_req   => { in => [ "fp", "fp", "fpcw" ], out => [ "fp" ] },
-	ins       => [ "left", "right", "fpcw" ],
-	emit      => "fprem1",
-	latency   => 20,
-	mode      => $mode_fp87,
-	attr_type => "ia32_x87_attr_t",
-},
-
 fabs => {
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "fp" ], out => [ "fp" ] },

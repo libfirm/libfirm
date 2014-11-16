@@ -864,13 +864,6 @@ do_pop:
 	DB((dbg, LEVEL_1, "<<< %s %s ->\n", get_irn_opname(n), get_st_reg(0)->name));
 }
 
-static void sim_fprem(x87_state *const state, ir_node *const n)
-{
-	(void)state;
-	(void)n;
-	panic("TODO implement");
-}
-
 /**
  * Simulate a virtual fisttp.
  *
@@ -1466,7 +1459,6 @@ static void x87_init_simulator(x87_simulator *sim, ir_graph *irg)
 	register_sim(op_ia32_fld,          sim_load);
 	register_sim(op_ia32_fldz,         sim_load);
 	register_sim(op_ia32_fmul,         sim_binop);
-	register_sim(op_ia32_fprem,        sim_fprem);
 	register_sim(op_ia32_fst,          sim_store);
 	register_sim(op_ia32_fsub,         sim_binop);
 	register_sim(op_ia32_FtstFnstsw,   sim_FtstFnstsw);
