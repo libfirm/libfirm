@@ -1329,76 +1329,66 @@ void irg_assert_verify(ir_graph *irg)
 	}
 }
 
-static void register_verify_node_func(ir_op *op, verify_node_func func)
-{
-	op->ops.verify_node = func;
-}
-
-static void register_verify_node_func_proj(ir_op *op, verify_node_func func)
-{
-	op->ops.verify_proj_node = func;
-}
-
 void ir_register_verify_node_ops(void)
 {
-	register_verify_node_func(op_Add,      verify_node_Add);
-	register_verify_node_func(op_Address,  verify_node_Address);
-	register_verify_node_func(op_Align,    verify_node_int);
-	register_verify_node_func(op_Alloc,    verify_node_Alloc);
-	register_verify_node_func(op_And,      verify_node_And);
-	register_verify_node_func(op_Bitcast,  verify_node_Bitcast);
-	register_verify_node_func(op_Block,    verify_node_Block);
-	register_verify_node_func(op_Call,     verify_node_Call);
-	register_verify_node_func(op_Cmp,      verify_node_Cmp);
-	register_verify_node_func(op_Cond,     verify_node_Cond);
-	register_verify_node_func(op_Confirm,  verify_node_Confirm);
-	register_verify_node_func(op_Const,    verify_node_Const);
-	register_verify_node_func(op_Conv,     verify_node_Conv);
-	register_verify_node_func(op_CopyB,    verify_node_CopyB);
-	register_verify_node_func(op_Deleted,  verify_node_Deleted);
-	register_verify_node_func(op_Div,      verify_node_Div);
-	register_verify_node_func(op_End,      verify_node_End);
-	register_verify_node_func(op_Eor,      verify_node_Eor);
-	register_verify_node_func(op_Free,     verify_node_Free);
-	register_verify_node_func(op_IJmp,     verify_node_IJmp);
-	register_verify_node_func(op_Jmp,      verify_node_Jmp);
-	register_verify_node_func(op_Load,     verify_node_Load);
-	register_verify_node_func(op_Member,   verify_node_Member);
-	register_verify_node_func(op_Minus,    verify_node_Minus);
-	register_verify_node_func(op_Mod,      verify_node_Mod);
-	register_verify_node_func(op_Mul,      verify_node_Mul);
-	register_verify_node_func(op_Mulh,     verify_node_Mulh);
-	register_verify_node_func(op_Mux,      verify_node_Mux);
-	register_verify_node_func(op_Not,      verify_node_Not);
-	register_verify_node_func(op_Offset,   verify_node_int);
-	register_verify_node_func(op_Or,       verify_node_Or);
-	register_verify_node_func(op_Phi,      verify_node_Phi);
-	register_verify_node_func(op_Proj,     verify_node_Proj);
-	register_verify_node_func(op_Raise,    verify_node_Raise);
-	register_verify_node_func(op_Return,   verify_node_Return);
-	register_verify_node_func(op_Sel,      verify_node_Sel);
-	register_verify_node_func(op_Shl,      verify_node_Shl);
-	register_verify_node_func(op_Shr,      verify_node_Shr);
-	register_verify_node_func(op_Shrs,     verify_node_Shrs);
-	register_verify_node_func(op_Size,     verify_node_int);
-	register_verify_node_func(op_Start,    verify_node_Start);
-	register_verify_node_func(op_Store,    verify_node_Store);
-	register_verify_node_func(op_Sub,      verify_node_Sub);
-	register_verify_node_func(op_Switch,   verify_node_Switch);
-	register_verify_node_func(op_Sync,     verify_node_Sync);
+	set_op_verify(op_Add,      verify_node_Add);
+	set_op_verify(op_Address,  verify_node_Address);
+	set_op_verify(op_Align,    verify_node_int);
+	set_op_verify(op_Alloc,    verify_node_Alloc);
+	set_op_verify(op_And,      verify_node_And);
+	set_op_verify(op_Bitcast,  verify_node_Bitcast);
+	set_op_verify(op_Block,    verify_node_Block);
+	set_op_verify(op_Call,     verify_node_Call);
+	set_op_verify(op_Cmp,      verify_node_Cmp);
+	set_op_verify(op_Cond,     verify_node_Cond);
+	set_op_verify(op_Confirm,  verify_node_Confirm);
+	set_op_verify(op_Const,    verify_node_Const);
+	set_op_verify(op_Conv,     verify_node_Conv);
+	set_op_verify(op_CopyB,    verify_node_CopyB);
+	set_op_verify(op_Deleted,  verify_node_Deleted);
+	set_op_verify(op_Div,      verify_node_Div);
+	set_op_verify(op_End,      verify_node_End);
+	set_op_verify(op_Eor,      verify_node_Eor);
+	set_op_verify(op_Free,     verify_node_Free);
+	set_op_verify(op_IJmp,     verify_node_IJmp);
+	set_op_verify(op_Jmp,      verify_node_Jmp);
+	set_op_verify(op_Load,     verify_node_Load);
+	set_op_verify(op_Member,   verify_node_Member);
+	set_op_verify(op_Minus,    verify_node_Minus);
+	set_op_verify(op_Mod,      verify_node_Mod);
+	set_op_verify(op_Mul,      verify_node_Mul);
+	set_op_verify(op_Mulh,     verify_node_Mulh);
+	set_op_verify(op_Mux,      verify_node_Mux);
+	set_op_verify(op_Not,      verify_node_Not);
+	set_op_verify(op_Offset,   verify_node_int);
+	set_op_verify(op_Or,       verify_node_Or);
+	set_op_verify(op_Phi,      verify_node_Phi);
+	set_op_verify(op_Proj,     verify_node_Proj);
+	set_op_verify(op_Raise,    verify_node_Raise);
+	set_op_verify(op_Return,   verify_node_Return);
+	set_op_verify(op_Sel,      verify_node_Sel);
+	set_op_verify(op_Shl,      verify_node_Shl);
+	set_op_verify(op_Shr,      verify_node_Shr);
+	set_op_verify(op_Shrs,     verify_node_Shrs);
+	set_op_verify(op_Size,     verify_node_int);
+	set_op_verify(op_Start,    verify_node_Start);
+	set_op_verify(op_Store,    verify_node_Store);
+	set_op_verify(op_Sub,      verify_node_Sub);
+	set_op_verify(op_Switch,   verify_node_Switch);
+	set_op_verify(op_Sync,     verify_node_Sync);
 
-	register_verify_node_func_proj(op_Alloc,  verify_node_Proj_Alloc);
-	register_verify_node_func_proj(op_Call,   verify_node_Proj_Call);
-	register_verify_node_func_proj(op_Cond,   verify_node_Proj_Cond);
-	register_verify_node_func_proj(op_Div,    verify_node_Proj_Div);
-	register_verify_node_func_proj(op_Load,   verify_node_Proj_Load);
-	register_verify_node_func_proj(op_Mod,    verify_node_Proj_Mod);
-	register_verify_node_func_proj(op_Proj,   verify_node_Proj_Proj);
-	register_verify_node_func_proj(op_Raise,  verify_node_Proj_Raise);
-	register_verify_node_func_proj(op_Start,  verify_node_Proj_Start);
-	register_verify_node_func_proj(op_Store,  verify_node_Proj_Store);
-	register_verify_node_func_proj(op_Switch, verify_node_Proj_Switch);
-	register_verify_node_func_proj(op_Tuple,  verify_node_Proj_Tuple);
+	set_op_verify_proj(op_Alloc,  verify_node_Proj_Alloc);
+	set_op_verify_proj(op_Call,   verify_node_Proj_Call);
+	set_op_verify_proj(op_Cond,   verify_node_Proj_Cond);
+	set_op_verify_proj(op_Div,    verify_node_Proj_Div);
+	set_op_verify_proj(op_Load,   verify_node_Proj_Load);
+	set_op_verify_proj(op_Mod,    verify_node_Proj_Mod);
+	set_op_verify_proj(op_Proj,   verify_node_Proj_Proj);
+	set_op_verify_proj(op_Raise,  verify_node_Proj_Raise);
+	set_op_verify_proj(op_Start,  verify_node_Proj_Start);
+	set_op_verify_proj(op_Store,  verify_node_Proj_Store);
+	set_op_verify_proj(op_Switch, verify_node_Proj_Switch);
+	set_op_verify_proj(op_Tuple,  verify_node_Proj_Tuple);
 }
 
 static bool has_multiple_X_succs(const ir_node *node)
