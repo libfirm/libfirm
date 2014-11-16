@@ -381,10 +381,6 @@ op_pin_state (get_irn_pinned)(const ir_node *node)
 
 void set_irn_pinned(ir_node *node, op_pin_state state)
 {
-	/* due to optimization an opt may be turned into a Tuple */
-	if (is_Tuple(node))
-		return;
-
 	assert(get_op_pinned(get_irn_op(node)) >= op_pin_state_exc_pinned);
 	assert(state == op_pin_state_pinned || state == op_pin_state_floats);
 
@@ -775,25 +771,15 @@ ir_graph *(get_irn_irg)(const ir_node *node)
 
 ir_node *skip_Proj(ir_node *node)
 {
-	/* don't assert node !!! */
-	if (node == NULL)
-		return NULL;
-
 	if (is_Proj(node))
 		node = get_Proj_pred(node);
-
 	return node;
 }
 
 const ir_node *skip_Proj_const(const ir_node *node)
 {
-	/* don't assert node !!! */
-	if (node == NULL)
-		return NULL;
-
 	if (is_Proj(node))
 		node = get_Proj_pred(node);
-
 	return node;
 }
 
