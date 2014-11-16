@@ -1202,18 +1202,6 @@ static ir_node *gen_shift_binop(ir_node *node, ir_node *op1, ir_node *op2,
 	ir_node  *new_block = be_transform_node(block);
 	ir_node  *new_node  = func(dbgi, new_block, new_op1, new_op2);
 	SET_IA32_ORIG_NODE(new_node, node);
-
-	/* lowered shift instruction may have a dependency operand, handle it here */
-	if (get_irn_arity(node) == 3) {
-		/* we have a dependency */
-		ir_node* dep = get_irn_n(node, 2);
-		if (get_irn_n_edges(dep) > 1) {
-			/* ... which has at least one user other than 'node' */
-			ir_node *new_dep = be_transform_node(dep);
-			add_irn_dep(new_node, new_dep);
-		}
-	}
-
 	return new_node;
 }
 
