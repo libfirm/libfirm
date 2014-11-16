@@ -606,6 +606,11 @@ static int verify_node_Member(const ir_node *n)
 	return fine;
 }
 
+static int mode_is_data_not_b(const ir_mode *mode)
+{
+	return mode_is_data(mode) && mode != mode_b;
+}
+
 static int verify_node_Call(const ir_node *n)
 {
 	bool fine = check_mode(n, mode_T);
@@ -638,7 +643,7 @@ static int verify_node_Call(const ir_node *n)
 				}
 			} else {
 				fine &= check_input_func(n, n_Call_max+1+i, NULL,
-				                         mode_is_data, "data");
+				                         mode_is_data_not_b, "data");
 			}
 		}
 	}
@@ -787,8 +792,9 @@ static int verify_node_Not(const ir_node *n)
 static int verify_node_Cmp(const ir_node *n)
 {
 	bool fine = check_mode(n, mode_b);
-	fine &= check_input_func(n, n_Cmp_left, "left", mode_is_data, "data");
-	fine &= check_input_func(n, n_Cmp_right, "right", mode_is_data, "data");
+	fine &= check_input_func(n, n_Cmp_left, "left", mode_is_data_not_b, "data");
+	fine &= check_input_func(n, n_Cmp_right, "right", mode_is_data_not_b,
+	                         "data");
 	ir_mode *model = get_irn_mode(get_Cmp_left(n));
 	ir_mode *moder = get_irn_mode(get_Cmp_right(n));
 	if (model != moder) {
@@ -830,14 +836,14 @@ static int verify_node_Shrs(const ir_node *n)
 
 static int verify_node_Conv(const ir_node *n)
 {
-	bool fine = check_mode_func(n, mode_is_data, "data");
-	fine &= check_input_func(n, n_Conv_op, "op", mode_is_data, "data");
+	bool fine = check_mode_func(n, mode_is_data_not_b, "data");
+	fine &= check_input_func(n, n_Conv_op, "op", mode_is_data_not_b, "data");
 	return fine;
 }
 
 static int verify_node_Bitcast(const ir_node *n)
 {
-	bool fine = check_mode_func(n, mode_is_data, "data");
+	bool fine = check_mode_func(n, mode_is_data_not_b, "data");
 	ir_node *op       = get_Bitcast_op(n);
 	ir_mode *src_mode = get_irn_mode(op);
 	ir_mode *dst_mode = get_irn_mode(n);
@@ -892,7 +898,7 @@ static int verify_node_Load(const ir_node *n)
 		fine &= check_input_func(n, n_Load_ptr, "ptr", mode_is_reference, "reference");
 	}
 	ir_mode *loadmode = get_Load_mode(n);
-	if (!mode_is_data(loadmode)) {
+	if (!mode_is_data_not_b(loadmode)) {
 		warn(n, "load mode is not a data mode, but %+F", loadmode);
 		fine = false;
 	}
@@ -908,7 +914,7 @@ static int verify_node_Store(const ir_node *n)
 		fine &= check_input_func(n, n_Store_ptr, "ptr", mode_is_reference, "reference");
 	}
 	ir_mode *storemode = get_irn_mode(get_Store_value(n));
-	if (!mode_is_data(storemode)) {
+	if (!mode_is_data_not_b(storemode)) {
 		warn(n, "store mode is not a data mode, but %+F", storemode);
 		fine = false;
 	}

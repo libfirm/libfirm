@@ -5139,53 +5139,6 @@ is_bittest: {
 		}
 	}
 
-	/* replace mode_b compares with ands/ors */
-	if (!irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_MODEB_LOWERED) && mode == mode_b) {
-		ir_node  *block = get_nodes_block(n);
-		dbg_info *dbgi  = get_irn_dbg_info(n);
-		ir_node  *bres;
-
-		switch (relation) {
-		case ir_relation_less_equal: {
-			ir_node *not = new_rd_Not(dbgi, block, left, mode_b);
-			bres = new_rd_Or(dbgi, block, not, right, mode_b);
-			break;
-		}
-		case ir_relation_less: {
-			ir_node *not = new_rd_Not(dbgi, block, left, mode_b);
-			bres = new_rd_And(dbgi, block, not, right, mode_b);
-			break;
-		}
-		case ir_relation_greater_equal: {
-			ir_node *not = new_rd_Not(dbgi, block, right, mode_b);
-			bres = new_rd_Or(dbgi, block, left, not, mode_b);
-			break;
-		}
-		case ir_relation_greater: {
-			ir_node *not = new_rd_Not(dbgi, block, right, mode_b);
-			bres = new_rd_And(dbgi, block, left, not, mode_b);
-			break;
-		}
-		case ir_relation_less_greater:
-			bres = new_rd_Eor(dbgi, block, left, right, mode_b);
-			break;
-		case ir_relation_equal: {
-			ir_node *eor = new_rd_Eor(dbgi, block, left, right, mode_b);
-			bres = new_rd_Not(dbgi, block, eor, mode_b);
-			break;
-		}
-		default:
-#ifdef DEBUG_libfirm
-			ir_fprintf(stderr, "Optimization warning, unexpected mode_b Cmp %+F\n", n);
-#endif
-			bres = NULL;
-		}
-		if (bres != NULL) {
-			DBG_OPT_ALGSIM0(n, bres, FS_OPT_CMP_TO_BOOL);
-			return bres;
-		}
-	}
-
 	/*
 	 * First step: normalize the compare op
 	 * by placing the constant on the right side
