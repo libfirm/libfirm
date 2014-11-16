@@ -4598,10 +4598,6 @@ static ir_node *transform_node_Proj_Load(ir_node *proj)
 		const ir_node *confirm;
 
 		if (value_not_null(addr, &confirm)) {
-			if (confirm == NULL) {
-				/* this node may float if it did not depend on a Confirm */
-				set_irn_pinned(load, op_pin_state_floats);
-			}
 			if (get_Proj_num(proj) == pn_Load_X_except) {
 				ir_graph *irg = get_irn_irg(proj);
 				DBG_OPT_EXC_REM(proj);
@@ -4628,10 +4624,6 @@ static ir_node *transform_node_Proj_Store(ir_node *proj)
 		const ir_node *confirm;
 
 		if (value_not_null(addr, &confirm)) {
-			if (confirm == NULL) {
-				/* this node may float if it did not depend on a Confirm */
-				set_irn_pinned(store, op_pin_state_floats);
-			}
 			if (get_Proj_num(proj) == pn_Store_X_except) {
 				ir_graph *irg = get_irn_irg(proj);
 				DBG_OPT_EXC_REM(proj);
