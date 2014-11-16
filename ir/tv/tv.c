@@ -990,31 +990,9 @@ ir_tarval *tarval_divmod(ir_tarval *a, ir_tarval *b, ir_tarval **mod)
 
 ir_tarval *tarval_abs(ir_tarval *a)
 {
-	assert(mode_is_num(a->mode));
-
-	switch (get_mode_sort(a->mode)) {
-	case irms_int_number:
-	case irms_reference:
-		if (sc_comp(a->value, get_mode_null(a->mode)->value) == ir_relation_less) {
-			sc_word *buffer = ALLOCAN(sc_word, sc_value_length);
-			sc_neg(a->value, buffer);
-			return get_tarval_overflow(buffer, a->length, a->mode);
-		}
-		return a;
-
-	case irms_float_number:
-		if (fc_is_negative((const fp_value*)a->value)) {
-			fc_neg((const fp_value*) a->value, NULL);
-			return get_tarval_overflow(fc_get_buffer(), fc_get_buffer_length(), a->mode);
-		}
-		return a;
-
-	case irms_auxiliary:
-	case irms_data:
-	case irms_internal_boolean:
-		panic("operation not defined on mode");
-	}
-	panic("invalid mode sort");
+	if (tarval_is_negative(a))
+		return tarval_neg(a);
+	return a;
 }
 
 ir_tarval *tarval_and(ir_tarval *a, ir_tarval *b)
