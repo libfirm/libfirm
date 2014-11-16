@@ -614,18 +614,13 @@ void optimize_reassociation(ir_graph *irg)
 	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_CONTROL_FLOW);
 }
 
-static void register_node_reassoc_func(ir_op *op, reassociate_func func)
-{
-	op->ops.reassociate = func;
-}
-
 void ir_register_reassoc_node_ops(void)
 {
-	register_node_reassoc_func(op_Add, reassoc_commutative);
-	register_node_reassoc_func(op_And, reassoc_commutative);
-	register_node_reassoc_func(op_Eor, reassoc_commutative);
-	register_node_reassoc_func(op_Mul, reassoc_commutative);
-	register_node_reassoc_func(op_Or,  reassoc_commutative);
+	set_op_reassociate(op_Add, reassoc_commutative);
+	set_op_reassociate(op_And, reassoc_commutative);
+	set_op_reassociate(op_Eor, reassoc_commutative);
+	set_op_reassociate(op_Mul, reassoc_commutative);
+	set_op_reassociate(op_Or,  reassoc_commutative);
 }
 
 /* initialize the reassociation by adding operations to some opcodes */
