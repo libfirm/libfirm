@@ -422,15 +422,6 @@ void set_nodes_block(ir_node *node, ir_node *block)
 	set_irn_n(node, -1, block);
 }
 
-int get_Block_cfgpred_pos(const ir_node *block, const ir_node *pred)
-{
-	for (int i = get_Block_n_cfgpreds(block); i-- > 0; ) {
-		if (get_Block_cfgpred_block(block, i) == pred)
-			return i;
-	}
-	return -1;
-}
-
 ir_node *(get_Block_cfgpred_block)(const ir_node *node, int pos)
 {
 	return get_Block_cfgpred_block_(node, pos);

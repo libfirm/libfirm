@@ -1140,11 +1140,11 @@ static int backward_antic(block_t *bl)
 	int     n = get_Block_n_cfg_outs(block);
 
 	if (n == 1) {
-		ir_node  *succ    = get_Block_cfg_out(block, 0);
-		block_t  *succ_bl = get_block_entry(succ);
-		int      pred_pos = get_Block_cfgpred_pos(succ, block);
-		size_t   end      = env.rbs_size - 1;
-		size_t   pos;
+		int       pred_pos;
+		ir_node  *succ     = get_Block_cfg_out_ex(block, 0, &pred_pos);
+		block_t  *succ_bl  = get_block_entry(succ);
+		size_t    end      = env.rbs_size - 1;
+		size_t    pos;
 
 		kill_all();
 

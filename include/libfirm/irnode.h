@@ -216,17 +216,6 @@ FIRM_API void set_nodes_block(ir_node *node, ir_node *block);
  */
 
 /**
- * Returns the position of the predecessor block pred in the inputs
- * of the block block.
- *
- * @param block  the block
- * @param pred   a predecessor block of block
- *
- * @return the position of pred in block or -1
- */
-FIRM_API int get_Block_cfgpred_pos(const ir_node *block, const ir_node *pred);
-
-/**
  * Returns the predecessor block.
  *
  * Returns the block corresponding to the predecessor pos of block.

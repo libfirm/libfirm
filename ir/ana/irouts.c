@@ -97,6 +97,24 @@ ir_node *get_Block_cfg_out(const ir_node *bl, unsigned pos)
 	return NULL;
 }
 
+ir_node *get_Block_cfg_out_ex(const ir_node *bl, unsigned pos, int *in_pos)
+{
+	assert(is_Block(bl));
+	foreach_irn_out(bl, i, succ) {
+		if (get_irn_mode(succ) != mode_X)
+			continue;
+		if (is_End(succ) || is_Bad(succ))
+			continue;
+
+		unsigned n_outs = get_irn_n_outs(succ);
+		if (pos < n_outs)
+			return get_irn_out_ex(succ, pos, in_pos);
+		else
+			pos -= n_outs;
+	}
+	return NULL;
+}
+
 ir_node *get_Block_cfg_out_ka(const ir_node *bl, unsigned pos)
 {
 	assert(is_Block(bl));

@@ -54,6 +54,10 @@ FIRM_API unsigned get_Block_n_cfg_outs_ka(const ir_node *node);
 /** Access predecessor n, ignore keep-alives. */
 FIRM_API ir_node *get_Block_cfg_out(const ir_node *node, unsigned pos);
 
+/** Access predecessor n, ignore keep-alives also return its input position. */
+FIRM_API ir_node *get_Block_cfg_out_ex(const ir_node *node, unsigned pos,
+                                       int *in_pos);
+
 /** Access predecessor n, honor keep-alives. */
 FIRM_API ir_node *get_Block_cfg_out_ka(const ir_node *node, unsigned pos);
 

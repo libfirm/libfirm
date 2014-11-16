@@ -941,8 +941,8 @@ static void compute_antic(ir_node *block, void *ctx)
 
 	/* successor might have phi nodes */
 	if (n_succ == 1 && get_irn_arity(get_Block_cfg_out(block, 0)) > 1) {
-		succ      = get_Block_cfg_out(block, 0);
-		int pos   = get_Block_cfgpred_pos(succ, block);
+		int pos;
+		succ      = get_Block_cfg_out_ex(block, 0, &pos);
 		succ_info = get_block_info(succ);
 
 		/* initialize translated set */
