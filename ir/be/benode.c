@@ -705,8 +705,8 @@ static ir_op *new_be_op(unsigned code, const char *name, op_pin_state p,
                         irop_flags flags, op_arity opar, size_t attr_size)
 {
 	ir_op *res = new_ir_op(code, name, p, flags, opar, 0, attr_size);
-	res->ops.dump_node = dump_node;
-	res->ops.copy_attr = copy_attr;
+	set_op_dump(res, dump_node);
+	set_op_copy_attr(res, copy_attr);
 	res->ops.be_ops    = &be_node_irn_ops;
 	set_op_tag(res, be_op_tag);
 	return res;

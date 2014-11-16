@@ -138,12 +138,12 @@ void be_info_init(void)
 		panic("double initialization of be_info");
 
 	old_phi_copy_attr = op_Phi->ops.copy_attr;
-	op_Phi->ops.copy_attr = new_phi_copy_attr;
+	set_op_copy_attr(op_Phi, new_phi_copy_attr);
 	initialized = true;
 
 	/* phis have register and register requirements now which we want to dump */
 	assert(op_Phi->ops.dump_node == NULL);
-	op_Phi->ops.dump_node = be_dump_phi_reg_reqs;
+	set_op_dump(op_Phi, be_dump_phi_reg_reqs);
 
 	hook_liveness_info.hook._hook_node_info = dump_liveness_info_hook;
 	register_hook(hook_node_info, &hook_liveness_info);
@@ -189,7 +189,7 @@ void be_info_free(void)
 	initialized = false;
 
 	assert(op_Phi->ops.dump_node == be_dump_phi_reg_reqs);
-	op_Phi->ops.dump_node = NULL;
+	set_op_dump(op_Phi, NULL);
 
 	unregister_hook(hook_node_info, &hook_liveness_info);
 }

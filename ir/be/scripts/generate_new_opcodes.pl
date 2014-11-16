@@ -623,7 +623,7 @@ EOF
 	$temp .= ", ".translate_arity($arity).", -1, ${attr_size});\n";
 	$obst_new_irop .= $temp;
 	$obst_new_irop .= "\top->ops.be_ops        = be_ops;\n";
-	$obst_new_irop .= "\top->ops.dump_node     = ${dump_func};\n";
+	$obst_new_irop .= "\tset_op_dump(op, ${dump_func});\n";
 	if (defined($attrs_equal_func)) {
 		$obst_new_irop .= "\tset_op_attrs_equal(op, ${attrs_equal_func});\n";
 	}
@@ -635,10 +635,10 @@ EOF
 		}
 	}
 	if (defined($copy_attr_func)) {
-		$obst_new_irop .= "\top->ops.copy_attr     = ${copy_attr_func};\n";
+		$obst_new_irop .= "\tset_op_copy_attr(op, ${copy_attr_func});\n";
 	}
 	if (defined($hash_func)) {
-		$obst_new_irop .= "\top->ops.hash          = ${hash_func};\n";
+		$obst_new_irop .= "\tset_op_hash(op, ${hash_func});\n";
 	}
 
 	if ($is_fragile) {
