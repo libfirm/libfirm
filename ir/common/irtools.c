@@ -121,10 +121,7 @@ ir_node *irn_copy_into_irg(const ir_node *node, ir_graph *irg)
 	copy_node_attr(irg, node, res);
 
 	/* duplicate dependency edges */
-	for (int i = 0, n_deps = get_irn_n_deps(node); i < n_deps; ++i) {
-		ir_node *dep = get_irn_dep(node, i);
-		add_irn_dep(res, dep);
-	}
+	add_irn_deps(res, node);
 
 	return res;
 }

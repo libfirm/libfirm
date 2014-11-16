@@ -77,7 +77,7 @@ FIRM_API void add_irn_dep(ir_node *node, ir_node *dep);
  * @param tgt The node which should be enriched.
  * @param src The node whose dependencies shall be copied.
  */
-FIRM_API void add_irn_deps(ir_node *tgt, ir_node *src);
+FIRM_API void add_irn_deps(ir_node *tgt, ir_node const *src);
 
 /**
  * Returns the number of dependency predecessors/edges of node @p node.

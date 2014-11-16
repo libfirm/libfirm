@@ -296,7 +296,7 @@ void delete_irn_dep(ir_node *node, ir_node *dep)
 	}
 }
 
-void add_irn_deps(ir_node *tgt, ir_node *src)
+void add_irn_deps(ir_node *const tgt, ir_node const *const src)
 {
 	for (int i = 0, n = get_irn_n_deps(src); i < n; ++i)
 		add_irn_dep(tgt, get_irn_dep(src, i));
