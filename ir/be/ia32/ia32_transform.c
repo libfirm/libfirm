@@ -234,8 +234,8 @@ static ir_node *gen_Const(ir_node *node)
 #ifdef CONSTRUCT_SSE_CONST
 			} else if (tarval_is_one(tv)) {
 				int     cnst  = mode == ia32_mode_float32 ? 26 : 55;
-				ir_node *imm1 = ia32_create_Immediate(irg, NULL, 0, cnst);
-				ir_node *imm2 = ia32_create_Immediate(irg, NULL, 0, 2);
+				ir_node *imm1 = ia32_create_Immediate(irg, NULL, cnst);
+				ir_node *imm2 = ia32_create_Immediate(irg, NULL, 2);
 				ir_node *pslld, *psrld;
 
 				load = new_bd_ia32_xAllOnes(dbgi, block);
@@ -264,7 +264,7 @@ static ir_node *gen_Const(ir_node *node)
 						(get_tarval_sub_bits(tv, 2) << 16) |
 						(get_tarval_sub_bits(tv, 3) << 24);
 					if (val == 0) {
-						ir_node *imm32 = ia32_create_Immediate(irg, NULL, 0, 32);
+						ir_node *imm32 = ia32_create_Immediate(irg, NULL, 32);
 						ir_node *cnst, *psllq;
 
 						/* fine, lower 32bit are zero, produce 32bit value */
@@ -272,7 +272,7 @@ static ir_node *gen_Const(ir_node *node)
 							(get_tarval_sub_bits(tv, 5) << 8) |
 							(get_tarval_sub_bits(tv, 6) << 16) |
 							(get_tarval_sub_bits(tv, 7) << 24);
-						cnst = new_bd_ia32_Const(dbgi, block, NULL, 0, 0, val);
+						cnst = new_bd_ia32_Const(dbgi, block, NULL, 0, val);
 						load = new_bd_ia32_xMovd(dbgi, block, cnst);
 						set_ia32_ls_mode(load, mode);
 						psllq = new_bd_ia32_xPsllq(dbgi, block, load, imm32);
