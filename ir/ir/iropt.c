@@ -7570,130 +7570,88 @@ restart:;
 	return n;
 }
 
-static void register_computed_value_func(ir_op *op, computed_value_func func)
-{
-	assert(op->ops.computed_value == NULL || op->ops.computed_value == func);
-	op->ops.computed_value = func;
-}
-
-static void register_computed_value_func_proj(ir_op *op,
-                                              computed_value_func func)
-{
-	assert(op->ops.computed_value_Proj == NULL
-	    || op->ops.computed_value_Proj == func);
-	op->ops.computed_value_Proj = func;
-}
-
-static void register_equivalent_node_func(ir_op *op, equivalent_node_func func)
-{
-	assert(op->ops.equivalent_node == NULL || op->ops.equivalent_node == func);
-	op->ops.equivalent_node = func;
-}
-
-static void register_equivalent_node_func_proj(ir_op *op,
-                                               equivalent_node_func func)
-{
-	assert(op->ops.equivalent_node_Proj == NULL
-	    || op->ops.equivalent_node_Proj == func);
-	op->ops.equivalent_node_Proj = func;
-}
-
-static void register_transform_node_func(ir_op *op, transform_node_func func)
-{
-	assert(op->ops.transform_node == NULL || op->ops.transform_node == func);
-	op->ops.transform_node = func;
-}
-
-static void register_transform_node_func_proj(ir_op *op,
-                                              transform_node_func func)
-{
-	assert(op->ops.transform_node_Proj == NULL
-	    || op->ops.transform_node_Proj == func);
-	op->ops.transform_node_Proj = func;
-}
-
 void ir_register_opt_node_ops(void)
 {
-	register_computed_value_func(op_Add,      computed_value_Add);
-	register_computed_value_func(op_Align,    computed_value_Align);
-	register_computed_value_func(op_And,      computed_value_And);
-	register_computed_value_func(op_Bitcast,  computed_value_Bitcast);
-	register_computed_value_func(op_Cmp,      computed_value_Cmp);
-	register_computed_value_func(op_Confirm,  computed_value_Confirm);
-	register_computed_value_func(op_Const,    computed_value_Const);
-	register_computed_value_func(op_Conv,     computed_value_Conv);
-	register_computed_value_func(op_Offset,   computed_value_Offset);
-	register_computed_value_func(op_Eor,      computed_value_Eor);
-	register_computed_value_func(op_Minus,    computed_value_Minus);
-	register_computed_value_func(op_Mul,      computed_value_Mul);
-	register_computed_value_func(op_Mux,      computed_value_Mux);
-	register_computed_value_func(op_Not,      computed_value_Not);
-	register_computed_value_func(op_Or,       computed_value_Or);
-	register_computed_value_func(op_Proj,     computed_value_Proj);
-	register_computed_value_func(op_Shl,      computed_value_Shl);
-	register_computed_value_func(op_Shr,      computed_value_Shr);
-	register_computed_value_func(op_Shrs,     computed_value_Shrs);
-	register_computed_value_func(op_Size,     computed_value_Size);
-	register_computed_value_func(op_Sub,      computed_value_Sub);
-	register_computed_value_func_proj(op_Div, computed_value_Proj_Div);
-	register_computed_value_func_proj(op_Mod, computed_value_Proj_Mod);
+	set_op_computed_value(op_Add,      computed_value_Add);
+	set_op_computed_value(op_Align,    computed_value_Align);
+	set_op_computed_value(op_And,      computed_value_And);
+	set_op_computed_value(op_Bitcast,  computed_value_Bitcast);
+	set_op_computed_value(op_Cmp,      computed_value_Cmp);
+	set_op_computed_value(op_Confirm,  computed_value_Confirm);
+	set_op_computed_value(op_Const,    computed_value_Const);
+	set_op_computed_value(op_Conv,     computed_value_Conv);
+	set_op_computed_value(op_Offset,   computed_value_Offset);
+	set_op_computed_value(op_Eor,      computed_value_Eor);
+	set_op_computed_value(op_Minus,    computed_value_Minus);
+	set_op_computed_value(op_Mul,      computed_value_Mul);
+	set_op_computed_value(op_Mux,      computed_value_Mux);
+	set_op_computed_value(op_Not,      computed_value_Not);
+	set_op_computed_value(op_Or,       computed_value_Or);
+	set_op_computed_value(op_Proj,     computed_value_Proj);
+	set_op_computed_value(op_Shl,      computed_value_Shl);
+	set_op_computed_value(op_Shr,      computed_value_Shr);
+	set_op_computed_value(op_Shrs,     computed_value_Shrs);
+	set_op_computed_value(op_Size,     computed_value_Size);
+	set_op_computed_value(op_Sub,      computed_value_Sub);
+	set_op_computed_value_proj(op_Div, computed_value_Proj_Div);
+	set_op_computed_value_proj(op_Mod, computed_value_Proj_Mod);
 
-	register_equivalent_node_func(op_Add,     equivalent_node_Add);
-	register_equivalent_node_func(op_And,     equivalent_node_And);
-	register_equivalent_node_func(op_Bitcast, equivalent_node_Bitcast);
-	register_equivalent_node_func(op_Confirm, equivalent_node_Confirm);
-	register_equivalent_node_func(op_Conv,    equivalent_node_Conv);
-	register_equivalent_node_func(op_CopyB,   equivalent_node_CopyB);
-	register_equivalent_node_func(op_Eor,     equivalent_node_Eor);
-	register_equivalent_node_func(op_Id,      equivalent_node_Id);
-	register_equivalent_node_func(op_Minus,   equivalent_node_Minus);
-	register_equivalent_node_func(op_Mul,     equivalent_node_Mul);
-	register_equivalent_node_func(op_Mux,     equivalent_node_Mux);
-	register_equivalent_node_func(op_Not,     equivalent_node_Not);
-	register_equivalent_node_func(op_Or,      equivalent_node_Or);
-	register_equivalent_node_func(op_Phi,     equivalent_node_Phi);
-	register_equivalent_node_func(op_Proj,    equivalent_node_Proj);
-	register_equivalent_node_func(op_Shl,     equivalent_node_left_zero);
-	register_equivalent_node_func(op_Shr,     equivalent_node_left_zero);
-	register_equivalent_node_func(op_Shrs,    equivalent_node_left_zero);
-	register_equivalent_node_func(op_Sub,     equivalent_node_Sub);
-	register_equivalent_node_func(op_Sync,    equivalent_node_Sync);
-	register_equivalent_node_func_proj(op_Div,   equivalent_node_Proj_Div);
-	register_equivalent_node_func_proj(op_Tuple, equivalent_node_Proj_Tuple);
-	register_equivalent_node_func_proj(op_Store, equivalent_node_Proj_Store);
+	set_op_equivalent_node(op_Add,     equivalent_node_Add);
+	set_op_equivalent_node(op_And,     equivalent_node_And);
+	set_op_equivalent_node(op_Bitcast, equivalent_node_Bitcast);
+	set_op_equivalent_node(op_Confirm, equivalent_node_Confirm);
+	set_op_equivalent_node(op_Conv,    equivalent_node_Conv);
+	set_op_equivalent_node(op_CopyB,   equivalent_node_CopyB);
+	set_op_equivalent_node(op_Eor,     equivalent_node_Eor);
+	set_op_equivalent_node(op_Id,      equivalent_node_Id);
+	set_op_equivalent_node(op_Minus,   equivalent_node_Minus);
+	set_op_equivalent_node(op_Mul,     equivalent_node_Mul);
+	set_op_equivalent_node(op_Mux,     equivalent_node_Mux);
+	set_op_equivalent_node(op_Not,     equivalent_node_Not);
+	set_op_equivalent_node(op_Or,      equivalent_node_Or);
+	set_op_equivalent_node(op_Phi,     equivalent_node_Phi);
+	set_op_equivalent_node(op_Proj,    equivalent_node_Proj);
+	set_op_equivalent_node(op_Shl,     equivalent_node_left_zero);
+	set_op_equivalent_node(op_Shr,     equivalent_node_left_zero);
+	set_op_equivalent_node(op_Shrs,    equivalent_node_left_zero);
+	set_op_equivalent_node(op_Sub,     equivalent_node_Sub);
+	set_op_equivalent_node(op_Sync,    equivalent_node_Sync);
+	set_op_equivalent_node_proj(op_Div,   equivalent_node_Proj_Div);
+	set_op_equivalent_node_proj(op_Tuple, equivalent_node_Proj_Tuple);
+	set_op_equivalent_node_proj(op_Store, equivalent_node_Proj_Store);
 
-	register_transform_node_func(op_Add,     transform_node_Add);
-	register_transform_node_func(op_And,     transform_node_And);
-	register_transform_node_func(op_Bitcast, transform_node_Bitcast);
-	register_transform_node_func(op_Block,   transform_node_Block);
-	register_transform_node_func(op_Cmp,     transform_node_Cmp);
-	register_transform_node_func(op_Cond,    transform_node_Cond);
-	register_transform_node_func(op_Confirm, transform_node_Confirm);
-	register_transform_node_func(op_Conv,    transform_node_Conv);
-	register_transform_node_func(op_Div,     transform_node_Div);
-	register_transform_node_func(op_End,     transform_node_End);
-	register_transform_node_func(op_Eor,     transform_node_Eor);
-	register_transform_node_func(op_Load,    transform_node_Load);
-	register_transform_node_func(op_Minus,   transform_node_Minus);
-	register_transform_node_func(op_Mod,     transform_node_Mod);
-	register_transform_node_func(op_Mul,     transform_node_Mul);
-	register_transform_node_func(op_Mux,     transform_node_Mux);
-	register_transform_node_func(op_Not,     transform_node_Not);
-	register_transform_node_func(op_Or,      transform_node_Or);
-	register_transform_node_func(op_Phi,     transform_node_Phi);
-	register_transform_node_func(op_Proj,    transform_node_Proj);
-	register_transform_node_func(op_Shl,     transform_node_Shl);
-	register_transform_node_func(op_Shrs,    transform_node_Shrs);
-	register_transform_node_func(op_Shr,     transform_node_Shr);
-	register_transform_node_func(op_Store,   transform_node_Store);
-	register_transform_node_func(op_Sub,     transform_node_Sub);
-	register_transform_node_func(op_Switch,  transform_node_Switch);
-	register_transform_node_func(op_Sync,    transform_node_Sync);
-	register_transform_node_func_proj(op_Builtin, transform_node_Proj_Builtin);
-	register_transform_node_func_proj(op_Div,     transform_node_Proj_Div);
-	register_transform_node_func_proj(op_Load,    transform_node_Proj_Load);
-	register_transform_node_func_proj(op_Mod,     transform_node_Proj_Mod);
-	register_transform_node_func_proj(op_Store,   transform_node_Proj_Store);
+	set_op_transform_node(op_Add,     transform_node_Add);
+	set_op_transform_node(op_And,     transform_node_And);
+	set_op_transform_node(op_Bitcast, transform_node_Bitcast);
+	set_op_transform_node(op_Block,   transform_node_Block);
+	set_op_transform_node(op_Cmp,     transform_node_Cmp);
+	set_op_transform_node(op_Cond,    transform_node_Cond);
+	set_op_transform_node(op_Confirm, transform_node_Confirm);
+	set_op_transform_node(op_Conv,    transform_node_Conv);
+	set_op_transform_node(op_Div,     transform_node_Div);
+	set_op_transform_node(op_End,     transform_node_End);
+	set_op_transform_node(op_Eor,     transform_node_Eor);
+	set_op_transform_node(op_Load,    transform_node_Load);
+	set_op_transform_node(op_Minus,   transform_node_Minus);
+	set_op_transform_node(op_Mod,     transform_node_Mod);
+	set_op_transform_node(op_Mul,     transform_node_Mul);
+	set_op_transform_node(op_Mux,     transform_node_Mux);
+	set_op_transform_node(op_Not,     transform_node_Not);
+	set_op_transform_node(op_Or,      transform_node_Or);
+	set_op_transform_node(op_Phi,     transform_node_Phi);
+	set_op_transform_node(op_Proj,    transform_node_Proj);
+	set_op_transform_node(op_Shl,     transform_node_Shl);
+	set_op_transform_node(op_Shrs,    transform_node_Shrs);
+	set_op_transform_node(op_Shr,     transform_node_Shr);
+	set_op_transform_node(op_Store,   transform_node_Store);
+	set_op_transform_node(op_Sub,     transform_node_Sub);
+	set_op_transform_node(op_Switch,  transform_node_Switch);
+	set_op_transform_node(op_Sync,    transform_node_Sync);
+	set_op_transform_node_proj(op_Builtin, transform_node_Proj_Builtin);
+	set_op_transform_node_proj(op_Div,     transform_node_Proj_Div);
+	set_op_transform_node_proj(op_Load,    transform_node_Proj_Load);
+	set_op_transform_node_proj(op_Mod,     transform_node_Proj_Mod);
+	set_op_transform_node_proj(op_Store,   transform_node_Proj_Store);
 }
 
 /* **************** Common Subexpression Elimination **************** */
