@@ -732,10 +732,9 @@ static void x86_cpuid(cpuid_registers *regs, unsigned level)
 #if defined(__GNUC__)
 #	if defined(__PIC__) && !defined(__amd64) // GCC cannot handle EBX in PIC
 	__asm (
-		"pushl %%ebx\n\t"
-		"cpuid\n\t"
 		"movl %%ebx, %1\n\t"
-		"popl %%ebx"
+		"cpuid\n\t"
+		"xchgl %%ebx, %1"
 	: "=a" (regs->r.eax), "=r" (regs->r.ebx), "=c" (regs->r.ecx), "=d" (regs->r.edx)
 	: "a" (level)
 	);
