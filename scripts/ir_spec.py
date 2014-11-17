@@ -79,14 +79,23 @@ class Alloc:
 
 @op
 class Anchor:
-	"""utiliy node used to "hold" nodes in a graph that might possibly not be
+	"""Utility node used to "hold" nodes in a graph that might possibly not be
 	reachable by other means or which should be reachable immediately without
 	searching through the graph.
 	Each firm-graph contains exactly one anchor node whose address is always
-	known. All other well-known graph-nodes like Start, End, NoMem, Bad, ...
+	known. All other well-known graph-nodes like Start, End, NoMem, ...
 	are found by looking at the respective Anchor operand."""
+	ins = [
+		("end_block",   "block the end node belongs to" ),
+		("start_block", "block the start node belongs to" ),
+		("end",         "end node of this ir_graph" ),
+		("start",       "start node of this ir_graph" ),
+		("frame",       "frame of this ir_graph" ),
+		("initial_mem", "initial memory of this ir_graph" ),
+		("args",        "argument proj of the start node" ),
+		("no_mem",      "the only NoMem node of this ir_graph" ),
+	]
 	mode             = "mode_ANY"
-	arity            = "variable"
 	flags            = [ "dump_noblock" ]
 	pinned           = "yes"
 	singleton        = True

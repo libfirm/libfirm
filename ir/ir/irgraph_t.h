@@ -123,82 +123,82 @@ int node_is_in_irgs_storage(const ir_graph *irg, const ir_node *n);
 /** Returns the start block of a graph. */
 static inline ir_node *get_irg_start_block_(const ir_graph *irg)
 {
-	return get_irn_n(irg->anchor, anchor_start_block);
+	return get_Anchor_start_block(irg->anchor);
 }
 
 static inline void set_irg_start_block_(ir_graph *irg, ir_node *node)
 {
-	set_irn_n(irg->anchor, anchor_start_block, node);
+	set_Anchor_start_block(irg->anchor, node);
 }
 
 static inline ir_node *get_irg_start_(const ir_graph *irg)
 {
-	return get_irn_n(irg->anchor, anchor_start);
+	return get_Anchor_start(irg->anchor);
 }
 
 static inline void set_irg_start_(ir_graph *irg, ir_node *node)
 {
-	set_irn_n(irg->anchor, anchor_start, node);
+	set_Anchor_start(irg->anchor, node);
 }
 
 static inline ir_node *get_irg_end_block_(const ir_graph *irg)
 {
-	return get_irn_n(irg->anchor, anchor_end_block);
+	return get_Anchor_end_block(irg->anchor);
 }
 
 static inline void set_irg_end_block_(ir_graph *irg, ir_node *node)
 {
-	set_irn_n(irg->anchor, anchor_end_block, node);
+	set_Anchor_end_block(irg->anchor, node);
 }
 
 static inline ir_node *get_irg_end_(const ir_graph *irg)
 {
-	return get_irn_n(irg->anchor, anchor_end);
+	return get_Anchor_end(irg->anchor);
 }
 
 static inline void set_irg_end_(ir_graph *irg, ir_node *node)
 {
-	set_irn_n(irg->anchor, anchor_end, node);
+	set_Anchor_end(irg->anchor, node);
 }
 
 static inline ir_node *get_irg_frame_(const ir_graph *irg)
 {
-	return get_irn_n(irg->anchor, anchor_frame);
+	return get_Anchor_frame(irg->anchor);
 }
 
 static inline void set_irg_frame_(ir_graph *irg, ir_node *node)
 {
-	set_irn_n(irg->anchor, anchor_frame, node);
+	set_Anchor_frame(irg->anchor, node);
 }
 
 static inline ir_node *get_irg_initial_mem_(const ir_graph *irg)
 {
-	return get_irn_n(irg->anchor, anchor_initial_mem);
+	return get_Anchor_initial_mem(irg->anchor);
 }
 
 static inline void set_irg_initial_mem_(ir_graph *irg, ir_node *node)
 {
-	set_irn_n(irg->anchor, anchor_initial_mem, node);
+	set_Anchor_initial_mem(irg->anchor, node);
 }
 
 static inline ir_node *get_irg_args_(const ir_graph *irg)
 {
-	return get_irn_n(irg->anchor, anchor_args);
+	return get_Anchor_args(irg->anchor);
 }
 
 static inline void set_irg_args_(ir_graph *irg, ir_node *node)
 {
-	set_irn_n(irg->anchor, anchor_args, node);
+	set_Anchor_args(irg->anchor, node);
 }
 
 static inline ir_node *get_irg_no_mem_(const ir_graph *irg)
 {
-	return get_irn_n(irg->anchor, anchor_no_mem);
+	return get_Anchor_no_mem(irg->anchor);
 }
 
 static inline void set_irg_no_mem_(ir_graph *irg, ir_node *node)
 {
-	set_irn_n(irg->anchor, anchor_no_mem, node);
+	set_Anchor_no_mem(irg->anchor, node);
 }
 
 static inline ir_entity *get_irg_entity_(const ir_graph *irg)

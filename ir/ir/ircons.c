@@ -599,12 +599,11 @@ ir_node *new_r_Anchor(ir_graph *irg)
 	res->in[0] = res;
 
 	/* we can't have NULL inputs so reference ourselves for now */
-	int const arity = anchor_last + 1;
-	ir_node  *in[arity];
-	for (size_t i = 0; i < (size_t)arity; ++i) {
+	ir_node *in[n_Anchor_max + 1];
+	for (size_t i = 0; i < ARRAY_SIZE(in); ++i) {
 		in[i] = res;
 	}
-	set_irn_in(res, arity, in);
+	set_irn_in(res, ARRAY_SIZE(in), in);
 
 	return res;
 }
