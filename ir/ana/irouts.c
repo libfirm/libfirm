@@ -259,8 +259,7 @@ static void count_outs(ir_graph *irg)
 {
 	inc_irg_visited(irg);
 	count_outs_node(get_irg_end(irg));
-	for (int i = anchor_first; i <= anchor_last; ++i) {
-		ir_node *n = get_irg_anchor(irg, i);
+	foreach_irn_in(get_irg_anchor(irg), i, n) {
 		if (irn_visited_else_mark(n))
 			continue;
 		n->o.n_outs = 0;
@@ -300,8 +299,7 @@ static void set_out_edges(ir_graph *irg)
 
 	inc_irg_visited(irg);
 	set_out_edges_node(get_irg_end(irg), obst);
-	for (int i = anchor_first; i <= anchor_last; ++i) {
-		ir_node *n = get_irg_anchor(irg, i);
+	foreach_irn_in(get_irg_anchor(irg), i, n) {
 		if (irn_visited_else_mark(n))
 			continue;
 		n->o.out          = OALLOCF(obst, ir_def_use_edges, edges, 0);

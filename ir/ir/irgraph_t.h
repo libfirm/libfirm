@@ -386,19 +386,11 @@ static inline ir_node *get_idx_irn_(const ir_graph *irg, unsigned idx)
 }
 
 /**
- * Return the number of anchors in this graph.
+ * Get the anchor.
  */
-static inline int get_irg_n_anchors(const ir_graph *irg)
+static inline ir_node *get_irg_anchor(ir_graph const *const irg)
 {
-	return get_irn_arity(irg->anchor);
-}
-
-/**
- * Return anchor for given index
- */
-static inline ir_node *get_irg_anchor(const ir_graph *irg, int idx)
-{
-	return get_irn_n(irg->anchor, idx);
+	return irg->anchor;
 }
 
 #endif

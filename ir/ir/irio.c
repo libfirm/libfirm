@@ -2125,10 +2125,8 @@ static void read_graph(read_env_t *env, ir_graph *irg)
 		}
 		set_irn_in(dp->node, dp->n_preds, ins);
 		if (is_Anchor(dp->node)) {
-			for (irg_anchors a = anchor_first; a <= anchor_last; ++a) {
-				ir_node *old_anchor = get_irg_anchor(irg, a);
-				ir_node *new_anchor = ins[a];
-				exchange(old_anchor, new_anchor);
+			foreach_irn_in(get_irg_anchor(irg), a, old) {
+				exchange(old, ins[a]);
 			}
 		}
 next_delayed_pred: ;
