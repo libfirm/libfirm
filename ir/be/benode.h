@@ -190,7 +190,6 @@ const arch_register_req_t *be_create_reg_req(struct obstack *obst,
  * @param pos The position (@see be_set_constr_single_reg()).
  * @param req The register requirements which shall be transferred.
  */
-void be_set_constr_in(ir_node *irn, int pos, const arch_register_req_t *req);
 void be_set_constr_out(ir_node *irn, int pos, const arch_register_req_t *req);
 
 /**

@@ -99,7 +99,7 @@ static arch_register_req_t *allocate_reg_req(ir_graph *const irg)
 	return req;
 }
 
-void be_set_constr_in(ir_node *node, int pos, const arch_register_req_t *req)
+static void be_set_constr_in(ir_node *const node, int const pos, arch_register_req_t const *const req)
 {
 	backend_info_t *info = be_get_info(node);
 	assert(pos < get_irn_arity(node));
