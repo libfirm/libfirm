@@ -57,7 +57,7 @@ struct be_main_env_t {
 	ir_type      *pic_symbols_type;
 };
 
-extern asm_constraint_flags_t asm_constraint_flags[256];
+void be_set_constraint_support(asm_constraint_flags_t flags, char const *constraints);
 
 void be_get_allocatable_regs(ir_graph const *irg, arch_register_class_t const *cls, unsigned *raw_bitset);
 

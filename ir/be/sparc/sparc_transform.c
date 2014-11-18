@@ -377,17 +377,8 @@ static arch_register_req_t const *make_register_req(ir_graph *const irg,
 
 void sparc_init_asm_constraints(void)
 {
-	static unsigned char const register_flags[] = {
-		'r', 'e', 'f', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'
-	};
-	for (size_t i = 0; i < ARRAY_SIZE(register_flags); ++i) {
-		unsigned char const c = register_flags[i];
-		asm_constraint_flags[c] = ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER;
-	}
-
-	asm_constraint_flags['A'] = ASM_CONSTRAINT_FLAG_SUPPORTS_IMMEDIATE;
-	asm_constraint_flags['I'] = ASM_CONSTRAINT_FLAG_SUPPORTS_IMMEDIATE;
-
+	be_set_constraint_support(ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER,  "0123456789efr");
+	be_set_constraint_support(ASM_CONSTRAINT_FLAG_SUPPORTS_IMMEDIATE, "AI");
 	/* Note there are many more flags in gcc which we can't properly support
 	 * at the moment. see gcc/config/sparc/constraints.md */
 }

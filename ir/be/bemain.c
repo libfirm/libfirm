@@ -107,22 +107,27 @@ static const lc_opt_table_entry_t be_main_options[] = {
 static be_module_list_entry_t *isa_ifs         = NULL;
 static bool                    isa_initialized = false;
 
-asm_constraint_flags_t asm_constraint_flags[256];
+static asm_constraint_flags_t asm_constraint_flags[256];
+
+void be_set_constraint_support(asm_constraint_flags_t const flags, char const *const constraints)
+{
+	for (char const *i = constraints; *i != '\0'; ++i) {
+		asm_constraint_flags[(unsigned char)*i] = flags;
+	}
+}
 
 static void be_init_default_asm_constraint_flags(void)
 {
-	/* list of constraints supported by gcc for any machine (or at least
+	for (size_t i = 0; i != ARRAY_SIZE(asm_constraint_flags); ++i) {
+		asm_constraint_flags[i] = ASM_CONSTRAINT_FLAG_INVALID;
+	}
+	/* List of constraints supported by gcc for any machine (or at least
 	 * recognized). Mark them as NO_SUPPORT so we can differentiate them
 	 * from INVALID. Backends should change the flags they support. */
-	static const unsigned char gcc_common_flags[] = {
-		'?', '!', '&', '%', 'i', 's', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L',
-		'M', 'N', 'O', 'P', 'm', 'o', 'r', 'V', '<', '>', 'p', 'g', 'X',
-		'0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-	};
-	for (size_t i = 0; i < ARRAY_SIZE(gcc_common_flags); ++i) {
-		unsigned char const c = gcc_common_flags[i];
-		asm_constraint_flags[c] = ASM_CONSTRAINT_FLAG_NO_SUPPORT;
-	}
+	char const *const gcc_common_flags = "!%&0123456789<>?EFGHIJKLMNOPVXgimoprs";
+	be_set_constraint_support(ASM_CONSTRAINT_FLAG_NO_SUPPORT, gcc_common_flags);
+	/* Skip whitespace. */
+	be_set_constraint_support(ASM_CONSTRAINT_FLAG_NONE, "\t\n\r ");
 }
 
 static void initialize_isa(void)
@@ -149,11 +154,6 @@ asm_constraint_flags_t be_parse_asm_constraints(const char *constraint)
 	asm_constraint_flags_t flags = ASM_CONSTRAINT_FLAG_NONE;
 	for (const char *c = constraint; *c != '\0'; ++c) {
 		switch (*c) {
-		case ' ':
-		case '\t':
-		case '\n':
-		case '\r':
-			break;
 		case '=':
 			flags |= ASM_CONSTRAINT_FLAG_MODIFIER_WRITE;
 			flags |= ASM_CONSTRAINT_FLAG_MODIFIER_NO_READ;
@@ -161,11 +161,6 @@ asm_constraint_flags_t be_parse_asm_constraints(const char *constraint)
 		case '+':
 			flags |= ASM_CONSTRAINT_FLAG_MODIFIER_READ;
 			flags |= ASM_CONSTRAINT_FLAG_MODIFIER_WRITE;
-			break;
-		case '&':
-		case '%':
-			/* not really supported by libFirm yet */
-			flags |= ASM_CONSTRAINT_FLAG_NO_SUPPORT;
 			break;
 		case '#':
 			/* text until comma is a comment */
@@ -176,15 +171,10 @@ asm_constraint_flags_t be_parse_asm_constraints(const char *constraint)
 			/* next character is a comment */
 			++c;
 			break;
-		default: {
-			asm_constraint_flags_t tflags = asm_constraint_flags[(int) *c];
-			if (tflags != 0) {
-				flags |= tflags;
-			} else {
-				flags |= ASM_CONSTRAINT_FLAG_INVALID;
-			}
+
+		default:
+			flags |= asm_constraint_flags[(unsigned char)*c];
 			break;
-		}
 		}
 	}
 

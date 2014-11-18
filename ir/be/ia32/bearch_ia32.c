@@ -1268,28 +1268,14 @@ extern const arch_isa_if_t ia32_isa_if;
 
 static void init_asm_constraints(void)
 {
-	static const unsigned char register_flags[] = {
-		'a', 'b', 'c', 'd', 'D', 'S', 'Q', 'q', 'A', 'l', 'R', 'r', 'p', 'f',
-		't', 'u', 'Y', 'X', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'
-	};
-	for (size_t i = 0; i < ARRAY_SIZE(register_flags); ++i) {
-		unsigned char const c = register_flags[i];
-		asm_constraint_flags[c] = ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER;
-	}
-	static const unsigned char immediate_flags[] = {
-		'i', 'n', 'I', 'J', 'K', 'L', 'M', 'N', 'O'
-	};
-	for (size_t i = 0; i < ARRAY_SIZE(immediate_flags); ++i) {
-		unsigned char const c = immediate_flags[i];
-		asm_constraint_flags[c] = ASM_CONSTRAINT_FLAG_SUPPORTS_IMMEDIATE;
-	}
-
-	asm_constraint_flags['g'] = ASM_CONSTRAINT_FLAG_SUPPORTS_IMMEDIATE
-		| ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER
-		| ASM_CONSTRAINT_FLAG_SUPPORTS_MEMOP;
-	asm_constraint_flags['m'] = ASM_CONSTRAINT_FLAG_SUPPORTS_MEMOP;
-	asm_constraint_flags['o'] = ASM_CONSTRAINT_FLAG_SUPPORTS_MEMOP;
-	asm_constraint_flags['V'] = ASM_CONSTRAINT_FLAG_SUPPORTS_MEMOP;
+	be_set_constraint_support(ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER,  "0123456789ADQRSXYabcdflpqrtu");
+	be_set_constraint_support(ASM_CONSTRAINT_FLAG_SUPPORTS_IMMEDIATE, "IJKLMNOin");
+	be_set_constraint_support(ASM_CONSTRAINT_FLAG_SUPPORTS_MEMOP,     "Vmo");
+	asm_constraint_flags_t const g =
+		ASM_CONSTRAINT_FLAG_SUPPORTS_IMMEDIATE |
+		ASM_CONSTRAINT_FLAG_SUPPORTS_MEMOP |
+		ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER;
+	be_set_constraint_support(g, "g");
 }
 
 /**
