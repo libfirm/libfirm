@@ -124,12 +124,14 @@ static void be_init_default_asm_constraint_flags(void)
 	/* List of constraints supported by gcc for any machine (or at least
 	 * recognized). Mark them as NO_SUPPORT so we can differentiate them
 	 * from INVALID. Backends should change the flags they support. */
-	char const *const gcc_common_flags = "!%&0123456789<>?EFGHIJKLMNOPVXgimoprs";
+	char const *const gcc_common_flags = "%&,0123456789<>EFGHIJKLMNOPVXgimoprs";
 	be_set_constraint_support(ASM_CONSTRAINT_FLAG_NO_SUPPORT, gcc_common_flags);
 	/* Skip whitespace.
 	 * TODO '*' actually penalizes the selection of the next constraint letter.
-	 * We do not support this, yet. */
-	be_set_constraint_support(ASM_CONSTRAINT_FLAG_NONE, "\t\n\r *");
+	 * We do not support this, yet.
+	 * TODO '!' and '?' actually penalize an alternative of a multi alternative
+	 * constraint.  We do not support this, yet. */
+	be_set_constraint_support(ASM_CONSTRAINT_FLAG_NONE, "\t\n\r !*?");
 }
 
 static void initialize_isa(void)
