@@ -92,7 +92,7 @@ typedef struct ia32_attr_t ia32_attr_t;
 struct ia32_attr_t {
 	except_attr  exc;               /**< the exception attribute. MUST be the first one. */
 
-	unsigned tp:3;                  /**< ia32 node type. */
+	ENUMBF(ia32_op_type_t) tp:2;          /**< Indicator of used address mode. */
 	unsigned am_arity:2;            /**< Indicates the address mode type supported by this node. */
 	unsigned am_scale:2;            /**< The address mode scale for index register. */
 
