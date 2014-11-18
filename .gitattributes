@@ -1,6 +1,6 @@
-*.vcxproj           eol=crlf
-*.vcproj            eol=crlf
 *.dsp               eol=crlf
 *.dsw               eol=crlf
 *.props             eol=crlf
+*.vcproj            eol=crlf
+*.vcxproj           eol=crlf
 *.vcxproj.filters   eol=crlf
