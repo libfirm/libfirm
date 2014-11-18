@@ -40,19 +40,15 @@ typedef enum asm_constraint_flags_t {
 	ASM_CONSTRAINT_FLAG_NO_SUPPORT            = 1u << 3,
 	/** The input is also written to */
 	ASM_CONSTRAINT_FLAG_MODIFIER_WRITE        = 1u << 4,
-	/** the input is not written to */
-	ASM_CONSTRAINT_FLAG_MODIFIER_NO_WRITE     = 1u << 5,
 	/** the input is read */
-	ASM_CONSTRAINT_FLAG_MODIFIER_READ         = 1u << 6,
-	/** the input is not read */
-	ASM_CONSTRAINT_FLAG_MODIFIER_NO_READ      = 1u << 7,
+	ASM_CONSTRAINT_FLAG_MODIFIER_READ         = 1u << 5,
 	/** the value is modified before all inputs to the asm block
 	 * are handled. */
-	ASM_CONSTRAINT_FLAG_MODIFIER_EARLYCLOBBER = 1u << 8,
+	ASM_CONSTRAINT_FLAG_MODIFIER_EARLYCLOBBER = 1u << 6,
 	/** This operand and the following operand are commutative */
-	ASM_CONSTRAINT_FLAG_MODIFIER_COMMUTATIVE  = 1u << 9,
+	ASM_CONSTRAINT_FLAG_MODIFIER_COMMUTATIVE  = 1u << 7,
 	/** invalid constraint (due to parse error) */
-	ASM_CONSTRAINT_FLAG_INVALID               = 1u << 10
+	ASM_CONSTRAINT_FLAG_INVALID               = 1u << 8
 } asm_constraint_flags_t;
 ENUM_BITSET(asm_constraint_flags_t)
 

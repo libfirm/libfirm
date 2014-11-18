@@ -153,17 +153,16 @@ asm_constraint_flags_t be_parse_asm_constraints(const char *constraint)
 {
 	initialize_isa();
 
-	asm_constraint_flags_t flags = ASM_CONSTRAINT_FLAG_NONE;
-	for (const char *c = constraint; *c != '\0'; ++c) {
+	asm_constraint_flags_t flags;
+	char            const *c = constraint;
+	switch (*c) {
+	case '=': ++c; flags = ASM_CONSTRAINT_FLAG_MODIFIER_WRITE; break;
+	case '+': ++c; flags = ASM_CONSTRAINT_FLAG_MODIFIER_READ | ASM_CONSTRAINT_FLAG_MODIFIER_WRITE; break;
+	default:       flags = ASM_CONSTRAINT_FLAG_MODIFIER_READ; break;
+	}
+
+	for (; *c != '\0'; ++c) {
 		switch (*c) {
-		case '=':
-			flags |= ASM_CONSTRAINT_FLAG_MODIFIER_WRITE;
-			flags |= ASM_CONSTRAINT_FLAG_MODIFIER_NO_READ;
-			break;
-		case '+':
-			flags |= ASM_CONSTRAINT_FLAG_MODIFIER_READ;
-			flags |= ASM_CONSTRAINT_FLAG_MODIFIER_WRITE;
-			break;
 		case '#':
 			/* text until comma is a comment */
 			while (*c != 0 && *c != ',')
@@ -174,23 +173,6 @@ asm_constraint_flags_t be_parse_asm_constraints(const char *constraint)
 			flags |= asm_constraint_flags[(unsigned char)*c];
 			break;
 		}
-	}
-
-	if ((
-	        flags & ASM_CONSTRAINT_FLAG_MODIFIER_WRITE &&
-	        flags & ASM_CONSTRAINT_FLAG_MODIFIER_NO_WRITE
-	    ) || (
-	        flags & ASM_CONSTRAINT_FLAG_MODIFIER_READ &&
-	        flags & ASM_CONSTRAINT_FLAG_MODIFIER_NO_READ
-	    )) {
-		flags |= ASM_CONSTRAINT_FLAG_INVALID;
-	}
-	if (!(flags & (ASM_CONSTRAINT_FLAG_MODIFIER_READ     |
-	               ASM_CONSTRAINT_FLAG_MODIFIER_WRITE    |
-	               ASM_CONSTRAINT_FLAG_MODIFIER_NO_WRITE |
-	               ASM_CONSTRAINT_FLAG_MODIFIER_NO_READ)
-	    )) {
-		flags |= ASM_CONSTRAINT_FLAG_MODIFIER_READ;
 	}
 
 	return flags;
