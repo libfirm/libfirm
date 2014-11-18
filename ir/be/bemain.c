@@ -126,8 +126,10 @@ static void be_init_default_asm_constraint_flags(void)
 	 * from INVALID. Backends should change the flags they support. */
 	char const *const gcc_common_flags = "!%&0123456789<>?EFGHIJKLMNOPVXgimoprs";
 	be_set_constraint_support(ASM_CONSTRAINT_FLAG_NO_SUPPORT, gcc_common_flags);
-	/* Skip whitespace. */
-	be_set_constraint_support(ASM_CONSTRAINT_FLAG_NONE, "\t\n\r ");
+	/* Skip whitespace.
+	 * TODO '*' actually penalizes the selection of the next constraint letter.
+	 * We do not support this, yet. */
+	be_set_constraint_support(ASM_CONSTRAINT_FLAG_NONE, "\t\n\r *");
 }
 
 static void initialize_isa(void)
@@ -166,10 +168,6 @@ asm_constraint_flags_t be_parse_asm_constraints(const char *constraint)
 			/* text until comma is a comment */
 			while (*c != 0 && *c != ',')
 				++c;
-			break;
-		case '*':
-			/* next character is a comment */
-			++c;
 			break;
 
 		default:

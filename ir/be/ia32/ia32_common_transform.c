@@ -169,19 +169,14 @@ static void parse_asm_constraints(constraint_t *const constraint, ident *const c
 		arch_register_class_t const *new_cls = NULL;
 		char                         new_imm = '\0';
 		switch (*c) {
+		/* Skip spaces, out/in-out marker. */
 		case ' ':
 		case '\t':
 		case '\n':
-			break;
-
-		/* Skip out/in-out marker */
-		case '=': break;
-		case '+': break;
-
-		case '&': break;
-
+		case '=':
+		case '+':
+		case '&':
 		case '*':
-			++c;
 			break;
 
 		case '#':

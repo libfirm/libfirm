@@ -255,10 +255,10 @@ static void parse_asm_constraints(constraint_t *const constraint,
 		case '\n':
 		case '=':
 		case '+':
-		case '&': break;
+		case '&':
 		case '*':
-			++c;
 			break;
+
 		case '#':
 			while (*c != 0 && *c != ',')
 				++c;
