@@ -880,9 +880,9 @@ static void emit_ia32_Setcc(const ir_node *node)
 
 static void emit_ia32_CMovcc(const ir_node *node)
 {
-	const ia32_attr_t     *attr = get_ia32_attr_const(node);
-	const arch_register_t *out  = arch_get_irn_register_out(node, pn_ia32_res);
-	x86_condition_code_t   cc   = get_ia32_condcode(node);
+	ia32_attr_t     const *const attr = get_ia32_attr_const(node);
+	arch_register_t const *const out  = arch_get_irn_register_out(node, pn_ia32_CMovcc_res);
+	x86_condition_code_t         cc   = get_ia32_condcode(node);
 
 	cc = determine_final_cc(node, n_ia32_CMovcc_eflags, cc);
 	/* although you can't set ins_permuted in the constructor it might still
@@ -1259,10 +1259,10 @@ static void emit_zero(const ir_node* node, const arch_register_t *reg)
 
 static void emit_ia32_Minus64(const ir_node *node)
 {
-	const arch_register_t *in_lo  = arch_get_irn_register_in(node, 0);
-	const arch_register_t *in_hi  = arch_get_irn_register_in(node, 1);
-	const arch_register_t *out_lo = arch_get_irn_register_out(node, 0);
-	const arch_register_t *out_hi = arch_get_irn_register_out(node, 1);
+	arch_register_t const *const in_lo  = arch_get_irn_register_in(node, n_ia32_Minus64_low);
+	arch_register_t const *const in_hi  = arch_get_irn_register_in(node, n_ia32_Minus64_high);
+	arch_register_t const *const out_lo = arch_get_irn_register_out(node, pn_ia32_Minus64_res_low);
+	arch_register_t const *const out_hi = arch_get_irn_register_out(node, pn_ia32_Minus64_res_high);
 
 	if (out_lo == in_lo) {
 		if (out_hi != in_hi) {
@@ -1720,7 +1720,7 @@ static unsigned char pnc2cc(x86_condition_code_t cc)
 enum OpSize {
 	OP_8          = 0x00, /* 8bit operation. */
 	OP_16_32      = 0x01, /* 16/32bit operation. */
-	OP_MEM_SRC    = 0x02, /* The memory operand is in the soruce position. */
+	OP_MEM_SRC    = 0x02, /* The memory operand is in the source position. */
 	OP_IMM8       = 0x02, /* 8bit immediate, which gets sign extended for 16/32bit operation. */
 	OP_16_32_IMM8 = 0x03, /* 16/32bit operation with sign extended 8bit immediate. */
 	OP_EAX        = 0x04, /* Short form of instruction with al/ax/eax as operand. */
@@ -1816,7 +1816,7 @@ static void bemit_jmp_destination(const ir_node *dest_block)
 
 typedef enum reg_modifier {
 	REG_LOW  = 0,
-	REG_HIGH = 1
+	REG_HIGH = 4
 } reg_modifier_t;
 
 /** Create a ModR/M byte for src1,src2 registers */
@@ -1834,8 +1834,8 @@ static void bemit_modrr8(reg_modifier_t high_part1, const arch_register_t *src1,
 						 reg_modifier_t high_part2, const arch_register_t *src2)
 {
 	unsigned char modrm = MOD_REG;
-	modrm |= ENC_RM(src1->encoding +  (high_part1 == REG_HIGH ? 4 : 0));
-	modrm |= ENC_REG(src2->encoding + (high_part2 == REG_HIGH ? 4 : 0));
+	modrm |= ENC_RM( high_part1 | src1->encoding);
+	modrm |= ENC_REG(high_part2 | src2->encoding);
 	bemit8(modrm);
 }
 
@@ -1854,7 +1854,7 @@ static void bemit_modrm8(reg_modifier_t high_part, const arch_register_t *reg)
 {
 	unsigned char modrm = MOD_REG;
 	assert(reg->encoding < 4);
-	modrm |= ENC_RM(reg->encoding + (high_part == REG_HIGH ? 4 : 0));
+	modrm |= ENC_RM(high_part | reg->encoding);
 	modrm |= MOD_REG;
 	bemit8(modrm);
 }
@@ -1967,7 +1967,7 @@ static void bemit_unop(const ir_node *node, unsigned char code, unsigned char ex
 
 static void bemit_unop_reg(const ir_node *node, unsigned char code, int input)
 {
-	const arch_register_t *out = arch_get_irn_register_out(node, 0);
+	arch_register_t const *const out = arch_get_irn_register_out(node, pn_ia32_res);
 	bemit_unop(node, code, out->encoding, input);
 }
 
@@ -1976,7 +1976,7 @@ static void bemit_unop_mem(const ir_node *node, unsigned char code, unsigned cha
 	unsigned size = get_mode_size_bits(get_ia32_ls_mode(node));
 	if (size == 16)
 		bemit8(0x66);
-	bemit8(size == 8 ? code : code + 1);
+	bemit8(size == 8 ? code : code | OP_16_32);
 	bemit_mod_am(ext, node);
 }
 
@@ -2001,6 +2001,24 @@ static void bemit_imm(ia32_immediate_attr_t const *const attr, unsigned const si
 	}
 }
 
+static void bemit_mov(arch_register_t const *const src, arch_register_t const *const dst)
+{
+	bemit8(0x88 | OP_MEM_SRC | OP_16_32); // movl %src, %dst
+	bemit_modrr(src, dst);
+}
+
+static void bemit_xchg(arch_register_t const *const src, arch_register_t const *const dst)
+{
+	if (src->index == REG_GP_EAX) {
+		bemit8(0x90 + dst->encoding); // xchgl %eax, %dst
+	} else if (dst->index == REG_GP_EAX) {
+		bemit8(0x90 + src->encoding); // xchgl %src, %eax
+	} else {
+		bemit8(0x86 | OP_16_32); // xchgl %src, %dst
+		bemit_modrr(src, dst);
+	}
+}
+
 static void bemit_copy(const ir_node *copy)
 {
 	const arch_register_t *in  = arch_get_irn_register_in(copy, 0);
@@ -2013,8 +2031,7 @@ static void bemit_copy(const ir_node *copy)
 		return;
 
 	assert(in->cls == &ia32_reg_classes[CLASS_ia32_gp]);
-	bemit8(0x8B);
-	bemit_modrr(in, out);
+	bemit_mov(in, out);
 }
 
 static void bemit_perm(const ir_node *node)
@@ -2026,14 +2043,7 @@ static void bemit_perm(const ir_node *node)
 	assert(cls == reg1->cls && "Register class mismatch at Perm");
 
 	if (cls == &ia32_reg_classes[CLASS_ia32_gp]) {
-		if (reg0->index == REG_GP_EAX) {
-			bemit8(0x90 + reg1->encoding);
-		} else if (reg1->index == REG_GP_EAX) {
-			bemit8(0x90 + reg0->encoding);
-		} else {
-			bemit8(0x87);
-			bemit_modrr(reg0, reg1);
-		}
+		bemit_xchg(reg0, reg1);
 	} else if (cls == &ia32_reg_classes[CLASS_ia32_xmm]) {
 		panic("unimplemented"); // TODO implement
 		//ia32_emitf(NULL, "xorpd %R, %R", reg1, reg0);
@@ -2048,16 +2058,35 @@ static void bemit_perm(const ir_node *node)
 
 static void bemit_xor0(const ir_node *node)
 {
-	const arch_register_t *out = arch_get_irn_register_out(node, 0);
 	bemit8(0x31);
+	arch_register_t const *const out = arch_get_irn_register_out(node, pn_ia32_Xor0_res);
 	bemit_modrr(out, out);
 }
 
 static void bemit_mov_const(const ir_node *node)
 {
-	const arch_register_t *out = arch_get_irn_register_out(node, 0);
+	arch_register_t const *const out = arch_get_irn_register_out(node, pn_ia32_Const_res);
 	bemit8(0xB8 + out->encoding);
 	bemit_imm32(node, false);
+}
+
+static bool use_eax_short_form(ir_node const *const node)
+{
+	return
+		get_ia32_op_type(node) == ia32_Normal &&
+		arch_get_irn_register_in(node, n_ia32_binary_left)->index == REG_GP_EAX;
+}
+
+static void bemit_binop_reg(ir_node const *const node, unsigned char const code, ir_node const *const right)
+{
+	bemit8(code);
+	arch_register_t const *const dst = arch_get_irn_register_in(node, n_ia32_binary_left);
+	if (get_ia32_op_type(node) == ia32_Normal) {
+		arch_register_t const *const src = arch_get_irn_register(right);
+		bemit_modrr(src, dst);
+	} else {
+		bemit_mod_am(dst->encoding, node);
+	}
 }
 
 /**
@@ -2081,30 +2110,15 @@ static void bemit_binop(ir_node const *const node, unsigned const code)
 		}
 
 		/* Emit the main opcode. */
-		if (get_ia32_op_type(node) == ia32_Normal) {
-			arch_register_t const *const dst = arch_get_irn_register_in(node, n_ia32_binary_left);
-			/* Try to use the shorter al/ax/eax form. */
-			if (dst->index == REG_GP_EAX && op != OP_16_32_IMM8) {
-				bemit8(code << 3 | OP_EAX | op);
-			} else {
-				bemit8(0x80 | op);
-				bemit_modru(dst, code);
-			}
+		if (op != OP_16_32_IMM8 && use_eax_short_form(node)) {
+			bemit8(code << 3 | OP_EAX | op);
 		} else {
-			bemit8(0x80 | op);
-			bemit_mod_am(code, node);
+			bemit_unop(node, 0x80 | op, code, n_ia32_binary_left);
 		}
 
 		bemit_imm(attr, size);
 	} else {
-		bemit8(code << 3 | OP_MEM_SRC | op);
-		arch_register_t const *const dst = arch_get_irn_register_in(node, n_ia32_binary_left);
-		if (get_ia32_op_type(node) == ia32_Normal) {
-			arch_register_t const *const src = arch_get_irn_register(right);
-			bemit_modrr(src, dst);
-		} else {
-			bemit_mod_am(dst->encoding, node);
-		}
+		bemit_binop_reg(node, code << 3 | OP_MEM_SRC | op, right);
 	}
 }
 
@@ -2188,8 +2202,8 @@ UNOP(ijmp,    0xFF, 4, n_ia32_IJmp_target)
 #define SHIFT(op, ext) \
 static void bemit_##op(const ir_node *node) \
 { \
-	const arch_register_t *out   = arch_get_irn_register_out(node, 0); \
-	ir_node               *count = get_irn_n(node, 1); \
+	arch_register_t const *const out   = arch_get_irn_register_out(node, pn_ia32_res); \
+	ir_node               *const count = get_irn_n(node, 1); \
 	if (is_ia32_Immediate(count)) { \
 		int offset = get_ia32_immediate_attr_const(count)->offset; \
 		if (offset == 1) { \
@@ -2269,10 +2283,9 @@ static void bemit_shrd(const ir_node *node)
 
 static void bemit_sbb0(ir_node const *const node)
 {
-	arch_register_t const *const out = arch_get_irn_register_out(node, pn_ia32_Sbb0_res);
-	unsigned char          const reg = out->encoding;
 	bemit8(0x1B);
-	bemit8(MOD_REG | ENC_REG(reg) | ENC_RM(reg));
+	arch_register_t const *const out = arch_get_irn_register_out(node, pn_ia32_Sbb0_res);
+	bemit_modrr(out, out);
 }
 
 /**
@@ -2377,8 +2390,7 @@ static void bemit_cmovcc(const ir_node *node)
 		in_true      = in_false;
 	} else {
 		/* we need a mov */
-		bemit8(0x8B); // mov %in_false, %out
-		bemit_modrr(in_false, out);
+		bemit_mov(in_false, out);
 	}
 
 	if (ins_permuted)
@@ -2406,30 +2418,15 @@ static void bemit_test(ir_node const *const node)
 	ir_node *const right = get_irn_n(node, n_ia32_Test_right);
 	if (is_ia32_Immediate(right)) {
 		/* Emit the main opcode. */
-		if (get_ia32_op_type(node) == ia32_Normal) {
-			arch_register_t const *const dst = arch_get_irn_register_in(node, n_ia32_Test_left);
-			/* Try to use the shorter al/ax/eax form. */
-			if (dst->index == REG_GP_EAX) {
-				bemit8(0xA8 | op);
-			} else {
-				bemit8(0xF6 | op);
-				bemit_modru(dst, 0);
-			}
+		if (use_eax_short_form(node)) {
+			bemit8(0xA8 | op);
 		} else {
-			bemit8(0xF6 | op);
-			bemit_mod_am(0, node);
+			bemit_unop(node, 0xF6, 0, n_ia32_Test_left);
 		}
 
 		bemit_imm(get_ia32_immediate_attr_const(right), size);
 	} else {
-		bemit8(0x84 | op);
-		arch_register_t const *const dst = arch_get_irn_register_in(node, n_ia32_Test_left);
-		if (get_ia32_op_type(node) == ia32_Normal) {
-			arch_register_t const *const src = arch_get_irn_register(right);
-			bemit_modrr(src, dst);
-		} else {
-			bemit_mod_am(dst->encoding, node);
-		}
+		bemit_binop_reg(node, 0x84 | op, right);
 	}
 }
 
@@ -2472,13 +2469,12 @@ UNOPMEM(decmem, 0xFE, 1)
 
 static void bemit_ldtls(const ir_node *node)
 {
-	const arch_register_t *out = arch_get_irn_register_out(node, 0);
-
 	bemit8(0x65); // gs:
+	arch_register_t const *const out = arch_get_irn_register_out(node, pn_ia32_LdTls_res);
 	if (out->index == REG_GP_EAX) {
 		bemit8(0xA1); // movl 0, %eax
 	} else {
-		bemit8(0x8B); // movl 0, %reg
+		bemit8(0x88 | OP_MEM_SRC | OP_16_32); // movl 0, %reg
 		bemit8(MOD_IND | ENC_REG(out->encoding) | ENC_RM(0x05));
 	}
 	bemit32(0);
@@ -2489,16 +2485,9 @@ static void bemit_ldtls(const ir_node *node)
  */
 static void bemit_lea(const ir_node *node)
 {
-	const arch_register_t *out = arch_get_irn_register_out(node, 0);
 	bemit8(0x8D);
+	arch_register_t const *const out = arch_get_irn_register_out(node, pn_ia32_Lea_res);
 	bemit_mod_am(out->encoding, node);
-}
-
-/* helper function for bemit_minus64bit */
-static void bemit_helper_mov(const arch_register_t *src, const arch_register_t *dst)
-{
-	bemit8(0x8B); // movl %src, %dst
-	bemit_modrr(src, dst);
 }
 
 /* helper function for bemit_minus64bit */
@@ -2511,7 +2500,7 @@ static void bemit_helper_neg(const arch_register_t *reg)
 /* helper function for bemit_minus64bit */
 static void bemit_helper_sbb0(const arch_register_t *reg)
 {
-	bemit8(0x83); // sbbl $0, %reg
+	bemit8(0x80 | OP_16_32_IMM8); // sbbl $0, %reg
 	bemit_modru(reg, 3);
 	bemit8(0);
 }
@@ -2524,19 +2513,6 @@ static void bemit_helper_sbb(const arch_register_t *src, const arch_register_t *
 }
 
 /* helper function for bemit_minus64bit */
-static void bemit_helper_xchg(const arch_register_t *src, const arch_register_t *dst)
-{
-	if (src->index == REG_GP_EAX) {
-		bemit8(0x90 + dst->encoding); // xchgl %eax, %dst
-	} else if (dst->index == REG_GP_EAX) {
-		bemit8(0x90 + src->encoding); // xchgl %src, %eax
-	} else {
-		bemit8(0x87); // xchgl %src, %dst
-		bemit_modrr(src, dst);
-	}
-}
-
-/* helper function for bemit_minus64bit */
 static void bemit_helper_zero(const arch_register_t *reg)
 {
 	bemit8(0x33); // xorl %reg, %reg
@@ -2545,10 +2521,10 @@ static void bemit_helper_zero(const arch_register_t *reg)
 
 static void bemit_minus64(const ir_node *node)
 {
-	const arch_register_t *in_lo  = arch_get_irn_register_in(node, 0);
-	const arch_register_t *in_hi  = arch_get_irn_register_in(node, 1);
-	const arch_register_t *out_lo = arch_get_irn_register_out(node, 0);
-	const arch_register_t *out_hi = arch_get_irn_register_out(node, 1);
+	arch_register_t const *const in_lo  = arch_get_irn_register_in(node, n_ia32_Minus64_low);
+	arch_register_t const *const in_hi  = arch_get_irn_register_in(node, n_ia32_Minus64_high);
+	arch_register_t const *const out_lo = arch_get_irn_register_out(node, pn_ia32_Minus64_res_low);
+	arch_register_t const *const out_hi = arch_get_irn_register_out(node, pn_ia32_Minus64_res_high);
 
 	if (out_lo == in_lo) {
 		if (out_hi != in_hi) {
@@ -2561,26 +2537,26 @@ static void bemit_minus64(const ir_node *node)
 	} else if (out_lo == in_hi) {
 		if (out_hi == in_lo) {
 			/* a -> b, b -> a */
-			bemit_helper_xchg(in_lo, in_hi);
+			bemit_xchg(in_lo, in_hi);
 			goto normal_neg;
 		} else {
 			/* a -> b, b -> d */
-			bemit_helper_mov(in_hi, out_hi);
-			bemit_helper_mov(in_lo, out_lo);
+			bemit_mov(in_hi, out_hi);
+			bemit_mov(in_lo, out_lo);
 			goto normal_neg;
 		}
 	} else {
 		if (out_hi == in_lo) {
 			/* a -> c, b -> a */
-			bemit_helper_mov(in_lo, out_lo);
+			bemit_mov(in_lo, out_lo);
 			goto zero_neg;
 		} else if (out_hi == in_hi) {
 			/* a -> c, b -> b */
-			bemit_helper_mov(in_lo, out_lo);
+			bemit_mov(in_lo, out_lo);
 			goto normal_neg;
 		} else {
 			/* a -> c, b -> d */
-			bemit_helper_mov(in_lo, out_lo);
+			bemit_mov(in_lo, out_lo);
 			goto zero_neg;
 		}
 	}
@@ -2619,7 +2595,7 @@ EMIT_SINGLEOP(stc,   0xF9)
  */
 static void bemit_load(const ir_node *node)
 {
-	const arch_register_t *out = arch_get_irn_register_out(node, 0);
+	arch_register_t const *const out = arch_get_irn_register_out(node, pn_ia32_Load_res);
 
 	if (out->index == REG_GP_EAX) {
 		ir_node   *base      = get_irn_n(node, n_ia32_base);
@@ -2636,7 +2612,7 @@ static void bemit_load(const ir_node *node)
 			return;
 		}
 	}
-	bemit8(0x8B);
+	bemit8(0x88 | OP_MEM_SRC | OP_16_32);
 	bemit_mod_am(out->encoding, node);
 }
 
@@ -2679,13 +2655,9 @@ static void bemit_store(const ir_node *node)
 			}
 		}
 
-		if (size == 8) {
-			bemit8(0x88);
-		} else {
-			if (size == 16)
-				bemit8(0x66);
-			bemit8(0x89);
-		}
+		if (size == 16)
+			bemit8(0x66);
+		bemit8(0x88 | (size != 8 ? OP_16_32 : 0));
 		bemit_mod_am(in->encoding, node);
 	}
 }
@@ -2734,7 +2706,7 @@ static void bemit_push(const ir_node *node)
  */
 static void bemit_pop(const ir_node *node)
 {
-	const arch_register_t *reg = arch_get_irn_register_out(node, pn_ia32_Pop_res);
+	arch_register_t const *const reg = arch_get_irn_register_out(node, pn_ia32_Pop_res);
 	bemit8(0x58 + reg->encoding);
 }
 
@@ -2880,13 +2852,11 @@ static void bemit_return(const ir_node *node)
 
 static void bemit_subsp(const ir_node *node)
 {
-	const arch_register_t *out;
 	/* sub %in, %esp */
 	bemit_sub(node);
 	/* mov %esp, %out */
-	bemit8(0x8B);
-	out = arch_get_irn_register_out(node, 1);
-	bemit8(MOD_REG | ENC_REG(out->encoding) | ENC_RM(0x04));
+	arch_register_t const *const out = arch_get_irn_register_out(node, pn_ia32_SubSP_addr);
+	bemit_mov(&ia32_registers[REG_ESP], out);
 }
 
 static void bemit_incsp(const ir_node *node)
@@ -2904,7 +2874,7 @@ static void bemit_incsp(const ir_node *node)
 	}
 
 	bool const imm8b = ia32_is_8bit_val(offs);
-	bemit8(imm8b ? 0x83 : 0x81);
+	bemit8(0x80 | OP_16_32 | (imm8b ? OP_IMM8 : 0));
 
 	const arch_register_t *reg  = arch_get_irn_register_out(node, 0);
 	bemit_modru(reg, ext);
@@ -2943,7 +2913,7 @@ static void bemit_fbinop(ir_node const *const node, unsigned const op_fwd, unsig
 		if (attr->pop)        op0 |= 0x02;
 		bemit8(op0);
 
-		bemit8(MOD_REG | ENC_REG(op) | ENC_RM(attr->reg->encoding));
+		bemit_modru(attr->reg, op);
 	} else {
 		assert(!attr->reg);
 		assert(!attr->pop);

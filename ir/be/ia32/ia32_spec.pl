@@ -641,6 +641,7 @@ NegMem => {
 Minus64 => {
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "gp", "gp" ], out => [ "in_r1", "in_r2" ] },
+	ins       => [ "low", "high" ],
 	outs      => [ "res_low", "res_high" ],
 	latency   => 3,
 	modified_flags => $status_flags
@@ -878,6 +879,7 @@ Const => {
 	op_flags  => [ "constlike" ],
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { out => [ "gp" ] },
+	outs      => [ "res" ],
 	emit      => "movl %I, %D0",
 	attr      => "ir_entity *entity, bool no_pic_adjust, int32_t offset",
 	attr_type => "ia32_immediate_attr_t",
@@ -1018,6 +1020,7 @@ Lea => {
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
 	ins       => [ "base", "index" ],
+	outs      => [ "res" ],
 	emit      => "leal %AM, %D0",
 	latency   => 2,
 	mode      => $mode_gp,
@@ -1127,6 +1130,7 @@ SubSP => {
 LdTls => {
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { out => [ "gp" ] },
+	outs      => [ "res" ],
 	emit      => "movl %%gs:0, %D0",
 	mode      => $mode_gp,
 	latency   => 1,
