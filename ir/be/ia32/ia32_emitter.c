@@ -1986,10 +1986,19 @@ static void bemit_0f_unop_reg(ir_node const *const node, unsigned char const cod
 	bemit_unop_reg(node, code, input);
 }
 
-static void bemit_immediate(const ir_node *node, bool relative)
+static void bemit_imm32(ir_node const *const node, bool const relative)
 {
 	const ia32_immediate_attr_t *attr = get_ia32_immediate_attr_const(node);
 	bemit_entity(attr->entity, attr->offset, relative);
+}
+
+static void bemit_imm(ia32_immediate_attr_t const *const attr, unsigned const size)
+{
+	switch (size) {
+	case  8: bemit8(attr->offset);  break;
+	case 16: bemit16(attr->offset); break;
+	case 32: bemit_entity(attr->entity, attr->offset, false); break;
+	}
 }
 
 static void bemit_copy(const ir_node *copy)
@@ -2048,7 +2057,7 @@ static void bemit_mov_const(const ir_node *node)
 {
 	const arch_register_t *out = arch_get_irn_register_out(node, 0);
 	bemit8(0xB8 + out->encoding);
-	bemit_immediate(node, false);
+	bemit_imm32(node, false);
 }
 
 /**
@@ -2086,12 +2095,7 @@ static void bemit_binop(ir_node const *const node, unsigned const code)
 			bemit_mod_am(code, node);
 		}
 
-		/* Emit the immediate. */
-		switch (size) {
-		case  8: bemit8(attr->offset);  break;
-		case 16: bemit16(attr->offset); break;
-		case 32: bemit_entity(attr->entity, attr->offset, false); break;
-		}
+		bemit_imm(attr, size);
 	} else {
 		bemit8(code << 3 | OP_MEM_SRC | op);
 		arch_register_t const *const dst = arch_get_irn_register_in(node, n_ia32_binary_left);
@@ -2143,12 +2147,7 @@ static void bemit_binop_mem(ir_node const *const node, unsigned const code)
 		bemit8(0x80 | op);
 		bemit_mod_am(code, node);
 
-		/* Emit the immediate. */
-		switch (size) {
-		case  8: bemit8(attr->offset);  break;
-		case 16: bemit16(attr->offset); break;
-		case 32: bemit_entity(attr->entity, attr->offset, false); break;
-		}
+		bemit_imm(attr, size);
 	} else {
 		bemit8(code << 3 | op);
 		bemit_mod_am(arch_get_irn_register(val)->encoding, node);
@@ -2421,13 +2420,7 @@ static void bemit_test(ir_node const *const node)
 			bemit_mod_am(0, node);
 		}
 
-		/* Emit the immediate. */
-		ia32_immediate_attr_t const *const attr = get_ia32_immediate_attr_const(right);
-		switch (size) {
-		case  8: bemit8(attr->offset);  break;
-		case 16: bemit16(attr->offset); break;
-		case 32: bemit_entity(attr->entity, attr->offset, false); break;
-		}
+		bemit_imm(get_ia32_immediate_attr_const(right), size);
 	} else {
 		bemit8(0x84 | op);
 		arch_register_t const *const dst = arch_get_irn_register_in(node, n_ia32_Test_left);
@@ -2445,14 +2438,10 @@ static void bemit_imul(const ir_node *node)
 	ir_node *right = get_irn_n(node, n_ia32_IMul_right);
 	/* Do we need the immediate form? */
 	if (is_ia32_Immediate(right)) {
-		int imm = get_ia32_immediate_attr_const(right)->offset;
-		if (ia32_is_8bit_val(imm)) {
-			bemit_unop_reg(node, 0x6B, n_ia32_IMul_left);
-			bemit8(imm);
-		} else {
-			bemit_unop_reg(node, 0x69, n_ia32_IMul_left);
-			bemit32(imm);
-		}
+		ia32_immediate_attr_t const *const attr = get_ia32_immediate_attr_const(right);
+		bool                         const imm8 = ia32_is_8bit_imm(attr);
+		bemit_unop_reg(node, 0x69 | (imm8 ? OP_IMM8 : 0), n_ia32_IMul_left);
+		bemit_imm(attr, imm8 ? 8 : 32);
 	} else {
 		bemit_0f_unop_reg(node, 0xAF, n_ia32_IMul_right);
 	}
@@ -2660,20 +2649,11 @@ static void bemit_store(const ir_node *node)
 	unsigned       size  = get_mode_size_bits(get_ia32_ls_mode(node));
 
 	if (is_ia32_Immediate(value)) {
-		if (size == 8) {
-			bemit8(0xC6);
-			bemit_mod_am(0, node);
-			bemit8(get_ia32_immediate_attr_const(value)->offset);
-		} else if (size == 16) {
+		if (size == 16)
 			bemit8(0x66);
-			bemit8(0xC7);
-			bemit_mod_am(0, node);
-			bemit16(get_ia32_immediate_attr_const(value)->offset);
-		} else {
-			bemit8(0xC7);
-			bemit_mod_am(0, node);
-			bemit_immediate(value, false);
-		}
+		bemit8(0xC6 | (size != 8 ? OP_16_32 : 0));
+		bemit_mod_am(0, node);
+		bemit_imm(get_ia32_immediate_attr_const(value), size);
 	} else {
 		const arch_register_t *in = arch_get_irn_register_in(node, n_ia32_Store_val);
 
@@ -2736,14 +2716,10 @@ static void bemit_push(const ir_node *node)
 	const ir_node *value = get_irn_n(node, n_ia32_Push_val);
 
 	if (is_ia32_Immediate(value)) {
-		const ia32_immediate_attr_t *attr = get_ia32_immediate_attr_const(value);
-		if (ia32_is_8bit_imm(attr)) {
-			bemit8(0x6A);
-			bemit8((unsigned char)attr->offset);
-		} else {
-			bemit8(0x68);
-			bemit_immediate(value, false);
-		}
+		ia32_immediate_attr_t const *const attr = get_ia32_immediate_attr_const(value);
+		bool                         const imm8 = ia32_is_8bit_imm(attr);
+		bemit8(0x68 | (imm8 ? OP_IMM8 : 0));
+		bemit_imm(attr, imm8 ? 8 : 32);
 	} else if (is_ia32_NoReg_GP(value)) {
 		bemit8(0xFF);
 		bemit_mod_am(6, node);
@@ -2777,7 +2753,7 @@ static void bemit_call(const ir_node *node)
 
 	if (is_ia32_Immediate(proc)) {
 		bemit8(0xE8);
-		bemit_immediate(proc, true);
+		bemit_imm32(proc, true);
 	} else {
 		bemit_unop(node, 0xFF, 2, n_ia32_Call_addr);
 	}
