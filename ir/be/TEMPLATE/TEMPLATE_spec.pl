@@ -104,63 +104,63 @@ $default_copy_attr = "TEMPLATE_copy_attr";
 Add => {
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
-	emit      => 'add %S0, %S1, %D0',
+	emit      => '%D0 = add %S0, %S1',
 	mode      => $mode_gp,
 },
 
 Mul => {
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
-	emit      =>'mul %S0, %S1, %D0',
+	emit      => '%D0 = mul %S0, %S1',
 	mode      => $mode_gp,
 },
 
 And => {
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
-	emit      => 'and %S0, %S1, %D0',
+	emit      => '%D0 = and %S0, %S1',
 	mode      => $mode_gp,
 },
 
 Or => {
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
-	emit      => 'or %S0, %S1, %D0',
+	emit      => '%D0 = or %S0, %S1',
 	mode      => $mode_gp,
 },
 
 Xor => {
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
-	emit      => 'xor %S0, %S1, %D0',
+	emit      => '%D0 = xor %S0, %S1',
 	mode      => $mode_gp,
 },
 
 Sub => {
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
-	emit      => 'sub %S0, %S1, %D0',
+	emit      => '%D0 = sub %S0, %S1',
 	mode      => $mode_gp,
 },
 
 Shl => {
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
-	emit      => 'shl %S0, %S1, %D0',
+	emit      => '%D0 = shl %S0, %S1',
 	mode      => $mode_gp,
 },
 
 Shr => {
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "gp", "gp" ], out => [ "in_r1" ] },
-	emit      => 'shr %S1, %D0',
+	emit      => '%D0 = shr %S1',
 	mode      => $mode_gp,
 },
 
 Minus => {
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
-	emit      => 'neg %S0, %D0',
+	emit      => '%D0 = neg %S0',
 	mode      => $mode_gp,
 },
 
@@ -168,7 +168,7 @@ Not => {
 	arity   => 1,
 	remat   => 1,
 	reg_req => { in => [ "gp" ], out => [ "gp" ] },
-	emit    => 'not %S0, %D0',
+	emit    => '%D0 = not %S0',
 	mode    => $mode_gp,
 },
 
@@ -178,7 +178,7 @@ Const => {
 	attr       => "ir_tarval *value",
 	custominit => "set_TEMPLATE_value(res, value);",
 	reg_req    => { out => [ "gp" ] },
-	emit       => 'mov %I, %D0',
+	emit       => '%D0 = const %I',
 	mode       => $mode_gp,
 },
 
@@ -217,7 +217,7 @@ Load => {
 	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "none" ], out => [ "gp" ] },
-	emit      => 'mov (%S0), %D0',
+	emit      => '%D0 = load (%S0)',
 },
 
 Store => {
@@ -225,7 +225,7 @@ Store => {
 	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none" ] },
-	emit      => 'movl %S1, (%S0)',
+	emit      => 'store %S0 -> (%S1)',
 },
 
 # Floating Point operations
@@ -233,33 +233,33 @@ Store => {
 fAdd => {
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "fp", "fp" ], out => [ "fp" ] },
-	emit      => 'fadd %S0, %S1, %D0',
-	mode    => $mode_fp,
+	emit      => '%D0 = fadd %S0, %S1',
+	mode      => $mode_fp,
 },
 
 fMul => {
 	reg_req   => { in => [ "fp", "fp" ], out => [ "fp" ] },
-	emit      =>'fmul %S0, %S1, %D0',
+	emit      => '%D0 = fmul %S0, %S1',
 	mode      => $mode_fp,
 },
 
 fSub => {
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "fp", "fp" ], out => [ "fp" ] },
-	emit      => 'fsub %S0, %S1, %D0',
+	emit      => '%D0 = fsub %S0, %S1',
 	mode      => $mode_fp,
 },
 
 fDiv => {
 	reg_req   => { in => [ "fp", "fp" ], out => [ "fp" ] },
-	emit      => 'fdiv %S0, %S1, %D0',
+	emit      => '%D0 = fdiv %S0, %S1',
 	mode      => $mode_fp,
 },
 
 fMinus => {
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "fp" ], out => [ "fp" ] },
-	emit      => 'fneg %S0, %D0',
+	emit      => '%D0 = fneg %S0',
 	mode      => $mode_fp,
 },
 
@@ -267,7 +267,7 @@ fConst => {
 	op_flags  => [ "constlike" ],
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { out => [ "fp" ] },
-	emit      => 'fmov %I, %D0',
+	emit      => '%D0 = fconst %I',
 	mode      => $mode_fp,
 },
 
@@ -278,7 +278,7 @@ fLoad => {
 	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "none" ], out => [ "fp" ] },
-	emit      => 'fmov (%S0), %D0',
+	emit      => '%D0 = fload (%S0)',
 },
 
 fStore => {
@@ -286,7 +286,7 @@ fStore => {
 	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "fp", "none" ] },
-	emit      => 'fmov %S1, (%S0)',
+	emit      => 'fstore %S0 -> (%S1)',
 },
 
 );
