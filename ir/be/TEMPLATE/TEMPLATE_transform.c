@@ -258,16 +258,6 @@ static ir_node *gen_Proj_Start(ir_node *node)
 	panic("unexpected Start proj %u", pn);
 }
 
-static ir_node *gen_Proj(ir_node *node)
-{
-	ir_node *pred = get_Proj_pred(node);
-	switch (get_irn_opcode(pred)) {
-	case iro_Start: return gen_Proj_Start(node);
-	default:
-		panic("code selection can't handle Proj after %+F", pred);
-	}
-}
-
 static void TEMPLATE_register_transformers(void)
 {
 	be_start_transform_setup();
@@ -283,7 +273,6 @@ static void TEMPLATE_register_transformers(void)
 	be_set_transform_function(op_Mul,    gen_Mul);
 	be_set_transform_function(op_Not,    gen_Not);
 	be_set_transform_function(op_Or,     gen_Or);
-	be_set_transform_function(op_Proj,   gen_Proj);
 	be_set_transform_function(op_Phi,    gen_Phi);
 	be_set_transform_function(op_Return, gen_Return);
 	be_set_transform_function(op_Shl,    gen_Shl);
