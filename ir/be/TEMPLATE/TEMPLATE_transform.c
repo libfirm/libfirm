@@ -214,7 +214,11 @@ static ir_node *gen_Start(ir_node *node)
 	dbg_info *dbgi      = get_irn_dbg_info(node);
 	ir_node  *block     = get_nodes_block(node);
 	ir_node  *new_block = be_transform_node(block);
-	return new_bd_TEMPLATE_Start(dbgi, new_block);
+	ir_node  *result    = new_bd_TEMPLATE_Start(dbgi, new_block);
+	/* we have to set ignore registers manually */
+	arch_set_irn_register_out(result, pn_TEMPLATE_Start_stack,
+	                          &TEMPLATE_registers[REG_SP]);
+	return result;
 }
 
 static ir_node *gen_Return(ir_node *node)
