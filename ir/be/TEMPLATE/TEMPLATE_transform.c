@@ -16,10 +16,12 @@
 #include "iropt_t.h"
 #include "debug.h"
 #include "panic.h"
+#include "util.h"
 
 #include "benode.h"
 #include "betranshlp.h"
 #include "bearch_TEMPLATE_t.h"
+#include "beirg.h"
 
 #include "TEMPLATE_nodes_attr.h"
 #include "TEMPLATE_transform.h"
@@ -283,6 +285,24 @@ static void TEMPLATE_register_transformers(void)
 	be_set_transform_proj_function(op_Start, gen_Proj_Start);
 }
 
+static const unsigned ignore_regs[] = {
+	REG_SP,
+	REG_BP,
+};
+
+static void setup_calling_convention(ir_graph *irg)
+{
+	be_irg_t       *birg = be_birg_from_irg(irg);
+	struct obstack *obst = &birg->obst;
+
+	unsigned *allocatable_regs = rbitset_obstack_alloc(obst, N_TEMPLATE_REGISTERS);
+	rbitset_set_all(allocatable_regs, N_TEMPLATE_REGISTERS);
+	for (size_t r = 0, n = ARRAY_SIZE(ignore_regs); r < n; ++r) {
+		rbitset_clear(allocatable_regs, ignore_regs[r]);
+	}
+	birg->allocatable_regs = allocatable_regs;
+}
+
 /**
  * Transform generic IR-nodes into TEMPLATE machine instructions
  */
@@ -294,6 +314,9 @@ void TEMPLATE_transform_graph(ir_graph *irg)
 	gp_regs_mode = TEMPLATE_reg_classes[CLASS_TEMPLATE_gp].mode;
 
 	TEMPLATE_register_transformers();
+
+	setup_calling_convention(irg);
+
 	be_transform_graph(irg, NULL);
 }
 
