@@ -69,8 +69,8 @@ $mode_fp  = "mode_F";  # mode used by floatingpoint registers
 		{ name => "r11" },
 		{ name => "r12" },
 		{ name => "r13" },
-		{ name => "sp", realname => "r14" }, # stackpointer
-		{ name => "bp", realname => "r15" }, # basepointer
+		{ name => "sp"  }, # stackpointer
+		{ name => "bp"  }, # basepointer
 		{ mode => $mode_gp }
 	],
 	fp => [
