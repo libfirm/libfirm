@@ -204,7 +204,8 @@ Return => {
 	state    => "pinned",
 	op_flags => [ "cfopcode" ],
 	ins      => [ "stack", "mem" ],
-	reg_req  => { in => [ "sp", "none", ], out => [] },
+	outs     => [ "X" ],
+	reg_req  => { in => [ "sp", "none", ], out => [ "none" ] },
 	mode     => "mode_X",
 },
 
