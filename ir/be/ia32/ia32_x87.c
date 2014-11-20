@@ -438,16 +438,15 @@ static x87_state *x87_shuffle(ir_node *block, x87_state *state, const x87_state 
  *
  * @param state     the x87 state
  * @param n         the node after the fpush
- * @param pos       push st(pos) on stack
  * @param val       the value to push
  */
-static void x87_create_fpush(x87_state *state, ir_node *n, unsigned pos,
-                             unsigned const out_reg_idx, ir_node *const val)
+static void x87_create_fpush(x87_state *const state, ir_node *const n, unsigned const out_reg_idx, ir_node *const val)
 {
 	x87_push(state, out_reg_idx, val);
 
 	ir_node         *const fpush = new_bd_ia32_fpush(NULL, get_nodes_block(n));
 	ia32_x87_attr_t *const attr  = get_ia32_x87_attr(fpush);
+	unsigned         const pos   = x87_on_stack_val(state, val);
 	attr->reg = get_st_reg(pos);
 
 	keep_alive(fpush);
@@ -652,7 +651,7 @@ static void sim_binop(x87_state *const state, ir_node *const n)
 			if (op1_live_after) {
 				/* Both operands are live: push the first one.
 				 * This works even for op1 == op2. */
-				x87_create_fpush(state, n, op1_idx, out_reg_idx, op1);
+				x87_create_fpush(state, n, out_reg_idx, op1);
 				/* now do fxxx (tos=tos X op) */
 				op1_idx = 0;
 				op2_idx += 1;
@@ -708,7 +707,7 @@ static void sim_binop(x87_state *const state, ir_node *const n)
 		/* second operand is an address mode */
 		if (op1_live_after) {
 			/* first operand is live: push it here */
-			x87_create_fpush(state, n, op1_idx, out_reg_idx, op1);
+			x87_create_fpush(state, n, out_reg_idx, op1);
 		} else {
 			/* first operand is dead: bring it to tos */
 			if (op1_idx != 0)
@@ -757,13 +756,13 @@ static void sim_unop(x87_state *state, ir_node *n)
 	ir_node               *const op1         = get_irn_n(n, 0);
 	arch_register_t const *const op1_reg     = arch_get_irn_register(op1);
 	unsigned               const op1_reg_idx = op1_reg->index;
-	unsigned               const op1_idx     = x87_on_stack(state, op1_reg_idx);
 	unsigned               const out_reg_idx = out->index;
 	if (is_fp_live(op1_reg_idx, live)) {
 		/* push the operand here */
-		x87_create_fpush(state, n, op1_idx, out_reg_idx, op1);
+		x87_create_fpush(state, n, out_reg_idx, op1);
 	} else {
 		/* operand is dead, bring it to tos */
+		unsigned const op1_idx = x87_on_stack(state, op1_reg_idx);
 		if (op1_idx != 0)
 			x87_create_fxch(state, n, op1_idx);
 	}
@@ -821,7 +820,7 @@ static void sim_store(x87_state *state, ir_node *n)
 		if (get_mode_size_bits(mode) > (mode_is_int(mode) ? 32U : 64U)) {
 			if (x87_get_depth(state) < N_FLOAT_REGS) {
 				/* ok, we have a free register: push + fstp */
-				x87_create_fpush(state, n, op2_idx, REG_FP_FP_NOREG, val);
+				x87_create_fpush(state, n, REG_FP_FP_NOREG, val);
 do_pop:
 				x87_pop(state);
 			} else {
