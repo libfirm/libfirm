@@ -36,6 +36,14 @@ typedef ir_node* (*new_binop_func)(dbg_info *dbgi, ir_node *block,
 
 static ir_mode *gp_regs_mode;
 
+/**
+ * returns true if mode should be stored in a general purpose register
+ */
+static inline bool mode_needs_gp_reg(ir_mode *mode)
+{
+	return get_mode_arithmetic(mode) == irma_twos_complement;
+}
+
 static ir_node *transform_binop(ir_node *node, new_binop_func new_func)
 {
 	ir_node  *block     = get_nodes_block(node);
@@ -218,15 +226,15 @@ static ir_node *gen_Return(ir_node *node)
 	ir_node  *new_mem   = be_transform_node(mem);
 	ir_graph *irg       = get_irn_irg(node);
 	ir_node  *sp        = get_irg_frame(irg);
-	return new_bd_TEMPLATE_Return(dbgi, new_block, sp, new_mem);
-}
 
-/**
- * returns true if mode should be stored in a general purpose register
- */
-static inline bool mode_needs_gp_reg(ir_mode *mode)
-{
-	return mode_is_int(mode) || mode_is_reference(mode);
+	if (get_Return_n_ress(node) != 1)
+		panic("TEMPLATE: only return with 1 result supported");
+	ir_node *result = get_Return_res(node, 0);
+	if (!mode_needs_gp_reg(get_irn_mode(result)))
+		panic("TEMPLATE: return result must have gp mode");
+	ir_node *new_result = be_transform_node(result);
+
+	return new_bd_TEMPLATE_Return(dbgi, new_block, new_result, sp, new_mem);
 }
 
 static ir_node *gen_Phi(ir_node *node)

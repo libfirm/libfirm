@@ -203,9 +203,10 @@ Start => {
 Return => {
 	state    => "pinned",
 	op_flags => [ "cfopcode" ],
-	ins      => [ "stack", "mem" ],
+	# This is fixed to 1 result in a gp register
+	ins      => [ "result", "stack", "mem" ],
 	outs     => [ "X" ],
-	reg_req  => { in => [ "sp", "none", ], out => [ "none" ] },
+	reg_req  => { in => [ "gp", "sp", "none", ], out => [ "none" ] },
 	mode     => "mode_X",
 },
 
