@@ -36,6 +36,12 @@ static void TEMPLATE_emit_immediate(const ir_node *node)
 	be_emit_irprintf("%T", attr->value);
 }
 
+static void TEMPLATE_emit_entity(const ir_node *node)
+{
+	const TEMPLATE_attr_t *attr = get_TEMPLATE_attr_const(node);
+	be_emit_irprintf("%s", get_entity_ld_name(attr->entity));
+}
+
 static void emit_register(const arch_register_t *reg)
 {
 	be_emit_string(reg->name);
@@ -96,6 +102,10 @@ void TEMPLATE_emitf(const ir_node *node, const char *format, ...)
 			TEMPLATE_emit_dest_register(node, pos);
 			break;
 		}
+
+		case 'E':
+			TEMPLATE_emit_entity(node);
+			break;
 
 		case 'I':
 			TEMPLATE_emit_immediate(node);

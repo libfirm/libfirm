@@ -165,6 +165,15 @@ static ir_node *gen_Const(ir_node *node)
 	return new_bd_TEMPLATE_Const(dbgi, new_block, value);
 }
 
+static ir_node *gen_Address(ir_node *node)
+{
+	ir_node   *block     = get_nodes_block(node);
+	ir_node   *new_block = be_transform_node(block);
+	dbg_info  *dbgi      = get_irn_dbg_info(node);
+	ir_entity *entity    = get_Address_entity(node);
+	return new_bd_TEMPLATE_Address(dbgi, new_block, entity);
+}
+
 static ir_node *gen_Load(ir_node *node)
 {
 	ir_node  *block     = get_nodes_block(node);
@@ -298,25 +307,26 @@ static void TEMPLATE_register_transformers(void)
 {
 	be_start_transform_setup();
 
-	be_set_transform_function(op_Add,    gen_Add);
-	be_set_transform_function(op_And,    gen_And);
-	be_set_transform_function(op_Const,  gen_Const);
-	be_set_transform_function(op_Div,    gen_Div);
-	be_set_transform_function(op_Eor,    gen_Eor);
-	be_set_transform_function(op_Jmp,    gen_Jmp);
-	be_set_transform_function(op_Load,   gen_Load);
-	be_set_transform_function(op_Minus,  gen_Minus);
-	be_set_transform_function(op_Mul,    gen_Mul);
-	be_set_transform_function(op_Not,    gen_Not);
-	be_set_transform_function(op_Or,     gen_Or);
-	be_set_transform_function(op_Phi,    gen_Phi);
-	be_set_transform_function(op_Return, gen_Return);
-	be_set_transform_function(op_Shl,    gen_Shl);
-	be_set_transform_function(op_Shr,    gen_Shr);
-	be_set_transform_function(op_Start,  gen_Start);
-	be_set_transform_function(op_Store,  gen_Store);
-	be_set_transform_function(op_Sub,    gen_Sub);
 	be_set_transform_proj_function(op_Start, gen_Proj_Start);
+	be_set_transform_function(op_Add,     gen_Add);
+	be_set_transform_function(op_Address, gen_Address);
+	be_set_transform_function(op_And,     gen_And);
+	be_set_transform_function(op_Const,   gen_Const);
+	be_set_transform_function(op_Div,     gen_Div);
+	be_set_transform_function(op_Eor,     gen_Eor);
+	be_set_transform_function(op_Jmp,     gen_Jmp);
+	be_set_transform_function(op_Load,    gen_Load);
+	be_set_transform_function(op_Minus,   gen_Minus);
+	be_set_transform_function(op_Mul,     gen_Mul);
+	be_set_transform_function(op_Not,     gen_Not);
+	be_set_transform_function(op_Or,      gen_Or);
+	be_set_transform_function(op_Phi,     gen_Phi);
+	be_set_transform_function(op_Return,  gen_Return);
+	be_set_transform_function(op_Shl,     gen_Shl);
+	be_set_transform_function(op_Shr,     gen_Shr);
+	be_set_transform_function(op_Start,   gen_Start);
+	be_set_transform_function(op_Store,   gen_Store);
+	be_set_transform_function(op_Sub,     gen_Sub);
 	be_set_transform_proj_function(op_Proj,  gen_Proj_Proj);
 }
 

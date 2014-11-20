@@ -17,6 +17,7 @@ typedef struct TEMPLATE_attr_t TEMPLATE_attr_t;
 struct TEMPLATE_attr_t
 {
 	ir_tarval *value;
+	ir_entity *entity;
 };
 
 #endif

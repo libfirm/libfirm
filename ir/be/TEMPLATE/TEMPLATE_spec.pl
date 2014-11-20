@@ -182,6 +182,16 @@ Const => {
 	mode       => $mode_gp,
 },
 
+Address => {
+	op_flags   => [ "constlike" ],
+	irn_flags  => [ "rematerializable" ],
+	attr       => "ir_entity *entity",
+	custominit => "set_TEMPLATE_entity(res, entity);",
+	reg_req    => { out => [ "gp" ] },
+	emit       => '%D0 = address of %E',
+	mode       => $mode_gp,
+},
+
 # Control Flow
 
 Jmp => {

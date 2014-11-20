@@ -94,11 +94,18 @@ static void set_TEMPLATE_value(ir_node *node, ir_tarval *value)
 	attr->value = value;
 }
 
+static void set_TEMPLATE_entity(ir_node *node, ir_entity *entity)
+{
+	TEMPLATE_attr_t *attr = get_TEMPLATE_attr(node);
+	attr->entity = entity;
+}
+
 static int TEMPLATE_attrs_equal(const ir_node *a, const ir_node *b)
 {
 	const TEMPLATE_attr_t *attr_a = get_TEMPLATE_attr_const(a);
 	const TEMPLATE_attr_t *attr_b = get_TEMPLATE_attr_const(b);
-	return attr_a->value == attr_b->value;
+	return attr_a->value == attr_b->value
+	    && attr_a->entity == attr_b->entity;
 }
 
 static void TEMPLATE_copy_attr(ir_graph *irg, const ir_node *old_node,
