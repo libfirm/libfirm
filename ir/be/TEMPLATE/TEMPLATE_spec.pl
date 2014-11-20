@@ -195,8 +195,8 @@ Jmp => {
 Start => {
 	irn_flags => [ "schedule_first" ],
 	state     => "pinned",
-	reg_req   => { in => [], out => [ "sp:I|S", "none" ] },
-	outs      => [ "stack", "M" ],
+	reg_req   => { in => [], out => [ "sp:I|S", "r0", "r1", "r2", "r3", "none" ] },
+	outs      => [ "stack", "arg0", "arg1", "arg2", "arg3", "M" ],
 	ins       => [],
 },
 
