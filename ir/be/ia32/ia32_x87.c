@@ -325,6 +325,23 @@ static void x87_create_fxch(x87_state *state, ir_node *n, unsigned pos)
 	DB((dbg, LEVEL_1, "<<< %s %s\n", get_irn_opname(fxch), attr->reg->name));
 }
 
+static void move_to_pos(x87_state *const state, ir_node *const before, ir_node *const val, unsigned const to)
+{
+	unsigned const from = x87_on_stack(state, val);
+	assert(from != (unsigned)-1);
+	if (from != to) {
+		if (from != 0)
+			x87_create_fxch(state, before, from);
+		if (to != 0)
+			x87_create_fxch(state, before, to);
+	}
+}
+
+static void move_to_tos(x87_state *const state, ir_node *const before, ir_node *const val)
+{
+	move_to_pos(state, before, val, 0);
+}
+
 /* -------------- x87 perm --------------- */
 
 /**
@@ -667,9 +684,9 @@ static void sim_binop(x87_state *const state, ir_node *const n)
 				out_idx = 0;
 			} else {
 				/* Second live, first operand is dead: Overwrite first. */
-				if (op1_idx != 0 && op2_idx != 0) {
+				if (op2_idx != 0) {
 					/* Bring one operand to tos. */
-					x87_create_fxch(state, n, op1_idx);
+					move_to_tos(state, n, op1);
 					op1_idx = 0;
 				}
 				out_idx = op1_idx;
@@ -678,9 +695,9 @@ static void sim_binop(x87_state *const state, ir_node *const n)
 			/* Second operand is dead. */
 			if (op1_live_after) {
 				/* First operand is live, second is dead: Overwrite second. */
-				if (op1_idx != 0 && op2_idx != 0) {
+				if (op1_idx != 0) {
 					/* Bring one operand to tos. */
-					x87_create_fxch(state, n, op2_idx);
+					move_to_tos(state, n, op2);
 					op2_idx = 0;
 				}
 				out_idx = op2_idx;
@@ -688,11 +705,9 @@ static void sim_binop(x87_state *const state, ir_node *const n)
 				/* Both operands are dead. */
 				if (op1_idx == op2_idx) {
 					/* Operands are identical: no pop. */
-					if (op1_idx != 0) {
-						x87_create_fxch(state, n, op1_idx);
-						op1_idx = 0;
-						op2_idx = 0;
-					}
+					move_to_tos(state, n, op1);
+					op1_idx = 0;
+					op2_idx = 0;
 				} else {
 					if (op1_idx != 0 && op2_idx != 0) {
 						/* Bring one operand to tos. Heuristically swap the operand not at
@@ -700,10 +715,10 @@ static void sim_binop(x87_state *const state, ir_node *const n)
 						 * will end up in the new st(0) after the implicit pop. If the next
 						 * operation uses the result, then no fxch will be necessary. */
 						if (op1_idx != 1) {
-							x87_create_fxch(state, n, op1_idx);
+							move_to_tos(state, n, op1);
 							op1_idx = 0;
 						} else {
-							x87_create_fxch(state, n, op2_idx);
+							move_to_tos(state, n, op2);
 							op2_idx = 0;
 						}
 					}
@@ -719,8 +734,7 @@ static void sim_binop(x87_state *const state, ir_node *const n)
 			x87_dup_operand(state, n, n_ia32_binary_left, op1, out);
 		} else {
 			/* first operand is dead: bring it to tos */
-			if (op1_idx != 0)
-				x87_create_fxch(state, n, op1_idx);
+			move_to_tos(state, n, op1);
 		}
 
 		op1_idx = attr->attr.ins_permuted ? -1 :  0;
@@ -768,9 +782,7 @@ static void sim_unop(x87_state *state, ir_node *n)
 		x87_dup_operand(state, n, 0, val, out);
 	} else {
 		/* operand is dead, bring it to tos */
-		unsigned const op1_idx = x87_on_stack(state, val);
-		if (op1_idx != 0)
-			x87_create_fxch(state, n, op1_idx);
+		move_to_tos(state, n, val);
 	}
 
 	x87_set_st(state, n, 0);
@@ -805,13 +817,10 @@ static void sim_store(x87_state *state, ir_node *n)
 	ir_node *const val = get_irn_n(n, n_ia32_fst_val);
 	DB((dbg, LEVEL_1, ">>> %+F %+F ->\n", n, val));
 
-	unsigned    const op2_idx = x87_on_stack(state, val);
-	fp_liveness const live    = fp_live_args_after(state->sim, n, 0);
-	assert(op2_idx != (unsigned)-1);
+	fp_liveness const live = fp_live_args_after(state->sim, n, 0);
 	if (!is_fp_live(val, live)) {
 		/* we can only store the tos to memory */
-		if (op2_idx != 0)
-			x87_create_fxch(state, n, op2_idx);
+		move_to_tos(state, n, val);
 		goto do_pop;
 	} else {
 		/* Problem: fst doesn't support 80bit modes (spills), only fstp does
@@ -829,8 +838,7 @@ do_pop:
 				x87_pop(state);
 			} else {
 				/* we can only store the tos to memory */
-				if (op2_idx != 0)
-					x87_create_fxch(state, n, op2_idx);
+				move_to_tos(state, n, val);
 
 				/* stack full here: need fstp + load */
 				ir_node *const block = get_nodes_block(n);
@@ -865,8 +873,7 @@ do_pop:
 			get_ia32_x87_attr(n)->pop = true;
 		} else {
 			/* we can only store the tos to memory */
-			if (op2_idx != 0)
-				x87_create_fxch(state, n, op2_idx);
+			move_to_tos(state, n, val);
 		}
 	}
 
@@ -881,18 +888,15 @@ do_pop:
  */
 static void sim_fisttp(x87_state *state, ir_node *n)
 {
-	ir_node *const val     = get_irn_n(n, n_ia32_fisttp_val);
-	unsigned const op2_idx = x87_on_stack(state, val);
+	ir_node *const val = get_irn_n(n, n_ia32_fisttp_val);
 	DB((dbg, LEVEL_1, ">>> %+F %s ->\n", n, arch_get_irn_register(val)->name));
-	assert(op2_idx != (unsigned)-1);
 
 	/* Note: although the value is still live here, it is destroyed because
 	 * of the pop. The register allocator is aware of that and introduced a copy
 	 * if the value must be alive. */
 
 	/* we can only store the tos to memory */
-	if (op2_idx != 0)
-		x87_create_fxch(state, n, op2_idx);
+	move_to_tos(state, n, val);
 
 	x87_pop(state);
 
@@ -907,19 +911,16 @@ static void sim_fisttp(x87_state *state, ir_node *n)
  */
 static void sim_FtstFnstsw(x87_state *state, ir_node *n)
 {
-	ir_node     *const val     = get_irn_n(n, n_ia32_FtstFnstsw_left);
-	unsigned     const op1_idx = x87_on_stack(state, val);
-	fp_liveness  const live    = fp_live_args_after(state->sim, n, 0);
+	ir_node     *const val  = get_irn_n(n, n_ia32_FtstFnstsw_left);
+	fp_liveness  const live = fp_live_args_after(state->sim, n, 0);
 
 	DB((dbg, LEVEL_1, ">>> %+F %+F\n", n, val));
 	DEBUG_ONLY(fp_dump_live(live);)
 	DB((dbg, LEVEL_1, "Stack before: "));
 	DEBUG_ONLY(x87_dump_stack(state);)
-	assert(op1_idx != (unsigned)-1);
 
 	/* bring the value to tos */
-	if (op1_idx != 0)
-		x87_create_fxch(state, n, op1_idx);
+	move_to_tos(state, n, val);
 
 	if (!is_fp_live(val, live))
 		x87_create_fpop(state, n, 0);
@@ -959,9 +960,9 @@ static void sim_Fucom(x87_state *state, ir_node *n)
 
 			if (is_fp_live(op1, live)) {
 				/* both operands are live */
-				if (op1_idx != 0 && op2_idx != 0) {
+				if (op2_idx != 0) {
 					/* bring the first one to tos */
-					x87_create_fxch(state, n, op1_idx);
+					move_to_tos(state, n, op1);
 					if (op1_idx == op2_idx)
 						op2_idx = 0;
 					op1_idx = 0;
@@ -971,12 +972,10 @@ static void sim_Fucom(x87_state *state, ir_node *n)
 				/* second live, first operand is dead here, bring it to tos.
 				   This means further, op1_idx != op2_idx. */
 				assert(op1_idx != op2_idx);
-				if (op1_idx != 0) {
-					x87_create_fxch(state, n, op1_idx);
-					if (op2_idx == 0)
-						op2_idx = op1_idx;
-					op1_idx = 0;
-				}
+				move_to_tos(state, n, op1);
+				if (op2_idx == 0)
+					op2_idx = op1_idx;
+				op1_idx = 0;
 				/* res = tos X op, pop */
 				pops = 1;
 			}
@@ -986,23 +985,19 @@ static void sim_Fucom(x87_state *state, ir_node *n)
 				/* first operand is live: bring second to tos.
 				   This means further, op1_idx != op2_idx. */
 				assert(op1_idx != op2_idx);
-				if (op2_idx != 0) {
-					x87_create_fxch(state, n, op2_idx);
-					if (op1_idx == 0)
-						op1_idx = op2_idx;
-					op2_idx = 0;
-				}
+				move_to_tos(state, n, op2);
+				if (op1_idx == 0)
+					op1_idx = op2_idx;
+				op2_idx = 0;
 				/* res = op X tos, pop */
 				pops = 1;
 			} else {
 				/* both operands are dead here, check first for identity. */
 				if (op1_idx == op2_idx) {
 					/* identically, one pop needed */
-					if (op1_idx != 0) {
-						x87_create_fxch(state, n, op1_idx);
-						op1_idx = 0;
-						op2_idx = 0;
-					}
+					move_to_tos(state, n, op1);
+					op1_idx = 0;
+					op2_idx = 0;
 					/* res = tos X op, pop */
 					pops    = 1;
 				} else {
@@ -1010,10 +1005,10 @@ static void sim_Fucom(x87_state *state, ir_node *n)
 						/* Both not at tos: Move one operand to tos. Move the one not at
 						 * pos 1, so we get a chance to use fucompp. */
 						if (op1_idx != 1) {
-							x87_create_fxch(state, n, op1_idx);
+							move_to_tos(state, n, op1);
 							op1_idx = 0;
 						} else {
-							x87_create_fxch(state, n, op2_idx);
+							move_to_tos(state, n, op2);
 							op2_idx = 0;
 						}
 					}
@@ -1023,8 +1018,7 @@ static void sim_Fucom(x87_state *state, ir_node *n)
 		}
 	} else {
 		/* second operand is an address mode */
-		if (op1_idx != 0)
-			x87_create_fxch(state, n, op1_idx);
+		move_to_tos(state, n, op1);
 		/* Pop first operand, if it is dead. */
 		if (!is_fp_live(op1, live))
 			pops = 1;
