@@ -226,7 +226,8 @@ Load => {
 	op_flags  => [ "uses_memory" ],
 	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "none" ], out => [ "gp" ] },
+	reg_req   => { in => [ "gp", "none" ], out => [ "gp", "none" ] },
+	outs      => [ "res", "M" ],
 	emit      => '%D0 = load (%S0)',
 },
 
@@ -234,7 +235,9 @@ Store => {
 	op_flags  => [ "uses_memory" ],
 	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none" ] },
+	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none" ] },
+	outs      => [ "M" ],
+	mode      => "mode_M",
 	emit      => 'store %S0 -> (%S1)',
 },
 
@@ -287,7 +290,8 @@ fLoad => {
 	op_flags  => [ "uses_memory" ],
 	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "none" ], out => [ "fp" ] },
+	reg_req   => { in => [ "gp", "none" ], out => [ "fp", "none" ] },
+	outs      => [ "res", "M" ],
 	emit      => '%D0 = fload (%S0)',
 },
 
@@ -295,7 +299,9 @@ fStore => {
 	op_flags  => [ "uses_memory" ],
 	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "fp", "none" ] },
+	reg_req   => { in => [ "gp", "fp", "none" ], out => [ "none" ] },
+	outs      => [ "M" ],
+	mode      => "mode_M",
 	emit      => 'fstore %S0 -> (%S1)',
 },
 

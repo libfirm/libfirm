@@ -183,12 +183,12 @@ static ir_node *gen_Load(ir_node *node)
 	ir_node  *new_ptr   = be_transform_node(ptr);
 	ir_node  *mem       = get_Load_mem(node);
 	ir_node  *new_mem   = be_transform_node(mem);
-	ir_mode  *mode      = get_irn_mode(node);
+	ir_mode  *mode      = get_Load_mode(node);
 
 	if (mode_is_float(mode)) {
-		return new_bd_TEMPLATE_fLoad(dbgi, new_block, new_ptr, new_mem, mode);
+		return new_bd_TEMPLATE_fLoad(dbgi, new_block, new_ptr, new_mem);
 	}
-	return new_bd_TEMPLATE_Load(dbgi, new_block, new_ptr, new_mem, mode);
+	return new_bd_TEMPLATE_Load(dbgi, new_block, new_ptr, new_mem);
 }
 
 static ir_node *gen_Store(ir_node *node)
@@ -205,9 +205,9 @@ static ir_node *gen_Store(ir_node *node)
 	ir_mode  *mode      = get_irn_mode(node);
 
 	if (mode_is_float(mode)) {
-		return new_bd_TEMPLATE_fStore(dbgi, new_block, new_ptr, new_val, new_mem, mode);
+		return new_bd_TEMPLATE_fStore(dbgi, new_block, new_val, new_ptr, new_mem);
 	}
-	return new_bd_TEMPLATE_Store(dbgi, new_block, new_ptr, new_mem, new_val, mode);
+	return new_bd_TEMPLATE_Store(dbgi, new_block, new_val, new_ptr, new_mem);
 }
 
 static ir_node *gen_Jmp(ir_node *node)
@@ -285,6 +285,36 @@ static ir_node *gen_Proj_Proj(ir_node *node)
 	panic("No transformer for %+F -> %+F -> %+F", node, pred, pred_pred);
 }
 
+static ir_node *gen_Proj_Load(ir_node *node)
+{
+	ir_node *load     = get_Proj_pred(node);
+	ir_node *new_load = be_transform_node(load);
+	switch ((pn_Load)get_Proj_num(node)) {
+	case pn_Load_M:
+		return new_r_Proj(new_load, mode_M, pn_TEMPLATE_Load_M);
+	case pn_Load_res:
+		return new_r_Proj(new_load, gp_regs_mode, pn_TEMPLATE_Load_res);
+	case pn_Load_X_regular:
+	case pn_Load_X_except:
+		panic("exception handling not supported yet");
+	}
+	panic("invalid Proj %+F -> %+F", node, load);
+}
+
+static ir_node *gen_Proj_Store(ir_node *node)
+{
+	ir_node *store     = get_Proj_pred(node);
+	ir_node *new_store = be_transform_node(store);
+	switch ((pn_Store)get_Proj_num(node)) {
+	case pn_Store_M:
+		return new_store;
+	case pn_Store_X_regular:
+	case pn_Store_X_except:
+		panic("exception handling not supported yet");
+	}
+	panic("invalid Proj %+F -> %+F", node, store);
+}
+
 static ir_node *gen_Proj_Start(ir_node *node)
 {
 	dbg_info *dbgi      = get_irn_dbg_info(node);
@@ -307,7 +337,6 @@ static void TEMPLATE_register_transformers(void)
 {
 	be_start_transform_setup();
 
-	be_set_transform_proj_function(op_Start, gen_Proj_Start);
 	be_set_transform_function(op_Add,     gen_Add);
 	be_set_transform_function(op_Address, gen_Address);
 	be_set_transform_function(op_And,     gen_And);
@@ -327,7 +356,10 @@ static void TEMPLATE_register_transformers(void)
 	be_set_transform_function(op_Start,   gen_Start);
 	be_set_transform_function(op_Store,   gen_Store);
 	be_set_transform_function(op_Sub,     gen_Sub);
+	be_set_transform_proj_function(op_Load,  gen_Proj_Load);
 	be_set_transform_proj_function(op_Proj,  gen_Proj_Proj);
+	be_set_transform_proj_function(op_Start, gen_Proj_Start);
+	be_set_transform_proj_function(op_Store, gen_Proj_Store);
 }
 
 static const unsigned ignore_regs[] = {
