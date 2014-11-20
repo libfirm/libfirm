@@ -208,7 +208,7 @@ static void emit_Return(const ir_node *node)
 	}
 
 	/* return */
-	TEMPLATE_emitf(node, "ret");
+	TEMPLATE_emitf(node, "ret %S0");
 }
 
 /**
