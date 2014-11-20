@@ -186,9 +186,9 @@ static ir_node *gen_Load(ir_node *node)
 	ir_mode  *mode      = get_Load_mode(node);
 
 	if (mode_is_float(mode)) {
-		return new_bd_TEMPLATE_fLoad(dbgi, new_block, new_ptr, new_mem);
+		return new_bd_TEMPLATE_fLoad(dbgi, new_block, new_mem, new_ptr);
 	}
-	return new_bd_TEMPLATE_Load(dbgi, new_block, new_ptr, new_mem);
+	return new_bd_TEMPLATE_Load(dbgi, new_block, new_mem, new_ptr);
 }
 
 static ir_node *gen_Store(ir_node *node)
@@ -205,9 +205,9 @@ static ir_node *gen_Store(ir_node *node)
 	ir_mode  *mode      = get_irn_mode(node);
 
 	if (mode_is_float(mode)) {
-		return new_bd_TEMPLATE_fStore(dbgi, new_block, new_val, new_ptr, new_mem);
+		return new_bd_TEMPLATE_fStore(dbgi, new_block, new_mem, new_ptr, new_val);
 	}
-	return new_bd_TEMPLATE_Store(dbgi, new_block, new_val, new_ptr, new_mem);
+	return new_bd_TEMPLATE_Store(dbgi, new_block, new_mem, new_ptr, new_val);
 }
 
 static ir_node *gen_Jmp(ir_node *node)

@@ -226,19 +226,21 @@ Load => {
 	op_flags  => [ "uses_memory" ],
 	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "none" ], out => [ "gp", "none" ] },
+	reg_req   => { in => [ "none", "gp" ], out => [ "gp", "none" ] },
+	ins       => [ "mem", "ptr" ],
 	outs      => [ "res", "M" ],
-	emit      => '%D0 = load (%S0)',
+	emit      => '%D0 = load (%S1)',
 },
 
 Store => {
 	op_flags  => [ "uses_memory" ],
 	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none" ] },
+	reg_req   => { in => [ "none", "gp", "gp" ], out => [ "none" ] },
+	ins       => [ "mem", "ptr", "val" ],
 	outs      => [ "M" ],
 	mode      => "mode_M",
-	emit      => 'store %S0 -> (%S1)',
+	emit      => '(%S1) = store %S2',
 },
 
 # Floating Point operations
@@ -290,19 +292,21 @@ fLoad => {
 	op_flags  => [ "uses_memory" ],
 	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "none" ], out => [ "fp", "none" ] },
+	reg_req   => { in => [ "none", "gp" ], out => [ "fp", "none" ] },
+	ins       => [ "mem", "ptr" ],
 	outs      => [ "res", "M" ],
-	emit      => '%D0 = fload (%S0)',
+	emit      => '%D0 = fload (%S1)',
 },
 
 fStore => {
 	op_flags  => [ "uses_memory" ],
 	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "fp", "none" ], out => [ "none" ] },
+	reg_req   => { in => [ "none", "gp", "fp" ], out => [ "none" ] },
+	ins       => [ "mem", "ptr", "val" ],
 	outs      => [ "M" ],
 	mode      => "mode_M",
-	emit      => 'fstore %S0 -> (%S1)',
+	emit      => '(%S1) = fstore %S2',
 },
 
 );
