@@ -203,6 +203,12 @@ static unsigned x87_on_stack(x87_state const *const state, ir_node const *const 
 	return (unsigned)-1;
 }
 
+static unsigned is_at_pos(x87_state const *const state, ir_node const *const val, unsigned const pos)
+{
+	arch_register_t const *const reg = arch_get_irn_register(val);
+	return x87_get_st_reg(state, pos) == reg->index;
+}
+
 /**
  * Push a node onto the stack, double pushes are NOT allowed.
  *
@@ -473,12 +479,13 @@ static ir_node *x87_create_fdup(x87_state *const state, ir_node *const block, ir
  * @param n         the node after the fdup
  * @param val       the value to duplicate
  */
-static void x87_dup_operand(x87_state *const state, ir_node *const n, unsigned const op_n, ir_node *const val, arch_register_t const *const out)
+static ir_node *x87_dup_operand(x87_state *const state, ir_node *const n, unsigned const op_n, ir_node *const val, arch_register_t const *const out)
 {
 	ir_node *const block = get_nodes_block(n);
 	ir_node *const fdup  = x87_create_fdup(state, block, val, out);
 	sched_add_before(n, fdup);
 	set_irn_n(n, op_n, fdup);
+	return fdup;
 }
 
 /**
@@ -647,119 +654,112 @@ static ir_node *get_result_node(ir_node *const n)
  */
 static void sim_binop(x87_state *const state, ir_node *const n)
 {
-	ir_node               *const op1  = get_irn_n(n, n_ia32_binary_left);
-	ir_node               *const op2  = get_irn_n(n, n_ia32_binary_right);
-	arch_register_t const *const out  = arch_get_irn_register_out(n, pn_ia32_res);
-	fp_liveness            const live = fp_live_args_after(state->sim, n, REGMASK(out));
+	ir_node                     *op1            = get_irn_n(n, n_ia32_binary_left);
+	ir_node               *const op2            = get_irn_n(n, n_ia32_binary_right);
+	arch_register_t const *const out            = arch_get_irn_register_out(n, pn_ia32_res);
+	fp_liveness            const live           = fp_live_args_after(state->sim, n, REGMASK(out));
+	bool                   const op1_live_after = is_fp_live(op1, live);
 
 	DB((dbg, LEVEL_1, ">>> %+F %+F, %+F -> %s\n", n, op1, op2, out->name));
 	DEBUG_ONLY(fp_dump_live(live);)
 	DB((dbg, LEVEL_1, "Stack before: "));
 	DEBUG_ONLY(x87_dump_stack(state);)
 
-	unsigned op1_idx = x87_on_stack(state, op1);
-	assert(op1_idx != (unsigned)-1);
-	bool const op1_live_after = is_fp_live(op1, live);
-
-	unsigned               op2_idx;
-	unsigned               out_idx;
-	bool                   pop     = false;
-	ia32_x87_attr_t *const attr    = get_ia32_x87_attr(n);
-	if (!is_ia32_NoReg_FP(op2)) {
-		/* second operand is a fp register */
-		op2_idx = x87_on_stack(state, op2);
-		assert(op2_idx != (unsigned)-1);
-		bool const op2_live_after = is_fp_live(op2, live);
-
-		if (op2_live_after) {
-			/* Second operand is live. */
-
-			if (op1_live_after) {
-				/* Both operands are live: push the first one.
-				 * This works even for op1 == op2. */
-				x87_dup_operand(state, n, n_ia32_binary_left, op1, out);
-				/* now do fxxx (tos=tos X op) */
-				op1_idx = 0;
-				op2_idx += 1;
-				out_idx = 0;
-			} else {
-				/* Second live, first operand is dead: Overwrite first. */
-				if (op2_idx != 0) {
-					/* Bring one operand to tos. */
-					move_to_tos(state, n, op1);
-					op1_idx = 0;
-				}
-				out_idx = op1_idx;
-			}
-		} else {
-			/* Second operand is dead. */
-			if (op1_live_after) {
-				/* First operand is live, second is dead: Overwrite second. */
-				if (op1_idx != 0) {
-					/* Bring one operand to tos. */
-					move_to_tos(state, n, op2);
-					op2_idx = 0;
-				}
-				out_idx = op2_idx;
-			} else {
-				/* Both operands are dead. */
-				if (op1_idx == op2_idx) {
-					/* Operands are identical: no pop. */
-					move_to_tos(state, n, op1);
-					op1_idx = 0;
-					op2_idx = 0;
-				} else {
-					if (op1_idx != 0 && op2_idx != 0) {
-						/* Bring one operand to tos. Heuristically swap the operand not at
-						 * st(1) to tos. This way, if any operand was at st(1), the result
-						 * will end up in the new st(0) after the implicit pop. If the next
-						 * operation uses the result, then no fxch will be necessary. */
-						if (op1_idx != 1) {
-							move_to_tos(state, n, op1);
-							op1_idx = 0;
-						} else {
-							move_to_tos(state, n, op2);
-							op2_idx = 0;
-						}
-					}
-					pop = true;
-				}
-				out_idx = op1_idx != 0 ? op1_idx : op2_idx;
-			}
-		}
-	} else {
-		/* second operand is an address mode */
+	if (is_ia32_NoReg_FP(op2)) {
+		/* Second operand is an address mode. */
 		if (op1_live_after) {
-			/* first operand is live: push it here */
+			/* First operand is live: Duplicate it. */
 			x87_dup_operand(state, n, n_ia32_binary_left, op1, out);
 		} else {
-			/* first operand is dead: bring it to tos */
+			/* First operand is dead: Move it to tos. */
 			move_to_tos(state, n, op1);
 		}
+		x87_set_st(state, get_result_node(n), 0);
+	} else {
+		bool       reverse;
+		bool       to_reg;
+		bool       pop            = false;
+		bool const op2_live_after = is_fp_live(op2, live);
+		if (op1_live_after) {
+			if (op2_live_after) {
+				/* Both operands are live: push the first one.
+				 * This works even for op1 == op2. */
+				op1     = x87_dup_operand(state, n, n_ia32_binary_left, op1, out);
+				reverse = false;
+				to_reg  = false;
+			} else {
+				/* First live, second dead: Overwrite second. */
+				if (is_at_pos(state, op1, 0)) {
+					reverse = false;
+					to_reg  = true;
+				} else {
+					move_to_tos(state, n, op2);
+					reverse = true;
+					to_reg  = false;
+				}
+			}
+		} else {
+			if (op2_live_after) {
+				/* First dead, Second live: Overwrite first. */
+				if (is_at_pos(state, op2, 0)) {
+					reverse = true;
+					to_reg  = true;
+				} else {
+					move_to_tos(state, n, op1);
+					reverse = false;
+					to_reg  = false;
+				}
+			} else {
+				/* Both dead. */
+				if (op1 == op2) {
+					/* Operands are identical: No pop. */
+					move_to_tos(state, n, op1);
+					reverse = false;
+					to_reg  = false;
+				} else {
+					/* Bring one operand to tos. Heuristically swap the operand not at
+					 * st(1) to tos. This way, if any operand was at st(1), the result
+					 * will end up in the new st(0) after the implicit pop. If the next
+					 * operation uses the result, then no fxch will be necessary. */
+					if (is_at_pos(state, op1, 0)) {
+						reverse = false;
+					} else if (is_at_pos(state, op2, 0)) {
+						reverse = true;
+					} else if (is_at_pos(state, op1, 1)) {
+						move_to_tos(state, n, op2);
+						reverse = true;
+					} else {
+						move_to_tos(state, n, op1);
+						reverse = false;
+					}
+					to_reg = true;
+					pop    = true;
+				}
+			}
+		}
 
-		op1_idx = attr->attr.ins_permuted ? -1 :  0;
-		op2_idx = attr->attr.ins_permuted ?  0 : (unsigned)-1;
-		out_idx = 0;
+		unsigned const op_reg = x87_on_stack(state, reverse ? op1 : op2);
+		/* Patch the operation. */
+		ia32_x87_attr_t *const attr = get_ia32_x87_attr(n);
+		attr->reg               = get_st_reg(op_reg);
+		attr->attr.ins_permuted = reverse;
+		attr->res_in_reg        = to_reg;
+		attr->pop               = pop;
+
+		x87_set_st(state, get_result_node(n), to_reg ? op_reg : 0);
+		if (pop)
+			x87_pop(state);
 	}
-	assert(op1_idx == 0       || op2_idx == 0);
-	assert(out_idx == op1_idx || out_idx == op2_idx);
-
-	x87_set_st(state, get_result_node(n), out_idx);
-	if (pop)
-		x87_pop(state);
-
-	/* patch the operation */
-	unsigned const reg_idx = op1_idx != 0 ? op1_idx : op2_idx;
-	attr->reg               = reg_idx != (unsigned)-1 ? get_st_reg(reg_idx) : NULL;
-	attr->attr.ins_permuted = op1_idx != 0;
-	attr->res_in_reg        = out_idx != 0;
-	attr->pop               = pop;
 
 	DEBUG_ONLY(
-		char const *const l = op1_idx != (unsigned)-1 ? get_st_reg(op1_idx)->name : "[AM]";
-		char const *const r = op2_idx != (unsigned)-1 ? get_st_reg(op2_idx)->name : "[AM]";
-		char const *const o = get_st_reg(out_idx)->name;
-		DB((dbg, LEVEL_1, "<<< %s %s, %s -> %s\n", get_irn_opname(n), l, r, o));
+		ia32_x87_attr_t const *const attr = get_ia32_x87_attr(n);
+		char            const *const st0  = get_st_reg(0)->name;
+		char            const *const reg  =  attr->reg ? attr->reg->name : "[AM]";
+		char            const *const l    =  attr->attr.ins_permuted ? reg : st0;
+		char            const *const r    = !attr->attr.ins_permuted ? reg : st0;
+		char            const *const o    =  attr->res_in_reg        ? reg : st0;
+		char            const *const pop  =  attr->pop ? " [pop]" : "";
+		DB((dbg, LEVEL_1, "<<< %s %s, %s -> %s%s\n", get_irn_opname(n), l, r, o, pop));
 	)
 }
 
@@ -934,123 +934,106 @@ static void sim_FtstFnstsw(x87_state *state, ir_node *n)
  */
 static void sim_Fucom(x87_state *state, ir_node *n)
 {
-	ia32_x87_attr_t *const attr = get_ia32_x87_attr(n);
-	ir_node         *const op1  = get_irn_n(n, n_ia32_FucomFnstsw_left);
-	ir_node         *const op2  = get_irn_n(n, n_ia32_FucomFnstsw_right);
-	fp_liveness      const live = fp_live_args_after(state->sim, n, 0);
+	ir_node     *const op1            = get_irn_n(n, n_ia32_FucomFnstsw_left);
+	ir_node     *const op2            = get_irn_n(n, n_ia32_FucomFnstsw_right);
+	fp_liveness  const live           = fp_live_args_after(state->sim, n, 0);
+	bool         const op1_live_after = is_fp_live(op1, live);
 
 	DB((dbg, LEVEL_1, ">>> %+F %+F, %+F\n", n, op1, op2));
 	DEBUG_ONLY(fp_dump_live(live);)
 	DB((dbg, LEVEL_1, "Stack before: "));
 	DEBUG_ONLY(x87_dump_stack(state);)
 
-	unsigned op1_idx = x87_on_stack(state, op1);
-	assert(op1_idx != (unsigned)-1);
-
-	unsigned op2_idx;
-	unsigned pops = 0;
-	/* BEWARE: check for comp a,a cases, they might happen */
-	if (!is_ia32_NoReg_FP(op2)) {
-		/* second operand is a fp register */
-		op2_idx = x87_on_stack(state, op2);
-		assert(op2_idx != (unsigned)-1);
-
-		if (is_fp_live(op2, live)) {
-			/* second operand is live */
-
-			if (is_fp_live(op1, live)) {
-				/* both operands are live */
-				if (op2_idx != 0) {
-					/* bring the first one to tos */
+	if (is_ia32_NoReg_FP(op2)) {
+		/* Second operand is an address mode. */
+		move_to_tos(state, n, op1);
+		/* Pop first operand, if it is dead. */
+		if (!op1_live_after) {
+			x87_pop(state);
+			ia32_x87_attr_t *const attr = get_ia32_x87_attr(n);
+			attr->pop = true;
+		}
+	} else {
+		bool       reverse;
+		unsigned   pops           = 0;
+		bool const op2_live_after = is_fp_live(op2, live);
+		if (op1_live_after) {
+			if (op2_live_after) {
+				/* Both operands are live. */
+				if (is_at_pos(state, op2, 0)) {
+					reverse = true;
+				} else {
+					/* Move the first one to tos. */
 					move_to_tos(state, n, op1);
-					if (op1_idx == op2_idx)
-						op2_idx = 0;
-					op1_idx = 0;
-					/* res = tos X op */
+					reverse = false;
 				}
 			} else {
-				/* second live, first operand is dead here, bring it to tos.
-				   This means further, op1_idx != op2_idx. */
-				assert(op1_idx != op2_idx);
-				move_to_tos(state, n, op1);
-				if (op2_idx == 0)
-					op2_idx = op1_idx;
-				op1_idx = 0;
-				/* res = tos X op, pop */
-				pops = 1;
+				/* First live, second dead: Pop second. */
+				move_to_tos(state, n, op2);
+				reverse = true;
+				pops    = 1;
 			}
 		} else {
-			/* second operand is dead */
-			if (is_fp_live(op1, live)) {
-				/* first operand is live: bring second to tos.
-				   This means further, op1_idx != op2_idx. */
-				assert(op1_idx != op2_idx);
-				move_to_tos(state, n, op2);
-				if (op1_idx == 0)
-					op1_idx = op2_idx;
-				op2_idx = 0;
-				/* res = op X tos, pop */
-				pops = 1;
+			if (op2_live_after) {
+				/* First dead, Second live: Pop first. */
+				move_to_tos(state, n, op1);
+				reverse = false;
+				pops    = 1;
 			} else {
-				/* both operands are dead here, check first for identity. */
-				if (op1_idx == op2_idx) {
-					/* identically, one pop needed */
+				/* Both dead. */
+				if (op1 == op2) {
+					/* Operands are identical: One pop. */
 					move_to_tos(state, n, op1);
-					op1_idx = 0;
-					op2_idx = 0;
-					/* res = tos X op, pop */
+					reverse = false;
 					pops    = 1;
 				} else {
-					if (op1_idx != 0 && op2_idx != 0) {
-						/* Both not at tos: Move one operand to tos. Move the one not at
-						 * pos 1, so we get a chance to use fucompp. */
-						if (op1_idx != 1) {
-							move_to_tos(state, n, op1);
-							op1_idx = 0;
-						} else {
-							move_to_tos(state, n, op2);
-							op2_idx = 0;
-						}
+					/* Both operands are dead.
+					 * Move one operand to tos. Move the one not at
+					 * pos 1, so we get a chance to use fucompp. */
+					if (is_at_pos(state, op1, 0)) {
+						reverse = false;
+					} else if (is_at_pos(state, op2, 0)) {
+						reverse = true;
+					} else if (is_at_pos(state, op1, 1)) {
+						move_to_tos(state, n, op2);
+						reverse = true;
+					} else {
+						move_to_tos(state, n, op1);
+						reverse = false;
 					}
 					pops = 2;
 				}
 			}
 		}
-	} else {
-		/* second operand is an address mode */
-		move_to_tos(state, n, op1);
-		/* Pop first operand, if it is dead. */
-		if (!is_fp_live(op1, live))
-			pops = 1;
 
-		op1_idx = attr->attr.ins_permuted ? (unsigned)-1 :            0;
-		op2_idx = attr->attr.ins_permuted ?            0 : (unsigned)-1;
-	}
-	assert(op1_idx == 0 || op2_idx == 0);
+		unsigned const op_reg = x87_on_stack(state, reverse ? op1 : op2);
+		/* Patch the operation. */
+		ia32_x87_attr_t *const attr = get_ia32_x87_attr(n);
+		attr->reg                = get_st_reg(op_reg);
+		attr->attr.ins_permuted ^= reverse;
+		attr->pop                = pops != 0;
 
-	/* patch the operation */
-	if (is_ia32_FucomFnstsw(n) && pops == 2 && (op1_idx == 1 || op2_idx == 1)) {
-		set_irn_op(n, op_ia32_FucomppFnstsw);
-		x87_pop(state);
-		x87_pop(state);
-	} else {
-		if (pops != 0)
+		if (pops != 0) {
 			x87_pop(state);
-		if (pops == 2) {
-			unsigned const idx = (op1_idx != 0 ? op1_idx : op2_idx) - 1 /* Due to prior pop. */;
-			x87_create_fpop(state, n, idx);
+			if (pops == 2) {
+				if (is_ia32_FucomFnstsw(n) && op_reg == 1) {
+					set_irn_op(n, op_ia32_FucomppFnstsw);
+					x87_pop(state);
+				} else {
+					x87_create_fpop(state, n, op_reg - 1 /* Due to prior pop. */);
+				}
+			}
 		}
 	}
 
-	unsigned const reg_idx = op1_idx != 0 ? op1_idx : op2_idx;
-	attr->reg               = reg_idx != (unsigned)-1 ? get_st_reg(reg_idx) : NULL;
-	attr->attr.ins_permuted = op1_idx != 0;
-	attr->pop               = pops != 0;
-
 	DEBUG_ONLY(
-		char const *const l = op1_idx != (unsigned)-1 ? get_st_reg(op1_idx)->name : "[AM]";
-		char const *const r = op2_idx != (unsigned)-1 ? get_st_reg(op2_idx)->name : "[AM]";
-		DB((dbg, LEVEL_1, "<<< %s %s, %s\n", get_irn_opname(n), l, r));
+		ia32_x87_attr_t const *const attr = get_ia32_x87_attr(n);
+		char            const *const st0  = get_st_reg(0)->name;
+		char            const *const reg  =  attr->reg ? attr->reg->name : "[AM]";
+		char            const *const l    =  attr->attr.ins_permuted ? reg : st0;
+		char            const *const r    = !attr->attr.ins_permuted ? reg : st0;
+		char            const *const pop  =  attr->pop ? " [pop]" : "";
+		DB((dbg, LEVEL_1, "<<< %s %s, %s%s\n", get_irn_opname(n), l, r, pop));
 	)
 }
 
