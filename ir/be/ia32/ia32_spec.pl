@@ -919,7 +919,6 @@ NoReg_FP => {
 	reg_req   => { out => [ "fp_NOREG:I" ] },
 	mode      => $mode_fp87,
 	latency   => 0,
-	attr_type => "ia32_x87_attr_t",
 },
 
 NoReg_XMM => {
@@ -1842,10 +1841,9 @@ fabs => {
 	reg_req   => { in => [ "fp" ], out => [ "fp" ] },
 	ins       => [ "value" ],
 	emit      => "fabs",
-	init_attr => "attr->attr.ls_mode = ia32_mode_E;",
+	init_attr => "attr->ls_mode = ia32_mode_E;",
 	latency   => 2,
 	mode      => $mode_fp87,
-	attr_type => "ia32_x87_attr_t",
 },
 
 fchs => {
@@ -1853,10 +1851,9 @@ fchs => {
 	reg_req   => { in => [ "fp" ], out => [ "fp" ] },
 	ins       => [ "value" ],
 	emit      => "fchs",
-	init_attr => "attr->attr.ls_mode = ia32_mode_E;",
+	init_attr => "attr->ls_mode = ia32_mode_E;",
 	latency   => 2,
 	mode      => $mode_fp87,
-	attr_type => "ia32_x87_attr_t",
 },
 
 fld => {
@@ -1869,9 +1866,8 @@ fld => {
 	outs      => [ "res", "unused", "M", "X_regular", "X_except" ],
 	emit      => "fld%FM %AM",
 	attr      => "ir_mode *load_mode",
-	init_attr => "attr->attr.ls_mode = load_mode;",
+	init_attr => "attr->ls_mode = load_mode;",
 	latency   => 2,
-	attr_type => "ia32_x87_attr_t",
 },
 
 fst => {
@@ -1897,7 +1893,6 @@ fild => {
 	ins       => [ "base", "index", "mem" ],
 	emit      => "fild%FM %AM",
 	latency   => 4,
-	attr_type => "ia32_x87_attr_t",
 },
 
 fist => {
@@ -1931,10 +1926,9 @@ fldz => {
 	reg_req   => { out => [ "fp" ] },
 	outs      => [ "res" ],
 	emit      => "fldz",
-	init_attr => "attr->attr.ls_mode = ia32_mode_E;",
+	init_attr => "attr->ls_mode = ia32_mode_E;",
 	latency   => 4,
 	mode      => $mode_fp87,
-	attr_type => "ia32_x87_attr_t",
 },
 
 fld1 => {
@@ -1943,10 +1937,9 @@ fld1 => {
 	reg_req   => { out => [ "fp" ] },
 	outs      => [ "res" ],
 	emit      => "fld1",
-	init_attr => "attr->attr.ls_mode = ia32_mode_E;",
+	init_attr => "attr->ls_mode = ia32_mode_E;",
 	latency   => 4,
 	mode      => $mode_fp87,
-	attr_type => "ia32_x87_attr_t",
 },
 
 fldpi => {
@@ -1955,10 +1948,9 @@ fldpi => {
 	reg_req   => { out => [ "fp" ] },
 	outs      => [ "res" ],
 	emit      => "fldpi",
-	init_attr => "attr->attr.ls_mode = ia32_mode_E;",
+	init_attr => "attr->ls_mode = ia32_mode_E;",
 	latency   => 4,
 	mode      => $mode_fp87,
-	attr_type => "ia32_x87_attr_t",
 },
 
 fldln2 => {
@@ -1967,10 +1959,9 @@ fldln2 => {
 	reg_req   => { out => [ "fp" ] },
 	outs      => [ "res" ],
 	emit      => "fldln2",
-	init_attr => "attr->attr.ls_mode = ia32_mode_E;",
+	init_attr => "attr->ls_mode = ia32_mode_E;",
 	latency   => 4,
 	mode      => $mode_fp87,
-	attr_type => "ia32_x87_attr_t",
 },
 
 fldlg2 => {
@@ -1979,10 +1970,9 @@ fldlg2 => {
 	reg_req   => { out => [ "fp" ] },
 	emit      => "fldlg2",
 	outs      => [ "res" ],
-	init_attr => "attr->attr.ls_mode = ia32_mode_E;",
+	init_attr => "attr->ls_mode = ia32_mode_E;",
 	latency   => 4,
 	mode      => $mode_fp87,
-	attr_type => "ia32_x87_attr_t",
 },
 
 fldl2t => {
@@ -1991,10 +1981,9 @@ fldl2t => {
 	reg_req   => { out => [ "fp" ] },
 	emit      => "fldll2t",
 	outs      => [ "res" ],
-	init_attr => "attr->attr.ls_mode = ia32_mode_E;",
+	init_attr => "attr->ls_mode = ia32_mode_E;",
 	latency   => 4,
 	mode      => $mode_fp87,
-	attr_type => "ia32_x87_attr_t",
 },
 
 fldl2e => {
@@ -2003,10 +1992,9 @@ fldl2e => {
 	reg_req   => { out => [ "fp" ] },
 	emit      => "fldl2e",
 	outs      => [ "res" ],
-	init_attr => "attr->attr.ls_mode = ia32_mode_E;",
+	init_attr => "attr->ls_mode = ia32_mode_E;",
 	latency   => 4,
 	mode      => $mode_fp87,
-	attr_type => "ia32_x87_attr_t",
 },
 
 FucomFnstsw => {
@@ -2062,9 +2050,8 @@ FtstFnstsw => {
 	emit      => "ftst\n".
 	             "fnstsw %%ax",
 	attr      => "bool ins_permuted",
-	init_attr => "attr->attr.ins_permuted = ins_permuted;",
+	init_attr => "attr->ins_permuted = ins_permuted;",
 	latency   => 3,
-	attr_type => "ia32_x87_attr_t",
 	mode      => $mode_gp
 },
 
@@ -2135,7 +2122,6 @@ emms => {
 	reg_req   => { out => [ "none" ] },
 	attrs_equal => "attrs_equal_false",
 	emit      => "emms",
-	attr_type => "ia32_x87_attr_t",
 	mode      => "mode_ANY",
 	latency   => 3,
 },
@@ -2145,7 +2131,6 @@ femms => {
 	reg_req   => { out => [ "none" ] },
 	attrs_equal => "attrs_equal_false",
 	emit      => "femms",
-	attr_type => "ia32_x87_attr_t",
 	mode      => "mode_ANY",
 	latency   => 3,
 },
