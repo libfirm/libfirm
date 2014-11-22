@@ -83,6 +83,31 @@ static bool has_ia32_condcode_attr(const ir_node *node)
 	    || is_ia32_Sbb0(node) || is_ia32_Cmc(node);
 }
 
+static bool has_ia32_x87_attr(ir_node const *const node)
+{
+	switch ((ia32_opcodes)get_ia32_irn_opcode(node)) {
+	case iro_ia32_FucomFnstsw:
+	case iro_ia32_Fucomi:
+	case iro_ia32_FucomppFnstsw:
+	case iro_ia32_fadd:
+	case iro_ia32_fdiv:
+	case iro_ia32_ffreep:
+	case iro_ia32_fist:
+	case iro_ia32_fisttp:
+	case iro_ia32_fmul:
+	case iro_ia32_fpop:
+	case iro_ia32_fpush:
+	case iro_ia32_fpushCopy:
+	case iro_ia32_fst:
+	case iro_ia32_fsub:
+	case iro_ia32_fxch:
+		return true;
+
+	default:
+		return false;
+	}
+}
+
 static char const *get_frame_use_str(ir_node const *const node)
 {
 	switch (get_ia32_frame_use(node)) {
@@ -227,6 +252,11 @@ static void ia32_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 				fprintf(F, "ins_permuted = %s\n", be_dump_yesno(attr->ins_permuted));
 			} else if (is_ia32_CopyB(n) || is_ia32_CopyB_i(n)) {
 				fprintf(F, "size = %u\n", get_ia32_copyb_size(n));
+			} else if (has_ia32_x87_attr(n)) {
+				ia32_x87_attr_t const *const attr = get_ia32_x87_attr_const(n);
+				fprintf(F, "explicit operand = %s\n", be_dump_reg_name(attr->reg));
+				fprintf(F, "result to explicit operand = %s\n", be_dump_yesno(attr->res_in_reg));
+				fprintf(F, "pop = %s\n", be_dump_yesno(attr->pop));
 			}
 
 			fprintf(F, "commutative = %s\n", be_dump_yesno(is_ia32_commutative(n)));
