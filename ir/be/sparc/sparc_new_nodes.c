@@ -90,15 +90,14 @@ static void sparc_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 		if (sparc_has_load_store_attr(n)) {
 			const sparc_load_store_attr_t *attr = get_sparc_load_store_attr_const(n);
 			ir_fprintf(F, "load store mode: %+F\n", attr->load_store_mode);
-			fprintf(F, "is frame entity: %s\n",
-			        attr->is_frame_entity ? "true" : "false");
+			fprintf(F, "is frame entity: %s\n", be_dump_yesno(attr->is_frame_entity));
 		}
 		if (has_jmp_cond_attr(n)) {
 			const sparc_jmp_cond_attr_t *attr
 				= get_sparc_jmp_cond_attr_const(n);
 			fprintf(F, "relation: %d (%s)\n", (int)attr->relation,
 			        get_relation_string(attr->relation));
-			fprintf(F, "unsigned: %s\n", attr->is_unsigned ? "true" : "false");
+			fprintf(F, "unsigned: %s\n", be_dump_yesno(attr->is_unsigned));
 		}
 		if (has_fp_attr(n)) {
 			const sparc_fp_attr_t *attr = get_sparc_fp_attr_const(n);

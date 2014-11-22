@@ -224,13 +224,13 @@ static void ia32_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 					fprintf(F, "condition_code = <invalid (0x%X)>\n",
 					        (unsigned)get_ia32_condcode(n));
 				}
-				fprintf(F, "ins_permuted = %u\n", (unsigned)attr->ins_permuted);
+				fprintf(F, "ins_permuted = %s\n", be_dump_yesno(attr->ins_permuted));
 			} else if (is_ia32_CopyB(n) || is_ia32_CopyB_i(n)) {
 				fprintf(F, "size = %u\n", get_ia32_copyb_size(n));
 			}
 
-			fprintf(F, "commutative = %d\n", is_ia32_commutative(n));
-			fprintf(F, "is reload = %d\n", is_ia32_is_reload(n));
+			fprintf(F, "commutative = %s\n", be_dump_yesno(is_ia32_commutative(n)));
+			fprintf(F, "is reload = %s\n", be_dump_yesno(is_ia32_is_reload(n)));
 			fprintf(F, "latency = %u\n", get_ia32_latency(n));
 
 			/* dump frame entity */

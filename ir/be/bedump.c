@@ -243,14 +243,14 @@ void be_dump_reqs_and_registers(FILE *F, const ir_node *node)
 		fprintf(F, "inreq #%d = ", i);
 		dump_register_req(F, req);
 		arch_register_t const *const reg = be_get_info(skip_Proj_const(op))->out_infos ? arch_get_irn_register(op) : NULL;
-		fprintf(F, " [%s]\n", reg ? reg->name : "n/a");
+		fprintf(F, " [%s]\n", be_dump_reg_name(reg));
 	}
 	be_foreach_out(node, o) {
 		const arch_register_req_t *req = arch_get_irn_register_req_out(node, o);
 		fprintf(F, "outreq #%u = ", o);
 		dump_register_req(F, req);
 		const arch_register_t *reg = arch_get_irn_register_out(node, o);
-		fprintf(F, " [%s]\n", reg != NULL ? reg->name : "n/a");
+		fprintf(F, " [%s]\n", be_dump_reg_name(reg));
 	}
 
 	fprintf(F, "flags =");

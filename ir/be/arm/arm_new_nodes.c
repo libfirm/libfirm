@@ -98,10 +98,8 @@ static void arm_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 			ir_fprintf(F, "load_store_mode = %+F\n", attr->load_store_mode);
 			ir_fprintf(F, "entity = %+F\n", attr->entity);
 			fprintf(F, "offset = %ld\n", attr->offset);
-			fprintf(F, "is_frame_entity = %s\n",
-					attr->is_frame_entity ? "yes" : "no");
-			fprintf(F, "entity_sign = %s\n",
-					attr->entity_sign ? "yes" : "no");
+			fprintf(F, "is_frame_entity = %s\n", be_dump_yesno(attr->is_frame_entity));
+			fprintf(F, "entity_sign = %s\n", be_dump_yesno(attr->entity_sign));
 		}
 		if (has_shifter_operand(n)) {
 			const arm_shifter_operand_t *attr
