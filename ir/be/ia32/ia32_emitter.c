@@ -52,6 +52,7 @@
 #include "bedwarf.h"
 #include "beemitter.h"
 #include "begnuas.h"
+#include "bestack.h"
 #include "beutil.h"
 
 #include "ia32_emitter.h"
@@ -1424,7 +1425,7 @@ static void ia32_emit_node(ir_node *node)
 	be_emit_node(node);
 
 	if (sp_relative) {
-		int sp_change = arch_get_sp_bias(node);
+		int sp_change = ia32_get_sp_bias(node);
 		if (sp_change != 0) {
 			assert(sp_change != SP_BIAS_RESET);
 			callframe_offset += sp_change;

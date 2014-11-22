@@ -20,13 +20,6 @@
 #include "beinfo.h"
 #include "be.h"
 
-/**
- * this constant is returned by the get_sp_bias functions if the stack
- * is reset (usually because the frame pointer is copied to the stack
- * pointer
- */
-#define SP_BIAS_RESET      INT_MIN
-
 typedef enum arch_register_class_flags_t {
 	arch_register_class_flag_none      = 0,
 	/** don't do automatic register allocation for this class */
@@ -71,11 +64,7 @@ ENUM_BITSET(arch_register_req_type_t)
 extern arch_register_req_t const arch_no_requirement;
 #define arch_no_register_req (&arch_no_requirement)
 
-void arch_set_frame_offset(ir_node *irn, int bias);
-
 ir_entity *arch_get_frame_entity(const ir_node *irn);
-
-int arch_get_sp_bias(ir_node *irn);
 
 int arch_get_op_estimated_cost(const ir_node *irn);
 
@@ -300,26 +289,6 @@ struct arch_irn_ops_t {
 	 *         a stack frame entity.
 	 */
 	ir_entity *(*get_frame_entity)(const ir_node *irn);
-
-	/**
-	 * Set the offset of a node carrying an entity on the stack frame.
-	 * @param irn  The node.
-	 * @param offset The offset of the node's stack frame entity.
-	 */
-	void (*set_frame_offset)(ir_node *irn, int offset);
-
-	/**
-	 * Returns the delta of the stackpointer for nodes that increment or
-	 * decrement the stackpointer with a constant value. (push, pop
-	 * nodes on most architectures).
-	 * A positive value stands for an expanding stack area, a negative value for
-	 * a shrinking one.
-	 *
-	 * @param irn       The node
-	 * @return          0 if the stackpointer is not modified with a constant
-	 *                  value, otherwise the increment/decrement value
-	 */
-	int (*get_sp_bias)(const ir_node *irn);
 
 	/**
 	 * Get the estimated cycle count for @p irn.

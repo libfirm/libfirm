@@ -139,40 +139,10 @@ static ir_entity *sparc_get_frame_entity(const ir_node *node)
 	return NULL;
 }
 
-/**
- * This function is called by the generic backend to correct offsets for
- * nodes accessing the stack.
- */
-static void sparc_set_frame_offset(ir_node *node, int offset)
-{
-	sparc_attr_t *attr = get_sparc_attr(node);
-	attr->immediate_value += offset;
-
-	/* must be a FrameAddr or a load/store node with frame_entity */
-	assert(is_sparc_FrameAddr(node) ||
-			get_sparc_load_store_attr_const(node)->is_frame_entity);
-}
-
-static int sparc_get_sp_bias(const ir_node *node)
-{
-	if (is_sparc_Save(node)) {
-		const sparc_attr_t *attr = get_sparc_attr_const(node);
-		if (get_irn_arity(node) == 3)
-			panic("no support for _reg variant yet");
-
-		return -attr->immediate_value;
-	} else if (is_sparc_RestoreZero(node)) {
-		return SP_BIAS_RESET;
-	}
-	return 0;
-}
-
 /* fill register allocator interface */
 
 const arch_irn_ops_t sparc_irn_ops = {
 	.get_frame_entity = sparc_get_frame_entity,
-	.set_frame_offset = sparc_set_frame_offset,
-	.get_sp_bias      = sparc_get_sp_bias,
 };
 
 /**

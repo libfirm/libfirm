@@ -19,6 +19,37 @@
 #include "bearch.h"
 #include "benode.h"
 #include "besched.h"
+#include "bestack.h"
+
+static void sparc_set_frame_offset(ir_node *node, int offset)
+{
+	if (be_is_MemPerm(node)) {
+		be_set_MemPerm_offset(node, offset);
+	} else {
+		sparc_attr_t *attr = get_sparc_attr(node);
+		attr->immediate_value += offset;
+
+		/* must be a FrameAddr or a load/store node with frame_entity */
+		assert(is_sparc_FrameAddr(node) ||
+				get_sparc_load_store_attr_const(node)->is_frame_entity);
+	}
+}
+
+static int sparc_get_sp_bias(const ir_node *node)
+{
+	if (be_is_IncSP(node))
+		return be_get_IncSP_offset(node);
+	if (is_sparc_Save(node)) {
+		const sparc_attr_t *attr = get_sparc_attr_const(node);
+		if (get_irn_arity(node) == 3)
+			panic("no support for _reg variant yet");
+
+		return -attr->immediate_value;
+	}
+	if (is_sparc_RestoreZero(node))
+		return SP_BIAS_RESET;
+	return 0;
+}
 
 static void set_irn_sp_bias(ir_node *node, int new_bias)
 {
@@ -48,7 +79,7 @@ static void process_bias(ir_node *block, bool sp_relative, int bias,
 			int offset = get_entity_offset(entity);
 			if (sp_relative)
 				offset += bias + SPARC_MIN_STACKSIZE;
-			arch_set_frame_offset(irn, offset);
+			sparc_set_frame_offset(irn, offset);
 		}
 
 		/* The additional alignment bytes cannot be used
@@ -59,7 +90,7 @@ static void process_bias(ir_node *block, bool sp_relative, int bias,
 			assert(free_bytes == 0);
 		}
 
-		irn_bias = arch_get_sp_bias(irn);
+		irn_bias = sparc_get_sp_bias(irn);
 		if (irn_bias == 0) {
 			/* do nothing */
 		} else if (irn_bias == SP_BIAS_RESET) {

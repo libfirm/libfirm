@@ -478,24 +478,9 @@ static ir_entity *be_node_get_frame_entity(const ir_node *irn)
 	return NULL;
 }
 
-static void be_node_set_frame_offset(ir_node *irn, int offset)
-{
-	if (be_is_MemPerm(irn))
-		be_set_MemPerm_offset(irn, offset);
-}
-
-static int be_node_get_sp_bias(const ir_node *irn)
-{
-	if (be_is_IncSP(irn))
-		return be_get_IncSP_offset(irn);
-	return 0;
-}
-
 /* for be nodes */
 static const arch_irn_ops_t be_node_irn_ops = {
 	.get_frame_entity = be_node_get_frame_entity,
-	.set_frame_offset = be_node_set_frame_offset,
-	.get_sp_bias      = be_node_get_sp_bias,
 };
 
 static unsigned get_start_reg_index(ir_graph *irg, const arch_register_t *reg)
@@ -529,24 +514,9 @@ static ir_entity* dummy_get_frame_entity(const ir_node *node)
 	return NULL;
 }
 
-static void dummy_set_frame_offset(ir_node *node, int bias)
-{
-	(void)node;
-	(void)bias;
-	panic("should not be called");
-}
-
-static int dummy_get_sp_bias(const ir_node *node)
-{
-	(void)node;
-	return 0;
-}
-
 /* for "middleend" nodes */
 static const arch_irn_ops_t dummy_be_irn_ops = {
 	.get_frame_entity = dummy_get_frame_entity,
-	.set_frame_offset = dummy_set_frame_offset,
-	.get_sp_bias      = dummy_get_sp_bias,
 };
 
 ir_node *be_new_Phi(ir_node *block, int n_ins, ir_node **ins, ir_mode *mode,
@@ -602,8 +572,6 @@ void be_dump_phi_reg_reqs(FILE *F, const ir_node *node, dump_reason_t reason)
 
 static const arch_irn_ops_t phi_irn_ops = {
 	dummy_get_frame_entity,
-	dummy_set_frame_offset,
-	dummy_get_sp_bias,
 	NULL,    /* get_op_estimated_cost   */
 	NULL,    /* perform_memory_operand  */
 };

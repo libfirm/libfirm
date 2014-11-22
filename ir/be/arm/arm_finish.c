@@ -129,6 +129,30 @@ static void fix_should_be_same(ir_node *block, void *data)
 	}
 }
 
+/**
+ * This function is called by the generic backend to correct offsets for
+ * nodes accessing the stack.
+ */
+static void arm_set_frame_offset(ir_node *irn, int bias)
+{
+	if (be_is_MemPerm(irn)) {
+		be_set_MemPerm_offset(irn, bias);
+	} else if (is_arm_FrameAddr(irn)) {
+		arm_Address_attr_t *attr = get_arm_Address_attr(irn);
+		attr->fp_offset += bias;
+	} else {
+		arm_load_store_attr_t *attr = get_arm_load_store_attr(irn);
+		assert(attr->base.is_load_store);
+		attr->offset += bias;
+	}
+}
+
+static int arm_get_sp_bias(const ir_node *node)
+{
+	(void)node;
+	return 0;
+}
+
 void arm_finish_graph(ir_graph *irg)
 {
 	be_stack_layout_t *stack_layout = be_get_irg_stack_layout(irg);
@@ -143,7 +167,7 @@ void arm_finish_graph(ir_graph *irg)
 
 	/* fix stack entity offsets */
 	be_fix_stack_nodes(irg, &arm_registers[REG_SP]);
-	be_abi_fix_stack_bias(irg);
+	be_abi_fix_stack_bias(irg, arm_get_sp_bias, arm_set_frame_offset);
 
 	/* do peephole optimizations and fix stack offsets */
 	arm_peephole_optimization(irg);

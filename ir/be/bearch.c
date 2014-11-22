@@ -38,22 +38,10 @@ static const arch_irn_ops_t *get_irn_ops(const ir_node *irn)
 	return be_ops;
 }
 
-void arch_set_frame_offset(ir_node *irn, int offset)
-{
-	const arch_irn_ops_t *ops = get_irn_ops(irn);
-	ops->set_frame_offset(irn, offset);
-}
-
 ir_entity *arch_get_frame_entity(const ir_node *irn)
 {
 	const arch_irn_ops_t *ops = get_irn_ops(irn);
 	return ops->get_frame_entity(irn);
-}
-
-int arch_get_sp_bias(ir_node *irn)
-{
-	const arch_irn_ops_t *ops = get_irn_ops(irn);
-	return ops->get_sp_bias(irn);
 }
 
 void arch_perform_memory_operand(ir_node *irn, unsigned int i)

@@ -43,29 +43,10 @@ static ir_entity *TEMPLATE_get_frame_entity(const ir_node *node)
 	return NULL;
 }
 
-/**
- * This function is called by the generic backend to correct offsets for
- * nodes accessing the stack.
- */
-static void TEMPLATE_set_frame_offset(ir_node *irn, int offset)
-{
-	(void)irn;
-	(void)offset;
-	/* TODO: correct offset if irn accesses the stack */
-}
-
-static int TEMPLATE_get_sp_bias(const ir_node *irn)
-{
-	(void)irn;
-	return 0;
-}
-
 /* fill register allocator interface */
 
 static const arch_irn_ops_t TEMPLATE_irn_ops = {
 	.get_frame_entity = TEMPLATE_get_frame_entity,
-	.set_frame_offset = TEMPLATE_set_frame_offset,
-	.get_sp_bias      = TEMPLATE_get_sp_bias,
 };
 
 /**
@@ -90,8 +71,6 @@ static void TEMPLATE_emit(ir_graph *irg)
 {
 	/* fix stack entity offsets */
 	be_fix_stack_nodes(irg, &TEMPLATE_registers[REG_SP]);
-
-	//be_abi_fix_stack_bias(irg);
 
 	/* emit code */
 	TEMPLATE_emit_function(irg);

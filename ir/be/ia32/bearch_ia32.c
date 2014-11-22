@@ -190,7 +190,7 @@ static void ia32_set_frame_offset(ir_node *irn, int bias)
 	add_ia32_am_offs_int(irn, bias);
 }
 
-static int ia32_get_sp_bias(const ir_node *node)
+int ia32_get_sp_bias(const ir_node *node)
 {
 	if (is_ia32_Call(node))
 		return -(int)get_ia32_call_attr_const(node)->pop;
@@ -413,8 +413,6 @@ static void ia32_perform_memory_operand(ir_node *irn, unsigned int i)
 /* register allocator interface */
 static const arch_irn_ops_t ia32_irn_ops = {
 	.get_frame_entity        = ia32_get_frame_entity,
-	.set_frame_offset        = ia32_set_frame_offset,
-	.get_sp_bias             = ia32_get_sp_bias,
 	.get_op_estimated_cost   = ia32_get_op_estimated_cost,
 	.perform_memory_operand  = ia32_perform_memory_operand,
 };
@@ -1178,7 +1176,7 @@ static void ia32_emit(ir_graph *irg)
 
 	/* fix stack entity offsets */
 	be_fix_stack_nodes(irg, &ia32_registers[REG_ESP]);
-	be_abi_fix_stack_bias(irg);
+	be_abi_fix_stack_bias(irg, ia32_get_sp_bias, ia32_set_frame_offset);
 
 	/* fix 2-address code constraints */
 	ia32_finish_irg(irg);

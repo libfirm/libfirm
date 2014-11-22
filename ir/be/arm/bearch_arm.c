@@ -77,34 +77,10 @@ static ir_entity *arm_get_frame_entity(const ir_node *irn)
 	return NULL;
 }
 
-/**
- * This function is called by the generic backend to correct offsets for
- * nodes accessing the stack.
- */
-static void arm_set_frame_offset(ir_node *irn, int bias)
-{
-	if (is_arm_FrameAddr(irn)) {
-		arm_Address_attr_t *attr = get_arm_Address_attr(irn);
-		attr->fp_offset += bias;
-	} else {
-		arm_load_store_attr_t *attr = get_arm_load_store_attr(irn);
-		assert(attr->base.is_load_store);
-		attr->offset += bias;
-	}
-}
-
-static int arm_get_sp_bias(const ir_node *node)
-{
-	(void)node;
-	return 0;
-}
-
 /* fill register allocator interface */
 
 const arch_irn_ops_t arm_irn_ops = {
 	.get_frame_entity = arm_get_frame_entity,
-	.set_frame_offset = arm_set_frame_offset,
-	.get_sp_bias      = arm_get_sp_bias,
 };
 
 /**
