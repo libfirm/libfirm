@@ -2065,7 +2065,7 @@ Sahf => {
 	mode      => $mode_flags,
 },
 
-# fxch, fpush, fpop
+# fxch, fdup, fpop
 # Note that it is NEVER allowed to do CSE on these nodes
 # Moreover, note the virtual register requierements!
 
@@ -2074,16 +2074,6 @@ fxch => {
 	reg_req   => { out => [ "none" ] },
 	attrs_equal => "attrs_equal_false",
 	emit      => "fxch %F0",
-	attr_type => "ia32_x87_attr_t",
-	mode      => "mode_ANY",
-	latency   => 1,
-},
-
-fpush => {
-	op_flags  => [ "keep" ],
-	reg_req   => { out => [ "none" ] },
-	attrs_equal => "attrs_equal_false",
-	emit      => "fld %F0",
 	attr_type => "ia32_x87_attr_t",
 	mode      => "mode_ANY",
 	latency   => 1,

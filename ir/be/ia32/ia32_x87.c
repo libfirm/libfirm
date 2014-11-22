@@ -433,26 +433,31 @@ static x87_state *x87_shuffle(ir_node *block, x87_state *state, const x87_state 
 	return state;
 }
 
+static ir_node *x87_create_fdup(x87_state *const state, ir_node *const block, ir_node *const val, arch_register_t const *const out)
+{
+	ir_node         *const fdup = new_bd_ia32_fdup(NULL, block, val);
+	ia32_x87_attr_t *const attr = get_ia32_x87_attr(fdup);
+	unsigned         const pos  = x87_on_stack_val(state, val);
+	attr->reg = get_st_reg(pos);
+	arch_set_irn_register(fdup, out);
+	x87_push(state, out->index, fdup);
+	DB((dbg, LEVEL_1, "<<< %s %s\n", get_irn_opname(fdup), attr->reg->name));
+	return fdup;
+}
+
 /**
- * Create a fpush before node n.
+ * Create an fdup before node @p n replacing operand @p op_n.
  *
  * @param state     the x87 state
- * @param n         the node after the fpush
- * @param val       the value to push
+ * @param n         the node after the fdup
+ * @param val       the value to duplicate
  */
-static void x87_create_fpush(x87_state *const state, ir_node *const n, unsigned const out_reg_idx, ir_node *const val)
+static void x87_dup_operand(x87_state *const state, ir_node *const n, unsigned const op_n, ir_node *const val, arch_register_t const *const out)
 {
-	x87_push(state, out_reg_idx, val);
-
-	ir_node         *const fpush = new_bd_ia32_fpush(NULL, get_nodes_block(n));
-	ia32_x87_attr_t *const attr  = get_ia32_x87_attr(fpush);
-	unsigned         const pos   = x87_on_stack_val(state, val);
-	attr->reg = get_st_reg(pos);
-
-	keep_alive(fpush);
-	sched_add_before(n, fpush);
-
-	DB((dbg, LEVEL_1, "<<< %s %s\n", get_irn_opname(fpush), attr->reg->name));
+	ir_node *const block = get_nodes_block(n);
+	ir_node *const fdup  = x87_create_fdup(state, block, val, out);
+	sched_add_before(n, fdup);
+	set_irn_n(n, op_n, fdup);
 }
 
 /**
@@ -636,9 +641,8 @@ static void sim_binop(x87_state *const state, ir_node *const n)
 
 	unsigned               op2_idx;
 	unsigned               out_idx;
-	bool                   pop         = false;
-	unsigned         const out_reg_idx = out->index;
-	ia32_x87_attr_t *const attr        = get_ia32_x87_attr(n);
+	bool                   pop     = false;
+	ia32_x87_attr_t *const attr    = get_ia32_x87_attr(n);
 	if (reg_index_2 != REG_FP_FP_NOREG) {
 		/* second operand is a fp register */
 		op2_idx = x87_on_stack(state, reg_index_2);
@@ -651,7 +655,7 @@ static void sim_binop(x87_state *const state, ir_node *const n)
 			if (op1_live_after) {
 				/* Both operands are live: push the first one.
 				 * This works even for op1 == op2. */
-				x87_create_fpush(state, n, out_reg_idx, op1);
+				x87_dup_operand(state, n, n_ia32_binary_left, op1, out);
 				/* now do fxxx (tos=tos X op) */
 				op1_idx = 0;
 				op2_idx += 1;
@@ -707,7 +711,7 @@ static void sim_binop(x87_state *const state, ir_node *const n)
 		/* second operand is an address mode */
 		if (op1_live_after) {
 			/* first operand is live: push it here */
-			x87_create_fpush(state, n, out_reg_idx, op1);
+			x87_dup_operand(state, n, n_ia32_binary_left, op1, out);
 		} else {
 			/* first operand is dead: bring it to tos */
 			if (op1_idx != 0)
@@ -721,7 +725,7 @@ static void sim_binop(x87_state *const state, ir_node *const n)
 	assert(op1_idx == 0       || op2_idx == 0);
 	assert(out_idx == op1_idx || out_idx == op2_idx);
 
-	x87_set_st(state, out_reg_idx, n, out_idx);
+	x87_set_st(state, out->index, n, out_idx);
 	if (pop)
 		x87_pop(state);
 
@@ -756,10 +760,9 @@ static void sim_unop(x87_state *state, ir_node *n)
 	ir_node               *const op1         = get_irn_n(n, 0);
 	arch_register_t const *const op1_reg     = arch_get_irn_register(op1);
 	unsigned               const op1_reg_idx = op1_reg->index;
-	unsigned               const out_reg_idx = out->index;
 	if (is_fp_live(op1_reg_idx, live)) {
 		/* push the operand here */
-		x87_create_fpush(state, n, out_reg_idx, op1);
+		x87_dup_operand(state, n, 0, op1, out);
 	} else {
 		/* operand is dead, bring it to tos */
 		unsigned const op1_idx = x87_on_stack(state, op1_reg_idx);
@@ -767,7 +770,7 @@ static void sim_unop(x87_state *state, ir_node *n)
 			x87_create_fxch(state, n, op1_idx);
 	}
 
-	x87_set_st(state, out_reg_idx, n, 0);
+	x87_set_st(state, out->index, n, 0);
 	DB((dbg, LEVEL_1, "<<< %s -> %s\n", get_irn_opname(n), get_st_reg(0)->name));
 }
 
@@ -820,7 +823,8 @@ static void sim_store(x87_state *state, ir_node *n)
 		if (get_mode_size_bits(mode) > (mode_is_int(mode) ? 32U : 64U)) {
 			if (x87_get_depth(state) < N_FLOAT_REGS) {
 				/* ok, we have a free register: push + fstp */
-				x87_create_fpush(state, n, REG_FP_FP_NOREG, val);
+				arch_register_t const *const out = get_st_reg(REG_FP_FP_NOREG);
+				x87_dup_operand(state, n, n_ia32_fst_val, val, out);
 do_pop:
 				x87_pop(state);
 			} else {
@@ -1097,24 +1101,19 @@ static void sim_Copy(x87_state *state, ir_node *n)
 	DEBUG_ONLY(fp_dump_live(live);)
 
 	if (is_fp_live(op1->index, live)) {
-		/* Operand is still live, a real copy. We need here an fpush that can
-		 * hold a a register, so use a fdup or recreate constants. */
+		/* Operand is still live, a real copy.
+		 * Use an fdup or recreate constants. */
 		ir_node       *copy;
 		ir_node *const block = get_nodes_block(n);
 		if (is_irn_constlike(pred)) {
 			/* Copy a constant. */
 			copy = exact_copy(pred);
 			set_nodes_block(copy, block);
+			x87_push(state, out->index, copy);
+			arch_set_irn_register(copy, out);
 		} else {
-			dbg_info *const dbgi = get_irn_dbg_info(n);
-			copy = new_bd_ia32_fdup(dbgi, block, pred);
-
-			ia32_x87_attr_t *const attr    = get_ia32_x87_attr(copy);
-			unsigned         const op1_idx = x87_on_stack_val(state, pred);
-			attr->reg = get_st_reg(op1_idx);
+			copy = x87_create_fdup(state, block, pred, out);
 		}
-		x87_push(state, out->index, copy);
-		arch_set_irn_register(copy, out);
 		sched_replace(n, copy);
 		exchange(n, copy);
 

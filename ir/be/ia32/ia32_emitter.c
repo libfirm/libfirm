@@ -3065,11 +3065,6 @@ static void bemit_fpop(const ir_node *node)
 	bemit_fop_reg(node, 0xDD, 0xD8);
 }
 
-static void bemit_fpush(const ir_node *node)
-{
-	bemit_fop_reg(node, 0xD9, 0xC0);
-}
-
 static void bemit_fdup(const ir_node *node)
 {
 	bemit_fop_reg(node, 0xD9, 0xC0);
@@ -3250,7 +3245,6 @@ static void ia32_register_binary_emitters(void)
 	be_set_emitter(op_ia32_fldz,          bemit_fldz);
 	be_set_emitter(op_ia32_fmul,          bemit_fmul);
 	be_set_emitter(op_ia32_fpop,          bemit_fpop);
-	be_set_emitter(op_ia32_fpush,         bemit_fpush);
 	be_set_emitter(op_ia32_fdup,          bemit_fdup);
 	be_set_emitter(op_ia32_fst,           bemit_fst);
 	be_set_emitter(op_ia32_fsub,          bemit_fsub);
