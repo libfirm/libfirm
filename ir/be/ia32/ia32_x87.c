@@ -192,6 +192,12 @@ static unsigned x87_on_stack(const x87_state *state, unsigned reg_idx)
 	return (unsigned)-1;
 }
 
+static unsigned x87_on_stack_val(x87_state const *const state, ir_node const *const val)
+{
+	arch_register_t const *const reg = arch_get_irn_register(val);
+	return x87_on_stack(state, reg->index);
+}
+
 /**
  * Push a virtual Register onto the stack, double pushes are NOT allowed.
  *
@@ -872,11 +878,9 @@ do_pop:
  */
 static void sim_fisttp(x87_state *state, ir_node *n)
 {
-	ir_node               *val = get_irn_n(n, n_ia32_fisttp_val);
-	const arch_register_t *op2 = arch_get_irn_register(val);
-
-	unsigned const op2_idx = x87_on_stack(state, op2->index);
-	DB((dbg, LEVEL_1, ">>> %+F %s ->\n", n, op2->name));
+	ir_node *const val     = get_irn_n(n, n_ia32_fisttp_val);
+	unsigned const op2_idx = x87_on_stack_val(state, val);
+	DB((dbg, LEVEL_1, ">>> %+F %s ->\n", n, arch_get_irn_register(val)->name));
 	assert(op2_idx != (unsigned)-1);
 
 	/* Note: although the value is still live here, it is destroyed because
@@ -1095,9 +1099,8 @@ static ir_node *create_Copy(x87_state *state, ir_node *n)
 		ir_mode  *const mode    = get_irn_mode(n);
 		res = new_bd_ia32_fdup(dbgi, block, pred, mode);
 
-		ia32_x87_attr_t       *const attr    = get_ia32_x87_attr(res);
-		arch_register_t const *const op1     = arch_get_irn_register(pred);
-		unsigned               const op1_idx = x87_on_stack(state, op1->index);
+		ia32_x87_attr_t *const attr    = get_ia32_x87_attr(res);
+		unsigned         const op1_idx = x87_on_stack_val(state, pred);
 		attr->reg = get_st_reg(op1_idx);
 	}
 	arch_register_t const *const out = arch_get_irn_register(n);
@@ -1241,8 +1244,7 @@ static void sim_Perm(x87_state *state, ir_node *irn)
 
 	/* collect old stack positions */
 	foreach_irn_in(irn, i, pred) {
-		const arch_register_t *inreg = arch_get_irn_register(pred);
-		unsigned idx = x87_on_stack(state, inreg->index);
+		unsigned const idx = x87_on_stack_val(state, pred);
 		assert(idx != (unsigned)-1);
 		stack_pos[i] = idx;
 	}
