@@ -61,17 +61,8 @@ ir_type *ia32_get_prim_type(const ir_mode *mode)
 ir_entity *ia32_create_float_const_entity(ia32_isa_t *isa, ir_tarval *tv,
                                           ident *name)
 {
-	ir_entity        *res = pmap_get(ir_entity, isa->tv_ent, tv);
-	ir_initializer_t *initializer;
-	ir_mode          *mode;
-	ir_type          *tp;
-
-	if (res != NULL)
-		return res;
-
-	mode = get_tarval_mode(tv);
-
-	if (! ia32_cg_config.use_sse2) {
+	ir_mode *mode = get_tarval_mode(tv);
+	if (!ia32_cg_config.use_sse2) {
 		/* try to reduce the mode to produce smaller sized entities */
 		if (mode != mode_F) {
 			if (tarval_ieee754_can_conv_lossless(tv, mode_F)) {
@@ -86,19 +77,22 @@ ir_entity *ia32_create_float_const_entity(ia32_isa_t *isa, ir_tarval *tv,
 		}
 	}
 
-	if (name == NULL)
-		name = id_unique("C%u");
+	ir_entity *res = pmap_get(ir_entity, isa->tv_ent, tv);
+	if (!res) {
+		if (!name)
+			name = id_unique("C%u");
 
-	tp  = ia32_get_prim_type(mode);
-	res = new_entity(get_glob_type(), name, tp);
-	set_entity_ld_ident(res, get_entity_ident(res));
-	set_entity_visibility(res, ir_visibility_private);
-	add_entity_linkage(res, IR_LINKAGE_CONSTANT);
+		ir_type *const tp = ia32_get_prim_type(mode);
+		res = new_entity(get_glob_type(), name, tp);
+		set_entity_ld_ident(res, get_entity_ident(res));
+		set_entity_visibility(res, ir_visibility_private);
+		add_entity_linkage(res, IR_LINKAGE_CONSTANT);
 
-	initializer = create_initializer_tarval(tv);
-	set_entity_initializer(res, initializer);
+		ir_initializer_t *const initializer = create_initializer_tarval(tv);
+		set_entity_initializer(res, initializer);
 
-	pmap_insert(isa->tv_ent, tv, res);
+		pmap_insert(isa->tv_ent, tv, res);
+	}
 	return res;
 }
 
