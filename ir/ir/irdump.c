@@ -943,6 +943,7 @@ static void print_constblkid(FILE *F, const ir_node *node, const ir_node *block)
 	fprintf(F, "\"n%ldb%ld\"", get_irn_node_nr(node), get_irn_node_nr(block));
 }
 
+static void print_dbg_info(FILE *F, dbg_info *dbg);
 
 /** outputs the predecessors of n, that are constants, local.  I.e.,
    generates a copy of the constant predecessors for each node called with. */
@@ -969,6 +970,7 @@ static void dump_const_node_local(FILE *F, const ir_node *n)
 			dump_node_label(F, con);
 			fprintf(F, "\" ");
 			dump_node_info(F, con);
+			print_dbg_info(F, get_irn_dbg_info(con));
 			dump_node_vcgattr(F, n, con);
 			fprintf(F, "}\n");
 		}
