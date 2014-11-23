@@ -77,6 +77,7 @@ typedef struct bias_walk {
 	ir_node *start_block;      /**< The start block of the current graph. */
 	get_sp_bias_func      get_sp_bias;
 	set_frame_offset_func set_frame_offset;
+	get_frame_entity_func get_frame_entity;
 } bias_walk;
 
 /**
@@ -98,7 +99,7 @@ static int process_stack_bias(const bias_walk *bw, ir_node *bl, int real_bias)
 		/* Check, if the node relates to an entity on the stack frame.
 		 * If so, set the true offset (including the bias) for that
 		 * node. */
-		ir_entity *ent = arch_get_frame_entity(irn);
+		ir_entity *ent = bw->get_frame_entity(irn);
 		if (ent != NULL) {
 			int bias   = sp_relative ? real_bias : 0;
 			int offset = be_get_stack_entity_offset(layout, ent, bias);
@@ -160,7 +161,8 @@ static void stack_bias_walker(ir_node *bl, void *data)
 }
 
 void be_abi_fix_stack_bias(ir_graph *irg, get_sp_bias_func get_sp_bias,
-                           set_frame_offset_func set_frame_offset)
+                           set_frame_offset_func set_frame_offset,
+                           get_frame_entity_func get_frame_entity)
 {
 	be_stack_layout_t *stack_layout = be_get_irg_stack_layout(irg);
 
@@ -171,6 +173,7 @@ void be_abi_fix_stack_bias(ir_graph *irg, get_sp_bias_func get_sp_bias,
 	bw.start_block      = get_irg_start_block(irg);
 	bw.get_sp_bias      = get_sp_bias;
 	bw.set_frame_offset = set_frame_offset;
+	bw.get_frame_entity = get_frame_entity;
 	bw.start_block_bias = process_stack_bias(&bw, bw.start_block, stack_layout->initial_bias);
 
 	/* fix the bias is all other blocks */

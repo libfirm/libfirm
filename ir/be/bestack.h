@@ -44,7 +44,8 @@ void be_fix_stack_nodes(ir_graph *irg, arch_register_t const *sp);
  * callback does not need to handle them.
  */
 void be_abi_fix_stack_bias(ir_graph *irg, get_sp_bias_func get_sp_bias,
-                           set_frame_offset_func set_frame_offset);
+                           set_frame_offset_func set_frame_offset,
+                           get_frame_entity_func get_frame_entity);
 
 int be_get_stack_entity_offset(be_stack_layout_t *frame, ir_entity *ent,
                                int bias);

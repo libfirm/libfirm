@@ -336,7 +336,7 @@ static bool can_move_down_into_delayslot(const ir_node *node, const ir_node *to)
 	if (!is_legal_delay_slot_filler(node))
 		return false;
 
-	if (!be_can_move_down(heights, node, to))
+	if (!be_can_move_down(heights, node, to, sparc_get_frame_entity))
 		return false;
 
 	if (is_sparc_Call(to)) {

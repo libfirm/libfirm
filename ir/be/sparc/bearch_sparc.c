@@ -121,28 +121,9 @@ static const lc_opt_table_entry_t sparc_options[] = {
 	LC_OPT_LAST
 };
 
-static ir_entity *sparc_get_frame_entity(const ir_node *node)
-{
-	if (is_sparc_FrameAddr(node)) {
-		const sparc_attr_t *attr = get_sparc_attr_const(node);
-		return attr->immediate_value_entity;
-	}
-
-	if (sparc_has_load_store_attr(node)) {
-		const sparc_load_store_attr_t *load_store_attr
-			= get_sparc_load_store_attr_const(node);
-		if (load_store_attr->is_frame_entity) {
-			return load_store_attr->base.immediate_value_entity;
-		}
-	}
-
-	return NULL;
-}
-
 /* fill register allocator interface */
 
 const arch_irn_ops_t sparc_irn_ops = {
-	.get_frame_entity = sparc_get_frame_entity,
 };
 
 /**

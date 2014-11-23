@@ -36,17 +36,9 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
-static ir_entity *TEMPLATE_get_frame_entity(const ir_node *node)
-{
-	(void)node;
-	/* TODO: return the ir_entity assigned to the frame */
-	return NULL;
-}
-
 /* fill register allocator interface */
 
 static const arch_irn_ops_t TEMPLATE_irn_ops = {
-	.get_frame_entity = TEMPLATE_get_frame_entity,
 };
 
 /**

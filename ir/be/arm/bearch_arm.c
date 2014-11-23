@@ -59,28 +59,9 @@ arm_codegen_config_t arm_cg_config;
 ir_mode *arm_mode_gp;
 ir_mode *arm_mode_flags;
 
-static ir_entity *arm_get_frame_entity(const ir_node *irn)
-{
-	const arm_attr_t *attr = get_arm_attr_const(irn);
-
-	if (is_arm_FrameAddr(irn)) {
-		const arm_Address_attr_t *frame_attr = get_arm_Address_attr_const(irn);
-		return frame_attr->entity;
-	}
-	if (attr->is_load_store) {
-		const arm_load_store_attr_t *load_store_attr
-			= get_arm_load_store_attr_const(irn);
-		if (load_store_attr->is_frame_entity) {
-			return load_store_attr->entity;
-		}
-	}
-	return NULL;
-}
-
 /* fill register allocator interface */
 
 const arch_irn_ops_t arm_irn_ops = {
-	.get_frame_entity = arm_get_frame_entity,
 };
 
 /**

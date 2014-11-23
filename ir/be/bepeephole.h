@@ -59,7 +59,8 @@ bool be_has_only_one_user(ir_node *node);
  * optimization phase.
  */
 bool be_can_move_down(ir_heights_t *heights, const ir_node *node,
-                      const ir_node *before);
+                      const ir_node *before,
+                      get_frame_entity_func get_frame_entity);
 
 bool be_can_move_up(ir_heights_t *heights, const ir_node *node,
                     const ir_node *after);

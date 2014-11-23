@@ -470,7 +470,6 @@ static void assign_spill_entity(be_fec_env_t *env, ir_node *node,
 	}
 
 	node = skip_Proj(node);
-	assert(arch_get_frame_entity(node) == NULL);
 	env->set_frame_entity(node, entity, type);
 }
 

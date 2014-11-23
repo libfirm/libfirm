@@ -412,9 +412,8 @@ static void ia32_perform_memory_operand(ir_node *irn, unsigned int i)
 
 /* register allocator interface */
 static const arch_irn_ops_t ia32_irn_ops = {
-	.get_frame_entity        = ia32_get_frame_entity,
-	.get_op_estimated_cost   = ia32_get_op_estimated_cost,
-	.perform_memory_operand  = ia32_perform_memory_operand,
+	.get_op_estimated_cost  = ia32_get_op_estimated_cost,
+	.perform_memory_operand = ia32_perform_memory_operand,
 };
 
 static bool gprof;
@@ -1176,7 +1175,8 @@ static void ia32_emit(ir_graph *irg)
 
 	/* fix stack entity offsets */
 	be_fix_stack_nodes(irg, &ia32_registers[REG_ESP]);
-	be_abi_fix_stack_bias(irg, ia32_get_sp_bias, ia32_set_frame_offset);
+	be_abi_fix_stack_bias(irg, ia32_get_sp_bias, ia32_set_frame_offset,
+	                      ia32_get_frame_entity);
 
 	/* fix 2-address code constraints */
 	ia32_finish_irg(irg);

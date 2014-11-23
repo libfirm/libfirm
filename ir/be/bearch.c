@@ -38,12 +38,6 @@ static const arch_irn_ops_t *get_irn_ops(const ir_node *irn)
 	return be_ops;
 }
 
-ir_entity *arch_get_frame_entity(const ir_node *irn)
-{
-	const arch_irn_ops_t *ops = get_irn_ops(irn);
-	return ops->get_frame_entity(irn);
-}
-
 void arch_perform_memory_operand(ir_node *irn, unsigned int i)
 {
 	const arch_irn_ops_t *ops = get_irn_ops(irn);

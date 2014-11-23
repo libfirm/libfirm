@@ -153,6 +153,26 @@ static int arm_get_sp_bias(const ir_node *node)
 	return 0;
 }
 
+static ir_entity *arm_get_frame_entity(const ir_node *irn)
+{
+	if (be_is_MemPerm(irn))
+		return be_get_MemPerm_in_entity(irn, 0);
+
+	const arm_attr_t *attr = get_arm_attr_const(irn);
+	if (is_arm_FrameAddr(irn)) {
+		const arm_Address_attr_t *frame_attr = get_arm_Address_attr_const(irn);
+		return frame_attr->entity;
+	}
+	if (attr->is_load_store) {
+		const arm_load_store_attr_t *load_store_attr
+			= get_arm_load_store_attr_const(irn);
+		if (load_store_attr->is_frame_entity) {
+			return load_store_attr->entity;
+		}
+	}
+	return NULL;
+}
+
 void arm_finish_graph(ir_graph *irg)
 {
 	be_stack_layout_t *stack_layout = be_get_irg_stack_layout(irg);
@@ -167,7 +187,8 @@ void arm_finish_graph(ir_graph *irg)
 
 	/* fix stack entity offsets */
 	be_fix_stack_nodes(irg, &arm_registers[REG_SP]);
-	be_abi_fix_stack_bias(irg, arm_get_sp_bias, arm_set_frame_offset);
+	be_abi_fix_stack_bias(irg, arm_get_sp_bias, arm_set_frame_offset,
+	                      arm_get_frame_entity);
 
 	/* do peephole optimizations and fix stack offsets */
 	arm_peephole_optimization(irg);

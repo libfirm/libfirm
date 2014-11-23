@@ -73,4 +73,6 @@ void sparc_create_stacklayout(ir_graph *irg, calling_convention_t *cconv);
 void sparc_adjust_stack_entity_offsets(ir_graph *irg);
 void sparc_fix_stack_bias(ir_graph *irg);
 
+ir_entity *sparc_get_frame_entity(const ir_node *node);
+
 #endif

@@ -541,6 +541,11 @@ static void replace_with_restore_imm(ir_node *node, ir_node *replaced,
 	be_peephole_exchange(replaced, res);
 }
 
+static bool can_move_down(const ir_node *schedpoint, const ir_node *node)
+{
+	return be_can_move_down(heights, schedpoint, node, sparc_get_frame_entity);
+}
+
 static void peephole_sparc_RestoreZero(ir_node *node)
 {
 	/* restore gives us a free "add" instruction, let's try to use that to fold
@@ -573,13 +578,13 @@ static void peephole_sparc_RestoreZero(ir_node *node)
 		if (!is_restorezeroopt_reg(reg))
 			continue;
 
-		if (be_is_Copy(schedpoint) && be_can_move_down(heights, schedpoint, node)) {
+		if (be_is_Copy(schedpoint) && can_move_down(schedpoint, node)) {
 			ir_node *const op = be_get_Copy_op(schedpoint);
 			replace_with_restore_imm(node, schedpoint, op, NULL, 0);
 		} else if (is_sparc_Or(schedpoint) &&
 		           arch_get_irn_flags(schedpoint) & ((arch_irn_flags_t)sparc_arch_irn_flag_immediate_form) &&
 		           arch_get_irn_register_in(schedpoint, 0) == &sparc_registers[REG_G0] &&
-		           be_can_move_down(heights, schedpoint, node)) {
+		           can_move_down(schedpoint, node)) {
 			/* it's a constant */
 			const sparc_attr_t *attr      = get_sparc_attr_const(schedpoint);
 			ir_entity          *entity    = attr->immediate_value_entity;
@@ -587,7 +592,7 @@ static void peephole_sparc_RestoreZero(ir_node *node)
 			ir_node            *g0        = get_irn_n(schedpoint, 0);
 			replace_with_restore_imm(node, schedpoint, g0, entity, immediate);
 		} else if (is_sparc_Add(schedpoint) &&
-		           be_can_move_down(heights, schedpoint, node)) {
+		           can_move_down(schedpoint, node)) {
 			if (arch_get_irn_flags(schedpoint) & ((arch_irn_flags_t)sparc_arch_irn_flag_immediate_form)) {
 				ir_node            *op     = get_irn_n(schedpoint, 0);
 				const sparc_attr_t *attr   = get_sparc_attr_const(schedpoint);
@@ -602,7 +607,7 @@ static void peephole_sparc_RestoreZero(ir_node *node)
 		} else if (is_sparc_Sub(schedpoint) &&
 		           arch_get_irn_flags(schedpoint) & ((arch_irn_flags_t)sparc_arch_irn_flag_immediate_form) &&
 		           arch_get_irn_register_in(schedpoint, 0) == &sparc_registers[REG_G0] &&
-		           be_can_move_down(heights, schedpoint, node)) {
+		           can_move_down(schedpoint, node)) {
 			/* it's a constant */
 			const sparc_attr_t *attr   = get_sparc_attr_const(schedpoint);
 			ir_entity          *entity = attr->immediate_value_entity;

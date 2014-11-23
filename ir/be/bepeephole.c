@@ -209,12 +209,13 @@ static inline bool overlapping_regs(const arch_register_t *reg0,
 }
 
 bool be_can_move_down(ir_heights_t *heights, const ir_node *node,
-                      const ir_node *before)
+                      const ir_node *before,
+                      get_frame_entity_func get_frame_entity)
 {
 	assert(get_nodes_block(node) == get_nodes_block(before));
 	assert(sched_get_time_step(node) < sched_get_time_step(before));
 
-	const ir_entity *const entity = arch_get_frame_entity(node);
+	const ir_entity *const entity = get_frame_entity(node);
 
 	ir_node *schedpoint = sched_next(node);
 	while (schedpoint != before) {
@@ -244,7 +245,7 @@ bool be_can_move_down(ir_heights_t *heights, const ir_node *node,
 		 * kinda preliminary but enough for the sparc backend. */
 		if (entity != NULL) {
 			const ir_entity *const schedpoint_entity
-				= arch_get_frame_entity(schedpoint);
+				= get_frame_entity(schedpoint);
 			if (schedpoint_entity == entity)
 				return false;
 			if (be_is_MemPerm(schedpoint)) {

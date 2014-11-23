@@ -281,10 +281,11 @@ typedef struct spill_t {
 } spill_t;
 
 typedef struct {
-	ir_graph  *irg;
-	set       *spills;
-	ir_node  **reloads;
-	bool       problem_found;
+	ir_graph             *irg;
+	set                  *spills;
+	ir_node             **reloads;
+	bool                  problem_found;
+	get_frame_entity_func get_frame_entity;
 } be_verify_spillslots_env_t;
 
 static int cmp_spill(const void* d1, const void* d2, size_t size)
@@ -342,7 +343,7 @@ static void be_check_entity(be_verify_spillslots_env_t *env, ir_node *node, ir_e
 
 static void collect_spill(be_verify_spillslots_env_t *env, ir_node *node, ir_node *reload, ir_entity* ent)
 {
-	ir_entity *spillent = arch_get_frame_entity(node);
+	ir_entity *spillent = env->get_frame_entity(node);
 	be_check_entity(env, node, spillent);
 	get_spill(env, node, ent);
 
@@ -434,7 +435,7 @@ static void collect_spills_walker(ir_node *node, void *data)
 			env->problem_found = true;
 			return;
 		}
-		ir_entity *ent = arch_get_frame_entity(node);
+		ir_entity *ent = env->get_frame_entity(node);
 		be_check_entity(env, node, ent);
 
 		collect(env, spill, node, ent);
@@ -481,7 +482,7 @@ static void check_lonely_spills(ir_node *node, void *data)
 	    || (is_Proj(node) && be_is_MemPerm(get_Proj_pred(node)))) {
 		spill_t *spill = find_spill(env, node);
 		if (arch_irn_is(node, spill)) {
-			ir_entity *ent = arch_get_frame_entity(node);
+			ir_entity *ent = env->get_frame_entity(node);
 			be_check_entity(env, node, ent);
 		}
 
@@ -492,14 +493,15 @@ static void check_lonely_spills(ir_node *node, void *data)
 	}
 }
 
-bool be_verify_spillslots(ir_graph *irg)
+bool be_verify_spillslots(ir_graph *irg, get_frame_entity_func get_frame_entity)
 {
 	be_verify_spillslots_env_t env;
 
-	env.irg           = irg;
-	env.spills        = new_set(cmp_spill, 10);
-	env.reloads       = NEW_ARR_F(ir_node*, 0);
-	env.problem_found = false;
+	env.irg              = irg;
+	env.spills           = new_set(cmp_spill, 10);
+	env.reloads          = NEW_ARR_F(ir_node*, 0);
+	env.problem_found    = false;
+	env.get_frame_entity = get_frame_entity;
 
 	irg_walk_graph(irg, collect_spills_walker, NULL, &env);
 	irg_walk_graph(irg, check_lonely_spills, NULL, &env);

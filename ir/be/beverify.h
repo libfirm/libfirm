@@ -38,11 +38,9 @@ bool be_verify_schedule(ir_graph *irg);
 
 /**
  * Verify spillslots
- *
- * @param irg   The irg to check
- * @return      true if spillslots are valid, false otherwise
  */
-bool be_verify_spillslots(ir_graph *irg);
+bool be_verify_spillslots(ir_graph *irg,
+                          get_frame_entity_func get_frame_entity);
 
 /**
  * Verify register allocation: Checks that no 2 live nodes have the same

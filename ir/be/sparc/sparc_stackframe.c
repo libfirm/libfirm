@@ -64,6 +64,26 @@ static void set_irn_sp_bias(ir_node *node, int new_bias)
 	}
 }
 
+ir_entity *sparc_get_frame_entity(const ir_node *node)
+{
+	if (be_is_MemPerm(node))
+		return be_get_MemPerm_in_entity(node, 0);
+	if (is_sparc_FrameAddr(node)) {
+		const sparc_attr_t *attr = get_sparc_attr_const(node);
+		return attr->immediate_value_entity;
+	}
+
+	if (sparc_has_load_store_attr(node)) {
+		const sparc_load_store_attr_t *load_store_attr
+			= get_sparc_load_store_attr_const(node);
+		if (load_store_attr->is_frame_entity) {
+			return load_store_attr->base.immediate_value_entity;
+		}
+	}
+
+	return NULL;
+}
+
 static void process_bias(ir_node *block, bool sp_relative, int bias,
                          int free_bytes)
 {
@@ -74,7 +94,7 @@ static void process_bias(ir_node *block, bool sp_relative, int bias,
 		int irn_bias;
 
 		/* set bias to nodes with entities */
-		ir_entity *entity = arch_get_frame_entity(irn);
+		ir_entity *entity = sparc_get_frame_entity(irn);
 		if (entity != NULL) {
 			int offset = get_entity_offset(entity);
 			if (sp_relative)

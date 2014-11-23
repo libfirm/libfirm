@@ -64,8 +64,6 @@ ENUM_BITSET(arch_register_req_type_t)
 extern arch_register_req_t const arch_no_requirement;
 #define arch_no_register_req (&arch_no_requirement)
 
-ir_entity *arch_get_frame_entity(const ir_node *irn);
-
 int arch_get_op_estimated_cost(const ir_node *irn);
 
 void arch_perform_memory_operand(ir_node *irn, unsigned i);
@@ -282,14 +280,6 @@ static inline bool reg_reqs_equal(const arch_register_req_t *req1,
 }
 
 struct arch_irn_ops_t {
-	/**
-	 * Get the entity on the stack frame this node depends on.
-	 * @param irn  The node in question.
-	 * @return The entity on the stack frame or NULL, if the node does not have
-	 *         a stack frame entity.
-	 */
-	ir_entity *(*get_frame_entity)(const ir_node *irn);
-
 	/**
 	 * Get the estimated cycle count for @p irn.
 	 *

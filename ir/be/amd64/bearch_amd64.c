@@ -118,7 +118,6 @@ static int amd64_get_sp_bias(const ir_node *node)
 /* fill register allocator interface */
 
 static const arch_irn_ops_t amd64_irn_ops = {
-	.get_frame_entity = amd64_get_frame_entity,
 };
 
 static void amd64_before_ra(ir_graph *irg)
@@ -637,7 +636,8 @@ static void amd64_finish_graph(ir_graph *irg)
 
 	/* fix stack entity offsets */
 	be_fix_stack_nodes(irg, &amd64_registers[REG_RSP]);
-	be_abi_fix_stack_bias(irg, amd64_get_sp_bias, amd64_set_frame_offset);
+	be_abi_fix_stack_bias(irg, amd64_get_sp_bias, amd64_set_frame_offset,
+	                      amd64_get_frame_entity);
 
 	/* Fix 2-address code constraints. */
 	amd64_finish_irg(irg);

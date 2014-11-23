@@ -471,16 +471,8 @@ unsigned be_get_IncSP_align(const ir_node *irn)
 	return a->align;
 }
 
-static ir_entity *be_node_get_frame_entity(const ir_node *irn)
-{
-	if (be_is_MemPerm(irn))
-		return be_get_MemPerm_in_entity(irn, 0);
-	return NULL;
-}
-
 /* for be nodes */
 static const arch_irn_ops_t be_node_irn_ops = {
-	.get_frame_entity = be_node_get_frame_entity,
 };
 
 static unsigned get_start_reg_index(ir_graph *irg, const arch_register_t *reg)
@@ -508,15 +500,8 @@ ir_node *be_get_initial_reg_value(ir_graph *irg, const arch_register_t *reg)
 	return proj ? proj : new_r_Proj(start, reg->cls->mode, i);
 }
 
-static ir_entity* dummy_get_frame_entity(const ir_node *node)
-{
-	(void)node;
-	return NULL;
-}
-
 /* for "middleend" nodes */
 static const arch_irn_ops_t dummy_be_irn_ops = {
-	.get_frame_entity = dummy_get_frame_entity,
 };
 
 ir_node *be_new_Phi(ir_node *block, int n_ins, ir_node **ins, ir_mode *mode,
@@ -571,9 +556,6 @@ void be_dump_phi_reg_reqs(FILE *F, const ir_node *node, dump_reason_t reason)
 }
 
 static const arch_irn_ops_t phi_irn_ops = {
-	dummy_get_frame_entity,
-	NULL,    /* get_op_estimated_cost   */
-	NULL,    /* perform_memory_operand  */
 };
 
 /**
