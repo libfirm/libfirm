@@ -64,15 +64,15 @@ ir_entity *ia32_create_float_const_entity(ia32_isa_t *isa, ir_tarval *tv,
 	ir_mode *mode = get_tarval_mode(tv);
 	if (!ia32_cg_config.use_sse2) {
 		/* try to reduce the mode to produce smaller sized entities */
-		if (mode != mode_F) {
-			if (tarval_ieee754_can_conv_lossless(tv, mode_F)) {
-				mode = mode_F;
-				tv = tarval_convert_to(tv, mode);
-			} else if (mode != mode_D) {
-				if (tarval_ieee754_can_conv_lossless(tv, mode_D)) {
-					mode = mode_D;
-					tv = tarval_convert_to(tv, mode);
-				}
+		ir_mode *const modes[] = { mode_F, mode_D, NULL };
+		for (ir_mode *const *i = modes;; ++i) {
+			ir_mode *const to = *i;
+			if (!to || to == mode)
+				break;
+			if (tarval_ieee754_can_conv_lossless(tv, to)) {
+				tv   = tarval_convert_to(tv, to);
+				mode = to;
+				break;
 			}
 		}
 	}
