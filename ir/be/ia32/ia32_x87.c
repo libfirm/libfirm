@@ -1077,37 +1077,6 @@ static void keep_float_node_alive(ir_node *node)
 }
 
 /**
- * Create a copy of a node. Recreate the node if it's a constant.
- *
- * @param state  the x87 state
- * @param n      the node to be copied
- * @return the copy of n
- */
-static ir_node *create_Copy(x87_state *state, ir_node *n)
-{
-	/* Do not copy constants, recreate them. */
-	ir_node       *res;
-	ir_node *const block = get_nodes_block(n);
-	ir_node *const pred  = be_get_Copy_op(n);
-	if (is_irn_constlike(pred)) {
-		/* Copy a constant. */
-		res = exact_copy(pred);
-		set_nodes_block(res, block);
-	} else {
-		dbg_info *const dbgi    = get_irn_dbg_info(n);
-		res = new_bd_ia32_fdup(dbgi, block, pred);
-
-		ia32_x87_attr_t *const attr    = get_ia32_x87_attr(res);
-		unsigned         const op1_idx = x87_on_stack_val(state, pred);
-		attr->reg = get_st_reg(op1_idx);
-	}
-	arch_register_t const *const out = arch_get_irn_register(n);
-	x87_push(state, out->index, res);
-	arch_set_irn_register(res, out);
-	return res;
-}
-
-/**
  * Simulate a be_Copy.
  *
  * @param state  the x87 state
@@ -1129,10 +1098,25 @@ static void sim_Copy(x87_state *state, ir_node *n)
 
 	if (is_fp_live(op1->index, live)) {
 		/* Operand is still live, a real copy. We need here an fpush that can
-		   hold a a register, so use a fdup or recreate constants */
-		ir_node *const node = create_Copy(state, n);
-		sched_replace(n, node);
-		exchange(n, node);
+		 * hold a a register, so use a fdup or recreate constants. */
+		ir_node       *copy;
+		ir_node *const block = get_nodes_block(n);
+		if (is_irn_constlike(pred)) {
+			/* Copy a constant. */
+			copy = exact_copy(pred);
+			set_nodes_block(copy, block);
+		} else {
+			dbg_info *const dbgi = get_irn_dbg_info(n);
+			copy = new_bd_ia32_fdup(dbgi, block, pred);
+
+			ia32_x87_attr_t *const attr    = get_ia32_x87_attr(copy);
+			unsigned         const op1_idx = x87_on_stack_val(state, pred);
+			attr->reg = get_st_reg(op1_idx);
+		}
+		x87_push(state, out->index, copy);
+		arch_set_irn_register(copy, out);
+		sched_replace(n, copy);
+		exchange(n, copy);
 
 		/* We have to make sure the old value doesn't go dead (which can happen
 		 * when we recreate constants). As the simulator expected that value in
@@ -1142,7 +1126,7 @@ static void sim_Copy(x87_state *state, ir_node *n)
 		if (get_irn_n_edges(pred) == 0)
 			keep_float_node_alive(pred);
 
-		DB((dbg, LEVEL_1, "<<< %+F %s -> ?\n", node, op1->name));
+		DB((dbg, LEVEL_1, "<<< %+F %s -> ?\n", copy, op1->name));
 	} else {
 		/* Just a virtual copy. */
 		unsigned const op1_idx = x87_on_stack(state, op1->index);
