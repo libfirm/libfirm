@@ -1095,8 +1095,7 @@ static ir_node *create_Copy(x87_state *state, ir_node *n)
 		set_nodes_block(res, block);
 	} else {
 		dbg_info *const dbgi    = get_irn_dbg_info(n);
-		ir_mode  *const mode    = get_irn_mode(n);
-		res = new_bd_ia32_fdup(dbgi, block, pred, mode);
+		res = new_bd_ia32_fdup(dbgi, block, pred);
 
 		ia32_x87_attr_t *const attr    = get_ia32_x87_attr(res);
 		unsigned         const op1_idx = x87_on_stack_val(state, pred);

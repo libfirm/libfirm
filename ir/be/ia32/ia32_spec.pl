@@ -2091,9 +2091,11 @@ fpush => {
 
 fdup => {
 	reg_req   => { in => [ "fp" ], out => [ "fp" ] },
+	ins       => [ "val" ],
 	attrs_equal => "attrs_equal_false",
 	emit      => "fld %F0",
 	attr_type => "ia32_x87_attr_t",
+	mode      => "get_irn_mode(val)",
 	latency   => 1,
 },
 
