@@ -1082,21 +1082,6 @@ FIRM_API int is_segment_type(const ir_type *tp);
  *
  *  - supertypes:  A list of direct superclasses.
  *
- *  - final:       A final class is always a leaf in the class hierarchy.  Final
- *                 classes cannot be super classes of other ones.  As this information
- *                 can only be computed in whole world compilations, we allow to
- *                 set this flag.  It is used in optimizations if get_opt_closed_world()
- *                 is false.  Default:  false
- *
- *  - interface:   The class represents an interface.  This flag can be set to distinguish
- *                 between interfaces, abstract classes and other classes that all may
- *                 have the peculiarity peculiarity_description.  Depending on this flag
- *                 the lowering might do different actions.  Default:  false
- *
- *  - abstract :   The class represents an abstract class.  This flag can be set to distinguish
- *                 between interfaces, abstract classes and other classes that all may
- *                 have the peculiarity peculiarity_description.  Depending on this flag
- *                 the lowering might do different actions.  Default:  false
  * @{
  */
 
