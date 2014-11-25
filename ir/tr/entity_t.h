@@ -13,7 +13,9 @@
 
 #include <assert.h>
 #include <stdbool.h>
+#include <stdint.h>
 
+#include "compiler.h"
 #include "typerep.h"
 #include "type_t.h"
 #include "ident.h"
@@ -175,19 +177,14 @@ struct ir_entity {
 	ir_type *type;           /**< The type of this entity */
 	ir_type *owner;          /**< The compound type (e.g. class type) this
 							      entity belongs to. */
-	unsigned entity_kind:3;  /**< entity kind */
-	unsigned linkage:10;     /**< Specifies linkage type */
-	unsigned volatility:1;   /**< Specifies volatility of entities content.*/
-	unsigned aligned:1;      /**< Specifies alignment of entities content. */
-	unsigned usage:4;        /**< flag indicating usage types of this entity,
-	                              see ir_entity_usage. */
-	unsigned compiler_gen:1; /**< If set, this entity was compiler generated.
-	                          */
-	unsigned visibility:3;   /**< @deprecated */
-	unsigned allocation:3;   /**< @deprecated */
-	unsigned peculiarity:3;  /**< @deprecated */
-	unsigned final:1;        /**< @deprecated */
-	unsigned alignment;      /**< entity alignment in bytes */
+	ENUMBF(ir_entity_kind)  entity_kind:3; /**< entity kind */
+	ENUMBF(ir_linkage)      linkage:6;     /**< Linkage type */
+	ENUMBF(ir_volatility)   volatility:1;  /**< Volatility of entity content.*/
+	ENUMBF(ir_align)        aligned:1;     /**< Alignment of entity content. */
+	ENUMBF(ir_entity_usage) usage:4;       /**< Usage type of entity */
+	ENUMBF(ir_visibility)   visibility:2;  /**< Visibility of entity. */
+	bool compiler_gen:1; /**< If set, this entity was compiler generated. */
+	uint16_t                alignment;     /**< entity alignment in bytes */
 	ir_visited_t visit;      /**< visited counter for walks of the type
 	                              information. */
 	struct dbg_info *dbi;    /**< A pointer to information for debug support. */
