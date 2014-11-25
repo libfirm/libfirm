@@ -124,6 +124,8 @@ static const lc_opt_table_entry_t sparc_options[] = {
 /* fill register allocator interface */
 
 const arch_irn_ops_t sparc_irn_ops = {
+	.get_op_estimated_cost  = NULL,
+	.perform_memory_operand = NULL,
 };
 
 /**

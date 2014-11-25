@@ -118,6 +118,8 @@ static int amd64_get_sp_bias(const ir_node *node)
 /* fill register allocator interface */
 
 static const arch_irn_ops_t amd64_irn_ops = {
+	.get_op_estimated_cost  = NULL,
+	.perform_memory_operand = NULL,
 };
 
 static void amd64_before_ra(ir_graph *irg)

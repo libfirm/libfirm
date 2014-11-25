@@ -472,7 +472,9 @@ unsigned be_get_IncSP_align(const ir_node *irn)
 }
 
 /* for be nodes */
-static const arch_irn_ops_t be_node_irn_ops = {
+static const arch_irn_ops_t null_ops = {
+	.get_op_estimated_cost  = NULL,
+	.perform_memory_operand = NULL,
 };
 
 static unsigned get_start_reg_index(ir_graph *irg, const arch_register_t *reg)
@@ -499,10 +501,6 @@ ir_node *be_get_initial_reg_value(ir_graph *irg, const arch_register_t *reg)
 	ir_node *const proj  = get_Proj_for_pn(start, i);
 	return proj ? proj : new_r_Proj(start, reg->cls->mode, i);
 }
-
-/* for "middleend" nodes */
-static const arch_irn_ops_t dummy_be_irn_ops = {
-};
 
 ir_node *be_new_Phi(ir_node *block, int n_ins, ir_node **ins, ir_mode *mode,
                     const arch_register_req_t *req)
@@ -554,9 +552,6 @@ void be_dump_phi_reg_reqs(FILE *F, const ir_node *node, dump_reason_t reason)
 	}
 	}
 }
-
-static const arch_irn_ops_t phi_irn_ops = {
-};
 
 /**
  * ir_op-Operation: dump a be node to file
@@ -657,7 +652,7 @@ static ir_op *new_be_op(unsigned code, const char *name, op_pin_state p,
 	ir_op *res = new_ir_op(code, name, p, flags, opar, 0, attr_size);
 	set_op_dump(res, dump_node);
 	set_op_copy_attr(res, copy_attr);
-	res->ops.be_ops    = &be_node_irn_ops;
+	res->ops.be_ops = &null_ops;
 	set_op_tag(res, be_op_tag);
 	return res;
 }
@@ -688,9 +683,9 @@ void be_init_op(void)
 	for (unsigned opc = iro_first; opc <= iro_last; ++opc) {
 		ir_op *op = ir_get_opcode(opc);
 		assert(op->ops.be_ops == NULL);
-		op->ops.be_ops = &dummy_be_irn_ops;
+		op->ops.be_ops = &null_ops;
 	}
-	op_Phi->ops.be_ops = &phi_irn_ops;
+	op_Phi->ops.be_ops = &null_ops;
 }
 
 void be_finish_op(void)

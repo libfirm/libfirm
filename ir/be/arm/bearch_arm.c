@@ -62,6 +62,8 @@ ir_mode *arm_mode_flags;
 /* fill register allocator interface */
 
 const arch_irn_ops_t arm_irn_ops = {
+	.get_op_estimated_cost  = NULL,
+	.perform_memory_operand = NULL,
 };
 
 /**

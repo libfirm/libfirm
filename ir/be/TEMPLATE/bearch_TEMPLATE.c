@@ -39,6 +39,8 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 /* fill register allocator interface */
 
 static const arch_irn_ops_t TEMPLATE_irn_ops = {
+	.get_op_estimated_cost  = NULL,
+	.perform_memory_operand = NULL,
 };
 
 /**
