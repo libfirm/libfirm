@@ -312,6 +312,10 @@ void set_entity_type(ir_entity *ent, ir_type *type)
 	case IR_ENTITY_LABEL:
 		assert(type == get_code_type());
 		break;
+	case IR_ENTITY_ALIAS:
+	case IR_ENTITY_PARAMETER:
+	case IR_ENTITY_UNKNOWN:
+	case IR_ENTITY_GOTENTRY:
 	case IR_ENTITY_COMPOUND_MEMBER:
 		break;
 	}
