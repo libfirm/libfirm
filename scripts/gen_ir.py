@@ -130,8 +130,8 @@ def format_pinned(node):
 	return ""
 
 def format_flags(node):
-	flags = map(lambda x : "irop_flag_" + x, node.flags)
-	if flags == []:
+	flags = list(map(lambda x : "irop_flag_" + x, node.flags))
+	if not flags:
 		flags = [ "irop_flag_none" ]
 	return " | ".join(flags)
 
