@@ -36,8 +36,11 @@ typedef union {
  */
 #ifndef __USE_BSD
 #define __USE_BSD
-#endif
 #include <sys/time.h>
+#undef __USE_BSD
+#else
+#include <sys/time.h>
+#endif
 
 /* Linux timer value. */
 typedef struct timeval ir_timer_val_t;
