@@ -20,7 +20,9 @@
 #include <windows.h>
 #include <winsock2.h>
 #include <BaseTsd.h>
+#ifdef _MSC_VER
 typedef SSIZE_T ssize_t;
+#endif
 #else
 #include <unistd.h>
 #include <sys/types.h>
