@@ -23,6 +23,7 @@
 #include "iropt_dbg.h"
 #include "iroptimize.h"
 #include "irouts.h"
+#include "tv_t.h"
 #include "valueset.h"
 #include "irloop.h"
 #include "firmstat_t.h"
@@ -1111,13 +1112,9 @@ static ir_mode *is_partially_redundant(ir_node *block, ir_node *expr, ir_node *v
 			ir_tarval *c     = get_Const_tarval(trans_expr);
 
 			/* tarval within range? */
-			if (tarval_cmp(lower, c) == ir_relation_less_equal &&
-				tarval_cmp(c, upper) == ir_relation_less_equal) {
+			if (tarval_in_range(lower, c, upper))
 				avail_expr = trans_expr;
-			} else {
-				avail_expr = NULL;
-			}
-	    }
+		}
 
 		DB((dbg, LEVEL_3, "avail_expr %+F  trans_expr %+F\n", avail_expr, trans_expr));
 
@@ -1235,13 +1232,12 @@ static unsigned is_hoisting_greedy(ir_node *irn, ir_node *block)
 				} else {
 					/* limit range of new constants */
 					ir_mode   *cmode = get_irn_mode(trans);
-					ir_tarval *upper = new_tarval_from_long(128, cmode);
-					ir_tarval *lower = new_tarval_from_long(-128, cmode);
+					ir_tarval *upper = new_tarval_from_long( 127, cmode);
+					ir_tarval *lower = new_tarval_from_long(-127, cmode);
 					ir_tarval *c     = get_Const_tarval(trans);
 
 					/* tarval within range? */
-					if (tarval_cmp(lower, c) == ir_relation_less &&
-						tarval_cmp(c, upper) == ir_relation_less) {
+					if (tarval_in_range(lower, c, upper)) {
 						continue;
 					} else {
 						return 1;
