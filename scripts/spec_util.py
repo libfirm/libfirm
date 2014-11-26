@@ -2,7 +2,7 @@
 # Copyright (C) 2012 Karlsruhe Institute of Technology.
 import sys
 import imp
-from six import string_types
+from jinja2._compat import string_types
 
 abstracts = set()
 def abstract(cls):
