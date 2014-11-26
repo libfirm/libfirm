@@ -162,7 +162,7 @@ static inline void set_ia32_frame_use(ir_node *const node, ia32_frame_use_t cons
 	/* Only allow more specific, the same or reset. */
 	assert(attr->frame_use == IA32_FRAME_USE_NONE
 	    || attr->frame_use == IA32_FRAME_USE_AUTO
-	    || (ia32_frame_use_t)attr->frame_use == val
+	    || attr->frame_use == val
 	    || val == IA32_FRAME_USE_NONE);
 	attr->frame_use = val;
 }
