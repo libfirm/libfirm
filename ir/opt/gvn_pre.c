@@ -108,7 +108,7 @@ typedef struct pre_env {
 #endif
 } pre_env;
 
-static pre_env *environ;
+static pre_env *environment;
 
 /* custom GVN value map */
 static ir_nodehashmap_t value_map;
@@ -346,9 +346,9 @@ static ir_node *remember(ir_node *irn)
 #if OPTIMIZE_NODES
 		/* TODO optimize_node() uses the valuetable and thus the custom
 		   identify_cmp() and will fail trying. */
-		environ->graph->value_table = environ->value_table;
+		environment->graph->value_table = environment->value_table;
 		nn = optimize_node(nn);
-		environ->graph->value_table = environ->gvnpre_values;
+		environment->graph->value_table = environment->gvnpre_values;
 #endif
 
 		/* now the value can be determined because the
@@ -470,7 +470,7 @@ static void clear_block_mark_loop_link(ir_node *block, void *env)
 static unsigned in_loop(ir_node *block, ir_loop *loop)
 {
 	ir_loop *l     = get_irn_loop(block);
-	ir_loop *outer = get_irg_loop(environ->graph);
+	ir_loop *outer = get_irg_loop(environment->graph);
 
 	while (l != loop) {
 		/* loop tree root is not a loop */
@@ -486,7 +486,7 @@ static unsigned in_loop(ir_node *block, ir_loop *loop)
  */
 static ir_loop *get_loop_outermost(ir_loop *loop)
 {
-	ir_loop *outer = get_irg_loop(environ->graph);
+	ir_loop *outer = get_irg_loop(environment->graph);
 	ir_loop *l     = loop;
 	ir_loop *last  = NULL;
 
@@ -512,13 +512,13 @@ static void infinite_loop_walker(ir_node *block, void *env)
 		return;
 
 	/* start block has no predecessors */
-	if (block == environ->start_block)
+	if (block == environment->start_block)
 		return;
 
 	arity = get_irn_arity(block);
 
 	/* block not part of a real loop: no infinite loop */
-	if (get_irn_loop(block) == get_irg_loop(environ->graph))
+	if (get_irn_loop(block) == get_irg_loop(environment->graph))
 		set_Block_mark(block, 1);
 
 	if (get_Block_mark(block)) {
@@ -710,9 +710,9 @@ static void topo_walker(ir_node *irn, void *ctx)
 		return;
 
 #if OPTIMIZE_NODES
-	environ->graph->value_table = environ->value_table;
+	environment->graph->value_table = environment->value_table;
 	identify_remember(irn);
-	environ->graph->value_table = environ->gvnpre_values;
+	environment->graph->value_table = environment->gvnpre_values;
 #endif
 
 	/* GVN step: remember the value. */
@@ -1230,7 +1230,7 @@ static unsigned is_hoisting_greedy(ir_node *irn, ir_node *block)
 
 			if (is_Address(trans_val) || is_Align(trans_val) || is_Const(trans_val) || is_Offset(trans_val) || is_Size(trans_val)) {
 				/* existing constant */
-				if (get_irn_idx(trans_val) < environ->last_idx) {
+				if (get_irn_idx(trans_val) < environment->last_idx) {
 					continue;
 				} else {
 					/* limit range of new constants */
@@ -1736,7 +1736,7 @@ static void eliminate(ir_node *irn, void *ctx)
 static void eliminate_nodes(elim_pair *pairs, ir_nodeset_t *keeps)
 {
 	elim_pair             *p;
-	ir_node               *end    = environ->end_node;
+	ir_node               *end    = environment->end_node;
 
 	for (p = pairs; p != NULL; p = p->next) {
 		/* might be already changed */
@@ -1847,7 +1847,7 @@ static void gvn_pre(ir_graph *irg, pre_env *env)
 
 	/* Deactivate edges to prevent intelligent removal of nodes,
 	   or else we will get deleted nodes which we try to exchange. */
-	edges_deactivate(environ->graph);
+	edges_deactivate(environment->graph);
 
 	/* eliminate nodes */
 	irg_walk_graph(irg, NULL, eliminate, env);
@@ -1888,7 +1888,7 @@ void do_gvn_pre(ir_graph *irg)
 
 	edges_activate(irg);
 
-	environ = &env;
+	environment = &env;
 	DEBUG_ONLY(init_stats();)
 
 	/* setup environment */
