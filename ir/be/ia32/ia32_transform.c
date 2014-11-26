@@ -88,7 +88,8 @@ typedef ir_node *construct_binop_float_func(dbg_info *db, ir_node *block,
 
 typedef ir_node *construct_unop_func(dbg_info *db, ir_node *block, ir_node *op);
 
-static ir_node *create_immediate_or_transform(ir_node *node);
+static ir_node *create_immediate_or_transform(ir_node *node,
+                                              const char immediate_mode);
 
 static ir_node *create_I2I_Conv(ir_mode *src_mode, dbg_info *dbgi, ir_node *block, ir_node *op, ir_node *orig_node);
 
@@ -1194,7 +1195,7 @@ static ir_node *gen_shift_binop(ir_node *node, ir_node *op1, ir_node *op2,
 		op2 = op;
 		assert(get_mode_size_bits(get_irn_mode(op2)) >= 5);
 	}
-	ir_node *new_op2 = create_immediate_or_transform(op2);
+	ir_node *new_op2 = create_immediate_or_transform(op2, 'I');
 
 	dbg_info *dbgi      = get_irn_dbg_info(node);
 	ir_node  *block     = get_nodes_block(node);
@@ -1302,7 +1303,7 @@ static ir_node *gen_64bit_shifts(dbg_info *dbgi, ir_node *block,
 		assert(get_mode_size_bits(get_irn_mode(count)) >= 5);
 		count = get_Conv_op(count);
 	}
-	ir_node *new_count = create_immediate_or_transform(count);
+	ir_node *new_count = create_immediate_or_transform(count, 'I');
 
 	ir_node *new_node = func(dbgi, new_block, new_high, new_low, new_count);
 	return new_node;
@@ -2295,7 +2296,7 @@ static ir_node *dest_am_binop(ir_node *node, ir_node *op1, ir_node *op2,
                               ir_node *mem, ir_node *ptr, ir_mode *mode,
                               construct_binop_dest_func *func,
                               construct_binop_dest_func *func8bit,
-							  match_flags_t flags)
+							  match_flags_t flags, const char imm_mode)
 {
 	assert(flags & match_immediate); /* there is no destam node without... */
 	bool commutative = (flags & match_commutative) != 0;
@@ -2306,10 +2307,10 @@ static ir_node *dest_am_binop(ir_node *node, ir_node *op1, ir_node *op2,
 	ir_node *new_op;
 	if (use_dest_am(src_block, op1, mem, ptr, op2, flags)) {
 		build_address(&am, op1, x86_create_am_double_use);
-		new_op = create_immediate_or_transform(op2);
+		new_op = create_immediate_or_transform(op2, imm_mode);
 	} else if (commutative && use_dest_am(src_block, op2, mem, ptr, op1, flags)) {
 		build_address(&am, op2, x86_create_am_double_use);
-		new_op = create_immediate_or_transform(op1);
+		new_op = create_immediate_or_transform(op1, imm_mode);
 	} else {
 		return NULL;
 	}
@@ -2471,12 +2472,12 @@ static ir_node *try_create_dest_am(ir_node *node)
 				new_node = dest_am_binop(val, rot_left, rot_right, mem, ptr,
 				                         mode, new_bd_ia32_RorMem,
 				                         new_bd_ia32_RorMem,
-				                         match_immediate | match_two_users);
+				                         match_immediate | match_two_users, 'i');
 			} else {
 				new_node = dest_am_binop(val, rot_left, rot_right, mem, ptr,
 				                         mode, new_bd_ia32_RolMem,
 				                         new_bd_ia32_RolMem,
-				                         match_immediate | match_two_users);
+				                         match_immediate | match_two_users, 'i');
 			}
 			break;
 		}
@@ -2496,7 +2497,7 @@ static ir_node *try_create_dest_am(ir_node *node)
 		}
 		new_node = dest_am_binop(val, op1, op2, mem, ptr, mode,
 		                         new_bd_ia32_AddMem, new_bd_ia32_AddMem_8bit,
-		                         match_commutative | match_immediate);
+		                         match_commutative | match_immediate, 'i');
 		break;
 	}
 	case iro_Sub: {
@@ -2507,7 +2508,7 @@ static ir_node *try_create_dest_am(ir_node *node)
 		}
 		new_node = dest_am_binop(val, op1, op2, mem, ptr, mode,
 		                         new_bd_ia32_SubMem, new_bd_ia32_SubMem_8bit,
-		                         match_immediate);
+		                         match_immediate, 'i');
 		break;
 	}
 	case iro_And: {
@@ -2515,7 +2516,7 @@ static ir_node *try_create_dest_am(ir_node *node)
 		ir_node *op2 = get_And_right(val);
 		new_node = dest_am_binop(val, op1, op2, mem, ptr, mode,
 		                         new_bd_ia32_AndMem, new_bd_ia32_AndMem_8bit,
-		                         match_commutative | match_immediate);
+		                         match_commutative | match_immediate, 'i');
 		break;
 	}
 	case iro_Or: {
@@ -2527,12 +2528,12 @@ static ir_node *try_create_dest_am(ir_node *node)
 				new_node = dest_am_binop(val, rot_left, rot_right, mem, ptr,
 				                         mode, new_bd_ia32_RorMem,
 				                         new_bd_ia32_RorMem,
-				                         match_immediate | match_two_users);
+				                         match_immediate | match_two_users, 'i');
 			} else {
 				new_node = dest_am_binop(val, rot_left, rot_right, mem, ptr,
 				                         mode, new_bd_ia32_RolMem,
 				                         new_bd_ia32_RolMem,
-				                         match_immediate | match_two_users);
+				                         match_immediate | match_two_users, 'i');
 			}
 			break;
 		}
@@ -2541,7 +2542,7 @@ static ir_node *try_create_dest_am(ir_node *node)
 		ir_node *op2 = get_Or_right(val);
 		new_node = dest_am_binop(val, op1, op2, mem, ptr, mode,
 		                         new_bd_ia32_OrMem, new_bd_ia32_OrMem_8bit,
-		                         match_commutative | match_immediate);
+		                         match_commutative | match_immediate, 'i');
 		break;
 	}
 	case iro_Eor: {
@@ -2549,7 +2550,7 @@ static ir_node *try_create_dest_am(ir_node *node)
 		ir_node *op2 = get_Eor_right(val);
 		new_node = dest_am_binop(val, op1, op2, mem, ptr, mode,
 		                         new_bd_ia32_XorMem, new_bd_ia32_XorMem_8bit,
-		                         match_commutative | match_immediate);
+		                         match_commutative | match_immediate, 'i');
 		break;
 	}
 	case iro_Shl: {
@@ -2557,7 +2558,7 @@ static ir_node *try_create_dest_am(ir_node *node)
 		ir_node *op2 = get_Shl_right(val);
 		new_node = dest_am_binop(val, op1, op2, mem, ptr, mode,
 		                         new_bd_ia32_ShlMem, new_bd_ia32_ShlMem,
-		                         match_immediate);
+		                         match_immediate, 'I');
 		break;
 	}
 	case iro_Shr: {
@@ -2565,7 +2566,7 @@ static ir_node *try_create_dest_am(ir_node *node)
 		ir_node *op2 = get_Shr_right(val);
 		new_node = dest_am_binop(val, op1, op2, mem, ptr, mode,
 		                         new_bd_ia32_ShrMem, new_bd_ia32_ShrMem,
-		                         match_immediate);
+		                         match_immediate, 'I');
 		break;
 	}
 	case iro_Shrs: {
@@ -2573,7 +2574,7 @@ static ir_node *try_create_dest_am(ir_node *node)
 		ir_node *op2 = get_Shrs_right(val);
 		new_node = dest_am_binop(val, op1, op2, mem, ptr, mode,
 		                         new_bd_ia32_SarMem, new_bd_ia32_SarMem,
-		                         match_immediate);
+		                         match_immediate, 'I');
 		break;
 	}
 	case iro_Mux:
@@ -2760,7 +2761,7 @@ static ir_node *create_store(dbg_info *dbgi, ir_node *new_block,
 		       && get_mode_size_bits(get_irn_mode(value)) >= dest_bits) {
 		    value = get_Conv_op(value);
 		}
-		ir_node *new_val = create_immediate_or_transform(value);
+		ir_node *new_val = create_immediate_or_transform(value, 'i');
 		assert(mode != mode_b);
 
 		store = dest_bits == 8
@@ -4100,9 +4101,10 @@ static ir_node *gen_Bitcast(ir_node *const node)
 	return res;
 }
 
-static ir_node *create_immediate_or_transform(ir_node *const node)
+static ir_node *create_immediate_or_transform(ir_node *const node,
+                                              const char immediate_mode)
 {
-	ir_node *new_node = ia32_try_create_Immediate(node, 'i');
+	ir_node *new_node = ia32_try_create_Immediate(node, immediate_mode);
 	if (new_node == NULL) {
 		new_node = be_transform_node(node);
 	}
@@ -5383,7 +5385,8 @@ static ir_node *gen_bswap(ir_node *node)
  */
 static ir_node *gen_outport(ir_node *node)
 {
-	ir_node  *port  = create_immediate_or_transform(get_Builtin_param(node, 0));
+	ir_node  *param = get_Builtin_param(node, 0);
+	ir_node  *port  = create_immediate_or_transform(param, 'K');
 	ir_node  *oldv  = get_Builtin_param(node, 1);
 	ir_mode  *mode  = get_irn_mode(oldv);
 	ir_node  *value = be_transform_node(oldv);
@@ -5403,7 +5406,8 @@ static ir_node *gen_inport(ir_node *node)
 	ir_type  *tp    = get_Builtin_type(node);
 	ir_type  *rstp  = get_method_res_type(tp, 0);
 	ir_mode  *mode  = get_type_mode(rstp);
-	ir_node  *port  = create_immediate_or_transform(get_Builtin_param(node, 0));
+	ir_node  *param = get_Builtin_param(node, 0);
+	ir_node  *port  = create_immediate_or_transform(param, 'K');
 	ir_node  *block = be_transform_node(get_nodes_block(node));
 	ir_node  *mem   = be_transform_node(get_Builtin_mem(node));
 	dbg_info *dbgi  = get_irn_dbg_info(node);
