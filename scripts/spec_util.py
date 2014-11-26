@@ -2,6 +2,7 @@
 # Copyright (C) 2012 Karlsruhe Institute of Technology.
 import sys
 import imp
+from six import string_types
 
 abstracts = set()
 def abstract(cls):
@@ -120,7 +121,7 @@ def setnodedefaults(node):
 	# as a list of (name, comment) tuples. Normalize it to Input objects
 	new_ins = []
 	for i in node.ins:
-		if isinstance(i, basestring):
+		if isinstance(i, string_types):
 			i = Input(i)
 		elif isinstance(i, tuple):
 			i = Input(name=i[0], comment=i[1])
@@ -129,7 +130,7 @@ def setnodedefaults(node):
 	if hasattr(node, "outs"):
 		new_outs = []
 		for o in node.outs:
-			if isinstance(o, basestring):
+			if isinstance(o, string_types):
 				o = Output(o)
 			elif isinstance(o, tuple):
 				o = Output(name=o[0], comment=o[1])
