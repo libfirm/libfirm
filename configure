@@ -20,7 +20,6 @@ cflags_warnings = ["-Wall", "-W", "-Wextra", "-Wstrict-prototypes",
                    "-Wmissing-prototypes", "-Wwrite-strings"]
 cflags_language = ["-std=c99"]
 cflags_codegen = ["-fPIC"]
-cflags = cflags_warnings + cflags_language + cflags_codegen
 cppflags = []
 linkflags = ["-lm"]
 if variant == "debug":
@@ -40,6 +39,7 @@ elif variant == "optimize":
 else:
 	sys.stderr.write("Unknown build variant '%s' requested\n" % variant)
 	sys.exit(1)
+cflags = cflags_warnings + cflags_language + cflags_codegen
 
 # Determine directories, create output, collect files
 srcdir = dirname(__file__)
