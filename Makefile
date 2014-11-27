@@ -156,19 +156,17 @@ $(docdir)/libfirm.tag: doc/Doxyfile doc/logo.png $(IR_SPEC_GENERATED_INCLUDES) $
 	@echo Doxygen $@
 	$(Q)$(DOXYGEN) $<
 
-DOCU_GENERATOR = $(srcdir)/scripts/gen_docu.py
-DOCU_GENERATOR_DEPS = $(srcdir)/scripts/spec_util.py
-DOCU_TEMPLATE = $(srcdir)/scripts/docu_templates/nodes.html
-DOCU_TEMPLATE_DEPS = $(srcdir)/scripts/docu_templates/style.css
-$(docdir)/html/nodes.html: $(docdir)/libfirm.tag $(DOCU_GENERATOR) $(DOCU_GENERATOR_DEPS) $(IR_SPEC) $(DOCU_TEMPLATE) $(DOCU_TEMPLATE_DEPS)
-	@echo gen_docu.py $@
-	$(Q)$(DOCU_GENERATOR) $(IR_SPEC) $(DOCU_TEMPLATE) $(docdir)/libfirm.tag "" > $@
+DOCU_TEMPLATE = $(srcdir)/scripts/templates/nodes.html
+DOCU_TEMPLATE_DEPS = $(srcdir)/scripts/templates/style.css
+$(docdir)/html/nodes.html: $(docdir)/libfirm.tag $(IR_SPEC_GENERATOR) $(IR_SPEC_GENERATOR_DEPS) $(IR_SPEC) $(DOCU_TEMPLATE) $(DOCU_TEMPLATE_DEPS)
+	@echo GEN $@
+	$(Q)$(IR_SPEC_GENERATOR) $(IR_SPEC) $(DOCU_TEMPLATE) --tagfile $(docdir)/libfirm.tag > $@
 	$(Q)cp $(DOCU_TEMPLATE_DEPS) $(docdir)/html
 
 NODES_TEMPLATE = firm-homepage/nodes_templates/Nodes
-$(docdir)/Nodes: $(docdir)/libfirm.tag $(DOCU_GENERATOR) $(DOCU_GENERATOR_DEPS) $(IR_SPEC) $(NODES_TEMPLATE)
-	@echo gen_docu.py $@
-	$(Q)$(DOCU_GENERATOR) $(IR_SPEC) $(NODES_TEMPLATE) $(docdir)/libfirm.tag "" > $@
+$(docdir)/Nodes: $(docdir)/libfirm.tag $(IR_SPEC_GENERATOR) $(IR_SPEC_GENERATOR_DEPS) $(IR_SPEC) $(NODES_TEMPLATE)
+	@echo GEN $@
+	$(Q)$(IR_SPEC_GENERATOR) $(IR_SPEC) $(NODES_TEMPLATE) --tagfile $(docdir)/libfirm.tag -I $(dir $(NODES_TEMPLATE)) > $@
 
 .PHONY: doc
 doc: $(docdir)/libfirm.tag $(docdir)/html/nodes.html
