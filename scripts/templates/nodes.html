@@ -15,7 +15,7 @@
 					<h5>Inputs</h5>
 					<dl>
 					{% for input in node.ins %}
-						<dt>{{input[0]}}</dt><dd>{{input[1]}}</dd>
+						<dt>{{input.name}}</dt><dd>{{input.comment}}</dd>
 					{% endfor %}
 					{% if node.arity == "variable" %}
 						<dt>...</dt><dd>additional inputs (oparity_variable)</dd>
@@ -27,7 +27,7 @@
 					<h5>Outputs</h5>
 					<dl>
 					{% for output in node.outs %}
-						<dt>{{output[0]}}</dt><dd>{{output[1]}}</dd>
+						<dt>{{output.name}}</dt><dd>{{output.comment}}</dd>
 					{% endfor %}
 					</dl>
 					{% endif %}
