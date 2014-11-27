@@ -16,8 +16,8 @@ def format_arguments(string, voidwhenempty = False):
 		return "void"
 	return joined
 
-def filter_hasnot(list, flag):
-	return filter(lambda x: not hasattr(x, flag) or not getattr(x, flag), list)
+def filter_hasnot(plist, flag):
+	return list(filter(lambda x: not hasattr(x, flag) or not getattr(x, flag), plist))
 
-def filter_has(list, flag):
-	return filter(lambda x: hasattr(x, flag) and getattr(x, flag), list)
+def filter_has(plist, flag):
+	return list(filter(lambda x: hasattr(x, flag) and getattr(x, flag), plist))
