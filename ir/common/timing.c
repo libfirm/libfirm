@@ -34,13 +34,7 @@ typedef union {
  * Just, if we have gettimeofday()
  * Someday, we will have a check here.
  */
-#ifndef __USE_BSD
-#define __USE_BSD
 #include <sys/time.h>
-#undef __USE_BSD
-#else
-#include <sys/time.h>
-#endif
 
 /* Linux timer value. */
 typedef struct timeval ir_timer_val_t;
@@ -87,7 +81,8 @@ static inline void _time_get(ir_timer_val_t *val)
 
 static inline void _time_reset(ir_timer_val_t *val)
 {
-	timerclear(val);
+	val->tv_sec  = 0;
+	val->tv_usec = 0;
 }
 
 static inline unsigned long _time_to_msec(const ir_timer_val_t *elapsed)
@@ -110,14 +105,24 @@ static inline double _time_to_sec(const ir_timer_val_t *elapsed)
 static inline ir_timer_val_t *_time_add(ir_timer_val_t *res,
 		const ir_timer_val_t *lhs, const ir_timer_val_t *rhs)
 {
-	timeradd(lhs, rhs, res);
-		return res;
+	res->tv_sec  = lhs->tv_sec + rhs->tv_sec;
+	res->tv_usec = lhs->tv_usec + rhs->tv_usec;
+	if (res->tv_usec >= 1000000) {
+		res->tv_sec++;
+		res->tv_usec -= 1000000;
+	}
+	return res;
 }
 
 static inline ir_timer_val_t *_time_sub(ir_timer_val_t *res,
 		const ir_timer_val_t *lhs, const ir_timer_val_t *rhs)
 {
-	timersub(lhs, rhs, res);
+	res->tv_sec  = lhs->tv_sec - rhs->tv_sec;
+	res->tv_usec = lhs->tv_usec - rhs->tv_usec;
+	if (res->tv_usec < 0) {
+		res->tv_sec--;
+		res->tv_usec += 1000000;
+	}
 	return res;
 }
 
