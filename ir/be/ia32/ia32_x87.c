@@ -199,20 +199,19 @@ static unsigned x87_on_stack_val(x87_state const *const state, ir_node const *co
 }
 
 /**
- * Push a virtual Register onto the stack, double pushes are NOT allowed.
+ * Push a node onto the stack, double pushes are NOT allowed.
  *
  * @param state     the x87 state
- * @param reg_idx   the register fp index
  * @param node      the node that produces the value of the fp register
  */
-static void x87_push(x87_state *state, unsigned reg_idx, ir_node *node)
+static void x87_push(x87_state *const state, ir_node *const node)
 {
-	assert(x87_on_stack(state, reg_idx) == (unsigned)-1 && "double push");
+	assert(x87_on_stack_val(state, node) == (unsigned)-1 && "double push");
 	assert(state->depth < N_FLOAT_REGS && "stack overrun");
 
 	++state->depth;
 	st_entry *const entry = x87_get_entry(state, 0);
-	entry->reg_idx = reg_idx;
+	entry->reg_idx = arch_get_irn_register(node)->index;
 	entry->node    = node;
 
 	DB((dbg, LEVEL_2, "After PUSH: "));
@@ -440,7 +439,7 @@ static ir_node *x87_create_fdup(x87_state *const state, ir_node *const block, ir
 	unsigned         const pos  = x87_on_stack_val(state, val);
 	attr->reg = get_st_reg(pos);
 	arch_set_irn_register(fdup, out);
-	x87_push(state, out->index, fdup);
+	x87_push(state, fdup);
 	DB((dbg, LEVEL_1, "<<< %s %s\n", get_irn_opname(fdup), attr->reg->name));
 	return fdup;
 }
@@ -611,6 +610,11 @@ static void fp_dump_live(fp_liveness live)
 #endif /* DEBUG_libfirm */
 
 /* --------------------------------- simulators ---------------------------------------- */
+
+static ir_node *get_result_node(ir_node *const n)
+{
+	return get_irn_mode(n) != mode_T ? n : get_Proj_for_pn(n, pn_ia32_res);
+}
 
 /**
  * Simulate a virtual binop.
@@ -785,10 +789,9 @@ static void sim_load(x87_state *state, ir_node *n)
 	assert((unsigned)pn_ia32_fld_res == (unsigned)pn_ia32_fild_res
 	    && (unsigned)pn_ia32_fld_res == (unsigned)pn_ia32_fld1_res
 	    && (unsigned)pn_ia32_fld_res == (unsigned)pn_ia32_fldz_res);
-	const arch_register_t *out = arch_get_irn_register_out(n, pn_ia32_fld_res);
 
-	DB((dbg, LEVEL_1, ">>> %+F -> %s\n", n, out->name));
-	x87_push(state, out->index, n);
+	DB((dbg, LEVEL_1, ">>> %+F\n", n));
+	x87_push(state, get_result_node(n));
 	DB((dbg, LEVEL_1, "<<< %s -> %s\n", get_irn_opname(n), get_st_reg(0)->name));
 }
 
@@ -1109,8 +1112,8 @@ static void sim_Copy(x87_state *state, ir_node *n)
 			/* Copy a constant. */
 			copy = exact_copy(pred);
 			set_nodes_block(copy, block);
-			x87_push(state, out->index, copy);
 			arch_set_irn_register(copy, out);
+			x87_push(state, copy);
 		} else {
 			copy = x87_create_fdup(state, block, pred, out);
 		}
@@ -1168,9 +1171,8 @@ static void sim_Call(x87_state *state, ir_node *n)
 		ir_type *const res_type = get_method_res_type(call_tp, 0);
 		ir_mode *const mode     = get_type_mode(res_type);
 		if (mode && mode_is_float(mode)) {
-			ir_node               *const resproj = get_Proj_for_pn(n, pn_ia32_Call_first_result);
-			arch_register_t const *const reg     = arch_get_irn_register(resproj);
-			x87_push(state, reg->index, resproj);
+			ir_node *const res = get_Proj_for_pn(n, pn_ia32_Call_first_result);
+			x87_push(state, res);
 		}
 	}
 	DB((dbg, LEVEL_1, "Stack after: "));
