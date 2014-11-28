@@ -111,6 +111,18 @@ static st_entry *x87_get_entry(x87_state *const state, unsigned const pos)
 }
 
 /**
+ * Return the node at st(pos).
+ *
+ * @param state  the x87 state
+ * @param pos    a stack position
+ * @return the node that produced the value at st(pos)
+ */
+static ir_node *x87_get_st_node(x87_state const *const state, unsigned const pos)
+{
+	return x87_get_entry((x87_state*)state, pos)->node;
+}
+
+/**
  * Return the virtual register index at st(pos).
  *
  * @param state  the x87 state
@@ -174,26 +186,21 @@ static void x87_fxch(x87_state *state, unsigned pos)
 }
 
 /**
- * Convert a virtual register to the stack index.
+ * Convert a node to the stack index.
  *
  * @param state    the x87 state
- * @param reg_idx  the register fp index
- * @return the stack position where the register is stacked
- *         or -1 if the virtual register was not found
+ * @param node     the node to find
+ * @return the stack position where the node is stacked
+ *         or -1 if the node was not found
  */
-static unsigned x87_on_stack(const x87_state *state, unsigned reg_idx)
+static unsigned x87_on_stack(x87_state const *const state, ir_node const *const node)
 {
+	unsigned const reg_idx = arch_get_irn_register(node)->index;
 	for (unsigned i = 0; i < state->depth; ++i) {
 		if (x87_get_st_reg(state, i) == reg_idx)
 			return i;
 	}
 	return (unsigned)-1;
-}
-
-static unsigned x87_on_stack_val(x87_state const *const state, ir_node const *const val)
-{
-	arch_register_t const *const reg = arch_get_irn_register(val);
-	return x87_on_stack(state, reg->index);
 }
 
 /**
@@ -204,7 +211,7 @@ static unsigned x87_on_stack_val(x87_state const *const state, ir_node const *co
  */
 static void x87_push(x87_state *const state, ir_node *const node)
 {
-	assert(x87_on_stack_val(state, node) == (unsigned)-1 && "double push");
+	assert(x87_on_stack(state, node) == (unsigned)-1 && "double push");
 	assert(state->depth < N_FLOAT_REGS && "stack overrun");
 
 	++state->depth;
@@ -378,7 +385,7 @@ static x87_state *x87_shuffle(ir_node *block, x87_state *state, const x87_state 
 		cycles[n_cycles] = (1 << i);
 		cycle_idx[n_cycles][k++] = i;
 		for (unsigned src_idx = i, dst_idx; ; src_idx = dst_idx) {
-			dst_idx = x87_on_stack(dst_state, x87_get_st_reg(state, src_idx));
+			dst_idx = x87_on_stack(dst_state, x87_get_st_node(state, src_idx));
 
 			if ((all_mask & (1 << dst_idx)) == 0)
 				break;
@@ -434,7 +441,7 @@ static ir_node *x87_create_fdup(x87_state *const state, ir_node *const block, ir
 {
 	ir_node         *const fdup = new_bd_ia32_fdup(NULL, block, val);
 	ia32_x87_attr_t *const attr = get_ia32_x87_attr(fdup);
-	unsigned         const pos  = x87_on_stack_val(state, val);
+	unsigned         const pos  = x87_on_stack(state, val);
 	attr->reg = get_st_reg(pos);
 	arch_set_irn_register(fdup, out);
 	x87_push(state, fdup);
@@ -628,7 +635,6 @@ static void sim_binop(x87_state *const state, ir_node *const n)
 	const arch_register_t *op1_reg = arch_get_irn_register(op1);
 	const arch_register_t *op2_reg = arch_get_irn_register(op2);
 	const arch_register_t *out     = arch_get_irn_register_out(n, pn_ia32_res);
-	unsigned reg_index_1           = op1_reg->index;
 	unsigned reg_index_2           = op2_reg->index;
 	fp_liveness            live    = fp_live_args_after(sim, n, REGMASK(out));
 
@@ -637,9 +643,9 @@ static void sim_binop(x87_state *const state, ir_node *const n)
 	DB((dbg, LEVEL_1, "Stack before: "));
 	DEBUG_ONLY(x87_dump_stack(state);)
 
-	unsigned op1_idx = x87_on_stack(state, reg_index_1);
+	unsigned op1_idx = x87_on_stack(state, op1);
 	assert(op1_idx != (unsigned)-1);
-	bool op1_live_after = is_fp_live(reg_index_1, live);
+	bool op1_live_after = is_fp_live(op1_reg->index, live);
 
 	unsigned               op2_idx;
 	unsigned               out_idx;
@@ -647,7 +653,7 @@ static void sim_binop(x87_state *const state, ir_node *const n)
 	ia32_x87_attr_t *const attr    = get_ia32_x87_attr(n);
 	if (reg_index_2 != REG_FP_FP_NOREG) {
 		/* second operand is a fp register */
-		op2_idx = x87_on_stack(state, reg_index_2);
+		op2_idx = x87_on_stack(state, op2);
 		assert(op2_idx != (unsigned)-1);
 		bool op2_live_after = is_fp_live(reg_index_2, live);
 
@@ -759,15 +765,14 @@ static void sim_unop(x87_state *state, ir_node *n)
 	DB((dbg, LEVEL_1, ">>> %+F -> %s\n", n, out->name));
 	DEBUG_ONLY(fp_dump_live(live);)
 
-	ir_node               *const op1         = get_irn_n(n, 0);
-	arch_register_t const *const op1_reg     = arch_get_irn_register(op1);
-	unsigned               const op1_reg_idx = op1_reg->index;
-	if (is_fp_live(op1_reg_idx, live)) {
+	ir_node               *const op1     = get_irn_n(n, 0);
+	arch_register_t const *const op1_reg = arch_get_irn_register(op1);
+	if (is_fp_live(op1_reg->index, live)) {
 		/* push the operand here */
 		x87_dup_operand(state, n, 0, op1, out);
 	} else {
 		/* operand is dead, bring it to tos */
-		unsigned const op1_idx = x87_on_stack(state, op1_reg_idx);
+		unsigned const op1_idx = x87_on_stack(state, op1);
 		if (op1_idx != 0)
 			x87_create_fxch(state, n, op1_idx);
 	}
@@ -805,11 +810,10 @@ static void sim_store(x87_state *state, ir_node *n)
 	arch_register_t const *const op2 = arch_get_irn_register(val);
 	DB((dbg, LEVEL_1, ">>> %+F %s ->\n", n, op2->name));
 
-	unsigned    const op2_reg_idx = op2->index;
-	unsigned    const op2_idx     = x87_on_stack(state, op2_reg_idx);
-	fp_liveness const live        = fp_live_args_after(state->sim, n, 0);
+	unsigned    const op2_idx = x87_on_stack(state, val);
+	fp_liveness const live    = fp_live_args_after(state->sim, n, 0);
 	assert(op2_idx != (unsigned)-1);
-	if (!is_fp_live(op2_reg_idx, live)) {
+	if (!is_fp_live(op2->index, live)) {
 		/* we can only store the tos to memory */
 		if (op2_idx != 0)
 			x87_create_fxch(state, n, op2_idx);
@@ -883,7 +887,7 @@ do_pop:
 static void sim_fisttp(x87_state *state, ir_node *n)
 {
 	ir_node *const val     = get_irn_n(n, n_ia32_fisttp_val);
-	unsigned const op2_idx = x87_on_stack_val(state, val);
+	unsigned const op2_idx = x87_on_stack(state, val);
 	DB((dbg, LEVEL_1, ">>> %+F %s ->\n", n, arch_get_irn_register(val)->name));
 	assert(op2_idx != (unsigned)-1);
 
@@ -908,14 +912,12 @@ static void sim_fisttp(x87_state *state, ir_node *n)
  */
 static void sim_FtstFnstsw(x87_state *state, ir_node *n)
 {
-	x87_simulator         *sim         = state->sim;
-	ir_node               *op1_node    = get_irn_n(n, n_ia32_FtstFnstsw_left);
-	const arch_register_t *reg1        = arch_get_irn_register(op1_node);
-	unsigned               reg_index_1 = reg1->index;
-	unsigned               op1_idx     = x87_on_stack(state, reg_index_1);
-	fp_liveness            live        = fp_live_args_after(sim, n, 0);
+	ir_node               *const val     = get_irn_n(n, n_ia32_FtstFnstsw_left);
+	arch_register_t const *const reg     = arch_get_irn_register(val);
+	unsigned               const op1_idx = x87_on_stack(state, val);
+	fp_liveness            const live    = fp_live_args_after(state->sim, n, 0);
 
-	DB((dbg, LEVEL_1, ">>> %+F %s\n", n, reg1->name));
+	DB((dbg, LEVEL_1, ">>> %+F %s\n", n, reg->name));
 	DEBUG_ONLY(fp_dump_live(live);)
 	DB((dbg, LEVEL_1, "Stack before: "));
 	DEBUG_ONLY(x87_dump_stack(state);)
@@ -925,7 +927,7 @@ static void sim_FtstFnstsw(x87_state *state, ir_node *n)
 	if (op1_idx != 0)
 		x87_create_fxch(state, n, op1_idx);
 
-	if (!is_fp_live(reg_index_1, live))
+	if (!is_fp_live(reg->index, live))
 		x87_create_fpop(state, n, 0);
 }
 
@@ -952,7 +954,7 @@ static void sim_Fucom(x87_state *state, ir_node *n)
 	DB((dbg, LEVEL_1, "Stack before: "));
 	DEBUG_ONLY(x87_dump_stack(state);)
 
-	unsigned op1_idx = x87_on_stack(state, reg_index_1);
+	unsigned op1_idx = x87_on_stack(state, op1_node);
 	assert(op1_idx != (unsigned)-1);
 
 	unsigned op2_idx;
@@ -960,7 +962,7 @@ static void sim_Fucom(x87_state *state, ir_node *n)
 	/* BEWARE: check for comp a,a cases, they might happen */
 	if (reg_index_2 != REG_FP_FP_NOREG) {
 		/* second operand is a fp register */
-		op2_idx = x87_on_stack(state, reg_index_2);
+		op2_idx = x87_on_stack(state, op2_node);
 		assert(op2_idx != (unsigned)-1);
 
 		if (is_fp_live(reg_index_2, live)) {
@@ -1129,7 +1131,7 @@ static void sim_Copy(x87_state *state, ir_node *n)
 		DB((dbg, LEVEL_1, "<<< %+F %s -> ?\n", copy, op1->name));
 	} else {
 		/* Just a virtual copy. */
-		unsigned const op1_idx = x87_on_stack(state, op1->index);
+		unsigned const op1_idx = x87_on_stack(state, pred);
 		x87_set_st(state, n, op1_idx);
 	}
 }
@@ -1225,7 +1227,7 @@ static void sim_Perm(x87_state *state, ir_node *irn)
 
 	/* collect old stack positions */
 	foreach_irn_in(irn, i, pred) {
-		unsigned const idx = x87_on_stack_val(state, pred);
+		unsigned const idx = x87_on_stack(state, pred);
 		assert(idx != (unsigned)-1);
 		stack_pos[i] = idx;
 	}
