@@ -139,18 +139,16 @@ static void x87_dump_stack(const x87_state *state)
 #endif /* DEBUG_libfirm */
 
 /**
- * Set a virtual register to st(pos).
+ * Set a node to st(pos).
  *
  * @param state    the x87 state
- * @param reg_idx  the fp register index that should be set
  * @param node     the IR node that produces the value of the fp register
  * @param pos      the stack position where the new value should be entered
  */
-static void x87_set_st(x87_state *state, unsigned reg_idx, ir_node *node,
-                       unsigned pos)
+static void x87_set_st(x87_state *const state, ir_node *const node, unsigned const pos)
 {
 	st_entry *const entry = x87_get_entry(state, pos);
-	entry->reg_idx = reg_idx;
+	entry->reg_idx = arch_get_irn_register(node)->index;
 	entry->node    = node;
 
 	DB((dbg, LEVEL_2, "After SET_REG: "));
@@ -729,7 +727,7 @@ static void sim_binop(x87_state *const state, ir_node *const n)
 	assert(op1_idx == 0       || op2_idx == 0);
 	assert(out_idx == op1_idx || out_idx == op2_idx);
 
-	x87_set_st(state, out->index, n, out_idx);
+	x87_set_st(state, get_result_node(n), out_idx);
 	if (pop)
 		x87_pop(state);
 
@@ -774,7 +772,7 @@ static void sim_unop(x87_state *state, ir_node *n)
 			x87_create_fxch(state, n, op1_idx);
 	}
 
-	x87_set_st(state, out->index, n, 0);
+	x87_set_st(state, n, 0);
 	DB((dbg, LEVEL_1, "<<< %s -> %s\n", get_irn_opname(n), get_st_reg(0)->name));
 }
 
@@ -849,7 +847,7 @@ do_pop:
 
 				arch_set_irn_register(rproj, op2);
 				/* Replace TOS by the reloaded value. */
-				x87_set_st(state, op2->index, vfld, 0);
+				x87_set_st(state, rproj, 0);
 
 				/* reroute all former users of the store memory to the load memory */
 				edges_reroute_except(mem, mproj, vfld);
@@ -1132,7 +1130,7 @@ static void sim_Copy(x87_state *state, ir_node *n)
 	} else {
 		/* Just a virtual copy. */
 		unsigned const op1_idx = x87_on_stack(state, op1->index);
-		x87_set_st(state, out->index, n, op1_idx);
+		x87_set_st(state, n, op1_idx);
 	}
 }
 
@@ -1233,12 +1231,11 @@ static void sim_Perm(x87_state *state, ir_node *irn)
 	}
 	/* now do the permutation */
 	foreach_out_edge(irn, edge) {
-		ir_node               *proj = get_edge_src_irn(edge);
-		const arch_register_t *out  = arch_get_irn_register(proj);
-		unsigned               num  = get_Proj_num(proj);
+		ir_node  *const proj = get_edge_src_irn(edge);
+		unsigned  const num  = get_Proj_num(proj);
 
 		assert(num < n);
-		x87_set_st(state, out->index, proj, stack_pos[num]);
+		x87_set_st(state, proj, stack_pos[num]);
 	}
 	DB((dbg, LEVEL_1, "<<< %+F\n", irn));
 }
