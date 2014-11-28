@@ -59,7 +59,7 @@ my %reg2class = ();
 
 $classdef .= "enum reg_classes {\n";
 
-foreach my $class_name (keys(%reg_classes)) {
+foreach my $class_name (sort(keys(%reg_classes))) {
 	my @class = @{ $reg_classes{"$class_name"} };
 
 	my $idx = 0;
@@ -108,7 +108,7 @@ sub get_limited_array {
 }
 
 # generate register type and class variable, init function and default requirements
-foreach my $class_name (keys(%reg_classes)) {
+foreach my $class_name (sort(keys(%reg_classes))) {
 	my @class         = @{ $reg_classes{"$class_name"} };
 	my $old_classname = $class_name;
 

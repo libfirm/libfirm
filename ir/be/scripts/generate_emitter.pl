@@ -36,7 +36,7 @@ my $obst_func     = ""; # buffer for the emit functions
 my $obst_register = ""; # buffer for emitter register code
 
 
-foreach my $op (keys(%nodes)) {
+foreach my $op (sort(keys(%nodes))) {
 	my %n = %{ $nodes{"$op"} };
 
 	# skip this node description if no emit information is available

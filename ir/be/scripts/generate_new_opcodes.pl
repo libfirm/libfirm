@@ -76,7 +76,7 @@ my %reg2class = ();
 my %regclass2len = ();
 
 # build register->class hashes
-foreach my $class_name (keys(%reg_classes)) {
+foreach my $class_name (sort(keys(%reg_classes))) {
 	my @class         = @{ $reg_classes{"$class_name"} };
 	my $old_classname = $class_name;
 
@@ -441,7 +441,7 @@ my @node_attrs = (
 );
 
 $obst_enum_op .= "typedef enum ${arch}_opcodes {\n";
-foreach my $op (keys(%nodes)) {
+foreach my $op (sort(keys(%nodes))) {
 	my %n        = %{ $nodes{"$op"} };
 	my $known_mode;
 	my $num_outs = 0;
@@ -579,7 +579,7 @@ EOF
 		%constructors = ( "" => \%constructor );
 	}
 
-	foreach my $constr (keys(%constructors)) {
+	foreach my $constr (sort(keys(%constructors))) {
 		my %cstr = %{ $constructors{$constr} };
 		# Copy some values from outer node if they don't exists in the constr
 		foreach my $a (@node_attrs) {
