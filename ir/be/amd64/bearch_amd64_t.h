@@ -20,6 +20,7 @@ typedef struct amd64_isa_t {
 
 extern ir_mode *amd64_mode_E;
 extern ir_type *amd64_type_E;
+extern ir_mode *amd64_mode_xmm;
 
 #define AMD64_REGISTER_SIZE   8
 /** power of two stack alignment on calls */

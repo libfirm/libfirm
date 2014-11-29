@@ -2,7 +2,7 @@ $arch = "amd64";
 
 $mode_gp      = "mode_Lu";
 $mode_flags   = "mode_Iu";
-$mode_xmm      = "mode_D"; #TODO 128bit fp-mode
+$mode_xmm     = "amd64_mode_xmm";
 $status_flags = "all"; # TODO
 $all_flags    = "all";
 

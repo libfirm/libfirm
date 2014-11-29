@@ -680,7 +680,7 @@ static void emit_be_Copy(const ir_node *irn)
 		return;
 	}
 
-	if (mode_is_float(mode)) {
+	if (mode == amd64_mode_xmm) {
 		amd64_emitf(irn, "movapd %^S0, %^D0");
 	} else if (mode_is_data(mode)) {
 		amd64_emitf(irn, "mov %^S0, %^D0");

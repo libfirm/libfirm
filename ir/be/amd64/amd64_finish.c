@@ -12,6 +12,7 @@
 #include "amd64_nodes_attr.h"
 #include "amd64_transform.h"
 #include "bearch.h"
+#include "bearch_amd64_t.h"
 #include "benode.h"
 #include "besched.h"
 #include "debug.h"
@@ -102,14 +103,14 @@ static void transform_sub_to_neg_add(ir_node *node,
 		ir_node *xor_in[] = { in2 };
 		ir_node *xor = new_bd_amd64_xXorp(dbgi, block, ARRAY_SIZE(xor_in),
 		                                  xor_in, &xor_attr);
-		ir_node *neg = new_r_Proj(xor, mode_D, pn_amd64_xXorp_res);
+		ir_node *neg = new_r_Proj(xor, amd64_mode_xmm, pn_amd64_xXorp_res);
 
 		sched_add_before(node, xor);
 		arch_set_irn_register(neg, in2_reg);
 
 		ir_node *in[] = { neg, in1 };
 		add     = new_bd_amd64_xAdds(dbgi, block, ARRAY_SIZE(in), in, attr);
-		add_res = new_r_Proj(add, mode_D, pn_amd64_xAdds_res);
+		add_res = new_r_Proj(add, amd64_mode_xmm, pn_amd64_xAdds_res);
 	} else {
 		assert(is_amd64_Sub(node));
 		ir_node *neg = new_bd_amd64_Neg(dbgi, block, in2, attr->base.insn_mode);

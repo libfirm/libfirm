@@ -28,6 +28,7 @@
 
 #include "amd64_nodes_attr.h"
 #include "amd64_new_nodes.h"
+#include "bearch_amd64_t.h"
 #include "gen_amd64_regalloc_if.h"
 
 static const char *get_op_mode_string(amd64_op_mode_t mode)

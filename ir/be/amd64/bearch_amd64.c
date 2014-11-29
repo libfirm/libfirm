@@ -47,6 +47,7 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 ir_mode *amd64_mode_E;
 ir_type *amd64_type_E;
+ir_mode *amd64_mode_xmm;
 
 static ir_entity *amd64_get_frame_entity(const ir_node *node)
 {
@@ -779,6 +780,10 @@ static void amd64_init_types(void)
 	amd64_type_E = new_type_primitive(amd64_mode_E);
 	set_type_size_bytes(amd64_type_E, 16);
 	set_type_alignment_bytes(amd64_type_E, 16);
+
+	/* use an int128 mode for xmm registers for now, so that firm allows us to
+	 * create constants with the xmm mode... */
+	amd64_mode_xmm = new_int_mode("x86_xmm", irma_twos_complement, 128, 0, 0);
 
 	amd64_backend_params.type_long_double = amd64_type_E;
 }

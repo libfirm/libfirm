@@ -240,7 +240,8 @@ static const arch_register_req_t *xmm_xmm_reqs[] = {
 
 static inline bool mode_needs_gp_reg(ir_mode *mode)
 {
-	return get_mode_arithmetic(mode) == irma_twos_complement;
+	return get_mode_arithmetic(mode) == irma_twos_complement
+	    && mode != amd64_mode_xmm; /* mode_xmm is 128bit int at the moment */
 }
 
 static bool is_downconv(const ir_node *node)
@@ -757,7 +758,7 @@ static ir_node *gen_binop_am(ir_node *node, ir_node *op1, ir_node *op2,
 	if (mode_is_float(mode)) {
 		arch_set_irn_register_req_out(new_node, 0,
 		                              &amd64_requirement_xmm_same_0);
-		return new_r_Proj(new_node, mode_D, pn_amd64_xSubs_res);
+		return new_r_Proj(new_node, amd64_mode_xmm, pn_amd64_xSubs_res);
 	} else {
 		arch_set_irn_register_req_out(new_node, 0,
 		                              &amd64_requirement_gp_same_0);
@@ -1153,7 +1154,7 @@ static ir_node *gen_Proj_Div(ir_node *const node)
 
 	ir_mode *mode;
 	if (mode_is_float(get_Div_resmode(pred)))
-		mode = mode_D;
+		mode = amd64_mode_xmm;
 	else
 		mode = mode_gp;
 
@@ -1807,7 +1808,7 @@ static ir_node *gen_Proj_Proj_Call(ir_node *node)
 	if (mode_needs_gp_reg(mode))
 		mode = mode_gp;
 	else if (mode_is_float(mode))
-		mode = mode_D;
+		mode = amd64_mode_xmm;
 	x86_free_calling_convention(cconv);
 	return new_r_Proj(new_call, mode, new_pn);
 }
@@ -1851,7 +1852,7 @@ static ir_node *gen_Proj_Proj_Start(ir_node *node)
 		if (mode_is_float(mode)) {
 			load  = new_bd_amd64_xMovs(NULL, new_block, ARRAY_SIZE(in),
 			                           in, insn_mode, AMD64_OP_ADDR, addr);
-			value = new_r_Proj(load, mode_D, pn_amd64_xMovs_res);
+			value = new_r_Proj(load, amd64_mode_xmm, pn_amd64_xMovs_res);
 		} else if (get_mode_size_bits(mode) < 64 && mode_is_signed(mode)) {
 			load  = new_bd_amd64_Movs(NULL, new_block, ARRAY_SIZE(in),
 			                          in, insn_mode, AMD64_OP_ADDR, addr);
@@ -2028,7 +2029,7 @@ static ir_node *gen_Conv(ir_node *node)
 			conv = new_bd_amd64_CvtSS2SD(dbgi, block, ARRAY_SIZE(in),
 			                             in, insn_mode, AMD64_OP_REG,
 			                             addr);
-			res  = new_r_Proj(conv, mode_D, pn_amd64_CvtSS2SD_res);
+			res  = new_r_Proj(conv, amd64_mode_xmm, pn_amd64_CvtSS2SD_res);
 		} else {
 			conv = new_bd_amd64_CvtSD2SS(dbgi, block, ARRAY_SIZE(in),
 			                             in, insn_mode, AMD64_OP_REG,
@@ -2092,7 +2093,7 @@ static ir_node *gen_Conv(ir_node *node)
 			                             in, insn_mode, AMD64_OP_REG,
 			                             addr);
 
-			res = new_r_Proj(conv, mode_D, pn_amd64_CvtSI2SD_res);
+			res = new_r_Proj(conv, amd64_mode_xmm, pn_amd64_CvtSI2SD_res);
 		}
 		reqs = reg_reqs;
 
@@ -2334,7 +2335,7 @@ static ir_node *gen_Proj_Load(ir_node *node)
 	switch (get_amd64_irn_opcode(new_load)) {
 	case iro_amd64_xMovs:
 		if (pn == pn_Load_res) {
-			return new_rd_Proj(dbgi, new_load, mode_D, pn_amd64_xMovs_res);
+			return new_rd_Proj(dbgi, new_load, amd64_mode_xmm, pn_amd64_xMovs_res);
 		} else if (pn == pn_Load_M) {
 			return new_rd_Proj(dbgi, new_load, mode_M, pn_amd64_xMovs_M);
 		}
