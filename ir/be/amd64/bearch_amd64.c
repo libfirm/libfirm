@@ -345,23 +345,6 @@ static void rewrite_unsigned_float_Conv(ir_node *node)
 	exchange(node, phi);
 }
 
-static ir_node *create_conv_const(ir_graph *irg, ir_mode *src_mode)
-{
-	assert(mode_is_float(src_mode));
-
-	ir_node *result = NULL;
-	if (get_mode_size_bits(src_mode) == 32) {
-		double fconst = 1593835520;
-		ir_tarval *tv = new_tarval_from_double(fconst, src_mode);
-		result        = new_r_Const(irg, tv);
-	} else if (get_mode_size_bits(src_mode) == 64) {
-		double dconst = 1138753536;
-		ir_tarval *tv = new_tarval_from_double(dconst, src_mode);
-		result        = new_r_Const(irg, tv);
-	}
-	return result;
-}
-
 /* Creates a 64-bit constant with only the sign bit set,
  * i.e. returns 0x8000000000000000
  */
@@ -372,7 +355,15 @@ static ir_node *create_sign_bit_const(ir_graph *irg)
 }
 
 /* rewrite float/double -> unsigned long conversion
- * x86_64 only has a signed conversion
+ * x86_64 only has a signed conversion so we rewrite to the following:
+ *
+ * if (x >= 9223372036854775808.) {
+ *   converted ^= (int)(x-9223372036854775808.) ^ 0x8000000000000000;
+ * } else {
+ *   converted = (int)x;
+ * }
+ * return (unsigned)converted;
+
  */
 static void rewrite_float_unsigned_Conv(ir_node *node)
 {
@@ -383,10 +374,12 @@ static void rewrite_float_unsigned_Conv(ir_node *node)
 
 	part_block(node);
 
-	ir_node *block       = get_nodes_block(node);
-	ir_node *fp_x        = get_Conv_op(node);
-	ir_mode *src_mode    = get_irn_mode(fp_x);
-	ir_node *fp_const    = create_conv_const(irg, src_mode);
+	ir_node   *block    = get_nodes_block(node);
+	ir_node   *fp_x     = get_Conv_op(node);
+	ir_mode   *src_mode = get_irn_mode(fp_x);
+	double     d_const  = 9223372036854775808.;
+	ir_tarval *tv       = new_tarval_from_double(d_const, src_mode);
+	ir_node   *fp_const = new_r_Const(irg, tv);
 	collect_new_start_block_node(fp_const);
 
 	/* Test if the sign bit is needed */
