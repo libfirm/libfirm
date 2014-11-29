@@ -157,7 +157,8 @@ static ir_entity *arm_get_frame_entity(const ir_node *irn)
 {
 	if (be_is_MemPerm(irn))
 		return be_get_MemPerm_in_entity(irn, 0);
-
+	if (!is_arm_irn(irn))
+		return NULL;
 	const arm_attr_t *attr = get_arm_attr_const(irn);
 	if (is_arm_FrameAddr(irn)) {
 		const arm_Address_attr_t *frame_attr = get_arm_Address_attr_const(irn);
