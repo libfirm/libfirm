@@ -402,16 +402,11 @@ static ir_node *create_float_const(dbg_info *dbgi, ir_node *block,
 ir_tarval *create_sign_tv(ir_mode *mode)
 {
 	unsigned size = get_mode_size_bits(mode);
-	ir_tarval *tv;
-	if (size == 32) {
-		tv = get_mode_one(mode_Iu);
-		tv = tarval_shl_unsigned(tv, 31);
-	} else {
-		assert(size == 64);
-		tv = get_mode_one(mode_Lu);
-		tv = tarval_shl_unsigned(tv, 63);
-	}
-	return tarval_bitcast(tv, mode);
+	assert(size == 32 || size == 64);
+	ir_mode *intmode = size == 32 ? mode_Iu : mode_Lu;
+	ir_tarval *one  = get_mode_one(intmode);
+	ir_tarval *sign = tarval_shl_unsigned(one, size-1);
+	return tarval_bitcast(sign, mode);
 }
 
 static ir_node *gen_Const(ir_node *node)
