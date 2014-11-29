@@ -349,6 +349,24 @@ ir_entity *create_float_const_entity(ir_graph *const irg,
 	return entity;
 }
 
+typedef enum reference_mode_t {
+	REFERENCE_DIRECT,
+	REFERENCE_IP_RELATIVE,
+	REFERENCE_GOT,
+} reference_mode_t;
+
+static reference_mode_t need_relative_addressing(const ir_entity *entity)
+{
+	if (!be_options.pic)
+		return REFERENCE_DIRECT;
+
+	/* simply everything is instruction pointer relative, external functions
+	 * use a global offset table */
+	return entity_has_definition(entity)
+	   && (get_entity_linkage(entity) & IR_LINKAGE_MERGE) == 0
+	    ? REFERENCE_IP_RELATIVE : REFERENCE_GOT;
+}
+
 static ir_node *create_float_const(dbg_info *dbgi, ir_node *block,
                             ir_tarval *tv)
 {
@@ -364,8 +382,13 @@ static ir_node *create_float_const(dbg_info *dbgi, ir_node *block,
 	addr.immediate.entity       = entity;
 	amd64_insn_mode_t insn_mode = get_insn_mode_from_mode(tv_mode);
 
-	addr.base_input  = NO_INPUT;
 	addr.index_input = NO_INPUT;
+	if (need_relative_addressing(entity) == REFERENCE_DIRECT) {
+		addr.base_input = NO_INPUT;
+	} else {
+		assert(need_relative_addressing(entity) == REFERENCE_IP_RELATIVE);
+		addr.base_input = RIP_INPUT;
+	}
 
 	ir_node *load = new_bd_amd64_xMovs(dbgi, block, ARRAY_SIZE(in), in,
 	                                   insn_mode, AMD64_OP_ADDR, addr);
@@ -409,24 +432,6 @@ static ir_node *gen_Const(ir_node *node)
 	uint64_t val = get_tarval_uint64(tv);
 	amd64_insn_mode_t imode = val > UINT32_MAX ? INSN_MODE_64 : INSN_MODE_32;
 	return new_bd_amd64_MovImm(dbgi, block, imode, val, NULL);
-}
-
-typedef enum reference_mode_t {
-	REFERENCE_DIRECT,
-	REFERENCE_IP_RELATIVE,
-	REFERENCE_GOT,
-} reference_mode_t;
-
-static reference_mode_t need_relative_addressing(const ir_entity *entity)
-{
-	if (!be_options.pic)
-		return REFERENCE_DIRECT;
-
-	/* simply everything is instruction pointer relative, external functions
-	 * use a global offset table */
-	return entity_has_definition(entity)
-	   && (get_entity_linkage(entity) & IR_LINKAGE_MERGE) == 0
-	    ? REFERENCE_IP_RELATIVE : REFERENCE_GOT;
 }
 
 static ir_node *gen_Address(ir_node *node)
@@ -640,7 +645,13 @@ static void perform_address_matching(ir_node *ptr, int *arity,
 		addr->base_input = base_input;
 		in[base_input]   = be_transform_node(maddr.base);
 	} else {
-		addr->base_input = NO_INPUT;
+		ir_entity *entity = maddr.entity;
+		if (entity != NULL
+		    && need_relative_addressing(entity) != REFERENCE_DIRECT) {
+		    addr->base_input = RIP_INPUT;
+		} else {
+			addr->base_input = NO_INPUT;
+		}
 	}
 	if (maddr.index != NULL) {
 		int index_input = (*arity)++;
@@ -2234,6 +2245,11 @@ ir_node *amd64_new_reload(ir_node *value, ir_node *spill, ir_node *before)
 	return res;
 }
 
+static bool val_input(unsigned in)
+{
+	return in != NO_INPUT && in != RIP_INPUT;
+}
+
 static ir_node *gen_Load(ir_node *node)
 {
 
@@ -2250,10 +2266,12 @@ static ir_node *gen_Load(ir_node *node)
 
 	perform_address_matching(ptr, &arity, in, &addr);
 
-	const arch_register_req_t **reqs = mem_reqs;
-	if (addr.base_input != NO_INPUT && addr.index_input != NO_INPUT) {
+	const arch_register_req_t **reqs;
+	if (!val_input(addr.base_input) && !val_input(addr.index_input)) {
+		reqs = mem_reqs;
+	} else if (val_input(addr.base_input) && val_input(addr.index_input)) {
 		reqs = reg_reg_mem_reqs;
-	} else if (addr.base_input != NO_INPUT || addr.index_input != NO_INPUT) {
+	} else {
 		reqs = reg_mem_reqs;
 	}
 
