@@ -356,24 +356,18 @@ int smaller_mode(const ir_mode *sm, const ir_mode *lm)
 			assert(get_mode_arithmetic(sm) == irma_twos_complement);
 
 			/* integers are convertable if
-			 *   - both have the same sign and lm is the larger one
-			 *   - lm is the signed one and is at least two bits larger
-			 *     (one for the sign, one for the highest bit of sm)
-			 *   - sm & lm are two_complement and lm has greater or equal
-			 *     number of bits
-			 */
+			 * - both have the same sign and lm is the larger one
+			 * - lm is signed and is at least one bit larger (the sign) */
 			unsigned sm_bits = get_mode_size_bits(sm);
 			unsigned lm_bits = get_mode_size_bits(lm);
 			if (mode_is_signed(sm)) {
 				if (!mode_is_signed(lm))
-					return 0;
-				return sm_bits <= lm_bits;
+					return false;
 			} else {
-				if (mode_is_signed(lm)) {
+				if (mode_is_signed(lm))
 					return sm_bits < lm_bits;
-				}
-				return sm_bits <= lm_bits;
 			}
+			return sm_bits <= lm_bits;
 
 		case irms_auxiliary:
 		case irms_data:

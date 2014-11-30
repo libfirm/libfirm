@@ -291,7 +291,7 @@ FIRM_API int mode_is_data (const ir_mode *mode);
  * Returns true if a value of mode @p sm can be converted to mode @p lm without
  * loss.
  *
- * That is the interpretation of the numbers does not changes, so you a signed
+ * That is the interpretation of the numbers does not changes, so a signed
  * integer mode is never smaller than an unsigned integer mode since the
  * unsigned mode can't represent negative numbers in a way that they are
  * interpreted as negative numbers.
@@ -304,7 +304,7 @@ FIRM_API int smaller_mode(const ir_mode *sm, const ir_mode *lm);
  * Returns true if no information is lost when converting a value of mode @p sm
  * into mode @p lm (and back to mode @p sm).
  *
- * So the interpretation of the values may change in the intermediate mode @p sm
+ * So the interpretation of the values may change in the intermediate mode @p lm
  * (for example when converting negative signed integer numbers into unsigned
  * integers) but after a conversion back they are exactly the same value.
  *
