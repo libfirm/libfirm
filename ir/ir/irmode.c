@@ -387,7 +387,7 @@ int smaller_mode(const ir_mode *sm, const ir_mode *lm)
 
 	case irms_float_number:
 		return get_mode_arithmetic(sm) == get_mode_arithmetic(lm)
-		    && get_mode_sort(lm) == irms_float_number
+		    && mode_is_float(lm)
 		    && get_mode_size_bits(lm) >= get_mode_size_bits(sm);
 
 	case irms_auxiliary:
@@ -486,27 +486,23 @@ ir_mode *find_unsigned_mode(const ir_mode *mode)
 	if (mode->sort == irms_reference)
 		n.sort = irms_int_number;
 
-	assert(n.sort == irms_int_number);
+	assert(mode_is_int(&n));
 	n.sign = 0;
 	return find_mode(&n);
 }
 
 ir_mode *find_signed_mode(const ir_mode *mode)
 {
+	assert(mode_is_int(mode));
 	ir_mode n = *mode;
-
-	assert(mode->sort == irms_int_number);
 	n.sign = 1;
 	return find_mode(&n);
 }
 
 ir_mode *find_double_bits_int_mode(const ir_mode *mode)
 {
+	assert(mode_is_int(mode) && mode->arithmetic == irma_twos_complement);
 	ir_mode n = *mode;
-
-	assert(mode->sort == irms_int_number
-	       && mode->arithmetic == irma_twos_complement);
-
 	n.size = 2*mode->size;
 	if (n.modulo_shift != 0 && n.modulo_shift < n.size)
 		n.modulo_shift = n.size;

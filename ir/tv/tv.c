@@ -402,7 +402,7 @@ uint64_t get_tarval_uint64(const ir_tarval *tv)
 
 ir_tarval *new_tarval_from_long_double(long double d, ir_mode *mode)
 {
-	assert(mode && (get_mode_sort(mode) == irms_float_number));
+	assert(mode_is_float(mode));
 	fp_value *val = fc_val_from_ieee754(d, NULL);
 	return get_tarval_from_fp_value(val, mode);
 }
@@ -414,7 +414,7 @@ ir_tarval *new_tarval_from_double(double d, ir_mode *mode)
 
 int tarval_is_double(const ir_tarval *tv)
 {
-	return get_mode_sort(tv->mode) == irms_float_number;
+	return mode_is_float(tv->mode);
 }
 
 long double get_tarval_long_double(const ir_tarval *tv)
@@ -488,7 +488,7 @@ ir_tarval *get_tarval_epsilon(ir_mode *mode)
 
 ir_tarval *get_tarval_minus_inf(ir_mode *mode)
 {
-	if (get_mode_sort(mode) != irms_float_number)
+	if (!mode_is_float(mode))
 		panic("mode %F does not support -inf value", mode);
 	const float_descriptor_t *desc = get_descriptor(mode);
 	fc_get_inf(desc, NULL, true);
@@ -719,7 +719,7 @@ ir_tarval *tarval_convert_to(ir_tarval *src, ir_mode *dst_mode)
 		break;
 
 	case irms_reference:
-		if (get_mode_sort(dst_mode) == irms_int_number) {
+		if (mode_is_int(dst_mode)) {
 			sc_word *buffer = ALLOCAN(sc_word, sc_value_length);
 			memcpy(buffer, src->value, sc_value_length);
 			unsigned bits = get_mode_size_bits(src->mode);
