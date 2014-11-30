@@ -449,10 +449,8 @@ static inline aff_chunk_t *get_aff_chunk(co_mst_env_t *env, const ir_node *irn)
 /**
  * Let chunk(src) absorb the nodes of chunk(tgt) (only possible when there
  * are no interference edges from chunk(src) to chunk(tgt)).
- * @return true if successful, false if not possible
  */
-static bool aff_chunk_absorb(co_mst_env_t *env, const ir_node *src,
-                             const ir_node *tgt)
+static void aff_chunk_absorb(co_mst_env_t *const env, ir_node const *const src, ir_node const *const tgt)
 {
 	aff_chunk_t *c1 = get_aff_chunk(env, src);
 	aff_chunk_t *c2 = get_aff_chunk(env, tgt);
@@ -515,14 +513,11 @@ static bool aff_chunk_absorb(co_mst_env_t *env, const ir_node *src,
 		c1->weight_consistent = false;
 
 		delete_aff_chunk(c2);
-		goto absorbed;
+absorbed:
+		DB((dbg, LEVEL_4, " ... absorbed\n"));
+		return;
 	}
 	DB((dbg, LEVEL_4, " ... c1 interferes with c2, skipped\n"));
-	return false;
-
-absorbed:
-	DB((dbg, LEVEL_4, " ... absorbed\n"));
-	return true;
 }
 
 /**
@@ -656,7 +651,7 @@ static void build_affinity_chunks(co_mst_env_t *env)
 	for (size_t i = 0, len = ARR_LEN(edges); i < len; ++i) {
 		DBG((dbg, LEVEL_1, "edge (%u,%u) %f\n", edges[i].src->node_idx, edges[i].tgt->node_idx, edges[i].weight));
 
-		(void)aff_chunk_absorb(env, edges[i].src, edges[i].tgt);
+		aff_chunk_absorb(env, edges[i].src, edges[i].tgt);
 	}
 
 	/* now insert all chunks into a priority queue */
