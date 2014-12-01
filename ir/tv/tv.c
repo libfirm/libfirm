@@ -1469,13 +1469,13 @@ static ir_tarval *make_b_tarval(unsigned char const val)
 	return tv;
 }
 
-void init_tarval_1(int support_quad_precision)
+void init_tarval_1(void)
 {
 	/* initialize the sets holding the tarvals with a comparison function and
 	 * an initial size, which is the expected number of constants */
 	tarvals = new_set(cmp_tv, N_CONSTANTS);
 	/* calls init_strcalc() with needed size */
-	init_fltcalc(support_quad_precision ? 112 : 64);
+	init_fltcalc(128);
 
 	sc_value_length = sc_get_value_length();
 

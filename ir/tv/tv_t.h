@@ -33,11 +33,8 @@
  * Initialization of the tarval module.
  *
  * Call before init_mode().
- *
- * @param support_quad_precision
- *            If non-zero, activate support for quad precision
  */
-void init_tarval_1(int support_quad_precision);
+void init_tarval_1(void);
 
 /**
  * Initialization of the tarval module.
