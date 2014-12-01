@@ -318,10 +318,11 @@ static ir_node *get_frame_base(ir_graph *irg)
 static amd64_insn_mode_t get_insn_mode_from_mode(const ir_mode *mode)
 {
 	switch (get_mode_size_bits(mode)) {
-	case  8: return INSN_MODE_8;
-	case 16: return INSN_MODE_16;
-	case 32: return INSN_MODE_32;
-	case 64: return INSN_MODE_64;
+	case   8: return INSN_MODE_8;
+	case  16: return INSN_MODE_16;
+	case  32: return INSN_MODE_32;
+	case  64: return INSN_MODE_64;
+	case 128: return INSN_MODE_128;
 	}
 	panic("unexpected mode");
 }

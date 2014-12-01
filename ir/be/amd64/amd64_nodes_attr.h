@@ -21,6 +21,7 @@ enum amd64_arch_irn_flags_t {
 };
 
 typedef enum {
+	INSN_MODE_128,
 	INSN_MODE_64,
 	INSN_MODE_32,
 	INSN_MODE_16,
@@ -90,7 +91,7 @@ typedef struct {
 typedef struct {
 	amd64_attr_t base;
 	bool                      needs_frame_ent : 1;
-	ENUMBF(amd64_insn_mode_t) insn_mode       : 2;
+	ENUMBF(amd64_insn_mode_t) insn_mode       : 3;
 	amd64_addr_t addr;
 } amd64_addr_attr_t;
 
@@ -104,13 +105,13 @@ typedef struct {
 
 typedef struct {
 	amd64_attr_t base;
-	ENUMBF(amd64_insn_mode_t) insn_mode : 2;
+	ENUMBF(amd64_insn_mode_t) insn_mode : 3;
 	uint8_t                   immediate;
 } amd64_shift_attr_t;
 
 typedef struct {
 	amd64_attr_t base;
-	ENUMBF(amd64_insn_mode_t) insn_mode : 2;
+	ENUMBF(amd64_insn_mode_t) insn_mode : 3;
 	amd64_imm64_t             immediate;
 } amd64_movimm_attr_t;
 

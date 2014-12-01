@@ -52,6 +52,7 @@ static void amd64_emit_insn_mode_suffix(amd64_insn_mode_t mode)
 	case INSN_MODE_16: c = 'w'; break;
 	case INSN_MODE_32: c = 'l'; break;
 	case INSN_MODE_64: c = 'q'; break;
+	case INSN_MODE_128:
 	default:
 		panic("invalid insn mode");
 	}
@@ -62,8 +63,9 @@ static void amd64_emit_xmm_mode_suffix(amd64_insn_mode_t mode)
 {
 	char c;
 	switch (mode) {
-	case INSN_MODE_32: c = 's'; break;
-	case INSN_MODE_64: c = 'd'; break;
+	case INSN_MODE_32:  c = 's'; break;
+	case INSN_MODE_64:  c = 'd'; break;
+	case INSN_MODE_128: c = 'q'; break;
 	default:
 		panic("invalid insn mode");
 	}
@@ -153,7 +155,8 @@ static void emit_register_insn_mode(const arch_register_t *reg,
 	case INSN_MODE_8:  name = get_8bit_name(reg);  break;
 	case INSN_MODE_16: name = get_16bit_name(reg); break;
 	case INSN_MODE_32: name = get_32bit_name(reg); break;
-	case INSN_MODE_64: name = reg->name;           break;
+	case INSN_MODE_64:
+	case INSN_MODE_128: name = reg->name;           break;
 	default:
 		panic("invalid mode");
 	}

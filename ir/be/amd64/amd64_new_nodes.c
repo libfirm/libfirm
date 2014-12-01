@@ -57,10 +57,11 @@ static const char *get_op_mode_string(amd64_op_mode_t mode)
 static const char *get_insn_mode_string(amd64_insn_mode_t mode)
 {
 	switch (mode) {
-	case INSN_MODE_8:  return "8";
-	case INSN_MODE_16: return "16";
-	case INSN_MODE_32: return "32";
-	case INSN_MODE_64: return "64";
+	case INSN_MODE_8:   return "8";
+	case INSN_MODE_16:  return "16";
+	case INSN_MODE_32:  return "32";
+	case INSN_MODE_64:  return "64";
+	case INSN_MODE_128: return "128";
 	}
 	panic("invalid insn_mode");
 }
