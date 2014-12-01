@@ -352,8 +352,6 @@ static void initialize_birg(be_irg_t *birg, ir_graph *irg, be_main_env_t *env)
 
 	be_info_init_irg(irg);
 	birg->lv = be_liveness_new(irg);
-
-	be_dump(DUMP_INITIAL, irg, "prepared");
 }
 
 int be_timing;
@@ -465,6 +463,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		initialize_birg(&birgs[num_birgs++], irg, &env);
 		if (arch_env->impl->handle_intrinsics)
 			arch_env->impl->handle_intrinsics(irg);
+		be_dump(DUMP_INITIAL, irg, "prepared");
 	}
 
 	/*
