@@ -370,7 +370,7 @@ static reference_mode_t need_relative_addressing(const ir_entity *entity)
 }
 
 static ir_node *create_float_const(dbg_info *dbgi, ir_node *block,
-                            ir_tarval *tv)
+                                   ir_tarval *tv)
 {
 	ir_graph  *irg     = get_irn_irg(block);
 	ir_mode   *tv_mode = get_tarval_mode(tv);
@@ -1986,12 +1986,11 @@ static ir_node *gen_Conv(ir_node *node)
 	int src_bits = get_mode_size_bits(src_mode);
 	int dst_bits = get_mode_size_bits(dst_mode);
 	ir_mode *min_mode;
-
 	if (src_bits < dst_bits) {
 		min_mode = src_mode;
 	} else if (src_bits > dst_bits) {
 		min_mode = dst_mode;
-	} else if ((src_float && dst_float) || is_gp){
+	} else if ((src_float && dst_float) || is_gp) {
 		/* skip unnecessary conv */
 		return be_transform_node(op);
 	} else {
@@ -2025,7 +2024,7 @@ static ir_node *gen_Conv(ir_node *node)
 	const arch_register_req_t **reqs;
 
 	if (src_float && dst_float) {
-		/* fp conv */
+		/* float to float */
 		if (src_bits < dst_bits) {
 			conv = new_bd_amd64_CvtSS2SD(dbgi, block, ARRAY_SIZE(in),
 			                             in, insn_mode, AMD64_OP_REG,
@@ -2040,7 +2039,7 @@ static ir_node *gen_Conv(ir_node *node)
 		reqs = xmm_reqs;
 
 	} else if (src_float && !dst_float) {
-		/* fp to integer */
+		/* float to int */
 
 		if (!mode_is_signed(dst_mode) && dst_bits <= 32) {
 			/* The conversion is signed only; simply use 64-bit register*/
@@ -2063,7 +2062,7 @@ static ir_node *gen_Conv(ir_node *node)
 		reqs = xmm_reqs;
 
 	} else if (!src_float && dst_float) {
-		/* integer to fp */
+		/* int to float */
 
 		if (!mode_is_signed(src_mode) && src_bits <= 32) {
 			/* Conversion is signed only, therefore use up to 64-bit register
@@ -2099,9 +2098,8 @@ static ir_node *gen_Conv(ir_node *node)
 		reqs = reg_reqs;
 
 	} else {
-		/* integer conv */
-		if (!mode_is_signed(min_mode)
-		    || get_mode_size_bits(min_mode) == 64) {
+		/* int to int */
+		if (!mode_is_signed(min_mode) || get_mode_size_bits(min_mode) == 64) {
 			conv = new_bd_amd64_Mov(dbgi, block, ARRAY_SIZE(in),
 			                        in, insn_mode,
 			                        AMD64_OP_REG, addr);
@@ -2288,7 +2286,7 @@ static ir_node *gen_Load(ir_node *node)
 
 	if (mode_is_float(mode)) {
 		new_load = new_bd_amd64_xMovs(dbgi, block, arity, in,
-		                             insn_mode, AMD64_OP_ADDR, addr);
+		                              insn_mode, AMD64_OP_ADDR, addr);
 	} else if (get_mode_size_bits(mode) < 64 && mode_is_signed(mode)) {
 		new_load = new_bd_amd64_Movs(dbgi, block, arity, in,
 		                             insn_mode, AMD64_OP_ADDR, addr);

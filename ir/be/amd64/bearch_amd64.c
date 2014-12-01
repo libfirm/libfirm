@@ -404,7 +404,6 @@ static ir_node *create_sign_bit_const(ir_graph *irg)
  *   converted = (int)x;
  * }
  * return (unsigned)converted;
-
  */
 static void rewrite_float_unsigned_Conv(ir_node *node)
 {
