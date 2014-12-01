@@ -649,4 +649,27 @@ CvtSI2SD => {
 	emit      => "cvtsi2sd %AM, %^D0",
 },
 
+movdqu => {
+	state     => "exc_pinned",
+	arity     => "variable",
+	outs      => [ "res", "none", "M" ],
+	reg_req   => { out => [ "xmm", "none", "none" ] },
+	attr_type => "amd64_addr_attr_t",
+	attr      => "amd64_op_mode_t op_mode, amd64_addr_t addr",
+	fixed     => "amd64_insn_mode_t insn_mode = INSN_MODE_128;\n",
+	emit      => "movdqu %AM, %D0",
+},
+
+movdqu_store => {
+	op_flags  => [ "uses_memory" ],
+	state     => "exc_pinned",
+	reg_req   => { out => [ "none" ] },
+	arity     => "variable",
+	outs      => [ "M" ],
+	attr_type => "amd64_binop_addr_attr_t",
+	attr      => "const amd64_binop_addr_attr_t *attr_init",
+	mode      => "mode_M",
+	emit      => "movdqu %^S0, %A",
+},
+
 );

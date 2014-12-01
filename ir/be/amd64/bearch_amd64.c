@@ -474,14 +474,16 @@ static void amd64_set_frame_entity(ir_node *node, ir_entity *entity,
 	(void)type;
 	assert(is_amd64_Store(node) || is_amd64_Mov(node)
 	    || is_amd64_Movs(node) || is_amd64_xMovs(node)
-	    || is_amd64_xStores(node));
+	    || is_amd64_xStores(node) || is_amd64_movdqu_store(node)
+	    || is_amd64_movdqu(node));
 	amd64_addr_attr_t *attr = get_amd64_addr_attr(node);
 	attr->addr.immediate.entity = entity;
 }
 
 static bool is_frame_load(const ir_node *node)
 {
-	return is_amd64_Mov(node) || is_amd64_Movs(node) || is_amd64_xMovs(node);
+	return is_amd64_Mov(node) || is_amd64_Movs(node) || is_amd64_xMovs(node)
+	    || is_amd64_movdqu(node);
 }
 
 /**
@@ -495,9 +497,11 @@ static void amd64_collect_frame_entity_nodes(ir_node *node, void *data)
 
 	const amd64_addr_attr_t *attr = get_amd64_addr_attr_const(node);
 	if (attr->needs_frame_ent) {
-		be_fec_env_t  *env   = (be_fec_env_t*)data;
-		const ir_mode *mode  = mode_Lu; /* TODO: improve */
-		const ir_type *type  = get_type_for_mode(mode);
+		be_fec_env_t  *env  = (be_fec_env_t*)data;
+		/* TODO: improve this */
+		const ir_mode *mode = is_amd64_movdqu(node) ? amd64_mode_xmm
+		                                            : mode_Lu;
+		const ir_type *type = get_type_for_mode(mode);
 		be_load_needs_frame_entity(env, node, type);
 	}
 }
