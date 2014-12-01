@@ -688,12 +688,10 @@ unknown:
 
 static void emit_ia32_IMul(const ir_node *node)
 {
-	ir_node               *left    = get_irn_n(node, n_ia32_IMul_left);
-	const arch_register_t *out_reg = arch_get_irn_register_out(node, pn_ia32_IMul_res);
-
 	/* do we need the 3-address form? */
-	if (is_ia32_NoReg_GP(left)
-	    || arch_get_irn_register_in(node, n_ia32_IMul_left) != out_reg) {
+	arch_register_t const *const in_reg  = arch_get_irn_register_in(node, n_ia32_IMul_left);
+	arch_register_t const *const out_reg = arch_get_irn_register_out(node, pn_ia32_IMul_res);
+	if (in_reg != out_reg) {
 		ia32_emitf(node, "imul%M %#S4, %#AS3, %#D0");
 	} else {
 		ia32_emitf(node, "imul%M %#AS4, %#S3");
