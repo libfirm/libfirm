@@ -392,12 +392,18 @@ static ir_node *create_float_const(dbg_info *dbgi, ir_node *block,
 		addr.base_input = RIP_INPUT;
 	}
 
-	ir_node *load = new_bd_amd64_xMovs(dbgi, block, ARRAY_SIZE(in), in,
-	                                   insn_mode, AMD64_OP_ADDR, addr);
-
+	ir_node *load;
+	if (insn_mode == INSN_MODE_128) {
+		load = new_bd_amd64_movdqa(dbgi, block, ARRAY_SIZE(in), in,
+		                           AMD64_OP_ADDR, addr);
+	} else {
+		load = new_bd_amd64_xMovs(dbgi, block, ARRAY_SIZE(in), in,
+		                          insn_mode, AMD64_OP_ADDR, addr);
+	}
 	arch_set_irn_register_reqs_in(load, mem_reqs);
 	set_irn_pinned(load, op_pin_state_floats);
 
+	assert((unsigned)pn_amd64_xMovs_res == (unsigned)pn_amd64_movdqa_res);
 	return new_r_Proj(load, tv_mode, pn_amd64_xMovs_res);
 }
 

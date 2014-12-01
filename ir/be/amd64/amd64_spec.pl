@@ -649,6 +649,17 @@ CvtSI2SD => {
 	emit      => "cvtsi2sd %AM, %^D0",
 },
 
+movdqa => {
+	state     => "exc_pinned",
+	arity     => "variable",
+	outs      => [ "res", "none", "M" ],
+	reg_req   => { out => [ "xmm", "none", "none" ] },
+	attr_type => "amd64_addr_attr_t",
+	attr      => "amd64_op_mode_t op_mode, amd64_addr_t addr",
+	fixed     => "amd64_insn_mode_t insn_mode = INSN_MODE_128;\n",
+	emit      => "movdqa %AM, %D0",
+},
+
 movdqu => {
 	state     => "exc_pinned",
 	arity     => "variable",
