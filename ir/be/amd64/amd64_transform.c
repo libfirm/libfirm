@@ -606,6 +606,11 @@ static ir_node *create_zext(ir_node *block, ir_node *const node)
 	return new_r_Proj(xor0, mode_gp, pn_amd64_Xor0_res);
 }
 
+static bool val_input(unsigned in)
+{
+	return in != NO_INPUT && in != RIP_INPUT;
+}
+
 static bool use_address_matching(ir_mode *mode, match_flags_t flags,
                                  ir_node *block,
                                  ir_node *op1, ir_node *op2,
@@ -846,6 +851,62 @@ static ir_node *gen_binop_rax(ir_node *node, ir_node *op1, ir_node *op2,
 		be_set_transformed_node(load, new_node);
 	}
 	return new_node;
+}
+
+static ir_node *gen_binop_xmm(ir_node *node, ir_node *op0, ir_node *op1,
+                              construct_binop_func make_node,
+                              match_flags_t flags)
+{
+	ir_node *block = get_nodes_block(node);
+	ir_mode *mode  = get_irn_mode(op0);
+	amd64_args_t args;
+	memset(&args, 0, sizeof(args));
+
+	ir_node *load;
+	ir_node *op;
+	bool use_am = use_address_matching(mode, flags, block, op0, op1, &load,
+	                                   &op);
+
+	if (use_am) {
+		int reg_input = args.arity++;
+		args.attr.u.reg_input = reg_input;
+		args.in[reg_input]    = be_transform_node(op);
+
+		amd64_addr_t *addr = &args.attr.base.addr;
+		ir_node      *ptr  = get_Load_ptr(load);
+		perform_address_matching(ptr, &args.arity, args.in, addr);
+
+		unsigned reg_count
+			= val_input(addr->base_input) + val_input(addr->index_input);
+		args.reqs = reg_count == 0 ? xmm_mem_reqs :
+		            reg_count == 1 ? xmm_reg_mem_reqs
+		                           : xmm_reg_reg_mem_reqs;
+
+		ir_node *new_mem   = be_transform_node(get_Load_mem(load));
+		int mem_input      = args.arity++;
+		args.in[mem_input] = new_mem;
+		addr->mem_input    = mem_input;
+
+		args.mem_proj      = get_Proj_for_pn(load, pn_Load_M);
+		args.attr.base.base.op_mode = AMD64_OP_ADDR_REG;
+	} else {
+		args.in[args.arity++] = be_transform_node(op0);
+		args.in[args.arity++] = be_transform_node(op1);
+		args.attr.base.base.op_mode = AMD64_OP_REG_REG;
+		args.reqs = xmm_xmm_reqs;
+	}
+
+	dbg_info *const dbgi      = get_irn_dbg_info(node);
+	ir_node  *const new_block = be_transform_node(block);
+	ir_node *new_node = make_node(dbgi, new_block, args.arity, args.in,
+	                              &args.attr);
+	arch_set_irn_register_reqs_in(new_node, args.reqs);
+
+	fix_node_mem_proj(new_node, args.mem_proj);
+
+	arch_set_irn_register_req_out(new_node, 0,
+								  &amd64_requirement_xmm_same_0);
+	return new_r_Proj(new_node, amd64_mode_xmm, pn_amd64_xSubs_res);
 }
 
 typedef ir_node *(*construct_shift_func)(dbg_info *dbgi, ir_node *block,
@@ -2252,11 +2313,6 @@ ir_node *amd64_new_reload(ir_node *value, ir_node *spill, ir_node *before)
 	return res;
 }
 
-static bool val_input(unsigned in)
-{
-	return in != NO_INPUT && in != RIP_INPUT;
-}
-
 static ir_node *gen_Load(ir_node *node)
 {
 
@@ -2521,45 +2577,69 @@ static ir_node *gen_Bitcast(ir_node *node)
 	panic("Bitcast NIY");
 }
 
+static ir_node *gen_amd64_l_punpckldq(ir_node *node)
+{
+	ir_node *op0 = get_irn_n(node, n_amd64_l_punpckldq_arg0);
+	ir_node *op1 = get_irn_n(node, n_amd64_l_punpckldq_arg1);
+	return gen_binop_xmm(node, op0, op1, new_bd_amd64_punpckldq, match_am);
+}
+
+static ir_node *gen_amd64_l_subpd(ir_node *node)
+{
+	ir_node *op0 = get_irn_n(node, n_amd64_l_subpd_arg0);
+	ir_node *op1 = get_irn_n(node, n_amd64_l_subpd_arg1);
+	return gen_binop_xmm(node, op0, op1, new_bd_amd64_subpd, match_am);
+}
+
+static ir_node *gen_amd64_l_haddpd(ir_node *node)
+{
+	ir_node *op0 = get_irn_n(node, n_amd64_l_haddpd_arg0);
+	ir_node *op1 = get_irn_n(node, n_amd64_l_haddpd_arg1);
+	return gen_binop_xmm(node, op0, op1, new_bd_amd64_haddpd, match_am);
+}
+
 /* Boilerplate code for transformation: */
 
 static void amd64_register_transformers(void)
 {
 	be_start_transform_setup();
 
-	be_set_transform_function(op_Add,      gen_Add);
-	be_set_transform_function(op_Address,  gen_Address);
-	be_set_transform_function(op_Alloc,    gen_Alloc);
-	be_set_transform_function(op_And,      gen_And);
-	be_set_transform_function(op_Bitcast,  gen_Bitcast);
-	be_set_transform_function(op_Builtin,  gen_Builtin);
-	be_set_transform_function(op_Call,     gen_Call);
-	be_set_transform_function(op_Cmp,      gen_Cmp);
-	be_set_transform_function(op_Cond,     gen_Cond);
-	be_set_transform_function(op_Const,    gen_Const);
-	be_set_transform_function(op_Conv,     gen_Conv);
-	be_set_transform_function(op_Div,      gen_Div);
-	be_set_transform_function(op_Eor,      gen_Eor);
-	be_set_transform_function(op_IJmp,     gen_IJmp);
-	be_set_transform_function(op_Jmp,      gen_Jmp);
-	be_set_transform_function(op_Load,     gen_Load);
-	be_set_transform_function(op_Member,   gen_Member);
-	be_set_transform_function(op_Minus,    gen_Minus);
-	be_set_transform_function(op_Mod,      gen_Mod);
-	be_set_transform_function(op_Mul,      gen_Mul);
-	be_set_transform_function(op_Mulh,     gen_Mulh);
-	be_set_transform_function(op_Not,      gen_Not);
-	be_set_transform_function(op_Or,       gen_Or);
-	be_set_transform_function(op_Phi,      gen_Phi);
-	be_set_transform_function(op_Return,   gen_Return);
-	be_set_transform_function(op_Shl,      gen_Shl);
-	be_set_transform_function(op_Shr,      gen_Shr);
-	be_set_transform_function(op_Shrs,     gen_Shrs);
-	be_set_transform_function(op_Start,    gen_Start);
-	be_set_transform_function(op_Store,    gen_Store);
-	be_set_transform_function(op_Sub,      gen_Sub);
-	be_set_transform_function(op_Switch,   gen_Switch);
-	be_set_transform_function(op_Unknown,  gen_Unknown);
+	be_set_transform_function(op_Add,               gen_Add);
+	be_set_transform_function(op_Address,           gen_Address);
+	be_set_transform_function(op_Alloc,             gen_Alloc);
+	be_set_transform_function(op_And,               gen_And);
+	be_set_transform_function(op_Bitcast,           gen_Bitcast);
+	be_set_transform_function(op_Builtin,           gen_Builtin);
+	be_set_transform_function(op_Call,              gen_Call);
+	be_set_transform_function(op_Cmp,               gen_Cmp);
+	be_set_transform_function(op_Cond,              gen_Cond);
+	be_set_transform_function(op_Const,             gen_Const);
+	be_set_transform_function(op_Conv,              gen_Conv);
+	be_set_transform_function(op_Div,               gen_Div);
+	be_set_transform_function(op_Eor,               gen_Eor);
+	be_set_transform_function(op_IJmp,              gen_IJmp);
+	be_set_transform_function(op_Jmp,               gen_Jmp);
+	be_set_transform_function(op_Load,              gen_Load);
+	be_set_transform_function(op_Member,            gen_Member);
+	be_set_transform_function(op_Minus,             gen_Minus);
+	be_set_transform_function(op_Mod,               gen_Mod);
+	be_set_transform_function(op_Mul,               gen_Mul);
+	be_set_transform_function(op_Mulh,              gen_Mulh);
+	be_set_transform_function(op_Not,               gen_Not);
+	be_set_transform_function(op_Or,                gen_Or);
+	be_set_transform_function(op_Phi,               gen_Phi);
+	be_set_transform_function(op_Return,            gen_Return);
+	be_set_transform_function(op_Shl,               gen_Shl);
+	be_set_transform_function(op_Shr,               gen_Shr);
+	be_set_transform_function(op_Shrs,              gen_Shrs);
+	be_set_transform_function(op_Start,             gen_Start);
+	be_set_transform_function(op_Store,             gen_Store);
+	be_set_transform_function(op_Sub,               gen_Sub);
+	be_set_transform_function(op_Switch,            gen_Switch);
+	be_set_transform_function(op_Unknown,           gen_Unknown);
+	be_set_transform_function(op_amd64_l_punpckldq, gen_amd64_l_punpckldq);
+	be_set_transform_function(op_amd64_l_subpd,     gen_amd64_l_subpd);
+	be_set_transform_function(op_amd64_l_haddpd,    gen_amd64_l_haddpd);
 
 	be_set_transform_proj_function(op_Alloc,   gen_Proj_Alloc);
 	be_set_transform_proj_function(op_Builtin, gen_Proj_Builtin);

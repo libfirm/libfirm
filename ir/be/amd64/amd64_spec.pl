@@ -683,4 +683,61 @@ movdqu_store => {
 	emit      => "movdqu %^S0, %A",
 },
 
+l_punpckldq => {
+	ins       => [ "arg0", "arg1" ],
+	outs      => [ "res" ],
+	attr_type => "",
+	dump_func => "NULL",
+	mode      => $mode_xmm,
+},
+
+l_subpd => {
+	ins       => [ "arg0", "arg1" ],
+	outs      => [ "res" ],
+	attr_type => "",
+	dump_func => "NULL",
+	mode      => $mode_xmm,
+},
+
+l_haddpd => {
+	ins       => [ "arg0", "arg1" ],
+	outs      => [ "res" ],
+	attr_type => "",
+	dump_func => "NULL",
+	mode      => $mode_xmm,
+},
+
+punpckldq => {
+	irn_flags => [ "rematerializable" ],
+	state     => "exc_pinned",
+	arity     => "variable",
+	outs      => [ "res", "none", "M" ],
+	reg_req   => { out => [ "xmm", "none", "none" ] },
+	attr_type => "amd64_binop_addr_attr_t",
+	attr      => "const amd64_binop_addr_attr_t *attr_init",
+	emit      => "punpckldq %AM",
+},
+
+subpd => {
+	irn_flags => [ "rematerializable" ],
+	state     => "exc_pinned",
+	arity     => "variable",
+	outs      => [ "res", "none", "M" ],
+	reg_req   => { out => [ "xmm", "none", "none" ] },
+	attr_type => "amd64_binop_addr_attr_t",
+	attr      => "const amd64_binop_addr_attr_t *attr_init",
+	emit      => "subpd %AM",
+},
+
+haddpd => {
+	irn_flags => [ "rematerializable" ],
+	state     => "exc_pinned",
+	arity     => "variable",
+	outs      => [ "res", "none", "M" ],
+	reg_req   => { out => [ "xmm", "none", "none" ] },
+	attr_type => "amd64_binop_addr_attr_t",
+	attr      => "const amd64_binop_addr_attr_t *attr_init",
+	emit      => "haddpd %AM",
+},
+
 );
