@@ -332,58 +332,42 @@ static void amd64_after_ra_walker(ir_node *block, void *data)
 
 /**
  * rewrite unsigned long -> float/double conversion
- * x86_64 only has a signed conversion
+ * x86_64 only has a signed conversion so we do some crazy sse construction
+ * instead (first seen this pattern in llvm): We split the 64bit value into
+ * 2 32bit vals and place them into the mantissa parts of apropriately choosen
+ * float values and later add the 2 floats together. In pseudo code:
+ *
+ * a = (vector unsigned long, unsigned long) x;
+ * b = (vector unsigned, unsigned, unsigned, unsigned)
+ *       upper half of 0x1p+52, upper half of 0x1p+84, 0, 0
+ * c = repack (a[0], b[0], a[1], b[1])
+ * d = (vector double) 0x1p+52, 0x1p+84
+ * e = c - d
+ * f = e[0] + e[1]
  */
 static void rewrite_unsigned_float_Conv(ir_node *node)
 {
-	ir_graph *irg        = get_irn_irg(node);
-	dbg_info *dbgi       = get_irn_dbg_info(node);
-	ir_node *lower_block = get_nodes_block(node);
-	ir_mode *dest_mode   = get_irn_mode(node);
-
-	part_block(node);
-
-	ir_node *block       = get_nodes_block(node);
-	ir_node *unsigned_x  = get_Conv_op(node);
-	ir_mode *mode_u      = get_irn_mode(unsigned_x);
-	ir_mode *mode_s      = find_signed_mode(mode_u);
-	ir_node *signed_x    = new_rd_Conv(dbgi, block, unsigned_x, mode_s);
-	ir_node *zero        = new_r_Const_null(irg, mode_s);
-	collect_new_start_block_node(zero);
-	ir_node *cmp         = new_rd_Cmp(dbgi, block, signed_x, zero,
-	                                 ir_relation_less);
-	ir_node *cond        = new_rd_Cond(dbgi, block, cmp);
-	ir_node *proj_true   = new_r_Proj(cond, mode_X, pn_Cond_true);
-	ir_node *proj_false  = new_r_Proj(cond, mode_X, pn_Cond_false);
-	ir_node *in_true[1]  = { proj_true };
-	ir_node *in_false[1] = { proj_false };
-
-	/* true block: Do some arithmetic to use the signed conversion */
-	ir_node *true_block  = new_r_Block(irg, ARRAY_SIZE(in_true), in_true);
-	ir_node *true_jmp    = new_r_Jmp(true_block);
-	ir_node *one         = new_r_Const_one(irg, mode_u);
-	collect_new_start_block_node(one);
-	ir_node *and         = new_r_And(true_block, unsigned_x, one, mode_u);
-	ir_node *shr         = new_r_Shr(true_block, unsigned_x, one, mode_u);
-	ir_node *or          = new_r_Or(true_block, and, shr, mode_u);
-	ir_node *or_signed   = new_rd_Conv(dbgi, true_block, or, mode_s);
-	ir_node *half        = new_rd_Conv(dbgi, true_block, or_signed, dest_mode);
-	ir_node *true_res    = new_r_Add(true_block, half, half, dest_mode);
-
-	/* false block: Simply convert to floating point */
-	ir_node *false_block = new_r_Block(irg, ARRAY_SIZE(in_false), in_false);
-	ir_node *false_jmp   = new_r_Jmp(false_block);
-	ir_node *false_res   = new_rd_Conv(dbgi, false_block, signed_x, dest_mode);
-
-	/* lower block */
-	ir_node *lower_in[2] = { true_jmp, false_jmp };
-	ir_node *phi_in[2]   = { true_res, false_res };
-
-	set_irn_in(lower_block, ARRAY_SIZE(lower_in), lower_in);
-	ir_node *phi = new_r_Phi(lower_block, ARRAY_SIZE(phi_in), phi_in,
-	                         dest_mode);
-	collect_new_phi_node(phi);
-	exchange(node, phi);
+	ir_graph  *irg    = get_irn_irg(node);
+	dbg_info  *dbgi   = get_irn_dbg_info(node);
+	ir_node   *block  = get_nodes_block(node);
+	ir_node   *in     = get_Conv_op(node);
+	ir_node   *in_xmm = new_r_Conv(block, in, amd64_mode_xmm);
+	ir_tarval *magic0
+		= new_integer_tarval_from_str("4530000043300000", 16, 0, 16,
+		                              amd64_mode_xmm);
+	ir_node   *const0 = new_r_Const(irg, magic0);
+	collect_new_start_block_node(const0);
+	ir_node   *punpck = new_bd_amd64_l_punpckldq(dbgi, block, in_xmm, const0);
+	ir_tarval *magic1
+		= new_integer_tarval_from_str("45300000000000004330000000000000", 32,
+		                              0, 16, amd64_mode_xmm);
+	ir_node   *const1 = new_r_Const(irg, magic1);
+	collect_new_start_block_node(const1);
+	ir_node   *subpd  = new_bd_amd64_l_subpd(dbgi, block, punpck, const1);
+	ir_node   *haddpd = new_bd_amd64_l_haddpd(dbgi, block, subpd, subpd);
+	ir_mode   *mode   = get_irn_mode(node);
+	ir_node   *conv   = new_r_Conv(block, haddpd, mode);
+	exchange(node, conv);
 }
 
 /* Creates a 64-bit constant with only the sign bit set,
