@@ -387,14 +387,14 @@ static void ia32_emit_am(ir_node const *const node)
 
 		/* emit base */
 		if (has_base) {
-			const arch_register_t *reg = arch_get_irn_register_in(node, n_ia32_base);
+			arch_register_t const *const reg = arch_get_irn_register(base);
 			emit_register(reg, NULL);
 		}
 
 		/* emit index + scale */
 		if (has_index) {
-			const arch_register_t *reg = arch_get_irn_register_in(node, n_ia32_index);
 			be_emit_char(',');
+			arch_register_t const *const reg = arch_get_irn_register(idx);
 			emit_register(reg, NULL);
 
 			int scale = get_ia32_am_scale(node);
@@ -501,10 +501,10 @@ emit_AM:
 				break;
 			}
 
-			case 'B':
-				imm = get_irn_n(node, n_ia32_binary_right);
-				if (is_ia32_Immediate(imm)) {
-					emit_ia32_Immediate(imm);
+			case 'B': {
+				ir_node const *const src = get_irn_n(node, n_ia32_binary_right);
+				if (is_ia32_Immediate(src)) {
+					emit_ia32_Immediate(src);
 					be_emit_cstring(", ");
 					if (get_ia32_op_type(node) == ia32_Normal) {
 						goto destination_operand;
@@ -513,7 +513,7 @@ emit_AM:
 					}
 				} else {
 					if (get_ia32_op_type(node) == ia32_Normal) {
-						reg = arch_get_irn_register_in(node, n_ia32_binary_right);
+						reg = arch_get_irn_register(src);
 						emit_register(reg, get_ia32_ls_mode(node));
 					} else {
 						ia32_emit_am(node);
@@ -524,6 +524,7 @@ destination_operand:
 					emit_register(reg, get_ia32_ls_mode(node));
 				}
 				break;
+			}
 
 			case 'D':
 				if (*fmt < '0' || '9' < *fmt)
@@ -641,11 +642,12 @@ emit_S:
 					goto unknown;
 
 				unsigned pos = *fmt++ - '0';
-				imm = get_irn_n(node, pos);
-				if (is_ia32_Immediate(imm)) {
+				ir_node const *const src = get_irn_n(node, pos);
+				if (is_ia32_Immediate(src)) {
+					imm = src;
 					goto emit_I;
 				} else {
-					reg = arch_get_irn_register_in(node, pos);
+					reg = arch_get_irn_register(src);
 					goto emit_R;
 				}
 			}
@@ -1031,7 +1033,7 @@ static const char* emit_asm_operand(const ir_node *node, const char *s)
 			emit_ia32_Immediate(pred);
 			return s;
 		}
-		reg = arch_get_irn_register_in(node, asm_reg->inout_pos);
+		reg = arch_get_irn_register(pred);
 	}
 	if (reg == NULL) {
 		ir_fprintf(stderr,
@@ -2695,7 +2697,7 @@ static void bemit_push(const ir_node *node)
 		bemit8(0xFF);
 		bemit_mod_am(6, node);
 	} else {
-		const arch_register_t *reg = arch_get_irn_register_in(node, n_ia32_Push_val);
+		arch_register_t const *const reg = arch_get_irn_register(value);
 		bemit8(0x50 + reg->encoding);
 	}
 }
