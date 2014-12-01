@@ -2035,6 +2035,75 @@ static ir_node *gen_Phi(ir_node *node)
 	return be_transform_phi(node, req);
 }
 
+typedef ir_node* (*create_mov_func)(dbg_info *dbgi, ir_node *block, int arity,
+                                    ir_node **in, amd64_op_mode_t op_mode,
+                                    amd64_addr_t addr);
+
+static ir_node *match_mov(dbg_info *dbgi, ir_node *block, ir_node *value,
+                          create_mov_func create_mov, unsigned pn_res)
+{
+	amd64_addr_t addr;
+	memset(&addr, 0, sizeof(addr));
+	ir_node *load;
+	ir_node *op;
+	int      arity = 0;
+	ir_node *in[4];
+	ir_mode *mode = get_irn_mode(value);
+	bool use_am = use_address_matching(mode, match_am, block, NULL,
+									   value, &load, &op);
+
+	amd64_op_mode_t op_mode;
+	const arch_register_req_t **reqs;
+	ir_node *mem_proj = NULL;
+	if (use_am) {
+		ir_node *ptr = get_Load_ptr(load);
+		perform_address_matching(ptr, &arity, in, &addr);
+
+		if (!val_input(addr.base_input) && !val_input(addr.index_input))
+			reqs = mem_reqs;
+		else if (val_input(addr.base_input) && val_input(addr.index_input))
+			reqs = reg_reg_mem_reqs;
+		else
+			reqs = reg_mem_reqs;
+
+		ir_node *new_mem = be_transform_node(get_Load_mem(load));
+		int mem_input  = arity++;
+		in[mem_input]  = new_mem;
+		addr.mem_input = mem_input;
+
+		mem_proj = get_Proj_for_pn(load, pn_Load_M);
+		op_mode  = AMD64_OP_ADDR;
+	} else {
+		ir_node *new_value = be_transform_node(value);
+		in[arity++] = new_value;
+		reqs        = get_irn_mode(new_value) == amd64_mode_xmm ? xmm_reqs
+		                                                        : reg_reqs;
+		op_mode     = AMD64_OP_REG;
+	}
+
+	assert((size_t)arity <= ARRAY_SIZE(in));
+	ir_node *new_node = create_mov(dbgi, block, arity, in, op_mode,
+	                               addr);
+	arch_set_irn_register_reqs_in(new_node, reqs);
+
+	if (mem_proj != NULL)
+		be_set_transformed_node(load, new_node);
+
+	ir_node *res = new_r_Proj(new_node, amd64_mode_xmm, pn_res);
+	return res;
+}
+
+static ir_node *create_movq(dbg_info *dbgi, ir_node *block, ir_node *value)
+{
+	return match_mov(dbgi, block, value, new_bd_amd64_movq, pn_amd64_movq_res);
+}
+
+static ir_node *create_cvtsd2ss(dbg_info *dbgi, ir_node *block, ir_node *value)
+{
+	return match_mov(dbgi, block, value, new_bd_amd64_CvtSD2SS,
+	                 pn_amd64_CvtSD2SS_res);
+}
+
 static ir_node *gen_Conv(ir_node *node)
 {
 	ir_node  *block    = be_transform_node(get_nodes_block(node));
@@ -2043,15 +2112,34 @@ static ir_node *gen_Conv(ir_node *node)
 	ir_mode  *dst_mode = get_irn_mode(node);
 	dbg_info *dbgi     = get_irn_dbg_info(node);
 
-	if (src_mode == dst_mode)
-		return be_transform_node(op);
+	int src_bits = get_mode_size_bits(src_mode);
+	int dst_bits = get_mode_size_bits(dst_mode);
+	/* ad-hoc assumption until libfirm has vector modes:
+	 * we assume 128bit modes are two packed doubles. */
+	if (dst_bits == 128) {
+		/* int -> 2xdouble */
+		assert(get_mode_arithmetic(src_mode) == irma_twos_complement);
+		assert(src_bits == 64);
+		assert(dst_mode == amd64_mode_xmm);
+		return create_movq(dbgi, block, op);
+	} else if (src_bits == 128) {
+		/* 2xdouble -> float */
+		assert(src_mode == amd64_mode_xmm);
+		assert(mode_is_float(dst_mode));
+		if (dst_bits == 32) {
+			return create_cvtsd2ss(dbgi, block, op);
+		} else if (dst_bits == 64) {
+			/* this is a NOP */
+			return be_transform_node(op);
+		} else {
+			panic("amd64: can't transform %+F", node);
+		}
+	}
 
 	bool src_float = mode_is_float(src_mode);
 	bool dst_float = mode_is_float(dst_mode);
 	bool is_gp     = !src_float && !dst_float;
 
-	int src_bits = get_mode_size_bits(src_mode);
-	int dst_bits = get_mode_size_bits(dst_mode);
 	ir_mode *min_mode;
 	if (src_bits < dst_bits) {
 		min_mode = src_mode;
@@ -2099,8 +2187,7 @@ static ir_node *gen_Conv(ir_node *node)
 			res  = new_r_Proj(conv, amd64_mode_xmm, pn_amd64_CvtSS2SD_res);
 		} else {
 			conv = new_bd_amd64_CvtSD2SS(dbgi, block, ARRAY_SIZE(in),
-			                             in, insn_mode, AMD64_OP_REG,
-			                             addr);
+			                             in, AMD64_OP_REG, addr);
 			res  = new_r_Proj(conv, mode_F, pn_amd64_CvtSD2SS_res);
 		}
 		reqs = xmm_reqs;

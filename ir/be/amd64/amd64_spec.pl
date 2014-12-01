@@ -605,7 +605,8 @@ CvtSD2SS => {
 	outs      => [ "res", "none", "M" ],
 	arity     => "variable",
 	attr_type => "amd64_addr_attr_t",
-	attr      => "amd64_insn_mode_t insn_mode, amd64_op_mode_t op_mode, amd64_addr_t addr",
+	attr      => "amd64_op_mode_t op_mode, amd64_addr_t addr",
+	fixed     => "amd64_insn_mode_t insn_mode = INSN_MODE_64;\n",
 	emit      => "cvtsd2ss %AM, %^D0",
 },
 
@@ -647,6 +648,17 @@ CvtSI2SD => {
 	attr_type => "amd64_addr_attr_t",
 	attr      => "amd64_insn_mode_t insn_mode, amd64_op_mode_t op_mode, amd64_addr_t addr",
 	emit      => "cvtsi2sd %AM, %^D0",
+},
+
+movq => {
+	state     => "exc_pinned",
+	arity     => "variable",
+	outs      => [ "res", "none", "M" ],
+	reg_req   => { out => [ "xmm", "none", "none" ] },
+	attr_type => "amd64_addr_attr_t",
+	attr      => "amd64_op_mode_t op_mode, amd64_addr_t addr",
+	fixed     => "amd64_insn_mode_t insn_mode = INSN_MODE_64;\n",
+	emit      => "movq %AM, %D0",
 },
 
 movdqa => {
