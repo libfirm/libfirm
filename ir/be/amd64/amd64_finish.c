@@ -78,27 +78,16 @@ static void transform_sub_to_neg_add(ir_node *node,
 	ir_node *add, *add_res;
 
 	if (is_amd64_xSubs(node)) {
-		ir_mode *mode = get_irn_mode(in2);
-		ir_tarval *tv;
-		if (get_mode_size_bits(mode) <= 32)
-			tv = create_sign_tv(mode_Iu);
-		else
-			tv = create_sign_tv(mode_Lu);
-
+		ir_tarval *tv = create_sign_tv(amd64_mode_xmm);
 		ir_entity *sign_bit_const = create_float_const_entity(irg, tv);
-
-		/* xXorp needs a 128-bit memory address since it's a vector instruction.
-		 * Setting the alignment works in this case, but is not the nice way.
-		 * TODO: Create and set correct mode/type for the entity.
-		 */
-		set_entity_alignment(sign_bit_const, 16);
 
 		amd64_binop_addr_attr_t xor_attr;
 		memset(&xor_attr, 0, sizeof(xor_attr));
+		xor_attr.base.insn_mode             = INSN_MODE_64;
+		xor_attr.base.base.op_mode          = AMD64_OP_ADDR_REG;
 		xor_attr.base.addr.base_input       = NO_INPUT;
 		xor_attr.base.addr.index_input      = NO_INPUT;
 		xor_attr.base.addr.immediate.entity = sign_bit_const;
-		xor_attr.base.base.op_mode          = AMD64_OP_ADDR_REG;
 
 		ir_node *xor_in[] = { in2 };
 		ir_node *xor = new_bd_amd64_xXorp(dbgi, block, ARRAY_SIZE(xor_in),

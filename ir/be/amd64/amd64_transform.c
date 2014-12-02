@@ -410,8 +410,10 @@ static ir_node *create_float_const(dbg_info *dbgi, ir_node *block,
 ir_tarval *create_sign_tv(ir_mode *mode)
 {
 	unsigned size = get_mode_size_bits(mode);
-	assert(size == 32 || size == 64);
-	ir_mode *intmode = size == 32 ? mode_Iu : mode_Lu;
+	assert(size == 32 || size == 64 || size == 128);
+	ir_mode *intmode = size == 128 ? amd64_mode_xmm
+	                 : size == 64  ? mode_Lu
+	                               : mode_Iu;
 	ir_tarval *one  = get_mode_one(intmode);
 	ir_tarval *sign = tarval_shl_unsigned(one, size-1);
 	return tarval_bitcast(sign, mode);
@@ -1302,6 +1304,7 @@ static ir_node *gen_float_neg(ir_node *const node)
 	amd64_binop_addr_attr_t attr;
 	memset(&attr, 0, sizeof(attr));
 	attr.base.base.op_mode = AMD64_OP_REG_REG;
+	attr.base.insn_mode    = INSN_MODE_64;
 
 	ir_node *xor = new_bd_amd64_xXorp(dbgi, new_block, ARRAY_SIZE(in),
 	                                  in, &attr);
