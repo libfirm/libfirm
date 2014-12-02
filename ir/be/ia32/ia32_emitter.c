@@ -879,40 +879,6 @@ static void emit_ia32_Setcc(const ir_node *node)
 	}
 }
 
-static void emit_ia32_CMovcc(const ir_node *node)
-{
-	arch_register_t const *const out = arch_get_irn_register_out(node, pn_ia32_CMovcc_res);
-
-	x86_condition_code_t cc = determine_final_cc(node, n_ia32_CMovcc_eflags);
-
-	const arch_register_t *in_true
-		= arch_get_irn_register_in(node, n_ia32_CMovcc_val_true);
-	const arch_register_t *in_false
-		= arch_get_irn_register_in(node, n_ia32_CMovcc_val_false);
-
-	/* should be same constraint fullfilled? */
-	if (out == in_false) {
-		/* yes -> nothing to do */
-	} else if (out == in_true) {
-		assert(get_ia32_op_type(node) == ia32_Normal);
-
-		cc = x86_negate_condition_code(cc);
-
-		const arch_register_t *tmp      = in_true;
-		in_true  = in_false;
-		in_false = tmp;
-	} else {
-		/* we need a mov */
-		ia32_emitf(node, "movl %R, %R", in_false, out);
-	}
-
-	if (cc & x86_cc_float_parity_cases) {
-		panic("CMov with floatingpoint compare/parity not supported yet");
-	}
-
-	ia32_emitf(node, "cmov%PX %#AR, %#R", (int)cc, in_true, out);
-}
-
 /**
  * Emits code for a SwitchJmp
  */
@@ -1361,7 +1327,6 @@ static void ia32_register_emitters(void)
 	be_set_emitter(op_ia32_Return,     emit_ia32_Return);
 	be_set_emitter(op_ia32_Asm,        emit_ia32_Asm);
 	be_set_emitter(op_ia32_ClimbFrame, emit_ia32_ClimbFrame);
-	be_set_emitter(op_ia32_CMovcc,     emit_ia32_CMovcc);
 	be_set_emitter(op_ia32_Conv_FP2FP, emit_ia32_Conv_FP2FP);
 	be_set_emitter(op_ia32_Conv_FP2I,  emit_ia32_Conv_FP2I);
 	be_set_emitter(op_ia32_Conv_I2FP,  emit_ia32_Conv_I2FP);
@@ -2362,37 +2327,12 @@ static void bemit_bt(ir_node const *const node)
 
 static void bemit_cmovcc(const ir_node *node)
 {
-	arch_register_t const *const out = arch_get_irn_register_out(node, pn_ia32_res);
-
-	x86_condition_code_t cc = determine_final_cc(node, n_ia32_CMovcc_eflags);
-
-	const arch_register_t *in_true
-		= arch_get_irn_register_in(node, n_ia32_CMovcc_val_true);
-	const arch_register_t *in_false
-		= arch_get_irn_register_in(node, n_ia32_CMovcc_val_false);
-
-	/* should be same constraint fullfilled? */
-	if (out == in_false) {
-		/* yes -> nothing to do */
-	} else if (out == in_true) {
-		assert(get_ia32_op_type(node) == ia32_Normal);
-		cc      = x86_negate_condition_code(cc);
-		in_true = in_false;
-	} else {
-		/* we need a mov */
-		bemit_mov(in_false, out);
-	}
-
+	bemit8(0x0F);
+	ir_node       const *const val_true = get_irn_n(node, n_ia32_CMovcc_val_true);
+	x86_condition_code_t const cc       = determine_final_cc(node, n_ia32_CMovcc_eflags);
 	if (cc & x86_cc_float_parity_cases)
 		panic("cmov can't handle parity float cases");
-
-	bemit8(0x0F);
-	bemit8(0x40 | pnc2cc(cc));
-	if (get_ia32_op_type(node) == ia32_Normal) {
-		bemit_modrr(in_true, out);
-	} else {
-		bemit_mod_am(out->encoding, node);
-	}
+	bemit_binop_reg(node, 0x40 | pnc2cc(cc), val_true);
 }
 
 static void bemit_test(ir_node const *const node)
