@@ -21,6 +21,7 @@ enum amd64_arch_irn_flags_t {
 };
 
 typedef enum {
+	INSN_MODE_INVALID = 0,
 	INSN_MODE_128,
 	INSN_MODE_64,
 	INSN_MODE_32,
