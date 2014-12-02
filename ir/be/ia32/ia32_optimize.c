@@ -734,11 +734,6 @@ static void peephole_ia32_Const(ir_node *node)
 	be_peephole_exchange(node, xorn);
 }
 
-static inline int is_noreg(const ir_node *node)
-{
-	return is_ia32_NoReg_GP(node);
-}
-
 static bool is_disp_const(ir_node const *const node, int32_t const val)
 {
 	return !get_ia32_am_ent(node) && get_ia32_am_offs_int(node) == val;
@@ -774,14 +769,14 @@ static void peephole_ia32_Lea(ir_node *node)
 	} else {
 #ifdef DEBUG_libfirm
 		/* We shouldn't construct these in the first place. */
-		if (is_noreg(base) && is_noreg(index))
+		if (is_ia32_NoReg_GP(base) && is_ia32_NoReg_GP(index))
 			ir_fprintf(stderr, "Optimization warning: found Lea which is a Const\n");
 #endif
 		return; /* Neither base nor index use the same register as the Lea. */
 	}
 
 	ir_node       *res;
-	bool     const has_2ops = !is_noreg(op2);
+	bool     const has_2ops = !is_ia32_NoReg_GP(op2);
 	bool     const has_disp = !is_disp_const(node, 0);
 	unsigned const scale    = get_ia32_am_scale(node);
 	if (scale == 0) {
