@@ -745,29 +745,23 @@ static x86_condition_code_t determine_final_cc(ir_node const *const node, int co
 	if (attr->attr.ins_permuted)
 		cc = x86_negate_condition_code(cc);
 
-	ir_node *flags = get_irn_n(node, flags_pos);
-	flags = skip_Proj(flags);
+	ir_node *flags = skip_Proj(get_irn_n(node, flags_pos));
 
 	/* Permuted operands of a test instruction do not change the result. */
 	if (is_ia32_Test(flags))
 		return cc;
 
-	const ia32_attr_t *flags_attr;
 	if (is_ia32_Sahf(flags)) {
-		ir_node *cmp = get_irn_n(flags, n_ia32_Sahf_val);
-		if (!(is_ia32_FucomFnstsw(cmp) || is_ia32_FucomppFnstsw(cmp) || is_ia32_FtstFnstsw(cmp))) {
-			ir_graph *irg = get_irn_irg(node);
+		flags = get_irn_n(flags, n_ia32_Sahf_val);
+		if (!is_ia32_FucomFnstsw(flags) && !is_ia32_FucomppFnstsw(flags) && !is_ia32_FtstFnstsw(flags)) {
+			ir_graph *const irg = get_irn_irg(node);
 			inc_irg_visited(irg);
-			cmp = find_original_value(cmp);
-			assert(cmp != NULL);
-			assert(is_ia32_FucomFnstsw(cmp) || is_ia32_FucomppFnstsw(cmp) || is_ia32_FtstFnstsw(cmp));
+			flags = find_original_value(flags);
+			assert(is_ia32_FucomFnstsw(flags) || is_ia32_FucomppFnstsw(flags) || is_ia32_FtstFnstsw(flags));
 		}
-
-		flags_attr = get_ia32_attr_const(cmp);
-	} else {
-		flags_attr = get_ia32_attr_const(flags);
 	}
 
+	ia32_attr_t const *const flags_attr = get_ia32_attr_const(flags);
 	if (flags_attr->ins_permuted)
 		cc = x86_invert_condition_code(cc);
 	return cc;
