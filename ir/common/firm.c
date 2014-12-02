@@ -54,50 +54,33 @@ void ir_init(void)
 	/* for historical reasons be_init must be run first */
 	firm_be_init();
 
-	/* initialize firm flags */
 	firm_init_flags();
-	/* initialize all ident stuff */
 	init_ident();
-	/* Edges need hooks. */
 	init_edges();
-	/* create the type kinds. */
 	init_tpop();
-	/* create an obstack and put all tarvals in a pdeq */
 	init_tarval_1();
 	/* Builds a basic program representation, so modes can be added. */
 	init_irprog_1();
-	/* initialize all modes an ir node can consist of */
 	init_mode();
-	/* initialize tarvals, and floating point arithmetic */
 	init_tarval_2();
-	/* initialize node opcodes */
 	firm_init_op();
-	/* kind of obstack initialization */
 	firm_init_mangle();
-	/* initialize reassociation */
 	firm_init_reassociation();
-	/* initialize function call optimization */
 	firm_init_funccalls();
-	/* initialize function inlining */
 	firm_init_inline();
-	/* initialize scalar replacement */
 	firm_init_scalar_replace();
 	/* Builds a construct allowing to access all information to be constructed
 	   later. */
 	init_irprog_2();
-	/* memory disambiguation */
 	firm_init_memory_disambiguator();
 	firm_init_loop_opt();
 
-	/* Init architecture dependent optimizations. */
 	arch_dep_set_opts(arch_dep_none);
 
 	init_execfreq();
-
 	init_stat();
 
 #ifdef DEBUG_libfirm
-	/* integrated debugger extension */
 	firm_init_debugger();
 #endif
 }
