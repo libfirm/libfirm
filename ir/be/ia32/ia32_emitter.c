@@ -405,7 +405,7 @@ static void ia32_emit_am(ir_node const *const node)
 	}
 }
 
-static x86_condition_code_t determine_final_cc(ir_node const *node, int flags_pos, x86_condition_code_t cc);
+static x86_condition_code_t determine_final_cc(ir_node const *node, int flags_pos);
 
 void ia32_emitf(ir_node const *const node, char const *fmt, ...)
 {
@@ -607,8 +607,7 @@ emit_I:
 					++fmt;
 					cc = (x86_condition_code_t)va_arg(ap, int);
 				} else if ('0' <= *fmt && *fmt <= '9') {
-					cc = get_ia32_condcode(node);
-					cc = determine_final_cc(node, *fmt - '0', cc);
+					cc = determine_final_cc(node, *fmt - '0');
 					++fmt;
 				} else {
 					goto unknown;
@@ -739,10 +738,9 @@ static ir_node *find_original_value(ir_node *node)
 	}
 }
 
-static x86_condition_code_t determine_final_cc(const ir_node *node,
-                                               int flags_pos,
-                                               x86_condition_code_t cc)
+static x86_condition_code_t determine_final_cc(ir_node const *const node, int const flags_pos)
 {
+	x86_condition_code_t cc = get_ia32_condcode(node);
 	ir_node *flags = get_irn_n(node, flags_pos);
 	flags = skip_Proj(flags);
 
@@ -790,8 +788,7 @@ static bool fallthrough_possible(const ir_node *block, const ir_node *target)
  */
 static void emit_ia32_Jcc(const ir_node *node)
 {
-	x86_condition_code_t cc = get_ia32_condcode(node);
-	cc = determine_final_cc(node, 0, cc);
+	x86_condition_code_t cc = determine_final_cc(node, n_ia32_Jcc_eflags);
 
 	/* get both Projs */
 	ir_node const *proj_true   = get_Proj_for_pn(node, pn_ia32_Jcc_true);
@@ -862,8 +859,7 @@ static void emit_ia32_Setcc(const ir_node *node)
 {
 	const arch_register_t *dreg = arch_get_irn_register_out(node, pn_ia32_Setcc_res);
 
-	x86_condition_code_t cc = get_ia32_condcode(node);
-	cc = determine_final_cc(node, n_ia32_Setcc_eflags, cc);
+	x86_condition_code_t const cc = determine_final_cc(node, n_ia32_Setcc_eflags);
 	if (cc & x86_cc_float_parity_cases) {
 		if (cc & x86_cc_negated) {
 			ia32_emitf(node, "set%PX %<R", (int)cc, dreg);
@@ -883,9 +879,8 @@ static void emit_ia32_CMovcc(const ir_node *node)
 {
 	ia32_attr_t     const *const attr = get_ia32_attr_const(node);
 	arch_register_t const *const out  = arch_get_irn_register_out(node, pn_ia32_CMovcc_res);
-	x86_condition_code_t         cc   = get_ia32_condcode(node);
 
-	cc = determine_final_cc(node, n_ia32_CMovcc_eflags, cc);
+	x86_condition_code_t cc = determine_final_cc(node, n_ia32_CMovcc_eflags);
 	/* although you can't set ins_permuted in the constructor it might still
 	 * be set by memory operand folding
 	 * Permuting inputs of a cmov means the condition is negated!
@@ -2296,8 +2291,7 @@ static void bemit_setcc(const ir_node *node)
 {
 	const arch_register_t *dreg = arch_get_irn_register_out(node, pn_ia32_Setcc_res);
 
-	x86_condition_code_t cc = get_ia32_condcode(node);
-	cc = determine_final_cc(node, n_ia32_Setcc_eflags, cc);
+	x86_condition_code_t const cc = determine_final_cc(node, n_ia32_Setcc_eflags);
 	if (cc & x86_cc_float_parity_cases) {
 		if (cc & x86_cc_negated) {
 			/* set%PNC <dreg */
@@ -2374,8 +2368,6 @@ static void bemit_cmovcc(const ir_node *node)
 	const ia32_attr_t     *attr         = get_ia32_attr_const(node);
 	int                    ins_permuted = attr->ins_permuted;
 	const arch_register_t *out          = arch_get_irn_register_out(node, pn_ia32_res);
-	x86_condition_code_t   cc           = get_ia32_condcode(node);
-	cc = determine_final_cc(node, n_ia32_CMovcc_eflags, cc);
 
 	const arch_register_t *in_true
 		= arch_get_irn_register_in(node, n_ia32_CMovcc_val_true);
@@ -2394,6 +2386,7 @@ static void bemit_cmovcc(const ir_node *node)
 		bemit_mov(in_false, out);
 	}
 
+	x86_condition_code_t cc = determine_final_cc(node, n_ia32_CMovcc_eflags);
 	if (ins_permuted)
 		cc = x86_negate_condition_code(cc);
 
@@ -2766,8 +2759,7 @@ static void bemit_jp(bool odd, const ir_node *dest_block)
 
 static void bemit_ia32_jcc(const ir_node *node)
 {
-	x86_condition_code_t cc = get_ia32_condcode(node);
-	cc = determine_final_cc(node, 0, cc);
+	x86_condition_code_t cc = determine_final_cc(node, n_ia32_Jcc_eflags);
 
 	/* get both Projs */
 	ir_node const *proj_true    = get_Proj_for_pn(node, pn_ia32_Jcc_true);
