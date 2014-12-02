@@ -82,9 +82,6 @@ static void assure_should_be_same_requirements(ir_node *node)
 		ir_node *uses_out_reg     = NULL;
 		int      uses_out_reg_pos = -1;
 		foreach_irn_in(node, i2, in) {
-			if (!mode_is_data(get_irn_mode(in)))
-				continue;
-
 			const arch_register_t *other_in_reg = arch_get_irn_register(in);
 			if (other_in_reg != out_reg)
 				continue;

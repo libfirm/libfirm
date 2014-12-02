@@ -242,9 +242,6 @@ static void assure_should_be_same_requirements(ir_node *node)
 		/* check if any other input operands uses the out register */
 		int uses_out_reg_pos = -1;
 		foreach_irn_in(node, i2, in) {
-			if (!mode_is_data(get_irn_mode(in)))
-				continue;
-
 			arch_register_t const *const other_in_reg = arch_get_irn_register(in);
 			if (other_in_reg == out_reg) {
 				if (uses_out_reg_pos >= 0)
