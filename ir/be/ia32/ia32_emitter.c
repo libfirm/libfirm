@@ -740,7 +740,11 @@ static ir_node *find_original_value(ir_node *node)
 
 static x86_condition_code_t determine_final_cc(ir_node const *const node, int const flags_pos)
 {
-	x86_condition_code_t cc = get_ia32_condcode(node);
+	ia32_condcode_attr_t const *const attr = get_ia32_condcode_attr_const(node);
+	x86_condition_code_t              cc   = attr->condition_code;
+	if (attr->attr.ins_permuted)
+		cc = x86_negate_condition_code(cc);
+
 	ir_node *flags = get_irn_n(node, flags_pos);
 	flags = skip_Proj(flags);
 
@@ -877,16 +881,9 @@ static void emit_ia32_Setcc(const ir_node *node)
 
 static void emit_ia32_CMovcc(const ir_node *node)
 {
-	ia32_attr_t     const *const attr = get_ia32_attr_const(node);
-	arch_register_t const *const out  = arch_get_irn_register_out(node, pn_ia32_CMovcc_res);
+	arch_register_t const *const out = arch_get_irn_register_out(node, pn_ia32_CMovcc_res);
 
 	x86_condition_code_t cc = determine_final_cc(node, n_ia32_CMovcc_eflags);
-	/* although you can't set ins_permuted in the constructor it might still
-	 * be set by memory operand folding
-	 * Permuting inputs of a cmov means the condition is negated!
-	 */
-	if (attr->ins_permuted)
-		cc = x86_negate_condition_code(cc);
 
 	const arch_register_t *in_true
 		= arch_get_irn_register_in(node, n_ia32_CMovcc_val_true);
@@ -2365,9 +2362,9 @@ static void bemit_bt(ir_node const *const node)
 
 static void bemit_cmovcc(const ir_node *node)
 {
-	const ia32_attr_t     *attr         = get_ia32_attr_const(node);
-	int                    ins_permuted = attr->ins_permuted;
-	const arch_register_t *out          = arch_get_irn_register_out(node, pn_ia32_res);
+	arch_register_t const *const out = arch_get_irn_register_out(node, pn_ia32_res);
+
+	x86_condition_code_t cc = determine_final_cc(node, n_ia32_CMovcc_eflags);
 
 	const arch_register_t *in_true
 		= arch_get_irn_register_in(node, n_ia32_CMovcc_val_true);
@@ -2379,16 +2376,12 @@ static void bemit_cmovcc(const ir_node *node)
 		/* yes -> nothing to do */
 	} else if (out == in_true) {
 		assert(get_ia32_op_type(node) == ia32_Normal);
-		ins_permuted = !ins_permuted;
-		in_true      = in_false;
+		cc      = x86_negate_condition_code(cc);
+		in_true = in_false;
 	} else {
 		/* we need a mov */
 		bemit_mov(in_false, out);
 	}
-
-	x86_condition_code_t cc = determine_final_cc(node, n_ia32_CMovcc_eflags);
-	if (ins_permuted)
-		cc = x86_negate_condition_code(cc);
 
 	if (cc & x86_cc_float_parity_cases)
 		panic("cmov can't handle parity float cases");
