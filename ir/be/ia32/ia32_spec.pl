@@ -821,9 +821,9 @@ CMovcc => {
 	# (note: leave the false,true order intact to make it compatible with other
 	#  ia32_binary ops)
 	reg_req   => { in => [ "gp", "gp", "none", "gp", "gp", "eflags" ],
-	               out => [ "in_r4 in_r5", "flags", "none" ] },
+	               out => [ "in_r4 in_r5", "none", "none" ] },
 	ins       => [ "base", "index", "mem", "val_false", "val_true", "eflags" ],
-	outs      => [ "res", "flags", "M" ],
+	outs      => [ "res", "unused", "M" ],
 	am        => "source,binary",
 	attr_type => "ia32_condcode_attr_t",
 	attr      => "x86_condition_code_t condition_code",
