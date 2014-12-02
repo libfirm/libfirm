@@ -349,55 +349,55 @@ typedef enum ia32_emit_mod_t {
 } ia32_emit_mod_t;
 ENUM_BITSET(ia32_emit_mod_t)
 
+static ir_node const *get_irn_n_reg(ir_node const *const node, int const pos)
+{
+	ir_node *const in = get_irn_n(node, pos);
+	return is_ia32_NoReg_GP(in) ? NULL : in;
+}
+
 /**
  * Emits address mode.
  */
 static void ia32_emit_am(ir_node const *const node)
 {
-	ir_entity *ent       = get_ia32_am_ent(node);
-	int32_t    offs      = get_ia32_am_offs_int(node);
-	ir_node   *base      = get_irn_n(node, n_ia32_base);
-	bool       has_base  = !is_ia32_NoReg_GP(base);
-	ir_node   *idx       = get_irn_n(node, n_ia32_index);
-	bool       has_index = !is_ia32_NoReg_GP(idx);
-
 	/* just to be sure... */
 	assert(get_ia32_frame_use(node) == IA32_FRAME_USE_NONE || get_ia32_frame_ent(node));
 
 	if (get_ia32_am_tls_segment(node))
 		be_emit_cstring("%gs:");
 
+	ir_node const *const base = get_irn_n_reg(node, n_ia32_base);
+	ir_node const *const idx  = get_irn_n_reg(node, n_ia32_index);
+
 	/* emit offset */
-	if (ent != NULL) {
+	int32_t    const offs = get_ia32_am_offs_int(node);
+	ir_entity *const ent  = get_ia32_am_ent(node);
+	if (ent) {
 		const ia32_attr_t *attr = get_ia32_attr_const(node);
 		ia32_emit_entity(ent, attr->am_sc_no_pic_adjust);
-	}
-
-	/* also handle special case if nothing is set */
-	if (offs != 0 || (ent == NULL && !has_base && !has_index)) {
-		if (ent != NULL) {
+		if (offs != 0)
 			be_emit_irprintf("%+"PRId32, offs);
-		} else {
-			be_emit_irprintf("%"PRId32, offs);
-		}
+	} else if (offs != 0 || (!base && !idx)) {
+		/* also handle special case if nothing is set */
+		be_emit_irprintf("%"PRId32, offs);
 	}
 
-	if (has_base || has_index) {
+	if (base || idx) {
 		be_emit_char('(');
 
 		/* emit base */
-		if (has_base) {
+		if (base) {
 			arch_register_t const *const reg = arch_get_irn_register(base);
 			emit_register(reg, NULL);
 		}
 
 		/* emit index + scale */
-		if (has_index) {
+		if (idx) {
 			be_emit_char(',');
 			arch_register_t const *const reg = arch_get_irn_register(idx);
 			emit_register(reg, NULL);
 
-			int scale = get_ia32_am_scale(node);
+			int const scale = get_ia32_am_scale(node);
 			if (scale > 0)
 				be_emit_irprintf(",%d", 1 << scale);
 		}
@@ -1824,19 +1824,13 @@ static bool ia32_is_8bit_imm(ia32_immediate_attr_t const *const imm)
  */
 static void bemit_mod_am(unsigned reg, const ir_node *node)
 {
-	ir_entity *ent       = get_ia32_am_ent(node);
-	int32_t    offs      = get_ia32_am_offs_int(node);
-	ir_node   *base      = get_irn_n(node, n_ia32_base);
-	int        has_base  = !is_ia32_NoReg_GP(base);
-	ir_node   *idx       = get_irn_n(node, n_ia32_index);
-	int        has_index = !is_ia32_NoReg_GP(idx);
-	unsigned   modrm     = 0;
-	unsigned   sib       = 0;
-	unsigned   emitoffs  = 0;
-	bool       emitsib   = false;
+	ir_entity *const ent  = get_ia32_am_ent(node);
+	int32_t    const offs = get_ia32_am_offs_int(node);
 
 	/* set the mod part depending on displacement */
-	if (ent != NULL) {
+	unsigned modrm    = 0;
+	unsigned emitoffs = 0;
+	if (ent) {
 		modrm |= MOD_IND_WORD_OFS;
 		emitoffs = 32;
 	} else if (offs == 0) {
@@ -1851,8 +1845,9 @@ static void bemit_mod_am(unsigned reg, const ir_node *node)
 	}
 
 	unsigned base_enc;
-	if (has_base) {
-		const arch_register_t *base_reg = arch_get_irn_register(base);
+	ir_node const *const base = get_irn_n_reg(node, n_ia32_base);
+	if (base) {
+		arch_register_t const *const base_reg = arch_get_irn_register(base);
 		base_enc = base_reg->encoding;
 	} else {
 		/* Use the EBP encoding + MOD_IND if NO base register. There is
@@ -1863,10 +1858,12 @@ static void bemit_mod_am(unsigned reg, const ir_node *node)
 	}
 
 	/* Determine if we need a SIB byte. */
-	if (has_index) {
-		const arch_register_t *reg_index = arch_get_irn_register(idx);
-		int                    scale     = get_ia32_am_scale(node);
-		assert(scale < 4);
+	bool                 emitsib = false;
+	unsigned             sib     = 0;
+	ir_node const *const idx     = get_irn_n_reg(node, n_ia32_index);
+	if (idx) {
+		arch_register_t const *const reg_index = arch_get_irn_register(idx);
+		unsigned               const scale     = get_ia32_am_scale(node);
 		/* R/M set to ESP means SIB in 32bit mode. */
 		modrm   |= ENC_RM(0x04);
 		sib      = ENC_SIB(scale, reg_index->encoding, base_enc);
@@ -2519,11 +2516,9 @@ static void bemit_load(const ir_node *node)
 	arch_register_t const *const out = arch_get_irn_register_out(node, pn_ia32_Load_res);
 
 	if (out->index == REG_GP_EAX) {
-		ir_node   *base      = get_irn_n(node, n_ia32_base);
-		int        has_base  = !is_ia32_NoReg_GP(base);
-		ir_node   *idx       = get_irn_n(node, n_ia32_index);
-		int        has_index = !is_ia32_NoReg_GP(idx);
-		if (!has_base && !has_index) {
+		ir_node const *const base = get_irn_n_reg(node, n_ia32_base);
+		ir_node const *const idx  = get_irn_n_reg(node, n_ia32_index);
+		if (!base && !idx) {
 			ir_entity *ent  = get_ia32_am_ent(node);
 			int32_t    offs = get_ia32_am_offs_int(node);
 			/* load from constant address to EAX can be encoded
@@ -2552,14 +2547,12 @@ static void bemit_store(const ir_node *node)
 		bemit_mod_am(0, node);
 		bemit_imm(get_ia32_immediate_attr_const(value), size);
 	} else {
-		const arch_register_t *in = arch_get_irn_register_in(node, n_ia32_Store_val);
+		arch_register_t const *const in = arch_get_irn_register(value);
 
 		if (in->index == REG_GP_EAX) {
-			ir_node   *base      = get_irn_n(node, n_ia32_base);
-			bool       has_base  = !is_ia32_NoReg_GP(base);
-			ir_node   *idx       = get_irn_n(node, n_ia32_index);
-			bool       has_index = !is_ia32_NoReg_GP(idx);
-			if (!has_base && !has_index) {
+			ir_node const *const base = get_irn_n_reg(node, n_ia32_base);
+			ir_node const *const idx  = get_irn_n_reg(node, n_ia32_index);
+			if (!base && !idx) {
 				ir_entity *ent  = get_ia32_am_ent(node);
 				int        offs = get_ia32_am_offs_int(node);
 				/* store to constant address from EAX can be encoded as
@@ -2606,16 +2599,15 @@ static void bemit_popcnt(ir_node const *const node)
  */
 static void bemit_push(const ir_node *node)
 {
-	const ir_node *value = get_irn_n(node, n_ia32_Push_val);
-
-	if (is_ia32_Immediate(value)) {
+	ir_node const *const value = get_irn_n_reg(node, n_ia32_Push_val);
+	if (!value) {
+		bemit8(0xFF);
+		bemit_mod_am(6, node);
+	} else if (is_ia32_Immediate(value)) {
 		ia32_immediate_attr_t const *const attr = get_ia32_immediate_attr_const(value);
 		bool                         const imm8 = ia32_is_8bit_imm(attr);
 		bemit8(0x68 | (imm8 ? OP_IMM8 : 0));
 		bemit_imm(attr, imm8 ? 8 : 32);
-	} else if (is_ia32_NoReg_GP(value)) {
-		bemit8(0xFF);
-		bemit_mod_am(6, node);
 	} else {
 		arch_register_t const *const reg = arch_get_irn_register(value);
 		bemit8(0x50 + reg->encoding);
