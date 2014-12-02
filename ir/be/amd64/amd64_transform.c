@@ -404,7 +404,7 @@ static ir_node *create_float_const(dbg_info *dbgi, ir_node *block,
 	set_irn_pinned(load, op_pin_state_floats);
 
 	assert((unsigned)pn_amd64_xMovs_res == (unsigned)pn_amd64_movdqa_res);
-	return new_r_Proj(load, tv_mode, pn_amd64_xMovs_res);
+	return new_r_Proj(load, amd64_mode_xmm, pn_amd64_xMovs_res);
 }
 
 ir_tarval *create_sign_tv(ir_mode *mode)
@@ -1304,14 +1304,14 @@ static ir_node *gen_float_neg(ir_node *const node)
 	amd64_binop_addr_attr_t attr;
 	memset(&attr, 0, sizeof(attr));
 	attr.base.base.op_mode = AMD64_OP_REG_REG;
-	attr.base.insn_mode    = INSN_MODE_64;
+	attr.base.insn_mode    = get_insn_mode_from_mode(mode);
 
 	ir_node *xor = new_bd_amd64_xXorp(dbgi, new_block, ARRAY_SIZE(in),
 	                                  in, &attr);
 	arch_set_irn_register_reqs_in(xor, xmm_xmm_reqs);
 	arch_set_irn_register_req_out(xor, 0, &amd64_requirement_xmm_same_0);
 
-	return new_r_Proj(xor, mode, pn_amd64_xXorp_res);
+	return new_r_Proj(xor, amd64_mode_xmm, pn_amd64_xXorp_res);
 }
 
 static ir_node *gen_Minus(ir_node *const node)
