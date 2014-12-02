@@ -223,78 +223,57 @@ static int get_first_same(const arch_register_req_t* req)
  */
 static void assure_should_be_same_requirements(ir_node *node)
 {
-	ir_node *block = get_nodes_block(node);
-
 	/* check all OUT requirements, if there is a should_be_same */
 	be_foreach_out(node, i) {
-		const arch_register_req_t *req = arch_get_irn_register_req_out(node, i);
+		arch_register_req_t const *const req = arch_get_irn_register_req_out(node, i);
 		if (!arch_register_req_is(req, should_be_same))
 			continue;
 
-		int same_pos = get_first_same(req);
-
 		/* get in and out register */
-		const arch_register_t *out_reg = arch_get_irn_register_out(node, i);
-		ir_node               *in_node = get_irn_n(node, same_pos);
-		const arch_register_t *in_reg  = arch_get_irn_register(in_node);
+		int                    const same_pos = get_first_same(req);
+		ir_node               *const in_node  = get_irn_n(node, same_pos);
+		arch_register_t const *const in_reg   = arch_get_irn_register(in_node);
+		arch_register_t const *const out_reg  = arch_get_irn_register_out(node, i);
 
 		/* requirement already fulfilled? */
 		if (in_reg == out_reg)
 			continue;
-		assert(in_reg->cls == out_reg->cls);
 
 		/* check if any other input operands uses the out register */
-		ir_node *uses_out_reg     = NULL;
-		int      uses_out_reg_pos = -1;
+		int uses_out_reg_pos = -1;
 		foreach_irn_in(node, i2, in) {
 			if (!mode_is_data(get_irn_mode(in)))
 				continue;
 
-			const arch_register_t *other_in_reg = arch_get_irn_register(in);
-			if (other_in_reg != out_reg)
-				continue;
-
-			if (uses_out_reg != NULL && in != uses_out_reg) {
-				panic("invalid register allocation");
-			}
-			uses_out_reg = in;
-			if (uses_out_reg_pos >= 0)
-				uses_out_reg_pos = -1; /* multiple inputs... */
-			else
+			arch_register_t const *const other_in_reg = arch_get_irn_register(in);
+			if (other_in_reg == out_reg) {
+				if (uses_out_reg_pos >= 0)
+					panic("unresolved should_be_same constraint");
 				uses_out_reg_pos = i2;
+			}
 		}
 
-		/* no-one else is using the out reg, we can simply copy it
-		 * (the register can't be live since the operation will override it
-		 *  anyway) */
-		if (uses_out_reg == NULL) {
-			ir_node *copy = be_new_Copy(block, in_node);
-
+		if (uses_out_reg_pos < 0) {
+			/* no-one else is using the out reg, we can simply copy it
+			 * (the register can't be live since the operation will override it
+			 *  anyway) */
+			ir_node *const block = get_nodes_block(node);
+			ir_node *const copy  = be_new_Copy(block, in_node);
 			/* destination is the out register */
 			arch_set_irn_register(copy, out_reg);
-
 			/* insert copy before the node into the schedule */
 			sched_add_before(node, copy);
-
 			/* set copy as in */
 			set_irn_n(node, same_pos, copy);
 
-			DBG((dbg, LEVEL_1,
-				"created copy %+F for should be same argument at input %d of %+F\n",
-				copy, same_pos, node));
-			continue;
-		}
-
-		/* for commutative nodes we can simply swap the left/right */
-		if (uses_out_reg_pos == n_ia32_binary_right && is_ia32_commutative(node)) {
+			DBG((dbg, LEVEL_1, "created copy %+F for should be same argument at input %d of %+F\n", copy, same_pos, node));
+		} else if (uses_out_reg_pos == n_ia32_binary_right && is_ia32_commutative(node)) {
+			/* for commutative nodes we can simply swap the left/right */
 			ia32_swap_left_right(node);
-			DBG((dbg, LEVEL_1,
-				"swapped left/right input of %+F to resolve should be same constraint\n",
-				node));
-			continue;
+			DBG((dbg, LEVEL_1, "swapped left/right input of %+F to resolve should be same constraint\n", node));
+		} else {
+			panic("unresolved should_be_same constraint");
 		}
-
-		panic("uNresolved should_be_same constraint");
 	}
 }
 
