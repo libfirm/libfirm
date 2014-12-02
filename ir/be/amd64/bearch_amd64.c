@@ -155,7 +155,8 @@ static const arch_register_req_t *am_pushpop_base_reqs[] = {
 };
 
 static ir_node *create_push(ir_node *node, ir_node *schedpoint, ir_node *sp,
-                            ir_node *mem, ir_entity *ent)
+                            ir_node *mem, ir_entity *ent,
+                            amd64_insn_mode_t insn_mode)
 {
 	dbg_info *dbgi  = get_irn_dbg_info(node);
 	ir_node  *block = get_nodes_block(node);
@@ -169,13 +170,14 @@ static ir_node *create_push(ir_node *node, ir_node *schedpoint, ir_node *sp,
 	addr.immediate.entity = ent;
 	ir_node *in[] = { sp, frame, mem };
 	ir_node *push = new_bd_amd64_PushAM(dbgi, block, ARRAY_SIZE(in), in,
-	                                    INSN_MODE_64, addr);
+	                                    insn_mode, addr);
 	arch_set_irn_register_reqs_in(push, am_pushpop_base_reqs);
 	sched_add_before(schedpoint, push);
 	return push;
 }
 
-static ir_node *create_pop(ir_node *node, ir_node *schedpoint, ir_node *sp, ir_entity *ent)
+static ir_node *create_pop(ir_node *node, ir_node *schedpoint, ir_node *sp,
+                           ir_entity *ent, amd64_insn_mode_t insn_mode)
 {
 	dbg_info *dbgi  = get_irn_dbg_info(node);
 	ir_node  *block = get_nodes_block(node);
@@ -190,7 +192,7 @@ static ir_node *create_pop(ir_node *node, ir_node *schedpoint, ir_node *sp, ir_e
 	ir_node *in[] = { sp, frame, get_irg_no_mem(irg) };
 
 	ir_node *pop = new_bd_amd64_PopAM(dbgi, block, ARRAY_SIZE(in), in,
-	                                  INSN_MODE_64, addr);
+	                                  insn_mode, addr);
 	arch_set_irn_register_reqs_in(pop, am_pushpop_base_reqs);
 	sched_add_before(schedpoint, pop);
 
@@ -230,16 +232,33 @@ static void transform_MemPerm(ir_node *node)
 		unsigned entsize = get_type_size_bytes(enttype);
 		unsigned entsize2 = get_type_size_bytes(get_entity_type(outent));
 		ir_node *mem = get_irn_n(node, i);
-		ir_node *push;
 
 		/* work around cases where entities have different sizes */
 		if (entsize2 < entsize)
 			entsize = entsize2;
-		/* spillslot should be 64bit size */
-		assert(entsize == 8);
 
-		push = create_push(node, node, sp, mem, inent);
-		sp = create_spproj(push, pn_amd64_PushAM_stack);
+		int offset = 0;
+		do {
+			amd64_insn_mode_t insn_mode;
+			if (entsize%2 == 1) {
+				insn_mode = INSN_MODE_8;
+			} else if (entsize % 4 == 2) {
+				insn_mode = INSN_MODE_16;
+			} else if (entsize % 8 == 4) {
+				insn_mode = INSN_MODE_32;
+			} else {
+				assert(entsize%8 == 0);
+				insn_mode = INSN_MODE_64;
+			}
+
+			ir_node *push = create_push(node, node, sp, mem, inent, insn_mode);
+			sp = create_spproj(push, pn_amd64_PushAM_stack);
+			get_amd64_addr_attr(push)->addr.immediate.offset = offset;
+
+			unsigned size = get_insn_mode_bytes(insn_mode);
+			offset  += size;
+			entsize -= size;
+		} while(entsize > 0);
 		set_irn_n(node, i, new_r_Bad(irg, mode_X));
 	}
 
@@ -254,10 +273,30 @@ static void transform_MemPerm(ir_node *node)
 		/* work around cases where entities have different sizes */
 		if (entsize2 < entsize)
 			entsize = entsize2;
-		assert(entsize == 8);
 
-		ir_node *pop = create_pop(node, node, sp, outent);
-		sp = create_spproj(pop, pn_amd64_PopAM_stack);
+		int      offset = entsize;
+		ir_node *pop;
+		do {
+			amd64_insn_mode_t insn_mode;
+			if (entsize%2 == 1) {
+				insn_mode = INSN_MODE_8;
+			} else if (entsize % 4 == 2) {
+				insn_mode = INSN_MODE_16;
+			} else if (entsize % 8 == 4) {
+				insn_mode = INSN_MODE_32;
+			} else {
+				assert(entsize%8 == 0);
+				insn_mode = INSN_MODE_64;
+			}
+
+			pop = create_pop(node, node, sp, outent, insn_mode);
+			sp  = create_spproj(pop, pn_amd64_PopAM_stack);
+
+			unsigned size = get_insn_mode_bytes(insn_mode);
+			offset  -= size;
+			entsize -= size;
+			get_amd64_addr_attr(pop)->addr.immediate.offset = offset;
+		} while(entsize > 0);
 		pops[i] = pop;
 	}
 
