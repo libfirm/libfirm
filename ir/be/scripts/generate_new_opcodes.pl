@@ -1078,7 +1078,6 @@ sub generate_requirements {
 	my $op    = shift;
 	my $idx   = shift;
 	my $is_in = shift;
-	my $class = "";
 	my $width = 1;
 	my $result;
 
@@ -1097,19 +1096,9 @@ sub generate_requirements {
 		}
 	}
 
+	my $class;
 	if ($reqs eq "none") {
-
-		$result = <<EOF;
-{
-	.cls             = NULL,
-	.limited         = NULL,
-	.type            = arch_register_req_type_none,
-	.other_same      = 0,
-	.other_different = 0,
-	.width           = 0,
-};
-
-EOF
+		return "arch_no_requirement";
 	} elsif (is_reg_class($reqs)) {
 		push(@req_type_mask, "arch_register_req_type_normal");
 		my $reqtype = join(" | ", @req_type_mask);
