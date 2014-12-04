@@ -164,6 +164,15 @@ void be_liveness_dump(FILE *F, const be_lv_t *lv)
 	irg_block_walk_graph(lv->irg, lv_dump_block_walker, NULL, &w);
 }
 
+static void dump_bitmask(FILE *const F, char const *const ctx, unsigned mask)
+{
+	fputs(ctx, F);
+	for (unsigned i = 0; mask != 0; ++i, mask >>= 1) {
+		if (mask & 1)
+			ir_fprintf(F, " #%u", i);
+	}
+}
+
 /**
  * Print information about a register requirement in human readable form
  * @param F   output stream/file
@@ -171,105 +180,82 @@ void be_liveness_dump(FILE *F, const be_lv_t *lv)
  */
 static void dump_register_req(FILE *const F, arch_register_req_t const *const req)
 {
-	if (req == NULL || req->type == arch_register_req_type_none) {
-		fprintf(F, "n/a");
+	if (!req || req->type == arch_register_req_type_none) {
+		fputs("n/a", F);
 		return;
 	}
 
-	fprintf(F, "%s", req->cls->name);
+	arch_register_class_t const *const cls = req->cls;
+	fputs(cls->name, F);
 
 	if (arch_register_req_is(req, limited)) {
-		unsigned n_regs = req->cls->n_regs;
-		unsigned i;
-
-		fprintf(F, " limited to");
-		for (i = 0; i < n_regs; ++i) {
-			if (rbitset_is_set(req->limited, i)) {
-				const arch_register_t *reg = &req->cls->regs[i];
-				fprintf(F, " %s", reg->name);
-			}
+		fputs(" limited to", F);
+		for (unsigned i = 0, n_regs = cls->n_regs; i < n_regs; ++i) {
+			if (rbitset_is_set(req->limited, i))
+				fprintf(F, " %s", cls->regs[i].name);
 		}
 	}
 
-	if (arch_register_req_is(req, should_be_same)) {
-		const unsigned other = req->other_same;
-		int i;
+	if (arch_register_req_is(req, should_be_same))
+		dump_bitmask(F, " same as", req->other_same);
+	if (arch_register_req_is(req, must_be_different))
+		dump_bitmask(F, " different from", req->other_different);
 
-		fprintf(F, " same as");
-		for (i = 0; 1U << i <= other; ++i) {
-			if (other & (1U << i)) {
-				ir_fprintf(F, " #%d", i);
-			}
-		}
-	}
-
-	if (arch_register_req_is(req, must_be_different)) {
-		const unsigned other = req->other_different;
-		int i;
-
-		fprintf(F, " different from");
-		for (i = 0; 1U << i <= other; ++i) {
-			if (other & (1U << i)) {
-				ir_fprintf(F, " #%d", i);
-			}
-		}
-	}
-
-	if (req->width != 1) {
+	if (req->width != 1)
 		fprintf(F, " width:%d", req->width);
-	}
-	if (arch_register_req_is(req, aligned)) {
-		fprintf(F, " aligned");
-	}
-	if (arch_register_req_is(req, ignore)) {
-		fprintf(F, " ignore");
-	}
-	if (arch_register_req_is(req, produces_sp)) {
-		fprintf(F, " produces_sp");
-	}
+	if (arch_register_req_is(req, aligned))
+		fputs(" aligned", F);
+	if (arch_register_req_is(req, ignore))
+		fputs(" ignore", F);
+	if (arch_register_req_is(req, produces_sp))
+		fputs(" produces_sp", F);
 }
 
-void be_dump_reqs_and_registers(FILE *F, const ir_node *node)
+static void dump_req_reg(FILE *const F, char const *const ctx, unsigned const idx, arch_register_req_t const *const req, arch_register_t const *const reg)
 {
-	backend_info_t *const info = be_get_info(node);
+	fprintf(F, "%s #%u = ", ctx, idx);
+	dump_register_req(F, req);
+	fprintf(F, " [%s]\n", be_dump_reg_name(reg));
+}
+
+void be_dump_reqs_and_registers(FILE *const F, ir_node const *const node)
+{
+	backend_info_t const *const info = be_get_info(node);
 	/* don't fail on invalid graphs */
 	if (!info || (!info->in_reqs && get_irn_arity(node) != 0) || !info->out_infos) {
-		fprintf(F, "invalid register requirements!!!\n");
+		fprintf(F, "invalid register requirements!\n");
 		return;
 	}
 
 	foreach_irn_in(node, i, op) {
-		const arch_register_req_t *req = arch_get_irn_register_req_in(node, i);
-		fprintf(F, "inreq #%d = ", i);
-		dump_register_req(F, req);
-		arch_register_t const *const reg = be_get_info(skip_Proj_const(op))->out_infos ? arch_get_irn_register(op) : NULL;
-		fprintf(F, " [%s]\n", be_dump_reg_name(reg));
+		arch_register_req_t const *const req  = arch_get_irn_register_req_in(node, i);
+		reg_out_info_t      const *const info = be_get_info(skip_Proj_const(op))->out_infos;
+		arch_register_t     const *const reg  = info ? arch_get_irn_register(op) : NULL;
+		dump_req_reg(F, "inreq", i, req, reg);
 	}
 	be_foreach_out(node, o) {
-		const arch_register_req_t *req = arch_get_irn_register_req_out(node, o);
-		fprintf(F, "outreq #%u = ", o);
-		dump_register_req(F, req);
-		const arch_register_t *reg = arch_get_irn_register_out(node, o);
-		fprintf(F, " [%s]\n", be_dump_reg_name(reg));
+		arch_register_req_t const *const req = arch_get_irn_register_req_out(node, o);
+		arch_register_t     const *const reg = arch_get_irn_register_out(node, o);
+		dump_req_reg(F, "outreq", o, req, reg);
 	}
 
-	fprintf(F, "flags =");
-	arch_irn_flags_t flags = arch_get_irn_flags(node);
+	fputs("flags =", F);
+	arch_irn_flags_t const flags = arch_get_irn_flags(node);
 	if (flags == arch_irn_flags_none) {
-		fprintf(F, " none");
+		fputs(" none", F);
 	} else {
 		if (flags & arch_irn_flag_dont_spill)
-			fprintf(F, " unspillable");
+			fputs(" unspillable", F);
 		if (flags & arch_irn_flag_rematerializable)
-			fprintf(F, " remat");
+			fputs(" remat", F);
 		if (flags & arch_irn_flag_modify_flags)
-			fprintf(F, " modify_flags");
+			fputs(" modify_flags", F);
 		if (flags & arch_irn_flag_simple_jump)
-			fprintf(F, " simple_jump");
+			fputs(" simple_jump", F);
 		if (flags & arch_irn_flag_not_scheduled)
-			fprintf(F, " not_scheduled");
+			fputs(" not_scheduled", F);
 		if (flags & arch_irn_flag_schedule_first)
-			fprintf(F, " schedule_first");
+			fputs(" schedule_first", F);
 	}
 	fprintf(F, " (0x%x)\n", (unsigned)flags);
 }
