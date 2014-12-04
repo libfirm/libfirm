@@ -413,7 +413,7 @@ found_front:
 		);
 
 		be_foreach_definition(node, cls, value, req,
-			if (req->type != arch_register_req_type_normal &&
+			if (req->type != arch_register_req_type_none &&
 			    req->type != arch_register_req_type_should_be_same)
 				goto done;
 		);

@@ -180,12 +180,17 @@ static void dump_bitmask(FILE *const F, char const *const ctx, unsigned mask)
  */
 static void dump_register_req(FILE *const F, arch_register_req_t const *const req)
 {
-	if (!req || req->type == arch_register_req_type_none) {
+	if (!req) {
 		fputs("n/a", F);
 		return;
 	}
 
 	arch_register_class_t const *const cls = req->cls;
+	if (!cls) {
+		fputs("none", F);
+		return;
+	}
+
 	fputs(cls->name, F);
 
 	if (arch_register_req_is(req, limited)) {

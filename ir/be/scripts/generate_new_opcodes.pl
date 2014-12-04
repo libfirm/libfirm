@@ -1100,8 +1100,7 @@ sub generate_requirements {
 	if ($reqs eq "none") {
 		return "arch_no_requirement";
 	} elsif (is_reg_class($reqs)) {
-		push(@req_type_mask, "arch_register_req_type_normal");
-		my $reqtype = join(" | ", @req_type_mask);
+		my $reqtype = join(" | ", @req_type_mask) || "arch_register_req_type_none";
 		$class  = $reqs;
 		$result = <<EOF;
 {

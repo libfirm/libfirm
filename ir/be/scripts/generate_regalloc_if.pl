@@ -122,7 +122,7 @@ foreach my $class_name (sort(keys(%reg_classes))) {
 static const arch_register_req_t ${arch}_class_reg_req_${old_classname} = {
 	.cls             = &${arch}_reg_classes[CLASS_${arch}_${old_classname}],
 	.limited         = NULL,
-	.type            = arch_register_req_type_normal,
+	.type            = arch_register_req_type_none,
 	.other_same      = 0,
 	.other_different = 0,
 	.width           = 1,

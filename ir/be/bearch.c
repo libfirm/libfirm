@@ -111,7 +111,6 @@ void arch_add_irn_flags(ir_node *node, arch_irn_flags_t flags)
 bool arch_reg_is_allocatable(const arch_register_req_t *req,
                              const arch_register_t *reg)
 {
-	assert(req->type != arch_register_req_type_none);
 	if (req->cls != reg->cls)
 		return false;
 	if (reg->type & arch_register_type_virtual)

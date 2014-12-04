@@ -133,7 +133,7 @@ static void amd64_before_ra(ir_graph *irg)
 static const arch_register_req_t amd64_requirement_gp = {
 	.cls             = &amd64_reg_classes[CLASS_amd64_gp],
 	.limited         = NULL,
-	.type            = arch_register_req_type_normal,
+	.type            = arch_register_req_type_none,
 	.other_same      = 0,
 	.other_different = 0,
 	.width           = 1,

@@ -47,7 +47,7 @@ static be_stackorder_t *stackorder;
 static const arch_register_req_t amd64_requirement_gp = {
 	.cls             = &amd64_reg_classes[CLASS_amd64_gp],
 	.limited         = NULL,
-	.type            = arch_register_req_type_normal,
+	.type            = arch_register_req_type_none,
 	.other_same      = 0,
 	.other_different = 0,
 	.width           = 1,
@@ -56,7 +56,7 @@ static const arch_register_req_t amd64_requirement_gp = {
 static const arch_register_req_t amd64_requirement_flags = {
 	.cls             = &amd64_reg_classes[CLASS_amd64_flags],
 	.limited         = NULL,
-	.type            = arch_register_req_type_normal,
+	.type            = arch_register_req_type_none,
 	.other_same      = 0,
 	.other_different = 0,
 	.width           = 1,
@@ -65,7 +65,7 @@ static const arch_register_req_t amd64_requirement_flags = {
 static const arch_register_req_t amd64_requirement_xmm = {
 	.cls             = &amd64_reg_classes[CLASS_amd64_xmm],
 	.limited         = NULL,
-	.type            = arch_register_req_type_normal,
+	.type            = arch_register_req_type_none,
 	.other_same      = 0,
 	.other_different = 0,
 	.width           = 1,
@@ -76,8 +76,7 @@ static const arch_register_req_t amd64_requirement_xmm = {
 static const arch_register_req_t amd64_requirement_gp_same_0 = {
 	.cls             = &amd64_reg_classes[CLASS_amd64_gp],
 	.limited         = NULL,
-	.type            = arch_register_req_type_normal
-	                   | arch_register_req_type_should_be_same,
+	.type            = arch_register_req_type_should_be_same,
 	.other_same      = BIT(0),
 	.other_different = 0,
 	.width           = 1,
@@ -86,8 +85,7 @@ static const arch_register_req_t amd64_requirement_gp_same_0 = {
 static const arch_register_req_t amd64_requirement_xmm_same_0 = {
 	.cls             = &amd64_reg_classes[CLASS_amd64_xmm],
 	.limited         = NULL,
-	.type            = arch_register_req_type_normal
-	                   | arch_register_req_type_should_be_same,
+	.type            = arch_register_req_type_should_be_same,
 	.other_same      = BIT(0),
 	.other_different = 0,
 	.width           = 1,
@@ -96,8 +94,7 @@ static const arch_register_req_t amd64_requirement_xmm_same_0 = {
 static const arch_register_req_t amd64_requirement_gp_same_0_not_1 = {
 	.cls             = &amd64_reg_classes[CLASS_amd64_gp],
 	.limited         = NULL,
-	.type            = arch_register_req_type_normal
-	                   | arch_register_req_type_should_be_same
+	.type            = arch_register_req_type_should_be_same
 	                   | arch_register_req_type_must_be_different,
 	.other_same      = BIT(0),
 	.other_different = BIT(1),
