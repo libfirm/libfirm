@@ -693,19 +693,19 @@ static void emit_amd64_Mov(const ir_node *node)
  */
 static void emit_be_Copy(const ir_node *irn)
 {
-	ir_mode *mode = get_irn_mode(irn);
-
-	if (arch_get_irn_register_in(irn, 0) == arch_get_irn_register_out(irn, 0)) {
+	arch_register_t const *const out = arch_get_irn_register_out(irn, 0);
+	if (arch_get_irn_register_in(irn, 0) == out) {
 		/* omitted Copy */
 		return;
 	}
 
-	if (mode == amd64_mode_xmm) {
-		amd64_emitf(irn, "movapd %^S0, %^D0");
-	} else if (mode_is_data(mode)) {
+	arch_register_class_t const *const cls = out->cls;
+	if (cls == &amd64_reg_classes[CLASS_amd64_gp]) {
 		amd64_emitf(irn, "mov %^S0, %^D0");
+	} else if (cls == &amd64_reg_classes[CLASS_amd64_xmm]) {
+		amd64_emitf(irn, "movapd %^S0, %^D0");
 	} else {
-		panic("move not supported for this mode");
+		panic("move not supported for this register class");
 	}
 }
 

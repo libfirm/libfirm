@@ -1325,14 +1325,16 @@ static const arch_register_t *get_next_fp_reg(const arch_register_t *reg)
 
 static void emit_be_Copy(const ir_node *node)
 {
-	ir_mode               *mode    = get_irn_mode(node);
 	const arch_register_t *src_reg = arch_get_irn_register_in(node, 0);
 	const arch_register_t *dst_reg = arch_get_irn_register_out(node, 0);
-
 	if (src_reg == dst_reg)
 		return;
 
-	if (mode_is_float(mode)) {
+	arch_register_class_t const *const cls = dst_reg->cls;
+	if (cls == &sparc_reg_classes[CLASS_sparc_gp]) {
+		sparc_emitf(node, "mov %S0, %D0");
+	} else if (cls == &sparc_reg_classes[CLASS_sparc_fp]) {
+		ir_mode *mode = get_irn_mode(node);
 		unsigned bits = get_mode_size_bits(mode);
 		int      n    = bits > 32 ? bits > 64 ? 3 : 1 : 0;
 		emit_fmov(node, src_reg, dst_reg);
@@ -1341,10 +1343,8 @@ static void emit_be_Copy(const ir_node *node)
 			dst_reg = get_next_fp_reg(dst_reg);
 			emit_fmov(node, src_reg, dst_reg);
 		}
-	} else if (mode_is_data(mode)) {
-		sparc_emitf(node, "mov %S0, %D0");
 	} else {
-		panic("invalid mode");
+		panic("invalid register class");
 	}
 }
 
