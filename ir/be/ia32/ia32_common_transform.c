@@ -479,6 +479,28 @@ ir_node *ia32_gen_ASM(ir_node *node)
 	in[n_inputs]          = be_transform_node(get_ASM_mem(node));
 	in_reg_reqs[n_inputs] = arch_no_register_req;
 
+	/* Handle early clobbers. */
+	for (size_t o = 0; o != n_out_constraints; ++o) {
+		ir_asm_constraint const *const constraint = &out_constraints[o];
+		if (strchr(get_id_str(constraint->constraint), '&')) {
+			arch_register_req_t const *const oreq = out_reg_reqs[o];
+
+			unsigned different = 0;
+			for (int i = 0; i != n_inputs; ++i) {
+				if (in_reg_reqs[i]->cls == oreq->cls)
+					different |= 1U << i;
+			}
+
+			if (different != 0) {
+				arch_register_req_t *const req = OALLOC(obst, arch_register_req_t);
+				*req                 = *oreq;
+				req->type           |= arch_register_req_type_must_be_different;
+				req->other_different = different;
+				out_reg_reqs[o]      = req;
+			}
+		}
+	}
+
 	ir_node *const block = be_transform_node(get_nodes_block(node));
 
 	/* Attempt to make ASM node register pressure faithful.

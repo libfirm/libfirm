@@ -121,10 +121,13 @@ static void be_init_default_asm_constraint_flags(void)
 	for (size_t i = 0; i != ARRAY_SIZE(asm_constraint_flags); ++i) {
 		asm_constraint_flags[i] = ASM_CONSTRAINT_FLAG_INVALID;
 	}
+
+	be_set_constraint_support(ASM_CONSTRAINT_FLAG_MODIFIER_EARLYCLOBBER, "&");
+
 	/* List of constraints supported by gcc for any machine (or at least
 	 * recognized). Mark them as NO_SUPPORT so we can differentiate them
 	 * from INVALID. Backends should change the flags they support. */
-	char const *const gcc_common_flags = "%&,0123456789<>EFGHIJKLMNOPVXgimoprs";
+	char const *const gcc_common_flags = "%,0123456789<>EFGHIJKLMNOPVXgimoprs";
 	be_set_constraint_support(ASM_CONSTRAINT_FLAG_NO_SUPPORT, gcc_common_flags);
 	/* Skip whitespace.
 	 * TODO '*' actually penalizes the selection of the next constraint letter.
