@@ -359,7 +359,7 @@ static void amd64_emit_am(const ir_node *const node, bool indirect_star)
 
 static amd64_insn_mode_t get_amd64_insn_mode(const ir_node *node)
 {
-	if (is_amd64_MovImm(node)) {
+	if (is_amd64_mov_imm(node)) {
 		const amd64_movimm_attr_t *const attr
 			= get_amd64_movimm_attr_const(node);
 		return attr->insn_mode;
@@ -591,7 +591,7 @@ static ir_node *sched_next_block(const ir_node *block)
 /**
  * Emit a Jmp.
  */
-static void emit_amd64_Jmp(const ir_node *node)
+static void emit_amd64_jmp(const ir_node *node)
 {
 	ir_node *block, *next_block;
 
@@ -607,18 +607,19 @@ static void emit_amd64_Jmp(const ir_node *node)
 	}
 }
 
-static void emit_amd64_SwitchJmp(const ir_node *node)
+static void emit_amd64_jmp_switch(const ir_node *node)
 {
 	const amd64_switch_jmp_attr_t *attr = get_amd64_switch_jmp_attr_const(node);
 
 	amd64_emitf(node, "jmp *%E(,%^S0,8)", attr->table_entity);
-	be_emit_jump_table(node, attr->table, attr->table_entity, get_cfop_target_block);
+	be_emit_jump_table(node, attr->table, attr->table_entity,
+	                   get_cfop_target_block);
 }
 
 /**
  * Emit a Compare with conditional branch.
  */
-static void emit_amd64_Jcc(const ir_node *irn)
+static void emit_amd64_jcc(const ir_node *irn)
 {
 	const ir_node         *proj_true  = NULL;
 	const ir_node         *proj_false = NULL;
@@ -673,7 +674,7 @@ static void emit_amd64_Jcc(const ir_node *irn)
 	}
 }
 
-static void emit_amd64_Mov(const ir_node *node)
+static void emit_amd64_mov_gp(const ir_node *node)
 {
 	const amd64_addr_attr_t *attr = get_amd64_addr_attr_const(node);
 	switch (attr->insn_mode) {
@@ -756,14 +757,14 @@ static void amd64_register_emitters(void)
 	/* register all emitter functions defined in spec */
 	amd64_register_spec_emitters();
 
-	be_set_emitter(op_amd64_Jcc,       emit_amd64_Jcc);
-	be_set_emitter(op_amd64_Jmp,       emit_amd64_Jmp);
-	be_set_emitter(op_amd64_Mov,       emit_amd64_Mov);
-	be_set_emitter(op_amd64_SwitchJmp, emit_amd64_SwitchJmp);
-	be_set_emitter(op_be_Copy,         emit_be_Copy);
-	be_set_emitter(op_be_CopyKeep,     emit_be_Copy);
-	be_set_emitter(op_be_IncSP,        emit_be_IncSP);
-	be_set_emitter(op_be_Perm,         emit_be_Perm);
+	be_set_emitter(op_amd64_jcc,        emit_amd64_jcc);
+	be_set_emitter(op_amd64_jmp,        emit_amd64_jmp);
+	be_set_emitter(op_amd64_mov_gp,     emit_amd64_mov_gp);
+	be_set_emitter(op_amd64_jmp_switch, emit_amd64_jmp_switch);
+	be_set_emitter(op_be_Copy,          emit_be_Copy);
+	be_set_emitter(op_be_CopyKeep,      emit_be_Copy);
+	be_set_emitter(op_be_IncSP,         emit_be_IncSP);
+	be_set_emitter(op_be_Perm,          emit_be_Perm);
 }
 
 /**

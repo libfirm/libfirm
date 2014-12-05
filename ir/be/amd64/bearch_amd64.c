@@ -92,7 +92,7 @@ static void amd64_set_frame_offset(ir_node *node, int offset)
 		return;
 	amd64_addr_attr_t *attr = get_amd64_addr_attr(node);
 	attr->addr.immediate.offset += offset;
-	if (is_amd64_PopAM(node)) {
+	if (is_amd64_pop_am(node)) {
 		ir_graph          *irg    = get_irn_irg(node);
 		be_stack_layout_t *layout = be_get_irg_stack_layout(irg);
 		if (layout->sp_relative)
@@ -102,16 +102,16 @@ static void amd64_set_frame_offset(ir_node *node, int offset)
 
 static int amd64_get_sp_bias(const ir_node *node)
 {
-	if (is_amd64_PushAM(node)) {
+	if (is_amd64_push_am(node)) {
 		const amd64_addr_attr_t *attr = get_amd64_addr_attr_const(node);
 		return get_insn_mode_bytes(attr->insn_mode);
-	} else if (is_amd64_PushRbp(node)) {
+	} else if (is_amd64_push_rbp(node)) {
 		/* 64-bit register size */
 		return AMD64_REGISTER_SIZE;
-	} else if (is_amd64_PopAM(node)) {
+	} else if (is_amd64_pop_am(node)) {
 		const amd64_addr_attr_t *attr = get_amd64_addr_attr_const(node);
 		return -get_insn_mode_bytes(attr->insn_mode);
-	} else if (is_amd64_Leave(node)) {
+	} else if (is_amd64_leave(node)) {
 		return SP_BIAS_RESET;
 	}
 
@@ -170,8 +170,8 @@ static ir_node *create_push(ir_node *node, ir_node *schedpoint, ir_node *sp,
 	addr.index_input      = NO_INPUT;
 	addr.immediate.entity = ent;
 	ir_node *in[] = { sp, frame, mem };
-	ir_node *push = new_bd_amd64_PushAM(dbgi, block, ARRAY_SIZE(in), in,
-	                                    insn_mode, addr);
+	ir_node *push = new_bd_amd64_push_am(dbgi, block, ARRAY_SIZE(in), in,
+	                                     insn_mode, addr);
 	arch_set_irn_register_reqs_in(push, am_pushpop_base_reqs);
 	sched_add_before(schedpoint, push);
 	return push;
@@ -192,8 +192,8 @@ static ir_node *create_pop(ir_node *node, ir_node *schedpoint, ir_node *sp,
 	addr.immediate.entity = ent;
 	ir_node *in[] = { sp, frame, get_irg_no_mem(irg) };
 
-	ir_node *pop = new_bd_amd64_PopAM(dbgi, block, ARRAY_SIZE(in), in,
-	                                  insn_mode, addr);
+	ir_node *pop = new_bd_amd64_pop_am(dbgi, block, ARRAY_SIZE(in), in,
+	                                   insn_mode, addr);
 	arch_set_irn_register_reqs_in(pop, am_pushpop_base_reqs);
 	sched_add_before(schedpoint, pop);
 
@@ -253,7 +253,7 @@ static void transform_MemPerm(ir_node *node)
 			}
 
 			ir_node *push = create_push(node, node, sp, mem, inent, insn_mode);
-			sp = create_spproj(push, pn_amd64_PushAM_stack);
+			sp = create_spproj(push, pn_amd64_push_am_stack);
 			get_amd64_addr_attr(push)->addr.immediate.offset = offset;
 
 			unsigned size = get_insn_mode_bytes(insn_mode);
@@ -291,7 +291,7 @@ static void transform_MemPerm(ir_node *node)
 			}
 
 			pop = create_pop(node, node, sp, outent, insn_mode);
-			sp  = create_spproj(pop, pn_amd64_PopAM_stack);
+			sp  = create_spproj(pop, pn_amd64_pop_am_stack);
 
 			unsigned size = get_insn_mode_bytes(insn_mode);
 			offset  -= size;
@@ -313,7 +313,7 @@ static void transform_MemPerm(ir_node *node)
 		assert(p < arity);
 
 		set_Proj_pred(proj, pops[p]);
-		set_Proj_num(proj, pn_amd64_PopAM_M);
+		set_Proj_num(proj, pn_amd64_pop_am_M);
 	}
 
 	/* remove memperm */
@@ -495,18 +495,14 @@ static void amd64_set_frame_entity(ir_node *node, ir_entity *entity,
                                    const ir_type *type)
 {
 	(void)type;
-	assert(is_amd64_Store(node) || is_amd64_Mov(node)
-	    || is_amd64_Movs(node) || is_amd64_xMovs(node)
-	    || is_amd64_xStores(node) || is_amd64_movdqu_store(node)
-	    || is_amd64_movdqu(node));
 	amd64_addr_attr_t *attr = get_amd64_addr_attr(node);
 	attr->addr.immediate.entity = entity;
 }
 
 static bool is_frame_load(const ir_node *node)
 {
-	return is_amd64_Mov(node) || is_amd64_Movs(node) || is_amd64_xMovs(node)
-	    || is_amd64_movdqu(node);
+	return is_amd64_mov_gp(node) || is_amd64_movs(node)
+	    || is_amd64_movs_xmm(node) || is_amd64_movdqu(node);
 }
 
 /**
@@ -557,9 +553,9 @@ static void introduce_epilogue(ir_node *ret)
 		int n_rbp = determine_rbp_input(ret);
 		ir_node *curr_bp = get_irn_n(ret, n_rbp);
 
-		ir_node *leave = new_bd_amd64_Leave(NULL, block, curr_bp);
-		curr_bp        = new_r_Proj(leave, mode_gp, pn_amd64_Leave_frame);
-		curr_sp        = new_r_Proj(leave, mode_gp, pn_amd64_Leave_stack);
+		ir_node *leave = new_bd_amd64_leave(NULL, block, curr_bp);
+		curr_bp        = new_r_Proj(leave, mode_gp, pn_amd64_leave_frame);
+		curr_sp        = new_r_Proj(leave, mode_gp, pn_amd64_leave_stack);
 		arch_set_irn_register(curr_bp, bp);
 		arch_set_irn_register(curr_sp, sp);
 		sched_add_before(ret, leave);
@@ -598,8 +594,8 @@ static void introduce_prologue_epilogue(ir_graph *irg)
 
 	if (!layout->sp_relative) {
 		/* push rbp */
-		ir_node *push = new_bd_amd64_PushRbp(NULL, block, initial_sp);
-		ir_node *curr_sp = new_r_Proj(push, mode_gp, pn_amd64_PushRbp_stack);
+		ir_node *push = new_bd_amd64_push_rbp(NULL, block, initial_sp);
+		ir_node *curr_sp = new_r_Proj(push, mode_gp, pn_amd64_push_rbp_stack);
 
 		arch_set_irn_register(curr_sp, sp);
 		sched_add_after(start, push);
@@ -635,7 +631,7 @@ static void introduce_prologue_epilogue(ir_graph *irg)
 
 	/* introduce epilogue for every return node */
 	foreach_irn_in(get_irg_end_block(irg), i, ret) {
-		assert(is_amd64_Return(ret));
+		assert(is_amd64_ret(ret));
 		introduce_epilogue(ret);
 	}
 }

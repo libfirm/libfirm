@@ -87,7 +87,7 @@ $default_copy_attr = "amd64_copy_attr";
 );
 
 %nodes = (
-PushAM => {
+push_am => {
 	op_flags  => [ "uses_memory" ],
 	state     => "exc_pinned",
 	reg_req   => { out => [ "rsp:I|S", "none" ] },
@@ -99,7 +99,7 @@ PushAM => {
 	emit      => "push%M %A",
 },
 
-PushRbp => {
+push_rbp => {
 	op_flags  => [ "uses_memory" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "rsp" ], out => [ "rsp:I|S" ] },
@@ -109,7 +109,7 @@ PushRbp => {
 	emit      => "pushq %%rbp",
 },
 
-PopAM => {
+pop_am => {
 	op_flags  => [ "uses_memory" ],
 	state     => "exc_pinned",
 	reg_req   => { out => [ "rsp:I|S", "none" ] },
@@ -121,7 +121,7 @@ PopAM => {
 	emit      => "pop%M %A",
 },
 
-SubSP => {
+sub_sp => {
 	state     => "pinned",
 	reg_req   => { out => [ "rsp:I|S", "gp", "none" ] },
 	outs      => [ "stack", "addr", "M" ],
@@ -133,7 +133,7 @@ SubSP => {
 	modified_flags => $status_flags,
 },
 
-Leave => {
+leave => {
 	op_flags  => [ "uses_memory" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "rbp" ], out => [ "rbp:I", "rbp:I|S" ] },
@@ -142,7 +142,7 @@ Leave => {
 	emit      => "leave",
 },
 
-Add => {
+add => {
 	irn_flags => [ "rematerializable", "commutative" ],
 	state     => "exc_pinned",
 	reg_req   => { out => [ "gp", "flags", "none" ] },
@@ -154,7 +154,7 @@ Add => {
 	modified_flags => $status_flags,
 },
 
-And => {
+and => {
 	irn_flags => [ "rematerializable", "commutative" ],
 	state     => "exc_pinned",
 	reg_req   => { out => [ "gp", "flags", "none" ] },
@@ -167,7 +167,7 @@ And => {
 
 },
 
-Div => {
+div => {
 	state     => "pinned",
 	reg_req   => { out => [ "rax", "flags", "none", "rdx" ] },
 	arity     => "variable",
@@ -180,7 +180,7 @@ Div => {
 	modified_flags => $status_flags,
 },
 
-IDiv => {
+idiv => {
 	state     => "pinned",
 	reg_req   => { out => [ "rax", "flags", "none", "rdx" ] },
 	arity     => "variable",
@@ -193,7 +193,7 @@ IDiv => {
 	modified_flags => $status_flags,
 },
 
-IMul => {
+imul => {
 	irn_flags => [ "rematerializable", "commutative" ],
 	state     => "exc_pinned",
 	reg_req   => { out => [ "gp", "flags", "none" ] },
@@ -205,7 +205,7 @@ IMul => {
 	modified_flags => $status_flags,
 },
 
-IMul1Op => {
+imul_1op => {
 	# Do not rematerialize this node
 	# TODO: should mark this commutative as soon as the backend code
 	#       can handle this special case
@@ -220,7 +220,7 @@ IMul1Op => {
 	modified_flags => $status_flags,
 },
 
-Mul => {
+mul => {
 	# Do not rematerialize this node
 	# It produces 2 results and has strict constraints
 	state     => "exc_pinned",
@@ -233,7 +233,7 @@ Mul => {
 	modified_flags => $status_flags,
 },
 
-Or => {
+or => {
 	irn_flags => [ "rematerializable", "commutative" ],
 	state     => "exc_pinned",
 	reg_req   => { out => [ "gp", "flags", "none" ] },
@@ -245,7 +245,7 @@ Or => {
 	modified_flags => $status_flags,
 },
 
-Shl => {
+shl => {
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { out => [ "gp", "flags" ] },
 	outs      => [ "res", "flags" ],
@@ -256,7 +256,7 @@ Shl => {
 	modified_flags => $status_flags
 },
 
-Shr => {
+shr => {
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { out => [ "gp", "flags" ] },
 	outs      => [ "res", "flags" ],
@@ -267,7 +267,7 @@ Shr => {
 	modified_flags => $status_flags
 },
 
-Sar => {
+sar => {
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { out => [ "gp", "flags" ] },
 	outs      => [ "res", "flags" ],
@@ -278,7 +278,7 @@ Sar => {
 	modified_flags => $status_flags
 },
 
-Sub => {
+sub => {
 	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
 	reg_req   => { out => [ "gp", "flags", "none" ] },
@@ -290,7 +290,7 @@ Sub => {
 	modified_flags => $status_flags,
 },
 
-Sbb => {
+sbb => {
 	state     => "exc_pinned",
 	reg_req   => { out => [ "gp", "flags", "none" ] },
 	outs      => [ "res", "flags", "M" ],
@@ -301,7 +301,7 @@ Sbb => {
 	modified_flags => $status_flags,
 },
 
-Neg => {
+neg => {
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "gp" ], out => [ "in_r1", "flags" ] },
 	ins       => [ "val" ],
@@ -314,7 +314,7 @@ Neg => {
 	modified_flags => $status_flags
 },
 
-Not => {
+not => {
 	irn_flags => [ "rematerializable" ],
 	attr      => "amd64_insn_mode_t insn_mode",
 	init_attr => "attr->insn_mode = insn_mode;",
@@ -328,7 +328,7 @@ Not => {
 	modified_flags => $status_flags
 },
 
-Xor => {
+xor => {
 	irn_flags => [ "rematerializable", "commutative" ],
 	state     => "exc_pinned",
 	reg_req   => { out => [ "gp", "flags", "none" ] },
@@ -340,7 +340,7 @@ Xor => {
 	modified_flags => $status_flags,
 },
 
-Xor0 => {
+xor_0 => {
 	op_flags  => [ "constlike" ],
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { out => [ "gp", "flags" ] },
@@ -350,7 +350,7 @@ Xor0 => {
 	modified_flags => $status_flags,
 },
 
-MovImm => {
+mov_imm => {
 	op_flags  => [ "constlike" ],
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { out => [ "gp" ] },
@@ -361,7 +361,7 @@ MovImm => {
 	mode      => $mode_gp,
 },
 
-Movs => {
+movs => {
 	state     => "exc_pinned",
 	reg_req   => { out => [ "gp", "none", "none" ] },
 	outs      => [ "res", "unused", "M" ],
@@ -371,7 +371,7 @@ Movs => {
 	emit      => "movs%Mq %AM, %^D0",
 },
 
-Mov => {
+mov_gp => {
 	state     => "exc_pinned",
 	reg_req   => { out => [ "gp", "none", "none" ] },
 	outs      => [ "res", "unused", "M" ],
@@ -380,7 +380,7 @@ Mov => {
 	attr      => "amd64_insn_mode_t insn_mode, amd64_op_mode_t op_mode, amd64_addr_t addr",
 },
 
-IJmp => {
+ijmp => {
 	state     => "pinned",
 	op_flags  => [ "cfopcode", "unknown_jump" ],
 	reg_req   => { in => [ "gp" ], out => [ "none", "none", "none" ] },
@@ -391,7 +391,7 @@ IJmp => {
 	emit      => "jmp %*AM",
 },
 
-Jmp => {
+jmp => {
 	state    => "pinned",
 	op_flags => [ "cfopcode" ],
 	reg_req  => { out => [ "none" ] },
@@ -399,7 +399,7 @@ Jmp => {
 	mode     => "mode_X",
 },
 
-Cmp => {
+cmp => {
 	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
 	reg_req   => { out => [ "none", "flags", "none" ] },
@@ -411,7 +411,7 @@ Cmp => {
 	modified_flags => $status_flags,
 },
 
-Lea => {
+lea => {
 	irn_flags => [ "rematerializable" ],
 	arity     => "variable",
 	outs      => [ "res" ],
@@ -423,7 +423,7 @@ Lea => {
 	mode      => $mode_gp,
 },
 
-Jcc => {
+jcc => {
 	state     => "pinned",
 	op_flags  => [ "cfopcode", "forking" ],
 	reg_req   => { in  => [ "eflags" ], out => [ "none", "none" ] },
@@ -434,7 +434,7 @@ Jcc => {
 	fixed     => "amd64_op_mode_t op_mode = AMD64_OP_NONE;\n",
 },
 
-Store => {
+mov_store => {
 	op_flags  => [ "uses_memory" ],
 	state     => "exc_pinned",
 	reg_req   => { out => [ "none" ] },
@@ -446,7 +446,7 @@ Store => {
 	emit      => "mov%M %S0, %A",
 },
 
-SwitchJmp => {
+jmp_switch => {
 	op_flags  => [ "cfopcode", "forking" ],
 	state     => "pinned",
 	reg_req   => { in => [ "gp" ], out => [ "none" ] },
@@ -456,7 +456,7 @@ SwitchJmp => {
 	fixed     => "amd64_op_mode_t op_mode = AMD64_OP_NONE;\n",
 },
 
-Call => {
+call => {
 	state     => "exc_pinned",
 	arity     => "variable",
 	out_arity => "variable",
@@ -467,7 +467,7 @@ Call => {
 	modified_flags => $all_flags,
 },
 
-Start => {
+start => {
 	irn_flags => [ "schedule_first" ],
 	state     => "pinned",
 	out_arity => "variable",
@@ -476,7 +476,7 @@ Start => {
 	emit      => "",
 },
 
-Return => {
+ret => {
 	state    => "pinned",
 	op_flags => [ "cfopcode" ],
 	arity    => "variable",
@@ -488,7 +488,7 @@ Return => {
 
 # SSE
 
-xAdds => {
+adds => {
 	irn_flags  => [ "rematerializable", "commutative" ],
 	state     => "exc_pinned",
 	reg_req   => { out => [ "xmm", "none", "none" ] },
@@ -499,7 +499,7 @@ xAdds => {
 	emit      => "adds%MX %AM",
 },
 
-xDivs => {
+divs => {
 	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
 	reg_req   => { out => [ "xmm", "none", "none" ] },
@@ -510,7 +510,7 @@ xDivs => {
 	emit      => "divs%MX %AM",
 },
 
-xMovs => {
+movs_xmm => {
 	state     => "exc_pinned",
 	reg_req   => { out => [ "xmm", "none", "none" ] },
 	outs      => [ "res", "unused", "M" ],
@@ -520,7 +520,7 @@ xMovs => {
 	emit      => "movs%MX %AM, %D0",
 },
 
-xMuls => {
+muls => {
 	irn_flags => [ "rematerializable", "commutative" ],
 	state     => "exc_pinned",
 	reg_req   => { out => [ "xmm", "none", "none" ] },
@@ -531,7 +531,7 @@ xMuls => {
 	emit      => "muls%MX %AM",
 },
 
-xStores => {
+movs_store_xmm => {
 	op_flags  => [ "uses_memory" ],
 	state     => "exc_pinned",
 	reg_req   => { out => [ "none" ] },
@@ -544,7 +544,7 @@ xStores => {
 },
 
 
-xSubs => {
+subs => {
 	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
 	reg_req   => { out => [ "xmm", "none", "none" ] },
@@ -555,7 +555,7 @@ xSubs => {
 	emit      => "subs%MX %AM",
 },
 
-xUcomis => {
+ucomis => {
 	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
 	reg_req   => { out => [ "none", "flags", "none" ] },
@@ -567,7 +567,7 @@ xUcomis => {
 	modified_flags => $status_flags,
 },
 
-xXorp0 => {
+xorpd_0 => {
 	op_flags  => [ "constlike" ],
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { out => [ "xmm" ] },
@@ -577,7 +577,7 @@ xXorp0 => {
 	mode      => $mode_xmm,
 },
 
-xXorp  => {
+xorp  => {
 	irn_flags => [ "rematerializable", "commutative" ],
 	state     => "exc_pinned",
 	reg_req   => { out => [ "xmm", "none", "none" ] },
@@ -590,7 +590,7 @@ xXorp  => {
 
 # Conversion operations
 
-CvtSS2SD => {
+cvtss2sd => {
 	state     => "exc_pinned",
 	reg_req   => { out => [ "xmm", "none", "none" ] },
 	outs      => [ "res", "none", "M" ],
@@ -600,7 +600,7 @@ CvtSS2SD => {
 	emit      => "cvtss2sd %AM, %^D0",
 },
 
-CvtSD2SS => {
+cvtsd2ss => {
 	state     => "exc_pinned",
 	reg_req   => { out => [ "xmm", "none", "none" ] },
 	outs      => [ "res", "none", "M" ],
@@ -611,7 +611,7 @@ CvtSD2SS => {
 	emit      => "cvtsd2ss %AM, %^D0",
 },
 
-CvtSD2SI => {
+cvttsd2si => {
 	state     => "exc_pinned",
 	reg_req   => { out => [ "gp", "none", "none" ] },
 	outs      => [ "res", "none", "M" ],
@@ -621,7 +621,7 @@ CvtSD2SI => {
 	emit      => "cvttsd2si %AM, %D0",
 },
 
-CvtSS2SI => {
+cvttss2si => {
 	state     => "exc_pinned",
 	reg_req   => { out => [ "gp", "none", "none" ] },
 	outs      => [ "res", "none", "M" ],
@@ -631,7 +631,7 @@ CvtSS2SI => {
 	emit      => "cvttss2si %AM, %D0",
 },
 
-CvtSI2SS => {
+cvtsi2ss => {
 	state     => "exc_pinned",
 	reg_req   => { out => [ "xmm", "none", "none" ] },
 	outs      => [ "res", "none", "M" ],
@@ -641,7 +641,7 @@ CvtSI2SS => {
 	emit      => "cvtsi2ss %AM, %^D0",
 },
 
-CvtSI2SD => {
+cvtsi2sd => {
 	state     => "exc_pinned",
 	reg_req   => { out => [ "xmm", "none", "none" ] },
 	outs      => [ "res", "none", "M" ],

@@ -77,7 +77,7 @@ static void transform_sub_to_neg_add(ir_node *node,
 	const amd64_binop_addr_attr_t *attr = get_amd64_binop_addr_attr(node);
 	ir_node *add, *add_res;
 
-	if (is_amd64_xSubs(node)) {
+	if (is_amd64_subs(node)) {
 		ir_tarval *tv = create_sign_tv(amd64_mode_xmm);
 		ir_entity *sign_bit_const = create_float_const_entity(irg, tv);
 
@@ -90,28 +90,28 @@ static void transform_sub_to_neg_add(ir_node *node,
 		xor_attr.base.addr.immediate.entity = sign_bit_const;
 
 		ir_node *xor_in[] = { in2 };
-		ir_node *xor = new_bd_amd64_xXorp(dbgi, block, ARRAY_SIZE(xor_in),
-		                                  xor_in, &xor_attr);
-		ir_node *neg = new_r_Proj(xor, amd64_mode_xmm, pn_amd64_xXorp_res);
+		ir_node *xor = new_bd_amd64_xorp(dbgi, block, ARRAY_SIZE(xor_in),
+		                                 xor_in, &xor_attr);
+		ir_node *neg = new_r_Proj(xor, amd64_mode_xmm, pn_amd64_xorp_res);
 
 		sched_add_before(node, xor);
 		arch_set_irn_register(neg, in2_reg);
 
 		ir_node *in[] = { neg, in1 };
-		add     = new_bd_amd64_xAdds(dbgi, block, ARRAY_SIZE(in), in, attr);
-		add_res = new_r_Proj(add, amd64_mode_xmm, pn_amd64_xAdds_res);
+		add     = new_bd_amd64_adds(dbgi, block, ARRAY_SIZE(in), in, attr);
+		add_res = new_r_Proj(add, amd64_mode_xmm, pn_amd64_adds_res);
 	} else {
-		assert(is_amd64_Sub(node));
-		ir_node *neg = new_bd_amd64_Neg(dbgi, block, in2, attr->base.insn_mode);
-		arch_set_irn_register_out(neg, pn_amd64_Neg_res, out_reg);
+		assert(is_amd64_sub(node));
+		ir_node *neg = new_bd_amd64_neg(dbgi, block, in2, attr->base.insn_mode);
+		arch_set_irn_register_out(neg, pn_amd64_neg_res, out_reg);
 		sched_add_before(node, neg);
 		ir_node *neg_res
 			= new_r_Proj(neg, amd64_reg_classes[CLASS_amd64_gp].mode,
-			             pn_amd64_Neg_res);
+			             pn_amd64_neg_res);
 
 		ir_node *in[] = { neg_res, in1 };
-		add     = new_bd_amd64_Add(dbgi, block, ARRAY_SIZE(in), in, attr);
-		add_res = new_r_Proj(add, mode_Lu, pn_amd64_Add_res);
+		add     = new_bd_amd64_add(dbgi, block, ARRAY_SIZE(in), in, attr);
+		add_res = new_r_Proj(add, mode_Lu, pn_amd64_add_res);
 	}
 	arch_set_irn_register(add_res, out_reg);
 
@@ -144,9 +144,10 @@ static ir_node *amd64_turn_back_am(ir_node *node)
 	new_addr.mem_input = load_arity;
 	load_in[load_arity++] = get_irn_n(node, attr->addr.mem_input);
 
-	ir_node *load = new_bd_amd64_Mov(dbgi, block, load_arity, load_in,
-	                                 attr->insn_mode, AMD64_OP_ADDR, new_addr);
-	ir_node *load_res = new_r_Proj(load, mode_Lu, pn_amd64_Mov_res);
+	ir_node *load = new_bd_amd64_mov_gp(dbgi, block, load_arity, load_in,
+	                                    attr->insn_mode, AMD64_OP_ADDR,
+	                                    new_addr);
+	ir_node *load_res = new_r_Proj(load, mode_Lu, pn_amd64_mov_gp_res);
 
 	/* change operation */
 	const amd64_binop_addr_attr_t *binop_attr
@@ -164,7 +165,7 @@ static ir_node *amd64_turn_back_am(ir_node *node)
 		ir_node *out = get_edge_src_irn(edge);
 		if (get_irn_mode(out) == mode_M) {
 			set_Proj_pred(out, load);
-			set_Proj_num(out, pn_amd64_Mov_M);
+			set_Proj_num(out, pn_amd64_mov_gp_M);
 			break;
 		}
 	}
@@ -212,7 +213,7 @@ swap:;
 					if (res)
 						return;
 
-					if (is_amd64_Sub(node) || is_amd64_xSubs(node)) {
+					if (is_amd64_sub(node) || is_amd64_subs(node)) {
 						transform_sub_to_neg_add(node, out_reg);
 						return;
 					}
