@@ -277,11 +277,8 @@ static int verify_node_Proj_Proj_Start(const ir_node *p)
 		     get_Proj_pred(get_Proj_pred(p)));
 		return false;
 	}
-	if (!irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_BACKEND)) {
-		ir_type *param_type = get_method_param_type(mt, pn);
-		return check_mode(p, get_type_mode(param_type));
-	}
-	return true;
+	ir_type *param_type = get_method_param_type(mt, pn);
+	return check_mode(p, get_type_mode(param_type));
 }
 
 static int verify_node_Proj_Proj_Call(const ir_node *p)
@@ -591,10 +588,8 @@ static int verify_node_Member(const ir_node *n)
 {
 	bool fine = check_mode_func(n, mode_is_reference, "reference");
 	/* do not check in backend until beabi.c is gone */
-	if (!irg_is_constrained(get_irn_irg(n), IR_GRAPH_CONSTRAINT_BACKEND)) {
-		fine &= check_input_func(n, n_Member_ptr, "ptr", mode_is_reference,
-		                         "reference");
-	}
+	fine &= check_input_func(n, n_Member_ptr, "ptr", mode_is_reference,
+	                         "reference");
 	ir_entity *entity = get_Member_entity(n);
 	if (entity == NULL) {
 		warn(n, "entity is NULL");
@@ -893,10 +888,8 @@ static int verify_node_Load(const ir_node *n)
 {
 	bool fine = check_mode(n, mode_T);
 	fine &= check_input_mode(n, n_Load_mem, "mem", mode_M);
-	ir_graph *irg = get_irn_irg(n);
-	if (!irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_BACKEND)) {
-		fine &= check_input_func(n, n_Load_ptr, "ptr", mode_is_reference, "reference");
-	}
+	fine &= check_input_func(n, n_Load_ptr, "ptr", mode_is_reference,
+	                         "reference");
 	ir_mode *loadmode = get_Load_mode(n);
 	if (!mode_is_data_not_b(loadmode)) {
 		warn(n, "load mode is not a data mode, but %+F", loadmode);
@@ -909,10 +902,8 @@ static int verify_node_Store(const ir_node *n)
 {
 	bool fine = check_mode(n, mode_T);
 	fine &= check_input_mode(n, n_Store_mem, "mem", mode_M);
-	ir_graph *irg = get_irn_irg(n);
-	if (!irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_BACKEND)) {
-		fine &= check_input_func(n, n_Store_ptr, "ptr", mode_is_reference, "reference");
-	}
+	fine &= check_input_func(n, n_Store_ptr, "ptr", mode_is_reference,
+	                         "reference");
 	ir_mode *storemode = get_irn_mode(get_Store_value(n));
 	if (!mode_is_data_not_b(storemode)) {
 		warn(n, "store mode is not a data mode, but %+F", storemode);
@@ -964,12 +955,11 @@ static int verify_node_Mux(const ir_node *n)
 
 static int verify_node_CopyB(const ir_node *n)
 {
-	bool      fine = check_mode(n, mode_M);
-	ir_graph *irg  = get_irn_irg(n);
-	if (!irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_BACKEND)) {
-		fine &= check_input_func(n, n_CopyB_src, "src", mode_is_reference, "reference");
-		fine &= check_input_func(n, n_CopyB_dst, "dst", mode_is_reference, "reference");
-	}
+	bool fine = check_mode(n, mode_M);
+	fine &= check_input_func(n, n_CopyB_src, "src", mode_is_reference,
+	                         "reference");
+	fine &= check_input_func(n, n_CopyB_dst, "dst", mode_is_reference,
+	                         "reference");
 	fine &= check_input_mode(n, n_CopyB_mem, "mem", mode_M);
 	ir_type *type = get_CopyB_type(n);
 	if (!is_compound_type(type) && !is_Array_type(type)) {
