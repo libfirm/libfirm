@@ -18,4 +18,10 @@
  */
 void ir_register_verify_node_ops(void);
 
+/**
+ * Print a verification warning about a specific node. The format string
+ * is in ir_printf format.
+ */
+void verify_warn(const ir_node *n, const char *format, ...);
+
 #endif

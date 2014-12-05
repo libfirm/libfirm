@@ -23,7 +23,7 @@
 #include "irnodeset.h"
 #include "ircons.h"
 
-static void warn(const ir_node *n, const char *format, ...)
+void verify_warn(const ir_node *n, const char *format, ...)
 {
 	FILE *out = stderr;
 	fputs("Verify warning: ", out);
@@ -45,7 +45,7 @@ static bool check_mode(const ir_node *n, const ir_mode *expected)
 {
 	ir_mode *mode = get_irn_mode(n);
 	if (mode != expected) {
-		warn(n, "expected mode %+F but found %+F", expected, mode);
+		verify_warn(n, "expected mode %+F but found %+F", expected, mode);
 		return false;
 	}
 	return true;
@@ -62,7 +62,7 @@ static bool check_mode_func(const ir_node *n, check_mode_func_ptr func,
 {
 	ir_mode *mode = get_irn_mode(n);
 	if (!func(mode)) {
-		warn(n, "expected %s mode but found %+F", name, mode);
+		verify_warn(n, "expected %s mode but found %+F", name, mode);
 		return false;
 	}
 	return true;
@@ -83,8 +83,8 @@ static bool check_input_mode(const ir_node *n, int input, const char *inputname,
 			snprintf(num, sizeof(num), "input %d", input);
 			inputname = num;
 		}
-		warn(n, "expected mode %+F for input '%s' but found %+F (%+F)",
-		     mode, inputname, in_mode, in);
+		verify_warn(n, "expected mode %+F for input '%s' but found %+F (%+F)",
+		            mode, inputname, in_mode, in);
 		return false;
 	}
 	return true;
@@ -105,8 +105,8 @@ static bool check_input_func(const ir_node *n, int input, const char *inputname,
 			snprintf(num, sizeof(num), "input %d", input);
 			inputname = num;
 		}
-		warn(n, "expected %s mode for input '%s' but found %+F (%+F)",
-		     modedescr, inputname, mode, in);
+		verify_warn(n, "expected %s mode for input '%s' but found %+F (%+F)",
+		            modedescr, inputname, mode, in);
 		return false;
 	}
 	return true;
@@ -124,8 +124,8 @@ static bool check_mode_same_input(const ir_node *n, int input,
 			snprintf(num, sizeof(num), "input %d", input);
 			inputname = num;
 		}
-		warn(n, "mode of input '%s' different from output mode %+F",
-		     inputname, mode);
+		verify_warn(n, "mode of input '%s' different from output mode %+F",
+		            inputname, mode);
 		return false;
 	}
 	return true;
@@ -145,8 +145,8 @@ static bool check_mode_same_size_input(const ir_node *n, int input,
 			snprintf(num, sizeof(num), "input %d", input);
 			inputname = num;
 		}
-		warn(n, "mode size of input '%s' different from output mode size",
-		     inputname);
+		verify_warn(n, "mode size of input '%s' different from output mode size",
+		            inputname);
 		return false;
 	}
 	return true;
@@ -157,8 +157,8 @@ static bool check_mode_same_size_input(const ir_node *n, int input,
  */
 static bool invalid_proj(const ir_node *proj)
 {
-	warn(proj, "invalid proj number %u for predecessor %+F",
-	     get_Proj_num(proj), get_Proj_pred(proj));
+	verify_warn(proj, "invalid proj number %u for predecessor %+F",
+	            get_Proj_num(proj), get_Proj_pred(proj));
 	return false;
 }
 
@@ -187,7 +187,7 @@ static int verify_node_Proj_Switch(const ir_node *p)
 	ir_node *pred = get_Proj_pred(p);
 	bool     fine = check_mode(p, mode_X);
 	if (pn >= get_Switch_n_outs(pred)) {
-		warn(p, "invalid proj number %u for predecessor %+F", pn, pred);
+		verify_warn(p, "invalid proj number %u for predecessor %+F", pn, pred);
 		fine = false;
 	}
 	return fine;
@@ -273,8 +273,8 @@ static int verify_node_Proj_Proj_Start(const ir_node *p)
 		return true;
 	unsigned pn = get_Proj_num(p);
 	if (pn >= get_method_n_params(mt)) {
-		warn(p, "invalid proj number %u after Proj(%+F)", pn,
-		     get_Proj_pred(get_Proj_pred(p)));
+		verify_warn(p, "invalid proj number %u after Proj(%+F)", pn,
+		            get_Proj_pred(get_Proj_pred(p)));
 		return false;
 	}
 	ir_type *param_type = get_method_param_type(mt, pn);
@@ -290,7 +290,7 @@ static int verify_node_Proj_Proj_Call(const ir_node *p)
 		return true;
 	unsigned pn = get_Proj_num(p);
 	if (pn >= get_method_n_ress(mt)) {
-		warn(p, "invalid proj number %u after %+F", pn, call);
+		verify_warn(p, "invalid proj number %u after %+F", pn, call);
 		return false;
 	}
 	ir_type *type = get_method_res_type(mt, pn);
@@ -314,7 +314,7 @@ static int verify_node_Proj_Tuple(const ir_node *p)
 	ir_node *tuple = get_Proj_pred(p);
 	unsigned pn    = get_Proj_num(p);
 	if (pn >= (unsigned)get_irn_arity(tuple)) {
-		warn(p, "invalid proj number on %+F", tuple);
+		verify_warn(p, "invalid proj number on %+F", tuple);
 		return false;
 	}
 	ir_node *in = get_irn_n(tuple, pn);
@@ -331,7 +331,8 @@ static bool verify_node_Proj_fragile(const ir_node *node)
 		return true;
 	int throws_exception = ir_throws_exception(pred);
 	if (!throws_exception) {
-		warn(node, "exception Proj on %+F which is not marked as throwing exceptions", pred);
+		verify_warn(node, "exception Proj on %+F which is not marked as throwing exceptions",
+		            pred);
 		return false;
 	}
 	return true;
@@ -342,13 +343,13 @@ static int verify_node_Proj(const ir_node *p)
 	ir_graph *irg  = get_irn_irg(p);
 	ir_node  *pred = get_Proj_pred(p);
 	if (get_irn_mode(pred) != mode_T) {
-		warn(p, "predecessor %+F does not have mode_T", pred);
+		verify_warn(p, "predecessor %+F does not have mode_T", pred);
 		return false;
 	}
 	bool fine = true;
 	if (get_irg_pinned(irg) != op_pin_state_floats
 	    && get_nodes_block(pred) != get_nodes_block(p)) {
-	    warn(p, "different block than predecessor %+F", pred);
+	    verify_warn(p, "different block than predecessor %+F", pred);
 	    fine = false;
 	}
 	fine &= verify_node_Proj_fragile(p);
@@ -368,21 +369,21 @@ static int verify_node_Block(const ir_node *n)
 		ir_node *pred         = get_Block_cfgpred(n, i);
 		ir_node *skipped_pred = skip_Proj(skip_Tuple(pred));
 		if (!is_cfop(skipped_pred) && !is_Bad(skipped_pred)) {
-			warn(n, "predecessor %d of block is not a cfop, but %+F", i,
-			     skipped_pred);
+			verify_warn(n, "predecessor %d of block is not a cfop, but %+F", i,
+			            skipped_pred);
 			fine = false;
 		}
 
 		if (is_IJmp(skipped_pred) && get_Block_entity(n) == NULL) {
-			warn(n, "succesor block of IJmp %+F has no entity assigned",
-			     skipped_pred);
+			verify_warn(n, "succesor block of IJmp %+F has no entity assigned",
+			            skipped_pred);
 			fine = false;
 		}
 	}
 
 	ir_graph *irg = get_irn_irg(n);
 	if (n == get_irg_start_block(irg) && get_Block_n_cfgpreds(n) != 0) {
-		warn(n, "start block mustn't have inputs");
+		verify_warn(n, "start block mustn't have inputs");
 		fine = false;
 	} else if (n == get_irg_end_block(irg)
 	           && !irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_BACKEND)) {
@@ -393,8 +394,8 @@ static int verify_node_Block(const ir_node *n)
 			ir_node *skipped_pred = skip_Proj(skip_Tuple(pred));
 			if (!is_Return(skipped_pred) && !is_Bad(skipped_pred)
 			    && !is_Raise(skipped_pred)) {
-			    warn(n, "end block must have Return or Raise predecessor, found %+F",
-			         skipped_pred);
+			    verify_warn(n, "end block must have Return or Raise predecessor, found %+F",
+			                skipped_pred);
 			    fine = false;
 			}
 		}
@@ -404,7 +405,7 @@ static int verify_node_Block(const ir_node *n)
 
 static int verify_node_Deleted(const ir_node *n)
 {
-	warn(n, "Deleted node %+F appears to be reachable");
+	verify_warn(n, "Deleted node %+F appears to be reachable");
 	return false;
 }
 
@@ -431,8 +432,8 @@ static int verify_node_End(const ir_node *n)
 				continue;
 			if (is_Bad(kept))
 				continue;
-			warn(n, "keep-alive edge only allowed on Block, PhiLoop and Call node, found %+F",
-			     kept);
+			verify_warn(n, "keep-alive edge only allowed on Block, PhiLoop and Call node, found %+F",
+			            kept);
 			fine = false;
 		}
 	}
@@ -462,7 +463,7 @@ static bool verify_switch_table(const ir_node *n)
 {
 	const ir_switch_table *table = get_Switch_table(n);
 	if (table == NULL) {
-		warn(n, "switch table is NULL");
+		verify_warn(n, "switch table is NULL");
 		return false;
 	}
 
@@ -477,20 +478,21 @@ static bool verify_switch_table(const ir_node *n)
 		if (entry->pn == 0)
 			continue;
 		if (entry->min == NULL || entry->max == NULL) {
-			warn(n, "switch table entry %zu without min+max value", e);
+			verify_warn(n, "switch table entry %zu without min+max value", e);
 			fine = false;
 		}
 		if (mode_is_int(mode) && (get_tarval_mode(entry->min) != mode
 		                       || get_tarval_mode(entry->max) != mode)) {
-			warn(n, "switch table entry %zu has wrong mode for min or max value",
-				 e);
+			verify_warn(n, "switch table entry %zu has wrong mode for min or max value",
+				        e);
 			fine = false;
 		} else if (tarval_cmp(entry->min, entry->max) == ir_relation_greater) {
-			warn(n, "switch table entry %zu min is not less or equal than max", e);
+			verify_warn(n, "switch table entry %zu min is not less or equal than max",
+			            e);
 			fine = false;
 		}
 		if (entry->pn >= n_outs) {
-			warn(n, "switch table entry %zu has invalid proj number", e);
+			verify_warn(n, "switch table entry %zu has invalid proj number", e);
 			fine = false;
 		}
 	}
@@ -515,8 +517,8 @@ static int verify_node_Return(const ir_node *n)
 	if (!is_Method_type(mt)) /* someone else should report that problem */
 		return true;
 	if ((size_t)get_Return_n_ress(n) != get_method_n_ress(mt)) {
-		warn(n, "number of inputs does not match method type (%zu inputs, %zu declared)",
-		     get_Return_n_ress(n), get_method_n_ress(mt));
+		verify_warn(n, "number of inputs does not match method type (%zu inputs, %zu declared)",
+		            get_Return_n_ress(n), get_method_n_ress(mt));
 		fine = false;
 	} else {
 		for (int i = get_Return_n_ress(n); i-- > 0; ) {
@@ -545,7 +547,8 @@ static int verify_node_Address(const ir_node *n)
 	ir_entity *ent  = get_Address_entity(n);
 	bool       fine = check_mode_func(n, mode_is_reference, "reference");
 	if (!(get_entity_owner(ent)->flags & tf_segment) && !is_method_entity(ent)) {
-		warn(n, "entity of %+F is not in a segment type but %+F", ent, get_entity_owner(ent));
+		verify_warn(n, "entity of %+F is not in a segment type but %+F",
+		            ent, get_entity_owner(ent));
 		fine = false;
 	}
 	return fine;
@@ -557,8 +560,8 @@ static int verify_node_Const(const ir_node *n)
 	ir_mode *mode    = get_irn_mode(n);
 	ir_mode *tv_mode = get_tarval_mode(get_Const_tarval(n));
 	if (fine && tv_mode != mode) {
-		warn(n, "tarval mode (%+F) different from Const mode (%+F)", tv_mode,
-		     mode);
+		verify_warn(n, "tarval mode (%+F) different from Const mode (%+F)",
+		            tv_mode, mode);
 		fine = false;
 	}
 	return fine;
@@ -576,10 +579,10 @@ static int verify_node_Sel(const ir_node *n)
 	fine &= check_input_func(n, n_Sel_index, "index", mode_is_int, "int");
 	ir_type *type = get_Sel_type(n);
 	if (type == NULL) {
-		warn(n, "type is NULL");
+		verify_warn(n, "type is NULL");
 		fine = false;
 	} else if (!is_Array_type(type)) {
-		warn(n, "type %+F is not an array type", type);
+		verify_warn(n, "type %+F is not an array type", type);
 		fine = false;
 	}
 	return fine;
@@ -593,10 +596,10 @@ static int verify_node_Member(const ir_node *n)
 	                         "reference");
 	ir_entity *entity = get_Member_entity(n);
 	if (entity == NULL) {
-		warn(n, "entity is NULL");
+		verify_warn(n, "entity is NULL");
 		fine = false;
 	} else if (get_entity_owner(entity)->flags & tf_segment) {
-		warn(n, "Member from entity with global/segment type owner");
+		verify_warn(n, "Member from entity with global/segment type owner");
 		fine = false;
 	}
 	return fine;
@@ -615,15 +618,15 @@ static int verify_node_Call(const ir_node *n)
 
 	ir_type *mt = get_Call_type(n);
 	if (!is_Method_type(mt)) {
-		warn(n, "call_type is not a method type");
+		verify_warn(n, "call_type is not a method type");
 		return false;
 	}
 
 	if ((size_t)get_Call_n_params(n) < get_method_n_params(mt)) {
-		warn(n, "call has fewer arguments than method type");
+		verify_warn(n, "call has fewer arguments than method type");
 		return false;
 	} else if ((size_t)get_Call_n_params(n) > get_method_n_params(mt) && !is_method_variadic(mt)) {
-		warn(n, "call has more arguments than method type");
+		verify_warn(n, "call has more arguments than method type");
 		return false;
 	} else {
 		for (int i = 0, n_params = get_Call_n_params(n); i < n_params; ++i) {
@@ -660,11 +663,11 @@ static int verify_node_Add(const ir_node *n)
 		} else if (mode_is_int(right_mode)) {
 			fine &= check_mode_same_input(n, n_Add_left, "left");
 		} else {
-			warn(n, "AddP has no integer input");
+			verify_warn(n, "AddP has no integer input");
 			fine = false;
 		}
 	} else {
-		warn(n, "mode must be numeric or reference but is %+F", mode);
+		verify_warn(n, "mode must be numeric or reference but is %+F", mode);
 		fine = false;
 	}
 	return fine;
@@ -723,7 +726,7 @@ static int verify_node_Div(const ir_node *n)
 	fine &= check_input_mode(n, n_Div_right, "right", mode);
 	fine &= check_input_mode(n, n_Div_mem, "mem", mode_M);
 	if (!mode_is_num(mode)) {
-		warn(n, "div resmode is not a numeric mode");
+		verify_warn(n, "div resmode is not a numeric mode");
 		fine = false;
 	}
 	return fine;
@@ -737,7 +740,7 @@ static int verify_node_Mod(const ir_node *n)
 	fine &= check_input_mode(n, n_Mod_right, "right", mode);
 	fine &= check_input_mode(n, n_Mod_mem, "mem", mode_M);
 	if (!mode_is_int(mode)) {
-		warn(n, "mod resmode is not a int mode");
+		verify_warn(n, "mod resmode is not a int mode");
 		fine = false;
 	}
 	return fine;
@@ -789,8 +792,8 @@ static int verify_node_Cmp(const ir_node *n)
 	ir_mode *model = get_irn_mode(get_Cmp_left(n));
 	ir_mode *moder = get_irn_mode(get_Cmp_right(n));
 	if (model != moder) {
-		warn(n, "modes of left+right input are different: %+F and %+F", model,
-		     moder);
+		verify_warn(n, "modes of left+right input are different: %+F and %+F",
+		            model, moder);
 		fine = false;
 	}
 	return fine;
@@ -846,7 +849,7 @@ static int verify_node_Bitcast(const ir_node *n)
 	 * same operation. We might loosen this constraint in the future. */
 	if (get_mode_size_bits(src_mode) != get_mode_size_bits(dst_mode)
 	    || get_mode_arithmetic(src_mode) == get_mode_arithmetic(dst_mode)) {
-	    warn(n, "bitcast only allowed for modes with same size and different arithmetic");
+	    verify_warn(n, "bitcast only allowed for modes with same size and different arithmetic");
 	    fine = false;
 	}
 	return fine;
@@ -868,7 +871,7 @@ static int verify_node_Phi(const ir_node *n)
 	if (!is_Bad(block) && get_irn_arity(n) != get_irn_arity(block)
 	    && (!irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_CONSTRUCTION)
 	        || get_irn_arity(n) != 0)) {
-	    warn(n, "wrong number of inputs in Phi node");
+	    verify_warn(n, "wrong number of inputs in Phi node");
 	    fine = false;
 	}
 
@@ -891,7 +894,7 @@ static int verify_node_Load(const ir_node *n)
 	                         "reference");
 	ir_mode *loadmode = get_Load_mode(n);
 	if (!mode_is_data_not_b(loadmode)) {
-		warn(n, "load mode is not a data mode, but %+F", loadmode);
+		verify_warn(n, "load mode is not a data mode, but %+F", loadmode);
 		fine = false;
 	}
 	return fine;
@@ -957,7 +960,7 @@ static int verify_node_CopyB(const ir_node *n)
 	fine &= check_input_mode(n, n_CopyB_mem, "mem", mode_M);
 	ir_type *type = get_CopyB_type(n);
 	if (!is_compound_type(type) && !is_Array_type(type)) {
-		warn(n, "CopyB_type is no compound or Array type but %+F", type);
+		verify_warn(n, "CopyB_type is no compound or Array type but %+F", type);
 		fine = false;
 	}
 	return fine;
@@ -996,7 +999,7 @@ static bool check_dominance_for_node(const ir_node *use)
 			continue;
 
 		if (!block_dominates(def_bl, use_bl)) {
-			warn(use, "not dominated by operand %+F", def);
+			verify_warn(use, "not dominated by operand %+F", def);
 			fine = false;
 		}
 	}
@@ -1010,7 +1013,7 @@ static bool check_dominance_for_node(const ir_node *use)
 static bool check_irn_storage(ir_graph *irg, const ir_node *node)
 {
 	if (!node_is_in_irgs_storage(irg, node)) {
-		warn(node, "node is not stored on graph obstack");
+		verify_warn(node, "node is not stored on graph obstack");
 		return false;
 	}
 	return true;
@@ -1032,7 +1035,7 @@ int irn_verify(const ir_node *const n)
 	unsigned idx           = get_irn_idx(n);
 	ir_node *node_from_map = get_idx_irn(irg, idx);
 	if (node_from_map != n) {
-		warn(n, "node index and index map entry differ");
+		verify_warn(n, "node index and index map entry differ");
 		return false;
 	}
 
@@ -1041,18 +1044,18 @@ int irn_verify(const ir_node *const n)
 		ir_node *block = get_nodes_block(n);
 		if (!is_Block(block) && (!is_Bad(block)
 		    || !irg_has_properties(irg, IR_GRAPH_PROPERTY_NO_BADS))) {
-			warn(n, "block input is not a block (but %+F)", block);
+			verify_warn(n, "block input is not a block (but %+F)", block);
 			fine = false;
 		} else if (is_op_start_block_placed(op)
 		           && block != get_irg_start_block(irg)) {
-			warn(n, "not placed in start block");
+			verify_warn(n, "not placed in start block");
 			fine = false;
 		}
 	}
 	if (get_op_pinned(op) >= op_pin_state_exc_pinned) {
 		op_pin_state state = get_irn_pinned(n);
 		if (state != op_pin_state_floats && state != op_pin_state_pinned) {
-			warn(n, "invalid pin state (%d)", (int)state);
+			verify_warn(n, "invalid pin state (%d)", (int)state);
 			fine = false;
 		}
 	}
@@ -1100,12 +1103,12 @@ static int check_block_cfg(const ir_node *block, check_cfg_env_t *env)
 {
 	bool fine = true;
 	if (!ir_nodeset_contains(&env->reachable_blocks, block)) {
-		warn(block, "not reachable by blockwalker (endless loop with no kept block?)");
+		verify_warn(block, "not reachable by blockwalker (endless loop with no kept block?)");
 		fine = false;
 	}
 
 	if (!get_Block_matured(block)) {
-		warn(block, "imature block found");
+		verify_warn(block, "imature block found");
 		fine = false;
 	}
 
@@ -1113,7 +1116,7 @@ static int check_block_cfg(const ir_node *block, check_cfg_env_t *env)
 	if (get_Block_n_cfgpreds(block) == 0 && block != get_irg_start_block(irg)
 	    && block != get_irg_end_block(irg)) {
 		/* normal blocks must have at least 1 input (which may be a Bad node) */
-		warn(block, "normal block must have at least 1 input");
+		verify_warn(block, "normal block must have at least 1 input");
 		fine = false;
 	}
 
@@ -1127,7 +1130,7 @@ static int check_block_cfg(const ir_node *block, check_cfg_env_t *env)
 			continue;
 		ir_node *former_dest = pmap_get(ir_node, branch_nodes, branch);
 		if (former_dest != NULL && !is_unknown_jump(skip_Proj(branch))) {
-			warn(branch, "multiple users on mode_X node");
+			verify_warn(branch, "multiple users on mode_X node");
 			fine = false;
 			continue;
 		}
@@ -1142,8 +1145,8 @@ static int check_block_cfg(const ir_node *block, check_cfg_env_t *env)
 		ir_node *former_branch = pmap_get(ir_node, branch_nodes, branch_block);
 
 		if (former_branch != NULL && former_branch != branch) {
-			warn(branch_block, "multiple branching nodes (%+F,%+F) in block",
-			     branch, former_branch);
+			verify_warn(branch_block, "multiple branching nodes (%+F,%+F) in block",
+			            branch, former_branch);
 			fine = false;
 			continue;
 		}
@@ -1177,7 +1180,7 @@ static bool verify_block_branch(const ir_node *block, check_cfg_env_t *env)
 	ir_node *branch = pmap_get(ir_node, env->branch_nodes, block);
 	if (branch == NULL && !ir_nodeset_contains(&env->kept_nodes, block)
 	    && block != get_irg_end_block(get_irn_irg(block))) {
-		warn(block, "no cfopt in block");
+		verify_warn(block, "no cfopt in block");
 		return false;
 	}
 	return true;
@@ -1187,11 +1190,11 @@ static int verify_cond_projs(const ir_node *cond, check_cfg_env_t *env)
 {
 	bool fine = true;
 	if (!ir_nodeset_contains(&env->true_projs, cond)) {
-		warn(cond, "Cond node lacks true proj");
+		verify_warn(cond, "Cond node lacks true proj");
 		fine = false;
 	}
 	if (!ir_nodeset_contains(&env->false_projs, cond)) {
-		warn(cond, "Cond node lacks false proj");
+		verify_warn(cond, "Cond node lacks false proj");
 		fine = false;
 	}
 	return fine;
@@ -1200,7 +1203,7 @@ static int verify_cond_projs(const ir_node *cond, check_cfg_env_t *env)
 static int verify_switch_projs(const ir_node *sw, check_cfg_env_t *env)
 {
 	if (!ir_nodeset_contains(&env->true_projs, sw)) {
-		warn(sw, "Switch lacks a default proj");
+		verify_warn(sw, "Switch lacks a default proj");
 		return false;
 	}
 	return true;
@@ -1275,7 +1278,7 @@ static bool check_has_memory(ir_graph *irg)
 		if (get_irn_mode(kept) == mode_M || is_Call(kept))
 			return true;
 	}
-	warn(NULL, "could not find any memory chain in graph %+F", irg);
+	verify_warn(NULL, "could not find any memory chain in graph %+F", irg);
 	return false;
 }
 
@@ -1390,13 +1393,13 @@ static void check_simple_properties(ir_node *node, void *env)
 	ir_graph *irg = (ir_graph*)env;
 	if (is_Bad(node)) {
 		if (irg_has_properties(irg, IR_GRAPH_PROPERTY_NO_BADS)) {
-			warn(node, "IR_GRAPH_PROPERTY_NO_BADS is set, but Bad exists");
+			verify_warn(node, "IR_GRAPH_PROPERTY_NO_BADS is set, but Bad exists");
 			properties_fine = false;
 		}
 	}
 	if (is_Tuple(node)) {
 		if (irg_has_properties(irg, IR_GRAPH_PROPERTY_NO_TUPLES)) {
-			warn(node, "IR_GRAPH_PROPERTY_NO_TUPLES is set, but Tuple exists");
+			verify_warn(node, "IR_GRAPH_PROPERTY_NO_TUPLES is set, but Tuple exists");
 			properties_fine = false;
 		}
 	}
@@ -1404,13 +1407,13 @@ static void check_simple_properties(ir_node *node, void *env)
 		if (irg_has_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE
 		                          | IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE)
 		    && get_Block_dom_depth(node) == -1) {
-			warn(node, "IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE + IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE is set, but block has depth -1");
+			verify_warn(node, "IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE + IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE is set, but block has depth -1");
 			properties_fine = false;
 		}
 		if (irg_has_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_POSTDOMINANCE
 		                          | IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE)
 		    && get_Block_postdom_depth(node) == -1) {
-			warn(node, "IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE + IR_GRAPH_PROPERTY_CONSISTENT_POSTDOMINANCE is set, but block has depth -1");
+			verify_warn(node, "IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE + IR_GRAPH_PROPERTY_CONSISTENT_POSTDOMINANCE is set, but block has depth -1");
 			properties_fine = false;
 		}
 
@@ -1419,7 +1422,8 @@ static void check_simple_properties(ir_node *node, void *env)
 			foreach_irn_in(node, p, pred) {
 				ir_node *skipped = skip_Proj(skip_Tuple(pred));
 				if (has_multiple_X_succs(skipped)) {
-					warn(node, "IR_GRAPH_PROPERTY_NO_CRITICAL_EDGES set, but edge %+F->%+F is critical", node, skipped);
+					verify_warn(node, "IR_GRAPH_PROPERTY_NO_CRITICAL_EDGES set, but edge %+F->%+F is critical",
+					            node, skipped);
 					properties_fine = false;
 				}
 			}
@@ -1429,7 +1433,7 @@ static void check_simple_properties(ir_node *node, void *env)
 		++n_returns;
 		if (n_returns > 1
 		    && irg_has_properties(irg, IR_GRAPH_PROPERTY_ONE_RETURN)) {
-			warn(node, "IR_GRAPH_PROPERTY_ONE_RETURN set, but multiple return nodes found");
+			verify_warn(node, "IR_GRAPH_PROPERTY_ONE_RETURN set, but multiple return nodes found");
 			properties_fine = false;
 		}
 	}
@@ -1445,7 +1449,7 @@ static void assure_in_set(ir_node *node, void *env)
 {
 	ir_nodeset_t *nodes = (ir_nodeset_t*)env;
 	if (!ir_nodeset_contains(nodes, node)) {
-		warn(node, "IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES set, but node cannot be found with normal edges");
+		verify_warn(node, "IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES set, but node cannot be found with normal edges");
 		properties_fine = false;
 	}
 	ir_nodeset_remove(nodes, node);
@@ -1470,7 +1474,7 @@ static void check_consistent_out_edges(ir_graph *irg)
 	}
 
 	foreach_ir_nodeset(&nodes, node, i) {
-		warn(node, "IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES set, but node cannot be found with out edges");
+		verify_warn(node, "IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES set, but node cannot be found with out edges");
 		properties_fine = false;
 	}
 	ir_nodeset_destroy(&nodes);
