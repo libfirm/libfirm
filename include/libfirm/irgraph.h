@@ -339,11 +339,10 @@ typedef enum ir_graph_constraints_t {
 	 * been lowered.
 	 */
 	IR_GRAPH_CONSTRAINT_TARGET_LOWERED            = 1U << 5,
-	/**
-	 * We have a backend graph: all data values have register constraints
-	 * annotated.
-	 */
-	IR_GRAPH_CONSTRAINT_BACKEND                   = 1U << 6,
+	/** Backend info struct should be allocated for each new node. */
+	IR_GRAPH_CONSTRAINT_BACKEND_INFO              = 1U << 6,
+	/** All inputs+outputs have register constraints set. */
+	IR_GRAPH_CONSTRAINT_BACKEND                   = 1U << 7,
 } ir_graph_constraints_t;
 ENUM_BITSET(ir_graph_constraints_t)
 

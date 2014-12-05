@@ -118,7 +118,7 @@ ir_node *new_ir_node(dbg_info *db, ir_graph *irg, ir_node *block, ir_op *op,
 		edges_notify_edge(res, i, res->in[i+1], NULL, irg);
 
 	hook_new_node(res);
-	if (irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_BACKEND))
+	if (irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_BACKEND_INFO))
 		be_info_new_node(irg, res);
 
 	return res;

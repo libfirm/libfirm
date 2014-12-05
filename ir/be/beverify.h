@@ -57,4 +57,10 @@ bool be_verify_register_allocation(ir_graph *irg);
  */
 void be_liveness_check(be_lv_t *lv);
 
+/**
+ * Verify backend info of a node.
+ * This is used by the firm verifier when IR_GRAPH_CONSTRAINT_BACKEND is set.
+ */
+bool be_verify_node(const ir_node *node);
+
 #endif

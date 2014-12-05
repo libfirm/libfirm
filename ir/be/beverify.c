@@ -9,24 +9,163 @@
  * @author      Matthias Braun
  * @date        05.05.2006
  */
-#include <stdbool.h>
-
-#include "bitset.h"
-#include "set.h"
-#include "array.h"
-
-#include "irnode.h"
-#include "irgwalk.h"
-#include "irprintf.h"
-#include "irdump_t.h"
-#include "iredges.h"
-
 #include "beverify.h"
-#include "belive.h"
-#include "besched.h"
-#include "benode.h"
+
+#include "array.h"
 #include "beirg.h"
 #include "belistsched.h"
+#include "belive.h"
+#include "benode.h"
+#include "besched.h"
+#include "bitset.h"
+#include "irdump_t.h"
+#include "iredges.h"
+#include "irgwalk.h"
+#include "irnode.h"
+#include "irprintf.h"
+#include "irverify_t.h"
+#include "set.h"
+
+static bool check_value_constraint(const ir_node *node)
+{
+	const arch_register_req_t   *req  = arch_get_irn_register_req(node);
+	const arch_register_class_t *cls  = req->cls;
+	ir_mode                     *mode = get_irn_mode(node);
+
+	bool fine = true;
+	if (!cls->mode) {
+		if (is_Proj(node)) {
+			verify_warn(node, "Value with class %s must not have a Proj", cls->name);
+			fine = false;
+		} else if (mode != mode_ANY) {
+			verify_warn(node, "Value with class %s must have mode %+F", cls->name, mode_ANY);
+			fine = false;
+		}
+	} else if (mode != cls->mode) {
+		verify_warn(node, "Value with register class %s should have mode %+F but has %+F",
+					cls->name, cls->mode, mode);
+		fine = false;
+	}
+
+	return fine;
+}
+
+static void warn_constr(const ir_node *node, const char *type, unsigned n,
+                        const char *format, ...)
+{
+	verify_warn_prefix(node);
+	fprintf(stderr, "reqs %s %u: ", type, n);
+	va_list ap;
+	va_start(ap, format);
+	ir_vfprintf(stderr, format, ap);
+	va_end(ap);
+	fputc('\n', stderr);
+}
+
+static bool check_reg_constraint(const ir_node *node,
+                                 const arch_register_req_t *req,
+                                 const arch_register_t *reg, const char *type,
+                                 unsigned n)
+{
+	bool fine = true;
+	const arch_register_class_t *cls = req->cls;
+	if (req->width > cls->n_regs || (req->width == 0 && cls->n_regs != 0)) {
+		warn_constr(node, type, n, "invalid width %u", (unsigned)req->width);
+		fine = false;
+	}
+
+	if (reg != NULL && reg->cls != cls) {
+		warn_constr(node, type, n, "register %s does not match class %s",
+		            reg->name, cls->name);
+		fine = false;
+	} else if (reg != NULL) {
+		unsigned reg_index = reg->index;
+		if (!arch_reg_is_allocatable(req, reg)) {
+			warn_constr(node, type, n, "register %s not allowed (limited)",
+						reg->name);
+			fine = false;
+		}
+		if (req->must_be_different) {
+			foreach_irn_in(node, i, in) {
+				(void)in;
+				if (!rbitset_is_set(&req->must_be_different, i))
+					continue;
+
+				const arch_register_req_t *in_req
+					= arch_get_irn_register_req_in(node, i);
+				if (in_req->cls != cls) {
+					warn_constr(node, type, n, "must_be_different input %u has class %s should be %s",
+								i, in_req->cls!=NULL ? in_req->cls->name:"NULL",
+								cls!=NULL?cls->name:"NULL");
+					fine = false;
+				}
+				const arch_register_t *in_reg
+					= arch_get_irn_register_in(node, i);
+				if (in_reg != NULL && reg == in_reg) {
+					warn_constr(node, type, n, "register %s not different from input %u",
+								reg->name, i);
+					fine = false;
+				}
+			}
+		}
+		if (reg_index + req->width - 1 > cls->n_regs) {
+			warn_constr(node, type, n,
+			            "register width constraint not fulfilled");
+			fine = false;
+		}
+		if (req->aligned && reg->index % req->width != 0) {
+			warn_constr(node, type, n,
+			            "register alignment constraint not fulfilled");
+			fine = false;
+		}
+	}
+	return fine;
+}
+
+bool be_verify_node(const ir_node *node)
+{
+	if (is_Proj(node))
+		return check_value_constraint(node);
+	/** Only schedulable nodes are real instructions and require constraints */
+	if (arch_is_irn_not_scheduled(node))
+		return true;
+
+	bool fine = true;
+	if (get_irn_mode(node) != mode_T)
+		fine &= check_value_constraint(node);
+
+	be_foreach_out(node, o) {
+		const arch_register_req_t *req
+			= arch_get_irn_register_req_out(node, o);
+		const arch_register_t *reg = arch_get_irn_register_out(node, o);
+		fine &= check_reg_constraint(node, req, reg, "output", o);
+	}
+	foreach_irn_in(node, i, in) {
+		if (is_Dummy(in))
+			continue;
+
+		const arch_register_req_t *req
+			 = arch_get_irn_register_req_in(node, i);
+		const arch_register_t *reg = arch_get_irn_register_in(node, i);
+		fine &= check_reg_constraint(node, req, reg, "input", i);
+
+		const arch_register_req_t *in_req = arch_get_irn_register_req(in);
+		if (in_req->cls != req->cls) {
+			warn_constr(node, "input", i,
+						"input class %s does not match value class %s (%+F)",
+						in_req->cls!=NULL?in_req->cls->name:"NULL",
+						req->cls!=NULL?req->cls->name:"NULL", in);
+			fine = false;
+		}
+		if (in_req->width < req->width) {
+			warn_constr(node, "input", i,
+			            "register width is too small: %u need at least %u",
+			            in_req->width, req->width);
+			fine = false;
+		}
+	}
+	return fine;
+}
 
 static bool my_values_interfere(const ir_node *a, const ir_node *b);
 

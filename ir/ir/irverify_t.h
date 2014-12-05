@@ -24,4 +24,6 @@ void ir_register_verify_node_ops(void);
  */
 void verify_warn(const ir_node *n, const char *format, ...);
 
+void verify_warn_prefix(const ir_node *n);
+
 #endif

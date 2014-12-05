@@ -132,7 +132,7 @@ static void dump_backend_info_hook(void *context, FILE *F, const ir_node *node)
 	(void)context;
 
 	ir_graph *const irg = get_irn_irg(node);
-	if (!irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_BACKEND))
+	if (!irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_BACKEND_INFO))
 		return;
 
 	be_dump_reqs_and_registers(F, node);
@@ -163,7 +163,7 @@ void be_info_init(void)
 static void sched_edge_hook(FILE *F, const ir_node *irn)
 {
 	ir_graph *irg = get_irn_irg(irn);
-	if (!irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_BACKEND))
+	if (!irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_BACKEND_INFO))
 		return;
 
 	if (is_Proj(irn) || is_Block(irn) || !sched_is_scheduled(irn))
@@ -181,7 +181,7 @@ static void sched_edge_hook(FILE *F, const ir_node *irn)
 
 void be_info_init_irg(ir_graph *irg)
 {
-	add_irg_constraints(irg, IR_GRAPH_CONSTRAINT_BACKEND);
+	add_irg_constraints(irg, IR_GRAPH_CONSTRAINT_BACKEND_INFO);
 	irg_walk_anchors(irg, init_walker, NULL, NULL);
 
 	set_dump_node_edge_hook(sched_edge_hook);

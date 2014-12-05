@@ -9,11 +9,13 @@
  * @author   Christian Schaefer, Goetz Lindenmaier, Till Riedel, Michael Beck,
  *           Matthias Braun
  */
+#include "irverify_t.h"
+
+#include "beverify.h"
 #include "irnode_t.h"
 #include "irprog.h"
 #include "irop_t.h"
 #include "irgraph_t.h"
-#include "irverify_t.h"
 #include "irgwalk.h"
 #include "irdump.h"
 #include "irdom_t.h"
@@ -23,18 +25,23 @@
 #include "irnodeset.h"
 #include "ircons.h"
 
+void verify_warn_prefix(const ir_node *n)
+{
+	fputs("Verify warning: ", stderr);
+	if (n != NULL) {
+		ir_fprintf(stderr, "%+F(%+F): ", n, get_irn_irg(n));
+	}
+}
+
 void verify_warn(const ir_node *n, const char *format, ...)
 {
-	FILE *out = stderr;
-	fputs("Verify warning: ", out);
-	if (n != NULL) {
-		ir_fprintf(out, "%+F(%+F): ", n, get_irn_irg(n));
-	}
+	verify_warn_prefix(n);
+
 	va_list ap;
 	va_start(ap, format);
-	ir_vfprintf(out, format, ap);
+	ir_vfprintf(stderr, format, ap);
 	va_end(ap);
-	fputc('\n', out);
+	fputc('\n', stderr);
 }
 
 /**
@@ -1059,6 +1066,8 @@ int irn_verify(const ir_node *const n)
 			fine = false;
 		}
 	}
+	if (irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_BACKEND))
+		fine &= be_verify_node(n);
 
 	if (op->ops.verify_node != NULL)
 		fine &= op->ops.verify_node(n);
