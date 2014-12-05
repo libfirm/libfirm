@@ -531,8 +531,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		}
 
 		/* prepare and perform codeselection */
-		if (arch_env->impl->prepare_graph != NULL)
-			arch_env->impl->prepare_graph(irg);
+		arch_env->impl->prepare_graph(irg);
 
 		/* schedule the irg */
 		be_timer_push(T_SCHED);
@@ -552,8 +551,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 
 		/* stuff needs to be done after scheduling but before register allocation */
 		be_timer_push(T_RA_PREPARATION);
-		if (arch_env->impl->before_ra != NULL)
-			arch_env->impl->before_ra(irg);
+		arch_env->impl->before_ra(irg);
 		be_timer_pop(T_RA_PREPARATION);
 
 		if (stat_ev_enabled) {
@@ -592,8 +590,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 
 		/* emit assembler code */
 		be_timer_push(T_EMIT);
-		if (arch_env->impl->emit != NULL)
-			arch_env->impl->emit(irg);
+		arch_env->impl->emit(irg);
 		be_timer_pop(T_EMIT);
 
 		if (stat_ev_enabled) {
