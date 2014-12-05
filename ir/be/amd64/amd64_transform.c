@@ -2180,16 +2180,18 @@ static ir_node *gen_Conv(ir_node *node)
 
 	if (src_float && dst_float) {
 		/* float to float */
+		unsigned pn_res;
 		if (src_bits < dst_bits) {
 			conv = new_bd_amd64_CvtSS2SD(dbgi, block, ARRAY_SIZE(in),
 			                             in, insn_mode, AMD64_OP_REG,
 			                             addr);
-			res  = new_r_Proj(conv, amd64_mode_xmm, pn_amd64_CvtSS2SD_res);
+			pn_res = pn_amd64_CvtSS2SD_res;
 		} else {
 			conv = new_bd_amd64_CvtSD2SS(dbgi, block, ARRAY_SIZE(in),
 			                             in, AMD64_OP_REG, addr);
-			res  = new_r_Proj(conv, mode_F, pn_amd64_CvtSD2SS_res);
+			pn_res = pn_amd64_CvtSD2SS_res;
 		}
+		res  = new_r_Proj(conv, amd64_mode_xmm, pn_res);
 		reqs = xmm_reqs;
 
 	} else if (src_float && !dst_float) {
@@ -2202,17 +2204,19 @@ static ir_node *gen_Conv(ir_node *node)
 			panic("cannot convert floating point to 64-bit unsigned");
 		}
 
+		unsigned pn_res;
 		if (src_bits < 64) {
 			conv = new_bd_amd64_CvtSS2SI(dbgi, block, ARRAY_SIZE(in),
 			                             in, insn_mode, AMD64_OP_REG,
 			                             addr);
+			pn_res = pn_amd64_CvtSS2SI_res;
 		} else {
 			conv = new_bd_amd64_CvtSD2SI(dbgi, block, ARRAY_SIZE(in),
 			                             in, insn_mode, AMD64_OP_REG,
 			                             addr);
+			pn_res = pn_amd64_CvtSD2SI_res;
 		}
-		assert((unsigned)pn_amd64_CvtSS2SI_res == (unsigned)pn_amd64_CvtSD2SI_res);
-		res  = new_r_Proj(conv, mode_gp, pn_amd64_CvtSS2SI_res);
+		res  = new_r_Proj(conv, mode_gp, pn_res);
 		reqs = xmm_reqs;
 
 	} else if (!src_float && dst_float) {
@@ -2236,34 +2240,36 @@ static ir_node *gen_Conv(ir_node *node)
 			panic("cannot convert 64-bit unsigned to floating point");
 		}
 
+		unsigned pn_res;
 		if (dst_bits < 64) {
 			conv = new_bd_amd64_CvtSI2SS(dbgi, block, ARRAY_SIZE(in),
 			                             in, insn_mode, AMD64_OP_REG,
 			                             addr);
-
-			res = new_r_Proj(conv, mode_F, pn_amd64_CvtSI2SS_res);
+			pn_res = pn_amd64_CvtSI2SS_res;
 		} else {
 			conv = new_bd_amd64_CvtSI2SD(dbgi, block, ARRAY_SIZE(in),
 			                             in, insn_mode, AMD64_OP_REG,
 			                             addr);
-
-			res = new_r_Proj(conv, amd64_mode_xmm, pn_amd64_CvtSI2SD_res);
+			pn_res = pn_amd64_CvtSI2SD_res;
 		}
+		res = new_r_Proj(conv, amd64_mode_xmm, pn_res);
 		reqs = reg_reqs;
 
 	} else {
 		/* int to int */
+		unsigned pn_res;
 		if (!mode_is_signed(min_mode) || get_mode_size_bits(min_mode) == 64) {
 			conv = new_bd_amd64_Mov(dbgi, block, ARRAY_SIZE(in),
 			                        in, insn_mode,
 			                        AMD64_OP_REG, addr);
-			res = new_r_Proj(conv, mode_gp, pn_amd64_Mov_res);
+			pn_res = pn_amd64_Mov_res;
 		} else {
 			conv = new_bd_amd64_Movs(dbgi, block, ARRAY_SIZE(in),
 			                         in, insn_mode,
 			                         AMD64_OP_REG, addr);
-			res = new_r_Proj(conv, mode_gp, pn_amd64_Movs_res);
+			pn_res = pn_amd64_Movs_res;
 		}
+		res = new_r_Proj(conv, mode_gp, pn_res);
 		reqs = reg_reqs;
 	}
 
@@ -2380,23 +2386,23 @@ ir_node *amd64_new_reload(ir_node *value, ir_node *spill, ir_node *before)
 
 	ir_node *in[] = { frame, spill };
 
-	unsigned res_pn;
+	unsigned pn_res;
 	ir_node *load;
 	if (mode_is_float(mode) || mode == amd64_mode_xmm) {
 		load = new_bd_amd64_movdqu(NULL, block, ARRAY_SIZE(in), in,
 		                           AMD64_OP_ADDR, addr);
-		res_pn = pn_amd64_movdqu_res;
+		pn_res = pn_amd64_movdqu_res;
 	} else {
 		load = new_bd_amd64_Mov(NULL, block, ARRAY_SIZE(in), in,
 	                            INSN_MODE_64, AMD64_OP_ADDR, addr);
-		res_pn = pn_amd64_Mov_res;
+		pn_res = pn_amd64_Mov_res;
 	}
 	arch_set_irn_register_reqs_in(load, reg_mem_reqs);
 	arch_add_irn_flags(load, arch_irn_flag_reload);
 	sched_add_before(before, load);
 	amd64_addr_attr_t *attr = get_amd64_addr_attr(load);
 	attr->needs_frame_ent = true;
-	ir_node *res = new_r_Proj(load, mode, res_pn);
+	ir_node *res = new_r_Proj(load, mode, pn_res);
 	return res;
 }
 
