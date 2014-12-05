@@ -745,12 +745,6 @@ static void emit_be_IncSP(const ir_node *node)
 	}
 }
 
-static void emit_amd64_Return(const ir_node *node)
-{
-	be_emit_cstring("\tret");
-	be_emit_finish_line_gas(node);
-}
-
 /**
  * Enters the emitter functions for handled nodes into the generic
  * pointer of an opcode.
@@ -765,7 +759,6 @@ static void amd64_register_emitters(void)
 	be_set_emitter(op_amd64_Jcc,       emit_amd64_Jcc);
 	be_set_emitter(op_amd64_Jmp,       emit_amd64_Jmp);
 	be_set_emitter(op_amd64_Mov,       emit_amd64_Mov);
-	be_set_emitter(op_amd64_Return,    emit_amd64_Return);
 	be_set_emitter(op_amd64_SwitchJmp, emit_amd64_SwitchJmp);
 	be_set_emitter(op_be_Copy,         emit_be_Copy);
 	be_set_emitter(op_be_CopyKeep,     emit_be_Copy);

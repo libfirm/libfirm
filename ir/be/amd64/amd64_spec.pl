@@ -483,6 +483,7 @@ Return => {
 	reg_req  => { out => [ "none" ] },
 	fixed    => "amd64_op_mode_t op_mode = AMD64_OP_NONE;\n",
 	mode     => "mode_X",
+	emit     => "ret",
 },
 
 # SSE
