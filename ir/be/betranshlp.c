@@ -52,16 +52,6 @@ bool be_is_transformed(const ir_node *node)
 	return irn_visited(node);
 }
 
-static inline ir_node *be_get_transformed_node(ir_node *old_node)
-{
-	if (irn_visited(old_node)) {
-		ir_node *new_node = (ir_node*)get_irn_link(old_node);
-		assert(new_node != NULL);
-		return new_node;
-	}
-	return NULL;
-}
-
 /**
  * Duplicate all dependency edges of a node.
  */
@@ -202,23 +192,23 @@ ir_node *be_duplicate_node(ir_node *const node)
 
 ir_node *be_transform_node(ir_node *node)
 {
-	ir_node *new_node = be_get_transformed_node(node);
-	if (new_node != NULL)
-		return new_node;
+	ir_node *new_node;
+	if (be_is_transformed(node)) {
+		new_node = (ir_node*)get_irn_link(node);
+	} else {
+		DEBUG_ONLY(be_set_transformed_node(node, NULL);)
 
-	DEBUG_ONLY(be_set_transformed_node(node, NULL);)
-
-	ir_op *op = get_irn_op(node);
-	be_transform_func *transform = (be_transform_func *)op->ops.generic;
+		ir_op             *const op        = get_irn_op(node);
+		be_transform_func *const transform = (be_transform_func*)op->ops.generic;
 #ifdef DEBUG_libfirm
-	if (!transform)
-		panic("no transformer for %+F", node);
+		if (!transform)
+			panic("no transformer for %+F", node);
 #endif
 
-	new_node = transform(node);
-	assert(new_node != NULL);
-
-	be_set_transformed_node(node, new_node);
+		new_node = transform(node);
+		be_set_transformed_node(node, new_node);
+	}
+	assert(new_node);
 	return new_node;
 }
 
