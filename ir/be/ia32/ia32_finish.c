@@ -186,12 +186,6 @@ static inline int need_constraint_copy(ir_node *irn)
 {
 	/* TODO this should be determined from the node specification */
 	switch (get_ia32_irn_opcode(irn)) {
-		case iro_ia32_IMul: {
-			/* the 3 operand form of IMul needs no constraint copy */
-			ir_node *right = get_irn_n(irn, n_ia32_IMul_right);
-			return !is_ia32_Immediate(right);
-		}
-
 		case iro_ia32_Lea:
 		case iro_ia32_Minus64:
 			return 0;

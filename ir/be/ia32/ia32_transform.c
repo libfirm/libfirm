@@ -1504,9 +1504,13 @@ static ir_node *gen_Mul(ir_node *node)
 		else
 			return gen_binop_x87_float(node, op1, op2, new_bd_ia32_fmul);
 	}
-	return gen_binop(node, op1, op2, new_bd_ia32_IMul,
-	                 match_commutative | match_am | match_mode_neutral |
-	                 match_immediate | match_am_and_immediates);
+
+	ir_node      *const block = get_nodes_block(node);
+	ia32_address_mode_t am;
+	match_arguments(&am, block, op1, op2, NULL, match_commutative | match_am | match_mode_neutral | match_immediate | match_am_and_immediates);
+
+	construct_binop_func *const func = is_ia32_Immediate(am.new_op2) ? new_bd_ia32_IMulImm : new_bd_ia32_IMul;
+	return make_binop(node, &am, func);
 }
 
 /**

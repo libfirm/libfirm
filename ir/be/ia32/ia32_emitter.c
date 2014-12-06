@@ -687,18 +687,6 @@ unknown:
 	va_end(ap);
 }
 
-static void emit_ia32_IMul(const ir_node *node)
-{
-	/* do we need the 3-address form? */
-	arch_register_t const *const in_reg  = arch_get_irn_register_in(node, n_ia32_IMul_left);
-	arch_register_t const *const out_reg = arch_get_irn_register_out(node, pn_ia32_IMul_res);
-	if (in_reg != out_reg) {
-		ia32_emitf(node, "imul%M %#S4, %#AS3, %#D0");
-	} else {
-		ia32_emitf(node, "imul%M %#AS4, %#S3");
-	}
-}
-
 /**
  * walks up a tree of copies/perms/spills/reloads to find the original value
  * that is moved around
@@ -1327,7 +1315,6 @@ static void ia32_register_emitters(void)
 	be_set_emitter(op_ia32_CopyB,      emit_ia32_CopyB);
 	be_set_emitter(op_ia32_CopyB_i,    emit_ia32_CopyB_i);
 	be_set_emitter(op_ia32_GetEIP,     emit_ia32_GetEIP);
-	be_set_emitter(op_ia32_IMul,       emit_ia32_IMul);
 	be_set_emitter(op_ia32_Jcc,        emit_ia32_Jcc);
 	be_set_emitter(op_ia32_Jmp,        emit_ia32_Jmp);
 	be_set_emitter(op_ia32_Minus64,    emit_ia32_Minus64);
@@ -2350,16 +2337,16 @@ static void bemit_test(ir_node const *const node)
 
 static void bemit_imul(const ir_node *node)
 {
-	ir_node *right = get_irn_n(node, n_ia32_IMul_right);
-	/* Do we need the immediate form? */
-	if (is_ia32_Immediate(right)) {
-		ia32_immediate_attr_t const *const attr = get_ia32_immediate_attr_const(right);
-		bool                         const imm8 = ia32_is_8bit_imm(attr);
-		bemit_unop_reg(node, 0x69 | (imm8 ? OP_IMM8 : 0), n_ia32_IMul_left);
-		bemit_imm(attr, imm8 ? 8 : 32);
-	} else {
-		bemit_0f_unop_reg(node, 0xAF, n_ia32_IMul_right);
-	}
+	bemit_0f_unop_reg(node, 0xAF, n_ia32_IMul_right);
+}
+
+static void bemit_imulimm(const ir_node *node)
+{
+	ir_node               const *const right = get_irn_n(node, n_ia32_IMul_right);
+	ia32_immediate_attr_t const *const attr  = get_ia32_immediate_attr_const(right);
+	bool                         const imm8  = ia32_is_8bit_imm(attr);
+	bemit_unop_reg(node, 0x69 | (imm8 ? OP_IMM8 : 0), n_ia32_IMul_left);
+	bemit_imm(attr, imm8 ? 8 : 32);
 }
 
 static void bemit_dec(const ir_node *node)
@@ -3096,6 +3083,7 @@ static void ia32_register_binary_emitters(void)
 	be_set_emitter(op_ia32_IJmp,          bemit_ijmp);
 	be_set_emitter(op_ia32_IMul,          bemit_imul);
 	be_set_emitter(op_ia32_IMul1OP,       bemit_imul1op);
+	be_set_emitter(op_ia32_IMulImm,       bemit_imulimm);
 	be_set_emitter(op_ia32_Inc,           bemit_inc);
 	be_set_emitter(op_ia32_IncMem,        bemit_incmem);
 	be_set_emitter(op_ia32_Jcc,           bemit_ia32_jcc);

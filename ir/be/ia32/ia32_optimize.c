@@ -837,14 +837,11 @@ exchange:
 /**
  * Split a Imul mem, imm into a Load mem and Imul reg, imm if possible.
  */
-static void peephole_ia32_Imul_split(ir_node *imul)
+static void peephole_ia32_ImulImm_split(ir_node *imul)
 {
-	const ir_node *right = get_irn_n(imul, n_ia32_IMul_right);
-
-	if (!is_ia32_Immediate(right) || get_ia32_op_type(imul) != ia32_AddrModeS) {
-		/* no memory, imm form ignore */
+	/* Ignore, if no memory, imm form. */
+	if (get_ia32_op_type(imul) != ia32_AddrModeS)
 		return;
-	}
 	/* we need a free register */
 	const arch_register_t *reg = get_free_gp_reg(get_irn_irg(imul));
 	if (reg == NULL)
@@ -910,8 +907,8 @@ void ia32_peephole_optimization(ir_graph *irg)
 		register_peephole_optimization(op_ia32_Conv_I2I, peephole_ia32_Conv_I2I);
 	if (ia32_cg_config.use_pxor)
 		register_peephole_optimization(op_ia32_xZero, peephole_ia32_xZero);
-	if (! ia32_cg_config.use_imul_mem_imm32)
-		register_peephole_optimization(op_ia32_IMul, peephole_ia32_Imul_split);
+	if (!ia32_cg_config.use_imul_mem_imm32)
+		register_peephole_optimization(op_ia32_IMulImm, peephole_ia32_ImulImm_split);
 	be_peephole_opt(irg);
 
 	/* pass 2 */

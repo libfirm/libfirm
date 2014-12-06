@@ -266,13 +266,26 @@ l_Mul => {
 IMul => {
 	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
-	# TODO: adjust out requirements for the 3 operand form
-	# (no need for should_be_same then)
 	reg_req   => { in => [ "gp", "gp", "none", "gp", "gp" ],
 		           out => [ "in_r4 in_r5", "flags", "none" ] },
 	ins       => [ "base", "index", "mem", "left", "right" ],
 	outs      => [ "res", "flags", "M" ],
 	am        => "source,binary",
+	emit      => "imul%M %B",
+	latency   => 5,
+	mode      => $mode_gp,
+	modified_flags => $status_flags
+},
+
+IMulImm => {
+	irn_flags => [ "rematerializable" ],
+	state     => "exc_pinned",
+	reg_req   => { in => [ "gp", "gp", "none", "gp", "gp" ],
+	              out => [ "gp", "flags", "none" ] },
+	ins       => [ "base", "index", "mem", "left", "right" ],
+	outs      => [ "res", "flags", "M" ],
+	am        => "source,binary",
+	emit      => "imul%M %#S4, %#AS3, %#D0",
 	latency   => 5,
 	mode      => $mode_gp,
 	modified_flags => $status_flags
