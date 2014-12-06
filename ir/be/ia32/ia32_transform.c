@@ -960,7 +960,7 @@ static void match_arguments(ia32_address_mode_t *am, ir_node *block,
  * @return a Proj(pn_ia32_res) if a memory address mode is used,
  *         node else
  */
-static ir_node *fix_mem_proj(ir_node *node, ia32_address_mode_t *am)
+static ir_node *fix_mem_proj(ir_node *const node, ia32_address_mode_t const *const am)
 {
 	if (am->mem_proj == NULL)
 		return node;
@@ -979,6 +979,16 @@ static ir_node *fix_mem_proj(ir_node *node, ia32_address_mode_t *am)
 	}
 }
 
+static ir_node *make_binop(ir_node *const node, ia32_address_mode_t const *const am, construct_binop_func *const func)
+{
+	dbg_info *const dbgi  = get_irn_dbg_info(node);
+	ir_node  *const block = be_transform_node(get_nodes_block(node));
+	ir_node  *const res   = func(dbgi, block, am->addr.base, am->addr.index, am->addr.mem, am->new_op1, am->new_op2);
+	set_am_attributes(res, am);
+	SET_IA32_ORIG_NODE(res, node);
+	return fix_mem_proj(res, am);
+}
+
 /**
  * Construct a standard binary operation, set AM and immediate if required.
  *
@@ -995,19 +1005,12 @@ static ir_node *gen_binop(ir_node *node, ir_node *op1, ir_node *op2,
 	ia32_address_mode_t am;
 	match_arguments(&am, block, op1, op2, NULL, flags);
 
-	dbg_info      *dbgi      = get_irn_dbg_info(node);
-	ir_node       *new_block = be_transform_node(block);
-	x86_address_t *addr      = &am.addr;
-	ir_node       *new_node  = func(dbgi, new_block, addr->base, addr->index,
-	                                addr->mem, am.new_op1, am.new_op2);
-	set_am_attributes(new_node, &am);
+	ir_node *const new_node = make_binop(node, &am, func);
 	/* we can't use source address mode anymore when using immediates */
 	if (!(flags & match_am_and_immediates) &&
 	    (is_ia32_Immediate(am.new_op1) || is_ia32_Immediate(am.new_op2)))
 		set_ia32_am_support(new_node, ia32_am_none);
-	SET_IA32_ORIG_NODE(new_node, node);
 
-	new_node = fix_mem_proj(new_node, &am);
 	return new_node;
 }
 
@@ -1474,18 +1477,8 @@ static ir_node *gen_Add(ir_node *node)
 			| match_mode_neutral | match_am | match_immediate | match_try_am);
 
 	/* construct an Add with source address mode */
-	if (am.op_type == ia32_AddrModeS) {
-		x86_address_t *am_addr = &am.addr;
-		new_node = new_bd_ia32_Add(dbgi, new_block, am_addr->base,
-		                         am_addr->index, am_addr->mem, am.new_op1,
-		                         am.new_op2);
-		set_am_attributes(new_node, &am);
-		SET_IA32_ORIG_NODE(new_node, node);
-
-		new_node = fix_mem_proj(new_node, &am);
-
-		return new_node;
-	}
+	if (am.op_type == ia32_AddrModeS)
+		return make_binop(node, &am, new_bd_ia32_Add);
 
 	/* otherwise construct a lea */
 	new_node = create_lea_from_address(dbgi, new_block, &addr);
