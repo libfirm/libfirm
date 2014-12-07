@@ -195,8 +195,8 @@ static void assure_should_be_same_requirements(ir_node *const node)
 			continue;
 
 		/* test if any other input is using the out register */
-		for (int i2 = 0, arity = get_irn_arity(node); i2 < arity; ++i2) {
-			const arch_register_t *reg = arch_get_irn_register_in(node, i2);
+		foreach_irn_in(node, i2, in) {
+			arch_register_t const *const reg = arch_get_irn_register(in);
 			if (reg == out_reg && (unsigned)i2 != same_pos) {
 				if (!is_amd64_irn(node))
 					panic("cannot fulfill should_be_same on non-amd64 node");

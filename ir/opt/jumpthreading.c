@@ -445,8 +445,7 @@ static ir_node *find_const_or_confirm(jumpthreading_env_t *env, ir_node *jump,
 		if (get_nodes_block(value) != block)
 			return NULL;
 
-		for (int i = 0, arity = get_irn_arity(value); i < arity; ++i) {
-			ir_node *phi_pred   = get_Phi_pred(value, i);
+		foreach_irn_in(value, i, phi_pred) {
 			ir_node *cfgpred    = get_Block_cfgpred(block, i);
 			ir_node *copy_block = find_const_or_confirm(env, cfgpred, phi_pred);
 			if (copy_block == NULL)
@@ -496,8 +495,7 @@ static ir_node *find_candidate(jumpthreading_env_t *env, ir_node *jump,
 		if (get_nodes_block(value) != block)
 			return NULL;
 
-		for (int i = 0, arity = get_irn_arity(value); i < arity; ++i) {
-			ir_node *phi_pred   = get_Phi_pred(value, i);
+		foreach_irn_in(value, i, phi_pred) {
 			ir_node *cfgpred    = get_Block_cfgpred(block, i);
 			ir_node *copy_block = find_candidate(env, cfgpred, phi_pred);
 			if (copy_block == NULL)

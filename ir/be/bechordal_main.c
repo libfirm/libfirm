@@ -144,8 +144,7 @@ static void dump(unsigned mask, ir_graph *irg,
 static void memory_operand_walker(ir_node *irn, void *env)
 {
 	(void)env;
-	for (int i = 0, arity = get_irn_arity(irn); i < arity; ++i) {
-		ir_node *in = get_irn_n(irn, i);
+	foreach_irn_in(irn, i, in) {
 		if (!arch_irn_is(skip_Proj(in), reload))
 			continue;
 		if (get_nodes_block(in) != get_nodes_block(irn))

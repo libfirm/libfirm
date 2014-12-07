@@ -534,8 +534,7 @@ void remove_End_n(ir_node *n, int idx)
 void remove_End_keepalive(ir_node *end, const ir_node *irn)
 {
 	assert(END_KEEPALIVE_OFFSET == 0);
-	for (unsigned i = get_irn_arity(end); i-- > 0; ) {
-		const ir_node *ka = get_irn_n(end, i);
+	foreach_irn_in_r(end, i, ka) {
 		if (ka == irn) {
 			remove_irn_n(end, i);
 			return;
