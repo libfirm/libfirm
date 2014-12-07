@@ -70,16 +70,16 @@ static produces_flag_t check_produces_zero_sign(ir_node *node, unsigned pn)
 	ir_node *count;
 
 	switch (get_ia32_irn_opcode(node)) {
-		case iro_ia32_Add:
 		case iro_ia32_Adc:
+		case iro_ia32_Add:
 		case iro_ia32_And:
-		case iro_ia32_Or:
-		case iro_ia32_Xor:
-		case iro_ia32_Sub:
-		case iro_ia32_Sbb:
-		case iro_ia32_Neg:
-		case iro_ia32_Inc:
 		case iro_ia32_Dec:
+		case iro_ia32_Inc:
+		case iro_ia32_Neg:
+		case iro_ia32_Or:
+		case iro_ia32_Sbb:
+		case iro_ia32_Sub:
+		case iro_ia32_Xor:
 			break;
 
 		case iro_ia32_ShlD:
@@ -88,9 +88,9 @@ static produces_flag_t check_produces_zero_sign(ir_node *node, unsigned pn)
 			count = get_irn_n(node, n_ia32_ShlD_count);
 			goto check_shift_amount;
 
+		case iro_ia32_Sar:
 		case iro_ia32_Shl:
 		case iro_ia32_Shr:
-		case iro_ia32_Sar:
 			assert((int)n_ia32_Shl_count == (int)n_ia32_Shr_count
 					&& (int)n_ia32_Shl_count == (int)n_ia32_Sar_count);
 			count = get_irn_n(node, n_ia32_Shl_count);
