@@ -286,24 +286,6 @@ static x87_state *x87_clone_state(x87_simulator *sim, const x87_state *src)
 	return res;
 }
 
-/**
- * Returns the first Proj of a mode_T node having a given mode.
- *
- * @param n  the mode_T node
- * @param m  the desired mode of the Proj
- * @return The first Proj of mode @p m found.
- */
-static ir_node *get_irn_Proj_for_mode(ir_node *n, ir_mode *m)
-{
-	assert(get_irn_mode(n) == mode_T);
-	foreach_out_edge(n, edge) {
-		ir_node *proj = get_edge_src_irn(edge);
-		if (get_irn_mode(proj) == m)
-			return proj;
-	}
-	panic("Proj not found");
-}
-
 static inline const arch_register_t *get_st_reg(unsigned index)
 {
 	return &ia32_registers[REG_ST0 + index];
@@ -842,7 +824,7 @@ do_pop:
 
 				/* stack full here: need fstp + load */
 				ir_node *const block = get_nodes_block(n);
-				ir_node *const mem   = get_irn_Proj_for_mode(n, mode_M);
+				ir_node *const mem   = get_Proj_for_pn(n, pn_ia32_st_M);
 				ir_node *const vfld  = new_bd_ia32_fld(NULL, block, get_irn_n(n, 0), get_irn_n(n, 1), mem, mode);
 
 				/* copy all attributes */
