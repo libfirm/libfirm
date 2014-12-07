@@ -420,8 +420,10 @@ ir_node *ia32_gen_ASM(ir_node *node)
 		arch_register_t const *const reg     = ia32_parse_clobber(clobber);
 		if (reg) {
 			assert(reg->cls->n_regs <= sizeof(unsigned) * 8);
-			clobber_bits[reg->cls->index] |= 1U << reg->index;
-			out_reg_reqs[out_arity++]      = reg->single_req;
+			/* x87 registers may still be used as input, even if clobbered. */
+			if (reg->cls != &ia32_reg_classes[CLASS_ia32_fp])
+				clobber_bits[reg->cls->index] |= 1U << reg->index;
+			out_reg_reqs[out_arity++] = reg->single_req;
 		}
 	}
 

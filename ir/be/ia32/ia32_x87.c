@@ -1257,6 +1257,24 @@ static bool reg_req_same_limited(arch_register_req_t const *const req, arch_regi
 	return true;
 }
 
+static bool is_clobber(ir_node const *const asm_n, ir_node const *const value)
+{
+	arch_register_req_t const *const req = arch_get_irn_register_req(value);
+	if (arch_register_req_is(req, should_be_same))
+		return false;
+
+	unsigned               const num     = get_Proj_num(value);
+	ia32_asm_attr_t const *const attr    = get_ia32_asm_attr_const(asm_n);
+	ia32_asm_reg_t  const *const reg_map = attr->register_map;
+	for (size_t i = 0, n = ARR_LEN(reg_map); i != n; ++i) {
+		ia32_asm_reg_t const *const reg = &reg_map[i];
+		if (!reg->use_input && reg->inout_pos == num)
+			return false;
+	}
+
+	return true;
+}
+
 static void sim_Asm(x87_state *const state, ir_node *const n)
 {
 	arch_register_req_t const *const req_t = ia32_registers[REG_ST0].single_req;
@@ -1295,7 +1313,8 @@ static void sim_Asm(x87_state *const state, ir_node *const n)
 
 	/* Collect out requirements.
 	 * If inputs are not overweritten, it is assumed that they remain on the
-	 * stack.
+	 * stack.  Clobbering a register means that the value is popped from the stack
+	 * by the inline assembler statement.
 	 * Extension: GCC only allows an output "u" if there is an output "t".
 	 * Here it is also ok, if it is just an input "t". */
 	ir_node *out_t = in_t;
@@ -1303,10 +1322,10 @@ static void sim_Asm(x87_state *const state, ir_node *const n)
 	be_foreach_definition(n, &ia32_reg_classes[CLASS_ia32_fp], value, req,
 		if (reg_req_same_limited(req, req_t)) {
 			assert(out_t == in_t);
-			out_t = value;
+			out_t = is_clobber(n, value) ? NULL : value;
 		} else if (reg_req_same_limited(req, req_u)) {
 			assert(out_u == in_u);
-			out_u = value;
+			out_u = is_clobber(n, value) ? NULL : value;
 		} else {
 			panic("cannot handle %+F with x87 constraints", n);
 		}
@@ -1314,7 +1333,7 @@ static void sim_Asm(x87_state *const state, ir_node *const n)
 
 	/* Put outputs (or non-overwritten inputs back) onto the simulator stack. */
 	if (out_u) {
-		if (!out_t)
+		if (!out_t && !in_t)
 			panic("\"u\" output constraint without \"t\" constraint in %+F", n);
 		x87_push(state, out_u);
 	}
