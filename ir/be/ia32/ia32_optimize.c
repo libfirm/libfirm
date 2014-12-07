@@ -77,6 +77,7 @@ static produces_flag_t check_produces_zero_sign(ir_node *node, unsigned pn)
 		case iro_ia32_Inc:
 		case iro_ia32_Neg:
 		case iro_ia32_Or:
+		case iro_ia32_Popcnt:
 		case iro_ia32_Sbb:
 		case iro_ia32_Sub:
 		case iro_ia32_Xor:
