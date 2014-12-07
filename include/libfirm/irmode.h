@@ -221,9 +221,12 @@ FIRM_API ir_mode *mode_P;   /**< pointer */
  * This mode represents (parts of) the processor status flag queried in
  * conditional jumps or predicated code.
  *
- * Do not confuse this with boolean variables found in some languages. You
- * cannot perform any operations like And, Or, Not, Phi, etc. on mode_b
- * values (although some of these constructs can be legalized by lower_mode_b().
+ * Do not confuse this with boolean variables found in some languages.
+ * mode_b values are used as the inputs to conditional jumps or Mux nodes.
+ * As is the case with most hardware flags registers you cannot simply
+ * load/store them to memory or convert them to integer/float values with a
+ * single operation. You have to use an if-like construct to produce integer
+ * numbers based on a mode_b value.
  */
 FIRM_API ir_mode *mode_b;
 
@@ -234,58 +237,72 @@ FIRM_API ir_mode *mode_T;  /**< tuple (none) */
 FIRM_API ir_mode *mode_ANY;/**< undefined mode */
 FIRM_API ir_mode *mode_BAD;/**< bad mode */
 
-/** Returns float mode */
+/** Returns float mode. @copydoc mode_F */
 FIRM_API ir_mode *get_modeF(void);
-/** Returns double mode */
+/** Returns double mode. @copydoc mode_D */
 FIRM_API ir_mode *get_modeD(void);
-/** Returns byte signed mode */
+/** Returns byte signed mode. @copydoc mode_Bs */
 FIRM_API ir_mode *get_modeBs(void);
-/** Returns byte unsigned mode */
+/** Returns byte unsigned mode. @copydoc mode_Bu */
 FIRM_API ir_mode *get_modeBu(void);
-/** Returns halfword signed mode */
+/** Returns halfword signed mode. @copydoc mode_Hs */
 FIRM_API ir_mode *get_modeHs(void);
-/** Returns halfword unsigned mode */
+/** Returns halfword unsigned mode. @copydoc mode_Hu */
 FIRM_API ir_mode *get_modeHu(void);
-/** Returns integer signed mode */
+/** Returns integer signed mode. @copydoc mode_Is */
 FIRM_API ir_mode *get_modeIs(void);
-/** Returns integer unsigned mode */
+/** Returns integer unsigned mode. @copydoc mode_Iu */
 FIRM_API ir_mode *get_modeIu(void);
-/** Returns long signed mode */
+/** Returns long signed mode. @copydoc mode_Ls */
 FIRM_API ir_mode *get_modeLs(void);
-/** Returns long unsigned mode */
+/** Returns long unsigned mode. @copydoc mode_Lu */
 FIRM_API ir_mode *get_modeLu(void);
-/** Returns pointer mode */
+/** Returns pointer mode. @copydoc mode_P */
 FIRM_API ir_mode *get_modeP(void);
-/** Returns internal boolean mode */
+/** Returns internal boolean mode. @copydoc mode_b */
 FIRM_API ir_mode *get_modeb(void);
-/** Returns control-flow mode */
+/** Returns control-flow mode. @copydoc mode_X */
 FIRM_API ir_mode *get_modeX(void);
-/** Returns Basic-Block mode */
+/** Returns Basic-Block mode. @copydoc mode_BB */
 FIRM_API ir_mode *get_modeBB(void);
-/** Returns memory mode */
+/** Returns memory mode. @copydoc mode_M */
 FIRM_API ir_mode *get_modeM(void);
-/** Returns tuple mode */
+/** Returns tuple mode. @copydoc mode_T */
 FIRM_API ir_mode *get_modeT(void);
-/** Returns ANY mode */
+/** Returns ANY mode. @copydoc mode_ANY */
 FIRM_API ir_mode *get_modeANY(void);
-/** Returns BAD mode */
+/** Returns BAD mode. @copydoc mode_BAD */
 FIRM_API ir_mode *get_modeBAD(void);
 
 /** Sets the machine specific pointer mode. */
 FIRM_API void set_modeP(ir_mode *p);
 
 /** Returns 1 if @p mode is signed, 0 otherwise */
-FIRM_API int mode_is_signed (const ir_mode *mode);
+FIRM_API int mode_is_signed(const ir_mode *mode);
+
 /** Returns 1 if @p mode is for floating point numbers, 0 otherwise */
-FIRM_API int mode_is_float (const ir_mode *mode);
+FIRM_API int mode_is_float(const ir_mode *mode);
+
 /** Returns 1 if @p mode is for integer numbers, 0 otherwise */
-FIRM_API int mode_is_int (const ir_mode *mode);
+FIRM_API int mode_is_int(const ir_mode *mode);
+
 /** Returns 1 if @p mode is for references/pointers, 0 otherwise */
-FIRM_API int mode_is_reference (const ir_mode *mode);
-/** Returns 1 if @p mode is for numeric values, 0 otherwise */
-FIRM_API int mode_is_num (const ir_mode *mode);
-/** Returns 1 if @p mode is for data values, 0 otherwise */
-FIRM_API int mode_is_data (const ir_mode *mode);
+FIRM_API int mode_is_reference(const ir_mode *mode);
+
+/**
+ * Returns 1 if @p mode is for numeric values, 0 otherwise.
+ *
+ * A numeric mode supports the Add, Sub, Mul, Div and Minus operations.
+ */
+FIRM_API int mode_is_num(const ir_mode *mode);
+
+/**
+ * Returns 1 if @p mode is for data values, 0 otherwise.
+ *
+ * A data value is made from a fixed size of bits, you can build a tarval for
+ * such values.
+ */
+FIRM_API int mode_is_data(const ir_mode *mode);
 
 /**
  * Returns true if a value of mode @p sm can be converted to mode @p lm without
