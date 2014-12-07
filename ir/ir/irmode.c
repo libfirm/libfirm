@@ -200,9 +200,9 @@ ir_mode *new_float_mode(const char *name, ir_mode_arithmetic arithmetic,
 	return register_mode(result);
 }
 
-ir_mode *new_non_arithmetic_mode(const char *name)
+ir_mode *new_non_arithmetic_mode(const char *name, unsigned bit_size)
 {
-	ir_mode *result = alloc_mode(name, irms_data, irma_none, 0, 0, 0);
+	ir_mode *result = alloc_mode(name, irms_data, irma_none, bit_size, 0, 0);
 	return register_mode(result);
 }
 

@@ -111,7 +111,7 @@ FIRM_API ir_mode *new_float_mode(const char *name,
  * Creates a new mode for data values which are not used to perform arithmetic.
  * Arithmetic will be set to irma_none.
  */
-FIRM_API ir_mode *new_non_arithmetic_mode(const char *name);
+FIRM_API ir_mode *new_non_arithmetic_mode(const char *name, unsigned bit_size);
 
 /** Returns the ident* of the mode */
 FIRM_API ident *get_mode_ident(const ir_mode *mode);

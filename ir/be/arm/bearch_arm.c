@@ -329,7 +329,7 @@ static void arm_init(void)
 {
 	arm_mode_gp    = new_int_mode("arm_gp", irma_twos_complement,
 	                              ARM_MACHINE_SIZE, 0, ARM_MODULO_SHIFT);
-	arm_mode_flags = new_non_arithmetic_mode("arm_flags");
+	arm_mode_flags = new_non_arithmetic_mode("arm_flags", 32);
 
 	arm_register_init();
 	arm_create_opcodes(&arm_irn_ops);

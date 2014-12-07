@@ -1480,8 +1480,8 @@ static void ia32_init(void)
 
 	init_asm_constraints();
 
-	ia32_mode_fpcw = new_non_arithmetic_mode("fpcw");
-	ia32_mode_flags = new_non_arithmetic_mode("flags");
+	ia32_mode_fpcw = new_non_arithmetic_mode("fpcw", 16);
+	ia32_mode_flags = new_non_arithmetic_mode("flags", 32);
 
 	/* note mantissa is 64bit but with explicitely encoded 1 so the really
 	 * usable part as counted by firm is only 63 bits */
