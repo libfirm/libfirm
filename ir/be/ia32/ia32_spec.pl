@@ -1736,7 +1736,7 @@ Conv_I2I => {
 		}
 	},
 	ins       => [ "base", "index", "mem", "val" ],
-	outs      => [ "res", "flags", "M", "X_regular", "X_except" ],
+	outs      => [ "res", "unused", "M", "X_regular", "X_except" ],
 	emit      => "mov%#Ml %#AS3, %D0",
 	am        => "source,unary",
 	latency   => 1,
