@@ -1656,17 +1656,6 @@ xStore => {
 	latency  => 0,
 },
 
-xStoreSimple => {
-	op_flags => [ "uses_memory", "fragile" ],
-	state    => "exc_pinned",
-	reg_req  => { in => [ "gp", "gp", "none", "xmm" ],
-	              out => [ "none", "none", "none" ] },
-	ins      => [ "base", "index", "mem", "val" ],
-	outs     => [ "M", "X_regular", "X_except" ],
-	emit     => "movs%FX %S3, %AM",
-	latency  => 0,
-},
-
 CvtSI2SS => {
 	state     => "exc_pinned",
 	reg_req  => { in => [ "gp", "gp", "none", "gp" ], out => [ "xmm" ] },
