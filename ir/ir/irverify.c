@@ -638,7 +638,7 @@ static int verify_node_Call(const ir_node *n)
 				}
 			} else {
 				fine &= check_input_func(n, n_Call_max+1+i, NULL,
-				                         mode_is_data_not_b, "data");
+				                         mode_is_data_not_b, "data_not_b");
 			}
 		}
 	}
@@ -787,9 +787,10 @@ static int verify_node_Not(const ir_node *n)
 static int verify_node_Cmp(const ir_node *n)
 {
 	bool fine = check_mode(n, mode_b);
-	fine &= check_input_func(n, n_Cmp_left, "left", mode_is_data_not_b, "data");
+	fine &= check_input_func(n, n_Cmp_left, "left", mode_is_data_not_b,
+	                         "data_not_b");
 	fine &= check_input_func(n, n_Cmp_right, "right", mode_is_data_not_b,
-	                         "data");
+	                         "data_not_b");
 	ir_mode *model = get_irn_mode(get_Cmp_left(n));
 	ir_mode *moder = get_irn_mode(get_Cmp_right(n));
 	if (model != moder) {
@@ -831,14 +832,15 @@ static int verify_node_Shrs(const ir_node *n)
 
 static int verify_node_Conv(const ir_node *n)
 {
-	bool fine = check_mode_func(n, mode_is_data_not_b, "data");
-	fine &= check_input_func(n, n_Conv_op, "op", mode_is_data_not_b, "data");
+	bool fine = check_mode_func(n, mode_is_data_not_b, "data_not_b");
+	fine &= check_input_func(n, n_Conv_op, "op", mode_is_data_not_b,
+	                         "data_not_b");
 	return fine;
 }
 
 static int verify_node_Bitcast(const ir_node *n)
 {
-	bool fine = check_mode_func(n, mode_is_data_not_b, "data");
+	bool fine = check_mode_func(n, mode_is_data_not_b, "data_not_b");
 	ir_node *op       = get_Bitcast_op(n);
 	ir_mode *src_mode = get_irn_mode(op);
 	ir_mode *dst_mode = get_irn_mode(n);
