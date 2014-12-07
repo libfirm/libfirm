@@ -315,20 +315,6 @@ static bool ia32_possible_memory_operand(const ir_node *irn, unsigned int i)
 	    get_ia32_frame_use(irn) != IA32_FRAME_USE_NONE) /* must not already use frame */
 		return false;
 
-	ir_node *op   = get_irn_n(irn, i);
-	ir_node *load = get_Proj_pred(op);
-	assert(is_ia32_irn(load));
-	const ir_mode *mode = get_ia32_ls_mode(load);
-	if (mode_is_float(mode)) {
-		if (mode != ia32_mode_float64 && mode != mode_F)
-			return false;
-		/* Don't do reload folding for x87 nodes for now, as we can't predict
-		 * yet wether the spillslot must be widened to 80bit for which no AM
-		 * operations exist. */
-		if (is_ia32_fld(load))
-			return false;
-	}
-
 	switch (get_ia32_am_support(irn)) {
 	case ia32_am_none:
 		return false;
@@ -368,6 +354,19 @@ static bool ia32_possible_memory_operand(const ir_node *irn, unsigned int i)
 	 * This can happen for Call and Div */
 	if (!is_NoMem(get_irn_n(irn, n_ia32_mem)))
 		return false;
+
+	ir_node       *const op   = get_irn_n(irn, i);
+	ir_node const *const load = get_Proj_pred(op);
+	ir_mode const *const mode = get_ia32_ls_mode(load);
+	if (mode_is_float(mode)) {
+		if (mode != ia32_mode_float64 && mode != mode_F)
+			return false;
+		/* Don't do reload folding for x87 nodes for now, as we can't predict
+		 * yet wether the spillslot must be widened to 80bit for which no AM
+		 * operations exist. */
+		if (is_ia32_fld(load))
+			return false;
+	}
 
 	return true;
 }
