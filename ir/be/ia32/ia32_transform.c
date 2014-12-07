@@ -4063,38 +4063,30 @@ static ir_node *gen_Bitcast(ir_node *const node)
 		panic("ia32: unexpected src mode in Bitcast");
 	}
 
-	ir_node *new_block = be_transform_node(block);
-	ir_node *res;
+	ir_node                   *ld;
+	ir_node                   *res;
+	ir_node             *const new_block = be_transform_node(block);
+	x86_address_t const *const addr      = &am.addr;
 	switch (get_mode_arithmetic(dst_mode)) {
 	case irma_ieee754:
-	case irma_x86_extended_float: {
-		const x86_address_t *addr = &am.addr;
-		ir_node *fld      = new_bd_ia32_fld(dbgi, new_block, addr->base,
-		                                    addr->index, addr->mem, dst_mode);
-		res = new_r_Proj(fld, mode_fp, pn_ia32_fld_res);
+	case irma_x86_extended_float:
+		ld  = new_bd_ia32_fld(dbgi, new_block, addr->base, addr->index, addr->mem, dst_mode);
+		res = new_r_Proj(ld, mode_fp, pn_ia32_fld_res);
+		break;
 
-		am.ls_mode = dst_mode;
-		set_am_attributes(fld, &am);
-		force_int_stackent(fld, dst_mode);
-		SET_IA32_ORIG_NODE(fld, node);
-		fix_mem_proj(fld, &am);
-		break;
-	}
-	case irma_twos_complement: {
-		const x86_address_t *addr = &am.addr;
-		ir_node *ld = new_bd_ia32_Load(dbgi, new_block, addr->base, addr->index,
-		                               addr->mem);
+	case irma_twos_complement:
+		ld  = new_bd_ia32_Load(dbgi, new_block, addr->base, addr->index, addr->mem);
 		res = new_r_Proj(ld, ia32_mode_gp, pn_ia32_Load_res);
-		am.ls_mode = dst_mode;
-		set_am_attributes(ld, &am);
-		force_int_stackent(ld, dst_mode);
-		SET_IA32_ORIG_NODE(ld, node);
-		fix_mem_proj(ld, &am);
 		break;
-	}
+
 	default:
 		panic("ia32: unexpected dst mode in Bitcast");
 	}
+	am.ls_mode = dst_mode;
+	set_am_attributes(ld, &am);
+	force_int_stackent(ld, dst_mode);
+	SET_IA32_ORIG_NODE(ld, node);
+	fix_mem_proj(ld, &am);
 	return res;
 }
 
