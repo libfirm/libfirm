@@ -242,7 +242,6 @@ ir_mode_arithmetic (get_mode_arithmetic)(const ir_mode *mode)
 	return get_mode_arithmetic_(mode);
 }
 
-
 unsigned int (get_mode_modulo_shift)(const ir_mode *mode)
 {
 	return get_mode_modulo_shift_(mode);

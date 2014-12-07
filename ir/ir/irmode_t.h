@@ -32,11 +32,20 @@
 #define get_mode_mantissa_size(mode)   get_mode_mantissa_size_(mode)
 #define get_mode_exponent_size(mode)   get_mode_exponent_size_(mode)
 
-static inline ident *get_mode_ident_(const ir_mode *mode) { return mode->name; }
+static inline ident *get_mode_ident_(const ir_mode *mode)
+{
+	return mode->name;
+}
 
-static inline ir_mode_sort get_mode_sort_(const ir_mode *mode) { return mode->sort; }
+static inline ir_mode_sort get_mode_sort_(const ir_mode *mode)
+{
+	return mode->sort;
+}
 
-static inline unsigned get_mode_size_bits_(const ir_mode *mode) { return mode->size; }
+static inline unsigned get_mode_size_bits_(const ir_mode *mode)
+{
+	return mode->size;
+}
 
 static inline unsigned get_mode_size_bytes_(const ir_mode *mode)
 {
@@ -45,36 +54,20 @@ static inline unsigned get_mode_size_bytes_(const ir_mode *mode)
 	return size >> 3;
 }
 
-static inline int get_mode_sign_(const ir_mode *mode) { return mode->sign; }
+static inline int get_mode_sign_(const ir_mode *mode)
+{
+	return mode->sign;
+}
 
-static inline ir_mode_arithmetic get_mode_arithmetic_(const ir_mode *mode) { return mode->arithmetic; }
+static inline ir_mode_arithmetic get_mode_arithmetic_(const ir_mode *mode)
+{
+	return mode->arithmetic;
+}
 
-static inline unsigned int get_mode_modulo_shift_(const ir_mode *mode) { return mode->modulo_shift; }
-
-/* Functions to check, whether a mode is signed, float, int, num, data.
-   For more exact definitions read the corresponding pages
-   in the firm documentation or the following enumeration
-
-   The set of "float" is defined as:
-   ---------------------------------
-   float = {irm_F, irm_D, irm_E}
-
-   The set of "int" is defined as:
-   -------------------------------
-   int   = {irm_Bs, irm_Bu, irm_Hs, irm_Hu, irm_Is, irm_Iu, irm_Ls, irm_Lu}
-
-   The set of "num" is defined as:
-   -------------------------------
-   num   = {irm_F, irm_D, irm_E, irm_Bs, irm_Bu, irm_Hs, irm_Hu,
-            irm_Is, irm_Iu, irm_Ls, irm_Lu}
-            = {float || int}
-
-   The set of "data" is defined as:
-   -------------------------------
-   data  = {irm_F, irm_D, irm_E irm_Bs, irm_Bu, irm_Hs, irm_Hu,
-            irm_Is, irm_Iu, irm_Ls, irm_Lu, irm_C, irm_U, irm_P}
-            = {num || irm_C || irm_U || irm_P}
- */
+static inline unsigned int get_mode_modulo_shift_(const ir_mode *mode)
+{
+	return mode->modulo_shift;
+}
 
 static inline int mode_is_signed_(const ir_mode *mode)
 {
@@ -83,27 +76,27 @@ static inline int mode_is_signed_(const ir_mode *mode)
 
 static inline int mode_is_float_(const ir_mode *mode)
 {
-	return (get_mode_sort(mode) == irms_float_number);
+	return get_mode_sort(mode) == irms_float_number;
 }
 
 static inline int mode_is_int_(const ir_mode *mode)
 {
-	return (get_mode_sort(mode) == irms_int_number);
+	return get_mode_sort(mode) == irms_int_number;
 }
 
 static inline int mode_is_reference_(const ir_mode *mode)
 {
-	return (get_mode_sort(mode) == irms_reference);
+	return get_mode_sort(mode) == irms_reference;
 }
 
 static inline int mode_is_num_(const ir_mode *mode)
 {
-	return (get_mode_sort(mode) & irmsh_is_num);
+	return (get_mode_sort(mode) & irmsh_is_num) != 0;
 }
 
 static inline int mode_is_data_(const ir_mode *mode)
 {
-	return (get_mode_sort(mode) & irmsh_is_data);
+	return (get_mode_sort(mode) & irmsh_is_data) != 0;
 }
 
 static inline ir_type *get_type_for_mode_(const ir_mode *mode)
