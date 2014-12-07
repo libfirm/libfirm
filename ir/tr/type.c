@@ -1065,16 +1065,6 @@ int (is_Primitive_type)(const ir_type *primitive)
 	return is_primitive_type_(primitive);
 }
 
-void set_primitive_mode(ir_type *tp, ir_mode *mode)
-{
-	/* Modes of primitives must be data */
-	assert(mode_is_data(mode));
-
-	/* For primitive size depends on the mode. */
-	tp->size = get_mode_size_bytes(mode);
-	tp->mode = mode;
-}
-
 
 int (is_atomic_type)(const ir_type *tp)
 {

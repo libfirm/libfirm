@@ -168,7 +168,6 @@ void free_union_attrs(ir_type *uni);
 void set_class_mode(ir_type *tp, ir_mode *mode);
 void set_struct_mode(ir_type *tp, ir_mode *mode);
 void set_pointer_mode(ir_type *tp, ir_mode *mode);
-void set_primitive_mode(ir_type *tp, ir_mode *mode);
 
 void set_default_size(ir_type *tp, unsigned bytes);
 
