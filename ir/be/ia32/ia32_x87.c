@@ -825,7 +825,9 @@ do_pop:
 				/* stack full here: need fstp + load */
 				ir_node *const block = get_nodes_block(n);
 				ir_node *const mem   = get_Proj_for_pn(n, pn_ia32_st_M);
-				ir_node *const vfld  = new_bd_ia32_fld(NULL, block, get_irn_n(n, 0), get_irn_n(n, 1), mem, mode);
+				ir_node *const base  = get_irn_n(n, n_ia32_base);
+				ir_node *const idx   = get_irn_n(n, n_ia32_index);
+				ir_node *const vfld  = new_bd_ia32_fld(NULL, block, base, idx, mem, mode);
 
 				/* copy all attributes */
 				ia32_copy_am_attrs(vfld, n);
