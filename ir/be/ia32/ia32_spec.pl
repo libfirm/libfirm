@@ -778,7 +778,6 @@ XorHighLow => {
 	ins       => [ "value" ],
 	outs      => [ "res", "flags" ],
 	latency   => 1,
-	mode      => $mode_gp,
 	modified_flags => $status_flags,
 },
 
