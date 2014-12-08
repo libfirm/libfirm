@@ -696,7 +696,7 @@ static void remat_simplifier(ir_node *node, void *env)
 					set_irn_n(mem_users[i], mem_users_pos[i], proj_M);
 				}
 
-				cmp = new_r_Proj(cmp, mode_M, pn_ia32_Cmp_eflags);
+				cmp = new_r_Proj(cmp, ia32_mode_flags, pn_ia32_Cmp_eflags);
 			}
 
 			for (unsigned i = 0; i < ARR_LEN(flag_users); i++) {

@@ -3193,7 +3193,7 @@ static ir_node *create_doz(ir_node *psi, ir_node *a, ir_node *b)
 		new_node = new_r_Proj(sub, mode, pn_ia32_res);
 	}
 	assert(is_ia32_Sub(sub));
-	ir_node  *eflags = new_r_Proj(sub, ia32_mode_gp, pn_ia32_Sub_flags);
+	ir_node  *eflags = new_r_Proj(sub, ia32_mode_flags, pn_ia32_Sub_flags);
 
 	dbg_info *dbgi   = get_irn_dbg_info(psi);
 	ir_node  *block  = get_nodes_block(new_node);
@@ -5212,7 +5212,7 @@ static ir_node *gen_ffs(ir_node *node)
 		bsf = new_r_Proj(real, ia32_mode_gp, pn_ia32_res);
 	}
 
-	ir_node *flag = new_r_Proj(real, mode_b, pn_ia32_flags);
+	ir_node *flag = new_r_Proj(real, ia32_mode_flags, pn_ia32_flags);
 
 	/* sete */
 	dbg_info *dbgi  = get_irn_dbg_info(real);
@@ -5289,7 +5289,8 @@ static ir_node *gen_parity(ir_node *node)
 	set_ia32_commutative(xorn);
 
 	set_irn_mode(xor2, mode_T);
-	ir_node *flags = new_r_Proj(xor2, ia32_mode_gp, pn_ia32_XorHighLow_flags);
+	ir_node *flags = new_r_Proj(xor2, ia32_mode_flags,
+	                            pn_ia32_XorHighLow_flags);
 
 	/* setp */
 	ir_node *new_node = new_bd_ia32_Setcc(dbgi, new_block, flags,
@@ -5425,7 +5426,7 @@ static ir_node *gen_saturating_increment(ir_node *node)
 	SET_IA32_ORIG_NODE(increment, node);
 
 	ir_node *value  = new_rd_Proj(dbgi, increment, ia32_mode_gp, pn_ia32_Add_res);
-	ir_node *eflags = new_rd_Proj(dbgi, increment, ia32_mode_gp, pn_ia32_Add_flags);
+	ir_node *eflags = new_rd_Proj(dbgi, increment, ia32_mode_flags, pn_ia32_Add_flags);
 	ir_node *zero   = ia32_create_Immediate(irg, 0);
 	ir_node *sbb    = new_bd_ia32_Sbb(dbgi, block, noreg_GP, noreg_GP, nomem,
 	                                  value, zero, eflags);

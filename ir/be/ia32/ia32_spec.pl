@@ -2038,7 +2038,7 @@ Fucomi => {
 	init_attr => "attr->attr.ins_permuted = ins_permuted;",
 	latency   => 3,
 	attr_type => "ia32_x87_attr_t",
-	mode      => $mode_gp
+	mode      => $mode_flags,
 },
 
 FtstFnstsw => {
