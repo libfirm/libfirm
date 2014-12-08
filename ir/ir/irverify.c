@@ -841,6 +841,8 @@ static int verify_node_Conv(const ir_node *n)
 static int verify_node_Bitcast(const ir_node *n)
 {
 	bool fine = check_mode_func(n, mode_is_data_not_b, "data_not_b");
+	fine &= check_input_func(n, n_Bitcast_op, "op", mode_is_data_not_b,
+	                         "data_not_b");
 	ir_node *op       = get_Bitcast_op(n);
 	ir_mode *src_mode = get_irn_mode(op);
 	ir_mode *dst_mode = get_irn_mode(n);
