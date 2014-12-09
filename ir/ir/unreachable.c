@@ -7,7 +7,7 @@
  * @brief    Remove unreachable code
  * @author   Andreas Zwinkau
  *
- * This is done by elminiating all edges into the unreachable code. So that
+ * This is done by eliminating all edges into the unreachable code. So that
  * after that the unreachable code should be dead.
  */
 #include "irgopt.h"
