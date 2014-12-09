@@ -41,92 +41,60 @@ static bool tarval_possible(ir_tarval *tv)
 	return val == (long)val32;
 }
 
-/**
- * Recursive worker for checking if a DAG with root node can be represented as
- * a simple immediate.
- *
- * @param node      the node
- *
- * @return true if the DAG represents an immediate, false else
- */
-static bool do_is_immediate(ir_node const *const node, bool *const entity_allowed)
+static bool eat_imm(x86_address_t *const addr, ir_node const *const node)
 {
 	switch (get_irn_opcode(node)) {
-	case iro_Const:
-		return tarval_possible(get_Const_tarval(node));
-	case iro_Address:
-		/* the first SymConst of a DAG can be fold into an immediate */
-		/* unfortunately the assembler/linker doesn't support -symconst */
-		if (!*entity_allowed)
-			return false;
-		/* only 1 symconst allowed */
-		*entity_allowed = false;
-		return true;
-
-	case iro_Unknown:
-		/* we can use '0' for Unknowns */
-		return true;
 	case iro_Add:
-		/* Add is typically supported as long as both operands are immediates. */
+		/* Add is supported as long as both operands are immediates. */
 		return
 			!x86_is_non_address_mode_node(node) &&
-			do_is_immediate(get_Add_left(node),  entity_allowed) &&
-			do_is_immediate(get_Add_right(node), entity_allowed);
+			eat_imm(addr, get_Add_left(node)) &&
+			eat_imm(addr, get_Add_right(node));
+
+	case iro_Address:
+		/* The first Address of a DAG can be folded into an immediate. */
+		if (addr->entity)
+			return false;
+		addr->entity = get_Address_entity(node);
+		if (is_tls_entity(addr->entity))
+			addr->tls_segment = true;
+		return true;
+
+	case iro_Const: {
+		/* Add the value to the offset. */
+		ir_tarval *const tv = get_Const_tarval(node);
+		if (!tarval_possible(tv))
+			return false;
+		addr->offset += get_tarval_long(tv);
+		return true;
+	}
+
+	case iro_Unknown:
+		/* Use '0' for Unknowns. */
+		return true;
 
 	default:
-		/* all other nodes are NO immediates */
+		/* All other nodes are no immediates. */
 		return false;
 	}
 }
 
 /**
- * Check if a DAG starting with root node can be folded into an address mode
- * as an immediate.
- */
-static int is_immediate(ir_node const *const node, bool const init_entity_allowed)
-{
-	bool entity_allowed = init_entity_allowed;
-	return do_is_immediate(node, &entity_allowed);
-}
-
-/**
- * Place a DAG with root node into an address mode.
+ * Place a DAG with root @p node into an address mode.
  *
- * @param addr    the address mode data so far
+ * @param addr    the address mode data so far (only modified on success)
  * @param node    the node
+ *
+ * @return Whether the whole DAG at @p node could be matched as immediate.
  */
-static void eat_immediate(x86_address_t *const addr, ir_node const *const node)
+static bool eat_immediate(x86_address_t *const addr, ir_node const *const node)
 {
-	switch (get_irn_opcode(node)) {
-	case iro_Const: {
-		/* simply add the value to the offset */
-		long const val = get_Const_long(node);
-		addr->offset += val;
-		break;
+	x86_address_t try_addr = *addr;
+	if (eat_imm(&try_addr, node)) {
+		*addr = try_addr;
+		return true;
 	}
-	case iro_Address:
-		/* place the entity into the immediate */
-		if (addr->entity != NULL) {
-			panic("internal error: more than 1 entity in address calculation");
-		}
-		addr->entity = get_Address_entity(node);
-		if (is_tls_entity(addr->entity))
-			addr->tls_segment = true;
-		break;
-	case iro_Unknown:
-		break;
-	case iro_Add: {
-		assert(!x86_is_non_address_mode_node(node));
-		ir_node *left = get_Add_left(node);
-		eat_immediate(addr, left);
-		ir_node *right = get_Add_right(node);
-		eat_immediate(addr, right);
-		break;
-	}
-
-	default:
-		panic("internal error in immediate address calculation");
-	}
+	return false;
 }
 
 /**
@@ -149,16 +117,10 @@ static ir_node *eat_immediates(x86_address_t *addr, ir_node *node,
 	if (is_Add(node)) {
 		ir_node *left  = get_Add_left(node);
 		ir_node *right = get_Add_right(node);
-		bool entity_ok = addr->entity == NULL;
-
-		if (is_immediate(left, entity_ok)) {
-			eat_immediate(addr, left);
+		if (eat_immediate(addr, left))
 			return eat_immediates(addr, right, x86_create_am_normal);
-		}
-		if (is_immediate(right, entity_ok)) {
-			eat_immediate(addr, right);
+		if (eat_immediate(addr, right))
 			return eat_immediates(addr, left, x86_create_am_normal);
-		}
 	} else if (is_Member(node)) {
 		assert(addr->frame_entity == NULL);
 		addr->frame_entity = get_Member_entity(node);
@@ -253,10 +215,8 @@ static ir_node *skip_downconv(ir_node *node)
 void x86_create_address_mode(x86_address_t *addr, ir_node *node,
                              x86_create_am_flags_t flags)
 {
-	if (is_immediate(node, true)) {
-		eat_immediate(addr, node);
+	if (eat_immediate(addr, node))
 		return;
-	}
 
 	if (!(flags & x86_create_am_force)
 	    && x86_is_non_address_mode_node(node)
@@ -284,9 +244,8 @@ void x86_create_address_mode(x86_address_t *addr, ir_node *node,
 		 * instructions, because we want the former as Lea x, x, not Shl x, 1 */
 		if (eat_shl(addr, node))
 			return;
-	} else if (is_immediate(node, addr->entity == NULL)) {
+	} else if (eat_immediate(addr, node)) {
 		/* we can hit this case in x86_create_am_force mode */
-		eat_immediate(addr, node);
 		return;
 	} else if (is_Add(node)) {
 		ir_node *left  = get_Add_left(node);
@@ -414,11 +373,6 @@ static bool value_last_used_here(be_lv_t *lv, ir_node *here, ir_node *value)
 	return true;
 }
 
-static bool simple_is_immediate(const ir_node *node)
-{
-	return is_immediate(node, true);
-}
-
 /**
  * Walker: mark those nodes that cannot be part of an address mode because
  * their value must be accessed through a register
@@ -461,7 +415,9 @@ static void mark_non_address_nodes(ir_node *node, void *env)
 
 		/* if any of the operands is an immediate then this will not
 		 * increase register pressure */
-		if (simple_is_immediate(left) || simple_is_immediate(right))
+		x86_address_t addr;
+		memset(&addr, 0, sizeof(addr));
+		if (eat_immediate(&addr, left) || eat_immediate(&addr, right))
 			return;
 
 		/* Fold AM if any of the two operands does not die here. This duplicates
