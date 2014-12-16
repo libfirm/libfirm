@@ -6799,14 +6799,11 @@ static ir_node *transform_node_Mux(ir_node *n)
 						ir_node  *block     = get_nodes_block(n);
 						dbg_info *dbgi      = get_irn_dbg_info(n);
 
-						if (is_relation_less) {
-							/* Mux(a < 0, 0, 0xFFFFFFFF) => a >>s 31 */
-							relation = ir_relation_less;
-						} else {
+						/* Mux(a < 0, 0, 0xFFFFFFFF) => a >>s 31 */
+						if (!is_relation_less) {
 							/* Mux(a >= 0, 0, 0xFFFFFFFF) => ~a >>s 31 */
 							assert(is_relation_greater_equal);
 							cmp_l = new_rd_Not(dbgi, block, cmp_l, cmp_mode);
-							relation = ir_relation_greater_equal;
 						}
 
 						unsigned  bits = get_mode_size_bits(cmp_mode);
