@@ -70,7 +70,7 @@ typedef struct ir_tarval            ir_tarval;
  * Type */
 typedef struct ir_type              ir_type;
 /** @ingroup ir_graph
- * Procedure Grpah */
+ * Procedure Graph */
 typedef struct ir_graph             ir_graph;
 /** @ingroup ir_prog
  * Program */

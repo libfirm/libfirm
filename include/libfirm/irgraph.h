@@ -358,7 +358,7 @@ FIRM_API int irg_is_constrained(const ir_graph *irg,
                                 ir_graph_constraints_t constraints);
 
 /**
- * graph state. They properties about a graph.
+ * graph state. The properties about a graph.
  * Graph transformations may destroy these properties and have to explicitely
  * state when they did not affect some properties and want to keep them.
  */
