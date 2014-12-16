@@ -201,16 +201,10 @@ static int reassoc_commutative(ir_node **node)
 			DBG((dbg, LEVEL_5, "Applied: %n .%s. (%n .%s. %n) => %n .%s. (%n .%s. %n)\n",
 			     c1, get_irn_opname(n), c2, get_irn_opname(n), t2,
 			     t2, get_irn_opname(n), c1, get_irn_opname(n), c2));
-			/*
-			 * In some rare cases it can really happen that we get the same
-			 * node back. This might be happen in dead loops, were the Phi
-			 * nodes are already gone away. So check this.
-			 */
-			if (n != irn1) {
-				exchange(n, irn1);
-				*node = irn1;
-				return 1;
-			}
+
+			exchange(n, irn1);
+			*node = irn1;
+			return 1;
 		}
 	}
 	if (get_irn_op(c1) == op) {
@@ -252,11 +246,9 @@ static int reassoc_commutative(ir_node **node)
 				c1, get_irn_opname(n), l, get_irn_opname(n), r,
 				r, get_irn_opname(n), c1, get_irn_opname(n), c1));
 
-			if (n != irn1) {
-				exchange(n, irn1);
-				*node = irn1;
-				return 1;
-			}
+			exchange(n, irn1);
+			*node = irn1;
+			return 1;
 		}
 	}
 	return 0;
