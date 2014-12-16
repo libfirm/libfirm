@@ -71,11 +71,11 @@ static const_class_t get_const_class(const ir_node *n, const ir_node *block)
 static void get_comm_Binop_ops(ir_node *binop, ir_node **a, ir_node **c)
 {
 	assert(is_op_commutative(get_irn_op(binop)));
-	ir_node *op_a = get_binop_left(binop);
-	ir_node *op_b = get_binop_right(binop);
-	ir_node *block = get_nodes_block(binop);
-	int class_a = get_const_class(op_a, block);
-	int class_b = get_const_class(op_b, block);
+	ir_node       *op_a    = get_binop_left(binop);
+	ir_node       *op_b    = get_binop_right(binop);
+	ir_node       *block   = get_nodes_block(binop);
+	const_class_t  class_a = get_const_class(op_a, block);
+	const_class_t  class_b = get_const_class(op_b, block);
 
 	if (class_a == REAL_CONSTANT && class_b == REAL_CONSTANT) {
 		/* if both are constants, one might be a
