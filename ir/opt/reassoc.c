@@ -146,11 +146,6 @@ static int reassoc_commutative(ir_node **node)
 		ir_node *t2;
 		ir_node *c2;
 		get_comm_Binop_ops(t1, &t2, &c2);
-
-		/* do not optimize Bad nodes, will fail later */
-		if (is_Bad(t2))
-			return 0;
-
 		const_class_t c_c1 = get_const_class(c1, block);
 		const_class_t c_c2 = get_const_class(c2, block);
 		const_class_t c_t2 = get_const_class(t2, block);
