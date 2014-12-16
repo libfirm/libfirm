@@ -148,9 +148,9 @@ static int reassoc_commutative(ir_node **node)
 		const_class_t c_c1 = get_const_class(c1, block);
 		const_class_t c_c2 = get_const_class(c2, block);
 		const_class_t c_t2 = get_const_class(t2, block);
-		if ( (c_c1 != NO_CONSTANT && c_t2 >= NO_CONSTANT) &&
-		     ((((c_c1 ^ c_c2 ^ c_t2) & REGION_CONST) == 0)
-		         || ((c_c1 & c_c2 & c_t2) == REGION_CONST)) ) {
+		if (c_c1 != NO_CONSTANT &&
+		    (((c_c1 ^ c_c2 ^ c_t2) & REGION_CONST) == 0
+		     || (c_c1 & c_c2 & c_t2) == REGION_CONST)) {
 			/* All three are constant and either all are constant expressions
 			 * or two of them are:
 			 * then applying this rule would lead into a cycle
