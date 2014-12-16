@@ -5,7 +5,7 @@
 
 /**
  * @file
- * @brief      Union-Find datastructure
+ * @brief      Union-Find data structure
  * @author     Matthias Braun
  */
 #ifndef FIRM_ADT_UNIONFIND_H
@@ -18,7 +18,7 @@
 /**
  * @ingroup adt
  * @defgroup unionfind Union-Find
- *  Union-Find datastructure
+ *  Union-Find data structure
  *
  *  This implementation uses weighted sets and path compression which results
  *  in (nearly) O(n) complexity for n find and union operations
@@ -30,12 +30,12 @@
  * union find functions.
  *
  * @param data    The array (you have to allocate it yourself)
- * @param n_elems number of elements handled by the datastructure
+ * @param n_elems number of elements handled by the data structure
  */
 static inline void uf_init(int* data, size_t n_elems)
 {
 	size_t i;
-	for(i = 0; i < n_elems; ++i) {
+	for (i = 0; i < n_elems; ++i) {
 		data[i] = -1;
 	}
 }
@@ -55,7 +55,7 @@ static inline int uf_union(int* data, int set1, int set2)
 	int d2;
 	int newcount;
 
-	if(set1 == set2)
+	if (set1 == set2)
 		return set1;
 
 	/* need 2 set representatives */
@@ -64,7 +64,7 @@ static inline int uf_union(int* data, int set1, int set2)
 	assert(d1 < 0 && d2 < 0);
 
 	newcount = d1 + d2;
-	if(d1 > d2) {
+	if (d1 > d2) {
 		data[set1] = set2;
 		data[set2] = newcount;
 		return set2;
@@ -89,12 +89,12 @@ static inline int uf_find(int* data, int e)
 {
 	/* go through list to find representative */
 	int repr = e;
-	while(data[repr] >= 0) {
+	while (data[repr] >= 0) {
 		repr = data[repr];
 	}
 
 	/* update list to point to new representative (path compression) */
-	while(e != repr) {
+	while (e != repr) {
 		int next = data[e];
 		data[e] = repr;
 		e = next;
