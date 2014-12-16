@@ -573,11 +573,9 @@ static ir_node *match_pkh(ir_node *node)
 	/* we want the low-mask on the right side */
 	if (is_high_mask(get_Const_tarval(left_right))) {
 		ir_node *tmp = left;
-		left  = right;
-		right = tmp;
-		ir_node *tmp2 = left_right;
+		left       = right;
+		right      = tmp;
 		left_right = right_right;
-		right_right = tmp2;
 	} else if (!is_high_mask(get_Const_tarval(right_right))) {
 		return NULL;
 	}
