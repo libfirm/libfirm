@@ -165,8 +165,8 @@ static int reassoc_commutative(ir_node **node)
 			/* handles rules R7, R8, R9, R10:
 			 * convert c1 .OP. (c2 .OP. x) => x .OP. (c1 .OP. c2)
 			 */
-			ir_mode  *mode_c1 = get_irn_mode(c1);
-			ir_mode  *mode_c2 = get_irn_mode(c2);
+			ir_mode *mode_c1 = get_irn_mode(c1);
+			ir_mode *mode_c2 = get_irn_mode(c2);
 
 			/* It might happen, that c1 and c2 have different modes, for
 			 * instance Is and Iu.
@@ -293,8 +293,8 @@ static void do_reassociation(waitq *const wq)
 		bool res;
 		do {
 			res = false;
-			ir_op    *op   = get_irn_op(n);
-			ir_mode  *mode = get_irn_mode(n);
+			ir_op   *op   = get_irn_op(n);
+			ir_mode *mode = get_irn_mode(n);
 
 			/* reassociating floatingpoint ops is imprecise */
 			if (mode_is_float(mode) && !ir_imprecise_float_transforms_allowed())
@@ -445,7 +445,7 @@ transform:;
 	else
 		irn = new_rd_Sub(dbg, blk, a, b, mode);
 
-	blk  = earliest_block(irn, x, curr_blk);
+	blk = earliest_block(irn, x, curr_blk);
 	if (op == op_Mul)
 		irn = new_rd_Mul(dbg, blk, irn, x, mode);
 	else
@@ -539,9 +539,9 @@ transform:;
 	if (! block_dominates(get_nodes_block(b), blk))
 		return 0;
 	/* ok */
-	ir_mode  *mode  = get_mode_from_ops(a, b);
-	ir_node  *in0[] = { a, b };
-	ir_node  *irn   = create_node(dbg, blk, op, mode, ARRAY_SIZE(in0), in0);
+	ir_mode *mode  = get_mode_from_ops(a, b);
+	ir_node *in0[] = { a, b };
+	ir_node *irn   = create_node(dbg, blk, op, mode, ARRAY_SIZE(in0), in0);
 
 	/* beware: optimize_node might have changed the opcode, check again */
 	if (is_Add(irn) || is_Sub(irn)) {
