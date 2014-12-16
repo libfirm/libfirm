@@ -87,8 +87,7 @@ static void get_comm_Binop_ops(ir_node *binop, ir_node **a, ir_node **c)
 			*a = op_b;
 			*c = op_a;
 		}
-	} else if ((class_a == REAL_CONSTANT
-	            && (class_b == NO_CONSTANT || class_b == REGION_CONST))
+	} else if (class_a == REAL_CONSTANT
 	           || (class_a == REGION_CONST && class_b == NO_CONSTANT)) {
 		*a = op_b;
 		*c = op_a;
