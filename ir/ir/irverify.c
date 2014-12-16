@@ -1291,6 +1291,9 @@ static bool check_has_memory(ir_graph *irg)
 		if (!is_Bad(ret))
 			return true;
 	}
+	/* we can't reliably detect backend calls yet */
+	if (irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_BACKEND))
+		return true;
 	ir_node *end = get_irg_end(irg);
 	foreach_irn_in(end, i, kept) {
 		if (get_irn_mode(kept) == mode_M || is_Call(kept))
