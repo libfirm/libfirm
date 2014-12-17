@@ -188,15 +188,14 @@ static int reassoc_commutative(ir_node **node)
 				}
 			}
 
-			ir_node *in0[] = { c1, c2};
-			ir_mode *mode0 = get_mode_from_ops(c1, c2);
-			ir_node *irn0  = create_node(NULL, block, op, mode0,
-			                             ARRAY_SIZE(in0), in0);
+			dbg_info *dbgi  = get_irn_dbg_info(n);
+			ir_node  *in0[] = { c1, c2};
+			ir_mode  *mode0 = get_mode_from_ops(c1, c2);
+			ir_node  *irn0  = create_node(dbgi, block, op, mode0, ARRAY_SIZE(in0), in0);
 
 			ir_node *in1[] = { t2, irn0 };
 			ir_mode *mode1 = get_mode_from_ops(t2, irn0);
-			ir_node *irn1  = create_node(NULL, block, op, mode1,
-			                             ARRAY_SIZE(in1), in1);
+			ir_node *irn1  = create_node(dbgi, block, op, mode1, ARRAY_SIZE(in1), in1);
 
 			DBG((dbg, LEVEL_5, "Applied: %n .%s. (%n .%s. %n) => %n .%s. (%n .%s. %n)\n",
 			     c1, get_irn_opname(n), c2, get_irn_opname(n), t2,
@@ -232,14 +231,15 @@ static int reassoc_commutative(ir_node **node)
 
 		if (l == c1) {
 			/* convert x .OP. (x .OP. y) => y .OP. (x .OP. x) */
-			ir_mode *mode_res = get_irn_mode(n);
-			ir_mode *mode_c1  = get_irn_mode(c1);
-			ir_node *in[]     = { c1, c1 };
-			ir_node *irn0     = create_node(NULL, block, op, mode_c1,
+			dbg_info *dbgi     = get_irn_dbg_info(n);
+			ir_mode  *mode_res = get_irn_mode(n);
+			ir_mode  *mode_c1  = get_irn_mode(c1);
+			ir_node  *in[]     = { c1, c1 };
+			ir_node  *irn0     = create_node(dbgi, block, op, mode_c1,
 			                                ARRAY_SIZE(in), in);
 
 			ir_node *in1[] = { r, irn0 };
-			ir_node *irn1  = create_node(NULL, block, op, mode_res,
+			ir_node *irn1  = create_node(dbgi, block, op, mode_res,
 			                             ARRAY_SIZE(in1), in1);
 
 			DBG((dbg, LEVEL_5, "Applied: %n .%s. (%n .%s. %n) => %n .%s. (%n .%s. %n)\n",
@@ -460,12 +460,11 @@ static int move_consts_up(ir_node **node)
 	if (is_constant_expr(l) || is_constant_expr(r))
 		return 0;
 
-	dbg_info *dbg = get_irn_dbg_info(n);
-	ir_op    *op  = get_irn_op(n);
-	ir_node  *blk;
-	ir_node  *a;
-	ir_node  *b;
-	ir_node  *c;
+	ir_op   *op  = get_irn_op(n);
+	ir_node *blk;
+	ir_node *a;
+	ir_node *b;
+	ir_node *c;
 	if (get_irn_op(l) == op) {
 		/* (a .op. b) .op. r */
 		a = get_binop_left(l);
@@ -473,17 +472,15 @@ static int move_consts_up(ir_node **node)
 
 		if (is_constant_expr(a)) {
 			/* (C .op. b) .op. r ==> (r .op. b) .op. C */
-			c = a;
-			a = r;
+			c   = a;
+			a   = r;
 			blk = get_nodes_block(l);
-			dbg = dbg == get_irn_dbg_info(l) ? dbg : NULL;
 			goto transform;
 		} else if (is_constant_expr(b)) {
 			/* (a .op. C) .op. r ==> (a .op. r) .op. C */
-			c = b;
-			b = r;
+			c   = b;
+			b   = r;
 			blk = get_nodes_block(l);
-			dbg = dbg == get_irn_dbg_info(l) ? dbg : NULL;
 			goto transform;
 		}
 	}
@@ -494,17 +491,15 @@ static int move_consts_up(ir_node **node)
 
 		if (is_constant_expr(a)) {
 			/* l .op. (C .op. b) ==> (l .op. b) .op. C */
-			c = a;
-			a = l;
+			c   = a;
+			a   = l;
 			blk = get_nodes_block(r);
-			dbg = dbg == get_irn_dbg_info(r) ? dbg : NULL;
 			goto transform;
 		} else if (is_constant_expr(b)) {
 			/* l .op. (a .op. C) ==> (a .op. l) .op. C */
-			c = b;
-			b = l;
+			c   = b;
+			b   = l;
 			blk = get_nodes_block(r);
-			dbg = dbg == get_irn_dbg_info(r) ? dbg : NULL;
 			goto transform;
 		}
 	}
@@ -530,9 +525,10 @@ transform:;
 	if (! block_dominates(get_nodes_block(b), blk))
 		return 0;
 	/* ok */
-	ir_mode *mode  = get_mode_from_ops(a, b);
-	ir_node *in0[] = { a, b };
-	ir_node *irn   = create_node(dbg, blk, op, mode, ARRAY_SIZE(in0), in0);
+	dbg_info *dbgi  = get_irn_dbg_info(n);
+	ir_mode  *mode  = get_mode_from_ops(a, b);
+	ir_node  *in0[] = { a, b };
+	ir_node  *irn   = create_node(dbgi, blk, op, mode, ARRAY_SIZE(in0), in0);
 
 	/* beware: optimize_node might have changed the opcode, check again */
 	if (is_Add(irn) || is_Sub(irn)) {
@@ -541,7 +537,7 @@ transform:;
 
 	ir_node *in1[] = { irn, c };
 	ir_mode *mode1 = get_mode_from_ops(irn, c);
-	ir_node *irn1  = create_node(dbg, blk, op, mode1, ARRAY_SIZE(in1), in1);
+	ir_node *irn1  = create_node(dbgi, blk, op, mode1, ARRAY_SIZE(in1), in1);
 
 	exchange(n, irn1);
 	*node = irn1;
