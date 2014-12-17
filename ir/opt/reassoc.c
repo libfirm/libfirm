@@ -148,19 +148,18 @@ static int reassoc_commutative(ir_node **node)
 		const_class_t c_c1 = get_const_class(c1, block);
 		const_class_t c_c2 = get_const_class(c2, block);
 		const_class_t c_t2 = get_const_class(t2, block);
-		if (c_c1 != NO_CONSTANT &&
-		    (((c_c1 ^ c_c2 ^ c_t2) & REGION_CONST) == 0
-		     || (c_c1 & c_c2 & c_t2) == REGION_CONST)) {
-			/* All three are constant and either all are constant expressions
-			 * or two of them are:
-			 * then applying this rule would lead into a cycle
-			 *
-			 * Note that if t2 is a constant so is c2 hence we save one test.
-			 */
-			return 0;
-		}
+		if (c_c1 != NO_CONSTANT) {
+			if (((c_c1 ^ c_c2 ^ c_t2) & REGION_CONST) == 0
+			    || (c_c1 & c_c2 & c_t2) == REGION_CONST) {
+				/* All three are constant and either all are constant expressions
+				 * or two of them are:
+				 * then applying this rule would lead into a cycle
+				 *
+				 * Note that if t2 is a constant so is c2 hence we save one test.
+				 */
+				return 0;
+			}
 
-		if (c_c1 != NO_CONSTANT /* && c_c2 != NO_CONSTANT */) {
 			/* handles rules R7, R8, R9, R10:
 			 * convert c1 .OP. (c2 .OP. x) => x .OP. (c1 .OP. c2)
 			 */
