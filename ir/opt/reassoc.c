@@ -171,22 +171,20 @@ static int reassoc_commutative(ir_node **node)
 			 * instance Is and Iu.
 			 * Handle this here.
 			 */
-			if (mode_c1 != mode_c2) {
-				if (mode_is_int(mode_c1) && mode_is_int(mode_c2)) {
-					unsigned bits_c1 = get_mode_size_bits(mode_c1);
-					unsigned bits_c2 = get_mode_size_bits(mode_c2);
-					/* get the bigger one */
-					if (bits_c1 > bits_c2) {
-						c2 = new_r_Conv(block, c2, mode_c1);
-					} else if (bits_c1 < bits_c2) {
+			if (mode_c1 != mode_c2 && mode_is_int(mode_c1) && mode_is_int(mode_c2)) {
+				unsigned bits_c1 = get_mode_size_bits(mode_c1);
+				unsigned bits_c2 = get_mode_size_bits(mode_c2);
+				/* get the bigger one */
+				if (bits_c1 > bits_c2) {
+					c2 = new_r_Conv(block, c2, mode_c1);
+				} else if (bits_c1 < bits_c2) {
+					c1 = new_r_Conv(block, c1, mode_c2);
+				} else {
+					/* Try to cast the real const */
+					if (c_c1 == REAL_CONSTANT)
 						c1 = new_r_Conv(block, c1, mode_c2);
-					} else {
-						/* Try to cast the real const */
-						if (c_c1 == REAL_CONSTANT)
-							c1 = new_r_Conv(block, c1, mode_c2);
-						else
-							c2 = new_r_Conv(block, c2, mode_c1);
-					}
+					else
+						c2 = new_r_Conv(block, c2, mode_c1);
 				}
 			}
 
