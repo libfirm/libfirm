@@ -424,82 +424,49 @@ static ir_node *ia32_turn_back_dest_am(ir_node *node)
 		ir_node *base, ir_node *index, ir_node *mem,
 		ir_node *op1, ir_node *op2);
 
-	int                   operand_n;
 	construct_binop_func *func;
-	if (is_ia32_AddMem(node)) {
-		operand_n = n_ia32_AddMem_val;
-		func      = new_bd_ia32_Add;
-	} else if (is_ia32_AndMem(node)) {
-		operand_n = n_ia32_AndMem_val;
-		func      = new_bd_ia32_And;
-	} else if (is_ia32_OrMem(node)) {
-		operand_n = n_ia32_OrMem_val;
-		func      = new_bd_ia32_Or;
-	} else if (is_ia32_XorMem(node)) {
-		operand_n = n_ia32_XorMem_val;
-		func      = new_bd_ia32_Xor;
-	} else if (is_ia32_SubMem(node)) {
-		operand_n = n_ia32_SubMem_subtrahend;
-		func      = new_bd_ia32_Sub;
-	} else {
-		panic("cannot turn back DestAM for %+F", node);
+	switch (get_ia32_irn_opcode(node)) {
+	case iro_ia32_AddMem: func = new_bd_ia32_Add; break;
+	case iro_ia32_AndMem: func = new_bd_ia32_And; break;
+	case iro_ia32_OrMem:  func = new_bd_ia32_Or;  break;
+	case iro_ia32_SubMem: func = new_bd_ia32_Sub; break;
+	case iro_ia32_XorMem: func = new_bd_ia32_Xor; break;
+	default: panic("cannot turn back DestAM for %+F", node);
 	}
 
-	dbg_info *dbgi     = get_irn_dbg_info(node);
-	ir_graph *irg      = get_irn_irg(node);
-	ir_node  *block    = get_nodes_block(node);
-	ir_node  *base     = get_irn_n(node, n_ia32_base);
-	ir_node  *idx      = get_irn_n(node, n_ia32_index);
-	ir_node  *mem      = get_irn_n(node, n_ia32_mem);
-	ir_node  *operand  = get_irn_n(node, operand_n);
-
-	ir_node  *load     = new_bd_ia32_Load(dbgi, block, base, idx, mem);
-	ir_node  *load_res = new_rd_Proj(dbgi, load, ia32_mode_gp, pn_ia32_Load_res);
-	ir_node  *load_mem = new_rd_Proj(dbgi, load, mode_M, pn_ia32_Load_M);
-
+	dbg_info *const dbgi  = get_irn_dbg_info(node);
+	ir_node  *const block = get_nodes_block(node);
+	ir_node  *const base  = get_irn_n(node, n_ia32_base);
+	ir_node  *const idx   = get_irn_n(node, n_ia32_index);
+	ir_node  *const mem   = get_irn_n(node, n_ia32_mem);
+	ir_node  *const load  = new_bd_ia32_Load(dbgi, block, base, idx, mem);
 	ia32_copy_am_attrs(load, node);
 	if (is_ia32_is_reload(node))
 		set_ia32_is_reload(load);
+	sched_add_before(node, load);
+	ir_node *const load_res = new_rd_Proj(dbgi, load, ia32_mode_gp, pn_ia32_Load_res);
+	ir_node *const load_mem = new_rd_Proj(dbgi, load, mode_M, pn_ia32_Load_M);
 
-	ir_node *new_node = func(dbgi, block, base, idx, get_irg_no_mem(irg), load_res, operand);
+	ir_graph *const irg      = get_irn_irg(node);
+	ir_node  *const noreg    = ia32_new_NoReg_gp(irg);
+	ir_node  *const nomem    = get_irg_no_mem(irg);
+	ir_node  *const operand  = get_irn_n(node, n_ia32_binary_left);
+	ir_node  *const new_node = func(dbgi, block, noreg, noreg, nomem, load_res, operand);
 	set_ia32_ls_mode(new_node, get_ia32_ls_mode(node));
-
-	ir_mode *old_mode = get_irn_mode(new_node);
 	set_irn_mode(new_node, mode_T);
-	ir_node *res_proj = new_rd_Proj(dbgi, new_node, old_mode, pn_ia32_res);
+	ir_node *const res_proj = new_rd_Proj(dbgi, new_node, ia32_mode_gp, pn_ia32_res);
 
-	ir_node *store = new_bd_ia32_Store(dbgi, block, base, idx, load_mem, res_proj);
+	ir_node *const store = new_bd_ia32_Store(dbgi, block, base, idx, load_mem, res_proj);
 	ia32_copy_am_attrs(store, node);
 	set_ia32_op_type(store, ia32_AddrModeD);
+	sched_add_after(node, store);
 
-	foreach_out_edge_safe(node, edge) {
-		ir_node *out      = get_edge_src_irn(edge);
-		ir_mode *out_mode = get_irn_mode(out);
+	ir_node *const mem_proj = get_Proj_for_pn(node, pn_ia32_M);
+	set_Proj_pred(mem_proj, store);
+	set_Proj_num(mem_proj, pn_ia32_Store_M);
 
-		if (out_mode == ia32_mode_flags) {
-			const arch_register_t *flags_reg = arch_get_irn_register_out(node, get_Proj_num(out));
-			set_Proj_pred(out, new_node);
-			set_Proj_num(out, pn_ia32_flags);
-			arch_set_irn_register(out, flags_reg);
-		} else if (out_mode == mode_M) {
-			set_Proj_pred(out, store);
-			set_Proj_num(out, pn_ia32_Store_M);
-		} else {
-			panic("unexpected Proj mode at DestAM node");
-		}
-	}
-	ir_node *noreg = ia32_new_NoReg_gp(irg);
-	set_irn_n(node, n_ia32_base,  noreg);
-	set_irn_n(node, n_ia32_index, noreg);
-	set_ia32_am_offs_int(node, 0);
-	set_ia32_am_ent(node, NULL);
-	set_ia32_am_scale(node, 0);
-	set_ia32_frame_ent(node, NULL);
-
-	sched_replace(node, load);
-	sched_add_after(load, new_node);
-	sched_add_after(new_node, store);
-
+	sched_replace(node, new_node);
+	exchange(node, new_node);
 	return new_node;
 }
 
