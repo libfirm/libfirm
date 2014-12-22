@@ -4558,6 +4558,42 @@ static ir_node *transform_node_Minus(ir_node *n)
 			return new_rd_Sub(dbgi, block, negated_r, l, mode);
 		}
 	}
+	if (is_And(op) && only_one_user(op)) {
+		ir_node *l = get_And_left(op);
+		ir_node *r = get_And_right(op);
+		if (is_Minus(r) && get_Minus_op(r) == l) {
+			/* -(a & (-a)) -> a | (-a) */
+			ir_node *block = get_nodes_block(n);
+			ir_mode *mode  = get_irn_mode(n);
+
+			return new_rd_Or(dbgi, block, l, r, mode);
+		}
+		if (is_Minus(l) && get_Minus_op(l) == r) {
+			/* -((-a) & a) -> (-a) | a */
+			ir_node *block = get_nodes_block(n);
+			ir_mode *mode  = get_irn_mode(n);
+
+			return new_rd_Or(dbgi, block, l, r, mode);
+		}
+	}
+	if (is_Or(op) && only_one_user(op)) {
+		ir_node *l = get_Or_left(op);
+		ir_node *r = get_Or_right(op);
+		if (is_Minus(r) && get_Minus_op(r) == l) {
+			/* -(a | (-a)) -> a & (-a) */
+			ir_node *block = get_nodes_block(n);
+			ir_mode *mode  = get_irn_mode(n);
+
+			return new_rd_And(dbgi, block, l, r, mode);
+		}
+		if (is_Minus(l) && get_Minus_op(l) == r) {
+			/* -((-a) | a) -> (-a) & a */
+			ir_node *block = get_nodes_block(n);
+			ir_mode *mode  = get_irn_mode(n);
+
+			return new_rd_And(dbgi, block, l, r, mode);
+		}
+	}
 
 	if (is_Mul(op) && only_one_user(op)) {
 		ir_node  *l         = get_Mul_left(op);
