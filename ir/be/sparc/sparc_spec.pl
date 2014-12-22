@@ -124,19 +124,6 @@ $default_copy_attr = "sparc_copy_attr";
 	has_delay_slot    => "(arch_irn_flags_t)sparc_arch_irn_flag_has_delay_slot",
 );
 
-my %cmp_operand_constructors = (
-	imm => {
-		attr       => "ir_entity *immediate_entity, int32_t immediate_value",
-		custominit => "sparc_set_attr_imm(res, immediate_entity, immediate_value);",
-		reg_req    => { in => [ "gp" ], out => [ "flags" ] },
-		ins        => [ "left" ],
-	},
-	reg => {
-		reg_req    => { in => [ "gp", "gp" ], out => [ "flags" ] },
-		ins        => [ "left", "right" ],
-	},
-);
-
 my %binop_operand_constructors = (
 	imm => {
 		attr       => "ir_entity *immediate_entity, int32_t immediate_value",
