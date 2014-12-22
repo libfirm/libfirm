@@ -1733,69 +1733,39 @@ static ir_node *create_sex_32_64(dbg_info *dbgi, ir_node *block,
  * Generates an ia32 Div with additional infrastructure for the
  * register allocator if needed.
  */
-static ir_node *create_Div(ir_node *node)
+static ir_node *create_Div(ir_node *const node, ir_node *const op1, ir_node *const op2, ir_node *const mem, ir_mode *const mode)
 {
 	/* the upper bits have random contents for smaller modes */
-	ir_node *op1;
-	ir_node *op2;
-	ir_node *mem;
-	ir_mode *mode;
-	switch (get_irn_opcode(node)) {
-	case iro_Div:
-		op1     = get_Div_left(node);
-		op2     = get_Div_right(node);
-		mem     = get_Div_mem(node);
-		mode    = get_Div_resmode(node);
-		break;
-	case iro_Mod:
-		op1     = get_Mod_left(node);
-		op2     = get_Mod_right(node);
-		mem     = get_Mod_mem(node);
-		mode    = get_Mod_resmode(node);
-		break;
-	default:
-		panic("invalid divmod node %+F", node);
-	}
-
 	ia32_address_mode_t  am;
-	ir_node             *mem_pin_skip = skip_Pin(mem);
-	ir_node             *block        = get_nodes_block(node);
-	match_arguments(&am, block, op1, op2, mem_pin_skip, match_am|match_upconv);
+	ir_node       *const mem_pin_skip = skip_Pin(mem);
+	ir_node       *const old_block    = get_nodes_block(node);
+	match_arguments(&am, old_block, op1, op2, mem_pin_skip, match_am | match_upconv);
 
 	/* Beware: We don't need a Sync, if the memory predecessor of the Div node
-	   is the memory of the consumed address. We can have only the second op as
-	   address in Div nodes, so check only op2. */
-	x86_address_t *addr    = &am.addr;
-	ir_node       *new_mem = transform_AM_mem(block, op2, mem_pin_skip,
-	                                          addr->mem);
+	 * is the memory of the consumed address. We can have only the second op as
+	 * address in Div nodes, so check only op2. */
+	ir_node       *const block   = be_transform_node(old_block);
+	x86_address_t *const addr    = &am.addr;
+	ir_node       *const new_mem = transform_AM_mem(block, op2, mem_pin_skip, addr->mem);
 
-	dbg_info *dbgi      = get_irn_dbg_info(node);
-	ir_node  *new_block = be_transform_node(block);
-	ir_node  *new_node;
+	dbg_info *const dbgi = get_irn_dbg_info(node);
+	ir_node        *ext;
+	ir_node      *(*cons)(dbg_info *db, ir_node *block, ir_node *base, ir_node *index, ir_node *mem, ir_node *op1, ir_node *op2, ir_node *ext);
 	if (mode_is_signed(mode)) {
-		ir_node *sign_extension
-			= create_sex_32_64(dbgi, new_block, am.new_op1, node);
-		new_node = new_bd_ia32_IDiv(dbgi, new_block, addr->base,
-		                            addr->index, new_mem, am.new_op2,
-		                            am.new_op1, sign_extension);
+		ext  = create_sex_32_64(dbgi, block, am.new_op1, node);
+		cons = new_bd_ia32_IDiv;
 	} else {
-		ir_node *sign_extension
-			= new_bd_ia32_Const(dbgi, new_block, NULL, 0, 0);
-		new_node = new_bd_ia32_Div(dbgi, new_block, addr->base,
-		                           addr->index, new_mem, am.new_op2,
-		                           am.new_op1, sign_extension);
+		ext  = new_bd_ia32_Const(dbgi, block, NULL, 0, 0);
+		cons = new_bd_ia32_Div;
 	}
-	int throws_exception = ir_throws_exception(node);
-	ir_set_throws_exception(new_node, throws_exception);
+	ir_node *const new_node = cons(dbgi, block, addr->base, addr->index, new_mem, am.new_op2, am.new_op1, ext);
 
+	ir_set_throws_exception(new_node, ir_throws_exception(node));
 	set_irn_pinned(new_node, get_irn_pinned(node));
-
 	set_am_attributes(new_node, &am);
 	SET_IA32_ORIG_NODE(new_node, node);
 
-	new_node = fix_mem_proj(new_node, &am);
-
-	return new_node;
+	return fix_mem_proj(new_node, &am);
 }
 
 /**
@@ -1803,7 +1773,11 @@ static ir_node *create_Div(ir_node *node)
  */
 static ir_node *gen_Mod(ir_node *node)
 {
-	return create_Div(node);
+	ir_node *const op1  = get_Mod_left(node);
+	ir_node *const op2  = get_Mod_right(node);
+	ir_node *const mem  = get_Mod_mem(node);
+	ir_mode *const mode = get_Mod_resmode(node);
+	return create_Div(node, op1, op2, mem, mode);
 }
 
 /**
@@ -1811,11 +1785,10 @@ static ir_node *gen_Mod(ir_node *node)
  */
 static ir_node *gen_Div(ir_node *node)
 {
-	ir_mode *mode = get_Div_resmode(node);
+	ir_node *const op1  = get_Div_left(node);
+	ir_node *const op2  = get_Div_right(node);
+	ir_mode *const mode = get_Div_resmode(node);
 	if (mode_is_float(mode)) {
-		ir_node *op1 = get_Div_left(node);
-		ir_node *op2 = get_Div_right(node);
-
 		if (ia32_cg_config.use_sse2) {
 			return gen_binop(node, op1, op2, new_bd_ia32_xDiv, match_am);
 		} else {
@@ -1823,7 +1796,8 @@ static ir_node *gen_Div(ir_node *node)
 		}
 	}
 
-	return create_Div(node);
+	ir_node *const mem = get_Div_mem(node);
+	return create_Div(node, op1, op2, mem, mode);
 }
 
 /**
