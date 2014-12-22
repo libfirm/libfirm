@@ -6,7 +6,7 @@
 #
 
 # This script generates the C code which creates the irop's and
-# their coresponding node constructors for all operations in a given spec
+# their corresponding node constructors for all operations in a given spec
 # so they can be used as normal firm nodes.
 # Creation: 2005/10/19
 
