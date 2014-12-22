@@ -2145,7 +2145,7 @@ xxStore => {
 	              out => [ "none", "none", "none" ] },
 	ins      => [ "base", "index", "mem", "val" ],
 	outs     => [ "M", "X_regular", "X_except" ],
-	emit     => "movdqu %B",
+	emit     => "movdqu %S3, %AM",
 	latency  => 1,
 },
 
