@@ -30,9 +30,9 @@
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
 typedef enum {
-	NO_CONSTANT,   /**< node is not constant */
-	REAL_CONSTANT, /**< a Const that is suitable for constant folding */
-	REGION_CONST   /**< a constant expression in the current context */
+    NO_CONSTANT,   /**< node is not constant */
+    REAL_CONSTANT, /**< a Const that is suitable for constant folding */
+    REGION_CONST   /**< a constant expression in the current context */
 } const_class_t;
 
 /**
@@ -235,15 +235,15 @@ static int reassoc_commutative(ir_node **node)
 			ir_mode  *mode_c1  = get_irn_mode(c1);
 			ir_node  *in[]     = { c1, c1 };
 			ir_node  *irn0     = create_node(dbgi, block, op, mode_c1,
-			                                ARRAY_SIZE(in), in);
+			                                 ARRAY_SIZE(in), in);
 
 			ir_node *in1[] = { r, irn0 };
 			ir_node *irn1  = create_node(dbgi, block, op, mode_res,
 			                             ARRAY_SIZE(in1), in1);
 
 			DBG((dbg, LEVEL_5, "Applied: %n .%s. (%n .%s. %n) => %n .%s. (%n .%s. %n)\n",
-				c1, get_irn_opname(n), l, get_irn_opname(n), r,
-				r, get_irn_opname(n), c1, get_irn_opname(n), c1));
+			     c1, get_irn_opname(n), l, get_irn_opname(n), r,
+			     r, get_irn_opname(n), c1, get_irn_opname(n), c1));
 
 			exchange(n, irn1);
 			*node = irn1;
@@ -258,7 +258,7 @@ static int reassoc_commutative(ir_node **node)
  */
 static void wq_walker(ir_node *n, void *env)
 {
-	waitq *const wq = (waitq*)env;
+	waitq *const wq = (waitq *)env;
 
 	set_irn_link(n, NULL);
 	if (!is_Block(n)) {
@@ -273,7 +273,7 @@ static void wq_walker(ir_node *n, void *env)
 static void do_reassociation(waitq *const wq)
 {
 	while (!waitq_empty(wq)) {
-		ir_node *n = (ir_node*)waitq_get(wq);
+		ir_node *n = (ir_node *)waitq_get(wq);
 		set_irn_link(n, NULL);
 
 		hook_reassociate(1);
@@ -575,11 +575,11 @@ static void reverse_rules(ir_node *node, void *env)
 void optimize_reassociation(ir_graph *irg)
 {
 	assert(get_irg_pinned(irg) != op_pin_state_floats &&
-		"Reassociation needs pinned graph to work properly");
+	       "Reassociation needs pinned graph to work properly");
 
 	assure_irg_properties(irg,
-		IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE
-		| IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO);
+	                      IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE
+	                      | IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO);
 
 	waitq *const wq = new_waitq();
 
