@@ -448,6 +448,14 @@ foreach my $op (sort(keys(%nodes))) {
 	my $out_arity;
 	my @out_flags;
 
+	if (my $template = $n{"template"}) {
+		foreach my $key (keys(%$template)) {
+			if (!exists $n{$key}) {
+				$n{$key} = $template->{$key};
+			}
+		}
+	}
+
 	# determine arity
 	$arity = 0;
 	if(exists($n{"arity"})) {
