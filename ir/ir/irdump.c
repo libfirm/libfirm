@@ -927,12 +927,6 @@ static void dump_node_info(FILE *F, const ir_node *n)
 	fprintf(F, "\"\n");
 }
 
-static int is_constlike_node(const ir_node *node)
-{
-	const ir_op *op = get_irn_op(node);
-	return is_op_constlike(op);
-}
-
 static void print_constid(FILE *F, const ir_node *user, const ir_node *node)
 {
 	fprintf(F, "\"n%ldb%ld\"", get_irn_node_nr(user), get_irn_node_nr(node));
@@ -955,13 +949,13 @@ static void dump_const_node_local(FILE *F, const ir_node *n)
 	/* Use visited flag to avoid outputting nodes twice.
 	initialize it first. */
 	foreach_irn_in(n, i, con) {
-		if (is_constlike_node(con)) {
+		if (is_irn_constlike(con)) {
 			set_irn_visited(con, get_irg_visited(irg) - 1);
 		}
 	}
 
 	foreach_irn_in(n, i, con) {
-		if (is_constlike_node(con) && !irn_visited_else_mark(con)) {
+		if (is_irn_constlike(con) && !irn_visited_else_mark(con)) {
 			/* Generate a new name for the node by appending the names of
 			n and const. */
 			fprintf(F, "node: {title: ");
@@ -984,7 +978,7 @@ static void dump_const_block_local(FILE *F, const ir_node *n)
 		return;
 
 	ir_node *blk = get_nodes_block(n);
-	if (is_constlike_node(blk)) {
+	if (is_irn_constlike(blk)) {
 		/* Generate a new name for the node by appending the names of
 		n and blk. */
 		fprintf(F, "node: {title: ");
@@ -1037,7 +1031,7 @@ static void print_type_dbg_info(FILE *F, type_dbg_info *dbg)
  */
 void dump_node(FILE *F, const ir_node *n)
 {
-	if (get_opt_dump_const_local() && is_constlike_node(n))
+	if (get_opt_dump_const_local() && is_irn_constlike(n))
 		return;
 
 	/* dump this node */
@@ -1059,12 +1053,12 @@ void dump_node(FILE *F, const ir_node *n)
 /** dump the edge to the block this node belongs to */
 static void dump_ir_block_edge(FILE *F, const ir_node *n)
 {
-	if (get_opt_dump_const_local() && is_constlike_node(n))
+	if (get_opt_dump_const_local() && is_irn_constlike(n))
 		return;
 	if (!is_Block(n)) {
 		ir_node *block = get_nodes_block(n);
 
-		if (get_opt_dump_const_local() && is_constlike_node(block)) {
+		if (get_opt_dump_const_local() && is_irn_constlike(block)) {
 			dump_const_block_local(F, n);
 		} else {
 			fprintf(F, "edge: { sourcename: ");
@@ -1169,7 +1163,7 @@ void dump_ir_data_edges(FILE *F, const ir_node *n)
 			fprintf(F, "{sourcename: ");
 			print_nodeid(F, n);
 			fprintf(F, " targetname: ");
-			if ((get_opt_dump_const_local()) && is_constlike_node(dep)) {
+			if ((get_opt_dump_const_local()) && is_irn_constlike(dep)) {
 				print_constid(F, n, dep);
 			} else {
 				print_nodeid(F, dep);
@@ -1188,7 +1182,7 @@ void dump_ir_data_edges(FILE *F, const ir_node *n)
 		}
 		print_nodeid(F, n);
 		fprintf(F, " targetname: ");
-		if ((get_opt_dump_const_local()) && is_constlike_node(pred)) {
+		if ((get_opt_dump_const_local()) && is_irn_constlike(pred)) {
 			print_constid(F, n, pred);
 		} else {
 			print_nodeid(F, pred);
