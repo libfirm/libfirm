@@ -3101,7 +3101,6 @@ static void ia32_register_binary_emitters(void)
 	be_set_emitter(op_ia32_Or,            bemit_or);
 	be_set_emitter(op_ia32_OrMem,         bemit_ormem);
 	be_set_emitter(op_ia32_Pop,           bemit_pop);
-	be_set_emitter(op_ia32_PopEbp,        bemit_pop);
 	be_set_emitter(op_ia32_PopMem,        bemit_popmem);
 	be_set_emitter(op_ia32_Popcnt,        bemit_popcnt);
 	be_set_emitter(op_ia32_Push,          bemit_push);

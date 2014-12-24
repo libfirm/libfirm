@@ -1030,10 +1030,10 @@ static void introduce_epilogue(ir_node *const ret)
 			sched_add_before(ret, curr_sp);
 
 			/* Pop ebp. */
-			restore  = new_bd_ia32_PopEbp(NULL, block, curr_mem, curr_sp);
-			curr_bp  = new_r_Proj(restore, mode_gp, pn_ia32_PopEbp_res);
-			curr_sp  = new_r_Proj(restore, mode_gp, pn_ia32_PopEbp_stack);
-			curr_mem = new_r_Proj(restore, mode_M,  pn_ia32_PopEbp_M);
+			restore  = new_bd_ia32_Pop_ebp(NULL, block, curr_mem, curr_sp);
+			curr_bp  = new_r_Proj(restore, mode_gp, pn_ia32_Pop_res);
+			curr_sp  = new_r_Proj(restore, mode_gp, pn_ia32_Pop_stack);
+			curr_mem = new_r_Proj(restore, mode_M,  pn_ia32_Pop_M);
 		}
 		sched_add_before(ret, restore);
 		arch_set_irn_register(curr_bp, bp);
