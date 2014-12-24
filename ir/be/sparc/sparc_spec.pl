@@ -254,6 +254,15 @@ my $float_unop = {
 	},
 };
 
+my $branchcc = {
+	op_flags  => [ "cfopcode", "forking" ],
+	irn_flags => [ "has_delay_slot" ],
+	state     => "pinned",
+	attr_type => "sparc_jmp_cond_attr_t",
+	ins       => [ "flags" ],
+	outs      => [ "false", "true" ],
+};
+
 %nodes = (
 
 ASM => {
@@ -468,27 +477,17 @@ FrameAddr => {
 },
 
 Bicc => {
-	op_flags  => [ "cfopcode", "forking" ],
-	irn_flags => [ "has_delay_slot" ],
-	state     => "pinned",
-	attr_type => "sparc_jmp_cond_attr_t",
+	template  => $branchcc,
 	attr      => "ir_relation relation, bool is_unsigned",
 	init_attr => "\tinit_sparc_jmp_cond_attr(res, relation, is_unsigned);",
 	reg_req   => { in => [ "flags" ], out => [ "none", "none" ] },
-	ins       => [ "flags" ],
-	outs      => [ "false", "true" ],
 },
 
 fbfcc => {
-	op_flags  => [ "cfopcode", "forking" ],
-	irn_flags => [ "has_delay_slot" ],
-	state     => "pinned",
-	attr_type => "sparc_jmp_cond_attr_t",
+	template  => $branchcc,
 	attr      => "ir_relation relation",
 	init_attr => "\tinit_sparc_jmp_cond_attr(res, relation, false);",
 	reg_req   => { in => [ "fpflags" ], out => [ "none", "none" ] },
-	ins       => [ "flags" ],
-	outs      => [ "false", "true" ],
 },
 
 Ba => {
