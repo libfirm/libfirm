@@ -124,99 +124,135 @@ $default_copy_attr = "sparc_copy_attr";
 	has_delay_slot    => "(arch_irn_flags_t)sparc_arch_irn_flag_has_delay_slot",
 );
 
-my %binop_operand_constructors = (
-	imm => {
-		attr       => "ir_entity *immediate_entity, int32_t immediate_value",
-		custominit => "sparc_set_attr_imm(res, immediate_entity, immediate_value);",
-		reg_req    => { in => [ "gp" ], out => [ "gp" ] },
-		ins        => [ "left" ],
+my $binop_operand = {
+	irn_flags    => [ "rematerializable" ],
+	mode         => $mode_gp,
+	constructors => {
+		imm => {
+			attr       => "ir_entity *immediate_entity, int32_t immediate_value",
+			custominit => "sparc_set_attr_imm(res, immediate_entity, immediate_value);",
+			reg_req    => { in => [ "gp" ], out => [ "gp" ] },
+			ins        => [ "left" ],
+		},
+		reg => {
+			reg_req    => { in => [ "gp", "gp" ], out => [ "gp" ] },
+			ins        => [ "left", "right" ],
+		},
 	},
-	reg => {
-		reg_req    => { in => [ "gp", "gp" ], out => [ "gp" ] },
-		ins        => [ "left", "right" ],
-	},
-);
+};
 
-my %binopcc_operand_constructors = (
-	imm => {
-		attr       => "ir_entity *immediate_entity, int32_t immediate_value",
-		custominit => "sparc_set_attr_imm(res, immediate_entity, immediate_value);",
-		reg_req    => { in => [ "gp" ], out => [ "gp", "flags" ] },
-		ins        => [ "left" ],
+my $binopcc_operand = {
+	irn_flags    => [ "rematerializable" ],
+	outs         => [ "res", "flags" ],
+	constructors => {
+		imm => {
+			attr       => "ir_entity *immediate_entity, int32_t immediate_value",
+			custominit => "sparc_set_attr_imm(res, immediate_entity, immediate_value);",
+			reg_req    => { in => [ "gp" ], out => [ "gp", "flags" ] },
+			ins        => [ "left" ],
+		},
+		reg => {
+			reg_req    => { in => [ "gp", "gp" ], out => [ "gp", "flags" ] },
+			ins        => [ "left", "right" ],
+		},
 	},
-	reg => {
-		reg_req    => { in => [ "gp", "gp" ], out => [ "gp", "flags" ] },
-		ins        => [ "left", "right" ],
-	},
-);
+};
 
-my %binopx_operand_constructors = (
-	imm => {
-		attr       => "ir_entity *immediate_entity, int32_t immediate_value",
-		custominit => "sparc_set_attr_imm(res, immediate_entity, immediate_value);",
-		reg_req    => { in => [ "gp", "flags" ], out => [ "gp" ] },
-		ins        => [ "left", "carry" ],
+my $binopx_operand = {
+	# At the moment not rematerializable because of assert in beflags.c/
+	# (it claims that spiller can't rematerialize flag stuff correctly)
+	#irn_flags    => [ "rematerializable" ],
+	mode         => $mode_gp,
+	constructors => {
+		imm => {
+			attr       => "ir_entity *immediate_entity, int32_t immediate_value",
+			custominit => "sparc_set_attr_imm(res, immediate_entity, immediate_value);",
+			reg_req    => { in => [ "gp", "flags" ], out => [ "gp" ] },
+			ins        => [ "left", "carry" ],
+		},
+		reg => {
+			reg_req    => { in => [ "gp", "gp", "flags" ], out => [ "gp" ] },
+			ins        => [ "left", "right", "carry" ],
+		},
 	},
-	reg => {
-		reg_req    => { in => [ "gp", "gp", "flags" ], out => [ "gp" ] },
-		ins        => [ "left", "right", "carry" ],
-	},
-);
+};
 
+my $binopcczero_operand = {
+	irn_flags    => [ "rematerializable" ],
+	mode         => $mode_flags,
+	constructors => {
+		imm => {
+			attr       => "ir_entity *immediate_entity, int32_t immediate_value",
+			custominit => "sparc_set_attr_imm(res, immediate_entity, immediate_value);",
+			reg_req    => { in => [ "gp" ], out => [ "flags" ] },
+			ins        => [ "left" ],
+		},
+		reg => {
+			reg_req    => { in => [ "gp", "gp" ], out => [ "flags" ] },
+			ins        => [ "left", "right" ],
+		},
+	},
+};
 
-my %binopcczero_operand_constructors = (
-	imm => {
-		attr       => "ir_entity *immediate_entity, int32_t immediate_value",
-		custominit => "sparc_set_attr_imm(res, immediate_entity, immediate_value);",
-		reg_req    => { in => [ "gp" ], out => [ "flags" ] },
-		ins        => [ "left" ],
+my $div_operand = {
+	irn_flags    => [ "rematerializable", "has_delay_slot" ],
+	op_flags     => [ "uses_memory" ],
+	state        => "exc_pinned",
+	ins          => [ "mem", "dividend_high", "dividend_low", "divisor" ],
+	outs         => [ "res", "M" ],
+	constructors => {
+		imm => {
+			attr       => "ir_entity *immediate_entity, int32_t immediate_value",
+			custominit => "sparc_set_attr_imm(res, immediate_entity, immediate_value);",
+			reg_req    => { in => [ "none", "gp", "gp" ], out => [ "gp", "none" ] },
+		},
+		reg => {
+			reg_req    => { in => [ "none", "gp", "gp", "gp" ], out => [ "gp", "none" ] },
+		},
 	},
-	reg => {
-		reg_req    => { in => [ "gp", "gp" ], out => [ "flags" ] },
-		ins        => [ "left", "right" ],
-	},
-);
+};
 
-my %div_operand_constructors = (
-	imm => {
-		attr       => "ir_entity *immediate_entity, int32_t immediate_value",
-		custominit => "sparc_set_attr_imm(res, immediate_entity, immediate_value);",
-		reg_req    => { in => [ "none", "gp", "gp" ], out => [ "gp", "none" ] },
+my $float_binop = {
+	irn_flags    => [ "rematerializable" ],
+	attr_type    => "sparc_fp_attr_t",
+	attr         => "ir_mode *fp_mode",
+	ins          => [ "left", "right" ],
+	constructors => {
+		s => {
+			reg_req => { in => [ "fp", "fp" ], out => [ "fp" ] },
+			mode    => $mode_fp,
+		},
+		d => {
+			reg_req => { in => [ "fp:a|2", "fp:a|2" ], out => [ "fp:a|2" ] },
+			mode    => $mode_fp2,
+		},
+		q => {
+			reg_req => { in => [ "fp:a|4", "fp:a|4" ], out => [ "fp:a|4" ] },
+			mode    => $mode_fp4,
+		}
 	},
-	reg => {
-		reg_req    => { in => [ "none", "gp", "gp", "gp" ], out => [ "gp", "none" ] },
-	},
-);
+};
 
-my %float_binop_constructors = (
-	s => {
-		reg_req => { in => [ "fp", "fp" ], out => [ "fp" ] },
-		mode    => $mode_fp,
+my $float_unop = {
+	irn_flags    => [ "rematerializable" ],
+	attr_type    => "sparc_fp_attr_t",
+	attr         => "ir_mode *fp_mode",
+	ins          => [ "val" ],
+	constructors => {
+		s => {
+			reg_req => { in => [ "fp" ], out => [ "fp" ] },
+			mode    => $mode_fp,
+		},
+		d => {
+			reg_req => { in => [ "fp:a|2" ], out => [ "fp:a|2" ] },
+			mode    => $mode_fp2,
+		},
+		q => {
+			reg_req => { in => [ "fp:a|4" ], out => [ "fp:a|4" ] },
+			mode    => $mode_fp4,
+		}
 	},
-	d => {
-		reg_req => { in => [ "fp:a|2", "fp:a|2" ], out => [ "fp:a|2" ] },
-		mode    => $mode_fp2,
-	},
-	q => {
-		reg_req => { in => [ "fp:a|4", "fp:a|4" ], out => [ "fp:a|4" ] },
-		mode    => $mode_fp4,
-	}
-);
-
-my %float_unop_constructors = (
-	s => {
-		reg_req => { in => [ "fp" ], out => [ "fp" ] },
-		mode    => $mode_fp,
-	},
-	d => {
-		reg_req => { in => [ "fp:a|2" ], out => [ "fp:a|2" ] },
-		mode    => $mode_fp2,
-	},
-	q => {
-		reg_req => { in => [ "fp:a|4" ], out => [ "fp:a|4" ] },
-		mode    => $mode_fp4,
-	}
-);
+};
 
 %nodes = (
 
@@ -229,33 +265,23 @@ ASM => {
 },
 
 Add => {
-	irn_flags    => [ "rematerializable" ],
-	mode         => $mode_gp,
-	emit         => "add %S0, %SI1, %D0",
-	constructors => \%binop_operand_constructors,
+	template => $binop_operand,
+	emit     => "add %S0, %SI1, %D0",
 },
 
 AddCC => {
-	irn_flags    => [ "rematerializable" ],
-	emit         => "addcc %S0, %SI1, %D0",
-	outs         => [ "res", "flags" ],
-	constructors => \%binopcc_operand_constructors,
+	template => $binopcc_operand,
+	emit     => "addcc %S0, %SI1, %D0",
 },
 
 AddCCZero => {
-	irn_flags    => [ "rematerializable" ],
-	emit         => "addcc %S0, %SI1, %%g0",
-	mode         => $mode_flags,
-	constructors => \%binopcczero_operand_constructors,
+	template => $binopcczero_operand,
+	emit     => "addcc %S0, %SI1, %%g0",
 },
 
 AddX => {
-	# At the moment not rematerializable because of assert in beflags.c/
-	# (it claims that spiller can't rematerialize flag stuff correctly)
-	#irn_flags    => [ "rematerializable" ],
-	emit         => "addx %S0, %SI1, %D0",
-	constructors => \%binopx_operand_constructors,
-	mode         => $mode_gp,
+	template => $binopx_operand,
+	emit     => "addx %S0, %SI1, %D0",
 },
 
 AddCC_t => {
@@ -272,31 +298,23 @@ AddX_t => {
 },
 
 Sub => {
-	irn_flags    => [ "rematerializable" ],
-	mode         => $mode_gp,
-	emit         => "sub %S0, %SI1, %D0",
-	constructors => \%binop_operand_constructors,
+	template => $binop_operand,
+	emit     => "sub %S0, %SI1, %D0",
 },
 
 SubCC => {
-	irn_flags    => [ "rematerializable" ],
-	emit         => "subcc %S0, %SI1, %D0",
-	outs         => [ "res", "flags" ],
-	constructors => \%binopcc_operand_constructors,
+	template => $binopcc_operand,
+	emit     => "subcc %S0, %SI1, %D0",
 },
 
 SubCCZero => {
-	irn_flags    => [ "rematerializable" ],
-	emit         => "subcc %S0, %SI1, %%g0",
-	mode         => $mode_flags,
-	constructors => \%binopcczero_operand_constructors,
+	template => $binopcczero_operand,
+	emit     => "subcc %S0, %SI1, %%g0",
 },
 
 SubX => {
-	# Not rematerializable (see AddX)
-	emit         => "subx %S0, %SI1, %D0",
-	constructors => \%binopx_operand_constructors,
-	mode         => $mode_gp,
+	template => $binopx_operand,
+	emit     => "subx %S0, %SI1, %D0",
 },
 
 SubCC_t => {
@@ -539,10 +557,8 @@ Call => {
 },
 
 Cmp => {  # aka SubccZero
-	irn_flags    => [ "rematerializable" ],
-	emit         => "cmp %S0, %SI1",
-	mode         => $mode_flags,
-	constructors => \%binopcczero_operand_constructors,
+	template => $binopcczero_operand,
+	emit     => "cmp %S0, %SI1",
 },
 
 SwitchJmp => {
@@ -556,156 +572,112 @@ SwitchJmp => {
 },
 
 Sll => {
-	irn_flags    => [ "rematerializable" ],
-	mode         => $mode_gp,
-	emit         => "sll %S0, %SI1, %D0",
-	constructors => \%binop_operand_constructors,
+	template => $binop_operand,
+	emit     => "sll %S0, %SI1, %D0",
 },
 
 Srl => {
-	irn_flags    => [ "rematerializable" ],
-	mode         => $mode_gp,
-	emit         => "srl %S0, %SI1, %D0",
-	constructors => \%binop_operand_constructors,
+	template => $binop_operand,
+	emit     => "srl %S0, %SI1, %D0",
 },
 
 Sra => {
-	irn_flags    => [ "rematerializable" ],
-	mode         => $mode_gp,
-	emit         => "sra %S0, %SI1, %D0",
-	constructors => \%binop_operand_constructors,
+	template => $binop_operand,
+	emit     => "sra %S0, %SI1, %D0",
 },
 
 And => {
-	irn_flags    => [ "rematerializable" ],
-	mode         => $mode_gp,
-	emit         => "and %S0, %SI1, %D0",
-	constructors => \%binop_operand_constructors,
+	template => $binop_operand,
+	emit     => "and %S0, %SI1, %D0",
 },
 
 AndCCZero => {
-	irn_flags    => [ "rematerializable" ],
-	emit         => "andcc %S0, %SI1, %%g0",
-	mode         => $mode_flags,
-	constructors => \%binopcczero_operand_constructors,
+	template => $binopcczero_operand,
+	emit     => "andcc %S0, %SI1, %%g0",
 },
 
 AndN => {
-	irn_flags => [ "rematerializable" ],
-	mode      => $mode_gp,
-	emit      => "andn %S0, %SI1, %D0",
-	constructors => \%binop_operand_constructors,
+	template => $binop_operand,
+	emit     => "andn %S0, %SI1, %D0",
 },
 
 AndNCCZero => {
-	irn_flags    => [ "rematerializable" ],
-	emit         => "andncc %S0, %SI1, %%g0",
-	mode         => $mode_flags,
-	constructors => \%binopcczero_operand_constructors,
+	template => $binopcczero_operand,
+	emit     => "andncc %S0, %SI1, %%g0",
 },
 
 Or => {
-	irn_flags    => [ "rematerializable" ],
-	mode         => $mode_gp,
-	emit         => "or %S0, %SI1, %D0",
-	constructors => \%binop_operand_constructors,
+	template => $binop_operand,
+	emit     => "or %S0, %SI1, %D0",
 },
 
 OrCCZero => {
-	irn_flags    => [ "rematerializable" ],
-	emit         => "orcc %S0, %SI1, %%g0",
-	mode         => $mode_flags,
-	constructors => \%binopcczero_operand_constructors,
+	template => $binopcczero_operand,
+	emit     => "orcc %S0, %SI1, %%g0",
 },
 
 OrN => {
-	irn_flags => [ "rematerializable" ],
-	mode      => $mode_gp,
-	emit      => "orn %S0, %SI1, %D0",
-	constructors => \%binop_operand_constructors,
+	template => $binop_operand,
+	emit     => "orn %S0, %SI1, %D0",
 },
 
 OrNCCZero => {
-	irn_flags    => [ "rematerializable" ],
-	emit         => "orncc %S0, %SI1, %%g0",
-	mode         => $mode_flags,
-	constructors => \%binopcczero_operand_constructors,
+	template => $binopcczero_operand,
+	emit     => "orncc %S0, %SI1, %%g0",
 },
 
 Xor => {
-	irn_flags    => [ "rematerializable" ],
-	mode         => $mode_gp,
-	emit         => "xor %S0, %SI1, %D0",
-	constructors => \%binop_operand_constructors,
+	template => $binop_operand,
+	emit     => "xor %S0, %SI1, %D0",
 },
 
 XorCCZero => {
-	irn_flags    => [ "rematerializable" ],
-	emit         => "xorcc %S0, %SI1, %%g0",
-	mode         => $mode_flags,
-	constructors => \%binopcczero_operand_constructors,
+	template => $binopcczero_operand,
+	emit     => "xorcc %S0, %SI1, %%g0",
 },
 
 XNor => {
-	irn_flags => [ "rematerializable" ],
-	mode      => $mode_gp,
-	emit      => "xnor %S0, %SI1, %D0",
-	constructors => \%binop_operand_constructors,
+	template => $binop_operand,
+	emit     => "xnor %S0, %SI1, %D0",
 },
 
 XNorCCZero => {
-	irn_flags    => [ "rematerializable" ],
-	emit         => "xnorcc %S0, %SI1, %%g0",
-	mode         => $mode_flags,
-	constructors => \%binopcczero_operand_constructors,
+	template => $binopcczero_operand,
+	emit     => "xnorcc %S0, %SI1, %%g0",
 },
 
 Mul => {
-	irn_flags    => [ "rematerializable" ],
-	mode         => $mode_gp,
-	emit         => "smul %S0, %SI1, %D0",
-	constructors => \%binop_operand_constructors,
+	template => $binop_operand,
+	emit     => "smul %S0, %SI1, %D0",
 },
 
 MulCCZero => {
-	irn_flags    => [ "rematerializable" ],
-	emit         => "smulcc %S0, %SI1, %%g0",
-	mode         => $mode_flags,
-	constructors => \%binopcczero_operand_constructors,
+	template => $binopcczero_operand,
+	emit     => "smulcc %S0, %SI1, %%g0",
 },
 
 SMulh => {
-	irn_flags    => [ "rematerializable" ],
-	outs         => [ "low", "high" ],
-	emit         => "smul %S0, %SI1, %D0\n".
-	                "mov %%y, %D0",
-	constructors => \%binop_operand_constructors,
+	template => $binop_operand,
+	mode     => "mode_T",
+	outs     => [ "low", "high" ],
+	emit     => "smul %S0, %SI1, %D0\n".
+	            "mov %%y, %D0",
 },
 
 UMulh => {
-	irn_flags    => [ "rematerializable" ],
-	outs         => [ "low", "high" ],
-	emit         => "umul %S0, %SI1, %D0\n".
-	                "mov %%y, %D0",
-	constructors => \%binop_operand_constructors,
+	template => $binop_operand,
+	mode     => "mode_T",
+	outs     => [ "low", "high" ],
+	emit     => "umul %S0, %SI1, %D0\n".
+	            "mov %%y, %D0",
 },
 
 SDiv => {
-	irn_flags    => [ "rematerializable", "has_delay_slot" ],
-	op_flags     => [ "uses_memory" ],
-	state        => "exc_pinned",
-	ins          => [ "mem", "dividend_high", "dividend_low", "divisor" ],
-	outs         => [ "res", "M" ],
-	constructors => \%div_operand_constructors,
+	template => $div_operand,
 },
 
 UDiv => {
-	irn_flags    => [ "rematerializable", "has_delay_slot" ],
-	op_flags     => [ "uses_memory" ],
-	state        => "exc_pinned",
-	ins          => [ "mem", "dividend_high", "dividend_low", "divisor" ],
-	outs         => [ "res", "M" ],
-	constructors => \%div_operand_constructors,
+	template => $div_operand,
 },
 
 Stbar => {
@@ -750,30 +722,18 @@ fcmp => {
 },
 
 fadd => {
-	irn_flags    => [ "rematerializable" ],
-	emit         => "fadd%FM %S0, %S1, %D0",
-	attr_type    => "sparc_fp_attr_t",
-	attr         => "ir_mode *fp_mode",
-	ins          => [ "left", "right" ],
-	constructors => \%float_binop_constructors,
+	template => $float_binop,
+	emit     => "fadd%FM %S0, %S1, %D0",
 },
 
 fsub => {
-	irn_flags    => [ "rematerializable" ],
-	emit         => "fsub%FM %S0, %S1, %D0",
-	attr_type    => "sparc_fp_attr_t",
-	attr         => "ir_mode *fp_mode",
-	ins          => [ "left", "right" ],
-	constructors => \%float_binop_constructors,
+	template => $float_binop,
+	emit     => "fsub%FM %S0, %S1, %D0",
 },
 
 fmul => {
-	irn_flags    => [ "rematerializable" ],
-	emit         => "fmul%FM %S0, %S1, %D0",
-	attr_type    => "sparc_fp_attr_t",
-	attr         => "ir_mode *fp_mode",
-	ins          => [ "left", "right" ],
-	constructors => \%float_binop_constructors,
+	template => $float_binop,
+	emit     => "fmul%FM %S0, %S1, %D0",
 },
 
 fdiv => {
@@ -797,24 +757,15 @@ fdiv => {
 },
 
 fneg => {
-	irn_flags => [ "rematerializable" ],
-	reg_req   => { in => [ "fp" ], out => [ "fp" ] },
+	template => $float_unop,
 	# note that we only need the first register even for wide-values
-	emit      => "fnegs %S0, %D0",
-	attr_type => "sparc_fp_attr_t",
-	attr      => "ir_mode *fp_mode",
-	ins          => [ "val" ],
-	constructors => \%float_unop_constructors,
+	emit     => "fnegs %S0, %D0",
 },
 
 "fabs" => {
-	irn_flags    => [ "rematerializable" ],
+	template => $float_unop,
 	# note that we only need the first register even for wide-values
-	emit         => "fabs %S0, %D0",
-	attr_type    => "sparc_fp_attr_t",
-	attr         => "ir_mode *fp_mode",
-	ins          => [ "val" ],
-	constructors => \%float_unop_constructors,
+	emit     => "fabs %S0, %D0",
 },
 
 fftof => {

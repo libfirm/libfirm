@@ -137,21 +137,39 @@ $status_flags_wo_cf = [       "PF", "AF", "ZF", "SF", "OF" ];
 $fpcw_flags         = [ "FP_IM", "FP_DM", "FP_ZM", "FP_OM", "FP_UM", "FP_PM",
                         "FP_PC0", "FP_PC1", "FP_RC0", "FP_RC1", "FP_X" ];
 
-my %binop_flags_constructors = (
-	"" => {
-	  reg_req => { in => [ "gp", "gp", "none", "gp", "gp" ],
-	              out => [ "flags", "none", "none" ] },
+my $binop_flags = {
+	irn_flags => [ "rematerializable" ],
+	state     => "exc_pinned",
+	constructors => {
+		"" => {
+		  reg_req => { in  => [ "gp", "gp", "none", "gp", "gp" ],
+		               out => [ "flags", "none", "none" ] },
+		},
+		"8bit" => {
+		  reg_req => { in  => [ "gp", "gp", "none", "eax ebx ecx edx", "eax ebx ecx edx" ],
+		               out => [ "flags", "none", "none" ] },
+		}
 	},
-	"8bit" => {
-	  reg_req => { in => [ "gp", "gp", "none", "eax ebx ecx edx", "eax ebx ecx edx" ],
-	              out => [ "flags", "none", "none" ] },
-	}
-);
+	ins       => [ "base", "index", "mem", "left", "right" ],
+	outs      => [ "eflags", "unused", "M" ],
+	am        => "source,binary",
+	attr      => "bool ins_permuted",
+	init_attr => "attr->ins_permuted = ins_permuted;",
+	mode      => $mode_flags,
+	modified_flags => $status_flags
+};
 
-my %binop_mem_constructors = (
-	""     => { reg_req   => { in => [ "gp", "gp", "none", "gp" ],              out => [ "none", "flags", "none" ] } },
-	"8bit" => { reg_req   => { in => [ "gp", "gp", "none", "eax ebx ecx edx" ], out => [ "none", "flags", "none" ] } },
-);
+my $binop_mem = {
+	irn_flags      => [ "rematerializable" ],
+	state          => "exc_pinned",
+	constructors   => {
+		""     => { reg_req => { in => [ "gp", "gp", "none", "gp" ],              out => [ "none", "flags", "none" ] } },
+		"8bit" => { reg_req => { in => [ "gp", "gp", "none", "eax ebx ecx edx" ], out => [ "none", "flags", "none" ] } },
+	},
+	ins            => [ "base", "index", "mem", "val" ],
+	outs           => [ "unused", "flags", "M" ],
+	modified_flags => $status_flags,
+};
 
 %nodes = (
 
@@ -204,14 +222,9 @@ Add => {
 },
 
 AddMem => {
-	irn_flags => [ "rematerializable" ],
-	state     => "exc_pinned",
-	constructors => \%binop_mem_constructors,
-	ins       => [ "base", "index", "mem", "val" ],
-	outs      => [ "unused", "flags", "M" ],
-	emit      => "add%M %#S3, %AM",
-	latency   => 1,
-	modified_flags => $status_flags
+	template => $binop_mem,
+	emit     => "add%M %#S3, %AM",
+	latency  => 1,
 },
 
 Adc => {
@@ -326,14 +339,9 @@ And => {
 },
 
 AndMem => {
-	irn_flags => [ "rematerializable" ],
-	state     => "exc_pinned",
-	constructors => \%binop_mem_constructors,
-	ins       => [ "base", "index", "mem", "val" ],
-	outs      => [ "unused", "flags", "M" ],
-	emit      => "and%M %#S3, %AM",
-	latency   => 1,
-	modified_flags => $status_flags
+	template => $binop_mem,
+	emit     => "and%M %#S3, %AM",
+	latency  => 1,
 },
 
 Or => {
@@ -351,14 +359,9 @@ Or => {
 },
 
 OrMem => {
-	irn_flags => [ "rematerializable" ],
-	state     => "exc_pinned",
-	constructors => \%binop_mem_constructors,
-	ins       => [ "base", "index", "mem", "val" ],
-	outs      => [ "unused", "flags", "M" ],
-	emit      => "or%M %#S3, %AM",
-	latency   => 1,
-	modified_flags => $status_flags
+	template => $binop_mem,
+	emit     => "or%M %#S3, %AM",
+	latency  => 1,
 },
 
 Xor => {
@@ -387,14 +390,9 @@ Xor0 => {
 },
 
 XorMem => {
-	irn_flags => [ "rematerializable" ],
-	state     => "exc_pinned",
-	constructors => \%binop_mem_constructors,
-	ins       => [ "base", "index", "mem", "val" ],
-	outs      => [ "unused", "flags", "M" ],
-	emit      => "xor%M %#S3, %AM",
-	latency   => 1,
-	modified_flags => $status_flags
+	template => $binop_mem,
+	emit     => "xor%M %#S3, %AM",
+	latency  => 1,
 },
 
 Sub => {
@@ -412,14 +410,9 @@ Sub => {
 },
 
 SubMem => {
-	irn_flags => [ "rematerializable" ],
-	state     => "exc_pinned",
-	constructors => \%binop_mem_constructors,
-	ins       => [ "base", "index", "mem", "subtrahend" ],
-	outs      => [ "unused", "flags", "M" ],
-	emit      => "sub%M %#S3, %AM",
-	latency   => 1,
-	modified_flags => $status_flags
+	template => $binop_mem,
+	emit     => "sub%M %#S3, %AM",
+	latency  => 1,
 },
 
 Sbb => {
@@ -755,18 +748,9 @@ Stc => {
 },
 
 Cmp => {
-	irn_flags => [ "rematerializable" ],
-	state     => "exc_pinned",
-	constructors => \%binop_flags_constructors,
-	ins       => [ "base", "index", "mem", "left", "right" ],
-	outs      => [ "eflags", "unused", "M" ],
-	am        => "source,binary",
-	emit      => "cmp%M %B",
-	attr      => "bool ins_permuted",
-	init_attr => "attr->ins_permuted = ins_permuted;",
-	latency   => 1,
-	mode      => $mode_flags,
-	modified_flags => $status_flags
+	template => $binop_flags,
+	emit     => "cmp%M %B",
+	latency  => 1,
 },
 
 XorHighLow => {
@@ -782,18 +766,9 @@ XorHighLow => {
 },
 
 Test => {
-	irn_flags => [ "rematerializable" ],
-	state     => "exc_pinned",
-	constructors => \%binop_flags_constructors,
-	ins       => [ "base", "index", "mem", "left", "right" ],
-	outs      => [ "eflags", "unused", "M" ],
-	am        => "source,binary",
-	emit      => "test%M %B",
-	attr      => "bool ins_permuted",
-	init_attr => "attr->ins_permuted = ins_permuted;",
-	latency   => 1,
-	mode      => $mode_flags,
-	modified_flags => $status_flags
+	template => $binop_flags,
+	emit     => "test%M %B",
+	latency  => 1,
 },
 
 Setcc => {
