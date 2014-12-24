@@ -137,6 +137,18 @@ $status_flags_wo_cf = [       "PF", "AF", "ZF", "SF", "OF" ];
 $fpcw_flags         = [ "FP_IM", "FP_DM", "FP_ZM", "FP_OM", "FP_UM", "FP_PM",
                         "FP_PC0", "FP_PC1", "FP_RC0", "FP_RC1", "FP_X" ];
 
+my $binop_commutative = {
+	irn_flags      => [ "rematerializable" ],
+	state          => "exc_pinned",
+	reg_req        => { in  => [ "gp", "gp", "none", "gp", "gp" ],
+	                    out => [ "in_r4 in_r5", "flags", "none" ] },
+	ins            => [ "base", "index", "mem", "left", "right" ],
+	outs           => [ "res", "flags", "M" ],
+	am             => "source,binary",
+	mode           => $mode_gp,
+	modified_flags => $status_flags
+};
+
 my $binop_flags = {
 	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
@@ -171,6 +183,151 @@ my $binop_mem = {
 	modified_flags => $status_flags,
 };
 
+my $shiftop = {
+	irn_flags      => [ "rematerializable" ],
+	reg_req        => { in  => [ "gp", "ecx" ],
+	                    out => [ "in_r1 !in_r2", "flags" ] },
+	ins            => [ "val", "count" ],
+	outs           => [ "res", "flags" ],
+	mode           => $mode_gp,
+	modified_flags => $status_flags
+};
+
+my $shiftop_mem = {
+	irn_flags      => [ "rematerializable" ],
+	state          => "exc_pinned",
+	reg_req        => { in  => [ "gp", "gp", "none", "ecx" ],
+	                    out => [ "none", "flags", "none" ] },
+	ins            => [ "base", "index", "mem", "count" ],
+	outs           => [ "unused", "flags", "M" ],
+	modified_flags => $status_flags
+};
+
+my $shiftop_double = {
+	irn_flags      => [ "rematerializable" ],
+	reg_req        => { in  => [ "gp", "gp", "ecx" ],
+	                    out => [ "in_r1 !in_r2 !in_r3", "flags" ] },
+	ins            => [ "val_high", "val_low", "count" ],
+	outs           => [ "res", "flags" ],
+	mode           => $mode_gp,
+	modified_flags => $status_flags
+};
+
+my $divop = {
+	op_flags       => [ "fragile", "uses_memory" ],
+	state          => "exc_pinned",
+	reg_req        => { in  => [ "gp", "gp", "none", "gp", "eax", "edx" ],
+	                    out => [ "eax", "flags", "none", "edx", "none", "none" ] },
+	ins            => [ "base", "index", "mem", "divisor", "dividend_low", "dividend_high" ],
+	outs           => [ "div_res", "flags", "M", "mod_res", "X_regular", "X_except" ],
+	am             => "source,unary",
+	modified_flags => $status_flags
+};
+
+my $mulop = {
+	state          => "exc_pinned",
+	reg_req        => { in  => [ "gp", "gp", "none", "eax", "gp" ],
+	                    out => [ "eax", "flags", "none", "edx" ] },
+	ins            => [ "base", "index", "mem", "left", "right" ],
+	outs           => [ "res_low", "flags", "M", "res_high" ],
+	am             => "source,binary",
+	modified_flags => $status_flags
+};
+
+my $unop = {
+	irn_flags => [ "rematerializable" ],
+	reg_req   => { in  => [ "gp" ],
+	               out => [ "in_r1", "flags" ] },
+	ins       => [ "val" ],
+	outs      => [ "res", "flags" ],
+	mode      => $mode_gp,
+};
+
+my $unop_no_flags = {
+	irn_flags => [ "rematerializable" ],
+	reg_req   => { in  => [ "gp" ],
+	               out => [ "in_r1" ] },
+	ins       => [ "val" ],
+	outs      => [ "res" ],
+	mode      => $mode_gp,
+	# no flags modified
+};
+
+my $unop_from_mem = {
+	irn_flags      => [ "rematerializable" ],
+	state          => "exc_pinned",
+	reg_req        => { in  => [ "gp", "gp", "none", "gp" ],
+	                    out => [ "gp", "flags", "none" ] },
+	ins            => [ "base", "index", "mem", "operand" ],
+	outs           => [ "res", "flags", "M" ],
+	am             => "source,unary",
+	mode           => $mode_gp,
+	modified_flags => $status_flags
+};
+
+my $unop_mem = {
+	irn_flags => [ "rematerializable" ],
+	state     => "exc_pinned",
+	reg_req   => { in  => [ "gp", "gp", "none" ],
+	               out => [ "none", "flags", "none" ] },
+	ins       => [ "base", "index", "mem" ],
+	outs      => [ "unused", "flags", "M" ],
+};
+
+my $memop = {
+	state   => "pinned",
+	reg_req => { in => [ "none" ], out => [ "none" ] },
+	ins     => [ "mem" ],
+	mode    => "mode_M",
+};
+
+my $prefetchop = {
+	op_flags  => [ "uses_memory" ],
+	state     => "exc_pinned",
+	reg_req   => { in  => [ "gp", "gp", "none" ],
+	               out => [ "none" ] },
+	ins       => [ "base", "index", "mem" ],
+	outs      => [ "M" ],
+};
+
+my $fbinop = {
+#	irn_flags => [ "rematerializable" ],
+	state     => "exc_pinned",
+	reg_req   => { in  => [ "gp", "gp", "none", "fp", "fp", "fpcw" ],
+	               out => [ "fp", "none", "none" ] },
+	ins       => [ "base", "index", "mem", "left", "right", "fpcw" ],
+	outs      => [ "res", "dummy", "M" ],
+	am        => "source,binary",
+	mode      => $mode_fp87,
+	attr_type => "ia32_x87_attr_t",
+};
+
+my $funop = {
+	irn_flags => [ "rematerializable" ],
+	reg_req   => { in  => [ "fp" ],
+	               out => [ "fp" ] },
+	ins       => [ "value" ],
+	init_attr => "attr->ls_mode = ia32_mode_E;",
+	mode      => $mode_fp87,
+};
+
+my $fconstop = {
+	op_flags  => [ "constlike" ],
+	irn_flags => [ "rematerializable" ],
+	reg_req   => { out => [ "fp" ] },
+	outs      => [ "res" ],
+	init_attr => "attr->ls_mode = ia32_mode_E;",
+	mode      => $mode_fp87,
+};
+
+my $valueop = {
+	op_flags  => [ "constlike" ],
+	irn_flags => [ "rematerializable" ],
+	reg_req   => { out => [ "gp" ] },
+	outs      => [ "res" ],
+	mode      => $mode_gp,
+};
+
 %nodes = (
 
 Immediate => {
@@ -198,27 +355,17 @@ Asm => {
 
 # "allocates" a free register
 ProduceVal => {
+	template  => $valueop,
 	op_flags  => [ "constlike", "cse_neutral" ],
-	irn_flags => [ "rematerializable" ],
-	reg_req   => { out => [ "gp" ] },
 	emit      => "",
 	latency   => 0,
-	mode      => $mode_gp,
 	attrs_equal => "attrs_equal_false",
 },
 
 Add => {
-	irn_flags => [ "rematerializable" ],
-	state     => "exc_pinned",
-	reg_req   => { in  => [ "gp", "gp", "none", "gp", "gp" ],
-	               out => [ "in_r4 in_r5", "flags", "none" ] },
-	ins       => [ "base", "index", "mem", "left", "right" ],
-	outs      => [ "res", "flags", "M" ],
-	emit      => "add%M %B",
-	am        => "source,binary",
-	latency   => 1,
-	mode      => $mode_gp,
-	modified_flags => $status_flags
+	template => $binop_commutative,
+	emit     => "add%M %B",
+	latency  => 1,
 },
 
 AddMem => {
@@ -256,17 +403,11 @@ l_Adc => {
 },
 
 Mul => {
+	template => $mulop,
 	# we should not rematerialize this node. It produces 2 results and has
 	# very strict constraints
-	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "eax", "gp" ],
-	               out => [ "eax", "flags", "none", "edx" ] },
-	ins       => [ "base", "index", "mem", "left", "right" ],
 	emit      => "mul%M %AS4",
-	outs      => [ "res_low", "flags", "M", "res_high" ],
-	am        => "source,binary",
 	latency   => 10,
-	modified_flags => $status_flags
 },
 
 l_Mul => {
@@ -277,17 +418,9 @@ l_Mul => {
 },
 
 IMul => {
-	irn_flags => [ "rematerializable" ],
-	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "gp", "gp" ],
-		           out => [ "in_r4 in_r5", "flags", "none" ] },
-	ins       => [ "base", "index", "mem", "left", "right" ],
-	outs      => [ "res", "flags", "M" ],
-	am        => "source,binary",
-	emit      => "imul%M %B",
-	latency   => 5,
-	mode      => $mode_gp,
-	modified_flags => $status_flags
+	template => $binop_commutative,
+	emit     => "imul%M %B",
+	latency  => 5,
 },
 
 IMulImm => {
@@ -305,16 +438,10 @@ IMulImm => {
 },
 
 IMul1OP => {
+	template => $mulop,
 	irn_flags => [ "rematerializable" ],
-	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "eax", "gp" ],
-	               out => [ "eax", "flags", "none", "edx" ] },
-	ins       => [ "base", "index", "mem", "left", "right" ],
 	emit      => "imul%M %AS4",
-	outs      => [ "res_low", "flags", "M", "res_high" ],
-	am        => "source,binary",
 	latency   => 5,
-	modified_flags => $status_flags
 },
 
 l_IMul => {
@@ -325,17 +452,9 @@ l_IMul => {
 },
 
 And => {
-	irn_flags => [ "rematerializable" ],
-	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "gp", "gp" ],
-		           out => [ "in_r4 in_r5", "flags", "none" ] },
-	ins       => [ "base", "index", "mem", "left", "right" ],
-	outs      => [ "res", "flags", "M" ],
-	am        => "source,binary",
-	emit      => "and%M %B",
-	latency   => 1,
-	mode      => $mode_gp,
-	modified_flags => $status_flags
+	template => $binop_commutative,
+	emit     => "and%M %B",
+	latency  => 1,
 },
 
 AndMem => {
@@ -345,17 +464,9 @@ AndMem => {
 },
 
 Or => {
-	irn_flags => [ "rematerializable" ],
-	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "gp", "gp" ],
-	               out => [ "in_r4 in_r5", "flags", "none" ] },
-	ins       => [ "base", "index", "mem", "left", "right" ],
-	outs      => [ "res", "flags", "M" ],
-	am        => "source,binary",
-	emit      => "or%M %B",
-	latency   => 1,
-	mode      => $mode_gp,
-	modified_flags => $status_flags
+	template => $binop_commutative,
+	emit     => "or%M %B",
+	latency  => 1,
 },
 
 OrMem => {
@@ -365,17 +476,9 @@ OrMem => {
 },
 
 Xor => {
-	irn_flags => [ "rematerializable" ],
-	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "gp", "gp" ],
-	               out => [ "in_r4 in_r5", "flags", "none" ] },
-	ins       => [ "base", "index", "mem", "left", "right" ],
-	outs      => [ "res", "flags", "M" ],
-	am        => "source,binary",
-	emit      => "xor%M %B",
-	latency   => 1,
-	mode      => $mode_gp,
-	modified_flags => $status_flags
+	template => $binop_commutative,
+	emit     => "xor%M %B",
+	latency  => 1,
 },
 
 Xor0 => {
@@ -457,190 +560,100 @@ l_Sbb => {
 },
 
 IDiv => {
-	op_flags  => [ "fragile", "uses_memory" ],
-	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "gp", "eax", "edx" ],
-	               out => [ "eax", "flags", "none", "edx", "none", "none" ] },
-	ins       => [ "base", "index", "mem", "divisor", "dividend_low", "dividend_high" ],
-	outs      => [ "div_res", "flags", "M", "mod_res", "X_regular", "X_except" ],
-	am        => "source,unary",
-	emit      => "idiv%M %AS3",
-	latency   => 25,
-	modified_flags => $status_flags
+	template => $divop,
+	emit     => "idiv%M %AS3",
+	latency  => 25,
 },
 
 Div => {
-	op_flags  => [ "fragile", "uses_memory" ],
-	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "gp", "eax", "edx" ],
-	               out => [ "eax", "flags", "none", "edx", "none", "none" ] },
-	ins       => [ "base", "index", "mem", "divisor", "dividend_low", "dividend_high" ],
-	outs      => [ "div_res", "flags", "M", "mod_res", "X_regular", "X_except" ],
-	am        => "source,unary",
-	emit      => "div%M %AS3",
-	latency   => 25,
-	modified_flags => $status_flags
+	template => $divop,
+	emit     => "div%M %AS3",
+	latency  => 25,
 },
 
 Shl => {
-	irn_flags => [ "rematerializable" ],
-	reg_req   => { in => [ "gp", "ecx" ],
-	               out => [ "in_r1 !in_r2", "flags" ] },
-	ins       => [ "val", "count" ],
-	outs      => [ "res", "flags" ],
-	emit      => "shl%M %<,S1 %D0",
-	latency   => 1,
-	mode      => $mode_gp,
-	modified_flags => $status_flags
+	template => $shiftop,
+	emit     => "shl%M %<,S1 %D0",
+	latency  => 1,
 },
 
 ShlMem => {
-	irn_flags => [ "rematerializable" ],
-	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "ecx" ], out => [ "none", "flags", "none" ] },
-	ins       => [ "base", "index", "mem", "count" ],
-	outs      => [ "unused", "flags", "M" ],
-	emit      => "shl%M %<,S3 %AM",
-	latency   => 1,
-	modified_flags => $status_flags
+	template => $shiftop_mem,
+	emit     => "shl%M %<,S3 %AM",
+	latency  => 1,
 },
 
 ShlD => {
-	irn_flags => [ "rematerializable" ],
-	reg_req   => { in => [ "gp", "gp", "ecx" ],
-	               out => [ "in_r1 !in_r2 !in_r3", "flags" ] },
-	ins       => [ "val_high", "val_low", "count" ],
-	outs      => [ "res", "flags" ],
-	emit      => "shld%M %<S2, %S1, %D0",
-	latency   => 6,
-	mode      => $mode_gp,
-	modified_flags => $status_flags
+	template => $shiftop_double,
+	emit     => "shld%M %<S2, %S1, %D0",
+	latency  => 6,
 },
 
 Shr => {
-	irn_flags => [ "rematerializable" ],
-	reg_req   => { in => [ "gp", "ecx" ],
-	               out => [ "in_r1 !in_r2", "flags" ] },
-	ins       => [ "val", "count" ],
-	outs      => [ "res", "flags" ],
-	emit      => "shr%M %<,S1 %D0",
-	mode      => $mode_gp,
-	latency   => 1,
-	modified_flags => $status_flags
+	template => $shiftop,
+	emit     => "shr%M %<,S1 %D0",
+	latency  => 1,
 },
 
 ShrMem => {
-	irn_flags => [ "rematerializable" ],
-	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "ecx" ], out => [ "none", "flags", "none" ] },
-	ins       => [ "base", "index", "mem", "count" ],
-	outs      => [ "unused", "flags", "M" ],
-	emit      => "shr%M %<,S3 %AM",
-	latency   => 1,
-	modified_flags => $status_flags
+	template => $shiftop_mem,
+	emit     => "shr%M %<,S3 %AM",
+	latency  => 1,
 },
 
 ShrD => {
-	irn_flags => [ "rematerializable" ],
-	reg_req   => { in => [ "gp", "gp", "ecx" ],
-	               out => [ "in_r1 !in_r2 !in_r3", "flags" ] },
-	ins       => [ "val_high", "val_low", "count" ],
-	outs      => [ "res", "flags" ],
-	emit      => "shrd%M %<S2, %S1, %D0",
-	latency   => 6,
-	mode      => $mode_gp,
-	modified_flags => $status_flags
+	template => $shiftop_double,
+	emit     => "shrd%M %<S2, %S1, %D0",
+	latency  => 6,
 },
 
 Sar => {
-	irn_flags => [ "rematerializable" ],
-	reg_req   => { in => [ "gp", "ecx" ],
-	               out => [ "in_r1 !in_r2", "flags" ] },
-	ins       => [ "val", "count" ],
-	outs      => [ "res", "flags" ],
-	emit      => "sar%M %<,S1 %D0",
-	latency   => 1,
-	mode      => $mode_gp,
-	modified_flags => $status_flags
+	template => $shiftop,
+	emit     => "sar%M %<,S1 %D0",
+	latency  => 1,
 },
 
 SarMem => {
-	irn_flags => [ "rematerializable" ],
-	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "ecx" ], out => [ "none", "flags", "none" ] },
-	ins       => [ "base", "index", "mem", "count" ],
-	outs      => [ "unused", "flags", "M" ],
-	emit      => "sar%M %<,S3 %AM",
-	latency   => 1,
-	modified_flags => $status_flags
+	template => $shiftop_mem,
+	emit     => "sar%M %<,S3 %AM",
+	latency  => 1,
 },
 
 Ror => {
-	irn_flags => [ "rematerializable" ],
-	reg_req   => { in => [ "gp", "ecx" ],
-	               out => [ "in_r1 !in_r2", "flags" ] },
-	ins       => [ "val", "count" ],
-	outs      => [ "res", "flags" ],
-	emit      => "ror%M %<,S1 %D0",
-	latency   => 1,
-	mode      => $mode_gp,
-	modified_flags => $status_flags
+	template => $shiftop,
+	emit     => "ror%M %<,S1 %D0",
+	latency  => 1,
 },
 
 RorMem => {
-	irn_flags => [ "rematerializable" ],
-	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "ecx" ], out => [ "none", "flags", "none" ] },
-	ins       => [ "base", "index", "mem", "count" ],
-	outs      => [ "unused", "flags", "M" ],
-	emit      => "ror%M %<,S3 %AM",
-	latency   => 1,
-	modified_flags => $status_flags
+	template => $shiftop_mem,
+	emit     => "ror%M %<,S3 %AM",
+	latency  => 1,
 },
 
 Rol => {
-	irn_flags => [ "rematerializable" ],
-	reg_req   => { in => [ "gp", "ecx" ],
-	               out => [ "in_r1 !in_r2", "flags" ] },
-	ins       => [ "val", "count" ],
-	outs      => [ "res", "flags" ],
-	emit      => "rol%M %<,S1 %#D0",
-	latency   => 1,
-	mode      => $mode_gp,
-	modified_flags => $status_flags
+	template => $shiftop,
+	emit     => "rol%M %<,S1 %#D0",
+	latency  => 1,
 },
 
 RolMem => {
-	irn_flags => [ "rematerializable" ],
-	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "ecx" ], out => [ "none", "flags", "none" ] },
-	ins       => [ "base", "index", "mem", "count" ],
-	outs      => [ "unused", "flags", "M" ],
-	emit      => "rol%M %<,S3 %AM",
-	latency   => 1,
-	modified_flags => $status_flags
+	template => $shiftop_mem,
+	emit     => "rol%M %<,S3 %AM",
+	latency  => 1,
 },
 
 Neg => {
-	irn_flags => [ "rematerializable" ],
-	reg_req   => { in => [ "gp" ],
-	               out => [ "in_r1", "flags" ] },
-	emit      => "neg%M %D0",
-	ins       => [ "val" ],
-	outs      => [ "res", "flags" ],
-	latency   => 1,
-	mode      => $mode_gp,
+	template       => $unop,
+	emit           => "neg%M %D0",
+	latency        => 1,
 	modified_flags => $status_flags
 },
 
 NegMem => {
-	irn_flags => [ "rematerializable" ],
-	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none", "flags", "none" ] },
-	ins       => [ "base", "index", "mem" ],
-	outs      => [ "unused", "flags", "M" ],
-	emit      => "neg%M %AM",
-	latency   => 1,
+	template       => $unop_mem,
+	emit           => "neg%M %AM",
+	latency        => 1,
 	modified_flags => $status_flags
 },
 
@@ -661,61 +674,37 @@ l_Minus64 => {
 },
 
 Inc => {
-	irn_flags => [ "rematerializable" ],
-	reg_req   => { in => [ "gp" ],
-	               out => [ "in_r1", "flags" ] },
-	ins       => [ "val" ],
-	outs      => [ "res", "flags" ],
-	emit      => "inc%M %D0",
-	mode      => $mode_gp,
-	latency   => 1,
+	template       => $unop,
+	emit           => "inc%M %D0",
+	latency        => 1,
 	modified_flags => $status_flags_wo_cf
 },
 
 IncMem => {
-	irn_flags => [ "rematerializable" ],
-	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none", "flags", "none" ] },
-	ins       => [ "base", "index", "mem" ],
-	outs      => [ "unused", "flags", "M" ],
-	emit      => "inc%M %AM",
-	latency   => 1,
+	template       => $unop_mem,
+	emit           => "inc%M %AM",
+	latency        => 1,
 	modified_flags => $status_flags_wo_cf
 },
 
 Dec => {
-	irn_flags => [ "rematerializable" ],
-	reg_req   => { in => [ "gp" ],
-	               out => [ "in_r1", "flags" ] },
-	ins       => [ "val" ],
-	outs      => [ "res", "flags" ],
-	emit      => "dec%M %D0",
-	mode      => $mode_gp,
-	latency   => 1,
+	template       => $unop,
+	emit           => "dec%M %D0",
+	latency        => 1,
 	modified_flags => $status_flags_wo_cf
 },
 
 DecMem => {
-	irn_flags => [ "rematerializable" ],
-	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none", "flags", "none" ] },
-	ins       => [ "base", "index", "mem" ],
-	outs      => [ "unused", "flags", "M" ],
-	emit      => "dec%M %AM",
-	latency   => 1,
+	template       => $unop_mem,
+	emit           => "dec%M %AM",
+	latency        => 1,
 	modified_flags => $status_flags_wo_cf
 },
 
 Not => {
-	irn_flags => [ "rematerializable" ],
-	reg_req   => { in => [ "gp" ],
-	               out => [ "in_r1" ] },
-	ins       => [ "val" ],
-	outs      => [ "res" ],
-	emit      => "not%M %D0",
-	latency   => 1,
-	mode      => $mode_gp,
-	# no flags modified
+	template => $unop_no_flags,
+	emit     => "not%M %D0",
+	latency  => 1,
 },
 
 NotMem => {
@@ -864,31 +853,24 @@ IJmp => {
 },
 
 Const => {
-	op_flags  => [ "constlike" ],
-	irn_flags => [ "rematerializable" ],
-	reg_req   => { out => [ "gp" ] },
-	outs      => [ "res" ],
+	template  => $valueop,
 	emit      => "movl %I, %D0",
 	attr      => "ir_entity *entity, bool no_pic_adjust, int32_t offset",
 	attr_type => "ia32_immediate_attr_t",
 	latency   => 1,
-	mode      => $mode_gp,
 },
 
 Unknown => {
-	op_flags  => [ "constlike" ],
-	irn_flags => [ "rematerializable" ],
-	reg_req   => { out => [ "gp" ] },
+	template  => $valueop,
 	latency   => 0,
 	emit      => "",
-	mode      => $mode_gp,
 },
 
 GetEIP => {
-	op_flags => [ "constlike" ],
-	reg_req  => { out => [ "gp" ] },
-	latency  => 5,
-	mode     => $mode_gp,
+	template  => $valueop,
+	# not rematerializable, value depends on location in code
+	irn_flags => [],
+	latency   => 5,
 },
 
 NoReg_GP => {
@@ -1115,11 +1097,8 @@ SubSP => {
 },
 
 LdTls => {
-	irn_flags => [ "rematerializable" ],
-	reg_req   => { out => [ "gp" ] },
-	outs      => [ "res" ],
+	template  => $valueop,
 	emit      => "movl %%gs:0, %D0",
-	mode      => $mode_gp,
 	latency   => 1,
 },
 
@@ -1138,48 +1117,24 @@ Bt => {
 },
 
 Bsf => {
-	irn_flags => [ "rematerializable" ],
-	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "gp" ],
-	               out => [ "gp", "flags", "none" ] },
-	ins       => [ "base", "index", "mem", "operand" ],
-	outs      => [ "res", "flags", "M" ],
-	am        => "source,unary",
-	emit      => "bsf%M %AS3, %D0",
-	latency   => 1,
-	mode      => $mode_gp,
-	modified_flags => $status_flags
+	template => $unop_from_mem,
+	emit     => "bsf%M %AS3, %D0",
+	latency  => 1,
 },
 
 Bsr => {
-	irn_flags => [ "rematerializable" ],
-	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "gp" ],
-	               out => [ "gp", "flags", "none" ] },
-	ins       => [ "base", "index", "mem", "operand" ],
-	outs      => [ "res", "flags", "M" ],
-	am        => "source,unary",
-	emit      => "bsr%M %AS3, %D0",
-	latency   => 1,
-	mode      => $mode_gp,
-	modified_flags => $status_flags
+	template => $unop_from_mem,
+	emit     => "bsr%M %AS3, %D0",
+	latency  => 1,
 },
 
 #
 # SSE4.2 or SSE4a popcnt instruction
 #
 Popcnt => {
-	irn_flags => [ "rematerializable" ],
-	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "gp" ],
-	               out => [ "gp", "flags", "none" ] },
-	ins       => [ "base", "index", "mem", "operand" ],
-	outs      => [ "res", "flags", "M" ],
-	am        => "source,unary",
-	emit      => "popcnt%M %AS3, %D0",
-	latency   => 1,
-	mode      => $mode_gp,
-	modified_flags => $status_flags
+	template => $unop_from_mem,
+	emit     => "popcnt%M %AS3, %D0",
+	latency  => 1,
 },
 
 Start => {
@@ -1237,14 +1192,9 @@ ClimbFrame => {
 # bswap
 #
 Bswap => {
-	irn_flags => [ "rematerializable" ],
-	reg_req   => { in => [ "gp" ],
-	               out => [ "in_r1" ] },
-	outs      => [ "res" ],
-	emit      => "bswap%M %D0",
-	ins       => [ "val" ],
-	latency   => 1,
-	mode      => $mode_gp,
+	template => $unop_no_flags,
+	emit     => "bswap%M %D0",
+	latency  => 1,
 },
 
 #
@@ -1276,24 +1226,18 @@ CmpXChgMem => {
 # BreakPoint
 #
 Breakpoint => {
-	state     => "pinned",
-	reg_req   => { in => [ "none" ], out => [ "none" ] },
-	ins       => [ "mem" ],
-	latency   => 0,
-	emit      => "int3",
-	mode      => "mode_M",
+	template => $memop,
+	latency  => 0,
+	emit     => "int3",
 },
 
 #
 # Undefined Instruction on ALL x86 CPU's
 #
 UD2 => {
-	state     => "pinned",
-	reg_req   => { in => [ "none" ], out => [ "none" ] },
-	ins       => [ "mem" ],
-	latency   => 0,
-	emit      => "ud2",
-	mode      => "mode_M",
+	template => $memop,
+	latency  => 0,
+	emit     => "ud2",
 },
 
 #
@@ -1328,66 +1272,42 @@ Inport => {
 # Intel style prefetching
 #
 Prefetch0 => {
-	op_flags  => [ "uses_memory" ],
-	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none" ] },
-	ins       => [ "base", "index", "mem" ],
-	outs      => [ "M" ],
-	latency   => 0,
-	emit      => "prefetcht0 %AM",
+	template => $prefetchop,
+	latency  => 0,
+	emit     => "prefetcht0 %AM",
 },
 
 Prefetch1 => {
-	op_flags  => [ "uses_memory" ],
-	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none" ] },
-	ins       => [ "base", "index", "mem" ],
-	outs      => [ "M" ],
-	latency   => 0,
-	emit      => "prefetcht1 %AM",
+	template => $prefetchop,
+	latency  => 0,
+	emit     => "prefetcht1 %AM",
 },
 
 Prefetch2 => {
-	op_flags  => [ "uses_memory" ],
-	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none" ] },
-	ins       => [ "base", "index", "mem" ],
-	outs      => [ "M" ],
-	latency   => 0,
-	emit      => "prefetcht2 %AM",
+	template => $prefetchop,
+	latency  => 0,
+	emit     => "prefetcht2 %AM",
 },
 
 PrefetchNTA => {
-	op_flags  => [ "uses_memory" ],
-	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none" ] },
-	ins       => [ "base", "index", "mem" ],
-	outs      => [ "M" ],
-	latency   => 0,
-	emit      => "prefetchnta %AM",
+	template => $prefetchop,
+	latency  => 0,
+	emit     => "prefetchnta %AM",
 },
 
 #
 # 3DNow! prefetch instructions
 #
 Prefetch => {
-	op_flags  => [ "uses_memory" ],
-	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none" ] },
-	ins       => [ "base", "index", "mem" ],
-	outs      => [ "M" ],
-	latency   => 0,
-	emit      => "prefetch %AM",
+	template => $prefetchop,
+	latency  => 0,
+	emit     => "prefetch %AM",
 },
 
 PrefetchW => {
-	op_flags  => [ "uses_memory" ],
-	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none" ] },
-	ins       => [ "base", "index", "mem" ],
-	outs      => [ "M" ],
-	latency   => 0,
-	emit      => "prefetchw %AM",
+	template => $prefetchop,
+	latency  => 0,
+	emit     => "prefetchw %AM",
 },
 
 # produces a 0/+0.0
@@ -1756,77 +1676,40 @@ Conv_FP2FP => {
 # handler runs before spilling and we might end up with wrong fpcw then
 
 fadd => {
-#	irn_flags => [ "rematerializable" ],
-	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "fp", "fp", "fpcw" ],
-	               out => [ "fp", "none", "none" ] },
-	ins       => [ "base", "index", "mem", "left", "right", "fpcw" ],
-	outs      => [ "res", "dummy", "M" ],
-	emit      => "fadd%FP%FM %AF",
-	am        => "source,binary",
-	latency   => 4,
-	mode      => $mode_fp87,
-	attr_type => "ia32_x87_attr_t",
+	template => $fbinop,
+	emit     => "fadd%FP%FM %AF",
+	latency  => 4,
 },
 
 fmul => {
-#	irn_flags => [ "rematerializable" ],
-	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "fp", "fp", "fpcw" ],
-	               out => [ "fp", "none", "none" ] },
-	ins       => [ "base", "index", "mem", "left", "right", "fpcw" ],
-	outs      => [ "res", "dummy", "M" ],
-	emit      => "fmul%FP%FM %AF",
-	am        => "source,binary",
-	latency   => 4,
-	mode      => $mode_fp87,
-	attr_type => "ia32_x87_attr_t",
+	template => $fbinop,
+	emit     => "fmul%FP%FM %AF",
+	latency  => 4,
 },
 
 fsub => {
-#	irn_flags => [ "rematerializable" ],
-	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "fp", "fp", "fpcw" ],
-	               out => [ "fp", "none", "none" ] },
-	ins       => [ "base", "index", "mem", "minuend", "subtrahend", "fpcw" ],
-	outs      => [ "res", "dummy", "M" ],
-	emit      => "fsub%FR%FP%FM %AF",
-	am        => "source,binary",
-	latency   => 4,
-	mode      => $mode_fp87,
-	attr_type => "ia32_x87_attr_t",
+	template => $fbinop,
+	emit     => "fsub%FR%FP%FM %AF",
+	latency  => 4,
 },
 
 fdiv => {
-	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "fp", "fp", "fpcw" ],
-	               out => [ "fp", "none", "none" ] },
-	ins       => [ "base", "index", "mem", "dividend", "divisor", "fpcw" ],
-	outs      => [ "res", "dummy", "M" ],
-	emit      => "fdiv%FR%FP%FM %AF",
-	am        => "source,binary",
-	latency   => 20,
-	attr_type => "ia32_x87_attr_t",
+	template => $fbinop,
+	emit     => "fdiv%FR%FP%FM %AF",
+	latency  => 20,
+	mode     => "mode_T"
 },
 
 fabs => {
-	irn_flags => [ "rematerializable" ],
-	reg_req   => { in => [ "fp" ], out => [ "fp" ] },
-	ins       => [ "value" ],
-	emit      => "fabs",
-	init_attr => "attr->ls_mode = ia32_mode_E;",
-	latency   => 2,
-	mode      => $mode_fp87,
+	template => $funop,
+	emit     => "fabs",
+	latency  => 2,
 },
 
 fchs => {
-	irn_flags => [ "rematerializable" ],
-	reg_req   => { in => [ "fp" ], out => [ "fp" ] },
-	ins       => [ "value" ],
-	emit      => "fchs",
-	init_attr => "attr->ls_mode = ia32_mode_E;",
-	latency   => 2,
-	mode      => $mode_fp87,
+	template => $funop,
+	emit     => "fchs",
+	latency  => 2,
 },
 
 fld => {
@@ -1894,80 +1777,45 @@ fisttp => {
 },
 
 fldz => {
-	op_flags  => [ "constlike" ],
-	irn_flags => [ "rematerializable" ],
-	reg_req   => { out => [ "fp" ] },
-	outs      => [ "res" ],
-	emit      => "fldz",
-	init_attr => "attr->ls_mode = ia32_mode_E;",
-	latency   => 4,
-	mode      => $mode_fp87,
+	template => $fconstop,
+	emit     => "fldz",
+	latency  => 4,
 },
 
 fld1 => {
-	op_flags  => [ "constlike" ],
-	irn_flags => [ "rematerializable" ],
-	reg_req   => { out => [ "fp" ] },
-	outs      => [ "res" ],
-	emit      => "fld1",
-	init_attr => "attr->ls_mode = ia32_mode_E;",
-	latency   => 4,
-	mode      => $mode_fp87,
+	template => $fconstop,
+	emit     => "fld1",
+	latency  => 4,
 },
 
 fldpi => {
-	op_flags  => [ "constlike" ],
-	irn_flags => [ "rematerializable" ],
-	reg_req   => { out => [ "fp" ] },
-	outs      => [ "res" ],
-	emit      => "fldpi",
-	init_attr => "attr->ls_mode = ia32_mode_E;",
-	latency   => 4,
-	mode      => $mode_fp87,
+	template => $fconstop,
+	emit     => "fldpi",
+	latency  => 4,
 },
 
 fldln2 => {
-	op_flags  => [ "constlike" ],
-	irn_flags => [ "rematerializable" ],
-	reg_req   => { out => [ "fp" ] },
-	outs      => [ "res" ],
-	emit      => "fldln2",
-	init_attr => "attr->ls_mode = ia32_mode_E;",
-	latency   => 4,
-	mode      => $mode_fp87,
+	template => $fconstop,
+	emit     => "fldln2",
+	latency  => 4,
 },
 
 fldlg2 => {
-	op_flags  => [ "constlike" ],
-	irn_flags => [ "rematerializable" ],
-	reg_req   => { out => [ "fp" ] },
-	emit      => "fldlg2",
-	outs      => [ "res" ],
-	init_attr => "attr->ls_mode = ia32_mode_E;",
-	latency   => 4,
-	mode      => $mode_fp87,
+	template => $fconstop,
+	emit     => "fldlg2",
+	latency  => 4,
 },
 
 fldl2t => {
-	op_flags  => [ "constlike" ],
-	irn_flags => [ "rematerializable" ],
-	reg_req   => { out => [ "fp" ] },
-	emit      => "fldll2t",
-	outs      => [ "res" ],
-	init_attr => "attr->ls_mode = ia32_mode_E;",
-	latency   => 4,
-	mode      => $mode_fp87,
+	template => $fconstop,
+	emit     => "fldll2t",
+	latency  => 4,
 },
 
 fldl2e => {
-	op_flags  => [ "constlike" ],
-	irn_flags => [ "rematerializable" ],
-	reg_req   => { out => [ "fp" ] },
-	emit      => "fldl2e",
-	outs      => [ "res" ],
-	init_attr => "attr->ls_mode = ia32_mode_E;",
-	latency   => 4,
-	mode      => $mode_fp87,
+	template => $fconstop,
+	emit     => "fldl2e",
+	latency  => 4,
 },
 
 FucomFnstsw => {
