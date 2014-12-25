@@ -64,8 +64,6 @@ static inline bool sparc_is_value_imm_encodeable(int32_t value)
 
 void sparc_finish_graph(ir_graph *irg);
 
-void sparc_introduce_prolog_epilog(ir_graph *irg);
-
 void sparc_lower_64bit(void);
 
 bool sparc_variadic_fixups(ir_graph *irg, calling_convention_t *cconv);

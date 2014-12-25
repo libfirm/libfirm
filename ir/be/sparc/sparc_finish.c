@@ -166,7 +166,7 @@ static void introduce_epilog(ir_node *ret)
 	}
 }
 
-void sparc_introduce_prolog_epilog(ir_graph *irg)
+static void sparc_introduce_prolog_epilog(ir_graph *irg)
 {
 	const arch_register_t *sp_reg     = &sparc_registers[REG_SP];
 	ir_node               *start      = get_irg_start(irg);
