@@ -977,7 +977,6 @@ static ir_node *find_copy(ir_node *irn, ir_node *op)
 
 /** Environment for constraints. */
 typedef struct {
-	ir_graph        *irg;
 	ir_nodehashmap_t op_set;
 	struct obstack   obst;
 } constraint_env_t;
@@ -1321,7 +1320,6 @@ void be_spill_prepare_for_constraints(ir_graph *irg)
 	irg_walk_graph(irg, add_missing_keep_walker, NULL, NULL);
 
 	constraint_env_t cenv;
-	cenv.irg = irg;
 	ir_nodehashmap_init(&cenv.op_set);
 	obstack_init(&cenv.obst);
 
