@@ -480,8 +480,6 @@ static ir_node *do_remat(spill_env_t *env, ir_node *spilled, ir_node *reloader)
 			ins[i] = arg;
 		} else {
 			ins[i] = do_remat(env, arg, reloader);
-			/* don't count the argument rematerialization as an extra remat */
-			--env->remat_count;
 		}
 	}
 
@@ -493,10 +491,8 @@ static ir_node *do_remat(spill_env_t *env, ir_node *spilled, ir_node *reloader)
 	DBG((dbg, LEVEL_1, "Insert remat %+F of %+F before reloader %+F\n", res,
 	     spilled, reloader));
 
-	if (!is_Proj(res)) {
+	if (!is_Proj(res))
 		sched_add_before(reloader, res);
-		++env->remat_count;
-	}
 
 	return res;
 }
@@ -742,6 +738,7 @@ void be_insert_spills_reloads(spill_env_t *env)
 			} else if (be_do_remats &&
 					(force_remat || rld->remat_cost_delta < 0)) {
 				copy = do_remat(env, to_spill, rld->reloader);
+				++env->remat_count;
 			} else {
 				/* make sure we have a spill */
 				spill_node(env, si);
