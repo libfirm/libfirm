@@ -2779,7 +2779,6 @@ static void sparc_register_transformers(void)
 
 	be_set_transform_function(op_sparc_AddX_t, gen_AddX_t);
 	be_set_transform_function(op_sparc_AddCC_t,gen_AddCC_t);
-	be_set_transform_function(op_sparc_Save,   be_duplicate_node);
 	be_set_transform_function(op_sparc_SubX_t, gen_SubX_t);
 	be_set_transform_function(op_sparc_SubCC_t,gen_SubCC_t);
 
