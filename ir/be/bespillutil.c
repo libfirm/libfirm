@@ -494,8 +494,6 @@ static ir_node *do_remat(spill_env_t *env, ir_node *spilled, ir_node *reloader)
 	     spilled, reloader));
 
 	if (!is_Proj(res)) {
-		/* insert in schedule */
-		sched_reset(res);
 		sched_add_before(reloader, res);
 		++env->remat_count;
 	}
