@@ -577,7 +577,7 @@ static void introduce_epilogue(ir_node *ret)
 	}
 }
 
-static void introduce_prologue_epilogue(ir_graph *irg)
+static void introduce_prologue(ir_graph *const irg)
 {
 	const arch_register_t *sp         = &amd64_registers[REG_RSP];
 	const arch_register_t *bp         = &amd64_registers[REG_RBP];
@@ -611,7 +611,7 @@ static void introduce_prologue_epilogue(ir_graph *irg)
 		sched_add_after(curr_sp, incsp);
 
 		/* make sure the initial IncSP is really used by someone */
-		if (get_irn_n_edges(incsp) <= 1) {
+		if (get_irn_n_edges(incsp) == 0) {
 			ir_node *in[] = { incsp };
 			ir_node *keep = be_new_Keep(block, 1, in);
 			sched_add_after(incsp, keep);
@@ -625,12 +625,17 @@ static void introduce_prologue_epilogue(ir_graph *irg)
 			sched_add_after(start, incsp);
 		}
 	}
+}
 
+static void introduce_prologue_epilogue(ir_graph *irg)
+{
 	/* introduce epilogue for every return node */
 	foreach_irn_in(get_irg_end_block(irg), i, ret) {
 		assert(is_amd64_ret(ret));
 		introduce_epilogue(ret);
 	}
+
+	introduce_prologue(irg);
 }
 
 /**
