@@ -589,9 +589,6 @@ static void introduce_prologue_epilogue(ir_graph *irg)
 	ir_node               *initial_sp = be_get_initial_reg_value(irg, sp);
 	ir_mode               *mode_gp    = mode_Lu;
 
-	if (is_Deleted(start))
-		return;
-
 	if (!layout->sp_relative) {
 		/* push rbp */
 		ir_node *push = new_bd_amd64_push_rbp(NULL, block, initial_sp);
