@@ -469,16 +469,12 @@ void be_start_transform_setup(void)
 {
 	ir_clear_opcodes_generic_func();
 
-	be_set_transform_function(op_Bad,         be_duplicate_node);
-	be_set_transform_function(op_be_CopyKeep, be_duplicate_node);
-	be_set_transform_function(op_be_IncSP,    be_duplicate_node);
-	be_set_transform_function(op_be_Keep,     be_duplicate_node);
-	be_set_transform_function(op_Block,       transform_block);
-	be_set_transform_function(op_End,         transform_end);
-	be_set_transform_function(op_NoMem,       be_duplicate_node);
-	be_set_transform_function(op_Pin,         be_duplicate_node);
-	be_set_transform_function(op_Proj,        transform_proj);
-	be_set_transform_function(op_Sync,        be_duplicate_node);
+	be_set_transform_function(op_Block, transform_block);
+	be_set_transform_function(op_End,   transform_end);
+	be_set_transform_function(op_NoMem, be_duplicate_node);
+	be_set_transform_function(op_Pin,   be_duplicate_node);
+	be_set_transform_function(op_Proj,  transform_proj);
+	be_set_transform_function(op_Sync,  be_duplicate_node);
 
 	be_set_upper_bits_clean_function(op_And,   and_upper_bits_clean);
 	be_set_upper_bits_clean_function(op_Const, const_upper_bits_clean);
