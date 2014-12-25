@@ -20,6 +20,7 @@
 #include "bespillutil.h"
 #include "bestack.h"
 #include "be_t.h"
+#include "beutil.h"
 #include "debug.h"
 #include "panic.h"
 #include "irarch_t.h"
@@ -611,11 +612,7 @@ static void introduce_prologue(ir_graph *const irg)
 		sched_add_after(curr_sp, incsp);
 
 		/* make sure the initial IncSP is really used by someone */
-		if (get_irn_n_edges(incsp) == 0) {
-			ir_node *in[] = { incsp };
-			ir_node *keep = be_new_Keep(block, 1, in);
-			sched_add_after(incsp, keep);
-		}
+		be_keep_if_unused(incsp);
 
 		layout->initial_bias = -8;
 	} else {

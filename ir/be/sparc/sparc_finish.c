@@ -199,11 +199,7 @@ static void sparc_introduce_prolog_epilog(ir_graph *irg)
 		 * the function should hold the Save, even if we use a restore
 		 * which just overrides it instead of using the value)
 		 */
-		if (get_irn_n_edges(save) == 0) {
-			ir_node *in[] = { save };
-			ir_node *keep = be_new_Keep(block, 1, in);
-			sched_add_after(schedpoint, keep);
-		}
+		be_keep_if_unused(save);
 	} else {
 		ir_node *const incsp = be_new_IncSP(sp_reg, block, initial_sp, frame_size, 0);
 		edges_reroute_except(initial_sp, incsp, incsp);

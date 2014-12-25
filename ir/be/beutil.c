@@ -167,3 +167,13 @@ void be_remove_dead_nodes_from_schedule(ir_graph *irg)
 	/* walk schedule and remove non-marked nodes */
 	irg_block_walk_graph(irg, remove_dead_nodes_walker, NULL, &env);
 }
+
+void be_keep_if_unused(ir_node *node)
+{
+	if (get_irn_n_edges(node) == 0) {
+		ir_node *const in[]  = { node };
+		ir_node *const block = get_nodes_block(node);
+		ir_node *const keep  = be_new_Keep(block, ARRAY_SIZE(in), in);
+		sched_add_after(node, keep);
+	}
+}

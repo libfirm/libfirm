@@ -45,4 +45,11 @@ ir_node *insert_Perm_before(ir_graph *irg, const arch_register_class_t *cls,
  */
 void be_remove_dead_nodes_from_schedule(ir_graph *irg);
 
+/**
+ * Keep the given node alive, if it has no users, by adding a be_Keep.
+ *
+ * @param node  The node to kept alive.
+ */
+void be_keep_if_unused(ir_node *node);
+
 #endif

@@ -12,6 +12,7 @@
 #include <assert.h>
 
 #include "beirg.h"
+#include "beutil.h"
 #include "irnode_t.h"
 #include "irop_t.h"
 #include "irprog.h"
@@ -1022,18 +1023,6 @@ static void sim_Fucom(x87_state *state, ir_node *n)
 }
 
 /**
- * Keep the given node alive by adding a be_Keep.
- *
- * @param node  the node to kept alive
- */
-static void keep_float_node_alive(ir_node *node)
-{
-	ir_node *block = get_nodes_block(node);
-	ir_node *keep  = be_new_Keep(block, 1, &node);
-	sched_add_after(node, keep);
-}
-
-/**
  * Simulate a be_Copy.
  *
  * @param state  the x87 state
@@ -1074,8 +1063,7 @@ static void sim_Copy(x87_state *state, ir_node *n)
 		 * the pred blocks. This is unfortunate as removing it would save us 1
 		 * instruction, but we would have to rerun all the simulation to get
 		 * this correct. */
-		if (get_irn_n_edges(pred) == 0)
-			keep_float_node_alive(pred);
+		be_keep_if_unused(pred);
 
 		DB((dbg, LEVEL_1, "<<< %+F %+F -> ?\n", copy, pred));
 	} else {
