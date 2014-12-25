@@ -126,13 +126,6 @@ static inline void sched_init_block(ir_node *block)
 	info->prev = block;
 }
 
-static inline void sched_reset(ir_node *node)
-{
-	sched_info_t *info = get_irn_sched_info(node);
-	info->next = NULL;
-	info->prev = NULL;
-}
-
 /**
  * Remove a node from the scheduled.
  * @param irn The node.
