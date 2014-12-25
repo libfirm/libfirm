@@ -61,11 +61,11 @@ struct constr_info {
 	bool is_use            : 1;
 	bool already_processed : 1;
 	union {
-		/* Since we only consider scheduled nodes,
+		/** Since we only consider scheduled nodes,
 		 * this points to the real definition (e.g. a Proj). */
 		ir_node *definition;
 
-		/* Last definition of a block. */
+		/** Last definition of a block. */
 		ir_node *last_definition;
 	} u;
 };
@@ -169,12 +169,9 @@ static void mark_iterated_dominance_frontiers(
 	DBG((dbg, LEVEL_3, "Dominance Frontier:"));
 	stat_ev_tim_push();
 	while (!waitq_empty(env->worklist)) {
-		int i;
 		ir_node  *block    = (ir_node*)waitq_get(env->worklist);
 		ir_node **domfront = ir_get_dominance_frontier(block);
-		int domfront_len = ARR_LEN(domfront);
-
-		for (i = 0; i < domfront_len; ++i) {
+		for (size_t i = 0, len = ARR_LEN(domfront); i < len; ++i) {
 			ir_node *y = domfront[i];
 			if (Block_block_visited(y))
 				continue;
@@ -204,21 +201,19 @@ static void mark_iterated_dominance_frontiers(
  */
 static ir_node *insert_dummy_phi(be_ssa_construction_env_t *env, ir_node *block)
 {
-	int i, n_preds = get_Block_n_cfgpreds(block);
-	ir_graph *irg = get_irn_irg(block);
-	ir_node **ins = ALLOCAN(ir_node*, n_preds);
-	ir_node  *dummy;
-	ir_node  *phi;
+	int       n_preds = get_Block_n_cfgpreds(block);
+	ir_graph *irg     = get_irn_irg(block);
+	ir_node **ins     = ALLOCAN(ir_node*, n_preds);
 
 	DBG((dbg, LEVEL_3, "\t...create phi at block %+F\n", block));
 
 	assert(n_preds > 1);
 
-	dummy = new_r_Dummy(irg, env->mode);
-	for (i = 0; i < n_preds; ++i) {
+	ir_node *dummy = new_r_Dummy(irg, env->mode);
+	for (int i = 0; i < n_preds; ++i) {
 		ins[i] = dummy;
 	}
-	phi = be_new_Phi(block, n_preds, ins, env->mode, env->phi_req);
+	ir_node *phi = be_new_Phi(block, n_preds, ins, env->mode, env->phi_req);
 	sched_add_after(block, phi);
 	ARR_APP1(ir_node*, env->new_phis, phi);
 
@@ -226,7 +221,6 @@ static ir_node *insert_dummy_phi(be_ssa_construction_env_t *env, ir_node *block)
 	introduce_definition(env, phi);
 
 	waitq_put(env->worklist, phi);
-
 	return phi;
 }
 
@@ -241,7 +235,8 @@ static ir_node *get_def_at_idom(be_ssa_construction_env_t *env, ir_node *block)
 	return search_def_end_of_block(env, dom);
 }
 
-static ir_node *get_def_from_preds(be_ssa_construction_env_t *const env, ir_node *const block)
+static ir_node *get_def_from_preds(be_ssa_construction_env_t *const env,
+                                   ir_node *const block)
 {
 	/* Create a phi if the block is in the dominance frontier. */
 	if (Block_block_visited(block)) {
@@ -257,7 +252,8 @@ static ir_node *get_def_from_preds(be_ssa_construction_env_t *const env, ir_node
  * If an operand of the use is a (original) definition,
  * it will be replaced by the given definition.
  */
-static void set_operands(be_ssa_construction_env_t *env, ir_node *use, ir_node *def, constr_info *const use_info)
+static void set_operands(be_ssa_construction_env_t *env, ir_node *use,
+                         ir_node *def, constr_info *const use_info)
 {
 	foreach_irn_in(use, i, op) {
 		if (is_definition(env, op)) {
@@ -284,16 +280,15 @@ static void process_block(be_ssa_construction_env_t *env, ir_node *block)
 
 	sched_foreach(block, node) {
 		constr_info *const info = get_info(env, node);
-		if (!info)
+		if (info == NULL)
 			continue;
 
 		if (info->is_use && !is_Phi(node)) {
 			DBG((dbg, LEVEL_3, "\t...found use %+F\n", node));
 
-			if (def == NULL) {
-				/* Create a phi if the block is in the dominance frontier. */
+			/* Create a phi if the block is in the dominance frontier. */
+			if (def == NULL)
 				def = get_def_from_preds(env, block);
-			}
 
 			set_operands(env, node, def, info);
 		}
@@ -322,15 +317,15 @@ static ir_node *search_def_end_of_block(be_ssa_construction_env_t *env,
 
 	if (has_definition(block)) {
 		if (has_use(env, block)) {
-			if (!block_info->already_processed) {
+			if (!block_info->already_processed)
 				process_block(env, block);
-			}
 		} else {
 			/* Search the last definition of the block. */
 			sched_foreach_reverse(block, def) {
 				constr_info const *const info = get_info(env, def);
 				if (info && info->is_definition) {
-					DBG((dbg, LEVEL_3, "\t...found definition %+F\n", info->u.definition));
+					DBG((dbg, LEVEL_3, "\t...found definition %+F\n",
+					     info->u.definition));
 					block_info->u.last_definition = info->u.definition;
 					break;
 				}
@@ -350,7 +345,8 @@ static ir_node *search_def_end_of_block(be_ssa_construction_env_t *env,
 /**
  * Fixes all operands of the given use.
  */
-static void search_def_at_block(be_ssa_construction_env_t *const env, ir_node *const use, constr_info *const info)
+static void search_def_at_block(be_ssa_construction_env_t *const env,
+                                ir_node *const use, constr_info *const info)
 {
 	ir_node     *block      = get_nodes_block(use);
 	constr_info *block_info = get_or_set_info(env, block);
@@ -371,10 +367,10 @@ void be_ssa_construction_init(be_ssa_construction_env_t *env, ir_graph *irg)
 	stat_ev_ctx_push_fmt("bessaconstr", "%+F", irg);
 	stat_ev_tim_push();
 
-	stat_ev_dbl("bessaconstr_n_blocks", get_Block_dom_max_subtree_pre_num(get_irg_start_block(irg)));
+	stat_ev_dbl("bessaconstr_n_blocks",
+	            get_Block_dom_max_subtree_pre_num(get_irg_start_block(irg)));
 
 	memset(env, 0, sizeof(env[0]));
-
 	env->irg       = irg;
 	env->new_phis  = NEW_ARR_F(ir_node*, 0);
 	env->worklist  = new_waitq();
@@ -412,7 +408,7 @@ void be_ssa_construction_destroy(be_ssa_construction_env_t *env)
 
 static void determine_phi_req(be_ssa_construction_env_t *env, ir_node *value)
 {
-	const arch_register_req_t *req   = arch_get_irn_register_req(value);
+	const arch_register_req_t *req = arch_get_irn_register_req(value);
 	env->mode = get_irn_mode(value);
 	if (req->width == 1) {
 		env->phi_req = req->cls->class_req;
@@ -424,43 +420,35 @@ static void determine_phi_req(be_ssa_construction_env_t *env, ir_node *value)
 		new_req->cls   = req->cls;
 		new_req->type  = req->type & arch_register_req_type_aligned;
 		new_req->width = req->width;
-		env->phi_req = new_req;
+		env->phi_req   = new_req;
 	}
 }
 
 void be_ssa_construction_add_copy(be_ssa_construction_env_t *env,
                                   ir_node *copy)
 {
-	ir_node *block;
-
-	assert(env->iterated_domfront_calculated == 0);
-
+	assert(!env->iterated_domfront_calculated);
 	if (env->mode == NULL) {
 		determine_phi_req(env, copy);
 	} else {
 		assert(env->mode == get_irn_mode(copy));
 	}
 
-	block = get_nodes_block(copy);
-
-	if (!has_definition(block)) {
+	ir_node *block = get_nodes_block(copy);
+	if (!has_definition(block))
 		waitq_put(env->worklist, block);
-	}
 	introduce_definition(env, copy);
 }
 
 void be_ssa_construction_add_copies(be_ssa_construction_env_t *env,
                                     ir_node **copies, size_t copies_len)
 {
-	size_t i;
+	assert(!env->iterated_domfront_calculated);
 
-	assert(env->iterated_domfront_calculated == 0);
-
-	if (env->mode == NULL) {
+	if (env->mode == NULL)
 		determine_phi_req(env, copies[0]);
-	}
 
-	for (i = 0; i < copies_len; ++i) {
+	for (size_t i = 0; i < copies_len; ++i) {
 		ir_node *copy  = copies[i];
 		ir_node *block = get_nodes_block(copy);
 
@@ -503,14 +491,11 @@ static void fix_phi_arguments(be_ssa_construction_env_t *const env, ir_node *con
 void be_ssa_construction_fix_users_array(be_ssa_construction_env_t *env,
                                          ir_node **nodes, size_t nodes_len)
 {
-	size_t i;
-	stat_ev_cnt_decl(uses);
-
 	be_timer_push(T_SSA_CONSTR);
 
 	if (!env->iterated_domfront_calculated) {
 		mark_iterated_dominance_frontiers(env);
-		env->iterated_domfront_calculated = 1;
+		env->iterated_domfront_calculated = true;
 	}
 
 	DBG((dbg, LEVEL_1, "\tfixing users array\n"));
@@ -519,7 +504,7 @@ void be_ssa_construction_fix_users_array(be_ssa_construction_env_t *env,
 
 	stat_ev_tim_push();
 
-	for (i = 0; i < nodes_len; ++i) {
+	for (size_t i = 0; i < nodes_len; ++i) {
 		ir_node *value = nodes[i];
 		DBG((dbg, LEVEL_3, "\tfixing users of %+F\n", value));
 		introduce_definition(env, value);
@@ -533,6 +518,7 @@ void be_ssa_construction_fix_users_array(be_ssa_construction_env_t *env,
 		}
 	}
 
+	stat_ev_cnt_decl(uses);
 	while (!waitq_empty(env->worklist)) {
 		ir_node     *use  = (ir_node *)waitq_get(env->worklist);
 		constr_info *info = get_info(env, use);
@@ -551,12 +537,12 @@ void be_ssa_construction_fix_users_array(be_ssa_construction_env_t *env,
 	}
 
 	be_timer_pop(T_SSA_CONSTR);
-
 	stat_ev_tim_pop("bessaconstr_fix_time");
 	stat_ev_cnt_done(uses, "bessaconstr_uses");
 }
 
-void be_ssa_construction_fix_users(be_ssa_construction_env_t *env, ir_node *value)
+void be_ssa_construction_fix_users(be_ssa_construction_env_t *env,
+                                   ir_node *value)
 {
 	be_ssa_construction_fix_users_array(env, &value, 1);
 }
@@ -565,16 +551,11 @@ void be_ssa_construction_fix_users(be_ssa_construction_env_t *env, ir_node *valu
 void be_ssa_construction_update_liveness_phis(be_ssa_construction_env_t *env,
                                               be_lv_t *lv)
 {
-	int i, n;
-
 	be_timer_push(T_SSA_CONSTR);
-
-	n = ARR_LEN(env->new_phis);
-	for (i = 0; i < n; ++i) {
+	for (size_t i = 0, n = ARR_LEN(env->new_phis); i < n; ++i) {
 		ir_node *phi = env->new_phis[i];
 		be_liveness_introduce(lv, phi);
 	}
-
 	be_timer_pop(T_SSA_CONSTR);
 }
 

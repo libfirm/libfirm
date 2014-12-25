@@ -27,15 +27,12 @@ static copy_attr_func old_phi_copy_attr;
 
 void be_info_new_node(ir_graph *irg, ir_node *node)
 {
-	struct obstack *obst;
-	backend_info_t *info;
-
 	/* Projs need no be info, all info is fetched from their predecessor */
 	if (is_Proj(node))
 		return;
 
-	obst = be_get_be_obst(irg);
-	info = OALLOCZ(obst, backend_info_t);
+	struct obstack *obst = be_get_be_obst(irg);
+	backend_info_t *info = OALLOCZ(obst, backend_info_t);
 
 	assert(node->backend_info == NULL);
 	node->backend_info = info;
