@@ -50,7 +50,6 @@ typedef struct reloader_t reloader_t;
 struct reloader_t {
 	reloader_t *next;
 	ir_node    *reloader;
-	ir_node    *rematted_node;
 	int         remat_cost_delta; /** costs needed for rematerialization,
 	                                  compared to placing a reload */
 };
@@ -187,7 +186,6 @@ void be_add_reload(spill_env_t *env, ir_node *to_spill, ir_node *before)
 	reloader_t *rel       = OALLOC(&env->obst, reloader_t);
 	rel->next             = info->reloaders;
 	rel->reloader         = before;
-	rel->rematted_node    = NULL;
 	rel->remat_cost_delta = 0;
 
 	info->reloaders = rel;
@@ -683,11 +681,6 @@ void be_insert_spills_reloads(spill_env_t *env)
 			for (reloader_t *rld = si->reloaders; rld != NULL;
 			     rld = rld->next) {
 				ir_node *reloader = rld->reloader;
-				if (rld->rematted_node != NULL) {
-					DBG((dbg, LEVEL_2, "\tforced remat %+F before %+F\n",
-					     rld->rematted_node, reloader));
-					continue;
-				}
 				if (rld->remat_cost_delta >= REMAT_COST_INFINITE) {
 					DBG((dbg, LEVEL_2, "\treload before %+F is forbidden\n",
 					     reloader));
@@ -732,11 +725,7 @@ void be_insert_spills_reloads(spill_env_t *env)
 		/* go through all reloads for this spill */
 		for (reloader_t *rld = si->reloaders; rld != NULL; rld = rld->next) {
 			ir_node *copy; /* a reload is a "copy" of the original value */
-			if (rld->rematted_node != NULL) {
-				copy = rld->rematted_node;
-				sched_add_before(rld->reloader, copy);
-			} else if (be_do_remats &&
-					(force_remat || rld->remat_cost_delta < 0)) {
+			if (be_do_remats && (force_remat || rld->remat_cost_delta < 0)) {
 				copy = do_remat(env, to_spill, rld->reloader);
 				++env->remat_count;
 			} else {
