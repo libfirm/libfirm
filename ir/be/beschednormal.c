@@ -290,10 +290,6 @@ static void real_sched_block(ir_node *block, void *data)
 	 * anyway. */
 	for (int i = ARR_LEN(sched); i-- > 0; ) {
 		ir_node *irn = sched[i];
-		/* exclude IncSP so they are scheduled late, this is often benefitial
-		 * for the ia32 IncSP -> Push/Pop peephole optimization */
-		if (be_is_IncSP(irn))
-			continue;
 		set_irn_link(irn, first);
 		first = irn;
 	}
