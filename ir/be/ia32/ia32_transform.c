@@ -5615,7 +5615,6 @@ static void register_transformers(void)
 	be_set_transform_function(op_ia32_GetEIP,      be_duplicate_node);
 	be_set_transform_function(op_ia32_l_Adc,       gen_ia32_l_Adc);
 	be_set_transform_function(op_ia32_l_Add,       gen_ia32_l_Add);
-	be_set_transform_function(op_ia32_Leave,       be_duplicate_node);
 	be_set_transform_function(op_ia32_l_FloattoLL, gen_ia32_l_FloattoLL);
 	be_set_transform_function(op_ia32_l_IMul,      gen_ia32_l_IMul);
 	be_set_transform_function(op_ia32_l_LLtoFloat, gen_ia32_l_LLtoFloat);
