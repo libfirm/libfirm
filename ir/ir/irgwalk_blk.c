@@ -122,6 +122,14 @@ static void traverse_block_post(ir_node *block, block_entry_t *entry,
 	}
 }
 
+static void free_block_entry(block_entry_t *entry)
+{
+	DEL_ARR_F(entry->entry_list);
+	DEL_ARR_F(entry->phi_list);
+	DEL_ARR_F(entry->df_list);
+	DEL_ARR_F(entry->cf_list);
+}
+
 /**
  * Traverse the pre order only, from End to Start.
  */
@@ -132,11 +140,7 @@ static void traverse_pre(blk_collect_data_t *blks, irg_walk_func *pre, void *env
 		block_entry_t *entry = block_find_entry(block, blks);
 
 		traverse_block_pre(block, entry, pre, env);
-
-		DEL_ARR_F(entry->entry_list);
-		DEL_ARR_F(entry->phi_list);
-		DEL_ARR_F(entry->df_list);
-		DEL_ARR_F(entry->cf_list);
+		free_block_entry(entry);
 	}
 }
 
@@ -151,11 +155,7 @@ static void traverse_post(blk_collect_data_t *blks, irg_walk_func *post,
 		block_entry_t *entry = block_find_entry(block, blks);
 
 		traverse_block_post(block, entry, post, env);
-
-		DEL_ARR_F(entry->entry_list);
-		DEL_ARR_F(entry->phi_list);
-		DEL_ARR_F(entry->df_list);
-		DEL_ARR_F(entry->cf_list);
+		free_block_entry(entry);
 	}
 }
 
@@ -206,6 +206,7 @@ static void dom_block_visit_pre(ir_node *block, void *env)
 	dom_traversal_t *ctx   = (dom_traversal_t*)env;
 	block_entry_t   *entry = block_find_entry(block, ctx->blks);
 	traverse_block_pre(block, entry, ctx->pre, ctx->env);
+	free_block_entry(entry);
 }
 
 /**
@@ -216,6 +217,7 @@ static void dom_block_visit_post(ir_node *block, void *env)
 	dom_traversal_t *ctx   = (dom_traversal_t*)env;
 	block_entry_t   *entry = block_find_entry(block, ctx->blks);
 	traverse_block_post(block, entry, ctx->post, ctx->env);
+	free_block_entry(entry);
 }
 
 /**
@@ -227,6 +229,7 @@ static void dom_block_visit_both(ir_node *block, void *env)
 	block_entry_t   *entry = block_find_entry(block, ctx->blks);
 	traverse_block_pre(block, entry, ctx->pre, ctx->env);
 	traverse_block_post(block, entry, ctx->post, ctx->env);
+	free_block_entry(entry);
 }
 
 /**
