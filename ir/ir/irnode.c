@@ -89,7 +89,6 @@ ir_node *new_ir_node(dbg_info *db, ir_graph *irg, ir_node *block, ir_op *op,
 	res->visited  = 0;
 	res->node_idx = irg_register_node_idx(irg, res);
 	res->link     = NULL;
-	res->deps     = NULL;
 
 	if (arity < 0) {
 		res->in = NEW_ARR_F(ir_node *, 1);  /* 1: space for block */
@@ -246,60 +245,6 @@ static void remove_irn_n(ir_node *node, int n)
 void remove_Sync_n(ir_node *n, int i)
 {
 	remove_irn_n(n, i);
-}
-
-int (get_irn_n_deps)(const ir_node *node)
-{
-	return get_irn_n_deps_(node);
-}
-
-ir_node *(get_irn_dep)(const ir_node *node, int pos)
-{
-	return get_irn_dep_(node, pos);
-}
-
-void set_irn_dep(ir_node *node, int pos, ir_node *dep)
-{
-	assert(node->deps != NULL);
-	assert(pos >= 0 && pos < (int)ARR_LEN(node->deps));
-	assert(dep != NULL);
-	ir_node *old = node->deps[pos];
-	node->deps[pos] = dep;
-	ir_graph *irg = get_irn_irg(node);
-	if (edges_activated_kind(irg, EDGE_KIND_DEP))
-		edges_notify_edge_kind(node, pos, dep, old, EDGE_KIND_DEP, irg);
-}
-
-void add_irn_dep(ir_node *node, ir_node *dep)
-{
-	assert(dep != NULL);
-	if (node->deps == NULL)
-		node->deps = NEW_ARR_F(ir_node *, 0);
-	ARR_APP1(ir_node*, node->deps, dep);
-	ir_graph *irg = get_irn_irg(node);
-	if (edges_activated_kind(irg, EDGE_KIND_DEP))
-		edges_notify_edge_kind(node, ARR_LEN(node->deps)-1, dep, NULL, EDGE_KIND_DEP, irg);
-}
-
-void delete_irn_dep(ir_node *node, ir_node *dep)
-{
-	if (node->deps == NULL)
-		return;
-
-	for (size_t i = 0, n_deps = ARR_LEN(node->deps); i < n_deps; ++i) {
-		if (node->deps[i] == dep) {
-			set_irn_dep(node, i, node->deps[n_deps-1]);
-			edges_notify_edge(node, i, NULL, dep, get_irn_irg(node));
-			ARR_SHRINKLEN(node->deps, n_deps-1);
-			break;
-		}
-	}
-}
-
-void add_irn_deps(ir_node *const tgt, ir_node const *const src)
-{
-	for (int i = 0, n = get_irn_n_deps(src); i < n; ++i)
-		add_irn_dep(tgt, get_irn_dep(src, i));
 }
 
 

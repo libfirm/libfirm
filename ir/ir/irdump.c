@@ -1153,25 +1153,6 @@ void dump_ir_data_edges(FILE *F, const ir_node *n)
 		return;
 	}
 
-	/* dump the dependency edges. */
-	for (int i = 0, n_deps = get_irn_n_deps(n); i < n_deps; ++i) {
-		ir_node *dep = get_irn_dep(n, i);
-
-		if (dep) {
-			print_node_edge_kind(F, n);
-			fprintf(F, "{sourcename: ");
-			print_nodeid(F, n);
-			fprintf(F, " targetname: ");
-			if ((get_opt_dump_const_local()) && is_irn_constlike(dep)) {
-				print_constid(F, n, dep);
-			} else {
-				print_nodeid(F, dep);
-			}
-			fprintf(F, " label: \"%d\" ", i);
-			fprintf(F, " color: darkgreen}\n");
-		}
-	}
-
 	foreach_irn_in(n, i, pred) {
 		if ((flags & ir_dump_flag_back_edges) && is_backedge(n, i)) {
 			fprintf(F, "backedge: {sourcename: ");

@@ -414,7 +414,6 @@ struct ir_node {
 	struct dbg_info  *dbi;   /**< A pointer to information for debug support. */
 	/* ------- For analyses -------- */
 	ir_loop *loop;           /**< the loop the node is in. Access routines in irloop.h */
-	struct ir_node **deps;   /**< Additional dependencies induced by state. */
 	void            *backend_info;
 	irn_edges_info_t edge_info;  /**< Everlasting out edges. */
 

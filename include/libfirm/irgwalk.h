@@ -176,27 +176,6 @@ FIRM_API void irg_walk_blkwise_graph(ir_graph *irg, irg_walk_func *pre,
 /**
  * Walks over reachable nodes in block-wise topological order, i.e. visit
  * all nodes in a block before going to another block, starting at the end operation.
- * Executes pre before visiting the predecessor of a node, post after.
- * irg_walk_blkwise_graph() uses the visited flag in irg and the nodes to
- * determine visited nodes.
- * It executes inc_irg_visited() to generate a new flag. It marks the node as
- * visited before executing pre.
- * The void *env can be used to pass status information between the
- * pre and post functions.  Does not use the link fields.
- * This walker also follows dependency edges.
- *
- * @param irg   the irg graph
- * @param pre   walker function, executed before the predecessor of a node are visited
- * @param post  walker function, executed after the predecessor of a node are visited
- * @param env   environment, passed to pre and post
- */
-FIRM_API void irg_walk_in_or_dep_blkwise_graph(ir_graph *irg,
-                                               irg_walk_func *pre,
-                                               irg_walk_func *post, void *env);
-
-/**
- * Walks over reachable nodes in block-wise topological order, i.e. visit
- * all nodes in a block before going to another block, starting at the end operation.
  * Visit the blocks in dominator tree top-down order.
  * Executes pre before visiting the predecessor of a node, post after.
  * irg_walk_blkwise_graph() uses the visited flag in irg and the nodes to

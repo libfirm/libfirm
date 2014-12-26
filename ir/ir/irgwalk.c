@@ -158,8 +158,7 @@ static void irg_walk_in_or_dep_2_pre(ir_node *node, irg_walk_func *pre,
 		if (pred->visited < visited)
 			irg_walk_in_or_dep_2_pre(pred, pre, env);
 	}
-	for (int i = get_irn_ins_or_deps(node); i-- > 0; ) {
-		ir_node *pred = get_irn_in_or_dep(node, i);
+	foreach_irn_in_r(node, i, pred) {
 		if (pred->visited < visited)
 			irg_walk_in_or_dep_2_pre(pred, pre, env);
 	}
@@ -181,8 +180,7 @@ static void irg_walk_in_or_dep_2_post(ir_node *node, irg_walk_func *post,
 		if (pred->visited < visited)
 			irg_walk_in_or_dep_2_post(pred, post, env);
 	}
-	for (int i = get_irn_ins_or_deps(node); i-- > 0; ) {
-		ir_node *pred = get_irn_in_or_dep(node, i);
+	foreach_irn_in_r(node, i, pred) {
 		if (pred->visited < visited)
 			irg_walk_in_or_dep_2_post(pred, post, env);
 	}
@@ -208,8 +206,7 @@ static void irg_walk_in_or_dep_2_both(ir_node *node, irg_walk_func *pre,
 		if (pred->visited < visited)
 			irg_walk_in_or_dep_2_both(pred, pre, post, env);
 	}
-	for (int i = get_irn_ins_or_deps(node); i-- > 0; ) {
-		ir_node *pred = get_irn_in_or_dep(node, i);
+	foreach_irn_in_r(node, i, pred) {
 		if (pred->visited < visited)
 			irg_walk_in_or_dep_2_both(pred, pre, post, env);
 	}

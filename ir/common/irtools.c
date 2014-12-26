@@ -61,9 +61,6 @@ ir_node *irn_copy_into_irg(const ir_node *node, ir_graph *irg)
 	/* copy the attributes */
 	copy_node_attr(irg, node, res);
 
-	/* duplicate dependency edges */
-	add_irn_deps(res, node);
-
 	return res;
 }
 
@@ -89,12 +86,6 @@ void irn_rewire_inputs(ir_node *node)
 	foreach_irn_in(node, i, in) {
 		ir_node *new_in = get_new_node(in);
 		set_irn_n(new_node, i, new_in);
-	}
-
-	for (int i = 0, n_deps = get_irn_n_deps(new_node); i < n_deps; ++i) {
-		ir_node *dep     = get_irn_dep(node, i);
-		ir_node *new_dep = get_new_node(dep);
-		set_irn_dep(new_node, i, new_dep);
 	}
 
 	/* Now the new node is complete. We can add it to the hash table for CSE. */

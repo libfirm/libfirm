@@ -52,20 +52,6 @@ bool be_is_transformed(const ir_node *node)
 	return irn_visited(node);
 }
 
-/**
- * Duplicate all dependency edges of a node.
- */
-static void be_duplicate_deps(ir_node *old_node, ir_node *new_node)
-{
-	int deps = get_irn_n_deps(old_node);
-	for (int i = 0; i < deps; ++i) {
-		ir_node *dep     = get_irn_dep(old_node, i);
-		ir_node *new_dep = be_transform_node(dep);
-
-		add_irn_dep(new_node, new_dep);
-	}
-}
-
 ir_node *be_transform_phi(ir_node *node, const arch_register_req_t *req)
 {
 	ir_node  *block = be_transform_node(get_nodes_block(node));
@@ -79,7 +65,6 @@ ir_node *be_transform_phi(ir_node *node, const arch_register_req_t *req)
 	ir_mode  *mode  = req->cls != NULL ? req->cls->mode : get_irn_mode(node);
 	ir_node  *phi   = new_ir_node(dbgi, irg, block, op_Phi, mode, arity, ins);
 	copy_node_attr(irg, node, phi);
-	be_duplicate_deps(node, phi);
 
 	backend_info_t *info = be_get_info(phi);
 	struct obstack *obst = be_get_be_obst(irg);
@@ -137,7 +122,6 @@ static ir_node *transform_end(ir_node *node)
 	ir_node  *block   = be_transform_node(get_nodes_block(node));
 	ir_node  *new_end = new_ir_node(dbgi, irg, block, op_End, mode_X, -1, NULL);
 	copy_node_attr(irg, node, new_end);
-	be_duplicate_deps(node, new_end);
 
 	set_irg_end(irg, new_end);
 
@@ -183,8 +167,6 @@ ir_node *be_duplicate_node(ir_node *const node)
 
 	ir_node *const block    = be_transform_node(get_nodes_block(node));
 	ir_node *const new_node = new_similar_node(node, block, ins);
-
-	be_duplicate_deps(node, new_node);
 
 	new_node->node_nr = node->node_nr;
 	return new_node;
@@ -258,19 +240,6 @@ static void fix_loops(ir_node *node)
 	if (is_Proj(node)) {
 		set_nodes_block(node, get_nodes_block(get_Proj_pred(node)));
 		changed = true;
-	}
-
-	for (int i = 0, arity = get_irn_n_deps(node); i < arity; ++i) {
-		ir_node *in = get_irn_dep(node, i);
-		ir_node *nw = (ir_node*)get_irn_link(in);
-
-		if (nw != NULL && nw != in) {
-			set_irn_dep(node, i, nw);
-			in = nw;
-			changed = true;
-		}
-
-		fix_loops(in);
 	}
 
 	if (changed) {

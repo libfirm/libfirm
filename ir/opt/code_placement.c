@@ -226,14 +226,7 @@ static ir_node *get_deepest_common_dom_ancestor(ir_node *node, ir_node *dca)
 			dca = consumer_dom_dca(dca, succ, node);
 		}
 	}
-	if (dca == NULL)
-		return NULL;
 
-	foreach_out_edge_kind(node, edge, EDGE_KIND_DEP) {
-		ir_node *succ = get_edge_src_irn(edge);
-		assert(is_block_reachable(get_nodes_block(succ)));
-		dca = consumer_dom_dca(dca, succ, node);
-	}
 	return dca;
 }
 

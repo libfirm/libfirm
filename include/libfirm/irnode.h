@@ -62,56 +62,6 @@ FIRM_API ir_node *get_irn_n(const ir_node *node, int n);
  * the nodes opcode. */
 FIRM_API void set_irn_in(ir_node *node, int arity, ir_node *const in[]);
 
-/**
- * Add an artificial dependency to the node.
- *
- * @param node The node.
- * @param dep  The dependency target.
- */
-FIRM_API void add_irn_dep(ir_node *node, ir_node *dep);
-
-/**
- * Copy all dependencies from a node to another.
- * This is only allowed in phase_backend!
- *
- * @param tgt The node which should be enriched.
- * @param src The node whose dependencies shall be copied.
- */
-FIRM_API void add_irn_deps(ir_node *tgt, ir_node const *src);
-
-/**
- * Returns the number of dependency predecessors/edges of node @p node.
- * @param node The node.
- * @return The length of the dependency array or 0 if it has not yet been
- *         allocated.
- */
-FIRM_API int get_irn_n_deps(const ir_node *node);
-
-/**
- * Returns an entry of the dependency array.
- * @param node The node.
- * @param pos  The position.
- * @return The node at that position.
- */
-FIRM_API ir_node *get_irn_dep(const ir_node *node, int pos);
-
-/**
- * Sets an entry of the dependency array.
- * @param node The node.
- * @param pos  The position.
- * @param dep  The dependency target.
- */
-FIRM_API void set_irn_dep(ir_node *node, int pos, ir_node *dep);
-
-/**
- * Deletes the entry of the dependency array, that points to dep. Does nothing
- * if no dependency exists.
- *
- * @param node the node to delete the dependency at
- * @param dep the target of the dependency to delete
- */
-FIRM_API void delete_irn_dep(ir_node *node, ir_node *dep);
-
 /** Replaces the n-th predecessor of a node with a new one. */
 FIRM_API void set_irn_n(ir_node *node, int n, ir_node *in);
 /**

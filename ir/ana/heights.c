@@ -92,8 +92,7 @@ static bool search(ir_heights_t *h, const ir_node *curr, const ir_node *tgt)
 	h_curr->visited = h->visited;
 
 	/* Start a search from this node. */
-	for (int i = 0, n = get_irn_ins_or_deps(curr); i < n; ++i) {
-		ir_node *op = get_irn_in_or_dep(curr, i);
+	foreach_irn_in(curr, i, op) {
 		if (search(h, op, tgt))
 			return true;
 	}
@@ -145,16 +144,6 @@ static unsigned compute_height(ir_heights_t *h, ir_node *irn, const ir_node *bl)
 		}
 	}
 
-	foreach_out_edge_kind(irn, edge, EDGE_KIND_DEP) {
-		ir_node *dep = get_edge_src_irn(edge);
-
-		assert(!is_Phi(dep));
-		if (!is_Block(dep) && get_nodes_block(dep) == bl) {
-			unsigned dep_height = compute_height(h, dep, bl);
-			ih->height          = MAX(ih->height, dep_height+1);
-		}
-	}
-
 	return ih->height;
 }
 
@@ -164,13 +153,6 @@ static unsigned compute_heights_in_block(ir_node *bl, ir_heights_t *h)
 
 	int max_height = -1;
 	foreach_out_edge(bl, edge) {
-		ir_node *dep = get_edge_src_irn(edge);
-		int     curh = compute_height(h, dep, bl);
-
-		max_height = MAX(curh, max_height);
-	}
-
-	foreach_out_edge_kind(bl, edge, EDGE_KIND_DEP) {
 		ir_node *dep = get_edge_src_irn(edge);
 		int     curh = compute_height(h, dep, bl);
 

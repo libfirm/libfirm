@@ -76,9 +76,6 @@ static bool can_move(ir_node *node, ir_node *after)
 	ir_node *node_block = get_nodes_block(node);
 	assert(node_block == get_nodes_block(after));
 
-	/* TODO respect dep edges */
-	assert(get_irn_n_edges_kind(node, EDGE_KIND_DEP) == 0);
-
 	/** all users have to be after the after node */
 	foreach_out_edge(node, edge) {
 		ir_node *out = get_edge_src_irn(edge);

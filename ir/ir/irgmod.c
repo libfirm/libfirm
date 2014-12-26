@@ -55,11 +55,7 @@ void exchange(ir_node *old, ir_node *nw)
 	/* If new outs are on, we can skip the id node creation and reroute
 	 * the edges from the old node to the new directly. */
 	if (edges_activated(irg)) {
-		/* copy all dependencies from old to new */
-		add_irn_deps(nw, old);
-
 		edges_reroute(old, nw);
-		edges_reroute_kind(old, nw, EDGE_KIND_DEP);
 		edges_node_deleted(old);
 		/* noone is allowed to reference this node anymore */
 		set_irn_op(old, op_Deleted);

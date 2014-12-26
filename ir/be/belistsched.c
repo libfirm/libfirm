@@ -100,12 +100,6 @@ static void try_make_ready(ir_node *node)
 			    && !is_available(op))
 				return;
 		}
-		for (int i = 0, n_deps = get_irn_n_deps(node); i < n_deps; ++i) {
-			ir_node *op = get_irn_dep(node, i);
-			if (!is_Block(op) && get_nodes_block(op) == current_block
-			    && !is_available(op))
-				return;
-		}
 	}
 	node_ready(node);
 }
@@ -118,12 +112,6 @@ static void make_available(ir_node *node)
 
     /* check users, they might be ready now */
 	foreach_out_edge(node, edge) {
-		ir_node *user = get_edge_src_irn(edge);
-		if (!is_Block(user) && get_nodes_block(user) == current_block
-		    && !is_Phi(user))
-			try_make_ready(user);
-	}
-	foreach_out_edge_kind(node, edge, EDGE_KIND_DEP) {
 		ir_node *user = get_edge_src_irn(edge);
 		if (!is_Block(user) && get_nodes_block(user) == current_block
 		    && !is_Phi(user))

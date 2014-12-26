@@ -114,7 +114,6 @@ static ir_node *get_irn_safe_n(const ir_node *node, int n)
 static const ir_edge_kind_info_t edge_kind_info[EDGE_KIND_LAST+1] = {
 	{ "normal"     , set_irn_n,   -1, get_irn_arity,  get_irn_safe_n },
 	{ "block succs", NULL,         0, get_irn_arity,  get_block_n    },
-	{ "dependency",  set_irn_dep,  0, get_irn_n_deps, get_irn_dep    }
 };
 
 #define foreach_tgt(irn, i, n, kind) for (int i = edge_kind_info[kind].first_idx, n = edge_kind_info[kind].get_arity(irn); i < n; ++i)
@@ -275,9 +274,7 @@ static void delete_edge(ir_node *src, int pos, ir_node *old_tgt,
 	edge_change_cnt(old_tgt_info, -1);
 }
 
-void edges_notify_edge_kind(ir_node *src, int pos, ir_node *tgt,
-                            ir_node *old_tgt, ir_edge_kind_t kind,
-                            ir_graph *irg)
+static void edges_notify_edge_kind(ir_node *src, int pos, ir_node *tgt, ir_node *old_tgt, ir_edge_kind_t kind, ir_graph *irg)
 {
 	assert(edges_activated_kind(irg, kind));
 	if (old_tgt == NULL) {
@@ -454,38 +451,6 @@ static void init_lh_walker(ir_node *irn, void *data)
 	get_irn_edge_info(irn, kind)->out_count   = 0;
 }
 
-/**
- * Pre-Walker: initializes the list-heads and set the out-count
- * of all nodes to 0.
- *
- * Additionally touches DEP nodes, as they might be DEAD.
- * THIS IS UGLY, but I don't find a better way until we
- *
- * a) ensure that dead nodes are not used as input
- * b) it might be sufficient to add those stupid NO_REG nodes
- * to the anchor
- */
-static void init_lh_walker_dep(ir_node *irn, void *data)
-{
-	build_walker   *w    = (build_walker*)data;
-	ir_edge_kind_t  kind = w->kind;
-	list_head      *head = &get_irn_edge_info(irn, kind)->outs_head;
-
-	INIT_LIST_HEAD(head);
-	get_irn_edge_info(irn, kind)->edges_built = 0;
-	get_irn_edge_info(irn, kind)->out_count   = 0;
-
-	for (int i = get_irn_n_deps(irn) - 1; i >= 0; --i) {
-		ir_node *dep = get_irn_dep(irn, i);
-
-		head = &get_irn_edge_info(dep, kind)->outs_head;
-
-		INIT_LIST_HEAD(head);
-		get_irn_edge_info(dep, kind)->edges_built = 0;
-		get_irn_edge_info(dep, kind)->out_count   = 0;
-	}
-}
-
 void edges_activate_kind(ir_graph *irg, ir_edge_kind_t kind)
 {
 	/*
@@ -517,12 +482,7 @@ void edges_activate_kind(ir_graph *irg, ir_edge_kind_t kind)
 
 	info->activated = 1;
 	edges_init_graph_kind(irg, kind);
-	if (kind == EDGE_KIND_DEP) {
-		irg_walk_anchors(irg, init_lh_walker_dep, NULL, &w);
-		/* Argh: Dep nodes might be dead, so we MUST visit identities first */
-		visit_all_identities(irg, init_lh_walker_dep, &w);
-		irg_walk_anchors(irg, NULL, build_edges_walker, &w);
-	} else if (kind == EDGE_KIND_BLOCK) {
+	if (kind == EDGE_KIND_BLOCK) {
 		visit_all_identities(irg, init_lh_walker, &w);
 		irg_block_walk_graph(irg, init_lh_walker, build_edges_walker, &w);
 	} else {
@@ -785,12 +745,10 @@ void edges_activate(ir_graph *irg)
 {
 	edges_activate_kind(irg, EDGE_KIND_NORMAL);
 	edges_activate_kind(irg, EDGE_KIND_BLOCK);
-	edges_activate_kind(irg, EDGE_KIND_DEP);
 }
 
 void edges_deactivate(ir_graph *irg)
 {
-	edges_deactivate_kind(irg, EDGE_KIND_DEP);
 	edges_deactivate_kind(irg, EDGE_KIND_BLOCK);
 	edges_deactivate_kind(irg, EDGE_KIND_NORMAL);
 }
@@ -799,7 +757,6 @@ void assure_edges(ir_graph *irg)
 {
 	assure_edges_kind(irg, EDGE_KIND_BLOCK);
 	assure_edges_kind(irg, EDGE_KIND_NORMAL);
-	assure_edges_kind(irg, EDGE_KIND_DEP);
 	add_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
 }
 
@@ -812,7 +769,6 @@ void assure_edges_kind(ir_graph *irg, ir_edge_kind_t kind)
 void edges_node_deleted(ir_node *irn)
 {
 	edges_node_deleted_kind(irn, EDGE_KIND_NORMAL);
-	edges_node_deleted_kind(irn, EDGE_KIND_DEP);
 	if (is_Block(irn)) {
 		edges_node_deleted_kind(irn, EDGE_KIND_BLOCK);
 	}

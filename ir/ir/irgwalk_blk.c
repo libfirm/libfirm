@@ -17,19 +17,13 @@
 #include "hashptr.h"
 #include "ircons.h"
 
-#define _get_walk_arity(env, node) \
-	((env)->follow_deps ? get_irn_ins_or_deps((node)) : get_irn_arity((node)))
-#define _get_walk_irn_n(env, node, pos) \
-	((env)->follow_deps ? get_irn_in_or_dep((node), (pos)) : get_irn_n((node), (pos)))
-
 /**
  * Metadata for block walker.
  */
 typedef struct blk_collect_data_t {
-	struct obstack obst;        /**< obstack to allocate objects on */
-	pset          *blk_map;     /**< Hash map: Block -> List */
-	ir_node      **blk_list;    /**< the Block list */
-	bool           follow_deps; /**< follow dependency edges */
+	struct obstack obst;     /**< obstack to allocate objects on */
+	pset          *blk_map;  /**< Hash map: Block -> List */
+	ir_node      **blk_list; /**< the Block list */
 } blk_collect_data_t;
 
 /**
@@ -262,8 +256,7 @@ static void collect_walk(ir_node *node, blk_collect_data_t *env)
 
 	if (is_Block(node)) {
 		/* predecessors of a block are control flow nodes */
-		for (int i = _get_walk_arity(env, node) - 1; i >= 0; --i) {
-			ir_node *pred = _get_walk_irn_n(env, node, i);
+		foreach_irn_in_r(node, i, pred) {
 			if (irn_visited(pred))
 				continue;
 
@@ -286,8 +279,7 @@ static void collect_walk(ir_node *node, blk_collect_data_t *env)
 			collect_walk(block, env);
 
 		bool is_phi = is_Phi(node);
-		for (int i = _get_walk_arity(env, node) - 1; i >= 0; --i) {
-			ir_node *pred = _get_walk_irn_n(env, node, i);
+		foreach_irn_in_r(node, i, pred) {
 			if (irn_visited(pred))
 				continue;
 
@@ -322,8 +314,7 @@ static void collect_blks_lists(ir_node *node, ir_node *block,
 	 * outside the current block because Phi edges are always
 	 * "outside". */
 	if (!is_Phi(node)) {
-		for (int i = _get_walk_arity(env, node) - 1; i >= 0; --i) {
-			ir_node *pred = _get_walk_irn_n(env, node, i);
+		foreach_irn_in_r(node, i, pred) {
 			/* BEWARE: predecessors of End nodes might be blocks */
 			if (is_Block(pred))
 				continue;
@@ -371,7 +362,7 @@ static void collect_lists(ir_graph *const irg, blk_collect_data_t *const env)
  * Intra procedural graph walker over blocks.
  */
 static void do_irg_walk_blk(ir_graph *irg, irg_walk_func *pre,
-                            irg_walk_func *post, void *env, bool follow_deps,
+                            irg_walk_func *post, void *env,
                             void (*traverse)(ir_graph *irg,
                                              blk_collect_data_t* blks,
                                              irg_walk_func *pre,
@@ -379,9 +370,8 @@ static void do_irg_walk_blk(ir_graph *irg, irg_walk_func *pre,
 {
 	blk_collect_data_t blks;
 	obstack_init(&blks.obst);
-	blks.blk_map     = new_pset(addr_cmp, 1);
-	blks.blk_list    = NEW_ARR_F(ir_node *, 0);
-	blks.follow_deps = follow_deps;
+	blks.blk_map  = new_pset(addr_cmp, 1);
+	blks.blk_list = NEW_ARR_F(ir_node*, 0);
 
 	/* first step: traverse the graph and fill the lists */
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_VISITED);
@@ -413,19 +403,12 @@ void irg_walk_blkwise_graph(ir_graph *irg, irg_walk_func *pre,
                             irg_walk_func *post, void *env)
 {
 	hook_irg_walk_blkwise(irg, (generic_func*)pre, (generic_func*)post);
-	do_irg_walk_blk(irg, pre, post, env, false, traverse_blocks);
-}
-
-void irg_walk_in_or_dep_blkwise_graph(ir_graph *irg, irg_walk_func *pre,
-                                      irg_walk_func *post, void *env)
-{
-	hook_irg_walk_blkwise(irg, (generic_func*)pre, (generic_func*)post);
-	do_irg_walk_blk(irg, pre, post, env, true, traverse_blocks);
+	do_irg_walk_blk(irg, pre, post, env, traverse_blocks);
 }
 
 void irg_walk_blkwise_dom_top_down(ir_graph *irg, irg_walk_func *pre,
                                    irg_walk_func *post, void *env)
 {
 	hook_irg_walk_blkwise(irg, (generic_func*)pre, (generic_func*)post);
-	do_irg_walk_blk(irg, pre, post, env, false, traverse_dom_blocks_top_down);
+	do_irg_walk_blk(irg, pre, post, env, traverse_dom_blocks_top_down);
 }

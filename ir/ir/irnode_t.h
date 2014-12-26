@@ -59,12 +59,6 @@
 #define get_irn_generic_attr_const(node)      get_irn_generic_attr_const_(node)
 #define get_irn_idx(node)                     get_irn_idx_(node)
 
-#define get_irn_n_deps(node)                  get_irn_n_deps_(node)
-#define get_irn_dep(node, pos)                get_irn_dep_(node, pos)
-
-#define get_irn_ins_or_deps(node)             get_irn_ins_or_deps_(node)
-#define get_irn_in_or_dep(node, pos)          get_irn_in_or_dep_(node, pos)
-
 #define get_irn_dbg_info(node)                get_irn_dbg_info_(node)
 #define set_irn_dbg_info(node, db)            set_irn_dbg_info_(node, db)
 
@@ -175,31 +169,6 @@ static inline ir_node *get_irn_n_(const ir_node *node, int n)
 static inline unsigned hash_irn(const ir_node *node)
 {
 	return (unsigned) get_irn_idx(node);
-}
-
-static inline int get_irn_n_deps_(const ir_node *node)
-{
-	return node->deps ? (int)ARR_LEN(node->deps) : 0;
-}
-
-static inline ir_node *get_irn_dep_(const ir_node *node, int pos)
-{
-	assert(pos >= 0 && pos < (int)ARR_LEN(node->deps) && "dependency index out of range");
-	return node->deps[pos];
-}
-
-/* forward declaration outside iredges_t.h to avoid circular include problems */
-void edges_notify_edge_kind(ir_node *src, int pos, ir_node *tgt, ir_node *old_tgt, ir_edge_kind_t kind, ir_graph *irg);
-
-static inline int get_irn_ins_or_deps_(const ir_node *irn)
-{
-	return get_irn_n_deps_(irn) + get_irn_arity_(irn);
-}
-
-static inline ir_node *get_irn_in_or_dep_(const ir_node *irn, int pos)
-{
-	int n_in = get_irn_arity(irn);
-	return pos < n_in ? get_irn_n(irn, pos) : get_irn_dep(irn, pos - n_in);
 }
 
 /**
