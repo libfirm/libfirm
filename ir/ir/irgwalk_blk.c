@@ -23,20 +23,20 @@
 	((env)->follow_deps ? get_irn_in_or_dep((node), (pos)) : get_irn_n((node), (pos)))
 
 /**
- * Metadata for block walker
+ * Metadata for block walker.
  */
 typedef struct blk_collect_data_t {
-	struct obstack obst;            /**< obstack to allocate objects on */
-	pset           *blk_map;        /**< Hash map: Block -> List */
-	ir_node        **blk_list;      /**< the Block list */
-	unsigned       follow_deps : 1; /**< follow dependency edges */
+	struct obstack obst;        /**< obstack to allocate objects on */
+	pset          *blk_map;     /**< Hash map: Block -> List */
+	ir_node      **blk_list;    /**< the Block list */
+	bool           follow_deps; /**< follow dependency edges */
 } blk_collect_data_t;
 
 /**
- * An entry for a block in the blk_map
+ * An entry for a block in the blk_map.
  */
 typedef struct block_entry_t {
-	ir_node *block;       /**< the block */
+	ir_node  *block;      /**< the block */
 	ir_node **phi_list;   /**< the list of Phi instruction */
 	ir_node **df_list;    /**< the list of data flow instruction */
 	ir_node **cf_list;    /**< the list of control flow instructions */
@@ -44,59 +44,54 @@ typedef struct block_entry_t {
 } block_entry_t;
 
 /**
- * compare two block_entries
+ * Compare two block_entries.
  */
 static int addr_cmp(const void *elt, const void *key)
 {
 	const block_entry_t *e1 = (const block_entry_t*)elt;
 	const block_entry_t *e2 = (const block_entry_t*)key;
-
 	return e1->block != e2->block;
 }
 
 /**
- * Returns the associates block_entry_t for an block
+ * Returns the associates block_entry_t for an block.
  */
 static block_entry_t *block_find_entry(ir_node *block, blk_collect_data_t *ctx)
 {
 	block_entry_t key;
-	block_entry_t *elem;
-
 	key.block = block;
-	elem = (block_entry_t*)pset_find(ctx->blk_map, &key, hash_ptr(block));
-	if (elem)
+	block_entry_t *elem
+		= (block_entry_t*)pset_find(ctx->blk_map, &key, hash_ptr(block));
+	if (elem != NULL)
 		return elem;
 
 	elem = OALLOC(&ctx->obst, block_entry_t);
-
 	elem->block      = block;
 	elem->phi_list   = NEW_ARR_F(ir_node *, 0);
 	elem->df_list    = NEW_ARR_F(ir_node *, 0);
 	elem->cf_list    = NEW_ARR_F(ir_node *, 0);
 	elem->entry_list = NEW_ARR_F(ir_node *, 0);
-
 	return (block_entry_t*)pset_insert(ctx->blk_map, elem, hash_ptr(block));
 }
 
 /**
  * Traverse a block in pre order.
  */
-static void traverse_block_pre(ir_node *block, block_entry_t *entry, irg_walk_func *pre, void *env)
+static void traverse_block_pre(ir_node *block, block_entry_t *entry,
+                               irg_walk_func *pre, void *env)
 {
-	size_t j;
-
-	for (j = ARR_LEN(entry->cf_list); j > 0;) {
-		ir_node *node = entry->cf_list[--j];
+	for (size_t j = ARR_LEN(entry->cf_list); j-- > 0;) {
+		ir_node *node = entry->cf_list[j];
 		pre(node, env);
 	}
 
-	for (j = ARR_LEN(entry->df_list); j > 0;) {
-		ir_node *node = entry->df_list[--j];
+	for (size_t j = ARR_LEN(entry->df_list); j-- > 0;) {
+		ir_node *node = entry->df_list[j];
 		pre(node, env);
 	}
 
-	for (j = ARR_LEN(entry->phi_list); j > 0;) {
-		ir_node *node = entry->phi_list[--j];
+	for (size_t j = ARR_LEN(entry->phi_list); j-- > 0;) {
+		ir_node *node = entry->phi_list[j];
 		pre(node, env);
 	}
 
@@ -109,35 +104,31 @@ static void traverse_block_pre(ir_node *block, block_entry_t *entry, irg_walk_fu
 static void traverse_block_post(ir_node *block, block_entry_t *entry,
                                 irg_walk_func *post, void *env)
 {
-	size_t j, n;
-
 	post(block, env);
 
-	for (j = 0, n = ARR_LEN(entry->phi_list); j < n; ++j) {
+	for (size_t j = 0, n = ARR_LEN(entry->phi_list); j < n; ++j) {
 		ir_node *node = entry->phi_list[j];
 		post(node, env);
 	}
 
-	for (j = 0, n = ARR_LEN(entry->df_list); j < n; ++j) {
+	for (size_t j = 0, n = ARR_LEN(entry->df_list); j < n; ++j) {
 		ir_node *node = entry->df_list[j];
 		post(node, env);
 	}
 
-	for (j = 0, n = ARR_LEN(entry->cf_list); j < n; ++j) {
+	for (size_t j = 0, n = ARR_LEN(entry->cf_list); j < n; ++j) {
 		ir_node *node = entry->cf_list[j];
 		post(node, env);
 	}
 }
 
 /**
- * traverse the pre order only, from End to Start
+ * Traverse the pre order only, from End to Start.
  */
 static void traverse_pre(blk_collect_data_t *blks, irg_walk_func *pre, void *env)
 {
-	size_t i;
-
-	for (i = ARR_LEN(blks->blk_list); i > 0;) {
-		ir_node       *block = blks->blk_list[--i];
+	for (size_t i = ARR_LEN(blks->blk_list); i-- > 0;) {
+		ir_node       *block = blks->blk_list[i];
 		block_entry_t *entry = block_find_entry(block, blks);
 
 		traverse_block_pre(block, entry, pre, env);
@@ -150,13 +141,12 @@ static void traverse_pre(blk_collect_data_t *blks, irg_walk_func *pre, void *env
 }
 
 /**
- * traverse the post order only, from Start to End
+ * Traverse the post order only, from Start to End.
  */
-static void traverse_post(blk_collect_data_t *blks, irg_walk_func *post, void *env)
+static void traverse_post(blk_collect_data_t *blks, irg_walk_func *post,
+                          void *env)
 {
-	size_t i, k;
-
-	for (i = 0, k = ARR_LEN(blks->blk_list); i < k; ++i) {
+	for (size_t i = 0, n = ARR_LEN(blks->blk_list); i < n; ++i) {
 		ir_node       *block = blks->blk_list[i];
 		block_entry_t *entry = block_find_entry(block, blks);
 
@@ -170,14 +160,13 @@ static void traverse_post(blk_collect_data_t *blks, irg_walk_func *post, void *e
 }
 
 /**
- * traverse both
+ * Traverse both.
  */
-static void traverse_both(blk_collect_data_t *blks, irg_walk_func *pre, irg_walk_func *post, void *env)
+static void traverse_both(blk_collect_data_t *blks, irg_walk_func *pre,
+                          irg_walk_func *post, void *env)
 {
-	size_t i;
-
-	for (i = ARR_LEN(blks->blk_list); i > 0;) {
-		ir_node       *block = blks->blk_list[--i];
+	for (size_t i = ARR_LEN(blks->blk_list); i-- > 0;) {
+		ir_node       *block = blks->blk_list[i];
 		block_entry_t *entry = block_find_entry(block, blks);
 
 		traverse_block_pre(block, entry, pre, env);
@@ -190,12 +179,16 @@ static void traverse_both(blk_collect_data_t *blks, irg_walk_func *pre, irg_walk
 /**
  * Do the traversal.
  */
-static void traverse_blocks(ir_graph *irg, blk_collect_data_t *blks, irg_walk_func *pre, irg_walk_func *post, void *env)
+static void traverse_blocks(ir_graph *irg, blk_collect_data_t *blks,
+                            irg_walk_func *pre, irg_walk_func *post, void *env)
 {
 	(void)irg;
-	if      (!post) traverse_pre (blks, pre, env);
-	else if (!pre)  traverse_post(blks, post, env);
-	else            traverse_both(blks, pre, post, env);
+	if (post == NULL)
+		traverse_pre(blks, pre, env);
+	else if (pre == NULL)
+		traverse_post(blks, post, env);
+	else
+		traverse_both(blks, pre, post, env);
 }
 
 typedef struct dom_traversal_t {
@@ -212,7 +205,6 @@ static void dom_block_visit_pre(ir_node *block, void *env)
 {
 	dom_traversal_t *ctx   = (dom_traversal_t*)env;
 	block_entry_t   *entry = block_find_entry(block, ctx->blks);
-
 	traverse_block_pre(block, entry, ctx->pre, ctx->env);
 }
 
@@ -223,7 +215,6 @@ static void dom_block_visit_post(ir_node *block, void *env)
 {
 	dom_traversal_t *ctx   = (dom_traversal_t*)env;
 	block_entry_t   *entry = block_find_entry(block, ctx->blks);
-
 	traverse_block_post(block, entry, ctx->post, ctx->env);
 }
 
@@ -234,7 +225,6 @@ static void dom_block_visit_both(ir_node *block, void *env)
 {
 	dom_traversal_t *ctx   = (dom_traversal_t*)env;
 	block_entry_t   *entry = block_find_entry(block, ctx->blks);
-
 	traverse_block_pre(block, entry, ctx->pre, ctx->env);
 	traverse_block_post(block, entry, ctx->post, ctx->env);
 }
@@ -242,10 +232,11 @@ static void dom_block_visit_both(ir_node *block, void *env)
 /**
  * Do the traversal in the dominator tree in top-down order.
  */
-static void traverse_dom_blocks_top_down(ir_graph *irg, blk_collect_data_t* blks, irg_walk_func *pre, irg_walk_func *post, void *env)
+static void traverse_dom_blocks_top_down(ir_graph *irg, blk_collect_data_t* blks,
+                                         irg_walk_func *pre, irg_walk_func *post,
+                                         void *env)
 {
 	dom_traversal_t ctx;
-
 	ctx.blks = blks;
 	ctx.pre  = pre;
 	ctx.post = post;
@@ -264,62 +255,52 @@ static void traverse_dom_blocks_top_down(ir_graph *irg, blk_collect_data_t* blks
  */
 static void collect_walk(ir_node *node, blk_collect_data_t *env)
 {
-	int           i, is_phi;
-	block_entry_t *entry;
-	ir_node       *block;
-
 	mark_irn_visited(node);
 
 	if (is_Block(node)) {
 		/* predecessors of a block are control flow nodes */
-		for (i = _get_walk_arity(env, node) - 1; i >= 0; --i) {
+		for (int i = _get_walk_arity(env, node) - 1; i >= 0; --i) {
 			ir_node *pred = _get_walk_irn_n(env, node, i);
-			ir_node *blk  = get_nodes_block(pred);
+			if (irn_visited(pred))
+				continue;
 
-			if (!irn_visited(pred)) {
-				collect_walk(pred, env);
+			ir_node *blk = get_nodes_block(pred);
+			collect_walk(pred, env);
 
-				/* control flow predecessors are always block inputs */
-				entry = block_find_entry(blk, env);
-				ARR_APP1(ir_node *, entry->entry_list, pred);
-			}
+			/* control flow predecessors are always block inputs */
+			block_entry_t *entry = block_find_entry(blk, env);
+			ARR_APP1(ir_node *, entry->entry_list, pred);
 		}
 
-		/* it's a block, put it into the block list */
-		if (node == get_irg_end_block(get_irn_irg(node))) {
-			/* Put the end block always last. If we don't do it here,
-			 * it might be placed elsewhere if the graph contains
-			 * endless loops.
-			 */
-		} else {
+		/* it's a block, put it into the block list, except for the end block
+		 * which we append in the main loop. This avoids it being placed
+		 * elsewhere if the graph contains endless loops. */
+		if (node != get_irg_end_block(get_irn_irg(node)))
 			ARR_APP1(ir_node *, env->blk_list, node);
-		}
 	} else {
-		block = get_nodes_block(node);
-
+		ir_node *block = get_nodes_block(node);
 		if (!irn_visited(block))
 			collect_walk(block, env);
 
-		is_phi = is_Phi(node);
-		for (i = _get_walk_arity(env, node) - 1; i >= 0; --i) {
+		bool is_phi = is_Phi(node);
+		for (int i = _get_walk_arity(env, node) - 1; i >= 0; --i) {
 			ir_node *pred = _get_walk_irn_n(env, node, i);
+			if (irn_visited(pred))
+				continue;
 
-			if (!irn_visited(pred)) {
-				collect_walk(pred, env);
+			collect_walk(pred, env);
 
-				/* BEWARE: predecessors of End nodes might be blocks */
-				if (!is_Block(pred)) {
-					ir_node *blk  = get_nodes_block(pred);
+			/* BEWARE: predecessors of End nodes might be blocks */
+			if (is_Block(pred))
+				continue;
 
-					/*
-					 * Note that Phi predecessors are always block entries
-					 * because Phi edges are always "outside" a block
-					 */
-					if (block != blk || is_phi) {
-						entry = block_find_entry(blk, env);
-						ARR_APP1(ir_node *, entry->entry_list, pred);
-					}
-				}
+			ir_node *blk = get_nodes_block(pred);
+
+			/* Note that Phi predecessors are always block entries
+			 * because Phi edges are always "outside" a block */
+			if (block != blk || is_phi) {
+				block_entry_t *entry = block_find_entry(blk, env);
+				ARR_APP1(ir_node *, entry->entry_list, pred);
 			}
 		}
 	}
@@ -332,29 +313,24 @@ static void collect_walk(ir_node *node, blk_collect_data_t *env)
 static void collect_blks_lists(ir_node *node, ir_node *block,
                                block_entry_t *entry, blk_collect_data_t *env)
 {
-	int i;
-
 	mark_irn_visited(node);
 
-	/*
-	 * Do not descent into Phi predecessors, these are always
+	/* Do not descent into Phi predecessors, these are always
 	 * outside the current block because Phi edges are always
-	 * "outside".
-	 */
-	if (! is_Phi(node)) {
-		for (i = _get_walk_arity(env, node) - 1; i >= 0; --i) {
+	 * "outside". */
+	if (!is_Phi(node)) {
+		for (int i = _get_walk_arity(env, node) - 1; i >= 0; --i) {
 			ir_node *pred = _get_walk_irn_n(env, node, i);
-
 			/* BEWARE: predecessors of End nodes might be blocks */
-			if (!is_Block(pred)) {
-				ir_node *blk  = get_nodes_block(pred);
+			if (is_Block(pred))
+				continue;
+			if (irn_visited(pred))
+				continue;
 
-				if (!irn_visited(pred)) {
-					if (block != blk)
-						continue;
-					collect_blks_lists(pred, block, entry, env);
-				}
-			}
+			ir_node *blk = get_nodes_block(pred);
+			if (block != blk)
+				continue;
+			collect_blks_lists(pred, block, entry, env);
 		}
 	} else {
 		ARR_APP1(ir_node *, entry->phi_list, node);
@@ -373,22 +349,17 @@ static void collect_blks_lists(ir_node *node, ir_node *block,
  */
 static void collect_lists(ir_graph *const irg, blk_collect_data_t *const env)
 {
-	size_t          i, j;
-	ir_node         *block, *node;
-	block_entry_t   *entry;
-
 	inc_irg_visited(irg);
 
-	for (i = ARR_LEN(env->blk_list); i > 0;) {
-		block = env->blk_list[--i];
-		entry = block_find_entry(block, env);
-
-		for (j = ARR_LEN(entry->entry_list); j > 0;) {
-			node = entry->entry_list[--j];
-
+	for (size_t i = ARR_LEN(env->blk_list); i-- > 0;) {
+		ir_node       *block = env->blk_list[i];
+		block_entry_t *entry = block_find_entry(block, env);
+		for (size_t j = ARR_LEN(entry->entry_list); j-- > 0;) {
+			ir_node *node = entry->entry_list[j];
 			/* a entry might already be visited due to Phi loops */
-			if (node->visited < irg->visited)
-				collect_blks_lists(node, block, entry, env);
+			if (irn_visited(node))
+				continue;
+			collect_blks_lists(node, block, entry, env);
 		}
 	}
 }
@@ -397,29 +368,30 @@ static void collect_lists(ir_graph *const irg, blk_collect_data_t *const env)
  * Intra procedural graph walker over blocks.
  */
 static void do_irg_walk_blk(ir_graph *irg, irg_walk_func *pre,
-	irg_walk_func *post, void *env, unsigned follow_deps,
-	void (*traverse)(ir_graph *irg, blk_collect_data_t* blks, irg_walk_func *pre, irg_walk_func *post, void *env))
+                            irg_walk_func *post, void *env, bool follow_deps,
+                            void (*traverse)(ir_graph *irg,
+                                             blk_collect_data_t* blks,
+                                             irg_walk_func *pre,
+                                             irg_walk_func *post, void *env))
 {
-	ir_node            *end_node = get_irg_end(irg);
-	ir_node            *end_blk = get_irg_end_block(irg);
 	blk_collect_data_t blks;
-	block_entry_t      *entry;
-
 	obstack_init(&blks.obst);
 	blks.blk_map     = new_pset(addr_cmp, 1);
 	blks.blk_list    = NEW_ARR_F(ir_node *, 0);
-	blks.follow_deps = follow_deps != 0;
+	blks.follow_deps = follow_deps;
 
 	/* first step: traverse the graph and fill the lists */
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_VISITED);
 	inc_irg_visited(irg);
+	ir_node *end_node = get_irg_end(irg);
 	collect_walk(end_node, &blks);
 
 	/* add the end block */
+	ir_node *end_blk = get_irg_end_block(irg);
 	ARR_APP1(ir_node *, blks.blk_list, end_blk);
 
 	/* and the end node */
-	entry = block_find_entry(end_blk, &blks);
+	block_entry_t *entry = block_find_entry(end_blk, &blks);
 	ARR_APP1(ir_node *, entry->entry_list, end_node);
 
 	collect_lists(irg, &blks);
@@ -434,20 +406,23 @@ static void do_irg_walk_blk(ir_graph *irg, irg_walk_func *pre,
 	ir_free_resources(irg, IR_RESOURCE_IRN_VISITED);
 }
 
-void irg_walk_blkwise_graph(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post, void *env)
+void irg_walk_blkwise_graph(ir_graph *irg, irg_walk_func *pre,
+                            irg_walk_func *post, void *env)
 {
-	hook_irg_walk_blkwise(irg, (generic_func *)pre, (generic_func *)post);
-	do_irg_walk_blk(irg, pre, post, env, 0, traverse_blocks);
+	hook_irg_walk_blkwise(irg, (generic_func*)pre, (generic_func*)post);
+	do_irg_walk_blk(irg, pre, post, env, false, traverse_blocks);
 }
 
-void irg_walk_in_or_dep_blkwise_graph(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post, void *env)
+void irg_walk_in_or_dep_blkwise_graph(ir_graph *irg, irg_walk_func *pre,
+                                      irg_walk_func *post, void *env)
 {
-	hook_irg_walk_blkwise(irg, (generic_func *)pre, (generic_func *)post);
-	do_irg_walk_blk(irg, pre, post, env, 1, traverse_blocks);
+	hook_irg_walk_blkwise(irg, (generic_func*)pre, (generic_func*)post);
+	do_irg_walk_blk(irg, pre, post, env, true, traverse_blocks);
 }
 
-void irg_walk_blkwise_dom_top_down(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post, void *env)
+void irg_walk_blkwise_dom_top_down(ir_graph *irg, irg_walk_func *pre,
+                                   irg_walk_func *post, void *env)
 {
-	hook_irg_walk_blkwise(irg, (generic_func *)pre, (generic_func *)post);
-	do_irg_walk_blk(irg, pre, post, env, 0, traverse_dom_blocks_top_down);
+	hook_irg_walk_blkwise(irg, (generic_func*)pre, (generic_func*)post);
+	do_irg_walk_blk(irg, pre, post, env, false, traverse_dom_blocks_top_down);
 }
