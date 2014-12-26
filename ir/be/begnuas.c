@@ -576,39 +576,18 @@ void be_gas_emit_function_epilog(const ir_entity *entity)
 }
 
 /**
- * Output a tarval.
+ * Output parts of a tarval.
  *
- * @param tv     the tarval
- * @param bytes  the width of the tarvals value in bytes
+ * @param tv      The tarval
+ * @param offset  The byte offst to start at
+ * @param n       How many bytes to output
  */
-static void emit_arith_tarval(ir_tarval *tv, unsigned bytes)
+static void emit_tv(ir_tarval *const tv, unsigned const offset, unsigned const n)
 {
-	switch (bytes) {
-	case 1:
-		be_emit_irprintf("0x%02x", get_tarval_sub_bits(tv, 0));
-		return;
-
-	case 2:
-		be_emit_irprintf("0x%02x%02x",
-			get_tarval_sub_bits(tv, 1), get_tarval_sub_bits(tv, 0));
-		return;
-
-	case 4:
-		be_emit_irprintf("0x%02x%02x%02x%02x",
-			get_tarval_sub_bits(tv, 3), get_tarval_sub_bits(tv, 2),
-			get_tarval_sub_bits(tv, 1), get_tarval_sub_bits(tv, 0));
-		return;
-
-	case 8:
-		be_emit_irprintf("0x%02x%02x%02x%02x%02x%02x%02x%02x",
-			get_tarval_sub_bits(tv, 7), get_tarval_sub_bits(tv, 6),
-			get_tarval_sub_bits(tv, 5), get_tarval_sub_bits(tv, 4),
-			get_tarval_sub_bits(tv, 3), get_tarval_sub_bits(tv, 2),
-			get_tarval_sub_bits(tv, 1), get_tarval_sub_bits(tv, 0));
-		return;
+	be_emit_cstring("0x");
+	for (unsigned i = n; i-- != 0;) {
+		be_emit_irprintf("%02x", get_tarval_sub_bits(tv, offset + i));
 	}
-
-	panic("cannot dump a tarval with %d bytes", bytes);
 }
 
 /**
@@ -641,9 +620,8 @@ static void emit_init_expression(be_gas_decl_env_t *env, ir_node *init)
 
 	case iro_Const: {
 		ir_tarval *tv = get_Const_tarval(init);
-
 		/* it's an arithmetic value */
-		emit_arith_tarval(tv, bytes);
+		emit_tv(tv, 0, bytes);
 		return;
 	}
 
@@ -999,67 +977,30 @@ static void emit_ir_initializer(normal_or_bitfield *vals,
 static void emit_tarval_data(ir_type *type, ir_tarval *tv)
 {
 	size_t size = get_type_size_bytes(type);
-	if (size == 12) {
-		/* this should be an x86 extended float */
-		assert(be_get_backend_param()->byte_order_big_endian == 0);
-
-		/* Beware: Mixed endian output!  One little endian number emitted as
-		 * three longs.  Each long initializer is written in big endian. */
-		be_emit_irprintf(
-			"\t.long\t0x%02x%02x%02x%02x\n"
-			"\t.long\t0x%02x%02x%02x%02x\n"
-			"\t.long\t0x%02x%02x%02x%02x\n",
-			get_tarval_sub_bits(tv,  3), get_tarval_sub_bits(tv,  2),
-			get_tarval_sub_bits(tv,  1), get_tarval_sub_bits(tv,  0),
-			get_tarval_sub_bits(tv,  7), get_tarval_sub_bits(tv,  6),
-			get_tarval_sub_bits(tv,  5), get_tarval_sub_bits(tv,  4),
-			get_tarval_sub_bits(tv, 11), get_tarval_sub_bits(tv, 10),
-			get_tarval_sub_bits(tv,  9), get_tarval_sub_bits(tv,  8)
-		);
-		be_emit_write_line();
-	} else if (size == 16) {
+	if (size > 8) {
+		assert(size % 4 == 0);
 		if (be_get_backend_param()->byte_order_big_endian) {
-			be_emit_irprintf(
-				"\t.long\t0x%02x%02x%02x%02x\n"
-				"\t.long\t0x%02x%02x%02x%02x\n"
-				"\t.long\t0x%02x%02x%02x%02x\n"
-				"\t.long\t0x%02x%02x%02x%02x\n",
-				get_tarval_sub_bits(tv, 15), get_tarval_sub_bits(tv, 14),
-				get_tarval_sub_bits(tv, 13), get_tarval_sub_bits(tv, 12),
-				get_tarval_sub_bits(tv, 11), get_tarval_sub_bits(tv, 10),
-				get_tarval_sub_bits(tv,  9), get_tarval_sub_bits(tv,  8),
-				get_tarval_sub_bits(tv,  7), get_tarval_sub_bits(tv,  6),
-				get_tarval_sub_bits(tv,  5), get_tarval_sub_bits(tv,  4),
-				get_tarval_sub_bits(tv,  3), get_tarval_sub_bits(tv,  2),
-				get_tarval_sub_bits(tv,  1), get_tarval_sub_bits(tv,  0)
-			);
+			for (unsigned i = size; i != 0;) {
+				emit_size_type(4);
+				emit_tv(tv, i -= 4, 4);
+				be_emit_char('\n');
+			}
 		} else {
 			/* Beware: Mixed endian output! One little endian number emitted as
-			 * three longs.  Each long initializer is written in big endian. */
-			be_emit_irprintf(
-				"\t.long\t0x%02x%02x%02x%02x\n"
-				"\t.long\t0x%02x%02x%02x%02x\n"
-				"\t.long\t0x%02x%02x%02x%02x\n"
-				"\t.long\t0x%02x%02x%02x%02x\n",
-				get_tarval_sub_bits(tv,  3), get_tarval_sub_bits(tv,  2),
-				get_tarval_sub_bits(tv,  1), get_tarval_sub_bits(tv,  0),
-				get_tarval_sub_bits(tv,  7), get_tarval_sub_bits(tv,  6),
-				get_tarval_sub_bits(tv,  5), get_tarval_sub_bits(tv,  4),
-				get_tarval_sub_bits(tv, 11), get_tarval_sub_bits(tv, 10),
-				get_tarval_sub_bits(tv,  9), get_tarval_sub_bits(tv,  8),
-				get_tarval_sub_bits(tv, 15), get_tarval_sub_bits(tv, 14),
-				get_tarval_sub_bits(tv, 13), get_tarval_sub_bits(tv, 12)
-			);
+			 * longs.  Each long initializer is written in big endian. */
+			for (unsigned i = 0; i != size; i += 4) {
+				emit_size_type(4);
+				emit_tv(tv, i, 4);
+				be_emit_char('\n');
+			}
 		}
-		be_emit_write_line();
-		return;
 	} else {
 		/* default case */
 		emit_size_type(size);
-		emit_arith_tarval(tv, size);
+		emit_tv(tv, 0, size);
 		be_emit_char('\n');
-		be_emit_write_line();
 	}
+	be_emit_write_line();
 }
 
 /**
