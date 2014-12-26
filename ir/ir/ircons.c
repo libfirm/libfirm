@@ -539,10 +539,7 @@ ir_node *get_store(void)
 void set_r_store(ir_graph *const irg, ir_node *store)
 {
 	assert(irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_CONSTRUCTION));
-	/* Beware: due to dead code elimination, a store might become a Bad node even in
-	   the construction phase. */
-	assert((get_irn_mode(store) == mode_M || is_Bad(store)) && "storing non-memory node");
-
+	assert(get_irn_mode(store) == mode_M && "storing non-memory node");
 	irg->current_block->attr.block.graph_arr[0] = store;
 }
 
