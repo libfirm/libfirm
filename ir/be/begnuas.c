@@ -1294,10 +1294,26 @@ void be_gas_emit_entity(const ir_entity *entity)
 		return;
 	}
 
+	const char *name = get_entity_ld_name(entity);
+	bool needs_quotes = false;
+	if (be_gas_object_file_format == OBJECT_FILE_FORMAT_MACH_O) {
+		for (const unsigned char *c = (const unsigned char*)name; *c != '\0';
+		     ++c) {
+			if (*c >= 128) {
+				needs_quotes = true;
+				break;
+			}
+		}
+		if (needs_quotes)
+			be_emit_char('"');
+	}
+
 	if (get_entity_visibility(entity) == ir_visibility_private) {
 		be_emit_string(be_gas_get_private_prefix());
 	}
-	be_emit_irprintf("%I", get_entity_ld_ident(entity));
+	be_emit_string(name);
+	if (needs_quotes)
+		be_emit_char('"');
 }
 
 void be_gas_emit_block_name(const ir_node *block)
