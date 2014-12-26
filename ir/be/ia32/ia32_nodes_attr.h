@@ -192,7 +192,7 @@ struct ia32_asm_reg_t {
 	unsigned                   dummy_fill : 13;
 	unsigned                   inout_pos  : 16; /* in/out pos where the
 	                                               register is assigned */
-	const ir_mode             *mode;
+	ir_mode                   *mode;
 };
 
 /**

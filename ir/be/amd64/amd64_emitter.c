@@ -82,71 +82,71 @@ static void amd64_emit_xmm_mode_suffix(const amd64_insn_mode_t mode)
 	be_emit_char(get_xmm_mode_suffix(mode));
 }
 
-static const char *get_8bit_name(const arch_register_t *reg)
+static const char *get_register_name_8bit(const arch_register_t *reg)
 {
-	switch (reg->index) {
-	case REG_GP_RAX: return "al";
-	case REG_GP_RBX: return "bl";
-	case REG_GP_RCX: return "cl";
-	case REG_GP_RDX: return "dl";
-	case REG_GP_RSP: return "spl";
-	case REG_GP_RBP: return "bpl";
-	case REG_GP_RSI: return "sil";
-	case REG_GP_RDI: return "dil";
-	case REG_GP_R8:  return "r8b";
-	case REG_GP_R9:  return "r9b";
-	case REG_GP_R10: return "r10b";
-	case REG_GP_R11: return "r11b";
-	case REG_GP_R12: return "r12b";
-	case REG_GP_R13: return "r13b";
-	case REG_GP_R14: return "r14b";
-	case REG_GP_R15: return "r15b";
+	switch (reg->global_index) {
+	case REG_RAX: return "al";
+	case REG_RBX: return "bl";
+	case REG_RCX: return "cl";
+	case REG_RDX: return "dl";
+	case REG_RSP: return "spl";
+	case REG_RBP: return "bpl";
+	case REG_RSI: return "sil";
+	case REG_RDI: return "dil";
+	case REG_R8:  return "r8b";
+	case REG_R9:  return "r9b";
+	case REG_R10: return "r10b";
+	case REG_R11: return "r11b";
+	case REG_R12: return "r12b";
+	case REG_R13: return "r13b";
+	case REG_R14: return "r14b";
+	case REG_R15: return "r15b";
 	}
 	panic("unexpected register number");
 }
 
-static const char *get_16bit_name(const arch_register_t *reg)
+static const char *get_register_name_16bit(const arch_register_t *reg)
 {
-	switch (reg->index) {
-	case REG_GP_RAX: return "ax";
-	case REG_GP_RBX: return "bx";
-	case REG_GP_RCX: return "cx";
-	case REG_GP_RDX: return "dx";
-	case REG_GP_RSP: return "sp";
-	case REG_GP_RBP: return "bp";
-	case REG_GP_RSI: return "si";
-	case REG_GP_RDI: return "di";
-	case REG_GP_R8:  return "r8w";
-	case REG_GP_R9:  return "r9w";
-	case REG_GP_R10: return "r10w";
-	case REG_GP_R11: return "r11w";
-	case REG_GP_R12: return "r12w";
-	case REG_GP_R13: return "r13w";
-	case REG_GP_R14: return "r14w";
-	case REG_GP_R15: return "r15w";
+	switch (reg->global_index) {
+	case REG_RAX: return "ax";
+	case REG_RBX: return "bx";
+	case REG_RCX: return "cx";
+	case REG_RDX: return "dx";
+	case REG_RSP: return "sp";
+	case REG_RBP: return "bp";
+	case REG_RSI: return "si";
+	case REG_RDI: return "di";
+	case REG_R8:  return "r8w";
+	case REG_R9:  return "r9w";
+	case REG_R10: return "r10w";
+	case REG_R11: return "r11w";
+	case REG_R12: return "r12w";
+	case REG_R13: return "r13w";
+	case REG_R14: return "r14w";
+	case REG_R15: return "r15w";
 	}
 	panic("unexpected register number");
 }
 
-static const char *get_32bit_name(const arch_register_t *reg)
+static const char *get_register_name_32bit(const arch_register_t *reg)
 {
-	switch (reg->index) {
-	case REG_GP_RAX: return "eax";
-	case REG_GP_RBX: return "ebx";
-	case REG_GP_RCX: return "ecx";
-	case REG_GP_RDX: return "edx";
-	case REG_GP_RSP: return "esp";
-	case REG_GP_RBP: return "ebp";
-	case REG_GP_RSI: return "esi";
-	case REG_GP_RDI: return "edi";
-	case REG_GP_R8:  return "r8d";
-	case REG_GP_R9:  return "r9d";
-	case REG_GP_R10: return "r10d";
-	case REG_GP_R11: return "r11d";
-	case REG_GP_R12: return "r12d";
-	case REG_GP_R13: return "r13d";
-	case REG_GP_R14: return "r14d";
-	case REG_GP_R15: return "r15d";
+	switch (reg->global_index) {
+	case REG_RAX: return "eax";
+	case REG_RBX: return "ebx";
+	case REG_RCX: return "ecx";
+	case REG_RDX: return "edx";
+	case REG_RSP: return "esp";
+	case REG_RBP: return "ebp";
+	case REG_RSI: return "esi";
+	case REG_RDI: return "edi";
+	case REG_R8:  return "r8d";
+	case REG_R9:  return "r9d";
+	case REG_R10: return "r10d";
+	case REG_R11: return "r11d";
+	case REG_R12: return "r12d";
+	case REG_R13: return "r13d";
+	case REG_R14: return "r14d";
+	case REG_R15: return "r15d";
 	}
 	panic("unexpected register number");
 }
@@ -161,9 +161,9 @@ static const char *get_register_name_mode(const arch_register_t *reg,
                                           const amd64_insn_mode_t mode)
 {
 	switch (mode) {
-	case INSN_MODE_8:  return get_8bit_name(reg);
-	case INSN_MODE_16: return get_16bit_name(reg);
-	case INSN_MODE_32: return get_32bit_name(reg);
+	case INSN_MODE_8:  return get_register_name_8bit(reg);
+	case INSN_MODE_16: return get_register_name_16bit(reg);
+	case INSN_MODE_32: return get_register_name_32bit(reg);
 	case INSN_MODE_64:
 	case INSN_MODE_128: return reg->name;
 	case INSN_MODE_INVALID:

@@ -128,57 +128,67 @@ static char *get_unique_label(char *buf, size_t buflen, const char *prefix)
 	return buf;
 }
 
-/**
- * Emit the name of the 8bit low register
- */
-static void emit_8bit_register(const arch_register_t *reg)
+static const char *get_register_name_8bit_low(const arch_register_t *reg)
 {
-	assert(reg->index == REG_GP_EAX || reg->index == REG_GP_EBX
-	       || reg->index == REG_GP_ECX || reg->index == REG_GP_EDX);
-
-	be_emit_char('%');
-	be_emit_char(reg->name[1]); /* get the basic name of the register */
-	be_emit_char('l');
+	switch (reg->global_index) {
+	case REG_EAX: return "al";
+	case REG_EBX: return "bl";
+	case REG_ECX: return "cl";
+	case REG_EDX: return "dl";
+	}
+	panic("unexpected register");
 }
 
-/**
- * Emit the name of the 8bit high register
- */
-static void emit_8bit_register_high(const arch_register_t *reg)
+static const char *get_register_name_8bit_high(const arch_register_t *reg)
 {
-	assert(reg->index == REG_GP_EAX || reg->index == REG_GP_EBX
-	       || reg->index == REG_GP_ECX || reg->index == REG_GP_EDX);
-
-	be_emit_char('%');
-	be_emit_char(reg->name[1]); /* get the basic name of the register */
-	be_emit_char('h');
+	switch (reg->global_index) {
+	case REG_EAX: return "ah";
+	case REG_EBX: return "bh";
+	case REG_ECX: return "ch";
+	case REG_EDX: return "dh";
+	}
+	panic("unexpected register");
 }
 
-static void emit_16bit_register(const arch_register_t *reg)
+static const char *get_register_name_16bit(const arch_register_t *reg)
 {
-	be_emit_char('%');
-	be_emit_string(reg->name + 1); /* skip the 'e' prefix of the 32bit names */
+	switch (reg->global_index) {
+	case REG_EAX: return "ax";
+	case REG_EBX: return "bx";
+	case REG_ECX: return "cx";
+	case REG_EDX: return "dx";
+	case REG_ESI: return "si";
+	case REG_EDI: return "di";
+	case REG_ESP: return "sp";
+	case REG_EBP: return "bp";
+	}
+	panic("unexpected register");
+}
+
+static const char *get_register_name_mode(const arch_register_t *reg,
+                                          ir_mode *mode)
+{
+	if (mode == NULL)
+		return reg->name;
+	unsigned size = get_mode_size_bits(mode);
+	if (size == 8)
+		return get_register_name_8bit_low(reg);
+	else if (size == 16)
+		return get_register_name_16bit(reg);
+	else
+		return reg->name;
 }
 
 /**
  * emit a register, possible shortened by a mode
- *
  * @param reg   the register
  * @param mode  the mode of the register or NULL for full register
  */
-static void emit_register(const arch_register_t *reg, const ir_mode *mode)
+static void emit_register(const arch_register_t *reg, ir_mode *mode)
 {
-	if (mode != NULL) {
-		unsigned size = get_mode_size_bits(mode);
-		switch (size) {
-			case  8: emit_8bit_register(reg);  return;
-			case 16: emit_16bit_register(reg); return;
-		}
-		assert(mode_is_float(mode) || size == 32);
-	}
-
+	const char *name = get_register_name_mode(reg, mode);
 	be_emit_char('%');
-	be_emit_string(reg->name);
+	be_emit_string(name);
 }
 
 static void ia32_emit_entity(ir_entity *entity, int no_pic_adjust)
@@ -621,15 +631,20 @@ emit_I:
 emit_R:
 				if (mod & EMIT_ALTERNATE_AM)
 					be_emit_char('*');
+				const char *name;
 				if (mod & EMIT_HIGH_REG) {
-					emit_8bit_register_high(reg);
+					name = get_register_name_8bit_high(reg);
 				} else if (mod & EMIT_LOW_REG) {
-					emit_8bit_register(reg);
+					name = get_register_name_8bit_low(reg);
 				} else if (mod & EMIT_16BIT_REG) {
-					emit_16bit_register(reg);
+					name = get_register_name_16bit(reg);
 				} else {
-					emit_register(reg, mod & EMIT_RESPECT_LS ? get_ia32_ls_mode(node) : NULL);
+					name = mod & EMIT_RESPECT_LS
+						 ? get_register_name_mode(reg, get_ia32_ls_mode(node))
+						 : reg->name;
 				}
+				be_emit_char('%');
+				be_emit_string(name);
 				if (mod & EMIT_SHIFT_COMMA) {
 					be_emit_char(',');
 				}
@@ -988,13 +1003,16 @@ static const char* emit_asm_operand(const ir_node *node, const char *s)
 		emit_register(reg, NULL);
 		be_emit_char(')');
 	} else {
+		const char *name;
 		switch (modifier) {
-		case '\0': emit_register(reg, asm_reg->mode); break;
-		case  'b': emit_8bit_register(reg);           break;
-		case  'h': emit_8bit_register_high(reg);      break;
-		case  'w': emit_16bit_register(reg);          break;
+		case '\0': name = get_register_name_mode(reg, asm_reg->mode); break;
+		case  'b': name = get_register_name_8bit_low(reg); break;
+		case  'h': name = get_register_name_8bit_high(reg); break;
+		case  'w': name = get_register_name_16bit(reg); break;
 		default:   panic("invalid asm op modifier");
 		}
+		be_emit_char('%');
+		be_emit_string(name);
 	}
 
 	return s;
