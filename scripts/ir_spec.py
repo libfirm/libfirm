@@ -95,12 +95,11 @@ class Anchor:
 		("args",        "argument proj of the start node" ),
 		("no_mem",      "the only NoMem node of this ir_graph" ),
 	]
-	mode             = "mode_ANY"
-	flags            = [ "dump_noblock" ]
-	pinned           = "yes"
-	singleton        = True
-	constructor      = False
-	customSerializer = True
+	mode        = "mode_ANY"
+	flags       = [ "dump_noblock" ]
+	pinned      = "yes"
+	singleton   = True
+	constructor = False
 
 @op
 class And(Binop):
@@ -136,19 +135,18 @@ class ASM:
 
 	(This format is inspired by the gcc extended asm syntax)
 	"""
-	mode             = "mode_T"
-	arity            = "variable"
-	input_name       = "input"
-	flags            = [ "keep", "uses_memory" ]
-	pinned           = "exception"
-	pinned_init      = "op_pin_state_pinned"
-	attr_struct      = "asm_attr"
-	attrs_name       = "assem"
-	customSerializer = True
-	ins   = [
+	mode        = "mode_T"
+	arity       = "variable"
+	input_name  = "input"
+	flags       = [ "keep", "uses_memory" ]
+	pinned      = "exception"
+	pinned_init = "op_pin_state_pinned"
+	attr_struct = "asm_attr"
+	attrs_name  = "assem"
+	ins         = [
 		("mem",    "memory dependency"),
 	]
-	attrs = [
+	attrs       = [
 		Attribute("input_constraints", type="ir_asm_constraint*",
 		          comment="input constraints"),
 		Attribute("n_output_constraints", type="size_t", noprop=True,
@@ -194,11 +192,10 @@ class Bad:
 class Deleted:
 	"""Internal node which is temporary set to nodes which are already removed
 	from the graph."""
-	mode             = "mode_Bad"
-	flags            = [ ]
-	pinned           = "yes"
-	constructor      = False
-	customSerializer = True # this has no serializer
+	mode        = "mode_Bad"
+	flags       = [ ]
+	pinned      = "yes"
+	constructor = False
 
 @op
 class Block:
