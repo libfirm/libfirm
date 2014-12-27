@@ -484,7 +484,8 @@ class Id:
 	ins    = [
 	   ("pred", "the value which is returned unchanged")
 	]
-	flags  = []
+	flags       = []
+	constructor = False
 
 @op
 class IJmp:
