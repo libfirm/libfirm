@@ -200,18 +200,18 @@ class Deleted:
 @op
 class Block:
 	"""A basic block"""
-	mode             = "mode_BB"
-	block            = "NULL"
-	pinned           = "yes"
-	arity            = "variable"
-	input_name       = "cfgpred"
-	flags            = []
-	attr_struct      = "block_attr"
-	attrs            = [
+	mode        = "mode_BB"
+	block       = "NULL"
+	pinned      = "yes"
+	arity       = "variable"
+	input_name  = "cfgpred"
+	flags       = []
+	attr_struct = "block_attr"
+	attrs       = [
 		Attribute("entity", type="ir_entity*", init="NULL",
 		          comment="entity representing this block"),
 	]
-	customSerializer = True
+	serializer  = False
 
 	init = '''
 	res->attr.block.backedge    = new_backedge_arr(get_irg_obstack(irg), arity);
@@ -633,18 +633,18 @@ class Phi:
 	"""Choose a value based on control flow. A phi node has 1 input for each
 	predecessor of its block. If a block is entered from its nth predecessor
 	all phi nodes produce their nth input as result."""
-	pinned        = "yes"
-	arity         = "variable"
-	input_name    = "pred"
-	flags         = []
-	attrs         = [
+	pinned      = "yes"
+	arity       = "variable"
+	input_name  = "pred"
+	flags       = []
+	attrs       = [
 		Attribute("loop", type="int", init="0",
 		          comment="wether Phi represents the observable effect of a (possibly) nonterminating loop"),
 	]
-	attr_struct   = "phi_attr"
-	init          = '''
+	attr_struct = "phi_attr"
+	init        = '''
 	res->attr.phi.u.backedge = new_backedge_arr(get_irg_obstack(irg), arity);'''
-	customSerializer = True
+	serializer  = False
 
 @op
 class Pin:

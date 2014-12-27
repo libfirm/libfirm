@@ -1,5 +1,5 @@
 {{warning}}
-{%- for node in nodes|hasnot('customSerializer') %}
+{%- for node in nodes|has('serializer') %}
 static ir_node *read_{{node.name}}(read_env_t *env)
 {
 	{%- if not node.block %}
@@ -63,7 +63,7 @@ static ir_node *read_{{node.name}}(read_env_t *env)
 }
 {% endfor %}
 
-{%- for node in nodes|hasnot('customSerializer') %}
+{%- for node in nodes|has('serializer') %}
 static void write_{{node.name}}(write_env_t *env, const ir_node *node)
 {
 	write_symbol(env, "{{node.name}}");
@@ -94,14 +94,14 @@ static void write_{{node.name}}(write_env_t *env, const ir_node *node)
 
 static void register_generated_node_readers(void)
 {
-	{%- for node in nodes|hasnot('customSerializer') %}
+	{%- for node in nodes|has('serializer') %}
 	register_node_reader("{{node.name}}", read_{{node.name}});
 	{%- endfor %}
 }
 
 static void register_generated_node_writers(void)
 {
-	{%- for node in nodes|hasnot('customSerializer') %}
+	{%- for node in nodes|has('serializer') %}
 	register_node_writer(op_{{node.name}}, write_{{node.name}});
 	{%- endfor %}
 }
