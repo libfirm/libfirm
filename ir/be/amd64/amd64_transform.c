@@ -1851,15 +1851,10 @@ static ir_node *gen_Call(ir_node *node)
 
 	assert(in_arity <= (int)max_inputs);
 
-	/* outputs:
-	 *  - memory
-	 *  - flags
-	 *  - results
-	 *  - caller saves
-	 */
-	int n_caller_saves
-		= rbitset_popcount(cconv->caller_saves, N_AMD64_REGISTERS);
-	int out_arity = 2 + cconv->n_reg_results + n_caller_saves;
+	/* count outputs */
+	unsigned       o              = pn_amd64_call_first_result;
+	unsigned const n_caller_saves = rbitset_popcount(cconv->caller_saves, N_AMD64_REGISTERS);
+	unsigned const out_arity      = o + cconv->n_reg_results + n_caller_saves;
 
 	/* create call node */
 	ir_node *call = new_bd_amd64_call(dbgi, new_block, in_arity, in, out_arity,
@@ -1869,19 +1864,12 @@ static ir_node *gen_Call(ir_node *node)
 	fix_node_mem_proj(call, mem_proj);
 
 	/* create output register reqs */
-	int o = 0;
+	arch_set_irn_register_req_out(call, pn_amd64_call_M, arch_no_register_req);
 
-	int memo = o++;
-	arch_set_irn_register_req_out(call, memo, arch_no_register_req);
-	assert(memo == pn_amd64_Call_mem);
-
-	int flagso = o++;
-	arch_set_irn_register_req_out(call, flagso,
-		amd64_reg_classes[CLASS_amd64_flags].class_req);
-	assert(flagso == pn_amd64_Call_flags);
+	arch_register_class_t const *const flags = &amd64_reg_classes[CLASS_amd64_flags];
+	arch_set_irn_register_req_out(call, pn_amd64_call_flags, flags->class_req);
 
 	/* add register requirements for the result regs */
-	assert(o == pn_amd64_Call_first_res);
 	for (size_t r = 0; r < n_ress; ++r) {
 		const reg_or_stackslot_t  *result_info = &cconv->results[r];
 		const arch_register_t     *reg         = result_info->reg;
@@ -1924,7 +1912,7 @@ static ir_node *gen_Proj_Call(ir_node *node)
 	ir_node *new_call = be_transform_node(call);
 	switch ((pn_Call)pn) {
 	case pn_Call_M:
-		return new_r_Proj(new_call, mode_M, pn_amd64_Call_mem);
+		return new_r_Proj(new_call, mode_M, pn_amd64_call_M);
 	case pn_Call_X_regular:
 	case pn_Call_X_except:
 	case pn_Call_T_result:
@@ -1942,7 +1930,7 @@ static ir_node *gen_Proj_Proj_Call(ir_node *node)
 	x86_cconv_t *cconv    = amd64_decide_calling_convention(tp, NULL);
 	const reg_or_stackslot_t *res    = &cconv->results[pn];
 	ir_mode                  *mode   = get_irn_mode(node);
-	unsigned                  new_pn = pn_amd64_Call_first_res+res->reg_offset;
+	unsigned                  new_pn = pn_amd64_call_first_result + res->reg_offset;
 
 	assert(res->reg != NULL);
 	if (mode_needs_gp_reg(mode))

@@ -556,6 +556,7 @@ Call => {
 	state     => "exc_pinned",
 	in_reqs   => "...",
 	out_reqs  => "...",
+	outs      => [ "M", "first_result" ],
 	attr_type => "sparc_call_attr_t",
 	constructors => {
 		imm => {

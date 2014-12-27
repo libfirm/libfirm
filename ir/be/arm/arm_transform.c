@@ -1640,7 +1640,7 @@ static ir_node *gen_Proj_Call(ir_node *node)
 	ir_node *new_call  = be_transform_node(call);
 	switch ((pn_Call)pn) {
 	case pn_Call_M:
-		return new_r_Proj(new_call, mode_M, 0);
+		return new_r_Proj(new_call, mode_M, pn_arm_Bl_M);
 	case pn_Call_X_regular:
 	case pn_Call_X_except:
 	case pn_Call_T_result:
@@ -2004,11 +2004,8 @@ static ir_node *gen_Call(ir_node *node)
 	assert(sync_arity <= n_params);
 	assert(in_arity <= max_inputs);
 
-	/* outputs:
-	 *  - memory
-	 *  - caller saves
-	 */
-	size_t out_arity = 1 + n_caller_saves;
+	/* Count outputs. */
+	unsigned const out_arity = pn_arm_Bl_first_result + n_caller_saves;
 
 	ir_node *res;
 	if (entity != NULL) {
@@ -2027,10 +2024,10 @@ static ir_node *gen_Call(ir_node *node)
 	arch_set_irn_register_reqs_in(res, in_req);
 
 	/* create output register reqs */
-	arch_set_irn_register_req_out(res, 0, arch_no_register_req);
+	arch_set_irn_register_req_out(res, pn_arm_Bl_M, arch_no_register_req);
 	for (size_t o = 0; o < n_caller_saves; ++o) {
 		const arch_register_t *reg = caller_saves[o];
-		arch_set_irn_register_req_out(res, o+1, reg->single_req);
+		arch_set_irn_register_req_out(res, pn_arm_Bl_first_result + o, reg->single_req);
 	}
 
 	/* copy pinned attribute */

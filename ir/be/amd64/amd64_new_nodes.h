@@ -14,11 +14,6 @@
 #include "gen_amd64_new_nodes.h"
 
 enum {
-	pn_amd64_Call_mem       = 0,
-	pn_amd64_Call_flags     = 1,
-	pn_amd64_Call_first_res = 2,
-};
-enum {
 	n_amd64_Return_stack = 1,
 };
 

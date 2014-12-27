@@ -2120,12 +2120,9 @@ static ir_node *gen_Call(ir_node *node)
 	}
 	assert(in_arity <= (int)max_inputs);
 
-	/* outputs:
-	 *  - memory
-	 *  - results
-	 *  - caller saves
-	 */
-	int out_arity = 1 + cconv->n_reg_results + n_caller_saves;
+	/* Count outputs. */
+	unsigned       o         = pn_sparc_Call_first_result;
+	unsigned const out_arity = o + cconv->n_reg_results + n_caller_saves;
 
 	/* create call node */
 	ir_node *res;
@@ -2139,8 +2136,7 @@ static ir_node *gen_Call(ir_node *node)
 	arch_set_irn_register_reqs_in(res, in_req);
 
 	/* create output register reqs */
-	int o = 0;
-	arch_set_irn_register_req_out(res, o++, arch_no_register_req);
+	arch_set_irn_register_req_out(res, pn_sparc_Call_M, arch_no_register_req);
 	/* add register requirements for the result regs */
 	for (size_t r = 0; r < n_ress; ++r) {
 		const reg_or_stackslot_t  *result_info = &cconv->results[r];
@@ -2680,7 +2676,7 @@ static ir_node *gen_Proj_Call(ir_node *node)
 
 	switch ((pn_Call) pn) {
 	case pn_Call_M:
-		return new_r_Proj(new_call, mode_M, 0);
+		return new_r_Proj(new_call, mode_M, pn_sparc_Call_M);
 	case pn_Call_X_regular:
 	case pn_Call_X_except:
 	case pn_Call_T_result:

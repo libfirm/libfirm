@@ -445,6 +445,7 @@ Bl => {
 	irn_flags => [ "modify_flags" ],
 	in_reqs   => "...",
 	out_reqs  => "...",
+	outs      => [ "M", "first_result" ],
 	attr_type => "arm_Address_attr_t",
 	attr      => "ir_entity *entity, int offset",
 	emit      => 'bl %I',

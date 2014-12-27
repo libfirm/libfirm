@@ -474,6 +474,7 @@ call => {
 	state     => "exc_pinned",
 	in_reqs   => "...",
 	out_reqs  => "...",
+	outs      => [ "M", "flags", "first_result" ],
 	attr_type => "amd64_addr_attr_t",
 	attr      => "amd64_op_mode_t op_mode, amd64_addr_t addr",
 	fixed     => "amd64_insn_mode_t insn_mode = INSN_MODE_64;\n",
