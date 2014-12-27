@@ -319,7 +319,7 @@ ir_node *new_rd_DivRL(dbg_info *dbgi, ir_node *block, ir_node * irn_mem, ir_node
 {
 	ir_graph *const irg = get_irn_irg(block);
 	ir_node  *const in[] = { irn_mem, irn_left, irn_right };
-	ir_node        *res  = new_ir_node(dbgi, irg, block, op_Div, mode_T, 3, in);
+	ir_node        *res  = new_ir_node(dbgi, irg, block, op_Div, mode_T, ARRAY_SIZE(in), in);
 	res->attr.div.resmode       = resmode;
 	res->attr.div.no_remainder  = 1;
 	res->attr.div.exc.pin_state = pin_state;

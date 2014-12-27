@@ -5767,13 +5767,10 @@ static ir_node *transform_node_shift(ir_node *n)
 
 	/* ok, we can replace it */
 	assert(modulo_shf >= get_mode_size_bits(mode));
-	ir_node *block = get_nodes_block(n);
-
-	ir_node *in[2];
-	in[0] = get_binop_left(left);
-	in[1] = new_r_Const(irg, res);
-
-	ir_node *irn = new_ir_node(NULL, irg, block, get_irn_op(n), mode, 2, in);
+	ir_node *const block = get_nodes_block(n);
+	ir_node *const val   = get_binop_left(left);
+	ir_node *const amt   = new_r_Const(irg, res);
+	ir_node *const irn   = new_binop(n, block, val, amt);
 
 	DBG_OPT_ALGSIM0(n, irn, FS_OPT_REASSOC_SHIFT);
 

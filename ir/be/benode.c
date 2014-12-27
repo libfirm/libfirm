@@ -288,7 +288,7 @@ ir_node *be_new_IncSP(const arch_register_t *sp, ir_node *bl,
 	return irn;
 }
 
-ir_node *be_new_CopyKeep(ir_node *bl, ir_node *src, int n, ir_node *in_keep[])
+ir_node *be_new_CopyKeep(ir_node *const bl, ir_node *const src, int const n, ir_node *const *const in_keep)
 {
 	ir_mode  *mode  = get_irn_mode(src);
 	ir_graph *irg   = get_irn_irg(bl);
@@ -315,7 +315,8 @@ ir_node *be_new_CopyKeep(ir_node *bl, ir_node *src, int n, ir_node *in_keep[])
 
 ir_node *be_new_CopyKeep_single(ir_node *bl, ir_node *src, ir_node *keep)
 {
-	return be_new_CopyKeep(bl, src, 1, &keep);
+	ir_node *const in[] = { keep };
+	return be_new_CopyKeep(bl, src, ARRAY_SIZE(in), in);
 }
 
 ir_node *be_get_CopyKeep_op(const ir_node *cpy)

@@ -146,8 +146,7 @@ enum {
 	n_be_CopyKeep_op,
 	n_be_CopyKeep_max = n_be_CopyKeep_op
 };
-ir_node *be_new_CopyKeep(ir_node *block, ir_node *src,
-                         int n, ir_node *in_keep[]);
+ir_node *be_new_CopyKeep(ir_node *block, ir_node *src, int n, ir_node *const *in_keep);
 
 ir_node *be_new_CopyKeep_single(ir_node *block, ir_node *src, ir_node *keep);
 

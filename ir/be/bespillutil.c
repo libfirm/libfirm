@@ -1218,12 +1218,11 @@ static ir_node *add_to_keep(ir_node *last_keep,
 	if (last_keep != NULL) {
 		be_Keep_add_node(last_keep, cls, node);
 	} else {
-		ir_node *in[1] = { node };
-		ir_node *block = get_nodes_block(node);
-		ir_node *schedpoint;
-		last_keep = be_new_Keep(block, 1, in);
+		ir_node *const in[]  = { node };
+		ir_node *const block = get_nodes_block(node);
+		last_keep = be_new_Keep(block, ARRAY_SIZE(in), in);
 
-		schedpoint = skip_Proj(node);
+		ir_node *const schedpoint = skip_Proj(node);
 		if (sched_is_scheduled(schedpoint)) {
 			sched_add_after(schedpoint, last_keep);
 		}

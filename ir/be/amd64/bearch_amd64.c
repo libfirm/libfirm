@@ -222,8 +222,6 @@ static void transform_MemPerm(ir_node *node)
 	ir_node  *sp    = be_get_initial_reg_value(irg, &amd64_registers[REG_RSP]);
 	int       arity = be_get_MemPerm_entity_arity(node);
 	ir_node **pops  = ALLOCAN(ir_node*, arity);
-	ir_node  *in[1];
-	ir_node  *keep;
 	int       i;
 
 	/* create Pushs */
@@ -302,8 +300,8 @@ static void transform_MemPerm(ir_node *node)
 		pops[i] = pop;
 	}
 
-	in[0] = sp;
-	keep  = be_new_Keep(block, 1, in);
+	ir_node *const in[] = { sp };
+	ir_node *const keep = be_new_Keep(block, ARRAY_SIZE(in), in);
 	sched_replace(node, keep);
 
 	/* exchange memprojs */

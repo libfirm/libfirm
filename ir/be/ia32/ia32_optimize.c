@@ -35,6 +35,7 @@
 #include "ia32_common_transform.h"
 #include "ia32_transform.h"
 #include "ia32_architecture.h"
+#include "util.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
@@ -635,8 +636,8 @@ static ir_node *create_pop(dbg_info *dbgi, ir_node *block,
 
 	sched_add_before(schedpoint, pop);
 
-	ir_node *in[1] = { val };
-	ir_node *keep  = be_new_Keep(block, 1, in);
+	ir_node *const in[] = { val };
+	ir_node *const keep = be_new_Keep(block, ARRAY_SIZE(in), in);
 	sched_add_before(schedpoint, keep);
 
 	return stack;
