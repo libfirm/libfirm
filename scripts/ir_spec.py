@@ -99,7 +99,7 @@ class Anchor:
 	flags            = [ "dump_noblock" ]
 	pinned           = "yes"
 	singleton        = True
-	noconstructor    = True
+	constructor      = False
 	customSerializer = True
 
 @op
@@ -163,7 +163,7 @@ class ASM:
 	]
 	# constructor is written manually at the moment, because of the clobbers+
 	# constraints arrays needing special handling (2 arguments for 1 attribute)
-	noconstructor = True
+	constructor = False
 
 @op
 class Bad:
@@ -197,7 +197,7 @@ class Deleted:
 	mode             = "mode_Bad"
 	flags            = [ ]
 	pinned           = "yes"
-	noconstructor    = True
+	constructor      = False
 	customSerializer = True # this has no serializer
 
 @op

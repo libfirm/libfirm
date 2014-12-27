@@ -60,7 +60,7 @@ typedef enum {
 	pn_{{node.name}}_max = pn_{{node.name}}_{{node.outs[-1].name}}
 } pn_{{node.name}};
 {% endif %}
-{%- if not node.noconstructor %}
+{%- if node.constructor %}
 /**
  * Construct {{node.name|a_an}} node.
  *

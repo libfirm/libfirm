@@ -40,7 +40,7 @@ int is_{{spec.name}}_node(const ir_node *node)
 
 {% for node in nodes %}
 
-{%- if not node.noconstructor %}
+{%- if node.constructor %}
 ir_node *new_rd_{{node.name}}(
 	{%- filter parameters %}
 		dbg_info *dbgi

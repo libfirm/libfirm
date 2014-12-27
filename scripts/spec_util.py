@@ -104,6 +104,7 @@ def setnodedefaults(node):
 	setdefault(node, "ins", [])
 	setdefault(node, "arity", len(node.ins))
 	setdefault(node, "attrs", [])
+	setdefault(node, "constructor", True)
 	setdefault(node, "constructor_args", [])
 	setdefault(node, "customSerializer", False)
 	setdefault(node, "block", None)
