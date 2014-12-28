@@ -1225,18 +1225,6 @@ static void ia32_prepare_graph(ir_graph *irg)
 
 extern const arch_isa_if_t ia32_isa_if;
 
-static void init_asm_constraints(void)
-{
-	be_set_constraint_support(ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER,  "0123456789ADQRSXYabcdflpqrtu");
-	be_set_constraint_support(ASM_CONSTRAINT_FLAG_SUPPORTS_IMMEDIATE, "IJKLMNOin");
-	be_set_constraint_support(ASM_CONSTRAINT_FLAG_SUPPORTS_MEMOP,     "Vmo");
-	asm_constraint_flags_t const g =
-		ASM_CONSTRAINT_FLAG_SUPPORTS_IMMEDIATE |
-		ASM_CONSTRAINT_FLAG_SUPPORTS_MEMOP |
-		ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER;
-	be_set_constraint_support(g, "g");
-}
-
 /**
  * Check if Mux(sel, mux_true, mux_false) would represent a Max or Min operation
  */
@@ -1440,7 +1428,7 @@ static void ia32_init(void)
 {
 	ia32_setup_cg_config();
 
-	init_asm_constraints();
+	x86_set_be_asm_constraint_support(ia32_asm_constraints);
 
 	ia32_mode_fpcw = new_non_arithmetic_mode("fpcw", 16);
 	ia32_mode_flags = new_non_arithmetic_mode("flags", 32);
@@ -1540,7 +1528,8 @@ static void ia32_mark_remat(ir_node *node)
 
 static int ia32_is_valid_clobber(const char *clobber)
 {
-	return ia32_get_clobber_register(clobber) != NULL;
+	return x86_parse_clobber(&ia32_isa_template.base,
+	                         ia32_additional_clobber_names, clobber) != NULL;
 }
 
 static void ia32_lower_for_target(void)

@@ -15,6 +15,7 @@
 #include "bearch.h"
 #include "irnode_t.h"
 #include "x86_cc.h"
+#include "x86_asm.h"
 
 typedef enum {
 	ia32_Normal,
@@ -184,25 +185,13 @@ struct ia32_x87_attr_t {
 	bool                   pop;        /**< Emit a pop suffix. */
 };
 
-typedef struct ia32_asm_reg_t ia32_asm_reg_t;
-struct ia32_asm_reg_t {
-	unsigned                   use_input  : 1; /* use input or output pos */
-	unsigned                   valid      : 1;
-	unsigned                   memory     : 1;
-	unsigned                   dummy_fill : 13;
-	unsigned                   inout_pos  : 16; /* in/out pos where the
-	                                               register is assigned */
-	ir_mode                   *mode;
-};
-
 /**
  * The attributes for ASM nodes.
  */
 typedef struct ia32_asm_attr_t ia32_asm_attr_t;
 struct ia32_asm_attr_t {
-	ia32_attr_t           attr;         /**< the generic attribute */
-	ident                *asm_text;
-	const ia32_asm_reg_t *register_map;
+	ia32_attr_t    attr;         /**< the generic attribute */
+	x86_asm_attr_t asmattr;
 };
 
 /**

@@ -12,6 +12,10 @@
 #define FIRM_BE_IA32_IA32_TRANSFORM_H
 
 #include "firm_types.h"
+#include "x86_asm.h"
+
+extern const x86_clobber_name_t   ia32_additional_clobber_names[];
+extern const x86_asm_constraint_t ia32_asm_constraints[128];
 
 /**
  * Transform firm nodes to x86 assembler nodes, ie

@@ -1253,12 +1253,12 @@ static bool is_clobber(ir_node const *const asm_n, ir_node const *const value)
 	if (arch_register_req_is(req, should_be_same))
 		return false;
 
-	unsigned               const num     = get_Proj_num(value);
-	ia32_asm_attr_t const *const attr    = get_ia32_asm_attr_const(asm_n);
-	ia32_asm_reg_t  const *const reg_map = attr->register_map;
-	for (size_t i = 0, n = ARR_LEN(reg_map); i != n; ++i) {
-		ia32_asm_reg_t const *const reg = &reg_map[i];
-		if (!reg->use_input && reg->inout_pos == num)
+	unsigned                 const num      = get_Proj_num(value);
+	ia32_asm_attr_t   const *const attr     = get_ia32_asm_attr_const(asm_n);
+	x86_asm_operand_t const *const operands = attr->asmattr.operands;
+	for (size_t i = 0, n = ARR_LEN(operands); i != n; ++i) {
+		x86_asm_operand_t const *const op = &operands[i];
+		if (op->kind == ASM_OP_OUT_REG && op->inout_pos == num)
 			return false;
 	}
 

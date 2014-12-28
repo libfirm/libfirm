@@ -903,118 +903,20 @@ static void emit_ia32_Jmp(const ir_node *node)
 	}
 }
 
-/**
- * Emit an inline assembler operand.
- *
- * @param node  the ia32_ASM node
- * @param s     points to the operand (a %c)
- *
- * @return  pointer to the first char in s NOT in the current operand
- */
-static const char* emit_asm_operand(const ir_node *node, const char *s)
+static void emit_ia32_asm_register(const arch_register_t *reg, char modifier,
+                                   ir_mode *mode)
 {
-	assert(*s == '%');
-	char c = *(++s);
-
-	/* parse modifiers */
-	char modifier = 0;
-	switch (c) {
-	case 0:
-		ir_fprintf(stderr, "Warning: asm text (%+F) ends with %%\n", node);
-		be_emit_char('%');
-		return s;
-
-	case '%':
-		be_emit_char('%');
-		return s + 1;
-	case 'w':
-	case 'b':
-	case 'h':
-		modifier = c;
-		++s;
-		break;
-	case '0':
-	case '1':
-	case '2':
-	case '3':
-	case '4':
-	case '5':
-	case '6':
-	case '7':
-	case '8':
-	case '9':
-		break;
+	const char *name;
+	switch (modifier) {
+	case '\0': name = get_register_name_mode(reg, mode); break;
+	case  'b': name = get_register_name_8bit_low(reg); break;
+	case  'h': name = get_register_name_8bit_high(reg); break;
+	case  'w': name = get_register_name_16bit(reg); break;
 	default:
-		ir_fprintf(stderr,
-				"Warning: asm text (%+F) contains unknown modifier '%c' for asm op\n",
-				node, c);
-		++s;
-		break;
+		panic("invalid asm op modifier");
 	}
-
-	/* parse number */
-	int num;
-	int p;
-	if (sscanf(s, "%d%n", &num, &p) != 1) {
-		ir_fprintf(stderr, "Warning: Couldn't parse assembler operand (%+F)\n",
-		           node);
-		return s;
-	} else {
-		s += p;
-	}
-
-	const ia32_attr_t     *ia32_attr = get_ia32_attr_const(node);
-	const ia32_asm_attr_t *attr      = CONST_CAST_IA32_ATTR(ia32_asm_attr_t, ia32_attr);
-	const ia32_asm_reg_t  *asm_regs  = attr->register_map;
-	if (num < 0 || ARR_LEN(asm_regs) <= (size_t)num) {
-		ir_fprintf(stderr,
-				"Error: Custom assembler references invalid input/output (%+F)\n",
-				node);
-		return s;
-	}
-	const ia32_asm_reg_t *asm_reg = &asm_regs[num];
-	assert(asm_reg->valid);
-
-	/* get register */
-	const arch_register_t *reg;
-	if (asm_reg->use_input == 0) {
-		reg = arch_get_irn_register_out(node, asm_reg->inout_pos);
-	} else {
-		ir_node *pred = get_irn_n(node, asm_reg->inout_pos);
-
-		/* might be an immediate value */
-		if (is_ia32_Immediate(pred)) {
-			emit_ia32_Immediate(pred);
-			return s;
-		}
-		reg = arch_get_irn_register(pred);
-	}
-	if (reg == NULL) {
-		ir_fprintf(stderr,
-				"Warning: no register assigned for %d asm op (%+F)\n",
-				num, node);
-		return s;
-	}
-
-	/* Emit the register. */
-	if (asm_reg->memory) {
-		be_emit_char('(');
-		emit_register(reg, NULL);
-		be_emit_char(')');
-	} else {
-		const char *name;
-		switch (modifier) {
-		case '\0': name = get_register_name_mode(reg, asm_reg->mode); break;
-		case  'b': name = get_register_name_8bit_low(reg); break;
-		case  'h': name = get_register_name_8bit_high(reg); break;
-		case  'w': name = get_register_name_16bit(reg); break;
-		default:   panic("invalid asm op modifier");
-		}
-		be_emit_char('%');
-		be_emit_string(name);
-	}
-
-	return s;
+	be_emit_char('%');
+	be_emit_string(name);
 }
 
 /**
@@ -1022,30 +924,9 @@ static const char* emit_asm_operand(const ir_node *node, const char *s)
  */
 static void emit_ia32_Asm(const ir_node *node)
 {
-	const void            *gen_attr = get_irn_generic_attr_const(node);
-	const ia32_asm_attr_t *attr
-		= CONST_CAST_IA32_ATTR(ia32_asm_attr_t, gen_attr);
-	ident                 *asm_text = attr->asm_text;
-	const char            *s        = get_id_str(asm_text);
-
-	be_emit_cstring("#APP");
-	be_emit_finish_line_gas(node);
-
-	if (s[0] != '\t')
-		be_emit_char('\t');
-
-	while (*s != 0) {
-		if (*s == '%') {
-			s = emit_asm_operand(node, s);
-		} else {
-			be_emit_char(*s++);
-		}
-	}
-
-	be_emit_cstring("\n#NO_APP\n");
-	be_emit_write_line();
+	const ia32_asm_attr_t *attr = get_ia32_asm_attr_const(node);
+	x86_emit_asm(node, &attr->asmattr, emit_ia32_asm_register);
 }
-
 
 /**
  * Emit movsb/w instructions to make mov count divideable by 4

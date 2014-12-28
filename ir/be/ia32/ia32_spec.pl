@@ -346,9 +346,8 @@ Asm => {
 	arity     => "variable",
 	out_arity => "variable",
 	attr_type => "ia32_asm_attr_t",
-	attr      => "ident *asm_text, const ia32_asm_reg_t *register_map",
-	init_attr => "attr->asm_text = asm_text;\n".
-	             "\tattr->register_map = register_map;\n",
+	attr      => "const x86_asm_attr_t *asmattr",
+	init_attr => "attr->asmattr = *asmattr;",
 	latency   => 10,
 	modified_flags => $status_flags,
 },
