@@ -96,12 +96,6 @@ void arch_set_irn_register(ir_node *node, const arch_register_t *reg)
 	out->reg = reg;
 }
 
-void arch_set_irn_flags(ir_node *node, arch_irn_flags_t flags)
-{
-	backend_info_t *const info = be_get_info(node);
-	info->flags = flags;
-}
-
 void arch_add_irn_flags(ir_node *node, arch_irn_flags_t flags)
 {
 	backend_info_t *const info = be_get_info(node);

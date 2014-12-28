@@ -1009,7 +1009,7 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
 	ir_node *cpy = find_copy(skip_Proj(irn), other_different);
 	if (cpy == NULL) {
 		cpy = be_new_Copy(block, other_different);
-		arch_set_irn_flags(cpy, arch_irn_flag_dont_spill);
+		arch_add_irn_flags(cpy, arch_irn_flag_dont_spill);
 		DB((dbg_constr, LEVEL_1, "created non-spillable %+F for value %+F\n", cpy, other_different));
 	} else {
 		DB((dbg_constr, LEVEL_1, "using already existing %+F for value %+F\n", cpy, other_different));

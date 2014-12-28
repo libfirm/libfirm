@@ -157,8 +157,6 @@ static inline arch_irn_flags_t arch_get_irn_flags(const ir_node *node)
 	return info->flags;
 }
 
-void arch_set_irn_flags(ir_node *node, arch_irn_flags_t flags);
-
 void arch_add_irn_flags(ir_node *node, arch_irn_flags_t flags);
 
 /**
