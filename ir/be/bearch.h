@@ -157,7 +157,11 @@ static inline arch_irn_flags_t arch_get_irn_flags(const ir_node *node)
 	return info->flags;
 }
 
-void arch_add_irn_flags(ir_node *node, arch_irn_flags_t flags);
+static inline void arch_add_irn_flags(ir_node *const node, arch_irn_flags_t const flags)
+{
+	backend_info_t *const info = be_get_info(node);
+	info->flags |= flags;
+}
 
 /**
  * Returns true if the given node should not be scheduled (has
