@@ -353,15 +353,6 @@ Asm => {
 	modified_flags => $status_flags,
 },
 
-# "allocates" a free register
-ProduceVal => {
-	template  => $valueop,
-	op_flags  => [ "constlike", "cse_neutral" ],
-	emit      => "",
-	latency   => 0,
-	attrs_equal => "attrs_equal_false",
-},
-
 Add => {
 	template => $binop_commutative,
 	emit     => "add%M %B",

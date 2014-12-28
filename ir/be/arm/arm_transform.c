@@ -1385,9 +1385,9 @@ static ir_node *gen_CopyB(ir_node *node)
 	ir_node  *dst_copy = be_new_Copy(block, new_dst);
 
 	return new_bd_arm_CopyB(dbg, block, dst_copy, src_copy,
-	                        new_bd_arm_EmptyReg(dbg, block),
-	                        new_bd_arm_EmptyReg(dbg, block),
-	                        new_bd_arm_EmptyReg(dbg, block),
+	                        be_new_AnyVal(block, &arm_reg_classes[CLASS_arm_gp]),
+	                        be_new_AnyVal(block, &arm_reg_classes[CLASS_arm_gp]),
+	                        be_new_AnyVal(block, &arm_reg_classes[CLASS_arm_gp]),
 	                        new_mem, size);
 }
 

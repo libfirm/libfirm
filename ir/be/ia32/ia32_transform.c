@@ -1919,7 +1919,7 @@ static ir_node *create_sex_32_64(dbg_info *dbgi, ir_node *block,
 
 	ir_node *res;
 	if (ia32_cg_config.use_short_sex_eax) {
-		ir_node *pval = new_bd_ia32_ProduceVal(dbgi, block);
+		ir_node *pval = be_new_AnyVal(block, &ia32_reg_classes[CLASS_ia32_gp]);
 		res = new_bd_ia32_Cltd(dbgi, block, val, pval);
 	} else {
 		ir_graph *const irg   = get_irn_irg(block);
@@ -6258,7 +6258,7 @@ static ir_node *gen_ASM(ir_node *node)
 			/* add a new (dummy) input which occupies the register */
 			assert(arch_register_req_is(outreq, limited));
 			in_reg_reqs[n_ins] = outreq;
-			in[n_ins]          = new_bd_ia32_ProduceVal(NULL, block);
+			in[n_ins]          = be_new_AnyVal(block, outreq->cls);
 			++n_ins;
 		}
 	} else {

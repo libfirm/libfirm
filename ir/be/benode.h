@@ -22,8 +22,9 @@
 #include "bearch.h"
 
 typedef enum be_opcode {
+	beo_AnyVal,
+	beo_first = beo_AnyVal,
 	beo_Copy,
-	beo_first = beo_Copy,
 	beo_CopyKeep,
 	beo_IncSP,
 	beo_Keep,
@@ -32,13 +33,13 @@ typedef enum be_opcode {
 	beo_last  = beo_Perm
 } be_opcode;
 
+extern ir_op *op_be_AnyVal;
 extern ir_op *op_be_Copy;
 extern ir_op *op_be_CopyKeep;
 extern ir_op *op_be_IncSP;
 extern ir_op *op_be_Keep;
 extern ir_op *op_be_MemPerm;
 extern ir_op *op_be_Perm;
-extern ir_op *op_be_ProduceVal;
 
 /**
  * Determines if irn is a be_node.
@@ -163,6 +164,14 @@ void be_set_MemPerm_offset(ir_node *irn, int offset);
 int be_get_MemPerm_offset(const ir_node *irn);
 
 unsigned be_get_MemPerm_entity_arity(const ir_node *irn);
+
+/**
+ * Create a AnyVal node. Use of this node should be avoided!
+ * The node is used as input at places where we need an input register assigned
+ * but don't care about its contents. This is for example necessary to fixup
+ * nodes which are not register pressure faithfull.
+ */
+ir_node *be_new_AnyVal(ir_node *block, const arch_register_class_t *cls);
 
 /**
  * Impose a register constraint on a backend node.

@@ -437,16 +437,6 @@ Bl => {
 	emit       => 'bl %I',
 },
 
-# this node produces ALWAYS an empty (tempary) gp reg and cannot be CSE'd
-EmptyReg => {
-	op_flags    => [ "constlike" ],
-	irn_flags   => [ "rematerializable" ],
-	reg_req     => { out => [ "gp" ] },
-	emit        => '/* %D0 now available for calculations */',
-	attrs_equal => 'attrs_equal_false',
-	mode        => $mode_gp,
-},
-
 CopyB => {
 	state     => "pinned",
 	attr      => "unsigned size",
