@@ -47,15 +47,22 @@ static be_stackorder_t *stackorder;
 /** we don't have a concept of aliasing registers, so enumerate them
  * manually for the asm nodes. */
 const x86_clobber_name_t amd64_additional_clobber_names[] = {
-	{ "al", REG_RAX }, { "ah", REG_RAX }, { "ax", REG_RAX },
-	{ "bl", REG_RBX }, { "bh", REG_RBX }, { "bx", REG_RBX },
-	{ "cl", REG_RCX }, { "ch", REG_RCX }, { "cx", REG_RCX },
-	{ "dl", REG_RDX }, { "dh", REG_RDX }, { "dx", REG_RDX },
-	{ "si", REG_RSI }, { "di", REG_RDI }, { "sp", REG_RSP },
-	{ "bp", REG_RBP },
-	{ "eax", REG_RAX }, { "ebx", REG_RBX }, { "ecx", REG_RCX },
-	{ "edx", REG_RDX }, { "esi", REG_RSI }, { "edi", REG_RDI },
-	{ "ebp", REG_RBP }, { "esp", REG_RBP },
+	{ "al", REG_RAX }, { "ah", REG_RAX }, { "ax", REG_RAX }, { "eax", REG_RAX },
+	{ "bl", REG_RBX }, { "bh", REG_RBX }, { "bx", REG_RBX }, { "ebx", REG_RBX },
+	{ "cl", REG_RCX }, { "ch", REG_RCX }, { "cx", REG_RCX }, { "ecx", REG_RCX },
+	{ "dl", REG_RDX }, { "dh", REG_RDX }, { "dx", REG_RDX }, { "edx", REG_RDX },
+	{ "sil",  REG_RSI }, { "si",   REG_RSI }, { "esi",  REG_RSI },
+	{ "dil",  REG_RDI }, { "di",   REG_RDI }, { "edi",  REG_RDI },
+	{ "bpl",  REG_RBP }, { "bp",   REG_RBP }, { "ebp",  REG_RBP },
+	{ "spl",  REG_RSP }, { "sp",   REG_RSP }, { "esp",  REG_RSP },
+	{ "r8b",  REG_R8  }, { "r8w",  REG_R8  }, { "r8d",  REG_R8  },
+	{ "r9b",  REG_R9  }, { "r9w",  REG_R9  }, { "r9d",  REG_R9  },
+	{ "r10b", REG_R10 }, { "r10w", REG_R10 }, { "r10d", REG_R10 },
+	{ "r11b", REG_R11 }, { "r11w", REG_R11 }, { "r11d", REG_R11 },
+	{ "r12b", REG_R12 }, { "r12w", REG_R12 }, { "r12d", REG_R12 },
+	{ "r13b", REG_R13 }, { "r13w", REG_R13 }, { "r13d", REG_R13 },
+	{ "r14b", REG_R14 }, { "r14w", REG_R14 }, { "r14d", REG_R14 },
+	{ "r15b", REG_R15 }, { "r15w", REG_R15 }, { "r15d", REG_R15 },
 	{ NULL, ~0u }
 };
 
