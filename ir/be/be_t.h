@@ -48,6 +48,8 @@ extern be_options_t be_options;
 
 extern after_transform_func be_after_transform;
 
+extern asm_constraint_flags_t be_asm_constraint_flags[256];
+
 struct be_main_env_t {
 	arch_env_t   *arch_env;
 	const char   *cup_name;             /**< name of the compilation unit */

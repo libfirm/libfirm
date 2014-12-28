@@ -107,19 +107,19 @@ static const lc_opt_table_entry_t be_main_options[] = {
 static be_module_list_entry_t *isa_ifs         = NULL;
 static bool                    isa_initialized = false;
 
-static asm_constraint_flags_t asm_constraint_flags[256];
+asm_constraint_flags_t be_asm_constraint_flags[256];
 
 void be_set_constraint_support(asm_constraint_flags_t const flags, char const *const constraints)
 {
 	for (char const *i = constraints; *i != '\0'; ++i) {
-		asm_constraint_flags[(unsigned char)*i] = flags;
+		be_asm_constraint_flags[(unsigned char)*i] = flags;
 	}
 }
 
 static void be_init_default_asm_constraint_flags(void)
 {
-	for (size_t i = 0; i != ARRAY_SIZE(asm_constraint_flags); ++i) {
-		asm_constraint_flags[i] = ASM_CONSTRAINT_FLAG_INVALID;
+	for (size_t i = 0; i != ARRAY_SIZE(be_asm_constraint_flags); ++i) {
+		be_asm_constraint_flags[i] = ASM_CONSTRAINT_FLAG_INVALID;
 	}
 
 	be_set_constraint_support(ASM_CONSTRAINT_FLAG_MODIFIER_EARLYCLOBBER, "&");
@@ -175,7 +175,7 @@ asm_constraint_flags_t be_parse_asm_constraints(const char *constraint)
 			break;
 
 		default:
-			flags |= asm_constraint_flags[(unsigned char)*c];
+			flags |= be_asm_constraint_flags[(unsigned char)*c];
 			break;
 		}
 	}
@@ -316,7 +316,7 @@ static be_main_env_t *be_init_env(be_main_env_t *const env,
 	env->cup_name             = compilation_unit_name;
 	env->arch_env             = isa_if->begin_codegeneration();
 
-	memset(asm_constraint_flags, 0, sizeof(asm_constraint_flags));
+	memset(be_asm_constraint_flags, 0, sizeof(be_asm_constraint_flags));
 
 	return env;
 }
