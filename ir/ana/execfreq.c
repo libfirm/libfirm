@@ -17,13 +17,13 @@
  *     frequencies of its predecessor blocks scaled by the probability factors
  *     of the edges to the predecessors.
  *   - All outgoing probabilities have a sum of 1.0.
- * We then assign equaly distributed probablilities for normal controlflow
+ * We then assign equally distributed probablilities for normal controlflow
  * splits, and higher probabilities for backedges.
  *
  * Special case: In case of endless loops or "noreturn" calls some blocks have
  * no path to the end node, which produces undesired results (0, infinite
- * execution frequencies). We aleviate that by adding artificial edges from kept
- * blocks with a path to end.
+ * execution frequencies). We alleviate that by adding artificial edges from
+ * kept blocks with a path to end.
  */
 #include <stdio.h>
 #include <string.h>
