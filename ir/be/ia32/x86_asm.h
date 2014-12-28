@@ -1,3 +1,14 @@
+/*
+ * This file is part of libFirm.
+ * Copyright (C) 2014 University of Karlsruhe.
+ */
+
+/**
+ * @file
+ * @brief  Handling of x86 inline assembly
+ * @author Matthias Braun
+ * Matching and emitting of inline assembly nodes.
+ */
 #ifndef FIRM_BE_IA32_X86_ASM_H
 #define FIRM_BE_IA32_X86_ASM_H
 
