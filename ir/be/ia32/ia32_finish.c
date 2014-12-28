@@ -24,7 +24,6 @@
 #include "bearch_ia32_t.h"
 #include "ia32_finish.h"
 #include "ia32_new_nodes.h"
-#include "ia32_common_transform.h"
 #include "ia32_transform.h"
 #include "ia32_optimize.h"
 #include "gen_ia32_regalloc_if.h"

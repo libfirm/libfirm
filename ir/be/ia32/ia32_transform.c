@@ -41,7 +41,6 @@
 #include "bearch_ia32_t.h"
 #include "gen_ia32_regalloc_if.h"
 #include "ia32_architecture.h"
-#include "ia32_common_transform.h"
 #include "ia32_new_nodes.h"
 #include "ia32_nodes_attr.h"
 #include "ia32_transform.h"
@@ -63,7 +62,8 @@ static be_start_info_t  start_val[N_IA32_REGISTERS];
 static unsigned         start_params_offset;
 static pmap            *node_to_stack;
 static be_stackorder_t *stackorder;
-bool                    ia32_no_pic_adjust;
+static ir_heights_t    *heights;
+static bool             no_pic_adjust;
 
 typedef ir_node *construct_binop_func(dbg_info *db, ir_node *block,
         ir_node *base, ir_node *index, ir_node *mem, ir_node *op1,
@@ -96,6 +96,11 @@ static ir_node *create_I2I_Conv(ir_mode *src_mode, dbg_info *dbgi, ir_node *bloc
 /* its enough to have those once */
 static ir_node *nomem;
 static ir_node *noreg_GP;
+
+static bool mode_needs_gp_reg(ir_mode *mode)
+{
+	return get_mode_arithmetic(mode) == irma_twos_complement;
+}
 
 /** Return non-zero is a node represents the 0 constant. */
 static bool is_Const_0(ir_node *node)
@@ -208,6 +213,138 @@ static ir_node *get_initial_fpcw(ir_graph *irg)
 	return be_get_start_proj(irg, &start_val[REG_FPCW]);
 }
 
+static bool check_immediate_constraint(long val, char immediate_constraint_type)
+{
+	switch (immediate_constraint_type) {
+	case 'g':
+	case 'i':
+	case 'n': return true;
+
+	case 'I': return 0 <= val && val <=  31;
+	case 'J': return 0 <= val && val <=  63;
+	case 'K': return ia32_is_8bit_val(val);
+	case 'L': return val == 0xff || val == 0xffff;
+	case 'M': return 0 <= val && val <=   3;
+	case 'N': return 0 <= val && val <= 255;
+	case 'O': return 0 <= val && val <= 127;
+
+	default: panic("invalid immediate constraint found");
+	}
+}
+
+ir_node *ia32_create_Immediate_full(ir_graph *const irg,
+		ir_entity *const entity, bool const no_pic_adjust, int32_t const val)
+{
+	ir_node *const start_block = get_irg_start_block(irg);
+	ir_node *const immediate
+		= new_bd_ia32_Immediate(NULL, start_block, entity, no_pic_adjust, val);
+	arch_set_irn_register(immediate, &ia32_registers[REG_GP_NOREG]);
+	return immediate;
+}
+
+static ir_node *try_create_Immediate(ir_node *node,
+                                     char immediate_constraint_type)
+{
+	ir_mode *const mode = get_irn_mode(node);
+	if (!mode_is_int(mode) && !mode_is_reference(mode))
+		return NULL;
+
+	ir_node   *cnst;
+	ir_entity *entity;
+	if (is_Const(node)) {
+		cnst   = node;
+		entity = NULL;
+	} else if (is_Address(node)) {
+		cnst   = NULL;
+		entity = get_Address_entity(node);
+		if (is_tls_entity(entity))
+			return NULL;
+	} else if (is_Add(node)) {
+		ir_node *left  = get_Add_left(node);
+		ir_node *right = get_Add_right(node);
+		if (is_Const(left) && is_Address(right)) {
+			cnst   = left;
+			entity = get_Address_entity(right);
+		} else if (is_Address(left) && is_Const(right)) {
+			cnst   = right;
+			entity = get_Address_entity(left);
+		} else {
+			return NULL;
+		}
+	} else {
+		return NULL;
+	}
+
+	long val = 0;
+	if (cnst != NULL) {
+		ir_tarval *offset = get_Const_tarval(cnst);
+		if (!tarval_is_long(offset)) {
+			ir_fprintf(stderr, "Optimization warning: tarval of %+F is not a long?\n", cnst);
+			return NULL;
+		}
+
+		val = get_tarval_long(offset);
+		if (!check_immediate_constraint(val, immediate_constraint_type))
+			return NULL;
+	}
+
+	if (entity != NULL) {
+		/* we need full 32bits for entities */
+		if (immediate_constraint_type != 'i')
+			return NULL;
+	}
+
+	ir_graph *const irg = get_irn_irg(node);
+	return ia32_create_Immediate_full(irg, entity, no_pic_adjust, val);
+}
+
+static ir_type *get_prim_type(const ir_mode *mode)
+{
+	if (mode == ia32_mode_E) {
+		return ia32_type_E;
+	} else {
+		return get_type_for_mode(mode);
+	}
+}
+
+static ir_entity *create_float_const_entity(ia32_isa_t *isa, ir_tarval *tv,
+                                            ident *name)
+{
+	ir_mode *mode = get_tarval_mode(tv);
+	if (!ia32_cg_config.use_sse2) {
+		/* try to reduce the mode to produce smaller sized entities */
+		ir_mode *const modes[] = { mode_F, mode_D, NULL };
+		for (ir_mode *const *i = modes;; ++i) {
+			ir_mode *const to = *i;
+			if (!to || to == mode)
+				break;
+			if (tarval_ieee754_can_conv_lossless(tv, to)) {
+				tv   = tarval_convert_to(tv, to);
+				mode = to;
+				break;
+			}
+		}
+	}
+
+	ir_entity *res = pmap_get(ir_entity, isa->tv_ent, tv);
+	if (!res) {
+		if (!name)
+			name = id_unique("C%u");
+
+		ir_type *const tp = get_prim_type(mode);
+		res = new_entity(get_glob_type(), name, tp);
+		set_entity_ld_ident(res, get_entity_ident(res));
+		set_entity_visibility(res, ir_visibility_private);
+		add_entity_linkage(res, IR_LINKAGE_CONSTANT);
+
+		ir_initializer_t *const initializer = create_initializer_tarval(tv);
+		set_entity_initializer(res, initializer);
+
+		pmap_insert(isa->tv_ent, tv, res);
+	}
+	return res;
+}
+
 /**
  * Transforms a Const.
  */
@@ -283,7 +420,7 @@ static ir_node *gen_Const(ir_node *node)
 				}
 #endif /* CONSTRUCT_SSE_CONST */
 				ir_entity *floatent
-					= ia32_create_float_const_entity(isa, tv, NULL);
+					= create_float_const_entity(isa, tv, NULL);
 
 				ir_node *base = get_global_base(irg);
 				load = new_bd_ia32_xLoad(dbgi, block, base, noreg_GP, nomem,
@@ -303,7 +440,7 @@ static ir_node *gen_Const(ir_node *node)
 				res  = load;
 			} else {
 				ir_entity *floatent
-					= ia32_create_float_const_entity(isa, tv, NULL);
+					= create_float_const_entity(isa, tv, NULL);
 				/* create_float_const_ent is smart and sometimes creates
 				   smaller entities */
 				ir_mode *ls_mode  = get_type_mode(get_entity_type(floatent));
@@ -348,7 +485,7 @@ static ir_node *gen_Address(ir_node *node)
 	dbg_info *dbgi      = get_irn_dbg_info(node);
 	ir_mode  *mode      = get_irn_mode(node);
 
-	if (!ia32_mode_needs_gp_reg(mode))
+	if (!mode_needs_gp_reg(mode))
 		panic("unexpected mode for Address");
 
 	ir_entity *entity = get_Address_entity(node);
@@ -444,7 +581,7 @@ ir_entity *ia32_gen_fp_known_const(ir_graph *const irg, ia32_known_const_t kct)
 		ir_tarval *tv = new_tarval_from_str(cnst_str, strlen(cnst_str), mode);
 
 		if (kct == ia32_ULLBIAS) {
-			ir_type *type  = ia32_get_prim_type(ia32_mode_float32);
+			ir_type *type  = get_prim_type(ia32_mode_float32);
 			ir_type *atype = ia32_create_float_array(type);
 
 			ent = new_entity(get_glob_type(), name, atype);
@@ -460,13 +597,77 @@ ir_entity *ia32_gen_fp_known_const(ir_graph *const irg, ia32_known_const_t kct)
 				create_initializer_tarval(tv));
 			set_entity_initializer(ent, initializer);
 		} else {
-			ent = ia32_create_float_const_entity(isa, tv, name);
+			ent = create_float_const_entity(isa, tv, name);
 		}
 		/* cache the entry */
 		ent_cache[kct] = ent;
 	}
 
 	return ent_cache[kct];
+}
+
+static ir_node *gen_Unknown(ir_node *node)
+{
+	ir_mode  *mode  = get_irn_mode(node);
+	dbg_info *dbgi  = get_irn_dbg_info(node);
+	ir_graph *irg   = get_irn_irg(node);
+	ir_node  *block = get_irg_start_block(irg);
+	ir_node  *res   = NULL;
+
+	if (mode_is_float(mode)) {
+		if (ia32_cg_config.use_sse2) {
+			res = new_bd_ia32_xUnknown(dbgi, block);
+		} else {
+			res = new_bd_ia32_fldz(dbgi, block);
+		}
+	} else if (mode_needs_gp_reg(mode)) {
+		res = new_bd_ia32_Unknown(dbgi, block);
+	} else {
+		panic("unsupported Unknown-Mode");
+	}
+
+	return res;
+}
+
+/**
+ * Checks whether other node inputs depend on the am_candidate (via mem-proj).
+ */
+static bool prevents_AM(ir_node *const block, ir_node *const am_candidate,
+                        ir_node *const other)
+{
+	if (get_nodes_block(other) != block)
+		return false;
+
+	if (is_Sync(other)) {
+		int i;
+
+		for (i = get_Sync_n_preds(other) - 1; i >= 0; --i) {
+			ir_node *const pred = get_Sync_pred(other, i);
+
+			if (get_nodes_block(pred) != block)
+				continue;
+
+			/* Do not block ourselves from getting eaten */
+			if (is_Proj(pred) && get_Proj_pred(pred) == am_candidate)
+				continue;
+
+			if (!heights_reachable_in_block(heights, pred, am_candidate))
+				continue;
+
+			return true;
+		}
+
+		return false;
+	} else {
+		/* Do not block ourselves from getting eaten */
+		if (is_Proj(other) && get_Proj_pred(other) == am_candidate)
+			return false;
+
+		if (!heights_reachable_in_block(heights, other, am_candidate))
+			return false;
+
+		return true;
+	}
 }
 
 /**
@@ -582,10 +783,10 @@ static bool ia32_use_source_address_mode(ir_node *block, ir_node *node,
 		return false;
 
 	/* don't do AM if other node inputs depend on the load (via mem-proj) */
-	if (other != NULL && ia32_prevents_AM(block, load, other))
+	if (other != NULL && prevents_AM(block, load, other))
 		return false;
 
-	if (other2 != NULL && ia32_prevents_AM(block, load, other2))
+	if (other2 != NULL && prevents_AM(block, load, other2))
 		return false;
 
 	return true;
@@ -627,7 +828,7 @@ static void build_address(ia32_address_mode_t *am, ir_node *node,
 		const arch_env_t *arch_env = be_get_irg_arch_env(irg);
 		ia32_isa_t       *isa      = (ia32_isa_t*) arch_env;
 		ir_tarval        *tv       = get_Const_tarval(node);
-		ir_entity *entity = ia32_create_float_const_entity(isa, tv, NULL);
+		ir_entity *entity = create_float_const_entity(isa, tv, NULL);
 		addr->base        = get_global_base(irg);
 		addr->index       = noreg_GP;
 		addr->mem         = nomem;
@@ -700,8 +901,8 @@ static bool is_downconv(const ir_node *node)
 	ir_mode *src_mode  = get_irn_mode(get_Conv_op(node));
 	ir_mode *dest_mode = get_irn_mode(node);
 	return
-		ia32_mode_needs_gp_reg(src_mode)  &&
-		ia32_mode_needs_gp_reg(dest_mode) &&
+		mode_needs_gp_reg(src_mode)  &&
+		mode_needs_gp_reg(dest_mode) &&
 		get_mode_size_bits(dest_mode) <= get_mode_size_bits(src_mode);
 }
 
@@ -758,8 +959,8 @@ static bool is_sameconv(ir_node *node)
 	ir_mode *src_mode  = get_irn_mode(get_Conv_op(node));
 	ir_mode *dest_mode = get_irn_mode(node);
 	return
-		ia32_mode_needs_gp_reg(src_mode)  &&
-		ia32_mode_needs_gp_reg(dest_mode) &&
+		mode_needs_gp_reg(src_mode)  &&
+		mode_needs_gp_reg(dest_mode) &&
 		get_mode_size_bits(dest_mode) == get_mode_size_bits(src_mode);
 }
 
@@ -877,7 +1078,7 @@ static void match_arguments(ia32_address_mode_t *am, ir_node *block,
 	 * op2 input */
 	ir_node *new_op2 = NULL;
 	if (!(flags & match_try_am) && use_immediate) {
-		new_op2 = ia32_try_create_Immediate(op2, 'i');
+		new_op2 = try_create_Immediate(op2, 'i');
 	}
 
 	ir_node *new_op1;
@@ -2252,14 +2453,14 @@ static bool use_dest_am(ir_node *block, ir_node *node, ir_node *mem,
 	/* don't do AM if other node inputs depend on the load (via mem-proj) */
 	if (other != NULL                   &&
 	    get_nodes_block(other) == block &&
-	    heights_reachable_in_block(ia32_heights, other, load)) {
+	    heights_reachable_in_block(heights, other, load)) {
 		return false;
 	}
 
-	if (ia32_prevents_AM(block, load, mem))
+	if (prevents_AM(block, load, mem))
 		return false;
 	/* Store should be attached to the load via mem */
-	assert(heights_reachable_in_block(ia32_heights, mem, load));
+	assert(heights_reachable_in_block(heights, mem, load));
 	return true;
 }
 
@@ -2405,7 +2606,7 @@ static ir_node *try_create_dest_am(ir_node *node)
 	unsigned  bits = get_mode_size_bits(mode);
 
 	/* handle only GP modes for now... */
-	if (!ia32_mode_needs_gp_reg(mode))
+	if (!mode_needs_gp_reg(mode))
 		return NULL;
 
 	for (;;) {
@@ -2416,7 +2617,7 @@ static ir_node *try_create_dest_am(ir_node *node)
 		if (is_Conv(val)) {
 			ir_node *conv_op   = get_Conv_op(val);
 			ir_mode *pred_mode = get_irn_mode(conv_op);
-			if (!ia32_mode_needs_gp_reg(pred_mode))
+			if (!mode_needs_gp_reg(pred_mode))
 				break;
 			if (pred_mode == mode_b || bits <= get_mode_size_bits(pred_mode)) {
 				val = conv_op;
@@ -3020,7 +3221,7 @@ static ir_node *gen_Cmp(ir_node *node)
 			return create_Fucom(node);
 		}
 	}
-	assert(ia32_mode_needs_gp_reg(cmp_mode));
+	assert(mode_needs_gp_reg(cmp_mode));
 
 	/* Prefer the Test instruction, when encountering (x & y) ==/!= 0 */
 	ia32_address_mode_t am;
@@ -3103,7 +3304,7 @@ static ir_node *create_CMov(ir_node *node, ir_node *flags, ir_node *new_flags,
 	ir_node  *val_true  = get_Mux_true(node);
 	ir_node  *val_false = get_Mux_false(node);
 	assert(ia32_cg_config.use_cmov);
-	assert(ia32_mode_needs_gp_reg(get_irn_mode(val_true)));
+	assert(mode_needs_gp_reg(get_irn_mode(val_true)));
 
 	ia32_address_mode_t am;
 	ir_node *block = get_nodes_block(node);
@@ -3218,7 +3419,7 @@ static ir_entity *ia32_create_const_array(ir_node *c0, ir_node *c1,
 
 	}
 
-	ir_type *tp = ia32_get_prim_type(mode);
+	ir_type *tp = get_prim_type(mode);
 	tp = ia32_create_float_array(tp);
 
 	ir_entity *ent = new_entity(get_glob_type(), id_unique("C%u"), tp);
@@ -3427,7 +3628,7 @@ static ir_node *gen_Mux(ir_node *node)
 
 	int is_abs = ir_mux_is_abs(sel, mux_false, mux_true);
 	if (is_abs != 0) {
-		if (ia32_mode_needs_gp_reg(mode)) {
+		if (mode_needs_gp_reg(mode)) {
 			ir_fprintf(stderr, "Optimization warning: Integer abs %+F not transformed\n",
 			           node);
 		} else {
@@ -3529,7 +3730,7 @@ static ir_node *gen_Mux(ir_node *node)
 		panic("cannot transform floating point Mux");
 
 	} else {
-		assert(ia32_mode_needs_gp_reg(mode));
+		assert(mode_needs_gp_reg(mode));
 
 		if (is_Cmp(sel)) {
 			ir_node    *cmp_left  = get_Cmp_left(sel);
@@ -4067,7 +4268,7 @@ static ir_node *gen_Bitcast(ir_node *const node)
 static ir_node *create_immediate_or_transform(ir_node *const node,
                                               const char immediate_mode)
 {
-	ir_node *new_node = ia32_try_create_Immediate(node, immediate_mode);
+	ir_node *new_node = try_create_Immediate(node, immediate_mode);
 	if (new_node == NULL) {
 		new_node = be_transform_node(node);
 	}
@@ -4260,7 +4461,7 @@ static ir_node *gen_Alloc(ir_node *node)
 {
 	ir_node *stack    = get_stack_pointer_for(node);
 	ir_node *size     = get_Alloc_size(node);
-	ir_node *new_size = ia32_try_create_Immediate(size, 'i');
+	ir_node *new_size = try_create_Immediate(size, 'i');
 	ir_node *mem      = get_Alloc_mem(node);
 	ir_node *new_mem  = be_transform_node(mem);
 	if (new_size == NULL)
@@ -4302,7 +4503,7 @@ static ir_node *gen_Phi(ir_node *node)
 {
 	ir_mode                   *mode = get_irn_mode(node);
 	const arch_register_req_t *req;
-	if (ia32_mode_needs_gp_reg(mode)) {
+	if (mode_needs_gp_reg(mode)) {
 		/* we shouldn't have any 64bit stuff around anymore */
 		assert(get_mode_size_bits(mode) <= 32);
 		/* all integer operations are on 32bit registers now */
@@ -4821,6 +5022,43 @@ static ir_node *gen_Proj_Mod(ir_node *node)
 	panic("no idea how to transform proj->Mod");
 }
 
+static ir_node *gen_CopyB(ir_node *node)
+{
+	ir_node  *block    = be_transform_node(get_nodes_block(node));
+	ir_node  *src      = get_CopyB_src(node);
+	ir_node  *new_src  = be_transform_node(src);
+	ir_node  *dst      = get_CopyB_dst(node);
+	ir_node  *new_dst  = be_transform_node(dst);
+	ir_node  *mem      = get_CopyB_mem(node);
+	ir_node  *new_mem  = be_transform_node(mem);
+	dbg_info *dbgi     = get_irn_dbg_info(node);
+	int      size      = get_type_size_bytes(get_CopyB_type(node));
+	int      rem;
+
+	/* If we have to copy more than 32 bytes, we use REP MOVSx and */
+	/* then we need the size explicitly in ECX.                    */
+	ir_node *projm;
+	if (size >= 32 * 4) {
+		rem = size & 0x3; /* size % 4 */
+		size >>= 2;
+
+		ir_node *cnst  = new_bd_ia32_Const(dbgi, block, NULL, 0, size);
+		ir_node *copyb = new_bd_ia32_CopyB(dbgi, block, new_dst, new_src, cnst,
+		                                   new_mem, rem);
+		SET_IA32_ORIG_NODE(copyb, node);
+		projm = new_r_Proj(copyb, mode_M, pn_ia32_CopyB_M);
+	} else {
+		if (size == 0) {
+			ir_fprintf(stderr, "Optimization warning: %+F with size <4\n", node);
+		}
+		ir_node *copyb = new_bd_ia32_CopyB_i(dbgi, block, new_dst, new_src,
+		                                     new_mem, size);
+		SET_IA32_ORIG_NODE(copyb, node);
+		projm = new_r_Proj(copyb, mode_M, pn_ia32_CopyB_i_M);
+	}
+	return projm;
+}
+
 static ir_node *gen_Call(ir_node *node)
 {
 	arch_register_req_t const *const req_gp = ia32_reg_classes[CLASS_ia32_gp].class_req;
@@ -4828,8 +5066,8 @@ static ir_node *gen_Call(ir_node *node)
 	arch_register_t     const *const fpcw   = &ia32_registers[REG_FPCW];
 
 	/* special case for PIC trampoline calls */
-	bool const old_no_pic_adjust = ia32_no_pic_adjust;
-	ia32_no_pic_adjust = be_options.pic;
+	bool const old_no_pic_adjust = no_pic_adjust;
+	no_pic_adjust = be_options.pic;
 
 	/* Construct arguments. */
 	ia32_address_mode_t am;
@@ -4975,7 +5213,7 @@ static ir_node *gen_Call(ir_node *node)
 	pmap_insert(node_to_stack, node, new_stack);
 	x86_free_calling_convention(cconv);
 
-	ia32_no_pic_adjust = old_no_pic_adjust;
+	no_pic_adjust = old_no_pic_adjust;
 	return res;
 }
 
@@ -5006,7 +5244,7 @@ static ir_node *gen_Proj_Proj_Call(ir_node *node)
 	ir_mode                  *mode   = get_irn_mode(node);
 	unsigned                  new_pn = pn_ia32_Call_first_result + res->reg_offset;
 
-	if (ia32_mode_needs_gp_reg(mode))
+	if (mode_needs_gp_reg(mode))
 		mode = ia32_mode_gp;
 	else if (mode_is_float(mode))
 		mode = ia32_mode_E;
@@ -5538,6 +5776,538 @@ ir_node *ia32_new_IncSP(ir_node *block, ir_node *old_sp, int offset,
 	return incsp;
 }
 
+const arch_register_t *ia32_get_clobber_register(const char *clobber)
+{
+	/* TODO: construct a hashmap instead of doing linear search for clobber
+	 * register */
+	for (size_t i = 0; i != N_IA32_REGISTERS; ++i) {
+		arch_register_t const *const reg = &ia32_registers[i];
+		if (strcmp(reg->name, clobber) == 0 ||
+		    (reg->cls == &ia32_reg_classes[CLASS_ia32_gp] && strcmp(reg->name + 1, clobber) == 0)) {
+			return reg;
+		}
+	}
+
+	return NULL;
+}
+
+/**
+ * An assembler constraint.
+ */
+typedef struct constraint_t {
+	const arch_register_class_t *cls;
+	unsigned                     allowed_registers;
+	bool                         all_registers_allowed;
+	bool                         memory_possible;
+	char                         immediate_type;
+	int                          same_as;
+} constraint_t;
+
+static void parse_asm_constraints(constraint_t *const constraint, ident *const constraint_text, bool const is_output)
+{
+	memset(constraint, 0, sizeof(constraint[0]));
+	constraint->same_as = -1;
+
+	char const *c = get_id_str(constraint_text);
+	if (*c == 0) {
+		/* a memory constraint: no need to do anything in backend about it
+		 * (the dependencies are already respected by the memory edge of
+		 * the node) */
+		return;
+	}
+
+	arch_register_class_t const *const gp = &ia32_reg_classes[CLASS_ia32_gp];
+	arch_register_class_t const *const fp = &ia32_reg_classes[CLASS_ia32_fp];
+
+	/* TODO: improve error messages with node and source info. (As users can
+	 * easily hit these) */
+	char                         immediate_type        = '\0';
+	unsigned                     limited               = 0;
+	arch_register_class_t const *cls                   = NULL;
+	bool                         memory_possible       = false;
+	bool                         all_registers_allowed = false;
+	int                          same_as               = -1;
+	while (*c != 0) {
+		arch_register_class_t const *new_cls = NULL;
+		char                         new_imm = '\0';
+		switch (*c) {
+		/* Skip spaces, out/in-out marker. */
+		case ' ':
+		case '\t':
+		case '\n':
+		case '=':
+		case '+':
+		case '&':
+		case '*':
+			break;
+
+		case '#':
+			while (*c != 0 && *c != ',')
+				++c;
+			break;
+
+		case 'a': new_cls = gp; limited |= 1 << REG_GP_EAX; break;
+		case 'b': new_cls = gp; limited |= 1 << REG_GP_EBX; break;
+		case 'c': new_cls = gp; limited |= 1 << REG_GP_ECX; break;
+		case 'd': new_cls = gp; limited |= 1 << REG_GP_EDX; break;
+		case 'D': new_cls = gp; limited |= 1 << REG_GP_EDI; break;
+		case 'S': new_cls = gp; limited |= 1 << REG_GP_ESI; break;
+
+		case 'Q':
+		case 'q':
+			/* q means lower part of the regs only, this makes no
+			 * difference to Q for us (we only assign whole registers) */
+			new_cls  = gp;
+			limited |= 1 << REG_GP_EAX | 1 << REG_GP_EBX | 1 << REG_GP_ECX |
+			           1 << REG_GP_EDX;
+			break;
+
+		case 'A':
+			new_cls  = gp;
+			limited |= 1 << REG_GP_EAX | 1 << REG_GP_EDX;
+			break;
+
+		case 'l':
+			new_cls  = gp;
+			limited |= 1 << REG_GP_EAX | 1 << REG_GP_EBX | 1 << REG_GP_ECX |
+			           1 << REG_GP_EDX | 1 << REG_GP_ESI | 1 << REG_GP_EDI |
+			           1 << REG_GP_EBP;
+			break;
+
+		case 'R':
+		case 'r':
+		case 'p':
+			new_cls               = gp;
+			all_registers_allowed = true;
+			break;
+
+		case 'f': new_cls = fp; all_registers_allowed = true; break;
+		case 't': new_cls = fp; limited |= 1 << REG_FP_ST0;   break;
+		case 'u': new_cls = fp; limited |= 1 << REG_FP_ST1;   break;
+
+		case 'Y':
+		case 'x':
+			new_cls               = &ia32_reg_classes[CLASS_ia32_xmm];
+			all_registers_allowed = true;
+			break;
+
+		case 'I':
+		case 'J':
+		case 'K':
+		case 'L':
+		case 'M':
+		case 'N':
+		case 'O':
+			new_cls = gp;
+			new_imm = *c;
+			break;
+
+		case 'n':
+		case 'i':
+			new_cls = gp;
+			new_imm = 'i';
+			break;
+
+		case 'X':
+		case 'g':
+			new_cls               = gp;
+			new_imm               = 'i';
+			all_registers_allowed = true;
+			memory_possible       = true;
+			break;
+
+		case '0':
+		case '1':
+		case '2':
+		case '3':
+		case '4':
+		case '5':
+		case '6':
+		case '7':
+		case '8':
+		case '9': {
+			if (is_output)
+				panic("can only specify same constraint on input");
+
+			int p;
+			sscanf(c, "%d%n", &same_as, &p);
+			if (same_as >= 0) {
+				c += p;
+				continue;
+			}
+			break;
+		}
+
+		case 'm':
+		case 'o':
+		case 'V':
+			/* memory constraint no need to do anything in backend about it
+			 * (the dependencies are already respected by the memory edge of
+			 * the node) */
+			memory_possible = true;
+			break;
+
+		case 'E': /* no float consts yet */
+		case 'F': /* no float consts yet */
+		case 's': /* makes no sense on x86 */
+		case '<': /* no autodecrement on x86 */
+		case '>': /* no autoincrement on x86 */
+		case 'C': /* sse constant not supported yet */
+		case 'G': /* 80387 constant not supported yet */
+		case 'y': /* we don't support mmx registers yet */
+		case 'Z': /* not available in 32 bit mode */
+		case 'e': /* not available in 32 bit mode */
+			panic("unsupported asm constraint '%c'", *c);
+
+		default:
+			panic("unknown asm constraint '%c'", *c);
+		}
+
+		if (new_cls) {
+			if (!cls) {
+				cls = new_cls;
+			} else if (cls != new_cls) {
+				panic("multiple register classes not supported");
+			}
+		}
+
+		if (new_imm != '\0') {
+			if (immediate_type == '\0') {
+				immediate_type = new_imm;
+			} else if (immediate_type != new_imm) {
+				panic("multiple immediate types not supported");
+			}
+		}
+
+		++c;
+	}
+
+	if (same_as >= 0) {
+		if (cls != NULL)
+			panic("same as and register constraint not supported");
+		if (immediate_type != '\0')
+			panic("same as and immediate constraint not supported");
+	}
+
+	if (!cls && same_as < 0 && !memory_possible)
+		panic("no constraint specified for assembler input");
+
+	constraint->same_as               = same_as;
+	constraint->cls                   = cls;
+	constraint->allowed_registers     = limited;
+	constraint->all_registers_allowed = all_registers_allowed;
+	constraint->memory_possible       = memory_possible;
+	constraint->immediate_type        = immediate_type;
+}
+
+static bool can_match(const arch_register_req_t *in,
+                      const arch_register_req_t *out)
+{
+	if (in->cls != out->cls)
+		return false;
+	if (!arch_register_req_is(in,  limited) ||
+	    !arch_register_req_is(out, limited))
+		return true;
+
+	return (*in->limited & *out->limited) != 0;
+}
+
+static bool match_requirement(arch_register_req_t const **reqs, size_t const n_reqs, bitset_t *const used, arch_register_req_t const *const req)
+{
+	if (!req->cls)
+		return true;
+	for (size_t i = 0; i != n_reqs; ++i) {
+		if (bitset_is_set(used, i))
+			continue;
+		if (!can_match(req, reqs[i]))
+			continue;
+		bitset_set(used, i);
+		return true;
+	}
+	return false;
+}
+
+static arch_register_req_t const *ia32_make_register_req(ir_graph *const irg, constraint_t const *const c, int const n_outs, arch_register_req_t const **const out_reqs, int const pos)
+{
+	int const same_as = c->same_as;
+	if (same_as >= 0) {
+		if (same_as >= n_outs)
+			panic("invalid output number in same_as constraint");
+
+		struct obstack            *const obst  = get_irg_obstack(irg);
+		arch_register_req_t       *const req   = OALLOC(obst, arch_register_req_t);
+		arch_register_req_t const *const other = out_reqs[same_as];
+		*req            = *other;
+		req->type      |= arch_register_req_type_should_be_same;
+		req->other_same = 1U << pos;
+
+		/* Switch constraints. This is because in firm we have same_as
+		 * constraints on the output constraints while in the gcc asm syntax
+		 * they are specified on the input constraints. */
+		out_reqs[same_as] = req;
+		return other;
+	}
+
+	/* Pure memory ops. */
+	if (!c->cls)
+		return arch_no_register_req;
+
+	if (c->allowed_registers == 0 || c->all_registers_allowed)
+		return c->cls->class_req;
+
+	struct obstack      *const obst    = get_irg_obstack(irg);
+	arch_register_req_t *const req     = (arch_register_req_t*)obstack_alloc(obst, sizeof(req[0]) + sizeof(unsigned));
+	unsigned            *const limited = (unsigned*)(req + 1);
+	*limited = c->allowed_registers;
+
+	memset(req, 0, sizeof(req[0]));
+	req->type    = arch_register_req_type_limited;
+	req->cls     = c->cls;
+	req->limited = limited;
+	req->width   = 1;
+	return req;
+}
+
+static arch_register_t const *ia32_parse_clobber(char const *const clobber)
+{
+	if (strcmp(clobber, "memory") == 0 || strcmp(clobber, "cc") == 0)
+		return NULL;
+
+	arch_register_t const *const reg = ia32_get_clobber_register(clobber);
+	if (!reg)
+		panic("register '%s' mentioned in asm clobber is unknown", clobber);
+
+	return reg;
+}
+
+static ir_node *gen_ASM(ir_node *node)
+{
+	int                      const n_inputs          = get_ASM_n_inputs(node);
+	size_t                   const n_out_constraints = get_ASM_n_output_constraints(node);
+	ir_asm_constraint const *const in_constraints    = get_ASM_input_constraints(node);
+	ir_asm_constraint const *const out_constraints   = get_ASM_output_constraints(node);
+
+	/* determine size of register_map */
+	unsigned reg_map_size = 0;
+	for (size_t i = 0; i < n_out_constraints; ++i) {
+		reg_map_size = MAX(reg_map_size, out_constraints[i].pos + 1);
+	}
+	for (int i = 0; i < n_inputs; ++i) {
+		reg_map_size = MAX(reg_map_size, in_constraints[i].pos + 1);
+	}
+
+	ir_graph       *const irg          = get_irn_irg(node);
+	struct obstack *const obst         = get_irg_obstack(irg);
+	ia32_asm_reg_t *const register_map = NEW_ARR_DZ(ia32_asm_reg_t, obst, reg_map_size);
+
+	/* construct output constraints */
+	size_t              const   n_clobbers   = get_ASM_n_clobbers(node);
+	size_t                      out_size     = n_out_constraints + n_clobbers;
+	arch_register_req_t const **out_reg_reqs = OALLOCN(obst, arch_register_req_t const*, out_size);
+
+	size_t out_arity = 0;
+	for (; out_arity < n_out_constraints; ++out_arity) {
+		ir_asm_constraint const *const constraint = &out_constraints[out_arity];
+
+		constraint_t parsed_constraint;
+		parse_asm_constraints(&parsed_constraint, constraint->constraint, true);
+
+		out_reg_reqs[out_arity] = ia32_make_register_req(irg, &parsed_constraint, n_out_constraints, out_reg_reqs, out_arity);
+
+		ia32_asm_reg_t *const reg = &register_map[constraint->pos];
+		/* multiple constraints for same pos. This can happen for example when
+		 * a =A constraint gets lowered to two constraints: =a and =d for the
+		 * same pos */
+		if (reg->valid)
+			continue;
+
+		reg->use_input = false;
+		reg->valid     = true;
+		reg->memory    = false;
+		reg->inout_pos = out_arity;
+		reg->mode      = constraint->mode;
+	}
+
+	/* parse clobbers */
+	unsigned clobber_bits[N_IA32_CLASSES];
+	memset(&clobber_bits, 0, sizeof(clobber_bits));
+	ident **const clobbers = get_ASM_clobbers(node);
+	for (size_t c = 0; c < n_clobbers; ++c) {
+		char            const *const clobber = get_id_str(clobbers[c]);
+		arch_register_t const *const reg     = ia32_parse_clobber(clobber);
+		if (reg) {
+			assert(reg->cls->n_regs <= sizeof(unsigned) * 8);
+			/* x87 registers may still be used as input, even if clobbered. */
+			if (reg->cls != &ia32_reg_classes[CLASS_ia32_fp])
+				clobber_bits[reg->cls->index] |= 1U << reg->index;
+			out_reg_reqs[out_arity++] = reg->single_req;
+		}
+	}
+
+	/* inputs + input constraints */
+	int                         n_ins       = n_inputs + 1;
+	ir_node                   **in          = ALLOCANZ(ir_node*, n_ins);
+	arch_register_req_t const **in_reg_reqs = OALLOCN(obst, arch_register_req_t const*, n_ins);
+	for (int i = 0; i < n_inputs; ++i) {
+		ir_asm_constraint const *const constraint = &in_constraints[i];
+
+		constraint_t parsed_constraint;
+		parse_asm_constraints(&parsed_constraint, constraint->constraint, false);
+		arch_register_class_t const *const cls = parsed_constraint.cls;
+		if (cls) {
+			unsigned const r_clobber_bits = clobber_bits[cls->index];
+			if (r_clobber_bits != 0) {
+				if (parsed_constraint.all_registers_allowed) {
+					parsed_constraint.all_registers_allowed = false;
+					be_get_allocatable_regs(irg, cls, &parsed_constraint.allowed_registers);
+				}
+				parsed_constraint.allowed_registers &= ~r_clobber_bits;
+			}
+		}
+
+		in_reg_reqs[i] = ia32_make_register_req(irg, &parsed_constraint, n_out_constraints, out_reg_reqs, i);
+
+		ir_node       *input    = NULL;
+		ir_node *const pred     = get_ASM_input(node, i);
+		char     const imm_type = parsed_constraint.immediate_type;
+		if (imm_type != '\0')
+			input = try_create_Immediate(pred, imm_type);
+
+		bool is_memory_op = false;
+		if (!input) {
+			input = be_transform_node(pred);
+
+			if (!cls && parsed_constraint.same_as < 0) {
+				is_memory_op   = true;
+				in_reg_reqs[i] = ia32_reg_classes[CLASS_ia32_gp].class_req;
+			} else if (parsed_constraint.memory_possible) {
+				/* TODO: match Load or Load/Store if memory possible is set */
+			}
+		}
+		in[i] = input;
+
+		ia32_asm_reg_t *const reg = &register_map[constraint->pos];
+		reg->use_input = true;
+		reg->valid     = true;
+		reg->memory    = is_memory_op;
+		reg->inout_pos = i;
+		reg->mode      = constraint->mode;
+	}
+
+	assert(n_inputs == n_ins - 1);
+	in[n_inputs]          = be_transform_node(get_ASM_mem(node));
+	in_reg_reqs[n_inputs] = arch_no_register_req;
+
+	/* Handle early clobbers. */
+	for (size_t o = 0; o != n_out_constraints; ++o) {
+		ir_asm_constraint const *const constraint = &out_constraints[o];
+		if (strchr(get_id_str(constraint->constraint), '&')) {
+			arch_register_req_t const *const oreq = out_reg_reqs[o];
+
+			unsigned different = 0;
+			for (int i = 0; i != n_inputs; ++i) {
+				if (in_reg_reqs[i]->cls == oreq->cls)
+					different |= 1U << i;
+			}
+
+			if (different != 0) {
+				arch_register_req_t *const req = OALLOC(obst, arch_register_req_t);
+				*req                 = *oreq;
+				req->type           |= arch_register_req_type_must_be_different;
+				req->other_different = different;
+				out_reg_reqs[o]      = req;
+			}
+		}
+	}
+
+	ir_node *const block = be_transform_node(get_nodes_block(node));
+
+	/* Attempt to make ASM node register pressure faithful.
+	 * (This does not work for complicated cases yet!)
+	 *
+	 * Algorithm: Check if there are fewer inputs or outputs (I will call this
+	 * the smaller list). Then try to match each constraint of the smaller list
+	 * to 1 of the other list. If we can't match it, then we have to add a dummy
+	 * input/output to the other list
+	 *
+	 * FIXME: This is still broken in lots of cases. But at least better than
+	 *        before...
+	 * FIXME: need to do this per register class...
+	 */
+	if (out_arity <= (size_t)n_inputs) {
+		int             in_size     = n_ins;
+		int       const orig_inputs = n_ins;
+		bitset_t *const used_ins    = bitset_alloca(n_ins);
+		for (size_t o = 0; o < out_arity; ++o) {
+			arch_register_req_t const *const outreq = out_reg_reqs[o];
+			if (match_requirement(in_reg_reqs, orig_inputs, used_ins, outreq))
+				continue;
+
+			/* we might need more space in the input arrays */
+			if (n_ins >= in_size) {
+				in_size *= 2;
+				arch_register_req_t const **const new_in_reg_reqs = OALLOCN(obst, arch_register_req_t const*, in_size);
+				MEMCPY(new_in_reg_reqs, in_reg_reqs, n_ins);
+				ir_node **const new_in = ALLOCANZ(ir_node*, in_size);
+				MEMCPY(new_in, in, n_ins);
+
+				in_reg_reqs = new_in_reg_reqs;
+				in          = new_in;
+			}
+
+			/* add a new (dummy) input which occupies the register */
+			assert(arch_register_req_is(outreq, limited));
+			in_reg_reqs[n_ins] = outreq;
+			in[n_ins]          = new_bd_ia32_ProduceVal(NULL, block);
+			++n_ins;
+		}
+	} else {
+		bitset_t *used_outs      = bitset_alloca(out_arity);
+		size_t    orig_out_arity = out_arity;
+		for (int i = 0; i < n_inputs; ++i) {
+			arch_register_req_t const *const inreq = in_reg_reqs[i];
+			if (match_requirement(out_reg_reqs, orig_out_arity, used_outs, inreq))
+				continue;
+
+			/* we might need more space in the output arrays */
+			if (out_arity >= out_size) {
+				out_size *= 2;
+				arch_register_req_t const **const new_out_reg_reqs = OALLOCN(obst, arch_register_req_t const*, out_size);
+				MEMCPY(new_out_reg_reqs, out_reg_reqs, out_arity);
+				out_reg_reqs = new_out_reg_reqs;
+			}
+
+			/* add a new (dummy) output which occupies the register */
+			assert(arch_register_req_is(inreq, limited));
+			out_reg_reqs[out_arity++] = inreq;
+		}
+	}
+
+	/* append none register requirement for the memory output */
+	if (out_arity + 1 >= out_size) {
+		out_size = out_arity + 1;
+		arch_register_req_t const **const new_out_reg_reqs = OALLOCN(obst, arch_register_req_t const*, out_size);
+		MEMCPY(new_out_reg_reqs, out_reg_reqs, out_arity);
+		out_reg_reqs = new_out_reg_reqs;
+	}
+
+	/* add a new (dummy) output which occupies the register */
+	out_reg_reqs[out_arity++] = arch_no_register_req;
+
+	dbg_info *const dbgi     = get_irn_dbg_info(node);
+	ident    *const text     = get_ASM_text(node);
+	ir_node  *const new_node = new_bd_ia32_Asm(dbgi, block, n_ins, in, out_arity, text, register_map);
+
+	backend_info_t *const info = be_get_info(new_node);
+	for (size_t o = 0; o < out_arity; ++o) {
+		info->out_infos[o].req = out_reg_reqs[o];
+	}
+	arch_set_irn_register_reqs_in(new_node, in_reg_reqs);
+
+	SET_IA32_ORIG_NODE(new_node, node);
+	return new_node;
+}
+
 static ir_node *gen_Proj_ASM(ir_node *node)
 {
 	ir_mode *mode     = get_irn_mode(node);
@@ -5574,7 +6344,7 @@ static ir_node *gen_Proj_default(ir_node *node)
 {
 	ir_node *pred = get_Proj_pred(node);
 	ir_mode *mode = get_irn_mode(node);
-	if (ia32_mode_needs_gp_reg(mode)) {
+	if (mode_needs_gp_reg(mode)) {
 		ir_node *new_pred = be_transform_node(pred);
 		ir_node *new_proj = new_r_Proj(new_pred, ia32_mode_gp,
 									   get_Proj_num(node));
@@ -5601,7 +6371,7 @@ static void register_transformers(void)
 	be_set_transform_function(op_Address,          gen_Address);
 	be_set_transform_function(op_Alloc,            gen_Alloc);
 	be_set_transform_function(op_And,              gen_And);
-	be_set_transform_function(op_ASM,              ia32_gen_ASM);
+	be_set_transform_function(op_ASM,              gen_ASM);
 	be_set_transform_function(op_Bitcast,          gen_Bitcast);
 	be_set_transform_function(op_Builtin,          gen_Builtin);
 	be_set_transform_function(op_Call,             gen_Call);
@@ -5609,7 +6379,7 @@ static void register_transformers(void)
 	be_set_transform_function(op_Cond,             gen_Cond);
 	be_set_transform_function(op_Const,            gen_Const);
 	be_set_transform_function(op_Conv,             gen_Conv);
-	be_set_transform_function(op_CopyB,            ia32_gen_CopyB);
+	be_set_transform_function(op_CopyB,            gen_CopyB);
 	be_set_transform_function(op_Div,              gen_Div);
 	be_set_transform_function(op_Eor,              gen_Eor);
 	be_set_transform_function(op_ia32_GetEIP,      be_duplicate_node);
@@ -5642,7 +6412,7 @@ static void register_transformers(void)
 	be_set_transform_function(op_Store,            gen_Store);
 	be_set_transform_function(op_Sub,              gen_Sub);
 	be_set_transform_function(op_Switch,           gen_Switch);
-	be_set_transform_function(op_Unknown,          ia32_gen_Unknown);
+	be_set_transform_function(op_Unknown,          gen_Unknown);
 	be_set_transform_proj_function(op_Alloc,            gen_Proj_Alloc);
 	be_set_transform_proj_function(op_ASM,              gen_Proj_ASM);
 	be_set_transform_proj_function(op_Builtin,          gen_Proj_Builtin);
@@ -5795,8 +6565,8 @@ void ia32_transform_graph(ir_graph *irg)
 	                         | IR_GRAPH_PROPERTY_NO_TUPLES
 	                         | IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 
-	ia32_no_pic_adjust = false;
-	start_mem.irn      = NULL;
+	no_pic_adjust = false;
+	start_mem.irn = NULL;
 	memset(&start_val, 0, sizeof(start_val));
 
 	register_transformers();
@@ -5811,7 +6581,7 @@ void ia32_transform_graph(ir_graph *irg)
 	add_parameter_loads(irg, current_cconv);
 
 	be_timer_push(T_HEIGHTS);
-	ia32_heights = heights_new(irg);
+	heights = heights_new(irg);
 	be_timer_pop(T_HEIGHTS);
 	x86_calculate_non_address_mode_nodes(irg);
 
@@ -5825,8 +6595,8 @@ void ia32_transform_graph(ir_graph *irg)
 	set_opt_cse(cse_last);
 
 	x86_free_non_address_mode_nodes();
-	heights_free(ia32_heights);
-	ia32_heights = NULL;
+	heights_free(heights);
+	heights = NULL;
 	be_free_stackorder(stackorder);
 	x86_free_calling_convention(current_cconv);
 	pmap_destroy(node_to_stack);

@@ -34,7 +34,6 @@
 #include "beinfo.h"
 
 #include "bearch_ia32_t.h"
-#include "ia32_common_transform.h"
 #include "ia32_nodes_attr.h"
 #include "ia32_new_nodes.h"
 #include "gen_ia32_regalloc_if.h"

@@ -56,7 +56,6 @@
 #include "beutil.h"
 
 #include "ia32_emitter.h"
-#include "ia32_common_transform.h"
 #include "gen_ia32_emitter.h"
 #include "gen_ia32_regalloc_if.h"
 #include "ia32_nodes_attr.h"

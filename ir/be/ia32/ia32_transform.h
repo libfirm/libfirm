@@ -48,4 +48,15 @@ void ia32_init_transform(void);
 ir_node *ia32_new_IncSP(ir_node *block, ir_node *old_sp, int offset,
                         unsigned align);
 
+const arch_register_t *ia32_get_clobber_register(const char *clobber);
+
+ir_node *ia32_create_Immediate_full(ir_graph *irg, ir_entity *entity,
+                                    bool no_pic_adjust, int32_t val);
+
+static inline ir_node *ia32_create_Immediate(ir_graph *const irg,
+                                             int32_t const val)
+{
+	return ia32_create_Immediate_full(irg, NULL, false, val);
+}
+
 #endif

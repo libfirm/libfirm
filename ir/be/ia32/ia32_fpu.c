@@ -17,7 +17,7 @@
 #include "ia32_fpu.h"
 #include "ia32_new_nodes.h"
 #include "ia32_architecture.h"
-#include "ia32_common_transform.h"
+#include "ia32_transform.h"
 #include "gen_ia32_regalloc_if.h"
 
 #include "ircons.h"
