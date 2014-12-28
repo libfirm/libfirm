@@ -108,6 +108,17 @@ bool arch_reg_is_allocatable(const arch_register_req_t *req,
 	return true;
 }
 
+const arch_register_t *arch_find_register(const arch_env_t *arch_env,
+                                          const char *name)
+{
+	for (size_t i = 0, n = arch_env->n_registers; i < n; ++i) {
+		const arch_register_t *reg = &arch_env->registers[i];
+		if (strcmp(reg->name, name) == 0)
+			return reg;
+	}
+	return NULL;
+}
+
 void be_make_start_mem(be_start_info_t *const info, ir_node *const start, unsigned const pos)
 {
   info->pos = pos;

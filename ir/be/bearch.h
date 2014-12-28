@@ -425,6 +425,9 @@ static inline bool arch_irn_consider_in_reg_alloc(
 	return req->cls == cls && !arch_register_req_is(req, ignore);
 }
 
+const arch_register_t *arch_find_register(const arch_env_t *arch_env,
+                                          const char *name);
+
 #define be_foreach_value(node, value, code) \
 	do { \
 		if (get_irn_mode(node) == mode_T) { \
