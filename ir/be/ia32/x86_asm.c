@@ -12,7 +12,6 @@
 #include "betranshlp.h"
 #include "beutil.h"
 #include "gen_ia32_regalloc_if.h"
-#include "ia32_emitter.h"
 #include "ia32_new_nodes.h"
 #include "irprintf.h"
 #include "panic.h"

@@ -105,6 +105,17 @@ static const char *get_register_name_8bit(const arch_register_t *reg)
 	panic("unexpected register number");
 }
 
+static const char *get_register_name_8bit_high(const arch_register_t *reg)
+{
+	switch (reg->global_index) {
+	case REG_RAX: return "ah";
+	case REG_RBX: return "bh";
+	case REG_RCX: return "ch";
+	case REG_RDX: return "dh";
+	}
+	panic("unexpected register number");
+}
+
 static const char *get_register_name_16bit(const arch_register_t *reg)
 {
 	switch (reg->global_index) {
@@ -588,6 +599,49 @@ static ir_node *sched_next_block(const ir_node *block)
     return (ir_node*)get_irn_link(block);
 }
 
+static const char *get_register_name_ir_mode(const arch_register_t *reg,
+                                             ir_mode *mode)
+{
+	if (get_mode_arithmetic(mode) != irma_twos_complement)
+		return reg->name;
+	switch (get_mode_size_bits(mode)) {
+	case 8:  return get_register_name_8bit(reg);
+	case 16: return get_register_name_16bit(reg);
+	case 32: return get_register_name_32bit(reg);
+	case 64: return reg->name;
+	default:
+		panic("unexpected mode size");
+	}
+}
+
+static void emit_amd64_asm_register(const arch_register_t *reg, char modifier,
+                                    ir_mode *mode)
+{
+	const char *name;
+	switch (modifier) {
+	case '\0':
+		name = mode != NULL ? get_register_name_ir_mode(reg, mode) : reg->name;
+		break;
+	case  'b': name = get_register_name_8bit(reg); break;
+	case  'h': name = get_register_name_8bit_high(reg); break;
+	case  'w': name = get_register_name_16bit(reg); break;
+	case  'k': name = get_register_name_32bit(reg); break;
+	case  'q': name = reg->name; break;
+	// gcc also knows 'x' V4SFmode, 't' V8SFmode, 'y' "st(0)" instead of "st",
+	// 'd' duplicate operand for AVX instruction
+	default:
+		panic("invalid asm op modifier");
+	}
+	be_emit_char('%');
+	be_emit_string(name);
+}
+
+static void emit_amd64_asm(const ir_node *node)
+{
+	const amd64_asm_attr_t *attr = get_amd64_asm_attr_const(node);
+	x86_emit_asm(node, &attr->asmattr, emit_amd64_asm_register);
+}
+
 /**
  * Emit a Jmp.
  */
@@ -757,10 +811,11 @@ static void amd64_register_emitters(void)
 	/* register all emitter functions defined in spec */
 	amd64_register_spec_emitters();
 
+	be_set_emitter(op_amd64_asm,        emit_amd64_asm);
 	be_set_emitter(op_amd64_jcc,        emit_amd64_jcc);
 	be_set_emitter(op_amd64_jmp,        emit_amd64_jmp);
-	be_set_emitter(op_amd64_mov_gp,     emit_amd64_mov_gp);
 	be_set_emitter(op_amd64_jmp_switch, emit_amd64_jmp_switch);
+	be_set_emitter(op_amd64_mov_gp,     emit_amd64_mov_gp);
 	be_set_emitter(op_be_Copy,          emit_be_Copy);
 	be_set_emitter(op_be_CopyKeep,      emit_be_Copy);
 	be_set_emitter(op_be_IncSP,         emit_be_IncSP);

@@ -790,8 +790,8 @@ static const backend_params *amd64_get_backend_params(void) {
 
 static int amd64_is_valid_clobber(const char *clobber)
 {
-	(void) clobber;
-	return 0;
+	return x86_parse_clobber(&amd64_isa_template.base,
+	                         amd64_additional_clobber_names, clobber) != NULL;
 }
 
 static void amd64_init_types(void)
@@ -815,6 +815,7 @@ static void amd64_init(void)
 	amd64_register_init();
 	amd64_create_opcodes(&amd64_irn_ops);
 	amd64_cconv_init();
+	x86_set_be_asm_constraint_support(amd64_asm_constraints);
 }
 
 const arch_isa_if_t amd64_isa_if = {

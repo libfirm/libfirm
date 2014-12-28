@@ -15,6 +15,7 @@
 #include "bearch.h"
 #include "compiler.h"
 #include "../ia32/x86_cc.h"
+#include "../ia32/x86_asm.h"
 
 enum amd64_arch_irn_flags_t {
 	amd64_arch_irn_flag_commutative_binop = arch_irn_flag_backend << 0,
@@ -88,6 +89,11 @@ typedef struct {
 	except_attr exc; /**< the exception attribute. MUST be the first one. */
 	ENUMBF(amd64_op_mode_t) op_mode : 4;
 } amd64_attr_t;
+
+typedef struct {
+	amd64_attr_t   base;
+	x86_asm_attr_t asmattr;
+} amd64_asm_attr_t;
 
 typedef struct {
 	amd64_attr_t base;

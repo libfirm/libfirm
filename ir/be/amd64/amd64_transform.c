@@ -44,6 +44,61 @@ static size_t           start_params_offset;
 static pmap            *node_to_stack;
 static be_stackorder_t *stackorder;
 
+/** we don't have a concept of aliasing registers, so enumerate them
+ * manually for the asm nodes. */
+const x86_clobber_name_t amd64_additional_clobber_names[] = {
+	{ "al", REG_RAX }, { "ah", REG_RAX }, { "ax", REG_RAX },
+	{ "bl", REG_RBX }, { "bh", REG_RBX }, { "bx", REG_RBX },
+	{ "cl", REG_RCX }, { "ch", REG_RCX }, { "cx", REG_RCX },
+	{ "dl", REG_RDX }, { "dh", REG_RDX }, { "dx", REG_RDX },
+	{ "si", REG_RSI }, { "di", REG_RDI }, { "sp", REG_RSP },
+	{ "bp", REG_RBP },
+	{ "eax", REG_RAX }, { "ebx", REG_RBX }, { "ecx", REG_RCX },
+	{ "edx", REG_RDX }, { "esi", REG_RSI }, { "edi", REG_RDI },
+	{ "ebp", REG_RBP }, { "esp", REG_RBP },
+	{ NULL, ~0u }
+};
+
+#define GP &amd64_reg_classes[CLASS_amd64_gp]
+const x86_asm_constraint_t amd64_asm_constraints[128] = {
+	['A'] = { MATCH_REG, GP, 1 << REG_GP_RAX | 1 << REG_GP_RDX },
+	['D'] = { MATCH_REG, GP, 1 << REG_GP_RDI },
+	['I'] = { MATCH_IMM, GP, 0 },
+	['J'] = { MATCH_IMM, GP, 0 },
+	['K'] = { MATCH_IMM, GP, 0 },
+	['L'] = { MATCH_IMM, GP, 0 },
+	['M'] = { MATCH_IMM, GP, 0 },
+	['N'] = { MATCH_IMM, GP, 0 },
+	['O'] = { MATCH_IMM, GP, 0 },
+	['R'] = { MATCH_REG, GP, 1 << REG_GP_RAX | 1 << REG_GP_RBX
+		| 1 << REG_GP_RCX | 1 << REG_GP_RDX | 1 << REG_GP_RSI
+		| 1 << REG_GP_RDI | 1 << REG_GP_RBP | 1 << REG_GP_RSP },
+	['S'] = { MATCH_REG, GP, 1 << REG_GP_RSI },
+	['Q'] = { MATCH_REG, GP, 1 << REG_GP_RAX | 1 << REG_GP_RBX
+		| 1 << REG_GP_RCX | 1 << REG_GP_RDX },
+	['V'] = { MATCH_MEM, GP, 0 },
+	['X'] = { MATCH_ANY, GP, 0 },
+	['a'] = { MATCH_REG, GP, 1 << REG_GP_RAX },
+	['b'] = { MATCH_REG, GP, 1 << REG_GP_RBX },
+	['c'] = { MATCH_REG, GP, 1 << REG_GP_RCX },
+	['d'] = { MATCH_REG, GP, 1 << REG_GP_RDX },
+	['g'] = { MATCH_ANY, GP, 0 },
+	['i'] = { MATCH_IMM, GP, 0 },
+	['l'] = { MATCH_REG, GP, 1 << REG_GP_RAX | 1 << REG_GP_RBX
+		| 1 << REG_GP_RCX | 1 << REG_GP_RDX | 1 << REG_GP_RSI
+		| 1 << REG_GP_RDI | 1 << REG_GP_RBP },
+	['m'] = { MATCH_MEM, GP, 0 },
+	['n'] = { MATCH_IMM, GP, 0 },
+	['o'] = { MATCH_MEM, GP, 0 },
+	['p'] = { MATCH_REG, GP, 0 },
+	['q'] = { MATCH_REG, GP, 0 },
+	['r'] = { MATCH_REG, GP, 0 },
+	['x'] = { MATCH_REG, &amd64_reg_classes[CLASS_amd64_xmm], 0 },
+
+	// see comments in ia32_transform.c about unimplemented stuff.
+};
+#undef GP
+
 static const arch_register_req_t amd64_requirement_gp = {
 	.cls             = &amd64_reg_classes[CLASS_amd64_gp],
 	.limited         = NULL,
@@ -2025,6 +2080,32 @@ static ir_node *gen_Cond(ir_node *node)
 	return new_bd_amd64_jcc(dbgi, block, flags, cc);
 }
 
+static ir_node *gen_ASM(ir_node *node)
+{
+	return x86_match_ASM(node, new_bd_amd64_asm, amd64_additional_clobber_names,
+	                     amd64_asm_constraints);
+}
+
+static ir_node *gen_Proj_ASM(ir_node *node)
+{
+	ir_mode *mode     = get_irn_mode(node);
+	ir_node *pred     = get_Proj_pred(node);
+	ir_node *new_pred = be_transform_node(pred);
+	unsigned pn       = get_Proj_num(node);
+
+	if (mode == mode_M) {
+		pn = arch_get_irn_n_outs(new_pred)-1;
+	} else if (mode_is_int(mode) || mode_is_reference(mode)) {
+		mode = mode_gp;
+	} else if (mode_is_float(mode)) {
+		mode = amd64_mode_xmm;
+	} else {
+		panic("unexpected proj mode at ASM");
+	}
+
+	return new_r_Proj(new_pred, mode, pn);
+}
+
 static ir_node *gen_Phi(ir_node *node)
 {
 	ir_mode                   *mode = get_irn_mode(node);
@@ -2706,6 +2787,7 @@ static void amd64_register_transformers(void)
 	be_set_transform_function(op_Address,           gen_Address);
 	be_set_transform_function(op_Alloc,             gen_Alloc);
 	be_set_transform_function(op_And,               gen_And);
+	be_set_transform_function(op_ASM,               gen_ASM);
 	be_set_transform_function(op_Bitcast,           gen_Bitcast);
 	be_set_transform_function(op_Builtin,           gen_Builtin);
 	be_set_transform_function(op_Call,              gen_Call);
@@ -2740,6 +2822,7 @@ static void amd64_register_transformers(void)
 	be_set_transform_function(op_amd64_l_haddpd,    gen_amd64_l_haddpd);
 
 	be_set_transform_proj_function(op_Alloc,   gen_Proj_Alloc);
+	be_set_transform_proj_function(op_ASM,     gen_Proj_ASM);
 	be_set_transform_proj_function(op_Builtin, gen_Proj_Builtin);
 	be_set_transform_proj_function(op_Call,    gen_Proj_Call);
 	be_set_transform_proj_function(op_Cond,    be_duplicate_node);
