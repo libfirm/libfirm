@@ -3733,7 +3733,7 @@ static ir_node *transform_node_Mul(ir_node *n)
 			ir_mode *mode      = get_irn_mode(a);
 			ir_node *add_right = get_Add_right(a);
 			if (is_Const(add_right) && arith == irma_twos_complement) {
-			    ir_tarval *c2       = get_Const_tarval(add_right);
+				ir_tarval *c2       = get_Const_tarval(add_right);
 				ir_node   *add_left = get_Add_left(a);
 
 				dbg_info  *dbgi  = get_irn_dbg_info(n);
