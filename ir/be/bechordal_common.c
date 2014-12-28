@@ -156,7 +156,7 @@ ir_node *pre_process_constraints(be_chordal_env_t *env, be_insn_t **the_insn)
 		arch_register_req_t const *const req = arch_get_irn_register_req_in(irn, i);
 		if (!arch_register_req_is(req, limited))
 			continue;
-		be_set_constr_out(perm, get_Proj_num(proj), req);
+		arch_set_irn_register_req_out(perm, get_Proj_num(proj), req);
 	}
 
 	return perm;

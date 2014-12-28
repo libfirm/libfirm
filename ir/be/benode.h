@@ -22,25 +22,23 @@
 #include "bearch.h"
 
 typedef enum be_opcode {
-	beo_Perm,
-	beo_first = beo_Perm,
-	beo_MemPerm,
 	beo_Copy,
-	beo_Keep,
+	beo_first = beo_Copy,
 	beo_CopyKeep,
 	beo_IncSP,
-	beo_last  = beo_IncSP
+	beo_Keep,
+	beo_MemPerm,
+	beo_Perm,
+	beo_last  = beo_Perm
 } be_opcode;
 
-/**
- * The benode op's.  Must be available to register emitter function.
- */
-extern ir_op *op_be_Perm;
-extern ir_op *op_be_MemPerm;
 extern ir_op *op_be_Copy;
-extern ir_op *op_be_Keep;
 extern ir_op *op_be_CopyKeep;
 extern ir_op *op_be_IncSP;
+extern ir_op *op_be_Keep;
+extern ir_op *op_be_MemPerm;
+extern ir_op *op_be_Perm;
+extern ir_op *op_be_ProduceVal;
 
 /**
  * Determines if irn is a be_node.
@@ -73,7 +71,8 @@ ir_node *be_get_Copy_op(const ir_node *cpy);
 /**
  * Make a new Perm node.
  */
-ir_node *be_new_Perm(arch_register_class_t const *cls, ir_node *block, int n, ir_node *const *in);
+ir_node *be_new_Perm(arch_register_class_t const *cls, ir_node *block, int n,
+                     ir_node *const *in);
 
 /**
  * Reduce a Perm.
@@ -126,7 +125,7 @@ ir_node *be_new_IncSP(const arch_register_t *sp, ir_node *block,
 ir_node *be_get_IncSP_pred(ir_node *incsp);
 
 /** Sets the previous node that computes the stack pointer. */
-void     be_set_IncSP_pred(ir_node *incsp, ir_node *pred);
+void be_set_IncSP_pred(ir_node *incsp, ir_node *pred);
 
 /**
  * Sets a new offset to a IncSP node.
@@ -134,7 +133,7 @@ void     be_set_IncSP_pred(ir_node *incsp, ir_node *pred);
  * an offset is == BE_STACK_FRAME_SIZE will be replaced by the real size of the
  * stackframe in the fix_stack_offsets phase.
  */
-void     be_set_IncSP_offset(ir_node *irn, int offset);
+void be_set_IncSP_offset(ir_node *irn, int offset);
 
 /** Gets the offset from a IncSP node. */
 int be_get_IncSP_offset(const ir_node *irn);
@@ -172,35 +171,11 @@ unsigned be_get_MemPerm_entity_arity(const ir_node *irn);
  * @param reg The register which is admissible for that node, argument/result
  *            and position.
  */
-void be_set_constr_single_reg_in(ir_node *irn, int pos,
-		const arch_register_t *reg, arch_register_req_type_t additional_flags);
 void be_set_constr_single_reg_out(ir_node *irn, int pos,
 		const arch_register_t *reg, arch_register_req_type_t additional_flags);
 
 const arch_register_req_t *be_create_reg_req(struct obstack *obst,
 		const arch_register_t *reg, arch_register_req_type_t additional_types);
-
-/**
- * Impose register constraints on a backend node.
- * The register subsets given by the limited function in @p req are copied to
- * the backend node. This requires that the constraint type of the @p req is
- * arch_register_req_type_limited.
- * @param irn The backend node.
- * @param pos The position (@see be_set_constr_single_reg()).
- * @param req The register requirements which shall be transferred.
- */
-void be_set_constr_out(ir_node *irn, int pos, const arch_register_req_t *req);
-
-/**
- * Set the register class of a node.
- * @param irn The node itself.
- * @param pos The position (0..n) for arguments
- * @param flags The register class to set for that node and position.
- */
-void be_node_set_reg_class_in(ir_node *irn, int pos,
-                              const arch_register_class_t *cls);
-void be_node_set_reg_class_out(ir_node *irn, int pos,
-                               const arch_register_class_t *cls);
 
 /**
  * Set the register requirements for a phi node.
@@ -220,11 +195,11 @@ ir_node *be_new_Phi(ir_node *block, int n_ins, ir_node **ins, ir_mode *mode,
  */
 ir_node *be_get_initial_reg_value(ir_graph *irg, const arch_register_t *reg);
 
-static inline bool be_is_Copy     (const ir_node *irn) { return get_irn_op(irn) == op_be_Copy     ; }
-static inline bool be_is_CopyKeep (const ir_node *irn) { return get_irn_op(irn) == op_be_CopyKeep ; }
-static inline bool be_is_Perm     (const ir_node *irn) { return get_irn_op(irn) == op_be_Perm     ; }
-static inline bool be_is_MemPerm  (const ir_node *irn) { return get_irn_op(irn) == op_be_MemPerm  ; }
-static inline bool be_is_Keep     (const ir_node *irn) { return get_irn_op(irn) == op_be_Keep     ; }
-static inline bool be_is_IncSP    (const ir_node *irn) { return get_irn_op(irn) == op_be_IncSP    ; }
+static inline bool be_is_Copy    (const ir_node *irn) { return get_irn_op(irn) == op_be_Copy     ; }
+static inline bool be_is_CopyKeep(const ir_node *irn) { return get_irn_op(irn) == op_be_CopyKeep ; }
+static inline bool be_is_Perm    (const ir_node *irn) { return get_irn_op(irn) == op_be_Perm     ; }
+static inline bool be_is_MemPerm (const ir_node *irn) { return get_irn_op(irn) == op_be_MemPerm  ; }
+static inline bool be_is_Keep    (const ir_node *irn) { return get_irn_op(irn) == op_be_Keep     ; }
+static inline bool be_is_IncSP   (const ir_node *irn) { return get_irn_op(irn) == op_be_IncSP    ; }
 
 #endif

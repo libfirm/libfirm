@@ -1020,7 +1020,6 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
 	ir_node *keep;
 	if (has_irn_users(other_different)) {
 		keep = be_new_CopyKeep_single(block, cpy, irn);
-		be_node_set_reg_class_in(keep, 1, cls);
 	} else {
 		ir_node *in[] = { irn, cpy };
 		keep = be_new_Keep(block, ARRAY_SIZE(in), in);
@@ -1186,11 +1185,6 @@ static void melt_copykeeps(constraint_env_t *cenv)
 			}
 
 			ir_node *const new_ck = be_new_CopyKeep(get_nodes_block(ref), be_get_CopyKeep_op(ref), n_melt, new_ck_in);
-
-			/* set register class for all kept inputs */
-			for (unsigned j = 1; j <= n_melt; ++j) {
-				be_node_set_reg_class_in(new_ck, j, entry->cls);
-			}
 
 			ir_nodeset_insert(&entry->copies, new_ck);
 
