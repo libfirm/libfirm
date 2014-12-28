@@ -105,18 +105,18 @@ $default_attr_type = "sparc_attr_t";
 $default_copy_attr = "sparc_copy_attr";
 
 %init_attr = (
-	sparc_attr_t             => "\tinit_sparc_attributes(res, irn_flags_, in_reqs, n_res);",
-	sparc_load_store_attr_t  => "\tinit_sparc_attributes(res, irn_flags_, in_reqs, n_res);",
-	sparc_jmp_cond_attr_t    => "\tinit_sparc_attributes(res, irn_flags_, in_reqs, n_res);",
-	sparc_switch_jmp_attr_t  => "\tinit_sparc_attributes(res, irn_flags_, in_reqs, n_res);\n".
+	sparc_attr_t             => "be_info_init_irn(res, irn_flags_, in_reqs, n_res);",
+	sparc_load_store_attr_t  => "be_info_init_irn(res, irn_flags_, in_reqs, n_res);",
+	sparc_jmp_cond_attr_t    => "be_info_init_irn(res, irn_flags_, in_reqs, n_res);",
+	sparc_switch_jmp_attr_t  => "be_info_init_irn(res, irn_flags_, in_reqs, n_res);\n".
 	                            "\tinit_sparc_switch_jmp_attributes(res, table, jump_table);\n",
-	sparc_fp_attr_t          => "\tinit_sparc_attributes(res, irn_flags_, in_reqs, n_res);\n".
+	sparc_fp_attr_t          => "be_info_init_irn(res, irn_flags_, in_reqs, n_res);\n".
 	                            "\tinit_sparc_fp_attributes(res, fp_mode);\n",
-	sparc_fp_conv_attr_t     => "\tinit_sparc_attributes(res, irn_flags_, in_reqs, n_res);\n".
+	sparc_fp_conv_attr_t     => "be_info_init_irn(res, irn_flags_, in_reqs, n_res);\n".
 	                            "\tinit_sparc_fp_conv_attributes(res, src_mode, dest_mode);\n",
-	sparc_asm_attr_t         => "\tinit_sparc_attributes(res, irn_flags_, in_reqs, n_res);\n".
+	sparc_asm_attr_t         => "be_info_init_irn(res, irn_flags_, in_reqs, n_res);\n".
 	                            "\tinit_sparc_asm_attributes(res, text, operands);",
-	sparc_call_attr_t        => "\tinit_sparc_attributes(res, irn_flags_, in_reqs, n_res);\n".
+	sparc_call_attr_t        => "be_info_init_irn(res, irn_flags_, in_reqs, n_res);\n".
 	                            "\tinit_sparc_call_attributes(res, call_type);",
 );
 

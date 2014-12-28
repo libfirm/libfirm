@@ -49,6 +49,8 @@ void be_info_free(void);
 void be_info_init_irg(ir_graph *irg);
 void be_info_new_node(ir_graph *irg, ir_node *node);
 
+void be_info_init_irn(ir_node *node, arch_irn_flags_t flags, arch_register_req_t const **in_reqs, unsigned n_res);
+
 int attrs_equal_be_node(const ir_node *node1, const ir_node *node2);
 
 #endif

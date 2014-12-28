@@ -70,7 +70,7 @@ $default_copy_attr = "amd64_copy_attr";
 		."\tattr->insn_mode = insn_mode;\n"
 		."\tattr->addr = addr;",
 	amd64_binop_addr_attr_t =>
-		"init_be_info(res, irn_flags_, in_reqs, n_res);\n"
+		"be_info_init_irn(res, irn_flags_, in_reqs, n_res);\n"
 		."\t*attr = *attr_init;",
 	amd64_switch_jmp_attr_t =>
 		"init_amd64_attributes(res, irn_flags_, in_reqs, n_res, op_mode);\n"
@@ -82,7 +82,7 @@ $default_copy_attr = "amd64_copy_attr";
 		"init_amd64_attributes(res, irn_flags_, in_reqs, n_res, op_mode);\n"
 		."\tinit_amd64_movimm_attributes(res, insn_mode, entity, offset);",
 	amd64_shift_attr_t =>
-		"init_be_info(res, irn_flags_, in_reqs, n_res);\n"
+		"be_info_init_irn(res, irn_flags_, in_reqs, n_res);\n"
 		."\t*attr = *attr_init;\n",
 );
 

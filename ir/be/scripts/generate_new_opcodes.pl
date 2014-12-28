@@ -46,7 +46,7 @@ if(!defined($default_attr_type)) {
 }
 if(! %init_attr) {
 	%init_attr = (
-		"$default_attr_type" => "\tinit_${arch}_attributes(res, irn_flags_, in_reqs, n_res);",
+		$default_attr_type => "be_info_init_irn(res, irn_flags_, in_reqs, n_res);",
 	);
 }
 

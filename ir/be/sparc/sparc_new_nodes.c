@@ -228,22 +228,6 @@ const sparc_call_attr_t *get_sparc_call_attr_const(const ir_node *node)
 	return (const sparc_call_attr_t*)get_irn_generic_attr_const(node);
 }
 
-/**
- * Initializes the nodes attributes.
- */
-static void init_sparc_attributes(ir_node *node, arch_irn_flags_t flags,
-                                  const arch_register_req_t **in_reqs,
-                                  int n_res)
-{
-	arch_set_irn_flags(node, flags);
-	arch_set_irn_register_reqs_in(node, in_reqs);
-
-	backend_info_t  *info = be_get_info(node);
-	ir_graph        *irg  = get_irn_irg(node);
-	struct obstack  *obst = get_irg_obstack(irg);
-	info->out_infos = NEW_ARR_DZ(reg_out_info_t, obst, n_res);
-}
-
 static void init_sparc_load_store_attributes(ir_node *res, ir_mode *ls_mode,
                                              ir_entity *entity, int32_t offset,
                                              bool is_frame_entity,

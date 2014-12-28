@@ -288,15 +288,9 @@ static void init_arm_attributes(ir_node *node, arch_irn_flags_t flags,
                          const arch_register_req_t ** in_reqs,
 						 int n_res)
 {
-	ir_graph       *irg  = get_irn_irg(node);
-	struct obstack *obst = get_irg_obstack(irg);
-	arm_attr_t     *attr = get_arm_attr(node);
-	arch_set_irn_flags(node, flags);
-	arch_set_irn_register_reqs_in(node, in_reqs);
+	be_info_init_irn(node, flags, in_reqs, n_res);
+	arm_attr_t *const attr = get_arm_attr(node);
 	attr->is_load_store    = false;
-
-	backend_info_t *info = be_get_info(node);
-	info->out_infos = NEW_ARR_DZ(reg_out_info_t, obst, n_res);
 }
 
 static void init_arm_load_store_attributes(ir_node *res, ir_mode *ls_mode,

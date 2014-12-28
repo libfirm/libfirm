@@ -25,6 +25,16 @@
 
 static copy_attr_func old_phi_copy_attr;
 
+void be_info_init_irn(ir_node *const node, arch_irn_flags_t const flags, arch_register_req_t const **const in_reqs, unsigned const n_res)
+{
+	ir_graph       *const irg  = get_irn_irg(node);
+	struct obstack *const obst = get_irg_obstack(irg);
+	backend_info_t *const info = be_get_info(node);
+	info->flags     = flags;
+	info->in_reqs   = in_reqs;
+	info->out_infos = NEW_ARR_DZ(reg_out_info_t, obst, n_res);
+}
+
 void be_info_new_node(ir_graph *irg, ir_node *node)
 {
 	/* Projs need no be info, all info is fetched from their predecessor */

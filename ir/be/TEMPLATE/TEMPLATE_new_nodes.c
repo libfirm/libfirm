@@ -70,24 +70,6 @@ TEMPLATE_attr_t *get_TEMPLATE_attr(ir_node *node)
 	return (TEMPLATE_attr_t *)get_irn_generic_attr(node);
 }
 
-/**
- * Initializes the nodes attributes.
- */
-static void init_TEMPLATE_attributes(ir_node *node, arch_irn_flags_t flags,
-                                     const arch_register_req_t **in_reqs,
-                                     int n_res)
-{
-	ir_graph        *irg  = get_irn_irg(node);
-	struct obstack  *obst = get_irg_obstack(irg);
-	backend_info_t  *info;
-
-	arch_set_irn_flags(node, flags);
-	arch_set_irn_register_reqs_in(node, in_reqs);
-
-	info            = be_get_info(node);
-	info->out_infos = NEW_ARR_DZ(reg_out_info_t, obst, n_res);
-}
-
 static void set_TEMPLATE_value(ir_node *node, ir_tarval *value)
 {
 	TEMPLATE_attr_t *attr = get_TEMPLATE_attr(node);
