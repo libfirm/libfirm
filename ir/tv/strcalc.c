@@ -20,8 +20,8 @@
 #include "bitfiddle.h"
 #include "tv_t.h"
 
-#define SC_MASK      ((sc_word)0xF)
-#define SC_RESULT(x) ((x) & ((1U << SC_BITS) - 1U))
+#define SC_MASK      ((sc_word)0xFF)
+#define SC_RESULT(x) ((x) & SC_MASK)
 #define SC_CARRY(x)  ((unsigned)(x) >> SC_BITS)
 
 static char *output_buffer = NULL;  /**< buffer for output */
@@ -558,20 +558,18 @@ bool sc_is_negative(const sc_word *value)
 
 unsigned char sc_sub_bits(const sc_word *value, unsigned len, unsigned byte_ofs)
 {
-	/* the current scheme uses one byte to store a nibble */
-	unsigned nibble_ofs = 2 * byte_ofs;
-	if (nibble_ofs * SC_BITS >= len)
+	if (byte_ofs*SC_BITS >= len)
 		return 0;
 
-	unsigned char res = value[nibble_ofs];
-	if (len > (nibble_ofs + 1) * SC_BITS)
-		res |= value[nibble_ofs + 1] << SC_BITS;
-
-	/* kick bits outside */
-	if (len - 8 * byte_ofs < 8) {
-		res &= (1 << (len - 8 * byte_ofs)) - 1;
+	assert(SC_BITS == CHAR_BIT);
+	sc_word val = value[byte_ofs];
+	// Mask out if we are at the end
+	if (byte_ofs == (len/SC_BITS)-1) {
+		unsigned bit = len % SC_BITS;
+		if (bit != 0)
+			val &= max_digit(bit);
 	}
-	return res;
+	return val;
 }
 
 unsigned sc_popcount(const sc_word *value, unsigned bits)
@@ -591,88 +589,75 @@ unsigned sc_popcount(const sc_word *value, unsigned bits)
 void sc_val_from_bytes(unsigned char const *const bytes, size_t n_bytes,
                        bool big_endian, sc_word *buffer)
 {
-	assert(n_bytes*8 <= (size_t)calc_buffer_size*SC_BITS);
+	assert(n_bytes*CHAR_BIT <= (size_t)calc_buffer_size*SC_BITS);
 
 	sc_word *p = buffer;
-	assert(SC_BITS == 4);
+	assert(SC_BITS == CHAR_BIT);
 	if (big_endian) {
-		for (unsigned char const *bp = bytes+n_bytes-1; bp >= bytes; --bp) {
-			unsigned char v = *bp;
-			*p++ =  v     & SC_MASK;
-			*p++ = (v>>4) & SC_MASK;
+		for (unsigned char const *bp = bytes+n_bytes; bp-- > bytes; ) {
+			*p++ = (sc_word)*bp;
 		}
 	} else {
-		for (unsigned char const *bp = bytes, *bp_end = bytes + n_bytes;
-		     bp < bp_end; ++bp) {
-			unsigned char v = *bp;
-			*p++ =  v     & SC_MASK;
-			*p++ = (v>>4) & SC_MASK;
-		}
+		memcpy(p, bytes, n_bytes);
+		p += n_bytes;
 	}
-	for (sc_word *p_end = buffer+calc_buffer_size; p < p_end; ++p)
-		*p = 0;
+	memset(p, 0, buffer+calc_buffer_size-p);
 }
 
 void sc_val_to_bytes(const sc_word *buffer, unsigned char *const dest,
                      size_t const dest_len)
 {
-	assert(dest_len*8 <= (size_t)calc_buffer_size*SC_BITS);
+	assert(dest_len*CHAR_BIT <= (size_t)calc_buffer_size*SC_BITS);
 
-	const sc_word *b = buffer;
-	for (size_t i = 0; i < dest_len; ++i) {
-		dest[i] = b[0] + (b[1]<<4);
-		b+=2;
-	}
+	assert(SC_BITS == CHAR_BIT);
+	memcpy(dest, buffer, dest_len);
 }
 
 void sc_val_from_bits(unsigned char const *const bytes, unsigned from,
                       unsigned to, sc_word *buffer)
 {
 	assert(from < to);
-	assert((to - from) / 8 <= calc_buffer_size);
-	assert(SC_BITS == 4);
+	assert((to - from) / CHAR_BIT <= calc_buffer_size);
+	assert(CHAR_BIT == 8);
+	assert(SC_BITS == CHAR_BIT);
 
 	sc_word *p = buffer;
 
 	/* see which is the lowest and highest byte, special case if they are
 	 * the same. */
-	const unsigned char *const low      = &bytes[from/8];
-	const unsigned char *const high     = &bytes[(to-1)/8];
-	const uint8_t              low_bit  = from%8;
-	const uint8_t              high_bit = (to-1)%8 + 1;
+	const unsigned char *const low      = &bytes[from/CHAR_BIT];
+	const unsigned char *const high     = &bytes[(to-1)/CHAR_BIT];
+	const unsigned             low_bit  = from%CHAR_BIT;
+	const unsigned             high_bit = (to-1)%CHAR_BIT + 1;
 	if (low == high) {
 		uint32_t val
 			= ((uint32_t)*low << (32-high_bit)) >> (32-high_bit+low_bit);
-		*p++ = (val >> 0) & SC_MASK;
-		*p++ = (val >> 4) & SC_MASK;
+		*p++ = val & SC_MASK;
 		goto clear_rest;
 	}
 
 	/* lowest byte gets applied partially */
 	uint32_t val = ((uint32_t)*low) >> low_bit;
-	*p     = (val >> 0) & SC_MASK;
-	*(p+1) = (val >> 4) & SC_MASK;
-	*(p+2) = 0;
-	unsigned bit = (8-low_bit)%4;
-	p += (8-low_bit)/4;
-	/* fully apply bytes in the middle (but note that they may affect up to 3
+	*p     = val & SC_MASK;
+	*(p+1) = 0;
+	unsigned bit = (CHAR_BIT-low_bit)%SC_BITS;
+	p += (CHAR_BIT-low_bit)/SC_BITS;
+	/* fully apply bytes in the middle (but note that they may affect up to 2
 	 * units of the destination number) */
 	for (const unsigned char *mid = low+1; mid < high; ++mid) {
 		uint32_t mval = ((uint32_t)*mid) << bit;
-		*p++   |= (mval >> 0) & SC_MASK;
-		*p++    = (mval >> 4) & SC_MASK;
-		*p      = (mval >> 8) & SC_MASK;
+		*p++   |= (mval >> 0)       & SC_MASK;
+		*p      = (mval >> SC_BITS) & SC_MASK;
 	}
 	/* partially apply the highest byte */
 	uint32_t hval = ((uint32_t)(*high) << (32-high_bit)) >> (32-high_bit-bit);
-	*p++ |= (hval >> 0) & SC_MASK;
-	*p++  = (hval >> 4) & SC_MASK;
-	if ((hval >> 8) != 0)
-		*p++ = (hval >> 8) & SC_MASK;
+	*p++ |= (hval >> 0)       & SC_MASK;
+	if ((hval >> SC_BITS) != 0)
+		*p++ = (hval >> SC_BITS) & SC_MASK;
 
 clear_rest:
 	assert(p <= buffer + calc_buffer_size);
-	memset(p, 0, calc_buffer_size - (p-buffer));
+	memset(p, 0, buffer+calc_buffer_size - p);
 }
 
 const char *sc_print(const sc_word *value, unsigned bits, enum base_t base,
@@ -706,13 +691,15 @@ char *sc_print_buf(char *buf, size_t buf_len, const sc_word *value,
 		bits = bit_pattern_size;
 
 	unsigned words = bits / SC_BITS;
-	unsigned counter;
 	switch (base) {
 	case SC_HEX:
 		digits = big_digits;
-	case SC_hex:
-		for (counter = 0; counter < words; ++counter) {
-			*(--pos) = digits[value[counter]];
+	case SC_hex: {
+		assert(SC_BITS == 8);
+		unsigned counter = 0;
+		for ( ; counter < words; ++counter) {
+			*(--pos) = digits[(value[counter] >> 0) & 0xf];
+			*(--pos) = digits[(value[counter] >> 4) & 0xf];
 		}
 		assert(pos >= buf);
 
@@ -720,20 +707,16 @@ char *sc_print_buf(char *buf, size_t buf_len, const sc_word *value,
 		if (bits % SC_BITS) {
 			sc_word mask = max_digit(bits % SC_BITS);
 			sc_word x    = value[counter++] & mask;
-			*(--pos) = digits[x];
+			*(--pos) = digits[(value[x] >> 0) & 0xf];
+			*(--pos) = digits[(value[x] >> 4) & 0xf];
 			assert(pos >= buf);
 		}
 
-		/* now kill zeros */
-		for (; counter > 1; --counter, ++pos) {
-			if (pos[0] != '0')
-				break;
-		}
-		break;
-
-	case SC_BIN:
-		assert(SC_BITS == 4);
-		for (counter = 0; counter < words; ++counter) {
+		goto kill_zeros;
+	}
+	case SC_BIN: {
+		unsigned counter = 0;
+		for ( ; counter < words; ++counter) {
 			pos -= SC_BITS;
 			write_bits(pos, value[counter]);
 		}
@@ -750,10 +733,13 @@ char *sc_print_buf(char *buf, size_t buf_len, const sc_word *value,
 		assert(pos >= buf);
 
 		/* now kill zeros */
-		for (counter <<= 2; counter > 1; --counter, ++pos)
+kill_zeros:
+		for ( ; pos < buf+buf_len-2; ++pos) {
 			if (pos[0] != '0')
 				break;
-			break;
+		}
+		break;
+	}
 
 	case SC_DEC:
 	case SC_OCT: {
@@ -774,7 +760,8 @@ char *sc_print_buf(char *buf, size_t buf_len, const sc_word *value,
 
 		/* transfer data into oscillating buffers */
 		sc_word *div1_res = ALLOCANZ(sc_word, calc_buffer_size);
-		for (counter = 0; counter < words; ++counter)
+		unsigned counter = 0;
+		for ( ; counter < words; ++counter)
 			div1_res[counter] = p[counter];
 
 		/* last nibble must be masked */
@@ -818,12 +805,13 @@ char *sc_print_buf(char *buf, size_t buf_len, const sc_word *value,
 void init_strcalc(unsigned precision)
 {
 	if (output_buffer == NULL) {
-		/* round up to multiple of 4 */
-		precision = (precision + 3) & ~3;
+		/* round up to multiple of SC_BITS */
+		assert(is_po2(SC_BITS));
+		precision = (precision + (SC_BITS-1)) & ~(SC_BITS-1);
 
 		bit_pattern_size = precision;
-		calc_buffer_size = precision / 2;
-		max_value_size   = precision / 4;
+		calc_buffer_size = precision / (SC_BITS/2);
+		max_value_size   = precision / SC_BITS;
 
 		output_buffer = XMALLOCN(char, bit_pattern_size + 1);
 	}
@@ -946,6 +934,7 @@ bool sc_shrsI(const sc_word *value, unsigned shift_count, unsigned bitsize,
 	/* if shifting far enough the result is either 0 or -1 */
 	if (shift_count >= bitsize) {
 		bool carry_flag = !sc_is_zero(value, calc_buffer_size*SC_BITS);
+		assert(SC_BITS <= CHAR_BIT);
 		memset(buffer, sign, calc_buffer_size);
 		return carry_flag;
 	}
@@ -962,7 +951,7 @@ bool sc_shrsI(const sc_word *value, unsigned shift_count, unsigned bitsize,
 		}
 	}
 
-	/* TODO: bitsize % 4 != 0*/
+	/* TODO: bitsize % SC_BITS != 0 not implemented yet */
 	assert(bitsize % SC_BITS == 0);
 	unsigned limit = bitsize / SC_BITS;
 
@@ -985,6 +974,7 @@ bool sc_shrsI(const sc_word *value, unsigned shift_count, unsigned bitsize,
 	}
 
 	/* fill upper words with extended sign */
+	assert(SC_BITS <= CHAR_BIT);
 	memset(&buffer[limit-shift_words], sign,
 	       calc_buffer_size-(limit-shift_words));
 	return carry_flag;

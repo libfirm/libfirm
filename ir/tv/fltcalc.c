@@ -726,7 +726,7 @@ long double fc_val_to_ieee754(const fp_value *val)
 #else
 		unsigned offset = i;
 #endif
-		buf[i] = sc_sub_bits(packed, value_size*4, offset);
+		buf[i] = sc_sub_bits(packed, value_size*SC_BITS, offset);
 	}
 	memset(buf+real_size, 0, sizeof(long double)-real_size);
 	long double result;

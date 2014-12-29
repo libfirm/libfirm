@@ -16,7 +16,7 @@
 #include <stdlib.h>
 #include "firm_types.h"
 
-#define SC_BITS      4
+#define SC_BITS 8
 
 typedef uint8_t sc_word;
 
