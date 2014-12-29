@@ -1206,21 +1206,6 @@ static void melt_copykeeps(constraint_env_t *cenv)
 	obstack_free(&obst, NULL);
 }
 
-static ir_node *add_to_keep(ir_node *last_keep,
-                            const arch_register_class_t *cls, ir_node *node)
-{
-	if (last_keep != NULL) {
-		be_Keep_add_node(last_keep, cls, node);
-	} else {
-		last_keep = be_new_Keep_one(node);
-		ir_node *const schedpoint = skip_Proj(node);
-		if (sched_is_scheduled(schedpoint)) {
-			sched_add_after(schedpoint, last_keep);
-		}
-	}
-	return last_keep;
-}
-
 /**
  * Tests whether a node has a real user and is not just kept by the End or
  * Anchor node
@@ -1238,68 +1223,50 @@ static bool has_real_user(const ir_node *node)
 static void add_missing_keep_walker(ir_node *node, void *data)
 {
 	(void)data;
-	ir_mode *mode = get_irn_mode(node);
-	ir_node *last_keep;
+	if (get_irn_mode(node) == mode_T) {
+		unsigned const n_outs = arch_get_irn_n_outs(node);
+		assert(n_outs != 0);
 
-	if (mode != mode_T) {
-		if (!has_real_user(node)) {
-			const arch_register_req_t   *req = arch_get_irn_register_req(node);
-			const arch_register_class_t *cls = req->cls;
-			if (cls == NULL
-					|| (cls->flags & arch_register_class_flag_manual_ra)) {
-				return;
+		ir_node **const existing_projs = ALLOCANZ(ir_node*, n_outs);
+		foreach_out_edge(node, edge) {
+			ir_node *const succ = get_edge_src_irn(edge);
+			/* The node could be kept */
+			if (is_Proj(succ)) {
+				unsigned const pn = get_Proj_num(succ);
+				assert(pn < n_outs);
+				existing_projs[pn] = succ;
 			}
-
-			add_to_keep(NULL, cls, node);
-		}
-		return;
-	}
-
-	unsigned n_outs = arch_get_irn_n_outs(node);
-	if (n_outs <= 0)
-		return;
-
-	unsigned *const found_projs    = rbitset_alloca(n_outs);
-	ir_node **const existing_projs = ALLOCANZ(ir_node*, n_outs);
-	foreach_out_edge(node, edge) {
-		ir_node *succ = get_edge_src_irn(edge);
-		ir_mode *mode = get_irn_mode(succ);
-
-		/* The node could be kept */
-		if (is_End(succ) || is_Anchor(succ))
-			continue;
-		if (mode == mode_M || mode == mode_X)
-			continue;
-		unsigned pn = get_Proj_num(succ);
-		existing_projs[pn] = succ;
-		if (!has_real_user(succ))
-			continue;
-
-		assert(pn < n_outs);
-		rbitset_set(found_projs, pn);
-	}
-
-	/* are keeps missing? */
-	last_keep = NULL;
-	for (unsigned i = 0; i < n_outs; ++i) {
-		ir_node                     *value;
-		const arch_register_req_t   *req;
-		const arch_register_class_t *cls;
-
-		if (rbitset_is_set(found_projs, i)) {
-			continue;
 		}
 
-		req = arch_get_irn_register_req_out(node, i);
-		cls = req->cls;
-		if (cls == NULL || (cls->flags & arch_register_class_flag_manual_ra)) {
-			continue;
+		/* are keeps missing? */
+		unsigned n_to_keep = 0;
+		for (unsigned i = 0; i < n_outs; ++i) {
+			arch_register_req_t   const *const req = arch_get_irn_register_req_out(node, i);
+			arch_register_class_t const *const cls = req->cls;
+			if (cls && !(cls->flags & arch_register_class_flag_manual_ra)) {
+				ir_node *value = existing_projs[i];
+				if (!value) {
+					value = new_r_Proj(node, cls->mode, i);
+				} else if (has_real_user(value)) {
+					continue;
+				}
+				existing_projs[n_to_keep++] = value;
+			}
 		}
-
-		value = existing_projs[i];
-		if (value == NULL)
-			value = new_r_Proj(node, cls->mode, i);
-		last_keep = add_to_keep(last_keep, cls, value);
+		if (n_to_keep != 0) {
+			ir_node *const block = get_nodes_block(node);
+			ir_node *const keep  = be_new_Keep(block, n_to_keep, existing_projs);
+			sched_add_after(node, keep);
+		}
+	} else if (!is_Proj(node)) {
+		arch_register_req_t   const *const req = arch_get_irn_register_req(node);
+		arch_register_class_t const *const cls = req->cls;
+		if (cls && !(cls->flags & arch_register_class_flag_manual_ra)) {
+			if (!has_real_user(node)) {
+				ir_node *const keep = be_new_Keep_one(node);
+				sched_add_after(node, keep);
+			}
+		}
 	}
 }
 
