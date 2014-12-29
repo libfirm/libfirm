@@ -122,12 +122,6 @@ static void init_node_attr(ir_node *const node, unsigned const n_outputs, arch_i
 	info->flags = flags;
 }
 
-static void add_register_req_in(ir_node *node, const arch_register_req_t *req)
-{
-	backend_info_t *info = be_get_info(node);
-	ARR_APP1(const arch_register_req_t*, info->in_reqs, req);
-}
-
 ir_node *be_new_Perm(arch_register_class_t const *const cls,
                      ir_node *const block, int const n,
                      ir_node *const *const in)
@@ -248,14 +242,6 @@ ir_node *be_new_Keep_one(ir_node *const kept)
 	ir_node *const in[]  = { kept };
 	ir_node *const block = get_nodes_block(kept);
 	return be_new_Keep(block, ARRAY_SIZE(in), in);
-}
-
-void be_Keep_add_node(ir_node *keep, const arch_register_class_t *cls,
-                      ir_node *node)
-{
-	assert(be_is_Keep(keep));
-	add_irn_n(keep, node);
-	add_register_req_in(keep, cls->class_req);
 }
 
 ir_node *be_new_IncSP(const arch_register_t *sp, ir_node *bl,
@@ -642,7 +628,7 @@ void be_init_op(void)
 	op_be_Copy     = new_be_op(o+beo_Copy,     "be_Copy",     op_pin_state_exc_pinned, irop_flag_none,                            oparity_any,      sizeof(be_node_attr_t));
 	op_be_CopyKeep = new_be_op(o+beo_CopyKeep, "be_CopyKeep", op_pin_state_exc_pinned, irop_flag_keep,                            oparity_variable, sizeof(be_node_attr_t));
 	op_be_IncSP    = new_be_op(o+beo_IncSP,    "be_IncSP",    op_pin_state_exc_pinned, irop_flag_none,                            oparity_any,      sizeof(be_incsp_attr_t));
-	op_be_Keep     = new_be_op(o+beo_Keep,     "be_Keep",     op_pin_state_exc_pinned, irop_flag_keep,                            oparity_dynamic,  sizeof(be_node_attr_t));
+	op_be_Keep     = new_be_op(o+beo_Keep,     "be_Keep",     op_pin_state_exc_pinned, irop_flag_keep,                            oparity_variable, sizeof(be_node_attr_t));
 	op_be_MemPerm  = new_be_op(o+beo_MemPerm,  "be_MemPerm",  op_pin_state_exc_pinned, irop_flag_none,                            oparity_variable, sizeof(be_memperm_attr_t));
 	op_be_Perm     = new_be_op(o+beo_Perm,     "be_Perm",     op_pin_state_exc_pinned, irop_flag_none,                            oparity_variable, sizeof(be_node_attr_t));
 
