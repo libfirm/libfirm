@@ -1286,7 +1286,7 @@ static ir_node *gen_Proj_Div(ir_node *const node)
 	assert((unsigned)pn_amd64_div_M == (unsigned)pn_amd64_idiv_M);
 	assert((unsigned)pn_amd64_div_res_div == (unsigned)pn_amd64_idiv_res_div);
 	assert((unsigned)pn_amd64_divs_M == (unsigned)pn_amd64_idiv_M);
-	assert((unsigned)pn_amd64_divs_res_div == (unsigned)pn_amd64_idiv_res_div);
+	assert((unsigned)pn_amd64_divs_res == (unsigned)pn_amd64_idiv_res_div);
 
 	ir_mode *mode;
 	if (mode_is_float(get_Div_resmode(pred)))

@@ -89,6 +89,122 @@ $default_copy_attr = "amd64_copy_attr";
 		."\t*attr = *attr_init;\n",
 );
 
+my $binop = {
+	state          => "exc_pinned",
+	reg_req        => { out => [ "gp", "flags", "none" ] },
+	outs           => [ "res", "flags", "M" ],
+	arity          => "variable",
+	attr_type      => "amd64_binop_addr_attr_t",
+	attr           => "const amd64_binop_addr_attr_t *attr_init",
+	modified_flags => $status_flags,
+};
+
+my $binop_commutative = {
+	irn_flags      => [ "rematerializable", "commutative" ],
+	state          => "exc_pinned",
+	reg_req        => { out => [ "gp", "flags", "none" ] },
+	outs           => [ "res", "flags", "M" ],
+	arity          => "variable",
+	attr_type      => "amd64_binop_addr_attr_t",
+	attr           => "const amd64_binop_addr_attr_t *attr_init",
+	modified_flags => $status_flags,
+};
+
+my $divop = {
+	state          => "pinned",
+	reg_req        => { out => [ "rax", "flags", "none", "rdx" ] },
+	outs           => [ "res_div", "flags", "M", "res_mod" ],
+	arity          => "variable",
+	attr_type      => "amd64_addr_attr_t",
+	fixed          => "amd64_addr_t addr = { { NULL, 0 }, NO_INPUT, NO_INPUT, NO_INPUT, 0, AMD64_SEGMENT_DEFAULT };\n"
+	                 ."amd64_op_mode_t op_mode = AMD64_OP_RAX_REG;\n",
+	attr           => "amd64_insn_mode_t insn_mode",
+	modified_flags => $status_flags,
+};
+
+my $mulop = {
+	# Do not rematerialize this node
+	# TODO: should mark this commutative as soon as the backend code
+	#       can handle this special case
+	# It produces 2 results and has strict constraints
+	state          => "exc_pinned",
+	reg_req        => { out => [ "rax", "flags", "none", "rdx" ] },
+	outs           => [ "res_low", "flags", "M", "res_high" ],
+	arity          => "variable",
+	attr_type      => "amd64_addr_attr_t",
+	attr           => "amd64_insn_mode_t insn_mode, amd64_op_mode_t op_mode, amd64_addr_t addr",
+	modified_flags => $status_flags,
+};
+
+my $shiftop = {
+	irn_flags => [ "rematerializable" ],
+	reg_req   => { out => [ "gp", "flags" ] },
+	outs      => [ "res", "flags" ],
+	arity     => "variable",
+	attr_type => "amd64_shift_attr_t",
+	attr      => "const amd64_shift_attr_t *attr_init",
+	modified_flags => $status_flags
+};
+
+my $unop = {
+	irn_flags      => [ "rematerializable" ],
+	reg_req        => { in => [ "gp" ], out => [ "in_r1", "flags" ] },
+	ins            => [ "val" ],
+	outs           => [ "res", "flags" ],
+	attr_type      => "amd64_addr_attr_t",
+	attr           => "amd64_insn_mode_t insn_mode",
+	fixed          => "amd64_op_mode_t op_mode = AMD64_OP_UNOP_REG;\n"
+	                 ."amd64_addr_t addr = { { NULL, 0 }, NO_INPUT, NO_INPUT, NO_INPUT, 0, AMD64_SEGMENT_DEFAULT };",
+	modified_flags => $status_flags
+};
+
+my $binopx = {
+	irn_flags => [ "rematerializable" ],
+	state     => "exc_pinned",
+	reg_req   => { out => [ "xmm", "none", "none" ] },
+	outs      => [ "res", "none", "M" ],
+	arity     => "variable",
+	attr_type => "amd64_binop_addr_attr_t",
+	attr      => "const amd64_binop_addr_attr_t *attr_init",
+};
+
+my $binopx_commutative = {
+	irn_flags => [ "rematerializable", "commutative" ],
+	state     => "exc_pinned",
+	reg_req   => { out => [ "xmm", "none", "none" ] },
+	outs      => [ "res", "none", "M" ],
+	arity     => "variable",
+	attr_type => "amd64_binop_addr_attr_t",
+	attr      => "const amd64_binop_addr_attr_t *attr_init",
+};
+
+my $cvtop2x = {
+	state     => "exc_pinned",
+	reg_req   => { out => [ "xmm", "none", "none" ] },
+	outs      => [ "res", "none", "M" ],
+	arity     => "variable",
+	attr_type => "amd64_addr_attr_t",
+	attr      => "amd64_insn_mode_t insn_mode, amd64_op_mode_t op_mode, amd64_addr_t addr",
+};
+
+my $cvtopx2i = {
+	state     => "exc_pinned",
+	reg_req   => { out => [ "gp", "none", "none" ] },
+	outs      => [ "res", "none", "M" ],
+	arity     => "variable",
+	attr_type => "amd64_addr_attr_t",
+	attr      => "amd64_insn_mode_t insn_mode, amd64_op_mode_t op_mode, amd64_addr_t addr",
+};
+
+my $movopx = {
+	state     => "exc_pinned",
+	arity     => "variable",
+	outs      => [ "res", "none", "M" ],
+	reg_req   => { out => [ "xmm", "none", "none" ] },
+	attr_type => "amd64_addr_attr_t",
+	attr      => "amd64_op_mode_t op_mode, amd64_addr_t addr",
+};
+
 %nodes = (
 push_am => {
 	op_flags  => [ "uses_memory" ],
@@ -146,27 +262,13 @@ leave => {
 },
 
 add => {
-	irn_flags => [ "rematerializable", "commutative" ],
-	state     => "exc_pinned",
-	reg_req   => { out => [ "gp", "flags", "none" ] },
-	arity     => "variable",
-	outs      => [ "res", "flags", "M" ],
-	attr_type => "amd64_binop_addr_attr_t",
-	attr      => "const amd64_binop_addr_attr_t *attr_init",
-	emit      => "add%M %AM",
-	modified_flags => $status_flags,
+	template => $binop_commutative,
+	emit     => "add%M %AM",
 },
 
 and => {
-	irn_flags => [ "rematerializable", "commutative" ],
-	state     => "exc_pinned",
-	reg_req   => { out => [ "gp", "flags", "none" ] },
-	arity     => "variable",
-	outs      => [ "res", "flags", "M" ],
-	attr_type => "amd64_binop_addr_attr_t",
-	attr      => "const amd64_binop_addr_attr_t *attr_init",
-	emit      => "and%M %AM",
-	modified_flags => $status_flags,
+	template => $binop_commutative,
+	emit     => "and%M %AM",
 },
 
 asm => {
@@ -178,176 +280,74 @@ asm => {
 },
 
 div => {
-	state     => "pinned",
-	reg_req   => { out => [ "rax", "flags", "none", "rdx" ] },
-	arity     => "variable",
-	outs      => [ "res_div", "flags", "M", "res_mod" ],
-	attr_type => "amd64_addr_attr_t",
-	fixed     => "amd64_addr_t addr = { { NULL, 0 }, NO_INPUT, NO_INPUT, NO_INPUT, 0, AMD64_SEGMENT_DEFAULT };\n"
-	            ."amd64_op_mode_t op_mode = AMD64_OP_RAX_REG;\n",
-	attr      => "amd64_insn_mode_t insn_mode",
-	emit      => "div%M %AM",
-	modified_flags => $status_flags,
+	template => $divop,
+	emit     => "div%M %AM",
 },
 
 idiv => {
-	state     => "pinned",
-	reg_req   => { out => [ "rax", "flags", "none", "rdx" ] },
-	arity     => "variable",
-	outs      => [ "res_div", "flags", "M", "res_mod" ],
-	attr_type => "amd64_addr_attr_t",
-	fixed     => "amd64_addr_t addr = { { NULL, 0 }, NO_INPUT, NO_INPUT, NO_INPUT, 0, AMD64_SEGMENT_DEFAULT };\n"
-	            ."amd64_op_mode_t op_mode = AMD64_OP_RAX_REG;\n",
-	attr      => "amd64_insn_mode_t insn_mode",
-	emit      => "idiv%M %AM",
-	modified_flags => $status_flags,
+	template => $divop,
+	emit     => "idiv%M %AM",
 },
 
 imul => {
-	irn_flags => [ "rematerializable", "commutative" ],
-	state     => "exc_pinned",
-	reg_req   => { out => [ "gp", "flags", "none" ] },
-	outs      => [ "res", "flags", "M" ],
-	arity     => "variable",
-	attr_type => "amd64_binop_addr_attr_t",
-	attr      => "const amd64_binop_addr_attr_t *attr_init",
-	emit      => "imul%M %AM",
-	modified_flags => $status_flags,
+	template => $binop_commutative,
+	emit     => "imul%M %AM",
 },
 
 imul_1op => {
-	# Do not rematerialize this node
-	# TODO: should mark this commutative as soon as the backend code
-	#       can handle this special case
-	# It produces 2 results and has strict constraints
-	state     => "exc_pinned",
-	reg_req   => { out => [ "rax", "flags", "none", "rdx" ] },
-	outs      => [ "res_low", "flags", "M", "res_high" ],
-	arity     => "variable",
-	attr_type => "amd64_addr_attr_t",
-	attr      => "amd64_insn_mode_t insn_mode, amd64_op_mode_t op_mode, amd64_addr_t addr",
-	emit      => "imul%M %AM",
-	modified_flags => $status_flags,
+	template => $mulop,
+	emit     => "imul%M %AM",
 },
 
 mul => {
-	# Do not rematerialize this node
-	# It produces 2 results and has strict constraints
-	state     => "exc_pinned",
-	reg_req   => { out => [ "rax", "flags", "none", "rdx" ] },
-	outs      => [ "res_low", "flags", "M", "res_high" ],
-	arity     => "variable",
-	attr_type => "amd64_addr_attr_t",
-	attr      => "amd64_insn_mode_t insn_mode, amd64_op_mode_t op_mode, amd64_addr_t addr",
-	emit      => "mul%M %AM",
-	modified_flags => $status_flags,
+	template => $mulop,
+	emit     => "mul%M %AM",
 },
 
 or => {
-	irn_flags => [ "rematerializable", "commutative" ],
-	state     => "exc_pinned",
-	reg_req   => { out => [ "gp", "flags", "none" ] },
-	outs      => [ "res", "flags", "M" ],
-	arity     => "variable",
-	attr_type => "amd64_binop_addr_attr_t",
-	attr      => "const amd64_binop_addr_attr_t *attr_init",
-	emit      => "or%M %AM",
-	modified_flags => $status_flags,
+	template => $binop_commutative,
+	emit     => "or%M %AM",
 },
 
 shl => {
-	irn_flags => [ "rematerializable" ],
-	reg_req   => { out => [ "gp", "flags" ] },
-	outs      => [ "res", "flags" ],
-	arity     => "variable",
-	attr_type => "amd64_shift_attr_t",
-	attr      => "const amd64_shift_attr_t *attr_init",
-	emit      => "shl%MS %SO",
-	modified_flags => $status_flags
+	template => $shiftop,
+	emit     => "shl%MS %SO",
 },
 
 shr => {
-	irn_flags => [ "rematerializable" ],
-	reg_req   => { out => [ "gp", "flags" ] },
-	outs      => [ "res", "flags" ],
-	arity     => "variable",
-	attr_type => "amd64_shift_attr_t",
-	attr      => "const amd64_shift_attr_t *attr_init",
-	emit      => "shr%MS %SO",
-	modified_flags => $status_flags
+	template => $shiftop,
+	emit     => "shr%MS %SO",
 },
 
 sar => {
-	irn_flags => [ "rematerializable" ],
-	reg_req   => { out => [ "gp", "flags" ] },
-	outs      => [ "res", "flags" ],
-	arity     => "variable",
-	attr_type => "amd64_shift_attr_t",
-	attr      => "const amd64_shift_attr_t *attr_init",
-	emit      => "sar%MS %SO",
-	modified_flags => $status_flags
+	template => $shiftop,
+	emit     => "sar%MS %SO",
 },
 
 sub => {
+	template  => $binop,
 	irn_flags => [ "rematerializable" ],
-	state     => "exc_pinned",
-	reg_req   => { out => [ "gp", "flags", "none" ] },
-	outs      => [ "res", "flags", "M" ],
-	arity     => "variable",
-	attr_type => "amd64_binop_addr_attr_t",
-	attr      => "const amd64_binop_addr_attr_t *attr_init",
 	emit      => "sub%M %AM",
-	modified_flags => $status_flags,
 },
 
 sbb => {
-	state     => "exc_pinned",
-	reg_req   => { out => [ "gp", "flags", "none" ] },
-	outs      => [ "res", "flags", "M" ],
-	arity     => "variable",
-	attr_type => "amd64_binop_addr_attr_t",
-	attr      => "const amd64_binop_addr_attr_t *attr_init",
-	emit      => "sbb%M %AM",
-	modified_flags => $status_flags,
+	template => $binop,
+	emit     => "sbb%M %AM",
 },
 
 neg => {
-	irn_flags => [ "rematerializable" ],
-	reg_req   => { in => [ "gp" ], out => [ "in_r1", "flags" ] },
-	ins       => [ "val" ],
-	outs      => [ "res", "flags" ],
-	attr_type => "amd64_addr_attr_t",
-	attr      => "amd64_insn_mode_t insn_mode",
-	fixed     => "amd64_op_mode_t op_mode = AMD64_OP_UNOP_REG;\n"
-	            ."amd64_addr_t addr = { { NULL, 0 }, NO_INPUT, NO_INPUT, NO_INPUT, 0, AMD64_SEGMENT_DEFAULT };",
-	emit      => "neg%M %AM",
-	modified_flags => $status_flags
+	template => $unop,
+	emit     => "neg%M %AM",
 },
 
 not => {
-	irn_flags => [ "rematerializable" ],
-	attr      => "amd64_insn_mode_t insn_mode",
-	init_attr => "attr->insn_mode = insn_mode;",
-	reg_req   => { in => [ "gp" ], out => [ "in_r1", "flags" ] },
-	ins       => [ "val" ],
-	outs      => [ "res", "flags" ],
-	attr_type => "amd64_addr_attr_t",
-	fixed     => "amd64_op_mode_t op_mode = AMD64_OP_UNOP_REG;\n"
-	            ."amd64_addr_t addr = { { NULL, 0 }, NO_INPUT, NO_INPUT, NO_INPUT, 0, AMD64_SEGMENT_DEFAULT };",
-	emit      => "not%M %AM",
-	modified_flags => $status_flags
+	template => $unop,
+	emit     => "not%M %AM",
 },
 
 xor => {
-	irn_flags => [ "rematerializable", "commutative" ],
-	state     => "exc_pinned",
-	reg_req   => { out => [ "gp", "flags", "none" ] },
-	arity     => "variable",
-	outs      => [ "res", "flags", "M" ],
-	attr_type => "amd64_binop_addr_attr_t",
-	attr      => "const amd64_binop_addr_attr_t *attr_init",
-	emit      => "xor%M %AM",
-	modified_flags => $status_flags,
+	template => $binop_commutative,
+	emit     => "xor%M %AM",
 },
 
 xor_0 => {
@@ -499,46 +499,24 @@ ret => {
 # SSE
 
 adds => {
-	irn_flags  => [ "rematerializable", "commutative" ],
-	state     => "exc_pinned",
-	reg_req   => { out => [ "xmm", "none", "none" ] },
-	outs      => [ "res", "none", "M" ],
-	arity     => "variable",
-	attr_type => "amd64_binop_addr_attr_t",
-	attr      => "const amd64_binop_addr_attr_t *attr_init",
-	emit      => "adds%MX %AM",
+	template => $binopx_commutative,
+	emit     => "adds%MX %AM",
 },
 
 divs => {
-	irn_flags => [ "rematerializable" ],
-	state     => "exc_pinned",
-	reg_req   => { out => [ "xmm", "none", "none" ] },
-	outs      => [ "res_div", "none", "M" ],
-	arity     => "variable",
-	attr_type => "amd64_binop_addr_attr_t",
-	attr      => "const amd64_binop_addr_attr_t *attr_init",
-	emit      => "divs%MX %AM",
+	template => $binopx,
+	emit     => "divs%MX %AM",
 },
 
 movs_xmm => {
-	state     => "exc_pinned",
-	reg_req   => { out => [ "xmm", "none", "none" ] },
-	outs      => [ "res", "unused", "M" ],
-	arity     => "variable",
-	attr_type => "amd64_addr_attr_t",
-	attr      => "amd64_insn_mode_t insn_mode, amd64_op_mode_t op_mode, amd64_addr_t addr",
-	emit      => "movs%MX %AM, %D0",
+	template => $movopx,
+	attr     => "amd64_insn_mode_t insn_mode, amd64_op_mode_t op_mode, amd64_addr_t addr",
+	emit     => "movs%MX %AM, %D0",
 },
 
 muls => {
-	irn_flags => [ "rematerializable", "commutative" ],
-	state     => "exc_pinned",
-	reg_req   => { out => [ "xmm", "none", "none" ] },
-	outs      => [ "res", "none", "M" ],
-	arity     => "variable",
-	attr_type => "amd64_binop_addr_attr_t",
-	attr      => "const amd64_binop_addr_attr_t *attr_init",
-	emit      => "muls%MX %AM",
+	template => $binopx_commutative,
+	emit     => "muls%MX %AM",
 },
 
 movs_store_xmm => {
@@ -553,16 +531,9 @@ movs_store_xmm => {
 	emit      => "movs%MX %^S0, %A",
 },
 
-
 subs => {
-	irn_flags => [ "rematerializable" ],
-	state     => "exc_pinned",
-	reg_req   => { out => [ "xmm", "none", "none" ] },
-	outs      => [ "res", "none", "M" ],
-	arity     => "variable",
-	attr_type => "amd64_binop_addr_attr_t",
-	attr      => "const amd64_binop_addr_attr_t *attr_init",
-	emit      => "subs%MX %AM",
+	template => $binopx,
+	emit     => "subs%MX %AM",
 },
 
 ucomis => {
@@ -588,110 +559,60 @@ xorpd_0 => {
 },
 
 xorp  => {
-	irn_flags => [ "rematerializable", "commutative" ],
-	state     => "exc_pinned",
-	reg_req   => { out => [ "xmm", "none", "none" ] },
-	arity     => "variable",
-	outs      => [ "res", "none", "M" ],
-	attr_type => "amd64_binop_addr_attr_t",
-	attr      => "const amd64_binop_addr_attr_t *attr_init",
-	emit      => "xorp%MX %AM",
+	template => $binopx_commutative,
+	emit     => "xorp%MX %AM",
 },
 
 # Conversion operations
 
 cvtss2sd => {
-	state     => "exc_pinned",
-	reg_req   => { out => [ "xmm", "none", "none" ] },
-	outs      => [ "res", "none", "M" ],
-	arity     => "variable",
-	attr_type => "amd64_addr_attr_t",
-	attr      => "amd64_insn_mode_t insn_mode, amd64_op_mode_t op_mode, amd64_addr_t addr",
-	emit      => "cvtss2sd %AM, %^D0",
+	template => $cvtop2x,
+	emit     => "cvtss2sd %AM, %^D0",
 },
 
 cvtsd2ss => {
-	state     => "exc_pinned",
-	reg_req   => { out => [ "xmm", "none", "none" ] },
-	outs      => [ "res", "none", "M" ],
-	arity     => "variable",
-	attr_type => "amd64_addr_attr_t",
-	attr      => "amd64_op_mode_t op_mode, amd64_addr_t addr",
-	fixed     => "amd64_insn_mode_t insn_mode = INSN_MODE_64;\n",
-	emit      => "cvtsd2ss %AM, %^D0",
+	template => $cvtop2x,
+	attr     => "amd64_op_mode_t op_mode, amd64_addr_t addr",
+	fixed    => "amd64_insn_mode_t insn_mode = INSN_MODE_64;\n",
+	emit     => "cvtsd2ss %AM, %^D0",
 },
 
 cvttsd2si => {
-	state     => "exc_pinned",
-	reg_req   => { out => [ "gp", "none", "none" ] },
-	outs      => [ "res", "none", "M" ],
-	arity     => "variable",
-	attr_type => "amd64_addr_attr_t",
-	attr      => "amd64_insn_mode_t insn_mode, amd64_op_mode_t op_mode, amd64_addr_t addr",
-	emit      => "cvttsd2si %AM, %D0",
+	template => $cvtopx2i,
+	emit     => "cvttsd2si %AM, %D0",
 },
 
 cvttss2si => {
-	state     => "exc_pinned",
-	reg_req   => { out => [ "gp", "none", "none" ] },
-	outs      => [ "res", "none", "M" ],
-	arity     => "variable",
-	attr_type => "amd64_addr_attr_t",
-	attr      => "amd64_insn_mode_t insn_mode, amd64_op_mode_t op_mode, amd64_addr_t addr",
-	emit      => "cvttss2si %AM, %D0",
+	template => $cvtopx2i,
+	emit     => "cvttss2si %AM, %D0",
 },
 
 cvtsi2ss => {
-	state     => "exc_pinned",
-	reg_req   => { out => [ "xmm", "none", "none" ] },
-	outs      => [ "res", "none", "M" ],
-	arity     => "variable",
-	attr_type => "amd64_addr_attr_t",
-	attr      => "amd64_insn_mode_t insn_mode, amd64_op_mode_t op_mode, amd64_addr_t addr",
-	emit      => "cvtsi2ss %AM, %^D0",
+	template => $cvtop2x,
+	emit     => "cvtsi2ss %AM, %^D0",
 },
 
 cvtsi2sd => {
-	state     => "exc_pinned",
-	reg_req   => { out => [ "xmm", "none", "none" ] },
-	outs      => [ "res", "none", "M" ],
-	arity     => "variable",
-	attr_type => "amd64_addr_attr_t",
-	attr      => "amd64_insn_mode_t insn_mode, amd64_op_mode_t op_mode, amd64_addr_t addr",
-	emit      => "cvtsi2sd %AM, %^D0",
+	template => $cvtop2x,
+	emit     => "cvtsi2sd %AM, %^D0",
 },
 
 movq => {
-	state     => "exc_pinned",
-	arity     => "variable",
-	outs      => [ "res", "none", "M" ],
-	reg_req   => { out => [ "xmm", "none", "none" ] },
-	attr_type => "amd64_addr_attr_t",
-	attr      => "amd64_op_mode_t op_mode, amd64_addr_t addr",
-	fixed     => "amd64_insn_mode_t insn_mode = INSN_MODE_64;\n",
-	emit      => "movq %AM, %D0",
+	template => $movopx,
+	fixed    => "amd64_insn_mode_t insn_mode = INSN_MODE_64;\n",
+	emit     => "movq %AM, %D0",
 },
 
 movdqa => {
-	state     => "exc_pinned",
-	arity     => "variable",
-	outs      => [ "res", "none", "M" ],
-	reg_req   => { out => [ "xmm", "none", "none" ] },
-	attr_type => "amd64_addr_attr_t",
-	attr      => "amd64_op_mode_t op_mode, amd64_addr_t addr",
-	fixed     => "amd64_insn_mode_t insn_mode = INSN_MODE_128;\n",
-	emit      => "movdqa %AM, %D0",
+	template => $movopx,
+	fixed    => "amd64_insn_mode_t insn_mode = INSN_MODE_128;\n",
+	emit     => "movdqa %AM, %D0",
 },
 
 movdqu => {
-	state     => "exc_pinned",
-	arity     => "variable",
-	outs      => [ "res", "none", "M" ],
-	reg_req   => { out => [ "xmm", "none", "none" ] },
-	attr_type => "amd64_addr_attr_t",
-	attr      => "amd64_op_mode_t op_mode, amd64_addr_t addr",
-	fixed     => "amd64_insn_mode_t insn_mode = INSN_MODE_128;\n",
-	emit      => "movdqu %AM, %D0",
+	template => $movopx,
+	fixed    => "amd64_insn_mode_t insn_mode = INSN_MODE_128;\n",
+	emit     => "movdqu %AM, %D0",
 },
 
 movdqu_store => {
@@ -731,36 +652,18 @@ l_haddpd => {
 },
 
 punpckldq => {
-	irn_flags => [ "rematerializable" ],
-	state     => "exc_pinned",
-	arity     => "variable",
-	outs      => [ "res", "none", "M" ],
-	reg_req   => { out => [ "xmm", "none", "none" ] },
-	attr_type => "amd64_binop_addr_attr_t",
-	attr      => "const amd64_binop_addr_attr_t *attr_init",
-	emit      => "punpckldq %AM",
+	template => $binopx,
+	emit     => "punpckldq %AM",
 },
 
 subpd => {
-	irn_flags => [ "rematerializable" ],
-	state     => "exc_pinned",
-	arity     => "variable",
-	outs      => [ "res", "none", "M" ],
-	reg_req   => { out => [ "xmm", "none", "none" ] },
-	attr_type => "amd64_binop_addr_attr_t",
-	attr      => "const amd64_binop_addr_attr_t *attr_init",
-	emit      => "subpd %AM",
+	template => $binopx,
+	emit     => "subpd %AM",
 },
 
 haddpd => {
-	irn_flags => [ "rematerializable" ],
-	state     => "exc_pinned",
-	arity     => "variable",
-	outs      => [ "res", "none", "M" ],
-	reg_req   => { out => [ "xmm", "none", "none" ] },
-	attr_type => "amd64_binop_addr_attr_t",
-	attr      => "const amd64_binop_addr_attr_t *attr_init",
-	emit      => "haddpd %AM",
+	template => $binopx,
+	emit     => "haddpd %AM",
 },
 
 );
