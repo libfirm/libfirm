@@ -24,8 +24,6 @@
 #define SC_RESULT(x) ((x) & ((1U << SC_BITS) - 1U))
 #define SC_CARRY(x)  ((unsigned)(x) >> SC_BITS)
 
-#define _bitisset(digit, pos) (((digit) & (1 << (pos))) != 0)
-
 static char *output_buffer = NULL;  /**< buffer for output */
 static unsigned bit_pattern_size;   /**< maximum number of bits */
 static unsigned calc_buffer_size;   /**< size of internally stored values */
@@ -517,12 +515,6 @@ int sc_get_lowest_set_bit(const sc_word *value)
 			return (counter * SC_BITS) + ntz(word);
 	}
 	return -1;
-}
-
-bool sc_get_bit_at(const sc_word *value, unsigned pos)
-{
-	unsigned nibble = pos / SC_BITS;
-	return value[nibble] & (1 << (pos % SC_BITS));
 }
 
 void sc_set_bit_at(sc_word *value, unsigned pos)

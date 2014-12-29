@@ -16,7 +16,9 @@
 #include <stdlib.h>
 #include "firm_types.h"
 
-typedef unsigned char sc_word;
+#define SC_BITS      4
+
+typedef uint8_t sc_word;
 
 /**
  * The output mode for integer values.
@@ -247,7 +249,11 @@ void finish_strcalc(void);
 unsigned sc_get_precision(void);
 
 /** Return the bit at a given position. */
-bool sc_get_bit_at(const sc_word *value, unsigned pos);
+static inline bool sc_get_bit_at(const sc_word *value, unsigned pos)
+{
+	unsigned nibble = pos / SC_BITS;
+	return (value[nibble] >> (pos % SC_BITS)) & 1;
+}
 
 /** Set the bit at the specified position. */
 void sc_set_bit_at(sc_word *value, unsigned pos);

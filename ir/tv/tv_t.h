@@ -15,8 +15,9 @@
 
 #include <assert.h>
 #include "firm_common.h"
-#include "irmode.h"
+#include "irmode_t.h"
 #include "tv.h"
+#include "strcalc.h"
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -26,8 +27,6 @@
 #define get_tarval_b_false()     get_tarval_b_false_()
 #define get_tarval_b_true()      get_tarval_b_true_()
 #define tarval_is_constant(tv)   tarval_is_constant_(tv)
-
-#define SC_BITS 4
 
 /**
  * Initialization of the tarval module.
@@ -139,12 +138,19 @@ ir_tarval *get_tarval_epsilon(ir_mode *mode);
 ir_tarval *get_tarval_minus_inf(ir_mode *mode);
 
 /**
- * Get the @p idx'th bit of the internal representation of the given tarval @p tv.
+ * Get the @p idx'th bit of the internal representation of the given tarval
+ * @p tv.
  */
-static inline unsigned get_tarval_bit(ir_tarval const *const tv, unsigned const idx)
+static inline unsigned get_tarval_bit(ir_tarval const *const tv,
+                                      unsigned const idx)
 {
-	assert(idx < get_mode_size_bits(get_tarval_mode(tv)));
-	return tv->value[idx / SC_BITS] >> (idx % SC_BITS) & 1;
+#ifndef NDEBUG
+	ir_mode *mode = get_tarval_mode(tv);
+	assert(get_mode_sort(mode) == irms_reference
+	    || get_mode_sort(mode) == irms_int_number);
+	assert(idx < get_mode_size_bits(mode));
+#endif
+	return sc_get_bit_at(tv->value, idx);
 }
 
 bool tarval_in_range(ir_tarval const *min, ir_tarval const *val, ir_tarval const *max);
