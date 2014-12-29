@@ -119,13 +119,6 @@ static int amd64_get_sp_bias(const ir_node *node)
 	return 0;
 }
 
-/* fill register allocator interface */
-
-static const arch_irn_ops_t amd64_irn_ops = {
-	.get_op_estimated_cost  = NULL,
-	.perform_memory_operand = NULL,
-};
-
 static void amd64_before_ra(ir_graph *irg)
 {
 	be_sched_fix_flags(irg, &amd64_reg_classes[CLASS_amd64_flags], NULL, NULL, NULL);
@@ -811,7 +804,7 @@ static void amd64_init(void)
 {
 	amd64_init_types();
 	amd64_register_init();
-	amd64_create_opcodes(&amd64_irn_ops);
+	amd64_create_opcodes(&be_null_ops);
 	amd64_cconv_init();
 	x86_set_be_asm_constraint_support(&amd64_asm_constraints);
 }

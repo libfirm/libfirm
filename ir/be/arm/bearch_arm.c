@@ -59,13 +59,6 @@ arm_codegen_config_t arm_cg_config;
 ir_mode *arm_mode_gp;
 ir_mode *arm_mode_flags;
 
-/* fill register allocator interface */
-
-const arch_irn_ops_t arm_irn_ops = {
-	.get_op_estimated_cost  = NULL,
-	.perform_memory_operand = NULL,
-};
-
 /**
  * Transforms the standard Firm graph into an ARM firm graph.
  */
@@ -332,7 +325,7 @@ static void arm_init(void)
 	arm_mode_flags = new_non_arithmetic_mode("arm_flags", 32);
 
 	arm_register_init();
-	arm_create_opcodes(&arm_irn_ops);
+	arm_create_opcodes(&be_null_ops);
 	arm_init_backend_params();
 }
 

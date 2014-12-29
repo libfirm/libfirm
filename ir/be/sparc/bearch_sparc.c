@@ -121,13 +121,6 @@ static const lc_opt_table_entry_t sparc_options[] = {
 	LC_OPT_LAST
 };
 
-/* fill register allocator interface */
-
-const arch_irn_ops_t sparc_irn_ops = {
-	.get_op_estimated_cost  = NULL,
-	.perform_memory_operand = NULL,
-};
-
 /**
  * Transforms the standard firm graph into a SPARC firm graph
  */
@@ -406,7 +399,7 @@ static void sparc_init(void)
 {
 	sparc_init_asm_constraints();
 	sparc_register_init();
-	sparc_create_opcodes(&sparc_irn_ops);
+	sparc_create_opcodes(&be_null_ops);
 	sparc_cconv_init();
 	sparc_setup_cg_config();
 }

@@ -602,7 +602,7 @@ bool is_be_node(const ir_node *irn)
 	return get_op_tag(get_irn_op(irn)) == be_op_tag;
 }
 
-static const arch_irn_ops_t null_ops = {
+arch_irn_ops_t const be_null_ops = {
 	.get_op_estimated_cost  = NULL,
 	.perform_memory_operand = NULL,
 };
@@ -613,7 +613,7 @@ static ir_op *new_be_op(unsigned code, const char *name, op_pin_state p,
 	ir_op *res = new_ir_op(code, name, p, flags, opar, 0, attr_size);
 	set_op_dump(res, dump_node);
 	set_op_copy_attr(res, copy_attr);
-	res->ops.be_ops = &null_ops;
+	res->ops.be_ops = &be_null_ops;
 	set_op_tag(res, be_op_tag);
 	return res;
 }
@@ -644,7 +644,7 @@ void be_init_op(void)
 	for (unsigned opc = iro_first; opc <= iro_last; ++opc) {
 		ir_op *op = ir_get_opcode(opc);
 		assert(op->ops.be_ops == NULL);
-		op->ops.be_ops = &null_ops;
+		op->ops.be_ops = &be_null_ops;
 	}
 }
 

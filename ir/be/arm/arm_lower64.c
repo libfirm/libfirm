@@ -10,6 +10,7 @@
  */
 #include "arm_nodes_attr.h"
 #include "bearch_arm_t.h"
+#include "benode.h"
 #include "gen_arm_new_nodes.h"
 #include "gen_arm_regalloc_if.h"
 #include "ircons_t.h"
@@ -391,7 +392,7 @@ void arm_lower_64bit(void)
 	create_divmod_intrinsics(word_unsigned, word_signed);
 
 	/* make sure opcodes are initialized */
-	arm_create_opcodes(&arm_irn_ops);
+	arm_create_opcodes(&be_null_ops);
 
 	ir_prepare_dw_lowering(&lower_dw_params);
 	ir_register_dw_lower_function(op_Add,   lower64_add);

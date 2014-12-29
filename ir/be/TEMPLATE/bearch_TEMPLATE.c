@@ -36,13 +36,6 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
-/* fill register allocator interface */
-
-static const arch_irn_ops_t TEMPLATE_irn_ops = {
-	.get_op_estimated_cost  = NULL,
-	.perform_memory_operand = NULL,
-};
-
 /**
  * Transforms the standard firm graph into
  * a TEMLPATE firm graph
@@ -93,7 +86,7 @@ static TEMPLATE_isa_t TEMPLATE_isa_template = {
 static void TEMPLATE_init(void)
 {
 	TEMPLATE_register_init();
-	TEMPLATE_create_opcodes(&TEMPLATE_irn_ops);
+	TEMPLATE_create_opcodes(&be_null_ops);
 }
 
 static void TEMPLATE_finish(void)

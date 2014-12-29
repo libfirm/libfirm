@@ -29,8 +29,6 @@ typedef struct sparc_isa_t {
 	pmap       *constants;
 } sparc_isa_t;
 
-extern const arch_irn_ops_t sparc_irn_ops;
-
 extern ir_mode *sparc_mode_Q;
 
 /**

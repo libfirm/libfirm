@@ -41,6 +41,8 @@ extern ir_op *op_be_Keep;
 extern ir_op *op_be_MemPerm;
 extern ir_op *op_be_Perm;
 
+extern arch_irn_ops_t const be_null_ops;
+
 /**
  * Determines if irn is a be_node.
  */
