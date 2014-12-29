@@ -229,17 +229,15 @@ ir_node *be_new_Keep(ir_node *const block, int const n,
                      ir_node *const *const in)
 {
 	ir_graph *irg = get_irn_irg(block);
-	ir_node  *res = new_ir_node(NULL, irg, block, op_be_Keep, mode_ANY, 0, NULL);
+	ir_node  *res = new_ir_node(NULL, irg, block, op_be_Keep, mode_ANY, n, in);
 	init_node_attr(res, 1, arch_irn_flag_schedule_first);
 	be_node_attr_t *attr = (be_node_attr_t*) get_irn_generic_attr(res);
 	attr->exc.pin_state = op_pin_state_pinned;
 
 	for (int i = 0; i < n; ++i) {
-		ir_node *pred = in[i];
-		add_irn_n(res, pred);
-		const arch_register_req_t *req = arch_get_irn_register_req(pred);
+		arch_register_req_t const *req = arch_get_irn_register_req(in[i]);
 		req = req->cls != NULL ? req->cls->class_req : arch_no_register_req;
-		add_register_req_in(res, req);
+		be_node_set_register_req_in(res, i, req);
 	}
 	keep_alive(res);
 	return res;
