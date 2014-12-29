@@ -287,24 +287,15 @@ FIRM_API ir_tarval *tarval_b_true;
 /** Returns the mode_b tarval 'true'. */
 FIRM_API ir_tarval *get_tarval_b_true(void);
 
-/** Modes for handling integer overflows. */
-typedef enum tarval_int_overflow_mode_t {
-	TV_OVERFLOW_BAD,      /**< tarval module will return tarval_bad if an overflow occurs */
-	TV_OVERFLOW_WRAP,     /**< overflow will be ignored, wrap around occurs */
-	TV_OVERFLOW_SATURATE  /**< tarval module will saturate the overflow */
-} tarval_int_overflow_mode_t;
+/**
+ * Sets whether values should wrap on overflow or return the bad value.
+ */
+FIRM_API void tarval_set_wrap_on_overflow(int wrap_on_overflow);
 
 /**
- * Sets the overflow mode for integer operations.
- *
- * @param ov_mode  one of the overflow modes
+ * Returns 0 if operations return bad on overflow, != 0 if they wrap around.
  */
-FIRM_API void tarval_set_integer_overflow_mode(tarval_int_overflow_mode_t ov_mode);
-
-/**
- * Returns the overflow mode for integer operations.
- */
-FIRM_API tarval_int_overflow_mode_t tarval_get_integer_overflow_mode(void);
+FIRM_API int tarval_get_wrap_on_overflow(void);
 
 /**
  * Compares two tarvals

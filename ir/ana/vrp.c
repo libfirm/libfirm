@@ -112,13 +112,13 @@ static int vrp_update_node(ir_vrp_info *info, ir_node *node)
 
 		if (vrp_left->range_type == VRP_RANGE
 		 && vrp_right->range_type == VRP_RANGE) {
-			tarval_int_overflow_mode_t rem = tarval_get_integer_overflow_mode();
-			tarval_set_integer_overflow_mode(TV_OVERFLOW_BAD);
+			int old_wrap_on_overflow = tarval_get_wrap_on_overflow();
+			tarval_set_wrap_on_overflow(false);
 			ir_tarval *new_top
 				= tarval_add(vrp_left->range_top, vrp_right->range_top);
 			ir_tarval *new_bottom
 				= tarval_add(vrp_left->range_bottom, vrp_right->range_bottom);
-			tarval_set_integer_overflow_mode(rem);
+			tarval_set_wrap_on_overflow(old_wrap_on_overflow);
 
 			if (new_top != tarval_bad && new_bottom != tarval_bad) {
 				new_range_bottom = new_bottom;
@@ -151,11 +151,11 @@ static int vrp_update_node(ir_vrp_info *info, ir_node *node)
 
 		if (vrp_left->range_type == VRP_RANGE
 		 && vrp_right->range_type == VRP_RANGE) {
-			tarval_int_overflow_mode_t rem = tarval_get_integer_overflow_mode();
-			tarval_set_integer_overflow_mode(TV_OVERFLOW_BAD);
+			int old_wrap_on_overflow = tarval_get_wrap_on_overflow();
+			tarval_set_wrap_on_overflow(false);
 			ir_tarval *new_top = tarval_sub(vrp_left->range_top, vrp_right->range_bottom, NULL);
 			ir_tarval *new_bottom = tarval_sub(vrp_left->range_bottom, vrp_right->range_top, NULL);
-			tarval_set_integer_overflow_mode(rem);
+			tarval_set_wrap_on_overflow(old_wrap_on_overflow);
 
 			if (new_top != tarval_bad && new_bottom != tarval_bad) {
 				new_range_bottom = new_bottom;

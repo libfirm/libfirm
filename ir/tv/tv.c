@@ -50,7 +50,7 @@ static struct set *tarvals = NULL;
 static unsigned sc_value_length;
 
 /** The integer overflow mode. */
-static tarval_int_overflow_mode_t int_overflow_mode = TV_OVERFLOW_WRAP;
+static bool wrap_on_overflow = true;
 
 /** Hash a value. Treat it as a byte array. */
 static unsigned hash_val(unsigned char const *value, size_t length)
@@ -130,10 +130,7 @@ static ir_tarval *get_tarval_overflow(const void *value, size_t length,
 
 	case irms_int_number:
 		if (sc_comp(value, get_mode_max(mode)->value) == ir_relation_greater) {
-			switch (tarval_get_integer_overflow_mode()) {
-			case TV_OVERFLOW_SATURATE:
-				return get_mode_max(mode);
-			case TV_OVERFLOW_WRAP: {
+			if (wrap_on_overflow) {
 				sc_word *temp = ALLOCAN(sc_word, sc_value_length);
 				memcpy(temp, value, sc_value_length);
 				unsigned bits = get_mode_size_bits(mode);
@@ -144,26 +141,17 @@ static ir_tarval *get_tarval_overflow(const void *value, size_t length,
 					sc_zero_extend(temp, bits);
 				}
 				return get_tarval(temp, length, mode);
-			}
-			case TV_OVERFLOW_BAD:
+			} else {
 				return tarval_bad;
-			default:
-				return get_tarval(value, length, mode);
 			}
 		}
 		if (sc_comp(value, get_mode_min(mode)->value) == ir_relation_less) {
-			switch (tarval_get_integer_overflow_mode()) {
-			case TV_OVERFLOW_SATURATE:
-				return get_mode_min(mode);
-			case TV_OVERFLOW_WRAP: {
+			if (wrap_on_overflow) {
 				sc_word *temp = ALLOCAN(sc_word, sc_value_length);
 				memcpy(temp, value, sc_value_length);
 				return get_tarval(temp, length, mode);
-			}
-			case TV_OVERFLOW_BAD:
+			} else {
 				return tarval_bad;
-			default:
-				return get_tarval(value, length, mode);
 			}
 		}
 		break;
@@ -1449,14 +1437,14 @@ int tarval_is_finite(const ir_tarval *tv)
 	return 1;
 }
 
-void tarval_set_integer_overflow_mode(tarval_int_overflow_mode_t ov_mode)
+void tarval_set_wrap_on_overflow(int new_wrap_on_overflow)
 {
-	int_overflow_mode = ov_mode;
+	wrap_on_overflow = new_wrap_on_overflow;
 }
 
-tarval_int_overflow_mode_t tarval_get_integer_overflow_mode(void)
+int tarval_get_wrap_on_overflow(void)
 {
-	return int_overflow_mode;
+	return wrap_on_overflow;
 }
 
 static ir_tarval *make_b_tarval(unsigned char const val)

@@ -4872,12 +4872,10 @@ static ir_node *transform_node_Cmp(ir_node *n)
 			ir_mode   *mode_left = get_irn_mode(op_left);
 			if (smaller_mode(mode_left, mode) && mode_left != mode_b) {
 				ir_tarval *tv = get_Const_tarval(right);
-				tarval_int_overflow_mode_t last_mode
-					= tarval_get_integer_overflow_mode();
-				ir_tarval *new_tv;
-				tarval_set_integer_overflow_mode(TV_OVERFLOW_BAD);
-				new_tv = tarval_convert_to(tv, mode_left);
-				tarval_set_integer_overflow_mode(last_mode);
+				int old_wrap_on_overflow = tarval_get_wrap_on_overflow();
+				tarval_set_wrap_on_overflow(false);
+				ir_tarval *new_tv = tarval_convert_to(tv, mode_left);
+				tarval_set_wrap_on_overflow(old_wrap_on_overflow);
 				if (tarval_is_constant(new_tv)) {
 					left    = op_left;
 					right   = new_r_Const(irg, new_tv);

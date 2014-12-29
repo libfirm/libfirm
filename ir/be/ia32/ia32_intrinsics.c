@@ -75,8 +75,8 @@ static carry_result lower_add_carry(ir_node *left, ir_node *right, ir_mode *mode
 	ir_tarval    *rmax   = tarval_convert_to(bitinfo_max(bi_right), mode);
 	carry_result  result = no_carry;
 
-	tarval_int_overflow_mode_t ofm = tarval_get_integer_overflow_mode();
-	tarval_set_integer_overflow_mode(TV_OVERFLOW_BAD);
+	int old_wrap_on_overflow = tarval_get_wrap_on_overflow();
+	tarval_set_wrap_on_overflow(false);
 
 	if (tarval_add(lmax, rmax) == tarval_bad) {
 		result = can_carry;
@@ -85,7 +85,7 @@ static carry_result lower_add_carry(ir_node *left, ir_node *right, ir_mode *mode
 		}
 	}
 
-	tarval_set_integer_overflow_mode(ofm);
+	tarval_set_wrap_on_overflow(old_wrap_on_overflow);
 
 	return result;
 }
@@ -109,8 +109,8 @@ static carry_result lower_sub_borrow(ir_node *left, ir_node *right, ir_mode *mod
 	ir_tarval    *rmax   = tarval_convert_to(bitinfo_max(bi_right), mode);
 	carry_result  result = no_carry;
 
-	tarval_int_overflow_mode_t ofm = tarval_get_integer_overflow_mode();
-	tarval_set_integer_overflow_mode(TV_OVERFLOW_BAD);
+	int old_wrap_on_overflow = tarval_get_wrap_on_overflow();
+	tarval_set_wrap_on_overflow(false);
 
 	if (tarval_sub(lmin, rmax, NULL) == tarval_bad) {
 		result = can_carry;
@@ -119,7 +119,7 @@ static carry_result lower_sub_borrow(ir_node *left, ir_node *right, ir_mode *mod
 		}
 	}
 
-	tarval_set_integer_overflow_mode(ofm);
+	tarval_set_wrap_on_overflow(old_wrap_on_overflow);
 
 	return result;
 }

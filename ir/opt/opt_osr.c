@@ -1035,8 +1035,8 @@ static ir_node *apply_one_edge(ir_node *iv, ir_node *rc, ldtr_edge_t *e,
 		ir_tarval *tv_l = get_Const_tarval(rc);
 		ir_tarval *tv_r = get_Const_tarval(e->rc);
 
-		tarval_int_overflow_mode_t ovmode = tarval_get_integer_overflow_mode();
-		tarval_set_integer_overflow_mode(TV_OVERFLOW_BAD);
+		int old_wrap_on_overflow = tarval_get_wrap_on_overflow();
+		tarval_set_wrap_on_overflow(false);
 
 		scc       *pscc    = get_iv_scc(iv, env);
 		ir_tarval *tv_incr = pscc->incr;
@@ -1071,14 +1071,14 @@ static ir_node *apply_one_edge(ir_node *iv, ir_node *rc, ldtr_edge_t *e,
 		}
 
 		if (tv == tarval_bad || tv_init == tarval_bad) {
-			tarval_set_integer_overflow_mode(ovmode);
+			tarval_set_wrap_on_overflow(old_wrap_on_overflow);
 			DB((dbg, LEVEL_4, " = OVERFLOW"));
 			return NULL;
 		}
 		/* backwards counting in unsigned modes easily leads to overflow
 		 * in the increment. TODO: improve this situation */
 		if (tv_incr == tarval_bad) {
-			tarval_set_integer_overflow_mode(ovmode);
+			tarval_set_wrap_on_overflow(old_wrap_on_overflow);
 			DB((dbg, LEVEL_4, " = OVERFLOW (incr)"));
 			return NULL;
 		}
@@ -1091,7 +1091,7 @@ static ir_node *apply_one_edge(ir_node *iv, ir_node *rc, ldtr_edge_t *e,
 			tv_end = tarval_sub(tv, tv_incr, NULL);
 		}
 
-		tarval_set_integer_overflow_mode(ovmode);
+		tarval_set_wrap_on_overflow(old_wrap_on_overflow);
 
 		if (tv_end == tarval_bad) {
 			DB((dbg, LEVEL_4, " = OVERFLOW"));

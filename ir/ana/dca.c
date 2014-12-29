@@ -414,7 +414,7 @@ void dca_analyze(ir_graph *irg)
 
 	DB((dbg, LEVEL_1, "===> Performing don't care bit analysis on %+F\n", irg));
 
-	assert(tarval_get_integer_overflow_mode() == TV_OVERFLOW_WRAP);
+	assert(tarval_get_wrap_on_overflow());
 
 	assert(((ir_resources_reserved(irg) & IR_RESOURCE_IRN_LINK) != 0) &&
 			"user of dc analysis must reserve links");

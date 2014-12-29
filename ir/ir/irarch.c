@@ -629,8 +629,7 @@ struct ms {
 static struct ms magic(ir_tarval *d)
 {
 	/* we need overflow mode to work correctly */
-	tarval_int_overflow_mode_t rem = tarval_get_integer_overflow_mode();
-	tarval_set_integer_overflow_mode(TV_OVERFLOW_WRAP);
+	assert(tarval_get_wrap_on_overflow());
 
 	ir_mode *mode   = get_tarval_mode(d);
 	ir_mode *u_mode = find_unsigned_mode(mode);
@@ -689,8 +688,6 @@ static struct ms magic(ir_tarval *d)
 
 	/* need a sub if d < 0 && M > 0 */
 	mag.need_sub = d_cmp & ir_relation_less && M_cmp & ir_relation_greater;
-
-	tarval_set_integer_overflow_mode(rem);
 
 	return mag;
 }
