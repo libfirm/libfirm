@@ -328,6 +328,50 @@ my $valueop = {
 	mode      => $mode_gp,
 };
 
+my $xbinop = {
+	irn_flags => [ "rematerializable" ],
+	state     => "exc_pinned",
+	reg_req   => { in  => [ "gp", "gp", "none", "xmm", "xmm" ],
+	               out => [ "in_r4 !in_r5", "flags", "none" ] },
+	ins       => [ "base", "index", "mem", "left", "right" ],
+	outs      => [ "res", "flags", "M" ],
+	am        => "source,binary",
+	mode      => $mode_xmm,
+};
+
+my $xbinop_commutative = {
+	irn_flags => [ "rematerializable" ],
+	state     => "exc_pinned",
+	reg_req   => { in  => [ "gp", "gp", "none", "xmm", "xmm" ],
+	               out => [ "in_r4 in_r5", "flags", "none" ] },
+	ins       => [ "base", "index", "mem", "left", "right" ],
+	outs      => [ "res", "flags", "M" ],
+	am        => "source,binary",
+	mode      => $mode_xmm,
+};
+
+my $xconv_i2f = {
+	state   => "exc_pinned",
+	reg_req => { in => [ "gp", "gp", "none", "gp" ], out => [ "xmm" ] },
+	ins     => [ "base", "index", "mem", "val" ],
+	am      => "source,unary",
+	mode    => $mode_xmm
+};
+
+my $xshiftop = {
+	irn_flags => [ "rematerializable" ],
+	reg_req   => { in => [ "xmm", "xmm" ], out => [ "in_r1 !in_r2" ] },
+	mode      => $mode_xmm,
+};
+
+my $xvalueop = {
+	op_flags  => [ "constlike" ],
+	irn_flags => [ "rematerializable" ],
+	reg_req   => { out => [ "xmm" ] },
+	outs      => [ "res" ],
+	mode      => $mode_xmm,
+};
+
 %nodes = (
 
 Immediate => {
@@ -1302,64 +1346,49 @@ PrefetchW => {
 
 # produces a 0/+0.0
 xZero => {
-	irn_flags => [ "rematerializable" ],
-	reg_req   => { out => [ "xmm" ] },
-	emit      => "xorp%FX %D0, %D0",
-	latency   => 3,
-	mode      => $mode_xmm
+	template => $xvalueop,
+	emit     => "xorp%FX %D0, %D0",
+	latency  => 3,
 },
 
 xUnknown => {
-	op_flags  => [ "constlike" ],
-	irn_flags => [ "rematerializable" ],
-	reg_req   => { out => [ "xmm" ] },
-	emit      => "",
-	latency   => 0,
-	mode      => $mode_xmm
+	template => $xvalueop,
+	emit     => "",
+	latency  => 0,
 },
 
 xPzero => {
-	irn_flags => [ "rematerializable" ],
-	reg_req   => { out => [ "xmm" ] },
-	emit      => "pxor %D0, %D0",
-	latency   => 3,
-	mode      => $mode_xmm
+	template => $xvalueop,
+	emit     => "pxor %D0, %D0",
+	latency  => 3,
 },
 
 # produces all 1 bits
 xAllOnes => {
-	irn_flags => [ "rematerializable" ],
-	reg_req   => { out => [ "xmm" ] },
-	emit      => "pcmpeqb %D0, %D0",
-	latency   => 3,
-	mode      => $mode_xmm
+	template => $xvalueop,
+	emit     => "pcmpeqb %D0, %D0",
+	latency  => 3,
 },
 
 # integer shift left, dword
 xPslld => {
-	irn_flags => [ "rematerializable" ],
-	reg_req   => { in => [ "xmm", "xmm" ], out => [ "in_r1 !in_r2" ] },
-	emit      => "pslld %#S1, %D0",
-	latency   => 3,
-	mode      => $mode_xmm
+	template => $xshiftop,
+	emit     => "pslld %#S1, %D0",
+	latency  => 3,
 },
 
 # integer shift left, qword
 xPsllq => {
-	irn_flags => [ "rematerializable" ],
-	reg_req   => { in => [ "xmm", "xmm" ], out => [ "in_r1 !in_r2" ] },
-	emit      => "psllq %#S1, %D0",
-	latency   => 3,
-	mode      => $mode_xmm
+	template => $xshiftop,
+	emit     => "psllq %#S1, %D0",
+	latency  => 3,
 },
 
 # integer shift right, dword
 xPsrld => {
-	irn_flags => [ "rematerializable" ],
-	reg_req   => { in => [ "xmm", "xmm" ], out => [ "in_r1 !in_r2" ] },
-	emit      => "psrld %#S1, %D0",
-	latency   => 1,
-	mode      => $mode_xmm
+	template => $xshiftop,
+	emit     => "psrld %#S1, %D0",
+	latency  => 1,
 },
 
 # mov from integer to SSE register
@@ -1372,107 +1401,51 @@ xMovd  => {
 },
 
 xAdd => {
-	irn_flags => [ "rematerializable" ],
-	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "xmm", "xmm" ],
-	               out => [ "in_r4 in_r5", "flags", "none" ] },
-	ins       => [ "base", "index", "mem", "left", "right" ],
-	outs      => [ "res", "flags", "M" ],
-	am        => "source,binary",
-	emit      => "adds%FX %B",
-	latency   => 4,
-	mode      => $mode_xmm
+	template => $xbinop_commutative,
+	emit     => "adds%FX %B",
+	latency  => 4,
 },
 
 xMul => {
-	irn_flags => [ "rematerializable" ],
-	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "xmm", "xmm" ],
-	               out => [ "in_r4 in_r5", "flags", "none" ] },
-	ins       => [ "base", "index", "mem", "left", "right" ],
-	outs      => [ "res", "flags", "M" ],
-	am        => "source,binary",
-	emit      => "muls%FX %B",
-	latency   => 4,
-	mode      => $mode_xmm
+	template => $xbinop_commutative,
+	emit     => "muls%FX %B",
+	latency  => 4,
 },
 
 xMax => {
-	irn_flags => [ "rematerializable" ],
-	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "xmm", "xmm" ],
-	               out => [ "in_r4 in_r5", "flags", "none" ] },
-	ins       => [ "base", "index", "mem", "left", "right" ],
-	outs      => [ "res", "flags", "M" ],
-	am        => "source,binary",
-	emit      => "maxs%FX %B",
-	latency   => 2,
-	mode      => $mode_xmm
+	template => $xbinop_commutative,
+	emit     => "maxs%FX %B",
+	latency  => 2,
 },
 
 xMin => {
-	irn_flags => [ "rematerializable" ],
-	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "xmm", "xmm" ],
-	               out => [ "in_r4 in_r5", "flags", "none" ] },
-	ins       => [ "base", "index", "mem", "left", "right" ],
-	outs      => [ "res", "flags", "M" ],
-	am        => "source,binary",
-	emit      => "mins%FX %B",
-	latency   => 2,
-	mode      => $mode_xmm
+	template => $xbinop_commutative,
+	emit     => "mins%FX %B",
+	latency  => 2,
 },
 
 xAnd => {
-	irn_flags => [ "rematerializable" ],
-	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "xmm", "xmm" ],
-	               out => [ "in_r4 in_r5", "flags", "none" ] },
-	ins       => [ "base", "index", "mem", "left", "right" ],
-	outs      => [ "res", "flags", "M" ],
-	am        => "source,binary",
-	emit      => "andp%FX %B",
-	latency   => 3,
-	mode      => $mode_xmm
+	template => $xbinop_commutative,
+	emit     => "andp%FX %B",
+	latency  => 3,
 },
 
 xOr => {
-	irn_flags => [ "rematerializable" ],
-	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "xmm", "xmm" ],
-	               out => [ "in_r4 in_r5", "flags", "none" ] },
-	ins       => [ "base", "index", "mem", "left", "right" ],
-	outs      => [ "res", "flags", "M" ],
-	am        => "source,binary",
-	emit      => "orp%FX %B",
-	latency   => 3,
-	mode      => $mode_xmm
+	template => $xbinop_commutative,
+	emit     => "orp%FX %B",
+	latency  => 3,
 },
 
 xXor => {
-	irn_flags => [ "rematerializable" ],
-	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "xmm", "xmm" ],
-	               out => [ "in_r4 in_r5", "flags", "none" ] },
-	ins       => [ "base", "index", "mem", "left", "right" ],
-	outs      => [ "res", "flags", "M" ],
-	am        => "source,binary",
-	emit      => "xorp%FX %B",
-	latency   => 3,
-	mode      => $mode_xmm
+	template => $xbinop_commutative,
+	emit     => "xorp%FX %B",
+	latency  => 3,
 },
 
 xAndNot => {
-	irn_flags => [ "rematerializable" ],
-	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "xmm", "xmm" ],
-	               out => [ "in_r4 !in_r5", "flags", "none" ] },
-	ins       => [ "base", "index", "mem", "left", "right" ],
-	outs      => [ "res", "flags", "M" ],
-	am        => "source,binary",
-	emit      => "andnp%FX %B",
-	latency   => 3,
-	mode      => $mode_xmm
+	template => $xbinop,
+	emit     => "andnp%FX %B",
+	latency  => 3,
 },
 
 xSub => {
@@ -1489,15 +1462,11 @@ xSub => {
 },
 
 xDiv => {
-	irn_flags => [ "rematerializable" ],
-	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "xmm", "xmm" ],
-	               out => [ "in_r4 !in_r5", "flags", "none" ] },
-	ins       => [ "base", "index", "mem", "dividend", "divisor" ],
-	outs      => [ "res", "flags", "M" ],
-	am        => "source,binary",
-	emit      => "divs%FX %B",
-	latency   => 16,
+	template => $xbinop,
+	am       => "source,binary",
+	emit     => "divs%FX %B",
+	latency  => 16,
+	mode     => "mode_T"
 },
 
 Ucomi => {
@@ -1541,23 +1510,15 @@ xStore => {
 },
 
 CvtSI2SS => {
-	state     => "exc_pinned",
-	reg_req  => { in => [ "gp", "gp", "none", "gp" ], out => [ "xmm" ] },
-	ins      => [ "base", "index", "mem", "val" ],
-	am       => "source,unary",
+	template => $xconv_i2f,
 	emit     => "cvtsi2ss %AS3, %D0",
 	latency  => 2,
-	mode     => $mode_xmm
 },
 
 CvtSI2SD => {
-	state     => "exc_pinned",
-	reg_req  => { in => [ "gp", "gp", "none", "gp" ], out => [ "xmm" ] },
-	ins      => [ "base", "index", "mem", "val" ],
-	am       => "source,unary",
+	template => $xconv_i2f,
 	emit     => "cvtsi2sd %AS3, %D0",
 	latency  => 2,
-	mode     => $mode_xmm
 },
 
 
