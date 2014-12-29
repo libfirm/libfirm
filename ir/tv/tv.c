@@ -39,11 +39,6 @@
  * constant target values */
 #define N_CONSTANTS 2048
 
-/****************************************************************************
- *   local definitions and macros
- ****************************************************************************/
-#define INSERT_TARVAL(tv) (set_insert(ir_tarval, tarvals, (tv), offsetof(ir_tarval, value) + (tv)->length, hash_tv((tv))))
-
 /** A set containing all existing tarvals. */
 static struct set *tarvals = NULL;
 
@@ -52,40 +47,20 @@ static unsigned sc_value_length;
 /** The integer overflow mode. */
 static bool wrap_on_overflow = true;
 
-/** Hash a value. Treat it as a byte array. */
-static unsigned hash_val(unsigned char const *value, size_t length)
-{
-	/* scramble the byte - array */
-	unsigned hash = 0;
-	for (size_t i = 0; i < length; ++i) {
-		hash += (hash << 5) ^ (hash >> 27) ^ value[i];
-		hash += (hash << 11) ^ (hash >> 17);
-	}
-	return hash;
-}
-
 /** Hash a tarval. */
 static unsigned hash_tv(const ir_tarval *tv)
 {
-	return (unsigned)((hash_val(tv->value, tv->length) ^ PTR_TO_INT(tv->mode)) + tv->length);
+	return hash_combine(hash_ptr(tv->mode), hash_data(tv->value, tv->length));
 }
 
 static int cmp_tv(const void *p1, const void *p2, size_t n)
 {
-	const ir_tarval *tv1 = (const ir_tarval*) p1;
-	const ir_tarval *tv2 = (const ir_tarval*) p2;
-	(void) n;
-
-	assert(tv1->kind == k_tarval);
-	assert(tv2->kind == k_tarval);
-	if (tv1->mode < tv2->mode)
-		return -1;
-	if (tv1->mode > tv2->mode)
+	(void)n;
+	const ir_tarval *tv1 = (const ir_tarval*)p1;
+	const ir_tarval *tv2 = (const ir_tarval*)p2;
+	if (tv1->mode != tv2->mode)
 		return 1;
-	if (tv1->length < tv2->length)
-		return -1;
-	if (tv1->length > tv2->length)
-		return 1;
+	assert(tv1->length == tv2->length);
 	return memcmp(tv1->value, tv2->value, tv1->length);
 }
 
@@ -106,61 +81,24 @@ static ir_tarval *get_tarval(const void *value, size_t length, ir_mode *mode)
 	}
 	/* if there is such a tarval, it is returned, else tv is copied
 	 * into the set */
-	return INSERT_TARVAL(tv);
+	unsigned hash = hash_tv(tv);
+	return set_insert(ir_tarval, tarvals, tv, sizeof(ir_tarval) + tv->length,
+	                  hash);
 }
 
 /** handle overflow */
 static ir_tarval *get_tarval_overflow(const void *value, size_t length,
                                       ir_mode *mode)
 {
-	switch (get_mode_sort(mode)) {
-	case irms_reference: {
-		/* addresses always wrap around */
-		sc_word *temp = ALLOCAN(sc_word, sc_value_length);
-		memcpy(temp, value, sc_value_length);
-		unsigned bits = get_mode_size_bits(mode);
-		/* the sc_ module expects that all bits are set ... */
-		if (mode_is_signed(mode)) {
-			sc_sign_extend(temp, bits);
-		} else {
-			sc_zero_extend(temp, bits);
-		}
-		return get_tarval(temp, length, mode);
+	// We can only detect overflows for two complements here.
+	assert(get_mode_arithmetic(mode) == irma_twos_complement);
+	if (sc_comp(value, get_mode_max(mode)->value) == ir_relation_greater
+	    && !wrap_on_overflow) {
+		return tarval_bad;
 	}
-
-	case irms_int_number:
-		if (sc_comp(value, get_mode_max(mode)->value) == ir_relation_greater) {
-			if (wrap_on_overflow) {
-				sc_word *temp = ALLOCAN(sc_word, sc_value_length);
-				memcpy(temp, value, sc_value_length);
-				unsigned bits = get_mode_size_bits(mode);
-				/* the sc_ module expects that all bits are set ... */
-				if (mode_is_signed(mode)) {
-					sc_sign_extend(temp, bits);
-				} else {
-					sc_zero_extend(temp, bits);
-				}
-				return get_tarval(temp, length, mode);
-			} else {
-				return tarval_bad;
-			}
-		}
-		if (sc_comp(value, get_mode_min(mode)->value) == ir_relation_less) {
-			if (wrap_on_overflow) {
-				sc_word *temp = ALLOCAN(sc_word, sc_value_length);
-				memcpy(temp, value, sc_value_length);
-				return get_tarval(temp, length, mode);
-			} else {
-				return tarval_bad;
-			}
-		}
-		break;
-
-	case irms_float_number:
-		break;
-
-	default:
-		break;
+	if (sc_comp(value, get_mode_min(mode)->value) == ir_relation_less
+	    && !wrap_on_overflow) {
+		return tarval_bad;
 	}
 	return get_tarval(value, length, mode);
 }
@@ -548,10 +486,6 @@ void init_mode_values(ir_mode* mode)
 	}
 }
 
-/*
- * Arithmetic operations on tarvals ========================================
- */
-
 int tarval_is_negative(const ir_tarval *a)
 {
 	switch (get_mode_sort(a->mode)) {
@@ -796,7 +730,7 @@ ir_tarval *tarval_neg(ir_tarval *a)
 
 	case irms_float_number:
 		fc_neg((const fp_value*) a->value, NULL);
-		return get_tarval_overflow(fc_get_buffer(), fc_get_buffer_length(), a->mode);
+		return get_tarval(fc_get_buffer(), fc_get_buffer_length(), a->mode);
 
 	case irms_auxiliary:
 	case irms_data:
@@ -819,7 +753,8 @@ ir_tarval *tarval_add(ir_tarval *a, ir_tarval *b)
 	switch (get_mode_sort(a->mode)) {
 	case irms_reference:
 	case irms_int_number: {
-		/* modes of a,b are equal, so result has mode of a as this might be the character */
+		/* modes of a,b are equal, so result has mode of a as this might be the
+		 * character */
 		sc_word *buffer = ALLOCAN(sc_word, sc_value_length);
 		sc_add(a->value, b->value, buffer);
 		return get_tarval_overflow(buffer, a->length, a->mode);
@@ -827,7 +762,7 @@ ir_tarval *tarval_add(ir_tarval *a, ir_tarval *b)
 
 	case irms_float_number:
 		fc_add((const fp_value*) a->value, (const fp_value*) b->value, NULL);
-		return get_tarval_overflow(fc_get_buffer(), fc_get_buffer_length(), a->mode);
+		return get_tarval(fc_get_buffer(), fc_get_buffer_length(), a->mode);
 
 	case irms_auxiliary:
 	case irms_data:
@@ -850,7 +785,8 @@ ir_tarval *tarval_sub(ir_tarval *a, ir_tarval *b, ir_mode *dst_mode)
 	switch (get_mode_sort(a->mode)) {
 	case irms_reference:
 	case irms_int_number: {
-		/* modes of a,b are equal, so result has mode of a as this might be the character */
+		/* modes of a,b are equal, so result has mode of a as this might be the
+		 * character */
 		sc_word *buffer = ALLOCAN(sc_word, sc_value_length);
 		sc_sub(a->value, b->value, buffer);
 		return get_tarval_overflow(buffer, a->length, a->mode);
@@ -858,7 +794,7 @@ ir_tarval *tarval_sub(ir_tarval *a, ir_tarval *b, ir_mode *dst_mode)
 
 	case irms_float_number:
 		fc_sub((const fp_value*) a->value, (const fp_value*) b->value, NULL);
-		return get_tarval_overflow(fc_get_buffer(), fc_get_buffer_length(), a->mode);
+		return get_tarval(fc_get_buffer(), fc_get_buffer_length(), a->mode);
 
 	case irms_auxiliary:
 	case irms_data:
@@ -883,7 +819,7 @@ ir_tarval *tarval_mul(ir_tarval *a, ir_tarval *b)
 
 	case irms_float_number:
 		fc_mul((const fp_value*) a->value, (const fp_value*) b->value, NULL);
-		return get_tarval_overflow(fc_get_buffer(), fc_get_buffer_length(), a->mode);
+		return get_tarval(fc_get_buffer(), fc_get_buffer_length(), a->mode);
 
 	case irms_auxiliary:
 	case irms_data:
@@ -912,7 +848,7 @@ ir_tarval *tarval_div(ir_tarval *a, ir_tarval *b)
 
 	case irms_float_number:
 		fc_div((const fp_value*) a->value, (const fp_value*) b->value, NULL);
-		return get_tarval_overflow(fc_get_buffer(), fc_get_buffer_length(), mode);
+		return get_tarval(fc_get_buffer(), fc_get_buffer_length(), mode);
 
 	case irms_auxiliary:
 	case irms_data:
@@ -1238,9 +1174,7 @@ int tarval_snprintf(char *buf, size_t len, ir_tarval *tv)
 
 static char hexchar(unsigned val)
 {
-	if (val < 10)
-		return val + '0';
-	return (val-10) + 'A';
+	return "0123456789ABCDEF"[val];
 }
 
 static unsigned hexval(char c)
