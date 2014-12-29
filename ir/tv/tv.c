@@ -1313,22 +1313,6 @@ ir_tarval *ir_tarval_from_ascii(const char *buf, ir_mode *mode)
 	panic("invalid mode for tarval_from_ascii");
 }
 
-char *get_tarval_bitpattern(const ir_tarval *tv)
-{
-	int   n   = get_mode_size_bits(tv->mode);
-	char *res = XMALLOCN(char, n + 1);
-	int   pos = 0;
-	for (int i = 0, bytes = (n+7)/8; i < bytes; i++) {
-		unsigned char byte = get_tarval_sub_bits(tv, i);
-		for (int j = 1; j < 256; j <<= 1) {
-			if (pos < n)
-				res[pos++] = j & byte ? '1' : '0';
-		}
-	}
-	res[n] = '\0';
-	return res;
-}
-
 unsigned char get_tarval_sub_bits(const ir_tarval *tv, unsigned byte_ofs)
 {
 	switch (get_mode_arithmetic(tv->mode)) {

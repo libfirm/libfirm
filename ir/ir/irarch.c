@@ -175,20 +175,18 @@ static instruction *emit_ROOT(mul_env *env, ir_node *root_op)
  */
 static unsigned char *value_to_condensed(mul_env *env, ir_tarval *tv, int *pr)
 {
-	ir_mode *mode   = get_tarval_mode(tv);
-	unsigned bits   = get_mode_size_bits(mode);
-	char    *bitstr = get_tarval_bitpattern(tv);
-	unsigned char *R = OALLOCN(&env->obst, unsigned char, bits);
+	ir_mode       *mode = get_tarval_mode(tv);
+	unsigned       bits = get_mode_size_bits(mode);
+	unsigned char *R    = OALLOCN(&env->obst, unsigned char, bits);
 
 	int r = 0;
-	for (int i = 0, l = 0; bitstr[i] != '\0'; ++i) {
-		if (bitstr[i] == '1') {
+	for (unsigned i = 0, l = 0; i < bits; ++i) {
+		if (tarval_get_bit(tv, i)) {
 			R[r] = i - l;
 			l = i;
 			++r;
 		}
 	}
-	free(bitstr);
 
 	*pr = r;
 	return R;

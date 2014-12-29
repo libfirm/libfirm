@@ -554,30 +554,6 @@ FIRM_API ir_tarval *tarval_shrs(ir_tarval *a, ir_tarval *b);
 FIRM_API ir_tarval *tarval_shrs_unsigned(ir_tarval *a, unsigned b);
 
 /**
- * Returns Bit representation of a tarval value, as string of '0' and '1'
- *
- * @param tv   The tarval
- *
- * This function returns a printable bit representation of any value
- * stored as tarval. This representation is a null terminated C string.
- *
- * @return
- *   As usual in C a pointer to a char is returned. The length of the
- *   returned string if fixed, just read as many chars as the mode defines
- *   as size.
- *
- * @note
- *   The string is allocated using malloc() and must be freed by the caller.
- *   The string consists of the ASCII characters '0' and '1' and is
- *   null terminated
- *
- * @sa
- *    irmode.h for the definition of the ir_mode struct
- *    the size member of aforementioned struct
- */
-FIRM_API char *get_tarval_bitpattern(const ir_tarval *tv);
-
-/**
  * Returns the bitpattern of the bytes_ofs byte.
  *
  * This function succeeds even if the mode of the tarval uses fewer bits
