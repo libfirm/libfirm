@@ -81,9 +81,6 @@ print OUT<<EOF;
 #ifndef FIRM_BE_${tmp}_GEN_${tmp}_EMITTER_H
 #define FIRM_BE_${tmp}_GEN_${tmp}_EMITTER_H
 
-#include "irnode.h"
-#include "${arch}_emitter.h"
-
 void ${arch}_register_spec_emitters(void);
 
 #endif
@@ -105,14 +102,7 @@ print OUT<<EOF;
  *            created by: $0 $specfile $target_dir
  * \@date      $creation_time
  */
-#include <stdio.h>
-#include <assert.h>
-
-#include "irnode.h"
-#include "irop_t.h"
-#include "irprog_t.h"
 #include "beemitter.h"
-
 #include "gen_${arch}_emitter.h"
 #include "${arch}_new_nodes.h"
 #include "${arch}_emitter.h"

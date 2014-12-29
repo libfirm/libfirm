@@ -222,7 +222,6 @@ print OUT<<EOF;
 #ifndef FIRM_BE_${archuc}_GEN_${archuc}_REGALLOC_IF_H
 #define FIRM_BE_${archuc}_GEN_${archuc}_REGALLOC_IF_H
 
-#include "bearch.h"
 #include "${arch}_nodes_attr.h"
 
 /** global register indices for ${arch} registers */
@@ -270,7 +269,6 @@ print OUT<<EOF;
  */
 #include "gen_${arch}_regalloc_if.h"
 #include "bearch_${arch}_t.h"
-#include "irmode.h"
 
 ${single_constraints}
 EOF

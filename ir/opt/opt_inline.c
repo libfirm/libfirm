@@ -35,7 +35,6 @@
 #include "irbackedge_t.h"
 #include "opt_init.h"
 #include "cgana.h"
-#include "panic.h"
 #include "irmemory_t.h"
 
 #include "analyze_irg_args.h"

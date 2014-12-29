@@ -29,7 +29,6 @@
 #include "irprintf.h"
 #include "util.h"
 #include "irtools.h"
-#include "panic.h"
 #include "list.h"
 #include "statev_t.h"
 

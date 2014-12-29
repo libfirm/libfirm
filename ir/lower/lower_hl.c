@@ -8,7 +8,6 @@
  * @brief   Lower some High-level constructs, moved from the firmlower.
  * @author  Boris Boesler, Goetz Lindenmaier, Michael Beck
  */
-#include "panic.h"
 #include "lowering.h"
 #include "irmode_t.h"
 #include "irnode_t.h"

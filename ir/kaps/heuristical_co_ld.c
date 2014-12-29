@@ -6,7 +6,6 @@
 #include <stdbool.h>
 
 #include "adt/array.h"
-#include "panic.h"
 
 #include "bucket.h"
 #include "heuristical_co_ld.h"

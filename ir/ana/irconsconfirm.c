@@ -22,7 +22,6 @@
 #include "irtools.h"
 #include "array.h"
 #include "debug.h"
-#include "panic.h"
 #include "irflag.h"
 
 /**

@@ -28,7 +28,6 @@
 #include "ircons.h"
 #include "iredges_t.h"
 #include "irouts_t.h"
-#include "panic.h"
 
 #include "beflags.h"
 #include "bearch.h"

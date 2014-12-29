@@ -21,7 +21,6 @@
 #include "irgwalk.h"
 #include "irnode_t.h"
 #include "irverify.h"
-#include "panic.h"
 #include "util.h"
 #include "xmalloc.h"
 

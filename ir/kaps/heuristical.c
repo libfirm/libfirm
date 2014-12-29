@@ -12,7 +12,6 @@
 #include <assert.h>
 
 #include "adt/array.h"
-#include "panic.h"
 
 #include "bucket.h"
 #include "heuristical.h"

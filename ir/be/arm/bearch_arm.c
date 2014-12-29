@@ -22,7 +22,6 @@
 #include "lower_builtins.h"
 #include "lower_calls.h"
 #include "lower_softfloat.h"
-#include "panic.h"
 #include "debug.h"
 #include "array.h"
 #include "irtools.h"

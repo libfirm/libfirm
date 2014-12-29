@@ -13,7 +13,6 @@
 #include "irprog_t.h"
 #include "irgraph_t.h"
 #include "array.h"
-#include "panic.h"
 #include "obst.h"
 #include "irop_t.h"
 #include "irmemory.h"

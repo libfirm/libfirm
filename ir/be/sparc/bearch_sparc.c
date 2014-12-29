@@ -31,7 +31,6 @@
 #include "lower_softfloat.h"
 #include "debug.h"
 #include "array.h"
-#include "panic.h"
 #include "util.h"
 #include "be_t.h"
 #include "bearch.h"

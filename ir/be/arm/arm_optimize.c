@@ -11,7 +11,6 @@
 #include "irgmod.h"
 #include "ircons.h"
 #include "iredges.h"
-#include "panic.h"
 
 #include "benode.h"
 #include "bepeephole.h"

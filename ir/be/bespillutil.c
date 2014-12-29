@@ -36,7 +36,6 @@
 #include "irgwalk.h"
 #include "irnodehashmap.h"
 #include "irnode_t.h"
-#include "panic.h"
 #include "statev_t.h"
 #include "type_t.h"
 #include "util.h"

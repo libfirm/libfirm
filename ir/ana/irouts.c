@@ -15,7 +15,6 @@
 #include "irgraph_t.h"
 #include "irprog_t.h"
 #include "irgwalk.h"
-#include "panic.h"
 #include "ircons.h"
 
 unsigned get_irn_n_outs(const ir_node *node)

@@ -26,7 +26,6 @@
 #include "irverify_t.h"
 #include "irprintf.h"
 #include "iredges.h"
-#include "panic.h"
 #include "xmalloc.h"
 
 #include "bearch.h"
