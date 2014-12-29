@@ -99,12 +99,13 @@ static void be_node_set_register_req_in(ir_node *const node, int const pos,
 /**
  * Initializes the generic attribute of all be nodes and return it.
  */
-static void init_node_attr(ir_node *const node, unsigned const arity, unsigned const n_outputs, arch_irn_flags_t const flags)
+static void init_node_attr(ir_node *const node, unsigned const n_outputs, arch_irn_flags_t const flags)
 {
 	ir_graph       *irg  = get_irn_irg(node);
 	struct obstack *obst = be_get_be_obst(irg);
 	backend_info_t *info = be_get_info(node);
 
+	unsigned                    const arity   = get_irn_arity(node);
 	arch_register_req_t const **const in_reqs =
 		is_irn_dynamic(node) ? NEW_ARR_F(arch_register_req_t const*, arity) :
 		arity != 0           ? OALLOCN(obst, arch_register_req_t const*, arity) :
@@ -133,7 +134,7 @@ ir_node *be_new_Perm(arch_register_class_t const *const cls,
 {
 	ir_graph *irg = get_irn_irg(block);
 	ir_node  *irn = new_ir_node(NULL, irg, block, op_be_Perm, mode_T, n, in);
-	init_node_attr(irn, n, n, arch_irn_flags_none);
+	init_node_attr(irn, n, arch_irn_flags_none);
 	be_node_attr_t *attr = (be_node_attr_t*)get_irn_generic_attr(irn);
 	attr->exc.pin_state = op_pin_state_pinned;
 	for (int i = 0; i < n; ++i) {
@@ -185,7 +186,7 @@ ir_node *be_new_MemPerm(ir_node *const block, int n, ir_node *const *const in)
 	ir_graph *const irg = get_irn_irg(block);
 	ir_node  *const irn = new_ir_node(NULL, irg, block, op_be_MemPerm, mode_T, n, in);
 
-	init_node_attr(irn, n, n, arch_irn_flags_none);
+	init_node_attr(irn, n, arch_irn_flags_none);
 
 	be_memperm_attr_t *attr = (be_memperm_attr_t*)get_irn_generic_attr(irn);
 	attr->in_entities  = OALLOCNZ(get_irg_obstack(irg), ir_entity*, n);
@@ -200,7 +201,7 @@ ir_node *be_new_Copy(ir_node *bl, ir_node *op)
 	ir_node  *in[] = { op };
 	ir_node  *res  = new_ir_node(NULL, irg, bl, op_be_Copy, get_irn_mode(op),
 	                             ARRAY_SIZE(in), in);
-	init_node_attr(res, 1, 1, arch_irn_flags_none);
+	init_node_attr(res, 1, arch_irn_flags_none);
 	be_node_attr_t *attr = (be_node_attr_t*) get_irn_generic_attr(res);
 	attr->exc.pin_state = op_pin_state_floats;
 
@@ -229,7 +230,7 @@ ir_node *be_new_Keep(ir_node *const block, int const n,
 {
 	ir_graph *irg = get_irn_irg(block);
 	ir_node  *res = new_ir_node(NULL, irg, block, op_be_Keep, mode_ANY, 0, NULL);
-	init_node_attr(res, 0, 1, arch_irn_flag_schedule_first);
+	init_node_attr(res, 1, arch_irn_flag_schedule_first);
 	be_node_attr_t *attr = (be_node_attr_t*) get_irn_generic_attr(res);
 	attr->exc.pin_state = op_pin_state_pinned;
 
@@ -259,7 +260,7 @@ ir_node *be_new_IncSP(const arch_register_t *sp, ir_node *bl,
 	ir_node  *in[] = { old_sp };
 	ir_node  *irn  = new_ir_node(NULL, irg, bl, op_be_IncSP, sp->cls->mode,
 	                             ARRAY_SIZE(in), in);
-	init_node_attr(irn, 1, 1, arch_irn_flags_none);
+	init_node_attr(irn, 1, arch_irn_flags_none);
 	be_incsp_attr_t *a    = (be_incsp_attr_t*)get_irn_generic_attr(irn);
 	a->offset             = offset;
 	a->align              = align;
@@ -280,7 +281,7 @@ ir_node *be_new_CopyKeep(ir_node *const bl, ir_node *const src, int const n, ir_
 	in[0] = src;
 	MEMCPY(&in[1], in_keep, n);
 	ir_node *irn = new_ir_node(NULL, irg, bl, op_be_CopyKeep, mode, arity, in);
-	init_node_attr(irn, arity, 1, arch_irn_flag_schedule_first);
+	init_node_attr(irn, 1, arch_irn_flag_schedule_first);
 	be_node_attr_t *attr = (be_node_attr_t*)get_irn_generic_attr(irn);
 	attr->exc.pin_state = op_pin_state_floats;
 	const arch_register_req_t   *req  = arch_get_irn_register_req(src);
@@ -370,7 +371,7 @@ ir_node *be_new_AnyVal(ir_node *block, const arch_register_class_t *cls)
 	ir_graph *irg  = get_irn_irg(block);
 	ir_mode  *mode = cls->mode;
 	ir_node  *res  = new_ir_node(NULL, irg, block, op_be_AnyVal, mode, 0, NULL);
-	init_node_attr(res, 0, 1, arch_irn_flags_none);
+	init_node_attr(res, 1, arch_irn_flags_none);
 	arch_set_irn_register_req_out(res, 0, cls->class_req);
 	be_node_attr_t *attr = (be_node_attr_t*)get_irn_generic_attr(res);
 	attr->exc.pin_state = op_pin_state_floats;
