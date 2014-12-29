@@ -206,6 +206,7 @@ void sc_val_to_bytes(const sc_word *val, unsigned char *buf, size_t buf_size);
 ir_relation sc_comp(const sc_word *val1, const sc_word *val2);
 
 int sc_get_highest_set_bit(const sc_word *value);
+int sc_get_highest_clear_bit(const sc_word *value);
 int sc_get_lowest_set_bit(const sc_word *value);
 bool sc_is_negative(const sc_word *value);
 bool sc_is_zero(const sc_word *value, unsigned num_bits);

@@ -506,6 +506,16 @@ int sc_get_highest_set_bit(const sc_word *value)
 	return -1;
 }
 
+int sc_get_highest_clear_bit(const sc_word *value)
+{
+	for (unsigned counter = calc_buffer_size; counter-- > 0; ) {
+		sc_word word = value[counter] ^ SC_MASK;
+		if (word != 0)
+			return counter*SC_BITS + (31 - nlz(word));
+	}
+	return -1;
+}
+
 int sc_get_lowest_set_bit(const sc_word *value)
 {
 	for (unsigned counter = 0; counter < calc_buffer_size;
