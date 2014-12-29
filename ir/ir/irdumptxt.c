@@ -345,7 +345,7 @@ void dump_irnode_to_file(FILE *const F, const ir_node *const n)
 		ir_tarval const* const z = b->z;
 		ir_tarval const* const o = b->o;
 		for (unsigned i = get_mode_size_bits(get_tarval_mode(z)); i-- != 0;) {
-			fputc("0_?1"[get_tarval_bit(z, i) << 1 | get_tarval_bit(o, i)], F);
+			fputc("0_?1"[tarval_get_bit(z, i) << 1 | tarval_get_bit(o, i)], F);
 		}
 	}
 }

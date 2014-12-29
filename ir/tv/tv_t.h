@@ -141,7 +141,7 @@ ir_tarval *get_tarval_minus_inf(ir_mode *mode);
  * Get the @p idx'th bit of the internal representation of the given tarval
  * @p tv.
  */
-static inline unsigned get_tarval_bit(ir_tarval const *const tv,
+static inline unsigned tarval_get_bit(ir_tarval const *const tv,
                                       unsigned const idx)
 {
 #ifndef NDEBUG
