@@ -58,8 +58,8 @@ void finish_tarval(void);
  */
 struct ir_tarval {
 	firm_kind     kind;    /**< must be k_tarval */
+	uint16_t      length;  /**< the length of the stored value */
 	ir_mode      *mode;    /**< the mode of the stored value */
-	size_t        length;  /**< the length of the stored value */
 	unsigned char value[]; /**< the value stored in an internal way */
 };
 
