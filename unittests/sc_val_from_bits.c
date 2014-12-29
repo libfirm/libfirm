@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <inttypes.h>
 #include "strcalc.h"
 
 bool fine = true;
@@ -10,6 +11,9 @@ static void test(const unsigned char *bytes, unsigned from, unsigned to,
 {
 	size_t val_len = sc_get_value_length();
 	sc_word val0[val_len];
+	/* write some vals in the buffer */
+	for (sc_word *c = val0; c < val0+val_len; ++c)
+		*c = 0xa5 ^ (c-val0);
 	sc_val_from_bits(bytes, from, to, val0);
 
 	char print_buf[32];
@@ -42,6 +46,21 @@ int main(void)
 	test(bytes2, 0, 23, "0");
 	test(bytes2, 23, 31, "7F");
 	test(bytes2, 31, 32, "0");
+
+	uint32_t uval  = 0xCAFEBABE;
+	uint32_t uval2 = 0x3F800000;
+	for (unsigned from = 0; from < 32; ++from) {
+		for (unsigned to = from+1; to < 32; ++to) {
+			unsigned dval = (uval << (32-to)) >> (32-to+from);
+			char buf[9];
+			snprintf(buf, sizeof(buf), "%"PRIX32, dval);
+			test(bytes, from, to, buf);
+
+			unsigned dval2 = (uval2 << (32-to)) >> (32-to+from);
+			snprintf(buf, sizeof(buf), "%"PRIX32, dval2);
+			test(bytes2, from, to, buf);
+		}
+	}
 
 	if (!fine) {
 		printf("*** Some tests failed\n");
