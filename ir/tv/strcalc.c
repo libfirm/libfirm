@@ -667,6 +667,8 @@ void sc_val_from_bits(unsigned char const *const bytes, unsigned from,
 	uint32_t hval = ((uint32_t)(*high) << (32-high_bit)) >> (32-high_bit-bit);
 	*p++ |= (hval >> 0) & SC_MASK;
 	*p++  = (hval >> 4) & SC_MASK;
+	if ((hval >> 8) != 0)
+		*p++ = (hval >> 8) & SC_MASK;
 
 clear_rest:
 	assert(p <= buffer + calc_buffer_size);
