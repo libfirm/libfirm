@@ -96,7 +96,7 @@ arch_register_t const *x86_parse_clobber(const arch_env_t *arch_env,
 }
 
 static void parse_asm_constraints(parsed_constraint_t *const constraint,
-                                  const x86_asm_constraint_t *constraints,
+                                  const x86_asm_constraint_list_t *constraints,
                                   ident *const constraint_text,
                                   bool const is_output)
 {
@@ -159,9 +159,9 @@ static void parse_asm_constraints(parsed_constraint_t *const constraint,
 		}
 
 		default:
-			if (*c >= 128)
+			if (*c >= ARRAY_SIZE(*constraints))
 				panic("Unknown asm constraint '%c'", *c);
-			const x86_asm_constraint_t *constraint = &constraints[*c];
+			const x86_asm_constraint_t *constraint = &(*constraints)[*c];
 			switch (constraint->kind) {
 			case MATCH_REG:
 				new_cls = constraint->cls;
@@ -347,7 +347,7 @@ static void x86_emit_immediate(const x86_imm32_t *immediate)
 
 ir_node *x86_match_ASM(const ir_node *node, new_bd_asm_func new_bd_asm,
                        const x86_clobber_name_t *additional_clobber_names,
-                       const x86_asm_constraint_t *constraints)
+                       const x86_asm_constraint_list_t *constraints)
 {
 	int                      const n_inputs          = get_ASM_n_inputs(node);
 	size_t                   const n_out_constraints = get_ASM_n_output_constraints(node);
@@ -719,10 +719,10 @@ void x86_emit_asm(const ir_node *node, const x86_asm_attr_t *attr,
 	be_emit_write_line();
 }
 
-void x86_set_be_asm_constraint_support(const x86_asm_constraint_t *constraints)
+void x86_set_be_asm_constraint_support(const x86_asm_constraint_list_t *constraints)
 {
-	for (unsigned char c = 0; c < 128; ++c) {
-		const x86_asm_constraint_t *constraint = &constraints[c];
+	for (unsigned char c = 0; c < ARRAY_SIZE(*constraints); ++c) {
+		const x86_asm_constraint_t *constraint = &(*constraints)[c];
 		asm_constraint_flags_t flags;
 		switch (constraint->kind) {
 		case MATCH_INVALID:

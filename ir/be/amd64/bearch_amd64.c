@@ -815,7 +815,7 @@ static void amd64_init(void)
 	amd64_register_init();
 	amd64_create_opcodes(&amd64_irn_ops);
 	amd64_cconv_init();
-	x86_set_be_asm_constraint_support(amd64_asm_constraints);
+	x86_set_be_asm_constraint_support(&amd64_asm_constraints);
 }
 
 const arch_isa_if_t amd64_isa_if = {

@@ -14,8 +14,8 @@
 #include "firm_types.h"
 #include "x86_asm.h"
 
-extern const x86_clobber_name_t   ia32_additional_clobber_names[];
-extern const x86_asm_constraint_t ia32_asm_constraints[128];
+extern const x86_clobber_name_t        ia32_additional_clobber_names[];
+extern const x86_asm_constraint_list_t ia32_asm_constraints;
 
 /**
  * Transform firm nodes to x86 assembler nodes, ie

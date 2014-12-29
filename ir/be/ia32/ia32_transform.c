@@ -78,7 +78,7 @@ const x86_clobber_name_t ia32_additional_clobber_names[] = {
 
 #define GP &ia32_reg_classes[CLASS_ia32_gp]
 #define FP &ia32_reg_classes[CLASS_ia32_fp]
-const x86_asm_constraint_t ia32_asm_constraints[128] = {
+const x86_asm_constraint_list_t ia32_asm_constraints = {
 	['A'] = { MATCH_REG, GP, 1 << REG_GP_EAX | 1 << REG_GP_EDX },
 	['D'] = { MATCH_REG, GP, 1 << REG_GP_EDI },
 	['I'] = { MATCH_IMM, GP, 0 },
@@ -5774,7 +5774,7 @@ static ir_node *gen_ASM(ir_node *node)
 {
 	ir_node *new_node = x86_match_ASM(node, new_bd_ia32_Asm,
 	                                  ia32_additional_clobber_names,
-	                                  ia32_asm_constraints);
+	                                  &ia32_asm_constraints);
 	SET_IA32_ORIG_NODE(new_node, node);
 	return new_node;
 }

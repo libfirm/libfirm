@@ -65,6 +65,8 @@ typedef struct x86_asm_constraint_t {
 	unsigned                     limited;
 } x86_asm_constraint_t;
 
+typedef x86_asm_constraint_t x86_asm_constraint_list_t[128];
+
 static inline bool x86_asm_attr_equal(const x86_asm_attr_t *attr0,
                                       const x86_asm_attr_t *attr1)
 {
@@ -86,11 +88,11 @@ typedef ir_node* (*new_bd_asm_func)(dbg_info *dbgi, ir_node *block, int arity,
 
 ir_node *x86_match_ASM(const ir_node *node, new_bd_asm_func new_bd_asm,
                        const x86_clobber_name_t *names,
-                       const x86_asm_constraint_t *constraints);
+                       const x86_asm_constraint_list_t *constraints);
 
 bool x86_match_immediate(x86_imm32_t *immediate, const ir_node *node,
                          char constraint);
 
-void x86_set_be_asm_constraint_support(const x86_asm_constraint_t *constraints);
+void x86_set_be_asm_constraint_support(const x86_asm_constraint_list_t *constraints);
 
 #endif

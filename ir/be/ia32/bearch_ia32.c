@@ -1428,7 +1428,7 @@ static void ia32_init(void)
 {
 	ia32_setup_cg_config();
 
-	x86_set_be_asm_constraint_support(ia32_asm_constraints);
+	x86_set_be_asm_constraint_support(&ia32_asm_constraints);
 
 	ia32_mode_fpcw = new_non_arithmetic_mode("fpcw", 16);
 	ia32_mode_flags = new_non_arithmetic_mode("flags", 32);

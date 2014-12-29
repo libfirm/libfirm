@@ -13,8 +13,8 @@
 #include "firm_types.h"
 #include "x86_asm.h"
 
-extern const x86_clobber_name_t   amd64_additional_clobber_names[];
-extern const x86_asm_constraint_t amd64_asm_constraints[128];
+extern const x86_clobber_name_t        amd64_additional_clobber_names[];
+extern const x86_asm_constraint_list_t amd64_asm_constraints;
 
 void amd64_init_transform(void);
 

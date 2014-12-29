@@ -67,7 +67,7 @@ const x86_clobber_name_t amd64_additional_clobber_names[] = {
 };
 
 #define GP &amd64_reg_classes[CLASS_amd64_gp]
-const x86_asm_constraint_t amd64_asm_constraints[128] = {
+const x86_asm_constraint_list_t amd64_asm_constraints = {
 	['A'] = { MATCH_REG, GP, 1 << REG_GP_RAX | 1 << REG_GP_RDX },
 	['D'] = { MATCH_REG, GP, 1 << REG_GP_RDI },
 	['I'] = { MATCH_IMM, GP, 0 },
@@ -2090,7 +2090,7 @@ static ir_node *gen_Cond(ir_node *node)
 static ir_node *gen_ASM(ir_node *node)
 {
 	return x86_match_ASM(node, new_bd_amd64_asm, amd64_additional_clobber_names,
-	                     amd64_asm_constraints);
+	                     &amd64_asm_constraints);
 }
 
 static ir_node *gen_Proj_ASM(ir_node *node)
