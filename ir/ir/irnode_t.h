@@ -27,7 +27,6 @@
 #define get_irn_irg(node)                     get_irn_irg_(node)
 #define get_nodes_block(node)                 get_nodes_block_(node)
 #define get_irn_op(node)                      get_irn_op_(node)
-#define set_irn_op(node, op)                  set_irn_op_(node, op)
 #define get_irn_opcode(node)                  get_irn_opcode_(node)
 #define get_irn_visited(node)                 get_irn_visited_(node)
 #define set_irn_visited(node, v)              set_irn_visited_(node, v)
@@ -110,7 +109,10 @@ static inline ir_op *get_irn_op_(const ir_node *node)
 	return node->op;
 }
 
-static inline void set_irn_op_(ir_node *node, ir_op *op)
+/**
+ * Sets the opcode struct of the node.
+ */
+static inline void set_irn_op(ir_node *node, ir_op *op)
 {
 	node->op = op;
 }

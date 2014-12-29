@@ -318,11 +318,6 @@ ir_op *(get_irn_op)(const ir_node *node)
 	return get_irn_op_(node);
 }
 
-void (set_irn_op)(ir_node *node, ir_op *op)
-{
-	set_irn_op_(node, op);
-}
-
 unsigned (get_irn_opcode)(const ir_node *node)
 {
 	return get_irn_opcode_(node);

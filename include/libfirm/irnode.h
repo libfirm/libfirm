@@ -126,8 +126,6 @@ FIRM_API void set_irn_mode(ir_node *node, ir_mode *mode);
 FIRM_API ir_mode *get_irn_mode(const ir_node *node);
 /** Returns the opcode struct of the node. */
 FIRM_API ir_op *get_irn_op(const ir_node *node);
-/** Sets the opcode struct of the node. */
-FIRM_API void set_irn_op(ir_node *node, ir_op *op);
 /** Returns the opcode-enum of the node. */
 FIRM_API unsigned get_irn_opcode(const ir_node *node);
 /** Returns the string representation of the opcode. */
