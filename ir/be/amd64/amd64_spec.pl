@@ -459,7 +459,7 @@ mov_store => {
 jmp_switch => {
 	op_flags  => [ "cfopcode", "forking" ],
 	state     => "pinned",
-	reg_req   => { in => [ "gp" ], out => [ "none" ] },
+	reg_req   => { in => [ "gp" ] },
 	out_arity => "variable",
 	attr_type => "amd64_switch_jmp_attr_t",
 	attr      => "const ir_switch_table *table, ir_entity *table_entity",

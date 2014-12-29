@@ -500,7 +500,7 @@ SwitchJmp => {
 	mode      => "mode_T",
 	attr      => "const ir_switch_table *table",
 	init_attr => "init_arm_SwitchJmp_attributes(res, table);",
-	reg_req   => { in => [ "gp" ], out => [ "none" ] },
+	reg_req   => { in => [ "gp" ] },
 	out_arity => "variable",
 	attr_type => "arm_SwitchJmp_attr_t",
 },
