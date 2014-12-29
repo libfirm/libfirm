@@ -99,22 +99,18 @@ static void be_node_set_register_req_in(ir_node *const node, int const pos,
 /**
  * Initializes the generic attribute of all be nodes and return it.
  */
-static void init_node_attr(ir_node *node, int n_inputs, unsigned n_outputs,
-                           arch_irn_flags_t flags)
+static void init_node_attr(ir_node *const node, unsigned const arity, unsigned const n_outputs, arch_irn_flags_t const flags)
 {
 	ir_graph       *irg  = get_irn_irg(node);
 	struct obstack *obst = be_get_be_obst(irg);
 	backend_info_t *info = be_get_info(node);
 
-	const arch_register_req_t **in_reqs;
-	if (n_inputs >= 0) {
-		assert(n_inputs == get_irn_arity(node));
-		in_reqs = OALLOCN(obst, const arch_register_req_t*, n_inputs);
-		for (int i = 0; i < n_inputs; ++i) {
-			in_reqs[i] = arch_no_register_req;
-		}
-	} else {
-		in_reqs = NEW_ARR_F(const arch_register_req_t*, 0);
+	arch_register_req_t const **const in_reqs =
+		is_irn_dynamic(node) ? NEW_ARR_F(arch_register_req_t const*, arity) :
+		arity != 0           ? OALLOCN(obst, arch_register_req_t const*, arity) :
+		NULL;
+	for (unsigned i = 0; i < arity; ++i) {
+		in_reqs[i] = arch_no_register_req;
 	}
 	info->in_reqs = in_reqs;
 
@@ -232,8 +228,8 @@ ir_node *be_new_Keep(ir_node *const block, int const n,
                      ir_node *const *const in)
 {
 	ir_graph *irg = get_irn_irg(block);
-	ir_node  *res = new_ir_node(NULL, irg, block, op_be_Keep, mode_ANY, -1, NULL);
-	init_node_attr(res, -1, 1, arch_irn_flag_schedule_first);
+	ir_node  *res = new_ir_node(NULL, irg, block, op_be_Keep, mode_ANY, 0, NULL);
+	init_node_attr(res, 0, 1, arch_irn_flag_schedule_first);
 	be_node_attr_t *attr = (be_node_attr_t*) get_irn_generic_attr(res);
 	attr->exc.pin_state = op_pin_state_pinned;
 
