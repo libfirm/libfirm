@@ -585,13 +585,15 @@ unsigned char sc_sub_bits(const sc_word *value, unsigned len, unsigned byte_ofs)
 unsigned sc_popcount(const sc_word *value, unsigned bits)
 {
 	unsigned res = 0;
-	unsigned i;
-	for (i = 0; i < bits/SC_BITS; ++i) {
+	unsigned full_words = bits/SC_BITS;
+	for (unsigned i = 0; i < full_words; ++i) {
 		res += popcount(value[i]);
 	}
-	sc_word mask = max_digit(bits%SC_BITS);
-	if (mask != 0)
-		res += popcount(value[i] & mask);
+	unsigned remaining_bits = bits%SC_BITS;
+	if (remaining_bits != 0) {
+		sc_word mask = max_digit(remaining_bits);
+		res += popcount(value[full_words] & mask);
+	}
 
 	return res;
 }
