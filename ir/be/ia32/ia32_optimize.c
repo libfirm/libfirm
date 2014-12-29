@@ -635,8 +635,7 @@ static ir_node *create_pop(dbg_info *dbgi, ir_node *block,
 
 	sched_add_before(schedpoint, pop);
 
-	ir_node *const in[] = { val };
-	ir_node *const keep = be_new_Keep(block, ARRAY_SIZE(in), in);
+	ir_node *const keep = be_new_Keep_one(val);
 	sched_add_before(schedpoint, keep);
 
 	return stack;

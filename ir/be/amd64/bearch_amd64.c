@@ -217,7 +217,6 @@ static ir_node* create_spproj(ir_node *pred, int pos)
  */
 static void transform_MemPerm(ir_node *node)
 {
-	ir_node  *block = get_nodes_block(node);
 	ir_graph *irg   = get_irn_irg(node);
 	ir_node  *sp    = be_get_initial_reg_value(irg, &amd64_registers[REG_RSP]);
 	int       arity = be_get_MemPerm_entity_arity(node);
@@ -300,8 +299,7 @@ static void transform_MemPerm(ir_node *node)
 		pops[i] = pop;
 	}
 
-	ir_node *const in[] = { sp };
-	ir_node *const keep = be_new_Keep(block, ARRAY_SIZE(in), in);
+	ir_node *const keep = be_new_Keep_one(sp);
 	sched_replace(node, keep);
 
 	/* exchange memprojs */

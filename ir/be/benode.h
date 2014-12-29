@@ -98,6 +98,7 @@ void be_Perm_reduce(ir_node *perm, int new_size, int *map);
 ir_node *be_new_MemPerm(ir_node *block, int n, ir_node *const *in);
 
 ir_node *be_new_Keep(ir_node *block, int arity, ir_node *const *in);
+ir_node *be_new_Keep_one(ir_node *kept);
 
 void be_Keep_add_node(ir_node *keep, const arch_register_class_t *cls,
                       ir_node *node);

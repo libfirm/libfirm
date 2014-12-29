@@ -243,6 +243,13 @@ ir_node *be_new_Keep(ir_node *const block, int const n,
 	return res;
 }
 
+ir_node *be_new_Keep_one(ir_node *const kept)
+{
+	ir_node *const in[]  = { kept };
+	ir_node *const block = get_nodes_block(kept);
+	return be_new_Keep(block, ARRAY_SIZE(in), in);
+}
+
 void be_Keep_add_node(ir_node *keep, const arch_register_class_t *cls,
                       ir_node *node)
 {
