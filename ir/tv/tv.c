@@ -260,10 +260,10 @@ ir_tarval *new_tarval_from_bytes(unsigned char const *buf,
 {
 	switch (get_mode_arithmetic(mode)) {
 	case irma_twos_complement: {
-		if (get_mode_size_bytes(mode) == (unsigned)-1)
-			return tarval_bad;
-		sc_word *dest = ALLOCAN(sc_word, sc_value_length);
-		sc_val_from_bytes(buf, get_mode_size_bytes(mode), big_endian, dest);
+		unsigned bits    = get_mode_size_bits(mode);
+		unsigned n_bytes = bits/CHAR_BIT + (bits%CHAR_BIT != 0);
+		sc_word *dest    = ALLOCAN(sc_word, sc_value_length);
+		sc_val_from_bytes(buf, n_bytes, big_endian, dest);
 		return get_tarval(dest, sc_value_length, mode);
 	}
 	case irma_ieee754:
