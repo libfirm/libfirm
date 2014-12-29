@@ -46,8 +46,6 @@ extern ir_op *op_be_Perm;
  */
 bool is_be_node(const ir_node *irn);
 
-be_opcode get_be_irn_opcode(const ir_node *node);
-
 /**
  * Create all BE specific opcodes.
  */

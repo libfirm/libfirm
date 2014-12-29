@@ -59,7 +59,6 @@ typedef struct {
 	int            offset;
 } be_memperm_attr_t;
 
-static unsigned be_opcode_start;
 ir_op *op_be_AnyVal;
 ir_op *op_be_Copy;
 ir_op *op_be_CopyKeep;
@@ -556,15 +555,12 @@ static void dump_node(FILE *f, const ir_node *irn, dump_reason_t reason)
 	case dump_node_info_txt:
 		be_dump_reqs_and_registers(f, irn);
 
-		switch (get_be_irn_opcode(irn)) {
-		case beo_IncSP: {
+		if (be_is_IncSP(irn)) {
 			const be_incsp_attr_t *a
 				= (const be_incsp_attr_t*)get_irn_generic_attr_const(irn);
 			fprintf(f, "align: %u\n", a->align);
 			fprintf(f, "offset: %d\n", a->offset);
-			break;
-		}
-		case beo_MemPerm: {
+		} else if (be_is_MemPerm(irn)) {
 			for (unsigned i = 0; i < be_get_MemPerm_entity_arity(irn); ++i) {
 				ir_entity *in  = be_get_MemPerm_in_entity(irn, i);
 				ir_entity *out = be_get_MemPerm_out_entity(irn, i);
@@ -573,12 +569,8 @@ static void dump_node(FILE *f, const ir_node *irn, dump_reason_t reason)
 				if (out != NULL)
 					fprintf(f, "\nout[%u]: %s\n", i, get_entity_name(out));
 			}
-			break;
 		}
-
-		default:
-			break;
-		}
+		break;
 	}
 }
 
@@ -622,12 +614,6 @@ bool is_be_node(const ir_node *irn)
 	return get_op_tag(get_irn_op(irn)) == be_op_tag;
 }
 
-be_opcode get_be_irn_opcode(const ir_node *node)
-{
-	assert(is_be_node(node));
-	return (be_opcode) (get_irn_opcode(node) - be_opcode_start);
-}
-
 static const arch_irn_ops_t null_ops = {
 	.get_op_estimated_cost  = NULL,
 	.perform_memory_operand = NULL,
@@ -648,10 +634,8 @@ void be_init_op(void)
 {
 	assert(op_be_Perm == NULL);
 
-	be_opcode_start = get_next_ir_opcodes(beo_last+1);
-
 	/* Acquire all needed opcodes. */
-	unsigned o = be_opcode_start;
+	unsigned const o = get_next_ir_opcodes(beo_last + 1);
 	op_be_AnyVal   = new_be_op(o+beo_AnyVal,   "be_AnyVal",   op_pin_state_exc_pinned, irop_flag_constlike|irop_flag_cse_neutral, oparity_any,      sizeof(be_node_attr_t));
 	op_be_Copy     = new_be_op(o+beo_Copy,     "be_Copy",     op_pin_state_exc_pinned, irop_flag_none,                            oparity_any,      sizeof(be_node_attr_t));
 	op_be_CopyKeep = new_be_op(o+beo_CopyKeep, "be_CopyKeep", op_pin_state_exc_pinned, irop_flag_keep,                            oparity_variable, sizeof(be_node_attr_t));
