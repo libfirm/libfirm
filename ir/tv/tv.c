@@ -86,20 +86,29 @@ static ir_tarval *get_tarval(const void *value, size_t length, ir_mode *mode)
 	                  hash);
 }
 
+static bool is_overflow(const sc_word *value, ir_mode *mode)
+{
+	assert(get_mode_arithmetic(mode) == irma_twos_complement);
+	unsigned bits      = get_mode_size_bits(mode);
+	bool     is_signed = mode_is_signed(mode);
+	/* some of the uppper bits are not zero? */
+	if (sc_get_highest_set_bit(value) >= (int)bits-is_signed) {
+		/* all upper bits and sign bit 1 is fine for signed modes,
+		 * otherwise it's an overflow */
+		return !is_signed || sc_get_highest_clear_bit(value) >= (int)bits-1;
+	}
+
+	return false;
+}
+
 /** handle overflow */
 static ir_tarval *get_tarval_overflow(const void *value, size_t length,
                                       ir_mode *mode)
 {
 	// We can only detect overflows for two complements here.
 	assert(get_mode_arithmetic(mode) == irma_twos_complement);
-	if (sc_comp(value, get_mode_max(mode)->value) == ir_relation_greater
-	    && !wrap_on_overflow) {
+	if (!wrap_on_overflow && is_overflow(value, mode))
 		return tarval_bad;
-	}
-	if (sc_comp(value, get_mode_min(mode)->value) == ir_relation_less
-	    && !wrap_on_overflow) {
-		return tarval_bad;
-	}
 	return get_tarval(value, length, mode);
 }
 
