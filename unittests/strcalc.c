@@ -12,15 +12,15 @@
 #include "xmalloc.h"
 #include "util.h"
 
-static const unsigned precision = 72; /* some random non-po2 number (but a multiple of 4),
-                                         as strcalc rounds up to multiple of 4 anyway */
+static const unsigned precision = 72; /* some random non-po2 number (but a multiple of SC_BITS),
+                                         as strcalc rounds up to multiple of SC_BITS anyway */
 static unsigned buflen;
 
 static bool equal(const sc_word *v0, const sc_word *v1)
 {
-	/* use precision/4 instead of buflen for now until we don't have these
+	/* use precision/SC_BITS instead of buflen for now until we don't have these
 	 * strange extra precision words anymore. */
-	size_t len = precision/4;
+	size_t len = precision/SC_BITS;
 	return memcmp(v0, v1, len) == 0;
 }
 
