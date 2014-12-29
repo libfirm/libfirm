@@ -1151,13 +1151,6 @@ static ir_node *gen_Load(ir_node *node)
 	}
 	set_irn_pinned(new_load, get_irn_pinned(node));
 
-	/* check for special case: the loaded value might not be used */
-	if (!get_Proj_for_pn(node, pn_Load_res)) {
-		/* add a result proj and a Keep to produce a pseudo use */
-		ir_node *const in[] = { new_r_Proj(new_load, arm_mode_gp, pn_arm_Ldr_res) };
-		be_new_Keep(block, ARRAY_SIZE(in), in);
-	}
-
 	return new_load;
 }
 
