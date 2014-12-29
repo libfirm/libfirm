@@ -44,14 +44,6 @@ typedef struct be_node_attr_t {
 	except_attr exc;
 } be_node_attr_t;
 
-/** The be_Return nodes attribute type. */
-typedef struct {
-	be_node_attr_t base;
-	int            num_ret_vals; /**< number of return values */
-	unsigned       pop;          /**< number of bytes that should be popped */
-	int            emit_pop;     /**< if set, emit pop bytes, even if pop = 0 */
-} be_return_attr_t;
-
 /** The be_IncSP attribute type. */
 typedef struct {
 	be_node_attr_t base;
