@@ -238,6 +238,20 @@ my $cmp_shifter_operand = {
 	},
 };
 
+my $mullop = {
+	irn_flags => [ "rematerializable" ],
+	reg_req   => { in => [ "gp", "gp" ], out => [ "gp", "gp" ] },
+	outs      => [ "low", "high" ],
+};
+
+my $binopf = {
+	irn_flags => [ "rematerializable" ],
+	reg_req   => { in => [ "fpa", "fpa" ], out => [ "fpa" ] },
+	attr_type => "arm_farith_attr_t",
+	attr      => "ir_mode *op_mode",
+	mode      => $mode_fp,
+};
+
 
 %nodes = (
 
@@ -270,17 +284,13 @@ Mul => {
 },
 
 SMulL => {
-	irn_flags => [ "rematerializable" ],
-	reg_req   => { in => [ "gp", "gp" ], out => [ "gp", "gp" ] },
-	emit      => 'smull %D0, %D1, %S0, %S1',
-	outs      => [ "low", "high" ],
+	template => $mullop,
+	emit     => 'smull %D0, %D1, %S0, %S1',
 },
 
 UMulL => {
-	irn_flags => [ "rematerializable" ],
-	reg_req   => { in => [ "gp", "gp" ], out => [ "gp", "gp" ] },
-	emit      => 'umull %D0, %D1, %S0, %S1',
-	outs      => [ "low", "high" ],
+	template => $mullop,
+	emit     => 'umull %D0, %D1, %S0, %S1',
 },
 
 Mla => {
@@ -540,30 +550,18 @@ LoadStackM3Epilogue => {
 
 
 Adf => {
-	irn_flags => [ "rematerializable" ],
-	reg_req   => { in => [ "fpa", "fpa" ], out => [ "fpa" ] },
-	emit      => 'adf%MA %D0, %S0, %S1',
-	attr_type => "arm_farith_attr_t",
-	attr      => "ir_mode *op_mode",
-	mode      => $mode_fp,
+	template => $binopf,
+	emit     => 'adf%MA %D0, %S0, %S1',
 },
 
 Muf => {
-	irn_flags => [ "rematerializable" ],
-	reg_req   => { in => [ "fpa", "fpa" ], out => [ "fpa" ] },
-	emit      => 'muf%MA %D0, %S0, %S1',
-	attr_type => "arm_farith_attr_t",
-	attr      => "ir_mode *op_mode",
-	mode      => $mode_fp,
+	template => $binopf,
+	emit     => 'muf%MA %D0, %S0, %S1',
 },
 
 Suf => {
-	irn_flags => [ "rematerializable" ],
-	reg_req   => { in => [ "fpa", "fpa" ], out => [ "fpa" ] },
-	emit      => 'suf%MA %D0, %S0, %S1',
-	attr_type => "arm_farith_attr_t",
-	attr      => "ir_mode *op_mode",
-	mode      => $mode_fp,
+	template => $binopf,
+	emit     => 'suf%MA %D0, %S0, %S1',
 },
 
 Dvf => {
