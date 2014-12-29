@@ -9,10 +9,10 @@
  * @date    28.12.2009
  * @author  Sebastian Buchwald
  */
+#include <assert.h>
 #include <stdbool.h>
 
 #include "adt/array.h"
-#include "assert.h"
 #include "panic.h"
 
 #include "bucket.h"

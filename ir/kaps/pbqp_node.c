@@ -9,11 +9,10 @@
  * @date    02.10.2008
  * @author  Sebastian Buchwald
  */
+#include <assert.h>
 #include <stdbool.h>
 
 #include "adt/array.h"
-
-#include "assert.h"
 
 #include "bucket.h"
 #include "pbqp_edge.h"

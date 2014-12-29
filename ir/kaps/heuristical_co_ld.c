@@ -2,10 +2,10 @@
  * This file is part of libFirm.
  * Copyright (C) 2012 Karlsruhe Institute of Technology.
  */
+#include <assert.h>
 #include <stdbool.h>
 
 #include "adt/array.h"
-#include "assert.h"
 #include "panic.h"
 
 #include "bucket.h"

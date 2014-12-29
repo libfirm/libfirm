@@ -9,9 +9,9 @@
  * @date    02.12.2008
  * @author  Sebastian Buchwald
  */
+#include <assert.h>
 #include <stdbool.h>
 
-#include "assert.h"
 #include "panic.h"
 
 #include "bucket.h"

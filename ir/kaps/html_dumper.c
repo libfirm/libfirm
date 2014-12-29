@@ -9,8 +9,9 @@
  * @date    03.10.2008
  * @author  Sebastian Buchwald
  */
+#include <assert.h>
+
 #include "adt/array.h"
-#include "assert.h"
 
 #include "pbqp_edge_t.h"
 #include "pbqp_node_t.h"

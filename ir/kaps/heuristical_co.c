@@ -9,8 +9,9 @@
  * @date    18.09.2009
  * @author  Thomas Bersch
  */
+#include <assert.h>
+
 #include "adt/array.h"
-#include "assert.h"
 #include "panic.h"
 
 #include "bucket.h"

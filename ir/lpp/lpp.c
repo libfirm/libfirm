@@ -7,11 +7,11 @@
  * @file
  * @author  Daniel Grund
  */
+#include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 
-#include "assert.h"
 #include "obst.h"
 #include "hashptr.h"
 #include "debug.h"
