@@ -654,8 +654,7 @@ create_mla:;
 			ir_node  *new_right = be_transform_node(mul_right);
 			ir_node  *new_add   = be_transform_node(other);
 			if (arm_cg_config.variant < ARM_VARIANT_6)
-				return new_bd_arm_MlaV5(dbgi, block, new_left, new_right,
-				                        new_add);
+				return new_bd_arm_Mla_v5(dbgi, block, new_left, new_right, new_add);
 			else
 				return new_bd_arm_Mla(dbgi, block, new_left, new_right,
 				                      new_add);
@@ -746,7 +745,7 @@ static ir_node *gen_Mul(ir_node *node)
 	}
 	assert(mode_is_data(mode));
 	if (arm_cg_config.variant < ARM_VARIANT_6) {
-		return new_bd_arm_Mulv5(dbg, block, new_op1, new_op2);
+		return new_bd_arm_Mul_v5(dbg, block, new_op1, new_op2);
 	} else {
 		return new_bd_arm_Mul(dbg, block, new_op1, new_op2);
 	}

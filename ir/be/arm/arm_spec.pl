@@ -257,20 +257,16 @@ AdC => {
 },
 
 Mul => {
-	irn_flags => [ "rematerializable" ],
-	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
-	emit      => 'mul %D0, %S0, %S1',
-	mode      => $mode_gp,
-},
-
-Mulv5 => {
-	irn_flags => [ "rematerializable" ],
-	# TODO: !in_r1 for out constrains the register allocator more than
-	# necessary, as usually you can fix the problem by swapping the inputs. But
-	# for this scheme we would need a special if both inputs are the same value.
-	reg_req   => { in => [ "gp", "gp" ], out => [ "!in_r1" ] },
-	emit      => 'mul %D0, %S0, %S1',
-	mode      => $mode_gp,
+	irn_flags    => [ "rematerializable" ],
+	emit         => 'mul %D0, %S0, %S1',
+	mode         => $mode_gp,
+	constructors => {
+		""   => { reg_req => { in => [ "gp", "gp" ], out => [ "gp" ]     } },
+		# TODO: !in_r1 for out constrains the register allocator more than
+		# necessary, as usually you can fix the problem by swapping the inputs. But
+		# for this scheme we would need a special if both inputs are the same value.
+		"v5" => { reg_req => { in => [ "gp", "gp" ], out => [ "!in_r1" ] } },
+	},
 },
 
 SMulL => {
@@ -289,19 +285,14 @@ UMulL => {
 
 Mla => {
 	irn_flags => [ "rematerializable" ],
-	reg_req   => { in => [ "gp", "gp", "gp" ], out => [ "gp" ] },
 	ins       => [ "left", "right", "add" ],
 	emit      => 'mla %D0, %S0, %S1, %S2',
 	mode      => $mode_gp,
-},
-
-MlaV5 => {
-	irn_flags => [ "rematerializable" ],
-	# See comments for Mulv5 out register constraint
-	reg_req   => { in => [ "gp", "gp", "gp" ], out => [ "!in_r1" ] },
-	ins       => [ "left", "right", "add" ],
-	emit      => 'mla %D0, %S0, %S1, %S2',
-	mode      => $mode_gp,
+	constructors => {
+		""   => { reg_req   => { in => [ "gp", "gp", "gp" ], out => [ "gp" ]     } },
+		# See comments for Mul_v5 out register constraint
+		"v5" => { reg_req   => { in => [ "gp", "gp", "gp" ], out => [ "!in_r1" ] } },
+	}
 },
 
 Mls => {
