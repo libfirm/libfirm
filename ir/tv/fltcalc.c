@@ -59,28 +59,18 @@ static float_descriptor_t long_double_desc;
 /** pack machine-like */
 static void pack(const fp_value *value, sc_word *packed)
 {
-	switch ((value_class_t)value->clss) {
-	case FC_NAN: {
-		fp_value *val_buffer = (fp_value*) alloca(calc_buffer_size);
-		fc_get_qnan(&value->desc, val_buffer);
-		value = val_buffer;
-		break;
-	}
-
-	case FC_INF: {
-		fp_value *val_buffer = (fp_value*) alloca(calc_buffer_size);
-		fc_get_inf(&value->desc, val_buffer, value->sign);
-		value = val_buffer;
-		break;
-	}
-
-	default:
-		break;
-	}
-
 	const float_descriptor_t *desc = &value->desc;
 	unsigned mantissa_size = desc->mantissa_size;
 	unsigned exponent_size = desc->exponent_size;
+
+	/* do some sanity checking */
+	if (value->clss == FC_INF) {
+		assert(sc_is_all_one(_exp(value), exponent_size));
+		assert(sc_is_zero(_mant(value), mantissa_size+ROUNDING_BITS) || desc->explicit_one);
+	} else if (value->clss == FC_NAN) {
+		assert(sc_is_all_one(_exp(value), exponent_size));
+		assert(!sc_is_zero(_mant(value), mantissa_size+ROUNDING_BITS));
+	}
 
 	/* extract mantissa, remove rounding bits */
 	/* remove rounding bits */
