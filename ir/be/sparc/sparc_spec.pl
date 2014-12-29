@@ -514,19 +514,15 @@ Return => {
 	state     => "pinned",
 	op_flags  => [ "cfopcode" ],
 	irn_flags => [ "has_delay_slot" ],
+	reg_req   => { out => [ "none" ] },
 	arity     => "variable",
 	mode      => "mode_X",
 	constructors => {
 		imm => {
 			attr       => "ir_entity *entity, int32_t offset",
 			custominit => "\tsparc_set_attr_imm(res, entity, offset);",
-			arity     => "variable",
-			reg_req   => { out => [ "none" ] },
 		},
-		reg => {
-			arity     => "variable",
-			reg_req   => { out => [ "none" ] },
-		}
+		reg => {}
 	},
 },
 
@@ -543,13 +539,9 @@ Call => {
 			attr       => "ir_type *call_type, ir_entity *entity, int32_t offset, bool aggregate_return",
 			custominit => "\tsparc_set_attr_imm(res, entity, offset);\n".
 			              "\tif (aggregate_return) arch_add_irn_flags(res, (arch_irn_flags_t)sparc_arch_irn_flag_aggregate_return);",
-			arity     => "variable",
-			out_arity => "variable",
 		},
 		reg => {
 			attr       => "ir_type *call_type, bool aggregate_return",
-			arity      => "variable",
-			out_arity  => "variable",
 			custominit => "\tif (aggregate_return) arch_add_irn_flags(res, (arch_irn_flags_t)sparc_arch_irn_flag_aggregate_return);",
 		}
 	},
@@ -564,7 +556,7 @@ SwitchJmp => {
 	op_flags     => [ "cfopcode", "forking" ],
 	irn_flags    => [ "has_delay_slot" ],
 	state        => "pinned",
-	reg_req      => { in => [ "gp" ], out => [ ] },
+	reg_req      => { in => [ "gp" ] },
 	out_arity    => "variable",
 	attr_type    => "sparc_switch_jmp_attr_t",
 	attr         => "const ir_switch_table *table, ir_entity *jump_table",
