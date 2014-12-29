@@ -96,7 +96,7 @@ arch_register_t const *x86_parse_clobber(const arch_env_t *arch_env,
 }
 
 static void parse_asm_constraints(parsed_constraint_t *const constraint,
-								  const x86_asm_constraint_t *constraints,
+                                  const x86_asm_constraint_t *constraints,
                                   ident *const constraint_text,
                                   bool const is_output)
 {
@@ -595,9 +595,9 @@ ir_node *x86_match_ASM(const ir_node *node, new_bd_asm_func new_bd_asm,
  * @return  pointer to the first char in s NOT in the current operand
  */
 static const char* emit_asm_operand(const ir_node *node,
-									const x86_asm_attr_t *attr,
-									emit_register_func emit_register,
-									const char *s)
+                                    const x86_asm_attr_t *attr,
+                                    emit_register_func emit_register,
+                                    const char *s)
 {
 	assert(*s == '%');
 	char c = *(++s);
