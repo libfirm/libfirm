@@ -75,8 +75,8 @@
  *   value/mode pair.
  *
  * @note
- *   If the string is not representable in the given mode an assertion is
- *   thrown in assert build.
+ *   Behaviour is undefined if the number in @p str is malformed. Debug builds
+ *   should fail assertions in these cases.
  *
  * @sa
  *   irmode.h for predefined modes

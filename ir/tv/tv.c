@@ -153,13 +153,7 @@ ir_tarval *new_integer_tarval_from_str(const char *str, size_t len,
 static ir_tarval *new_tarval_from_str_int(const char *str, size_t len,
                                           ir_mode *mode)
 {
-	/* skip leading spaces */
-	while (len > 0 && str[0] == ' ') {
-		++str;
-		--len;
-	}
-	if (len == 0)
-		return tarval_bad;
+	assert(len > 0);
 
 	/* 1 sign character allowed */
 	bool negative = false;
@@ -190,8 +184,7 @@ static ir_tarval *new_tarval_from_str_int(const char *str, size_t len,
 			base = 8;
 		}
 	}
-	if (len == 0)
-		return tarval_bad;
+	assert(len > 0);
 
 	sc_word *buffer = ALLOCAN(sc_word, sc_value_length);
 	bool     ok     = sc_val_from_str(negative, base, str, len, buffer);
