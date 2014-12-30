@@ -121,8 +121,8 @@ sub create_constructor {
 	my $arity = 0;
 	if(exists($n->{"arity"})) {
 		$arity = $n->{"arity"};
-	} elsif (exists($n->{"reg_req"}) && exists($n->{"reg_req"}{"in"})) {
-		$arity = scalar(@{ $n->{"reg_req"}{"in"} });
+	} elsif (exists($n->{"in_reqs"})) {
+		$arity = scalar(@{ $n->{"in_reqs"} });
 	} elsif (exists($n->{"ins"})) {
 		$arity = scalar(@{ $n->{"ins"} });
 	}
@@ -136,8 +136,8 @@ sub create_constructor {
 	my $out_arity = 0;
 	if(exists($n->{"out_arity"})) {
 		$out_arity = $n->{"out_arity"};
-	} elsif (exists($n->{"reg_req"}) && exists($n->{"reg_req"}{"out"})) {
-		$out_arity = scalar(@{ $n->{"reg_req"}{"out"} });
+	} elsif (exists($n->{"out_reqs"})) {
+		$out_arity = scalar(@{ $n->{"out_reqs"} });
 	} elsif (exists($n->{"outs"})) {
 		$out_arity = scalar(@{ $n->{"outs"} });
 	}
@@ -249,63 +249,51 @@ EOF
 	my $set_out_reqs = "";
 
 	# set up static variables for requirements and registers
-	if (exists($n->{"reg_req"})) {
-		my %req = %{ $n->{"reg_req"} };
-		my $idx;
+	my $idx;
 
-		undef my @in;
-		@in = @{ $req{"in"} } if (exists($req{"in"}));
-		undef my @out;
-		@out = @{ $req{"out"} } if exists(($req{"out"}));
+	undef my @in;
+	@in = @{ $n->{"in_reqs"} } if (exists($n->{"in_reqs"}));
+	undef my @out;
+	@out = @{ $n->{"out_reqs"} } if (exists($n->{"out_reqs"}));
 
-		for(my $idx = 0; $idx < $#in; $idx++) {
+	for(my $idx = 0; $idx < $#in; $idx++) {
+		my $req = $in[$idx];
+		generate_requirements($req, $n, "${arch}_${op}", $idx, 1);
+	}
+	for(my $idx = 0; $idx < $#out; $idx++) {
+		my $req = $out[$idx];
+		generate_requirements($req, $n, "${arch}_${op}", $idx, 0);
+	}
+
+	if (@in) {
+		if($arity >= 0 && scalar(@in) != $arity) {
+			die "Fatal error: Arity and number of in requirements don't match for ${op}\n";
+		}
+
+		$temp .= "\tstatic const arch_register_req_t *in_reqs[] =\n";
+		$temp .= "\t{\n";
+		for ($idx = 0; $idx <= $#in; $idx++) {
 			my $req = $in[$idx];
-			generate_requirements($req, $n, "${arch}_${op}", $idx, 1);
+			my $reqstruct = generate_requirements($req, $n, "${arch}_${op}", $idx, 1);
+			$temp .= "\t\t& ${reqstruct},\n";
 		}
-		for(my $idx = 0; $idx < $#out; $idx++) {
-			my $req = $out[$idx];
-			generate_requirements($req, $n, "${arch}_${op}", $idx, 0);
-		}
-
-		if (@in) {
-			if($arity >= 0 && scalar(@in) != $arity) {
-				die "Fatal error: Arity and number of in requirements don't match for ${op}\n";
-			}
-
-			$temp .= "\tstatic const arch_register_req_t *in_reqs[] =\n";
-			$temp .= "\t{\n";
-			for ($idx = 0; $idx <= $#in; $idx++) {
-				my $req = $in[$idx];
-				my $reqstruct = generate_requirements($req, $n, "${arch}_${op}", $idx, 1);
-				$temp .= "\t\t& ${reqstruct},\n";
-			}
-			$temp .= "\t};\n";
-		} else {
-			if($arity > 0) {
-				die "Fatal error: need in requirements for ${op}\n";
-			}
-			$temp .= "\tstatic const arch_register_req_t **in_reqs = NULL;\n";
-		}
-
-		if (@out) {
-			if($out_arity >= 0 && scalar(@out) != $out_arity) {
-				die "Fatal error: Out-Arity and number of out requirements don't match for ${op}\n";
-			}
-
-			for ($idx = 0; $idx <= $#out; $idx++) {
-				my $req = $out[$idx];
-				my $reqstruct = generate_requirements($req, $n, "${arch}_${op}", $idx, 0);
-				$set_out_reqs .= <<EOF;
-	info->out_infos[${idx}].req = &${reqstruct};
-EOF
-			}
-		} else {
-			if($out_arity > 0) {
-				die "Fatal error: need out requirements for ${op}\n";
-			}
-		}
+		$temp .= "\t};\n";
 	} else {
 		$temp .= "\tstatic const arch_register_req_t **in_reqs = NULL;\n";
+	}
+
+	if (@out) {
+		if($out_arity >= 0 && scalar(@out) != $out_arity) {
+			die "Fatal error: Out-Arity and number of out requirements don't match for ${op}\n";
+		}
+
+		for ($idx = 0; $idx <= $#out; $idx++) {
+			my $req = $out[$idx];
+			my $reqstruct = generate_requirements($req, $n, "${arch}_${op}", $idx, 0);
+			$set_out_reqs .= <<EOF;
+info->out_infos[${idx}].req = &${reqstruct};
+EOF
+		}
 	}
 	my $attr_type = $on->{attr_type};
 
@@ -431,13 +419,14 @@ my @node_attrs = (
 	"attr",
 	"comment",
 	"custominit",
+	"in_reqs",
 	"init_attr",
 	"ins",
 	"irn_flags",
 	"mode",
 	"out_arity",
+	"out_reqs",
 	"outs",
-	"reg_req",
 );
 
 $obst_enum_op .= "typedef enum ${arch}_opcodes {\n";
@@ -460,8 +449,8 @@ foreach my $op (sort(keys(%nodes))) {
 	$arity = 0;
 	if(exists($n{"arity"})) {
 		$arity = $n{"arity"};
-	} elsif (exists($n{"reg_req"}) && exists($n{"reg_req"}{"in"})) {
-		$arity = scalar(@{ $n{"reg_req"}{"in"} });
+	} elsif (exists($n{"in_reqs"})) {
+		$arity = scalar(@{ $n{"in_reqs"} });
 	} elsif (exists($n{"ins"})) {
 		$arity = scalar(@{ $n{"ins"} });
 	}
@@ -475,8 +464,8 @@ foreach my $op (sort(keys(%nodes))) {
 	$out_arity = 0;
 	if(exists($n{"out_arity"})) {
 		$out_arity = $n{"out_arity"};
-	} elsif (exists($n{"reg_req"}) && exists($n{"reg_req"}{"out"})) {
-		$out_arity = scalar(@{ $n{"reg_req"}{"out"} });
+	} elsif (exists($n{"out_reqs"})) {
+		$out_arity = scalar(@{ $n{"out_reqs"} });
 	} elsif (exists($n{"outs"})) {
 		$out_arity = scalar(@{ $n{"outs"} });
 	}
@@ -868,10 +857,10 @@ sub build_inout_idx_class {
 	my $is_in = shift;
 	my @idx_class;
 
-	my $inout = ($is_in ? "in" : "out");
+	my $inout = ($is_in ? "in_reqs" : "out_reqs");
 
-	if (exists($n->{"reg_req"}{"$inout"})) {
-		my @reqs = @{ $n->{"reg_req"}{"$inout"} };
+	if (exists($n->{"$inout"})) {
+		my @reqs = @{ $n->{"$inout"} };
 
 		for (my $idx = 0; $idx <= $#reqs; $idx++) {
 			my $class = undef;

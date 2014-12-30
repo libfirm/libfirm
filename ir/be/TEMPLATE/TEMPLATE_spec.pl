@@ -21,7 +21,8 @@ $mode_fp  = "mode_F";  # mode used by floatingpoint registers
 #                    ...
 #                  ],
 #   comment   => "any comment for constructor",  # optional
-#   reg_req   => { in => [ "reg_class|register" ], out => [ "reg_class|register|in_rX" ] },
+#   in_reqs   => [ "reg_class|register" ],
+#   out_reqs  => [ "reg_class|register|in_rX" ],
 #   outs      => { "out1", "out2" },# optional, creates pn_op_out1, ... consts
 #   ins       => { "in1", "in2" },  # optional, creates n_op_in1, ... consts
 #   mode      => "mode_Iu",         # optional, predefines the mode
@@ -99,28 +100,28 @@ $default_copy_attr = "TEMPLATE_copy_attr";
 
 my $binop = {
 	irn_flags => [ "rematerializable" ],
-	reg_req   => { in  => [ "gp", "gp" ],
-	               out => [ "gp" ] },
+	in_reqs   => [ "gp", "gp" ],
+	out_reqs  => [ "gp" ],
 	mode      => $mode_gp,
 };
 
 my $constop = {
 	op_flags   => [ "constlike" ],
 	irn_flags  => [ "rematerializable" ],
-	reg_req    => { out => [ "gp" ] },
+	out_reqs   => [ "gp" ],
 	mode       => $mode_gp,
 };
 
 my $fbinop = {
-	reg_req   => { in  => [ "fp", "fp" ],
-	               out => [ "fp" ] },
+	in_reqs   => [ "fp", "fp" ],
+	out_reqs  => [ "fp" ],
 	mode      => $mode_fp,
 };
 
 my $unop = {
 	irn_flags => [ "rematerializable" ],
-	reg_req   => { in  => [ "gp" ],
-	               out => [ "gp" ] },
+	in_reqs   => [ "gp" ],
+	out_reqs  => [ "gp" ],
 	mode      => $mode_gp,
 };
 
@@ -198,14 +199,14 @@ Jmp => {
 	state     => "pinned",
 	op_flags  => [ "cfopcode" ],
 	irn_flags => [ "simple_jump" ],
-	reg_req   => { out => [ "none" ] },
+	out_reqs  => [ "none" ],
 	mode      => "mode_X",
 },
 
 Start => {
 	irn_flags => [ "schedule_first" ],
 	state     => "pinned",
-	reg_req   => { in => [], out => [ "sp:I|S", "r0", "r1", "r2", "r3", "none" ] },
+	our_reqs  => [ "sp:I|S", "r0", "r1", "r2", "r3", "none" ],
 	outs      => [ "stack", "arg0", "arg1", "arg2", "arg3", "M" ],
 	ins       => [],
 },
@@ -214,7 +215,7 @@ Return => {
 	state    => "pinned",
 	op_flags => [ "cfopcode" ],
 	arity    => "variable",
-	reg_req  => { out => [ "none" ] },
+	out_reqs => [ "none" ],
 	ins      => [ "mem", "stack", "first_result" ],
 	outs     => [ "X" ],
 	mode     => "mode_X",
@@ -226,7 +227,8 @@ Load => {
 	op_flags  => [ "uses_memory" ],
 	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
-	reg_req   => { in => [ "none", "gp" ], out => [ "gp", "none" ] },
+	in_reqs   => [ "none", "gp" ],
+	out_reqs  => [ "gp", "none" ],
 	ins       => [ "mem", "ptr" ],
 	outs      => [ "res", "M" ],
 	emit      => '%D0 = load (%S1)',
@@ -236,7 +238,8 @@ Store => {
 	op_flags  => [ "uses_memory" ],
 	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
-	reg_req   => { in => [ "none", "gp", "gp" ], out => [ "none" ] },
+	in_reqs   => [ "none", "gp", "gp" ],
+	out_reqs  => [ "none" ],
 	ins       => [ "mem", "ptr", "val" ],
 	outs      => [ "M" ],
 	mode      => "mode_M",
@@ -269,7 +272,8 @@ fDiv => {
 
 fMinus => {
 	irn_flags => [ "rematerializable" ],
-	reg_req   => { in => [ "fp" ], out => [ "fp" ] },
+	in_reqs   => [ "fp" ],
+	out_reqs  => [ "fp" ],
 	emit      => '%D0 = fneg %S0',
 	mode      => $mode_fp,
 },
@@ -277,7 +281,7 @@ fMinus => {
 fConst => {
 	op_flags  => [ "constlike" ],
 	irn_flags => [ "rematerializable" ],
-	reg_req   => { out => [ "fp" ] },
+	out_reqs  => [ "fp" ],
 	emit      => '%D0 = fconst %I',
 	mode      => $mode_fp,
 },
@@ -288,7 +292,8 @@ fLoad => {
 	op_flags  => [ "uses_memory" ],
 	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
-	reg_req   => { in => [ "none", "gp" ], out => [ "fp", "none" ] },
+	in_reqs   => [ "none", "gp" ],
+	out_reqs  => [ "fp", "none" ],
 	ins       => [ "mem", "ptr" ],
 	outs      => [ "res", "M" ],
 	emit      => '%D0 = fload (%S1)',
@@ -298,7 +303,8 @@ fStore => {
 	op_flags  => [ "uses_memory" ],
 	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
-	reg_req   => { in => [ "none", "gp", "fp" ], out => [ "none" ] },
+	in_reqs   => [ "none", "gp", "fp" ],
+	out_reqs  => [ "none" ],
 	ins       => [ "mem", "ptr", "val" ],
 	outs      => [ "M" ],
 	mode      => "mode_M",

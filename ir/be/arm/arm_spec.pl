@@ -78,27 +78,28 @@ my $unop_shifter_operand = {
 	irn_flags    => [ "rematerializable" ],
 	mode         => $mode_gp,
 	attr_type    => "arm_shifter_operand_t",
+	out_reqs     => [ "gp" ],
 	constructors => {
 		imm => {
 			attr       => "unsigned char immediate_value, unsigned char immediate_rot",
 			custominit => "init_arm_shifter_operand(res, 0, immediate_value, ARM_SHF_IMM, immediate_rot);",
-			reg_req    => { in => [], out => [ "gp" ] },
+			in_reqs    => [],
 		},
 		reg => {
 			custominit => "init_arm_shifter_operand(res, 0, 0, ARM_SHF_REG, 0);",
-			reg_req    => { in => [ "gp" ], out => [ "gp" ] },
+			in_reqs    => [ "gp" ],
 			ins        => [ "Rm" ],
 		},
 		reg_shift_reg => {
 			attr       => "arm_shift_modifier_t shift_modifier",
 			custominit => "init_arm_shifter_operand(res, 0, 0, shift_modifier, 0);",
-			reg_req    => { in => [ "gp", "gp" ], out => [ "gp" ] },
+			in_reqs    => [ "gp", "gp" ],
 			ins        => [ "Rm", "Rs" ],
 		},
 		reg_shift_imm => {
 			attr       => "arm_shift_modifier_t shift_modifier, unsigned shift_immediate",
 			custominit => "init_arm_shifter_operand(res, 0, 0, shift_modifier, shift_immediate);",
-			reg_req    => { in => [ "gp" ], out => [ "gp" ] },
+			in_reqs    => [ "gp" ],
 			ins        => [ "Rm" ],
 		},
 	},
@@ -108,28 +109,29 @@ my $binop_shifter_operand = {
 	irn_flags    => [ "rematerializable" ],
 	mode         => $mode_gp,
 	attr_type    => "arm_shifter_operand_t",
+	out_reqs     => [ "gp" ],
 	constructors => {
 		imm => {
 			attr       => "unsigned char immediate_value, unsigned char immediate_rot",
 			custominit => "init_arm_shifter_operand(res, 1, immediate_value, ARM_SHF_IMM, immediate_rot);",
-			reg_req    => { in => [ "gp" ], out => [ "gp" ] },
+			in_reqs    => [ "gp" ],
 			ins        => [ "left" ],
 		},
 		reg => {
 			custominit => "init_arm_shifter_operand(res, 1, 0, ARM_SHF_REG, 0);",
-			reg_req    => { in => [ "gp", "gp" ], out => [ "gp" ] },
+			in_reqs    => [ "gp", "gp" ],
 			ins        => [ "left", "right" ],
 		},
 		reg_shift_reg => {
 			attr       => "arm_shift_modifier_t shift_modifier",
 			custominit => "init_arm_shifter_operand(res, 1, 0, shift_modifier, 0);",
-			reg_req    => { in => [ "gp", "gp", "gp" ], out => [ "gp" ] },
+			in_reqs    => [ "gp", "gp", "gp" ],
 			ins        => [ "left", "right", "shift" ],
 		},
 		reg_shift_imm => {
 			attr       => "arm_shift_modifier_t shift_modifier, unsigned shift_immediate",
 			custominit => "init_arm_shifter_operand(res, 1, 0, shift_modifier, shift_immediate);",
-			reg_req    => { in => [ "gp", "gp" ], out => [ "gp" ] },
+			in_reqs    => [ "gp", "gp" ],
 			ins        => [ "left", "right" ],
 		},
 	},
@@ -138,29 +140,30 @@ my $binop_shifter_operand = {
 my $binop_shifter_operand_setflags = {
 	irn_flags    => [ "rematerializable" ],
 	attr_type    => "arm_shifter_operand_t",
+	out_reqs     => [ "gp", "flags" ],
 	outs         => [ "res", "flags" ],
 	constructors => {
 		imm => {
 			attr       => "unsigned char immediate_value, unsigned char immediate_rot",
 			custominit => "init_arm_shifter_operand(res, 1, immediate_value, ARM_SHF_IMM, immediate_rot);",
-			reg_req    => { in => [ "gp" ], out => [ "gp", "flags" ] },
+			in_reqs    => [ "gp" ],
 			ins        => [ "left" ],
 		},
 		reg => {
 			custominit => "init_arm_shifter_operand(res, 1, 0, ARM_SHF_REG, 0);",
-			reg_req    => { in => [ "gp", "gp" ], out => [ "gp", "flags" ] },
+			in_reqs    => [ "gp", "gp" ],
 			ins        => [ "left", "right" ],
 		},
 		reg_shift_reg => {
 			attr       => "arm_shift_modifier_t shift_modifier",
 			custominit => "init_arm_shifter_operand(res, 1, 0, shift_modifier, 0);",
-			reg_req    => { in => [ "gp", "gp", "gp" ], out => [ "gp", "flags" ] },
+			in_reqs    => [ "gp", "gp", "gp" ],
 			ins        => [ "left", "right", "shift" ],
 		},
 		reg_shift_imm => {
 			attr       => "arm_shift_modifier_t shift_modifier, unsigned shift_immediate",
 			custominit => "init_arm_shifter_operand(res, 1, 0, shift_modifier, shift_immediate);",
-			reg_req    => { in => [ "gp", "gp" ], out => [ "gp", "flags" ] },
+			in_reqs    => [ "gp", "gp" ],
 			ins        => [ "left", "right" ],
 		},
 	},
@@ -170,28 +173,29 @@ my $binop_shifter_operand_flags = {
 	#irn_flags    => [ "rematerializable" ],
 	attr_type    => "arm_shifter_operand_t",
 	mode         => $mode_gp,
+	out_reqs     => [ "gp" ],
 	constructors => {
 		imm => {
 			attr       => "unsigned char immediate_value, unsigned char immediate_rot",
 			custominit => "init_arm_shifter_operand(res, 1, immediate_value, ARM_SHF_IMM, immediate_rot);",
-			reg_req    => { in => [ "gp", "flags" ], out => [ "gp" ] },
+			in_reqs    => [ "gp", "flags" ],
 			ins        => [ "left", "flags" ],
 		},
 		reg => {
 			custominit => "init_arm_shifter_operand(res, 1, 0, ARM_SHF_REG, 0);",
-			reg_req    => { in => [ "gp", "gp", "flags" ], out => [ "gp" ] },
+			in_reqs    => [ "gp", "gp", "flags" ],
 			ins        => [ "left", "right", "flags" ],
 		},
 		reg_shift_reg => {
 			attr       => "arm_shift_modifier_t shift_modifier",
 			custominit => "init_arm_shifter_operand(res, 1, 0, shift_modifier, 0);",
-			reg_req    => { in => [ "gp", "gp", "gp", "flags" ], out => [ "gp" ] },
+			in_reqs    => [ "gp", "gp", "gp", "flags" ],
 			ins        => [ "left", "right", "shift", "flags" ],
 		},
 		reg_shift_imm => {
 			attr       => "arm_shift_modifier_t shift_modifier, unsigned shift_immediate",
 			custominit => "init_arm_shifter_operand(res, 1, 0, shift_modifier, shift_immediate);",
-			reg_req    => { in => [ "gp", "gp", "flags" ], out => [ "gp" ] },
+			in_reqs    => [ "gp", "gp", "flags" ],
 			ins        => [ "left", "right", "flags" ],
 		},
 	},
@@ -202,13 +206,14 @@ my $cmp_shifter_operand = {
 	emit         => 'cmp %S0, %O',
 	mode         => $mode_flags,
 	attr_type    => "arm_cmp_attr_t",
+	out_reqs     => [ "flags" ],
 	constructors => {
 		imm => {
 			attr       => "unsigned char immediate_value, unsigned char immediate_rot, bool ins_permuted, bool is_unsigned",
 			custominit =>
 				"init_arm_shifter_operand(res, 1, immediate_value, ARM_SHF_IMM, immediate_rot);\n".
 				"\tinit_arm_cmp_attr(res, ins_permuted, is_unsigned);",
-			reg_req    => { in => [ "gp" ], out => [ "flags" ] },
+			in_reqs    => [ "gp" ],
 			ins        => [ "left" ],
 		},
 		reg => {
@@ -216,7 +221,7 @@ my $cmp_shifter_operand = {
 			custominit =>
 				"init_arm_shifter_operand(res, 1, 0, ARM_SHF_REG, 0);\n".
 				"\tinit_arm_cmp_attr(res, ins_permuted, is_unsigned);",
-			reg_req    => { in => [ "gp", "gp" ], out => [ "flags" ] },
+			in_reqs    => [ "gp", "gp" ],
 			ins        => [ "left", "right" ],
 		},
 		reg_shift_reg => {
@@ -224,7 +229,7 @@ my $cmp_shifter_operand = {
 			custominit =>
 				"init_arm_shifter_operand(res, 1, 0, shift_modifier, 0);\n".
 				"\tinit_arm_cmp_attr(res, ins_permuted, is_unsigned);",
-			reg_req    => { in => [ "gp", "gp", "gp" ], out => [ "flags" ] },
+			in_reqs    => [ "gp", "gp", "gp" ],
 			ins        => [ "left", "right", "shift" ],
 		},
 		reg_shift_imm => {
@@ -232,7 +237,7 @@ my $cmp_shifter_operand = {
 			custominit =>
 				"init_arm_shifter_operand(res, 1, 0, shift_modifier, shift_immediate);\n".
 				"\tinit_arm_cmp_attr(res, ins_permuted, is_unsigned);",
-			reg_req    => { in => [ "gp", "gp" ], out => [ "flags" ] },
+			in_reqs    => [ "gp", "gp" ],
 			ins        => [ "left", "right" ],
 		},
 	},
@@ -240,13 +245,15 @@ my $cmp_shifter_operand = {
 
 my $mullop = {
 	irn_flags => [ "rematerializable" ],
-	reg_req   => { in => [ "gp", "gp" ], out => [ "gp", "gp" ] },
+	in_reqs   => [ "gp", "gp" ],
+	out_reqs  => [ "gp", "gp" ],
 	outs      => [ "low", "high" ],
 };
 
 my $binopf = {
 	irn_flags => [ "rematerializable" ],
-	reg_req   => { in => [ "fpa", "fpa" ], out => [ "fpa" ] },
+	in_reqs   => [ "fpa", "fpa" ],
+	out_reqs  => [ "fpa" ],
 	attr_type => "arm_farith_attr_t",
 	attr      => "ir_mode *op_mode",
 	mode      => $mode_fp,
@@ -272,14 +279,15 @@ AdC => {
 
 Mul => {
 	irn_flags    => [ "rematerializable" ],
+	in_reqs      => [ "gp", "gp" ],
 	emit         => 'mul %D0, %S0, %S1',
 	mode         => $mode_gp,
 	constructors => {
-		""   => { reg_req => { in => [ "gp", "gp" ], out => [ "gp" ]     } },
+		""   => { out_reqs => [ "gp" ]     },
 		# TODO: !in_r1 for out constrains the register allocator more than
 		# necessary, as usually you can fix the problem by swapping the inputs. But
 		# for this scheme we would need a special if both inputs are the same value.
-		"v5" => { reg_req => { in => [ "gp", "gp" ], out => [ "!in_r1" ] } },
+		"v5" => { out_reqs => [ "!in_r1" ] },
 	},
 },
 
@@ -295,19 +303,21 @@ UMulL => {
 
 Mla => {
 	irn_flags => [ "rematerializable" ],
+	in_reqs   => [ "gp", "gp", "gp" ],
 	ins       => [ "left", "right", "add" ],
 	emit      => 'mla %D0, %S0, %S1, %S2',
 	mode      => $mode_gp,
 	constructors => {
-		""   => { reg_req   => { in => [ "gp", "gp", "gp" ], out => [ "gp" ]     } },
+		""   => { out_reqs => [ "gp" ]     },
 		# See comments for Mul_v5 out register constraint
-		"v5" => { reg_req   => { in => [ "gp", "gp", "gp" ], out => [ "!in_r1" ] } },
+		"v5" => { out_reqs => [ "!in_r1" ] },
 	}
 },
 
 Mls => {
 	irn_flags => [ "rematerializable" ],
-	reg_req   => { in => [ "gp", "gp", "gp" ], out => [ "gp" ] },
+	in_reqs   => [ "gp", "gp", "gp" ],
+	out_reqs  => [ "gp" ],
 	ins       => [ "left", "right", "sub" ],
 	emit      => 'mls %D0, %S0, %S1, %S2',
 	mode      => $mode_gp,
@@ -328,7 +338,8 @@ OrPl => {
 	emit       => 'orrpl %D0, %S2, %O',
 	mode       => $mode_gp,
 	attr_type  => "arm_shifter_operand_t",
-	reg_req    => { in => [ "gp", "flags", "gp", "gp" ], out => [ "in_r3" ], },
+	in_reqs    => [ "gp", "flags", "gp", "gp" ],
+	out_reqs   => [ "in_r3" ],
 	ins        => [ "falseval", "flags", "left", "right" ],
 	custominit => "init_arm_shifter_operand(res, 3, 0, ARM_SHF_REG, 0);",
 },
@@ -396,7 +407,8 @@ Pkhtb => {
 
 Clz => {
 	irn_flags => [ "rematerializable" ],
-	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
+	in_reqs   => [ "gp" ],
+	out_reqs  => [ "gp" ],
 	emit      => 'clz %D0, %S0',
 	mode      => $mode_gp,
 },
@@ -442,7 +454,8 @@ CopyB => {
 	state     => "pinned",
 	attr      => "unsigned size",
 	attr_type => "arm_CopyB_attr_t",
-	reg_req   => { in => [ "!sp", "!sp", "gp", "gp", "gp", "none" ], out => [ "none" ] },
+	in_reqs   => [ "!sp", "!sp", "gp", "gp", "gp", "none" ],
+	out_reqs  => [ "none" ],
 	outs      => [ "M" ],
 	mode      => "mode_M",
 },
@@ -451,7 +464,8 @@ FrameAddr => {
 	op_flags  => [ "constlike" ],
 	irn_flags => [ "rematerializable" ],
 	attr      => "ir_entity *entity, int offset",
-	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
+	in_reqs   => [ "gp" ],
+	out_reqs  => [ "gp" ],
 	ins       => [ "base" ],
 	attr_type => "arm_Address_attr_t",
 	mode      => $mode_gp,
@@ -461,7 +475,7 @@ Address => {
 	op_flags  => [ "constlike" ],
 	irn_flags => [ "rematerializable" ],
 	attr      => "ir_entity *entity, int offset",
-	reg_req   => { out => [ "gp" ] },
+	out_reqs  => [ "gp" ],
 	attr_type => "arm_Address_attr_t",
 	mode      => $mode_gp,
 },
@@ -480,7 +494,8 @@ B => {
 	op_flags  => [ "cfopcode", "forking" ],
 	state     => "pinned",
 	mode      => "mode_T",
-	reg_req   => { in => [ "flags" ], out => [ "none", "none" ] },
+	in_reqs   => [ "flags" ],
+	out_reqs  => [ "none", "none" ],
 	ins       => [ "flags" ],
 	attr      => "ir_relation relation",
 	attr_type => "arm_CondJmp_attr_t",
@@ -491,7 +506,7 @@ Jmp => {
 	state     => "pinned",
 	op_flags  => [ "cfopcode" ],
 	irn_flags => [ "simple_jump" ],
-	reg_req   => { out => [ "none" ] },
+	out_reqs  => [ "none" ],
 	mode      => "mode_X",
 },
 
@@ -501,7 +516,7 @@ SwitchJmp => {
 	mode      => "mode_T",
 	attr      => "const ir_switch_table *table",
 	init_attr => "init_arm_SwitchJmp_attributes(res, table);",
-	reg_req   => { in => [ "gp" ] },
+	in_reqs   => [ "gp" ],
 	out_arity => "variable",
 	attr_type => "arm_SwitchJmp_attr_t",
 },
@@ -511,7 +526,8 @@ Ldr => {
 	state     => "exc_pinned",
 	ins       => [ "ptr", "mem" ],
 	outs      => [ "res", "M" ],
-	reg_req   => { in => [ "gp", "none" ], out => [ "gp", "none" ] },
+	in_reqs   => [ "gp", "none" ],
+	out_reqs  => [ "gp", "none" ],
 	emit      => 'ldr%ML %D0, [%S0, #%o]',
 	attr_type => "arm_load_store_attr_t",
 	attr      => "ir_mode *ls_mode, ir_entity *entity, int entity_sign, long offset, bool is_frame_entity",
@@ -522,7 +538,8 @@ Str => {
 	state     => "exc_pinned",
 	ins       => [ "ptr", "val", "mem" ],
 	outs      => [ "M" ],
-	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none" ] },
+	in_reqs   => [ "gp", "gp", "none" ],
+	out_reqs  => [ "none" ],
 	emit      => 'str%MS %S1, [%S0, #%o]',
 	mode      => "mode_M",
 	attr_type => "arm_load_store_attr_t",
@@ -533,7 +550,8 @@ StoreStackM4Inc => {
 	op_flags  => [ "uses_memory" ],
 	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
-	reg_req   => { in => [ "sp", "gp", "gp", "gp", "gp", "none" ], out => [ "sp:I|S", "none" ] },
+	in_reqs   => [ "sp", "gp", "gp", "gp", "gp", "none" ],
+	out_reqs  => [ "sp:I|S", "none" ],
 	emit      => 'stmfd %S0!, {%S1, %S2, %S3, %S4}',
 	outs      => [ "ptr", "M" ],
 },
@@ -542,7 +560,8 @@ LoadStackM3Epilogue => {
 	op_flags  => [ "uses_memory" ],
 	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
-	reg_req   => { in => [ "sp", "none" ], out => [ "r11:I", "sp:I|S", "pc:I", "none" ] },
+	in_reqs   => [ "sp", "none" ],
+	out_reqs  => [ "r11:I", "sp:I|S", "pc:I", "none" ],
 	emit      => 'ldmfd %S0, {%D0, %D1, %D2}',
 	outs      => [ "res0", "res1", "res2", "M" ],
 },
@@ -565,7 +584,8 @@ Suf => {
 },
 
 Dvf => {
-	reg_req   => { in => [ "fpa", "fpa" ], out => [ "fpa", "none" ] },
+	in_reqs   => [ "fpa", "fpa" ],
+	out_reqs  => [ "fpa", "none" ],
 	emit      => 'dvf%MA %D0, %S0, %S1',
 	outs      => [ "res", "M" ],
 	attr_type => "arm_farith_attr_t",
@@ -575,7 +595,8 @@ Dvf => {
 
 Mvf => {
 	irn_flags => [ "rematerializable" ],
-	reg_req   => { in => [ "fpa" ], out => [ "fpa" ] },
+	in_reqs   => [ "fpa" ],
+	out_reqs  => [ "fpa" ],
 	emit      => 'mvf%MA %S0, %D0',
 	attr_type => "arm_farith_attr_t",
 	attr      => "ir_mode *op_mode",
@@ -584,7 +605,8 @@ Mvf => {
 
 FltX => {
 	irn_flags => [ "rematerializable" ],
-	reg_req   => { in => [ "gp" ], out => [ "fpa" ] },
+	in_reqs   => [ "gp" ],
+	out_reqs  => [ "fpa" ],
 	emit      => 'flt%MA %D0, %S0',
 	attr_type => "arm_farith_attr_t",
 	attr      => "ir_mode *op_mode",
@@ -597,7 +619,8 @@ Cmfe => {
 	attr_type => "arm_cmp_attr_t",
 	attr      => "bool ins_permuted",
 	init_attr => "init_arm_cmp_attr(res, ins_permuted, false);",
-	reg_req   => { in => [ "fpa", "fpa" ], out => [ "flags" ] },
+	in_reqs   => [ "fpa", "fpa" ],
+	out_reqs  => [ "flags" ],
 	emit      => 'cmfe %S0, %S1',
 },
 
@@ -606,7 +629,8 @@ Ldf => {
 	state     => "exc_pinned",
 	ins       => [ "ptr", "mem" ],
 	outs      => [ "res", "M" ],
-	reg_req   => { in => [ "gp", "none" ], out => [ "fpa", "none" ] },
+	in_reqs   => [ "gp", "none" ],
+	out_reqs  => [ "fpa", "none" ],
 	emit      => 'ldf%MF %D0, [%S0, #%o]',
 	attr_type => "arm_load_store_attr_t",
 	attr      => "ir_mode *ls_mode, ir_entity *entity, int entity_sign, long offset, bool is_frame_entity",
@@ -618,7 +642,8 @@ Stf => {
 	ins       => [ "ptr", "val", "mem" ],
 	outs      => [ "M" ],
 	mode      => "mode_M",
-	reg_req   => { in => [ "gp", "fpa", "none" ], out => [ "none" ] },
+	in_reqs   => [ "gp", "fpa", "none" ],
+	out_reqs  => [ "none" ],
 	emit      => 'stf%MF %S1, [%S0, #%o]',
 	attr_type => "arm_load_store_attr_t",
 	attr      => "ir_mode *ls_mode, ir_entity *entity, int entity_sign, long offset, bool is_frame_entity",
@@ -633,7 +658,7 @@ fConst => {
 	attr      => "ir_tarval *tv",
 	init_attr => "attr->tv = tv;",
 	mode      => "get_tarval_mode(tv)",
-	reg_req   => { out => [ "fpa" ] },
+	out_reqs  => [ "fpa" ],
 	attr_type => "arm_fConst_attr_t",
 },
 
@@ -650,7 +675,7 @@ Return => {
 	op_flags => [ "cfopcode" ],
 	arity    => "variable",
 	mode     => "mode_X",
-	reg_req  => { out => [ "none" ] },
+	out_reqs => [ "none" ],
 	emit     => "bx lr",
 },
 
