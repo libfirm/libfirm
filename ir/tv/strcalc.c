@@ -707,16 +707,17 @@ char *sc_print_buf(char *buf, size_t buf_len, const sc_word *value,
 		assert(SC_BITS == 8);
 		unsigned counter = 0;
 		for ( ; counter < n_full_words; ++counter) {
-			*(--pos) = digits[(value[counter] >> 0) & 0xf];
-			*(--pos) = digits[(value[counter] >> 4) & 0xf];
+			sc_word x = value[counter];
+			*(--pos) = digits[(x >> 0) & 0xf];
+			*(--pos) = digits[(x >> 4) & 0xf];
 		}
 
 		/* last nibble must be masked */
 		if (remaining_bits != 0) {
 			sc_word mask = max_digit(remaining_bits);
 			sc_word x    = value[counter++] & mask;
-			*(--pos) = digits[(value[x] >> 0) & 0xf];
-			*(--pos) = digits[(value[x] >> 4) & 0xf];
+			*(--pos) = digits[(x >> 0) & 0xf];
+			*(--pos) = digits[(x >> 4) & 0xf];
 			assert(pos >= buf);
 		}
 
