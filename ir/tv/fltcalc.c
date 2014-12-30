@@ -292,11 +292,6 @@ return_nan_b:
  */
 static void _fadd(const fp_value *a, const fp_value *b, fp_value *result)
 {
-	fc_exact = true;
-
-	if (handle_NAN(a, b, result))
-		return;
-
 	/* make sure result has a descriptor */
 	if (result != a && result != b)
 		result->desc = a->desc;
@@ -1126,6 +1121,10 @@ fp_value *fc_add(const fp_value *a, const fp_value *b, fp_value *result)
 	if (result == NULL)
 		result = calc_buffer;
 
+	fc_exact = true;
+	if (handle_NAN(a, b, result))
+		return result;
+
 	/* make the value with the bigger exponent the first one */
 	if (sc_comp(_exp(a), _exp(b)) == ir_relation_less)
 		_fadd(b, a, result);
@@ -1139,6 +1138,10 @@ fp_value *fc_sub(const fp_value *a, const fp_value *b, fp_value *result)
 {
 	if (result == NULL)
 		result = calc_buffer;
+
+	fc_exact = true;
+	if (handle_NAN(a, b, result))
+		return result;
 
 	fp_value *temp = (fp_value*) alloca(calc_buffer_size);
 	memcpy(temp, b, calc_buffer_size);
@@ -1176,7 +1179,8 @@ fp_value *fc_neg(const fp_value *a, fp_value *result)
 
 	if (a != result)
 		memcpy(result, a, calc_buffer_size);
-	result->sign = !a->sign;
+	if (result->clss != FC_NAN)
+		result->sign = !a->sign;
 	return result;
 }
 
