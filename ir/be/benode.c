@@ -299,11 +299,6 @@ ir_node *be_get_CopyKeep_op(const ir_node *cpy)
 	return get_irn_n(cpy, n_be_CopyKeep_op);
 }
 
-void be_set_CopyKeep_op(ir_node *cpy, ir_node *op)
-{
-	set_irn_n(cpy, n_be_CopyKeep_op, op);
-}
-
 void be_set_MemPerm_in_entity(const ir_node *irn, unsigned n, ir_entity *ent)
 {
 	assert(n < be_get_MemPerm_entity_arity(irn));

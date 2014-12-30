@@ -150,8 +150,6 @@ ir_node *be_new_CopyKeep_single(ir_node *block, ir_node *src, ir_node *keep);
 
 ir_node *be_get_CopyKeep_op(const ir_node *cpy);
 
-void be_set_CopyKeep_op(ir_node *cpy, ir_node *op);
-
 void be_set_MemPerm_in_entity(const ir_node *irn, unsigned n, ir_entity* ent);
 ir_entity *be_get_MemPerm_in_entity(const ir_node *irn, unsigned n);
 
