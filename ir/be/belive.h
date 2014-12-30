@@ -212,6 +212,7 @@ typedef struct lv_iterator_t
 static inline lv_iterator_t be_lv_iteration_begin(const be_lv_t *lv,
                                                   const ir_node *block)
 {
+	assert(lv->sets_valid);
 	lv_iterator_t res;
 	res.info  = ir_nodehashmap_get(be_lv_info_t, &lv->map, block);
 	res.i     = res.info != NULL ? res.info[0].head.n_members : 0;

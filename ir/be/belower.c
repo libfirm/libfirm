@@ -83,7 +83,6 @@ static void mark_live_nodes_registers(const ir_node *irn, lower_env_t *env)
 	unsigned                    *free_regs = rbitset_duplicate_obstack_alloc(&env->obst, birg->allocatable_regs, n_regs);
 
 	be_lv_t *lv = be_get_irg_liveness(irg);
-	assert(lv->sets_valid && "Live sets are invalid");
 	be_lv_foreach_cls(lv, block, be_lv_state_end, cls, live) {
 		set_reg_free(free_regs, live, false);
 	}

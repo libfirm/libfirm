@@ -149,7 +149,6 @@ static void process_block(ir_node *block, void *data)
 	/* construct initial register assignment */
 	memset(register_values, 0, sizeof(ir_node*) * arch_env->n_registers);
 
-	assert(lv->sets_valid && "live sets must be computed");
 	DB((dbg, LEVEL_1, "\nProcessing block %+F (from end)\n", block));
 	be_lv_foreach(lv, block, be_lv_state_end, node) {
 		set_reg_value(node);

@@ -385,7 +385,6 @@ void be_liveness_end_of_block(const be_lv_t *lv,
                               const arch_register_class_t *cls,
                               const ir_node *block, ir_nodeset_t *live)
 {
-	assert(lv->sets_valid);
 	be_lv_foreach_cls(lv, block, be_lv_state_end, cls, node) {
 		ir_nodeset_insert(live, node);
 	}
