@@ -7173,6 +7173,18 @@ handle_tv:
 	panic("invalid initializer");
 }
 
+static void reverse_bytes(unsigned char *buffer, unsigned buffer_len)
+{
+	unsigned char *l = buffer;
+	unsigned char *r = buffer + buffer_len - 1;
+	while (l < r) {
+		unsigned char vl = *l;
+		unsigned char vr = *r;
+		*l++ = vr;
+		*r-- = vl;
+	}
+}
+
 static ir_node *sim_store_load(const ir_type *type,
                                const ir_initializer_t *initializer, long offset,
                                ir_mode *mode, ir_graph *irg)
@@ -7181,11 +7193,8 @@ static ir_node *sim_store_load(const ir_type *type,
 	unsigned char *storage      = ALLOCANZ(unsigned char, storage_size);
 	if (!sim_store(storage, mode, offset, type, initializer))
 		return NULL;
-	if (be_is_big_endian()) {
-		for (unsigned i = 0; i < storage_size; ++i) {
-			storage[i] = storage[storage_size-i-1];
-		}
-	}
+	if (be_is_big_endian())
+		reverse_bytes(storage, storage_size);
 	ir_tarval *tv = new_tarval_from_bytes(storage, mode);
 	if (tv == tarval_unknown)
 		return NULL;
