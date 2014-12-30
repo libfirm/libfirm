@@ -93,23 +93,18 @@ static void pack(const fp_value *value, sc_word *packed)
  *
  * @return true if result is exact
  */
-static bool normalize(const fp_value *in_val, fp_value *out_val, bool sticky)
+static bool normalize(fp_value *val, bool sticky)
 {
-	const float_descriptor_t *desc = &in_val->desc;
+	const float_descriptor_t *desc = &val->desc;
 	unsigned effective_mantissa = desc->mantissa_size - desc->explicit_one;
 	/* save rounding bits at the end */
-	int hsb = ROUNDING_BITS + effective_mantissa - sc_get_highest_set_bit(_mant(in_val)) - 1;
+	int hsb = ROUNDING_BITS + effective_mantissa - sc_get_highest_set_bit(_mant(val)) - 1;
 
-	if (in_val != out_val) {
-		out_val->sign = in_val->sign;
-		out_val->desc = in_val->desc;
-	}
-
-	out_val->clss = FC_NORMAL;
+	val->clss = FC_NORMAL;
 
 	/* mantissa all zeros, so zero exponent (because of explicit one) */
 	if (hsb == ROUNDING_BITS + (int)effective_mantissa) {
-		sc_zero(_exp(out_val));
+		sc_zero(_exp(val));
 		hsb = -1;
 	}
 
@@ -120,46 +115,46 @@ static bool normalize(const fp_value *in_val, fp_value *out_val, bool sticky)
 		/* shift right */
 		sc_val_from_ulong(-hsb-1, temp);
 
-		bool carry = sc_shrI(_mant(in_val), -hsb-1, _mant(out_val));
+		bool carry = sc_shrI(_mant(val), -hsb-1, _mant(val));
 
 		/* remember if some bits were shifted away */
 		if (carry) {
 			exact  = false;
 			sticky = true;
 		}
-		sc_add(_exp(in_val), temp, _exp(out_val));
+		sc_add(_exp(val), temp, _exp(val));
 	} else if (hsb > -1) {
 		/* shift left */
 		sc_val_from_ulong(hsb+1, temp);
 
-		sc_shlI(_mant(in_val), hsb+1, _mant(out_val));
+		sc_shlI(_mant(val), hsb+1, _mant(val));
 
-		sc_sub(_exp(in_val), temp, _exp(out_val));
+		sc_sub(_exp(val), temp, _exp(val));
 	}
 
 	/* check for exponent underflow */
-	if (sc_is_negative(_exp(out_val))
-	 || sc_is_zero(_exp(out_val), value_size)) {
+	if (sc_is_negative(_exp(val))
+	 || sc_is_zero(_exp(val), value_size)) {
 		/* exponent underflow */
 		/* shift the mantissa right to have a zero exponent */
 		sc_val_from_ulong(1, temp);
-		sc_sub(temp, _exp(out_val), temp);
+		sc_sub(temp, _exp(val), temp);
 
-		bool carry = sc_shr(_mant(out_val), temp, _mant(out_val));
+		bool carry = sc_shr(_mant(val), temp, _mant(val));
 		if (carry) {
 			exact  = false;
 			sticky = true;
 		}
 		/* denormalized means exponent of zero */
-		sc_zero(_exp(out_val));
+		sc_zero(_exp(val));
 
-		out_val->clss = FC_SUBNORMAL;
+		val->clss = FC_SUBNORMAL;
 	}
 
 	/* perform rounding by adding a value that clears the guard bit and the
 	 * round bit and either causes a carry to round up or not */
 	/* get the last 3 bits of the value */
-	char lsb       = sc_sub_bits(_mant(out_val), effective_mantissa + ROUNDING_BITS, 0) & 0x7;
+	char lsb       = sc_sub_bits(_mant(val), effective_mantissa + ROUNDING_BITS, 0) & 0x7;
 	char guard     = (lsb&0x2)>>1;
 	char round     = lsb&0x1;
 	char round_dir = 0;
@@ -171,11 +166,11 @@ static bool normalize(const fp_value *in_val, fp_value *out_val, bool sticky)
 		break;
 	case FC_TOPOSITIVE:
 		/* if positive: round to one if the exact value is bigger, else to zero */
-		round_dir = (!out_val->sign && (guard || round || sticky));
+		round_dir = (!val->sign && (guard || round || sticky));
 		break;
 	case FC_TONEGATIVE:
 		/* if negative: round to one if the exact value is bigger, else to zero */
-		round_dir = (out_val->sign && (guard || round || sticky));
+		round_dir = (val->sign && (guard || round || sticky));
 		break;
 	case FC_TOZERO:
 		/* always round to 0 (chopping mode) */
@@ -193,29 +188,29 @@ static bool normalize(const fp_value *in_val, fp_value *out_val, bool sticky)
 	/* add the rounded value */
 	if (lsb != 0) {
 		sc_val_from_long(lsb, temp);
-		sc_add(_mant(out_val), temp, _mant(out_val));
+		sc_add(_mant(val), temp, _mant(val));
 		exact = false;
 	}
 
 	/* could have rounded down to zero */
-	if (sc_is_zero(_mant(out_val), value_size)
-	    && (out_val->clss == FC_SUBNORMAL))
-		out_val->clss = FC_ZERO;
+	if (sc_is_zero(_mant(val), value_size)
+	    && (val->clss == FC_SUBNORMAL))
+		val->clss = FC_ZERO;
 
 	/* check for rounding overflow */
-	hsb = ROUNDING_BITS + effective_mantissa - sc_get_highest_set_bit(_mant(out_val)) - 1;
-	if ((out_val->clss != FC_SUBNORMAL) && (hsb < -1)) {
+	hsb = ROUNDING_BITS + effective_mantissa - sc_get_highest_set_bit(_mant(val)) - 1;
+	if ((val->clss != FC_SUBNORMAL) && (hsb < -1)) {
 		sc_val_from_ulong(1, temp);
-		bool carry = sc_shrI(_mant(out_val), 1, _mant(out_val));
+		bool carry = sc_shrI(_mant(val), 1, _mant(val));
 		if (carry)
 			exact = false;
-		sc_add(_exp(out_val), temp, _exp(out_val));
-	} else if ((out_val->clss == FC_SUBNORMAL) && (hsb == -1)) {
+		sc_add(_exp(val), temp, _exp(val));
+	} else if ((val->clss == FC_SUBNORMAL) && (hsb == -1)) {
 		/* overflow caused the mantissa to be normal again,
 		 * so adapt the exponent accordingly */
-		sc_inc(_exp(out_val));
+		sc_inc(_exp(val));
 
-		out_val->clss = FC_NORMAL;
+		val->clss = FC_NORMAL;
 	}
 	/* no further rounding is needed, because rounding overflow means
 	 * the carry of the original rounding was propagated all the way
@@ -223,8 +218,8 @@ static bool normalize(const fp_value *in_val, fp_value *out_val, bool sticky)
 	 * to the right are all zeros (rounding is +1) */
 
 	/* check for exponent overflow */
-	sc_val_from_ulong((1 << out_val->desc.exponent_size) - 1, temp);
-	if (sc_comp(_exp(out_val), temp) != ir_relation_less) {
+	sc_val_from_ulong((1 << val->desc.exponent_size) - 1, temp);
+	if (sc_comp(_exp(val), temp) != ir_relation_less) {
 		/* exponent overflow, reaction depends on rounding method:
 		 *
 		 * mode        | sign of value |  result
@@ -244,12 +239,12 @@ static bool normalize(const fp_value *in_val, fp_value *out_val, bool sticky)
 		switch (rounding_mode) {
 		case FC_TONEAREST:
 		case FC_TOPOSITIVE:
-			fc_get_inf(&out_val->desc, out_val, out_val->sign);
+			fc_get_inf(&val->desc, val, val->sign);
 			break;
 
 		case FC_TONEGATIVE:
 		case FC_TOZERO:
-			fc_get_max(&out_val->desc, out_val, out_val->sign);
+			fc_get_max(&val->desc, val, val->sign);
 			break;
 		}
 	}
@@ -394,7 +389,7 @@ static void _fadd(const fp_value *a, const fp_value *b, fp_value *result)
 	/* resulting exponent is the bigger one */
 	memmove(_exp(result), _exp(a), value_size);
 
-	fc_exact &= normalize(result, result, sticky);
+	fc_exact &= normalize(result, sticky);
 }
 
 /**
@@ -476,7 +471,7 @@ static void _fmul(const fp_value *a, const fp_value *b, fp_value *result)
 	              +ROUNDING_BITS, _mant(result));
 	fc_exact &= !sticky;
 
-	fc_exact &= normalize(result, result, sticky);
+	fc_exact &= normalize(result, sticky);
 }
 
 /**
@@ -565,7 +560,7 @@ static void _fdiv(const fp_value *a, const fp_value *b, fp_value *result)
 	bool sticky = sc_div(dividend, divisor, _mant(result));
 	fc_exact &= !sticky;
 
-	fc_exact &= normalize(result, result, sticky);
+	fc_exact &= normalize(result, sticky);
 }
 
 /**
@@ -673,7 +668,7 @@ fp_value *fc_val_from_bytes(fp_value *result, const unsigned char *buffer,
 			/* normalize expects the radix point to be normal, so shift
 			 * mantissa of subnormal origin one to the left */
 			sc_shlI(_mant(result), 1, _mant(result));
-			normalize(result, result, 0);
+			normalize(result, false);
 		}
 	} else if (sc_is_all_one(_exp(result), exponent_size)) {
 		unsigned size = mantissa_size + ROUNDING_BITS - desc->explicit_one;
@@ -689,7 +684,7 @@ fp_value *fc_val_from_bytes(fp_value *result, const unsigned char *buffer,
 		/* we always have an explicit one */
 		if (!desc->explicit_one)
 			sc_set_bit_at(_mant(result), ROUNDING_BITS+mantissa_size);
-		normalize(result, result, 0);
+		normalize(result, false);
 	}
 	return result;
 }
@@ -793,7 +788,7 @@ fp_value *fc_cast(const fp_value *value, const float_descriptor_t *dest,
 		memcpy(_mant(result), _mant(value), value_size);
 	}
 
-	normalize(result, result, 0);
+	normalize(result, false);
 	return result;
 }
 
