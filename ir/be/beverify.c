@@ -217,27 +217,21 @@ static void verify_schedule_walker(ir_node *block, void *data)
 		if (be_is_Keep(node) || be_is_CopyKeep(node)) {
 			/* at least 1 of the keep arguments has to be its schedule
 			 * predecessor */
-			ir_node *prev    = sched_prev(node);
+			ir_node *prev = sched_prev(node);
 			while (be_is_Keep(prev) || be_is_CopyKeep(prev))
 				prev = sched_prev(prev);
 
-			bool found = false;
-			while (true) {
+			do {
 				foreach_irn_in(node, i, in) {
 					if (skip_Proj(in) == prev)
-						found = true;
+						goto ok;
 				}
-				if (found)
-					break;
 				prev = sched_prev(prev);
-				if (!is_Phi(prev))
-					break;
-			}
-			if (!found) {
-				ir_fprintf(stderr, "%+F not scheduled after its pred node in block %+F (%s)\n",
-				           node, block, get_irg_name(block));
-				env->problem_found = true;
-			}
+			} while (is_Phi(prev));
+			ir_fprintf(stderr, "%+F not scheduled after its pred node in block %+F (%s)\n",
+			           node, block, get_irg_name(block));
+			env->problem_found = true;
+ok:;
 		}
 	}
 }
