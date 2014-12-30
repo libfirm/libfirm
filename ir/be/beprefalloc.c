@@ -1837,8 +1837,10 @@ static void be_pref_alloc(ir_graph *new_irg)
 		/* verify schedule and register pressure */
 		if (be_options.do_verify) {
 			be_timer_push(T_VERIFY);
-			be_verify_schedule(irg);
-			be_verify_register_pressure(irg, cls);
+			bool check_schedule = be_verify_schedule(irg);
+			be_check_verify_result(check_schedule, irg);
+			bool check_pressure = be_verify_register_pressure(irg, cls);
+			be_check_verify_result(check_pressure, irg);
 			be_timer_pop(T_VERIFY);
 		}
 

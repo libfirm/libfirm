@@ -233,12 +233,22 @@ int be_parse_arg(const char *arg)
 	return lc_opt_from_single_arg(be_grp, arg);
 }
 
+void be_check_verify_result(bool fine, ir_graph *irg)
+{
+	if (!fine) {
+		fprintf(stderr, "...verifier failed: Trying to write assert graph and abort\n");
+		dump_ir_graph(irg, "assert");
+		abort();
+	}
+}
+
 /* Perform schedule verification if requested. */
 static void be_sched_verify(ir_graph *irg)
 {
 	if (be_options.do_verify) {
 		be_timer_push(T_VERIFY);
-		be_verify_schedule(irg);
+		bool fine = be_verify_schedule(irg);
+		be_check_verify_result(fine, irg);
 		be_timer_pop(T_VERIFY);
 	}
 }
@@ -526,7 +536,8 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		/* Verify the initial graph */
 		if (be_options.do_verify) {
 			be_timer_push(T_VERIFY);
-			irg_assert_verify(irg);
+			bool fine = irg_verify(irg);
+			be_check_verify_result(fine, irg);
 			be_timer_pop(T_VERIFY);
 		}
 
@@ -576,7 +587,8 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 
 		if (be_options.do_verify) {
 			be_timer_push(T_VERIFY);
-			be_verify_register_allocation(irg, true);
+			bool fine = be_verify_register_allocation(irg, true);
+			be_check_verify_result(fine, irg);
 			be_timer_pop(T_VERIFY);
 		}
 

@@ -195,8 +195,10 @@ static void post_spill(be_chordal_env_t *const chordal_env, ir_graph *const irg)
 	/* verify schedule and register pressure */
 	if (be_options.do_verify) {
 		be_timer_push(T_VERIFY);
-		be_verify_schedule(irg);
-		be_verify_register_pressure(irg, chordal_env->cls);
+		bool check_schedule = be_verify_schedule(irg);
+		be_check_verify_result(check_schedule, irg);
+		bool check_pressure = be_verify_register_pressure(irg, chordal_env->cls);
+		be_check_verify_result(check_pressure, irg);
 		be_timer_pop(T_VERIFY);
 	}
 
@@ -242,7 +244,8 @@ static void post_spill(be_chordal_env_t *const chordal_env, ir_graph *const irg)
 
 	if (be_options.do_verify) {
 		be_timer_push(T_VERIFY);
-		be_ssa_destruction_check(chordal_env->irg, chordal_env->cls);
+		bool fine = be_ssa_destruction_check(chordal_env->irg, chordal_env->cls);
+		be_check_verify_result(fine, chordal_env->irg);
 		be_timer_pop(T_VERIFY);
 	}
 

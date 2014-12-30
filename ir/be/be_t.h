@@ -68,6 +68,8 @@ unsigned be_get_n_allocatable_regs(const ir_graph *irg,
 
 void be_after_irp_transform(const char *name);
 
+void be_check_verify_result(bool fine, ir_graph *irg);
+
 /**
  * Initialize the backend. Must be run first in init_firm();
  */

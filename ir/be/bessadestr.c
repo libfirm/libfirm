@@ -262,7 +262,11 @@ static void ssa_destruction_check_walker(ir_node *block, void *data)
 	}
 }
 
-void be_ssa_destruction_check(ir_graph *irg, const arch_register_class_t *cls)
+bool be_ssa_destruction_check(ir_graph *irg, const arch_register_class_t *cls)
 {
 	irg_block_walk_graph(irg, ssa_destruction_check_walker, NULL, (void*)cls);
+	/* well we didn't run into an assertion failure so we are fine.
+	 * (I'm too lazy to rewrite the code to not use assert() now as it will
+	 * get replaced with a new reg verifier anyway) */
+	return true;
 }
