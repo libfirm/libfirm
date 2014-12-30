@@ -150,6 +150,12 @@ FIRM_API ir_tarval *new_tarval_from_bytes(unsigned char const *buf,
                                           ir_mode *mode);
 
 /**
+ * Write tarval to a sequence of bytes. The value is written in a
+ * "little endian" fashion which means the less significant bytes come first.
+ */
+FIRM_API void tarval_to_bytes(unsigned char *buffer, ir_tarval *tv);
+
+/**
  * Returns value as long if possible.
  */
 FIRM_API long get_tarval_long(const ir_tarval *tv);

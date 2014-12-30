@@ -277,6 +277,26 @@ ir_tarval *new_tarval_from_bytes(unsigned char const *buf,
 	panic("tarval from byte requested for non storable mode");
 }
 
+void tarval_to_bytes(unsigned char *buffer, ir_tarval *tv)
+{
+	switch (get_mode_arithmetic(get_tarval_mode(tv))) {
+	case irma_ieee754:
+	case irma_x86_extended_float:
+		fc_val_to_bytes((const fp_value*)tv->value, buffer);
+		return;
+	case irma_twos_complement: {
+		ir_mode *mode       = get_tarval_mode(tv);
+		unsigned bits       = get_mode_size_bits(mode);
+		unsigned buffer_len = bits/CHAR_BIT + (bits%CHAR_BIT != 0);
+		sc_val_to_bytes((const sc_word*)tv->value, buffer, buffer_len);
+		return;
+	}
+	case irma_none:
+		break;
+	}
+	panic("unexpected arithmetic mode");
+}
+
 int tarval_is_long(const ir_tarval *tv)
 {
 	ir_mode *mode = get_tarval_mode(tv);
@@ -671,22 +691,10 @@ ir_tarval *tarval_bitcast(ir_tarval *src, ir_mode *dst_mode)
 		return src;
 	unsigned size = get_mode_size_bits(src_mode);
 	assert(get_mode_size_bits(dst_mode) == size);
-	assert(size % 8 == 0);
 
-	size_t         buf_len = size / 8;
+	unsigned       buf_len = size/CHAR_BIT + (size%CHAR_BIT != 0);
 	unsigned char *buffer  = ALLOCAN(unsigned char, buf_len);
-	switch (get_mode_arithmetic(src_mode)) {
-	case irma_ieee754:
-	case irma_x86_extended_float:
-		fc_val_to_bytes((const fp_value*)src->value, buffer);
-		break;
-	case irma_twos_complement:
-		sc_val_to_bytes((const sc_word*)src->value, buffer, buf_len);
-		break;
-	default:
-		panic("unexpected arithmetic mode in tarval_bitcast");
-	}
-
+	tarval_to_bytes(buffer, src);
 	return new_tarval_from_bytes(buffer, dst_mode);
 }
 
