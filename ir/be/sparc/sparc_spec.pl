@@ -263,6 +263,13 @@ my $branchcc = {
 	outs      => [ "false", "true" ],
 };
 
+my $xop = {
+	state    => "pinned",
+	op_flags => [ "cfopcode" ],
+	reg_req  => { out => [ "none" ] },
+	mode     => "mode_X",
+};
+
 %nodes = (
 
 ASM => {
@@ -493,11 +500,8 @@ fbfcc => {
 Ba => {
 	# Note: has_delay_slot depends on whether it is a fallthrough or not, so we
 	# have special code for this in sparc_emitter
-	state     => "pinned",
-	op_flags  => [ "cfopcode" ],
+	template  => $xop,
 	irn_flags => [ "simple_jump" ],
-	reg_req   => { out => [ "none" ] },
-	mode      => "mode_X",
 },
 
 Start => {
@@ -511,12 +515,9 @@ Start => {
 # This is a Jump instruction, but with the addition that you can add custom
 # register constraints to model your calling conventions
 Return => {
-	state     => "pinned",
-	op_flags  => [ "cfopcode" ],
+	template  => $xop,
 	irn_flags => [ "has_delay_slot" ],
-	reg_req   => { out => [ "none" ] },
 	arity     => "variable",
-	mode      => "mode_X",
 	constructors => {
 		imm => {
 			attr       => "ir_entity *entity, int32_t offset",
