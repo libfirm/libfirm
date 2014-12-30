@@ -256,6 +256,11 @@ static bool normalize(const fp_value *in_val, fp_value *out_val, bool sticky)
 	return exact;
 }
 
+static bool smaller_nan(const fp_value *a, const fp_value *b)
+{
+	return sc_comp(_mant(a), _mant(b)) == ir_relation_less;
+}
+
 /**
  * Operations involving NaN's must return NaN.
  * They are NOT exact.
@@ -263,12 +268,18 @@ static bool normalize(const fp_value *in_val, fp_value *out_val, bool sticky)
 static bool handle_NAN(const fp_value *a, const fp_value *b, fp_value *result)
 {
 	if (a->clss == FC_NAN) {
+		/* for two NaN inputs take the smaller one to not break commutativity
+		 * of some operations.
+		 * TODO: Find out and do exactly what the current target host does. */
+		if (b->clss == FC_NAN && smaller_nan(b, a))
+			goto return_nan_b;
 		if (a != result)
 			memcpy(result, a, calc_buffer_size);
 		fc_exact = false;
 		return true;
 	}
 	if (b->clss == FC_NAN) {
+return_nan_b:
 		if (b != result) memcpy(result, b, calc_buffer_size);
 		fc_exact = false;
 		return true;
