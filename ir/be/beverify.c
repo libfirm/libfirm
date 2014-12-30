@@ -131,8 +131,6 @@ static void verify_schedule_walker(ir_node *block, void *data)
 	 *   1. Make sure that all phi nodes are scheduled at the beginning of the
 	 *      block
 	 *   2. No value is defined after it has been used
-	 *   3. mode_T nodes have all projs scheduled behind them followed by Keeps
-	 *       (except mode_X projs)
 	 */
 	sched_foreach(block, node) {
 		/* this node is scheduled */
