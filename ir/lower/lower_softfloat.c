@@ -522,16 +522,9 @@ static bool lower_Const(ir_node *const n)
 	if (!mode_is_float(mode))
 		return false;
 
-	assert(get_mode_size_bits(mode) % 8 == 0);
-	unsigned       size = get_mode_size_bits(mode) / 8;
-	unsigned char *buf  = ALLOCAN(unsigned char, size);
-
-	ir_tarval *float_tv = get_Const_tarval(n);
-	for (unsigned i = 0; i < size; ++i) {
-		buf[i] = get_tarval_sub_bits(float_tv, i);
-	}
+	ir_tarval *float_tv     = get_Const_tarval(n);
 	ir_mode   *lowered_mode = get_lowered_mode(mode);
-	ir_tarval *int_tv       = new_tarval_from_bytes(buf, lowered_mode, false);
+	ir_tarval *int_tv       = tarval_bitcast(float_tv, lowered_mode);
 
 	set_irn_mode(n, lowered_mode);
 	set_Const_tarval(n, int_tv);
