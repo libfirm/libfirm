@@ -1018,7 +1018,8 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
 	/* of the other_different irn in case of CopyKeep.   */
 	ir_node *keep;
 	if (has_irn_users(other_different)) {
-		keep = be_new_CopyKeep_single(block, cpy, irn);
+		ir_node *const in[] = { irn };
+		keep = be_new_CopyKeep(block, cpy, ARRAY_SIZE(in), in);
 	} else {
 		ir_node *in[] = { irn, cpy };
 		keep = be_new_Keep(block, ARRAY_SIZE(in), in);

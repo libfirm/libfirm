@@ -146,8 +146,6 @@ enum {
 };
 ir_node *be_new_CopyKeep(ir_node *block, ir_node *src, int n, ir_node *const *in_keep);
 
-ir_node *be_new_CopyKeep_single(ir_node *block, ir_node *src, ir_node *keep);
-
 ir_node *be_get_CopyKeep_op(const ir_node *cpy);
 
 void be_set_MemPerm_in_entity(const ir_node *irn, unsigned n, ir_entity* ent);

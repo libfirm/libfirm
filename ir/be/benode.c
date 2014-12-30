@@ -288,12 +288,6 @@ ir_node *be_new_CopyKeep(ir_node *const bl, ir_node *const src, int const n, ir_
 	return irn;
 }
 
-ir_node *be_new_CopyKeep_single(ir_node *bl, ir_node *src, ir_node *keep)
-{
-	ir_node *const in[] = { keep };
-	return be_new_CopyKeep(bl, src, ARRAY_SIZE(in), in);
-}
-
 ir_node *be_get_CopyKeep_op(const ir_node *cpy)
 {
 	return get_irn_n(cpy, n_be_CopyKeep_op);
