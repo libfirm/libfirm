@@ -698,26 +698,22 @@ char *sc_print_buf(char *buf, size_t buf_len, const sc_word *value,
 	*(--pos) = '\0';
 	assert(pos >= buf);
 
-	/* special case */
-	if (bits == 0)
-		bits = bit_pattern_size;
-
-	unsigned words = bits / SC_BITS;
+	unsigned n_full_words   = bits / SC_BITS;
+	unsigned remaining_bits = bits % SC_BITS;
 	switch (base) {
 	case SC_HEX:
 		digits = big_digits;
 	case SC_hex: {
 		assert(SC_BITS == 8);
 		unsigned counter = 0;
-		for ( ; counter < words; ++counter) {
+		for ( ; counter < n_full_words; ++counter) {
 			*(--pos) = digits[(value[counter] >> 0) & 0xf];
 			*(--pos) = digits[(value[counter] >> 4) & 0xf];
 		}
-		assert(pos >= buf);
 
 		/* last nibble must be masked */
-		if (bits % SC_BITS) {
-			sc_word mask = max_digit(bits % SC_BITS);
+		if (remaining_bits != 0) {
+			sc_word mask = max_digit(remaining_bits);
 			sc_word x    = value[counter++] & mask;
 			*(--pos) = digits[(value[x] >> 0) & 0xf];
 			*(--pos) = digits[(value[x] >> 4) & 0xf];
@@ -728,24 +724,23 @@ char *sc_print_buf(char *buf, size_t buf_len, const sc_word *value,
 	}
 	case SC_BIN: {
 		unsigned counter = 0;
-		for ( ; counter < words; ++counter) {
+		for ( ; counter < n_full_words; ++counter) {
 			pos -= SC_BITS;
 			write_bits(pos, value[counter]);
 		}
-		assert(pos >= buf);
 
 		/* last nibble must be masked */
-		if (bits % SC_BITS) {
-			sc_word mask = max_digit(bits % SC_BITS);
+		if (remaining_bits != 0) {
+			sc_word mask = max_digit(remaining_bits);
 			sc_word x    = value[counter++] & mask;
 
 			pos -= SC_BITS;
 			write_bits(pos, x);
 		}
-		assert(pos >= buf);
 
 		/* now kill zeros */
 kill_zeros:
+		assert(pos >= buf);
 		for ( ; pos < buf+buf_len-2; ++pos) {
 			if (pos[0] != '0')
 				break;
@@ -773,7 +768,7 @@ kill_zeros:
 		/* transfer data into oscillating buffers */
 		sc_word *div1_res = ALLOCANZ(sc_word, calc_buffer_size);
 		unsigned counter = 0;
-		for ( ; counter < words; ++counter)
+		for ( ; counter < n_full_words; ++counter)
 			div1_res[counter] = p[counter];
 
 		/* last nibble must be masked */
