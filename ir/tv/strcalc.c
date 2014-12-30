@@ -599,21 +599,14 @@ unsigned sc_popcount(const sc_word *value, unsigned bits)
 }
 
 void sc_val_from_bytes(unsigned char const *const bytes, size_t n_bytes,
-                       bool big_endian, sc_word *buffer)
+                       sc_word *buffer)
 {
 	assert(n_bytes*CHAR_BIT <= (size_t)calc_buffer_size*SC_BITS);
 
 	sc_word *p = buffer;
 	assert(SC_BITS == CHAR_BIT);
-	if (big_endian) {
-		for (unsigned char const *bp = bytes+n_bytes; bp-- > bytes; ) {
-			*p++ = (sc_word)*bp;
-		}
-	} else {
-		memcpy(p, bytes, n_bytes);
-		p += n_bytes;
-	}
-	memset(p, 0, buffer+calc_buffer_size-p);
+	memcpy(p, bytes, n_bytes);
+	memset(p+n_bytes, 0, buffer+calc_buffer_size-p);
 }
 
 void sc_val_to_bytes(const sc_word *buffer, unsigned char *const dest,

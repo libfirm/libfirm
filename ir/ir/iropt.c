@@ -7181,7 +7181,12 @@ static ir_node *sim_store_load(const ir_type *type,
 	unsigned char *storage      = ALLOCANZ(unsigned char, storage_size);
 	if (!sim_store(storage, mode, offset, type, initializer))
 		return NULL;
-	ir_tarval *tv = new_tarval_from_bytes(storage, mode, be_is_big_endian());
+	if (be_is_big_endian()) {
+		for (unsigned i = 0; i < storage_size; ++i) {
+			storage[i] = storage[storage_size-i-1];
+		}
+	}
+	ir_tarval *tv = new_tarval_from_bytes(storage, mode);
 	if (tv == tarval_unknown)
 		return NULL;
 	return new_r_Const(irg, tv);

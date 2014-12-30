@@ -256,26 +256,18 @@ ir_tarval *new_tarval_from_long(long l, ir_mode *mode)
 }
 
 ir_tarval *new_tarval_from_bytes(unsigned char const *buf,
-                                 ir_mode *mode, int big_endian)
+                                 ir_mode *mode)
 {
 	switch (get_mode_arithmetic(mode)) {
 	case irma_twos_complement: {
 		unsigned bits    = get_mode_size_bits(mode);
 		unsigned n_bytes = bits/CHAR_BIT + (bits%CHAR_BIT != 0);
 		sc_word *dest    = ALLOCAN(sc_word, sc_value_length);
-		sc_val_from_bytes(buf, n_bytes, big_endian, dest);
+		sc_val_from_bytes(buf, n_bytes, dest);
 		return get_tarval(dest, sc_value_length, mode);
 	}
 	case irma_ieee754:
 	case irma_x86_extended_float: {
-		if (big_endian) {
-			unsigned       size = get_mode_size_bytes(mode);
-			unsigned char *temp = ALLOCAN(unsigned char, size);
-			for (unsigned i = 0; i < size; ++i) {
-				temp[i] = buf[size-i-1];
-			}
-			buf = temp;
-		}
 		fc_val_from_bytes(NULL, buf, get_descriptor(mode));
 		return get_tarval_from_fp_value(fc_get_buffer(), mode);
 	}
@@ -695,7 +687,7 @@ ir_tarval *tarval_bitcast(ir_tarval *src, ir_mode *dst_mode)
 		panic("unexpected arithmetic mode in tarval_bitcast");
 	}
 
-	return new_tarval_from_bytes(buffer, dst_mode, false);
+	return new_tarval_from_bytes(buffer, dst_mode);
 }
 
 ir_tarval *tarval_not(ir_tarval *a)

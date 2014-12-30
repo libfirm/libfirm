@@ -169,16 +169,14 @@ void sc_val_from_long(long l, sc_word *buffer);
 void sc_val_from_ulong(unsigned long l, sc_word *buffer);
 
 /**
- * Construct a strcalc value form a sequence of bytes in two complement big
- * or little endian format.
+ * Construct a strcalc value form a sequence of bytes in two complement little
+ * endian format.
  * @param bytes       pointer to array of bytes
  * @param n_bytes     number of bytes in the sequence
- * @param big_endian  interpret bytes as big_endian format if true, else
- *                    little endian
  * @param buffer      destination buffer (calc_buffer if used if NULL)
  */
 void sc_val_from_bytes(unsigned char const *bytes, size_t n_bytes,
-                       bool big_endian, sc_word *buffer);
+                       sc_word *buffer);
 
 /**
  * Construct a strcalc value from a sequence of bytes in a little endian
