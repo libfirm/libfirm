@@ -32,7 +32,6 @@
 static bool my_values_interfere(const ir_node *a, const ir_node *b);
 
 typedef struct be_verify_register_pressure_env_t_ {
-	ir_graph                    *irg;                 /**< the irg to verify */
 	be_lv_t                     *lv;                  /**< Liveness information. */
 	const arch_register_class_t *cls;                 /**< the register class to check for */
 	unsigned                    registers_available;  /**< number of available registers */
@@ -51,9 +50,10 @@ static void print_living_values(FILE *F, const ir_nodeset_t *live_nodes)
 	ir_fprintf(F, "\n");
 }
 
-static const char *get_irg_name(ir_graph *irg)
+static char const *get_irg_name(ir_node const *const irn)
 {
-	ir_entity *entity = get_irg_entity(irg);
+	ir_graph  *const irg    = get_irn_irg(irn);
+	ir_entity *const entity = get_irg_entity(irg);
 	return get_entity_ld_name(entity);
 }
 
@@ -73,7 +73,7 @@ static void verify_liveness_walker(ir_node *block, void *data)
 	unsigned pressure = ir_nodeset_size(&live_nodes);
 	if (pressure > env->registers_available) {
 		ir_fprintf(stderr, "Verify warning: Register pressure too high at end of block %+F(%s) (%d/%d):\n",
-			block, get_irg_name(env->irg), pressure, env->registers_available);
+			block, get_irg_name(block), pressure, env->registers_available);
 		print_living_values(stderr, &live_nodes);
 		env->problem_found = true;
 	}
@@ -89,7 +89,7 @@ static void verify_liveness_walker(ir_node *block, void *data)
 
 		if (pressure > env->registers_available) {
 			ir_fprintf(stderr, "Verify warning: Register pressure too high before node %+F in %+F(%s) (%d/%d):\n",
-				irn, block, get_irg_name(env->irg), pressure, env->registers_available);
+				irn, block, get_irg_name(block), pressure, env->registers_available);
 			print_living_values(stderr, &live_nodes);
 			env->problem_found = true;
 		}
@@ -100,9 +100,7 @@ static void verify_liveness_walker(ir_node *block, void *data)
 bool be_verify_register_pressure(ir_graph *irg, const arch_register_class_t *cls)
 {
 	be_verify_register_pressure_env_t env;
-
 	env.lv                  = be_liveness_new(irg);
-	env.irg                 = irg;
 	env.cls                 = cls;
 	env.registers_available = be_get_n_allocatable_regs(irg, cls);
 	env.problem_found       = false;
@@ -119,7 +117,6 @@ bool be_verify_register_pressure(ir_graph *irg, const arch_register_class_t *cls
 typedef struct be_verify_schedule_env_t_ {
 	bool      problem_found; /**< flags indicating a problem */
 	bitset_t *scheduled;     /**< bitset of scheduled nodes */
-	ir_graph *irg;           /**< the irg to check */
 } be_verify_schedule_env_t;
 
 static void verify_schedule_walker(ir_node *block, void *data)
@@ -169,7 +166,7 @@ static void verify_schedule_walker(ir_node *block, void *data)
 		if (is_Phi(node)) {
 			if (non_phi_found != NULL) {
 				ir_fprintf(stderr, "Verify warning: Phi node %+F scheduled after non-Phi nodes (for example %+F) in block %+F (%s)\n",
-					node, non_phi_found, block, get_irg_name(env->irg));
+					node, non_phi_found, block, get_irg_name(block));
 				env->problem_found = true;
 			}
 		} else {
@@ -181,7 +178,7 @@ static void verify_schedule_walker(ir_node *block, void *data)
 			/* check, that only one CF operation is scheduled */
 			if (cfchange_found != NULL) {
 				ir_fprintf(stderr, "Verify warning: Additional control flow changing node %+F scheduled after %+F in block %+F (%s)\n",
-					node, block, cfchange_found, get_irg_name(env->irg));
+					node, cfchange_found, block, get_irg_name(block));
 				env->problem_found = true;
 			} else {
 				cfchange_found = node;
@@ -190,7 +187,7 @@ static void verify_schedule_walker(ir_node *block, void *data)
 			/* keepany isn't a real instruction. */
 			if (!be_is_Keep(node)) {
 				ir_fprintf(stderr, "Verify warning: Node %+F scheduled after control flow changing node in block %+F (%s)\n",
-				           node, block, get_irg_name(env->irg));
+				           node, block, get_irg_name(block));
 				env->problem_found = true;
 			}
 		}
@@ -204,7 +201,7 @@ static void verify_schedule_walker(ir_node *block, void *data)
 
 				if (sched_get_time_step(arg) >= nodetime) {
 					ir_fprintf(stderr, "Verify warning: Value %+F used by %+F before it was defined in block %+F (%s)\n",
-					           arg, node, block, get_irg_name(env->irg));
+					           arg, node, block, get_irg_name(block));
 					env->problem_found = true;
 				}
 			}
@@ -213,7 +210,7 @@ static void verify_schedule_walker(ir_node *block, void *data)
 		/* Check that no dead nodes are scheduled */
 		if (get_irn_n_edges(node) == 0) {
 			ir_fprintf(stderr, "Verify warning: Node %+F is dead but scheduled in block %+F (%s)\n",
-			           node, block, get_irg_name(env->irg));
+			           node, block, get_irg_name(block));
 			env->problem_found = true;
 		}
 
@@ -238,7 +235,7 @@ static void verify_schedule_walker(ir_node *block, void *data)
 			}
 			if (!found) {
 				ir_fprintf(stderr, "%+F not scheduled after its pred node in block %+F (%s)\n",
-				           node, block, get_irg_name(env->irg));
+				           node, block, get_irg_name(block));
 				env->problem_found = true;
 			}
 		}
@@ -253,7 +250,7 @@ static void check_schedule(ir_node *node, void *data)
 
 	if (should_be != scheduled) {
 		ir_fprintf(stderr, "Verify warning: Node %+F in block %+F(%s) should%s be scheduled\n",
-			node, get_nodes_block(node), get_irg_name(env->irg), should_be ? "" : " not");
+			node, get_nodes_block(node), get_irg_name(node), should_be ? "" : " not");
 		env->problem_found = true;
 	}
 }
@@ -261,10 +258,8 @@ static void check_schedule(ir_node *node, void *data)
 bool be_verify_schedule(ir_graph *irg)
 {
 	be_verify_schedule_env_t env;
-
 	env.problem_found = false;
-	env.irg           = irg;
-	env.scheduled     = bitset_alloca(get_irg_last_idx(env.irg));
+	env.scheduled     = bitset_alloca(get_irg_last_idx(irg));
 
 	irg_block_walk_graph(irg, verify_schedule_walker, NULL, &env);
 	/* check if all nodes are scheduled */
@@ -281,7 +276,6 @@ typedef struct spill_t {
 } spill_t;
 
 typedef struct {
-	ir_graph             *irg;
 	set                  *spills;
 	ir_node             **reloads;
 	bool                  problem_found;
@@ -333,23 +327,23 @@ static ir_node *get_memory_edge(const ir_node *node)
 
 static void collect(be_verify_spillslots_env_t *env, ir_node *node, ir_node *reload, ir_entity* ent);
 
-static void be_check_entity(be_verify_spillslots_env_t *env, ir_node *node, ir_entity *ent)
+static void be_check_entity(ir_node *node, ir_entity *ent)
 {
 	if (ent == NULL) {
 		ir_fprintf(stderr, "Verify warning: Node %+F in block %+F(%s) should have an entity assigned\n",
-		           node, get_nodes_block(node), get_irg_name(env->irg));
+		           node, get_nodes_block(node), get_irg_name(node));
 	}
 }
 
 static void collect_spill(be_verify_spillslots_env_t *env, ir_node *node, ir_node *reload, ir_entity* ent)
 {
 	ir_entity *spillent = env->get_frame_entity(node);
-	be_check_entity(env, node, spillent);
+	be_check_entity(node, spillent);
 	get_spill(env, node, ent);
 
 	if (spillent != ent) {
 		ir_fprintf(stderr, "Verify warning: Spill %+F has different entity than reload %+F in block %+F(%s)\n",
-			node, reload, get_nodes_block(node), get_irg_name(env->irg));
+			node, reload, get_nodes_block(node), get_irg_name(node));
 		env->problem_found = true;
 	}
 }
@@ -360,10 +354,10 @@ static void collect_memperm(be_verify_spillslots_env_t *env, ir_node *node, ir_n
 	unsigned out     = get_Proj_num(node);
 
 	ir_entity *spillent = be_get_MemPerm_out_entity(memperm, out);
-	be_check_entity(env, memperm, spillent);
+	be_check_entity(memperm, spillent);
 	if (spillent != ent) {
 		ir_fprintf(stderr, "Verify warning: MemPerm %+F has different entity than reload %+F in block %+F(%s)\n",
-			node, reload, get_nodes_block(node), get_irg_name(env->irg));
+			node, reload, get_nodes_block(node), get_irg_name(node));
 		env->problem_found = true;
 	}
 
@@ -431,12 +425,12 @@ static void collect_spills_walker(ir_node *node, void *data)
 		ir_node *spill = get_memory_edge(node);
 		if (spill == NULL) {
 			ir_fprintf(stderr, "Verify warning: No spill attached to reload %+F in block %+F(%s)\n",
-			           node, get_nodes_block(node), get_irg_name(env->irg));
+			           node, get_nodes_block(node), get_irg_name(node));
 			env->problem_found = true;
 			return;
 		}
 		ir_entity *ent = env->get_frame_entity(node);
-		be_check_entity(env, node, ent);
+		be_check_entity(node, ent);
 
 		collect(env, spill, node, ent);
 		ARR_APP1(ir_node*, env->reloads, node);
@@ -465,8 +459,8 @@ static void check_spillslot_interference(be_verify_spillslots_env_t *env)
 
 			if (my_values_interfere(sp1->spill, sp2->spill)) {
 				ir_fprintf(stderr, "Verify warning: Spillslots for %+F in block %+F(%s) and %+F in block %+F(%s) interfere\n",
-					sp1->spill, get_nodes_block(sp1->spill), get_irg_name(env->irg),
-					sp2->spill, get_nodes_block(sp2->spill), get_irg_name(env->irg));
+					sp1->spill, get_nodes_block(sp1->spill), get_irg_name(sp1->spill),
+					sp2->spill, get_nodes_block(sp2->spill), get_irg_name(sp2->spill));
 				env->problem_found = true;
 				my_values_interfere(sp1->spill, sp2->spill);
 			}
@@ -483,12 +477,12 @@ static void check_lonely_spills(ir_node *node, void *data)
 		spill_t *spill = find_spill(env, node);
 		if (arch_irn_is(node, spill)) {
 			ir_entity *ent = env->get_frame_entity(node);
-			be_check_entity(env, node, ent);
+			be_check_entity(node, ent);
 		}
 
 		if (spill == NULL) {
 			ir_fprintf(stderr, "Verify warning: Node %+F in block %+F(%s) not connected to a reload\n",
-			           node, get_nodes_block(node), get_irg_name(env->irg));
+			           node, get_nodes_block(node), get_irg_name(node));
 		}
 	}
 }
@@ -496,8 +490,6 @@ static void check_lonely_spills(ir_node *node, void *data)
 bool be_verify_spillslots(ir_graph *irg, get_frame_entity_func get_frame_entity)
 {
 	be_verify_spillslots_env_t env;
-
-	env.irg              = irg;
 	env.spills           = new_set(cmp_spill, 10);
 	env.reloads          = NEW_ARR_F(ir_node*, 0);
 	env.problem_found    = false;
@@ -581,7 +573,6 @@ static bool my_values_interfere(const ir_node *a, const ir_node *b)
 /*--------------------------------------------------------------------------- */
 
 static const arch_env_t  *arch_env;
-static ir_graph          *irg;
 static be_lv_t           *lv;
 static bool               ignore_sp_problems;
 static bool               problem_found;
@@ -597,11 +588,11 @@ static void check_output_constraints(const ir_node *node)
 	arch_register_t const *const reg = arch_get_irn_register(node);
 	if (reg == NULL) {
 		ir_fprintf(stderr, "Verify warning: Node %+F in block %+F(%s) should have a register assigned\n",
-				node, get_nodes_block(node), get_irg_name(irg));
+				node, get_nodes_block(node), get_irg_name(node));
 		problem_found = true;
 	} else if (!arch_reg_is_allocatable(req, reg)) {
 		ir_fprintf(stderr, "Verify warning: Register %s assigned as output of %+F not allowed (register constraint) in block %+F(%s)\n",
-				reg->name, node, get_nodes_block(node), get_irg_name(irg));
+				reg->name, node, get_nodes_block(node), get_irg_name(node));
 		problem_found = true;
 	}
 }
@@ -612,7 +603,7 @@ static void check_input_constraints(ir_node *node)
 	foreach_irn_in(node, i, pred) {
 		if (is_Bad(pred)) {
 			ir_fprintf(stderr, "Verify warning: %+F in block %+F(%s) has Bad as input %d\n",
-				node, get_nodes_block(node), get_irg_name(irg), i);
+				node, get_nodes_block(node), get_irg_name(node), i);
 			problem_found = 1;
 			continue;
 		}
@@ -624,19 +615,19 @@ static void check_input_constraints(ir_node *node)
 		const arch_register_req_t *pred_req = arch_get_irn_register_req(pred);
 		if (req->width > pred_req->width) {
 			ir_fprintf(stderr, "Verify warning: %+F in block %+F(%s) register width of value at input %d too small\n",
-			           node, get_nodes_block(node), get_irg_name(irg), i);
+			           node, get_nodes_block(node), get_irg_name(node), i);
 			problem_found = 1;
 		}
 
 		const arch_register_t *reg = arch_get_irn_register(pred);
 		if (reg == NULL) {
 			ir_fprintf(stderr, "Verify warning: Node %+F in block %+F(%s) should have a register assigned (%+F input constraint)\n",
-			           pred, get_nodes_block(pred), get_irg_name(irg), node);
+			           pred, get_nodes_block(pred), get_irg_name(node), node);
 			problem_found = 1;
 			continue;
 		} else if (!arch_reg_is_allocatable(req, reg)) {
 			ir_fprintf(stderr, "Verify warning: Register %s as input %d of %+F not allowed (register constraint) in block %+F(%s)\n",
-			           reg->name, i, node, get_nodes_block(node), get_irg_name(irg));
+			           reg->name, i, node, get_nodes_block(node), get_irg_name(node));
 			problem_found = 1;
 		}
 	}
@@ -653,7 +644,7 @@ static void check_input_constraints(ir_node *node)
 				const char *reg_name  = reg != NULL ? reg->name : "(null)";
 				ir_fprintf(stderr, "Verify warning: Input %d of %+F in block %+F(%s) uses register %s instead of %s\n",
 				           i, node, get_nodes_block(node),
-				           get_irg_name(irg), pred_name, reg_name);
+				           get_irg_name(node), pred_name, reg_name);
 				problem_found = true;
 			}
 		}
@@ -675,7 +666,7 @@ static void value_used(const ir_node *block, const ir_node *node)
 			&& (!ignore_sp_problems
 			    || !(req->type & arch_register_req_type_produces_sp))) {
 			ir_fprintf(stderr, "Verify warning: Register %s assigned more than once in block %+F(%s) (nodes %+F %+F)\n",
-					   reg->name, block, get_irg_name(irg),
+					   reg->name, block, get_irg_name(node),
 					   node, reg_node);
 			problem_found = true;
 		}
@@ -706,7 +697,7 @@ static void value_def(const ir_node *node)
 		        || !(req->type & arch_register_req_type_produces_sp))) {
 			ir_fprintf(stderr, "Verify warning: Node %+F not registered as value for Register %s (but %+F) in block %+F(%s)\n",
 			           node, reg->name, reg_node, get_nodes_block(node),
-			           get_irg_name(irg));
+			           get_irg_name(node));
 			problem_found = true;
 		}
 		registers[idx+i] = NULL;
@@ -752,15 +743,13 @@ static void verify_block_register_allocation(ir_node *block, void *data)
 			continue;
 
 		ir_fprintf(stderr, "Verify warning: Node %+F not live-in and no def found in block %+F(%s)\n",
-				registers[i], block, get_irg_name(irg));
+				registers[i], block, get_irg_name(block));
 		problem_found = true;
 	}
 }
 
-bool be_verify_register_allocation(ir_graph *new_irg,
-                                   bool new_ignore_sp_problems)
+bool be_verify_register_allocation(ir_graph *irg, bool new_ignore_sp_problems)
 {
-	irg                = new_irg;
 	arch_env           = be_get_irg_arch_env(irg);
 	lv                 = be_liveness_new(irg);
 	ignore_sp_problems = new_ignore_sp_problems;
