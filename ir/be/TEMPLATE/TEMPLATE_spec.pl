@@ -97,99 +97,99 @@ $mode_fp  = "mode_F";  # mode used by floatingpoint registers
 $default_attr_type = "TEMPLATE_attr_t";
 $default_copy_attr = "TEMPLATE_copy_attr";
 
+my $binop = {
+	irn_flags => [ "rematerializable" ],
+	reg_req   => { in  => [ "gp", "gp" ],
+	               out => [ "gp" ] },
+	mode      => $mode_gp,
+};
+
+my $constop = {
+	op_flags   => [ "constlike" ],
+	irn_flags  => [ "rematerializable" ],
+	reg_req    => { out => [ "gp" ] },
+	mode       => $mode_gp,
+};
+
+my $fbinop = {
+	reg_req   => { in  => [ "fp", "fp" ],
+	               out => [ "fp" ] },
+	mode      => $mode_fp,
+};
+
+my $unop = {
+	irn_flags => [ "rematerializable" ],
+	reg_req   => { in  => [ "gp" ],
+	               out => [ "gp" ] },
+	mode      => $mode_gp,
+};
+
 %nodes = (
 
 # Integer nodes
 
 Add => {
-	irn_flags => [ "rematerializable" ],
-	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
-	emit      => '%D0 = add %S0, %S1',
-	mode      => $mode_gp,
+	template => $binop,
+	emit     => '%D0 = add %S0, %S1',
 },
 
 Mul => {
-	irn_flags => [ "rematerializable" ],
-	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
-	emit      => '%D0 = mul %S0, %S1',
-	mode      => $mode_gp,
+	template => $binop,
+	emit     => '%D0 = mul %S0, %S1',
 },
 
 And => {
-	irn_flags => [ "rematerializable" ],
-	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
-	emit      => '%D0 = and %S0, %S1',
-	mode      => $mode_gp,
+	template => $binop,
+	emit     => '%D0 = and %S0, %S1',
 },
 
 Or => {
-	irn_flags => [ "rematerializable" ],
-	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
-	emit      => '%D0 = or %S0, %S1',
-	mode      => $mode_gp,
+	template => $binop,
+	emit     => '%D0 = or %S0, %S1',
 },
 
 Xor => {
-	irn_flags => [ "rematerializable" ],
-	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
-	emit      => '%D0 = xor %S0, %S1',
-	mode      => $mode_gp,
+	template => $binop,
+	emit     => '%D0 = xor %S0, %S1',
 },
 
 Sub => {
-	irn_flags => [ "rematerializable" ],
-	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
-	emit      => '%D0 = sub %S0, %S1',
-	mode      => $mode_gp,
+	template => $binop,
+	emit     => '%D0 = sub %S0, %S1',
 },
 
 Shl => {
-	irn_flags => [ "rematerializable" ],
-	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
-	emit      => '%D0 = shl %S0, %S1',
-	mode      => $mode_gp,
+	template => $binop,
+	emit     => '%D0 = shl %S0, %S1',
 },
 
 Shr => {
-	irn_flags => [ "rematerializable" ],
-	reg_req   => { in => [ "gp", "gp" ], out => [ "in_r1" ] },
-	emit      => '%D0 = shr %S1',
-	mode      => $mode_gp,
+	template => $binop,
+	emit     => '%D0 = shr %S0, %S1',
 },
 
 Minus => {
-	irn_flags => [ "rematerializable" ],
-	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
-	emit      => '%D0 = neg %S0',
-	mode      => $mode_gp,
+	template => $unop,
+	emit     => '%D0 = neg %S0',
 },
 
 Not => {
-	arity   => 1,
-	remat   => 1,
-	reg_req => { in => [ "gp" ], out => [ "gp" ] },
-	emit    => '%D0 = not %S0',
-	mode    => $mode_gp,
+	template => $unop,
+	emit     => '%D0 = not %S0',
 },
 
 Const => {
-	op_flags   => [ "constlike" ],
-	irn_flags  => [ "rematerializable" ],
+	template   => $constop,
 	attr       => "ir_tarval *value",
 	custominit => "set_TEMPLATE_value(res, value);",
-	reg_req    => { out => [ "gp" ] },
 	emit       => '%D0 = const %I',
-	mode       => $mode_gp,
 },
 
 Address => {
-	op_flags   => [ "constlike" ],
-	irn_flags  => [ "rematerializable" ],
+	template   => $constop,
 	attr       => "ir_entity *entity",
 	custominit => "set_TEMPLATE_entity(res, entity);",
-	reg_req    => { out => [ "gp" ] },
 	emit       => '%D0 = address of %E',
-	mode       => $mode_gp,
 },
 
 # Control Flow
@@ -246,29 +246,25 @@ Store => {
 # Floating Point operations
 
 fAdd => {
+	template  => $fbinop,
 	irn_flags => [ "rematerializable" ],
-	reg_req   => { in => [ "fp", "fp" ], out => [ "fp" ] },
 	emit      => '%D0 = fadd %S0, %S1',
-	mode      => $mode_fp,
 },
 
 fMul => {
-	reg_req   => { in => [ "fp", "fp" ], out => [ "fp" ] },
-	emit      => '%D0 = fmul %S0, %S1',
-	mode      => $mode_fp,
+	template => $fbinop,
+	emit     => '%D0 = fmul %S0, %S1',
 },
 
 fSub => {
+	template  => $fbinop,
 	irn_flags => [ "rematerializable" ],
-	reg_req   => { in => [ "fp", "fp" ], out => [ "fp" ] },
 	emit      => '%D0 = fsub %S0, %S1',
-	mode      => $mode_fp,
 },
 
 fDiv => {
-	reg_req   => { in => [ "fp", "fp" ], out => [ "fp" ] },
-	emit      => '%D0 = fdiv %S0, %S1',
-	mode      => $mode_fp,
+	template => $fbinop,
+	emit     => '%D0 = fdiv %S0, %S1',
 },
 
 fMinus => {
