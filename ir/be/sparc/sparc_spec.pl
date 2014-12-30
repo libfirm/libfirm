@@ -649,16 +649,12 @@ MulCCZero => {
 
 SMulh => {
 	template => $binop_operand,
-	mode     => "mode_T",
-	outs     => [ "low", "high" ],
 	emit     => "smul %S0, %SI1, %D0\n".
 	            "mov %%y, %D0",
 },
 
 UMulh => {
 	template => $binop_operand,
-	mode     => "mode_T",
-	outs     => [ "low", "high" ],
 	emit     => "umul %S0, %SI1, %D0\n".
 	            "mov %%y, %D0",
 },
