@@ -983,7 +983,6 @@ typedef struct {
 /** Associates an ir_node with its copy and CopyKeep. */
 typedef struct {
 	ir_nodeset_t copies; /**< all non-spillable copies of this irn */
-	const arch_register_class_t *cls;
 } op_copy_assoc_t;
 
 static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different, constraint_env_t *env)
@@ -995,9 +994,8 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
 		return;
 	}
 
-	ir_nodehashmap_t            *op_set = &env->op_set;
-	ir_node                     *block  = get_nodes_block(irn);
-	const arch_register_class_t *cls    = req->cls;
+	ir_nodehashmap_t *op_set = &env->op_set;
+	ir_node          *block  = get_nodes_block(irn);
 
 	/* Make a not spillable copy of the different node   */
 	/* this is needed because the different irn could be */
@@ -1037,8 +1035,7 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
 	op_copy_assoc_t *entry
 		= ir_nodehashmap_get(op_copy_assoc_t, op_set, other_different);
 	if (entry == NULL) {
-		entry      = OALLOC(&env->obst, op_copy_assoc_t);
-		entry->cls = cls;
+		entry = OALLOC(&env->obst, op_copy_assoc_t);
 		ir_nodeset_init(&entry->copies);
 
 		ir_nodehashmap_insert(op_set, other_different, entry);
