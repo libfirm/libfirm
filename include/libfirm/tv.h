@@ -150,6 +150,15 @@ FIRM_API ir_tarval *new_tarval_from_bytes(unsigned char const *buf,
                                           ir_mode *mode);
 
 /**
+ * Construct a new floating point quiet NaN value.
+ * @param mode       floating point mode for the resulting value
+ * @param signaling  if != 0 produces a signaling NaN else a quiet one.
+ * @param payload    if != NULL puts the integer tarval into the mantissa.
+ */
+FIRM_API ir_tarval *new_tarval_nan(ir_mode *mode, int signaling,
+                                   ir_tarval *payload);
+
+/**
  * Write tarval to a sequence of bytes. The value is written in a
  * "little endian" fashion which means the less significant bytes come first.
  */
@@ -644,11 +653,25 @@ FIRM_API int tarval_ieee754_can_conv_lossless(const ir_tarval *tv, ir_mode *mode
 FIRM_API unsigned tarval_ieee754_get_exact(void);
 
 /**
- * Check if its the a floating point NaN.
+ * Check if @P tv is a floating point NaN.
  *
  * @param tv    the tarval
  */
 FIRM_API int tarval_is_nan(const ir_tarval *tv);
+
+/**
+ * Check if @p tv is a floating point quiet NaN.
+ *
+ * @param tv    the tarval
+ */
+FIRM_API int tarval_is_quiet_nan(const ir_tarval *tv);
+
+/**
+ * Check if @p tv is a floating point signaling NaN.
+ *
+ * @param tv    the tarval
+ */
+FIRM_API int tarval_is_signaling_nan(const ir_tarval *tv);
 
 /**
  * Check if its the a floating point +inf.

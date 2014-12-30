@@ -194,15 +194,6 @@ FIRM_API ir_tarval *get_mode_all_one(const ir_mode *mode);
  */
 FIRM_API ir_tarval *get_mode_infinite(const ir_mode *mode);
 
-/**
- * Returns a NAN value of a given mode.
- *
- * This is only valid for float_numbers, other modes will result in tarval_bad.
- * There are typically multiple possible representations of NaN, don't compare
- * with this value but use tarval_is_NaN() instead.
- */
-FIRM_API ir_tarval *get_mode_NAN(const ir_mode *mode);
-
 FIRM_API ir_mode *mode_M; /**< memory */
 
 FIRM_API ir_mode *mode_F;   /**< ieee754 binary32 float (single precision) */

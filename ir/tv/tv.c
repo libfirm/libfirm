@@ -248,6 +248,20 @@ ir_tarval *new_tarval_from_long(long l, ir_mode *mode)
 	}
 }
 
+ir_tarval *new_tarval_nan(ir_mode *mode, int signaling, ir_tarval *payload)
+{
+	assert(payload == NULL || get_mode_arithmetic(get_tarval_mode(payload))
+	                          == irma_twos_complement);
+	sc_word *sc_payload = payload != NULL ? payload->value : NULL;
+
+	assert(mode_is_float(mode));
+	unsigned                  buffer_len = fc_get_buffer_length();
+	fp_value                 *buffer     = (fp_value*)ALLOCAN(char, buffer_len);
+	const float_descriptor_t *desc       = get_descriptor(mode);
+	fc_get_nan(desc, buffer, signaling, sc_payload);
+	return get_tarval(buffer, buffer_len, mode);
+}
+
 ir_tarval *new_tarval_from_bytes(unsigned char const *buf,
                                  ir_mode *mode)
 {
@@ -445,8 +459,6 @@ void init_mode_values(ir_mode* mode)
 		mode->all_one     = tarval_bad;
 		fc_get_inf(desc, buf, false);
 		mode->infinity    = get_tarval(buf, buflen, mode);
-		fc_get_qnan(desc, buf);
-		mode->nan         = get_tarval(buf, buflen, mode);
 		fc_get_max(desc, buf, true); // min = negative maximum
 		mode->min         = get_tarval(buf, buflen, mode);
 		fc_get_max(desc, buf, false);
@@ -459,7 +471,6 @@ void init_mode_values(ir_mode* mode)
 	case irms_internal_boolean:
 		mode->all_one   = tarval_b_true;
 		mode->infinity  = tarval_bad;
-		mode->nan       = tarval_bad;
 		mode->min       = tarval_b_false;
 		mode->max       = tarval_b_true;
 		mode->null      = tarval_b_false;
@@ -475,7 +486,6 @@ void init_mode_values(ir_mode* mode)
 		sc_max_from_bits(bits, false, buf);
 		mode->all_one   = get_tarval(buf, buflen, mode);
 		mode->infinity  = tarval_bad;
-		mode->nan       = tarval_bad;
 		sc_min_from_bits(bits, sign, buf);
 		mode->min       = get_tarval(buf, buflen, mode);
 		sc_max_from_bits(bits, sign, buf);
@@ -495,7 +505,6 @@ void init_mode_values(ir_mode* mode)
 		mode->null      = tarval_bad;
 		mode->one       = tarval_bad;
 		mode->infinity  = tarval_bad;
-		mode->nan       = tarval_bad;
 		break;
 	}
 }
@@ -1331,6 +1340,20 @@ int tarval_is_nan(const ir_tarval *tv)
 	if (!mode_is_float(tv->mode))
 		return 0;
 	return fc_is_nan((const fp_value*) tv->value);
+}
+
+int tarval_is_quiet_nan(const ir_tarval *tv)
+{
+	if (!tarval_is_nan(tv))
+		return false;
+	return fc_nan_is_quiet((const fp_value*)tv->value);
+}
+
+int tarval_is_signaling_nan(const ir_tarval *tv)
+{
+	if (!tarval_is_nan(tv))
+		return false;
+	return !fc_nan_is_quiet((const fp_value*)tv->value);
 }
 
 int tarval_is_plus_inf(const ir_tarval *tv)

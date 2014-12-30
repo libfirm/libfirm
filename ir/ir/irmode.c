@@ -285,12 +285,6 @@ ir_tarval *get_mode_infinite(const ir_mode *mode)
 	return mode->infinity;
 }
 
-ir_tarval *get_mode_NAN(const ir_mode *mode)
-{
-	assert(mode_is_float(mode));
-	return mode->nan;
-}
-
 int (mode_is_signed)(const ir_mode *mode)
 {
 	return mode_is_signed_(mode);

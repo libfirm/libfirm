@@ -46,7 +46,6 @@ int main(void)
 	test_float(FLT_MIN, NULL);
 	test_float(INFINITY, get_mode_infinite(mode_F));
 	test_float(HUGE_VALF, NULL);
-	test_float(NAN, get_mode_NAN(mode_F));
 	test_float(FLT_MIN, get_tarval_small(mode_F));
 	test_float(FLT_EPSILON, get_tarval_epsilon(mode_F));
 	test_float(FLT_MIN * FLT_EPSILON, NULL); // subnormal
@@ -60,7 +59,6 @@ int main(void)
 	test_double(DBL_MIN, NULL);
 	test_double(HUGE_VAL, NULL);
 	test_double(INFINITY, get_mode_infinite(mode_D));
-	test_double(NAN, get_mode_NAN(mode_D));
 	test_double(DBL_MIN, get_tarval_small(mode_D));
 	test_double(DBL_EPSILON, get_tarval_epsilon(mode_D));
 	test_double(DBL_MIN * DBL_EPSILON, NULL); // subnormal
@@ -84,7 +82,6 @@ int main(void)
 	test_ldouble(LDBL_MIN, NULL);
 	test_ldouble(HUGE_VAL, NULL);
 	test_ldouble(INFINITY, get_mode_infinite(mode_E));
-	test_ldouble(NAN, get_mode_NAN(mode_E));
 	test_ldouble(LDBL_MIN, get_tarval_small(mode_E));
 	test_ldouble(LDBL_EPSILON, get_tarval_epsilon(mode_E));
 	test_ldouble(LDBL_MIN * LDBL_EPSILON, NULL); // subnormal

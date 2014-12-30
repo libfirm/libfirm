@@ -33,7 +33,8 @@ static void test_mode(ir_mode *mode)
 	if (mode_is_float(mode)) {
 		test_tv(get_mode_infinite(mode));
 		test_tv(tarval_neg(get_mode_infinite(mode)));
-		test_tv(get_mode_NAN(mode));
+		test_tv(new_tarval_nan(mode, true, NULL));
+		test_tv(new_tarval_nan(mode, false, NULL));
 		if (mode == mode_F) {
 			test_tv(new_tarval_from_double(FLT_MIN, mode));
 			test_tv(new_tarval_from_double(FLT_EPSILON, mode));

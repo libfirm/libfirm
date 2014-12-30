@@ -287,6 +287,11 @@ return_nan_b:
 	return false;
 }
 
+static void fc_get_qnan(const float_descriptor_t *desc, fp_value *result)
+{
+	fc_get_nan(desc, result, false, NULL);
+}
+
 /**
  * calculate a + b, where a is the value with the bigger exponent
  */
@@ -730,15 +735,14 @@ long double fc_val_to_ieee754(const fp_value *val)
 	return result;
 }
 
-static bool is_quiet_nan(const fp_value *value)
+bool fc_nan_is_quiet(const fp_value *value)
 {
 	assert(value->clss == FC_NAN);
+	/* most significant mantissa bit cleared means signaling, else quiet.
+	 * This does not include the "explicit one" bit for 80bit x86. */
 	const float_descriptor_t *desc = &value->desc;
-	if (!desc->explicit_one) {
-		return sc_get_bit_at(_mant(value), desc->mantissa_size-1);
-	} else {
-		return !sc_get_bit_at(_mant(value), desc->mantissa_size-2);
-	}
+	unsigned bit = desc->mantissa_size + ROUNDING_BITS - 1 - desc->explicit_one;
+	return sc_get_bit_at(_mant(value), bit);
 }
 
 fp_value *fc_cast(const fp_value *value, const float_descriptor_t *dest,
@@ -759,8 +763,7 @@ fp_value *fc_cast(const fp_value *value, const float_descriptor_t *dest,
 
 	if (value->clss == FC_NAN) {
 		/* TODO: preserve mantissa bits? */
-		return is_quiet_nan(value) ? fc_get_qnan(dest, result)
-		                           : fc_get_snan(dest, result);
+		return fc_get_nan(dest, result, !fc_nan_is_quiet(value), NULL);
 	} else if (value->clss == FC_INF) {
 		return fc_get_inf(dest, result, value->sign);
 	}
@@ -841,7 +844,8 @@ fp_value *fc_get_epsilon(const float_descriptor_t *desc, fp_value *result)
 	return result;
 }
 
-fp_value *fc_get_snan(const float_descriptor_t *desc, fp_value *result)
+fp_value *fc_get_nan(const float_descriptor_t *desc, fp_value *result,
+                     bool signaling, sc_word *payload)
 {
 	if (result == NULL)
 		result = calc_buffer;
@@ -852,32 +856,32 @@ fp_value *fc_get_snan(const float_descriptor_t *desc, fp_value *result)
 
 	sc_max_from_bits(desc->exponent_size, 0, _exp(result));
 
-	/* signaling NaN has msb in mantissa cleared */
-	sc_zero(_mant(result));
-	/* we still set our explicit one */
-	if (desc->explicit_one) {
-		sc_set_bit_at(_mant(result), desc->mantissa_size+ROUNDING_BITS-1);
-		sc_set_bit_at(_mant(result), desc->mantissa_size+ROUNDING_BITS-3);
+	/* copy payload into mantissa */
+	unsigned mantissa_size = desc->mantissa_size;
+	bool     explicit_one  = desc->explicit_one;
+	if (payload != NULL) {
+		memcpy(_mant(result), payload, value_size);
+		/* Limit payload to mantissa size. The "explicit_one" on 80bit x86 must
+		 * be 0 for NaNs. */
+		sc_zero_extend(_mant(result), mantissa_size - explicit_one);
+		/* Ensure that we have at least 1 bit set. */
+		if (sc_is_zero(_mant(result), mantissa_size))
+			sc_set_bit_at(_mant(result), ROUNDING_BITS);
+		/* Adjust for rounding bits. */
+		sc_shlI(_mant(result), ROUNDING_BITS, _mant(result));
+	} else {
+		sc_zero(_mant(result));
+		/* Ensure that we have at least 1 bit set. */
+		if (signaling)
+			sc_set_bit_at(_mant(result), ROUNDING_BITS);
 	}
-	return result;
-}
 
-fp_value *fc_get_qnan(const float_descriptor_t *desc, fp_value *result)
-{
-	if (result == NULL)
-		result = calc_buffer;
-
-	result->desc = *desc;
-	result->clss = FC_NAN;
-	result->sign = 0;
-
-	sc_max_from_bits(desc->exponent_size, 0, _exp(result));
-
-	/* quiet NaN has the msb of the mantissa set, so shift one there */
-	sc_zero(_mant(result));
-	sc_set_bit_at(_mant(result), desc->mantissa_size+ROUNDING_BITS-1);
-	if (desc->explicit_one)
-		sc_set_bit_at(_mant(result), desc->mantissa_size+ROUNDING_BITS-2);
+	/* The most significant mantissa bit indicates whether the NaN is quiet. */
+	unsigned quiet_bit = mantissa_size + ROUNDING_BITS - 1 - explicit_one;
+	if (signaling)
+		sc_clear_bit_at(_mant(result), quiet_bit);
+	else
+		sc_set_bit_at(_mant(result), quiet_bit);
 	return result;
 }
 

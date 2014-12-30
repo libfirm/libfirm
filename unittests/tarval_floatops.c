@@ -14,7 +14,8 @@ static void check_mode(ir_mode *mode)
 	ir_tarval *minus_zero = tarval_neg(zero);
 	ir_tarval *two        = new_tarval_from_str("2", 1, mode);
 	ir_tarval *half       = new_tarval_from_str("0.5", 3, mode);
-	ir_tarval *nan        = get_mode_NAN(mode);
+	ir_tarval *qnan       = new_tarval_nan(mode, false, NULL);
+	ir_tarval *snan       = new_tarval_nan(mode, true, NULL);
 	ir_tarval *inf        = get_mode_infinite(mode);
 	ir_tarval *minus_inf  = tarval_neg(inf);
 	ir_tarval *small      = get_tarval_small(mode);
@@ -39,7 +40,8 @@ static void check_mode(ir_mode *mode)
 		inf,
 		minus_inf,
 		minus_one,
-		nan,
+		qnan,
+		snan,
 		denorm,
 		tarval_neg(denorm),
 	};
@@ -64,8 +66,9 @@ static void check_mode(ir_mode *mode)
 		ir_tarval *mul = tarval_mul(val, zero);
 		assert((tarval_is_negative(val) && mul == minus_zero)
 		    || (!tarval_is_negative(val) && mul == zero)
-		    || (val == nan && mul == nan)
-		    || (val == inf && mul == nan)
+		    || (val == qnan && mul == qnan)
+		    || (val == snan && mul == snan)
+		    || (val == inf && tarval_is_nan(mul))
 		    || (val == minus_inf && tarval_is_nan(mul)));
 		assert(!tarval_is_finite(val) || tarval_sub(val, val, mode) == zero);
 	}
@@ -98,13 +101,13 @@ static void check_mode(ir_mode *mode)
 	/* nan stays nan TODO: check nan payload? */
 	for (unsigned i = 0; i < ARRAY_SIZE(values); ++i) {
 		ir_tarval *val = values[i];
-		assert(tarval_is_nan(tarval_add(val, nan)));
-		assert(tarval_is_nan(tarval_sub(val, nan, mode)));
-		assert(tarval_is_nan(tarval_mul(val, nan)));
-		assert(tarval_is_nan(tarval_div(val, nan)));
+		assert(tarval_is_nan(tarval_add(val, qnan)));
+		assert(tarval_is_nan(tarval_sub(val, qnan, mode)));
+		assert(tarval_is_nan(tarval_mul(val, qnan)));
+		assert(tarval_is_nan(tarval_div(val, qnan)));
 	}
-	assert(tarval_is_nan(tarval_neg(nan)));
-	assert(tarval_is_nan(tarval_abs(nan)));
+	assert(tarval_is_nan(tarval_neg(qnan)));
+	assert(tarval_is_nan(tarval_abs(qnan)));
 
 	/* minus zero */
 	assert(tarval_mul(minus_zero, minus_zero) == zero);

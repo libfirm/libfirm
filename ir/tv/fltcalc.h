@@ -122,8 +122,8 @@ fp_value *fc_cast(const fp_value *val, const float_descriptor_t *desc, fp_value 
  *          a pointer to the internal accumulator buffer
  */
 fp_value *fc_get_max(const float_descriptor_t *desc, fp_value *result, bool sign);
-fp_value *fc_get_snan(const float_descriptor_t *desc, fp_value *result);
-fp_value *fc_get_qnan(const float_descriptor_t *desc, fp_value *result);
+fp_value *fc_get_nan(const float_descriptor_t *desc, fp_value *result,
+                     bool signaling, sc_word *payload);
 fp_value *fc_get_inf(const float_descriptor_t *desc, fp_value *result, bool sign);
 fp_value *fc_get_small(const float_descriptor_t *desc, fp_value *result);
 fp_value *fc_get_epsilon(const float_descriptor_t *desc, fp_value *result);
@@ -133,6 +133,7 @@ bool fc_is_zero(const fp_value *a);
 bool fc_is_negative(const fp_value *a);
 bool fc_is_inf(const fp_value *a);
 bool fc_is_nan(const fp_value *a);
+bool fc_nan_is_quiet(const fp_value *a);
 bool fc_is_subnormal(const fp_value *a);
 
 fp_value *fc_add(const fp_value *a, const fp_value *b, fp_value *result);
