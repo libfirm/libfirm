@@ -85,16 +85,12 @@ void sc_andnot(const sc_word *val1, const sc_word *val2, sc_word *buffer)
 		buffer[counter] = val1[counter] & (SC_MASK ^ val2[counter]);
 }
 
-void sc_inc(const sc_word *val, sc_word *buffer)
+void sc_inc(sc_word *buffer)
 {
 	for (unsigned counter = 0; counter < calc_buffer_size; ++counter) {
-		sc_word v = val[counter];
+		sc_word v = buffer[counter];
 		if (v < SC_MASK) {
 			buffer[counter] = v+1;
-			/* copy the rest of the buffer if necessary */
-			if (buffer != val)
-				memcpy(&buffer[counter+1], &val[counter+1],
-				       calc_buffer_size-(counter+1));
 			break;
 		}
 		buffer[counter] = 0;
@@ -104,7 +100,7 @@ void sc_inc(const sc_word *val, sc_word *buffer)
 void sc_neg(const sc_word *val, sc_word *buffer)
 {
 	sc_not(val, buffer);
-	sc_inc(buffer, buffer);
+	sc_inc(buffer);
 }
 
 void sc_add(const sc_word *val1, const sc_word *val2, sc_word *buffer)
@@ -400,7 +396,7 @@ void sc_val_from_long(long value, sc_word *buffer)
 
 	if (sign) {
 		if (is_minlong)
-			sc_inc(buffer, buffer);
+			sc_inc(buffer);
 
 		sc_neg(buffer, buffer);
 	}
