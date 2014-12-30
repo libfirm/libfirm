@@ -730,8 +730,8 @@ bool be_verify_register_allocation(ir_graph *irg, bool new_ignore_sp_problems)
 /*--------------------------------------------------------------------------- */
 
 typedef struct lv_walker_t {
-	be_lv_t *lv;
-	void *data;
+	be_lv_t *given;
+	be_lv_t *fresh;
 } lv_walker_t;
 
 static const char *lv_flags_to_str(unsigned flags)
@@ -752,11 +752,9 @@ static const char *lv_flags_to_str(unsigned flags)
 
 static void lv_check_walker(ir_node *bl, void *data)
 {
-	lv_walker_t *w     = (lv_walker_t*)data;
-	be_lv_t     *fresh = (be_lv_t*)w->data;
-
-	be_lv_info_t *curr = ir_nodehashmap_get(be_lv_info_t, &lv->map, bl);
-	be_lv_info_t *fr   = ir_nodehashmap_get(be_lv_info_t, &fresh->map, bl);
+	lv_walker_t  *const w    = (lv_walker_t*)data;
+	be_lv_info_t *const curr = ir_nodehashmap_get(be_lv_info_t, &w->given->map, bl);
+	be_lv_info_t *const fr   = ir_nodehashmap_get(be_lv_info_t, &w->fresh->map, bl);
 
 	if (!fr && curr && curr[0].head.n_members > 0) {
 		ir_fprintf(stderr, "%+F liveness should be empty but current liveness contains:\n", bl);
@@ -787,11 +785,12 @@ static void lv_check_walker(ir_node *bl, void *data)
 
 void be_liveness_check(be_lv_t *lv)
 {
-	lv_walker_t w;
-	be_lv_t *fresh = be_liveness_new(lv->irg);
-
-	w.lv   = lv;
-	w.data = fresh;
+	be_lv_t *const fresh = be_liveness_new(lv->irg);
+	be_liveness_compute_sets(fresh);
+	lv_walker_t w = {
+		.given = lv,
+		.fresh = fresh,
+	};
 	irg_block_walk_graph(lv->irg, lv_check_walker, NULL, &w);
 	be_liveness_free(fresh);
 }
