@@ -592,13 +592,9 @@ static void introduce_prologue(ir_graph *const irg)
 		sched_add_after(push, curr_bp);
 		be_set_constr_single_reg_out(curr_bp, 0,
 		                             bp, arch_register_req_type_ignore);
-		curr_sp = be_new_CopyKeep_single(block, curr_sp, curr_bp);
-		sched_add_after(curr_bp, curr_sp);
-		be_set_constr_single_reg_out(curr_sp, 0,
-		                             sp, arch_register_req_type_produces_sp);
 
 		ir_node *incsp = amd64_new_IncSP(block, curr_sp, frame_size, 0);
-		sched_add_after(curr_sp, incsp);
+		sched_add_after(curr_bp, incsp);
 
 		/* make sure the initial IncSP is really used by someone */
 		be_keep_if_unused(incsp);
