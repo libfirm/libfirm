@@ -100,12 +100,12 @@ FIRM_API ir_node *get_Block_dominated_next(const ir_node *node);
 FIRM_API ir_node *get_Block_postdominated_next(const ir_node *node);
 
 /**
- * Returns the smallest common dominator block of two nodes.
- * @param a A node.
- * @param b Another node.
- * @return The first block dominating @p a and @p b
+ * Returns the deepest common dominator of two blocks.
+ * @param block0  A block.
+ * @param block1  Another block.
+ * @return The deepest block dominating @p block0 and @p block1.
  */
-FIRM_API ir_node *node_smallest_common_dominator(ir_node *a, ir_node *b);
+FIRM_API ir_node *ir_deepest_common_dominator(ir_node *block0, ir_node *block1);
 
 /**
  * Visit all nodes in the dominator subtree of a given node.

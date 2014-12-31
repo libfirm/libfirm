@@ -167,30 +167,29 @@ int block_dominates(const ir_node *a, const ir_node *b)
 		<= ai->max_subtree_pre_num - ai->tree_pre_num;
 }
 
-ir_node *node_smallest_common_dominator(ir_node *a, ir_node *b)
+ir_node *ir_deepest_common_dominator(ir_node *block0, ir_node *block1)
 {
-	ir_node *bl_a   = get_block(a);
-	ir_node *bl_b   = get_block(b);
-	ir_node *dom_bl = NULL;
+	/* Both blocks must be reachable. */
+	assert(get_Block_dom_depth(block0) >= 0);
+	assert(get_Block_dom_depth(block1) >= 0);
 
-	/* Check if block of a dominates block of b */
-	if (block_dominates(bl_a, bl_b)) {
-		dom_bl = bl_a;
-	/* Check if block of b dominates block of a */
-	} else if (block_dominates(bl_b, bl_a)) {
-		dom_bl = bl_b;
-	} else {
-		/* walk up and search for first block dominating a and b */
-		while (dom_bl == NULL) {
-			bl_a = get_Block_idom(bl_a);
-			assert(!is_Bad(bl_a));
+	/* Shortcut. */
+	if (block0 == block1)
+		return block0;
 
-			if (block_dominates(bl_a, bl_b))
-				dom_bl = bl_a;
-		}
+	/* block0 shall be the shallowest block. */
+	if (get_Block_dom_depth(block1) > get_Block_dom_depth(block0)) {
+		ir_node *tmp = block0;
+		block0 = block1;
+		block1 = tmp;
 	}
 
-	return dom_bl;
+	/* Walk idom chain upwards until we found a block that dominates the other
+	 * block. */
+	while (!block_dominates(block0, block1)) {
+		block0 = get_Block_idom(block0);
+	}
+	return block0;
 }
 
 ir_node *get_Block_dominated_first(const ir_node *block)

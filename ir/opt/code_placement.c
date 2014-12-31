@@ -120,35 +120,16 @@ static void place_early(ir_graph *irg, waitq *worklist)
 }
 
 /**
- * Compute the deepest common dominator tree ancestor of block and dca.
- *
- * @param dca    the deepest common dominator tree ancestor so far,
- *               might be NULL
- * @param block  a block
- *
- * @return  the deepest common dominator tree ancestor of block and dca
+ * Wrapper around ir_deepest_common_dominator() that allows the @p dca to be
+ * NULL as a special case.
  */
 static ir_node *calc_dom_dca(ir_node *dca, ir_node *block)
 {
 	assert(block != NULL);
-
-	/* We found a first legal placement. */
-	if (!dca)
+	if (dca == NULL || dca == block)
 		return block;
 
-	/* Find a placement that is dominates both, dca and block. */
-	while (get_Block_dom_depth(block) > get_Block_dom_depth(dca))
-		block = get_Block_idom(block);
-
-	while (get_Block_dom_depth(dca) > get_Block_dom_depth(block)) {
-		dca = get_Block_idom(dca);
-	}
-
-	while (block != dca) {
-		block = get_Block_idom(block);
-		dca   = get_Block_idom(dca);
-	}
-	return dca;
+	return ir_deepest_common_dominator(dca, block);
 }
 
 /**
