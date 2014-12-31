@@ -28,7 +28,6 @@
 #include "pbqp_node_t.h"
 #include "vector.h"
 
-#include "plist.h"
 #include "timing.h"
 
 pbqp_edge_t **edge_bucket;

@@ -31,7 +31,6 @@
 #include "irgraph_t.h"
 #include "irnode_t.h"
 #include "iropt_t.h"
-#include "plist.h"
 
 /* suggested by GVN-PRE authors */
 #define MAX_ANTIC_ITER 10
