@@ -668,20 +668,11 @@ const char *sc_print(const sc_word *value, unsigned bits, enum base_t base,
 	                    base, is_signed);
 }
 
-static void write_bits(char *dest, sc_word word)
-{
-	for (unsigned i = 0; i < SC_BITS; ++i) {
-		dest[i] = (word & (1u << (SC_BITS-i-1))) ? '1' : '0';
-	}
-}
-
 char *sc_print_buf(char *buf, size_t buf_len, const sc_word *value,
                    unsigned bits, enum base_t base, bool is_signed)
 {
-	static const char big_digits[]   = "0123456789ABCDEF";
-	static const char small_digits[] = "0123456789abcdef";
+	static const char digits[] = "0123456789ABCDEF";
 
-	const char *digits = small_digits;
 
 	char *pos = buf + buf_len;
 	*(--pos) = '\0';
@@ -690,9 +681,7 @@ char *sc_print_buf(char *buf, size_t buf_len, const sc_word *value,
 	unsigned n_full_words   = bits / SC_BITS;
 	unsigned remaining_bits = bits % SC_BITS;
 	switch (base) {
-	case SC_HEX:
-		digits = big_digits;
-	case SC_hex: {
+	case SC_HEX: {
 		assert(SC_BITS == 8);
 		unsigned counter = 0;
 		for ( ; counter < n_full_words; ++counter) {
@@ -710,43 +699,22 @@ char *sc_print_buf(char *buf, size_t buf_len, const sc_word *value,
 			assert(pos >= buf);
 		}
 
-		goto kill_zeros;
-	}
-	case SC_BIN: {
-		unsigned counter = 0;
-		for ( ; counter < n_full_words; ++counter) {
-			pos -= SC_BITS;
-			write_bits(pos, value[counter]);
-		}
-
-		/* last nibble must be masked */
-		if (remaining_bits != 0) {
-			sc_word mask = max_digit(remaining_bits);
-			sc_word x    = value[counter++] & mask;
-
-			pos -= SC_BITS;
-			write_bits(pos, x);
-		}
-
 		/* now kill zeros */
-kill_zeros:
 		assert(pos >= buf);
 		for ( ; pos < buf+buf_len-2; ++pos) {
 			if (pos[0] != '0')
 				break;
 		}
-		break;
+		return pos;
 	}
-
-	case SC_DEC:
-	case SC_OCT: {
+	case SC_DEC: {
 		sc_word *base_val = ALLOCANZ(sc_word, calc_buffer_size);
-		base_val[0] = base == SC_DEC ? 10 : 8;
+		base_val[0] = 10;
 
 		const sc_word *p        = value;
 		bool           sign     = false;
 		sc_word       *div2_res = ALLOCAN(sc_word, calc_buffer_size);
-		if (is_signed && base == SC_DEC) {
+		if (is_signed) {
 			/* check for negative values */
 			if (sc_get_bit_at(value, bits-1)) {
 				sc_neg(value, div2_res);
@@ -790,13 +758,10 @@ kill_zeros:
 			*(--pos) = '-';
 			assert(pos >= buf);
 		}
-		break;
+		return pos;
 	}
-
-	default:
-		panic("unsupported base %d", base);
 	}
-	return pos;
+	panic("invalid base");
 }
 
 void init_strcalc(unsigned precision)

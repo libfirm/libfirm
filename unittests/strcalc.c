@@ -339,17 +339,11 @@ int main(void)
 	}
 
 	/* test printing/conversion */
-	test_conv_print(1, SC_hex, "1");
 	test_conv_print(1, SC_HEX, "1");
 	test_conv_print(1, SC_DEC, "1");
-	test_conv_print(1, SC_OCT, "1");
-	test_conv_print(1, SC_BIN, "1");
 
-	test_conv_print(0xcafebabe, SC_hex, "cafebabe");
 	test_conv_print(0xcafebabe, SC_HEX, "CAFEBABE");
 	test_conv_print(0xcafebabe, SC_DEC, "3405691582");
-	test_conv_print(0xcafebabe, SC_OCT, "31277535276");
-	test_conv_print(0xcafebabe, SC_BIN, "11001010111111101011101010111110");
 
 	test_conv(0);
 	test_conv(-1);
