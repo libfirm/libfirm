@@ -272,21 +272,6 @@ static int cmp_aff_edge(const void *a, const void *b)
 	return QSORT_CMP(e2->weight, e1->weight);
 }
 
-/** compares to color-cost pairs */
-static __attribute__((unused)) int cmp_col_cost_lt(const void *a, const void *b)
-{
-	const col_cost_t *c1   = (const col_cost_t*)a;
-	const col_cost_t *c2   = (const col_cost_t*)b;
-	real_t            diff = c1->cost - c2->cost;
-
-	if (diff < 0)
-		return 1;
-	if (diff > 0)
-		return -1;
-
-	return QSORT_CMP(c1->col, c2->col);
-}
-
 static int cmp_col_cost_gt(const void *a, const void *b)
 {
 	const col_cost_t *c1   = (const col_cost_t*)a;
@@ -685,67 +670,6 @@ static void build_affinity_chunks(co_mst_env_t *env)
 	}
 
 	DEL_ARR_F(edges);
-}
-
-static __attribute__((unused)) void chunk_order_nodes(co_mst_env_t *env, aff_chunk_t *chunk)
-{
-	pqueue_t      *grow       = new_pqueue();
-	ir_node const *max_node   = NULL;
-	int            max_weight = 0;
-
-	for (size_t i = ARR_LEN(chunk->n); i-- > 0; ) {
-		const ir_node *irn = chunk->n[i];
-		if (arch_irn_is_ignore(irn))
-			continue;
-
-		affinity_node_t *an = get_affinity_info(env->co, irn);
-		int              w  = 0;
-		if (an) {
-			co_gs_foreach_neighb(an, neigh)
-				w += neigh->costs;
-
-			if (w > max_weight) {
-				max_weight = w;
-				max_node   = irn;
-			}
-		}
-	}
-
-	if (max_node) {
-		bitset_t *visited = bitset_malloc(get_irg_last_idx(env->co->irg));
-
-		for (size_t i = ARR_LEN(chunk->n); i-- > 0; )
-			bitset_set(visited, get_irn_idx(chunk->n[i]));
-
-		pqueue_put(grow, (void*)max_node, max_weight);
-		bitset_clear(visited, get_irn_idx(max_node));
-		unsigned i = 0;
-		while (!pqueue_empty(grow)) {
-			ir_node *irn = (ir_node*)pqueue_pop_front(grow);
-			affinity_node_t *an = get_affinity_info(env->co, irn);
-
-			if (arch_irn_is_ignore(irn))
-				continue;
-
-			assert(i <= ARR_LEN(chunk->n));
-			chunk->n[i++] = irn;
-
-			assert(an);
-
-			/* build the affinity edges */
-			co_gs_foreach_neighb(an, neigh) {
-				co_mst_irn_t *node = get_co_mst_irn(env, neigh->irn);
-
-				if (bitset_is_set(visited, get_irn_idx(node->irn))) {
-					pqueue_put(grow, (void *) neigh->irn, neigh->costs);
-					bitset_clear(visited, get_irn_idx(node->irn));
-				}
-			}
-		}
-
-		free(visited);
-	}
-	del_pqueue(grow);
 }
 
 /**
