@@ -571,6 +571,13 @@ static void test_float_tarvals(ir_mode *mode)
 	/* misc */
 	TVS_EQUAL(tarval_div(one, two), half);
 	TVS_EQUAL(tarval_mul(half, two), one);
+	for (unsigned i = 0, n = n_tarvals; i < n; ++i) {
+		ir_tarval *value = tarvals[i];
+		if (!tarval_is_finite(value))
+			continue;
+		TVS_EQUAL(tarval_div(value, inf), tarval_is_negative(value) ? minus_zero : zero);
+		TVS_EQUAL(tarval_div(value, minus_inf), tarval_is_negative(value) ? zero : minus_zero);
+	}
 
 	test_compare(minus_zero, zero);
 
