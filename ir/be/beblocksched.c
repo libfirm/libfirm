@@ -533,17 +533,16 @@ static blocksched_entry_t *finish_block_schedule(blocksched_env_t *env)
 	return entry;
 }
 
-static ir_node **create_blocksched_array(blocksched_env_t *env,
-                                         blocksched_entry_t *first,
-                                         int count, struct obstack* obst)
+static ir_node **create_blocksched_array(blocksched_env_t *const env)
 {
-	(void)env;
-	ir_node **block_list = NEW_ARR_D(ir_node *, obst, count);
 	DB((dbg, LEVEL_1, "Blockschedule:\n"));
 
-	int i = 0;
-	for (blocksched_entry_t *entry = first; entry != NULL;
-	     entry = entry->next) {
+	unsigned                  i          = 0;
+	blocksched_entry_t *const first      = finish_block_schedule(env);
+	unsigned            const count      = env->blockcount;
+	struct obstack     *const obst       = be_get_be_obst(env->irg);
+	ir_node           **const block_list = NEW_ARR_D(ir_node*, obst, count);
+	for (blocksched_entry_t const *entry = first; entry; entry = entry->next) {
 		assert(i < count);
 		block_list[i++] = entry->block;
 		DB((dbg, LEVEL_1, "\t%+F\n", entry->block));
@@ -571,10 +570,7 @@ ir_node **be_create_block_schedule(ir_graph *irg)
 
 	coalesce_blocks(&env);
 
-	blocksched_entry_t *start_entry = finish_block_schedule(&env);
-	ir_node           **block_list
-		= create_blocksched_array(&env, start_entry, env.blockcount,
-		                          be_get_be_obst(irg));
+	ir_node **const block_list = create_blocksched_array(&env);
 
 	DEL_ARR_F(env.edges);
 	obstack_free(&env.obst, NULL);
