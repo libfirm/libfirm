@@ -70,7 +70,6 @@ static const ia32_isa_t *isa;
 static char              pic_base_label[128];
 static ir_label_t        exc_label_id;
 static bool              mark_spill_reload;
-static bool              do_pic;
 
 static bool              sp_relative;
 static int               frame_type_size;
@@ -203,7 +202,7 @@ static void ia32_emit_entity(ir_entity *entity, int no_pic_adjust)
 		}
 	}
 
-	if (do_pic && !no_pic_adjust && get_entity_type(entity) != get_code_type()) {
+	if (be_options.pic && !no_pic_adjust && get_entity_type(entity) != get_code_type()) {
 		be_emit_char('-');
 		be_emit_string(pic_base_label);
 	}
@@ -1475,8 +1474,7 @@ static void ia32_emit_function_text(ir_graph *const irg, ir_node **const blk_sch
 	const arch_env_t *arch_env  = be_get_irg_arch_env(irg);
 	be_stack_layout_t *layout   = be_get_irg_stack_layout(irg);
 
-	isa    = (ia32_isa_t*) arch_env;
-	do_pic = be_options.pic;
+	isa = (ia32_isa_t*)arch_env;
 
 	be_gas_elf_type_char = '@';
 
