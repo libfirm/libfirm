@@ -79,18 +79,4 @@ ir_node *irn_copy_into_irg(const ir_node *node, ir_graph *irg);
  */
 void irn_rewire_inputs(ir_node *node);
 
-/**
- * @deprecated
- * Copies a node to a new irg. The Ins of the new node point to
- * the predecessors on the old irg.  n->link points to the new node.
- *
- * @param n    The node to be copied
- * @param irg  the new irg
- *
- * Does NOT copy standard nodes like Start, End etc that are fixed
- * in an irg. Instead, the corresponding nodes of the new irg are returned.
- * Note further, that the new nodes have no block.
- */
-void copy_irn_to_irg(ir_node *n, ir_graph *irg);
-
 #endif

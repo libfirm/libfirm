@@ -48,65 +48,6 @@ void firm_collect_block_phis(ir_node *node, void *env)
 		add_Block_phi(get_nodes_block(node), node);
 }
 
-void copy_irn_to_irg(ir_node *n, ir_graph *irg)
-{
-	/* do not copy standard nodes */
-	ir_node *nn = NULL;
-	switch (get_irn_opcode(n)) {
-	case iro_NoMem:
-		nn = get_irg_no_mem(irg);
-		break;
-
-	case iro_Block: {
-		ir_graph *old_irg = get_irn_irg(n);
-		if (n == get_irg_start_block(old_irg))
-			nn = get_irg_start_block(irg);
-		else if (n == get_irg_end_block(old_irg))
-			nn = get_irg_end_block(irg);
-		break;
-	}
-
-	case iro_Start:
-		nn = get_irg_start(irg);
-		break;
-
-	case iro_End:
-		nn = get_irg_end(irg);
-		break;
-
-	case iro_Proj: {
-		ir_graph *old_irg = get_irn_irg(n);
-		if (n == get_irg_frame(old_irg))
-			nn = get_irg_frame(irg);
-		else if (n == get_irg_initial_mem(old_irg))
-			nn = get_irg_initial_mem(irg);
-		else if (n == get_irg_args(old_irg))
-			nn = get_irg_args(irg);
-		break;
-	}
-	}
-
-	if (nn) {
-		set_irn_link(n, nn);
-		return;
-	}
-
-	nn = new_ir_node(get_irn_dbg_info(n),
-	                 irg,
-	                 NULL,            /* no block yet, will be set later */
-	                 get_irn_op(n),
-	                 get_irn_mode(n),
-	                 get_irn_arity(n),
-	                 get_irn_in(n) + 1);
-
-
-	/* Copy the attributes.  These might point to additional data.  If this
-	   was allocated on the old obstack the pointers now are dangling.  This
-	   frees e.g. the memory of the graph_arr allocated in new_immBlock. */
-	copy_node_attr(irg, n, nn);
-	set_irn_link(n, nn);
-}
-
 ir_node *irn_copy_into_irg(const ir_node *node, ir_graph *irg)
 {
 	ir_op    *op    = get_irn_op(node);
