@@ -1032,8 +1032,7 @@ void init_fltcalc(unsigned precision)
 	/* needs additionally rounding bits, one bit as explicit 1., and one for
 	 * addition overflow */
 	max_precision = sc_get_precision() - (2 + ROUNDING_BITS);
-	if (max_precision < precision)
-		printf("WARNING: not enough precision available, using %u\n", max_precision);
+	assert(max_precision >= precision);
 
 	rounding_mode = FC_TONEAREST;
 	value_size    = sc_get_value_length();
