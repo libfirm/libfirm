@@ -130,11 +130,7 @@ static size_t    tos = 0;
  */
 static inline void init_stack(void)
 {
-	if (stack) {
-		ARR_RESIZE(ir_node *, stack, 1000);
-	} else {
-		stack = NEW_ARR_F(ir_node *, 1000);
-	}
+	stack = NEW_ARR_F(ir_node *, 100);
 	tos = 0;
 }
 
