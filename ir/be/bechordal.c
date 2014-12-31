@@ -10,7 +10,6 @@
  * @date        08.12.2004
  */
 #include "bechordal_common.h"
-#include "bechordal_draw.h"
 #include "bechordal_t.h"
 #include "beinsn_t.h"
 #include "belive.h"
@@ -352,14 +351,6 @@ static void be_ra_chordal_color(be_chordal_env_t *const chordal_env)
 
 	/* Assign the colors */
 	dom_tree_walk_irg(irg, assign, NULL, chordal_env);
-
-	if (chordal_env->opts->dump_flags & BE_CH_DUMP_TREE_INTV) {
-		char buf[256];
-		ir_snprintf(buf, sizeof(buf), "ifg_%s_%F.eps", chordal_env->cls->name, irg);
-		plotter_t *const plotter = new_plotter_ps(buf);
-		draw_interval_tree(&draw_chordal_def_opts, chordal_env, plotter);
-		plotter_free(plotter);
-	}
 }
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_chordal)
