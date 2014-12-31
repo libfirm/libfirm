@@ -3352,11 +3352,11 @@ static ir_node *create_doz(ir_node *psi, ir_node *a, ir_node *b)
 	ir_node *new_node = gen_binop(psi, a, b, new_bd_ia32_Sub,
 		match_mode_neutral | match_am | match_immediate | match_two_users);
 
-	ir_mode *mode = get_irn_mode(psi);
 	ir_node *sub;
 	if (is_Proj(new_node)) {
 		sub = get_Proj_pred(new_node);
 	} else {
+		ir_mode *mode = get_irn_mode(new_node);
 		sub = new_node;
 		set_irn_mode(sub, mode_T);
 		new_node = new_r_Proj(sub, mode, pn_ia32_res);
