@@ -588,9 +588,6 @@ static void build_affinity_chunks(co_mst_env_t *env)
 
 	/* at first we create the affinity edge objects */
 	be_ifg_foreach_node(env->ifg, n) {
-		if (arch_irn_is_ignore(n))
-			continue;
-
 		co_mst_irn_t    *n1    = get_co_mst_irn(env, n);
 		affinity_node_t *an    = get_affinity_info(env->co, n);
 		unsigned         n_idx = get_irn_idx(n);
@@ -606,10 +603,6 @@ static void build_affinity_chunks(co_mst_env_t *env)
 
 				/* record the edge in only one direction */
 				if (n_idx < m_idx) {
-					/* skip ignore nodes */
-					if (arch_irn_is_ignore(m))
-						continue;
-
 					aff_edge_t edge;
 					edge.src = n;
 					edge.tgt = m;
@@ -699,12 +692,9 @@ static void expand_chunk_from(co_mst_env_t *env, co_mst_irn_t *node,
 		/* check all affinity neighbors */
 		if (an != NULL) {
 			co_gs_foreach_neighb(an, neigh) {
-				const ir_node *m = neigh->irn;
-				if (arch_irn_is_ignore(m))
-					continue;
-
-				co_mst_irn_t *n2    = get_co_mst_irn(env, m);
-				unsigned      m_idx = get_irn_idx(m);
+				const ir_node *m     = neigh->irn;
+				co_mst_irn_t  *n2    = get_co_mst_irn(env, m);
+				unsigned       m_idx = get_irn_idx(m);
 				if (!bitset_is_set(visited, m_idx)
 				  && decider(n2, col)
 				  && !n2->fixed
@@ -938,11 +928,8 @@ static bool recolor_nodes(co_mst_env_t *env, co_mst_irn_t *node,
 		/* try to color all interfering neighbours with current color forbidden */
 		bool neigh_ok = true;
 		for (unsigned j = 0, nj = node->n_neighs; j < nj; ++j) {
-			ir_node *neigh = node->int_neighs[j];
-			if (arch_irn_is_ignore(neigh))
-				continue;
-
-			co_mst_irn_t *nn = get_co_mst_irn(env, neigh);
+			ir_node      *neigh = node->int_neighs[j];
+			co_mst_irn_t *nn    = get_co_mst_irn(env, neigh);
 			DB((dbg, LEVEL_4, "\tHandling neighbour %+F, at position %d (fixed: %d, tmp_col: %d, col: %d)\n",
 				neigh, j, nn->fixed, nn->tmp_col, nn->col));
 
@@ -1319,15 +1306,12 @@ static int co_solve_heuristic_mst(copy_opt_t *co)
 		co_mst_irn_t *mirn = (co_mst_irn_t*)mst_env.map.data[pn];
 		if (mirn == NULL)
 			continue;
-		ir_node *const irn = get_idx_irn(co->irg, pn);
-		if (arch_irn_is_ignore(irn))
-			continue;
-
 		/* skip nodes where color hasn't changed */
 		if (mirn->init_col == mirn->col)
 			continue;
 
 		const arch_register_t *reg = arch_register_for_index(co->cls, mirn->col);
+		ir_node *const irn = get_idx_irn(co->irg, pn);
 		arch_set_irn_register(irn, reg);
 		DB((dbg, LEVEL_1, "%+F set color from %d to %d\n", irn, mirn->init_col, mirn->col));
 	}
