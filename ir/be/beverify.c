@@ -555,11 +555,9 @@ static bool my_values_interfere(const ir_node *a, const ir_node *b)
 /*--------------------------------------------------------------------------- */
 
 typedef struct be_verify_reg_alloc_env_t {
-	ir_node    const **registers;
-	arch_env_t const  *arch_env;
-	be_lv_t           *lv;
-	bool               ignore_sp_problems;
-	bool               problem_found;
+	be_lv_t *lv;
+	bool     ignore_sp_problems;
+	bool     problem_found;
 } be_verify_reg_alloc_env_t;
 
 static void check_output_constraints(be_verify_reg_alloc_env_t *const env, const ir_node *node)
@@ -626,7 +624,7 @@ static void check_input_constraints(be_verify_reg_alloc_env_t *const env, ir_nod
 	}
 }
 
-static void value_used(be_verify_reg_alloc_env_t *const env, ir_node const *const block, ir_node const *const node)
+static void value_used(be_verify_reg_alloc_env_t *const env, ir_node const **const registers, ir_node const *const block, ir_node const *const node)
 {
 	const arch_register_t *reg = arch_get_irn_register(node);
 	if (reg == NULL || reg->type & arch_register_type_virtual)
@@ -636,18 +634,18 @@ static void value_used(be_verify_reg_alloc_env_t *const env, ir_node const *cons
 	assert(req->width > 0);
 	unsigned idx = reg->global_index;
 	for (unsigned i = 0; i < req->width; ++i) {
-		ir_node const *const reg_node = env->registers[idx + i];
+		ir_node const *const reg_node = registers[idx + i];
 		if (reg_node != NULL && reg_node != node
 			&& (!env->ignore_sp_problems
 			    || !(req->type & arch_register_req_type_produces_sp))) {
 			verify_warnf(block, "register %s assigned more than once (nodes %+F and %+F)", reg->name, node, reg_node);
 			env->problem_found = true;
 		}
-		env->registers[idx + i] = node;
+		registers[idx + i] = node;
 	}
 }
 
-static void value_def(be_verify_reg_alloc_env_t *const env, ir_node const *const node)
+static void value_def(be_verify_reg_alloc_env_t *const env, ir_node const **const registers, ir_node const *const node)
 {
 	const arch_register_t *reg = arch_get_irn_register(node);
 
@@ -658,7 +656,7 @@ static void value_def(be_verify_reg_alloc_env_t *const env, ir_node const *const
 	assert(req->width > 0);
 	unsigned idx = reg->global_index;
 	for (unsigned i = 0; i < req->width; ++i) {
-		ir_node const *const reg_node = env->registers[idx + i];
+		ir_node const *const reg_node = registers[idx + i];
 
 		/* a little cheat, since its so hard to remove all outedges to dead code
 		 * in the backend. This particular case should never be a problem. */
@@ -671,7 +669,7 @@ static void value_def(be_verify_reg_alloc_env_t *const env, ir_node const *const
 			verify_warnf(node, "%+F not registered as value for register %s (but %+F)", node, reg->name, reg_node);
 			env->problem_found = true;
 		}
-		env->registers[idx + i] = NULL;
+		registers[idx + i] = NULL;
 	}
 }
 
@@ -679,16 +677,17 @@ static void verify_block_register_allocation(ir_node *block, void *data)
 {
 	be_verify_reg_alloc_env_t *const env = (be_verify_reg_alloc_env_t*)data;
 
-	unsigned const n_regs = env->arch_env->n_registers;
-	env->registers = ALLOCANZ(ir_node const*, n_regs);
+	ir_graph       *const irg       = get_irn_irg(block);
+	unsigned        const n_regs    = be_get_irg_arch_env(irg)->n_registers;
+	ir_node const **const registers = ALLOCANZ(ir_node const*, n_regs);
 
 	be_lv_foreach(env->lv, block, be_lv_state_end, lv_node) {
-		value_used(env, block, lv_node);
+		value_used(env, registers, block, lv_node);
 	}
 
 	sched_foreach_reverse(block, node) {
 		be_foreach_value(node, value,
-			value_def(env, value);
+			value_def(env, registers, value);
 			check_output_constraints(env, value);
 		);
 
@@ -697,19 +696,19 @@ static void verify_block_register_allocation(ir_node *block, void *data)
 		/* process uses. (Phi inputs are no real uses) */
 		if (!is_Phi(node)) {
 			foreach_irn_in(node, i, use) {
-				value_used(env, block, use);
+				value_used(env, registers, block, use);
 			}
 		}
 	}
 
 	be_lv_foreach(env->lv, block, be_lv_state_in, lv_node) {
-		value_def(env, lv_node);
+		value_def(env, registers, lv_node);
 	}
 
 	/* set must be empty now */
 	for (unsigned i = 0; i < n_regs; ++i) {
-		if (env->registers[i]) {
-			verify_warnf(block, "%+F not live-in and no def found", env->registers[i]);
+		if (registers[i]) {
+			verify_warnf(block, "%+F not live-in and no def found", registers[i]);
 			env->problem_found = true;
 		}
 	}
@@ -718,7 +717,6 @@ static void verify_block_register_allocation(ir_node *block, void *data)
 bool be_verify_register_allocation(ir_graph *const irg, bool const ignore_sp_problems)
 {
 	be_verify_reg_alloc_env_t env = {
-		.arch_env           = be_get_irg_arch_env(irg),
 		.lv                 = be_liveness_new(irg),
 		.ignore_sp_problems = ignore_sp_problems,
 		.problem_found      = false,
