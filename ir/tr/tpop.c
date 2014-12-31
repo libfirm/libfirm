@@ -27,16 +27,11 @@ const tp_op *new_tpop(tp_opcode code, ident *name, unsigned flags,
                       size_t attr_size, const tp_op_ops *ops)
 {
 	tp_op *res = XMALLOC(tp_op);
-	res->code          = code;
-	res->name          = name;
-	res->flags         = flags;
-	res->attr_size     = attr_size;
-
-	if (ops)
-		res->ops = *ops;
-	else
-		memset(&res->ops, 0, sizeof(res->ops));
-
+	res->code      = code;
+	res->name      = name;
+	res->flags     = flags;
+	res->attr_size = attr_size;
+	res->ops       = *ops;
 	return res;
 }
 
