@@ -21,11 +21,6 @@
 lc_opt_entry_t *firm_opt_get_root(void);
 
 /**
- * Dump a pset containing Firm objects.
- */
-void firm_pset_dump(pset *set);
-
-/**
  * The famous clear_link() walker-function.
  * Sets all links fields of visited nodes to NULL.
  * Do not implement it by yourself, use this one.

@@ -100,10 +100,3 @@ void irn_rewire_inputs(ir_node *node)
 	/* Now the new node is complete. We can add it to the hash table for CSE. */
 	add_identities(new_node);
 }
-
-void firm_pset_dump(pset *set)
-{
-	foreach_pset(set, void, obj) {
-		ir_fprintf(stderr, "%+F\n", obj);
-	}
-}
