@@ -99,10 +99,11 @@ void fc_cast(const fp_value *val, const float_descriptor_t *desc,
  */
 void fc_get_max(const float_descriptor_t *desc, fp_value *result, bool sign);
 void fc_get_nan(const float_descriptor_t *desc, fp_value *result,
-                bool signaling, sc_word *payload);
+                bool signaling, const sc_word *payload);
 void fc_get_inf(const float_descriptor_t *desc, fp_value *result, bool sign);
 void fc_get_small(const float_descriptor_t *desc, fp_value *result);
 void fc_get_epsilon(const float_descriptor_t *desc, fp_value *result);
+void fc_get_zero(const float_descriptor_t *desc, fp_value *result, bool sign);
 /*@}*/
 
 bool fc_is_zero(const fp_value *a);

@@ -129,14 +129,6 @@ static const float_descriptor_t *get_descriptor(const ir_mode *mode)
 	return &mode->float_desc;
 }
 
-static ir_tarval *get_tarval_from_fp_value(const fp_value *val, ir_mode *mode)
-{
-	const float_descriptor_t *desc   = get_descriptor(mode);
-	fp_value                 *casted = alloca(fp_value_size);
-	fc_cast(val, desc, casted);
-	return get_tarval(casted, fp_value_size, mode);
-}
-
 ir_tarval *new_integer_tarval_from_str(const char *str, size_t len,
                                        int negative, unsigned char base,
                                        ir_mode *mode)
@@ -212,7 +204,8 @@ ir_tarval *new_tarval_from_str(const char *str, size_t len, ir_mode *mode)
 	case irms_float_number: {
 		fp_value *buffer = (fp_value*)ALLOCAN(char, fp_value_size);
 		fc_val_from_str(str, len, buffer);
-		return get_tarval_from_fp_value(buffer, mode);
+		fc_cast(buffer, get_descriptor(mode), buffer);
+		return get_tarval(buffer, fp_value_size, mode);
 	}
 	case irms_reference:
 		if (!strcasecmp(str, "null"))
@@ -277,7 +270,7 @@ ir_tarval *new_tarval_from_bytes(unsigned char const *buf,
 	case irma_x86_extended_float: {
 		fp_value *buffer = (fp_value*)ALLOCAN(char, fp_value_size);
 		fc_val_from_bytes(buffer, buf, get_descriptor(mode));
-		return get_tarval_from_fp_value(buffer, mode);
+		return get_tarval(buffer, fp_value_size, mode);
 	}
 	case irma_none:
 		break;
@@ -360,7 +353,8 @@ ir_tarval *new_tarval_from_long_double(long double d, ir_mode *mode)
 	assert(mode_is_float(mode));
 	fp_value *buffer = (fp_value*)ALLOCAN(char, fp_value_size);
 	fc_val_from_ieee754(d, buffer);
-	return get_tarval_from_fp_value(buffer, mode);
+	fc_cast(buffer, get_descriptor(mode), buffer);
+	return get_tarval(buffer, fp_value_size, mode);
 }
 
 ir_tarval *new_tarval_from_double(double d, ir_mode *mode)
@@ -467,7 +461,8 @@ void init_mode_values(ir_mode* mode)
 		mode->min         = get_tarval(buf, fp_value_size, mode);
 		fc_get_max(desc, buf, false);
 		mode->max         = get_tarval(buf, fp_value_size, mode);
-		mode->null        = new_tarval_from_double(0.0, mode);
+		fc_get_zero(desc, buf, false);
+		mode->null        = get_tarval(buf, fp_value_size, mode);
 		mode->one         = new_tarval_from_double(1.0, mode);
 		break;
 	}
@@ -660,7 +655,8 @@ ir_tarval *tarval_convert_to(ir_tarval *src, ir_mode *dst_mode)
 
 			fp_value *fpval = (fp_value*)ALLOCAN(char, fp_value_size);
 			fc_val_from_str(buffer, len, fpval);
-			return get_tarval_from_fp_value(fpval, dst_mode);
+			fc_cast(fpval, get_descriptor(dst_mode), fpval);
+			return get_tarval(fpval, fp_value_size, dst_mode);
 		}
 		case irms_auxiliary:
 		case irms_data:
@@ -1262,7 +1258,7 @@ ir_tarval *ir_tarval_from_ascii(const char *buf, ir_mode *mode)
 		}
 		fp_value *buffer = (fp_value*)ALLOCAN(char, fp_value_size);
 		fc_val_from_bytes(buffer, temp, get_descriptor(mode));
-		return get_tarval_from_fp_value(buffer, mode);
+		return get_tarval(buffer, fp_value_size, mode);
 	}
 	case irms_data:
 	case irms_auxiliary:
