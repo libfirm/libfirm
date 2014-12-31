@@ -19,8 +19,6 @@
 typedef enum {
 	FC_DEC,
 	FC_HEX,
-	FC_BIN,
-	FC_PACKED
 } fc_base_t;
 
 /** IEEE-754 Rounding modes. */

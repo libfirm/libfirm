@@ -930,43 +930,26 @@ bool fc_is_subnormal(const fp_value *a)
 
 int fc_print(const fp_value *val, char *buf, size_t buflen, fc_base_t base)
 {
-	switch (base) {
-	case FC_DEC:
-		switch ((value_class_t)val->clss) {
-		case FC_INF:
-			return snprintf(buf, buflen, "%cINF", val->sign ? '-' : '+');
-		case FC_NAN:
-			return snprintf(buf, buflen, "NaN");
-		case FC_ZERO:
-			return snprintf(buf, buflen, "0.0");
-		default: {
-			long double flt_val = fc_val_to_ieee754(val);
+	switch ((value_class_t)val->clss) {
+	case FC_INF:
+		return snprintf(buf, buflen, "%cINF", val->sign ? '-' : '+');
+	case FC_NAN:
+		return snprintf(buf, buflen, "NaN");
+	case FC_ZERO:
+		return snprintf(buf, buflen, "0.0");
+	case FC_SUBNORMAL:
+	case FC_NORMAL: {
+		long double flt_val = fc_val_to_ieee754(val);
+		if (base == FC_DEC) {
 			/* XXX 30 is arbitrary */
 			return snprintf(buf, buflen, "%.30LE", flt_val);
-		}
-		}
-
-	case FC_HEX:
-		switch ((value_class_t)val->clss) {
-		case FC_INF:
-			return snprintf(buf, buflen, "%cINF", val->sign ? '-' : '+');
-		case FC_NAN:
-			return snprintf(buf, buflen, "NaN");
-		case FC_ZERO:
-			return snprintf(buf, buflen, "0.0");
-		default: {
-			long double flt_val = fc_val_to_ieee754(val);
+		} else {
+			assert(base == FC_HEX);
 			return snprintf(buf, buflen, "%LA", flt_val);
 		}
-		}
-
-	case FC_PACKED:
-	default: {
-		sc_word *packed = ALLOCAN(sc_word, value_size);
-		pack(val, packed);
-		return snprintf(buf, buflen, "%s", sc_print(packed, value_size*4, SC_HEX, 0));
 	}
 	}
+	panic("invalid fp_value");
 }
 
 unsigned char fc_sub_bits(const fp_value *value, unsigned num_bits,
@@ -1204,11 +1187,5 @@ void __attribute__((used)) fc_debug(fp_value *value)
 	printf("Mantissa w/o round implicit one: ");
 	sc_clear_bit_at(temp, value->desc.mantissa_size);
 	printf("%s\n", sc_print(temp, sc_get_precision(), SC_HEX, false));
-
-	char buf[128];
-	//fc_print(value, buf, sizeof(buf), FC_DEC);
-	//printf("%s\n", buf);
-	fc_print(value, buf, sizeof(buf), FC_PACKED);
-	printf("Packed: %s\n", buf);
 }
 #endif
