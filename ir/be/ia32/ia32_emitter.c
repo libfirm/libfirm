@@ -66,14 +66,13 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
-static const ia32_isa_t *isa;
-static char              pic_base_label[128];
-static ir_label_t        exc_label_id;
-static bool              mark_spill_reload;
+static char       pic_base_label[128];
+static ir_label_t exc_label_id;
+static bool       mark_spill_reload;
 
-static bool              sp_relative;
-static int               frame_type_size;
-static int               callframe_offset;
+static bool       sp_relative;
+static int        frame_type_size;
+static int        callframe_offset;
 
 /** Return the next block in Block schedule */
 static ir_node *get_prev_block_sched(const ir_node *block)
@@ -1469,12 +1468,9 @@ static parameter_dbg_info_t *construct_parameter_infos(ir_graph *irg)
  */
 static void ia32_emit_function_text(ir_graph *const irg, ir_node **const blk_sched)
 {
-	ir_entity        *entity    = get_irg_entity(irg);
-	exc_entry        *exc_list  = NEW_ARR_F(exc_entry, 0);
-	const arch_env_t *arch_env  = be_get_irg_arch_env(irg);
+	ir_entity         *entity   = get_irg_entity(irg);
+	exc_entry         *exc_list = NEW_ARR_F(exc_entry, 0);
 	be_stack_layout_t *layout   = be_get_irg_stack_layout(irg);
-
-	isa = (ia32_isa_t*)arch_env;
 
 	be_gas_elf_type_char = '@';
 
@@ -3056,10 +3052,7 @@ static void gen_binary_block(ir_node *block)
 
 static void ia32_emit_function_binary(ir_graph *const irg, ir_node **const blk_sched)
 {
-	ir_entity        *entity    = get_irg_entity(irg);
-	const arch_env_t *arch_env  = be_get_irg_arch_env(irg);
-
-	isa = (ia32_isa_t*) arch_env;
+	ir_entity *entity = get_irg_entity(irg);
 
 	ia32_register_binary_emitters();
 
