@@ -606,6 +606,8 @@ static void remat_simplifier(ir_node *node, void *env)
 					ARR_APP1(ir_node*, mem_users, user);
 					ARR_APP1(int, mem_users_pos, get_edge_src_pos(out2));
 				}
+			} else {
+				panic("unexpected mode for %+F", proj);
 			}
 		}
 
