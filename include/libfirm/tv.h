@@ -675,20 +675,6 @@ FIRM_API int tarval_is_quiet_nan(const ir_tarval *tv);
 FIRM_API int tarval_is_signaling_nan(const ir_tarval *tv);
 
 /**
- * Check if its the a floating point +inf.
- *
- * @param tv    the tarval
- */
-FIRM_API int tarval_is_plus_inf(const ir_tarval *tv);
-
-/**
- * Check if its the a floating point -inf.
- *
- * @param tv    the tarval
- */
-FIRM_API int tarval_is_minus_inf(const ir_tarval *tv);
-
-/**
  * Check if the tarval represents a finite value, ie neither NaN nor inf.
  *
  * @param tv    the tarval

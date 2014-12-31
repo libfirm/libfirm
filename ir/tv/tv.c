@@ -498,7 +498,7 @@ int tarval_is_negative(const ir_tarval *a)
 	case irms_auxiliary:
 	case irms_internal_boolean:
 	case irms_data:
-		panic("mode %F does not support negation value", a->mode);
+		break;
 	}
 	panic("invalid mode sort");
 }
@@ -553,9 +553,11 @@ ir_relation tarval_cmp(const ir_tarval *a, const ir_tarval *b)
 			return ir_relation_equal;
 		return a == tarval_b_true ? ir_relation_greater : ir_relation_less;
 
-	default:
-		panic("can't compare values of mode %F", a->mode);
+	case irms_auxiliary:
+	case irms_data:
+		break;
 	}
+	panic("invalid mode sort");
 }
 
 ir_tarval *tarval_convert_to(ir_tarval *src, ir_mode *dst_mode)
@@ -574,6 +576,7 @@ ir_tarval *tarval_convert_to(ir_tarval *src, ir_mode *dst_mode)
 			return get_fp_tarval(buffer, dst_mode);
 		}
 
+		case irms_reference:
 		case irms_int_number: {
 			fp_value *buffer = (fp_value*)ALLOCAN(char, fp_value_size);
 			fc_int((const fp_value*) src->value, buffer);
@@ -599,7 +602,9 @@ ir_tarval *tarval_convert_to(ir_tarval *src, ir_mode *dst_mode)
 			}
 		}
 
-		default:
+		case irms_internal_boolean:
+		case irms_auxiliary:
+		case irms_data:
 			break;
 		}
 		/* the rest can't be converted */
@@ -695,15 +700,13 @@ ir_tarval *tarval_not(ir_tarval *a)
 	case irms_auxiliary:
 	case irms_data:
 	case irms_float_number:
-		panic("bitwise negation is only allowed for integer and boolean");
+		break;
 	}
 	panic("invalid mode sort");
 }
 
 ir_tarval *tarval_neg(ir_tarval *a)
 {
-	assert(mode_is_num(a->mode)); /* negation only for numerical values */
-
 	/* note: negation is allowed even for unsigned modes. */
 
 	switch (get_mode_sort(a->mode)) {
@@ -723,7 +726,7 @@ ir_tarval *tarval_neg(ir_tarval *a)
 	case irms_auxiliary:
 	case irms_data:
 	case irms_internal_boolean:
-		return tarval_bad;
+		break;
 	}
 	panic("invalid mode sort");
 }
@@ -874,7 +877,7 @@ ir_tarval *tarval_mod(ir_tarval *a, ir_tarval *b)
 	case irms_data:
 	case irms_internal_boolean:
 	case irms_float_number:
-		panic("operation not defined on mode");
+		break;
 	}
 	panic("invalid mode sort");
 }
@@ -902,7 +905,7 @@ ir_tarval *tarval_divmod(ir_tarval *a, ir_tarval *b, ir_tarval **mod)
 	case irms_data:
 	case irms_internal_boolean:
 	case irms_float_number:
-		panic("operation not defined on mode");
+		break;
 	}
 	panic("invalid mode sort");
 }
@@ -932,7 +935,7 @@ ir_tarval *tarval_and(ir_tarval *a, ir_tarval *b)
 	case irms_auxiliary:
 	case irms_data:
 	case irms_float_number:
-		panic("operation not defined on mode");
+		break;
 	}
 	panic("invalid mode sort");
 }
@@ -955,7 +958,7 @@ ir_tarval *tarval_andnot(ir_tarval *a, ir_tarval *b)
 	case irms_auxiliary:
 	case irms_data:
 	case irms_float_number:
-		panic("operation not defined on mode");
+		break;
 	}
 	panic("invalid mode sort");
 }
@@ -978,7 +981,7 @@ ir_tarval *tarval_or(ir_tarval *a, ir_tarval *b)
 	case irms_auxiliary:
 	case irms_data:
 	case irms_float_number:
-		panic("operation not defined on mode");
+		break;
 	}
 	panic("invalid mode sort");
 }
@@ -1001,14 +1004,14 @@ ir_tarval *tarval_ornot(ir_tarval *a, ir_tarval *b)
 	case irms_auxiliary:
 	case irms_data:
 	case irms_float_number:
-		panic("operation not defined on mode");
+		break;
 	}
 	panic("invalid mode sort");
 }
 
 ir_tarval *tarval_eor(ir_tarval *a, ir_tarval *b)
 {
-	assert((a->mode == b->mode));
+	assert(a->mode == b->mode);
 
 	switch (get_mode_sort(a->mode)) {
 	case irms_internal_boolean:
@@ -1024,7 +1027,7 @@ ir_tarval *tarval_eor(ir_tarval *a, ir_tarval *b)
 	case irms_auxiliary:
 	case irms_data:
 	case irms_float_number:
-		panic("operation not defined on mode");
+		break;
 	}
 	panic("invalid mode sort");
 }
@@ -1267,8 +1270,7 @@ int get_tarval_popcount(const ir_tarval *tv)
 
 int get_tarval_lowest_bit(const ir_tarval *tv)
 {
-	if (!mode_is_int(tv->mode))
-		return -1;
+	assert(get_mode_arithmetic(tv->mode) == irma_twos_complement);
 
 	int l = get_mode_size_bytes(tv->mode);
 	for (int i = 0; i < l; ++i) {
@@ -1282,8 +1284,7 @@ int get_tarval_lowest_bit(const ir_tarval *tv)
 
 int get_tarval_highest_bit(const ir_tarval *tv)
 {
-	if (!mode_is_int(tv->mode))
-		return -1;
+	assert(get_mode_arithmetic(tv->mode) == irma_twos_complement);
 
 	int l = get_mode_size_bytes(tv->mode);
 	for (int i = l - 1; i >= 0; --i) {
@@ -1339,22 +1340,6 @@ int tarval_is_signaling_nan(const ir_tarval *tv)
 	if (!tarval_is_nan(tv))
 		return false;
 	return !fc_nan_is_quiet((const fp_value*)tv->value);
-}
-
-int tarval_is_plus_inf(const ir_tarval *tv)
-{
-	if (!mode_is_float(tv->mode))
-		return 0;
-	return fc_is_inf((const fp_value*) tv->value)
-		&& !fc_is_negative((const fp_value*) tv->value);
-}
-
-int tarval_is_minus_inf(const ir_tarval *tv)
-{
-	if (!mode_is_float(tv->mode))
-		return 0;
-	return fc_is_inf((const fp_value*) tv->value)
-		&& fc_is_negative((const fp_value*) tv->value);
 }
 
 int tarval_is_finite(const ir_tarval *tv)
