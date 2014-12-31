@@ -24,9 +24,6 @@
 
 #define IA32_REGISTER_SIZE 4
 
-typedef struct ia32_isa_t            ia32_isa_t;
-typedef struct ia32_intrinsic_env_t  ia32_intrinsic_env_t;
-
 typedef struct ia32_irg_data_t {
 	unsigned do_x87_sim:1;    /**< set to 1 if x87 simulation should be enforced */
 	ir_node  *noreg_gp;       /**< unique NoReg_GP node */
@@ -40,21 +37,11 @@ typedef struct ia32_irg_data_t {
 /**
  * IA32 ISA object
  */
-struct ia32_isa_t {
+typedef struct ia32_isa_t {
 	arch_env_t             base;     /**< must be derived from arch_env_t */
 	pmap                  *tv_ent;   /**< A map of entities that store const tarvals */
 	int                    fpu_arch; /**< FPU architecture */
-};
-
-/**
- * A helper type collecting needed info for IA32 intrinsic lowering.
- */
-struct ia32_intrinsic_env_t {
-	ir_entity  *divdi3;  /**< entity for __divdi3 library call */
-	ir_entity  *moddi3;  /**< entity for __moddi3 library call */
-	ir_entity  *udivdi3; /**< entity for __udivdi3 library call */
-	ir_entity  *umoddi3; /**< entity for __umoddi3 library call */
-};
+} ia32_isa_t;
 
 /** The mode for the floating point control word. */
 extern ir_mode *ia32_mode_fpcw;
