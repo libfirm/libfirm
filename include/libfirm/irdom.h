@@ -50,16 +50,6 @@ FIRM_API ir_node *get_Block_ipostdom(const ir_node *block);
 FIRM_API int block_dominates(const ir_node *a, const ir_node *b);
 
 /**
- * Check, if a block strictly dominates another block, i.e. a != b.
- *
- * @param a The potential dominator block.
- * @param b The potentially dominated block.
- *
- * @return 1, if @p a strictly dominates @p b, else 0.
- */
-FIRM_API int block_strictly_dominates(const ir_node *a, const ir_node *b);
-
-/**
  * Check, if a block post dominates another block.
  *
  * @param a The potential post dominator block.
@@ -194,14 +184,6 @@ FIRM_API void compute_doms(ir_graph *irg);
  * the run does not free the outs information.
  */
 FIRM_API void compute_postdoms(ir_graph *irg);
-
-/** Frees the dominance data structures.  Sets the flag in irg to "dom_none". */
-FIRM_API void free_dom(ir_graph *irg);
-
-/**
- * Frees the postdominance data structures. Sets the flag in irg to "dom_none".
- */
-FIRM_API void free_postdom(ir_graph *irg);
 
 /**
  * Compute the dominance frontiers for a given graph.

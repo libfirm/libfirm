@@ -167,11 +167,6 @@ int block_dominates(const ir_node *a, const ir_node *b)
 		<= ai->max_subtree_pre_num - ai->tree_pre_num;
 }
 
-int block_strictly_dominates(const ir_node *a, const ir_node *b)
-{
-	return (a != b) && block_dominates(a, b);
-}
-
 ir_node *node_smallest_common_dominator(ir_node *a, ir_node *b)
 {
 	ir_node *bl_a   = get_block(a);
@@ -597,12 +592,6 @@ void compute_doms(ir_graph *irg)
 	add_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 }
 
-void free_dom(ir_graph *irg)
-{
-	clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
-	ir_free_dominance_frontiers(irg);
-}
-
 void compute_postdoms(ir_graph *irg)
 {
 	/* Update graph state */
@@ -685,10 +674,4 @@ void compute_postdoms(ir_graph *irg)
 	                  assign_tree_postdom_pre_order_max, &tree_pre_order);
 
 	add_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_POSTDOMINANCE);
-}
-
-void free_postdom(ir_graph *irg)
-{
-	/* Update graph state */
-	clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_POSTDOMINANCE);
 }
