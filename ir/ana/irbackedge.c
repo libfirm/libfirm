@@ -112,13 +112,6 @@ void set_backedge(ir_node *n, int pos)
 	bitset_set(ba, pos);
 }
 
-void set_not_backedge(ir_node *n, int pos)
-{
-	bitset_t *ba = get_backarray(n);
-	assert(ba && "can only set backedges at Phi, Block nodes.");
-	bitset_clear(ba, pos);
-}
-
 int has_backedges(const ir_node *n)
 {
 	bitset_t *ba = get_backarray(n);

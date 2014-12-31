@@ -33,8 +33,6 @@
 FIRM_API int is_backedge(const ir_node *n, int pos);
 /** Marks edge pos as a backedge. */
 FIRM_API void set_backedge(ir_node *n, int pos);
-/** Marks edge pos as a non-backedge. */
-FIRM_API void set_not_backedge(ir_node *n, int pos);
 /** Returns non-zero if n has backedges. */
 FIRM_API int has_backedges(const ir_node *n);
 /** Clears all backedge information. */
