@@ -248,12 +248,9 @@ void lv_chk_free(lv_chk_t *lv)
 unsigned lv_chk_bl_xxx(lv_chk_t *lv, const ir_node *bl, const ir_node *var)
 {
 	assert(is_Block(bl));
+	assert(is_liveness_node(var));
 	stat_ev_cnt_decl(uses);
 	stat_ev_cnt_decl(iter);
-
-	/* If the variable ist no liveness related var, bail out. */
-	if (!is_liveness_node(var))
-		return 0;
 
 	stat_ev_ctx_push_fmt("lv_chk", "%u", get_irn_idx(var));
 	stat_ev_tim_push();
