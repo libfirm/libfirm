@@ -62,8 +62,7 @@ static void remove_empty_block(ir_node *block)
 
 	ir_node *jump = NULL;
 	sched_foreach(block, node) {
-		if (!is_Jmp(node)
-		    && !(arch_get_irn_flags(node) & arch_irn_flag_simple_jump))
+		if (!(arch_get_irn_flags(node) & arch_irn_flag_simple_jump))
 			goto check_preds;
 		if (jump != NULL) {
 			/* we should never have 2 jumps in a block */
