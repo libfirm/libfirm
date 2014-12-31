@@ -35,14 +35,6 @@ ir_node *get_irn_out_ex(const ir_node *def, unsigned pos, int *in_pos)
 	return def->o.out->edges[pos].use;
 }
 
-void set_irn_out(ir_node *def, unsigned pos, ir_node *use, int in_pos)
-{
-	assert(use != NULL);
-	assert(pos < get_irn_n_outs(def));
-	def->o.out->edges[pos].use = use;
-	def->o.out->edges[pos].pos = in_pos;
-}
-
 unsigned get_Block_n_cfg_outs(const ir_node *bl)
 {
 	assert(is_Block(bl));

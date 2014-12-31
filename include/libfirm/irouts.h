@@ -35,16 +35,6 @@ FIRM_API ir_node *get_irn_out(const ir_node *def, unsigned pos);
  */
 FIRM_API ir_node *get_irn_out_ex(const ir_node *def, unsigned pos, int *in_pos);
 
-/**
- * Sets the User at position pos.
- *
- * @param def     the Def node
- * @param pos     the number of the Def-Use edge tat is modified
- * @param use     the Use node
- * @param in_pos  the number of the corresponding Use-Def edge in the use node in array
- */
-FIRM_API void set_irn_out(ir_node *def, unsigned pos, ir_node *use, int in_pos);
-
 /** Returns the number of control flow successors, ignore keep-alives. */
 FIRM_API unsigned get_Block_n_cfg_outs(const ir_node *node);
 

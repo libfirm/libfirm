@@ -30,6 +30,7 @@
 #include "irtools.h"
 #include "irgmod.h"
 #include "array.h"
+#include "panic.h"
 
 /**
  * This struct contains the information quadruple for a Call, which we need to
@@ -340,14 +341,10 @@ static ir_node *get_irg_arg(ir_graph *irg, size_t pos)
 	ir_node *irg_args = get_irg_args(irg);
 	foreach_irn_out_r(irg_args, i, proj) {
 		if (pos == get_Proj_num(proj)) {
-			if (arg) {
-				/* More than one arg node found:
-				 * We rely on the fact that only one arg exists, so do
-				 * a cheap CSE in this case. */
-				set_irn_out(irg_args, i, arg, 0);
-				exchange(proj, arg);
-			} else
-				arg = proj;
+			assert(arg == NULL);
+			if (arg != NULL)
+				panic("multiple projs for the same argument");
+			arg = proj;
 		}
 	}
 	assert(arg && "Argument not found");
