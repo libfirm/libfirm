@@ -10,9 +10,6 @@
 #ifndef FIRM_BE_AMD64_AMD64_NEW_NODES_H
 #define FIRM_BE_AMD64_AMD64_NEW_NODES_H
 
-#include <stdint.h>
-
-#include "irnode_t.h"
 #include "amd64_nodes_attr.h"
 #include "gen_amd64_new_nodes.h"
 

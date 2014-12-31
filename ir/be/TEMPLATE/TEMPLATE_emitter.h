@@ -10,14 +10,7 @@
 #ifndef FIRM_BE_TEMPLATE_TEMPLATE_EMITTER_H
 #define FIRM_BE_TEMPLATE_TEMPLATE_EMITTER_H
 
-#include "irargs_t.h"
-#include "irnode.h"
-#include "debug.h"
-
-#include "bearch.h"
-#include "beemitter.h"
-
-#include "bearch_TEMPLATE_t.h"
+#include "firm_types.h"
 
 /**
  * emit assembler instructions with format string. Automatically indents

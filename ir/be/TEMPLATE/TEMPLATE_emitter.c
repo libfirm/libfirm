@@ -7,28 +7,15 @@
  * @file
  * @brief   emit assembler for a backend graph
  */
-#include <limits.h>
-
-#include "panic.h"
-#include "xmalloc.h"
-#include "tv.h"
-#include "iredges.h"
-#include "debug.h"
-#include "irgwalk.h"
-#include "irop_t.h"
-#include "irargs_t.h"
-#include "irprog.h"
-
-#include "besched.h"
-#include "begnuas.h"
-#include "beblocksched.h"
-#include "benode.h"
-
 #include "TEMPLATE_emitter.h"
-#include "gen_TEMPLATE_emitter.h"
-#include "gen_TEMPLATE_regalloc_if.h"
-#include "TEMPLATE_nodes_attr.h"
 #include "TEMPLATE_new_nodes.h"
+#include "beblocksched.h"
+#include "begnuas.h"
+#include "benode.h"
+#include "besched.h"
+#include "gen_TEMPLATE_emitter.h"
+#include "irgwalk.h"
+#include "panic.h"
 
 static void TEMPLATE_emit_immediate(const ir_node *node)
 {

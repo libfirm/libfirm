@@ -7,32 +7,18 @@
  * @file
  * @brief    The main TEMPLATE backend driver file.
  */
-#include "bearch_TEMPLATE_t.h"
-
-#include "irgwalk.h"
-#include "irprog.h"
-#include "ircons.h"
-#include "irdump.h"
-#include "irgmod.h"
-#include "lower_calls.h"
-#include "lower_builtins.h"
-#include "debug.h"
-#include "panic.h"
-#include "be_t.h"
-#include "bearch.h"
-#include "benode.h"
-#include "belower.h"
-#include "besched.h"
-#include "bemodule.h"
-#include "begnuas.h"
-#include "belistsched.h"
-#include "bestack.h"
-#include "bespillutil.h"
-
-#include "TEMPLATE_new_nodes.h"
-#include "gen_TEMPLATE_regalloc_if.h"
-#include "TEMPLATE_transform.h"
 #include "TEMPLATE_emitter.h"
+#include "TEMPLATE_new_nodes.h"
+#include "TEMPLATE_transform.h"
+#include "be_t.h"
+#include "bearch_TEMPLATE_t.h"
+#include "bemodule.h"
+#include "benode.h"
+#include "bestack.h"
+#include "gen_TEMPLATE_regalloc_if.h"
+#include "lower_builtins.h"
+#include "lower_calls.h"
+#include "panic.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 

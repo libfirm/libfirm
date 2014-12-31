@@ -8,42 +8,29 @@
  * @brief   emit assembler for a backend graph
  * @author  Hannes Rapp, Matthias Braun
  */
-#include <limits.h>
+//#include <limits.h>
 #include <inttypes.h>
 
-#include "util.h"
-#include "beutil.h"
-#include "bitfiddle.h"
-#include "xmalloc.h"
-#include "tv.h"
-#include "iredges.h"
-#include "debug.h"
-#include "irgwalk.h"
-#include "irop_t.h"
-#include "irargs_t.h"
-#include "irprog.h"
-#include "irargs_t.h"
-#include "panic.h"
-#include "raw_bitset.h"
-#include "dbginfo.h"
-#include "heights.h"
-#include "pmap.h"
-#include "execfreq_t.h"
-
-#include "besched.h"
+#include "bearch_sparc_t.h"
 #include "beblocksched.h"
-#include "beirg.h"
 #include "begnuas.h"
-#include "bedwarf.h"
+#include "beirg.h"
 #include "benode.h"
-#include "bestack.h"
 #include "bepeephole.h"
-
-#include "sparc_emitter.h"
+#include "besched.h"
+#include "bestack.h"
+#include "beutil.h"
+#include "debug.h"
+#include "execfreq_t.h"
 #include "gen_sparc_emitter.h"
-#include "sparc_nodes_attr.h"
-#include "sparc_new_nodes.h"
 #include "gen_sparc_regalloc_if.h"
+#include "heights.h"
+#include "irgwalk.h"
+#include "panic.h"
+#include "pmap.h"
+#include "sparc_emitter.h"
+#include "sparc_new_nodes.h"
+#include "util.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 

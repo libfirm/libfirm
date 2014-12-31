@@ -15,8 +15,6 @@
 #ifndef FIRM_BE_BENODE_H
 #define FIRM_BE_BENODE_H
 
-#include <limits.h>
-
 #include "firm_types.h"
 #include "irnode_t.h"
 #include "bearch.h"

@@ -26,43 +26,25 @@
  *   pnc_Uge => P || AE
  *   pnc_Ne  => P || NE
  */
-#include <limits.h>
 #include <inttypes.h>
 
+#include "be_t.h"
+#include "bearch_ia32_t.h"
 #include "beblocksched.h"
-#include "util.h"
-#include "xmalloc.h"
-#include "tv.h"
-#include "iredges.h"
-#include "debug.h"
-#include "irgwalk.h"
-#include "irprintf.h"
-#include "irop_t.h"
-#include "irargs_t.h"
-#include "irprog_t.h"
-#include "iredges_t.h"
-#include "irtools.h"
-#include "execfreq.h"
-#include "panic.h"
-#include "dbginfo.h"
-#include "lc_opts.h"
-#include "ircons.h"
-
-#include "besched.h"
-#include "benode.h"
-#include "bedwarf.h"
-#include "beemitter.h"
 #include "begnuas.h"
+#include "besched.h"
 #include "bestack.h"
 #include "beutil.h"
-
-#include "ia32_emitter.h"
+#include "execfreq.h"
 #include "gen_ia32_emitter.h"
 #include "gen_ia32_regalloc_if.h"
-#include "ia32_nodes_attr.h"
-#include "ia32_new_nodes.h"
 #include "ia32_architecture.h"
-#include "bearch_ia32_t.h"
+#include "ia32_emitter.h"
+#include "ia32_new_nodes.h"
+#include "irgwalk.h"
+#include "irtools.h"
+#include "lc_opts.h"
+#include "panic.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 

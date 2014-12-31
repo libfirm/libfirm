@@ -7,32 +7,21 @@
  * @file
  * @brief   emit assembler for a backend graph
  */
-#include <limits.h>
 #include <inttypes.h>
 
+#include "amd64_emitter.h"
+#include "amd64_new_nodes.h"
+#include "amd64_nodes_attr.h"
 #include "be_t.h"
-#include "panic.h"
-#include "xmalloc.h"
-#include "tv.h"
-#include "iredges.h"
-#include "debug.h"
-#include "irgwalk.h"
-#include "irop_t.h"
-#include "irargs_t.h"
-#include "irprog.h"
-
 #include "beblocksched.h"
 #include "begnuas.h"
 #include "beirg.h"
+#include "benode.h"
 #include "besched.h"
-
-#include "amd64_emitter.h"
 #include "gen_amd64_emitter.h"
 #include "gen_amd64_regalloc_if.h"
-#include "amd64_nodes_attr.h"
-#include "amd64_new_nodes.h"
-
-#include "benode.h"
+#include "irgwalk.h"
+#include "panic.h"
 
 static be_stack_layout_t *layout;
 

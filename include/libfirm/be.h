@@ -13,7 +13,6 @@
 
 #include <stdio.h>
 #include "irarch.h"
-#include "lowering.h"
 #include "iroptimize.h"
 #include "irmode.h"
 #include "begin.h"

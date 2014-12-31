@@ -8,39 +8,24 @@
  * @brief   arm emitter
  * @author  Oliver Richter, Tobias Gneist, Michael Beck, Matthias Braun
  */
-#include <limits.h>
-#include <stdbool.h>
 #include <inttypes.h>
 
+#include "arm_cconv.h"
+#include "arm_emitter.h"
+#include "arm_new_nodes.h"
+#include "be_t.h"
 #include "bearch_arm_t.h"
-#include "dbginfo.h"
+#include "beblocksched.h"
+#include "begnuas.h"
+#include "benode.h"
+#include "besched.h"
 #include "debug.h"
-#include "irargs_t.h"
-#include "iredges.h"
+#include "gen_arm_emitter.h"
+#include "gen_arm_regalloc_if.h"
 #include "irgwalk.h"
-#include "irop_t.h"
-#include "irprog_t.h"
 #include "panic.h"
 #include "pmap.h"
-#include "tv.h"
 #include "util.h"
-#include "xmalloc.h"
-
-#include "besched.h"
-#include "beblocksched.h"
-#include "beirg.h"
-#include "begnuas.h"
-#include "bedwarf.h"
-
-#include "arm_emitter.h"
-#include "arm_optimize.h"
-#include "arm_cconv.h"
-#include "gen_arm_emitter.h"
-#include "arm_nodes_attr.h"
-#include "arm_new_nodes.h"
-#include "gen_arm_regalloc_if.h"
-
-#include "benode.h"
 
 /** An entry in the ent_or_tv set. */
 typedef struct ent_or_tv_t ent_or_tv_t;
