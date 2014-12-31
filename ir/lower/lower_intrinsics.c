@@ -893,28 +893,6 @@ int i_mapper_memcpy(ir_node *call)
 	return 0;
 }
 
-int i_mapper_mempcpy(ir_node *call)
-{
-	ir_node *dst = get_Call_param(call, 0);
-	ir_node *src = get_Call_param(call, 1);
-	ir_node *len = get_Call_param(call, 2);
-
-	if (dst == src || (is_Const(len) && is_Const_null(len))) {
-		/* a memcpy(d, d, len) ==> d + len OR
-		   a memcpy(d, s, 0) ==> d + 0 */
-		dbg_info *dbg = get_irn_dbg_info(call);
-		ir_node *mem  = get_Call_mem(call);
-		ir_node *blk  = get_nodes_block(call);
-		ir_mode *mode = get_irn_mode(dst);
-		ir_node *res  = new_rd_Add(dbg, blk, dst, len, mode);
-
-		DBG_OPT_ALGSIM0(call, res, FS_OPT_RTS_MEMPCPY);
-		replace_call(res, call, mem, NULL, NULL);
-		return 1;
-	}
-	return 0;
-}
-
 int i_mapper_memmove(ir_node *call)
 {
 	ir_node *dst = get_Call_param(call, 0);
