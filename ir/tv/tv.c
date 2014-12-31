@@ -202,16 +202,6 @@ ir_tarval *new_tarval_from_str(const char *str, size_t len, ir_mode *mode)
 	assert(len > 0);
 
 	switch (get_mode_sort(mode)) {
-	case irms_internal_boolean:
-		/* match [tT][rR][uU][eE]|[fF][aA][lL][sS][eE] */
-		if (!strcasecmp(str, "true"))
-			return tarval_b_true;
-		else if (!strcasecmp(str, "false"))
-			return tarval_b_false;
-		else
-			/* XXX This is C semantics */
-			return atoi(str) ? tarval_b_true : tarval_b_false;
-
 	case irms_float_number: {
 		fp_value *buffer = (fp_value*)ALLOCAN(char, fp_value_size);
 		fc_val_from_str(str, len, buffer);
@@ -219,25 +209,21 @@ ir_tarval *new_tarval_from_str(const char *str, size_t len, ir_mode *mode)
 		return get_fp_tarval(buffer, mode);
 	}
 	case irms_reference:
-		if (!strcasecmp(str, "null"))
-			return get_mode_null(mode);
-		/* FALLTHROUGH */
 	case irms_int_number:
 		return new_tarval_from_str_int(str, len, mode);
-	default:
-		panic("unsupported tarval creation with mode %F", mode);
+
+	case irms_auxiliary:
+	case irms_data:
+	case irms_internal_boolean:
+		break;
 	}
+	panic("unsupported tarval creation with mode %F", mode);
 }
 
 ir_tarval *new_tarval_from_long(long l, ir_mode *mode)
 {
 	switch (get_mode_sort(mode))   {
-	case irms_internal_boolean:
-		/* XXX C semantics ! */
-		return l ? tarval_b_true : tarval_b_false ;
-
 	case irms_reference:
-		/* same as integer modes */
 	case irms_int_number: {
 		sc_word *buffer = ALLOCAN(sc_word, sc_value_length);
 		sc_val_from_long(l, buffer);
@@ -247,9 +233,12 @@ ir_tarval *new_tarval_from_long(long l, ir_mode *mode)
 	case irms_float_number:
 		return new_tarval_from_double((long double)l, mode);
 
-	default:
-		panic("unsupported mode sort");
+	case irms_internal_boolean:
+	case irms_data:
+	case irms_auxiliary:
+		break;
 	}
+	panic("unsupported mode sort");
 }
 
 ir_tarval *new_tarval_nan(ir_mode *mode, int signaling, ir_tarval *payload)
