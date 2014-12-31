@@ -41,13 +41,10 @@ struct fp_value {
 #define _exp(a)  &((a)->value[0])
 #define _mant(a) &((a)->value[value_size])
 
-/** A temporary buffer. */
-static fp_value *calc_buffer;
-
 /** Current rounding mode.*/
 static fc_rounding_mode_t rounding_mode;
 
-static unsigned calc_buffer_size;
+static unsigned fp_value_size;
 static unsigned value_size;
 static unsigned max_precision;
 
@@ -269,13 +266,13 @@ static bool handle_NAN(const fp_value *a, const fp_value *b, fp_value *result)
 		if (b->clss == FC_NAN && smaller_nan(b, a))
 			goto return_nan_b;
 		if (a != result)
-			memcpy(result, a, calc_buffer_size);
+			memcpy(result, a, fp_value_size);
 		fc_exact = false;
 		return true;
 	}
 	if (b->clss == FC_NAN) {
 return_nan_b:
-		if (b != result) memcpy(result, b, calc_buffer_size);
+		if (b != result) memcpy(result, b, fp_value_size);
 		fc_exact = false;
 		return true;
 	}
@@ -339,14 +336,14 @@ static void _fadd(const fp_value *a, const fp_value *b, fp_value *result)
 	/* sign has been taken care of, check for special cases */
 	if (a->clss == FC_ZERO || b->clss == FC_INF) {
 		if (b != result)
-			memcpy(result, b, calc_buffer_size);
+			memcpy(result, b, fp_value_size);
 		fc_exact = b->clss == FC_NORMAL;
 		result->sign = res_sign;
 		return;
 	}
 	if (b->clss == FC_ZERO || a->clss == FC_INF) {
 		if (a != result)
-			memcpy(result, a, calc_buffer_size);
+			memcpy(result, a, fp_value_size);
 		fc_exact = a->clss == FC_NORMAL;
 		result->sign = res_sign;
 		return;
@@ -415,7 +412,7 @@ static void _fmul(const fp_value *a, const fp_value *b, fp_value *result)
 			fc_exact = false;
 		} else {
 			if (a != result)
-				memcpy(result, a, calc_buffer_size);
+				memcpy(result, a, fp_value_size);
 			result->sign = res_sign;
 		}
 		return;
@@ -426,7 +423,7 @@ static void _fmul(const fp_value *a, const fp_value *b, fp_value *result)
 			fc_exact = false;
 		} else {
 			if (b != result)
-				memcpy(result, b, calc_buffer_size);
+				memcpy(result, b, fp_value_size);
 			result->sign = res_sign;
 		}
 		return;
@@ -435,14 +432,14 @@ static void _fmul(const fp_value *a, const fp_value *b, fp_value *result)
 	if (a->clss == FC_INF) {
 		fc_exact = false;
 		if (a != result)
-			memcpy(result, a, calc_buffer_size);
+			memcpy(result, a, fp_value_size);
 		result->sign = res_sign;
 		return;
 	}
 	if (b->clss == FC_INF) {
 		fc_exact = false;
 		if (b != result)
-			memcpy(result, b, calc_buffer_size);
+			memcpy(result, b, fp_value_size);
 		result->sign = res_sign;
 		return;
 	}
@@ -499,7 +496,7 @@ static void _fdiv(const fp_value *a, const fp_value *b, fp_value *result)
 		} else {
 			/* 0/x -> 0 */
 			if (a != result)
-				memcpy(result, a, calc_buffer_size);
+				memcpy(result, a, fp_value_size);
 			result->sign = res_sign;
 		}
 		return;
@@ -523,7 +520,7 @@ static void _fdiv(const fp_value *a, const fp_value *b, fp_value *result)
 		fc_exact = false;
 		/* inf/x -> inf */
 		if (a != result)
-			memcpy(result, a, calc_buffer_size);
+			memcpy(result, a, fp_value_size);
 		result->sign = res_sign;
 		return;
 	}
@@ -600,7 +597,7 @@ static void _trunc(const fp_value *a, fp_value *result)
 	unsigned effective_mantissa = a->desc.mantissa_size - a->desc.explicit_one;
 	if (exp_val > (int)effective_mantissa) {
 		if (a != result)
-			memcpy(result, a, calc_buffer_size);
+			memcpy(result, a, fp_value_size);
 		return;
 	}
 
@@ -619,33 +616,25 @@ static void _trunc(const fp_value *a, fp_value *result)
 	}
 }
 
-const void *fc_get_buffer(void)
+unsigned fc_get_value_size(void)
 {
-	return calc_buffer;
+	return fp_value_size;
 }
 
-unsigned fc_get_buffer_length(void)
-{
-	return calc_buffer_size;
-}
-
-void *fc_val_from_str(const char *str, size_t len, void *result)
+void fc_val_from_str(const char *str, size_t len, fp_value *result)
 {
 	char *buffer = alloca(len + 1);
 	memcpy(buffer, str, len);
 	buffer[len] = '\0';
 	long double val = strtold(buffer, NULL);
-	return fc_val_from_ieee754(val, result);
+	fc_val_from_ieee754(val, result);
 }
 
-fp_value *fc_val_from_bytes(fp_value *result, const unsigned char *buffer,
-                            const float_descriptor_t *desc)
+void fc_val_from_bytes(fp_value *result, const unsigned char *buffer,
+                       const float_descriptor_t *desc)
 {
-	if (result == NULL)
-		result = calc_buffer;
-
 	/* CLEAR the buffer, else some bits might be uninitialized */
-	memset(result, 0, calc_buffer_size);
+	memset(result, 0, fp_value_size);
 
 	unsigned exponent_size = desc->exponent_size;
 	unsigned mantissa_size = desc->mantissa_size;
@@ -686,10 +675,9 @@ fp_value *fc_val_from_bytes(fp_value *result, const unsigned char *buffer,
 			sc_set_bit_at(_mant(result), ROUNDING_BITS+mantissa_size);
 		normalize(result, false);
 	}
-	return result;
 }
 
-fp_value *fc_val_from_ieee754(long double l, fp_value *result)
+void fc_val_from_ieee754(long double l, fp_value *result)
 {
 	unsigned real_size
 		= (long_double_desc.mantissa_size+long_double_desc.exponent_size+1)/8;
@@ -701,17 +689,16 @@ fp_value *fc_val_from_ieee754(long double l, fp_value *result)
 #else
 	memcpy(buf, &l, real_size);
 #endif
-	return fc_val_from_bytes(result, buf, &long_double_desc);
+	fc_val_from_bytes(result, buf, &long_double_desc);
 }
 
 long double fc_val_to_ieee754(const fp_value *val)
 {
-
-	fp_value *temp  = (fp_value*) alloca(calc_buffer_size);
-	fp_value *value = fc_cast(val, &long_double_desc, temp);
+	fp_value *temp  = (fp_value*) alloca(fp_value_size);
+	fc_cast(val, &long_double_desc, temp);
 
 	sc_word *packed = ALLOCAN(sc_word, value_size);
-	pack(value, packed);
+	pack(temp, packed);
 
 	char buf[sizeof(long double)];
 	unsigned real_size
@@ -740,11 +727,9 @@ bool fc_nan_is_quiet(const fp_value *value)
 	return sc_get_bit_at(_mant(value), bit);
 }
 
-fp_value *fc_cast(const fp_value *value, const float_descriptor_t *dest,
-                  fp_value *result)
+void fc_cast(const fp_value *value, const float_descriptor_t *dest,
+             fp_value *result)
 {
-	if (result == NULL)
-		result = calc_buffer;
 	assert(value != result);
 
 	const float_descriptor_t *desc = &value->desc;
@@ -752,15 +737,17 @@ fp_value *fc_cast(const fp_value *value, const float_descriptor_t *dest,
 		desc->mantissa_size == dest->mantissa_size &&
 		desc->explicit_one  == dest->explicit_one) {
 		if (value != result)
-			memcpy(result, value, calc_buffer_size);
-		return result;
+			memcpy(result, value, fp_value_size);
+		return;
 	}
 
 	if (value->clss == FC_NAN) {
 		/* TODO: preserve mantissa bits? */
-		return fc_get_nan(dest, result, !fc_nan_is_quiet(value), NULL);
+		fc_get_nan(dest, result, !fc_nan_is_quiet(value), NULL);
+		return;
 	} else if (value->clss == FC_INF) {
-		return fc_get_inf(dest, result, value->sign);
+		fc_get_inf(dest, result, value->sign);
+		return;
 	}
 
 	/* set the descriptor of the new value */
@@ -789,14 +776,10 @@ fp_value *fc_cast(const fp_value *value, const float_descriptor_t *dest,
 	}
 
 	normalize(result, false);
-	return result;
 }
 
-fp_value *fc_get_max(const float_descriptor_t *desc, fp_value *result, bool sign)
+void fc_get_max(const float_descriptor_t *desc, fp_value *result, bool sign)
 {
-	if (result == NULL)
-		result = calc_buffer;
-
 	result->desc = *desc;
 	result->clss = FC_NORMAL;
 	result->sign = sign;
@@ -804,14 +787,10 @@ fp_value *fc_get_max(const float_descriptor_t *desc, fp_value *result, bool sign
 	sc_val_from_ulong((1 << desc->exponent_size) - 2, _exp(result));
 	sc_max_from_bits(desc->mantissa_size+1-desc->explicit_one, 0, _mant(result));
 	sc_shlI(_mant(result), ROUNDING_BITS, _mant(result));
-	return result;
 }
 
-fp_value *fc_get_small(const float_descriptor_t *desc, fp_value *result)
+void fc_get_small(const float_descriptor_t *desc, fp_value *result)
 {
-	if (result == NULL)
-		result = calc_buffer;
-
 	result->desc = *desc;
 	result->clss = FC_NORMAL;
 	result->sign = false;
@@ -819,14 +798,10 @@ fp_value *fc_get_small(const float_descriptor_t *desc, fp_value *result)
 	sc_zero(_mant(result));
 	sc_set_bit_at(_mant(result), (desc->mantissa_size - desc->explicit_one)
 	                             + ROUNDING_BITS);
-	return result;
 }
 
-fp_value *fc_get_epsilon(const float_descriptor_t *desc, fp_value *result)
+void fc_get_epsilon(const float_descriptor_t *desc, fp_value *result)
 {
-	if (result == NULL)
-		result = calc_buffer;
-
 	result->desc = *desc;
 	result->clss = FC_NORMAL;
 	result->sign = false;
@@ -836,15 +811,11 @@ fp_value *fc_get_epsilon(const float_descriptor_t *desc, fp_value *result)
 	sc_val_from_ulong(exp_bias - effective_mantissa, _exp(result));
 	sc_zero(_mant(result));
 	sc_set_bit_at(_mant(result), effective_mantissa + ROUNDING_BITS);
-	return result;
 }
 
-fp_value *fc_get_nan(const float_descriptor_t *desc, fp_value *result,
-                     bool signaling, sc_word *payload)
+void fc_get_nan(const float_descriptor_t *desc, fp_value *result,
+                bool signaling, sc_word *payload)
 {
-	if (result == NULL)
-		result = calc_buffer;
-
 	result->desc = *desc;
 	result->clss = FC_NAN;
 	result->sign = 0;
@@ -877,15 +848,10 @@ fp_value *fc_get_nan(const float_descriptor_t *desc, fp_value *result,
 		sc_clear_bit_at(_mant(result), quiet_bit);
 	else
 		sc_set_bit_at(_mant(result), quiet_bit);
-	return result;
 }
 
-fp_value *fc_get_inf(const float_descriptor_t *desc, fp_value *result,
-                     bool sign)
+void fc_get_inf(const float_descriptor_t *desc, fp_value *result, bool sign)
 {
-	if (result == NULL)
-		result = calc_buffer;
-
 	result->desc = *desc;
 	result->clss = FC_INF;
 	result->sign = sign;
@@ -894,7 +860,6 @@ fp_value *fc_get_inf(const float_descriptor_t *desc, fp_value *result,
 	// set the explicit one
 	sc_set_bit_at(_mant(result),
 				  (desc->mantissa_size - desc->explicit_one)+ROUNDING_BITS);
-	return result;
 }
 
 ir_relation fc_comp(fp_value const *const val_a, fp_value const *const val_b)
@@ -1080,116 +1045,85 @@ fc_rounding_mode_t fc_get_rounding_mode(void)
 
 void init_fltcalc(unsigned precision)
 {
-	if (calc_buffer == NULL) {
-		init_strcalc(precision + 2 + ROUNDING_BITS);
+#ifndef NDEBUG
+	static bool initialized;
+	assert(!initialized);
+	initialized = true;
+#endif
 
-		/* needs additionally rounding bits, one bit as explicit 1., and one for
-		 * addition overflow */
-		max_precision = sc_get_precision() - (2 + ROUNDING_BITS);
-		if (max_precision < precision)
-			printf("WARNING: not enough precision available, using %u\n", max_precision);
+	init_strcalc(precision + 2 + ROUNDING_BITS);
 
-		rounding_mode    = FC_TONEAREST;
-		value_size       = sc_get_value_length();
-		calc_buffer_size = sizeof(fp_value) + 2*value_size;
+	/* needs additionally rounding bits, one bit as explicit 1., and one for
+	 * addition overflow */
+	max_precision = sc_get_precision() - (2 + ROUNDING_BITS);
+	if (max_precision < precision)
+		printf("WARNING: not enough precision available, using %u\n", max_precision);
 
-		calc_buffer = (fp_value*) xmalloc(calc_buffer_size);
-		memset(calc_buffer, 0, calc_buffer_size);
+	rounding_mode = FC_TONEAREST;
+	value_size    = sc_get_value_length();
+	fp_value_size = sizeof(fp_value) + 2*value_size;
 
 #if LDBL_MANT_DIG == 64
-		assert(sizeof(long double) == 12 || sizeof(long double) == 16);
-		long_double_desc = (float_descriptor_t) { 15, 64, 1 };
+	assert(sizeof(long double) == 12 || sizeof(long double) == 16);
+	long_double_desc = (float_descriptor_t) { 15, 64, 1 };
 #elif LDBL_MANT_DIG == 53
-		assert(sizeof(long double) == 8);
-		long_double_desc = (float_descriptor_t) { 11, 52, 0 };
+	assert(sizeof(long double) == 8);
+	long_double_desc = (float_descriptor_t) { 11, 52, 0 };
 #else
-	#error "Unsupported long double format"
+#error "Unsupported long double format"
 #endif
-	}
-}
-
-void finish_fltcalc(void)
-{
-	free(calc_buffer);
-	calc_buffer = NULL;
 }
 
 /* definition of interface functions */
-fp_value *fc_add(const fp_value *a, const fp_value *b, fp_value *result)
+void fc_add(const fp_value *a, const fp_value *b, fp_value *result)
 {
-	if (result == NULL)
-		result = calc_buffer;
-
 	fc_exact = true;
 	if (handle_NAN(a, b, result))
-		return result;
+		return;
 
 	/* make the value with the bigger exponent the first one */
 	if (sc_comp(_exp(a), _exp(b)) == ir_relation_less)
 		_fadd(b, a, result);
 	else
 		_fadd(a, b, result);
-
-	return result;
 }
 
-fp_value *fc_sub(const fp_value *a, const fp_value *b, fp_value *result)
+void fc_sub(const fp_value *a, const fp_value *b, fp_value *result)
 {
-	if (result == NULL)
-		result = calc_buffer;
-
 	fc_exact = true;
 	if (handle_NAN(a, b, result))
-		return result;
+		return;
 
-	fp_value *temp = (fp_value*) alloca(calc_buffer_size);
-	memcpy(temp, b, calc_buffer_size);
+	fp_value *temp = (fp_value*) alloca(fp_value_size);
+	memcpy(temp, b, fp_value_size);
 	temp->sign = !b->sign;
 	if (sc_comp(_exp(a), _exp(temp)) == ir_relation_less)
 		_fadd(temp, a, result);
 	else
 		_fadd(a, temp, result);
-
-	return result;
 }
 
-fp_value *fc_mul(const fp_value *a, const fp_value *b, fp_value *result)
+void fc_mul(const fp_value *a, const fp_value *b, fp_value *result)
 {
-	if (result == NULL)
-		result = calc_buffer;
-
 	_fmul(a, b, result);
-	return result;
 }
 
-fp_value *fc_div(const fp_value *a, const fp_value *b, fp_value *result)
+void fc_div(const fp_value *a, const fp_value *b, fp_value *result)
 {
-	if (result == NULL)
-		result = calc_buffer;
-
 	_fdiv(a, b, result);
-	return result;
 }
 
-fp_value *fc_neg(const fp_value *a, fp_value *result)
+void fc_neg(const fp_value *a, fp_value *result)
 {
-	if (result == NULL)
-		result = calc_buffer;
-
 	if (a != result)
-		memcpy(result, a, calc_buffer_size);
+		memcpy(result, a, fp_value_size);
 	if (result->clss != FC_NAN)
 		result->sign = !a->sign;
-	return result;
 }
 
-fp_value *fc_int(const fp_value *a, fp_value *result)
+void fc_int(const fp_value *a, fp_value *result)
 {
-	if (result == NULL)
-		result = calc_buffer;
-
 	_trunc(a, result);
-	return result;
 }
 
 flt2int_result_t fc_flt2int(const fp_value *a, sc_word *result,

@@ -45,39 +45,26 @@ typedef enum {
 struct fp_value;
 typedef struct fp_value fp_value;
 
-/** internal buffer access
- * All functions that accept NULL as return buffer put their result into an
- * internal buffer.
- * @return fc_get_buffer() returns the pointer to the buffer,
- *         fc_get_buffer_length()
- * returns the size of this buffer
- */
-const void *fc_get_buffer(void);
-unsigned fc_get_buffer_length(void);
+/** Returns the size in bytes of an fp_value */
+unsigned fc_get_value_size(void);
 
-void *fc_val_from_str(const char *str, size_t len, void *result);
+void fc_val_from_str(const char *str, size_t len, fp_value *result);
 
 /** get the representation of a floating point value
  * This function tries to builds a representation having the same value as the
  * long double floating point number passed.
  *
  * @param l       The floating point number to build a representation for
- * @param result  A buffer to hold the value built. If this is NULL, the internal
- *                accumulator buffer is used. Note that the buffer must be big
- *                enough to hold the value. Use fc_get_buffer_length() to find out
- *                the size needed
- *
- * @return  The result pointer passed to the function. If this was NULL this returns
- *          a pointer to the internal accumulator buffer
+ * @param result  A buffer to hold the value built.
  */
-fp_value *fc_val_from_ieee754(long double l, fp_value *result);
+void fc_val_from_ieee754(long double l, fp_value *result);
 
 /**
  * get fp_value from a floatingpoint an ieee754 float number encoded in little
  * endian format in @p buffer.
  */
-fp_value *fc_val_from_bytes(fp_value *result, const unsigned char *buffer,
-                            const float_descriptor_t *desc);
+void fc_val_from_bytes(fp_value *result, const unsigned char *buffer,
+                       const float_descriptor_t *desc);
 
 /** retrieve the float value of an internal value
  * This function casts the internal value to long double and returns a
@@ -99,14 +86,10 @@ long double fc_val_to_ieee754(const fp_value *val);
  *
  * @param val     The value to be casted
  * @param desc    The floating point descriptor
- * @param result  A buffer to hold the value built. If this is NULL, the internal
- *                accumulator buffer is used. Note that the buffer must be big
- *                enough to hold the value. Use fc_get_buffer_length() to find out
- *                the size needed
- * @return  The result pointer passed to the function. If this was NULL this returns
- *          a pointer to the internal accumulator buffer
+ * @param result  A buffer to hold the value built.
  */
-fp_value *fc_cast(const fp_value *val, const float_descriptor_t *desc, fp_value *result);
+void fc_cast(const fp_value *val, const float_descriptor_t *desc,
+             fp_value *result);
 
 /*@{*/
 /** build a special float value
@@ -114,19 +97,14 @@ fp_value *fc_cast(const fp_value *val, const float_descriptor_t *desc, fp_value 
  * function's suffix.
  *
  * @param desc    The floating point descriptor
- * @param result  A buffer to hold the value built. If this is NULL, the internal
- *                accumulator buffer is used. Note that the buffer must be big
- *                enough to hold the value. Use fc_get_buffer_length() to find out
- *                the size needed
- * @return  The result pointer passed to the function. If this was NULL this returns
- *          a pointer to the internal accumulator buffer
+ * @param result  A buffer to hold the value built.
  */
-fp_value *fc_get_max(const float_descriptor_t *desc, fp_value *result, bool sign);
-fp_value *fc_get_nan(const float_descriptor_t *desc, fp_value *result,
-                     bool signaling, sc_word *payload);
-fp_value *fc_get_inf(const float_descriptor_t *desc, fp_value *result, bool sign);
-fp_value *fc_get_small(const float_descriptor_t *desc, fp_value *result);
-fp_value *fc_get_epsilon(const float_descriptor_t *desc, fp_value *result);
+void fc_get_max(const float_descriptor_t *desc, fp_value *result, bool sign);
+void fc_get_nan(const float_descriptor_t *desc, fp_value *result,
+                bool signaling, sc_word *payload);
+void fc_get_inf(const float_descriptor_t *desc, fp_value *result, bool sign);
+void fc_get_small(const float_descriptor_t *desc, fp_value *result);
+void fc_get_epsilon(const float_descriptor_t *desc, fp_value *result);
 /*@}*/
 
 bool fc_is_zero(const fp_value *a);
@@ -136,12 +114,12 @@ bool fc_is_nan(const fp_value *a);
 bool fc_nan_is_quiet(const fp_value *a);
 bool fc_is_subnormal(const fp_value *a);
 
-fp_value *fc_add(const fp_value *a, const fp_value *b, fp_value *result);
-fp_value *fc_sub(const fp_value *a, const fp_value *b, fp_value *result);
-fp_value *fc_mul(const fp_value *a, const fp_value *b, fp_value *result);
-fp_value *fc_div(const fp_value *a, const fp_value *b, fp_value *result);
-fp_value *fc_neg(const fp_value *a, fp_value *result);
-fp_value *fc_int(const fp_value *a, fp_value *result);
+void fc_add(const fp_value *a, const fp_value *b, fp_value *result);
+void fc_sub(const fp_value *a, const fp_value *b, fp_value *result);
+void fc_mul(const fp_value *a, const fp_value *b, fp_value *result);
+void fc_div(const fp_value *a, const fp_value *b, fp_value *result);
+void fc_neg(const fp_value *a, fp_value *result);
+void fc_int(const fp_value *a, fp_value *result);
 
 int fc_print(const fp_value *a, char *buf, size_t buflen, fc_base_t base);
 
@@ -263,6 +241,5 @@ void fc_val_to_bytes(const fp_value *val, unsigned char *buf);
 bool fc_is_exact(void);
 
 void init_fltcalc(unsigned precision);
-void finish_fltcalc(void);
 
 #endif

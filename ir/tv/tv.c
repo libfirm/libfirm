@@ -43,6 +43,7 @@
 static struct set *tarvals = NULL;
 
 static unsigned sc_value_length;
+static unsigned fp_value_size;
 
 /** The integer overflow mode. */
 static bool wrap_on_overflow = true;
@@ -130,12 +131,10 @@ static const float_descriptor_t *get_descriptor(const ir_mode *mode)
 
 static ir_tarval *get_tarval_from_fp_value(const fp_value *val, ir_mode *mode)
 {
-	const float_descriptor_t *desc          = get_descriptor(mode);
-	const int                 buffer_length = fc_get_buffer_length();
-	fp_value                 *tmp           = alloca(buffer_length);
-	memcpy(tmp, val, buffer_length);
-	fp_value *casted_val = fc_cast(tmp, desc, NULL);
-	return get_tarval(casted_val, buffer_length, mode);
+	const float_descriptor_t *desc   = get_descriptor(mode);
+	fp_value                 *casted = alloca(fp_value_size);
+	fc_cast(val, desc, casted);
+	return get_tarval(casted, fp_value_size, mode);
 }
 
 ir_tarval *new_integer_tarval_from_str(const char *str, size_t len,
@@ -211,8 +210,9 @@ ir_tarval *new_tarval_from_str(const char *str, size_t len, ir_mode *mode)
 			return atoi(str) ? tarval_b_true : tarval_b_false;
 
 	case irms_float_number: {
-		fp_value *val = fc_val_from_str(str, len, NULL);
-		return get_tarval_from_fp_value(val, mode);
+		fp_value *buffer = (fp_value*)ALLOCAN(char, fp_value_size);
+		fc_val_from_str(str, len, buffer);
+		return get_tarval_from_fp_value(buffer, mode);
 	}
 	case irms_reference:
 		if (!strcasecmp(str, "null"))
@@ -255,7 +255,7 @@ ir_tarval *new_tarval_nan(ir_mode *mode, int signaling, ir_tarval *payload)
 	sc_word *sc_payload = payload != NULL ? payload->value : NULL;
 
 	assert(mode_is_float(mode));
-	unsigned                  buffer_len = fc_get_buffer_length();
+	unsigned                  buffer_len = fp_value_size;
 	fp_value                 *buffer     = (fp_value*)ALLOCAN(char, buffer_len);
 	const float_descriptor_t *desc       = get_descriptor(mode);
 	fc_get_nan(desc, buffer, signaling, sc_payload);
@@ -275,8 +275,9 @@ ir_tarval *new_tarval_from_bytes(unsigned char const *buf,
 	}
 	case irma_ieee754:
 	case irma_x86_extended_float: {
-		fc_val_from_bytes(NULL, buf, get_descriptor(mode));
-		return get_tarval_from_fp_value(fc_get_buffer(), mode);
+		fp_value *buffer = (fp_value*)ALLOCAN(char, fp_value_size);
+		fc_val_from_bytes(buffer, buf, get_descriptor(mode));
+		return get_tarval_from_fp_value(buffer, mode);
 	}
 	case irma_none:
 		break;
@@ -357,8 +358,9 @@ uint64_t get_tarval_uint64(const ir_tarval *tv)
 ir_tarval *new_tarval_from_long_double(long double d, ir_mode *mode)
 {
 	assert(mode_is_float(mode));
-	fp_value *val = fc_val_from_ieee754(d, NULL);
-	return get_tarval_from_fp_value(val, mode);
+	fp_value *buffer = (fp_value*)ALLOCAN(char, fp_value_size);
+	fc_val_from_ieee754(d, buffer);
+	return get_tarval_from_fp_value(buffer, mode);
 }
 
 ir_tarval *new_tarval_from_double(double d, ir_mode *mode)
@@ -426,27 +428,30 @@ ir_tarval *get_tarval_small(ir_mode *mode)
 {
 	if (!mode_is_float(mode))
 		panic("mode %+F does not support small value");
+	fp_value                 *buffer     = (fp_value*)ALLOCAN(char, fp_value_size);
 	const float_descriptor_t *desc = get_descriptor(mode);
-	fc_get_small(desc, NULL);
-	return get_tarval(fc_get_buffer(), fc_get_buffer_length(), mode);
+	fc_get_small(desc, buffer);
+	return get_tarval(buffer, fp_value_size, mode);
 }
 
 ir_tarval *get_tarval_epsilon(ir_mode *mode)
 {
 	if (!mode_is_float(mode))
 		panic("mode %+F does not support small value");
+	fp_value                 *buffer     = (fp_value*)ALLOCAN(char, fp_value_size);
 	const float_descriptor_t *desc = get_descriptor(mode);
-	fc_get_epsilon(desc, NULL);
-	return get_tarval(fc_get_buffer(), fc_get_buffer_length(), mode);
+	fc_get_epsilon(desc, buffer);
+	return get_tarval(buffer, fp_value_size, mode);
 }
 
 ir_tarval *get_tarval_minus_inf(ir_mode *mode)
 {
 	if (!mode_is_float(mode))
 		panic("mode %F does not support -inf value", mode);
+	fp_value                 *buffer     = (fp_value*)ALLOCAN(char, fp_value_size);
 	const float_descriptor_t *desc = get_descriptor(mode);
-	fc_get_inf(desc, NULL, true);
-	return get_tarval(fc_get_buffer(), fc_get_buffer_length(), mode);
+	fc_get_inf(desc, buffer, true);
+	return get_tarval(buffer, fp_value_size, mode);
 }
 
 void init_mode_values(ir_mode* mode)
@@ -454,15 +459,14 @@ void init_mode_values(ir_mode* mode)
 	switch (get_mode_sort(mode)) {
 	case irms_float_number: {
 		const float_descriptor_t *desc   = get_descriptor(mode);
-		unsigned                  buflen = fc_get_buffer_length();
-		fp_value                 *buf    = alloca(buflen);
+		fp_value                 *buf    = alloca(fp_value_size);
 		mode->all_one     = tarval_bad;
 		fc_get_inf(desc, buf, false);
-		mode->infinity    = get_tarval(buf, buflen, mode);
+		mode->infinity    = get_tarval(buf, fp_value_size, mode);
 		fc_get_max(desc, buf, true); // min = negative maximum
-		mode->min         = get_tarval(buf, buflen, mode);
+		mode->min         = get_tarval(buf, fp_value_size, mode);
 		fc_get_max(desc, buf, false);
-		mode->max         = get_tarval(buf, buflen, mode);
+		mode->max         = get_tarval(buf, fp_value_size, mode);
 		mode->null        = new_tarval_from_double(0.0, mode);
 		mode->one         = new_tarval_from_double(1.0, mode);
 		break;
@@ -597,15 +601,17 @@ ir_tarval *tarval_convert_to(ir_tarval *src, ir_mode *dst_mode)
 		switch (get_mode_sort(dst_mode)) {
 		case irms_float_number: {
 			const float_descriptor_t *desc = get_descriptor(dst_mode);
-			fc_cast((const fp_value*) src->value, desc, NULL);
-			return get_tarval(fc_get_buffer(), fc_get_buffer_length(), dst_mode);
+			fp_value *buffer = (fp_value*)ALLOCAN(char, fp_value_size);
+			fc_cast((const fp_value*)src->value, desc, buffer);
+			return get_tarval(buffer, fp_value_size, dst_mode);
 		}
 
 		case irms_int_number: {
-			fp_value *res    = fc_int((const fp_value*) src->value, NULL);
-			sc_word  *buffer = ALLOCAN(sc_word, sc_value_length);
+			fp_value *buffer = (fp_value*)ALLOCAN(char, fp_value_size);
+			fc_int((const fp_value*) src->value, buffer);
+			sc_word *intval = ALLOCAN(sc_word, sc_value_length);
 			flt2int_result_t cres
-				= fc_flt2int(res, buffer, get_mode_size_bits(dst_mode),
+				= fc_flt2int(buffer, intval, get_mode_size_bits(dst_mode),
 				             mode_is_signed(dst_mode));
 			switch (cres) {
 			case FLT2INT_POSITIVE_OVERFLOW:
@@ -621,7 +627,7 @@ ir_tarval *tarval_convert_to(ir_tarval *src, ir_mode *dst_mode)
 			case FLT2INT_BAD:
 				return tarval_bad;
 			case FLT2INT_OK:
-				return get_tarval(buffer, sc_value_length, dst_mode);
+				return get_tarval(intval, sc_value_length, dst_mode);
 			}
 		}
 
@@ -651,10 +657,10 @@ ir_tarval *tarval_convert_to(ir_tarval *src, ir_mode *dst_mode)
 			 * interpreted unsigned by fc_val_from_str, so this is a HACK */
 			int len = snprintf(buffer, 100, "%s",
 				sc_print(src->value, get_mode_size_bits(src->mode), SC_DEC, mode_is_signed(src->mode)));
-			buffer[100 - 1] = '\0';
 
-			fp_value *val = fc_val_from_str(buffer, len, NULL);
-			return get_tarval_from_fp_value(val, dst_mode);
+			fp_value *fpval = (fp_value*)ALLOCAN(char, fp_value_size);
+			fc_val_from_str(buffer, len, fpval);
+			return get_tarval_from_fp_value(fpval, dst_mode);
 		}
 		case irms_auxiliary:
 		case irms_data:
@@ -739,9 +745,11 @@ ir_tarval *tarval_neg(ir_tarval *a)
 		return get_tarval_overflow(buffer, a->length, a->mode);
 	}
 
-	case irms_float_number:
-		fc_neg((const fp_value*) a->value, NULL);
-		return get_tarval(fc_get_buffer(), fc_get_buffer_length(), a->mode);
+	case irms_float_number: {
+		fp_value *buffer = (fp_value*)ALLOCAN(char, fp_value_size);
+		fc_neg((const fp_value*)a->value, buffer);
+		return get_tarval(buffer, fp_value_size, a->mode);
+	}
 
 	case irms_auxiliary:
 	case irms_data:
@@ -771,9 +779,11 @@ ir_tarval *tarval_add(ir_tarval *a, ir_tarval *b)
 		return get_tarval_overflow(buffer, a->length, a->mode);
 	}
 
-	case irms_float_number:
-		fc_add((const fp_value*) a->value, (const fp_value*) b->value, NULL);
-		return get_tarval(fc_get_buffer(), fc_get_buffer_length(), a->mode);
+	case irms_float_number: {
+		fp_value *buffer = (fp_value*)ALLOCAN(char, fp_value_size);
+		fc_add((const fp_value*)a->value, (const fp_value*)b->value, buffer);
+		return get_tarval(buffer, fp_value_size, a->mode);
+	}
 
 	case irms_auxiliary:
 	case irms_data:
@@ -803,9 +813,11 @@ ir_tarval *tarval_sub(ir_tarval *a, ir_tarval *b, ir_mode *dst_mode)
 		return get_tarval_overflow(buffer, a->length, a->mode);
 	}
 
-	case irms_float_number:
-		fc_sub((const fp_value*) a->value, (const fp_value*) b->value, NULL);
-		return get_tarval(fc_get_buffer(), fc_get_buffer_length(), a->mode);
+	case irms_float_number: {
+		fp_value *buffer = (fp_value*)ALLOCAN(char, fp_value_size);
+		fc_sub((const fp_value*)a->value, (const fp_value*)b->value, buffer);
+		return get_tarval(buffer, fp_value_size, a->mode);
+	}
 
 	case irms_auxiliary:
 	case irms_data:
@@ -828,9 +840,11 @@ ir_tarval *tarval_mul(ir_tarval *a, ir_tarval *b)
 		return get_tarval_overflow(buffer, a->length, a->mode);
 	}
 
-	case irms_float_number:
-		fc_mul((const fp_value*) a->value, (const fp_value*) b->value, NULL);
-		return get_tarval(fc_get_buffer(), fc_get_buffer_length(), a->mode);
+	case irms_float_number: {
+		fp_value *buffer = (fp_value*)ALLOCAN(char, fp_value_size);
+		fc_mul((const fp_value*)a->value, (const fp_value*)b->value, buffer);
+		return get_tarval(buffer, fp_value_size, a->mode);
+	}
 
 	case irms_auxiliary:
 	case irms_data:
@@ -857,9 +871,11 @@ ir_tarval *tarval_div(ir_tarval *a, ir_tarval *b)
 		return get_tarval(buffer, sc_value_length, a->mode);
 	}
 
-	case irms_float_number:
-		fc_div((const fp_value*) a->value, (const fp_value*) b->value, NULL);
-		return get_tarval(fc_get_buffer(), fc_get_buffer_length(), mode);
+	case irms_float_number: {
+		fp_value *buffer = (fp_value*)ALLOCAN(char, fp_value_size);
+		fc_div((const fp_value*)a->value, (const fp_value*)b->value, buffer);
+		return get_tarval(buffer, fp_value_size, mode);
+	}
 
 	case irms_auxiliary:
 	case irms_data:
@@ -1244,8 +1260,9 @@ ir_tarval *ir_tarval_from_ascii(const char *buf, ir_mode *mode)
 			unsigned char val = hexval(buf[i*2]) | (hexval(buf[i*2+1]) << 4);
 			temp[i] = val;
 		}
-		fc_val_from_bytes(NULL, temp, get_descriptor(mode));
-		return get_tarval_from_fp_value(fc_get_buffer(), mode);
+		fp_value *buffer = (fp_value*)ALLOCAN(char, fp_value_size);
+		fc_val_from_bytes(buffer, temp, get_descriptor(mode));
+		return get_tarval_from_fp_value(buffer, mode);
 	}
 	case irms_data:
 	case irms_auxiliary:
@@ -1409,6 +1426,7 @@ void init_tarval_1(void)
 	init_fltcalc(128);
 
 	sc_value_length = sc_get_value_length();
+	fp_value_size   = fc_get_value_size();
 
 	/* true/false must be created beforehand without mode due to a cyclic
 	 * dependency between tarvals and modes. */
@@ -1431,7 +1449,6 @@ void init_tarval_2(void)
 void finish_tarval(void)
 {
 	finish_strcalc();
-	finish_fltcalc();
 	del_set(tarvals); tarvals = NULL;
 }
 
