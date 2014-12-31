@@ -881,10 +881,6 @@ ir_relation fc_comp(fp_value const *const val_a, fp_value const *const val_b)
 
 	ir_relation const mul = val_a->sign ? ir_relation_less_greater : ir_relation_false;
 
-	/* both infinity means equality */
-	if ((val_a->clss == FC_INF) && (val_b->clss == FC_INF))
-		return ir_relation_equal;
-
 	/* infinity is bigger than the rest */
 	if (val_a->clss == FC_INF)
 		return ir_relation_greater ^ mul;
