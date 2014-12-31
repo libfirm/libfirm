@@ -44,35 +44,7 @@
 #include "be.h"
 #include "panic.h"
 
-#include "lc_opts.h"
-#include "lc_opts_enum.h"
-
-#include "lpp.h"
-#include "lpp_net.h"
-
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
-
-typedef enum blocksched_algos_t {
-	BLOCKSCHED_NAIV, BLOCKSCHED_GREEDY, BLOCKSCHED_ILP
-} blocksched_algos_t;
-
-static int algo = BLOCKSCHED_GREEDY;
-
-static const lc_opt_enum_int_items_t blockschedalgo_items[] = {
-	{ "naiv",   BLOCKSCHED_NAIV },
-	{ "greedy", BLOCKSCHED_GREEDY },
-	{ "ilp",    BLOCKSCHED_ILP },
-	{ NULL,     0 }
-};
-
-static lc_opt_enum_int_var_t algo_var = {
-	&algo, blockschedalgo_items
-};
-
-static const lc_opt_table_entry_t be_blocksched_options[] = {
-	LC_OPT_ENT_ENUM_INT ("blockscheduler", "the block scheduling algorithm", &algo_var),
-	LC_OPT_LAST
-};
 
 static bool blocks_removed;
 
@@ -184,15 +156,6 @@ static void remove_empty_blocks(ir_graph *irg)
 		clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 	}
 }
-
-/*
- *   ____                   _
- *  / ___|_ __ ___  ___  __| |_   _
- * | |  _| '__/ _ \/ _ \/ _` | | | |
- * | |_| | | |  __/  __/ (_| | |_| |
- *  \____|_|  \___|\___|\__,_|\__, |
- *                            |___/
- */
 
 typedef struct blocksched_entry_t blocksched_entry_t;
 struct blocksched_entry_t {
@@ -593,8 +556,9 @@ static blocksched_entry_t *finish_block_schedule(blocksched_env_t *env)
 	return entry;
 }
 
-static ir_node **create_blocksched_array(blocksched_env_t *env, blocksched_entry_t *first,
-										int count, struct obstack* obst)
+static ir_node **create_blocksched_array(blocksched_env_t *env,
+                                         blocksched_entry_t *first,
+                                         int count, struct obstack* obst)
 {
 	int                i = 0;
 	ir_node            **block_list;
@@ -614,7 +578,7 @@ static ir_node **create_blocksched_array(blocksched_env_t *env, blocksched_entry
 	return block_list;
 }
 
-static ir_node **create_block_schedule_greedy(ir_graph *irg)
+ir_node **be_create_block_schedule(ir_graph *irg)
 {
 	blocksched_env_t   env;
 	blocksched_entry_t *start_entry;
@@ -633,8 +597,7 @@ static ir_node **create_block_schedule_greedy(ir_graph *irg)
 
 	remove_empty_blocks(irg);
 
-	if (algo != BLOCKSCHED_NAIV)
-		coalesce_blocks(&env);
+	coalesce_blocks(&env);
 
 	start_entry = finish_block_schedule(&env);
 	block_list  = create_blocksched_array(&env, start_entry, env.blockcount,
@@ -646,213 +609,8 @@ static ir_node **create_block_schedule_greedy(ir_graph *irg)
 	return block_list;
 }
 
-/*
- *  ___ _     ____
- * |_ _| |   |  _ \
- *  | || |   | |_) |
- *  | || |___|  __/
- * |___|_____|_|
- *
- */
-
-typedef struct ilp_edge_t {
-	ir_node *block;   /**< source block */
-	int     pos;      /**< number of cfg predecessor (target) */
-	int     ilpvar;
-} ilp_edge_t;
-
-typedef struct blocksched_ilp_env_t {
-	blocksched_env_t env;
-	ilp_edge_t       *ilpedges;
-	lpp_t            *lpp;
-} blocksched_ilp_env_t;
-
-typedef struct blocksched_ilp_entry_t {
-	ir_node *block;
-	int      out_cst;
-} blocksched_ilp_entry_t;
-
-static int add_ilp_edge(ir_node *block, int pos, double execfreq, blocksched_ilp_env_t *env)
-{
-	char       name[64];
-	ilp_edge_t edge;
-	int        edgeidx = ARR_LEN(env->ilpedges);
-
-	snprintf(name, sizeof(name), "edge%d", edgeidx);
-
-	edge.block  = block;
-	edge.pos    = pos;
-	edge.ilpvar = lpp_add_var_default(env->lpp, name, lpp_binary, execfreq, 1.0);
-
-	ARR_APP1(ilp_edge_t, env->ilpedges, edge);
-	return edgeidx;
-}
-
-static void collect_egde_frequency_ilp(ir_node *block, void *data)
-{
-	blocksched_ilp_env_t *env        = (blocksched_ilp_env_t*)data;
-	ir_graph             *irg        = env->env.irg;
-	ir_node              *startblock = get_irg_start_block(irg);
-	int                  arity;
-	char                 name[64];
-	int                  out_count;
-	blocksched_ilp_entry_t *entry;
-
-	snprintf(name, sizeof(name), "block_out_constr_%ld", get_irn_node_nr(block));
-	out_count = get_irn_n_edges_kind(block, EDGE_KIND_BLOCK);
-
-	entry          = OALLOC(&env->env.obst, blocksched_ilp_entry_t);
-	entry->block   = block;
-	entry->out_cst = lpp_add_cst_uniq(env->lpp, name, lpp_greater_equal, out_count - 1);
-	set_irn_link(block, entry);
-
-	if (block == startblock)
-		return;
-
-	arity = get_irn_arity(block);
-	if (arity == 1) {
-		double execfreq = get_block_execfreq(block);
-		add_ilp_edge(block, 0, execfreq, env);
-	} else {
-		int i;
-		int cst_idx;
-
-		snprintf(name, sizeof(name), "block_in_constr_%ld", get_irn_node_nr(block));
-		cst_idx = lpp_add_cst_uniq(env->lpp, name, lpp_greater_equal, arity - 1);
-
-		for (i = 0; i < arity; ++i) {
-			double     execfreq;
-			int        edgenum;
-			ilp_edge_t *edge;
-			ir_node    *pred_block = get_Block_cfgpred_block(block, i);
-
-			execfreq = get_block_execfreq(pred_block);
-			edgenum  = add_ilp_edge(block, i, execfreq, env);
-			edge     = &env->ilpedges[edgenum];
-			lpp_set_factor_fast(env->lpp, cst_idx, edge->ilpvar, 1.0);
-		}
-	}
-}
-
-static blocksched_ilp_entry_t *get_blocksched_ilp_entry(const ir_node *block)
-{
-	return (blocksched_ilp_entry_t*)get_irn_link(block);
-}
-
-static void coalesce_blocks_ilp(blocksched_ilp_env_t *env)
-{
-	int           edge_count = ARR_LEN(env->ilpedges);
-	int           i;
-
-	/* complete out constraints */
-	for (i = 0; i < edge_count; ++i) {
-		const ilp_edge_t *edge  = &env->ilpedges[i];
-		ir_node          *block = edge->block;
-		ir_node          *pred;
-		blocksched_ilp_entry_t *entry;
-
-		/* the block might have been removed already... */
-		if (is_Bad(get_Block_cfgpred(block, 0)))
-			continue;
-
-		pred  = get_Block_cfgpred_block(block, edge->pos);
-		entry = get_blocksched_ilp_entry(pred);
-
-		DB((dbg, LEVEL_1, "Adding out cst to %+F from %+F,%d\n",
-				  pred, block, edge->pos));
-		lpp_set_factor_fast(env->lpp, entry->out_cst, edge->ilpvar, 1.0);
-	}
-
-	lpp_solve_net(env->lpp, be_options.ilp_server, be_options.ilp_solver);
-	assert(lpp_is_sol_valid(env->lpp));
-
-	/* Apply results to edges */
-	for (i = 0; i < edge_count; ++i) {
-		const ilp_edge_t   *edge  = &env->ilpedges[i];
-		ir_node            *block = edge->block;
-		ir_node            *pred;
-		int                is_jump;
-		blocksched_entry_t *entry;
-		blocksched_entry_t *pred_entry;
-
-		/* the block might have been removed already... */
-		if (is_Bad(get_Block_cfgpred(block, 0)))
-			continue;
-
-		is_jump = (int)lpp_get_var_sol(env->lpp, edge->ilpvar);
-		if (is_jump)
-			continue;
-
-		pred       = get_Block_cfgpred_block(block, edge->pos);
-		entry      = get_blocksched_entry(block);
-		pred_entry = get_blocksched_entry(pred);
-
-		assert(entry->prev == NULL && pred_entry->next == NULL);
-		entry->prev      = pred_entry;
-		pred_entry->next = entry;
-	}
-}
-
-static ir_node **create_block_schedule_ilp(ir_graph *irg)
-{
-	blocksched_ilp_env_t env;
-	blocksched_entry_t   *start_entry;
-	ir_node              **block_list;
-
-	env.env.irg        = irg;
-	env.env.worklist   = NULL;
-	env.env.blockcount = 0;
-	env.ilpedges       = NEW_ARR_F(ilp_edge_t, 0);
-	obstack_init(&env.env.obst);
-
-	env.lpp = lpp_new("blockschedule", lpp_minimize);
-	lpp_set_time_limit(env.lpp, 20);
-	lpp_set_log(env.lpp, stdout);
-
-	irg_block_walk_graph(irg, collect_egde_frequency_ilp, NULL, &env);
-
-	remove_empty_blocks(irg);
-	coalesce_blocks_ilp(&env);
-
-	start_entry = finish_block_schedule(&env.env);
-	block_list  = create_blocksched_array(&env.env, start_entry,
-	                                      env.env.blockcount,
-	                                      be_get_be_obst(irg));
-
-	DEL_ARR_F(env.ilpedges);
-	lpp_free(env.lpp);
-	obstack_free(&env.env.obst, NULL);
-
-	return block_list;
-}
-
-/*
- *  __  __       _
- * |  \/  | __ _(_)_ __
- * | |\/| |/ _` | | '_ \
- * | |  | | (_| | | | | |
- * |_|  |_|\__,_|_|_| |_|
- *
- */
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_blocksched)
 void be_init_blocksched(void)
 {
-	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
-
-	lc_opt_add_table(be_grp, be_blocksched_options);
-
 	FIRM_DBG_REGISTER(dbg, "firm.be.blocksched");
-}
-
-ir_node **be_create_block_schedule(ir_graph *irg)
-{
-	switch (algo) {
-	case BLOCKSCHED_GREEDY:
-	case BLOCKSCHED_NAIV:
-		return create_block_schedule_greedy(irg);
-	case BLOCKSCHED_ILP:
-		return create_block_schedule_ilp(irg);
-	}
-
-	panic("unknown blocksched algo");
 }
