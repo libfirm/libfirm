@@ -89,11 +89,10 @@ static void test_neutral_(binop op, const char *new_op_name,
 
 static void test_zero_(binop op, const char *new_op_name,
                        ir_tarval *zero_element, bool left_zero,
-                       bool right_zero)
+                       bool right_zero, ir_tarval *zero)
 {
 	op_name = new_op_name;
 
-	ir_tarval *zero = tarvals[0]; /* first one is zero by convention */
 	for (unsigned i = 0, n = n_tarvals; i < n; ++i) {
 		ir_tarval *value = tarvals[i];
 		if (left_zero)
@@ -105,7 +104,7 @@ static void test_zero_(binop op, const char *new_op_name,
 	op_name = "";
 }
 #define test_zero(func, zero_element, left_zero, right_zero) \
-	test_zero_(func, #func, zero_element, left_zero, right_zero)
+	test_zero_(func, #func, zero_element, left_zero, right_zero, zero)
 
 static void test_inverse_(binop op, const char *new_op_name,
                           unop create_inverse, ir_tarval *neutral_element)
@@ -207,6 +206,35 @@ static void test_bitcast(ir_mode *mode)
 	}
 }
 
+static void test_compare(ir_tarval *minus_zero, ir_tarval *zero)
+{
+	/* assumes the tarvals are in order */
+	for (unsigned a = 0; a < n_tarvals; ++a) {
+		ir_tarval *val_a = tarvals[a];
+		for (unsigned b = 0; b < n_tarvals; ++b) {
+			ir_tarval *val_b = tarvals[b];
+			TEST(tarval_cmp(val_a, val_b) == get_inversed_relation(tarval_cmp(val_b, val_a)));
+
+			ir_relation expected;
+			if (tarval_is_nan(val_a) || tarval_is_nan(val_b))
+				expected = ir_relation_unordered;
+			else if (val_a == val_b)
+				expected = ir_relation_equal;
+			else if ((val_a == minus_zero && val_b == zero)
+			         || (val_a == zero && val_b == minus_zero))
+				expected = ir_relation_equal;
+			else if (a < b)
+				expected = ir_relation_less;
+			else
+				expected = ir_relation_greater;
+			ir_relation relation = tarval_cmp(val_a, val_b);
+			if (relation != expected) {
+				ir_fprintf(stderr, "Comparing %+F with %+F failed: got %s, expected %s\n", val_a, val_b, get_relation_string(relation), get_relation_string(expected));
+			}
+		}
+	}
+}
+
 static void test_int_tarvals(ir_mode *mode)
 {
 	char ctxbuf[128];
@@ -233,18 +261,29 @@ static void test_int_tarvals(ir_mode *mode)
 	}
 	ir_tarval *evenbits = new_tarval_from_bytes(buffer, mode);
 
-	ir_tarval *const values[] = {
+	/* a collection of "interesting" values, make sure they are sorted */
+	tarvals = mode_is_signed(mode) ? (ir_tarval*[]) {
+		min,
+		bits % 2 == 0 ? evenbits : oddbits,
+		all_one,
 		zero,
 		one,
-		all_one,
-		min,
-		max,
 		n_bits,
-		oddbits,
-		evenbits,
+		bits % 2 == 0 ? oddbits : evenbits,
+		max,
+		NULL,
+	} : (ir_tarval*[]) {
+		zero,
+		one,
+		n_bits,
+		bits % 2 == 0 ? oddbits : evenbits,
+		bits % 2 == 0 ? evenbits : oddbits,
+		all_one,
+		NULL,
 	};
-	tarvals = values;
-	n_tarvals = ARRAY_SIZE(values);
+	n_tarvals = 0;
+	while (tarvals[n_tarvals] != NULL)
+		++n_tarvals;
 
 	/* unops - involution */
 	test_involution(tarval_neg);
@@ -339,6 +378,7 @@ static void test_int_tarvals(ir_mode *mode)
 		TEST(!tarval_is_negative(all_one));
 	}
 
+	/* tarval_is_XXX, tarval_abs */
 	for (unsigned i = 0, n = n_tarvals; i < n; ++i) {
 		ir_tarval *value = tarvals[i];
 		if (value == zero)
@@ -361,6 +401,8 @@ static void test_int_tarvals(ir_mode *mode)
 		TVS_EQUAL(tarval_abs(value),
 		          tarval_is_negative(value) ? tarval_neg(value) : value);
 	}
+
+	test_compare(NULL, NULL);
 
 	test_bitcast(mode);
 
@@ -388,26 +430,27 @@ static void test_float_tarvals(ir_mode *mode)
 	ir_tarval *min        = get_mode_min(mode);
 	ir_tarval *max        = get_mode_max(mode);
 	ir_tarval *const values[] = {
-		one,
-		two,
-		half,
-		new_tarval_from_str("42", 2, mode),
+		/* list of interesting values, keep it sorted */
+		minus_inf,
+		min,
 		new_tarval_from_str("-13", 3, mode),
+		minus_one,
+		tarval_neg(epsilon),
+		tarval_neg(small),
+		tarval_neg(denorm),
+		minus_zero,
+		zero,
+		denorm,
 		small,
 		epsilon,
-		tarval_neg(small),
-		tarval_neg(epsilon),
-		min,
+		half,
+		one,
+		two,
+		new_tarval_from_str("42", 2, mode),
 		max,
-		zero,
-		minus_zero,
 		inf,
-		minus_inf,
-		minus_one,
 		qnan,
 		snan,
-		denorm,
-		tarval_neg(denorm),
 	};
 	tarvals = values;
 	n_tarvals = ARRAY_SIZE(values);
@@ -528,6 +571,8 @@ static void test_float_tarvals(ir_mode *mode)
 	/* misc */
 	TVS_EQUAL(tarval_div(one, two), half);
 	TVS_EQUAL(tarval_mul(half, two), one);
+
+	test_compare(minus_zero, zero);
 
 	/* TODO: check that overflows go to inf/minus_inf correctly */
 
