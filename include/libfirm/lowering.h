@@ -207,14 +207,6 @@ FIRM_API void ir_lower_intrinsics(ir_graph *irg, ir_intrinsics_map *map);
 FIRM_API int i_mapper_abs(ir_node *call);
 
 /**
- * A mapper for the integer byte swap value: type bswap(type v).
- * Replaces the call by a builtin[ir_bk_bswap] node.
- *
- * @return always 1
- */
-FIRM_API int i_mapper_bswap(ir_node *call);
-
-/**
  * A mapper for the floating point sqrt(v): floattype sqrt(floattype v);
  *
  * @return 1 if the sqrt call was removed, 0 else.
