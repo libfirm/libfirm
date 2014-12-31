@@ -45,15 +45,6 @@ typedef struct pdeq pdeq;
 FIRM_API pdeq *new_pdeq(void);
 
 /**
- * Creates a new double ended pointer list and puts an initial pointer element in.
- *
- * @param x   The pointer element to put in.
- *
- * @return The new list.
- */
-FIRM_API pdeq *new_pdeq1(const void *x);
-
-/**
  * Delete a double ended pointer list.
  *
  * @param dq   The list to be deleted.

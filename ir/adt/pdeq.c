@@ -117,12 +117,6 @@ pdeq *new_pdeq(void)
 	return dq;
 }
 
-/* Creates a new double ended pointer list and puts an initial pointer element in. */
-pdeq *new_pdeq1(const void *x)
-{
-	return pdeq_putr(new_pdeq(), x);
-}
-
 /* Delete a double ended pointer list. */
 void del_pdeq(pdeq *dq)
 {
