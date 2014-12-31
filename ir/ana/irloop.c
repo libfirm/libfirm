@@ -139,3 +139,24 @@ ir_loop *alloc_loop(ir_loop *father, struct obstack *obst)
 #endif
 	return son;
 }
+
+static bool is_loop_variant(ir_loop *l, ir_loop *b)
+{
+	if (l == b)
+		return true;
+
+	for (size_t i = 0, n_elems = get_loop_n_elements(l); i < n_elems; ++i) {
+		loop_element e = get_loop_element(l, i);
+		if (is_ir_loop(e.kind) && is_loop_variant(e.son, b))
+			return true;
+	}
+
+	return false;
+}
+
+int is_loop_invariant(const ir_node *n, const ir_node *block)
+{
+	ir_loop       *const l = get_irn_loop(block);
+	ir_node const *const b = get_block_const(n);
+	return !is_loop_variant(l, get_irn_loop(b));
+}

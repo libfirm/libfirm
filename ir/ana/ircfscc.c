@@ -556,6 +556,38 @@ static void cfscc(ir_node *n)
 	}
 }
 
+/**
+ * Return non-zero if the given node is a legal loop header:
+ * Block, Phi
+ *
+ * @param n  the node to check
+ */
+static inline bool is_possible_loop_head(ir_node *n)
+{
+	return is_Block(n) || is_Phi(n);
+}
+
+static void reset_backedges(ir_node *n)
+{
+	if (is_possible_loop_head(n))
+		clear_backedges(n);
+}
+
+static void loop_reset_node(ir_node *n, void *env)
+{
+	(void)env;
+	set_irn_loop(n, NULL);
+	reset_backedges(n);
+}
+
+void free_loop_information(ir_graph *irg)
+{
+	irg_walk_graph(irg, loop_reset_node, NULL, NULL);
+	set_irg_loop(irg, NULL);
+	clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO);
+	/* We cannot free the loop nodes, they are on the obstack. */
+}
+
 void construct_cf_backedges(ir_graph *irg)
 {
 	outermost_ir_graph = irg;

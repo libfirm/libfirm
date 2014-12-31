@@ -80,26 +80,6 @@ FIRM_API void set_loop_link(ir_loop *loop, void *link);
  * @see set_loop_link() */
 FIRM_API void *get_loop_link(const ir_loop *loop);
 
-/** Constructs backedge information and loop tree for a graph.
- *
- *  The algorithm views the program representation as a pure graph.
- *  It assumes that only block and phi nodes may be loop headers.
- *  The resulting loop tree is a possible visiting order for dataflow
- *  analysis.
- *
- *  This algorithm destoyes the link field of block nodes.
- *
- *  @remark
- *  One assumes, the Phi nodes in a block with a backedge have backedges
- *  at the same positions as the block.  This is not the case, as
- *  the scc algorithms does not respect the program semantics in this case.
- *  Take a swap in a loop (t = i; i = j; j = t;)  This results in two Phi
- *  nodes.  They form a cycle.  Once the scc algorithm deleted one of the
- *  edges, the cycle is removed.  The second Phi node does not get a
- *  backedge!
- */
-FIRM_API void construct_backedges(ir_graph *irg);
-
 /**
  * Construct Intra-procedural control flow loop tree for a IR-graph.
  *
@@ -128,8 +108,6 @@ FIRM_API void assure_loopinfo(ir_graph *irg);
  * Resets all backedges.  Works for any construction algorithm.
  */
 FIRM_API void free_loop_information(ir_graph *irg);
-/** Removes loop information from all graphs in the current program. */
-FIRM_API void free_all_loop_information(void);
 
 /** Tests whether a value is loop invariant.
  *
