@@ -29,6 +29,7 @@
 #include <limits.h>
 #include <inttypes.h>
 
+#include "beblocksched.h"
 #include "util.h"
 #include "xmalloc.h"
 #include "tv.h"
@@ -1467,13 +1468,11 @@ static parameter_dbg_info_t *construct_parameter_infos(ir_graph *irg)
 /**
  * Main driver. Emits the code for one routine.
  */
-void ia32_emit_function(ir_graph *irg)
+static void ia32_emit_function_text(ir_graph *const irg, ir_node **const blk_sched)
 {
 	ir_entity        *entity    = get_irg_entity(irg);
 	exc_entry        *exc_list  = NEW_ARR_F(exc_entry, 0);
 	const arch_env_t *arch_env  = be_get_irg_arch_env(irg);
-	ia32_irg_data_t  *irg_data  = ia32_get_irg_data(irg);
-	ir_node         **blk_sched = irg_data->blk_sched;
 	be_stack_layout_t *layout   = be_get_irg_stack_layout(irg);
 
 	isa    = (ia32_isa_t*) arch_env;
@@ -3057,12 +3056,10 @@ static void gen_binary_block(ir_node *block)
 	}
 }
 
-void ia32_emit_function_binary(ir_graph *irg)
+static void ia32_emit_function_binary(ir_graph *const irg, ir_node **const blk_sched)
 {
 	ir_entity        *entity    = get_irg_entity(irg);
 	const arch_env_t *arch_env  = be_get_irg_arch_env(irg);
-	ia32_irg_data_t  *irg_data  = ia32_get_irg_data(irg);
-	ir_node         **blk_sched = irg_data->blk_sched;
 
 	isa = (ia32_isa_t*) arch_env;
 
@@ -3095,6 +3092,17 @@ void ia32_emit_function_binary(ir_graph *irg)
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 }
 
+void ia32_emit_function(ir_graph *const irg)
+{
+	ir_node **const blk_sched = be_create_block_schedule(irg);
+
+	/* emit the code */
+	if (ia32_cg_config.emit_machcode) {
+		ia32_emit_function_binary(irg, blk_sched);
+	} else {
+		ia32_emit_function_text(irg, blk_sched);
+	}
+}
 
 void ia32_init_emitter(void)
 {

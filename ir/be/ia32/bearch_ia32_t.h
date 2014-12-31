@@ -28,7 +28,6 @@ typedef struct ia32_isa_t            ia32_isa_t;
 typedef struct ia32_intrinsic_env_t  ia32_intrinsic_env_t;
 
 typedef struct ia32_irg_data_t {
-	ir_node  **blk_sched;     /**< an array containing the scheduled blocks */
 	unsigned do_x87_sim:1;    /**< set to 1 if x87 simulation should be enforced */
 	ir_node  *noreg_gp;       /**< unique NoReg_GP node */
 	ir_node  *noreg_fp;       /**< unique NoReg_FP node */

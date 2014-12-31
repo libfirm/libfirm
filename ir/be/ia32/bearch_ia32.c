@@ -10,7 +10,6 @@
  */
 #include "bearch_ia32_t.h"
 
-#include "beblocksched.h"
 #include "beflags.h"
 #include "begnuas.h"
 #include "be.h"
@@ -1115,7 +1114,6 @@ static void ia32_emit(ir_graph *irg)
 	 * virtual with real x87 instructions, creating a block schedule and
 	 * peephole optimizations.
 	 */
-	ia32_irg_data_t   *irg_data     = ia32_get_irg_data(irg);
 	be_stack_layout_t *stack_layout = be_get_irg_stack_layout(irg);
 	bool               at_begin     = stack_layout->sp_relative;
 	be_fec_env_t      *fec_env      = be_new_frame_entity_coalescer(irg);
@@ -1139,6 +1137,7 @@ static void ia32_emit(ir_graph *irg)
 	be_dump(DUMP_RA, irg, "2addr");
 
 	/* we might have to rewrite x87 virtual registers */
+	ia32_irg_data_t const *const irg_data = ia32_get_irg_data(irg);
 	if (irg_data->do_x87_sim) {
 		ia32_x87_simulate_graph(irg);
 		be_dump(DUMP_RA, irg, "x87");
@@ -1149,16 +1148,7 @@ static void ia32_emit(ir_graph *irg)
 
 	be_remove_dead_nodes_from_schedule(irg);
 
-	/* create block schedule, this also removes empty blocks which might
-	 * produce critical edges */
-	irg_data->blk_sched = be_create_block_schedule(irg);
-
-	/* emit the code */
-	if (ia32_cg_config.emit_machcode) {
-		ia32_emit_function_binary(irg);
-	} else {
-		ia32_emit_function(irg);
-	}
+	ia32_emit_function(irg);
 }
 
 /**
