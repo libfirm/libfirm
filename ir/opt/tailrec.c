@@ -613,13 +613,3 @@ void opt_tail_rec_irg(ir_graph *irg)
 	free(env.parameter_projs);
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 }
-
-void opt_tail_recursion(void)
-{
-	FIRM_DBG_REGISTER(dbg, "firm.opt.tailrec");
-
-	DB((dbg, LEVEL_1, "Performing tail recursion ...\n"));
-	foreach_irp_irg(i, irg) {
-		opt_tail_rec_irg(irg);
-	}
-}

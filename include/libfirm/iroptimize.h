@@ -387,19 +387,6 @@ FIRM_API void scalar_replacement_opt(ir_graph *irg);
 FIRM_API void opt_tail_rec_irg(ir_graph *irg);
 
 /**
- * Optimize tail-recursion calls for all IR-Graphs.
- * Can currently handle:
- * - direct return value, i.e. return func().
- * - additive return value, i.e. return x +/- func()
- * - multiplicative return value, i.e. return x * func() or return -func()
- *
- * The current implementation must be run before optimize_funccalls(),
- * because it expects the memory edges pointing to calls, which might be
- * removed by optimize_funccalls().
- */
-FIRM_API void opt_tail_recursion(void);
-
-/**
  * CLiff Click's combo algorithm from
  *   "Combining Analyses, combining Optimizations".
  *
