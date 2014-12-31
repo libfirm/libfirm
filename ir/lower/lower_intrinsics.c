@@ -205,33 +205,6 @@ int i_mapper_bswap(ir_node *call)
 	return 1;
 }
 
-int i_mapper_alloca(ir_node *call)
-{
-	ir_node *mem   = get_Call_mem(call);
-	ir_node *block = get_nodes_block(call);
-	ir_node *op    = get_Call_param(call, 0);
-	ir_node *irn;
-	dbg_info *dbg  = get_irn_dbg_info(call);
-
-	if (mode_is_signed(get_irn_mode(op))) {
-		ir_mode *mode = get_irn_mode(op);
-		mode = find_unsigned_mode(mode);
-		if (mode == NULL) {
-			panic("cannot find unsigned mode for %M", mode);
-		}
-		op = new_rd_Conv(dbg, block, op, mode);
-	}
-
-	irn    = new_rd_Alloc(dbg, block, mem, op, 1);
-	mem    = new_rd_Proj(dbg, irn, mode_M, pn_Alloc_M);
-	irn    = new_rd_Proj(dbg, irn, mode_P, pn_Alloc_res);
-	assert(!ir_throws_exception(call));
-
-	DBG_OPT_ALGSIM0(call, irn, FS_OPT_RTS_ALLOCA);
-	replace_call(irn, call, mem, NULL, NULL);
-	return 1;
-}
-
 int i_mapper_sqrt(ir_node *call)
 {
 	ir_node   *mem;

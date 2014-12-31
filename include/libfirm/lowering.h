@@ -403,14 +403,6 @@ FIRM_API int i_mapper_memset(ir_node *call);
  */
 FIRM_API int i_mapper_memcmp(ir_node *call);
 
-/**
- * A mapper for the alloca() function: pointer alloca(inttype size)
- * Replaces the call by a Alloca(stack_alloc) node.
- *
- * @return always 1
- */
-FIRM_API int i_mapper_alloca(ir_node *call);
-
 /** @} */
 
 #include "end.h"
