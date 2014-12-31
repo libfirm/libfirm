@@ -69,7 +69,6 @@ typedef struct lc_arg_env_t lc_arg_env_t;
 
 lc_arg_env_t *lc_arg_new_env(void);
 void lc_arg_free_env(lc_arg_env_t *env);
-lc_arg_env_t *lc_arg_get_default_env(void);
 
 int lc_arg_register(lc_arg_env_t *env, const char *name, char letter, const lc_arg_handler_t *handler);
 void lc_arg_unregister(lc_arg_env_t *env, const char *name);
@@ -78,29 +77,13 @@ lc_arg_env_t *lc_arg_add_std(lc_arg_env_t *env);
 
 int lc_arg_append(lc_appendable_t *app, const lc_arg_occ_t *occ, const char *str, size_t len);
 
-int lc_epprintf(const lc_arg_env_t *env, lc_appendable_t *app, const char *fmt, ...);
 int lc_evpprintf(const lc_arg_env_t *env, lc_appendable_t *app, const char *fmt, va_list args);
-int lc_pprintf(lc_appendable_t *app, const char *fmt, ...);
-int lc_vpprintf(lc_appendable_t *app, const char *fmt, va_list args);
 
-int lc_eprintf(const lc_arg_env_t *env, const char *fmt, ...);
-int lc_esnprintf(const lc_arg_env_t *env, char *buf, size_t len, const char *fmt, ...);
-int lc_efprintf(const lc_arg_env_t *env, FILE *file, const char *fmt, ...);
 int lc_eoprintf(const lc_arg_env_t *env, struct obstack *obst, const char *fmt, ...);
 
 int lc_evprintf(const lc_arg_env_t *env, const char *fmt, va_list args);
 int lc_evsnprintf(const lc_arg_env_t *env, char *buf, size_t len, const char *fmt, va_list args);
 int lc_evfprintf(const lc_arg_env_t *env, FILE *f, const char *fmt, va_list args);
 int lc_evoprintf(const lc_arg_env_t *env, struct obstack *obst, const char *fmt, va_list args);
-
-int lc_printf(const char *fmt, ...);
-int lc_snprintf(char *buf, size_t len, const char *fmt, ...);
-int lc_fprintf(FILE *f, const char *fmt, ...);
-int lc_oprintf(struct obstack *obst, const char *fmt, ...);
-
-int lc_vprintf(const char *fmt, va_list args);
-int lc_vsnprintf(char *buf, size_t len, const char *fmt, va_list args);
-int lc_vfprintf(FILE *f, const char *fmt, va_list args);
-int lc_voprintf(struct obstack *obst, const char *fmt, va_list args);
 
 #endif

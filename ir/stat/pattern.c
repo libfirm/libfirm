@@ -24,7 +24,6 @@
 #include "pattern_dmp.h"
 #include "hashptr.h"
 #include "panic.h"
-#include "lc_printf.h"
 
 /*
  * just be make some things clear :-), the
@@ -713,7 +712,7 @@ static void calc_nodes_pattern(ir_node *node, void *ctx)
 	depth = encode_node(node, &buf, env->max_depth);
 
 	if (buf_overrun(&buf)) {
-		lc_fprintf(stderr, "Pattern store: buffer overrun at size %zu. Pattern ignored.\n", sizeof(buffer));
+		fprintf(stderr, "Pattern store: buffer overrun at size %zu. Pattern ignored.\n", sizeof(buffer));
 	} else
 		count_pattern(&buf, depth);
 }
@@ -790,7 +789,7 @@ static HASH_MAP(pattern_entry_t) *read_pattern(const char *fname)
 	}
 	fclose(f);
 
-	lc_printf("Read %zu pattern from %s\n", count, fname);
+	printf("Read %zu pattern from %s\n", count, fname);
 	assert(pset_count(pattern_hash) == count);
 
 	return pattern_hash;
@@ -812,7 +811,7 @@ static void pattern_output(const char *fname)
 	pattern_dumper_t *dump;
 	size_t i, count = pset_count(status->pattern_hash);
 
-	lc_printf("\n%zu pattern detected\n", count);
+	printf("\n%zu pattern detected\n", count);
 
 	if (count == 0)
 		return;

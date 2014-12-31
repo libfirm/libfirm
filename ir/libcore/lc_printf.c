@@ -38,22 +38,6 @@ struct lc_arg_env_t {
 	lc_arg_t *upper[26];        /**< Map for upper conversion specifiers. */
 };
 
-/** The default argument environment. */
-static lc_arg_env_t *default_env = NULL;
-
-static inline lc_arg_env_t *_lc_arg_get_default_env(void)
-{
-	if (!default_env)
-		default_env = lc_arg_add_std(lc_arg_new_env());
-
-	return default_env;
-}
-
-lc_arg_env_t *lc_arg_get_default_env(void)
-{
-	return _lc_arg_get_default_env();
-}
-
 static int lc_arg_cmp(const void *p1, const void *p2, size_t size)
 {
 	const lc_arg_t *a1 = (const lc_arg_t*)p1;
@@ -61,7 +45,6 @@ static int lc_arg_cmp(const void *p1, const void *p2, size_t size)
 	(void) size;
 	return strcmp(a1->name, a2->name);
 }
-
 
 lc_arg_env_t *lc_arg_new_env(void)
 {
@@ -496,56 +479,6 @@ int lc_evpprintf(const lc_arg_env_t *env, lc_appendable_t *app, const char *fmt,
 
 /* Convenience implementations */
 
-int lc_epprintf(const lc_arg_env_t *env, lc_appendable_t *app, const char *fmt, ...)
-{
-	va_list args;
-	va_start(args, fmt);
-	int res = lc_evpprintf(env, app, fmt, args);
-	va_end(args);
-	return res;
-}
-
-int lc_pprintf(lc_appendable_t *app, const char *fmt, ...)
-{
-	va_list args;
-	va_start(args, fmt);
-	int res = lc_vpprintf(app, fmt, args);
-	va_end(args);
-	return res;
-}
-
-int lc_vpprintf(lc_appendable_t *app, const char *fmt, va_list args)
-{
-	return lc_evpprintf(_lc_arg_get_default_env(), app, fmt, args);
-}
-
-int lc_eprintf(const lc_arg_env_t *env, const char *fmt, ...)
-{
-	va_list args;
-	va_start(args, fmt);
-	int res = lc_efprintf(env, stdout, fmt, args);
-	va_end(args);
-	return res;
-}
-
-int lc_esnprintf(const lc_arg_env_t *env, char *buf, size_t len, const char *fmt, ...)
-{
-	va_list args;
-	va_start(args, fmt);
-	int res = lc_evsnprintf(env, buf, len, fmt, args);
-	va_end(args);
-	return res;
-}
-
-int lc_efprintf(const lc_arg_env_t *env, FILE *file, const char *fmt, ...)
-{
-	va_list args;
-	va_start(args, fmt);
-	int res = lc_evfprintf(env, file, fmt, args);
-	va_end(args);
-	return res;
-}
-
 int lc_eoprintf(const lc_arg_env_t *env, struct obstack *obst, const char *fmt, ...)
 {
 	va_list args;
@@ -588,62 +521,4 @@ int lc_evoprintf(const lc_arg_env_t *env, struct obstack *obst, const char *fmt,
 	int res = lc_evpprintf(env, &app, fmt, args);
 	lc_appendable_finish(&app);
 	return res;
-}
-
-
-int lc_printf(const char *fmt, ...)
-{
-	va_list args;
-	va_start(args, fmt);
-	int res = lc_vprintf(fmt, args);
-	va_end(args);
-	return res;
-}
-
-int lc_snprintf(char *buf, size_t len, const char *fmt, ...)
-{
-	va_list args;
-	va_start(args, fmt);
-	int res = lc_vsnprintf(buf, len, fmt, args);
-	va_end(args);
-	return res;
-}
-
-int lc_fprintf(FILE *f, const char *fmt, ...)
-{
-	va_list args;
-	va_start(args, fmt);
-	int res = lc_vfprintf(f, fmt, args);
-	va_end(args);
-	return res;
-}
-
-int lc_oprintf(struct obstack *obst, const char *fmt, ...)
-{
-	va_list args;
-	va_start(args, fmt);
-	int res = lc_voprintf(obst, fmt, args);
-	va_end(args);
-	return res;
-}
-
-
-int lc_vprintf(const char *fmt, va_list args)
-{
-	return lc_evprintf(_lc_arg_get_default_env(), fmt, args);
-}
-
-int lc_vsnprintf(char *buf, size_t len, const char *fmt, va_list args)
-{
-	return lc_evsnprintf(_lc_arg_get_default_env(), buf, len, fmt, args);
-}
-
-int lc_vfprintf(FILE *f, const char *fmt, va_list args)
-{
-	return lc_evfprintf(_lc_arg_get_default_env(), f, fmt, args);
-}
-
-int lc_voprintf(struct obstack *obst, const char *fmt, va_list args)
-{
-	return lc_evoprintf(_lc_arg_get_default_env(), obst, fmt, args);
 }
