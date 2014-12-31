@@ -14,7 +14,7 @@
 #ifndef FIRM_ANA_DFS_H
 #define FIRM_ANA_DFS_H
 
-#include "absgraph.h"
+#include "firm_types.h"
 
 typedef struct dfs_t      dfs_t;
 typedef struct dfs_node_t dfs_node_t;
@@ -27,10 +27,10 @@ typedef enum {
 	DFS_EDGE_BACK
 } dfs_edge_kind_t;
 
-extern dfs_edge_kind_t dfs_get_edge_kind(const dfs_t *dfs, const void *src, const void *tgt);
+dfs_edge_kind_t dfs_get_edge_kind(dfs_t const *dfs, ir_node const *src, ir_node const *tgt);
 
-extern dfs_t *dfs_new(const absgraph_t *graph_impl, void *graph);
-extern void dfs_free(dfs_t *dfs);
-extern void dfs_dump(const dfs_t *dfs, FILE *file);
+dfs_t *dfs_new(ir_graph *irg);
+void dfs_free(dfs_t *dfs);
+void dfs_dump(const dfs_t *dfs, FILE *file);
 
 #endif

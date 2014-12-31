@@ -138,7 +138,6 @@
     <ClInclude Include="$(FirmRoot)\ir\adt\compiler.h"/>
     <ClInclude Include="$(FirmRoot)\ir\adt\util.h"/>
     <ClInclude Include="$(FirmRoot)\ir\adt\raw_bitset.h"/>
-    <ClCompile Include="$(FirmRoot)\ir\ana\absgraph.c"/>
     <ClCompile Include="$(FirmRoot)\ir\ana\analyze_irg_args.c"/>
     <ClCompile Include="$(FirmRoot)\ir\ana\callgraph.c"/>
     <ClCompile Include="$(FirmRoot)\ir\ana\cdep.c"/>
@@ -160,7 +159,6 @@
     <ClCompile Include="$(FirmRoot)\ir\ana\rta.c"/>
     <ClCompile Include="$(FirmRoot)\ir\ana\vrp.c"/>
     <ClCompile Include="$(FirmRoot)\ir\ana\structure.c"/>
-    <ClInclude Include="$(FirmRoot)\ir\ana\absgraph.h"/>
     <ClInclude Include="$(FirmRoot)\ir\ana\dfs.h"/>
     <ClInclude Include="$(FirmRoot)\ir\ana\dfs_t.h"/>
     <ClInclude Include="$(FirmRoot)\ir\ana\irbackedge_t.h"/>

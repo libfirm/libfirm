@@ -94,8 +94,8 @@ static bl_info_t *get_block_info(lv_chk_t *lv, const ir_node *block)
 static void red_trans_closure(lv_chk_t *lv)
 {
 	for (int i = 0, n = dfs_get_n_nodes(lv->dfs); i < n; ++i) {
-		const ir_node *bl = (const ir_node*) dfs_get_post_num_node(lv->dfs, i);
-		bl_info_t     *bi = get_block_info(lv, bl);
+		ir_node   *const bl = dfs_get_post_num_node(lv->dfs, i);
+		bl_info_t *const bi = get_block_info(lv, bl);
 
 		bitset_set(bi->red_reachable, bi->id);
 		foreach_block_succ(bl, edge) {
@@ -165,8 +165,8 @@ static inline void compute_back_edge_chains(lv_chk_t *lv)
 	}
 
 	for (int i = 0, n = dfs_get_n_nodes(lv->dfs); i < n; ++i) {
-		const ir_node *bl = (const ir_node*) dfs_get_post_num_node(lv->dfs, i);
-		bl_info_t     *bi = get_block_info(lv, bl);
+		ir_node   *const bl = dfs_get_post_num_node(lv->dfs, i);
+		bl_info_t *const bi = get_block_info(lv, bl);
 
 		if (!bitset_is_set(lv->back_edge_tgt, bi->id)) {
 			foreach_block_succ(bl, edge) {
@@ -183,7 +183,7 @@ static inline void compute_back_edge_chains(lv_chk_t *lv)
 	}
 
 	for (int i = 0, n = dfs_get_n_nodes(lv->dfs); i < n; ++i) {
-		const ir_node *bl = (const ir_node*) dfs_get_post_num_node(lv->dfs, i);
+		ir_node const *bl = dfs_get_post_num_node(lv->dfs, i);
 		bl_info_t     *bi = get_block_info(lv, bl);
 		bitset_set(bi->be_tgt_reach, bi->id);
 	}
@@ -198,7 +198,7 @@ lv_chk_t *lv_chk_new(ir_graph *irg)
 	FIRM_DBG_REGISTER(res->dbg, "ir.ana.lvchk");
 	ir_nodemap_init(&res->block_infos, irg);
 	obstack_init(&res->obst);
-	res->dfs           = dfs_new(&absgraph_irg_cfg_succ, irg);
+	res->dfs           = dfs_new(irg);
 	res->n_blocks      = dfs_get_n_nodes(res->dfs);
 	res->back_edge_src = bitset_obstack_alloc(&res->obst, res->n_blocks);
 	res->back_edge_tgt = bitset_obstack_alloc(&res->obst, res->n_blocks);
@@ -206,7 +206,7 @@ lv_chk_t *lv_chk_new(ir_graph *irg)
 
 	/* fill the map which maps pre_num to block infos */
 	for (int i = res->n_blocks; i-- > 0; ) {
-		ir_node   *irn = (ir_node*)dfs_get_pre_num_node(res->dfs, i);
+		ir_node   *irn = dfs_get_pre_num_node(res->dfs, i);
 		bl_info_t *bi  = get_block_info(res, irn);
 		assert(bi->id < res->n_blocks);
 		assert(res->map[bi->id] == NULL);
@@ -222,7 +222,7 @@ lv_chk_t *lv_chk_new(ir_graph *irg)
 #ifdef DEBUG_libfirm
 	DBG((res->dbg, LEVEL_1, "liveness chk in %+F\n", irg));
 	for (int i = res->n_blocks; i-- > 0; ) {
-		const ir_node   *irn = (const ir_node*) dfs_get_pre_num_node(res->dfs, i);
+		const ir_node   *irn = dfs_get_pre_num_node(res->dfs, i);
 		const bl_info_t *bi  = get_block_info(res, irn);
 		DBG((res->dbg, LEVEL_1, "lv_chk for %d -> %+F\n", i, irn));
 		DBG((res->dbg, LEVEL_1, "\tred reach: %B\n", bi->red_reachable));

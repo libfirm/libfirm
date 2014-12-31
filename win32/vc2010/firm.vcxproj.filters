@@ -150,9 +150,6 @@
     <ClInclude Include="$(FirmRoot)\ir\adt\raw_bitset.h">
       <Filter>ir\adt</Filter>
     </ClInclude>
-    <ClCompile Include="$(FirmRoot)\ir\ana\absgraph.c">
-      <Filter>ir\ana</Filter>
-    </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ana\analyze_irg_args.c">
       <Filter>ir\ana</Filter>
     </ClCompile>
@@ -222,9 +219,6 @@
     <ClCompile Include="$(FirmRoot)\ir\ana\vrp.c">
       <Filter>ir\ana</Filter>
     </ClCompile>
-    <ClInclude Include="$(FirmRoot)\ir\ana\absgraph.h">
-      <Filter>ir\ana</Filter>
-    </ClInclude>
     <ClInclude Include="$(FirmRoot)\ir\ana\dfs.h">
       <Filter>ir\ana</Filter>
     </ClInclude>
@@ -1962,9 +1956,6 @@
     <ClInclude Include="$(FirmRoot)\ir\adt\raw_bitset.h">
       <Filter>ir\adt</Filter>
     </ClInclude>
-    <ClCompile Include="$(FirmRoot)\ir\ana\absgraph.c">
-      <Filter>ir\ana</Filter>
-    </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ana\analyze_irg_args.c">
       <Filter>ir\ana</Filter>
     </ClCompile>
@@ -2028,9 +2019,6 @@
     <ClCompile Include="$(FirmRoot)\ir\ana\structure.c">
       <Filter>ir\ana</Filter>
     </ClCompile>
-    <ClInclude Include="$(FirmRoot)\ir\ana\absgraph.h">
-      <Filter>ir\ana</Filter>
-    </ClInclude>
     <ClInclude Include="$(FirmRoot)\ir\ana\dfs.h">
       <Filter>ir\ana</Filter>
     </ClInclude>
@@ -3621,9 +3609,6 @@
     <ClInclude Include="$(FirmRoot)\ir\adt\raw_bitset.h">
       <Filter>ir\adt</Filter>
     </ClInclude>
-    <ClCompile Include="$(FirmRoot)\ir\ana\absgraph.c">
-      <Filter>ir\ana</Filter>
-    </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ana\analyze_irg_args.c">
       <Filter>ir\ana</Filter>
     </ClCompile>
@@ -3687,9 +3672,6 @@
     <ClCompile Include="$(FirmRoot)\ir\ana\structure.c">
       <Filter>ir\ana</Filter>
     </ClCompile>
-    <ClInclude Include="$(FirmRoot)\ir\ana\absgraph.h">
-      <Filter>ir\ana</Filter>
-    </ClInclude>
     <ClInclude Include="$(FirmRoot)\ir\ana\dfs.h">
       <Filter>ir\ana</Filter>
     </ClInclude>
@@ -5274,9 +5256,6 @@
     <ClInclude Include="$(FirmRoot)\ir\adt\raw_bitset.h">
       <Filter>ir\adt</Filter>
     </ClInclude>
-    <ClCompile Include="$(FirmRoot)\ir\ana\absgraph.c">
-      <Filter>ir\ana</Filter>
-    </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ana\analyze_irg_args.c">
       <Filter>ir\ana</Filter>
     </ClCompile>
@@ -5340,9 +5319,6 @@
     <ClCompile Include="$(FirmRoot)\ir\ana\structure.c">
       <Filter>ir\ana</Filter>
     </ClCompile>
-    <ClInclude Include="$(FirmRoot)\ir\ana\absgraph.h">
-      <Filter>ir\ana</Filter>
-    </ClInclude>
     <ClInclude Include="$(FirmRoot)\ir\ana\dfs.h">
       <Filter>ir\ana</Filter>
     </ClInclude>

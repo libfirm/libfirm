@@ -11,7 +11,6 @@
  */
 #include "execfreq.h"
 #include "beirg.h"
-#include "absgraph.h"
 #include "belive.h"
 
 void be_invalidate_live_sets(ir_graph *irg)

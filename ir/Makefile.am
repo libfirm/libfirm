@@ -40,7 +40,6 @@ libfirm_la_SOURCES = \
 	adt/pset_new.c \
 	adt/set.c \
 	adt/xmalloc.c \
-	ana/absgraph.c \
 	ana/analyze_irg_args.c \
 	ana/callgraph.c \
 	ana/cdep.c \
@@ -255,7 +254,6 @@ EXTRA_DIST = \
 	adt/raw_bitset.h \
 	adt/hashset.h \
 	adt/pset_new.h \
-	ana/absgraph.h \
 	ana/dfs.h \
 	ana/dfs_t.h \
 	ana/irbackedge_t.h \

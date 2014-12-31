@@ -18,7 +18,6 @@
 #include "irdump_t.h"
 #include "irnodeset.h"
 
-#include "absgraph.h"
 #include "statev_t.h"
 #include "be_t.h"
 #include "bearch.h"

@@ -16,6 +16,8 @@
 #define DISABLE_STATEV
 
 #include <assert.h>
+#include "iredges.h"
+#include "irgraph_t.h"
 #include "irprintf.h"
 #include "irdom_t.h"
 #include "set.h"
@@ -41,7 +43,7 @@ static int cmp_node(const void *a, const void *b, size_t sz)
 
 #define get_node(dfs, node) _dfs_get_node(dfs, node)
 
-static dfs_edge_t *get_edge(const dfs_t *self, const void *src, const void *tgt)
+static dfs_edge_t *get_edge(dfs_t const *const self, ir_node const *const src, ir_node const *const tgt)
 {
 	unsigned hash = hash_combine(hash_ptr(src), hash_ptr(tgt));
 
@@ -53,7 +55,7 @@ static dfs_edge_t *get_edge(const dfs_t *self, const void *src, const void *tgt)
 	return set_insert(dfs_edge_t, self->edges, &templ, sizeof(templ), hash);
 }
 
-static void dfs_perform(dfs_t *dfs, void *n, void *anc, int level)
+static void dfs_perform(dfs_t *dfs, ir_node *n, dfs_node_t const *anc, int level)
 {
 	dfs_node_t *node = get_node(dfs, n);
 	assert(node->visited == 0);
@@ -64,12 +66,14 @@ static void dfs_perform(dfs_t *dfs, void *n, void *anc, int level)
 	node->max_pre_num = node->pre_num;
 	node->level       = level;
 
-	dfs->graph_impl->grow_succs(dfs->graph, n, &dfs->obst);
+	foreach_block_succ(n, edge) {
+		obstack_ptr_grow(&dfs->obst, get_edge_src_irn(edge));
+	}
 	obstack_ptr_grow(&dfs->obst, NULL);
-	void **succs = (void**) obstack_finish(&dfs->obst);
+	ir_node **const succs = (ir_node**)obstack_finish(&dfs->obst);
 
-	for (void **iter = succs; *iter != NULL; ++iter) {
-		void *p = *iter;
+	for (ir_node **iter = succs; *iter != NULL; ++iter) {
+		ir_node *const p = *iter;
 
 		/* get the node */
 		dfs_node_t *child = get_node(dfs, p);
@@ -122,7 +126,7 @@ static void classify_edges(dfs_t *dfs)
 	stat_ev_cnt_done(cross, "dfs_edge_cross");
 }
 
-dfs_edge_kind_t dfs_get_edge_kind(const dfs_t *dfs, const void *a, const void *b)
+dfs_edge_kind_t dfs_get_edge_kind(dfs_t const *const dfs, ir_node const *const a, ir_node const *const b)
 {
 	if (!dfs->edges_classified) {
 		dfs_t *urg = (dfs_t *) dfs;
@@ -132,11 +136,9 @@ dfs_edge_kind_t dfs_get_edge_kind(const dfs_t *dfs, const void *a, const void *b
 	return get_edge(dfs, a, b)->kind;
 }
 
-dfs_t *dfs_new(const absgraph_t *graph_impl, void *graph_self)
+dfs_t *dfs_new(ir_graph *const irg)
 {
 	dfs_t *res = XMALLOC(dfs_t);
-	res->graph_impl       = graph_impl;
-	res->graph            = graph_self;
 	res->nodes            = new_set(cmp_node, 64);
 	res->edges            = new_set(cmp_edge, 128);
 	res->pre_num          = 0;
@@ -145,13 +147,15 @@ dfs_t *dfs_new(const absgraph_t *graph_impl, void *graph_self)
 
 	obstack_init(&res->obst);
 
-	dfs_perform(res, graph_impl->get_root(graph_self), NULL, 0);
+	ir_node *const root = get_irg_start_block(irg);
+	dfs_perform(res, root, NULL, 0);
 
 	/* make sure the end node (which might not be accessible) has a number */
-	dfs_node_t *const node = get_node(res, graph_impl->get_end(graph_self));
+	ir_node    *const end  = get_irg_end_block(irg);
+	dfs_node_t *const node = get_node(res, end);
 	if (!node->visited) {
 		node->visited     = 1;
-		node->node        = graph_impl->get_end(graph_self);
+		node->node        = end;
 		node->ancestor    = NULL;
 		node->pre_num     = res->pre_num++;
 		node->post_num    = res->post_num++;

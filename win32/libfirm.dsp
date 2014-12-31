@@ -191,10 +191,6 @@ SOURCE=..\ir\adt\xmalloc.c
 # PROP Default_Filter ""
 # Begin Source File
 
-SOURCE=..\ir\ana\absgraph.c
-# End Source File
-# Begin Source File
-
 SOURCE=..\ir\ana\analyze_irg_args.c
 # End Source File
 # Begin Source File
@@ -2602,10 +2598,6 @@ SOURCE=..\include\libfirm\adt\util.h
 SOURCE=..\include\libfirm\adt\xmalloc.h
 # End Source File
 # End Group
-# Begin Source File
-
-SOURCE=..\include\libfirm\absgraph.h
-# End Source File
 # Begin Source File
 
 SOURCE=..\include\libfirm\analyze_irg_args.h

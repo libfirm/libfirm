@@ -36,7 +36,6 @@
 #include "hashptr.h"
 #include "debug.h"
 #include "dfs_t.h"
-#include "absgraph.h"
 #include "panic.h"
 #include "xmalloc.h"
 
@@ -410,7 +409,7 @@ void ir_estimate_execfreq(ir_graph *irg)
 	 * using a toposort on the CFG (without back edges) will propagate
 	 * the values better for the gauss/seidel iteration.
 	 * => they can "flow" from start to end. */
-	dfs_t *dfs = dfs_new(&absgraph_irg_cfg_succ, irg);
+	dfs_t *const dfs = dfs_new(irg);
 
 	unsigned       size   = dfs_get_n_nodes(dfs);
 	square_matrix *in_fac = mat_create(size);
@@ -451,17 +450,17 @@ void ir_estimate_execfreq(ir_graph *irg)
 	int *lgs_to_mat = NEW_ARR_F(int, 0);
 
 	for (unsigned idx = 0; idx < size; ++idx) {
-		const ir_node *bb = (ir_node*)dfs_get_post_num_node(dfs, size-idx-1);
+		ir_node const *const bb = dfs_get_post_num_node(dfs, size-idx-1);
 		/* The end block is handled properly later, when all the kept blocks
 		 * are done. */
 		if (bb == end_block)
 			continue;
 
 		for (int i = get_Block_n_cfgpreds(bb) - 1; i >= 0; --i) {
-			const ir_node *pred           = get_Block_cfgpred_block(bb, i);
-			unsigned       pred_idx       = size - dfs_get_post_num(dfs, pred)-1;
-			double         cf_probability = get_cf_probability(bb, i, inv_loop_weight);
-			bool           pred_visited   = pred_idx < idx;
+			ir_node *const pred           = get_Block_cfgpred_block(bb, i);
+			unsigned const pred_idx       = size - dfs_get_post_num(dfs, pred) - 1;
+			double   const cf_probability = get_cf_probability(bb, i, inv_loop_weight);
+			bool     const pred_visited   = pred_idx < idx;
 
 			if (pred_visited) {
 				add_weighted(in_fac, idx, pred_idx, cf_probability);
@@ -478,9 +477,9 @@ void ir_estimate_execfreq(ir_graph *irg)
 	/* handle end block */
 	ARR_APP1(int, lgs_to_mat, end_idx);
 	for (int i = get_Block_n_cfgpreds(end_block) - 1; i >= 0; --i) {
-		const ir_node *pred           = get_Block_cfgpred_block(end_block, i);
-		int            pred_idx       = size - dfs_get_post_num(dfs, pred)-1;
-		double         cf_probability = get_cf_probability(end_block, i, inv_loop_weight);
+		ir_node *const pred           = get_Block_cfgpred_block(end_block, i);
+		int      const pred_idx       = size - dfs_get_post_num(dfs, pred) - 1;
+		double   const cf_probability = get_cf_probability(end_block, i, inv_loop_weight);
 		add_weighted(in_fac, end_idx, pred_idx, cf_probability);
 	}
 
@@ -554,7 +553,7 @@ void ir_estimate_execfreq(ir_graph *irg)
 	/* First get the frequency for the nodes which were
 	 * explicitly computed. */
 	for (unsigned idx = size; idx-- > 0; ) {
-		ir_node *bb = (ir_node *) dfs_get_post_num_node(dfs, size - idx - 1);
+		ir_node *const bb = dfs_get_post_num_node(dfs, size - idx - 1);
 
 		if (mat_to_lgs[idx] != -1) {
 			double freq = lgs_x[mat_to_lgs[idx]] * norm;
@@ -573,7 +572,7 @@ void ir_estimate_execfreq(ir_graph *irg)
 	if (valid_freq) {
 		/* Now get the rest of the frequencies using the factors in in_fac */
 		for (unsigned idx = size; idx-- > 0; ) {
-			ir_node *bb = (ir_node *) dfs_get_post_num_node(dfs, size - idx - 1);
+			ir_node *const bb = dfs_get_post_num_node(dfs, size - idx - 1);
 
 			if (mat_to_lgs[idx] == -1) {
 				double freq = mat_dot_vec_entry(in_fac, freqs, idx);
@@ -594,7 +593,7 @@ void ir_estimate_execfreq(ir_graph *irg)
 		valid_freq = true;
 
 		for (int idx = size; idx-- > 0; ) {
-			ir_node       *bb    = (ir_node *) dfs_get_post_num_node(dfs, size - idx - 1);
+			ir_node       *bb    = dfs_get_post_num_node(dfs, size - idx - 1);
 			const ir_loop *loop  = get_irn_loop(bb);
 			const int      depth = get_loop_depth(loop);
 			double         freq  = 1.0;
@@ -615,7 +614,7 @@ void ir_estimate_execfreq(ir_graph *irg)
 	/* Fallback solution: All blocks have the same execution frequency. */
 	if (!valid_freq) {
 		for (int idx = size; idx-- > 0; ) {
-			ir_node *bb = (ir_node *) dfs_get_post_num_node(dfs, size - idx - 1);
+			ir_node *const bb = dfs_get_post_num_node(dfs, size - idx - 1);
 			set_block_execfreq(bb, 1.0);
 		}
 	}
