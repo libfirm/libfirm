@@ -567,13 +567,6 @@ void irg_finalize_cons(ir_graph *irg)
 	clear_irg_constraints(irg, IR_GRAPH_CONSTRAINT_CONSTRUCTION);
 }
 
-void irp_finalize_cons(void)
-{
-	foreach_irp_irg(i, irg) {
-		irg_finalize_cons(irg);
-	}
-}
-
 ir_node *new_Const_long(ir_mode *mode, long value)
 {
 	return new_d_Const_long(NULL, mode, value);

@@ -674,12 +674,6 @@ FIRM_API void keep_alive(ir_node *ka);
 /** Puts the graph into state "phase_high" */
 FIRM_API void irg_finalize_cons(ir_graph *irg);
 
-/** Puts the program and all graphs into state phase_high.
- *
- * This also remarks, the construction of types is finished,
- * e.g., that no more subtypes will be added.  */
-FIRM_API void irp_finalize_cons(void);
-
 /**
  * If firm is built in debug mode, verify that a newly created node is fine.
  * The normal node constructors already call this function, you only need to

@@ -2335,8 +2335,6 @@ int ir_import_file(FILE *input, const char *inputname)
 
 	del_set(env->idset);
 
-	irp_finalize_cons();
-
 	set_optimize(oldoptimize);
 
 	obstack_free(&env->preds_obst, NULL);
