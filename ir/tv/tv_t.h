@@ -135,8 +135,6 @@ ir_tarval *get_tarval_small(ir_mode *mode);
 
 ir_tarval *get_tarval_epsilon(ir_mode *mode);
 
-ir_tarval *get_tarval_minus_inf(ir_mode *mode);
-
 /**
  * Get the @p idx'th bit of the internal representation of the given tarval
  * @p tv.

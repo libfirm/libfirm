@@ -406,31 +406,19 @@ ir_tarval *(get_tarval_b_true)(void)
 
 ir_tarval *get_tarval_small(ir_mode *mode)
 {
-	if (!mode_is_float(mode))
-		panic("mode %+F does not support small value");
-	fp_value                 *buffer     = (fp_value*)ALLOCAN(char, fp_value_size);
-	const float_descriptor_t *desc = get_descriptor(mode);
+	assert(mode_is_float(mode));
+	fp_value                 *buffer = (fp_value*)ALLOCAN(char, fp_value_size);
+	const float_descriptor_t *desc   = get_descriptor(mode);
 	fc_get_small(desc, buffer);
 	return get_fp_tarval(buffer, mode);
 }
 
 ir_tarval *get_tarval_epsilon(ir_mode *mode)
 {
-	if (!mode_is_float(mode))
-		panic("mode %+F does not support small value");
-	fp_value                 *buffer     = (fp_value*)ALLOCAN(char, fp_value_size);
-	const float_descriptor_t *desc = get_descriptor(mode);
+	assert(mode_is_float(mode));
+	fp_value                 *buffer = (fp_value*)ALLOCAN(char, fp_value_size);
+	const float_descriptor_t *desc   = get_descriptor(mode);
 	fc_get_epsilon(desc, buffer);
-	return get_fp_tarval(buffer, mode);
-}
-
-ir_tarval *get_tarval_minus_inf(ir_mode *mode)
-{
-	if (!mode_is_float(mode))
-		panic("mode %F does not support -inf value", mode);
-	fp_value                 *buffer     = (fp_value*)ALLOCAN(char, fp_value_size);
-	const float_descriptor_t *desc = get_descriptor(mode);
-	fc_get_inf(desc, buffer, true);
 	return get_fp_tarval(buffer, mode);
 }
 
