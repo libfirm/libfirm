@@ -112,7 +112,8 @@ FIRM_API ir_tarval *new_integer_tarval_from_str(const char *str, size_t len,
  * Constructor function for new tarvals
  *
  * @param l     The long representing the value
- * @param mode  The mode requested for the result tarval
+ * @param mode  The mode requested for the result tarval must be a
+ *              twos_complement mode.
  *
  * This function creates a new tarval representing the value represented
  * by a long integer. If a tarval representing this value already exists,

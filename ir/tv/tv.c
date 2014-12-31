@@ -222,23 +222,10 @@ ir_tarval *new_tarval_from_str(const char *str, size_t len, ir_mode *mode)
 
 ir_tarval *new_tarval_from_long(long l, ir_mode *mode)
 {
-	switch (get_mode_sort(mode))   {
-	case irms_reference:
-	case irms_int_number: {
-		sc_word *buffer = ALLOCAN(sc_word, sc_value_length);
-		sc_val_from_long(l, buffer);
-		return get_int_tarval(buffer, mode);
-	}
-
-	case irms_float_number:
-		return new_tarval_from_double((long double)l, mode);
-
-	case irms_internal_boolean:
-	case irms_data:
-	case irms_auxiliary:
-		break;
-	}
-	panic("unsupported mode sort");
+	assert(get_mode_arithmetic(mode) == irma_twos_complement);
+	sc_word *buffer = ALLOCAN(sc_word, sc_value_length);
+	sc_val_from_long(l, buffer);
+	return get_int_tarval(buffer, mode);
 }
 
 ir_tarval *new_tarval_nan(ir_mode *mode, int signaling, ir_tarval *payload)
