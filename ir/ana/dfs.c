@@ -67,13 +67,7 @@ static void dfs_perform(dfs_t *dfs, ir_node *n, dfs_node_t const *anc, int level
 	node->level       = level;
 
 	foreach_block_succ(n, edge) {
-		obstack_ptr_grow(&dfs->obst, get_edge_src_irn(edge));
-	}
-	obstack_ptr_grow(&dfs->obst, NULL);
-	ir_node **const succs = (ir_node**)obstack_finish(&dfs->obst);
-
-	for (ir_node **iter = succs; *iter != NULL; ++iter) {
-		ir_node *const p = *iter;
+		ir_node *const p = get_edge_src_irn(edge);
 
 		/* get the node */
 		dfs_node_t *child = get_node(dfs, p);
@@ -91,7 +85,6 @@ static void dfs_perform(dfs_t *dfs, ir_node *n, dfs_node_t const *anc, int level
 	}
 
 	node->post_num = dfs->post_num++;
-	obstack_free(&dfs->obst, succs);
 }
 
 static void classify_edges(dfs_t *dfs)
@@ -145,8 +138,6 @@ dfs_t *dfs_new(ir_graph *const irg)
 	res->post_num         = 0;
 	res->edges_classified = false;
 
-	obstack_init(&res->obst);
-
 	ir_node *const root = get_irg_start_block(irg);
 	dfs_perform(res, root, NULL, 0);
 
@@ -183,7 +174,6 @@ dfs_t *dfs_new(ir_graph *const irg)
 
 void dfs_free(dfs_t *dfs)
 {
-	obstack_free(&dfs->obst, NULL);
 	del_set(dfs->nodes);
 	del_set(dfs->edges);
 	free(dfs->pre_order);

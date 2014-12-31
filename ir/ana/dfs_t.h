@@ -16,7 +16,6 @@
 
 #include <stdbool.h>
 #include "hashptr.h"
-#include "obst.h"
 #include "dfs.h"
 
 #define dfs_get_n_nodes(dfs)            ((dfs)->pre_num)
@@ -45,8 +44,6 @@ struct dfs_edge_t {
 };
 
 struct dfs_t {
-	struct obstack obst;
-
 	set         *nodes;
 	set         *edges;
 	dfs_node_t **pre_order;
