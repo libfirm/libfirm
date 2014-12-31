@@ -8,8 +8,8 @@
  * @brief       Generic backend types and interfaces.
  * @author      Sebastian Hack
  */
-#ifndef FIRM_BE_MAIN_H
-#define FIRM_BE_MAIN_H
+#ifndef FIRM_BE_H
+#define FIRM_BE_H
 
 #include <stdio.h>
 #include "irarch.h"

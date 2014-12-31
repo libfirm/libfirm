@@ -12,8 +12,8 @@
  * Backend node support for generic backend nodes.
  * This file provides Perm, and Copy nodes.
  */
-#ifndef FIRM_BE_BENODE_T_H
-#define FIRM_BE_BENODE_T_H
+#ifndef FIRM_BE_BENODE_H
+#define FIRM_BE_BENODE_H
 
 #include <limits.h>
 
