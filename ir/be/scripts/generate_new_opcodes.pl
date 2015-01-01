@@ -815,45 +815,28 @@ sub get_reg_index {
 # We need this information for requirements like "in_sX" or "out_dX"
 # @return array of classes corresponding to the requirement for each index
 ###
-sub build_inout_idx_class {
-	my $n     = shift;
-	my $op    = shift;
-	my $is_in = shift;
-	my @idx_class;
+sub get_in_req_class {
+	my $n   = shift;
+	my $idx = shift;
 
-	my $inout = ($is_in ? "in_reqs" : "out_reqs");
+	my $reqs = $n->{"in_reqs"};
+	if ($reqs && $reqs ne "..." && $idx < scalar(@$reqs)) {
+		my ($req,) = split(/:/, @$reqs[$idx]);
+		if ($req eq "none") {
+			return "none";
+		} elsif (is_reg_class($req)) {
+			return $req;
+		} else {
+			foreach my $reg (split(/ /, $req)) {
+				my $class = get_reg_class($reg);
+				if ($class) {
+					return $class;
+				}
+			}
+		}
+	}
 
-	my $reqs = $n->{"$inout"};
-	if ($reqs && $reqs ne "...") {
-		for my $r (@$reqs) {
-			my ($req,) = split(/:/, $r);
-
-			my $class = undef;
-			if ($req eq "none") {
-				$class = "none";
-			} elsif (is_reg_class($req)) {
-				$class = $req;
-			} else {
-				my @regs = split(/ /, $req);
-GET_CLASS:		foreach my $reg (@regs) {
-					if ($reg =~ /!?(in|out)\_r\d+/ || $reg =~ /!in/) {
-						$class = "UNKNOWN_CLASS";
-					} else {
-						$class = get_reg_class($reg);
-						if (!defined $class) {
-							die("Fatal error: Could not get ".uc($inout)." register class for '$op' reg $reg ... exiting.\n");
-						} else {
-							last GET_CLASS;
-						} # !defined class
-					} # if (reg =~ ...
-				} # foreach
-			} # if
-
-			push(@idx_class, $class);
-		} # for
-	} # if
-
-	return @idx_class;
+	return undef;
 }
 
 ###
@@ -884,8 +867,6 @@ sub build_subset_class_func {
 	my @regs  = split(/ /, shift);
 	my $flags = shift;
 
-	my @idx_class = build_inout_idx_class($node, $op, !$is_in);
-
 	# set/unset registers
 CHECK_REQS: foreach (@regs) {
 		if (!$is_in && /(!)?in_r(\d+)/) {
@@ -914,7 +895,11 @@ CHECK_REQS: foreach (@regs) {
 				$same_pos      |= $bit_pos;
 			}
 
-			$class = $idx_class[$2 - 1];
+			my $idx = $2;
+			$class = get_in_req_class($node, $idx - 1);
+			if (!$class) {
+				die("Fatal error: Could not get in_reqs register class for '$op' index $idx ... exiting.\n");
+			}
 			next CHECK_REQS;
 		}
 
