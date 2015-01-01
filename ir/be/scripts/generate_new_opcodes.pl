@@ -69,7 +69,6 @@ my $cmp_attr_func;
 my $temp;
 my $n_opcodes = 0;    # number of opcodes
 my $ARITY_VARIABLE = -1;
-my $ARITY_DYNAMIC  = -2;
 my %requirements = ();
 my %limit_bitsets = ();
 my %reg2class = ();
@@ -128,8 +127,6 @@ sub create_constructor {
 	}
 	if($arity eq "variable") {
 		$arity = $ARITY_VARIABLE;
-	} elsif($arity eq "dynamic") {
-		$arity = $ARITY_DYNAMIC;
 	}
 
 	# determine out arity
@@ -143,8 +140,6 @@ sub create_constructor {
 	}
 	if($out_arity eq "variable") {
 		$out_arity = $ARITY_VARIABLE;
-	} elsif($out_arity eq "dynamic") {
-		$out_arity = $ARITY_DYNAMIC;
 	}
 	if ($out_arity != 0 && $out_arity != 1 && !defined($known_mode)) {
 		$known_mode = "mode_T";
@@ -169,8 +164,6 @@ sub create_constructor {
 	if (!exists($n->{"args"})) { # default args
 		if ($arity == $ARITY_VARIABLE) {
 			$complete_args = ", int arity, ir_node *in[]";
-		} elsif ($arity == $ARITY_DYNAMIC) {
-			$complete_args = "";
 		} else {
 			for (my $i = 0; $i < $arity; $i++) {
 				my $opname = "op${i}";
@@ -212,13 +205,7 @@ sub create_constructor {
 	arch_irn_flags_t irn_flags_ = arch_irn_flags_none;
 EOF
 
-	if($arity == $ARITY_DYNAMIC) {
-		$temp .= <<EOF;
-	int      const   arity      = -1;
-	ir_node  const **in         = NULL;
-EOF
-	} elsif($arity == $ARITY_VARIABLE) {
-	} else {
+	if ($arity != $ARITY_VARIABLE) {
 		$temp .= <<EOF;
 	int      const   arity      = $arity;
 EOF
@@ -232,12 +219,7 @@ EOF
 EOF
 		}
 	}
-	if($out_arity == $ARITY_DYNAMIC) {
-		$temp .= <<EOF;
-	int      const   n_res      = -1;
-EOF
-	} elsif($out_arity == $ARITY_VARIABLE) {
-	} else {
+	if ($out_arity != $ARITY_VARIABLE) {
 		$temp .= <<EOF;
 	int      const   n_res      = ${out_arity};
 EOF
@@ -456,8 +438,6 @@ foreach my $op (sort(keys(%nodes))) {
 	}
 	if($arity eq "variable") {
 		$arity = $ARITY_VARIABLE;
-	} elsif($arity eq "dynamic") {
-		$arity = $ARITY_DYNAMIC;
 	}
 
 	# determine out arity
@@ -471,8 +451,6 @@ foreach my $op (sort(keys(%nodes))) {
 	}
 	if($out_arity eq "variable") {
 		$out_arity = $ARITY_VARIABLE;
-	} elsif($out_arity eq "dynamic") {
-		$out_arity = $ARITY_DYNAMIC;
 	}
 
 	$orig_op = $op;
@@ -787,8 +765,6 @@ sub translate_arity {
 		return "oparity_any";
 	} elsif ($arity == $ARITY_VARIABLE) {
 		return "oparity_variable";
-	} elsif ($arity == $ARITY_DYNAMIC) {
-		return "oparity_dynamic";
 	} else {
 		die "Fatal error: Unknown arity $arity";
 	}

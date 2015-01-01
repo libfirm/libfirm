@@ -13,7 +13,7 @@ $mode_fp  = "mode_F";  # mode used by floatingpoint registers
 # %nodes = (
 #
 # <op-name> => {
-#   arity     => "0|1|2|3 ... |variable|dynamic|any",   # optional
+#   arity     => "0|1|2|3 ... |variable",               # optional
 #   state     => "floats|pinned|mem_pinned|exc_pinned", # optional
 #   args      => [
 #                    { type => "type 1", name => "name 1" },
