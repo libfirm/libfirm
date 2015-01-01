@@ -15,11 +15,6 @@ $mode_fp  = "mode_F";  # mode used by floatingpoint registers
 # <op-name> => {
 #   arity     => "0|1|2|3 ... |variable",               # optional
 #   state     => "floats|pinned|mem_pinned|exc_pinned", # optional
-#   args      => [
-#                    { type => "type 1", name => "name 1" },
-#                    { type => "type 2", name => "name 2" },
-#                    ...
-#                  ],
 #   comment   => "any comment for constructor",  # optional
 #   in_reqs   => [ "reg_class|register" ],
 #   out_reqs  => [ "reg_class|register|in_rX" ],
@@ -42,13 +37,6 @@ $mode_fp  = "mode_F";  # mode used by floatingpoint registers
 # state: state of the operation, OPTIONAL (default is "floats")
 #
 # arity: arity of the operation, MUST NOT BE OMITTED
-#
-# args:  the OPTIONAL arguments of the node constructor (debug, irg and block
-#        are always the first 3 arguments and are always autmatically
-#        created)
-#        If this key is missing the following arguments will be created:
-#        for i = 1 .. arity: ir_node *op_i
-#        ir_mode *mode
 #
 # outs:  if a node defines more than one output, the names of the projections
 #        nodes having outs having automatically the mode mode_T

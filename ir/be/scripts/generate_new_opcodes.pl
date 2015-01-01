@@ -161,32 +161,23 @@ sub create_constructor {
 	$temp             = "";
 
 	$temp = "ir_node *new_bd_${arch}_${op}${suffix}(dbg_info *dbgi, ir_node *block";
-	if (!exists($n->{"args"})) { # default args
-		if ($arity == $ARITY_VARIABLE) {
-			$complete_args = ", int arity, ir_node *in[]";
-		} else {
-			for (my $i = 0; $i < $arity; $i++) {
-				my $opname = "op${i}";
-				if (exists($n->{"ins"})) {
-					my @ins = @{ $n->{"ins"} };
-					$opname = $ins[$i];
-				}
-
-				$complete_args .= ", ir_node *${opname}";
+	if ($arity == $ARITY_VARIABLE) {
+		$complete_args = ", int arity, ir_node *in[]";
+	} else {
+		for (my $i = 0; $i < $arity; $i++) {
+			my $opname = "op${i}";
+			if (exists($n->{"ins"})) {
+				my @ins = @{ $n->{"ins"} };
+				$opname = $ins[$i];
 			}
+			$complete_args .= ", ir_node *${opname}";
 		}
-		if ($out_arity == $ARITY_VARIABLE) {
-			$complete_args .= ", int n_res";
-		}
-
-		if (!defined($known_mode)) {
-			$complete_args .= ", ir_mode *mode";
-		}
-	} else { # user defined args
-		for my $href (@{ $n->{"args"} }) {
-			$href->{"type"} .= " " if ($href->{"type"} !~ / [*]?$/); # put a space between name and type if there is none at the end
-			$complete_args  .= ", ".$href->{"type"}.$href->{"name"};
-		}
+	}
+	if ($out_arity == $ARITY_VARIABLE) {
+		$complete_args .= ", int n_res";
+	}
+	if (!defined($known_mode)) {
+		$complete_args .= ", ir_mode *mode";
 	}
 
 	# we have additional attribute arguements
@@ -396,7 +387,6 @@ EOF
 }
 
 my @node_attrs = (
-	"args",
 	"arity",
 	"attr",
 	"comment",
