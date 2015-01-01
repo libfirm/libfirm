@@ -416,38 +416,38 @@ Clz => {
 # mov lr, pc\n mov pc, XXX -- This combination is used for calls to function
 # pointers
 LinkMovPC => {
-	state        => "exc_pinned",
-	irn_flags    => [ "modify_flags" ],
-	arity        => "variable",
-	out_reqs     => "...",
-	attr_type    => "arm_shifter_operand_t",
-	attr         => "unsigned shiftop_input, arm_shift_modifier_t shift_modifier, unsigned char immediate_value, unsigned char immediate_rot",
-	custominit   => "init_arm_shifter_operand(res, shiftop_input, immediate_value, shift_modifier, immediate_rot);\n",
-	emit         => "mov lr, pc\n".
-	                "mov pc, %O",
+	state      => "exc_pinned",
+	irn_flags  => [ "modify_flags" ],
+	in_reqs    => "...",
+	out_reqs   => "...",
+	attr_type  => "arm_shifter_operand_t",
+	attr       => "unsigned shiftop_input, arm_shift_modifier_t shift_modifier, unsigned char immediate_value, unsigned char immediate_rot",
+	custominit => "init_arm_shifter_operand(res, shiftop_input, immediate_value, shift_modifier, immediate_rot);\n",
+	emit       => "mov lr, pc\n".
+	              "mov pc, %O",
 },
 
 # mov lr, pc\n ldr pc, XXX -- This combination is used for calls to function
 # pointers
 LinkLdrPC => {
-	state        => "exc_pinned",
-	irn_flags    => [ "modify_flags" ],
-	arity        => "variable",
-	out_reqs     => "...",
-	attr_type    => "arm_load_store_attr_t",
-	attr         => "ir_mode *ls_mode, ir_entity *entity, int entity_sign, long offset, bool is_frame_entity",
-	emit         => "mov lr, pc\n".
-	                "ldr pc, %O",
+	state      => "exc_pinned",
+	irn_flags  => [ "modify_flags" ],
+	in_reqs    => "...",
+	out_reqs   => "...",
+	attr_type  => "arm_load_store_attr_t",
+	attr       => "ir_mode *ls_mode, ir_entity *entity, int entity_sign, long offset, bool is_frame_entity",
+	emit       => "mov lr, pc\n".
+	              "ldr pc, %O",
 },
 
 Bl => {
-	state      => "exc_pinned",
-	irn_flags  => [ "modify_flags" ],
-	arity      => "variable",
-	out_reqs   => "...",
-	attr_type  => "arm_Address_attr_t",
-	attr       => "ir_entity *entity, int offset",
-	emit       => 'bl %I',
+	state     => "exc_pinned",
+	irn_flags => [ "modify_flags" ],
+	in_reqs   => "...",
+	out_reqs  => "...",
+	attr_type => "arm_Address_attr_t",
+	attr      => "ir_entity *entity, int offset",
+	emit      => 'bl %I',
 },
 
 CopyB => {
@@ -652,7 +652,7 @@ Start => {
 Return => {
 	state    => "pinned",
 	op_flags => [ "cfopcode" ],
-	arity    => "variable",
+	in_reqs  => "...",
 	mode     => "mode_X",
 	out_reqs => [ "none" ],
 	emit     => "bx lr",

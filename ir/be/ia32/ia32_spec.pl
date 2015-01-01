@@ -386,7 +386,7 @@ Immediate => {
 },
 
 Asm => {
-	arity     => "variable",
+	in_reqs   => "...",
 	out_reqs  => "...",
 	attr_type => "ia32_asm_attr_t",
 	attr      => "const x86_asm_attr_t *asmattr",
@@ -1197,7 +1197,7 @@ Start => {
 Return => {
 	state     => "pinned",
 	op_flags  => [ "cfopcode" ],
-	arity     => "variable",
+	in_reqs   => "...",
 	out_reqs  => [ "none" ],
 	ins       => [ "mem", "stack", "first_result" ],
 	mode      => "mode_X",
@@ -1209,7 +1209,7 @@ Return => {
 Call => {
 	op_flags  => [ "uses_memory" ],
 	state     => "exc_pinned",
-	arity     => "variable",
+	in_reqs   => "...",
 	out_reqs  => "...",
 	ins       => [ "base", "index", "mem", "callee", "stack", "fpcw", "first_argument" ],
 	outs      => [ "mem", "stack", "fpcw", "first_result" ],

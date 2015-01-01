@@ -116,17 +116,18 @@ sub create_constructor {
 		$known_mode = $n->{mode};
 	}
 
+	my $in_reqs = $n->{"in_reqs"};
 	# determine arity
 	my $arity = 0;
-	if(exists($n->{"arity"})) {
-		$arity = $n->{"arity"};
-	} elsif (exists($n->{"in_reqs"})) {
-		$arity = scalar(@{ $n->{"in_reqs"} });
+	if ($in_reqs) {
+		if ($in_reqs eq "...") {
+			$arity   = $ARITY_VARIABLE;
+			$in_reqs = undef;
+		} else {
+			$arity = scalar(@$in_reqs);
+		}
 	} elsif (exists($n->{"ins"})) {
 		$arity = scalar(@{ $n->{"ins"} });
-	}
-	if($arity eq "variable") {
-		$arity = $ARITY_VARIABLE;
 	}
 
 	my $out_reqs = $n->{"out_reqs"};
@@ -225,12 +226,11 @@ EOF
 	# set up static variables for requirements and registers
 	my $idx;
 
-	undef my @in;
-	@in = @{ $n->{"in_reqs"} } if (exists($n->{"in_reqs"}));
-
-	for(my $idx = 0; $idx < $#in; $idx++) {
-		my $req = $in[$idx];
-		generate_requirements($req, $n, "${arch}_${op}", $idx, 1);
+	if ($in_reqs) {
+		my $idx = 0;
+		for my $req (@$in_reqs) {
+			generate_requirements($req, $n, "${arch}_${op}", $idx++, 1);
+		}
 	}
 	if ($out_reqs) {
 		my $idx = 0;
@@ -239,16 +239,16 @@ EOF
 		}
 	}
 
-	if (@in) {
-		if($arity >= 0 && scalar(@in) != $arity) {
+	if ($in_reqs) {
+		if ($arity >= 0 && scalar(@$in_reqs) != $arity) {
 			die "Fatal error: Arity and number of in requirements don't match for ${op}\n";
 		}
 
 		$temp .= "\tstatic const arch_register_req_t *in_reqs[] =\n";
 		$temp .= "\t{\n";
-		for ($idx = 0; $idx <= $#in; $idx++) {
-			my $req = $in[$idx];
-			my $reqstruct = generate_requirements($req, $n, "${arch}_${op}", $idx, 1);
+		my $idx = 0;
+		for my $req (@$in_reqs) {
+			my $reqstruct = generate_requirements($req, $n, "${arch}_${op}", $idx++, 1);
 			$temp .= "\t\t& ${reqstruct},\n";
 		}
 		$temp .= "\t};\n";
@@ -419,15 +419,14 @@ foreach my $op (sort(keys(%nodes))) {
 
 	# determine arity
 	$arity = 0;
-	if(exists($n{"arity"})) {
-		$arity = $n{"arity"};
-	} elsif (exists($n{"in_reqs"})) {
-		$arity = scalar(@{ $n{"in_reqs"} });
+	if (my $in_reqs = $n{"in_reqs"}) {
+		if ($in_reqs eq "...") {
+			$arity = $ARITY_VARIABLE;
+		} else {
+			$arity = scalar(@$in_reqs);
+		}
 	} elsif (exists($n{"ins"})) {
 		$arity = scalar(@{ $n{"ins"} });
-	}
-	if($arity eq "variable") {
-		$arity = $ARITY_VARIABLE;
 	}
 
 	# determine out arity
@@ -824,13 +823,12 @@ sub build_inout_idx_class {
 
 	my $inout = ($is_in ? "in_reqs" : "out_reqs");
 
-	if (exists($n->{"$inout"})) {
-		my @reqs = @{ $n->{"$inout"} };
+	my $reqs = $n->{"$inout"};
+	if ($reqs && $reqs ne "...") {
+		for my $r (@$reqs) {
+			my ($req,) = split(/:/, $r);
 
-		for (my $idx = 0; $idx <= $#reqs; $idx++) {
 			my $class = undef;
-			my ($req,) = split(/:/, $reqs[$idx]);
-
 			if ($req eq "none") {
 				$class = "none";
 			} elsif (is_reg_class($req)) {
@@ -843,7 +841,7 @@ GET_CLASS:		foreach my $reg (@regs) {
 					} else {
 						$class = get_reg_class($reg);
 						if (!defined $class) {
-							die("Fatal error: Could not get ".uc($inout)." register class for '$op' pos $idx (reg $reg) ... exiting.\n");
+							die("Fatal error: Could not get ".uc($inout)." register class for '$op' reg $reg ... exiting.\n");
 						} else {
 							last GET_CLASS;
 						} # !defined class
