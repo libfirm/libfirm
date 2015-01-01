@@ -276,7 +276,7 @@ and => {
 
 asm => {
 	arity     => "variable",
-	out_arity => "variable",
+	out_reqs  => "...",
 	attr_type => "amd64_asm_attr_t",
 	attr      => "const x86_asm_attr_t *asmattr",
 	fixed     => "amd64_op_mode_t op_mode = AMD64_OP_NONE;\n",
@@ -465,7 +465,7 @@ jmp_switch => {
 	op_flags  => [ "cfopcode", "forking" ],
 	state     => "pinned",
 	in_reqs   => [ "gp" ],
-	out_arity => "variable",
+	out_reqs  => "...",
 	attr_type => "amd64_switch_jmp_attr_t",
 	attr      => "const ir_switch_table *table, ir_entity *table_entity",
 	fixed     => "amd64_op_mode_t op_mode = AMD64_OP_NONE;\n",
@@ -474,7 +474,7 @@ jmp_switch => {
 call => {
 	state     => "exc_pinned",
 	arity     => "variable",
-	out_arity => "variable",
+	out_reqs  => "...",
 	attr_type => "amd64_addr_attr_t",
 	attr      => "amd64_op_mode_t op_mode, amd64_addr_t addr",
 	fixed     => "amd64_insn_mode_t insn_mode = INSN_MODE_64;\n",
@@ -485,7 +485,7 @@ call => {
 start => {
 	irn_flags => [ "schedule_first" ],
 	state     => "pinned",
-	out_arity => "variable",
+	out_reqs  => "...",
 	ins       => [],
 	fixed     => "amd64_op_mode_t op_mode = AMD64_OP_NONE;\n",
 	emit      => "",

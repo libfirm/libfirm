@@ -129,17 +129,18 @@ sub create_constructor {
 		$arity = $ARITY_VARIABLE;
 	}
 
+	my $out_reqs = $n->{"out_reqs"};
 	# determine out arity
 	my $out_arity = 0;
-	if(exists($n->{"out_arity"})) {
-		$out_arity = $n->{"out_arity"};
-	} elsif (exists($n->{"out_reqs"})) {
-		$out_arity = scalar(@{ $n->{"out_reqs"} });
+	if ($out_reqs) {
+		if ($out_reqs eq "...") {
+			$out_arity = $ARITY_VARIABLE;
+			$out_reqs  = undef;
+		} else {
+			$out_arity = scalar(@$out_reqs);
+		}
 	} elsif (exists($n->{"outs"})) {
 		$out_arity = scalar(@{ $n->{"outs"} });
-	}
-	if($out_arity eq "variable") {
-		$out_arity = $ARITY_VARIABLE;
 	}
 	if ($out_arity != 0 && $out_arity != 1 && !defined($known_mode)) {
 		$known_mode = "mode_T";
@@ -226,16 +227,16 @@ EOF
 
 	undef my @in;
 	@in = @{ $n->{"in_reqs"} } if (exists($n->{"in_reqs"}));
-	undef my @out;
-	@out = @{ $n->{"out_reqs"} } if (exists($n->{"out_reqs"}));
 
 	for(my $idx = 0; $idx < $#in; $idx++) {
 		my $req = $in[$idx];
 		generate_requirements($req, $n, "${arch}_${op}", $idx, 1);
 	}
-	for(my $idx = 0; $idx < $#out; $idx++) {
-		my $req = $out[$idx];
-		generate_requirements($req, $n, "${arch}_${op}", $idx, 0);
+	if ($out_reqs) {
+		my $idx = 0;
+		for my $req (@$out_reqs) {
+			generate_requirements($req, $n, "${arch}_${op}", $idx++, 0);
+		}
 	}
 
 	if (@in) {
@@ -255,17 +256,18 @@ EOF
 		$temp .= "\tstatic const arch_register_req_t **in_reqs = NULL;\n";
 	}
 
-	if (@out) {
-		if($out_arity >= 0 && scalar(@out) != $out_arity) {
+	if ($out_reqs) {
+		if ($out_arity >= 0 && scalar(@$out_reqs) != $out_arity) {
 			die "Fatal error: Out-Arity and number of out requirements don't match for ${op}\n";
 		}
 
-		for ($idx = 0; $idx <= $#out; $idx++) {
-			my $req = $out[$idx];
+		my $idx = 0;
+		for my $req (@$out_reqs) {
 			my $reqstruct = generate_requirements($req, $n, "${arch}_${op}", $idx, 0);
 			$set_out_reqs .= <<EOF;
 info->out_infos[${idx}].req = &${reqstruct};
 EOF
+			++$idx;
 		}
 	}
 	my $attr_type = $on->{attr_type};
@@ -396,7 +398,6 @@ my @node_attrs = (
 	"ins",
 	"irn_flags",
 	"mode",
-	"out_arity",
 	"out_reqs",
 	"outs",
 );
@@ -406,7 +407,6 @@ foreach my $op (sort(keys(%nodes))) {
 	my %n        = %{ $nodes{"$op"} };
 	my $known_mode;
 	my $num_outs = 0;
-	my $out_arity;
 	my @out_flags;
 
 	if (my $template = $n{"template"}) {
@@ -431,16 +431,15 @@ foreach my $op (sort(keys(%nodes))) {
 	}
 
 	# determine out arity
-	$out_arity = 0;
-	if(exists($n{"out_arity"})) {
-		$out_arity = $n{"out_arity"};
-	} elsif (exists($n{"out_reqs"})) {
-		$out_arity = scalar(@{ $n{"out_reqs"} });
+	my $out_arity = 0;
+	if (my $out_reqs = $n{"out_reqs"}) {
+		if ($out_reqs eq "...") {
+			$out_arity = $ARITY_VARIABLE;
+		} else {
+			$out_arity = scalar(@$out_reqs);
+		}
 	} elsif (exists($n{"outs"})) {
 		$out_arity = scalar(@{ $n{"outs"} });
-	}
-	if($out_arity eq "variable") {
-		$out_arity = $ARITY_VARIABLE;
 	}
 
 	$orig_op = $op;

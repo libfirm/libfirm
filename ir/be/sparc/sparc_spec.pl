@@ -286,7 +286,7 @@ my $xop = {
 ASM => {
 	state     => "exc_pinned",
 	arity     => "variable",
-	out_arity => "variable",
+	out_reqs  => "...",
 	attr      => "ident *text, const sparc_asm_operand_t *operands",
 	attr_type => "sparc_asm_attr_t",
 },
@@ -529,7 +529,7 @@ Ba => {
 Start => {
 	irn_flags => [ "schedule_first" ],
 	state     => "pinned",
-	out_arity => "variable",
+	out_reqs  => "...",
 	ins       => [],
 	emit      => "",
 },
@@ -555,7 +555,7 @@ Call => {
 	irn_flags => [ "has_delay_slot" ],
 	state     => "exc_pinned",
 	arity     => "variable",
-	out_arity => "variable",
+	out_reqs  => "...",
 	attr_type => "sparc_call_attr_t",
 	constructors => {
 		imm => {
@@ -580,7 +580,7 @@ SwitchJmp => {
 	irn_flags    => [ "has_delay_slot" ],
 	state        => "pinned",
 	in_reqs      => [ "gp" ],
-	out_arity    => "variable",
+	out_reqs     => "...",
 	attr_type    => "sparc_switch_jmp_attr_t",
 	attr         => "const ir_switch_table *table, ir_entity *jump_table",
 },
