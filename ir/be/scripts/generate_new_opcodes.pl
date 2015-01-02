@@ -954,20 +954,6 @@ CHECK_REQS: foreach (@regs) {
 		$limit_reqs .= "$_ ";
 	}
 
-	# don't allow ignore regs in negative constraints
-	if($neg) {
-		my @cur_class = @{ $reg_classes{"$class"} };
-		for (my $idx = 0; $idx <= $#cur_class; $idx++) {
-			if (defined($cur_class[$idx]{"type"}) && ($cur_class[$idx]{"type"} & 4)) {
-				my $reg    = $cur_class[$idx]{"name"};
-				my $regix  = get_reg_index($reg);
-				my $arrayp = $regix / 32;
-				push(@{$limit_array[$arrayp]}, $reg);
-				$limit_reqs .= "$reg ";
-			}
-		}
-	}
-
 	if ($has_limit == 1) {
 		$limit_name = "${arch}_limit_".mangle_requirements($limit_reqs, $class);
 
