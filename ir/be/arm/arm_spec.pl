@@ -546,27 +546,6 @@ Str => {
 	attr      => "ir_mode *ls_mode, ir_entity *entity, int entity_sign, long offset, bool is_frame_entity",
 },
 
-StoreStackM4Inc => {
-	op_flags  => [ "uses_memory" ],
-	irn_flags => [ "rematerializable" ],
-	state     => "exc_pinned",
-	in_reqs   => [ "sp", "gp", "gp", "gp", "gp", "none" ],
-	out_reqs  => [ "sp:I|S", "none" ],
-	emit      => 'stmfd %S0!, {%S1, %S2, %S3, %S4}',
-	outs      => [ "ptr", "M" ],
-},
-
-LoadStackM3Epilogue => {
-	op_flags  => [ "uses_memory" ],
-	irn_flags => [ "rematerializable" ],
-	state     => "exc_pinned",
-	in_reqs   => [ "sp", "none" ],
-	out_reqs  => [ "r11:I", "sp:I|S", "pc:I", "none" ],
-	emit      => 'ldmfd %S0, {%D0, %D1, %D2}',
-	outs      => [ "res0", "res1", "res2", "M" ],
-},
-
-
 
 Adf => {
 	template => $binopf,
