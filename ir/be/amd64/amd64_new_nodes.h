@@ -54,8 +54,8 @@ static inline bool amd64_has_addr_attr(const ir_node *node)
 	    || attr->op_mode == AMD64_OP_UNOP_REG
 	    || attr->op_mode == AMD64_OP_RAX_ADDR
 	    || attr->op_mode == AMD64_OP_RAX_REG)
-	    && (get_irn_op(node) != op_amd64_xor_0)
-	    && (get_irn_op(node) != op_amd64_xorpd_0);
+	    && !is_amd64_xor_0(node)
+	    && !is_amd64_xorpd_0(node);
 }
 
 static inline amd64_addr_attr_t *get_amd64_addr_attr(ir_node *node)
