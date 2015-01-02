@@ -55,7 +55,6 @@ if(! %init_attr) {
 my $obst_limit_func  = ""; #
 my $obst_reg_reqs    = ""; #
 my $obst_opvar       = ""; # buffer for the "ir_op *op_<arch>_<op-name> = NULL;" statements
-my $obst_get_opvar   = ""; # buffer for the get_op_<arch>_<op-name>() functions
 my $obst_constructor = ""; # buffer for node constructor functions
 my $obst_new_irop    = ""; # buffer for the new_ir_op calls
 my $obst_free_irop   = ""; # buffer for free_ir_op calls
@@ -494,14 +493,15 @@ foreach my $op (sort(keys(%nodes))) {
 
 	# Create opcode
 	$obst_opvar     .= "ir_op *op_$op = NULL;\n";
-	$obst_get_opvar .= "bool is_$op(const ir_node *n)\n";
-	$obst_get_opvar .= "{\n";
-	$obst_get_opvar .= "\treturn get_irn_op(n) == op_$op;\n";
-	$obst_get_opvar .= "}\n\n";
 
 	$obst_header .= <<EOF;
 extern ir_op *op_${op};
-bool is_${op}(const ir_node *n);
+
+static inline bool is_$op(ir_node const *const n)
+{
+	return get_irn_op(n) == op_$op;
+}
+
 EOF
 
 	my $attr_type= $n{attr_type};
@@ -634,7 +634,6 @@ print OUT<<EOF;
 
 $obst_attrs_equal
 $obst_opvar
-$obst_get_opvar
 
 static int $arch\_opcode_start = -1;
 
