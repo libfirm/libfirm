@@ -72,9 +72,6 @@ ir_relation get_arm_CondJmp_relation(const ir_node *node);
  */
 void set_arm_CondJmp_relation(ir_node *node, ir_relation relation);
 
-ir_node *new_r_arm_StoreStackMInc(ir_graph *irg, ir_node *block, ir_node *mem, ir_node *sp,
-							      int n_regs, ir_node **regs, ir_mode *mode);
-
 /* Include the generated headers */
 #include "gen_arm_new_nodes.h"
 
