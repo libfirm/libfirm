@@ -351,8 +351,6 @@ done:
  * Push nodes that do not need to be permed through the Perm.
  * This is commonly a reload cascade at block ends.
  * @note This routine needs interference.
- * @note Probably, we can implement it a little more efficient.
- *       Especially searching the frontier lazily might be better.
  *
  * @param perm The perm
  * @param env  The lowerer environment
@@ -363,13 +361,11 @@ done:
 static int push_through_perm(ir_node *perm)
 {
 	ir_graph *irg     = get_irn_irg(perm);
-	ir_node *bl       = get_nodes_block(perm);
 	int  arity        = get_irn_arity(perm);
 	int *map;
 	bitset_t *moved   = bitset_alloca(arity);
 	int n_moved;
 	int new_size;
-	ir_node *frontier = bl;
 	int i, n;
 
 	(void)irg;
@@ -377,37 +373,17 @@ static int push_through_perm(ir_node *perm)
 
 	arch_register_class_t const *const cls = arch_get_irn_register_req_out(perm, 0)->cls;
 
-	/* Find the point in the schedule after which the
-	 * potentially movable nodes must be defined.
-	 * A Perm will only be pushed up to first instruction
-	 * which lets an operand of itself die.
-	 * If we would allow to move the Perm above this instruction,
-	 * the former dead operand would be live now at the point of
-	 * the Perm, increasing the register pressure by one.
-	 */
-	sched_foreach_reverse_before(perm, irn) {
-		if (is_Phi(irn) || arch_irn_is(irn, schedule_first)) {
-			frontier = irn;
-			goto found_front;
-		}
-		be_foreach_use(irn, cls, in_req_, op, op_req_,
-			if (!be_value_live_after(op, perm)) {
-				frontier = irn;
-				goto found_front;
-			}
-		);
-	}
-found_front:
-
-	DB((dbg_permmove, LEVEL_2, "\tfrontier: %+F\n", frontier));
-
 	n_moved = 0;
 	for (;;) {
 		ir_node *const node = sched_prev(perm);
-		if (node == frontier)
+		if (sched_is_begin(node))
 			break;
-
-		be_foreach_use(node, cls, in_req, value, value_req,
+		if (arch_irn_is(node, schedule_first)) {
+			DB((dbg_permmove, LEVEL_2, "\tcannot move past schedule_first %+F\n", node));
+			break;
+		}
+		be_foreach_use(node, cls, in_req, op, op_req,
+			DB((dbg_permmove, LEVEL_2, "\tcannot move past %+F due to operand %+F\n", node, op));
 			goto done;
 		);
 
