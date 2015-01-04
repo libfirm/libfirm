@@ -76,20 +76,6 @@ unsigned firm_dbg_get_mask(const firm_dbg_module_t *module);
  */
 void firm_dbg_set_file(firm_dbg_module_t *module, FILE *file);
 
-#define _DBG_MAIN(func,args) \
-  _firm_dbg_print_msg(__FILE__, __LINE__, func, _firm_dbg_make_msg args)
-
-#define _DBG(args)  _DBG_MAIN(__func__, args)
-#define _DB(args) _firm_dbg_print args
-
-/**
- * Debug messages issued with this macro are always printed, even in
- * retail versions.
- * @see DBG()
- */
-#define DBG_RETAIL(args)    _DBG(args)
-#define DB_RETAIL(args)     _DB(args)
-
 /**
  * Issue a debug message.
  * @param args The arguments.
@@ -113,8 +99,8 @@ void firm_dbg_set_file(firm_dbg_module_t *module, FILE *file);
  * DBG((my_mod, LEVEL_DEFAULT, "entity %e has type %t", ent, type))
  * @endcode
  */
-#define DBG(args)           _DBG(args)
-#define DB(args)            _DB(args)
+#define DBG(args) _firm_dbg_print_msg(__FILE__, __LINE__, __func__, _firm_dbg_make_msg args)
+#define DB(args)  _firm_dbg_print args
 
 /** create a debug handle in debug mode */
 #define FIRM_DBG_REGISTER(handle, name) handle = firm_dbg_register(name)
