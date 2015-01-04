@@ -350,22 +350,15 @@ done:
 /**
  * Push nodes that do not need to be permed through the Perm.
  * This is commonly a reload cascade at block ends.
- * @note This routine needs interference.
  *
  * @param perm The perm
- * @param env  The lowerer environment
  *
- * @return     1, if there is something left to perm over.
- *             0, if removed the complete perm.
+ * @return     true, if there is something left to perm over.
+ *             false, if removed the complete perm.
  */
-static int push_through_perm(ir_node *perm)
+static bool push_through_perm(ir_node *perm)
 {
-	ir_graph *irg     = get_irn_irg(perm);
-	int n_moved;
-	int new_size;
-
-	(void)irg;
-	DB((dbg_permmove, LEVEL_1, "perm move %+F irg %+F\n", perm, irg));
+	DB((dbg_permmove, LEVEL_1, "perm move %+F irg %+F\n", perm, get_irn_irg(perm)));
 
 	/* Collect all Projs of the Perm in an array sorted by Proj number. */
 	unsigned  const arity = get_irn_arity(perm);
@@ -378,9 +371,8 @@ static int push_through_perm(ir_node *perm)
 		projs[pn] = proj;
 	}
 
-	arch_register_class_t const *const cls = arch_get_irn_register_req_out(perm, 0)->cls;
-
-	n_moved = 0;
+	arch_register_class_t const *const cls      = arch_get_irn_register_req_out(perm, 0)->cls;
+	unsigned                           new_size = arity;
 	for (;;) {
 		ir_node *const node = sched_prev(perm);
 		if (sched_is_begin(node))
@@ -395,8 +387,7 @@ static int push_through_perm(ir_node *perm)
 		);
 
 		be_foreach_definition(node, cls, value, req,
-			if (req->type != arch_register_req_type_none &&
-			    req->type != arch_register_req_type_should_be_same)
+			if (req->type & ~arch_register_req_type_should_be_same)
 				goto done;
 		);
 
@@ -415,37 +406,33 @@ static int push_through_perm(ir_node *perm)
 				/* Reroute all users of the proj to the moved node. */
 				exchange(projs[pn], in);
 				projs[pn] = NULL;
-				++n_moved;
+				--new_size;
 			}
 		}
 	}
 done:
 
-	/* well, we could not push anything through the perm */
-	if (n_moved == 0)
-		return 1;
-
-	new_size = arity - n_moved;
 	if (new_size == 0) {
 		sched_remove(perm);
 		kill_node(perm);
-		return 0;
-	}
+		return false;
+	} else if (new_size != arity) {
+		/* Some, but not all, values were pushed through; adjust the Perm. */
+		int *const map = ALLOCAN(int, new_size);
+		unsigned   n   = 0;
+		for (unsigned pn = 0; pn != arity; ++pn) {
+			ir_node *const proj = projs[pn];
+			if (!proj)
+				continue;
+			set_Proj_num(proj, n);
+			map[n] = pn;
+			n++;
+		}
+		assert(n == new_size);
 
-	int *const map = ALLOCAN(int, new_size);
-	int        n   = 0;
-	for (unsigned pn = 0; pn != arity; ++pn) {
-		ir_node *const proj = projs[pn];
-		if (!proj)
-			continue;
-		set_Proj_num(proj, n);
-		map[n] = pn;
-		n++;
+		be_Perm_reduce(perm, new_size, map);
 	}
-	assert(n == new_size);
-
-	be_Perm_reduce(perm, new_size, map);
-	return 1;
+	return true;
 }
 
 /**
