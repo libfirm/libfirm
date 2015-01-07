@@ -361,15 +361,22 @@ done:
 static int push_through_perm(ir_node *perm)
 {
 	ir_graph *irg     = get_irn_irg(perm);
-	int  arity        = get_irn_arity(perm);
-	int *map;
-	bitset_t *moved   = bitset_alloca(arity);
 	int n_moved;
 	int new_size;
-	int i, n;
 
 	(void)irg;
 	DB((dbg_permmove, LEVEL_1, "perm move %+F irg %+F\n", perm, irg));
+
+	/* Collect all Projs of the Perm in an array sorted by Proj number. */
+	unsigned  const arity = get_irn_arity(perm);
+	ir_node **const projs = ALLOCAN(ir_node*, arity);
+	DEBUG_ONLY(memset(projs, 0, sizeof(*projs) * arity);)
+	foreach_out_edge(perm, edge) {
+		ir_node *const proj = get_edge_src_irn(edge);
+		unsigned const pn   = get_Proj_num(proj);
+		assert(pn < arity);
+		projs[pn] = proj;
+	}
 
 	arch_register_class_t const *const cls = arch_get_irn_register_req_out(perm, 0)->cls;
 
@@ -400,16 +407,14 @@ static int push_through_perm(ir_node *perm)
 		sched_add_after(perm, node);
 
 		/* Rewire Perm results to pushed through instruction. */
-		foreach_out_edge_safe(perm, edge) {
-			ir_node *const proj = get_edge_src_irn(edge);
-			unsigned const pn   = get_Proj_num(proj);
-			ir_node *const in   = get_irn_n(perm, pn);
+		for (unsigned pn = 0; pn != arity; ++pn) {
+			ir_node *const in = get_irn_n(perm, pn);
 			if (in == node || (is_Proj(in) && get_Proj_pred(in) == node)) {
 				/* Give it the proj's register. */
 				arch_set_irn_register(in, arch_get_irn_register_out(perm, pn));
 				/* Reroute all users of the proj to the moved node. */
-				exchange(proj, in);
-				bitset_set(moved, pn);
+				exchange(projs[pn], in);
+				projs[pn] = NULL;
 				++n_moved;
 			}
 		}
@@ -427,23 +432,17 @@ done:
 		return 0;
 	}
 
-	map      = ALLOCAN(int, new_size);
-	unsigned *proj_map = ALLOCAN(unsigned, arity);
-	n   = 0;
-	for (i = 0; i < arity; ++i) {
-		if (bitset_is_set(moved, i))
+	int *const map = ALLOCAN(int, new_size);
+	int        n   = 0;
+	for (unsigned pn = 0; pn != arity; ++pn) {
+		ir_node *const proj = projs[pn];
+		if (!proj)
 			continue;
-		map[n]      = i;
-		proj_map[i] = n;
+		set_Proj_num(proj, n);
+		map[n] = pn;
 		n++;
 	}
 	assert(n == new_size);
-	foreach_out_edge(perm, edge) {
-		ir_node *proj = get_edge_src_irn(edge);
-		unsigned pn   = get_Proj_num(proj);
-		pn = proj_map[pn];
-		set_Proj_num(proj, pn);
-	}
 
 	be_Perm_reduce(perm, new_size, map);
 	return 1;
