@@ -326,6 +326,8 @@ static void lower_perm_node(ir_node *const perm, lower_env_t *env)
 					arch_set_irn_register_out(xchg, 0, q->in_reg);
 					arch_set_irn_register_out(xchg, 1, q->out_reg);
 					sched_add_before(perm, xchg);
+					/* Prevent that the broken down Perm is visited by the walker. */
+					mark_irn_visited(xchg);
 				}
 				p->in_node = new_p;
 				exchange(q->out_node, new_q);
