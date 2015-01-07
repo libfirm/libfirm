@@ -373,8 +373,9 @@ static bool push_through_perm(ir_node *perm)
 
 	arch_register_class_t const *const cls      = arch_get_irn_register_req_out(perm, 0)->cls;
 	unsigned                           new_size = arity;
+	ir_node                           *node     = perm;
 	for (;;) {
-		ir_node *const node = sched_prev(perm);
+		node = sched_prev(node);
 		if (sched_is_begin(node))
 			break;
 		if (arch_irn_is(node, schedule_first)) {
@@ -392,10 +393,6 @@ static bool push_through_perm(ir_node *perm)
 		);
 
 		DBG((dbg_permmove, LEVEL_2, "\tmoving %+F after %+F\n", node, perm));
-
-		/* move the movable node in front of the Perm */
-		sched_remove(node);
-		sched_add_after(perm, node);
 
 		/* Rewire Perm results to pushed through instruction. */
 		for (unsigned pn = 0; pn != arity; ++pn) {
@@ -438,6 +435,10 @@ done:
 		ARR_SHRINKLEN(out_infos, new_size);
 		set_irn_in(perm, n, projs);
 	}
+	/* Move the Perm before all pushed through nodes. This may happen even if the
+	 * Perm did not get smaller. */
+	sched_remove(perm);
+	sched_add_after(node, perm);
 	return true;
 }
 
