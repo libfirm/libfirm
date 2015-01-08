@@ -417,20 +417,26 @@ done:
 		kill_node(perm);
 		return false;
 	} else if (new_size != arity) {
-		/* Some, but not all, values were pushed through; adjust the Perm. */
-		int *const map = ALLOCAN(int, new_size);
-		unsigned   n   = 0;
+		/* Some, but not all, values were pushed through.
+		 * Rewrite Perm to skip all moved slots. */
+		unsigned                          n         = 0;
+		backend_info_t             *const info      = be_get_info(perm);
+		arch_register_req_t const **const in_reqs   = info->in_reqs;
+		reg_out_info_t             *const out_infos = info->out_infos;
 		for (unsigned pn = 0; pn != arity; ++pn) {
 			ir_node *const proj = projs[pn];
 			if (!proj)
 				continue;
 			set_Proj_num(proj, n);
-			map[n] = pn;
-			n++;
+			in_reqs[n]   = in_reqs[pn];
+			out_infos[n] = out_infos[pn];
+			/* Reuse projs for reduced Perm inputs. */
+			projs[n]     = get_irn_n(perm, pn);
+			++n;
 		}
 		assert(n == new_size);
-
-		be_Perm_reduce(perm, new_size, map);
+		ARR_SHRINKLEN(out_infos, new_size);
+		set_irn_in(perm, n, projs);
 	}
 	return true;
 }

@@ -150,31 +150,6 @@ ir_node *be_new_Perm(arch_register_class_t const *const cls,
 	return irn;
 }
 
-void be_Perm_reduce(ir_node *perm, int new_size, int *map)
-{
-	assert(be_is_Perm(perm));
-	int arity = get_irn_arity(perm);
-	assert(new_size <= arity);
-	const arch_register_req_t **old_in_reqs
-		= ALLOCAN(const arch_register_req_t*, arity);
-	reg_out_info_t *old_infos = ALLOCAN(reg_out_info_t, arity);
-	backend_info_t *info      = be_get_info(perm);
-	ir_node       **new_in    = ALLOCAN(ir_node*, new_size);
-
-	/* save the old register data */
-	MEMCPY(old_in_reqs, info->in_reqs, arity);
-	MEMCPY(old_infos, info->out_infos, arity);
-
-	/* compose the new in array and set the new register data directly */
-	for (int i = 0; i < new_size; ++i) {
-		int idx = map[i];
-		new_in[i]          = get_irn_n(perm, idx);
-		info->in_reqs[i]   = old_in_reqs[idx];
-		info->out_infos[i] = old_infos[idx];
-	}
-	set_irn_in(perm, new_size, new_in);
-}
-
 ir_node *be_new_MemPerm(ir_node *const block, int n, ir_node *const *const in)
 {
 	ir_graph *const irg = get_irn_irg(block);

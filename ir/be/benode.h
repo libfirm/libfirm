@@ -74,22 +74,6 @@ ir_node *be_new_Perm(arch_register_class_t const *cls, ir_node *block, int n,
                      ir_node *const *in);
 
 /**
- * Reduce a Perm.
- * Basically, we provide a map to remap the Perm's arguments. If an entry in the
- * map is -1, the argument gets deleted.
- * This function takes care, that the register data and the input array reflects
- * the changes described by the map.
- * This is needed by the Perm optimization/movement in belower.c, see
- * push_through_perm().
- * @param perm     The perm node.
- * @param new_size The new number of arguments (must be smaller or equal to the
- *                 current one).
- * @param map      A map assigning each operand a new index (or -1 to indicate
- *                 deletion).
- */
-void be_Perm_reduce(ir_node *perm, int new_size, int *map);
-
-/**
  * Create a new MemPerm node.
  * A MemPerm node exchanges the values of memory locations. (Typically entities
  * used as spillslots). MemPerm nodes perform this operation without modifying
