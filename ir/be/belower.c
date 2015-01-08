@@ -349,6 +349,15 @@ done:
 	kill_node(perm);
 }
 
+static bool is_node_operand(ir_node *const node, ir_node const *const operand)
+{
+	foreach_irn_in(node, i, in) {
+		if (in == operand)
+			return true;
+	}
+	return false;
+}
+
 /**
  * Push nodes that do not need to be permed through the Perm.
  * This is commonly a reload cascade at block ends.
@@ -385,8 +394,15 @@ static bool push_through_perm(ir_node *perm)
 			break;
 		}
 		be_foreach_use(node, cls, in_req, op, op_req,
-			DB((dbg_permmove, LEVEL_2, "\tcannot move past %+F due to operand %+F\n", node, op));
-			goto done;
+			/* A Perm will only be pushed up to the first instruction
+			 * which lets an operand of itself die.
+			 * If we would allow to move the Perm above this instruction,
+			 * the former dead operand would be live now at the point of
+			 * the Perm, increasing the register pressure by one. */
+			if (in_req->type != arch_register_req_type_none || !is_node_operand(perm, op)) {
+				DB((dbg_permmove, LEVEL_2, "\tcannot move past %+F due to operand %+F\n", node, op));
+				goto done;
+			}
 		);
 
 		be_foreach_definition(node, cls, value, req,
@@ -398,14 +414,21 @@ static bool push_through_perm(ir_node *perm)
 
 		/* Rewire Perm results to pushed through instruction. */
 		for (unsigned pn = 0; pn != arity; ++pn) {
-			ir_node *const in = get_irn_n(perm, pn);
+			ir_node *const proj = projs[pn];
+			ir_node *const in   = get_irn_n(perm, pn);
 			if (in == node || (is_Proj(in) && get_Proj_pred(in) == node)) {
 				/* Give it the proj's register. */
 				arch_set_irn_register(in, arch_get_irn_register_out(perm, pn));
 				/* Reroute all users of the proj to the moved node. */
-				exchange(projs[pn], in);
+				exchange(proj, in);
 				projs[pn] = NULL;
 				--new_size;
+			} else {
+				/* Translate the nodes's inputs through the Perm. */
+				foreach_irn_in(node, i, node_in) {
+					if (node_in == in)
+						set_irn_n(node, i, proj);
+				}
 			}
 		}
 	}
