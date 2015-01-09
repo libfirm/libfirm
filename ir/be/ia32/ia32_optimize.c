@@ -244,12 +244,11 @@ static void peephole_ia32_Test(ir_node *node)
 		}
 
 		if (get_irn_mode(op) != mode_T) {
-			set_irn_mode(op, mode_T);
-
 			/* If there are other users, reroute them to result proj */
 			if (get_irn_n_edges(op) != 2) {
-				ir_node *res = new_r_Proj(op, ia32_mode_gp, pn_ia32_res);
-				edges_reroute_except(op, res, res);
+				be_peephole_to_tuple(op);
+			} else {
+				set_irn_mode(op, mode_T);
 			}
 		} else {
 			if (get_irn_n_edges(left) == 2)
