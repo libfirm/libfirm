@@ -162,26 +162,26 @@ static bool is_same_value(const ir_node *a, const ir_node *b)
  * @param env         The lowering environment, containing information on,
  *                    i.e., whether to use copies if free register available
  */
-static void lower_perm_node(ir_node *const perm, lower_env_t *env)
+static void lower_perm_node(ir_node *const perm, arch_register_class_t const *const cls, unsigned const arity, ir_node **const projs, lower_env_t *const env)
 {
 	DBG((dbg, LEVEL_1, "lowering %+F\n", perm));
 
-	bool const                         use_copies = env->use_copies;
-	arch_register_class_t const *const cls        = arch_get_irn_register_req_out(perm, 0)->cls;
-	unsigned                     const n_regs     = cls->n_regs;
+	bool             const use_copies = env->use_copies;
+	unsigned         const n_regs     = cls->n_regs;
 	/* Registers used as inputs of the Perm. */
-	unsigned                    *const inregs     = rbitset_alloca(n_regs);
+	unsigned        *const inregs     = rbitset_alloca(n_regs);
 	/* Map from register index to pair with this register as output. */
-	reg_pair_t                 **const oregmap    = ALLOCANZ(reg_pair_t*, n_regs);
-	size_t                       const arity      = get_irn_arity(perm);
-	reg_pair_t                  *const pairs      = ALLOCAN(reg_pair_t, arity);
-	reg_pair_t                        *pair       = pairs;
-	arch_register_t const             *free_reg   = NULL;
+	reg_pair_t     **const oregmap    = ALLOCANZ(reg_pair_t*, n_regs);
+	reg_pair_t      *const pairs      = ALLOCAN(reg_pair_t, arity);
+	reg_pair_t            *pair       = pairs;
+	arch_register_t const *free_reg   = NULL;
 
 	/* Collect all input-output pairs of the Perm. */
-	foreach_out_edge_safe(perm, edge) {
-		ir_node               *const out  = get_edge_src_irn(edge);
-		unsigned               const pos  = get_Proj_num(out);
+	for (unsigned pos = 0; pos != arity; ++pos) {
+		ir_node *const out = projs[pos];
+		if (!out)
+			continue;
+
 		ir_node               *const in   = get_irn_n(perm, pos);
 		arch_register_t const *const ireg = arch_get_irn_register(in);
 		arch_register_t const *const oreg = arch_get_irn_register_out(perm, pos);
@@ -367,24 +367,12 @@ static bool is_node_operand(ir_node *const node, ir_node const *const operand)
  * @return     true, if there is something left to perm over.
  *             false, if removed the complete perm.
  */
-static bool push_through_perm(ir_node *perm)
+static bool push_through_perm(ir_node *const perm, arch_register_class_t const *const cls, unsigned const arity, ir_node **const projs)
 {
 	DB((dbg_permmove, LEVEL_1, "perm move %+F irg %+F\n", perm, get_irn_irg(perm)));
 
-	/* Collect all Projs of the Perm in an array sorted by Proj number. */
-	unsigned  const arity = get_irn_arity(perm);
-	ir_node **const projs = ALLOCAN(ir_node*, arity);
-	DEBUG_ONLY(memset(projs, 0, sizeof(*projs) * arity);)
-	foreach_out_edge(perm, edge) {
-		ir_node *const proj = get_edge_src_irn(edge);
-		unsigned const pn   = get_Proj_num(proj);
-		assert(pn < arity);
-		projs[pn] = proj;
-	}
-
-	arch_register_class_t const *const cls      = arch_get_irn_register_req_out(perm, 0)->cls;
-	unsigned                           new_size = arity;
-	ir_node                           *node     = perm;
+	unsigned new_size = arity;
+	ir_node *node     = perm;
 	for (;;) {
 		node = sched_prev(node);
 		if (sched_is_begin(node))
@@ -438,33 +426,13 @@ done:
 		sched_remove(perm);
 		kill_node(perm);
 		return false;
-	} else if (new_size != arity) {
-		/* Some, but not all, values were pushed through.
-		 * Rewrite Perm to skip all moved slots. */
-		unsigned                          n         = 0;
-		backend_info_t             *const info      = be_get_info(perm);
-		arch_register_req_t const **const in_reqs   = info->in_reqs;
-		reg_out_info_t             *const out_infos = info->out_infos;
-		for (unsigned pn = 0; pn != arity; ++pn) {
-			ir_node *const proj = projs[pn];
-			if (!proj)
-				continue;
-			set_Proj_num(proj, n);
-			in_reqs[n]   = in_reqs[pn];
-			out_infos[n] = out_infos[pn];
-			/* Reuse projs for reduced Perm inputs. */
-			projs[n]     = get_irn_n(perm, pn);
-			++n;
-		}
-		assert(n == new_size);
-		ARR_SHRINKLEN(out_infos, new_size);
-		set_irn_in(perm, n, projs);
+	} else {
+		/* Move the Perm before all pushed through nodes. This may happen even if
+		 * the Perm did not get smaller. */
+		sched_remove(perm);
+		sched_add_after(node, perm);
+		return true;
 	}
-	/* Move the Perm before all pushed through nodes. This may happen even if the
-	 * Perm did not get smaller. */
-	sched_remove(perm);
-	sched_add_after(node, perm);
-	return true;
 }
 
 /**
@@ -477,11 +445,25 @@ static void lower_nodes_after_ra_walker(ir_node *irn, void *walk_env)
 {
 	if (!be_is_Perm(irn))
 		return;
+	ir_node *const perm = irn;
 
-	const bool perm_stayed = push_through_perm(irn);
+	arch_register_class_t const *const cls   = arch_get_irn_register_req_out(perm, 0)->cls;
+	unsigned                     const arity = get_irn_arity(perm);
+
+	/* Collect all Projs of the Perm in an array sorted by Proj number. */
+	ir_node **const projs = ALLOCAN(ir_node*, arity);
+	DEBUG_ONLY(memset(projs, 0, sizeof(*projs) * arity);)
+	foreach_out_edge(perm, edge) {
+		ir_node *const proj = get_edge_src_irn(edge);
+		unsigned const pn   = get_Proj_num(proj);
+		assert(pn < arity);
+		projs[pn] = proj;
+	}
+
+	bool const perm_stayed = push_through_perm(perm, cls, arity, projs);
 	if (perm_stayed) {
 		lower_env_t *env = (lower_env_t*)walk_env;
-		lower_perm_node(irn, env);
+		lower_perm_node(perm, cls, arity, projs, env);
 	}
 }
 
