@@ -38,6 +38,8 @@ typedef void (*peephole_opt_func) (ir_node *node);
  */
 void be_peephole_exchange(ir_node *old, ir_node *nw);
 
+ir_node *be_peephole_to_tuple(ir_node *node);
+
 /**
  * Tries to optimize a beIncSp node with its previous IncSP node.
  * Must be run from a be_peephole_opt() context.
