@@ -4568,15 +4568,15 @@ static ir_node *transform_node_Minus(ir_node *n)
 		ir_node  *negated_l = can_negate_cheaply(NULL, l);
 		if (negated_l != NULL) {
 			/* -((a - b) + c) -> (b - a) - c */
-			ir_node  *block = get_nodes_block(n);
-			ir_mode  *mode  = get_irn_mode(n);
+			ir_node *block = get_nodes_block(n);
+			ir_mode *mode  = get_irn_mode(n);
 			return new_rd_Sub(dbgi, block, negated_l, r, mode);
 		}
 		ir_node *negated_r = can_negate_cheaply(NULL, r);
 		if (negated_r != NULL) {
 			/* -(a + (b - c)) -> (c - b) - a */
-			ir_node  *block = get_nodes_block(n);
-			ir_mode  *mode  = get_irn_mode(n);
+			ir_node *block = get_nodes_block(n);
+			ir_mode *mode  = get_irn_mode(n);
 			return new_rd_Sub(dbgi, block, negated_r, l, mode);
 		}
 	}
