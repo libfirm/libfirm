@@ -758,27 +758,26 @@ static void lv_check_walker(ir_node *bl, void *data)
 	be_lv_info_t *const curr = ir_nodehashmap_get(be_lv_info_t, &w->given->map, bl);
 	be_lv_info_t *const fr   = ir_nodehashmap_get(be_lv_info_t, &w->fresh->map, bl);
 
-	if (!fr && curr && curr[0].head.n_members > 0) {
+	if (!fr && curr && curr->n_members > 0) {
 		ir_fprintf(stderr, "%+F liveness should be empty but current liveness contains:\n", bl);
-		for (unsigned i = 0; i < curr[0].head.n_members; ++i) {
-			ir_fprintf(stderr, "\t%+F\n", curr[1 + i].node.node);
+		for (unsigned i = 0; i < curr->n_members; ++i) {
+			ir_fprintf(stderr, "\t%+F\n", curr->nodes[i].node);
 		}
 	} else if (curr) {
-		unsigned n_curr  = curr[0].head.n_members;
-		unsigned n_fresh = fr[0].head.n_members;
-
+		unsigned const n_curr  = curr->n_members;
+		unsigned const n_fresh = fr->n_members;
 		if (n_curr != n_fresh) {
 			ir_fprintf(stderr, "%+F: liveness set sizes differ. curr %d, correct %d\n", bl, n_curr, n_fresh);
 
 			ir_fprintf(stderr, "current:\n");
 			for (unsigned i = 0; i < n_curr; ++i) {
-				be_lv_info_node_t *n = &curr[1 + i].node;
+				be_lv_info_node_t *const n = &curr->nodes[i];
 				ir_fprintf(stderr, "%+F %u %+F %s\n", bl, i, n->node, lv_flags_to_str(n->flags));
 			}
 
 			ir_fprintf(stderr, "correct:\n");
 			for (unsigned i = 0; i < n_fresh; ++i) {
-				be_lv_info_node_t *n = &fr[1 + i].node;
+				be_lv_info_node_t *const n = &fr->nodes[i];
 				ir_fprintf(stderr, "%+F %u %+F %s\n", bl, i, n->node, lv_flags_to_str(n->flags));
 			}
 		}

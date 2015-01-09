@@ -48,7 +48,7 @@ typedef enum arch_irn_flags_t {
 ENUM_BITSET(arch_irn_flags_t)
 
 typedef struct be_lv_t           be_lv_t;
-typedef union  be_lv_info_t      be_lv_info_t;
+typedef struct be_lv_info_t      be_lv_info_t;
 typedef struct be_stack_layout_t be_stack_layout_t;
 typedef struct backend_info_t    backend_info_t;
 typedef struct sched_info_t      sched_info_t;

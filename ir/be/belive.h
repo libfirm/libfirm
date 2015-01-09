@@ -143,14 +143,10 @@ struct be_lv_info_node_t {
 	unsigned flags;
 };
 
-struct be_lv_info_head_t {
-	unsigned n_members;
-	unsigned n_size;
-};
-
-union be_lv_info_t {
-	struct be_lv_info_head_t head;
-	struct be_lv_info_node_t node;
+struct be_lv_info_t {
+	unsigned          n_members;
+	unsigned          n_size;
+	be_lv_info_node_t nodes[];
 };
 
 be_lv_info_node_t *be_lv_get(const be_lv_t *li, const ir_node *block,
@@ -215,7 +211,7 @@ static inline lv_iterator_t be_lv_iteration_begin(const be_lv_t *lv,
 	assert(lv->sets_valid);
 	lv_iterator_t res;
 	res.info  = ir_nodehashmap_get(be_lv_info_t, &lv->map, block);
-	res.i     = res.info != NULL ? res.info[0].head.n_members : 0;
+	res.i     = res.info ? res.info->n_members : 0;
 	return res;
 }
 
@@ -223,10 +219,10 @@ static inline ir_node *be_lv_iteration_next(lv_iterator_t *iterator,
                                             be_lv_state_t flags)
 {
 	while (iterator->i != 0) {
-		const be_lv_info_t *info = iterator->info + iterator->i--;
-		assert(get_irn_mode(info->node.node) != mode_T);
-		if (info->node.flags & flags)
-			return info->node.node;
+		be_lv_info_node_t const *const node = &iterator->info->nodes[--iterator->i];
+		assert(get_irn_mode(node->node) != mode_T);
+		if (node->flags & flags)
+			return node->node;
 	}
 	return NULL;
 }
@@ -236,12 +232,12 @@ static inline ir_node *be_lv_iteration_cls_next(lv_iterator_t *iterator,
                                                 const arch_register_class_t *cls)
 {
 	while (iterator->i != 0) {
-		const be_lv_info_t *info = iterator->info + iterator->i--;
-		assert(get_irn_mode(info->node.node) != mode_T);
-		if (!(info->node.flags & flags))
+		be_lv_info_node_t const *const lnode = &iterator->info->nodes[--iterator->i];
+		assert(get_irn_mode(lnode->node) != mode_T);
+		if (!(lnode->flags & flags))
 			continue;
 
-		ir_node *node = info->node.node;
+		ir_node *const node = lnode->node;
 		if (!arch_irn_consider_in_reg_alloc(cls, node))
 			continue;
 		return node;

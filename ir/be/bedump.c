@@ -132,11 +132,8 @@ void be_dump_liveness_block(be_lv_t *lv, FILE *F, const ir_node *bl)
 
 	fprintf(F, "liveness:\n");
 	if (info != NULL) {
-		unsigned n = info[0].head.n_members;
-		unsigned i;
-
-		for (i = 0; i < n; ++i) {
-			be_lv_info_node_t *n = &info[i+1].node;
+		for (unsigned i = 0, n = info->n_members; i < n; ++i) {
+			be_lv_info_node_t *const n = &info->nodes[i];
 			ir_fprintf(F, "%s %+F\n", lv_flags_to_str(n->flags), n->node);
 		}
 	}

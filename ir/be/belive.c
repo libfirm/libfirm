@@ -29,22 +29,20 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
-#define LV_STD_SIZE             64
+#define LV_STD_SIZE             63
 
-static unsigned _be_liveness_bsearch(const be_lv_info_t *arr,
-                                     const ir_node *node)
+static unsigned _be_liveness_bsearch(be_lv_info_t const *const arr, ir_node const *const node)
 {
-	unsigned n = arr[0].head.n_members;
+	unsigned const n = arr->n_members;
 	if (n == 0)
 		return 0;
 
-	unsigned            lo      = 0;
-	unsigned            hi      = n;
-	const be_lv_info_t *payload = arr + 1;
-	unsigned            res;
+	unsigned lo = 0;
+	unsigned hi = n;
+	unsigned res;
 	do {
 		unsigned md      = lo + ((hi - lo) >> 1);
-		ir_node *md_node = payload[md].node.node;
+		ir_node *md_node = arr->nodes[md].node;
 
 		if (node > md_node) {
 			lo = md + 1;
@@ -71,9 +69,8 @@ be_lv_info_node_t *be_lv_get(const be_lv_t *li, const ir_node *bl,
 		/* Get the position of the index in the array. */
 		unsigned pos = _be_liveness_bsearch(irn_live, irn);
 
-		/* Get the record in question. 1 must be added, since the first record
-		 * contains information about the array and must be skipped. */
-		be_lv_info_node_t *rec = &irn_live[pos + 1].node;
+		/* Get the record in question. */
+		be_lv_info_node_t *const rec = &irn_live->nodes[pos];
 
 		/* Check, if the irn is in deed in the array. */
 		if (rec->node == irn)
@@ -91,44 +88,38 @@ static be_lv_info_node_t *be_lv_get_or_set(be_lv_t *li, ir_node *bl,
 
 	be_lv_info_t *irn_live = ir_nodehashmap_get(be_lv_info_t, &li->map, bl);
 	if (irn_live == NULL) {
-		irn_live = OALLOCNZ(&li->obst, be_lv_info_t, LV_STD_SIZE);
-		irn_live[0].head.n_size = LV_STD_SIZE-1;
+		irn_live = OALLOCFZ(&li->obst, be_lv_info_t, nodes, LV_STD_SIZE);
+		irn_live->n_size = LV_STD_SIZE;
 		ir_nodehashmap_insert(&li->map, bl, irn_live);
 	}
 
 	/* Get the position of the index in the array. */
 	unsigned pos = _be_liveness_bsearch(irn_live, irn);
 
-	/* Get the record in question. 1 must be added, since the first record
-	 * contains information about the array and must be skipped. */
-	be_lv_info_node_t *res = &irn_live[pos + 1].node;
+	/* Get the record in question. */
+	be_lv_info_node_t *res = &irn_live->nodes[pos];
 
 	/* Check, if the irn is in deed in the array. */
 	if (res->node != irn) {
-		unsigned n_members = irn_live[0].head.n_members;
-		unsigned n_size    = irn_live[0].head.n_size;
+		unsigned n_members = irn_live->n_members;
+		unsigned n_size    = irn_live->n_size;
 		if (n_members + 1 >= n_size) {
-			/* double the array size. Remember that the first entry is
-			 * metadata about the array and not a real array element */
-			unsigned old_size_bytes  = (n_size + 1) * sizeof(irn_live[0]);
-			unsigned new_size        = (2 * n_size) + 1;
-			size_t   new_size_bytes  = new_size * sizeof(irn_live[0]);
-			be_lv_info_t *nw = OALLOCN(&li->obst, be_lv_info_t, new_size);
-			memcpy(nw, irn_live, old_size_bytes);
-			memset(((char*) nw) + old_size_bytes, 0,
-			       new_size_bytes - old_size_bytes);
-			nw[0].head.n_size = new_size - 1;
+			/* double the array size. */
+			unsigned      const new_size = 2 * n_size;
+			be_lv_info_t *const nw       = OALLOCF(&li->obst, be_lv_info_t, nodes, new_size);
+			memcpy(nw, irn_live, sizeof(*irn_live) + n_size * sizeof(*irn_live->nodes));
+			memset(&nw->nodes[n_size], 0, (new_size - n_size) * sizeof(*irn_live->nodes));
+			nw->n_size = new_size;
 			irn_live = nw;
 			ir_nodehashmap_insert(&li->map, bl, nw);
 		}
 
-		be_lv_info_t *payload = &irn_live[1];
 		for (unsigned i = n_members; i > pos; --i) {
-			payload[i] = payload[i - 1];
+			irn_live->nodes[i] = irn_live->nodes[i - 1];
 		}
 
-		++irn_live[0].head.n_members;
-		res        = &payload[pos].node;
+		++irn_live->n_members;
+		res        = &irn_live->nodes[pos];
 		res->node  = irn;
 		res->flags = 0;
 	}
@@ -151,22 +142,21 @@ static void lv_remove_irn_walker(ir_node *const bl, void *const data)
 	if (irn_live == NULL)
 		return;
 
-	unsigned       const n       = irn_live[0].head.n_members;
-	const ir_node *const irn     = w->irn;
-	unsigned       const pos     = _be_liveness_bsearch(irn_live, irn);
-	be_lv_info_t        *payload = irn_live + 1;
-	be_lv_info_node_t   *res     = &payload[pos].node;
+	unsigned           const n   = irn_live->n_members;
+	ir_node     const *const irn = w->irn;
+	unsigned           const pos = _be_liveness_bsearch(irn_live, irn);
+	be_lv_info_node_t *const res = &irn_live->nodes[pos];
 	if (res->node != irn)
 		return;
 
 	/* The node is indeed in the block's array. Let's remove it. */
 	for (unsigned i = pos + 1; i < n; ++i)
-		payload[i - 1] = payload[i];
+		irn_live->nodes[i - 1] = irn_live->nodes[i];
 
-	payload[n - 1].node.node  = NULL;
-	payload[n - 1].node.flags = 0;
+	irn_live->nodes[n - 1].node  = NULL;
+	irn_live->nodes[n - 1].flags = 0;
 
-	--irn_live[0].head.n_members;
+	--irn_live->n_members;
 	DBG((dbg, LEVEL_3, "\tdeleting %+F from %+F at pos %d\n", irn, bl, pos));
 }
 
