@@ -228,7 +228,7 @@ static int reassoc_commutative(ir_node **node)
 			return 0;
 		}
 
-		if (l == c1) {
+		if (l == c1 && r != c1) {
 			/* convert x .OP. (x .OP. y) => y .OP. (x .OP. x) */
 			dbg_info *dbgi     = get_irn_dbg_info(n);
 			ir_mode  *mode_res = get_irn_mode(n);
