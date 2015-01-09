@@ -87,6 +87,8 @@ be_lv_info_node_t *be_lv_get(const be_lv_t *li, const ir_node *bl,
 static be_lv_info_node_t *be_lv_get_or_set(be_lv_t *li, ir_node *bl,
                                            ir_node *irn)
 {
+	assert(get_irn_mode(irn) != mode_T);
+
 	be_lv_info_t *irn_live = ir_nodehashmap_get(be_lv_info_t, &li->map, bl);
 	if (irn_live == NULL) {
 		irn_live = OALLOCNZ(&li->obst, be_lv_info_t, LV_STD_SIZE);

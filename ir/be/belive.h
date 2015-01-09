@@ -224,6 +224,7 @@ static inline ir_node *be_lv_iteration_next(lv_iterator_t *iterator,
 {
 	while (iterator->i != 0) {
 		const be_lv_info_t *info = iterator->info + iterator->i--;
+		assert(get_irn_mode(info->node.node) != mode_T);
 		if (info->node.flags & flags)
 			return info->node.node;
 	}
@@ -236,6 +237,7 @@ static inline ir_node *be_lv_iteration_cls_next(lv_iterator_t *iterator,
 {
 	while (iterator->i != 0) {
 		const be_lv_info_t *info = iterator->info + iterator->i--;
+		assert(get_irn_mode(info->node.node) != mode_T);
 		if (!(info->node.flags & flags))
 			continue;
 
