@@ -166,3 +166,13 @@ void be_init_sched(void)
 	be_add_module_list_opt(be_grp, "scheduler", "scheduling algorithm",
 	                       &schedulers, (void**)&scheduler);
 }
+
+ir_node *be_move_after_schedule_first(ir_node *node)
+{
+	for (;;) {
+		ir_node *const next = sched_next(node);
+		if (!arch_irn_is(next, schedule_first))
+			return node;
+		node = next;
+	}
+}

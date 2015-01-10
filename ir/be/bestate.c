@@ -110,11 +110,7 @@ static spill_info_t *create_spill(minibelady_env_t *env, ir_node *state,
 
 	ir_node *after;
 	if (sched_is_scheduled(state)) {
-		ir_node *next = state;
-		do {
-			after = next;
-			next = sched_next(after);
-		} while (is_Phi(next) || be_is_Keep(next));
+		after = be_move_after_schedule_first(state);
 	} else {
 		after = state;
 	}

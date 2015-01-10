@@ -229,4 +229,10 @@ void be_register_scheduler(const char *name, schedule_func func);
  */
 void be_schedule_graph(ir_graph *irg);
 
+/**
+ * Return the last schedule_first node following node, if there is any, node
+ * otherwise.
+ */
+ir_node *be_move_after_schedule_first(ir_node *node);
+
 #endif

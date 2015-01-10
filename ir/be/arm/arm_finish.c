@@ -81,15 +81,12 @@ static void introduce_prolog_epilog(ir_graph *irg)
 	ir_node               *start      = get_irg_start(irg);
 	ir_node               *block      = get_nodes_block(start);
 	ir_node               *initial_sp = be_get_initial_reg_value(irg, sp_reg);
-	ir_node               *schedpoint = start;
 	ir_type               *frame_type = get_irg_frame_type(irg);
 	unsigned               frame_size = get_type_size_bytes(frame_type);
 
-	while (be_is_Keep(sched_next(schedpoint)))
-		schedpoint = sched_next(schedpoint);
-
 	ir_node *const incsp = be_new_IncSP(sp_reg, block, initial_sp, frame_size, 0);
 	edges_reroute_except(initial_sp, incsp, incsp);
+	ir_node *const schedpoint = be_move_after_schedule_first(start);
 	sched_add_after(schedpoint, incsp);
 }
 

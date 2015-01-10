@@ -211,22 +211,6 @@ ir_node *be_get_end_of_block_insertion_point(const ir_node *block)
 }
 
 /**
- * determine final spill position: it should be after all phis, keep nodes
- * and behind nodes marked as prolog
- */
-static ir_node *determine_spill_point(ir_node *const node)
-{
-	ir_node *n = skip_Proj(node);
-	while (true) {
-		ir_node *next = sched_next(n);
-		if (!is_Phi(next) && !be_is_Keep(next) && !be_is_CopyKeep(next))
-			break;
-		n = next;
-	}
-	return n;
-}
-
-/**
  * Returns the point at which you can insert a node that should be executed
  * before block @p block when coming from pred @p pos.
  */
@@ -272,7 +256,7 @@ void be_spill_phi(spill_env_t *env, ir_node *node)
 			insert = be_get_end_of_block_insertion_point(pred_block);
 			insert = sched_prev(insert);
 		} else {
-			insert = determine_spill_point(arg);
+			insert = be_move_after_schedule_first(arg);
 		}
 		be_add_spill(env, arg, insert);
 	}
@@ -308,9 +292,7 @@ static void spill_irn(spill_env_t *env, spill_info_t *spillinfo)
 	DBG((dbg, LEVEL_1, "spilling %+F ... \n", to_spill));
 	for (spill_t *spill = spillinfo->spills; spill != NULL;
 	     spill = spill->next) {
-		ir_node *after = spill->after;
-		after = determine_spill_point(after);
-
+		ir_node *const after = be_move_after_schedule_first(spill->after);
 		spill->spill = arch_env_new_spill(env->arch_env, to_spill, after);
 		DB((dbg, LEVEL_1, "\t%+F after %+F\n", spill->spill, after));
 		env->spill_count++;
@@ -348,7 +330,7 @@ static void spill_phi(spill_env_t *env, spill_info_t *spillinfo)
 	/* override or replace spills list... */
 	ir_node *block = get_nodes_block(phi);
 	spill_t *spill = OALLOC(&env->obst, spill_t);
-	spill->after   = determine_spill_point(phi);
+	spill->after   = be_move_after_schedule_first(phi);
 	spill->spill   = be_new_Phi(block, arity, ins, mode_M, arch_no_register_req);
 	spill->next    = NULL;
 	sched_add_after(block, spill->spill);
@@ -612,7 +594,7 @@ static void determine_spill_costs(spill_env_t *env, spill_info_t *spillinfo)
 
 	/* override spillinfos or create a new one */
 	spill_t *spill = OALLOC(&env->obst, spill_t);
-	spill->after   = determine_spill_point(to_spill);
+	spill->after   = be_move_after_schedule_first(skip_Proj(to_spill));
 	spill->next    = NULL;
 	spill->spill   = NULL;
 
@@ -1186,13 +1168,8 @@ static void melt_copykeeps(constraint_env_t *cenv)
 			ir_nodeset_insert(&entry->copies, new_ck);
 
 			/* find scheduling point */
-			ir_node *sched_pt = ref_mode_T;
-			do {
-				/* just walk along the schedule until a non-Keep/CopyKeep node is found */
-				sched_pt = sched_next(sched_pt);
-			} while (be_is_Keep(sched_pt) || be_is_CopyKeep(sched_pt));
-
-			sched_add_before(sched_pt, new_ck);
+			ir_node *const sched_pt = be_move_after_schedule_first(ref_mode_T);
+			sched_add_after(sched_pt, new_ck);
 			DB((dbg_constr, LEVEL_1, "created %+F, scheduled before %+F\n", new_ck, sched_pt));
 
 			/* finally: kill the reference copykeep */
