@@ -298,35 +298,31 @@ static void spill_phi(spill_env_t *env, spill_info_t *spillinfo)
 	DBG((dbg, LEVEL_1, "spilling Phi %+F:\n", phi));
 
 	/* build a new PhiM */
-	int       const arity   = get_Phi_n_preds(phi);
-	ir_node **const ins     = ALLOCAN(ir_node*, arity);
-	ir_graph *const irg     = env->irg;
-	ir_node  *const unknown = new_r_Unknown(irg, mode_M);
-	for (int i = 0; i < arity; ++i) {
-		ins[i] = unknown;
-	}
+	ir_node *const block = get_nodes_block(phi);
+	ir_node *const phim  = be_new_Phi0(block, mode_M, arch_no_register_req);
+	sched_add_after(block, phim);
 
 	/* override or replace spills list... */
-	ir_node *block = get_nodes_block(phi);
 	spill_t *spill = OALLOC(&env->obst, spill_t);
-	spill->after   = be_move_after_schedule_first(phi);
-	spill->spill   = be_new_Phi(block, arity, ins, mode_M, arch_no_register_req);
-	spill->next    = NULL;
-	sched_add_after(block, spill->spill);
+	spill->after = be_move_after_schedule_first(phi);
+	spill->spill = phim;
+	spill->next  = NULL;
 
 	spillinfo->spills = spill;
 	env->spilled_phi_count++;
 
+	unsigned  const arity = get_Phi_n_preds(phi);
+	ir_node **const ins   = ALLOCAN(ir_node*, arity);
 	foreach_irn_in(phi, i, arg) {
 		spill_info_t *arg_info = get_spillinfo(env, arg);
 
 		determine_spill_costs(env, arg_info);
 		spill_node(env, arg_info);
 
-		set_irn_n(spill->spill, i, arg_info->spills->spill);
+		ins[i] = arg_info->spills->spill;
 	}
-	DBG((dbg, LEVEL_1, "... done spilling Phi %+F, created PhiM %+F\n", phi,
-	     spill->spill));
+	be_complete_Phi(phim, arity, ins);
+	DBG((dbg, LEVEL_1, "... done spilling Phi %+F, created PhiM %+F\n", phi, phim));
 }
 
 /**

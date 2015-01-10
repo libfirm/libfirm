@@ -193,26 +193,16 @@ static void mark_iterated_dominance_frontiers(
 /**
  * Inserts a new phi at the given block.
  *
- * The constructed phi has only Dummy operands,
+ * The constructed phi has no operands,
  * but can be used as definition for other nodes.
  *
  * @see fix_phi_arguments
  */
 static ir_node *insert_dummy_phi(be_ssa_construction_env_t *env, ir_node *block)
 {
-	int       n_preds = get_Block_n_cfgpreds(block);
-	ir_graph *irg     = get_irn_irg(block);
-	ir_node **ins     = ALLOCAN(ir_node*, n_preds);
-
 	DBG((dbg, LEVEL_3, "\t...create phi at block %+F\n", block));
 
-	assert(n_preds > 1);
-
-	ir_node *dummy = new_r_Dummy(irg, env->mode);
-	for (int i = 0; i < n_preds; ++i) {
-		ins[i] = dummy;
-	}
-	ir_node *phi = be_new_Phi(block, n_preds, ins, env->mode, env->phi_req);
+	ir_node *const phi = be_new_Phi0(block, env->mode, env->phi_req);
 	sched_add_after(block, phi);
 	ARR_APP1(ir_node*, env->new_phis, phi);
 
@@ -474,14 +464,25 @@ static void fix_phi_arguments(be_ssa_construction_env_t *const env, ir_node *con
 	DBG((dbg, LEVEL_3, "\tfixing phi arguments  %+F\n", phi));
 
 	ir_node *const block = get_nodes_block(phi);
-	foreach_irn_in(phi, i, op) {
-		if (is_definition(env, op) || is_Dummy(op)) {
-			ir_node *pred_block = get_Block_cfgpred_block(block, i);
-			ir_node *pred_def   = search_def_end_of_block(env, pred_block);
-
-			DBG((dbg, LEVEL_1, "\t...%+F(%d) -> %+F\n", phi, i, pred_def));
-			set_irn_n(phi, i, pred_def);
+	if (get_Phi_n_preds(phi) != 0) {
+		foreach_irn_in(phi, i, op) {
+			if (is_definition(env, op)) {
+				ir_node *const pred_block = get_Block_cfgpred_block(block, i);
+				ir_node *const pred_def   = search_def_end_of_block(env, pred_block);
+				DBG((dbg, LEVEL_1, "\t...%+F(%d) -> %+F\n", phi, i, pred_def));
+				set_irn_n(phi, i, pred_def);
+			}
 		}
+	} else {
+		unsigned  const arity = get_Block_n_cfgpreds(block);
+		ir_node **const ins   = ALLOCAN(ir_node*, arity);
+		for (unsigned i = 0; i != arity; ++i) {
+			ir_node *const pred_block = get_Block_cfgpred_block(block, i);
+			ir_node *const pred_def   = search_def_end_of_block(env, pred_block);
+			DBG((dbg, LEVEL_1, "\t...%+F(%d) -> %+F\n", phi, i, pred_def));
+			ins[i] = pred_def;
+		}
+		be_complete_Phi(phi, arity, ins);
 	}
 
 	info->already_processed = true;

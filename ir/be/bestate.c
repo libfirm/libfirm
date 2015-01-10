@@ -131,12 +131,7 @@ static void create_reload(minibelady_env_t *env, ir_node *state,
 
 static void spill_phi(minibelady_env_t *env, ir_node *phi)
 {
-	ir_graph *irg           = get_irn_irg(phi);
-	ir_node  *block         = get_nodes_block(phi);
-	int       arity         = get_irn_arity(phi);
-	ir_node **phi_in        = ALLOCAN(ir_node*, arity);
-	ir_node  *dummy         = new_r_Dummy(irg, mode_M);
-	ir_node  *spill_to_kill = NULL;
+	ir_node *spill_to_kill = NULL;
 
 	/* does a spill exist for the phis value? */
 	spill_info_t *spill_info = get_spill_info(env, phi);
@@ -146,28 +141,27 @@ static void spill_phi(minibelady_env_t *env, ir_node *phi)
 		spill_info = create_spill_info(env, phi);
 	}
 
-	/* create a new phi-M with bad preds */
-	for (int i = 0; i < arity; ++i) {
-		phi_in[i] = dummy;
-	}
-
 	DBG((dbg, LEVEL_2, "\tcreate Phi-M for %+F\n", phi));
 
 	/* create a Phi-M */
-	spill_info->spill = be_new_Phi(block, arity, phi_in, mode_M,
-	                               arch_no_register_req);
-	sched_add_after(block, spill_info->spill);
+	ir_node *const block = get_nodes_block(phi);
+	ir_node *const phim  = be_new_Phi0(block, mode_M, arch_no_register_req);
+	spill_info->spill = phim;
+	sched_add_after(block, phim);
 
 	if (spill_to_kill != NULL) {
-		exchange(spill_to_kill, spill_info->spill);
 		sched_remove(spill_to_kill);
+		exchange(spill_to_kill, phim);
 	}
 
 	/* create spills for the phi values */
+	unsigned  const arity  = get_irn_arity(phi);
+	ir_node **const phi_in = ALLOCAN(ir_node*, arity);
 	foreach_irn_in(phi, i, in) {
 		spill_info_t *pred_spill = create_spill(env, in, true);
-		set_irn_n(spill_info->spill, i, pred_spill->spill);
+		phi_in[i] = pred_spill->spill;
 	}
+	be_complete_Phi(phim, arity, phi_in);
 }
 
 static void belady(minibelady_env_t *env, ir_node *block);
