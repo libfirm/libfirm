@@ -158,8 +158,7 @@ static void introduce_use(be_ssa_construction_env_t *env, ir_node *use)
 
 /**
  * Calculates the iterated dominance frontier of a set of blocks. Marks the
- * blocks as visited. Sets the link fields of the blocks in the dominance
- * frontier to the block itself.
+ * blocks as visited.
  */
 static void mark_iterated_dominance_frontiers(
                                            const be_ssa_construction_env_t *env)
@@ -175,10 +174,8 @@ static void mark_iterated_dominance_frontiers(
 			if (Block_block_visited(y))
 				continue;
 
-			if (!irn_visited(y)) {
-				set_irn_link(y, NULL);
+			if (!irn_visited(y))
 				waitq_put(env->worklist, y);
-			}
 
 			DBG((dbg, LEVEL_3, " %+F", y));
 			mark_Block_block_visited(y);
