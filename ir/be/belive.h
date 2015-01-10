@@ -152,13 +152,13 @@ struct be_lv_info_t {
 be_lv_info_node_t *be_lv_get(const be_lv_t *li, const ir_node *block,
                              const ir_node *irn);
 
-static inline bool _be_is_live_xxx(be_lv_t const *const li, ir_node const *const block, ir_node const *const irn, be_lv_state_t const flags)
+static inline be_lv_state_t be_get_live_state(be_lv_t const *const li, ir_node const *const block, ir_node const *const irn)
 {
 	if (li->sets_valid) {
 		be_lv_info_node_t *info = be_lv_get(li, block, irn);
-		return info != NULL ? (info->flags & flags) : false;
+		return info ? info->flags : be_lv_state_none;
 	} else {
-		return lv_chk_bl_xxx(li->lvc, block, irn) & flags;
+		return lv_chk_bl_xxx(li->lvc, block, irn);
 	}
 }
 
@@ -171,7 +171,7 @@ static inline bool _be_is_live_xxx(be_lv_t const *const li, ir_node const *const
 static inline bool be_is_live_in(const be_lv_t *li, const ir_node *block,
                                  const ir_node *node)
 {
-	return _be_is_live_xxx(li, block, node, be_lv_state_in);
+	return be_get_live_state(li, block, node) & be_lv_state_in;
 }
 
 /**
@@ -183,7 +183,7 @@ static inline bool be_is_live_in(const be_lv_t *li, const ir_node *block,
 static inline bool be_is_live_out(const be_lv_t *li, const ir_node *block,
                                   const ir_node *node)
 {
-	return _be_is_live_xxx(li, block, node, be_lv_state_out);
+	return be_get_live_state(li, block, node) & be_lv_state_out;
 }
 
 /**
@@ -195,7 +195,7 @@ static inline bool be_is_live_out(const be_lv_t *li, const ir_node *block,
 static inline bool be_is_live_end(const be_lv_t *li, const ir_node *block,
                                   const ir_node *node)
 {
-	return _be_is_live_xxx(li, block, node, be_lv_state_end);
+	return be_get_live_state(li, block, node) & be_lv_state_end;
 }
 
 typedef struct lv_iterator_t
