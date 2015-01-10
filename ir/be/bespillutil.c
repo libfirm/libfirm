@@ -246,18 +246,8 @@ void be_spill_phi(spill_env_t *env, ir_node *node)
 	env->mem_phis      = info;
 
 	/* create spills for the phi arguments */
-	ir_node *block = get_nodes_block(node);
 	foreach_irn_in(node, i, arg) {
-		/* some backends have virtual noreg/unknown nodes that are not scheduled
-		 * and simply always available. */
-		ir_node *insert;
-		if (!sched_is_scheduled(arg)) {
-			ir_node *pred_block = get_Block_cfgpred_block(block, i);
-			insert = be_get_end_of_block_insertion_point(pred_block);
-			insert = sched_prev(insert);
-		} else {
-			insert = be_move_after_schedule_first(arg);
-		}
+		ir_node *const insert = be_move_after_schedule_first(arg);
 		be_add_spill(env, arg, insert);
 	}
 }
@@ -277,18 +267,7 @@ static void spill_irn(spill_env_t *env, spill_info_t *spillinfo)
 	/* determine_spill_costs must have been run before */
 	assert(spillinfo->spill_costs >= 0);
 
-	/* some backends have virtual noreg/unknown nodes that are not scheduled
-	 * and simply always available. */
-	ir_node       *to_spill = spillinfo->to_spill;
-	const ir_node *insn     = skip_Proj_const(to_spill);
-	if (!sched_is_scheduled(insn)) {
-		/* override spillinfos or create a new one */
-		ir_graph *irg = get_irn_irg(to_spill);
-		spillinfo->spills->spill = get_irg_no_mem(irg);
-		DB((dbg, LEVEL_1, "don't spill %+F use NoMem\n", to_spill));
-		return;
-	}
-
+	ir_node *const to_spill = spillinfo->to_spill;
 	DBG((dbg, LEVEL_1, "spilling %+F ... \n", to_spill));
 	for (spill_t *spill = spillinfo->spills; spill != NULL;
 	     spill = spill->next) {
@@ -539,26 +518,6 @@ static void determine_spill_costs(spill_env_t *env, spill_info_t *spillinfo)
 	const ir_node *insn     = skip_Proj_const(to_spill);
 	assert(!arch_irn_is(insn, dont_spill));
 	assert(!arch_irn_is(insn, reload));
-
-	/* some backends have virtual noreg/unknown nodes that are not scheduled
-	 * and simply always available.
-	 * TODO: this is kinda hairy, the NoMem is correct for an Unknown as Phi
-	 * predecessor (of a PhiM) but this test might match other things too...
-	 */
-	if (!sched_is_scheduled(insn)) {
-		ir_graph *irg = get_irn_irg(to_spill);
-		/* override spillinfos or create a new one */
-		spill_t *spill = OALLOC(&env->obst, spill_t);
-		spill->after = NULL;
-		spill->next  = NULL;
-		spill->spill = get_irg_no_mem(irg);
-
-		spillinfo->spills      = spill;
-		spillinfo->spill_costs = 0;
-
-		DB((dbg, LEVEL_1, "don't spill %+F use NoMem\n", to_spill));
-		return;
-	}
 
 	ir_node *spill_block    = get_nodes_block(insn);
 	double   spill_execfreq = get_block_execfreq(spill_block);
