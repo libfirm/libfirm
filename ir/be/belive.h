@@ -18,7 +18,7 @@
 #include "irlivechk.h"
 #include "bearch.h"
 
-typedef enum {
+typedef enum be_lv_state_t {
 	be_lv_state_none = 0,
 	be_lv_state_in   = 1u << 0,
 	be_lv_state_end  = 1u << 1,
@@ -139,8 +139,8 @@ struct be_lv_t {
 
 typedef struct be_lv_info_node_t be_lv_info_node_t;
 struct be_lv_info_node_t {
-	ir_node *node;
-	unsigned flags;
+	ir_node      *node;
+	be_lv_state_t flags;
 };
 
 struct be_lv_info_t {
@@ -152,8 +152,7 @@ struct be_lv_info_t {
 be_lv_info_node_t *be_lv_get(const be_lv_t *li, const ir_node *block,
                              const ir_node *irn);
 
-static inline bool _be_is_live_xxx(const be_lv_t *li, const ir_node *block,
-                                   const ir_node *irn, unsigned flags)
+static inline bool _be_is_live_xxx(be_lv_t const *const li, ir_node const *const block, ir_node const *const irn, be_lv_state_t const flags)
 {
 	if (li->sets_valid) {
 		be_lv_info_node_t *info = be_lv_get(li, block, irn);
