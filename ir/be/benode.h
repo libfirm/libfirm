@@ -176,6 +176,17 @@ ir_node *be_new_Phi(ir_node *block, int n_ins, ir_node **ins, ir_mode *mode,
                     const arch_register_req_t *req);
 
 /**
+ * Create a new Phi with backend info and without inputs.
+ * Inputs are added later with @see be_complete_Phi().
+ */
+ir_node *be_new_Phi0(ir_node *block, ir_mode *mode, arch_register_req_t const *req);
+
+/**
+ * Add inputs to a inputless Phi created by @see be_new_Phi0().
+ */
+ir_node *be_complete_Phi(ir_node *phi, unsigned n_ins, ir_node **ins);
+
+/**
  * Search for output of start node with a specific register
  */
 ir_node *be_get_initial_reg_value(ir_graph *irg, const arch_register_t *reg);

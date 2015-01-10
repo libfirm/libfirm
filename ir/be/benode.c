@@ -451,6 +451,38 @@ ir_node *be_new_Phi(ir_node *block, int n_ins, ir_node **ins, ir_mode *mode,
 	return phi;
 }
 
+ir_node *be_new_Phi0(ir_node *const block, ir_mode *const mode, arch_register_req_t const *const req)
+{
+	ir_graph *const irg = get_irn_irg(block);
+	ir_node  *const phi = new_ir_node(NULL, irg, block, op_Phi, mode, 0, NULL);
+	struct obstack *const obst = be_get_be_obst(irg);
+	backend_info_t *const info = be_get_info(phi);
+	info->out_infos = NEW_ARR_DZ(reg_out_info_t, obst, 1);
+	info->out_infos[0].req = req;
+	return phi;
+}
+
+ir_node *be_complete_Phi(ir_node *const phi, unsigned const n_ins, ir_node **const ins)
+{
+	assert(is_Phi(phi) && get_Phi_n_preds(phi) == 0);
+
+	ir_graph *const irg = get_irn_irg(phi);
+	phi->attr.phi.u.backedge = new_backedge_arr(get_irg_obstack(irg), n_ins);
+	set_irn_in(phi, n_ins, ins);
+
+	struct obstack             *const obst    = be_get_be_obst(irg);
+	arch_register_req_t const **const in_reqs = OALLOCN(obst, arch_register_req_t const*, n_ins);
+	arch_register_req_t const  *const req     = arch_get_irn_register_req(phi);
+	for (unsigned i = 0; i < n_ins; ++i) {
+		in_reqs[i] = req;
+	}
+	backend_info_t *const info = be_get_info(phi);
+	info->in_reqs = in_reqs;
+
+	verify_new_node(irg, phi);
+	return optimize_node(phi);
+}
+
 void be_set_phi_reg_req(ir_node *node, const arch_register_req_t *req)
 {
 	assert(mode_is_data(get_irn_mode(node)));
