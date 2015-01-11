@@ -93,7 +93,7 @@ static int amd64_get_sp_bias(const ir_node *node)
 	if (is_amd64_push_am(node)) {
 		const amd64_addr_attr_t *attr = get_amd64_addr_attr_const(node);
 		return get_insn_mode_bytes(attr->insn_mode);
-	} else if (is_amd64_push_rbp(node)) {
+	} else if (is_amd64_push_reg(node)) {
 		/* 64-bit register size */
 		return AMD64_REGISTER_SIZE;
 	} else if (is_amd64_pop_am(node)) {
@@ -569,8 +569,8 @@ static void introduce_prologue(ir_graph *const irg)
 	if (!layout->sp_relative) {
 		/* push rbp */
 		ir_node *const initial_bp = be_get_initial_reg_value(irg, bp);
-		ir_node *push = new_bd_amd64_push_rbp(NULL, block, initial_sp);
-		ir_node *curr_sp = new_r_Proj(push, mode_gp, pn_amd64_push_rbp_stack);
+		ir_node *const push       = new_bd_amd64_push_reg(NULL, block, initial_sp, initial_bp);
+		ir_node *const curr_sp    = new_r_Proj(push, mode_gp, pn_amd64_push_reg_stack);
 
 		arch_set_irn_register(curr_sp, sp);
 		sched_add_after(start, push);

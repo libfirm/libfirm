@@ -219,15 +219,15 @@ push_am => {
 	emit      => "push%M %A",
 },
 
-push_rbp => {
+push_reg => {
 	op_flags  => [ "uses_memory" ],
 	state     => "exc_pinned",
-	in_reqs   => [ "rsp" ],
+	in_reqs   => [ "rsp", "gp" ],
 	out_reqs  => [ "rsp:I|S" ],
-	ins       => [ "stack" ],
+	ins       => [ "stack", "val" ],
 	outs      => [ "stack" ],
 	fixed     => "amd64_op_mode_t op_mode = AMD64_OP_NONE;\n",
-	emit      => "pushq %%rbp",
+	emit      => "pushq %^S1",
 },
 
 pop_am => {
