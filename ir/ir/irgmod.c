@@ -304,6 +304,8 @@ ir_node *part_block_edges(ir_node *node)
 
 void kill_node(ir_node *node)
 {
+	hook_replace(node, NULL);
+
 	ir_graph *irg = get_irn_irg(node);
 	if (edges_activated(irg)) {
 		edges_node_deleted(node);
