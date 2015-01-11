@@ -2137,6 +2137,8 @@ static ir_node *gen_Call(ir_node *node)
 
 	/* create output register reqs */
 	arch_set_irn_register_req_out(res, pn_sparc_Call_M, arch_no_register_req);
+	arch_copy_irn_out_info(res, pn_sparc_Call_stack, incsp);
+
 	/* add register requirements for the result regs */
 	for (size_t r = 0; r < n_ress; ++r) {
 		const reg_or_stackslot_t  *result_info = &cconv->results[r];
@@ -2163,11 +2165,11 @@ static ir_node *gen_Call(ir_node *node)
 	set_irn_pinned(res, get_irn_pinned(node));
 
 	/* IncSP to destroy the call stackframe */
-	incsp = be_new_IncSP(sp_reg, new_block, incsp, -cconv->param_stack_size, 0);
+	ir_node *const call_stack = new_r_Proj(res, mode_gp, pn_sparc_Call_stack);
+	incsp = be_new_IncSP(sp_reg, new_block, call_stack, -cconv->param_stack_size, 0);
 	/* if we are the last IncSP producer in a block then we have to keep
 	 * the stack value.
 	 * Note: This here keeps all producers which is more than necessary */
-	add_irn_dep(incsp, res);
 	keep_alive(incsp);
 
 	pmap_insert(node_to_stack, node, incsp);

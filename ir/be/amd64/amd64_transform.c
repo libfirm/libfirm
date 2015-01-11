@@ -1865,6 +1865,7 @@ static ir_node *gen_Call(ir_node *node)
 
 	/* create output register reqs */
 	arch_set_irn_register_req_out(call, pn_amd64_call_M, arch_no_register_req);
+	arch_copy_irn_out_info(call, pn_amd64_call_stack, incsp);
 
 	arch_register_class_t const *const flags = &amd64_reg_classes[CLASS_amd64_flags];
 	arch_set_irn_register_req_out(call, pn_amd64_call_flags, flags->class_req);
@@ -1892,11 +1893,11 @@ static ir_node *gen_Call(ir_node *node)
 	set_irn_pinned(call, get_irn_pinned(node));
 
 	/* IncSP to destroy the call stackframe */
-	incsp = amd64_new_IncSP(new_block, incsp, -cconv->param_stack_size, 0);
+	ir_node *const call_stack = new_r_Proj(call, mode_gp, pn_amd64_call_stack);
+	incsp = amd64_new_IncSP(new_block, call_stack, -cconv->param_stack_size, 0);
 	/* if we are the last IncSP producer in a block then we have to keep
 	 * the stack value.
 	 * Note: This here keeps all producers which is more than necessary */
-	add_irn_dep(incsp, call);
 	keep_alive(incsp);
 
 	pmap_insert(node_to_stack, node, incsp);
