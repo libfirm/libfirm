@@ -584,6 +584,7 @@ static void introduce_prologue(ir_graph *const irg)
 
 		ir_node *incsp = amd64_new_IncSP(block, curr_sp, frame_size, 0);
 		sched_add_after(curr_bp, incsp);
+		edges_reroute_except(initial_sp, incsp, push);
 
 		/* make sure the initial IncSP is really used by someone */
 		be_keep_if_unused(incsp);
@@ -594,6 +595,7 @@ static void introduce_prologue(ir_graph *const irg)
 			ir_node *const incsp = amd64_new_IncSP(block, initial_sp,
 			                                       frame_size, 0);
 			sched_add_after(start, incsp);
+			edges_reroute_except(initial_sp, incsp, incsp);
 		}
 	}
 }
