@@ -253,6 +253,16 @@ static void be_sched_verify(ir_graph *irg)
 	}
 }
 
+static void be_regalloc_verify(ir_graph *const irg, bool const ignore_sp_problems)
+{
+	if (be_options.do_verify) {
+		be_timer_push(T_VERIFY);
+		bool const fine = be_verify_register_allocation(irg, ignore_sp_problems);
+		be_check_verify_result(fine, irg);
+		be_timer_pop(T_VERIFY);
+	}
+}
+
 /* Initialize the Firm backend. Must be run first in init_firm()! */
 void firm_be_init(void)
 {
@@ -584,13 +594,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 
 		/* Do register allocation */
 		be_allocate_registers(irg);
-
-		if (be_options.do_verify) {
-			be_timer_push(T_VERIFY);
-			bool fine = be_verify_register_allocation(irg, true);
-			be_check_verify_result(fine, irg);
-			be_timer_pop(T_VERIFY);
-		}
+		be_regalloc_verify(irg, true);
 
 		if (stat_ev_enabled) {
 			stat_ev_dbl("bemain_costs_after_ra", be_estimate_irg_costs(irg));
@@ -611,6 +615,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		}
 
 		be_dump(DUMP_FINAL, irg, "final");
+		be_regalloc_verify(irg, false);
 
 		restore_optimization_state(&state);
 
