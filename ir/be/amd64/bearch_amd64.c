@@ -504,7 +504,7 @@ static void amd64_collect_frame_entity_nodes(ir_node *node, void *data)
 
 static int determine_rbp_input(ir_node *ret)
 {
-	const arch_register_t *bp = &amd64_registers[REG_RSP];
+	arch_register_t const *const bp = &amd64_registers[REG_RBP];
 	foreach_irn_in(ret, i, input) {
 		if (arch_get_irn_register(input) == bp)
 			return i;
@@ -568,6 +568,7 @@ static void introduce_prologue(ir_graph *const irg)
 
 	if (!layout->sp_relative) {
 		/* push rbp */
+		ir_node *const initial_bp = be_get_initial_reg_value(irg, bp);
 		ir_node *push = new_bd_amd64_push_rbp(NULL, block, initial_sp);
 		ir_node *curr_sp = new_r_Proj(push, mode_gp, pn_amd64_push_rbp_stack);
 
@@ -579,6 +580,7 @@ static void introduce_prologue(ir_graph *const irg)
 		sched_add_after(push, curr_bp);
 		be_set_constr_single_reg_out(curr_bp, 0,
 		                             bp, arch_register_req_type_ignore);
+		edges_reroute_except(initial_bp, curr_bp, push);
 
 		ir_node *incsp = amd64_new_IncSP(block, curr_sp, frame_size, 0);
 		sched_add_after(curr_bp, incsp);

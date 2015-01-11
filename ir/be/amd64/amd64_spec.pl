@@ -258,7 +258,7 @@ leave => {
 	op_flags  => [ "uses_memory" ],
 	state     => "exc_pinned",
 	in_reqs   => [ "rbp" ],
-	out_reqs  => [ "rbp:I", "rbp:I|S" ],
+	out_reqs  => [ "rbp:I", "rsp:I|S" ],
 	outs      => [ "frame", "stack" ],
 	fixed     => "amd64_op_mode_t op_mode = AMD64_OP_NONE;\n",
 	emit      => "leave",
