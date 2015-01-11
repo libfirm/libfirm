@@ -180,6 +180,14 @@ void be_abi_fix_stack_bias(ir_graph *irg, get_sp_bias_func get_sp_bias,
 	irg_block_walk_graph(irg, stack_bias_walker, NULL, &bw);
 }
 
+static bool is_irn_sp_producer(ir_node const *const node)
+{
+	if (get_irn_mode(node) == mode_T)
+		return false;
+	arch_register_req_t const *const req = arch_get_irn_register_req(node);
+	return arch_register_req_is(req, produces_sp);
+}
+
 typedef struct fix_stack_walker_env_t {
 	ir_node **sp_nodes;
 } fix_stack_walker_env_t;
@@ -190,14 +198,8 @@ typedef struct fix_stack_walker_env_t {
 static void collect_stack_nodes_walker(ir_node *node, void *data)
 {
 	fix_stack_walker_env_t *const env = (fix_stack_walker_env_t*)data;
-	if (get_irn_mode(node) == mode_T)
-		return;
-
-	arch_register_req_t const *const req = arch_get_irn_register_req(node);
-	if (!arch_register_req_is(req, produces_sp))
-		return;
-
-	ARR_APP1(ir_node*, env->sp_nodes, node);
+	if (is_irn_sp_producer(node))
+		ARR_APP1(ir_node*, env->sp_nodes, node);
 }
 
 void be_fix_stack_nodes(ir_graph *const irg, arch_register_t const *const sp)
@@ -250,20 +252,21 @@ void be_fix_stack_nodes(ir_graph *const irg, arch_register_t const *const sp)
 	be_ssa_construction_destroy(&senv);
 	DEL_ARR_F(walker_env.sp_nodes);
 
-	/* when doing code with frame-pointers then often the last incsp-nodes are
+	/* when doing code with frame-pointers then often the last sp producers are
 	 * not used anymore because we copy the framepointer to the stack pointer
-	 * when leaving the function. Though the last incsp is often kept (because
-	 * you often don't know which incsp is the last one and fixstack should find
-	 * them all). Remove unnecessary keeps and IncSP nodes */
+	 * when leaving the function. Though the last sp producer is often kept
+	 * (because you often don't know which sp producer is the last one and
+	 * fixstack should find them all). Remove unnecessary keep edges and sp
+	 * producers. */
 	ir_node *end = get_irg_end(irg);
 	foreach_irn_in_r(end, i, in) {
-		if (!be_is_IncSP(in))
-			continue;
-
-		remove_End_n(end, i);
-		if (get_irn_n_edges(in) == 0) {
-			sched_remove(in);
-			kill_node(in);
+		if (is_irn_sp_producer(in)) {
+			remove_End_n(end, i);
+			if (get_irn_n_edges(in) == 0) {
+				if (!is_Proj(in))
+					sched_remove(in);
+				kill_node(in);
+			}
 		}
 	}
 }
