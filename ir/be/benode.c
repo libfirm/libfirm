@@ -234,7 +234,8 @@ ir_node *be_new_IncSP(const arch_register_t *sp, ir_node *bl,
 
 	/* Set output constraint to stack register. */
 	be_node_set_register_req_in(irn, 0, sp->cls->class_req);
-	be_set_constr_single_reg_out(irn, 0, sp, arch_register_req_type_produces_sp);
+	arch_copy_irn_out_info(irn, 0, old_sp);
+	assert(arch_register_req_is(arch_get_irn_register_req(irn), produces_sp));
 	return irn;
 }
 
@@ -346,28 +347,6 @@ const arch_register_req_t *be_create_reg_req(struct obstack *obst,
 	req->limited = limited;
 	req->width   = 1;
 	return req;
-}
-
-void be_set_constr_single_reg_out(ir_node *node, int pos,
-		const arch_register_t *reg, arch_register_req_type_t additional_types)
-{
-	ir_graph *irg  = get_irn_irg(node);
-	be_irg_t *birg = be_birg_from_irg(irg);
-
-	/* if we have an ignore register, add ignore flag and just assign it */
-	if (!rbitset_is_set(birg->allocatable_regs, reg->global_index))
-		additional_types |= arch_register_req_type_ignore;
-
-	const arch_register_req_t *req;
-	if (additional_types == 0) {
-		req = reg->single_req;
-	} else {
-		struct obstack *obst = be_get_be_obst(irg);
-		req = be_create_reg_req(obst, reg, additional_types);
-	}
-
-	arch_set_irn_register_out(node, pos, reg);
-	arch_set_irn_register_req_out(node, pos, req);
 }
 
 ir_node *be_get_IncSP_pred(ir_node *irn)

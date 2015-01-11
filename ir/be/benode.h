@@ -149,16 +149,6 @@ unsigned be_get_MemPerm_entity_arity(const ir_node *irn);
  */
 ir_node *be_new_AnyVal(ir_node *block, const arch_register_class_t *cls);
 
-/**
- * Impose a register constraint on a backend node.
- * @param irn The node.
- * @param pos The position of the argument.
- * @param reg The register which is admissible for that node, argument/result
- *            and position.
- */
-void be_set_constr_single_reg_out(ir_node *irn, int pos,
-		const arch_register_t *reg, arch_register_req_type_t additional_flags);
-
 const arch_register_req_t *be_create_reg_req(struct obstack *obst,
 		const arch_register_t *reg, arch_register_req_type_t additional_types);
 

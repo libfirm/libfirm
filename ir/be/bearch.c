@@ -147,3 +147,10 @@ ir_node *be_get_start_proj(ir_graph *const irg, be_start_info_t *const info)
 	}
 	return info->irn;
 }
+
+void arch_copy_irn_out_info(ir_node *const dst, unsigned const dst_pos, ir_node const *const src)
+{
+	reg_out_info_t *const src_info = get_out_info(src);
+	reg_out_info_t *const dst_info = get_out_info_n(dst, dst_pos);
+	*dst_info = *src_info;
+}

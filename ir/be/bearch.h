@@ -492,4 +492,6 @@ void be_make_start_out(be_start_info_t *info, struct obstack *obst, ir_node *sta
 
 ir_node *be_get_start_proj(ir_graph *irg, be_start_info_t *info);
 
+void arch_copy_irn_out_info(ir_node *dst, unsigned dst_pos, ir_node const *src);
+
 #endif

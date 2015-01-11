@@ -578,8 +578,7 @@ static void introduce_prologue(ir_graph *const irg)
 		/* move rsp to rbp */
 		ir_node *const curr_bp = be_new_Copy(block, curr_sp);
 		sched_add_after(push, curr_bp);
-		be_set_constr_single_reg_out(curr_bp, 0,
-		                             bp, arch_register_req_type_ignore);
+		arch_copy_irn_out_info(curr_bp, 0, initial_bp);
 		edges_reroute_except(initial_bp, curr_bp, push);
 
 		ir_node *incsp = amd64_new_IncSP(block, curr_sp, frame_size, 0);

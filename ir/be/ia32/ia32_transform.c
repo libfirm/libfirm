@@ -5168,9 +5168,7 @@ static ir_node *gen_Call(ir_node *node)
 	/* Construct outputs. */
 	arch_set_irn_register_req_out(call, pn_ia32_Call_mem, arch_no_register_req);
 
-	arch_register_req_t const *const req = be_create_reg_req(obst, sp, arch_register_req_type_ignore | arch_register_req_type_produces_sp);
-	arch_set_irn_register_req_out(call, pn_ia32_Call_stack, req);
-	arch_set_irn_register_out(call, pn_ia32_Call_stack, sp);
+	arch_copy_irn_out_info(call, pn_ia32_Call_stack, callframe);
 
 	arch_set_irn_register_req_out(call, pn_ia32_Call_fpcw, fpcw->single_req);
 	arch_set_irn_register_out(call, pn_ia32_Call_fpcw, fpcw);
