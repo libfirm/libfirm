@@ -517,8 +517,7 @@ static void introduce_epilogue(ir_node *ret)
 	const arch_register_t *sp         = &amd64_registers[REG_RSP];
 	const arch_register_t *bp         = &amd64_registers[REG_RBP];
 	ir_graph              *irg        = get_irn_irg(ret);
-	ir_node               *start      = get_irg_start(irg);
-	ir_node               *block      = get_nodes_block(start);
+	ir_node               *block      = get_nodes_block(ret);
 	ir_type               *frame_type = get_irg_frame_type(irg);
 	unsigned               frame_size = get_type_size_bytes(frame_type);
 	be_stack_layout_t     *layout     = be_get_irg_stack_layout(irg);
