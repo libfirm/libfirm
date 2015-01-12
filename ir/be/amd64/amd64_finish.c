@@ -111,6 +111,7 @@ static void transform_sub_to_neg_add(ir_node *node,
 
 		ir_node *in[] = { neg_res, in1 };
 		add     = new_bd_amd64_add(dbgi, block, ARRAY_SIZE(in), in, attr);
+		arch_set_irn_register_reqs_in(add, arch_get_irn_register_reqs_in(node));
 		add_res = new_r_Proj(add, mode_Lu, pn_amd64_add_res);
 	}
 	arch_set_irn_register(add_res, out_reg);
