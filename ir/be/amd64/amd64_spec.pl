@@ -496,6 +496,7 @@ ret => {
 	op_flags => [ "cfopcode" ],
 	in_reqs  => "...",
 	out_reqs => [ "none" ],
+	ins      => [ "mem", "stack", "first_result" ],
 	fixed    => "amd64_op_mode_t op_mode = AMD64_OP_NONE;\n",
 	mode     => "mode_X",
 	emit     => "ret",

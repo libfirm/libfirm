@@ -1628,24 +1628,19 @@ static ir_node *gen_Return(ir_node *node)
 	x86_cconv_t    *cconv   = current_cconv;
 
 	/* estimate number of return values */
-	size_t n_ins = 2 + n_res; /* memory + stackpointer, return values */
-	size_t n_callee_saves
-		= rbitset_popcount(cconv->callee_saves, N_AMD64_REGISTERS);
-	n_ins += n_callee_saves;
+	size_t       p              = n_amd64_ret_first_result;
+	size_t const n_callee_saves = rbitset_popcount(cconv->callee_saves, N_AMD64_REGISTERS);
+	size_t const n_ins          = p + n_res + n_callee_saves;
 
 	const arch_register_req_t **reqs
 		= OALLOCN(be_obst, const arch_register_req_t*, n_ins);
 	ir_node **in = ALLOCAN(ir_node*, n_ins);
-	size_t    p  = 0;
 
-	in[p]   = new_mem;
-	reqs[p] = arch_no_register_req;
-	++p;
+	in[n_amd64_ret_mem]   = new_mem;
+	reqs[n_amd64_ret_mem] = arch_no_register_req;
 
-	unsigned spp = p++;
-	assert(spp == n_amd64_Return_stack);
-	in[spp]   = sp;
-	reqs[spp] = amd64_registers[REG_RSP].single_req;
+	in[n_amd64_ret_stack]   = sp;
+	reqs[n_amd64_ret_stack] = amd64_registers[REG_RSP].single_req;
 
 	/* result values */
 	for (size_t i = 0; i < n_res; ++i) {
