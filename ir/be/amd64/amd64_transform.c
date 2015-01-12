@@ -280,7 +280,7 @@ static const arch_register_req_t *reg_reqs[] = {
 	&amd64_requirement_gp,
 };
 
-static const arch_register_req_t *xmm_reqs[] = {
+arch_register_req_t const *amd64_xmm_reqs[] = {
 	&amd64_requirement_xmm,
 };
 
@@ -2154,7 +2154,7 @@ static ir_node *match_mov(dbg_info *dbgi, ir_node *block, ir_node *value,
 	} else {
 		ir_node *new_value = be_transform_node(value);
 		in[arity++] = new_value;
-		reqs        = get_irn_mode(new_value) == amd64_mode_xmm ? xmm_reqs
+		reqs        = get_irn_mode(new_value) == amd64_mode_xmm ? amd64_xmm_reqs
 		                                                        : reg_reqs;
 		op_mode     = AMD64_OP_REG;
 	}
@@ -2270,7 +2270,7 @@ static ir_node *gen_Conv(ir_node *node)
 			pn_res = pn_amd64_cvtsd2ss_res;
 		}
 		res  = new_r_Proj(conv, amd64_mode_xmm, pn_res);
-		reqs = xmm_reqs;
+		reqs = amd64_xmm_reqs;
 
 	} else if (src_float && !dst_float) {
 		/* float to int */
@@ -2295,7 +2295,7 @@ static ir_node *gen_Conv(ir_node *node)
 			pn_res = pn_amd64_cvttsd2si_res;
 		}
 		res  = new_r_Proj(conv, mode_gp, pn_res);
-		reqs = xmm_reqs;
+		reqs = amd64_xmm_reqs;
 
 	} else if (!src_float && dst_float) {
 		/* int to float */

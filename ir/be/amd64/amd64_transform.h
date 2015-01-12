@@ -16,6 +16,8 @@
 extern const x86_clobber_name_t        amd64_additional_clobber_names[];
 extern const x86_asm_constraint_list_t amd64_asm_constraints;
 
+extern arch_register_req_t const *amd64_xmm_reqs[];
+
 void amd64_init_transform(void);
 
 ir_node *amd64_new_spill(ir_node *value, ir_node *after);

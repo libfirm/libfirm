@@ -92,6 +92,7 @@ static void transform_sub_to_neg_add(ir_node *node,
 		ir_node *xor_in[] = { in2 };
 		ir_node *xor = new_bd_amd64_xorp(dbgi, block, ARRAY_SIZE(xor_in),
 		                                 xor_in, &xor_attr);
+		arch_set_irn_register_reqs_in(xor, amd64_xmm_reqs);
 		ir_node *neg = new_r_Proj(xor, amd64_mode_xmm, pn_amd64_xorp_res);
 
 		sched_add_before(node, xor);
@@ -111,9 +112,9 @@ static void transform_sub_to_neg_add(ir_node *node,
 
 		ir_node *in[] = { neg_res, in1 };
 		add     = new_bd_amd64_add(dbgi, block, ARRAY_SIZE(in), in, attr);
-		arch_set_irn_register_reqs_in(add, arch_get_irn_register_reqs_in(node));
 		add_res = new_r_Proj(add, mode_Lu, pn_amd64_add_res);
 	}
+	arch_set_irn_register_reqs_in(add, arch_get_irn_register_reqs_in(node));
 	arch_set_irn_register(add_res, out_reg);
 
 	/* exchange the add and the sub */
