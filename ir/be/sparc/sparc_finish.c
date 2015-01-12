@@ -182,11 +182,10 @@ static void sparc_introduce_prolog_epilog(ir_graph *irg)
 		introduce_epilog(ret);
 	}
 
-	ir_node *const schedpoint = be_move_after_schedule_first(start);
 	if (!layout->sp_relative) {
 		ir_node *const save = new_bd_sparc_Save_imm(NULL, block, initial_sp, NULL, -(SPARC_MIN_STACKSIZE + frame_size));
 		arch_set_irn_register(save, sp_reg);
-		sched_add_after(schedpoint, save);
+		sched_add_after(start, save);
 
 		edges_reroute_except(initial_sp, save, save);
 
@@ -199,7 +198,7 @@ static void sparc_introduce_prolog_epilog(ir_graph *irg)
 	} else {
 		ir_node *const incsp = be_new_IncSP(sp_reg, block, initial_sp, frame_size, 0);
 		edges_reroute_except(initial_sp, incsp, incsp);
-		sched_add_after(schedpoint, incsp);
+		sched_add_after(start, incsp);
 	}
 }
 

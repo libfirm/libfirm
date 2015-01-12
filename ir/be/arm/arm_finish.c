@@ -86,8 +86,7 @@ static void introduce_prolog_epilog(ir_graph *irg)
 
 	ir_node *const incsp = be_new_IncSP(sp_reg, block, initial_sp, frame_size, 0);
 	edges_reroute_except(initial_sp, incsp, incsp);
-	ir_node *const schedpoint = be_move_after_schedule_first(start);
-	sched_add_after(schedpoint, incsp);
+	sched_add_after(start, incsp);
 }
 
 static int get_first_same(const arch_register_req_t* req)
