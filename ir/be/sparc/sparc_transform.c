@@ -2697,7 +2697,7 @@ static ir_node *gen_Proj_Proj_Call(ir_node *node)
 		= sparc_decide_calling_convention(function_type, NULL);
 	const reg_or_stackslot_t  *res  = &cconv->results[pn];
 	ir_mode                   *mode = get_irn_mode(node);
-	unsigned                   new_pn = 1 + res->reg_offset;
+	unsigned                   new_pn = pn_sparc_Call_first_result + res->reg_offset;
 
 	assert(res->req0 != NULL && res->req1 == NULL);
 	if (mode_needs_gp_reg(mode)) {
