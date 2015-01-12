@@ -84,6 +84,7 @@ void sched_add_before(ir_node *before, ir_node *irn)
 	assert(!sched_is_scheduled(irn));
 	assert(!is_Proj(before));
 	assert(!is_Proj(irn));
+	assert(get_block_const(before) == get_nodes_block(irn));
 
 	info->prev = prev;
 	info->next = next;
@@ -103,6 +104,7 @@ void sched_add_after(ir_node *after, ir_node *irn)
 	assert(!sched_is_scheduled(irn));
 	assert(!is_Proj(after));
 	assert(!is_Proj(irn));
+	assert(get_block_const(after) == get_nodes_block(irn));
 
 	info->prev = prev;
 	info->next = next;
