@@ -3710,10 +3710,10 @@ static ir_node *gen_Mux(ir_node *node)
 
 			ir_node *load;
 			if (ia32_cg_config.use_sse2) {
-				load = new_bd_ia32_xLoad(dbgi, block, am.addr.base,
+				load = new_bd_ia32_xLoad(dbgi, new_block, am.addr.base,
 				                         am.addr.index, am.addr.mem, new_mode);
 			} else {
-				load = new_bd_ia32_fld(dbgi, block, am.addr.base,
+				load = new_bd_ia32_fld(dbgi, new_block, am.addr.base,
 				                       am.addr.index, am.addr.mem, new_mode);
 			}
 			set_irn_pinned(load, op_pin_state_floats);
