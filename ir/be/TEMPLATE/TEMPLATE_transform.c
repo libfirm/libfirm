@@ -46,8 +46,7 @@ static inline bool mode_needs_gp_reg(ir_mode *mode)
 
 static ir_node *transform_binop(ir_node *node, new_binop_func new_func)
 {
-	ir_node  *block     = get_nodes_block(node);
-	ir_node  *new_block = be_transform_node(block);
+	ir_node  *new_block = be_transform_nodes_block(node);
 	dbg_info *dbgi      = get_irn_dbg_info(node);
 	ir_node  *left      = get_binop_left(node);
 	ir_node  *new_left  = be_transform_node(left);
@@ -132,8 +131,7 @@ typedef ir_node* (*new_unop_func)(dbg_info *dbgi, ir_node *block, ir_node *op);
 
 static ir_node *transform_unop(ir_node *node, int op_index, new_unop_func new_func)
 {
-	ir_node  *block     = get_nodes_block(node);
-	ir_node  *new_block = be_transform_node(block);
+	ir_node  *new_block = be_transform_nodes_block(node);
 	dbg_info *dbgi      = get_irn_dbg_info(node);
 	ir_node  *op        = get_irn_n(node, op_index);
 	ir_node  *new_op    = be_transform_node(op);
@@ -158,8 +156,7 @@ static ir_node *gen_Not(ir_node *node)
 
 static ir_node *gen_Const(ir_node *node)
 {
-	ir_node   *block     = get_nodes_block(node);
-	ir_node   *new_block = be_transform_node(block);
+	ir_node   *new_block = be_transform_nodes_block(node);
 	dbg_info  *dbgi      = get_irn_dbg_info(node);
 	ir_tarval *value     = get_Const_tarval(node);
 	return new_bd_TEMPLATE_Const(dbgi, new_block, value);
@@ -167,8 +164,7 @@ static ir_node *gen_Const(ir_node *node)
 
 static ir_node *gen_Address(ir_node *node)
 {
-	ir_node   *block     = get_nodes_block(node);
-	ir_node   *new_block = be_transform_node(block);
+	ir_node   *new_block = be_transform_nodes_block(node);
 	dbg_info  *dbgi      = get_irn_dbg_info(node);
 	ir_entity *entity    = get_Address_entity(node);
 	return new_bd_TEMPLATE_Address(dbgi, new_block, entity);
@@ -176,8 +172,7 @@ static ir_node *gen_Address(ir_node *node)
 
 static ir_node *gen_Load(ir_node *node)
 {
-	ir_node  *block     = get_nodes_block(node);
-	ir_node  *new_block = be_transform_node(block);
+	ir_node  *new_block = be_transform_nodes_block(node);
 	dbg_info *dbgi      = get_irn_dbg_info(node);
 	ir_node  *ptr       = get_Load_ptr(node);
 	ir_node  *new_ptr   = be_transform_node(ptr);
@@ -193,8 +188,7 @@ static ir_node *gen_Load(ir_node *node)
 
 static ir_node *gen_Store(ir_node *node)
 {
-	ir_node  *block     = get_nodes_block(node);
-	ir_node  *new_block = be_transform_node(block);
+	ir_node  *new_block = be_transform_nodes_block(node);
 	dbg_info *dbgi      = get_irn_dbg_info(node);
 	ir_node  *ptr       = get_Store_ptr(node);
 	ir_node  *new_ptr   = be_transform_node(ptr);
@@ -212,8 +206,7 @@ static ir_node *gen_Store(ir_node *node)
 
 static ir_node *gen_Jmp(ir_node *node)
 {
-	ir_node  *block     = get_nodes_block(node);
-	ir_node  *new_block = be_transform_node(block);
+	ir_node  *new_block = be_transform_nodes_block(node);
 	dbg_info *dbgi      = get_irn_dbg_info(node);
 	return new_bd_TEMPLATE_Jmp(dbgi, new_block);
 }
@@ -221,8 +214,7 @@ static ir_node *gen_Jmp(ir_node *node)
 static ir_node *gen_Start(ir_node *node)
 {
 	dbg_info *dbgi      = get_irn_dbg_info(node);
-	ir_node  *block     = get_nodes_block(node);
-	ir_node  *new_block = be_transform_node(block);
+	ir_node  *new_block = be_transform_nodes_block(node);
 	ir_node  *result    = new_bd_TEMPLATE_Start(dbgi, new_block);
 	/* we have to set ignore registers manually */
 	arch_set_irn_register_out(result, pn_TEMPLATE_Start_stack,
@@ -253,7 +245,7 @@ static ir_node *gen_Return(ir_node *node)
 	}
 
 	dbg_info *const dbgi  = get_irn_dbg_info(node);
-	ir_node  *const block = be_transform_node(get_nodes_block(node));
+	ir_node  *const block = be_transform_nodes_block(node);
 	ir_node  *const ret   = new_bd_TEMPLATE_Return(dbgi, block, n_ins, in);
 	arch_set_irn_register_reqs_in(ret, reqs);
 

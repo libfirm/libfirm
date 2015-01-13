@@ -344,11 +344,10 @@ static ir_entity *create_float_const_entity(ia32_isa_t *isa, ir_tarval *tv,
  */
 static ir_node *gen_Const(ir_node *node)
 {
-	ir_node   *old_block = get_nodes_block(node);
-	ir_node   *block     = be_transform_node(old_block);
-	dbg_info  *dbgi      = get_irn_dbg_info(node);
-	ir_mode   *mode      = get_irn_mode(node);
-	ir_tarval *tv        = get_Const_tarval(node);
+	ir_node   *block = be_transform_nodes_block(node);
+	dbg_info  *dbgi  = get_irn_dbg_info(node);
+	ir_mode   *mode  = get_irn_mode(node);
+	ir_tarval *tv    = get_Const_tarval(node);
 
 	if (mode_is_float(mode)) {
 		ir_graph         *irg      = get_irn_irg(node);
@@ -474,10 +473,9 @@ end:
  */
 static ir_node *gen_Address(ir_node *node)
 {
-	ir_node  *old_block = get_nodes_block(node);
-	ir_node  *block     = be_transform_node(old_block);
-	dbg_info *dbgi      = get_irn_dbg_info(node);
-	ir_mode  *mode      = get_irn_mode(node);
+	ir_node  *block = be_transform_nodes_block(node);
+	dbg_info *dbgi  = get_irn_dbg_info(node);
+	ir_mode  *mode  = get_irn_mode(node);
 
 	if (!mode_needs_gp_reg(mode))
 		panic("unexpected mode for Address");
@@ -1177,7 +1175,7 @@ static ir_node *fix_mem_proj(ir_node *const node, ia32_address_mode_t const *con
 static ir_node *make_binop(ir_node *const node, ia32_address_mode_t const *const am, construct_binop_func *const func)
 {
 	dbg_info *const dbgi  = get_irn_dbg_info(node);
-	ir_node  *const block = be_transform_node(get_nodes_block(node));
+	ir_node  *const block = be_transform_nodes_block(node);
 	ir_node  *const res   = func(dbgi, block, am->addr.base, am->addr.index, am->addr.mem, am->new_op1, am->new_op2);
 	set_am_attributes(res, am);
 	SET_IA32_ORIG_NODE(res, node);
@@ -1396,8 +1394,7 @@ static ir_node *gen_shift_binop(ir_node *node, ir_node *op1, ir_node *op2,
 	ir_node *new_op2 = create_immediate_or_transform(op2, 'I');
 
 	dbg_info *dbgi      = get_irn_dbg_info(node);
-	ir_node  *block     = get_nodes_block(node);
-	ir_node  *new_block = be_transform_node(block);
+	ir_node  *new_block = be_transform_nodes_block(node);
 	ir_node  *new_node  = func(dbgi, new_block, new_op1, new_op2);
 	SET_IA32_ORIG_NODE(new_node, node);
 	return new_node;
@@ -1420,8 +1417,7 @@ static ir_node *gen_unop(ir_node *node, ir_node *op, construct_unop_func *func,
 
 	ir_node  *new_op    = be_transform_node(op);
 	dbg_info *dbgi      = get_irn_dbg_info(node);
-	ir_node  *block     = get_nodes_block(node);
-	ir_node  *new_block = be_transform_node(block);
+	ir_node  *new_block = be_transform_nodes_block(node);
 	ir_node  *new_node  = func(dbgi, new_block, new_op);
 
 	SET_IA32_ORIG_NODE(new_node, node);
@@ -2009,8 +2005,7 @@ static ir_node *gen_Shl(ir_node *node)
 	 * constraints */
 	if (is_Const_1(right)) {
 		dbg_info *dbgi      = get_irn_dbg_info(node);
-		ir_node  *block     = get_nodes_block(node);
-		ir_node  *new_block = be_transform_node(block);
+		ir_node  *new_block = be_transform_nodes_block(node);
 		ir_node  *new_left  = be_transform_node(left);
 		ir_node  *new_node
 			= new_bd_ia32_Lea(dbgi, new_block, new_left, new_left);
@@ -2051,7 +2046,7 @@ static ir_node *gen_Shrs(ir_node *node)
 		if (val == 31 && get_irn_n_edges(left) > 1) {
 			/* this is a sign extension */
 			dbg_info *dbgi   = get_irn_dbg_info(node);
-			ir_node  *block  = be_transform_node(get_nodes_block(node));
+			ir_node  *block  = be_transform_nodes_block(node);
 			ir_node  *new_op = be_transform_node(left);
 
 			return create_sex_32_64(dbgi, block, new_op, node);
@@ -2096,7 +2091,7 @@ static ir_node *gen_Shrs(ir_node *node)
 static ir_node *gen_Minus(ir_node *node)
 {
 	ir_node  *op    = get_Minus_op(node);
-	ir_node  *block = be_transform_node(get_nodes_block(node));
+	ir_node  *block = be_transform_nodes_block(node);
 	dbg_info *dbgi  = get_irn_dbg_info(node);
 	ir_mode  *mode  = get_irn_mode(node);
 
@@ -2144,12 +2139,11 @@ static ir_node *gen_Not(ir_node *node)
 	return gen_unop(node, op, new_bd_ia32_Not, match_mode_neutral);
 }
 
-static ir_node *create_float_abs(dbg_info *dbgi, ir_node *block, ir_node *op,
+static ir_node *create_float_abs(dbg_info *dbgi, ir_node *new_block, ir_node *op,
                                  bool negate, ir_node *node)
 {
-	ir_node *new_block = be_transform_node(block);
-	ir_mode *mode      = get_irn_mode(op);
-	ir_node *new_op    = be_transform_node(op);
+	ir_mode *mode   = get_irn_mode(op);
+	ir_node *new_op = be_transform_node(op);
 	assert(mode_is_float(mode));
 
 	ir_node *new_node;
@@ -2190,8 +2184,7 @@ static ir_node *create_float_abs(dbg_info *dbgi, ir_node *block, ir_node *op,
 static ir_node *gen_bt(ir_node *cmp, ir_node *x, ir_node *n)
 {
 	dbg_info *dbgi      = get_irn_dbg_info(cmp);
-	ir_node  *block     = get_nodes_block(cmp);
-	ir_node  *new_block = be_transform_node(block);
+	ir_node  *new_block = be_transform_nodes_block(cmp);
 	ir_node  *op1       = be_transform_node(x);
 	ir_node  *op2       = be_transform_node(n);
 
@@ -2367,13 +2360,12 @@ static void create_transformed_address_mode(x86_address_t *addr,
  */
 static ir_node *gen_Load(ir_node *node)
 {
-	ir_node  *old_block = get_nodes_block(node);
-	ir_node  *block     = be_transform_node(old_block);
-	ir_node  *ptr       = get_Load_ptr(node);
-	ir_node  *mem       = get_Load_mem(node);
-	ir_node  *new_mem   = be_transform_node(mem);
-	dbg_info *dbgi      = get_irn_dbg_info(node);
-	ir_mode  *mode      = get_Load_mode(node);
+	ir_node  *block   = be_transform_nodes_block(node);
+	ir_node  *ptr     = get_Load_ptr(node);
+	ir_node  *mem     = get_Load_mem(node);
+	ir_node  *new_mem = be_transform_node(mem);
+	dbg_info *dbgi    = get_irn_dbg_info(node);
+	ir_mode  *mode    = get_Load_mode(node);
 
 	/* construct load address */
 	x86_address_t addr;
@@ -2581,8 +2573,7 @@ static ir_node *try_create_SetMem(ir_node *node, ir_node *ptr, ir_node *mem)
 	build_address_ptr(&addr, ptr, mem);
 
 	dbg_info *dbgi      = get_irn_dbg_info(node);
-	ir_node  *block     = get_nodes_block(node);
-	ir_node  *new_block = be_transform_node(block);
+	ir_node  *new_block = be_transform_nodes_block(node);
 	ir_node  *new_node  = new_bd_ia32_SetccMem(dbgi, new_block, addr.base,
 	                                           addr.index, addr.mem, flags, cc);
 	set_address(new_node, &addr);
@@ -2808,8 +2799,7 @@ static ir_node *gen_float_const_Store(ir_node *node, ir_node *cns)
 	ir_mode   *cns_mode  = get_irn_mode(cns);
 	unsigned   size      = get_mode_size_bytes(cns_mode);
 	ir_tarval *tv        = get_Const_tarval(cns);
-	ir_node   *block     = get_nodes_block(node);
-	ir_node   *new_block = be_transform_node(block);
+	ir_node   *new_block = be_transform_nodes_block(node);
 	ir_node   *ptr       = get_Store_ptr(node);
 	ir_node   *mem       = get_Store_mem(node);
 	dbg_info  *dbgi      = get_irn_dbg_info(node);
@@ -2972,8 +2962,7 @@ static ir_node *gen_Store(ir_node *node)
 	addr.mem = be_transform_node(mem);
 
 	dbg_info *dbgi      = get_irn_dbg_info(node);
-	ir_node  *block     = get_nodes_block(node);
-	ir_node  *new_block = be_transform_node(block);
+	ir_node  *new_block = be_transform_nodes_block(node);
 	ir_node  *value     = get_Store_value(node);
 	ir_node  *store     = create_store(dbgi, new_block, value, &addr);
 
@@ -3013,7 +3002,7 @@ static ir_node *gen_Switch(ir_node *node)
 	table = ir_switch_table_duplicate(irg, table);
 
 	dbg_info *dbgi     = get_irn_dbg_info(node);
-	ir_node  *block    = be_transform_node(get_nodes_block(node));
+	ir_node  *block    = be_transform_nodes_block(node);
 	unsigned  n_outs   = get_Switch_n_outs(node);
 	ir_node  *new_node = new_bd_ia32_SwitchJmp(dbgi, block, noreg_GP, new_sel,
 	                                           n_outs, table);
@@ -3039,8 +3028,7 @@ static ir_node *gen_Cond(ir_node *node)
 	ir_node *flags = get_flags_node(sel, &cc);
 
 	dbg_info *dbgi      = get_irn_dbg_info(node);
-	ir_node  *block     = get_nodes_block(node);
-	ir_node  *new_block = be_transform_node(block);
+	ir_node  *new_block = be_transform_nodes_block(node);
 	ir_node  *new_node  = new_bd_ia32_Jcc(dbgi, new_block, flags, cc);
 	SET_IA32_ORIG_NODE(new_node, node);
 
@@ -3050,8 +3038,7 @@ static ir_node *gen_Cond(ir_node *node)
 static ir_node *create_Fucom(ir_node *node)
 {
 	dbg_info *dbgi      = get_irn_dbg_info(node);
-	ir_node  *block     = get_nodes_block(node);
-	ir_node  *new_block = be_transform_node(block);
+	ir_node  *new_block = be_transform_nodes_block(node);
 	ir_node  *left      = get_Cmp_left(node);
 	ir_node  *new_left  = be_transform_node(left);
 	ir_node  *right     = get_Cmp_right(node);
@@ -3611,8 +3598,7 @@ static ir_node *create_Conv_I2I(dbg_info *dbgi, ir_node *block, ir_node *base,
 static ir_node *gen_Mux(ir_node *node)
 {
 	dbg_info *dbgi      = get_irn_dbg_info(node);
-	ir_node  *block     = get_nodes_block(node);
-	ir_node  *new_block = be_transform_node(block);
+	ir_node  *new_block = be_transform_nodes_block(node);
 	ir_node  *mux_true  = get_Mux_true(node);
 	ir_node  *mux_false = get_Mux_false(node);
 	ir_node  *sel       = get_Mux_sel(node);
@@ -3627,7 +3613,7 @@ static ir_node *gen_Mux(ir_node *node)
 			           node);
 		} else {
 			ir_node *op = ir_get_abs_op(sel, mux_false, mux_true);
-			return create_float_abs(dbgi, block, op, is_abs < 0, node);
+			return create_float_abs(dbgi, new_block, op, is_abs < 0, node);
 		}
 	}
 
@@ -3858,7 +3844,7 @@ static void force_int_stackent(ir_node *node, ir_mode *mode)
  */
 static ir_node *gen_x87_fp_to_gp(ir_node *node)
 {
-	ir_node  *block  = be_transform_node(get_nodes_block(node));
+	ir_node  *block  = be_transform_nodes_block(node);
 	ir_node  *op     = get_Conv_op(node);
 	ir_node  *new_op = be_transform_node(op);
 	dbg_info *dbgi   = get_irn_dbg_info(node);
@@ -4271,7 +4257,7 @@ static ir_node *create_immediate_or_transform(ir_node *const node,
 
 static ir_node *gen_Member(ir_node *node)
 {
-	ir_node  *block = be_transform_node(get_nodes_block(node));
+	ir_node  *block = be_transform_nodes_block(node);
 	dbg_info *dbgi  = get_irn_dbg_info(node);
 
 	x86_address_t addr;
@@ -4288,8 +4274,7 @@ static ir_node *gen_Start(ir_node *node)
 	ir_graph  *irg           = get_irn_irg(node);
 	ir_entity *entity        = get_irg_entity(irg);
 	ir_type   *function_type = get_entity_type(entity);
-	ir_node   *block         = get_nodes_block(node);
-	ir_node   *new_block     = be_transform_node(block);
+	ir_node   *new_block     = be_transform_nodes_block(node);
 	dbg_info  *dbgi          = get_irn_dbg_info(node);
 	struct obstack *obst     = be_get_be_obst(irg);
 
@@ -4399,9 +4384,8 @@ static ir_node *get_stack_pointer_for(ir_node *node)
 
 static ir_node *gen_Return(ir_node *node)
 {
-	ir_node  *block     = get_nodes_block(node);
 	ir_graph *irg       = get_irn_irg(node);
-	ir_node  *new_block = be_transform_node(block);
+	ir_node  *new_block = be_transform_nodes_block(node);
 	dbg_info *dbgi      = get_irn_dbg_info(node);
 	ir_node  *mem       = get_Return_mem(node);
 	ir_node  *new_mem   = be_transform_node(mem);
@@ -4463,8 +4447,7 @@ static ir_node *gen_Alloc(ir_node *node)
 	/* TODO: match address mode for size... */
 
 	dbg_info *dbgi      = get_irn_dbg_info(node);
-	ir_node  *block     = get_nodes_block(node);
-	ir_node  *new_block = be_transform_node(block);
+	ir_node  *new_block = be_transform_nodes_block(node);
 	ir_node *new_node
 		= new_bd_ia32_SubSP(dbgi, new_block, noreg_GP, noreg_GP, new_mem, stack,
 		                    new_size);
@@ -4516,8 +4499,7 @@ static ir_node *gen_Phi(ir_node *node)
 
 static ir_node *gen_Jmp(ir_node *node)
 {
-	ir_node  *block     = get_nodes_block(node);
-	ir_node  *new_block = be_transform_node(block);
+	ir_node  *new_block = be_transform_nodes_block(node);
 	dbg_info *dbgi      = get_irn_dbg_info(node);
 	ir_node  *new_node  = new_bd_ia32_Jmp(dbgi, new_block);
 	SET_IA32_ORIG_NODE(new_node, node);
@@ -4627,8 +4609,7 @@ static ir_node *gen_ia32_l_Sbb(ir_node *node)
 static ir_node *gen_ia32_l_Minus64(ir_node *node)
 {
 	dbg_info *dbgi      = get_irn_dbg_info(node);
-	ir_node  *block     = get_nodes_block(node);
-	ir_node  *new_block = be_transform_node(block);
+	ir_node  *new_block = be_transform_nodes_block(node);
 	ir_node  *low       = get_irn_n(node, n_ia32_l_Minus64_low);
 	ir_node  *high      = get_irn_n(node, n_ia32_l_Minus64_high);
 	ir_node  *new_low   = be_transform_node(low);
@@ -4641,8 +4622,7 @@ static ir_node *gen_ia32_l_LLtoFloat(ir_node *node)
 	if (ia32_cg_config.use_sse2)
 		panic("not implemented for SSE2");
 
-	ir_node  *src_block    = get_nodes_block(node);
-	ir_node  *block        = be_transform_node(src_block);
+	ir_node  *block        = be_transform_nodes_block(node);
 	ir_graph *irg          = get_irn_irg(block);
 	dbg_info *dbgi         = get_irn_dbg_info(node);
 	ir_node  *frame        = get_irg_frame(irg);
@@ -4724,8 +4704,7 @@ static ir_node *gen_ia32_l_LLtoFloat(ir_node *node)
 
 static ir_node *gen_ia32_l_FloattoLL(ir_node *node)
 {
-	ir_node  *src_block = get_nodes_block(node);
-	ir_node  *block     = be_transform_node(src_block);
+	ir_node  *block     = be_transform_nodes_block(node);
 	ir_graph *irg       = get_irn_irg(block);
 	dbg_info *dbgi      = get_irn_dbg_info(node);
 	ir_node  *frame     = get_irg_frame(irg);
@@ -4746,7 +4725,7 @@ static ir_node *gen_ia32_l_FloattoLL(ir_node *node)
 
 static ir_node *gen_Proj_l_FloattoLL(ir_node *node)
 {
-	ir_node  *block    = be_transform_node(get_nodes_block(node));
+	ir_node  *block    = be_transform_nodes_block(node);
 	ir_graph *irg      = get_irn_irg(block);
 	ir_node  *pred     = get_Proj_pred(node);
 	ir_node  *new_pred = be_transform_node(pred);
@@ -5018,7 +4997,7 @@ static ir_node *gen_Proj_Mod(ir_node *node)
 
 static ir_node *gen_CopyB(ir_node *node)
 {
-	ir_node  *block    = be_transform_node(get_nodes_block(node));
+	ir_node  *block    = be_transform_nodes_block(node);
 	ir_node  *src      = get_CopyB_src(node);
 	ir_node  *new_src  = be_transform_node(src);
 	ir_node  *dst      = get_CopyB_dst(node);
@@ -5250,7 +5229,7 @@ static ir_node *gen_Proj_Proj_Call(ir_node *node)
 static ir_node *gen_trap(ir_node *node)
 {
 	dbg_info *dbgi  = get_irn_dbg_info(node);
-	ir_node  *block = be_transform_node(get_nodes_block(node));
+	ir_node  *block = be_transform_nodes_block(node);
 	ir_node  *mem   = be_transform_node(get_Builtin_mem(node));
 	return new_bd_ia32_UD2(dbgi, block, mem);
 }
@@ -5261,7 +5240,7 @@ static ir_node *gen_trap(ir_node *node)
 static ir_node *gen_debugbreak(ir_node *node)
 {
 	dbg_info *dbgi  = get_irn_dbg_info(node);
-	ir_node  *block = be_transform_node(get_nodes_block(node));
+	ir_node  *block = be_transform_nodes_block(node);
 	ir_node  *mem   = be_transform_node(get_Builtin_mem(node));
 	return new_bd_ia32_Breakpoint(dbgi, block, mem);
 }
@@ -5269,7 +5248,7 @@ static ir_node *gen_debugbreak(ir_node *node)
 static ir_node *make_load_from_frame(ir_node *const node, ir_entity *(*const get_ent)(ir_graph*))
 {
 	dbg_info *const dbgi  = get_irn_dbg_info(node);
-	ir_node  *const block = be_transform_node(get_nodes_block(node));
+	ir_node  *const block = be_transform_nodes_block(node);
 	ir_graph *const irg   = get_irn_irg(node);
 
 	ir_node            *ptr      = get_irg_frame(irg);
@@ -5337,7 +5316,7 @@ static ir_node *gen_prefetch(ir_node *node)
 	ir_node  *base  = addr.base;
 	ir_node  *idx   = addr.index;
 	dbg_info *dbgi  = get_irn_dbg_info(node);
-	ir_node  *block = be_transform_node(get_nodes_block(node));
+	ir_node  *block = be_transform_nodes_block(node);
 	ir_node  *mem   = be_transform_node(get_Builtin_mem(node));
 
 	ir_node *new_node;
@@ -5473,8 +5452,7 @@ static ir_node *gen_ctz(ir_node *node)
 static ir_node *gen_parity(ir_node *node)
 {
 	dbg_info *dbgi      = get_irn_dbg_info(node);
-	ir_node  *block     = get_nodes_block(node);
-	ir_node  *new_block = be_transform_node(block);
+	ir_node  *new_block = be_transform_nodes_block(node);
 	ir_node  *param     = get_Builtin_param(node, 0);
 	ir_node  *new_param = be_transform_node(param);
 
@@ -5541,8 +5519,7 @@ static ir_node *gen_bswap(ir_node *node)
 {
 	ir_node  *param     = be_transform_node(get_Builtin_param(node, 0));
 	dbg_info *dbgi      = get_irn_dbg_info(node);
-	ir_node  *block     = get_nodes_block(node);
-	ir_node  *new_block = be_transform_node(block);
+	ir_node  *new_block = be_transform_nodes_block(node);
 	ir_mode  *mode      = get_irn_mode(param);
 	unsigned  size      = get_mode_size_bits(mode);
 
@@ -5583,7 +5560,7 @@ static ir_node *gen_outport(ir_node *node)
 	ir_node  *oldv  = get_Builtin_param(node, 1);
 	ir_mode  *mode  = get_irn_mode(oldv);
 	ir_node  *value = be_transform_node(oldv);
-	ir_node  *block = be_transform_node(get_nodes_block(node));
+	ir_node  *block = be_transform_nodes_block(node);
 	ir_node  *mem   = be_transform_node(get_Builtin_mem(node));
 	dbg_info *dbgi  = get_irn_dbg_info(node);
 	ir_node  *res   = new_bd_ia32_Outport(dbgi, block, port, value, mem);
@@ -5601,7 +5578,7 @@ static ir_node *gen_inport(ir_node *node)
 	ir_mode  *mode  = get_type_mode(rstp);
 	ir_node  *param = get_Builtin_param(node, 0);
 	ir_node  *port  = create_immediate_or_transform(param, 'K');
-	ir_node  *block = be_transform_node(get_nodes_block(node));
+	ir_node  *block = be_transform_nodes_block(node);
 	ir_node  *mem   = be_transform_node(get_Builtin_mem(node));
 	dbg_info *dbgi  = get_irn_dbg_info(node);
 	ir_node  *res   = new_bd_ia32_Inport(dbgi, block, port, mem);
@@ -5615,7 +5592,7 @@ static ir_node *gen_inport(ir_node *node)
 static ir_node *gen_saturating_increment(ir_node *node)
 {
 	dbg_info *dbgi      = get_irn_dbg_info(node);
-	ir_node  *block     = be_transform_node(get_nodes_block(node));
+	ir_node  *block     = be_transform_nodes_block(node);
 	ir_node  *operand   = be_transform_node(get_Builtin_param(node, 0));
 	ir_graph *irg       = get_irn_irg(block);
 	ir_node  *one       = ia32_create_Immediate(irg, 1);
@@ -5642,7 +5619,7 @@ static ir_node *gen_saturating_increment(ir_node *node)
 static ir_node *gen_compare_swap(ir_node *node)
 {
 	dbg_info *dbgi    = get_irn_dbg_info(node);
-	ir_node  *block   = be_transform_node(get_nodes_block(node));
+	ir_node  *block   = be_transform_nodes_block(node);
 	ir_node  *ptr     = get_Builtin_param(node, 0);
 	ir_node  *old     = get_Builtin_param(node, 1);
 	ir_node  *new     = get_Builtin_param(node, 2);

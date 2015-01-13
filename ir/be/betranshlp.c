@@ -54,7 +54,7 @@ bool be_is_transformed(const ir_node *node)
 
 ir_node *be_transform_phi(ir_node *node, const arch_register_req_t *req)
 {
-	ir_node  *block = be_transform_node(get_nodes_block(node));
+	ir_node  *block = be_transform_nodes_block(node);
 	ir_graph *irg   = get_irn_irg(block);
 	dbg_info *dbgi  = get_irn_dbg_info(node);
 
@@ -120,7 +120,7 @@ static ir_node *transform_end(ir_node *node)
 	 * phase from visiting all the graph. */
 	ir_graph *irg     = get_irn_irg(node);
 	dbg_info *dbgi    = get_irn_dbg_info(node);
-	ir_node  *block   = be_transform_node(get_nodes_block(node));
+	ir_node  *block   = be_transform_nodes_block(node);
 	int       arity   = get_irn_arity(node);
 	ir_node **ins     = get_irn_in(node) + 1;
 	ir_node  *new_end = new_ir_node(dbgi, irg, block, op_End, mode_X, arity, ins);
@@ -163,7 +163,7 @@ ir_node *be_duplicate_node(ir_node *const node)
 		ins[i] = be_transform_node(in);
 	}
 
-	ir_node *const block    = be_transform_node(get_nodes_block(node));
+	ir_node *const block    = be_transform_nodes_block(node);
 	ir_node *const new_node = new_similar_node(node, block, ins);
 
 	new_node->node_nr = node->node_nr;
@@ -190,6 +190,12 @@ ir_node *be_transform_node(ir_node *node)
 	}
 	assert(new_node);
 	return new_node;
+}
+
+ir_node *be_transform_nodes_block(ir_node const *const node)
+{
+	ir_node *const block = get_nodes_block(node);
+	return be_transform_node(block);
 }
 
 void be_enqueue_preds(ir_node *node)

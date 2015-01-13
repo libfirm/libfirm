@@ -482,7 +482,7 @@ ir_tarval *create_sign_tv(ir_mode *mode)
 
 static ir_node *gen_Const(ir_node *node)
 {
-	ir_node  *block = be_transform_node(get_nodes_block(node));
+	ir_node  *block = be_transform_nodes_block(node);
 	dbg_info *dbgi  = get_irn_dbg_info(node);
 	ir_mode  *mode  = get_irn_mode(node);
 	ir_tarval *tv = get_Const_tarval(node);
@@ -502,7 +502,7 @@ static ir_node *gen_Const(ir_node *node)
 
 static ir_node *gen_Address(ir_node *node)
 {
-	ir_node   *block  = be_transform_node(get_nodes_block(node));
+	ir_node   *block  = be_transform_nodes_block(node);
 	dbg_info  *dbgi   = get_irn_dbg_info(node);
 	ir_entity *entity = get_Address_entity(node);
 
@@ -639,12 +639,11 @@ static bool needs_extension(ir_node *op)
 	return !be_upper_bits_clean(op, mode);
 }
 
-static ir_node *create_sext(ir_node *block, ir_node *const node, ir_mode *mode)
+static ir_node *create_sext(ir_node *new_block, ir_node *const node, ir_mode *mode)
 {
 	amd64_insn_mode_t insn_mode = get_insn_mode_from_mode(mode);
 	dbg_info *const   dbgi      = get_irn_dbg_info(node);
 	ir_node  *const   new_node  = be_transform_node(node);
-	ir_node  *const   new_block = be_transform_node(block);
 
 	amd64_shift_attr_t attr;
 	memset(&attr, 0, sizeof(attr));
@@ -660,10 +659,9 @@ static ir_node *create_sext(ir_node *block, ir_node *const node, ir_mode *mode)
 	return new_r_Proj(sar, mode_gp, pn_amd64_sar_res);
 }
 
-static ir_node *create_zext(ir_node *block, ir_node *const node)
+static ir_node *create_zext(ir_node *new_block, ir_node *const node)
 {
 	dbg_info *const dbgi      = get_irn_dbg_info(node);
-	ir_node  *const new_block = be_transform_node(block);
 	ir_node  *const xor0      = new_bd_amd64_xor_0(dbgi, new_block);
 	arch_set_irn_register_reqs_in(xor0, reg_reqs);
 	return new_r_Proj(xor0, mode_gp, pn_amd64_xor_0_res);
@@ -1025,9 +1023,8 @@ static ir_node *gen_shift_binop(ir_node *node, ir_node *op1, ir_node *op2,
 	}
 	attr.insn_mode = get_insn_mode_from_mode(mode);
 
-	ir_node  *const block     = get_nodes_block(node);
 	dbg_info *const dbgi      = get_irn_dbg_info(node);
-	ir_node  *const new_block = be_transform_node(block);
+	ir_node  *const new_block = be_transform_nodes_block(node);
 	ir_node  *const new_node  = func(dbgi, new_block, arity, in, &attr);
 	arch_set_irn_register_reqs_in(new_node, reqs);
 	arch_set_irn_register_req_out(new_node, 0, out_req0);
@@ -1037,8 +1034,7 @@ static ir_node *gen_shift_binop(ir_node *node, ir_node *op1, ir_node *op2,
 static ir_node *create_lea_as_add(ir_node *node, ir_node *op1, ir_node *op2)
 {
 	dbg_info *const dbgi = get_irn_dbg_info(node);
-	ir_node  *block      = get_nodes_block(node);
-	ir_node  *new_block  = be_transform_node(block);
+	ir_node  *new_block  = be_transform_nodes_block(node);
 	ir_mode *mode        = get_irn_mode(node);
 
 	amd64_insn_mode_t insn_mode;
@@ -1219,8 +1215,7 @@ static ir_node *create_div(ir_node *const node, ir_mode *const mode,
                            ir_node *const mem)
 {
 	dbg_info *const dbgi      = get_irn_dbg_info(node);
-	ir_node  *const block     = get_nodes_block(node);
-	ir_node  *const new_block = be_transform_node(block);
+	ir_node  *const new_block = be_transform_nodes_block(node);
 	amd64_insn_mode_t insn_mode
 		= get_mode_size_bits(mode) > 32 ? INSN_MODE_64 : INSN_MODE_32;
 
@@ -1230,10 +1225,10 @@ static ir_node *create_div(ir_node *const node, ir_mode *const mode,
 	ir_node *upper_value;
 	ir_node *(*constructor)(dbg_info*,ir_node*,int,ir_node**,amd64_insn_mode_t);
 	if (mode_is_signed(mode)) {
-		upper_value = create_sext(block, op1, mode);
+		upper_value = create_sext(new_block, op1, mode);
 		constructor = new_bd_amd64_idiv;
 	} else {
-		upper_value = create_zext(block, node);
+		upper_value = create_zext(new_block, node);
 		constructor = new_bd_amd64_div;
 	}
 
@@ -1342,7 +1337,7 @@ static ir_node *gen_unop(ir_node *const node, int op_pos, unop_constructor gen,
                          unsigned pn_res)
 {
 	dbg_info *const dbgi   = get_irn_dbg_info(node);
-	ir_node  *const block  = be_transform_node(get_nodes_block(node));
+	ir_node  *const block  = be_transform_nodes_block(node);
 	ir_node  *const op     = get_irn_n(node, op_pos);
 	ir_node  *const new_op = be_transform_node(op);
 	ir_mode  *const mode   = get_irn_mode(node);
@@ -1358,8 +1353,7 @@ static ir_node *gen_unop(ir_node *const node, int op_pos, unop_constructor gen,
 static ir_node *gen_float_neg(ir_node *const node)
 {
 	dbg_info  *const dbgi = get_irn_dbg_info(node);
-	ir_node   *block      = get_nodes_block(node);
-	ir_node   *new_block  = be_transform_node(block);
+	ir_node   *new_block  = be_transform_nodes_block(node);
 	ir_node   *op         = get_irn_n(node, n_Minus_op);
 	ir_node   *new_op     = be_transform_node(op);
 	ir_mode   *mode       = get_irn_mode(node);
@@ -1398,8 +1392,7 @@ static ir_node *gen_Not(ir_node *const node)
 
 static ir_node *gen_Member(ir_node *const node)
 {
-	ir_node   *block     = get_nodes_block(node);
-	ir_node   *new_block = be_transform_node(block);
+	ir_node   *new_block = be_transform_nodes_block(node);
 	dbg_info  *dbgi      = get_irn_dbg_info(node);
 	ir_node   *ptr       = get_Member_ptr(node);
 	ir_graph  *irg       = get_irn_irg(node);
@@ -1487,8 +1480,7 @@ static ir_node *gen_IJmp(ir_node *node)
 
 static ir_node *gen_Jmp(ir_node *node)
 {
-	ir_node  *block     = get_nodes_block(node);
-	ir_node  *new_block = be_transform_node(block);
+	ir_node  *new_block = be_transform_nodes_block(node);
 	dbg_info *dbgi      = get_irn_dbg_info(node);
 
 	return new_bd_amd64_jmp(dbgi, new_block);
@@ -1497,7 +1489,7 @@ static ir_node *gen_Jmp(ir_node *node)
 static ir_node *gen_Switch(ir_node *node)
 {
 	ir_graph *irg       = get_irn_irg(node);
-	ir_node  *new_block = be_transform_node(get_nodes_block(node));
+	ir_node  *new_block = be_transform_nodes_block(node);
 	ir_node  *sel       = get_Switch_selector(node);
 	dbg_info *dbgi      = get_irn_dbg_info(node);
 	ir_node  *new_sel   = be_transform_node(sel);
@@ -1522,8 +1514,7 @@ static ir_node *gen_Start(ir_node *node)
 	ir_graph  *irg           = get_irn_irg(node);
 	ir_entity *entity        = get_irg_entity(irg);
 	ir_type   *function_type = get_entity_type(entity);
-	ir_node   *block         = get_nodes_block(node);
-	ir_node   *new_block     = be_transform_node(block);
+	ir_node   *new_block     = be_transform_nodes_block(node);
 	dbg_info  *dbgi          = get_irn_dbg_info(node);
 	struct obstack *obst     = be_get_be_obst(irg);
 
@@ -1616,9 +1607,8 @@ static ir_node *get_stack_pointer_for(ir_node *node)
 
 static ir_node *gen_Return(ir_node *node)
 {
-	ir_node  *block     = get_nodes_block(node);
 	ir_graph *irg       = get_irn_irg(node);
-	ir_node  *new_block = be_transform_node(block);
+	ir_node  *new_block = be_transform_nodes_block(node);
 	dbg_info *dbgi      = get_irn_dbg_info(node);
 	ir_node  *mem       = get_Return_mem(node);
 	ir_node  *new_mem   = be_transform_node(mem);
@@ -1939,8 +1929,7 @@ static ir_node *gen_Proj_Proj_Call(ir_node *node)
 
 static ir_node *gen_Proj_Proj_Start(ir_node *node)
 {
-	ir_node *block     = get_nodes_block(node);
-	ir_node *new_block = be_transform_node(block);
+	ir_node *new_block = be_transform_nodes_block(node);
 	unsigned pn        = get_Proj_num(node);
 	ir_node *args      = get_Proj_pred(node);
 	ir_node *start     = get_Proj_pred(args);
@@ -2067,7 +2056,7 @@ static ir_node *gen_Cond(ir_node *node)
 	ir_node             *flags = get_flags_node(sel, &cc);
 
 	dbg_info *const dbgi  = get_irn_dbg_info(node);
-	ir_node  *const block = be_transform_node(get_nodes_block(node));
+	ir_node  *const block = be_transform_nodes_block(node);
 	return new_bd_amd64_jcc(dbgi, block, flags, cc);
 }
 
@@ -2184,7 +2173,7 @@ static ir_node *create_cvtsd2ss(dbg_info *dbgi, ir_node *block, ir_node *value)
 
 static ir_node *gen_Conv(ir_node *node)
 {
-	ir_node  *block    = be_transform_node(get_nodes_block(node));
+	ir_node  *block    = be_transform_nodes_block(node);
 	ir_node  *op       = get_Conv_op(node);
 	ir_mode  *src_mode = get_irn_mode(op);
 	ir_mode  *dst_mode = get_irn_mode(node);
@@ -2356,7 +2345,7 @@ static ir_node *gen_Conv(ir_node *node)
 static ir_node *gen_Store(ir_node *node)
 {
 	dbg_info *dbgi = get_irn_dbg_info(node);
-	ir_node *block = be_transform_node(get_nodes_block(node));
+	ir_node *block = be_transform_nodes_block(node);
 	ir_node *val   = get_Store_value(node);
 	ir_mode *mode  = get_irn_mode(val);
 
@@ -2486,7 +2475,7 @@ static ir_node *gen_Load(ir_node *node)
 {
 
 	dbg_info *dbgi = get_irn_dbg_info(node);
-	ir_node *block = be_transform_node(get_nodes_block(node));
+	ir_node *block = be_transform_nodes_block(node);
 	ir_mode *mode  = get_Load_mode(node);
 
 	ir_node *ptr = get_Load_ptr(node);
@@ -2535,7 +2524,7 @@ static ir_node *gen_Load(ir_node *node)
 static ir_node *gen_Unknown(ir_node *node)
 {
 	/* for now, there should be more efficient ways to do this */
-	ir_node *block = be_transform_node(get_nodes_block(node));
+	ir_node *block = be_transform_nodes_block(node);
 
 	if (mode_is_float(get_irn_mode(node))) {
 		return new_bd_amd64_xorpd_0(NULL, block);
@@ -2614,8 +2603,7 @@ static ir_node *gen_Proj_Store(ir_node *node)
 static ir_node *gen_Alloc(ir_node *node)
 {
 	dbg_info *dbgi      = get_irn_dbg_info(node);
-	ir_node  *block     = get_nodes_block(node);
-	ir_node  *new_block = be_transform_node(block);
+	ir_node  *new_block = be_transform_nodes_block(node);
 	ir_node  *size      = get_Alloc_size(node);
 	ir_node  *mem       = get_Alloc_mem(node);
 	ir_node  *new_mem   = be_transform_node(mem);
@@ -2675,7 +2663,7 @@ static ir_node *gen_Proj_Alloc(ir_node *node)
 static ir_node *gen_saturating_increment(ir_node *node)
 {
 	dbg_info *dbgi      = get_irn_dbg_info(node);
-	ir_node  *new_block = be_transform_node(get_nodes_block(node));
+	ir_node  *new_block = be_transform_nodes_block(node);
 	ir_node  *param0    = get_Builtin_param(node, 0);
 	ir_node  *operand   = be_transform_node(param0);
 	ir_mode  *mode      = get_irn_mode(param0);

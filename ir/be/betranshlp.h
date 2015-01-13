@@ -36,6 +36,11 @@ ir_node *be_pre_transform_node(ir_node *place);
 ir_node *be_transform_node(ir_node *node);
 
 /**
+ * Transform the node's block.
+ */
+ir_node *be_transform_nodes_block(ir_node const *node);
+
+/**
  * Creates a new phi (needs some special handling since we can't transform
  * all predecessors yet).
  */

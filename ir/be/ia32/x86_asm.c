@@ -499,7 +499,7 @@ ir_node *x86_match_ASM(const ir_node *node, new_bd_asm_func new_bd_asm,
 		}
 	}
 
-	ir_node *const block = be_transform_node(get_nodes_block(node));
+	ir_node *const block = be_transform_nodes_block(node);
 
 	/* Attempt to make ASM node register pressure faithful.
 	 * (This does not work for complicated cases yet!)

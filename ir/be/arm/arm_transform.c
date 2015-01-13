@@ -235,7 +235,7 @@ static bool upper_bits_clean(ir_node *transformed_node, ir_mode *mode)
  */
 static ir_node *gen_Conv(ir_node *node)
 {
-	ir_node  *block    = be_transform_node(get_nodes_block(node));
+	ir_node  *block    = be_transform_nodes_block(node);
 	ir_node  *op       = get_Conv_op(node);
 	ir_node  *new_op   = be_transform_node(op);
 	ir_mode  *src_mode = get_irn_mode(op);
@@ -416,7 +416,7 @@ static ir_node *gen_int_binop_ops(ir_node *node, ir_node *op1, ir_node *op2,
                                   match_flags_t flags,
                                   const arm_binop_factory_t *factory)
 {
-	ir_node  *block = be_transform_node(get_nodes_block(node));
+	ir_node  *block = be_transform_nodes_block(node);
 	dbg_info *dbgi  = get_irn_dbg_info(node);
 
 	if (flags & MATCH_SIZE_NEUTRAL) {
@@ -528,7 +528,7 @@ static ir_node *gen_Ror(ir_node *node, ir_node *op1, ir_node *op2,
                         bool negate_op)
 {
 	dbg_info *dbgi    = get_irn_dbg_info(node);
-	ir_node  *block   = be_transform_node(get_nodes_block(node));
+	ir_node  *block   = be_transform_nodes_block(node);
 	ir_node  *new_op1 = be_transform_node(op1);
 	if (is_Const(op2)) {
 		ir_tarval *tv   = get_Const_tarval(op2);
@@ -621,7 +621,7 @@ static ir_node *gen_Add(ir_node *node)
 
 	ir_mode *mode = get_irn_mode(node);
 	if (mode_is_float(mode)) {
-		ir_node  *block   = be_transform_node(get_nodes_block(node));
+		ir_node  *block   = be_transform_nodes_block(node);
 		ir_node  *op1     = get_Add_left(node);
 		ir_node  *op2     = get_Add_right(node);
 		dbg_info *dbgi    = get_irn_dbg_info(node);
@@ -714,8 +714,7 @@ static ir_node *gen_arm_AdC_t(ir_node *node)
 	ir_node *new_flags = be_transform_node(flags);
 
 	dbg_info *dbgi      = get_irn_dbg_info(node);
-	ir_node  *block     = get_nodes_block(node);
-	ir_node  *new_block = be_transform_node(block);
+	ir_node  *new_block = be_transform_nodes_block(node);
 	ir_node  *res       = new_bd_arm_AdC_reg(dbgi, new_block, new_left,
 	                                         new_right, new_flags);
 	return res;
@@ -728,7 +727,7 @@ static ir_node *gen_arm_AdC_t(ir_node *node)
  */
 static ir_node *gen_Mul(ir_node *node)
 {
-	ir_node  *block   = be_transform_node(get_nodes_block(node));
+	ir_node  *block   = be_transform_nodes_block(node);
 	ir_node  *op1     = get_Mul_left(node);
 	ir_node  *new_op1 = be_transform_node(op1);
 	ir_node  *op2     = get_Mul_right(node);
@@ -753,7 +752,7 @@ static ir_node *gen_Mul(ir_node *node)
 
 static ir_node *gen_arm_UMulL_t(ir_node *node)
 {
-	ir_node  *block     = be_transform_node(get_nodes_block(node));
+	ir_node  *block     = be_transform_nodes_block(node);
 	ir_node  *left      = get_irn_n(node, n_arm_UMulL_t_left);
 	ir_node  *new_left  = be_transform_node(left);
 	ir_node  *right     = get_irn_n(node, n_arm_UMulL_t_right);
@@ -778,7 +777,7 @@ static ir_node *gen_Proj_arm_UMulL_t(ir_node *node)
 
 static ir_node *gen_Div(ir_node *node)
 {
-	ir_node  *block   = be_transform_node(get_nodes_block(node));
+	ir_node  *block   = be_transform_nodes_block(node);
 	ir_node  *op1     = get_Div_left(node);
 	ir_node  *new_op1 = be_transform_node(op1);
 	ir_node  *op2     = get_Div_right(node);
@@ -863,8 +862,7 @@ static ir_node *gen_arm_OrPl_t(ir_node *node)
 	ir_node *new_flags    = be_transform_node(flags);
 
 	dbg_info *dbgi      = get_irn_dbg_info(node);
-	ir_node  *block     = get_nodes_block(node);
-	ir_node  *new_block = be_transform_node(block);
+	ir_node  *new_block = be_transform_nodes_block(node);
 	ir_node  *res       = new_bd_arm_OrPl(dbgi, new_block, new_left, new_right,
 	                                      new_falseval, new_flags);
 	return res;
@@ -888,7 +886,7 @@ static ir_node *gen_Sub(ir_node *node)
 	ir_node *left  = get_Sub_left(node);
 	ir_node *right = get_Sub_right(node);
 	if (mode_is_float(mode)) {
-		ir_node  *block     = be_transform_node(get_nodes_block(node));
+		ir_node  *block     = be_transform_nodes_block(node);
 		ir_node  *new_left  = be_transform_node(left);
 		ir_node  *new_right = be_transform_node(right);
 		dbg_info *dbgi      = get_irn_dbg_info(node);
@@ -901,7 +899,7 @@ static ir_node *gen_Sub(ir_node *node)
 	} else {
 		if (is_Mul(right) && arm_cg_config.variant >= ARM_VARIANT_6T2) {
 			dbg_info *dbgi      = get_irn_dbg_info(node);
-			ir_node  *block     = be_transform_node(get_nodes_block(node));
+			ir_node  *block     = be_transform_nodes_block(node);
 			ir_node  *mul_left  = get_Mul_left(right);
 			ir_node  *mul_right = get_Mul_right(right);
 			ir_node  *new_left  = be_transform_node(mul_left);
@@ -981,8 +979,7 @@ static ir_node *gen_arm_SbC_t(ir_node *node)
 	ir_node *new_flags = be_transform_node(flags);
 
 	dbg_info *dbgi      = get_irn_dbg_info(node);
-	ir_node  *block     = get_nodes_block(node);
-	ir_node  *new_block = be_transform_node(block);
+	ir_node  *new_block = be_transform_nodes_block(node);
 	ir_node  *res       = new_bd_arm_SbC_reg(dbgi, new_block, new_left,
 	                                         new_right, new_flags);
 	return res;
@@ -1012,7 +1009,7 @@ static bool can_use_shift_constant(unsigned int val,
 static ir_node *make_shift(ir_node *node, match_flags_t flags,
 		arm_shift_modifier_t shift_modifier)
 {
-	ir_node  *block = be_transform_node(get_nodes_block(node));
+	ir_node  *block = be_transform_nodes_block(node);
 	ir_node  *op1   = get_binop_left(node);
 	ir_node  *op2   = get_binop_right(node);
 	dbg_info *dbgi  = get_irn_dbg_info(node);
@@ -1063,7 +1060,7 @@ static ir_node *gen_Shrs(ir_node *node)
 
 static ir_node *gen_Not(ir_node *node)
 {
-	ir_node  *block  = be_transform_node(get_nodes_block(node));
+	ir_node  *block  = be_transform_nodes_block(node);
 	ir_node  *op     = get_Not_op(node);
 	ir_node  *new_op = be_transform_node(op);
 	dbg_info *dbgi   = get_irn_dbg_info(node);
@@ -1106,7 +1103,7 @@ static ir_node *gen_Not(ir_node *node)
 
 static ir_node *gen_Minus(ir_node *node)
 {
-	ir_node  *block  = be_transform_node(get_nodes_block(node));
+	ir_node  *block  = be_transform_nodes_block(node);
 	ir_node  *op     = get_Minus_op(node);
 	ir_node  *new_op = be_transform_node(op);
 	dbg_info *dbgi   = get_irn_dbg_info(node);
@@ -1125,7 +1122,7 @@ static ir_node *gen_Minus(ir_node *node)
 
 static ir_node *gen_Load(ir_node *node)
 {
-	ir_node  *block   = be_transform_node(get_nodes_block(node));
+	ir_node  *block   = be_transform_nodes_block(node);
 	ir_node  *ptr     = get_Load_ptr(node);
 	ir_node  *new_ptr = be_transform_node(ptr);
 	ir_node  *mem     = get_Load_mem(node);
@@ -1155,7 +1152,7 @@ static ir_node *gen_Load(ir_node *node)
 
 static ir_node *gen_Store(ir_node *node)
 {
-	ir_node  *block   = be_transform_node(get_nodes_block(node));
+	ir_node  *block   = be_transform_nodes_block(node);
 	ir_node  *ptr     = get_Store_ptr(node);
 	ir_node  *new_ptr = be_transform_node(ptr);
 	ir_node  *mem     = get_Store_mem(node);
@@ -1186,8 +1183,7 @@ static ir_node *gen_Store(ir_node *node)
 
 static ir_node *gen_Jmp(ir_node *node)
 {
-	ir_node  *block     = get_nodes_block(node);
-	ir_node  *new_block = be_transform_node(block);
+	ir_node  *new_block = be_transform_nodes_block(node);
 	dbg_info *dbgi      = get_irn_dbg_info(node);
 	return new_bd_arm_Jmp(dbgi, new_block);
 }
@@ -1195,7 +1191,7 @@ static ir_node *gen_Jmp(ir_node *node)
 static ir_node *gen_Switch(ir_node *node)
 {
 	ir_graph              *irg      = get_irn_irg(node);
-	ir_node               *block    = be_transform_node(get_nodes_block(node));
+	ir_node               *block    = be_transform_nodes_block(node);
 	ir_node               *selector = get_Switch_selector(node);
 	dbg_info              *dbgi     = get_irn_dbg_info(node);
 	ir_node               *new_op   = be_transform_node(selector);
@@ -1214,7 +1210,7 @@ static ir_node *gen_Switch(ir_node *node)
 
 static ir_node *gen_Cmp(ir_node *node)
 {
-	ir_node  *block    = be_transform_node(get_nodes_block(node));
+	ir_node  *block    = be_transform_nodes_block(node);
 	ir_node  *op1      = get_Cmp_left(node);
 	ir_node  *op2      = get_Cmp_right(node);
 	ir_mode  *cmp_mode = get_irn_mode(op1);
@@ -1241,7 +1237,7 @@ static ir_node *gen_Cmp(ir_node *node)
 
 static ir_node *gen_Cond(ir_node *node)
 {
-	ir_node    *const block     = be_transform_node(get_nodes_block(node));
+	ir_node    *const block     = be_transform_nodes_block(node);
 	dbg_info   *const dbgi      = get_irn_dbg_info(node);
 	ir_node    *const selector  = get_Cond_selector(node);
 	ir_node    *const flag_node = be_transform_node(selector);
@@ -1259,7 +1255,7 @@ static ir_tarval *fpa_imm[FPA_IMM_MAX + 1][fpa_max];
 
 static ir_node *gen_Const(ir_node *node)
 {
-	ir_node  *block = be_transform_node(get_nodes_block(node));
+	ir_node  *block = be_transform_nodes_block(node);
 	ir_mode  *mode  = get_irn_mode(node);
 	dbg_info *dbg   = get_irn_dbg_info(node);
 
@@ -1276,7 +1272,7 @@ static ir_node *gen_Const(ir_node *node)
 
 static ir_node *gen_Address(ir_node *node)
 {
-	ir_node   *block  = be_transform_node(get_nodes_block(node));
+	ir_node   *block  = be_transform_nodes_block(node);
 	ir_entity *entity = get_Address_entity(node);
 	dbg_info  *dbgi   = get_irn_dbg_info(node);
 	if (is_tls_entity(entity))
@@ -1364,7 +1360,7 @@ static void double_to_ints(dbg_info *dbgi, ir_node *block, ir_node *node,
 
 static ir_node *gen_CopyB(ir_node *node)
 {
-	ir_node  *block    = be_transform_node(get_nodes_block(node));
+	ir_node  *block    = be_transform_nodes_block(node);
 	ir_node  *src      = get_CopyB_src(node);
 	ir_node  *new_src  = be_transform_node(src);
 	ir_node  *dst      = get_CopyB_dst(node);
@@ -1388,7 +1384,7 @@ static ir_node *gen_CopyB(ir_node *node)
  */
 static ir_node *gen_clz(ir_node *node)
 {
-	ir_node  *block  = be_transform_node(get_nodes_block(node));
+	ir_node  *block  = be_transform_nodes_block(node);
 	dbg_info *dbg    = get_irn_dbg_info(node);
 	ir_node  *op     = get_irn_n(node, 1);
 	ir_node  *new_op = be_transform_node(op);
@@ -1532,8 +1528,7 @@ static ir_node *gen_Proj_Start(ir_node *node)
 static ir_node *gen_Proj_Proj_Start(ir_node *node)
 {
 	unsigned   pn          = get_Proj_num(node);
-	ir_node   *block       = get_nodes_block(node);
-	ir_node   *new_block   = be_transform_node(block);
+	ir_node   *new_block   = be_transform_nodes_block(node);
 	ir_graph  *irg         = get_irn_irg(new_block);
 	ir_node   *args        = get_Proj_pred(node);
 	ir_node   *start       = get_Proj_pred(args);
@@ -1677,8 +1672,7 @@ static ir_node *gen_Proj_Proj(ir_node *node)
 
 static ir_node *gen_Unknown(ir_node *node)
 {
-	ir_node  *block     = get_nodes_block(node);
-	ir_node  *new_block = be_transform_node(block);
+	ir_node  *new_block = be_transform_nodes_block(node);
 	dbg_info *dbgi      = get_irn_dbg_info(node);
 
 	/* just produce a 0 */
@@ -1760,8 +1754,7 @@ static ir_node *gen_Start(ir_node *node)
 	ir_graph       *irg           = get_irn_irg(node);
 	ir_entity      *entity        = get_irg_entity(irg);
 	ir_type        *function_type = get_entity_type(entity);
-	ir_node        *block         = get_nodes_block(node);
-	ir_node        *new_block     = be_transform_node(block);
+	ir_node        *new_block     = be_transform_nodes_block(node);
 	dbg_info       *dbgi          = get_irn_dbg_info(node);
 	struct obstack *obst          = be_get_be_obst(irg);
 
@@ -1830,8 +1823,7 @@ static ir_node *get_stack_pointer_for(ir_node *node)
  */
 static ir_node *gen_Return(ir_node *node)
 {
-	ir_node        *block          = get_nodes_block(node);
-	ir_node        *new_block      = be_transform_node(block);
+	ir_node        *new_block      = be_transform_nodes_block(node);
 	dbg_info       *dbgi           = get_irn_dbg_info(node);
 	ir_node        *mem            = get_Return_mem(node);
 	ir_node        *new_mem        = be_transform_node(mem);
@@ -1891,8 +1883,7 @@ static ir_node *gen_Call(ir_node *node)
 {
 	ir_graph             *irg          = get_irn_irg(node);
 	ir_node              *callee       = get_Call_ptr(node);
-	ir_node              *block        = get_nodes_block(node);
-	ir_node              *new_block    = be_transform_node(block);
+	ir_node              *new_block    = be_transform_nodes_block(node);
 	ir_node              *mem          = get_Call_mem(node);
 	ir_node              *new_mem      = be_transform_node(mem);
 	dbg_info             *dbgi         = get_irn_dbg_info(node);
@@ -2052,8 +2043,7 @@ static ir_node *gen_Call(ir_node *node)
 static ir_node *gen_Member(ir_node *node)
 {
 	dbg_info  *dbgi      = get_irn_dbg_info(node);
-	ir_node   *block     = get_nodes_block(node);
-	ir_node   *new_block = be_transform_node(block);
+	ir_node   *new_block = be_transform_nodes_block(node);
 	ir_node   *ptr       = get_Member_ptr(node);
 	ir_node   *new_ptr   = be_transform_node(ptr);
 	ir_entity *entity    = get_Member_entity(node);
