@@ -116,20 +116,18 @@ static ir_node *transform_block(ir_node *node)
 
 static ir_node *transform_end(ir_node *node)
 {
-	/* end has to be duplicated manually because we need a dynamic in array */
+	/* Do not transform predecessors yet to keep the pre-transform
+	 * phase from visiting all the graph. */
 	ir_graph *irg     = get_irn_irg(node);
 	dbg_info *dbgi    = get_irn_dbg_info(node);
 	ir_node  *block   = be_transform_node(get_nodes_block(node));
-	ir_node  *new_end = new_ir_node(dbgi, irg, block, op_End, mode_X, -1, NULL);
+	int       arity   = get_irn_arity(node);
+	ir_node **ins     = get_irn_in(node) + 1;
+	ir_node  *new_end = new_ir_node(dbgi, irg, block, op_End, mode_X, arity, ins);
 	copy_node_attr(irg, node, new_end);
 
 	set_irg_end(irg, new_end);
 
-	/* do not transform predecessors yet to keep the pre-transform
-	 * phase from visiting all the graph */
-	foreach_irn_in(node, i, in) {
-		add_End_keepalive(new_end, in);
-	}
 	be_enqueue_preds(node);
 
 	return new_end;
