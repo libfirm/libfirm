@@ -649,7 +649,7 @@ static ir_node *gen_Add(ir_node *node)
 			other     = left;
 create_mla:;
 			dbg_info *dbgi      = get_irn_dbg_info(node);
-			ir_node  *block     = get_nodes_block(node);
+			ir_node  *block     = be_transform_nodes_block(node);
 			ir_node  *new_left  = be_transform_node(mul_left);
 			ir_node  *new_right = be_transform_node(mul_right);
 			ir_node  *new_add   = be_transform_node(other);
