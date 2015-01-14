@@ -5,7 +5,8 @@
 import sys
 import argparse
 from datetime import datetime
-from jinja2 import Environment, Template, BaseLoader
+from jinja2 import Environment, Template
+import jinjautil
 from spec_util import is_dynamic_pinned, isAbstract, setdefault, load_spec, Attribute
 from filters import arguments, filtjoin, has, hasnot
 
@@ -232,30 +233,7 @@ def parse_tagfile(filename):
 	except:
 		tags = None
 
-# simple FileSystemLoader variant. Compared to the default loader in jinja
-# it does not perform searchpath magic and does not reject paths containig ".."
-# for security.
-# Note that we want to use a loader instead of simply env.from_string because
-# we want to see the filename in error messages from jinja
-class SimpleLoader(BaseLoader):
-	def __init__(self):
-		super(SimpleLoader, self).__init__()
-		self.includedirs = [""]
-	def get_source(self, environment, name):
-		for dir in self.includedirs:
-			try:
-				path = name if dir == "" else "%s/%s" % (dir, name)
-				contents = open(path).read()
-			except:
-				continue
-			def uptodate():
-				return False
-			return contents, name, uptodate
-		raise Exception("Could not open '%s'" % name)
-	def list_template(self):
-		return []
-
-loader = SimpleLoader()
+loader = jinjautil.SimpleLoader()
 env = Environment(loader=loader, keep_trailing_newline=True)
 env.filters['a_an']               = a_an
 env.filters['args']               = args
