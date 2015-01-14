@@ -6,6 +6,7 @@ import sys
 import argparse
 from datetime import datetime
 from jinja2 import Environment, Template
+from jinjautil import export, export_filter
 import jinjautil
 from spec_util import is_dynamic_pinned, isAbstract, setdefault, load_spec, Attribute
 from filters import arguments, filtjoin, has, hasnot
@@ -233,39 +234,13 @@ def parse_tagfile(filename):
 	except:
 		tags = None
 
-loader = jinjautil.SimpleLoader()
-env = Environment(loader=loader, keep_trailing_newline=True)
-env.filters['a_an']               = a_an
-env.filters['args']               = args
-env.filters['arguments']          = arguments
-env.filters['arity_and_ins']      = arity_and_ins
-env.filters['arity']              = arity
-env.filters['attr_size']          = attr_size
-env.filters['blockargument']      = blockargument
-env.filters['block']              = block
-env.filters['blockparameter']     = blockparameter
-env.filters['blockparameterhelp'] = blockparameterhelp
-env.filters['curblock']           = curblock
-env.filters['escape_keywords']    = escape_keywords
-env.filters['flags']              = flags
-env.filters['filtjoin']           = filtjoin
-env.filters['has']                = has
-env.filters['hasnot']             = hasnot
-env.filters['insdecl']            = insdecl
-env.filters['blockassign']        = blockassign
-env.filters['irgassign']          = irgassign
-env.filters['nodearguments']      = nodearguments
-env.filters['nodeparameters']     = nodeparameters
-env.filters['nodeparametershelp'] = nodeparametershelp
-env.filters['opindex']            = opindex
-env.filters['parameterlist']      = parameterlist
-env.filters['parameters']         = parameters
-env.filters['pinned']             = pinned
-env.filters['simplify_type']      = simplify_type
-env.filters['stringformat']       = stringformat
-env.filters['docutils']           = docutils
-env.filters['doxylink']           = doxylink
-env.filters['doxygrouplink']      = doxygrouplink
+for f in [a_an, args, arity_and_ins, arity, attr_size, blockargument, block,
+		blockparameter, blockparameterhelp, curblock, escape_keywords, flags,
+		insdecl, blockassign, irgassign, nodearguments, nodeparameters,
+		nodeparametershelp, opindex, parameterlist, parameters, pinned,
+		simplify_type, stringformat, docutils, doxylink, doxygrouplink ]:
+	export_filter(f)
+export(is_dynamic_pinned)
 
 def preprocess_node(node):
 	setdefault(node, "attrs_name", node.name.lower())
@@ -350,14 +325,14 @@ def main(argv):
 	spec = load_spec(config.specfile)
 	(nodes, abstract_nodes) = prepare_nodes(spec.nodes)
 
+	loader = jinjautil.SimpleLoader()
+	env = Environment(loader=loader, keep_trailing_newline=True)
+	env.globals.update(jinjautil.exports)
+	env.filters.update(jinjautil.filters)
+
 	env.globals['nodes']          = nodes
 	env.globals['abstract_nodes'] = abstract_nodes
-	env.globals['spec']    = spec
-	env.globals['len']     = len
-	env.globals['hasattr'] = hasattr
-	env.globals['is_dynamic_pinned'] = is_dynamic_pinned
-	env.globals['time'] = datetime.now().replace(microsecond=0).isoformat(' ')
-	env.globals['warning'] = "/* Warning: automatically generated file */"
+	env.globals['spec']           = spec
 	loader.includedirs += config.includedirs
 	template = env.get_template(config.templatefile)
 	result = template.render()

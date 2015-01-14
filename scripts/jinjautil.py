@@ -24,3 +24,17 @@ class SimpleLoader(BaseLoader):
 		raise Exception("Could not open '%s'" % name)
 	def list_template(self):
 		return []
+
+exports = dict()
+def export(thing, name=None):
+	if name is None:
+		name = thing.__name__
+	assert name not in exports
+	exports[name] = thing
+
+filters = dict()
+def export_filter(func, name=None):
+	if name is None:
+		name = func.__name__
+	assert name not in filters
+	filters[name] = func

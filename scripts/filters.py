@@ -1,5 +1,7 @@
 # This file is part of libFirm.
 # Copyright (C) 2012 Karlsruhe Institute of Technology.
+from jinjautil import export_filter, export
+from datetime import datetime
 import re
 
 def filtjoin(string, joinstring):
@@ -21,3 +23,11 @@ def hasnot(plist, flag):
 
 def has(plist, flag):
 	return list(filter(lambda x: hasattr(x, flag) and getattr(x, flag), plist))
+
+for f in [filtjoin, arguments, hasnot, has]:
+	export_filter(f)
+
+export(len)
+export(hasattr)
+export("/* Warning: Automatically generated file */", "warning")
+export(datetime.now().replace(microsecond=0).isoformat(' '), "time")
