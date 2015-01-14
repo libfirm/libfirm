@@ -136,7 +136,7 @@ def specgen(out, template=None):
 	generator = "$srcdir/scripts/gen_ir.py"
 	specfile = "$srcdir/scripts/ir_spec.py"
 	deps = [template, specfile, generator, "$srcdir/scripts/jinjautil.py",
-			"$srcdir/scripts/spec_util.py", "$srcdir/scripts/filters.py"]
+			"$srcdir/scripts/irops.py", "$srcdir/scripts/filters.py"]
 	return build("GEN_IR", out, deps, specfile=specfile,
 	             template=template, generatortool=generator)
 

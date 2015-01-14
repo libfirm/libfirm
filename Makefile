@@ -114,7 +114,7 @@ IR_SPEC_GENERATED_INCLUDES := \
 	$(gendir)/ir/ir/gen_irdump.c.inl  \
 	$(gendir)/ir/ir/gen_irnode.h
 IR_SPEC_GENERATOR := $(srcdir)/scripts/gen_ir.py
-IR_SPEC_GENERATOR_DEPS := $(IR_SPEC_GENERATOR) $(srcdir)/scripts/jinjautil.py $(srcdir)/scripts/spec_util.py $(srcdir)/scripts/filters.py
+IR_SPEC_GENERATOR_DEPS := $(IR_SPEC_GENERATOR) $(srcdir)/scripts/jinjautil.py $(srcdir)/scripts/irops.py $(srcdir)/scripts/filters.py
 IR_SPEC := $(srcdir)/scripts/ir_spec.py
 libfirm_BUILDDIRS += $(gendir)/include/libfirm
 

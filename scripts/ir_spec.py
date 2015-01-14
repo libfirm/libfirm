@@ -4,7 +4,7 @@
 # Firm node specifications
 # The comments are in (standard python) restructured text format and are used
 # to generate documentation.
-from spec_util import abstract, op, Attribute
+from irops import abstract, op, Attribute
 
 name = "ir"
 
