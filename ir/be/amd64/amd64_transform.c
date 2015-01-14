@@ -524,12 +524,11 @@ static ir_node *gen_Address(ir_node *node)
 
 	amd64_addr_t addr;
 	memset(&addr, 0, sizeof(addr));
-	addr.base_input  = NO_INPUT;
+	addr.base_input  = RIP_INPUT;
 	addr.index_input = NO_INPUT;
 	addr.mem_input   = NO_INPUT;
 
 	if (mode == REFERENCE_IP_RELATIVE) {
-		addr.base_input       = RIP_INPUT;
 		addr.immediate.entity = entity;
 		return new_bd_amd64_lea(dbgi, block, 0, NULL, INSN_MODE_64, addr);
 	} else {

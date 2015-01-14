@@ -1323,6 +1323,9 @@ static void emit_global(be_gas_decl_env_t *env, const ir_entity *entity)
 	/* Block labels are already emitted in the code. */
 	if (kind == IR_ENTITY_LABEL)
 		return;
+	/* GOT entries are created automatically */
+	if (kind == IR_ENTITY_GOTENTRY)
+		return;
 
 	/* we already emitted all methods with graphs in other functions like
 	 * be_gas_emit_function_prolog(). All others don't need to be emitted. */
