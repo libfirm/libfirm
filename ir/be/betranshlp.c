@@ -240,11 +240,6 @@ static void fix_loops(ir_node *node)
 
 		fix_loops(in);
 	}
-	/* fix proj block */
-	if (is_Proj(node)) {
-		set_nodes_block(node, get_nodes_block(get_Proj_pred(node)));
-		changed = true;
-	}
 
 	if (changed) {
 		identify_remember(node);
