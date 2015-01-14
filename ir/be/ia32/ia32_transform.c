@@ -1481,13 +1481,12 @@ typedef ir_node* (*new_shiftd_func)(dbg_info *dbgi, ir_node *block,
  * op3 - shift count
  * Only op3 can be an immediate.
  */
-static ir_node *gen_64bit_shifts(dbg_info *dbgi, ir_node *block,
-                                 ir_node *high, ir_node *low, ir_node *count,
-                                 new_shiftd_func func)
+static ir_node *gen_64bit_shifts(ir_node *const node, ir_node *const high, ir_node *const low, ir_node *count, new_shiftd_func const func)
 {
-	ir_node  *new_block = be_transform_node(block);
-	ir_node  *new_high  = be_transform_node(high);
-	ir_node  *new_low   = be_transform_node(low);
+	dbg_info *const dbgi     = get_irn_dbg_info(node);
+	ir_node  *const block    = be_transform_nodes_block(node);
+	ir_node  *const new_high = be_transform_node(high);
+	ir_node  *const new_low  = be_transform_node(low);
 
 	/* the shift amount can be any mode that is bigger than 5 bits, since all
 	 * other bits are ignored anyway */
@@ -1499,7 +1498,7 @@ static ir_node *gen_64bit_shifts(dbg_info *dbgi, ir_node *block,
 	}
 	ir_node *new_count = create_immediate_or_transform(count, 'I');
 
-	ir_node *new_node = func(dbgi, new_block, new_high, new_low, new_count);
+	ir_node *const new_node = func(dbgi, block, new_high, new_low, new_count);
 	return new_node;
 }
 
@@ -1536,40 +1535,26 @@ static ir_node *match_64bit_shift(ir_node *node)
 		ir_node *shr_right = get_Shr_right(op2);
 		ir_node *shr_left  = get_Shr_left(op2);
 		/* constant ShlD operation */
-		if (is_complementary_shifts(shl_right, shr_right)) {
-			dbg_info *dbgi  = get_irn_dbg_info(node);
-			ir_node  *block = get_nodes_block(node);
-			return gen_64bit_shifts(dbgi, block, shl_left, shr_left, shl_right,
-			                        new_bd_ia32_ShlD);
-		}
+		if (is_complementary_shifts(shl_right, shr_right))
+			return gen_64bit_shifts(node, shl_left, shr_left, shl_right, new_bd_ia32_ShlD);
 		/* constant ShrD operation */
-		if (is_complementary_shifts(shr_right, shl_right)) {
-			dbg_info *dbgi  = get_irn_dbg_info(node);
-			ir_node  *block = get_nodes_block(node);
-			return gen_64bit_shifts(dbgi, block, shr_left, shl_left, shr_right,
-			                        new_bd_ia32_ShrD);
-		}
+		if (is_complementary_shifts(shr_right, shl_right))
+			return gen_64bit_shifts(node, shr_left, shl_left, shr_right, new_bd_ia32_ShrD);
 		/* lower_dw produces the following for ShlD:
 		 * Or(Shr(Shr(high,1),Not(c)),Shl(low,c)) */
 		if (is_Shr(shr_left) && is_Not(shr_right)
 			&& is_Const_1(get_Shr_right(shr_left))
 		    && get_Not_op(shr_right) == shl_right) {
-			dbg_info *dbgi  = get_irn_dbg_info(node);
-			ir_node  *block = get_nodes_block(node);
-			ir_node  *val_h = get_Shr_left(shr_left);
-			return gen_64bit_shifts(dbgi, block, shl_left, val_h, shl_right,
-			                        new_bd_ia32_ShlD);
+			ir_node *val_h = get_Shr_left(shr_left);
+			return gen_64bit_shifts(node, shl_left, val_h, shl_right, new_bd_ia32_ShlD);
 		}
 		/* lower_dw produces the following for ShrD:
 		 * Or(Shl(Shl(high,1),Not(c)), Shr(low,c)) */
 		if (is_Shl(shl_left) && is_Not(shl_right)
 		    && is_Const_1(get_Shl_right(shl_left))
 		    && get_Not_op(shl_right) == shr_right) {
-			dbg_info *dbgi  = get_irn_dbg_info(node);
-			ir_node  *block = get_nodes_block(node);
-			ir_node  *val_h = get_Shl_left(shl_left);
-		    return gen_64bit_shifts(dbgi, block, shr_left, val_h, shr_right,
-		                            new_bd_ia32_ShrD);
+			ir_node *val_h = get_Shl_left(shl_left);
+			return gen_64bit_shifts(node, shr_left, val_h, shr_right, new_bd_ia32_ShrD);
 		}
 	}
 
