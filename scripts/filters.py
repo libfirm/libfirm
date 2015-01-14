@@ -2,7 +2,7 @@
 # Copyright (C) 2012 Karlsruhe Institute of Technology.
 import re
 
-def format_filtjoin(string, joinstring):
+def filtjoin(string, joinstring):
 	args = re.split('\s*\n\s*', string)
 	if args[0] == '':
 		args = args[1:]
@@ -10,14 +10,14 @@ def format_filtjoin(string, joinstring):
 		args = args[:-1]
 	return joinstring.join(args)
 
-def format_arguments(string, voidwhenempty = False):
-	joined = format_filtjoin(string, ", ")
+def arguments(string, voidwhenempty = False):
+	joined = filtjoin(string, ", ")
 	if joined == "" and voidwhenempty:
 		return "void"
 	return joined
 
-def filter_hasnot(plist, flag):
+def hasnot(plist, flag):
 	return list(filter(lambda x: not hasattr(x, flag) or not getattr(x, flag), plist))
 
-def filter_has(plist, flag):
+def has(plist, flag):
 	return list(filter(lambda x: hasattr(x, flag) and getattr(x, flag), plist))

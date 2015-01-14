@@ -7,31 +7,31 @@ import argparse
 from datetime import datetime
 from jinja2 import Environment, Template, BaseLoader
 from spec_util import is_dynamic_pinned, isAbstract, setdefault, load_spec, Attribute
-from filters import format_arguments, format_filtjoin, filter_has, filter_hasnot
+from filters import arguments, filtjoin, has, hasnot
 
-def format_parameterlist(parameterlist):
+def parameterlist(parameterlist):
 	return "\n".join(parameterlist)
 
-def format_nodearguments(node):
+def nodearguments(node):
 	arguments = [arg.name for arg in node.arguments]
-	return format_parameterlist(arguments)
+	return parameterlist(arguments)
 
-def format_nodeparameters(node):
+def nodeparameters(node):
 	parameters = ["%s %s" % (arg.type, arg.name) for arg in node.arguments]
-	return format_parameterlist(parameters)
+	return parameterlist(parameters)
 
-def format_nodeparametershelp(node):
+def nodeparametershelp(node):
 	res = ""
 	for param in node.arguments:
 		res += " * @param %-9s %s\n" % (param.name, param.comment)
 	return res
 
-def format_a_an(text):
+def a_an(text):
 	if text[0] in "aAeEuUoOiI":
 		return "an " + text
 	return "a " + text
 
-def format_blockparameter(node):
+def blockparameter(node):
 	if not node.block:
 		return "ir_node *block"
 	elif node.usesGraph:
@@ -39,7 +39,7 @@ def format_blockparameter(node):
 	else:
 		return ""
 
-def format_blockparameterhelp(node):
+def blockparameterhelp(node):
 	if not node.block:
 		return " * @param block     The IR block the node belongs to.\n"
 	elif node.usesGraph:
@@ -47,7 +47,7 @@ def format_blockparameterhelp(node):
 	else:
 		return ""
 
-def format_blockargument(node):
+def blockargument(node):
 	if not node.block:
 		return "block"
 	elif node.usesGraph:
@@ -55,19 +55,19 @@ def format_blockargument(node):
 	else:
 		return ""
 
-def format_blockassign(node):
+def blockassign(node):
 	if node.block:
 		return "ir_node *block = %s;" % node.block
 	else:
 		return ""
 
-def format_irgassign(node):
+def irgassign(node):
 	if node.usesGraph:
 		return ""
 	else:
 		return "ir_graph *irg = get_irn_irg(block);\n"
 
-def format_curblock(node):
+def curblock(node):
 	if not node.block:
 		return "get_cur_block()"
 	elif node.usesGraph:
@@ -75,7 +75,7 @@ def format_curblock(node):
 	else:
 		return ""
 
-def format_insdecl(node):
+def insdecl(node):
 	arity = node.arity
 	if arity == "dynamic" or arity == "variable":
 		if len(node.ins) == 0:
@@ -98,7 +98,7 @@ def format_insdecl(node):
 			i += 1
 	return res
 
-def format_arity_and_ins(node):
+def arity_and_ins(node):
 	arity = node.arity
 	if arity == "dynamic" or arity == "variable":
 		if len(node.ins) == 0:
@@ -110,7 +110,7 @@ def format_arity_and_ins(node):
 	else:
 		return repr(arity) + ", in"
 
-def format_arity(node):
+def arity(node):
 	if hasattr(node, "arity_override"):
 		return node.arity_override
 	arity = node.arity
@@ -120,7 +120,7 @@ def format_arity(node):
 		return "oparity_variable"
 	return "oparity_any"
 
-def format_pinned(node):
+def pinned(node):
 	pinned = node.pinned
 	if pinned == "yes":
 		return "op_pin_state_pinned"
@@ -131,39 +131,39 @@ def format_pinned(node):
 	print("WARNING: Unknown pinned state %s in format pined" % pinned)
 	return ""
 
-def format_flags(node):
+def flags(node):
 	flags = list(map(lambda x : "irop_flag_" + x, node.flags))
 	if not flags:
 		flags = [ "irop_flag_none" ]
 	return " | ".join(flags)
 
-def format_stringformat(string, *args):
+def stringformat(string, *args):
 	return string % args
 
-def format_attr_size(node):
+def attr_size(node):
 	if not hasattr(node, "attr_struct"):
 		return "0"
 	return "sizeof(%s)" % node.attr_struct
 
-def format_opindex(node):
+def opindex(node):
 	if hasattr(node, "op_index"):
 		return node.op_index
 	return "-1"
 
 keywords = frozenset([ "true", "false" ])
-def format_escape_keywords(word):
+def escape_keywords(word):
 	if word in keywords:
 		return word + "_"
 	return word
 
-def format_parameters(string):
-	return format_arguments(string, voidwhenempty = True)
+def parameters(string):
+	return arguments(string, voidwhenempty = True)
 
-def format_args(arglist):
+def args(arglist):
 	argument_names = [ arg.name for arg in arglist ]
 	return "\n".join(argument_names)
 
-def format_block(node):
+def block(node):
 	if not node.block:
 		return "block"
 	elif node.usesGraph:
@@ -171,7 +171,7 @@ def format_block(node):
 	else:
 		return ""
 
-def format_simplify_type(string):
+def simplify_type(string):
 	"""Returns a simplified version of a C type for use in a function name.
 	Stars are replaced with _ref, spaces removed and the ir_ firm namespace
 	prefix stripped."""
@@ -180,7 +180,7 @@ def format_simplify_type(string):
 		res = res[3:]
 	return res
 
-def format_doxygrouplink(string, link=None):
+def doxygrouplink(string, link=None):
 	global tags
 	if link == None:
 		link = string
@@ -199,7 +199,7 @@ def format_doxygrouplink(string, link=None):
 tags = None
 linkbase = None
 
-def format_doxylink(string, link=None):
+def doxylink(string, link=None):
 	global tags
 	if link == None:
 		link = string
@@ -216,7 +216,7 @@ def format_doxylink(string, link=None):
 	global linkbase
 	return "<a href=\"%s%s#%s\">%s</a>" % (linkbase, anchorfile[0], anchor[0], string)
 
-def format_docutils(string):
+def docutils(string):
 	import docutils.writers.html4css1
 	import docutils.core
 	writer = docutils.writers.html4css1.Writer()
@@ -257,37 +257,37 @@ class SimpleLoader(BaseLoader):
 
 loader = SimpleLoader()
 env = Environment(loader=loader, keep_trailing_newline=True)
-env.filters['a_an']               = format_a_an
-env.filters['args']               = format_args
-env.filters['arguments']          = format_arguments
-env.filters['arity_and_ins']      = format_arity_and_ins
-env.filters['arity']              = format_arity
-env.filters['attr_size']          = format_attr_size
-env.filters['blockargument']      = format_blockargument
-env.filters['block']              = format_block
-env.filters['blockparameter']     = format_blockparameter
-env.filters['blockparameterhelp'] = format_blockparameterhelp
-env.filters['curblock']           = format_curblock
-env.filters['escape_keywords']    = format_escape_keywords
-env.filters['flags']              = format_flags
-env.filters['filtjoin']           = format_filtjoin
-env.filters['has']                = filter_has
-env.filters['hasnot']             = filter_hasnot
-env.filters['insdecl']            = format_insdecl
-env.filters['blockassign']        = format_blockassign
-env.filters['irgassign']          = format_irgassign
-env.filters['nodearguments']      = format_nodearguments
-env.filters['nodeparameters']     = format_nodeparameters
-env.filters['nodeparametershelp'] = format_nodeparametershelp
-env.filters['opindex']            = format_opindex
-env.filters['parameterlist']      = format_parameterlist
-env.filters['parameters']         = format_parameters
-env.filters['pinned']             = format_pinned
-env.filters['simplify_type']      = format_simplify_type
-env.filters['stringformat']       = format_stringformat
-env.filters['docutils']           = format_docutils
-env.filters['doxylink']           = format_doxylink
-env.filters['doxygrouplink']      = format_doxygrouplink
+env.filters['a_an']               = a_an
+env.filters['args']               = args
+env.filters['arguments']          = arguments
+env.filters['arity_and_ins']      = arity_and_ins
+env.filters['arity']              = arity
+env.filters['attr_size']          = attr_size
+env.filters['blockargument']      = blockargument
+env.filters['block']              = block
+env.filters['blockparameter']     = blockparameter
+env.filters['blockparameterhelp'] = blockparameterhelp
+env.filters['curblock']           = curblock
+env.filters['escape_keywords']    = escape_keywords
+env.filters['flags']              = flags
+env.filters['filtjoin']           = filtjoin
+env.filters['has']                = has
+env.filters['hasnot']             = hasnot
+env.filters['insdecl']            = insdecl
+env.filters['blockassign']        = blockassign
+env.filters['irgassign']          = irgassign
+env.filters['nodearguments']      = nodearguments
+env.filters['nodeparameters']     = nodeparameters
+env.filters['nodeparametershelp'] = nodeparametershelp
+env.filters['opindex']            = opindex
+env.filters['parameterlist']      = parameterlist
+env.filters['parameters']         = parameters
+env.filters['pinned']             = pinned
+env.filters['simplify_type']      = simplify_type
+env.filters['stringformat']       = stringformat
+env.filters['docutils']           = docutils
+env.filters['doxylink']           = doxylink
+env.filters['doxygrouplink']      = doxygrouplink
 
 def preprocess_node(node):
 	setdefault(node, "attrs_name", node.name.lower())
