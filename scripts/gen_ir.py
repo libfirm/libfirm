@@ -4,10 +4,9 @@
 # Copyright (C) 2012 Karlsruhe Institute of Technology.
 import sys
 import argparse
-from jinja2 import Environment, Template
-from irops import prepare_nodes, load_spec
+from jinja2 import Environment
 import filters
-import irops
+import imp
 import jinjautil
 
 def main(argv):
@@ -23,17 +22,14 @@ def main(argv):
 	                    help='jinja2 template file')
 	config = parser.parse_args()
 
-	spec = load_spec(config.specfile)
-	(nodes, abstract_nodes) = prepare_nodes(spec.nodes)
+	# Load specfile
+	imp.load_source('spec', config.specfile)
 
 	loader = jinjautil.SimpleLoader()
 	env = Environment(loader=loader, keep_trailing_newline=True)
 	env.globals.update(jinjautil.exports)
 	env.filters.update(jinjautil.filters)
 
-	env.globals['nodes']          = nodes
-	env.globals['abstract_nodes'] = abstract_nodes
-	env.globals['spec']           = spec
 	loader.includedirs += config.includedirs
 	template = env.get_template(config.templatefile)
 	result = template.render()

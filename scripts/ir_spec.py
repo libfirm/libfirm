@@ -4,7 +4,8 @@
 # Firm node specifications
 # The comments are in (standard python) restructured text format and are used
 # to generate documentation.
-from irops import abstract, op, Attribute
+from irops import abstract, op, Attribute, prepare_nodes
+from jinjautil import export
 
 name = "ir"
 
@@ -860,3 +861,8 @@ class Unknown(object):
 	users of the original unknown node!"""
 	pinned     = "yes"
 	flags      = [ "start_block", "constlike", "dump_noblock" ]
+
+(nodes, abstract_nodes) = prepare_nodes(globals())
+export(nodes, "nodes")
+export(abstract_nodes, "abstract_nodes")
+export(globals(), "spec")

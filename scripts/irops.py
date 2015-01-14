@@ -433,7 +433,18 @@ def _preprocess_node(node):
 	node.arguments = arguments
 	node.initattrs = initattrs
 
-def prepare_nodes(nodes):
+def prepare_nodes(namespace):
+	nodes = []
+	for x in namespace.values():
+		if not is_op(x):
+			continue
+		setnodedefaults(x)
+		verify_node(x)
+		nodes.append(x)
+	nodes.sort(key=lambda x: x.name)
+	if len(nodes) == 0:
+		print("Warning: No nodes found in spec file '%s'" % filename)
+
 	real_nodes = []
 	abstract_nodes = []
 	for node in nodes:
@@ -467,23 +478,6 @@ def verify_spec(spec):
 		sys.stderr.write("Warning: No nodes found in spec\n")
 	if not hasattr(spec, "name"):
 		sys.stderr.write("Warning: No name specified in node spec\n")
-
-def load_spec(filename):
-	module = imp.load_source('spec', filename)
-	nodes = []
-	for x in module.__dict__.values():
-		if not is_op(x):
-			continue
-		setnodedefaults(x)
-		verify_node(x)
-		nodes.append(x)
-	nodes.sort(key=lambda x: x.name)
-	module.nodes = nodes
-	if len(nodes) == 0:
-		print("Warning: No nodes found in spec file '%s'" % filename)
-	if not hasattr(module, "name"):
-		print("Warning: No name specified in file '%s'" % filename)
-	return module
 
 export(is_dynamic_pinned)
 export(is_abstract)
