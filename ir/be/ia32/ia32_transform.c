@@ -5808,11 +5808,6 @@ static void register_transformers(void)
 	/* first clear the generic function pointer for all ops */
 	be_start_transform_setup();
 
-	for (unsigned opc = iro_first; opc <= iro_last; ++opc) {
-		ir_op *op = ir_get_opcode(opc);
-		be_set_transform_proj_function(op, gen_Proj_default);
-	}
-
 	be_set_transform_function(op_Add,              gen_Add);
 	be_set_transform_function(op_Address,          gen_Address);
 	be_set_transform_function(op_Alloc,            gen_Alloc);
@@ -5863,6 +5858,7 @@ static void register_transformers(void)
 	be_set_transform_proj_function(op_ASM,              gen_Proj_ASM);
 	be_set_transform_proj_function(op_Builtin,          gen_Proj_Builtin);
 	be_set_transform_proj_function(op_Call,             gen_Proj_Call);
+	be_set_transform_proj_function(op_Cond,             gen_Proj_default);
 	be_set_transform_proj_function(op_Div,              gen_Proj_Div);
 	be_set_transform_proj_function(op_ia32_l_Adc,       gen_Proj_default);
 	be_set_transform_proj_function(op_ia32_l_Add,       gen_Proj_default);
@@ -5878,6 +5874,7 @@ static void register_transformers(void)
 	be_set_transform_proj_function(op_Proj,             gen_Proj_Proj);
 	be_set_transform_proj_function(op_Start,            gen_Proj_Start);
 	be_set_transform_proj_function(op_Store,            gen_Proj_Store);
+	be_set_transform_proj_function(op_Switch,           gen_Proj_default);
 
 	be_set_upper_bits_clean_function(op_Mux, ia32_mux_upper_bits_clean);
 }
