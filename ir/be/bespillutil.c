@@ -76,7 +76,6 @@ struct spill_info_t {
 };
 
 struct spill_env_t {
-	const arch_env_t *arch_env;
 	ir_graph         *irg;
 	ir_nodehashmap_t  spillmap;
 	spill_info_t     *spills;
@@ -116,7 +115,6 @@ spill_env_t *be_new_spill_env(ir_graph *irg)
 
 	spill_env_t *env = XMALLOCZ(spill_env_t);
 	env->irg         = irg;
-	env->arch_env    = arch_env;
 	env->spill_cost  = arch_env->spill_cost;
 	env->reload_cost = arch_env->reload_cost;
 	ir_nodehashmap_init(&env->spillmap);
@@ -272,7 +270,7 @@ static void spill_irn(spill_env_t *env, spill_info_t *spillinfo)
 	for (spill_t *spill = spillinfo->spills; spill != NULL;
 	     spill = spill->next) {
 		ir_node *const after = be_move_after_schedule_first(spill->after);
-		spill->spill = arch_env_new_spill(env->arch_env, to_spill, after);
+		spill->spill = isa_if->new_spill(to_spill, after);
 		DB((dbg, LEVEL_1, "\t%+F after %+F\n", spill->spill, after));
 		env->spill_count++;
 	}
@@ -440,7 +438,8 @@ static ir_node *do_remat(spill_env_t *env, ir_node *spilled, ir_node *reloader)
 	/* create a copy of the node */
 	ir_node *const bl  = get_nodes_block(reloader);
 	ir_node *const res = new_similar_node(spilled, bl, ins);
-	arch_env_mark_remat(env->arch_env, res);
+	if (isa_if->mark_remat)
+		isa_if->mark_remat(res);
 
 	DBG((dbg, LEVEL_1, "Insert remat %+F of %+F before reloader %+F\n", res,
 	     spilled, reloader));
@@ -671,8 +670,7 @@ void be_insert_spills_reloads(spill_env_t *env)
 				/* create a reload, use the first spill for now SSA
 				 * reconstruction for memory comes below */
 				assert(si->spills != NULL);
-				copy = arch_env_new_reload(env->arch_env, si->to_spill,
-				                           si->spills->spill, rld->reloader);
+				copy = isa_if->new_reload(si->to_spill, si->spills->spill, rld->reloader);
 				env->reload_count++;
 			}
 

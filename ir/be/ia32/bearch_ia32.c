@@ -1182,8 +1182,6 @@ static void ia32_prepare_graph(ir_graph *irg)
 	be_dump(DUMP_BE, irg, "place");
 }
 
-extern const arch_isa_if_t ia32_isa_if;
-
 /**
  * Check if Mux(sel, mux_true, mux_false) would represent a Max or Min operation
  */
@@ -1448,7 +1446,6 @@ static void ia32_finish(void)
  */
 static ia32_isa_t ia32_isa_template = {
 	.base = {
-		.impl               = &ia32_isa_if,
 		.n_registers        = N_IA32_REGISTERS,
 		.registers          = ia32_registers,
 		.n_register_classes = N_IA32_CLASSES,
@@ -1590,7 +1587,7 @@ static const lc_opt_table_entry_t ia32_options[] = {
 	LC_OPT_LAST
 };
 
-const arch_isa_if_t ia32_isa_if = {
+static arch_isa_if_t const ia32_isa_if = {
 	.init                 = ia32_init,
 	.finish               = ia32_finish,
 	.get_params           = ia32_get_libfirm_params,

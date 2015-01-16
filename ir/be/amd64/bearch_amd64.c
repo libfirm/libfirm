@@ -639,10 +639,8 @@ static void amd64_finish_graph(ir_graph *irg)
 	amd64_emit_function(irg);
 }
 
-extern const arch_isa_if_t amd64_isa_if;
 static amd64_isa_t amd64_isa_template = {
 	.base = {
-		.impl               = &amd64_isa_if,
 		.n_registers        = N_AMD64_REGISTERS,
 		.registers          = amd64_registers,
 		.n_register_classes = N_AMD64_CLASSES,
@@ -794,7 +792,7 @@ static void amd64_init(void)
 	x86_set_be_asm_constraint_support(&amd64_asm_constraints);
 }
 
-const arch_isa_if_t amd64_isa_if = {
+static arch_isa_if_t const amd64_isa_if = {
 	.init                 = amd64_init,
 	.finish               = amd64_finish,
 	.get_params           = amd64_get_backend_params,

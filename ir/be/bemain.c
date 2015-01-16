@@ -70,7 +70,7 @@ be_options_t be_options = {
 };
 
 /* back end instruction set architecture to use */
-static const arch_isa_if_t *isa_if = NULL;
+arch_isa_if_t const *isa_if = NULL;
 
 /* possible dumping options */
 static const lc_opt_enum_mask_items_t dump_items[] = {
@@ -346,6 +346,7 @@ static be_main_env_t *be_init_env(be_main_env_t *const env,
  */
 static void be_done_env(be_main_env_t *env)
 {
+	isa_if->end_codegeneration(env->arch_env);
 	pmap_destroy(env->ent_trampoline_map);
 	pmap_destroy(env->ent_pic_symbol_map);
 	free_type(env->pic_trampolines_type);
@@ -471,7 +472,6 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 	be_main_env_t env;
 	be_init_env(&env, cup_name);
 	be_info_init();
-	arch_env_t *arch_env = env.arch_env;
 
 	be_gas_begin_compilation_unit(&env);
 
@@ -484,8 +484,8 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		if (get_entity_linkage(entity) & IR_LINKAGE_NO_CODEGEN)
 			continue;
 		initialize_birg(&birgs[num_birgs++], irg, &env);
-		if (arch_env->impl->handle_intrinsics)
-			arch_env->impl->handle_intrinsics(irg);
+		if (isa_if->handle_intrinsics)
+			isa_if->handle_intrinsics(irg);
 		be_dump(DUMP_INITIAL, irg, "prepared");
 	}
 
@@ -552,7 +552,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		}
 
 		/* prepare and perform codeselection */
-		arch_env->impl->prepare_graph(irg);
+		isa_if->prepare_graph(irg);
 
 		/* schedule the irg */
 		be_timer_push(T_SCHED);
@@ -572,7 +572,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 
 		/* stuff needs to be done after scheduling but before register allocation */
 		be_timer_push(T_RA_PREPARATION);
-		arch_env->impl->before_ra(irg);
+		isa_if->before_ra(irg);
 		be_timer_pop(T_RA_PREPARATION);
 
 		if (stat_ev_enabled) {
@@ -606,7 +606,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 
 		/* emit assembler code */
 		be_timer_push(T_EMIT);
-		arch_env->impl->emit(irg);
+		isa_if->emit(irg);
 		be_timer_pop(T_EMIT);
 
 		if (stat_ev_enabled) {
@@ -648,8 +648,6 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 
 	be_gas_end_compilation_unit(&env);
 	be_emit_exit();
-
-	arch_env_end_codegeneration(arch_env);
 
 	be_done_env(&env);
 

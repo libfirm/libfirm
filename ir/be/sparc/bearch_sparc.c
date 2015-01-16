@@ -38,10 +38,8 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
-extern const arch_isa_if_t sparc_isa_if;
 static sparc_isa_t sparc_isa_template = {
 	.base = {
-		.impl        = &sparc_isa_if,
 		.n_registers = N_SPARC_REGISTERS,
 		.registers   = sparc_registers,
 		.n_register_classes = N_SPARC_CLASSES,
@@ -556,7 +554,7 @@ static ir_node *sparc_new_reload(ir_node *value, ir_node *spill,
 	return res;
 }
 
-const arch_isa_if_t sparc_isa_if = {
+static arch_isa_if_t const sparc_isa_if = {
 	.init                 = sparc_init,
 	.finish               = sparc_finish,
 	.get_params           = sparc_get_backend_params,

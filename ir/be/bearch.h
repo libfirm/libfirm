@@ -390,18 +390,10 @@ struct arch_isa_if_t {
 	void (*emit)(ir_graph *irg);
 };
 
-#define arch_env_end_codegeneration(env)               ((env)->impl->end_codegeneration(env))
-#define arch_env_mark_remat(env,node) \
-	do { if ((env)->impl->mark_remat != NULL) (env)->impl->mark_remat((node)); } while(0)
-
-#define arch_env_new_spill(env,value,after)            ((env)->impl->new_spill(value, after))
-#define arch_env_new_reload(env,value,spilled,before)  ((env)->impl->new_reload(value, spilled, before))
-
 /**
  * ISA base class.
  */
 struct arch_env_t {
-	const arch_isa_if_t   *impl;
 	unsigned               n_registers;     /**< number of registers */
 	const arch_register_t *registers;       /**< register array */
 	/** number of register classes*/

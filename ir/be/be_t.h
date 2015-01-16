@@ -21,6 +21,8 @@
 #include "timing.h"
 #include "irdump.h"
 
+extern arch_isa_if_t const *isa_if;
+
 typedef enum be_dump_flags_t {
 	DUMP_NONE     = 0,
 	DUMP_INITIAL  = 1 << 0,

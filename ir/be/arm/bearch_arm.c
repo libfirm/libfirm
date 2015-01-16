@@ -173,10 +173,8 @@ static void arm_handle_intrinsics(ir_graph *irg)
 	irg_walk_graph(irg, handle_intrinsic, NULL, NULL);
 }
 
-extern const arch_isa_if_t arm_isa_if;
 static arm_isa_t arm_isa_template = {
 	.base = {
-		.impl               = &arm_isa_if,
 		.n_registers        = N_ARM_REGISTERS,
 		.registers          = arm_registers,
 		.n_register_classes = N_ARM_CLASSES,
@@ -310,7 +308,7 @@ static void arm_init(void)
 	arm_init_backend_params();
 }
 
-const arch_isa_if_t arm_isa_if = {
+static arch_isa_if_t const arm_isa_if = {
 	.init                 = arm_init,
 	.finish               = arm_finish,
 	.get_params           = arm_get_libfirm_params,
