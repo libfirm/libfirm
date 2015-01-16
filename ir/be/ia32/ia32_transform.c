@@ -301,8 +301,7 @@ static ir_type *get_prim_type(const ir_mode *mode)
 	}
 }
 
-static ir_entity *create_float_const_entity(ia32_isa_t *isa, ir_tarval *tv,
-                                            ident *name)
+static ir_entity *create_float_const_entity(ir_graph *const irg, ir_tarval *tv, ident *name)
 {
 	ir_mode *mode = get_tarval_mode(tv);
 	if (!ia32_cg_config.use_sse2) {
@@ -320,7 +319,8 @@ static ir_entity *create_float_const_entity(ia32_isa_t *isa, ir_tarval *tv,
 		}
 	}
 
-	ir_entity *res = pmap_get(ir_entity, isa->tv_ent, tv);
+	ia32_isa_t *const isa = (ia32_isa_t*)be_get_irg_arch_env(irg);
+	ir_entity        *res = pmap_get(ir_entity, isa->tv_ent, tv);
 	if (!res) {
 		if (!name)
 			name = id_unique("C%u");
@@ -350,11 +350,9 @@ static ir_node *gen_Const(ir_node *node)
 	ir_tarval *tv    = get_Const_tarval(node);
 
 	if (mode_is_float(mode)) {
-		ir_graph         *irg      = get_irn_irg(node);
-		const arch_env_t *arch_env = be_get_irg_arch_env(irg);
-		ia32_isa_t       *isa      = (ia32_isa_t*) arch_env;
-		ir_node          *res      = NULL;
-		ir_node          *load;
+		ir_graph *const irg = get_irn_irg(node);
+		ir_node        *res = NULL;
+		ir_node        *load;
 
 		if (ia32_cg_config.use_sse2) {
 			if (tarval_is_null(tv)) {
@@ -412,8 +410,7 @@ static ir_node *gen_Const(ir_node *node)
 					}
 				}
 #endif /* CONSTRUCT_SSE_CONST */
-				ir_entity *floatent
-					= create_float_const_entity(isa, tv, NULL);
+				ir_entity *const floatent = create_float_const_entity(irg, tv, NULL);
 
 				ir_node *base = get_global_base(irg);
 				load = new_bd_ia32_xLoad(dbgi, block, base, noreg_GP, nomem,
@@ -432,8 +429,7 @@ static ir_node *gen_Const(ir_node *node)
 				load = new_bd_ia32_fld1(dbgi, block);
 				res  = load;
 			} else {
-				ir_entity *floatent
-					= create_float_const_entity(isa, tv, NULL);
+				ir_entity *const floatent = create_float_const_entity(irg, tv, NULL);
 				/* create_float_const_ent is smart and sometimes creates
 				   smaller entities */
 				ir_mode *ls_mode  = get_type_mode(get_entity_type(floatent));
@@ -559,10 +555,8 @@ ir_entity *ia32_gen_fp_known_const(ir_graph *const irg, ia32_known_const_t kct)
 	ir_entity *ent = ent_cache[kct];
 
 	if (ent == NULL) {
-		const arch_env_t *arch_env = be_get_irg_arch_env(irg);
-		ia32_isa_t       *isa      = (ia32_isa_t*) arch_env;
-		const char       *cnst_str = names[kct].cnst_str;
-		ident            *name     = new_id_from_str(names[kct].name);
+		char const *const cnst_str = names[kct].cnst_str;
+		ident      *const name     = new_id_from_str(names[kct].name);
 		ir_mode          *mode;
 		switch (names[kct].mode) {
 		case 0:  mode = ia32_mode_gp; break;
@@ -589,7 +583,7 @@ ir_entity *ia32_gen_fp_known_const(ir_graph *const irg, ia32_known_const_t kct)
 				create_initializer_tarval(tv));
 			set_entity_initializer(ent, initializer);
 		} else {
-			ent = create_float_const_entity(isa, tv, name);
+			ent = create_float_const_entity(irg, tv, name);
 		}
 		/* cache the entry */
 		ent_cache[kct] = ent;
@@ -816,11 +810,9 @@ static void build_address(ia32_address_mode_t *am, ir_node *node,
 
 	/* floating point immediates */
 	if (is_Const(node)) {
-		ir_graph         *irg      = get_irn_irg(node);
-		const arch_env_t *arch_env = be_get_irg_arch_env(irg);
-		ia32_isa_t       *isa      = (ia32_isa_t*) arch_env;
-		ir_tarval        *tv       = get_Const_tarval(node);
-		ir_entity *entity = create_float_const_entity(isa, tv, NULL);
+		ir_graph  *const irg    = get_irn_irg(node);
+		ir_tarval *const tv     = get_Const_tarval(node);
+		ir_entity *const entity = create_float_const_entity(irg, tv, NULL);
 		addr->base        = get_global_base(irg);
 		addr->index       = noreg_GP;
 		addr->mem         = nomem;
