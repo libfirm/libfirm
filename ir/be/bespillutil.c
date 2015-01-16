@@ -822,10 +822,8 @@ static void prepare_constr_insn(ir_node *const node)
 			continue;
 		if (!arch_register_req_is(req, limited))
 			continue;
-		if (def_constr == NULL) {
-			const arch_env_t *const arch_env = birg->main_env->arch_env;
-			def_constr = rbitset_alloca(arch_env->n_registers);
-		}
+		if (def_constr == NULL)
+			def_constr = rbitset_alloca(isa_if->n_registers);
 		rbitset_foreach(req->limited, cls->n_regs, e) {
 			const arch_register_t *reg = arch_register_for_index(cls, e);
 			rbitset_set(def_constr, reg->global_index);

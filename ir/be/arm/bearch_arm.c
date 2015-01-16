@@ -175,12 +175,8 @@ static void arm_handle_intrinsics(ir_graph *irg)
 
 static arm_isa_t arm_isa_template = {
 	.base = {
-		.n_registers        = N_ARM_REGISTERS,
-		.registers          = arm_registers,
-		.n_register_classes = N_ARM_CLASSES,
-		.register_classes   = arm_reg_classes,
-		.spill_cost         = 7,
-		.reload_cost        = 5,
+		.spill_cost  = 7,
+		.reload_cost = 5,
 	},
 };
 
@@ -309,6 +305,10 @@ static void arm_init(void)
 }
 
 static arch_isa_if_t const arm_isa_if = {
+	.n_registers          = N_ARM_REGISTERS,
+	.registers            = arm_registers,
+	.n_register_classes   = N_ARM_CLASSES,
+	.register_classes     = arm_reg_classes,
 	.init                 = arm_init,
 	.finish               = arm_finish,
 	.get_params           = arm_get_libfirm_params,

@@ -641,12 +641,8 @@ static void amd64_finish_graph(ir_graph *irg)
 
 static amd64_isa_t amd64_isa_template = {
 	.base = {
-		.n_registers        = N_AMD64_REGISTERS,
-		.registers          = amd64_registers,
-		.n_register_classes = N_AMD64_CLASSES,
-		.register_classes   = amd64_reg_classes,
-		.spill_cost         = 7,
-		.reload_cost        = 5,
+		.spill_cost  = 7,
+		.reload_cost = 5,
 	},
 };
 
@@ -764,8 +760,7 @@ static const backend_params *amd64_get_backend_params(void) {
 
 static int amd64_is_valid_clobber(const char *clobber)
 {
-	return x86_parse_clobber(&amd64_isa_template.base,
-	                         amd64_additional_clobber_names, clobber) != NULL;
+	return x86_parse_clobber(amd64_additional_clobber_names, clobber) != NULL;
 }
 
 static void amd64_init_types(void)
@@ -793,6 +788,10 @@ static void amd64_init(void)
 }
 
 static arch_isa_if_t const amd64_isa_if = {
+	.n_registers          = N_AMD64_REGISTERS,
+	.registers            = amd64_registers,
+	.n_register_classes   = N_AMD64_CLASSES,
+	.register_classes     = amd64_reg_classes,
 	.init                 = amd64_init,
 	.finish               = amd64_finish,
 	.get_params           = amd64_get_backend_params,

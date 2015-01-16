@@ -301,6 +301,11 @@ struct arch_irn_ops_t {
  * Architecture interface.
  */
 struct arch_isa_if_t {
+	unsigned                     n_registers;        /**< number of registers */
+	arch_register_t       const *registers;          /**< register array */
+	unsigned                     n_register_classes; /**< number of register classes */
+	arch_register_class_t const *register_classes;   /**< register classes */
+
 	/**
 	 * Initializes the isa interface. This is necessary before calling any
 	 * other functions from this interface.
@@ -394,14 +399,8 @@ struct arch_isa_if_t {
  * ISA base class.
  */
 struct arch_env_t {
-	unsigned               n_registers;     /**< number of registers */
-	const arch_register_t *registers;       /**< register array */
-	/** number of register classes*/
-	unsigned               n_register_classes;
-	/** register classes */
-	const arch_register_class_t *register_classes;
-	unsigned               spill_cost;      /**< cost for a be_Spill node */
-	unsigned               reload_cost;     /**< cost for a be_Reload node */
+	unsigned spill_cost;  /**< cost for a be_Spill node */
+	unsigned reload_cost; /**< cost for a be_Reload node */
 };
 
 static inline bool arch_irn_is_ignore(const ir_node *irn)
@@ -417,8 +416,7 @@ static inline bool arch_irn_consider_in_reg_alloc(
 	return req->cls == cls && !arch_register_req_is(req, ignore);
 }
 
-const arch_register_t *arch_find_register(const arch_env_t *arch_env,
-                                          const char *name);
+arch_register_t const *arch_find_register(char const *name);
 
 #define be_foreach_value(node, value, code) \
 	do { \

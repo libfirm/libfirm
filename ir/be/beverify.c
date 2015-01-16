@@ -677,8 +677,7 @@ static void verify_block_register_allocation(ir_node *block, void *data)
 {
 	be_verify_reg_alloc_env_t *const env = (be_verify_reg_alloc_env_t*)data;
 
-	ir_graph       *const irg       = get_irn_irg(block);
-	unsigned        const n_regs    = be_get_irg_arch_env(irg)->n_registers;
+	unsigned        const n_regs    = isa_if->n_registers;
 	ir_node const **const registers = ALLOCANZ(ir_node const*, n_regs);
 
 	be_lv_foreach(env->lv, block, be_lv_state_end, lv_node) {

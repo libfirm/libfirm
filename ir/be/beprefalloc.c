@@ -1819,10 +1819,9 @@ static void be_pref_alloc(ir_graph *new_irg)
 	/* determine a good coloring order */
 	determine_block_order();
 
-	const arch_env_t *arch_env = be_get_irg_arch_env(new_irg);
-	int               n_cls    = arch_env->n_register_classes;
-	for (int c = 0; c < n_cls; ++c) {
-		cls = &arch_env->register_classes[c];
+	arch_register_class_t const *const reg_classes = isa_if->register_classes;
+	for (int c = 0, n_cls = isa_if->n_register_classes; c < n_cls; ++c) {
+		cls = &reg_classes[c];
 		if (cls->flags & arch_register_class_flag_manual_ra)
 			continue;
 

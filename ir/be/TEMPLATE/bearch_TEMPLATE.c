@@ -58,12 +58,8 @@ static void TEMPLATE_before_ra(ir_graph *irg)
 
 static TEMPLATE_isa_t TEMPLATE_isa_template = {
 	.base = {
-		.n_registers        = N_TEMPLATE_REGISTERS,
-		.registers          = TEMPLATE_registers,
-		.n_register_classes = N_TEMPLATE_CLASSES,
-		.register_classes   = TEMPLATE_reg_classes,
-		.spill_cost         = 7,
-		.reload_cost        = 5,
+		.spill_cost  = 7,
+		.reload_cost = 5,
 	},
 };
 
@@ -159,6 +155,10 @@ static ir_node *TEMPLATE_new_reload(ir_node *value, ir_node *spill,
 }
 
 static arch_isa_if_t const TEMPLATE_isa_if = {
+	.n_registers          = N_TEMPLATE_REGISTERS,
+	.registers            = TEMPLATE_registers,
+	.n_register_classes   = N_TEMPLATE_CLASSES,
+	.register_classes     = TEMPLATE_reg_classes,
 	.init                 = TEMPLATE_init,
 	.finish               = TEMPLATE_finish,
 	.get_params           = TEMPLATE_get_backend_params,

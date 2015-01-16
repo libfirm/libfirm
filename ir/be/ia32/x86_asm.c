@@ -81,16 +81,15 @@ static arch_register_req_t const *x86_make_register_req(struct obstack *obst,
 	return req;
 }
 
-arch_register_t const *x86_parse_clobber(const arch_env_t *arch_env,
-	const x86_clobber_name_t *additional_clobber_names,
-	const char *const clobber)
+arch_register_t const *x86_parse_clobber(x86_clobber_name_t const *const additional_clobber_names, char const *const clobber)
 {
-	arch_register_t const *reg = arch_find_register(arch_env, clobber);
+	arch_register_t const *reg = arch_find_register(clobber);
 	if (reg != NULL)
 		return reg;
+	arch_register_t const *const regs = isa_if->registers;
 	for (size_t i = 0; additional_clobber_names[i].name != NULL; ++i) {
 		if (strcmp(additional_clobber_names[i].name, clobber) == 0)
-			return &arch_env->registers[additional_clobber_names[i].index];
+			return &regs[additional_clobber_names[i].index];
 	}
 	return NULL;
 }
@@ -399,15 +398,12 @@ ir_node *x86_match_ASM(const ir_node *node, new_bd_asm_func new_bd_asm,
 	}
 
 	/* parse clobbers */
-	const arch_env_t *arch_env = be_get_irg_arch_env(irg);
-
-	unsigned clobber_bits[arch_env->n_register_classes];
+	unsigned clobber_bits[isa_if->n_register_classes];
 	memset(&clobber_bits, 0, sizeof(clobber_bits));
 	ident **const clobbers = get_ASM_clobbers(node);
 	for (size_t c = 0; c < n_clobbers; ++c) {
 		char            const *const clobber = get_id_str(clobbers[c]);
-		arch_register_t const *const reg
-			= x86_parse_clobber(arch_env, additional_clobber_names, clobber);
+		arch_register_t const *const reg     = x86_parse_clobber(additional_clobber_names, clobber);
 		if (reg != NULL) {
 			assert(reg->cls->n_regs <= sizeof(unsigned) * 8);
 			/* x87 registers may still be used as input, even if clobbered. */

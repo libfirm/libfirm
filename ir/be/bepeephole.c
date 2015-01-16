@@ -27,10 +27,9 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
-static const arch_env_t *arch_env;
-static be_lv_t          *lv;
-static ir_node          *current_node;
-ir_node                **register_values;
+static be_lv_t *lv;
+static ir_node *current_node;
+ir_node       **register_values;
 
 static void clear_reg_value(ir_node *node)
 {
@@ -158,7 +157,7 @@ static void process_block(ir_node *block, void *data)
 	(void)data;
 
 	/* construct initial register assignment */
-	memset(register_values, 0, sizeof(ir_node*) * arch_env->n_registers);
+	memset(register_values, 0, sizeof(ir_node*) * isa_if->n_registers);
 
 	DB((dbg, LEVEL_1, "\nProcessing block %+F (from end)\n", block));
 	be_lv_foreach(lv, block, be_lv_state_end, node) {
@@ -406,10 +405,9 @@ void be_peephole_opt(ir_graph *irg)
 {
 	be_assure_live_sets(irg);
 
-	arch_env = be_get_irg_arch_env(irg);
-	lv       = be_get_irg_liveness(irg);
+	lv = be_get_irg_liveness(irg);
 
-	register_values = XMALLOCN(ir_node*, arch_env->n_registers);
+	register_values = XMALLOCN(ir_node*, isa_if->n_registers);
 
 	irg_block_walk_graph(irg, process_block, NULL, NULL);
 

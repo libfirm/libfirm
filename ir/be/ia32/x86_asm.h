@@ -79,8 +79,7 @@ typedef void (*emit_register_func)(const arch_register_t *reg, char modifier,
 void x86_emit_asm(const ir_node *node, const x86_asm_attr_t *attr,
                   emit_register_func emit_register);
 
-const arch_register_t *x86_parse_clobber(const arch_env_t *arch_env,
-	const x86_clobber_name_t *additional_clobber_names, const char *name);
+arch_register_t const *x86_parse_clobber(x86_clobber_name_t const *additional_clobber_names, char const *name);
 
 typedef ir_node* (*new_bd_asm_func)(dbg_info *dbgi, ir_node *block, int arity,
                                     ir_node *in[], int out_arity,

@@ -40,12 +40,8 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 static sparc_isa_t sparc_isa_template = {
 	.base = {
-		.n_registers = N_SPARC_REGISTERS,
-		.registers   = sparc_registers,
-		.n_register_classes = N_SPARC_CLASSES,
-		.register_classes   = sparc_reg_classes,
-		.spill_cost         = 7,
-		.reload_cost        = 5,
+		.spill_cost  = 7,
+		.reload_cost = 5,
 	},
 };
 
@@ -555,6 +551,10 @@ static ir_node *sparc_new_reload(ir_node *value, ir_node *spill,
 }
 
 static arch_isa_if_t const sparc_isa_if = {
+	.n_registers          = N_SPARC_REGISTERS,
+	.registers            = sparc_registers,
+	.n_register_classes   = N_SPARC_CLASSES,
+	.register_classes     = sparc_reg_classes,
 	.init                 = sparc_init,
 	.finish               = sparc_finish,
 	.get_params           = sparc_get_backend_params,

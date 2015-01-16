@@ -1446,12 +1446,8 @@ static void ia32_finish(void)
  */
 static ia32_isa_t ia32_isa_template = {
 	.base = {
-		.n_registers        = N_IA32_REGISTERS,
-		.registers          = ia32_registers,
-		.n_register_classes = N_IA32_CLASSES,
-		.register_classes   = ia32_reg_classes,
-		.spill_cost         = 7,
-		.reload_cost        = 5,
+		.spill_cost  = 7,
+		.reload_cost = 5,
 	},
 };
 
@@ -1483,8 +1479,7 @@ static void ia32_mark_remat(ir_node *node)
 
 static int ia32_is_valid_clobber(const char *clobber)
 {
-	return x86_parse_clobber(&ia32_isa_template.base,
-	                         ia32_additional_clobber_names, clobber) != NULL;
+	return x86_parse_clobber(ia32_additional_clobber_names, clobber) != NULL;
 }
 
 static void ia32_lower_for_target(void)
@@ -1588,6 +1583,10 @@ static const lc_opt_table_entry_t ia32_options[] = {
 };
 
 static arch_isa_if_t const ia32_isa_if = {
+	.n_registers          = N_IA32_REGISTERS,
+	.registers            = ia32_registers,
+	.n_register_classes   = N_IA32_CLASSES,
+	.register_classes     = ia32_reg_classes,
 	.init                 = ia32_init,
 	.finish               = ia32_finish,
 	.get_params           = ia32_get_libfirm_params,

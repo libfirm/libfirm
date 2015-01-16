@@ -77,9 +77,8 @@ static void mark_live_nodes_registers(const ir_node *irn, lower_env_t *env)
 	ir_node                     *block     = get_nodes_block(irn);
 	ir_graph                    *irg       = get_irn_irg(irn);
 	arch_register_class_t const *cls       = arch_get_irn_register(get_irn_n(irn, 0))->cls;
-	arch_env_t const            *arch_env  = be_get_irg_arch_env(irg);
 	be_irg_t                    *birg      = be_birg_from_irg(irg);
-	unsigned                     n_regs    = arch_env->n_registers;
+	unsigned                     n_regs    = isa_if->n_registers;
 	unsigned                    *free_regs = rbitset_duplicate_obstack_alloc(&env->obst, birg->allocatable_regs, n_regs);
 
 	be_lv_t *lv = be_get_irg_liveness(irg);
@@ -104,10 +103,7 @@ static arch_register_t const *get_free_register(ir_node *const perm, lower_env_t
 		return NULL;
 
 	ir_node                     *block     = get_nodes_block(perm);
-	ir_graph                    *irg       = get_irn_irg(perm);
 	arch_register_class_t const *cls       = arch_get_irn_register(get_irn_n(perm, 0))->cls;
-	arch_env_t const            *arch_env  = be_get_irg_arch_env(irg);
-	unsigned                     n_regs    = arch_env->n_registers;
 	unsigned                    *free_regs = (unsigned*)ir_nodehashmap_get(arch_register_t const, &env->live_regs, perm);
 
 	sched_foreach_reverse(block, node) {
@@ -135,8 +131,10 @@ static arch_register_t const *get_free_register(ir_node *const perm, lower_env_t
 			break;
 	}
 
+	arch_register_t const *const regs   = isa_if->registers;
+	unsigned               const n_regs = isa_if->n_registers;
 	rbitset_foreach(free_regs, n_regs, free_idx) {
-		arch_register_t const *free_reg = &arch_env->registers[free_idx];
+		arch_register_t const *free_reg = &regs[free_idx];
 		if (free_reg->cls != cls)
 			continue;
 
