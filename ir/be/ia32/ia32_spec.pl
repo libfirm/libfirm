@@ -137,6 +137,8 @@ $status_flags_wo_cf = [       "PF", "AF", "ZF", "SF", "OF" ];
 $fpcw_flags         = [ "FP_IM", "FP_DM", "FP_ZM", "FP_OM", "FP_UM", "FP_PM",
                         "FP_PC0", "FP_PC1", "FP_RC0", "FP_RC1", "FP_X" ];
 
+my $x87sim = "ia32_request_x87_sim(irg);";
+
 my $binop_commutative = {
 	irn_flags      => [ "rematerializable" ],
 	state          => "exc_pinned",
@@ -314,6 +316,7 @@ my $fconstop = {
 	out_reqs  => [ "fp" ],
 	outs      => [ "res" ],
 	init_attr => "attr->ls_mode = ia32_mode_E;",
+	fixed     => $x87sim,
 	mode      => $mode_fp87,
 };
 
@@ -927,6 +930,7 @@ NoReg_FP => {
 	op_flags  => [ "constlike", "dump_noblock" ],
 	irn_flags => [ "not_scheduled" ],
 	out_reqs  => [ "fp_NOREG:I" ],
+	fixed     => $x87sim,
 	mode      => $mode_fp87,
 	latency   => 0,
 },
@@ -1691,6 +1695,7 @@ fld => {
 	emit      => "fld%FM %AM",
 	attr      => "ir_mode *load_mode",
 	init_attr => "attr->ls_mode = load_mode;",
+	fixed     => $x87sim,
 	latency   => 2,
 },
 
@@ -1716,6 +1721,7 @@ fild => {
 	outs      => [ "res", "unused", "M" ],
 	ins       => [ "base", "index", "mem" ],
 	emit      => "fild%FM %AM",
+	fixed     => $x87sim,
 	latency   => 4,
 },
 
@@ -1844,6 +1850,7 @@ FtstFnstsw => {
 	             "fnstsw %%ax",
 	attr      => "bool ins_permuted",
 	init_attr => "attr->ins_permuted = ins_permuted;",
+	fixed     => $x87sim,
 	latency   => 3,
 	mode      => $mode_gp
 },
@@ -1909,6 +1916,7 @@ emms => {
 	out_reqs    => [ "none" ],
 	attrs_equal => "attrs_equal_false",
 	emit        => "emms",
+	fixed       => $x87sim,
 	mode        => "mode_ANY",
 	latency     => 3,
 },
@@ -1918,6 +1926,7 @@ femms => {
 	out_reqs    => [ "none" ],
 	attrs_equal => "attrs_equal_false",
 	emit        => "femms",
+	fixed       => $x87sim,
 	mode        => "mode_ANY",
 	latency     => 3,
 },
