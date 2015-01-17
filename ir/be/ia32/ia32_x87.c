@@ -11,6 +11,7 @@
  */
 #include <assert.h>
 
+#include "bearch_ia32_t.h"
 #include "beirg.h"
 #include "beutil.h"
 #include "irnode_t.h"
@@ -39,6 +40,12 @@
 #include "ia32_architecture.h"
 
 #define N_FLOAT_REGS  (N_ia32_fp_REGS-1)  // exclude NOREG
+
+static bool requested_x87_sim(ir_graph const *const irg)
+{
+	ia32_irg_data_t const *const irg_data = ia32_get_irg_data(irg);
+	return irg_data->do_x87_sim;
+}
 
 /** the debug handle */
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
@@ -218,6 +225,7 @@ static unsigned is_at_pos(x87_state const *const state, ir_node const *const val
  */
 static void x87_push(x87_state *const state, ir_node *const node)
 {
+	assert(requested_x87_sim(get_irn_irg(node)));
 	assert(x87_on_stack(state, node) == (unsigned)-1 && "double push");
 	assert(state->depth < N_FLOAT_REGS && "stack overrun");
 
@@ -1430,6 +1438,11 @@ static void register_sim(ir_op *op, sim_func func)
  */
 static void x87_init_simulator(x87_simulator *sim, ir_graph *irg)
 {
+#ifndef DEBUG_libfirm
+	if (!requested_x87_sim(irg))
+		return;
+#endif
+
 	obstack_init(&sim->obst);
 	sim->blk_states = pmap_create();
 	sim->n_idx      = get_irg_last_idx(irg);
