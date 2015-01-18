@@ -170,12 +170,6 @@ void be_add_reload(spill_env_t *env, ir_node *to_spill, ir_node *before)
 	assert(!be_is_Keep(before));
 
 	spill_info_t *info = get_spillinfo(env, to_spill);
-	if (is_Phi(to_spill)) {
-		/* create spillinfos for the phi arguments */
-		foreach_irn_in(to_spill, i, arg) {
-			get_spillinfo(env, arg);
-		}
-	}
 
 	/* put reload into list */
 	reloader_t *rel       = OALLOC(&env->obst, reloader_t);
