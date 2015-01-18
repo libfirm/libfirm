@@ -328,6 +328,14 @@ my $valueop = {
 	mode      => $mode_gp,
 };
 
+my $fpopop = {
+	op_flags    => [ "keep" ],
+	out_reqs    => [ "none" ],
+	attrs_equal => "attrs_equal_false",
+	attr_type   => "ia32_x87_attr_t",
+	mode        => "mode_ANY",
+};
+
 my $xbinop = {
 	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
@@ -1892,23 +1900,15 @@ fdup => {
 },
 
 fpop => {
-	op_flags    => [ "keep" ],
-	out_reqs    => [ "none" ],
-	attrs_equal => "attrs_equal_false",
-	emit        => "fstp %F0",
-	attr_type   => "ia32_x87_attr_t",
-	mode        => "mode_ANY",
-	latency     => 1,
+	template => $fpopop,
+	emit     => "fstp %F0",
+	latency  => 1,
 },
 
 ffreep => {
-	op_flags    => [ "keep" ],
-	out_reqs    => [ "none" ],
-	attrs_equal => "attrs_equal_false",
-	emit        => "ffreep %F0",
-	attr_type   => "ia32_x87_attr_t",
-	mode        => "mode_ANY",
-	latency     => 1,
+	template => $fpopop,
+	emit     => "ffreep %F0",
+	latency  => 1,
 },
 
 emms => {
