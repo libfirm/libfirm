@@ -386,12 +386,9 @@ static amd64_insn_mode_t get_insn_mode_from_mode(const ir_mode *mode)
 	panic("unexpected mode");
 }
 
-ir_entity *create_float_const_entity(ir_graph *const irg,
-                                     ir_tarval *const tv)
+ir_entity *create_float_const_entity(ir_tarval *const tv)
 {
-	const arch_env_t *arch_env = be_get_irg_arch_env(irg);
-	amd64_isa_t      *isa      = (amd64_isa_t*) arch_env;
-	ir_entity        *entity   = pmap_get(ir_entity, isa->constants, tv);
+	ir_entity *entity = pmap_get(ir_entity, amd64_constants, tv);
 	if (entity != NULL)
 		return entity;
 
@@ -406,7 +403,7 @@ ir_entity *create_float_const_entity(ir_graph *const irg,
 	ir_initializer_t *initializer = create_initializer_tarval(tv);
 	set_entity_initializer(entity, initializer);
 
-	pmap_insert(isa->constants, tv, entity);
+	pmap_insert(amd64_constants, tv, entity);
 	return entity;
 }
 
@@ -433,7 +430,7 @@ static ir_node *create_float_const(dbg_info *dbgi, ir_node *block,
 {
 	ir_graph  *irg     = get_irn_irg(block);
 	ir_mode   *tv_mode = get_tarval_mode(tv);
-	ir_entity *entity  = create_float_const_entity(irg, tv);
+	ir_entity *entity  = create_float_const_entity(tv);
 	ir_node   *nomem   = get_irg_no_mem(irg);
 
 	ir_node *in[] = { nomem };

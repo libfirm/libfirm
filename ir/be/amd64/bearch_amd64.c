@@ -33,6 +33,8 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
+pmap *amd64_constants;
+
 ir_mode *amd64_mode_E;
 ir_type *amd64_type_E;
 ir_mode *amd64_mode_xmm;
@@ -644,22 +646,14 @@ static void amd64_finish(void)
 	amd64_free_opcodes();
 }
 
-static arch_env_t *amd64_begin_codegeneration(void)
+static void amd64_begin_codegeneration(void)
 {
-	amd64_isa_t *isa = XMALLOC(amd64_isa_t);
-	isa->constants = pmap_create();
-
-	return &isa->base;
+	amd64_constants = pmap_create();
 }
 
-/**
- * Closes the output file and frees the ISA structure.
- */
-static void amd64_end_codegeneration(void *self)
+static void amd64_end_codegeneration(void)
 {
-	amd64_isa_t *isa = (amd64_isa_t*)self;
-	pmap_destroy(isa->constants);
-	free(isa);
+	pmap_destroy(amd64_constants);
 }
 
 /**

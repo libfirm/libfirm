@@ -1356,11 +1356,9 @@ static ir_node *gen_Minus(ir_node *node)
 /**
  * Create an entity for a given (floating point) tarval
  */
-static ir_entity *create_float_const_entity(ir_graph *const irg, ir_tarval *const tv)
+static ir_entity *create_float_const_entity(ir_tarval *const tv)
 {
-	const arch_env_t *arch_env = be_get_irg_arch_env(irg);
-	sparc_isa_t      *isa      = (sparc_isa_t*) arch_env;
-	ir_entity        *entity   = pmap_get(ir_entity, isa->constants, tv);
+	ir_entity *entity = pmap_get(ir_entity, sparc_constants, tv);
 	if (entity != NULL)
 		return entity;
 
@@ -1374,15 +1372,15 @@ static ir_entity *create_float_const_entity(ir_graph *const irg, ir_tarval *cons
 	ir_initializer_t *initializer = create_initializer_tarval(tv);
 	set_entity_initializer(entity, initializer);
 
-	pmap_insert(isa->constants, tv, entity);
+	pmap_insert(sparc_constants, tv, entity);
 	return entity;
 }
 
 static ir_node *gen_float_const(dbg_info *dbgi, ir_node *block, ir_tarval *tv)
 {
-	ir_graph  *irg    = get_irn_irg(block);
-	ir_entity *entity = create_float_const_entity(irg, tv);
+	ir_entity *entity = create_float_const_entity(tv);
 	ir_node   *hi     = new_bd_sparc_SetHi(dbgi, block, entity, 0);
+	ir_graph  *irg    = get_irn_irg(block);
 	ir_node   *mem    = get_irg_no_mem(irg);
 	ir_mode   *mode   = get_tarval_mode(tv);
 	ir_node   *new_op

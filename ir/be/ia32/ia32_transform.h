@@ -39,7 +39,7 @@ typedef enum {
 /**
  * Generate a known floating point constant
  */
-ir_entity *ia32_gen_fp_known_const(ir_graph *irg, ia32_known_const_t kct);
+ir_entity *ia32_gen_fp_known_const(ia32_known_const_t kct);
 
 /**
  * Skip all Down-Conv's on a given node and return the resulting node.

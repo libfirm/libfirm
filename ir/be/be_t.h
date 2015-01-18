@@ -53,12 +53,11 @@ extern after_transform_func be_after_transform;
 extern asm_constraint_flags_t be_asm_constraint_flags[256];
 
 struct be_main_env_t {
-	arch_env_t   *arch_env;
-	const char   *cup_name;             /**< name of the compilation unit */
-	pmap         *ent_trampoline_map;   /**< A map containing PIC trampolines for methods. */
-	ir_type      *pic_trampolines_type; /**< Class type containing all trampolines */
-	pmap         *ent_pic_symbol_map;
-	ir_type      *pic_symbols_type;
+	const char *cup_name;             /**< name of the compilation unit */
+	pmap       *ent_trampoline_map;   /**< A map containing PIC trampolines for methods. */
+	ir_type    *pic_trampolines_type; /**< Class type containing all trampolines */
+	pmap       *ent_pic_symbol_map;
+	ir_type    *pic_symbols_type;
 };
 
 void be_set_constraint_support(asm_constraint_flags_t flags, char const *constraints);

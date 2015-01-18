@@ -41,6 +41,8 @@
 #include "lowering.h"
 #include "panic.h"
 
+pmap *ia32_tv_ent; /**< A map of entities that store const tarvals */
+
 ir_mode *ia32_mode_fpcw;
 ir_mode *ia32_mode_flags;
 ir_mode *ia32_mode_E;
@@ -1439,22 +1441,14 @@ static void ia32_finish(void)
 	obstack_free(&opcodes_obst, NULL);
 }
 
-static arch_env_t *ia32_begin_codegeneration(void)
+static void ia32_begin_codegeneration(void)
 {
-	ia32_isa_t *isa = XMALLOC(ia32_isa_t);
-	isa->tv_ent = pmap_create();
-
-	return &isa->base;
+	ia32_tv_ent = pmap_create();
 }
 
-/**
- * Closes the output file and frees the ISA structure.
- */
-static void ia32_end_codegeneration(void *self)
+static void ia32_end_codegeneration(void)
 {
-	ia32_isa_t *isa = (ia32_isa_t*)self;
-	pmap_destroy(isa->tv_ent);
-	free(self);
+	pmap_destroy(ia32_tv_ent);
 }
 
 static void ia32_mark_remat(ir_node *node)

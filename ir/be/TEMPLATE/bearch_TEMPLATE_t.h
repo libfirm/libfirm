@@ -10,10 +10,4 @@
 #ifndef FIRM_BE_TEMPLATE_BEARCH_TEMPLATE_T_H
 #define FIRM_BE_TEMPLATE_BEARCH_TEMPLATE_T_H
 
-#include "bearch.h"
-
-typedef struct TEMPLATE_isa_t {
-	arch_env_t  base;      /**< must be derived from arch_isa */
-} TEMPLATE_isa_t;
-
 #endif

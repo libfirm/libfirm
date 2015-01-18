@@ -68,9 +68,8 @@ static void transform_sub_to_neg_add(ir_node *node,
 	ir_node  *block = get_nodes_block(node);
 	dbg_info *dbgi  = get_irn_dbg_info(node);
 
-	ir_graph *irg = get_irn_irg(node);
-	ir_node  *in1 = get_irn_n(node, 0);
-	ir_node  *in2 = get_irn_n(node, 1);
+	ir_node *in1 = get_irn_n(node, 0);
+	ir_node *in2 = get_irn_n(node, 1);
 
 	const arch_register_t *in2_reg = arch_get_irn_register(in2);
 
@@ -79,7 +78,7 @@ static void transform_sub_to_neg_add(ir_node *node,
 
 	if (is_amd64_subs(node)) {
 		ir_tarval *tv = create_sign_tv(amd64_mode_xmm);
-		ir_entity *sign_bit_const = create_float_const_entity(irg, tv);
+		ir_entity *sign_bit_const = create_float_const_entity(tv);
 
 		amd64_binop_addr_attr_t xor_attr;
 		memset(&xor_attr, 0, sizeof(xor_attr));

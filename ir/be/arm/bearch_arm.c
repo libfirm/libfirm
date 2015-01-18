@@ -173,24 +173,16 @@ static void arm_handle_intrinsics(ir_graph *irg)
 	irg_walk_graph(irg, handle_intrinsic, NULL, NULL);
 }
 
-static arch_env_t *arm_begin_codegeneration(void)
+static void arm_begin_codegeneration(void)
 {
-	arm_isa_t *isa = XMALLOC(arm_isa_t);
-
 	be_gas_emit_types = false;
 	be_gas_elf_type_char = '%';
 
 	arm_emit_file_prologue();
-
-	return &isa->base;
 }
 
-/**
- * Closes the output file and frees the ISA structure.
- */
-static void arm_end_codegeneration(void *self)
+static void arm_end_codegeneration(void)
 {
-	free(self);
 }
 
 /**

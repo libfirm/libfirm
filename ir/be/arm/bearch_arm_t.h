@@ -32,10 +32,6 @@ typedef enum {
 	ARM_FPU_FPA,
 } arm_fpu_variant_t;
 
-struct arm_isa_t {
-	arch_env_t base; /**< must be derived from arch_env_t */
-};
-
 typedef struct arm_codegen_config_t {
 	arm_variant_t     variant;
 	arm_fpu_variant_t fpu;

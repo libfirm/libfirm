@@ -20,7 +20,6 @@
 
 #include "benode.h"
 #include "betranshlp.h"
-#include "bearch_TEMPLATE_t.h"
 #include "beirg.h"
 
 #include "TEMPLATE_nodes_attr.h"

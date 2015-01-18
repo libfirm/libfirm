@@ -11,7 +11,6 @@
 #include "TEMPLATE_new_nodes.h"
 #include "TEMPLATE_transform.h"
 #include "be_t.h"
-#include "bearch_TEMPLATE_t.h"
 #include "bemodule.h"
 #include "benode.h"
 #include "bestack.h"
@@ -66,18 +65,12 @@ static void TEMPLATE_finish(void)
 	TEMPLATE_free_opcodes();
 }
 
-static arch_env_t *TEMPLATE_begin_codegeneration(void)
+static void TEMPLATE_begin_codegeneration(void)
 {
-	TEMPLATE_isa_t *isa = XMALLOC(TEMPLATE_isa_t);
-	return &isa->base;
 }
 
-/**
- * Closes the output file and frees the ISA structure.
- */
-static void TEMPLATE_end_codegeneration(void *self)
+static void TEMPLATE_end_codegeneration(void)
 {
-	free(self);
 }
 
 static void TEMPLATE_lower_for_target(void)

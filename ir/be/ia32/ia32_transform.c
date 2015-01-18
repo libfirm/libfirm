@@ -301,7 +301,7 @@ static ir_type *get_prim_type(const ir_mode *mode)
 	}
 }
 
-static ir_entity *create_float_const_entity(ir_graph *const irg, ir_tarval *tv, ident *name)
+static ir_entity *create_float_const_entity(ir_tarval *tv, ident *name)
 {
 	ir_mode *mode = get_tarval_mode(tv);
 	if (!ia32_cg_config.use_sse2) {
@@ -319,8 +319,7 @@ static ir_entity *create_float_const_entity(ir_graph *const irg, ir_tarval *tv, 
 		}
 	}
 
-	ia32_isa_t *const isa = (ia32_isa_t*)be_get_irg_arch_env(irg);
-	ir_entity        *res = pmap_get(ir_entity, isa->tv_ent, tv);
+	ir_entity *res = pmap_get(ir_entity, ia32_tv_ent, tv);
 	if (!res) {
 		if (!name)
 			name = id_unique("C%u");
@@ -334,7 +333,7 @@ static ir_entity *create_float_const_entity(ir_graph *const irg, ir_tarval *tv, 
 		ir_initializer_t *const initializer = create_initializer_tarval(tv);
 		set_entity_initializer(res, initializer);
 
-		pmap_insert(isa->tv_ent, tv, res);
+		pmap_insert(ia32_tv_ent, tv, res);
 	}
 	return res;
 }
@@ -410,7 +409,7 @@ static ir_node *gen_Const(ir_node *node)
 					}
 				}
 #endif /* CONSTRUCT_SSE_CONST */
-				ir_entity *const floatent = create_float_const_entity(irg, tv, NULL);
+				ir_entity *const floatent = create_float_const_entity(tv, NULL);
 
 				ir_node *base = get_global_base(irg);
 				load = new_bd_ia32_xLoad(dbgi, block, base, noreg_GP, nomem,
@@ -429,7 +428,7 @@ static ir_node *gen_Const(ir_node *node)
 				load = new_bd_ia32_fld1(dbgi, block);
 				res  = load;
 			} else {
-				ir_entity *const floatent = create_float_const_entity(irg, tv, NULL);
+				ir_entity *const floatent = create_float_const_entity(tv, NULL);
 				/* create_float_const_ent is smart and sometimes creates
 				   smaller entities */
 				ir_mode *ls_mode  = get_type_mode(get_entity_type(floatent));
@@ -537,7 +536,7 @@ static ir_type *ia32_create_float_array(ir_type *tp)
 }
 
 /* Generates an entity for a known FP const (used for FP Neg + Abs) */
-ir_entity *ia32_gen_fp_known_const(ir_graph *const irg, ia32_known_const_t kct)
+ir_entity *ia32_gen_fp_known_const(ia32_known_const_t const kct)
 {
 	static const struct {
 		const char *name;
@@ -583,7 +582,7 @@ ir_entity *ia32_gen_fp_known_const(ir_graph *const irg, ia32_known_const_t kct)
 				create_initializer_tarval(tv));
 			set_entity_initializer(ent, initializer);
 		} else {
-			ent = create_float_const_entity(irg, tv, name);
+			ent = create_float_const_entity(tv, name);
 		}
 		/* cache the entry */
 		ent_cache[kct] = ent;
@@ -812,7 +811,7 @@ static void build_address(ia32_address_mode_t *am, ir_node *node,
 	if (is_Const(node)) {
 		ir_graph  *const irg    = get_irn_irg(node);
 		ir_tarval *const tv     = get_Const_tarval(node);
-		ir_entity *const entity = create_float_const_entity(irg, tv, NULL);
+		ir_entity *const entity = create_float_const_entity(tv, NULL);
 		addr->base        = get_global_base(irg);
 		addr->index       = noreg_GP;
 		addr->mem         = nomem;
@@ -2085,7 +2084,7 @@ static ir_node *gen_Minus(ir_node *node)
 			new_node = new_bd_ia32_xXor(dbgi, block, base, noreg_GP, nomem, new_op, noreg_xmm);
 
 			int        size = get_mode_size_bits(mode);
-			ir_entity *ent  = ia32_gen_fp_known_const(irg, size == 32 ? ia32_SSIGN : ia32_DSIGN);
+			ir_entity *ent  = ia32_gen_fp_known_const(size == 32 ? ia32_SSIGN : ia32_DSIGN);
 
 			set_ia32_am_ent(new_node, ent);
 			set_ia32_op_type(new_node, ia32_AddrModeS);
@@ -2131,7 +2130,7 @@ static ir_node *create_float_abs(dbg_info *dbgi, ir_node *new_block, ir_node *op
 		new_node = new_bd_ia32_xAnd(dbgi, new_block, base, noreg_GP, nomem, new_op, noreg_fp);
 
 		int        size = get_mode_size_bits(mode);
-		ir_entity *ent  = ia32_gen_fp_known_const(irg, size == 32 ? ia32_SABS : ia32_DABS);
+		ir_entity *ent  = ia32_gen_fp_known_const(size == 32 ? ia32_SABS : ia32_DABS);
 
 		set_ia32_am_ent(new_node, ent);
 
@@ -4654,7 +4653,7 @@ static ir_node *gen_ia32_l_LLtoFloat(ir_node *node)
 		am.addr.mem          = nomem;
 		am.addr.offset       = 0;
 		am.addr.scale        = 2;
-		am.addr.entity       = ia32_gen_fp_known_const(irg, ia32_ULLBIAS);
+		am.addr.entity       = ia32_gen_fp_known_const(ia32_ULLBIAS);
 		am.addr.tls_segment  = false;
 		am.addr.use_frame    = 0;
 		am.addr.frame_entity = NULL;

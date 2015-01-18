@@ -93,11 +93,6 @@ static inline be_lv_t *be_get_irg_liveness(const ir_graph *irg)
 	return be_birg_from_irg(irg)->lv;
 }
 
-static inline const arch_env_t *be_get_irg_arch_env(const ir_graph *irg)
-{
-	return be_birg_from_irg(irg)->main_env->arch_env;
-}
-
 static inline struct obstack *be_get_be_obst(const ir_graph *irg)
 {
 	be_irg_t       *const birg = be_birg_from_irg(irg);

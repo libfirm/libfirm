@@ -34,13 +34,7 @@ typedef struct ia32_irg_data_t {
 	ir_node  *get_eip;        /**< get eip node */
 } ia32_irg_data_t;
 
-/**
- * IA32 ISA object
- */
-typedef struct ia32_isa_t {
-	arch_env_t             base;     /**< must be derived from arch_env_t */
-	pmap                  *tv_ent;   /**< A map of entities that store const tarvals */
-} ia32_isa_t;
+extern pmap *ia32_tv_ent; /**< A map of entities that store const tarvals */
 
 /** The mode for the floating point control word. */
 extern ir_mode *ia32_mode_fpcw;

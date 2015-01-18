@@ -29,10 +29,10 @@ void amd64_transform_graph(ir_graph *irg);
 ir_node *amd64_new_IncSP(ir_node *block, ir_node *old_sp, int offset,
                          unsigned align);
 
-/** Creates an entity for a constant floating point value.
-  */
-ir_entity *create_float_const_entity(ir_graph *const irg,
-                                     ir_tarval *const tv);
+/**
+ * Creates an entity for a constant floating point value.
+ */
+ir_entity *create_float_const_entity(ir_tarval *const tv);
 
 /** Creates a tarval with the given mode and only
   * the most-significant (first) bit set.

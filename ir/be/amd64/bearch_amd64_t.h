@@ -13,10 +13,7 @@
 #include "bearch.h"
 #include "../ia32/x86_cconv.h"
 
-typedef struct amd64_isa_t {
-	arch_env_t  base;      /**< must be derived from arch_isa */
-	pmap       *constants; /**< A map of entities that store const tarvals */
-} amd64_isa_t;
+extern pmap *amd64_constants; /**< A map of entities that store const tarvals */
 
 extern ir_mode *amd64_mode_E;
 extern ir_type *amd64_type_E;

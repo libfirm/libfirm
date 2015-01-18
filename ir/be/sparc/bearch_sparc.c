@@ -38,6 +38,8 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
+pmap *sparc_constants;
+
 ir_mode *sparc_mode_Q;
 
 typedef enum {
@@ -379,25 +381,17 @@ static void sparc_finish(void)
 	sparc_free_opcodes();
 }
 
-static arch_env_t *sparc_begin_codegeneration(void)
+static void sparc_begin_codegeneration(void)
 {
-	sparc_isa_t *isa = XMALLOC(sparc_isa_t);
-	isa->constants = pmap_create();
+	sparc_constants = pmap_create();
 
 	be_gas_elf_type_char = '#';
 	be_gas_elf_variant   = ELF_VARIANT_SPARC;
-
-	return &isa->base;
 }
 
-/**
- * Closes the output file and frees the ISA structure.
- */
-static void sparc_end_codegeneration(void *self)
+static void sparc_end_codegeneration(void)
 {
-	sparc_isa_t *isa = (sparc_isa_t*)self;
-	pmap_destroy(isa->constants);
-	free(isa);
+	pmap_destroy(sparc_constants);
 }
 
 static void sparc_lower_for_target(void)

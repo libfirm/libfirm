@@ -24,10 +24,7 @@ typedef struct sparc_codegen_config_t {
 } sparc_codegen_config_t;
 extern sparc_codegen_config_t sparc_cg_config;
 
-typedef struct sparc_isa_t {
-	arch_env_t  base;      /**< must be derived from arch_env_t */
-	pmap       *constants;
-} sparc_isa_t;
+extern pmap *sparc_constants;
 
 extern ir_mode *sparc_mode_Q;
 

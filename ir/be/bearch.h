@@ -340,12 +340,12 @@ struct arch_isa_if_t {
 	 * Start codegeneration
 	 * @return a new isa instance
 	 */
-	arch_env_t *(*begin_codegeneration)(void);
+	void (*begin_codegeneration)(void);
 
 	/**
 	 * Free the isa instance.
 	 */
-	void (*end_codegeneration)(void *self);
+	void (*end_codegeneration)(void);
 
 	/**
 	 * mark node as rematerialized
@@ -395,12 +395,6 @@ struct arch_isa_if_t {
 	 * the code.
 	 */
 	void (*emit)(ir_graph *irg);
-};
-
-/**
- * ISA base class.
- */
-struct arch_env_t {
 };
 
 static inline bool arch_irn_is_ignore(const ir_node *irn)
