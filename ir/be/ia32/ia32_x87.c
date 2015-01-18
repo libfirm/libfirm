@@ -1438,11 +1438,6 @@ static void register_sim(ir_op *op, sim_func func)
  */
 static void x87_init_simulator(x87_simulator *sim, ir_graph *irg)
 {
-#ifndef DEBUG_libfirm
-	if (!requested_x87_sim(irg))
-		return;
-#endif
-
 	obstack_init(&sim->obst);
 	sim->blk_states = pmap_create();
 	sim->n_idx      = get_irg_last_idx(irg);
@@ -1507,6 +1502,11 @@ static void update_liveness_walker(ir_node *block, void *data)
  */
 void ia32_x87_simulate_graph(ir_graph *irg)
 {
+#ifndef DEBUG_libfirm
+	if (!requested_x87_sim(irg))
+		return;
+#endif
+
 	/* create the simulator */
 	x87_simulator sim;
 	x87_init_simulator(&sim, irg);
