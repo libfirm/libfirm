@@ -1456,7 +1456,6 @@ static ia32_isa_t ia32_isa_template = {
 		.spill_cost         = 7,
 		.reload_cost        = 5,
 	},
-	.fpu_arch = IA32_FPU_ARCH_X87,
 };
 
 static arch_env_t *ia32_begin_codegeneration(void)

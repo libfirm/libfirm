@@ -40,7 +40,6 @@ typedef struct ia32_irg_data_t {
 typedef struct ia32_isa_t {
 	arch_env_t             base;     /**< must be derived from arch_env_t */
 	pmap                  *tv_ent;   /**< A map of entities that store const tarvals */
-	int                    fpu_arch; /**< FPU architecture */
 } ia32_isa_t;
 
 /** The mode for the floating point control word. */
