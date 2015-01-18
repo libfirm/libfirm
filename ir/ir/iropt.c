@@ -283,13 +283,13 @@ static ir_tarval *computed_value_Size(const ir_node *n)
 
 static bool complement_values(const ir_node *a, const ir_node *b)
 {
-	if ((is_Not(a) && get_Not_op(a) == b) ||
-	    (is_Not(b) && get_Not_op(b) == a))
-		return true;
 	if (is_Eor(a) && is_Eor(b) && get_Eor_left(a) == get_Eor_left(b)) {
 		a = get_Eor_right(a);
 		b = get_Eor_right(b);
 	}
+	if ((is_Not(a) && get_Not_op(a) == b) ||
+	    (is_Not(b) && get_Not_op(b) == a))
+		return true;
 	if (is_Const(a) && is_Const(b)) {
 		ir_tarval *const tv_a = get_Const_tarval(a);
 		ir_tarval *const tv_b = get_Const_tarval(b);
