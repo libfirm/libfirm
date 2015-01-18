@@ -75,7 +75,7 @@ void be_insert_spills_reloads(spill_env_t *senv);
  * (Remember that each phi needs a register, so you have to spill phis when
  *  there are more phis than registers in a block)
  */
-void be_spill_phi(spill_env_t *env, ir_node *node);
+void be_spill_phi(spill_env_t *env, ir_node *phi);
 
 /**
  * Returns the estimated costs if a node would ge spilled. This does only return

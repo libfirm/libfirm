@@ -232,17 +232,17 @@ void be_add_reload_on_edge(spill_env_t *env, ir_node *to_spill, ir_node *block,
 	be_add_reload(env, to_spill, before);
 }
 
-void be_spill_phi(spill_env_t *env, ir_node *node)
+void be_spill_phi(spill_env_t *const env, ir_node *const phi)
 {
-	assert(is_Phi(node));
+	assert(is_Phi(phi));
 
-	spill_info_t *info = get_spillinfo(env, node);
+	spill_info_t *info = get_spillinfo(env, phi);
 	info->spilled_phi  = true;
 	info->next_mem_phi = env->mem_phis;
 	env->mem_phis      = info;
 
 	/* create spills for the phi arguments */
-	foreach_irn_in(node, i, arg) {
+	foreach_irn_in(phi, i, arg) {
 		ir_node *const insert = be_move_after_schedule_first(arg);
 		be_add_spill(env, arg, insert);
 	}
