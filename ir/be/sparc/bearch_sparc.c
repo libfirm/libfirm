@@ -38,13 +38,6 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
-static sparc_isa_t sparc_isa_template = {
-	.base = {
-		.spill_cost  = 7,
-		.reload_cost = 5,
-	},
-};
-
 ir_mode *sparc_mode_Q;
 
 typedef enum {
@@ -389,7 +382,6 @@ static void sparc_finish(void)
 static arch_env_t *sparc_begin_codegeneration(void)
 {
 	sparc_isa_t *isa = XMALLOC(sparc_isa_t);
-	*isa = sparc_isa_template;
 	isa->constants = pmap_create();
 
 	be_gas_elf_type_char = '#';
@@ -555,6 +547,8 @@ static arch_isa_if_t const sparc_isa_if = {
 	.registers            = sparc_registers,
 	.n_register_classes   = N_SPARC_CLASSES,
 	.register_classes     = sparc_reg_classes,
+	.spill_cost           = 7,
+	.reload_cost          = 5,
 	.init                 = sparc_init,
 	.finish               = sparc_finish,
 	.get_params           = sparc_get_backend_params,

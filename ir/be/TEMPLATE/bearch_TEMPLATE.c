@@ -55,14 +55,6 @@ static void TEMPLATE_before_ra(ir_graph *irg)
 	(void)irg;
 }
 
-
-static TEMPLATE_isa_t TEMPLATE_isa_template = {
-	.base = {
-		.spill_cost  = 7,
-		.reload_cost = 5,
-	},
-};
-
 static void TEMPLATE_init(void)
 {
 	TEMPLATE_register_init();
@@ -77,8 +69,6 @@ static void TEMPLATE_finish(void)
 static arch_env_t *TEMPLATE_begin_codegeneration(void)
 {
 	TEMPLATE_isa_t *isa = XMALLOC(TEMPLATE_isa_t);
-	*isa = TEMPLATE_isa_template;
-
 	return &isa->base;
 }
 
@@ -159,6 +149,8 @@ static arch_isa_if_t const TEMPLATE_isa_if = {
 	.registers            = TEMPLATE_registers,
 	.n_register_classes   = N_TEMPLATE_CLASSES,
 	.register_classes     = TEMPLATE_reg_classes,
+	.spill_cost           = 7,
+	.reload_cost          = 5,
 	.init                 = TEMPLATE_init,
 	.finish               = TEMPLATE_finish,
 	.get_params           = TEMPLATE_get_backend_params,

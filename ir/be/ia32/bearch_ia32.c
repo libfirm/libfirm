@@ -1439,23 +1439,9 @@ static void ia32_finish(void)
 	obstack_free(&opcodes_obst, NULL);
 }
 
-/**
- * The template that generates a new ISA object.
- * Note that this template can be changed by command line
- * arguments.
- */
-static ia32_isa_t ia32_isa_template = {
-	.base = {
-		.spill_cost  = 7,
-		.reload_cost = 5,
-	},
-};
-
 static arch_env_t *ia32_begin_codegeneration(void)
 {
 	ia32_isa_t *isa = XMALLOC(ia32_isa_t);
-
-	*isa        = ia32_isa_template;
 	isa->tv_ent = pmap_create();
 
 	return &isa->base;
@@ -1587,6 +1573,8 @@ static arch_isa_if_t const ia32_isa_if = {
 	.registers            = ia32_registers,
 	.n_register_classes   = N_IA32_CLASSES,
 	.register_classes     = ia32_reg_classes,
+	.spill_cost           = 7,
+	.reload_cost          = 5,
 	.init                 = ia32_init,
 	.finish               = ia32_finish,
 	.get_params           = ia32_get_libfirm_params,

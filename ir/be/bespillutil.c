@@ -111,12 +111,10 @@ static spill_info_t *get_spillinfo(spill_env_t *env, ir_node *value)
 
 spill_env_t *be_new_spill_env(ir_graph *irg)
 {
-	const arch_env_t *arch_env = be_get_irg_arch_env(irg);
-
 	spill_env_t *env = XMALLOCZ(spill_env_t);
 	env->irg         = irg;
-	env->spill_cost  = arch_env->spill_cost;
-	env->reload_cost = arch_env->reload_cost;
+	env->spill_cost  = isa_if->spill_cost;
+	env->reload_cost = isa_if->reload_cost;
 	ir_nodehashmap_init(&env->spillmap);
 	obstack_init(&env->obst);
 	return env;

@@ -639,13 +639,6 @@ static void amd64_finish_graph(ir_graph *irg)
 	amd64_emit_function(irg);
 }
 
-static amd64_isa_t amd64_isa_template = {
-	.base = {
-		.spill_cost  = 7,
-		.reload_cost = 5,
-	},
-};
-
 static void amd64_finish(void)
 {
 	amd64_free_opcodes();
@@ -654,8 +647,7 @@ static void amd64_finish(void)
 static arch_env_t *amd64_begin_codegeneration(void)
 {
 	amd64_isa_t *isa = XMALLOC(amd64_isa_t);
-	*isa             = amd64_isa_template;
-	isa->constants   = pmap_create();
+	isa->constants = pmap_create();
 
 	return &isa->base;
 }
@@ -792,6 +784,8 @@ static arch_isa_if_t const amd64_isa_if = {
 	.registers            = amd64_registers,
 	.n_register_classes   = N_AMD64_CLASSES,
 	.register_classes     = amd64_reg_classes,
+	.spill_cost           = 7,
+	.reload_cost          = 5,
 	.init                 = amd64_init,
 	.finish               = amd64_finish,
 	.get_params           = amd64_get_backend_params,

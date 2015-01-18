@@ -173,17 +173,9 @@ static void arm_handle_intrinsics(ir_graph *irg)
 	irg_walk_graph(irg, handle_intrinsic, NULL, NULL);
 }
 
-static arm_isa_t arm_isa_template = {
-	.base = {
-		.spill_cost  = 7,
-		.reload_cost = 5,
-	},
-};
-
 static arch_env_t *arm_begin_codegeneration(void)
 {
 	arm_isa_t *isa = XMALLOC(arm_isa_t);
-	*isa = arm_isa_template;
 
 	be_gas_emit_types = false;
 	be_gas_elf_type_char = '%';
@@ -309,6 +301,8 @@ static arch_isa_if_t const arm_isa_if = {
 	.registers            = arm_registers,
 	.n_register_classes   = N_ARM_CLASSES,
 	.register_classes     = arm_reg_classes,
+	.spill_cost           = 7,
+	.reload_cost          = 5,
 	.init                 = arm_init,
 	.finish               = arm_finish,
 	.get_params           = arm_get_libfirm_params,

@@ -305,6 +305,8 @@ struct arch_isa_if_t {
 	arch_register_t       const *registers;          /**< register array */
 	unsigned                     n_register_classes; /**< number of register classes */
 	arch_register_class_t const *register_classes;   /**< register classes */
+	unsigned                     spill_cost;         /**< cost for a spill node */
+	unsigned                     reload_cost;        /**< cost for a reload node */
 
 	/**
 	 * Initializes the isa interface. This is necessary before calling any
@@ -399,8 +401,6 @@ struct arch_isa_if_t {
  * ISA base class.
  */
 struct arch_env_t {
-	unsigned spill_cost;  /**< cost for a be_Spill node */
-	unsigned reload_cost; /**< cost for a be_Reload node */
 };
 
 static inline bool arch_irn_is_ignore(const ir_node *irn)
