@@ -555,36 +555,6 @@ static void determine_spill_costs(spill_env_t *env, spill_info_t *spillinfo)
 	DB((dbg, LEVEL_1, "spill %+F after definition\n", to_spill));
 }
 
-void make_spill_locations_dominate_irn(spill_env_t *env, ir_node *irn)
-{
-	const spill_info_t *si = get_spillinfo(env, irn);
-	if (si == NULL)
-		return;
-
-	/* Fill the bitset with the dominance pre-order numbers
-	 * of the blocks the reloads are located in. */
-	ir_node  *start_block = get_irg_start_block(get_irn_irg(irn));
-	unsigned  n_blocks    = get_Block_dom_max_subtree_pre_num(start_block);
-	bitset_t *reloads     = bitset_alloca(n_blocks);
-	for (reloader_t *r = si->reloaders; r != NULL; r = r->next) {
-		ir_node *block = get_nodes_block(r->reloader);
-		bitset_set(reloads, get_Block_dom_tree_pre_num(block));
-	}
-
-	/* Now, cancel out all the blocks that are dominated by each spill.
-	 * If the bitset is not empty after that, we have reloads that are
-	 * not dominated by any spill. */
-	for (spill_t *s = si->spills; s != NULL; s = s->next) {
-		ir_node *block = get_nodes_block(s->after);
-		unsigned start = get_Block_dom_tree_pre_num(block);
-		unsigned end   = get_Block_dom_max_subtree_pre_num(block);
-		bitset_clear_range(reloads, start, end);
-	}
-
-	if (!bitset_is_empty(reloads))
-		be_add_spill(env, si->to_spill, si->to_spill);
-}
-
 void be_insert_spills_reloads(spill_env_t *env)
 {
 	be_timer_push(T_RA_SPILL_APPLY);
