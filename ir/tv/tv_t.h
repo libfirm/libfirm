@@ -144,8 +144,7 @@ static inline unsigned tarval_get_bit(ir_tarval const *const tv,
 {
 #ifndef NDEBUG
 	ir_mode *mode = get_tarval_mode(tv);
-	assert(get_mode_sort(mode) == irms_reference
-	    || get_mode_sort(mode) == irms_int_number);
+	assert(mode_is_data(mode));
 	assert(idx < get_mode_size_bits(mode));
 #endif
 	return sc_get_bit_at(tv->value, idx);
