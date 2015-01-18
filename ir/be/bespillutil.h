@@ -120,13 +120,6 @@ typedef struct {
 void be_get_total_spill_costs(ir_graph *irg, be_total_spill_costs_t *costs);
 
 /**
- * Check, if a node is rematerializable.
- * @param env  The spill env.
- */
-bool be_is_rematerializable(spill_env_t *env, const ir_node *to_remat,
-                            const ir_node *before);
-
-/**
  * Create a be_Spill node. This function is compatible to the
  * arch_env->new_spill callback.
  */

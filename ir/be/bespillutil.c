@@ -485,12 +485,6 @@ double be_get_reload_costs(spill_env_t *env, ir_node *to_spill, ir_node *before)
 	return env->reload_cost * freq;
 }
 
-bool be_is_rematerializable(spill_env_t *env, const ir_node *to_remat,
-                            const ir_node *before)
-{
-	return check_remat_conditions_costs(env, to_remat, before, 0) < REMAT_COST_INFINITE;
-}
-
 double be_get_reload_costs_on_edge(spill_env_t *env, ir_node *to_spill,
                                    ir_node *block, int pos)
 {
