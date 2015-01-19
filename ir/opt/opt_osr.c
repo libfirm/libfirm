@@ -500,9 +500,7 @@ static bool is_counter_iv(ir_node *iv, iv_env *env)
 
 			have_incr = get_Add_right(irn);
 			if (!is_Const(have_incr)) {
-				have_incr = get_Add_left(irn);
-				if (!is_Const(have_incr))
-					return false;
+				return false;
 			}
 			code = iro_Add;
 		} else if (is_Sub(irn)) {
