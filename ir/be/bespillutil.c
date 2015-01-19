@@ -872,9 +872,8 @@ typedef struct {
 static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different, constraint_env_t *env)
 {
 	arch_register_req_t const *const req = arch_get_irn_register_req(other_different);
-	if (arch_register_req_is(req, ignore) ||
-			!mode_is_data(get_irn_mode(other_different))) {
-		DB((dbg_constr, LEVEL_1, "ignore constraint for %+F because other_irn is ignore or not a data node\n", irn));
+	if (arch_register_req_is(req, ignore)) {
+		DB((dbg_constr, LEVEL_1, "ignore constraint for %+F because other_irn is ignore\n", irn));
 		return;
 	}
 
@@ -985,8 +984,7 @@ static void assure_constraints_walker(ir_node *block, void *walk_env)
 
 	sched_foreach_reverse(block, irn) {
 		be_foreach_value(irn, value,
-			if (mode_is_data(get_irn_mode(value)))
-				assure_different_constraints(value, irn, env);
+			assure_different_constraints(value, irn, env);
 		);
 	}
 }
