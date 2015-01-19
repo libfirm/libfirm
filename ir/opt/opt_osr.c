@@ -494,23 +494,15 @@ static bool is_counter_iv(ir_node *iv, iv_env *env)
 	ir_opcode code      = iro_Bad;
 	pscc->code = iro_Bad;
 	for (ir_node *irn = pscc->head; irn != NULL; irn = e->next) {
-		if (is_Add(irn)) {
+		if (is_Add(irn) || is_Sub(irn)) {
 			if (have_incr != NULL)
 				return false;
 
-			have_incr = get_Add_right(irn);
+			have_incr = get_binop_right(irn);
 			if (!is_Const(have_incr)) {
 				return false;
 			}
-			code = iro_Add;
-		} else if (is_Sub(irn)) {
-			if (have_incr != NULL)
-				return false;
-
-			have_incr = get_Sub_right(irn);
-			if (!is_Const(have_incr))
-				return false;
-			code = iro_Sub;
+			code = get_irn_opcode(irn);
 		} else if (is_Phi(irn)) {
 			int i;
 
