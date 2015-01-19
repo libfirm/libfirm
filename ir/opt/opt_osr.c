@@ -47,7 +47,7 @@ typedef struct scc {
 	ir_tarval *incr; /**< the induction variable increment if only a single
 	                      const exists. */
 	unsigned   code; /**< == iro_Add if +incr, iro_Sub if -incr, 0 if not
-	                         analysed, iro_Bad else */
+	                         analyzed, iro_Bad else */
 } scc;
 
 /** A node entry */
@@ -56,8 +56,8 @@ typedef struct node_entry {
 	unsigned  low;      /**< the low number of this node */
 	ir_node  *header;   /**< the header of this node */
 	bool      in_stack; /**< flag, set if the node is on the stack */
-	ir_node  *next;     /**< link to the next node the the same scc */
-	scc      *pscc;     /**< the scc of this node */
+	ir_node  *next;     /**< link to the next node the same SCC */
+	scc      *pscc;     /**< the SCC of this node */
 	unsigned  POnum;    /**< the post order number for blocks */
 } node_entry;
 
@@ -172,7 +172,7 @@ static node_entry *get_irn_ne(ir_node *irn, iv_env *env)
 }
 
 /**
- * Gets the scc from an induction variable.
+ * Gets the SCC from an induction variable.
  *
  * @param iv   any node of the induction variable
  * @param env  the environment
@@ -411,7 +411,7 @@ static ir_node *reduce(ir_node *orig, ir_node *iv, ir_node *rc, iv_env *env)
 }
 
 /**
- * Update the scc for a newly created IV.
+ * Update the SCC for a newly created IV.
  */
 static void update_scc(ir_node *iv, node_entry *e, iv_env *env)
 {
@@ -485,7 +485,7 @@ static bool is_counter_iv(ir_node *iv, iv_env *env)
 	scc        *pscc = e->pscc;
 
 	if (pscc->code != 0) {
-		/* already analysed */
+		/* already analyzed */
 		return pscc->code != iro_Bad;
 	}
 
@@ -614,7 +614,7 @@ static bool check_users_for_reg_pressure(ir_node *iv, iv_env *env)
  * @param irn   the node to check
  * @param env   the environment
  *
- * @return non-zero if irn should be Replace'd
+ * @return non-zero if irn should be replaced
  */
 static bool check_replace(ir_node *irn, iv_env *env)
 {
@@ -660,7 +660,7 @@ static bool check_replace(ir_node *irn, iv_env *env)
  */
 static void classify_iv(scc *pscc, iv_env *env)
 {
-	/* find the header block for this scc */
+	/* find the header block for this SCC */
 	ir_node    *header = NULL;
 	node_entry *h      = NULL;
 	for (ir_node *irn = pscc->head, *next; irn != NULL; irn = next) {
@@ -681,7 +681,7 @@ static void classify_iv(scc *pscc, iv_env *env)
 		}
 	}
 
-	/* check if this scc contains only Phi, Add or Sub nodes */
+	/* check if this SCC contains only Phi, Add or Sub nodes */
 	bool     only_phi    = true;
 	unsigned num_outside = 0;
 	ir_node *out_rc      = NULL;
@@ -751,7 +751,7 @@ static void classify_iv(scc *pscc, iv_env *env)
 		return;
 	}
 
-	/* set the header for every node in this scc */
+	/* set the header for every node in this SCC */
 	for (ir_node *irn = pscc->head, *next; irn != NULL; irn = next) {
 		node_entry *e = get_irn_ne(irn, env);
 		e->header = header;
@@ -809,7 +809,7 @@ static void process_scc(scc *pscc, iv_env *env)
  */
 static void remove_phi_cycle(scc *pscc, iv_env *env)
 {
-	/* check if this scc contains only Phi nodes */
+	/* check if this SCC contains only Phi nodes */
 	ir_node *out_rc = NULL;
 	for (ir_node *irn = pscc->head, *next; irn; irn = next) {
 		node_entry *e = get_irn_ne(irn, env);
