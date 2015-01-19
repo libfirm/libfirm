@@ -310,9 +310,8 @@ static ir_node *do_apply(unsigned code, dbg_info *db, ir_node *op1,
 	case iro_Sub:
 		return new_rd_Sub(db, block, op1, op2, mode);
 	default:
-		break;
+		panic("unsupported opcode");
 	}
-	panic("unsupported opcode");
 }
 
 /**
@@ -504,9 +503,7 @@ static bool is_counter_iv(ir_node *iv, iv_env *env)
 			}
 			code = get_irn_opcode(irn);
 		} else if (is_Phi(irn)) {
-			int i;
-
-			for (i = get_Phi_n_preds(irn) - 1; i >= 0; --i) {
+			for (int i = get_Phi_n_preds(irn) - 1; i >= 0; --i) {
 				ir_node    *pred = get_Phi_pred(irn, i);
 				node_entry *ne   = get_irn_ne(pred, env);
 
