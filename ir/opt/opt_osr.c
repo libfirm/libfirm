@@ -1149,14 +1149,15 @@ static void do_lftr(ir_node *cmp, void *ctx)
 	ir_node *riv    = is_iv(right, env);
 	ir_node *nleft  = NULL;
 	ir_node *nright = NULL;
+	ir_node *iv;
 	if (liv != NULL && is_rc(right, liv)) {
-		ir_node *iv = left;
+		iv = left;
 		ir_node *rc = right;
 
 		nright = apply_edges(&iv, rc, env);
 		nleft  = iv;
 	} else if (riv != NULL && is_rc(left, riv)) {
-		ir_node *iv = right;
+		iv = right;
 		ir_node *rc = left;
 
 		nleft  = apply_edges(&iv, rc, env);
@@ -1164,6 +1165,31 @@ static void do_lftr(ir_node *cmp, void *ctx)
 	}
 
 	if (nleft && nright) {
+		if (is_counter_iv(iv, env)) {
+			scc         *pscc          = get_iv_scc(iv, env);
+			ir_tarval   *tv_incr       = pscc->incr;
+			ir_mode     *mode          = get_tarval_mode(tv_incr);
+			ir_tarval   *zero          = get_mode_null(mode);
+			ir_relation  incr_relation = tarval_cmp(tv_incr, zero);
+			ir_relation  relation      = get_Cmp_relation(cmp);
+			switch (relation) {
+				case ir_relation_less:
+				case ir_relation_less_equal:
+					if (incr_relation == ir_relation_less)
+						/* Prevent: for (i = 42; i <= 42; i--) -> for (i = 43; i >= 43; i--) */
+						return;
+
+				case ir_relation_greater:
+				case ir_relation_greater_equal:
+					if (incr_relation == ir_relation_greater)
+						/* Prevent: for (i = 42; i >= 42; i++) -> for (i = 41; i >= 41; i++) */
+						return;
+
+				default:
+					break;
+			}
+		}
+
 		DB((dbg, LEVEL_2, "  LFTR for %+F\n", cmp));
 		set_Cmp_left(cmp, nleft);
 		set_Cmp_right(cmp, nright);
