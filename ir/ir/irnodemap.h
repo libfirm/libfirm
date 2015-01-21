@@ -74,16 +74,6 @@ static inline void ir_nodemap_insert_fast(ir_nodemap *nodemap,
 }
 
 /**
- * Removed mapping for @p node.
- *
- * This is really a shorthand form for ir_nodemap_insert(nodemap, node, NULL);
- */
-static inline void ir_nodemap_remove(ir_nodemap *nodemap, const ir_node *node)
-{
-	ir_nodemap_insert(nodemap, node, NULL);
-}
-
-/**
  * Get mapping for @p node. Returns NULL if nothing is mapped.
  */
 static inline void *ir_nodemap_get(const ir_nodemap *nodemap,
