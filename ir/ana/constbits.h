@@ -2,7 +2,6 @@
 #define CONSTBITS_H
 
 #include <stdbool.h>
-#include "adt/obst.h"
 #include "tv.h"
 
 typedef struct bitinfo

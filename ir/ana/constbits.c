@@ -9,25 +9,14 @@
  * @author  Christoph Mallon
  */
 #include <assert.h>
-#include <stdbool.h>
 
 #include "adt/pdeq.h"
-#include "adt/obst.h"
-#include "adt/xmalloc.h"
+#include "constbits.h"
 #include "debug.h"
-#include "ircons.h"
-#include "irdom.h"
-#include "iredges.h"
-#include "irgmod.h"
-#include "irgraph_t.h"
 #include "irgwalk.h"
 #include "irnode_t.h"
 #include "irnodemap.h"
-#include "iroptimize.h"
 #include "iropt.h"
-#include "tv.h"
-#include "irmemory.h"
-#include "constbits.h"
 
 /* TODO:
  * - Implement cleared/set bit calculation for Div, Mod
