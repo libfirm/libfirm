@@ -250,17 +250,6 @@ void mature_immBlock(ir_node *block)
 	if (get_Block_matured(block))
 		return;
 
-	/* Traverse a chain of Phi nodes attached to this block and mature these,
-	 * too. */
-	for (ir_node *phi = block->attr.block.phis; phi != NULL;) {
-		ir_node *const next      = phi->attr.phi.next;
-		int      const pos       = phi->attr.phi.u.pos;
-		ir_node *const new_value = set_phi_arguments(phi, pos);
-		if (block->attr.block.graph_arr[pos] == phi)
-			block->attr.block.graph_arr[pos] = new_value;
-		phi = next;
-	}
-
 	set_Block_matured(block, 1);
 
 	/* Create final in-array for the block. */
@@ -284,6 +273,17 @@ void mature_immBlock(ir_node *block)
 		block->in                     = new_in;
 		block->attr.block.backedge    = new_backedge_arr(obst, n_preds);
 		block->attr.block.dynamic_ins = false;
+	}
+
+	/* Traverse a chain of Phi nodes attached to this block and mature these,
+	 * too. */
+	for (ir_node *phi = block->attr.block.phis; phi != NULL;) {
+		ir_node *const next      = phi->attr.phi.next;
+		int      const pos       = phi->attr.phi.u.pos;
+		ir_node *const new_value = set_phi_arguments(phi, pos);
+		if (block->attr.block.graph_arr[pos] == phi)
+			block->attr.block.graph_arr[pos] = new_value;
+		phi = next;
 	}
 
 	/* Now, as the block is a finished Firm node, we can optimize it.
