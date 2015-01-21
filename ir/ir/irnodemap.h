@@ -69,6 +69,7 @@ static inline void ir_nodemap_insert_fast(ir_nodemap *nodemap,
                                           const ir_node *node, void *data)
 {
 	unsigned idx = get_irn_idx(node);
+	assert(idx < ARR_LEN(nodemap->data));
 	nodemap->data[idx] = data;
 }
 
@@ -108,6 +109,7 @@ static inline void *ir_nodemap_get_fast(const ir_nodemap *nodemap,
                                         const ir_node *node)
 {
 	unsigned idx = get_irn_idx(node);
+	assert(idx < ARR_LEN(nodemap->data));
 	return nodemap->data[idx];
 }
 
