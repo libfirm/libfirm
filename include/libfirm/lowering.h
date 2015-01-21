@@ -368,13 +368,6 @@ FIRM_API int i_mapper_strlen(ir_node *call);
 FIRM_API int i_mapper_memcpy(ir_node *call);
 
 /**
- * A mapper for the mempcpy-Function: void pointer mempcpy(void pointer d, void pointer s, inttype c);
- *
- * @return 1 if the mempcpy call was removed, 0 else.
- */
-FIRM_API int i_mapper_mempcpy(ir_node *call);
-
-/**
  * A mapper for the memmove-Function: void pointer memmove(void pointer d, void pointer s, inttype c);
  *
  * @return 1 if the memmove call was removed, 0 else.
