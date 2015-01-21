@@ -22,14 +22,12 @@ bool set_bitinfo(ir_node *irn, ir_tarval *z, ir_tarval *o);
 
 /**
  * Compute value range fixpoint aka which bits of value are constant zero/one.
- * The result is available via links to bitinfo*, allocated on client_obst.
+ * The result is available via @see get_bitinfo.
  */
 void constbits_analyze(ir_graph *irg);
 
 /**
  * Clears the bit information for the given graph.
- *
- * This does not affect the obstack passed to constbits_analyze.
  */
 void constbits_clear(ir_graph *irg);
 
