@@ -297,6 +297,20 @@ static const arch_register_req_t *xmm_xmm_reqs[] = {
 	&amd64_requirement_xmm,
 };
 
+static arch_register_req_t const **const gp_am_reqs[] = {
+	mem_reqs,
+	reg_mem_reqs,
+	reg_reg_mem_reqs,
+	reg_reg_reg_mem_reqs,
+};
+
+static arch_register_req_t const **const xmm_am_reqs[] = {
+	mem_reqs,
+	xmm_mem_reqs,
+	xmm_reg_mem_reqs,
+	xmm_reg_reg_mem_reqs,
+};
+
 static inline bool mode_needs_gp_reg(ir_mode *mode)
 {
 	return get_mode_arithmetic(mode) == irma_twos_complement
@@ -664,11 +678,6 @@ static ir_node *create_zext(ir_node *new_block, ir_node *const node)
 	return new_r_Proj(xor0, mode_gp, pn_amd64_xor_0_res);
 }
 
-static bool val_input(unsigned in)
-{
-	return in != NO_INPUT && in != RIP_INPUT;
-}
-
 static bool use_address_matching(ir_mode *mode, match_flags_t flags,
                                  ir_node *block,
                                  ir_node *op1, ir_node *op2,
@@ -784,14 +793,8 @@ static void match_binop(amd64_args_t *args, ir_node *block,
 		ir_node *ptr = get_Load_ptr(load);
 		perform_address_matching(ptr, &(args->arity), args->in, addr);
 
-		args->reqs = use_xmm ? xmm_mem_reqs : reg_mem_reqs;
-		if (addr->base_input != NO_INPUT && addr->index_input != NO_INPUT) {
-			args->reqs = use_xmm ? xmm_reg_reg_mem_reqs
-			             : reg_reg_reg_mem_reqs;
-		} else if (addr->base_input != NO_INPUT || addr->index_input != NO_INPUT) {
-			args->reqs = use_xmm ? xmm_reg_mem_reqs
-			             : reg_reg_mem_reqs;
-		}
+		args->reqs = (use_xmm ? xmm_am_reqs : gp_am_reqs)[args->arity];
+
 		ir_node *new_mem    = be_transform_node(get_Load_mem(load));
 		int mem_input       = args->arity++;
 		args->in[mem_input] = new_mem;
@@ -878,12 +881,7 @@ static ir_node *gen_binop_rax(ir_node *node, ir_node *op1, ir_node *op2,
 		ir_node *ptr = get_Load_ptr(load);
 		perform_address_matching(ptr, &arity, in, &addr);
 
-		reqs = reg_mem_reqs;
-		if (addr.base_input != NO_INPUT && addr.index_input != NO_INPUT) {
-			reqs = reg_reg_reg_mem_reqs;
-		} else if (addr.base_input != NO_INPUT || addr.index_input != NO_INPUT) {
-			reqs = reg_reg_mem_reqs;
-		}
+		reqs = gp_am_reqs[arity];
 
 		ir_node *new_mem = be_transform_node(get_Load_mem(load));
 		int mem_input    = arity++;
@@ -935,11 +933,7 @@ static ir_node *gen_binop_xmm(ir_node *node, ir_node *op0, ir_node *op1,
 		ir_node      *ptr  = get_Load_ptr(load);
 		perform_address_matching(ptr, &args.arity, args.in, addr);
 
-		unsigned reg_count
-			= val_input(addr->base_input) + val_input(addr->index_input);
-		args.reqs = reg_count == 0 ? xmm_mem_reqs :
-		            reg_count == 1 ? xmm_reg_mem_reqs
-		                           : xmm_reg_reg_mem_reqs;
+		args.reqs = xmm_am_reqs[args.arity];
 
 		ir_node *new_mem   = be_transform_node(get_Load_mem(load));
 		int mem_input      = args.arity++;
@@ -1442,12 +1436,7 @@ static ir_node *gen_IJmp(ir_node *node)
 			perform_address_matching(load_ptr, &arity, in, &addr);
 			assert((size_t)arity < ARRAY_SIZE(in));
 
-			reqs = mem_reqs;
-			if (addr.base_input != NO_INPUT && addr.index_input != NO_INPUT) {
-				reqs = reg_reg_mem_reqs;
-			} else if (addr.base_input != NO_INPUT || addr.index_input != NO_INPUT) {
-				reqs = reg_mem_reqs;
-			}
+			reqs = gp_am_reqs[arity];
 			ir_node *load_mem = get_Load_mem(load);
 			ir_node *new_mem  = be_transform_node(load_mem);
 			int mem_input     = arity++;
@@ -2123,12 +2112,7 @@ static ir_node *match_mov(dbg_info *dbgi, ir_node *block, ir_node *value,
 		ir_node *ptr = get_Load_ptr(load);
 		perform_address_matching(ptr, &arity, in, &addr);
 
-		if (!val_input(addr.base_input) && !val_input(addr.index_input))
-			reqs = mem_reqs;
-		else if (val_input(addr.base_input) && val_input(addr.index_input))
-			reqs = reg_reg_mem_reqs;
-		else
-			reqs = reg_mem_reqs;
+		reqs = gp_am_reqs[arity];
 
 		ir_node *new_mem = be_transform_node(get_Load_mem(load));
 		int mem_input  = arity++;
@@ -2362,29 +2346,18 @@ static ir_node *gen_Store(ir_node *node)
 	ir_node *ptr     = get_Store_ptr(node);
 	perform_address_matching(ptr, &arity, in, addr);
 
+	bool const need_xmm = mode_is_float(mode);
+
+	arch_register_req_t const **const reqs = (need_xmm ? xmm_am_reqs : gp_am_reqs)[arity];
+
 	ir_node *mem     = get_Store_mem(node);
 	ir_node *new_mem = be_transform_node(mem);
 	in[arity++]      = new_mem;
 	assert((size_t)arity <= ARRAY_SIZE(in));
 	attr.base.insn_mode = get_insn_mode_from_mode(mode);
 
-	const arch_register_req_t **reqs;
-
-	bool need_xmm = mode_is_float(mode);
-
-	switch (arity) {
-	case 1: reqs = mem_reqs; break;
-	case 2: reqs = need_xmm ? xmm_mem_reqs : reg_mem_reqs; break;
-	case 3: reqs = need_xmm ? xmm_reg_mem_reqs : reg_reg_mem_reqs; break;
-	case 4: reqs = need_xmm ? xmm_reg_reg_mem_reqs : reg_reg_reg_mem_reqs;
-		break;
-	default:
-		panic("unexpected arity %d while transforming node %+F", arity, node);
-	}
-
-
 	ir_node *new_store;
-	if (mode_is_float(mode)) {
+	if (need_xmm) {
 		new_store = new_bd_amd64_movs_store_xmm(dbgi, block, arity, in, &attr);
 	} else {
 		new_store = new_bd_amd64_mov_store(dbgi, block, arity, in, &attr);
@@ -2484,14 +2457,7 @@ static ir_node *gen_Load(ir_node *node)
 
 	perform_address_matching(ptr, &arity, in, &addr);
 
-	const arch_register_req_t **reqs;
-	if (!val_input(addr.base_input) && !val_input(addr.index_input)) {
-		reqs = mem_reqs;
-	} else if (val_input(addr.base_input) && val_input(addr.index_input)) {
-		reqs = reg_reg_mem_reqs;
-	} else {
-		reqs = reg_mem_reqs;
-	}
+	arch_register_req_t const **const reqs = gp_am_reqs[arity];
 
 	ir_node *mem     = get_Load_mem(node);
 	ir_node *new_mem = be_transform_node(mem);
