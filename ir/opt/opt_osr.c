@@ -63,19 +63,19 @@ typedef struct node_entry {
 
 /** The environment. */
 typedef struct iv_env {
-	struct obstack obst;    /**< an obstack for allocations */
-	ir_node  **stack;       /**< the node stack */
-	size_t    tos;          /**< tos index */
-	unsigned  nextDFSnum;   /**< the current DFS number */
-	unsigned  POnum;        /**< current post order number */
-	set      *quad_map;     /**< a map from (op, iv, rc) to node */
-	set      *lftr_edges;   /**< the set of lftr edges */
-	unsigned  replaced;     /**< number of replaced ops */
-	unsigned  lftr_replaced;/**< number of applied linear function test
-	                             replacements */
-	unsigned  osr_flags;    /**< additional flags steering the transformation */
-	bool      need_postpass;/**< set, if a post pass is needed to fix Add and
-	                             Sub nodes */
+	struct     obstack obst;  /**< an obstack for allocations */
+	ir_node  **stack;         /**< the node stack */
+	size_t     tos;           /**< tos index */
+	unsigned   nextDFSnum;    /**< the current DFS number */
+	unsigned   POnum;         /**< current post order number */
+	set       *quad_map;      /**< a map from (op, iv, rc) to node */
+	set       *lftr_edges;    /**< the set of lftr edges */
+	unsigned   replaced;      /**< number of replaced ops */
+	unsigned   lftr_replaced; /**< number of applied linear function test
+	                               replacements */
+	unsigned   osr_flags;     /**< additional flags steering the transformation */
+	bool       need_postpass; /**< set, if a post pass is needed to fix Add and
+	                               Sub nodes */
 	/** Function called to process a SCC. */
 	void (*process_scc)(scc *pscc, struct iv_env *env);
 } iv_env;
@@ -84,21 +84,20 @@ typedef struct iv_env {
  * An entry in the (op, node, node) -> node map.
  */
 typedef struct quadruple_t {
-	unsigned code; /**< the opcode of the reduced operation */
-	ir_node *op1;  /**< the first operand the reduced operation */
-	ir_node *op2;  /**< the second operand of the reduced operation */
-
-	ir_node *res; /**< the reduced operation */
+	unsigned  code; /**< the opcode of the reduced operation */
+	ir_node  *op1;  /**< the first operand the reduced operation */
+	ir_node  *op2;  /**< the second operand of the reduced operation */
+	ir_node  *res;  /**< the reduced operation */
 } quadruple_t;
 
 /**
  * A LFTR edge.
  */
 typedef struct ldtr_edge_t {
-	ir_node  *src;   /**< the source node */
-	ir_node  *dst;   /**< the destination node */
-	unsigned  code;  /**< the opcode that must be applied */
-	ir_node  *rc;    /**< the region const that must be applied */
+	ir_node  *src;  /**< the source node */
+	ir_node  *dst;  /**< the destination node */
+	unsigned  code; /**< the opcode that must be applied */
+	ir_node  *rc;   /**< the region const that must be applied */
 } ldtr_edge_t;
 
 /* forward */
@@ -122,8 +121,7 @@ static int lftr_cmp(const void *e1, const void *e2, size_t size)
  */
 static ldtr_edge_t *lftr_find(ir_node *src, iv_env *env)
 {
-	ldtr_edge_t key;
-	key.src  = src;
+	ldtr_edge_t key = { .src = src };
 	return set_find(ldtr_edge_t, env->lftr_edges, &key, sizeof(key),
 	                hash_ptr(src));
 }
@@ -140,11 +138,7 @@ static ldtr_edge_t *lftr_find(ir_node *src, iv_env *env)
 static void lftr_add(ir_node *src, ir_node *dst, unsigned code, ir_node *rc,
                      iv_env *env)
 {
-	ldtr_edge_t key;
-	key.src  = src;
-	key.dst  = dst;
-	key.code = code;
-	key.rc   = rc;
+	ldtr_edge_t key = { .src = src, .dst = dst, .code = code, .rc = rc };
 
 	/*
 	 * There might be more than one edge here. This is rather bad
@@ -233,12 +227,8 @@ static int quad_cmp(const void *e1, const void *e2, size_t size)
  */
 static ir_node *search(unsigned code, ir_node *op1, ir_node *op2, iv_env *env)
 {
-	quadruple_t key;
-	key.code = code;
-	key.op1 = op1;
-	key.op2 = op2;
-
-	unsigned hash = (code*9) ^ hash_ptr(op1) ^ hash_ptr(op2);
+	quadruple_t  key   = { .code = code, .op1 = op1, .op2 = op2 };
+	unsigned     hash  = (code*9) ^ hash_ptr(op1) ^ hash_ptr(op2);
 	quadruple_t *entry = set_find(quadruple_t, env->quad_map, &key, sizeof(key),
 	                              hash);
 	if (entry != NULL)
@@ -258,13 +248,8 @@ static ir_node *search(unsigned code, ir_node *op1, ir_node *op2, iv_env *env)
 static void add(unsigned code, ir_node *op1, ir_node *op2, ir_node *result,
                 iv_env *env)
 {
-	quadruple_t key;
-	key.code = code;
-	key.op1  = op1;
-	key.op2  = op2;
-	key.res  = result;
-
-	unsigned hash = (code*9) ^ hash_ptr(op1) ^ hash_ptr(op2);
+	quadruple_t key  = { .code = code, .op1 = op1, .op2 = op2, .res = result };
+	unsigned    hash = (code*9) ^ hash_ptr(op1) ^ hash_ptr(op2);
 	(void)set_insert(quadruple_t, env->quad_map, &key, sizeof(key), hash);
 }
 
@@ -328,8 +313,8 @@ static ir_node *do_apply(unsigned code, dbg_info *db, ir_node *op1,
 static ir_node *apply(ir_node *header, ir_node *orig, ir_node *op1,
                       ir_node *op2, iv_env *env)
 {
-	unsigned code   = get_irn_opcode(orig);
-	ir_node *result = search(code, op1, op2, env);
+	unsigned  code   = get_irn_opcode(orig);
+	ir_node  *result = search(code, op1, op2, env);
 
 	if (result == NULL) {
 		dbg_info *db         = get_irn_dbg_info(orig);
@@ -361,8 +346,8 @@ static ir_node *apply(ir_node *header, ir_node *orig, ir_node *op1,
  */
 static ir_node *reduce(ir_node *orig, ir_node *iv, ir_node *rc, iv_env *env)
 {
-	unsigned code   = get_irn_opcode(orig);
-	ir_node *result = search(code, iv, rc, env);
+	unsigned  code   = get_irn_opcode(orig);
+	ir_node  *result = search(code, iv, rc, env);
 
 	/* check if we have already done this operation on the iv */
 	if (result == NULL) {
@@ -488,9 +473,9 @@ static bool is_counter_iv(ir_node *iv, iv_env *env)
 		return pscc->code != iro_Bad;
 	}
 
-	ir_node  *have_init = NULL;
-	ir_node  *have_incr = NULL;
-	ir_opcode code      = iro_Bad;
+	ir_node   *have_init = NULL;
+	ir_node   *have_incr = NULL;
+	ir_opcode  code      = iro_Bad;
 	pscc->code = iro_Bad;
 	for (ir_node *irn = pscc->head; irn != NULL; irn = e->next) {
 		if (is_Add(irn) || is_Sub(irn)) {
@@ -585,14 +570,7 @@ static bool check_users_for_reg_pressure(ir_node *iv, iv_env *env)
 	 * are limited, so check if the iv has the right form: Only ONE
 	 * Phi, only one Add/Sub with a Const.
 	 */
-	if (!is_counter_iv(iv, env))
-		return false;
-
-	/*
-	 * Ok, we have only one increment AND it is a Const, we might be able
-	 * to do a linear function test replacement, so go on.
-	 */
-	return true;
+	return is_counter_iv(iv, env);
 }
 
 /**
@@ -623,20 +601,18 @@ static bool check_replace(ir_node *irn, iv_env *env)
 		} else if (riv && is_op_commutative(op) &&
 			            is_rc(left, riv)) {
 			iv = right; rc = left;
+		} else {
+			return false;
 		}
 
-		if (iv != NULL) {
-			if (env->osr_flags & osr_flag_keep_reg_pressure
-			    && !check_users_for_reg_pressure(iv, env))
-				return false;
-			return replace(irn, iv, rc, env);
-		}
-		break;
+		if (env->osr_flags & osr_flag_keep_reg_pressure
+		    && !check_users_for_reg_pressure(iv, env))
+			return false;
+		return replace(irn, iv, rc, env);
 	}
 	default:
-		break;
+		return false;
 	}
-	return false;
 }
 
 /**
@@ -669,9 +645,9 @@ static void classify_iv(scc *pscc, iv_env *env)
 	}
 
 	/* check if this SCC contains only Phi, Add or Sub nodes */
-	bool     only_phi    = true;
-	unsigned num_outside = 0;
-	ir_node *out_rc      = NULL;
+	bool      only_phi    = true;
+	unsigned  num_outside = 0;
+	ir_node  *out_rc      = NULL;
 	for (ir_node *irn = pscc->head, *next; irn != NULL; irn = next) {
 		node_entry *e = get_irn_ne(irn, env);
 
@@ -883,7 +859,7 @@ static void push(iv_env *env, ir_node *n)
  */
 static ir_node *pop(iv_env *env)
 {
-	ir_node *n = env->stack[--env->tos];
+	ir_node    *n = env->stack[--env->tos];
 	node_entry *e = get_irn_ne(n, env);
 
 	e->in_stack = false;
