@@ -297,7 +297,7 @@ static const arch_register_req_t *xmm_xmm_reqs[] = {
 	&amd64_requirement_xmm,
 };
 
-static arch_register_req_t const **const gp_am_reqs[] = {
+arch_register_req_t const **const gp_am_reqs[] = {
 	mem_reqs,
 	reg_mem_reqs,
 	reg_reg_mem_reqs,

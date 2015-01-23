@@ -132,8 +132,8 @@ static ir_node *amd64_turn_back_am(ir_node *node)
 	amd64_addr_t new_addr = attr->addr;
 	ir_node *load_in[3];
 	int      load_arity = 0;
-	if (attr->addr.base_input != NO_INPUT
-	 && attr->addr.base_input != RIP_INPUT) {
+	if (attr->addr.base_input != NO_INPUT &&
+	    attr->addr.base_input != RIP_INPUT) {
 		new_addr.base_input = load_arity;
 		load_in[load_arity++] = get_irn_n(node, attr->addr.base_input);
 	}
@@ -148,6 +148,7 @@ static ir_node *amd64_turn_back_am(ir_node *node)
 	ir_node *load = new_bd_amd64_mov_gp(dbgi, block, load_arity, load_in,
 	                                    attr->insn_mode, AMD64_OP_ADDR,
 	                                    new_addr);
+	arch_set_irn_register_reqs_in(load, gp_am_reqs[load_arity - 1]);
 	ir_node *load_res = new_r_Proj(load, mode_Lu, pn_amd64_mov_gp_res);
 
 	/* change operation */
