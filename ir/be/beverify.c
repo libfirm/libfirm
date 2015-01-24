@@ -579,6 +579,13 @@ static void check_output_constraints(be_verify_reg_alloc_env_t *const env, const
 
 static void check_input_constraints(be_verify_reg_alloc_env_t *const env, ir_node *const node)
 {
+	arch_register_req_t const **const in_reqs = arch_get_irn_register_reqs_in(node);
+	if (!in_reqs && get_irn_arity(node) != 0) {
+		verify_warnf(node, "%+F has no input requirements", node);
+		env->problem_found = true;
+		return;
+	}
+
 	/* verify input register */
 	foreach_irn_in(node, i, pred) {
 		if (is_Bad(pred)) {
