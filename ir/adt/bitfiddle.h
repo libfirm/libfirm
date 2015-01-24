@@ -20,38 +20,6 @@
 #include "compiler.h"
 
 /**
- * Add saturated.
- * @param x Summand 1.
- * @param y Summand 2.
- * @return x + y or INT_MAX/INT_MIN if an overflow occurred and x,y was
- *         positive/negative.
- *
- * @note See hacker's delight, page 27.
- */
-static inline int add_saturated(int x, int y)
-{
-	int sum      = x + y;
-	/*
-		An overflow occurs, if the sign of the both summands is equal
-		and the one of the sum is different from the summand's one.
-		The sign bit is 1, if an overflow occurred, 0 otherwise.
-		int overflow = ~(x ^ y) & (sum ^ x);
-	*/
-	int overflow = (x ^ sum) & (y ^ sum);
-
-	/*
-		The infinity to use.
-		Make a mask of the sign bit of x and y (they are the same if an
-		overflow occurred).
-		INT_MIN == ~INT_MAX, so if the sign was negative, INT_MAX becomes
-		INT_MIN.
-	*/
-	int inf = (x >> (sizeof(x) * 8 - 1)) ^ INT_MAX;
-
-	return overflow < 0 ? inf : sum;
-}
-
-/**
  * Compute the count of set bits in a 32-bit word.
  * @param x A 32-bit word.
  * @return The number of bits set in x.
