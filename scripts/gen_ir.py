@@ -3,6 +3,8 @@
 # This file is part of libFirm.
 # Copyright (C) 2012 Karlsruhe Institute of Technology.
 import sys
+# don't clutter our filesystem with .pyc files...
+sys.dont_write_bytecode = True
 import argparse
 from jinja2 import Environment
 import filters
