@@ -18,7 +18,7 @@ from jinja2.utils import Markup, escape, pformat, urlize, soft_unicode, \
      unicode_urlencode
 from jinja2.runtime import Undefined
 from jinja2.exceptions import FilterArgumentError
-from jinja2._compat import next, imap, string_types, text_type, iteritems
+from jinja2._compat import imap, string_types, text_type, iteritems
 
 
 _word_re = re.compile(r'\w+(?u)')
@@ -183,7 +183,7 @@ def do_title(s):
     uppercase letters, all remaining characters are lowercase.
     """
     rv = []
-    for item in re.compile(r'([-\s]+)(?u)').split(s):
+    for item in re.compile(r'([-\s]+)(?u)').split(soft_unicode(s)):
         if not item:
             continue
         rv.append(item[0].upper() + item[1:].lower())
@@ -204,8 +204,7 @@ def do_dictsort(value, case_sensitive=False, by='key'):
             sort the dict by key, case sensitive
 
         {% for item in mydict|dictsort(false, 'value') %}
-            sort the dict by key, case insensitive, sorted
-            normally and ordered by value.
+            sort the dict by value, case insensitive
     """
     if by == 'key':
         pos = 0
@@ -409,7 +408,8 @@ def do_pprint(value, verbose=False):
 
 
 @evalcontextfilter
-def do_urlize(eval_ctx, value, trim_url_limit=None, nofollow=False):
+def do_urlize(eval_ctx, value, trim_url_limit=None, nofollow=False,
+              target=None):
     """Converts URLs in plain text into clickable links.
 
     If you pass the filter an additional integer it will shorten the urls
@@ -420,8 +420,18 @@ def do_urlize(eval_ctx, value, trim_url_limit=None, nofollow=False):
 
         {{ mytext|urlize(40, true) }}
             links are shortened to 40 chars and defined with rel="nofollow"
+
+    If *target* is specified, the ``target`` attribute will be added to the
+    ``<a>`` tag:
+
+    .. sourcecode:: jinja
+
+       {{ mytext|urlize(40, target='_blank') }}
+
+    .. versionchanged:: 2.8+
+       The *target* parameter was added.
     """
-    rv = urlize(value, trim_url_limit, nofollow)
+    rv = urlize(value, trim_url_limit, nofollow, target)
     if eval_ctx.autoescape:
         rv = Markup(rv)
     return rv
@@ -456,25 +466,22 @@ def do_truncate(s, length=255, killwords=False, end='...'):
 
     .. sourcecode:: jinja
 
-        {{ "foo bar"|truncate(5) }}
+        {{ "foo bar baz"|truncate(9) }}
+            -> "foo ba..."
+        {{ "foo bar baz"|truncate(9, True) }}
             -> "foo ..."
-        {{ "foo bar"|truncate(5, True) }}
-            -> "foo b..."
+
     """
     if len(s) <= length:
         return s
     elif killwords:
-        return s[:length] + end
-    words = s.split(' ')
-    result = []
-    m = 0
-    for word in words:
-        m += len(word) + 1
-        if m > length:
-            break
-        result.append(word)
-    result.append(end)
-    return u' '.join(result)
+        return s[:length - len(end)] + end
+
+    result = s[:length - len(end)].rsplit(' ', 1)[0]
+    if len(result) < length:
+        result += ' '
+    return result + end
+
 
 @environmentfilter
 def do_wordwrap(environment, s, width=79, break_long_words=True,
@@ -612,7 +619,6 @@ def do_batch(value, linecount, fill_with=None):
         {%- endfor %}
         </table>
     """
-    result = []
     tmp = []
     for item in value:
         if len(tmp) == linecount:
@@ -842,13 +848,14 @@ def do_map(*args, **kwargs):
 
 @contextfilter
 def do_select(*args, **kwargs):
-    """Filters a sequence of objects by appying a test to either the object
-    or the attribute and only selecting the ones with the test succeeding.
+    """Filters a sequence of objects by appying a test to the object and only
+    selecting the ones with the test succeeding.
 
     Example usage:
 
     .. sourcecode:: jinja
 
+        {{ numbers|select("odd") }}
         {{ numbers|select("odd") }}
 
     .. versionadded:: 2.7
@@ -858,8 +865,8 @@ def do_select(*args, **kwargs):
 
 @contextfilter
 def do_reject(*args, **kwargs):
-    """Filters a sequence of objects by appying a test to either the object
-    or the attribute and rejecting the ones with the test succeeding.
+    """Filters a sequence of objects by appying a test to the object and
+    rejecting the ones with the test succeeding.
 
     Example usage:
 
@@ -874,8 +881,8 @@ def do_reject(*args, **kwargs):
 
 @contextfilter
 def do_selectattr(*args, **kwargs):
-    """Filters a sequence of objects by appying a test to either the object
-    or the attribute and only selecting the ones with the test succeeding.
+    """Filters a sequence of objects by appying a test to an attribute of an
+    object and only selecting the ones with the test succeeding.
 
     Example usage:
 
@@ -891,8 +898,8 @@ def do_selectattr(*args, **kwargs):
 
 @contextfilter
 def do_rejectattr(*args, **kwargs):
-    """Filters a sequence of objects by appying a test to either the object
-    or the attribute and rejecting the ones with the test succeeding.
+    """Filters a sequence of objects by appying a test to an attribute of an
+    object or the attribute and rejecting the ones with the test succeeding.
 
     .. sourcecode:: jinja
 

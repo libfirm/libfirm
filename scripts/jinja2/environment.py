@@ -90,13 +90,13 @@ def load_extensions(environment, extensions):
 def _environment_sanity_check(environment):
     """Perform a sanity check on the environment."""
     assert issubclass(environment.undefined, Undefined), 'undefined must ' \
-           'be a subclass of undefined because filters depend on it.'
+        'be a subclass of undefined because filters depend on it.'
     assert environment.block_start_string != \
-           environment.variable_start_string != \
-           environment.comment_start_string, 'block, variable and comment ' \
-           'start strings must be different'
+        environment.variable_start_string != \
+        environment.comment_start_string, 'block, variable and comment ' \
+        'start strings must be different'
     assert environment.newline_sequence in ('\r', '\r\n', '\n'), \
-           'newline_sequence set to unknown line ending string.'
+        'newline_sequence set to unknown line ending string.'
     return environment
 
 
@@ -108,16 +108,16 @@ class Environment(object):
     Modifications on environments after the first template was loaded
     will lead to surprising effects and undefined behavior.
 
-    Here the possible initialization parameters:
+    Here are the possible initialization parameters:
 
         `block_start_string`
-            The string marking the begin of a block.  Defaults to ``'{%'``.
+            The string marking the beginning of a block.  Defaults to ``'{%'``.
 
         `block_end_string`
             The string marking the end of a block.  Defaults to ``'%}'``.
 
         `variable_start_string`
-            The string marking the begin of a print statement.
+            The string marking the beginning of a print statement.
             Defaults to ``'{{'``.
 
         `variable_end_string`
@@ -125,7 +125,7 @@ class Environment(object):
             ``'}}'``.
 
         `comment_start_string`
-            The string marking the begin of a comment.  Defaults to ``'{#'``.
+            The string marking the beginning of a comment.  Defaults to ``'{#'``.
 
         `comment_end_string`
             The string marking the end of a comment.  Defaults to ``'#}'``.
@@ -180,7 +180,7 @@ class Environment(object):
 
         `autoescape`
             If set to true the XML/HTML autoescaping feature is enabled by
-            default.  For more details about auto escaping see
+            default.  For more details about autoescaping see
             :class:`~jinja2.utils.Markup`.  As of Jinja 2.4 this can also
             be a callable that is passed the template name and has to
             return `True` or `False` depending on autoescape should be
@@ -193,11 +193,14 @@ class Environment(object):
             The template loader for this environment.
 
         `cache_size`
-            The size of the cache.  Per default this is ``50`` which means
-            that if more than 50 templates are loaded the loader will clean
+            The size of the cache.  Per default this is ``400`` which means
+            that if more than 400 templates are loaded the loader will clean
             out the least recently used template.  If the cache size is set to
             ``0`` templates are recompiled all the time, if the cache size is
             ``-1`` the cache will not be cleaned.
+
+            .. versionchanged:: 2.8
+               The cache size was increased to 400 from a low 50.
 
         `auto_reload`
             Some loaders load templates from locations where the template
@@ -254,7 +257,7 @@ class Environment(object):
                  finalize=None,
                  autoescape=False,
                  loader=None,
-                 cache_size=50,
+                 cache_size=400,
                  auto_reload=True,
                  bytecode_cache=None):
         # !!Important notice!!
@@ -330,7 +333,7 @@ class Environment(object):
                 loader=missing, cache_size=missing, auto_reload=missing,
                 bytecode_cache=missing):
         """Create a new overlay environment that shares all the data with the
-        current environment except of cache and the overridden attributes.
+        current environment except for cache and the overridden attributes.
         Extensions cannot be removed for an overlayed environment.  An overlayed
         environment automatically gets all the extensions of the environment it
         is linked to plus optional extra extensions.
@@ -551,7 +554,7 @@ class Environment(object):
             return self._compile(source, filename)
         except TemplateSyntaxError:
             exc_info = sys.exc_info()
-        self.handle_exception(exc_info, source_hint=source)
+        self.handle_exception(exc_info, source_hint=source_hint)
 
     def compile_expression(self, source, undefined_to_none=True):
         """A handy helper method that returns a callable that accepts keyword
@@ -603,8 +606,8 @@ class Environment(object):
                           ignore_errors=True, py_compile=False):
         """Finds all the templates the loader can find, compiles them
         and stores them in `target`.  If `zip` is `None`, instead of in a
-        zipfile, the templates will be will be stored in a directory.
-        By default a deflate zip algorithm is used, to switch to
+        zipfile, the templates will be stored in a directory.
+        By default a deflate zip algorithm is used. To switch to
         the stored algorithm, `zip` can be set to ``'stored'``.
 
         `extensions` and `filter_func` are passed to :meth:`list_templates`.
@@ -634,7 +637,8 @@ class Environment(object):
                 warn(Warning('py_compile has no effect on pypy or Python 3'))
                 py_compile = False
             else:
-                import imp, marshal
+                import imp
+                import marshal
                 py_header = imp.get_magic() + \
                     u'\xff\xff\xff\xff'.encode('iso-8859-15')
 
@@ -716,7 +720,7 @@ class Environment(object):
             filter_func = lambda x: '.' in x and \
                                     x.rsplit('.', 1)[1] in extensions
         if filter_func is not None:
-            x = ifilter(filter_func, x)
+            x = list(ifilter(filter_func, x))
         return x
 
     def handle_exception(self, exc_info=None, rendered=False, source_hint=None):
@@ -757,14 +761,23 @@ class Environment(object):
     def _load_template(self, name, globals):
         if self.loader is None:
             raise TypeError('no loader for this environment specified')
+        try:
+            # use abs path for cache key
+            cache_key = self.loader.get_source(self, name)[1]
+        except RuntimeError:
+            # if loader does not implement get_source()
+            cache_key = None
+        # if template is not file, use name for cache key
+        if cache_key is None:
+            cache_key = name
         if self.cache is not None:
-            template = self.cache.get(name)
-            if template is not None and (not self.auto_reload or \
+            template = self.cache.get(cache_key)
+            if template is not None and (not self.auto_reload or
                                          template.is_up_to_date):
                 return template
         template = self.loader.load(self, name, globals)
         if self.cache is not None:
-            self.cache[name] = template
+            self.cache[cache_key] = template
         return template
 
     @internalcode
@@ -1131,7 +1144,9 @@ class TemplateStream(object):
         """
         close = False
         if isinstance(fp, string_types):
-            fp = open(fp, encoding is None and 'w' or 'wb')
+            if encoding is None:
+                encoding = 'utf-8'
+            fp = open(fp, 'wb')
             close = True
         try:
             if encoding is not None:

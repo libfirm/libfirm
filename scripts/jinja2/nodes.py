@@ -12,16 +12,16 @@
     :copyright: (c) 2010 by the Jinja Team.
     :license: BSD, see LICENSE for more details.
 """
+import types
 import operator
 
 from collections import deque
 from jinja2.utils import Markup
-from jinja2._compat import next, izip, with_metaclass, text_type, \
-     method_type, function_type
+from jinja2._compat import izip, with_metaclass, text_type
 
 
 #: the types we support for context functions
-_context_function_types = (function_type, method_type)
+_context_function_types = (types.FunctionType, types.MethodType)
 
 
 _binop_to_func = {
@@ -345,6 +345,11 @@ class ExprStmt(Stmt):
 class Assign(Stmt):
     """Assigns an expression to a target."""
     fields = ('target', 'node')
+
+
+class AssignBlock(Stmt):
+    """Assigns a block to a target."""
+    fields = ('target', 'body')
 
 
 class Expr(Node):
@@ -746,7 +751,7 @@ class Add(BinExpr):
 
 
 class Sub(BinExpr):
-    """Substract the right from the left node."""
+    """Subtract the right from the left node."""
     operator = '-'
 
 
