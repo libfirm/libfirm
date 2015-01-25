@@ -8,7 +8,6 @@
  * @brief   Lowering of Switches if necessary or advantageous.
  * @author  Moritz Kroll
  */
-#include <limits.h>
 #include <stdbool.h>
 
 #include "array.h"

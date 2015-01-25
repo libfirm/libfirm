@@ -9,7 +9,6 @@
  *              ia32-Firm.
  * @author      Christian Wuerdig, Matthias Braun
  */
-#include <limits.h>
 #include <stdbool.h>
 
 #include "irargs_t.h"

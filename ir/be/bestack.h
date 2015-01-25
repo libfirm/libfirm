@@ -12,6 +12,8 @@
 #ifndef FIRM_BE_BESTACK_H
 #define FIRM_BE_BESTACK_H
 
+#include <limits.h>
+
 #include "firm_types.h"
 #include "be_types.h"
 

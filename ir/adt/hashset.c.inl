@@ -50,6 +50,7 @@
  */
 #ifdef HashSet
 
+#include <limits.h>
 #include <stdlib.h>
 #include <assert.h>
 

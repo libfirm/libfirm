@@ -23,7 +23,6 @@
 
 #include <time.h>
 #include <time.h>
-#include <limits.h>
 #include <errno.h>
 #include <signal.h>
 #include <stdlib.h>

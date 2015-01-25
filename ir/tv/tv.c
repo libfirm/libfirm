@@ -17,6 +17,7 @@
  *  - target has IEEE-754 floating-point arithmetic.
  */
 #include <assert.h>
+#include <limits.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdlib.h>

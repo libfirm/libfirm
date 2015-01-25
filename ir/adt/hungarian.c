@@ -28,6 +28,7 @@
  * @file
  * @brief   Solving the Minimum Assignment Problem using the Hungarian Method.
  */
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>

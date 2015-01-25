@@ -35,8 +35,6 @@
 #include "gen_arm_regalloc_if.h"
 #include "gen_arm_new_nodes.h"
 
-#include <limits.h>
-
 #define ARM_PO2_STACK_ALIGNMENT 3
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)

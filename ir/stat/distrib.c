@@ -8,6 +8,8 @@
  * @brief   Statistics for Firm. Distribution tables.
  * @author  Michael Beck
  */
+#include <limits.h>
+
 #include "hashptr.h"
 #include "util.h"
 #include "xmalloc.h"

@@ -12,7 +12,6 @@
 #ifndef FIRM_ADT_BITFIDDLE_H
 #define FIRM_ADT_BITFIDDLE_H
 
-#include <limits.h>
 #include <assert.h>
 #include <stdbool.h>
 #include <stdint.h>

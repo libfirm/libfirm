@@ -8,7 +8,6 @@
  * @brief   emit assembler for a backend graph
  * @author  Hannes Rapp, Matthias Braun
  */
-//#include <limits.h>
 #include <inttypes.h>
 
 #include "bearch_sparc_t.h"
