@@ -9,7 +9,6 @@
  * @author      Matthias Braun
  * @date        05.05.2006
  */
-#include <limits.h>
 #include <stdbool.h>
 
 #include "bitset.h"
@@ -131,9 +130,6 @@ typedef struct be_verify_schedule_env_t_ {
 static void verify_schedule_walker(ir_node *block, void *data)
 {
 	be_verify_schedule_env_t *env = (be_verify_schedule_env_t*) data;
-	ir_node *non_phi_found  = NULL;
-	ir_node *cfchange_found = NULL;
-	int last_timestep = INT_MIN;
 
 	/*
 	 * Tests for the following things:
@@ -141,6 +137,9 @@ static void verify_schedule_walker(ir_node *block, void *data)
 	 *      block
 	 *   2. No value is defined after it has been used
 	 */
+	ir_node         *non_phi_found  = NULL;
+	ir_node         *cfchange_found = NULL;
+	sched_timestep_t last_timestep  = 0;
 	sched_foreach(block, node) {
 		/* this node is scheduled */
 		if (bitset_is_set(env->scheduled, get_irn_idx(node))) {
@@ -156,7 +155,7 @@ static void verify_schedule_walker(ir_node *block, void *data)
 		}
 
 		/* Check that timesteps are increasing */
-		int timestep = sched_get_time_step(node);
+		sched_timestep_t timestep = sched_get_time_step(node);
 		if (timestep <= last_timestep) {
 			verify_warnf(block, "schedule timestep did not increase at %+F", node);
 			env->problem_found = true;
