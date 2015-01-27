@@ -64,7 +64,6 @@ void ir_init(void)
 	init_mode();
 	init_tarval_2();
 	firm_init_op();
-	firm_init_mangle();
 	firm_init_reassociation();
 	firm_init_funccalls();
 	firm_init_inline();
@@ -98,7 +97,6 @@ void ir_finish(void)
 	finish_tarval();
 	finish_mode();
 	finish_tpop();
-	firm_finish_mangle();
 	finish_ident();
 }
 

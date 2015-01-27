@@ -30,11 +30,6 @@ void init_ident(void);
  */
 void finish_ident(void);
 
-/** initializes the name mangling code */
-void firm_init_mangle(void);
-
-void firm_finish_mangle(void);
-
 #define NEW_IDENT(x) new_id_from_chars((x), sizeof(x) - 1)
 
 #endif

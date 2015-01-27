@@ -280,7 +280,7 @@ static void copy_parameter_entities(ir_node *call, ir_graph *called_graph)
 		ir_type   *old_type    = get_entity_type(old_entity);
 		dbg_info  *entity_dbgi = get_entity_dbg_info(old_entity);
 		ident     *old_name    = get_entity_ident(old_entity);
-		ident     *name        = id_mangle3("", old_name, "$inlined");
+		ident     *name        = new_id_fmt("%s$inlined", old_name);
 		ir_entity *new_ent     = new_entity(frame_type, name, old_type);
 		set_entity_dbg_info(new_ent, entity_dbgi);
 		set_entity_link(old_entity, new_ent);

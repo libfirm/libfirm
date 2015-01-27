@@ -220,7 +220,7 @@ static ir_type *compute_arg_type(ir_graph *irg, calling_convention_t *cconv,
 	ir_type *frame_type      = get_irg_frame_type(irg);
 	size_t   n_frame_members = get_compound_n_members(frame_type);
 
-	ir_type *const res = new_type_struct(id_mangle3("", get_entity_ident(entity), "_arg_type"));
+	ir_type *const res = new_type_struct(new_id_fmt("%s_arg_type", get_entity_ident(entity)));
 
 	/* search for existing value_param entities */
 	for (size_t f = n_frame_members; f-- > 0; ) {

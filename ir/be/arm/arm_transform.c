@@ -1713,7 +1713,7 @@ static void create_stacklayout(ir_graph *irg)
 	assert(cconv != NULL);
 
 	/* construct argument type */
-	ident   *const arg_type_id = id_mangle3("", get_entity_ident(entity), "_arg_type");
+	ident   *const arg_type_id = new_id_fmt("%s_arg_type", get_entity_ident(entity));
 	ir_type *const arg_type    = new_type_struct(arg_type_id);
 	for (unsigned p = 0, n_params = get_method_n_params(function_type);
 	     p < n_params; ++p) {

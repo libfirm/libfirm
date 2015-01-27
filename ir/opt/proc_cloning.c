@@ -245,9 +245,7 @@ static void collect_irg_calls(ir_node *call, void *env)
  */
 static ident *get_clone_ident(ident *id, size_t pos, size_t nr)
 {
-	char clone_postfix[32];
-	ir_snprintf(clone_postfix, sizeof(clone_postfix), "_cl_%zu_%zu", pos, nr);
-	return id_mangle3("", id, clone_postfix);
+	return new_id_fmt("%s_cl_%zu_%zu", id, pos, nr);
 }
 
 static inline ir_node *get_irn_copy(ir_node *const irn)

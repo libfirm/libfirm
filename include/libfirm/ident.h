@@ -45,6 +45,13 @@ FIRM_API ident *new_id_from_str(const char *str);
 FIRM_API ident *new_id_from_chars(const char *str, size_t len);
 
 /**
+ * Create an ident from a format string.
+ *
+ * @return a handle for the generated ident
+ */
+FIRM_API ident *new_id_fmt(char const *fmt, ...);
+
+/**
  * Returns a string represented by an ident.
  *
  * Returns the string represented by id. This string is
@@ -60,13 +67,6 @@ FIRM_API const char *get_id_str(ident *id);
  * and replaces a "%u" inside the tag with the counter.
  */
 FIRM_API ident *id_unique(const char *tag);
-
-/** mangle dot: Returns a new ident that represents first.scnd. */
-FIRM_API ident *id_mangle_dot(ident *first, ident* scnd);
-
-/** Returns a new ident that represents 'prefixscndsuffix'. */
-FIRM_API ident *id_mangle3(const char *prefix, ident *middle,
-                           const char *suffix);
 
 /** @} */
 

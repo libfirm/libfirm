@@ -28,7 +28,7 @@ static ir_entity *create_trampoline(be_main_env_t *be, ir_entity *method)
 {
 	ir_type   *type   = get_entity_type(method);
 	ident     *old_id = get_entity_ld_ident(method);
-	ident     *id     = id_mangle3("", old_id, "$stub");
+	ident     *id     = new_id_fmt("%s$stub", old_id);
 	ir_type   *parent = be->pic_trampolines_type;
 	ir_entity *ent    = new_entity(parent, old_id, type);
 	set_entity_ld_ident(ent, id);
@@ -54,7 +54,7 @@ static ir_entity *get_trampoline(be_main_env_t *env, ir_entity *method)
 static ir_entity *create_pic_symbol(be_main_env_t *be, ir_entity *entity)
 {
 	ident     *old_id = get_entity_ld_ident(entity);
-	ident     *id     = id_mangle3("", old_id, "$non_lazy_ptr");
+	ident     *id     = new_id_fmt("%s$non_lazy_ptr", old_id);
 	ir_type   *e_type = get_entity_type(entity);
 	ir_type   *type   = new_type_pointer(e_type);
 	ir_type   *parent = be->pic_symbols_type;

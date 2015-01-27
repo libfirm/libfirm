@@ -2812,7 +2812,7 @@ static void amd64_create_stacklayout(ir_graph *irg, const x86_cconv_t *cconv)
 	be_stack_layout_t *layout        = be_get_irg_stack_layout(irg);
 
 	/* construct argument type */
-	ident   *const arg_id   = id_mangle3("", get_entity_ident(entity), "_arg_type");
+	ident   *const arg_id   = new_id_fmt("%s_arg_type", get_entity_ident(entity));
 	ir_type *const arg_type = new_type_struct(arg_id);
 	size_t   const n_params = get_method_n_params(function_type);
 	for (size_t p = 0; p < n_params; ++p) {
