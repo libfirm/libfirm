@@ -264,16 +264,11 @@ static ir_node *create_softfloat_address(const ir_node *n, const char *name)
 	assert(float_types <= 3);
 	assert(double_types <= 3);
 
-	char buf[16];
-	if (float_types + double_types > 1)
-		snprintf(buf, sizeof(buf), "__%s%s%s%s%u", name, first_param,
-		         second_param, result, float_types + double_types);
-	else
-		snprintf(buf, sizeof(buf), "__%s%s%s%s", name, first_param,
-		         second_param, result);
+	ident *const id = float_types + double_types > 1 ?
+		new_id_fmt("__%s%s%s%s%u", name, first_param, second_param, result, float_types + double_types) :
+		new_id_fmt("__%s%s%s%s",   name, first_param, second_param, result);
 
 	ir_graph  *const irg = get_irn_irg(n);
-	ident     *const id  = new_id_from_str(buf);
 	ir_entity *const ent = create_compilerlib_entity(id, method);
 	return new_r_Address(irg, ent);
 }

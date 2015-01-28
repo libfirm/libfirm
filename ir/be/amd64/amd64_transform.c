@@ -2820,9 +2820,7 @@ static void amd64_create_stacklayout(ir_graph *irg, const x86_cconv_t *cconv)
 		if (param->type == NULL)
 			continue;
 
-		char buf[128];
-		snprintf(buf, sizeof(buf), "param_%u", (unsigned)p);
-		ident *id     = new_id_from_str(buf);
+		ident *const id = new_id_fmt("param_%u", (unsigned)p);
 		param->entity = new_entity(arg_type, id, param->type);
 		set_entity_offset(param->entity, param->offset);
 	}

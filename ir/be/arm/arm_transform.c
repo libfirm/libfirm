@@ -1721,9 +1721,7 @@ static void create_stacklayout(ir_graph *irg)
 		if (param->type == NULL)
 			continue;
 
-		char buf[128];
-		snprintf(buf, sizeof(buf), "param_%u", p);
-		ident *id     = new_id_from_str(buf);
+		ident *const id = new_id_fmt("param_%u", p);
 		param->entity = new_entity(arg_type, id, param->type);
 		set_entity_offset(param->entity, param->offset);
 	}

@@ -1252,9 +1252,7 @@ ir_entity *frame_alloc_area(ir_type *frame_type, int size, unsigned alignment,
 	if (irp->byte_type == NULL)
 		irp->byte_type = new_type_primitive(mode_Bu);
 
-	char buf[32];
-	snprintf(buf, sizeof(buf), "area%u", area_cnt++);
-	ident *name = new_id_from_str(buf);
+	ident *const name = new_id_fmt("area%u", area_cnt++);
 
 	ir_type *tp = new_type_array(irp->byte_type);
 	set_array_size_int(tp, size);

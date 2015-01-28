@@ -79,11 +79,8 @@ static void replace_with_call(ir_node *node)
 	ir_node        *call_res;
 	ir_entity      *entity;
 	ir_node        *call;
-	ident          *id;
 
-	char buf[64];
-	snprintf(buf, sizeof(buf), "__%s%s2", name, gcc_machmode);
-	id = new_id_from_str(buf);
+	ident *const id = new_id_fmt("__%s%s2", name, gcc_machmode);
 
 	entity = pmap_get(ir_entity, entities, id);
 	if (entity == NULL) {

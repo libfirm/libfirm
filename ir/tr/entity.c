@@ -79,16 +79,9 @@ ir_entity *new_entity(ir_type *owner, ident *name, ir_type *type)
 	return res;
 }
 
-static ident *make_parameter_entity_name(size_t pos)
-{
-	char buf[64];
-	snprintf(buf, sizeof(buf), "parameter.%lu", (unsigned long) pos);
-	return new_id_from_str(buf);
-}
-
 ir_entity *new_parameter_entity(ir_type *owner, size_t pos, ir_type *type)
 {
-	ident     *name = make_parameter_entity_name(pos);
+	ident     *name = new_id_fmt("parameter.%lu", (unsigned long)pos);
 	ir_entity *res  = intern_new_entity(owner, IR_ENTITY_PARAMETER, name, type);
 	res->attr.compound_member.offset = -1;
 	res->attr.parameter.number = pos;
