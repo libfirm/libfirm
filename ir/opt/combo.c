@@ -1763,7 +1763,16 @@ static void default_compute(node_t *node)
 		}
 	}
 
-	node->type.tv = computed_value(irn);
+	ir_tarval *value = computed_value(irn);
+	if (!tarval_is_constant(value)) {
+		/* In case of undefined behavior (e.g. division by zero) computed_value
+		 * returns tarval_bottom. However, we handle the node like an Unknown node
+		 * and set its type to tarval_top (see compute_Unknown for details).
+		 */
+		node->type.tv = tarval_top;
+	} else {
+		node->type.tv = value;
+	}
 }
 
 /**
@@ -1812,6 +1821,8 @@ static void compute_Bad(node_t *node)
  */
 static void compute_Unknown(node_t *node)
 {
+	/* If we would return tarval_bottom, a Cond with an Unknown
+	 * predecessor would lose both Projs and the graph would break apart. */
 	node->type.tv = tarval_top;
 }
 
@@ -2187,23 +2198,6 @@ static void compute_Proj_Switch(node_t *node, ir_node *switchn)
 	}
 }
 
-static void compute_DivMod_res(node_t *node)
-{
-	/* if any of the data inputs have type bottom, the result is type bottom */
-	ir_node *irn = node->node;
-	foreach_irn_in_r(irn, i, pred) {
-		node_t *const p = get_irn_node(pred);
-		if (p->type.tv == tarval_bottom) {
-			node->type.tv = tarval_bottom;
-			return;
-		}
-	}
-
-	node->type.tv = computed_value(irn);
-	if (!tarval_is_constant(node->type.tv))
-		node->type.tv = tarval_unknown;
-}
-
 /**
  * (Re-)compute the type for a Proj-Node.
  *
@@ -2249,12 +2243,7 @@ static void compute_Proj(node_t *node)
 		return;
 	}
 
-	if ((is_Div(pred) && get_Proj_num(proj) == pn_Div_res)
-	 || (is_Mod(pred) && get_Proj_num(proj) == pn_Mod_res)) {
-		compute_DivMod_res(pred_node);
-	} else {
-		default_compute(pred_node);
-	}
+	default_compute(pred_node);
 	node->type.tv = pred_node->type.tv;
 }
 
