@@ -1,5 +1,6 @@
 #include <assert.h>
 #include <float.h>
+#include <limits.h>
 #include "firm.h"
 #include "fltcalc.h"
 #include "irprintf.h"
