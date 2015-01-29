@@ -5230,7 +5230,7 @@ is_bittest: {
 			if (get_mode_size_bits(mode) > get_mode_size_bits(op_mode) &&
 			    (is_relation_equal || is_relation_less_greater ||
 			     mode_is_signed(mode) || !mode_is_signed(op_mode)) &&
-			    !mode_is_float(mode)) {
+			    !mode_is_float(op_mode)) {
 				if (!mode_is_signed(mode) && mode_is_signed(op_mode)) {
 					relation = is_relation_equal ? ir_relation_equal
 					                             : ir_relation_less_greater;
