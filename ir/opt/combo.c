@@ -3103,28 +3103,25 @@ static void apply_result(ir_node *irn, void *ctx)
  */
 static void apply_end(ir_node *end, environment_t *env)
 {
-	int       j  = 0;
-	int       n  = get_End_n_keepalives(end);
-	ir_node **in = NULL;
+	int const n  = get_End_n_keepalives(end);
+	if (n > 0) {
+		int             j  = 0;
+		ir_node **const in = ALLOCAN(ir_node*, n);
+		for (int i = 0; i < n; i++) {
+			ir_node *ka = get_End_keepalive(end, i);
 
-	if (n > 0)
-		in = ALLOCAN(ir_node*, n);
+			if (is_Bad(ka))
+				continue;
 
-	/* fix the keep alive */
-	for (int i = 0; i < n; i++) {
-		ir_node *ka = get_End_keepalive(end, i);
-
-		if (is_Bad(ka))
-			continue;
-
-		ir_node *const block = get_block(ka);
-		node_t  *const node  = get_irn_node(block);
-		if (is_reachable(node))
-			in[j++] = ka;
-	}
-	if (j != n) {
-		set_End_keepalives(end, j, in);
-		env->modified = true;
+			ir_node *const block = get_block(ka);
+			node_t  *const node  = get_irn_node(block);
+			if (is_reachable(node))
+				in[j++] = ka;
+		}
+		if (j != n) {
+			set_End_keepalives(end, j, in);
+			env->modified = true;
+		}
 	}
 }
 
