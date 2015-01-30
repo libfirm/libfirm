@@ -2967,20 +2967,9 @@ static void apply_result(ir_node *irn, void *ctx)
 	environment_t *env   = (environment_t *)ctx;
 	node_t        *node  = get_irn_node(irn);
 	node_t        *block = get_irn_node(get_nodes_block(irn));
+	assert(is_reachable(block));
 
-	if (!is_reachable(block)) {
-		ir_graph *irg  = get_irn_irg(irn);
-		ir_mode  *mode = get_irn_mode(node->node);
-		ir_node  *bad  = new_r_Bad(irg, mode);
-
-		/* here, bad might already have a node, but this can be safely ignored
-			 as long as bad has at least ONE valid node */
-		set_irn_node(bad, node);
-		node->node = bad;
-		DB((dbg, LEVEL_1, "%+F is unreachable\n", irn));
-		exchange(irn, bad);
-		env->modified = true;
-	} else if (node->type.tv == tarval_bottom) {
+	if (node->type.tv == tarval_bottom) {
 		ir_mode *mode = get_irn_mode(irn);
 
 		if (mode == mode_M) {
