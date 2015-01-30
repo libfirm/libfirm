@@ -2764,28 +2764,14 @@ static void apply_cf(ir_node *block, void *ctx)
 	int            n    = get_Block_n_cfgpreds(block);
 
 	if (!is_reachable(node)) {
-		env->modified = true;
-
-		for (int i = n; i-- > 0; ) {
-			ir_node *pred = get_Block_cfgpred(block, i);
-
-			if (!is_Bad(pred)) {
-				ir_node *pred_block = get_nodes_block(skip_Proj(pred));
-				if (!is_Bad(pred_block)) {
-					node_t *pred_bl = get_irn_node(pred_block);
-
-					if (pred_bl->flagged == 0) {
-						pred_bl->flagged = 3;
-					}
-				}
-			}
-		}
-
+		/* Nothing to do for unreachable blocks. Their control-flow successors cut
+		 * them off anyway.  The only exception is the end block. */
 		ir_graph *const irg = get_irn_irg(block);
 		if (block == get_irg_end_block(irg)) {
 			/* Analysis found out that the end block is unreachable,
 			 * hence we remove all its control flow predecessors. */
 			set_irn_in(block, 0, NULL);
+			env->modified = true;
 		}
 		return;
 	}
@@ -2815,16 +2801,6 @@ static void apply_cf(ir_node *block, void *ctx)
 			in_X[k++] = pred;
 		} else {
 			DB((dbg, LEVEL_1, "Removing dead input %d from %+F (%+F)\n", i, block, pred));
-			if (!is_Bad(pred)) {
-				ir_node *pred_block = get_nodes_block(skip_Proj(pred));
-				if (!is_Bad(pred_block)) {
-					node_t *pred_bl = get_irn_node(pred_block);
-
-					if (!is_Bad(pred_bl->node) && pred_bl->flagged == 0) {
-						pred_bl->flagged = 3;
-					}
-				}
-			}
 		}
 	}
 	if (k >= n)
