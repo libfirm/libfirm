@@ -2960,150 +2960,150 @@ static void find_kept_memory(ir_node *irn, void *ctx)
  */
 static void apply_result(ir_node *irn, void *ctx)
 {
-	if (is_Block(irn) || is_End(irn) || is_Bad(irn)) {
-		/* blocks already handled, do not touch the End node */
-	} else {
-		environment_t *env   = (environment_t *)ctx;
-		node_t        *node  = get_irn_node(irn);
-		node_t        *block = get_irn_node(get_nodes_block(irn));
+	/* Blocks already handled, do not touch the End node. */
+	if (is_Block(irn) || is_End(irn) || is_Bad(irn))
+		return;
 
-		if (!is_reachable(block)) {
-			ir_graph *irg  = get_irn_irg(irn);
-			ir_mode  *mode = get_irn_mode(node->node);
-			ir_node  *bad  = new_r_Bad(irg, mode);
+	environment_t *env   = (environment_t *)ctx;
+	node_t        *node  = get_irn_node(irn);
+	node_t        *block = get_irn_node(get_nodes_block(irn));
 
-			/* here, bad might already have a node, but this can be safely ignored
-			   as long as bad has at least ONE valid node */
-			set_irn_node(bad, node);
-			node->node = bad;
-			DB((dbg, LEVEL_1, "%+F is unreachable\n", irn));
-			exchange(irn, bad);
-			env->modified = true;
-		} else if (node->type.tv == tarval_bottom) {
-			ir_mode *mode = get_irn_mode(irn);
+	if (!is_reachable(block)) {
+		ir_graph *irg  = get_irn_irg(irn);
+		ir_mode  *mode = get_irn_mode(node->node);
+		ir_node  *bad  = new_r_Bad(irg, mode);
 
-			if (mode == mode_M) {
-				/* never kill a mode_M node */
-				if (is_Proj(irn)) {
-					ir_node *pred  = get_Proj_pred(irn);
-					node_t  *pnode = get_irn_node(pred);
+		/* here, bad might already have a node, but this can be safely ignored
+			 as long as bad has at least ONE valid node */
+		set_irn_node(bad, node);
+		node->node = bad;
+		DB((dbg, LEVEL_1, "%+F is unreachable\n", irn));
+		exchange(irn, bad);
+		env->modified = true;
+	} else if (node->type.tv == tarval_bottom) {
+		ir_mode *mode = get_irn_mode(irn);
 
-					if (pnode->type.tv == tarval_bottom) {
-						/* skip the predecessor */
-						ir_node *mem = get_memop_mem(pred);
-						node->node = mem;
-						DB((dbg, LEVEL_1, "%+F computes Bottom, replaced by %+F\n", irn, mem));
-						exchange(irn, mem);
-						env->modified = true;
-					}
-				}
-				/* leave other nodes, especially PhiM */
-			} else if (mode == mode_T) {
-				/* Do not kill mode_T nodes, kill their Projs */
-			} else if (!is_Unknown(irn)) {
-				/* do not kick away Unknown's, they might be still needed */
-				ir_graph *irg = get_irn_irg(irn);
-				ir_node  *unk = new_r_Unknown(irg, mode);
-
-				/* control flow should already be handled at apply_cf() */
-				assert(mode != mode_X);
-
-				/* see comment above */
-				set_irn_node(unk, node);
-				node->node = unk;
-				DB((dbg, LEVEL_1, "%+F computes Bottom\n", irn));
-				exchange(irn, unk);
-				env->modified = true;
-			}
-		} else if (get_irn_mode(irn) == mode_X) {
+		if (mode == mode_M) {
+			/* never kill a mode_M node */
 			if (is_Proj(irn)) {
-				/* leave or Jmp */
-				ir_node *cond = get_Proj_pred(irn);
+				ir_node *pred  = get_Proj_pred(irn);
+				node_t  *pnode = get_irn_node(pred);
 
-				if (is_Cond(cond) || is_Switch(cond)) {
-					if (only_one_reachable_proj(cond)) {
-						ir_node *jmp = new_r_Jmp(block->node);
-						set_irn_node(jmp, node);
-						node->node = jmp;
-						DB((dbg, LEVEL_1, "%+F is replaced by %+F\n", irn, jmp));
-						DBG_OPT_COMBO(irn, jmp, FS_OPT_COMBO_CF);
-						exchange(irn, jmp);
-						env->modified = true;
-					} else if (is_Switch(cond)) {
-						node_t    *sel = get_irn_node(get_Switch_selector(cond));
-						ir_tarval *tv  = sel->type.tv;
-
-						if (is_tarval(tv) && tarval_is_constant(tv)) {
-							/* The selector is a constant, but more
-							 * than one output is active: An unoptimized
-							 * case found. */
-							env->unopt_cf = true;
-						}
-					}
-				}
-			}
-		/* normal data node */
-		} else if (is_tarval(node->type.tv) && tarval_is_constant(node->type.tv)) {
-			/*
-			 * Beware: never replace mode_T nodes by constants. Currently we must mark
-			 * mode_T nodes with constants, but do NOT replace them.
-			 */
-			if (!is_Const(irn) && get_irn_mode(irn) != mode_T) {
-				/* can be replaced by a constant */
-				ir_graph  *irg = get_irn_irg(irn);
-				ir_tarval *tv  = node->type.tv;
-				ir_node   *c   = new_r_Const(irg, tv);
-				set_irn_node(c, node);
-				node->node = c;
-				DB((dbg, LEVEL_1, "%+F is replaced by %+F\n", irn, c));
-				DBG_OPT_COMBO(irn, c, FS_OPT_COMBO_CONST);
-				exchange_leader(irn, c);
-				env->modified = true;
-			}
-		} else if (is_entity(node->type.ent)) {
-			if (!is_Address(irn)) {
-				/* can be replaced by an Address */
-				ir_graph *irg  = get_irn_irg(irn);
-				ir_node  *addr = new_r_Address(irg, node->type.ent);
-				set_irn_node(addr, node);
-				node->node = addr;
-
-				DB((dbg, LEVEL_1, "%+F is replaced by %+F\n", irn, addr));
-				DBG_OPT_COMBO(irn, addr, FS_OPT_COMBO_CONST);
-				exchange_leader(irn, addr);
-				env->modified = true;
-			}
-		} else if (is_Confirm(irn)) {
-			/* Confirms are always follower, but do not kill them here */
-		} else {
-			ir_node *leader = get_leader(node);
-
-			if (leader != irn) {
-				bool non_strict_phi = false;
-
-				/*
-				 * Beware: Do not remove Phi(Unknown, ..., x, ..., Unknown)
-				 * as this might create non-strict programs.
-				 */
-				if (node->is_follower && is_Phi(irn) && !is_Unknown(leader)) {
-					for (int i = get_Phi_n_preds(irn); i-- > 0; ) {
-						ir_node *pred = get_Phi_pred(irn, i);
-
-						if (is_Unknown(pred)) {
-							non_strict_phi = true;
-							break;
-						}
-					}
-				}
-				if (!non_strict_phi) {
-					DB((dbg, LEVEL_1, "%+F from part%d is replaced by %+F\n", irn, node->part->nr, leader));
-					if (node->is_follower)
-						DBG_OPT_COMBO(irn, leader, FS_OPT_COMBO_FOLLOWER);
-					else
-						DBG_OPT_COMBO(irn, leader, FS_OPT_COMBO_CONGRUENT);
-					exchange_leader(irn, leader);
+				if (pnode->type.tv == tarval_bottom) {
+					/* skip the predecessor */
+					ir_node *mem = get_memop_mem(pred);
+					node->node = mem;
+					DB((dbg, LEVEL_1, "%+F computes Bottom, replaced by %+F\n", irn, mem));
+					exchange(irn, mem);
 					env->modified = true;
 				}
+			}
+			/* leave other nodes, especially PhiM */
+		} else if (mode == mode_T) {
+			/* Do not kill mode_T nodes, kill their Projs */
+		} else if (!is_Unknown(irn)) {
+			/* do not kick away Unknown's, they might be still needed */
+			ir_graph *irg = get_irn_irg(irn);
+			ir_node  *unk = new_r_Unknown(irg, mode);
+
+			/* control flow should already be handled at apply_cf() */
+			assert(mode != mode_X);
+
+			/* see comment above */
+			set_irn_node(unk, node);
+			node->node = unk;
+			DB((dbg, LEVEL_1, "%+F computes Bottom\n", irn));
+			exchange(irn, unk);
+			env->modified = true;
+		}
+	} else if (get_irn_mode(irn) == mode_X) {
+		if (is_Proj(irn)) {
+			/* leave or Jmp */
+			ir_node *cond = get_Proj_pred(irn);
+
+			if (is_Cond(cond) || is_Switch(cond)) {
+				if (only_one_reachable_proj(cond)) {
+					ir_node *jmp = new_r_Jmp(block->node);
+					set_irn_node(jmp, node);
+					node->node = jmp;
+					DB((dbg, LEVEL_1, "%+F is replaced by %+F\n", irn, jmp));
+					DBG_OPT_COMBO(irn, jmp, FS_OPT_COMBO_CF);
+					exchange(irn, jmp);
+					env->modified = true;
+				} else if (is_Switch(cond)) {
+					node_t    *sel = get_irn_node(get_Switch_selector(cond));
+					ir_tarval *tv  = sel->type.tv;
+
+					if (is_tarval(tv) && tarval_is_constant(tv)) {
+						/* The selector is a constant, but more
+						 * than one output is active: An unoptimized
+						 * case found. */
+						env->unopt_cf = true;
+					}
+				}
+			}
+		}
+	/* normal data node */
+	} else if (is_tarval(node->type.tv) && tarval_is_constant(node->type.tv)) {
+		/*
+		 * Beware: never replace mode_T nodes by constants. Currently we must mark
+		 * mode_T nodes with constants, but do NOT replace them.
+		 */
+		if (!is_Const(irn) && get_irn_mode(irn) != mode_T) {
+			/* can be replaced by a constant */
+			ir_graph  *irg = get_irn_irg(irn);
+			ir_tarval *tv  = node->type.tv;
+			ir_node   *c   = new_r_Const(irg, tv);
+			set_irn_node(c, node);
+			node->node = c;
+			DB((dbg, LEVEL_1, "%+F is replaced by %+F\n", irn, c));
+			DBG_OPT_COMBO(irn, c, FS_OPT_COMBO_CONST);
+			exchange_leader(irn, c);
+			env->modified = true;
+		}
+	} else if (is_entity(node->type.ent)) {
+		if (!is_Address(irn)) {
+			/* can be replaced by an Address */
+			ir_graph *irg  = get_irn_irg(irn);
+			ir_node  *addr = new_r_Address(irg, node->type.ent);
+			set_irn_node(addr, node);
+			node->node = addr;
+
+			DB((dbg, LEVEL_1, "%+F is replaced by %+F\n", irn, addr));
+			DBG_OPT_COMBO(irn, addr, FS_OPT_COMBO_CONST);
+			exchange_leader(irn, addr);
+			env->modified = true;
+		}
+	} else if (is_Confirm(irn)) {
+		/* Confirms are always follower, but do not kill them here */
+	} else {
+		ir_node *leader = get_leader(node);
+
+		if (leader != irn) {
+			bool non_strict_phi = false;
+
+			/*
+			 * Beware: Do not remove Phi(Unknown, ..., x, ..., Unknown)
+			 * as this might create non-strict programs.
+			 */
+			if (node->is_follower && is_Phi(irn) && !is_Unknown(leader)) {
+				for (int i = get_Phi_n_preds(irn); i-- > 0; ) {
+					ir_node *pred = get_Phi_pred(irn, i);
+
+					if (is_Unknown(pred)) {
+						non_strict_phi = true;
+						break;
+					}
+				}
+			}
+			if (!non_strict_phi) {
+				DB((dbg, LEVEL_1, "%+F from part%d is replaced by %+F\n", irn, node->part->nr, leader));
+				if (node->is_follower)
+					DBG_OPT_COMBO(irn, leader, FS_OPT_COMBO_FOLLOWER);
+				else
+					DBG_OPT_COMBO(irn, leader, FS_OPT_COMBO_CONGRUENT);
+				exchange_leader(irn, leader);
+				env->modified = true;
 			}
 		}
 	}
