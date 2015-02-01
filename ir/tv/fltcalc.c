@@ -1084,8 +1084,7 @@ void fc_neg(const fp_value *a, fp_value *result)
 {
 	if (a != result)
 		memcpy(result, a, fp_value_size);
-	if (result->clss != FC_NAN)
-		result->sign = !a->sign;
+	result->sign = !a->sign;
 }
 
 flt2int_result_t fc_flt2int(const fp_value *a, sc_word *result,
