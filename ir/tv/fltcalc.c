@@ -724,9 +724,21 @@ void fc_cast(const fp_value *value, const float_descriptor_t *dest,
 	}
 
 	switch ((value_class_t)value->clss) {
-	case FC_NAN:
-		fc_get_nan(dest, result, !fc_nan_is_quiet(value), _mant(value));
+	case FC_NAN: {
+		result->desc = *dest;
+		result->clss = FC_NAN;
+		result->sign = value->sign;
+		sc_max_from_bits(dest->exponent_size, 0, _exp(result));
+		unsigned const src_mant = value->desc.mantissa_size;
+		unsigned const dst_mant = dest->mantissa_size;
+		if (dst_mant < src_mant) {
+			sc_shrI(_mant(value), src_mant - dst_mant, _mant(result));
+		} else {
+			sc_shlI(_mant(value), dst_mant - src_mant, _mant(result));
+		}
 		return;
+	}
+
 	case FC_INF:
 		fc_get_inf(dest, result, value->sign);
 		return;
