@@ -999,7 +999,6 @@ bool fc_can_lossless_conv_to(const fp_value *value,
 	switch ((value_class_t)value->clss) {
 	case FC_ZERO:
 	case FC_INF:
-	case FC_NAN:
 		return true;
 	case FC_NORMAL:
 	case FC_SUBNORMAL: {
@@ -1009,6 +1008,8 @@ bool fc_can_lossless_conv_to(const fp_value *value,
 		int v        = fc_get_exponent(value) + exp_bias;
 		if (0 < v && v < (1 << desc->exponent_size) - 1) {
 			/* exponent can be encoded, now check the mantissa */
+			/* FALLTHROUGH */
+	case FC_NAN:
 			v = (value->desc.mantissa_size - value->desc.explicit_one)
 				+ ROUNDING_BITS - sc_get_lowest_set_bit(_mant(value));
 			return v <= desc->mantissa_size - desc->explicit_one;
