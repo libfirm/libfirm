@@ -4349,13 +4349,13 @@ static ir_node *transform_node_And(ir_node *n)
 	}
 	ir_node *x;
 	ir_node *y;
-	if (is_Eor(a) || is_Eor_Add(a)) {
+	if ((is_Eor(a) || is_Eor_Add(a)) && only_one_user(a)) {
 		x = b;
 		y = get_commutative_other_op(a, x);
 		if (y) /* (x ^ y) & x -> ~y & x */
 			goto absorb;
 	}
-	if (is_Eor(b) || is_Eor_Add(b)) {
+	if ((is_Eor(b) || is_Eor_Add(b)) && only_one_user(b)) {
 		x = a;
 		y = get_commutative_other_op(b, x);
 		if (y) {
