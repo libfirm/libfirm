@@ -2925,6 +2925,87 @@ static ir_node *transform_node_Eor_(ir_node *n)
 		}
 	}
 
+	// Eor elimination
+	ir_node *ta   = a;
+	ir_node *tb   = b;
+	int      nots = 0;
+	if (is_Not(ta) && only_one_user(ta)) {
+		nots++;
+		ta = get_Not_op(ta);
+	}
+	if (is_Not(tb) && only_one_user(tb)) {
+		nots++;
+		tb = get_Not_op(tb);
+	}
+
+	if (is_And(tb) || is_Or(tb)) {
+		ir_node *l = get_binop_left(tb);
+		ir_node *r = get_binop_right(tb);
+
+		if (ta == r || (is_Not(r) && ta == get_Not_op(r))) {
+			ir_node *t = l;
+			l = r;
+			r = t;
+		}
+
+		if (is_Not(l) && ta == get_Not_op(l)) {
+			nots++;
+			ta = l;
+		}
+
+		if (ta == l && only_one_user(tb)) {
+			nots = nots % 2;
+
+			dbg_info *dbgi  = get_irn_dbg_info(n);
+			ir_node  *block = get_nodes_block(n);
+			ir_node  *t;
+			if(is_And(tb)) {
+				t = new_rd_And(dbgi, block, l, new_rd_Not(dbgi, block, r, mode), mode);
+			} else {
+				assert(is_Or(tb));
+				t = new_rd_And(dbgi, block, new_rd_Not(dbgi, block, l, mode), r, mode);
+			}
+			if (nots) {
+				t = new_rd_Not(dbgi, block, t, mode);
+			}
+			return t;
+		}
+	}
+
+	if (is_And(ta) || is_Or(ta)) {
+		ir_node *l = get_binop_left(ta);
+		ir_node *r = get_binop_right(ta);
+
+		if (tb == r || (is_Not(r) && tb == get_Not_op(r))) {
+			ir_node *t = l;
+			l = r;
+			r = t;
+		}
+
+		if (is_Not(l) && tb == get_Not_op(l)) {
+			nots++;
+			tb = l;
+		}
+
+		if (tb == l && only_one_user(ta)) {
+			nots = nots % 2;
+
+			dbg_info *dbgi  = get_irn_dbg_info(n);
+			ir_node  *block = get_nodes_block(n);
+			ir_node  *t;
+			if(is_And(ta)) {
+				t = new_rd_And(dbgi, block, l, new_rd_Not(dbgi, block, r, mode), mode);
+			} else {
+				assert(is_Or(ta));
+				t = new_rd_And(dbgi, block, new_rd_Not(dbgi, block, l, mode), r, mode);
+			}
+			if (nots) {
+				t = new_rd_Not(dbgi, block, t, mode);
+			}
+			return t;
+		}
+	}
+
 	n = transform_bitop_chain(n);
 	if (n != oldn)
 		return n;
