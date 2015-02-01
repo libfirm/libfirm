@@ -925,12 +925,13 @@ bool fc_is_subnormal(const fp_value *a)
 int fc_print(const fp_value *val, char *buf, size_t buflen, fc_base_t base)
 {
 	switch ((value_class_t)val->clss) {
-	case FC_INF:
-		return snprintf(buf, buflen, "%cINF", val->sign ? '-' : '+');
-	case FC_NAN:
-		return snprintf(buf, buflen, "NaN");
-	case FC_ZERO:
-		return snprintf(buf, buflen, "0.0");
+		char const *v;
+	case FC_INF:  v = "INF"; goto special;
+	case FC_NAN:  v = "NaN"; goto special;
+	case FC_ZERO: v = "0.0"; goto special;
+special:
+		return snprintf(buf, buflen, "%c%s", val->sign ? '-' : '+', v);
+
 	case FC_SUBNORMAL:
 	case FC_NORMAL: {
 		long double flt_val = fc_val_to_ieee754(val);
