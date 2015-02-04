@@ -524,7 +524,6 @@ static void test_float_tarvals(ir_mode *mode)
 		test_binop_nan(simple_sub, nan);
 		test_binop_nan(tarval_mul, nan);
 		test_binop_nan(tarval_div, nan);
-		test_unop_nan(tarval_neg, nan);
 		test_unop_nan(tarval_abs, nan);
 	}
 
