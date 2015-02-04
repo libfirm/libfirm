@@ -183,12 +183,7 @@ static void test_binop_nan_(binop op, const char *new_op_name, ir_tarval *nan)
 static void test_unop_nan_(unop op, const char *new_op_name, ir_tarval *nan)
 {
 	op_name = new_op_name;
-	for (unsigned i = 0, n = n_tarvals; i < n; ++i) {
-		ir_tarval *value = tarvals[i];
-		if (tarval_is_nan(value))
-			continue;
-		TVS_EQUAL(op(nan), nan);
-	}
+	TVS_EQUAL(op(nan), nan);
 	op_name = "";
 }
 #define test_unop_nan(func, nan) test_unop_nan_(func, #func, nan)
