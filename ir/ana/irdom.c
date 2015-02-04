@@ -75,11 +75,7 @@ void set_Block_idom(ir_node *block, ir_node *n)
 
 ir_node *get_Block_ipostdom(const ir_node *block)
 {
-	if (get_Block_postdom_depth(block) == -1) {
-		/* This block is not reachable from Start */
-		ir_graph *irg = get_irn_irg(block);
-		return new_r_Bad(irg, mode_BB);
-	}
+	assert(get_Block_postdom_depth(block) != -1);
 	return get_pdom_info_const(block)->idom;
 }
 
@@ -622,11 +618,10 @@ void compute_postdoms(ir_graph *irg)
 		/* Step 2 */
 		unsigned irn_arity = get_Block_n_cfg_outs_ka(w->block);
 		for (unsigned j = 0; j < irn_arity; j++) {
-			const ir_node *succ = get_Block_cfg_out_ka(w->block, j);
-			if (get_Block_postdom_pre_num(succ) == -1)
-				continue;    /* endless-loop */
-
-			const tmp_dom_info *u = dom_eval(&tdi_list[get_Block_postdom_pre_num(succ)]);
+			const ir_node      *succ    = get_Block_cfg_out_ka(w->block, j);
+			const int           pre_num = get_Block_postdom_pre_num(succ);
+			assert(pre_num != -1);
+			const tmp_dom_info *u       = dom_eval(&tdi_list[pre_num]);
 			if (u->semi < w->semi)
 				w->semi = u->semi;
 		}
