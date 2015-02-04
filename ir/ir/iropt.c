@@ -7435,7 +7435,8 @@ static ir_node *transform_node_Store(ir_node *n)
 {
 	ir_node *mem = get_Store_mem(n);
 	ir_node *ptr = get_Store_ptr(n);
-	if (is_Proj(mem)) {
+	/* The store might modify a global value that is used within a loop. */
+	if (is_Proj(mem) && only_one_user(mem)) {
 		ir_node *pred_store = get_Proj_pred(mem);
 		if (is_Store(pred_store) && get_Store_ptr(pred_store) == ptr &&
 		    get_Store_volatility(pred_store) != volatility_is_volatile) {
