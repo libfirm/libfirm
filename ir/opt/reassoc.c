@@ -834,6 +834,148 @@ static void do_shannon(ir_graph *irg)
 	plist_free(optimizations);
 }
 
+/**
+ * Returns true if we can be sure that @p node only has a single read user.
+ */
+static bool only_one_user(const ir_node *node)
+{
+	ir_graph *irg = get_irn_irg(node);
+	if (!edges_activated(irg))
+		return false;
+	return get_irn_n_edges(node) <= 1;
+}
+
+typedef enum {
+    NOT_FOUND,    /**< no match found */
+    FOUND_FIRST,  /**< found a match for the first node */
+    FOUND_SECOND  /**< found a match for the second node */
+} match_result_t;
+
+/**
+ * Recursively replaces a with b/~b, or b with a/~a, according to need_not.
+ *
+ * We only want to replace something if our subgraph contains a and b.
+ * So we set the @p replace flag when we found the first node and perform
+ * the actual replacement if we found the second one.
+ *
+ * @param node      The currently visited node
+ * @param a         The first node we want to match
+ * @param b         The second node we want to match
+ * @param need_not  Whether we should replace a with ~b (instead of b), or vice versa.
+ * @param replace   Whether we already found one node and thus can replace the other.
+ *
+ * @return match result that indicates whether we found a or b first, or none of them.
+ */
+static match_result_t replace_until_other_user(ir_node *node, ir_node *a, ir_node *b, bool need_not, bool replace)
+{
+	match_result_t ret = replace;
+	if (!is_bitop(node) || !only_one_user(node)) {
+		return ret;
+	}
+
+	foreach_irn_in(node, i, t) {
+		if (t == a) {
+			if (replace) {
+				ir_node *op = b;
+				if (need_not) {
+					op = new_rd_Not(get_irn_dbg_info(op), get_nodes_block(op), op, get_irn_mode(op));
+				}
+				DBG((dbg, LEVEL_4, "replace %li @ %li with %li\n", get_irn_node_nr(t), get_irn_node_nr(node), get_irn_node_nr(op)));
+				set_irn_n(node, i, op);
+			} else {
+				replace = true;
+				ir_node *t  = a;
+				a   = b;
+				b   = t;
+				ret = FOUND_SECOND;
+			}
+		} else if (t == b) {
+			if (!replace) {
+				replace = true;
+				ret     = FOUND_FIRST;
+			}
+		} else {
+			match_result_t res = replace_until_other_user(t, a, b, need_not, replace);
+			switch (res) {
+			case FOUND_SECOND: {
+				ir_node *t  = a;
+				a = b;
+				b = t;
+				/* fall through */
+			}
+			case FOUND_FIRST:
+				if (!replace)
+					ret = res;
+				replace = true;
+				break;
+			default:
+				break;
+			}
+		}
+	}
+
+	return ret;
+}
+
+/**
+ * If one of the following cases is matched, replace_until_other_user will be called:
+ *  (a ^ b) & f(a, b) ->  (a ^ b) & f(a, ~a)
+ * ~(a ^ b) & f(a, b) -> ~(a ^ b) & f(a,  a)
+ *  (a ^ b) | f(a, b) ->  (a ^ b) | f(a,  a)
+ * ~(a ^ b) | f(a, b) -> ~(a ^ b) | f(a, ~a)
+ */
+static void walk_equality(ir_node *node, void *env)
+{
+	(void)env;
+
+	if (!is_And(node) && !is_Or(node)) {
+		return;
+	}
+
+	ir_node *l        = get_binop_left(node);
+	ir_node *r        = get_binop_right(node);
+	bool     need_not = is_And(node);
+
+	if (is_Not(l) && is_Eor(get_Not_op(l))) {
+		l        = get_Not_op(l);
+		need_not = !need_not;
+	} else if (is_Eor(l)) {
+	} else if (is_Not(r) && is_Eor(get_Not_op(r))) {
+		ir_node *t = get_Not_op(r);
+		r          = l;
+		l          = t;
+		need_not   = !need_not;
+	} else if (is_Eor(r)) {
+		ir_node *t = r;
+		r          = l;
+		l          = t;
+	} else {
+		return;
+	}
+
+	ir_node *a = get_binop_left(l);
+	ir_node *b = get_binop_right(l);
+	assert(a != b);
+
+	if (is_Const(b)) {
+		replace_until_other_user(r, a, b, need_not, true);
+	} else if (is_Const(a)) {
+		replace_until_other_user(r, b, a, need_not, true);
+	} else {
+		if (is_Not(a)) {
+			need_not = !need_not;
+			a        = get_Not_op(a);
+		}
+
+		if (is_Not(b)) {
+			need_not = !need_not;
+			b        = get_Not_op(b);
+		}
+
+		replace_until_other_user(r, a, b, need_not, false);
+	}
+}
+
 /*
  * do the reassociation
  */
@@ -850,6 +992,8 @@ void optimize_reassociation(ir_graph *irg)
 	DBG((dbg, LEVEL_5, "shannon start...\n"));
 	do_shannon(irg);
 
+	DBG((dbg, LEVEL_5, "Eor equality start...\n"));
+	irg_walk_edges(get_irg_start_block(irg), walk_equality, NULL, NULL);
 
 	waitq *const wq = new_waitq();
 
