@@ -12,7 +12,7 @@
 #include <string.h>
 
 #include "util.h"
-#include "irouts.h"
+#include "irouts_t.h"
 
 #include "xmalloc.h"
 #include "irgwalk.h"
@@ -353,6 +353,7 @@ typedef struct tmp_dom_info {
 	                                   immediate dominator. After step 4,
 	                                   w->dom is the immediate dominator of w.*/
 	struct tmp_dom_info *bucket;  /**< set of vertices with same semidominator */
+	int unreachable : 1; /**< node is not reachable by control flow edges */
 } tmp_dom_info;
 
 /**
@@ -372,13 +373,14 @@ static void init_tmp_dom_info(ir_node *block, tmp_dom_info *parent,
 	tmp_dom_info *tdi = &tdi_list[*used];
 	++(*used);
 
-	tdi->block    = block;
-	tdi->semi     = tdi;
-	tdi->parent   = parent;
-	tdi->label    = tdi;
-	tdi->ancestor = NULL;
-	tdi->dom      = NULL;
-	tdi->bucket   = NULL;
+	tdi->block       = block;
+	tdi->semi        = tdi;
+	tdi->parent      = parent;
+	tdi->label       = tdi;
+	tdi->ancestor    = NULL;
+	tdi->dom         = NULL;
+	tdi->bucket      = NULL;
+	tdi->unreachable = 0;
 
 	/* Iterate */
 	for (unsigned i = get_Block_n_cfg_outs_ka(block); i-- != 0;) {
@@ -396,7 +398,8 @@ static void init_tmp_dom_info(ir_node *block, tmp_dom_info *parent,
  * End block misses blocks in endless loops.
  */
 static void init_tmp_pdom_info(ir_node *block, tmp_dom_info *parent,
-                               tmp_dom_info *tdi_list, int* used, int n_blocks)
+                               tmp_dom_info *tdi_list, int* used, int n_blocks,
+                               int unreachable)
 {
 	if (Block_block_visited(block))
 		return;
@@ -407,31 +410,31 @@ static void init_tmp_pdom_info(ir_node *block, tmp_dom_info *parent,
 	tmp_dom_info *tdi = &tdi_list[*used];
 	++(*used);
 
-	tdi->block    = block;
-	tdi->semi     = tdi;
-	tdi->parent   = parent;
-	tdi->label    = tdi;
-	tdi->ancestor = NULL;
-	tdi->dom      = NULL;
-	tdi->bucket   = NULL;
+	tdi->block       = block;
+	tdi->semi        = tdi;
+	tdi->parent      = parent;
+	tdi->label       = tdi;
+	tdi->ancestor    = NULL;
+	tdi->dom         = NULL;
+	tdi->bucket      = NULL;
+	tdi->unreachable = unreachable;
 
 	/* Iterate */
 	for (int i = get_Block_n_cfgpreds(block) - 1; i >= 0; --i) {
 		ir_node *pred = get_Block_cfgpred_block(block, i);
 		if (pred == NULL)
 			continue;
-		init_tmp_pdom_info(pred, tdi, tdi_list, used, n_blocks);
+		init_tmp_pdom_info(pred, tdi, tdi_list, used, n_blocks, unreachable);
 	}
 
-	/* Handle keep-alives. Note that the preprocessing
-	   in init_construction() had already killed all
-	   phantom keep-alive edges. All remaining block keep-alives
-	   are really edges to endless loops. */
+	/* All remaining block keep-alives are edges to endless loops.
+	 * Mark the following unvisited blocks as unreachable.
+	 * Later, we will treat the keep-alive edges as normal control flow. */
 	const ir_graph *irg = get_irn_irg(block);
 	if (block == get_irg_end_block(irg)) {
 		foreach_irn_in_r(get_irg_end(irg), i, pred) {
 			if (is_Block(pred))
-				init_tmp_pdom_info(pred, tdi, tdi_list, used, n_blocks);
+				init_tmp_pdom_info(pred, tdi, tdi_list, used, n_blocks, 1);
 		}
 	}
 }
@@ -587,6 +590,18 @@ void compute_doms(ir_graph *irg)
 	add_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 }
 
+static void update_pdom_semi(tmp_dom_info *tdi_list, tmp_dom_info *w,
+                             ir_node *succ_block)
+{
+	assert(is_Block(succ_block));
+	const int           pre_num = get_Block_postdom_pre_num(succ_block);
+	assert(pre_num != -1);
+	const tmp_dom_info *u       = dom_eval(&tdi_list[pre_num]);
+	if (u->semi < w->semi) {
+		w->semi = u->semi;
+	}
+}
+
 void compute_postdoms(ir_graph *irg)
 {
 	/* Update graph state */
@@ -607,7 +622,8 @@ void compute_postdoms(ir_graph *irg)
 	ir_reserve_resources(irg, IR_RESOURCE_BLOCK_VISITED);
 	inc_irg_block_visited(irg);
 	int used = 0;
-	init_tmp_pdom_info(get_irg_end_block(irg), NULL, tdi_list, &used, n_blocks);
+	ir_node *end_block = get_irg_end_block(irg);
+	init_tmp_pdom_info(end_block, NULL, tdi_list, &used, n_blocks, 0);
 	ir_free_resources(irg, IR_RESOURCE_BLOCK_VISITED);
 	assert(used <= n_blocks);
 	n_blocks = used;
@@ -616,15 +632,23 @@ void compute_postdoms(ir_graph *irg)
 		tmp_dom_info *w = &tdi_list[i];
 
 		/* Step 2 */
-		unsigned irn_arity = get_Block_n_cfg_outs_ka(w->block);
-		for (unsigned j = 0; j < irn_arity; j++) {
-			const ir_node      *succ    = get_Block_cfg_out_ka(w->block, j);
-			const int           pre_num = get_Block_postdom_pre_num(succ);
-			assert(pre_num != -1);
-			const tmp_dom_info *u       = dom_eval(&tdi_list[pre_num]);
-			if (u->semi < w->semi)
-				w->semi = u->semi;
+		ir_node  *block       = w->block;
+		bool      unreachable = w->unreachable;
+		foreach_irn_out(block, j, succ) {
+			if (get_irn_mode(succ) != mode_X || is_Bad(succ))
+				continue;
+			if (is_End(succ)) {
+				if (unreachable && end_block != block)
+					/* Handle keep-alive edges to unreachable
+					 * blocks as normal control flow. */
+					update_pdom_semi(tdi_list, w, end_block);
+				continue;
+			}
+			foreach_irn_out(succ, k, succ_block) {
+				update_pdom_semi(tdi_list, w, succ_block);
+			}
 		}
+
 		/* Add w to w->semi's bucket.  w is in exactly one bucket, so
 		   buckets can be implemented as linked lists. */
 		w->bucket = w->semi->bucket;
