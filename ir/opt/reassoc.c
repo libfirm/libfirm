@@ -27,6 +27,9 @@
 #include "pdeq.h"
 #include "debug.h"
 
+#include "unionfind.h"
+#include "plist.h"
+
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
 typedef enum {
@@ -569,6 +572,268 @@ static void reverse_rules(ir_node *node, void *env)
 	} while (res);
 }
 
+/**
+ * Returns true iff node is a bitwise function.
+ */
+static bool is_bitop(ir_node *node)
+{
+	return is_And(node) || is_Eor(node) || is_Or(node) || is_Not(node);
+}
+
+typedef struct {
+	ir_graph *irg;
+	plist_t  *optimizations;
+
+	pmap        *walk_counter;
+	unsigned int walk_base;
+	unsigned int walk_max;
+} shannon_data;
+
+
+typedef struct {
+	ir_node *base_node;
+	ir_node *middle_node;
+	ir_node *top_node;
+	ir_node *other_node;
+} optimization_t;
+
+/**
+ * Try to find middle_node or top_node, from base_node over a non-direct path.
+ *
+ *              top_node
+ *              ^      ^
+ *              |      |
+ *          +---+      +------+
+ *          |                 |
+ *     other_node       middle_node (optional)
+ *          ^                 ^
+ *          |                 |
+ *          |                 |
+ *          .                 |
+ *          .                 |
+ *          .                 |
+ *          |                 |
+ *          |                 |
+ *          +-------+   +-----+
+ *                  |   |
+ *               base_node
+ *
+ * @param current      Current node of the search
+ * @param other_node   Previous visited node of the search
+ * @param base_node    Common root node
+ * @param middle_node  Not node,  Eor node with constant operand, or NULL
+ * @param top_node     Non-constant Operand of middle_node
+ * @param shdata       Shannon data
+ */
+static void find_path_to_top_node(ir_node *current, ir_node *other_node, ir_node *base_node, ir_node *middle_node, ir_node *top_node, shannon_data *shdata)
+{
+	ir_node *top_node2;
+	ir_node *middle_node2;
+	if (current == middle_node) {
+		top_node2    = middle_node;
+		middle_node2 = NULL;
+	} else {
+		top_node2    = top_node;
+		middle_node2 = middle_node;
+	}
+
+	if (current == top_node2 && ((middle_node && get_irn_n_outs(middle_node) > 1) || base_node != other_node)) {
+		optimization_t *optimization = XMALLOC(optimization_t);
+		optimization->base_node      = base_node;
+		optimization->middle_node    = middle_node2;
+		optimization->top_node       = top_node2;
+		optimization->other_node     = other_node;
+
+		plist_insert_back(shdata->optimizations, optimization);
+
+		return;
+	}
+
+	uintptr_t counter = (uintptr_t)pmap_get(void, shdata->walk_counter, current);
+	if (counter < shdata->walk_base) {
+		counter = shdata->walk_base;
+	}
+	counter++;
+	if (counter > shdata->walk_max) {
+		shdata->walk_max = counter;
+	}
+	pmap_insert(shdata->walk_counter, current, (void *)counter);
+
+	if ((counter - shdata->walk_base) == get_irn_n_outs(current) && is_bitop(current)) {
+		foreach_irn_in(current, i, n) {
+			find_path_to_top_node(n, current, base_node, middle_node, top_node, shdata);
+		}
+	}
+}
+
+/**
+ * If given node is a middle_node, return the top_node. Else return the node itself.
+ */
+static ir_node *get_topnode_from_middlenode(ir_node *node)
+{
+	if (is_Not(node))
+		return get_Not_op(node);
+
+	if (is_Eor(node)) {
+		assert(!is_Const(get_Eor_left(node)));
+
+		ir_node *r = get_Eor_right(node);
+		if (is_Const(r)) {
+			return get_Eor_left(node);
+		}
+	}
+
+	return node;
+}
+
+/**
+ * Walker function that tries to find a top_node to given base_node.
+ */
+static void try_basenode(ir_node *base_node, void *env)
+{
+	if (!is_And(base_node) && !is_Or(base_node)) {
+		return;
+	}
+
+	shannon_data *shdata = (shannon_data *)env;
+	ir_node      *l      = get_binop_left(base_node);
+	ir_node      *r      = get_binop_right(base_node);
+
+	for (int i = 0; i < 2; i++) {
+		ir_node *top_node    = get_topnode_from_middlenode(l);
+		ir_node *middle_node = NULL;
+		if (top_node != l) {
+			middle_node = l;
+		}
+
+		shdata->walk_base = shdata->walk_max;
+		find_path_to_top_node(r, base_node, base_node, middle_node, top_node, shdata);
+
+		ir_node *t = l;
+		l = r;
+		r = t;
+	}
+}
+
+/**
+ * Replace top_node from given other_node by constant. base_node could be And or Or and is used to
+ * decide if the constant will be (replacement Eor -1) or (replacement Eor 0).
+ */
+static void replace_node(ir_node *top_node, ir_node *base_node, ir_node *other_node, ir_tarval *replacement)
+{
+	assert(is_And(base_node) || is_Or(base_node));
+
+	/* find index of top_node from other_node */
+	int pos = -1;
+	foreach_irn_in(other_node, i, n) {
+		if (n == top_node) {
+			pos = i;
+			break;
+		}
+	}
+	assert(pos >= 0);
+
+	ir_mode   *other_mode = get_irn_mode(other_node);
+	ir_tarval *base_val   = is_And(base_node) ? get_mode_all_one(other_mode) : get_mode_null(other_mode);
+	dbg_info  *dbgi       = get_irn_dbg_info(other_node);
+	ir_graph  *irg        = get_irn_irg(top_node);
+	ir_tarval *tv         = tarval_eor(base_val, replacement);
+	ir_node   *c          = new_rd_Const(dbgi, irg, tv);
+	set_irn_n(other_node, pos, c);
+}
+
+/**
+ * Returns the tarval of the const operator of the node.
+ */
+static ir_tarval *get_Eor_tarval(ir_node *node)
+{
+	assert(is_Eor(node));
+	ir_node *l = get_Eor_left(node);
+	ir_node *r = get_Eor_right(node);
+
+	if (is_Const(l))
+		return get_Const_tarval(l);
+
+	assert(is_Const(r));
+	return get_Const_tarval(r);
+}
+
+/**
+ * Returns true iff operand is a operand of node.
+ */
+static bool has_operand(ir_node *node, ir_node *operand)
+{
+	foreach_irn_in(node, i, n) {
+		if (n == operand) {
+			return true;
+		}
+	}
+	return false;
+}
+
+/**
+ * Applies Shannon to given irg.
+ */
+static void do_shannon(ir_graph *irg)
+{
+	plist_t     *optimizations = plist_new();
+	pmap        *walk_counter  = pmap_create();
+	shannon_data shdata        = {.irg = irg, .optimizations = optimizations, .walk_counter = walk_counter, .walk_base = 0, .walk_max = 0};
+
+	/* walk and get optimization data */
+	irg_walk_edges(get_irg_start_block(irg), NULL, try_basenode, &shdata);
+
+	/* optimize */
+	DBG((dbg, LEVEL_4, "optimizations:\n"));
+	foreach_plist(optimizations, el) {
+		optimization_t *optimization = el->data;
+		ir_node        *middle_node  = optimization->middle_node;
+		ir_node        *top_node     = optimization->top_node;
+		ir_node        *base_node    = optimization->base_node;
+		ir_node        *other_node   = optimization->other_node;
+
+		DBG((dbg, LEVEL_4, "base_node: %li, middle_node: %li, top_node: %li, other_node: %li\n",
+		     get_irn_node_nr(base_node),
+		     middle_node ? get_irn_node_nr(middle_node) : 0,
+		     get_irn_node_nr(top_node),
+		     get_irn_node_nr(other_node)));
+
+		/* check if optimization is still valid */
+		if (middle_node) {
+			if (!has_operand(middle_node, top_node) || !has_operand(base_node, middle_node)) {
+				continue;
+			}
+		} else if (!has_operand(base_node, top_node)) {
+			continue;
+		}
+
+		if (!has_operand(other_node, top_node)) {
+			continue;
+		}
+
+		/* calculate replacement */
+		ir_mode   *mode        = get_irn_mode(top_node);
+		ir_tarval *replacement;
+		if (!middle_node) {
+			replacement = get_mode_null(mode);
+		} else if (is_Not(middle_node)) {
+			replacement = get_mode_all_one(mode);
+		} else {
+			assert(is_Eor(middle_node));
+			replacement = get_Eor_tarval(middle_node);
+		}
+
+		/* replace */
+		replace_node(top_node, base_node, other_node, replacement);
+		DBG((dbg, LEVEL_4, "replaced\n"));
+
+		free(optimization);
+	}
+
+	pmap_destroy(walk_counter);
+	plist_free(optimizations);
+}
+
 /*
  * do the reassociation
  */
@@ -579,7 +844,12 @@ void optimize_reassociation(ir_graph *irg)
 
 	assure_irg_properties(irg,
 	                      IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE
-	                      | IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO);
+	                      | IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO
+	                      | IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
+
+	DBG((dbg, LEVEL_5, "shannon start...\n"));
+	do_shannon(irg);
+
 
 	waitq *const wq = new_waitq();
 
