@@ -2925,6 +2925,35 @@ static ir_node *transform_node_Eor_(ir_node *n)
 		}
 	}
 
+
+	if (is_Or(a) && is_And(b) && only_one_user(a) && only_one_user(b)) {
+		ir_node *al = get_binop_left(a);
+		ir_node *ar = get_binop_right(a);
+		ir_node *bl = get_binop_left(b);
+		ir_node *br = get_binop_right(b);
+
+		if ((al == bl && ar == br) || (al == br && ar == bl)) {
+			/* (x | y) ^ (x & y) -> x ^ y */
+			dbg_info *dbgi  = get_irn_dbg_info(n);
+			ir_node  *block = get_nodes_block(n);
+			return new_rd_Eor(dbgi, block, al, ar, mode);
+		}
+	}
+	if (is_And(a) && is_Or(b) && only_one_user(a) && only_one_user(b)) {
+		ir_node *al = get_binop_left(a);
+		ir_node *ar = get_binop_right(a);
+		ir_node *bl = get_binop_left(b);
+		ir_node *br = get_binop_right(b);
+
+		if ((al == bl && ar == br) || (al == br && ar == bl)) {
+			/* (x & y) ^ (x | y) -> x ^ y */
+			dbg_info *dbgi  = get_irn_dbg_info(n);
+			ir_node  *block = get_nodes_block(n);
+			return new_rd_Eor(dbgi, block, al, ar, mode);
+		}
+	}
+
+
 	// Eor elimination
 	ir_node *ta   = a;
 	ir_node *tb   = b;
