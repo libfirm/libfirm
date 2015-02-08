@@ -114,7 +114,7 @@ static bool sparc_modifies_flags(const ir_node *node)
 {
 	be_foreach_out(node, o) {
 		const arch_register_req_t *req = arch_get_irn_register_req_out(node, o);
-		if (req->cls == &sparc_reg_classes[CLASS_sparc_flags_class])
+		if (req->cls == &sparc_reg_classes[CLASS_sparc_flags])
 			return true;
 	}
 	return false;
@@ -124,7 +124,7 @@ static bool sparc_modifies_fp_flags(const ir_node *node)
 {
 	be_foreach_out(node, o) {
 		const arch_register_req_t *req = arch_get_irn_register_req_out(node, o);
-		if (req->cls == &sparc_reg_classes[CLASS_sparc_fpflags_class])
+		if (req->cls == &sparc_reg_classes[CLASS_sparc_fpflags])
 			return true;
 	}
 	return false;
@@ -133,9 +133,9 @@ static bool sparc_modifies_fp_flags(const ir_node *node)
 static void sparc_before_ra(ir_graph *irg)
 {
 	/* fixup flags register */
-	be_sched_fix_flags(irg, &sparc_reg_classes[CLASS_sparc_flags_class],
+	be_sched_fix_flags(irg, &sparc_reg_classes[CLASS_sparc_flags],
 	                   NULL, sparc_modifies_flags, NULL);
-	be_sched_fix_flags(irg, &sparc_reg_classes[CLASS_sparc_fpflags_class],
+	be_sched_fix_flags(irg, &sparc_reg_classes[CLASS_sparc_fpflags],
 	                   NULL, sparc_modifies_fp_flags, NULL);
 }
 

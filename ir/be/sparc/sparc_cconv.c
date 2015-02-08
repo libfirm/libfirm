@@ -31,11 +31,11 @@ static const unsigned ignore_regs[] = {
 
 	REG_SP,
 	REG_O7,
-	REG_FRAME_POINTER,
+	REG_FP,
 	REG_I7,
 
-	REG_FPFLAGS,
-	REG_FLAGS,
+	REG_PSR,
+	REG_FSR,
 	REG_Y,
 
 	REG_F31,
@@ -105,15 +105,15 @@ static const unsigned caller_saves[] = {
 	REG_F28,
 	REG_F29,
 	REG_F30,
-	REG_FLAGS,
-	REG_FPFLAGS,
+	REG_PSR,
+	REG_FSR,
 	REG_Y,
 };
 static unsigned default_caller_saves[BITSET_SIZE_ELEMS(N_SPARC_REGISTERS)];
 
 static const unsigned returns_twice_saved[] = {
 	REG_SP,
-	REG_FRAME_POINTER,
+	REG_FP,
 	REG_I7
 };
 static unsigned default_returns_twice_saves[BITSET_SIZE_ELEMS(N_SPARC_REGISTERS)];

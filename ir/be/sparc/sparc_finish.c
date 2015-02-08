@@ -149,7 +149,7 @@ static void introduce_epilog(ir_node *ret)
 	ir_graph          *const irg    = get_irn_irg(ret);
 	be_stack_layout_t *const layout = be_get_irg_stack_layout(irg);
 	if (!layout->sp_relative) {
-		arch_register_t const *const fp_reg  = &sparc_registers[REG_FRAME_POINTER];
+		arch_register_t const *const fp_reg  = &sparc_registers[REG_FP];
 		ir_node               *const fp      = be_get_initial_reg_value(irg, fp_reg);
 		ir_node               *const new_sp  = be_get_initial_reg_value(irg, sp_reg);
 		ir_node               *const restore = new_bd_sparc_RestoreZero(NULL, block, new_sp, fp);
