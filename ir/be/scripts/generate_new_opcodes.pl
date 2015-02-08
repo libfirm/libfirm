@@ -788,6 +788,12 @@ sub is_reg_class {
     return 0;
 }
 
+sub is_ambiguous {
+	my $name = shift;
+	return 1 if exists($reg_classes{"$name"}) && exists($reg2class{"$name"});
+	return 0;
+}
+
 ###
 # Returns the register class for a given register.
 # @return class or undef
@@ -1025,10 +1031,23 @@ sub generate_requirements {
 		}
 	}
 
+	my $is_cls = 0;
+	my $is_reg = 0;
+	if ($reqs =~ /reg-(.*)/) {
+		$reqs = $1;
+		$is_reg = 1;
+	} elsif ($reqs =~ /cls-(.*)/) {
+		$reqs = $1;
+		$is_cls = 1;
+	}
+	if (is_ambiguous($reqs) && !$is_reg && !$is_cls) {
+		die("Fatal error: $reqs is ambiguous (try reg-$reqs or cls-$reqs) at node $op")
+	}
+
 	my $class;
 	if ($reqs eq "none") {
 		return "arch_no_requirement";
-	} elsif (is_reg_class($reqs)) {
+	} elsif (is_reg_class($reqs) && !$is_reg) {
 		my $reqtype = join(" | ", @req_type_mask) || "arch_register_req_type_none";
 		$class  = $reqs;
 		$result = <<EOF;
