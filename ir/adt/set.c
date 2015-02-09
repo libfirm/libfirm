@@ -69,7 +69,7 @@
 
 typedef struct element {
 	struct element *chain;    /**< for chaining Elements */
-	MANGLEP (entry) entry;
+	MANGLEP(entry)  entry;
 } Element, *Segment;
 
 
@@ -91,29 +91,28 @@ struct SET {
 
 SET *(PMANGLE(new)) (MANGLEP(cmp_fun) cmp, size_t nslots)
 {
-	SET   *table = XMALLOC(SET);
-	size_t i;
-
 	if (nslots > SEGMENT_SIZE * DIRECTORY_SIZE) {
 		nslots = DIRECTORY_SIZE;
 	} else {
 		/* Adjust nslots up to next power of 2, minimum SEGMENT_SIZE */
-		for (i = SEGMENT_SIZE;  i < nslots;  i <<= 1) {
+		size_t i;
+		for (i = SEGMENT_SIZE; i < nslots; i <<= 1) {
 		}
 		nslots = i >> SEGMENT_SIZE_SHIFT;
 	}
 
-	table->nseg = table->p = table->nkey = 0;
-	table->maxp = nslots << SEGMENT_SIZE_SHIFT;
-	table->cmp = cmp;
+	SET *table = XMALLOC(SET);
+	table->nseg      = table->p = table->nkey = 0;
+	table->maxp      = nslots << SEGMENT_SIZE_SHIFT;
+	table->cmp       = cmp;
 	table->iter_tail = NULL;
 #ifdef PSET
 	table->free_list = NULL;
 #endif
-	obstack_init (&table->obst);
+	obstack_init(&table->obst);
 
 	/* Make segments */
-	for (i = 0;  i < nslots;  ++i) {
+	for (size_t i = 0;  i < nslots;  ++i) {
 		table->dir[i] = OALLOCNZ(&table->obst, Segment, SEGMENT_SIZE);
 		table->nseg++;
 	}
@@ -121,11 +120,10 @@ SET *(PMANGLE(new)) (MANGLEP(cmp_fun) cmp, size_t nslots)
 	return table;
 }
 
-
 void PMANGLE(del) (SET *table)
 {
-	obstack_free (&table->obst, NULL);
-	free (table);
+	obstack_free(&table->obst, NULL);
+	free(table);
 }
 
 size_t MANGLEP(count) (SET *table)
@@ -154,14 +152,16 @@ static inline int iter_step(SET *table)
  */
 void *(MANGLEP(first))(SET *table)
 {
-	assert (!table->iter_tail);
+	assert(!table->iter_tail);
 	table->iter_i = 0;
 	table->iter_j = 0;
 	while (!table->dir[table->iter_i][table->iter_j]) {
-		if (!iter_step (table)) return NULL;
+		if (!iter_step(table)) {
+			return NULL;
+		}
 	}
 	table->iter_tail = table->dir[table->iter_i][table->iter_j];
-	assert (table->iter_tail->entry.dptr);
+	assert(table->iter_tail->entry.dptr);
 	return table->iter_tail->entry.dptr;
 }
 
@@ -178,11 +178,13 @@ void *(MANGLEP(next))(SET *table)
 	if (!table->iter_tail) {
 		/* go to next segment */
 		do {
-			if (!iter_step (table)) return NULL;
+			if (!iter_step (table)) {
+				return NULL;
+			}
 		} while (!table->dir[table->iter_i][table->iter_j]);
 		table->iter_tail = table->dir[table->iter_i][table->iter_j];
 	}
-	assert (table->iter_tail->entry.dptr);
+	assert(table->iter_tail->entry.dptr);
 	return table->iter_tail->entry.dptr;
 }
 
@@ -196,8 +198,7 @@ void MANGLEP(break) (SET *table)
  */
 static inline unsigned Hash(SET *table, unsigned h)
 {
-	unsigned address;
-	address = h & (table->maxp - 1);          /* h % table->maxp */
+	unsigned address = h & (table->maxp - 1);       /* h % table->maxp */
 	if (address < (unsigned)table->p)
 		address = h & ((table->maxp << 1) - 1); /* h % (2*table->maxp) */
 	return address;
@@ -209,8 +210,7 @@ static inline unsigned Hash(SET *table, unsigned h)
  */
 static inline int loaded(SET *table)
 {
-	return (  ++table->nkey
-			> (table->nseg << SEGMENT_SIZE_SHIFT) * MAX_LOAD_FACTOR);
+	return ++table->nkey > (table->nseg << SEGMENT_SIZE_SHIFT) * MAX_LOAD_FACTOR;
 }
 
 /*
@@ -223,45 +223,36 @@ static inline int loaded(SET *table)
  */
 static void expand_table(SET *table)
 {
-	size_t NewAddress;
-	size_t OldSegmentIndex, NewSegmentIndex;
-	size_t OldSegmentDir, NewSegmentDir;
-	Segment *OldSegment;
-	Segment *NewSegment;
-	Element *Current;
-	Element **Previous;
-	Element **LastOfNew;
-
 	if (table->maxp + table->p < (DIRECTORY_SIZE << SEGMENT_SIZE_SHIFT)) {
 		/* Locate the bucket to be split */
-		OldSegmentDir   = table->p >> SEGMENT_SIZE_SHIFT;
-		OldSegment      = table->dir[OldSegmentDir];
-		OldSegmentIndex = table->p & (SEGMENT_SIZE-1);
+		size_t   OldSegmentDir   = table->p >> SEGMENT_SIZE_SHIFT;
+		Segment *OldSegment      = table->dir[OldSegmentDir];
+		size_t   OldSegmentIndex = table->p & (SEGMENT_SIZE - 1);
 
 		/* Expand address space; if necessary create a new segment */
-		NewAddress      = table->maxp + table->p;
-		NewSegmentDir   = NewAddress >> SEGMENT_SIZE_SHIFT;
-		NewSegmentIndex = NewAddress & (SEGMENT_SIZE-1);
+		size_t NewAddress      = table->maxp + table->p;
+		size_t NewSegmentDir   = NewAddress >> SEGMENT_SIZE_SHIFT;
+		size_t NewSegmentIndex = NewAddress & (SEGMENT_SIZE - 1);
 		if (NewSegmentIndex == 0) {
 			table->dir[NewSegmentDir] = OALLOCNZ(&table->obst, Segment, SEGMENT_SIZE);
 			table->nseg++;
 		}
-		NewSegment = table->dir[NewSegmentDir];
+		Segment *NewSegment = table->dir[NewSegmentDir];
 
 		/* Adjust state variables */
 		table->p++;
 		if (table->p == table->maxp) {
 			table->maxp <<= 1;  /* table->maxp *= 2 */
-			table->p = 0;
+			table->p      = 0;
 		}
 
 		/* Relocate records to the new bucket */
-		Previous = &OldSegment[OldSegmentIndex];
-		Current = *Previous;
-		LastOfNew = &NewSegment[NewSegmentIndex];
+		Element **Previous  = &OldSegment[OldSegmentIndex];
+		Element  *Current   = *Previous;
+		Element **LastOfNew = &NewSegment[NewSegmentIndex];
 		*LastOfNew = NULL;
 		while (Current != NULL) {
-			if (Hash (table, Current->entry.hash) == NewAddress) {
+			if (Hash(table, Current->entry.hash) == NewAddress) {
 				/* move to new chain */
 				*LastOfNew = Current;
 				*Previous  = Current->chain;
@@ -271,7 +262,7 @@ static void expand_table(SET *table)
 			} else {
 				/* leave on old chain */
 				Previous = &Current->chain;
-				Current = Current->chain;
+				Current  = Current->chain;
 			}
 		}
 	}
@@ -286,61 +277,60 @@ void * MANGLE(_,_search) (SET *table,
 		unsigned hash,
 		MANGLE(_,_action) action)
 {
-	unsigned h;
-	Segment *CurrentSegment;
-	int SegmentIndex;
-	MANGLEP(cmp_fun) cmp = table->cmp;
-	Segment q;
-
-	assert (table);
-	assert (key);
+	assert(table);
+	assert(key);
 
 	/* Find collision chain */
-	h = Hash (table, hash);
-	SegmentIndex   = h & (SEGMENT_SIZE-1);
-	CurrentSegment = table->dir[h >> SEGMENT_SIZE_SHIFT];
-	assert (CurrentSegment != NULL);
-	q = CurrentSegment[SegmentIndex];
+	unsigned  h               = Hash(table, hash);
+	unsigned  segment_index   = h & (SEGMENT_SIZE-1);
+	Segment  *current_segment = table->dir[h >> SEGMENT_SIZE_SHIFT];
+	assert(current_segment != NULL);
+	Segment   q               = current_segment[segment_index];
 
 	/* Follow collision chain */
-	while (q && !EQUAL (cmp, q, key, size)) {
+	MANGLEP(cmp_fun) cmp = table->cmp;
+	while (q && !EQUAL(cmp, q, key, size)) {
 		q = q->chain;
 	}
 
 	if (!q && (action != MANGLE(_,_find))) { /* not found, insert */
-		assert (!table->iter_tail && "insert an element into a set that is iterated");
+		assert(!table->iter_tail && "insert an element into a set that is iterated");
 
 #ifdef PSET
 		if (table->free_list) {
-			q = table->free_list;
-			table->free_list = table->free_list->chain;
+			q                = table->free_list;
+			table->free_list = q->chain;
 		} else {
 			q = OALLOC(&table->obst, Element);
 		}
 		q->entry.dptr = (void *)key;
 #else
-		obstack_blank (&table->obst, offsetof (Element, entry.dptr));
+		obstack_blank(&table->obst, offsetof(Element, entry.dptr));
 		if (action == _set_hinsert0)
-			obstack_grow0 (&table->obst, key, size);
+			obstack_grow0(&table->obst, key, size);
 		else
-			obstack_grow (&table->obst, key, size);
-		q = (Segment) obstack_finish (&table->obst);
+			obstack_grow(&table->obst, key, size);
+		q = (Segment)obstack_finish(&table->obst);
 		q->entry.size = size;
 #endif
-		q->chain = CurrentSegment[SegmentIndex];
-		q->entry.hash = hash;
-		CurrentSegment[SegmentIndex] = q;
+		q->chain                       = current_segment[segment_index];
+		q->entry.hash                  = hash;
+		current_segment[segment_index] = q;
 
-		if (loaded (table)) {
-			expand_table(table);    /* doesn't affect q */
+		if (loaded(table)) {
+			/* does not affect q */
+			expand_table(table);
 		}
 	}
 
-	if (!q) return NULL;
+	if (!q)
+		return NULL;
 #ifdef PSET
-	if (action == _pset_hinsert) return &q->entry;
+	if (action == _pset_hinsert)
+		return &q->entry;
 #else
-	if (action == _set_hinsert || action == _set_hinsert0) return &q->entry;
+	if (action == _set_hinsert || action == _set_hinsert0)
+		return &q->entry;
 #endif
 	return q->entry.dptr;
 }
@@ -355,30 +345,23 @@ int pset_default_ptr_cmp(const void *x, const void *y)
 
 void *pset_remove(SET *table, const void *key, unsigned hash)
 {
-	unsigned h;
-	Segment *CurrentSegment;
-	int SegmentIndex;
-	pset_cmp_fun cmp = table->cmp;
-	Segment *p;
-	Segment q;
-
-	assert (table && !table->iter_tail);
+	assert(table && !table->iter_tail);
 
 	/* Find collision chain */
-	h = Hash (table, hash);
-	SegmentIndex = h & (SEGMENT_SIZE-1);
-	CurrentSegment = table->dir[h >> SEGMENT_SIZE_SHIFT];
-	assert (CurrentSegment != NULL);
-	p = &CurrentSegment[SegmentIndex];
+	unsigned  h               = Hash(table, hash);
+	unsigned  segment_index   = h & (SEGMENT_SIZE - 1);
+	Segment  *current_segment = table->dir[h >> SEGMENT_SIZE_SHIFT];
+	assert(current_segment != NULL);
+	Segment  *p               = &current_segment[segment_index];
 
 	/* Follow collision chain */
-	while (!EQUAL (cmp, *p, key, size)) {
+	pset_cmp_fun cmp = table->cmp;
+	while (!EQUAL(cmp, *p, key, size)) {
 		p = &(*p)->chain;
-		assert (*p);
+		assert(*p);
 	}
 
-	q = *p;
-
+	Segment q = *p;
 	if (q == table->iter_tail) {
 		/* removing current element */
 		table->iter_tail = q->chain;
@@ -392,8 +375,8 @@ void *pset_remove(SET *table, const void *key, unsigned hash)
 		}
 	}
 
-	*p = (*p)->chain;
-	q->chain = table->free_list;
+	*p               = (*p)->chain;
+	q->chain         = table->free_list;
 	table->free_list = q;
 	--table->nkey;
 
@@ -403,20 +386,19 @@ void *pset_remove(SET *table, const void *key, unsigned hash)
 
 void *(pset_find) (SET *se, const void *key, unsigned hash)
 {
-	return pset_find (se, key, hash);
+	return pset_find(se, key, hash);
 }
 
 
 void *(pset_insert) (SET *se, const void *key, unsigned hash)
 {
-	return pset_insert (se, key, hash);
+	return pset_insert(se, key, hash);
 }
 
-
-	MANGLEP(entry) *
+MANGLEP(entry) *
 (pset_hinsert) (SET *se, const void *key, unsigned hash)
 {
-	return pset_hinsert (se, key, hash);
+	return pset_hinsert(se, key, hash);
 }
 
 void pset_insert_pset_ptr(pset *target, pset *src)
@@ -442,7 +424,7 @@ void *(set_insert) (set *se, const void *key, size_t size, unsigned hash)
 
 set_entry *(set_hinsert) (set *se, const void *key, size_t size, unsigned hash)
 {
-	return set_hinsert (se, key, size, hash);
+	return set_hinsert(se, key, size, hash);
 }
 
 #endif /* !PSET */
