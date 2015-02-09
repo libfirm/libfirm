@@ -66,7 +66,7 @@ static arch_register_req_t const *x86_make_register_req(struct obstack *obst,
 	if (c->cls == NULL)
 		return arch_no_register_req;
 
-	if (c->allowed_registers == 0 || c->all_registers_allowed)
+	if (c->all_registers_allowed)
 		return c->cls->class_req;
 
 	arch_register_req_t *const req     = (arch_register_req_t*)obstack_alloc(obst, sizeof(req[0]) + sizeof(unsigned));
