@@ -176,6 +176,7 @@ static void parse_asm_constraints(parsed_constraint_t *const constraint,
 				memory_possible = true;
 				goto fine;
 			case MATCH_IMM:
+				new_cls = constraint->cls;
 				new_imm = *c;
 				goto fine;
 			case MATCH_ANY:
