@@ -343,6 +343,19 @@ static void x86_emit_immediate(const x86_imm32_t *immediate)
 	}
 }
 
+static void set_operand_if_invalid(x86_asm_operand_t *const op, x86_asm_operand_kind_t const kind, unsigned const pos, ir_asm_constraint const *const constraint)
+{
+	/* Multiple constraints for same pos. This can happen for example when
+	 * a =A constraint gets lowered to two constraints: =a and =d for the
+	 * same pos. */
+	if (op->kind == ASM_OP_INVALID) {
+		op->kind      = kind;
+		op->inout_pos = pos;
+		op->u.mode    = constraint->mode;
+		assert(op->inout_pos == pos); // Make sure we had no overflow.
+	}
+}
+
 ir_node *x86_match_ASM(const ir_node *node, new_bd_asm_func new_bd_asm,
                        const x86_clobber_name_t *additional_clobber_names,
                        const x86_asm_constraint_list_t *constraints)
@@ -384,16 +397,7 @@ ir_node *x86_match_ASM(const ir_node *node, new_bd_asm_func new_bd_asm,
 			                        out_reg_reqs, out_arity);
 
 		x86_asm_operand_t *const op = &operands[constraint->pos];
-		/* multiple constraints for same pos. This can happen for example when
-		 * a =A constraint gets lowered to two constraints: =a and =d for the
-		 * same pos */
-		if (op->kind != ASM_OP_INVALID)
-			continue;
-
-		op->kind      = ASM_OP_OUT_REG;
-		op->inout_pos = out_arity;
-		assert(op->inout_pos == out_arity); // make sure we had no overflow
-		op->u.mode    = constraint->mode;
+		set_operand_if_invalid(op, ASM_OP_OUT_REG, out_arity, constraint);
 	}
 
 	/* parse clobbers */
@@ -448,14 +452,12 @@ ir_node *x86_match_ASM(const ir_node *node, new_bd_asm_func new_bd_asm,
 
 		ir_node *new_pred = be_transform_node(pred);
 
-		op->kind = ASM_OP_IN_REG;
 		int in_pos = n_ins++;
 		in[in_pos] = new_pred;
 		in_reg_reqs[in_pos]
 			= x86_make_register_req(obst, &parsed_constraint, n_out_constraints,
 			                        out_reg_reqs, in_pos);
-		op->inout_pos = in_pos;
-		op->u.mode    = constraint->mode;
+		set_operand_if_invalid(op, ASM_OP_IN_REG, in_pos, constraint);
 
 		if (cls == NULL && parsed_constraint.same_as < 0) {
 			op->kind = ASM_OP_MEMORY;
