@@ -17,7 +17,11 @@ def main(argv):
 	                    help='doxygen tag file for link generation')
 	parser.add_argument('-I', dest='includedirs', action='store', nargs='*',
 	                    default=[],
-	                    help='include directories for template require directives')
+	                    help='include directories for template require directives',
+	                    metavar='DIR')
+	parser.add_argument('-D', dest='definitions', action='append',
+	                    help='definition exported to jinja',
+	                    default=[], metavar='NAME=DEF')
 	parser.add_argument('specfile', action='store',
 	                    help='node specification file')
 	parser.add_argument('templatefile', action='store',
@@ -31,6 +35,13 @@ def main(argv):
 	env = Environment(loader=loader, keep_trailing_newline=True)
 	env.globals.update(jinjautil.exports)
 	env.filters.update(jinjautil.filters)
+	for definition in config.definitions:
+		if "=" not in definition:
+			name = definition
+			replacement = ""
+		else:
+			(name, replacement) = definition.split("=", 1)
+		env.globals[name] = replacement
 
 	loader.includedirs += config.includedirs
 	template = env.get_template(config.templatefile)
