@@ -84,9 +84,6 @@ def setdefault(node, attr, val):
 
 def setnodedefaults(node):
 	setldefault(node, "name", node.__name__)
-	setdefault(node, "pinned", "no")
-	setdefault(node, "flags", [])
-	setdefault(node, "ins", [])
 	setdefault(node, "arity", len(node.ins))
 
 	# As a shortcut you can specify inputs either as a list of strings or
@@ -109,11 +106,7 @@ def setnodedefaults(node):
 			new_outs.append(o)
 		node.outs = new_outs
 
-	setdefault(node, "attrs", [])
-	setdefault(node, "constructor", True)
-	setdefault(node, "constructor_args", [])
 	setdefault(node, "serializer", node.constructor)
-	setdefault(node, "block", None)
 	if hasattr(node, "__doc__"):
 		node.doc = trim_docstring(node.__doc__)
 	else:
