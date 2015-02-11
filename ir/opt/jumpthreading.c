@@ -294,7 +294,7 @@ static void copy_and_fix(const jumpthreading_env_t *env, ir_node *block,
 		ir_node *copy = copy_and_fix_node(env, block, copy_block, j, node);
 
 		/* we might hit values in blocks that have already been processed by a
-		 * recursive find_phi_with_const() call */
+		 * recursive find_const_or_confirm() call */
 		assert(get_irn_visited(copy) <= env->visited_nr);
 		if (get_irn_visited(copy) >= env->visited_nr) {
 			ir_node *prev_copy = (ir_node*)get_irn_link(copy);
