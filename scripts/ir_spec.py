@@ -59,7 +59,7 @@ class Align(TypeConst):
 	"""A symbolic constant that represents the alignment of a type"""
 
 @op
-class Alloc:
+class Alloc(object):
 	"""Allocates a block of memory on the stack."""
 	ins = [
 		("mem",  "memory dependency" ),
@@ -78,7 +78,7 @@ class Alloc:
 	attr_struct = "alloc_attr"
 
 @op
-class Anchor:
+class Anchor(object):
 	"""Utility node used to "hold" nodes in a graph that might possibly not be
 	reachable by other means or which should be reachable immediately without
 	searching through the graph.
@@ -107,7 +107,7 @@ class And(Binop):
 	flags    = [ "commutative" ]
 
 @op
-class ASM:
+class ASM(object):
 	"""executes assembler fragments of the target machine.
 
 	The node contains a template for an assembler snippet. The compiler will
@@ -164,7 +164,7 @@ class ASM:
 	constructor = False
 
 @op
-class Bad:
+class Bad(object):
 	"""Bad nodes indicate invalid input, which is values which should never be
 	computed.
 
@@ -189,7 +189,7 @@ class Bad:
 	pinned        = "yes"
 
 @op
-class Deleted:
+class Deleted(object):
 	"""Internal node which is temporary set to nodes which are already removed
 	from the graph."""
 	mode        = "mode_Bad"
@@ -198,7 +198,7 @@ class Deleted:
 	constructor = False
 
 @op
-class Block:
+class Block(object):
 	"""A basic block"""
 	mode        = "mode_BB"
 	block       = "NULL"
@@ -224,7 +224,7 @@ class Block:
 	'''
 
 @op
-class Builtin:
+class Builtin(object):
 	"""performs a backend-specific builtin."""
 	ins         = [
 		("mem", "memory dependency"),
@@ -250,7 +250,7 @@ class Builtin:
 	'''
 
 @op
-class Call:
+class Call(object):
 	"""Calls other code. Control flow is transfered to ptr, additional
 	operands are passed to the called code. Called code usually performs a
 	return operation. The operands of this return operation are the result
@@ -293,7 +293,7 @@ class Cmp(Binop):
 	attr_struct = "cmp_attr"
 
 @op
-class Cond:
+class Cond(object):
 	"""Conditionally change control flow."""
 	ins      = [
 		("selector",  "condition parameter"),
@@ -312,7 +312,7 @@ class Cond:
 	attr_struct = "cond_attr"
 
 @op
-class Switch:
+class Switch(object):
 	"""Change control flow. The destination is choosen based on an integer input value which is looked up in a table.
 
 	Backends can implement this efficiently using a jump table."""
@@ -335,7 +335,7 @@ class Switch:
 	attrs_name  = "switcha"
 
 @op
-class Confirm:
+class Confirm(object):
 	"""Specifies constraints for a value. This allows explicit representation
 	of path-sensitive properties. (Example: This value is always >= 0 on 1
 	if-branch then all users within that branch are rerouted to a confirm-node
@@ -359,7 +359,7 @@ class Confirm:
 	attr_struct = "confirm_attr"
 
 @op
-class Const:
+class Const(object):
 	"""Returns a constant value."""
 	flags      = [ "constlike", "start_block" ]
 	mode       = "get_tarval_mode(tarval)"
@@ -371,7 +371,7 @@ class Const:
 	attrs_name  = "con"
 
 @op
-class Conv:
+class Conv(object):
 	"""Converts values between modes"""
 	flags  = []
 	ins    = [
@@ -379,7 +379,7 @@ class Conv:
 	]
 
 @op
-class Bitcast:
+class Bitcast(object):
 	"""Converts a value between modes with different arithmetics but same
 	number of bits by reinterpreting the bits in the new mode"""
 	flags = []
@@ -388,7 +388,7 @@ class Bitcast:
 	]
 
 @op
-class CopyB:
+class CopyB(object):
 	"""Copies a block of memory with statically known size/type."""
 	ins   = [
 		("mem",  "memory dependency"),
@@ -411,7 +411,7 @@ class CopyB:
 	]
 
 @op
-class Div:
+class Div(object):
 	"""returns the quotient of its 2 operands"""
 	ins   = [
 		("mem",   "memory dependency"),
@@ -437,7 +437,7 @@ class Div:
 	arity_override = "oparity_binary"
 
 @op
-class Dummy:
+class Dummy(object):
 	"""A placeholder value. This is used when constructing cyclic graphs where
 	you have cases where not all predecessors of a phi-node are known. Dummy
 	nodes are used for the unknown predecessors and replaced later."""
@@ -446,7 +446,7 @@ class Dummy:
 	pinned     = "yes"
 
 @op
-class End:
+class End(object):
 	"""Last node of a graph. It references nodes in endless loops (so called
 	keepalive edges)"""
 	mode             = "mode_X"
@@ -465,7 +465,7 @@ class Eor(Binop):
 	flags    = [ "commutative" ]
 
 @op
-class Free:
+class Free(object):
 	"""Frees a block of memory previously allocated by an Alloc node"""
 	ins = [
 		("mem", "memory dependency" ),
@@ -476,7 +476,7 @@ class Free:
 	pinned = "yes"
 
 @op
-class Id:
+class Id(object):
 	"""Returns its operand unchanged.
 
 	This is mainly used when exchanging nodes. Usually you shouldn't see Id
@@ -488,7 +488,7 @@ class Id:
 	constructor = False
 
 @op
-class IJmp:
+class IJmp(object):
 	"""Jumps to the code in its argument. The code has to be in the same
 	function and the the destination must be one of the blocks reachable
 	by the tuple results"""
@@ -500,7 +500,7 @@ class IJmp:
 	flags    = [ "cfopcode", "forking", "keep", "unknown_jump" ]
 
 @op
-class Jmp:
+class Jmp(object):
 	"""Jumps to the block connected through the out-value"""
 	mode     = "mode_X"
 	pinned   = "yes"
@@ -508,7 +508,7 @@ class Jmp:
 	flags    = [ "cfopcode" ]
 
 @op
-class Load:
+class Load(object):
 	"""Loads a value from memory (heap or stack)."""
 	ins   = [
 		("mem", "memory dependency"),
@@ -545,7 +545,7 @@ class Load:
 	throws_init = "(flags & cons_throws_exception) != 0"
 
 @op
-class Minus:
+class Minus(object):
 	"""returns the additive inverse of its operand"""
 	flags  = []
 	ins    = [
@@ -553,7 +553,7 @@ class Minus:
 	]
 
 @op
-class Mod:
+class Mod(object):
 	"""returns the remainder of its operands from an implied division.
 
 	Examples:
@@ -594,7 +594,7 @@ class Mulh(Binop):
 	flags = [ "commutative" ]
 
 @op
-class Mux:
+class Mux(object):
 	"""returns the false or true operand depending on the value of the sel
 	operand"""
 	ins    = [
@@ -605,7 +605,7 @@ class Mux:
 	flags  = []
 
 @op
-class NoMem:
+class NoMem(object):
 	"""Placeholder node for cases where you don't need any memory input"""
 	mode          = "mode_M"
 	flags         = [ "dump_noblock", "start_block" ]
@@ -613,7 +613,7 @@ class NoMem:
 	singleton     = True
 
 @op
-class Not:
+class Not(object):
 	"""returns the bitwise complement of a value. Works for boolean values, too."""
 	flags  = []
 	ins    = [
@@ -630,7 +630,7 @@ class Or(Binop):
 	flags = [ "commutative" ]
 
 @op
-class Phi:
+class Phi(object):
 	"""Choose a value based on control flow. A phi node has 1 input for each
 	predecessor of its block. If a block is entered from its nth predecessor
 	all phi nodes produce their nth input as result."""
@@ -648,7 +648,7 @@ class Phi:
 	serializer  = False
 
 @op
-class Pin:
+class Pin(object):
 	"""Pin the value of the node node in the current block. No users of the Pin
 	node can float above the Block of the Pin. The node cannot float behind
 	this block. Often used to Pin the NoMem node."""
@@ -660,7 +660,7 @@ class Pin:
 	pinned   = "yes"
 
 @op
-class Proj:
+class Proj(object):
 	"""returns an entry of a tuple value"""
 	ins        = [
 		("pred", "the tuple value from which a part is extracted"),
@@ -675,7 +675,7 @@ class Proj:
 	attr_struct = "proj_attr"
 
 @op
-class Raise:
+class Raise(object):
 	"""Raises an exception. Unconditional change of control flow. Writes an
 	explicit Except variable to memory to pass it to the exception handler.
 	Must be lowered to a Call to a runtime check function."""
@@ -691,7 +691,7 @@ class Raise:
 	pinned = "yes"
 
 @op
-class Return:
+class Return(object):
 	"""Returns from the current function. Takes memory and return values as
 	operands."""
 	ins        = [
@@ -704,7 +704,7 @@ class Return:
 	pinned     = "yes"
 
 @op
-class Sel:
+class Sel(object):
 	"""Computes the address of an array element from the array base pointer and
 	an index.
 
@@ -722,7 +722,7 @@ class Sel:
 	attr_struct = "sel_attr"
 
 @op
-class Member:
+class Member(object):
 	"""Computes the address of a compound type member given the base address
 	of an instance of the compound type.
 
@@ -767,7 +767,7 @@ class Shrs(Binop):
 	flags = []
 
 @op
-class Start:
+class Start(object):
 	"""The first node of a graph. Execution starts with this node."""
 	outs = [
 		("M",              "initial memory"),
@@ -780,7 +780,7 @@ class Start:
 	singleton = True
 
 @op
-class Store:
+class Store(object):
 	"""Stores a value into memory (heap or stack)."""
 	ins   = [
 	   ("mem",   "memory dependency"),
@@ -824,7 +824,7 @@ class Size(TypeConst):
 	"""A symbolic constant that represents the size of a type"""
 
 @op
-class Sync:
+class Sync(object):
 	"""The Sync operation unifies several partial memory blocks. These blocks
 	have to be pairwise disjunct or the values in common locations have to
 	be identical.  This operation allows to specify all operations that
@@ -836,7 +836,7 @@ class Sync:
 	input_name = "pred"
 
 @op
-class Tuple:
+class Tuple(object):
 	"""Builds a Tuple from single values.
 
 	This is needed to implement optimizations that remove a node that produced
@@ -851,7 +851,7 @@ class Tuple:
 	flags      = []
 
 @op
-class Unknown:
+class Unknown(object):
 	"""Returns an unknown (at compile- and runtime) value. It is a valid
 	optimization to replace an Unknown by any other constant value.
 
