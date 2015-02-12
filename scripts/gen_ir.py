@@ -15,10 +15,9 @@ def main(argv):
 	parser = argparse.ArgumentParser(description='Generate code/docu from node specification', add_help=True)
 	parser.add_argument('--tagfile', dest='tagfile', action='store',
 	                    help='doxygen tag file for link generation')
-	parser.add_argument('-I', dest='includedirs', action='store', nargs='*',
-	                    default=[],
+	parser.add_argument('-I', dest='includedirs', action='append',
 	                    help='include directories for templates/python modules',
-	                    metavar='DIR')
+	                    default=[], metavar='DIR')
 	parser.add_argument('-D', dest='definitions', action='append',
 	                    help='definition exported to jinja',
 	                    default=[], metavar='NAME=DEF')
