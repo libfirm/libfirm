@@ -4,6 +4,20 @@ from filters import arguments
 import imp
 import sys
 
+# Node base class
+class Node(object):
+	pinned           = "no"
+	flags            = []
+	ins              = []
+	attrs            = []
+	constructor      = True
+	constructor_args = []
+	block            = None
+	mode             = None
+	pinned_init      = None
+	throws_init      = None
+	arity_override   = None
+
 # Datastructures for specifying ir operation types.
 
 abstracts = set()
@@ -53,7 +67,7 @@ def verify_node(node):
 	if node.pinned not in ["yes", "no", "exception"]:
 		print("%s: UNKNOWN PINNED MODE: %s" % (node.name, node.pinned))
 
-	if hasattr(node, "pinned_init") and not is_dynamic_pinned(node):
+	if node.pinned_init is not None and not is_dynamic_pinned(node):
 		print("ERROR: node %s has pinned_init attribute but is not marked as dynamically pinned" % node.name)
 	if "uses_memory" in node.flags:
 		if not inout_contains(node.ins, "mem"):
@@ -61,14 +75,14 @@ def verify_node(node):
 	if "fragile" in node.flags:
 		if not is_dynamic_pinned(node):
 			print("ERROR: fragile node %s must be dynamically pinned" % node.name)
-		if not hasattr(node, "throws_init"):
+		if node.throws_init is None:
 			print("ERROR: fragile node %s needs a throws_init attribute" % node.name)
 		if not inout_contains(node.outs, "X_regular"):
 			print("ERROR: fragile node %s needs an output named 'X_regular'" % node.name)
 		if not inout_contains(node.outs, "X_except"):
 			print("ERROR: fragile node %s needs an output named 'X_except'" % node.name)
 	else:
-		if hasattr(node, "throws_init"):
+		if node.throws_init is not None:
 			print("ERROR: throws_init only makes sense for fragile nodes")
 
 
@@ -78,13 +92,11 @@ def setldefault(node, attr, val):
 		setattr(node, attr, val)
 
 def setdefault(node, attr, val):
-	# Don't use hasattr, as these things should not be inherited
 	if not hasattr(node, attr):
 		setattr(node, attr, val)
 
 def setnodedefaults(node):
 	setldefault(node, "name", node.__name__)
-	setdefault(node, "arity", len(node.ins))
 
 	# As a shortcut you can specify inputs either as a list of strings or
 	# as a list of (name, comment) tuples. Normalize it to Input objects
@@ -106,17 +118,20 @@ def setnodedefaults(node):
 			new_outs.append(o)
 		node.outs = new_outs
 
-	setdefault(node, "serializer", node.constructor)
 	if hasattr(node, "__doc__"):
 		node.doc = trim_docstring(node.__doc__)
 	else:
 		node.doc = ""
-	if hasattr(node, "outs") and len(node.outs) > 1:
-		node.mode = "mode_T"
-	if "start_block" in node.flags:
-		node.block = "get_irg_start_block(irg)"
+
 	if not is_abstract(node):
-		setdefault(node, "usesGraph", node.block != None)
+		setdefault(node, "arity", len(node.ins))
+		setdefault(node, "attrs_name", node.name.lower())
+		setdefault(node, "serializer", node.constructor)
+		if hasattr(node, "outs") and len(node.outs) > 1:
+			node.mode = "mode_T"
+		if "start_block" in node.flags:
+			node.block = "get_irg_start_block(irg)"
+		setdefault(node, "usesGraph", node.block is not None)
 
 def trim_docstring(docstring):
     if not docstring:
@@ -245,7 +260,7 @@ def arity_and_ins(node):
 		return repr(arity) + ", in"
 
 def arity(node):
-	if hasattr(node, "arity_override"):
+	if node.arity_override is not None:
 		return node.arity_override
 	arity = node.arity
 	if arity == "dynamic":
@@ -374,8 +389,6 @@ for f in [a_an, args, arity_and_ins, arity, attr_size, blockargument, block,
 	export_filter(f)
 
 def _preprocess_node(node):
-	setdefault(node, "attrs_name", node.name.lower())
-
 	# construct node arguments
 	arguments = [ ]
 	initattrs = [ ]
@@ -392,7 +405,7 @@ def _preprocess_node(node):
 			Attribute("in", type="ir_node *const *",
 			          comment="additional inputs"))
 
-	if not hasattr(node, "mode"):
+	if node.mode is None:
 		arguments.append(
 			Attribute("mode", type="ir_mode *",
 			          comment = "mode of the operations result"))
@@ -404,18 +417,18 @@ def _preprocess_node(node):
 
 	# dynamic pin state means more constructor arguments
 	if is_dynamic_pinned(node):
-		if hasattr(node, "pinned_init"):
+		if node.pinned_init is not None:
 			initattrs.append(
 				Attribute("pin_state", fqname="exc.pin_state",
 				          type="op_pin_state", init=node.pinned_init))
 		else:
-			node.constructor_args.append(
+			arguments.append(
 				Attribute("pin_state", type="op_pin_state",
 				          comment = "pinned state"))
 			initattrs.append(
 				Attribute("pin_state", fqname="exc.pin_state",
 				          type="op_pin_state", init="pin_state"))
-	if hasattr(node, "throws_init"):
+	if node.throws_init is not None:
 		initattrs.append(
 			Attribute("throws_exception", fqname="exc.throws_exception",
 			          type="unsigned", init=node.throws_init))
@@ -445,9 +458,7 @@ def prepare_nodes(namespace):
 			abstract_nodes.append(node)
 		else:
 			real_nodes.append(node)
-
-	for node in real_nodes+abstract_nodes:
-		_preprocess_node(node)
+			_preprocess_node(node)
 
 	return (real_nodes, abstract_nodes)
 

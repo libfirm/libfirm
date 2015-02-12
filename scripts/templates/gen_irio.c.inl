@@ -8,7 +8,7 @@ static ir_node *read_{{node.name}}(read_env_t *env)
 	{%- for input in node.ins %}
 	ir_node *irn_{{input.name}} = read_node_ref(env);
 	{%- endfor %}
-	{%- if not hasattr(node, "mode") %}
+	{%- if not node.mode %}
 	ir_mode *mode = read_mode_ref(env);
 	{%- endif %}
 	{%- for attr in node.attrs %}
@@ -74,7 +74,7 @@ static void write_{{node.name}}(write_env_t *env, const ir_node *node)
 	{%- for input in node.ins %}
 	write_node_ref(env, get_{{node.name}}_{{input.name}}(node));
 	{%- endfor %}
-	{%- if not hasattr(node, "mode") %}
+	{%- if not node.mode %}
 	write_mode_ref(env, get_irn_mode(node));
 	{%- endif %}
 	{%- for attr in node.attrs %}

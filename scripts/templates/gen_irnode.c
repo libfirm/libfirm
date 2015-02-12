@@ -58,7 +58,7 @@ ir_node *new_rd_{{node.name}}(
 			irg
 			block
 			op_{{node.name}}
-			{% if hasattr(node, 'mode') -%}
+			{% if node.mode -%}
 				{{node.mode}}
 			{%- else -%}
 				mode

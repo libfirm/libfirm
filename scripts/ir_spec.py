@@ -4,19 +4,10 @@
 # Firm node specifications
 # The comments are in (standard python) restructured text format and are used
 # to generate documentation.
-from irops import abstract, op, Attribute, prepare_nodes
+from irops import Node, abstract, op, Attribute, prepare_nodes
 from jinjautil import export
 
 name = "ir"
-
-class Node(object):
-	pinned           = "no"
-	flags            = []
-	ins              = []
-	attrs            = []
-	constructor      = True
-	constructor_args = []
-	block            = None
 
 @abstract
 @op
