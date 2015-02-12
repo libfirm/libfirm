@@ -17,7 +17,7 @@ def main(argv):
 	                    help='doxygen tag file for link generation')
 	parser.add_argument('-I', dest='includedirs', action='store', nargs='*',
 	                    default=[],
-	                    help='include directories for template require directives',
+	                    help='include directories for templates/python modules',
 	                    metavar='DIR')
 	parser.add_argument('-D', dest='definitions', action='append',
 	                    help='definition exported to jinja',
@@ -28,10 +28,16 @@ def main(argv):
 	                    help='jinja2 template file')
 	config = parser.parse_args()
 
+	# Append includedirs to python path and template loader searchpath
+	for dir in config.includedirs:
+		sys.path.insert(1, dir)
+
+	loader = jinjautil.SimpleLoader()
+	loader.includedirs += config.includedirs
+
 	# Load specfile
 	imp.load_source('spec', config.specfile)
 
-	loader = jinjautil.SimpleLoader()
 	env = Environment(loader=loader, keep_trailing_newline=True)
 	env.globals.update(jinjautil.exports)
 	env.filters.update(jinjautil.filters)
@@ -43,7 +49,6 @@ def main(argv):
 			(name, replacement) = definition.split("=", 1)
 		env.globals[name] = replacement
 
-	loader.includedirs += config.includedirs
 	template = env.get_template(config.templatefile)
 	result = template.render()
 	sys.stdout.write(result)
