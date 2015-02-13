@@ -410,7 +410,8 @@ static ir_node *find_const_or_confirm(jumpthreading_env_t *env, ir_node *jump,
 			return NULL;
 		/* maybe we could evaluate the condition completely without any
 		 * partial tracking along paths. */
-		if (block == get_nodes_block(env->cmp)) {
+		assert(get_Block_n_cfgpreds(env->true_block) == 1);
+		if (block == get_Block_cfgpred_block(env->true_block, 0)) {
 			if (evaluated == 0) {
 				ir_graph *irg = get_irn_irg(block);
 				ir_node  *bad = new_r_Bad(irg, mode_X);
