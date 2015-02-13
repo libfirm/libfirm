@@ -26,6 +26,7 @@
 #include "irloop.h"
 #include "pdeq.h"
 #include "debug.h"
+#include "panic.h"
 
 #include "unionfind.h"
 #include "plist.h"
@@ -976,6 +977,975 @@ static void walk_equality(ir_node *node, void *env)
 	}
 }
 
+typedef struct {
+	ir_node *base_node;      /**< Root node of the multiset */
+	pset    *operands;       /**< Non-constant operands of the multiop */
+	pset    *nodes;          /**< Nodes that belong to the multiop */
+	pmap    *multiplier;     /**< Maps each node to its multiplier,
+	                              e.g. x - y + x has the mapping x -> 2 and y -> -1 */
+	pmap    *edge_value;     /**< Edge-based multiplier, used to compute the multiplier above */
+	pset    *multi_operands; /**< Multiops of all operands */
+	pset    *multi_users;    /**< Multiops of all users */
+	bool     other_op;       /**< Whether a node has a user that does not belong to any multiop in multi_users
+	                              (because the operation is not supported by multiops) */
+	bool     changed;        /**< Whether we reassociate the nodes in the multiop */
+} multi_op;
+
+typedef struct {
+	pmap *set_map;     /**< Maps each node to its multi_op */
+	pset *sets;        /**< Set of all multi_ops */
+	pset *walkhistory; /**< Visited nodes during computation of multi_ops */
+} multi_op_env;
+
+/**
+ * Creates a new multi_op. This is a set of operations, with same type and mode.
+ * Sub and scalar Mul is seen as Add.
+ */
+static multi_op *new_multi_op(multi_op_env *multi_env, ir_node *base_node)
+{
+	multi_op *data       = XMALLOC(multi_op);
+	data->operands       = pset_new_ptr_default();
+	data->nodes          = pset_new_ptr_default();
+	data->multi_operands = pset_new_ptr_default();
+	data->multi_users    = pset_new_ptr_default();
+	data->base_node      = base_node;
+	data->other_op       = false;
+	data->changed        = false;
+	data->multiplier     = pmap_create();
+	data->edge_value     = pmap_create();
+
+	if (is_Add(base_node) || is_Sub(base_node)) {
+		ir_mode *mode = get_irn_mode(base_node);
+		if (mode_is_reference(mode)) {
+			ir_node *right      = get_binop_right(base_node);
+			ir_mode *right_mode = get_irn_mode(right);
+			if (mode_is_reference(right_mode)) {
+				ir_node *left = get_binop_left(base_node);
+				mode = get_irn_mode(left);
+			} else {
+				mode = right_mode;
+			}
+		}
+		pmap_insert(data->edge_value, base_node, get_mode_one(mode));
+	} else if (is_Mul(base_node)) {
+		ir_node *l = get_Mul_left(base_node);
+		ir_node *r = get_Mul_right(base_node);
+		if (is_Const(l)) {
+			pmap_insert(data->edge_value, base_node, get_Const_tarval(l));
+			if (tarval_is_negative(get_Const_tarval(l))) {
+				data->changed = true;
+			}
+		} else {
+			assert(is_Const(r));
+			pmap_insert(data->edge_value, base_node, get_Const_tarval(r));
+			if (tarval_is_negative(get_Const_tarval(r))) {
+				data->changed = true;
+			}
+		}
+	}
+
+	pset_insert_ptr(data->nodes, base_node);
+	pmap_insert(multi_env->set_map, base_node, data);
+	pset_insert_ptr(multi_env->sets, data);
+
+	return data;
+}
+
+static ir_op *get_multi_op_op(multi_op *multi_op)
+{
+	ir_node *base_node = multi_op->base_node;
+	return is_Sub(base_node) || is_Mul(base_node) ? op_Add : get_irn_op(base_node);
+}
+
+/**
+ * Destroys a multi_op and frees its memory.
+ */
+static void destroy_multi_op(multi_op *o)
+{
+	del_pset(o->operands);
+	del_pset(o->nodes);
+	del_pset(o->multi_operands);
+	del_pset(o->multi_users);
+	pmap_destroy(o->multiplier);
+	pmap_destroy(o->edge_value);
+
+	free(o);
+}
+
+/**
+ * Returns true if the given node is a scalar multiplication.
+ */
+static bool is_scalar_Mul(ir_node *node)
+{
+	return is_Mul(node) && (is_Const(get_Mul_left(node)) || is_Const(get_Mul_right(node)));
+}
+
+/**
+ * Adds a node to a Eor set.
+ */
+static void add_to_Eor_set(multi_op_env *multi_env, ir_node *node, multi_op *set)
+{
+	if (get_irn_op(node) == get_multi_op_op(set)) {
+		assert(!pset_find_ptr(set->nodes, node));
+
+		pset_insert_ptr(set->nodes, node);
+		pmap_insert(multi_env->set_map, node, set);
+	} else if (pset_find_ptr(set->operands, node)) {
+		pset_remove_ptr(set->operands, node);
+	} else {
+		pset_insert_ptr(set->operands, node);
+	}
+}
+
+/**
+ * Adds a node to an And or Or set.
+ */
+static void add_to_And_Or_set(multi_op_env *multi_env, ir_node *node, multi_op *set)
+{
+	if (get_irn_op(node) == get_multi_op_op(set)) {
+		pset_insert_ptr(set->nodes, node);
+		pmap_insert(multi_env->set_map, node, set);
+	} else {
+		pset_insert_ptr(set->operands, node);
+	}
+}
+
+/**
+ * Adds a node to a Add set, with given entry. The entry is the user of the node and indicates it's value.
+ * Example: In 3*(x + y) is 3 the value of (x+y) and * is the entry.
+ */
+static void add_to_Add_set(multi_op_env *multi_env, ir_node *node, multi_op *set, ir_node *entry)
+{
+	ir_mode *mode      = get_irn_mode(node);
+	ir_op   *op        = get_irn_op(node);
+	ir_node *base_node = set->base_node;
+	ir_mode *base_mode = get_irn_mode(base_node);
+	if (is_scalar_Mul(node) && mode == base_mode) {
+		/* add scalar Mul to set */
+		assert(!entry);
+		assert(!pset_find_ptr(set->nodes, node));
+
+		ir_tarval *val = get_mode_null(mode);
+
+		foreach_out_edge(node, edge) {
+			ir_node   *src = get_edge_src_irn(edge);
+			ir_tarval *t   = pmap_get(ir_tarval, set->edge_value, src);
+			assert(t);
+			if (is_Sub(src) && get_Sub_right(src) == node) {
+				t = tarval_neg(t);
+			}
+			val = tarval_add(val, t);
+		}
+
+		if (is_Const(get_Mul_left(node))) {
+			val = tarval_mul(val, get_Const_tarval(get_Mul_left(node)));
+		} else {
+			val = tarval_mul(val, get_Const_tarval(get_Mul_right(node)));
+		}
+		assert(tarval_is_constant(val));
+
+		pset_insert_ptr(set->nodes, node);
+		pmap_insert(multi_env->set_map, node, set);
+		pmap_insert(set->edge_value, node, val);
+	} else if ((op == op_Add || (op == op_Sub && !mode_is_reference(get_irn_mode(get_Sub_right(node)))
+		       && !mode_is_reference(get_irn_mode(get_Sub_left(node))))) && mode == base_mode) {
+		/* add Add or Sub to set */
+		assert(!entry);
+		assert(!pset_find_ptr(set->nodes, node));
+
+		if (mode_is_reference(mode)) {
+			if (mode_is_reference(get_irn_mode(get_binop_right(node)))) {
+				mode = get_irn_mode(get_binop_left(node));
+			} else {
+				mode = get_irn_mode(get_binop_right(node));
+			}
+		}
+		ir_tarval *val = get_mode_null(mode);
+		foreach_out_edge(node, edge) {
+			ir_node *src = get_edge_src_irn(edge);
+
+			ir_tarval *t = pmap_get(ir_tarval, set->edge_value, src);
+			if (tarval_is_one(t) && get_tarval_mode(t) != mode) {
+				t = get_mode_one(get_tarval_mode(val));
+			}
+			assert(t);
+			if (is_Sub(src) && get_Sub_right(src) == node) {
+				t = tarval_neg(t);
+			}
+			val = tarval_add(val, t);
+		}
+		assert(tarval_is_constant(val));
+
+		pset_insert_ptr(set->nodes, node);
+		pmap_insert(multi_env->set_map, node, set);
+		pmap_insert(set->edge_value, node, val);
+	} else {
+		assert(entry);
+
+		ir_tarval *new_val = pmap_get(ir_tarval, set->edge_value, entry);
+		assert(new_val);
+
+		if (is_Sub(entry) && get_Sub_right(entry) == node) {
+			new_val = tarval_neg(new_val);
+		}
+
+		if (is_Const(node) && is_Mul(entry)) {
+			DBG((dbg, LEVEL_5, "Const skipped\n"));
+			return;
+		}
+
+		if (pset_find_ptr(set->operands, node)) {
+			ir_tarval *old_val = pmap_get(ir_tarval, set->multiplier, node);
+			new_val            = tarval_add(old_val, new_val);
+			set->changed       = true;
+		} else {
+			pset_insert_ptr(set->operands, node);
+		}
+		pmap_insert(set->multiplier, node, new_val);
+	}
+}
+
+/**
+ * Adds a node to a set, with given entry.
+ */
+static void add_to_set(multi_op_env *multi_env, ir_node *node, multi_op *set, ir_node *entry)
+{
+	switch (get_op_code(get_multi_op_op(set))) {
+	case iro_Eor:
+		add_to_Eor_set(multi_env, node, set);
+		break;
+	case iro_And:
+	case iro_Or:
+		add_to_And_Or_set(multi_env, node, set);
+		break;
+	case iro_Add:
+		add_to_Add_set(multi_env, node, set, entry);
+		break;
+
+	default:
+		panic("Operation not supported");
+	}
+}
+
+/**
+ * Connects an operand multi_op to a user multi_op.
+ * If operand is not Eor it would be added to operands.
+ */
+static void connect_Eor(multi_op *operand, multi_op *user)
+{
+	assert(get_multi_op_op(user) == op_Eor);
+
+	if (pset_find_ptr(user->multi_operands, operand)) {
+		assert(pset_find_ptr(operand->multi_users, user));
+
+		pset_remove_ptr(user->multi_operands, operand);
+		pset_remove_ptr(operand->multi_users, user);
+
+		user->changed = true;
+	} else {
+		pset_insert_ptr(operand->multi_users, user);
+		pset_insert_ptr(user->multi_operands, operand);
+	}
+}
+
+/**
+ * Connects an operand multi_op to a user multi_op.
+ * If operand is not And it would be added to operands.
+ */
+static void connect_And_Or(multi_op *operand, multi_op *user)
+{
+	assert(get_multi_op_op(user) == op_And || get_multi_op_op(user) == op_Or);
+
+	if (pset_find_ptr(user->multi_operands, operand)) {
+		assert(pset_find_ptr(operand->multi_users, user));
+
+		user->changed = true;
+	} else {
+		pset_insert_ptr(operand->multi_users, user);
+		pset_insert_ptr(user->multi_operands, operand);
+	}
+}
+
+/**
+ * Connects an operand multi_op to a user multi_op.
+ * Entry gives the value of the operand, like in add_to_Add_set.
+ */
+static void connect_Add(multi_op *operand, multi_op *user, ir_node *op_node, ir_node *entry)
+{
+	assert(entry);
+
+	ir_mode *mode = get_irn_mode(operand->base_node);
+	if (mode_is_reference(mode)) {
+		if (mode_is_reference(get_irn_mode(get_binop_right(operand->base_node)))) {
+			mode = get_irn_mode(get_binop_left(operand->base_node));
+		} else {
+			mode = get_irn_mode(get_binop_right(operand->base_node));
+		}
+	}
+	ir_tarval *new_val = get_mode_null(mode);
+	ir_tarval *t = pmap_get(ir_tarval, user->edge_value, entry);
+
+	if (tarval_is_one(t) && get_tarval_mode(t) != mode) {
+		t = get_mode_one(mode);
+	}
+
+	new_val = tarval_add(new_val, t);
+	assert(new_val);
+
+	if (is_Sub(entry) && get_Sub_right(entry) == op_node) {
+		new_val = tarval_neg(new_val);
+	}
+
+	assert(get_multi_op_op(user) == op_Add);
+
+	if (pset_find_ptr(user->multi_operands, operand)) {
+		assert(pset_find_ptr(operand->multi_users, user));
+
+		ir_tarval *val = pmap_get(ir_tarval, user->multiplier, operand);
+		new_val        = tarval_add(val, new_val);
+
+		user->changed = true;
+	} else {
+		pset_insert_ptr(operand->multi_users, user);
+		pset_insert_ptr(user->multi_operands, operand);
+	}
+	pmap_insert(user->multiplier, operand, new_val);
+}
+
+/**
+ * Connects a operand multi_op to a user multi_op. Connect means operand is a whole operand of user.
+ */
+static void connect_sets(multi_op *operand, multi_op *user, ir_node *op_node, ir_node *user_node)
+{
+	switch (get_op_code(get_multi_op_op(user))) {
+	case iro_Eor:
+		connect_Eor(operand, user);
+		break;
+	case iro_And:
+	case iro_Or:
+		connect_And_Or(operand, user);
+		break;
+	case iro_Add:
+		connect_Add(operand, user, op_node, user_node);
+		break;
+	default:
+		panic("Operation not supported");
+	}
+
+}
+
+/**
+ * Returns the first user of node.
+ */
+static ir_node *get_first_user(ir_node *node)
+{
+	return get_edge_src_irn(get_irn_out_edge_first(node));
+}
+
+
+/**
+ * Returns true iff the given node is supported by setsort, else it would be handled as a variable.
+ */
+static bool is_supported_node(ir_node *node)
+{
+	if (mode_is_float(get_irn_mode(node))) {
+		return false;
+	}
+
+	switch (get_op_code(get_irn_op(node))) {
+	case iro_Eor:
+	case iro_And:
+	case iro_Or:
+	case iro_Add:
+		return true;
+	case iro_Sub:
+		return !mode_is_reference(get_irn_mode(get_Sub_left(node)))
+		    && !mode_is_reference(get_irn_mode(get_Sub_right(node)));
+	case iro_Mul:
+		return is_scalar_Mul(node);
+	default:
+		return false;
+	}
+}
+
+/**
+ * Rewalk a node if it is called before its user.
+ *
+ * @param multi_env The multiop environment
+ * @param node      Node that was visited before its user @p user
+ * @param user      The user that was visited after @p node
+ */
+static void second_walk(multi_op_env *multi_env, ir_node *node, ir_node *user)
+{
+	assert(user);
+
+	multi_op *user_set = pmap_get(multi_op, multi_env->set_map, user);
+	if (is_supported_node(node)) {
+		multi_op *operand_set = pmap_get(multi_op, multi_env->set_map, node);
+		assert(operand_set);
+
+		connect_sets(operand_set, user_set, node, user);
+	} else if (get_multi_op_op(user_set) == op_Add) {
+		ir_tarval *new_val = pmap_get(ir_tarval, user_set->edge_value, user);
+		assert(new_val);
+
+		if (is_Sub(user) && get_Sub_right(user) == node) {
+			new_val = tarval_neg(new_val);
+		}
+
+		if (is_Mul(user) && is_Const(node)) {
+			DBG((dbg, LEVEL_5, "Const skipped\n"));
+			return;
+		}
+
+		if (pset_find_ptr(user_set->operands, node)) {
+			ir_tarval *old_val = pmap_get(ir_tarval, user_set->multiplier, node);
+			new_val            = tarval_add(old_val, new_val);
+
+			pmap_insert(user_set->multiplier, node, new_val);
+
+			user_set->changed = true;
+		} else {
+			pmap_insert(user_set->multiplier, node, new_val);
+			pset_insert_ptr(user_set->operands, node);
+		}
+	} else {
+		pset_insert_ptr(user_set->operands, node);
+	}
+}
+
+/**
+ * Walk on the graph and add nodes to sets.
+ */
+static void walk_sets(ir_node *node, void *env)
+{
+	if (is_Block(node)) {
+		return;
+	}
+
+	DBG((dbg, LEVEL_5, "%li %s %s\n", get_irn_node_nr(node), get_irn_opname(node), get_mode_name(get_irn_mode(node))));
+
+	multi_op_env *multi_env = (multi_op_env *)env;
+	pmap         *set_map   = multi_env->set_map;
+
+	if (is_supported_node(node)) {
+		bool      is_same_set = true;
+		multi_op *user_set    = pmap_get(multi_op, set_map, get_first_user(node));
+		if (!user_set || get_irn_mode(user_set->base_node) != get_irn_mode(node)) {
+			is_same_set = false;
+		} else {
+			foreach_out_edge(node, edge) {
+				ir_node *user = get_edge_src_irn(edge);
+				if (!pset_find_ptr(user_set->nodes, user)) {
+					is_same_set = false;
+					break;
+				}
+			}
+		}
+
+		ir_op *op = get_irn_op(node);
+		if (is_same_set && (get_multi_op_op(user_set) == op || (get_multi_op_op(user_set) == op_Add && (op == op_Sub || is_scalar_Mul(node))))) {
+			add_to_set(multi_env, node, user_set, NULL);
+		} else {
+			/* create new Set and add to user sets */
+			multi_op *new_set = new_multi_op(multi_env, node);
+
+			/* connect to all multi users */
+			foreach_out_edge(node, edge) {
+				ir_node  *user = get_edge_src_irn(edge);
+				multi_op *t    = pmap_get(multi_op, set_map, user);
+				if (t) {
+					connect_sets(new_set, t, node, user);
+				}
+
+				if (!is_supported_node(user)) {
+					new_set->other_op = true;
+				}
+			}
+		}
+
+		foreach_irn_in(node, i, n) {
+			if (pset_find_ptr(multi_env->walkhistory, n)) {
+				DBG((dbg, LEVEL_5, "%li already visited!\n", get_irn_node_nr(n)));
+				second_walk(multi_env, n, node);
+			}
+		}
+	} else {
+		/* add unsupported operations to multiops */
+		foreach_out_edge(node, edge) {
+			ir_node  *user = get_edge_src_irn(edge);
+			multi_op *t    = pmap_get(multi_op, set_map, user);
+			if (t) {
+				add_to_set(multi_env, node, t, user);
+			}
+		}
+	}
+
+	pset_insert_ptr(multi_env->walkhistory, node);
+}
+
+/**
+ * insert elements from a into b. a will be freed.
+ */
+static void merge(multi_op_env *multi_env, multi_op *a, multi_op *b)
+{
+	assert(get_multi_op_op(a) == get_multi_op_op(b));
+	assert(!a->other_op);
+	assert(pset_count(a->multi_users) == 1);
+
+	DBG((dbg, LEVEL_4, "merge %i in %i...\n", get_irn_node_nr(a->base_node), get_irn_node_nr(b->base_node)));
+
+	if (get_multi_op_op(b) == op_Add) {
+		ir_tarval *a_val = pmap_get(ir_tarval, b->multiplier, a);
+
+		foreach_pset(a->operands, ir_node, node) {
+			ir_tarval *val;
+			if (!tarval_is_one(a_val)) {
+				val = tarval_mul(a_val, pmap_get(ir_tarval, a->multiplier, node));
+			} else {
+				val = pmap_get(ir_tarval, a->multiplier, node);
+			}
+
+			if (pset_find_ptr(b->operands, node)) {
+				val = tarval_add(val, pmap_get(ir_tarval, b->multiplier, node));
+				pmap_insert(b->multiplier, node, val);
+			} else {
+				pmap_insert(b->multiplier, node, val);
+				pset_insert_ptr(b->operands, node);
+			}
+		}
+
+		pset_remove_ptr(b->multi_operands, a);
+
+		foreach_pset(a->multi_operands, multi_op, o) {
+			ir_tarval *val;
+			if (!tarval_is_one(a_val)) {
+				val = tarval_mul(a_val, pmap_get(ir_tarval, a->multiplier, o));
+			} else {
+				val = pmap_get(ir_tarval, a->multiplier, o);
+			}
+
+			if (pset_find_ptr(b->multi_operands, o)) {
+				val = tarval_add(val, pmap_get(ir_tarval, b->multiplier, o));
+				pmap_insert(b->multiplier, o, val);
+			} else {
+				pmap_insert(b->multiplier, o, val);
+				pset_insert_ptr(b->multi_operands, o);
+			}
+
+			pset_remove_ptr(o->multi_users, a);
+			pset_insert_ptr(o->multi_users, b);
+		}
+	} else {
+		foreach_pset(a->operands, ir_node, n) {
+			add_to_set(multi_env, n, b, NULL);
+		}
+
+		pset_remove_ptr(b->multi_operands, a);
+
+		foreach_pset(a->multi_operands, multi_op, o) {
+			connect_sets(o, b, NULL, NULL);
+
+			pset_remove_ptr(o->multi_users, a);
+		}
+	}
+
+	pset_remove_ptr(multi_env->sets, a);
+	destroy_multi_op(a);
+	b->changed = true;
+}
+
+/**
+ * Returns whether the given multi_op has only one operand.
+ * Example:
+ * 1*x -> true
+ * 2*x, x+y, x^y -> false
+ */
+static bool is_trivial_multi_op(multi_op *o)
+{
+	if (pset_count(o->operands) + pset_count(o->multi_operands) != 1) {
+		return false;
+	}
+
+	if (get_multi_op_op(o) == op_Add) {
+		if (pset_count(o->operands) == 1) {
+			foreach_pset(o->operands, ir_node, n) {
+				assert(pmap_get(ir_tarval, o->multiplier, n));
+				if (!tarval_is_one(pmap_get(ir_tarval, o->multiplier, n))) {
+					pset_break(o->operands);
+					return false;
+				}
+			}
+		} else {
+			assert(pset_count(o->multi_operands) == 1);
+			foreach_pset(o->multi_operands, multi_op, m) {
+				assert(pmap_get(ir_tarval, o->multiplier, m));
+				if (!tarval_is_one(pmap_get(ir_tarval, o->multiplier, m))) {
+					pset_break(o->multi_operands);
+					return false;
+				}
+			}
+		}
+	}
+
+	return true;
+}
+
+/**
+ * Inserts elements from the trivial multiop a into b.
+ */
+static void merge_trivial_multi_op(multi_op_env *multi_env, multi_op *a, multi_op *b)
+{
+	assert(is_trivial_multi_op(a));
+
+	DBG((dbg, LEVEL_4, "merge trivial multiop %li in %li...\n", get_irn_node_nr(a->base_node), get_irn_node_nr(b->base_node)));
+
+	foreach_pset(a->operands, ir_node, n) {
+		if (get_multi_op_op(b) == op_Add) {
+			ir_tarval *val = pmap_get(ir_tarval, b->multiplier, a);
+			if (pset_find_ptr(b->operands, n)) {
+				val = tarval_add(val, pmap_get(ir_tarval, b->multiplier, n));
+			} else {
+				pset_insert_ptr(b->operands, n);
+			}
+			pmap_insert(b->multiplier, n, val);
+		} else {
+			add_to_set(multi_env, n, b, NULL);
+		}
+	}
+
+	pset_remove_ptr(b->multi_operands, a);
+
+	foreach_pset(a->multi_operands, multi_op, o) {
+		if (get_multi_op_op(b) == op_Add) {
+			ir_tarval *val = pmap_get(ir_tarval, b->multiplier, a);
+			if (pset_find_ptr(b->multi_operands, o)) {
+				val = tarval_add(val, pmap_get(ir_tarval, b->multiplier, o));
+			} else {
+				pset_insert_ptr(b->multi_operands, o);
+			}
+			pmap_insert(b->multiplier, o, val);
+			pset_insert_ptr(o->multi_users, b);
+		} else {
+			connect_sets(o, b, NULL, NULL);
+		}
+
+		pset_remove_ptr(o->multi_users, a);
+	}
+
+	pset_remove_ptr(multi_env->sets, a);
+	destroy_multi_op(a);
+	b->changed = true;
+}
+
+/**
+ * Returns true iff all multi_ops in set are from type op.
+ */
+static bool is_same_op(pset *set, ir_op *op)
+{
+	foreach_pset(set, multi_op, o) {
+		if (get_multi_op_op(o) != op) {
+			pset_break(set);
+			return false;
+		}
+	}
+	return true;
+}
+
+/**
+ * Returns the user of a multi_op with only one user.
+ */
+static multi_op *get_user(multi_op *o)
+{
+	assert(pset_count(o->multi_users) == 1);
+	multi_op *user;
+	foreach_pset(o->multi_users, multi_op, n) {
+		user = n;
+	}
+	return user;
+}
+
+static ir_node *rebuild_node(multi_op *o, ir_node *curr, ir_node *node)
+{
+	ir_node  *block = get_nodes_block(o->base_node);
+	dbg_info *dbgi  = get_irn_dbg_info(o->base_node);
+	ir_mode  *mode  = get_irn_mode(o->base_node);
+
+	if (!curr)
+		return node;
+
+	switch (get_op_code(get_multi_op_op(o))) {
+	case iro_Eor:
+		return new_rd_Eor(dbgi, block, node, curr, mode);
+	case iro_And:
+		return new_rd_And(dbgi, block, node, curr, mode);
+	case iro_Or:
+		return new_rd_Or(dbgi, block, node, curr, mode);
+	default:
+		panic("Operation not supported");
+	}
+}
+
+/**
+ * Rebuild the graph according to the multi_ops. Only sets with change flag set, will bereplaced.
+ */
+static void rebuild(multi_op_env *multi_env)
+{
+	DBG((dbg, LEVEL_5, "rebuilding...\n"));
+
+	foreach_pset(multi_env->sets, multi_op, o) {
+		if (!o->changed) {
+			continue;
+		}
+
+		DBG((dbg, LEVEL_5, "rebuild %li\n", get_irn_node_nr(o->base_node)));
+
+		ir_node  *block = get_nodes_block(o->base_node);
+		dbg_info *dbgi  = get_irn_dbg_info(o->base_node);
+		ir_mode  *mode  = get_irn_mode(o->base_node);
+		ir_node  *curr  = NULL;
+
+
+		if (get_multi_op_op(o) == op_Add) {
+			/* rebuild polynoms */
+			pmap    *dic     = pmap_create();
+			ir_node *pointer = NULL;
+
+			foreach_pset(o->multi_operands, multi_op, operand) {
+				ir_node *node = operand->base_node;
+
+				/* In each Add-Set there should be at most one pointer.
+				 * If that's the case it have to be topmost. */
+				if (mode_is_reference(get_irn_mode(node))) {
+					assert(pointer == NULL);
+					pointer = node;
+					continue;
+				}
+
+				ir_tarval *val = pmap_get(ir_tarval, o->multiplier, operand);
+				assert(val);
+				if (!tarval_is_null(val)) {
+					pset *dic_set = pmap_get(pset, dic, val);
+					if (!dic_set) {
+						dic_set = pset_new_ptr_default();
+						pmap_insert(dic, val, dic_set);
+					}
+
+					pset_insert_ptr(dic_set, node);
+				}
+			}
+			foreach_pset(o->operands, ir_node, node) {
+				/* In each Add-Set there should be at most one pointer.
+				 * If that's the case it have to be topmost. */
+				if (mode_is_reference(get_irn_mode(node))) {
+					assert(pointer == NULL);
+					pointer = node;
+					continue;
+				}
+
+				ir_tarval *val = pmap_get(ir_tarval, o->multiplier, node);
+				assert(val);
+				if (!tarval_is_null(val)) {
+					pset *dic_set = pmap_get(pset, dic, val);
+					if (!dic_set) {
+						dic_set = pset_new_ptr_default();
+						pmap_insert(dic, val, dic_set);
+					}
+
+					pset_insert_ptr(dic_set, node);
+				}
+			}
+
+			curr = pointer;
+			pset    *done      = pset_new_ptr_default();
+			plist_t *negatives = plist_new();
+
+			foreach_pmap(dic, entry) {
+				ir_tarval *curr_val = (ir_tarval *)entry->key;
+
+				if (pset_find_ptr(done, curr_val)) {
+					continue;
+				}
+
+				ir_tarval *neg_val    = tarval_neg(curr_val);
+				bool       is_max_val = neg_val == curr_val;
+
+				if (is_max_val || pmap_contains(dic, neg_val) || !tarval_is_negative(curr_val)) {
+					assert(!(mode_is_signed(get_irn_mode(o->base_node)) && pset_find_ptr(done, neg_val)));
+
+					ir_tarval *negativ_val;
+					ir_tarval *positiv_val;
+
+					if (is_max_val || !tarval_is_negative(curr_val)) {
+						negativ_val = neg_val;
+						positiv_val = curr_val;
+					} else {
+						negativ_val = curr_val;
+						positiv_val = neg_val;
+					}
+
+					pset *negativ_set = NULL;
+					if (!is_max_val && mode_is_signed(get_irn_mode(o->base_node))) {
+						negativ_set = pmap_get(pset, dic, negativ_val);
+					}
+					pset *positiv_set = pmap_get(pset, dic, positiv_val);
+					assert(positiv_set);
+
+					ir_node *inner = NULL;
+					bool is_one = tarval_is_one(positiv_val);
+					if (curr && is_one) {
+						inner = curr;
+					}
+					foreach_pset(positiv_set, ir_node, node) {
+						if (!inner) {
+							inner = node;
+						} else {
+							inner = new_rd_Add(dbgi, block, inner, node, mode);
+						}
+					}
+					assert(inner);
+					if (negativ_set) {
+						foreach_pset(negativ_set, ir_node, node) {
+							inner = new_rd_Sub(dbgi, block, inner, node, mode);
+						}
+					}
+
+					if (!is_one) {
+						ir_mode *node_mode = get_irn_mode(inner);
+						ir_node *c = new_rd_Const(dbgi, get_irn_irg(inner), positiv_val);
+						inner      = new_rd_Mul(dbgi, block, c, inner, node_mode);
+					}
+
+					if (!curr || is_one) {
+						curr = inner;
+					} else {
+						curr = new_rd_Add(dbgi, block, curr, inner, mode);
+					}
+
+					pset_insert_ptr(done, positiv_val);
+					if (negativ_set) {
+						pset_insert_ptr(done, negativ_val);
+					}
+				} else {
+					plist_insert_back(negatives, curr_val);
+				}
+
+			}
+
+			foreach_plist(negatives, el) {
+				ir_tarval *negativ_val = el->data;
+				assert(tarval_is_negative(negativ_val));
+
+				pset *negativ_set = pmap_get(pset, dic, negativ_val);
+				assert(negativ_set);
+
+				ir_node *inner = NULL;
+				foreach_pset(negativ_set, ir_node, node) {
+					if (!inner) {
+						inner = node;
+					} else {
+						inner = new_rd_Add(dbgi, block, inner, node, mode);
+					}
+				}
+
+				ir_tarval *positiv_val = tarval_neg(negativ_val);
+				if (!tarval_is_one(positiv_val)) {
+					ir_mode *node_mode = get_irn_mode(inner);
+					ir_node *c         = new_rd_Const(dbgi, get_irn_irg(inner), tarval_convert_to(positiv_val, node_mode));
+					inner              = new_rd_Mul(dbgi, block, c, inner, node_mode);
+				}
+
+				if (!curr) {
+					curr = new_rd_Minus(dbgi, block, inner, mode);
+				} else {
+					curr = new_rd_Sub(dbgi, block, curr, inner, mode);
+				}
+			}
+
+			plist_free(negatives);
+			del_pset(done);
+			foreach_pmap(dic, entry) {
+				pset *dic_set = (pset *)entry->value;
+				del_pset(dic_set);
+			}
+			pmap_destroy(dic);
+		} else {
+			/* rebuild other sets */
+			foreach_pset(o->multi_operands, multi_op, operand) {
+				ir_node *node = operand->base_node;
+				curr = rebuild_node(o, curr, node);
+			}
+			foreach_pset(o->operands, ir_node, node) {
+				curr = rebuild_node(o, curr, node);
+			}
+		}
+
+		assert(curr);
+
+		if (o->base_node != curr) {
+			DBG((dbg, LEVEL_4, "exchanging... %li with %li\n", get_irn_node_nr(o->base_node), get_irn_node_nr(curr)));
+
+			exchange(o->base_node, curr);
+			assert(get_irn_mode(o->base_node) == get_irn_mode(curr));
+			o->base_node = curr;
+		}
+	}
+}
+
+/**
+ * Applies setsort to a given irg.
+ */
+static void do_Setsort(ir_graph *irg)
+{
+	multi_op_env *multi_env = XMALLOC(multi_op_env);
+	multi_env->set_map     = pmap_create();
+	multi_env->sets        = pset_new_ptr_default();
+	multi_env->walkhistory = pset_new_ptr_default();
+
+	/* walk upwards */
+	irg_walk_edges(get_irg_start_block(irg), NULL, walk_sets, multi_env);
+
+	/* from this point multi_ops->ops and multi_env->set_map are irrelevant */
+
+	DBG((dbg, LEVEL_5, "analysing...\n"));
+
+	plist_t *queue = plist_new();
+	foreach_pset(multi_env->sets, multi_op, o) {
+		assert(is_supported_node(o->base_node));
+		plist_insert_front(queue, o);
+	}
+
+	foreach_plist(queue, el) {
+		multi_op *o = el->data;
+
+		/* Merge sets with only one user */
+		if (!o->other_op && pset_count(o->multi_users) == 1) {
+			multi_op *user = get_user(o);
+			if (get_irn_mode(user->base_node) == get_irn_mode(o->base_node)) {
+				if (is_same_op(o->multi_users, get_multi_op_op(o))) {
+					merge(multi_env, o, user);
+					continue;
+				}
+				if (is_trivial_multi_op(o)) {
+					merge_trivial_multi_op(multi_env, o, get_user(o));
+					continue;
+				}
+			}
+		}
+	}
+	plist_free(queue);
+
+	rebuild(multi_env);
+
+	pmap_destroy(multi_env->set_map);
+	foreach_pset(multi_env->sets, multi_op, o) {
+		destroy_multi_op(o);
+	}
+	del_pset(multi_env->sets);
+	del_pset(multi_env->walkhistory);
+	free(multi_env);
+}
+
 /*
  * do the reassociation
  */
@@ -994,6 +1964,9 @@ void optimize_reassociation(ir_graph *irg)
 
 	DBG((dbg, LEVEL_5, "Eor equality start...\n"));
 	irg_walk_edges(get_irg_start_block(irg), walk_equality, NULL, NULL);
+
+	DBG((dbg, LEVEL_5, "setsort start...\n"));
+	do_Setsort(irg);
 
 	waitq *const wq = new_waitq();
 
