@@ -463,7 +463,7 @@ ir_node *x86_match_ASM(const ir_node *node, new_bd_asm_func new_bd_asm,
 			op->kind = ASM_OP_MEMORY;
 			const arch_register_req_t *req
 				= arch_get_irn_register_req(new_pred);
-			in_reg_reqs[i] = req->cls->class_req;
+			in_reg_reqs[in_pos] = req->cls->class_req;
 		} else if (parsed_constraint.memory_possible) {
 			/* TODO: match Load or Load/Store if memory possible is set */
 		}
