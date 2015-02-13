@@ -332,16 +332,14 @@ bool x86_match_immediate(x86_imm32_t *immediate, const ir_node *node,
 
 static void x86_emit_immediate(const x86_imm32_t *immediate)
 {
-	const ir_entity *entity = immediate->entity;
-	if (entity != NULL)
+	int32_t          const offset = immediate->offset;
+	ir_entity const *const entity = immediate->entity;
+	if (entity) {
 		be_gas_emit_entity(entity);
-	int32_t offset = immediate->offset;
-	if (entity == NULL || offset != 0) {
-		if (entity != NULL) {
+		if (offset != 0)
 			be_emit_irprintf("%+"PRId32, offset);
-		} else {
-			be_emit_irprintf("0x%"PRIX32, (uint32_t)offset);
-		}
+	} else {
+		be_emit_irprintf("0x%"PRIX32, (uint32_t)offset);
 	}
 }
 
