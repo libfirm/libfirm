@@ -593,11 +593,16 @@ static void check_input_constraints(be_verify_reg_alloc_env_t *const env, ir_nod
 			continue;
 		}
 
-		const arch_register_req_t *req = arch_get_irn_register_req_in(node, i);
+		const arch_register_req_t *req      = arch_get_irn_register_req_in(node, i);
+		const arch_register_req_t *pred_req = arch_get_irn_register_req(pred);
+		if (req->cls != pred_req->cls) {
+			verify_warnf(node, "%+F register class of requirement at input %d and operand differ", node, i);
+			env->problem_found = true;
+		}
+
 		if (req->cls == NULL)
 			continue;
 
-		const arch_register_req_t *pred_req = arch_get_irn_register_req(pred);
 		if (req->width > pred_req->width) {
 			verify_warnf(node, "%+F register width of value at input %d too small", node, i);
 			env->problem_found = true;
