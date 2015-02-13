@@ -658,7 +658,7 @@ void opt_jumpthreading(ir_graph* irg)
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_IRN_VISITED);
 
 	if (changed) {
-		/* we tend to produce alot of duplicated keep edges, remove them */
+		/* we tend to produce a lot of duplicated keep edges, remove them */
 		remove_End_Bads_and_doublets(get_irg_end(irg));
 		confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_NONE);
 	} else {
