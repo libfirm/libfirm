@@ -654,7 +654,7 @@ FIRM_API int tarval_ieee754_can_conv_lossless(const ir_tarval *tv, ir_mode *mode
 FIRM_API unsigned tarval_ieee754_get_exact(void);
 
 /**
- * Check if @P tv is a floating point NaN.
+ * Check if @p tv is a floating point NaN.
  *
  * @param tv    the tarval
  */
