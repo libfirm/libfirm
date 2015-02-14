@@ -576,6 +576,7 @@ static const char* emit_asm_operand(const ir_node *node,
 	case 'w':
 	case 'b':
 	case 'h':
+	case 'k':
 		modifier = c;
 		++s;
 		break;

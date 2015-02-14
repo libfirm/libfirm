@@ -893,6 +893,7 @@ static void emit_ia32_asm_register(const arch_register_t *reg, char modifier,
 	case  'b': name = get_register_name_8bit_low(reg); break;
 	case  'h': name = get_register_name_8bit_high(reg); break;
 	case  'w': name = get_register_name_16bit(reg); break;
+	case  'k': name = reg->name; break;
 	default:
 		panic("invalid asm op modifier");
 	}
