@@ -462,9 +462,6 @@ ir_node *x86_match_ASM(const ir_node *node, new_bd_asm_func new_bd_asm,
 		ARR_APP1(ir_node*, in, new_pred);
 	}
 
-	ARR_APP1(ir_node*, in, be_transform_node(get_ASM_mem(node)));
-	ARR_APP1(arch_register_req_t const*, in_reqs, arch_no_register_req);
-
 	/* Handle early clobbers. */
 	for (size_t o = 0; o != n_out_constraints; ++o) {
 		ir_asm_constraint const *const constraint = &out_constraints[o];
@@ -501,10 +498,10 @@ ir_node *x86_match_ASM(const ir_node *node, new_bd_asm_func new_bd_asm,
 	 *        before...
 	 * FIXME: need to do this per register class...
 	 */
+	size_t const orig_n_ins  = ARR_LEN(in_reqs);
 	size_t const orig_n_outs = ARR_LEN(out_reqs);
-	if (orig_n_outs <= (size_t)n_inputs) {
-		unsigned  const orig_n_ins = ARR_LEN(in_reqs);
-		bitset_t *const used_ins   = bitset_alloca(orig_n_ins);
+	if (orig_n_outs < orig_n_ins) {
+		bitset_t *const used_ins = bitset_alloca(orig_n_ins);
 		for (size_t o = 0; o < orig_n_outs; ++o) {
 			arch_register_req_t const *const outreq = out_reqs[o];
 			if (match_requirement(in_reqs, orig_n_ins, used_ins, outreq))
@@ -517,7 +514,7 @@ ir_node *x86_match_ASM(const ir_node *node, new_bd_asm_func new_bd_asm,
 		}
 	} else {
 		bitset_t *const used_outs = bitset_alloca(orig_n_outs);
-		for (int i = 0; i < n_inputs; ++i) {
+		for (unsigned i = 0; i < orig_n_ins; ++i) {
 			arch_register_req_t const *const inreq = in_reqs[i];
 			if (match_requirement(out_reqs, orig_n_outs, used_outs, inreq))
 				continue;
@@ -528,7 +525,9 @@ ir_node *x86_match_ASM(const ir_node *node, new_bd_asm_func new_bd_asm,
 		}
 	}
 
-	/* add a new (dummy) output which occupies the register */
+	/* Add memory input and output. */
+	ARR_APP1(ir_node*, in, be_transform_node(get_ASM_mem(node)));
+	ARR_APP1(arch_register_req_t const*, in_reqs,  arch_no_register_req);
 	ARR_APP1(arch_register_req_t const*, out_reqs, arch_no_register_req);
 
 	dbg_info      *const dbgi     = get_irn_dbg_info(node);
