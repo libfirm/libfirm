@@ -380,24 +380,21 @@ ir_node *x86_match_ASM(const ir_node *node, new_bd_asm_func new_bd_asm,
 		= NEW_ARR_DZ(x86_asm_operand_t, obst, max_operands);
 
 	/* construct output constraints */
-	size_t              const   n_clobbers   = get_ASM_n_clobbers(node);
-	size_t                      out_size     = n_out_constraints + n_clobbers;
-	arch_register_req_t const **out_reg_reqs = OALLOCN(obst, arch_register_req_t const*, out_size);
+	size_t              const   n_clobbers = get_ASM_n_clobbers(node);
+	arch_register_req_t const **out_reqs   = NEW_ARR_F(arch_register_req_t const*, 0);
 
-	size_t out_arity = 0;
-	for (; out_arity < n_out_constraints; ++out_arity) {
-		ir_asm_constraint const *const constraint = &out_constraints[out_arity];
+	for (unsigned o = 0; o < n_out_constraints; ++o) {
+		ir_asm_constraint const *const constraint = &out_constraints[o];
 
 		parsed_constraint_t parsed_constraint;
 		parse_asm_constraints(&parsed_constraint, constraints,
 		                      constraint->constraint, true);
 
-		out_reg_reqs[out_arity]
-			= x86_make_register_req(obst, &parsed_constraint, n_out_constraints,
-			                        out_reg_reqs, out_arity);
+		arch_register_req_t const *const req = x86_make_register_req(obst, &parsed_constraint, n_out_constraints, out_reqs, o);
+		ARR_APP1(arch_register_req_t const*, out_reqs, req);
 
 		x86_asm_operand_t *const op = &operands[constraint->pos];
-		set_operand_if_invalid(op, ASM_OP_OUT_REG, out_arity, constraint);
+		set_operand_if_invalid(op, ASM_OP_OUT_REG, o, constraint);
 	}
 
 	/* parse clobbers */
@@ -412,15 +409,13 @@ ir_node *x86_match_ASM(const ir_node *node, new_bd_asm_func new_bd_asm,
 			/* x87 registers may still be used as input, even if clobbered. */
 			if (reg->cls != &ia32_reg_classes[CLASS_ia32_fp])
 				clobber_bits[reg->cls->index] |= 1U << reg->index;
-			out_reg_reqs[out_arity++] = reg->single_req;
+			ARR_APP1(arch_register_req_t const*, out_reqs, reg->single_req);
 		}
 	}
 
 	/* inputs + input constraints */
-	unsigned                    max_ins     = n_inputs + 1;
-	ir_node                   **in          = ALLOCANZ(ir_node*, max_ins);
-	arch_register_req_t const **in_reg_reqs = OALLOCN(obst, arch_register_req_t const*, max_ins);
-	unsigned                    n_ins       = 0;
+	ir_node                   **in      = NEW_ARR_F(ir_node*, 0);
+	arch_register_req_t const **in_reqs = NEW_ARR_F(arch_register_req_t const*, 0);
 	for (int i = 0; i < n_inputs; ++i) {
 		ir_asm_constraint const *const constraint = &in_constraints[i];
 
@@ -450,40 +445,36 @@ ir_node *x86_match_ASM(const ir_node *node, new_bd_asm_func new_bd_asm,
 			}
 		}
 
-		ir_node *new_pred = be_transform_node(pred);
+		ir_node            *const  new_pred = be_transform_node(pred);
+		unsigned            const  in_pos   = ARR_LEN(in_reqs);
+		arch_register_req_t const *req      = x86_make_register_req(obst, &parsed_constraint, n_out_constraints, out_reqs, in_pos);
 
-		int in_pos = n_ins++;
-		in[in_pos] = new_pred;
-		in_reg_reqs[in_pos]
-			= x86_make_register_req(obst, &parsed_constraint, n_out_constraints,
-			                        out_reg_reqs, in_pos);
 		set_operand_if_invalid(op, ASM_OP_IN_REG, in_pos, constraint);
 
 		if (cls == NULL && parsed_constraint.same_as < 0) {
 			op->kind = ASM_OP_MEMORY;
-			const arch_register_req_t *req
-				= arch_get_irn_register_req(new_pred);
-			in_reg_reqs[in_pos] = req->cls->class_req;
+			req = arch_get_irn_register_req(new_pred)->cls->class_req;
 		} else if (parsed_constraint.memory_possible) {
 			/* TODO: match Load or Load/Store if memory possible is set */
 		}
+
+		ARR_APP1(arch_register_req_t const*, in_reqs, req);
+		ARR_APP1(ir_node*, in, new_pred);
 	}
 
-	assert(n_ins < max_ins);
-	int in_mem = n_ins++;
-	in[in_mem]          = be_transform_node(get_ASM_mem(node));
-	in_reg_reqs[in_mem] = arch_no_register_req;
+	ARR_APP1(ir_node*, in, be_transform_node(get_ASM_mem(node)));
+	ARR_APP1(arch_register_req_t const*, in_reqs, arch_no_register_req);
 
 	/* Handle early clobbers. */
 	for (size_t o = 0; o != n_out_constraints; ++o) {
 		ir_asm_constraint const *const constraint = &out_constraints[o];
 		if (!strchr(get_id_str(constraint->constraint), '&'))
 			continue;
-		arch_register_req_t const *const oreq = out_reg_reqs[o];
+		arch_register_req_t const *const oreq = out_reqs[o];
 
 		unsigned different = 0;
 		for (int i = 0; i != n_inputs; ++i) {
-			if (in_reg_reqs[i]->cls == oreq->cls)
+			if (in_reqs[i]->cls == oreq->cls)
 				different |= 1U << i;
 		}
 
@@ -492,7 +483,7 @@ ir_node *x86_match_ASM(const ir_node *node, new_bd_asm_func new_bd_asm,
 			*req                 = *oreq;
 			req->type           |= arch_register_req_type_must_be_different;
 			req->other_different = different;
-			out_reg_reqs[o]      = req;
+			out_reqs[o]          = req;
 		}
 	}
 
@@ -510,79 +501,51 @@ ir_node *x86_match_ASM(const ir_node *node, new_bd_asm_func new_bd_asm,
 	 *        before...
 	 * FIXME: need to do this per register class...
 	 */
-	if (out_arity <= (size_t)n_inputs) {
-		unsigned        in_size     = n_ins;
-		unsigned  const orig_inputs = n_ins;
-		bitset_t *const used_ins    = bitset_alloca(n_ins);
-		for (size_t o = 0; o < out_arity; ++o) {
-			arch_register_req_t const *const outreq = out_reg_reqs[o];
-			if (match_requirement(in_reg_reqs, orig_inputs, used_ins, outreq))
+	size_t const orig_n_outs = ARR_LEN(out_reqs);
+	if (orig_n_outs <= (size_t)n_inputs) {
+		unsigned  const orig_n_ins = ARR_LEN(in_reqs);
+		bitset_t *const used_ins   = bitset_alloca(orig_n_ins);
+		for (size_t o = 0; o < orig_n_outs; ++o) {
+			arch_register_req_t const *const outreq = out_reqs[o];
+			if (match_requirement(in_reqs, orig_n_ins, used_ins, outreq))
 				continue;
-
-			/* we might need more space in the input arrays */
-			if (n_ins >= in_size) {
-				in_size *= 2;
-				arch_register_req_t const **const new_in_reg_reqs
-					= OALLOCN(obst, arch_register_req_t const*, in_size);
-				MEMCPY(new_in_reg_reqs, in_reg_reqs, n_ins);
-				ir_node **const new_in = ALLOCANZ(ir_node*, in_size);
-				MEMCPY(new_in, in, n_ins);
-
-				in_reg_reqs = new_in_reg_reqs;
-				in          = new_in;
-			}
 
 			/* add a new (dummy) input which occupies the register */
 			assert(arch_register_req_is(outreq, limited));
-			in_reg_reqs[n_ins] = outreq;
-			in[n_ins]          = be_new_AnyVal(block, outreq->cls);
-			++n_ins;
+			ARR_APP1(arch_register_req_t const*, in_reqs, outreq);
+			ARR_APP1(ir_node*, in, be_new_AnyVal(block, outreq->cls));
 		}
 	} else {
-		bitset_t *used_outs      = bitset_alloca(out_arity);
-		size_t    orig_out_arity = out_arity;
+		bitset_t *const used_outs = bitset_alloca(orig_n_outs);
 		for (int i = 0; i < n_inputs; ++i) {
-			arch_register_req_t const *const inreq = in_reg_reqs[i];
-			if (match_requirement(out_reg_reqs, orig_out_arity, used_outs, inreq))
+			arch_register_req_t const *const inreq = in_reqs[i];
+			if (match_requirement(out_reqs, orig_n_outs, used_outs, inreq))
 				continue;
-
-			/* we might need more space in the output arrays */
-			if (out_arity >= out_size) {
-				out_size *= 2;
-				arch_register_req_t const **const new_out_reg_reqs
-					= OALLOCN(obst, arch_register_req_t const*, out_size);
-				MEMCPY(new_out_reg_reqs, out_reg_reqs, out_arity);
-				out_reg_reqs = new_out_reg_reqs;
-			}
 
 			/* add a new (dummy) output which occupies the register */
 			assert(arch_register_req_is(inreq, limited));
-			out_reg_reqs[out_arity++] = inreq;
+			ARR_APP1(arch_register_req_t const*, out_reqs, inreq);
 		}
 	}
 
-	/* append none register requirement for the memory output */
-	if (out_arity + 1 >= out_size) {
-		out_size = out_arity + 1;
-		arch_register_req_t const **const new_out_reg_reqs
-			= OALLOCN(obst, arch_register_req_t const*, out_size);
-		MEMCPY(new_out_reg_reqs, out_reg_reqs, out_arity);
-		out_reg_reqs = new_out_reg_reqs;
-	}
-
 	/* add a new (dummy) output which occupies the register */
-	out_reg_reqs[out_arity++] = arch_no_register_req;
+	ARR_APP1(arch_register_req_t const*, out_reqs, arch_no_register_req);
 
 	dbg_info      *const dbgi     = get_irn_dbg_info(node);
 	x86_asm_attr_t const attr     = { get_ASM_text(node), operands };
-	ir_node       *const new_node = new_bd_asm(dbgi, block, n_ins, in,
-	                                           out_arity, &attr);
+	size_t         const n_ins    = ARR_LEN(in);
+	size_t         const n_outs   = ARR_LEN(out_reqs);
+	ir_node       *const new_node = new_bd_asm(dbgi, block, n_ins, in, n_outs, &attr);
 
 	backend_info_t *const info = be_get_info(new_node);
-	for (size_t o = 0; o < out_arity; ++o) {
-		info->out_infos[o].req = out_reg_reqs[o];
+	for (size_t o = 0; o < n_outs; ++o) {
+		info->out_infos[o].req = out_reqs[o];
 	}
-	arch_set_irn_register_reqs_in(new_node, in_reg_reqs);
+	arch_set_irn_register_reqs_in(new_node, DUP_ARR_D(arch_register_req_t const*, obst, in_reqs));
+
+	DEL_ARR_F(in_reqs);
+	DEL_ARR_F(in);
+	DEL_ARR_F(out_reqs);
 
 	return new_node;
 }
