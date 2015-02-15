@@ -41,11 +41,7 @@ def main(argv):
 	env.globals.update(jinjautil.exports)
 	env.filters.update(jinjautil.filters)
 	for definition in config.definitions:
-		if "=" not in definition:
-			name = definition
-			replacement = ""
-		else:
-			(name, replacement) = definition.split("=", 1)
+		(name, _, replacement) = definition.partition("=")
 		env.globals[name] = replacement
 
 	template = env.get_template(config.templatefile)
