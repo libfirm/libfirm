@@ -579,7 +579,7 @@ void sparc_emitf(ir_node const *const node, char const *fmt, ...)
 		}
 
 		case 'D':
-			if (*fmt < '0' || '9' <= *fmt)
+			if (!is_digit(*fmt))
 				goto unknown;
 			sparc_emit_dest_register(node, *fmt++ - '0');
 			break;
@@ -624,7 +624,7 @@ void sparc_emitf(ir_node const *const node, char const *fmt, ...)
 			break;
 
 		case 'O':
-			if (*fmt < '0' || '9' <= *fmt)
+			if (!is_digit(*fmt))
 				goto unknown;
 			sparc_emit_offset(node, *fmt++ - '0');
 			break;
@@ -642,7 +642,7 @@ void sparc_emitf(ir_node const *const node, char const *fmt, ...)
 				imm = true;
 				++fmt;
 			}
-			if (*fmt < '0' || '9' <= *fmt)
+			if (!is_digit(*fmt))
 				goto unknown;
 			unsigned const pos = *fmt++ - '0';
 			if (imm && arch_get_irn_flags(node) & (arch_irn_flags_t)sparc_arch_irn_flag_immediate_form) {
@@ -715,7 +715,7 @@ static const char *emit_asm_operand(const ir_node *node, const char *s)
 	} else if (c == '%') {
 		be_emit_char('%');
 		return s+1;
-	} else if (c < '0' || c > '9') {
+	} else if (!is_digit(c)) {
 		be_errorf(node, "asm contains unknown modifier '%c'", c);
 		return s+1;
 	}

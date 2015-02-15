@@ -465,7 +465,7 @@ end_of_mods:
 			}
 
 			case 'D':
-				if (*fmt < '0' || '9' <= *fmt)
+				if (!is_digit(*fmt))
 					goto unknown;
 				reg = arch_get_irn_register_out(node, *fmt++ - '0');
 				goto emit_R;
@@ -504,12 +504,9 @@ end_of_mods:
 					emit_shiftop(node);
 					break;
 				}
-				int pos;
-				if ('0' <= *fmt && *fmt <= '9') {
-					pos = *fmt++ - '0';
-				} else {
+				if (!is_digit(*fmt))
 					goto unknown;
-				}
+				int const pos = *fmt++ - '0';
 				reg = arch_get_irn_register_in(node, pos);
 emit_R:
 				if (mod & EMIT_IGNORE_MODE) {

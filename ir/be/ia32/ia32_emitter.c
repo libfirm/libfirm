@@ -517,7 +517,7 @@ destination_operand:
 			}
 
 			case 'D':
-				if (*fmt < '0' || '9' < *fmt)
+				if (!is_digit(*fmt))
 					goto unknown;
 				reg = arch_get_irn_register_out(node, *fmt++ - '0');
 				goto emit_R;
@@ -596,7 +596,7 @@ emit_I:
 				if (*fmt == 'X') {
 					++fmt;
 					cc = (x86_condition_code_t)va_arg(ap, int);
-				} else if ('0' <= *fmt && *fmt <= '9') {
+				} else if (is_digit(*fmt)) {
 					cc = determine_final_cc(node, *fmt - '0');
 					++fmt;
 				} else {
@@ -632,7 +632,7 @@ emit_R:
 
 emit_S:
 			case 'S': {
-				if (*fmt < '0' || '9' < *fmt)
+				if (!is_digit(*fmt))
 					goto unknown;
 
 				unsigned pos = *fmt++ - '0';

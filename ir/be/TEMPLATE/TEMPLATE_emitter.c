@@ -16,6 +16,7 @@
 #include "gen_TEMPLATE_emitter.h"
 #include "irgwalk.h"
 #include "panic.h"
+#include "util.h"
 
 static void TEMPLATE_emit_immediate(const ir_node *node)
 {
@@ -75,7 +76,7 @@ void TEMPLATE_emitf(const ir_node *node, const char *format, ...)
 			break;
 
 		case 'S': {
-			if (*format < '0' || '9' <= *format)
+			if (!is_digit(*format))
 				goto unknown;
 			unsigned const pos = *format++ - '0';
 			TEMPLATE_emit_source_register(node, pos);
@@ -83,7 +84,7 @@ void TEMPLATE_emitf(const ir_node *node, const char *format, ...)
 		}
 
 		case 'D': {
-			if (*format < '0' || '9' <= *format)
+			if (!is_digit(*format))
 				goto unknown;
 			unsigned const pos = *format++ - '0';
 			TEMPLATE_emit_dest_register(node, pos);

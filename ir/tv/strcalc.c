@@ -19,6 +19,7 @@
 #include "panic.h"
 #include "bitfiddle.h"
 #include "tv_t.h"
+#include "util.h"
 
 #define SC_MASK      ((sc_word)0xFF)
 #define SC_RESULT(x) ((x) & SC_MASK)
@@ -342,7 +343,7 @@ bool sc_val_from_str(bool negative, unsigned base, const char *str, size_t len,
 	while (len > 0) {
 		char c = *str;
 		unsigned v;
-		if (c >= '0' && c <= '9')
+		if (is_digit(c))
 			v = c - '0';
 		else if (c >= 'A' && c <= 'F')
 			v = c - 'A' + 10;

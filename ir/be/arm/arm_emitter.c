@@ -272,7 +272,7 @@ void arm_emitf(const ir_node *node, const char *format, ...)
 			break;
 
 		case 'S': {
-			if (*format < '0' || '9' <= *format)
+			if (!is_digit(*format))
 				goto unknown;
 			unsigned const pos = *format++ - '0';
 			arm_emit_source_register(node, pos);
@@ -280,7 +280,7 @@ void arm_emitf(const ir_node *node, const char *format, ...)
 		}
 
 		case 'D': {
-			if (*format < '0' || '9' <= *format)
+			if (!is_digit(*format))
 				goto unknown;
 			unsigned const pos = *format++ - '0';
 			arm_emit_dest_register(node, pos);

@@ -12,6 +12,7 @@
 #ifndef FIRM_ADT_UTIL_H
 #define FIRM_ADT_UTIL_H
 
+#include <stdbool.h>
 #include <string.h>
 
 /**
@@ -57,5 +58,10 @@ static inline void *safe_memcpy(void* const dst, void const* const src, size_t c
 }
 
 #define MEMCPY(dst, src, n) safe_memcpy((dst), (src), (n) * sizeof(*(1 ? (dst) : (src))))
+
+static inline bool is_digit(char const c)
+{
+	return '0' <= c && c <= '9';
+}
 
 #endif

@@ -1178,7 +1178,7 @@ static char hexchar(unsigned val)
 
 static unsigned hexval(char c)
 {
-	if (c >= '0' && c <= '9')
+	if (is_digit(c))
 		return c - '0';
 	return (c - 'A')+10;
 }

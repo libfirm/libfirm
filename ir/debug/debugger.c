@@ -919,7 +919,7 @@ static unsigned get_token(void)
 		lexer.s   = lexer.tok_start;
 		lexer.len = lexer.curr_pos - lexer.s;
 		return tok_identifier;
-	} else if (isdigit((unsigned char)c) || c == '-') {
+	} else if (is_digit(c) || c == '-') {
 		unsigned number = 0;
 		unsigned sign   = 0;
 
@@ -938,7 +938,7 @@ static unsigned get_token(void)
 
 					if (! isxdigit((unsigned char)c))
 						break;
-					if (isdigit((unsigned char)c))
+					if (is_digit(c))
 						number = (number << 4) | (c - '0');
 					else
 						number = (number << 4) | (toupper((unsigned char)c) - 'A' + 10);
@@ -949,7 +949,7 @@ static unsigned get_token(void)
 			}
 		}
 		for (;;) {
-			if (! isdigit((unsigned char)c))
+			if (!is_digit(c))
 				break;
 			number = number * 10 + (c - '0');
 			c = next_char();
