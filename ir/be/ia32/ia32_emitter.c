@@ -31,6 +31,7 @@
 #include "be_t.h"
 #include "bearch_ia32_t.h"
 #include "beblocksched.h"
+#include "bediagnostic.h"
 #include "begnuas.h"
 #include "besched.h"
 #include "bestack.h"
@@ -189,25 +190,23 @@ static void ia32_emit_entity(ir_entity *entity, int no_pic_adjust)
 	}
 }
 
-static void emit_ia32_Immediate_no_prefix(const ir_node *node)
+static void emit_ia32_immediate(bool const prefix, bool const no_pic_adjust, ir_entity *const entity, int32_t const offset)
 {
-	const ia32_immediate_attr_t *attr = get_ia32_immediate_attr_const(node);
-
-	ir_entity *const entity = attr->entity;
-	if (entity != NULL) {
-		ia32_emit_entity(entity, attr->no_pic_adjust);
-		if (attr->offset != 0) {
-			be_emit_irprintf("%+"PRId32, attr->offset);
-		}
+	if (prefix)
+		be_emit_char('$');
+	if (entity) {
+		ia32_emit_entity(entity, no_pic_adjust);
+		if (offset != 0)
+			be_emit_irprintf("%+"PRId32, offset);
 	} else {
-		be_emit_irprintf("0x%"PRIX32, (uint32_t)attr->offset);
+		be_emit_irprintf("0x%"PRIX32, (uint32_t)offset);
 	}
 }
 
-static void emit_ia32_Immediate(const ir_node *node)
+static void emit_ia32_immediate_attr(bool const prefix, ir_node const *const node)
 {
-	be_emit_char('$');
-	emit_ia32_Immediate_no_prefix(node);
+	ia32_immediate_attr_t const *const attr = get_ia32_immediate_attr_const(node);
+	emit_ia32_immediate(prefix, attr->no_pic_adjust, attr->entity, attr->offset);
 }
 
 static void ia32_emit_mode_suffix_mode(const ir_mode *mode)
@@ -494,7 +493,7 @@ emit_AM:
 			case 'B': {
 				ir_node const *const src = get_irn_n(node, n_ia32_binary_right);
 				if (is_ia32_Immediate(src)) {
-					emit_ia32_Immediate(src);
+					emit_ia32_immediate_attr(true, src);
 					be_emit_cstring(", ");
 					if (get_ia32_op_type(node) == ia32_Normal) {
 						goto destination_operand;
@@ -566,9 +565,7 @@ emit_I:
 					if (attr->entity == NULL && attr->offset == 1)
 						break;
 				}
-				if (!(mod & EMIT_ALTERNATE_AM))
-					be_emit_char('$');
-				emit_ia32_Immediate_no_prefix(imm);
+				emit_ia32_immediate_attr(!(mod & EMIT_ALTERNATE_AM), imm);
 				if (mod & EMIT_SHIFT_COMMA) {
 					be_emit_char(',');
 				}
@@ -901,13 +898,59 @@ static void emit_ia32_asm_register(const arch_register_t *reg, char modifier,
 	be_emit_string(name);
 }
 
+static void emit_ia32_asm_operand(ir_node const *const node, char const modifier, unsigned const pos)
+{
+	switch (modifier) {
+	case '\0':
+	case 'b':
+	case 'h':
+	case 'k':
+	case 'w':
+		break;
+
+	default:
+		be_errorf(node, "asm contains unknown modifier '%c'", modifier);
+		return;
+	}
+
+	ia32_asm_attr_t   const *const attr = get_ia32_asm_attr_const(node);
+	x86_asm_operand_t const *const op   = &attr->asmattr.operands[pos];
+	switch ((x86_asm_operand_kind_t)op->kind) {
+	case ASM_OP_INVALID:
+		panic("invalid asm operand");
+
+	case ASM_OP_IN_REG: {
+		arch_register_t const *const reg = arch_get_irn_register_in(node, op->inout_pos);
+		emit_ia32_asm_register(reg, modifier, op->u.mode);
+		return;
+	}
+
+	case ASM_OP_OUT_REG: {
+		arch_register_t const *const reg = arch_get_irn_register_out(node, op->inout_pos);
+		emit_ia32_asm_register(reg, modifier, op->u.mode);
+		return;
+	}
+
+	case ASM_OP_MEMORY: {
+		arch_register_t const *const reg = arch_get_irn_register_in(node, op->inout_pos);
+		be_emit_irprintf("(%%%s)", reg->name);
+		return;
+	}
+
+	case ASM_OP_IMMEDIATE:
+		emit_ia32_immediate(true, true, op->u.imm32.entity, op->u.imm32.offset);
+		return;
+	}
+	panic("invalid asm operand kind");
+}
+
 /**
  * Emits code for an ASM pseudo op.
  */
 static void emit_ia32_Asm(const ir_node *node)
 {
-	const ia32_asm_attr_t *attr = get_ia32_asm_attr_const(node);
-	x86_emit_asm(node, &attr->asmattr, emit_ia32_asm_register);
+	ia32_asm_attr_t const *const attr = get_ia32_asm_attr_const(node);
+	be_emit_asm(node, attr->asmattr.asm_text, ARR_LEN(attr->asmattr.operands), emit_ia32_asm_operand);
 }
 
 /**

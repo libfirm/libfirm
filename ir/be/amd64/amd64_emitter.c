@@ -14,6 +14,7 @@
 #include "amd64_nodes_attr.h"
 #include "be_t.h"
 #include "beblocksched.h"
+#include "bediagnostic.h"
 #include "begnuas.h"
 #include "beirg.h"
 #include "benode.h"
@@ -210,8 +211,10 @@ static void amd64_emit_immediate64(const amd64_imm64_t *const imm)
 	}
 }
 
-static void amd64_emit_immediate32(const amd64_imm32_t *const imm)
+static void amd64_emit_immediate32(bool const prefix, amd64_imm32_t const *const imm)
 {
+	if (prefix)
+		be_emit_char('$');
 	if (imm->entity) {
 		be_gas_emit_entity(imm->entity);
 		if (imm->offset != 0)
@@ -284,8 +287,7 @@ static void amd64_emit_am(const ir_node *const node, bool indirect_star)
 	case AMD64_OP_REG_IMM: {
 		const amd64_binop_addr_attr_t *const binop_attr
 			= (const amd64_binop_addr_attr_t*)attr;
-		be_emit_char('$');
-		amd64_emit_immediate32(&binop_attr->u.immediate);
+		amd64_emit_immediate32(true, &binop_attr->u.immediate);
 		be_emit_cstring(", ");
 		const arch_register_t *reg = arch_get_irn_register_in(node, 0);
 		emit_register_mode(reg, binop_attr->base.insn_mode);
@@ -326,7 +328,7 @@ static void amd64_emit_am(const ir_node *const node, bool indirect_star)
 		return;
 	}
 	case AMD64_OP_UNOP_IMM32:
-		amd64_emit_immediate32(&attr->addr.immediate);
+		amd64_emit_immediate32(false, &attr->addr.immediate);
 		return;
 	case AMD64_OP_UNOP_ADDR:
 		if (indirect_star)
@@ -618,10 +620,59 @@ static void emit_amd64_asm_register(const arch_register_t *reg, char modifier,
 	be_emit_string(name);
 }
 
+static void emit_amd64_asm_operand(ir_node const *const node, char const modifier, unsigned const pos)
+{
+	switch (modifier) {
+	case '\0':
+	case 'b':
+	case 'h':
+	case 'k':
+	case 'q':
+	case 'w':
+		break;
+
+	default:
+		be_errorf(node, "asm contains unknown modifier '%c'", modifier);
+		return;
+	}
+
+	amd64_asm_attr_t  const *const attr = get_amd64_asm_attr_const(node);
+	x86_asm_operand_t const *const op   = &attr->asmattr.operands[pos];
+	switch ((x86_asm_operand_kind_t)op->kind) {
+	case ASM_OP_INVALID:
+		panic("invalid asm operand");
+
+	case ASM_OP_IN_REG: {
+		arch_register_t const *const reg = arch_get_irn_register_in(node, op->inout_pos);
+		emit_amd64_asm_register(reg, modifier, op->u.mode);
+		return;
+	}
+
+	case ASM_OP_OUT_REG: {
+		arch_register_t const *const reg = arch_get_irn_register_out(node, op->inout_pos);
+		emit_amd64_asm_register(reg, modifier, op->u.mode);
+		return;
+	}
+
+	case ASM_OP_MEMORY: {
+		arch_register_t const *const reg = arch_get_irn_register_in(node, op->inout_pos);
+		be_emit_irprintf("(%%%s)", reg->name);
+		return;
+	}
+
+	case ASM_OP_IMMEDIATE: {
+		amd64_imm32_t const imm = { op->u.imm32.entity, op->u.imm32.offset };
+		amd64_emit_immediate32(true, &imm);
+		return;
+	}
+	}
+	panic("invalid asm operand kind");
+}
+
 static void emit_amd64_asm(const ir_node *node)
 {
-	const amd64_asm_attr_t *attr = get_amd64_asm_attr_const(node);
-	x86_emit_asm(node, &attr->asmattr, emit_amd64_asm_register);
+	amd64_asm_attr_t const *const attr = get_amd64_asm_attr_const(node);
+	be_emit_asm(node, attr->asmattr.asm_text, ARR_LEN(attr->asmattr.operands), emit_amd64_asm_operand);
 }
 
 /**

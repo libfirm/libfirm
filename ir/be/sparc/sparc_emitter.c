@@ -703,77 +703,35 @@ static void emit_be_IncSP(const ir_node *irn)
 	sparc_emitf(irn, "%s %S0, %d, %D0", insn, offset);
 }
 
-static const char *emit_asm_operand(const ir_node *node, const char *s)
+static void emit_sparc_asm_operand(ir_node const *const node, char const modifier, unsigned const pos)
 {
-	assert(*s == '%');
-	char c = *(++s);
-	/* parse modifiers */
-	if (c == '\0') {
-		be_errorf(node, "asm ends with %%");
-		be_emit_char('%');
-		return s;
-	} else if (c == '%') {
-		be_emit_char('%');
-		return s+1;
-	} else if (!is_digit(c)) {
-		be_errorf(node, "asm contains unknown modifier '%c'", c);
-		return s+1;
+	if (modifier != '\0') {
+		be_errorf(node, "asm contains unknown modifier '%c'", modifier);
+		return;
 	}
 
-	/* parse number */
-	int num = 0;
-	int p   = 0;
-	sscanf(s, "%d%n", &num, &p);
-	s += p;
-
-	const sparc_asm_attr_t     *const attr     = get_sparc_asm_attr_const(node);
-	const sparc_asm_operand_t  *const operands = attr->operands;
-	if ((size_t)num > ARR_LEN(operands)) {
-		be_errorf(node, "asm operand number '%d' out of range", num);
-		return s;
-	}
-
-	const sparc_asm_operand_t *const operand = &operands[num];
-	const arch_register_t *reg = NULL;
-	switch (operand->kind) {
+	sparc_asm_attr_t    const *const attr = get_sparc_asm_attr_const(node);
+	sparc_asm_operand_t const *const op   = &attr->operands[pos];
+	switch (op->kind) {
 	case ASM_OPERAND_IMMEDIATE:
-		sparc_emit_immediate(operand->immediate_value,
-		                     operand->immediate_value_entity);
-		return s;
-	case ASM_OPERAND_INPUT_VALUE:
-		reg = arch_get_irn_register_in(node, operand->pos);
-		break;
-	case ASM_OPERAND_OUTPUT_VALUE:
-		reg = arch_get_irn_register_out(node, operand->pos);
-		break;
-	}
+		sparc_emit_immediate(op->immediate_value, op->immediate_value_entity);
+		return;
 
-	/* emit the register */
-	sparc_emit_register(reg);
-	return s;
+	case ASM_OPERAND_INPUT_VALUE:
+		sparc_emit_register(arch_get_irn_register_in(node, op->pos));
+		return;
+
+	case ASM_OPERAND_OUTPUT_VALUE:
+		sparc_emit_register(arch_get_irn_register_out(node, op->pos));
+		return;
+	}
+	panic("invalid asm operand kind");
 }
 
 static void emit_sparc_ASM(const ir_node *node)
 {
-	be_emit_cstring("#APP\n");
-	be_emit_write_line();
-
-	const sparc_asm_attr_t *attr = get_sparc_asm_attr_const(node);
-	const char             *s    = get_id_str(attr->text);
-
-	if (s[0] != '\t')
-		be_emit_char('\t');
-	while (*s != 0) {
-		if (*s == '%') {
-			s = emit_asm_operand(node, s);
-		} else {
-			be_emit_char(*s++);
-		}
-	}
-
-	be_emit_cstring("\n#NO_APP\n");
-	be_emit_write_line();
-
+	sparc_asm_attr_t const *const attr = get_sparc_asm_attr_const(node);
+	be_emit_asm(node, attr->text, ARR_LEN(attr->operands), emit_sparc_asm_operand);
 }
 
 /**
