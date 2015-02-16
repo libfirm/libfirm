@@ -86,7 +86,7 @@ FIRM_API pmap_entry *pmap_next(pmap *);
 	for (pmap_entry *curr = pmap_first(pmap); curr; curr = pmap_next(pmap))
 
 /** Breaks an iteration.
- *  Must be called, if a iteration ends before p_map_next() returns NULL.
+ *  Must be called, if a iteration ends before pmap_next() returns NULL.
  */
 FIRM_API void pmap_break(pmap *map);
 
