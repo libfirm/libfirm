@@ -24,6 +24,7 @@
 #include "firmstat_t.h"
 
 #include "be_t.h"
+#include "bediagnostic.h"
 #include "benode.h"
 #include "besched.h"
 #include "bepeephole.h"
@@ -767,7 +768,7 @@ static void peephole_ia32_Lea(ir_node *node)
 #ifdef DEBUG_libfirm
 		/* We shouldn't construct these in the first place. */
 		if (is_ia32_NoReg_GP(base) && is_ia32_NoReg_GP(index))
-			ir_fprintf(stderr, "Optimization warning: found Lea which is a Const\n");
+			be_warningf(node, "found unoptimized Lea which is a Const");
 #endif
 		return; /* Neither base nor index use the same register as the Lea. */
 	}
@@ -781,7 +782,7 @@ static void peephole_ia32_Lea(ir_node *node)
 			/* Lea base/index + disp -> Add+Imm. */
 #ifdef DEBUG_libfirm
 			if (!has_disp)
-				ir_fprintf(stderr, "Optimization warning: found Lea which is a Nop\n");
+				be_warningf(node, "found unoptimized Lea which is a Copy");
 #endif
 			if (ia32_cg_config.use_incdec) {
 				if (is_disp_const(node, 1)) {
@@ -941,7 +942,7 @@ static void optimize_conv_store(ir_node *node)
 	if (get_mode_size_bits(conv_mode) < get_mode_size_bits(store_mode))
 		return;
 
-	ir_fprintf(stderr, "Optimization warning: unoptimized ia32 Store(Conv) (%+F, %+F)\n", node, pred);
+	be_warningf(node, "unoptimized ia32 Store(Conv)");
 	set_irn_n(node, n_ia32_Store_val, get_irn_n(pred, n_ia32_Conv_I2I_val));
 	if (get_irn_n_edges(pred_proj) == 0) {
 		kill_node(pred_proj);
@@ -988,7 +989,7 @@ static void optimize_load_conv(ir_node *node)
 	}
 
 	/* kill the conv */
-	ir_fprintf(stderr, "Optimization warning: unoptimized ia32 Conv(Load) (%+F, %+F)\n", node, predpred);
+	be_warningf(node, "unoptimized ia32 Conv(Load)");
 	exchange(node, pred);
 }
 
@@ -1059,7 +1060,7 @@ static void optimize_conv_conv(ir_node *node)
 		}
 	}
 
-	ir_fprintf(stderr, "Optimization warning: unoptimized ia32 Conv(Conv) (%+F, %+F)\n", node, pred);
+	be_warningf(node, "unoptimized ia32 Conv(Conv)");
 	/* Some user (like Phis) won't be happy if we change the mode. */
 	set_irn_mode(result_conv, get_irn_mode(node));
 

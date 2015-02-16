@@ -12,6 +12,7 @@
 
 #include "bearch_sparc_t.h"
 #include "beblocksched.h"
+#include "bediagnostic.h"
 #include "begnuas.h"
 #include "beirg.h"
 #include "benode.h"
@@ -708,15 +709,14 @@ static const char *emit_asm_operand(const ir_node *node, const char *s)
 	char c = *(++s);
 	/* parse modifiers */
 	if (c == '\0') {
-		ir_fprintf(stderr, "Warning: asm text (%+F) ends with %%\n", node);
+		be_errorf(node, "asm ends with %%");
 		be_emit_char('%');
 		return s;
 	} else if (c == '%') {
 		be_emit_char('%');
 		return s+1;
 	} else if (c < '0' || c > '9') {
-		ir_fprintf(stderr, "Warning: asm text (%+F) contains unknown modifier '%c' for asm op\n",
-		           node, c);
+		be_errorf(node, "asm contains unknown modifier '%c'", c);
 		return s+1;
 	}
 
@@ -729,9 +729,7 @@ static const char *emit_asm_operand(const ir_node *node, const char *s)
 	const sparc_asm_attr_t     *const attr     = get_sparc_asm_attr_const(node);
 	const sparc_asm_operand_t  *const operands = attr->operands;
 	if ((size_t)num > ARR_LEN(operands)) {
-		ir_fprintf(stderr,
-		           "Error: Custom assembler references invalid input/output (%+F)\n",
-		           node);
+		be_errorf(node, "asm operand number '%d' out of range", num);
 		return s;
 	}
 

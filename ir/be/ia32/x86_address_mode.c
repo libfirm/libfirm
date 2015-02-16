@@ -9,6 +9,7 @@
  *              nodes that can be used as address mode for x86 instructions
  * @author      Matthias Braun
  */
+#include "bediagnostic.h"
 #include "beirg.h"
 #include "beutil.h"
 #include "betranshlp.h"
@@ -161,8 +162,7 @@ static bool eat_shl(x86_address_t *addr, ir_node *node)
 		if (val < 0 || val > 3)
 			return false;
 		if (val == 0)
-			ir_fprintf(stderr,
-			           "Optimization warning: unoptimized Shl(,0) found\n");
+			be_warningf(node, "found unoptimized Shl x,0");
 
 		shifted_val = get_Shl_left(node);
 	} else if (is_Add(node)) {

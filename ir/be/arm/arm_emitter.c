@@ -16,6 +16,7 @@
 #include "be_t.h"
 #include "bearch_arm_t.h"
 #include "beblocksched.h"
+#include "bediagnostic.h"
 #include "begnuas.h"
 #include "benode.h"
 #include "besched.h"
@@ -530,7 +531,7 @@ static void emit_arm_CopyB(const ir_node *irn)
 	assert(size > 0 && "CopyB needs size > 0" );
 
 	if (size & 3) {
-		fprintf(stderr, "strange hack enabled: copy more bytes than needed!");
+		be_errorf(irn, "strange hack enabled: copy more bytes than needed");
 		size += 4;
 	}
 

@@ -12,6 +12,7 @@
 #include "ircons.h"
 #include "iredges.h"
 
+#include "bediagnostic.h"
 #include "benode.h"
 #include "bepeephole.h"
 #include "besched.h"
@@ -145,10 +146,8 @@ static void peephole_arm_Str_Ldr(ir_node *node)
 		return;
 
 	/* we should only have too big offsets for frame entities */
-	if (!attr->is_frame_entity) {
-		fprintf(stderr,
-		        "POSSIBLE ARM BACKEND PROBLEM: offset in Store too big\n");
-	}
+	if (!attr->is_frame_entity)
+		be_errorf(node, "POSSIBLE ARM BACKEND PROBLEM: offset in Store too big");
 	bool use_add = offset >= 0;
 
 	ir_node *ptr;

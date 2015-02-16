@@ -18,6 +18,7 @@
 #include "irnodeset.h"
 
 #include "bechordal_t.h"
+#include "bediagnostic.h"
 #include "benode.h"
 #include "beutil.h"
 #include "becopyopt_t.h"
@@ -178,7 +179,7 @@ static FILE *be_ffopen(const char *base, const char *ext, const char *mode)
 	snprintf(buf, sizeof(buf), "%s.%s", base, ext);
 	buf[sizeof(buf) - 1] = '\0';
 	if (! (out = fopen(buf, mode))) {
-		fprintf(stderr, "Cannot open file %s in mode %s\n", buf, mode);
+		be_errorf(NULL, "cannot open file '%s' in mode '%s'", buf, mode);
 		return NULL;
 	}
 	return out;

@@ -17,6 +17,7 @@
 #include "array.h"
 #include "bearch.h"
 #include "beemitter.h"
+#include "bediagnostic.h"
 #include "begnuas.h"
 #include "beirg.h"
 #include "benode.h"
@@ -307,9 +308,7 @@ bool x86_match_immediate(x86_imm32_t *immediate, const ir_node *node,
 	if (cnst != NULL) {
 		ir_tarval *offset = get_Const_tarval(cnst);
 		if (!tarval_is_long(offset)) {
-			ir_fprintf(stderr,
-			           "Optimization warning: tarval of %+F is not a long?\n",
-			           cnst);
+			be_warningf(cnst, "tarval is not long");
 			return false;
 		}
 
@@ -566,7 +565,7 @@ static const char* emit_asm_operand(const ir_node *node,
 	switch (c) {
 	case '\0':
 		/* TODO: move this warning to the frontend */
-		ir_fprintf(stderr, "Warning: asm text (%+F) ends with %%\n", node);
+		be_errorf(node, "asm ends with %%");
 		be_emit_char('%');
 		return s;
 
@@ -592,9 +591,7 @@ static const char* emit_asm_operand(const ir_node *node,
 	case '9':
 		break;
 	default:
-		ir_fprintf(stderr,
-		           "Warning: asm text (%+F) contains unknown modifier '%c' for asm op\n",
-		           node, c);
+		be_errorf(node, "asm contains unknown modifier '%c'", c);
 		++s;
 		break;
 	}
@@ -603,8 +600,7 @@ static const char* emit_asm_operand(const ir_node *node,
 	unsigned num;
 	int p;
 	if (sscanf(s, "%u%n", &num, &p) != 1) {
-		ir_fprintf(stderr, "Warning: Couldn't parse assembler operand (%+F)\n",
-		           node);
+		be_errorf(node, "could not parse asm operand");
 		return s;
 	} else {
 		s += p;
@@ -612,9 +608,7 @@ static const char* emit_asm_operand(const ir_node *node,
 
 	const x86_asm_operand_t *operands = attr->operands;
 	if (num >= ARR_LEN(operands)) {
-		ir_fprintf(stderr,
-		           "Error: Custom assembler references invalid input/output (%+F)\n",
-		           node);
+		be_errorf(node, "asm operand number '%u' out of range", num);
 		return s;
 	}
 	const x86_asm_operand_t *op = &operands[num];
@@ -637,9 +631,7 @@ static const char* emit_asm_operand(const ir_node *node,
 		panic("invalid asm operand");
 	}
 	if (reg == NULL) {
-		ir_fprintf(stderr,
-		           "Warning: no register assigned for %d asm op (%+F)\n",
-		           num, node);
+		be_errorf(node, "no register assigend for asm op %u", num);
 		return s;
 	}
 

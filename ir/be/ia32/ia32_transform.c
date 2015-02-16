@@ -31,6 +31,7 @@
 #include "array.h"
 #include "heights.h"
 
+#include "bediagnostic.h"
 #include "benode.h"
 #include "besched.h"
 #include "betranshlp.h"
@@ -1546,8 +1547,7 @@ static ir_node *gen_Add(ir_node *node)
 	if (add_immediate_op != NULL) {
 		if (!am_has_immediates(&addr)) {
 #ifdef DEBUG_libfirm
-			ir_fprintf(stderr, "Optimization warning: Add x,0 (%+F) found\n",
-					   node);
+			be_warningf(node, "found unoptimized Add x,0");
 #endif
 			return be_transform_node(add_immediate_op);
 		}
@@ -1718,10 +1718,8 @@ static ir_node *gen_Sub(ir_node *node)
 			return gen_binop_x87_float(node, op1, op2, new_bd_ia32_fsub);
 	}
 
-	if (is_Const(op2)) {
-		ir_fprintf(stderr, "Optimization warning: found sub with const (%+F)\n",
-		           node);
-	}
+	if (is_Const(op2))
+		be_warningf(node, "found unoptimized Sub with Const");
 
 	ir_node *ia32_sub = gen_binop(node, op1, op2, new_bd_ia32_Sub, match_mode_neutral
 	                              | match_am | match_immediate);
@@ -2551,9 +2549,8 @@ static ir_node *try_create_dest_am(ir_node *node)
 	case iro_Sub: {
 		ir_node *op1 = get_Sub_left(val);
 		ir_node *op2 = get_Sub_right(val);
-		if (is_Const(op2)) {
-			ir_fprintf(stderr, "Optimization warning: not-normalized sub ,C found\n");
-		}
+		if (is_Const(op2))
+			be_warningf(val, "found unoptimized Sub with Const");
 		new_node = dest_am_binop(val, op1, op2, mem, ptr, mode,
 		                         new_bd_ia32_SubMem, new_bd_ia32_SubMem_8bit,
 		                         match_immediate, 'i');
@@ -3491,8 +3488,7 @@ static ir_node *gen_Mux(ir_node *node)
 	int is_abs = ir_mux_is_abs(sel, mux_false, mux_true);
 	if (is_abs != 0) {
 		if (mode_needs_gp_reg(mode)) {
-			ir_fprintf(stderr, "Optimization warning: Integer abs %+F not transformed\n",
-			           node);
+			be_warningf(node, "integer abs not transformed");
 		} else {
 			ir_node *op = ir_get_abs_op(sel, mux_false, mux_true);
 			return create_float_abs(dbgi, new_block, op, is_abs < 0, node);
@@ -3911,10 +3907,8 @@ static ir_node *create_I2I_Conv(ir_mode *const src_mode, dbg_info *const dbgi, i
 	(void)node;
 
 #ifdef DEBUG_libfirm
-	if (is_Const(op)) {
-		ir_fprintf(stderr, "Optimization warning: conv after constant %+F\n",
-		           op);
-	}
+	if (is_Const(op))
+		be_warningf(op, "unoptimized conv after constant");
 #endif
 
 	op = be_skip_downconv(op, false);
@@ -3959,7 +3953,7 @@ static ir_node *gen_Conv(ir_node *node)
 
 	if (src_mode == tgt_mode) {
 		/* this should be optimized already, but who knows... */
-		DEBUG_ONLY(ir_fprintf(stderr, "Debug warning: conv %+F is pointless\n", node);)
+		DEBUG_ONLY(be_warningf(node, "pointless Conv");)
 		DB((dbg, LEVEL_1, "killed Conv(mode, mode) ..."));
 		return be_transform_node(op);
 	}
@@ -4891,9 +4885,8 @@ static ir_node *gen_CopyB(ir_node *node)
 		SET_IA32_ORIG_NODE(copyb, node);
 		projm = new_r_Proj(copyb, mode_M, pn_ia32_CopyB_M);
 	} else {
-		if (size == 0) {
-			ir_fprintf(stderr, "Optimization warning: %+F with size <4\n", node);
-		}
+		if (size == 0)
+			be_warningf(node, "unoptimized CopyB with size <4");
 		ir_node *copyb = new_bd_ia32_CopyB_i(dbgi, block, new_dst, new_src,
 		                                     new_mem, size);
 		SET_IA32_ORIG_NODE(copyb, node);

@@ -35,6 +35,7 @@
 
 #include "bearch.h"
 #include "be_t.h"
+#include "bediagnostic.h"
 #include "begnuas.h"
 #include "bemodule.h"
 #include "beutil.h"
@@ -236,7 +237,7 @@ int be_parse_arg(const char *arg)
 void be_check_verify_result(bool fine, ir_graph *irg)
 {
 	if (!fine) {
-		fprintf(stderr, "...verifier failed: Trying to write assert graph and abort\n");
+		be_errorf(NULL, "verifier failed; trying to write assert graph and abort");
 		dump_ir_graph(irg, "assert");
 		abort();
 	}
@@ -503,8 +504,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 	if (be_options.opt_profile_use) {
 		bool res = ir_profile_read(prof_filename);
 		if (!res) {
-			fprintf(stderr, "Warning: Couldn't read profile data '%s'\n",
-			        prof_filename);
+			be_warningf(NULL, "could not read profile data '%s'", prof_filename);
 		} else {
 			ir_create_execfreqs_from_profile();
 			ir_profile_free();
@@ -663,9 +663,8 @@ void be_main(FILE *file_handle, const char *cup_name)
 	if (be_options.timing) {
 		t = ir_timer_new();
 
-		if (ir_timer_enter_high_priority()) {
-			fprintf(stderr, "Warning: Could not enter high priority mode.\n");
-		}
+		if (ir_timer_enter_high_priority())
+			be_warningf(NULL, "could not enter high priority mode");
 
 		ir_timer_reset_and_start(t);
 	}
