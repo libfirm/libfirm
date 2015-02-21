@@ -122,6 +122,9 @@ void be_emit_asm(ir_node const *const asmn, ident *const text, unsigned const n_
 		++s; /* Skip '%'. */
 		switch (*s) {
 		case '%':
+		case '{':
+		case '|':
+		case '}':
 			be_emit_char(*s++);
 			break;
 
