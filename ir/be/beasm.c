@@ -314,6 +314,15 @@ void be_emit_asm(ir_node const *const asmn, be_emit_asm_operand_func *const emit
 			be_emit_char(*s++);
 			break;
 
+		case '=':
+			/* From gcc source:
+			 * %= outputs a number which is unique to each insn in the entire
+			 * compilation.  This is useful for making local labels that are
+			 * referred to more than once in a given insn. */
+			++s; /* Skip '='. */
+			be_emit_irprintf("%ld", get_irn_node_nr(asmn));
+			break;
+
 		default: {
 			char const modifier = isalpha((unsigned char)*s) ? *s++ : '\0';
 			unsigned   pos;
