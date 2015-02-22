@@ -130,11 +130,22 @@ static void opt_walker(ir_node *n, void *env)
 	pdeq *waitq = (pdeq *)env;
 	set_irn_link(n, NULL);
 
-	ir_node *optimized = optimize_in_place_2(n);
-	if (optimized != n) {
-		enqueue_users(n, waitq);
-		exchange(n, optimized);
-	}
+	/* If CSE occurs during the optimization,
+	 * our operands have fewer users than before.
+	 * Thus, we may be able to apply a rule that
+	 * requires an operand with only one user.
+	 * Hence, we need a loop to reach the fixpoint. */
+	ir_node *optimized = n;
+	ir_node *last;
+	do {
+		last      = optimized;
+		optimized = optimize_in_place_2(last);
+
+		if (optimized != last) {
+			enqueue_users(last, waitq);
+			exchange(last, optimized);
+		}
+	} while (optimized != last);
 }
 
 void optimize_graph_df(ir_graph *irg)
