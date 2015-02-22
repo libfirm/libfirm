@@ -127,10 +127,8 @@ void local_optimize_graph(ir_graph *irg)
  */
 static void opt_walker(ir_node *n, void *env)
 {
-	pdeq *waitq = (pdeq*)env;
-	ir_node *optimized;
-
-	optimized = optimize_in_place_2(n);
+	pdeq    *waitq     = (pdeq *)env;
+	ir_node *optimized = optimize_in_place_2(n);
 	set_irn_link(optimized, NULL);
 
 	if (optimized != n) {
