@@ -1941,8 +1941,7 @@ static ir_node *gen_Cond(ir_node *node)
 
 static ir_node *gen_ASM(ir_node *node)
 {
-	return x86_match_ASM(node, new_bd_amd64_asm, amd64_additional_clobber_names,
-	                     &amd64_asm_constraints);
+	return x86_match_ASM(node, amd64_additional_clobber_names, &amd64_asm_constraints);
 }
 
 static ir_node *gen_Proj_ASM(ir_node *node)

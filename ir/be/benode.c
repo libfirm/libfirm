@@ -40,10 +40,6 @@
 #include "set.h"
 #include "util.h"
 
-typedef struct be_node_attr_t {
-	except_attr exc;
-} be_node_attr_t;
-
 /** The be_IncSP attribute type. */
 typedef struct {
 	be_node_attr_t base;
@@ -60,6 +56,7 @@ typedef struct {
 } be_memperm_attr_t;
 
 ir_op *op_be_AnyVal;
+ir_op *op_be_Asm;
 ir_op *op_be_Copy;
 ir_op *op_be_CopyKeep;
 ir_op *op_be_IncSP;
@@ -68,6 +65,13 @@ ir_op *op_be_MemPerm;
 ir_op *op_be_Perm;
 
 #define be_op_tag FOURCC('B', 'E', '\0', '\0')
+
+static int be_asm_attr_equal(ir_node const *const a, ir_node const *const b)
+{
+	be_asm_attr_t const *const attr_a = get_be_asm_attr_const(a);
+	be_asm_attr_t const *const attr_b = get_be_asm_attr_const(b);
+	return attr_a->text == attr_b->text && attr_a->operands == attr_b->operands;
+}
 
 /**
  * Compare the attributes of two be_IncSP nodes.
@@ -493,6 +497,19 @@ void be_dump_phi_reg_reqs(FILE *F, const ir_node *node, dump_reason_t reason)
 	}
 }
 
+ir_node *be_new_Asm(dbg_info *const dbgi, ir_node *const block, int const n_ins, ir_node **const ins, int const n_outs, ident *const text, void *const operands)
+{
+	ir_graph *const irg  = get_irn_irg(block);
+	ir_node  *const asmn = new_ir_node(dbgi, irg, block, op_be_Asm, mode_T, n_ins, ins);
+	be_info_init_irn(asmn, arch_irn_flags_none, NULL, n_outs);
+
+	be_asm_attr_t *const attr = (be_asm_attr_t*)get_irn_generic_attr(asmn);
+	attr->text     = text;
+	attr->operands = operands;
+
+	return asmn;
+}
+
 /**
  * ir_op-Operation: dump a be node to file
  */
@@ -600,6 +617,7 @@ void be_init_op(void)
 	/* Acquire all needed opcodes. */
 	unsigned const o = get_next_ir_opcodes(beo_last + 1);
 	op_be_AnyVal   = new_be_op(o+beo_AnyVal,   "be_AnyVal",   op_pin_state_exc_pinned, irop_flag_constlike|irop_flag_cse_neutral, oparity_any,      sizeof(be_node_attr_t));
+	op_be_Asm      = new_be_op(o+beo_Asm,      "be_Asm",      op_pin_state_exc_pinned, irop_flag_none,                            oparity_any,      sizeof(be_asm_attr_t));
 	op_be_Copy     = new_be_op(o+beo_Copy,     "be_Copy",     op_pin_state_exc_pinned, irop_flag_none,                            oparity_any,      sizeof(be_node_attr_t));
 	op_be_CopyKeep = new_be_op(o+beo_CopyKeep, "be_CopyKeep", op_pin_state_exc_pinned, irop_flag_keep,                            oparity_variable, sizeof(be_node_attr_t));
 	op_be_IncSP    = new_be_op(o+beo_IncSP,    "be_IncSP",    op_pin_state_exc_pinned, irop_flag_none,                            oparity_any,      sizeof(be_incsp_attr_t));
@@ -607,6 +625,7 @@ void be_init_op(void)
 	op_be_MemPerm  = new_be_op(o+beo_MemPerm,  "be_MemPerm",  op_pin_state_exc_pinned, irop_flag_none,                            oparity_variable, sizeof(be_memperm_attr_t));
 	op_be_Perm     = new_be_op(o+beo_Perm,     "be_Perm",     op_pin_state_exc_pinned, irop_flag_none,                            oparity_variable, sizeof(be_node_attr_t));
 
+	set_op_attrs_equal(op_be_Asm,      be_asm_attr_equal);
 	set_op_attrs_equal(op_be_AnyVal,   attrs_equal_be_node);
 	set_op_attrs_equal(op_be_Copy,     attrs_equal_be_node);
 	set_op_attrs_equal(op_be_CopyKeep, attrs_equal_be_node);

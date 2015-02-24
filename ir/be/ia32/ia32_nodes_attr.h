@@ -186,15 +186,6 @@ struct ia32_x87_attr_t {
 };
 
 /**
- * The attributes for ASM nodes.
- */
-typedef struct ia32_asm_attr_t ia32_asm_attr_t;
-struct ia32_asm_attr_t {
-	ia32_attr_t    attr;         /**< the generic attribute */
-	x86_asm_attr_t asmattr;
-};
-
-/**
  * The attributes for the ClimbFrame node.
  */
 typedef struct ia32_climbframe_attr_t ia32_climbframe_attr_t;
@@ -218,7 +209,6 @@ union allow_casts_attr_t_ {
 	ia32_condcode_attr_t   cc_attr;
 	ia32_copyb_attr_t      cpy_attr;
 	ia32_x87_attr_t        x87_attr;
-	ia32_asm_attr_t        asm_attr;
 	ia32_immediate_attr_t  immediate_attr;
 	ia32_climbframe_attr_t climbframe_attr;
 	ia32_switch_attr_t     switch_attr;

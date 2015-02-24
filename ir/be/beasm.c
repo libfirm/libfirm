@@ -9,6 +9,7 @@
 #include "beasm.h"
 #include "bediagnostic.h"
 #include "beemitter.h"
+#include "benode.h"
 #include "ident_t.h"
 #include "panic.h"
 #include "util.h"
@@ -148,16 +149,19 @@ void be_parse_asm_constraints_internal(be_asm_constraint_t *const constraint, id
 	constraint->immediate_type        = immediate_type;
 }
 
-void be_emit_asm(ir_node const *const asmn, ident *const text, unsigned const n_operands, be_emit_asm_operand_func *const emit_asm_operand)
+void be_emit_asm(ir_node const *const asmn, be_emit_asm_operand_func *const emit_asm_operand)
 {
 	be_emit_cstring("#APP");
 	be_emit_finish_line_gas(asmn);
 
-	char const *s = get_id_str(text);
+	be_asm_attr_t const *const attr = get_be_asm_attr_const(asmn);
+
+	char const *s = get_id_str(attr->text);
 	if (s[0] != '\t')
 		be_emit_char('\t');
 
-	char const *last = s;
+	char     const *last       = s;
+	unsigned const  n_operands = ARR_LEN(attr->operands);
 	while ((s = strchr(s, '%'))) {
 		be_emit_string_len(last, s - last);
 		++s; /* Skip '%'. */

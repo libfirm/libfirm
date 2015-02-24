@@ -114,8 +114,6 @@ $default_copy_attr = "sparc_copy_attr";
 	                            "\tinit_sparc_fp_attributes(res, fp_mode);\n",
 	sparc_fp_conv_attr_t     => "be_info_init_irn(res, irn_flags_, in_reqs, n_res);\n".
 	                            "\tinit_sparc_fp_conv_attributes(res, src_mode, dest_mode);\n",
-	sparc_asm_attr_t         => "be_info_init_irn(res, irn_flags_, in_reqs, n_res);\n".
-	                            "\tinit_sparc_asm_attributes(res, text, operands);",
 	sparc_call_attr_t        => "be_info_init_irn(res, irn_flags_, in_reqs, n_res);\n".
 	                            "\tinit_sparc_call_attributes(res, call_type);",
 );
@@ -282,14 +280,6 @@ my $xop = {
 };
 
 %nodes = (
-
-ASM => {
-	state     => "exc_pinned",
-	in_reqs   => "...",
-	out_reqs  => "...",
-	attr      => "ident *text, const sparc_asm_operand_t *operands",
-	attr_type => "sparc_asm_attr_t",
-},
 
 Add => {
 	template => $binop_operand,

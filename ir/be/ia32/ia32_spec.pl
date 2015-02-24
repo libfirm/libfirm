@@ -101,9 +101,6 @@ sub ia32_custom_init_attr {
 $custom_init_attr_func = \&ia32_custom_init_attr;
 
 %init_attr = (
-	ia32_asm_attr_t =>
-		"\tinit_ia32_attributes(res, irn_flags_, in_reqs, n_res);\n".
-		"\tinit_ia32_asm_attributes(res);",
 	ia32_attr_t     =>
 		"\tinit_ia32_attributes(res, irn_flags_, in_reqs, n_res);",
 	ia32_call_attr_t =>
@@ -394,16 +391,6 @@ Immediate => {
 	hash_func => "ia32_hash_Immediate",
 	latency   => 0,
 	mode      => $mode_gp,
-},
-
-Asm => {
-	in_reqs   => "...",
-	out_reqs  => "...",
-	attr_type => "ia32_asm_attr_t",
-	attr      => "const x86_asm_attr_t *asmattr",
-	init_attr => "attr->asmattr = *asmattr;",
-	latency   => 10,
-	modified_flags => $status_flags,
 },
 
 Add => {

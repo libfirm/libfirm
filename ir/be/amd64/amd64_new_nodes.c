@@ -179,14 +179,6 @@ static int amd64_attrs_equal(const ir_node *a, const ir_node *b)
 	return attr_a->op_mode == attr_b->op_mode;
 }
 
-static int amd64_asm_attrs_equal(const ir_node *a, const ir_node *b)
-{
-	const amd64_asm_attr_t *attr_a = get_amd64_asm_attr_const(a);
-	const amd64_asm_attr_t *attr_b = get_amd64_asm_attr_const(b);
-	return amd64_attrs_equal(a, b)
-	    && x86_asm_attr_equal(&attr_a->asmattr, &attr_b->asmattr);
-}
-
 static int amd64_addr_attrs_equal(const ir_node *a, const ir_node *b)
 {
 	const amd64_addr_attr_t *attr_a = get_amd64_addr_attr_const(a);

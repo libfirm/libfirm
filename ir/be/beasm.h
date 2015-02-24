@@ -34,6 +34,6 @@ void be_parse_asm_constraints_internal(be_asm_constraint_t *constraint, ident *c
 
 typedef void be_emit_asm_operand_func(ir_node const *asmn, char modifier, unsigned pos);
 
-void be_emit_asm(ir_node const *asmn, ident *text, unsigned n_operands, be_emit_asm_operand_func *emit_asm_operand);
+void be_emit_asm(ir_node const *asmn, be_emit_asm_operand_func *emit_asm_operand);
 
 #endif

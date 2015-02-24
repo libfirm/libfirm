@@ -637,8 +637,8 @@ static void emit_amd64_asm_operand(ir_node const *const node, char const modifie
 		return;
 	}
 
-	amd64_asm_attr_t  const *const attr = get_amd64_asm_attr_const(node);
-	x86_asm_operand_t const *const op   = &attr->asmattr.operands[pos];
+	be_asm_attr_t     const *const attr = get_be_asm_attr_const(node);
+	x86_asm_operand_t const *const op   = &((x86_asm_operand_t const*)attr->operands)[pos];
 	switch ((x86_asm_operand_kind_t)op->kind) {
 	case ASM_OP_INVALID:
 		panic("invalid asm operand");
@@ -672,8 +672,7 @@ static void emit_amd64_asm_operand(ir_node const *const node, char const modifie
 
 static void emit_amd64_asm(const ir_node *node)
 {
-	amd64_asm_attr_t const *const attr = get_amd64_asm_attr_const(node);
-	be_emit_asm(node, attr->asmattr.asm_text, ARR_LEN(attr->asmattr.operands), emit_amd64_asm_operand);
+	be_emit_asm(node, emit_amd64_asm_operand);
 }
 
 /**
@@ -845,11 +844,11 @@ static void amd64_register_emitters(void)
 	/* register all emitter functions defined in spec */
 	amd64_register_spec_emitters();
 
-	be_set_emitter(op_amd64_asm,        emit_amd64_asm);
 	be_set_emitter(op_amd64_jcc,        emit_amd64_jcc);
 	be_set_emitter(op_amd64_jmp,        emit_amd64_jmp);
 	be_set_emitter(op_amd64_jmp_switch, emit_amd64_jmp_switch);
 	be_set_emitter(op_amd64_mov_gp,     emit_amd64_mov_gp);
+	be_set_emitter(op_be_Asm,           emit_amd64_asm);
 	be_set_emitter(op_be_Copy,          emit_be_Copy);
 	be_set_emitter(op_be_CopyKeep,      emit_be_Copy);
 	be_set_emitter(op_be_IncSP,         emit_be_IncSP);

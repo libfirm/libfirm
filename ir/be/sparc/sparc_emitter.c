@@ -273,7 +273,7 @@ static bool emits_multiple_instructions(const ir_node *node)
 	return is_sparc_SMulh(node) || is_sparc_UMulh(node)
 		|| is_sparc_SDiv(node) || is_sparc_UDiv(node)
 		|| be_is_MemPerm(node) || be_is_Perm(node)
-		|| is_sparc_SubSP(node) || is_sparc_ASM(node);
+		|| is_sparc_SubSP(node) || be_is_Asm(node);
 }
 
 static bool uses_reg(const ir_node *node, unsigned reg_index, unsigned width)
@@ -730,8 +730,8 @@ static void emit_sparc_asm_operand(ir_node const *const node, char const modifie
 		return;
 	}
 
-	sparc_asm_attr_t    const *const attr = get_sparc_asm_attr_const(node);
-	sparc_asm_operand_t const *const op   = &attr->operands[pos];
+	be_asm_attr_t       const *const attr = get_be_asm_attr_const(node);
+	sparc_asm_operand_t const *const op   = &((sparc_asm_operand_t const*)attr->operands)[pos];
 	switch (op->kind) {
 	case ASM_OPERAND_IMMEDIATE:
 		if (zero_as_g0 && op->immediate_value == 0 && !op->immediate_value_entity)
@@ -761,8 +761,7 @@ static void emit_sparc_asm_operand(ir_node const *const node, char const modifie
 
 static void emit_sparc_ASM(const ir_node *node)
 {
-	sparc_asm_attr_t const *const attr = get_sparc_asm_attr_const(node);
-	be_emit_asm(node, attr->text, ARR_LEN(attr->operands), emit_sparc_asm_operand);
+	be_emit_asm(node, emit_sparc_asm_operand);
 }
 
 /**
@@ -1333,12 +1332,12 @@ static void sparc_register_emitters(void)
 	sparc_register_spec_emitters();
 
 	/* custom emitter */
+	be_set_emitter(op_be_Asm,          emit_sparc_ASM);
 	be_set_emitter(op_be_Copy,         emit_be_Copy);
 	be_set_emitter(op_be_CopyKeep,     emit_be_Copy);
 	be_set_emitter(op_be_IncSP,        emit_be_IncSP);
 	be_set_emitter(op_be_MemPerm,      emit_be_MemPerm);
 	be_set_emitter(op_be_Perm,         emit_be_Perm);
-	be_set_emitter(op_sparc_ASM,       emit_sparc_ASM);
 	be_set_emitter(op_sparc_Ba,        emit_sparc_Ba);
 	be_set_emitter(op_sparc_Bicc,      emit_sparc_Bicc);
 	be_set_emitter(op_sparc_Call,      emit_sparc_Call);

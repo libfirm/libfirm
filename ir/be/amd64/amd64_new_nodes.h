@@ -55,13 +55,6 @@ static inline amd64_addr_attr_t *get_amd64_addr_attr(ir_node *node)
 	return (amd64_addr_attr_t*)get_irn_generic_attr(node);
 }
 
-static inline const amd64_asm_attr_t *get_amd64_asm_attr_const(
-		const ir_node *node)
-{
-	assert(is_amd64_asm(node));
-	return (const amd64_asm_attr_t*)get_irn_generic_attr_const(node);
-}
-
 static inline const amd64_addr_attr_t *get_amd64_addr_attr_const(
 		const ir_node *node)
 {

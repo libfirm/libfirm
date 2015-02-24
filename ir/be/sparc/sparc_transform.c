@@ -453,8 +453,7 @@ static ir_node *gen_ASM(ir_node *node)
 	dbg_info *const dbgi      = get_irn_dbg_info(node);
 	ir_node  *const new_block = be_transform_nodes_block(node);
 	ident    *const text      = get_ASM_text(node);
-	ir_node  *const new_node
-		= new_bd_sparc_ASM(dbgi, new_block, n_ins, in, n_outs, text, operands);
+	ir_node  *const new_node  = be_new_Asm(dbgi, new_block, n_ins, in, n_outs, text, operands);
 
 	backend_info_t *const info = be_get_info(new_node);
 	for (size_t o = 0; o < n_outs; ++o) {

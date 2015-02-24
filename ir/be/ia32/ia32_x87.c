@@ -1262,8 +1262,7 @@ static bool is_clobber(ir_node const *const asm_n, ir_node const *const value)
 		return false;
 
 	unsigned                 const num      = get_Proj_num(value);
-	ia32_asm_attr_t   const *const attr     = get_ia32_asm_attr_const(asm_n);
-	x86_asm_operand_t const *const operands = attr->asmattr.operands;
+	x86_asm_operand_t const *const operands = (x86_asm_operand_t const*)get_be_asm_attr_const(asm_n)->operands;
 	for (size_t i = 0, n = ARR_LEN(operands); i != n; ++i) {
 		x86_asm_operand_t const *const op = &operands[i];
 		if (op->kind == ASM_OP_OUT_REG && op->inout_pos == num)
@@ -1449,10 +1448,10 @@ static void x87_init_simulator(x87_simulator *sim, ir_graph *irg)
 	/* set the generic function pointer of instruction we must simulate */
 	ir_clear_opcodes_generic_func();
 
+	register_sim(op_be_Asm,            sim_Asm);
 	register_sim(op_be_Copy,           sim_Copy);
 	register_sim(op_be_Keep,           sim_Keep);
 	register_sim(op_be_Perm,           sim_Perm);
-	register_sim(op_ia32_Asm,          sim_Asm);
 	register_sim(op_ia32_Call,         sim_Call);
 	register_sim(op_ia32_fabs,         sim_unop);
 	register_sim(op_ia32_fadd,         sim_binop);

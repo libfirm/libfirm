@@ -22,6 +22,7 @@
 typedef enum be_opcode {
 	beo_AnyVal,
 	beo_first = beo_AnyVal,
+	beo_Asm,
 	beo_Copy,
 	beo_CopyKeep,
 	beo_IncSP,
@@ -31,7 +32,18 @@ typedef enum be_opcode {
 	beo_last  = beo_Perm
 } be_opcode;
 
+typedef struct be_node_attr_t {
+	except_attr exc;
+} be_node_attr_t;
+
+typedef struct be_asm_attr_t {
+	be_node_attr_t base;
+	ident         *text;
+	void          *operands;
+} be_asm_attr_t;
+
 extern ir_op *op_be_AnyVal;
+extern ir_op *op_be_Asm;
 extern ir_op *op_be_Copy;
 extern ir_op *op_be_CopyKeep;
 extern ir_op *op_be_IncSP;
@@ -176,16 +188,25 @@ ir_node *be_new_Phi0(ir_node *block, ir_mode *mode, arch_register_req_t const *r
  */
 ir_node *be_complete_Phi(ir_node *phi, unsigned n_ins, ir_node **ins);
 
+ir_node *be_new_Asm(dbg_info *dbgi, ir_node *block, int n_ins, ir_node **ins, int n_outs, ident *text, void *operands);
+
 /**
  * Search for output of start node with a specific register
  */
 ir_node *be_get_initial_reg_value(ir_graph *irg, const arch_register_t *reg);
 
+static inline bool be_is_Asm     (const ir_node *irn) { return get_irn_op(irn) == op_be_Asm      ; }
 static inline bool be_is_Copy    (const ir_node *irn) { return get_irn_op(irn) == op_be_Copy     ; }
 static inline bool be_is_CopyKeep(const ir_node *irn) { return get_irn_op(irn) == op_be_CopyKeep ; }
 static inline bool be_is_Perm    (const ir_node *irn) { return get_irn_op(irn) == op_be_Perm     ; }
 static inline bool be_is_MemPerm (const ir_node *irn) { return get_irn_op(irn) == op_be_MemPerm  ; }
 static inline bool be_is_Keep    (const ir_node *irn) { return get_irn_op(irn) == op_be_Keep     ; }
 static inline bool be_is_IncSP   (const ir_node *irn) { return get_irn_op(irn) == op_be_IncSP    ; }
+
+static inline be_asm_attr_t const *get_be_asm_attr_const(ir_node const *const asmn)
+{
+	assert(be_is_Asm(asmn));
+	return (be_asm_attr_t const*)get_irn_generic_attr_const(asmn);
+}
 
 #endif

@@ -914,8 +914,8 @@ static void emit_ia32_asm_operand(ir_node const *const node, char const modifier
 		return;
 	}
 
-	ia32_asm_attr_t   const *const attr = get_ia32_asm_attr_const(node);
-	x86_asm_operand_t const *const op   = &attr->asmattr.operands[pos];
+	be_asm_attr_t     const *const attr = get_be_asm_attr_const(node);
+	x86_asm_operand_t const *const op   = &((x86_asm_operand_t const*)attr->operands)[pos];
 	switch ((x86_asm_operand_kind_t)op->kind) {
 	case ASM_OP_INVALID:
 		panic("invalid asm operand");
@@ -950,8 +950,7 @@ static void emit_ia32_asm_operand(ir_node const *const node, char const modifier
  */
 static void emit_ia32_Asm(const ir_node *node)
 {
-	ia32_asm_attr_t const *const attr = get_ia32_asm_attr_const(node);
-	be_emit_asm(node, attr->asmattr.asm_text, ARR_LEN(attr->asmattr.operands), emit_ia32_asm_operand);
+	be_emit_asm(node, emit_ia32_asm_operand);
 }
 
 /**
@@ -1226,12 +1225,12 @@ static void ia32_register_emitters(void)
 	/* register all emitter functions defined in spec */
 	ia32_register_spec_emitters();
 
+	be_set_emitter(op_be_Asm,          emit_ia32_Asm);
 	be_set_emitter(op_be_Copy,         emit_be_Copy);
 	be_set_emitter(op_be_CopyKeep,     emit_be_CopyKeep);
 	be_set_emitter(op_be_IncSP,        emit_be_IncSP);
 	be_set_emitter(op_be_Perm,         emit_be_Perm);
 	be_set_emitter(op_ia32_Return,     emit_ia32_Return);
-	be_set_emitter(op_ia32_Asm,        emit_ia32_Asm);
 	be_set_emitter(op_ia32_ClimbFrame, emit_ia32_ClimbFrame);
 	be_set_emitter(op_ia32_Conv_FP2FP, emit_ia32_Conv_FP2FP);
 	be_set_emitter(op_ia32_Conv_FP2I,  emit_ia32_Conv_FP2I);
@@ -2963,6 +2962,7 @@ static void ia32_register_binary_emitters(void)
 	ir_clear_opcodes_generic_func();
 
 	/* benode emitter */
+	be_set_emitter(op_be_Asm,             emit_ia32_Asm); // TODO implement binary emitter
 	be_set_emitter(op_be_Copy,            bemit_copy);
 	be_set_emitter(op_be_CopyKeep,        bemit_copy);
 	be_set_emitter(op_be_IncSP,           bemit_incsp);
@@ -2973,7 +2973,6 @@ static void ia32_register_binary_emitters(void)
 	be_set_emitter(op_ia32_AddMem,        bemit_addmem);
 	be_set_emitter(op_ia32_And,           bemit_and);
 	be_set_emitter(op_ia32_AndMem,        bemit_andmem);
-	be_set_emitter(op_ia32_Asm,           emit_ia32_Asm); // TODO implement binary emitter
 	be_set_emitter(op_ia32_Breakpoint,    bemit_int3);
 	be_set_emitter(op_ia32_Bsf,           bemit_bsf);
 	be_set_emitter(op_ia32_Bsr,           bemit_bsr);

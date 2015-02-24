@@ -317,14 +317,6 @@ const ia32_x87_attr_t *get_ia32_x87_attr_const(const ir_node *node)
 	return x87_attr;
 }
 
-const ia32_asm_attr_t *get_ia32_asm_attr_const(const ir_node *node)
-{
-	const ia32_attr_t     *attr     = get_ia32_attr_const(node);
-	const ia32_asm_attr_t *asm_attr = CONST_CAST_IA32_ATTR(ia32_asm_attr_t, attr);
-
-	return asm_attr;
-}
-
 ia32_immediate_attr_t *get_ia32_immediate_attr(ir_node *node)
 {
 	ia32_attr_t           *attr      = get_ia32_attr(node);
@@ -776,17 +768,6 @@ static void init_ia32_x87_attributes(ir_node *res)
 	ia32_request_x87_sim(irg);
 }
 
-static void init_ia32_asm_attributes(ir_node *res)
-{
-#ifndef NDEBUG
-	ia32_attr_t *attr  = get_ia32_attr(res);
-	attr->attr_type   |= IA32_ATTR_ia32_asm_attr_t;
-#endif
-
-	ir_graph *const irg = get_irn_irg(res);
-	ia32_request_x87_sim(irg); /* asm might have fp operands. */
-}
-
 static void init_ia32_immediate_attributes(ir_node *res, ir_entity *entity,
                                            bool no_pic_adjust, int32_t offset)
 {
@@ -918,15 +899,6 @@ static int ia32_copyb_attrs_equal(const ir_node *a, const ir_node *b)
 	const ia32_copyb_attr_t *attr_b = get_ia32_copyb_attr_const(b);
 	return ia32_attrs_equal_(&attr_a->attr, &attr_b->attr)
 	    && attr_a->size == attr_b->size;
-}
-
-/** Compare ASM node attributes. */
-static int ia32_asm_attrs_equal(const ir_node *a, const ir_node *b)
-{
-	const ia32_asm_attr_t *attr_a = get_ia32_asm_attr_const(a);
-	const ia32_asm_attr_t *attr_b = get_ia32_asm_attr_const(b);
-	return ia32_attrs_equal_(&attr_a->attr, &attr_b->attr)
-	    && x86_asm_attr_equal(&attr_a->asmattr, &attr_b->asmattr);
 }
 
 /**

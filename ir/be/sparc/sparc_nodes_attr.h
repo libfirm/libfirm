@@ -105,13 +105,6 @@ typedef struct sparc_asm_operand_t {
 	ir_entity     *immediate_value_entity;
 } sparc_asm_operand_t;
 
-typedef struct sparc_asm_attr_t sparc_asm_attr_t;
-struct sparc_asm_attr_t {
-	sparc_attr_t               base;
-	ident                     *text;
-	const sparc_asm_operand_t *operands;
-};
-
 enum n_sparc_Return {
 	n_sparc_Return_mem = 0,
 	n_sparc_Return_sp  = 1,

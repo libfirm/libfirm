@@ -41,11 +41,6 @@ typedef struct x86_asm_operand_t {
 	} u;
 } x86_asm_operand_t;
 
-typedef struct x86_asm_attr_t {
-	ident                   *asm_text;
-	const x86_asm_operand_t *operands;
-} x86_asm_attr_t;
-
 typedef struct x86_clobber_name_t {
 	const char *name;
 	unsigned    index;
@@ -67,24 +62,12 @@ typedef struct x86_asm_constraint_t {
 
 typedef x86_asm_constraint_t x86_asm_constraint_list_t[128];
 
-static inline bool x86_asm_attr_equal(const x86_asm_attr_t *attr0,
-                                      const x86_asm_attr_t *attr1)
-{
-	return attr0->asm_text == attr1->asm_text;
-}
-
 typedef void (*emit_register_func)(const arch_register_t *reg, char modifier,
                                    ir_mode *mode);
 
 arch_register_t const *x86_parse_clobber(x86_clobber_name_t const *additional_clobber_names, char const *name);
 
-typedef ir_node* (*new_bd_asm_func)(dbg_info *dbgi, ir_node *block, int arity,
-                                    ir_node *in[], int out_arity,
-                                    const x86_asm_attr_t *attr);
-
-ir_node *x86_match_ASM(const ir_node *node, new_bd_asm_func new_bd_asm,
-                       const x86_clobber_name_t *names,
-                       const x86_asm_constraint_list_t *constraints);
+ir_node *x86_match_ASM(ir_node const *node, x86_clobber_name_t const *names, x86_asm_constraint_list_t const *constraints);
 
 bool x86_match_immediate(x86_imm32_t *immediate, const ir_node *node,
                          char constraint);

@@ -186,9 +186,7 @@ static void set_operand_if_invalid(x86_asm_operand_t *const op, x86_asm_operand_
 	}
 }
 
-ir_node *x86_match_ASM(const ir_node *node, new_bd_asm_func new_bd_asm,
-                       const x86_clobber_name_t *additional_clobber_names,
-                       const x86_asm_constraint_list_t *constraints)
+ir_node *x86_match_ASM(ir_node const *const node, x86_clobber_name_t const *const additional_clobber_names, x86_asm_constraint_list_t const *const constraints)
 {
 	int                      const n_inputs          = get_ASM_n_inputs(node);
 	size_t                   const n_out_constraints = get_ASM_n_output_constraints(node);
@@ -360,11 +358,11 @@ ir_node *x86_match_ASM(const ir_node *node, new_bd_asm_func new_bd_asm,
 	ARR_APP1(arch_register_req_t const*, in_reqs,  arch_no_register_req);
 	ARR_APP1(arch_register_req_t const*, out_reqs, arch_no_register_req);
 
-	dbg_info      *const dbgi     = get_irn_dbg_info(node);
-	x86_asm_attr_t const attr     = { get_ASM_text(node), operands };
-	size_t         const n_ins    = ARR_LEN(in);
-	size_t         const n_outs   = ARR_LEN(out_reqs);
-	ir_node       *const new_node = new_bd_asm(dbgi, block, n_ins, in, n_outs, &attr);
+	dbg_info *const dbgi     = get_irn_dbg_info(node);
+	size_t    const n_ins    = ARR_LEN(in);
+	size_t    const n_outs   = ARR_LEN(out_reqs);
+	ident    *const text     = get_ASM_text(node);
+	ir_node  *const new_node = be_new_Asm(dbgi, block, n_ins, in, n_outs, text, operands);
 
 	backend_info_t *const info = be_get_info(new_node);
 	for (size_t o = 0; o < n_outs; ++o) {

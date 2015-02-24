@@ -5610,11 +5610,8 @@ ir_node *ia32_new_IncSP(ir_node *block, ir_node *old_sp, int offset,
 
 static ir_node *gen_ASM(ir_node *node)
 {
-	ir_node *new_node = x86_match_ASM(node, new_bd_ia32_Asm,
-	                                  ia32_additional_clobber_names,
-	                                  &ia32_asm_constraints);
-	SET_IA32_ORIG_NODE(new_node, node);
-	return new_node;
+	ia32_request_x87_sim(get_irn_irg(node)); /* asm might have fp operands. */
+	return x86_match_ASM(node, ia32_additional_clobber_names, &ia32_asm_constraints);
 }
 
 static ir_node *gen_Proj_ASM(ir_node *node)

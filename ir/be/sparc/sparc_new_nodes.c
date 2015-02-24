@@ -204,18 +204,6 @@ const sparc_fp_conv_attr_t *get_sparc_fp_conv_attr_const(const ir_node *node)
 	return (const sparc_fp_conv_attr_t*) get_irn_generic_attr_const(node);
 }
 
-sparc_asm_attr_t *get_sparc_asm_attr(ir_node *node)
-{
-	assert(is_sparc_ASM(node));
-	return (sparc_asm_attr_t*)get_irn_generic_attr(node);
-}
-
-const sparc_asm_attr_t *get_sparc_asm_attr_const(const ir_node *node)
-{
-	assert(is_sparc_ASM(node));
-	return (const sparc_asm_attr_t*)get_irn_generic_attr_const(node);
-}
-
 sparc_call_attr_t *get_sparc_call_attr(ir_node *node)
 {
 	assert(is_sparc_Call(node));
@@ -266,14 +254,6 @@ static void init_sparc_switch_jmp_attributes(ir_node *node,
 	be_foreach_out(node, o) {
 		arch_set_irn_register_req_out(node, o, arch_no_register_req);
 	}
-}
-
-static void init_sparc_asm_attributes(ir_node *node, ident *text,
-                                      const sparc_asm_operand_t *operands)
-{
-	sparc_asm_attr_t *attr = get_sparc_asm_attr(node);
-	attr->text     = text;
-	attr->operands = operands;
 }
 
 static void init_sparc_call_attributes(ir_node *node, ir_type *call_type)
@@ -343,13 +323,6 @@ static int sparc_fp_conv_attrs_equal(const ir_node *a, const ir_node *b)
 	return sparc_attrs_equal(a, b)
 	    && attr_a->src_mode == attr_b->src_mode
 	    && attr_a->dest_mode == attr_b->dest_mode;
-}
-
-static int sparc_asm_attrs_equal(const ir_node *a, const ir_node *b)
-{
-	const sparc_asm_attr_t *attr_a = get_sparc_asm_attr_const(a);
-	const sparc_asm_attr_t *attr_b = get_sparc_asm_attr_const(b);
-	return sparc_attrs_equal(a, b) && attr_a->text == attr_b->text;
 }
 
 static int sparc_call_attrs_equal(const ir_node *a, const ir_node *b)

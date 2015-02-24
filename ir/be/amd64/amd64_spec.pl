@@ -77,9 +77,6 @@ $default_copy_attr = "amd64_copy_attr";
 		"init_amd64_attributes(res, irn_flags_, in_reqs, n_res, op_mode);\n"
 		."\tattr->insn_mode = insn_mode;\n"
 		."\tattr->addr = addr;",
-	amd64_asm_attr_t =>
-		"init_amd64_attributes(res, irn_flags_, in_reqs, n_res, op_mode);\n"
-		."\tattr->asmattr = *asmattr;\n",
 	amd64_binop_addr_attr_t =>
 		"be_info_init_irn(res, irn_flags_, in_reqs, n_res);\n"
 		."\t*attr = *attr_init;",
@@ -280,14 +277,6 @@ add => {
 and => {
 	template => $binop_commutative,
 	emit     => "and%M %AM",
-},
-
-asm => {
-	in_reqs   => "...",
-	out_reqs  => "...",
-	attr_type => "amd64_asm_attr_t",
-	attr      => "const x86_asm_attr_t *asmattr",
-	fixed     => "amd64_op_mode_t op_mode = AMD64_OP_NONE;\n",
 },
 
 div => {

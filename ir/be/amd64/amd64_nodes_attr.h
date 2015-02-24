@@ -91,11 +91,6 @@ typedef struct {
 } amd64_attr_t;
 
 typedef struct {
-	amd64_attr_t   base;
-	x86_asm_attr_t asmattr;
-} amd64_asm_attr_t;
-
-typedef struct {
 	amd64_attr_t base;
 	bool                      needs_frame_ent : 1;
 	ENUMBF(amd64_insn_mode_t) insn_mode       : 3;
