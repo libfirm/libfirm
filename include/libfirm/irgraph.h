@@ -385,7 +385,7 @@ typedef enum ir_graph_properties_t {
 	/** dominance frontiers information is calculated */
 	IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE_FRONTIERS = 1U << 7,
 	/**
-	 * out edges (=iredges) are enable and there is no dead code that can be
+	 * out edges (=iredges) are enable and there are no unused nodes that can be
 	 * reached by following them
 	 */
 	IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES           = 1U << 8,
