@@ -178,10 +178,9 @@ static bool transfer(ir_node *const irn)
 	ir_tarval       *o;
 
 	if (m == mode_X) {
-		bitinfo *const b = get_bitinfo(get_nodes_block(irn));
-
 		DB((dbg, LEVEL_3, "transfer %+F\n", irn));
 
+		bitinfo *const b = get_bitinfo(get_nodes_block(irn));
 		/* Unreachble blocks might have no bitinfo. */
 		if (b == NULL || b->z == f) {
 unreachable_X:
