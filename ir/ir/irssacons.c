@@ -44,6 +44,7 @@ void ssa_cons_start(ir_graph *irg, int n_loc)
 	 * seems worth to do this.  First, we have to check if they really exists and
 	 * then clear them.  We do not expect SSA construction is used often.
 	 */
+	ir_reserve_resources(irg, IR_RESOURCE_PHI_LIST);
 	ssa_cons_walker(irg, NULL, prepare_blocks, NULL);
 }
 
@@ -62,4 +63,5 @@ void ssa_cons_finish(ir_graph *irg)
 {
 	ssa_cons_walker(irg, NULL, finish_block, NULL);
 	irg_finalize_cons(irg);
+	ir_free_resources(irg, IR_RESOURCE_PHI_LIST);
 }

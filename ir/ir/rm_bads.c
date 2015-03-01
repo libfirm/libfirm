@@ -110,6 +110,7 @@ void remove_bads(ir_graph *irg)
 	assure_irg_properties(irg, IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE);
 
 	/* build phi list per block */
+	ir_reserve_resources(irg, IR_RESOURCE_PHI_LIST);
 	ir_node **blocks_to_process = NEW_ARR_F(ir_node*, 0);
 	irg_walk_graph(irg, firm_clear_block_phis, collect, &blocks_to_process);
 
@@ -119,6 +120,7 @@ void remove_bads(ir_graph *irg)
 		block_remove_bads(block);
 	}
 	DEL_ARR_F(blocks_to_process);
+	ir_free_resources(irg, IR_RESOURCE_PHI_LIST);
 
 	remove_End_Bads_and_doublets(get_irg_end(irg));
 
