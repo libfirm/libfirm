@@ -23,6 +23,8 @@
 void turn_into_tuple(ir_node *const node, int const arity,
                      ir_node *const *const in)
 {
+	assert(get_irn_mode(node) == mode_T);
+
 	hook_replace(node, node);
 
 	set_irn_in(node, arity, in);
