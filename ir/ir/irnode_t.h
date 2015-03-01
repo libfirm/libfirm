@@ -413,6 +413,7 @@ static inline void set_irn_dbg_info_(ir_node *n, dbg_info *db)
  */
 static inline void set_Block_phis_(ir_node *block, ir_node *phi)
 {
+	assert(ir_resources_reserved(get_irn_irg(block)) & IR_RESOURCE_PHI_LIST);
 	assert(is_Block_(block));
 	assert(phi == NULL || is_Phi_(phi));
 	block->attr.block.phis = phi;
@@ -424,18 +425,21 @@ static inline void set_Block_phis_(ir_node *block, ir_node *phi)
  */
 static inline ir_node *get_Block_phis_(const ir_node *block)
 {
+	assert(ir_resources_reserved(get_irn_irg(block)) & IR_RESOURCE_PHI_LIST);
 	assert(is_Block_(block));
 	return block->attr.block.phis;
 }
 
 static inline void set_Phi_next_(ir_node *phi, ir_node *next)
 {
+	assert(ir_resources_reserved(get_irn_irg(phi)) & IR_RESOURCE_PHI_LIST);
 	assert(is_Phi_(phi));
 	phi->attr.phi.next = next;
 }
 
 static inline ir_node *get_Phi_next_(const ir_node *phi)
 {
+	assert(ir_resources_reserved(get_irn_irg(phi)) & IR_RESOURCE_PHI_LIST);
 	assert(is_Phi_(phi));
 	return phi->attr.phi.next;
 }
