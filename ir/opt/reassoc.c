@@ -1946,6 +1946,126 @@ static void do_Setsort(ir_graph *irg)
 	free(multi_env);
 }
 
+/**
+ * This function checks if chaining could be applied and swaps nodes if possible.
+ */
+static bool walk_chains(ir_node *node)
+{
+	ir_op *node_op = get_irn_op(node);
+	bool   changed = false;
+
+	DBG((dbg, LEVEL_5, "%li\n", get_irn_node_nr(node)));
+
+	if (node_op == op_Or || node_op == op_And || node_op == op_Eor) {
+		ir_node *a = get_binop_left(node);
+		ir_node *b = get_binop_right(node);
+
+		if (get_irn_op(a) == node_op && is_bitop(b) && only_one_user(a)) {
+			ir_node *l = get_binop_left(a);
+			ir_node *r = get_binop_right(a);
+
+			if (!is_bitop(l)) {
+				/* (l .op. r) .op. b -> (b .op. r) .op. l */
+				DBG((dbg, LEVEL_4, "(%li .op. %li) .op. %li -> (%li .op. %li) .op. %li\n",
+				     get_irn_node_nr(l), get_irn_node_nr(r), get_irn_node_nr(b),
+				     get_irn_node_nr(b), get_irn_node_nr(r), get_irn_node_nr(l)));
+
+				if (get_nodes_block(l) == get_nodes_block(b)) {
+					set_irn_n(node, 1, l);
+					set_irn_n(a, 0, b);
+					changed = true;
+				}
+			} else if (!is_bitop(r)) {
+				/* (l .op. r) .op. b -> (l .op. b) .op. r */
+				DBG((dbg, LEVEL_4, "(%li .op. %li) .op. %li -> (%li .op. %li) .op. %li\n",
+				     get_irn_node_nr(l), get_irn_node_nr(r), get_irn_node_nr(b),
+				     get_irn_node_nr(l), get_irn_node_nr(b), get_irn_node_nr(r)));
+
+				if (get_nodes_block(r) == get_nodes_block(b)) {
+					set_irn_n(node, 1, r);
+					set_irn_n(a, 1, b);
+					changed = true;
+				}
+			}
+		}
+
+		if (!changed && get_irn_op(b) == node_op && is_bitop(a) && only_one_user(b)) {
+			ir_node *l = get_binop_left(b);
+			ir_node *r = get_binop_right(b);
+
+			if (!is_bitop(l)) {
+				/* a .op. (l .op. r) -> l .op. (a .op. r) */
+				DBG((dbg, LEVEL_4, "%li .op. (%li .op. %li) -> %li .op. (%li .op. %li)\n",
+				     get_irn_node_nr(a), get_irn_node_nr(l), get_irn_node_nr(r),
+				     get_irn_node_nr(l), get_irn_node_nr(a), get_irn_node_nr(r)));
+
+				if (get_nodes_block(l) == get_nodes_block(a)) {
+					set_irn_n(node, 0, l);
+					set_irn_n(b, 0, a);
+					changed = true;
+				}
+			} else if (!is_bitop(r)) {
+				/* a .op. (l .op. r) -> r .op. (l .op. a) */
+				DBG((dbg, LEVEL_4, "%li .op. (%li .op. %li) -> %li .op. (%li .op. %li)\n",
+				     get_irn_node_nr(a), get_irn_node_nr(l), get_irn_node_nr(r),
+				     get_irn_node_nr(r), get_irn_node_nr(l), get_irn_node_nr(a)));
+
+				if (get_nodes_block(r) == get_nodes_block(a)) {
+					set_irn_n(node, 0, r);
+					set_irn_n(b, 1, a);
+					changed = true;
+				}
+			}
+		}
+	}
+
+	return changed;
+}
+
+/**
+ * Applies Chaining to a given irg.
+ */
+static void do_chaining(ir_graph *irg)
+{
+	waitq *const wq = new_waitq();
+
+	/* now we have collected enough information, optimize */
+	irg_walk_graph(irg, NULL, wq_walker, wq);
+
+	while (!waitq_empty(wq)) {
+		ir_node *n = (ir_node *)waitq_get(wq);
+		set_irn_link(n, NULL);
+
+		hook_reassociate(1);
+
+		/* reassociation must run until a fixpoint is reached. */
+		bool changed = false;
+		bool res;
+		do {
+			/* reassociating floatingpoint ops is imprecise */
+			ir_mode *mode = get_irn_mode(n);
+			if (mode_is_float(mode) && !ir_imprecise_float_transforms_allowed())
+				break;
+
+			res      = walk_chains(n);
+			changed |= res;
+
+		} while (res);
+		hook_reassociate(0);
+
+		if (changed) {
+			foreach_irn_in_r(n, i, pred) {
+				if (get_irn_link(pred) != wq) {
+					waitq_put(wq, pred);
+					set_irn_link(pred, wq);
+				}
+			}
+		}
+	}
+
+	del_waitq(wq);
+}
+
 /*
  * do the reassociation
  */
@@ -1958,6 +2078,9 @@ void optimize_reassociation(ir_graph *irg)
 	                      IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE
 	                      | IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO
 	                      | IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
+
+	DBG((dbg, LEVEL_5, "chaining start...\n"));
+	do_chaining(irg);
 
 	DBG((dbg, LEVEL_5, "shannon start...\n"));
 	do_shannon(irg);
