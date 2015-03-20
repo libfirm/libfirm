@@ -289,6 +289,8 @@ result_unknown_X:
 			if (tarval_is_constant(computed)) {
 				z = o = computed;
 				goto set_info;
+			} else if (computed == tarval_bad) {
+				goto undefined;
 			}
 
 			switch (get_irn_opcode(irn)) {

@@ -645,11 +645,18 @@ static ir_tarval *computed_value_Confirm(const ir_node *n)
 	const ir_relation  possible = ir_get_possible_cmp_relations(value, bound);
 	const ir_relation  relation = get_Confirm_relation(n);
 
-	if ((possible & relation) == ir_relation_equal) {
+	switch (possible & relation) {
+	case ir_relation_false:
+		return tarval_bad;
+
+	case ir_relation_equal: {
 		ir_tarval *tv = value_of(bound);
 		if (tarval_is_constant(tv))
 			return tv;
+		break;
 	}
+	}
+
 	return value_of(value);
 }
 
