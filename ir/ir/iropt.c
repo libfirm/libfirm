@@ -5308,13 +5308,12 @@ is_bittest: {
 					tv = tarval_add(tv, get_mode_one(mode));
 
 reduced_tv:
-					if (tarval_is_constant(tv)) {
-						relation                 ^= ir_relation_equal;
-						is_relation_equal         = is_relation(ir_relation_equal, relation, possible);
-						is_relation_less_greater  = is_relation(ir_relation_less_greater, relation, possible);
-						changedc                  = true;
-						DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_CNST_MAGN);
-					}
+					assert(tarval_is_constant(tv));
+					relation                 ^= ir_relation_equal;
+					is_relation_equal         = is_relation(ir_relation_equal, relation, possible);
+					is_relation_less_greater  = is_relation(ir_relation_less_greater, relation, possible);
+					changedc                  = true;
+					DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_CNST_MAGN);
 				}
 
 				/* the following reassociations work only for == and != */
