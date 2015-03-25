@@ -6848,6 +6848,7 @@ static ir_node *transform_node_Mux(ir_node *n)
 					bool         is_relation_less_greater = is_relation(ir_relation_less_greater, relation, possible);
 					ir_node     *block                    = get_nodes_block(n);
 					dbg_info    *dbgi                     = get_irn_dbg_info(n);
+					assert(is_relation_equal ^ is_relation_less_greater);
 
 					if (mode != cmp_mode) {
 						cmp_l = new_rd_Conv(dbgi, block, cmp_l, mode);
