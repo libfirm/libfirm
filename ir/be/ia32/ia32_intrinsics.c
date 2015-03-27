@@ -62,7 +62,7 @@ static carry_result lower_add_carry(ir_node *left, ir_node *right, ir_mode *mode
 
 	bitinfo *bi_left = get_bitinfo(left);
 	if (!bi_left) {
-		return true;
+		return can_carry;
 	}
 	bitinfo *bi_right = get_bitinfo(right);
 	// If we have bitinfo for one node, we should also have it for
@@ -96,7 +96,7 @@ static carry_result lower_sub_borrow(ir_node *left, ir_node *right, ir_mode *mod
 
 	bitinfo *bi_left = get_bitinfo(left);
 	if (!bi_left) {
-		return true;
+		return can_carry;
 	}
 	bitinfo *bi_right = get_bitinfo(right);
 	// If we have bitinfo for one node, we should also have it for
