@@ -339,7 +339,7 @@ void dump_irnode_to_file(FILE *const F, const ir_node *const n)
 		break;
 	}
 
-	bitinfo const *const b = get_bitinfo(n);
+	bitinfo const *const b = try_get_bitinfo(n);
 	if (b) {
 		fprintf(F, "\n  bitinfo: ");
 		ir_tarval const* const z = b->z;

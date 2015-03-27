@@ -159,6 +159,13 @@ static bool mode_is_intb(ir_mode const *const m)
 	return mode_is_int(m) || m == mode_b;
 }
 
+bitinfo const *try_get_bitinfo(ir_node const *const irn)
+{
+	ir_graph   *const irg = get_irn_irg(irn);
+	ir_nodemap *const map = &irg->bitinfo.map;
+	return map->data ? ir_nodemap_get(bitinfo, map, irn) : NULL;
+}
+
 static bitinfo *get_bitinfo_null(ir_node const *const irn)
 {
 	(void)irn;
