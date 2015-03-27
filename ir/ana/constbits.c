@@ -100,16 +100,6 @@ static bool is_undefined(bitinfo const *const b)
 	return tarval_is_null(b->z) && tarval_is_all_one(b->o);
 }
 
-bitinfo *get_bitinfo(ir_node const *const irn)
-{
-	ir_graph   *const irg = get_irn_irg(irn);
-	ir_nodemap *const map = &irg->bitinfo.map;
-	if (map->data == NULL)
-		return NULL;
-
-	return ir_nodemap_get(bitinfo, map, irn);
-}
-
 bool join_bitinfo(ir_node *const irn, ir_tarval *const z, ir_tarval *const o)
 {
 	if (tarval_is_null(z) && tarval_is_all_one(o)) {
@@ -144,10 +134,10 @@ bool join_bitinfo(ir_node *const irn, ir_tarval *const z, ir_tarval *const o)
 
 bool set_bitinfo(ir_node *const irn, ir_tarval *const z, ir_tarval *const o)
 {
-	bitinfo *b = get_bitinfo(irn);
+	ir_graph   *const irg  = get_irn_irg(irn);
+	ir_nodemap *const map  = &irg->bitinfo.map;
+	bitinfo          *b    = ir_nodemap_get(bitinfo, map, irn);
 	if (b == NULL) {
-		ir_graph       *const irg  = get_irn_irg(irn);
-		ir_nodemap     *const map  = &irg->bitinfo.map;
 		struct obstack *const obst = &irg->bitinfo.obst;
 		b = OALLOCZ(obst, bitinfo);
 		ir_nodemap_insert(map, irn, b);
@@ -167,6 +157,26 @@ bool set_bitinfo(ir_node *const irn, ir_tarval *const z, ir_tarval *const o)
 static bool mode_is_intb(ir_mode const *const m)
 {
 	return mode_is_int(m) || m == mode_b;
+}
+
+static bitinfo *get_bitinfo_null(ir_node const *const irn)
+{
+	(void)irn;
+	return NULL;
+}
+
+static bitinfo *get_bitinfo_direct(ir_node const *const irn)
+{
+	ir_graph   *const irg = get_irn_irg(irn);
+	ir_nodemap *const map = &irg->bitinfo.map;
+	return ir_nodemap_get(bitinfo, map, irn);
+}
+
+static bitinfo *(*get_bitinfo_func)(ir_node const*) = &get_bitinfo_null;
+
+bitinfo *get_bitinfo(ir_node const *const irn)
+{
+	return get_bitinfo_func(irn);
 }
 
 static bool transfer(ir_node *const irn)
@@ -783,6 +793,7 @@ void constbits_analyze(ir_graph *const irg)
 
 	obstack_init(&irg->bitinfo.obst);
 	ir_nodemap_init(&irg->bitinfo.map, irg);
+	get_bitinfo_func = &get_bitinfo_direct;
 
 	/* We need this extra step because the dom tree does not contain
 	 * unreachable blocks in Firm. Moreover build phi list. */
@@ -809,6 +820,7 @@ void constbits_analyze(ir_graph *const irg)
 
 void constbits_clear(ir_graph *const irg)
 {
+	get_bitinfo_func = &get_bitinfo_null;
 	ir_nodemap_destroy(&irg->bitinfo.map);
 	obstack_free(&irg->bitinfo.obst, NULL);
 }
