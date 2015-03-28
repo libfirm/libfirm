@@ -154,6 +154,42 @@ static bitinfo *get_bitinfo_direct(ir_node const *const irn)
 	return b;
 }
 
+static void calc_bitinfo(ir_node const *irn, bitinfo *b);
+
+/**
+ * Get analysis information for node @p irn.
+ *
+ * If it is not available, calculate it.
+ */
+static bitinfo *get_bitinfo_recursive(ir_node const *const irn)
+{
+	ir_graph   *const irg = get_irn_irg(irn);
+	ir_nodemap *const map = &irg->bitinfo.map;
+	bitinfo          *b   = ir_nodemap_get(bitinfo, map, irn);
+	if (!b || b->state == BITINFO_INVALID || b->state == BITINFO_UNSTABLE) {
+		ir_mode *mode = get_irn_mode(irn);
+		if (mode == mode_BB || mode == mode_X) {
+			/* Blocks and jumps use a boolean domain. */
+			mode = mode_b;
+		} else if (!mode_is_intb(mode)) {
+			return NULL;
+		}
+
+		/* Insert bottom to break cycles. */
+		struct obstack *const obst = &irg->bitinfo.obst;
+		if (!b)
+			b = OALLOCZ(obst, bitinfo);
+		if (b->state == BITINFO_INVALID) {
+			b->z = get_mode_null(mode);
+			b->o = get_mode_all_one(mode);
+		}
+		ir_nodemap_insert(map, irn, b);
+
+		calc_bitinfo(irn, b);
+	}
+	return b;
+}
+
 static bitinfo *(*get_bitinfo_func)(ir_node const*) = &get_bitinfo_null;
 
 bitinfo *get_bitinfo(ir_node const *const irn)
@@ -161,7 +197,7 @@ bitinfo *get_bitinfo(ir_node const *const irn)
 	return get_bitinfo_func(irn);
 }
 
-static bool transfer(ir_node *const irn)
+static bool transfer(ir_node const *const irn)
 {
 	ir_tarval *const f = tarval_b_false;
 	ir_tarval *const t = tarval_b_true;
@@ -172,9 +208,8 @@ static bool transfer(ir_node *const irn)
 	if (m == mode_X) {
 		DB((dbg, LEVEL_3, "transfer %+F\n", irn));
 
-		bitinfo *const b = get_bitinfo(get_nodes_block(irn));
-		/* Unreachble blocks might have no bitinfo. */
-		if (b == NULL || b->z == f) {
+		bitinfo *const b = get_bitinfo_recursive(get_nodes_block(irn));
+		if (b->z == f) {
 unreachable_X:
 			z = f;
 			o = t;
@@ -188,7 +223,7 @@ unreachable_X:
 					goto result_unknown_X;
 				} else if (is_Cond(pred)) {
 					ir_node   *const selector = get_Cond_selector(pred);
-					bitinfo   *const b        = get_bitinfo(selector);
+					bitinfo   *const b        = get_bitinfo_recursive(selector);
 					if (is_undefined(b))
 						goto unreachable_X;
 					if (b->z == b->o) {
@@ -202,7 +237,7 @@ unreachable_X:
 					}
 				} else if (is_Switch(pred)) {
 					ir_node *const selector = get_Switch_selector(pred);
-					bitinfo *const b        = get_bitinfo(selector);
+					bitinfo *const b        = get_bitinfo_recursive(selector);
 					if (is_undefined(b))
 						goto unreachable_X;
 					/* TODO */
@@ -228,8 +263,8 @@ result_unknown_X:
 		DB((dbg, LEVEL_3, "transfer %+F\n", irn));
 		bool reachable = false;
 		foreach_irn_in(irn, i, pred_block) {
-			bitinfo *const b = get_bitinfo(pred_block);
-			if (b != NULL && b->z == t) {
+			bitinfo *const b = get_bitinfo_recursive(pred_block);
+			if (b->z == t) {
 				reachable = true;
 				break;
 			}
@@ -258,9 +293,9 @@ result_unknown_X:
 			z = get_mode_null(m);
 			o = get_mode_all_one(m);
 			foreach_irn_in(block, i, pred_block) {
-				bitinfo *const b_cfg = get_bitinfo(pred_block);
-				if (b_cfg != NULL && b_cfg->z != f) {
-					bitinfo *const b = get_bitinfo(get_Phi_pred(irn, i));
+				bitinfo *const b_cfg = get_bitinfo_recursive(pred_block);
+				if (b_cfg->z != f) {
+					bitinfo *const b = get_bitinfo_recursive(get_Phi_pred(irn, i));
 					/* Only use input if it's not undefined. */
 					if (!is_undefined(b)) {
 						z = tarval_or( z, b->z);
@@ -271,7 +306,7 @@ result_unknown_X:
 		} else {
 			/* Undefined if any input is undefined. */
 			foreach_irn_in(irn, i, pred) {
-				bitinfo *const pred_b = get_bitinfo(pred);
+				bitinfo *const pred_b = get_bitinfo_recursive(pred);
 				if (pred_b != NULL && is_undefined(pred_b))
 					goto undefined;
 			}
@@ -299,12 +334,12 @@ undefined:
 
 				case iro_Confirm: {
 					ir_node *const v = get_Confirm_value(irn);
-					bitinfo *const b = get_bitinfo(v);
+					bitinfo *const b = get_bitinfo_recursive(v);
 					/* TODO Use bound and relation. */
 					z = b->z;
 					o = b->o;
 					if ((get_Confirm_relation(irn) & ~ir_relation_unordered) == ir_relation_equal) {
-						bitinfo *const bound_b = get_bitinfo(get_Confirm_bound(irn));
+						bitinfo *const bound_b = get_bitinfo_recursive(get_Confirm_bound(irn));
 						z = tarval_and(z, bound_b->z);
 						o = tarval_or( o, bound_b->o);
 					}
@@ -313,8 +348,8 @@ undefined:
 
 				case iro_Shl: {
 					ir_node   *const right = get_Shl_right(irn);
-					bitinfo   *const l     = get_bitinfo(get_Shl_left(irn));
-					bitinfo   *const r     = get_bitinfo(right);
+					bitinfo   *const l     = get_bitinfo_recursive(get_Shl_left(irn));
+					bitinfo   *const r     = get_bitinfo_recursive(right);
 					ir_tarval *const lo    = l->o;
 					ir_tarval *const lz    = l->z;
 					ir_tarval *const ro    = r->o;
@@ -357,8 +392,8 @@ undefined:
 
 				case iro_Shr: {
 					ir_node   *const right = get_Shr_right(irn);
-					bitinfo   *const l     = get_bitinfo(get_Shr_left(irn));
-					bitinfo   *const r     = get_bitinfo(right);
+					bitinfo   *const l     = get_bitinfo_recursive(get_Shr_left(irn));
+					bitinfo   *const r     = get_bitinfo_recursive(right);
 					ir_tarval *const lz    = l->z;
 					ir_tarval *const lo    = l->o;
 					ir_tarval *const rz    = r->z;
@@ -401,8 +436,8 @@ undefined:
 
 				case iro_Shrs: {
 					ir_node   *const right = get_Shrs_right(irn);
-					bitinfo   *const l     = get_bitinfo(get_Shrs_left(irn));
-					bitinfo   *const r     = get_bitinfo(right);
+					bitinfo   *const l     = get_bitinfo_recursive(get_Shrs_left(irn));
+					bitinfo   *const r     = get_bitinfo_recursive(right);
 					ir_tarval *const lz    = l->z;
 					ir_tarval *const lo    = l->o;
 					ir_tarval *const rz    = r->z;
@@ -444,8 +479,8 @@ undefined:
 				}
 
 				case iro_Add: {
-					bitinfo   *const l   = get_bitinfo(get_Add_left(irn));
-					bitinfo   *const r   = get_bitinfo(get_Add_right(irn));
+					bitinfo   *const l   = get_bitinfo_recursive(get_Add_left(irn));
+					bitinfo   *const r   = get_bitinfo_recursive(get_Add_right(irn));
 					ir_tarval *const lz  = l->z;
 					ir_tarval *const lo  = l->o;
 					ir_tarval *const rz  = r->z;
@@ -462,8 +497,8 @@ undefined:
 				}
 
 				case iro_Sub: {
-					bitinfo *const l = get_bitinfo(get_Sub_left(irn));
-					bitinfo *const r = get_bitinfo(get_Sub_right(irn));
+					bitinfo *const l = get_bitinfo_recursive(get_Sub_left(irn));
+					bitinfo *const r = get_bitinfo_recursive(get_Sub_right(irn));
 					// might subtract pointers
 					if (l == NULL || r == NULL)
 						goto cannot_analyse;
@@ -484,8 +519,8 @@ undefined:
 				}
 
 				case iro_Mul: {
-					bitinfo   *const l  = get_bitinfo(get_Mul_left(irn));
-					bitinfo   *const r  = get_bitinfo(get_Mul_right(irn));
+					bitinfo   *const l  = get_bitinfo_recursive(get_Mul_left(irn));
+					bitinfo   *const r  = get_bitinfo_recursive(get_Mul_right(irn));
 					ir_tarval *      lz = l->z;
 					ir_tarval *      lo = l->o;
 					ir_tarval *      rz = r->z;
@@ -525,7 +560,7 @@ undefined:
 
 				case iro_Minus: {
 					/* -a = 0 - a */
-					bitinfo   *const b   = get_bitinfo(get_Minus_op(irn));
+					bitinfo   *const b   = get_bitinfo_recursive(get_Minus_op(irn));
 					ir_tarval *const bz  = b->z;
 					ir_tarval *const bo  = b->o;
 					ir_tarval *const vz  = tarval_neg(bz);
@@ -540,24 +575,24 @@ undefined:
 				}
 
 				case iro_And: {
-					bitinfo *const l = get_bitinfo(get_And_left(irn));
-					bitinfo *const r = get_bitinfo(get_And_right(irn));
+					bitinfo *const l = get_bitinfo_recursive(get_And_left(irn));
+					bitinfo *const r = get_bitinfo_recursive(get_And_right(irn));
 					z = tarval_and(l->z, r->z);
 					o = tarval_and(l->o, r->o);
 					break;
 				}
 
 				case iro_Or: {
-					bitinfo *const l = get_bitinfo(get_Or_left(irn));
-					bitinfo *const r = get_bitinfo(get_Or_right(irn));
+					bitinfo *const l = get_bitinfo_recursive(get_Or_left(irn));
+					bitinfo *const r = get_bitinfo_recursive(get_Or_right(irn));
 					z = tarval_or(l->z, r->z);
 					o = tarval_or(l->o, r->o);
 					break;
 				}
 
 				case iro_Eor: {
-					bitinfo   *const l  = get_bitinfo(get_Eor_left(irn));
-					bitinfo   *const r  = get_bitinfo(get_Eor_right(irn));
+					bitinfo   *const l  = get_bitinfo_recursive(get_Eor_left(irn));
+					bitinfo   *const r  = get_bitinfo_recursive(get_Eor_right(irn));
 					ir_tarval *const lz = l->z;
 					ir_tarval *const lo = l->o;
 					ir_tarval *const rz = r->z;
@@ -568,14 +603,14 @@ undefined:
 				}
 
 				case iro_Not: {
-					bitinfo *const b = get_bitinfo(get_Not_op(irn));
+					bitinfo *const b = get_bitinfo_recursive(get_Not_op(irn));
 					z = tarval_not(b->o);
 					o = tarval_not(b->z);
 					break;
 				}
 
 				case iro_Conv: {
-					bitinfo *const b = get_bitinfo(get_Conv_op(irn));
+					bitinfo *const b = get_bitinfo_recursive(get_Conv_op(irn));
 					if (b == NULL) // Happens when converting from float values.
 						goto result_unknown;
 					z = tarval_convert_to(b->z, m);
@@ -584,9 +619,9 @@ undefined:
 				}
 
 				case iro_Mux: {
-					bitinfo *const bf = get_bitinfo(get_Mux_false(irn));
-					bitinfo *const bt = get_bitinfo(get_Mux_true(irn));
-					bitinfo *const c  = get_bitinfo(get_Mux_sel(irn));
+					bitinfo *const bf = get_bitinfo_recursive(get_Mux_false(irn));
+					bitinfo *const bt = get_bitinfo_recursive(get_Mux_true(irn));
+					bitinfo *const c  = get_bitinfo_recursive(get_Mux_sel(irn));
 					if (c->o == t) {
 						z = bt->z;
 						o = bt->o;
@@ -601,8 +636,8 @@ undefined:
 				}
 
 				case iro_Cmp: {
-					bitinfo *const l = get_bitinfo(get_Cmp_left(irn));
-					bitinfo *const r = get_bitinfo(get_Cmp_right(irn));
+					bitinfo *const l = get_bitinfo_recursive(get_Cmp_left(irn));
+					bitinfo *const r = get_bitinfo_recursive(get_Cmp_right(irn));
 					if (l == NULL || r == NULL)
 						goto result_unknown; // Cmp compares something we cannot evaluate.
 					ir_tarval  *const lz       = l->z;
@@ -682,7 +717,7 @@ undefined:
 					if (is_Tuple(pred)) {
 						unsigned       pn = get_Proj_num(irn);
 						ir_node *const op = get_Tuple_pred(pred, pn);
-						bitinfo *const b  = get_bitinfo(op);
+						bitinfo *const b  = get_bitinfo_recursive(op);
 						z = b->z;
 						o = b->o;
 						goto set_info;
@@ -707,97 +742,98 @@ set_info:
 	return set_bitinfo(irn, z, o);
 }
 
-static void first_round(ir_node *const irn, void *const env)
-{
-	pdeq *const worklist = (pdeq*)env;
+static void trigger_users(ir_node const *irn);
 
-	transfer(irn);
-	if (is_Phi(irn) || is_Block(irn)) {
-		/* Only Phis (and their users) need another round, if we did not have
-		 * information about all their inputs in the first round, i.e. in loops. */
-		/* TODO inserts all Phis, should only insert Phis, which did no have all
-		 * predecessors available */
-		pdeq_putr(worklist, irn);
+static void trigger(ir_node const *const irn, ir_node const *const operand)
+{
+	bitinfo *const b = get_bitinfo_direct(irn);
+	if (b && b->state == BITINFO_VALID) {
+		DB((dbg, LEVEL_5, "%+F triggers %+F\n", operand, irn));
+		b->state = BITINFO_UNSTABLE;
+		trigger_users(irn);
+	} else {
+		DB((dbg, LEVEL_5, "%+F does not trigger %+F\n", operand, irn));
 	}
 }
 
-static void queue_users(pdeq *const worklist, ir_node *const n)
+static void trigger_users(ir_node const *const irn)
 {
-	if (get_irn_mode(n) == mode_X) {
-		/* When the state of a control flow node changes, not only queue its
-		 * successor blocks, but also the Phis in these blocks, because the Phis
-		 * must reconsider this input path. */
-		foreach_out_edge(n, e) {
+	if (is_Bad(irn))
+		return;
+
+	if (is_Block(irn)) {
+		/* Blocks just trigger the jump nodes inside.  The value of all other nodes
+		 * should not depend on the reachability of the block. */
+		foreach_out_edge(irn, e) {
 			ir_node *const src = get_edge_src_irn(e);
-			pdeq_putr(worklist, src);
-			/* should always be a block */
-			if (is_Block(src)) {
-				ir_node *phi;
-				for (phi = get_Block_phis(src); phi; phi = get_Phi_next(phi))
-					pdeq_putr(worklist, phi);
+			if (get_irn_mode(src) == mode_X)
+				trigger(src, irn);
+		}
+	} else if (get_irn_mode(irn) == mode_X) {
+		if (!is_End(irn)) {
+			/* When the state of a control flow node changes, not only trigger its
+			 * successor blocks, but also the Phis in these blocks, because the Phis
+			 * must reconsider this input path. */
+			foreach_out_edge(irn, e) {
+				ir_node *const src = get_edge_src_irn(e);
+				if (is_Block(src)) {
+					trigger(src, irn);
+					foreach_out_edge(src, f) {
+						ir_node *const phi = get_edge_src_irn(f);
+						if (is_Phi(phi))
+							trigger(phi, irn);
+					}
+				} else {
+					assert(is_Tuple(src) && get_nodes_block(src) == get_nodes_block(irn));
+				}
 			}
 		}
 	} else {
-		foreach_out_edge(n, e) {
-			ir_node *const src = get_edge_src_irn(e);
+		foreach_out_edge(irn, e) {
+			ir_node* const src = get_edge_src_irn(e);
 			if (get_irn_mode(src) == mode_T) {
-				queue_users(worklist, src);
+				/* Trigger Projs of tuple nodes.  They might contain analysis information,
+				 * but the tuple node does not. */
+				trigger_users(src);
 			} else {
-				pdeq_putr(worklist, src);
+				trigger(src, irn);
 			}
 		}
 	}
 }
 
-static void clear_phi_lists(ir_node *irn, void *env)
+static void calc_bitinfo(ir_node const *const irn, bitinfo *const b)
 {
-	(void)env;
-	if (is_Block(irn))
-		set_Block_phis(irn, NULL);
+	do {
+		b->state = BITINFO_IN_FLIGHT;
+		bool const changed = transfer(irn);
+		b->state = BITINFO_VALID;
+		if (changed)
+			trigger_users(irn);
+	} while (b->state != BITINFO_VALID);
 }
 
-static void build_phi_lists(ir_node *irn, void *env)
+static void calc_bitinfo_walker(ir_node *const n, void *const env)
 {
 	(void)env;
-	if (is_Phi(irn))
-		add_Block_phi(get_nodes_block(irn), irn);
+
+	ir_mode *const mode = get_irn_mode(n);
+	if (mode_is_intb(mode) || mode == mode_BB || mode == mode_X)
+		get_bitinfo_recursive(n);
 }
 
 void constbits_analyze(ir_graph *const irg)
 {
 	FIRM_DBG_REGISTER(dbg, "firm.ana.fp-vrp");
-	DB((dbg, LEVEL_1,
-	    "===> Performing constant propagation on %+F (analysis)\n", irg));
+	DB((dbg, LEVEL_1, "---> activating constbits for %+F\n", irg));
 
-	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES
-	                         | IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
-	ir_reserve_resources(irg, IR_RESOURCE_PHI_LIST);
+	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
 
 	obstack_init(&irg->bitinfo.obst);
 	ir_nodemap_init(&irg->bitinfo.map, irg);
+	get_bitinfo_func = &get_bitinfo_recursive;
+	irg_walk_graph(irg, calc_bitinfo_walker, NULL, NULL);
 	get_bitinfo_func = &get_bitinfo_direct;
-
-	/* We need this extra step because the dom tree does not contain
-	 * unreachable blocks in Firm. Moreover build phi list. */
-	irg_walk_anchors(irg, clear_phi_lists, build_phi_lists, NULL);
-
-	ir_tarval *const f = get_tarval_b_false();
-	ir_tarval *const t = get_tarval_b_true();
-	set_bitinfo(get_irg_end_block(irg), t, f); /* Reachable. */
-
-	/* TODO Improve iteration order. Best is reverse postorder in data flow
-	 * direction and respecting loop nesting for fastest convergence. */
-	pdeq *const worklist = new_pdeq();
-	irg_walk_blkwise_dom_top_down(irg, NULL, first_round, worklist);
-
-	while (!pdeq_empty(worklist)) {
-		ir_node *const n = (ir_node*)pdeq_getl(worklist);
-		if (transfer(n))
-			queue_users(worklist, n);
-	}
-	del_pdeq(worklist);
-
-	ir_free_resources(irg, IR_RESOURCE_PHI_LIST);
 }
 
 void constbits_clear(ir_graph *const irg)

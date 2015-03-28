@@ -4,10 +4,18 @@
 #include <stdbool.h>
 #include "tv.h"
 
+typedef enum bitinfo_state {
+	BITINFO_INVALID,
+	BITINFO_VALID,
+	BITINFO_IN_FLIGHT,
+	BITINFO_UNSTABLE,
+} bitinfo_state;
+
 typedef struct bitinfo
 {
-	ir_tarval *z; /**< safe zeroes, 0 = bit is zero,       1 = bit maybe is 1 */
-	ir_tarval *o; /**< safe ones,   0 = bit maybe is zero, 1 = bit is 1 */
+	ir_tarval    *z; /**< safe zeroes, 0 = bit is zero,       1 = bit maybe is 1 */
+	ir_tarval    *o; /**< safe ones,   0 = bit maybe is zero, 1 = bit is 1 */
+	bitinfo_state state;
 } bitinfo;
 
 /** Get analysis information for node irn */
