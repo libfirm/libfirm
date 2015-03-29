@@ -100,38 +100,6 @@ static bool is_undefined(bitinfo const *const b)
 	return tarval_is_null(b->z) && tarval_is_all_one(b->o);
 }
 
-bool join_bitinfo(ir_node *const irn, ir_tarval *const z, ir_tarval *const o)
-{
-	if (tarval_is_null(z) && tarval_is_all_one(o)) {
-		/*
-		 * Reject undefined bit information.
-		 *
-		 * This occurs if we optimize within unreachable code.
-		 * Due to CSE, the node might also be used within reachable code,
-		 * so we cannot set undefined bit information in this case.
-		 */
-		return false;
-	}
-
-	bitinfo *b = get_bitinfo(irn);
-	if (b == NULL) {
-		ir_graph       *const irg  = get_irn_irg(irn);
-		ir_nodemap     *const map  = &irg->bitinfo.map;
-		struct obstack *const obst = &irg->bitinfo.obst;
-		b = OALLOCZ(obst, bitinfo);
-		ir_nodemap_insert(map, irn, b);
-		b->z = z;
-		b->o = o;
-	} else if (z == b->z && o == b->o) {
-		return false;
-	} else {
-		b->z = tarval_and(b->z, z);
-		b->o = tarval_or(b->o, o);
-	}
-	DB((dbg, LEVEL_3, "Join %+F: 0:%T 1:%T\n", irn, b->z, b->o));
-	return true;
-}
-
 bool set_bitinfo(ir_node *const irn, ir_tarval *const z, ir_tarval *const o)
 {
 	ir_graph   *const irg  = get_irn_irg(irn);

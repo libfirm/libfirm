@@ -20,9 +20,6 @@ bitinfo *get_bitinfo(ir_node const *irn);
  */
 bitinfo const *try_get_bitinfo(ir_node const *irn);
 
-/** Joins the existing information with the given one. */
-bool join_bitinfo(ir_node *irn, ir_tarval *z, ir_tarval *o);
-
 /** Set analysis information for node irn. */
 bool set_bitinfo(ir_node *irn, ir_tarval *z, ir_tarval *o);
 

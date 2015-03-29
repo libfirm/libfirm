@@ -6129,7 +6129,6 @@ static ir_node *transform_node_Shrs(ir_node *n)
 			dbg_info *const dbgi  = get_irn_dbg_info(n);
 			ir_node  *const block = get_nodes_block(n);
 			n = new_rd_Shr(dbgi, block, a, b, mode);
-			join_bitinfo(n, z, bn->o);
 			return n;
 		}
 	}
