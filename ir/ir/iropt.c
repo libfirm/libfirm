@@ -5301,19 +5301,13 @@ is_bittest: {
 					tarval_cmp(tv, get_mode_null(mode)) == ir_relation_greater) {
 					/* c > 0 : a < c  ==>  a <= (c - 1)    a >= c  ==>  a > (c - 1) */
 					tv = tarval_sub(tv, get_mode_one(mode), NULL);
-
-					if (tarval_is_constant(tv)) {
-						relation                 ^= ir_relation_equal;
-						is_relation_equal         = is_relation(ir_relation_equal, relation, possible);
-						is_relation_less_greater  = is_relation(ir_relation_less_greater, relation, possible);
-						changedc                  = true;
-						DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_CNST_MAGN);
-					}
+					goto reduced_tv;
 				} else if ((relation == ir_relation_greater || relation == ir_relation_less_equal) &&
 					tarval_cmp(tv, get_mode_null(mode)) == ir_relation_less) {
 					/* c < 0 : a > c  ==>  a >= (c + 1)    a <= c  ==>  a < (c + 1) */
 					tv = tarval_add(tv, get_mode_one(mode));
 
+reduced_tv:
 					if (tarval_is_constant(tv)) {
 						relation                 ^= ir_relation_equal;
 						is_relation_equal         = is_relation(ir_relation_equal, relation, possible);
