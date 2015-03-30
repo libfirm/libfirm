@@ -100,7 +100,8 @@ static bool is_undefined(bitinfo const *const b)
 	return tarval_is_null(b->z) && tarval_is_all_one(b->o);
 }
 
-bool set_bitinfo(ir_node *const irn, ir_tarval *const z, ir_tarval *const o)
+/** Set analysis information for node @p irn. */
+static bool set_bitinfo(ir_node const *const irn, ir_tarval *const z, ir_tarval *const o)
 {
 	ir_graph   *const irg  = get_irn_irg(irn);
 	ir_nodemap *const map  = &irg->bitinfo.map;

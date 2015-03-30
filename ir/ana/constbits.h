@@ -20,9 +20,6 @@ bitinfo *get_bitinfo(ir_node const *irn);
  */
 bitinfo const *try_get_bitinfo(ir_node const *irn);
 
-/** Set analysis information for node irn. */
-bool set_bitinfo(ir_node *irn, ir_tarval *z, ir_tarval *o);
-
 /**
  * Compute value range fixpoint aka which bits of value are constant zero/one.
  * The result is available via @see get_bitinfo.

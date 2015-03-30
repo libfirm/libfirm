@@ -7534,7 +7534,6 @@ restart:;
 					if (mode_is_int(m) || m == mode_b) {
 						ir_graph *const irg = get_irn_irg(n);
 						n = new_r_Const(irg, z);
-						set_bitinfo(n, z, o);
 						return n;
 					}
 				}
