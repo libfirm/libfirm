@@ -746,6 +746,8 @@ static void trigger_users(ir_node const *irn);
 
 static void trigger(ir_node const *const irn, ir_node const *const operand)
 {
+	(void)operand;
+
 	bitinfo *const b = get_bitinfo_direct(irn);
 	if (b && b->state == BITINFO_VALID) {
 		DB((dbg, LEVEL_5, "%+F triggers %+F\n", operand, irn));
