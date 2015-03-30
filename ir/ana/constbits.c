@@ -145,7 +145,13 @@ static bitinfo *get_bitinfo_direct(ir_node const *const irn)
 {
 	ir_graph   *const irg = get_irn_irg(irn);
 	ir_nodemap *const map = &irg->bitinfo.map;
-	return ir_nodemap_get(bitinfo, map, irn);
+	bitinfo          *b   = ir_nodemap_get(bitinfo, map, irn);
+	if (!b && is_Const(irn) && mode_is_intb(get_irn_mode(irn))) {
+		ir_tarval *const tv = get_Const_tarval(irn);
+		set_bitinfo(irn, tv, tv);
+		b = ir_nodemap_get(bitinfo, map, irn);
+	}
+	return b;
 }
 
 static bitinfo *(*get_bitinfo_func)(ir_node const*) = &get_bitinfo_null;
