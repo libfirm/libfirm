@@ -834,7 +834,7 @@ void constbits_analyze(ir_graph *const irg)
 	obstack_init(&irg->bitinfo.obst);
 	ir_nodemap_init(&irg->bitinfo.map, irg);
 	get_bitinfo_func = &get_bitinfo_recursive;
-	irg_walk_graph(irg, calc_bitinfo_walker, NULL, NULL);
+	irg_walk_graph(irg, NULL, calc_bitinfo_walker, NULL);
 	get_bitinfo_func = &get_bitinfo_direct;
 }
 
