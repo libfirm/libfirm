@@ -743,14 +743,14 @@ static int verify_node_Mod(const ir_node *n)
 	return fine;
 }
 
-static int mode_is_intrefb(const ir_mode *mode)
+static int mode_is_intb(const ir_mode *mode)
 {
-	return mode_is_int(mode) || mode_is_reference(mode) || mode == mode_b;
+	return mode_is_int(mode) || mode == mode_b;
 }
 
 static int verify_node_And(const ir_node *n)
 {
-	bool fine = check_mode_func(n, mode_is_intrefb, "int, reference or mode_b");
+	bool fine = check_mode_func(n, mode_is_intb, "int or mode_b");
 	fine &= check_mode_same_input(n, n_And_left, "left");
 	fine &= check_mode_same_input(n, n_And_right, "right");
 	return fine;
@@ -758,7 +758,7 @@ static int verify_node_And(const ir_node *n)
 
 static int verify_node_Or(const ir_node *n)
 {
-	bool fine = check_mode_func(n, mode_is_intrefb, "int, reference or mode_b");
+	bool fine = check_mode_func(n, mode_is_intb, "int or mode_b");
 	fine &= check_mode_same_input(n, n_Or_left, "left");
 	fine &= check_mode_same_input(n, n_Or_right, "right");
 	return fine;
@@ -766,15 +766,10 @@ static int verify_node_Or(const ir_node *n)
 
 static int verify_node_Eor(const ir_node *n)
 {
-	bool fine = check_mode_func(n, mode_is_intrefb, "int, reference or mode_b");
+	bool fine = check_mode_func(n, mode_is_intb, "int or mode_b");
 	fine &= check_mode_same_input(n, n_Eor_left, "left");
 	fine &= check_mode_same_input(n, n_Eor_right, "right");
 	return fine;
-}
-
-static int mode_is_intb(const ir_mode *mode)
-{
-	return mode_is_int(mode) || mode == mode_b;
 }
 
 static int verify_node_Not(const ir_node *n)
