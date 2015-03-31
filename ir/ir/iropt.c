@@ -5339,7 +5339,7 @@ is_bittest: {
 							ir_tarval *const one   = get_mode_one(mode);
 							ir_tarval *const hibit = tarval_shl_unsigned(one, hi);
 							ir_tarval *const mask  = tarval_sub(hibit, one, NULL);
-							tv = tarval_or(tarval_andnot(tarval_add(tv, hibit), mask), tarval_and(bl->z, mask));
+							tv = tarval_or(tarval_andnot(tarval_add(tv, hibit), mask), tarval_and(bl->o, mask));
 							goto reduced_tv;
 						}
 					}
