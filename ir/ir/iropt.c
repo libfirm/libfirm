@@ -5329,7 +5329,7 @@ is_bittest: {
 						ir_tarval *const uneq = tarval_or(tarval_andnot(tv, bl->z), tarval_andnot(bl->o, tv));
 						int        const hi   = get_tarval_highest_bit(uneq);
 						if (hi >= 0) {
-							/* Example: 0b????0101 > 0b11001000 -> 0b????0101 >  0b11010101
+							/* Example: 0b????0101 > 0b11001000 -> 0b????0101 >= 0b11010101
 							 * It is possible that o <= tv <= z and it is known that left and
 							 * tv differ in at least one bit.  Increase the constant by the
 							 * value of the highest differing bit and set all bits below to
