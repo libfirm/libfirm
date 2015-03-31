@@ -2703,7 +2703,7 @@ static ir_node *transform_node_Or_(ir_node *n)
 			ir_tarval *const one = get_mode_one(mode);
 
 			/* Create mask for rightmost may-1-bit and the trailing 0's. */
-			mask = tarval_eor(z, tarval_sub(z, one, mode));
+			mask = tarval_eor(z, tarval_sub(z, one, NULL));
 		} else {
 			mask = get_mode_one(mode);
 		}
@@ -2892,7 +2892,7 @@ static ir_node *transform_node_Eor_(ir_node *n)
 						ir_node   *block = get_nodes_block(n);
 						ir_node   *aa    = get_Add_left(a);
 						ir_tarval *tab   = get_Const_tarval(ab);
-						ir_tarval *tc    = tarval_sub(tb, tab, mode);
+						ir_tarval *tc    = tarval_sub(tb, tab, NULL);
 						ir_node   *c     = new_rd_Const(dbgi, irg, tc);
 						return new_rd_Sub(dbgi, block, c, aa, mode);
 					}
@@ -2905,7 +2905,7 @@ static ir_node *transform_node_Eor_(ir_node *n)
 						ir_node   *block = get_nodes_block(n);
 						ir_node   *ab    = get_Sub_right(a);
 						ir_tarval *taa   = get_Const_tarval(aa);
-						ir_tarval *tc    = tarval_sub(tb, taa, mode);
+						ir_tarval *tc    = tarval_sub(tb, taa, NULL);
 						ir_node   *c     = new_rd_Const(dbgi, irg, tc);
 						return new_rd_Add(dbgi, block, ab, c, mode);
 					}
@@ -3099,7 +3099,7 @@ static ir_node *transform_node_Add(ir_node *n)
 				if (is_Const(b)) {
 					ir_tarval *const tv  = get_Const_tarval(b);
 					ir_tarval *const one = get_mode_one(mode);
-					ir_tarval *const add = tarval_sub(tv, one, mode);
+					ir_tarval *const add = tarval_sub(tv, one, NULL);
 
 					if (tarval_is_constant(add)) {
 						/* ~x + C = (C - 1) - x */
@@ -4398,7 +4398,7 @@ absorb:;
 			ir_tarval *const one = get_mode_one(mode);
 
 			/* Create mask for rightmost may-1-bit and the trailing 0's. */
-			mask = tarval_eor(z, tarval_sub(z, one, mode));
+			mask = tarval_eor(z, tarval_sub(z, one, NULL));
 		} else {
 			mask = get_mode_one(mode);
 		}
