@@ -2772,30 +2772,28 @@ static ir_node *transform_node_Or_(ir_node *n)
 				b_left  = new_rd_Conv(dbgi, block, b_left,  umode);
 				b_right = new_rd_Conv(dbgi, block, b_right, umode);
 			}
-			if (values_in_mode(get_irn_mode(a_left), get_irn_mode(b_left))) {
-				ir_graph *irg    = get_irn_irg(n);
-				dbg_info *dbgi   = get_irn_dbg_info(n);
-				ir_node  *block  = get_nodes_block(n);
-				ir_mode  *a_mode = get_irn_mode(a_left);
-				ir_mode  *b_mode = get_irn_mode(b_left);
-				ir_node  *xora   = new_rd_Eor(dbgi, block, a_left, a_right, a_mode);
-				ir_node  *xorb   = new_rd_Eor(dbgi, block, b_left, b_right, b_mode);
-				ir_node  *conv   = new_rd_Conv(dbgi, block, xora, b_mode);
-				ir_node  *orn    = new_rd_Or(dbgi, block, conv, xorb, b_mode);
-				ir_node  *zero   = new_r_Const_null(irg, b_mode);
+			ir_mode *a_mode = get_irn_mode(a_left);
+			ir_mode *b_mode = get_irn_mode(b_left);
+			if (values_in_mode(a_mode, b_mode)) {
+				ir_graph *irg   = get_irn_irg(n);
+				dbg_info *dbgi  = get_irn_dbg_info(n);
+				ir_node  *block = get_nodes_block(n);
+				ir_node  *xora  = new_rd_Eor(dbgi, block, a_left, a_right, a_mode);
+				ir_node  *xorb  = new_rd_Eor(dbgi, block, b_left, b_right, b_mode);
+				ir_node  *conv  = new_rd_Conv(dbgi, block, xora, b_mode);
+				ir_node  *orn   = new_rd_Or(dbgi, block, conv, xorb, b_mode);
+				ir_node  *zero  = new_r_Const_null(irg, b_mode);
 				return new_rd_Cmp(dbgi, block, orn, zero, ir_relation_less_greater);
 			}
-			if (values_in_mode(get_irn_mode(b_left), get_irn_mode(a_left))) {
-				ir_graph *irg    = get_irn_irg(n);
-				dbg_info *dbgi   = get_irn_dbg_info(n);
-				ir_node  *block  = get_nodes_block(n);
-				ir_mode  *a_mode = get_irn_mode(a_left);
-				ir_mode  *b_mode = get_irn_mode(b_left);
-				ir_node  *xora   = new_rd_Eor(dbgi, block, a_left, a_right, a_mode);
-				ir_node  *xorb   = new_rd_Eor(dbgi, block, b_left, b_right, b_mode);
-				ir_node  *conv   = new_rd_Conv(dbgi, block, xorb, a_mode);
-				ir_node  *orn    = new_rd_Or(dbgi, block, xora, conv, a_mode);
-				ir_node  *zero   = new_r_Const_null(irg, a_mode);
+			if (values_in_mode(b_mode, a_mode)) {
+				ir_graph *irg   = get_irn_irg(n);
+				dbg_info *dbgi  = get_irn_dbg_info(n);
+				ir_node  *block = get_nodes_block(n);
+				ir_node  *xora  = new_rd_Eor(dbgi, block, a_left, a_right, a_mode);
+				ir_node  *xorb  = new_rd_Eor(dbgi, block, b_left, b_right, b_mode);
+				ir_node  *conv  = new_rd_Conv(dbgi, block, xorb, a_mode);
+				ir_node  *orn   = new_rd_Or(dbgi, block, xora, conv, a_mode);
+				ir_node  *zero  = new_r_Const_null(irg, a_mode);
 				return new_rd_Cmp(dbgi, block, orn, zero, ir_relation_less_greater);
 			}
 		}
@@ -4292,30 +4290,28 @@ static ir_node *transform_node_And(ir_node *n)
 				b_left  = new_rd_Conv(dbgi, block, b_left,  umode);
 				b_right = new_rd_Conv(dbgi, block, b_right, umode);
 			}
-			if (values_in_mode(get_irn_mode(a_left), get_irn_mode(b_left))) {
-				dbg_info *dbgi   = get_irn_dbg_info(n);
-				ir_node  *block  = get_nodes_block(n);
-				ir_mode  *a_mode = get_irn_mode(a_left);
-				ir_mode  *b_mode = get_irn_mode(b_left);
-				ir_node  *xora   = new_rd_Eor(dbgi, block, a_left, a_right, a_mode);
-				ir_node  *xorb   = new_rd_Eor(dbgi, block, b_left, b_right, b_mode);
-				ir_node  *conv   = new_rd_Conv(dbgi, block, xora, b_mode);
-				ir_node  *orn    = new_rd_Or(dbgi, block, conv, xorb, b_mode);
-				ir_graph *irg    = get_irn_irg(n);
-				ir_node  *zero   = new_r_Const_null(irg, b_mode);
+			ir_mode *a_mode = get_irn_mode(a_left);
+			ir_mode *b_mode = get_irn_mode(b_left);
+			if (values_in_mode(a_mode, b_mode)) {
+				dbg_info *dbgi  = get_irn_dbg_info(n);
+				ir_node  *block = get_nodes_block(n);
+				ir_node  *xora  = new_rd_Eor(dbgi, block, a_left, a_right, a_mode);
+				ir_node  *xorb  = new_rd_Eor(dbgi, block, b_left, b_right, b_mode);
+				ir_node  *conv  = new_rd_Conv(dbgi, block, xora, b_mode);
+				ir_node  *orn   = new_rd_Or(dbgi, block, conv, xorb, b_mode);
+				ir_graph *irg   = get_irn_irg(n);
+				ir_node  *zero  = new_r_Const_null(irg, b_mode);
 				return new_rd_Cmp(dbgi, block, orn, zero, ir_relation_equal);
 			}
-			if (values_in_mode(get_irn_mode(b_left), get_irn_mode(a_left))) {
-				dbg_info *dbgi   = get_irn_dbg_info(n);
-				ir_node  *block  = get_nodes_block(n);
-				ir_mode  *a_mode = get_irn_mode(a_left);
-				ir_mode  *b_mode = get_irn_mode(b_left);
-				ir_node  *xora   = new_rd_Eor(dbgi, block, a_left, a_right, a_mode);
-				ir_node  *xorb   = new_rd_Eor(dbgi, block, b_left, b_right, b_mode);
-				ir_node  *conv   = new_rd_Conv(dbgi, block, xorb, a_mode);
-				ir_node  *orn    = new_rd_Or(dbgi, block, xora, conv, a_mode);
-				ir_graph *irg    = get_irn_irg(n);
-				ir_node  *zero   = new_r_Const_null(irg, a_mode);
+			if (values_in_mode(b_mode, a_mode)) {
+				dbg_info *dbgi  = get_irn_dbg_info(n);
+				ir_node  *block = get_nodes_block(n);
+				ir_node  *xora  = new_rd_Eor(dbgi, block, a_left, a_right, a_mode);
+				ir_node  *xorb  = new_rd_Eor(dbgi, block, b_left, b_right, b_mode);
+				ir_node  *conv  = new_rd_Conv(dbgi, block, xorb, a_mode);
+				ir_node  *orn   = new_rd_Or(dbgi, block, xora, conv, a_mode);
+				ir_graph *irg   = get_irn_irg(n);
+				ir_node  *zero  = new_r_Const_null(irg, a_mode);
 				return new_rd_Cmp(dbgi, block, orn, zero, ir_relation_equal);
 			}
 		}
