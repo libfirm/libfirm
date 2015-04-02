@@ -2751,10 +2751,27 @@ static ir_node *transform_node_Or_(ir_node *n)
 			ir_relation new_relation = a_relation | b_relation;
 			return new_rd_Cmp(dbgi, block, a_left, a_right, new_relation);
 		}
+
 		/* Cmp(a!=b) or Cmp(c!=d) => Cmp((a^b)|(c^d) != 0) */
+		const ir_mode *cmp_mode_left  = get_irn_mode(a_left);
+		const ir_mode *cmp_mode_right = get_irn_mode(b_left);
 		if (is_cmp_unequal(a) && is_cmp_unequal(b)
-		    && !mode_is_float(get_irn_mode(a_left))
-		    && !mode_is_float(get_irn_mode(b_left))) {
+		    && !mode_is_float(cmp_mode_left)
+		    && !mode_is_float(cmp_mode_right)) {
+			if (mode_is_reference(cmp_mode_left)) {
+				ir_mode  *umode = get_reference_mode_unsigned_eq(cmp_mode_left);
+				dbg_info *dbgi  = get_irn_dbg_info(a_left);
+				ir_node  *block = get_nodes_block(n);
+				a_left  = new_rd_Conv(dbgi, block, a_left,  umode);
+				a_right = new_rd_Conv(dbgi, block, a_right, umode);
+			}
+			if (mode_is_reference(cmp_mode_right)) {
+				ir_mode  *umode = get_reference_mode_unsigned_eq(cmp_mode_right);
+				dbg_info *dbgi  = get_irn_dbg_info(b_left);
+				ir_node  *block = get_nodes_block(n);
+				b_left  = new_rd_Conv(dbgi, block, b_left,  umode);
+				b_right = new_rd_Conv(dbgi, block, b_right, umode);
+			}
 			if (values_in_mode(get_irn_mode(a_left), get_irn_mode(b_left))) {
 				ir_graph *irg    = get_irn_irg(n);
 				dbg_info *dbgi   = get_irn_dbg_info(n);
