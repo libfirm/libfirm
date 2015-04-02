@@ -766,7 +766,13 @@ static bool is_relation(ir_relation relation, ir_relation cmp_relation, ir_relat
 	return (min | possible_bits) == relation;
 }
 
-static ir_tarval *compute_cmp(const ir_node *cmp)
+/**
+ * Return the value of a Cmp.
+ *
+ * The basic idea here is to determine which relations are possible and which
+ * one are definitely impossible.
+ */
+static ir_tarval *computed_value_Cmp(const ir_node *cmp)
 {
 	ir_node     *left     = get_Cmp_left(cmp);
 	ir_node     *right    = get_Cmp_right(cmp);
@@ -799,22 +805,7 @@ static ir_tarval *compute_cmp_ext(const ir_node *cmp)
 {
 	if (!get_opt_constant_folding())
 		return tarval_unknown;
-	return compute_cmp(cmp);
-}
-
-/**
- * Return the value of a Cmp.
- *
- * The basic idea here is to determine which relations are possible and which
- * one are definitely impossible.
- */
-static ir_tarval *computed_value_Cmp(const ir_node *cmp)
-{
-	/* we can't construct Constb after lowering mode_b nodes */
-	if (irg_is_constrained(get_irn_irg(cmp), IR_GRAPH_CONSTRAINT_MODEB_LOWERED))
-		return tarval_unknown;
-
-	return compute_cmp(cmp);
+	return computed_value_Cmp(cmp);
 }
 
 /**
