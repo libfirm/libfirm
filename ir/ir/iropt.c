@@ -4890,6 +4890,10 @@ static ir_node *transform_node_Cmp(ir_node *n)
 		changed  = true;
 	}
 
+	/*
+	 * First step: remove similar operations on both sides of the Cmp.
+	 */
+
 	/* Remove unnecessary conversions */
 	if (!mode_is_float(mode)
 	    || be_get_backend_param()->mode_float_arithmetic == NULL) {
@@ -4920,24 +4924,6 @@ static ir_node *transform_node_Cmp(ir_node *n)
 					DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_CONV);
 				}
 				mode = get_irn_mode(left);
-			}
-		}
-		if (is_Conv(left) && is_Const(right)) {
-			ir_node   *op_left   = get_Conv_op(left);
-			ir_mode   *mode_left = get_irn_mode(op_left);
-			if (smaller_mode(mode_left, mode) && mode_left != mode_b) {
-				ir_tarval *tv = get_Const_tarval(right);
-				int old_wrap_on_overflow = tarval_get_wrap_on_overflow();
-				tarval_set_wrap_on_overflow(false);
-				ir_tarval *new_tv = tarval_convert_to(tv, mode_left);
-				tarval_set_wrap_on_overflow(old_wrap_on_overflow);
-				if (tarval_is_constant(new_tv)) {
-					left    = op_left;
-					right   = new_r_Const(irg, new_tv);
-					mode    = get_irn_mode(left);
-					changed = true;
-					DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_CONV);
-				}
 			}
 		}
 	}
@@ -5066,39 +5052,113 @@ cmp_x_eq_0:;
 					DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_OP_OP);
 				}
 			}
+		}
+	}
 
-			if (is_And(left) && is_Const(right)) {
-				ir_node *ll = get_binop_left(left);
-				ir_node *lr = get_binop_right(left);
-				if (is_Shr(ll) && is_Const(lr)) {
-					/* Cmp((x >>u c1) & c2, c3) = Cmp(x & (c2 << c1), c3 << c1) */
-					ir_node *llr = get_Shr_right(ll);
-
-					if (is_Const(llr)) {
-						ir_tarval *c1 = get_Const_tarval(llr);
-						ir_tarval *c2 = get_Const_tarval(lr);
-						ir_tarval *c3 = get_Const_tarval(right);
-
-						assert(tarval_is_long(c1));
-						ir_mode *mode = get_irn_mode(left);
-						long     l1   = get_tarval_long(c1);
-						long     h2   = get_tarval_highest_bit(c2);
-						long     h3   = get_tarval_highest_bit(c3);
-						long     bits = get_mode_size_bits(mode);
-
-						if (l1 + h2 < bits && l1 + h3 < bits) {
-							dbg_info *dbg   = get_irn_dbg_info(left);
-							ir_node  *block = get_nodes_block(n);
-
-							ir_tarval *mask  = tarval_shl(c2, c1);
-							ir_tarval *value = tarval_shl(c3, c1);
-
-							left     = new_rd_And(dbg, block, get_Shr_left(ll), new_r_Const(irg, mask), mode);
-							right    = new_r_Const(irg, value);
-							relation = is_relation_equal ? ir_relation_equal : ir_relation_less_greater;
-							changed  = true;
-						}
+	if (((is_Shr(left) && is_Shr(right)) || (is_Shrs(left) && is_Shrs(right))) &&
+	    get_mode_arithmetic(mode) == irma_twos_complement) {
+		ir_node *const lr = get_binop_right(left);
+		ir_node *const rr = get_binop_right(right);
+		if (lr == rr && is_Const(lr)) {
+			bitinfo *const bl = get_bitinfo(left);
+			bitinfo *const br = get_bitinfo(right);
+			if (bl != NULL && br != NULL) {
+				ir_tarval *const lz  = bl->z;
+				ir_tarval *const lo  = bl->o;
+				ir_tarval *const rz  = br->z;
+				ir_tarval *const ro  = br->o;
+				ir_tarval *const min = get_mode_min(mode);
+				ir_tarval *const leq = tarval_eor(lz, lo);
+				ir_tarval *const req = tarval_eor(rz, ro);
+				if (tarval_is_null(tarval_and(tarval_or(leq, req), min))) {
+					ir_tarval *const c     = get_Const_tarval(lr);
+					ir_tarval *const one   = get_mode_one(mode);
+					ir_tarval *const mask  = tarval_sub(tarval_shl(one, c), one, NULL);
+					ir_tarval *const lmask = tarval_and(leq, mask);
+					ir_tarval *const rmask = tarval_and(req, mask);
+					if (tarval_is_null(tarval_or(lmask, rmask)) &&
+					    tarval_is_null(tarval_eor(lz, rz))) {
+						/* Cmp(x >> c, y >> c) -> Cmp(x,y) */
+						left  = get_binop_left(left);
+						right = get_binop_left(right);
 					}
+				}
+			}
+		}
+	}
+
+	/*
+	 * Second step: normalize the compare op
+	 * by placing the constant on the right side
+	 * or moving the lower address node to the left.
+	 */
+	if (!operands_are_normalized(left, right)) {
+		ir_node *t = left;
+		left  = right;
+		right = t;
+
+		relation = get_inversed_relation(relation);
+		possible = get_inversed_relation(possible);
+		changed  = true;
+	}
+
+	/*
+	 * Third step: remove operations on the left-hand side.
+	 */
+
+	/* Remove unnecessary conversions */
+	if ((!mode_is_float(mode)
+	     || be_get_backend_param()->mode_float_arithmetic == NULL)
+	    && is_Conv(left) && is_Const(right)) {
+		ir_node *op_left   = get_Conv_op(left);
+		ir_mode *mode_left = get_irn_mode(op_left);
+		if (smaller_mode(mode_left, mode) && mode_left != mode_b) {
+			ir_tarval *tv = get_Const_tarval(right);
+			int old_wrap_on_overflow = tarval_get_wrap_on_overflow();
+			tarval_set_wrap_on_overflow(false);
+			ir_tarval *new_tv = tarval_convert_to(tv, mode_left);
+			tarval_set_wrap_on_overflow(old_wrap_on_overflow);
+			if (tarval_is_constant(new_tv)) {
+				left    = op_left;
+				right   = new_r_Const(irg, new_tv);
+				mode    = get_irn_mode(left);
+				changed = true;
+				DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_CONV);
+			}
+		}
+	}
+
+	if (is_And(left) && is_Const(right)
+	    && (is_relation_equal || is_relation_less_greater)) {
+		ir_node *ll = get_And_left(left);
+		ir_node *lr = get_And_right(left);
+		if (is_Shr(ll) && is_Const(lr)) {
+			/* Cmp((x >>u c1) & c2, c3) = Cmp(x & (c2 << c1), c3 << c1) */
+			ir_node *llr = get_Shr_right(ll);
+
+			if (is_Const(llr)) {
+				ir_tarval *c1 = get_Const_tarval(llr);
+				ir_tarval *c2 = get_Const_tarval(lr);
+				ir_tarval *c3 = get_Const_tarval(right);
+
+				assert(tarval_is_long(c1));
+				ir_mode *mode = get_irn_mode(left);
+				long     l1   = get_tarval_long(c1);
+				long     h2   = get_tarval_highest_bit(c2);
+				long     h3   = get_tarval_highest_bit(c3);
+				long     bits = get_mode_size_bits(mode);
+
+				if (l1 + h2 < bits && l1 + h3 < bits) {
+					dbg_info *dbg   = get_irn_dbg_info(left);
+					ir_node  *block = get_nodes_block(n);
+
+					ir_tarval *mask  = tarval_shl(c2, c1);
+					ir_tarval *value = tarval_shl(c3, c1);
+
+					left     = new_rd_And(dbg, block, get_Shr_left(ll), new_r_Const(irg, mask), mode);
+					right    = new_r_Const(irg, value);
+					relation = is_relation_equal ? ir_relation_equal : ir_relation_less_greater;
+					changed  = true;
 				}
 			}
 		}
@@ -5161,55 +5221,8 @@ is_bittest: {
 		}
 	}
 
-	if (((is_Shr(left) && is_Shr(right)) || (is_Shrs(left) && is_Shrs(right))) &&
-	    get_mode_arithmetic(mode) == irma_twos_complement) {
-		ir_node *const lr = get_binop_right(left);
-		ir_node *const rr = get_binop_right(right);
-		if (lr == rr && is_Const(lr)) {
-			bitinfo *const bl = get_bitinfo(left);
-			bitinfo *const br = get_bitinfo(right);
-			if (bl != NULL && br != NULL) {
-				ir_tarval *const lz  = bl->z;
-				ir_tarval *const lo  = bl->o;
-				ir_tarval *const rz  = br->z;
-				ir_tarval *const ro  = br->o;
-				ir_tarval *const min = get_mode_min(mode);
-				ir_tarval *const leq = tarval_eor(lz, lo);
-				ir_tarval *const req = tarval_eor(rz, ro);
-				if (tarval_is_null(tarval_and(tarval_or(leq, req), min))) {
-					ir_tarval *const c     = get_Const_tarval(lr);
-					ir_tarval *const one   = get_mode_one(mode);
-					ir_tarval *const mask  = tarval_sub(tarval_shl(one, c), one, NULL);
-					ir_tarval *const lmask = tarval_and(leq, mask);
-					ir_tarval *const rmask = tarval_and(req, mask);
-					if (tarval_is_null(tarval_or(lmask, rmask)) &&
-					    tarval_is_null(tarval_eor(lz, rz))) {
-						/* Cmp(x >> c, y >> c) -> Cmp(x,y) */
-						left  = get_binop_left(left);
-						right = get_binop_left(right);
-					}
-				}
-			}
-		}
-	}
-
 	/*
-	 * First step: normalize the compare op
-	 * by placing the constant on the right side
-	 * or moving the lower address node to the left.
-	 */
-	if (!operands_are_normalized(left, right)) {
-		ir_node *t = left;
-		left  = right;
-		right = t;
-
-		relation = get_inversed_relation(relation);
-		possible = get_inversed_relation(possible);
-		changed  = true;
-	}
-
-	/*
-	 * Second step: Try to reduce the magnitude
+	 * Fourth step: Try to reduce the magnitude
 	 * of a constant. This may help to generate better code
 	 * later and may help to normalize more compares.
 	 * Of course this is only possible for integer values.
