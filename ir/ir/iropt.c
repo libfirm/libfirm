@@ -5120,8 +5120,10 @@ cmp_x_eq_0:;
 		 * by the simpler Cmp(And(1bit, val), 0) negated pnc */
 		if (is_relation_equal || is_relation_less_greater
 		    || (!mode_is_signed(mode) && (relation & ir_relation_less_equal) == ir_relation_less)) {
-			ir_node *mask = get_And_right(left);
-			if (mask == right && is_single_bit(mask)) {
+			ir_node *ll = get_And_left(left);
+			ir_node *lr = get_And_right(left);
+			if ((ll == right && is_single_bit(ll)) ||
+			    (lr == right && is_single_bit(lr))) {
 				relation = is_relation_equal ? ir_relation_less_greater
 				                             : ir_relation_equal;
 				right                    = new_r_Const_null(irg, mode);
