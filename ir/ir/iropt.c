@@ -1294,25 +1294,6 @@ static ir_node *equivalent_node_And(ir_node *n)
 			DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_AND);
 			return n;
 		}
-
-		ir_mode *mode = get_irn_mode(n);
-		if (!mode_is_signed(mode) && is_Conv(a)) {
-			const ir_node *convop     = get_Conv_op(a);
-			const ir_mode *convopmode = get_irn_mode(convop);
-			if (!mode_is_signed(convopmode)) {
-				/* Check Conv(all_one) & Const = all_one */
-				ir_tarval       *one  = get_mode_all_one(convopmode);
-				ir_tarval       *conv = tarval_convert_to(one, mode);
-				const ir_tarval *tand = tarval_and(conv, tb);
-
-				if (tarval_is_all_one(tand)) {
-					/* Conv(X) & Const = X */
-					n = a;
-					DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_AND);
-					return n;
-				}
-			}
-		}
 	}
 	const ir_tarval *ta = value_of(a);
 	if (tarval_is_all_one(ta)) {
