@@ -2445,7 +2445,7 @@ static ir_node *transform_bitwise_distributive(ir_node *n)
 		ir_node       *b_op   = get_Conv_op(b);
 		ir_mode       *a_mode = get_irn_mode(a_op);
 		const ir_mode *b_mode = get_irn_mode(b_op);
-		if (a_mode == b_mode && (mode_is_int(a_mode) || a_mode == mode_b)) {
+		if (a_mode == b_mode && mode_is_int(a_mode)) {
 			ir_node *blk = get_nodes_block(n);
 			n = new_binop(n, blk, a_op, b_op);
 			n = new_r_Conv(blk, n, get_irn_mode(oldn));
@@ -4875,8 +4875,7 @@ static ir_node *transform_node_Cmp(ir_node *n)
 			ir_mode *mode_left  = get_irn_mode(op_left);
 			ir_mode *mode_right = get_irn_mode(op_right);
 
-			if (smaller_mode(mode_left, mode) && smaller_mode(mode_right, mode)
-					&& mode_left != mode_b && mode_right != mode_b) {
+			if (smaller_mode(mode_left, mode) && smaller_mode(mode_right, mode)) {
 				ir_node *block = get_nodes_block(n);
 
 				if (mode_left == mode_right) {
@@ -5084,7 +5083,7 @@ cmp_x_eq_0:;
 	    && is_Conv(left) && is_Const(right)) {
 		ir_node *op_left   = get_Conv_op(left);
 		ir_mode *mode_left = get_irn_mode(op_left);
-		if (smaller_mode(mode_left, mode) && mode_left != mode_b) {
+		if (smaller_mode(mode_left, mode)) {
 			ir_tarval *tv = get_Const_tarval(right);
 			int old_wrap_on_overflow = tarval_get_wrap_on_overflow();
 			tarval_set_wrap_on_overflow(false);
@@ -6275,21 +6274,15 @@ static ir_node *transform_node_Conv(ir_node *n)
 		}
 	}
 
-	if (mode != mode_b) {
-		/* Do NOT optimize mode_b Conv's, this leads to remaining
-		 * Phib nodes later, because the conv_b_lower operation
-		 * is instantly reverted, when it tries to insert a Convb.
-		 */
-		ir_node *c = NULL;
-		if (is_const_Phi(a)) {
-			c = apply_conv_on_phi(a, mode);
-		} else if (is_const_Mux(a)) {
-			c = apply_conv_on_mux(a, mode);
-		}
-		if (c) {
-			DBG_OPT_ALGSIM0(oldn, c, FS_OPT_CONST_PHI);
-			return c;
-		}
+	ir_node *c = NULL;
+	if (is_const_Phi(a)) {
+		c = apply_conv_on_phi(a, mode);
+	} else if (is_const_Mux(a)) {
+		c = apply_conv_on_mux(a, mode);
+	}
+	if (c) {
+		DBG_OPT_ALGSIM0(oldn, c, FS_OPT_CONST_PHI);
+		return c;
 	}
 
 	if (mode_is_reference(mode) &&

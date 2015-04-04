@@ -2358,8 +2358,6 @@ static ir_node *gen_Load(ir_node *node)
 			                            mode);
 		}
 	} else {
-		assert(mode != mode_b);
-
 		/* create a conv node with address mode for smaller modes */
 		if (get_mode_size_bits(mode) < 32) {
 			new_node = new_bd_ia32_Conv_I2I(dbgi, block, base, idx,
@@ -2579,7 +2577,7 @@ static ir_node *try_create_dest_am(ir_node *node)
 			ir_mode *pred_mode = get_irn_mode(conv_op);
 			if (!mode_needs_gp_reg(pred_mode))
 				break;
-			if (pred_mode == mode_b || bits <= get_mode_size_bits(pred_mode)) {
+			if (bits <= get_mode_size_bits(pred_mode)) {
 				val = conv_op;
 				continue;
 			}
@@ -3579,8 +3577,6 @@ static ir_node *gen_Mux(ir_node *node)
 	ir_node  *sel       = get_Mux_sel(node);
 	ir_mode  *mode      = get_irn_mode(node);
 
-	assert(get_irn_mode(sel) == mode_b);
-
 	int is_abs = ir_mux_is_abs(sel, mux_false, mux_true);
 	if (is_abs != 0) {
 		if (mode_needs_gp_reg(mode)) {
@@ -4052,11 +4048,6 @@ static ir_node *gen_Conv(ir_node *node)
 	assert(!mode_is_int(src_mode) || src_bits <= 32);
 	assert(!mode_is_int(tgt_mode) || tgt_bits <= 32);
 
-	/* modeB -> X should already be lowered by the lower_mode_b pass */
-	if (src_mode == mode_b) {
-		panic("ConvB not lowered %+F", node);
-	}
-
 	if (src_mode == tgt_mode) {
 		/* this should be optimized already, but who knows... */
 		DEBUG_ONLY(ir_fprintf(stderr, "Debug warning: conv %+F is pointless\n", node);)
@@ -4116,11 +4107,6 @@ static ir_node *gen_Conv(ir_node *node)
 				}
 				return res;
 			}
-		} else if (tgt_mode == mode_b) {
-			/* mode_b lowering already took care that we only have 0/1 values */
-			DB((dbg, LEVEL_1, "omitting unnecessary Conv(%+F, %+F) ...",
-			    src_mode, tgt_mode));
-			return be_transform_node(op);
 		} else {
 			/* to int */
 			if (src_bits >= tgt_bits) {

@@ -1281,9 +1281,6 @@ static void lower_Conv_to_Ll(ir_node *node)
 				res_high = new_r_Const_null(irg, low_signed);
 			}
 		}
-	} else if (imode == mode_b) {
-		res_low  = new_rd_Conv(dbg, block, op, low_unsigned);
-		res_high = new_r_Const_null(irg, low_signed);
 	} else {
 		ir_node *irn, *call;
 		ir_type *mtp = get_conv_type(imode, omode);
@@ -1324,12 +1321,6 @@ static void lower_Conv_from_Ll(ir_node *node)
 			op = new_rd_Conv(dbg, block, op, omode);
 
 		set_Conv_op(node, op);
-	} else if (omode == mode_b) {
-		/* llu ? true : false  <=> (low|high) ? true : false */
-		ir_mode *mode   = env.p.word_unsigned;
-		ir_node *ornode = new_rd_Or(dbg, block, entry->low_word,
-		                            entry->high_word, mode);
-		set_Conv_op(node, ornode);
 	} else {
 		ir_node *in[2];
 		if (env.p.big_endian) {

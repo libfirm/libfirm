@@ -1647,9 +1647,6 @@ static ir_node *gen_Conv(ir_node *node)
 	ir_mode  *src_mode = get_irn_mode(op);
 	ir_mode  *dst_mode = get_irn_mode(node);
 
-	if (src_mode == mode_b)
-		panic("ConvB not lowered %+F", node);
-
 	if (src_mode == dst_mode)
 		return be_transform_node(op);
 
@@ -1681,7 +1678,7 @@ static ir_node *gen_Conv(ir_node *node)
 			return create_itof(dbgi, block, new_op, dst_mode);
 		}
 	} else { /* complete in gp registers */
-		if (src_bits >= dst_bits || dst_mode == mode_b) {
+		if (src_bits >= dst_bits) {
 			/* kill unnecessary conv */
 			return be_transform_node(op);
 		}
