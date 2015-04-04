@@ -2883,15 +2883,13 @@ static ir_node *create_store(dbg_info *dbgi, ir_node *new_block,
 		                        addr->mem, new_op, op_mode);
 		mode = op_mode;
 	} else {
-		unsigned dest_bits = get_mode_size_bits(mode);
-		while (is_downconv(value)
-		       && get_mode_size_bits(get_irn_mode(value)) >= dest_bits) {
+		while (is_downconv(value)) {
 		    value = get_Conv_op(value);
 		}
 		ir_node *new_val = create_immediate_or_transform(value, 'i');
 		assert(mode != mode_b);
 
-		store = dest_bits == 8
+		store = get_mode_size_bits(mode) == 8
 			? new_bd_ia32_Store_8bit(dbgi, new_block, addr->base, addr->index, addr->mem, new_val)
 			: new_bd_ia32_Store     (dbgi, new_block, addr->base, addr->index, addr->mem, new_val);
 	}
