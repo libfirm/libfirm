@@ -869,23 +869,29 @@ static void set_am_attributes(ir_node *node, const ia32_address_mode_t *am)
 }
 
 /**
- * Check, if a given node is a Down-Conv, i.e. an integer Conv
- * from a mode with more bits to a mode with fewer bits.
+ * Skip integer truncations.
  *
- * @param node   the node
- * @return non-zero if node is a Down-Conv
+ * @param node         the node
+ * @param single_user  only skip, if a down-conv has a single user
+ * @return the node after skipping down-convs
  */
-static bool is_downconv(const ir_node *node)
+static ir_node *skip_downconv(ir_node *node, bool const single_user)
 {
-	if (!is_Conv(node))
-		return false;
-
-	ir_mode *src_mode  = get_irn_mode(get_Conv_op(node));
-	ir_mode *dest_mode = get_irn_mode(node);
-	return
-		mode_needs_gp_reg(src_mode)  &&
-		mode_needs_gp_reg(dest_mode) &&
-		get_mode_size_bits(dest_mode) <= get_mode_size_bits(src_mode);
+	for (;;) {
+		if (single_user && get_irn_n_edges(node) > 1) {
+			break;
+		} else if (is_Conv(node)) {
+			ir_node *const op        = get_Conv_op(node);
+			ir_mode *const src_mode  = get_irn_mode(op);
+			ir_mode *const dest_mode = get_irn_mode(node);
+			if (!mode_needs_gp_reg(src_mode) || !mode_needs_gp_reg(dest_mode) || get_mode_size_bits(dest_mode) > get_mode_size_bits(src_mode))
+				break;
+			node = op;
+		} else {
+			break;
+		}
+	}
+	return node;
 }
 
 /**
@@ -895,17 +901,10 @@ static bool is_downconv(const ir_node *node)
  */
 ir_node *ia32_skip_downconv(ir_node *node)
 {
-	while (is_downconv(node)) {
-		/* we only want to skip the conv when we're the only user
-		 * (because this test is used in the context of address-mode selection
-		 *  and we don't want to use address mode for multiple users) */
-		if (get_irn_n_edges(node) > 1)
-			break;
-
-		node = get_Conv_op(node);
-	}
-
-	return node;
+	/* we only want to skip the conv when we're the only user
+	 * (because this test is used in the context of address-mode selection
+	 *  and we don't want to use address mode for multiple users) */
+	return skip_downconv(node, true);
 }
 
 static bool is_float_downconv(const ir_node *node)
@@ -2883,9 +2882,7 @@ static ir_node *create_store(dbg_info *dbgi, ir_node *new_block,
 		                        addr->mem, new_op, op_mode);
 		mode = op_mode;
 	} else {
-		while (is_downconv(value)) {
-		    value = get_Conv_op(value);
-		}
+		value = skip_downconv(value, false);
 		ir_node *new_val = create_immediate_or_transform(value, 'i');
 		assert(mode != mode_b);
 
@@ -4002,9 +3999,7 @@ static ir_node *create_I2I_Conv(ir_mode *const src_mode, dbg_info *const dbgi, i
 	}
 #endif
 
-	while(is_downconv(op)) {
-		op = get_Conv_op(op);
-	}
+	op = skip_downconv(op, false);
 
 	if (be_upper_bits_clean(op, src_mode)) {
 		return be_transform_node(op);
