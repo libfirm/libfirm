@@ -41,11 +41,6 @@ typedef enum {
  */
 ir_entity *ia32_gen_fp_known_const(ia32_known_const_t kct);
 
-/**
- * Skip all Down-Conv's on a given node and return the resulting node.
- */
-ir_node *ia32_skip_downconv(ir_node *node);
-
 /** Initialize the ia32 instruction selector. */
 void ia32_init_transform(void);
 

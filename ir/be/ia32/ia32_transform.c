@@ -894,19 +894,6 @@ static ir_node *skip_downconv(ir_node *node, bool const single_user)
 	return node;
 }
 
-/**
- * Skip all Down-Conv's on a given node and return the resulting node.
- *
- * Moreover, we only skip Conv nodes that has at most one user.
- */
-ir_node *ia32_skip_downconv(ir_node *node)
-{
-	/* we only want to skip the conv when we're the only user
-	 * (because this test is used in the context of address-mode selection
-	 *  and we don't want to use address mode for multiple users) */
-	return skip_downconv(node, true);
-}
-
 static bool is_float_downconv(const ir_node *node)
 {
 	if (!is_Conv(node))
@@ -1044,9 +1031,9 @@ static void match_arguments(ia32_address_mode_t *am, ir_node *block,
 	/* we can simply skip downconvs for mode neutral nodes: the upper bits
 	 * can be random for these operations */
 	if (flags & match_mode_neutral) {
-		op2 = ia32_skip_downconv(op2);
+		op2 = skip_downconv(op2, true);
 		if (op1 != NULL) {
-			op1 = ia32_skip_downconv(op1);
+			op1 = skip_downconv(op1, true);
 		}
 	} else {
 		op2 = ia32_skip_sameconv(op2);
@@ -1350,7 +1337,7 @@ static ir_node *gen_shift_binop(ir_node *node, ir_node *op1, ir_node *op2,
 
 	ir_node *new_op1;
 	if (flags & match_mode_neutral) {
-		op1     = ia32_skip_downconv(op1);
+		op1     = skip_downconv(op1, true);
 		new_op1 = be_transform_node(op1);
 	} else {
 		op1 = ia32_skip_sameconv(op1);
@@ -1401,7 +1388,7 @@ static ir_node *gen_unop(ir_node *node, ir_node *op, construct_unop_func *func,
 {
 	assert(flags == 0 || flags == match_mode_neutral);
 	if (flags & match_mode_neutral) {
-		op = ia32_skip_downconv(op);
+		op = skip_downconv(op, true);
 	}
 
 	ir_node  *new_op    = be_transform_node(op);
