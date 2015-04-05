@@ -901,13 +901,8 @@ static int verify_node_Store(const ir_node *n)
 {
 	bool fine = check_mode(n, mode_T);
 	fine &= check_input_mode(n, n_Store_mem, "mem", mode_M);
-	fine &= check_input_func(n, n_Store_ptr, "ptr", mode_is_reference,
-	                         "reference");
-	ir_mode *storemode = get_irn_mode(get_Store_value(n));
-	if (!mode_is_data_not_b(storemode)) {
-		warn(n, "store mode is not a data mode, but %+F", storemode);
-		fine = false;
-	}
+	fine &= check_input_func(n, n_Store_ptr, "ptr", mode_is_reference, "reference");
+	fine &= check_input_func(n, n_Store_value, "value", mode_is_data_not_b, "data_not_b");
 	return fine;
 }
 
