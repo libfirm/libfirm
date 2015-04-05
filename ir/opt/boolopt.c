@@ -228,7 +228,7 @@ static ir_node *bool_and(cond_pair* const cpair, ir_node *dst_block)
 			}
 			c    = new_r_Const(irg, tv_lo);
 			sub  = new_r_Sub(block, x, c, mode);
-			subc = new_r_Sub(block, new_r_Const(irg, tv_hi), c, mode);
+			subc = new_r_Const(irg, tarval_sub(tv_hi, tv_lo, NULL));
 			cmp  = new_r_Cmp(block, sub, subc, rel_hi);
 			return cmp;
 		}
@@ -354,7 +354,7 @@ static ir_node *bool_or(cond_pair *const cpair, ir_node *dst_block)
 			}
 			c    = new_r_Const(irg, tv_lo);
 			sub  = new_r_Sub(block, x, c, mode);
-			subc = new_r_Sub(block, new_r_Const(irg, tv_hi), c, mode);
+			subc = new_r_Const(irg, tarval_sub(tv_hi, tv_lo, NULL));
 			cmp  = new_r_Cmp(block, sub, subc, rel_hi);
 			return cmp;
 		}
