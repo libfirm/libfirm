@@ -2108,8 +2108,6 @@ static ir_node *gen_Minus(ir_node *node)
 static ir_node *gen_Not(ir_node *node)
 {
 	assert(get_irn_mode(node) != mode_b); /* should be lowered already */
-	assert(!mode_is_float(get_irn_mode(node)));
-
 	ir_node *op = get_Not_op(node);
 	return gen_unop(node, op, new_bd_ia32_Not, match_mode_neutral);
 }
