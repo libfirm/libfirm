@@ -194,7 +194,7 @@ static ir_node *bool_and(cond_pair* const cpair, ir_node *dst_block)
 			return make_Cmp(dst_block, cmp_lo, ir_relation_less);
 		}
 	} else if ((rel_lo == ir_relation_greater || rel_lo == ir_relation_greater_equal) &&
-	           (rel_hi == ir_relation_less || rel_lo == ir_relation_less_equal) &&
+	           (rel_hi == ir_relation_less || rel_hi == ir_relation_less_equal) &&
 	           get_mode_arithmetic(mode) == irma_twos_complement) {
 		/* works for two-complements only */
 		/* x >|\= lo && x <|<= hi ==> (x - lo) <u|<=u (hi-lo) */
@@ -320,7 +320,7 @@ static ir_node *bool_or(cond_pair *const cpair, ir_node *dst_block)
 			return make_Cmp(dst_block, cmp_lo, ir_relation_greater_equal);
 		}
 	} else if ((rel_lo == ir_relation_less || rel_lo == ir_relation_less_equal) &&
-	           (rel_hi == ir_relation_greater || rel_lo == ir_relation_greater_equal) &&
+	           (rel_hi == ir_relation_greater || rel_hi == ir_relation_greater_equal) &&
 	           get_mode_arithmetic(mode) == irma_twos_complement) {
 		/* works for two-complements only */
 		/* x <|<= lo  || x >|>= hi ==> (x - lo) >u|>=u (hi-lo) */
