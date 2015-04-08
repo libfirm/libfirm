@@ -1348,11 +1348,10 @@ static ir_node *equivalent_node_Conv(ir_node *n)
 				ir_tarval  *const bz          = bb->z;
 				const long        highest_bit = get_tarval_highest_bit(bz);
 				const long        mode_bits   = get_mode_size_bits(a_mode);
-				const int         both_signed = mode_is_signed(a_mode) && mode_is_signed(b_mode);
-
-				/* If both modes are signed, the highest bit of the smaller mode
+				const int         is_sext     = mode_is_signed(a_mode);
+				/* If it is a sign extension, the highest bit of the smaller mode
 				 * must be zero to ensure that no sign extension occurs. */
-				if (highest_bit + both_signed < mode_bits) {
+				if (highest_bit + is_sext < mode_bits) {
 					n = b;
 					DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_CONV);
 					return n;
