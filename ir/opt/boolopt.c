@@ -584,7 +584,10 @@ restart:
 			continue;
 
 		ir_node *const cond_selector = get_Cond_selector(cond);
-		ir_node *const lower_pred    = get_Block_cfgpred_block(lower_block, 0);
+		if (!is_Cond(cond))
+			continue;
+
+		ir_node *const lower_pred = get_Block_cfgpred_block(lower_block, 0);
 		if (lower_pred == NULL)
 			continue;
 		for (up_idx = 0; up_idx < n_cfgpreds; ++up_idx) {
@@ -610,7 +613,10 @@ restart:
 				continue;
 
 			/* all fine, try it */
-			ir_node *const upper_cond          = get_Proj_pred(upper_cf);
+			ir_node *const upper_cond = get_Proj_pred(upper_cf);
+			if (!is_Cond(upper_cond))
+				continue;
+
 			ir_node *const upper_cond_selector = get_Cond_selector(upper_cond);
 			if (!find_cond_pair(cond_selector, upper_cond_selector, &cpair))
 				continue;
