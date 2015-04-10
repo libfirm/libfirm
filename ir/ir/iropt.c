@@ -5136,8 +5136,8 @@ cmp_x_eq_0:;
 		changed  = true;
 	}
 
-	if (is_And(left)) {
-		if (is_Const(right) && (is_relation_equal || is_relation_less_greater)) {
+	if (is_And(left) && (is_relation_equal || is_relation_less_greater)) {
+		if (is_Const(right)) {
 			ir_node *ll = get_And_left(left);
 			ir_node *lr = get_And_right(left);
 			if (is_Shr(ll) && is_Const(lr)) {
@@ -5174,8 +5174,7 @@ cmp_x_eq_0:;
 
 		/* a complicated Cmp(And(1bit, val), 1bit) "bit-testing" can be replaced
 		 * by the simpler Cmp(And(1bit, val), 0) negated pnc */
-		if ((is_relation_equal || is_relation_less_greater)
-		    && (get_commutative_other_op(left, right) && is_single_bit(right))) {
+		if (get_commutative_other_op(left, right) && is_single_bit(right)) {
 			relation = is_relation_equal ? ir_relation_less_greater
 			                             : ir_relation_equal;
 			right                    = new_r_Const_null(irg, mode);
@@ -5186,8 +5185,7 @@ cmp_x_eq_0:;
 			goto is_bittest;
 		}
 
-		if (is_Const(right) && is_Const_null(right) &&
-		    (is_relation_equal || is_relation_less_greater)) {
+		if (is_Const(right) && is_Const_null(right)) {
 is_bittest: {
 			/* instead of flipping the bit before the bit-test operation negate
 			 * pnc */
