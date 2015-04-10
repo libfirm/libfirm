@@ -660,6 +660,18 @@ static ir_tarval *computed_value_Confirm(const ir_node *n)
 	return value_of(value);
 }
 
+static ir_node *get_commutative_other_op(const ir_node *const node, const ir_node *const op)
+{
+	assert(is_op_commutative(get_irn_op(node)));
+	ir_node *const l = get_binop_left(node);
+	ir_node *const r = get_binop_right(node);
+	if (l == op)
+		return r;
+	if (r == op)
+		return l;
+	return NULL;
+}
+
 /**
  * gives a (conservative) estimation of possible relation when comparing
  * left+right
@@ -737,6 +749,10 @@ ir_relation ir_get_possible_cmp_relations(const ir_node *left,
 	/* Alloc nodes never return null (but throw an exception) */
 	if (is_Alloc(left) && tarval_is_null(tv_r))
 		possible &= ~ir_relation_equal;
+	if (is_And(left) && !mode_is_signed(mode) && get_commutative_other_op(left, right))
+		possible &= ~ir_relation_greater;
+	if (is_And(right) && !mode_is_signed(mode) && get_commutative_other_op(right, left))
+		possible &= ~ir_relation_less;
 	/* stuff known through confirm nodes */
 	if (is_Confirm(left) && get_Confirm_bound(left) == right) {
 		possible &= get_Confirm_relation(left);
@@ -959,18 +975,6 @@ static ir_node *equivalent_node_neutral_zero(ir_node *n)
 	}
 
 	return n;
-}
-
-static ir_node *get_commutative_other_op(ir_node *const node, ir_node *const op)
-{
-	assert(is_op_commutative(get_irn_op(node)));
-	ir_node *const l = get_binop_left(node);
-	ir_node *const r = get_binop_right(node);
-	if (l == op)
-		return r;
-	if (r == op)
-		return l;
-	return NULL;
 }
 
 /**
@@ -5171,8 +5175,7 @@ cmp_x_eq_0:;
 	if (mode_is_int(mode) && is_And(left)) {
 		/* a complicated Cmp(And(1bit, val), 1bit) "bit-testing" can be replaced
 		 * by the simpler Cmp(And(1bit, val), 0) negated pnc */
-		if (is_relation_equal || is_relation_less_greater
-		    || (!mode_is_signed(mode) && (relation & ir_relation_less_equal) == ir_relation_less)) {
+		if (is_relation_equal || is_relation_less_greater) {
 			ir_node *ll = get_And_left(left);
 			ir_node *lr = get_And_right(left);
 			if ((ll == right && is_single_bit(ll)) ||
