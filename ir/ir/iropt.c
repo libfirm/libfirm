@@ -4848,7 +4848,6 @@ static ir_node *transform_node_Cmp(ir_node *n)
 	ir_node    *right    = get_Cmp_right(n);
 	ir_graph   *irg      = get_irn_irg(n);
 	ir_mode    *mode     = get_irn_mode(left);
-	ir_tarval  *tv       = NULL;
 	bool        changed  = false;
 	bool        changedc = false;
 	ir_relation relation = get_Cmp_relation(n);
@@ -5197,7 +5196,7 @@ is_bittest: {
 	 * later and may help to normalize more compares.
 	 * Of course this is only possible for integer values.
 	 */
-	tv = value_of(right);
+	ir_tarval *tv = value_of(right);
 	if (tarval_is_constant(tv)) {
 		ir_mode *mode = get_irn_mode(right);
 
