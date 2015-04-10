@@ -5172,7 +5172,7 @@ cmp_x_eq_0:;
 		changed  = true;
 	}
 
-	if (mode_is_int(mode) && is_And(left)) {
+	if (is_And(left)) {
 		/* a complicated Cmp(And(1bit, val), 1bit) "bit-testing" can be replaced
 		 * by the simpler Cmp(And(1bit, val), 0) negated pnc */
 		if (is_relation_equal || is_relation_less_greater) {
