@@ -5080,9 +5080,9 @@ cmp_x_eq_0:;
 	 */
 
 	/* Remove unnecessary conversions */
-	if ((!mode_is_float(mode)
-	     || be_get_backend_param()->mode_float_arithmetic == NULL)
-	    && is_Conv(left) && is_Const(right)) {
+	if (is_Conv(left) && is_Const(right)
+	    && (!mode_is_float(mode)
+	        || be_get_backend_param()->mode_float_arithmetic == NULL)) {
 		ir_node *op_left   = get_Conv_op(left);
 		ir_mode *mode_left = get_irn_mode(op_left);
 		if (smaller_mode(mode_left, mode)) {
