@@ -5174,20 +5174,16 @@ cmp_x_eq_0:;
 
 		/* a complicated Cmp(And(1bit, val), 1bit) "bit-testing" can be replaced
 		 * by the simpler Cmp(And(1bit, val), 0) negated pnc */
-		if (is_relation_equal || is_relation_less_greater) {
-			ir_node *ll = get_And_left(left);
-			ir_node *lr = get_And_right(left);
-			if ((ll == right && is_single_bit(ll)) ||
-			    (lr == right && is_single_bit(lr))) {
-				relation = is_relation_equal ? ir_relation_less_greater
-				                             : ir_relation_equal;
-				right                    = new_r_Const_null(irg, mode);
-				possible                 = ir_get_possible_cmp_relations(left, right);
-				is_relation_equal        = relation == ir_relation_equal;
-				is_relation_less_greater = relation != ir_relation_equal;
-				changed                  = true;
-				goto is_bittest;
-			}
+		if ((is_relation_equal || is_relation_less_greater)
+		    && (get_commutative_other_op(left, right) && is_single_bit(right))) {
+			relation = is_relation_equal ? ir_relation_less_greater
+			                             : ir_relation_equal;
+			right                    = new_r_Const_null(irg, mode);
+			possible                 = ir_get_possible_cmp_relations(left, right);
+			is_relation_equal        = relation == ir_relation_equal;
+			is_relation_less_greater = relation != ir_relation_equal;
+			changed                  = true;
+			goto is_bittest;
 		}
 
 		if (is_Const(right) && is_Const_null(right) &&
