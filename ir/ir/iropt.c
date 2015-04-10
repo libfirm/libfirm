@@ -5125,42 +5125,6 @@ cmp_x_eq_0:;
 		}
 	}
 
-	if (is_And(left) && is_Const(right)
-	    && (is_relation_equal || is_relation_less_greater)) {
-		ir_node *ll = get_And_left(left);
-		ir_node *lr = get_And_right(left);
-		if (is_Shr(ll) && is_Const(lr)) {
-			/* Cmp((x >>u c1) & c2, c3) = Cmp(x & (c2 << c1), c3 << c1) */
-			ir_node *llr = get_Shr_right(ll);
-
-			if (is_Const(llr)) {
-				ir_tarval *c1 = get_Const_tarval(llr);
-				ir_tarval *c2 = get_Const_tarval(lr);
-				ir_tarval *c3 = get_Const_tarval(right);
-
-				assert(tarval_is_long(c1));
-				ir_mode *mode = get_irn_mode(left);
-				long     l1   = get_tarval_long(c1);
-				long     h2   = get_tarval_highest_bit(c2);
-				long     h3   = get_tarval_highest_bit(c3);
-				long     bits = get_mode_size_bits(mode);
-
-				if (l1 + h2 < bits && l1 + h3 < bits) {
-					dbg_info *dbg   = get_irn_dbg_info(left);
-					ir_node  *block = get_nodes_block(n);
-
-					ir_tarval *mask  = tarval_shl(c2, c1);
-					ir_tarval *value = tarval_shl(c3, c1);
-
-					left     = new_rd_And(dbg, block, get_Shr_left(ll), new_r_Const(irg, mask), mode);
-					right    = new_r_Const(irg, value);
-					relation = is_relation_equal ? ir_relation_equal : ir_relation_less_greater;
-					changed  = true;
-				}
-			}
-		}
-	}
-
 	/* Cmp(Eor(x, y), 0) <=> Cmp(Sub(x, y), 0) <=> Cmp(x, y)
 	 * at least for the ==0, !=0 cases */
 	if (mode_is_int(mode) && is_cmp_equality_zero(n, relation) &&
@@ -5173,6 +5137,41 @@ cmp_x_eq_0:;
 	}
 
 	if (is_And(left)) {
+		if (is_Const(right) && (is_relation_equal || is_relation_less_greater)) {
+			ir_node *ll = get_And_left(left);
+			ir_node *lr = get_And_right(left);
+			if (is_Shr(ll) && is_Const(lr)) {
+				/* Cmp((x >>u c1) & c2, c3) = Cmp(x & (c2 << c1), c3 << c1) */
+				ir_node *llr = get_Shr_right(ll);
+
+				if (is_Const(llr)) {
+					ir_tarval *c1 = get_Const_tarval(llr);
+					ir_tarval *c2 = get_Const_tarval(lr);
+					ir_tarval *c3 = get_Const_tarval(right);
+
+					assert(tarval_is_long(c1));
+					ir_mode *mode = get_irn_mode(left);
+					long     l1   = get_tarval_long(c1);
+					long     h2   = get_tarval_highest_bit(c2);
+					long     h3   = get_tarval_highest_bit(c3);
+					long     bits = get_mode_size_bits(mode);
+
+					if (l1 + h2 < bits && l1 + h3 < bits) {
+						dbg_info *dbg   = get_irn_dbg_info(left);
+						ir_node  *block = get_nodes_block(n);
+
+						ir_tarval *mask  = tarval_shl(c2, c1);
+						ir_tarval *value = tarval_shl(c3, c1);
+
+						left     = new_rd_And(dbg, block, get_Shr_left(ll), new_r_Const(irg, mask), mode);
+						right    = new_r_Const(irg, value);
+						relation = is_relation_equal ? ir_relation_equal : ir_relation_less_greater;
+						changed  = true;
+					}
+				}
+			}
+		}
+
 		/* a complicated Cmp(And(1bit, val), 1bit) "bit-testing" can be replaced
 		 * by the simpler Cmp(And(1bit, val), 0) negated pnc */
 		if (is_relation_equal || is_relation_less_greater) {
