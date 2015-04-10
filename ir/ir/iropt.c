@@ -5182,11 +5182,9 @@ cmp_x_eq_0:;
 			is_relation_equal        = relation == ir_relation_equal;
 			is_relation_less_greater = relation != ir_relation_equal;
 			changed                  = true;
-			goto is_bittest;
 		}
 
 		if (is_Const(right) && is_Const_null(right)) {
-is_bittest: {
 			/* instead of flipping the bit before the bit-test operation negate
 			 * pnc */
 			ir_node *and0 = get_And_left(left);
@@ -5205,7 +5203,6 @@ is_bittest: {
 						changed                  = true;
 					}
 				}
-			}
 			}
 		}
 	}
