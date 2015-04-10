@@ -5097,6 +5097,30 @@ cmp_x_eq_0:;
 		}
 	}
 
+	if (is_Proj(left) && is_Const(right) && is_Const_null(right) && (is_relation_equal || is_relation_less_greater)) {
+		ir_node *op = get_Proj_pred(left);
+
+		if (is_Mod(op) && get_Proj_num(left) == pn_Mod_res) {
+			ir_node *c = get_binop_right(op);
+
+			if (is_Const(c)) {
+				ir_tarval *tv = get_Const_tarval(c);
+
+				if (get_tarval_popcount(tv) == 1) {
+					/* special case: (x % 2^n) CMP 0 ==> x & (2^n-1) CMP 0 */
+					ir_node  *v    = get_binop_left(op);
+					ir_node  *blk  = get_nodes_block(op);
+					ir_mode  *mode = get_irn_mode(v);
+
+					tv      = tarval_sub(tv, get_mode_one(mode), NULL);
+					left    = new_rd_And(get_irn_dbg_info(op), blk, v, new_r_Const(irg, tv), mode);
+					changed = true;
+					DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_MOD_TO_AND);
+				}
+			}
+		}
+	}
+
 	if (is_And(left) && is_Const(right)
 	    && (is_relation_equal || is_relation_less_greater)) {
 		ir_node *ll = get_And_left(left);
@@ -5596,30 +5620,6 @@ reduced_tv:
 	if (changedc) {     /* need a new Const */
 		right   = new_r_Const(irg, tv);
 		changed = true;
-	}
-
-	if ((is_relation_equal || is_relation_less_greater) && is_Const(right) && is_Const_null(right) && is_Proj(left)) {
-		ir_node *op = get_Proj_pred(left);
-
-		if (is_Mod(op) && get_Proj_num(left) == pn_Mod_res) {
-			ir_node *c = get_binop_right(op);
-
-			if (is_Const(c)) {
-				ir_tarval *tv = get_Const_tarval(c);
-
-				if (get_tarval_popcount(tv) == 1) {
-					/* special case: (x % 2^n) CMP 0 ==> x & (2^n-1) CMP 0 */
-					ir_node  *v    = get_binop_left(op);
-					ir_node  *blk  = get_nodes_block(op);
-					ir_mode  *mode = get_irn_mode(v);
-
-					tv      = tarval_sub(tv, get_mode_one(mode), NULL);
-					left    = new_rd_And(get_irn_dbg_info(op), blk, v, new_r_Const(irg, tv), mode);
-					changed = true;
-					DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_MOD_TO_AND);
-				}
-			}
-		}
 	}
 
 	if (changed) {
