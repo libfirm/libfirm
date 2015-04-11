@@ -6506,16 +6506,15 @@ bool ir_is_optimizable_mux(const ir_node *sel, const ir_node *mux_false,
 	/* this code should return true each time transform_node_Mux would
 	 * optimize the Mux completely away */
 
-	ir_mode *mode = get_irn_mode(mux_false);
+	ir_mode *const mode = get_irn_mode(mux_false);
 	if (get_mode_arithmetic(mode) == irma_twos_complement
 	    && ir_mux_is_abs(sel, mux_false, mux_true)) {
 		/* abs(x) = x^(x >>s 31) - (x >>s 31) */
 		return true;
 	}
 
-	const ir_node *f         = mux_false;
-	const ir_node *t         = mux_true;
-	const ir_mode *dest_mode = get_irn_mode(f);
+	ir_node const *f = mux_false;
+	ir_node const *t = mux_true;
 
 	if (is_Cmp(sel)) {
 		const ir_node *cmp_l    = get_Cmp_left(sel);
@@ -6539,7 +6538,7 @@ bool ir_is_optimizable_mux(const ir_node *sel, const ir_node *mux_false,
 		    get_mode_arithmetic(cmp_mode) == irma_twos_complement) {
 			if (is_Const(t)) {
 				if (is_Const_one(t)) {
-					if (ir_is_optimizable_mux_set(sel, relation, dest_mode)) {
+					if (ir_is_optimizable_mux_set(sel, relation, mode)) {
 						return true;
 					}
 				} else if (is_Const_all_one(t) && is_Const(cmp_r) && is_Const_null(cmp_r) &&
