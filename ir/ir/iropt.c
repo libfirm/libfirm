@@ -6542,7 +6542,7 @@ bool ir_is_optimizable_mux(const ir_node *sel, const ir_node *mux_false,
 						return true;
 					}
 				} else if (is_Const_all_one(t) && is_Const(cmp_r) && is_Const_null(cmp_r) &&
-					   mode_is_signed(mode) && get_mode_arithmetic(mode) == irma_twos_complement) {
+					   mode_is_signed(mode)) {
 					ir_relation possible = ir_get_possible_cmp_relations(cmp_l, cmp_r);
 					if (get_complementary_relations(ir_relation_less, relation, possible) != ir_relation_false) {
 						/* Mux(a >= 0, 0, 0xFFFFFFFF) => ~a >>s 31 */
