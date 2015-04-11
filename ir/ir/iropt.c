@@ -783,6 +783,27 @@ static bool is_relation(ir_relation relation, ir_relation cmp_relation, ir_relat
 }
 
 /**
+ * Check whether we can use @p relation or its ordered complement instead of @p
+ * cmp_relation, if only somre relations are @p possible.
+ *
+ * @param relation      The relation to check for
+ * @param cmp_relation  The current relation of the Cmp
+ * @param possible      The possible relations of the Cmp
+ * @return The replacement relation or ir_relation_false, if neither is
+ *         possible.
+ */
+static ir_relation get_complementary_relations(ir_relation const relation, ir_relation const cmp_relation, ir_relation const possible)
+{
+	assert(possible != ir_relation_false);
+	if (is_relation(relation, cmp_relation, possible))
+		return relation;
+	ir_relation const compl = relation ^ ir_relation_less_equal_greater;
+	if (is_relation(compl, cmp_relation, possible))
+		return compl;
+	return ir_relation_false;
+}
+
+/**
  * Return the value of a Cmp.
  *
  * The basic idea here is to determine which relations are possible and which
@@ -803,12 +824,9 @@ static ir_tarval *computed_value_Cmp(const ir_node *cmp)
 		return tarval_b_true;
 
 	/* we have some special rules for == 0 and != 0 */
-	bool is_relation_equal        = is_relation(ir_relation_equal, relation, possible);
-	bool is_relation_less_greater = is_relation(ir_relation_less_greater, relation, possible);
-	if ((is_relation_equal || is_relation_less_greater) &&
-	    is_Const(right) && is_Const_null(right) && value_not_null(left, NULL)) {
-		return is_relation_equal ? tarval_b_false : tarval_b_true;
-	}
+	ir_relation const rel_eq = get_complementary_relations(ir_relation_equal, relation, possible);
+	if (rel_eq != ir_relation_false && is_Const(right) && is_Const_null(right) && value_not_null(left, NULL))
+		return rel_eq != ir_relation_equal ? tarval_b_true : tarval_b_false;
 
 	return computed_value_Cmp_Confirm(cmp, left, right, relation);
 }
@@ -2275,8 +2293,7 @@ static bool is_cmp_equality_zero(const ir_node *node, ir_relation relation)
 	const ir_node *left     = get_Cmp_left(node);
 	ir_relation    possible = ir_get_possible_cmp_relations(left, right);
 
-	return is_relation(ir_relation_equal, relation, possible) ||
-	       is_relation(ir_relation_less_greater, relation, possible);
+	return get_complementary_relations(ir_relation_equal, relation, possible) != ir_relation_false;
 }
 
 static bool is_binop_const(ir_node *const irn, ir_node *const left, ir_tarval *const val)
@@ -4912,11 +4929,10 @@ static ir_node *transform_node_Cmp(ir_node *n)
 	}
 
 	/* remove operation on both sides if possible */
-	bool is_relation_equal        = is_relation(ir_relation_equal, relation, possible);
-	bool is_relation_less_greater = is_relation(ir_relation_less_greater, relation, possible);
+	ir_relation rel_eq = get_complementary_relations(ir_relation_equal, relation, possible);
 	/* The following operations are NOT safe for floating point operations, for instance
 	 * 1.0 + inf == 2.0 + inf, =/=> x == y */
-	if ((is_relation_equal || is_relation_less_greater) && mode_is_int(mode)) {
+	if (rel_eq != ir_relation_false && mode_is_int(mode)) {
 		unsigned const lop = get_irn_opcode(left);
 		if (lop == get_irn_opcode(right)) {
 			/* same operation on both sides, try to remove */
@@ -5002,7 +5018,7 @@ static ir_node *transform_node_Cmp(ir_node *n)
 cmp_x_eq_0:
 				left     = x;
 				right    = new_r_Const_null(irg, mode);
-				relation = is_relation_equal ? ir_relation_equal : ir_relation_less_greater;
+				relation = rel_eq;
 				changed  = true;
 				DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_OP_OP);
 			}
@@ -5082,7 +5098,7 @@ cmp_x_eq_0:
 		}
 	}
 
-	if (is_Proj(left) && is_Const(right) && is_Const_null(right) && (is_relation_equal || is_relation_less_greater)) {
+	if (is_Proj(left) && is_Const(right) && is_Const_null(right) && rel_eq != ir_relation_false) {
 		ir_node *op = get_Proj_pred(left);
 
 		if (is_Mod(op) && get_Proj_num(left) == pn_Mod_res) {
@@ -5112,12 +5128,11 @@ cmp_x_eq_0:
 	    (is_Eor(left) || is_Sub(left) || is_Or_Eor_Add(left))) {
 		right    = get_binop_right(left);
 		left     = get_binop_left(left);
-		relation = is_relation_equal ? ir_relation_equal
-		                             : ir_relation_less_greater;
+		relation = rel_eq;
 		changed  = true;
 	}
 
-	if (is_And(left) && (is_relation_equal || is_relation_less_greater)) {
+	if (is_And(left) && rel_eq != ir_relation_false) {
 		if (is_Const(right)) {
 			ir_node *ll = get_And_left(left);
 			ir_node *lr = get_And_right(left);
@@ -5146,7 +5161,7 @@ cmp_x_eq_0:
 
 						left     = new_rd_And(dbg, block, get_Shr_left(ll), new_r_Const(irg, mask), mode);
 						right    = new_r_Const(irg, value);
-						relation = is_relation_equal ? ir_relation_equal : ir_relation_less_greater;
+						relation = rel_eq;
 						changed  = true;
 					}
 				}
@@ -5156,13 +5171,11 @@ cmp_x_eq_0:
 		/* a complicated Cmp(And(1bit, val), 1bit) "bit-testing" can be replaced
 		 * by the simpler Cmp(And(1bit, val), 0) negated pnc */
 		if (get_commutative_other_op(left, right) && is_single_bit(right)) {
-			relation = is_relation_equal ? ir_relation_less_greater
-			                             : ir_relation_equal;
-			right                    = new_r_Const_null(irg, mode);
-			possible                 = ir_get_possible_cmp_relations(left, right);
-			is_relation_equal        = relation == ir_relation_equal;
-			is_relation_less_greater = relation != ir_relation_equal;
-			changed                  = true;
+			rel_eq  ^= ir_relation_less_equal_greater;
+			relation = rel_eq;
+			right    = new_r_Const_null(irg, mode);
+			possible = ir_get_possible_cmp_relations(left, right);
+			changed  = true;
 		}
 
 		if (is_Const(right) && is_Const_null(right)) {
@@ -5177,11 +5190,10 @@ cmp_x_eq_0:
 					if (flipped != NULL) {
 						dbg_info *dbgi  = get_irn_dbg_info(left);
 						ir_node  *block = get_nodes_block(left);
-						relation                 = get_negated_relation(relation);
-						is_relation_equal        = is_relation(ir_relation_equal, relation, possible);
-						is_relation_less_greater = is_relation(ir_relation_less_greater, relation, possible);
-						left                     = new_rd_And(dbgi, block, flipped, and1, mode);
-						changed                  = true;
+						relation = get_negated_relation(relation);
+						rel_eq   = get_complementary_relations(ir_relation_equal, relation, possible);
+						left     = new_rd_And(dbgi, block, flipped, and1, mode);
+						changed  = true;
 					}
 				}
 			}
@@ -5246,13 +5258,10 @@ cmp_x_eq_0:
 			 * win. (on the other side it makes detection/creation of fabs hard)
 			 */
 			if (get_mode_size_bits(mode) > get_mode_size_bits(op_mode) &&
-			    (is_relation_equal || is_relation_less_greater ||
-			     mode_is_signed(mode) || !mode_is_signed(op_mode)) &&
+			    (rel_eq != ir_relation_false || mode_is_signed(mode) || !mode_is_signed(op_mode)) &&
 			    !mode_is_float(op_mode)) {
-				if (!mode_is_signed(mode) && mode_is_signed(op_mode)) {
-					relation = is_relation_equal ? ir_relation_equal
-					                             : ir_relation_less_greater;
-				}
+				if (!mode_is_signed(mode) && mode_is_signed(op_mode))
+					relation = rel_eq;
 				tv       = get_mode_null(op_mode);
 				left     = op;
 				mode     = op_mode;
@@ -5275,7 +5284,7 @@ cmp_x_eq_0:
 				bitinfo   *b   = get_bitinfo(op);
 				ir_tarval *max = get_mode_max(mode);
 				if (!mode_overflow_on_unary_Minus(mode) ||
-				    (mode_is_int(mode) && (is_relation_equal || is_relation_less_greater)) ||
+				    (mode_is_int(mode) && rel_eq != ir_relation_false) ||
 				    (get_mode_arithmetic(mode) == irma_twos_complement && b != NULL &&
 				     (!tarval_is_all_one(tarval_or(max, b->z)) ||
 				      !tarval_is_null(tarval_and(b->o, max))))) {
@@ -5283,9 +5292,8 @@ cmp_x_eq_0:
 
 					if (tarval_is_constant(tv)) {
 						left = op;
-						if (mode_is_int(mode) && (is_relation_equal || is_relation_less_greater)) {
-							relation = is_relation_equal ? ir_relation_equal
-							                             : ir_relation_less_greater;
+						if (mode_is_int(mode) && rel_eq != ir_relation_false) {
+							relation = rel_eq;
 						} else {
 							relation = get_inversed_relation(relation);
 						}
@@ -5293,14 +5301,13 @@ cmp_x_eq_0:
 						DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_OP_C);
 					}
 				}
-			} else if (is_Not(left) && (is_relation_equal || is_relation_less_greater)) {
+			} else if (is_Not(left) && rel_eq != ir_relation_false) {
 				/* Not(a) ==/!= c  ==>  a ==/!= Not(c) */
 				tv = tarval_not(tv);
 
 				if (tarval_is_constant(tv)) {
 					left     = get_Not_op(left);
-					relation = is_relation_equal ? ir_relation_equal
-						                     : ir_relation_less_greater;
+					relation = rel_eq;
 					changedc = true;
 					DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_OP_C);
 				}
@@ -5360,15 +5367,14 @@ cmp_x_eq_0:
 
 reduced_tv:
 					assert(tarval_is_constant(tv));
-					relation                 ^= ir_relation_equal;
-					is_relation_equal         = is_relation(ir_relation_equal, relation, possible);
-					is_relation_less_greater  = is_relation(ir_relation_less_greater, relation, possible);
-					changedc                  = true;
+					relation ^= ir_relation_equal;
+					rel_eq    = get_complementary_relations(ir_relation_equal, relation, possible);
+					changedc  = true;
 					DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_CNST_MAGN);
 				}
 
 				/* the following reassociations work only for == and != */
-				if (is_relation_equal || is_relation_less_greater) {
+				if (rel_eq != ir_relation_false) {
 					if (tarval_is_constant(tv)) {
 						if (is_Sub(left)) {
 							/* a - c1 ==/!= c2  ==>  a ==/!= c2 + c1 */
@@ -5380,8 +5386,7 @@ reduced_tv:
 
 								if (tarval_is_constant(tv2)) {
 									left     = get_Sub_left(left);
-									relation = is_relation_equal ? ir_relation_equal
-									                             : ir_relation_less_greater;
+									relation = rel_eq;
 									tv       = tv2;
 									changedc = true;
 									DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_OP_C);
@@ -5395,8 +5400,7 @@ reduced_tv:
 								tv2 = tarval_sub(tv, tv2, NULL);
 								if (tarval_is_constant(tv2)) {
 									left     = get_binop_left(left);
-									relation = is_relation_equal ? ir_relation_equal
-									                             : ir_relation_less_greater;
+									relation = rel_eq;
 									tv       = tv2;
 									changedc = true;
 									DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_OP_C);
@@ -5408,8 +5412,7 @@ reduced_tv:
 
 							if (tarval_is_constant(tv2)) {
 								left     = get_Minus_op(left);
-								relation = is_relation_equal ? ir_relation_equal
-								                             : ir_relation_less_greater;
+								relation = rel_eq;
 								tv       = tv2;
 								changedc = true;
 								DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_OP_C);
@@ -5419,7 +5422,7 @@ reduced_tv:
 				}
 			}
 
-			if (is_relation_equal || is_relation_less_greater) {
+			if (rel_eq != ir_relation_false) {
 				switch (get_irn_opcode(left)) {
 					ir_node *c1;
 
@@ -5434,7 +5437,7 @@ reduced_tv:
 						ir_tarval *mask = tarval_and(tv1, tv);
 						if (mask != tv) {
 							/* TODO: move to constant evaluation */
-							c1 = create_bool_const(irg, !is_relation_equal);
+							c1 = create_bool_const(irg, rel_eq != ir_relation_equal);
 							DBG_OPT_CSTEVAL(n, c1);
 							return c1;
 						}
@@ -5468,8 +5471,7 @@ reduced_tv:
 							 * And(x, 0x80000000) != 0 ==> x <  0
 							 */
 							left     = get_And_left(left);
-							relation = is_relation_equal ? ir_relation_greater_equal
-							                             : ir_relation_less;
+							relation = rel_eq != ir_relation_equal ? ir_relation_less : ir_relation_greater_equal;
 							changedc = true;
 						}
 
@@ -5484,7 +5486,7 @@ reduced_tv:
 						 */
 						if (! tarval_is_null(get_Const_tarval(c1))) {
 							/* TODO: move to constant evaluation */
-							c1 = create_bool_const(irg, !is_relation_equal);
+							c1 = create_bool_const(irg, rel_eq != ir_relation_equal);
 							DBG_OPT_CSTEVAL(n, c1);
 							return c1;
 						}
@@ -5514,8 +5516,7 @@ reduced_tv:
 						ir_node   *sl    = get_Shl_left(left);
 						ir_node   *blk   = get_nodes_block(n);
 						left     = new_rd_And(get_irn_dbg_info(left), blk, sl, new_r_Const(irg, amask), mode);
-						relation = is_relation_equal ? ir_relation_equal
-						                             : ir_relation_less_greater;
+						relation = rel_eq;
 						tv       = tarval_shr(tv, tv1);
 						changedc = true;
 						DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_SHF_TO_AND);
@@ -5537,7 +5538,7 @@ reduced_tv:
 
 						if (tarval_and(tv, cmask) != tv) {
 							/* condition not met */
-							c1 = create_bool_const(irg, !is_relation_equal);
+							c1 = create_bool_const(irg, rel_eq != ir_relation_equal);
 							DBG_OPT_CSTEVAL(n, c1);
 							return c1;
 						}
@@ -5545,8 +5546,7 @@ reduced_tv:
 						ir_node   *sl    = get_Shr_left(left);
 						ir_node   *blk   = get_nodes_block(n);
 						left     = new_rd_And(get_irn_dbg_info(left), blk, sl, new_r_Const(irg, amask), mode);
-						relation = is_relation_equal ? ir_relation_equal
-						                             : ir_relation_less_greater;
+						relation = rel_eq;
 						tv       = tarval_shl(tv, tv1);
 						changedc = true;
 						DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_SHF_TO_AND);
@@ -5579,8 +5579,7 @@ reduced_tv:
 						ir_node   *sl    = get_Shrs_left(left);
 						ir_node   *blk   = get_nodes_block(n);
 						left     = new_rd_And(get_irn_dbg_info(left), blk, sl, new_r_Const(irg, amask), mode);
-						relation = is_relation_equal ? ir_relation_equal
-						                             : ir_relation_less_greater;
+						relation = rel_eq;
 						tv       = tarval_shl(tv, tv1);
 						changedc = true;
 						DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_SHF_TO_AND);
@@ -6434,14 +6433,13 @@ ir_node *ir_get_abs_op(const ir_node *sel, ir_node *mux_false,
 
 static bool ir_is_optimizable_mux_set(const ir_node *cond, ir_relation relation, const ir_mode *dest_mode)
 {
-	ir_node     *left                     = get_Cmp_left(cond);
-	ir_mode     *mode                     = get_irn_mode(left);
-	ir_node     *right                    = get_Cmp_right(cond);
-	ir_relation  possible                 = ir_get_possible_cmp_relations(left, right);
-	bool         is_relation_equal        = is_relation(ir_relation_equal, relation, possible);
-	bool         is_relation_less_greater = is_relation(ir_relation_less_greater, relation, possible);
-	if (is_relation_equal || is_relation_less_greater) {
-		if (is_relation_less_greater) {
+	ir_node     *left     = get_Cmp_left(cond);
+	ir_mode     *mode     = get_irn_mode(left);
+	ir_node     *right    = get_Cmp_right(cond);
+	ir_relation  possible = ir_get_possible_cmp_relations(left, right);
+	ir_relation  rel_eq   = get_complementary_relations(ir_relation_equal, relation, possible);
+	if (rel_eq != ir_relation_false) {
+		if (rel_eq == ir_relation_less_greater) {
 			bitinfo *bl = get_bitinfo(left);
 			bitinfo *br = get_bitinfo(right);
 
@@ -6474,35 +6472,28 @@ static bool ir_is_optimizable_mux_set(const ir_node *cond, ir_relation relation,
 		}
 	}
 
-	bool is_relation_less          = is_relation(ir_relation_less, relation, possible);
-	bool is_relation_less_equal    = is_relation(ir_relation_less_equal, relation, possible);
-	bool is_relation_greater       = is_relation(ir_relation_greater, relation, possible);
-	bool is_relation_greater_equal = is_relation(ir_relation_greater_equal, relation, possible);
+	ir_relation const rel_lt = get_complementary_relations(ir_relation_less,    relation, possible);
+	ir_relation const rel_gt = get_complementary_relations(ir_relation_greater, relation, possible);
 
 	if (get_mode_size_bits(mode) >= get_mode_size_bits(dest_mode)) {
 		/* Due to possible overflows, we can only transform compares with special constants. */
 		if (!mode_is_signed(mode) || !is_Const(right))
 			return false;
 
-		if (!((is_relation_less || is_relation_greater_equal) && is_Const_null(right)) &&
-		    !((is_relation_less_equal || is_relation_greater) && is_Const_all_one(right))) {
+		if (!(rel_lt != ir_relation_false && is_Const_null(right)) &&
+		    !(rel_gt != ir_relation_false && is_Const_all_one(right)))
 			return false;
-		}
 	} else if (!mode_is_signed(dest_mode)) {
 		return false;
 	}
 
-	if (is_relation_less) {
-		/* a < b <=> (a - b) < 0 <=> (a - b) >> 31 */
+	if (rel_lt != ir_relation_false) {
+		/* a <  b <=>                (a - b) < 0  <=>  (a - b) >> 31
+		 * a >= b <=> !(a < b) <=> !((a - b) < 0) <=> ~(a - b) >> 31 */
 		return true;
-	} else if (is_relation_greater) {
-		/* a > b <=> (b - a) < 0 <=> (b - a) >> 31 */
-		return true;
-	} else if (is_relation_less_equal) {
-		/* a <= b <=> !(a > b) <=> !((b - a) < 0) <=> ~(b - a) >> 31 */
-		return true;
-	} else if (is_relation_greater_equal) {
-		/* a >= b <=> !(a < b) <=> !((a - b) < 0) <=> ~(a - b) >> 31 */
+	} else if (rel_gt != ir_relation_false) {
+		/* a >  b <=>                (b - a) < 0  <=>  (b - a) >> 31 *
+		 * a <= b <=> !(a > b) <=> !((b - a) < 0) <=> ~(b - a) >> 31 */
 		return true;
 	} else {
 		return false;
@@ -6554,8 +6545,7 @@ bool ir_is_optimizable_mux(const ir_node *sel, const ir_node *mux_false,
 				} else if (is_Const_all_one(t) && is_Const(cmp_r) && is_Const_null(cmp_r) &&
 					   mode_is_signed(mode) && get_mode_arithmetic(mode) == irma_twos_complement) {
 					ir_relation possible = ir_get_possible_cmp_relations(cmp_l, cmp_r);
-					if (is_relation(ir_relation_less, relation, possible) ||
-				            is_relation(ir_relation_greater_equal, relation, possible)) {
+					if (get_complementary_relations(ir_relation_less, relation, possible) != ir_relation_false) {
 						/* Mux(a >= 0, 0, 0xFFFFFFFF) => ~a >>s 31 */
 						/* Mux(a <  0, 0, 0xFFFFFFFF) =>  a >>s 31 */
 						return true;
@@ -6611,16 +6601,15 @@ bool ir_is_optimizable_mux(const ir_node *sel, const ir_node *mux_false,
  */
 static ir_node *transform_Mux_set(ir_node *n, ir_relation relation)
 {
-	ir_node     *cond                     = get_Mux_sel(n);
-	ir_node     *left                     = get_Cmp_left(cond);
-	ir_mode     *mode                     = get_irn_mode(left);
-	ir_mode     *dest_mode                = get_irn_mode(n);
-	ir_node     *right                    = get_Cmp_right(cond);
-	ir_relation  possible                 = ir_get_possible_cmp_relations(left, right);
-	bool         is_relation_equal        = is_relation(ir_relation_equal, relation, possible);
-	bool         is_relation_less_greater = is_relation(ir_relation_less_greater, relation, possible);
-	if (is_relation_equal || is_relation_less_greater) {
-		if (is_relation_less_greater) {
+	ir_node     *cond      = get_Mux_sel(n);
+	ir_node     *left      = get_Cmp_left(cond);
+	ir_mode     *mode      = get_irn_mode(left);
+	ir_mode     *dest_mode = get_irn_mode(n);
+	ir_node     *right     = get_Cmp_right(cond);
+	ir_relation  possible  = ir_get_possible_cmp_relations(left, right);
+	ir_relation  rel_eq    = get_complementary_relations(ir_relation_equal, relation, possible);
+	if (rel_eq != ir_relation_false) {
+		if (rel_eq == ir_relation_less_greater) {
 			bitinfo *bl = get_bitinfo(left);
 			bitinfo *br = get_bitinfo(right);
 
@@ -6674,9 +6663,8 @@ static ir_node *transform_Mux_set(ir_node *n, ir_relation relation)
 						calc_mode = dest_mode;
 					}
 
-					if (is_relation_equal) {
+					if (rel_eq == ir_relation_equal)
 						a = new_rd_Not(dbgi, block, a, calc_mode);
-					}
 
 					ir_graph  *irg          = get_irn_irg(block);
 					unsigned   shift_amount = get_tarval_highest_bit(tv);
@@ -6694,45 +6682,36 @@ static ir_node *transform_Mux_set(ir_node *n, ir_relation relation)
 		}
 	}
 
-	bool is_relation_less          = is_relation(ir_relation_less, relation, possible);
-	bool is_relation_less_equal    = is_relation(ir_relation_less_equal, relation, possible);
-	bool is_relation_greater       = is_relation(ir_relation_greater, relation, possible);
-	bool is_relation_greater_equal = is_relation(ir_relation_greater_equal, relation, possible);
+	ir_relation const rel_lt = get_complementary_relations(ir_relation_less,    relation, possible);
+	ir_relation const rel_gt = get_complementary_relations(ir_relation_greater, relation, possible);
 
 	if (get_mode_size_bits(mode) >= get_mode_size_bits(dest_mode)) {
 		/* Due to possible overflows, we can only transform compares with special constants. */
 		if (!mode_is_signed(mode) || !is_Const(right))
 			return n;
 
-		if (!((is_relation_less || is_relation_greater_equal) && is_Const_null(right)) &&
-		    !((is_relation_less_equal || is_relation_greater) && is_Const_all_one(right))) {
+		if (!(rel_lt != ir_relation_false && is_Const_null(right)) &&
+		    !(rel_gt != ir_relation_false && is_Const_all_one(right)))
 			return n;
-		}
 	} else if (!mode_is_signed(dest_mode)) {
 		return n;
 	}
 
-	bool     need_not = false;
+	bool     need_not;
 	ir_node *a;
 	ir_node *b;
-	if (is_relation_less) {
-		/* a < b <=> (a - b) < 0 <=> (a - b) >> 31 */
-		a = left;
-		b = right;
-	} else if (is_relation_greater) {
-		/* a > b <=> (b - a) < 0 <=> (b - a) >> 31 */
-		a = right;
-		b = left;
-	} else if (is_relation_less_equal) {
+	if (rel_lt != ir_relation_false) {
+		/* a <  b              <=>   (a - b) < 0  <=>  (a - b) >> 31
+		 * a >= b <=> !(a < b) <=> !((a - b) < 0) <=> ~(a - b) >> 31 */
+		a        = left;
+		b        = right;
+		need_not = rel_lt == ir_relation_greater_equal;
+	} else if (rel_gt != ir_relation_false) {
+		/* a >  b <=>                (b - a) < 0  <=> ( b - a) >> 31 */
 		/* a <= b <=> !(a > b) <=> !((b - a) < 0) <=> ~(b - a) >> 31 */
 		a        = right;
 		b        = left;
-		need_not = true;
-	} else if (is_relation_greater_equal) {
-		/* a >= b <=> !(a < b) <=> !((a - b) < 0) <=> ~(a - b) >> 31 */
-		a        = left;
-		b        = right;
-		need_not = true;
+		need_not = rel_gt == ir_relation_less_equal;
 	} else {
 		return n;
 	}
@@ -6825,17 +6804,15 @@ static ir_node *transform_node_Mux(ir_node *n)
 						return n;
 				} else if (is_Const_all_one(t) && is_Const(cmp_r) && is_Const_null(cmp_r) &&
 					   mode_is_signed(cmp_mode) && mode_is_signed(mode)) {
-					ir_relation possible                  = ir_get_possible_cmp_relations(cmp_l, cmp_r);
-					bool        is_relation_less          = is_relation(ir_relation_less, relation, possible);
-					bool        is_relation_greater_equal = is_relation(ir_relation_greater_equal, relation, possible);
-					if (is_relation_less || is_relation_greater_equal) {
+					ir_relation const possible = ir_get_possible_cmp_relations(cmp_l, cmp_r);
+					ir_relation const rel_lt   = get_complementary_relations(ir_relation_less, relation, possible);
+					if (rel_lt != ir_relation_false) {
 						ir_node  *block     = get_nodes_block(n);
 						dbg_info *dbgi      = get_irn_dbg_info(n);
 
 						/* Mux(a < 0, 0, 0xFFFFFFFF) => a >>s 31 */
-						if (!is_relation_less) {
+						if (rel_lt == ir_relation_greater_equal) {
 							/* Mux(a >= 0, 0, 0xFFFFFFFF) => ~a >>s 31 */
-							assert(is_relation_greater_equal);
 							cmp_l = new_rd_Not(dbgi, block, cmp_l, cmp_mode);
 						}
 
@@ -6856,19 +6833,17 @@ static ir_node *transform_node_Mux(ir_node *n)
 				bitinfo *bl = get_bitinfo(cmp_l);
 
 				if (bl && tarval_is_one(bl->z)) {
-					ir_relation  possible                 = ir_get_possible_cmp_relations(cmp_l, cmp_r);
-					bool         is_relation_equal        = is_relation(ir_relation_equal, relation, possible);
-					bool         is_relation_less_greater = is_relation(ir_relation_less_greater, relation, possible);
-					ir_node     *block                    = get_nodes_block(n);
-					dbg_info    *dbgi                     = get_irn_dbg_info(n);
-					assert(is_relation_equal ^ is_relation_less_greater);
+					ir_relation  possible = ir_get_possible_cmp_relations(cmp_l, cmp_r);
+					ir_relation  rel_eq   = get_complementary_relations(ir_relation_equal, relation, possible);
+					ir_node     *block    = get_nodes_block(n);
+					dbg_info    *dbgi     = get_irn_dbg_info(n);
+					assert(rel_eq != ir_relation_false);
 
 					if (mode != cmp_mode) {
 						cmp_l = new_rd_Conv(dbgi, block, cmp_l, mode);
 					}
 
-					if ((is_relation_equal && is_Const_one(cmp_r)) ||
-					    (is_relation_less_greater && is_Const_null(cmp_r))) {
+					if (rel_eq == ir_relation_equal ? is_Const_one(cmp_r) : is_Const_null(cmp_r)) {
 						/* Mux((a & 1) != 0, 0, b) => -a & b */
 						cmp_l = new_rd_Minus(dbgi, block, cmp_l, mode);
 					} else {
@@ -6882,20 +6857,21 @@ static ir_node *transform_node_Mux(ir_node *n)
 			}
 		}
 
-		if (mode_is_int(mode) && is_cmp_equality_zero(sel, relation) && is_And(cmp_l) && f == cmp_r) {
+		ir_relation const possible = ir_get_possible_cmp_relations(cmp_l, cmp_r);
+		ir_relation const rel_eq   = get_complementary_relations(ir_relation_equal, relation, possible);
+		if (rel_eq != ir_relation_false && is_Const(cmp_r) && is_Const_null(cmp_r) && is_And(cmp_l) && f == cmp_r) {
 			ir_node *and_l = get_And_left(cmp_l);
 			ir_node *and_r = get_And_right(cmp_l);
 
 			if ((and_l == t || and_r == t) && is_single_bit(t)) {
-				ir_relation possible = ir_get_possible_cmp_relations(cmp_l, cmp_r);
-				if (is_relation(ir_relation_equal, relation, possible)) {
+				if (rel_eq == ir_relation_equal) {
 					/* Mux((a & (1<<n)) == 0, 0, (1<<n)) == (a & (1<<n)) xor ((1<<n)) */
 					ir_node *block = get_nodes_block(n);
 					n = new_rd_Eor(get_irn_dbg_info(n), block, cmp_l, t, mode);
 					DBG_OPT_ALGSIM1(oldn, sel, sel, n, FS_OPT_MUX_TO_BITOP);
 				} else {
 					/* Mux((a & (1<<n)) != 0, 0, (1<<n)) == a & (1<<n) */
-					assert(is_relation(ir_relation_less_greater, relation, possible));
+					assert(rel_eq == ir_relation_less_greater);
 					n = cmp_l;
 					DBG_OPT_ALGSIM1(oldn, sel, sel, n, FS_OPT_MUX_TO_BITOP);
 				}
