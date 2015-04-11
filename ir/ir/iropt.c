@@ -6541,8 +6541,7 @@ bool ir_is_optimizable_mux(const ir_node *sel, const ir_node *mux_false,
 					if (ir_is_optimizable_mux_set(sel, relation, mode)) {
 						return true;
 					}
-				} else if (is_Const_all_one(t) && is_Const(cmp_r) && is_Const_null(cmp_r) &&
-					   mode_is_signed(mode)) {
+				} else if (is_Const_all_one(t) && is_Const(cmp_r) && is_Const_null(cmp_r)) {
 					ir_relation possible = ir_get_possible_cmp_relations(cmp_l, cmp_r);
 					if (get_complementary_relations(ir_relation_less, relation, possible) != ir_relation_false) {
 						/* Mux(a >= 0, 0, 0xFFFFFFFF) => ~a >>s 31 */
@@ -6801,8 +6800,7 @@ static ir_node *transform_node_Mux(ir_node *n)
 					n = transform_Mux_set(n, relation);
 					if (n != oldn)
 						return n;
-				} else if (is_Const_all_one(t) && is_Const(cmp_r) && is_Const_null(cmp_r) &&
-					   mode_is_signed(cmp_mode) && mode_is_signed(mode)) {
+				} else if (is_Const_all_one(t) && is_Const(cmp_r) && is_Const_null(cmp_r) && mode_is_signed(cmp_mode)) {
 					ir_relation const possible = ir_get_possible_cmp_relations(cmp_l, cmp_r);
 					ir_relation const rel_lt   = get_complementary_relations(ir_relation_less, relation, possible);
 					if (rel_lt != ir_relation_false) {
