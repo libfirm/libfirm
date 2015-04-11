@@ -4869,17 +4869,14 @@ static ir_node *transform_node_Cmp(ir_node *n)
 	 */
 
 	/* Remove unnecessary conversions */
-	if (!mode_is_float(mode)
-	    || be_get_backend_param()->mode_float_arithmetic == NULL) {
+	if (!mode_is_float(mode) || be_get_backend_param()->mode_float_arithmetic == NULL) {
 		if (is_Conv(left) && is_Conv(right)) {
 			ir_node *op_left    = get_Conv_op(left);
 			ir_node *op_right   = get_Conv_op(right);
 			ir_mode *mode_left  = get_irn_mode(op_left);
 			ir_mode *mode_right = get_irn_mode(op_right);
-
 			if (smaller_mode(mode_left, mode) && smaller_mode(mode_right, mode)) {
 				ir_node *block = get_nodes_block(n);
-
 				if (mode_left == mode_right) {
 					left    = op_left;
 					right   = op_right;
@@ -4906,8 +4903,7 @@ static ir_node *transform_node_Cmp(ir_node *n)
 	 * This works only for modes where unary Minus cannot Overflow.
 	 * Note that two-complement integers can Overflow so it will NOT work.
 	 */
-	if (!mode_overflow_on_unary_Minus(mode) &&
-			is_Minus(left) && is_Minus(right)) {
+	if (!mode_overflow_on_unary_Minus(mode) && is_Minus(left) && is_Minus(right)) {
 		left     = get_Minus_op(left);
 		right    = get_Minus_op(right);
 		relation = get_inversed_relation(relation);
@@ -4918,112 +4914,97 @@ static ir_node *transform_node_Cmp(ir_node *n)
 	/* remove operation on both sides if possible */
 	bool is_relation_equal        = is_relation(ir_relation_equal, relation, possible);
 	bool is_relation_less_greater = is_relation(ir_relation_less_greater, relation, possible);
-	if (is_relation_equal || is_relation_less_greater) {
-		/*
-		 * The following operations are NOT safe for floating point operations, for instance
-		 * 1.0 + inf == 2.0 + inf, =/=> x == y
-		 */
-		if (mode_is_int(mode)) {
-			unsigned lop = get_irn_opcode(left);
+	/* The following operations are NOT safe for floating point operations, for instance
+	 * 1.0 + inf == 2.0 + inf, =/=> x == y */
+	if ((is_relation_equal || is_relation_less_greater) && mode_is_int(mode)) {
+		unsigned const lop = get_irn_opcode(left);
+		if (lop == get_irn_opcode(right)) {
+			/* same operation on both sides, try to remove */
+			switch (lop) {
+			case iro_Not:
+			case iro_Minus:
+				/* ~a CMP ~b => a CMP b, -a CMP -b ==> a CMP b */
+				assert((int)n_Minus_op == (int)n_Not_op);
+				left    = get_irn_n(left, n_Minus_op);
+				right   = get_irn_n(right, n_Not_op);
+				changed = true;
+				DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_OP_OP);
+				break;
 
-			if (lop == get_irn_opcode(right)) {
-				ir_node *ll, *lr, *rl, *rr;
-
-				/* same operation on both sides, try to remove */
-				switch (lop) {
-				case iro_Not:
-				case iro_Minus:
-					/* ~a CMP ~b => a CMP b, -a CMP -b ==> a CMP b */
-					assert((int)n_Minus_op == (int)n_Not_op);
-					left  = get_irn_n(left, n_Minus_op);
-					right = get_irn_n(right, n_Not_op);
+			case iro_Add:
+			case iro_Eor: {
+				ir_node *const ll = get_binop_left(left);
+				ir_node *const lr = get_binop_right(left);
+				ir_node *const r0 = get_commutative_other_op(right, ll);
+				if (r0) {
+					/* X op a CMP X op b ==> a CMP b */
+					left    = lr;
+					right   = r0;
 					changed = true;
 					DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_OP_OP);
-					break;
-
-				case iro_Add:
-				case iro_Eor:
-					ll = get_binop_left(left);
-					lr = get_binop_right(left);
-					rl = get_binop_left(right);
-					rr = get_binop_right(right);
-
-					if (ll == rl) {
-						/* X op a CMP X op b ==> a CMP b */
-						left  = lr;
-						right = rr;
-						changed = true;
-						DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_OP_OP);
-					} else if (ll == rr) {
-						/* X op a CMP b op X ==> a CMP b */
-						left  = lr;
-						right = rl;
-						changed = true;
-						DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_OP_OP);
-					} else if (lr == rl) {
+				} else {
+					ir_node *const r1 = get_commutative_other_op(right, lr);
+					if (r1) {
 						/* a op X CMP X op b ==> a CMP b */
-						left  = ll;
-						right = rr;
-						changed = true;
-						DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_OP_OP);
-					} else if (lr == rr) {
-						/* a op X CMP b op X ==> a CMP b */
-						left  = ll;
-						right = rl;
+						left    = ll;
+						right   = r1;
 						changed = true;
 						DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_OP_OP);
 					}
-					break;
-				case iro_Sub:
-					ll = get_Sub_left(left);
-					lr = get_Sub_right(left);
-					rl = get_Sub_left(right);
-					rr = get_Sub_right(right);
-
-					if (ll == rl) {
-						/* X - a CMP X - b ==> a CMP b */
-						left  = lr;
-						right = rr;
-						changed = true;
-						DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_OP_OP);
-					} else if (lr == rr) {
-						/* a - X CMP b - X ==> a CMP b */
-						left  = ll;
-						right = rl;
-						changed = true;
-						DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_OP_OP);
-					}
-					break;
-				default:
-					break;
 				}
+				break;
 			}
 
-			/* X+A == A, A+X == A, X^A == A, A^X == A, A-X == A -> X == 0 */
-			ir_node *x;
-			if (is_Add(left) || is_Eor(left) || is_Sub(left) || is_Or_Eor_Add(left)) {
-				if (is_Sub(left)) {
-					x = get_Sub_left(left) == right ? get_Sub_right(left) : NULL;
-				} else {
-					x = get_commutative_other_op(left, right);
-				}
-				if (x)
-					goto cmp_x_eq_0;
-			}
-			if (is_Add(right) || is_Eor(right) || is_Sub(right) || is_Or_Eor_Add(right)) {
-				if (is_Sub(right)) {
-					x = get_Sub_left(right) == left ? get_Sub_right(right) : NULL;
-				} else {
-					x = get_commutative_other_op(right, left);
-				}
-				if (x) {
-cmp_x_eq_0:;
-					left     = x;
-					right    = new_r_Const_null(irg, mode);
-					relation = is_relation_equal ? ir_relation_equal : ir_relation_less_greater;
-					changed  = true;
+			case iro_Sub: {
+				ir_node *const ll = get_Sub_left(left);
+				ir_node *const lr = get_Sub_right(left);
+				ir_node *const rl = get_Sub_left(right);
+				ir_node *const rr = get_Sub_right(right);
+				if (ll == rl) {
+					/* X - a CMP X - b ==> a CMP b */
+					left    = lr;
+					right   = rr;
+					changed = true;
+					DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_OP_OP);
+				} else if (lr == rr) {
+					/* a - X CMP b - X ==> a CMP b */
+					left    = ll;
+					right   = rl;
+					changed = true;
 					DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_OP_OP);
 				}
+				break;
+			}
+
+			default:
+				break;
+			}
+		}
+
+		/* X+A == A, A+X == A, X^A == A, A^X == A, A-X == A -> X == 0 */
+		ir_node *x;
+		if (is_Add(left) || is_Eor(left) || is_Sub(left) || is_Or_Eor_Add(left)) {
+			if (is_Sub(left)) {
+				x = get_Sub_left(left) == right ? get_Sub_right(left) : NULL;
+			} else {
+				x = get_commutative_other_op(left, right);
+			}
+			if (x)
+				goto cmp_x_eq_0;
+		}
+		if (is_Add(right) || is_Eor(right) || is_Sub(right) || is_Or_Eor_Add(right)) {
+			if (is_Sub(right)) {
+				x = get_Sub_left(right) == left ? get_Sub_right(right) : NULL;
+			} else {
+				x = get_commutative_other_op(right, left);
+			}
+			if (x) {
+cmp_x_eq_0:
+				left     = x;
+				right    = new_r_Const_null(irg, mode);
+				relation = is_relation_equal ? ir_relation_equal : ir_relation_less_greater;
+				changed  = true;
+				DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_OP_OP);
 			}
 		}
 	}
