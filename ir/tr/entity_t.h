@@ -377,43 +377,37 @@ static inline ir_initializer_t *_get_entity_initializer(ir_entity const *const e
 
 static inline int _get_entity_offset(const ir_entity *ent)
 {
-	assert(ent->entity_kind == IR_ENTITY_COMPOUND_MEMBER
-	       || ent->entity_kind == IR_ENTITY_PARAMETER);
+	assert(is_entity_compound_member(ent));
 	return ent->attr.compound_member.offset;
 }
 
 static inline void _set_entity_offset(ir_entity *ent, int offset)
 {
-	assert(ent->entity_kind == IR_ENTITY_COMPOUND_MEMBER
-	       || ent->entity_kind == IR_ENTITY_PARAMETER);
+	assert(is_entity_compound_member(ent));
 	ent->attr.compound_member.offset = offset;
 }
 
 static inline unsigned _get_entity_bitfield_offset(const ir_entity *ent)
 {
-	assert(ent->entity_kind == IR_ENTITY_COMPOUND_MEMBER
-	       || ent->entity_kind == IR_ENTITY_PARAMETER);
+	assert(is_entity_compound_member(ent));
 	return ent->attr.compound_member.bitfield_offset;
 }
 
 static inline void _set_entity_bitfield_offset(ir_entity *ent, unsigned offset)
 {
-	assert(ent->entity_kind == IR_ENTITY_COMPOUND_MEMBER
-	       || ent->entity_kind == IR_ENTITY_PARAMETER);
+	assert(is_entity_compound_member(ent));
 	ent->attr.compound_member.bitfield_offset = offset;
 }
 
 static inline unsigned _get_entity_bitfield_size(const ir_entity *entity)
 {
-	assert(entity->entity_kind == IR_ENTITY_COMPOUND_MEMBER
-	       || entity->entity_kind == IR_ENTITY_PARAMETER);
+	assert(is_entity_compound_member(entity));
 	return entity->attr.compound_member.bitfield_size;
 }
 
 static inline void _set_entity_bitfield_size(ir_entity *entity, unsigned size)
 {
-	assert(entity->entity_kind == IR_ENTITY_COMPOUND_MEMBER
-	       || entity->entity_kind == IR_ENTITY_PARAMETER);
+	assert(is_entity_compound_member(entity));
 	entity->attr.compound_member.bitfield_size = size;
 }
 
@@ -483,7 +477,7 @@ static inline int _is_parameter_entity(const ir_entity *entity)
 
 static inline size_t _get_entity_parameter_number(const ir_entity *entity)
 {
-	assert(entity->entity_kind == IR_ENTITY_PARAMETER);
+	assert(is_parameter_entity(entity));
 	return entity->attr.parameter.number;
 }
 
