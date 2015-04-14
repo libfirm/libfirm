@@ -1314,13 +1314,8 @@ static void lower_Conv_from_Ll(ir_node *node)
 	const lower64_entry_t *entry = get_node_entry(op);
 
 	if (get_mode_arithmetic(omode) == irma_twos_complement) {
-		op = entry->low_word;
-
 		/* simple case: create a high word */
-		if (omode != env.p.word_unsigned)
-			op = new_rd_Conv(dbg, block, op, omode);
-
-		set_Conv_op(node, op);
+		set_Conv_op(node, entry->low_word);
 	} else {
 		ir_node *in[2];
 		if (env.p.big_endian) {
