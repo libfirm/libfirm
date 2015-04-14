@@ -597,6 +597,7 @@ static void check_entity_initializer(ir_entity *entity)
 
 void set_entity_initializer(ir_entity *entity, ir_initializer_t *initializer)
 {
+	assert(get_entity_kind(entity) == IR_ENTITY_NORMAL);
 	entity->attr.normal.initializer = initializer;
 	check_entity_initializer(entity);
 }
