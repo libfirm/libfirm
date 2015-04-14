@@ -7328,7 +7328,8 @@ ir_node *predict_load(ir_node *ptr, ir_mode *mode)
 	}
 	if (is_Address(ptr)) {
 		ir_entity *entity = get_Address_entity(ptr);
-		if (! (get_entity_linkage(entity) & IR_LINKAGE_CONSTANT))
+		if (get_entity_kind(entity) != IR_ENTITY_NORMAL ||
+		    !(get_entity_linkage(entity) & IR_LINKAGE_CONSTANT))
 			return NULL;
 		const ir_type *type = get_entity_type(entity);
 		if (get_type_state(type) != layout_fixed)
