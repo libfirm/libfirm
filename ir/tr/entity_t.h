@@ -187,7 +187,7 @@ struct ir_entity {
 	uint16_t                alignment;     /**< entity alignment in bytes */
 	ir_visited_t visit;      /**< visited counter for walks of the type
 	                              information. */
-	struct dbg_info *dbi;    /**< A pointer to information for debug support. */
+	dbg_info *dbi;           /**< A pointer to information for debug support. */
 	void *link;              /**< To store some intermediate information. */
 
 	ir_entity **overwrites;  /**< A list of entities this entity overwrites. */

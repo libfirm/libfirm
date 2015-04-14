@@ -411,7 +411,7 @@ struct ir_node {
 		unsigned          n_outs; /**< number of def-use edges (temporarily used
 		                               during construction of datastructure ) */
 	} o;
-	struct dbg_info  *dbi;   /**< A pointer to information for debug support. */
+	dbg_info *dbi;           /**< A pointer to information for debug support. */
 	/* ------- For analyses -------- */
 	ir_loop *loop;           /**< the loop the node is in. Access routines in irloop.h */
 	void            *backend_info;
