@@ -1312,6 +1312,21 @@ static ir_node *gen_binop_x87_float(ir_node *node, ir_node *op1, ir_node *op2,
 	return new_node;
 }
 
+static ir_node *skip_shift_amount_conv(ir_node *n)
+{
+	/* The shift amount can be any mode that is bigger than 5 bits, since all
+	 * other bits are ignored anyway. */
+	while (is_Conv(n) && get_irn_n_edges(n) == 1) {
+		ir_node *const op   = get_Conv_op(n);
+		ir_mode *const mode = get_irn_mode(op);
+		if (!mode_needs_gp_reg(mode))
+			break;
+		assert(get_mode_size_bits(mode) >= 5);
+		n = op;
+	}
+	return n;
+}
+
 /**
  * Construct a shift/rotate binary operation, sets AM and immediate if required.
  *
@@ -1358,15 +1373,7 @@ static ir_node *gen_shift_binop(ir_node *node, ir_node *op1, ir_node *op2,
 		}
 	}
 
-	/* the shift amount can be any mode that is bigger than 5 bits, since all
-	 * other bits are ignored anyway */
-	while (is_Conv(op2) && get_irn_n_edges(op2) == 1) {
-		ir_node *const op = get_Conv_op(op2);
-		if (mode_is_float(get_irn_mode(op)))
-			break;
-		op2 = op;
-		assert(get_mode_size_bits(get_irn_mode(op2)) >= 5);
-	}
+	op2 = skip_shift_amount_conv(op2);
 	ir_node *new_op2 = create_immediate_or_transform(op2, 'I');
 
 	dbg_info *dbgi      = get_irn_dbg_info(node);
@@ -1464,14 +1471,7 @@ static ir_node *gen_64bit_shifts(ir_node *const node, ir_node *const high, ir_no
 	ir_node  *const new_high = be_transform_node(high);
 	ir_node  *const new_low  = be_transform_node(low);
 
-	/* the shift amount can be any mode that is bigger than 5 bits, since all
-	 * other bits are ignored anyway */
-	while (is_Conv(count)              &&
-	       get_irn_n_edges(count) == 1 &&
-	       mode_is_int(get_irn_mode(count))) {
-		assert(get_mode_size_bits(get_irn_mode(count)) >= 5);
-		count = get_Conv_op(count);
-	}
+	count = skip_shift_amount_conv(count);
 	ir_node *new_count = create_immediate_or_transform(count, 'I');
 
 	ir_node *const new_node = func(dbgi, block, new_high, new_low, new_count);
