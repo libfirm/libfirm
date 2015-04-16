@@ -22,7 +22,7 @@
 #include "util.h"
 
 static pmap *entities;
-static bool dont_lower[ir_bk_last+1];
+static bool dont_lower[ir_bk_last + 1];
 
 static const char *get_builtin_name(ir_builtin_kind kind)
 {
@@ -61,38 +61,32 @@ static const char *get_gcc_machmode(ir_type *type)
 
 static void replace_with_call(ir_node *node)
 {
-	ir_graph       *irg   = get_irn_irg(node);
-	ir_node        *block = get_nodes_block(node);
-	ir_builtin_kind kind  = get_Builtin_kind(node);
-	const char     *name  = get_builtin_name(kind);
-	ir_type        *mtp   = get_Builtin_type(node);
-	ir_type        *arg1  = get_method_param_type(mtp, 0);
-	dbg_info       *dbgi  = get_irn_dbg_info(node);
-	ir_node        *mem   = get_Builtin_mem(node);
-	const char     *gcc_machmode = get_gcc_machmode(arg1);
-	int             n_params     = get_Builtin_n_params(node);
-	ir_node       **params       = get_Builtin_param_arr(node);
-	ir_type        *res_type = get_method_res_type(mtp, 0);
-	ir_mode        *res_mode = get_type_mode(res_type);
-	ir_node        *call_mem;
-	ir_node        *call_ress;
-	ir_node        *call_res;
-	ir_entity      *entity;
-	ir_node        *call;
+	ir_type        *const mtp      = get_Builtin_type(node);
+	ir_builtin_kind const kind     = get_Builtin_kind(node);
+	char     const *const name     = get_builtin_name(kind);
+	ir_type        *const arg1     = get_method_param_type(mtp, 0);
+	char     const *const machmode = get_gcc_machmode(arg1);
+	ident          *const id       = new_id_fmt("__%s%s2", name, machmode);
 
-	ident *const id = new_id_fmt("__%s%s2", name, gcc_machmode);
-
-	entity = pmap_get(ir_entity, entities, id);
+	ir_entity *entity = pmap_get(ir_entity, entities, id);
 	if (entity == NULL) {
 		entity = create_compilerlib_entity(id, mtp);
 		pmap_insert(entities, id, entity);
 	}
 
-	ir_node *const callee = new_r_Address(irg, entity);
-	call      = new_rd_Call(dbgi, block, mem, callee, n_params, params, mtp);
-	call_mem  = new_r_Proj(call, mode_M, pn_Call_M);
-	call_ress = new_r_Proj(call, mode_T, pn_Call_T_result);
-	call_res  = new_r_Proj(call_ress, res_mode, 0);
+	dbg_info *const dbgi      = get_irn_dbg_info(node);
+	ir_node  *const block     = get_nodes_block(node);
+	ir_node  *const mem       = get_Builtin_mem(node);
+	ir_graph *const irg       = get_irn_irg(node);
+	ir_node  *const callee    = new_r_Address(irg, entity);
+	int       const n_params  = get_Builtin_n_params(node);
+	ir_node **const params    = get_Builtin_param_arr(node);
+	ir_node  *const call      = new_rd_Call(dbgi, block, mem, callee, n_params, params, mtp);
+	ir_node  *const call_mem  = new_r_Proj(call, mode_M, pn_Call_M);
+	ir_node  *const call_ress = new_r_Proj(call, mode_T, pn_Call_T_result);
+	ir_type  *const res_type  = get_method_res_type(mtp, 0);
+	ir_mode  *const res_mode  = get_type_mode(res_type);
+	ir_node  *const call_res  = new_r_Proj(call_ress, res_mode, 0);
 
 	ir_node *const in[] = {
 		[pn_Builtin_M]       = call_mem,
@@ -125,11 +119,10 @@ static void replace_may_alias(ir_node *node)
 static void lower_builtin(ir_node *node, void *env)
 {
 	bool *changed = (bool*)env;
-	ir_builtin_kind kind;
 	if (!is_Builtin(node))
 		return;
 
-	kind = get_Builtin_kind(node);
+	ir_builtin_kind const kind = get_Builtin_kind(node);
 	if (dont_lower[kind])
 		return;
 
@@ -139,8 +132,7 @@ static void lower_builtin(ir_node *node, void *env)
 		ir_node *mem = get_Builtin_mem(node);
 		ir_node *const in[] = { mem };
 		turn_into_tuple(node, ARRAY_SIZE(in), in);
-		*changed = true;
-		return;
+		goto changed;
 	}
 
 	case ir_bk_ffs:
@@ -151,11 +143,11 @@ static void lower_builtin(ir_node *node, void *env)
 	case ir_bk_bswap:
 		/* replace with a call */
 		replace_with_call(node);
-		*changed = true;
-		return;
+		goto changed;
 
 	case ir_bk_may_alias:
 		replace_may_alias(node);
+changed:
 		*changed = true;
 		return;
 
