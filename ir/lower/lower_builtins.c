@@ -21,7 +21,6 @@
 #include "irprog_t.h"
 #include "util.h"
 
-static pmap *entities;
 static bool dont_lower[ir_bk_last + 1];
 
 static const char *get_builtin_name(ir_builtin_kind kind)
@@ -67,12 +66,7 @@ static void replace_with_call(ir_node *node)
 	ir_type        *const arg1     = get_method_param_type(mtp, 0);
 	char     const *const machmode = get_gcc_machmode(arg1);
 	ident          *const id       = new_id_fmt("__%s%s2", name, machmode);
-
-	ir_entity *entity = pmap_get(ir_entity, entities, id);
-	if (entity == NULL) {
-		entity = create_compilerlib_entity(id, mtp);
-		pmap_insert(entities, id, entity);
-	}
+	ir_entity      *const entity   = create_compilerlib_entity(id, mtp);
 
 	dbg_info *const dbgi      = get_irn_dbg_info(node);
 	ir_node  *const block     = get_nodes_block(node);
@@ -172,14 +166,10 @@ void lower_builtins(size_t n_exceptions, ir_builtin_kind *exceptions)
 		dont_lower[exceptions[i]] = true;
 	}
 
-	entities = pmap_create();
-
 	foreach_irp_irg(i, irg) {
 		bool changed = false;
 		irg_walk_graph(irg, NULL, lower_builtin, &changed);
 		confirm_irg_properties(irg, changed ? IR_GRAPH_PROPERTIES_CONTROL_FLOW
 		                                    : IR_GRAPH_PROPERTIES_ALL);
 	}
-
-	pmap_destroy(entities);
 }
