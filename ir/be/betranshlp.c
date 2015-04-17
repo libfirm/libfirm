@@ -850,3 +850,25 @@ ir_node *be_skip_downconv(ir_node *node, bool const single_user)
 	}
 	return node;
 }
+
+ir_node *be_skip_sameconv(ir_node *node)
+{
+	assert(mode_needs_gp_reg(get_irn_mode(node)));
+	for (;;) {
+		if (get_irn_n_edges(node) > 1) {
+			/* we only want to skip the conv when we're the only user
+			 * (because this test is used in the context of address-mode selection
+			 *  and we don't want to use address mode for multiple users) */
+			break;
+		} else if (is_Conv(node)) {
+			ir_node *const op       = get_Conv_op(node);
+			ir_mode *const src_mode = get_irn_mode(op);
+			if (!mode_needs_gp_reg(src_mode) || get_mode_size_bits(get_irn_mode(node)) != get_mode_size_bits(src_mode))
+				break;
+			node = op;
+		} else {
+			break;
+		}
+	}
+	return node;
+}

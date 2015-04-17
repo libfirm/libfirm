@@ -154,4 +154,7 @@ uint32_t be_get_tv_bits32(ir_tarval *tv, unsigned offset);
  */
 ir_node *be_skip_downconv(ir_node *node, bool single_user);
 
+/** Skip all signedness convs */
+ir_node *be_skip_sameconv(ir_node *node);
+
 #endif

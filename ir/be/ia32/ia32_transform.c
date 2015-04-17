@@ -874,35 +874,6 @@ static ir_node *ia32_skip_float_downconv(ir_node *node)
 	return node;
 }
 
-static bool is_sameconv(ir_node *node)
-{
-	if (!is_Conv(node))
-		return false;
-
-	/* we only want to skip the conv when we're the only user
-	 * (because this test is used in the context of address-mode selection
-	 *  and we don't want to use address mode for multiple users) */
-	if (get_irn_n_edges(node) > 1)
-		return false;
-
-	ir_mode *src_mode  = get_irn_mode(get_Conv_op(node));
-	ir_mode *dest_mode = get_irn_mode(node);
-	return
-		mode_needs_gp_reg(src_mode)  &&
-		mode_needs_gp_reg(dest_mode) &&
-		get_mode_size_bits(dest_mode) == get_mode_size_bits(src_mode);
-}
-
-/** Skip all signedness convs */
-static ir_node *ia32_skip_sameconv(ir_node *node)
-{
-	while (is_sameconv(node)) {
-		node = get_Conv_op(node);
-	}
-
-	return node;
-}
-
 static ir_node *transform_sext(ir_node *node, ir_node *orig_node)
 {
 	ir_mode  *mode  = get_irn_mode(node);
@@ -989,17 +960,19 @@ static void match_arguments(ia32_address_mode_t *am, ir_node *block,
 		use_am = false;
 	}
 
-	/* we can simply skip downconvs for mode neutral nodes: the upper bits
-	 * can be random for these operations */
-	if (flags & match_mode_neutral) {
-		op2 = be_skip_downconv(op2, true);
-		if (op1 != NULL) {
-			op1 = be_skip_downconv(op1, true);
-		}
-	} else {
-		op2 = ia32_skip_sameconv(op2);
-		if (op1 != NULL) {
-			op1 = ia32_skip_sameconv(op1);
+	if (mode_needs_gp_reg(mode)) {
+		if (flags & match_mode_neutral) {
+			/* we can simply skip downconvs for mode neutral nodes: the upper bits
+			 * can be random for these operations */
+			op2 = be_skip_downconv(op2, true);
+			if (op1 != NULL) {
+				op1 = be_skip_downconv(op1, true);
+			}
+		} else {
+			op2 = be_skip_sameconv(op2);
+			if (op1 != NULL) {
+				op1 = be_skip_sameconv(op1);
+			}
 		}
 	}
 
@@ -1316,7 +1289,7 @@ static ir_node *gen_shift_binop(ir_node *node, ir_node *op1, ir_node *op2,
 		op1     = be_skip_downconv(op1, true);
 		new_op1 = be_transform_node(op1);
 	} else {
-		op1 = ia32_skip_sameconv(op1);
+		op1 = be_skip_sameconv(op1);
 		if (get_mode_size_bits(mode) != 32) {
 			if (flags & match_upconv) {
 				new_op1 = transform_upconv(op1, node);
@@ -2898,7 +2871,7 @@ static ir_node *gen_Switch(ir_node *node)
 
 	assert(get_mode_size_bits(sel_mode) <= 32);
 	assert(!mode_is_float(sel_mode));
-	sel = ia32_skip_sameconv(sel);
+	sel = be_skip_sameconv(sel);
 	if (get_mode_size_bits(sel_mode) < 32)
 		new_sel = transform_upconv(sel, node);
 

@@ -344,26 +344,6 @@ static bool try_encode_as_immediate(const ir_node *node, arm_immediate_t *res)
 	return false;
 }
 
-static bool is_sameconv(const ir_node *node)
-{
-	if (!is_Conv(node))
-		return false;
-	if (get_irn_n_edges(node) > 1)
-		return false;
-	ir_mode *src_mode = get_irn_mode(get_Conv_op(node));
-	ir_mode *dst_mode = get_irn_mode(node);
-	return get_mode_arithmetic(src_mode) == irma_twos_complement
-	    && get_mode_arithmetic(dst_mode) == irma_twos_complement
-	    && get_mode_size_bits(src_mode) == get_mode_size_bits(dst_mode);
-}
-
-static ir_node *arm_skip_sameconv(ir_node *node)
-{
-	while (is_sameconv(node))
-		node = get_Conv_op(node);
-	return node;
-}
-
 typedef enum {
 	MATCH_NONE         = 0,
 	MATCH_COMMUTATIVE  = 1 << 0,  /**< commutative node */
@@ -398,8 +378,8 @@ static ir_node *gen_int_binop_ops(ir_node *node, ir_node *op1, ir_node *op2,
 		op2 = be_skip_downconv(op2, true);
 	} else {
 		assert(get_mode_size_bits(get_irn_mode(node)) == 32);
-		op1 = arm_skip_sameconv(op1);
-		op2 = arm_skip_sameconv(op2);
+		op1 = be_skip_sameconv(op1);
+		op2 = be_skip_sameconv(op2);
 	}
 
 	arm_immediate_t imm;
