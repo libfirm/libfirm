@@ -11,6 +11,7 @@
  */
 #include "beirg.h"
 #include "beutil.h"
+#include "betranshlp.h"
 #include "x86_address_mode.h"
 
 #include "irtypes.h"
@@ -187,30 +188,6 @@ static bool eat_shl(x86_address_t *addr, ir_node *node)
 	return true;
 }
 
-static bool is_downconv(const ir_node *node)
-{
-	if (!is_Conv(node))
-		return false;
-
-	ir_mode *dest_mode = get_irn_mode(node);
-	if (get_mode_arithmetic(dest_mode) != irma_twos_complement)
-		return false;
-	ir_mode *src_mode = get_irn_mode(get_Conv_op(node));
-	if (get_mode_arithmetic(src_mode) != irma_twos_complement)
-		return false;
-	return get_mode_size_bits(dest_mode) <= get_mode_size_bits(src_mode);
-}
-
-static ir_node *skip_downconv(ir_node *node)
-{
-	while (is_downconv(node)) {
-		if (get_irn_n_edges(node) > 1)
-			break;
-		node = get_Conv_op(node);
-	}
-	return node;
-}
-
 void x86_create_address_mode(x86_address_t *addr, ir_node *node,
                              x86_create_am_flags_t flags)
 {
@@ -227,7 +204,7 @@ void x86_create_address_mode(x86_address_t *addr, ir_node *node,
 	ir_node *eat_imms = eat_immediates(addr, node, flags);
 	if (eat_imms != node) {
 		if (flags & x86_create_am_force) {
-			eat_imms = skip_downconv(eat_imms);
+			eat_imms = be_skip_downconv(eat_imms, true);
 		}
 
 		node = eat_imms;
@@ -251,8 +228,8 @@ void x86_create_address_mode(x86_address_t *addr, ir_node *node,
 		ir_node *right = get_Add_right(node);
 
 		if (flags & x86_create_am_force) {
-			left  = skip_downconv(left);
-			right = skip_downconv(right);
+			left  = be_skip_downconv(left, true);
+			right = be_skip_downconv(right, true);
 		}
 		left  = eat_immediates(addr, left, flags);
 		right = eat_immediates(addr, right, flags);

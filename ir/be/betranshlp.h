@@ -145,4 +145,13 @@ void be_add_parameter_entity_stores(ir_graph *irg);
 
 uint32_t be_get_tv_bits32(ir_tarval *tv, unsigned offset);
 
+/**
+ * Skip integer truncations.
+ *
+ * @param node         the node
+ * @param single_user  only skip, if a down-conv has a single user
+ * @return the node after skipping down-convs
+ */
+ir_node *be_skip_downconv(ir_node *node, bool single_user);
+
 #endif

@@ -317,30 +317,6 @@ static inline bool mode_needs_gp_reg(ir_mode *mode)
 	    && mode != amd64_mode_xmm; /* mode_xmm is 128bit int at the moment */
 }
 
-static bool is_downconv(const ir_node *node)
-{
-	if (!is_Conv(node))
-		return false;
-
-	ir_mode *dest_mode = get_irn_mode(node);
-	if (!mode_needs_gp_reg(dest_mode))
-		return false;
-	ir_mode *src_mode = get_irn_mode(get_Conv_op(node));
-	if (!mode_needs_gp_reg(src_mode))
-		return false;
-	return get_mode_size_bits(dest_mode) <= get_mode_size_bits(src_mode);
-}
-
-static ir_node *skip_downconv(ir_node *node)
-{
-	while (is_downconv(node)) {
-		if (get_irn_n_edges(node) > 1)
-			break;
-		node = get_Conv_op(node);
-	}
-	return node;
-}
-
 static bool is_sameconv(const ir_node *node)
 {
 	if (!is_Conv(node))
@@ -763,8 +739,8 @@ static void match_binop(amd64_args_t *args, ir_node *block,
 
 	/* TODO: legalize phase */
 	if (mode_neutral) {
-		op1 = skip_downconv(op1);
-		op2 = skip_downconv(op2);
+		op1 = be_skip_downconv(op1, true);
+		op2 = be_skip_downconv(op2, true);
 	} else {
 		/* TODO: extend inputs? */
 		(void)needs_extension;
@@ -852,8 +828,8 @@ static ir_node *gen_binop_rax(ir_node *node, ir_node *op1, ir_node *op2,
 
 	/* TODO: legalize phase */
 	if (mode_neutral) {
-		op1 = skip_downconv(op1);
-		op2 = skip_downconv(op2);
+		op1 = be_skip_downconv(op1, true);
+		op2 = be_skip_downconv(op2, true);
 	} else {
 		/* TODO: extend inputs? */
 		(void)needs_extension;
@@ -977,7 +953,7 @@ static ir_node *gen_shift_binop(ir_node *node, ir_node *op1, ir_node *op2,
 	ir_node *in[3];
 	int      arity = 0;
 	if (flags & match_mode_neutral) {
-		op1 = skip_downconv(op1);
+		op1 = be_skip_downconv(op1, true);
 		in[arity++] = be_transform_node(op1);
 		mode = get_mode_size_bits(mode) > 32 ? mode_gp : mode_Iu;
 	} else {

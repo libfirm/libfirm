@@ -344,30 +344,6 @@ static bool try_encode_as_immediate(const ir_node *node, arm_immediate_t *res)
 	return false;
 }
 
-static bool is_downconv(const ir_node *node)
-{
-	if (!is_Conv(node))
-		return false;
-
-	/* we only want to skip the conv when we're the only user
-	 * (not optimal but for now...) */
-	if (get_irn_n_edges(node) > 1)
-		return false;
-
-	ir_mode *src_mode  = get_irn_mode(get_Conv_op(node));
-	ir_mode *dest_mode = get_irn_mode(node);
-	return get_mode_arithmetic(src_mode) == irma_twos_complement
-	    && get_mode_arithmetic(dest_mode) == irma_twos_complement
-	    && get_mode_size_bits(dest_mode) <= get_mode_size_bits(src_mode);
-}
-
-static ir_node *arm_skip_downconv(ir_node *node)
-{
-	while (is_downconv(node))
-		node = get_Conv_op(node);
-	return node;
-}
-
 static bool is_sameconv(const ir_node *node)
 {
 	if (!is_Conv(node))
@@ -418,8 +394,8 @@ static ir_node *gen_int_binop_ops(ir_node *node, ir_node *op1, ir_node *op2,
 	dbg_info *dbgi  = get_irn_dbg_info(node);
 
 	if (flags & MATCH_SIZE_NEUTRAL) {
-		op1 = arm_skip_downconv(op1);
-		op2 = arm_skip_downconv(op2);
+		op1 = be_skip_downconv(op1, true);
+		op2 = be_skip_downconv(op2, true);
 	} else {
 		assert(get_mode_size_bits(get_irn_mode(node)) == 32);
 		op1 = arm_skip_sameconv(op1);
@@ -1016,8 +992,8 @@ static ir_node *make_shift(ir_node *node, match_flags_t flags,
 		panic("modulo shift!=256 not supported");
 
 	if (flags & MATCH_SIZE_NEUTRAL) {
-		op1 = arm_skip_downconv(op1);
-		op2 = arm_skip_downconv(op2);
+		op1 = be_skip_downconv(op1, true);
+		op2 = be_skip_downconv(op2, true);
 	}
 
 	ir_node *new_op1 = be_transform_node(op1);

@@ -855,32 +855,6 @@ static void set_am_attributes(ir_node *node, const ia32_address_mode_t *am)
 		set_ia32_commutative(node);
 }
 
-/**
- * Skip integer truncations.
- *
- * @param node         the node
- * @param single_user  only skip, if a down-conv has a single user
- * @return the node after skipping down-convs
- */
-static ir_node *skip_downconv(ir_node *node, bool const single_user)
-{
-	for (;;) {
-		if (single_user && get_irn_n_edges(node) > 1) {
-			break;
-		} else if (is_Conv(node)) {
-			ir_node *const op        = get_Conv_op(node);
-			ir_mode *const src_mode  = get_irn_mode(op);
-			ir_mode *const dest_mode = get_irn_mode(node);
-			if (!mode_needs_gp_reg(src_mode) || !mode_needs_gp_reg(dest_mode) || get_mode_size_bits(dest_mode) > get_mode_size_bits(src_mode))
-				break;
-			node = op;
-		} else {
-			break;
-		}
-	}
-	return node;
-}
-
 static bool is_float_downconv(const ir_node *node)
 {
 	if (!is_Conv(node))
@@ -1018,9 +992,9 @@ static void match_arguments(ia32_address_mode_t *am, ir_node *block,
 	/* we can simply skip downconvs for mode neutral nodes: the upper bits
 	 * can be random for these operations */
 	if (flags & match_mode_neutral) {
-		op2 = skip_downconv(op2, true);
+		op2 = be_skip_downconv(op2, true);
 		if (op1 != NULL) {
-			op1 = skip_downconv(op1, true);
+			op1 = be_skip_downconv(op1, true);
 		}
 	} else {
 		op2 = ia32_skip_sameconv(op2);
@@ -1339,7 +1313,7 @@ static ir_node *gen_shift_binop(ir_node *node, ir_node *op1, ir_node *op2,
 
 	ir_node *new_op1;
 	if (flags & match_mode_neutral) {
-		op1     = skip_downconv(op1, true);
+		op1     = be_skip_downconv(op1, true);
 		new_op1 = be_transform_node(op1);
 	} else {
 		op1 = ia32_skip_sameconv(op1);
@@ -1382,7 +1356,7 @@ static ir_node *gen_unop(ir_node *node, ir_node *op, construct_unop_func *func,
 {
 	assert(flags == 0 || flags == match_mode_neutral);
 	if (flags & match_mode_neutral) {
-		op = skip_downconv(op, true);
+		op = be_skip_downconv(op, true);
 	}
 
 	ir_node  *new_op    = be_transform_node(op);
@@ -2853,7 +2827,7 @@ static ir_node *create_store(dbg_info *dbgi, ir_node *new_block,
 		                        addr->mem, new_op, op_mode);
 		mode = op_mode;
 	} else {
-		value = skip_downconv(value, false);
+		value = be_skip_downconv(value, false);
 		ir_node *new_val = create_immediate_or_transform(value, 'i');
 		assert(mode != mode_b);
 
@@ -3970,7 +3944,7 @@ static ir_node *create_I2I_Conv(ir_mode *const src_mode, dbg_info *const dbgi, i
 	}
 #endif
 
-	op = skip_downconv(op, false);
+	op = be_skip_downconv(op, false);
 
 	if (be_upper_bits_clean(op, src_mode)) {
 		return be_transform_node(op);

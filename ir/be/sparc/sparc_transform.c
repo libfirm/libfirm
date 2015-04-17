@@ -186,35 +186,6 @@ static bool needs_extension(ir_node *op)
 }
 
 /**
- * Check, if a given node is a Down-Conv, i.e. a integer Conv
- * from a mode with a mode with more bits to a mode with fewer bits.
- * Moreover, we return only true if the node has not more than 1 user.
- *
- * @param node   the node
- * @return non-zero if node is a Down-Conv
- */
-static bool is_downconv(const ir_node *node)
-{
-	if (!is_Conv(node))
-		return false;
-
-	ir_mode *src_mode  = get_irn_mode(get_Conv_op(node));
-	ir_mode *dest_mode = get_irn_mode(node);
-	return
-		mode_needs_gp_reg(src_mode)  &&
-		mode_needs_gp_reg(dest_mode) &&
-		get_mode_size_bits(dest_mode) <= get_mode_size_bits(src_mode);
-}
-
-static ir_node *skip_downconv(ir_node *node)
-{
-	while (is_downconv(node)) {
-		node = get_Conv_op(node);
-	}
-	return node;
-}
-
-/**
  * An assembler constraint.
  */
 typedef struct constraint_t {
@@ -612,8 +583,8 @@ static ir_node *gen_helper_binop_args(ir_node *node,
 	ir_node  *block = be_transform_nodes_block(node);
 
 	if (flags & MATCH_MODE_NEUTRAL) {
-		op1 = skip_downconv(op1);
-		op2 = skip_downconv(op2);
+		op1 = be_skip_downconv(op1, false);
+		op2 = be_skip_downconv(op2, false);
 	}
 	ir_mode *mode2 = get_irn_mode(op2);
 	/* we should not see 64bit code */
@@ -1074,14 +1045,10 @@ static ir_node *gen_Store(ir_node *node)
 		new_store = create_stf(dbgi, block, new_val, address.ptr, new_mem,
 		                       mode, address.entity, address.offset, false);
 	} else {
-		unsigned dest_bits = get_mode_size_bits(mode);
-		while (is_downconv(node)
-		       && get_mode_size_bits(get_irn_mode(node)) >= dest_bits) {
-		    val = get_Conv_op(val);
-		}
+		val = be_skip_downconv(val, false);
 		ir_node *new_val = be_transform_node(val);
 
-		assert(dest_bits <= 32);
+		assert(get_mode_size_bits(mode) <= 32);
 		address_t address;
 		match_address(ptr, &address, true);
 		if (address.ptr2 != NULL) {
