@@ -209,10 +209,7 @@ static bool is_simple_sse_Const(ir_node *node)
 		return true;
 #ifdef CONSTRUCT_SSE_CONST
 	if (mode == ia32_mode_float64) {
-		unsigned val = get_tarval_sub_bits(tv, 0) |
-			(get_tarval_sub_bits(tv, 1) << 8) |
-			(get_tarval_sub_bits(tv, 2) << 16) |
-			(get_tarval_sub_bits(tv, 3) << 24);
+		unsigned const val = be_get_tv_bits32(tv, 0);
 		if (val == 0)
 			/* lower 32bit are zero, really a 32bit constant */
 			return true;
@@ -374,10 +371,7 @@ static ir_node *gen_Const(ir_node *node)
 #endif /* CONSTRUCT_SSE_CONST */
 			} else if (mode == ia32_mode_float32) {
 				/* we can place any 32bit constant by using a movd gp, sse */
-				unsigned val = get_tarval_sub_bits(tv, 0) |
-				               (get_tarval_sub_bits(tv, 1) << 8) |
-				               (get_tarval_sub_bits(tv, 2) << 16) |
-				               (get_tarval_sub_bits(tv, 3) << 24);
+				unsigned const val = be_get_tv_bits32(tv, 0);
 				ir_node *cnst = new_bd_ia32_Const(dbgi, block, NULL, 0, val);
 				load = new_bd_ia32_xMovd(dbgi, block, cnst);
 				set_ia32_ls_mode(load, mode);
@@ -385,19 +379,12 @@ static ir_node *gen_Const(ir_node *node)
 			} else {
 #ifdef CONSTRUCT_SSE_CONST
 				if (mode == ia32_mode_float64) {
-					unsigned val = get_tarval_sub_bits(tv, 0) |
-						(get_tarval_sub_bits(tv, 1) << 8) |
-						(get_tarval_sub_bits(tv, 2) << 16) |
-						(get_tarval_sub_bits(tv, 3) << 24);
-					if (val == 0) {
+					if (be_get_tv_bits32(tv, 0) == 0) {
 						ir_node *imm32 = ia32_create_Immediate(irg, 32);
 						ir_node *cnst, *psllq;
 
 						/* fine, lower 32bit are zero, produce 32bit value */
-						val = get_tarval_sub_bits(tv, 4) |
-							(get_tarval_sub_bits(tv, 5) << 8) |
-							(get_tarval_sub_bits(tv, 6) << 16) |
-							(get_tarval_sub_bits(tv, 7) << 24);
+						unsigned const val = be_get_tv_bits32(tv, 4);
 						cnst = new_bd_ia32_Const(dbgi, block, NULL, 0, val);
 						load = new_bd_ia32_xMovd(dbgi, block, cnst);
 						set_ia32_ls_mode(load, mode);
@@ -2772,10 +2759,7 @@ static ir_node *gen_float_const_Store(ir_node *node, ir_node *cns)
 		unsigned delta;
 		ir_mode *mode;
 		if (size >= 4) {
-			val= (unsigned)get_tarval_sub_bits(tv, ofs)            |
-			    ((unsigned)get_tarval_sub_bits(tv, ofs + 1) <<  8) |
-			    ((unsigned)get_tarval_sub_bits(tv, ofs + 2) << 16) |
-			    ((unsigned)get_tarval_sub_bits(tv, ofs + 3) << 24);
+			val   = be_get_tv_bits32(tv, ofs);
 			delta = 4;
 			mode  = ia32_mode_gp;
 		} else if (size >= 2) {

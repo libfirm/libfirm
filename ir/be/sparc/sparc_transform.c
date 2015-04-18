@@ -1929,16 +1929,10 @@ static void bitcast_float_to_int(dbg_info *dbgi, ir_node *block,
 	int bits = get_mode_size_bits(float_mode);
 	if (is_Const(value)) {
 		ir_tarval *tv = get_Const_tarval(value);
-		int32_t val = get_tarval_sub_bits(tv, 0)         |
-		              (get_tarval_sub_bits(tv, 1) << 8)  |
-		              (get_tarval_sub_bits(tv, 2) << 16) |
-		              (get_tarval_sub_bits(tv, 3) << 24);
+		int32_t const val = be_get_tv_bits32(tv, 0);
 		ir_node *valc = create_int_const(block, val);
 		if (bits == 64) {
-			int32_t val2 = get_tarval_sub_bits(tv, 4)         |
-						  (get_tarval_sub_bits(tv, 5) << 8)  |
-						  (get_tarval_sub_bits(tv, 6) << 16) |
-						  (get_tarval_sub_bits(tv, 7) << 24);
+			int32_t const val2 = be_get_tv_bits32(tv, 4);
 			ir_node *valc2 = create_int_const(block, val2);
 			result[0] = valc2;
 			result[1] = valc;

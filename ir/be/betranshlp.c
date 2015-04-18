@@ -813,3 +813,13 @@ void be_get_allocatable_regs(ir_graph const *const irg,
 			rbitset_set(raw_bitset, i);
 	}
 }
+
+uint32_t be_get_tv_bits32(ir_tarval *const tv, unsigned const offset)
+{
+	uint32_t val;
+	val  = (uint32_t)get_tarval_sub_bits(tv, offset);
+	val |= (uint32_t)get_tarval_sub_bits(tv, offset + 1) <<  8;
+	val |= (uint32_t)get_tarval_sub_bits(tv, offset + 2) << 16;
+	val |= (uint32_t)get_tarval_sub_bits(tv, offset + 3) << 24;
+	return val;
+}

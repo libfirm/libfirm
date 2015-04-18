@@ -143,4 +143,6 @@ void be_free_stackorder(be_stackorder_t *env);
  */
 void be_add_parameter_entity_stores(ir_graph *irg);
 
+uint32_t be_get_tv_bits32(ir_tarval *tv, unsigned offset);
+
 #endif
