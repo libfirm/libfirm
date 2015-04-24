@@ -970,7 +970,7 @@ static void write_mode(write_env_t *env, ir_mode *mode)
 		write_string(env, get_mode_name(mode));
 		write_mode_arithmetic(env, get_mode_arithmetic(mode));
 		write_unsigned(env, get_mode_size_bits(mode));
-		write_int(env, get_mode_sign(mode));
+		write_int(env, mode_is_signed(mode));
 		write_unsigned(env, get_mode_modulo_shift(mode));
 	} else if (mode_is_reference(mode)) {
 		write_symbol(env, "reference_mode");

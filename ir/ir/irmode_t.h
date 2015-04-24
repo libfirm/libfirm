@@ -19,7 +19,6 @@
 #define get_mode_sort(mode)            get_mode_sort_(mode)
 #define get_mode_size_bits(mode)       get_mode_size_bits_(mode)
 #define get_mode_size_bytes(mode)      get_mode_size_bytes_(mode)
-#define get_mode_sign(mode)            get_mode_sign_(mode)
 #define get_mode_arithmetic(mode)      get_mode_arithmetic_(mode)
 #define get_mode_modulo_shift(mode)    get_mode_modulo_shift_(mode)
 #define mode_is_signed(mode)           mode_is_signed_(mode)
@@ -52,11 +51,6 @@ static inline unsigned get_mode_size_bytes_(const ir_mode *mode)
 	unsigned size = get_mode_size_bits_(mode);
 	if ((size & 7) != 0) return (unsigned) -1;
 	return size >> 3;
-}
-
-static inline int get_mode_sign_(const ir_mode *mode)
-{
-	return mode->sign;
 }
 
 static inline ir_mode_arithmetic get_mode_arithmetic_(const ir_mode *mode)

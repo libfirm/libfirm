@@ -126,11 +126,6 @@ FIRM_API unsigned get_mode_size_bits(const ir_mode *mode);
  *  If the size is not dividable by 8 returns -1. */
 FIRM_API unsigned get_mode_size_bytes(const ir_mode *mode);
 
-/** Returns the signedness of a mode.
- *
- * Returns the signedness of a mode: 1 if mode is signed. */
-FIRM_API int get_mode_sign(const ir_mode *mode);
-
 /** Returns the arithmetic of a mode */
 FIRM_API ir_mode_arithmetic get_mode_arithmetic(const ir_mode *mode);
 

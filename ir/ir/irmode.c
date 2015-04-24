@@ -232,11 +232,6 @@ unsigned (get_mode_size_bytes)(const ir_mode *mode)
 	return get_mode_size_bytes_(mode);
 }
 
-int (get_mode_sign)(const ir_mode *mode)
-{
-	return get_mode_sign_(mode);
-}
-
 ir_mode_arithmetic (get_mode_arithmetic)(const ir_mode *mode)
 {
 	return get_mode_arithmetic_(mode);

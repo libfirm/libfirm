@@ -972,11 +972,11 @@ static void optimize_load_conv(ir_node *node)
 	if (get_mode_size_bits(conv_mode) < get_mode_size_bits(load_mode))
 		return;
 
-	if (get_mode_sign(conv_mode) != get_mode_sign(load_mode)) {
+	if (mode_is_signed(conv_mode) != mode_is_signed(load_mode)) {
 		/* change the load if it has only 1 user */
 		if (get_irn_n_edges(pred) == 1) {
 			ir_mode *newmode;
-			if (get_mode_sign(conv_mode)) {
+			if (mode_is_signed(conv_mode)) {
 				newmode = find_signed_mode(load_mode);
 			} else {
 				newmode = find_unsigned_mode(load_mode);
@@ -1018,7 +1018,7 @@ static void optimize_conv_conv(ir_node *node)
 	int      pred_mode_bits = get_mode_size_bits(pred_mode);
 
 	if (conv_mode_bits == pred_mode_bits
-			&& get_mode_sign(conv_mode) == get_mode_sign(pred_mode)) {
+			&& mode_is_signed(conv_mode) == mode_is_signed(pred_mode)) {
 		result_conv = pred_proj;
 	} else if (conv_mode_bits <= pred_mode_bits) {
 		/* if 2nd conv is smaller then first conv, then we can always take the
@@ -1049,7 +1049,7 @@ static void optimize_conv_conv(ir_node *node)
 		}
 	} else {
 		/* if both convs have the same sign, then we can take the smaller one */
-		if (get_mode_sign(conv_mode) == get_mode_sign(pred_mode)) {
+		if (mode_is_signed(conv_mode) == mode_is_signed(pred_mode)) {
 			result_conv = pred_proj;
 		} else {
 			/* no optimization possible if smaller conv is sign-extend */
