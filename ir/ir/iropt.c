@@ -784,7 +784,7 @@ static bool is_relation(ir_relation relation, ir_relation cmp_relation, ir_relat
 
 /**
  * Check whether we can use @p relation or its ordered complement instead of @p
- * cmp_relation, if only somre relations are @p possible.
+ * cmp_relation, if only some relations are @p possible.
  *
  * @param relation      The relation to check for
  * @param cmp_relation  The current relation of the Cmp
