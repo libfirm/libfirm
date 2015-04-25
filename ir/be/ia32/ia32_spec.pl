@@ -1081,8 +1081,7 @@ Pop => {
 			out_reqs => [ "gp", "none", "none", "esp:I|S" ],
 		},
 		"ebp" => {
-			out_reqs  => [ "ebp:I", "none", "none", "esp:I|S" ],
-			init_attr => "attr->ls_mode = ia32_mode_gp;",
+			out_reqs => [ "ebp:I", "none", "none", "esp:I|S" ],
 		}
 	},
 	in_reqs   => [ "none", "esp" ],
@@ -1090,6 +1089,7 @@ Pop => {
 	outs      => [ "res", "unused", "M", "stack" ],
 	emit      => "pop%M %D0",
 	latency   => 3, # Pop is more expensive than Push on Athlon
+	init_attr => "attr->ls_mode = ia32_mode_gp;",
 },
 
 CopyEbpEsp => {

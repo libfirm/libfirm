@@ -570,7 +570,6 @@ static void peephole_Load_IncSP_to_pop(ir_node *irn)
 
 		ir_node *pop = new_bd_ia32_Pop(get_irn_dbg_info(load), block, mem, pred_sp);
 		arch_set_irn_register_out(pop, pn_ia32_Load_res, reg);
-		set_ia32_ls_mode(pop, ia32_mode_gp);
 
 		copy_mark(load, pop);
 
@@ -625,7 +624,6 @@ static ir_node *create_pop(dbg_info *dbgi, ir_node *block,
 	ir_graph              *irg = get_irn_irg(block);
 
 	ir_node *pop = new_bd_ia32_Pop(dbgi, block, get_irg_no_mem(irg), stack);
-	set_ia32_ls_mode(pop, ia32_mode_gp);
 
 	stack = new_r_Proj(pop, ia32_mode_gp, pn_ia32_Pop_stack);
 	arch_set_irn_register(stack, esp);
