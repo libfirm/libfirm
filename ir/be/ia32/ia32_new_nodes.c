@@ -609,24 +609,6 @@ int is_ia32_is_remat(const ir_node *node)
 }
 
 /**
- * Gets the mode of the stored/loaded value (only set for Store/Load)
- */
-ir_mode *get_ia32_ls_mode(const ir_node *node)
-{
-	const ia32_attr_t *attr = get_ia32_attr_const(node);
-	return attr->ls_mode;
-}
-
-/**
- * Sets the mode of the stored/loaded value (only set for Store/Load)
- */
-void set_ia32_ls_mode(ir_node *node, ir_mode *mode)
-{
-	ia32_attr_t *attr = get_ia32_attr(node);
-	attr->ls_mode     = mode;
-}
-
-/**
  * Gets the frame entity assigned to this node.
  */
 ir_entity *get_ia32_frame_ent(const ir_node *node)
