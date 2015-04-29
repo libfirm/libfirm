@@ -212,16 +212,12 @@ static void amd64_emit_immediate64(const amd64_imm64_t *const imm)
 
 static void amd64_emit_immediate32(const amd64_imm32_t *const imm)
 {
-
-	if (imm->entity != NULL) {
+	if (imm->entity) {
 		be_gas_emit_entity(imm->entity);
-	}
-	if (imm->entity == NULL || imm->offset != 0) {
-		if (imm->entity != NULL) {
+		if (imm->offset != 0)
 			be_emit_irprintf("%+" PRId32, imm->offset);
-		} else {
-			be_emit_irprintf("%" PRId32, imm->offset);
-		}
+	} else {
+		be_emit_irprintf("%" PRId32, imm->offset);
 	}
 }
 
