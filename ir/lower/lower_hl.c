@@ -163,3 +163,11 @@ void lower_const_code(void)
 {
 	walk_const_code(NULL, lower_irnode, NULL);
 }
+
+void lower_highlevel()
+{
+	foreach_irp_irg(i, irg) {
+		lower_highlevel_graph(irg);
+	}
+	lower_const_code();
+}
