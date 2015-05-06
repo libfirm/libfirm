@@ -24,6 +24,7 @@
 #include "irgmod.h"
 #include "irgwalk.h"
 #include "iropt_t.h"
+#include "irtools.h"
 #include "lower_alloc.h"
 #include "lower_builtins.h"
 #include "lower_calls.h"
@@ -800,6 +801,15 @@ void be_init_arch_amd64(void)
 {
 	be_register_isa_if("amd64", &amd64_isa_if);
 	FIRM_DBG_REGISTER(dbg, "firm.be.amd64.cg");
+
+	static const lc_opt_table_entry_t options[] = {
+		LC_OPT_ENT_BOOL("x64abi", "Use x64 ABI (otherwise system V)",
+						&amd64_use_x64_abi),
+		LC_OPT_LAST
+	};
+	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
+	lc_opt_entry_t *x86_64_grp = lc_opt_get_grp(be_grp, "x86_64");
+	lc_opt_add_table(x86_64_grp, options);
 
 	amd64_init_finish();
 	amd64_init_transform();

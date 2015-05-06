@@ -4932,7 +4932,7 @@ static ir_node *gen_Call(ir_node *node)
 	ir_node *const block               = be_transform_node(old_block);
 	ir_node *const new_frame           = get_stack_pointer_for(node);
 	unsigned const po2_stack_alignment = ia32_cg_config.po2_stack_alignment;
-	unsigned const callframe_size      = cconv->param_stack_size;
+	unsigned const callframe_size      = cconv->callframe_size;
 	ir_node *const callframe           =
 		callframe_size == 0 && po2_stack_alignment == 0 ? new_frame:
 		ia32_new_IncSP(block, new_frame, callframe_size, ia32_cg_config.po2_stack_alignment);
@@ -5833,9 +5833,9 @@ static void ia32_create_stacklayout(ir_graph *irg, const x86_cconv_t *cconv)
 		set_entity_offset(param->entity, param->offset);
 	}
 	if (va_start_entity != NULL) {
-		set_entity_offset(va_start_entity, cconv->param_stack_size);
+		set_entity_offset(va_start_entity, cconv->callframe_size);
 	}
-	set_type_size_bytes(arg_type, cconv->param_stack_size);
+	set_type_size_bytes(arg_type, cconv->callframe_size);
 
 	memset(layout, 0, sizeof(*layout));
 	layout->frame_type     = frame_type;

@@ -19,6 +19,8 @@ extern ir_mode *amd64_mode_E;
 extern ir_type *amd64_type_E;
 extern ir_mode *amd64_mode_xmm;
 
+extern bool amd64_use_x64_abi;
+
 #define AMD64_REGISTER_SIZE   8
 /** power of two stack alignment on calls */
 #define AMD64_PO2_STACK_ALIGNMENT 4

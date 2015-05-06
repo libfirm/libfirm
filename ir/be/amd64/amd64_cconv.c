@@ -7,6 +7,10 @@
  * @file
  * @brief   calling convention helpers
  * @author  Matthias Braun
+ *
+ * See also:
+ *  - http://www.x86-64.org/documentation/abi.pdf
+ *  - MSDN - "x64 Software Conventions"
  */
 #include "be_t.h"
 #include "beirg.h"
@@ -21,19 +25,15 @@
 #include "bearch_amd64_t.h"
 #include "../ia32/x86_cconv.h"
 
+bool amd64_use_x64_abi;
+
 static const unsigned ignore_regs[] = {
 	REG_RSP,
 	REG_EFLAGS,
 };
 
-static const arch_register_t* const param_regs[] = {
-	&amd64_registers[REG_RDI],
-	&amd64_registers[REG_RSI],
-	&amd64_registers[REG_RDX],
-	&amd64_registers[REG_RCX],
-	&amd64_registers[REG_R8],
-	&amd64_registers[REG_R9],
-};
+static const arch_register_t *const *param_regs;
+static unsigned n_param_regs;
 
 static const arch_register_t* const float_param_regs[] = {
 	&amd64_registers[REG_XMM0],
@@ -45,6 +45,7 @@ static const arch_register_t* const float_param_regs[] = {
 	&amd64_registers[REG_XMM6],
 	&amd64_registers[REG_XMM7],
 };
+static unsigned n_float_param_regs;
 
 static const arch_register_t* const result_regs[] = {
 	&amd64_registers[REG_RAX],
@@ -53,37 +54,10 @@ static const arch_register_t* const result_regs[] = {
 
 static const arch_register_t* const float_result_regs[] = {
 	&amd64_registers[REG_XMM0],
+	&amd64_registers[REG_XMM1],
 };
 
-static const unsigned caller_saves[] = {
-	REG_RAX,
-	REG_RCX,
-	REG_RDX,
-	REG_RSI,
-	REG_RDI,
-	REG_R8,
-	REG_R9,
-	REG_R10,
-	REG_R11,
-	REG_XMM0,
-	REG_XMM1,
-	REG_XMM2,
-	REG_XMM3,
-	REG_XMM4,
-	REG_XMM5,
-	REG_XMM6,
-	REG_XMM7,
-};
 static unsigned default_caller_saves[BITSET_SIZE_ELEMS(N_AMD64_REGISTERS)];
-
-static const unsigned callee_saves[] = {
-	REG_RBX,
-	REG_RBP,
-	REG_R12,
-	REG_R13,
-	REG_R14,
-	REG_R15,
-};
 static unsigned default_callee_saves[BITSET_SIZE_ELEMS(N_AMD64_REGISTERS)];
 
 static void check_omit_fp(ir_node *node, void *env)
@@ -122,10 +96,9 @@ x86_cconv_t *amd64_decide_calling_convention(ir_type *function_type,
 	size_t              float_param_regnum = 0;
 	reg_or_stackslot_t *params             = XMALLOCNZ(reg_or_stackslot_t,
 	                                                   n_params);
-
-	size_t   n_param_regs = ARRAY_SIZE(param_regs);
-	size_t   n_float_param_regs = ARRAY_SIZE(float_param_regs);
-	unsigned stack_offset = 0;
+	/* x64 always reserves space to spill the first 4 arguments to have it
+	 * easy in case of variadic functions. */
+	unsigned stack_offset = amd64_use_x64_abi ? 32 : 0;
 	for (size_t i = 0; i < n_params; ++i) {
 		ir_type *param_type = get_method_param_type(function_type,i);
 		if (is_compound_type(param_type))
@@ -140,11 +113,15 @@ x86_cconv_t *amd64_decide_calling_convention(ir_type *function_type,
 			param->reg                 = reg;
 			param->reg_offset          = float_param_regnum + param_regnum;
 			++float_param_regnum;
+			if (amd64_use_x64_abi)
+				++param_regnum;
 		} else if (!mode_is_float(mode) && param_regnum < n_param_regs) {
 			const arch_register_t *reg = param_regs[param_regnum];
 			param->reg        = reg;
 			param->reg_offset = float_param_regnum + param_regnum;
 			++param_regnum;
+			if (amd64_use_x64_abi)
+				++float_param_regnum;
 		} else {
 			param->type   = param_type;
 			param->offset = stack_offset;
@@ -156,7 +133,8 @@ x86_cconv_t *amd64_decide_calling_convention(ir_type *function_type,
 
 	}
 
-	unsigned n_param_regs_used = param_regnum + float_param_regnum;
+	unsigned n_param_regs_used
+		= amd64_use_x64_abi ? param_regnum : param_regnum + float_param_regnum;
 
 	/* determine how results are passed */
 	size_t              n_results           = get_method_n_ress(function_type);
@@ -189,16 +167,16 @@ x86_cconv_t *amd64_decide_calling_convention(ir_type *function_type,
 		++n_reg_results;
 	}
 
-	x86_cconv_t *cconv      = XMALLOCZ(x86_cconv_t);
-	cconv->parameters       = params;
-	cconv->param_stack_size = stack_offset;
-	cconv->n_param_regs     = n_param_regs_used;
-	cconv->n_xmm_regs       = float_param_regnum;
-	cconv->results          = results;
-	cconv->omit_fp          = omit_fp;
-	cconv->caller_saves     = caller_saves;
-	cconv->callee_saves     = callee_saves;
-	cconv->n_reg_results    = n_reg_results;
+	x86_cconv_t *cconv    = XMALLOCZ(x86_cconv_t);
+	cconv->parameters     = params;
+	cconv->callframe_size = stack_offset;
+	cconv->n_param_regs   = n_param_regs_used;
+	cconv->n_xmm_regs     = float_param_regnum;
+	cconv->results        = results;
+	cconv->omit_fp        = omit_fp;
+	cconv->caller_saves   = caller_saves;
+	cconv->callee_saves   = callee_saves;
+	cconv->n_reg_results  = n_reg_results;
 
 	if (irg != NULL) {
 		be_irg_t       *birg      = be_birg_from_irg(irg);
@@ -219,10 +197,65 @@ x86_cconv_t *amd64_decide_calling_convention(ir_type *function_type,
 
 void amd64_cconv_init(void)
 {
-	for (size_t i = 0; i < ARRAY_SIZE(caller_saves); ++i) {
-		rbitset_set(default_caller_saves, caller_saves[i]);
+	static const unsigned common_caller_saves[] = {
+		REG_RAX,
+		REG_RCX,
+		REG_RDX,
+		REG_R8,
+		REG_R9,
+		REG_R10,
+		REG_R11,
+		REG_XMM0,
+		REG_XMM1,
+		REG_XMM2,
+		REG_XMM3,
+		REG_XMM4,
+		REG_XMM5,
+		REG_XMM6,
+		REG_XMM7,
+		REG_XMM8,
+		REG_XMM9,
+		REG_XMM10,
+		REG_XMM11,
+		REG_XMM12,
+		REG_XMM13,
+		REG_XMM14,
+		REG_XMM15,
+	};
+	for (size_t i = 0; i < ARRAY_SIZE(common_caller_saves); ++i) {
+		rbitset_set(default_caller_saves, common_caller_saves[i]);
 	}
-	for (size_t i = 0; i < ARRAY_SIZE(callee_saves); ++i) {
-		rbitset_set(default_callee_saves, callee_saves[i]);
+	if (!amd64_use_x64_abi) {
+		rbitset_set(default_caller_saves, REG_RSI);
+		rbitset_set(default_caller_saves, REG_RDI);
 	}
+
+	static const unsigned common_callee_saves[] = {
+		REG_RBX,
+		REG_RBP,
+		REG_R12,
+		REG_R13,
+		REG_R14,
+		REG_R15,
+	};
+	for (size_t i = 0; i < ARRAY_SIZE(common_callee_saves); ++i) {
+		rbitset_set(default_callee_saves, common_callee_saves[i]);
+	}
+	if (amd64_use_x64_abi) {
+		rbitset_set(default_callee_saves, REG_RSI);
+		rbitset_set(default_callee_saves, REG_RDI);
+	}
+
+	static const arch_register_t* const param_regs_list[] = {
+		&amd64_registers[REG_RDI],
+		&amd64_registers[REG_RSI],
+		&amd64_registers[REG_RDX],
+		&amd64_registers[REG_RCX],
+		&amd64_registers[REG_R8],
+		&amd64_registers[REG_R9],
+	};
+	param_regs   = amd64_use_x64_abi ? &param_regs_list[2] : param_regs_list;
+	n_param_regs = ARRAY_SIZE(param_regs) - (amd64_use_x64_abi ? 2 : 0);
+
+	n_float_param_regs = amd64_use_x64_abi ? 4 : ARRAY_SIZE(float_param_regs);
 }

@@ -1631,7 +1631,7 @@ static ir_node *gen_Call(ir_node *node)
 	 * aligned even if we don't push arguments on it */
 	const arch_register_t *sp_reg = &amd64_registers[REG_RSP];
 	ir_node *incsp = amd64_new_IncSP(new_block, new_frame,
-	                                 cconv->param_stack_size,
+	                                 cconv->callframe_size,
 	                                 AMD64_PO2_STACK_ALIGNMENT);
 
 	/* match callee */
@@ -1817,7 +1817,7 @@ static ir_node *gen_Call(ir_node *node)
 
 	/* IncSP to destroy the call stackframe */
 	ir_node *const call_stack = new_r_Proj(call, mode_gp, pn_amd64_call_stack);
-	incsp = amd64_new_IncSP(new_block, call_stack, -cconv->param_stack_size, 0);
+	incsp = amd64_new_IncSP(new_block, call_stack, -cconv->callframe_size, 0);
 	/* if we are the last IncSP producer in a block then we have to keep
 	 * the stack value.
 	 * Note: This here keeps all producers which is more than necessary */
