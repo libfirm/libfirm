@@ -11,30 +11,39 @@
  */
 #include "begnuas.h"
 
+#include <assert.h>
+#include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
-#include <assert.h>
-
-#include "obst.h"
-#include "tv.h"
-#include "irnode.h"
-#include "irprog.h"
-#include "entity_t.h"
-#include "panic.h"
-#include "util.h"
-#include "execfreq.h"
 
 #include "be_t.h"
 #include "bearch.h"
-#include "beemitter.h"
 #include "bedwarf.h"
+#include "beemitter.h"
+#include "bemodule.h"
+#include "entity_t.h"
+#include "execfreq.h"
+#include "irnode.h"
+#include "irprog.h"
+#include "irtools.h"
+#include "lc_opts_enum.h"
+#include "obst.h"
+#include "panic.h"
+#include "tv.h"
+#include "util.h"
+
+typedef enum object_file_format_t {
+	OBJECT_FILE_FORMAT_ELF,    /**< Executable and Linkable Format (unixes) */
+	OBJECT_FILE_FORMAT_COFF,   /**< Common Object File Format (Windows) */
+	OBJECT_FILE_FORMAT_MACH_O, /**< Mach Object File Format (OS/X) */
+	OBJECT_FILE_FORMAT_LAST = OBJECT_FILE_FORMAT_MACH_O
+} object_file_format_t;
 
 /** by default, we generate assembler code for the Linux gas */
-object_file_format_t  be_gas_object_file_format = OBJECT_FILE_FORMAT_ELF;
-elf_variant_t         be_gas_elf_variant        = ELF_VARIANT_NORMAL;
-bool                  be_gas_emit_types         = true;
-char                  be_gas_elf_type_char      = '@';
+static object_file_format_t be_gas_object_file_format = OBJECT_FILE_FORMAT_ELF;
+elf_variant_t               be_gas_elf_variant        = ELF_VARIANT_NORMAL;
+bool                        be_gas_emit_types         = true;
+char                        be_gas_elf_type_char      = '@';
 
 static be_gas_section_t current_section = (be_gas_section_t) -1;
 static pmap            *block_numbers;
@@ -1562,6 +1571,11 @@ static void emit_global_asms(void)
 	}
 }
 
+bool be_gas_produces_dwarf_line_info(void)
+{
+	return be_gas_object_file_format == OBJECT_FILE_FORMAT_ELF;
+}
+
 void be_gas_begin_compilation_unit(const be_main_env_t *env)
 {
 	be_dwarf_open();
@@ -1581,4 +1595,26 @@ void be_gas_end_compilation_unit(const be_main_env_t *env)
 
 	be_dwarf_unit_end();
 	be_dwarf_close();
+}
+
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_gas)
+void be_init_gas(void)
+{
+	static const lc_opt_enum_int_items_t objectformat_items[] = {
+		{ "elf",    OBJECT_FILE_FORMAT_ELF    },
+		{ "coff",   OBJECT_FILE_FORMAT_COFF   },
+		{ "mach-o", OBJECT_FILE_FORMAT_MACH_O },
+		{ NULL,     0 },
+	};
+	static lc_opt_enum_int_var_t format_var = {
+		(int*)&be_gas_object_file_format, objectformat_items
+	};
+	static const lc_opt_table_entry_t be_gas_options[] = {
+		LC_OPT_ENT_ENUM_INT("objectformat", "object file format",
+							&format_var),
+		LC_OPT_LAST
+	};
+
+	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
+	lc_opt_add_table(be_grp, be_gas_options);
 }

@@ -41,22 +41,13 @@ typedef enum {
 } be_gas_section_t;
 ENUM_BITSET(be_gas_section_t)
 
-typedef enum object_file_format_t {
-	OBJECT_FILE_FORMAT_ELF,    /**< Executable and Linkable Format (unixes) */
-	OBJECT_FILE_FORMAT_COFF,   /**< Common Object File Format (Windows) */
-	OBJECT_FILE_FORMAT_MACH_O, /**< Mach Object File Format (OS/X) */
-	OBJECT_FILE_FORMAT_LAST = OBJECT_FILE_FORMAT_MACH_O
-} object_file_format_t;
-
 typedef enum elf_variant_t {
 	ELF_VARIANT_NORMAL,
 	ELF_VARIANT_SPARC
 } elf_variant_t;
 
-/** The variable where the GAS dialect is stored. */
-extern object_file_format_t be_gas_object_file_format;
-extern bool                 be_gas_emit_types;
-extern elf_variant_t        be_gas_elf_variant;
+extern bool          be_gas_emit_types;
+extern elf_variant_t be_gas_elf_variant;
 
 /**
  * the .type directive needs to specify @function, #function or %function
@@ -137,5 +128,7 @@ typedef ir_node* (*get_cfop_target_func)(const ir_node *cfop);
 void be_emit_jump_table(const ir_node *node, const ir_switch_table *table,
                         ir_entity *entity,
                         get_cfop_target_func get_cfop_target);
+
+bool be_gas_produces_dwarf_line_info(void);
 
 #endif

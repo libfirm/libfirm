@@ -41,6 +41,7 @@ void be_init_copyopt(void);
 void be_init_copystat(void);
 void be_init_daemelspill(void);
 void be_init_dwarf(void);
+void be_init_gas(void);
 void be_init_listsched(void);
 void be_init_live(void);
 void be_init_loopana(void);
@@ -79,6 +80,7 @@ void be_init_modules(void)
 	be_init_copyopt();
 	be_init_copystat();
 	be_init_dwarf();
+	be_init_gas();
 	be_init_live();
 	be_init_loopana();
 	be_init_peephole();

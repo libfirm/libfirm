@@ -232,9 +232,9 @@ static void emit_line_info(void)
 	be_gas_emit_switch_section(GAS_SECTION_DEBUG_LINE);
 
 	emit_label("line_section_begin");
-	/* on elf systems gas handles producing the line info for us, and we don't
+	/* on some systems gas handles producing the line info for us, and we don't
 	 * have to do anything */
-	if (be_gas_object_file_format != OBJECT_FILE_FORMAT_ELF) {
+	if (!be_gas_produces_dwarf_line_info()) {
 		emit_size("line_info_begin", "line_info_end");
 
 		emit_label("line_info_begin");

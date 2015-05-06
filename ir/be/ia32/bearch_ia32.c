@@ -58,6 +58,7 @@ static ir_entity *old_bp_ent;
 static ir_entity *ret_addr_ent;
 static ir_entity *omit_fp_ret_addr_ent;
 static bool       precise_x87_spills;
+static bool       return_small_struct_in_regs;
 
 typedef ir_node *(*create_const_node_func) (dbg_info *dbgi, ir_node *block);
 
@@ -1471,13 +1472,12 @@ static void ia32_lower_for_target(void)
 	 * have hidden parameters but know where to find the structs on the stack.
 	 * (This also forces us to always allocate space for the compound arguments
 	 *  on the callframe and we can't just use an arbitrary position on the
-	 *  stackframe)
-	 */
-	bool darwin_abi = be_gas_object_file_format == OBJECT_FILE_FORMAT_MACH_O;
+	 *  stackframe) */
 	compound_call_lowering_flags lower_call_flags
 		= LF_RETURN_HIDDEN | LF_DONT_LOWER_ARGUMENTS
 		| LF_RETURN_SMALL_ARRAY_IN_INTS
-		| (darwin_abi ? LF_RETURN_SMALL_STRUCT_IN_INTS : LF_NONE);
+		| (return_small_struct_in_regs ? LF_RETURN_SMALL_STRUCT_IN_INTS
+		                               : LF_NONE);
 	lower_calls_with_compounds(lower_call_flags);
 	be_after_irp_transform("lower-calls");
 
@@ -1544,21 +1544,12 @@ static const backend_params *ia32_get_libfirm_params(void)
 	return &ia32_backend_params;
 }
 
-static const lc_opt_enum_int_items_t gas_items[] = {
-	{ "elf",   OBJECT_FILE_FORMAT_ELF    },
-	{ "mingw", OBJECT_FILE_FORMAT_COFF   },
-	{ "macho", OBJECT_FILE_FORMAT_MACH_O },
-	{ NULL,    0 }
-};
-
-static lc_opt_enum_int_var_t gas_var = {
-	(int*) &be_gas_object_file_format, gas_items
-};
-
 static const lc_opt_table_entry_t ia32_options[] = {
-	LC_OPT_ENT_ENUM_INT("gasmode", "set the GAS compatibility mode", &gas_var),
-	LC_OPT_ENT_BOOL("gprof",      "create gprof profiling code",                                    &gprof),
+	LC_OPT_ENT_BOOL("gprof", "Create gprof profiling code", &gprof),
 	LC_OPT_ENT_BOOL("precise_float_spill", "Spill floatingpoint values precisely (the whole 80 bits)", &precise_x87_spills),
+	LC_OPT_ENT_BOOL("struct_in_reg",
+					"Return small structs in integer registers",
+					&return_small_struct_in_regs),
 	LC_OPT_LAST
 };
 
