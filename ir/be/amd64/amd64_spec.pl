@@ -31,14 +31,22 @@ $all_flags    = "all";
 		{ mode => $mode_flags, flags => "manual_ra" }
 	],
 	xmm => [
-		{ name => "xmm0", dwarf => 17 },
-		{ name => "xmm1", dwarf => 18 },
-		{ name => "xmm2", dwarf => 19 },
-		{ name => "xmm3", dwarf => 20 },
-		{ name => "xmm4", dwarf => 21 },
-		{ name => "xmm5", dwarf => 22 },
-		{ name => "xmm6", dwarf => 23 },
-		{ name => "xmm7", dwarf => 24 },
+		{ name => "xmm0",  dwarf => 17 },
+		{ name => "xmm1",  dwarf => 18 },
+		{ name => "xmm2",  dwarf => 19 },
+		{ name => "xmm3",  dwarf => 20 },
+		{ name => "xmm4",  dwarf => 21 },
+		{ name => "xmm5",  dwarf => 22 },
+		{ name => "xmm6",  dwarf => 23 },
+		{ name => "xmm7",  dwarf => 24 },
+		{ name => "xmm8",  dwarf => 25 },
+		{ name => "xmm9",  dwarf => 26 },
+		{ name => "xmm10", dwarf => 27 },
+		{ name => "xmm11", dwarf => 28 },
+		{ name => "xmm12", dwarf => 29 },
+		{ name => "xmm13", dwarf => 30 },
+		{ name => "xmm14", dwarf => 31 },
+		{ name => "xmm15", dwarf => 32 },
 		{ mode => $mode_xmm }
 	]
 );
