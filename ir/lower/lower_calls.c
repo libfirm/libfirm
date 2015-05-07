@@ -703,7 +703,7 @@ static ir_entity *create_compound_arg_entity(ir_graph *irg, ir_type *type)
 	return entity;
 }
 
-static void fix_call_compound_params(const cl_entry *entry, const ir_type *ctp)
+static void fix_call_compound_params(const cl_entry *entry, const ir_type *ctp, wlk_env *env)
 {
 	ir_node  *call     = entry->call;
 	dbg_info *dbgi     = get_irn_dbg_info(call);
@@ -714,7 +714,7 @@ static void fix_call_compound_params(const cl_entry *entry, const ir_type *ctp)
 
 	for (size_t i = 0; i < n_params; ++i) {
 		ir_type *type = get_method_param_type(ctp, i);
-		if (!is_aggregate_type(type))
+		if (!is_aggregate_type(type) || (env->flags & LF_DONT_LOWER_ARGUMENTS))
 			continue;
 
 		ir_node   *arg         = get_Call_param(call, i);
@@ -739,7 +739,7 @@ static void fix_calls(wlk_env *env)
 		set_Call_type(call, lowered_mtp);
 
 		if (entry->has_compound_param) {
-			fix_call_compound_params(entry, ctp);
+			fix_call_compound_params(entry, ctp, env);
 		}
 		if (entry->n_compound_ret > 0) {
 			fix_call_compound_ret(entry, ctp, env);
