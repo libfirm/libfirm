@@ -106,33 +106,6 @@ const x86_asm_constraint_list_t amd64_asm_constraints = {
 };
 #undef GP
 
-static const arch_register_req_t amd64_requirement_gp = {
-	.cls             = &amd64_reg_classes[CLASS_amd64_gp],
-	.limited         = NULL,
-	.type            = arch_register_req_type_none,
-	.other_same      = 0,
-	.other_different = 0,
-	.width           = 1,
-};
-
-static const arch_register_req_t amd64_requirement_flags = {
-	.cls             = &amd64_reg_classes[CLASS_amd64_flags],
-	.limited         = NULL,
-	.type            = arch_register_req_type_none,
-	.other_same      = 0,
-	.other_different = 0,
-	.width           = 1,
-};
-
-static const arch_register_req_t amd64_requirement_xmm = {
-	.cls             = &amd64_reg_classes[CLASS_amd64_xmm],
-	.limited         = NULL,
-	.type            = arch_register_req_type_none,
-	.other_same      = 0,
-	.other_different = 0,
-	.width           = 1,
-};
-
 #define BIT(x)    (1u << x)
 
 static const arch_register_req_t amd64_requirement_gp_same_0 = {
@@ -163,138 +136,98 @@ static const arch_register_req_t amd64_requirement_gp_same_0_not_1 = {
 	.width           = 1,
 };
 
-static const unsigned amd64_limited_gp_rcx [] = { BIT(REG_GP_RCX) };
-static const arch_register_req_t amd64_requirement_rcx = {
-	.cls             = &amd64_reg_classes[CLASS_amd64_gp],
-	.limited         = amd64_limited_gp_rcx,
-	.type            = arch_register_req_type_limited,
-	.other_same      = 0,
-	.other_different = 0,
-	.width           = 1,
-};
-
-static const unsigned amd64_limited_gp_rax [] = { BIT(REG_GP_RAX) };
-static const arch_register_req_t amd64_requirement_rax = {
-	.cls             = &amd64_reg_classes[CLASS_amd64_gp],
-	.limited         = amd64_limited_gp_rax,
-	.type            = arch_register_req_type_limited,
-	.other_same      = 0,
-	.other_different = 0,
-	.width           = 1,
-};
-
-static const unsigned amd64_limited_gp_rdx [] = { BIT(REG_GP_RDX) };
-static const arch_register_req_t amd64_requirement_rdx = {
-	.cls             = &amd64_reg_classes[CLASS_amd64_gp],
-	.limited         = amd64_limited_gp_rdx,
-	.type            = arch_register_req_type_limited,
-	.other_same      = 0,
-	.other_different = 0,
-	.width           = 1,
-};
-
-static const unsigned amd64_limited_gp_rsp [] = { BIT(REG_GP_RSP) };
-static const arch_register_req_t amd64_requirement_rsp = {
-	.cls             = &amd64_reg_classes[CLASS_amd64_gp],
-	.limited         = amd64_limited_gp_rsp,
-	.type            = arch_register_req_type_limited,
-	.other_same      = 0,
-	.other_different = 0,
-	.width           = 1,
-};
-
 static const arch_register_req_t *mem_reqs[] = {
 	&arch_no_requirement,
 };
 
 static const arch_register_req_t *reg_mem_reqs[] = {
-	&amd64_requirement_gp,
+	&amd64_class_reg_req_gp,
 	&arch_no_requirement,
 };
 
 static const arch_register_req_t *rsp_mem_reqs[] = {
-	&amd64_requirement_rsp,
+	&amd64_single_reg_req_gp_rsp,
 	&arch_no_requirement,
 };
 
 static const arch_register_req_t *rsp_reg_mem_reqs[] = {
-	&amd64_requirement_rsp,
-	&amd64_requirement_gp,
+	&amd64_single_reg_req_gp_rsp,
+	&amd64_class_reg_req_gp,
 	&arch_no_requirement,
 };
 
 static const arch_register_req_t *xmm_mem_reqs[] = {
-	&amd64_requirement_xmm,
+	&amd64_class_reg_req_xmm,
 	&arch_no_requirement,
 };
 
 static const arch_register_req_t *reg_reg_mem_reqs[] = {
-	&amd64_requirement_gp,
-	&amd64_requirement_gp,
+	&amd64_class_reg_req_gp,
+	&amd64_class_reg_req_gp,
 	&arch_no_requirement,
 };
 
 static const arch_register_req_t *xmm_reg_mem_reqs[] = {
-	&amd64_requirement_xmm,
-	&amd64_requirement_gp,
+	&amd64_class_reg_req_xmm,
+	&amd64_class_reg_req_gp,
 	&arch_no_requirement,
 };
 
 static const arch_register_req_t *reg_reg_reg_mem_reqs[] = {
-	&amd64_requirement_gp,
-	&amd64_requirement_gp,
-	&amd64_requirement_gp,
+	&amd64_class_reg_req_gp,
+	&amd64_class_reg_req_gp,
+	&amd64_class_reg_req_gp,
 	&arch_no_requirement,
 };
 
 static const arch_register_req_t *xmm_reg_reg_mem_reqs[] = {
-	&amd64_requirement_xmm,
-	&amd64_requirement_gp,
-	&amd64_requirement_gp,
+	&amd64_class_reg_req_xmm,
+	&amd64_class_reg_req_gp,
+	&amd64_class_reg_req_gp,
 	&arch_no_requirement,
 };
 
 static const arch_register_req_t *reg_flags_reqs[] = {
-	&amd64_requirement_gp,
-	&amd64_requirement_flags,
+	&amd64_class_reg_req_gp,
+	&amd64_class_reg_req_flags,
 };
 
 static const arch_register_req_t *reg_reg_reqs[] = {
-	&amd64_requirement_gp,
-	&amd64_requirement_gp,
+	&amd64_class_reg_req_gp,
+	&amd64_class_reg_req_gp,
 };
 
 static const arch_register_req_t *rax_reg_reqs[] = {
-	&amd64_requirement_rax,
-	&amd64_requirement_gp,
+	&amd64_single_reg_req_gp_rax,
+	&amd64_class_reg_req_gp,
 };
 
 static const arch_register_req_t *rax_reg_rdx_mem_reqs[] = {
-	&amd64_requirement_rax,
-	&amd64_requirement_gp,
-	&amd64_requirement_rdx,
+	&amd64_single_reg_req_gp_rax,
+	&amd64_class_reg_req_gp,
+	&amd64_single_reg_req_gp_rdx,
 	&arch_no_requirement,
 };
 
 static const arch_register_req_t *reg_reqs[] = {
-	&amd64_requirement_gp,
+	&amd64_class_reg_req_gp,
 };
 
 arch_register_req_t const *amd64_xmm_reqs[] = {
-	&amd64_requirement_xmm,
+	&amd64_class_reg_req_xmm,
 };
 
 static const arch_register_req_t *reg_rcx_reqs[] = {
-	&amd64_requirement_gp,
-	&amd64_requirement_rcx,
+	&amd64_class_reg_req_gp,
+	&amd64_single_reg_req_gp_rcx,
 };
 
 static const arch_register_req_t *no_reqs[] = {
 };
 
 static const arch_register_req_t *xmm_xmm_reqs[] = {
-	&amd64_requirement_xmm,
-	&amd64_requirement_xmm,
+	&amd64_class_reg_req_xmm,
+	&amd64_class_reg_req_xmm,
 };
 
 arch_register_req_t const **const gp_am_reqs[] = {
@@ -1672,11 +1605,11 @@ static ir_node *gen_Call(ir_node *node)
 			perform_address_matching(load_ptr, &in_arity, in, &addr);
 
 			if (addr.base_input != NO_INPUT) {
-				in_req[addr.base_input] = &amd64_requirement_gp;
+				in_req[addr.base_input] = &amd64_class_reg_req_gp;
 			}
 
 			if (addr.index_input != NO_INPUT) {
-				in_req[addr.index_input] = &amd64_requirement_gp;
+				in_req[addr.index_input] = &amd64_class_reg_req_gp;
 			}
 
 			ir_node *load_mem     = get_Load_mem(load);
@@ -1689,7 +1622,7 @@ static ir_node *gen_Call(ir_node *node)
 			assert(input == 0); /* UNOP_REG is currently hardcoded to always
 			                     * output the register of the first input. */
 			in[input]          = be_transform_node(callee);
-			in_req[input]      = &amd64_requirement_gp;
+			in_req[input]      = &amd64_class_reg_req_gp;
 			addr.base_input    = NO_INPUT;
 			addr.index_input   = NO_INPUT;
 			op_mode            = AMD64_OP_UNOP_REG;
