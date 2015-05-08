@@ -255,7 +255,7 @@ void amd64_cconv_init(void)
 		&amd64_registers[REG_R9],
 	};
 	param_regs   = amd64_use_x64_abi ? &param_regs_list[2] : param_regs_list;
-	n_param_regs = ARRAY_SIZE(param_regs) - (amd64_use_x64_abi ? 2 : 0);
+	n_param_regs = ARRAY_SIZE(param_regs_list) - (amd64_use_x64_abi ? 2 : 0);
 
 	n_float_param_regs = amd64_use_x64_abi ? 4 : ARRAY_SIZE(float_param_regs);
 }
