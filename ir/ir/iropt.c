@@ -1043,13 +1043,13 @@ static ir_node *equivalent_node_Add(ir_node *n)
 {
 	ir_node *oldn = n;
 
-	n = equivalent_node_neutral_zero(n);
-	if (n != oldn)
-		return n;
-
 	/* these optimizations are imprecise for floating point ops */
 	ir_mode *mode = get_irn_mode(n);
 	if (mode_is_float(mode) && !ir_imprecise_float_transforms_allowed())
+		return n;
+
+	n = equivalent_node_neutral_zero(n);
+	if (n != oldn)
 		return n;
 
 	ir_node *left  = get_Add_left(n);
