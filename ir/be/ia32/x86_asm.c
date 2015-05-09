@@ -184,6 +184,7 @@ static void parse_asm_constraints(parsed_constraint_t *const constraint,
 				new_imm = *c;
 				new_cls = constraint->cls;
 				memory_possible = true;
+				all_registers_allowed = true;
 				goto fine;
 			case MATCH_INVALID:
 				break;
