@@ -991,7 +991,8 @@ static ir_node *equivalent_node_Eor(ir_node *n)
 	ir_node *oldn = n;
 
 	n = equivalent_node_neutral_zero(n);
-	if (n != oldn) return n;
+	if (n != oldn)
+		return n;
 
 	ir_node *a = get_Eor_left(n);
 	ir_node *b = get_Eor_right(n);
@@ -1115,10 +1116,6 @@ static ir_node *equivalent_node_Sub(ir_node *n)
 		return n;
 	}
 
-	/* these optimizations are imprecise for floating point ops */
-	if (mode_is_float(mode) && !ir_imprecise_float_transforms_allowed())
-		return n;
-
 	if (is_Const(a) && is_Or(b)) {
 		ir_tarval *ta        = get_Const_tarval(a);
 		ir_tarval *all_one   = get_mode_all_one(mode);
@@ -1187,29 +1184,8 @@ static ir_node *equivalent_node_Not(ir_node *n)
  */
 static ir_node *equivalent_node_Mul(ir_node *n)
 {
-	ir_node *oldn = n;
-	ir_node *a    = get_Mul_left(n);
-
-	/* we can handle here only the n * n = n bit cases */
-	if (get_irn_mode(n) == get_irn_mode(a)) {
-		/*
-		 * Mul is commutative and has again an other neutral element.
-		 * Constants are place right, so check this case first.
-		 */
-		ir_node         *b  = get_Mul_right(n);
-		const ir_tarval *tb = value_of(b);
-		if (tarval_is_one(tb)) {
-			n = a;
-			DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_NEUTRAL_1);
-		} else {
-			const ir_tarval *ta = value_of(a);
-			if (tarval_is_one(ta)) {
-				n = b;
-				DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_NEUTRAL_1);
-			}
-		}
-	}
-	return n;
+	ir_mode *mode = get_irn_mode(n);
+	return equivalent_node_neutral_element(n, get_mode_one(mode));
 }
 
 /**
@@ -1242,19 +1218,9 @@ static ir_node *equivalent_node_Or(ir_node *n)
 		}
 	}
 
-	/* constants are normalized to right, check this side first */
-	const ir_tarval *tb = value_of(b);
-	if (tarval_is_null(tb)) {
-		n = a;
-		DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_OR);
+	n = equivalent_node_neutral_zero(n);
+	if (n != oldn)
 		return n;
-	}
-	const ir_tarval *ta = value_of(a);
-	if (tarval_is_null(ta)) {
-		n = b;
-		DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_OR);
-		return n;
-	}
 
 	/* (a & X) | a => a */
 	if (is_And(a) && get_commutative_other_op(a, b)) {
@@ -1300,21 +1266,12 @@ static ir_node *equivalent_node_And(ir_node *n)
 		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_AND);
 		return n;
 	}
-	/* constants are normalized to right, check this side first */
-	ir_tarval *tb = value_of(b);
-	if (tarval_is_constant(tb)) {
-		if (tarval_is_all_one(tb)) {
-			n = a;
-			DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_AND);
-			return n;
-		}
-	}
-	const ir_tarval *ta = value_of(a);
-	if (tarval_is_all_one(ta)) {
-		n = b;
-		DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_AND);
+
+	ir_mode *mode = get_irn_mode(n);
+	n = equivalent_node_neutral_element(n, get_mode_all_one(mode));
+	if (n != oldn)
 		return n;
-	}
+
 	/* (a|X) & a => a*/
 	if ((is_Or(a) || is_Or_Eor_Add(a)) && get_commutative_other_op(a, b)) {
 		n = b;
