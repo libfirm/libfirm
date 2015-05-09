@@ -959,40 +959,28 @@ ir_tarval *computed_value(const ir_node *n)
 }
 
 /**
- * Optimize operations that are commutative and have neutral 0,
- * so a op 0 = 0 op a = a.
+ * Optimize operations that are commutative and have a neutral element.
+ * Example: a + 0 = 0 + a = a.
  */
+static ir_node *equivalent_node_neutral_element(ir_node *n,
+												ir_tarval *neutral_element)
+{
+	/* if right operand is neutral element return the left one.
+	 * Beware: We may have Add(NULL,3) in which case the 3 has not pointer type
+	 * and this transformation would give us a type mismatch. */
+	ir_node *a = get_binop_left(n);
+	ir_node *b = get_binop_right(n);
+	if (value_of(b) == neutral_element && get_irn_mode(a) == get_irn_mode(n))
+		return a;
+	if (value_of(a) == neutral_element && get_irn_mode(b) == get_irn_mode(n))
+		return b;
+	return n;
+}
+
 static ir_node *equivalent_node_neutral_zero(ir_node *n)
 {
-	ir_node         *oldn = n;
-	ir_node         *a    = get_binop_left(n);
-	ir_node         *b    = get_binop_right(n);
-	const ir_tarval *tv;
-	ir_node         *on;
-
-	/* After running compute_node there is only one constant predecessor.
-	   Find this predecessors value and remember the other node: */
-	if (tarval_is_constant( (tv = value_of(a)) )) {
-		on = b;
-	} else if (tarval_is_constant( (tv = value_of(b)) )) {
-		on = a;
-	} else
-		return n;
-
-	/* If this predecessors constant value is zero, the operation is
-	 * unnecessary. Remove it.
-	 *
-	 * Beware: If n is a Add, the mode of on and n might be different
-	 * which happens in this rare construction: NULL + 3.
-	 * Then, a Conv would be needed which we cannot include here.
-	 */
-	if (tarval_is_null(tv) && get_irn_mode(on) == get_irn_mode(n)) {
-		n = on;
-
-		DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_NEUTRAL_0);
-	}
-
-	return n;
+	ir_tarval *null = get_mode_null(get_irn_mode(n));
+	return equivalent_node_neutral_element(n, null);
 }
 
 /**
@@ -1045,10 +1033,18 @@ static ir_node *equivalent_node_Add(ir_node *n)
 
 	/* these optimizations are imprecise for floating point ops */
 	ir_mode *mode = get_irn_mode(n);
-	if (mode_is_float(mode) && !ir_imprecise_float_transforms_allowed())
-		return n;
+	ir_tarval *neutral = get_mode_null(mode);
+	if (mode_is_float(mode)) {
+		neutral = tarval_neg(neutral);
+		/* X + -0.0 -> X */
+		n = equivalent_node_neutral_element(n, neutral);
+		if (n != oldn)
+			return n;
+		if (!ir_imprecise_float_transforms_allowed())
+			return n;
+	}
 
-	n = equivalent_node_neutral_zero(n);
+	n = equivalent_node_neutral_element(n, neutral);
 	if (n != oldn)
 		return n;
 
@@ -1106,26 +1102,22 @@ static ir_node *equivalent_node_left_zero(ir_node *n)
  */
 static ir_node *equivalent_node_Sub(ir_node *n)
 {
-	ir_node *oldn = n;
-	ir_mode *mode = get_irn_mode(n);
+	ir_node         *oldn = n;
+	ir_mode         *mode = get_irn_mode(n);
+	ir_node         *a    = get_Sub_left(n);
+	ir_node         *b    = get_Sub_right(n);
+	const ir_tarval *tb   = value_of(b);
+
+	/* Beware: modes might be different */
+	if (tarval_is_null(tb) && mode == get_irn_mode(a)) {
+		n = a;
+		DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_NEUTRAL_0);
+		return n;
+	}
 
 	/* these optimizations are imprecise for floating point ops */
 	if (mode_is_float(mode) && !ir_imprecise_float_transforms_allowed())
 		return n;
-
-	ir_node         *a  = get_Sub_left(n);
-	ir_node         *b  = get_Sub_right(n);
-	const ir_tarval *tb = value_of(b);
-
-	/* Beware: modes might be different */
-	if (tarval_is_null(tb)) {
-		if (mode == get_irn_mode(a)) {
-			n = a;
-
-			DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_NEUTRAL_0);
-			return n;
-		}
-	}
 
 	if (is_Const(a) && is_Or(b)) {
 		ir_tarval *ta        = get_Const_tarval(a);
