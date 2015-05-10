@@ -49,16 +49,6 @@ static be_gas_section_t current_section = (be_gas_section_t) -1;
 static pmap            *block_numbers;
 static unsigned         next_block_nr;
 
-/**
- * An environment containing all needed dumper data.
- * Currently we create the file completely in memory first, then
- * write it to the disk. This is an artifact from the old C-generating backend
- * and even there NOT needed. So we might change it in the future.
- */
-typedef struct be_gas_decl_env {
-	const be_main_env_t *main_env;
-} be_gas_decl_env_t;
-
 static void emit_section_macho(be_gas_section_t section)
 {
 	be_gas_section_t  base  = section & GAS_SECTION_TYPE_MASK;
@@ -422,8 +412,7 @@ static be_gas_section_t determine_basic_section(const ir_entity *entity)
 	return GAS_SECTION_DATA;
 }
 
-static be_gas_section_t determine_section(be_gas_decl_env_t *env,
-                                          const ir_entity *entity)
+static be_gas_section_t determine_section(be_main_env_t const *const main_env, ir_entity const *const entity)
 {
 	ir_type *owner = get_entity_owner(entity);
 
@@ -432,9 +421,9 @@ static be_gas_section_t determine_section(be_gas_decl_env_t *env,
 		if (is_comdat(entity))
 			section |= GAS_SECTION_FLAG_COMDAT;
 		return section;
-	} else if (env != NULL && owner == env->main_env->pic_symbols_type) {
+	} else if (main_env && owner == main_env->pic_symbols_type) {
 		return GAS_SECTION_PIC_SYMBOLS;
-	} else if (env != NULL && owner == env->main_env->pic_trampolines_type) {
+	} else if (main_env && owner == main_env->pic_trampolines_type) {
 		return GAS_SECTION_PIC_TRAMPOLINES;
 	} else if (owner == get_segment_type(IR_SEGMENT_CONSTRUCTORS)) {
 		return GAS_SECTION_CONSTRUCTORS;
@@ -1320,10 +1309,9 @@ void be_gas_begin_block(const ir_node *block, bool needs_label)
 /**
  * Dump a global entity.
  *
- * @param env  the gas output environment
  * @param ent  the entity to be dumped
  */
-static void emit_global(be_gas_decl_env_t *env, const ir_entity *entity)
+static void emit_global(be_main_env_t const *const main_env, ir_entity const *const entity)
 {
 	ir_entity_kind kind = get_entity_kind(entity);
 
@@ -1336,7 +1324,7 @@ static void emit_global(be_gas_decl_env_t *env, const ir_entity *entity)
 
 	/* we already emitted all methods with graphs in other functions like
 	 * be_gas_emit_function_prolog(). All others don't need to be emitted. */
-	be_gas_section_t section = determine_section(env, entity);
+	be_gas_section_t const section = determine_section(main_env, entity);
 	if (kind == IR_ENTITY_METHOD && section != GAS_SECTION_PIC_TRAMPOLINES) {
 		return;
 	}
@@ -1420,32 +1408,25 @@ static void emit_global(be_gas_decl_env_t *env, const ir_entity *entity)
  * Dumps declarations of global variables and the initialization code.
  *
  * @param gt                a global like type, either the global or the TLS one
- * @param env               an environment
  */
-static void be_gas_emit_globals(ir_type *gt, be_gas_decl_env_t *env)
+static void be_gas_emit_globals(ir_type *const gt, be_main_env_t const *const main_env)
 {
 	for (size_t i = 0, n = get_compound_n_members(gt); i < n; i++) {
 		ir_entity *ent = get_compound_member(gt, i);
-		emit_global(env, ent);
+		emit_global(main_env, ent);
 	}
 }
 
 /* Generate all entities. */
 static void emit_global_decls(const be_main_env_t *main_env)
 {
-	be_gas_decl_env_t env;
-	memset(&env, 0, sizeof(env));
-
-	/* dump global type */
-	env.main_env = main_env;
-
-	be_gas_emit_globals(get_glob_type(), &env);
-	be_gas_emit_globals(get_tls_type(), &env);
-	be_gas_emit_globals(get_segment_type(IR_SEGMENT_CONSTRUCTORS), &env);
-	be_gas_emit_globals(get_segment_type(IR_SEGMENT_DESTRUCTORS), &env);
-	be_gas_emit_globals(get_segment_type(IR_SEGMENT_JCR), &env);
-	be_gas_emit_globals(main_env->pic_symbols_type, &env);
-	be_gas_emit_globals(main_env->pic_trampolines_type, &env);
+	be_gas_emit_globals(get_glob_type(), main_env);
+	be_gas_emit_globals(get_tls_type(), main_env);
+	be_gas_emit_globals(get_segment_type(IR_SEGMENT_CONSTRUCTORS), main_env);
+	be_gas_emit_globals(get_segment_type(IR_SEGMENT_DESTRUCTORS), main_env);
+	be_gas_emit_globals(get_segment_type(IR_SEGMENT_JCR), main_env);
+	be_gas_emit_globals(main_env->pic_symbols_type, main_env);
+	be_gas_emit_globals(main_env->pic_trampolines_type, main_env);
 
 	/**
 	 * ".subsections_via_symbols marks object files which are OK to divide
