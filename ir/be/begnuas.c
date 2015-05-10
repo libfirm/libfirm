@@ -1231,6 +1231,17 @@ char const *be_gas_get_private_prefix(void)
 	return be_gas_object_file_format == OBJECT_FILE_FORMAT_MACH_O ? "L" : ".L";
 }
 
+static bool check_needs_quotes(char const *const s)
+{
+	if (be_gas_object_file_format == OBJECT_FILE_FORMAT_MACH_O) {
+		for (char const *i = s; *i != '\0'; ++i) {
+			if ((unsigned char)*i >= 128)
+				return true;
+		}
+	}
+	return false;
+}
+
 void be_gas_emit_entity(const ir_entity *entity)
 {
 	if (entity->entity_kind == IR_ENTITY_LABEL) {
@@ -1244,20 +1255,10 @@ void be_gas_emit_entity(const ir_entity *entity)
 		return;
 	}
 
-	const char *name = get_entity_ld_name(entity);
-	bool needs_quotes = false;
-	if (be_gas_object_file_format == OBJECT_FILE_FORMAT_MACH_O) {
-		for (const unsigned char *c = (const unsigned char*)name; *c != '\0';
-		     ++c) {
-			if (*c >= 128) {
-				needs_quotes = true;
-				break;
-			}
-		}
-		if (needs_quotes)
-			be_emit_char('"');
-	}
-
+	char const *const name         = get_entity_ld_name(entity);
+	bool        const needs_quotes = check_needs_quotes(name);
+	if (needs_quotes)
+		be_emit_char('"');
 	if (get_entity_visibility(entity) == ir_visibility_private) {
 		be_emit_string(be_gas_get_private_prefix());
 	}
