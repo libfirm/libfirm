@@ -56,7 +56,6 @@ static unsigned         next_block_nr;
  * and even there NOT needed. So we might change it in the future.
  */
 typedef struct be_gas_decl_env {
-	be_gas_section_t     section;
 	const be_main_env_t *main_env;
 } be_gas_decl_env_t;
 
@@ -1441,7 +1440,6 @@ static void emit_global_decls(const be_main_env_t *main_env)
 
 	/* dump global type */
 	env.main_env = main_env;
-	env.section  = (be_gas_section_t) -1;
 
 	be_gas_emit_globals(get_glob_type(), &env);
 	be_gas_emit_globals(get_tls_type(), &env);
