@@ -609,21 +609,20 @@ const char *be_gas_insn_label_prefix(void)
 /**
  * Dump an atomic value.
  *
- * @param env   the gas output environment
  * @param init  a node representing the atomic value (on the const code irg)
  */
-static void emit_init_expression(be_gas_decl_env_t *env, ir_node *init)
+static void emit_init_expression(ir_node *const init)
 {
 	ir_mode *mode  = get_irn_mode(init);
 	int      bytes = get_mode_size_bytes(mode);
 
 	switch (get_irn_opcode(init)) {
 	case iro_Id:
-		emit_init_expression(env, get_Id_pred(init));
+		emit_init_expression(get_Id_pred(init));
 		return;
 
 	case iro_Conv:
-		emit_init_expression(env, get_Conv_op(init));
+		emit_init_expression(get_Conv_op(init));
 		return;
 
 	case iro_Const: {
@@ -653,27 +652,27 @@ static void emit_init_expression(be_gas_decl_env_t *env, ir_node *init)
 		if (!mode_is_int(mode) && !mode_is_reference(mode)) {
 			panic("constant must be int or pointer for '+' to work");
 		}
-		emit_init_expression(env, get_Add_left(init));
+		emit_init_expression(get_Add_left(init));
 		be_emit_cstring(" + ");
-		emit_init_expression(env, get_Add_right(init));
+		emit_init_expression(get_Add_right(init));
 		return;
 
 	case iro_Sub:
 		if (!mode_is_int(mode) && !mode_is_reference(mode)) {
 			panic("constant must be int or pointer for '-' to work");
 		}
-		emit_init_expression(env, get_Sub_left(init));
+		emit_init_expression(get_Sub_left(init));
 		be_emit_cstring(" - ");
-		emit_init_expression(env, get_Sub_right(init));
+		emit_init_expression(get_Sub_right(init));
 		return;
 
 	case iro_Mul:
 		if (!mode_is_int(mode) && !mode_is_reference(mode)) {
 			panic("constant must be int or pointer for '*' to work");
 		}
-		emit_init_expression(env, get_Mul_left(init));
+		emit_init_expression(get_Mul_left(init));
 		be_emit_cstring(" * ");
-		emit_init_expression(env, get_Mul_right(init));
+		emit_init_expression(get_Mul_right(init));
 		return;
 
 	case iro_Unknown:
@@ -1014,10 +1013,9 @@ static void emit_tarval_data(ir_type *type, ir_tarval *tv)
 /**
  * Emit an atomic value.
  *
- * @param env   the gas output environment
  * @param init  a node representing the atomic value (on the const code irg)
  */
-static void emit_node_data(be_gas_decl_env_t *env, ir_node *init, ir_type *type)
+static void emit_node_data(ir_node *const init, ir_type *const type)
 {
 	size_t size = get_type_size_bytes(type);
 	if (size == 12 || size == 16) {
@@ -1030,12 +1028,12 @@ static void emit_node_data(be_gas_decl_env_t *env, ir_node *init, ir_type *type)
 	}
 
 	emit_size_type(size);
-	emit_init_expression(env, init);
+	emit_init_expression(init);
 	be_emit_char('\n');
 	be_emit_write_line();
 }
 
-static void emit_initializer(be_gas_decl_env_t *env, const ir_entity *entity)
+static void emit_initializer(ir_entity const *const entity)
 {
 	ir_initializer_t const *const initializer = get_entity_initializer(entity);
 	if (initializer_is_string_const(initializer, false)) {
@@ -1069,7 +1067,7 @@ static void emit_initializer(be_gas_decl_env_t *env, const ir_entity *entity)
 		switch (kind) {
 		case NORMAL:
 			if (vals[k].v.value != NULL) {
-				emit_node_data(env, vals[k].v.value, vals[k].type);
+				emit_node_data(vals[k].v.value, vals[k].type);
 				elem_size = get_type_size_bytes(vals[k].type);
 			} else {
 				elem_size = 0;
@@ -1414,7 +1412,7 @@ static void emit_global(be_gas_decl_env_t *env, const ir_entity *entity)
 			be_emit_write_line();
 		}
 	} else {
-		emit_initializer(env, entity);
+		emit_initializer(entity);
 	}
 }
 
