@@ -1033,8 +1033,10 @@ static ir_node *equivalent_node_Add(ir_node *n)
 	ir_node *oldn = n;
 
 	/* these optimizations are imprecise for floating point ops */
-	ir_mode *mode = get_irn_mode(n);
-	ir_tarval *neutral = get_mode_null(mode);
+	ir_node   *right      = get_Add_right(n);
+	ir_mode   *right_mode = get_irn_mode(right);
+	ir_tarval *neutral    = get_mode_null(right_mode);
+	ir_mode   *mode       = get_irn_mode(n);
 	if (mode_is_float(mode)) {
 		neutral = tarval_neg(neutral);
 		/* X + -0.0 -> X */
@@ -1049,8 +1051,7 @@ static ir_node *equivalent_node_Add(ir_node *n)
 	if (n != oldn)
 		return n;
 
-	ir_node *left  = get_Add_left(n);
-	ir_node *right = get_Add_right(n);
+	ir_node *left = get_Add_left(n);
 
 	if (is_Sub(left) && get_Sub_right(left) == right) {
 		/* (a - x) + x */
