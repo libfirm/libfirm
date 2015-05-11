@@ -963,7 +963,7 @@ ir_tarval *computed_value(const ir_node *n)
  * Example: a + 0 = 0 + a = a.
  */
 static ir_node *equivalent_node_neutral_element(ir_node *n,
-												ir_tarval *neutral_element)
+                                                ir_tarval *neutral_element)
 {
 	/* if right operand is neutral element return the left one.
 	 * Beware: We may have Add(NULL,3) in which case the 3 has not pointer type
