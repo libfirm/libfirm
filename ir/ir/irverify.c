@@ -515,7 +515,7 @@ static int verify_node_Return(const ir_node *n)
 	if (!is_Method_type(mt)) /* someone else should report that problem */
 		return true;
 	if ((size_t)get_Return_n_ress(n) != get_method_n_ress(mt)) {
-		warn(n, "number of inputs does not match metho type (%zu inputs, %zu declared)",
+		warn(n, "number of inputs does not match method type (%zu inputs, %zu declared)",
 		     get_Return_n_ress(n), get_method_n_ress(mt));
 	} else {
 		for (int i = get_Return_n_ress(n); i-- > 0; ) {
