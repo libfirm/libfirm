@@ -56,6 +56,8 @@
 #include "bestack.h"
 #include "beemitter.h"
 
+static struct obstack obst;
+
 /* options visible for anyone */
 be_options_t be_options = {
 	.dump_flags           = DUMP_NONE,
@@ -329,6 +331,8 @@ float_int_conversion_overflow_style_t be_get_float_int_overflow(void)
 static be_main_env_t *be_init_env(be_main_env_t *const env,
                                   char const *const compilation_unit_name)
 {
+	obstack_init(&obst);
+
 	memset(env, 0, sizeof(*env));
 	env->ent_trampoline_map   = pmap_create();
 	env->pic_trampolines_type = new_type_segment(NEW_IDENT("$PIC_TRAMPOLINE_TYPE"), tf_none);
@@ -353,6 +357,7 @@ static void be_done_env(be_main_env_t *env)
 	pmap_destroy(env->ent_pic_symbol_map);
 	free_type(env->pic_trampolines_type);
 	free_type(env->pic_symbols_type);
+	obstack_free(&obst, NULL);
 }
 
 /**
@@ -447,6 +452,38 @@ void be_lower_for_target(void)
 	}
 }
 
+static ir_graph *be_prepare_profile(const char *const cup_name)
+{
+	obstack_printf(&obst, "%s.prof", cup_name);
+	obstack_1grow(&obst, '\0');
+	const char *prof_filename = obstack_finish(&obst);
+
+	bool have_profile = false;
+	if (be_options.opt_profile_use) {
+		bool res = ir_profile_read(prof_filename);
+		if (!res) {
+			be_warningf(NULL, "could not read profile data '%s'", prof_filename);
+		} else {
+			ir_create_execfreqs_from_profile();
+			ir_profile_free();
+			have_profile = true;
+		}
+	}
+
+	ir_graph *prof_init_irg = NULL;
+	if (be_options.opt_profile_generate)
+		prof_init_irg = ir_profile_instrument(prof_filename);
+
+	if (!have_profile) {
+		be_timer_push(T_EXECFREQ);
+		foreach_irp_irg(i, irg) {
+			ir_estimate_execfreq(irg);
+		}
+		be_timer_pop(T_EXECFREQ);
+	}
+	return prof_init_irg;
+}
+
 /**
  * The Firm backend main loop.
  * Do architecture specific lowering for all graphs
@@ -492,40 +529,12 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		be_dump(DUMP_INITIAL, irg, "prepared");
 	}
 
-	/*
-		Get the filename for the profiling data.
-		Beware: '\0' is already included in sizeof(suffix)
-	*/
-	static const char suffix[] = ".prof";
-	char prof_filename[256];
-	sprintf(prof_filename, "%.*s%s",
-	        (int)(sizeof(prof_filename) - sizeof(suffix)), cup_name, suffix);
-
-	bool have_profile = false;
-	if (be_options.opt_profile_use) {
-		bool res = ir_profile_read(prof_filename);
-		if (!res) {
-			be_warningf(NULL, "could not read profile data '%s'", prof_filename);
-		} else {
-			ir_create_execfreqs_from_profile();
-			ir_profile_free();
-			have_profile = true;
-		}
-	}
-
-	if (num_birgs > 0 && be_options.opt_profile_generate) {
-		ir_graph *const prof_init_irg = ir_profile_instrument(prof_filename);
-		assert(prof_init_irg->be_data == NULL);
+	/* Prepare basicblock profile generation/usage. Note: You should avoid
+	 * introducing new control flow after this point or you won't have profile
+	 * data for the new basic blocks. */
+	ir_graph *prof_init_irg = be_prepare_profile(cup_name);
+	if (prof_init_irg != NULL)
 		initialize_birg(&birgs[num_birgs++], prof_init_irg, &env);
-	}
-
-	if (!have_profile) {
-		be_timer_push(T_EXECFREQ);
-		foreach_irp_irg(i, irg) {
-			ir_estimate_execfreq(irg);
-		}
-		be_timer_pop(T_EXECFREQ);
-	}
 
 	/* For all graphs */
 	foreach_irp_irg(i, irg) {
