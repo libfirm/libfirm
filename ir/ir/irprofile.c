@@ -315,7 +315,7 @@ static void instrument_irg(ir_graph *irg, ir_entity *counters, block_id_walker_d
 
 	/* connect the new memory nodes to the return nodes */
 	ir_node *const endbb = get_irg_end_block(irg);
-	for (int i = get_Block_n_cfgpreds(endbb); i != 0;) {
+	for (unsigned i = get_Block_n_cfgpreds(endbb); i-- > 0;) {
 		ir_node *const node = skip_Proj(get_Block_cfgpred(endbb, i));
 		ir_node *const bb   = get_Block_cfgpred_block(endbb, i);
 		if (bb == NULL)
@@ -342,7 +342,7 @@ static void instrument_irg(ir_graph *irg, ir_entity *counters, block_id_walker_d
 
 	/* as well as calls with attribute noreturn */
 	ir_node *const end = get_irg_end(irg);
-	for (int i = get_End_n_keepalives(end); i-- != 0;) {
+	for (unsigned i = get_End_n_keepalives(end); i-- > 0;) {
 		ir_node *node = get_End_keepalive(end, i);
 		if (is_Call(node)) {
 			ir_node *const bb  = get_nodes_block(node);
