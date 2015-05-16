@@ -464,8 +464,9 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		be_lower_for_target();
 
 	if (be_timing) {
-		for (size_t i = 0; i < T_LAST+1; ++i) {
-			be_timers[i] = ir_timer_new();
+		for (be_timer_id_t t = T_FIRST; t < T_LAST+1; ++t) {
+			be_timers[t] = ir_timer_new();
+			ir_timer_init_parent(be_timers[t]);
 		}
 	}
 
@@ -518,9 +519,6 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		initialize_birg(&birgs[num_birgs++], prof_init_irg, &env);
 	}
 
-	for (be_timer_id_t t = T_FIRST; t < T_LAST+1; ++t) {
-		ir_timer_init_parent(be_timers[t]);
-	}
 	if (!have_profile) {
 		be_timer_push(T_EXECFREQ);
 		foreach_irp_irg(i, irg) {
@@ -535,14 +533,12 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		if (get_entity_linkage(entity) & IR_LINKAGE_NO_CODEGEN)
 			continue;
 
+		be_timer_push(T_OTHER);
 		if (stat_ev_enabled) {
 			stat_ev_ctx_push_fmt("bemain_irg", "%+F", irg);
 			stat_ev_ull("bemain_insns_start", be_count_insns(irg));
 			stat_ev_ull("bemain_blocks_start", be_count_blocks(irg));
 		}
-
-		/* stop and reset timers */
-		be_timer_push(T_OTHER);
 
 		/* Verify the initial graph */
 		if (be_options.do_verify) {
