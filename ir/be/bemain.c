@@ -484,6 +484,122 @@ static ir_graph *be_prepare_profile(const char *const cup_name)
 	return prof_init_irg;
 }
 
+static void be_gen_code_for_irg(ir_graph *irg)
+{
+	ir_entity *const entity = get_irg_entity(irg);
+	if (get_entity_linkage(entity) & IR_LINKAGE_NO_CODEGEN)
+		return;
+
+	be_timer_push(T_OTHER);
+	if (stat_ev_enabled) {
+		stat_ev_ctx_push_fmt("bemain_irg", "%+F", irg);
+		stat_ev_ull("bemain_insns_start", be_count_insns(irg));
+		stat_ev_ull("bemain_blocks_start", be_count_blocks(irg));
+	}
+
+	/* Verify the initial graph */
+	if (be_options.do_verify) {
+		be_timer_push(T_VERIFY);
+		bool fine = irg_verify(irg);
+		be_check_verify_result(fine, irg);
+		be_timer_pop(T_VERIFY);
+	}
+
+	/* prepare and perform codeselection */
+	isa_if->prepare_graph(irg);
+
+	/* schedule the irg */
+	be_timer_push(T_SCHED);
+	be_schedule_graph(irg);
+	be_timer_pop(T_SCHED);
+
+	be_dump(DUMP_SCHED, irg, "sched");
+
+	/* check schedule */
+	be_sched_verify(irg);
+
+	/* we switch off optimizations here, because they might cause trouble */
+	optimization_state_t state;
+	save_optimization_state(&state);
+	set_optimize(0);
+	set_opt_cse(0);
+
+	/* stuff needs to be done after scheduling but before register allocation */
+	be_timer_push(T_RA_PREPARATION);
+	isa_if->before_ra(irg);
+	be_timer_pop(T_RA_PREPARATION);
+
+	if (stat_ev_enabled) {
+		stat_ev_dbl("bemain_costs_before_ra", be_estimate_irg_costs(irg));
+		stat_ev_ull("bemain_insns_before_ra", be_count_insns(irg));
+		stat_ev_ull("bemain_blocks_before_ra", be_count_blocks(irg));
+	}
+
+	be_timer_push(T_RA_CONSTR);
+	/* add CopyKeeps for should_be_different constrained nodes  */
+	/* beware: needs schedule due to usage of be_ssa_constr */
+	be_spill_prepare_for_constraints(irg);
+	be_timer_pop(T_RA_CONSTR);
+	be_dump(DUMP_RA, irg, "spillprepare");
+
+	if (stat_ev_enabled) {
+		be_stat_values(irg);
+	}
+
+	/* Do register allocation */
+	be_allocate_registers(irg);
+	be_regalloc_verify(irg, true);
+
+	if (stat_ev_enabled) {
+		stat_ev_dbl("bemain_costs_after_ra", be_estimate_irg_costs(irg));
+		stat_ev_ull("bemain_insns_after_ra", be_count_insns(irg));
+		stat_ev_ull("bemain_blocks_after_ra", be_count_blocks(irg));
+	}
+
+	be_dump(DUMP_RA, irg, "ra");
+
+	/* emit assembler code */
+	be_timer_push(T_EMIT);
+	isa_if->emit(irg);
+	be_timer_pop(T_EMIT);
+
+	if (stat_ev_enabled) {
+		stat_ev_ull("bemain_insns_finish", be_count_insns(irg));
+		stat_ev_ull("bemain_blocks_finish", be_count_blocks(irg));
+	}
+
+	be_dump(DUMP_FINAL, irg, "final");
+	be_regalloc_verify(irg, false);
+
+	restore_optimization_state(&state);
+
+	be_timer_pop(T_OTHER);
+
+	if (be_timing) {
+		if (stat_ev_enabled) {
+			for (be_timer_id_t t = T_FIRST; t < T_LAST+1; ++t) {
+				char buf[128];
+				snprintf(buf, sizeof(buf), "bemain_time_%s",
+						 get_timer_name(t));
+				stat_ev_dbl(buf, ir_timer_elapsed_usec(be_timers[t]));
+			}
+		} else {
+			printf("==>> IRG %s <<==\n",
+				   get_entity_name(get_irg_entity(irg)));
+			for (be_timer_id_t t = T_FIRST; t < T_LAST+1; ++t) {
+				double val = ir_timer_elapsed_usec(be_timers[t]) / 1000.0;
+				printf("%-20s: %10.3f msec\n", get_timer_name(t), val);
+			}
+		}
+		for (be_timer_id_t t = T_FIRST; t < T_LAST+1; ++t) {
+			ir_timer_reset(be_timers[t]);
+		}
+	}
+
+	be_free_birg(irg);
+	stat_ev_ctx_pop("bemain_irg");
+}
+
 /**
  * The Firm backend main loop.
  * Do architecture specific lowering for all graphs
@@ -536,120 +652,8 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 	if (prof_init_irg != NULL)
 		initialize_birg(&birgs[num_birgs++], prof_init_irg, &env);
 
-	/* For all graphs */
 	foreach_irp_irg(i, irg) {
-		ir_entity *const entity = get_irg_entity(irg);
-		if (get_entity_linkage(entity) & IR_LINKAGE_NO_CODEGEN)
-			continue;
-
-		be_timer_push(T_OTHER);
-		if (stat_ev_enabled) {
-			stat_ev_ctx_push_fmt("bemain_irg", "%+F", irg);
-			stat_ev_ull("bemain_insns_start", be_count_insns(irg));
-			stat_ev_ull("bemain_blocks_start", be_count_blocks(irg));
-		}
-
-		/* Verify the initial graph */
-		if (be_options.do_verify) {
-			be_timer_push(T_VERIFY);
-			bool fine = irg_verify(irg);
-			be_check_verify_result(fine, irg);
-			be_timer_pop(T_VERIFY);
-		}
-
-		/* prepare and perform codeselection */
-		isa_if->prepare_graph(irg);
-
-		/* schedule the irg */
-		be_timer_push(T_SCHED);
-		be_schedule_graph(irg);
-		be_timer_pop(T_SCHED);
-
-		be_dump(DUMP_SCHED, irg, "sched");
-
-		/* check schedule */
-		be_sched_verify(irg);
-
-		/* we switch off optimizations here, because they might cause trouble */
-		optimization_state_t state;
-		save_optimization_state(&state);
-		set_optimize(0);
-		set_opt_cse(0);
-
-		/* stuff needs to be done after scheduling but before register allocation */
-		be_timer_push(T_RA_PREPARATION);
-		isa_if->before_ra(irg);
-		be_timer_pop(T_RA_PREPARATION);
-
-		if (stat_ev_enabled) {
-			stat_ev_dbl("bemain_costs_before_ra", be_estimate_irg_costs(irg));
-			stat_ev_ull("bemain_insns_before_ra", be_count_insns(irg));
-			stat_ev_ull("bemain_blocks_before_ra", be_count_blocks(irg));
-		}
-
-		be_timer_push(T_RA_CONSTR);
-		/* add CopyKeeps for should_be_different constrained nodes  */
-		/* beware: needs schedule due to usage of be_ssa_constr */
-		be_spill_prepare_for_constraints(irg);
-		be_timer_pop(T_RA_CONSTR);
-		be_dump(DUMP_RA, irg, "spillprepare");
-
-		if (stat_ev_enabled) {
-			be_stat_values(irg);
-		}
-
-		/* Do register allocation */
-		be_allocate_registers(irg);
-		be_regalloc_verify(irg, true);
-
-		if (stat_ev_enabled) {
-			stat_ev_dbl("bemain_costs_after_ra", be_estimate_irg_costs(irg));
-			stat_ev_ull("bemain_insns_after_ra", be_count_insns(irg));
-			stat_ev_ull("bemain_blocks_after_ra", be_count_blocks(irg));
-		}
-
-		be_dump(DUMP_RA, irg, "ra");
-
-		/* emit assembler code */
-		be_timer_push(T_EMIT);
-		isa_if->emit(irg);
-		be_timer_pop(T_EMIT);
-
-		if (stat_ev_enabled) {
-			stat_ev_ull("bemain_insns_finish", be_count_insns(irg));
-			stat_ev_ull("bemain_blocks_finish", be_count_blocks(irg));
-		}
-
-		be_dump(DUMP_FINAL, irg, "final");
-		be_regalloc_verify(irg, false);
-
-		restore_optimization_state(&state);
-
-		be_timer_pop(T_OTHER);
-
-		if (be_timing) {
-			if (stat_ev_enabled) {
-				for (be_timer_id_t t = T_FIRST; t < T_LAST+1; ++t) {
-					char buf[128];
-					snprintf(buf, sizeof(buf), "bemain_time_%s",
-					         get_timer_name(t));
-					stat_ev_dbl(buf, ir_timer_elapsed_usec(be_timers[t]));
-				}
-			} else {
-				printf("==>> IRG %s <<==\n",
-				       get_entity_name(get_irg_entity(irg)));
-				for (be_timer_id_t t = T_FIRST; t < T_LAST+1; ++t) {
-					double val = ir_timer_elapsed_usec(be_timers[t]) / 1000.0;
-					printf("%-20s: %10.3f msec\n", get_timer_name(t), val);
-				}
-			}
-			for (be_timer_id_t t = T_FIRST; t < T_LAST+1; ++t) {
-				ir_timer_reset(be_timers[t]);
-			}
-		}
-
-		be_free_birg(irg);
-		stat_ev_ctx_pop("bemain_irg");
+		be_gen_code_for_irg(irg);
 	}
 
 	be_gas_end_compilation_unit(&env);
