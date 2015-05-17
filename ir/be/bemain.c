@@ -535,13 +535,6 @@ static void be_gen_code_for_irg(ir_graph *irg)
 		stat_ev_ull("bemain_blocks_before_ra", be_count_blocks(irg));
 	}
 
-	be_timer_push(T_RA_CONSTR);
-	/* add CopyKeeps for should_be_different constrained nodes  */
-	/* beware: needs schedule due to usage of be_ssa_constr */
-	be_spill_prepare_for_constraints(irg);
-	be_timer_pop(T_RA_CONSTR);
-	be_dump(DUMP_RA, irg, "spillprepare");
-
 	if (stat_ev_enabled) {
 		be_stat_values(irg);
 	}

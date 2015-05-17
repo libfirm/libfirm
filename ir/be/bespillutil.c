@@ -1147,6 +1147,7 @@ static void add_missing_keep_walker(ir_node *node, void *data)
 void be_spill_prepare_for_constraints(ir_graph *irg)
 {
 	FIRM_DBG_REGISTER(dbg_constr, "firm.be.lower.constr");
+	be_timer_push(T_RA_CONSTR);
 
 	irg_walk_graph(irg, add_missing_keep_walker, NULL, NULL);
 
@@ -1223,6 +1224,8 @@ void be_spill_prepare_for_constraints(ir_graph *irg)
 	stat_ev_ull("ra_multi_precol_copies", multi_precol_copies);
 	stat_ev_ull("ra_constrained_livethrough_copies",
 	            constrained_livethrough_copies);
+	be_timer_pop(T_RA_CONSTR);
+	be_dump(DUMP_RA, irg, "spillprepare");
 }
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_spill)

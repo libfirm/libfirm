@@ -52,6 +52,7 @@
 
 #include "bespillslots.h"
 #include "bespill.h"
+#include "bespillutil.h"
 #include "belower.h"
 
 #include "becopystat.h"
@@ -266,6 +267,8 @@ static void post_spill(be_chordal_env_t *const chordal_env, ir_graph *const irg)
 static void be_ra_chordal_main(ir_graph *irg)
 {
 	be_timer_push(T_RA_OTHER);
+
+	be_spill_prepare_for_constraints(irg);
 
 	be_chordal_env_t chordal_env;
 	obstack_init(&chordal_env.obst);

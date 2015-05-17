@@ -1812,9 +1812,10 @@ static void spill(void)
  */
 static void be_pref_alloc(ir_graph *new_irg)
 {
+	irg = new_irg;
 	obstack_init(&obst);
 
-	irg = new_irg;
+	be_spill_prepare_for_constraints(irg);
 
 	/* determine a good coloring order */
 	determine_block_order();
