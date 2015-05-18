@@ -722,20 +722,26 @@ void fc_cast(const fp_value *value, const float_descriptor_t *dest,
 			memcpy(result, value, fp_value_size);
 		return;
 	}
+	/* Possible: value == result */
 
 	switch ((value_class_t)value->clss) {
 	case FC_NAN: {
+		unsigned const src_mant = value->desc.mantissa_size - value->desc.explicit_one;
+		unsigned const dst_mant = dest->mantissa_size       - dest->explicit_one;
+		assert (!fc_zero_mantissa(value));
 		result->desc = *dest;
 		result->clss = FC_NAN;
 		result->sign = value->sign;
 		sc_max_from_bits(dest->exponent_size, 0, _exp(result));
-		unsigned const src_mant = value->desc.mantissa_size;
-		unsigned const dst_mant = dest->mantissa_size;
 		if (dst_mant < src_mant) {
 			sc_shrI(_mant(value), src_mant - dst_mant, _mant(result));
 		} else {
 			sc_shlI(_mant(value), dst_mant - src_mant, _mant(result));
 		}
+		if (dest->explicit_one)
+			sc_set_bit_at(_mant(result), dest->mantissa_size + ROUNDING_BITS - 1);
+		assert (fc_nan_is_quiet(value) == fc_nan_is_quiet(result));
+		assert (fc_is_nan(result));
 		return;
 	}
 
