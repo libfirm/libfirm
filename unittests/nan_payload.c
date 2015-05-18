@@ -1,5 +1,6 @@
 #include <assert.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <limits.h>
 #include "xmalloc.h"
 #include "util.h"
@@ -9,14 +10,14 @@
 #include "irprog_t.h"
 #include "type_t.h"
 
-static long int nan_payload(double d) {
-	long int result;
+static int64_t nan_payload(double d) {
+	int64_t result;
 	memcpy(&result, &d, 8);
 	assert (result & 0x0008000000000000); // quiet NaN
 	return result & 0x0007ffffffffffff;
 }
 
-static double new_nan(long int payload) {
+static double new_nan(int64_t payload) {
 	double result;
 	payload |= 0xfff8000000000000;
 	memcpy(&result, &payload, 8);
