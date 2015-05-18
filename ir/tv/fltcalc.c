@@ -921,12 +921,22 @@ bool fc_is_negative(const fp_value *a)
 
 bool fc_is_inf(const fp_value *a)
 {
-	return a->clss == FC_INF;
+	if (a->clss == FC_INF) {
+		assert(fc_zero_mantissa(a));
+		return true;
+	} else {
+		return false;
+	}
 }
 
 bool fc_is_nan(const fp_value *a)
 {
-	return a->clss == FC_NAN;
+	if (a->clss == FC_NAN) {
+		assert(!fc_zero_mantissa(a));
+		return true;
+	} else {
+		return false;
+	}
 }
 
 bool fc_is_subnormal(const fp_value *a)
