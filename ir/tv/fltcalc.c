@@ -64,10 +64,10 @@ static void pack(const fp_value *value, sc_word *packed)
 	/* do some sanity checking */
 	if (value->clss == FC_INF) {
 		assert(sc_is_all_one(_exp(value), exponent_size));
-		assert(sc_is_zero(_mant(value), mantissa_size+ROUNDING_BITS) || desc->explicit_one);
+		assert(fc_zero_mantissa(value) || desc->explicit_one);
 	} else if (value->clss == FC_NAN) {
 		assert(sc_is_all_one(_exp(value), exponent_size));
-		assert(!sc_is_zero(_mant(value), mantissa_size+ROUNDING_BITS));
+		assert(!fc_zero_mantissa(value));
 	}
 
 	/* extract mantissa, remove rounding bits */
