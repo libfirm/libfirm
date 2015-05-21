@@ -251,6 +251,7 @@ static inline int irn_visited_else_mark_(ir_node *node)
  */
 static inline void set_irn_link_(ir_node *node, void *link)
 {
+	assert(ir_resources_reserved(get_irn_irg(node)) & IR_RESOURCE_IRN_LINK);
 	node->link = link;
 }
 
@@ -261,6 +262,7 @@ static inline void set_irn_link_(ir_node *node, void *link)
 static inline void *get_irn_link_(const ir_node *node)
 {
 	assert(node->kind == k_ir_node);
+	assert(ir_resources_reserved(get_irn_irg(node)) & IR_RESOURCE_IRN_LINK);
 	return node->link;
 }
 
