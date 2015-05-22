@@ -312,7 +312,9 @@ void be_transform_graph(ir_graph *irg, arch_pretrans_nodes *func)
 	new_identities(irg);
 
 	/* do the main transformation */
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 	transform_nodes(irg, func);
+	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 
 	/* free the old obstack */
 	obstack_free(&old_obst, 0);

@@ -97,7 +97,9 @@ void dead_node_elimination(ir_graph *irg)
 	new_identities(irg);
 
 	/* Copy the graph from the old to the new obstack */
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 	copy_graph_env(irg);
+	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 
 	/* Free memory from old unoptimized obstack */
 	obstack_free(&graveyard_obst, 0);  /* First empty the obstack ... */

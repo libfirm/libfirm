@@ -52,7 +52,9 @@ void local_optimize_node(ir_node *n)
 	new_identities(irg);
 
 	/* walk over the graph */
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 	irg_walk(n, firm_clear_link, optimize_in_place_wrapper, NULL);
+	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 }
 
 static void enqueue_node(ir_node *node, pdeq *waitq)
@@ -215,5 +217,7 @@ void local_opts_const_code(void)
 	/* Clean the value_table in irg for the CSE. */
 	new_identities(irg);
 
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 	walk_const_code(firm_clear_link, optimize_in_place_wrapper, NULL);
+	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 }

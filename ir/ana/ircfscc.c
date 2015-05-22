@@ -590,6 +590,8 @@ void construct_cf_backedges(ir_graph *irg)
 
 	struct obstack temp;
 	obstack_init(&temp);
+
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 	init_scc(irg, &temp);
 
 	current_loop = NULL;
@@ -610,6 +612,7 @@ void construct_cf_backedges(ir_graph *irg)
 			cfscc(el);
 	}
 	finish_scc();
+	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 	obstack_free(&temp, NULL);
 
 	assert(head_rem == current_loop);

@@ -903,6 +903,7 @@ void amd64_emit_function(ir_graph *irg)
 
 	be_gas_emit_function_prolog(entity, 4, NULL);
 
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 	irg_block_walk_graph(irg, amd64_gen_labels, NULL, NULL);
 
 	n = ARR_LEN(blk_sched);
@@ -918,6 +919,7 @@ void amd64_emit_function(ir_graph *irg)
 
 		amd64_gen_block(block, 0);
 	}
+	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 
 	be_gas_emit_function_epilog(entity);
 }

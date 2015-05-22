@@ -900,6 +900,7 @@ static void transform_irg(compound_call_lowering_flags flags, ir_graph *irg)
 	env.only_local_mem = true;
 
 	/* scan the code, fix argument numbers and collect calls. */
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 	irg_walk_graph(irg, firm_clear_link, NULL, &env);
 	irg_walk_graph(irg, fix_args_and_collect_calls, NULL, &env);
 
@@ -918,6 +919,7 @@ static void transform_irg(compound_call_lowering_flags flags, ir_graph *irg)
 		remove_compound_param_entities(irg);
 
 	fix_calls(&env);
+	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 
 	/* transform return nodes */
 	if (n_ret_com > 0) {

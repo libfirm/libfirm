@@ -646,7 +646,9 @@ static void callee_ana(void)
 	/* analyse all graphs */
 	foreach_irp_irg(i, irg) {
 		assure_irg_properties(irg, IR_GRAPH_PROPERTY_NO_TUPLES);
+		ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 		irg_walk_graph(irg, callee_walker, NULL, NULL);
+		ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 		set_irg_callee_info_state(irg, irg_callee_info_consistent);
 	}
 	set_irp_callee_info_state(irg_callee_info_consistent);

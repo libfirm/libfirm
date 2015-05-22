@@ -211,6 +211,8 @@ void normalize_n_returns(ir_graph *irg)
 	ir_node  *endbl    = get_irg_end_block(irg);
 	ir_node  *final    = NULL;
 	ir_node  *list     = NULL;
+
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 	for (int i = 0, n = get_Block_n_cfgpreds(endbl); i < n; ++i) {
 		ir_node *ret = get_Block_cfgpred(endbl, i);
 
@@ -231,6 +233,7 @@ void normalize_n_returns(ir_graph *irg)
 	}
 
 	if (n_rets == 0) {
+		ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 		confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_ALL);
 		add_irg_properties(irg, IR_GRAPH_PROPERTY_MANY_RETURNS);
 		return;
@@ -313,6 +316,7 @@ void normalize_n_returns(ir_graph *irg)
 	}
 
 	exchange(endbl, new_r_Block(irg, n_finals, endbl_in));
+	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 
 	/* Invalidate analysis information:
 	 * Blocks become dead and new Returns were deleted, so dominator, outs and

@@ -1194,9 +1194,12 @@ static void inline_into(ir_graph *irg, unsigned maxsize,
 			phiproj_computed = true;
 			collect_phiprojs_and_start_block_nodes(current_ir_graph);
 		}
+		ir_reserve_resources(callee, IR_RESOURCE_IRN_LINK);
 		bool did_inline = inline_method(curr_call->call, callee);
-		if (!did_inline)
+		if (!did_inline) {
+			ir_free_resources(callee, IR_RESOURCE_IRN_LINK);
 			continue;
+		}
 
 		/* call was inlined, Phi/Projs for current graph must be recomputed */
 		phiproj_computed = false;
@@ -1235,6 +1238,7 @@ static void inline_into(ir_graph *irg, unsigned maxsize,
 			list_add_tail(&new_entry->list, &env->calls);
 			maybe_push_call(pqueue, new_entry, inline_threshold);
 		}
+		ir_free_resources(callee, IR_RESOURCE_IRN_LINK);
 
 		env->n_call_nodes += callee_env->n_call_nodes;
 		env->n_nodes += callee_env->n_nodes;

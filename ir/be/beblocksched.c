@@ -563,6 +563,7 @@ ir_node **be_create_block_schedule(ir_graph *irg)
 	assure_loopinfo(irg);
 
 	// collect edge execution frequencies
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 	irg_block_walk_graph(irg, collect_egde_frequency, NULL, &env);
 
 	remove_empty_blocks(irg);
@@ -570,6 +571,7 @@ ir_node **be_create_block_schedule(ir_graph *irg)
 	coalesce_blocks(&env);
 
 	ir_node **const block_list = create_blocksched_array(&env);
+	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 
 	DEL_ARR_F(env.edges);
 	obstack_free(&env.obst, NULL);

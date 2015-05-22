@@ -2030,6 +2030,7 @@ static void do_chaining(ir_graph *irg)
 	waitq *const wq = new_waitq();
 
 	/* now we have collected enough information, optimize */
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 	irg_walk_graph(irg, NULL, wq_walker, wq);
 
 	while (!waitq_empty(wq)) {
@@ -2063,6 +2064,7 @@ static void do_chaining(ir_graph *irg)
 		}
 	}
 
+	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 	del_waitq(wq);
 }
 
@@ -2094,8 +2096,10 @@ void optimize_reassociation(ir_graph *irg)
 	waitq *const wq = new_waitq();
 
 	/* now we have collected enough information, optimize */
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 	irg_walk_graph(irg, NULL, wq_walker, wq);
 	do_reassociation(wq);
+	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 
 	/* reverse those rules that do not result in collapsed constants */
 	irg_walk_graph(irg, NULL, reverse_rules, NULL);

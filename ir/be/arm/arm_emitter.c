@@ -773,6 +773,7 @@ void arm_emit_function(ir_graph *irg)
 	parameter_dbg_info_t *const infos  = construct_parameter_infos(irg);
 	be_gas_emit_function_prolog(entity, 4, infos);
 
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 	irg_block_walk_graph(irg, arm_gen_labels, NULL, NULL);
 
 	ir_node *last_block = NULL;
@@ -785,6 +786,7 @@ void arm_emit_function(ir_graph *irg)
 		arm_gen_block(block, last_block);
 		last_block = block;
 	}
+	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 
 	/* emit entity and tarval values */
 	if (ent_or_tv_first != NULL) {

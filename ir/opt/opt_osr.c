@@ -1214,13 +1214,13 @@ void remove_phi_cycles(ir_graph *irg)
 	 * the same block as their predecessors.
 	 * This can improve the placement of new nodes.
 	 */
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 	irg_walk_graph(irg, NULL, firm_clear_link, NULL);
 
 	/* calculate the post order number for blocks. */
 	irg_out_block_walk(get_irg_start_block(irg), NULL, assign_po, &env);
 
 	/* calculate the SCC's and drive OSR. */
-	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 	do_dfs(irg, &env);
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 
@@ -1331,12 +1331,12 @@ void opt_osr(ir_graph *irg, unsigned flags)
 	 * the same block as its predecessors.
 	 * This can improve the placement of new nodes.
 	 */
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 	irg_walk_graph(irg, NULL, firm_clear_link, NULL);
 
 	irg_block_edges_walk(get_irg_start_block(irg), NULL, assign_po, &env);
 
 	/* calculate the SCC's and drive OSR. */
-	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 	do_dfs(irg, &env);
 
 	if (env.replaced) {

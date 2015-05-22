@@ -415,6 +415,7 @@ void be_assure_state(ir_graph *irg, const arch_register_t *reg, void *func_env,
 	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO
 	                         | IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 	be_assure_live_sets(irg);
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_VISITED | IR_RESOURCE_IRN_LINK);
 
 	minibelady_env_t env;
 	obstack_init(&env.obst);
@@ -427,7 +428,6 @@ void be_assure_state(ir_graph *irg, const arch_register_t *reg, void *func_env,
 	env.spills        = NULL;
 	ir_nodehashmap_init(&env.spill_infos);
 
-	ir_reserve_resources(irg, IR_RESOURCE_IRN_VISITED | IR_RESOURCE_IRN_LINK);
 	inc_irg_visited(irg);
 
 	/* process blocks */

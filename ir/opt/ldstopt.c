@@ -2278,6 +2278,7 @@ void optimize_load_store(ir_graph *irg)
 	obstack_init(&env.obst);
 
 	/* init the links, then collect Loads/Stores/Proj's in lists */
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 	master_visited = 0;
 	irg_walk_graph(irg, firm_clear_link, collect_nodes, &env);
 
@@ -2291,6 +2292,7 @@ void optimize_load_store(ir_graph *irg)
 	irg_walk_graph(irg, NULL, do_eliminate_dead_stores, &env);
 
 	env.changes |= optimize_loops(irg);
+	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 
 	obstack_free(&env.obst, NULL);
 

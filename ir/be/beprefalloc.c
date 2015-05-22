@@ -1672,6 +1672,7 @@ static void determine_block_order(void)
 	size_t    order_p   = 0;
 
 	/* clear block links... */
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 	for (size_t p = 0; p < n_blocks; ++p) {
 		ir_node *block = blocklist[p];
 		set_irn_link(block, NULL);
@@ -1749,7 +1750,7 @@ static void determine_block_order(void)
 	assert(order_p == n_blocks);
 	del_pdeq(worklist);
 
-	ir_free_resources(irg, IR_RESOURCE_BLOCK_VISITED);
+	ir_free_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_BLOCK_VISITED);
 
 	DEL_ARR_F(blocklist);
 
