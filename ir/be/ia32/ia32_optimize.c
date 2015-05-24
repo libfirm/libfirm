@@ -1089,6 +1089,7 @@ static void optimize_node(ir_node *node, void *env)
  */
 void ia32_optimize_graph(ir_graph *irg)
 {
+	assure_edges(irg);
 	irg_walk_blkwise_graph(irg, NULL, optimize_node, NULL);
 }
 

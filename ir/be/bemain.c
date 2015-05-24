@@ -57,6 +57,7 @@
 #include "beemitter.h"
 
 static struct obstack obst;
+static be_main_env_t  env;
 
 /* options visible for anyone */
 be_options_t be_options = {
@@ -273,7 +274,146 @@ void firm_be_init(void)
 	be_init_modules();
 }
 
-/* Finalize the Firm backend. */
+static ir_timer_t *bemain_timer;
+
+/**
+ * Prepare a backend graph for code generation and initialize its irg
+ */
+static void initialize_birg(be_irg_t *birg, ir_graph *irg, be_main_env_t *env)
+{
+	/* don't duplicate locals in backend when dumping... */
+	ir_remove_dump_flags(ir_dump_flag_consts_local);
+
+	be_dump(DUMP_INITIAL, irg, "begin");
+
+	assure_irg_properties(irg,
+		IR_GRAPH_PROPERTY_NO_BADS
+		| IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE
+		| IR_GRAPH_PROPERTY_NO_CRITICAL_EDGES
+		| IR_GRAPH_PROPERTY_MANY_RETURNS);
+
+	memset(birg, 0, sizeof(*birg));
+	birg->main_env = env;
+	obstack_init(&birg->obst);
+	irg->be_data = birg;
+
+	be_info_init_irg(irg);
+	birg->lv = be_liveness_new(irg);
+
+	/* Verify the initial graph */
+	if (be_options.do_verify) {
+		be_timer_push(T_VERIFY);
+		bool fine = irg_verify(irg);
+		be_check_verify_result(fine, irg);
+		be_timer_pop(T_VERIFY);
+	}
+}
+
+static ir_graph *be_prepare_profile(const char *const cup_name)
+{
+	obstack_printf(&obst, "%s.prof", cup_name);
+	obstack_1grow(&obst, '\0');
+	const char *prof_filename = obstack_finish(&obst);
+
+	bool have_profile = false;
+	if (be_options.opt_profile_use) {
+		bool res = ir_profile_read(prof_filename);
+		if (!res) {
+			be_warningf(NULL, "could not read profile data '%s'", prof_filename);
+		} else {
+			ir_create_execfreqs_from_profile();
+			ir_profile_free();
+			have_profile = true;
+		}
+	}
+
+	ir_graph *prof_init_irg = NULL;
+	if (be_options.opt_profile_generate)
+		prof_init_irg = ir_profile_instrument(prof_filename);
+
+	if (!have_profile) {
+		be_timer_push(T_EXECFREQ);
+		foreach_irp_irg(i, irg) {
+			ir_estimate_execfreq(irg);
+		}
+		be_timer_pop(T_EXECFREQ);
+	}
+	return prof_init_irg;
+}
+
+void be_begin(FILE *file_handle, const char *cup_name)
+{
+	obstack_init(&obst);
+	memset(be_asm_constraint_flags, 0, sizeof(be_asm_constraint_flags));
+
+	bemain_timer = NULL;
+	if (be_options.timing) {
+		bemain_timer = ir_timer_new();
+
+		if (ir_timer_enter_high_priority())
+			be_warningf(NULL, "could not enter high priority mode");
+
+		ir_timer_reset_and_start(bemain_timer);
+	}
+
+	if (stat_ev_enabled) {
+		const char *dot = strrchr(cup_name, '.');
+		const char *pos = dot ? dot : cup_name + strlen(cup_name);
+		char       *buf = ALLOCAN(char, pos - cup_name + 1);
+		strncpy(buf, cup_name, pos - cup_name);
+		buf[pos - cup_name] = '\0';
+
+		stat_ev_ctx_push_str("bemain_compilation_unit", cup_name);
+	}
+
+	be_timing = be_options.timing;
+
+	/* perform target lowering if it didn't happen yet */
+	if (get_irp_n_irgs() > 0 && !irg_is_constrained(get_irp_irg(0), IR_GRAPH_CONSTRAINT_TARGET_LOWERED))
+		be_lower_for_target();
+
+	if (be_timing) {
+		for (be_timer_id_t t = T_FIRST; t < T_LAST+1; ++t) {
+			be_timers[t] = ir_timer_new();
+			ir_timer_init_parent(be_timers[t]);
+		}
+	}
+
+	be_emit_init(file_handle);
+
+	memset(&env, 0, sizeof(env));
+	env.ent_trampoline_map   = pmap_create();
+	env.pic_trampolines_type = new_type_segment(NEW_IDENT("$PIC_TRAMPOLINE_TYPE"), tf_none);
+	env.ent_pic_symbol_map   = pmap_create();
+	env.pic_symbols_type     = new_type_segment(NEW_IDENT("$PIC_SYMBOLS_TYPE"), tf_none);
+	env.cup_name             = cup_name;
+
+	be_info_init();
+
+	/* First: initialize all birgs */
+	size_t          num_birgs = 0;
+	/* we might need 1 birg more for instrumentation constructor */
+	be_irg_t *const birgs     = OALLOCN(&obst, be_irg_t, get_irp_n_irgs()+1);
+	foreach_irp_irg(i, irg) {
+		ir_entity *entity = get_irg_entity(irg);
+		if (get_entity_linkage(entity) & IR_LINKAGE_NO_CODEGEN)
+			continue;
+		initialize_birg(&birgs[num_birgs++], irg, &env);
+		if (isa_if->handle_intrinsics)
+			isa_if->handle_intrinsics(irg);
+		be_dump(DUMP_INITIAL, irg, "prepared");
+	}
+
+	/* Prepare basicblock profile generation/usage. Note: You should avoid
+	 * introducing new control flow after this point or you won't have profile
+	 * data for the new basic blocks. */
+	ir_graph *prof_init_irg = be_prepare_profile(cup_name);
+	if (prof_init_irg != NULL)
+		initialize_birg(&birgs[num_birgs++], prof_init_irg, &env);
+
+	be_gas_begin_compilation_unit(&env);
+}
+
 void firm_be_finish(void)
 {
 	finish_isa();
@@ -320,69 +460,6 @@ ir_type *be_get_type_long_double(void)
 float_int_conversion_overflow_style_t be_get_float_int_overflow(void)
 {
 	return be_get_backend_param()->float_int_overflow;
-}
-
-/**
- * Initializes the main environment for the backend.
- *
- * @param env          an empty environment
- * @param file_handle  the file handle where the output will be written to
- */
-static be_main_env_t *be_init_env(be_main_env_t *const env,
-                                  char const *const compilation_unit_name)
-{
-	obstack_init(&obst);
-
-	memset(env, 0, sizeof(*env));
-	env->ent_trampoline_map   = pmap_create();
-	env->pic_trampolines_type = new_type_segment(NEW_IDENT("$PIC_TRAMPOLINE_TYPE"), tf_none);
-	env->ent_pic_symbol_map   = pmap_create();
-	env->pic_symbols_type     = new_type_segment(NEW_IDENT("$PIC_SYMBOLS_TYPE"), tf_none);
-	env->cup_name             = compilation_unit_name;
-
-	isa_if->begin_codegeneration();
-
-	memset(be_asm_constraint_flags, 0, sizeof(be_asm_constraint_flags));
-
-	return env;
-}
-
-/**
- * Called when the be_main_env_t can be destroyed.
- */
-static void be_done_env(be_main_env_t *env)
-{
-	isa_if->end_codegeneration();
-	pmap_destroy(env->ent_trampoline_map);
-	pmap_destroy(env->ent_pic_symbol_map);
-	free_type(env->pic_trampolines_type);
-	free_type(env->pic_symbols_type);
-	obstack_free(&obst, NULL);
-}
-
-/**
- * Prepare a backend graph for code generation and initialize its irg
- */
-static void initialize_birg(be_irg_t *birg, ir_graph *irg, be_main_env_t *env)
-{
-	/* don't duplicate locals in backend when dumping... */
-	ir_remove_dump_flags(ir_dump_flag_consts_local);
-
-	be_dump(DUMP_INITIAL, irg, "begin");
-
-	assure_irg_properties(irg,
-		IR_GRAPH_PROPERTY_NO_BADS
-		| IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE
-		| IR_GRAPH_PROPERTY_NO_CRITICAL_EDGES
-		| IR_GRAPH_PROPERTY_MANY_RETURNS);
-
-	memset(birg, 0, sizeof(*birg));
-	birg->main_env = env;
-	obstack_init(&birg->obst);
-	irg->be_data = birg;
-
-	be_info_init_irg(irg);
-	birg->lv = be_liveness_new(irg);
 }
 
 int be_timing;
@@ -452,43 +529,13 @@ void be_lower_for_target(void)
 	}
 }
 
-static ir_graph *be_prepare_profile(const char *const cup_name)
-{
-	obstack_printf(&obst, "%s.prof", cup_name);
-	obstack_1grow(&obst, '\0');
-	const char *prof_filename = obstack_finish(&obst);
+static int cse_setting;
 
-	bool have_profile = false;
-	if (be_options.opt_profile_use) {
-		bool res = ir_profile_read(prof_filename);
-		if (!res) {
-			be_warningf(NULL, "could not read profile data '%s'", prof_filename);
-		} else {
-			ir_create_execfreqs_from_profile();
-			ir_profile_free();
-			have_profile = true;
-		}
-	}
-
-	ir_graph *prof_init_irg = NULL;
-	if (be_options.opt_profile_generate)
-		prof_init_irg = ir_profile_instrument(prof_filename);
-
-	if (!have_profile) {
-		be_timer_push(T_EXECFREQ);
-		foreach_irp_irg(i, irg) {
-			ir_estimate_execfreq(irg);
-		}
-		be_timer_pop(T_EXECFREQ);
-	}
-	return prof_init_irg;
-}
-
-static void be_gen_code_for_irg(ir_graph *irg)
+bool be_step_first(ir_graph *irg)
 {
 	ir_entity *const entity = get_irg_entity(irg);
 	if (get_entity_linkage(entity) & IR_LINKAGE_NO_CODEGEN)
-		return;
+		return false;
 
 	be_timer_push(T_OTHER);
 	if (stat_ev_enabled) {
@@ -496,46 +543,30 @@ static void be_gen_code_for_irg(ir_graph *irg)
 		stat_ev_ull("bemain_insns_start", be_count_insns(irg));
 		stat_ev_ull("bemain_blocks_start", be_count_blocks(irg));
 	}
+	cse_setting = get_opt_cse();
+	return true;
+}
 
-	/* Verify the initial graph */
-	if (be_options.do_verify) {
-		be_timer_push(T_VERIFY);
-		bool fine = irg_verify(irg);
-		be_check_verify_result(fine, irg);
-		be_timer_pop(T_VERIFY);
-	}
+void be_step_schedule(ir_graph *irg)
+{
+	/* We generally disable CSE after scheduling as we now may want to duplicate
+	 * operations on purpose, new operations should not merge with existing ones
+	 * before they are scheduled. */
+	set_opt_cse(0);
 
-	/* prepare and perform codeselection */
-	isa_if->prepare_graph(irg);
-
-	/* schedule the irg */
 	be_timer_push(T_SCHED);
 	be_schedule_graph(irg);
 	be_timer_pop(T_SCHED);
-
 	be_dump(DUMP_SCHED, irg, "sched");
-
-	/* check schedule */
 	be_sched_verify(irg);
+}
 
-	/* we switch off optimizations here, because they might cause trouble */
-	optimization_state_t state;
-	save_optimization_state(&state);
-	set_optimize(0);
-	set_opt_cse(0);
-
-	/* stuff needs to be done after scheduling but before register allocation */
-	be_timer_push(T_RA_PREPARATION);
-	isa_if->before_ra(irg);
-	be_timer_pop(T_RA_PREPARATION);
-
+void be_step_regalloc(ir_graph *irg)
+{
 	if (stat_ev_enabled) {
 		stat_ev_dbl("bemain_costs_before_ra", be_estimate_irg_costs(irg));
 		stat_ev_ull("bemain_insns_before_ra", be_count_insns(irg));
 		stat_ev_ull("bemain_blocks_before_ra", be_count_blocks(irg));
-	}
-
-	if (stat_ev_enabled) {
 		be_stat_values(irg);
 	}
 
@@ -550,12 +581,10 @@ static void be_gen_code_for_irg(ir_graph *irg)
 	}
 
 	be_dump(DUMP_RA, irg, "ra");
+}
 
-	/* emit assembler code */
-	be_timer_push(T_EMIT);
-	isa_if->emit(irg);
-	be_timer_pop(T_EMIT);
-
+void be_step_last(ir_graph *irg)
+{
 	if (stat_ev_enabled) {
 		stat_ev_ull("bemain_insns_finish", be_count_insns(irg));
 		stat_ev_ull("bemain_blocks_finish", be_count_blocks(irg));
@@ -563,8 +592,6 @@ static void be_gen_code_for_irg(ir_graph *irg)
 
 	be_dump(DUMP_FINAL, irg, "final");
 	be_regalloc_verify(irg, false);
-
-	restore_optimization_state(&state);
 
 	be_timer_pop(T_OTHER);
 
@@ -591,105 +618,21 @@ static void be_gen_code_for_irg(ir_graph *irg)
 
 	be_free_birg(irg);
 	stat_ev_ctx_pop("bemain_irg");
+
+	set_opt_cse(cse_setting);
 }
 
-/**
- * The Firm backend main loop.
- * Do architecture specific lowering for all graphs
- * and call the architecture specific code generator.
- *
- * @param file_handle   the file handle the output will be written to
- * @param cup_name      name of the compilation unit
- */
-static void be_main_loop(FILE *file_handle, const char *cup_name)
+void be_finish(void)
 {
-	be_timing = be_options.timing;
-
-	/* perform target lowering if it didn't happen yet */
-	if (get_irp_n_irgs() > 0 && !irg_is_constrained(get_irp_irg(0), IR_GRAPH_CONSTRAINT_TARGET_LOWERED))
-		be_lower_for_target();
-
-	if (be_timing) {
-		for (be_timer_id_t t = T_FIRST; t < T_LAST+1; ++t) {
-			be_timers[t] = ir_timer_new();
-			ir_timer_init_parent(be_timers[t]);
-		}
-	}
-
-	be_emit_init(file_handle);
-
-	be_main_env_t env;
-	be_init_env(&env, cup_name);
-	be_info_init();
-
-	be_gas_begin_compilation_unit(&env);
-
-	/* First: initialize all birgs */
-	size_t          num_birgs = 0;
-	/* we might need 1 birg more for instrumentation constructor */
-	be_irg_t *const birgs     = ALLOCAN(be_irg_t, get_irp_n_irgs() + 1);
-	foreach_irp_irg(i, irg) {
-		ir_entity *entity = get_irg_entity(irg);
-		if (get_entity_linkage(entity) & IR_LINKAGE_NO_CODEGEN)
-			continue;
-		initialize_birg(&birgs[num_birgs++], irg, &env);
-		if (isa_if->handle_intrinsics)
-			isa_if->handle_intrinsics(irg);
-		be_dump(DUMP_INITIAL, irg, "prepared");
-	}
-
-	/* Prepare basicblock profile generation/usage. Note: You should avoid
-	 * introducing new control flow after this point or you won't have profile
-	 * data for the new basic blocks. */
-	ir_graph *prof_init_irg = be_prepare_profile(cup_name);
-	if (prof_init_irg != NULL)
-		initialize_birg(&birgs[num_birgs++], prof_init_irg, &env);
-
-	foreach_irp_irg(i, irg) {
-		be_gen_code_for_irg(irg);
-	}
-
 	be_gas_end_compilation_unit(&env);
-	be_emit_exit();
-
-	be_done_env(&env);
-
-	be_info_free();
-}
-
-/* Main interface to the frontend. */
-void be_main(FILE *file_handle, const char *cup_name)
-{
-	ir_timer_t *t = NULL;
 
 	if (be_options.timing) {
-		t = ir_timer_new();
-
-		if (ir_timer_enter_high_priority())
-			be_warningf(NULL, "could not enter high priority mode");
-
-		ir_timer_reset_and_start(t);
-	}
-
-	if (stat_ev_enabled) {
-		const char *dot = strrchr(cup_name, '.');
-		const char *pos = dot ? dot : cup_name + strlen(cup_name);
-		char       *buf = ALLOCAN(char, pos - cup_name + 1);
-		strncpy(buf, cup_name, pos - cup_name);
-		buf[pos - cup_name] = '\0';
-
-		stat_ev_ctx_push_str("bemain_compilation_unit", cup_name);
-	}
-
-	be_main_loop(file_handle, cup_name);
-
-	if (be_options.timing) {
-		ir_timer_stop(t);
+		ir_timer_stop(bemain_timer);
 		ir_timer_leave_high_priority();
 		if (stat_ev_enabled) {
-			stat_ev_dbl("bemain_backend_time", ir_timer_elapsed_msec(t));
+			stat_ev_dbl("bemain_backend_time", ir_timer_elapsed_msec(bemain_timer));
 		} else {
-			double val = ir_timer_elapsed_usec(t) / 1000.0;
+			double val = ir_timer_elapsed_usec(bemain_timer) / 1000.0;
 			printf("%-20s: %10.3f msec\n", "BEMAINLOOP", val);
 		}
 	}
@@ -697,4 +640,19 @@ void be_main(FILE *file_handle, const char *cup_name)
 	if (stat_ev_enabled) {
 		stat_ev_ctx_pop("bemain_compilation_unit");
 	}
+
+	be_emit_exit();
+	be_info_free();
+
+	pmap_destroy(env.ent_trampoline_map);
+	pmap_destroy(env.ent_pic_symbol_map);
+	free_type(env.pic_trampolines_type);
+	free_type(env.pic_symbols_type);
+	obstack_free(&obst, NULL);
+}
+
+void be_main(FILE *file_handle, const char *cup_name)
+{
+	/* Let the target control how the codegeneration works. */
+	isa_if->generate_code(file_handle, cup_name);
 }

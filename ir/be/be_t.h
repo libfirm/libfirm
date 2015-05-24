@@ -137,4 +137,17 @@ static inline void be_dump(be_dump_flags_t const mask, ir_graph *const irg, char
 		dump_ir_graph(irg, suffix);
 }
 
+/**
+ * @defgroup beconvenience Convenience Function for driving code generation.
+ * @{
+ */
+void be_begin(FILE *output, const char *cup_name);
+void be_finish(void);
+
+bool be_step_first(ir_graph *irg);
+void be_step_regalloc(ir_graph *irg);
+void be_step_schedule(ir_graph *irg);
+void be_step_last(ir_graph *irg);
+/** @} */
+
 #endif

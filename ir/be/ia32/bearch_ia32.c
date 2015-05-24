@@ -8,6 +8,7 @@
  * @brief       This is the main ia32 firm backend driver.
  * @author      Christian Wuerdig
  */
+#include "be_t.h"
 #include "bearch_ia32_t.h"
 #include "beflags.h"
 #include "begnuas.h"
@@ -670,20 +671,6 @@ static void simplify_remat_nodes(ir_graph *irg)
 	remove_End_Bads_and_doublets(get_irg_end(irg));
 }
 
-/**
- * Called before the register allocator.
- */
-static void ia32_before_ra(ir_graph *irg)
-{
-	/* setup fpu rounding modes */
-	ia32_setup_fpu_mode(irg);
-
-	/* fixup flags */
-	be_sched_fix_flags(irg, &ia32_reg_classes[CLASS_ia32_flags],
-	                   &flags_remat, NULL, &ia32_try_replace_flags);
-	simplify_remat_nodes(irg);
-}
-
 static ir_node *ia32_new_spill(ir_node *value, ir_node *after)
 {
 	ir_graph *irg   = get_irn_irg(value);
@@ -1129,13 +1116,15 @@ static void ia32_emit(ir_graph *irg)
 
 	be_remove_dead_nodes_from_schedule(irg);
 
+	be_timer_push(T_EMIT);
 	ia32_emit_function(irg);
+	be_timer_pop(T_EMIT);
 }
 
 /**
  * Prepare a graph and perform code selection.
  */
-static void ia32_prepare_graph(ir_graph *irg)
+static void ia32_select_instructions(ir_graph *irg)
 {
 	struct obstack  *obst     = be_get_be_obst(irg);
 	ia32_irg_data_t *irg_data = OALLOCZ(obst, ia32_irg_data_t);
@@ -1168,8 +1157,6 @@ static void ia32_prepare_graph(ir_graph *irg)
 
 	/* do local optimizations (mainly CSE) */
 	optimize_graph_df(irg);
-	/* backend code expects that outedges are always enabled */
-	assure_edges(irg);
 
 	/* optimize address mode */
 	ia32_optimize_graph(irg);
@@ -1446,13 +1433,35 @@ static void ia32_finish(void)
 	obstack_free(&opcodes_obst, NULL);
 }
 
-static void ia32_begin_codegeneration(void)
+static void ia32_generate_code(FILE *output, const char *cup_name)
 {
 	ia32_tv_ent = pmap_create();
-}
 
-static void ia32_end_codegeneration(void)
-{
+	be_begin(output, cup_name);
+
+	foreach_irp_irg(i, irg) {
+		if (!be_step_first(irg))
+			continue;
+
+		ia32_select_instructions(irg);
+
+		be_step_schedule(irg);
+
+		be_timer_push(T_RA_PREPARATION);
+		ia32_setup_fpu_mode(irg);
+		be_sched_fix_flags(irg, &ia32_reg_classes[CLASS_ia32_flags],
+						   &flags_remat, NULL, &ia32_try_replace_flags);
+		simplify_remat_nodes(irg);
+		be_timer_pop(T_RA_PREPARATION);
+
+		be_step_regalloc(irg);
+
+		ia32_emit(irg);
+
+		be_step_last(irg);
+	}
+
+	be_finish();
 	pmap_destroy(ia32_tv_ent);
 }
 
@@ -1567,16 +1576,12 @@ static arch_isa_if_t const ia32_isa_if = {
 	.init                 = ia32_init,
 	.finish               = ia32_finish,
 	.get_params           = ia32_get_libfirm_params,
+	.generate_code        = ia32_generate_code,
 	.lower_for_target     = ia32_lower_for_target,
 	.is_valid_clobber     = ia32_is_valid_clobber,
-	.begin_codegeneration = ia32_begin_codegeneration,
-	.end_codegeneration   = ia32_end_codegeneration,
 	.mark_remat           = ia32_mark_remat,
 	.new_spill            = ia32_new_spill,
 	.new_reload           = ia32_new_reload,
-	.prepare_graph        = ia32_prepare_graph,
-	.before_ra            = ia32_before_ra,
-	.emit                 = ia32_emit,
 };
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_ia32)

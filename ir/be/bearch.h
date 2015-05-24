@@ -325,6 +325,11 @@ struct arch_isa_if_t {
 	const backend_params *(*get_params)(void);
 
 	/**
+	 * Generate code for the current firm program.
+	 */
+	void (*generate_code)(FILE *output, const char *cup_name);
+
+	/**
 	 * lowers current program for target. See the documentation for
 	 * be_lower_for_target() for details.
 	 */
@@ -335,17 +340,6 @@ struct arch_isa_if_t {
 	 * backend
 	 */
 	int (*is_valid_clobber)(const char *clobber);
-
-	/**
-	 * Start codegeneration
-	 * @return a new isa instance
-	 */
-	void (*begin_codegeneration)(void);
-
-	/**
-	 * Free the isa instance.
-	 */
-	void (*end_codegeneration)(void);
 
 	/**
 	 * mark node as rematerialized
@@ -377,24 +371,6 @@ struct arch_isa_if_t {
 	 * intrinsics here.
 	 */
 	void (*handle_intrinsics)(ir_graph *irg);
-
-	/**
-	 * Initialize a graph for codegeneration. Code selection is usually
-	 * performed in this step.
-	 */
-	void (*prepare_graph)(ir_graph *irg);
-
-	/**
-	 * Called before register allocation.
-	 */
-	void (*before_ra)(ir_graph *irg);
-
-	/**
-	 * Last step in the backend. Called after register allocation.
-	 * May perform peephole optimizations and legalizations and finally emit
-	 * the code.
-	 */
-	void (*emit)(ir_graph *irg);
 };
 
 static inline bool arch_irn_is_ignore(const ir_node *irn)

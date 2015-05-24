@@ -96,18 +96,12 @@ static const lc_opt_table_entry_t sparc_options[] = {
 /**
  * Transforms the standard firm graph into a SPARC firm graph
  */
-static void sparc_prepare_graph(ir_graph *irg)
+static void sparc_select_instructions(ir_graph *irg)
 {
 	be_timer_push(T_CODEGEN);
 	sparc_transform_graph(irg);
 	be_timer_pop(T_CODEGEN);
 	be_dump(DUMP_BE, irg, "code-selection");
-}
-
-static void sparc_emit(ir_graph *irg)
-{
-	sparc_finish_graph(irg);
-	sparc_emit_function(irg);
 }
 
 static bool sparc_modifies_flags(const ir_node *node)
@@ -128,15 +122,6 @@ static bool sparc_modifies_fp_flags(const ir_node *node)
 			return true;
 	}
 	return false;
-}
-
-static void sparc_before_ra(ir_graph *irg)
-{
-	/* fixup flags register */
-	be_sched_fix_flags(irg, &sparc_reg_classes[CLASS_sparc_flags],
-	                   NULL, sparc_modifies_flags, NULL);
-	be_sched_fix_flags(irg, &sparc_reg_classes[CLASS_sparc_fpflags],
-	                   NULL, sparc_modifies_fp_flags, NULL);
 }
 
 /**
@@ -381,16 +366,38 @@ static void sparc_finish(void)
 	sparc_free_opcodes();
 }
 
-static void sparc_begin_codegeneration(void)
+static void sparc_generate_code(FILE *output, const char *cup_name)
 {
-	sparc_constants = pmap_create();
-
 	be_gas_elf_type_char = '#';
 	be_gas_elf_variant   = ELF_VARIANT_SPARC;
-}
+	sparc_constants = pmap_create();
 
-static void sparc_end_codegeneration(void)
-{
+	be_begin(output, cup_name);
+
+	foreach_irp_irg(i, irg) {
+		if (!be_step_first(irg))
+			continue;
+
+		sparc_select_instructions(irg);
+
+		be_step_schedule(irg);
+
+		be_timer_push(T_RA_PREPARATION);
+		be_sched_fix_flags(irg, &sparc_reg_classes[CLASS_sparc_flags],
+						   NULL, sparc_modifies_flags, NULL);
+		be_sched_fix_flags(irg, &sparc_reg_classes[CLASS_sparc_fpflags],
+						   NULL, sparc_modifies_fp_flags, NULL);
+		be_timer_pop(T_RA_PREPARATION);
+
+		be_step_regalloc(irg);
+
+		sparc_finish_graph(irg);
+		sparc_emit_function(irg);
+
+		be_step_last(irg);
+	}
+
+	be_finish();
 	pmap_destroy(sparc_constants);
 }
 
@@ -545,17 +552,13 @@ static arch_isa_if_t const sparc_isa_if = {
 	.reload_cost          = 5,
 	.init                 = sparc_init,
 	.finish               = sparc_finish,
+	.generate_code        = sparc_generate_code,
 	.get_params           = sparc_get_backend_params,
 	.lower_for_target     = sparc_lower_for_target,
 	.is_valid_clobber     = sparc_is_valid_clobber,
-	.begin_codegeneration = sparc_begin_codegeneration,
-	.end_codegeneration   = sparc_end_codegeneration,
 	.new_spill            = sparc_new_spill,
 	.new_reload           = sparc_new_reload,
 	.handle_intrinsics    = sparc_handle_intrinsics,
-	.prepare_graph        = sparc_prepare_graph,
-	.before_ra            = sparc_before_ra,
-	.emit                 = sparc_emit,
 };
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_sparc)

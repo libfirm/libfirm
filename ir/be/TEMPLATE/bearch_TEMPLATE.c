@@ -15,6 +15,7 @@
 #include "benode.h"
 #include "bestack.h"
 #include "gen_TEMPLATE_regalloc_if.h"
+#include "irprog_t.h"
 #include "lower_builtins.h"
 #include "lower_calls.h"
 #include "panic.h"
@@ -22,10 +23,9 @@
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 /**
- * Transforms the standard firm graph into
- * a TEMLPATE firm graph
+ * Transforms the standard firm graph into a TEMLPATE firm graph
  */
-static void TEMPLATE_prepare_graph(ir_graph *irg)
+static void TEMPLATE_select_instructions(ir_graph *irg)
 {
 	/* transform nodes into assembler instructions */
 	be_timer_push(T_CODEGEN);
@@ -34,24 +34,28 @@ static void TEMPLATE_prepare_graph(ir_graph *irg)
 	be_dump(DUMP_BE, irg, "code-selection");
 }
 
-
-
-/**
- * Last touchups and emitting of the generated code of a function.
- */
-static void TEMPLATE_emit(ir_graph *irg)
+static void TEMPLATE_generate_code(FILE *output, const char *cup_name)
 {
-	/* fix stack entity offsets */
-	be_fix_stack_nodes(irg, &TEMPLATE_registers[REG_SP]);
+	be_begin(output, cup_name);
 
-	/* emit code */
-	TEMPLATE_emit_function(irg);
-}
+	foreach_irp_irg(i, irg) {
+		if (!be_step_first(irg))
+			continue;
 
+		TEMPLATE_select_instructions(irg);
 
-static void TEMPLATE_before_ra(ir_graph *irg)
-{
-	(void)irg;
+		be_step_schedule(irg);
+
+		be_step_regalloc(irg);
+
+		be_fix_stack_nodes(irg, &TEMPLATE_registers[REG_SP]);
+
+		TEMPLATE_emit_function(irg);
+
+		be_step_last(irg);
+	}
+
+	be_finish();
 }
 
 static void TEMPLATE_init(void)
@@ -63,14 +67,6 @@ static void TEMPLATE_init(void)
 static void TEMPLATE_finish(void)
 {
 	TEMPLATE_free_opcodes();
-}
-
-static void TEMPLATE_begin_codegeneration(void)
-{
-}
-
-static void TEMPLATE_end_codegeneration(void)
-{
 }
 
 static void TEMPLATE_lower_for_target(void)
@@ -147,15 +143,11 @@ static arch_isa_if_t const TEMPLATE_isa_if = {
 	.init                 = TEMPLATE_init,
 	.finish               = TEMPLATE_finish,
 	.get_params           = TEMPLATE_get_backend_params,
+	.generate_code        = TEMPLATE_generate_code,
 	.lower_for_target     = TEMPLATE_lower_for_target,
 	.is_valid_clobber     = TEMPLATE_is_valid_clobber,
-	.begin_codegeneration = TEMPLATE_begin_codegeneration,
-	.end_codegeneration   = TEMPLATE_end_codegeneration,
 	.new_spill            = TEMPLATE_new_spill,
 	.new_reload           = TEMPLATE_new_reload,
-	.prepare_graph        = TEMPLATE_prepare_graph,
-	.before_ra            = TEMPLATE_before_ra,
-	.emit                 = TEMPLATE_emit,
 };
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_TEMPLATE)

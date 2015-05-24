@@ -43,7 +43,7 @@ ir_mode *arm_mode_flags;
 /**
  * Transforms the standard Firm graph into an ARM firm graph.
  */
-static void arm_prepare_graph(ir_graph *irg)
+static void arm_select_instructions(ir_graph *irg)
 {
 	/* transform nodes into assembler instructions */
 	be_timer_push(T_CODEGEN);
@@ -84,17 +84,6 @@ static ir_node *arm_new_spill(ir_node *value, ir_node *after)
 	arch_add_irn_flags(store, arch_irn_flag_spill);
 	sched_add_after(after, store);
 	return store;
-}
-
-static void arm_emit(ir_graph *irg)
-{
-	arm_finish_graph(irg);
-	arm_emit_function(irg);
-}
-
-static void arm_before_ra(ir_graph *irg)
-{
-	be_sched_fix_flags(irg, &arm_reg_classes[CLASS_arm_flags], NULL, NULL, NULL);
 }
 
 static ir_entity *divsi3;
@@ -173,16 +162,38 @@ static void arm_handle_intrinsics(ir_graph *irg)
 	irg_walk_graph(irg, handle_intrinsic, NULL, NULL);
 }
 
-static void arm_begin_codegeneration(void)
+static void arm_generate_code(FILE *output, const char *cup_name)
 {
 	be_gas_emit_types = false;
 	be_gas_elf_type_char = '%';
 
-	arm_emit_file_prologue();
-}
+	be_begin(output, cup_name);
 
-static void arm_end_codegeneration(void)
-{
+	arm_emit_file_prologue();
+
+	foreach_irp_irg(i, irg) {
+		if (!be_step_first(irg))
+			continue;
+
+		arm_select_instructions(irg);
+
+		be_step_schedule(irg);
+
+		be_timer_push(T_RA_PREPARATION);
+		be_sched_fix_flags(irg, &arm_reg_classes[CLASS_arm_flags], NULL, NULL, NULL);
+		be_timer_pop(T_RA_PREPARATION);
+
+		be_step_regalloc(irg);
+
+		be_timer_push(T_EMIT);
+		arm_finish_graph(irg);
+		arm_emit_function(irg);
+		be_timer_pop(T_EMIT);
+
+		be_step_last(irg);
+	}
+
+	be_finish();
 }
 
 /**
@@ -272,11 +283,6 @@ static const backend_params *arm_get_libfirm_params(void)
 	return &arm_backend_params;
 }
 
-static void arm_finish(void)
-{
-	arm_free_opcodes();
-}
-
 static void arm_init(void)
 {
 	arm_mode_gp    = new_int_mode("arm_gp", irma_twos_complement,
@@ -286,6 +292,11 @@ static void arm_init(void)
 	arm_register_init();
 	arm_create_opcodes(&be_null_ops);
 	arm_init_backend_params();
+}
+
+static void arm_finish(void)
+{
+	arm_free_opcodes();
 }
 
 static arch_isa_if_t const arm_isa_if = {
@@ -298,16 +309,12 @@ static arch_isa_if_t const arm_isa_if = {
 	.init                 = arm_init,
 	.finish               = arm_finish,
 	.get_params           = arm_get_libfirm_params,
+	.generate_code        = arm_generate_code,
 	.lower_for_target     = arm_lower_for_target,
 	.is_valid_clobber     = arm_is_valid_clobber,
-	.begin_codegeneration = arm_begin_codegeneration,
-	.end_codegeneration   = arm_end_codegeneration,
 	.new_spill            = arm_new_spill,
 	.new_reload           = arm_new_reload,
 	.handle_intrinsics    = arm_handle_intrinsics,
-	.prepare_graph        = arm_prepare_graph,
-	.before_ra            = arm_before_ra,
-	.emit                 = arm_emit,
 };
 
 static const lc_opt_enum_int_items_t arm_fpu_items[] = {

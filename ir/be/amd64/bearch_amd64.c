@@ -109,11 +109,6 @@ static int amd64_get_sp_bias(const ir_node *node)
 	return 0;
 }
 
-static void amd64_before_ra(ir_graph *irg)
-{
-	be_sched_fix_flags(irg, &amd64_reg_classes[CLASS_amd64_flags], NULL, NULL, NULL);
-}
-
 static const arch_register_req_t *am_pushpop_base_reqs[] = {
 	&amd64_single_reg_req_gp_rsp,
 	&amd64_class_reg_req_gp,
@@ -496,6 +491,18 @@ static int determine_rbp_input(ir_node *ret)
     panic("no rbp input found at %+F", ret);
 }
 
+/**
+ * prepare graph and perform code selection.
+ */
+static void amd64_select_instructions(ir_graph *irg)
+{
+	be_timer_push(T_CODEGEN);
+	amd64_transform_graph(irg);
+	be_timer_pop(T_CODEGEN);
+
+	be_dump(DUMP_BE, irg, "code-selection");
+}
+
 static void introduce_epilogue(ir_node *ret)
 {
 	const arch_register_t *sp         = &amd64_registers[REG_RSP];
@@ -596,7 +603,7 @@ static void introduce_prologue_epilogue(ir_graph *irg)
 /**
  * Called immediatly before emit phase.
  */
-static void amd64_finish_graph(ir_graph *irg)
+static void amd64_finish_and_emit(ir_graph *irg)
 {
 	be_stack_layout_t *stack_layout = be_get_irg_stack_layout(irg);
 	bool               at_begin     = stack_layout->sp_relative;
@@ -620,7 +627,9 @@ static void amd64_finish_graph(ir_graph *irg)
 	amd64_finish_irg(irg);
 
 	/* emit code */
+	be_timer_push(T_EMIT);
 	amd64_emit_function(irg);
+	be_timer_pop(T_EMIT);
 }
 
 static void amd64_finish(void)
@@ -628,26 +637,33 @@ static void amd64_finish(void)
 	amd64_free_opcodes();
 }
 
-static void amd64_begin_codegeneration(void)
+static void amd64_generate_code(FILE *output, const char *cup_name)
 {
 	amd64_constants = pmap_create();
-}
+	be_begin(output, cup_name);
 
-static void amd64_end_codegeneration(void)
-{
+	foreach_irp_irg(i, irg) {
+		if (!be_step_first(irg))
+			continue;
+
+		amd64_select_instructions(irg);
+
+		be_step_schedule(irg);
+
+		be_timer_push(T_RA_PREPARATION);
+		be_sched_fix_flags(irg, &amd64_reg_classes[CLASS_amd64_flags], NULL,
+						   NULL, NULL);
+		be_timer_pop(T_RA_PREPARATION);
+
+		be_step_regalloc(irg);
+
+		amd64_finish_and_emit(irg);
+
+		be_step_last(irg);
+	}
+
+	be_finish();
 	pmap_destroy(amd64_constants);
-}
-
-/**
- * prepare graph and perform code selection.
- */
-static void amd64_prepare_graph(ir_graph *irg)
-{
-	be_timer_push(T_CODEGEN);
-	amd64_transform_graph(irg);
-	be_timer_pop(T_CODEGEN);
-
-	be_dump(DUMP_BE, irg, "code-selection");
 }
 
 static void amd64_lower_for_target(void)
@@ -765,16 +781,12 @@ static arch_isa_if_t const amd64_isa_if = {
 	.init                 = amd64_init,
 	.finish               = amd64_finish,
 	.get_params           = amd64_get_backend_params,
+	.generate_code        = amd64_generate_code,
 	.lower_for_target     = amd64_lower_for_target,
 	.is_valid_clobber     = amd64_is_valid_clobber,
-	.begin_codegeneration = amd64_begin_codegeneration,
-	.end_codegeneration   = amd64_end_codegeneration,
 	.new_spill            = amd64_new_spill,
 	.new_reload           = amd64_new_reload,
 	.handle_intrinsics    = amd64_handle_intrinsics,
-	.prepare_graph        = amd64_prepare_graph,
-	.before_ra            = amd64_before_ra,
-	.emit                 = amd64_finish_graph,
 };
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_amd64)
