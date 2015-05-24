@@ -22,7 +22,6 @@
 #include "beirg.h"
 #include "benode.h"
 #include "betranshlp.h"
-#include "beutil.h"
 #include "gen_ia32_regalloc_if.h"
 #include "ia32_new_nodes.h"
 #include "irprintf.h"
@@ -279,37 +278,15 @@ bool x86_match_immediate(x86_imm32_t *immediate, const ir_node *node,
 	if (get_mode_arithmetic(mode) != irma_twos_complement)
 		return false;
 
-	const ir_node *cnst;
-	ir_entity     *entity;
-	if (is_Const(node)) {
-		cnst   = node;
-		entity = NULL;
-	} else if (is_Address(node)) {
-		cnst   = NULL;
-		entity = get_Address_entity(node);
-		if (is_tls_entity(entity))
-			return false;
-	} else if (is_Add(node)) {
-		ir_node *left  = get_Add_left(node);
-		ir_node *right = get_Add_right(node);
-		if (is_Const(left) && is_Address(right)) {
-			cnst   = left;
-			entity = get_Address_entity(right);
-		} else if (is_Address(left) && is_Const(right)) {
-			cnst   = right;
-			entity = get_Address_entity(left);
-		} else {
-			return false;
-		}
-	} else {
+	ir_tarval *offset;
+	ir_entity *entity;
+	if (!be_match_immediate(node, &offset, &entity))
 		return false;
-	}
 
 	long val = 0;
-	if (cnst != NULL) {
-		ir_tarval *offset = get_Const_tarval(cnst);
+	if (offset) {
 		if (!tarval_is_long(offset)) {
-			be_warningf(cnst, "tarval is not long");
+			be_warningf(node, "tarval is not long");
 			return false;
 		}
 

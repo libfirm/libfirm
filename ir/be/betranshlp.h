@@ -157,4 +157,6 @@ ir_node *be_skip_downconv(ir_node *node, bool single_user);
 /** Skip all signedness convs */
 ir_node *be_skip_sameconv(ir_node *node);
 
+bool be_match_immediate(ir_node const *node, ir_tarval **tarval_out, ir_entity **entity_out);
+
 #endif

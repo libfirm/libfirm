@@ -14,6 +14,7 @@
 #include "belive.h"
 #include "benode.h"
 #include "betranshlp.h"
+#include "beutil.h"
 #include "cgana.h"
 #include "debug.h"
 #include "execfreq_t.h"
@@ -871,4 +872,44 @@ ir_node *be_skip_sameconv(ir_node *node)
 		}
 	}
 	return node;
+}
+
+bool be_match_immediate(ir_node const *const node, ir_tarval **const tarval_out, ir_entity **const entity_out)
+{
+	ir_node const *addr;
+	ir_node const *cnst;
+	if (is_Const(node)) {
+		addr = NULL;
+		cnst = node;
+	} else if (is_Address(node)) {
+		addr = node;
+		cnst = NULL;
+	} else if (is_Add(node)) {
+		ir_node const *const l = get_Add_left(node);
+		ir_node const *const r = get_Add_right(node);
+		if (is_Address(l) && is_Const(r)) {
+			addr = l;
+			cnst = r;
+		} else if (is_Const(l) && is_Address(r)) {
+			addr = r;
+			cnst = l;
+		} else {
+			return false;
+		}
+	} else {
+		return false;
+	}
+
+	ir_entity *entity;
+	if (addr) {
+		entity = get_Address_entity(addr);
+		if (is_tls_entity(entity))
+			return false;
+	} else {
+		entity = NULL;
+	}
+
+	*tarval_out = cnst ? get_Const_tarval(cnst) : NULL;
+	*entity_out = entity;
+	return true;
 }
