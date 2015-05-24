@@ -54,7 +54,6 @@ static void sparc_emit_indent(void)
 static void sparc_emit_immediate(int32_t value, ir_entity *entity)
 {
 	if (entity == NULL) {
-		assert(sparc_is_value_imm_encodeable(value));
 		be_emit_irprintf("%"PRId32, value);
 	} else {
 		if (is_tls_entity(entity)) {
