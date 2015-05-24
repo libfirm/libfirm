@@ -37,7 +37,7 @@ typedef enum {
 	GAS_SECTION_TYPE_MASK    = 0xFF,
 
 	GAS_SECTION_FLAG_TLS     = 1 << 8,  /**< thread local flag */
-	GAS_SECTION_FLAG_COMDAT  = 1 << 9   /**< thread local version of _BSS */
+	GAS_SECTION_FLAG_COMDAT  = 1 << 9
 } be_gas_section_t;
 ENUM_BITSET(be_gas_section_t)
 
