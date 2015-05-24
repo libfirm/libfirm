@@ -357,6 +357,31 @@ int sparc_is_valid_clobber(const char *clobber)
 	return strcmp(clobber, "memory") == 0 || strcmp(clobber, "cc") == 0;
 }
 
+static bool sparc_match_immediate(sparc_asm_operand_t *const operand, ir_node *const node, char const imm_type)
+{
+	ir_tarval *offset;
+	ir_entity *entity;
+	if (!be_match_immediate(node, &offset, &entity))
+		return false;
+
+	if (entity && imm_type != 'i')
+		return false;
+
+	long value;
+	if (offset) {
+		value = get_tarval_long(offset);
+		if (imm_type == 'I' && !sparc_is_value_imm_encodeable(value))
+			return false;
+	} else {
+		value = 0;
+	}
+
+	operand->kind                   = ASM_OPERAND_IMMEDIATE;
+	operand->immediate_value        = value;
+	operand->immediate_value_entity = entity;
+	return true;
+}
+
 static ir_node *gen_ASM(ir_node *node)
 {
 	int       n_inputs     = get_ASM_n_inputs(node);
@@ -451,24 +476,8 @@ static ir_node *gen_ASM(ir_node *node)
 
 		/* try to use an immediate value */
 		char imm_type = parsed_constraint.immediate_type;
-		if (imm_type == 'I') {
-			if (is_imm_encodeable(pred)) {
-				operand->kind = ASM_OPERAND_IMMEDIATE;
-				operand->immediate_value = get_Const_long(pred);
-				continue;
-			}
-		} else if (imm_type == 'i') {
-			/* TODO: match Add(Address,Const), ... */
-			if (is_Address(pred)) {
-				operand->kind = ASM_OPERAND_IMMEDIATE;
-				operand->immediate_value_entity = get_Address_entity(pred);
-				continue;
-			} else if (is_Const(pred)) {
-				operand->kind = ASM_OPERAND_IMMEDIATE;
-				operand->immediate_value = get_Const_long(pred);
-				continue;
-			}
-		}
+		if (imm_type != '\0' && sparc_match_immediate(operand, pred, imm_type))
+			continue;
 
 		arch_register_req_t const *const req = make_register_req(irg, &parsed_constraint, n_out_constraints, out_reg_reqs, i);
 		in_reg_reqs[i] = req;

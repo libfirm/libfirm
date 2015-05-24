@@ -463,12 +463,18 @@ static bool match_immediate_32(amd64_imm32_t *imm, const ir_node *op,
 {
 	assert(mode_needs_gp_reg(get_irn_mode(op)));
 	assert(imm->offset == 0 && imm->entity == NULL);
-	if (is_Const(op)) {
-		ir_tarval *tv = get_Const_tarval(op);
+
+	ir_tarval *tv;
+	ir_entity *entity;
+	if (!be_match_immediate(op, &tv, &entity))
+		return false;
+
+	int32_t val;
+	if (tv) {
 		if (!tarval_is_long(tv))
 			return false;
-		long    lval = get_tarval_long(tv);
-		int32_t val  = (int32_t)lval;
+		long lval = get_tarval_long(tv);
+		val = (int32_t)lval;
 		if ((long)val != lval)
 			return false;
 		/** the immediate value is signed extended to 64bit, sometimes
@@ -476,16 +482,18 @@ static bool match_immediate_32(amd64_imm32_t *imm, const ir_node *op,
 		if (!upper32_dont_care && val < 0
 		    && !mode_is_signed(get_tarval_mode(tv)))
 		    return false;
-		imm->offset = val;
-		return true;
-	} else if (can_match_ip_relative && is_Address(op)) {
-		/* TODO: check if entity is in lower 4GB address space/relative */
-		ir_entity *entity = get_Address_entity(op);
-		imm->entity = entity;
-		return true;
+	} else {
+		val = 0;
 	}
-	/* TODO: SymConst, Add(SymConst, Const) ... */
-	return false;
+
+	if (entity && !can_match_ip_relative) {
+		/* TODO: check if entity is in lower 4GB address space/relative */
+		return false;
+	}
+
+	imm->offset = val;
+	imm->entity = entity;
+	return true;
 }
 
 static ir_heights_t *heights;
