@@ -320,7 +320,7 @@ bool x86_match_immediate(x86_imm32_t *immediate, const ir_node *node,
 
 	if (entity != NULL) {
 		/* we need full 32bits for entities */
-		if (constraint != 'i' && constraint != 'n' && constraint != 'g')
+		if (constraint != 'i' && constraint != 'g')
 			return false;
 	}
 
