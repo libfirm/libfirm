@@ -241,8 +241,8 @@ static void parse_asm_constraints(constraint_t *const constraint,
 			new_cls               = &sparc_reg_classes[CLASS_sparc_fp];
 			all_registers_allowed = true;
 			break;
-		case 'A':
 		case 'I':
+		case 'i':
 			new_cls = &sparc_reg_classes[CLASS_sparc_gp];
 			new_imm = *c;
 			break;
@@ -347,7 +347,7 @@ static arch_register_req_t const *make_register_req(ir_graph *const irg,
 void sparc_init_asm_constraints(void)
 {
 	be_set_constraint_support(ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER,  "0123456789efr");
-	be_set_constraint_support(ASM_CONSTRAINT_FLAG_SUPPORTS_IMMEDIATE, "AI");
+	be_set_constraint_support(ASM_CONSTRAINT_FLAG_SUPPORTS_IMMEDIATE, "Ii");
 	/* Note there are many more flags in gcc which we can't properly support
 	 * at the moment. see gcc/config/sparc/constraints.md */
 }
@@ -457,7 +457,7 @@ static ir_node *gen_ASM(ir_node *node)
 				operand->immediate_value = get_Const_long(pred);
 				continue;
 			}
-		} else if (imm_type == 'A') {
+		} else if (imm_type == 'i') {
 			/* TODO: match Add(Address,Const), ... */
 			if (is_Address(pred)) {
 				operand->kind = ASM_OPERAND_IMMEDIATE;
