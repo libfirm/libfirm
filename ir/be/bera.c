@@ -25,7 +25,6 @@
 #include "benode.h"
 #include "bera.h"
 #include "besched.h"
-#include "beutil.h"
 
 /** The list of register allocators */
 static be_module_list_entry_t *register_allocators;

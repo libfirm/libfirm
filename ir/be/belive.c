@@ -21,7 +21,6 @@
 #include "statev_t.h"
 #include "be_t.h"
 #include "bearch.h"
-#include "beutil.h"
 #include "belive.h"
 #include "besched.h"
 #include "bemodule.h"

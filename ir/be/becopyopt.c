@@ -42,7 +42,6 @@
 #include "benode.h"
 #include "besched.h"
 #include "statev_t.h"
-#include "beutil.h"
 
 #include "lc_opts.h"
 #include "lc_opts_enum.h"

@@ -40,7 +40,6 @@
 #include "bearch.h"
 #include "bemodule.h"
 #include "besched.h"
-#include "beutil.h"
 #include "be.h"
 #include "panic.h"
 

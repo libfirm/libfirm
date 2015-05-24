@@ -25,7 +25,6 @@
 #include "util.h"
 
 #include "be_t.h"
-#include "beutil.h"
 #include "belive.h"
 #include "benode.h"
 #include "besched.h"

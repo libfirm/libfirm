@@ -20,7 +20,6 @@
 #include "bechordal_t.h"
 #include "bediagnostic.h"
 #include "benode.h"
-#include "beutil.h"
 #include "becopyopt_t.h"
 #include "becopystat.h"
 #include "bemodule.h"

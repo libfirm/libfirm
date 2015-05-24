@@ -15,7 +15,6 @@
 
 #include "util.h"
 #include "array.h"
-#include "beutil.h"
 #include "debug.h"
 #include "panic.h"
 #include "irbackedge_t.h"
