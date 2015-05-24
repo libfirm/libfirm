@@ -279,7 +279,6 @@ static void spill_node(spill_env_t *env, spill_info_t *spillinfo);
  */
 static void spill_phi(spill_env_t *env, spill_info_t *spillinfo)
 {
-	assert(!get_opt_cse());
 	ir_node *phi = spillinfo->to_spill;
 	DBG((dbg, LEVEL_1, "spilling Phi %+F:\n", phi));
 

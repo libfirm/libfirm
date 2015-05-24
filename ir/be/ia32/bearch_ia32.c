@@ -936,18 +936,20 @@ static void ia32_collect_frame_entity_nodes(ir_node *node, void *data)
 			be_forbid_coalescing(env);
 	}
 
-	if (!is_ia32_irn(node)
-	    || get_ia32_frame_ent(node) != NULL
+	if (!is_ia32_irn(node) || get_ia32_frame_ent(node) != NULL
 	    || get_ia32_op_type(node) != ia32_AddrModeS)
 		return;
 
 	ir_type const *type;
 	switch (get_ia32_frame_use(node)) {
 	case IA32_FRAME_USE_NONE:  return;
-	case IA32_FRAME_USE_32BIT: type = get_type_for_mode(ia32_mode_gp); break;
-	case IA32_FRAME_USE_64BIT: type = get_type_for_mode(mode_Ls);      break;
-
-	default: {
+	case IA32_FRAME_USE_32BIT:
+		type = get_type_for_mode(ia32_mode_gp);
+		goto request_entity;
+	case IA32_FRAME_USE_64BIT:
+		type = get_type_for_mode(mode_Ls);
+		goto request_entity;
+	case IA32_FRAME_USE_AUTO: {
 		ir_mode *mode = get_ia32_ls_mode(node);
 		/* stupid hack: in some situations (like reloads folded into ConvI2I
 		 * with 8bit mode, an 8bit entity and reload+spill would suffice, but
@@ -962,9 +964,11 @@ static void ia32_collect_frame_entity_nodes(ir_node *node, void *data)
 		} else {
 			type = get_type_for_mode(mode);
 		}
-		break;
+		goto request_entity;
 	}
 	}
+	panic("invalid frame use type");
+request_entity:
 	be_load_needs_frame_entity(env, node, type);
 }
 
