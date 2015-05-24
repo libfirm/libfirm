@@ -1812,6 +1812,11 @@ static void spill(void)
  */
 static void be_pref_alloc(ir_graph *new_irg)
 {
+	/* disable optimization callbacks as we cannot deal with same-input phis
+	 * getting optimized away. */
+	int last_opt_state = get_optimize();
+	set_optimize(0);
+
 	irg = new_irg;
 	obstack_init(&obst);
 
@@ -1858,6 +1863,8 @@ static void be_pref_alloc(ir_graph *new_irg)
 
 	free_block_order();
 	obstack_free(&obst, NULL);
+
+	set_optimize(last_opt_state);
 }
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_pref_alloc)
