@@ -202,8 +202,18 @@ static void sparc_parse_constraint_letter(void const *const env, be_asm_constrai
 		c->all_registers_allowed = true;
 		break;
 
+	case 'g':
+		c->all_registers_allowed = true;
+		/* FALLTHROUGH */
+	case 'A':
 	case 'I':
+	case 'J':
+	case 'L':
+	case 'M':
+	case 'O':
+	case 'P':
 	case 'i':
+	case 'n':
 		c->cls            = &sparc_reg_classes[CLASS_sparc_gp];
 		c->immediate_type = l;
 		break;
@@ -231,7 +241,8 @@ static const arch_register_t *find_register(const char *name)
 void sparc_init_asm_constraints(void)
 {
 	be_set_constraint_support(ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER,  "0123456789efr");
-	be_set_constraint_support(ASM_CONSTRAINT_FLAG_SUPPORTS_IMMEDIATE, "Ii");
+	be_set_constraint_support(ASM_CONSTRAINT_FLAG_SUPPORTS_IMMEDIATE, "AIJLMOPin");
+	be_set_constraint_support(ASM_CONSTRAINT_FLAG_SUPPORTS_IMMEDIATE | ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER, "g");
 	/* Note there are many more flags in gcc which we can't properly support
 	 * at the moment. see gcc/config/sparc/constraints.md */
 }
@@ -241,6 +252,24 @@ int sparc_is_valid_clobber(const char *clobber)
 	return strcmp(clobber, "memory") == 0 || strcmp(clobber, "cc") == 0;
 }
 
+static bool sparc_check_immediate_constraint(long const val, char const imm_type)
+{
+	switch (imm_type) {
+	case 'A': return   -16 <= val && val <   16;
+	case 'I': return sparc_is_value_imm_encodeable(val);
+	case 'J': return val ==    0;
+	case 'L': return -1024 <= val && val < 1024;
+	case 'M': return  -512 <= val && val <  512;
+	case 'O': return val == 4096;
+	case 'P': return val ==   -1;
+
+	case 'g':
+	case 'i':
+	case 'n': return true;
+	}
+	panic("invalid immediate constraint found");
+}
+
 static bool sparc_match_immediate(sparc_asm_operand_t *const operand, ir_node *const node, char const imm_type)
 {
 	ir_tarval *offset;
@@ -248,13 +277,13 @@ static bool sparc_match_immediate(sparc_asm_operand_t *const operand, ir_node *c
 	if (!be_match_immediate(node, &offset, &entity))
 		return false;
 
-	if (entity && imm_type != 'i')
+	if (entity && imm_type != 'g' && imm_type != 'i')
 		return false;
 
 	long value;
 	if (offset) {
 		value = get_tarval_long(offset);
-		if (imm_type == 'I' && !sparc_is_value_imm_encodeable(value))
+		if (!sparc_check_immediate_constraint(value, imm_type))
 			return false;
 	} else {
 		value = 0;
