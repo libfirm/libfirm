@@ -710,7 +710,17 @@ static void emit_be_IncSP(const ir_node *irn)
 
 static void emit_sparc_asm_operand(ir_node const *const node, char const modifier, unsigned const pos)
 {
-	if (modifier != '\0') {
+	bool address_only = false;
+	switch (modifier) {
+	case '\0':
+		break;
+
+	case 'f':
+	case 'm':
+		address_only = true;
+		break;
+
+	default:
 		be_errorf(node, "asm contains unknown modifier '%c'", modifier);
 		return;
 	}
@@ -731,9 +741,11 @@ static void emit_sparc_asm_operand(ir_node const *const node, char const modifie
 		return;
 
 	case ASM_OPERAND_MEMORY:
-		be_emit_char('[');
+		if (!address_only)
+			be_emit_char('[');
 		sparc_emit_register(arch_get_irn_register_in(node, op->pos));
-		be_emit_char(']');
+		if (!address_only)
+			be_emit_char(']');
 		return;
 	}
 	panic("invalid asm operand kind");
