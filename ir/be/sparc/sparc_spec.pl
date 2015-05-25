@@ -380,7 +380,7 @@ Ld => {
 	ins       => [ "ptr", "mem" ],
 	outs      => [ "res", "M" ],
 	attr_type => "sparc_load_store_attr_t",
-	emit      => "ld%ML [%S0%O1], %D0"
+	emit      => "ld%ML %MO0, %D0"
 },
 
 SetHi => {
@@ -415,7 +415,7 @@ St => {
 	ins       => [ "val", "ptr", "mem" ],
 	outs      => [ "M" ],
 	attr_type => "sparc_load_store_attr_t",
-	emit      => "st%MS %S0, [%S1%O2]"
+	emit      => "st%MS %S0, %MO1"
 },
 
 Save => {
@@ -825,7 +825,7 @@ Ldf => {
 	attr_type  => "sparc_load_store_attr_t",
 	attr       => "ir_mode *ls_mode, ir_entity *entity, int32_t offset, bool is_frame_entity",
 	custominit => "init_sparc_load_store_attributes(res, ls_mode, entity, offset, is_frame_entity, false);",
-	emit       => "ld%ML [%S0%O1], %D0"
+	emit       => "ld%ML %MO0, %D0"
 },
 
 Stf => {
@@ -842,7 +842,7 @@ Stf => {
 	attr_type => "sparc_load_store_attr_t",
 	attr      => "ir_mode *ls_mode, ir_entity *entity, int32_t offset, bool is_frame_entity",
 	custominit => "init_sparc_load_store_attributes(res, ls_mode, entity, offset, is_frame_entity, false);",
-	emit      => "st%MS %S0, [%S1%O2]",
+	emit      => "st%MS %S0, %MO1",
 	mode      => "mode_M",
 },
 

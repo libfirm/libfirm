@@ -24,6 +24,7 @@
  * %H    <node>                  high immediate
  * %L    ir_node*                control flow target of the node
  * %ML   <node>                  load mode
+ * %MOx  <node>                  memory access with offset [%reg + %reg/imm]
  * %MS   <node>                  store mode
  * %R    arch_register_t const*  register
  * %Sx   <node>                  source register x
