@@ -462,7 +462,8 @@ static void emit_weak(const ir_entity *entity)
 {
 	const char *directive;
 	if (be_gas_object_file_format == OBJECT_FILE_FORMAT_MACH_O) {
-		directive = ".weak_reference";
+		directive = entity_has_definition(entity) ? ".weak_definition"
+		                                          : ".weak_reference";
 	} else {
 		directive = ".weak";
 	}
