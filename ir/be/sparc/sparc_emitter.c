@@ -729,6 +729,12 @@ static void emit_sparc_asm_operand(ir_node const *const node, char const modifie
 	case ASM_OPERAND_OUTPUT_VALUE:
 		sparc_emit_register(arch_get_irn_register_out(node, op->pos));
 		return;
+
+	case ASM_OPERAND_MEMORY:
+		be_emit_char('[');
+		sparc_emit_register(arch_get_irn_register_in(node, op->pos));
+		be_emit_char(']');
+		return;
 	}
 	panic("invalid asm operand kind");
 }

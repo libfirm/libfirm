@@ -204,6 +204,7 @@ static void sparc_parse_constraint_letter(void const *const env, be_asm_constrai
 
 	case 'g':
 		c->all_registers_allowed = true;
+		c->memory_possible       = true;
 		/* FALLTHROUGH */
 	case 'A':
 	case 'I':
@@ -216,6 +217,11 @@ static void sparc_parse_constraint_letter(void const *const env, be_asm_constrai
 	case 'n':
 		c->cls            = &sparc_reg_classes[CLASS_sparc_gp];
 		c->immediate_type = l;
+		break;
+
+	case 'm':
+	case 'w':
+		c->memory_possible = true;
 		break;
 
 	default:
@@ -242,7 +248,8 @@ void sparc_init_asm_constraints(void)
 {
 	be_set_constraint_support(ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER,  "0123456789efr");
 	be_set_constraint_support(ASM_CONSTRAINT_FLAG_SUPPORTS_IMMEDIATE, "AIJLMOPin");
-	be_set_constraint_support(ASM_CONSTRAINT_FLAG_SUPPORTS_IMMEDIATE | ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER, "g");
+	be_set_constraint_support(ASM_CONSTRAINT_FLAG_SUPPORTS_ANY,       "g");
+	be_set_constraint_support(ASM_CONSTRAINT_FLAG_SUPPORTS_MEMOP,     "mw");
 	/* Note there are many more flags in gcc which we can't properly support
 	 * at the moment. see gcc/config/sparc/constraints.md */
 }
@@ -390,13 +397,18 @@ static ir_node *gen_ASM(ir_node *node)
 		if (imm_type != '\0' && sparc_match_immediate(operand, pred, imm_type))
 			continue;
 
-		arch_register_req_t const *const req = be_make_register_req(obst, &parsed_constraint, n_out_constraints, out_reg_reqs, i);
+		ir_node             *const new_pred = be_transform_node(pred);
+		operand_kind_t             kind     = ASM_OPERAND_INPUT_VALUE;
+		arch_register_req_t const *req      = be_make_register_req(obst, &parsed_constraint, n_out_constraints, out_reg_reqs, i);
+		if (req == arch_no_register_req) {
+			kind = ASM_OPERAND_MEMORY;
+			req  = arch_get_irn_register_req(new_pred)->cls->class_req;
+		}
 		in_reg_reqs[i] = req;
 
-		int      op_pos      = n_ins++;
-		ir_node *new_pred = be_transform_node(pred);
+		int const op_pos = n_ins++;
 		in[op_pos]    = new_pred;
-		operand->kind = ASM_OPERAND_INPUT_VALUE;
+		operand->kind = kind;
 		operand->pos  = op_pos;
 	}
 

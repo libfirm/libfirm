@@ -94,7 +94,8 @@ struct sparc_switch_jmp_attr_t {
 typedef enum operand_kind_t {
 	ASM_OPERAND_INPUT_VALUE,
 	ASM_OPERAND_OUTPUT_VALUE,
-	ASM_OPERAND_IMMEDIATE
+	ASM_OPERAND_IMMEDIATE,
+	ASM_OPERAND_MEMORY,
 } operand_kind_t;
 
 typedef struct sparc_asm_operand_t {
