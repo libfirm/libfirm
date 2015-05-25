@@ -42,6 +42,7 @@
 #include "beifg.h"
 #include "besched.h"
 #include "bemodule.h"
+#include "irprintf.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 

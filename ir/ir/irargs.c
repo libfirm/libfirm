@@ -18,6 +18,7 @@
 #include "irnode_t.h"
 #include "entity_t.h"
 #include "irloop_t.h"
+#include "irprintf.h"
 #include "tv_t.h"
 #include "dbginfo_t.h"
 #include "util.h"

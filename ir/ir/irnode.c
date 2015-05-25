@@ -22,6 +22,7 @@
 #include "iredgekinds.h"
 #include "iredges_t.h"
 #include "ircons.h"
+#include "irprintf.h"
 #include "panic.h"
 #include "irverify.h"
 

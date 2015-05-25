@@ -4,6 +4,7 @@
 #include "xmalloc.h"
 #include "util.h"
 #include "irmode_t.h"
+#include "irprintf.h"
 #include "tv_t.h"
 #include "ident_t.h"
 #include "irprog_t.h"

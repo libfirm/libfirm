@@ -18,6 +18,7 @@
 #include "iredges.h"
 #include "tv.h"
 #include "irop.h"
+#include "irprintf.h"
 #include "pdeq.h"
 #include "irnodemap.h"
 #include "irhooks.h"

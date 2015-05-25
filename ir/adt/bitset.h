@@ -12,11 +12,9 @@
 #ifndef FIRM_ADT_BITSET_H
 #define FIRM_ADT_BITSET_H
 
-#include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
 
-#include "irprintf.h"
 #include "xmalloc.h"
 #include "bitfiddle.h"
 #include "raw_bitset.h"
@@ -340,18 +338,7 @@ static inline bool bitset_is_empty(const bitset_t *bs)
  * @param file The stream.
  * @param bs The bitset.
  */
-static inline void bitset_fprint(FILE *file, const bitset_t *bs)
-{
-	const char *prefix = "";
-	size_t i;
-
-	putc('{', file);
-	for(i = bitset_next_set(bs, 0); i != (size_t)-1; i = bitset_next_set(bs, i + 1)) {
-		ir_fprintf(file, "%s%zu", prefix, i);
-		prefix = ",";
-	}
-	putc('}', file);
-}
+void bitset_fprint(FILE *file, bitset_t const *bs);
 
 /**
  * Perform tgt = tgt & src operation.
