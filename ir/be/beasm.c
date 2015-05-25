@@ -5,10 +5,52 @@
 
 #include <ctype.h>
 
+#include "bearch.h"
 #include "beasm.h"
 #include "bediagnostic.h"
 #include "beemitter.h"
 #include "ident_t.h"
+#include "panic.h"
+#include "xmalloc.h"
+
+arch_register_req_t const *be_make_register_req(struct obstack *obst, be_asm_constraint_t const *const c, int const n_outs, arch_register_req_t const **const out_reqs, int const pos)
+{
+	int const same_as = c->same_as;
+	if (same_as >= 0) {
+		if (same_as >= n_outs)
+			panic("invalid output number in same_as constraint");
+
+		arch_register_req_t       *const req   = OALLOC(obst, arch_register_req_t);
+		arch_register_req_t const *const other = out_reqs[same_as];
+		*req            = *other;
+		req->type      |= arch_register_req_type_should_be_same;
+		req->other_same = 1U << pos;
+
+		/* Switch constraints. This is because in firm we have same_as
+		 * constraints on the output constraints while in the gcc asm syntax
+		 * they are specified on the input constraints. */
+		out_reqs[same_as] = req;
+		return other;
+	}
+
+	/* Pure memory ops. */
+	if (!c->cls)
+		return arch_no_register_req;
+
+	if (c->all_registers_allowed)
+		return c->cls->class_req;
+
+	arch_register_req_t *const req     = (arch_register_req_t*)obstack_alloc(obst, sizeof(*req) + sizeof(unsigned));
+	unsigned            *const limited = (unsigned*)(req + 1);
+	*limited = c->allowed_registers;
+
+	memset(req, 0, sizeof(*req));
+	req->type    = arch_register_req_type_limited;
+	req->cls     = c->cls;
+	req->limited = limited;
+	req->width   = 1;
+	return req;
+}
 
 void be_emit_asm(ir_node const *const asmn, ident *const text, unsigned const n_operands, be_emit_asm_operand_func *const emit_asm_operand)
 {

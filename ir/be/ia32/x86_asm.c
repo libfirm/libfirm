@@ -16,6 +16,7 @@
 
 #include "array.h"
 #include "bearch.h"
+#include "beasm.h"
 #include "beemitter.h"
 #include "bediagnostic.h"
 #include "begnuas.h"
@@ -27,59 +28,6 @@
 #include "irprintf.h"
 #include "panic.h"
 #include "util.h"
-
-/**
- * An assembler constraint.
- */
-typedef struct parsed_constraint_t {
-	const arch_register_class_t *cls;
-	unsigned                     allowed_registers;
-	bool                         all_registers_allowed;
-	bool                         memory_possible;
-	char                         immediate_type;
-	int                          same_as;
-} parsed_constraint_t;
-
-static arch_register_req_t const *x86_make_register_req(struct obstack *obst,
-		parsed_constraint_t const *const c, int const n_outs,
-		arch_register_req_t const **const out_reqs, int const pos)
-{
-	int const same_as = c->same_as;
-	if (same_as >= 0) {
-		if (same_as >= n_outs)
-			panic("invalid output number in same_as constraint");
-
-		arch_register_req_t       *const req   = OALLOC(obst, arch_register_req_t);
-		arch_register_req_t const *const other = out_reqs[same_as];
-		*req            = *other;
-		req->type      |= arch_register_req_type_should_be_same;
-		req->other_same = 1U << pos;
-
-		/* Switch constraints. This is because in firm we have same_as
-		 * constraints on the output constraints while in the gcc asm syntax
-		 * they are specified on the input constraints. */
-		out_reqs[same_as] = req;
-		return other;
-	}
-
-	/* Pure memory ops. */
-	if (c->cls == NULL)
-		return arch_no_register_req;
-
-	if (c->all_registers_allowed)
-		return c->cls->class_req;
-
-	arch_register_req_t *const req     = (arch_register_req_t*)obstack_alloc(obst, sizeof(req[0]) + sizeof(unsigned));
-	unsigned            *const limited = (unsigned*)(req + 1);
-	*limited = c->allowed_registers;
-
-	memset(req, 0, sizeof(req[0]));
-	req->type    = arch_register_req_type_limited;
-	req->cls     = c->cls;
-	req->limited = limited;
-	req->width   = 1;
-	return req;
-}
 
 arch_register_t const *x86_parse_clobber(x86_clobber_name_t const *const additional_clobber_names, char const *const clobber)
 {
@@ -94,10 +42,7 @@ arch_register_t const *x86_parse_clobber(x86_clobber_name_t const *const additio
 	return NULL;
 }
 
-static void parse_asm_constraints(parsed_constraint_t *const constraint,
-                                  const x86_asm_constraint_list_t *constraints,
-                                  ident *const constraint_text,
-                                  bool const is_output)
+static void parse_asm_constraints(be_asm_constraint_t *const constraint, x86_asm_constraint_list_t const *const constraints, ident *const constraint_text, bool const is_output)
 {
 	memset(constraint, 0, sizeof(constraint[0]));
 	constraint->same_as = -1;
@@ -350,11 +295,11 @@ ir_node *x86_match_ASM(const ir_node *node, new_bd_asm_func new_bd_asm,
 	for (unsigned o = 0; o < n_out_constraints; ++o) {
 		ir_asm_constraint const *const constraint = &out_constraints[o];
 
-		parsed_constraint_t parsed_constraint;
+		be_asm_constraint_t parsed_constraint;
 		parse_asm_constraints(&parsed_constraint, constraints,
 		                      constraint->constraint, true);
 
-		arch_register_req_t const *const req = x86_make_register_req(obst, &parsed_constraint, n_out_constraints, out_reqs, o);
+		arch_register_req_t const *const req = be_make_register_req(obst, &parsed_constraint, n_out_constraints, out_reqs, o);
 		ARR_APP1(arch_register_req_t const*, out_reqs, req);
 
 		x86_asm_operand_t *const op = &operands[constraint->pos];
@@ -383,7 +328,7 @@ ir_node *x86_match_ASM(const ir_node *node, new_bd_asm_func new_bd_asm,
 	for (int i = 0; i < n_inputs; ++i) {
 		ir_asm_constraint const *const constraint = &in_constraints[i];
 
-		parsed_constraint_t parsed_constraint;
+		be_asm_constraint_t parsed_constraint;
 		parse_asm_constraints(&parsed_constraint, constraints,
 		                      constraint->constraint, false);
 
@@ -411,7 +356,7 @@ ir_node *x86_match_ASM(const ir_node *node, new_bd_asm_func new_bd_asm,
 
 		ir_node            *const  new_pred = be_transform_node(pred);
 		unsigned            const  in_pos   = ARR_LEN(in_reqs);
-		arch_register_req_t const *req      = x86_make_register_req(obst, &parsed_constraint, n_out_constraints, out_reqs, in_pos);
+		arch_register_req_t const *req      = be_make_register_req(obst, &parsed_constraint, n_out_constraints, out_reqs, in_pos);
 
 		set_operand_if_invalid(op, ASM_OP_IN_REG, in_pos, constraint);
 

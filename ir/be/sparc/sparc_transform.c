@@ -24,6 +24,7 @@
 #include "panic.h"
 #include "util.h"
 
+#include "beasm.h"
 #include "benode.h"
 #include "beirg.h"
 #include "beutil.h"
@@ -185,19 +186,7 @@ static bool needs_extension(ir_node *op)
 	return !be_upper_bits_clean(op, mode);
 }
 
-/**
- * An assembler constraint.
- */
-typedef struct constraint_t {
-	const arch_register_class_t *cls;
-	char                         all_registers_allowed;
-	char                         immediate_type;
-	int                          same_as;
-} constraint_t;
-
-static void parse_asm_constraints(constraint_t *const constraint,
-                                  ident *const constraint_text,
-                                  bool const is_output)
+static void parse_asm_constraints(be_asm_constraint_t *const constraint, ident *const constraint_text, bool const is_output)
 {
 	memset(constraint, 0, sizeof(constraint[0]));
 	constraint->same_as = -1;
@@ -318,32 +307,6 @@ static const arch_register_t *find_register(const char *name)
 	return NULL;
 }
 
-static arch_register_req_t const *make_register_req(ir_graph *const irg,
-	constraint_t const *const c, int const n_outs,
-	arch_register_req_t const **const out_reqs, int const pos)
-{
-	int const same_as = c->same_as;
-	if (same_as >= 0) {
-		if (same_as >= n_outs)
-			panic("invalid output number in same_as constraint");
-
-		struct obstack            *const obst  = get_irg_obstack(irg);
-		arch_register_req_t       *const req   = OALLOC(obst, arch_register_req_t);
-		arch_register_req_t const *const other = out_reqs[same_as];
-		*req            = *other;
-		req->type      |= arch_register_req_type_should_be_same;
-		req->other_same = 1U << pos;
-
-		/* Switch constraints. This is because in firm we have same_as
-		 * constraints on the output constraints while in the gcc asm syntax
-		 * they are specified on the input constraints. */
-		out_reqs[same_as] = req;
-		return other;
-	}
-
-	return c->cls->class_req;
-}
-
 void sparc_init_asm_constraints(void)
 {
 	be_set_constraint_support(ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER,  "0123456789efr");
@@ -442,13 +405,11 @@ static ir_node *gen_ASM(ir_node *node)
 	for (out_idx = 0; out_idx < n_out_constraints; ++out_idx) {
 		const ir_asm_constraint *constraint = &out_constraints[out_idx];
 		unsigned                 pos        = constraint->pos;
-		constraint_t             parsed_constraint;
+		be_asm_constraint_t      parsed_constraint;
 		parse_asm_constraints(&parsed_constraint, constraint->constraint, true);
 
 		assert(parsed_constraint.immediate_type == 0);
-		arch_register_req_t const *const req
-			= make_register_req(irg, &parsed_constraint, n_out_constraints,
-			                    out_reg_reqs, out_idx);
+		arch_register_req_t const *const req = be_make_register_req(obst, &parsed_constraint, n_out_constraints, out_reg_reqs, out_idx);
 		out_reg_reqs[out_idx] = req;
 
 		/* TODO: adjust register_req for clobbers */
@@ -469,7 +430,7 @@ static ir_node *gen_ASM(ir_node *node)
 		const ir_asm_constraint *constraint   = &in_constraints[i];
 		unsigned                 pos          = constraint->pos;
 
-		constraint_t parsed_constraint;
+		be_asm_constraint_t parsed_constraint;
 		parse_asm_constraints(&parsed_constraint, constraint->constraint, false);
 
 		sparc_asm_operand_t *const operand = &operands[pos];
@@ -479,7 +440,7 @@ static ir_node *gen_ASM(ir_node *node)
 		if (imm_type != '\0' && sparc_match_immediate(operand, pred, imm_type))
 			continue;
 
-		arch_register_req_t const *const req = make_register_req(irg, &parsed_constraint, n_out_constraints, out_reg_reqs, i);
+		arch_register_req_t const *const req = be_make_register_req(obst, &parsed_constraint, n_out_constraints, out_reg_reqs, i);
 		in_reg_reqs[i] = req;
 
 		int      op_pos      = n_ins++;
