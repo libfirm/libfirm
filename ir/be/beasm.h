@@ -28,6 +28,10 @@ typedef struct be_asm_constraint_t {
 
 arch_register_req_t const *be_make_register_req(struct obstack *obst, be_asm_constraint_t const *c, int n_outs, arch_register_req_t const **out_reqs, int pos);
 
+typedef void parse_constraint_letter_func_t(void const *env, be_asm_constraint_t*, char l);
+
+void be_parse_asm_constraints_internal(be_asm_constraint_t *constraint, ident *constraint_text, bool is_output, parse_constraint_letter_func_t *parse_constraint_letter, void const *env);
+
 typedef void be_emit_asm_operand_func(ir_node const *asmn, char modifier, unsigned pos);
 
 void be_emit_asm(ir_node const *asmn, ident *text, unsigned n_operands, be_emit_asm_operand_func *emit_asm_operand);

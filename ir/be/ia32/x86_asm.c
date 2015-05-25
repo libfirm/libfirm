@@ -42,131 +42,52 @@ arch_register_t const *x86_parse_clobber(x86_clobber_name_t const *const additio
 	return NULL;
 }
 
-static void parse_asm_constraints(be_asm_constraint_t *const constraint, x86_asm_constraint_list_t const *const constraints, ident *const constraint_text, bool const is_output)
+static void x86_parse_constraint_letter(void const *const env, be_asm_constraint_t* const c, char const l)
 {
-	memset(constraint, 0, sizeof(constraint[0]));
-	constraint->same_as = -1;
+	x86_asm_constraint_list_t const *const constraints = (x86_asm_constraint_list_t const*)env;
 
-	unsigned char const *c = (const unsigned char*)get_id_str(constraint_text);
-	/* a memory constraint: no need to do anything in backend about it
-	 * (dependencies are already respected by the memory edge of the node) */
-	if (*c == 0)
+	unsigned char const u = (unsigned char)l;
+	if (u >= ARRAY_SIZE(*constraints))
+		panic("Unknown asm constraint '%c'", l);
+
+	x86_asm_constraint_t const *const constraint = &(*constraints)[u];
+	switch (constraint->kind) {
+	case MATCH_REG:
+		c->cls = constraint->cls;
+		if (constraint->limited == 0)
+			c->all_registers_allowed = true;
+		else
+			c->allowed_registers = constraint->limited;
 		return;
 
-	/* TODO: improve error messages with node and source info. (As users can
-	 * easily hit these) */
-	char                         immediate_type        = '\0';
-	unsigned                     limited               = 0;
-	arch_register_class_t const *cls                   = NULL;
-	bool                         memory_possible       = false;
-	bool                         all_registers_allowed = false;
-	int                          same_as               = -1;
-	for ( ; *c != 0; ++c) {
-		arch_register_class_t const *new_cls = NULL;
-		char                         new_imm = '\0';
-		switch (*c) {
-		/* Skip spaces, out/in-out marker. */
-		case ' ':
-		case '\t':
-		case '\n':
-		case '=':
-		case '+':
-		case '&':
-		case '*':
-			break;
+	case MATCH_MEM:
+		/* memory constraint no need to do anything in backend about it
+		 * (dependencies are already respected by the memory edge of the
+		 *  node) */
+		c->memory_possible = true;
+		return;
 
-		case '#':
-			while (*c != '\0' && *c != ',')
-				++c;
-			break;
+	case MATCH_IMM:
+		c->cls            = constraint->cls;
+		c->immediate_type = l;
+		return;
 
-		case '0':
-		case '1':
-		case '2':
-		case '3':
-		case '4':
-		case '5':
-		case '6':
-		case '7':
-		case '8':
-		case '9': {
-			if (is_output)
-				panic("can only specify same constraint on input");
+	case MATCH_ANY:
+		c->cls                   = constraint->cls;
+		c->immediate_type        = l;
+		c->memory_possible       = true;
+		c->all_registers_allowed = true;
+		return;
 
-			int p;
-			sscanf((const char*)c, "%d%n", &same_as, &p);
-			if (same_as >= 0) {
-				c += p-1; /* loop will do +1 */
-				continue;
-			}
-			break;
-		}
-
-		default:
-			if (*c >= ARRAY_SIZE(*constraints))
-				panic("Unknown asm constraint '%c'", *c);
-			const x86_asm_constraint_t *constraint = &(*constraints)[*c];
-			switch (constraint->kind) {
-			case MATCH_REG:
-				new_cls = constraint->cls;
-				if (constraint->limited == 0)
-					all_registers_allowed = true;
-				else
-					limited |= constraint->limited;
-				goto fine;
-			case MATCH_MEM:
-				/* memory constraint no need to do anything in backend about it
-				 * (dependencies are already respected by the memory edge of the
-				 *  node) */
-				memory_possible = true;
-				goto fine;
-			case MATCH_IMM:
-				new_cls = constraint->cls;
-				new_imm = *c;
-				goto fine;
-			case MATCH_ANY:
-				new_imm = *c;
-				new_cls = constraint->cls;
-				memory_possible = true;
-				all_registers_allowed = true;
-				goto fine;
-			case MATCH_INVALID:
-				break;
-			}
-			panic("Unknown asm constraint '%s'", *c);
-fine:
-			break;
-		}
-
-		if (new_cls != NULL) {
-			if (cls != NULL && cls != new_cls)
-				panic("multiple register classes not supported");
-			cls = new_cls;
-		}
-
-		if (new_imm != '\0') {
-			if (immediate_type != '\0' && immediate_type != new_imm)
-				panic("multiple immediate types not supported");
-			immediate_type = new_imm;
-		}
+	case MATCH_INVALID:
+		break;
 	}
+	panic("Unknown asm constraint '%c'", l);
+}
 
-	if (same_as >= 0) {
-		if (cls != NULL)
-			panic("same as and register constraint not supported");
-		if (immediate_type != '\0')
-			panic("same as and immediate constraint not supported");
-	}
-
-	if (cls == NULL && same_as < 0 && !memory_possible)
-		panic("no constraint specified for assembler input");
-
-	constraint->same_as               = same_as;
-	constraint->cls                   = cls;
-	constraint->allowed_registers     = limited;
-	constraint->all_registers_allowed = all_registers_allowed;
-	constraint->memory_possible       = memory_possible;
-	constraint->immediate_type        = immediate_type;
+static void parse_asm_constraints(be_asm_constraint_t *const constraint, x86_asm_constraint_list_t const *const constraints, ident *const constraint_text, bool const is_output)
+{
+	be_parse_asm_constraints_internal(constraint, constraint_text, is_output, &x86_parse_constraint_letter, constraints);
 }
 
 static bool can_match(const arch_register_req_t *in,

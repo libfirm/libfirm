@@ -186,115 +186,36 @@ static bool needs_extension(ir_node *op)
 	return !be_upper_bits_clean(op, mode);
 }
 
+static void sparc_parse_constraint_letter(void const *const env, be_asm_constraint_t* const c, char const l)
+{
+	(void)env;
+
+	switch (l) {
+	case 'r':
+		c->cls                   = &sparc_reg_classes[CLASS_sparc_gp];
+		c->all_registers_allowed = true;
+		break;
+
+	case 'e':
+	case 'f':
+		c->cls                   = &sparc_reg_classes[CLASS_sparc_fp];
+		c->all_registers_allowed = true;
+		break;
+
+	case 'I':
+	case 'i':
+		c->cls            = &sparc_reg_classes[CLASS_sparc_gp];
+		c->immediate_type = l;
+		break;
+
+	default:
+		panic("unknown asm constraint '%c'", l);
+	}
+}
+
 static void parse_asm_constraints(be_asm_constraint_t *const constraint, ident *const constraint_text, bool const is_output)
 {
-	memset(constraint, 0, sizeof(constraint[0]));
-	constraint->same_as = -1;
-
-	char const *c = get_id_str(constraint_text);
-	if (*c == '\0') {
-		/* a memory constraint: no need to do anything in backend about it
-		 * (the dependencies are already respected by the memory edge of
-		 * the node) */
-		return;
-	}
-
-	char                         immediate_type        = '\0';
-	arch_register_class_t const *cls                   = NULL;
-	bool                         all_registers_allowed = false;
-	int                          same_as               = -1;
-	while (*c != 0) {
-		arch_register_class_t const *new_cls = NULL;
-		char                         new_imm = '\0';
-		switch (*c) {
-		/* Skip spaces, out/in-out marker */
-		case ' ':
-		case '\t':
-		case '\n':
-		case '=':
-		case '+':
-		case '&':
-		case '*':
-			break;
-
-		case '#':
-			while (*c != 0 && *c != ',')
-				++c;
-			break;
-		case 'r':
-			new_cls               = &sparc_reg_classes[CLASS_sparc_gp];
-			all_registers_allowed = true;
-			break;
-		case 'e':
-		case 'f':
-			new_cls               = &sparc_reg_classes[CLASS_sparc_fp];
-			all_registers_allowed = true;
-			break;
-		case 'I':
-		case 'i':
-			new_cls = &sparc_reg_classes[CLASS_sparc_gp];
-			new_imm = *c;
-			break;
-
-		case '0':
-		case '1':
-		case '2':
-		case '3':
-		case '4':
-		case '5':
-		case '6':
-		case '7':
-		case '8':
-		case '9': {
-			if (is_output)
-				panic("can only specify same constraint on input");
-
-			int p;
-			sscanf(c, "%d%n", &same_as, &p);
-			if (same_as >= 0) {
-				c += p;
-				continue;
-			}
-			break;
-		}
-
-		default:
-			panic("unknown asm constraint '%c'", *c);
-		}
-
-		if (new_cls) {
-			if (!cls) {
-				cls = new_cls;
-			} else if (cls != new_cls) {
-				panic("multiple register classes not supported");
-			}
-		}
-
-		if (new_imm != '\0') {
-			if (immediate_type == '\0') {
-				immediate_type = new_imm;
-			} else if (immediate_type != new_imm) {
-				panic("multiple immediate types not supported");
-			}
-		}
-
-		++c;
-	}
-
-	if (same_as >= 0) {
-		if (cls != NULL)
-			panic("same as and register constraint not supported");
-		if (immediate_type != '\0')
-			panic("same as and immediate constraint not supported");
-	}
-
-	if (!cls && same_as < 0)
-		panic("no constraint specified for assembler input");
-
-	constraint->same_as               = same_as;
-	constraint->cls                   = cls;
-	constraint->all_registers_allowed = all_registers_allowed;
-	constraint->immediate_type        = immediate_type;
+	be_parse_asm_constraints_internal(constraint, constraint_text, is_output, &sparc_parse_constraint_letter, NULL);
 }
 
 static const arch_register_t *find_register(const char *name)
