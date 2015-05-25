@@ -470,16 +470,23 @@ static void emit_weak(const ir_entity *entity)
 	emit_symbol_directive(directive, entity);
 }
 
-static void emit_visibility(const ir_entity *entity)
+static void emit_visibility(const ir_entity *entity, bool implicit_globl)
 {
 	ir_linkage const linkage = get_entity_linkage(entity);
 
-	if (linkage & IR_LINKAGE_WEAK) {
+	if (linkage & IR_LINKAGE_WEAK)
 		emit_weak(entity);
-		/* Note: .weak seems to imply .globl so no need to output .globl */
-	} else if (get_entity_visibility(entity) == ir_visibility_external
-	           && entity_has_definition(entity)) {
-	    emit_symbol_directive(".globl", entity);
+
+	if (entity_has_definition(entity)) {
+		switch (get_entity_visibility(entity)) {
+		case ir_visibility_external:
+			if (!implicit_globl)
+				emit_symbol_directive(".globl", entity);
+			break;
+		case ir_visibility_local:
+		case ir_visibility_private:
+			break;
+		}
 	}
 
 	if (be_gas_object_file_format == OBJECT_FILE_FORMAT_MACH_O
@@ -517,7 +524,7 @@ void be_gas_emit_function_prolog(const ir_entity *entity, unsigned po2alignment,
 		be_emit_irprintf("%u,%s,%u\n", po2alignment, fill_byte, maximum_skip);
 		be_emit_write_line();
 	}
-	emit_visibility(entity);
+	emit_visibility(entity, false);
 
 	switch (be_gas_object_file_format) {
 	case OBJECT_FILE_FORMAT_ELF:
@@ -1114,63 +1121,28 @@ static unsigned get_effective_entity_alignment(const ir_entity *entity)
 	return alignment;
 }
 
-static void emit_common(const ir_entity *entity)
+static void emit_common(const ir_entity *entity, bool is_local)
 {
-	unsigned size      = get_type_size_bytes(get_entity_type(entity));
-	unsigned alignment = get_effective_entity_alignment(entity);
-
-	if (get_entity_linkage(entity) & IR_LINKAGE_WEAK) {
-		emit_weak(entity);
-	}
+	unsigned const size      = get_type_size_bytes(get_entity_type(entity));
+	unsigned const alignment = get_effective_entity_alignment(entity);
 
 	switch (be_gas_object_file_format) {
 	case OBJECT_FILE_FORMAT_MACH_O:
-		be_emit_cstring("\t.comm ");
+		be_emit_string(is_local ? "\t.lcomm " : "\t.comm ");
 		be_gas_emit_entity(entity);
 		be_emit_irprintf(",%u,%u\n", size, log2_floor(alignment));
 		be_emit_write_line();
 		return;
 	case OBJECT_FILE_FORMAT_ELF:
+		if (is_local)
+			emit_symbol_directive(".local", entity);
 		be_emit_cstring("\t.comm ");
 		be_gas_emit_entity(entity);
 		be_emit_irprintf(",%u,%u\n", size, alignment);
 		be_emit_write_line();
 		return;
 	case OBJECT_FILE_FORMAT_COFF:
-		be_emit_cstring("\t.comm ");
-		be_gas_emit_entity(entity);
-		be_emit_irprintf(",%u # %u\n", size, alignment);
-		be_emit_write_line();
-		return;
-	}
-	panic("invalid object file format");
-}
-
-static void emit_local_common(const ir_entity *entity)
-{
-	unsigned size      = get_type_size_bytes(get_entity_type(entity));
-	unsigned alignment = get_effective_entity_alignment(entity);
-
-	if (get_entity_linkage(entity) & IR_LINKAGE_WEAK) {
-		emit_weak(entity);
-	}
-
-	switch (be_gas_object_file_format) {
-	case OBJECT_FILE_FORMAT_MACH_O:
-		be_emit_cstring("\t.lcomm ");
-		be_gas_emit_entity(entity);
-		be_emit_irprintf(",%u,%u\n", size, log2_floor(alignment));
-		be_emit_write_line();
-		return;
-	case OBJECT_FILE_FORMAT_ELF:
-		emit_symbol_directive(".local", entity);
-		be_emit_cstring("\t.comm ");
-		be_gas_emit_entity(entity);
-		be_emit_irprintf(",%u,%u\n", size, alignment);
-		be_emit_write_line();
-		return;
-	case OBJECT_FILE_FORMAT_COFF:
-		be_emit_cstring("\t.lcomm ");
+		be_emit_cstring(is_local ? "\t.lcomm " : "\t.comm ");
 		be_gas_emit_entity(entity);
 		be_emit_irprintf(",%u # %u\n", size, alignment);
 		be_emit_write_line();
@@ -1182,8 +1154,8 @@ static void emit_local_common(const ir_entity *entity)
 static void emit_indirect_symbol(const ir_entity *entity,
                                  be_gas_section_t section)
 {
-	/* we can only do PIC code on macho so far */
-	assert(be_gas_object_file_format == OBJECT_FILE_FORMAT_MACH_O);
+	if (be_gas_object_file_format != OBJECT_FILE_FORMAT_MACH_O)
+		panic("indirect_symbol entities only supported for ELF");
 
 	be_gas_emit_entity(entity);
 	be_emit_cstring(":\n");
@@ -1202,7 +1174,6 @@ static void emit_indirect_symbol(const ir_entity *entity,
 
 static void emit_alias(const ir_entity *entity)
 {
-	/* no support on other object file formats (yet) */
 	if (be_gas_object_file_format != OBJECT_FILE_FORMAT_ELF)
 		panic("alias entities only supported for ELF");
 
@@ -1310,10 +1281,9 @@ void be_gas_begin_block(const ir_node *block, bool needs_label)
 
 /**
  * Dump a global entity.
- *
- * @param ent  the entity to be dumped
  */
-static void emit_global(be_main_env_t const *const main_env, ir_entity const *const entity)
+static void emit_global(be_main_env_t const *const main_env,
+                        ir_entity const *const entity)
 {
 	ir_entity_kind kind = get_entity_kind(entity);
 
@@ -1327,82 +1297,76 @@ static void emit_global(be_main_env_t const *const main_env, ir_entity const *co
 	/* we already emitted all methods with graphs in other functions like
 	 * be_gas_emit_function_prolog(). All others don't need to be emitted. */
 	be_gas_section_t const section = determine_section(main_env, entity);
-	if (kind == IR_ENTITY_METHOD && section != GAS_SECTION_PIC_TRAMPOLINES) {
+	if (kind == IR_ENTITY_METHOD && section != GAS_SECTION_PIC_TRAMPOLINES)
 		return;
-	}
 
 	be_dwarf_variable(entity);
 
 	ir_visibility visibility = get_entity_visibility(entity);
 	ir_linkage    linkage    = get_entity_linkage(entity);
-	if (section == GAS_SECTION_BSS) {
-		switch (visibility) {
-		case ir_visibility_local:
-		case ir_visibility_private:
-			emit_local_common(entity);
+	bool use_common_directive = section == GAS_SECTION_BSS
+	                         && (visibility == ir_visibility_local
+	                          || visibility == ir_visibility_private
+	                          || (linkage & IR_LINKAGE_MERGE));
+
+	emit_visibility(entity, use_common_directive);
+
+	if (use_common_directive) {
+		emit_common(entity, visibility == ir_visibility_local
+		                 || visibility == ir_visibility_private);
+	} else {
+		emit_section(section, entity);
+
+		if (section == GAS_SECTION_PIC_TRAMPOLINES
+		 || section == GAS_SECTION_PIC_SYMBOLS) {
+			emit_indirect_symbol(entity, section);
 			return;
-		case ir_visibility_external:
-			if (linkage & IR_LINKAGE_MERGE) {
-				emit_common(entity);
-				return;
-			}
-			break;
+		} else if (kind == IR_ENTITY_ALIAS) {
+			emit_alias(entity);
+			return;
 		}
-	}
 
-	emit_visibility(entity);
+		/* nothing left to do without an initializer */
+		if (!entity_has_definition(entity))
+			return;
 
-	emit_section(section, entity);
+		/* alignment */
+		unsigned alignment = get_effective_entity_alignment(entity);
+		if (!is_po2(alignment))
+			panic("alignment not a power of 2");
+		if (alignment > 1) {
+			emit_align(alignment);
+		}
+		if (be_gas_object_file_format == OBJECT_FILE_FORMAT_ELF
+			&& be_gas_emit_types && visibility != ir_visibility_private) {
+			be_emit_cstring("\t.type\t");
+			be_gas_emit_entity(entity);
+			be_emit_cstring(", ");
+			be_emit_char(be_gas_elf_type_char);
+			be_emit_cstring("object\n\t.size\t");\
+			be_gas_emit_entity(entity);
+			ir_type *const type = get_entity_type(entity);
+			be_emit_irprintf(", %u\n", get_type_size_bytes(type));
+		}
 
-	if (section == GAS_SECTION_PIC_TRAMPOLINES
-	 || section == GAS_SECTION_PIC_SYMBOLS) {
-		emit_indirect_symbol(entity, section);
-		return;
-	} else if (kind == IR_ENTITY_ALIAS) {
-		emit_alias(entity);
-		return;
-	}
-
-	/* nothing left to do without an initializer */
-	if (!entity_has_definition(entity))
-		return;
-
-	/* alignment */
-	unsigned alignment = get_effective_entity_alignment(entity);
-	if (!is_po2(alignment))
-		panic("alignment not a power of 2");
-	if (alignment > 1) {
-		emit_align(alignment);
-	}
-	if (be_gas_object_file_format == OBJECT_FILE_FORMAT_ELF
-	    && be_gas_emit_types && visibility != ir_visibility_private) {
-		be_emit_cstring("\t.type\t");
-		be_gas_emit_entity(entity);
-		be_emit_cstring(", ");
-		be_emit_char(be_gas_elf_type_char);
-		be_emit_cstring("object\n\t.size\t");\
-		be_gas_emit_entity(entity);
-		ir_type *const type = get_entity_type(entity);
-		be_emit_irprintf(", %u\n", get_type_size_bytes(type));
-	}
-
-	ident *ld_ident = get_entity_ld_ident(entity);
-	if (get_id_str(ld_ident)[0] != '\0') {
-		be_gas_emit_entity(entity);
-		be_emit_cstring(":\n");
-		be_emit_write_line();
-	}
-
-	if (entity_is_null(entity)) {
-		/* we should use .space for stuff in the bss segment */
-		ir_type *const type = get_entity_type(entity);
-		unsigned const size = get_type_size_bytes(type);
-		if (size > 0) {
-			be_emit_irprintf("\t.space %u, 0\n", size);
+		ident *ld_ident = get_entity_ld_ident(entity);
+		if (get_id_str(ld_ident)[0] != '\0') {
+			be_gas_emit_entity(entity);
+			be_emit_cstring(":\n");
 			be_emit_write_line();
 		}
-	} else {
-		emit_initializer(entity);
+
+		if (entity_is_null(entity)) {
+			/* we should use .space for stuff in the bss segment */
+			ir_type *const type = get_entity_type(entity);
+			unsigned const size = get_type_size_bytes(type);
+			if (size > 0) {
+				be_emit_irprintf("\t.space %u, 0\n", size);
+				be_emit_write_line();
+			}
+		} else {
+			emit_initializer(entity);
+		}
 	}
 }
 
