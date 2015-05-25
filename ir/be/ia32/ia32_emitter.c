@@ -533,6 +533,12 @@ destination_operand:
 				reg = arch_get_irn_register_out(node, *fmt++ - '0');
 				goto emit_R;
 
+			case 'E': {
+				const ir_entity *const entity = va_arg(ap, const ir_entity*);
+				be_gas_emit_entity(entity);
+				break;
+			}
+
 			case 'F':
 				if (*fmt == 'M') {
 					ia32_emit_x87_mode_suffix(node);

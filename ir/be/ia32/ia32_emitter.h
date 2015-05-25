@@ -23,6 +23,7 @@
  * %ASx <node>                  address mode of the node or source register x
  * %B   <node>                  operands for binary operation
  * %Dx  <node>                  destination register x
+ * %E   ir_entity const*        emit entity name
  * %Fx  <node>                  x87 register x
  * %FM  <node>                  x87 mode suffix
  * %FX  <node>                  SSE mode suffix
