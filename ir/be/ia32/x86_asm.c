@@ -397,9 +397,7 @@ void x86_set_be_asm_constraint_support(const x86_asm_constraint_list_t *constrai
 			flags = ASM_CONSTRAINT_FLAG_SUPPORTS_MEMOP;
 			goto fine;
 		case MATCH_ANY:
-			flags = ASM_CONSTRAINT_FLAG_SUPPORTS_IMMEDIATE
-			      | ASM_CONSTRAINT_FLAG_SUPPORTS_MEMOP
-			      | ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER;
+			flags = ASM_CONSTRAINT_FLAG_SUPPORTS_ANY;
 			goto fine;
 		}
 		panic("invalid constraint");
