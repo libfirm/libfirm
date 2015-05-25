@@ -30,6 +30,7 @@
 
 #include "be_t.h"
 #include "bearch_ia32_t.h"
+#include "beasm.h"
 #include "beblocksched.h"
 #include "bediagnostic.h"
 #include "begnuas.h"

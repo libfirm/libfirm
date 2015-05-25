@@ -125,8 +125,4 @@ void be_emit_nothing(ir_node const *node);
  */
 void be_emit_node(ir_node const *node);
 
-typedef void be_emit_asm_operand_func(ir_node const *asmn, char modifier, unsigned pos);
-
-void be_emit_asm(ir_node const *asmn, ident *text, unsigned n_operands, be_emit_asm_operand_func *emit_asm_operand);
-
 #endif

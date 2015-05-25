@@ -11,6 +11,7 @@
 #include <inttypes.h>
 
 #include "bearch_sparc_t.h"
+#include "beasm.h"
 #include "beblocksched.h"
 #include "bediagnostic.h"
 #include "begnuas.h"

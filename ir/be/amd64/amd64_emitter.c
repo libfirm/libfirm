@@ -13,6 +13,7 @@
 #include "amd64_new_nodes.h"
 #include "amd64_nodes_attr.h"
 #include "be_t.h"
+#include "beasm.h"
 #include "beblocksched.h"
 #include "bediagnostic.h"
 #include "begnuas.h"
