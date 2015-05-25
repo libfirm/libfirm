@@ -447,16 +447,26 @@ static be_gas_section_t determine_section(be_main_env_t const *const main_env, i
 	panic("couldn't determine section for %+F", entity);
 }
 
-static void emit_weak(const ir_entity *entity)
+static void emit_symbol_directive(const char *directive,
+								  const ir_entity *entity)
 {
-	if (be_gas_object_file_format == OBJECT_FILE_FORMAT_MACH_O) {
-		be_emit_cstring("\t.weak_reference ");
-	} else {
-		be_emit_cstring("\t.weak ");
-	}
+	be_emit_char('\t');
+	be_emit_string(directive);
+	be_emit_char(' ');
 	be_gas_emit_entity(entity);
 	be_emit_char('\n');
 	be_emit_write_line();
+}
+
+static void emit_weak(const ir_entity *entity)
+{
+	const char *directive;
+	if (be_gas_object_file_format == OBJECT_FILE_FORMAT_MACH_O) {
+		directive = ".weak_reference";
+	} else {
+		directive = ".weak";
+	}
+	emit_symbol_directive(directive, entity);
 }
 
 static void emit_visibility(const ir_entity *entity)
@@ -468,19 +478,13 @@ static void emit_visibility(const ir_entity *entity)
 		/* Note: .weak seems to imply .globl so no need to output .globl */
 	} else if (get_entity_visibility(entity) == ir_visibility_external
 	           && entity_has_definition(entity)) {
-		be_emit_cstring("\t.globl ");
-		be_gas_emit_entity(entity);
-		be_emit_char('\n');
-		be_emit_write_line();
+	    emit_symbol_directive(".globl", entity);
 	}
 
 	if (be_gas_object_file_format == OBJECT_FILE_FORMAT_MACH_O
 			&& (linkage & IR_LINKAGE_HIDDEN_USER)
 			&& get_entity_ld_name(entity)[0] != '\0') {
-		be_emit_cstring("\t.no_dead_strip ");
-		be_gas_emit_entity(entity);
-		be_emit_char('\n');
-		be_emit_write_line();
+		emit_symbol_directive(".no_dead_strip", entity);
 	}
 }
 
@@ -1158,10 +1162,7 @@ static void emit_local_common(const ir_entity *entity)
 		be_emit_write_line();
 		return;
 	case OBJECT_FILE_FORMAT_ELF:
-		be_emit_cstring("\t.local ");
-		be_gas_emit_entity(entity);
-		be_emit_cstring("\n");
-		be_emit_write_line();
+		emit_symbol_directive(".local", entity);
 		be_emit_cstring("\t.comm ");
 		be_gas_emit_entity(entity);
 		be_emit_irprintf(",%u,%u\n", size, alignment);
