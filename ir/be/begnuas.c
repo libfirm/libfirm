@@ -470,6 +470,31 @@ static void emit_weak(const ir_entity *entity)
 	emit_symbol_directive(directive, entity);
 }
 
+static const char *get_visibility_directive(const ir_entity *entity,
+											bool *output_global)
+{
+	switch (get_entity_visibility(entity)) {
+	case ir_visibility_external: return NULL;
+	case ir_visibility_external_private: {
+		switch (be_gas_object_file_format) {
+		case OBJECT_FILE_FORMAT_MACH_O:
+			*output_global = false;
+			return ".private_extern";
+		case OBJECT_FILE_FORMAT_ELF:
+			return ".hidden";
+		case OBJECT_FILE_FORMAT_COFF:
+			panic("ir_visibility_external_private not supported for COFF");
+		}
+		panic("invalid object file format");
+	}
+	case ir_visibility_local:
+	case ir_visibility_private:
+		*output_global = false;
+		return NULL;
+	}
+	panic("invalid visibility");
+}
+
 static void emit_visibility(const ir_entity *entity, bool implicit_globl)
 {
 	ir_linkage const linkage = get_entity_linkage(entity);
@@ -478,15 +503,13 @@ static void emit_visibility(const ir_entity *entity, bool implicit_globl)
 		emit_weak(entity);
 
 	if (entity_has_definition(entity)) {
-		switch (get_entity_visibility(entity)) {
-		case ir_visibility_external:
-			if (!implicit_globl)
-				emit_symbol_directive(".globl", entity);
-			break;
-		case ir_visibility_local:
-		case ir_visibility_private:
-			break;
-		}
+		bool output_global = !implicit_globl;
+		const char *const directive
+			= get_visibility_directive(entity, &output_global);
+		if (output_global)
+			emit_symbol_directive(".globl", entity);
+		if (directive != NULL)
+			emit_symbol_directive(directive, entity);
 	}
 
 	if (be_gas_object_file_format == OBJECT_FILE_FORMAT_MACH_O

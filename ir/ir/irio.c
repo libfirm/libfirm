@@ -209,9 +209,10 @@ static void symtbl_init(void)
 	INSERT(tt_loop, "loop",   true);
 	INSERT(tt_loop, "noloop", false);
 
-	INSERT(tt_visibility, "local", ir_visibility_local);
-	INSERT(tt_visibility, "external", ir_visibility_external);
-	INSERT(tt_visibility, "private", ir_visibility_private);
+	INSERT(tt_visibility, "external",         ir_visibility_external);
+	INSERT(tt_visibility, "external_private", ir_visibility_external_private);
+	INSERT(tt_visibility, "local",            ir_visibility_local);
+	INSERT(tt_visibility, "private",          ir_visibility_private);
 
 	INSERT(tt_throws, "throw",   true);
 	INSERT(tt_throws, "nothrow", false);
@@ -299,9 +300,10 @@ static const char *get_segment_name(ir_segment_t segment)
 static const char *get_visibility_name(ir_visibility visibility)
 {
 	switch (visibility) {
-	case ir_visibility_local:    return "local";
-	case ir_visibility_external: return "external";
-	case ir_visibility_private:  return "private";
+	case ir_visibility_external:         return "external";
+	case ir_visibility_external_private: return "external_private";
+	case ir_visibility_local:            return "local";
+	case ir_visibility_private:          return "private";
 	}
 	panic("invalid visibility");
 }

@@ -86,6 +86,11 @@ typedef enum {
 	 */
 	ir_visibility_external,
 	/**
+	 * The entity is visible across compilation units, but not accross modules.
+	 * This is equivalent to __attribute__((visibility("hidden"))) in gcc.
+	 */
+	ir_visibility_external_private,
+	/**
 	 * The entity is local to the compilation unit.
 	 * A local entity is not visible in other compilation units.
 	 * Note that the entity might still be accessed indirectly from other units
