@@ -711,6 +711,7 @@ static void emit_be_IncSP(const ir_node *irn)
 static void emit_sparc_asm_operand(ir_node const *const node, char const modifier, unsigned const pos)
 {
 	bool address_only = false;
+	bool zero_as_g0   = false;
 	switch (modifier) {
 	case '\0':
 		break;
@@ -718,6 +719,10 @@ static void emit_sparc_asm_operand(ir_node const *const node, char const modifie
 	case 'f':
 	case 'm':
 		address_only = true;
+		break;
+
+	case 'r':
+		zero_as_g0 = true;
 		break;
 
 	default:
@@ -729,7 +734,10 @@ static void emit_sparc_asm_operand(ir_node const *const node, char const modifie
 	sparc_asm_operand_t const *const op   = &attr->operands[pos];
 	switch (op->kind) {
 	case ASM_OPERAND_IMMEDIATE:
-		sparc_emit_immediate(op->immediate_value, op->immediate_value_entity);
+		if (zero_as_g0 && op->immediate_value == 0 && !op->immediate_value_entity)
+			sparc_emit_register(&sparc_registers[REG_G0]);
+		else
+			sparc_emit_immediate(op->immediate_value, op->immediate_value_entity);
 		return;
 
 	case ASM_OPERAND_INPUT_VALUE:
