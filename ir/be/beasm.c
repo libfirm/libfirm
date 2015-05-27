@@ -40,6 +40,9 @@ arch_register_req_t const *be_make_register_req(struct obstack *obst, be_asm_con
 	if (c->all_registers_allowed)
 		return c->cls->class_req;
 
+	if (c->allowed_registers == 0)
+		panic("constraint does not allow any registers");
+
 	arch_register_req_t *const req     = (arch_register_req_t*)obstack_alloc(obst, sizeof(*req) + sizeof(unsigned));
 	unsigned            *const limited = (unsigned*)(req + 1);
 	*limited = c->allowed_registers;
