@@ -1063,7 +1063,7 @@ static void solve_lpp(ir_nodeset_t *live_nodes, ir_node *node,
 	fclose(out);
 
 	/* solve lpp */
-	lpp_solve(lpp, be_options.ilp_server, be_options.ilp_solver);
+	lpp_solve(lpp, be_options.ilp_solver);
 	if (!lpp_is_sol_valid(lpp))
 		panic("ilp solution not valid");
 

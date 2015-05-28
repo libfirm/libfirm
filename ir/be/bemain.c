@@ -68,7 +68,6 @@ be_options_t be_options = {
 	.omit_fp              = false,
 	.pic                  = false,
 	.do_verify            = true,
-	.ilp_server           = "",
 	.ilp_solver           = "",
 	.verbose_asm          = true,
 };
@@ -103,7 +102,6 @@ static const lc_opt_table_entry_t be_main_options[] = {
 	LC_OPT_ENT_BOOL     ("profileuse",      "use existing profile data",                         &be_options.opt_profile_use),
 	LC_OPT_ENT_BOOL     ("verboseasm", "enable verbose assembler output",                        &be_options.verbose_asm),
 
-	LC_OPT_ENT_STR("ilp.server", "the ilp server name", &be_options.ilp_server),
 	LC_OPT_ENT_STR("ilp.solver", "the ilp solver name", &be_options.ilp_solver),
 	LC_OPT_LAST
 };

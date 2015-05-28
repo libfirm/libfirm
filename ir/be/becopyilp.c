@@ -234,7 +234,7 @@ lpp_sol_state_t ilp_go(ilp_env_t *ienv)
 	if (solve_log)
 		lpp_set_log(ienv->lp, stdout);
 
-	lpp_solve(ienv->lp, be_options.ilp_server, be_options.ilp_solver);
+	lpp_solve(ienv->lp, be_options.ilp_solver);
 
 	//stat_ev_dbl("co_ilp_objval",     ienv->lp->objval);
 	//stat_ev_dbl("co_ilp_best_bound", ienv->lp->best_bound);

@@ -42,7 +42,6 @@ struct be_options_t {
 	bool omit_fp;              /**< try to omit the frame pointer */
 	bool pic;                  /**< create position independent code */
 	bool do_verify;            /**< backend verify option */
-	char ilp_server[128];      /**< the ilp server name */
 	char ilp_solver[128];      /**< the ilp solver name */
 	bool verbose_asm;          /**< dump verbose assembler */
 };

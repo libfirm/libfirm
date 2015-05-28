@@ -342,9 +342,8 @@ static inline void lpp_unset_bound(lpp_t *lpp)
 /**
  * Solve an ILP.
  * @param lpp    The problem.
- * @param host   The host to solve on.
  * @param solver The solver to use.
  */
-void lpp_solve(lpp_t *lpp, const char* host, const char* solver);
+void lpp_solve(lpp_t *lpp, const char* solver);
 
 #endif
