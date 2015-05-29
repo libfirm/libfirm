@@ -90,35 +90,6 @@ static void parse_asm_constraints(be_asm_constraint_t *const constraint, x86_asm
 	be_parse_asm_constraints_internal(constraint, constraint_text, is_output, &x86_parse_constraint_letter, constraints);
 }
 
-static bool can_match(const arch_register_req_t *in,
-                      const arch_register_req_t *out)
-{
-	if (in->cls != out->cls)
-		return false;
-	if (!arch_register_req_is(in,  limited) ||
-	    !arch_register_req_is(out, limited))
-		return true;
-
-	return (*in->limited & *out->limited) != 0;
-}
-
-static bool match_requirement(arch_register_req_t const **reqs,
-                              size_t const n_reqs, bitset_t *const used,
-                              arch_register_req_t const *const req)
-{
-	if (!req->cls)
-		return true;
-	for (size_t i = 0; i != n_reqs; ++i) {
-		if (bitset_is_set(used, i))
-			continue;
-		if (!can_match(req, reqs[i]))
-			continue;
-		bitset_set(used, i);
-		return true;
-	}
-	return false;
-}
-
 static bool check_immediate_constraint(long val, char immediate_constraint_type)
 {
 	switch (immediate_constraint_type) {
@@ -309,47 +280,6 @@ ir_node *x86_match_ASM(ir_node const *const node, x86_clobber_name_t const *cons
 			req->type           |= arch_register_req_type_must_be_different;
 			req->other_different = different;
 			out_reqs[o]          = req;
-		}
-	}
-
-	ir_node *const block = be_transform_nodes_block(node);
-
-	/* Attempt to make ASM node register pressure faithful.
-	 * (This does not work for complicated cases yet!)
-	 *
-	 * Algorithm: Check if there are fewer inputs or outputs (I will call this
-	 * the smaller list). Then try to match each constraint of the smaller list
-	 * to 1 of the other list. If we can't match it, then we have to add a dummy
-	 * input/output to the other list
-	 *
-	 * FIXME: This is still broken in lots of cases. But at least better than
-	 *        before...
-	 * FIXME: need to do this per register class...
-	 */
-	size_t const orig_n_ins  = ARR_LEN(in_reqs);
-	size_t const orig_n_outs = ARR_LEN(out_reqs);
-	if (orig_n_outs < orig_n_ins) {
-		bitset_t *const used_ins = bitset_alloca(orig_n_ins);
-		for (size_t o = 0; o < orig_n_outs; ++o) {
-			arch_register_req_t const *const outreq = out_reqs[o];
-			if (match_requirement(in_reqs, orig_n_ins, used_ins, outreq))
-				continue;
-
-			/* add a new (dummy) input which occupies the register */
-			assert(arch_register_req_is(outreq, limited));
-			ARR_APP1(arch_register_req_t const*, in_reqs, outreq);
-			ARR_APP1(ir_node*, in, be_new_AnyVal(block, outreq->cls));
-		}
-	} else {
-		bitset_t *const used_outs = bitset_alloca(orig_n_outs);
-		for (unsigned i = 0; i < orig_n_ins; ++i) {
-			arch_register_req_t const *const inreq = in_reqs[i];
-			if (match_requirement(out_reqs, orig_n_outs, used_outs, inreq))
-				continue;
-
-			/* add a new (dummy) output which occupies the register */
-			assert(arch_register_req_is(inreq, limited));
-			ARR_APP1(arch_register_req_t const*, out_reqs, inreq);
 		}
 	}
 
