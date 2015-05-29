@@ -418,11 +418,6 @@ static ir_node *gen_ASM(ir_node *node)
 		ARR_APP1(arch_register_req_t const*, out_reqs, reg->single_req);
 	}
 
-	/* Add memory input and output. */
-	ARR_APP1(ir_node*, in, be_transform_node(get_ASM_mem(node)));
-	ARR_APP1(arch_register_req_t const*, in_reqs,  arch_no_register_req);
-	ARR_APP1(arch_register_req_t const*, out_reqs, arch_no_register_req);
-
 	return be_make_asm(node, in, in_reqs, out_reqs, operands);
 }
 

@@ -150,8 +150,13 @@ void be_parse_asm_constraints_internal(be_asm_constraint_t *const constraint, id
 	constraint->immediate_type        = immediate_type;
 }
 
-ir_node *be_make_asm(ir_node const *const node, ir_node **const in, arch_register_req_t const **const in_reqs, arch_register_req_t const **const out_reqs, void *const operands)
+ir_node *be_make_asm(ir_node const *const node, ir_node **in, arch_register_req_t const **in_reqs, arch_register_req_t const **out_reqs, void *const operands)
 {
+	/* Add memory input and output. */
+	ARR_APP1(ir_node*, in, be_transform_node(get_ASM_mem(node)));
+	ARR_APP1(arch_register_req_t const*, in_reqs,  arch_no_register_req);
+	ARR_APP1(arch_register_req_t const*, out_reqs, arch_no_register_req);
+
 	dbg_info *const dbgi     = get_irn_dbg_info(node);
 	ir_node  *const block    = be_transform_nodes_block(node);
 	unsigned  const n_ins    = ARR_LEN(in);
