@@ -10,6 +10,7 @@
 #include "bediagnostic.h"
 #include "beemitter.h"
 #include "benode.h"
+#include "betranshlp.h"
 #include "ident_t.h"
 #include "panic.h"
 #include "util.h"
@@ -147,6 +148,22 @@ void be_parse_asm_constraints_internal(be_asm_constraint_t *const constraint, id
 	constraint->all_registers_allowed = all_registers_allowed;
 	constraint->memory_possible       = memory_possible;
 	constraint->immediate_type        = immediate_type;
+}
+
+ir_node *be_make_asm(ir_node const *const node, unsigned const n_ins, ir_node **const in, arch_register_req_t const **const in_reqs, unsigned const n_outs, arch_register_req_t const **const out_reqs, void *const operands)
+{
+	dbg_info *const dbgi     = get_irn_dbg_info(node);
+	ir_node  *const block    = be_transform_nodes_block(node);
+	ident    *const text     = get_ASM_text(node);
+	ir_node  *const new_node = be_new_Asm(dbgi, block, n_ins, in, n_outs, text, operands);
+
+	backend_info_t *const info = be_get_info(new_node);
+	for (size_t o = 0; o < n_outs; ++o) {
+		info->out_infos[o].req = out_reqs[o];
+	}
+	arch_set_irn_register_reqs_in(new_node, in_reqs);
+
+	return new_node;
 }
 
 void be_emit_asm(ir_node const *const asmn, be_emit_asm_operand_func *const emit_asm_operand)

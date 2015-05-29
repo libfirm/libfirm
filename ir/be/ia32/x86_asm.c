@@ -358,17 +358,10 @@ ir_node *x86_match_ASM(ir_node const *const node, x86_clobber_name_t const *cons
 	ARR_APP1(arch_register_req_t const*, in_reqs,  arch_no_register_req);
 	ARR_APP1(arch_register_req_t const*, out_reqs, arch_no_register_req);
 
-	dbg_info *const dbgi     = get_irn_dbg_info(node);
-	size_t    const n_ins    = ARR_LEN(in);
-	size_t    const n_outs   = ARR_LEN(out_reqs);
-	ident    *const text     = get_ASM_text(node);
-	ir_node  *const new_node = be_new_Asm(dbgi, block, n_ins, in, n_outs, text, operands);
-
-	backend_info_t *const info = be_get_info(new_node);
-	for (size_t o = 0; o < n_outs; ++o) {
-		info->out_infos[o].req = out_reqs[o];
-	}
-	arch_set_irn_register_reqs_in(new_node, DUP_ARR_D(arch_register_req_t const*, obst, in_reqs));
+	size_t                      const n_ins       = ARR_LEN(in);
+	size_t                      const n_outs      = ARR_LEN(out_reqs);
+	arch_register_req_t const **const dup_in_reqs = DUP_ARR_D(arch_register_req_t const*, obst, in_reqs);
+	ir_node *const new_node = be_make_asm(node, n_ins, in, dup_in_reqs, n_outs, out_reqs, operands);
 
 	DEL_ARR_F(in_reqs);
 	DEL_ARR_F(in);
