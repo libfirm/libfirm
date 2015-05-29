@@ -371,11 +371,8 @@ static ir_node *gen_ASM(ir_node *node)
 	}
 
 	/* inputs + input constraints */
-	int       max_ins      = n_inputs+1;
-	ir_node **in = ALLOCANZ(ir_node*, max_ins);
-	const arch_register_req_t **in_reg_reqs
-		= OALLOCN(obst, const arch_register_req_t*, max_ins);
-	int n_ins = 0;
+	ir_node                   **in      = NEW_ARR_F(ir_node*, 0);
+	arch_register_req_t const **in_reqs = NEW_ARR_F(arch_register_req_t const*, 0);
 	for (int i = 0; i < n_inputs; ++i) {
 		ir_node                 *pred         = get_ASM_input(node, i);
 		const ir_asm_constraint *constraint   = &in_constraints[i];
@@ -398,18 +395,12 @@ static ir_node *gen_ASM(ir_node *node)
 			kind = ASM_OPERAND_MEMORY;
 			req  = arch_get_irn_register_req(new_pred)->cls->class_req;
 		}
-		in_reg_reqs[i] = req;
 
-		int const op_pos = n_ins++;
-		in[op_pos]    = new_pred;
 		operand->kind = kind;
-		operand->pos  = op_pos;
+		operand->pos  = ARR_LEN(in);
+		ARR_APP1(ir_node*, in, new_pred);
+		ARR_APP1(arch_register_req_t const*, in_reqs, req);
 	}
-
-	int      mem_pos     = n_ins++;
-	ir_node *mem         = get_ASM_mem(node);
-	in[mem_pos]          = be_transform_node(mem);
-	in_reg_reqs[mem_pos] = arch_no_register_req;
 
 	/* parse clobbers */
 	for (size_t c = 0; c < get_ASM_n_clobbers(node); ++c) {
@@ -427,10 +418,12 @@ static ir_node *gen_ASM(ir_node *node)
 		ARR_APP1(arch_register_req_t const*, out_reqs, reg->single_req);
 	}
 
-	/* add a new (dummy) output which occupies the register */
+	/* Add memory input and output. */
+	ARR_APP1(ir_node*, in, be_transform_node(get_ASM_mem(node)));
+	ARR_APP1(arch_register_req_t const*, in_reqs,  arch_no_register_req);
 	ARR_APP1(arch_register_req_t const*, out_reqs, arch_no_register_req);
 
-	return be_make_asm(node, n_ins, in, in_reg_reqs, out_reqs, operands);
+	return be_make_asm(node, in, in_reqs, out_reqs, operands);
 }
 
 /* Transforms the left operand of a binary operation.

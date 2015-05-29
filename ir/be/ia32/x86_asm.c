@@ -358,14 +358,7 @@ ir_node *x86_match_ASM(ir_node const *const node, x86_clobber_name_t const *cons
 	ARR_APP1(arch_register_req_t const*, in_reqs,  arch_no_register_req);
 	ARR_APP1(arch_register_req_t const*, out_reqs, arch_no_register_req);
 
-	size_t                      const n_ins       = ARR_LEN(in);
-	arch_register_req_t const **const dup_in_reqs = DUP_ARR_D(arch_register_req_t const*, obst, in_reqs);
-	ir_node *const new_node = be_make_asm(node, n_ins, in, dup_in_reqs, out_reqs, operands);
-
-	DEL_ARR_F(in_reqs);
-	DEL_ARR_F(in);
-
-	return new_node;
+	return be_make_asm(node, in, in_reqs, out_reqs, operands);
 }
 
 void x86_set_be_asm_constraint_support(const x86_asm_constraint_list_t *constraints)
