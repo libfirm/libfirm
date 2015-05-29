@@ -32,7 +32,7 @@ typedef void parse_constraint_letter_func_t(void const *env, be_asm_constraint_t
 
 void be_parse_asm_constraints_internal(be_asm_constraint_t *constraint, ident *constraint_text, bool is_output, parse_constraint_letter_func_t *parse_constraint_letter, void const *env);
 
-ir_node *be_make_asm(ir_node const *node, unsigned n_ins, ir_node **in, arch_register_req_t const **in_reqs, unsigned n_outs, arch_register_req_t const **out_reqs, void *operands);
+ir_node *be_make_asm(ir_node const *node, unsigned n_ins, ir_node **in, arch_register_req_t const **in_reqs, arch_register_req_t const **out_reqs, void *operands);
 
 typedef void be_emit_asm_operand_func(ir_node const *asmn, char modifier, unsigned pos);
 

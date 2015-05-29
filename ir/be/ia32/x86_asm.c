@@ -359,13 +359,11 @@ ir_node *x86_match_ASM(ir_node const *const node, x86_clobber_name_t const *cons
 	ARR_APP1(arch_register_req_t const*, out_reqs, arch_no_register_req);
 
 	size_t                      const n_ins       = ARR_LEN(in);
-	size_t                      const n_outs      = ARR_LEN(out_reqs);
 	arch_register_req_t const **const dup_in_reqs = DUP_ARR_D(arch_register_req_t const*, obst, in_reqs);
-	ir_node *const new_node = be_make_asm(node, n_ins, in, dup_in_reqs, n_outs, out_reqs, operands);
+	ir_node *const new_node = be_make_asm(node, n_ins, in, dup_in_reqs, out_reqs, operands);
 
 	DEL_ARR_F(in_reqs);
 	DEL_ARR_F(in);
-	DEL_ARR_F(out_reqs);
 
 	return new_node;
 }

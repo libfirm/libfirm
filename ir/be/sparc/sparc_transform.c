@@ -305,7 +305,6 @@ static bool sparc_match_immediate(sparc_asm_operand_t *const operand, ir_node *c
 static ir_node *gen_ASM(ir_node *node)
 {
 	int       n_inputs     = get_ASM_n_inputs(node);
-	size_t    n_clobbers   = 0;
 	ident   **clobbers     = get_ASM_clobbers(node);
 	ir_graph *irg          = get_irn_irg(node);
 	//unsigned  clobber_bits[BITSET_SIZE_ELEMS(N_SPARC_REGISTERS)];
@@ -315,7 +314,6 @@ static ir_node *gen_ASM(ir_node *node)
 		if (strcmp(clobber, "memory") == 0)
 			continue;
 		if (strcmp(clobber, "cc") == 0) {
-			n_clobbers += 2;
 			continue;
 		}
 
@@ -325,13 +323,11 @@ static ir_node *gen_ASM(ir_node *node)
 
 #if 0
 		rbitset_set(clobber_bits, reg->global_index);
-		++n_clobbers;
 #else
 		panic("clobbers not correctly supported yet");
 #endif
 	}
 	size_t n_out_constraints = get_ASM_n_output_constraints(node);
-	size_t n_outs            = n_out_constraints + n_clobbers;
 
 	const ir_asm_constraint *in_constraints  = get_ASM_input_constraints(node);
 	const ir_asm_constraint *out_constraints = get_ASM_output_constraints(node);
@@ -354,9 +350,7 @@ static ir_node *gen_ASM(ir_node *node)
 		= NEW_ARR_DZ(sparc_asm_operand_t, obst, n_operands);
 
 	/* construct output constraints */
-	size_t                      out_size = n_outs + 1;
-	const arch_register_req_t **out_reg_reqs
-		= OALLOCN(obst, const arch_register_req_t*, out_size);
+	arch_register_req_t const **out_reqs = NEW_ARR_F(arch_register_req_t const*, 0);
 
 	size_t out_idx;
 	for (out_idx = 0; out_idx < n_out_constraints; ++out_idx) {
@@ -366,8 +360,8 @@ static ir_node *gen_ASM(ir_node *node)
 		parse_asm_constraints(&parsed_constraint, constraint->constraint, true);
 
 		assert(parsed_constraint.immediate_type == 0);
-		arch_register_req_t const *const req = be_make_register_req(obst, &parsed_constraint, n_out_constraints, out_reg_reqs, out_idx);
-		out_reg_reqs[out_idx] = req;
+		arch_register_req_t const *const req = be_make_register_req(obst, &parsed_constraint, n_out_constraints, out_reqs, out_idx);
+		ARR_APP1(arch_register_req_t const*, out_reqs, req);
 
 		/* TODO: adjust register_req for clobbers */
 
@@ -399,7 +393,7 @@ static ir_node *gen_ASM(ir_node *node)
 
 		ir_node             *const new_pred = be_transform_node(pred);
 		operand_kind_t             kind     = ASM_OPERAND_INPUT_VALUE;
-		arch_register_req_t const *req      = be_make_register_req(obst, &parsed_constraint, n_out_constraints, out_reg_reqs, i);
+		arch_register_req_t const *req      = be_make_register_req(obst, &parsed_constraint, n_out_constraints, out_reqs, i);
 		if (req == arch_no_register_req) {
 			kind = ASM_OPERAND_MEMORY;
 			req  = arch_get_irn_register_req(new_pred)->cls->class_req;
@@ -423,34 +417,20 @@ static ir_node *gen_ASM(ir_node *node)
 		if (strcmp(clobber, "memory") == 0)
 			continue;
 		if (strcmp(clobber, "cc") == 0) {
-			const arch_register_t *flags_reg
-				= &sparc_registers[REG_PSR];
-			out_reg_reqs[out_idx++] = flags_reg->single_req;
-			const arch_register_t *fpflags_reg
-				= &sparc_registers[REG_FSR];
-			out_reg_reqs[out_idx++] = fpflags_reg->single_req;
+			ARR_APP1(arch_register_req_t const*, out_reqs, sparc_registers[REG_PSR].single_req);
+			ARR_APP1(arch_register_req_t const*, out_reqs, sparc_registers[REG_FSR].single_req);
 			continue;
 		}
 
 		const arch_register_t *reg = find_register(clobber);
 		assert(reg != NULL); /* otherwise we had a panic earlier */
-		out_reg_reqs[out_idx++] = reg->single_req;
-	}
-
-	/* append none register requirement for the memory output */
-	if (n_outs+1 >= out_size) {
-		out_size = n_outs + 1;
-		const arch_register_req_t **new_out_reg_reqs
-			= OALLOCN(obst, const arch_register_req_t*, out_size);
-		MEMCPY(new_out_reg_reqs, out_reg_reqs, n_outs);
-		out_reg_reqs = new_out_reg_reqs;
+		ARR_APP1(arch_register_req_t const*, out_reqs, reg->single_req);
 	}
 
 	/* add a new (dummy) output which occupies the register */
-	out_reg_reqs[n_outs] = arch_no_register_req;
-	++n_outs;
+	ARR_APP1(arch_register_req_t const*, out_reqs, arch_no_register_req);
 
-	return be_make_asm(node, n_ins, in, in_reg_reqs, n_outs, out_reg_reqs, operands);
+	return be_make_asm(node, n_ins, in, in_reg_reqs, out_reqs, operands);
 }
 
 /* Transforms the left operand of a binary operation.
