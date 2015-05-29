@@ -304,9 +304,7 @@ static bool sparc_match_immediate(sparc_asm_operand_t *const operand, ir_node *c
 
 static ir_node *gen_ASM(ir_node *node)
 {
-	int       n_inputs     = get_ASM_n_inputs(node);
 	ident   **clobbers     = get_ASM_clobbers(node);
-	ir_graph *irg          = get_irn_irg(node);
 	//unsigned  clobber_bits[BITSET_SIZE_ELEMS(N_SPARC_REGISTERS)];
 
 	for (size_t c = 0; c < get_ASM_n_clobbers(node); ++c) {
@@ -327,27 +325,16 @@ static ir_node *gen_ASM(ir_node *node)
 		panic("clobbers not correctly supported yet");
 #endif
 	}
-	size_t n_out_constraints = get_ASM_n_output_constraints(node);
 
-	const ir_asm_constraint *in_constraints  = get_ASM_input_constraints(node);
-	const ir_asm_constraint *out_constraints = get_ASM_output_constraints(node);
+	unsigned             const n_operands = be_count_asm_operands(node);
+	ir_graph            *const irg        = get_irn_irg(node);
+	struct obstack      *const obst       = get_irg_obstack(irg);
+	sparc_asm_operand_t *const operands   = NEW_ARR_DZ(sparc_asm_operand_t, obst, n_operands);
 
-	/* determine number of operands */
-	unsigned n_operands = 0;
-	for (size_t out_idx = 0; out_idx < n_out_constraints; ++out_idx) {
-		const ir_asm_constraint *constraint = &out_constraints[out_idx];
-		if (constraint->pos+1 > n_operands)
-			n_operands = constraint->pos+1;
-	}
-	for (int i = 0; i < n_inputs; ++i) {
-		const ir_asm_constraint *constraint = &in_constraints[i];
-		if (constraint->pos+1 > n_operands)
-			n_operands = constraint->pos+1;
-	}
-
-	struct obstack      *const obst = get_irg_obstack(irg);
-	sparc_asm_operand_t *const operands
-		= NEW_ARR_DZ(sparc_asm_operand_t, obst, n_operands);
+	int                      n_inputs          = get_ASM_n_inputs(node);
+	size_t                   n_out_constraints = get_ASM_n_output_constraints(node);
+	ir_asm_constraint const *in_constraints    = get_ASM_input_constraints(node);
+	ir_asm_constraint const *out_constraints   = get_ASM_output_constraints(node);
 
 	/* construct output constraints */
 	arch_register_req_t const **out_reqs = NEW_ARR_F(arch_register_req_t const*, 0);

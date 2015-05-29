@@ -159,24 +159,15 @@ static void set_operand_if_invalid(x86_asm_operand_t *const op, x86_asm_operand_
 
 ir_node *x86_match_ASM(ir_node const *const node, x86_clobber_name_t const *const additional_clobber_names, x86_asm_constraint_list_t const *const constraints)
 {
+	unsigned           const n_operands = be_count_asm_operands(node);
+	ir_graph          *const irg        = get_irn_irg(node);
+	struct obstack    *const obst       = get_irg_obstack(irg);
+	x86_asm_operand_t *const operands   = NEW_ARR_DZ(x86_asm_operand_t, obst, n_operands);
+
 	int                      const n_inputs          = get_ASM_n_inputs(node);
 	size_t                   const n_out_constraints = get_ASM_n_output_constraints(node);
 	ir_asm_constraint const *const in_constraints    = get_ASM_input_constraints(node);
 	ir_asm_constraint const *const out_constraints   = get_ASM_output_constraints(node);
-
-	/* determine maximum number of operands */
-	unsigned max_operands = 0;
-	for (size_t i = 0; i < n_out_constraints; ++i) {
-		max_operands = MAX(max_operands, out_constraints[i].pos + 1);
-	}
-	for (int i = 0; i < n_inputs; ++i) {
-		max_operands = MAX(max_operands, in_constraints[i].pos + 1);
-	}
-
-	ir_graph       *const irg  = get_irn_irg(node);
-	struct obstack *const obst = get_irg_obstack(irg);
-	x86_asm_operand_t *const operands
-		= NEW_ARR_DZ(x86_asm_operand_t, obst, max_operands);
 
 	/* construct output constraints */
 	size_t              const   n_clobbers = get_ASM_n_clobbers(node);

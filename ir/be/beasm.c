@@ -150,6 +150,25 @@ void be_parse_asm_constraints_internal(be_asm_constraint_t *const constraint, id
 	constraint->immediate_type        = immediate_type;
 }
 
+unsigned be_count_asm_operands(ir_node const *const node)
+{
+	unsigned n_operands = 0;
+
+	ir_asm_constraint const *const out_constraints   = get_ASM_output_constraints(node);
+	unsigned                 const n_out_constraints = get_ASM_n_output_constraints(node);
+	for (unsigned i = 0; i < n_out_constraints; ++i) {
+		n_operands = MAX(n_operands, out_constraints[i].pos + 1);
+	}
+
+	ir_asm_constraint const *const in_constraints = get_ASM_input_constraints(node);
+	unsigned                 const n_inputs       = get_ASM_n_inputs(node);
+	for (unsigned i = 0; i < n_inputs; ++i) {
+		n_operands = MAX(n_operands, in_constraints[i].pos + 1);
+	}
+
+	return n_operands;
+}
+
 static bool can_match(arch_register_req_t const *const in, arch_register_req_t const *const out)
 {
 	if (in->cls != out->cls)
