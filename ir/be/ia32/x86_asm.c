@@ -252,28 +252,6 @@ ir_node *x86_match_ASM(ir_node const *const node, x86_clobber_name_t const *cons
 		ARR_APP1(ir_node*, in, new_pred);
 	}
 
-	/* Handle early clobbers. */
-	for (size_t o = 0; o != n_out_constraints; ++o) {
-		ir_asm_constraint const *const constraint = &out_constraints[o];
-		if (!strchr(get_id_str(constraint->constraint), '&'))
-			continue;
-		arch_register_req_t const *const oreq = out_reqs[o];
-
-		unsigned different = 0;
-		for (int i = 0; i != n_inputs; ++i) {
-			if (in_reqs[i]->cls == oreq->cls)
-				different |= 1U << i;
-		}
-
-		if (different != 0) {
-			arch_register_req_t *const req = OALLOC(obst, arch_register_req_t);
-			*req                 = *oreq;
-			req->type           |= arch_register_req_type_must_be_different;
-			req->other_different = different;
-			out_reqs[o]          = req;
-		}
-	}
-
 	return be_make_asm(node, in, in_reqs, out_reqs, operands);
 }
 

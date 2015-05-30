@@ -196,6 +196,34 @@ static bool match_requirement(arch_register_req_t const **reqs, size_t const n_r
 
 ir_node *be_make_asm(ir_node const *const node, ir_node **in, arch_register_req_t const **in_reqs, arch_register_req_t const **out_reqs, void *const operands)
 {
+	ir_graph       *const irg  = get_irn_irg(node);
+	struct obstack *const obst = get_irg_obstack(irg);
+
+	/* Handle early clobbers. */
+	unsigned                 const n_inputs          = get_ASM_n_inputs(node);
+	ir_asm_constraint const *const out_constraints   = get_ASM_output_constraints(node);
+	unsigned                 const n_out_constraints = get_ASM_n_output_constraints(node);
+	for (unsigned o = 0; o != n_out_constraints; ++o) {
+		ir_asm_constraint const *const constraint = &out_constraints[o];
+		if (!strchr(get_id_str(constraint->constraint), '&'))
+			continue;
+		arch_register_req_t const *const oreq = out_reqs[o];
+
+		unsigned different = 0;
+		for (unsigned i = 0; i != n_inputs; ++i) {
+			if (in_reqs[i]->cls == oreq->cls)
+				different |= 1U << i;
+		}
+
+		if (different != 0) {
+			arch_register_req_t *const req = OALLOC(obst, arch_register_req_t);
+			*req                 = *oreq;
+			req->type           |= arch_register_req_type_must_be_different;
+			req->other_different = different;
+			out_reqs[o]          = req;
+		}
+	}
+
 	ir_node *const block = be_transform_nodes_block(node);
 
 	/* Attempt to make ASM node register pressure faithful.
@@ -252,8 +280,6 @@ ir_node *be_make_asm(ir_node const *const node, ir_node **in, arch_register_req_
 	for (size_t o = 0; o < n_outs; ++o) {
 		info->out_infos[o].req = out_reqs[o];
 	}
-	ir_graph                   *const irg         = get_irn_irg(node);
-	struct obstack             *const obst        = get_irg_obstack(irg);
 	arch_register_req_t const **const dup_in_reqs = DUP_ARR_D(arch_register_req_t const*, obst, in_reqs);
 	arch_set_irn_register_reqs_in(new_node, dup_in_reqs);
 
