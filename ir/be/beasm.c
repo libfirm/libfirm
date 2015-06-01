@@ -76,8 +76,7 @@ void be_parse_asm_constraints_internal(be_asm_constraint_t *const constraint, id
 	bool                         all_registers_allowed = false;
 	int                          same_as               = -1;
 	while (*i != '\0') {
-		char const l = *i++;
-		switch (l) {
+		switch (*i) {
 		/* Skip spaces, out/in-out marker. */
 		case ' ':
 		case '\t':
@@ -86,26 +85,28 @@ void be_parse_asm_constraints_internal(be_asm_constraint_t *const constraint, id
 		case '+':
 		case '&':
 		case '*':
+			++i;
 			break;
 
 		case '#':
-			while (*i != '\0' && *i != ',')
+			do {
 				++i;
+			} while (*i != '\0' && *i != ',');
 			break;
 
 		default:
-			if (is_digit(l)) {
+			if (is_digit(*i)) {
 				if (is_output)
 					panic("can only specify same constraint on input");
 
 				int p;
-				sscanf(i - 1, "%d%n", &same_as, &p);
+				sscanf(i, "%d%n", &same_as, &p);
 				if (same_as >= 0)
 					i += p;
 			} else {
 				be_asm_constraint_t new_constraint;
 				memset(&new_constraint, 0, sizeof(new_constraint));
-				parse_constraint_letter(env, &new_constraint, l);
+				parse_constraint_letter(env, &new_constraint, *i++);
 
 				limited               |= new_constraint.allowed_registers;
 				all_registers_allowed |= new_constraint.all_registers_allowed;
