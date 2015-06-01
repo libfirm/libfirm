@@ -1481,6 +1481,7 @@ static void check_consistent_out_edges(ir_graph *irg)
 		warn(node, "IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES set, but node cannot be found with out edges");
 		properties_fine = false;
 	}
+	ir_nodeset_destroy(&nodes);
 }
 
 static bool check_graph_properties(ir_graph *irg)
