@@ -1476,7 +1476,6 @@ void sparc_emit_function(ir_graph *irg)
 	}
 
 	pick_delay_slots(n_blocks, block_schedule);
-	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 
 	for (size_t i = 0; i < n_blocks; ++i) {
 		ir_node *block = block_schedule[i];
@@ -1485,6 +1484,7 @@ void sparc_emit_function(ir_graph *irg)
 			continue;
 		sparc_emit_block(block, prev);
 	}
+	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 
 	/* emit function epilog */
 	sparc_emit_func_epilog(irg);
