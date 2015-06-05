@@ -646,7 +646,7 @@ FIRM_API int tarval_get_exponent(const ir_tarval *tv);
  * @param tv    the tarval
  * @param mode  the mode to convert to
  */
-FIRM_API int tarval_ieee754_can_conv_lossless(const ir_tarval *tv, ir_mode *mode);
+FIRM_API int tarval_ieee754_can_conv_lossless(const ir_tarval *tv, const ir_mode *mode);
 
 /**
  * Returns non-zero if the result of the last IEEE-754 operation was exact.

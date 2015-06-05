@@ -1312,7 +1312,7 @@ int tarval_get_exponent(const ir_tarval *tv)
 	return fc_get_exponent((const fp_value*) tv->value);
 }
 
-int tarval_ieee754_can_conv_lossless(const ir_tarval *tv, ir_mode *mode)
+int tarval_ieee754_can_conv_lossless(const ir_tarval *tv, const ir_mode *mode)
 {
 	const float_descriptor_t *desc = get_descriptor(mode);
 	return fc_can_lossless_conv_to((const fp_value*) tv->value, desc);
