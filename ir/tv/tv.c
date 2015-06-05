@@ -67,7 +67,7 @@ static int cmp_tv(const void *p1, const void *p2, size_t n)
 	return memcmp(tv1->value, tv2->value, tv1->length);
 }
 
-static ir_tarval *identify_tarval(ir_tarval *tv)
+static ir_tarval *identify_tarval(const ir_tarval *tv)
 {
 	unsigned hash = hash_tv(tv);
 	return set_insert(ir_tarval, tarvals, tv, sizeof(ir_tarval) + tv->length,
