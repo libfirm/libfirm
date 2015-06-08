@@ -1658,10 +1658,11 @@ static bool is_same_op(pset *set, ir_op *op)
 static multi_op *get_user(multi_op *o)
 {
 	assert(pset_count(o->multi_users) == 1);
-	multi_op *user;
+	multi_op *user = NULL;
 	foreach_pset(o->multi_users, multi_op, n) {
 		user = n;
 	}
+	assert(user && "Found no multi op user");
 	return user;
 }
 
