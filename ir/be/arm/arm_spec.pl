@@ -654,6 +654,7 @@ Return => {
 	state    => "pinned",
 	op_flags => [ "cfopcode" ],
 	in_reqs  => "...",
+	ins      => [ "mem", "sp", "first_result" ],
 	mode     => "mode_X",
 	out_reqs => [ "none" ],
 	emit     => "bx lr",

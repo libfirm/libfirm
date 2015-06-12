@@ -46,11 +46,6 @@ enum fpa_immediates {
 	fpa_max
 };
 
-enum n_arm_Return {
-	n_arm_Return_mem = 0,
-	n_arm_Return_sp  = 1,
-};
-
 /** Generic ARM node attributes. */
 typedef struct arm_attr_t {
 	except_attr exc;                /**< the exception attribute. MUST be the first one. */

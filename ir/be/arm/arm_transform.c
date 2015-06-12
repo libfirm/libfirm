@@ -1785,22 +1785,18 @@ static ir_node *gen_Return(ir_node *node)
 	ir_graph       *irg            = get_irn_irg(node);
 	struct obstack *obst           = be_get_be_obst(irg);
 
-	unsigned n_ins = 2; /* memory + sp */
-	n_ins += n_res;
-	n_ins += n_callee_saves;
+	unsigned       p     = n_arm_Return_first_result;
+	unsigned const n_ins = p + n_res + n_callee_saves;
 
 	const arch_register_req_t **reqs
 		= OALLOCN(obst, const arch_register_req_t*, n_ins);
 	ir_node **in = ALLOCAN(ir_node*, n_ins);
-	unsigned  p  = 0;
 
-	in[p]   = new_mem;
-	reqs[p] = arch_no_register_req;
-	++p;
+	in[n_arm_Return_mem]   = new_mem;
+	reqs[n_arm_Return_mem] = arch_no_register_req;
 
-	in[p]   = sp;
-	reqs[p] = sp_reg->single_req;
-	++p;
+	in[n_arm_Return_sp]   = sp;
+	reqs[n_arm_Return_sp] = sp_reg->single_req;
 
 	/* result values */
 	for (size_t i = 0; i < n_res; ++i) {
