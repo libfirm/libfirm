@@ -529,9 +529,12 @@ static ir_node *source_am_possible(ir_node *block, ir_node *node)
 	/* make sure we are the only user */
 	if (get_irn_n_edges(node) != 1)
 		return NULL;
-	/* ia32 backend claims this can happen, use an assert for now and see
-	 * if we hit it :) */
-	assert(!be_is_transformed(node));
+	/* From ia32_transform.c:751:
+	 * in some edge cases with address mode we might reach the load normally
+	 * and through some AM sequence, if it is already materialized then we
+	 * can't create an AM node from it */
+	if (be_is_transformed(node))
+		return NULL;
 	return load;
 }
 
