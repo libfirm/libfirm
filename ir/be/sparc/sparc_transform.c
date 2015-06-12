@@ -1682,22 +1682,20 @@ static ir_node *gen_Return(ir_node *node)
 	struct obstack *be_obst = be_get_be_obst(irg);
 
 	/* estimate number of return values */
-	size_t n_ins = 2 + n_res; /* memory + stackpointer, return values */
+	unsigned p     = n_sparc_Return_first_result;
+	unsigned n_ins = p + n_res;
 	if (current_cconv->omit_fp)
 		n_ins += ARRAY_SIZE(omit_fp_callee_saves);
 
 	const arch_register_req_t **reqs
 		= OALLOCN(be_obst, const arch_register_req_t*, n_ins);
 	ir_node **in = ALLOCAN(ir_node*, n_ins);
-	size_t    p  = 0;
 
-	in[p]   = new_mem;
-	reqs[p] = arch_no_register_req;
-	++p;
+	in[n_sparc_Return_mem]   = new_mem;
+	reqs[n_sparc_Return_mem] = arch_no_register_req;
 
-	in[p]   = sp;
-	reqs[p] = sp_reg->single_req;
-	++p;
+	in[n_sparc_Return_sp]   = sp;
+	reqs[n_sparc_Return_sp] = sp_reg->single_req;
 
 	/* result values */
 	for (size_t i = 0; i < n_res; ++i) {

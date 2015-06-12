@@ -530,6 +530,7 @@ Return => {
 	template  => $xop,
 	irn_flags => [ "has_delay_slot" ],
 	in_reqs   => "...",
+	ins       => [ "mem", "sp", "first_result" ],
 	constructors => {
 		imm => {
 			attr       => "ir_entity *entity, int32_t offset",
