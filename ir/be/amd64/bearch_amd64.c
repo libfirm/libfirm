@@ -22,6 +22,7 @@
 #include "gen_amd64_regalloc_if.h"
 #include "irarch_t.h"
 #include "irgmod.h"
+#include "irgopt.h"
 #include "irgwalk.h"
 #include "iropt_t.h"
 #include "irtools.h"
@@ -501,6 +502,10 @@ static void amd64_select_instructions(ir_graph *irg)
 	be_timer_pop(T_CODEGEN);
 
 	be_dump(DUMP_BE, irg, "code-selection");
+
+	optimize_graph_df(irg);
+
+	be_dump(DUMP_BE, irg, "opt");
 }
 
 static void introduce_epilogue(ir_node *ret)
