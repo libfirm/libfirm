@@ -27,17 +27,17 @@ typedef enum arch_register_req_type_t {
 	/** No special type, but may still have a limited array set. */
 	arch_register_req_type_none              = 0,
 	/** The register should be equal to another one at the node. */
-	arch_register_req_type_should_be_same    = 1U << 1,
+	arch_register_req_type_should_be_same    = 1U << 0,
 	/** The register must be unequal from some other at the node. */
-	arch_register_req_type_must_be_different = 1U << 2,
+	arch_register_req_type_must_be_different = 1U << 1,
 	/** The registernumber should be aligned (in case of multiregister values)*/
-	arch_register_req_type_aligned           = 1U << 3,
+	arch_register_req_type_aligned           = 1U << 2,
 	/** ignore while allocating registers */
-	arch_register_req_type_ignore            = 1U << 4,
+	arch_register_req_type_ignore            = 1U << 3,
 	/** the output produces a new value for the stack pointer
 	 * (this is not really a constraint but a marker to guide the stackpointer
 	 * rewiring logic) */
-	arch_register_req_type_produces_sp       = 1U << 5,
+	arch_register_req_type_produces_sp       = 1U << 4,
 } arch_register_req_type_t;
 ENUM_BITSET(arch_register_req_type_t)
 
