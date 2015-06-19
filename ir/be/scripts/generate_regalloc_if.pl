@@ -34,13 +34,6 @@ use strict "subs";
 my $target_c   = $target_dir."/gen_".$arch."_regalloc_if.c";
 my $target_h   = $target_dir."/gen_".$arch."_regalloc_if.h";
 
-# helper function
-sub map_flags {
-	my $prefix = shift;
-	my $flags  = shift || "none";
-	return join(" | ", map { "$prefix$_" } split(/\s*\|\s*/, $flags));
-}
-
 # stacks for output
 my $regtypes_def; # stack for the register type variables definitions
 my @regclasses;   # stack for the register class variables
@@ -158,7 +151,12 @@ EOF
 	foreach (@class) {
 		my $name   = $_->{"name"};
 		my $ucname = uc($name);
-		my $type   = map_flags("arch_register_type_", $_->{"type"});
+		my $is_virtual = "false";
+		for ($_->{"type"}) {
+			if (defined($_) && $_ eq "virtual") {
+				$is_virtual = "true";
+			}
+		}
 		# realname is name if not set by user
 		$_->{"realname"} = $_->{"name"} if (! exists($_->{"realname"}));
 		my $realname = $_->{realname};
@@ -180,11 +178,11 @@ EOF
 		.name         = "${realname}",
 		.cls          = ${class_ptr},
 		.single_req   = &${arch}_single_reg_req_${old_classname}_${name},
-		.type         = ${type},
 		.index        = REG_${classuc}_${ucname},
 		.global_index = REG_${ucname},
 		.dwarf_number = ${dwarf_number},
 		.encoding     = ${encoding},
+		.is_virtual   = ${is_virtual},
 	},
 EOF
 

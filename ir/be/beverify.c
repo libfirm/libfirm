@@ -625,7 +625,7 @@ static void check_input_constraints(be_verify_reg_alloc_env_t *const env, ir_nod
 		foreach_irn_in(node, i, pred) {
 			const arch_register_t *pred_reg = arch_get_irn_register(pred);
 
-			if (reg != pred_reg && !(pred_reg->type & arch_register_type_virtual)) {
+			if (reg != pred_reg && !(pred_reg->is_virtual)) {
 				const char *pred_name = pred_reg != NULL ? pred_reg->name : "(null)";
 				const char *reg_name  = reg != NULL ? reg->name : "(null)";
 				verify_warnf(node, "input %d of %+F uses register %s instead of %s", i, node, pred_name, reg_name);
@@ -638,7 +638,7 @@ static void check_input_constraints(be_verify_reg_alloc_env_t *const env, ir_nod
 static void value_used(be_verify_reg_alloc_env_t *const env, ir_node const **const registers, ir_node const *const block, ir_node const *const node)
 {
 	const arch_register_t *reg = arch_get_irn_register(node);
-	if (reg == NULL || reg->type & arch_register_type_virtual)
+	if (reg == NULL || reg->is_virtual)
 		return;
 
 	const arch_register_req_t *req = arch_get_irn_register_req(node);
@@ -660,7 +660,7 @@ static void value_def(be_verify_reg_alloc_env_t *const env, ir_node const **cons
 {
 	const arch_register_t *reg = arch_get_irn_register(node);
 
-	if (reg == NULL || reg->type & arch_register_type_virtual)
+	if (reg == NULL || reg->is_virtual)
 		return;
 
 	const arch_register_req_t *req = arch_get_irn_register_req(node);

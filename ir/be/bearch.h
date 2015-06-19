@@ -20,15 +20,6 @@
 #include "beinfo.h"
 #include "be.h"
 
-typedef enum arch_register_type_t {
-	arch_register_type_none    = 0,
-	/** This is just a virtual register. Virtual registers fulfill any register
-	 * constraints as long as the register class matches. It is a allowed to
-	 * have multiple definitions for the same virtual register at a point */
-	arch_register_type_virtual = 1U << 0,
-} arch_register_type_t;
-ENUM_BITSET(arch_register_type_t)
-
 /**
  * Different types of register allocation requirements.
  */
@@ -186,7 +177,6 @@ struct arch_register_t {
 	arch_register_class_t const *cls;          /**< The class of the register */
 	/** register constraint allowing just this register */
 	const arch_register_req_t   *single_req;
-	arch_register_type_t         type;         /**< The type of the register. */
 	unsigned short               index;        /**< The index of the register in
 	                                                the class. */
 	unsigned short               global_index; /**< The global index this
@@ -195,6 +185,10 @@ struct arch_register_t {
 	unsigned short               dwarf_number;
 	/** register number in instruction encoding */
 	unsigned short               encoding;
+	/** This is just a virtual register. Virtual registers fulfill any register
+	 * constraints as long as the register class matches. It is allowed to
+	 * have multiple definitions for the same virtual register at a point */
+	bool                         is_virtual : 1;
 };
 
 /**

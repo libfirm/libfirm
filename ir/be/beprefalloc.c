@@ -1293,7 +1293,7 @@ static void add_phi_permutations(ir_node *block, int p)
 		ir_node               *op     = pred_info->assignments[a];
 		const arch_register_t *op_reg = arch_get_irn_register(op);
 		/* Virtual registers are ok, too. */
-		if (op_reg->type & arch_register_type_virtual)
+		if (op_reg->is_virtual)
 			continue;
 
 		permutation[regn] = a;

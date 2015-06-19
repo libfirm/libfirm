@@ -40,7 +40,7 @@ static void clear_reg_value(ir_node *node)
 	if (reg == NULL) {
 		panic("no register assigned at %+F", node);
 	}
-	if (reg->type & arch_register_type_virtual)
+	if (reg->is_virtual)
 		return;
 
 	DB((dbg, LEVEL_1, "Clear Register %s\n", reg->name));
@@ -57,7 +57,7 @@ static void set_reg_value(ir_node *node)
 	if (reg == NULL) {
 		panic("no register assigned at %+F", node);
 	}
-	if (reg->type & arch_register_type_virtual)
+	if (reg->is_virtual)
 		return;
 
 	DB((dbg, LEVEL_1, "Set Register %s: %+F\n", reg->name, node));

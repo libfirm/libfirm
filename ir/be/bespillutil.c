@@ -702,7 +702,7 @@ static void prepare_constr_insn(ir_node *const node)
 			continue;
 
 		/* Precolored with an ignore register (which is not virtual). */
-		if ((reg->type & arch_register_type_virtual) ||
+		if ((reg->is_virtual) ||
 		    rbitset_is_set(birg->allocatable_regs, reg->global_index))
 			continue;
 
