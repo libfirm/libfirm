@@ -1802,7 +1802,7 @@ static void spill(const regalloc_if_t *regif)
 	be_timer_pop(T_RA_SPILL);
 
 	be_timer_push(T_RA_SPILL_APPLY);
-	check_for_memory_operands(irg);
+	check_for_memory_operands(irg, regif);
 	be_timer_pop(T_RA_SPILL_APPLY);
 
 	be_dump(DUMP_RA, irg, "spill");

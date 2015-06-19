@@ -39,13 +39,6 @@ static const arch_irn_ops_t *get_irn_ops(const ir_node *irn)
 	return be_ops;
 }
 
-void arch_perform_memory_operand(ir_node *irn, unsigned int i)
-{
-	const arch_irn_ops_t *ops = get_irn_ops(irn);
-	if (ops->perform_memory_operand)
-		ops->perform_memory_operand(irn, i);
-}
-
 int arch_get_op_estimated_cost(const ir_node *irn)
 {
 	const arch_irn_ops_t *ops = get_irn_ops(irn);

@@ -596,7 +596,6 @@ bool is_be_node(const ir_node *irn)
 
 arch_irn_ops_t const be_null_ops = {
 	.get_op_estimated_cost  = NULL,
-	.perform_memory_operand = NULL,
 };
 
 static ir_op *new_be_op(unsigned code, const char *name, op_pin_state p,

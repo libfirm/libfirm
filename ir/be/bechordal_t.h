@@ -81,6 +81,6 @@ struct be_ra_chordal_opts_t {
 	int      lower_perm_opt;
 };
 
-void check_for_memory_operands(ir_graph *irg);
+void check_for_memory_operands(ir_graph *irg, const regalloc_if_t *regif);
 
 #endif

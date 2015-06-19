@@ -141,7 +141,7 @@ static void dump(unsigned mask, ir_graph *irg,
  */
 static void memory_operand_walker(ir_node *irn, void *env)
 {
-	(void)env;
+	const regalloc_if_t *regif = (const regalloc_if_t*)env;
 	foreach_irn_in(irn, i, in) {
 		if (!arch_irn_is(skip_Proj(in), reload))
 			continue;
@@ -150,16 +150,18 @@ static void memory_operand_walker(ir_node *irn, void *env)
 		/* only use memory operands, if the reload is only used by 1 node */
 		if (get_irn_n_edges(in) > 1)
 			continue;
-		arch_perform_memory_operand(irn, i);
+		regif->perform_memory_operand(irn, i);
 	}
 }
 
 /**
  * Starts a walk for memory operands if supported by the backend.
  */
-void check_for_memory_operands(ir_graph *irg)
+void check_for_memory_operands(ir_graph *irg, const regalloc_if_t *regif)
 {
-	irg_walk_graph(irg, NULL, memory_operand_walker, NULL);
+	if (regif->perform_memory_operand == NULL)
+		return;
+	irg_walk_graph(irg, NULL, memory_operand_walker, (void*)regif);
 }
 
 static be_node_stats_t last_node_stats;
@@ -182,13 +184,14 @@ static void pre_spill(be_chordal_env_t *const chordal_env,
 /**
  * Perform things which need to be done per register class after spilling.
  */
-static void post_spill(be_chordal_env_t *const chordal_env, ir_graph *const irg)
+static void post_spill(be_chordal_env_t *const chordal_env, ir_graph *const irg,
+					   const regalloc_if_t *regif)
 {
 	/* If we have a backend provided spiller, post spill is
 	 * called in a loop after spilling for each register class.
 	 * But we only need to fix stack nodes once in this case. */
 	be_timer_push(T_RA_SPILL_APPLY);
-	check_for_memory_operands(irg);
+	check_for_memory_operands(irg, regif);
 	be_timer_pop(T_RA_SPILL_APPLY);
 
 	/* verify schedule and register pressure */
@@ -305,7 +308,7 @@ static void be_ra_chordal_main(ir_graph *irg, const regalloc_if_t *regif)
 		dump(BE_CH_DUMP_SPILL, irg, cls, "spill");
 		stat_ev_dbl("bechordal_spillcosts", be_estimate_irg_costs(irg) - pre_spill_cost);
 
-		post_spill(&chordal_env, irg);
+		post_spill(&chordal_env, irg, regif);
 
 		if (stat_ev_enabled) {
 			be_node_stats_t node_stats;

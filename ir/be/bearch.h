@@ -64,8 +64,6 @@ extern arch_register_req_t const arch_no_requirement;
 
 int arch_get_op_estimated_cost(const ir_node *irn);
 
-void arch_perform_memory_operand(ir_node *irn, unsigned i);
-
 /**
  * Get the register allocated for a value.
  */
@@ -287,14 +285,6 @@ struct arch_irn_ops_t {
 	 * @return     The estimated cycle count for this operation
 	 */
 	int (*get_op_estimated_cost)(const ir_node *irn);
-
-	/**
-	 * Ask the backend to assimilate @p reload of operand @p i into @p irn.
-	 *
-	 * @param irn    The node.
-	 * @param i      The position of the reload.
-	 */
-	void (*perform_memory_operand)(ir_node *irn, unsigned i);
 };
 
 /**

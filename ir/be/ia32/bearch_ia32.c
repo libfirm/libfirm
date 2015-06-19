@@ -390,7 +390,6 @@ static void ia32_perform_memory_operand(ir_node *irn, unsigned int i)
 /* register allocator interface */
 static const arch_irn_ops_t ia32_irn_ops = {
 	.get_op_estimated_cost  = ia32_get_op_estimated_cost,
-	.perform_memory_operand = ia32_perform_memory_operand,
 };
 
 static bool gprof;
@@ -1440,14 +1439,13 @@ static void ia32_mark_remat(ir_node *node)
 		set_ia32_is_remat(node);
 }
 
-
-
 static const regalloc_if_t ia32_regalloc_if = {
-	.spill_cost  = 7,
-	.reload_cost = 5,
-	.mark_remat  = ia32_mark_remat,
-	.new_spill   = ia32_new_spill,
-	.new_reload  = ia32_new_reload,
+	.spill_cost             = 7,
+	.reload_cost            = 5,
+	.mark_remat             = ia32_mark_remat,
+	.new_spill              = ia32_new_spill,
+	.new_reload             = ia32_new_reload,
+	.perform_memory_operand = ia32_perform_memory_operand,
 };
 
 static void ia32_generate_code(FILE *output, const char *cup_name)

@@ -41,6 +41,12 @@ struct regalloc_if_t {
 	 */
 	ir_node *(*new_reload)(ir_node *value, ir_node *spilled_value,
 	                       ir_node *before);
+
+	/**
+	 * Ask the backend to fold a reload at operand @p i of @p irn. This can
+	 * be done by targets that support memory addressing modes.
+	 */
+	void (*perform_memory_operand)(ir_node *irn, unsigned i);
 };
 
 /**
