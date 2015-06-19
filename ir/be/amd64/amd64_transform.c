@@ -136,6 +136,16 @@ static const arch_register_req_t amd64_requirement_gp_same_0_not_1 = {
 	.width           = 1,
 };
 
+static const arch_register_req_t amd64_requirement_xmm_same_0_not_1 = {
+	.cls             = &amd64_reg_classes[CLASS_amd64_xmm],
+	.limited         = NULL,
+	.type            = arch_register_req_type_should_be_same
+	                   | arch_register_req_type_must_be_different,
+	.other_same      = BIT(0),
+	.other_different = BIT(1),
+	.width           = 1,
+};
+
 static const arch_register_req_t *mem_reqs[] = {
 	&arch_no_requirement,
 };
@@ -1141,8 +1151,19 @@ static ir_node *create_sse_div(ir_node *const node, ir_mode *const mode,
 
 	fix_node_mem_proj(new_node, args.mem_proj);
 
-	arch_set_irn_register_req_out(new_node, 0,
-	                              &amd64_requirement_xmm_same_0);
+	if (args.reqs == xmm_xmm_reqs) {
+		/* If this Div uses 2 xmm registers, we require
+		 * "output 0 must be different from input 1" in order
+		 * to give the finishing phase enough room for a copy,
+		 * in case the requirement "output 0 should be the
+		 * same as input 0" cannot be met.
+		 */
+		arch_set_irn_register_req_out(new_node, 0,
+		                              &amd64_requirement_xmm_same_0_not_1);
+	} else {
+		arch_set_irn_register_req_out(new_node, 0,
+		                              &amd64_requirement_xmm_same_0);
+	}
 	return new_node;
 }
 
