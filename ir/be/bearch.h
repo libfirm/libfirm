@@ -62,8 +62,6 @@ ENUM_BITSET(arch_register_req_type_t)
 extern arch_register_req_t const arch_no_requirement;
 #define arch_no_register_req (&arch_no_requirement)
 
-int arch_get_op_estimated_cost(const ir_node *irn);
-
 /**
  * Get the register allocated for a value.
  */
@@ -277,16 +275,6 @@ static inline bool reg_reqs_equal(const arch_register_req_t *req1,
 	return true;
 }
 
-struct arch_irn_ops_t {
-	/**
-	 * Get the estimated cycle count for @p irn.
-	 *
-	 * @param irn  The node.
-	 * @return     The estimated cycle count for this operation
-	 */
-	int (*get_op_estimated_cost)(const ir_node *irn);
-};
-
 /**
  * Architecture interface.
  */
@@ -334,6 +322,12 @@ struct arch_isa_if_t {
 	 * intrinsics here.
 	 */
 	void (*handle_intrinsics)(ir_graph *irg);
+
+	/**
+	 * Get a cost estimation for node @p irn. The cost should be similar to the
+	 * number of cycles necessary to execute the instruction.
+	 */
+	unsigned (*get_op_estimated_cost)(const ir_node *irn);
 };
 
 static inline bool arch_irn_is_ignore(const ir_node *irn)

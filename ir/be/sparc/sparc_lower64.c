@@ -138,7 +138,7 @@ void sparc_lower_64bit(void)
 	};
 
 	/* make sure opcodes are initialized */
-	sparc_create_opcodes(&be_null_ops);
+	sparc_create_opcodes();
 
 	ir_prepare_dw_lowering(&lower_dw_params);
 	ir_register_dw_lower_function(op_Add,   lower64_add);

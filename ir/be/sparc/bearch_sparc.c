@@ -357,7 +357,7 @@ static void sparc_init(void)
 {
 	sparc_init_asm_constraints();
 	sparc_register_init();
-	sparc_create_opcodes(&be_null_ops);
+	sparc_create_opcodes();
 	sparc_cconv_init();
 	sparc_setup_cg_config();
 }
@@ -551,18 +551,27 @@ static const backend_params *sparc_get_backend_params(void)
 	return &p;
 }
 
+static unsigned sparc_get_op_estimated_cost(const ir_node *node)
+{
+	/* TODO: refine */
+	if (sparc_has_load_store_attr(node))
+		return 5;
+	return 1;
+}
+
 static arch_isa_if_t const sparc_isa_if = {
-	.n_registers          = N_SPARC_REGISTERS,
-	.registers            = sparc_registers,
-	.n_register_classes   = N_SPARC_CLASSES,
-	.register_classes     = sparc_reg_classes,
-	.init                 = sparc_init,
-	.finish               = sparc_finish,
-	.generate_code        = sparc_generate_code,
-	.get_params           = sparc_get_backend_params,
-	.lower_for_target     = sparc_lower_for_target,
-	.is_valid_clobber     = sparc_is_valid_clobber,
-	.handle_intrinsics    = sparc_handle_intrinsics,
+	.n_registers           = N_SPARC_REGISTERS,
+	.registers             = sparc_registers,
+	.n_register_classes    = N_SPARC_CLASSES,
+	.register_classes      = sparc_reg_classes,
+	.init                  = sparc_init,
+	.finish                = sparc_finish,
+	.generate_code         = sparc_generate_code,
+	.get_params            = sparc_get_backend_params,
+	.lower_for_target      = sparc_lower_for_target,
+	.is_valid_clobber      = sparc_is_valid_clobber,
+	.handle_intrinsics     = sparc_handle_intrinsics,
+	.get_op_estimated_cost = sparc_get_op_estimated_cost,
 };
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_sparc)

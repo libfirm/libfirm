@@ -243,8 +243,11 @@ ir_entity *ia32_get_frame_address_entity(ir_graph *irg)
  *
  * @return     The estimated cycle count for this operation
  */
-static int ia32_get_op_estimated_cost(ir_node const *const irn)
+static unsigned ia32_get_op_estimated_cost(ir_node const *const irn)
 {
+	if (!is_ia32_irn(irn))
+		return 1;
+
 	if (is_ia32_CopyB_i(irn)) {
 		unsigned const size = get_ia32_copyb_size(irn);
 		return 20 + size * 4 / 3;
@@ -386,11 +389,6 @@ static void ia32_perform_memory_operand(ir_node *irn, unsigned int i)
 	kill_node(op);
 	kill_node(load);
 }
-
-/* register allocator interface */
-static const arch_irn_ops_t ia32_irn_ops = {
-	.get_op_estimated_cost  = ia32_get_op_estimated_cost,
-};
 
 static bool gprof;
 
@@ -1419,7 +1417,7 @@ static void ia32_init(void)
 
 	ia32_register_init();
 	obstack_init(&opcodes_obst);
-	ia32_create_opcodes(&ia32_irn_ops);
+	ia32_create_opcodes();
 	ia32_cconv_init();
 }
 
@@ -1576,16 +1574,17 @@ static const lc_opt_table_entry_t ia32_options[] = {
 };
 
 static arch_isa_if_t const ia32_isa_if = {
-	.n_registers          = N_IA32_REGISTERS,
-	.registers            = ia32_registers,
-	.n_register_classes   = N_IA32_CLASSES,
-	.register_classes     = ia32_reg_classes,
-	.init                 = ia32_init,
-	.finish               = ia32_finish,
-	.get_params           = ia32_get_libfirm_params,
-	.generate_code        = ia32_generate_code,
-	.lower_for_target     = ia32_lower_for_target,
-	.is_valid_clobber     = ia32_is_valid_clobber,
+	.n_registers           = N_IA32_REGISTERS,
+	.registers             = ia32_registers,
+	.n_register_classes    = N_IA32_CLASSES,
+	.register_classes      = ia32_reg_classes,
+	.init                  = ia32_init,
+	.finish                = ia32_finish,
+	.get_params            = ia32_get_libfirm_params,
+	.generate_code         = ia32_generate_code,
+	.lower_for_target      = ia32_lower_for_target,
+	.is_valid_clobber      = ia32_is_valid_clobber,
+	.get_op_estimated_cost = ia32_get_op_estimated_cost,
 };
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_ia32)

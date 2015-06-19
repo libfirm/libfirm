@@ -594,17 +594,12 @@ bool is_be_node(const ir_node *irn)
 	return get_op_tag(get_irn_op(irn)) == be_op_tag;
 }
 
-arch_irn_ops_t const be_null_ops = {
-	.get_op_estimated_cost  = NULL,
-};
-
 static ir_op *new_be_op(unsigned code, const char *name, op_pin_state p,
                         irop_flags flags, op_arity opar, size_t attr_size)
 {
 	ir_op *res = new_ir_op(code, name, p, flags, opar, 0, attr_size);
 	set_op_dump(res, dump_node);
 	set_op_copy_attr(res, copy_attr);
-	res->ops.be_ops = &be_null_ops;
 	set_op_tag(res, be_op_tag);
 	return res;
 }
@@ -632,13 +627,6 @@ void be_init_op(void)
 	set_op_attrs_equal(op_be_Keep,     attrs_equal_be_node);
 	set_op_attrs_equal(op_be_MemPerm,  attrs_equal_be_node);
 	set_op_attrs_equal(op_be_Perm,     attrs_equal_be_node);
-
-	/* attach out dummy_ops to middle end nodes */
-	for (unsigned opc = iro_first; opc <= iro_last; ++opc) {
-		ir_op *op = ir_get_opcode(opc);
-		assert(op->ops.be_ops == NULL);
-		op->ops.be_ops = &be_null_ops;
-	}
 }
 
 void be_finish_op(void)

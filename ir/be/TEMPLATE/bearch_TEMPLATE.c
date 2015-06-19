@@ -85,7 +85,7 @@ static void TEMPLATE_generate_code(FILE *output, const char *cup_name)
 static void TEMPLATE_init(void)
 {
 	TEMPLATE_register_init();
-	TEMPLATE_create_opcodes(&be_null_ops);
+	TEMPLATE_create_opcodes();
 }
 
 static void TEMPLATE_finish(void)
@@ -141,17 +141,27 @@ static int TEMPLATE_is_valid_clobber(const char *clobber)
 	return false;
 }
 
+static unsigned TEMPLATE_get_op_estimated_cost(const ir_node *node)
+{
+	if (is_TEMPLATE_Load(node))
+		return 5;
+	if (is_TEMPLATE_Store(node))
+		return 7;
+	return 1;
+}
+
 static arch_isa_if_t const TEMPLATE_isa_if = {
-	.n_registers          = N_TEMPLATE_REGISTERS,
-	.registers            = TEMPLATE_registers,
-	.n_register_classes   = N_TEMPLATE_CLASSES,
-	.register_classes     = TEMPLATE_reg_classes,
-	.init                 = TEMPLATE_init,
-	.finish               = TEMPLATE_finish,
-	.get_params           = TEMPLATE_get_backend_params,
-	.generate_code        = TEMPLATE_generate_code,
-	.lower_for_target     = TEMPLATE_lower_for_target,
-	.is_valid_clobber     = TEMPLATE_is_valid_clobber,
+	.n_registers           = N_TEMPLATE_REGISTERS,
+	.registers             = TEMPLATE_registers,
+	.n_register_classes    = N_TEMPLATE_CLASSES,
+	.register_classes      = TEMPLATE_reg_classes,
+	.init                  = TEMPLATE_init,
+	.finish                = TEMPLATE_finish,
+	.get_params            = TEMPLATE_get_backend_params,
+	.generate_code         = TEMPLATE_generate_code,
+	.lower_for_target      = TEMPLATE_lower_for_target,
+	.is_valid_clobber      = TEMPLATE_is_valid_clobber,
+	.get_op_estimated_cost = TEMPLATE_get_op_estimated_cost,
 };
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_TEMPLATE)

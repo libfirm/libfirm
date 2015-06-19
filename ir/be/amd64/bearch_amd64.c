@@ -779,23 +779,30 @@ static void amd64_init(void)
 {
 	amd64_init_types();
 	amd64_register_init();
-	amd64_create_opcodes(&be_null_ops);
+	amd64_create_opcodes();
 	amd64_cconv_init();
 	x86_set_be_asm_constraint_support(&amd64_asm_constraints);
 }
 
+static unsigned amd64_get_op_estimated_cost(const ir_node *node)
+{
+	(void)node;/* TODO */
+	return 1;
+}
+
 static arch_isa_if_t const amd64_isa_if = {
-	.n_registers          = N_AMD64_REGISTERS,
-	.registers            = amd64_registers,
-	.n_register_classes   = N_AMD64_CLASSES,
-	.register_classes     = amd64_reg_classes,
-	.init                 = amd64_init,
-	.finish               = amd64_finish,
-	.get_params           = amd64_get_backend_params,
-	.generate_code        = amd64_generate_code,
-	.lower_for_target     = amd64_lower_for_target,
-	.is_valid_clobber     = amd64_is_valid_clobber,
-	.handle_intrinsics    = amd64_handle_intrinsics,
+	.n_registers           = N_AMD64_REGISTERS,
+	.registers             = amd64_registers,
+	.n_register_classes    = N_AMD64_CLASSES,
+	.register_classes      = amd64_reg_classes,
+	.init                  = amd64_init,
+	.finish                = amd64_finish,
+	.get_params            = amd64_get_backend_params,
+	.generate_code         = amd64_generate_code,
+	.lower_for_target      = amd64_lower_for_target,
+	.is_valid_clobber      = amd64_is_valid_clobber,
+	.handle_intrinsics     = amd64_handle_intrinsics,
+	.get_op_estimated_cost = amd64_get_op_estimated_cost,
 };
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_amd64)

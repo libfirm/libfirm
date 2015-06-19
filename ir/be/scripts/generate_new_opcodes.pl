@@ -95,7 +95,7 @@ foreach my $class_name (sort(keys(%reg_classes))) {
 }
 
 
-$obst_header .= "void ${arch}_create_opcodes(const arch_irn_ops_t *be_ops);\n";
+$obst_header .= "void ${arch}_create_opcodes(void);\n";
 $obst_header .= "void ${arch}_free_opcodes(void);\n";
 
 sub create_constructor {
@@ -585,7 +585,6 @@ EOF
 	$temp  = "\top = new_ir_op(cur_opcode + iro_$op, \"$op\", op_pin_state_".$n{"state"}.", $op_flags";
 	$temp .= ", ".translate_arity($arity).", -1, ${attr_size});\n";
 	$obst_new_irop .= $temp;
-	$obst_new_irop .= "\top->ops.be_ops        = be_ops;\n";
 	$obst_new_irop .= "\tset_op_dump(op, ${dump_func});\n";
 	if (defined($attrs_equal_func)) {
 		$obst_new_irop .= "\tset_op_attrs_equal(op, ${attrs_equal_func});\n";
@@ -695,7 +694,7 @@ $obst_constructor
  * Creates the $arch specific Firm machine operations
  * needed for the assembler irgs.
  */
-void $arch\_create_opcodes(const arch_irn_ops_t *be_ops)
+void $arch\_create_opcodes(void)
 {
 	ir_op *op;
 	int    cur_opcode = get_next_ir_opcodes(iro_$arch\_last);

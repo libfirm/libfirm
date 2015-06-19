@@ -34,8 +34,6 @@ struct ir_nodemap {
 	void **data;  /**< maps node indices to void* */
 };
 
-typedef struct arch_irn_ops_t arch_irn_ops_t;
-
 /**
  * Operation specific callbacks.
  */
@@ -58,7 +56,6 @@ typedef struct {
 	op_func               generic;              /**< A generic function pointer. */
 	op_func               generic1;             /**< A generic function pointer. */
 	op_func               generic2;             /**< A generic function pointer. */
-	const arch_irn_ops_t *be_ops;               /**< callbacks used by the backend. */
 } ir_op_ops;
 
 /** The type of an ir_op. */

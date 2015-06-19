@@ -26,30 +26,6 @@ arch_register_req_t const arch_no_requirement = {
 	.width           = 0,
 };
 
-/**
- * Get the isa responsible for a node.
- * @param irn The node to get the responsible isa for.
- * @return The irn operations given by the responsible isa.
- */
-static const arch_irn_ops_t *get_irn_ops(const ir_node *irn)
-{
-	ir_op          const *const op     = get_irn_op(irn);
-	arch_irn_ops_t const *const be_ops = get_op_ops(op)->be_ops;
-	assert(be_ops);
-	return be_ops;
-}
-
-int arch_get_op_estimated_cost(const ir_node *irn)
-{
-	const arch_irn_ops_t *ops = get_irn_ops(irn);
-
-	if (ops->get_op_estimated_cost) {
-		return ops->get_op_estimated_cost(irn);
-	} else {
-		return 1;
-	}
-}
-
 static reg_out_info_t *get_out_info_n(const ir_node *node, unsigned pos)
 {
 	const backend_info_t *info = be_get_info(node);

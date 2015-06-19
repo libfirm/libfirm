@@ -298,7 +298,7 @@ static void arm_init(void)
 	arm_mode_flags = new_non_arithmetic_mode("arm_flags", 32);
 
 	arm_register_init();
-	arm_create_opcodes(&be_null_ops);
+	arm_create_opcodes();
 	arm_init_backend_params();
 }
 
@@ -307,18 +307,25 @@ static void arm_finish(void)
 	arm_free_opcodes();
 }
 
+static unsigned arm_get_op_estimated_cost(const ir_node *node)
+{
+	(void)node; /* TODO */
+	return 1;
+}
+
 static arch_isa_if_t const arm_isa_if = {
-	.n_registers          = N_ARM_REGISTERS,
-	.registers            = arm_registers,
-	.n_register_classes   = N_ARM_CLASSES,
-	.register_classes     = arm_reg_classes,
-	.init                 = arm_init,
-	.finish               = arm_finish,
-	.get_params           = arm_get_libfirm_params,
-	.generate_code        = arm_generate_code,
-	.lower_for_target     = arm_lower_for_target,
-	.is_valid_clobber     = arm_is_valid_clobber,
-	.handle_intrinsics    = arm_handle_intrinsics,
+	.n_registers           = N_ARM_REGISTERS,
+	.registers             = arm_registers,
+	.n_register_classes    = N_ARM_CLASSES,
+	.register_classes      = arm_reg_classes,
+	.init                  = arm_init,
+	.finish                = arm_finish,
+	.get_params            = arm_get_libfirm_params,
+	.generate_code         = arm_generate_code,
+	.lower_for_target      = arm_lower_for_target,
+	.is_valid_clobber      = arm_is_valid_clobber,
+	.handle_intrinsics     = arm_handle_intrinsics,
+	.get_op_estimated_cost = arm_get_op_estimated_cost,
 };
 
 static const lc_opt_enum_int_items_t arm_fpu_items[] = {

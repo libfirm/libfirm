@@ -392,7 +392,7 @@ void arm_lower_64bit(void)
 	create_divmod_intrinsics(word_unsigned, word_signed);
 
 	/* make sure opcodes are initialized */
-	arm_create_opcodes(&be_null_ops);
+	arm_create_opcodes();
 
 	ir_prepare_dw_lowering(&lower_dw_params);
 	ir_register_dw_lower_function(op_Add,   lower64_add);

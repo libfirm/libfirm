@@ -369,7 +369,7 @@ static int check_remat_conditions_costs(spill_env_t *env,
 	if (!arch_irn_is(insn, rematerializable))
 		return REMAT_COST_INFINITE;
 
-	int costs = arch_get_op_estimated_cost(insn);
+	int costs = isa_if->get_op_estimated_cost(insn);
 	int spillcosts = env->regif.reload_cost + env->regif.spill_cost;
 	if (parentcosts + costs >= spillcosts)
 		return REMAT_COST_INFINITE;
