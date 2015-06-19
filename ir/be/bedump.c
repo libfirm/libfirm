@@ -191,7 +191,7 @@ static void dump_register_req(FILE *const F, arch_register_req_t const *const re
 
 	fputs(cls->name, F);
 
-	if (arch_register_req_is(req, limited)) {
+	if (req->limited != NULL) {
 		fputs(" limited to", F);
 		for (unsigned i = 0, n_regs = cls->n_regs; i < n_regs; ++i) {
 			if (rbitset_is_set(req->limited, i))

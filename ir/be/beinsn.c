@@ -29,7 +29,7 @@ be_insn_t *be_scan_insn(be_chordal_env_t *const env, ir_node *const irn)
 	bool has_constraints = false;
 	be_foreach_definition(irn, cls, p, req,
 		/* found a def: create a new operand */
-		if (arch_register_req_is(req, limited)) {
+		if (req->limited != NULL) {
 			o.regs          = req->limited;
 			has_constraints = true;
 		} else {
@@ -46,7 +46,7 @@ be_insn_t *be_scan_insn(be_chordal_env_t *const env, ir_node *const irn)
 	/* now collect the uses for this node */
 	be_foreach_use(irn, cls, in_req, op, op_req,
 		/* found a register use, create an operand */
-		if (arch_register_req_is(in_req, limited)) {
+		if (in_req->limited != NULL) {
 			o.regs          = in_req->limited;
 			has_constraints = true;
 		} else {

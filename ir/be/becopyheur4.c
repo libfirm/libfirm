@@ -148,7 +148,7 @@ static co_mst_irn_t *co_mst_irn_init(co_mst_env_t *env, const ir_node *irn)
 
 	/* Exclude colors not assignable to the irn */
 	arch_register_req_t const *const req = arch_get_irn_register_req(irn);
-	if (arch_register_req_is(req, limited))
+	if (req->limited != NULL)
 		rbitset_and(adm->data, req->limited, n_regs);
 
 	/* compute the constraint factor */

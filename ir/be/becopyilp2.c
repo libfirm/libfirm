@@ -91,7 +91,7 @@ static void build_coloring_cstr(ilp_env_t *ienv)
 		req = arch_get_irn_register_req(irn);
 
 		/* get assignable colors */
-		if (arch_register_req_is(req, limited)) {
+		if (req->limited != NULL) {
 			rbitset_copy(colors, req->limited, n_regs);
 		} else {
 			rbitset_copy(colors, allocatable_colors, n_regs);

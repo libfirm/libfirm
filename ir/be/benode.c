@@ -346,7 +346,7 @@ const arch_register_req_t *be_create_reg_req(struct obstack *obst,
 		= rbitset_obstack_alloc(obst, cls->n_regs);
 	rbitset_set(limited, reg->index);
 	arch_register_req_t *req = OALLOC(obst, arch_register_req_t);
-	req->type    = arch_register_req_type_limited | additional_types;
+	req->type    = additional_types;
 	req->cls     = cls;
 	req->limited = limited;
 	req->width   = 1;
@@ -395,7 +395,7 @@ static unsigned get_start_reg_index(ir_graph *irg, const arch_register_t *reg)
 	be_foreach_out(start, i) {
 		arch_register_req_t const *const out_req
 			= arch_get_irn_register_req_out(start, i);
-		if (!arch_register_req_is(out_req, limited))
+		if (out_req->limited == NULL)
 			continue;
 		if (out_req->cls != reg->cls)
 			continue;

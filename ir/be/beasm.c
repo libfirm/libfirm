@@ -51,7 +51,7 @@ arch_register_req_t const *be_make_register_req(struct obstack *obst, be_asm_con
 	*limited = c->allowed_registers;
 
 	memset(req, 0, sizeof(*req));
-	req->type    = arch_register_req_type_limited;
+	req->type    = arch_register_req_type_none;
 	req->cls     = c->cls;
 	req->limited = limited;
 	req->width   = 1;
@@ -173,8 +173,7 @@ static bool can_match(arch_register_req_t const *const in, arch_register_req_t c
 {
 	if (in->cls != out->cls)
 		return false;
-	if (!arch_register_req_is(in,  limited) ||
-	    !arch_register_req_is(out, limited))
+	if (in->limited == NULL || out->limited == NULL)
 		return true;
 	return (*in->limited & *out->limited) != 0;
 }
@@ -248,7 +247,7 @@ ir_node *be_make_asm(ir_node const *const node, ir_node **in, arch_register_req_
 				continue;
 
 			/* add a new (dummy) input which occupies the register */
-			assert(arch_register_req_is(outreq, limited));
+			assert(outreq->limited != NULL);
 			ARR_APP1(arch_register_req_t const*, in_reqs, outreq);
 			ARR_APP1(ir_node*, in, be_new_AnyVal(block, outreq->cls));
 		}
@@ -260,7 +259,7 @@ ir_node *be_make_asm(ir_node const *const node, ir_node **in, arch_register_req_
 				continue;
 
 			/* add a new (dummy) output which occupies the register */
-			assert(arch_register_req_is(inreq, limited));
+			assert(inreq->limited != NULL);
 			ARR_APP1(arch_register_req_t const*, out_reqs, inreq);
 		}
 	}

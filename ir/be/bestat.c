@@ -232,7 +232,7 @@ static void block_count_values(ir_node *block, void *data)
 			++stats->values;
 			if (arch_register_req_is(req, should_be_same) || is_Phi(value))
 				++stats->should_be_sames;
-			if (arch_register_req_is(req, limited))
+			if (req->limited != NULL)
 				++stats->constrained_values;
 		);
 		for (int i = 0, arity = get_irn_arity(node); i < arity; ++i) {
@@ -246,11 +246,11 @@ static void block_count_values(ir_node *block, void *data)
 					++stats->unused_values;
 					const arch_register_req_t *const req
 						= arch_get_irn_register_req(value);
-					if (arch_register_req_is(req, limited))
+					if (req->limited != NULL)
 						++stats->unused_constrained_values;
 				}
 			}
-			if (arch_register_req_is(req, limited))
+			if (req->limited != NULL)
 				++stats->constrained_uses;
 		}
 	}

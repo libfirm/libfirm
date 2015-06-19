@@ -24,10 +24,8 @@
  * Different types of register allocation requirements.
  */
 typedef enum arch_register_req_type_t {
-	/** All registers in the class are allowed. */
+	/** No special type, but may still have a limited array set. */
 	arch_register_req_type_none              = 0,
-	/** Only a real subset of the class is allowed. */
-	arch_register_req_type_limited           = 1U << 0,
 	/** The register should be equal to another one at the node. */
 	arch_register_req_type_should_be_same    = 1U << 1,
 	/** The register must be unequal from some other at the node. */
@@ -231,7 +229,7 @@ struct arch_register_req_t {
 	/** The register class this constraint belongs to. */
 	const arch_register_class_t *cls;
 	/** allowed register bitset (in case of wide-values this is only about the
-	 * first register) */
+	 * first register). NULL if all registers are allowed. */
 	const unsigned              *limited;
 	arch_register_req_type_t     type; /**< The type of the constraint. */
 	/** Bitmask of ins which should use the same register (should_be_same). */

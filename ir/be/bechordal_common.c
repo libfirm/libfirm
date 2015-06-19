@@ -154,7 +154,7 @@ ir_node *pre_process_constraints(be_chordal_env_t *env, be_insn_t **the_insn)
 		 * limited, is a hack.  It will break when multiple differently constrained
 		 * inputs use the same value. */
 		arch_register_req_t const *const req = arch_get_irn_register_req_in(irn, i);
-		if (!arch_register_req_is(req, limited))
+		if (req->limited == NULL)
 			continue;
 		arch_set_irn_register_req_out(perm, get_Proj_num(proj), req);
 	}

@@ -116,7 +116,7 @@ static void sr_remove(ilp_env_t *const ienv)
 		redo = false;
 		be_ifg_foreach_node(ifg, irn) {
 			const arch_register_req_t *req = arch_get_irn_register_req(irn);
-			if (arch_register_req_is(req, limited) || sr_is_removed(ienv, irn))
+			if (req->limited != NULL || sr_is_removed(ienv, irn))
 				continue;
 			if (co_gs_is_optimizable(ienv->co, irn))
 				continue;

@@ -73,7 +73,7 @@ bool arch_reg_is_allocatable(const arch_register_req_t *req,
 		return false;
 	if (reg->is_virtual)
 		return true;
-	if (arch_register_req_is(req, limited))
+	if (req->limited != NULL)
 		return rbitset_is_set(req->limited, reg->index);
 	return true;
 }

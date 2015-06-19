@@ -190,7 +190,7 @@ EOF
 		$single_constraints .= <<EOF;
 static const unsigned ${arch}_limited_${old_classname}_${name} [] = ${limitedarray};
 const arch_register_req_t ${arch}_single_reg_req_${old_classname}_${name} = {
-	.type            = arch_register_req_type_limited,
+	.type            = arch_register_req_type_none,
 	.cls             = ${class_ptr},
 	.limited         = ${arch}_limited_${old_classname}_${name},
 	.other_same      = 0,

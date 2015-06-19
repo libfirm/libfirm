@@ -1069,16 +1069,13 @@ EOF
 			die("Fatal error: Could not build subset for requirements '$reqs' of '$op' pos $idx ... exiting.\n");
 		}
 
-		if (defined($limit_bitset) && $limit_bitset ne "NULL") {
-			push(@req_type_mask, "arch_register_req_type_limited");
-		}
 		if ($same_pos != 0) {
 			push(@req_type_mask, "arch_register_req_type_should_be_same");
 		}
 		if ($different_pos != 0) {
 			push(@req_type_mask, "arch_register_req_type_must_be_different");
 		}
-		my $reqtype = join(" | ", @req_type_mask);
+		my $reqtype = join(" | ", @req_type_mask) || "arch_register_req_type_none";
 
  		if(!defined($limit_bitset)) {
 			$limit_bitset = "NULL";

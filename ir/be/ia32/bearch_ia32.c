@@ -314,7 +314,7 @@ static bool ia32_possible_memory_operand(const ir_node *irn, unsigned int i)
 			/* we can't swap left/right for limited registers
 			 * (As this (currently) breaks constraint handling copies) */
 			arch_register_req_t const *const req = arch_get_irn_register_req_in(irn, n_ia32_binary_left);
-			if (arch_register_req_is(req, limited))
+			if (req->limited != NULL)
 				return false;
 			break;
 		}

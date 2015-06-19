@@ -237,7 +237,7 @@ static void give_penalties_for_limits(const ir_nodeset_t *live_nodes,
  */
 static void check_defs(ir_nodeset_t const *const live_nodes, float const weight, ir_node *const node, arch_register_req_t const *const req)
 {
-	if (arch_register_req_is(req, limited)) {
+	if (req->limited != NULL) {
 		const unsigned *limited = req->limited;
 		float           penalty = weight * DEF_FACTOR;
 		give_penalties_for_limits(live_nodes, penalty, limited, node);
@@ -313,7 +313,7 @@ static void analyze_block(ir_node *block, void *data)
 
 		/* update weights based on usage constraints */
 		be_foreach_use(node, cls, req, op, op_req,
-			if (!arch_register_req_is(req, limited))
+			if (req->limited == NULL)
 				continue;
 
 			give_penalties_for_limits(&live_nodes, weight * USE_FACTOR, req->limited, op);
@@ -691,7 +691,7 @@ static void assign_reg(ir_node const *const block, ir_node *const node, arch_reg
 	DB((dbg, LEVEL_2, "\n"));
 
 	const unsigned *allowed_regs = normal_regs;
-	if (arch_register_req_is(req, limited)) {
+	if (req->limited != NULL) {
 		allowed_regs = req->limited;
 	}
 
@@ -982,7 +982,7 @@ static void solve_lpp(ir_nodeset_t *live_nodes, ir_node *node,
 
 	/** mark some edges as forbidden */
 	be_foreach_use(node, cls, req, op, op_req,
-		if (!arch_register_req_is(req, limited))
+		if (req->limited == NULL)
 			continue;
 
 		const unsigned        *limited     = req->limited;
@@ -1127,7 +1127,7 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node,
 				continue;
 			}
 		}
-		if (!arch_register_req_is(req, limited))
+		if (req->limited == NULL)
 			continue;
 
 		const unsigned *limited = req->limited;
@@ -1144,7 +1144,7 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node,
 		(void)value;
 		if (req->width > 1)
 			double_width = true;
-		if (!arch_register_req_is(req, limited))
+		if (req->limited == NULL)
 			continue;
 		if (live_through_regs == NULL) {
 			live_through_regs = rbitset_alloca(n_regs);
@@ -1198,7 +1198,7 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node,
 	}
 
 	be_foreach_use(node, cls, req, op, op_req,
-		if (!arch_register_req_is(req, limited))
+		if (req->limited == NULL)
 			continue;
 
 		const unsigned        *limited     = req->limited;

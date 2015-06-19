@@ -662,11 +662,11 @@ bool co_gs_is_optimizable(copy_opt_t const *const co, ir_node *const irn)
 static bool co_dump_appel_disjoint_constraints(ir_node *const a, ir_node *const b)
 {
 	arch_register_req_t const *const reqa = arch_get_irn_register_req(a);
-	if (!arch_register_req_is(reqa, limited))
+	if (reqa->limited == NULL)
 		return false;
 
 	arch_register_req_t const *const reqb = arch_get_irn_register_req(b);
-	if (!arch_register_req_is(reqb, limited))
+	if (reqb->limited == NULL)
 		return false;
 
 	return !rbitsets_have_common(reqa->limited, reqb->limited, reqa->cls->n_regs);
@@ -719,7 +719,7 @@ static void co_dump_appel_graph(const copy_opt_t *co, FILE *f)
 		int              idx = node_map[get_irn_idx(irn)];
 		affinity_node_t *a   = get_affinity_info(co, irn);
 
-		if (arch_register_req_is(req, limited)) {
+		if (req->limited != NULL) {
 			for (unsigned i = 0; i < co->cls->n_regs; ++i) {
 				if (!rbitset_is_set(req->limited, i) && color_map[i] >= 0)
 					fprintf(f, "%d %d -1\n", color_map[i], idx);

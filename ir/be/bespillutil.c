@@ -706,7 +706,7 @@ static void prepare_constr_insn(ir_node *const node)
 		    rbitset_is_set(birg->allocatable_regs, reg->global_index))
 			continue;
 
-		if (!arch_register_req_is(req, limited))
+		if (req->limited == NULL)
 			continue;
 		if (rbitset_is_set(req->limited, reg->index))
 			continue;
@@ -727,7 +727,7 @@ static void prepare_constr_insn(ir_node *const node)
 		const arch_register_class_t *const cls = req->cls;
 		if (cls == NULL)
 			continue;
-		if (!arch_register_req_is(req, limited))
+		if (req->limited == NULL)
 			continue;
 
 		ir_node *in = get_irn_n(node, i);
@@ -740,7 +740,7 @@ static void prepare_constr_insn(ir_node *const node)
 				= arch_get_irn_register_req_in(node, i2);
 			if (req2->cls != cls)
 				continue;
-			if (!arch_register_req_is(req2, limited))
+			if (req2->limited == NULL)
 				continue;
 
 			ir_node *in2 = get_irn_n(node, i2);
@@ -770,7 +770,7 @@ static void prepare_constr_insn(ir_node *const node)
 		const arch_register_class_t *const cls = req->cls;
 		if (cls == NULL)
 			continue;
-		if (!arch_register_req_is(req, limited))
+		if (req->limited == NULL)
 			continue;
 		if (def_constr == NULL)
 			def_constr = rbitset_alloca(isa_if->n_registers);
@@ -795,7 +795,7 @@ static void prepare_constr_insn(ir_node *const node)
 		const arch_register_class_t *const cls = req->cls;
 		if (cls == NULL)
 			continue;
-		if (!arch_register_req_is(req, limited))
+		if (req->limited == NULL)
 			continue;
 		ir_node *in = get_irn_n(node, i);
 		const arch_register_req_t *const in_req
