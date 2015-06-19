@@ -263,7 +263,7 @@ static void post_spill(be_chordal_env_t *const chordal_env, ir_graph *const irg)
  * @return Structure containing timer for the single phases or NULL if no
  *         timing requested.
  */
-static void be_ra_chordal_main(ir_graph *irg)
+static void be_ra_chordal_main(ir_graph *irg, const regalloc_if_t *regif)
 {
 	be_timer_push(T_RA_OTHER);
 
@@ -300,7 +300,7 @@ static void be_ra_chordal_main(ir_graph *irg)
 		pre_spill(&chordal_env, cls, irg);
 
 		be_timer_push(T_RA_SPILL);
-		be_do_spill(irg, cls);
+		be_do_spill(irg, cls, regif);
 		be_timer_pop(T_RA_SPILL);
 		dump(BE_CH_DUMP_SPILL, irg, cls, "spill");
 		stat_ev_dbl("bechordal_spillcosts", be_estimate_irg_costs(irg) - pre_spill_cost);
@@ -335,10 +335,7 @@ void be_init_chordal_main(void)
 	lc_opt_entry_t *ra_grp      = lc_opt_get_grp(be_grp, "ra");
 	lc_opt_entry_t *chordal_grp = lc_opt_get_grp(ra_grp, "chordal");
 
-	static be_ra_t be_ra_chordal_allocator = {
-		be_ra_chordal_main,
-	};
-	be_register_allocator("chordal", &be_ra_chordal_allocator);
+	be_register_allocator("chordal", be_ra_chordal_main);
 
 	lc_opt_add_table(chordal_grp, be_chordal_options);
 	be_add_module_list_opt(chordal_grp, "coloring", "select coloring method",

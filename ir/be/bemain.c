@@ -559,7 +559,7 @@ void be_step_schedule(ir_graph *irg)
 	be_sched_verify(irg);
 }
 
-void be_step_regalloc(ir_graph *irg)
+void be_step_regalloc(ir_graph *irg, const regalloc_if_t *regif)
 {
 	if (stat_ev_enabled) {
 		stat_ev_dbl("bemain_costs_before_ra", be_estimate_irg_costs(irg));
@@ -569,7 +569,7 @@ void be_step_regalloc(ir_graph *irg)
 	}
 
 	/* Do register allocation */
-	be_allocate_registers(irg);
+	be_allocate_registers(irg, regif);
 	be_regalloc_verify(irg, true);
 
 	if (stat_ev_enabled) {

@@ -17,6 +17,7 @@
 #include "begnuas.h"
 #include "bemodule.h"
 #include "benode.h"
+#include "bera.h"
 #include "besched.h"
 #include "betranshlp.h"
 #include "gen_arm_regalloc_if.h"
@@ -162,6 +163,13 @@ static void arm_handle_intrinsics(ir_graph *irg)
 	irg_walk_graph(irg, handle_intrinsic, NULL, NULL);
 }
 
+static const regalloc_if_t arm_regalloc_if = {
+	.spill_cost  = 7,
+	.reload_cost = 5,
+	.new_spill   = arm_new_spill,
+	.new_reload  = arm_new_reload,
+};
+
 static void arm_generate_code(FILE *output, const char *cup_name)
 {
 	be_gas_emit_types = false;
@@ -183,7 +191,7 @@ static void arm_generate_code(FILE *output, const char *cup_name)
 		be_sched_fix_flags(irg, &arm_reg_classes[CLASS_arm_flags], NULL, NULL, NULL);
 		be_timer_pop(T_RA_PREPARATION);
 
-		be_step_regalloc(irg);
+		be_step_regalloc(irg, &arm_regalloc_if);
 
 		be_timer_push(T_EMIT);
 		arm_finish_graph(irg);
@@ -304,16 +312,12 @@ static arch_isa_if_t const arm_isa_if = {
 	.registers            = arm_registers,
 	.n_register_classes   = N_ARM_CLASSES,
 	.register_classes     = arm_reg_classes,
-	.spill_cost           = 7,
-	.reload_cost          = 5,
 	.init                 = arm_init,
 	.finish               = arm_finish,
 	.get_params           = arm_get_libfirm_params,
 	.generate_code        = arm_generate_code,
 	.lower_for_target     = arm_lower_for_target,
 	.is_valid_clobber     = arm_is_valid_clobber,
-	.new_spill            = arm_new_spill,
-	.new_reload           = arm_new_reload,
 	.handle_intrinsics    = arm_handle_intrinsics,
 };
 

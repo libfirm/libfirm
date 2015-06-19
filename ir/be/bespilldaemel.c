@@ -306,13 +306,14 @@ static void spill_block(ir_node *block, void *data)
 	ir_nodeset_destroy(&live_nodes);
 }
 
-static void be_spill_daemel(ir_graph *irg, const arch_register_class_t *new_cls)
+static void be_spill_daemel(ir_graph *irg, const arch_register_class_t *new_cls,
+							const regalloc_if_t *regif)
 {
 	n_regs = be_get_n_allocatable_regs(irg, new_cls);
 
 	be_assure_live_sets(irg);
 
-	spill_env     = be_new_spill_env(irg);
+	spill_env     = be_new_spill_env(irg, regif);
 	cls           = new_cls;
 	lv            = be_get_irg_liveness(irg);
 	spilled_nodes = bitset_malloc(get_irg_last_idx(irg));
@@ -330,6 +331,6 @@ static void be_spill_daemel(ir_graph *irg, const arch_register_class_t *new_cls)
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_daemelspill)
 void be_init_daemelspill(void)
 {
-	be_register_spiller("daemel", &be_spill_daemel);
+	be_register_spiller("daemel", be_spill_daemel);
 	FIRM_DBG_REGISTER(dbg, "firm.be.spilldaemel");
 }

@@ -13,6 +13,7 @@
 #include "beflags.h"
 #include "begnuas.h"
 #include "bemodule.h"
+#include "bera.h"
 #include "besched.h"
 #include "betranshlp.h"
 #include "gen_sparc_regalloc_if.h"
@@ -366,6 +367,56 @@ static void sparc_finish(void)
 	sparc_free_opcodes();
 }
 
+static ir_node *sparc_new_spill(ir_node *value, ir_node *after)
+{
+	ir_node  *block = get_block(after);
+	ir_graph *irg   = get_irn_irg(value);
+	ir_node  *frame = get_irg_frame(irg);
+	ir_node  *mem   = get_irg_no_mem(irg);
+	ir_mode  *mode  = get_irn_mode(value);
+
+	ir_node  *store;
+	if (mode_is_float(mode)) {
+		store = create_stf(NULL, block, value, frame, mem, mode, NULL, 0, true);
+	} else {
+		store = new_bd_sparc_St_imm(NULL, block, value, frame, mem, mode, NULL,
+		                            0, true);
+	}
+	arch_add_irn_flags(store, arch_irn_flag_spill);
+	sched_add_after(after, store);
+	return store;
+}
+
+static ir_node *sparc_new_reload(ir_node *value, ir_node *spill,
+                                 ir_node *before)
+{
+	ir_node  *block = get_block(before);
+	ir_graph *irg   = get_irn_irg(value);
+	ir_node  *frame = get_irg_frame(irg);
+	ir_mode  *mode  = get_irn_mode(value);
+
+	ir_node  *load;
+	if (mode_is_float(mode)) {
+		load = create_ldf(NULL, block, frame, spill, mode, NULL, 0, true);
+	} else {
+		load = new_bd_sparc_Ld_imm(NULL, block, frame, spill, mode, NULL, 0,
+		                           true);
+	}
+	arch_add_irn_flags(load, arch_irn_flag_reload);
+	sched_add_before(before, load);
+	assert((long)pn_sparc_Ld_res == (long)pn_sparc_Ldf_res);
+	ir_node *res = new_r_Proj(load, mode, pn_sparc_Ld_res);
+
+	return res;
+}
+
+static const regalloc_if_t sparc_regalloc_if = {
+	.spill_cost  = 7,
+	.reload_cost = 5,
+	.new_spill   = sparc_new_spill,
+	.new_reload  = sparc_new_reload,
+};
+
 static void sparc_generate_code(FILE *output, const char *cup_name)
 {
 	be_gas_elf_type_char = '#';
@@ -389,7 +440,7 @@ static void sparc_generate_code(FILE *output, const char *cup_name)
 						   NULL, sparc_modifies_fp_flags, NULL);
 		be_timer_pop(T_RA_PREPARATION);
 
-		be_step_regalloc(irg);
+		be_step_regalloc(irg, &sparc_regalloc_if);
 
 		sparc_finish_graph(irg);
 		sparc_emit_function(irg);
@@ -500,64 +551,17 @@ static const backend_params *sparc_get_backend_params(void)
 	return &p;
 }
 
-static ir_node *sparc_new_spill(ir_node *value, ir_node *after)
-{
-	ir_node  *block = get_block(after);
-	ir_graph *irg   = get_irn_irg(value);
-	ir_node  *frame = get_irg_frame(irg);
-	ir_node  *mem   = get_irg_no_mem(irg);
-	ir_mode  *mode  = get_irn_mode(value);
-
-	ir_node  *store;
-	if (mode_is_float(mode)) {
-		store = create_stf(NULL, block, value, frame, mem, mode, NULL, 0, true);
-	} else {
-		store = new_bd_sparc_St_imm(NULL, block, value, frame, mem, mode, NULL,
-		                            0, true);
-	}
-	arch_add_irn_flags(store, arch_irn_flag_spill);
-	sched_add_after(after, store);
-	return store;
-}
-
-static ir_node *sparc_new_reload(ir_node *value, ir_node *spill,
-                                 ir_node *before)
-{
-	ir_node  *block = get_block(before);
-	ir_graph *irg   = get_irn_irg(value);
-	ir_node  *frame = get_irg_frame(irg);
-	ir_mode  *mode  = get_irn_mode(value);
-
-	ir_node  *load;
-	if (mode_is_float(mode)) {
-		load = create_ldf(NULL, block, frame, spill, mode, NULL, 0, true);
-	} else {
-		load = new_bd_sparc_Ld_imm(NULL, block, frame, spill, mode, NULL, 0,
-		                           true);
-	}
-	arch_add_irn_flags(load, arch_irn_flag_reload);
-	sched_add_before(before, load);
-	assert((long)pn_sparc_Ld_res == (long)pn_sparc_Ldf_res);
-	ir_node *res = new_r_Proj(load, mode, pn_sparc_Ld_res);
-
-	return res;
-}
-
 static arch_isa_if_t const sparc_isa_if = {
 	.n_registers          = N_SPARC_REGISTERS,
 	.registers            = sparc_registers,
 	.n_register_classes   = N_SPARC_CLASSES,
 	.register_classes     = sparc_reg_classes,
-	.spill_cost           = 7,
-	.reload_cost          = 5,
 	.init                 = sparc_init,
 	.finish               = sparc_finish,
 	.generate_code        = sparc_generate_code,
 	.get_params           = sparc_get_backend_params,
 	.lower_for_target     = sparc_lower_for_target,
 	.is_valid_clobber     = sparc_is_valid_clobber,
-	.new_spill            = sparc_new_spill,
-	.new_reload           = sparc_new_reload,
 	.handle_intrinsics    = sparc_handle_intrinsics,
 };
 

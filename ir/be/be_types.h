@@ -56,6 +56,7 @@ typedef struct be_ifg_t          be_ifg_t;
 typedef struct copy_opt_t        copy_opt_t;
 typedef struct be_main_env_t     be_main_env_t;
 typedef struct be_options_t      be_options_t;
+typedef struct regalloc_if_t     regalloc_if_t;
 
 typedef ir_entity *(*get_frame_entity_func)(const ir_node *node);
 

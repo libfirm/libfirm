@@ -28,21 +28,18 @@
 
 /** The list of register allocators */
 static be_module_list_entry_t *register_allocators;
-static be_ra_t                *selected_allocator;
+static allocate_func           selected_allocator;
 
-void be_register_allocator(const char *name, be_ra_t *allocator)
+void be_register_allocator(const char *name, allocate_func allocator)
 {
 	if (selected_allocator == NULL)
 		selected_allocator = allocator;
 	be_add_module_to_list(&register_allocators, name, allocator);
 }
 
-void be_allocate_registers(ir_graph *irg)
+void be_allocate_registers(ir_graph *irg, const regalloc_if_t *regif)
 {
-	assert(selected_allocator != NULL);
-	if (selected_allocator != NULL) {
-		selected_allocator->allocate(irg);
-	}
+	selected_allocator(irg, regif);
 }
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_ra)

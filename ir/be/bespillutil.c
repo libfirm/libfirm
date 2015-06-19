@@ -81,8 +81,7 @@ struct spill_env_t {
 	spill_info_t     *spills;
 	spill_info_t     *mem_phis;
 	struct obstack    obst;
-	int               spill_cost;  /**< the cost of a single spill node */
-	int               reload_cost; /**< the cost of a reload node */
+	regalloc_if_t     regif;
 	unsigned          spill_count;
 	unsigned          reload_count;
 	unsigned          remat_count;
@@ -109,12 +108,11 @@ static spill_info_t *get_spillinfo(spill_env_t *env, ir_node *value)
 	return info;
 }
 
-spill_env_t *be_new_spill_env(ir_graph *irg)
+spill_env_t *be_new_spill_env(ir_graph *irg, const regalloc_if_t *regif)
 {
 	spill_env_t *env = XMALLOCZ(spill_env_t);
 	env->irg         = irg;
-	env->spill_cost  = isa_if->spill_cost;
-	env->reload_cost = isa_if->reload_cost;
+	env->regif       = *regif;
 	ir_nodehashmap_init(&env->spillmap);
 	obstack_init(&env->obst);
 	return env;
@@ -258,7 +256,7 @@ static void spill_irn(spill_env_t *env, spill_info_t *spillinfo)
 	for (spill_t *spill = spillinfo->spills; spill != NULL;
 	     spill = spill->next) {
 		ir_node *const after = be_move_after_schedule_first(spill->after);
-		spill->spill = isa_if->new_spill(to_spill, after);
+		spill->spill = env->regif.new_spill(to_spill, after);
 		DB((dbg, LEVEL_1, "\t%+F after %+F\n", spill->spill, after));
 		env->spill_count++;
 	}
@@ -372,7 +370,8 @@ static int check_remat_conditions_costs(spill_env_t *env,
 		return REMAT_COST_INFINITE;
 
 	int costs = arch_get_op_estimated_cost(insn);
-	if (parentcosts + costs >= env->reload_cost + env->spill_cost)
+	int spillcosts = env->regif.reload_cost + env->regif.spill_cost;
+	if (parentcosts + costs >= spillcosts)
 		return REMAT_COST_INFINITE;
 
 	/* never rematerialize a node which modifies the flags.
@@ -397,7 +396,7 @@ static int check_remat_conditions_costs(spill_env_t *env,
 
 		costs += check_remat_conditions_costs(env, arg, reloader,
 		                                      parentcosts + costs);
-		if (parentcosts + costs >= env->reload_cost + env->spill_cost)
+		if (parentcosts + costs >= spillcosts)
 			return REMAT_COST_INFINITE;
 	}
 
@@ -425,8 +424,8 @@ static ir_node *do_remat(spill_env_t *env, ir_node *spilled, ir_node *reloader)
 	/* create a copy of the node */
 	ir_node *const bl  = get_nodes_block(reloader);
 	ir_node *const res = new_similar_node(spilled, bl, ins);
-	if (isa_if->mark_remat)
-		isa_if->mark_remat(res);
+	if (env->regif.mark_remat)
+		env->regif.mark_remat(res);
 
 	DBG((dbg, LEVEL_1, "Insert remat %+F of %+F before reloader %+F\n", res,
 	     spilled, reloader));
@@ -442,7 +441,7 @@ double be_get_spill_costs(spill_env_t *env, ir_node *to_spill, ir_node *before)
 	(void)to_spill;
 	ir_node *block = get_nodes_block(before);
 	double   freq  = get_block_execfreq(block);
-	return env->spill_cost * freq;
+	return env->regif.spill_cost * freq;
 }
 
 unsigned be_get_reload_costs_no_weight(spill_env_t *env,
@@ -452,11 +451,11 @@ unsigned be_get_reload_costs_no_weight(spill_env_t *env,
 	if (be_do_remats) {
 		/* is the node rematerializable? */
 		unsigned costs = check_remat_conditions_costs(env, to_spill, before, 0);
-		if (costs < (unsigned) env->reload_cost)
+		if (costs < (unsigned) env->regif.reload_cost)
 			return costs;
 	}
 
-	return env->reload_cost;
+	return env->regif.reload_cost;
 }
 
 double be_get_reload_costs(spill_env_t *env, ir_node *to_spill, ir_node *before)
@@ -467,11 +466,11 @@ double be_get_reload_costs(spill_env_t *env, ir_node *to_spill, ir_node *before)
 	if (be_do_remats) {
 		/* is the node rematerializable? */
 		int costs = check_remat_conditions_costs(env, to_spill, before, 0);
-		if (costs < env->reload_cost)
+		if (costs < (int)env->regif.reload_cost)
 			return costs * freq;
 	}
 
-	return env->reload_cost * freq;
+	return env->regif.reload_cost * freq;
 }
 
 double be_get_reload_costs_on_edge(spill_env_t *env, ir_node *to_spill,
@@ -501,7 +500,7 @@ static void determine_spill_costs(spill_env_t *env, spill_info_t *spillinfo)
 	if (spillinfo->spilled_phi) {
 		/* TODO calculate correct costs...
 		 * (though we can't remat this node anyway so no big problem) */
-		spillinfo->spill_costs = env->spill_cost * spill_execfreq;
+		spillinfo->spill_costs = env->regif.spill_cost * spill_execfreq;
 		return;
 	}
 
@@ -516,13 +515,13 @@ static void determine_spill_costs(spill_env_t *env, spill_info_t *spillinfo)
 	}
 
 	DB((dbg, LEVEL_1, "%+F: latespillcosts %f after def: %f\n", to_spill,
-			spills_execfreq * env->spill_cost,
-			spill_execfreq * env->spill_cost));
+			spills_execfreq * env->regif.spill_cost,
+			spill_execfreq * env->regif.spill_cost));
 
 	/* multi-/latespill is advantageous -> return*/
 	if (spills_execfreq < spill_execfreq) {
 		DB((dbg, LEVEL_1, "use latespills for %+F\n", to_spill));
-		spillinfo->spill_costs = spills_execfreq * env->spill_cost;
+		spillinfo->spill_costs = spills_execfreq * env->regif.spill_cost;
 		return;
 	}
 
@@ -533,7 +532,7 @@ static void determine_spill_costs(spill_env_t *env, spill_info_t *spillinfo)
 	spill->spill   = NULL;
 
 	spillinfo->spills      = spill;
-	spillinfo->spill_costs = spill_execfreq * env->spill_cost;
+	spillinfo->spill_costs = spill_execfreq * env->regif.spill_cost;
 	DB((dbg, LEVEL_1, "spill %+F after definition\n", to_spill));
 }
 
@@ -583,7 +582,7 @@ void be_insert_spills_reloads(spill_env_t *env)
 					continue;
 				}
 
-				int remat_cost_delta  = remat_cost - env->reload_cost;
+				int remat_cost_delta  = remat_cost - env->regif.reload_cost;
 				rld->remat_cost_delta = remat_cost_delta;
 				ir_node *block        = get_block(reloader);
 				double   freq         = get_block_execfreq(block);
@@ -597,7 +596,7 @@ void be_insert_spills_reloads(spill_env_t *env)
 				   all reloaders */
 				all_remat_costs -= si->spill_costs;
 				DBG((dbg, LEVEL_2, "\tspill costs %d (rel %f)\n",
-				     env->spill_cost, si->spill_costs));
+				     env->regif.spill_cost, si->spill_costs));
 			}
 
 			if (all_remat_costs < 0) {
@@ -620,7 +619,8 @@ void be_insert_spills_reloads(spill_env_t *env)
 				/* create a reload, use the first spill for now SSA
 				 * reconstruction for memory comes below */
 				assert(si->spills != NULL);
-				copy = isa_if->new_reload(si->to_spill, si->spills->spill, rld->reloader);
+				copy = env->regif.new_reload(si->to_spill, si->spills->spill,
+											 rld->reloader);
 				env->reload_count++;
 			}
 

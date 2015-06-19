@@ -48,10 +48,10 @@ void be_register_spiller(const char *name, be_spill_func spiller)
 	be_add_module_to_list(&spillers, name, spiller);
 }
 
-void be_do_spill(ir_graph *irg, const arch_register_class_t *cls)
+void be_do_spill(ir_graph *irg, const arch_register_class_t *cls,
+				 const regalloc_if_t *regif)
 {
-	assert(selected_spiller != NULL);
-	selected_spiller(irg, cls);
+	selected_spiller(irg, cls, regif);
 }
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_spilloptions)

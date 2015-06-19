@@ -18,13 +18,14 @@
 #include "debug.h"
 
 #include "bearch.h"
+#include "bera.h"
 
 typedef struct spill_env_t spill_env_t;
 
 /**
  * Creates a new spill environment.
  */
-spill_env_t *be_new_spill_env(ir_graph *irg);
+spill_env_t *be_new_spill_env(ir_graph *irg, const regalloc_if_t *regif);
 
 /**
  * Deletes a spill environment.

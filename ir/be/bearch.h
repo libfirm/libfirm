@@ -305,8 +305,6 @@ struct arch_isa_if_t {
 	arch_register_t       const *registers;          /**< register array */
 	unsigned                     n_register_classes; /**< number of register classes */
 	arch_register_class_t const *register_classes;   /**< register classes */
-	unsigned                     spill_cost;         /**< cost for a spill node */
-	unsigned                     reload_cost;        /**< cost for a reload node */
 
 	/**
 	 * Initializes the isa interface. This is necessary before calling any
@@ -340,31 +338,6 @@ struct arch_isa_if_t {
 	 * backend
 	 */
 	int (*is_valid_clobber)(const char *clobber);
-
-	/**
-	 * mark node as rematerialized
-	 */
-	void (*mark_remat)(ir_node *node);
-
-	/**
-	 * Create a spill instruction. We assume that spill instructions do not need
-	 * any additional registers and do not affect cpu-flags in any way.
-	 * Construct a sequence of instructions after @p after (the resulting nodes
-	 * are already scheduled).
-	 * Returns a mode_M value which is used as input for a reload instruction.
-	 */
-	ir_node *(*new_spill)(ir_node *value, ir_node *after);
-
-	/**
-	 * Create a reload instruction. We assume that reload instructions do not
-	 * need any additional registers and do not affect cpu-flags in any way.
-	 * Constructs a sequence of instruction before @p before (the resulting
-	 * nodes are already scheduled). A rewiring of users is not performed in
-	 * this function.
-	 * Returns a value representing the restored value.
-	 */
-	ir_node *(*new_reload)(ir_node *value, ir_node *spilled_value,
-	                       ir_node *before);
 
 	/**
 	 * Called directly after initialization. Backend should handle all

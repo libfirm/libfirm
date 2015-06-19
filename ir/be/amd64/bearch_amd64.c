@@ -15,6 +15,7 @@
 #include "beflags.h"
 #include "beirg.h"
 #include "bemodule.h"
+#include "bera.h"
 #include "besched.h"
 #include "bespillslots.h"
 #include "bestack.h"
@@ -642,6 +643,13 @@ static void amd64_finish(void)
 	amd64_free_opcodes();
 }
 
+static const regalloc_if_t amd64_regalloc_if = {
+	.spill_cost  = 7,
+	.reload_cost = 5,
+	.new_spill   = amd64_new_spill,
+	.new_reload  = amd64_new_reload,
+};
+
 static void amd64_generate_code(FILE *output, const char *cup_name)
 {
 	amd64_constants = pmap_create();
@@ -660,7 +668,7 @@ static void amd64_generate_code(FILE *output, const char *cup_name)
 						   NULL, NULL);
 		be_timer_pop(T_RA_PREPARATION);
 
-		be_step_regalloc(irg);
+		be_step_regalloc(irg, &amd64_regalloc_if);
 
 		amd64_finish_and_emit(irg);
 
@@ -781,16 +789,12 @@ static arch_isa_if_t const amd64_isa_if = {
 	.registers            = amd64_registers,
 	.n_register_classes   = N_AMD64_CLASSES,
 	.register_classes     = amd64_reg_classes,
-	.spill_cost           = 7,
-	.reload_cost          = 5,
 	.init                 = amd64_init,
 	.finish               = amd64_finish,
 	.get_params           = amd64_get_backend_params,
 	.generate_code        = amd64_generate_code,
 	.lower_for_target     = amd64_lower_for_target,
 	.is_valid_clobber     = amd64_is_valid_clobber,
-	.new_spill            = amd64_new_spill,
-	.new_reload           = amd64_new_reload,
 	.handle_intrinsics    = amd64_handle_intrinsics,
 };
 

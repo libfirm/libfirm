@@ -832,7 +832,8 @@ static void fix_block_borders(ir_node *block, void *data)
 	}
 }
 
-static void be_spill_belady(ir_graph *irg, const arch_register_class_t *rcls)
+static void be_spill_belady(ir_graph *irg, const arch_register_class_t *rcls,
+							const regalloc_if_t *regif)
 {
 	be_assure_live_sets(irg);
 
@@ -854,7 +855,7 @@ static void be_spill_belady(ir_graph *irg, const arch_register_class_t *rcls)
 	ws           = new_workset();
 	uses         = be_begin_uses(irg, lv);
 	loop_ana     = be_new_loop_pressure(irg, cls);
-	senv         = be_new_spill_env(irg);
+	senv         = be_new_spill_env(irg, regif);
 	blocklist    = be_get_cfgpostorder(irg);
 	temp_workset = new_workset();
 	stat_ev_tim_pop("belady_time_init");

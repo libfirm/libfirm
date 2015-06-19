@@ -1794,11 +1794,11 @@ static void be_pref_alloc_cls(void)
 /**
  * Run the spiller on the current graph.
  */
-static void spill(void)
+static void spill(const regalloc_if_t *regif)
 {
 	/* spill */
 	be_timer_push(T_RA_SPILL);
-	be_do_spill(irg, cls);
+	be_do_spill(irg, cls, regif);
 	be_timer_pop(T_RA_SPILL);
 
 	be_timer_push(T_RA_SPILL_APPLY);
@@ -1811,7 +1811,7 @@ static void spill(void)
 /**
  * The pref register allocator for a whole procedure.
  */
-static void be_pref_alloc(ir_graph *new_irg)
+static void be_pref_alloc(ir_graph *new_irg, const regalloc_if_t *regif)
 {
 	/* disable optimization callbacks as we cannot deal with same-input phis
 	 * getting optimized away. */
@@ -1838,7 +1838,7 @@ static void be_pref_alloc(ir_graph *new_irg)
 		normal_regs = rbitset_malloc(n_regs);
 		be_get_allocatable_regs(irg, cls, normal_regs);
 
-		spill();
+		spill(regif);
 
 		/* verify schedule and register pressure */
 		if (be_options.do_verify) {
@@ -1871,7 +1871,6 @@ static void be_pref_alloc(ir_graph *new_irg)
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_pref_alloc)
 void be_init_pref_alloc(void)
 {
-	static be_ra_t be_ra_pref = { be_pref_alloc };
-	be_register_allocator("pref", &be_ra_pref);
+	be_register_allocator("pref", be_pref_alloc);
 	FIRM_DBG_REGISTER(dbg, "firm.be.prefalloc");
 }

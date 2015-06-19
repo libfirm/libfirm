@@ -13,6 +13,7 @@
 #include "beflags.h"
 #include "begnuas.h"
 #include "bemodule.h"
+#include "bera.h"
 #include "besched.h"
 #include "bespillslots.h"
 #include "bestack.h"
@@ -1433,6 +1434,22 @@ static void ia32_finish(void)
 	obstack_free(&opcodes_obst, NULL);
 }
 
+static void ia32_mark_remat(ir_node *node)
+{
+	if (is_ia32_irn(node))
+		set_ia32_is_remat(node);
+}
+
+
+
+static const regalloc_if_t ia32_regalloc_if = {
+	.spill_cost  = 7,
+	.reload_cost = 5,
+	.mark_remat  = ia32_mark_remat,
+	.new_spill   = ia32_new_spill,
+	.new_reload  = ia32_new_reload,
+};
+
 static void ia32_generate_code(FILE *output, const char *cup_name)
 {
 	ia32_tv_ent = pmap_create();
@@ -1454,7 +1471,7 @@ static void ia32_generate_code(FILE *output, const char *cup_name)
 		simplify_remat_nodes(irg);
 		be_timer_pop(T_RA_PREPARATION);
 
-		be_step_regalloc(irg);
+		be_step_regalloc(irg, &ia32_regalloc_if);
 
 		ia32_emit(irg);
 
@@ -1463,12 +1480,6 @@ static void ia32_generate_code(FILE *output, const char *cup_name)
 
 	be_finish();
 	pmap_destroy(ia32_tv_ent);
-}
-
-static void ia32_mark_remat(ir_node *node)
-{
-	if (is_ia32_irn(node))
-		set_ia32_is_remat(node);
 }
 
 static int ia32_is_valid_clobber(const char *clobber)
@@ -1571,17 +1582,12 @@ static arch_isa_if_t const ia32_isa_if = {
 	.registers            = ia32_registers,
 	.n_register_classes   = N_IA32_CLASSES,
 	.register_classes     = ia32_reg_classes,
-	.spill_cost           = 7,
-	.reload_cost          = 5,
 	.init                 = ia32_init,
 	.finish               = ia32_finish,
 	.get_params           = ia32_get_libfirm_params,
 	.generate_code        = ia32_generate_code,
 	.lower_for_target     = ia32_lower_for_target,
 	.is_valid_clobber     = ia32_is_valid_clobber,
-	.mark_remat           = ia32_mark_remat,
-	.new_spill            = ia32_new_spill,
-	.new_reload           = ia32_new_reload,
 };
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_ia32)

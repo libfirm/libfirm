@@ -13,6 +13,7 @@
 #include "be_t.h"
 #include "bemodule.h"
 #include "benode.h"
+#include "bera.h"
 #include "bestack.h"
 #include "gen_TEMPLATE_regalloc_if.h"
 #include "irprog_t.h"
@@ -34,6 +35,29 @@ static void TEMPLATE_select_instructions(ir_graph *irg)
 	be_dump(DUMP_BE, irg, "code-selection");
 }
 
+static ir_node *TEMPLATE_new_spill(ir_node *value, ir_node *after)
+{
+	(void)value;
+	(void)after;
+	panic("spilling not implemented yet");
+}
+
+static ir_node *TEMPLATE_new_reload(ir_node *value, ir_node *spill,
+                                    ir_node *before)
+{
+	(void)value;
+	(void)spill;
+	(void)before;
+	panic("reload not implemented yet");
+}
+
+static const regalloc_if_t TEMPLATE_regalloc_if = {
+	.spill_cost  = 7,
+	.reload_cost = 5,
+	.new_spill   = TEMPLATE_new_spill,
+	.new_reload  = TEMPLATE_new_reload,
+};
+
 static void TEMPLATE_generate_code(FILE *output, const char *cup_name)
 {
 	be_begin(output, cup_name);
@@ -46,7 +70,7 @@ static void TEMPLATE_generate_code(FILE *output, const char *cup_name)
 
 		be_step_schedule(irg);
 
-		be_step_regalloc(irg);
+		be_step_regalloc(irg, &TEMPLATE_regalloc_if);
 
 		be_fix_stack_nodes(irg, &TEMPLATE_registers[REG_SP]);
 
@@ -117,37 +141,17 @@ static int TEMPLATE_is_valid_clobber(const char *clobber)
 	return false;
 }
 
-static ir_node *TEMPLATE_new_spill(ir_node *value, ir_node *after)
-{
-	(void)value;
-	(void)after;
-	panic("spilling not implemented yet");
-}
-
-static ir_node *TEMPLATE_new_reload(ir_node *value, ir_node *spill,
-                                    ir_node *before)
-{
-	(void)value;
-	(void)spill;
-	(void)before;
-	panic("reload not implemented yet");
-}
-
 static arch_isa_if_t const TEMPLATE_isa_if = {
 	.n_registers          = N_TEMPLATE_REGISTERS,
 	.registers            = TEMPLATE_registers,
 	.n_register_classes   = N_TEMPLATE_CLASSES,
 	.register_classes     = TEMPLATE_reg_classes,
-	.spill_cost           = 7,
-	.reload_cost          = 5,
 	.init                 = TEMPLATE_init,
 	.finish               = TEMPLATE_finish,
 	.get_params           = TEMPLATE_get_backend_params,
 	.generate_code        = TEMPLATE_generate_code,
 	.lower_for_target     = TEMPLATE_lower_for_target,
 	.is_valid_clobber     = TEMPLATE_is_valid_clobber,
-	.new_spill            = TEMPLATE_new_spill,
-	.new_reload           = TEMPLATE_new_reload,
 };
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_TEMPLATE)
