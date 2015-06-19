@@ -20,13 +20,6 @@
 #include "beinfo.h"
 #include "be.h"
 
-typedef enum arch_register_class_flags_t {
-	arch_register_class_flag_none      = 0,
-	/** don't do automatic register allocation for this class */
-	arch_register_class_flag_manual_ra = 1U << 0,
-} arch_register_class_flags_t;
-ENUM_BITSET(arch_register_class_flags_t)
-
 typedef enum arch_register_type_t {
 	arch_register_type_none    = 0,
 	/** This is just a virtual register. Virtual registers fulfill any register
@@ -209,14 +202,15 @@ struct arch_register_t {
  * Like general purpose or floating point.
  */
 struct arch_register_class_t {
-	const char                  *name;   /**< The name of the register class.*/
-	ir_mode                     *mode;   /**< The mode of the register class.*/
-	const arch_register_t       *regs;   /**< The array of registers. */
-	const arch_register_req_t   *class_req;
-	unsigned                     index;  /**< index of this register class */
-	unsigned                     n_regs; /**< Number of registers in this
-	                                          class. */
-	arch_register_class_flags_t  flags;  /**< register class flags. */
+	const char                *name;   /**< The name of the register class.*/
+	ir_mode                   *mode;   /**< The mode of the register class.*/
+	const arch_register_t     *regs;   /**< The array of registers. */
+	const arch_register_req_t *class_req;
+	unsigned                   index;  /**< index of this register class */
+	unsigned                   n_regs; /**< Number of registers in this
+	                                        class. */
+	/** don't do register allocation for this class */
+	bool                       manual_ra : 1;
 };
 
 static inline const arch_register_t *arch_register_for_index(

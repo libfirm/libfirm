@@ -1829,7 +1829,7 @@ static void be_pref_alloc(ir_graph *new_irg, const regalloc_if_t *regif)
 	arch_register_class_t const *const reg_classes = isa_if->register_classes;
 	for (int c = 0, n_cls = isa_if->n_register_classes; c < n_cls; ++c) {
 		cls = &reg_classes[c];
-		if (cls->flags & arch_register_class_flag_manual_ra)
+		if (cls->manual_ra)
 			continue;
 
 		stat_ev_ctx_push_str("regcls", cls->name);

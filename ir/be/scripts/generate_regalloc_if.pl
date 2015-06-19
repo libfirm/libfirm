@@ -117,7 +117,6 @@ foreach my $class_name (sort(keys(%reg_classes))) {
 	$class_ptr  = "&".$arch."_reg_classes[CLASS_".$class_name."]";
 	my $flags = pop(@class);
 	my $class_mode = $flags->{"mode"};
-	my $flags_prepared = map_flags("arch_register_class_flag_", $flags->{"flags"});
 
 	$single_constraints .= <<EOF;
 const arch_register_req_t ${arch}_class_reg_req_${old_classname} = {
@@ -133,6 +132,13 @@ EOF
 
 	$classdef .= "\tCLASS_$class_name = $class_idx,\n";
 	my $numregs = @class;
+	my $manual_ra;
+	$manual_ra = "false";
+	for ($flags->{"flags"}) {
+		if (defined($_) && $_ eq "manual_ra") {
+			$manual_ra = "true";
+		}
+	}
 	my $first_reg = "&${arch}_registers[REG_". uc($class[0]->{"name"}) . "]";
 	my $rcdef = <<EOF;
 	{
@@ -142,7 +148,7 @@ EOF
 		.class_req = &${arch}_class_reg_req_${old_classname},
 		.index     = $class_idx,
 		.n_regs    = $numregs,
-		.flags     = $flags_prepared,
+		.manual_ra = ${manual_ra},
 	},
 EOF
 	push(@regclasses, $rcdef);

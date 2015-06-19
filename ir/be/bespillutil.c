@@ -1116,7 +1116,7 @@ static void add_missing_keep_walker(ir_node *node, void *data)
 		for (unsigned i = 0; i < n_outs; ++i) {
 			arch_register_req_t   const *const req = arch_get_irn_register_req_out(node, i);
 			arch_register_class_t const *const cls = req->cls;
-			if (cls && !(cls->flags & arch_register_class_flag_manual_ra)) {
+			if (cls && !cls->manual_ra) {
 				ir_node *value = existing_projs[i];
 				if (!value) {
 					value = new_r_Proj(node, cls->mode, i);
@@ -1134,7 +1134,7 @@ static void add_missing_keep_walker(ir_node *node, void *data)
 	} else if (!is_Proj(node)) {
 		arch_register_req_t   const *const req = arch_get_irn_register_req(node);
 		arch_register_class_t const *const cls = req->cls;
-		if (cls && !(cls->flags & arch_register_class_flag_manual_ra)) {
+		if (cls && !cls->manual_ra) {
 			if (!has_real_user(node)) {
 				ir_node *const keep = be_new_Keep_one(node);
 				sched_add_after(node, keep);
