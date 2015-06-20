@@ -306,11 +306,6 @@ static bool try_encode_as_immediate(const ir_node *node, arm_immediate_t *res)
 
 	uint32_t val = get_Const_long(node);
 
-	if (val == 0) {
-		res->imm_8 = 0;
-		res->rot   = 0;
-		return true;
-	}
 	if (val <= 0xff) {
 		res->imm_8 = val;
 		res->rot   = 0;
