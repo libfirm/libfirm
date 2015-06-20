@@ -299,13 +299,8 @@ typedef struct {
 	uint8_t rot;
 } arm_immediate_t;
 
-static bool try_encode_as_immediate(const ir_node *node, arm_immediate_t *res)
+static bool try_encode_val_as_immediate(uint32_t val, arm_immediate_t *const res)
 {
-	if (!is_Const(node))
-		return false;
-
-	uint32_t val = get_Const_long(node);
-
 	if (val <= 0xff) {
 		res->imm_8 = val;
 		res->rot   = 0;
@@ -337,6 +332,22 @@ static bool try_encode_as_immediate(const ir_node *node, arm_immediate_t *res)
 	}
 
 	return false;
+}
+
+static bool try_encode_as_immediate(ir_node const *const node, arm_immediate_t *const res)
+{
+	if (!is_Const(node))
+		return false;
+	uint32_t const val = get_Const_long(node);
+	return try_encode_val_as_immediate(val, res);
+}
+
+static bool try_encode_as_not_immediate(ir_node const *const node, arm_immediate_t *const res)
+{
+	if (!is_Const(node))
+		return false;
+	uint32_t const val = get_Const_long(node);
+	return try_encode_val_as_immediate(~val, res);
 }
 
 typedef enum {
@@ -760,6 +771,7 @@ static ir_node *gen_And(ir_node *node)
 	};
 
 	/* check for and not */
+	arm_immediate_t imm;
 	ir_node *left  = get_And_left(node);
 	ir_node *right = get_And_right(node);
 	if (is_Not(right)) {
@@ -770,6 +782,11 @@ static ir_node *gen_And(ir_node *node)
 		ir_node *left_not = get_Not_op(left);
 		return gen_int_binop_ops(node, right, left_not, MATCH_SIZE_NEUTRAL,
 		                         &bic_factory);
+	} else if (try_encode_as_not_immediate(right, &imm)) {
+		dbg_info *const dbgi  = get_irn_dbg_info(node);
+		ir_node  *const block = be_transform_nodes_block(node);
+		ir_node  *const new_l = be_transform_node(left);
+		return new_bd_arm_Bic_imm(dbgi, block, new_l, imm.imm_8, imm.rot);
 	} else {
 		return gen_int_binop(node, MATCH_COMMUTATIVE|MATCH_SIZE_NEUTRAL,
 		                     &and_factory);
