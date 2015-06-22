@@ -661,34 +661,27 @@ static int cmp_call_dependency(const void *c1, const void *c2)
  */
 static void process_ops_in_block(ir_node *block, void *data)
 {
-	ir_nodemap *map     = (ir_nodemap*)data;
-	unsigned    n_nodes = 0;
-	for (ir_node *node = (ir_node*)get_irn_link(block); node != NULL;
-	     node = (ir_node*)get_irn_link(node)) {
-		++n_nodes;
+	ir_nodemap *const map = (ir_nodemap*)data;
+
+	ir_node **nodes = NEW_ARR_F(ir_node*, 0);
+	for (ir_node *node = block; (node = (ir_node*)get_irn_link(node));) {
+		ARR_APP1(ir_node*, nodes, node);
 	}
-	if (n_nodes == 0)
-		return;
 
-	ir_node **nodes = XMALLOCN(ir_node*, n_nodes);
-	unsigned  n     = 0;
-	for (ir_node *node = (ir_node*)get_irn_link(block); node != NULL;
-	     node = (ir_node*)get_irn_link(node)) {
-		nodes[n++] = node;
+	unsigned const n_nodes = ARR_LEN(nodes);
+	if (n_nodes != 0) {
+		/* order nodes according to their data dependencies */
+		QSORT(nodes, n_nodes, cmp_call_dependency);
+
+		/* remember the calculated dependency into a phase */
+		for (unsigned n = n_nodes - 1; n > 0; --n) {
+			ir_node *const node = nodes[n];
+			ir_node *const pred = nodes[n - 1];
+			ir_nodemap_insert(map, node, pred);
+		}
 	}
-	assert(n == n_nodes);
 
-	/* order nodes according to their data dependencies */
-	QSORT(nodes, n_nodes, cmp_call_dependency);
-
-	/* remember the calculated dependency into a phase */
-	for (n = n_nodes-1; n > 0; --n) {
-		ir_node *node = nodes[n];
-		ir_node *pred = nodes[n-1];
-
-		ir_nodemap_insert(map, node, pred);
-	}
-	free(nodes);
+	DEL_ARR_F(nodes);
 }
 
 struct be_stackorder_t {
