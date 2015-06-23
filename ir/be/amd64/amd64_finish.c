@@ -58,6 +58,19 @@ static bool try_swap_inputs(ir_node *node)
 	return false;
 }
 
+static int get_insn_mode_bits(amd64_insn_mode_t insn_mode)
+{
+	switch (insn_mode) {
+	case INSN_MODE_8:       return 8;
+	case INSN_MODE_16:      return 16;
+	case INSN_MODE_32:      return 32;
+	case INSN_MODE_64:      return 64;
+	case INSN_MODE_128:     return 128;
+	case INSN_MODE_INVALID:
+	default:                panic("bad insn mode");
+	}
+}
+
 /**
   * Transforms a Sub to a Neg + Add, which subsequently allows swapping
   * of the inputs. The swapping is also (implicitly) done here.
@@ -77,7 +90,9 @@ static void transform_sub_to_neg_add(ir_node *node,
 	ir_node *add, *add_res;
 
 	if (is_amd64_subs(node)) {
-		ir_tarval *tv = create_sign_tv(amd64_mode_xmm);
+		int bits = get_insn_mode_bits(attr->base.insn_mode);
+		ir_tarval *tv = get_mode_one(amd64_mode_xmm);
+		tv = tarval_shl_unsigned(tv, bits - 1);
 		ir_entity *sign_bit_const = create_float_const_entity(tv);
 
 		amd64_binop_addr_attr_t xor_attr;
