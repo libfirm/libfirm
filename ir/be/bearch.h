@@ -391,7 +391,7 @@ typedef struct be_start_info_t {
 
 void be_make_start_mem(be_start_info_t *info, ir_node *start, unsigned pos);
 
-void be_make_start_out(be_start_info_t *info, struct obstack *obst, ir_node *start, unsigned pos, arch_register_t const *reg, arch_register_req_type_t flags);
+void be_make_start_out(be_start_info_t *info, ir_node *start, unsigned pos, arch_register_t const *reg, arch_register_req_type_t flags);
 
 ir_node *be_get_start_proj(ir_graph *irg, be_start_info_t *info);
 

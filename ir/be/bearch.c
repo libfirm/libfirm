@@ -12,6 +12,7 @@
 #include "bearch.h"
 #include "benode.h"
 #include "beinfo.h"
+#include "beirg.h"
 #include "ircons_t.h"
 #include "irnode_t.h"
 #include "irop_t.h"
@@ -96,13 +97,13 @@ void be_make_start_mem(be_start_info_t *const info, ir_node *const start, unsign
   arch_set_irn_register_req_out(start, pos, arch_no_register_req);
 }
 
-void be_make_start_out(be_start_info_t *const info, struct obstack *const obst, ir_node *const start, unsigned const pos, arch_register_t const *const reg, arch_register_req_type_t const flags)
+void be_make_start_out(be_start_info_t *const info, ir_node *const start, unsigned const pos, arch_register_t const *const reg, arch_register_req_type_t const flags)
 {
 	info->pos = pos;
 	info->irn = NULL;
 	arch_register_req_t const *const req =
 		flags == arch_register_req_type_none ? reg->single_req :
-		be_create_reg_req(obst, reg, flags);
+		be_create_reg_req(be_get_be_obst(get_irn_irg(start)), reg, flags);
 	arch_set_irn_register_req_out(start, pos, req);
 	arch_set_irn_register_out(start, pos, reg);
 }

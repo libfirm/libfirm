@@ -1720,7 +1720,6 @@ static ir_node *gen_Start(ir_node *node)
 	ir_type        *function_type = get_entity_type(entity);
 	ir_node        *new_block     = be_transform_nodes_block(node);
 	dbg_info       *dbgi          = get_irn_dbg_info(node);
-	struct obstack *obst          = be_get_be_obst(irg);
 
 	unsigned n_outs = 2; /* memory, sp */
 	n_outs += cconv->n_param_regs;
@@ -1730,7 +1729,7 @@ static ir_node *gen_Start(ir_node *node)
 
 	be_make_start_mem(&start_mem, start, o++);
 
-	be_make_start_out(&start_sp, obst, start, o++, &arm_registers[REG_SP], arch_register_req_type_ignore | arch_register_req_type_produces_sp);
+	be_make_start_out(&start_sp, start, o++, &arm_registers[REG_SP], arch_register_req_type_ignore | arch_register_req_type_produces_sp);
 
 	/* function parameters in registers */
 	start_params_offset = o;

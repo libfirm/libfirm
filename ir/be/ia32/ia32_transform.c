@@ -4140,7 +4140,6 @@ static ir_node *gen_Start(ir_node *node)
 	ir_type   *function_type = get_entity_type(entity);
 	ir_node   *new_block     = be_transform_nodes_block(node);
 	dbg_info  *dbgi          = get_irn_dbg_info(node);
-	struct obstack *obst     = be_get_be_obst(irg);
 
 	x86_cconv_t const *const cconv = current_cconv;
 
@@ -4162,7 +4161,7 @@ static ir_node *gen_Start(ir_node *node)
 	be_make_start_mem(&start_mem, start, o++);
 
 	/* the stack pointer */
-	be_make_start_out(&start_val[REG_ESP], obst, start, o++, &ia32_registers[REG_ESP], arch_register_req_type_ignore | arch_register_req_type_produces_sp);
+	be_make_start_out(&start_val[REG_ESP], start, o++, &ia32_registers[REG_ESP], arch_register_req_type_ignore | arch_register_req_type_produces_sp);
 
 	/* function parameters in registers */
 	start_params_offset = o;
@@ -4183,7 +4182,7 @@ static ir_node *gen_Start(ir_node *node)
 		arch_register_req_type_t const flags =
 			i == REG_EBP && !cconv->omit_fp ? arch_register_req_type_ignore :
 			arch_register_req_type_none;
-		be_make_start_out(&start_val[i], obst, start, o++, &ia32_registers[i], flags);
+		be_make_start_out(&start_val[i], start, o++, &ia32_registers[i], flags);
 	}
 	assert(n_outs == o);
 

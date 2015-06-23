@@ -1563,7 +1563,6 @@ static ir_node *gen_Start(ir_node *node)
 	ir_type   *function_type = get_entity_type(entity);
 	ir_node   *new_block     = be_transform_nodes_block(node);
 	dbg_info  *dbgi          = get_irn_dbg_info(node);
-	struct obstack *obst     = be_get_be_obst(irg);
 
 	/* start building list of start constraints */
 
@@ -1586,16 +1585,16 @@ static ir_node *gen_Start(ir_node *node)
 	be_make_start_mem(&start_mem, start, o++);
 
 	/* the zero register */
-	be_make_start_out(&start_g0, obst, start, o++, &sparc_registers[REG_G0], arch_register_req_type_ignore);
+	be_make_start_out(&start_g0, start, o++, &sparc_registers[REG_G0], arch_register_req_type_ignore);
 
 	/* g7 is used for TLS data */
-	be_make_start_out(&start_g7, obst, start, o++, &sparc_registers[REG_G7], arch_register_req_type_ignore);
+	be_make_start_out(&start_g7, start, o++, &sparc_registers[REG_G7], arch_register_req_type_ignore);
 
 	/* we need an output for the stack pointer */
-	be_make_start_out(&start_sp, obst, start, o++, sp_reg, arch_register_req_type_ignore | arch_register_req_type_produces_sp);
+	be_make_start_out(&start_sp, start, o++, sp_reg, arch_register_req_type_ignore | arch_register_req_type_produces_sp);
 
 	if (!current_cconv->omit_fp) {
-		be_make_start_out(&start_fp, obst, start, o++, fp_reg, arch_register_req_type_ignore);
+		be_make_start_out(&start_fp, start, o++, fp_reg, arch_register_req_type_ignore);
 	}
 
 	/* function parameters in registers */
