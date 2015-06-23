@@ -159,6 +159,8 @@ unsigned be_get_MemPerm_entity_arity(const ir_node *irn);
  */
 ir_node *be_new_AnyVal(ir_node *block, const arch_register_class_t *cls);
 
+arch_register_req_t const **be_allocate_in_reqs(ir_graph *irg, unsigned n);
+
 const arch_register_req_t *be_create_reg_req(struct obstack *obst,
 		const arch_register_t *reg, arch_register_req_type_t additional_types);
 

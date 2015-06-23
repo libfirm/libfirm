@@ -1517,7 +1517,6 @@ static ir_node *gen_Return(ir_node *node)
 	ir_node  *new_mem   = be_transform_node(mem);
 	ir_node  *sp        = get_stack_pointer_for(node);
 	size_t    n_res     = get_Return_n_ress(node);
-	struct obstack *be_obst = be_get_be_obst(irg);
 	x86_cconv_t    *cconv   = current_cconv;
 
 	/* estimate number of return values */
@@ -1525,8 +1524,7 @@ static ir_node *gen_Return(ir_node *node)
 	size_t const n_callee_saves = rbitset_popcount(cconv->callee_saves, N_AMD64_REGISTERS);
 	size_t const n_ins          = p + n_res + n_callee_saves;
 
-	const arch_register_req_t **reqs
-		= OALLOCN(be_obst, const arch_register_req_t*, n_ins);
+	arch_register_req_t const **const reqs = be_allocate_in_reqs(irg, n_ins);
 	ir_node **in = ALLOCAN(ir_node*, n_ins);
 
 	in[n_amd64_ret_mem]   = new_mem;
@@ -1574,15 +1572,12 @@ static ir_node *gen_Call(ir_node *node)
 	/* max inputs: memory, callee, register arguments */
 	ir_node        **sync_ins     = ALLOCAN(ir_node*, n_params+1);
 	ir_graph        *irg          = get_irn_irg(node);
-	struct obstack  *obst         = be_get_be_obst(irg);
 	x86_cconv_t   *cconv
 		= amd64_decide_calling_convention(type, NULL);
 	size_t           n_param_regs = cconv->n_param_regs;
 	/* param-regs + mem + stackpointer + callee(2) + n_sse_regs */
 	unsigned         max_inputs   = 5 + n_param_regs;
 	ir_node        **in           = ALLOCAN(ir_node*, max_inputs);
-	const arch_register_req_t **in_req
-		= OALLOCNZ(obst, const arch_register_req_t*, max_inputs);
 	int              in_arity     = 0;
 	int              sync_arity   = 0;
 	ir_node         *new_frame    = get_stack_pointer_for(node);
@@ -1606,6 +1601,8 @@ static ir_node *gen_Call(ir_node *node)
 	amd64_op_mode_t op_mode;
 
 	ir_node *mem_proj = NULL;
+
+	arch_register_req_t const **const in_req = be_allocate_in_reqs(irg, max_inputs);
 
 	if (match_immediate_32(&addr.immediate, callee, true, true)) {
 		op_mode = AMD64_OP_UNOP_IMM32;

@@ -85,6 +85,12 @@ static int be_incsp_attrs_equal(const ir_node *a, const ir_node *b)
 	return attr_a->offset == attr_b->offset && attrs_equal_be_node(a, b);
 }
 
+arch_register_req_t const **be_allocate_in_reqs(ir_graph *const irg, unsigned const n)
+{
+	struct obstack *const obst = be_get_be_obst(irg);
+	return OALLOCN(obst, arch_register_req_t const*, n);
+}
+
 static arch_register_req_t *allocate_reg_req(ir_graph *const irg)
 {
 	struct obstack *obst = be_get_be_obst(irg);
@@ -106,19 +112,19 @@ static void be_node_set_register_req_in(ir_node *const node, int const pos,
 static void init_node_attr(ir_node *const node, unsigned const n_outputs, arch_irn_flags_t const flags)
 {
 	ir_graph       *irg  = get_irn_irg(node);
-	struct obstack *obst = be_get_be_obst(irg);
 	backend_info_t *info = be_get_info(node);
 
 	unsigned                    const arity   = get_irn_arity(node);
 	arch_register_req_t const **const in_reqs =
 		is_irn_dynamic(node) ? NEW_ARR_F(arch_register_req_t const*, arity) :
-		arity != 0           ? OALLOCN(obst, arch_register_req_t const*, arity) :
+		arity != 0           ? be_allocate_in_reqs(irg, arity) :
 		NULL;
 	for (unsigned i = 0; i < arity; ++i) {
 		in_reqs[i] = arch_no_register_req;
 	}
 	info->in_reqs = in_reqs;
 
+	struct obstack *const obst = be_get_be_obst(irg);
 	info->out_infos = NEW_ARR_DZ(reg_out_info_t, obst, n_outputs);
 	for (unsigned i = 0; i < n_outputs; ++i) {
 		info->out_infos[i].req = arch_no_register_req;
@@ -423,7 +429,7 @@ ir_node *be_new_Phi(ir_node *block, int n_ins, ir_node **ins, ir_mode *mode,
 	struct obstack *obst = be_get_be_obst(irg);
 	backend_info_t *info = be_get_info(phi);
 	info->out_infos = NEW_ARR_DZ(reg_out_info_t, obst, 1);
-	info->in_reqs   = OALLOCN(obst, const arch_register_req_t*, n_ins);
+	info->in_reqs   = be_allocate_in_reqs(irg, n_ins);
 
 	info->out_infos[0].req = req;
 	for (int i = 0; i < n_ins; ++i) {
@@ -453,8 +459,7 @@ ir_node *be_complete_Phi(ir_node *const phi, unsigned const n_ins, ir_node **con
 	phi->attr.phi.u.backedge = new_backedge_arr(get_irg_obstack(irg), n_ins);
 	set_irn_in(phi, n_ins, ins);
 
-	struct obstack             *const obst    = be_get_be_obst(irg);
-	arch_register_req_t const **const in_reqs = OALLOCN(obst, arch_register_req_t const*, n_ins);
+	arch_register_req_t const **const in_reqs = be_allocate_in_reqs(irg, n_ins);
 	arch_register_req_t const  *const req     = arch_get_irn_register_req(phi);
 	for (unsigned i = 0; i < n_ins; ++i) {
 		in_reqs[i] = req;
@@ -581,7 +586,7 @@ static void copy_attr(ir_graph *irg, const ir_node *old_node, ir_node *new_node)
 		if (is_irn_dynamic(old_node)) {
 			new_info->in_reqs = NEW_ARR_F(const arch_register_req_t*, n_ins);
 		} else {
-			new_info->in_reqs = OALLOCN(obst,const arch_register_req_t*, n_ins);
+			new_info->in_reqs = be_allocate_in_reqs(irg, n_ins);
 		}
 		MEMCPY(new_info->in_reqs, old_info->in_reqs, n_ins);
 	} else {

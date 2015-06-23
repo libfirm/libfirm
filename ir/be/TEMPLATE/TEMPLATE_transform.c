@@ -228,8 +228,7 @@ static ir_node *gen_Return(ir_node *node)
 	unsigned                    const n_ins = p + n_res;
 	ir_node                   **const in    = ALLOCAN(ir_node*, n_ins);
 	ir_graph                   *const irg   = get_irn_irg(node);
-	struct obstack             *const obst  = be_get_be_obst(irg);
-	arch_register_req_t const **const reqs  = OALLOCN(obst, arch_register_req_t const*, n_ins);
+	arch_register_req_t const **const reqs  = be_allocate_in_reqs(irg, n_ins);
 
 	in[n_TEMPLATE_Return_mem]   = be_transform_node(get_Return_mem(node));
 	reqs[n_TEMPLATE_Return_mem] = arch_no_register_req;

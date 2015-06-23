@@ -4255,7 +4255,6 @@ static ir_node *gen_Return(ir_node *node)
 	ir_node  *new_mem   = be_transform_node(mem);
 	ir_node  *sp        = get_stack_pointer_for(node);
 	unsigned  n_res     = get_Return_n_ress(node);
-	struct obstack *obst  = be_get_be_obst(irg);
 	x86_cconv_t    *cconv = current_cconv;
 
 	/* estimate number of return values */
@@ -4263,8 +4262,7 @@ static ir_node *gen_Return(ir_node *node)
 	unsigned const n_callee_saves = rbitset_popcount(cconv->callee_saves, N_IA32_REGISTERS);
 	unsigned const n_ins          = p + n_res + n_callee_saves;
 
-	const arch_register_req_t **reqs
-		= OALLOCN(obst, const arch_register_req_t*, n_ins);
+	arch_register_req_t const **const reqs = be_allocate_in_reqs(irg, n_ins);
 	ir_node **in = ALLOCAN(ir_node*, n_ins);
 
 	in[n_ia32_Return_mem]   = new_mem;
@@ -4915,11 +4913,10 @@ static ir_node *gen_Call(ir_node *node)
 	ir_type                    *const type     = get_Call_type(node);
 	x86_cconv_t                *const cconv    = ia32_decide_calling_convention(type, NULL);
 	ir_graph                   *const irg      = get_irn_irg(node);
-	struct obstack             *const obst     = be_get_be_obst(irg);
 	unsigned                          in_arity = n_ia32_Call_first_argument;
 	unsigned                    const n_ins    = in_arity + cconv->n_param_regs;
 	ir_node                   **const in       = ALLOCAN(ir_node*, n_ins);
-	arch_register_req_t const **const in_req   = OALLOCNZ(obst, arch_register_req_t const*, n_ins);
+	arch_register_req_t const **const in_req   = be_allocate_in_reqs(irg, n_ins);
 
 	in[n_ia32_Call_base]       = am.addr.base;
 	in_req[n_ia32_Call_base]   = req_gp;

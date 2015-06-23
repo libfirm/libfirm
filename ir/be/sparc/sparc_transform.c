@@ -1679,7 +1679,6 @@ static ir_node *gen_Return(ir_node *node)
 	ir_node  *new_mem   = be_transform_node(mem);
 	ir_node  *sp        = get_stack_pointer_for(node);
 	size_t    n_res     = get_Return_n_ress(node);
-	struct obstack *be_obst = be_get_be_obst(irg);
 
 	/* estimate number of return values */
 	unsigned p     = n_sparc_Return_first_result;
@@ -1687,8 +1686,7 @@ static ir_node *gen_Return(ir_node *node)
 	if (current_cconv->omit_fp)
 		n_ins += ARRAY_SIZE(omit_fp_callee_saves);
 
-	const arch_register_req_t **reqs
-		= OALLOCN(be_obst, const arch_register_req_t*, n_ins);
+	arch_register_req_t const **const reqs = be_allocate_in_reqs(irg, n_ins);
 	ir_node **in = ALLOCAN(ir_node*, n_ins);
 
 	in[n_sparc_Return_mem]   = new_mem;
@@ -1823,15 +1821,13 @@ static ir_node *gen_Call(ir_node *node)
 	size_t           n_ress       = get_method_n_ress(type);
 	/* max inputs: memory, callee, register arguments */
 	ir_node        **sync_ins     = ALLOCAN(ir_node*, n_params);
-	struct obstack  *obst         = be_get_be_obst(irg);
 	calling_convention_t *cconv
 		= sparc_decide_calling_convention(type, NULL);
 	size_t           n_param_regs = cconv->n_param_regs;
 	/* param-regs + mem + stackpointer + callee */
 	unsigned         max_inputs   = 3 + n_param_regs;
 	ir_node        **in           = ALLOCAN(ir_node*, max_inputs);
-	const arch_register_req_t **in_req
-		= OALLOCNZ(obst, const arch_register_req_t*, max_inputs);
+	arch_register_req_t const **const in_req = be_allocate_in_reqs(irg, max_inputs);
 	int              in_arity     = 0;
 	int              sync_arity   = 0;
 	int              n_caller_saves

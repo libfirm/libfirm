@@ -68,8 +68,7 @@ ir_node *be_transform_phi(ir_node *node, const arch_register_req_t *req)
 	copy_node_attr(irg, node, phi);
 
 	backend_info_t *info = be_get_info(phi);
-	struct obstack *obst = be_get_be_obst(irg);
-	info->in_reqs = OALLOCN(obst, const arch_register_req_t*, arity);
+	info->in_reqs = be_allocate_in_reqs(irg, arity);
 	for (int i = 0; i < arity; ++i) {
 		info->in_reqs[i] = req;
 	}

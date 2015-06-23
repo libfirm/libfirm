@@ -1795,13 +1795,11 @@ static ir_node *gen_Return(ir_node *node)
 	ir_node        *sp             = get_stack_pointer_for(node);
 	unsigned        n_res          = get_Return_n_ress(node);
 	ir_graph       *irg            = get_irn_irg(node);
-	struct obstack *obst           = be_get_be_obst(irg);
 
 	unsigned       p     = n_arm_Return_first_result;
 	unsigned const n_ins = p + n_res + n_callee_saves;
 
-	const arch_register_req_t **reqs
-		= OALLOCN(obst, const arch_register_req_t*, n_ins);
+	arch_register_req_t const **const reqs = be_allocate_in_reqs(irg, n_ins);
 	ir_node **in = ALLOCAN(ir_node*, n_ins);
 
 	in[n_arm_Return_mem]   = new_mem;
@@ -1855,9 +1853,7 @@ static ir_node *gen_Call(ir_node *node)
 	size_t const          max_inputs   = 3 + n_param_regs;
 	ir_node             **in           = ALLOCAN(ir_node*, max_inputs);
 	ir_node             **sync_ins     = ALLOCAN(ir_node*, n_params);
-	struct obstack       *obst         = be_get_be_obst(irg);
-	const arch_register_req_t **in_req
-		= OALLOCNZ(obst, const arch_register_req_t*, max_inputs);
+	arch_register_req_t const **const in_req = be_allocate_in_reqs(irg, max_inputs);
 	size_t                in_arity       = 0;
 	size_t                sync_arity     = 0;
 	size_t const          n_caller_saves = ARRAY_SIZE(caller_saves);
