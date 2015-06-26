@@ -6023,8 +6023,8 @@ typedef ir_node*(*new_shift_func)(dbg_info *dbgi, ir_node *block,
 static ir_node *transform_node_shift_modulo(ir_node *n,
                                             new_shift_func new_shift)
 {
-	ir_mode  *mode   = get_irn_mode(n);
-	int       modulo = get_mode_modulo_shift(mode);
+	ir_mode *mode   = get_irn_mode(n);
+	int      modulo = get_mode_modulo_shift(mode);
 
 	if (modulo == 0)
 		return n;
@@ -6041,7 +6041,6 @@ static ir_node *transform_node_shift_modulo(ir_node *n,
 	if (is_Const(right)) {
 		ir_tarval *tv     = get_Const_tarval(right);
 		ir_tarval *tv_mod = get_modulo_tv_value(tv, modulo);
-
 		if (tv_mod == tv)
 			return n;
 
@@ -6049,29 +6048,26 @@ static ir_node *transform_node_shift_modulo(ir_node *n,
 	} else if (is_Add(right) || is_Or_Eor_Add(right)) {
 		ir_node *add_right = get_binop_right(right);
 		if (is_Const(add_right)) {
-			ir_tarval *tv       = get_Const_tarval(add_right);
-			ir_tarval *tv_mod   = get_modulo_tv_value(tv, modulo);
-			ir_node   *newconst;
-			if (tv_mod == tv)
-				return n;
-
-			dbg_info *dbgi = get_irn_dbg_info(right);
-			newconst = new_r_Const(irg, tv_mod);
-			newop    = new_rd_Add(dbgi, block, get_binop_left(right), newconst,
-			                      mode_right);
-		}
-	} else if (is_Sub(right)) {
-		ir_node *sub_left = get_Sub_left(right);
-		if (is_Const(sub_left)) {
-			ir_tarval *tv       = get_Const_tarval(sub_left);
-			ir_tarval *tv_mod   = get_modulo_tv_value(tv, modulo);
+			ir_tarval *tv     = get_Const_tarval(add_right);
+			ir_tarval *tv_mod = get_modulo_tv_value(tv, modulo);
 			if (tv_mod == tv)
 				return n;
 
 			dbg_info *dbgi     = get_irn_dbg_info(right);
 			ir_node  *newconst = new_r_Const(irg, tv_mod);
-			newop = new_rd_Sub(dbgi, block, newconst, get_Sub_right(right),
-			                   mode_right);
+			newop = new_rd_Add(dbgi, block, get_binop_left(right), newconst, mode_right);
+		}
+	} else if (is_Sub(right)) {
+		ir_node *sub_left = get_Sub_left(right);
+		if (is_Const(sub_left)) {
+			ir_tarval *tv     = get_Const_tarval(sub_left);
+			ir_tarval *tv_mod = get_modulo_tv_value(tv, modulo);
+			if (tv_mod == tv)
+				return n;
+
+			dbg_info *dbgi     = get_irn_dbg_info(right);
+			ir_node  *newconst = new_r_Const(irg, tv_mod);
+			newop = new_rd_Sub(dbgi, block, newconst, get_Sub_right(right), mode_right);
 		}
 	} else {
 		return n;
