@@ -134,7 +134,7 @@ FIRM_API void set_irp_memory_disambiguator_options(ir_disambiguator_options opti
 
 /**
  * Mark all private methods, i.e. those of which all call sites are known.
- * We use a very convervative estimation yet: If the address of a method is
+ * We use a very conservative estimation yet: If the address of a method is
  * never taken AND its visibility is visibility_local, then it's private.
  */
 FIRM_API void mark_private_methods(void);
