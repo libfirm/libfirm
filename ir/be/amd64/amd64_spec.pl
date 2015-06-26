@@ -566,6 +566,28 @@ xorp  => {
 	emit     => "xorp%MX %AM",
 },
 
+movd_xmm_gp => {
+	state     => "exc_pinned",
+	ins       => [ "operand" ],
+	outs      => [ "res" ],
+	in_reqs  => [ "xmm" ],
+	out_reqs  => [ "gp" ],
+	attr_type => "amd64_addr_attr_t",
+	attr      => "amd64_insn_mode_t insn_mode, amd64_op_mode_t op_mode, amd64_addr_t addr",
+	emit      => "movd %S0, %D0"
+},
+
+movd_gp_xmm => {
+	state     => "exc_pinned",
+	ins       => [ "operand" ],
+	outs      => [ "res" ],
+	in_reqs   => [ "gp" ],
+	out_reqs  => [ "xmm" ],
+	attr_type => "amd64_addr_attr_t",
+	attr      => "amd64_insn_mode_t insn_mode, amd64_op_mode_t op_mode, amd64_addr_t addr",
+	emit      => "movd %S0, %D0"
+},
+
 # Conversion operations
 
 cvtss2sd => {

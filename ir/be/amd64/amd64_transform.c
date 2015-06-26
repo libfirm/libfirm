@@ -2610,8 +2610,40 @@ static ir_node *gen_Proj_Builtin(ir_node *proj)
 
 static ir_node *gen_Bitcast(ir_node *node)
 {
-	(void)node;
-	panic("Bitcast NIY");
+	ir_node  *op   = get_Bitcast_op(node);
+	dbg_info *dbgi = get_irn_dbg_info(node);
+
+	ir_mode *dst_mode = get_irn_mode(node);
+	ir_mode *src_mode = get_irn_mode(op);
+
+	bool dst_float = mode_is_float(dst_mode);
+	bool src_float = mode_is_float(src_mode);
+
+	ir_node *be_op    = be_transform_node(op);
+	ir_node *be_block = get_nodes_block(be_op);
+
+	amd64_addr_t no_addr = {
+		.immediate = {
+			.entity = NULL,
+			.offset = 0,
+		},
+		.base_input  = NO_INPUT,
+		.index_input = NO_INPUT,
+		.mem_input   = NO_INPUT,
+		.log_scale   = AMD64_SEGMENT_DEFAULT
+	};
+
+	if (src_float && !dst_float) {
+		ir_node * new_node = new_bd_amd64_movd_xmm_gp(
+			dbgi, be_block, be_op, INSN_MODE_64, AMD64_OP_REG, no_addr);
+		return new_r_Proj(new_node, mode_gp, pn_amd64_movd_gp_xmm_res);
+	} else if (!src_float && dst_float) {
+		ir_node * new_node = new_bd_amd64_movd_gp_xmm(
+			dbgi, be_block, be_op, INSN_MODE_64, AMD64_OP_REG, no_addr);
+		return new_r_Proj(new_node, amd64_mode_xmm, pn_amd64_movd_xmm_gp_res);
+	} else {
+		panic("Unhandled bitcast modes: %+F to %+F\n", src_mode, dst_mode);
+	}
 }
 
 static ir_node *gen_amd64_l_punpckldq(ir_node *node)
