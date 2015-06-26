@@ -940,7 +940,6 @@ static void walk_equality(ir_node *node, void *env)
 	if (is_Not(l) && is_Eor(get_Not_op(l))) {
 		l        = get_Not_op(l);
 		need_not = !need_not;
-	} else if (is_Eor(l)) {
 	} else if (is_Not(r) && is_Eor(get_Not_op(r))) {
 		ir_node *t = get_Not_op(r);
 		r          = l;
@@ -950,7 +949,7 @@ static void walk_equality(ir_node *node, void *env)
 		ir_node *t = r;
 		r          = l;
 		l          = t;
-	} else {
+	} else if (!is_Eor(l)) {
 		return;
 	}
 
