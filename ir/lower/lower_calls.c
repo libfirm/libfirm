@@ -547,6 +547,15 @@ static void get_dest_addrs(const cl_entry *entry, ir_node **ins,
 				continue;
 		}
 
+		ir_graph *irg   = get_irn_irg(dst);
+		ir_node  *frame = get_irg_frame(irg);
+		if (!is_Member(dst) || get_Member_ptr(dst) != frame)
+			continue;
+
+		ir_entity *dst_ent = get_Member_entity(dst);
+		if (get_entity_usage(dst_ent) & ir_usage_address_taken)
+			continue;
+
 		/* Special case for calls with NoMem memory input. This can happen
 		 * for mtp_property_const functions. The call needs a memory input
 		 * after lowering, so patch it here to be the input of the CopyB.
@@ -918,6 +927,7 @@ static void transform_irg(compound_call_lowering_flags flags, ir_graph *irg)
 	if (n_param_com > 0 && !(flags & LF_DONT_LOWER_ARGUMENTS))
 		remove_compound_param_entities(irg);
 
+	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_ENTITY_USAGE);
 	fix_calls(&env);
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 
