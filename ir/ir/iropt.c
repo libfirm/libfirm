@@ -6041,7 +6041,7 @@ static ir_node *transform_node_shift_modulo(ir_node *n,
 	if (is_Const(right)) {
 		ir_tarval *tv     = get_Const_tarval(right);
 		ir_tarval *tv_mod = get_modulo_tv_value(tv, modulo);
-		if (tv_mod == tv)
+		if (!tarval_is_constant(tv_mod) || tv_mod == tv)
 			return n;
 
 		newop = new_r_Const(irg, tv_mod);
@@ -6050,7 +6050,7 @@ static ir_node *transform_node_shift_modulo(ir_node *n,
 		if (is_Const(add_right)) {
 			ir_tarval *tv     = get_Const_tarval(add_right);
 			ir_tarval *tv_mod = get_modulo_tv_value(tv, modulo);
-			if (tv_mod == tv)
+			if (!tarval_is_constant(tv_mod) || tv_mod == tv)
 				return n;
 
 			dbg_info *dbgi     = get_irn_dbg_info(right);
@@ -6062,7 +6062,7 @@ static ir_node *transform_node_shift_modulo(ir_node *n,
 		if (is_Const(sub_left)) {
 			ir_tarval *tv     = get_Const_tarval(sub_left);
 			ir_tarval *tv_mod = get_modulo_tv_value(tv, modulo);
-			if (tv_mod == tv)
+			if (!tarval_is_constant(tv_mod) || tv_mod == tv)
 				return n;
 
 			dbg_info *dbgi     = get_irn_dbg_info(right);
