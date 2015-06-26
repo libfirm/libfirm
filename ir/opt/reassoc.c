@@ -956,7 +956,9 @@ static void walk_equality(ir_node *node, void *env)
 
 	ir_node *a = get_binop_left(l);
 	ir_node *b = get_binop_right(l);
-	assert(a != b);
+	if (a == b) {
+		return;
+	}
 
 	if (is_Const(b)) {
 		replace_until_other_user(r, a, b, need_not, true);
