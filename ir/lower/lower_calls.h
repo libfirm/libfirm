@@ -21,7 +21,7 @@ typedef enum compound_call_lowering_flags {
 	LF_RETURN_HIDDEN        = 1 << 0, /**< return the hidden address instead of void */
 	LF_DONT_LOWER_ARGUMENTS = 1 << 1, /**< don't lower compound call arguments
 	                                       (some backends can handle them themselves) */
-	/** Return small arays as integer values instead of storing them into
+	/** Return small arrays as integer values instead of storing them into
 	 * memory. */
 	LF_RETURN_SMALL_ARRAY_IN_INTS = 1 << 2,
 	/** Return small structs as integer values */
