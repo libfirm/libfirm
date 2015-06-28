@@ -169,16 +169,12 @@ carry:;
 		}
 	}
 
-	/* exchange the add and the sub */
-	edges_reroute(irn, res);
-	sched_replace(irn, res);
-
 	set_irn_mode(res, get_irn_mode(irn));
-
 	SET_IA32_ORIG_NODE(res, irn);
 
-	/* remove the old sub */
-	kill_node(irn);
+	/* exchange the add and the sub */
+	sched_replace(irn, res);
+	exchange(irn, res);
 }
 
 static inline int need_constraint_copy(ir_node *irn)

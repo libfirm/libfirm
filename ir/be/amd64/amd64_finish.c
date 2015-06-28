@@ -132,10 +132,8 @@ static void transform_sub_to_neg_add(ir_node *node,
 	arch_set_irn_register(add_res, out_reg);
 
 	/* exchange the add and the sub */
-	edges_reroute(node, add);
 	sched_replace(node, add);
-
-	kill_node(node);
+	exchange(node, add);
 }
 
 static ir_node *amd64_turn_back_am(ir_node *node)
