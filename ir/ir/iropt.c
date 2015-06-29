@@ -1361,32 +1361,20 @@ static ir_node *equivalent_node_Phi(ir_node *n)
 	if (n_preds == 0)
 		return n;
 
-	/* Find first non-self-referencing input */
+	/* Determine whether the Phi is trivial, i.e. it only references itself and
+	 * one other value. */
 	bool     had_self_loop = false;
 	ir_node *first_val     = NULL;
-	int      i;
-	for (i = 0; i < n_preds; ++i) {
-		first_val = get_Phi_pred(n, i);
-		/* not self pointer */
-		if (first_val != n) {
-			/* then found first value. */
-			break;
-		} else {
+	foreach_irn_in(n, i, pred) {
+		if (pred == n) {
 			had_self_loop = true;
+		} else if (pred != first_val) {
+			/* more than 1 unique value found? abort */
+			if (first_val)
+				return n;
+			/* First non-self-referencing input */
+			first_val = pred;
 		}
-	}
-
-	/* search for rest of inputs, determine if any of these
-	 * are non-self-referencing */
-	for (++i; i < n_preds; ++i) {
-		const ir_node *scnd_val = get_Phi_pred(n, i);
-		if (scnd_val == n) {
-			had_self_loop = true;
-			continue;
-		}
-		/* more than 1 unique value found? abort */
-		if (scnd_val != first_val)
-			return n;
 	}
 
 	/* if we are here then all inputs are either self-loops or first_val */
