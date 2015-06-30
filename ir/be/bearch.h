@@ -25,13 +25,11 @@
  */
 typedef enum arch_register_req_type_t {
 	/** No special type, but may still have a limited array set. */
-	arch_register_req_type_none              = 0,
-	/** The register must be unequal from some other at the node. */
-	arch_register_req_type_must_be_different = 1U << 0,
+	arch_register_req_type_none    = 0,
 	/** The registernumber should be aligned (in case of multiregister values)*/
-	arch_register_req_type_aligned           = 1U << 1,
+	arch_register_req_type_aligned = 1U << 0,
 	/** ignore while allocating registers */
-	arch_register_req_type_ignore            = 1U << 2,
+	arch_register_req_type_ignore  = 1U << 1,
 } arch_register_req_type_t;
 ENUM_BITSET(arch_register_req_type_t)
 
@@ -229,7 +227,7 @@ struct arch_register_req_t {
 	/** Bitmask of ins which should use the same register. */
 	unsigned                     should_be_same;
 	/** Bitmask of ins which shall use a different register (must_be_different) */
-	unsigned                     other_different;
+	unsigned                     must_be_different;
 	/** Specifies how many sequential registers are required */
 	unsigned char                width;
 };
@@ -243,7 +241,7 @@ static inline bool reg_reqs_equal(const arch_register_req_t *req1,
 	if (req1->type              != req2->type            ||
 	    req1->cls               != req2->cls             ||
 	    req1->should_be_same    != req2->should_be_same  ||
-	    req1->other_different   != req2->other_different ||
+	    req1->must_be_different != req2->must_be_different ||
 	    (req1->limited != NULL) != (req2->limited != NULL))
 		return false;
 

@@ -215,10 +215,9 @@ ir_node *be_make_asm(ir_node const *const node, ir_node **in, arch_register_req_
 
 		if (different != 0) {
 			arch_register_req_t *const req = OALLOCZ(obst, arch_register_req_t);
-			*req                 = *oreq;
-			req->type           |= arch_register_req_type_must_be_different;
-			req->other_different = different;
-			out_reqs[o]          = req;
+			*req                   = *oreq;
+			req->must_be_different = different;
+			out_reqs[o]            = req;
 		}
 	}
 

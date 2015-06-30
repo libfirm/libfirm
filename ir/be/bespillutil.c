@@ -943,8 +943,8 @@ static void assure_different_constraints(ir_node *irn, ir_node *skipped_irn, con
 {
 	const arch_register_req_t *req = arch_get_irn_register_req(irn);
 
-	if (arch_register_req_is(req, must_be_different)) {
-		const unsigned other = req->other_different;
+	if (req->must_be_different != 0) {
+		const unsigned other = req->must_be_different;
 
 		if (req->should_be_same != 0) {
 			const unsigned same = req->should_be_same;

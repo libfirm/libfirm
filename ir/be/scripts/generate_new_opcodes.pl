@@ -1049,12 +1049,12 @@ sub generate_requirements {
 		$class  = $reqs;
 		$result = <<EOF;
 {
-	.cls             = &${arch}_reg_classes[CLASS_${arch}_${class}],
-	.limited         = NULL,
-	.type            = ${reqtype},
-	.should_be_same  = 0,
-	.other_different = 0,
-	.width           = $width,
+	.cls               = &${arch}_reg_classes[CLASS_${arch}_${class}],
+	.limited           = NULL,
+	.type              = ${reqtype},
+	.should_be_same    = 0,
+	.must_be_different = 0,
+	.width             = $width,
 };
 
 EOF
@@ -1067,9 +1067,6 @@ EOF
 			die("Fatal error: Could not build subset for requirements '$reqs' of '$op' pos $idx ... exiting.\n");
 		}
 
-		if ($different_pos != 0) {
-			push(@req_type_mask, "arch_register_req_type_must_be_different");
-		}
 		my $reqtype = join(" | ", @req_type_mask) || "arch_register_req_type_none";
 
  		if(!defined($limit_bitset)) {
@@ -1079,12 +1076,12 @@ EOF
 		$class  = $regclass;
 		$result = <<EOF;
 {
-	.cls             = &${arch}_reg_classes[CLASS_${arch}_${class}],
-	.limited         = ${limit_bitset},
-	.type            = ${reqtype},
-	.should_be_same  = ${same_pos},
-	.other_different = ${different_pos},
-	.width           = $width,
+	.cls               = &${arch}_reg_classes[CLASS_${arch}_${class}],
+	.limited           = ${limit_bitset},
+	.type              = ${reqtype},
+	.should_be_same    = ${same_pos},
+	.must_be_different = ${different_pos},
+	.width             = $width,
 };
 
 EOF

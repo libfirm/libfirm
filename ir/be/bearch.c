@@ -19,12 +19,12 @@
 #include "raw_bitset.h"
 
 arch_register_req_t const arch_no_requirement = {
-	.cls             = NULL,
-	.limited         = NULL,
-	.type            = arch_register_req_type_none,
-	.should_be_same  = 0,
-	.other_different = 0,
-	.width           = 0,
+	.cls               = NULL,
+	.limited           = NULL,
+	.type              = arch_register_req_type_none,
+	.should_be_same    = 0,
+	.must_be_different = 0,
+	.width             = 0,
 };
 
 static reg_out_info_t *get_out_info_n(const ir_node *node, unsigned pos)

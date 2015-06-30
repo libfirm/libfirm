@@ -109,39 +109,39 @@ const x86_asm_constraint_list_t amd64_asm_constraints = {
 #define BIT(x)    (1u << x)
 
 static const arch_register_req_t amd64_requirement_gp_same_0 = {
-	.cls             = &amd64_reg_classes[CLASS_amd64_gp],
-	.limited         = NULL,
-	.type            = arch_register_req_type_none,
-	.should_be_same  = BIT(0),
-	.other_different = 0,
-	.width           = 1,
+	.cls               = &amd64_reg_classes[CLASS_amd64_gp],
+	.limited           = NULL,
+	.type              = arch_register_req_type_none,
+	.should_be_same    = BIT(0),
+	.must_be_different = 0,
+	.width             = 1,
 };
 
 static const arch_register_req_t amd64_requirement_xmm_same_0 = {
-	.cls             = &amd64_reg_classes[CLASS_amd64_xmm],
-	.limited         = NULL,
-	.type            = arch_register_req_type_none,
-	.should_be_same  = BIT(0),
-	.other_different = 0,
-	.width           = 1,
+	.cls               = &amd64_reg_classes[CLASS_amd64_xmm],
+	.limited           = NULL,
+	.type              = arch_register_req_type_none,
+	.should_be_same    = BIT(0),
+	.must_be_different = 0,
+	.width             = 1,
 };
 
 static const arch_register_req_t amd64_requirement_gp_same_0_not_1 = {
-	.cls             = &amd64_reg_classes[CLASS_amd64_gp],
-	.limited         = NULL,
-	.type            = arch_register_req_type_must_be_different,
-	.should_be_same  = BIT(0),
-	.other_different = BIT(1),
-	.width           = 1,
+	.cls               = &amd64_reg_classes[CLASS_amd64_gp],
+	.limited           = NULL,
+	.type              = arch_register_req_type_none,
+	.should_be_same    = BIT(0),
+	.must_be_different = BIT(1),
+	.width             = 1,
 };
 
 static const arch_register_req_t amd64_requirement_xmm_same_0_not_1 = {
-	.cls             = &amd64_reg_classes[CLASS_amd64_xmm],
-	.limited         = NULL,
-	.type            = arch_register_req_type_must_be_different,
-	.should_be_same  = BIT(0),
-	.other_different = BIT(1),
-	.width           = 1,
+	.cls               = &amd64_reg_classes[CLASS_amd64_xmm],
+	.limited           = NULL,
+	.type              = arch_register_req_type_none,
+	.should_be_same    = BIT(0),
+	.must_be_different = BIT(1),
+	.width             = 1,
 };
 
 static const arch_register_req_t *mem_reqs[] = {
