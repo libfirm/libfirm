@@ -5413,7 +5413,7 @@ static ir_node *gen_bswap(ir_node *node)
 static ir_node *gen_outport(ir_node *node)
 {
 	ir_node  *param = get_Builtin_param(node, 0);
-	ir_node  *port  = create_immediate_or_transform(param, 'K');
+	ir_node  *port  = create_immediate_or_transform(param, 'N');
 	ir_node  *oldv  = get_Builtin_param(node, 1);
 	ir_mode  *mode  = get_irn_mode(oldv);
 	ir_node  *value = be_transform_node(oldv);
@@ -5434,7 +5434,7 @@ static ir_node *gen_inport(ir_node *node)
 	ir_type  *rstp  = get_method_res_type(tp, 0);
 	ir_mode  *mode  = get_type_mode(rstp);
 	ir_node  *param = get_Builtin_param(node, 0);
-	ir_node  *port  = create_immediate_or_transform(param, 'K');
+	ir_node  *port  = create_immediate_or_transform(param, 'N');
 	ir_node  *block = be_transform_nodes_block(node);
 	ir_node  *mem   = be_transform_node(get_Builtin_mem(node));
 	dbg_info *dbgi  = get_irn_dbg_info(node);
