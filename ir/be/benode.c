@@ -187,7 +187,6 @@ ir_node *be_new_Copy(ir_node *bl, ir_node *op)
 	const arch_register_req_t   *in_req = arch_get_irn_register_req(op);
 	const arch_register_class_t *cls    = in_req->cls;
 	be_node_set_register_req_in(res, 0, cls->class_req);
-	arch_set_irn_register_req_out(res, 0, cls->class_req);
 
 	arch_register_req_t *const req = allocate_reg_req(irg);
 	req->cls            = cls;
