@@ -75,9 +75,6 @@ sub ia32_custom_init_attr {
 	my $name   = shift;
 	my $res    = "";
 
-	if(defined($node->{modified_flags})) {
-		$res .= "\tarch_add_irn_flags(res, arch_irn_flag_modify_flags);\n";
-	}
 	if(defined($node->{am})) {
 		my $am = $node->{am};
 		if($am eq "source,unary") {
@@ -129,25 +126,21 @@ $custom_init_attr_func = \&ia32_custom_init_attr;
 		"\tinit_ia32_return_attributes(res, pop);",
 );
 
-$status_flags       = [ "CF", "PF", "AF", "ZF", "SF", "OF" ];
-$status_flags_wo_cf = [       "PF", "AF", "ZF", "SF", "OF" ];
-
 my $x87sim = "ia32_request_x87_sim(irg);";
 
 my $binop_commutative = {
-	irn_flags      => [ "rematerializable" ],
-	state          => "exc_pinned",
-	in_reqs        => [ "gp", "gp", "none", "gp", "gp" ],
-	out_reqs       => [ "in_r4 in_r5", "flags", "none" ],
-	ins            => [ "base", "index", "mem", "left", "right" ],
-	outs           => [ "res", "flags", "M" ],
-	am             => "source,binary",
-	mode           => $mode_gp,
-	modified_flags => $status_flags
+	irn_flags => [ "modify_flags", "rematerializable" ],
+	state     => "exc_pinned",
+	in_reqs   => [ "gp", "gp", "none", "gp", "gp" ],
+	out_reqs  => [ "in_r4 in_r5", "flags", "none" ],
+	ins       => [ "base", "index", "mem", "left", "right" ],
+	outs      => [ "res", "flags", "M" ],
+	am        => "source,binary",
+	mode      => $mode_gp,
 };
 
 my $binop_flags = {
-	irn_flags => [ "rematerializable" ],
+	irn_flags => [ "modify_flags", "rematerializable" ],
 	state     => "exc_pinned",
 	constructors => {
 		""     => { in_reqs => [ "gp", "gp", "none", "gp", "gp" ], },
@@ -160,77 +153,72 @@ my $binop_flags = {
 	attr      => "bool ins_permuted",
 	init_attr => "attr->ins_permuted = ins_permuted;",
 	mode      => $mode_flags,
-	modified_flags => $status_flags
 };
 
 my $binop_mem = {
-	irn_flags      => [ "rematerializable" ],
-	state          => "exc_pinned",
-	constructors   => {
+	irn_flags    => [ "modify_flags", "rematerializable" ],
+	state        => "exc_pinned",
+	constructors => {
 		""     => { in_reqs => [ "gp", "gp", "none", "gp" ] },
 		"8bit" => { in_reqs => [ "gp", "gp", "none", "eax ebx ecx edx" ] },
 	},
-	out_reqs       => [ "none", "flags", "none" ],
-	ins            => [ "base", "index", "mem", "val" ],
-	outs           => [ "unused", "flags", "M" ],
-	modified_flags => $status_flags,
+	out_reqs     => [ "none", "flags", "none" ],
+	ins          => [ "base", "index", "mem", "val" ],
+	outs         => [ "unused", "flags", "M" ],
 };
 
 my $shiftop = {
-	irn_flags      => [ "rematerializable" ],
-	in_reqs        => [ "gp", "ecx" ],
-	out_reqs       => [ "in_r1 !in_r2", "flags" ],
-	ins            => [ "val", "count" ],
-	outs           => [ "res", "flags" ],
-	mode           => $mode_gp,
-	modified_flags => $status_flags
+	irn_flags => [ "modify_flags", "rematerializable" ],
+	in_reqs   => [ "gp", "ecx" ],
+	out_reqs  => [ "in_r1 !in_r2", "flags" ],
+	ins       => [ "val", "count" ],
+	outs      => [ "res", "flags" ],
+	mode      => $mode_gp,
 };
 
 my $shiftop_mem = {
-	irn_flags      => [ "rematerializable" ],
-	state          => "exc_pinned",
-	in_reqs        => [ "gp", "gp", "none", "ecx" ],
-	out_reqs       => [ "none", "flags", "none" ],
-	ins            => [ "base", "index", "mem", "count" ],
-	outs           => [ "unused", "flags", "M" ],
-	modified_flags => $status_flags
+	irn_flags => [ "modify_flags", "rematerializable" ],
+	state     => "exc_pinned",
+	in_reqs   => [ "gp", "gp", "none", "ecx" ],
+	out_reqs  => [ "none", "flags", "none" ],
+	ins       => [ "base", "index", "mem", "count" ],
+	outs      => [ "unused", "flags", "M" ],
 };
 
 my $shiftop_double = {
-	irn_flags      => [ "rematerializable" ],
-	in_reqs        => [ "gp", "gp", "ecx" ],
-	out_reqs       => [ "in_r1 !in_r2 !in_r3", "flags" ],
-	ins            => [ "val_high", "val_low", "count" ],
-	outs           => [ "res", "flags" ],
-	mode           => $mode_gp,
-	modified_flags => $status_flags
+	irn_flags => [ "modify_flags", "rematerializable" ],
+	in_reqs   => [ "gp", "gp", "ecx" ],
+	out_reqs  => [ "in_r1 !in_r2 !in_r3", "flags" ],
+	ins       => [ "val_high", "val_low", "count" ],
+	outs      => [ "res", "flags" ],
+	mode      => $mode_gp,
 };
 
 my $divop = {
-	op_flags       => [ "fragile", "uses_memory" ],
-	state          => "exc_pinned",
-	in_reqs        => [ "gp", "gp", "none", "gp", "eax", "edx" ],
-	out_reqs       => [ "eax", "flags", "none", "edx", "none", "none" ],
-	ins            => [ "base", "index", "mem", "divisor", "dividend_low", "dividend_high" ],
-	outs           => [ "div_res", "flags", "M", "mod_res", "X_regular", "X_except" ],
-	am             => "source,unary",
-	modified_flags => $status_flags
+	op_flags  => [ "fragile", "uses_memory" ],
+	irn_flags => [ "modify_flags" ],
+	state     => "exc_pinned",
+	in_reqs   => [ "gp", "gp", "none", "gp", "eax", "edx" ],
+	out_reqs  => [ "eax", "flags", "none", "edx", "none", "none" ],
+	ins       => [ "base", "index", "mem", "divisor", "dividend_low", "dividend_high" ],
+	outs      => [ "div_res", "flags", "M", "mod_res", "X_regular", "X_except" ],
+	am        => "source,unary",
 };
 
 my $mulop = {
 	# we should not rematerialize these nodes. They produce 2 results and have
 	# very strict constraints
-	state          => "exc_pinned",
-	in_reqs        => [ "gp", "gp", "none", "eax", "gp" ],
-	out_reqs       => [ "eax", "flags", "none", "edx" ],
-	ins            => [ "base", "index", "mem", "left", "right" ],
-	outs           => [ "res_low", "flags", "M", "res_high" ],
-	am             => "source,binary",
-	modified_flags => $status_flags
+	irn_flags => [ "modify_flags" ],
+	state     => "exc_pinned",
+	in_reqs   => [ "gp", "gp", "none", "eax", "gp" ],
+	out_reqs  => [ "eax", "flags", "none", "edx" ],
+	ins       => [ "base", "index", "mem", "left", "right" ],
+	outs      => [ "res_low", "flags", "M", "res_high" ],
+	am        => "source,binary",
 };
 
 my $unop = {
-	irn_flags => [ "rematerializable" ],
+	irn_flags => [ "modify_flags", "rematerializable" ],
 	in_reqs   => [ "gp" ],
 	out_reqs  => [ "in_r1", "flags" ],
 	ins       => [ "val" ],
@@ -239,29 +227,28 @@ my $unop = {
 };
 
 my $unop_no_flags = {
+	# no flags modified
 	irn_flags => [ "rematerializable" ],
 	in_reqs   => [ "gp" ],
 	out_reqs  => [ "in_r1" ],
 	ins       => [ "val" ],
 	outs      => [ "res" ],
 	mode      => $mode_gp,
-	# no flags modified
 };
 
 my $unop_from_mem = {
-	irn_flags      => [ "rematerializable" ],
-	state          => "exc_pinned",
-	in_reqs        => [ "gp", "gp", "none", "gp" ],
-	out_reqs       => [ "gp", "flags", "none" ],
-	ins            => [ "base", "index", "mem", "operand" ],
-	outs           => [ "res", "flags", "M" ],
-	am             => "source,unary",
-	mode           => $mode_gp,
-	modified_flags => $status_flags
+	irn_flags => [ "modify_flags", "rematerializable" ],
+	state     => "exc_pinned",
+	in_reqs   => [ "gp", "gp", "none", "gp" ],
+	out_reqs  => [ "gp", "flags", "none" ],
+	ins       => [ "base", "index", "mem", "operand" ],
+	outs      => [ "res", "flags", "M" ],
+	am        => "source,unary",
+	mode      => $mode_gp,
 };
 
 my $unop_mem = {
-	irn_flags => [ "rematerializable" ],
+	irn_flags => [ "modify_flags", "rematerializable" ],
 	state     => "exc_pinned",
 	in_reqs   => [ "gp", "gp", "none" ],
 	out_reqs  => [ "none", "flags", "none" ],
@@ -406,6 +393,7 @@ AddMem => {
 },
 
 Adc => {
+	irn_flags => [ "modify_flags" ],
 	state     => "exc_pinned",
 	in_reqs   => [ "gp", "gp", "none", "gp", "gp", "flags" ],
 	out_reqs  => [ "in_r4 in_r5", "flags", "none" ],
@@ -417,7 +405,6 @@ Adc => {
 	am        => "source,binary",
 	latency   => 1,
 	mode      => $mode_gp,
-	modified_flags => $status_flags
 },
 
 l_Add => {
@@ -453,7 +440,7 @@ IMul => {
 },
 
 IMulImm => {
-	irn_flags => [ "rematerializable" ],
+	irn_flags => [ "modify_flags", "rematerializable" ],
 	state     => "exc_pinned",
 	in_reqs   => [ "gp", "gp", "none", "gp", "gp" ],
 	out_reqs  => [ "gp", "flags", "none" ],
@@ -463,7 +450,6 @@ IMulImm => {
 	emit      => "imul%M %#S4, %#AS3, %#D0",
 	latency   => 5,
 	mode      => $mode_gp,
-	modified_flags => $status_flags
 },
 
 IMul1OP => {
@@ -511,13 +497,12 @@ Xor => {
 
 Xor0 => {
 	op_flags  => [ "constlike" ],
-	irn_flags => [ "rematerializable" ],
+	irn_flags => [ "modify_flags", "rematerializable" ],
 	out_reqs  => [ "gp", "flags" ],
 	outs      => [ "res", "flags" ],
 	emit      => "xor%M %D0, %D0",
 	latency   => 1,
 	mode      => $mode_gp,
-	modified_flags => $status_flags
 },
 
 XorMem => {
@@ -527,7 +512,7 @@ XorMem => {
 },
 
 Sub => {
-	irn_flags => [ "rematerializable" ],
+	irn_flags => [ "modify_flags", "rematerializable" ],
 	state     => "exc_pinned",
 	in_reqs   => [ "gp", "gp", "none", "gp", "gp" ],
 	out_reqs  => [ "in_r4", "flags", "none" ],
@@ -537,7 +522,6 @@ Sub => {
 	emit      => "sub%M %B",
 	latency   => 1,
 	mode      => $mode_gp,
-	modified_flags => $status_flags
 },
 
 SubMem => {
@@ -547,6 +531,7 @@ SubMem => {
 },
 
 Sbb => {
+	irn_flags => [ "modify_flags" ],
 	state     => "exc_pinned",
 	in_reqs   => [ "gp", "gp", "none", "gp", "gp", "flags" ],
 	out_reqs  => [ "in_r4", "flags", "none" ],
@@ -558,12 +543,12 @@ Sbb => {
 	emit      => "sbb%M %B",
 	latency   => 1,
 	mode      => $mode_gp,
-	modified_flags => $status_flags
 },
 
 Sbb0 => {
 	# Spiller currently fails when rematerializing flag consumers
-	# irn_flags => [ "rematerializable" ],
+	# irn_flags => [ "modify_flags", "rematerializable" ],
+	irn_flags => [ "modify_flags" ],
 	in_reqs   => [ "flags" ],
 	out_reqs  => [ "gp", "flags" ],
 	outs      => [ "res", "flags" ],
@@ -572,7 +557,6 @@ Sbb0 => {
 	emit      => "sbb%M %D0, %D0",
 	latency   => 1,
 	mode      => $mode_gp,
-	modified_flags => $status_flags
 },
 
 l_Sub => {
@@ -673,27 +657,24 @@ RolMem => {
 },
 
 Neg => {
-	template       => $unop,
-	emit           => "neg%M %D0",
-	latency        => 1,
-	modified_flags => $status_flags
+	template => $unop,
+	emit     => "neg%M %D0",
+	latency  => 1,
 },
 
 NegMem => {
-	template       => $unop_mem,
-	emit           => "neg%M %AM",
-	latency        => 1,
-	modified_flags => $status_flags
+	template => $unop_mem,
+	emit     => "neg%M %AM",
+	latency  => 1,
 },
 
 Minus64 => {
-	irn_flags => [ "rematerializable" ],
+	irn_flags => [ "modify_flags", "rematerializable" ],
 	in_reqs   => [ "gp", "gp" ],
 	out_reqs  => [ "in_r1", "in_r2" ],
 	ins       => [ "low", "high" ],
 	outs      => [ "res_low", "res_high" ],
 	latency   => 3,
-	modified_flags => $status_flags
 },
 
 l_Minus64 => {
@@ -704,31 +685,27 @@ l_Minus64 => {
 },
 
 Inc => {
-	template       => $unop,
-	emit           => "inc%M %D0",
-	latency        => 1,
-	modified_flags => $status_flags_wo_cf
+	template => $unop,
+	emit     => "inc%M %D0",
+	latency  => 1,
 },
 
 IncMem => {
-	template       => $unop_mem,
-	emit           => "inc%M %AM",
-	latency        => 1,
-	modified_flags => $status_flags_wo_cf
+	template => $unop_mem,
+	emit     => "inc%M %AM",
+	latency  => 1,
 },
 
 Dec => {
-	template       => $unop,
-	emit           => "dec%M %D0",
-	latency        => 1,
-	modified_flags => $status_flags_wo_cf
+	template => $unop,
+	emit     => "dec%M %D0",
+	latency  => 1,
 },
 
 DecMem => {
-	template       => $unop_mem,
-	emit           => "dec%M %AM",
-	latency        => 1,
-	modified_flags => $status_flags_wo_cf
+	template => $unop_mem,
+	emit     => "dec%M %AM",
+	latency  => 1,
 },
 
 Not => {
@@ -750,6 +727,7 @@ NotMem => {
 },
 
 Cmc => {
+	irn_flags => [ "modify_flags" ],
 	in_reqs   => [ "flags" ],
 	out_reqs  => [ "flags" ],
 	attr_type => "ia32_condcode_attr_t",
@@ -757,15 +735,14 @@ Cmc => {
 	emit      => "cmc",
 	latency   => 1,
 	mode      => $mode_flags,
-	modified_flags => $status_flags
 },
 
 Stc => {
+	irn_flags => [ "modify_flags" ],
 	out_reqs  => [ "flags" ],
 	emit      => "stc",
 	latency   => 1,
 	mode      => $mode_flags,
-	modified_flags => $status_flags
 },
 
 Cmp => {
@@ -775,7 +752,7 @@ Cmp => {
 },
 
 XorHighLow => {
-	irn_flags => [ "rematerializable" ],
+	irn_flags => [ "modify_flags", "rematerializable" ],
 	state     => "exc_pinned",
 	in_reqs   => [ "eax ebx ecx edx" ],
 	out_reqs  => [ "in_r1", "flags" ],
@@ -783,7 +760,6 @@ XorHighLow => {
 	ins       => [ "value" ],
 	outs      => [ "res", "flags" ],
 	latency   => 1,
-	modified_flags => $status_flags,
 },
 
 Test => {
@@ -1019,7 +995,9 @@ Store => {
 },
 
 Lea => {
-	irn_flags => [ "rematerializable" ],
+	# Lea doesn't modify the flags, but setting this seems advantageous since it
+	# increases chances that the Lea is transformed back to an Add
+	irn_flags => [ "modify_flags", "rematerializable" ],
 	in_reqs   => [ "gp", "gp" ],
 	out_reqs  => [ "gp" ],
 	ins       => [ "base", "index" ],
@@ -1027,9 +1005,6 @@ Lea => {
 	emit      => "leal %AM, %D0",
 	latency   => 2,
 	mode      => $mode_gp,
-# lea doesn't modify the flags, but setting this seems advantageous since it
-# increases chances that the Lea is transformed back to an Add
-	modified_flags => 1,
 },
 
 Push => {
@@ -1113,6 +1088,7 @@ Leave => {
 },
 
 AddSP => {
+	irn_flags => [ "modify_flags" ],
 	state     => "pinned",
 	in_reqs   => [ "gp", "gp", "none", "esp", "gp" ],
 	out_reqs  => [ "esp:I", "none" ],
@@ -1121,10 +1097,10 @@ AddSP => {
 	emit      => "addl %B",
 	latency   => 1,
 	outs      => [ "stack", "M" ],
-	modified_flags => $status_flags
 },
 
 SubSP => {
+	irn_flags => [ "modify_flags" ],
 	state     => "pinned",
 	in_reqs   => [ "gp", "gp", "none", "esp", "gp" ],
 	out_reqs  => [ "esp:I", "gp", "none" ],
@@ -1134,7 +1110,6 @@ SubSP => {
 	             "movl %%esp, %D1",
 	latency   => 2,
 	outs      => [ "stack", "addr", "M" ],
-	modified_flags => $status_flags
 },
 
 LdTls => {
@@ -1147,7 +1122,8 @@ LdTls => {
 # BT supports source address mode, but this is unused yet
 #
 Bt => {
-	irn_flags => [ "rematerializable" ],
+	# only CF is set, but the other flags are undefined
+	irn_flags => [ "modify_flags", "rematerializable" ],
 	state     => "exc_pinned",
 	in_reqs   => [ "gp", "gp" ],
 	out_reqs  => [ "flags" ],
@@ -1155,7 +1131,6 @@ Bt => {
 	emit      => "bt%M %S1, %S0",
 	latency   => 1,
 	mode      => $mode_flags,
-	modified_flags => $status_flags  # only CF is set, but the other flags are undefined
 },
 
 Bsf => {
@@ -1202,6 +1177,7 @@ Return => {
 
 Call => {
 	op_flags  => [ "uses_memory" ],
+	irn_flags => [ "modify_flags" ],
 	state     => "exc_pinned",
 	in_reqs   => "...",
 	out_reqs  => "...",
@@ -1212,7 +1188,6 @@ Call => {
 	attr      => "unsigned pop, ir_type *call_tp",
 	am        => "source,unary",
 	latency   => 4, # random number
-	modified_flags => $status_flags
 },
 
 #
@@ -1221,6 +1196,7 @@ Call => {
 # PS: try gcc __builtin_frame_address(100000) :-)
 #
 ClimbFrame => {
+	irn_flags => [ "modify_flags" ],
 	in_reqs   => [ "gp" ],
 	out_reqs  => [ "in_r1", "!in_r1" ],
 	ins       => [ "frame" ],
@@ -1228,7 +1204,6 @@ ClimbFrame => {
 	latency   => 4, # random number
 	attr_type => "ia32_climbframe_attr_t",
 	attr      => "unsigned count",
-	modified_flags => $status_flags
 },
 
 #
@@ -1254,15 +1229,14 @@ Bswap16 => {
 },
 
 CmpXChgMem => {
-	irn_flags      => [ "rematerializable" ],
-	state          => "exc_pinned",
-	in_reqs        => [ "gp", "gp", "none", "eax", "gp" ],
-	out_reqs       => [  "eax", "flags", "none" ],
-	ins            => [ "base", "index", "mem", "old", "new" ],
-	outs           => [ "res", "flags", "M" ],
-	emit           => "lock cmpxchg%M %#S4, %AM",
-	latency        => 2,
-	modified_flags => $status_flags
+	irn_flags => [ "modify_flags", "rematerializable" ],
+	state     => "exc_pinned",
+	in_reqs   => [ "gp", "gp", "none", "eax", "gp" ],
+	out_reqs  => [  "eax", "flags", "none" ],
+	ins       => [ "base", "index", "mem", "old", "new" ],
+	outs      => [ "res", "flags", "M" ],
+	emit      => "lock cmpxchg%M %#S4, %AM",
+	latency   => 2,
 },
 
 #
@@ -1480,7 +1454,7 @@ xDiv => {
 },
 
 Ucomi => {
-	irn_flags => [ "rematerializable" ],
+	irn_flags => [ "modify_flags", "rematerializable" ],
 	state     => "exc_pinned",
 	in_reqs   => [ "gp", "gp", "none", "xmm", "xmm" ],
 	out_reqs  => [ "eflags" ],
@@ -1492,7 +1466,6 @@ Ucomi => {
 	emit      => "ucomis%FX %B",
 	latency   => 3,
 	mode      => $mode_flags,
-	modified_flags => 1,
 },
 
 xLoad => {
