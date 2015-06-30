@@ -218,6 +218,8 @@ my $divop = {
 };
 
 my $mulop = {
+	# we should not rematerialize these nodes. They produce 2 results and have
+	# very strict constraints
 	state          => "exc_pinned",
 	in_reqs        => [ "gp", "gp", "none", "eax", "gp" ],
 	out_reqs       => [ "eax", "flags", "none", "edx" ],
@@ -433,10 +435,8 @@ l_Adc => {
 
 Mul => {
 	template => $mulop,
-	# we should not rematerialize this node. It produces 2 results and has
-	# very strict constraints
-	emit      => "mul%M %AS4",
-	latency   => 10,
+	emit     => "mul%M %AS4",
+	latency  => 10,
 },
 
 l_Mul => {
@@ -468,9 +468,8 @@ IMulImm => {
 
 IMul1OP => {
 	template => $mulop,
-	irn_flags => [ "rematerializable" ],
-	emit      => "imul%M %AS4",
-	latency   => 5,
+	emit     => "imul%M %AS4",
+	latency  => 5,
 },
 
 l_IMul => {
