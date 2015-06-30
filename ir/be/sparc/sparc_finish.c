@@ -745,6 +745,7 @@ void sparc_finish_graph(ir_graph *irg)
 
 	/* fix stack entity offsets */
 	be_fix_stack_nodes(irg, &sparc_registers[REG_SP]);
+	be_birg_from_irg(irg)->non_ssa_regs = NULL;
 	sparc_fix_stack_bias(irg);
 
 	heights = heights_new(irg);

@@ -4161,7 +4161,7 @@ static ir_node *gen_Start(ir_node *node)
 	be_make_start_mem(&start_mem, start, o++);
 
 	/* the stack pointer */
-	be_make_start_out(&start_val[REG_ESP], start, o++, &ia32_registers[REG_ESP], arch_register_req_type_ignore | arch_register_req_type_produces_sp);
+	be_make_start_out(&start_val[REG_ESP], start, o++, &ia32_registers[REG_ESP], arch_register_req_type_ignore);
 
 	/* function parameters in registers */
 	start_params_offset = o;

@@ -11,6 +11,7 @@
 #include "TEMPLATE_new_nodes.h"
 #include "TEMPLATE_transform.h"
 #include "be_t.h"
+#include "beirg.h"
 #include "bemodule.h"
 #include "benode.h"
 #include "bera.h"
@@ -61,11 +62,14 @@ static const regalloc_if_t TEMPLATE_regalloc_if = {
 static void TEMPLATE_generate_code(FILE *output, const char *cup_name)
 {
 	be_begin(output, cup_name);
+	unsigned *const sp_is_non_ssa = rbitset_malloc(N_TEMPLATE_REGISTERS);
+	rbitset_set(sp_is_non_ssa, REG_SP);
 
 	foreach_irp_irg(i, irg) {
 		if (!be_step_first(irg))
 			continue;
 
+		be_birg_from_irg(irg)->non_ssa_regs = sp_is_non_ssa;
 		TEMPLATE_select_instructions(irg);
 
 		be_step_schedule(irg);
@@ -73,6 +77,7 @@ static void TEMPLATE_generate_code(FILE *output, const char *cup_name)
 		be_step_regalloc(irg, &TEMPLATE_regalloc_if);
 
 		be_fix_stack_nodes(irg, &TEMPLATE_registers[REG_SP]);
+		be_birg_from_irg(irg)->non_ssa_regs = NULL;
 
 		TEMPLATE_emit_function(irg);
 

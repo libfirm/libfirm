@@ -210,8 +210,6 @@ static void dump_register_req(FILE *const F, arch_register_req_t const *const re
 		fputs(" aligned", F);
 	if (arch_register_req_is(req, ignore))
 		fputs(" ignore", F);
-	if (arch_register_req_is(req, produces_sp))
-		fputs(" produces_sp", F);
 }
 
 static void dump_req_reg(FILE *const F, char const *const ctx, unsigned const idx, arch_register_req_t const *const req, arch_register_t const *const reg)

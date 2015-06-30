@@ -13,6 +13,7 @@
 #include "arm_transform.h"
 #include "be_t.h"
 #include "bearch_arm_t.h"
+#include "beirg.h"
 #include "beflags.h"
 #include "begnuas.h"
 #include "bemodule.h"
@@ -176,6 +177,8 @@ static void arm_generate_code(FILE *output, const char *cup_name)
 	be_gas_elf_type_char = '%';
 
 	be_begin(output, cup_name);
+	unsigned *const sp_is_non_ssa = rbitset_malloc(N_ARM_REGISTERS);
+	rbitset_set(sp_is_non_ssa, REG_SP);
 
 	arm_emit_file_prologue();
 
@@ -183,6 +186,7 @@ static void arm_generate_code(FILE *output, const char *cup_name)
 		if (!be_step_first(irg))
 			continue;
 
+		be_birg_from_irg(irg)->non_ssa_regs = sp_is_non_ssa;
 		arm_select_instructions(irg);
 
 		be_step_schedule(irg);

@@ -1098,6 +1098,7 @@ static void ia32_emit(ir_graph *irg)
 
 	/* fix stack entity offsets */
 	be_fix_stack_nodes(irg, &ia32_registers[REG_ESP]);
+	be_birg_from_irg(irg)->non_ssa_regs = NULL;
 	be_abi_fix_stack_bias(irg, ia32_get_sp_bias, ia32_set_frame_offset,
 	                      ia32_get_frame_entity);
 
@@ -1451,11 +1452,14 @@ static void ia32_generate_code(FILE *output, const char *cup_name)
 	ia32_tv_ent = pmap_create();
 
 	be_begin(output, cup_name);
+	unsigned *const sp_is_non_ssa = rbitset_malloc(N_IA32_REGISTERS);
+	rbitset_set(sp_is_non_ssa, REG_ESP);
 
 	foreach_irp_irg(i, irg) {
 		if (!be_step_first(irg))
 			continue;
 
+		be_birg_from_irg(irg)->non_ssa_regs = sp_is_non_ssa;
 		ia32_select_instructions(irg);
 
 		be_step_schedule(irg);

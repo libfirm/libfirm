@@ -555,7 +555,6 @@ static bool my_values_interfere(const ir_node *a, const ir_node *b)
 
 typedef struct be_verify_reg_alloc_env_t {
 	be_lv_t *lv;
-	bool     ignore_sp_problems;
 	bool     problem_found;
 } be_verify_reg_alloc_env_t;
 
@@ -635,6 +634,14 @@ static void check_input_constraints(be_verify_reg_alloc_env_t *const env, ir_nod
 	}
 }
 
+static bool ignore_error_for_reg(ir_graph *irg, const arch_register_t *reg)
+{
+	be_irg_t *birg = be_birg_from_irg(irg);
+	if (birg->non_ssa_regs == NULL)
+		return false;
+	return rbitset_is_set(birg->non_ssa_regs, reg->global_index);
+}
+
 static void value_used(be_verify_reg_alloc_env_t *const env, ir_node const **const registers, ir_node const *const block, ir_node const *const node)
 {
 	const arch_register_t *reg = arch_get_irn_register(node);
@@ -647,8 +654,7 @@ static void value_used(be_verify_reg_alloc_env_t *const env, ir_node const **con
 	for (unsigned i = 0; i < req->width; ++i) {
 		ir_node const *const reg_node = registers[idx + i];
 		if (reg_node != NULL && reg_node != node
-			&& (!env->ignore_sp_problems
-			    || !(req->type & arch_register_req_type_produces_sp))) {
+			&& !ignore_error_for_reg(get_irn_irg(block), reg)) {
 			verify_warnf(block, "register %s assigned more than once (nodes %+F and %+F)", reg->name, node, reg_node);
 			env->problem_found = true;
 		}
@@ -674,9 +680,7 @@ static void value_def(be_verify_reg_alloc_env_t *const env, ir_node const **cons
 		if (reg_node == NULL && get_irn_n_edges(node) == 0)
 			return;
 
-		if (reg_node != node
-		    && (!env->ignore_sp_problems
-		        || !(req->type & arch_register_req_type_produces_sp))) {
+		if (reg_node != node && !ignore_error_for_reg(get_irn_irg(node), reg)) {
 			verify_warnf(node, "%+F not registered as value for register %s (but %+F)", node, reg->name, reg_node);
 			env->problem_found = true;
 		}
@@ -724,11 +728,10 @@ static void verify_block_register_allocation(ir_node *block, void *data)
 	}
 }
 
-bool be_verify_register_allocation(ir_graph *const irg, bool const ignore_sp_problems)
+bool be_verify_register_allocation(ir_graph *const irg)
 {
 	be_verify_reg_alloc_env_t env = {
 		.lv                 = be_liveness_new(irg),
-		.ignore_sp_problems = ignore_sp_problems,
 		.problem_found      = false,
 	};
 

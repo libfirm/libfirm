@@ -255,11 +255,11 @@ static void be_sched_verify(ir_graph *irg)
 	}
 }
 
-static void be_regalloc_verify(ir_graph *const irg, bool const ignore_sp_problems)
+static void be_regalloc_verify(ir_graph *const irg)
 {
 	if (be_options.do_verify) {
 		be_timer_push(T_VERIFY);
-		bool const fine = be_verify_register_allocation(irg, ignore_sp_problems);
+		bool const fine = be_verify_register_allocation(irg);
 		be_check_verify_result(fine, irg);
 		be_timer_pop(T_VERIFY);
 	}
@@ -570,7 +570,7 @@ void be_step_regalloc(ir_graph *irg, const regalloc_if_t *regif)
 
 	/* Do register allocation */
 	be_allocate_registers(irg, regif);
-	be_regalloc_verify(irg, true);
+	be_regalloc_verify(irg);
 
 	if (stat_ev_enabled) {
 		stat_ev_dbl("bemain_costs_after_ra", be_estimate_irg_costs(irg));
@@ -589,7 +589,7 @@ void be_step_last(ir_graph *irg)
 	}
 
 	be_dump(DUMP_FINAL, irg, "final");
-	be_regalloc_verify(irg, false);
+	be_regalloc_verify(irg);
 
 	be_timer_pop(T_OTHER);
 

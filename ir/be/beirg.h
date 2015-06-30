@@ -70,6 +70,10 @@ typedef struct be_irg_t {
 	be_stack_layout_t stack_layout;
 	/** bitset of registers available for the allocator */
 	unsigned         *allocatable_regs;
+	/** bitset of registers for which verification errors are not reported.
+	 * A typical use is for the stackpointer for which SSA form is only built
+	 * once late in the compilation. May be NULL. */
+	const unsigned   *non_ssa_regs;
 	/** obstack (mainly used to keep register constraints which we can't keep
 	 * in the irg obst, because it gets replaced during code selection) */
 	struct obstack    obst;

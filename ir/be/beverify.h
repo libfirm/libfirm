@@ -48,11 +48,9 @@ bool be_verify_spillslots(ir_graph *irg,
  * assigned.
  *
  * @param irg   The graph to check
- * @param ignore_sp_problems  if true do not report problems involving values
- *                            with arch_register_req_type_produces_sp
  * @return      true if verify succeeded, false otherwise
  */
-bool be_verify_register_allocation(ir_graph *irg, bool ignore_sp_problems);
+bool be_verify_register_allocation(ir_graph *irg);
 
 /**
  * Check the given liveness information against a freshly computed one.

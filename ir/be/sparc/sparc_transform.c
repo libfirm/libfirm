@@ -1591,7 +1591,7 @@ static ir_node *gen_Start(ir_node *node)
 	be_make_start_out(&start_g7, start, o++, &sparc_registers[REG_G7], arch_register_req_type_ignore);
 
 	/* we need an output for the stack pointer */
-	be_make_start_out(&start_sp, start, o++, sp_reg, arch_register_req_type_ignore | arch_register_req_type_produces_sp);
+	be_make_start_out(&start_sp, start, o++, sp_reg, arch_register_req_type_ignore);
 
 	if (!current_cconv->omit_fp) {
 		be_make_start_out(&start_fp, start, o++, fp_reg, arch_register_req_type_ignore);

@@ -180,16 +180,9 @@ void be_abi_fix_stack_bias(ir_graph *irg, get_sp_bias_func get_sp_bias,
 	irg_block_walk_graph(irg, stack_bias_walker, NULL, &bw);
 }
 
-static bool is_irn_sp_producer(ir_node const *const node)
-{
-	if (get_irn_mode(node) == mode_T)
-		return false;
-	arch_register_req_t const *const req = arch_get_irn_register_req(node);
-	return arch_register_req_is(req, produces_sp);
-}
-
 typedef struct fix_stack_walker_env_t {
-	ir_node **sp_nodes;
+	const arch_register_t *sp;
+	ir_node              **sp_nodes;
 } fix_stack_walker_env_t;
 
 /**
@@ -198,22 +191,23 @@ typedef struct fix_stack_walker_env_t {
 static void collect_stack_nodes_walker(ir_node *node, void *data)
 {
 	fix_stack_walker_env_t *const env = (fix_stack_walker_env_t*)data;
-	if (is_irn_sp_producer(node))
+	if (get_irn_mode(node) != mode_T && arch_get_irn_register(node) == env->sp)
 		ARR_APP1(ir_node*, env->sp_nodes, node);
 }
 
 void be_fix_stack_nodes(ir_graph *const irg, arch_register_t const *const sp)
 {
 	be_irg_t *const birg = be_birg_from_irg(irg);
-
-	arch_register_req_type_t type = arch_register_req_type_produces_sp;
-	if (!rbitset_is_set(birg->allocatable_regs, sp->global_index))
-		type |= arch_register_req_type_ignore;
-
-	struct obstack *const obst = be_get_be_obst(irg);
-	const arch_register_req_t *sp_req = be_create_reg_req(obst, sp, type);
+	const arch_register_req_t *sp_req;
+	if (!rbitset_is_set(birg->allocatable_regs, sp->global_index)) {
+		struct obstack *const obst = be_get_be_obst(irg);
+		sp_req = be_create_reg_req(obst, sp, arch_register_req_type_ignore);
+	} else {
+		sp_req = sp->single_req;
+	}
 
 	fix_stack_walker_env_t walker_env;
+	walker_env.sp = sp;
 	walker_env.sp_nodes = NEW_ARR_F(ir_node*, 0);
 
 	irg_walk_graph(irg, collect_stack_nodes_walker, NULL, &walker_env);
@@ -260,7 +254,7 @@ void be_fix_stack_nodes(ir_graph *const irg, arch_register_t const *const sp)
 	 * producers. */
 	ir_node *end = get_irg_end(irg);
 	foreach_irn_in_r(end, i, in) {
-		if (is_irn_sp_producer(in)) {
+		if (get_irn_mode(in) != mode_T && arch_get_irn_register(in) == sp) {
 			remove_End_n(end, i);
 			if (get_irn_n_edges(in) == 0) {
 				if (!is_Proj(in))

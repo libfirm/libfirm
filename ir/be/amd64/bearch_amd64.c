@@ -626,6 +626,7 @@ static void amd64_finish_and_emit(ir_graph *irg)
 
 	/* fix stack entity offsets */
 	be_fix_stack_nodes(irg, &amd64_registers[REG_RSP]);
+	be_birg_from_irg(irg)->non_ssa_regs = NULL;
 	be_abi_fix_stack_bias(irg, amd64_get_sp_bias, amd64_set_frame_offset,
 	                      amd64_get_frame_entity);
 
@@ -654,11 +655,14 @@ static void amd64_generate_code(FILE *output, const char *cup_name)
 {
 	amd64_constants = pmap_create();
 	be_begin(output, cup_name);
+	unsigned *const sp_is_non_ssa = rbitset_malloc(N_AMD64_REGISTERS);
+	rbitset_set(sp_is_non_ssa, REG_RSP);
 
 	foreach_irp_irg(i, irg) {
 		if (!be_step_first(irg))
 			continue;
 
+		be_birg_from_irg(irg)->non_ssa_regs = sp_is_non_ssa;
 		amd64_select_instructions(irg);
 
 		be_step_schedule(irg);

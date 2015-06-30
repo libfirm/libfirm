@@ -245,7 +245,6 @@ ir_node *be_new_IncSP(const arch_register_t *sp, ir_node *bl,
 	/* Set output constraint to stack register. */
 	be_node_set_register_req_in(irn, 0, sp->cls->class_req);
 	arch_copy_irn_out_info(irn, 0, old_sp);
-	assert(arch_register_req_is(arch_get_irn_register_req(irn), produces_sp));
 	return irn;
 }
 

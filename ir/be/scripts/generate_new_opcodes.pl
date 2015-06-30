@@ -1020,8 +1020,6 @@ sub generate_requirements {
 		foreach my $f (split(/|/, $flags)) {
 			if ($f eq "I") {
 				push(@req_type_mask, "arch_register_req_type_ignore");
-			} elsif ($f eq "S") {
-				push(@req_type_mask, "arch_register_req_type_produces_sp");
 			} elsif ($f eq "a") {
 				push(@req_type_mask, "arch_register_req_type_aligned");
 			} elsif ($f eq "2" or $f eq "4" or $f eq "8") {

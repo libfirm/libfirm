@@ -184,6 +184,7 @@ void arm_finish_graph(ir_graph *irg)
 
 	/* fix stack entity offsets */
 	be_fix_stack_nodes(irg, &arm_registers[REG_SP]);
+	be_birg_from_irg(irg)->non_ssa_regs = NULL;
 	be_abi_fix_stack_bias(irg, arm_get_sp_bias, arm_set_frame_offset,
 	                      arm_get_frame_entity);
 
