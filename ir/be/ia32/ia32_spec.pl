@@ -1300,7 +1300,6 @@ Outport => {
 	emit      => "out%M %#S1, %^S0",
 	latency   => 1,
 	mode      => "mode_M",
-	modified_flags => $status_flags
 },
 
 #
@@ -1315,7 +1314,6 @@ Inport => {
 	outs      => [ "res", "M" ],
 	emit      => "in%M %^S0, %#D0",
 	latency   => 1,
-	modified_flags => $status_flags
 },
 
 #
