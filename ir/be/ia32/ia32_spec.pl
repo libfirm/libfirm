@@ -131,8 +131,6 @@ $custom_init_attr_func = \&ia32_custom_init_attr;
 
 $status_flags       = [ "CF", "PF", "AF", "ZF", "SF", "OF" ];
 $status_flags_wo_cf = [       "PF", "AF", "ZF", "SF", "OF" ];
-$fpcw_flags         = [ "FP_IM", "FP_DM", "FP_ZM", "FP_OM", "FP_UM", "FP_PM",
-                        "FP_PC0", "FP_PC1", "FP_RC0", "FP_RC1", "FP_X" ];
 
 my $x87sim = "ia32_request_x87_sim(irg);";
 
@@ -946,7 +944,6 @@ ChangeCW => {
 	out_reqs  => [ "fpcw" ],
 	mode      => $mode_fpcw,
 	latency   => 3,
-	modified_flags => $fpcw_flags
 },
 
 FldCW => {
@@ -958,7 +955,6 @@ FldCW => {
 	latency   => 5,
 	emit      => "fldcw %AM",
 	mode      => $mode_fpcw,
-	modified_flags => $fpcw_flags
 },
 
 FnstCW => {
