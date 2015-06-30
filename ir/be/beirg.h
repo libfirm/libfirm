@@ -49,16 +49,15 @@ void be_free_birg(ir_graph *irg);
  * - frame_type:   A class type describing the frame layout.
  */
 struct be_stack_layout_t {
-	ir_type *arg_type;             /**< A type describing the stack argument layout. */
-	ir_type *between_type;         /**< A type describing the "between" layout. */
-	ir_type *frame_type;           /**< The frame type. */
-
+	ir_type *arg_type;
+	ir_type *between_type;
+	ir_type *frame_type;
 	ir_type *order[N_FRAME_TYPES]; /**< arg, between and frame types ordered. */
-
-	int initial_offset;            /**< the initial difference between stack pointer and frame pointer */
-	int initial_bias;              /**< the initial stack bias */
-	bool sp_relative : 1;          /**< entities are addressed relative to
-	                                    stack pointer (omit-fp mode) */
+	/** the initial difference between stack pointer and frame pointer */
+	int  initial_offset;
+	int  initial_bias;      /**< the initial stack bias */
+	/** entities are addressed relative to stack pointer (omit-fp mode) */
+	bool sp_relative : 1;
 };
 
 /**
@@ -66,16 +65,16 @@ struct be_stack_layout_t {
  * backend structures
  */
 typedef struct be_irg_t {
-	be_main_env_t             *main_env;
-	be_lv_t                   *lv;
-	be_stack_layout_t          stack_layout;
-	unsigned                  *allocatable_regs; /**< registers available for the
-	                                                  allocator */
-	struct obstack             obst;             /**< birg obstack (mainly used to keep
-	                                                  register constraints which we can't keep
-	                                                  in the irg obst, because it gets replaced
-	                                                  during code selection) */
-	void                      *isa_link;         /**< architecture specific per-graph data*/
+	be_main_env_t    *main_env;
+	be_lv_t          *lv;
+	be_stack_layout_t stack_layout;
+	/** bitset of registers available for the allocator */
+	unsigned         *allocatable_regs;
+	/** obstack (mainly used to keep register constraints which we can't keep
+	 * in the irg obst, because it gets replaced during code selection) */
+	struct obstack    obst;
+	/** Architecture specific per-graph data */
+	void             *isa_link;
 } be_irg_t;
 
 static inline be_irg_t *be_birg_from_irg(const ir_graph *irg)
