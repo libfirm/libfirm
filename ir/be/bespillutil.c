@@ -946,8 +946,8 @@ static void assure_different_constraints(ir_node *irn, ir_node *skipped_irn, con
 	if (arch_register_req_is(req, must_be_different)) {
 		const unsigned other = req->other_different;
 
-		if (arch_register_req_is(req, should_be_same)) {
-			const unsigned same = req->other_same;
+		if (req->should_be_same != 0) {
+			const unsigned same = req->should_be_same;
 
 			if (is_po2(other) && is_po2(same)) {
 				int idx_other = ntz(other);

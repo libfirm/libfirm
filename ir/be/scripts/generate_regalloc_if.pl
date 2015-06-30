@@ -116,7 +116,7 @@ const arch_register_req_t ${arch}_class_reg_req_${old_classname} = {
 	.cls             = &${arch}_reg_classes[CLASS_${arch}_${old_classname}],
 	.limited         = NULL,
 	.type            = arch_register_req_type_none,
-	.other_same      = 0,
+	.should_be_same  = 0,
 	.other_different = 0,
 	.width           = 1,
 };
@@ -193,7 +193,7 @@ const arch_register_req_t ${arch}_single_reg_req_${old_classname}_${name} = {
 	.type            = arch_register_req_type_none,
 	.cls             = ${class_ptr},
 	.limited         = ${arch}_limited_${old_classname}_${name},
-	.other_same      = 0,
+	.should_be_same  = 0,
 	.other_different = 0,
 	.width           = 1,
 };

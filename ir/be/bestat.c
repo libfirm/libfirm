@@ -230,7 +230,7 @@ static void block_count_values(ir_node *block, void *data)
 			if (req->cls == NULL)
 				continue;
 			++stats->values;
-			if (arch_register_req_is(req, should_be_same) || is_Phi(value))
+			if (req->should_be_same != 0 || is_Phi(value))
 				++stats->should_be_sames;
 			if (req->limited != NULL)
 				++stats->constrained_values;

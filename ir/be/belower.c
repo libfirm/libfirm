@@ -393,8 +393,7 @@ static bool push_through_perm(ir_node *const perm, arch_register_class_t const *
 		);
 
 		be_foreach_definition(node, cls, value, req,
-			if ((req->type & ~arch_register_req_type_should_be_same) != 0
-				|| req->limited != NULL)
+			if (req->type != 0 || req->limited != NULL)
 				goto done;
 		);
 

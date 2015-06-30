@@ -205,7 +205,7 @@ static bool co_is_optimizable_root(const ir_node *irn)
 	if (is_Phi(irn) || is_Perm_Proj(irn))
 		return true;
 
-	if (arch_register_req_is(req, should_be_same))
+	if (req->should_be_same != 0)
 		return true;
 
 	return false;
@@ -418,9 +418,9 @@ static void co_collect_units(ir_node *irn, void *env)
 		unit->nodes[0]   = irn;
 		unit->nodes[1]   = get_Perm_src(irn);
 		unit->costs[1]   = co->get_costs(irn, -1);
-	} else if (arch_register_req_is(req, should_be_same)) {
+	} else if (req->should_be_same != 0) {
 		/* Src == Tgt of a 2-addr-code instruction */
-		const unsigned other = req->other_same;
+		const unsigned other = req->should_be_same;
 
 		int count = 0;
 		for (int i = 0; (1U << i) <= other; ++i) {
@@ -612,8 +612,8 @@ static void build_graph_walker(ir_node *irn, void *env)
 	} else if (is_Perm_Proj(irn)) { /* Perms */
 		ir_node *arg = get_Perm_src(irn);
 		add_edges(co, irn, arg, co->get_costs(irn, -1));
-	} else if (arch_register_req_is(req, should_be_same)) {
-		const unsigned other = req->other_same;
+	} else if (req->should_be_same != 0) {
+		const unsigned other = req->should_be_same;
 		for (int i = 0; 1U << i <= other; ++i) {
 			if (other & (1U << i)) {
 				ir_node *other = get_irn_n(skip_Proj(irn), i);

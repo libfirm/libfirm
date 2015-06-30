@@ -30,7 +30,7 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
  */
 static unsigned get_first_same(arch_register_req_t const *const req)
 {
-	unsigned const other = req->other_same;
+	unsigned const other = req->should_be_same;
 	for (unsigned i = 0; i != 32; ++i) {
 		if (other & (1U << i))
 			return i;
@@ -200,7 +200,7 @@ static void assure_should_be_same_requirements(ir_node *const node)
 	be_foreach_out(node, i) {
 		arch_register_req_t const *const req
 			= arch_get_irn_register_req_out(node, i);
-		if (!arch_register_req_is(req, should_be_same))
+		if (req->should_be_same == 0)
 			continue;
 		unsigned               const same_pos = get_first_same(req);
 		ir_node               *const in_node  = get_irn_n(node, same_pos);
@@ -264,7 +264,7 @@ static void amd64_finish_irg_walker(ir_node *const block, void *const env)
 {
 	(void) env;
 
-	/* Insert should_be_same copies. */
+	/* Insert copies for should_be_same constraints. */
 	sched_foreach_safe(block, irn) {
 		if (is_amd64_irn(irn))
 			assure_should_be_same_requirements(irn);

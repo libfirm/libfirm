@@ -190,11 +190,10 @@ ir_node *be_new_Copy(ir_node *bl, ir_node *op)
 	arch_set_irn_register_req_out(res, 0, cls->class_req);
 
 	arch_register_req_t *const req = allocate_reg_req(irg);
-	req->cls  = cls;
-	req->type = arch_register_req_type_should_be_same
-	            | (in_req->type & arch_register_req_type_aligned);
-	req->other_same = 1U << 0;
-	req->width      = in_req->width;
+	req->cls            = cls;
+	req->type           = in_req->type & arch_register_req_type_aligned;
+	req->should_be_same = 1U << 0;
+	req->width          = in_req->width;
 	arch_set_irn_register_req_out(res, 0, req);
 	return res;
 }
@@ -350,7 +349,7 @@ const arch_register_req_t *be_create_reg_req(struct obstack *obst,
 	unsigned                    *limited
 		= rbitset_obstack_alloc(obst, cls->n_regs);
 	rbitset_set(limited, reg->index);
-	arch_register_req_t *req = OALLOC(obst, arch_register_req_t);
+	arch_register_req_t *req = OALLOCZ(obst, arch_register_req_t);
 	req->type    = additional_types;
 	req->cls     = cls;
 	req->limited = limited;

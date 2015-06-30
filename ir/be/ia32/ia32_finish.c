@@ -196,7 +196,7 @@ static inline int need_constraint_copy(ir_node *irn)
  */
 static int get_first_same(const arch_register_req_t* req)
 {
-	const unsigned other = req->other_same;
+	const unsigned other = req->should_be_same;
 	for (int i = 0; i < 32; ++i) {
 		if (other & (1U << i))
 			return i;
@@ -214,7 +214,7 @@ static void assure_should_be_same_requirements(ir_node *node)
 	/* check all OUT requirements, if there is a should_be_same */
 	be_foreach_out(node, i) {
 		arch_register_req_t const *const req = arch_get_irn_register_req_out(node, i);
-		if (!arch_register_req_is(req, should_be_same))
+		if (req->should_be_same == 0)
 			continue;
 
 		/* get in and out register */
@@ -281,7 +281,7 @@ static void fix_am_source(ir_node *irn)
 
 	be_foreach_out(irn, i) {
 		const arch_register_req_t *req = arch_get_irn_register_req_out(irn, i);
-		if (!arch_register_req_is(req, should_be_same))
+		if (req->should_be_same == 0)
 			continue;
 
 		/* get in and out register */

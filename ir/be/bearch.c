@@ -22,7 +22,7 @@ arch_register_req_t const arch_no_requirement = {
 	.cls             = NULL,
 	.limited         = NULL,
 	.type            = arch_register_req_type_none,
-	.other_same      = 0,
+	.should_be_same  = 0,
 	.other_different = 0,
 	.width           = 0,
 };

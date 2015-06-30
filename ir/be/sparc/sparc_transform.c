@@ -2058,7 +2058,7 @@ static const arch_register_req_t float1_req = {
 	.cls             = &sparc_reg_classes[CLASS_sparc_fp],
 	.limited         = NULL,
 	.type            = arch_register_req_type_none,
-	.other_same      = 0,
+	.should_be_same  = 0,
 	.other_different = 0,
 	.width           = 1,
 };
@@ -2066,7 +2066,7 @@ static const arch_register_req_t float2_req = {
 	.cls             = &sparc_reg_classes[CLASS_sparc_fp],
 	.limited         = NULL,
 	.type            = arch_register_req_type_aligned,
-	.other_same      = 0,
+	.should_be_same  = 0,
 	.other_different = 0,
 	.width           = 2,
 };
@@ -2074,7 +2074,7 @@ static const arch_register_req_t float4_req = {
 	.cls             = &sparc_reg_classes[CLASS_sparc_fp],
 	.limited         = NULL,
 	.type            = arch_register_req_type_aligned,
-	.other_same      = 0,
+	.should_be_same  = 0,
 	.other_different = 0,
 	.width           = 4,
 };

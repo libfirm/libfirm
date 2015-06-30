@@ -91,7 +91,7 @@ static void introduce_prolog_epilog(ir_graph *irg)
 
 static int get_first_same(const arch_register_req_t* req)
 {
-	const unsigned other = req->other_same;
+	const unsigned other = req->should_be_same;
 	for (int i = 0; i < 32; ++i) {
 		if (other & (1U << i))
 			return i;
@@ -110,7 +110,7 @@ static void fix_should_be_same(ir_node *block, void *data)
 		be_foreach_out(node, i) {
 			const arch_register_req_t *req
 				= arch_get_irn_register_req_out(node, i);
-			if (!arch_register_req_is(req, should_be_same))
+			if (req->should_be_same == 0)
 				continue;
 
 			int same_pos = get_first_same(req);

@@ -253,8 +253,8 @@ static void create_affinity_edges(ir_node *irn, void *env)
 			return;
 
 		insert_afe_edge(pbqp_alloc_env, irn, arg, -1);
-	} else if (arch_register_req_is(req, should_be_same)) {
-		const unsigned other = req->other_same;
+	} else if (req->should_be_same != 0) {
+		const unsigned other = req->should_be_same;
 		int            i;
 
 		for (i = 0; 1U << i <= other; ++i) {

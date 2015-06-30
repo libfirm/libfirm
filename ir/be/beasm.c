@@ -23,11 +23,10 @@ arch_register_req_t const *be_make_register_req(struct obstack *obst, be_asm_con
 		if (same_as >= n_outs)
 			panic("invalid output number in same_as constraint");
 
-		arch_register_req_t       *const req   = OALLOC(obst, arch_register_req_t);
+		arch_register_req_t       *const req   = OALLOCZ(obst, arch_register_req_t);
 		arch_register_req_t const *const other = out_reqs[same_as];
-		*req            = *other;
-		req->type      |= arch_register_req_type_should_be_same;
-		req->other_same = 1U << pos;
+		*req                = *other;
+		req->should_be_same = 1U << pos;
 
 		/* Switch constraints. This is because in firm we have same_as
 		 * constraints on the output constraints while in the gcc asm syntax
@@ -215,7 +214,7 @@ ir_node *be_make_asm(ir_node const *const node, ir_node **in, arch_register_req_
 		}
 
 		if (different != 0) {
-			arch_register_req_t *const req = OALLOC(obst, arch_register_req_t);
+			arch_register_req_t *const req = OALLOCZ(obst, arch_register_req_t);
 			*req                 = *oreq;
 			req->type           |= arch_register_req_type_must_be_different;
 			req->other_different = different;

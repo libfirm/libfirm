@@ -243,14 +243,14 @@ static void check_defs(ir_nodeset_t const *const live_nodes, float const weight,
 		give_penalties_for_limits(live_nodes, penalty, limited, node);
 	}
 
-	if (arch_register_req_is(req, should_be_same)) {
+	if (req->should_be_same != 0) {
 		ir_node           *insn  = skip_Proj(node);
 		allocation_info_t *info  = get_allocation_info(node);
 		int                arity = get_irn_arity(insn);
 
-		float factor = 1.0f / rbitset_popcount(&req->other_same, arity);
+		float factor = 1.0f / rbitset_popcount(&req->should_be_same, arity);
 		foreach_irn_in(insn, i, op) {
-			if (!rbitset_is_set(&req->other_same, i))
+			if (!rbitset_is_set(&req->should_be_same, i))
 				continue;
 
 			/* if we the value at the should_be_same input doesn't die at the
@@ -326,13 +326,13 @@ static void analyze_block(ir_node *block, void *data)
 static void congruence_def(ir_nodeset_t *const live_nodes, ir_node const *const node, arch_register_req_t const *const req)
 {
 	/* should be same constraint? */
-	if (arch_register_req_is(req, should_be_same)) {
+	if (req->should_be_same != 0) {
 		const ir_node *insn     = skip_Proj_const(node);
 		unsigned       node_idx = get_irn_idx(node);
 		node_idx = uf_find(congruence_classes, node_idx);
 
 		foreach_irn_in(insn, i, op) {
-			if (!rbitset_is_set(&req->other_same, i))
+			if (!rbitset_is_set(&req->should_be_same, i))
 				continue;
 
 			int op_idx = get_irn_idx(op);
@@ -657,12 +657,12 @@ static void assign_reg(ir_node const *const block, ir_node *const node, arch_reg
 	/* give should_be_same boni */
 	allocation_info_t *info    = get_allocation_info(node);
 	ir_node           *in_node = skip_Proj(node);
-	if (arch_register_req_is(req, should_be_same)) {
+	if (req->should_be_same != 0) {
 		float weight = (float)get_block_execfreq(block);
 
-		assert(get_irn_arity(in_node) <= (int)sizeof(req->other_same) * 8);
+		assert(get_irn_arity(in_node) <= (int)sizeof(req->should_be_same) * 8);
 		foreach_irn_in(in_node, i, in) {
-			if (!rbitset_is_set(&req->other_same, i))
+			if (!rbitset_is_set(&req->should_be_same, i))
 				continue;
 
 			const arch_register_t *reg       = arch_get_irn_register(in);

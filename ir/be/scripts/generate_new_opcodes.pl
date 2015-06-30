@@ -1052,7 +1052,7 @@ sub generate_requirements {
 	.cls             = &${arch}_reg_classes[CLASS_${arch}_${class}],
 	.limited         = NULL,
 	.type            = ${reqtype},
-	.other_same      = 0,
+	.should_be_same  = 0,
 	.other_different = 0,
 	.width           = $width,
 };
@@ -1067,9 +1067,6 @@ EOF
 			die("Fatal error: Could not build subset for requirements '$reqs' of '$op' pos $idx ... exiting.\n");
 		}
 
-		if ($same_pos != 0) {
-			push(@req_type_mask, "arch_register_req_type_should_be_same");
-		}
 		if ($different_pos != 0) {
 			push(@req_type_mask, "arch_register_req_type_must_be_different");
 		}
@@ -1085,7 +1082,7 @@ EOF
 	.cls             = &${arch}_reg_classes[CLASS_${arch}_${class}],
 	.limited         = ${limit_bitset},
 	.type            = ${reqtype},
-	.other_same      = ${same_pos},
+	.should_be_same  = ${same_pos},
 	.other_different = ${different_pos},
 	.width           = $width,
 };
