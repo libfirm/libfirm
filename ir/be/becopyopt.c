@@ -199,7 +199,7 @@ static void free_copy_opt(copy_opt_t *co)
 static bool co_is_optimizable_root(const ir_node *irn)
 {
 	arch_register_req_t const *const req = arch_get_irn_register_req(irn);
-	if (arch_register_req_is(req, ignore))
+	if (req->ignore)
 		return false;
 
 	if (is_Phi(irn) || is_Perm_Proj(irn))
@@ -602,7 +602,7 @@ static void build_graph_walker(ir_node *irn, void *env)
 		return;
 	copy_opt_t                *co  = (copy_opt_t*)env;
 	const arch_register_req_t *req = arch_get_irn_register_req(irn);
-	if (req->cls != co->cls || arch_register_req_is(req, ignore))
+	if (req->cls != co->cls || req->ignore)
 		return;
 
 	if (is_Phi(irn)) { /* Phis */
@@ -713,7 +713,7 @@ static void co_dump_appel_graph(const copy_opt_t *co, FILE *f)
 
 	be_ifg_foreach_node(ifg, irn) {
 		arch_register_req_t const *const req = arch_get_irn_register_req(irn);
-		if (arch_register_req_is(req, ignore))
+		if (req->ignore)
 			continue;
 
 		int              idx = node_map[get_irn_idx(irn)];

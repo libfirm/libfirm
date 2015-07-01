@@ -385,15 +385,14 @@ static bool push_through_perm(ir_node *const perm, arch_register_class_t const *
 			 * If we would allow to move the Perm above this instruction,
 			 * the former dead operand would be live now at the point of
 			 * the Perm, increasing the register pressure by one. */
-			if (in_req->type != arch_register_req_type_none ||
-				in_req->limited != NULL || !is_node_operand(perm, op)) {
+			if (reg_req_has_constraint(in_req) || !is_node_operand(perm, op)) {
 				DB((dbg_permmove, LEVEL_2, "\tcannot move past %+F due to operand %+F\n", node, op));
 				goto done;
 			}
 		);
 
 		be_foreach_definition(node, cls, value, req,
-			if (req->type != 0 || req->limited != NULL)
+			if (reg_req_has_constraint(req))
 				goto done;
 		);
 

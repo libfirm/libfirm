@@ -403,10 +403,10 @@ static void determine_phi_req(be_ssa_construction_env_t *env, ir_node *value)
 		ir_graph            *irg     = get_irn_irg(value);
 		struct obstack      *obst    = be_get_be_obst(irg);
 		arch_register_req_t *new_req = OALLOCZ(obst, arch_register_req_t);
-		new_req->cls   = req->cls;
-		new_req->type  = req->type & arch_register_req_type_aligned;
-		new_req->width = req->width;
-		env->phi_req   = new_req;
+		new_req->cls     = req->cls;
+		new_req->width   = req->width;
+		new_req->aligned = req->aligned;
+		env->phi_req     = new_req;
 	}
 }
 

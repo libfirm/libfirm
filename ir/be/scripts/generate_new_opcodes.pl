@@ -1013,15 +1013,15 @@ sub generate_requirements {
 	my $idx   = shift;
 	my $is_in = shift;
 	my $width = 1;
+	my $extra = "";
 	my $result;
 
-	my @req_type_mask;
 	if (defined($flags)) {
 		foreach my $f (split(/|/, $flags)) {
 			if ($f eq "I") {
-				push(@req_type_mask, "arch_register_req_type_ignore");
+				$extra .= "\n\t.ignore  = true,";
 			} elsif ($f eq "a") {
-				push(@req_type_mask, "arch_register_req_type_aligned");
+				$extra .= "\n\t.aligned = true,";
 			} elsif ($f eq "2" or $f eq "4" or $f eq "8") {
 				$width = int($f);
 			}
@@ -1045,16 +1045,11 @@ sub generate_requirements {
 	if ($reqs eq "none") {
 		return "arch_no_requirement";
 	} elsif (is_reg_class($reqs) && !$is_reg) {
-		my $reqtype = join(" | ", @req_type_mask) || "arch_register_req_type_none";
 		$class  = $reqs;
 		$result = <<EOF;
 {
-	.cls               = &${arch}_reg_classes[CLASS_${arch}_${class}],
-	.limited           = NULL,
-	.type              = ${reqtype},
-	.should_be_same    = 0,
-	.must_be_different = 0,
-	.width             = $width,
+	.cls   = &${arch}_reg_classes[CLASS_${arch}_${class}],
+	.width = $width,$extra
 };
 
 EOF
@@ -1067,8 +1062,6 @@ EOF
 			die("Fatal error: Could not build subset for requirements '$reqs' of '$op' pos $idx ... exiting.\n");
 		}
 
-		my $reqtype = join(" | ", @req_type_mask) || "arch_register_req_type_none";
-
  		if(!defined($limit_bitset)) {
 			$limit_bitset = "NULL";
 		}
@@ -1078,10 +1071,9 @@ EOF
 {
 	.cls               = &${arch}_reg_classes[CLASS_${arch}_${class}],
 	.limited           = ${limit_bitset},
-	.type              = ${reqtype},
 	.should_be_same    = ${same_pos},
 	.must_be_different = ${different_pos},
-	.width             = $width,
+	.width             = $width,$extra
 };
 
 EOF

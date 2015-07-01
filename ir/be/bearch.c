@@ -19,12 +19,7 @@
 #include "raw_bitset.h"
 
 arch_register_req_t const arch_no_requirement = {
-	.cls               = NULL,
-	.limited           = NULL,
-	.type              = arch_register_req_type_none,
-	.should_be_same    = 0,
-	.must_be_different = 0,
-	.width             = 0,
+	.cls = NULL,
 };
 
 static reg_out_info_t *get_out_info_n(const ir_node *node, unsigned pos)
@@ -97,13 +92,15 @@ void be_make_start_mem(be_start_info_t *const info, ir_node *const start, unsign
   arch_set_irn_register_req_out(start, pos, arch_no_register_req);
 }
 
-void be_make_start_out(be_start_info_t *const info, ir_node *const start, unsigned const pos, arch_register_t const *const reg, arch_register_req_type_t const flags)
+void be_make_start_out(be_start_info_t *const info, ir_node *const start,
+					   unsigned const pos, arch_register_t const *const reg,
+					   bool const ignore)
 {
 	info->pos = pos;
 	info->irn = NULL;
-	arch_register_req_t const *const req =
-		flags == arch_register_req_type_none ? reg->single_req :
-		be_create_reg_req(be_get_be_obst(get_irn_irg(start)), reg, flags);
+	arch_register_req_t const *const req = ignore
+		? be_create_reg_req(be_get_be_obst(get_irn_irg(start)), reg, true)
+		: reg->single_req;
 	arch_set_irn_register_req_out(start, pos, req);
 	arch_set_irn_register_out(start, pos, reg);
 }

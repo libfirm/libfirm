@@ -110,26 +110,18 @@ const x86_asm_constraint_list_t amd64_asm_constraints = {
 
 static const arch_register_req_t amd64_requirement_gp_same_0 = {
 	.cls               = &amd64_reg_classes[CLASS_amd64_gp],
-	.limited           = NULL,
-	.type              = arch_register_req_type_none,
 	.should_be_same    = BIT(0),
-	.must_be_different = 0,
 	.width             = 1,
 };
 
 static const arch_register_req_t amd64_requirement_xmm_same_0 = {
 	.cls               = &amd64_reg_classes[CLASS_amd64_xmm],
-	.limited           = NULL,
-	.type              = arch_register_req_type_none,
 	.should_be_same    = BIT(0),
-	.must_be_different = 0,
 	.width             = 1,
 };
 
 static const arch_register_req_t amd64_requirement_gp_same_0_not_1 = {
 	.cls               = &amd64_reg_classes[CLASS_amd64_gp],
-	.limited           = NULL,
-	.type              = arch_register_req_type_none,
 	.should_be_same    = BIT(0),
 	.must_be_different = BIT(1),
 	.width             = 1,
@@ -137,8 +129,6 @@ static const arch_register_req_t amd64_requirement_gp_same_0_not_1 = {
 
 static const arch_register_req_t amd64_requirement_xmm_same_0_not_1 = {
 	.cls               = &amd64_reg_classes[CLASS_amd64_xmm],
-	.limited           = NULL,
-	.type              = arch_register_req_type_none,
 	.should_be_same    = BIT(0),
 	.must_be_different = BIT(1),
 	.width             = 1,
@@ -1438,7 +1428,7 @@ static ir_node *gen_Start(ir_node *node)
 	be_make_start_mem(&start_mem, start, o++);
 
 	/* the stack pointer */
-	be_make_start_out(&start_val[REG_RSP], start, o++, &amd64_registers[REG_RSP], arch_register_req_type_ignore);
+	be_make_start_out(&start_val[REG_RSP], start, o++, &amd64_registers[REG_RSP], true);
 
 	/* function parameters in registers */
 	const unsigned *allocatable_regs = be_birg_from_irg(irg)->allocatable_regs;
@@ -1458,10 +1448,8 @@ static ir_node *gen_Start(ir_node *node)
 	for (size_t i = 0; i < N_AMD64_REGISTERS; ++i) {
 		if (!rbitset_is_set(cconv->callee_saves, i))
 			continue;
-		arch_register_req_type_t const flags =
-			i == REG_RBP && !cconv->omit_fp ? arch_register_req_type_ignore :
-			arch_register_req_type_none;
-		be_make_start_out(&start_val[i], start, o++, &amd64_registers[i], flags);
+		bool ignore = i == REG_RBP && !cconv->omit_fp;
+		be_make_start_out(&start_val[i], start, o++, &amd64_registers[i], ignore);
 	}
 	assert(n_outs == o);
 

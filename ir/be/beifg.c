@@ -267,7 +267,7 @@ static bool consider_component_node(bitset_t *const seen, ir_node *const irn)
 	bitset_set(seen, get_irn_idx(irn));
 
 	arch_register_req_t const *const req = arch_get_irn_register_req(irn);
-	if (arch_register_req_is(req, ignore))
+	if (req->ignore)
 		return false;
 
 	return true;

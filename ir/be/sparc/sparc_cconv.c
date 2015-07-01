@@ -368,13 +368,13 @@ void sparc_cconv_init(void)
 	for (size_t i = 0; i < ARRAY_SIZE(float_result_reqs_double); i += 2) {
 		arch_register_req_t *req = &float_result_reqs_double[i];
 		*req = *float_result_regs[i]->single_req;
-		req->type |= arch_register_req_type_aligned;
-		req->width = 2;
+		req->width   = 2;
+		req->aligned = true;
 	}
 	for (size_t i = 0; i < ARRAY_SIZE(float_result_reqs_quad); i += 4) {
 		arch_register_req_t *req = &float_result_reqs_quad[i];
 		*req = *float_result_regs[i]->single_req;
-		req->type |= arch_register_req_type_aligned;
-		req->width = 4;
+		req->width   = 4;
+		req->aligned = true;
 	}
 }

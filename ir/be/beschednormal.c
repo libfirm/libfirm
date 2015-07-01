@@ -85,7 +85,7 @@ static unsigned count_result(const ir_node *irn)
 		return 1;
 
 	arch_register_req_t const *const req = arch_get_irn_register_req(irn);
-	return arch_register_req_is(req, ignore) ? 0 : 1;
+	return req->ignore ? 0 : 1;
 }
 
 static unsigned normal_tree_cost(ir_node *irn)

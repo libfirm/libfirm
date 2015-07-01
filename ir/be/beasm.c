@@ -50,7 +50,6 @@ arch_register_req_t const *be_make_register_req(struct obstack *obst, be_asm_con
 	*limited = c->allowed_registers;
 
 	memset(req, 0, sizeof(*req));
-	req->type    = arch_register_req_type_none;
 	req->cls     = c->cls;
 	req->limited = limited;
 	req->width   = 1;

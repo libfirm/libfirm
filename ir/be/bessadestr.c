@@ -254,7 +254,7 @@ static void ssa_destruction_check_walker(ir_node *block, void *data)
 		/* iterate over all args of phi */
 		foreach_irn_in(phi, i, arg) {
 			const arch_register_req_t *req = arch_get_irn_register_req(arg);
-			if (arch_register_req_is(req, ignore))
+			if (req->ignore)
 				continue;
 
 			assert(arch_get_irn_register(phi) == arch_get_irn_register(arg));

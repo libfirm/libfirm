@@ -206,9 +206,9 @@ static void dump_register_req(FILE *const F, arch_register_req_t const *const re
 
 	if (req->width != 1)
 		fprintf(F, " width:%d", req->width);
-	if (arch_register_req_is(req, aligned))
+	if (req->aligned)
 		fputs(" aligned", F);
-	if (arch_register_req_is(req, ignore))
+	if (req->ignore)
 		fputs(" ignore", F);
 }
 

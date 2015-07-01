@@ -20,19 +20,6 @@
 #include "beinfo.h"
 #include "be.h"
 
-/**
- * Different types of register allocation requirements.
- */
-typedef enum arch_register_req_type_t {
-	/** No special type, but may still have a limited array set. */
-	arch_register_req_type_none    = 0,
-	/** The registernumber should be aligned (in case of multiregister values)*/
-	arch_register_req_type_aligned = 1U << 0,
-	/** ignore while allocating registers */
-	arch_register_req_type_ignore  = 1U << 1,
-} arch_register_req_type_t;
-ENUM_BITSET(arch_register_req_type_t)
-
 extern arch_register_req_t const arch_no_requirement;
 #define arch_no_register_req (&arch_no_requirement)
 
@@ -205,16 +192,6 @@ static inline const arch_register_t *arch_register_for_index(
 }
 
 /**
- * Convenience macro to check for set constraints.
- * @param req   A pointer to register requirements.
- * @param kind  The kind of constraint to check for
- *              (see arch_register_req_type_t).
- * @return      1, If the kind of constraint is present, 0 if not.
- */
-#define arch_register_req_is(req, kind) \
-	(((req)->type & (arch_register_req_type_ ## kind)) != 0)
-
-/**
  * Expresses requirements to register allocation for an operand.
  */
 struct arch_register_req_t {
@@ -223,13 +200,16 @@ struct arch_register_req_t {
 	/** allowed register bitset (in case of wide-values this is only about the
 	 * first register). NULL if all registers are allowed. */
 	const unsigned              *limited;
-	arch_register_req_type_t     type; /**< The type of the constraint. */
 	/** Bitmask of ins which should use the same register. */
 	unsigned                     should_be_same;
 	/** Bitmask of ins which shall use a different register (must_be_different) */
 	unsigned                     must_be_different;
 	/** Specifies how many sequential registers are required */
 	unsigned char                width;
+	/** ignore this input/output while allocating registers */
+	bool                         ignore : 1;
+	/** The registernumber should be aligned (in case of multiregister values)*/
+	bool                         aligned : 1;
 };
 
 static inline bool reg_reqs_equal(const arch_register_req_t *req1,
@@ -238,10 +218,11 @@ static inline bool reg_reqs_equal(const arch_register_req_t *req1,
 	if (req1 == req2)
 		return true;
 
-	if (req1->type              != req2->type            ||
-	    req1->cls               != req2->cls             ||
-	    req1->should_be_same    != req2->should_be_same  ||
+	if (req1->cls               != req2->cls               ||
+	    req1->should_be_same    != req2->should_be_same    ||
 	    req1->must_be_different != req2->must_be_different ||
+	    req1->ignore            != req2->ignore            ||
+	    req1->aligned           != req2->aligned           ||
 	    (req1->limited != NULL) != (req2->limited != NULL))
 		return false;
 
@@ -251,6 +232,12 @@ static inline bool reg_reqs_equal(const arch_register_req_t *req1,
 	}
 
 	return true;
+}
+
+static inline bool reg_req_has_constraint(const arch_register_req_t *req)
+{
+	return req->limited != NULL || req->should_be_same != 0
+	    || req->must_be_different != 0 || req->ignore || req->aligned;
 }
 
 /**
@@ -311,14 +298,14 @@ struct arch_isa_if_t {
 static inline bool arch_irn_is_ignore(const ir_node *irn)
 {
 	const arch_register_req_t *req = arch_get_irn_register_req(irn);
-	return arch_register_req_is(req, ignore);
+	return req->ignore;
 }
 
 static inline bool arch_irn_consider_in_reg_alloc(
 		const arch_register_class_t *cls, const ir_node *node)
 {
 	const arch_register_req_t *req = arch_get_irn_register_req(node);
-	return req->cls == cls && !arch_register_req_is(req, ignore);
+	return req->cls == cls && !req->ignore;
 }
 
 arch_register_t const *arch_find_register(char const *name);
@@ -354,7 +341,7 @@ arch_register_t const *arch_find_register(char const *name);
  */
 #define be_foreach_definition(node, ccls, value, req, code) \
 	be_foreach_definition_(node, ccls, value, req, \
-		if (arch_register_req_is(req, ignore)) \
+		if (req->ignore) \
 			continue; \
 		code \
 	)
@@ -367,7 +354,7 @@ arch_register_t const *arch_find_register(char const *name);
 			continue;                                                        \
 		ir_node                   *value     = get_irn_n(node, i_);              \
 		const arch_register_req_t *value_req = arch_get_irn_register_req(value); \
-		if (value_req->type & arch_register_req_type_ignore)                 \
+		if (value_req->ignore)                                               \
 			continue;                                                        \
 		code                                                                 \
 	}                                                                        \
@@ -383,7 +370,8 @@ typedef struct be_start_info_t {
 
 void be_make_start_mem(be_start_info_t *info, ir_node *start, unsigned pos);
 
-void be_make_start_out(be_start_info_t *info, ir_node *start, unsigned pos, arch_register_t const *reg, arch_register_req_type_t flags);
+void be_make_start_out(be_start_info_t *info, ir_node *start, unsigned pos,
+                       arch_register_t const *reg, bool ignore);
 
 ir_node *be_get_start_proj(ir_graph *irg, be_start_info_t *info);
 

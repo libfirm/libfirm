@@ -1729,7 +1729,7 @@ static ir_node *gen_Start(ir_node *node)
 
 	be_make_start_mem(&start_mem, start, o++);
 
-	be_make_start_out(&start_sp, start, o++, &arm_registers[REG_SP], arch_register_req_type_ignore);
+	be_make_start_out(&start_sp, start, o++, &arm_registers[REG_SP], true);
 
 	/* function parameters in registers */
 	start_params_offset = o;

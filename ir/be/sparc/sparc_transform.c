@@ -1585,16 +1585,16 @@ static ir_node *gen_Start(ir_node *node)
 	be_make_start_mem(&start_mem, start, o++);
 
 	/* the zero register */
-	be_make_start_out(&start_g0, start, o++, &sparc_registers[REG_G0], arch_register_req_type_ignore);
+	be_make_start_out(&start_g0, start, o++, &sparc_registers[REG_G0], true);
 
 	/* g7 is used for TLS data */
-	be_make_start_out(&start_g7, start, o++, &sparc_registers[REG_G7], arch_register_req_type_ignore);
+	be_make_start_out(&start_g7, start, o++, &sparc_registers[REG_G7], true);
 
 	/* we need an output for the stack pointer */
-	be_make_start_out(&start_sp, start, o++, sp_reg, arch_register_req_type_ignore);
+	be_make_start_out(&start_sp, start, o++, sp_reg, true);
 
 	if (!current_cconv->omit_fp) {
-		be_make_start_out(&start_fp, start, o++, fp_reg, arch_register_req_type_ignore);
+		be_make_start_out(&start_fp, start, o++, fp_reg, true);
 	}
 
 	/* function parameters in registers */
@@ -2055,28 +2055,18 @@ static ir_node *gen_Free(ir_node *node)
 }
 
 static const arch_register_req_t float1_req = {
-	.cls               = &sparc_reg_classes[CLASS_sparc_fp],
-	.limited           = NULL,
-	.type              = arch_register_req_type_none,
-	.should_be_same    = 0,
-	.must_be_different = 0,
-	.width             = 1,
+	.cls   = &sparc_reg_classes[CLASS_sparc_fp],
+	.width = 1,
 };
 static const arch_register_req_t float2_req = {
-	.cls               = &sparc_reg_classes[CLASS_sparc_fp],
-	.limited           = NULL,
-	.type              = arch_register_req_type_aligned,
-	.should_be_same    = 0,
-	.must_be_different = 0,
-	.width             = 2,
+	.cls     = &sparc_reg_classes[CLASS_sparc_fp],
+	.width   = 2,
+	.aligned = true,
 };
 static const arch_register_req_t float4_req = {
-	.cls               = &sparc_reg_classes[CLASS_sparc_fp],
-	.limited           = NULL,
-	.type              = arch_register_req_type_aligned,
-	.should_be_same    = 0,
-	.must_be_different = 0,
-	.width             = 4,
+	.cls     = &sparc_reg_classes[CLASS_sparc_fp],
+	.width   = 4,
+	.aligned = true,
 };
 
 static const arch_register_req_t *get_float_req(ir_mode *mode)

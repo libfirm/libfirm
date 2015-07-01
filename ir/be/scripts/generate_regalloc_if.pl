@@ -113,12 +113,8 @@ foreach my $class_name (sort(keys(%reg_classes))) {
 
 	$single_constraints .= <<EOF;
 const arch_register_req_t ${arch}_class_reg_req_${old_classname} = {
-	.cls               = &${arch}_reg_classes[CLASS_${arch}_${old_classname}],
-	.limited           = NULL,
-	.type              = arch_register_req_type_none,
-	.should_be_same    = 0,
-	.must_be_different = 0,
-	.width             = 1,
+	.cls   = &${arch}_reg_classes[CLASS_${arch}_${old_classname}],
+	.width = 1,
 };
 EOF
 	$reqdecls .= "extern const arch_register_req_t ${arch}_class_reg_req_${old_classname};\n";
@@ -190,12 +186,9 @@ EOF
 		$single_constraints .= <<EOF;
 static const unsigned ${arch}_limited_${old_classname}_${name} [] = ${limitedarray};
 const arch_register_req_t ${arch}_single_reg_req_${old_classname}_${name} = {
-	.type              = arch_register_req_type_none,
-	.cls               = ${class_ptr},
-	.limited           = ${arch}_limited_${old_classname}_${name},
-	.should_be_same    = 0,
-	.must_be_different = 0,
-	.width             = 1,
+	.cls     = ${class_ptr},
+	.limited = ${arch}_limited_${old_classname}_${name},
+	.width   = 1,
 };
 EOF
 		$reqdecls .= "extern const arch_register_req_t ${arch}_single_reg_req_${old_classname}_${name};\n";

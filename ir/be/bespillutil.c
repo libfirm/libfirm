@@ -731,9 +731,8 @@ static void prepare_constr_insn(ir_node *const node)
 			continue;
 
 		ir_node *in = get_irn_n(node, i);
-		const arch_register_req_t *const in_req
-			= arch_get_irn_register_req(in);
-		if (arch_register_req_is(in_req, ignore))
+		const arch_register_req_t *const in_req = arch_get_irn_register_req(in);
+		if (in_req->ignore)
 			continue;
 		for (int i2 = i + 1; i2 < arity; ++i2) {
 			const arch_register_req_t *const req2
@@ -798,9 +797,8 @@ static void prepare_constr_insn(ir_node *const node)
 		if (req->limited == NULL)
 			continue;
 		ir_node *in = get_irn_n(node, i);
-		const arch_register_req_t *const in_req
-			= arch_get_irn_register_req(in);
-		if (arch_register_req_is(in_req, ignore))
+		const arch_register_req_t *const in_req = arch_get_irn_register_req(in);
+		if (in_req->ignore)
 			continue;
 		/* Only create the copy if the operand is no copy.
 		 * this is necessary since the assure constraints phase inserts
@@ -871,7 +869,7 @@ typedef struct {
 static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different, constraint_env_t *env)
 {
 	arch_register_req_t const *const req = arch_get_irn_register_req(other_different);
-	if (arch_register_req_is(req, ignore)) {
+	if (req->ignore) {
 		DB((dbg_constr, LEVEL_1, "ignore constraint for %+F because other_irn is ignore\n", irn));
 		return;
 	}

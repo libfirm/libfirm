@@ -652,7 +652,7 @@ static void assign_reg(ir_node const *const block, ir_node *const node, arch_reg
 	}
 
 	/* ignore reqs must be preassigned */
-	assert(!arch_register_req_is(req, ignore));
+	assert(!req->ignore);
 
 	/* give should_be_same boni */
 	allocation_info_t *info    = get_allocation_info(node);
@@ -703,7 +703,7 @@ static void assign_reg(ir_node const *const block, ir_node *const node, arch_reg
 			continue;
 		/* alignment constraint? */
 		if (width > 1) {
-			if (arch_register_req_is(req, aligned) && (final_reg_index % width) != 0)
+			if (req->aligned && (final_reg_index % width) != 0)
 				continue;
 			bool fine = true;
 			for (unsigned r0 = r+1; r0 < r+width; ++r0) {
@@ -1121,11 +1121,9 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node,
 			double_width = true;
 		const arch_register_t *reg       = arch_get_irn_register(op);
 		unsigned               reg_index = reg->index;
-		if (arch_register_req_is(req, aligned)) {
-			if (!is_aligned(reg_index, req->width)) {
-				good = false;
-				continue;
-			}
+		if (req->aligned && !is_aligned(reg_index, req->width)) {
+			good = false;
+			continue;
 		}
 		if (req->limited == NULL)
 			continue;
@@ -1499,7 +1497,7 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 		if (req->cls != cls)
 			continue;
 
-		if (arch_register_req_is(req, ignore)) {
+		if (req->ignore) {
 			allocation_info_t *info = get_allocation_info(node);
 			info->current_value = node;
 
@@ -1538,9 +1536,9 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 			const arch_register_req_t *phi_req = cls->class_req;
 			if (req->width > 1) {
 				arch_register_req_t *new_req = allocate_reg_req(irg);
-				new_req->cls   = cls;
-				new_req->type  = req->type & arch_register_req_type_aligned;
-				new_req->width = req->width;
+				new_req->cls     = cls;
+				new_req->width   = req->width;
+				new_req->aligned = req->aligned;
 				phi_req = new_req;
 			}
 			ir_node *phi  = be_new_Phi(block, n_preds, phi_ins, mode,

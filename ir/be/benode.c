@@ -149,9 +149,9 @@ ir_node *be_new_Perm(arch_register_class_t const *const cls,
 			arch_set_irn_register_req_out(irn, i, cls->class_req);
 		} else {
 			arch_register_req_t *const new_req = allocate_reg_req(irg);
-			new_req->cls   = cls;
-			new_req->type  = (req->type & arch_register_req_type_aligned);
-			new_req->width = req->width;
+			new_req->cls     = cls;
+			new_req->width   = req->width;
+			new_req->aligned = req->aligned;
 			be_node_set_register_req_in(irn, i, new_req);
 			arch_set_irn_register_req_out(irn, i, new_req);
 		}
@@ -191,8 +191,8 @@ ir_node *be_new_Copy(ir_node *bl, ir_node *op)
 
 	arch_register_req_t *const req = allocate_reg_req(irg);
 	req->cls            = cls;
-	req->type           = in_req->type & arch_register_req_type_aligned;
 	req->should_be_same = 1U << 0;
+	req->aligned        = in_req->aligned;
 	req->width          = in_req->width;
 	arch_set_irn_register_req_out(res, 0, req);
 	return res;
@@ -343,17 +343,18 @@ ir_node *be_new_AnyVal(ir_node *block, const arch_register_class_t *cls)
 }
 
 const arch_register_req_t *be_create_reg_req(struct obstack *obst,
-		const arch_register_t *reg, arch_register_req_type_t additional_types)
+                                             const arch_register_t *reg,
+                                             bool ignore)
 {
 	arch_register_class_t const *cls     = reg->cls;
 	unsigned                    *limited
 		= rbitset_obstack_alloc(obst, cls->n_regs);
 	rbitset_set(limited, reg->index);
 	arch_register_req_t *req = OALLOCZ(obst, arch_register_req_t);
-	req->type    = additional_types;
 	req->cls     = cls;
 	req->limited = limited;
 	req->width   = 1;
+	req->ignore  = ignore;
 	return req;
 }
 

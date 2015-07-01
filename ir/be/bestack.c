@@ -201,7 +201,7 @@ void be_fix_stack_nodes(ir_graph *const irg, arch_register_t const *const sp)
 	const arch_register_req_t *sp_req;
 	if (!rbitset_is_set(birg->allocatable_regs, sp->global_index)) {
 		struct obstack *const obst = be_get_be_obst(irg);
-		sp_req = be_create_reg_req(obst, sp, arch_register_req_type_ignore);
+		sp_req = be_create_reg_req(obst, sp, true);
 	} else {
 		sp_req = sp->single_req;
 	}
