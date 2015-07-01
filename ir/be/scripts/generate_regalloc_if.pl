@@ -45,7 +45,6 @@ my $regcounts;
 my $reginit;      # stack for the register type inits
 my $single_constraints;
 
-my $class_ptr;
 my $class_idx = 0;
 
 my %regclass2len = ();
@@ -77,7 +76,6 @@ sub get_limited_array {
 
 	my $limitedbitsetlen = $regclass2len{$regclass};
 	my $arraylen         = ($limitedbitsetlen+31) / 32;
-	my $firstreg         = uc($reg_classes{$regclass}[0]->{"name"});
 	my $classuc          = uc($regclass);
 	my $first            = 1;
 	for (my $i = 0; $i < $arraylen; ++$i) {
@@ -107,7 +105,7 @@ foreach my $class_name (sort(keys(%reg_classes))) {
 	my $old_classname = $class_name;
 
 	$class_name = $arch."_".$class_name;
-	$class_ptr  = "&".$arch."_reg_classes[CLASS_".$class_name."]";
+	my $class_ptr  = "&".$arch."_reg_classes[CLASS_".$class_name."]";
 	my $flags = pop(@class);
 	my $class_mode = $flags->{"mode"};
 
@@ -121,8 +119,7 @@ EOF
 
 	$classdef .= "\tCLASS_$class_name = $class_idx,\n";
 	my $numregs = @class;
-	my $manual_ra;
-	$manual_ra = "false";
+	my $manual_ra = "false";
 	for ($flags->{"flags"}) {
 		if (defined($_) && $_ eq "manual_ra") {
 			$manual_ra = "true";

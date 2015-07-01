@@ -60,13 +60,8 @@ my $obst_new_irop    = ""; # buffer for the new_ir_op calls
 my $obst_free_irop   = ""; # buffer for free_ir_op calls
 my $obst_enum_op     = ""; # buffer for creating the <arch>_opcode enum
 my $obst_header      = ""; # buffer for function prototypes
-my $obst_attrs_equal = ""; # buffer for the compare attribute functions
 my $obst_proj        = ""; # buffer for the pn_ numbers
 my $orig_op;
-my $arity;
-my $cmp_attr_func;
-my $temp;
-my $n_opcodes = 0;    # number of opcodes
 my $ARITY_VARIABLE = -1;
 my %requirements = ();
 my %limit_bitsets = ();
@@ -159,9 +154,8 @@ sub create_constructor {
 
 	# create constructor head
 	my $complete_args = "";
-	$temp             = "";
 
-	$temp = "ir_node *new_bd_${arch}_${op}${suffix}(dbg_info *dbgi, ir_node *block";
+	my $temp = "ir_node *new_bd_${arch}_${op}${suffix}(dbg_info *dbgi, ir_node *block";
 	if ($arity == $ARITY_VARIABLE) {
 		$complete_args = ", int arity, ir_node *in[]";
 	} else {
@@ -417,7 +411,7 @@ foreach my $op (sort(keys(%nodes))) {
 	}
 
 	# determine arity
-	$arity = 0;
+	my $arity = 0;
 	if (my $in_reqs = $n{"in_reqs"}) {
 		if ($in_reqs eq "...") {
 			$arity = $ARITY_VARIABLE;
@@ -442,7 +436,6 @@ foreach my $op (sort(keys(%nodes))) {
 
 	$orig_op = $op;
 	$op      = $arch."_".$op;
-	$temp    = "";
 
 	# define proj numbers and in numbers
 	if (exists($n{"outs"})) {
@@ -581,8 +574,7 @@ EOF
 		$attr_size = "sizeof(${attr_type})"
 	}
 
-	$n_opcodes++;
-	$temp  = "\top = new_ir_op(cur_opcode + iro_$op, \"$op\", op_pin_state_".$n{"state"}.", $op_flags";
+	my $temp = "\top = new_ir_op(cur_opcode + iro_$op, \"$op\", op_pin_state_".$n{"state"}.", $op_flags";
 	$temp .= ", ".translate_arity($arity).", -1, ${attr_size});\n";
 	$obst_new_irop .= $temp;
 	$obst_new_irop .= "\tset_op_dump(op, ${dump_func});\n";
@@ -631,7 +623,6 @@ print OUT<<EOF;
 #include "fourcc.h"
 #include "irgopt.h"
 
-$obst_attrs_equal
 $obst_opvar
 
 static int $arch\_opcode_start = -1;
@@ -856,10 +847,6 @@ sub build_subset_class_func {
 	my $limit_name;
 	my $same_pos      = 0;
 	my $different_pos = 0;
-	my $temp;
-	my @obst_init;
-	my @obst_limits;
-	my @obst_ignore;
 	my @limit_array;
 	my $limit_reqs;   #used for name mangling
 
@@ -935,7 +922,7 @@ CHECK_REQS: foreach (@regs) {
 		}
 
 		# check if register belongs to one of the given classes
-		$temp = get_reg_class($_);
+		my $temp = get_reg_class($_);
 		if (!defined($temp)) {
 			print STDERR "Unknown register '$_'!\n";
 			return (undef, undef, undef, undef);
@@ -990,7 +977,6 @@ CHECK_REQS: foreach (@regs) {
 				} elsif(defined($temp)) {
 					$temp .= " | ";
 				}
-				my $firstreg = uc($reg_classes{$class}[0]->{"name"});
 				my $classuc = uc($class);
 				my $reguc = uc($reg);
 				$temp .= "BIT(REG_${classuc}_${reguc})";
