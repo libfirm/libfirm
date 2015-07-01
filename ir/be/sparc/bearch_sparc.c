@@ -12,6 +12,7 @@
 #include "bearch_sparc_t.h"
 #include "beflags.h"
 #include "begnuas.h"
+#include "beirg.h"
 #include "bemodule.h"
 #include "bera.h"
 #include "besched.h"
@@ -431,6 +432,7 @@ static void sparc_generate_code(FILE *output, const char *cup_name)
 		if (!be_step_first(irg))
 			continue;
 
+		be_birg_from_irg(irg)->non_ssa_regs = sp_is_non_ssa;
 		sparc_select_instructions(irg);
 
 		be_step_schedule(irg);
