@@ -411,7 +411,7 @@ St => {
 Save => {
 	irn_flags => [ "schedule_first" ],
 	emit      => "save %S0, %SI1, %D0",
-	out_reqs  => [ "sp:S" ],
+	out_reqs  => [ "sp:I" ],
 	outs      => [ "stack" ],
 	ins       => [ "stack" ],
 	constructors => {
@@ -430,7 +430,7 @@ Save => {
 },
 
 Restore => {
-	out_reqs => [ "sp:S", "gp" ],
+	out_reqs => [ "sp:I", "gp" ],
 	outs     => [ "stack", "res" ],
 	constructors => {
 		imm => {
@@ -448,7 +448,7 @@ Restore => {
 
 RestoreZero => {
 	in_reqs  => [ "sp", "reg-fp" ],
-	out_reqs => [ "sp:S" ],
+	out_reqs => [ "sp:I" ],
 	ins      => [ "stack", "frame_pointer" ],
 	outs     => [ "stack" ],
 	emit     => "restore",
@@ -468,13 +468,13 @@ SubSP => {
 			ins        => [ "stack", "size", "mem" ],
 		}
 	},
-	out_reqs => [ "sp:S", "gp", "none" ],
+	out_reqs => [ "sp:I", "gp", "none" ],
 	outs     => [ "stack", "addr", "M" ],
 },
 
 AddSP => {
 	in_reqs  => [ "sp", "gp" ],
-	out_reqs => [ "sp:S" ],
+	out_reqs => [ "sp:I" ],
 	ins      => [ "stack", "size" ],
 	outs     => [ "stack" ],
 	emit     => "add %S0, %S1, %D0\n",
