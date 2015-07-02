@@ -1000,13 +1000,15 @@ sub generate_requirements {
 	my $result;
 
 	if (defined($flags)) {
-		foreach my $f (split(/|/, $flags)) {
+		foreach my $f (split(/\|/, $flags)) {
 			if ($f eq "I") {
 				$extra .= "\n\t.ignore  = true,";
 			} elsif ($f eq "a") {
 				$extra .= "\n\t.aligned = true,";
 			} elsif ($f eq "2" or $f eq "4" or $f eq "8") {
 				$width = int($f);
+			} else {
+				die("Fatal error: unknown flag '$f'")
 			}
 		}
 	}
