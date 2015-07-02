@@ -366,6 +366,12 @@ my $xvalueop = {
 	mode      => $mode_xmm,
 };
 
+my $carry_user_op = {
+	irn_flags => [ "modify_flags" ],
+	attr_type => "ia32_condcode_attr_t",
+	fixed     => "x86_condition_code_t condition_code = x86_cc_carry;",
+};
+
 %nodes = (
 
 Immediate => {
@@ -393,18 +399,16 @@ AddMem => {
 },
 
 Adc => {
-	irn_flags => [ "modify_flags" ],
-	state     => "exc_pinned",
-	in_reqs   => [ "gp", "gp", "none", "gp", "gp", "flags" ],
-	out_reqs  => [ "in_r4 in_r5", "flags", "none" ],
-	ins       => [ "base", "index", "mem", "left", "right", "eflags" ],
-	outs      => [ "res", "flags", "M" ],
-	attr_type => "ia32_condcode_attr_t",
-	fixed     => "x86_condition_code_t condition_code = x86_cc_carry;",
-	emit      => "adc%M %B",
-	am        => "source,binary",
-	latency   => 1,
-	mode      => $mode_gp,
+	template => $carry_user_op,
+	state    => "exc_pinned",
+	in_reqs  => [ "gp", "gp", "none", "gp", "gp", "flags" ],
+	out_reqs => [ "in_r4 in_r5", "flags", "none" ],
+	ins      => [ "base", "index", "mem", "left", "right", "eflags" ],
+	outs     => [ "res", "flags", "M" ],
+	emit     => "adc%M %B",
+	am       => "source,binary",
+	latency  => 1,
+	mode     => $mode_gp,
 },
 
 l_Add => {
@@ -531,32 +535,28 @@ SubMem => {
 },
 
 Sbb => {
-	irn_flags => [ "modify_flags" ],
-	state     => "exc_pinned",
-	in_reqs   => [ "gp", "gp", "none", "gp", "gp", "flags" ],
-	out_reqs  => [ "in_r4", "flags", "none" ],
-	ins       => [ "base", "index", "mem", "minuend", "subtrahend", "eflags" ],
-	outs      => [ "res", "flags", "M" ],
-	attr_type => "ia32_condcode_attr_t",
-	fixed     => "x86_condition_code_t condition_code = x86_cc_carry;",
-	am        => "source,binary",
-	emit      => "sbb%M %B",
-	latency   => 1,
-	mode      => $mode_gp,
+	template => $carry_user_op,
+	state    => "exc_pinned",
+	in_reqs  => [ "gp", "gp", "none", "gp", "gp", "flags" ],
+	out_reqs => [ "in_r4", "flags", "none" ],
+	ins      => [ "base", "index", "mem", "minuend", "subtrahend", "eflags" ],
+	outs     => [ "res", "flags", "M" ],
+	am       => "source,binary",
+	emit     => "sbb%M %B",
+	latency  => 1,
+	mode     => $mode_gp,
 },
 
 Sbb0 => {
+	template => $carry_user_op,
 	# Spiller currently fails when rematerializing flag consumers
 	# irn_flags => [ "modify_flags", "rematerializable" ],
-	irn_flags => [ "modify_flags" ],
-	in_reqs   => [ "flags" ],
-	out_reqs  => [ "gp", "flags" ],
-	outs      => [ "res", "flags" ],
-	attr_type => "ia32_condcode_attr_t",
-	fixed     => "x86_condition_code_t condition_code = x86_cc_carry;",
-	emit      => "sbb%M %D0, %D0",
-	latency   => 1,
-	mode      => $mode_gp,
+	in_reqs  => [ "flags" ],
+	out_reqs => [ "gp", "flags" ],
+	outs     => [ "res", "flags" ],
+	emit     => "sbb%M %D0, %D0",
+	latency  => 1,
+	mode     => $mode_gp,
 },
 
 l_Sub => {
@@ -727,14 +727,12 @@ NotMem => {
 },
 
 Cmc => {
-	irn_flags => [ "modify_flags" ],
-	in_reqs   => [ "flags" ],
-	out_reqs  => [ "flags" ],
-	attr_type => "ia32_condcode_attr_t",
-	fixed     => "x86_condition_code_t condition_code = x86_cc_carry;",
-	emit      => "cmc",
-	latency   => 1,
-	mode      => $mode_flags,
+	template => $carry_user_op,
+	in_reqs  => [ "flags" ],
+	out_reqs => [ "flags" ],
+	emit     => "cmc",
+	latency  => 1,
+	mode     => $mode_flags,
 },
 
 Stc => {
