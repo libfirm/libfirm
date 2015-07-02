@@ -244,13 +244,6 @@ static void post_spill(be_chordal_env_t *const chordal_env, ir_graph *const irg,
 
 	dump(BE_CH_DUMP_SSADESTR, irg, chordal_env->cls, "ssadestr");
 
-	if (be_options.do_verify) {
-		be_timer_push(T_VERIFY);
-		bool fine = be_ssa_destruction_check(chordal_env->irg, chordal_env->cls);
-		be_check_verify_result(fine, chordal_env->irg);
-		be_timer_pop(T_VERIFY);
-	}
-
 	/* the ifg exists only if there are allocatable regs */
 	be_ifg_free(chordal_env->ifg);
 

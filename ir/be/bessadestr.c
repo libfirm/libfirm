@@ -242,31 +242,3 @@ void be_ssa_destruction(ir_graph *irg, const arch_register_class_t *cls)
 	/* unfortunately updating doesn't work yet. */
 	be_invalidate_live_chk(irg);
 }
-
-static void ssa_destruction_check_walker(ir_node *block, void *data)
-{
-	const arch_register_class_t *cls = (const arch_register_class_t*)data;
-
-	for (ir_node *phi = sched_first(block); is_Phi(phi); phi = sched_next(phi)) {
-		if (!arch_irn_consider_in_reg_alloc(cls, phi))
-			continue;
-
-		/* iterate over all args of phi */
-		foreach_irn_in(phi, i, arg) {
-			const arch_register_req_t *req = arch_get_irn_register_req(arg);
-			if (req->ignore)
-				continue;
-
-			assert(arch_get_irn_register(phi) == arch_get_irn_register(arg));
-		}
-	}
-}
-
-bool be_ssa_destruction_check(ir_graph *irg, const arch_register_class_t *cls)
-{
-	irg_block_walk_graph(irg, ssa_destruction_check_walker, NULL, (void*)cls);
-	/* well we didn't run into an assertion failure so we are fine.
-	 * (I'm too lazy to rewrite the code to not use assert() now as it will
-	 * get replaced with a new reg verifier anyway) */
-	return true;
-}

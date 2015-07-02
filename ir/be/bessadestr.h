@@ -20,6 +20,5 @@
  * Performs SSA destruction. Arguments get adjusted, phi nodes just stay.
  */
 void be_ssa_destruction(ir_graph *irg, const arch_register_class_t *cls);
-bool be_ssa_destruction_check(ir_graph *irg, const arch_register_class_t *cls);
 
 #endif
