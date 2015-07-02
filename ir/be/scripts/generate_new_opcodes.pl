@@ -256,10 +256,11 @@ EOF
 
 		my $idx = 0;
 		for my $req (@$out_reqs) {
+			if ($idx == 0) {
+				$set_out_reqs .= "\treg_out_info_t *const out_infos = be_get_info(res)->out_infos;\n";
+			}
 			my $reqstruct = generate_requirements($req, $n, "${arch}_${op}", $idx, 0);
-			$set_out_reqs .= <<EOF;
-info->out_infos[${idx}].req = &${reqstruct};
-EOF
+			$set_out_reqs .= "\tout_infos[$idx].req = &$reqstruct;\n";
 			++$idx;
 		}
 	}
@@ -357,11 +358,7 @@ EOF
 	${custominit}
 EOF
 	}
-	$temp .= <<EOF;
-	backend_info_t *info = be_get_info(res);
-	(void) info; /* avoid potential warning */
-${set_out_reqs}
-EOF
+	$temp .= "$set_out_reqs\n";
 
 	if (exists($n->{"init_attr"})) {
 		$temp .= "\t".$n->{"init_attr"}."\n";
