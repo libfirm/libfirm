@@ -859,10 +859,8 @@ static void amd64_register_emitters(void)
  * Walks over the nodes in a block connected by scheduling edges
  * and emits code for each node.
  */
-static void amd64_gen_block(ir_node *block, void *data)
+static void amd64_gen_block(ir_node *block)
 {
-	(void) data;
-
 	be_gas_begin_block(block, true);
 
 	sched_foreach(block, node) {
@@ -915,8 +913,7 @@ void amd64_emit_function(ir_graph *irg)
 
 	for (i = 0; i < n; ++i) {
 		ir_node *block = blk_sched[i];
-
-		amd64_gen_block(block, 0);
+		amd64_gen_block(block);
 	}
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 
