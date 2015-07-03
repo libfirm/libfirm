@@ -2541,7 +2541,6 @@ static ir_node *gen_saturating_increment(ir_node *node)
 
 	arch_set_irn_register_reqs_in(inc, reg_reqs);
 	arch_set_irn_register_req_out(inc, 0, &amd64_requirement_gp_same_0);
-	set_irn_mode(inc, mode_T);
 
 	ir_node *value  = new_rd_Proj(dbgi, inc, mode_gp, pn_amd64_add_res);
 	ir_node *eflags = new_rd_Proj(dbgi, inc, mode_flags, pn_amd64_add_flags);
