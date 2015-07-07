@@ -174,26 +174,32 @@ ir_node *be_new_MemPerm(ir_node *const block, int n, ir_node *const *const in)
 	return irn;
 }
 
+static void set_copy_info(ir_node *const irn, ir_graph *const irg, ir_node *const op, arch_irn_flags_t const flags)
+{
+	init_node_attr(irn, 1, flags);
+	be_node_attr_t *const attr = (be_node_attr_t*)get_irn_generic_attr(irn);
+	attr->exc.pin_state = op_pin_state_floats;
+
+	arch_register_req_t   const *const op_req = arch_get_irn_register_req(op);
+	arch_register_class_t const *const cls    = op_req->cls;
+
+	be_node_set_register_req_in(irn, 0, cls->class_req);
+
+	arch_register_req_t *const out_req = allocate_reg_req(irg);
+	out_req->cls            = cls;
+	out_req->should_be_same = 1U << 0;
+	out_req->aligned        = op_req->aligned;
+	out_req->width          = op_req->width;
+	arch_set_irn_register_req_out(irn, 0, out_req);
+}
+
 ir_node *be_new_Copy(ir_node *bl, ir_node *op)
 {
 	ir_graph *irg  = get_irn_irg(bl);
 	ir_node  *in[] = { op };
 	ir_node  *res  = new_ir_node(NULL, irg, bl, op_be_Copy, get_irn_mode(op),
 	                             ARRAY_SIZE(in), in);
-	init_node_attr(res, 1, arch_irn_flags_none);
-	be_node_attr_t *attr = (be_node_attr_t*) get_irn_generic_attr(res);
-	attr->exc.pin_state = op_pin_state_floats;
-
-	const arch_register_req_t   *in_req = arch_get_irn_register_req(op);
-	const arch_register_class_t *cls    = in_req->cls;
-	be_node_set_register_req_in(res, 0, cls->class_req);
-
-	arch_register_req_t *const req = allocate_reg_req(irg);
-	req->cls            = cls;
-	req->should_be_same = 1U << 0;
-	req->aligned        = in_req->aligned;
-	req->width          = in_req->width;
-	arch_set_irn_register_req_out(res, 0, req);
+	set_copy_info(res, irg, op, arch_irn_flags_none);
 	return res;
 }
 
@@ -255,13 +261,7 @@ ir_node *be_new_CopyKeep(ir_node *const bl, ir_node *const src, int const n, ir_
 	in[0] = src;
 	MEMCPY(&in[1], in_keep, n);
 	ir_node *irn = new_ir_node(NULL, irg, bl, op_be_CopyKeep, mode, arity, in);
-	init_node_attr(irn, 1, arch_irn_flag_schedule_first);
-	be_node_attr_t *attr = (be_node_attr_t*)get_irn_generic_attr(irn);
-	attr->exc.pin_state = op_pin_state_floats;
-	const arch_register_req_t   *req  = arch_get_irn_register_req(src);
-	const arch_register_class_t *cls  = req->cls;
-	be_node_set_register_req_in(irn, 0, cls->class_req);
-	arch_set_irn_register_req_out(irn, 0, cls->class_req);
+	set_copy_info(irn, irg, src, arch_irn_flag_schedule_first);
 	for (int i = 0; i < n; ++i) {
 		ir_node *pred = in_keep[i];
 		const arch_register_req_t *req = arch_get_irn_register_req(pred);
