@@ -136,7 +136,7 @@ static void ia32_set_frame_entity(ir_node *node, ir_entity *entity,
 {
 	set_ia32_frame_ent(node, entity);
 
-	/* set ls_mode based on entity unless we explicitely requested
+	/* set ls_mode based on entity unless we explicitly requested
 	 * a certain mode */
 	if (get_ia32_frame_use(node) != IA32_FRAME_USE_AUTO || is_ia32_Conv_I2I(node))
 		return;
