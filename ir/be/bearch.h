@@ -236,8 +236,7 @@ static inline bool reg_reqs_equal(const arch_register_req_t *req1,
 
 static inline bool reg_req_has_constraint(const arch_register_req_t *req)
 {
-	return req->limited != NULL || req->should_be_same != 0
-	    || req->must_be_different != 0 || req->ignore || req->aligned;
+	return req->limited || req->must_be_different != 0 || req->ignore || req->aligned;
 }
 
 /**
