@@ -199,14 +199,8 @@ static void fix_flags_walker(ir_node *block, void *env)
 	ir_node *flags_needed   = NULL;
 	ir_node *flag_consumers = NULL;
 	unsigned pn             = (unsigned)-1;
-	ir_node *place          = block;
-	sched_foreach_reverse(block, node) {
+	sched_foreach_non_phi_reverse(block, node) {
 		mark_irn_visited(node);
-
-		if (is_Phi(node)) {
-			place = node;
-			break;
-		}
 
 		if (node == flags_needed) {
 			/* all ok */
@@ -274,6 +268,7 @@ static void fix_flags_walker(ir_node *block, void *env)
 
 	if (flags_needed != NULL) {
 		assert(get_nodes_block(flags_needed) != block);
+		ir_node *const place = be_move_after_schedule_first(block);
 		rematerialize_or_move(flags_needed, place, flag_consumers, pn, NULL);
 		flags_needed   = NULL;
 		flag_consumers = NULL;

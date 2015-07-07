@@ -327,8 +327,8 @@ static void peephole_ia32_Return(ir_node *node)
 		return;
 
 	/* check if this return is the first on the block */
-	sched_foreach_reverse_before(node, irn) {
-		if (is_Phi(irn) || is_ia32_Start(irn))
+	sched_foreach_non_phi_reverse_before(node, irn) {
+		if (is_ia32_Start(irn))
 			continue;
 		/* arg, IncSP 0 nodes might occur, ignore these */
 		if (be_is_IncSP(irn) && be_get_IncSP_offset(irn) == 0)

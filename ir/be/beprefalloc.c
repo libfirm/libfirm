@@ -280,10 +280,7 @@ static void analyze_block(ir_node *block, void *data)
 	ir_nodeset_init(&live_nodes);
 	be_liveness_end_of_block(lv, cls, block, &live_nodes);
 
-	sched_foreach_reverse(block, node) {
-		if (is_Phi(node))
-			break;
-
+	sched_foreach_non_phi_reverse(block, node) {
 		be_foreach_definition(node, cls, value, req,
 			check_defs(&live_nodes, weight, value, req);
 		);
@@ -370,10 +367,7 @@ static void create_congruence_class(ir_node *block, void *data)
 	be_liveness_end_of_block(lv, cls, block, &live_nodes);
 
 	/* check should be same constraints */
-	sched_foreach_reverse(block, node) {
-		if (is_Phi(node))
-			break;
-
+	sched_foreach_non_phi_reverse(block, node) {
 		be_foreach_definition(node, cls, value, req,
 			congruence_def(&live_nodes, value, req);
 		);
@@ -381,10 +375,7 @@ static void create_congruence_class(ir_node *block, void *data)
 	}
 
 	/* check phi congruence classes */
-	sched_foreach(block, phi) {
-		if (!is_Phi(phi))
-			break;
-
+	sched_foreach_phi(block, phi) {
 		if (!arch_irn_consider_in_reg_alloc(cls, phi))
 			continue;
 
@@ -411,11 +402,9 @@ static void create_congruence_class(ir_node *block, void *data)
 			if (interferes)
 				continue;
 			/* any other phi has the same input? */
-			sched_foreach(block, phi) {
+			sched_foreach_phi(block, phi) {
 				ir_node *oop;
 				int      oop_idx;
-				if (!is_Phi(phi))
-					break;
 				if (!arch_irn_consider_in_reg_alloc(cls, phi))
 					continue;
 				oop = get_Phi_pred(phi, i);
@@ -1272,9 +1261,8 @@ static void add_phi_permutations(ir_node *block, int p)
 	}
 
 	/* check phi nodes */
-	bool     need_permutation = false;
-	ir_node *phi              = sched_first(block);
-	for ( ; is_Phi(phi); phi = sched_next(phi)) {
+	bool need_permutation = false;
+	sched_foreach_phi(block, phi) {
 		if (!arch_irn_consider_in_reg_alloc(cls, phi))
 			continue;
 
@@ -1308,8 +1296,7 @@ static void add_phi_permutations(ir_node *block, int p)
 	}
 
 	/* change phi nodes to use the copied values */
-	phi = sched_first(block);
-	for ( ; is_Phi(phi); phi = sched_next(phi)) {
+	sched_foreach_phi(block, phi) {
 		if (!arch_irn_consider_in_reg_alloc(cls, phi))
 			continue;
 
@@ -1386,9 +1373,7 @@ static void assign_phi_registers(ir_node *block)
 {
 	/* count phi nodes */
 	int n_phis = 0;
-	sched_foreach(block, node) {
-		if (!is_Phi(node))
-			break;
+	sched_foreach_phi(block, node) {
 		if (!arch_irn_consider_in_reg_alloc(cls, node))
 			continue;
 		++n_phis;
@@ -1401,9 +1386,7 @@ static void assign_phi_registers(ir_node *block)
 	hungarian_problem_t *bp
 		= hungarian_new(n_phis, n_regs, HUNGARIAN_MATCH_PERFECT);
 	int n = 0;
-	sched_foreach(block, node) {
-		if (!is_Phi(node))
-			break;
+	sched_foreach_phi(block, node) {
 		if (!arch_irn_consider_in_reg_alloc(cls, node))
 			continue;
 
@@ -1438,9 +1421,7 @@ static void assign_phi_registers(ir_node *block)
 
 	/* apply results */
 	n = 0;
-	sched_foreach(block, node) {
-		if (!is_Phi(node))
-			break;
+	sched_foreach_phi(block, node) {
 		if (!arch_irn_consider_in_reg_alloc(cls, node))
 			continue;
 		const arch_register_req_t *req
@@ -1589,12 +1570,8 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 	}
 #endif
 
-	/* assign instructions in the block */
-	sched_foreach(block, node) {
-		/* phis are already assigned */
-		if (is_Phi(node))
-			continue;
-
+	/* assign instructions in the block, phis are already assigned */
+	sched_foreach_non_phi(block, node) {
 		rewire_inputs(node);
 
 		/* enforce use constraints */

@@ -184,9 +184,7 @@ static void insert_shuffle_code_walker(ir_node *block, void *data)
 		}
 
 		bool need_perm = false;
-		for (ir_node *phi = sched_first(block); is_Phi(phi);
-		     phi = sched_next(phi)) {
-
+		sched_foreach_phi(block, phi) {
 			if (!arch_irn_consider_in_reg_alloc(cls, phi))
 				continue;
 

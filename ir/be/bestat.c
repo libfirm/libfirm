@@ -46,14 +46,9 @@ static void check_reg_pressure_class(pressure_walker_env_t *env,
 	unsigned max_live = ir_nodeset_size(&live_nodes);
 	env->regpressure += max_live;
 
-	sched_foreach_reverse(block, irn) {
-		size_t cnt;
-
-		if (is_Phi(irn))
-			break;
-
+	sched_foreach_non_phi_reverse(block, irn) {
 		be_liveness_transfer(cls, irn, &live_nodes);
-		cnt      = ir_nodeset_size(&live_nodes);
+		size_t const cnt = ir_nodeset_size(&live_nodes);
 		max_live = MAX(max_live, cnt);
 		env->regpressure += cnt;
 		env->insn_count++;

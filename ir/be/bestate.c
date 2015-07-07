@@ -212,9 +212,7 @@ static block_info_t *compute_block_start_state(minibelady_env_t *env,
 	bool     outer_loop_allowed = true;
 
 	/* check all Phis first */
-	sched_foreach(block, node) {
-		if (!is_Phi(node))
-			break;
+	sched_foreach_phi(block, node) {
 		if (arch_get_irn_register(node) != env->reg)
 			continue;
 
@@ -327,10 +325,8 @@ static void belady(minibelady_env_t *env, ir_node *block)
 	/* process the block from start to end */
 	DBG((dbg, LEVEL_3, "Processing...\n"));
 
-	sched_foreach(block, node) {
+	sched_foreach_non_phi(block, node) {
 		/* Phis are no real instr (see insert_starters()) */
-		if (is_Phi(node))
-			continue;
 
 		/* check which state is desired for the node */
 		ir_node *need_val = NULL;

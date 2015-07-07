@@ -507,9 +507,7 @@ static void decide_start_workset(ir_node *const block)
 
 	/* check all Phis first */
 	ir_loop *loop = get_irn_loop(block);
-	sched_foreach(block, node) {
-		if (!is_Phi(node))
-			break;
+	sched_foreach_phi(block, node) {
 		if (!arch_irn_consider_in_reg_alloc(cls, node))
 			continue;
 
@@ -706,12 +704,10 @@ static void process_block(ir_node *block)
 	DB((dbg, DBG_WSETS, "Processing...\n"));
 	workset_t *new_vals = temp_workset;
 
-	sched_foreach(block, irn) {
-		assert(workset_get_length(ws) <= n_regs);
-
+	sched_foreach_non_phi(block, irn) {
 		/* Phis are no real instr (see insert_starters()) */
-		if (is_Phi(irn))
-			continue;
+
+		assert(workset_get_length(ws) <= n_regs);
 		DB((dbg, DBG_DECIDE, "  ...%+F\n", irn));
 
 		/* allocate all values _used_ by this instruction */

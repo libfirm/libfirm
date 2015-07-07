@@ -585,12 +585,9 @@ static fp_liveness fp_live_args_after(x87_simulator *sim, const ir_node *pos,
 static void update_liveness(x87_simulator *sim, ir_node *block)
 {
 	fp_liveness live = fp_liveness_end_of_block(sim, block);
-	/* now iterate through the block backward and cache the results */
-	sched_foreach_reverse(block, irn) {
-		/* stop at the first Phi: this produces the live-in */
-		if (is_Phi(irn))
-			break;
-
+	/* Now iterate through the block backward and cache the results.
+	 * Stop at the first Phi: this produces the live-in. */
+	sched_foreach_non_phi_reverse(block, irn) {
 		unsigned idx = get_irn_idx(irn);
 		sim->live[idx] = live;
 

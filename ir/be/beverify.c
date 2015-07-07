@@ -86,10 +86,7 @@ static void verify_liveness_walker(ir_node *block, void *data)
 		env->problem_found = true;
 	}
 
-	sched_foreach_reverse(block, irn) {
-		if (is_Phi(irn))
-			break;
-
+	sched_foreach_non_phi_reverse(block, irn) {
 		// print_living_values(stderr, &live_nodes);
 		be_liveness_transfer(env->cls, irn, &live_nodes);
 

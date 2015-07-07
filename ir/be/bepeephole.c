@@ -315,9 +315,7 @@ bool be_can_move_up(ir_heights_t *heights, const ir_node *node,
 						return false;
 				}
 			}
-			sched_foreach(succ, phi) {
-				if (!is_Phi(phi))
-					break;
+			sched_foreach_phi(succ, phi) {
 				const arch_register_t     *reg = arch_get_irn_register(phi);
 				const arch_register_req_t *req = arch_get_irn_register_req(phi);
 				be_foreach_out(node, o) {

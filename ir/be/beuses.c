@@ -134,11 +134,7 @@ static bool be_is_phi_argument(const ir_node *block, const ir_node *def)
 	/* iterate over the Phi nodes in the successor and check if def is
 	 * one of its arguments */
 	const int i = get_edge_src_pos(edge);
-	sched_foreach(succ_block, node) {
-		/* we can stop the search on the first non-phi node */
-		if (!is_Phi(node))
-			break;
-
+	sched_foreach_phi(succ_block, node) {
 		const ir_node *arg = get_irn_n(node, i);
 		if (arg == def)
 			return true;

@@ -178,6 +178,10 @@ static inline bool value_strictly_dominates(const ir_node *a,
 #define sched_foreach_reverse_before(before, irn) \
 	for (ir_node *irn = (before); !sched_is_begin(irn = sched_prev(irn));)
 
+#define sched_foreach_non_phi_reverse_before(before, irn) \
+	for (ir_node *irn = (before); !sched_is_begin(irn = sched_prev(irn));) \
+		if (is_Phi(irn)) break; else
+
 /**
  * A shorthand macro for iterating over a schedule.
  * @param block The block.
@@ -186,6 +190,14 @@ static inline bool value_strictly_dominates(const ir_node *a,
 #define sched_foreach(block,irn) \
 	sched_foreach_after((assert(is_Block(block)), block), irn)
 
+#define sched_foreach_phi(block, irn) \
+	sched_foreach(block, irn) \
+		if (!is_Phi(irn)) break; else
+
+#define sched_foreach_non_phi(block, irn) \
+	sched_foreach(block, irn) \
+		if (is_Phi(irn)) continue; else
+
 /**
  * A shorthand macro for reversely iterating over a schedule.
  * @param block The block.
@@ -193,6 +205,9 @@ static inline bool value_strictly_dominates(const ir_node *a,
  */
 #define sched_foreach_reverse(block,irn) \
 	sched_foreach_reverse_before((assert(is_Block(block)), block), irn)
+
+#define sched_foreach_non_phi_reverse(block, irn) \
+	sched_foreach_non_phi_reverse_before((assert(is_Block(block)), block), irn)
 
 /**
  * A shorthand macro for iterating over a schedule while the current node may be

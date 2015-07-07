@@ -254,10 +254,7 @@ static void spill_block(ir_node *block, void *data)
 
 	/* walk schedule backwards and spill until register pressure is fine at
 	 * each node */
-	sched_foreach_reverse(block, node) {
-		if (is_Phi(node))
-			break;
-
+	sched_foreach_non_phi_reverse(block, node) {
 		remove_defs(node, &live_nodes);
 		do_spilling(&live_nodes, node);
 		add_uses(node, &live_nodes);
@@ -267,10 +264,7 @@ static void spill_block(ir_node *block, void *data)
 	 * are still there and occupy registers, so we need to count them and might
 	 * have to spill some of them. */
 	int n_phi_values_spilled = 0;
-	sched_foreach(block, node) {
-		if (!is_Phi(node))
-			break;
-
+	sched_foreach_phi(block, node) {
 		if (bitset_is_set(spilled_nodes, get_irn_idx(node)))
 			n_phi_values_spilled += get_value_width(node);
 	}
@@ -289,9 +283,7 @@ static void spill_block(ir_node *block, void *data)
 	/* spill as many phis as needed */
 	/* TODO: we should really estimate costs of the phi spill as well...
 	 * and preferably spill phis with lower costs... */
-	sched_foreach(block, node) {
-		if (!is_Phi(node))
-			break;
+	sched_foreach_phi(block, node) {
 		if (phi_spills_needed <= 0)
 			break;
 

@@ -106,10 +106,7 @@ static arch_register_t const *get_free_register(ir_node *const perm, lower_env_t
 	arch_register_class_t const *cls       = arch_get_irn_register(get_irn_n(perm, 0))->cls;
 	unsigned                    *free_regs = (unsigned*)ir_nodehashmap_get(arch_register_t const, &env->live_regs, perm);
 
-	sched_foreach_reverse(block, node) {
-		if (is_Phi(node))
-			break;
-
+	sched_foreach_non_phi_reverse(block, node) {
 		/* If we later implement first the chains and then the cycles
 		   of the Perm, we *cannot* regard the Perm's own outputs as
 		   free registers. */

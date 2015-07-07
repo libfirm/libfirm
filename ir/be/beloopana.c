@@ -62,10 +62,7 @@ static unsigned be_compute_block_pressure(ir_node *const block, arch_register_cl
 	be_liveness_end_of_block(lv, cls, block, &live_nodes);
 	unsigned max_live = (unsigned)ir_nodeset_size(&live_nodes);
 
-	sched_foreach_reverse(block, irn) {
-		if (is_Phi(irn))
-			break;
-
+	sched_foreach_non_phi_reverse(block, irn) {
 		be_liveness_transfer(cls, irn, &live_nodes);
 		unsigned cnt = (unsigned)ir_nodeset_size(&live_nodes);
 		max_live = MAX(cnt, max_live);
