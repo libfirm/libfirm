@@ -138,7 +138,8 @@ static void ia32_set_frame_entity(ir_node *node, ir_entity *entity,
 
 	/* set ls_mode based on entity unless we explicitly requested
 	 * a certain mode */
-	if (get_ia32_frame_use(node) != IA32_FRAME_USE_AUTO || is_ia32_Conv_I2I(node))
+	if (get_ia32_frame_use(node) != IA32_FRAME_USE_AUTO
+	    || is_ia32_Cmp(node) || is_ia32_Conv_I2I(node))
 		return;
 	ir_mode *mode = get_type_mode(type);
 	/** we 8bit stores have a special register requirement, so we can't simply
