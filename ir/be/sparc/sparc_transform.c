@@ -52,12 +52,8 @@ static ir_mode               *mode_fp2;
 //static ir_mode               *mode_fp4;
 static pmap                  *node_to_stack;
 static be_start_info_t        start_mem;
-static be_start_info_t        start_g0;
-static be_start_info_t        start_g7;
-static be_start_info_t        start_sp;
-static be_start_info_t        start_fp;
+static be_start_info_t        start_val[N_SPARC_REGISTERS];
 static ir_node               *frame_base;
-static size_t                 start_params_offset;
 static size_t                 start_callee_saves_offset;
 
 static const arch_register_t *const omit_fp_callee_saves[] = {
@@ -562,12 +558,12 @@ static ir_node *gen_helper_binopx(ir_node *node, match_flags_t match_flags,
 
 static ir_node *get_g0(ir_graph *irg)
 {
-	return be_get_start_proj(irg, &start_g0);
+	return be_get_start_proj(irg, &start_val[REG_G0]);
 }
 
 static ir_node *get_g7(ir_graph *irg)
 {
-	return be_get_start_proj(irg, &start_g7);
+	return be_get_start_proj(irg, &start_val[REG_G7]);
 }
 
 static ir_node *make_tls_offset(dbg_info *dbgi, ir_node *block,
@@ -1585,34 +1581,26 @@ static ir_node *gen_Start(ir_node *node)
 	be_make_start_mem(&start_mem, start, o++);
 
 	/* the zero register */
-	be_make_start_out(&start_g0, start, o++, &sparc_registers[REG_G0], true);
+	be_make_start_out(&start_val[REG_G0], start, o++, &sparc_registers[REG_G0], true);
 
 	/* g7 is used for TLS data */
-	be_make_start_out(&start_g7, start, o++, &sparc_registers[REG_G7], true);
+	be_make_start_out(&start_val[REG_G7], start, o++, &sparc_registers[REG_G7], true);
 
 	/* we need an output for the stack pointer */
-	be_make_start_out(&start_sp, start, o++, sp_reg, true);
+	be_make_start_out(&start_val[REG_SP], start, o++, sp_reg, true);
 
-	if (!current_cconv->omit_fp) {
-		be_make_start_out(&start_fp, start, o++, fp_reg, true);
-	}
+	if (!current_cconv->omit_fp)
+		be_make_start_out(&start_val[REG_FP], start, o++, fp_reg, true);
 
 	/* function parameters in registers */
-	start_params_offset = o;
 	for (size_t i = 0; i < get_method_n_params(function_type); ++i) {
-		const reg_or_stackslot_t *param = &current_cconv->parameters[i];
-		const arch_register_t    *reg0  = param->reg0;
-		const arch_register_t    *reg1  = param->reg1;
-		if (reg0 != NULL) {
-			arch_set_irn_register_req_out(start, o, reg0->single_req);
-			arch_set_irn_register_out(start, o, reg0);
-			++o;
-		}
-		if (reg1 != NULL) {
-			arch_set_irn_register_req_out(start, o, reg1->single_req);
-			arch_set_irn_register_out(start, o, reg1);
-			++o;
-		}
+		reg_or_stackslot_t const *const param = &current_cconv->parameters[i];
+		arch_register_t    const *const reg0  = param->reg0;
+		if (reg0)
+			be_make_start_out(&start_val[reg0->global_index], start, o++, reg0, false);
+		arch_register_t const *const reg1 = param->reg1;
+		if (reg1)
+			be_make_start_out(&start_val[reg1->global_index], start, o++, reg1, false);
 	}
 	/* we need the values of the callee saves (Note: non omit-fp mode has no
 	 * callee saves) */
@@ -1633,12 +1621,12 @@ static ir_node *gen_Start(ir_node *node)
 
 static ir_node *get_initial_sp(ir_graph *irg)
 {
-	return be_get_start_proj(irg, &start_sp);
+	return be_get_start_proj(irg, &start_val[REG_SP]);
 }
 
 static ir_node *get_initial_fp(ir_graph *irg)
 {
-	return be_get_start_proj(irg, &start_fp);
+	return be_get_start_proj(irg, &start_val[REG_FP]);
 }
 
 static ir_node *get_initial_mem(ir_graph *irg)
@@ -2397,25 +2385,18 @@ static ir_node *gen_Proj_Start(ir_node *node)
 
 static ir_node *gen_Proj_Proj_Start(ir_node *node)
 {
-	unsigned  pn        = get_Proj_num(node);
-	ir_graph *irg       = get_irn_irg(node);
-	ir_node  *new_block = be_transform_nodes_block(node);
-	ir_node  *args      = get_Proj_pred(node);
-	ir_node  *start     = get_Proj_pred(args);
-	ir_node  *new_start = be_transform_node(start);
-
 	/* Proj->Proj->Start must be a method argument */
 	assert(get_Proj_num(get_Proj_pred(node)) == pn_Start_T_args);
 
-	const reg_or_stackslot_t *param = &current_cconv->parameters[pn];
-
-	if (param->reg0 != NULL) {
+	ir_graph                 *const irg       = get_irn_irg(node);
+	ir_node                  *const new_block = be_transform_nodes_block(node);
+	unsigned                  const pn        = get_Proj_num(node);
+	reg_or_stackslot_t const *const param     = &current_cconv->parameters[pn];
+	arch_register_t    const *const reg0      = param->reg0;
+	if (reg0) {
 		/* argument transmitted in register */
-		const arch_register_t *reg      = param->reg0;
-		ir_mode               *reg_mode = reg->cls->mode;
-		unsigned               new_pn   = param->reg_offset + start_params_offset;
-		ir_node               *value    = new_r_Proj(new_start, reg_mode, new_pn);
-		bool                   is_float = false;
+		ir_node *value    = be_get_start_proj(irg, &start_val[reg0->global_index]);
+		bool     is_float = false;
 
 		ir_entity *entity      = get_irg_entity(irg);
 		ir_type   *method_type = get_entity_type(entity);
@@ -2430,8 +2411,7 @@ static ir_node *gen_Proj_Proj_Start(ir_node *node)
 			ir_node *value1 = NULL;
 
 			if (reg1 != NULL) {
-				ir_mode *const reg1_mode = reg1->cls->mode;
-				value1 = new_r_Proj(new_start, reg1_mode, new_pn+1);
+				value1 = be_get_start_proj(irg, &start_val[reg1->global_index]);
 			} else if (param->entity != NULL) {
 				ir_node *fp  = get_initial_fp(irg);
 				ir_node *mem = get_initial_mem(irg);

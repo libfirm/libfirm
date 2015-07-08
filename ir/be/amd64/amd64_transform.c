@@ -40,7 +40,6 @@ static ir_mode         *mode_flags;
 static x86_cconv_t     *current_cconv = NULL;
 static be_start_info_t  start_mem;
 static be_start_info_t  start_val[N_AMD64_REGISTERS];
-static size_t           start_params_offset;
 static pmap            *node_to_stack;
 static be_stackorder_t *stackorder;
 
@@ -1431,17 +1430,11 @@ static ir_node *gen_Start(ir_node *node)
 	be_make_start_out(&start_val[REG_RSP], start, o++, &amd64_registers[REG_RSP], true);
 
 	/* function parameters in registers */
-	const unsigned *allocatable_regs = be_birg_from_irg(irg)->allocatable_regs;
-	start_params_offset = o;
 	for (size_t i = 0; i < get_method_n_params(function_type); ++i) {
 		const reg_or_stackslot_t *param = &current_cconv->parameters[i];
 		const arch_register_t    *reg   = param->reg;
-		if (reg != NULL) {
-			arch_set_irn_register_req_out(start, o, reg->single_req);
-			if (!rbitset_is_set(allocatable_regs, reg->global_index))
-				arch_set_irn_register_out(start, o, reg);
-			++o;
-		}
+		if (reg)
+			be_make_start_out(&start_val[reg->global_index], start, o++, reg, false);
 	}
 
 	/* callee saves */
@@ -1814,25 +1807,17 @@ static ir_node *gen_Proj_Proj_Call(ir_node *node)
 
 static ir_node *gen_Proj_Proj_Start(ir_node *node)
 {
-	ir_node *new_block = be_transform_nodes_block(node);
-	unsigned pn        = get_Proj_num(node);
-	ir_node *args      = get_Proj_pred(node);
-	ir_node *start     = get_Proj_pred(args);
-	ir_node *new_start = be_transform_node(start);
+	assert(get_Proj_num(get_Proj_pred(node)) == pn_Start_T_args);
 
-	assert(get_Proj_num(args) == pn_Start_T_args);
-
-	const reg_or_stackslot_t *param = &current_cconv->parameters[pn];
-	if (param->reg != NULL) {
+	ir_graph                 *const irg   = get_irn_irg(node);
+	unsigned                  const pn    = get_Proj_num(node);
+	reg_or_stackslot_t const *const param = &current_cconv->parameters[pn];
+	arch_register_t    const *const reg   = param->reg;
+	if (reg) {
 		/* argument transmitted in register */
-		const arch_register_t *reg    = param->reg;
-		ir_mode               *mode   = reg->cls->mode;
-		unsigned               new_pn = param->reg_offset + start_params_offset;
-		ir_node               *value  = new_r_Proj(new_start, mode, new_pn);
-		return value;
+		return be_get_start_proj(irg, &start_val[reg->global_index]);
 	} else {
 		/* argument transmitted on stack */
-		ir_graph *irg  = get_irn_irg(node);
 		ir_mode  *mode = get_type_mode(param->type);
 		ir_node  *base = get_frame_base(irg);
 
@@ -1847,6 +1832,7 @@ static ir_node *gen_Proj_Proj_Start(ir_node *node)
 		ir_node *load;
 		ir_node *value;
 
+		ir_node *const new_block = be_transform_nodes_block(node);
 		if (mode_is_float(mode)) {
 			load  = new_bd_amd64_movs_xmm(NULL, new_block, ARRAY_SIZE(in),
 			                              in, insn_mode, AMD64_OP_ADDR, addr);

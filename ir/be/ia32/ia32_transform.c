@@ -59,7 +59,6 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 static x86_cconv_t     *current_cconv;
 static be_start_info_t  start_mem;
 static be_start_info_t  start_val[N_IA32_REGISTERS];
-static unsigned         start_params_offset;
 static pmap            *node_to_stack;
 static be_stackorder_t *stackorder;
 static ir_heights_t    *heights;
@@ -4164,15 +4163,11 @@ static ir_node *gen_Start(ir_node *node)
 	be_make_start_out(&start_val[REG_ESP], start, o++, &ia32_registers[REG_ESP], true);
 
 	/* function parameters in registers */
-	start_params_offset = o;
 	for (size_t i = 0; i < get_method_n_params(function_type); ++i) {
 		const reg_or_stackslot_t *param = &current_cconv->parameters[i];
 		const arch_register_t    *reg   = param->reg;
-		if (reg != NULL) {
-			arch_set_irn_register_req_out(start, o, reg->single_req);
-			arch_set_irn_register_out(start, o, reg);
-			++o;
-		}
+		if (reg)
+			be_make_start_out(&start_val[reg->global_index], start, o++, reg, false);
 	}
 
 	/* callee saves */
@@ -4207,21 +4202,15 @@ static ir_node *gen_Proj_Start(ir_node *node)
 
 static ir_node *gen_Proj_Proj_Start(ir_node *node)
 {
-	unsigned pn        = get_Proj_num(node);
-	ir_node *args      = get_Proj_pred(node);
-	ir_node *start     = get_Proj_pred(args);
-	ir_node *new_start = be_transform_node(start);
+	assert(get_Proj_num(get_Proj_pred(node)) == pn_Start_T_args);
 
-	assert(get_Proj_num(args) == pn_Start_T_args);
-
-	const reg_or_stackslot_t *param = &current_cconv->parameters[pn];
+	ir_graph                 *const irg   = get_irn_irg(node);
+	unsigned                  const pn    = get_Proj_num(node);
+	reg_or_stackslot_t const *const param = &current_cconv->parameters[pn];
 	/* stack paramter should have been lowered to loads already */
 	assert(param->reg != NULL);
 	/* argument transmitted in register */
-	ir_mode *const mode   = param->reg->cls->mode;
-	unsigned const new_pn = param->reg_offset + start_params_offset;
-	ir_node *const value  = new_r_Proj(new_start, mode, new_pn);
-	return value;
+	return be_get_start_proj(irg, &start_val[param->reg->global_index]);
 }
 
 static ir_node *get_stack_pointer_for(ir_node *node)
