@@ -444,16 +444,10 @@ IMul => {
 },
 
 IMulImm => {
-	irn_flags => [ "modify_flags", "rematerializable" ],
-	state     => "exc_pinned",
-	in_reqs   => [ "gp", "gp", "none", "gp", "gp" ],
+	template => $binop_commutative,
 	out_reqs  => [ "gp", "flags", "none" ],
-	ins       => [ "base", "index", "mem", "left", "right" ],
-	outs      => [ "res", "flags", "M" ],
-	am        => "source,binary",
 	emit      => "imul%M %#S4, %#AS3, %#D0",
 	latency   => 5,
-	mode      => $mode_gp,
 },
 
 IMul1OP => {
