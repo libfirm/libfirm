@@ -96,12 +96,7 @@ void be_set_transform_proj_function(ir_op *op, be_transform_func func)
  */
 static ir_node *transform_block(ir_node *node)
 {
-	ir_graph *irg   = get_irn_irg(node);
-	dbg_info *dbgi  = get_irn_dbg_info(node);
-	ir_mode  *mode  = get_irn_mode(node);
-	ir_node  *block = new_ir_node(dbgi, irg, NULL, get_irn_op(node), mode,
-	                              get_irn_arity(node), get_irn_in(node) + 1);
-	copy_node_attr(irg, node, block);
+	ir_node *const block = exact_copy(node);
 	block->node_nr = node->node_nr;
 
 	/* put the preds in the worklist */
@@ -114,14 +109,11 @@ static ir_node *transform_end(ir_node *node)
 {
 	/* Do not transform predecessors yet to keep the pre-transform
 	 * phase from visiting all the graph. */
-	ir_graph *irg     = get_irn_irg(node);
-	dbg_info *dbgi    = get_irn_dbg_info(node);
-	ir_node  *block   = be_transform_nodes_block(node);
-	int       arity   = get_irn_arity(node);
-	ir_node **ins     = get_irn_in(node) + 1;
-	ir_node  *new_end = new_ir_node(dbgi, irg, block, op_End, mode_X, arity, ins);
-	copy_node_attr(irg, node, new_end);
+	ir_node *const block   = be_transform_nodes_block(node);
+	ir_node *const new_end = exact_copy(node);
+	set_nodes_block(new_end, block);
 
+	ir_graph *const irg = get_irn_irg(new_end);
 	set_irg_end(irg, new_end);
 
 	be_enqueue_preds(node);
