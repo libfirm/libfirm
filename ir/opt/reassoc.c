@@ -599,6 +599,15 @@ typedef struct {
 } optimization_t;
 
 /**
+ * Returns true if we can be sure that @p node only has a single read user.
+ */
+static bool only_one_user(const ir_node *node)
+{
+	assert(edges_activated(get_irn_irg(node)));
+	return get_irn_n_edges(node) <= 1;
+}
+
+/**
  * Try to find middle_node or top_node, from base_node over a non-direct path.
  *
  *              top_node
@@ -638,7 +647,7 @@ static void find_path_to_top_node(ir_node *current, ir_node *other_node, ir_node
 		middle_node2 = middle_node;
 	}
 
-	if (current == top_node2 && ((middle_node && get_irn_n_outs(middle_node) > 1) || base_node != other_node)) {
+	if (current == top_node2 && ((middle_node && !only_one_user(middle_node)) || base_node != other_node)) {
 		optimization_t *optimization = XMALLOC(optimization_t);
 		optimization->base_node      = base_node;
 		optimization->middle_node    = middle_node2;
@@ -660,7 +669,7 @@ static void find_path_to_top_node(ir_node *current, ir_node *other_node, ir_node
 	}
 	pmap_insert(shdata->walk_counter, current, (void *)counter);
 
-	if ((counter - shdata->walk_base) == get_irn_n_outs(current) && is_bitop(current)) {
+	if ((counter - shdata->walk_base) == (unsigned)get_irn_n_edges(current) && is_bitop(current)) {
 		foreach_irn_in(current, i, n) {
 			find_path_to_top_node(n, current, base_node, middle_node, top_node, shdata);
 		}
@@ -833,15 +842,6 @@ static void do_shannon(ir_graph *irg)
 
 	pmap_destroy(walk_counter);
 	plist_free(optimizations);
-}
-
-/**
- * Returns true if we can be sure that @p node only has a single read user.
- */
-static bool only_one_user(const ir_node *node)
-{
-	assert(edges_activated(get_irn_irg(node)));
-	return get_irn_n_edges(node) <= 1;
 }
 
 typedef enum {
