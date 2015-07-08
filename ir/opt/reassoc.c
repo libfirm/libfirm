@@ -840,9 +840,7 @@ static void do_shannon(ir_graph *irg)
  */
 static bool only_one_user(const ir_node *node)
 {
-	ir_graph *irg = get_irn_irg(node);
-	if (!edges_activated(irg))
-		return false;
+	assert(edges_activated(get_irn_irg(node)));
 	return get_irn_n_edges(node) <= 1;
 }
 
