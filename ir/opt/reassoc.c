@@ -808,6 +808,13 @@ static void do_shannon(ir_graph *irg)
 		     get_irn_node_nr(top_node),
 		     get_irn_node_nr(other_node)));
 
+		/* This case can be handled by local optimizations.
+		 * We skip the case, because we would otherwise
+		 * simplify a & a to -1 & -1, or need to track edges
+		 * instead of nodes in the optimization environment. */
+		if (base_node == other_node)
+			continue;
+
 		/* check if optimization is still valid */
 		if (middle_node) {
 			if (!has_operand(middle_node, top_node) || !has_operand(base_node, middle_node)) {
