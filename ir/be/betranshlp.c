@@ -104,10 +104,6 @@ static ir_node *transform_block(ir_node *node)
 	copy_node_attr(irg, node, block);
 	block->node_nr = node->node_nr;
 
-	/* transfer execfreq value */
-	double execfreq = get_block_execfreq(node);
-	set_block_execfreq(block, execfreq);
-
 	/* put the preds in the worklist */
 	be_enqueue_preds(node);
 
