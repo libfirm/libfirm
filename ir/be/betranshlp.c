@@ -274,11 +274,10 @@ static void transform_nodes(ir_graph *irg, arch_pretrans_nodes *pre_transform)
 		be_transform_node(node);
 	}
 
-	/* fix loops and set new anchors*/
+	/* Fix loops. */
 	inc_irg_visited(irg);
-	foreach_irn_in_r(old_anchor, i, n) {
-		ir_node *const anchor = (ir_node*)get_irn_link(n);
-		fix_loops(anchor);
+	foreach_irn_in_r(new_anchor, i, n) {
+		fix_loops(n);
 	}
 
 	del_waitq(env.worklist);
