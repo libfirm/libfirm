@@ -517,6 +517,7 @@ static int verify_node_Return(const ir_node *n)
 	if ((size_t)get_Return_n_ress(n) != get_method_n_ress(mt)) {
 		warn(n, "number of inputs does not match method type (%zu inputs, %zu declared)",
 		     get_Return_n_ress(n), get_method_n_ress(mt));
+		fine = false;
 	} else {
 		for (int i = get_Return_n_ress(n); i-- > 0; ) {
 			ir_type *expected = get_method_res_type(mt, i);
@@ -958,6 +959,7 @@ static int verify_node_CopyB(const ir_node *n)
 	ir_type *type = get_CopyB_type(n);
 	if (!is_compound_type(type) && !is_Array_type(type)) {
 		warn(n, "CopyB_type is no compound or Array type but %+F", type);
+		fine = false;
 	}
 	return fine;
 }
@@ -1045,7 +1047,7 @@ int irn_verify_irg(const ir_node *n, ir_graph *irg)
 		if (!is_Block(block) && (!is_Bad(block)
 		    || !irg_has_properties(irg, IR_GRAPH_PROPERTY_NO_BADS))) {
 			warn(n, "block input is not a block (but %+F)", block);
-		    fine = false;
+			fine = false;
 		} else if (is_op_start_block_placed(op)
 		           && block != get_irg_start_block(irg)) {
 			warn(n, "not placed in start block");
