@@ -220,13 +220,11 @@ calling_convention_t *sparc_decide_calling_convention(ir_type *function_type,
 		}
 
 		if (regnum < n_param_regs) {
-			const arch_register_t *reg = param_regs[regnum];
+			arch_register_t const *reg = param_regs[regnum++];
 			if (irg == NULL || omit_fp)
 				reg = map_i_to_o_reg(reg);
-			param->reg0       = reg;
-			param->req0       = reg->single_req;
-			param->reg_offset = regnum;
-			++regnum;
+			param->reg0 = reg;
+			param->req0 = reg->single_req;
 		} else {
 			param->type   = param_type;
 			param->offset = stack_offset;
@@ -241,12 +239,11 @@ calling_convention_t *sparc_decide_calling_convention(ir_type *function_type,
 				panic("only 32 and 64bit modes supported");
 
 			if (regnum < n_param_regs) {
-				const arch_register_t *reg = param_regs[regnum];
+				arch_register_t const *reg = param_regs[regnum++];
 				if (irg == NULL || omit_fp)
 					reg = map_i_to_o_reg(reg);
-				param->reg1       = reg;
-				param->req1       = reg->single_req;
-				++regnum;
+				param->reg1 = reg;
+				param->req1 = reg->single_req;
 			} else {
 				ir_mode *regmode = param_regs[0]->cls->mode;
 				ir_type *type    = get_type_for_mode(regmode);
@@ -280,7 +277,6 @@ calling_convention_t *sparc_decide_calling_convention(ir_type *function_type,
 			} else {
 				const arch_register_t *reg = float_result_regs[next_reg];
 				rbitset_clear(caller_saves, reg->global_index);
-				result->reg_offset = i;
 				if (n_regs == 1) {
 					result->req0 = reg->single_req;
 				} else if (n_regs == 2) {
@@ -309,8 +305,7 @@ calling_convention_t *sparc_decide_calling_convention(ir_type *function_type,
 				const arch_register_t *reg = param_regs[regnum++];
 				if (irg == NULL || omit_fp)
 					reg = map_i_to_o_reg(reg);
-				result->req0       = reg->single_req;
-				result->reg_offset = i;
+				result->req0 = reg->single_req;
 				rbitset_clear(caller_saves, reg->global_index);
 				++n_reg_results;
 			}

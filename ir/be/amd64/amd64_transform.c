@@ -1787,21 +1787,18 @@ static ir_node *gen_Proj_Call(ir_node *node)
 
 static ir_node *gen_Proj_Proj_Call(ir_node *node)
 {
-	unsigned     pn       = get_Proj_num(node);
-	ir_node     *call     = get_Proj_pred(get_Proj_pred(node));
-	ir_node     *new_call = be_transform_node(call);
-	ir_type     *tp       = get_Call_type(call);
-	x86_cconv_t *cconv    = amd64_decide_calling_convention(tp, NULL);
-	const reg_or_stackslot_t *res    = &cconv->results[pn];
-	ir_mode                  *mode   = get_irn_mode(node);
-	unsigned                  new_pn = pn_amd64_call_first_result + res->reg_offset;
+	ir_node *const call     = get_Proj_pred(get_Proj_pred(node));
+	ir_node *const new_call = be_transform_node(call);
 
-	assert(res->reg != NULL);
+	ir_mode *mode = get_irn_mode(node);
 	if (mode_needs_gp_reg(mode))
 		mode = mode_gp;
 	else if (mode_is_float(mode))
 		mode = amd64_mode_xmm;
-	x86_free_calling_convention(cconv);
+
+	unsigned const pn     = get_Proj_num(node);
+	unsigned const new_pn = pn_amd64_call_first_result + pn;
+
 	return new_r_Proj(new_call, mode, new_pn);
 }
 

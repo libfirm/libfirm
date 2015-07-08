@@ -109,17 +109,11 @@ x86_cconv_t *amd64_decide_calling_convention(ir_type *function_type,
 		reg_or_stackslot_t *param = &params[i];
 
 		if (mode_is_float(mode) && float_param_regnum < n_float_param_regs) {
-			const arch_register_t *reg = float_param_regs[float_param_regnum];
-			param->reg                 = reg;
-			param->reg_offset          = float_param_regnum + param_regnum;
-			++float_param_regnum;
+			param->reg = float_param_regs[float_param_regnum++];
 			if (amd64_use_x64_abi)
 				++param_regnum;
 		} else if (!mode_is_float(mode) && param_regnum < n_param_regs) {
-			const arch_register_t *reg = param_regs[param_regnum];
-			param->reg        = reg;
-			param->reg_offset = float_param_regnum + param_regnum;
-			++param_regnum;
+			param->reg = param_regs[param_regnum++];
 			if (amd64_use_x64_abi)
 				++float_param_regnum;
 		} else {
@@ -161,8 +155,7 @@ x86_cconv_t *amd64_decide_calling_convention(ir_type *function_type,
 			}
 			reg = result_regs[res_regnum++];
 		}
-		result->reg        = reg;
-		result->reg_offset = i;
+		result->reg = reg;
 		rbitset_clear(caller_saves, reg->global_index);
 		++n_reg_results;
 	}

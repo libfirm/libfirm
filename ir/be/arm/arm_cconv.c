@@ -72,10 +72,7 @@ calling_convention_t *arm_decide_calling_convention(const ir_graph *irg,
 		}
 
 		if (regnum < n_param_regs) {
-			const arch_register_t *reg = param_regs[regnum];
-			param->reg0       = reg;
-			param->reg_offset = regnum;
-			++regnum;
+			param->reg0 = param_regs[regnum++];
 		} else {
 			param->offset = stack_offset;
 			/* increase offset 4 bytes so everything is aligned */

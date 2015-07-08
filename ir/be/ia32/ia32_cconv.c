@@ -153,15 +153,9 @@ x86_cconv_t *ia32_decide_calling_convention(ir_type *function_type,
 
 		ir_mode *mode = get_type_mode(param_type);
 		if (mode_is_float(mode) && float_param_regnum < n_float_param_regs) {
-			const arch_register_t *reg = float_param_regs[float_param_regnum];
-			param->reg                 = reg;
-			param->reg_offset          = float_param_regnum + param_regnum;
-			++float_param_regnum;
+			param->reg = float_param_regs[float_param_regnum++];
 		} else if (!mode_is_float(mode) && param_regnum < n_param_regs) {
-			const arch_register_t *reg = default_param_regs[param_regnum];
-			param->reg        = reg;
-			param->reg_offset = float_param_regnum + param_regnum;
-			++param_regnum;
+			param->reg = default_param_regs[param_regnum++];
 		} else {
 			param->type   = param_type;
 			param->offset = stack_offset;
@@ -202,8 +196,7 @@ align_stack:;
 			}
 			reg = result_regs[res_regnum++];
 		}
-		result->reg        = reg;
-		result->reg_offset = i;
+		result->reg = reg;
 		rbitset_clear(caller_saves, reg->global_index);
 		++n_reg_results;
 	}

@@ -27,7 +27,6 @@ typedef struct reg_or_stackslot_t
 	                                      for the 2nd part of the parameter */
 	const arch_register_t *reg0;
 	const arch_register_t *reg1;
-	size_t                 reg_offset;
 	ir_type               *type;   /**< indicates that an entity of the specific
 									    type is needed */
 	unsigned               offset; /**< if transmitted via stack, the offset for
