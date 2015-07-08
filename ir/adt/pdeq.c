@@ -52,7 +52,7 @@ struct pdeq {
 	pdeq *l, *r;          /**< left and right neighbor */
 	size_t n;             /**< number of elements in the current chunk */
 	size_t p;             /**< the read/write pointer */
-	const void *data[1];  /**< storage for elements */
+	const void *data[];   /**< storage for elements */
 };
 
 
