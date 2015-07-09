@@ -488,7 +488,8 @@ void compute_doms(ir_graph *irg)
 	assert(!irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_CONSTRUCTION));
 
 	/* We need the out data structure. */
-	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS);
+	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS
+	                         | IR_GRAPH_PROPERTY_NO_TUPLES);
 
 	/* Count the number of blocks in the graph. */
 	int n_blocks = 0;
