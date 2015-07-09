@@ -49,12 +49,14 @@ struct ir_edge_t {
 static inline irn_edge_info_t *get_irn_edge_info(ir_node *node,
                                                  ir_edge_kind_t kind)
 {
+	assert(edges_activated_kind(get_irn_irg(node), kind));
 	return &node->edge_info[kind];
 }
 
 static inline const irn_edge_info_t *get_irn_edge_info_const(
 		const ir_node *node, ir_edge_kind_t kind)
 {
+	assert(edges_activated_kind(get_irn_irg(node), kind));
 	return &node->edge_info[kind];
 }
 
@@ -81,9 +83,7 @@ static inline const irg_edge_info_t *get_irg_edge_info_const(
  */
 static inline const ir_edge_t *get_irn_out_edge_first_kind_(const ir_node *irn, ir_edge_kind_t kind)
 {
-	const struct list_head *head;
-	assert(edges_activated_kind(get_irn_irg(irn), kind));
-	head = &get_irn_edge_info_const(irn, kind)->outs_head;
+	struct list_head const *const head = &get_irn_edge_info_const(irn, kind)->outs_head;
 	return list_empty(head) ? NULL : list_entry(head->next, ir_edge_t, list);
 }
 

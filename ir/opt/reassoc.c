@@ -603,7 +603,6 @@ typedef struct {
  */
 static bool only_one_user(const ir_node *node)
 {
-	assert(edges_activated(get_irn_irg(node)));
 	return get_irn_n_edges(node) <= 1;
 }
 
