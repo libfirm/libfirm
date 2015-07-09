@@ -188,7 +188,13 @@ my $shiftop_mem = {
 my $shiftop_double = {
 	irn_flags => [ "modify_flags", "rematerializable" ],
 	in_reqs   => [ "gp", "gp", "ecx" ],
-	out_reqs  => [ "in_r1 !in_r2 !in_r3", "flags" ],
+	constructors => {
+		""    => { out_reqs  => [ "in_r1 !in_r2 !in_r3", "flags" ] },
+		# With an immediate shift amount we can swap between ShlD/ShrD and negate
+		# the shift amount, if the output gets the same register as the second
+		# input.
+		"imm" => { out_reqs  => [ "in_r1 in_r2",         "flags" ] },
+	},
 	ins       => [ "val_high", "val_low", "count" ],
 	outs      => [ "res", "flags" ],
 	mode      => $mode_gp,

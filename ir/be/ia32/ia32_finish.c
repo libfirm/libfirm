@@ -177,6 +177,32 @@ carry:;
 	exchange(irn, res);
 }
 
+static void ia32_transform_ShlD_to_ShrD_imm(ir_node *const irn)
+{
+	ir_node               *const in0     = get_irn_n(irn, n_ia32_ShlD_val_high);
+	arch_register_t const *const in0_reg = arch_get_irn_register(in0);
+	arch_register_t const *const out_reg = arch_get_irn_register_out(irn, pn_ia32_ShlD_res);
+	if (out_reg == in0_reg)
+		return; /* should_be_same fulfilled. */
+
+	ir_node               *const in1     = get_irn_n(irn, n_ia32_ShlD_val_low);
+	arch_register_t const *const in1_reg = arch_get_irn_register(in1);
+	if (out_reg != in1_reg)
+		return; /* res uses third register. Must be resolved with a Copy. */
+
+	/* a = ShlD(b, a, c) -> a = ShrD(a, b, 32 - c) */
+	ir_node                     *const lcount = get_irn_n(irn, n_ia32_ShlD_count);
+	ia32_immediate_attr_t const *const attr   = get_ia32_immediate_attr_const(lcount);
+	ir_graph                    *const irg    = get_irn_irg(irn);
+	ir_node                     *const count  = ia32_create_Immediate(irg, 32 - attr->offset);
+	dbg_info                    *const dbgi   = get_irn_dbg_info(irn);
+	ir_node                     *const block  = get_nodes_block(irn);
+	ir_node                     *const res    = new_bd_ia32_ShrD_imm(dbgi, block, in1, in0, count);
+	arch_set_irn_register_out(res, pn_ia32_ShrD_res, out_reg);
+	sched_replace(irn, res);
+	exchange(irn, res);
+}
+
 static inline int need_constraint_copy(ir_node *irn)
 {
 	/* TODO this should be determined from the node specification */
@@ -326,6 +352,8 @@ static void ia32_finish_irg_walker(ir_node *block, void *env)
 		/* check if there is a sub which need to be transformed */
 		if (is_ia32_Sub(irn) || is_ia32_Sbb(irn) || is_ia32_xSub(irn)) {
 			ia32_transform_sub_to_neg_add(irn);
+		} else if (is_ia32_ShlD(irn)) {
+			ia32_transform_ShlD_to_ShrD_imm(irn);
 		}
 	}
 

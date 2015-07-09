@@ -1421,7 +1421,7 @@ static bool is_complementary_shifts(ir_node *value1, ir_node *value2)
 	if (is_Const(value1) && is_Const(value2)) {
 		long const v1 = get_Const_long(value1);
 		long const v2 = get_Const_long(value2);
-		return v1 <= v2 && v2 == 32 - v1;
+		return v2 == 32 - v1;
 	}
 	return false;
 }
@@ -1446,10 +1446,7 @@ static ir_node *match_64bit_shift(ir_node *node)
 		ir_node *shr_left  = get_Shr_left(op2);
 		/* constant ShlD operation */
 		if (is_complementary_shifts(shl_right, shr_right))
-			return gen_64bit_shifts(node, shl_left, shr_left, shl_right, new_bd_ia32_ShlD);
-		/* constant ShrD operation */
-		if (is_complementary_shifts(shr_right, shl_right))
-			return gen_64bit_shifts(node, shr_left, shl_left, shr_right, new_bd_ia32_ShrD);
+			return gen_64bit_shifts(node, shl_left, shr_left, shl_right, new_bd_ia32_ShlD_imm);
 		/* lower_dw produces the following for ShlD:
 		 * Or(Shr(Shr(high,1),Not(c)),Shl(low,c)) */
 		if (is_Shr(shr_left) && is_Not(shr_right)
