@@ -193,7 +193,7 @@ Jmp => {
 Start => {
 	irn_flags => [ "schedule_first" ],
 	state     => "pinned",
-	our_reqs  => [ "sp:I", "r0", "r1", "r2", "r3", "none" ],
+	out_reqs  => [ "sp:I", "r0", "r1", "r2", "r3", "none" ],
 	outs      => [ "stack", "arg0", "arg1", "arg2", "arg3", "M" ],
 	ins       => [],
 },
