@@ -260,11 +260,14 @@ void TEMPLATE_emit_function(ir_graph *irg)
 	be_gas_emit_function_prolog(entity, 4, NULL);
 
 	/* populate jump link fields with their destinations */
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 	irg_block_walk_graph(irg, TEMPLATE_gen_labels, NULL, NULL);
 
 	for (size_t i = 0, n = ARR_LEN(block_schedule); i < n; ++i) {
 		ir_node *block = block_schedule[i];
 		TEMPLATE_emit_block(block);
 	}
+	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
+
 	be_gas_emit_function_epilog(entity);
 }
