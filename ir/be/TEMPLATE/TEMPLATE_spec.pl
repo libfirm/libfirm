@@ -23,9 +23,7 @@ $mode_fp  = "mode_F";  # mode used by floatingpoint registers
 #   emit      => "emit code with templates",   # optional for virtual nodes
 #   attr      => "additional attribute arguments for constructor", # optional
 #   init_attr => "emit attribute initialization template",         # optional
-#   rd_constructor => "c source code which constructs an ir_node", # optional
 #   hash_func => "name of the hash function for this operation",   # optional, get the default hash function else
-#   latency   => "latency of this operation (can be float)"        # optional
 #   attr_type => "name of the attribute struct",                   # optional
 # },
 #
