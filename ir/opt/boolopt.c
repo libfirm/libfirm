@@ -490,6 +490,10 @@ static void remove_block_input(ir_node *block, int idx)
 
 		for (phi = get_Block_phis(block); phi != NULL; phi = next_phi) {
 			next_phi = get_Phi_next(phi);
+			if (get_Phi_loop(phi)) {
+				remove_keep_alive(phi);
+				set_Phi_loop(phi, false);
+			}
 			exchange(phi, get_Phi_pred(phi, idx ^ 1));
 		}
 		set_Block_phis(block, NULL);
