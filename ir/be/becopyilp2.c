@@ -602,7 +602,7 @@ BE_REGISTER_MODULE_CONSTRUCTOR(be_init_copyilp2)
 void be_init_copyilp2(void)
 {
 	static co_algo_info copyheur = {
-		co_solve_ilp2, 1
+		co_solve_ilp2
 	};
 
 	be_register_copyopt("ilp", &copyheur);

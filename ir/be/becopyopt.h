@@ -26,7 +26,6 @@ typedef int(*cost_fct_t)(const ir_node *node, int input);
 
 typedef struct {
 	int (*copyopt)(copy_opt_t *co); /**< function ptr to run copyopt */
-	bool can_improve_existing;
 } co_algo_info;
 
 /**

@@ -1342,7 +1342,7 @@ void be_init_copyheur4(void)
 	lc_opt_entry_t *heur4_grp   = lc_opt_get_grp(co_grp, "heur4");
 
 	static co_algo_info copyheur = {
-		co_solve_heuristic_mst, 0
+		co_solve_heuristic_mst
 	};
 
 	lc_opt_add_table(heur4_grp, options);

@@ -88,7 +88,6 @@ static unsigned   dump_flags  = 0;
 static unsigned   style_flags = CO_IFG_DUMP_COLORS;
 static bool       do_stats    = false;
 static cost_fct_t cost_func   = co_get_costs_exec_freq;
-static bool       improve     = true;
 
 static const lc_opt_enum_mask_items_t dump_items[] = {
 	{ "before",  DUMP_BEFORE },
@@ -128,11 +127,10 @@ static lc_opt_enum_func_ptr_var_t cost_func_var = {
 };
 
 static const lc_opt_table_entry_t options[] = {
-	LC_OPT_ENT_ENUM_FUNC_PTR ("cost",    "select a cost function",                                  &cost_func_var),
-	LC_OPT_ENT_ENUM_MASK     ("dump",    "dump ifg before or after copy optimization",              &dump_var),
-	LC_OPT_ENT_ENUM_MASK     ("style",   "dump style for ifg dumping",                              &style_var),
-	LC_OPT_ENT_BOOL          ("stats",   "dump statistics after each optimization",                 &do_stats),
-	LC_OPT_ENT_BOOL          ("improve", "run heur1 before if algo can exploit start solutions",    &improve),
+	LC_OPT_ENT_ENUM_FUNC_PTR ("cost",  "select a cost function",                     &cost_func_var),
+	LC_OPT_ENT_ENUM_MASK     ("dump",  "dump ifg before or after copy optimization", &dump_var),
+	LC_OPT_ENT_ENUM_MASK     ("style", "dump style for ifg dumping",                 &style_var),
+	LC_OPT_ENT_BOOL          ("stats", "dump statistics after each optimization",    &do_stats),
 	LC_OPT_LAST
 };
 
@@ -169,7 +167,7 @@ BE_REGISTER_MODULE_CONSTRUCTOR(be_init_copynone)
 void be_init_copynone(void)
 {
 	static co_algo_info copyheur = {
-		void_algo, 0
+		void_algo
 	};
 
 	be_register_copyopt("none", &copyheur);
@@ -811,20 +809,6 @@ void co_driver(be_chordal_env_t *cenv)
 		be_dump_ifg_co(f, co, style_flags & CO_IFG_DUMP_LABELS, style_flags & CO_IFG_DUMP_COLORS);
 		fclose(f);
 	}
-
-#if 0
-	/* if the algo can improve results, provide an initial solution with heur1 */
-	if (improve && selected_copyopt->can_improve_existing) {
-		co_complete_stats_t stats;
-
-		/* produce a heuristic solution */
-		co_solve_heuristic(co);
-
-		/* do the stats and provide the current costs */
-		co_complete_stats(co, &stats);
-		stat_ev_ull("co_prepare_costs", stats.costs);
-	}
-#endif
 
 	/* perform actual copy minimization */
 	ir_timer_reset_and_start(timer);
