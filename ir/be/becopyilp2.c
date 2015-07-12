@@ -226,8 +226,8 @@ static void build_affinity_cstr(ilp_env_t const *const ienv)
 
 	/* for all optimization units */
 	list_for_each_entry(unit_t, curr, &ienv->co->units, units) {
-		ir_node *const root     = curr->nodes[0];
-		unsigned const root_col = get_irn_col(root);
+		ir_node               *const root     = curr->nodes[0];
+		arch_register_t const *const root_reg = arch_get_irn_register(root);
 		for (int i = 1; i < curr->node_count; ++i) {
 			ir_node *const arg = curr->nodes[i];
 			char           buf[32];
@@ -235,7 +235,7 @@ static void build_affinity_cstr(ilp_env_t const *const ienv)
 			/* add a new affinity variable */
 			make_affinity_var_name(buf, sizeof(buf), arg, root);
 			int    const y_idx = lpp_add_var(lp, buf, lpp_binary, curr->costs[i]);
-			double const val   = root_col == get_irn_col(arg) ? 0.0 : 1.0;
+			double const val   = root_reg == arch_get_irn_register(arg) ? 0.0 : 1.0;
 			lpp_set_start_value(lp, y_idx, val);
 
 			/* add constraints relating the affinity var to the color vars */

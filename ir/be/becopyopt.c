@@ -533,7 +533,7 @@ static void co_complete_stats(const copy_opt_t *co, co_complete_stats_t *stat)
 				stat->aff_edges += 1;
 				stat->max_costs += neigh->costs;
 
-				if (get_irn_col(an->irn) != get_irn_col(neigh->irn)) {
+				if (arch_get_irn_register(an->irn) != arch_get_irn_register(neigh->irn)) {
 					stat->costs += neigh->costs;
 					stat->unsatisfied_edges += 1;
 				}
