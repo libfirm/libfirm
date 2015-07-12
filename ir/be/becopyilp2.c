@@ -219,44 +219,37 @@ static void make_affinity_var_name(char *buf, size_t buf_size,
  *       by walking over all affinity edges. Graph structure
  *       does not provide this walker, yet.
  */
-static void build_affinity_cstr(ilp_env_t *ienv)
+static void build_affinity_cstr(ilp_env_t const *const ienv)
 {
+	lpp_t   *const lp       = ienv->lp;
 	unsigned const n_colors = ienv->co->cls->n_regs;
 
 	/* for all optimization units */
 	list_for_each_entry(unit_t, curr, &ienv->co->units, units) {
-		ir_node *root     = curr->nodes[0];
-		unsigned root_col = get_irn_col(root);
-		int      i;
-
-		for (i = 1; i < curr->node_count; ++i) {
-			ir_node *arg     = curr->nodes[i];
-			unsigned arg_col = get_irn_col(arg);
-			double   val;
-			char     buf[32];
-			unsigned col;
-			int      y_idx;
+		ir_node *const root     = curr->nodes[0];
+		unsigned const root_col = get_irn_col(root);
+		for (int i = 1; i < curr->node_count; ++i) {
+			ir_node *const arg = curr->nodes[i];
+			char           buf[32];
 
 			/* add a new affinity variable */
 			make_affinity_var_name(buf, sizeof(buf), arg, root);
-			y_idx = lpp_add_var(ienv->lp, buf, lpp_binary, curr->costs[i]);
-			val   = (root_col == arg_col) ? 0.0 : 1.0;
-			lpp_set_start_value(ienv->lp, y_idx, val);
+			int    const y_idx = lpp_add_var(lp, buf, lpp_binary, curr->costs[i]);
+			double const val   = root_col == get_irn_col(arg) ? 0.0 : 1.0;
+			lpp_set_start_value(lp, y_idx, val);
 
 			/* add constraints relating the affinity var to the color vars */
-			for (col=0; col<n_colors; ++col) {
-				int cst_idx = lpp_add_cst(ienv->lp, NULL, lpp_less_equal, 0.0);
-				int root_idx;
-				int arg_idx;
+			for (unsigned col = 0; col < n_colors; ++col) {
+				int const cst_idx = lpp_add_cst(lp, NULL, lpp_less_equal, 0.0);
 
 				make_color_var_name(buf, sizeof(buf), root, col);
-				root_idx = lpp_get_var_idx(ienv->lp, buf);
+				int const root_idx = lpp_get_var_idx(lp, buf);
 				make_color_var_name(buf, sizeof(buf), arg, col);
-				arg_idx  = lpp_get_var_idx(ienv->lp, buf);
+				int const arg_idx  = lpp_get_var_idx(lp, buf);
 
-				lpp_set_factor_fast(ienv->lp, cst_idx, root_idx,  1.0);
-				lpp_set_factor_fast(ienv->lp, cst_idx, arg_idx,  -1.0);
-				lpp_set_factor_fast(ienv->lp, cst_idx, y_idx, -1.0);
+				lpp_set_factor_fast(lp, cst_idx, root_idx,  1.0);
+				lpp_set_factor_fast(lp, cst_idx, arg_idx,  -1.0);
+				lpp_set_factor_fast(lp, cst_idx, y_idx,    -1.0);
 			}
 		}
 	}
