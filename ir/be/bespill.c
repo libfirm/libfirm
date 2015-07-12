@@ -61,6 +61,5 @@ void be_init_spilloptions(void)
 	lc_opt_entry_t *spill_grp = lc_opt_get_grp(be_grp, "spill");
 
 	lc_opt_add_table(spill_grp, be_spill_options);
-	be_add_module_list_opt(be_grp, "spiller", "spill algorithm",
-	                       &spillers, (void**) &selected_spiller);
+	be_add_module_list_opt(spill_grp, "algo", "spill algorithm", &spillers, (void**)&selected_spiller);
 }
