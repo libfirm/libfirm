@@ -5353,322 +5353,320 @@ cmp_x_eq_0:
 			}
 		}
 
-		if (tarval_is_constant(tv)) {
-			/* the following optimization is possible on modes without Overflow
-			 * on Unary Minus or on == and !=:
-			 * -a CMP c  ==>  a swap(CMP) -c
-			 *
-			 * Beware: for two-complement Overflow may occur, so only == and != can
-			 * be optimized, see this:
-			 * -MININT < 0 =/=> MININT > 0 !!!
-			 */
-			if (is_Minus(left)) {
-				ir_node   *op  = get_Minus_op(left);
-				bitinfo   *b   = get_bitinfo(op);
-				ir_tarval *max = get_mode_max(mode);
-				if (!mode_overflow_on_unary_Minus(mode) ||
-				    (mode_is_int(mode) && rel_eq != ir_relation_false) ||
-				    (get_mode_arithmetic(mode) == irma_twos_complement && b != NULL &&
-				     (!tarval_is_all_one(tarval_or(max, b->z)) ||
-				      !tarval_is_null(tarval_and(b->o, max))))) {
-					tv = tarval_neg(tv);
-
-					if (tarval_is_constant(tv)) {
-						left = op;
-						if (mode_is_int(mode) && rel_eq != ir_relation_false) {
-							relation = rel_eq;
-						} else {
-							relation = get_inversed_relation(relation);
-						}
-						changedc = true;
-						DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_OP_C);
-					}
-				}
-			} else if (is_Not(left) && rel_eq != ir_relation_false) {
-				/* Not(a) ==/!= c  ==>  a ==/!= Not(c) */
-				tv = tarval_not(tv);
+		/* the following optimization is possible on modes without Overflow
+		 * on Unary Minus or on == and !=:
+		 * -a CMP c  ==>  a swap(CMP) -c
+		 *
+		 * Beware: for two-complement Overflow may occur, so only == and != can
+		 * be optimized, see this:
+		 * -MININT < 0 =/=> MININT > 0 !!!
+		 */
+		if (is_Minus(left)) {
+			ir_node   *op  = get_Minus_op(left);
+			bitinfo   *b   = get_bitinfo(op);
+			ir_tarval *max = get_mode_max(mode);
+			if (!mode_overflow_on_unary_Minus(mode) ||
+			    (mode_is_int(mode) && rel_eq != ir_relation_false) ||
+			    (get_mode_arithmetic(mode) == irma_twos_complement && b != NULL &&
+			     (!tarval_is_all_one(tarval_or(max, b->z)) ||
+			      !tarval_is_null(tarval_and(b->o, max))))) {
+				tv = tarval_neg(tv);
 
 				if (tarval_is_constant(tv)) {
-					left     = get_Not_op(left);
-					relation = rel_eq;
+					left = op;
+					if (mode_is_int(mode) && rel_eq != ir_relation_false) {
+						relation = rel_eq;
+					} else {
+						relation = get_inversed_relation(relation);
+					}
 					changedc = true;
 					DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_OP_C);
 				}
 			}
+		} else if (is_Not(left) && rel_eq != ir_relation_false) {
+			/* Not(a) ==/!= c  ==>  a ==/!= Not(c) */
+			tv = tarval_not(tv);
 
-			/* for integer modes, we have more */
-			if (mode_is_int(mode) && !is_Const(left)) {
-				if ((relation == ir_relation_less || relation == ir_relation_greater_equal) &&
-					tarval_cmp(tv, get_mode_null(mode)) == ir_relation_greater) {
-					bitinfo const *const bl = get_bitinfo(left);
-					if (bl) {
-						ir_tarval *const uneq = tarval_or(tarval_andnot(tv, bl->z), tarval_andnot(bl->o, tv));
-						int        const hi   = get_tarval_highest_bit(uneq);
-						if (hi >= 0) {
-							/* Example: 0b????0101 < 0b11001000 -> 0b????0101 <= 0b11000101
-							 * It is possible that o <= tv <= z and it is known that left and
-							 * tv differ in at least one bit.  Reduce the constant by the
-							 * value of the highest differing bit and set all bits below to
-							 * the maximum possible value of the left hand side, i.e. z.
-							 * This converges in O(n) in comparison to l < c -> l <= c - 1,
-							 * which converges in O(2**n). */
-							ir_tarval *const one   = get_mode_one(mode);
-							ir_tarval *const hibit = tarval_shl_unsigned(one, hi);
-							ir_tarval *const mask  = tarval_sub(hibit, one, NULL);
-							tv = tarval_or(tarval_andnot(tarval_sub(tv, hibit, NULL), mask), tarval_and(bl->z, mask));
-							goto reduced_tv;
-						}
+			if (tarval_is_constant(tv)) {
+				left     = get_Not_op(left);
+				relation = rel_eq;
+				changedc = true;
+				DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_OP_C);
+			}
+		}
+
+		/* for integer modes, we have more */
+		if (mode_is_int(mode) && !is_Const(left)) {
+			if ((relation == ir_relation_less || relation == ir_relation_greater_equal) &&
+				tarval_cmp(tv, get_mode_null(mode)) == ir_relation_greater) {
+				bitinfo const *const bl = get_bitinfo(left);
+				if (bl) {
+					ir_tarval *const uneq = tarval_or(tarval_andnot(tv, bl->z), tarval_andnot(bl->o, tv));
+					int        const hi   = get_tarval_highest_bit(uneq);
+					if (hi >= 0) {
+						/* Example: 0b????0101 < 0b11001000 -> 0b????0101 <= 0b11000101
+						 * It is possible that o <= tv <= z and it is known that left and
+						 * tv differ in at least one bit.  Reduce the constant by the
+						 * value of the highest differing bit and set all bits below to
+						 * the maximum possible value of the left hand side, i.e. z.
+						 * This converges in O(n) in comparison to l < c -> l <= c - 1,
+						 * which converges in O(2**n). */
+						ir_tarval *const one   = get_mode_one(mode);
+						ir_tarval *const hibit = tarval_shl_unsigned(one, hi);
+						ir_tarval *const mask  = tarval_sub(hibit, one, NULL);
+						tv = tarval_or(tarval_andnot(tarval_sub(tv, hibit, NULL), mask), tarval_and(bl->z, mask));
+						goto reduced_tv;
 					}
-
-					/* c > 0 : a < c  ==>  a <= (c - 1)    a >= c  ==>  a > (c - 1) */
-					tv = tarval_sub(tv, get_mode_one(mode), NULL);
-					goto reduced_tv;
-				} else if ((relation == ir_relation_greater || relation == ir_relation_less_equal) &&
-					tarval_cmp(tv, get_mode_null(mode)) == ir_relation_less) {
-					bitinfo const *const bl = get_bitinfo(left);
-					if (bl) {
-						ir_tarval *const uneq = tarval_or(tarval_andnot(tv, bl->z), tarval_andnot(bl->o, tv));
-						int        const hi   = get_tarval_highest_bit(uneq);
-						if (hi >= 0) {
-							/* Example: 0b????0101 > 0b11001000 -> 0b????0101 >= 0b11010101
-							 * It is possible that o <= tv <= z and it is known that left and
-							 * tv differ in at least one bit.  Increase the constant by the
-							 * value of the highest differing bit and set all bits below to
-							 * the maximum possible value of the left hand side, i.e. z.
-							 * This converges in O(n) in comparison to l > c -> l >= c + 1,
-							 * which converges in O(2**n). */
-							ir_tarval *const one   = get_mode_one(mode);
-							ir_tarval *const hibit = tarval_shl_unsigned(one, hi);
-							ir_tarval *const mask  = tarval_sub(hibit, one, NULL);
-							tv = tarval_or(tarval_andnot(tarval_add(tv, hibit), mask), tarval_and(bl->o, mask));
-							goto reduced_tv;
-						}
-					}
-
-					/* c < 0 : a > c  ==>  a >= (c + 1)    a <= c  ==>  a < (c + 1) */
-					tv = tarval_add(tv, get_mode_one(mode));
-
-reduced_tv:
-					assert(tarval_is_constant(tv));
-					relation ^= ir_relation_equal;
-					rel_eq    = get_complementary_relations(ir_relation_equal, relation, possible);
-					changedc  = true;
-					DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_CNST_MAGN);
 				}
 
-				/* the following reassociations work only for == and != */
-				if (rel_eq != ir_relation_false) {
-					if (tarval_is_constant(tv)) {
-						if (is_Sub(left)) {
-							/* a - c1 ==/!= c2  ==>  a ==/!= c2 + c1 */
-							ir_node   *c1  = get_Sub_right(left);
-							ir_tarval *tv2 = value_of(c1);
+				/* c > 0 : a < c  ==>  a <= (c - 1)    a >= c  ==>  a > (c - 1) */
+				tv = tarval_sub(tv, get_mode_one(mode), NULL);
+				goto reduced_tv;
+			} else if ((relation == ir_relation_greater || relation == ir_relation_less_equal) &&
+				tarval_cmp(tv, get_mode_null(mode)) == ir_relation_less) {
+				bitinfo const *const bl = get_bitinfo(left);
+				if (bl) {
+					ir_tarval *const uneq = tarval_or(tarval_andnot(tv, bl->z), tarval_andnot(bl->o, tv));
+					int        const hi   = get_tarval_highest_bit(uneq);
+					if (hi >= 0) {
+						/* Example: 0b????0101 > 0b11001000 -> 0b????0101 >= 0b11010101
+						 * It is possible that o <= tv <= z and it is known that left and
+						 * tv differ in at least one bit.  Increase the constant by the
+						 * value of the highest differing bit and set all bits below to
+						 * the maximum possible value of the left hand side, i.e. z.
+						 * This converges in O(n) in comparison to l > c -> l >= c + 1,
+						 * which converges in O(2**n). */
+						ir_tarval *const one   = get_mode_one(mode);
+						ir_tarval *const hibit = tarval_shl_unsigned(one, hi);
+						ir_tarval *const mask  = tarval_sub(hibit, one, NULL);
+						tv = tarval_or(tarval_andnot(tarval_add(tv, hibit), mask), tarval_and(bl->o, mask));
+						goto reduced_tv;
+					}
+				}
+
+				/* c < 0 : a > c  ==>  a >= (c + 1)    a <= c  ==>  a < (c + 1) */
+				tv = tarval_add(tv, get_mode_one(mode));
+
+reduced_tv:
+				assert(tarval_is_constant(tv));
+				relation ^= ir_relation_equal;
+				rel_eq    = get_complementary_relations(ir_relation_equal, relation, possible);
+				changedc  = true;
+				DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_CNST_MAGN);
+			}
+
+			/* the following reassociations work only for == and != */
+			if (rel_eq != ir_relation_false) {
+				if (tarval_is_constant(tv)) {
+					if (is_Sub(left)) {
+						/* a - c1 ==/!= c2  ==>  a ==/!= c2 + c1 */
+						ir_node   *c1  = get_Sub_right(left);
+						ir_tarval *tv2 = value_of(c1);
+
+						if (tarval_is_constant(tv2)) {
+							tv2 = tarval_add(tv, value_of(c1));
 
 							if (tarval_is_constant(tv2)) {
-								tv2 = tarval_add(tv, value_of(c1));
-
-								if (tarval_is_constant(tv2)) {
-									left     = get_Sub_left(left);
-									relation = rel_eq;
-									tv       = tv2;
-									changedc = true;
-									DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_OP_C);
-								}
-							}
-						} else if ((is_Add(left) || is_Or_Eor_Add(left))
-						           && only_one_user(left)) {
-							/* a + c1 ==/!= c2  ==>  a ==/!= c2 - c1 */
-							ir_tarval *tv2 = value_of(get_binop_right(left));
-							if (tarval_is_constant(tv2)) {
-								tv2 = tarval_sub(tv, tv2, NULL);
-								if (tarval_is_constant(tv2)) {
-									left     = get_binop_left(left);
-									relation = rel_eq;
-									tv       = tv2;
-									changedc = true;
-									DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_OP_C);
-								}
-							}
-						} else if (is_Minus(left)) {
-							/* -a ==/!= c ==> a ==/!= -c */
-							ir_tarval *tv2 = tarval_neg(tv);
-
-							if (tarval_is_constant(tv2)) {
-								left     = get_Minus_op(left);
+								left     = get_Sub_left(left);
 								relation = rel_eq;
 								tv       = tv2;
 								changedc = true;
 								DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_OP_C);
 							}
 						}
+					} else if ((is_Add(left) || is_Or_Eor_Add(left))
+					           && only_one_user(left)) {
+						/* a + c1 ==/!= c2  ==>  a ==/!= c2 - c1 */
+						ir_tarval *tv2 = value_of(get_binop_right(left));
+						if (tarval_is_constant(tv2)) {
+							tv2 = tarval_sub(tv, tv2, NULL);
+							if (tarval_is_constant(tv2)) {
+								left     = get_binop_left(left);
+								relation = rel_eq;
+								tv       = tv2;
+								changedc = true;
+								DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_OP_C);
+							}
+						}
+					} else if (is_Minus(left)) {
+						/* -a ==/!= c ==> a ==/!= -c */
+						ir_tarval *tv2 = tarval_neg(tv);
+
+						if (tarval_is_constant(tv2)) {
+							left     = get_Minus_op(left);
+							relation = rel_eq;
+							tv       = tv2;
+							changedc = true;
+							DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_OP_C);
+						}
 					}
 				}
 			}
+		}
 
-			if (rel_eq != ir_relation_false) {
-				switch (get_irn_opcode(left)) {
-					ir_node *c1;
+		if (rel_eq != ir_relation_false) {
+			switch (get_irn_opcode(left)) {
+				ir_node *c1;
 
-				case iro_And:
-					c1 = get_And_right(left);
-					if (is_Const(c1)) {
+			case iro_And:
+				c1 = get_And_right(left);
+				if (is_Const(c1)) {
+					/*
+					 * And(x, C1) == C2 ==> FALSE if C2 & C1 != C2
+					 * And(x, C1) != C2 ==> TRUE if C2 & C1 != C2
+					 */
+					ir_tarval *tv1  = get_Const_tarval(c1);
+					ir_tarval *mask = tarval_and(tv1, tv);
+					if (mask != tv) {
+						/* TODO: move to constant evaluation */
+						c1 = create_bool_const(irg, rel_eq != ir_relation_equal);
+						DBG_OPT_CSTEVAL(n, c1);
+						return c1;
+					}
+
+					if (get_tarval_popcount(tv) == 1) {
 						/*
-						 * And(x, C1) == C2 ==> FALSE if C2 & C1 != C2
-						 * And(x, C1) != C2 ==> TRUE if C2 & C1 != C2
+						 * optimization for AND:
+						 * Optimize:
+						 *   And(x, C) == C  ==>  And(x, C) != 0
+						 *   And(x, C) != C  ==>  And(X, C) == 0
+						 *
+						 * if C is a single Bit constant.
 						 */
-						ir_tarval *tv1  = get_Const_tarval(c1);
-						ir_tarval *mask = tarval_and(tv1, tv);
-						if (mask != tv) {
-							/* TODO: move to constant evaluation */
-							c1 = create_bool_const(irg, rel_eq != ir_relation_equal);
-							DBG_OPT_CSTEVAL(n, c1);
-							return c1;
-						}
 
-						if (get_tarval_popcount(tv) == 1) {
-							/*
-							 * optimization for AND:
-							 * Optimize:
-							 *   And(x, C) == C  ==>  And(x, C) != 0
-							 *   And(x, C) != C  ==>  And(X, C) == 0
-							 *
-							 * if C is a single Bit constant.
-							 */
-
-							/* check for Constant's match. We have check hare the tarvals,
-							   because our const might be changed */
-							if (get_Const_tarval(c1) == tv) {
-								/* fine: do the transformation */
-								tv = get_mode_null(get_tarval_mode(tv));
-								relation ^= ir_relation_less_equal_greater;
-								changedc = true;
-								DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_CNST_MAGN);
-							}
-						}
-
-						if (mode_is_signed(mode) &&
-						    get_mode_arithmetic(mode) == irma_twos_complement &&
-						    get_mode_min(mode) == tv1 && tarval_is_null(tv)) {
-							/*
-							 * And(x, 0x80000000) == 0 ==> x >= 0
-							 * And(x, 0x80000000) != 0 ==> x <  0
-							 */
-							left     = get_And_left(left);
-							relation = rel_eq != ir_relation_equal ? ir_relation_less : ir_relation_greater_equal;
+						/* check for Constant's match. We have check hare the tarvals,
+						   because our const might be changed */
+						if (get_Const_tarval(c1) == tv) {
+							/* fine: do the transformation */
+							tv = get_mode_null(get_tarval_mode(tv));
+							relation ^= ir_relation_less_equal_greater;
 							changedc = true;
+							DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_CNST_MAGN);
 						}
-
 					}
-					break;
-				case iro_Or:
-					c1 = get_Or_right(left);
-					if (is_Const(c1) && tarval_is_null(tv)) {
+
+					if (mode_is_signed(mode) &&
+					    get_mode_arithmetic(mode) == irma_twos_complement &&
+					    get_mode_min(mode) == tv1 && tarval_is_null(tv)) {
 						/*
-						 * Or(x, C) == 0  && C != 0 ==> FALSE
-						 * Or(x, C) != 0  && C != 0 ==> TRUE
+						 * And(x, 0x80000000) == 0 ==> x >= 0
+						 * And(x, 0x80000000) != 0 ==> x <  0
 						 */
-						if (! tarval_is_null(get_Const_tarval(c1))) {
-							/* TODO: move to constant evaluation */
-							c1 = create_bool_const(irg, rel_eq != ir_relation_equal);
-							DBG_OPT_CSTEVAL(n, c1);
-							return c1;
-						}
-					}
-					break;
-				case iro_Shl:
-					/*
-					 * optimize x << c1 == c into x & (-1 >>u c1) == c >> c1  if  c & (-1 << c1) == c
-					 *                             FALSE                       else
-					 * optimize x << c1 != c into x & (-1 >>u c1) != c >> c1  if  c & (-1 << c1) == c
-					 *                             TRUE                        else
-					 */
-					c1 = get_Shl_right(left);
-					if (is_Const(c1)) {
-						ir_tarval *tv1    = get_Const_tarval(c1);
-						ir_mode   *mode   = get_irn_mode(left);
-						ir_tarval *minus1 = get_mode_all_one(mode);
-						ir_tarval *cmask  = tarval_shl(minus1, tv1);
-
-						if (tarval_and(tv, cmask) != tv) {
-							/* condition not met */
-							c1 = create_bool_const(irg, relation != ir_relation_equal);
-							DBG_OPT_CSTEVAL(n, c1);
-							return c1;
-						}
-						ir_tarval *amask = tarval_shr(minus1, tv1);
-						ir_node   *sl    = get_Shl_left(left);
-						ir_node   *blk   = get_nodes_block(n);
-						left     = new_rd_And(get_irn_dbg_info(left), blk, sl, new_r_Const(irg, amask), mode);
-						relation = rel_eq;
-						tv       = tarval_shr(tv, tv1);
+						left     = get_And_left(left);
+						relation = rel_eq != ir_relation_equal ? ir_relation_less : ir_relation_greater_equal;
 						changedc = true;
-						DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_SHF_TO_AND);
 					}
-					break;
-				case iro_Shr:
-					/*
-					 * optimize x >>u c1 == c into x & (-1 << c1) == c << c1  if  c & (-1 >>u c1) == c
-					 *                             FALSE                       else
-					 * optimize x >>u c1 != c into x & (-1 << c1) != c << c1  if  c & (-1 >>u c1) == c
-					 *                             TRUE                        else
-					 */
-					c1 = get_Shr_right(left);
-					if (is_Const(c1)) {
-						ir_tarval *tv1    = get_Const_tarval(c1);
-						ir_mode   *mode   = get_irn_mode(left);
-						ir_tarval *minus1 = get_mode_all_one(mode);
-						ir_tarval *cmask  = tarval_shr(minus1, tv1);
 
-						if (tarval_and(tv, cmask) != tv) {
-							/* condition not met */
-							c1 = create_bool_const(irg, rel_eq != ir_relation_equal);
-							DBG_OPT_CSTEVAL(n, c1);
-							return c1;
-						}
-						ir_tarval *amask = tarval_shl(minus1, tv1);
-						ir_node   *sl    = get_Shr_left(left);
-						ir_node   *blk   = get_nodes_block(n);
-						left     = new_rd_And(get_irn_dbg_info(left), blk, sl, new_r_Const(irg, amask), mode);
-						relation = rel_eq;
-						tv       = tarval_shl(tv, tv1);
-						changedc = true;
-						DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_SHF_TO_AND);
-					}
-					break;
-				case iro_Shrs:
-					/*
-					 * optimize x >>s c1 == c into x & (-1 << c1) == c << c1  if  (c >>s ((BITS - 1) - c1)) \in {0,-1}
-					 *                             FALSE                       else
-					 * optimize x >>s c1 != c into x & (-1 << c1) != c << c1  if  (c >>s ((BITS - 1) - c1)) \in {0,-1}
-					 *                             TRUE                        else
-					 */
-					c1 = get_Shrs_right(left);
-					if (is_Const(c1)) {
-						ir_tarval *tv1     = get_Const_tarval(c1);
-						ir_mode   *mode    = get_irn_mode(left);
-						ir_tarval *all_one = get_mode_all_one(mode);
-						ir_tarval *cond    = new_tarval_from_long(get_mode_size_bits(mode) - 1, get_tarval_mode(tv1));
-
-						cond = tarval_sub(cond, tv1, NULL);
-						cond = tarval_shrs(tv, cond);
-
-						if (!tarval_is_all_one(cond) && !tarval_is_null(cond)) {
-							/* condition not met */
-							c1 = create_bool_const(irg, relation != ir_relation_equal);
-							DBG_OPT_CSTEVAL(n, c1);
-							return c1;
-						}
-						ir_tarval *amask = tarval_shl(all_one, tv1);
-						ir_node   *sl    = get_Shrs_left(left);
-						ir_node   *blk   = get_nodes_block(n);
-						left     = new_rd_And(get_irn_dbg_info(left), blk, sl, new_r_Const(irg, amask), mode);
-						relation = rel_eq;
-						tv       = tarval_shl(tv, tv1);
-						changedc = true;
-						DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_SHF_TO_AND);
-					}
-					break;
 				}
+				break;
+			case iro_Or:
+				c1 = get_Or_right(left);
+				if (is_Const(c1) && tarval_is_null(tv)) {
+					/*
+					 * Or(x, C) == 0  && C != 0 ==> FALSE
+					 * Or(x, C) != 0  && C != 0 ==> TRUE
+					 */
+					if (! tarval_is_null(get_Const_tarval(c1))) {
+						/* TODO: move to constant evaluation */
+						c1 = create_bool_const(irg, rel_eq != ir_relation_equal);
+						DBG_OPT_CSTEVAL(n, c1);
+						return c1;
+					}
+				}
+				break;
+			case iro_Shl:
+				/*
+				 * optimize x << c1 == c into x & (-1 >>u c1) == c >> c1  if  c & (-1 << c1) == c
+				 *                             FALSE                       else
+				 * optimize x << c1 != c into x & (-1 >>u c1) != c >> c1  if  c & (-1 << c1) == c
+				 *                             TRUE                        else
+				 */
+				c1 = get_Shl_right(left);
+				if (is_Const(c1)) {
+					ir_tarval *tv1    = get_Const_tarval(c1);
+					ir_mode   *mode   = get_irn_mode(left);
+					ir_tarval *minus1 = get_mode_all_one(mode);
+					ir_tarval *cmask  = tarval_shl(minus1, tv1);
+
+					if (tarval_and(tv, cmask) != tv) {
+						/* condition not met */
+						c1 = create_bool_const(irg, relation != ir_relation_equal);
+						DBG_OPT_CSTEVAL(n, c1);
+						return c1;
+					}
+					ir_tarval *amask = tarval_shr(minus1, tv1);
+					ir_node   *sl    = get_Shl_left(left);
+					ir_node   *blk   = get_nodes_block(n);
+					left     = new_rd_And(get_irn_dbg_info(left), blk, sl, new_r_Const(irg, amask), mode);
+					relation = rel_eq;
+					tv       = tarval_shr(tv, tv1);
+					changedc = true;
+					DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_SHF_TO_AND);
+				}
+				break;
+			case iro_Shr:
+				/*
+				 * optimize x >>u c1 == c into x & (-1 << c1) == c << c1  if  c & (-1 >>u c1) == c
+				 *                             FALSE                       else
+				 * optimize x >>u c1 != c into x & (-1 << c1) != c << c1  if  c & (-1 >>u c1) == c
+				 *                             TRUE                        else
+				 */
+				c1 = get_Shr_right(left);
+				if (is_Const(c1)) {
+					ir_tarval *tv1    = get_Const_tarval(c1);
+					ir_mode   *mode   = get_irn_mode(left);
+					ir_tarval *minus1 = get_mode_all_one(mode);
+					ir_tarval *cmask  = tarval_shr(minus1, tv1);
+
+					if (tarval_and(tv, cmask) != tv) {
+						/* condition not met */
+						c1 = create_bool_const(irg, rel_eq != ir_relation_equal);
+						DBG_OPT_CSTEVAL(n, c1);
+						return c1;
+					}
+					ir_tarval *amask = tarval_shl(minus1, tv1);
+					ir_node   *sl    = get_Shr_left(left);
+					ir_node   *blk   = get_nodes_block(n);
+					left     = new_rd_And(get_irn_dbg_info(left), blk, sl, new_r_Const(irg, amask), mode);
+					relation = rel_eq;
+					tv       = tarval_shl(tv, tv1);
+					changedc = true;
+					DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_SHF_TO_AND);
+				}
+				break;
+			case iro_Shrs:
+				/*
+				 * optimize x >>s c1 == c into x & (-1 << c1) == c << c1  if  (c >>s ((BITS - 1) - c1)) \in {0,-1}
+				 *                             FALSE                       else
+				 * optimize x >>s c1 != c into x & (-1 << c1) != c << c1  if  (c >>s ((BITS - 1) - c1)) \in {0,-1}
+				 *                             TRUE                        else
+				 */
+				c1 = get_Shrs_right(left);
+				if (is_Const(c1)) {
+					ir_tarval *tv1     = get_Const_tarval(c1);
+					ir_mode   *mode    = get_irn_mode(left);
+					ir_tarval *all_one = get_mode_all_one(mode);
+					ir_tarval *cond    = new_tarval_from_long(get_mode_size_bits(mode) - 1, get_tarval_mode(tv1));
+
+					cond = tarval_sub(cond, tv1, NULL);
+					cond = tarval_shrs(tv, cond);
+
+					if (!tarval_is_all_one(cond) && !tarval_is_null(cond)) {
+						/* condition not met */
+						c1 = create_bool_const(irg, relation != ir_relation_equal);
+						DBG_OPT_CSTEVAL(n, c1);
+						return c1;
+					}
+					ir_tarval *amask = tarval_shl(all_one, tv1);
+					ir_node   *sl    = get_Shrs_left(left);
+					ir_node   *blk   = get_nodes_block(n);
+					left     = new_rd_And(get_irn_dbg_info(left), blk, sl, new_r_Const(irg, amask), mode);
+					relation = rel_eq;
+					tv       = tarval_shl(tv, tv1);
+					changedc = true;
+					DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_SHF_TO_AND);
+				}
+				break;
 			}
 		}
 	}
