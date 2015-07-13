@@ -254,46 +254,53 @@ static char *strtolower(char *buf, size_t n, const char *str)
 	return buf;
 }
 
-bool lc_opt_std_cb(lc_opt_type_t type, void *data, size_t length, ...)
+bool lc_opt_bit_cb(void *data, size_t length, ...)
 {
 	va_list args;
 	va_start(args, length);
-
-	bool res = false;
-	if (data) {
-		res = true;
-		switch (type) {
-		case lc_opt_type_bit: {
-			bool val = va_arg(args, int);
-			if (val)
-				*(unsigned*)data |= length;
-			else
-				*(unsigned*)data &= ~length;
-			break;
-		}
-
-		case lc_opt_type_boolean:
-			*((bool*) data) = va_arg(args, int);
-			break;
-
-		case lc_opt_type_string:
-			strncpy((char*)data, va_arg(args, const char *), length);
-			break;
-
-		case lc_opt_type_int:
-			*((int *) data) = va_arg(args, int);
-			break;
-
-		case lc_opt_type_double:
-			*((double *) data) = va_arg(args, double);
-			break;
-		default:
-			res = false;
-		}
-	}
-
+	bool val = va_arg(args, int);
+	if (val)
+		*(unsigned*)data |= length;
+	else
+		*(unsigned*)data &= ~length;
 	va_end(args);
-	return res;
+	return true;
+}
+
+bool lc_opt_bool_cb(void *data, size_t length, ...)
+{
+	va_list args;
+	va_start(args, length);
+	*(bool*)data = va_arg(args, int);
+	va_end(args);
+	return true;
+}
+
+bool lc_opt_double_cb(void *data, size_t length, ...)
+{
+	va_list args;
+	va_start(args, length);
+	*(double*)data = va_arg(args, double);
+	va_end(args);
+	return true;
+}
+
+bool lc_opt_int_cb(void *data, size_t length, ...)
+{
+	va_list args;
+	va_start(args, length);
+	*(int*)data = va_arg(args, int);
+	va_end(args);
+	return true;
+}
+
+bool lc_opt_string_cb(void *data, size_t length, ...)
+{
+	va_list args;
+	va_start(args, length);
+	strncpy((char*)data, va_arg(args, const char*), length);
+	va_end(args);
+	return true;
 }
 
 int lc_opt_bit_dump(char *const buf, size_t const n, void *const data)
@@ -365,14 +372,14 @@ static bool lc_opt_occurs(lc_opt_entry_t *opt, const char *value)
 	case lc_opt_type_int: {
 		int val;
 		if (sscanf(value, "%i", &val))
-			fine = s->cb(s->type, s->value, s->length, val);
+			fine = s->cb(s->value, s->length, val);
 		break;
 	}
 
 	case lc_opt_type_double: {
 		double val;
 		if (sscanf(value, "%lf", &val))
-			fine = s->cb(s->type, s->value, s->length, val);
+			fine = s->cb(s->value, s->length, val);
 		break;
 	}
 
@@ -390,14 +397,14 @@ static bool lc_opt_occurs(lc_opt_entry_t *opt, const char *value)
 		}
 
 		if (fine)
-			fine = s->cb(s->type, s->value, s->length, val);
+			fine = s->cb(s->value, s->length, val);
 
 		break;
 	}
 
 	case lc_opt_type_string:
 	case lc_opt_type_enum:
-		fine = s->cb(s->type, s->value, s->length, value);
+		fine = s->cb(s->value, s->length, value);
 		break;
 	case lc_opt_type_invalid:
 		abort();

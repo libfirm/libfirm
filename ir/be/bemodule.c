@@ -143,10 +143,9 @@ typedef struct module_opt_data_t {
  * return true.
  * Beware: return value of 0 means error.
  */
-static bool set_opt_module(lc_opt_type_t type, void *data, size_t length, ...)
+static bool set_opt_module(void *data, size_t length, ...)
 {
 	(void)length;
-	(void)type;
 
 	va_list args;
 	va_start(args, length);
