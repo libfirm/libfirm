@@ -191,11 +191,6 @@ const char *lc_opt_get_type_name(const lc_opt_entry_t *ent);
 
 /**
  * Print the help screen for the given entity to the given file.
- */
-void lc_opt_print_help(lc_opt_entry_t *ent, FILE *f);
-
-/**
- * Print the help screen for the given entity to the given file.
  * Use separator instead of '.' and ignore entities above ent,
  * i.e. if ent is root.be and has option isa.mach, prints
  * isa<separator>mach instead of root.be.isa.mach

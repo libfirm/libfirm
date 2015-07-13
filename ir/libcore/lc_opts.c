@@ -509,12 +509,6 @@ static void lc_opt_print_help_rec(lc_opt_entry_t *ent, char separator, lc_opt_en
 
 }
 
-void lc_opt_print_help(lc_opt_entry_t *ent, FILE *f)
-{
-	fprintf(f, HELP_TEMPL_VALS "\n", "option", "type", "description", "default", "possible options");
-	lc_opt_print_help_rec(ent, '.', NULL, f);
-}
-
 void lc_opt_print_help_for_entry(lc_opt_entry_t *ent, char separator, FILE *f)
 {
 	fprintf(f, HELP_TEMPL_VALS "\n", "option", "type", "description", "default", "possible options");
