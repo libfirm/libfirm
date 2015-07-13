@@ -32,7 +32,7 @@ typedef enum {
 
 typedef struct lc_opt_entry_t lc_opt_entry_t;
 
-typedef bool (lc_opt_callback_t)(void *data, size_t length, ...);
+typedef bool (lc_opt_callback_t)(void *data, size_t length, char const *value);
 
 typedef int (lc_opt_dump_t)(char *buf, size_t n, void *data);
 

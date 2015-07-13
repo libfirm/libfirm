@@ -3,7 +3,6 @@
  * Copyright (C) 2012 Universitaet Karlsruhe
  */
 #include <stdlib.h>
-#include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -14,21 +13,16 @@
 static const char *delim = " \t|,";
 
 #define DECL_CB(N, op) \
-bool lc_opt_enum_ ## N ## _cb(void *data, size_t len, ...) \
+bool lc_opt_enum_ ## N ## _cb(void *const data, size_t const len, char const *const arg) \
 { \
 	lc_opt_enum_ ## N ## _var_t *var           = (lc_opt_enum_ ## N ## _var_t*)data; \
 	const lc_opt_enum_ ## N ## _items_t *items = var->items; \
  \
-	va_list args; \
 	char *s, *tmp; \
 	size_t begin, end; \
-	const char *arg; \
 	bool res = false; \
  \
 	(void) len; \
-	va_start(args, len); \
-	arg = va_arg(args, const char *); \
-	va_end(args); \
 	\
 	end     = strlen(arg); \
 	tmp = s = (char*)malloc((end + 1) * sizeof(arg[0])); \

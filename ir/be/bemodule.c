@@ -143,13 +143,9 @@ typedef struct module_opt_data_t {
  * return true.
  * Beware: return value of 0 means error.
  */
-static bool set_opt_module(void *data, size_t length, ...)
+static bool set_opt_module(void *const data, size_t const length, char const *const opt)
 {
 	(void)length;
-
-	va_list args;
-	va_start(args, length);
-	const char *opt = va_arg(args, const char*);
 
 	const module_opt_data_t *moddata = (module_opt_data_t*)data;
 	bool                     res     = false;
@@ -161,7 +157,6 @@ static bool set_opt_module(void *data, size_t length, ...)
 			break;
 		}
 	}
-	va_end(args);
 
 	return res;
 }

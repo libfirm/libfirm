@@ -3,7 +3,6 @@
  * Copyright (C) 2012 IPD Goos, Universit"at Karlsruhe, Germany
  */
 #include <stdio.h>
-#include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
@@ -254,52 +253,67 @@ static char *strtolower(char *buf, size_t n, const char *str)
 	return buf;
 }
 
-bool lc_opt_bit_cb(void *data, size_t length, ...)
+static bool string_to_bool(bool *const val, char const *const value)
 {
-	va_list args;
-	va_start(args, length);
-	bool val = va_arg(args, int);
-	if (val)
-		*(unsigned*)data |= length;
-	else
-		*(unsigned*)data &= ~length;
-	va_end(args);
-	return true;
+	static const struct {
+		const char *str;
+		int val;
+	} bool_strings[] = {
+		{ "true",  1 },
+		{ "yes",   1 },
+		{ "on",    1 },
+		{ "1",     1 },
+		{ "false", 0 },
+		{ "no",    0 },
+		{ "off",   0 },
+		{ "0",     0 },
+	};
+
+	char buf[16];
+	strtolower(buf, sizeof(buf), value);
+	for (unsigned i = 0; i < ARRAY_SIZE(bool_strings); ++i) {
+		if (strcmp(buf, bool_strings[i].str) == 0) {
+			*val = bool_strings[i].val;
+			return true;
+		}
+	}
+	return false;
 }
 
-bool lc_opt_bool_cb(void *data, size_t length, ...)
+bool lc_opt_bit_cb(void *data, size_t length, char const *const value)
 {
-	va_list args;
-	va_start(args, length);
-	*(bool*)data = va_arg(args, int);
-	va_end(args);
-	return true;
+	bool       val;
+	bool const res = string_to_bool(&val, value);
+	if (res) {
+		if (val)
+			*(unsigned*)data |= length;
+		else
+			*(unsigned*)data &= ~length;
+	}
+	return res;
 }
 
-bool lc_opt_double_cb(void *data, size_t length, ...)
+bool lc_opt_bool_cb(void *const data, size_t const length, char const *const value)
 {
-	va_list args;
-	va_start(args, length);
-	*(double*)data = va_arg(args, double);
-	va_end(args);
-	return true;
+	(void)length;
+	return string_to_bool((bool*)data, value);
 }
 
-bool lc_opt_int_cb(void *data, size_t length, ...)
+bool lc_opt_double_cb(void *const data, size_t const length, char const *const value)
 {
-	va_list args;
-	va_start(args, length);
-	*(int*)data = va_arg(args, int);
-	va_end(args);
-	return true;
+	(void)length;
+	return sscanf(value, "%lf", (double*)data) != 0;
 }
 
-bool lc_opt_string_cb(void *data, size_t length, ...)
+bool lc_opt_int_cb(void *const data, size_t const length, char const *const value)
 {
-	va_list args;
-	va_start(args, length);
-	strncpy((char*)data, va_arg(args, const char*), length);
-	va_end(args);
+	(void)length;
+	return sscanf(value, "%i", (int*)data) != 0;
+}
+
+bool lc_opt_string_cb(void *const data, size_t const length, char const *const value)
+{
+	strncpy((char*)data, value, length);
 	return true;
 }
 
@@ -344,20 +358,6 @@ int lc_opt_bool_dump_vals(char *buf, size_t n, void *data)
  */
 static bool lc_opt_occurs(lc_opt_entry_t *opt, const char *value)
 {
-	static const struct {
-		const char *str;
-		int val;
-	} bool_strings[] = {
-		{ "true",  1 },
-		{ "yes",   1 },
-		{ "on",    1 },
-		{ "1",     1 },
-		{ "false", 0 },
-		{ "no",    0 },
-		{ "off",   0 },
-		{ "0",     0 },
-	};
-
 	if (opt == NULL)
 		return false;
 
@@ -366,51 +366,7 @@ static bool lc_opt_occurs(lc_opt_entry_t *opt, const char *value)
 		return false;
 
 	s->is_set = true;
-
-	bool fine = true;
-	switch (s->type) {
-	case lc_opt_type_int: {
-		int val;
-		if (sscanf(value, "%i", &val))
-			fine = s->cb(s->value, s->length, val);
-		break;
-	}
-
-	case lc_opt_type_double: {
-		double val;
-		if (sscanf(value, "%lf", &val))
-			fine = s->cb(s->value, s->length, val);
-		break;
-	}
-
-	case lc_opt_type_boolean:
-	case lc_opt_type_bit: {
-		char buf[16];
-		bool val = false;
-		strtolower(buf, sizeof(buf), value);
-		for (unsigned i = 0; i < ARRAY_SIZE(bool_strings); ++i) {
-			if (strcmp(buf, bool_strings[i].str) == 0) {
-				val = bool_strings[i].val;
-				fine = true;
-				break;
-			}
-		}
-
-		if (fine)
-			fine = s->cb(s->value, s->length, val);
-
-		break;
-	}
-
-	case lc_opt_type_string:
-	case lc_opt_type_enum:
-		fine = s->cb(s->value, s->length, value);
-		break;
-	case lc_opt_type_invalid:
-		abort();
-	}
-
-	return fine;
+	return s->cb(s->value, s->length, value);
 }
 
 /**
