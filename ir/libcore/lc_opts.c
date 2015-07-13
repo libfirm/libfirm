@@ -254,11 +254,8 @@ static char *strtolower(char *buf, size_t n, const char *str)
 	return buf;
 }
 
-bool lc_opt_std_cb(const char *name, lc_opt_type_t type, void *data,
-                   size_t length, ...)
+bool lc_opt_std_cb(lc_opt_type_t type, void *data, size_t length, ...)
 {
-	(void)name;
-
 	va_list args;
 	va_start(args, length);
 
@@ -368,14 +365,14 @@ static bool lc_opt_occurs(lc_opt_entry_t *opt, const char *value)
 	case lc_opt_type_int: {
 		int val;
 		if (sscanf(value, "%i", &val))
-			fine = s->cb(opt->name, s->type, s->value, s->length, val);
+			fine = s->cb(s->type, s->value, s->length, val);
 		break;
 	}
 
 	case lc_opt_type_double: {
 		double val;
 		if (sscanf(value, "%lf", &val))
-			fine = s->cb(opt->name, s->type, s->value, s->length, val);
+			fine = s->cb(s->type, s->value, s->length, val);
 		break;
 	}
 
@@ -393,14 +390,14 @@ static bool lc_opt_occurs(lc_opt_entry_t *opt, const char *value)
 		}
 
 		if (fine)
-			fine = s->cb(opt->name, s->type, s->value, s->length, val);
+			fine = s->cb(s->type, s->value, s->length, val);
 
 		break;
 	}
 
 	case lc_opt_type_string:
 	case lc_opt_type_enum:
-		fine = s->cb(opt->name, s->type, s->value, s->length, value);
+		fine = s->cb(s->type, s->value, s->length, value);
 		break;
 	case lc_opt_type_invalid:
 		abort();

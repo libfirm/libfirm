@@ -14,7 +14,7 @@
 static const char *delim = " \t|,";
 
 #define DECL_CB(N, op) \
-bool lc_opt_enum_ ## N ## _cb(const char *name, lc_opt_type_t type, void *data, size_t len, ...) \
+bool lc_opt_enum_ ## N ## _cb(lc_opt_type_t type, void *data, size_t len, ...) \
 { \
 	lc_opt_enum_ ## N ## _var_t *var           = (lc_opt_enum_ ## N ## _var_t*)data; \
 	const lc_opt_enum_ ## N ## _items_t *items = var->items; \
@@ -26,7 +26,6 @@ bool lc_opt_enum_ ## N ## _cb(const char *name, lc_opt_type_t type, void *data, 
 	bool res = false; \
  \
 	(void) len; \
-	(void) name; \
 	(void) type; \
 	va_start(args, len); \
 	arg = va_arg(args, const char *); \
