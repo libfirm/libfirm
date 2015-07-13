@@ -90,13 +90,6 @@ typedef char lc_opt_str_t[];
 lc_opt_entry_t *lc_opt_root_grp(void);
 
 /**
- * Check, if a group is the root group
- * @param ent   The entry to check for.
- * @return      1, if the entry is the root group, 0 otherwise.
- */
-int lc_opt_grp_is_root(const lc_opt_entry_t *ent);
-
-/**
  * Get an option group.
  * If the group is not already present, it is created.
  * @param parent   The parent group to look in.

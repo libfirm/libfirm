@@ -98,7 +98,12 @@ lc_opt_entry_t *lc_opt_root_grp(void)
 	return &root_group;
 }
 
-int lc_opt_grp_is_root(const lc_opt_entry_t *ent)
+/**
+ * Check, if a group is the root group
+ * @param ent   The entry to check for.
+ * @return      1, if the entry is the root group, 0 otherwise.
+ */
+static int lc_opt_grp_is_root(const lc_opt_entry_t *ent)
 {
 	return ent->parent == NULL;
 }
