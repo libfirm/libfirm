@@ -166,14 +166,6 @@ lc_opt_entry_t *lc_opt_resolve_opt(const lc_opt_entry_t *root,
                                    const char * const *names, int n);
 
 /**
- * Set the value of an option.
- * @param opt    The option to set.
- * @param value  The value of the option in a string representation.
- * @return       0, if an error occurred, 1 else.
- */
-bool lc_opt_occurs(lc_opt_entry_t *opt, const char *value);
-
-/**
  * Get the name of the type of an option.
  * @param ent The option.
  * @return The name of the type of the option.

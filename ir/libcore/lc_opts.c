@@ -345,7 +345,13 @@ int lc_opt_bool_dump_vals(char *buf, size_t n, const char *name, lc_opt_type_t t
 	return n;
 }
 
-bool lc_opt_occurs(lc_opt_entry_t *opt, const char *value)
+/**
+ * Set the value of an option.
+ * @param opt    The option to set.
+ * @param value  The value of the option in a string representation.
+ * @return       0, if an error occurred, 1 else.
+ */
+static bool lc_opt_occurs(lc_opt_entry_t *opt, const char *value)
 {
 	static const struct {
 		const char *str;
