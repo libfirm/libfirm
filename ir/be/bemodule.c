@@ -192,10 +192,8 @@ static int dump_opt_module(char *buf, size_t buflen, lc_opt_type_t type, void *d
 /**
  * Dump the values of all register module options.
  */
-static int dump_opt_module_vals(char *buf, size_t buflen, lc_opt_type_t type, void *data)
+static int dump_opt_module_vals(char *buf, size_t buflen, void *data)
 {
-	(void)type;
-
 	const module_opt_data_t *moddata = (module_opt_data_t*)data;
 	char                    *p       = buf;
 	for (const be_module_list_entry_t *module = *(moddata->list_head);
