@@ -299,37 +299,30 @@ bool lc_opt_std_cb(const char *name, lc_opt_type_t type, void *data,
 	return res;
 }
 
-int lc_opt_std_dump(char *buf, size_t n, lc_opt_type_t type, void *data)
+int lc_opt_bit_dump(char *const buf, size_t const n, void *const data)
 {
-	int res;
-	if (data) {
-		switch (type) {
-		case lc_opt_type_bit:
-			res = snprintf(buf, n, "%x", *((bool*) data));
-			break;
-		case lc_opt_type_boolean:
-			res = snprintf(buf, n, "%s", *((bool*) data) ? "true" : "false");
-			break;
-		case lc_opt_type_string:
-			strncpy(buf, (const char*)data, n);
-			res = n;
-			break;
-		case lc_opt_type_int:
-			res = snprintf(buf, n, "%d", *((int *) data));
-			break;
-		case lc_opt_type_double:
-			res = snprintf(buf, n, "%g", *((double *) data));
-			break;
-		default:
-			strncpy(buf, "", n);
-			res = 0;
-		}
-	} else {
-		strncpy(buf, "", n);
-		res = 0;
-	}
+	return snprintf(buf, n, "%x", *(bool*)data);
+}
 
-	return res;
+int lc_opt_bool_dump(char *const buf, size_t const n, void *const data)
+{
+	return snprintf(buf, n, "%s", *(bool*)data ? "true" : "false");
+}
+
+int lc_opt_double_dump(char *const buf, size_t const n, void *const data)
+{
+	return snprintf(buf, n, "%g", *(double*)data);
+}
+
+int lc_opt_int_dump(char *const buf, size_t const n, void *const data)
+{
+	return snprintf(buf, n, "%d", *(int*)data);
+}
+
+int lc_opt_string_dump(char *const buf, size_t const n, void *const data)
+{
+	strncpy(buf, (char const*)data, n);
+	return n;
 }
 
 int lc_opt_bool_dump_vals(char *buf, size_t n, void *data)
@@ -427,7 +420,7 @@ static char *lc_opt_value_to_string(char *buf, size_t len, const lc_opt_entry_t 
 {
 	const lc_opt_special_t *s = lc_get_opt_special(ent);
 	if (s->dump)
-		s->dump(buf, len, s->type, s->value);
+		s->dump(buf, len, s->value);
 	else
 		strncpy(buf, "<n/a>", len);
 	return buf;
