@@ -416,7 +416,14 @@ bool lc_opt_occurs(lc_opt_entry_t *opt, const char *value)
 	return fine;
 }
 
-char *lc_opt_value_to_string(char *buf, size_t len, const lc_opt_entry_t *ent)
+/**
+ * Convert the option to a string representation.
+ * @param buf  The string buffer to put the string representation to.
+ * @param len  The length of @p buf.
+ * @param ent  The option to process.
+ * @return     @p buf.
+ */
+static char *lc_opt_value_to_string(char *buf, size_t len, const lc_opt_entry_t *ent)
 {
 	const lc_opt_special_t *s = lc_get_opt_special(ent);
 	if (s->dump)

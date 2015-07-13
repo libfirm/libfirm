@@ -174,15 +174,6 @@ lc_opt_entry_t *lc_opt_resolve_opt(const lc_opt_entry_t *root,
 bool lc_opt_occurs(lc_opt_entry_t *opt, const char *value);
 
 /**
- * Convert the option to a string representation.
- * @param buf  The string buffer to put the string representation to.
- * @param len  The length of @p buf.
- * @param ent  The option to process.
- * @return     @p buf.
- */
-char *lc_opt_value_to_string(char *buf, size_t len, const lc_opt_entry_t *ent);
-
-/**
  * Get the name of the type of an option.
  * @param ent The option.
  * @return The name of the type of the option.
