@@ -332,9 +332,8 @@ int lc_opt_std_dump(char *buf, size_t n, lc_opt_type_t type, void *data)
 	return res;
 }
 
-int lc_opt_bool_dump_vals(char *buf, size_t n, const char *name, lc_opt_type_t type, void *data)
+int lc_opt_bool_dump_vals(char *buf, size_t n, lc_opt_type_t type, void *data)
 {
-	(void)name;
 	(void)type;
 	(void)data;
 	strncpy(buf, "true, false", n);
@@ -440,7 +439,7 @@ static char *lc_opt_values_to_string(char *buf, size_t len,
 {
 	const lc_opt_special_t *s = lc_get_opt_special(ent);
 	if (s->dump_vals)
-		s->dump_vals(buf, len, ent->name, s->type, s->value);
+		s->dump_vals(buf, len, s->type, s->value);
 	return buf;
 }
 

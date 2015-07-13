@@ -36,7 +36,7 @@ typedef bool (lc_opt_callback_t)(const char *name, lc_opt_type_t type, void *dat
 
 typedef int (lc_opt_dump_t)(char *buf, size_t n, lc_opt_type_t type, void *data);
 
-typedef int (lc_opt_dump_vals_t)(char *buf, size_t n, const char *name, lc_opt_type_t type, void *data);
+typedef int (lc_opt_dump_vals_t)(char *buf, size_t n, lc_opt_type_t type, void *data);
 
 typedef struct {
 	const char *name;               /**< The name of the option. */
