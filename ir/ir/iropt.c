@@ -5192,9 +5192,9 @@ cmp_x_eq_0:
 
 				if (get_tarval_popcount(tv) == 1) {
 					/* special case: (x % 2^n) CMP 0 ==> x & (2^n-1) CMP 0 */
-					ir_node  *v    = get_binop_left(op);
-					ir_node  *blk  = get_nodes_block(op);
-					ir_mode  *mode = get_irn_mode(v);
+					ir_node *v    = get_binop_left(op);
+					ir_node *blk  = get_nodes_block(op);
+					ir_mode *mode = get_irn_mode(v);
 
 					tv      = tarval_sub(tv, get_mode_one(mode), NULL);
 					left    = new_rd_And(get_irn_dbg_info(op), blk, v, new_r_Const(irg, tv), mode);
