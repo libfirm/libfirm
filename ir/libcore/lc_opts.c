@@ -299,10 +299,9 @@ bool lc_opt_std_cb(const char *name, lc_opt_type_t type, void *data,
 	return res;
 }
 
-int lc_opt_std_dump(char *buf, size_t n, const char *name, lc_opt_type_t type, void *data, size_t length)
+int lc_opt_std_dump(char *buf, size_t n, const char *name, lc_opt_type_t type, void *data)
 {
 	(void)name;
-	(void)length;
 
 	int res;
 	if (data) {
@@ -432,7 +431,7 @@ static char *lc_opt_value_to_string(char *buf, size_t len, const lc_opt_entry_t 
 {
 	const lc_opt_special_t *s = lc_get_opt_special(ent);
 	if (s->dump)
-		s->dump(buf, len, ent->name, s->type, s->value, s->length);
+		s->dump(buf, len, ent->name, s->type, s->value);
 	else
 		strncpy(buf, "<n/a>", len);
 	return buf;

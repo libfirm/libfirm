@@ -172,12 +172,10 @@ static bool set_opt_module(const char *name, lc_opt_type_t type, void *data,
 /**
  * Dump the names of all registered module options.
  */
-static int dump_opt_module(char *buf, size_t buflen, const char *name,
-                           lc_opt_type_t type, void *data, size_t length)
+static int dump_opt_module(char *buf, size_t buflen, const char *name, lc_opt_type_t type, void *data)
 {
 	(void)name;
 	(void)type;
-	(void)length;
 
 	const module_opt_data_t *moddata = (module_opt_data_t*)data;
 	for (const be_module_list_entry_t *module = *(moddata->list_head);

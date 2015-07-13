@@ -64,7 +64,7 @@ DECL_CB(const_ptr, =)
 DECL_CB(func_ptr, =)
 
 #define DECL_DUMP(T, N, cond) \
-int lc_opt_enum_ ## N ## _dump(char *buf, size_t n, const char *name, lc_opt_type_t type, void *data, size_t len) \
+int lc_opt_enum_ ## N ## _dump(char *buf, size_t n, const char *name, lc_opt_type_t type, void *data) \
 { \
 	lc_opt_enum_ ## N ## _var_t *var           = (lc_opt_enum_ ## N ## _var_t*)data;       \
 	const lc_opt_enum_ ## N ## _items_t *items = var->items; \
@@ -74,7 +74,6 @@ int lc_opt_enum_ ## N ## _dump(char *buf, size_t n, const char *name, lc_opt_typ
 	size_t l = strlen(buf); \
 	(void) name; \
 	(void) type; \
-	(void) len; \
  \
 	if (l >= n) \
 		return (int)l; \
