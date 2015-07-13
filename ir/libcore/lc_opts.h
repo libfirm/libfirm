@@ -128,18 +128,6 @@ int lc_opt_std_dump(char *buf, size_t n, const char *name, lc_opt_type_t type, v
 
 int lc_opt_bool_dump_vals(char *buf, size_t n, const char *name, lc_opt_type_t type, void *data, size_t length);
 
-#define lc_opt_add_opt_int(grp, name, desc, value, err) \
-	lc_opt_add_opt(grp, name, desc, lc_opt_type_int, value, 0, lc_opt_std_cb, lc_opt_std_dump, NULL, err)
-
-#define lc_opt_add_opt_double(grp, name, desc, value, err) \
-	lc_opt_add_opt(grp, name, desc, lc_opt_type_double, value, 0, lc_opt_std_cb, lc_opt_std_dump, NULL, err)
-
-#define lc_opt_add_opt_string(grp, name, desc, buf, len, err) \
-	lc_opt_add_opt(grp, name, desc, lc_opt_type_string, buf, len, lc_opt_std_cb, lc_opt_std_dump, NULL, err)
-
-#define lc_opt_add_opt_bit(grp, name, desc, value, mask, err) \
-	lc_opt_add_opt(grp, name, desc, lc_opt_type_bit, value, mask, lc_opt_std_cb, lc_opt_std_dump, NULL, err)
-
 
 /**
  * Find a group inside another group.
