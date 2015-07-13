@@ -202,8 +202,6 @@ void lc_opt_print_help(lc_opt_entry_t *ent, FILE *f);
  */
 void lc_opt_print_help_for_entry(lc_opt_entry_t *ent, char separator, FILE *f);
 
-void lc_opt_print_tree(lc_opt_entry_t *ent, FILE *f);
-
 bool lc_opt_add_table(lc_opt_entry_t *grp, const lc_opt_table_entry_t *table);
 
 /**

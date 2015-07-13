@@ -521,46 +521,6 @@ void lc_opt_print_help_for_entry(lc_opt_entry_t *ent, char separator, FILE *f)
 	lc_opt_print_help_rec(ent, separator, ent, f);
 }
 
-static void indent(FILE *f, int n)
-{
-	for (int i = 0; i < n; ++i)
-		fputc(' ', f);
-}
-
-static void lc_opt_print_tree_lc_opt_indent(lc_opt_entry_t *ent, FILE *f, int level)
-{
-	char buf[256];
-	lc_opt_special_t *s = lc_get_opt_special(ent);
-
-	indent(f, level);
-	fprintf(f, "%c%s(\"%s\"):%s = %s\n", s->is_set ? '+' : '-', ent->name,
-	        ent->desc, lc_opt_get_type_name(ent),
-	        lc_opt_value_to_string(buf, sizeof(buf), ent));
-}
-
-static void lc_opt_print_tree_grp_indent(lc_opt_entry_t *ent, FILE *f, int level)
-{
-	if (!ent->is_grp)
-		return;
-
-	lc_grp_special_t *s = lc_get_grp_special(ent);
-	indent(f, level);
-	fprintf(f, "/%s\n", ent->name);
-
-	list_for_each_entry(lc_opt_entry_t, e, &s->grps, list) {
-		lc_opt_print_tree_grp_indent(e, f, level + 2);
-	}
-
-	list_for_each_entry(lc_opt_entry_t, e, &s->opts, list) {
-		lc_opt_print_tree_lc_opt_indent(e, f, level + 2);
-	}
-}
-
-void lc_opt_print_tree(lc_opt_entry_t *ent, FILE *f)
-{
-	lc_opt_print_tree_grp_indent(ent, f, 0);
-}
-
 int lc_opt_from_single_arg(const lc_opt_entry_t *root, const char *arg)
 {
 	const lc_opt_entry_t *grp = root;
