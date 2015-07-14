@@ -15,8 +15,6 @@
 #include <stdio.h>
 #include <stdbool.h>
 
-#include "lc_printf.h"
-
 /**
  * The type of an option.
  */
