@@ -51,8 +51,6 @@ bool lc_opt_enum_ ## N ## _cb(void *const data, size_t const len, char const *co
 
 DECL_CB(int, =)
 DECL_CB(mask, |=)
-DECL_CB(ptr, =)
-DECL_CB(const_ptr, =)
 DECL_CB(func_ptr, =)
 
 #define DECL_DUMP(T, N, cond) \
@@ -125,16 +123,6 @@ DECL_DUMP_VALS(int, int)
 #define TYPE(x) unsigned x
 DECL_DUMP(unsigned, mask, (item_value & value) == item_value)
 DECL_DUMP_VALS(unsigned, mask)
-#undef TYPE
-
-#define TYPE(x) void *x
-DECL_DUMP(void *, ptr, item_value == value)
-DECL_DUMP_VALS(void *, ptr)
-#undef TYPE
-
-#define TYPE(x) const void *x
-DECL_DUMP(const void *, const_ptr, item_value == value)
-DECL_DUMP_VALS(const void *, const_ptr)
 #undef TYPE
 
 #define TYPE(x) int (*x)(void)
