@@ -888,12 +888,12 @@ static void transform_irg(compound_call_lowering_flags flags, ir_graph *irg)
 			++n_param_com;
 	}
 
-	if (arg_shift > 0) {
-		fix_parameter_entities(irg, n_ret_com);
+	if (arg_shift > 0)
+		fix_parameter_entities(irg, arg_shift);
 
-		/* much easier if we have only one return */
+	/* much easier if we have only one return */
+	if (n_ret_com != 0)
 		assure_irg_properties(irg, IR_GRAPH_PROPERTY_ONE_RETURN);
-	}
 
 	ir_type *lowered_mtp = lower_mtp(flags, mtp);
 	set_entity_type(ent, lowered_mtp);
