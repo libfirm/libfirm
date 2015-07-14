@@ -5400,7 +5400,8 @@ cmp_x_eq_0:
 			if ((relation == ir_relation_less || relation == ir_relation_greater_equal) &&
 				tarval_cmp(tv, get_mode_null(mode)) == ir_relation_greater) {
 				bitinfo const *const bl = get_bitinfo(left);
-				if (bl) {
+				if (bl && !is_relation(ir_relation_false, relation, possible)
+				       && !is_relation(ir_relation_true,  relation, possible)) {
 					ir_tarval *const uneq = tarval_or(tarval_andnot(tv, bl->z), tarval_andnot(bl->o, tv));
 					int        const hi   = get_tarval_highest_bit(uneq);
 					if (hi >= 0) {
@@ -5425,7 +5426,8 @@ cmp_x_eq_0:
 			} else if ((relation == ir_relation_greater || relation == ir_relation_less_equal) &&
 				tarval_cmp(tv, get_mode_null(mode)) == ir_relation_less) {
 				bitinfo const *const bl = get_bitinfo(left);
-				if (bl) {
+				if (bl && !is_relation(ir_relation_false, relation, possible)
+				       && !is_relation(ir_relation_true,  relation, possible)) {
 					ir_tarval *const uneq = tarval_or(tarval_andnot(tv, bl->z), tarval_andnot(bl->o, tv));
 					int        const hi   = get_tarval_highest_bit(uneq);
 					if (hi >= 0) {
