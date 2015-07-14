@@ -122,11 +122,11 @@ lc_opt_entry_t *lc_opt_add_opt(lc_opt_entry_t *grp,
                                lc_opt_dump_t *dump,
                                lc_opt_dump_vals_t *dump_vals);
 
-bool lc_opt_std_cb(const char *name, lc_opt_type_t type, void *data, size_t length, ...);
+lc_opt_callback_t lc_opt_std_cb;
 
-int lc_opt_std_dump(char *buf, size_t n, const char *name, lc_opt_type_t type, void *data, size_t length);
+lc_opt_dump_t lc_opt_std_dump;
 
-int lc_opt_bool_dump_vals(char *buf, size_t n, const char *name, lc_opt_type_t type, void *data, size_t length);
+lc_opt_dump_vals_t lc_opt_bool_dump_vals;
 
 
 /**

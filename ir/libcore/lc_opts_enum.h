@@ -19,9 +19,9 @@ typedef struct {                                \
 	const lc_opt_enum_ ## N ## _items_t *items;   \
 } lc_opt_enum_ ## N ## _var_t;                  \
 \
-bool lc_opt_enum_ ## N ## _cb(const char *name, lc_opt_type_t type, void *data, size_t len, ...); \
-int lc_opt_enum_ ## N ## _dump(char *buf, size_t n, const char *name, lc_opt_type_t type, void *data, size_t len); \
-int lc_opt_enum_ ## N ## _dump_vals(char *buf, size_t n, const char *name, lc_opt_type_t type, void *data, size_t len); \
+lc_opt_callback_t lc_opt_enum_ ## N ## _cb; \
+lc_opt_dump_t lc_opt_enum_ ## N ## _dump; \
+lc_opt_dump_vals_t lc_opt_enum_ ## N ## _dump_vals; \
 
 #define _LC_OPT_ENT_ENUM(N, name, desc, var) \
 	_LC_OPT_ENT(name, desc, lc_opt_type_enum, lc_opt_enum_ ## N ## _var_t, var, 0, lc_opt_enum_ ## N ## _cb, lc_opt_enum_ ## N ## _dump, lc_opt_enum_ ## N ## _dump_vals)
@@ -48,8 +48,8 @@ typedef struct {
 
 #define LC_OPT_ENT_ENUM_FUNC_PTR(name, desc, var)       _LC_OPT_ENT_ENUM(func_ptr, name, desc, var)
 
-bool lc_opt_enum_func_ptr_cb(const char *name, lc_opt_type_t type, void *data, size_t len, ...);
-int lc_opt_enum_func_ptr_dump(char *buf, size_t n, const char *name, lc_opt_type_t type, void *data, size_t len);
-int lc_opt_enum_func_ptr_dump_vals(char *buf, size_t n, const char *name, lc_opt_type_t type, void *data, size_t len);
+lc_opt_callback_t lc_opt_enum_func_ptr_cb;
+lc_opt_dump_t lc_opt_enum_func_ptr_dump;
+lc_opt_dump_vals_t lc_opt_enum_func_ptr_dump_vals;
 
 #endif
