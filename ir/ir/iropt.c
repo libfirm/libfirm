@@ -5172,10 +5172,11 @@ cmp_x_eq_0:
 			ir_tarval *new_tv = tarval_convert_to(tv, mode_left);
 			tarval_set_wrap_on_overflow(old_wrap_on_overflow);
 			if (tarval_is_constant(new_tv)) {
-				left    = op_left;
-				right   = new_r_Const(irg, new_tv);
-				mode    = get_irn_mode(left);
-				changed = true;
+				left     = op_left;
+				right    = new_r_Const(irg, new_tv);
+				mode     = get_irn_mode(left);
+				possible = ir_get_possible_cmp_relations(left, right);
+				changed  = true;
 				DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_CONV);
 			}
 		}
