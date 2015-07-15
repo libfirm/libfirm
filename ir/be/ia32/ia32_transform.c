@@ -5358,7 +5358,8 @@ static ir_node *gen_popcount(ir_node *node)
  */
 static ir_node *gen_bswap(ir_node *node)
 {
-	ir_node  *param     = be_transform_node(get_Builtin_param(node, 0));
+	ir_node  *param     = get_Builtin_param(node, 0);
+	ir_node  *new_param = be_transform_node(param);
 	dbg_info *dbgi      = get_irn_dbg_info(node);
 	ir_node  *new_block = be_transform_nodes_block(node);
 	ir_mode  *mode      = get_irn_mode(param);
@@ -5368,11 +5369,11 @@ static ir_node *gen_bswap(ir_node *node)
 	case 32:
 		if (ia32_cg_config.use_bswap) {
 			/* swap available */
-			return new_bd_ia32_Bswap(dbgi, new_block, param);
+			return new_bd_ia32_Bswap(dbgi, new_block, new_param);
 		} else {
 			ir_graph *const irg  = get_irn_irg(new_block);
 			ir_node  *const i8   = ia32_create_Immediate(irg, 8);
-			ir_node  *const rol1 = new_bd_ia32_Rol(dbgi, new_block, param, i8);
+			ir_node  *const rol1 = new_bd_ia32_Rol(dbgi, new_block, new_param, i8);
 			ir_node  *const i16  = ia32_create_Immediate(irg, 16);
 			ir_node  *const rol2 = new_bd_ia32_Rol(dbgi, new_block, rol1, i16);
 			ir_node  *const rol3 = new_bd_ia32_Rol(dbgi, new_block, rol2, i8);
@@ -5384,7 +5385,7 @@ static ir_node *gen_bswap(ir_node *node)
 
 	case 16:
 		/* swap16 always available */
-		return new_bd_ia32_Bswap16(dbgi, new_block, param);
+		return new_bd_ia32_Bswap16(dbgi, new_block, new_param);
 
 	default:
 		panic("invalid bswap size (%d)", size);
