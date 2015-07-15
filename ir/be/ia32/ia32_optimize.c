@@ -165,6 +165,15 @@ static void peephole_ia32_Cmp(ir_node *const node)
 	be_peephole_exchange(node, test);
 }
 
+static bool is_hl_register(arch_register_t const *const reg)
+{
+	return
+		reg == &ia32_registers[REG_EAX] ||
+		reg == &ia32_registers[REG_EBX] ||
+		reg == &ia32_registers[REG_ECX] ||
+		reg == &ia32_registers[REG_EDX];
+}
+
 /**
  * Peephole optimization for Test instructions.
  * - Remove the Test, if an appropriate flag was produced which is still live
@@ -299,13 +308,8 @@ static void peephole_ia32_Test(ir_node *node)
 			}
 		} else if ((offset & 0xFFFFFF80) == 0) {
 			arch_register_t const* const reg = arch_get_irn_register(left);
-
-			if (reg != &ia32_registers[REG_EAX] &&
-					reg != &ia32_registers[REG_EBX] &&
-					reg != &ia32_registers[REG_ECX] &&
-					reg != &ia32_registers[REG_EDX]) {
+			if (!is_hl_register(reg))
 				return;
-			}
 		} else {
 			return;
 		}
@@ -881,6 +885,24 @@ static void peephole_ia32_Conv_I2I(ir_node *node)
 	be_peephole_exchange(node, cwtl);
 }
 
+/* Replace rolw $8, %[abcd]x by shorter xchgb %[abcd]l, %[abcd]h */
+static void peephole_ia32_Rol(ir_node *node)
+{
+	if (get_mode_size_bits(get_ia32_ls_mode(node)) == 16) {
+		arch_register_t const *const reg = arch_get_irn_register_out(node, pn_ia32_Rol_res);
+		if (is_hl_register(reg)) {
+			dbg_info *const dbgi  = get_irn_dbg_info(node);
+			ir_node  *const block = get_nodes_block(node);
+			ir_node  *const val   = get_irn_n(node, n_ia32_Rol_val);
+			ir_node  *const xchg  = new_bd_ia32_Bswap16(dbgi, block, val);
+			arch_set_irn_register_out(xchg, pn_ia32_Bswap16_res, reg);
+			sched_add_before(node, xchg);
+			be_peephole_exchange(node, xchg);
+		}
+	}
+}
+
+
 /**
  * Register a peephole optimization function.
  */
@@ -907,6 +929,8 @@ void ia32_peephole_optimization(ir_graph *irg)
 		register_peephole_optimization(op_ia32_xZero, peephole_ia32_xZero);
 	if (!ia32_cg_config.use_imul_mem_imm32)
 		register_peephole_optimization(op_ia32_IMulImm, peephole_ia32_ImulImm_split);
+	if (ia32_cg_config.optimize_size)
+		register_peephole_optimization(op_ia32_Rol, peephole_ia32_Rol);
 	be_peephole_opt(irg);
 
 	/* pass 2 */

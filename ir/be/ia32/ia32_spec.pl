@@ -1222,6 +1222,7 @@ Bswap16 => {
 	out_reqs  => [ "in_r1" ],
 	emit      => "xchg %<D0, %>D0",
 	ins       => [ "val" ],
+	outs      => [ "res" ],
 	latency   => 1,
 	mode      => $mode_gp,
 },

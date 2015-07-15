@@ -5383,9 +5383,13 @@ static ir_node *gen_bswap(ir_node *node)
 			return rol3;
 		}
 
-	case 16:
-		/* swap16 always available */
-		return new_bd_ia32_Bswap16(dbgi, new_block, new_param);
+	case 16: {
+		ir_graph *const irg = get_irn_irg(new_block);
+		ir_node  *const i8  = ia32_create_Immediate(irg, 8);
+		ir_node  *const rol = new_bd_ia32_Rol(dbgi, new_block, new_param, i8);
+		set_ia32_ls_mode(rol, mode_Hu);
+		return rol;
+	}
 
 	default:
 		panic("invalid bswap size (%d)", size);
