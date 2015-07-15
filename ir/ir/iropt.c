@@ -5372,28 +5372,26 @@ cmp_x_eq_0:
 			     (!tarval_is_all_one(tarval_or(max, b->z)) ||
 			      !tarval_is_null(tarval_and(b->o, max))))) {
 				tv = tarval_neg(tv);
+				assert(tarval_is_constant(tv));
 
-				if (tarval_is_constant(tv)) {
-					left = op;
-					if (mode_is_int(mode) && rel_eq != ir_relation_false) {
-						relation = rel_eq;
-					} else {
-						relation = get_inversed_relation(relation);
-					}
-					changedc = true;
-					DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_OP_C);
+				left = op;
+				if (mode_is_int(mode) && rel_eq != ir_relation_false) {
+					relation = rel_eq;
+				} else {
+					relation = get_inversed_relation(relation);
 				}
+				changedc = true;
+				DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_OP_C);
 			}
 		} else if (is_Not(left) && rel_eq != ir_relation_false) {
 			/* Not(a) ==/!= c  ==>  a ==/!= Not(c) */
 			tv = tarval_not(tv);
+			assert(tarval_is_constant(tv));
 
-			if (tarval_is_constant(tv)) {
-				left     = get_Not_op(left);
-				relation = rel_eq;
-				changedc = true;
-				DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_OP_C);
-			}
+			left     = get_Not_op(left);
+			relation = rel_eq;
+			changedc = true;
+			DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_OP_C);
 		}
 
 		/* for integer modes, we have more */
