@@ -5380,7 +5380,9 @@ cmp_x_eq_0:
 				} else {
 					relation = get_inversed_relation(relation);
 				}
-				changedc = true;
+				right    = new_r_Const(irg, tv);
+				possible = ir_get_possible_cmp_relations(left, right);
+				changed  = true;
 				DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_OP_C);
 			}
 		} else if (is_Not(left) && rel_eq != ir_relation_false) {
