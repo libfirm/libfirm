@@ -429,7 +429,6 @@ struct dumper_t {
 	FILE                  *f;             /**< the file to dump to */
 	stat_info_t           *status;        /**< access to the global status */
 	dumper_t              *next;          /**< link to the next dumper */
-	pset                  *func_map;      /**< pset containing all registered functions */
 	unsigned               tag;            /**< the id tag of the dumper */
 };
 
@@ -545,13 +544,5 @@ void stat_be_block_regpressure(ir_graph *irg, ir_node *block, int pressure, cons
  * @param num_ready  the number of ready nodes
  */
 void stat_be_block_sched_ready(ir_graph *irg, ir_node *block, int num_ready);
-
-/**
- * Register an additional function for all dumper.  This function
- * is called in dump_snapshot once for each graph_entry and dumper.
- *
- * @param func  the dump function to register
- */
-void stat_register_dumper_func(dump_graph_FUNC *func);
 
 #endif

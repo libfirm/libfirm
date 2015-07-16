@@ -1064,21 +1064,6 @@ static void stat_dump_graph(graph_entry_t *entry)
 }
 
 /**
- * Calls all registered dumper functions.
- */
-static void stat_dump_registered(graph_entry_t *entry)
-{
-	dumper_t *dumper;
-
-	for (dumper = status->dumper; dumper; dumper = dumper->next) {
-		if (dumper->func_map) {
-			foreach_pset(dumper->func_map, dump_graph_FUNC, func)
-				func(dumper, entry);
-		}
-	}
-}
-
-/**
  * Dumps a constant table.
  */
 static void stat_dump_consts(const constant_info_t *tbl)
@@ -1140,20 +1125,6 @@ static void stat_dump_finish(void)
 	for (dumper = status->dumper; dumper; dumper = dumper->next) {
 		if (dumper->finish)
 			dumper->finish(dumper);
-	}
-}
-
-/**
- * Register an additional function for all dumper.
- */
-void stat_register_dumper_func(dump_graph_FUNC *const func)
-{
-	dumper_t *dumper;
-
-	for (dumper = status->dumper; dumper; dumper = dumper->next) {
-		if (! dumper->func_map)
-			dumper->func_map = pset_new_ptr(3);
-		pset_insert_ptr(dumper->func_map, (void*)func);
 	}
 }
 
@@ -1821,7 +1792,6 @@ void stat_dump_snapshot(const char *name, const char *phase)
 
 			if (! entry->is_deleted || status->stat_options & FIRMSTAT_COUNT_DELETED) {
 				stat_dump_graph(entry);
-				stat_dump_registered(entry);
 			}
 
 			if (! entry->is_deleted) {
@@ -1961,9 +1931,6 @@ static void stat_term_dumper(void)
 	dumper_t *dumper, *next_dumper;
 
 	for (dumper = status->dumper; dumper; /* iteration done in loop body */ ) {
-		if (dumper->func_map)
-			del_pset(dumper->func_map);
-
 		next_dumper = dumper->next;
 		free(dumper);
 		dumper = next_dumper;

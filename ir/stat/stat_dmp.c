@@ -552,7 +552,6 @@ const dumper_t simple_dumper = {
 	NULL,
 	NULL,
 	NULL,
-	NULL,
 	FOURCC('S', 'M', 'P', 'L'),
 };
 
@@ -692,7 +691,6 @@ const dumper_t csv_dumper = {
 	csv_dump_opt_cnt,
 	csv_init,
 	csv_finish,
-	NULL,
 	NULL,
 	NULL,
 	NULL,
