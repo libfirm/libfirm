@@ -348,11 +348,12 @@ static void be_block_clear_entry(be_block_entry_t *elem)
 /**
  * Returns the associated be_block_entry_t for an block.
  *
- * @param block_nr  an IR  block number
- * @param hmap      a hash map containing long -> be_block_entry_t
+ * @param block  a block
+ * @param hmap   a hash map containing long -> be_block_entry_t
  */
-static be_block_entry_t *be_block_get_entry(struct obstack *obst, long block_nr, hmap_be_block_entry_t *hmap)
+static be_block_entry_t *be_block_get_entry(ir_node *const block, hmap_be_block_entry_t *const hmap)
 {
+	long const block_nr = get_irn_node_nr(block);
 	be_block_entry_t key;
 	key.block_nr = block_nr;
 
@@ -360,7 +361,7 @@ static be_block_entry_t *be_block_get_entry(struct obstack *obst, long block_nr,
 	if (elem)
 		return elem;
 
-	elem = OALLOCZ(obst, be_block_entry_t);
+	elem = OALLOCZ(&status->be_data, be_block_entry_t);
 
 	/* clear new counter */
 	be_block_clear_entry(elem);
@@ -1579,7 +1580,7 @@ void stat_be_block_regpressure(ir_graph *irg, ir_node *block, int pressure, cons
 	STAT_ENTER;
 	{
 		graph_entry_t        *const graph     = graph_get_entry(irg, status->irg_hash);
-		be_block_entry_t     *const block_ent = be_block_get_entry(&status->be_data, get_irn_node_nr(block), graph->be_block_hash);
+		be_block_entry_t     *const block_ent = be_block_get_entry(block, graph->be_block_hash);
 		reg_pressure_entry_t *const rp_ent    = OALLOCZ(&status->be_data, reg_pressure_entry_t);
 
 		rp_ent->class_name = class_name;
