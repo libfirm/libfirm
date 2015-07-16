@@ -346,11 +346,7 @@ static void be_block_clear_entry(be_block_entry_t *elem)
 	if (elem->reg_pressure)
 		del_pset(elem->reg_pressure);
 
-	if (elem->sched_ready)
-		stat_delete_distrib_tbl(elem->sched_ready);
-
 	elem->reg_pressure = new_pset(reg_pressure_cmp, 5);
-	elem->sched_ready  = stat_new_int_distrib_tbl();
 }
 
 /**
@@ -1700,31 +1696,6 @@ void stat_be_block_regpressure(ir_graph *irg, ir_node *block, int pressure, cons
 		rp_ent->pressure   = pressure;
 
 		pset_insert(block_ent->reg_pressure, rp_ent, hash_ptr(class_name));
-	}
-	STAT_LEAVE;
-}
-
-/**
- * Update the distribution of ready nodes of a block
- *
- * @param irg        the irg containing the block
- * @param block      the block for which the reg pressure should be set
- * @param num_ready  the number of ready nodes
- */
-void stat_be_block_sched_ready(ir_graph *irg, ir_node *block, int num_ready)
-{
-	if (! status->stat_options)
-		return;
-
-	STAT_ENTER;
-	{
-		graph_entry_t    *graph = graph_get_entry(irg, status->irg_hash);
-		be_block_entry_t *block_ent;
-
-		block_ent = be_block_get_entry(&status->be_data, get_irn_node_nr(block), graph->be_block_hash);
-
-		/* increase the counter of corresponding number of ready nodes */
-		stat_inc_int_distrib_tbl(block_ent->sched_ready, num_ready);
 	}
 	STAT_LEAVE;
 }

@@ -243,38 +243,6 @@ static void simple_dump_be_block_reg_pressure(dumper_t *dmp, graph_entry_t *entr
 	}
 }
 
-/** prints a distribution entry */
-static void simple_dump_distrib_entry(const distrib_entry_t *entry, void *env)
-{
-	dumper_t *dmp = (dumper_t*)env;
-	fprintf(dmp->f, "%12u", cnt_to_uint(&entry->cnt));
-}
-
-/**
- * dumps the distribution of the amount of ready nodes for each block
- */
-static void simple_dump_be_block_sched_ready(dumper_t *dmp, graph_entry_t *entry)
-{
-	if (pset_count(entry->be_block_hash) > 0) {
-		int i;
-
-		fprintf(dmp->f, "\nSCHEDULING: NUMBER OF READY NODES\n");
-		fprintf(dmp->f, "%12s %12s %12s %12s %12s %12s %12s\n",
-			"Block Nr", "1 node", "2 nodes", "3 nodes", "4 nodes", "5 or more", "AVERAGE");
-
-		foreach_pset(entry->be_block_hash, be_block_entry_t, b_entry) {
-			/* this ensures that all keys from 1 to 5 are in the table */
-			for (i = 1; i < 6; ++i)
-				stat_insert_int_distrib_tbl(b_entry->sched_ready, i);
-
-			fprintf(dmp->f, "BLK   %6ld", b_entry->block_nr);
-			stat_iterate_distrib_tbl(b_entry->sched_ready, simple_dump_distrib_entry, dmp);
-			fprintf(dmp->f, "%12.2lf", stat_calc_avg_distrib_tbl(b_entry->sched_ready));
-			fprintf(dmp->f, "\n");
-		}
-	}
-}
-
 /**
  * dumps the number of real_function_call optimization
  */
@@ -420,9 +388,6 @@ static void simple_dump_graph(dumper_t *dmp, graph_entry_t *entry)
 
 		/* dump block reg pressure */
 		simple_dump_be_block_reg_pressure(dmp, entry);
-
-		/* dump block ready nodes distribution */
-		simple_dump_be_block_sched_ready(dmp, entry);
 	}
 }
 

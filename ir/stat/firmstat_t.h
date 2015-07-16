@@ -293,7 +293,6 @@ typedef struct reg_pressure_entry_t {
  */
 typedef struct be_block_entry_t {
 	long                           block_nr;         /**< block nr */
-	distrib_tbl_t                  *sched_ready;     /**< distribution of ready nodes per block */
 	/**< the highest register pressures for this block for each register class */
 	HASH_MAP(reg_pressure_entry_t) *reg_pressure;
 } be_block_entry_t;
@@ -474,26 +473,9 @@ void stat_inc_distrib_tbl(distrib_tbl_t *tbl, const void *object);
 void stat_inc_int_distrib_tbl(distrib_tbl_t *tbl, int key);
 
 /**
- * inserts a new object with count 0 into the distribution table
- * if object is already present, nothing happens
- */
-void stat_insert_distrib_tbl(distrib_tbl_t *tbl, const void *object);
-
-/**
- * inserts a new key with count 0 into the integer distribution table
- * if key is already present, nothing happens
- */
-void stat_insert_int_distrib_tbl(distrib_tbl_t *tbl, int key);
-
-/**
  * calculates the mean value of a distribution.
  */
 double stat_calc_mean_distrib_tbl(distrib_tbl_t *tbl);
-
-/**
- * calculates the average value of a distribution
- */
-double stat_calc_avg_distrib_tbl(distrib_tbl_t *tbl);
 
 /** evaluates each entry of a distribution table. */
 typedef void (*eval_distrib_entry_fun)(const distrib_entry_t *entry, void *env);
@@ -535,14 +517,5 @@ const char *stat_fc_name(float_classify_t classification);
  * @param class_name the name of the register class
  */
 void stat_be_block_regpressure(ir_graph *irg, ir_node *block, int pressure, const char *class_name);
-
-/**
- * Update the distribution of ready nodes of a block
- *
- * @param irg        the irg containing the block
- * @param block      the block for which the reg pressure should be set
- * @param num_ready  the number of ready nodes
- */
-void stat_be_block_sched_ready(ir_graph *irg, ir_node *block, int num_ready);
 
 #endif

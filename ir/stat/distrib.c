@@ -131,25 +131,6 @@ void stat_inc_int_distrib_tbl(distrib_tbl_t *tbl, int key)
 }
 
 /*
- * inserts a new object with count 0 into the distribution table
- * if object is already present, nothing happens
- */
-void stat_insert_distrib_tbl(distrib_tbl_t *tbl, const void *object)
-{
-	/* executed for side effect */
-	(void)distrib_get_entry(tbl, object);
-}
-
-/*
- * inserts a new key with count 0 into the integer distribution table
- * if key is already present, nothing happens
- */
-void stat_insert_int_distrib_tbl(distrib_tbl_t *tbl, int key)
-{
-	stat_insert_distrib_tbl(tbl, INT_TO_PTR(key));
-}
-
-/*
  * calculates the mean value of a distribution
  */
 double stat_calc_mean_distrib_tbl(distrib_tbl_t *tbl)
@@ -180,32 +161,6 @@ double stat_calc_mean_distrib_tbl(distrib_tbl_t *tbl)
 	} else {
 		sum = 0.0;
 		count = 0;
-		foreach_pset(tbl->hash_map, distrib_entry_t, entry) {
-			sum += cnt_to_dbl(&entry->cnt);
-			++count;
-		}
-	}
-
-	return count ? sum / (double)count : 0.0;
-}
-
-/*
- * calculates the average value of a distribution
- */
-double stat_calc_avg_distrib_tbl(distrib_tbl_t *tbl)
-{
-	size_t count = 0;
-	double sum   = 0.0;
-
-	if (tbl->int_dist) {
-		if (pset_count(tbl->hash_map) <= 0)
-			return 0.0;
-
-		foreach_pset(tbl->hash_map, distrib_entry_t, entry) {
-			sum   += cnt_to_dbl(&entry->cnt) * PTR_TO_INT(entry->object);
-			count += cnt_to_uint(&entry->cnt);
-		}
-	} else {
 		foreach_pset(tbl->hash_map, distrib_entry_t, entry) {
 			sum += cnt_to_dbl(&entry->cnt);
 			++count;
