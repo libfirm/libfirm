@@ -12,21 +12,20 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "irouts.h"
-#include "irdump.h"
-#include "hashptr.h"
-#include "firmstat_t.h"
-#include "pattern.h"
 #include "dags.h"
-#include "stat_dmp.h"
-#include "xmalloc.h"
-#include "irhooks.h"
-#include "util.h"
+#include "firmstat_t.h"
+#include "hashptr.h"
 #include "ircons.h"
+#include "irdump.h"
+#include "irhooks.h"
+#include "irouts.h"
 #include "irtools.h"
-
 #include "lc_opts.h"
 #include "lc_opts_enum.h"
+#include "pattern.h"
+#include "stat_dmp.h"
+#include "util.h"
+#include "xmalloc.h"
 
 /*
  * need this to be static:
@@ -50,7 +49,7 @@ static unsigned stat_options;
  * global status
  */
 static const unsigned status_disable = 0;
-static stat_info_t *status = (stat_info_t *)&status_disable;
+static stat_info_t *status = (stat_info_t*)&status_disable;
 
 /**
  * Compare two elements of the opcode hash.
@@ -135,9 +134,9 @@ static int opcode_cmp_2(const void *elt, const void *key)
  */
 static int address_mark_cmp(const void *elt, const void *key, size_t size)
 {
+	(void)size;
 	const address_mark_entry_t *e1 = (const address_mark_entry_t*)elt;
 	const address_mark_entry_t *e2 = (const address_mark_entry_t*)key;
-	(void) size;
 
 	/* compare only the nodes, the rest is used as data container */
 	return e1->node != e2->node;
@@ -164,11 +163,9 @@ static void opcode_clear_entry(node_entry_t *elem)
 static node_entry_t *opcode_get_entry(op_id_t const op_id, hmap_node_entry_t *const hmap)
 {
 	node_entry_t key;
-	node_entry_t *elem;
-
 	key.op_id = op_id;
 
-	elem = (node_entry_t*)pset_find(hmap, &key, hash_ptr(op_id));
+	node_entry_t *elem = (node_entry_t*)pset_find(hmap, &key, hash_ptr(op_id));
 	if (elem)
 		return elem;
 
@@ -191,7 +188,6 @@ static node_entry_t *opcode_get_entry(op_id_t const op_id, hmap_node_entry_t *co
 static ir_op *opcode_find_entry(ir_opcode code, hmap_ir_op *hmap)
 {
 	ir_op key;
-
 	key.code = code;
 	return (ir_op*)pset_find(hmap, &key, code);
 }
@@ -204,10 +200,8 @@ static ir_op *opcode_find_entry(ir_opcode code, hmap_ir_op *hmap)
  */
 static void graph_clear_entry(graph_entry_t *elem, int all)
 {
-	int i;
-
 	/* clear accumulated / non-accumulated counter */
-	for (i = all ? 0 : _gcnt_non_acc; i < _gcnt_last; ++i) {
+	for (int i = all ? 0 : _gcnt_non_acc; i < _gcnt_last; ++i) {
 		cnt_clr(&elem->cnt[i]);
 	}
 
@@ -229,16 +223,12 @@ static void graph_clear_entry(graph_entry_t *elem, int all)
 static graph_entry_t *graph_get_entry(ir_graph *irg, hmap_graph_entry_t *hmap)
 {
 	graph_entry_t key;
-	graph_entry_t *elem;
-	size_t i;
-
 	key.irg = irg;
 
-	elem = (graph_entry_t*)pset_find(hmap, &key, hash_ptr(irg));
-
+	graph_entry_t *elem = (graph_entry_t*)pset_find(hmap, &key, hash_ptr(irg));
 	if (elem) {
 		/* create hash map backend block information */
-		if (! elem->be_block_hash)
+		if (!elem->be_block_hash)
 			elem->be_block_hash = new_pset(be_block_cmp, 5);
 
 		return elem;
@@ -259,10 +249,23 @@ static graph_entry_t *graph_get_entry(ir_graph *irg, hmap_graph_entry_t *hmap)
 	/* these hash tables are created on demand */
 	elem->block_hash = NULL;
 
-	for (i = 0; i != ARRAY_SIZE(elem->opt_hash); ++i)
+	for (size_t i = 0; i != ARRAY_SIZE(elem->opt_hash); ++i)
 		elem->opt_hash[i] = new_pset(opt_cmp, 4);
 
 	return (graph_entry_t*)pset_insert(hmap, elem, hash_ptr(irg));
+}
+
+static graph_entry_t *get_graph_entry(ir_node *const node, hmap_graph_entry_t *const hmap)
+{
+	ir_graph *const irg = get_irn_irg(node);
+	return graph_get_entry(irg, hmap);
+}
+
+static node_entry_t *get_node_entry(ir_node *const node, op_id_t const op_id)
+{
+	ir_graph      *const irg   = node ? get_irn_irg(node) : NULL;
+	graph_entry_t *const graph = graph_get_entry(irg, status->irg_hash);
+	return opcode_get_entry(op_id, graph->opcode_hash);
 }
 
 /**
@@ -282,11 +285,9 @@ static void opt_clear_entry(opt_entry_t *elem)
 static opt_entry_t *opt_get_entry(op_id_t const op_id, hmap_opt_entry_t *const hmap)
 {
 	opt_entry_t key;
-	opt_entry_t *elem;
-
 	key.op_id = op_id;
 
-	elem = (opt_entry_t*)pset_find(hmap, &key, hash_ptr(op_id));
+	opt_entry_t *elem = (opt_entry_t*)pset_find(hmap, &key, hash_ptr(op_id));
 	if (elem)
 		return elem;
 
@@ -305,9 +306,7 @@ static opt_entry_t *opt_get_entry(op_id_t const op_id, hmap_opt_entry_t *const h
  */
 static void block_clear_entry(block_entry_t *elem)
 {
-	int i;
-
-	for (i = 0; i < _bcnt_last; ++i)
+	for (int i = 0; i < _bcnt_last; ++i)
 		cnt_clr(&elem->cnt[i]);
 }
 
@@ -320,11 +319,9 @@ static void block_clear_entry(block_entry_t *elem)
 static block_entry_t *block_get_entry(struct obstack *obst, long block_nr, hmap_block_entry_t *hmap)
 {
 	block_entry_t key;
-	block_entry_t *elem;
-
 	key.block_nr = block_nr;
 
-	elem = (block_entry_t*)pset_find(hmap, &key, block_nr);
+	block_entry_t *elem = (block_entry_t*)pset_find(hmap, &key, block_nr);
 	if (elem)
 		return elem;
 
@@ -358,11 +355,9 @@ static void be_block_clear_entry(be_block_entry_t *elem)
 static be_block_entry_t *be_block_get_entry(struct obstack *obst, long block_nr, hmap_be_block_entry_t *hmap)
 {
 	be_block_entry_t key;
-	be_block_entry_t *elem;
-
 	key.block_nr = block_nr;
 
-	elem = (be_block_entry_t*)pset_find(hmap, &key, block_nr);
+	be_block_entry_t *elem = (be_block_entry_t*)pset_find(hmap, &key, block_nr);
 	if (elem)
 		return elem;
 
@@ -381,8 +376,7 @@ static be_block_entry_t *be_block_get_entry(struct obstack *obst, long block_nr,
  */
 static void clear_optimization_counter(void)
 {
-	int i;
-	for (i = 0; i < FS_OPT_MAX; ++i)
+	for (int i = 0; i < FS_OPT_MAX; ++i)
 		cnt_clr(&status->num_opts[i]);
 }
 
@@ -452,12 +446,9 @@ static op_id_t stat_get_irn_op(ir_node *node)
  */
 static void undate_block_info(ir_node *node, graph_entry_t *graph)
 {
-	ir_node *block;
-	block_entry_t *b_entry;
-
 	/* check for block */
 	if (is_Block(node)) {
-		b_entry = block_get_entry(&graph->recalc_cnts, get_irn_node_nr(node), graph->block_hash);
+		block_entry_t *const b_entry = block_get_entry(&graph->recalc_cnts, get_irn_node_nr(node), graph->block_hash);
 		/* mark start end block to allow to filter them out */
 		if (node == get_irg_start_block(graph->irg))
 			b_entry->is_start = 1;
@@ -475,8 +466,8 @@ static void undate_block_info(ir_node *node, graph_entry_t *graph)
 		return;
 	}
 
-	block   = get_nodes_block(node);
-	b_entry = block_get_entry(&graph->recalc_cnts, get_irn_node_nr(block), graph->block_hash);
+	ir_node       *const block   = get_nodes_block(node);
+	block_entry_t *const b_entry = block_get_entry(&graph->recalc_cnts, get_irn_node_nr(block), graph->block_hash);
 
 	if (is_Phi(node) && get_irn_mode(node) != mode_M) {
 		/* count data Phi per block */
@@ -504,30 +495,39 @@ static void undate_block_info(ir_node *node, graph_entry_t *graph)
 }
 
 /**
+ * Find the base address of a Sel node.
+ *
+ * @param sel  the node
+ *
+ * @return the base address.
+ */
+static ir_node *find_base_adr(ir_node *sel)
+{
+	ir_node *ptr = sel;
+	do {
+		ptr = get_Sel_ptr(ptr);
+	} while (is_Sel(ptr));
+	return ptr;
+}
+
+/**
  * Calculates how many arguments of the call are const, updates
  * param distribution.
  */
 static void analyse_params_of_Call(graph_entry_t *graph, ir_node *call)
 {
-	int i, num_const_args = 0, num_local_adr = 0;
-	int n = get_Call_n_params(call);
-
-	for (i = 0; i < n; ++i) {
+	int num_const_args = 0;
+	int num_local_adr  = 0;
+	int n              = get_Call_n_params(call);
+	for (int i = 0; i < n; ++i) {
 		ir_node *param = get_Call_param(call, i);
-
 		if (is_irn_constlike(param)) {
 			++num_const_args;
 		} else if (is_Sel(param)) {
-			ir_node *base = param;
-
-			do {
-				base = get_Sel_ptr(base);
-			} while (is_Sel(base));
-
+			ir_node *const base = find_base_adr(param);
 			if (base == get_irg_frame(graph->irg))
 				++num_local_adr;
 		}
-
 	}
 
 	if (num_const_args > 0)
@@ -548,15 +548,10 @@ static void analyse_params_of_Call(graph_entry_t *graph, ir_node *call)
  */
 static void stat_update_call(ir_node *call, graph_entry_t *graph)
 {
-	ir_node   *block = get_nodes_block(call);
-	ir_node   *ptr = get_Call_ptr(call);
-	ir_graph  *callee = NULL;
-
-	/*
-	 * If the block is bad, the whole subgraph will collapse later
+	/* If the block is bad, the whole subgraph will collapse later
 	 * so do not count this call.
-	 * This happens in dead code.
-	 */
+	 * This happens in dead code. */
+	ir_node *block = get_nodes_block(call);
 	if (is_Bad(block))
 		return;
 
@@ -565,8 +560,10 @@ static void stat_update_call(ir_node *call, graph_entry_t *graph)
 	/* found a call, this function is not a leaf */
 	graph->is_leaf = 0;
 
+	ir_graph       *callee = NULL;
+	ir_node  *const ptr    = get_Call_ptr(call);
 	if (is_Address(ptr)) {
-		/* ok, we seems to know the entity */
+		/* ok, we seem to know the entity */
 		ir_entity *const ent = get_Address_entity(ptr);
 		callee = get_entity_irg(ent);
 
@@ -576,7 +573,7 @@ static void stat_update_call(ir_node *call, graph_entry_t *graph)
 		if (callee == NULL)
 			cnt_inc(&graph->cnt[gcnt_external_calls]);
 	} else {
-		/* indirect call, be could not predict */
+		/* indirect call, could not predict */
 		cnt_inc(&graph->cnt[gcnt_indirect_calls]);
 
 		/* NOT a leaf call */
@@ -586,13 +583,11 @@ static void stat_update_call(ir_node *call, graph_entry_t *graph)
 	/* check, if it's a chain-call: Then, the call-block
 	 * must dominate the end block. */
 	{
-		ir_node *curr = get_irg_end_block(graph->irg);
-		int depth = get_Block_dom_depth(block);
-
+		int const depth = get_Block_dom_depth(block);
+		ir_node  *curr  = get_irg_end_block(graph->irg);
 		for (; curr != block && get_Block_dom_depth(curr) > depth;) {
 			curr = get_Block_idom(curr);
-
-			if (! curr || !is_Block(curr))
+			if (!curr || !is_Block(curr))
 				break;
 		}
 
@@ -603,9 +598,8 @@ static void stat_update_call(ir_node *call, graph_entry_t *graph)
 	/* check, if the callee is a leaf */
 	if (callee) {
 		graph_entry_t *called = graph_get_entry(callee, status->irg_hash);
-
 		if (called->is_analyzed) {
-			if (! called->is_leaf)
+			if (!called->is_leaf)
 				graph->is_leaf_call = LCS_NON_LEAF_CALL;
 		}
 	}
@@ -618,20 +612,17 @@ static void stat_update_call(ir_node *call, graph_entry_t *graph)
  */
 static void stat_update_call_2(ir_node *call, graph_entry_t *graph)
 {
-	ir_node   *block = get_nodes_block(call);
-	ir_node   *ptr = get_Call_ptr(call);
-	ir_graph  *callee = NULL;
-
-	/*
-	 * If the block is bad, the whole subgraph will collapse later
+	/* If the block is bad, the whole subgraph will collapse later
 	 * so do not count this call.
-	 * This happens in dead code.
-	 */
+	 * This happens in dead code. */
+	ir_node *const block = get_nodes_block(call);
 	if (is_Bad(block))
 		return;
 
+	ir_graph       *callee = NULL;
+	ir_node  *const ptr    = get_Call_ptr(call);
 	if (is_Address(ptr)) {
-		/* ok, we seems to know the entity */
+		/* ok, we seem to know the entity */
 		ir_entity *const ent = get_Address_entity(ptr);
 		callee = get_entity_irg(ent);
 	}
@@ -642,28 +633,10 @@ static void stat_update_call_2(ir_node *call, graph_entry_t *graph)
 
 		assert(called->is_analyzed);
 
-		if (! called->is_leaf)
+		if (!called->is_leaf)
 			graph->is_leaf_call = LCS_NON_LEAF_CALL;
 	} else
 		graph->is_leaf_call = LCS_NON_LEAF_CALL;
-}
-
-/**
- * Find the base address and entity of an Sel node.
- *
- * @param sel  the node
- *
- * @return the base address.
- */
-static ir_node *find_base_adr(ir_node *sel)
-{
-	ir_node *ptr = get_Sel_ptr(sel);
-
-	while (is_Sel(ptr)) {
-		sel = ptr;
-		ptr = get_Sel_ptr(sel);
-	}
-	return ptr;
 }
 
 /**
@@ -671,9 +644,7 @@ static ir_node *find_base_adr(ir_node *sel)
  */
 static void stat_update_address(ir_node *node, graph_entry_t *graph)
 {
-	unsigned opc = get_irn_opcode(node);
-	ir_node *base;
-
+	unsigned const opc = get_irn_opcode(node);
 	switch (opc) {
 	case iro_Address:
 		/* a global address */
@@ -681,8 +652,8 @@ static void stat_update_address(ir_node *node, graph_entry_t *graph)
 		break;
 
 	case iro_Sel: {
-		base = find_base_adr(node);
-		ir_graph *const irg = graph->irg;
+		ir_node  *const base = find_base_adr(node);
+		ir_graph *const irg  = graph->irg;
 		if (base == get_irg_frame(irg)) {
 			/* a local Variable. */
 			cnt_inc(&graph->cnt[gcnt_local_adr]);
@@ -690,11 +661,9 @@ static void stat_update_address(ir_node *node, graph_entry_t *graph)
 			/* Pointer access */
 			if (is_Proj(base) && skip_Proj(get_Proj_pred(base)) == get_irg_start(irg)) {
 				/* pointer access through parameter, check for THIS */
-				ir_entity *ent = get_irg_entity(irg);
-
-				if (ent != NULL) {
-					ir_type *ent_tp = get_entity_type(ent);
-
+				ir_entity *const ent = get_irg_entity(irg);
+				if (ent) {
+					ir_type *const ent_tp = get_entity_type(ent);
 					if (get_method_calling_convention(ent_tp) & cc_this_call) {
 						if (get_Proj_num(base) == 0) {
 							/* THIS pointer */
@@ -723,14 +692,12 @@ end_parameter: ;
  */
 static void update_node_stat(ir_node *node, void *env)
 {
-	graph_entry_t *graph = (graph_entry_t*)env;
-
-	int arity = get_irn_arity(node);
-
-	op_id_t       const op    = stat_get_irn_op(node);
-	node_entry_t *const entry = opcode_get_entry(op, graph->opcode_hash);
+	graph_entry_t *const graph = (graph_entry_t*)env;
+	op_id_t        const op    = stat_get_irn_op(node);
+	node_entry_t  *const entry = opcode_get_entry(op, graph->opcode_hash);
 
 	cnt_inc(&entry->cnt_alive);
+	int const arity = get_irn_arity(node);
 	cnt_add_i(&graph->cnt[gcnt_edges], arity);
 
 	/* count block edges */
@@ -753,8 +720,7 @@ static void update_node_stat(ir_node *node, void *env)
 		break;
 	case iro_Phi:
 		/* check for non-strict Phi nodes */
-		for (int i = arity - 1; i >= 0; --i) {
-			ir_node *pred = get_Phi_pred(node, i);
+		foreach_irn_in_r(node, i, pred) {
 			if (is_Unknown(pred)) {
 				/* found an Unknown predecessor, graph is not strict */
 				graph->is_strict = 0;
@@ -781,7 +747,7 @@ static void update_node_stat(ir_node *node, void *env)
  */
 static void update_node_stat_2(ir_node *node, void *env)
 {
-	graph_entry_t *graph = (graph_entry_t*)env;
+	graph_entry_t *const graph = (graph_entry_t*)env;
 
 	/* check for properties that depends on calls like recursion/leaf/indirect call */
 	if (is_Call(node))
@@ -791,11 +757,10 @@ static void update_node_stat_2(ir_node *node, void *env)
 /**
  * Get the current address mark.
  */
-static unsigned get_adr_mark(graph_entry_t *graph, ir_node *node)
+static unsigned get_adr_mark(graph_entry_t *const graph, ir_node const *const node)
 {
-	address_mark_entry_t const val = { node, 0 };
-	address_mark_entry_t *value = set_find(address_mark_entry_t, graph->address_mark, &val, sizeof(val), hash_ptr(node));
-
+	address_mark_entry_t  const val   = { node, 0 };
+	address_mark_entry_t *const value = set_find(address_mark_entry_t, graph->address_mark, &val, sizeof(val), hash_ptr(node));
 	return value ? value->mark : 0;
 }
 
@@ -816,12 +781,11 @@ static void set_adr_mark(graph_entry_t *graph, ir_node *node, unsigned val)
  * it's identified as a part of an address expression or at least referenced
  * by an address expression.
  */
-static int stat_adr_mark_hook(FILE *F, ir_node *node, ir_node *local)
+static int stat_adr_mark_hook(FILE *const F, ir_node const *const node, ir_node const *const local)
 {
-	ir_node *n           = local ? local : node;
-	ir_graph *irg        = get_irn_irg(n);
-	graph_entry_t *graph = graph_get_entry(irg, status->irg_hash);
-	unsigned mark        = get_adr_mark(graph, n);
+	ir_node const *const n     = local ? local : node;
+	graph_entry_t *const graph = get_graph_entry(n, status->irg_hash);
+	unsigned       const mark  = get_adr_mark(graph, n);
 
 	if (mark & MARK_ADDRESS_CALC)
 		fprintf(F, "color: purple");
@@ -835,7 +799,7 @@ static int stat_adr_mark_hook(FILE *F, ir_node *node, ir_node *local)
 	/* I know the color! */
 	return 1;
 }
-#endif /* DUMP_ADR_MODE */
+#endif
 
 /**
  * Return the "operational" mode of a Firm node.
@@ -843,18 +807,12 @@ static int stat_adr_mark_hook(FILE *F, ir_node *node, ir_node *local)
 static ir_mode *get_irn_op_mode(ir_node *node)
 {
 	switch (get_irn_opcode(node)) {
-	case iro_Load:
-		return get_Load_mode(node);
-	case iro_Store:
-		return get_irn_mode(get_Store_value(node));
-	case iro_Div:
-		return get_irn_mode(get_Div_left(node));
-	case iro_Mod:
-		return get_irn_mode(get_Mod_left(node));
-	case iro_Cmp:
-		/* Cmp is no address calculation, or is it? */
-	default:
-		return get_irn_mode(node);
+	case iro_Load:  return get_Load_mode(node);
+	case iro_Store: return get_irn_mode(get_Store_value(node));
+	case iro_Div:   return get_irn_mode(get_Div_left(node));
+	case iro_Mod:   return get_irn_mode(get_Mod_left(node));
+	case iro_Cmp:   /* Cmp is no address calculation, or is it? */
+	default:        return get_irn_mode(node);
 	}
 }
 
@@ -867,13 +825,13 @@ static ir_mode *get_irn_op_mode(ir_node *node)
  */
 static void mark_address_calc(ir_node *node, void *env)
 {
-	graph_entry_t *graph = (graph_entry_t*)env;
-	ir_mode *mode = get_irn_op_mode(node);
-	unsigned mark_preds = MARK_REF_NON_ADR;
+	graph_entry_t *const graph = (graph_entry_t*)env;
 
-	if (! mode_is_data(mode))
+	ir_mode *const mode = get_irn_op_mode(node);
+	if (!mode_is_data(mode))
 		return;
 
+	unsigned mark_preds = MARK_REF_NON_ADR;
 	if (mode_is_reference(mode)) {
 		/* a reference is calculated here, we are sure */
 		set_adr_mark(graph, node, MARK_ADDRESS_CALC);
@@ -883,21 +841,16 @@ static void mark_address_calc(ir_node *node, void *env)
 		unsigned mark = get_adr_mark(graph, node);
 
 		if ((mark & (MARK_REF_ADR | MARK_REF_NON_ADR)) == MARK_REF_ADR) {
-			/*
-			 * this node has no reference mode, but is only
-			 * referenced by address calculations
-			 */
+			/* this node has no reference mode, but is only
+			 * referenced by address calculations */
 			mark_preds = MARK_REF_ADR;
 		}
 	}
 
 	/* mark all predecessors */
 	foreach_irn_in(node, i, pred) {
-		mode = get_irn_op_mode(pred);
-		if (! mode_is_data(mode))
-			continue;
-
-		set_adr_mark(graph, pred, get_adr_mark(graph, pred) | mark_preds);
+		if (mode_is_data(get_irn_op_mode(pred)))
+			set_adr_mark(graph, pred, get_adr_mark(graph, pred) | mark_preds);
 	}
 }
 
@@ -910,9 +863,9 @@ static void mark_address_calc(ir_node *node, void *env)
  */
 static void count_adr_ops(ir_node *node, void *env)
 {
-	graph_entry_t *graph = (graph_entry_t*)env;
-	unsigned mark        = get_adr_mark(graph, node);
+	graph_entry_t *const graph = (graph_entry_t*)env;
 
+	unsigned const mark = get_adr_mark(graph, node);
 	if (mark & MARK_ADDRESS_CALC)
 		cnt_inc(&graph->cnt[gcnt_pure_adr_ops]);
 	else if ((mark & (MARK_REF_ADR | MARK_REF_NON_ADR)) == MARK_REF_ADR)
@@ -930,8 +883,6 @@ static void count_adr_ops(ir_node *node, void *env)
  */
 static void update_graph_stat(graph_entry_t *global, graph_entry_t *graph)
 {
-	int i;
-
 	/* clear first the alive counter in the graph */
 	foreach_pset(graph->opcode_hash, node_entry_t, entry) {
 		cnt_clr(&entry->cnt_alive);
@@ -977,9 +928,9 @@ static void update_graph_stat(graph_entry_t *global, graph_entry_t *graph)
 #ifdef DUMP_ADR_MODE
 		/* register the vcg hook and dump the graph for test */
 		set_dump_node_vcgattr_hook(stat_adr_mark_hook);
-		dump_ir_block_graph(graph->irg, "-adr");
+		dump_ir_graph(graph->irg, "-adr");
 		set_dump_node_vcgattr_hook(NULL);
-#endif /* DUMP_ADR_MODE */
+#endif
 
 		irg_walk_graph(graph->irg, NULL, count_adr_ops, graph);
 	}
@@ -1003,7 +954,7 @@ static void update_graph_stat(graph_entry_t *global, graph_entry_t *graph)
 	graph->is_analyzed = 1;
 
 	/* accumulate all counter's */
-	for (i = 0; i < _gcnt_last; ++i)
+	for (int i = 0; i < _gcnt_last; ++i)
 		cnt_add(&global->cnt[i], &graph->cnt[i]);
 }
 
@@ -1011,12 +962,10 @@ static void update_graph_stat(graph_entry_t *global, graph_entry_t *graph)
  * Called for every graph that was on the wait_q in stat_dump_snapshot()
  * must finish all statistic info calculations.
  *
- * @param global    The global entry
- * @param graph     The current entry
+ * @param graph  The current entry
  */
-static void update_graph_stat_2(graph_entry_t *global, graph_entry_t *graph)
+static void update_graph_stat_2(graph_entry_t *graph)
 {
-	(void) global;
 	if (graph->is_deleted) {
 		/* deleted, ignore */
 		return;
@@ -1051,9 +1000,7 @@ static void stat_register_dumper(const dumper_t *dumper)
  */
 static void stat_dump_graph(graph_entry_t *entry)
 {
-	dumper_t *dumper;
-
-	for (dumper = status->dumper; dumper; dumper = dumper->next) {
+	for (dumper_t *dumper = status->dumper; dumper; dumper = dumper->next) {
 		if (dumper->dump_graph)
 			dumper->dump_graph(dumper, entry);
 	}
@@ -1064,9 +1011,7 @@ static void stat_dump_graph(graph_entry_t *entry)
  */
 static void stat_dump_consts(const constant_info_t *tbl)
 {
-	dumper_t *dumper;
-
-	for (dumper = status->dumper; dumper; dumper = dumper->next) {
+	for (dumper_t *dumper = status->dumper; dumper; dumper = dumper->next) {
 		if (dumper->dump_const_tbl)
 			dumper->dump_const_tbl(dumper, tbl);
 	}
@@ -1077,9 +1022,7 @@ static void stat_dump_consts(const constant_info_t *tbl)
  */
 static void stat_dump_param_tbl(const distrib_tbl_t *tbl, graph_entry_t *global)
 {
-	dumper_t *dumper;
-
-	for (dumper = status->dumper; dumper; dumper = dumper->next) {
+	for (dumper_t *dumper = status->dumper; dumper; dumper = dumper->next) {
 		if (dumper->dump_param_tbl)
 			dumper->dump_param_tbl(dumper, tbl, global);
 	}
@@ -1090,9 +1033,7 @@ static void stat_dump_param_tbl(const distrib_tbl_t *tbl, graph_entry_t *global)
  */
 static void stat_dump_opt_cnt(const counter_t *tbl, unsigned len)
 {
-	dumper_t *dumper;
-
-	for (dumper = status->dumper; dumper; dumper = dumper->next) {
+	for (dumper_t *dumper = status->dumper; dumper; dumper = dumper->next) {
 		if (dumper->dump_opt_cnt)
 			dumper->dump_opt_cnt(dumper, tbl, len);
 	}
@@ -1103,9 +1044,7 @@ static void stat_dump_opt_cnt(const counter_t *tbl, unsigned len)
  */
 static void stat_dump_init(const char *name)
 {
-	dumper_t *dumper;
-
-	for (dumper = status->dumper; dumper; dumper = dumper->next) {
+	for (dumper_t *dumper = status->dumper; dumper; dumper = dumper->next) {
 		if (dumper->init)
 			dumper->init(dumper, name);
 	}
@@ -1116,9 +1055,7 @@ static void stat_dump_init(const char *name)
  */
 static void stat_dump_finish(void)
 {
-	dumper_t *dumper;
-
-	for (dumper = status->dumper; dumper; dumper = dumper->next) {
+	for (dumper_t *dumper = status->dumper; dumper; dumper = dumper->next) {
 		if (dumper->finish)
 			dumper->finish(dumper);
 	}
@@ -1142,8 +1079,8 @@ ir_op *stat_get_op_from_opcode(unsigned code)
  */
 static void stat_new_ir_op(void *ctx, ir_op *op)
 {
-	(void) ctx;
-	if (! status->stat_options)
+	(void)ctx;
+	if (!status->stat_options)
 		return;
 
 	STAT_ENTER;
@@ -1166,9 +1103,9 @@ static void stat_new_ir_op(void *ctx, ir_op *op)
  */
 static void stat_free_ir_op(void *ctx, ir_op *op)
 {
-	(void) ctx;
-	(void) op;
-	if (! status->stat_options)
+	(void)ctx;
+	(void)op;
+	if (!status->stat_options)
 		return;
 
 	STAT_ENTER;
@@ -1185,8 +1122,8 @@ static void stat_free_ir_op(void *ctx, ir_op *op)
  */
 static void stat_new_node(void *ctx, ir_node *node)
 {
-	(void) ctx;
-	if (! status->stat_options)
+	(void)ctx;
+	if (!status->stat_options)
 		return;
 
 	/* do NOT count during dead node elimination */
@@ -1195,20 +1132,11 @@ static void stat_new_node(void *ctx, ir_node *node)
 
 	STAT_ENTER;
 	{
-		node_entry_t *entry;
-		graph_entry_t *graph;
 		op_id_t const op_id = stat_get_irn_op(node);
-
 		/* increase global value */
-		graph = graph_get_entry(NULL, status->irg_hash);
-		entry = opcode_get_entry(op_id, graph->opcode_hash);
-		cnt_inc(&entry->new_node);
-
+		cnt_inc(&get_node_entry(NULL, op_id)->new_node);
 		/* increase local value */
-		ir_graph *const irg = get_irn_irg(node);
-		graph = graph_get_entry(irg, status->irg_hash);
-		entry = opcode_get_entry(op_id, graph->opcode_hash);
-		cnt_inc(&entry->new_node);
+		cnt_inc(&get_node_entry(node, op_id)->new_node);
 	}
 	STAT_LEAVE;
 }
@@ -1221,26 +1149,17 @@ static void stat_new_node(void *ctx, ir_node *node)
  */
 static void stat_turn_into_id(void *ctx, ir_node *node)
 {
-	(void) ctx;
-	if (! status->stat_options)
+	(void)ctx;
+	if (!status->stat_options)
 		return;
 
 	STAT_ENTER;
 	{
-		node_entry_t *entry;
-		graph_entry_t *graph;
 		op_id_t const op_id = stat_get_irn_op(node);
-
 		/* increase global value */
-		graph = graph_get_entry(NULL, status->irg_hash);
-		entry = opcode_get_entry(op_id, graph->opcode_hash);
-		cnt_inc(&entry->into_Id);
-
+		cnt_inc(&get_node_entry(NULL, op_id)->into_Id);
 		/* increase local value */
-		ir_graph *const irg = get_irn_irg(node);
-		graph = graph_get_entry(irg, status->irg_hash);
-		entry = opcode_get_entry(op_id, graph->opcode_hash);
-		cnt_inc(&entry->into_Id);
+		cnt_inc(&get_node_entry(node, op_id)->into_Id);
 	}
 	STAT_LEAVE;
 }
@@ -1253,26 +1172,17 @@ static void stat_turn_into_id(void *ctx, ir_node *node)
  */
 static void stat_normalize(void *ctx, ir_node *node)
 {
-	(void) ctx;
-	if (! status->stat_options)
+	(void)ctx;
+	if (!status->stat_options)
 		return;
 
 	STAT_ENTER;
 	{
-		node_entry_t *entry;
-		graph_entry_t *graph;
 		op_id_t const op_id = stat_get_irn_op(node);
-
 		/* increase global value */
-		graph = graph_get_entry(NULL, status->irg_hash);
-		entry = opcode_get_entry(op_id, graph->opcode_hash);
-		cnt_inc(&entry->normalized);
-
+		cnt_inc(&get_node_entry(NULL, op_id)->normalized);
 		/* increase local value */
-		ir_graph *const irg = get_irn_irg(node);
-		graph = graph_get_entry(irg, status->irg_hash);
-		entry = opcode_get_entry(op_id, graph->opcode_hash);
-		cnt_inc(&entry->normalized);
+		cnt_inc(&get_node_entry(node, op_id)->normalized);
 	}
 	STAT_LEAVE;
 }
@@ -1286,15 +1196,14 @@ static void stat_normalize(void *ctx, ir_node *node)
  */
 static void stat_new_graph(void *ctx, ir_graph *irg, ir_entity *ent)
 {
-	(void) ctx;
-	if (! status->stat_options)
+	(void)ctx;
+	if (!status->stat_options)
 		return;
 
 	STAT_ENTER;
 	{
 		/* execute for side effect :-) */
-		graph_entry_t * graph = graph_get_entry(irg, status->irg_hash);
-
+		graph_entry_t *const graph = graph_get_entry(irg, status->irg_hash);
 		graph->ent           = ent;
 		graph->is_deleted    = 0;
 		graph->is_leaf       = 0;
@@ -1319,8 +1228,8 @@ static void stat_new_graph(void *ctx, ir_graph *irg, ir_entity *ent)
  */
 static void stat_free_graph(void *ctx, ir_graph *irg)
 {
-	(void) ctx;
-	if (! status->stat_options)
+	(void)ctx;
+	if (!status->stat_options)
 		return;
 
 	STAT_ENTER;
@@ -1348,16 +1257,15 @@ static void stat_free_graph(void *ctx, ir_graph *irg)
  */
 static void stat_irg_walk(void *ctx, ir_graph *irg, generic_func *pre, generic_func *post)
 {
-	(void) ctx;
-	(void) pre;
-	(void) post;
-	if (! status->stat_options)
+	(void)ctx;
+	(void)pre;
+	(void)post;
+	if (!status->stat_options)
 		return;
 
 	STAT_ENTER_SINGLE;
 	{
 		graph_entry_t *graph = graph_get_entry(irg, status->irg_hash);
-
 		cnt_inc(&graph->cnt[gcnt_acc_walked]);
 	}
 	STAT_LEAVE;
@@ -1388,17 +1296,16 @@ static void stat_irg_walk_blkwise(void *ctx, ir_graph *irg, generic_func *pre, g
  */
 static void stat_irg_block_walk(void *ctx, ir_graph *irg, ir_node *node, generic_func *pre, generic_func *post)
 {
-	(void) ctx;
-	(void) node;
-	(void) pre;
-	(void) post;
-	if (! status->stat_options)
+	(void)ctx;
+	(void)node;
+	(void)pre;
+	(void)post;
+	if (!status->stat_options)
 		return;
 
 	STAT_ENTER_SINGLE;
 	{
 		graph_entry_t *graph = graph_get_entry(irg, status->irg_hash);
-
 		cnt_inc(&graph->cnt[gcnt_acc_walked_blocks]);
 	}
 	STAT_LEAVE;
@@ -1442,30 +1349,25 @@ static void removed_due_opt(ir_node *n, hmap_opt_entry_t *hmap, hook_opt_kind ki
  *
  * @param ctx  the hook context
  */
-static void stat_merge_nodes(
-    void *ctx,
-    ir_node *const *new_node_array, int new_num_entries,
-    ir_node *const *old_node_array, int old_num_entries,
-    hook_opt_kind opt)
+static void stat_merge_nodes(void *ctx, ir_node *const *new_node_array, int new_num_entries, ir_node *const *old_node_array, int old_num_entries, hook_opt_kind opt)
 {
-	(void) ctx;
-	if (! status->stat_options)
+	(void)ctx;
+	if (!status->stat_options)
 		return;
 
 	STAT_ENTER;
 	{
-		int i, j;
 		assert(old_num_entries > 0);
-		ir_graph      *const irg   = get_irn_irg(old_node_array[0]);
-		graph_entry_t *const graph = graph_get_entry(irg, status->irg_hash);
+		graph_entry_t *const graph = get_graph_entry(old_node_array[0], status->irg_hash);
 
 		cnt_inc(&status->num_opts[opt]);
 		if (status->reassoc_run)
 			opt = HOOK_OPT_REASSOC;
 
-		for (i = 0; i < old_num_entries; ++i) {
+		for (int i = 0; i < old_num_entries; ++i) {
 			/* nodes might be in new and old, so if we found a node
-			   in both sets, this one  is NOT removed */
+			   in both sets, this one is NOT removed */
+			int j;
 			for (j = 0; j < new_num_entries; ++j) {
 				if (old_node_array[i] == new_node_array[j])
 					break;
@@ -1495,8 +1397,8 @@ static void stat_merge_nodes(
  */
 static void stat_reassociate(void *ctx, int flag)
 {
-	(void) ctx;
-	if (! status->stat_options)
+	(void)ctx;
+	if (!status->stat_options)
 		return;
 
 	STAT_ENTER;
@@ -1514,15 +1416,13 @@ static void stat_reassociate(void *ctx, int flag)
  */
 static void stat_lower(void *ctx, ir_node *node)
 {
-	(void) ctx;
-	if (! status->stat_options)
+	(void)ctx;
+	if (!status->stat_options)
 		return;
 
 	STAT_ENTER;
 	{
-		ir_graph      *const irg   = get_irn_irg(node);
-		graph_entry_t *const graph = graph_get_entry(irg, status->irg_hash);
-
+		graph_entry_t *const graph = get_graph_entry(node, status->irg_hash);
 		removed_due_opt(node, graph->opt_hash[HOOK_LOWERED], HOOK_LOWERED);
 	}
 	STAT_LEAVE;
@@ -1538,17 +1438,15 @@ static void stat_lower(void *ctx, ir_node *node)
  */
 static void stat_inline(void *ctx, ir_node *call, ir_graph *called_irg)
 {
-	(void) ctx;
-	if (! status->stat_options)
+	(void)ctx;
+	if (!status->stat_options)
 		return;
 
 	STAT_ENTER;
 	{
-		ir_graph *irg = get_irn_irg(call);
-		graph_entry_t *i_graph = graph_get_entry(called_irg, status->irg_hash);
-		graph_entry_t *graph   = graph_get_entry(irg, status->irg_hash);
-
+		graph_entry_t *const graph = get_graph_entry(call, status->irg_hash);
 		cnt_inc(&graph->cnt[gcnt_acc_got_inlined]);
+		graph_entry_t *const i_graph = graph_get_entry(called_irg, status->irg_hash);
 		cnt_inc(&i_graph->cnt[gcnt_acc_was_inlined]);
 	}
 	STAT_LEAVE;
@@ -1561,14 +1459,13 @@ static void stat_inline(void *ctx, ir_node *call, ir_graph *called_irg)
  */
 static void stat_tail_rec(void *ctx, ir_graph *irg, int n_calls)
 {
-	(void) ctx;
-	if (! status->stat_options)
+	(void)ctx;
+	if (!status->stat_options)
 		return;
 
 	STAT_ENTER;
 	{
-		graph_entry_t *graph = graph_get_entry(irg, status->irg_hash);
-
+		graph_entry_t *const graph = graph_get_entry(irg, status->irg_hash);
 		graph->num_tail_recursion += n_calls;
 	}
 	STAT_LEAVE;
@@ -1581,13 +1478,13 @@ static void stat_tail_rec(void *ctx, ir_graph *irg, int n_calls)
  */
 static void stat_strength_red(void *ctx, ir_graph *irg, ir_node *strong)
 {
-	(void) ctx;
-	if (! status->stat_options)
+	(void)ctx;
+	if (!status->stat_options)
 		return;
 
 	STAT_ENTER;
 	{
-		graph_entry_t *graph = graph_get_entry(irg, status->irg_hash);
+		graph_entry_t *const graph = graph_get_entry(irg, status->irg_hash);
 		cnt_inc(&graph->cnt[gcnt_acc_strength_red]);
 
 		removed_due_opt(strong, graph->opt_hash[HOOK_OPT_STRENGTH_RED], HOOK_OPT_STRENGTH_RED);
@@ -1602,9 +1499,9 @@ static void stat_strength_red(void *ctx, ir_graph *irg, ir_node *strong)
  */
 static void stat_dead_node_elim(void *ctx, ir_graph *irg, int start)
 {
-	(void) ctx;
-	(void) irg;
-	if (! status->stat_options)
+	(void)ctx;
+	(void)irg;
+	if (!status->stat_options)
 		return;
 
 	status->in_dead_node_elim = (start != 0);
@@ -1615,15 +1512,14 @@ static void stat_dead_node_elim(void *ctx, ir_graph *irg, int start)
  */
 static void stat_func_call(void *context, ir_graph *irg, ir_node *call)
 {
-	(void) context;
-	(void) call;
-	if (! status->stat_options)
+	(void)context;
+	(void)call;
+	if (!status->stat_options)
 		return;
 
 	STAT_ENTER;
 	{
-		graph_entry_t *graph = graph_get_entry(irg, status->irg_hash);
-
+		graph_entry_t *const graph = graph_get_entry(irg, status->irg_hash);
 		cnt_inc(&graph->cnt[gcnt_acc_real_func_call]);
 	}
 	STAT_LEAVE;
@@ -1636,14 +1532,13 @@ static void stat_func_call(void *context, ir_graph *irg, ir_node *call)
  */
 static void stat_arch_dep_replace_mul_with_shifts(void *ctx, ir_node *mul)
 {
-	(void) ctx;
-	if (! status->stat_options)
+	(void)ctx;
+	if (!status->stat_options)
 		return;
 
 	STAT_ENTER;
 	{
-		ir_graph      *const irg   = get_irn_irg(mul);
-		graph_entry_t *const graph = graph_get_entry(irg, status->irg_hash);
+		graph_entry_t *const graph = get_graph_entry(mul, status->irg_hash);
 		removed_due_opt(mul, graph->opt_hash[HOOK_OPT_ARCH_DEP], HOOK_OPT_ARCH_DEP);
 	}
 	STAT_LEAVE;
@@ -1657,14 +1552,13 @@ static void stat_arch_dep_replace_mul_with_shifts(void *ctx, ir_node *mul)
  */
 static void stat_arch_dep_replace_division_by_const(void *ctx, ir_node *node)
 {
-	(void) ctx;
-	if (! status->stat_options)
+	(void)ctx;
+	if (!status->stat_options)
 		return;
 
 	STAT_ENTER;
 	{
-		ir_graph      *const irg   = get_irn_irg(node);
-		graph_entry_t *const graph = graph_get_entry(irg, status->irg_hash);
+		graph_entry_t *const graph = get_graph_entry(node, status->irg_hash);
 		removed_due_opt(node, graph->opt_hash[HOOK_OPT_ARCH_DEP], HOOK_OPT_ARCH_DEP);
 	}
 	STAT_LEAVE;
@@ -1680,17 +1574,14 @@ static void stat_arch_dep_replace_division_by_const(void *ctx, ir_node *node)
  */
 void stat_be_block_regpressure(ir_graph *irg, ir_node *block, int pressure, const char *class_name)
 {
-	if (! status->stat_options)
+	if (!status->stat_options)
 		return;
 
 	STAT_ENTER;
 	{
-		graph_entry_t        *graph = graph_get_entry(irg, status->irg_hash);
-		be_block_entry_t     *block_ent;
-		reg_pressure_entry_t *rp_ent;
-
-		block_ent = be_block_get_entry(&status->be_data, get_irn_node_nr(block), graph->be_block_hash);
-		rp_ent    = OALLOCZ(&status->be_data, reg_pressure_entry_t);
+		graph_entry_t        *const graph     = graph_get_entry(irg, status->irg_hash);
+		be_block_entry_t     *const block_ent = be_block_get_entry(&status->be_data, get_irn_node_nr(block), graph->be_block_hash);
+		reg_pressure_entry_t *const rp_ent    = OALLOCZ(&status->be_data, reg_pressure_entry_t);
 
 		rp_ent->class_name = class_name;
 		rp_ent->pressure   = pressure;
@@ -1708,13 +1599,11 @@ void stat_dump_snapshot(const char *name, const char *phase)
 
 	STAT_ENTER;
 	{
-		graph_entry_t *global = graph_get_entry(NULL, status->irg_hash);
+		graph_entry_t *const global = graph_get_entry(NULL, status->irg_hash);
 
-		/*
-		 * The constant counter is only global, so we clear it here.
+		/* The constant counter is only global, so we clear it here.
 		 * Note that it does NOT contain the constants in DELETED
-		 * graphs due to this.
-		 */
+		 * graphs due to this. */
 		if (status->stat_options & FIRMSTAT_COUNT_CONSTS)
 			stat_const_clear(status);
 
@@ -1737,35 +1626,32 @@ void stat_dump_snapshot(const char *name, const char *phase)
 
 		/* calculate the graph statistics */
 		foreach_pset(status->irg_hash, graph_entry_t, entry) {
-			if (entry->irg == NULL) {
-				/* special entry for the global count */
+			/* special entry for the global count */
+			if (!entry->irg)
 				continue;
-			}
-			if (! entry->is_deleted) {
+			if (!entry->is_deleted) {
 				/* the graph is still alive, count the nodes on it */
 				update_graph_stat(global, entry);
 			}
 		}
 
 		/* some calculations are dependent, we pushed them on the wait_q */
-		while (! pdeq_empty(status->wait_q)) {
+		while (!pdeq_empty(status->wait_q)) {
 			graph_entry_t *const entry = (graph_entry_t*)pdeq_getr(status->wait_q);
-
-			update_graph_stat_2(global, entry);
+			update_graph_stat_2(entry);
 		}
 
 		/* dump per graph */
 		foreach_pset(status->irg_hash, graph_entry_t, entry) {
-			if (entry->irg == NULL) {
-				/* special entry for the global count */
+			/* special entry for the global count */
+			if (!entry->irg)
 				continue;
-			}
 
-			if (! entry->is_deleted || status->stat_options & FIRMSTAT_COUNT_DELETED) {
+			if (!entry->is_deleted || status->stat_options & FIRMSTAT_COUNT_DELETED) {
 				stat_dump_graph(entry);
 			}
 
-			if (! entry->is_deleted) {
+			if (!entry->is_deleted) {
 				/* clear the counter that are not accumulated */
 				graph_clear_entry(entry, 0);
 			}
@@ -1808,7 +1694,7 @@ void firm_init_stat(void)
 #define HOOK(h, fkt) \
 	stat_hooks[h].hook._##h = fkt; register_hook(h, &stat_hooks[h])
 
-	if (! (stat_options & FIRMSTAT_ENABLED))
+	if (!(stat_options & FIRMSTAT_ENABLED))
 		return;
 
 	status = XMALLOCZ(stat_info_t);
@@ -1899,10 +1785,8 @@ void firm_init_stat(void)
  */
 static void stat_term_dumper(void)
 {
-	dumper_t *dumper, *next_dumper;
-
-	for (dumper = status->dumper; dumper; /* iteration done in loop body */ ) {
-		next_dumper = dumper->next;
+	for (dumper_t *dumper = status->dumper; dumper;) {
+		dumper_t *const next_dumper = dumper->next;
 		free(dumper);
 		dumper = next_dumper;
 	}
@@ -1912,21 +1796,21 @@ static void stat_term_dumper(void)
 /* Terminates the statistics module, frees all memory. */
 void stat_term(void)
 {
-	if (status != (stat_info_t *)&status_disable) {
+	if (status != (stat_info_t*)&status_disable) {
 		obstack_free(&status->be_data, NULL);
 		obstack_free(&status->cnts, NULL);
 
 		stat_term_dumper();
 
 		free(status);
-		status = (stat_info_t *)&status_disable;
+		status = (stat_info_t*)&status_disable;
 	}
 }
 
 /* returns 1 if statistics were initialized, 0 otherwise */
 int stat_is_active(void)
 {
-	return status != (stat_info_t *)&status_disable;
+	return status != (stat_info_t*)&status_disable;
 }
 
 void init_stat(void)
@@ -1947,7 +1831,7 @@ void init_stat(void)
 	};
 	static lc_opt_enum_mask_var_t statmask = { &stat_options, stat_items };
 	static const lc_opt_table_entry_t stat_optionstable[] = {
-		LC_OPT_ENT_ENUM_MASK("statistics", "enable statistics",   &statmask),
+		LC_OPT_ENT_ENUM_MASK("statistics", "enable statistics", &statmask),
 		LC_OPT_LAST
 	};
 	lc_opt_add_table(be_grp, stat_optionstable);

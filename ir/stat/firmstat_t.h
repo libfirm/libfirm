@@ -192,8 +192,8 @@ enum adr_marker_t {
  * An entry in the address_mark set
  */
 typedef struct address_mark_entry_t {
-  ir_node  *node;               /**< the node which this entry belongs to, needed for compare */
-  unsigned mark;                /**< the mark, a bitmask of enum adr_marker_t */
+  ir_node const *node; /**< the node which this entry belongs to, needed for compare */
+  unsigned       mark; /**< the mark, a bitmask of enum adr_marker_t */
 } address_mark_entry_t;
 
 typedef char const *op_id_t;
