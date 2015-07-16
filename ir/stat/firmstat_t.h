@@ -472,11 +472,6 @@ void stat_inc_distrib_tbl(distrib_tbl_t *tbl, const void *object);
  */
 void stat_inc_int_distrib_tbl(distrib_tbl_t *tbl, int key);
 
-/**
- * calculates the mean value of a distribution.
- */
-double stat_calc_mean_distrib_tbl(distrib_tbl_t *tbl);
-
 /** evaluates each entry of a distribution table. */
 typedef void (*eval_distrib_entry_fun)(const distrib_entry_t *entry, void *env);
 

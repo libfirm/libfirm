@@ -130,46 +130,6 @@ void stat_inc_int_distrib_tbl(distrib_tbl_t *tbl, int key)
 	stat_inc_distrib_tbl(tbl, INT_TO_PTR(key));
 }
 
-/*
- * calculates the mean value of a distribution
- */
-double stat_calc_mean_distrib_tbl(distrib_tbl_t *tbl)
-{
-	size_t count;
-	double sum;
-
-	if (tbl->int_dist) {
-		/* integer distribution, need min, max */
-		if (pset_count(tbl->hash_map) == 0)
-			return 0.0;
-
-		int min = INT_MAX;
-		int max = INT_MIN;
-		sum = 0.0;
-
-		foreach_pset(tbl->hash_map, distrib_entry_t, entry) {
-			int value = PTR_TO_INT(entry->object);
-
-			if (value < min)
-				min = value;
-			if (value > max)
-				max = value;
-
-			sum += cnt_to_dbl(&entry->cnt);
-		}
-		count = max - min + 1;
-	} else {
-		sum = 0.0;
-		count = 0;
-		foreach_pset(tbl->hash_map, distrib_entry_t, entry) {
-			sum += cnt_to_dbl(&entry->cnt);
-			++count;
-		}
-	}
-
-	return count ? sum / (double)count : 0.0;
-}
-
 /**
  * iterates over all entries in a distribution table
  */
