@@ -120,28 +120,6 @@ static int reg_pressure_cmp(const void *elt, const void *key)
 }
 
 /**
- * Compare two elements of the perm_stat hash.
- */
-static int perm_stat_cmp(const void *elt, const void *key)
-{
-	const perm_stat_entry_t *e1 = (const perm_stat_entry_t*)elt;
-	const perm_stat_entry_t *e2 = (const perm_stat_entry_t*)key;
-
-	return e1->perm != e2->perm;
-}
-
-/**
- * Compare two elements of the perm_class hash.
- */
-static int perm_class_cmp(const void *elt, const void *key)
-{
-	const perm_class_entry_t *e1 = (const perm_class_entry_t*)elt;
-	const perm_class_entry_t *e2 = (const perm_class_entry_t*)key;
-
-	return e1->class_name != e2->class_name;
-}
-
-/**
  * Compare two elements of the ir_op hash.
  */
 static int opcode_cmp_2(const void *elt, const void *key)
@@ -371,12 +349,8 @@ static void be_block_clear_entry(be_block_entry_t *elem)
 	if (elem->sched_ready)
 		stat_delete_distrib_tbl(elem->sched_ready);
 
-	if (elem->perm_class_stat)
-		del_pset(elem->perm_class_stat);
-
-	elem->reg_pressure    = new_pset(reg_pressure_cmp, 5);
-	elem->sched_ready     = stat_new_int_distrib_tbl();
-	elem->perm_class_stat = new_pset(perm_class_cmp, 5);
+	elem->reg_pressure = new_pset(reg_pressure_cmp, 5);
+	elem->sched_ready  = stat_new_int_distrib_tbl();
 }
 
 /**
@@ -404,87 +378,6 @@ static be_block_entry_t *be_block_get_entry(struct obstack *obst, long block_nr,
 	elem->block_nr = block_nr;
 
 	return (be_block_entry_t*)pset_insert(hmap, elem, block_nr);
-}
-
-/**
- * clears all sets in perm_class_entry_t
- */
-static void perm_class_clear_entry(perm_class_entry_t *elem)
-{
-	if (elem->perm_stat)
-		del_pset(elem->perm_stat);
-
-	elem->perm_stat = new_pset(perm_stat_cmp, 5);
-}
-
-/**
- * Returns the associated perm_class entry for a register class.
- *
- * @param class_name  the register class name
- * @param hmap        a hash map containing class_name -> perm_class_entry_t
- */
-static perm_class_entry_t *perm_class_get_entry(struct obstack *obst, const char *class_name,
-                                                hmap_perm_class_entry_t *hmap)
-{
-	perm_class_entry_t key;
-	perm_class_entry_t *elem;
-
-	key.class_name = class_name;
-
-	elem = (perm_class_entry_t*)pset_find(hmap, &key, hash_ptr(class_name));
-	if (elem)
-		return elem;
-
-	elem = OALLOCZ(obst, perm_class_entry_t);
-
-	/* clear new counter */
-	perm_class_clear_entry(elem);
-
-	elem->class_name = class_name;
-
-	return (perm_class_entry_t*)pset_insert(hmap, elem, hash_ptr(class_name));
-}
-
-/**
- * clears all sets in perm_stat_entry_t
- */
-static void perm_stat_clear_entry(perm_stat_entry_t *elem)
-{
-	if (elem->chains)
-		stat_delete_distrib_tbl(elem->chains);
-
-	if (elem->cycles)
-		stat_delete_distrib_tbl(elem->cycles);
-
-	elem->chains = stat_new_int_distrib_tbl();
-	elem->cycles = stat_new_int_distrib_tbl();
-}
-
-/**
- * Returns the associated perm_stat entry for a perm.
- *
- * @param perm      the perm node
- * @param hmap      a hash map containing perm -> perm_stat_entry_t
- */
-static perm_stat_entry_t *perm_stat_get_entry(struct obstack *obst, ir_node *perm, hmap_perm_stat_entry_t *hmap)
-{
-	perm_stat_entry_t key;
-	perm_stat_entry_t *elem;
-
-	key.perm = perm;
-
-	elem = (perm_stat_entry_t*)pset_find(hmap, &key, hash_ptr(perm));
-	if (elem)
-		return elem;
-
-	elem = OALLOCZ(obst, perm_stat_entry_t);
-
-	/* clear new counter */
-	perm_stat_clear_entry(elem);
-
-	elem->perm = perm;
-
-	return (perm_stat_entry_t*)pset_insert(hmap, elem, hash_ptr(perm));
 }
 
 /**
@@ -1861,80 +1754,6 @@ void stat_be_block_sched_ready(ir_graph *irg, ir_node *block, int num_ready)
 
 		/* increase the counter of corresponding number of ready nodes */
 		stat_inc_int_distrib_tbl(block_ent->sched_ready, num_ready);
-	}
-	STAT_LEAVE;
-}
-
-/**
- * Update the permutation statistic of a block.
- *
- * @param class_name the name of the register class
- * @param n_regs     number of registers in the register class
- * @param perm       the perm node
- * @param block      the block containing the perm
- * @param size       the size of the perm
- * @param real_size  number of pairs with different registers
- */
-void stat_be_block_stat_perm(const char *class_name, int n_regs, ir_node *perm, ir_node *block,
-                             int size, int real_size)
-{
-	if (! status->stat_options)
-		return;
-
-	STAT_ENTER;
-	{
-		graph_entry_t      *graph = graph_get_entry(get_irn_irg(block), status->irg_hash);
-		be_block_entry_t   *block_ent;
-		perm_class_entry_t *pc_ent;
-		perm_stat_entry_t  *ps_ent;
-
-		block_ent = be_block_get_entry(&status->be_data, get_irn_node_nr(block), graph->be_block_hash);
-		pc_ent    = perm_class_get_entry(&status->be_data, class_name, block_ent->perm_class_stat);
-		ps_ent    = perm_stat_get_entry(&status->be_data, perm, pc_ent->perm_stat);
-
-		pc_ent->n_regs = n_regs;
-
-		/* update information */
-		ps_ent->size      = size;
-		ps_ent->real_size = real_size;
-	}
-	STAT_LEAVE;
-}
-
-/**
- * Update the permutation statistic of a single perm.
- *
- * @param class_name the name of the register class
- * @param perm       the perm node
- * @param block      the block containing the perm
- * @param is_chain   1 if chain, 0 if cycle
- * @param size       length of the cycle/chain
- * @param n_ops      the number of ops representing this cycle/chain after lowering
- */
-void stat_be_block_stat_permcycle(const char *class_name, ir_node *perm, ir_node *block,
-                                  int is_chain, int size, int n_ops)
-{
-	if (! status->stat_options)
-		return;
-
-	STAT_ENTER;
-	{
-		graph_entry_t      *graph = graph_get_entry(get_irn_irg(block), status->irg_hash);
-		be_block_entry_t   *block_ent;
-		perm_class_entry_t *pc_ent;
-		perm_stat_entry_t  *ps_ent;
-
-		block_ent = be_block_get_entry(&status->be_data, get_irn_node_nr(block), graph->be_block_hash);
-		pc_ent    = perm_class_get_entry(&status->be_data, class_name, block_ent->perm_class_stat);
-		ps_ent    = perm_stat_get_entry(&status->be_data, perm, pc_ent->perm_stat);
-
-		if (is_chain) {
-			ps_ent->n_copies += n_ops;
-			stat_inc_int_distrib_tbl(ps_ent->chains, size);
-		} else {
-			ps_ent->n_exchg += n_ops;
-			stat_inc_int_distrib_tbl(ps_ent->cycles, size);
-		}
 	}
 	STAT_LEAVE;
 }

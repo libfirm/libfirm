@@ -113,24 +113,6 @@ static distrib_entry_t *distrib_get_entry(distrib_tbl_t *tbl, const void *object
 }
 
 /*
- * adds a new object count into the distribution table
- */
-void stat_add_distrib_tbl(distrib_tbl_t *tbl, const void *object, const counter_t *cnt)
-{
-	distrib_entry_t *elem = distrib_get_entry(tbl, object);
-
-	cnt_add(&elem->cnt, cnt);
-}
-
-/*
- * adds a new key count into the integer distribution table
- */
-void stat_add_int_distrib_tbl(distrib_tbl_t *tbl, int key, const counter_t *cnt)
-{
-	stat_add_distrib_tbl(tbl, INT_TO_PTR(key), cnt);
-}
-
-/*
  * increases object count by one
  */
 void stat_inc_distrib_tbl(distrib_tbl_t *tbl, const void *object)
@@ -165,18 +147,6 @@ void stat_insert_distrib_tbl(distrib_tbl_t *tbl, const void *object)
 void stat_insert_int_distrib_tbl(distrib_tbl_t *tbl, int key)
 {
 	stat_insert_distrib_tbl(tbl, INT_TO_PTR(key));
-}
-
-/*
- * returns the sum over all counters in a distribution table
- */
-int stat_get_count_distrib_tbl(distrib_tbl_t *tbl)
-{
-	counter_t cnt = ZERO_CNT;
-
-	foreach_pset(tbl->hash_map, distrib_entry_t, entry)
-		cnt_add(&cnt, &entry->cnt);
-	return cnt_to_uint(&cnt);
 }
 
 /*

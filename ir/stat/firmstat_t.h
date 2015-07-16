@@ -35,8 +35,6 @@ typedef pset hmap_opt_entry_t;
 typedef pset hmap_block_entry_t;
 typedef pset hmap_be_block_entry_t;
 typedef pset hmap_reg_pressure_entry_t;
-typedef pset hmap_perm_stat_entry_t;
-typedef pset hmap_perm_class_entry_t;
 typedef pset hmap_ir_op;
 typedef pset hmap_distrib_entry_t;
 
@@ -291,28 +289,6 @@ typedef struct reg_pressure_entry_t {
 } reg_pressure_entry_t;
 
 /**
- * An entry for permutation statistics.
- */
-typedef struct perm_stat_entry_t {
-	ir_node       *perm;       /**< the perm node */
-	int            size;       /**< complete size */
-	int            real_size;  /**< number of pairs with different registers */
-	int            n_copies;   /**< number of copies created for lowering */
-	int            n_exchg;    /**< number of exchanges created for lowering */
-	distrib_tbl_t *cycles;     /**< distribution of cycle lengths */
-	distrib_tbl_t *chains;     /**< distribution of chain lengths */
-} perm_stat_entry_t;
-
-/**
- * An entry for permutation statistics per class.
- */
-typedef struct perm_class_entry_t {
-	const char                  *class_name; /**< name of the register class */
-	int                          n_regs;     /**< number of register in this class */
-	HASH_MAP(perm_stat_entry_t) *perm_stat;  /**< statistics about all perm nodes of this class */
-} perm_class_entry_t;
-
-/**
  * An entry for a block or extended block in a ir-graph
  */
 typedef struct be_block_entry_t {
@@ -320,7 +296,6 @@ typedef struct be_block_entry_t {
 	distrib_tbl_t                  *sched_ready;     /**< distribution of ready nodes per block */
 	/**< the highest register pressures for this block for each register class */
 	HASH_MAP(reg_pressure_entry_t) *reg_pressure;
-	HASH_MAP(perm_class_entry_t)   *perm_class_stat; /**< statistics about perm nodes for each register class */
 } be_block_entry_t;
 
 /**
@@ -490,16 +465,6 @@ distrib_tbl_t *stat_new_int_distrib_tbl(void);
 void stat_delete_distrib_tbl(distrib_tbl_t *tbl);
 
 /**
- * adds a new object count into the distribution table.
- */
-void stat_add_distrib_tbl(distrib_tbl_t *tbl, const void *object, const counter_t *cnt);
-
-/**
- * adds a new key count into the integer distribution table.
- */
-void stat_add_int_distrib_tbl(distrib_tbl_t *tbl, int key, const counter_t *cnt);
-
-/**
  * increases object count by one
  */
 void stat_inc_distrib_tbl(distrib_tbl_t *tbl, const void *object);
@@ -520,11 +485,6 @@ void stat_insert_distrib_tbl(distrib_tbl_t *tbl, const void *object);
  * if key is already present, nothing happens
  */
 void stat_insert_int_distrib_tbl(distrib_tbl_t *tbl, int key);
-
-/**
- * returns the sum over all counters in a distribution table
- */
-int stat_get_count_distrib_tbl(distrib_tbl_t *tbl);
 
 /**
  * calculates the mean value of a distribution.
@@ -585,31 +545,6 @@ void stat_be_block_regpressure(ir_graph *irg, ir_node *block, int pressure, cons
  * @param num_ready  the number of ready nodes
  */
 void stat_be_block_sched_ready(ir_graph *irg, ir_node *block, int num_ready);
-
-/**
- * Update the permutation statistic of a block
- *
- * @param class_name the name of the register class
- * @param perm       the perm node
- * @param block      the block containing the perm
- * @param size       the size of the perm
- * @param real_size  number of pairs with different registers
- */
-void stat_be_block_stat_perm(const char *class_name, int n_regs, ir_node *perm, ir_node *block,
-                             int size, int real_size);
-
-/**
- * Update the permutation statistic of a single perm
- *
- * @param class_name the name of the register class
- * @param perm       the perm node
- * @param block      the block containing the perm
- * @param is_chain   1 if chain, 0 if cycle
- * @param size       length of the cycle/chain
- * @param n_ops      the number of ops representing this cycle/chain after lowering
- */
-void stat_be_block_stat_permcycle(const char *class_name, ir_node *perm, ir_node *block,
-                                  int is_chain, int size, int n_ops);
 
 /**
  * Register an additional function for all dumper.  This function

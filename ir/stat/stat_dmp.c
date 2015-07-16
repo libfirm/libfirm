@@ -276,106 +276,6 @@ static void simple_dump_be_block_sched_ready(dumper_t *dmp, graph_entry_t *entry
 }
 
 /**
- * Adds the counter for given entry to another distribution table.
- */
-static void add_distrib_entry(const distrib_entry_t *entry, void *env)
-{
-	distrib_tbl_t *sum_tbl = (distrib_tbl_t*)env;
-
-	stat_add_int_distrib_tbl(sum_tbl, (int)PTR_TO_INT(entry->object), &entry->cnt);
-}
-
-/**
- * dumps permutation statistics for one and block and one class
- */
-static void simple_dump_be_block_permstat_class(dumper_t *dmp, perm_class_entry_t *entry)
-{
-	distrib_tbl_t *sum_chains = stat_new_int_distrib_tbl();
-	distrib_tbl_t *sum_cycles = stat_new_int_distrib_tbl();
-	char           buf[16];
-	int            i;
-
-	fprintf(dmp->f, "%12s %12s %12s %12s %12s %12s\n",
-		"size",
-		"real size",
-		"# chains",
-		"# cycles",
-		"# copies",
-		"# exchanges"
-	);
-
-	foreach_pset(entry->perm_stat, perm_stat_entry_t, ps_ent) {
-		fprintf(dmp->f, "%12d %12d %12d %12d %12d %12d\n",
-			ps_ent->size,
-			ps_ent->real_size,
-			stat_get_count_distrib_tbl(ps_ent->chains),
-			stat_get_count_distrib_tbl(ps_ent->cycles),
-			ps_ent->n_copies,
-			ps_ent->n_exchg
-		);
-
-		/* sum up distribution table for chains */
-		stat_iterate_distrib_tbl(ps_ent->chains, add_distrib_entry, sum_chains);
-
-		/* sum up distribution table for cycles */
-		stat_iterate_distrib_tbl(ps_ent->cycles, add_distrib_entry, sum_cycles);
-	}
-
-	/* print chain distribution for all perms of this class in this block */
-	fprintf(dmp->f, "chain distribution:\n");
-
-	/* add all missing entries to chain distribution table */
-	for (i = 1; i <= entry->n_regs; i++) {
-		snprintf(buf, sizeof(buf), "length %d", i);
-		fprintf(dmp->f, "%12s", buf);
-		stat_insert_int_distrib_tbl(sum_chains, i);
-	}
-	fprintf(dmp->f, "\n");
-	stat_iterate_distrib_tbl(sum_chains, simple_dump_distrib_entry, dmp);
-	fprintf(dmp->f, "\n");
-
-	/* print cycle distribution for all perms of this class in this block */
-	fprintf(dmp->f, "cycle distribution:\n");
-
-	/* add all missing entries to cycle distribution table */
-	for (i = 1; i <= entry->n_regs; i++) {
-		snprintf(buf, sizeof(buf), "length %d", i);
-		fprintf(dmp->f, "%12s", buf);
-		stat_insert_int_distrib_tbl(sum_cycles, i);
-	}
-	fprintf(dmp->f, "\n");
-	stat_iterate_distrib_tbl(sum_cycles, simple_dump_distrib_entry, dmp);
-	fprintf(dmp->f, "\n");
-
-	/* delete temporary sum distribution tables */
-	stat_delete_distrib_tbl(sum_chains);
-	stat_delete_distrib_tbl(sum_cycles);
-
-}
-
-/**
- * dumps statistics about perms
- */
-static void simple_dump_be_block_permstat(dumper_t *dmp, graph_entry_t *entry)
-{
-	if (pset_count(entry->be_block_hash) > 0) {
-		fprintf(dmp->f, "\nPERMUTATION STATISTICS BEGIN:\n");
-		foreach_pset(entry->be_block_hash, be_block_entry_t, b_entry) {
-			fprintf(dmp->f, "BLOCK %ld:\n", b_entry->block_nr);
-
-			if (b_entry->perm_class_stat) {
-				foreach_pset(b_entry->perm_class_stat, perm_class_entry_t, pc_ent) {
-					fprintf(dmp->f, "register class %s:\n", pc_ent->class_name);
-					simple_dump_be_block_permstat_class(dmp, pc_ent);
-				}
-			}
-		}
-
-		fprintf(dmp->f, "PERMUTATION STATISTICS END\n");
-	}
-}
-
-/**
  * dumps the number of real_function_call optimization
  */
 static void simple_dump_real_func_calls(dumper_t *dmp, counter_t *cnt)
@@ -523,9 +423,6 @@ static void simple_dump_graph(dumper_t *dmp, graph_entry_t *entry)
 
 		/* dump block ready nodes distribution */
 		simple_dump_be_block_sched_ready(dmp, entry);
-
-		/* dump block permutation statistics */
-		simple_dump_be_block_permstat(dmp, entry);
 	}
 }
 
