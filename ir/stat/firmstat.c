@@ -48,8 +48,7 @@ static unsigned stat_options;
 /**
  * global status
  */
-static const unsigned status_disable = 0;
-static stat_info_t *status = (stat_info_t*)&status_disable;
+static stat_info_t *status = NULL;
 
 /**
  * Compare two elements of the opcode hash.
@@ -1796,21 +1795,21 @@ static void stat_term_dumper(void)
 /* Terminates the statistics module, frees all memory. */
 void stat_term(void)
 {
-	if (status != (stat_info_t*)&status_disable) {
+	if (status) {
 		obstack_free(&status->be_data, NULL);
 		obstack_free(&status->cnts, NULL);
 
 		stat_term_dumper();
 
 		free(status);
-		status = (stat_info_t*)&status_disable;
+		status = NULL;
 	}
 }
 
 /* returns 1 if statistics were initialized, 0 otherwise */
 int stat_is_active(void)
 {
-	return status != (stat_info_t*)&status_disable;
+	return status != NULL;
 }
 
 void init_stat(void)
