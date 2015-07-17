@@ -19,7 +19,6 @@
 #include "beirg.h"
 #include "belive.h"
 #include "benode.h"
-#include "besched.h"
 #include "bitfiddle.h"
 #include "debug.h"
 #include "fourcc.h"

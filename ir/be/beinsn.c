@@ -15,7 +15,6 @@
 
 #include "bearch.h"
 #include "bechordal_t.h"
-#include "besched.h"
 #include "beinsn_t.h"
 
 be_insn_t *be_scan_insn(be_chordal_env_t *const env, ir_node *const irn)

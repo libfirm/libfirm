@@ -40,7 +40,6 @@
 #include "belive.h"
 #include "bemodule.h"
 #include "benode.h"
-#include "besched.h"
 #include "statev_t.h"
 
 #include "lc_opts.h"

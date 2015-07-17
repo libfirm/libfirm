@@ -23,7 +23,6 @@
 #include "beirg.h"
 #include "bearch.h"
 #include "benode.h"
-#include "besched.h"
 #include "bera.h"
 
 #include "lc_opts.h"

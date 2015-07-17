@@ -40,7 +40,6 @@
 #include "irgwalk.h"
 #include "becopyilp_t.h"
 #include "beifg.h"
-#include "besched.h"
 #include "bemodule.h"
 #include "irprintf.h"
 
