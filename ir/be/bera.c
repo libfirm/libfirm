@@ -9,21 +9,9 @@
  * @author      Sebastian Hack
  * @date        22.11.2004
  */
-#include <stdlib.h>
-
-#include "irdom.h"
-#include "iredges.h"
-#include "irgwalk.h"
-#include "irmode.h"
-#include "irnode.h"
-#include "irtools.h"
-#include "statev_t.h"
-
-#include "beirg.h"
-#include "belive.h"
 #include "bemodule.h"
-#include "benode.h"
 #include "bera.h"
+#include "irtools.h"
 
 /** The list of register allocators */
 static be_module_list_entry_t *register_allocators;
