@@ -58,18 +58,14 @@ static inline struct list_head *get_block_border_head(be_chordal_env_t const *co
 
 enum {
 	/* Dump flags */
-	BE_CH_DUMP_NONE       = (1 << 0),
-	BE_CH_DUMP_SPILL      = (1 << 1),
-	BE_CH_DUMP_LIVE       = (1 << 2),
-	BE_CH_DUMP_COLOR      = (1 << 3),
-	BE_CH_DUMP_COPYMIN    = (1 << 4),
-	BE_CH_DUMP_SSADESTR   = (1 << 5),
-	BE_CH_DUMP_CONSTR     = (1 << 6),
-	BE_CH_DUMP_SPILLSLOTS = (1 << 7),
-	BE_CH_DUMP_LOWER      = (1 << 8),
-	BE_CH_DUMP_SPLIT      = (1 << 9),
-	BE_CH_DUMP_APPEL      = (1 << 10),
-	BE_CH_DUMP_ALL        = 2 * BE_CH_DUMP_APPEL - 1,
+	BE_CH_DUMP_NONE     = 1 << 0,
+	BE_CH_DUMP_SPILL    = 1 << 1,
+	BE_CH_DUMP_COLOR    = 1 << 2,
+	BE_CH_DUMP_COPYMIN  = 1 << 3,
+	BE_CH_DUMP_SSADESTR = 1 << 4,
+	BE_CH_DUMP_CONSTR   = 1 << 5,
+	BE_CH_DUMP_LOWER    = 1 << 6,
+	BE_CH_DUMP_ALL      = 2 * BE_CH_DUMP_LOWER - 1,
 
 	/* lower perm options */
 	BE_CH_LOWER_PERM_SWAP   = 1,
