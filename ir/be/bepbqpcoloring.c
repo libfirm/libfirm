@@ -543,12 +543,7 @@ static void be_pbqp_coloring(be_chordal_env_t *env)
 	/* insert perms */
 	dom_tree_walk_irg(irg, insert_perms, NULL, env);
 
-	/* dump graph after inserting perms */
-	if (env->opts->dump_flags & BE_CH_DUMP_CONSTR) {
-		char buf[256];
-		snprintf(buf, sizeof(buf), "%s-constr", cls->name);
-		dump_ir_graph(irg, buf);
-	}
+	be_chordal_dump(BE_CH_DUMP_CONSTR, irg, cls, "constr");
 
 	be_pbqp_alloc_env_t pbqp_alloc_env;
 	ir_calculate_execfreq_int_factors(&pbqp_alloc_env.execfreq_factors, irg);

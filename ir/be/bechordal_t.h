@@ -41,7 +41,6 @@ struct border_t {
  */
 struct be_chordal_env_t {
 	struct obstack        obst;         /**< An obstack for temporary storage. */
-	be_ra_chordal_opts_t *opts;         /**< A pointer to the chordal ra options. */
 	ir_graph             *irg;          /**< The graph under examination. */
 	const arch_register_class_t *cls;   /**< The current register class. */
 	pmap                 *border_heads; /**< Maps blocks to border heads. */
@@ -76,6 +75,8 @@ struct be_ra_chordal_opts_t {
 	unsigned dump_flags;
 	int      lower_perm_opt;
 };
+
+void be_chordal_dump(unsigned mask, ir_graph *irg, arch_register_class_t const *cls, char const *suffix);
 
 void check_for_memory_operands(ir_graph *irg, const regalloc_if_t *regif);
 

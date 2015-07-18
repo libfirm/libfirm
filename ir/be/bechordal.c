@@ -333,18 +333,12 @@ static void be_ra_chordal_color(be_chordal_env_t *const chordal_env)
 	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 	be_assure_live_sets(irg);
 
-	be_timer_push(T_CONSTR);
-
 	/* Handle register targeting constraints */
+	be_timer_push(T_CONSTR);
 	dom_tree_walk_irg(irg, constraints, NULL, chordal_env);
-
-	if (chordal_env->opts->dump_flags & BE_CH_DUMP_CONSTR) {
-		char buf[256];
-		snprintf(buf, sizeof(buf), "%s-constr", chordal_env->cls->name);
-		dump_ir_graph(irg, buf);
-	}
-
 	be_timer_pop(T_CONSTR);
+
+	be_chordal_dump(BE_CH_DUMP_CONSTR, irg, chordal_env->cls, "constr");
 
 	/* First, determine the pressure */
 	dom_tree_walk_irg(irg, create_borders, NULL, chordal_env);

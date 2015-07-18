@@ -113,9 +113,7 @@ static void be_ra_chordal_coloring(be_chordal_env_t *env)
 	selected_coloring->allocate(env);
 }
 
-static void dump(unsigned mask, ir_graph *irg,
-				 const arch_register_class_t *cls,
-				 const char *suffix)
+void be_chordal_dump(unsigned const mask, ir_graph *const irg, arch_register_class_t const *const cls, char const *const suffix)
 {
 	if ((options.dump_flags & mask) == mask) {
 		if (cls != NULL) {
@@ -203,7 +201,7 @@ static void post_spill(be_chordal_env_t *const chordal_env, ir_graph *const irg,
 	be_ra_chordal_coloring(chordal_env);
 	be_timer_pop(T_RA_COLOR);
 
-	dump(BE_CH_DUMP_COLOR, irg, chordal_env->cls, "color");
+	be_chordal_dump(BE_CH_DUMP_COLOR, irg, chordal_env->cls, "color");
 
 	/* Create the ifg with the selected flavor */
 	be_timer_push(T_RA_IFG);
@@ -229,14 +227,14 @@ static void post_spill(be_chordal_env_t *const chordal_env, ir_graph *const irg,
 	co_driver(chordal_env);
 	be_timer_pop(T_RA_COPYMIN);
 
-	dump(BE_CH_DUMP_COPYMIN, irg, chordal_env->cls, "copymin");
+	be_chordal_dump(BE_CH_DUMP_COPYMIN, irg, chordal_env->cls, "copymin");
 
 	/* ssa destruction */
 	be_timer_push(T_RA_SSA);
 	be_ssa_destruction(chordal_env->irg, chordal_env->cls);
 	be_timer_pop(T_RA_SSA);
 
-	dump(BE_CH_DUMP_SSADESTR, irg, chordal_env->cls, "ssadestr");
+	be_chordal_dump(BE_CH_DUMP_SSADESTR, irg, chordal_env->cls, "ssadestr");
 
 	/* the ifg exists only if there are allocatable regs */
 	be_ifg_free(chordal_env->ifg);
@@ -261,7 +259,6 @@ static void be_ra_chordal_main(ir_graph *irg, const regalloc_if_t *regif)
 
 	be_chordal_env_t chordal_env;
 	obstack_init(&chordal_env.obst);
-	chordal_env.opts             = &options;
 	chordal_env.irg              = irg;
 	chordal_env.border_heads     = NULL;
 	chordal_env.ifg              = NULL;
@@ -292,7 +289,7 @@ static void be_ra_chordal_main(ir_graph *irg, const regalloc_if_t *regif)
 		be_timer_push(T_RA_SPILL);
 		be_do_spill(irg, cls, regif);
 		be_timer_pop(T_RA_SPILL);
-		dump(BE_CH_DUMP_SPILL, irg, cls, "spill");
+		be_chordal_dump(BE_CH_DUMP_SPILL, irg, cls, "spill");
 		stat_ev_dbl("bechordal_spillcosts", be_estimate_irg_costs(irg) - pre_spill_cost);
 
 		post_spill(&chordal_env, irg, regif);
@@ -309,7 +306,7 @@ static void be_ra_chordal_main(ir_graph *irg, const regalloc_if_t *regif)
 
 	be_timer_push(T_RA_EPILOG);
 	lower_nodes_after_ra(irg, options.lower_perm_opt == BE_CH_LOWER_PERM_COPY);
-	dump(BE_CH_DUMP_LOWER, irg, NULL, "belower-after-ra");
+	be_chordal_dump(BE_CH_DUMP_LOWER, irg, NULL, "belower-after-ra");
 
 	obstack_free(&chordal_env.obst, NULL);
 	be_invalidate_live_sets(irg);
