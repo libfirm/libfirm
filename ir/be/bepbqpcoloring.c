@@ -528,28 +528,17 @@ static void insert_perms(ir_node *block, void *data)
 
 static void be_pbqp_coloring(be_chordal_env_t *env)
 {
-	ir_graph                    *irg            = env->irg;
-	const arch_register_class_t *cls            = env->cls;
-	be_lv_t                     *lv             = NULL;
-	unsigned                     colors_n       = cls->n_regs;
-	be_pbqp_alloc_env_t          pbqp_alloc_env;
-	unsigned                     col;
-	unsigned                     row;
-	pbqp_matrix_t               *ife_matrix;
-	num                          solution;
-#if KAPS_DUMP
-	FILE                        *file_before;
-#endif
+	ir_graph                    *irg = env->irg;
+	arch_register_class_t const *cls = env->cls;
 #if TIMER
-	ir_timer_t *t_ra_pbqp_alloc_create     = ir_timer_new();
-	ir_timer_t *t_ra_pbqp_alloc_solve      = ir_timer_new();
-	ir_timer_t *t_ra_pbqp_alloc_create_aff = ir_timer_new();
+	ir_timer_t *const t_ra_pbqp_alloc_create     = ir_timer_new();
+	ir_timer_t *const t_ra_pbqp_alloc_solve      = ir_timer_new();
+	ir_timer_t *const t_ra_pbqp_alloc_create_aff = ir_timer_new();
 
 	printf("#### ----- === Allocating registers of %s (%s) ===\n", cls->name, get_entity_name(get_irg_entity(irg)));
 #endif
 	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 	be_assure_live_sets(irg);
-	lv = be_get_irg_liveness(irg);
 
 	/* insert perms */
 	dom_tree_walk_irg(irg, insert_perms, NULL, env);
@@ -561,23 +550,25 @@ static void be_pbqp_coloring(be_chordal_env_t *env)
 		dump_ir_graph(irg, buf);
 	}
 
+	be_pbqp_alloc_env_t pbqp_alloc_env;
 	ir_calculate_execfreq_int_factors(&pbqp_alloc_env.execfreq_factors, irg);
 
 	/* initialize pbqp allocation data structure */
 	pbqp_alloc_env.pbqp_inst        = alloc_pbqp(get_irg_last_idx(irg));  /* initialize pbqp instance */
 	pbqp_alloc_env.cls              = cls;
 	pbqp_alloc_env.irg              = irg;
-	pbqp_alloc_env.lv               = lv;
+	pbqp_alloc_env.lv               = be_get_irg_liveness(irg);
 	pbqp_alloc_env.allocatable_regs = env->allocatable_regs;
 	pbqp_alloc_env.rpeo             = plist_new();
 	pbqp_alloc_env.restr_nodes      = XMALLOCNZ(unsigned, get_irg_last_idx(irg));
 	pbqp_alloc_env.ife_edge_num     = XMALLOCNZ(unsigned, get_irg_last_idx(irg));
 	pbqp_alloc_env.env              = env;
 
+	unsigned const colors_n = cls->n_regs;
 	/* create costs matrix template for interference edges */
-	ife_matrix = pbqp_matrix_alloc(pbqp_alloc_env.pbqp_inst, colors_n, colors_n);
+	pbqp_matrix_t *const ife_matrix = pbqp_matrix_alloc(pbqp_alloc_env.pbqp_inst, colors_n, colors_n);
 	/* set costs */
-	for (row = 0, col = 0; row < colors_n; row++, col++)
+	for (unsigned row = 0, col = 0; row < colors_n; row++, col++)
 		pbqp_matrix_set(ife_matrix, row, col, INF_COSTS);
 
 	pbqp_alloc_env.ife_matrix_template = ife_matrix;
@@ -587,8 +578,8 @@ static void be_pbqp_coloring(be_chordal_env_t *env)
 		/* create costs matrix template for affinity edges */
 		pbqp_matrix_t *afe_matrix = pbqp_matrix_alloc(pbqp_alloc_env.pbqp_inst, colors_n, colors_n);
 		/* set costs */
-		for (row = 0; row < colors_n; row++) {
-			for (col = 0; col < colors_n; col++) {
+		for (unsigned row = 0; row < colors_n; row++) {
+			for (unsigned col = 0; col < colors_n; col++) {
 				if (row != col)
 					pbqp_matrix_set(afe_matrix, row, col, 2);
 			}
@@ -625,7 +616,7 @@ static void be_pbqp_coloring(be_chordal_env_t *env)
 
 #if KAPS_DUMP
 	// dump graph before solving pbqp
-	file_before = my_open(env, "", "-pbqp_coloring.html");
+	FILE* const file_before = my_open(env, "", "-pbqp_coloring.html");
 	set_dumpfile(pbqp_alloc_env.pbqp_inst, file_before);
 #endif
 
@@ -652,7 +643,7 @@ static void be_pbqp_coloring(be_chordal_env_t *env)
 #endif
 
 
-	solution = get_solution(pbqp_alloc_env.pbqp_inst);
+	num const solution = get_solution(pbqp_alloc_env.pbqp_inst);
 	if (solution == INF_COSTS)
 		panic("no PBQP solution found");
 
