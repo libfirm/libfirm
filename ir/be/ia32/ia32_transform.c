@@ -61,7 +61,6 @@ static be_start_info_t  start_val[N_IA32_REGISTERS];
 static pmap            *node_to_stack;
 static be_stackorder_t *stackorder;
 static ir_heights_t    *heights;
-static bool             no_pic_adjust;
 
 /** we don't have a concept of aliasing registers, so enumerate them
  * manually for the asm nodes. */
@@ -284,7 +283,7 @@ static ir_node *try_create_Immediate(const ir_node *node, char const constraint)
 		return NULL;
 
 	ir_graph *const irg = get_irn_irg(node);
-	return ia32_create_Immediate_full(irg, &immediate, no_pic_adjust);
+	return ia32_create_Immediate_full(irg, &immediate, false);
 }
 
 static ir_type *get_prim_type(const ir_mode *mode)
@@ -4889,10 +4888,6 @@ static ir_node *gen_Call(ir_node *node)
 	arch_register_t     const *const sp     = &ia32_registers[REG_ESP];
 	arch_register_t     const *const fpcw   = &ia32_registers[REG_FPCW];
 
-	/* special case for PIC trampoline calls */
-	bool const old_no_pic_adjust = no_pic_adjust;
-	no_pic_adjust = be_options.pic;
-
 	/* Construct arguments. */
 	ia32_address_mode_t am;
 	ir_node      *const old_block = get_nodes_block(node);
@@ -4915,6 +4910,12 @@ static ir_node *gen_Call(ir_node *node)
 	/* Memory input will be set later. */
 	in[n_ia32_Call_callee]     = am.new_op2;
 	in_req[n_ia32_Call_callee] = req_gp;
+
+	/* We have trampolines for our calls and need no PIC adjustments */
+	if (be_options.pic && is_ia32_Immediate(am.new_op2)) {
+		ia32_immediate_attr_t *const attr = get_ia32_immediate_attr(am.new_op2);
+		attr->no_pic_adjust = true;
+	}
 
 	ir_node *const block               = be_transform_node(old_block);
 	ir_node *const new_frame           = get_stack_pointer_for(node);
@@ -5034,7 +5035,6 @@ static ir_node *gen_Call(ir_node *node)
 	pmap_insert(node_to_stack, node, new_stack);
 	x86_free_calling_convention(cconv);
 
-	no_pic_adjust = old_no_pic_adjust;
 	return res;
 }
 
@@ -5858,7 +5858,6 @@ void ia32_transform_graph(ir_graph *irg)
 	                         | IR_GRAPH_PROPERTY_NO_TUPLES
 	                         | IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 
-	no_pic_adjust = false;
 	start_mem.irn = NULL;
 	memset(&start_val, 0, sizeof(start_val));
 
