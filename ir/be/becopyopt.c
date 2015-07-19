@@ -32,7 +32,6 @@
 
 #include "bearch.h"
 #include "becopyopt_t.h"
-#include "becopystat.h"
 #include "bedump.h"
 #include "beifg.h"
 #include "beinsn_t.h"

@@ -182,7 +182,6 @@
     <ClCompile Include="$(FirmRoot)\ir\be\bedump_minir.c"/>
     <ClCompile Include="$(FirmRoot)\ir\be\bemodule.c"/>
     <ClCompile Include="$(FirmRoot)\ir\be\beloopana.c"/>
-    <ClCompile Include="$(FirmRoot)\ir\be\becopystat.c"/>
     <ClCompile Include="$(FirmRoot)\ir\be\bedbgout.c"/>
     <ClCompile Include="$(FirmRoot)\ir\be\bedomfront.c"/>
     <ClCompile Include="$(FirmRoot)\ir\be\bepeephole.c"/>
@@ -243,7 +242,6 @@
     <ClInclude Include="$(FirmRoot)\ir\be\becopyilp_t.h"/>
     <ClInclude Include="$(FirmRoot)\ir\be\becopyopt.h"/>
     <ClInclude Include="$(FirmRoot)\ir\be\becopyopt_t.h"/>
-    <ClInclude Include="$(FirmRoot)\ir\be\becopystat.h"/>
     <ClInclude Include="$(FirmRoot)\ir\be\bedomfront.h"/>
     <ClInclude Include="$(FirmRoot)\ir\be\bedump_minir.h"/>
     <ClInclude Include="$(FirmRoot)\ir\be\beemitter.h"/>

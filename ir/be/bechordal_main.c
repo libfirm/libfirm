@@ -50,8 +50,6 @@
 #include "bespill.h"
 #include "bespillutil.h"
 #include "belower.h"
-
-#include "becopystat.h"
 #include "becopyopt.h"
 #include "bessadestr.h"
 #include "beverify.h"

@@ -46,7 +46,6 @@
 #include "bera.h"
 #include "bechordal_t.h"
 #include "beifg.h"
-#include "becopystat.h"
 #include "bessadestr.h"
 #include "belower.h"
 #include "bespillutil.h"

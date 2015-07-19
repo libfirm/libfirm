@@ -285,9 +285,6 @@
     <ClCompile Include="$(FirmRoot)\ir\be\becopypbqp.c">
       <Filter>ir\be</Filter>
     </ClCompile>
-    <ClCompile Include="$(FirmRoot)\ir\be\becopystat.c">
-      <Filter>ir\be</Filter>
-    </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\bedbgout.c">
       <Filter>ir\be</Filter>
     </ClCompile>
@@ -481,9 +478,6 @@
       <Filter>ir\be</Filter>
     </ClInclude>
     <ClInclude Include="$(FirmRoot)\ir\be\becopypbqp.h">
-      <Filter>ir\be</Filter>
-    </ClInclude>
-    <ClInclude Include="$(FirmRoot)\ir\be\becopystat.h">
       <Filter>ir\be</Filter>
     </ClInclude>
     <ClInclude Include="$(FirmRoot)\ir\be\be_dbgout.h">
@@ -2088,9 +2082,6 @@
     <ClCompile Include="$(FirmRoot)\ir\be\beloopana.c">
       <Filter>ir\be</Filter>
     </ClCompile>
-    <ClCompile Include="$(FirmRoot)\ir\be\becopystat.c">
-      <Filter>ir\be</Filter>
-    </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\bedbgout.c">
       <Filter>ir\be</Filter>
     </ClCompile>
@@ -2269,9 +2260,6 @@
       <Filter>ir\be</Filter>
     </ClInclude>
     <ClInclude Include="$(FirmRoot)\ir\be\becopyopt_t.h">
-      <Filter>ir\be</Filter>
-    </ClInclude>
-    <ClInclude Include="$(FirmRoot)\ir\be\becopystat.h">
       <Filter>ir\be</Filter>
     </ClInclude>
     <ClInclude Include="$(FirmRoot)\ir\be\bedomfront.h">
@@ -3741,9 +3729,6 @@
     <ClCompile Include="$(FirmRoot)\ir\be\beloopana.c">
       <Filter>ir\be</Filter>
     </ClCompile>
-    <ClCompile Include="$(FirmRoot)\ir\be\becopystat.c">
-      <Filter>ir\be</Filter>
-    </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\bedbgout.c">
       <Filter>ir\be</Filter>
     </ClCompile>
@@ -3922,9 +3907,6 @@
       <Filter>ir\be</Filter>
     </ClInclude>
     <ClInclude Include="$(FirmRoot)\ir\be\becopyopt_t.h">
-      <Filter>ir\be</Filter>
-    </ClInclude>
-    <ClInclude Include="$(FirmRoot)\ir\be\becopystat.h">
       <Filter>ir\be</Filter>
     </ClInclude>
     <ClInclude Include="$(FirmRoot)\ir\be\bedomfront.h">
@@ -5388,9 +5370,6 @@
     <ClCompile Include="$(FirmRoot)\ir\be\beloopana.c">
       <Filter>ir\be</Filter>
     </ClCompile>
-    <ClCompile Include="$(FirmRoot)\ir\be\becopystat.c">
-      <Filter>ir\be</Filter>
-    </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\bedbgout.c">
       <Filter>ir\be</Filter>
     </ClCompile>
@@ -5569,9 +5548,6 @@
       <Filter>ir\be</Filter>
     </ClInclude>
     <ClInclude Include="$(FirmRoot)\ir\be\becopyopt_t.h">
-      <Filter>ir\be</Filter>
-    </ClInclude>
-    <ClInclude Include="$(FirmRoot)\ir\be\becopystat.h">
       <Filter>ir\be</Filter>
     </ClInclude>
     <ClInclude Include="$(FirmRoot)\ir\be\bedomfront.h">

@@ -38,7 +38,6 @@ void be_init_copyilp(void);
 void be_init_copyilp2(void);
 void be_init_copynone(void);
 void be_init_copyopt(void);
-void be_init_copystat(void);
 void be_init_daemelspill(void);
 void be_init_dwarf(void);
 void be_init_gas(void);
@@ -61,7 +60,6 @@ void be_init_spillslots(void);
 void be_init_ssaconstr(void);
 void be_init_state(void);
 
-void be_quit_copystat(void);
 void be_quit_pbqp(void);
 
 /**
@@ -78,7 +76,6 @@ void be_init_modules(void)
 	be_init_blocksched();
 	be_init_chordal_common();
 	be_init_copyopt();
-	be_init_copystat();
 	be_init_dwarf();
 	be_init_gas();
 	be_init_live();
@@ -125,7 +122,6 @@ void be_init_modules(void)
 
 void be_quit_modules(void)
 {
-	be_quit_copystat();
 #ifdef FIRM_GRGEN_BE
 	be_quit_pbqp();
 #endif

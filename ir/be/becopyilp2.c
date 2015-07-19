@@ -563,14 +563,6 @@ static void ilp2_apply(ilp_env_t *ienv)
 
 		free(sol);
 	}
-
-#ifdef COPYOPT_STAT
-	/* TODO adapt to multiple possible ILPs */
-	copystat_add_ilp_time((int)(1000.0*lpp_get_sol_time(pi->curr_lp)));  //now we have ms
-	copystat_add_ilp_vars(lpp_get_var_count(pi->curr_lp));
-	copystat_add_ilp_csts(lpp_get_cst_count(pi->curr_lp));
-	copystat_add_ilp_iter(lpp_get_iter_cnt(pi->curr_lp));
-#endif
 }
 
 /**

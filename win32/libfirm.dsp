@@ -1290,14 +1290,6 @@ SOURCE=..\ir\be\becopyopt_t.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\ir\be\becopystat.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\ir\be\becopystat.h
-# End Source File
-# Begin Source File
-
 SOURCE=..\ir\be\bedbgout.c
 # End Source File
 # Begin Source File

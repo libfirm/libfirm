@@ -72,7 +72,6 @@ libfirm_la_SOURCES = \
 	be/becopyilp2.c \
 	be/becopyilp.c \
 	be/becopyopt.c \
-	be/becopystat.c \
 	be/bedump.c \
 	be/bedwarf.c \
 	be/beemitter_binary.c \
@@ -275,7 +274,6 @@ EXTRA_DIST = \
 	be/beabihelper.h \
 	be/becopyilp_t.h \
 	be/becopyopt.h \
-	be/becopystat.h \
 	be/bedump.h \
 	be/belive.h \
 	be/beintlive_t.h \

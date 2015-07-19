@@ -11,6 +11,7 @@
  */
 #include <stdlib.h>
 
+#include "bechordal_t.h"
 #include "lc_opts.h"
 #include "lc_opts_enum.h"
 
@@ -20,8 +21,6 @@
 #include "irnode_t.h"
 #include "beifg.h"
 #include "xmalloc.h"
-
-#include "becopystat.h"
 #include "beirg.h"
 #include "bemodule.h"
 #include "belive.h"

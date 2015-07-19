@@ -291,16 +291,6 @@ static inline lpp_sol_state_t lpp_get_sol_state(const lpp_t *lpp)
 	return lpp->sol_state;
 }
 
-static inline int lpp_get_var_count(const lpp_t *lpp)
-{
-	return lpp->var_next-1;
-}
-
-static inline int lpp_get_cst_count(const lpp_t *lpp)
-{
-	return lpp->cst_next-1;
-}
-
 static inline double lpp_get_var_sol(const lpp_t *lpp, int idx)
 {
 	return lpp->vars[idx]->value;
