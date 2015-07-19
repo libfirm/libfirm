@@ -827,9 +827,9 @@ static void build_address(ia32_address_mode_t *am, ir_node *node,
 
 static void set_address(ir_node *node, const x86_address_t *addr)
 {
+	ia32_attr_t *const attr = get_ia32_attr(node);
+	attr->am_imm = addr->imm;
 	set_ia32_am_scale(node, addr->scale);
-	set_ia32_am_ent(node, addr->imm.entity);
-	set_ia32_am_offs_int(node, addr->imm.offset);
 	set_ia32_am_tls_segment(node, addr->tls_segment);
 	set_ia32_frame_ent(node, addr->frame_entity);
 	if (addr->use_frame)

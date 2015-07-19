@@ -173,8 +173,9 @@ static void emit_register(const arch_register_t *reg, ir_mode *mode)
 	be_emit_string(name);
 }
 
-static void ia32_emit_entity(ir_entity *entity, int no_pic_adjust)
+static void ia32_emit_entity(x86_imm32_t const *const imm, bool no_pic_adjust)
 {
+	ir_entity *entity = imm->entity;
 	be_gas_emit_entity(entity);
 
 	if (is_tls_entity(entity)) {
@@ -191,12 +192,15 @@ static void ia32_emit_entity(ir_entity *entity, int no_pic_adjust)
 	}
 }
 
-static void emit_ia32_immediate(bool const prefix, bool const no_pic_adjust, ir_entity *const entity, int32_t const offset)
+static void emit_ia32_immediate(bool const prefix, bool const no_pic_adjust,
+                                x86_imm32_t const *const imm)
 {
 	if (prefix)
 		be_emit_char('$');
-	if (entity) {
-		ia32_emit_entity(entity, no_pic_adjust);
+	ir_entity const *const entity = imm->entity;
+	int32_t          const offset = imm->offset;
+	if (entity != NULL) {
+		ia32_emit_entity(imm, no_pic_adjust);
 		if (offset != 0)
 			be_emit_irprintf("%+"PRId32, offset);
 	} else {
@@ -207,8 +211,7 @@ static void emit_ia32_immediate(bool const prefix, bool const no_pic_adjust, ir_
 static void emit_ia32_immediate_attr(bool const prefix, ir_node const *const node)
 {
 	ia32_immediate_attr_t const *const attr = get_ia32_immediate_attr_const(node);
-	emit_ia32_immediate(prefix, attr->no_pic_adjust, attr->imm.entity,
-	                    attr->imm.offset);
+	emit_ia32_immediate(prefix, attr->no_pic_adjust, &attr->imm);
 }
 
 static void ia32_emit_mode_suffix_mode(const ir_mode *mode)
@@ -361,16 +364,17 @@ static void ia32_emit_am(ir_node const *const node)
 	ir_node const *const idx  = get_irn_n_reg(node, n_ia32_index);
 
 	/* emit offset */
-	int32_t    const offs = get_ia32_am_offs_int(node);
-	ir_entity *const ent  = get_ia32_am_ent(node);
-	if (ent) {
+	ia32_attr_t const *const attr = get_ia32_attr_const(node);
+	int32_t          const offset = attr->am_imm.offset;
+	ir_entity const *const entity = attr->am_imm.entity;
+	if (entity) {
 		const ia32_attr_t *attr = get_ia32_attr_const(node);
-		ia32_emit_entity(ent, attr->am_sc_no_pic_adjust);
-		if (offs != 0)
-			be_emit_irprintf("%+"PRId32, offs);
-	} else if (offs != 0 || (!base && !idx)) {
+		ia32_emit_entity(&attr->am_imm, attr->am_sc_no_pic_adjust);
+		if (offset != 0)
+			be_emit_irprintf("%+"PRId32, offset);
+	} else if (offset != 0 || (!base && !idx)) {
 		/* also handle special case if nothing is set */
-		be_emit_irprintf("%"PRId32, offs);
+		be_emit_irprintf("%"PRId32, offset);
 	}
 
 	if (base || idx) {
@@ -940,7 +944,7 @@ static void emit_ia32_asm_operand(ir_node const *const node, char const modifier
 	}
 
 	case ASM_OP_IMMEDIATE:
-		emit_ia32_immediate(true, true, op->u.imm32.entity, op->u.imm32.offset);
+		emit_ia32_immediate(true, true, &op->u.imm32);
 		return;
 	}
 	panic("invalid asm operand kind");
@@ -1628,8 +1632,10 @@ static void bemit32(const uint32_t u32)
  * Emit address of an entity. If @p is_relative is true then a relative
  * offset from behind the address to the entity is created.
  */
-static void bemit_entity(ir_entity *entity, int32_t offset, bool is_relative)
+static void bemit_entity(x86_imm32_t const *const imm, bool is_relative)
 {
+	ir_entity *entity = imm->entity;
+	int32_t    offset = imm->offset;
 	if (entity == NULL) {
 		bemit32(offset);
 		return;
@@ -1729,19 +1735,20 @@ static bool ia32_is_8bit_imm(ia32_immediate_attr_t const *const imm)
  */
 static void bemit_mod_am(unsigned reg, const ir_node *node)
 {
-	ir_entity *const ent  = get_ia32_am_ent(node);
-	int32_t    const offs = get_ia32_am_offs_int(node);
+	ia32_attr_t const *const attr = get_ia32_attr_const(node);
+	ir_entity const *const entity = attr->am_imm.entity;
+	int32_t          const offset = attr->am_imm.offset;
 
 	/* set the mod part depending on displacement */
 	unsigned modrm    = 0;
 	unsigned emitoffs = 0;
-	if (ent) {
+	if (entity) {
 		modrm |= MOD_IND_WORD_OFS;
 		emitoffs = 32;
-	} else if (offs == 0) {
+	} else if (offset == 0) {
 		modrm |= MOD_IND;
 		emitoffs = 0;
-	} else if (ia32_is_8bit_val(offs)) {
+	} else if (ia32_is_8bit_val(offset)) {
 		modrm |= MOD_IND_BYTE_OFS;
 		emitoffs = 8;
 	} else {
@@ -1799,9 +1806,9 @@ static void bemit_mod_am(unsigned reg, const ir_node *node)
 
 	/* emit displacement */
 	if (emitoffs == 8) {
-		bemit8((unsigned) offs);
+		bemit8((unsigned) offset);
 	} else if (emitoffs == 32) {
-		bemit_entity(ent, offs, false);
+		bemit_entity(&attr->am_imm, false);
 	}
 }
 
@@ -1843,7 +1850,7 @@ static void bemit_0f_unop_reg(ir_node const *const node, unsigned char const cod
 static void bemit_imm32(ir_node const *const node, bool const relative)
 {
 	const ia32_immediate_attr_t *attr = get_ia32_immediate_attr_const(node);
-	bemit_entity(attr->imm.entity, attr->imm.offset, relative);
+	bemit_entity(&attr->imm, relative);
 }
 
 static void bemit_imm(ia32_immediate_attr_t const *const attr,
@@ -1852,7 +1859,7 @@ static void bemit_imm(ia32_immediate_attr_t const *const attr,
 	switch (size) {
 	case  8: bemit8(attr->imm.offset);  break;
 	case 16: bemit16(attr->imm.offset); break;
-	case 32: bemit_entity(attr->imm.entity, attr->imm.offset, false); break;
+	case 32: bemit_entity(&attr->imm, false); break;
 	}
 }
 
@@ -2425,12 +2432,11 @@ static void bemit_load(const ir_node *node)
 		ir_node const *const base = get_irn_n_reg(node, n_ia32_base);
 		ir_node const *const idx  = get_irn_n_reg(node, n_ia32_index);
 		if (!base && !idx) {
-			ir_entity *ent  = get_ia32_am_ent(node);
-			int32_t    offs = get_ia32_am_offs_int(node);
 			/* load from constant address to EAX can be encoded
 			   as 0xA1 [offset] */
 			bemit8(0xA1);
-			bemit_entity(ent, offs, false);
+			ia32_attr_t const *const attr = get_ia32_attr_const(node);
+			bemit_entity(&attr->am_imm, false);
 			return;
 		}
 	}
@@ -2459,8 +2465,6 @@ static void bemit_store(const ir_node *node)
 			ir_node const *const base = get_irn_n_reg(node, n_ia32_base);
 			ir_node const *const idx  = get_irn_n_reg(node, n_ia32_index);
 			if (!base && !idx) {
-				ir_entity *ent  = get_ia32_am_ent(node);
-				int        offs = get_ia32_am_offs_int(node);
 				/* store to constant address from EAX can be encoded as
 				 * 0xA2/0xA3 [offset]*/
 				if (size == 8) {
@@ -2470,7 +2474,8 @@ static void bemit_store(const ir_node *node)
 						bemit8(0x66);
 					bemit8(0xA3);
 				}
-				bemit_entity(ent, offs, false);
+				ia32_attr_t const *const attr = get_ia32_attr_const(node);
+				bemit_entity(&attr->am_imm, false);
 				return;
 			}
 		}

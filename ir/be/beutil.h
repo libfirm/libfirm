@@ -24,7 +24,7 @@
  */
 ir_node **be_get_cfgpostorder(ir_graph *irg);
 
-static inline bool is_tls_entity(ir_entity *const ent)
+static inline bool is_tls_entity(const ir_entity *const ent)
 {
 	return get_entity_owner(ent) == get_tls_type();
 }
