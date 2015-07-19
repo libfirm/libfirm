@@ -290,19 +290,19 @@ static void peephole_ia32_Test(ir_node *node)
 			ir_graph    *const irg  = get_irn_irg(node);
 
 			if ((offset & 0xFFFFFF80) == 0) {
-				/* attr->am_offs += 0; */
+				/* attr->am_imm.offset += 0; */
 			} else if ((offset & 0xFFFF80FF) == 0) {
 				ir_node *const imm_node = ia32_create_Immediate(irg, offset >>  8);
 				set_irn_n(node, n_ia32_Test_right, imm_node);
-				attr->am_offs += 1;
+				attr->am_imm.offset += 1;
 			} else if ((offset & 0xFF80FFFF) == 0) {
 				ir_node *const imm_node = ia32_create_Immediate(irg, offset >> 16);
 				set_irn_n(node, n_ia32_Test_right, imm_node);
-				attr->am_offs += 2;
+				attr->am_imm.offset += 2;
 			} else if ((offset & 0x00FFFFFF) == 0) {
 				ir_node *const imm_node = ia32_create_Immediate(irg, offset >> 24);
 				set_irn_n(node, n_ia32_Test_right, imm_node);
-				attr->am_offs += 3;
+				attr->am_imm.offset += 3;
 			} else {
 				return;
 			}
@@ -803,7 +803,7 @@ static void peephole_ia32_Lea(ir_node *node)
 			}
 			ir_graph          *const irg  = get_irn_irg(node);
 			ia32_attr_t const *const attr = get_ia32_attr_const(node);
-			op2 = ia32_create_Immediate_full(irg, attr->am_ent, attr->am_sc_no_pic_adjust, attr->am_offs);
+			op2 = ia32_create_Immediate_full(irg, attr->am_imm.entity, attr->am_sc_no_pic_adjust, attr->am_imm.offset);
 		} else if (has_disp) {
 			return; /* Lea has base, index and displacement. */
 		}

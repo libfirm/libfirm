@@ -151,20 +151,22 @@ static void ia32_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 			} else {
 				const ia32_attr_t *attr = get_ia32_attr_const(n);
 
-				if (attr->am_ent != NULL || attr->am_offs != 0) {
+				int32_t    offset = attr->am_imm.offset;
+				ir_entity *entity = attr->am_imm.entity;
+				if (entity != NULL || offset != 0) {
 					fputs(" [", F);
 
-					if (attr->am_ent != NULL) {
-						fputs(get_entity_name(attr->am_ent), F);
+					if (entity != NULL) {
+						fputs(get_entity_name(entity), F);
 						if (attr->am_sc_no_pic_adjust) {
 							fputs("(no_pic_adjust)", F);
 						}
 					}
-					if (attr->am_offs != 0) {
-						if (attr->am_offs > 0 && attr->am_ent != NULL) {
+					if (offset != 0) {
+						if (offset > 0 && entity != NULL) {
 							fputc('+', F);
 						}
-						fprintf(F, "%d", attr->am_offs);
+						fprintf(F, "%d", offset);
 					}
 
 					fputc(']', F);
@@ -466,7 +468,7 @@ void set_ia32_am_support(ir_node *node, ia32_am_type_t arity)
 int32_t get_ia32_am_offs_int(const ir_node *node)
 {
 	const ia32_attr_t *attr = get_ia32_attr_const(node);
-	return attr->am_offs;
+	return attr->am_imm.offset;
 }
 
 /**
@@ -475,25 +477,25 @@ int32_t get_ia32_am_offs_int(const ir_node *node)
 void set_ia32_am_offs_int(ir_node *node, int32_t offset)
 {
 	ia32_attr_t *attr = get_ia32_attr(node);
-	attr->am_offs = offset;
+	attr->am_imm.offset = offset;
 }
 
 void add_ia32_am_offs_int(ir_node *node, int32_t offset)
 {
 	ia32_attr_t *attr = get_ia32_attr(node);
-	attr->am_offs += offset;
+	attr->am_imm.offset += offset;
 }
 
 ir_entity *get_ia32_am_ent(const ir_node *node)
 {
 	const ia32_attr_t *attr = get_ia32_attr_const(node);
-	return attr->am_ent;
+	return attr->am_imm.entity;
 }
 
 void set_ia32_am_ent(ir_node *node, ir_entity *entity)
 {
 	ia32_attr_t *attr = get_ia32_attr(node);
-	attr->am_ent      = entity;
+	attr->am_imm.entity = entity;
 }
 
 void set_ia32_am_tls_segment(ir_node *node, bool value)
@@ -856,8 +858,7 @@ static int ia32_attrs_equal_(const ia32_attr_t *a, const ia32_attr_t *b)
 
 	return a->tp == b->tp
 	    && a->am_scale == b->am_scale
-	    && a->am_offs == b->am_offs
-	    && a->am_ent == b->am_ent
+	    && x86_imm32_equal(&a->am_imm, &b->am_imm)
 	    && a->am_sc_no_pic_adjust == b->am_sc_no_pic_adjust
 	    && a->ls_mode == b->ls_mode
 	    && a->frame_use == b->frame_use

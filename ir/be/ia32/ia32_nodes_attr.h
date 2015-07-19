@@ -109,8 +109,7 @@ struct ia32_attr_t {
 	unsigned is_spill:1;
 	unsigned is_remat:1;
 
-	int32_t    am_offs;       /**< offsets for AddrMode */
-	ir_entity *am_ent;        /**< entity for AddrMode */
+	x86_imm32_t am_imm;             /**< imm32 for address mode */
 
 	ir_mode   *ls_mode;       /**< Load/Store mode: This is the mode of the
 	                               value that is manipulated by this node. */
