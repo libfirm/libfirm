@@ -121,7 +121,7 @@ my $divop = {
 	out_reqs       => [ "rax", "flags", "none", "rdx" ],
 	outs           => [ "res_div", "flags", "M", "res_mod" ],
 	attr_type      => "amd64_addr_attr_t",
-	fixed          => "amd64_addr_t addr = { { NULL, 0 }, NO_INPUT, NO_INPUT, NO_INPUT, 0, AMD64_SEGMENT_DEFAULT };\n"
+	fixed          => "amd64_addr_t addr = { { NULL, 0, X86_IMM_VALUE }, NO_INPUT, NO_INPUT, NO_INPUT, 0, AMD64_SEGMENT_DEFAULT };\n"
 	                 ."amd64_op_mode_t op_mode = AMD64_OP_RAX_REG;\n",
 	attr           => "amd64_insn_mode_t insn_mode",
 	modified_flags => $status_flags,
@@ -160,7 +160,7 @@ my $unop = {
 	attr_type      => "amd64_addr_attr_t",
 	attr           => "amd64_insn_mode_t insn_mode",
 	fixed          => "amd64_op_mode_t op_mode = AMD64_OP_UNOP_REG;\n"
-	                 ."amd64_addr_t addr = { { NULL, 0 }, NO_INPUT, NO_INPUT, NO_INPUT, 0, AMD64_SEGMENT_DEFAULT };",
+	                 ."amd64_addr_t addr = { { NULL, 0, X86_IMM_VALUE }, NO_INPUT, NO_INPUT, NO_INPUT, 0, AMD64_SEGMENT_DEFAULT };",
 	modified_flags => $status_flags
 };
 
