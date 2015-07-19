@@ -174,7 +174,7 @@ static void emit_register(const arch_register_t *reg, ir_mode *mode)
 	be_emit_string(name);
 }
 
-static void ia32_emit_entity(x86_imm32_t const *const imm, bool no_pic_adjust)
+static void ia32_emit_entity(x86_imm32_t const *const imm)
 {
 	assert(imm->kind != X86_IMM_VALUE);
 	ir_entity *entity = imm->entity;
@@ -189,18 +189,12 @@ static void ia32_emit_entity(x86_imm32_t const *const imm, bool no_pic_adjust)
 	}
 
 	if (imm->kind == X86_IMM_PICBASE_REL) {
-		assert(be_options.pic && !no_pic_adjust &&
-		       get_entity_type(entity) != get_code_type());
 		be_emit_char('-');
 		be_emit_string(pic_base_label);
-	} else {
-		assert(!be_options.pic || no_pic_adjust ||
-		       get_entity_type(entity) == get_code_type());
 	}
 }
 
-static void emit_ia32_immediate(bool const prefix, bool const no_pic_adjust,
-                                x86_imm32_t const *const imm)
+static void emit_ia32_immediate(bool const prefix, x86_imm32_t const *const imm)
 {
 	if (prefix)
 		be_emit_char('$');
@@ -208,7 +202,7 @@ static void emit_ia32_immediate(bool const prefix, bool const no_pic_adjust,
 	int32_t          const offset = imm->offset;
 	if (entity != NULL) {
 		assert(imm->kind != X86_IMM_VALUE);
-		ia32_emit_entity(imm, no_pic_adjust);
+		ia32_emit_entity(imm);
 		if (offset != 0)
 			be_emit_irprintf("%+"PRId32, offset);
 	} else {
@@ -220,7 +214,7 @@ static void emit_ia32_immediate(bool const prefix, bool const no_pic_adjust,
 static void emit_ia32_immediate_attr(bool const prefix, ir_node const *const node)
 {
 	ia32_immediate_attr_t const *const attr = get_ia32_immediate_attr_const(node);
-	emit_ia32_immediate(prefix, attr->no_pic_adjust, &attr->imm);
+	emit_ia32_immediate(prefix, &attr->imm);
 }
 
 static void ia32_emit_mode_suffix_mode(const ir_mode *mode)
@@ -379,7 +373,7 @@ static void ia32_emit_am(ir_node const *const node)
 	if (entity) {
 		assert(attr->am_imm.kind != X86_IMM_VALUE);
 		const ia32_attr_t *attr = get_ia32_attr_const(node);
-		ia32_emit_entity(&attr->am_imm, attr->am_sc_no_pic_adjust);
+		ia32_emit_entity(&attr->am_imm);
 		if (offset != 0)
 			be_emit_irprintf("%+"PRId32, offset);
 	} else if (offset != 0 || (!base && !idx)) {
@@ -955,7 +949,7 @@ static void emit_ia32_asm_operand(ir_node const *const node, char const modifier
 	}
 
 	case ASM_OP_IMMEDIATE:
-		emit_ia32_immediate(true, true, &op->u.imm32);
+		emit_ia32_immediate(true, &op->u.imm32);
 		return;
 	}
 	panic("invalid asm operand kind");

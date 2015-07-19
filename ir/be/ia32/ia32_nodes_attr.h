@@ -97,7 +97,6 @@ struct ia32_attr_t {
 	unsigned am_arity:2;            /**< Indicates the address mode type supported by this node. */
 	unsigned am_scale:2;            /**< The address mode scale for index register. */
 
-	unsigned am_sc_no_pic_adjust:1; /**< AM entity can be relative to EIP */
 	unsigned am_tls_segment:1;      /**< addresses are relative to TLS */
 	ENUMBF(ia32_frame_use_t) frame_use:2; /**< Whether an entity on the frame is used and its size. */
 	unsigned has_except_label:1;        /**< Set if this node needs a label because of possible exception. */
@@ -169,7 +168,6 @@ typedef struct ia32_immediate_attr_t ia32_immediate_attr_t;
 struct ia32_immediate_attr_t {
 	ia32_attr_t  attr;              /**< generic attribute */
 	x86_imm32_t  imm;
-	unsigned     no_pic_adjust : 1; /**< constant can be relative to EIP */
 };
 
 /**

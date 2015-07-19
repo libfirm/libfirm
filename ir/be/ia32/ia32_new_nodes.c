@@ -137,18 +137,14 @@ static void ia32_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 
 				fputc(' ', F);
 				ir_entity *entity = attr->imm.entity;
-				if (entity) {
+				if (entity)
 					fputs(get_entity_name(entity), F);
-				}
 				int32_t offset = attr->imm.offset;
 				if (offset != 0 || entity == NULL) {
 					if (offset > 0 && entity != NULL) {
 						fputc('+', F);
 					}
 					fprintf(F, "%"PRId32, offset);
-					if (attr->no_pic_adjust) {
-						fputs("(no_pic_adjust)", F);
-					}
 				}
 			} else {
 				const ia32_attr_t *attr = get_ia32_attr_const(n);
@@ -158,12 +154,8 @@ static void ia32_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 				if (entity != NULL || offset != 0) {
 					fputs(" [", F);
 
-					if (entity != NULL) {
+					if (entity != NULL)
 						fputs(get_entity_name(entity), F);
-						if (attr->am_sc_no_pic_adjust) {
-							fputs("(no_pic_adjust)", F);
-						}
-					}
 					if (offset != 0) {
 						if (offset > 0 && entity != NULL) {
 							fputc('+', F);
@@ -536,7 +528,6 @@ void ia32_copy_am_attrs(ir_node *to, const ir_node *from)
 	ia32_attr_t const *const from_attr = get_ia32_attr_const(from);
 	ia32_attr_t       *const to_attr   = get_ia32_attr(to);
 	to_attr->am_imm = from_attr->am_imm;
-	to_attr->am_sc_no_pic_adjust = from_attr->am_sc_no_pic_adjust;
 
 	set_ia32_ls_mode(to, get_ia32_ls_mode(from));
 	set_ia32_am_scale(to, get_ia32_am_scale(from));
@@ -776,8 +767,7 @@ static void init_ia32_x87_attributes(ir_node *res)
 }
 
 static void init_ia32_immediate_attributes(ir_node *res,
-                                           x86_imm32_t const *const imm,
-                                           bool no_pic_adjust)
+                                           x86_imm32_t const *const imm)
 {
 	ia32_immediate_attr_t *attr = (ia32_immediate_attr_t*)get_irn_generic_attr(res);
 
@@ -785,7 +775,6 @@ static void init_ia32_immediate_attributes(ir_node *res,
 	attr->attr.attr_type  |= IA32_ATTR_ia32_immediate_attr_t;
 #endif
 	attr->imm           = *imm;
-	attr->no_pic_adjust = no_pic_adjust;
 }
 
 static void init_ia32_call_attributes(ir_node* res, unsigned pop,
@@ -864,7 +853,6 @@ static int ia32_attrs_equal_(const ia32_attr_t *a, const ia32_attr_t *b)
 	return a->tp == b->tp
 	    && a->am_scale == b->am_scale
 	    && x86_imm32_equal(&a->am_imm, &b->am_imm)
-	    && a->am_sc_no_pic_adjust == b->am_sc_no_pic_adjust
 	    && a->ls_mode == b->ls_mode
 	    && a->frame_use == b->frame_use
 	    && a->frame_ent == b->frame_ent
@@ -922,8 +910,7 @@ static int ia32_immediate_attrs_equal(const ir_node *a, const ir_node *b)
 {
 	const ia32_immediate_attr_t *attr_a = get_ia32_immediate_attr_const(a);
 	const ia32_immediate_attr_t *attr_b = get_ia32_immediate_attr_const(b);
-	return x86_imm32_equal(&attr_a->imm, &attr_b->imm)
-		&& attr_a->no_pic_adjust == attr_b->no_pic_adjust;
+	return x86_imm32_equal(&attr_a->imm, &attr_b->imm);
 }
 
 /** Compare node attributes for x87 nodes. */

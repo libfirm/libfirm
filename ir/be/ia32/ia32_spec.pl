@@ -114,7 +114,7 @@ $custom_init_attr_func = \&ia32_custom_init_attr;
 		"\tinit_ia32_copyb_attributes(res, size);",
 	ia32_immediate_attr_t =>
 		"\tinit_ia32_attributes(res, irn_flags_, in_reqs, n_res);\n".
-		"\tinit_ia32_immediate_attributes(res, imm, no_pic_adjust);",
+		"\tinit_ia32_immediate_attributes(res, imm);",
 	ia32_x87_attr_t =>
 		"\tinit_ia32_attributes(res, irn_flags_, in_reqs, n_res);\n".
 		"\tinit_ia32_x87_attributes(res);",
@@ -385,7 +385,7 @@ Immediate => {
 	op_flags  => [ "constlike" ],
 	irn_flags => [ "not_scheduled" ],
 	out_reqs  => [ "gp_NOREG:I" ],
-	attr      => "const x86_imm32_t *imm, bool no_pic_adjust",
+	attr      => "const x86_imm32_t *imm",
 	attr_type => "ia32_immediate_attr_t",
 	hash_func => "ia32_hash_Immediate",
 	latency   => 0,
@@ -864,7 +864,7 @@ IJmp => {
 Const => {
 	template  => $valueop,
 	emit      => "movl %I, %D0",
-	attr      => "const x86_imm32_t *imm, bool no_pic_adjust",
+	attr      => "const x86_imm32_t *imm",
 	attr_type => "ia32_immediate_attr_t",
 	latency   => 1,
 },

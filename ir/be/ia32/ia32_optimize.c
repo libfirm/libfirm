@@ -804,7 +804,7 @@ static void peephole_ia32_Lea(ir_node *node)
 			}
 			ir_graph          *const irg  = get_irn_irg(node);
 			ia32_attr_t const *const attr = get_ia32_attr_const(node);
-			op2 = ia32_create_Immediate_full(irg, &attr->am_imm, attr->am_sc_no_pic_adjust);
+			op2 = ia32_create_Immediate_full(irg, &attr->am_imm);
 		} else if (has_disp) {
 			return; /* Lea has base, index and displacement. */
 		}
