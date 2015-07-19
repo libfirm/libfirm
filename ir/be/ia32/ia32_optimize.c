@@ -103,9 +103,9 @@ check_shift_amount:
 				return produces_no_flag;
 
 			const ia32_immediate_attr_t *imm_attr = get_ia32_immediate_attr_const(count);
-			if (imm_attr->entity != NULL)
+			if (imm_attr->imm.entity != NULL)
 				return produces_no_flag;
-			if ((imm_attr->offset & 0x1f) == 0)
+			if ((imm_attr->imm.offset & 0x1f) == 0)
 				return produces_no_flag;
 			break;
 
@@ -133,7 +133,7 @@ static void peephole_ia32_Cmp(ir_node *const node)
 		return;
 
 	ia32_immediate_attr_t const *const imm = get_ia32_immediate_attr_const(right);
-	if (imm->entity != NULL || imm->offset != 0)
+	if (imm->imm.entity != NULL || imm->imm.offset != 0)
 		return;
 
 	dbg_info *const dbgi         = get_irn_dbg_info(node);
@@ -276,7 +276,7 @@ static void peephole_ia32_Test(ir_node *node)
 		ia32_immediate_attr_t const *const imm = get_ia32_immediate_attr_const(right);
 
 		/* A test with an entity is rather strange, but better safe than sorry */
-		if (imm->entity != NULL)
+		if (imm->imm.entity != NULL)
 			return;
 
 		/*
@@ -284,7 +284,7 @@ static void peephole_ia32_Test(ir_node *node)
 		 * testl(128, 128) -> SF=0
 		 * testb(128, 128) -> SF=1
 		 */
-		unsigned offset = imm->offset;
+		unsigned offset = imm->imm.offset;
 		if (get_ia32_op_type(node) == ia32_AddrModeS) {
 			ia32_attr_t *const attr = get_ia32_attr(node);
 			ir_graph    *const irg  = get_irn_irg(node);
@@ -714,7 +714,7 @@ static void peephole_ia32_Const(ir_node *node)
 	const ia32_immediate_attr_t *attr = get_ia32_immediate_attr_const(node);
 
 	/* try to transform a mov 0, reg to xor reg reg */
-	if (attr->offset != 0 || attr->entity != NULL)
+	if (attr->imm.offset != 0 || attr->imm.entity != NULL)
 		return;
 	if (ia32_cg_config.use_mov_0)
 		return;

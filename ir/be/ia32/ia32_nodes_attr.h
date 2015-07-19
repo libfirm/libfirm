@@ -168,8 +168,7 @@ struct ia32_copyb_attr_t {
 typedef struct ia32_immediate_attr_t ia32_immediate_attr_t;
 struct ia32_immediate_attr_t {
 	ia32_attr_t  attr;              /**< generic attribute */
-	ir_entity   *entity;            /**< An entity if any. */
-	int32_t      offset;            /**< An offset if any. */
+	x86_imm32_t  imm;
 	unsigned     no_pic_adjust : 1; /**< constant can be relative to EIP */
 };
 

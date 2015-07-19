@@ -194,7 +194,7 @@ static void ia32_transform_ShlD_to_ShrD_imm(ir_node *const irn)
 	ir_node                     *const lcount = get_irn_n(irn, n_ia32_ShlD_count);
 	ia32_immediate_attr_t const *const attr   = get_ia32_immediate_attr_const(lcount);
 	ir_graph                    *const irg    = get_irn_irg(irn);
-	ir_node                     *const count  = ia32_create_Immediate(irg, 32 - attr->offset);
+	ir_node                     *const count  = ia32_create_Immediate(irg, 32 - attr->imm.offset);
 	dbg_info                    *const dbgi   = get_irn_dbg_info(irn);
 	ir_node                     *const block  = get_nodes_block(irn);
 	ir_node                     *const res    = new_bd_ia32_ShrD_imm(dbgi, block, in1, in0, count);

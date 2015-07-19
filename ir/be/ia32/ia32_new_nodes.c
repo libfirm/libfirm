@@ -136,14 +136,16 @@ static void ia32_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 					= get_ia32_immediate_attr_const(n);
 
 				fputc(' ', F);
-				if (attr->entity) {
-					fputs(get_entity_name(attr->entity), F);
+				ir_entity *entity = attr->imm.entity;
+				if (entity) {
+					fputs(get_entity_name(entity), F);
 				}
-				if (attr->offset != 0 || attr->entity == NULL) {
-					if (attr->offset > 0 && attr->entity != NULL) {
+				int32_t offset = attr->imm.offset;
+				if (offset != 0 || entity == NULL) {
+					if (offset > 0 && entity != NULL) {
 						fputc('+', F);
 					}
-					fprintf(F, "%"PRId32, attr->offset);
+					fprintf(F, "%"PRId32, offset);
 					if (attr->no_pic_adjust) {
 						fputs("(no_pic_adjust)", F);
 					}
@@ -778,9 +780,9 @@ static void init_ia32_immediate_attributes(ir_node *res, ir_entity *entity,
 #ifndef NDEBUG
 	attr->attr.attr_type  |= IA32_ATTR_ia32_immediate_attr_t;
 #endif
-	attr->entity        = entity;
+	attr->imm.entity    = entity;
+	attr->imm.offset    = offset;
 	attr->no_pic_adjust = no_pic_adjust;
-	attr->offset        = offset;
 }
 
 static void init_ia32_call_attributes(ir_node* res, unsigned pop,
@@ -909,7 +911,7 @@ static unsigned ia32_hash_Immediate(const ir_node *irn)
 {
 	const ia32_immediate_attr_t *a = get_ia32_immediate_attr_const(irn);
 
-	return hash_ptr(a->entity) + (unsigned)a->offset;
+	return hash_ptr(a->imm.entity) + (unsigned)a->imm.offset;
 }
 
 /** Compare node attributes for Immediates. */
@@ -917,9 +919,8 @@ static int ia32_immediate_attrs_equal(const ir_node *a, const ir_node *b)
 {
 	const ia32_immediate_attr_t *attr_a = get_ia32_immediate_attr_const(a);
 	const ia32_immediate_attr_t *attr_b = get_ia32_immediate_attr_const(b);
-	return attr_a->entity == attr_b->entity
-		&& attr_a->no_pic_adjust == attr_b->no_pic_adjust
-		&& attr_a->offset == attr_b->offset;
+	return x86_imm32_equal(&attr_a->imm, &attr_b->imm)
+		&& attr_a->no_pic_adjust == attr_b->no_pic_adjust;
 }
 
 /** Compare node attributes for x87 nodes. */
