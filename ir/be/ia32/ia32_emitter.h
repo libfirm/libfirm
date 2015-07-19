@@ -12,7 +12,6 @@
 #define FIRM_BE_IA32_IA32_EMITTER_H
 
 #include "irnode.h"
-#include "bearch.h"
 
 /**
  * fmt  parameter               output

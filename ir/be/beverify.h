@@ -14,7 +14,7 @@
 
 #include <stdbool.h>
 
-#include "bearch.h"
+#include "be_types.h"
 #include "firm_types.h"
 
 /**

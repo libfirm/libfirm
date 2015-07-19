@@ -12,7 +12,6 @@
 #define FIRM_BE_BEINSN_T_H
 
 #include "firm_types.h"
-#include "bearch.h"
 #include "bechordal.h"
 #include "raw_bitset.h"
 

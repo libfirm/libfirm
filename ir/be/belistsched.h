@@ -17,7 +17,6 @@
 
 #include "be.h"
 #include "be_types.h"
-#include "bearch.h"
 
 /**
  * Begin list scheduling for a graph.

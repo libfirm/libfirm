@@ -11,8 +11,8 @@
 #ifndef FIRM_BE_BESTAT_H
 #define FIRM_BE_BESTAT_H
 
+#include "be_types.h"
 #include "firm_types.h"
-#include "bearch.h"
 
 typedef enum be_stat_tag_t {
 	BE_STAT_FIRST,

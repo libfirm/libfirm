@@ -16,7 +16,6 @@
 #include "sparc_new_nodes.h"
 #include "sparc_cconv.h"
 #include "bitfiddle.h"
-#include "bearch.h"
 #include "benode.h"
 #include "besched.h"
 #include "bestack.h"

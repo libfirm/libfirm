@@ -22,8 +22,6 @@
 #include "irop.h"
 #include "irprintf.h"
 #include "xmalloc.h"
-
-#include "bearch.h"
 #include "bedump.h"
 
 #include "amd64_nodes_attr.h"

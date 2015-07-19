@@ -10,7 +10,6 @@
 #ifndef FIRM_BE_AMD64_BEARCH_AMD64_T_H
 #define FIRM_BE_AMD64_BEARCH_AMD64_T_H
 
-#include "bearch.h"
 #include "../ia32/x86_cconv.h"
 
 extern pmap *amd64_constants; /**< A map of entities that store const tarvals */

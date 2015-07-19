@@ -20,7 +20,6 @@
 #include "be.h"
 #include "belive.h"
 #include "beirg.h"
-#include "bearch.h"
 #include "benode.h"
 #include "bera.h"
 

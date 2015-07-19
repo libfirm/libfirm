@@ -30,7 +30,6 @@
 #include "besched.h"
 #include "belive.h"
 #include "belistsched.h"
-#include "bearch.h"
 #include "bestat.h"
 
 #include "lc_opts.h"

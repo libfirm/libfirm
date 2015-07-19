@@ -28,7 +28,6 @@
 #include "belive.h"
 #include "benode.h"
 #include "besched.h"
-#include "bearch.h"
 #include "beuses.h"
 
 #define UNKNOWN_OUTERMOST_LOOP  ((unsigned)-1)

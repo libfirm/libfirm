@@ -11,7 +11,6 @@
 #include "bearch_ia32_t.h"
 
 #include "adt/pmap.h"
-#include "bearch.h"
 #include "begnuas.h"
 #include "beirg.h"
 #include "be_t.h"

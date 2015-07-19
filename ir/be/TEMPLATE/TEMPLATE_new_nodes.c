@@ -20,8 +20,6 @@
 #include "irop.h"
 #include "irprintf.h"
 #include "xmalloc.h"
-
-#include "bearch.h"
 #include "bedump.h"
 
 #include "TEMPLATE_nodes_attr.h"

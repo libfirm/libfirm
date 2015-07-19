@@ -13,8 +13,10 @@
 #ifndef FIRM_BE_BESTATE_H
 #define FIRM_BE_BESTATE_H
 
+#include <stdbool.h>
+
+#include "be_types.h"
 #include "firm_types.h"
-#include "bearch.h"
 
 /**
  * Callback that should create a spill for a certain value. Can return NULL

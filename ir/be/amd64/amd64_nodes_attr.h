@@ -12,8 +12,8 @@
 
 #include <stdint.h>
 
-#include "bearch.h"
 #include "compiler.h"
+#include "irtypes.h"
 #include "../ia32/x86_cc.h"
 #include "../ia32/x86_asm.h"
 

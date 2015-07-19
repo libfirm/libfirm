@@ -12,9 +12,8 @@
 #ifndef FIRM_BE_BELOOPANA_H
 #define FIRM_BE_BELOOPANA_H
 
+#include "be_types.h"
 #include "irloop.h"
-
-#include "bearch.h"
 
 typedef struct be_loopana_t be_loopana_t;
 

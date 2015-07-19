@@ -220,6 +220,7 @@ print OUT<<EOF;
 #define FIRM_BE_${archuc}_GEN_${archuc}_REGALLOC_IF_H
 
 #include "${arch}_nodes_attr.h"
+#include "bearch.h"
 
 /** global register indices for ${arch} registers */
 enum reg_indices {

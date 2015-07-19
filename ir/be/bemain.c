@@ -33,7 +33,6 @@
 #include "ircons.h"
 #include "util.h"
 
-#include "bearch.h"
 #include "be_t.h"
 #include "bediagnostic.h"
 #include "begnuas.h"

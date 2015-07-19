@@ -15,8 +15,6 @@
 
 #include <stdbool.h>
 #include "firm_types.h"
-
-#include "bearch.h"
 #include "bera.h"
 
 typedef struct spill_env_t spill_env_t;

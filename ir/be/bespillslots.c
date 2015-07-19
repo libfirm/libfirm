@@ -30,7 +30,6 @@
 #include "bemodule.h"
 #include "belive.h"
 #include "beirg.h"
-#include "bearch.h"
 #include "bespillutil.h"
 
 #define DBG_COALESCING      1

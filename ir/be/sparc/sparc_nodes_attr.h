@@ -11,9 +11,11 @@
 #ifndef FIRM_BE_SPARC_SPARC_NODES_ATTR_H
 #define FIRM_BE_SPARC_SPARC_NODES_ATTR_H
 
-#include "firm_types.h"
-#include "bearch.h"
 #include <stdint.h>
+
+#include "be_types.h"
+#include "firm_types.h"
+#include "irtypes.h"
 
 typedef struct sparc_attr_t  sparc_attr_t;
 

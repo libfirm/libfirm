@@ -716,6 +716,8 @@ print OUT<<EOF;
 #ifndef FIRM_BE_${tmp}_GEN_${tmp}_NEW_NODES_H
 #define FIRM_BE_${tmp}_GEN_${tmp}_NEW_NODES_H
 
+#include "irnode_t.h"
+
 $obst_enum_op
 int is_${arch}_irn(const ir_node *node);
 int is_${arch}_op(const ir_op *op);

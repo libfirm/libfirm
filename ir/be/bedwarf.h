@@ -11,7 +11,7 @@
 #ifndef FIRM_BE_BEDWARF_H
 #define FIRM_BE_BEDWARF_H
 
-#include "bearch.h"
+#include "be_types.h"
 
 typedef struct parameter_dbg_info_t {
 	const ir_entity       *entity;

@@ -14,7 +14,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "bearch.h"
+#include "firm_types.h"
+#include "pmap.h"
 
 typedef struct calling_convention_t calling_convention_t;
 

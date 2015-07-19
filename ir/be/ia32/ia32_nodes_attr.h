@@ -12,7 +12,6 @@
 #define FIRM_BE_IA32_IA32_NODES_ATTR_H
 
 #include "firm_types.h"
-#include "bearch.h"
 #include "irnode_t.h"
 #include "x86_cc.h"
 #include "x86_asm.h"

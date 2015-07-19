@@ -11,7 +11,7 @@
 #ifndef FIRM_BE_BEFLAGS_H
 #define FIRM_BE_BEFLAGS_H
 
-#include "bearch.h"
+#include "be_types.h"
 
 /**
  * Callback which rematerializes (=duplicates) a machine node.

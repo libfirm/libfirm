@@ -12,7 +12,6 @@
 #ifndef FIRM_BE_BESPILL_H
 #define FIRM_BE_BESPILL_H
 
-#include "bearch.h"
 #include "bera.h"
 
 extern bool be_coalesce_spill_slots;

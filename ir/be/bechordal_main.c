@@ -35,7 +35,6 @@
 
 #include "bechordal_t.h"
 #include "belive.h"
-#include "bearch.h"
 #include "beifg.h"
 #include "benode.h"
 #include "statev_t.h"

@@ -16,8 +16,6 @@
 #include "list.h"
 #include "set.h"
 #include "irnode_t.h"
-
-#include "bearch.h"
 #include "bechordal_t.h"
 #include "becopyopt.h"
 

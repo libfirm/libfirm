@@ -11,7 +11,6 @@
  */
 #include <stdlib.h>
 
-#include "bearch.h"
 #include "belistsched.h"
 #include "bemodule.h"
 #include "besched.h"

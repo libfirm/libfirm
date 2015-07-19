@@ -16,7 +16,6 @@
 #include "irgmod.h"
 
 #include "bemodule.h"
-#include "bearch.h"
 #include "besched.h"
 #include "belistsched.h"
 #include "belive.h"

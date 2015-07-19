@@ -9,6 +9,7 @@
  */
 #include "TEMPLATE_emitter.h"
 #include "TEMPLATE_new_nodes.h"
+#include "bearch.h"
 #include "beblocksched.h"
 #include "begnuas.h"
 #include "benode.h"

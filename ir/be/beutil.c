@@ -10,7 +10,6 @@
  */
 #include <stdio.h>
 
-#include "bearch.h"
 #include "beirg.h"
 #include "belive.h"
 #include "benode.h"

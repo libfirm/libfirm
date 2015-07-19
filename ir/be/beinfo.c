@@ -11,7 +11,6 @@
 
 #include "beinfo.h"
 #include "beirg.h"
-#include "bearch.h"
 #include "benode.h"
 #include "besched.h"
 #include "bedump.h"

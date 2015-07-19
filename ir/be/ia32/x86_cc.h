@@ -1,6 +1,8 @@
 #ifndef X86_CC_H
 #define X86_CC_H
 
+#include <stdbool.h>
+
 /** x86 condition codes (the numbers correspond to the real encoding order) */
 typedef enum x86_condition_code_t {
 	x86_cc_negated       = 0x01, /**< negates condition */

@@ -11,7 +11,9 @@
 #ifndef FIRM_BE_ARM_BEARCH_ARM_T_H
 #define FIRM_BE_ARM_BEARCH_ARM_T_H
 
-#include "bearch.h"
+#include <stdbool.h>
+
+#include "firm_types.h"
 
 typedef struct arm_isa_t arm_isa_t;
 
