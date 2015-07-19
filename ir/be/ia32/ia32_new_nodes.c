@@ -772,16 +772,16 @@ static void init_ia32_x87_attributes(ir_node *res)
 	ia32_request_x87_sim(irg);
 }
 
-static void init_ia32_immediate_attributes(ir_node *res, ir_entity *entity,
-                                           bool no_pic_adjust, int32_t offset)
+static void init_ia32_immediate_attributes(ir_node *res,
+                                           x86_imm32_t const *const imm,
+                                           bool no_pic_adjust)
 {
 	ia32_immediate_attr_t *attr = (ia32_immediate_attr_t*)get_irn_generic_attr(res);
 
 #ifndef NDEBUG
 	attr->attr.attr_type  |= IA32_ATTR_ia32_immediate_attr_t;
 #endif
-	attr->imm.entity    = entity;
-	attr->imm.offset    = offset;
+	attr->imm           = *imm;
 	attr->no_pic_adjust = no_pic_adjust;
 }
 

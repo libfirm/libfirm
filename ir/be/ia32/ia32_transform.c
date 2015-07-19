@@ -267,11 +267,12 @@ static ir_node *get_initial_fpcw(ir_graph *irg)
 }
 
 ir_node *ia32_create_Immediate_full(ir_graph *const irg,
-		ir_entity *const entity, bool const no_pic_adjust, int32_t const val)
+                                    x86_imm32_t const *const imm,
+                                    bool const no_pic_adjust)
 {
 	ir_node *const start_block = get_irg_start_block(irg);
 	ir_node *const immediate
-		= new_bd_ia32_Immediate(NULL, start_block, entity, no_pic_adjust, val);
+		= new_bd_ia32_Immediate(NULL, start_block, imm, no_pic_adjust);
 	arch_set_irn_register(immediate, &ia32_registers[REG_GP_NOREG]);
 	return immediate;
 }
@@ -283,8 +284,7 @@ static ir_node *try_create_Immediate(const ir_node *node, char const constraint)
 		return NULL;
 
 	ir_graph *const irg = get_irn_irg(node);
-	return ia32_create_Immediate_full(irg, immediate.entity, no_pic_adjust,
-									  immediate.offset);
+	return ia32_create_Immediate_full(irg, &immediate, no_pic_adjust);
 }
 
 static ir_type *get_prim_type(const ir_mode *mode)
@@ -370,8 +370,10 @@ static ir_node *gen_Const(ir_node *node)
 #endif /* CONSTRUCT_SSE_CONST */
 			} else if (mode == ia32_mode_float32) {
 				/* we can place any 32bit constant by using a movd gp, sse */
-				unsigned const val = be_get_tv_bits32(tv, 0);
-				ir_node *cnst = new_bd_ia32_Const(dbgi, block, NULL, 0, val);
+				x86_imm32_t imm = {
+					.offset = be_get_tv_bits32(tv, 0),
+				};
+				ir_node *cnst = new_bd_ia32_Const(dbgi, block, &imm, false);
 				load = new_bd_ia32_xMovd(dbgi, block, cnst);
 				set_ia32_ls_mode(load, mode);
 				res = load;
@@ -439,9 +441,9 @@ end:
 		    tv == NULL) {
 			panic("couldn't convert constant tarval (%+F)", node);
 		}
-		long val = get_tarval_long(tv);
 
-		ir_node *cnst = new_bd_ia32_Const(dbgi, block, NULL, 0, val);
+		x86_imm32_t imm = { .offset = get_tarval_long(tv) };
+		ir_node *cnst = new_bd_ia32_Const(dbgi, block, &imm, false);
 		SET_IA32_ORIG_NODE(cnst, node);
 
 		return cnst;
@@ -468,7 +470,10 @@ static ir_node *gen_Address(ir_node *node)
 		set_ia32_am_ent(lea, entity);
 		cnst = lea;
 	} else {
-		cnst = new_bd_ia32_Const(dbgi, block, entity, 0, 0);
+		x86_imm32_t imm = {
+			.entity = entity,
+		};
+		cnst = new_bd_ia32_Const(dbgi, block, &imm, false);
 	}
 	SET_IA32_ORIG_NODE(cnst, node);
 	return cnst;
@@ -1527,8 +1532,7 @@ static ir_node *gen_Add(ir_node *node)
 
 	/* a constant? */
 	if (addr.base == NULL && addr.index == NULL) {
-		new_node = new_bd_ia32_Const(dbgi, new_block, addr.imm.entity, 0,
-		                             addr.imm.offset);
+		new_node = new_bd_ia32_Const(dbgi, new_block, &addr.imm, false);
 		SET_IA32_ORIG_NODE(new_node, node);
 		return new_node;
 	}
@@ -1835,7 +1839,8 @@ static ir_node *create_Div(ir_node *const node, ir_node *const op1, ir_node *con
 		ext  = create_sex_32_64(dbgi, block, am.new_op1, node);
 		cons = new_bd_ia32_IDiv;
 	} else {
-		ext  = new_bd_ia32_Const(dbgi, block, NULL, 0, 0);
+		x86_imm32_t imm = { .offset = 0 };
+		ext  = new_bd_ia32_Const(dbgi, block, &imm, false);
 		cons = new_bd_ia32_Div;
 	}
 	ir_node *const new_node = cons(dbgi, block, addr->base, addr->index, new_mem, am.new_op2, am.new_op1, ext);
@@ -4861,7 +4866,8 @@ static ir_node *gen_CopyB(ir_node *node)
 		rem = size & 0x3; /* size % 4 */
 		size >>= 2;
 
-		ir_node *cnst  = new_bd_ia32_Const(dbgi, block, NULL, 0, size);
+		x86_imm32_t imm = { .offset = size };
+		ir_node *cnst  = new_bd_ia32_Const(dbgi, block, &imm, false);
 		ir_node *copyb = new_bd_ia32_CopyB(dbgi, block, new_dst, new_src, cnst,
 		                                   new_mem, rem);
 		SET_IA32_ORIG_NODE(copyb, node);

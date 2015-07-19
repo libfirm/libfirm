@@ -13,6 +13,7 @@
 
 #include "firm_types.h"
 #include "x86_asm.h"
+#include "x86_imm.h"
 
 extern const x86_clobber_name_t        ia32_additional_clobber_names[];
 extern const x86_asm_constraint_list_t ia32_asm_constraints;
@@ -49,13 +50,14 @@ ir_node *ia32_new_IncSP(ir_node *block, ir_node *old_sp, int offset,
 
 const arch_register_t *ia32_get_clobber_register(const char *clobber);
 
-ir_node *ia32_create_Immediate_full(ir_graph *irg, ir_entity *entity,
-                                    bool no_pic_adjust, int32_t val);
+ir_node *ia32_create_Immediate_full(ir_graph *irg, const x86_imm32_t *imm,
+                                    bool no_pic_adjust);
 
 static inline ir_node *ia32_create_Immediate(ir_graph *const irg,
                                              int32_t const val)
 {
-	return ia32_create_Immediate_full(irg, NULL, false, val);
+	x86_imm32_t imm = { .offset = val };
+	return ia32_create_Immediate_full(irg, &imm, false);
 }
 
 #endif
