@@ -17,11 +17,6 @@
 #include "bearch.h"
 
 /**
- * Dump interference graph
- */
-void be_dump_ifg(FILE *F, ir_graph *irg, const be_ifg_t *ifg);
-
-/**
  * Dump interference graph with affinity edges as calculated by a
  * copy-minimisation phase
  */

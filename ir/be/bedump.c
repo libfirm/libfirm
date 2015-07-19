@@ -44,22 +44,6 @@ static void dump_ifg_edges(FILE *F, const be_ifg_t *ifg)
 	}
 }
 
-void be_dump_ifg(FILE *F, ir_graph *irg, const be_ifg_t *ifg)
-{
-	ir_fprintf(F,
-		"graph: { title: \"interference graph of %+F\"\n"
-		"layoutalgorithm: mindepth //$ \"circular\"\n"
-		"classname 1: \"interference\"\n"
-		, irg);
-	dump_vcg_infonames(F);
-	dump_vcg_header_colors(F);
-
-	dump_ifg_nodes(F, ifg);
-	dump_ifg_edges(F, ifg);
-
-	fprintf(F, "}\n");
-}
-
 static void dump_affinity_edges(FILE *F, const copy_opt_t *co,
                                 bool dump_costs, bool dump_colors)
 {
