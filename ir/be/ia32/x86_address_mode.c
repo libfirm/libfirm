@@ -57,6 +57,7 @@ static bool eat_imm(x86_address_t *const addr, ir_node const *const node)
 		if (addr->imm.entity)
 			return false;
 		addr->imm.entity = get_Address_entity(node);
+		addr->imm.kind = X86_IMM_ADDR;
 		if (is_tls_entity(addr->imm.entity))
 			addr->tls_segment = true;
 		return true;
@@ -191,11 +192,12 @@ static bool eat_shl(x86_address_t *addr, ir_node *node)
 void x86_create_address_mode(x86_address_t *addr, ir_node *node,
                              x86_create_am_flags_t flags)
 {
-	if (eat_immediate(addr, node))
+	addr->imm.kind = X86_IMM_VALUE;
+	if (eat_immediate(addr, node)) {
 		return;
+	}
 
-	if (!(flags & x86_create_am_force)
-	    && x86_is_non_address_mode_node(node)
+	if (!(flags & x86_create_am_force) && x86_is_non_address_mode_node(node)
 	    && (!(flags & x86_create_am_double_use) || get_irn_n_edges(node) > 2)) {
 		addr->base = node;
 		return;

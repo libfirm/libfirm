@@ -481,8 +481,8 @@ ir_node *ia32_turn_back_am(ir_node *node)
 	ir_node *noreg = ia32_new_NoReg_gp(irg);
 	set_irn_n(node, n_ia32_base,  noreg);
 	set_irn_n(node, n_ia32_index, noreg);
-	set_ia32_am_offs_int(node, 0);
-	set_ia32_am_ent(node, NULL);
+	ia32_attr_t *const attr = get_ia32_attr(node);
+	attr->am_imm = (x86_imm32_t) { .kind = X86_IMM_VALUE, .offset = 0 };
 	set_ia32_am_scale(node, 0);
 	set_ia32_frame_ent(node, NULL);
 

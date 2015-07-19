@@ -59,14 +59,17 @@ bool x86_match_immediate(x86_imm32_t *immediate, const ir_node *node,
 			return false;
 	}
 
+	x86_immediate_kind_t kind = X86_IMM_VALUE;
 	if (entity != NULL) {
 		/* we need full 32bits for entities */
 		if (constraint != 'i' && constraint != 'g')
 			return false;
+		kind = X86_IMM_ADDR;
 	}
 
 	/* we are fine */
 	immediate->entity = entity;
 	immediate->offset = (int32_t)val;
+	immediate->kind   = kind;
 	return true;
 }

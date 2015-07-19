@@ -533,10 +533,13 @@ void set_ia32_am_scale(ir_node *node, unsigned scale)
 
 void ia32_copy_am_attrs(ir_node *to, const ir_node *from)
 {
+	ia32_attr_t const *const from_attr = get_ia32_attr_const(from);
+	ia32_attr_t       *const to_attr   = get_ia32_attr(to);
+	to_attr->am_imm = from_attr->am_imm;
+	to_attr->am_sc_no_pic_adjust = from_attr->am_sc_no_pic_adjust;
+
 	set_ia32_ls_mode(to, get_ia32_ls_mode(from));
 	set_ia32_am_scale(to, get_ia32_am_scale(from));
-	set_ia32_am_ent(to, get_ia32_am_ent(from));
-	add_ia32_am_offs_int(to, get_ia32_am_offs_int(from));
 	set_ia32_frame_ent(to, get_ia32_frame_ent(from));
 	set_ia32_frame_use(to, get_ia32_frame_use(from));
 }

@@ -276,11 +276,19 @@ ir_node *ia32_create_Immediate_full(ir_graph *const irg,
 	return immediate;
 }
 
+static void adjust_pic(x86_imm32_t *imm)
+{
+	if (be_options.pic && imm->kind == X86_IMM_ADDR &&
+	    get_entity_type(imm->entity) != get_code_type())
+		imm->kind = X86_IMM_PICBASE_REL;
+}
+
 static ir_node *try_create_Immediate(const ir_node *node, char const constraint)
 {
 	x86_imm32_t immediate;
 	if (!x86_match_immediate(&immediate, node, constraint))
 		return NULL;
+	adjust_pic(&immediate);
 
 	ir_graph *const irg = get_irn_irg(node);
 	return ia32_create_Immediate_full(irg, &immediate, false);
@@ -330,6 +338,15 @@ static ir_entity *create_float_const_entity(ir_tarval *tv, ident *name)
 		pmap_insert(ia32_tv_ent, tv, res);
 	}
 	return res;
+}
+
+static void set_am_const_entity(ir_node *node, ir_entity *entity)
+{
+	ia32_attr_t *const attr = get_ia32_attr(node);
+	attr->am_imm = (x86_imm32_t) {
+		.kind   = be_options.pic ? X86_IMM_PICBASE_REL : X86_IMM_ADDR,
+		.entity = entity,
+	};
 }
 
 /**
@@ -402,7 +419,7 @@ static ir_node *gen_Const(ir_node *node)
 				                         mode);
 				set_irn_pinned(load, op_pin_state_floats);
 				set_ia32_op_type(load, ia32_AddrModeS);
-				set_ia32_am_ent(load, floatent);
+				set_am_const_entity(load, floatent);
 				arch_add_irn_flags(load, arch_irn_flag_rematerializable);
 				res = new_r_Proj(load, mode_xmm, pn_ia32_xLoad_res);
 			}
@@ -423,7 +440,7 @@ static ir_node *gen_Const(ir_node *node)
 				                       ls_mode);
 				set_irn_pinned(load, op_pin_state_floats);
 				set_ia32_op_type(load, ia32_AddrModeS);
-				set_ia32_am_ent(load, floatent);
+				set_am_const_entity(load, floatent);
 				arch_add_irn_flags(load, arch_irn_flag_rematerializable);
 				res = new_r_Proj(load, mode_fp, pn_ia32_fld_res);
 			}
@@ -462,16 +479,20 @@ static ir_node *gen_Address(ir_node *node)
 		panic("unexpected mode for Address");
 
 	ir_entity *entity = get_Address_entity(node);
-	ir_node   *cnst;
+	x86_imm32_t imm = {
+		.kind   = X86_IMM_ADDR,
+		.entity = entity,
+	};
+	adjust_pic(&imm);
+
+	ir_node *cnst;
 	if (is_tls_entity(entity)) {
 		ir_node *tls_base = new_bd_ia32_LdTls(NULL, block);
 		ir_node *lea      = new_bd_ia32_Lea(dbgi, block, tls_base, noreg_GP);
-		set_ia32_am_ent(lea, entity);
+		ia32_attr_t *const attr = get_ia32_attr(lea);
+		attr->am_imm = imm;
 		cnst = lea;
 	} else {
-		x86_imm32_t imm = {
-			.entity = entity,
-		};
 		cnst = new_bd_ia32_Const(dbgi, block, &imm, false);
 	}
 	SET_IA32_ORIG_NODE(cnst, node);
@@ -780,11 +801,18 @@ struct ia32_address_mode_t {
 	unsigned        ins_permuted : 1;
 };
 
+static void ia32_create_address_mode(x86_address_t *addr, ir_node *ptr,
+                                     x86_create_am_flags_t flags)
+{
+	x86_create_address_mode(addr, ptr, flags);
+	adjust_pic(&addr->imm);
+}
+
 static void build_address_ptr(x86_address_t *addr, ir_node *ptr, ir_node *mem)
 {
 	/* construct load address */
 	memset(addr, 0, sizeof(addr[0]));
-	x86_create_address_mode(addr, ptr, x86_create_am_normal);
+	ia32_create_address_mode(addr, ptr, x86_create_am_normal);
 
 	addr->base  = addr->base  ? be_transform_node(addr->base)  : noreg_GP;
 	addr->index = addr->index ? be_transform_node(addr->index) : noreg_GP;
@@ -804,7 +832,11 @@ static void build_address(ia32_address_mode_t *am, ir_node *node,
 		addr->base        = get_global_base(irg);
 		addr->index       = noreg_GP;
 		addr->mem         = nomem;
-		addr->imm.entity  = entity;
+		addr->imm         = (x86_imm32_t) {
+			.kind   = X86_IMM_ADDR,
+			.entity = entity,
+		};
+		adjust_pic(&addr->imm);
 		addr->tls_segment = false;
 		addr->use_frame   = false;
 		am->ls_mode       = get_type_mode(get_entity_type(entity));
@@ -822,7 +854,7 @@ static void build_address(ia32_address_mode_t *am, ir_node *node,
 	am->am_node      = node;
 
 	/* construct load address */
-	x86_create_address_mode(addr, ptr, flags);
+	ia32_create_address_mode(addr, ptr, flags);
 
 	addr->base  = addr->base  ? be_transform_node(addr->base)  : noreg_GP;
 	addr->index = addr->index ? be_transform_node(addr->index) : noreg_GP;
@@ -1523,7 +1555,7 @@ static ir_node *gen_Add(ir_node *node)
 	 */
 	x86_address_t addr;
 	memset(&addr, 0, sizeof(addr));
-	x86_create_address_mode(&addr, node, x86_create_am_force);
+	ia32_create_address_mode(&addr, node, x86_create_am_force);
 
 	dbg_info *dbgi      = get_irn_dbg_info(node);
 	ir_node  *block     = get_nodes_block(node);
@@ -2003,7 +2035,7 @@ static ir_node *gen_Minus(ir_node *node)
 			int        size = get_mode_size_bits(mode);
 			ir_entity *ent  = ia32_gen_fp_known_const(size == 32 ? ia32_SSIGN : ia32_DSIGN);
 
-			set_ia32_am_ent(new_node, ent);
+			set_am_const_entity(new_node, ent);
 			set_ia32_op_type(new_node, ia32_AddrModeS);
 			set_ia32_ls_mode(new_node, mode);
 		} else {
@@ -2047,7 +2079,7 @@ static ir_node *create_float_abs(dbg_info *dbgi, ir_node *new_block, ir_node *op
 		int        size = get_mode_size_bits(mode);
 		ir_entity *ent  = ia32_gen_fp_known_const(size == 32 ? ia32_SABS : ia32_DABS);
 
-		set_ia32_am_ent(new_node, ent);
+		set_am_const_entity(new_node, ent);
 
 		SET_IA32_ORIG_NODE(new_node, node);
 
@@ -2234,7 +2266,7 @@ static void create_transformed_address_mode(x86_address_t *addr,
                                             x86_create_am_flags_t flags)
 {
 	memset(addr, 0, sizeof(*addr));
-	x86_create_address_mode(addr, ptr, flags);
+	ia32_create_address_mode(addr, ptr, flags);
 	ir_node *base = addr->base;
 	base = base == NULL ? noreg_GP : be_transform_node(base);
 	addr->base = base;
@@ -2888,11 +2920,15 @@ static ir_node *gen_Switch(ir_node *node)
 	ir_node  *new_node = new_bd_ia32_SwitchJmp(dbgi, block, noreg_GP, new_sel,
 	                                           n_outs, table);
 	set_ia32_am_scale(new_node, 2);
-	set_ia32_am_ent(new_node, entity);
 	set_ia32_op_type(new_node, ia32_AddrModeS);
 	set_ia32_ls_mode(new_node, ia32_mode_gp);
 	SET_IA32_ORIG_NODE(new_node, node);
-	// FIXME This seems wrong. GCC uses PIC for switch on OS X.
+	ia32_attr_t *const attr = get_ia32_attr(new_node);
+	attr->am_imm = (x86_imm32_t) {
+		// FIXME This seems wrong. GCC uses PIC for switch on OS X.
+		.kind   = X86_IMM_ADDR,
+		.entity = entity,
+	};
 	get_ia32_attr(new_node)->am_sc_no_pic_adjust = true;
 
 	return new_node;
@@ -3538,11 +3574,8 @@ static ir_node *gen_Mux(ir_node *node)
 				new_mode = NULL;
 			}
 
-			ia32_address_mode_t am;
-			am.addr.imm.entity
-				= ia32_create_const_array(mux_false, mux_true, &new_mode);
-			am.addr.imm.offset = 0;
-
+			ir_entity *array = ia32_create_const_array(mux_false, mux_true,
+			                                           &new_mode);
 			unsigned scale;
 			if (new_mode == ia32_mode_float32) {
 				scale = 2;
@@ -3557,21 +3590,24 @@ static ir_node *gen_Mux(ir_node *node)
 			}
 
 			ir_graph *const irg = get_irn_irg(new_block);
-			am.ls_mode            = new_mode;
-			am.addr.base          = get_global_base(irg);
-			am.addr.index         = new_node;
-			am.addr.mem           = nomem;
-			am.addr.scale         = scale;
-			am.addr.use_frame     = 0;
-			am.addr.tls_segment   = false;
-			am.addr.frame_entity  = NULL;
-			am.mem_proj           = am.addr.mem;
-			am.op_type            = ia32_AddrModeS;
-			am.new_op1            = NULL;
-			am.new_op2            = NULL;
-			am.pinned             = op_pin_state_floats;
-			am.commutative        = 1;
-			am.ins_permuted       = false;
+			ia32_address_mode_t am = {
+				.addr = {
+					.imm = {
+						.kind   = be_options.pic ? X86_IMM_PICBASE_REL
+						                         : X86_IMM_ADDR,
+						.entity = array,
+					},
+					.base   = get_global_base(irg),
+					.index  = new_node,
+					.mem    = nomem,
+					.scale  = scale,
+				},
+				.ls_mode     = new_mode,
+				.mem_proj    = nomem,
+				.op_type     = ia32_AddrModeS,
+				.pinned      = op_pin_state_floats,
+				.commutative = true,
+			};
 
 			ir_node *load;
 			if (ia32_cg_config.use_sse2) {
@@ -4127,7 +4163,7 @@ static ir_node *gen_Member(ir_node *node)
 
 	x86_address_t addr;
 	memset(&addr, 0, sizeof(addr));
-	x86_create_address_mode(&addr, node, x86_create_am_force);
+	ia32_create_address_mode(&addr, node, x86_create_am_force);
 
 	ir_node *new_node = create_lea_from_address(dbgi, block, &addr);
 	SET_IA32_ORIG_NODE(new_node, node);
@@ -4521,24 +4557,26 @@ static ir_node *gen_ia32_l_LLtoFloat(ir_node *node)
 	if (!mode_is_signed(get_irn_mode(val_high))) {
 		ir_node *const count = ia32_create_Immediate(irg, 31);
 
-		ia32_address_mode_t am;
-		am.addr.base         = get_global_base(irg);
-		am.addr.index        = new_bd_ia32_Shr(dbgi, block, new_val_high, count);
-		am.addr.mem          = nomem;
-		am.addr.imm.entity   = ia32_gen_fp_known_const(ia32_ULLBIAS);
-		am.addr.imm.offset   = 0;
-		am.addr.scale        = 2;
-		am.addr.tls_segment  = false;
-		am.addr.use_frame    = 0;
-		am.addr.frame_entity = NULL;
-		am.ls_mode           = ia32_mode_float32;
-		am.mem_proj          = nomem;
-		am.op_type           = ia32_AddrModeS;
-		am.new_op1           = res;
-		am.new_op2           = ia32_new_NoReg_fp(irg);
-		am.pinned            = op_pin_state_floats;
-		am.commutative       = 1;
-		am.ins_permuted      = false;
+		ia32_address_mode_t am = {
+			.addr = {
+				.base  = get_global_base(irg),
+				.index = new_bd_ia32_Shr(dbgi, block, new_val_high, count),
+				.mem   = nomem,
+				.imm   = {
+					.kind   = be_options.pic ? X86_IMM_PICBASE_REL
+					                         : X86_IMM_ADDR,
+					.entity = ia32_gen_fp_known_const(ia32_ULLBIAS),
+				},
+				.scale = 2,
+			},
+			.ls_mode     = ia32_mode_float32,
+			.mem_proj    = nomem,
+			.op_type     = ia32_AddrModeS,
+			.new_op1     = res,
+			.new_op2     = ia32_new_NoReg_fp(irg),
+			.pinned      = op_pin_state_floats,
+			.commutative = true,
+		};
 
 		ir_node *fpcw = get_initial_fpcw(irg);
 		ir_node *fadd = new_bd_ia32_fadd(dbgi, block, am.addr.base,
@@ -4914,6 +4952,8 @@ static ir_node *gen_Call(ir_node *node)
 	/* We have trampolines for our calls and need no PIC adjustments */
 	if (be_options.pic && is_ia32_Immediate(am.new_op2)) {
 		ia32_immediate_attr_t *const attr = get_ia32_immediate_attr(am.new_op2);
+		if (attr->imm.kind == X86_IMM_PICBASE_REL)
+			attr->imm.kind = X86_IMM_ADDR;
 		attr->no_pic_adjust = true;
 	}
 

@@ -176,6 +176,7 @@ static void emit_register(const arch_register_t *reg, ir_mode *mode)
 
 static void ia32_emit_entity(x86_imm32_t const *const imm, bool no_pic_adjust)
 {
+	assert(imm->kind != X86_IMM_VALUE);
 	ir_entity *entity = imm->entity;
 	be_gas_emit_entity(entity);
 
@@ -187,9 +188,14 @@ static void ia32_emit_entity(x86_imm32_t const *const imm, bool no_pic_adjust)
 		}
 	}
 
-	if (be_options.pic && !no_pic_adjust && get_entity_type(entity) != get_code_type()) {
+	if (imm->kind == X86_IMM_PICBASE_REL) {
+		assert(be_options.pic && !no_pic_adjust &&
+		       get_entity_type(entity) != get_code_type());
 		be_emit_char('-');
 		be_emit_string(pic_base_label);
+	} else {
+		assert(!be_options.pic || no_pic_adjust ||
+		       get_entity_type(entity) == get_code_type());
 	}
 }
 
@@ -201,10 +207,12 @@ static void emit_ia32_immediate(bool const prefix, bool const no_pic_adjust,
 	ir_entity const *const entity = imm->entity;
 	int32_t          const offset = imm->offset;
 	if (entity != NULL) {
+		assert(imm->kind != X86_IMM_VALUE);
 		ia32_emit_entity(imm, no_pic_adjust);
 		if (offset != 0)
 			be_emit_irprintf("%+"PRId32, offset);
 	} else {
+		assert(imm->kind == X86_IMM_VALUE);
 		be_emit_irprintf("0x%"PRIX32, (uint32_t)offset);
 	}
 }
@@ -369,11 +377,13 @@ static void ia32_emit_am(ir_node const *const node)
 	int32_t          const offset = attr->am_imm.offset;
 	ir_entity const *const entity = attr->am_imm.entity;
 	if (entity) {
+		assert(attr->am_imm.kind != X86_IMM_VALUE);
 		const ia32_attr_t *attr = get_ia32_attr_const(node);
 		ia32_emit_entity(&attr->am_imm, attr->am_sc_no_pic_adjust);
 		if (offset != 0)
 			be_emit_irprintf("%+"PRId32, offset);
 	} else if (offset != 0 || (!base && !idx)) {
+		assert(attr->am_imm.kind == X86_IMM_VALUE);
 		/* also handle special case if nothing is set */
 		be_emit_irprintf("%"PRId32, offset);
 	}
