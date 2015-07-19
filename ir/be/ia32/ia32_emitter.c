@@ -174,24 +174,27 @@ static void emit_register(const arch_register_t *reg, ir_mode *mode)
 	be_emit_string(name);
 }
 
-static void ia32_emit_entity(x86_imm32_t const *const imm)
+static void ia32_emit_relocation(x86_imm32_t const *const imm)
 {
-	assert(imm->kind != X86_IMM_VALUE);
 	ir_entity *entity = imm->entity;
 	be_gas_emit_entity(entity);
-
-	if (is_tls_entity(entity)) {
-		if (!entity_has_definition(entity)) {
-			be_emit_cstring("@INDNTPOFF");
-		} else {
-			be_emit_cstring("@NTPOFF");
-		}
-	}
-
-	if (imm->kind == X86_IMM_PICBASE_REL) {
+	switch (imm->kind) {
+	case X86_IMM_ADDR:
+		return;
+	case X86_IMM_TLS_IE:
+		be_emit_cstring("INDNTPOFF");
+		return;
+	case X86_IMM_TLS_LE:
+		be_emit_cstring("NTPOFF");
+		return;
+	case X86_IMM_PICBASE_REL:
 		be_emit_char('-');
 		be_emit_string(pic_base_label);
+		return;
+	case X86_IMM_VALUE:
+		break;
 	}
+	panic("Unexpected immediate kind");
 }
 
 static void emit_ia32_immediate(bool const prefix, x86_imm32_t const *const imm)
@@ -202,7 +205,7 @@ static void emit_ia32_immediate(bool const prefix, x86_imm32_t const *const imm)
 	int32_t          const offset = imm->offset;
 	if (entity != NULL) {
 		assert(imm->kind != X86_IMM_VALUE);
-		ia32_emit_entity(imm);
+		ia32_emit_relocation(imm);
 		if (offset != 0)
 			be_emit_irprintf("%+"PRId32, offset);
 	} else {
@@ -373,7 +376,7 @@ static void ia32_emit_am(ir_node const *const node)
 	if (entity) {
 		assert(attr->am_imm.kind != X86_IMM_VALUE);
 		const ia32_attr_t *attr = get_ia32_attr_const(node);
-		ia32_emit_entity(&attr->am_imm);
+		ia32_emit_relocation(&attr->am_imm);
 		if (offset != 0)
 			be_emit_irprintf("%+"PRId32, offset);
 	} else if (offset != 0 || (!base && !idx)) {

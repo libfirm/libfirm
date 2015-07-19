@@ -275,11 +275,17 @@ ir_node *ia32_create_Immediate_full(ir_graph *const irg,
 	return immediate;
 }
 
-static void adjust_pic(x86_imm32_t *imm)
+static void adjust_relocation(x86_imm32_t *imm)
 {
-	if (be_options.pic && imm->kind == X86_IMM_ADDR &&
-	    get_entity_type(imm->entity) != get_code_type())
+	if (imm->kind != X86_IMM_ADDR)
+		return;
+	ir_entity *entity = imm->entity;
+	if (be_options.pic && get_entity_type(entity) != get_code_type()) {
 		imm->kind = X86_IMM_PICBASE_REL;
+	} else if (is_tls_entity(entity)) {
+		imm->kind = entity_has_definition(entity) ? X86_IMM_TLS_LE
+		                                          : X86_IMM_TLS_IE;
+	}
 }
 
 static ir_node *try_create_Immediate(const ir_node *node, char const constraint)
@@ -287,7 +293,7 @@ static ir_node *try_create_Immediate(const ir_node *node, char const constraint)
 	x86_imm32_t immediate;
 	if (!x86_match_immediate(&immediate, node, constraint))
 		return NULL;
-	adjust_pic(&immediate);
+	adjust_relocation(&immediate);
 
 	ir_graph *const irg = get_irn_irg(node);
 	return ia32_create_Immediate_full(irg, &immediate);
@@ -482,7 +488,7 @@ static ir_node *gen_Address(ir_node *node)
 		.kind   = X86_IMM_ADDR,
 		.entity = entity,
 	};
-	adjust_pic(&imm);
+	adjust_relocation(&imm);
 
 	ir_node *cnst;
 	if (is_tls_entity(entity)) {
@@ -804,7 +810,7 @@ static void ia32_create_address_mode(x86_address_t *addr, ir_node *ptr,
                                      x86_create_am_flags_t flags)
 {
 	x86_create_address_mode(addr, ptr, flags);
-	adjust_pic(&addr->imm);
+	adjust_relocation(&addr->imm);
 }
 
 static void build_address_ptr(x86_address_t *addr, ir_node *ptr, ir_node *mem)
@@ -835,7 +841,7 @@ static void build_address(ia32_address_mode_t *am, ir_node *node,
 			.kind   = X86_IMM_ADDR,
 			.entity = entity,
 		};
-		adjust_pic(&addr->imm);
+		adjust_relocation(&addr->imm);
 		addr->tls_segment = false;
 		addr->use_frame   = false;
 		am->ls_mode       = get_type_mode(get_entity_type(entity));
