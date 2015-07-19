@@ -150,23 +150,21 @@ static void ia32_set_frame_entity(ir_node *node, ir_entity *entity,
 	set_ia32_ls_mode(node, mode);
 }
 
-static void ia32_set_frame_offset(ir_node *irn, int bias)
+static void ia32_set_frame_offset(ir_node *node, int bias)
 {
-	if (get_ia32_frame_ent(irn) == NULL)
+	if (get_ia32_frame_ent(node) == NULL)
 		return;
 
-	if (is_ia32_Pop(irn) || is_ia32_PopMem(irn)) {
-		ir_graph          *irg     = get_irn_irg(irn);
-		be_stack_layout_t *layout  = be_get_irg_stack_layout(irg);
-		if (layout->sp_relative) {
-			/* Pop nodes modify the stack pointer before calculating the
-			 * destination address, so fix this here
-			 */
-			ir_mode *mode = get_ia32_ls_mode(irn);
+	/* Pop nodes modify the stack pointer before calculating the
+	 * destination address, fix this here */
+	if (is_ia32_PopMem(node)) {
+		ir_node *base = get_irn_n(node, n_ia32_PopMem_base);
+		if (arch_get_irn_register(base) == &ia32_registers[REG_ESP]) {
+			ir_mode *mode = get_ia32_ls_mode(node);
 			bias -= get_mode_size_bytes(mode);
 		}
 	}
-	add_ia32_am_offs_int(irn, bias);
+	add_ia32_am_offs_int(node, bias);
 }
 
 int ia32_get_sp_bias(const ir_node *node)
