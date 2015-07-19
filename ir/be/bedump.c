@@ -140,28 +140,6 @@ void be_dump_liveness_block(be_lv_t *lv, FILE *F, const ir_node *bl)
 	}
 }
 
-typedef struct lv_walker_t {
-	be_lv_t *lv;
-	FILE    *out;
-} lv_walker_t;
-
-static void lv_dump_block_walker(ir_node *irn, void *data)
-{
-	lv_walker_t *w = (lv_walker_t*)data;
-	if (!is_Block(irn))
-		return;
-	be_dump_liveness_block(w->lv, w->out, irn);
-}
-
-void be_liveness_dump(FILE *F, const be_lv_t *lv)
-{
-	lv_walker_t w;
-
-	w.lv  = (be_lv_t *) lv;
-	w.out = F;
-	irg_block_walk_graph(lv->irg, lv_dump_block_walker, NULL, &w);
-}
-
 static void dump_bitmask(FILE *const F, char const *const ctx, unsigned mask)
 {
 	fputs(ctx, F);
