@@ -17,6 +17,7 @@
 #include "bera.h"
 #include "besched.h"
 #include "betranshlp.h"
+#include "debug.h"
 #include "gen_sparc_regalloc_if.h"
 #include "irarch_t.h"
 #include "ircons_t.h"

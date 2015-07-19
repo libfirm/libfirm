@@ -19,6 +19,7 @@
 #include <float.h>
 
 #include "array.h"
+#include "debug.h"
 #include "irnode_t.h"
 #include "bitset.h"
 #include "raw_bitset.h"

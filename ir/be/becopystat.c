@@ -11,6 +11,7 @@
  */
 #include <string.h>
 
+#include "debug.h"
 #include "timing.h"
 #include "irgwalk.h"
 #include "irprog.h"

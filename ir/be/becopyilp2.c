@@ -32,6 +32,7 @@
 #include "be_t.h"
 #include "belive.h"
 #include "beirg.h"
+#include "debug.h"
 #include "panic.h"
 #include "raw_bitset.h"
 #include "pdeq.h"

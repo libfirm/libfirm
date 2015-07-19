@@ -12,6 +12,7 @@
  */
 #include "bestate.h"
 
+#include "debug.h"
 #include "obst.h"
 #include "irgraph_t.h"
 #include "irnode_t.h"

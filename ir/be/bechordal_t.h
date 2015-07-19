@@ -17,7 +17,6 @@
 #include "pmap.h"
 #include "bitset.h"
 #include "obst.h"
-#include "debug.h"
 
 #include "bechordal.h"
 #include "beifg.h"

@@ -20,6 +20,7 @@
 #include "bespillslots.h"
 #include "bestack.h"
 #include "beutil.h"
+#include "debug.h"
 #include "gen_amd64_regalloc_if.h"
 #include "irarch_t.h"
 #include "irgmod.h"

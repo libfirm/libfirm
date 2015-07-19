@@ -16,6 +16,7 @@
  * aren't be constant. The constant parameters of the function are placed
  * in the function graph. They aren't be passed as parameters.
  */
+#include "debug.h"
 #include "iroptimize.h"
 #include "tv.h"
 #include "set.h"

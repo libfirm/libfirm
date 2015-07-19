@@ -10,7 +10,6 @@
  * @date        29.09.2005
  */
 #include "irtools.h"
-#include "debug.h"
 #include "iredges_t.h"
 #include "raw_bitset.h"
 #include "statev_t.h"

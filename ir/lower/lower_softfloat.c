@@ -12,7 +12,6 @@
 
 #include "be.h"
 #include "dbginfo_t.h"
-#include "debug.h"
 #include "panic.h"
 #include "ircons_t.h"
 #include "iredges.h"

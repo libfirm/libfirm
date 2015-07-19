@@ -13,6 +13,7 @@
 #include "besched.h"
 #include "belistsched.h"
 #include "belive.h"
+#include "debug.h"
 #include "heights.h"
 #include "irgwalk.h"
 #include "benode.h"

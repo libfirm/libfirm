@@ -8,7 +8,6 @@
  * @brief   Utility routines for inheritance representation
  * @author  Goetz Lindenmaier
  */
-#include "debug.h"
 #include "typerep.h"
 #include "irgraph_t.h"
 #include "irprog_t.h"

@@ -14,7 +14,6 @@
 #include "iredges_t.h"
 #include "ircons.h"
 #include "irgmod.h"
-#include "debug.h"
 
 #include "bemodule.h"
 #include "bearch.h"

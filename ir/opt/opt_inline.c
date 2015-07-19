@@ -12,6 +12,7 @@
 #include <stdbool.h>
 #include <assert.h>
 
+#include "debug.h"
 #include "irnode_t.h"
 #include "irgraph_t.h"
 #include "irprog_t.h"

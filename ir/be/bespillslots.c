@@ -11,6 +11,7 @@
  */
 #include <stdlib.h>
 
+#include "debug.h"
 #include "util.h"
 #include "set.h"
 #include "array.h"

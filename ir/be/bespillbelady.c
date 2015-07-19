@@ -11,6 +11,7 @@
  */
 #include <stdbool.h>
 
+#include "debug.h"
 #include "obst.h"
 #include "irnode.h"
 #include "irmode.h"

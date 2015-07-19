@@ -10,7 +10,7 @@
  */
 #include "array.h"
 #include "bepeephole.h"
-
+#include "debug.h"
 #include "iredges_t.h"
 #include "irgwalk.h"
 #include "ircons.h"

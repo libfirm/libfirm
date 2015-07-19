@@ -11,7 +11,6 @@
 #include "iroptimize.h"
 
 #include "array.h"
-#include "debug.h"
 #include "ircons.h"
 #include "irgraph_t.h"
 #include "irgmod.h"

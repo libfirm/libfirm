@@ -12,6 +12,7 @@
 /* statev is expensive here, only enable when needed */
 #define DISABLE_STATEV
 
+#include "debug.h"
 #include "iredges_t.h"
 #include "irgwalk.h"
 #include "irprintf.h"

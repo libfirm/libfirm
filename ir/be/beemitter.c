@@ -13,6 +13,7 @@
 #include "beemitter.h"
 #include "benode.h"
 #include "be_t.h"
+#include "debug.h"
 #include "panic.h"
 #include "irnode_t.h"
 #include "irprintf.h"

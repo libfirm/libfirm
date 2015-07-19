@@ -16,6 +16,7 @@
 #include "benode.h"
 #include "bera.h"
 #include "bestack.h"
+#include "debug.h"
 #include "gen_TEMPLATE_regalloc_if.h"
 #include "irprog_t.h"
 #include "lower_builtins.h"

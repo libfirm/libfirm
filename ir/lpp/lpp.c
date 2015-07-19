@@ -16,7 +16,6 @@
 #include "hashptr.h"
 #include "debug.h"
 #include "set.h"
-#include "debug.h"
 #include "panic.h"
 
 #include "sp_matrix.h"

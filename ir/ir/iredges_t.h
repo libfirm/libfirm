@@ -13,7 +13,6 @@
 #define FIRM_IR_EDGES_T_H
 
 #include <stdbool.h>
-#include "debug.h"
 
 #include "set.h"
 #include "list.h"

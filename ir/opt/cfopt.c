@@ -16,6 +16,7 @@
 #include <assert.h>
 #include <stdbool.h>
 
+#include "debug.h"
 #include "irgmod.h"
 #include "irgraph_t.h"
 #include "irgwalk.h"

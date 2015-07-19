@@ -33,7 +33,6 @@
 
 #include "set.h"
 #include "hashptr.h"
-#include "debug.h"
 #include "dfs_t.h"
 #include "panic.h"
 #include "xmalloc.h"

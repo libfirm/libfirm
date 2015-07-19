@@ -15,7 +15,6 @@
 
 #include <stdbool.h>
 #include "firm_types.h"
-#include "debug.h"
 
 #include "bearch.h"
 #include "bera.h"

@@ -11,7 +11,6 @@
  */
 
 /* miscellaneous includes */
-#include "debug.h"
 #include "panic.h"
 
 #include "irdom.h"

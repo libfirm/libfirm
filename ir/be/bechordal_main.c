@@ -30,7 +30,6 @@
 #include "irnode.h"
 #include "ircons.h"
 #include "irtools.h"
-#include "debug.h"
 #include "execfreq.h"
 #include "iredges_t.h"
 

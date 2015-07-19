@@ -37,6 +37,7 @@
 #include "besched.h"
 #include "bestack.h"
 #include "beutil.h"
+#include "debug.h"
 #include "execfreq.h"
 #include "gen_ia32_emitter.h"
 #include "gen_ia32_regalloc_if.h"

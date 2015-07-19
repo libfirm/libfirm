@@ -20,7 +20,6 @@
 #include "belive.h"
 #include "benode.h"
 #include "bitfiddle.h"
-#include "debug.h"
 #include "fourcc.h"
 #include "irbackedge_t.h"
 #include "ircons_t.h"
