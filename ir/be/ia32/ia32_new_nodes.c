@@ -423,18 +423,12 @@ const ia32_climbframe_attr_t *get_ia32_climbframe_attr_const(const ir_node *node
 	return climbframe_attr;
 }
 
-/**
- * Gets the type of an ia32 node.
- */
 ia32_op_type_t get_ia32_op_type(const ir_node *node)
 {
 	const ia32_attr_t *attr = get_ia32_attr_const(node);
 	return (ia32_op_type_t)attr->tp;
 }
 
-/**
- * Sets the type of an ia32 node.
- */
 void set_ia32_op_type(ir_node *node, ia32_op_type_t tp)
 {
 	ia32_attr_t *attr = get_ia32_attr(node);
@@ -447,27 +441,18 @@ ia32_am_type_t get_ia32_am_support(const ir_node *node)
 	return (ia32_am_type_t)attr->am_arity;
 }
 
-/**
- * Sets the supported address mode of an ia32 node
- */
 void set_ia32_am_support(ir_node *node, ia32_am_type_t arity)
 {
 	ia32_attr_t *const attr = get_ia32_attr(node);
 	attr->am_arity = arity;
 }
 
-/**
- * Gets the address mode offset as int.
- */
 int32_t get_ia32_am_offs_int(const ir_node *node)
 {
 	const ia32_attr_t *attr = get_ia32_attr_const(node);
 	return attr->am_imm.offset;
 }
 
-/**
- * Sets the address mode offset from an int.
- */
 void set_ia32_am_offs_int(ir_node *node, int32_t offset)
 {
 	ia32_attr_t *attr = get_ia32_attr(node);
@@ -504,18 +489,12 @@ bool get_ia32_am_tls_segment(const ir_node *node)
 	return attr->am_tls_segment;
 }
 
-/**
- * Gets the addr mode const.
- */
 unsigned get_ia32_am_scale(const ir_node *node)
 {
 	const ia32_attr_t *attr = get_ia32_attr_const(node);
 	return attr->am_scale;
 }
 
-/**
- * Sets the index register scale for address mode.
- */
 void set_ia32_am_scale(ir_node *node, unsigned scale)
 {
 	ia32_attr_t *attr = get_ia32_attr(node);
@@ -535,27 +514,18 @@ void ia32_copy_am_attrs(ir_node *to, const ir_node *from)
 	set_ia32_frame_use(to, get_ia32_frame_use(from));
 }
 
-/**
- * Sets node to commutative.
- */
 void set_ia32_commutative(ir_node *node)
 {
 	ia32_attr_t *const attr = get_ia32_attr(node);
 	attr->is_commutative = 1;
 }
 
-/**
- * Sets node to non-commutative.
- */
 void clear_ia32_commutative(ir_node *node)
 {
 	ia32_attr_t *const attr = get_ia32_attr(node);
 	attr->is_commutative = 0;
 }
 
-/**
- * Checks if node is commutative.
- */
 int is_ia32_commutative(const ir_node *node)
 {
 	const ia32_attr_t *attr = get_ia32_attr_const(node);
@@ -598,18 +568,12 @@ int is_ia32_is_remat(const ir_node *node)
 	return attr->is_remat;
 }
 
-/**
- * Gets the frame entity assigned to this node.
- */
 ir_entity *get_ia32_frame_ent(const ir_node *node)
 {
 	const ia32_attr_t *attr = get_ia32_attr_const(node);
 	return attr->frame_ent;
 }
 
-/**
- * Sets the frame entity for this node.
- */
 void set_ia32_frame_ent(ir_node *node, ir_entity *ent)
 {
 	ia32_attr_t *attr = get_ia32_attr(node);
@@ -623,10 +587,6 @@ void set_ia32_frame_ent(ir_node *node, ir_entity *ent)
 	}
 }
 
-
-/**
- * Gets the instruction latency.
- */
 unsigned get_ia32_latency(const ir_node *node)
 {
 	assert(is_ia32_irn(node));
@@ -647,45 +607,30 @@ x86_condition_code_t get_ia32_condcode(const ir_node *node)
 	return attr->condition_code;
 }
 
-/**
- * Sets the condition code of a node
- */
 void set_ia32_condcode(ir_node *node, x86_condition_code_t code)
 {
 	ia32_condcode_attr_t *attr = get_ia32_condcode_attr(node);
 	attr->condition_code = code;
 }
 
-/**
- * Returns the condition code of a node.
- */
 unsigned get_ia32_copyb_size(const ir_node *node)
 {
 	const ia32_copyb_attr_t *attr = get_ia32_copyb_attr_const(node);
 	return attr->size;
 }
 
-/**
- * Get the exception label attribute.
- */
 unsigned get_ia32_exc_label(const ir_node *node)
 {
 	const ia32_attr_t *attr = get_ia32_attr_const(node);
 	return attr->has_except_label;
 }
 
-/**
- * Set the exception label attribute.
- */
 void set_ia32_exc_label(ir_node *node, unsigned flag)
 {
 	ia32_attr_t *attr = get_ia32_attr(node);
 	attr->has_except_label = flag;
 }
 
-/**
- * Return the exception label id.
- */
 ir_label_t get_ia32_exc_label_id(const ir_node *node)
 {
 	const ia32_attr_t *attr = get_ia32_attr_const(node);
@@ -694,9 +639,6 @@ ir_label_t get_ia32_exc_label_id(const ir_node *node)
 	return attr->exc_label;
 }
 
-/**
- * Assign the exception label id.
- */
 void set_ia32_exc_label_id(ir_node *node, ir_label_t id)
 {
 	ia32_attr_t *attr = get_ia32_attr(node);
@@ -717,9 +659,6 @@ static const char *ia32_get_old_node_name(const ir_node *irn)
 	return (const char*)obstack_finish(obst);
 }
 
-/**
- * Sets the name of the original ir node.
- */
 void set_ia32_orig_node(ir_node *node, const ir_node *old)
 {
 	const char  *name = ia32_get_old_node_name(old);
@@ -741,9 +680,6 @@ void ia32_swap_left_right(ir_node *node)
 	set_irn_n(node, n_ia32_binary_right, left);
 }
 
-/**
- * Initializes the nodes attributes.
- */
 static void init_ia32_attributes(ir_node *node, arch_irn_flags_t flags,
                                  const arch_register_req_t **in_reqs,
                                  int n_res)
