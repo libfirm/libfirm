@@ -182,10 +182,10 @@ static void ia32_emit_relocation(x86_imm32_t const *const imm)
 	case X86_IMM_ADDR:
 		return;
 	case X86_IMM_TLS_IE:
-		be_emit_cstring("INDNTPOFF");
+		be_emit_cstring("@INDNTPOFF");
 		return;
 	case X86_IMM_TLS_LE:
-		be_emit_cstring("NTPOFF");
+		be_emit_cstring("@NTPOFF");
 		return;
 	case X86_IMM_PICBASE_REL:
 		be_emit_char('-');
