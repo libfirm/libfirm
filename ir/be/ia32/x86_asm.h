@@ -18,11 +18,7 @@
 #include "compiler.h"
 #include "firm_types.h"
 #include "util.h"
-
-typedef struct x86_imm32_t {
-	ir_entity *entity;
-	int32_t    offset;
-} x86_imm32_t;
+#include "x86_imm.h"
 
 typedef enum x86_asm_operand_kind_t {
 	ASM_OP_INVALID,
@@ -68,9 +64,6 @@ typedef void (*emit_register_func)(const arch_register_t *reg, char modifier,
 arch_register_t const *x86_parse_clobber(x86_clobber_name_t const *additional_clobber_names, char const *name);
 
 ir_node *x86_match_ASM(ir_node const *node, x86_clobber_name_t const *names, x86_asm_constraint_list_t const *constraints);
-
-bool x86_match_immediate(x86_imm32_t *immediate, const ir_node *node,
-                         char constraint);
 
 void x86_set_be_asm_constraint_support(const x86_asm_constraint_list_t *constraints);
 
