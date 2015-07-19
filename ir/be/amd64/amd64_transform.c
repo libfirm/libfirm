@@ -613,7 +613,7 @@ static void perform_address_matching(ir_node *ptr, int *arity,
 		addr->base_input = base_input;
 		in[base_input]   = be_transform_node(maddr.base);
 	} else {
-		ir_entity *entity = maddr.entity;
+		ir_entity *entity = maddr.imm.entity;
 		if (entity != NULL
 		    && need_relative_addressing(entity) != REFERENCE_DIRECT) {
 		    addr->base_input = RIP_INPUT;
@@ -629,16 +629,16 @@ static void perform_address_matching(ir_node *ptr, int *arity,
 		addr->index_input = NO_INPUT;
 	}
 	if (maddr.frame_entity != NULL) {
-		assert(maddr.entity == NULL);
+		assert(maddr.imm.entity == NULL);
 		addr->immediate.entity = maddr.frame_entity;
 		/* not supported yet */
 		assert(!is_parameter_entity(maddr.frame_entity)
 		       || get_entity_parameter_number(maddr.frame_entity)
 		          != IR_VA_START_PARAMETER_NUMBER);
 	} else {
-		addr->immediate.entity = maddr.entity;
+		addr->immediate.entity = maddr.imm.entity;
 	}
-	addr->immediate.offset = maddr.offset;
+	addr->immediate.offset = maddr.imm.offset;
 	addr->log_scale        = maddr.scale;
 }
 

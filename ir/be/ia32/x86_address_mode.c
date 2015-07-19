@@ -54,10 +54,10 @@ static bool eat_imm(x86_address_t *const addr, ir_node const *const node)
 
 	case iro_Address:
 		/* The first Address of a DAG can be folded into an immediate. */
-		if (addr->entity)
+		if (addr->imm.entity)
 			return false;
-		addr->entity = get_Address_entity(node);
-		if (is_tls_entity(addr->entity))
+		addr->imm.entity = get_Address_entity(node);
+		if (is_tls_entity(addr->imm.entity))
 			addr->tls_segment = true;
 		return true;
 
@@ -66,7 +66,7 @@ static bool eat_imm(x86_address_t *const addr, ir_node const *const node)
 		ir_tarval *const tv = get_Const_tarval(node);
 		if (!tarval_possible(tv))
 			return false;
-		addr->offset += get_tarval_long(tv);
+		addr->imm.offset += get_tarval_long(tv);
 		return true;
 	}
 

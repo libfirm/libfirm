@@ -800,7 +800,7 @@ static void build_address(ia32_address_mode_t *am, ir_node *node,
 		addr->base        = get_global_base(irg);
 		addr->index       = noreg_GP;
 		addr->mem         = nomem;
-		addr->entity      = entity;
+		addr->imm.entity  = entity;
 		addr->tls_segment = false;
 		addr->use_frame   = false;
 		am->ls_mode       = get_type_mode(get_entity_type(entity));
@@ -828,8 +828,8 @@ static void build_address(ia32_address_mode_t *am, ir_node *node,
 static void set_address(ir_node *node, const x86_address_t *addr)
 {
 	set_ia32_am_scale(node, addr->scale);
-	set_ia32_am_ent(node, addr->entity);
-	set_ia32_am_offs_int(node, addr->offset);
+	set_ia32_am_ent(node, addr->imm.entity);
+	set_ia32_am_offs_int(node, addr->imm.offset);
 	set_ia32_am_tls_segment(node, addr->tls_segment);
 	set_ia32_frame_ent(node, addr->frame_entity);
 	if (addr->use_frame)
@@ -1362,7 +1362,7 @@ static ir_node *create_lea_from_address(dbg_info *dbgi, ir_node *block,
 	 * around... */
 	if (addr->tls_segment) {
 		ir_node *tls_base = new_bd_ia32_LdTls(NULL, block);
-		assert(addr->entity != NULL);
+		assert(addr->imm.entity != NULL);
 		if (base == noreg_GP)
 			base = tls_base;
 		else
@@ -1382,7 +1382,7 @@ static ir_node *create_lea_from_address(dbg_info *dbgi, ir_node *block,
  */
 static bool am_has_immediates(const x86_address_t *addr)
 {
-	return addr->offset != 0 || addr->entity != NULL
+	return addr->imm.offset != 0 || addr->imm.entity != NULL
 		|| addr->frame_entity || addr->use_frame;
 }
 
@@ -1527,7 +1527,8 @@ static ir_node *gen_Add(ir_node *node)
 
 	/* a constant? */
 	if (addr.base == NULL && addr.index == NULL) {
-		new_node = new_bd_ia32_Const(dbgi, new_block, addr.entity, 0, addr.offset);
+		new_node = new_bd_ia32_Const(dbgi, new_block, addr.imm.entity, 0,
+		                             addr.imm.offset);
 		SET_IA32_ORIG_NODE(new_node, node);
 		return new_node;
 	}
@@ -2729,7 +2730,7 @@ static ir_node *gen_float_const_Store(ir_node *node, ir_node *cns)
 
 		size -= delta;
 		ofs  += delta;
-		addr.offset += delta;
+		addr.imm.offset += delta;
 	} while (size != 0);
 
 	if (i > 1) {
@@ -3534,7 +3535,9 @@ static ir_node *gen_Mux(ir_node *node)
 			}
 
 			ia32_address_mode_t am;
-			am.addr.entity = ia32_create_const_array(mux_false, mux_true, &new_mode);
+			am.addr.imm.entity
+				= ia32_create_const_array(mux_false, mux_true, &new_mode);
+			am.addr.imm.offset = 0;
 
 			unsigned scale;
 			if (new_mode == ia32_mode_float32) {
@@ -3554,7 +3557,6 @@ static ir_node *gen_Mux(ir_node *node)
 			am.addr.base          = get_global_base(irg);
 			am.addr.index         = new_node;
 			am.addr.mem           = nomem;
-			am.addr.offset        = 0;
 			am.addr.scale         = scale;
 			am.addr.use_frame     = 0;
 			am.addr.tls_segment   = false;
@@ -3884,7 +3886,7 @@ static ir_node *gen_x87_gp_to_fp(ir_node *node)
 	                                     addr->index, addr->mem);
 	ir_node *new_node = new_r_Proj(fild, mode_fp, pn_ia32_fild_res);
 	set_am_attributes(fild, &am);
-	if (addr->use_frame && addr->entity == NULL
+	if (addr->use_frame && addr->imm.entity == NULL
 	    && get_mode_arithmetic(am.ls_mode) != irma_twos_complement)
 		force_int_stackent(fild, am.ls_mode);
 
@@ -4519,9 +4521,9 @@ static ir_node *gen_ia32_l_LLtoFloat(ir_node *node)
 		am.addr.base         = get_global_base(irg);
 		am.addr.index        = new_bd_ia32_Shr(dbgi, block, new_val_high, count);
 		am.addr.mem          = nomem;
-		am.addr.offset       = 0;
+		am.addr.imm.entity   = ia32_gen_fp_known_const(ia32_ULLBIAS);
+		am.addr.imm.offset   = 0;
 		am.addr.scale        = 2;
-		am.addr.entity       = ia32_gen_fp_known_const(ia32_ULLBIAS);
 		am.addr.tls_segment  = false;
 		am.addr.use_frame    = 0;
 		am.addr.frame_entity = NULL;
@@ -4949,10 +4951,10 @@ static ir_node *gen_Call(ir_node *node)
 		} else {
 			/* Value transmitted on callframe. */
 			x86_address_t const store_addr = {
-				.base   = callframe,
-				.index  = noreg_GP,
-				.mem    = nomem,
-				.offset = param->offset,
+				.base       = callframe,
+				.index      = noreg_GP,
+				.mem        = nomem,
+				.imm.offset = param->offset,
 			};
 			ir_node *const store = create_store(dbgi, block, value, &store_addr);
 			set_irn_pinned(store, op_pin_state_floats);

@@ -15,19 +15,19 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include "irtypes.h"
+#include "x86_imm.h"
 
 /**
  * The address mode data: Used to construct (memory) address modes.
  */
 typedef struct x86_address_t {
-	ir_node   *base;            /**< value for base register (if any) */
-	ir_node   *index;           /**< value for index register (if any). */
-	ir_node   *mem;             /**< value for memory input (if any). */
-	int32_t    offset;          /**< An integer offset. */
+	ir_node    *base;            /**< value for base register (if any) */
+	ir_node    *index;           /**< value for index register (if any). */
+	ir_node    *mem;             /**< value for memory input (if any). */
+	x86_imm32_t imm;
 	unsigned   scale       : 8; /**< An integer scale. {0,1,2,3} */
 	bool       use_frame   : 1; /**< Set, if the frame is accessed */
 	bool       tls_segment : 1; /**< Set if AM is relative to TLS */
-	ir_entity *entity;          /**< The accessed entity if any. */
 	ir_entity *frame_entity;    /**< The accessed frame entity if any. */
 } x86_address_t;
 
