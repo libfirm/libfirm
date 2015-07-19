@@ -150,12 +150,6 @@ static void init_amd64_movimm_attributes(ir_node *node,
 	attr->immediate.offset = offset;
 }
 
-static bool imm32s_equal(const amd64_imm32_t *const imm0,
-                         const amd64_imm32_t *const imm1)
-{
-	return imm0->offset == imm1->offset && imm0->entity == imm1->entity;
-}
-
 static bool imm64s_equal(const amd64_imm64_t *const imm0,
                          const amd64_imm64_t *const imm1)
 {
@@ -165,7 +159,7 @@ static bool imm64s_equal(const amd64_imm64_t *const imm0,
 static bool amd64_addrs_equal(const amd64_addr_t *const am0,
                               const amd64_addr_t *const am1)
 {
-	return imm32s_equal(&am0->immediate, &am1->immediate)
+	return x86_imm32_equal(&am0->immediate, &am1->immediate)
 	    && am0->base_input == am1->base_input
 	    && am0->index_input == am1->index_input
 	    && am0->log_scale == am1->log_scale
@@ -198,7 +192,7 @@ static int amd64_binop_addr_attrs_equal(const ir_node *a,
 		return false;
 	amd64_op_mode_t op_mode = attr_a->base.base.op_mode;
 	if (op_mode == AMD64_OP_REG_IMM || op_mode == AMD64_OP_ADDR_IMM) {
-		return imm32s_equal(&attr_a->u.immediate, &attr_b->u.immediate);
+		return x86_imm32_equal(&attr_a->u.immediate, &attr_b->u.immediate);
 	} else {
 		return attr_a->u.reg_input == attr_b->u.reg_input;
 	}

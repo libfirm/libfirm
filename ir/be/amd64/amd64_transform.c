@@ -454,7 +454,7 @@ typedef struct amd64_args_t {
 	const arch_register_req_t **reqs;
 } amd64_args_t;
 
-static bool match_immediate_32(amd64_imm32_t *imm, const ir_node *op,
+static bool match_immediate_32(x86_imm32_t *imm, const ir_node *op,
                                bool can_match_ip_relative,
                                bool upper32_dont_care)
 {
@@ -630,16 +630,14 @@ static void perform_address_matching(ir_node *ptr, int *arity,
 	}
 	if (maddr.frame_entity != NULL) {
 		assert(maddr.imm.entity == NULL);
-		addr->immediate.entity = maddr.frame_entity;
+		maddr.imm.entity = maddr.frame_entity;
 		/* not supported yet */
 		assert(!is_parameter_entity(maddr.frame_entity)
 		       || get_entity_parameter_number(maddr.frame_entity)
 		          != IR_VA_START_PARAMETER_NUMBER);
-	} else {
-		addr->immediate.entity = maddr.imm.entity;
 	}
-	addr->immediate.offset = maddr.imm.offset;
-	addr->log_scale        = maddr.scale;
+	addr->immediate = maddr.imm;
+	addr->log_scale = maddr.scale;
 }
 
 static void match_binop(amd64_args_t *args, ir_node *block,

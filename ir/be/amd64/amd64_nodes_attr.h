@@ -68,20 +68,15 @@ enum {
 
 typedef struct {
 	ir_entity *entity;
-	int32_t    offset;
-} amd64_imm32_t;
-
-typedef struct {
-	ir_entity *entity;
 	int64_t    offset;
 } amd64_imm64_t;
 
 typedef struct {
-	amd64_imm32_t immediate;
-	uint8_t       base_input;
-	uint8_t       index_input;
-	uint8_t       mem_input;
-	unsigned      log_scale : 2; /* 0, 1, 2, 3  (giving scale 1, 2, 4, 8) */
+	x86_imm32_t immediate;
+	uint8_t     base_input;
+	uint8_t     index_input;
+	uint8_t     mem_input;
+	unsigned    log_scale : 2; /* 0, 1, 2, 3  (giving scale 1, 2, 4, 8) */
 	ENUMBF(amd64_segment_selector_t) segment : 4;
 } amd64_addr_t;
 
@@ -100,8 +95,8 @@ typedef struct {
 typedef struct {
 	amd64_addr_attr_t base;
 	union {
-		uint8_t       reg_input;
-		amd64_imm32_t immediate;
+		uint8_t     reg_input;
+		x86_imm32_t immediate;
 	} u;
 } amd64_binop_addr_attr_t;
 

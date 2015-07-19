@@ -212,7 +212,7 @@ static void amd64_emit_immediate64(const amd64_imm64_t *const imm)
 	}
 }
 
-static void amd64_emit_immediate32(bool const prefix, amd64_imm32_t const *const imm)
+static void amd64_emit_immediate32(bool const prefix, x86_imm32_t const *const imm)
 {
 	if (prefix)
 		be_emit_char('$');
@@ -662,8 +662,7 @@ static void emit_amd64_asm_operand(ir_node const *const node, char const modifie
 	}
 
 	case ASM_OP_IMMEDIATE: {
-		amd64_imm32_t const imm = { op->u.imm32.entity, op->u.imm32.offset };
-		amd64_emit_immediate32(true, &imm);
+		amd64_emit_immediate32(true, &op->u.imm32);
 		return;
 	}
 	}
