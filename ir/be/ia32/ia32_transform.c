@@ -5001,10 +5001,12 @@ static ir_node *gen_Call(ir_node *node)
 		} else {
 			/* Value transmitted on callframe. */
 			x86_address_t const store_addr = {
-				.base       = callframe,
-				.index      = noreg_GP,
-				.mem        = nomem,
-				.imm.offset = param->offset,
+				.base  = callframe,
+				.index = noreg_GP,
+				.mem   = nomem,
+				.imm   = {
+					.offset = param->offset
+				},
 			};
 			ir_node *const store = create_store(dbgi, block, value, &store_addr);
 			set_irn_pinned(store, op_pin_state_floats);
