@@ -114,6 +114,15 @@ static void handle_intrinsic(ir_node *node, void *data)
 	}
 }
 
+static ir_type *make_divmod_type(ir_type *const tp)
+{
+	ir_type *const mtp = new_type_method(2, 1);
+	set_method_param_type(mtp, 0, tp);
+	set_method_param_type(mtp, 1, tp);
+	set_method_res_type(mtp, 0, tp);
+	return mtp;
+}
+
 static void arm_create_runtime_entities(void)
 {
 	if (divsi3 != NULL)
@@ -128,29 +137,13 @@ static void arm_create_runtime_entities(void)
 	ir_type *int_tp  = get_type_for_mode(mode_int);
 	ir_type *uint_tp = get_type_for_mode(mode_uint);
 
-	ir_type *tp_divsi3 = new_type_method(2, 1);
-	set_method_param_type(tp_divsi3, 0, int_tp);
-	set_method_param_type(tp_divsi3, 1, int_tp);
-	set_method_res_type(tp_divsi3, 0, int_tp);
-	divsi3 = create_compilerlib_entity(new_id_from_str("__divsi3"), tp_divsi3);
+	ir_type *const mtps = make_divmod_type(int_tp);
+	divsi3 = create_compilerlib_entity(new_id_from_str("__divsi3"), mtps);
+	modsi3 = create_compilerlib_entity(new_id_from_str("__modsi3"), mtps);
 
-	ir_type *tp_udivsi3 = new_type_method(2, 1);
-	set_method_param_type(tp_udivsi3, 0, uint_tp);
-	set_method_param_type(tp_udivsi3, 1, uint_tp);
-	set_method_res_type(tp_udivsi3, 0, uint_tp);
-	udivsi3 = create_compilerlib_entity(new_id_from_str("__udivsi3"), tp_udivsi3);
-
-	ir_type *tp_modsi3 = new_type_method(2, 1);
-	set_method_param_type(tp_modsi3, 0, int_tp);
-	set_method_param_type(tp_modsi3, 1, int_tp);
-	set_method_res_type(tp_modsi3, 0, int_tp);
-	modsi3 = create_compilerlib_entity(new_id_from_str("__modsi3"), tp_modsi3);
-
-	ir_type *tp_umodsi3 = new_type_method(2, 1);
-	set_method_param_type(tp_umodsi3, 0, uint_tp);
-	set_method_param_type(tp_umodsi3, 1, uint_tp);
-	set_method_res_type(tp_umodsi3, 0, uint_tp);
-	umodsi3 = create_compilerlib_entity(new_id_from_str("__umodsi3"), tp_umodsi3);
+	ir_type *const mtpu = make_divmod_type(uint_tp);
+	udivsi3 = create_compilerlib_entity(new_id_from_str("__udivsi3"), mtpu);
+	umodsi3 = create_compilerlib_entity(new_id_from_str("__umodsi3"), mtpu);
 }
 
 /**

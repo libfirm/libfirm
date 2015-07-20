@@ -285,23 +285,26 @@ static void handle_intrinsic(ir_node *node, void *data)
 	}
 }
 
+static ir_type *make_mod_type(ir_type *const tp)
+{
+	ir_type *const mtp = new_type_method(2, 1);
+	set_method_param_type(mtp, 0, tp);
+	set_method_param_type(mtp, 1, tp);
+	set_method_res_type(mtp, 0, tp);
+	return mtp;
+}
+
 static void sparc_create_runtime_entities(void)
 {
 	if (rem != NULL)
 		return;
 
-	ir_type *int_tp = new_type_primitive(mode_Is);
-	ir_type *mod_tp = new_type_method(2, 1);
-	set_method_param_type(mod_tp, 0, int_tp);
-	set_method_param_type(mod_tp, 1, int_tp);
-	set_method_res_type(mod_tp, 0, int_tp);
+	ir_type *const int_tp = new_type_primitive(mode_Is);
+	ir_type *const mod_tp = make_mod_type(int_tp);
 	rem = create_compilerlib_entity(new_id_from_str(".rem"), mod_tp);
 
-	ir_type *umod_tp = new_type_method(2, 1);
-	ir_type *uint_tp = new_type_primitive(mode_Iu);
-	set_method_param_type(umod_tp, 0, uint_tp);
-	set_method_param_type(umod_tp, 1, uint_tp);
-	set_method_res_type(umod_tp, 0, uint_tp);
+	ir_type *const uint_tp = new_type_primitive(mode_Iu);
+	ir_type *const umod_tp = make_mod_type(uint_tp);
 	urem = create_compilerlib_entity(new_id_from_str(".urem"), umod_tp);
 }
 

@@ -2713,22 +2713,15 @@ void ir_lower_dw_ops(void)
 		set_method_res_type(binop_tp_u, 0, tp_l_u);
 		set_method_res_type(binop_tp_u, 1, tp_u);
 
+		ir_type *const even = env.p.big_endian ? tp_l_s : tp_l_u;
+		ir_type *const odd  = env.p.big_endian ? tp_u   : tp_s;
 		binop_tp_s = new_type_method(4, 2);
-		if (env.p.big_endian) {
-			set_method_param_type(binop_tp_s, 0, tp_l_s);
-			set_method_param_type(binop_tp_s, 1, tp_u);
-			set_method_param_type(binop_tp_s, 2, tp_l_s);
-			set_method_param_type(binop_tp_s, 3, tp_u);
-			set_method_res_type(binop_tp_s, 0, tp_l_s);
-			set_method_res_type(binop_tp_s, 1, tp_u);
-		} else {
-			set_method_param_type(binop_tp_s, 0, tp_l_u);
-			set_method_param_type(binop_tp_s, 1, tp_s);
-			set_method_param_type(binop_tp_s, 2, tp_l_u);
-			set_method_param_type(binop_tp_s, 3, tp_s);
-			set_method_res_type(binop_tp_s, 0, tp_l_u);
-			set_method_res_type(binop_tp_s, 1, tp_s);
-		}
+		set_method_param_type(binop_tp_s, 0, even);
+		set_method_param_type(binop_tp_s, 1, odd);
+		set_method_param_type(binop_tp_s, 2, even);
+		set_method_param_type(binop_tp_s, 3, odd);
+		set_method_res_type(binop_tp_s, 0, even);
+		set_method_res_type(binop_tp_s, 1, odd);
 
 		unop_tp_u = new_type_method(2, 2);
 		set_method_param_type(unop_tp_u, 0, tp_l_u);
@@ -2737,17 +2730,10 @@ void ir_lower_dw_ops(void)
 		set_method_res_type(unop_tp_u, 1, tp_u);
 
 		unop_tp_s = new_type_method(2, 2);
-		if (env.p.big_endian) {
-			set_method_param_type(unop_tp_s, 0, tp_l_s);
-			set_method_param_type(unop_tp_s, 1, tp_u);
-			set_method_res_type(unop_tp_s, 0, tp_l_s);
-			set_method_res_type(unop_tp_s, 1, tp_u);
-		} else {
-			set_method_param_type(unop_tp_s, 0, tp_l_u);
-			set_method_param_type(unop_tp_s, 1, tp_s);
-			set_method_res_type(unop_tp_s, 0, tp_l_u);
-			set_method_res_type(unop_tp_s, 1, tp_s);
-		}
+		set_method_param_type(unop_tp_s, 0, even);
+		set_method_param_type(unop_tp_s, 1, odd);
+		set_method_res_type(unop_tp_s, 0, even);
+		set_method_res_type(unop_tp_s, 1, odd);
 	}
 
 	env.tv_mode_bytes = new_tarval_from_long(env.p.doubleword_size/(2*8),

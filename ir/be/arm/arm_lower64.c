@@ -103,50 +103,36 @@ static void lower64_mul(ir_node *node, ir_mode *mode)
 static ir_entity *ldivmod;
 static ir_entity *uldivmod;
 
+static ir_entity *make_divmod(char const *const name, ir_type *const even, ir_type *const odd)
+{
+	ir_type *const mtp = new_type_method(4, 4);
+	set_method_param_type(mtp, 0, even);
+	set_method_param_type(mtp, 1, odd);
+	set_method_param_type(mtp, 2, even);
+	set_method_param_type(mtp, 3, odd);
+	set_method_res_type(mtp, 0, even);
+	set_method_res_type(mtp, 1, odd);
+	set_method_res_type(mtp, 2, even);
+	set_method_res_type(mtp, 3, odd);
+
+	ident     *const id   = new_id_from_str(name);
+	ir_type   *const glob = get_glob_type();
+	ir_entity *const ent  = new_entity(glob, id, mtp);
+	set_entity_ld_ident(ent, id);
+	set_entity_visibility(ent, ir_visibility_external);
+	return ent;
+}
+
 static void create_divmod_intrinsics(ir_mode *mode_unsigned,
                                      ir_mode *mode_signed)
 {
-	ir_type *tp_unsigned  = get_type_for_mode(mode_unsigned);
-	ir_type *mtp_unsigned = new_type_method(4, 4);
-	set_method_param_type(mtp_unsigned, 0, tp_unsigned);
-	set_method_param_type(mtp_unsigned, 1, tp_unsigned);
-	set_method_param_type(mtp_unsigned, 2, tp_unsigned);
-	set_method_param_type(mtp_unsigned, 3, tp_unsigned);
-	set_method_res_type(mtp_unsigned, 0, tp_unsigned);
-	set_method_res_type(mtp_unsigned, 1, tp_unsigned);
-	set_method_res_type(mtp_unsigned, 2, tp_unsigned);
-	set_method_res_type(mtp_unsigned, 3, tp_unsigned);
-	ident     *id_uldivmod = new_id_from_str("__aeabi_uldivmod");
-	ir_type   *glob        = get_glob_type();
-	uldivmod = new_entity(glob, id_uldivmod, mtp_unsigned);
-	set_entity_ld_ident(uldivmod, id_uldivmod);
-	set_entity_visibility(uldivmod, ir_visibility_external);
+	ir_type *const tp_unsigned = get_type_for_mode(mode_unsigned);
+	uldivmod = make_divmod("__aeabi_uldivmod", tp_unsigned, tp_unsigned);
 
-	ir_type *tp_signed  = get_type_for_mode(mode_signed);
-	ir_type *mtp_signed = new_type_method(4, 4);
-	if (arm_cg_config.big_endian) {
-		set_method_param_type(mtp_signed, 0, tp_signed);
-		set_method_param_type(mtp_signed, 1, tp_unsigned);
-		set_method_param_type(mtp_signed, 2, tp_signed);
-		set_method_param_type(mtp_signed, 3, tp_unsigned);
-		set_method_res_type(mtp_signed, 0, tp_signed);
-		set_method_res_type(mtp_signed, 1, tp_unsigned);
-		set_method_res_type(mtp_signed, 2, tp_signed);
-		set_method_res_type(mtp_signed, 3, tp_unsigned);
-	} else {
-		set_method_param_type(mtp_signed, 0, tp_unsigned);
-		set_method_param_type(mtp_signed, 1, tp_signed);
-		set_method_param_type(mtp_signed, 2, tp_unsigned);
-		set_method_param_type(mtp_signed, 3, tp_signed);
-		set_method_res_type(mtp_signed, 0, tp_unsigned);
-		set_method_res_type(mtp_signed, 1, tp_signed);
-		set_method_res_type(mtp_signed, 2, tp_unsigned);
-		set_method_res_type(mtp_signed, 3, tp_signed);
-	}
-	ident *id_ldivmod = new_id_from_str("__aeabi_ldivmod");
-	ldivmod = new_entity(glob, id_ldivmod, mtp_signed);
-	set_entity_ld_ident(ldivmod, id_ldivmod);
-	set_entity_visibility(ldivmod, ir_visibility_external);
+	ir_type *const tp_signed = get_type_for_mode(mode_signed);
+	ir_type *const even      = arm_cg_config.big_endian ? tp_signed   : tp_unsigned;
+	ir_type *const odd       = arm_cg_config.big_endian ? tp_unsigned : tp_signed;
+	ldivmod = make_divmod("__aeabi_ldivmod", even, odd);
 }
 
 static void lower_divmod(ir_node *node, ir_node *left, ir_node *right,
