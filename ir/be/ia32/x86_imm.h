@@ -24,6 +24,7 @@ typedef enum x86_immediate_kind_t {
 	X86_IMM_TLS_IE,      /**< thread local storage, initial exec */
 	X86_IMM_TLS_LE,      /**< thread local storage, load exec */
 	X86_IMM_FRAMEOFFSET, /**< offset to entity on stackframe */
+	X86_IMM_GOTPCREL,    /**< global offset table entry PIC relative (elf64) */
 } x86_immediate_kind_t;
 
 typedef struct x86_imm32_t {

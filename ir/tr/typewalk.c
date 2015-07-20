@@ -114,7 +114,6 @@ static void do_type_walk(ir_type *const tp, ir_entity *const ent,
 		case IR_ENTITY_PARAMETER:
 		case IR_ENTITY_LABEL:
 		case IR_ENTITY_COMPOUND_MEMBER:
-		case IR_ENTITY_GOTENTRY:
 			break;
 		}
 	} else {

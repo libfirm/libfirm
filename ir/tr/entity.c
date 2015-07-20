@@ -100,18 +100,6 @@ ir_entity *new_label_entity(ir_label_t label)
 	return res;
 }
 
-ir_entity *new_got_entry_entity(ir_entity *referenced)
-{
-	ir_type *reftype = get_entity_type(referenced);
-	ir_type *pointer = new_type_pointer(reftype);
-	ir_type *global_type = get_glob_type();
-	ir_entity *res = intern_new_entity(global_type, IR_ENTITY_GOTENTRY, NULL,
-	                                   pointer);
-	res->attr.got.referenced = referenced;
-	hook_new_entity(res);
-	return res;
-}
-
 ir_entity *new_alias_entity(ir_type *owner, ident *name, ir_entity *aliased,
                             ir_type *type)
 {
@@ -307,7 +295,6 @@ void set_entity_type(ir_entity *ent, ir_type *type)
 	case IR_ENTITY_ALIAS:
 	case IR_ENTITY_PARAMETER:
 	case IR_ENTITY_UNKNOWN:
-	case IR_ENTITY_GOTENTRY:
 	case IR_ENTITY_COMPOUND_MEMBER:
 		break;
 	}
@@ -907,7 +894,6 @@ int entity_has_definition(const ir_entity *entity)
 	case IR_ENTITY_PARAMETER:
 	case IR_ENTITY_UNKNOWN:
 	case IR_ENTITY_COMPOUND_MEMBER:
-	case IR_ENTITY_GOTENTRY:
 		return false;
 	}
 	panic("invalid entity kind");

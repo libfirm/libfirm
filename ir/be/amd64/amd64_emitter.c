@@ -200,21 +200,14 @@ typedef enum amd64_emit_mod_t {
 } amd64_emit_mod_t;
 ENUM_BITSET(amd64_emit_mod_t)
 
-static void amd64_emit_immediate64(const amd64_imm64_t *const imm)
+static void emit_relocation_no_offset(x86_immediate_kind_t const kind,
+                                            ir_entity const *const entity)
 {
-	ir_entity *entity = imm->entity;
-	int64_t    offset = imm->offset;
-	switch (imm->kind) {
+	be_gas_emit_entity(entity);
+	switch (kind) {
+	case X86_IMM_ADDR:     return;
+	case X86_IMM_GOTPCREL: be_emit_cstring("@GOTPCREL"); return;
 	case X86_IMM_VALUE:
-		assert(entity == NULL);
-		be_emit_irprintf("0x%" PRIX64, offset);
-		return;
-	case X86_IMM_ADDR:
-		assert(entity != NULL);
-		be_gas_emit_entity(entity);
-		if (offset != 0)
-			be_emit_irprintf("%+" PRId64, offset);
-		return;
 	case X86_IMM_TLS_IE:
 	case X86_IMM_TLS_LE:
 	case X86_IMM_PICBASE_REL:
@@ -224,30 +217,31 @@ static void amd64_emit_immediate64(const amd64_imm64_t *const imm)
 	panic("unexpected or invalid immediate kind");
 }
 
-static void amd64_emit_immediate32(bool const prefix, x86_imm32_t const *const imm)
+static void amd64_emit_immediate64(const amd64_imm64_t *const imm)
+{
+	if (imm->kind == X86_IMM_VALUE) {
+		assert(imm->entity == NULL);
+		be_emit_irprintf("0x%" PRIX64, imm->offset);
+		return;
+	}
+	emit_relocation_no_offset(imm->kind, imm->entity);
+	if (imm->offset != 0)
+		be_emit_irprintf("%+" PRId64, imm->offset);
+}
+
+static void amd64_emit_immediate32(bool const prefix,
+                                   x86_imm32_t const *const imm)
 {
 	if (prefix)
 		be_emit_char('$');
-	ir_entity *entity = imm->entity;
-	int32_t    offset = imm->offset;
-	switch (imm->kind) {
-	case X86_IMM_VALUE:
-		assert(entity == NULL);
-		be_emit_irprintf("%" PRId32, offset);
+	if (imm->kind == X86_IMM_VALUE) {
+		assert(imm->entity == NULL);
+		be_emit_irprintf("%" PRId32, imm->offset);
 		return;
-	case X86_IMM_ADDR:
-		assert(entity != NULL);
-		be_gas_emit_entity(entity);
-		if (offset != 0)
-			be_emit_irprintf("%+" PRId32, offset);
-		return;
-	case X86_IMM_TLS_IE:
-	case X86_IMM_TLS_LE:
-	case X86_IMM_PICBASE_REL:
-	case X86_IMM_FRAMEOFFSET:
-		break;
 	}
-	panic("unexpected or invalid immediate kind");
+	emit_relocation_no_offset(imm->kind, imm->entity);
+	if (imm->offset != 0)
+		be_emit_irprintf("%+" PRId32, imm->offset);
 }
 
 static bool is_fp_relative(const ir_entity *entity)

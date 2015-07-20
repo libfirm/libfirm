@@ -421,11 +421,19 @@ static ir_node *gen_Address(ir_node *node)
 	addr.mem_input   = NO_INPUT;
 
 	if (mode == REFERENCE_IP_RELATIVE) {
-		addr.immediate.entity = entity;
+		addr.immediate = (x86_imm32_t) {
+			/* TODO: create an ip-relative kind? (even though it looks the same
+			 * in the assembler) */
+			.kind   = X86_IMM_ADDR,
+			.entity = entity,
+		};
 		return new_bd_amd64_lea(dbgi, block, 0, NULL, INSN_MODE_64, addr);
 	} else {
 		assert(mode == REFERENCE_GOT);
-		addr.immediate.entity = new_got_entry_entity(entity);
+		addr.immediate = (x86_imm32_t) {
+			.kind   = X86_IMM_GOTPCREL,
+			.entity = entity,
+		};
 		ir_node *load = new_bd_amd64_mov_gp(dbgi, block, 0, NULL, INSN_MODE_64,
 		                                    AMD64_OP_ADDR, addr);
 		return new_r_Proj(load, mode_gp, pn_amd64_mov_gp_res);

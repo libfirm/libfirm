@@ -312,7 +312,6 @@ int check_entity(const ir_entity *entity)
 		break;
 
 	case IR_ENTITY_UNKNOWN:
-	case IR_ENTITY_GOTENTRY:
 		break;
 	}
 

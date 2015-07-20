@@ -1230,11 +1230,6 @@ void be_gas_emit_entity(const ir_entity *entity)
 		ir_label_t label = get_entity_label(entity);
 		be_emit_irprintf("%s_%lu", be_gas_get_private_prefix(), label);
 		return;
-	} else if (entity->entity_kind == IR_ENTITY_GOTENTRY) {
-		ir_entity *referenced = entity->attr.got.referenced;
-		be_gas_emit_entity(referenced);
-		be_emit_cstring("@GOTPCREL");
-		return;
 	}
 
 	char const *const name         = get_entity_ld_name(entity);
@@ -1312,9 +1307,6 @@ static void emit_global(be_main_env_t const *const main_env,
 
 	/* Block labels are already emitted in the code. */
 	if (kind == IR_ENTITY_LABEL)
-		return;
-	/* GOT entries are created automatically */
-	if (kind == IR_ENTITY_GOTENTRY)
 		return;
 
 	/* we already emitted all methods with graphs in other functions like
