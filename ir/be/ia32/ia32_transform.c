@@ -872,9 +872,12 @@ static void set_address(ir_node *node, const x86_address_t *addr)
 	attr->am_imm = addr->imm;
 	set_ia32_am_scale(node, addr->scale);
 	set_ia32_am_tls_segment(node, addr->tls_segment);
-	set_ia32_frame_ent(node, addr->frame_entity);
-	if (addr->use_frame)
+	if (addr->imm.kind == X86_IMM_FRAMEOFFSET) {
+		assert(addr->use_frame);
 		set_ia32_frame_use(node, IA32_FRAME_USE_AUTO);
+	} else {
+		assert(!addr->use_frame);
+	}
 }
 
 /**
@@ -1424,7 +1427,7 @@ static ir_node *create_lea_from_address(dbg_info *dbgi, ir_node *block,
 static bool am_has_immediates(const x86_address_t *addr)
 {
 	return addr->imm.offset != 0 || addr->imm.entity != NULL
-		|| addr->frame_entity || addr->use_frame;
+		|| addr->use_frame;
 }
 
 typedef ir_node* (*new_shiftd_func)(dbg_info *dbgi, ir_node *block,
@@ -3906,6 +3909,7 @@ static void store_gp(dbg_info *dbgi, ia32_address_mode_t *am, ir_node *block,
 	addr->base      = frame;
 	addr->index     = noreg_GP;
 	addr->mem       = store_mem;
+	addr->imm       = (x86_imm32_t) { .kind = X86_IMM_FRAMEOFFSET };
 	addr->use_frame = true;
 	am->op_type     = ia32_AddrModeS;
 	am->ls_mode     = store_mode;
@@ -4093,6 +4097,7 @@ static void store_fp(dbg_info *dbgi, ia32_address_mode_t *am, ir_node *block,
 	addr->base      = frame;
 	addr->index     = noreg_GP;
 	addr->mem       = mem;
+	addr->imm       = (x86_imm32_t) { .kind = X86_IMM_FRAMEOFFSET };
 	addr->use_frame = true;
 	am->op_type     = ia32_AddrModeS;
 	am->ls_mode     = mode;
@@ -5156,8 +5161,12 @@ static ir_node *make_load_from_frame(ir_node *const node, ir_entity *(*const get
 	set_irn_pinned(load, get_irn_pinned(node));
 	set_ia32_op_type(load, ia32_AddrModeS);
 	set_ia32_ls_mode(load, ia32_mode_gp);
-	set_ia32_am_offs_int(load, 0);
-	set_ia32_frame_ent(load, get_ent(irg));
+	ia32_attr_t *const attr = get_ia32_attr(node);
+	attr->am_imm = (x86_imm32_t) {
+		.kind   = X86_IMM_FRAMEOFFSET,
+		.entity = get_ent(irg),
+	};
+	set_ia32_frame_use(load, IA32_FRAME_USE_AUTO);
 
 	if (get_irn_pinned(node) == op_pin_state_floats) {
 		assert((int)pn_ia32_xLoad_res == (int)pn_ia32_fld_res

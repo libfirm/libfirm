@@ -191,6 +191,7 @@ static void ia32_emit_relocation(x86_imm32_t const *const imm)
 		be_emit_char('-');
 		be_emit_string(pic_base_label);
 		return;
+	case X86_IMM_FRAMEOFFSET:
 	case X86_IMM_VALUE:
 		break;
 	}
@@ -360,9 +361,6 @@ static ir_node const *get_irn_n_reg(ir_node const *const node, int const pos)
  */
 static void ia32_emit_am(ir_node const *const node)
 {
-	/* just to be sure... */
-	assert(get_ia32_frame_use(node) == IA32_FRAME_USE_NONE || get_ia32_frame_ent(node));
-
 	if (get_ia32_am_tls_segment(node))
 		be_emit_cstring("%gs:");
 

@@ -754,7 +754,7 @@ static void peephole_ia32_Lea(ir_node *node)
 		return;
 
 	/* Frame entities should already be expressed in the offsets. */
-	assert(get_ia32_frame_use(node) == IA32_FRAME_USE_NONE || get_ia32_frame_ent(node));
+	assert(get_ia32_attr_const(node)->am_imm.kind != X86_IMM_FRAMEOFFSET);
 
 	/* We can transform Leas where the out register is the same as either the
 	 * base or index register back to an Add or Shl. */

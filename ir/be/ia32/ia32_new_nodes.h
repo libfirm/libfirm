@@ -158,12 +158,18 @@ int is_ia32_commutative(const ir_node *node);
 static inline void set_ia32_frame_use(ir_node *const node, ia32_frame_use_t const val)
 {
 	ia32_attr_t *const attr = get_ia32_attr(node);
+	if (attr->frame_use == val)
+		return;
 	/* Only allow more specific, the same or reset. */
 	assert(attr->frame_use == IA32_FRAME_USE_NONE
 	    || attr->frame_use == IA32_FRAME_USE_AUTO
-	    || attr->frame_use == val
 	    || val == IA32_FRAME_USE_NONE);
 	attr->frame_use = val;
+	if (val != IA32_FRAME_USE_NONE) {
+		assert(attr->am_imm.kind == X86_IMM_VALUE ||
+		       attr->am_imm.kind == X86_IMM_FRAMEOFFSET);
+		attr->am_imm.kind = X86_IMM_FRAMEOFFSET;
+	}
 }
 
 static inline ia32_frame_use_t get_ia32_frame_use(ir_node const *const node)
@@ -198,16 +204,6 @@ static inline void set_ia32_ls_mode(ir_node *const node, ir_mode *const mode)
 	ia32_attr_t *const attr = get_ia32_attr(node);
 	attr->ls_mode = mode;
 }
-
-/**
- * Gets the frame entity assigned to this node;
- */
-ir_entity *get_ia32_frame_ent(const ir_node *node);
-
-/**
- * Sets the frame entity for this node;
- */
-void set_ia32_frame_ent(ir_node *node, ir_entity *ent);
 
 /**
  * Returns the condition code of a node.

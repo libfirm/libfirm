@@ -28,7 +28,6 @@ typedef struct x86_address_t {
 	unsigned   scale       : 8; /**< An integer scale. {0,1,2,3} */
 	bool       use_frame   : 1; /**< Set, if the frame is accessed */
 	bool       tls_segment : 1; /**< Set if AM is relative to TLS */
-	ir_entity *frame_entity;    /**< The accessed frame entity if any. */
 } x86_address_t;
 
 /**

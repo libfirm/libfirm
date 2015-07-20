@@ -124,9 +124,10 @@ static ir_node *eat_immediates(x86_address_t *addr, ir_node *node,
 		if (eat_immediate(addr, right))
 			return eat_immediates(addr, left, x86_create_am_normal);
 	} else if (is_Member(node)) {
-		assert(addr->frame_entity == NULL);
-		addr->frame_entity = get_Member_entity(node);
-		addr->use_frame    = true;
+		assert(addr->imm.entity == NULL);
+		addr->imm.entity = get_Member_entity(node);
+		addr->imm.kind   = X86_IMM_FRAMEOFFSET;
+		addr->use_frame  = true;
 		ir_node *ptr = get_Member_ptr(node);
 		assert(is_Start(get_Proj_pred(ptr)));
 		return ptr;

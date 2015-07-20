@@ -112,12 +112,11 @@ struct ia32_attr_t {
 	ir_mode   *ls_mode;       /**< Load/Store mode: This is the mode of the
 	                               value that is manipulated by this node. */
 
-	ir_entity *frame_ent; /**< the frame entity attached to this node */
-
 	ir_label_t        exc_label;       /**< the exception label iff this instruction can throw an exception */
 
 #ifndef NDEBUG
 	const char       *orig_node;      /**< holds the name of the original ir node */
+	ir_entity        *old_frame_ent;  /**< frame entity referenced */
 	unsigned          attr_type;      /**< bitfield indicating the attribute type */
 #endif
 };

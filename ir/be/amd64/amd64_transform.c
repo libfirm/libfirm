@@ -628,14 +628,11 @@ static void perform_address_matching(ir_node *ptr, int *arity,
 	} else {
 		addr->index_input = NO_INPUT;
 	}
-	if (maddr.frame_entity != NULL) {
-		assert(maddr.imm.entity == NULL);
-		maddr.imm.entity = maddr.frame_entity;
-		/* not supported yet */
-		assert(!is_parameter_entity(maddr.frame_entity)
-		       || get_entity_parameter_number(maddr.frame_entity)
-		          != IR_VA_START_PARAMETER_NUMBER);
-	}
+	ir_entity *entity = maddr.imm.entity;
+	if (is_parameter_entity(entity) &&
+		get_entity_parameter_number(entity) == IR_VA_START_PARAMETER_NUMBER)
+		panic("VA_START not supported yet");
+
 	addr->immediate = maddr.imm;
 	addr->log_scale = maddr.scale;
 }

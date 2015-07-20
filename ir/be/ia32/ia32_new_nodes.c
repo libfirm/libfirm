@@ -233,8 +233,8 @@ static void ia32_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 			fprintf(F, "AM scale = %u\n", get_ia32_am_scale(n));
 
 			/* dump pn code */
+			const ia32_attr_t *attr = get_ia32_attr_const(n);
 			if (has_ia32_condcode_attr(n)) {
-				const ia32_attr_t *attr = get_ia32_attr_const(n);
 				const char *cc_name = condition_code_name(get_ia32_condcode(n));
 				if (cc_name) {
 					fprintf(F, "condition_code = %s\n", cc_name);
@@ -258,13 +258,19 @@ static void ia32_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 
 			/* dump frame entity */
 			fprintf(F, "frame use = %s\n", get_frame_use_str(n));
-			fprintf(F, "frame entity = ");
-			if (get_ia32_frame_ent(n)) {
-				ir_fprintf(F, "%+F", get_ia32_frame_ent(n));
-			} else {
-				fprintf(F, "n/a");
+			if (attr->am_imm.kind == X86_IMM_FRAMEOFFSET ||
+			    attr->old_frame_ent != NULL) {
+				fprintf(F, "frame entity = ");
+				ir_entity *entity = attr->am_imm.entity;
+				if (entity == NULL)
+					entity = attr->old_frame_ent;
+				if (entity != NULL) {
+					ir_fprintf(F, "%+F", entity);
+				} else {
+					fprintf(F, "n/a");
+				}
+				fprintf(F, "\n");
 			}
-			fprintf(F, "\n");
 
 			/* dump modes */
 			fprintf(F, "ls_mode = ");
@@ -507,11 +513,13 @@ void ia32_copy_am_attrs(ir_node *to, const ir_node *from)
 	ia32_attr_t const *const from_attr = get_ia32_attr_const(from);
 	ia32_attr_t       *const to_attr   = get_ia32_attr(to);
 	to_attr->am_imm = from_attr->am_imm;
+	to_attr->frame_use = from_attr->frame_use;
 
 	set_ia32_ls_mode(to, get_ia32_ls_mode(from));
 	set_ia32_am_scale(to, get_ia32_am_scale(from));
-	set_ia32_frame_ent(to, get_ia32_frame_ent(from));
-	set_ia32_frame_use(to, get_ia32_frame_use(from));
+#ifndef NDEBUG
+	to_attr->old_frame_ent = from_attr->old_frame_ent;
+#endif
 }
 
 void set_ia32_commutative(ir_node *node)
@@ -566,25 +574,6 @@ int is_ia32_is_remat(const ir_node *node)
 {
 	const ia32_attr_t *attr = get_ia32_attr_const(node);
 	return attr->is_remat;
-}
-
-ir_entity *get_ia32_frame_ent(const ir_node *node)
-{
-	const ia32_attr_t *attr = get_ia32_attr_const(node);
-	return attr->frame_ent;
-}
-
-void set_ia32_frame_ent(ir_node *node, ir_entity *ent)
-{
-	ia32_attr_t *attr = get_ia32_attr(node);
-	attr->frame_ent   = ent;
-	if (!ent) {
-		set_ia32_frame_use(node, IA32_FRAME_USE_NONE);
-	} else if (get_ia32_frame_use(node) == IA32_FRAME_USE_NONE) {
-		/* Only set frame use to auto, if it is not set to something more specific
-		 * already. */
-		set_ia32_frame_use(node, IA32_FRAME_USE_AUTO);
-	}
 }
 
 unsigned get_ia32_latency(const ir_node *node)
@@ -783,7 +772,7 @@ static int ia32_attrs_equal_(const ia32_attr_t *a, const ia32_attr_t *b)
 {
 	/* nodes with not yet assigned entities shouldn't be CSEd (important for
 	 * unsigned int -> double conversions */
-	if (a->frame_use != IA32_FRAME_USE_NONE && !a->frame_ent)
+	if (a->am_imm.kind == X86_IMM_FRAMEOFFSET && a->am_imm.entity == NULL)
 		return false;
 
 	return a->tp == b->tp
@@ -791,7 +780,6 @@ static int ia32_attrs_equal_(const ia32_attr_t *a, const ia32_attr_t *b)
 	    && x86_imm32_equal(&a->am_imm, &b->am_imm)
 	    && a->ls_mode == b->ls_mode
 	    && a->frame_use == b->frame_use
-	    && a->frame_ent == b->frame_ent
 	    && a->has_except_label == b->has_except_label
 	    && a->ins_permuted == b->ins_permuted;
 }
