@@ -59,6 +59,7 @@ static bool       sp_relative;
 static int        frame_type_size;
 static int        callframe_offset;
 static ir_entity *thunks[N_ia32_gp_REGS];
+static ir_type   *thunk_type;
 
 /** Return the next block in Block schedule */
 static ir_node *get_prev_block_sched(const ir_node *block)
@@ -1202,6 +1203,16 @@ zero_neg:
 	emit_sbb( node, in_hi, out_hi);
 }
 
+static ir_type *get_thunk_type(void)
+{
+	if (!thunk_type) {
+		ir_type *const tp = new_type_method(0, 1);
+		set_method_res_type(tp, 0, get_type_for_mode(mode_P));
+		thunk_type = tp;
+	}
+	return thunk_type;
+}
+
 static void emit_ia32_GetEIP(const ir_node *node)
 {
 	const arch_register_t *reg = arch_get_irn_register_out(node, 0);
@@ -1210,8 +1221,7 @@ static void emit_ia32_GetEIP(const ir_node *node)
 		ir_type    *const glob = get_glob_type();
 		char const *const name = get_register_name_16bit(reg);
 		ident      *const id   = new_id_fmt("__x86.get_pc_thunk.%s", name);
-		ir_type    *const tp   = new_type_method(0, 1);
-		set_method_res_type(tp, 0, get_type_for_mode(mode_P));
+		ir_type    *const tp   = get_thunk_type();
 		thunk = new_entity(glob, id, tp);
 		set_entity_visibility(thunk, ir_visibility_external_private);
 		add_entity_linkage(thunk, IR_LINKAGE_MERGE|IR_LINKAGE_GARBAGE_COLLECT);
