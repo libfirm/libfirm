@@ -20,6 +20,8 @@
 #include "irgwalk.h"
 #include "irnode_t.h"
 
+ia32_pic_style_t ia32_pic_style = IA32_PIC_NONE;
+
 /**
  * Create a trampoline entity for the given method.
  */
@@ -141,5 +143,7 @@ static void fix_pic_addresses(ir_node *const node, void *const data)
 
 void ia32_adjust_pic(ir_graph *irg)
 {
+	if (ia32_pic_style == IA32_PIC_NONE)
+		return;
 	irg_walk_graph(irg, fix_pic_addresses, NULL, NULL);
 }

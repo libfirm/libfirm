@@ -55,12 +55,13 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
-static x86_cconv_t     *current_cconv;
-static be_start_info_t  start_mem;
-static be_start_info_t  start_val[N_IA32_REGISTERS];
-static pmap            *node_to_stack;
-static be_stackorder_t *stackorder;
-static ir_heights_t    *heights;
+static x86_cconv_t         *current_cconv;
+static be_start_info_t      start_mem;
+static be_start_info_t      start_val[N_IA32_REGISTERS];
+static pmap                *node_to_stack;
+static be_stackorder_t     *stackorder;
+static ir_heights_t        *heights;
+static x86_immediate_kind_t lconst_imm_kind;
 
 /** we don't have a concept of aliasing registers, so enumerate them
  * manually for the asm nodes. */
@@ -238,10 +239,8 @@ ir_node *ia32_get_pic_base(ir_graph *irg)
  */
 static ir_node *get_global_base(ir_graph *const irg)
 {
-	if (be_options.pic) {
+	if (ia32_pic_style != IA32_PIC_NONE)
 		return ia32_get_pic_base(irg);
-	}
-
 	return noreg_GP;
 }
 
@@ -280,7 +279,8 @@ static void adjust_relocation(x86_imm32_t *imm)
 	if (imm->kind != X86_IMM_ADDR)
 		return;
 	ir_entity *entity = imm->entity;
-	if (be_options.pic && get_entity_type(entity) != get_code_type()) {
+	if (ia32_pic_style == IA32_PIC_MACH_O &&
+	    get_entity_type(entity) != get_code_type()) {
 		imm->kind = X86_IMM_PICBASE_REL;
 	} else if (is_tls_entity(entity)) {
 		imm->kind = entity_has_definition(entity) ? X86_IMM_TLS_LE
@@ -349,7 +349,7 @@ static void set_am_const_entity(ir_node *node, ir_entity *entity)
 {
 	ia32_attr_t *const attr = get_ia32_attr(node);
 	attr->am_imm = (x86_imm32_t) {
-		.kind   = be_options.pic ? X86_IMM_PICBASE_REL : X86_IMM_ADDR,
+		.kind   = lconst_imm_kind,
 		.entity = entity,
 	};
 }
@@ -3600,8 +3600,7 @@ static ir_node *gen_Mux(ir_node *node)
 			ia32_address_mode_t am = {
 				.addr = {
 					.imm = {
-						.kind   = be_options.pic ? X86_IMM_PICBASE_REL
-						                         : X86_IMM_ADDR,
+						.kind   = lconst_imm_kind,
 						.entity = array,
 					},
 					.base   = get_global_base(irg),
@@ -4572,8 +4571,7 @@ static ir_node *gen_ia32_l_LLtoFloat(ir_node *node)
 				.index = new_bd_ia32_Shr(dbgi, block, new_val_high, count),
 				.mem   = nomem,
 				.imm   = {
-					.kind   = be_options.pic ? X86_IMM_PICBASE_REL
-					                         : X86_IMM_ADDR,
+					.kind   = lconst_imm_kind,
 					.entity = ia32_gen_fp_known_const(ia32_ULLBIAS),
 				},
 				.scale = 2,
@@ -4959,7 +4957,7 @@ static ir_node *gen_Call(ir_node *node)
 	in_req[n_ia32_Call_callee] = req_gp;
 
 	/* We have trampolines for our calls and need no PIC adjustments */
-	if (be_options.pic && is_ia32_Immediate(am.new_op2)) {
+	if (ia32_pic_style != IA32_PIC_NONE && is_ia32_Immediate(am.new_op2)) {
 		ia32_immediate_attr_t *const attr = get_ia32_immediate_attr(am.new_op2);
 		if (attr->imm.kind == X86_IMM_PICBASE_REL)
 			attr->imm.kind = X86_IMM_ADDR;
@@ -5914,6 +5912,13 @@ void ia32_transform_graph(ir_graph *irg)
 
 	start_mem.irn = NULL;
 	memset(&start_val, 0, sizeof(start_val));
+
+	if (ia32_pic_style == IA32_PIC_MACH_O) {
+		lconst_imm_kind = X86_IMM_PICBASE_REL;
+	} else {
+		assert(ia32_pic_style == IA32_PIC_NONE);
+		lconst_imm_kind = X86_IMM_ADDR;
+	}
 
 	register_transformers();
 
