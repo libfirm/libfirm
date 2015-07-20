@@ -391,7 +391,11 @@ static ir_node *gen_Const(ir_node *node)
 
 	uint64_t val = get_tarval_uint64(tv);
 	amd64_insn_mode_t imode = val > UINT32_MAX ? INSN_MODE_64 : INSN_MODE_32;
-	return new_bd_amd64_mov_imm(dbgi, block, imode, val, NULL);
+	amd64_imm64_t const imm = {
+		.kind   = X86_IMM_VALUE,
+		.offset = val,
+	};
+	return new_bd_amd64_mov_imm(dbgi, block, imode, &imm);
 }
 
 static ir_node *gen_Address(ir_node *node)
@@ -402,8 +406,13 @@ static ir_node *gen_Address(ir_node *node)
 
 	/* do we need RIP-relative addressing because of PIC? */
 	reference_mode_t mode = need_relative_addressing(entity);
-	if (mode == REFERENCE_DIRECT)
-		return new_bd_amd64_mov_imm(dbgi, block, INSN_MODE_64, 0, entity);
+	if (mode == REFERENCE_DIRECT) {
+		amd64_imm64_t const imm = {
+			.kind   = X86_IMM_ADDR,
+			.entity = entity,
+		};
+		return new_bd_amd64_mov_imm(dbgi, block, INSN_MODE_64, &imm);
+	}
 
 	amd64_addr_t addr;
 	memset(&addr, 0, sizeof(addr));
@@ -459,7 +468,8 @@ static bool match_immediate_32(x86_imm32_t *imm, const ir_node *op,
                                bool upper32_dont_care)
 {
 	assert(mode_needs_gp_reg(get_irn_mode(op)));
-	assert(imm->offset == 0 && imm->entity == NULL);
+	assert(imm->offset == 0 && imm->entity == NULL
+	       && imm->kind == X86_IMM_VALUE);
 
 	ir_tarval *tv;
 	ir_entity *entity;
@@ -483,13 +493,19 @@ static bool match_immediate_32(x86_imm32_t *imm, const ir_node *op,
 		val = 0;
 	}
 
-	if (entity && !can_match_ip_relative) {
-		/* TODO: check if entity is in lower 4GB address space/relative */
-		return false;
+	x86_immediate_kind_t kind = X86_IMM_VALUE;
+	if (entity != NULL) {
+		if (!can_match_ip_relative) {
+			/* TODO: check if entity is in lower 4GB address space/relative */
+			return false;
+		}
+		/* TODO: use a new relocation type for ip-relative? */
+		kind = X86_IMM_ADDR;
 	}
 
-	imm->offset = val;
 	imm->entity = entity;
+	imm->offset = val;
+	imm->kind   = kind;
 	return true;
 }
 
@@ -1637,11 +1653,13 @@ static ir_node *gen_Call(ir_node *node)
 
 	/* vararg calls need the number of SSE registers used */
 	if (get_method_variadicity(type) == variadicity_variadic) {
-		unsigned xmm_regs = cconv->n_xmm_regs;
-		ir_node *xmm_imm  = new_bd_amd64_mov_imm(dbgi, block, INSN_MODE_32,
-		                                         xmm_regs, NULL);
+		amd64_imm64_t const imm = {
+			.kind   = X86_IMM_VALUE,
+			.offset = cconv->n_xmm_regs,
+		};
+		ir_node *nxmm = new_bd_amd64_mov_imm(dbgi, block, INSN_MODE_32, &imm);
 		in_req[in_arity] = amd64_registers[REG_RAX].single_req;
-		in[in_arity] = xmm_imm;
+		in[in_arity] = nxmm;
 		++in_arity;
 	}
 

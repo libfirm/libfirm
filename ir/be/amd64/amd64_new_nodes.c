@@ -140,12 +140,11 @@ static void init_amd64_cc_attributes(ir_node *node, x86_condition_code_t cc)
 
 static void init_amd64_movimm_attributes(ir_node *node,
                                          amd64_insn_mode_t insn_mode,
-                                         ir_entity *entity, int64_t offset)
+                                         const amd64_imm64_t *imm)
 {
 	amd64_movimm_attr_t *attr = get_amd64_movimm_attr(node);
-	attr->insn_mode        = insn_mode;
-	attr->immediate.entity = entity;
-	attr->immediate.offset = offset;
+	attr->insn_mode = insn_mode;
+	attr->immediate = *imm;
 }
 
 static bool imm64s_equal(const amd64_imm64_t *const imm0,

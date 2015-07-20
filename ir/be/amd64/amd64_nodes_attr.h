@@ -67,8 +67,9 @@ enum {
 };
 
 typedef struct {
-	ir_entity *entity;
-	int64_t    offset;
+	ir_entity                   *entity;
+	int64_t                      offset;
+	ENUMBF(x86_immediate_kind_t) kind : 8;
 } amd64_imm64_t;
 
 typedef struct {

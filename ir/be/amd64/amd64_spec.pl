@@ -88,7 +88,7 @@ $default_copy_attr = "amd64_copy_attr";
 		."\tinit_amd64_cc_attributes(res, cc);",
 	amd64_movimm_attr_t =>
 		"init_amd64_attributes(res, irn_flags_, in_reqs, n_res, op_mode);\n"
-		."\tinit_amd64_movimm_attributes(res, insn_mode, entity, offset);",
+		."\tinit_amd64_movimm_attributes(res, insn_mode, imm);",
 	amd64_shift_attr_t =>
 		"be_info_init_irn(res, irn_flags_, in_reqs, n_res);\n"
 		."\t*attr = *attr_init;\n",
@@ -365,7 +365,7 @@ mov_imm => {
 	irn_flags => [ "rematerializable" ],
 	out_reqs  => [ "gp" ],
 	attr_type => "amd64_movimm_attr_t",
-	attr      => "amd64_insn_mode_t insn_mode, int64_t offset, ir_entity *entity",
+	attr      => "amd64_insn_mode_t insn_mode, const amd64_imm64_t *imm",
 	fixed     => "amd64_op_mode_t op_mode = AMD64_OP_IMM64;",
 	emit      => 'mov%MM $%C, %D0',
 	mode      => $mode_gp,
