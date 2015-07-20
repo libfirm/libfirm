@@ -629,7 +629,7 @@ static void perform_address_matching(ir_node *ptr, int *arity,
 		addr->index_input = NO_INPUT;
 	}
 	ir_entity *entity = maddr.imm.entity;
-	if (is_parameter_entity(entity) &&
+	if (entity != NULL && is_parameter_entity(entity) &&
 		get_entity_parameter_number(entity) == IR_VA_START_PARAMETER_NUMBER)
 		panic("VA_START not supported yet");
 
