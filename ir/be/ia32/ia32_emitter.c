@@ -1207,14 +1207,12 @@ static void emit_ia32_GetEIP(const ir_node *node)
 	const arch_register_t *reg = arch_get_irn_register_out(node, 0);
 	ir_entity *thunk = thunks[reg->index];
 	if (thunk == NULL) {
-		char thunkname[80];
-		snprintf(thunkname, sizeof(thunkname),
-		         "__x86.get_pc_thunk.%s", get_register_name_16bit(reg));
-		ir_type *glob = get_glob_type();
-		ident *thunkid = new_id_from_str(thunkname);
-		ir_type *tp = new_type_method(0, 1);
+		ir_type    *const glob = get_glob_type();
+		char const *const name = get_register_name_16bit(reg);
+		ident      *const id   = new_id_fmt("__x86.get_pc_thunk.%s", name);
+		ir_type    *const tp   = new_type_method(0, 1);
 		set_method_res_type(tp, 0, get_type_for_mode(mode_P));
-		thunk = new_entity(glob, thunkid, tp);
+		thunk = new_entity(glob, id, tp);
 		set_entity_visibility(thunk, ir_visibility_external_private);
 		add_entity_linkage(thunk, IR_LINKAGE_MERGE|IR_LINKAGE_GARBAGE_COLLECT);
 		/* Note that we do not create a proper method graph, but rather cheat
