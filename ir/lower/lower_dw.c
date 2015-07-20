@@ -2686,6 +2686,28 @@ static int lower_mux_cb(ir_node *mux)
 	return ir_nodeset_contains(&created_mux_nodes, mux);
 }
 
+static ir_type *make_type_4_2(ir_type *const even, ir_type *const odd)
+{
+	ir_type *const tp = new_type_method(4, 2);
+	set_method_param_type(tp, 0, even);
+	set_method_param_type(tp, 1, odd);
+	set_method_param_type(tp, 2, even);
+	set_method_param_type(tp, 3, odd);
+	set_method_res_type(tp, 0, even);
+	set_method_res_type(tp, 1, odd);
+	return tp;
+}
+
+static ir_type *make_type_2_2(ir_type *const even, ir_type *const odd)
+{
+	ir_type *const tp = new_type_method(2, 2);
+	set_method_param_type(tp, 0, even);
+	set_method_param_type(tp, 1, odd);
+	set_method_res_type(tp, 0, even);
+	set_method_res_type(tp, 1, odd);
+	return tp;
+}
+
 /*
  * Do the lowering.
  */
@@ -2705,35 +2727,12 @@ void ir_lower_dw_ops(void)
 		tp_l_s = new_type_primitive(env.p.word_signed);
 		tp_l_s->flags |= tf_lowered_dw;
 
-		binop_tp_u = new_type_method(4, 2);
-		set_method_param_type(binop_tp_u, 0, tp_l_u);
-		set_method_param_type(binop_tp_u, 1, tp_u);
-		set_method_param_type(binop_tp_u, 2, tp_l_u);
-		set_method_param_type(binop_tp_u, 3, tp_u);
-		set_method_res_type(binop_tp_u, 0, tp_l_u);
-		set_method_res_type(binop_tp_u, 1, tp_u);
-
 		ir_type *const even = env.p.big_endian ? tp_l_s : tp_l_u;
 		ir_type *const odd  = env.p.big_endian ? tp_u   : tp_s;
-		binop_tp_s = new_type_method(4, 2);
-		set_method_param_type(binop_tp_s, 0, even);
-		set_method_param_type(binop_tp_s, 1, odd);
-		set_method_param_type(binop_tp_s, 2, even);
-		set_method_param_type(binop_tp_s, 3, odd);
-		set_method_res_type(binop_tp_s, 0, even);
-		set_method_res_type(binop_tp_s, 1, odd);
-
-		unop_tp_u = new_type_method(2, 2);
-		set_method_param_type(unop_tp_u, 0, tp_l_u);
-		set_method_param_type(unop_tp_u, 1, tp_u);
-		set_method_res_type(unop_tp_u, 0, tp_l_u);
-		set_method_res_type(unop_tp_u, 1, tp_u);
-
-		unop_tp_s = new_type_method(2, 2);
-		set_method_param_type(unop_tp_s, 0, even);
-		set_method_param_type(unop_tp_s, 1, odd);
-		set_method_res_type(unop_tp_s, 0, even);
-		set_method_res_type(unop_tp_s, 1, odd);
+		binop_tp_u = make_type_4_2(tp_l_u, tp_u);
+		binop_tp_s = make_type_4_2(even, odd);
+		unop_tp_u  = make_type_2_2(tp_l_u, tp_u);
+		unop_tp_s  = make_type_2_2(even, odd);
 	}
 
 	env.tv_mode_bytes = new_tarval_from_long(env.p.doubleword_size/(2*8),
