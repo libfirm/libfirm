@@ -13,7 +13,10 @@ Correctness:
 - Support ASM node
 - fail on long double
 - (Support 80bit long double with x87 instructions)
-- (Implement Position Independent Code (PIC))
+- Finish PIC code implementation. gen_Address / call with immediate should be
+  fine. However the address mode matcher must not treat GOTPCREL things as
+  addresses, we have to load from the GOT first. The easiest solution is
+  probably a preparation phase similar to ia32_pic.c that create loads.
 
 Improve Quality:
 - Immediate32 matching could be better and match SymConst, Add(SymConst, Const)
