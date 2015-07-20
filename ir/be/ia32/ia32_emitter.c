@@ -58,6 +58,7 @@ static bool       mark_spill_reload;
 static bool       sp_relative;
 static int        frame_type_size;
 static int        callframe_offset;
+static ir_entity *thunks[N_ia32_gp_REGS];
 
 /** Return the next block in Block schedule */
 static ir_node *get_prev_block_sched(const ir_node *block)
@@ -1202,10 +1203,30 @@ zero_neg:
 
 static void emit_ia32_GetEIP(const ir_node *node)
 {
-	ia32_emitf(node, "call %s", pic_base_label);
+	const arch_register_t *reg = arch_get_irn_register_out(node, 0);
+	ir_entity *thunk = thunks[reg->index];
+	if (thunk == NULL) {
+		char thunkname[80];
+		snprintf(thunkname, sizeof(thunkname),
+		         "__x86.get_pc_thunk.%s", get_register_name_16bit(reg));
+		ir_type *glob = get_glob_type();
+		ident *thunkid = new_id_from_str(thunkname);
+		ir_type *tp = new_type_method(0, 1);
+		set_method_res_type(tp, 0, get_type_for_mode(mode_P));
+		thunk = new_entity(glob, thunkid, tp);
+		set_entity_visibility(thunk, ir_visibility_external_private);
+		add_entity_linkage(thunk, IR_LINKAGE_MERGE|IR_LINKAGE_GARBAGE_COLLECT);
+		/* Note that we do not create a proper method graph, but rather cheat
+		 * later and emit the instructions manually. This is just necessary so
+		 * firm knows we will actually output code for this entity. */
+		new_ir_graph(thunk, 0);
+
+		thunks[reg->index] = thunk;
+	}
+
+	ia32_emitf(node, "call %E", thunk);
 	be_emit_irprintf("%s:\n", pic_base_label);
 	be_emit_write_line();
-	ia32_emitf(node, "popl %D0");
 }
 
 static void emit_ia32_ClimbFrame(const ir_node *node)
@@ -3137,6 +3158,22 @@ void ia32_emit_function(ir_graph *const irg)
 		ia32_emit_function_binary(irg, blk_sched);
 	} else {
 		ia32_emit_function_text(irg, blk_sched);
+	}
+}
+
+void ia32_emit_thunks(void)
+{
+	for (unsigned i = 0; i < N_ia32_gp_REGS; ++i) {
+		ir_entity *entity = thunks[i];
+		if (entity == NULL)
+			continue;
+		const arch_register_t *reg = &ia32_reg_classes[CLASS_ia32_gp].regs[i];
+
+		be_gas_emit_function_prolog(entity, ia32_cg_config.function_alignment,
+									NULL);
+		ia32_emitf(NULL, "movl (%%esp), %R", reg);
+		ia32_emitf(NULL, "ret");
+		be_gas_emit_function_epilog(entity);
 	}
 }
 

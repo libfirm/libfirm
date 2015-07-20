@@ -1515,6 +1515,8 @@ static void ia32_generate_code(FILE *output, const char *cup_name)
 		be_step_last(irg);
 	}
 
+	ia32_emit_thunks();
+
 	be_finish();
 	pmap_destroy(ia32_tv_ent);
 }
