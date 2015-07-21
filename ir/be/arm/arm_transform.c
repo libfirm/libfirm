@@ -333,20 +333,21 @@ static bool try_encode_val_as_immediate(uint32_t val, arm_immediate_t *const res
 	return false;
 }
 
-static bool try_encode_as_immediate(ir_node const *const node, arm_immediate_t *const res)
-{
-	if (!is_Const(node))
-		return false;
-	uint32_t const val = get_Const_long(node);
-	return try_encode_val_as_immediate(val, res);
-}
+typedef enum imm_match_t {
+	IMM_NONE = 0,
+	IMM_POS  = 1 << 0,
+	IMM_NOT  = 1 << 1,
+} imm_match_t;
 
-static bool try_encode_as_not_immediate(ir_node const *const node, arm_immediate_t *const res)
+static imm_match_t try_encode_as_immediate(ir_node const *const node, arm_immediate_t *const res, imm_match_t const match)
 {
 	if (!is_Const(node))
-		return false;
+		return IMM_NONE;
 	uint32_t const val = get_Const_long(node);
-	return try_encode_val_as_immediate(~val, res);
+	return
+		match & IMM_POS && try_encode_val_as_immediate( val, res) ? IMM_POS :
+		match & IMM_NOT && try_encode_val_as_immediate(~val, res) ? IMM_NOT :
+		IMM_NONE;
 }
 
 typedef enum {
@@ -388,12 +389,12 @@ static ir_node *gen_int_binop_ops(ir_node *node, ir_node *op1, ir_node *op2,
 	}
 
 	arm_immediate_t imm;
-	if (try_encode_as_immediate(op2, &imm)) {
+	if (try_encode_as_immediate(op2, &imm, IMM_POS) != IMM_NONE) {
 		ir_node *new_op1 = be_transform_node(op1);
 		return factory->new_binop_imm(dbgi, block, new_op1, imm.imm_8, imm.rot);
 	}
 	ir_node *new_op2 = be_transform_node(op2);
-    if ((flags & (MATCH_COMMUTATIVE|MATCH_REVERSE)) && try_encode_as_immediate(op1, &imm)) {
+    if ((flags & (MATCH_COMMUTATIVE|MATCH_REVERSE)) && try_encode_as_immediate(op1, &imm, IMM_POS) != IMM_NONE) {
 		if (flags & MATCH_REVERSE)
 			return factory[1].new_binop_imm(dbgi, block, new_op2, imm.imm_8, imm.rot);
 		else
@@ -781,7 +782,7 @@ static ir_node *gen_And(ir_node *node)
 		ir_node *left_not = get_Not_op(left);
 		return gen_int_binop_ops(node, right, left_not, MATCH_SIZE_NEUTRAL,
 		                         &bic_factory);
-	} else if (try_encode_as_not_immediate(right, &imm)) {
+	} else if (try_encode_as_immediate(right, &imm, IMM_NOT) != IMM_NONE) {
 		dbg_info *const dbgi  = get_irn_dbg_info(node);
 		ir_node  *const block = be_transform_nodes_block(node);
 		ir_node  *const new_l = be_transform_node(left);
