@@ -21,7 +21,6 @@
 #include "irop_t.h"
 
 /* don't use the following vars directly, they're only here for the inlines */
-extern FILE           *emit_file;
 extern struct obstack  emit_obst;
 
 /**

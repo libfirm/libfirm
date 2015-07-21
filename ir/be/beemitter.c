@@ -21,7 +21,7 @@
 #include "dbginfo.h"
 #include "util.h"
 
-FILE           *emit_file;
+static FILE    *emit_file;
 struct obstack  emit_obst;
 
 void be_emit_init(FILE *file)
