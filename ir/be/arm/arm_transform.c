@@ -337,6 +337,7 @@ typedef enum imm_match_t {
 	IMM_NONE = 0,
 	IMM_POS  = 1 << 0,
 	IMM_NOT  = 1 << 1,
+	IMM_NEG  = 1 << 2,
 } imm_match_t;
 
 static imm_match_t try_encode_as_immediate(ir_node const *const node, arm_immediate_t *const res, imm_match_t const match)
@@ -347,6 +348,7 @@ static imm_match_t try_encode_as_immediate(ir_node const *const node, arm_immedi
 	return
 		match & IMM_POS && try_encode_val_as_immediate( val, res) ? IMM_POS :
 		match & IMM_NOT && try_encode_val_as_immediate(~val, res) ? IMM_NOT :
+		match & IMM_NEG && try_encode_val_as_immediate(-val, res) ? IMM_NEG :
 		IMM_NONE;
 }
 
@@ -618,6 +620,14 @@ create_mla:;
 			else
 				return new_bd_arm_Mla(dbgi, block, new_left, new_right,
 				                      new_add);
+		}
+
+		arm_immediate_t imm;
+		if (try_encode_as_immediate(right, &imm, IMM_NEG) != IMM_NONE) {
+			dbg_info *const dbgi     = get_irn_dbg_info(node);
+			ir_node  *const block    = be_transform_nodes_block(node);
+			ir_node  *const new_left = be_transform_node(left);
+			return new_bd_arm_Sub_imm(dbgi, block, new_left, imm.imm_8, imm.rot);
 		}
 
 		static const arm_binop_factory_t add_factory = {
