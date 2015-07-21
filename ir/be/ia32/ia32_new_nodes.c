@@ -258,12 +258,17 @@ static void ia32_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 
 			/* dump frame entity */
 			fprintf(F, "frame use = %s\n", get_frame_use_str(n));
-			if (attr->am_imm.kind == X86_IMM_FRAMEOFFSET ||
-			    attr->old_frame_ent != NULL) {
+			if (attr->am_imm.kind == X86_IMM_FRAMEOFFSET
+#ifndef NDEBUG
+			    || attr->old_frame_ent != NULL
+#endif
+			    ) {
 				fprintf(F, "frame entity = ");
 				ir_entity *entity = attr->am_imm.entity;
+#ifndef NDEBUG
 				if (entity == NULL)
 					entity = attr->old_frame_ent;
+#endif
 				if (entity != NULL) {
 					ir_fprintf(F, "%+F", entity);
 				} else {
