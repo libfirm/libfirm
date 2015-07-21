@@ -1205,10 +1205,19 @@ static ir_node *gen_Cmp(ir_node *node)
 	/* integer compare, TODO: use shifter_op in all its combinations */
 	ir_node *new_op1 = be_transform_node(op1);
 	new_op1 = gen_extension(dbgi, block, new_op1, cmp_mode);
-	ir_node *new_op2 = be_transform_node(op2);
-	new_op2 = gen_extension(dbgi, block, new_op2, cmp_mode);
-	return new_bd_arm_Cmp_reg(dbgi, block, new_op1, new_op2, false,
-	                          is_unsigned);
+
+	arm_immediate_t imm;
+	switch (try_encode_as_immediate(op2, &imm, IMM_POS | IMM_NEG)) {
+	case IMM_POS:
+		return new_bd_arm_Cmp_imm(dbgi, block, new_op1, imm.imm_8, imm.rot, false, is_unsigned);
+	case IMM_NEG:
+		return new_bd_arm_Cmn_imm(dbgi, block, new_op1, imm.imm_8, imm.rot, false, is_unsigned);
+	default: {
+		ir_node *new_op2 = be_transform_node(op2);
+		new_op2 = gen_extension(dbgi, block, new_op2, cmp_mode);
+		return new_bd_arm_Cmp_reg(dbgi, block, new_op1, new_op2, false, is_unsigned);
+	}
+	}
 }
 
 static ir_node *gen_Cond(ir_node *node)

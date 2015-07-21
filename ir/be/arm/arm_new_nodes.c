@@ -45,12 +45,13 @@ static bool has_shifter_operand(const ir_node *node)
 	return is_arm_Add(node) || is_arm_And(node) || is_arm_Or(node)
 		|| is_arm_Eor(node) || is_arm_Bic(node) || is_arm_Sub(node)
 		|| is_arm_Rsb(node) || is_arm_Mov(node) || is_arm_Mvn(node)
-		|| is_arm_Cmp(node) || is_arm_Tst(node) || is_arm_LinkMovPC(node);
+		|| is_arm_Cmn(node) || is_arm_Cmp(node) || is_arm_Tst(node)
+		|| is_arm_LinkMovPC(node);
 }
 
 static bool has_cmp_attr(const ir_node *node)
 {
-	return is_arm_Cmp(node) || is_arm_Tst(node);
+	return is_arm_Cmn(node) || is_arm_Cmp(node) || is_arm_Tst(node);
 }
 
 static bool has_farith_attr(const ir_node *node)

@@ -447,7 +447,7 @@ static void emit_arm_B(const ir_node *irn)
 	}
 
 	ir_node *const op1 = get_irn_n(irn, n_arm_B_flags);
-	assert(is_arm_Cmp(op1) || is_arm_Tst(op1));
+	assert(is_arm_Cmn(op1) || is_arm_Cmp(op1) || is_arm_Tst(op1));
 
 	arm_cmp_attr_t const *const cmp_attr = get_arm_cmp_attr_const(op1);
 

@@ -481,6 +481,11 @@ Address => {
 	mode      => $mode_gp,
 },
 
+Cmn => {
+	template => $cmp_shifter_operand,
+	emit     => 'cmn %S0, %O',
+},
+
 Cmp => {
 	template => $cmp_shifter_operand,
 	emit     => 'cmp %S0, %O',
