@@ -217,23 +217,15 @@ static void ia32_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 					break;
 			}
 
-			/* dump AM offset */
-			if (get_ia32_am_offs_int(n) != 0) {
-				fprintf(F, "AM offset = %d\n", get_ia32_am_offs_int(n));
-			}
-
-			/* dump AM entity */
-			ir_entity *ent = get_ia32_am_ent(n);
-			if (ent != NULL) {
-				ident *id = get_entity_ld_ident(ent);
-				fprintf(F, "AM entity = %s\n", get_id_str(id));
-			}
+			const ia32_attr_t *attr = get_ia32_attr_const(n);
+			fputs("AM immediate = ", F);
+			x86_dump_imm32(&attr->am_imm, F);
+			fputc('\n', F);
 
 			/* dump AM scale */
 			fprintf(F, "AM scale = %u\n", get_ia32_am_scale(n));
 
 			/* dump pn code */
-			const ia32_attr_t *attr = get_ia32_attr_const(n);
 			if (has_ia32_condcode_attr(n)) {
 				const char *cc_name = condition_code_name(get_ia32_condcode(n));
 				if (cc_name) {
@@ -256,27 +248,6 @@ static void ia32_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 			fprintf(F, "is reload = %s\n", be_dump_yesno(is_ia32_is_reload(n)));
 			fprintf(F, "latency = %u\n", get_ia32_latency(n));
 
-			/* dump frame entity */
-			fprintf(F, "frame use = %s\n", get_frame_use_str(n));
-			if (attr->am_imm.kind == X86_IMM_FRAMEOFFSET
-#ifndef NDEBUG
-			    || attr->old_frame_ent != NULL
-#endif
-			    ) {
-				fprintf(F, "frame entity = ");
-				ir_entity *entity = attr->am_imm.entity;
-#ifndef NDEBUG
-				if (entity == NULL)
-					entity = attr->old_frame_ent;
-#endif
-				if (entity != NULL) {
-					ir_fprintf(F, "%+F", entity);
-				} else {
-					fprintf(F, "n/a");
-				}
-				fprintf(F, "\n");
-			}
-
 			/* dump modes */
 			fprintf(F, "ls_mode = ");
 			if (get_ia32_ls_mode(n)) {
@@ -287,6 +258,17 @@ static void ia32_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 			fprintf(F, "\n");
 
 #ifndef NDEBUG
+			/* dump frame entity */
+			fprintf(F, "frame use = %s\n", get_frame_use_str(n));
+			if (attr->old_frame_ent != NULL) {
+				fprintf(F, "frame entity = ");
+				ir_entity *entity = attr->am_imm.entity;
+				if (entity != NULL) {
+					ir_fprintf(F, "%+F", entity);
+				} else {
+					fprintf(F, "n/a");
+				}
+			}
 			/* dump original ir node name */
 			char const *orig = get_ia32_attr_const(n)->orig_node;
 			fprintf(F, "orig node = %s\n", orig ? orig : "n/a");

@@ -104,7 +104,9 @@ static void amd64_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 			fprintf(F, "size = %s\n", get_insn_mode_string(addr_attr->insn_mode));
 			fprintf(F, "base input: %d\n", addr_attr->addr.base_input);
 			fprintf(F, "index input: %d\n", addr_attr->addr.index_input);
-			ir_fprintf(F, "am imm: %+F%+" PRId32 "\n", addr_attr->addr.immediate.entity, addr_attr->addr.immediate.offset);
+			fputs("am imm: ", F);
+			x86_dump_imm32(&addr_attr->addr.immediate, F);
+			fputc('\n', F);
 			break;
 		}
 	}

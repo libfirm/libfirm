@@ -13,6 +13,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdio.h>
 #include "compiler.h"
 #include "firm_types.h"
 
@@ -35,6 +36,10 @@ typedef struct x86_imm32_t {
 
 bool x86_match_immediate(x86_imm32_t *immediate, const ir_node *node,
                          char constraint);
+
+char const *x86_get_immediate_kind_str(x86_immediate_kind_t const kind);
+
+void x86_dump_imm32(x86_imm32_t const *imm, FILE *F);
 
 static inline bool x86_imm32_equal(x86_imm32_t const *const imm0,
 								   x86_imm32_t const *const imm1)
