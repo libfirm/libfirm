@@ -5913,13 +5913,6 @@ static void ia32_create_stacklayout(ir_graph *irg, const x86_cconv_t *cconv)
 
 static void ia32_pretransform_node(ir_graph *irg)
 {
-	ia32_irg_data_t *irg_data = ia32_get_irg_data(irg);
-	irg_data->noreg_gp       = be_pre_transform_node(irg_data->noreg_gp);
-	irg_data->noreg_fp       = be_pre_transform_node(irg_data->noreg_fp);
-	irg_data->noreg_xmm      = be_pre_transform_node(irg_data->noreg_xmm);
-	irg_data->get_eip        = be_pre_transform_node(irg_data->get_eip);
-	irg_data->fpu_trunc_mode = be_pre_transform_node(irg_data->fpu_trunc_mode);
-
 	nomem    = get_irg_no_mem(irg);
 	noreg_GP = ia32_new_NoReg_gp(irg);
 }
