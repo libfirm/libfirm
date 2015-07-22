@@ -87,8 +87,11 @@ char const *x86_get_immediate_kind_str(x86_immediate_kind_t const kind)
 	case X86_IMM_PICBASE_REL: return "picbase_rel";
 	case X86_IMM_TLS_IE:      return "tls_ie";
 	case X86_IMM_TLS_LE:      return "tls_le";
-	case X86_IMM_GOTPCREL:    return "gotpcrel";
 	case X86_IMM_FRAMEOFFSET: return "frameoffset";
+	case X86_IMM_GOTPCREL:    return "gotpcrel";
+	case X86_IMM_GOTOFF:      return "gotoff";
+	case X86_IMM_GOT:         return "got";
+	case X86_IMM_PLT:         return "plt";
 	}
 	return "invalid";
 }
