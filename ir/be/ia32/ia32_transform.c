@@ -4148,7 +4148,8 @@ static ir_node *gen_Bitcast(ir_node *const node)
 	}
 	am.ls_mode = dst_mode;
 	set_am_attributes(ld, &am);
-	force_int_stackent(ld, dst_mode);
+	if (get_ia32_frame_use(ld) != IA32_FRAME_USE_NONE)
+		force_int_stackent(ld, dst_mode);
 	SET_IA32_ORIG_NODE(ld, node);
 	fix_mem_proj(ld, &am);
 	return res;
