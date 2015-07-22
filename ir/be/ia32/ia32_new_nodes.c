@@ -105,6 +105,7 @@ static bool has_ia32_x87_attr(ir_node const *const node)
 	}
 }
 
+#ifndef NDEBUG
 static char const *get_frame_use_str(ir_node const *const node)
 {
 	switch (get_ia32_frame_use(node)) {
@@ -115,6 +116,7 @@ static char const *get_frame_use_str(ir_node const *const node)
 	}
 	return "invalid";
 }
+#endif
 
 /**
  * Dumper interface for dumping ia32 nodes in vcg.
