@@ -279,12 +279,10 @@ static void adjust_relocation(x86_imm32_t *imm)
 	if (imm->kind != X86_IMM_ADDR)
 		return;
 	ir_entity *entity = imm->entity;
-	if (ia32_pic_style == IA32_PIC_MACH_O &&
-	    get_entity_type(entity) != get_code_type()) {
-		imm->kind = X86_IMM_PICBASE_REL;
-	} else if (is_tls_entity(entity)) {
+	if (is_tls_entity(entity)) {
 		imm->kind = entity_has_definition(entity) ? X86_IMM_TLS_LE
 		                                          : X86_IMM_TLS_IE;
+		return;
 	}
 }
 
@@ -4941,6 +4939,12 @@ static ir_node *gen_CopyB(ir_node *node)
 	return projm;
 }
 
+static bool callee_is_plt(ir_node *callee)
+{
+	return be_is_Relocation(callee)
+	    && be_get_Relocation_kind(callee) == X86_IMM_PLT;
+}
+
 static ir_node *gen_Call(ir_node *node)
 {
 	arch_register_req_t const *const req_gp = ia32_reg_classes[CLASS_ia32_gp].class_req;
@@ -4958,7 +4962,9 @@ static ir_node *gen_Call(ir_node *node)
 	x86_cconv_t                *const cconv    = ia32_decide_calling_convention(type, NULL);
 	ir_graph                   *const irg      = get_irn_irg(node);
 	unsigned                          in_arity = n_ia32_Call_first_argument;
-	unsigned                    const n_ins    = in_arity + cconv->n_param_regs;
+	bool                        const is_plt   = callee_is_plt(callee);
+	unsigned                    const n_ins
+		= in_arity + cconv->n_param_regs + is_plt;
 	ir_node                   **const in       = ALLOCAN(ir_node*, n_ins);
 	arch_register_req_t const **const in_req   = be_allocate_in_reqs(irg, n_ins);
 
@@ -4969,13 +4975,6 @@ static ir_node *gen_Call(ir_node *node)
 	/* Memory input will be set later. */
 	in[n_ia32_Call_callee]     = am.new_op2;
 	in_req[n_ia32_Call_callee] = req_gp;
-
-	/* We have trampolines for our calls and need no PIC adjustments */
-	if (ia32_pic_style != IA32_PIC_NONE && is_ia32_Immediate(am.new_op2)) {
-		ia32_immediate_attr_t *const attr = get_ia32_immediate_attr(am.new_op2);
-		if (attr->imm.kind == X86_IMM_PICBASE_REL)
-			attr->imm.kind = X86_IMM_ADDR;
-	}
 
 	ir_node *const block               = be_transform_node(old_block);
 	ir_node *const new_frame           = get_stack_pointer_for(node);
@@ -5029,6 +5028,13 @@ static ir_node *gen_Call(ir_node *node)
 			set_irn_pinned(store, op_pin_state_floats);
 			sync_ins[sync_arity++] = create_proj_for_store(store, pn_Store_M);
 		}
+	}
+	/* PIC calls need the GOT address in ebx */
+	if (is_plt) {
+		unsigned goti = in_arity++;
+		in[goti]      = ia32_get_pic_base(irg);
+		in_req[goti]  = ia32_registers[REG_EBX].single_req;
+		panic("Need code to make this register pressure faithful");
 	}
 	assert(in_arity == n_ins);
 	assert(sync_arity <= n_params + 1);
@@ -5928,11 +5934,11 @@ void ia32_transform_graph(ir_graph *irg)
 	start_mem.irn = NULL;
 	memset(&start_val, 0, sizeof(start_val));
 
-	if (ia32_pic_style == IA32_PIC_MACH_O) {
-		lconst_imm_kind = X86_IMM_PICBASE_REL;
-	} else {
-		assert(ia32_pic_style == IA32_PIC_NONE);
-		lconst_imm_kind = X86_IMM_ADDR;
+	switch (ia32_pic_style) {
+	case IA32_PIC_NONE:       lconst_imm_kind = X86_IMM_ADDR;        break;
+	case IA32_PIC_MACH_O:     lconst_imm_kind = X86_IMM_PICBASE_REL; break;
+	case IA32_PIC_ELF_PLT:
+	case IA32_PIC_ELF_NO_PLT: lconst_imm_kind = X86_IMM_GOTOFF;      break;
 	}
 
 	register_transformers();

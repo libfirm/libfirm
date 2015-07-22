@@ -26,6 +26,8 @@
 typedef enum ia32_pic_style_t {
 	IA32_PIC_NONE,
 	IA32_PIC_MACH_O,
+	IA32_PIC_ELF_PLT,
+	IA32_PIC_ELF_NO_PLT,
 } ia32_pic_style_t;
 
 typedef struct ia32_irg_data_t {

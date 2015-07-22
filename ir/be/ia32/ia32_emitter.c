@@ -183,12 +183,11 @@ static void ia32_emit_relocation(x86_imm32_t const *const imm)
 	switch (imm->kind) {
 	case X86_IMM_ADDR:
 		return;
-	case X86_IMM_TLS_IE:
-		be_emit_cstring("@INDNTPOFF");
-		return;
-	case X86_IMM_TLS_LE:
-		be_emit_cstring("@NTPOFF");
-		return;
+	case X86_IMM_TLS_IE: be_emit_cstring("@INDNTPOFF"); return;
+	case X86_IMM_TLS_LE: be_emit_cstring("@NTPOFF");    return;
+	case X86_IMM_GOT:    be_emit_cstring("@GOT");       return;
+	case X86_IMM_GOTOFF: be_emit_cstring("@GOTOFF");    return;
+	case X86_IMM_PLT:    be_emit_cstring("@PLT");       return;
 	case X86_IMM_PICBASE_REL:
 		be_emit_char('-');
 		be_emit_string(pic_base_label);
@@ -1234,8 +1233,19 @@ static void emit_ia32_GetEIP(const ir_node *node)
 	}
 
 	ia32_emitf(node, "call %E", thunk);
-	be_emit_irprintf("%s:\n", pic_base_label);
-	be_emit_write_line();
+	switch (ia32_pic_style) {
+	case IA32_PIC_MACH_O:
+		be_emit_irprintf("%s:\n", pic_base_label);
+		be_emit_write_line();
+		return;
+	case IA32_PIC_ELF_PLT:
+	case IA32_PIC_ELF_NO_PLT:
+		ia32_emitf(node, "addl $_GLOBAL_OFFSET_TABLE_, %D0");
+		return;
+	case IA32_PIC_NONE:
+		break;
+	}
+	panic("invalid pic_style");
 }
 
 static void emit_ia32_ClimbFrame(const ir_node *node)

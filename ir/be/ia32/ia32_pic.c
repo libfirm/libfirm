@@ -11,14 +11,17 @@
 #include "bearch_ia32_t.h"
 
 #include "adt/pmap.h"
+#include "be_t.h"
 #include "begnuas.h"
 #include "beirg.h"
-#include "be_t.h"
+#include "beutil.h"
 #include "entity_t.h"
+#include "ia32_new_nodes.h"
 #include "ident_t.h"
 #include "ircons_t.h"
 #include "irgwalk.h"
 #include "irnode_t.h"
+#include "x86_imm.h"
 
 ia32_pic_style_t ia32_pic_style = IA32_PIC_NONE;
 
@@ -52,7 +55,7 @@ static ir_entity *get_trampoline(be_main_env_t *env, ir_entity *method)
 	return result;
 }
 
-static ir_entity *create_pic_symbol(be_main_env_t *be, ir_entity *entity)
+static ir_entity *create_nonlazyptr(be_main_env_t *be, ir_entity *entity)
 {
 	ident     *old_id = get_entity_ld_ident(entity);
 	ident     *id     = new_id_fmt("%s$non_lazy_ptr", old_id);
@@ -66,75 +69,115 @@ static ir_entity *create_pic_symbol(be_main_env_t *be, ir_entity *entity)
 	return ent;
 }
 
-static ir_entity *get_pic_symbol(be_main_env_t *env, ir_entity *entity)
+static ir_entity *get_nonlazyptr(be_main_env_t *env, ir_entity *entity)
 {
 	ir_entity *result = pmap_get(ir_entity, env->ent_pic_symbol_map, entity);
 	if (result == NULL) {
-		result = create_pic_symbol(env, entity);
+		result = create_nonlazyptr(env, entity);
 		pmap_insert(env->ent_pic_symbol_map, entity, result);
 	}
-
 	return result;
 }
 
-/**
- * Returns non-zero if a given entity can be accessed using a relative address.
- */
-static int can_address_relative(ir_entity *entity)
+static ir_node *get_eip_relative(ir_graph *const irg,
+                                 x86_immediate_kind_t const kind,
+								 ir_entity *const entity)
 {
-	return entity_has_definition(entity) && !(get_entity_linkage(entity) & IR_LINKAGE_MERGE);
+	/* Everything else is accessed relative to EIP. */
+	ir_node *const pic_base = ia32_get_pic_base(irg);
+	ir_node *const block    = get_irg_start_block(irg);
+	ir_node *reloc = be_new_Relocation(irg, (unsigned)kind, entity);
+	/* All ok now for locally constructed stuff. */
+	ir_node *add = new_rd_Add(NULL, block, pic_base, reloc, mode_P);
+	/* Make sure the walker doesn't visit this add again. */
+	mark_irn_visited(add);
+	return add;
 }
 
-/** patches Addresses to work in position independent code */
-static void fix_pic_addresses(ir_node *const node, void *const data)
+static ir_node *get_table_load(ir_graph *irg, x86_immediate_kind_t const kind,
+                               ir_entity *const entity)
+{
+	ir_node *const addr  = get_eip_relative(irg, kind, entity);
+	ir_type *const type  = get_entity_type(entity);
+	ir_node *const nomem = get_irg_no_mem(irg);
+	ir_node *const block = get_irg_start_block(irg);
+	ir_node *const load  = new_rd_Load(NULL, block, nomem, addr, mode_P, type,
+	                                   cons_floats);
+	return new_r_Proj(load, mode_P, pn_Load_res);
+}
+
+static void fix_address_elf(ir_node *const node, void *const data)
 {
 	(void)data;
-
-	ir_graph      *const irg = get_irn_irg(node);
-	be_main_env_t *const be  = be_get_irg_main_env(irg);
 	foreach_irn_in(node, i, pred) {
 		if (!is_Address(pred))
 			continue;
-
-		ir_node         *res;
 		ir_entity *const entity = get_Address_entity(pred);
-		dbg_info  *const dbgi   = get_irn_dbg_info(pred);
+		if (is_tls_entity(entity))
+			continue;
+
+		ir_graph *const irg = get_irn_irg(node);
+		ir_node  *      res;
 		if (i == n_Call_ptr && is_Call(node)) {
 			/* Calls can jump to relative addresses, so we can directly jump to
 			 * the (relatively) known call address or the trampoline */
-			if (can_address_relative(entity))
+			if (entity_has_definition(entity)
+			 && !(get_entity_linkage(entity) & IR_LINKAGE_MERGE))
+				continue;
+
+			if (ia32_pic_style == IA32_PIC_ELF_PLT) {
+				res = be_new_Relocation(irg, X86_IMM_PLT, entity);
+			} else {
+				assert(ia32_pic_style == IA32_PIC_ELF_NO_PLT);
+				res = get_table_load(irg, X86_IMM_GOT, entity);
+			}
+		} else {
+			ir_visibility const visibility = get_entity_visibility(entity);
+			if (visibility != ir_visibility_external
+			 && visibility != ir_visibility_external_private) {
+				assert(visibility == ir_visibility_local
+				    || visibility == ir_visibility_private);
+				res = get_eip_relative(irg, X86_IMM_GOTOFF, entity);
+			} else {
+				res = get_table_load(irg, X86_IMM_GOT, entity);
+			}
+		}
+		set_irn_n(node, i, res);
+	}
+}
+
+/** patches Addresses to work in position independent code */
+static void fix_address_macho(ir_node *const node, void *const data)
+{
+	(void)data;
+
+	foreach_irn_in(node, i, pred) {
+		if (!is_Address(pred))
+			continue;
+		ir_entity *const entity = get_Address_entity(pred);
+		if (is_tls_entity(entity))
+			continue;
+
+		ir_graph      *const irg = get_irn_irg(node);
+		be_main_env_t *const be  = be_get_irg_main_env(irg);
+		ir_node             *res;
+		if (i == n_Call_ptr && is_Call(node)) {
+			/* Calls can jump to relative addresses, so we can directly jump to
+			 * the (relatively) known call address or the trampoline */
+			if (entity_has_definition(entity)
+			 && !(get_entity_linkage(entity) & IR_LINKAGE_MERGE))
 				continue;
 
 			ir_entity *const trampoline = get_trampoline(be, entity);
-			res = new_rd_Address(dbgi, irg, trampoline);
-		} else if (get_entity_type(entity) == get_code_type()) {
-			/* Block labels can always be addressed directly. */
-			continue;
+			res = be_new_Relocation(irg, X86_IMM_ADDR, trampoline);
 		} else {
 			/* Everything else is accessed relative to EIP. */
-			ir_node *const block    = get_nodes_block(pred);
-			ir_mode *const mode     = get_irn_mode(pred);
-			ir_node *const pic_base = ia32_get_pic_base(irg);
-
-			if (can_address_relative(entity)) {
-				/* All ok now for locally constructed stuff. */
-				res = new_rd_Add(dbgi, block, pic_base, pred, mode);
-				/* Make sure the walker doesn't visit this add again. */
-				mark_irn_visited(res);
+			if (entity_has_definition(entity)
+			 && !(get_entity_linkage(entity) & IR_LINKAGE_MERGE)) {
+				res = get_eip_relative(irg, X86_IMM_PICBASE_REL, entity);
 			} else {
-				/* Get entry from pic symbol segment. */
-				ir_entity *const pic_symbol  = get_pic_symbol(be, entity);
-				ir_node   *const pic_address = new_rd_Address(dbgi, irg, pic_symbol);
-				ir_node   *const add         = new_rd_Add(dbgi, block, pic_base, pic_address, mode);
-				mark_irn_visited(add);
-
-				/* We need an extra indirection for global data outside our current
-				 * module. The loads are always safe and can therefore float and
-				 * need no memory input */
-				ir_type *const type  = get_entity_type(entity);
-				ir_node *const nomem = get_irg_no_mem(irg);
-				ir_node *const load  = new_rd_Load(dbgi, block, nomem, add, mode, type, cons_floats);
-				res = new_r_Proj(load, mode, pn_Load_res);
+				ir_entity *const nonlazyptr = get_nonlazyptr(be, entity);
+				res = get_table_load(irg, X86_IMM_PICBASE_REL, nonlazyptr);
 			}
 		}
 		set_irn_n(node, i, res);
@@ -143,7 +186,15 @@ static void fix_pic_addresses(ir_node *const node, void *const data)
 
 void ia32_adjust_pic(ir_graph *irg)
 {
-	if (ia32_pic_style == IA32_PIC_NONE)
+	switch (ia32_pic_style) {
+	case IA32_PIC_NONE:
 		return;
-	irg_walk_graph(irg, fix_pic_addresses, NULL, NULL);
+	case IA32_PIC_ELF_PLT:
+	case IA32_PIC_ELF_NO_PLT:
+		irg_walk_graph(irg, fix_address_elf, NULL, NULL);
+		return;
+	case IA32_PIC_MACH_O:
+		irg_walk_graph(irg, fix_address_macho, NULL, NULL);
+		return;
+	}
 }

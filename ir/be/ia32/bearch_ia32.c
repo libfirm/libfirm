@@ -1609,6 +1609,8 @@ static const backend_params *ia32_get_libfirm_params(void)
 static const lc_opt_enum_int_items_t pic_style_items[] = {
 	{ "none",      IA32_PIC_NONE       },
 	{ "mach-o",    IA32_PIC_MACH_O     },
+	{ "elf",       IA32_PIC_ELF_PLT    },
+	{ "elf-noplt", IA32_PIC_ELF_NO_PLT },
 	{ NULL,        IA32_PIC_NONE       },
 };
 static lc_opt_enum_int_var_t pic_style_var = {

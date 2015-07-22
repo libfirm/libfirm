@@ -201,7 +201,7 @@ typedef enum amd64_emit_mod_t {
 ENUM_BITSET(amd64_emit_mod_t)
 
 static void emit_relocation_no_offset(x86_immediate_kind_t const kind,
-                                            ir_entity const *const entity)
+                                      ir_entity const *const entity)
 {
 	be_gas_emit_entity(entity);
 	switch (kind) {
@@ -212,6 +212,9 @@ static void emit_relocation_no_offset(x86_immediate_kind_t const kind,
 	case X86_IMM_TLS_LE:
 	case X86_IMM_PICBASE_REL:
 	case X86_IMM_FRAMEOFFSET:
+	case X86_IMM_GOT:
+	case X86_IMM_GOTOFF:
+	case X86_IMM_PLT:
 		break;
 	}
 	panic("unexpected or invalid immediate kind");
