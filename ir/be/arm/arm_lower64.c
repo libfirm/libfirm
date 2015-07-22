@@ -237,18 +237,19 @@ static void lower64_shl(ir_node *node, ir_mode *mode)
 	} else {
 		right_low = new_rd_Conv(dbgi, block, right, umode);
 	}
-	ir_node  *shl1       = new_rd_Shl(dbgi, block, left_high, right_low, mode);
-	ir_graph *irg        = get_irn_irg(node);
-	ir_node  *c32        = new_r_Const_long(irg, umode, 32);
-	ir_node  *sub        = new_rd_Sub(dbgi, block, right_low, c32, umode);
-	ir_node  *shl2       = new_rd_Shl(dbgi, block, left_low, sub, umode);
-	ir_node  *shl2_conv  = new_rd_Conv(dbgi, block, shl2, mode);
-	ir_node  *or         = new_rd_Or(dbgi, block, shl1, shl2_conv, mode);
-	ir_node  *sub2       = new_rd_Sub(dbgi, block, c32, right_low, umode);
-	ir_node  *shr        = new_rd_Shr(dbgi, block, left_low, sub2, umode);
-	ir_node  *shr_conv   = new_rd_Conv(dbgi, block, shr, mode);
-	ir_node  *or2        = new_rd_Or(dbgi, block, or, shr_conv, mode);
-	ir_node  *low        = new_rd_Shl(dbgi, block, left_low, right_low, umode);
+	/* Res_lo = L_hi << R | L_lo << (R - 32) | L_lo >> (32 - R) */
+	ir_node  *shl1     = new_rd_Shl(dbgi, block, left_high, right_low, mode);
+	ir_graph *irg      = get_irn_irg(node);
+	ir_node  *c32      = new_r_Const_long(irg, umode, 32);
+	ir_node  *sub      = new_rd_Sub(dbgi, block, right_low, c32, umode);
+	ir_node  *llo_conv = new_rd_Conv(dbgi, block, left_low, mode);
+	ir_node  *shl2     = new_rd_Shl(dbgi, block, llo_conv, sub, mode);
+	ir_node  *or       = new_rd_Or(dbgi, block, shl1, shl2, mode);
+	ir_node  *sub2     = new_rd_Sub(dbgi, block, c32, right_low, umode);
+	ir_node  *shr      = new_rd_Shr(dbgi, block, llo_conv, sub2, mode);
+	ir_node  *or2      = new_rd_Or(dbgi, block, or, shr, mode);
+	/* Res_lo = L_lo << R */
+	ir_node  *low      = new_rd_Shl(dbgi, block, left_low, right_low, umode);
 	ir_set_dw_lowered(node, low, or2);
 }
 
