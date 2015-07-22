@@ -838,7 +838,7 @@ static void build_address(ia32_address_mode_t *am, ir_node *node,
 		addr->index       = noreg_GP;
 		addr->mem         = nomem;
 		addr->imm         = (x86_imm32_t) {
-			.kind   = X86_IMM_ADDR,
+			.kind   = lconst_imm_kind,
 			.entity = entity,
 		};
 		adjust_relocation(&addr->imm);
