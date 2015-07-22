@@ -456,7 +456,7 @@ static int arm_cmp_attrs_equal(const ir_node *a, const ir_node *b)
 {
 	const arm_cmp_attr_t *attr_a = get_arm_cmp_attr_const(a);
 	const arm_cmp_attr_t *attr_b = get_arm_cmp_attr_const(b);
-	return arm_attrs_equal(a, b)
+	return arm_shifter_operands_equal(a, b)
 	    && attr_a->ins_permuted == attr_b->ins_permuted
 	    && attr_a->is_unsigned == attr_b->is_unsigned;
 }
