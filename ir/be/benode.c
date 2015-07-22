@@ -53,6 +53,11 @@ typedef struct {
 	int            offset;
 } be_memperm_attr_t;
 
+typedef struct be_relocation_attr_t {
+	ir_entity *entity;
+	unsigned   kind;
+} be_relocation_attr_t;
+
 ir_op *op_be_AnyVal;
 ir_op *op_be_Asm;
 ir_op *op_be_Copy;
@@ -61,6 +66,7 @@ ir_op *op_be_IncSP;
 ir_op *op_be_Keep;
 ir_op *op_be_MemPerm;
 ir_op *op_be_Perm;
+ir_op *op_be_Relocation;
 
 #define be_op_tag FOURCC('B', 'E', '\0', '\0')
 
@@ -81,6 +87,15 @@ static int be_incsp_attrs_equal(const ir_node *a, const ir_node *b)
 	const be_incsp_attr_t *attr_b
 		= (const be_incsp_attr_t*)get_irn_generic_attr_const(b);
 	return attr_a->offset == attr_b->offset && attrs_equal_be_node(a, b);
+}
+
+static int be_relocation_attrs_equal(ir_node const *a, ir_node const *b)
+{
+	be_relocation_attr_t const *attr_a
+		= (be_relocation_attr_t const*)get_irn_generic_attr_const(a);
+	be_relocation_attr_t const *attr_b
+		= (be_relocation_attr_t const*)get_irn_generic_attr_const(b);
+	return attr_a->entity == attr_b->entity && attr_a->kind == attr_b->kind;
 }
 
 arch_register_req_t const **be_allocate_in_reqs(ir_graph *const irg, unsigned const n)
@@ -511,6 +526,35 @@ ir_node *be_new_Asm(dbg_info *const dbgi, ir_node *const block, int const n_ins,
 	return asmn;
 }
 
+ir_node *be_new_Relocation(ir_graph *irg, unsigned kind, ir_entity *entity)
+{
+	ir_node *const block = get_irg_start_block(irg);
+	ir_node *const node  = new_ir_node(NULL, irg, block, op_be_Relocation,
+	                                   mode_P, 0, NULL);
+	be_relocation_attr_t *const attr
+		= (be_relocation_attr_t*)get_irn_generic_attr(node);
+	attr->entity = entity;
+	attr->kind   = kind;
+	ir_node *const optimized = optimize_node(node);
+	return optimized;
+}
+
+unsigned be_get_Relocation_kind(ir_node const* const node)
+{
+	assert(be_is_Relocation(node));
+	be_relocation_attr_t const *const attr
+		= (be_relocation_attr_t const*)get_irn_generic_attr_const(node);
+	return attr->kind;
+}
+
+ir_entity *be_get_Relocation_entity(ir_node const* const node)
+{
+	assert(be_is_Relocation(node));
+	be_relocation_attr_t const *const attr
+		= (be_relocation_attr_t const*)get_irn_generic_attr_const(node);
+	return attr->entity;
+}
+
 /**
  * ir_op-Operation: dump a be node to file
  */
@@ -611,23 +655,25 @@ void be_init_op(void)
 
 	/* Acquire all needed opcodes. */
 	unsigned const o = get_next_ir_opcodes(beo_last + 1);
-	op_be_AnyVal   = new_be_op(o+beo_AnyVal,   "be_AnyVal",   op_pin_state_exc_pinned, irop_flag_constlike|irop_flag_cse_neutral, oparity_any,      sizeof(be_node_attr_t));
-	op_be_Asm      = new_be_op(o+beo_Asm,      "be_Asm",      op_pin_state_exc_pinned, irop_flag_none,                            oparity_any,      sizeof(be_asm_attr_t));
-	op_be_Copy     = new_be_op(o+beo_Copy,     "be_Copy",     op_pin_state_exc_pinned, irop_flag_none,                            oparity_any,      sizeof(be_node_attr_t));
-	op_be_CopyKeep = new_be_op(o+beo_CopyKeep, "be_CopyKeep", op_pin_state_exc_pinned, irop_flag_keep,                            oparity_variable, sizeof(be_node_attr_t));
-	op_be_IncSP    = new_be_op(o+beo_IncSP,    "be_IncSP",    op_pin_state_exc_pinned, irop_flag_none,                            oparity_any,      sizeof(be_incsp_attr_t));
-	op_be_Keep     = new_be_op(o+beo_Keep,     "be_Keep",     op_pin_state_exc_pinned, irop_flag_keep,                            oparity_variable, sizeof(be_node_attr_t));
-	op_be_MemPerm  = new_be_op(o+beo_MemPerm,  "be_MemPerm",  op_pin_state_exc_pinned, irop_flag_none,                            oparity_variable, sizeof(be_memperm_attr_t));
-	op_be_Perm     = new_be_op(o+beo_Perm,     "be_Perm",     op_pin_state_exc_pinned, irop_flag_none,                            oparity_variable, sizeof(be_node_attr_t));
+	op_be_AnyVal     = new_be_op(o+beo_AnyVal,     "be_AnyVal",     op_pin_state_exc_pinned, irop_flag_constlike|irop_flag_cse_neutral, oparity_any,      sizeof(be_node_attr_t));
+	op_be_Asm        = new_be_op(o+beo_Asm,        "be_Asm",        op_pin_state_exc_pinned, irop_flag_none,                            oparity_any,      sizeof(be_asm_attr_t));
+	op_be_Copy       = new_be_op(o+beo_Copy,       "be_Copy",       op_pin_state_exc_pinned, irop_flag_none,                            oparity_any,      sizeof(be_node_attr_t));
+	op_be_CopyKeep   = new_be_op(o+beo_CopyKeep,   "be_CopyKeep",   op_pin_state_exc_pinned, irop_flag_keep,                            oparity_variable, sizeof(be_node_attr_t));
+	op_be_IncSP      = new_be_op(o+beo_IncSP,      "be_IncSP",      op_pin_state_exc_pinned, irop_flag_none,                            oparity_any,      sizeof(be_incsp_attr_t));
+	op_be_Keep       = new_be_op(o+beo_Keep,       "be_Keep",       op_pin_state_exc_pinned, irop_flag_keep,                            oparity_variable, sizeof(be_node_attr_t));
+	op_be_MemPerm    = new_be_op(o+beo_MemPerm,    "be_MemPerm",    op_pin_state_exc_pinned, irop_flag_none,                            oparity_variable, sizeof(be_memperm_attr_t));
+	op_be_Perm       = new_be_op(o+beo_Perm,       "be_Perm",       op_pin_state_exc_pinned, irop_flag_none,                            oparity_variable, sizeof(be_node_attr_t));
+	op_be_Relocation = new_be_op(o+beo_Relocation, "be_Relocation", op_pin_state_floats,     irop_flag_constlike|irop_flag_start_block, oparity_any,      sizeof(be_relocation_attr_t));
 
-	set_op_attrs_equal(op_be_Asm,      be_asm_attr_equal);
-	set_op_attrs_equal(op_be_AnyVal,   attrs_equal_be_node);
-	set_op_attrs_equal(op_be_Copy,     attrs_equal_be_node);
-	set_op_attrs_equal(op_be_CopyKeep, attrs_equal_be_node);
-	set_op_attrs_equal(op_be_IncSP,    be_incsp_attrs_equal);
-	set_op_attrs_equal(op_be_Keep,     attrs_equal_be_node);
-	set_op_attrs_equal(op_be_MemPerm,  attrs_equal_be_node);
-	set_op_attrs_equal(op_be_Perm,     attrs_equal_be_node);
+	set_op_attrs_equal(op_be_Asm,        be_asm_attr_equal);
+	set_op_attrs_equal(op_be_AnyVal,     attrs_equal_be_node);
+	set_op_attrs_equal(op_be_Copy,       attrs_equal_be_node);
+	set_op_attrs_equal(op_be_CopyKeep,   attrs_equal_be_node);
+	set_op_attrs_equal(op_be_IncSP,      be_incsp_attrs_equal);
+	set_op_attrs_equal(op_be_Keep,       attrs_equal_be_node);
+	set_op_attrs_equal(op_be_MemPerm,    attrs_equal_be_node);
+	set_op_attrs_equal(op_be_Perm,       attrs_equal_be_node);
+	set_op_attrs_equal(op_be_Relocation, be_relocation_attrs_equal);
 }
 
 void be_finish_op(void)

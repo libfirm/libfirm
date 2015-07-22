@@ -29,7 +29,8 @@ typedef enum be_opcode {
 	beo_Keep,
 	beo_MemPerm,
 	beo_Perm,
-	beo_last  = beo_Perm
+	beo_Relocation,
+	beo_last  = beo_Relocation
 } be_opcode;
 
 typedef struct be_node_attr_t {
@@ -50,6 +51,7 @@ extern ir_op *op_be_IncSP;
 extern ir_op *op_be_Keep;
 extern ir_op *op_be_MemPerm;
 extern ir_op *op_be_Perm;
+extern ir_op *op_be_Relocation;
 
 /**
  * Determines if irn is a be_node.
@@ -192,17 +194,30 @@ ir_node *be_complete_Phi(ir_node *phi, unsigned n_ins, ir_node **ins);
 ir_node *be_new_Asm(dbg_info *dbgi, ir_node *block, int n_ins, ir_node **ins, int n_outs, ident *text, void *operands);
 
 /**
+ * Create a new Relocation node. The node returns the reference to an entity
+ * with a specific linker relocation kind. The relocation kind is backend
+ * specific. This node is meant to be used in preparation phases for position
+ * independent code.
+ */
+ir_node *be_new_Relocation(ir_graph *irg, unsigned kind, ir_entity *entity);
+
+ir_entity *be_get_Relocation_entity(ir_node const* node);
+
+unsigned be_get_Relocation_kind(ir_node const* node);
+
+/**
  * Search for output of start node with a specific register
  */
 ir_node *be_get_initial_reg_value(ir_graph *irg, const arch_register_t *reg);
 
-static inline bool be_is_Asm     (const ir_node *irn) { return get_irn_op(irn) == op_be_Asm      ; }
-static inline bool be_is_Copy    (const ir_node *irn) { return get_irn_op(irn) == op_be_Copy     ; }
-static inline bool be_is_CopyKeep(const ir_node *irn) { return get_irn_op(irn) == op_be_CopyKeep ; }
-static inline bool be_is_Perm    (const ir_node *irn) { return get_irn_op(irn) == op_be_Perm     ; }
-static inline bool be_is_MemPerm (const ir_node *irn) { return get_irn_op(irn) == op_be_MemPerm  ; }
-static inline bool be_is_Keep    (const ir_node *irn) { return get_irn_op(irn) == op_be_Keep     ; }
-static inline bool be_is_IncSP   (const ir_node *irn) { return get_irn_op(irn) == op_be_IncSP    ; }
+static inline bool be_is_Asm       (const ir_node *irn) { return get_irn_op(irn) == op_be_Asm       ; }
+static inline bool be_is_Copy      (const ir_node *irn) { return get_irn_op(irn) == op_be_Copy      ; }
+static inline bool be_is_CopyKeep  (const ir_node *irn) { return get_irn_op(irn) == op_be_CopyKeep  ; }
+static inline bool be_is_Perm      (const ir_node *irn) { return get_irn_op(irn) == op_be_Perm      ; }
+static inline bool be_is_MemPerm   (const ir_node *irn) { return get_irn_op(irn) == op_be_MemPerm   ; }
+static inline bool be_is_Keep      (const ir_node *irn) { return get_irn_op(irn) == op_be_Keep      ; }
+static inline bool be_is_IncSP     (const ir_node *irn) { return get_irn_op(irn) == op_be_IncSP     ; }
+static inline bool be_is_Relocation(const ir_node *irn) { return get_irn_op(irn) == op_be_Relocation; }
 
 static inline be_asm_attr_t const *get_be_asm_attr_const(ir_node const *const asmn)
 {
