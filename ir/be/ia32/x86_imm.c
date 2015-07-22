@@ -47,7 +47,8 @@ bool x86_match_immediate(x86_imm32_t *immediate, const ir_node *node,
 
 	ir_tarval *offset;
 	ir_entity *entity;
-	if (!be_match_immediate(node, &offset, &entity))
+	unsigned   reloc_kind;
+	if (!be_match_immediate(node, &offset, &entity, &reloc_kind))
 		return false;
 
 	long val = 0;
@@ -62,12 +63,13 @@ bool x86_match_immediate(x86_imm32_t *immediate, const ir_node *node,
 			return false;
 	}
 
-	x86_immediate_kind_t kind = X86_IMM_VALUE;
+	x86_immediate_kind_t kind = (x86_immediate_kind_t)reloc_kind;
 	if (entity != NULL) {
 		/* we need full 32bits for entities */
 		if (constraint != 'i' && constraint != 'g')
 			return false;
-		kind = X86_IMM_ADDR;
+		if (kind == X86_IMM_VALUE)
+			kind = X86_IMM_ADDR;
 	}
 
 	/* we are fine */

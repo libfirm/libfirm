@@ -855,25 +855,41 @@ ir_node *be_skip_sameconv(ir_node *node)
 	return node;
 }
 
-bool be_match_immediate(ir_node const *const node, ir_tarval **const tarval_out, ir_entity **const entity_out)
+bool be_match_immediate(ir_node const *const node, ir_tarval **const tarval_out,
+                        ir_entity **const entity_out, unsigned *reloc_kind_out)
 {
-	ir_node const *addr;
-	ir_node const *cnst;
+	unsigned         reloc_kind;
+	ir_entity       *entity;
+	ir_node   const *cnst;
 	if (is_Const(node)) {
-		addr = NULL;
-		cnst = node;
+		entity     = NULL;
+		cnst       = node;
+		reloc_kind = 0;
 	} else if (is_Address(node)) {
-		addr = node;
-		cnst = NULL;
+		entity     = get_Address_entity(node);
+		cnst       = NULL;
+		reloc_kind = 0;
+	} else if (be_is_Relocation(node)) {
+		entity     = be_get_Relocation_entity(node);
+		cnst       = NULL;
+		reloc_kind = be_get_Relocation_kind(node);
 	} else if (is_Add(node)) {
-		ir_node const *const l = get_Add_left(node);
-		ir_node const *const r = get_Add_right(node);
-		if (is_Address(l) && is_Const(r)) {
-			addr = l;
-			cnst = r;
-		} else if (is_Const(l) && is_Address(r)) {
-			addr = r;
-			cnst = l;
+		ir_node const *l = get_Add_left(node);
+		ir_node const *r = get_Add_right(node);
+		if (be_is_Relocation(r) || is_Address(r)) {
+			ir_node const *tmp = l;
+			l = r;
+			r = tmp;
+		}
+		if (!is_Const(l))
+			return false;
+		cnst = l;
+		if (is_Address(r)) {
+			entity     = get_Address_entity(node);
+			reloc_kind = 0;
+		} else if (be_is_Relocation(r)) {
+			entity     = get_Address_entity(node);
+			reloc_kind = be_get_Relocation_kind(node);
 		} else {
 			return false;
 		}
@@ -881,16 +897,8 @@ bool be_match_immediate(ir_node const *const node, ir_tarval **const tarval_out,
 		return false;
 	}
 
-	ir_entity *entity;
-	if (addr) {
-		entity = get_Address_entity(addr);
-		if (is_tls_entity(entity))
-			return false;
-	} else {
-		entity = NULL;
-	}
-
-	*tarval_out = cnst ? get_Const_tarval(cnst) : NULL;
-	*entity_out = entity;
+	*tarval_out     = cnst ? get_Const_tarval(cnst) : NULL;
+	*entity_out     = entity;
+	*reloc_kind_out = reloc_kind;
 	return true;
 }

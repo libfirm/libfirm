@@ -277,7 +277,8 @@ static bool sparc_match_immediate(sparc_asm_operand_t *const operand, ir_node *c
 {
 	ir_tarval *offset;
 	ir_entity *entity;
-	if (!be_match_immediate(node, &offset, &entity))
+	unsigned   reloc_kind;
+	if (!be_match_immediate(node, &offset, &entity, &reloc_kind))
 		return false;
 
 	if (entity && imm_type != 'g' && imm_type != 'i')

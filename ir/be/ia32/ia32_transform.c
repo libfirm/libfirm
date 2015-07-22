@@ -504,6 +504,19 @@ static ir_node *gen_Address(ir_node *node)
 	return cnst;
 }
 
+static ir_node *gen_be_Relocation(ir_node *node)
+{
+	ir_node  *block = be_transform_nodes_block(node);
+	dbg_info *dbgi  = get_irn_dbg_info(node);
+	x86_imm32_t imm = {
+		.kind   = (x86_immediate_kind_t)be_get_Relocation_kind(node),
+		.entity = be_get_Relocation_entity(node),
+	};
+	ir_node *cnst = new_bd_ia32_Const(dbgi, block, &imm);
+	SET_IA32_ORIG_NODE(cnst, node);
+	return cnst;
+}
+
 static ir_type *make_array_type(ir_type *tp)
 {
 	unsigned alignment = get_type_alignment_bytes(tp);
@@ -5757,6 +5770,7 @@ static void register_transformers(void)
 	be_set_transform_function(op_Sub,              gen_Sub);
 	be_set_transform_function(op_Switch,           gen_Switch);
 	be_set_transform_function(op_Unknown,          gen_Unknown);
+	be_set_transform_function(op_be_Relocation,    gen_be_Relocation);
 	be_set_transform_proj_function(op_Alloc,            gen_Proj_Alloc);
 	be_set_transform_proj_function(op_ASM,              gen_Proj_ASM);
 	be_set_transform_proj_function(op_Builtin,          gen_Proj_Builtin);

@@ -9,20 +9,19 @@
  *              nodes that can be used as address mode for x86 instructions
  * @author      Matthias Braun
  */
-#include "bediagnostic.h"
-#include "beirg.h"
-#include "beutil.h"
-#include "betranshlp.h"
 #include "x86_address_mode.h"
 
-#include "irtypes.h"
-#include "irnode_t.h"
-#include "irprintf.h"
+#include "bediagnostic.h"
+#include "beirg.h"
+#include "belive.h"
+#include "benode.h"
+#include "betranshlp.h"
+#include "beutil.h"
 #include "iredges_t.h"
 #include "irgwalk.h"
-
-#include "benode.h"
-#include "belive.h"
+#include "irnode_t.h"
+#include "irprintf.h"
+#include "irtypes.h"
 
 static bitset_t *non_address_mode_nodes;
 
@@ -76,6 +75,13 @@ static bool eat_imm(x86_address_t *const addr, ir_node const *const node)
 		return true;
 
 	default:
+		if (be_is_Relocation(node)) {
+			if (addr->imm.entity)
+				return false;
+			addr->imm.entity = be_get_Relocation_entity(node);
+			addr->imm.kind = (x86_immediate_kind_t)be_get_Relocation_kind(node);
+			return true;
+		}
 		/* All other nodes are no immediates. */
 		return false;
 	}

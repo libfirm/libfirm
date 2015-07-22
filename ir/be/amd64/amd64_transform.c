@@ -481,7 +481,8 @@ static bool match_immediate_32(x86_imm32_t *imm, const ir_node *op,
 
 	ir_tarval *tv;
 	ir_entity *entity;
-	if (!be_match_immediate(op, &tv, &entity))
+	unsigned   reloc_kind;
+	if (!be_match_immediate(op, &tv, &entity, &reloc_kind))
 		return false;
 
 	int32_t val;
@@ -501,14 +502,14 @@ static bool match_immediate_32(x86_imm32_t *imm, const ir_node *op,
 		val = 0;
 	}
 
-	x86_immediate_kind_t kind = X86_IMM_VALUE;
+	x86_immediate_kind_t kind = (x86_immediate_kind_t)reloc_kind;
 	if (entity != NULL) {
 		if (!can_match_ip_relative) {
 			/* TODO: check if entity is in lower 4GB address space/relative */
 			return false;
 		}
-		/* TODO: use a new relocation type for ip-relative? */
-		kind = X86_IMM_ADDR;
+		if (kind == X86_IMM_VALUE)
+			kind = X86_IMM_ADDR;
 	}
 
 	imm->entity = entity;
