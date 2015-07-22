@@ -897,6 +897,9 @@ bool be_match_immediate(ir_node const *const node, ir_tarval **const tarval_out,
 		return false;
 	}
 
+	if (entity && is_tls_entity(entity))
+		return false;
+
 	*tarval_out     = cnst ? get_Const_tarval(cnst) : NULL;
 	*entity_out     = entity;
 	*reloc_kind_out = reloc_kind;
