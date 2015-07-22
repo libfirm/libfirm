@@ -234,14 +234,6 @@ static void fix_loops(ir_node *node)
 	}
 }
 
-ir_node *be_pre_transform_node(ir_node *place)
-{
-	if (place == NULL)
-		return NULL;
-
-	return be_transform_node(place);
-}
-
 /**
  * Transforms all nodes. Deletes the old obstack and creates a new one.
  */

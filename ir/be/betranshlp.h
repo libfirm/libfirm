@@ -27,9 +27,6 @@ typedef void (arch_pretrans_nodes)(ir_graph*);
  */
 typedef ir_node *(be_transform_func)(ir_node *node);
 
-/** pre-transform a node */
-ir_node *be_pre_transform_node(ir_node *place);
-
 /**
  * Calls transformation function for given node and marks it visited.
  */
