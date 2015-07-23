@@ -66,7 +66,7 @@ ir_node *new_rd_ASM(dbg_info *db, ir_node *block, ir_node *mem,
 	MEMCPY(a->output_constraints, outputs, n_outs);
 	MEMCPY(a->clobbers,           clobber, n_clobber);
 
-	verify_new_node(irg, res);
+	verify_new_node(res);
 	res = optimize_node(res);
 	return res;
 }
@@ -91,7 +91,7 @@ static inline ir_node *new_rd_Phi0(dbg_info *dbgi, ir_node *block,
 	ir_graph *irg = get_irn_irg(block);
 	ir_node  *res = new_ir_node(dbgi, irg, block, op_Phi, mode, 0, NULL);
 	res->attr.phi.u.pos = pos;
-	verify_new_node(irg, res);
+	verify_new_node(res);
 	return res;
 }
 
@@ -168,7 +168,7 @@ static ir_node *set_phi_arguments(ir_node *phi, int pos)
 	phi->attr.phi.u.backedge = new_backedge_arr(get_irg_obstack(irg), arity);
 	set_irn_in(phi, arity, in);
 
-	verify_new_node(irg, phi);
+	verify_new_node(phi);
 
 	try_remove_unnecessary_phi(phi);
 
@@ -294,7 +294,7 @@ void mature_immBlock(ir_node *block)
 	 * nodes refer to the unoptimized node.
 	 * We can call optimize_in_place_2(), as global cse has no effect on blocks.
 	 */
-	verify_new_node(irg, block);
+	verify_new_node(block);
 	optimize_in_place_2(block);
 }
 
@@ -322,7 +322,7 @@ ir_node *new_rd_DivRL(dbg_info *dbgi, ir_node *block, ir_node * irn_mem, ir_node
 	res->attr.div.resmode       = resmode;
 	res->attr.div.no_remainder  = 1;
 	res->attr.div.exc.pin_state = pin_state;
-	verify_new_node(irg, res);
+	verify_new_node(res);
 	res = optimize_node(res);
 	return res;
 }
@@ -350,7 +350,7 @@ ir_node *new_rd_Phi_loop(dbg_info *db, ir_node *block, int arity,
 	ir_node *res = new_ir_node(db, irg, block, op_Phi, mode_M, arity, in);
 	res->attr.phi.u.backedge = new_backedge_arr(get_irg_obstack(irg), arity);
 	res->attr.phi.loop = true;
-	verify_new_node(irg, res);
+	verify_new_node(res);
 	ir_node *optimized = optimize_node(res);
 	if (optimized == res)
 		keep_alive(optimized);
@@ -392,7 +392,7 @@ ir_node *new_rd_immBlock(dbg_info *dbgi, ir_graph *irg)
 	res->attr.block.graph_arr = NEW_ARR_DZ(ir_node*, get_irg_obstack(irg), irg->n_loc);
 
 	/* Immature block may not be optimized! */
-	verify_new_node(irg, res);
+	verify_new_node(res);
 
 	return res;
 }
@@ -606,13 +606,13 @@ ir_node *new_r_Block_noopt(ir_graph *irg, int arity, ir_node *in[])
 	if (irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_CONSTRUCTION)) {
 		res->attr.block.graph_arr = NEW_ARR_DZ(ir_node*, get_irg_obstack(irg), irg->n_loc);
 	}
-	verify_new_node(irg, res);
+	verify_new_node(res);
 	return res;
 }
 
-void (verify_new_node)(ir_graph *irg, ir_node *node)
+void (verify_new_node)(ir_node *node)
 {
-	verify_new_node_(irg, node);
+	verify_new_node_(node);
 }
 
 ir_node *new_rd_Const_null(dbg_info *const dbgi, ir_graph *const irg, ir_mode *const mode)

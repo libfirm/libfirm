@@ -435,7 +435,7 @@ ir_node *be_new_Phi(ir_node *block, int n_ins, ir_node **ins, ir_mode *mode,
 	for (int i = 0; i < n_ins; ++i) {
 		info->in_reqs[i] = req;
 	}
-	verify_new_node(irg, phi);
+	verify_new_node(phi);
 	phi = optimize_node(phi);
 	return phi;
 }
@@ -467,7 +467,7 @@ ir_node *be_complete_Phi(ir_node *const phi, unsigned const n_ins, ir_node **con
 	backend_info_t *const info = be_get_info(phi);
 	info->in_reqs = in_reqs;
 
-	verify_new_node(irg, phi);
+	verify_new_node(phi);
 	return optimize_node(phi);
 }
 

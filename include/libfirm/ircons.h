@@ -679,7 +679,7 @@ FIRM_API void irg_finalize_cons(ir_graph *irg);
  * The normal node constructors already call this function, you only need to
  * call this yourself if you create new node constructors on your own.
  */
-FIRM_API void verify_new_node(ir_graph *irg, ir_node *node);
+FIRM_API void verify_new_node(ir_node *node);
 
 /**
  * Register a new callback for the case that the value of an uninitialized

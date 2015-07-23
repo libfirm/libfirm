@@ -124,7 +124,7 @@ static ir_node *create_node(dbg_info *dbgi, ir_node *block, ir_op *op,
 {
 	ir_graph *irg = get_irn_irg(block);
 	ir_node  *new = new_ir_node(dbgi, irg, block, op, mode, n_in, in);
-	verify_new_node(irg, new);
+	verify_new_node(new);
 	return optimize_node(new);
 }
 

@@ -82,7 +82,7 @@ ir_node *new_rd_{{node.name}}(
 	{%- endfor %}
 	{%- endif %}
 	{{- node.init }}
-	verify_new_node(irg, res);
+	verify_new_node(res);
 	res = optimize_node(res);
 	{{- node.init_after_opt }}
 	return res;

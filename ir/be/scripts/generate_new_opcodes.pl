@@ -365,7 +365,7 @@ EOF
 	}
 
 	$temp .= <<EOF;
-	verify_new_node(irg, res);
+	verify_new_node(res);
 	return optimize_node(res);
 EOF
 
