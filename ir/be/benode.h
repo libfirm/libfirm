@@ -20,9 +20,8 @@
 #include "irnode_t.h"
 
 typedef enum be_opcode {
-	beo_AnyVal,
-	beo_first = beo_AnyVal,
 	beo_Asm,
+	beo_first = beo_Asm,
 	beo_Copy,
 	beo_CopyKeep,
 	beo_IncSP,
@@ -43,7 +42,6 @@ typedef struct be_asm_attr_t {
 	void          *operands;
 } be_asm_attr_t;
 
-extern ir_op *op_be_AnyVal;
 extern ir_op *op_be_Asm;
 extern ir_op *op_be_Copy;
 extern ir_op *op_be_CopyKeep;
@@ -152,14 +150,6 @@ void be_set_MemPerm_offset(ir_node *irn, int offset);
 int be_get_MemPerm_offset(const ir_node *irn);
 
 unsigned be_get_MemPerm_entity_arity(const ir_node *irn);
-
-/**
- * Create a AnyVal node. Use of this node should be avoided!
- * The node is used as input at places where we need an input register assigned
- * but don't care about its contents. This is for example necessary to fixup
- * nodes which are not register pressure faithfull.
- */
-ir_node *be_new_AnyVal(ir_node *block, const arch_register_class_t *cls);
 
 arch_register_req_t const **be_allocate_in_reqs(ir_graph *irg, unsigned n);
 
