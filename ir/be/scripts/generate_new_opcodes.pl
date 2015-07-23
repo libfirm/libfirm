@@ -365,11 +365,8 @@ EOF
 	}
 
 	$temp .= <<EOF;
-	/* optimize node */
-	res = optimize_node(res);
 	verify_new_node(irg, res);
-
-	return res;
+	return optimize_node(res);
 EOF
 
 	$obst_constructor .= $temp;
