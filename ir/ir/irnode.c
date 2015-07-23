@@ -881,11 +881,6 @@ int (is_irn_start_block_placed)(const ir_node *node)
 	return is_irn_start_block_placed_(node);
 }
 
-int (is_irn_cse_neutral)(const ir_node *node)
-{
-	return is_irn_cse_neutral_(node);
-}
-
 const char *get_cond_jmp_predicate_name(cond_jmp_predicate pred)
 {
 #define X(a)    case a: return #a

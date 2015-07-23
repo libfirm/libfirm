@@ -54,7 +54,6 @@
 #define is_irn_constlike(node)                is_irn_constlike_(node)
 #define is_irn_keep(node)                     is_irn_keep_(node)
 #define is_irn_start_block_placed(node)       is_irn_start_block_placed_(node)
-#define is_irn_cse_neutral(node)              is_irn_cse_neutral_(node)
 #define get_irn_generic_attr(node)            get_irn_generic_attr_(node)
 #define get_irn_generic_attr_const(node)      get_irn_generic_attr_const_(node)
 #define get_irn_idx(node)                     get_irn_idx_(node)
@@ -383,11 +382,6 @@ static inline int is_irn_keep_(const ir_node *node)
 static inline int is_irn_start_block_placed_(const ir_node *node)
 {
 	return is_op_start_block_placed(get_irn_op_(node));
-}
-
-static inline int is_irn_cse_neutral_(const ir_node *node)
-{
-	return is_op_cse_neutral(get_irn_op_(node));
 }
 
 static inline void *get_irn_generic_attr_(ir_node *node)

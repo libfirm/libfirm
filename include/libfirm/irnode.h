@@ -427,11 +427,6 @@ FIRM_API int is_irn_keep(const ir_node *node);
  */
 FIRM_API int is_irn_start_block_placed(const ir_node *node);
 
-/**
- * Returns non-zero for nodes that are CSE neutral to its users.
- */
-FIRM_API int is_irn_cse_neutral(const ir_node *node);
-
 /** Returns the string representation of the jump prediction. */
 FIRM_API const char *get_cond_jmp_predicate_name(cond_jmp_predicate pred);
 

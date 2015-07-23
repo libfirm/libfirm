@@ -211,10 +211,7 @@ static unsigned default_hash_node(const ir_node *node)
 	/* consider all in nodes... except the block if not a control flow. */
 	for (int i = is_cfop(node) ? -1 : 0;  i < arity;  ++i) {
 		ir_node *pred = get_irn_n(node, i);
-		if (is_irn_cse_neutral(pred))
-			hash *= 9;
-		else
-			hash = 9*hash + hash_ptr(pred);
+		hash = 9*hash + hash_ptr(pred);
 	}
 
 	/* ...mode,... */

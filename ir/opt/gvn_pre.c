@@ -271,10 +271,8 @@ static int compare_gvn_identities(const void *elt, const void *key)
 	for (i = 0; i < irn_arity_a; ++i) {
 		ir_node *pred_a = get_irn_n(a, i);
 		ir_node *pred_b = get_irn_n(b, i);
-		if (pred_a != pred_b) {
-			if (!is_irn_cse_neutral(pred_a) || !is_irn_cse_neutral(pred_b))
-				return 1;
-		}
+		if (pred_a != pred_b)
+			return 1;
 	}
 
 	/* here, we already now that the nodes are identical except their

@@ -99,12 +99,6 @@ static inline bool is_op_start_block_placed(const ir_op *op)
 	return op->flags & irop_flag_start_block;
 }
 
-/** Returns non-zero if operation is CSE neutral */
-static inline bool is_op_cse_neutral(const ir_op *op)
-{
-	return op->flags & irop_flag_cse_neutral;
-}
-
 static inline unsigned get_op_code_(const ir_op *op)
 {
 	return op->code;
