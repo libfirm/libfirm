@@ -1079,7 +1079,7 @@ int irn_verify(const ir_node *n)
 static void verify_wrap(ir_node *node, void *env)
 {
 	bool *fine = (bool*)env;
-	*fine &= irn_verify_irg(node, get_irn_irg(node));
+	*fine &= irn_verify(node);
 }
 
 /**
@@ -1090,7 +1090,7 @@ static void verify_wrap_ssa(ir_node *node, void *env)
 {
 	bool *fine = (bool*)env;
 
-	*fine &= irn_verify_irg(node, get_irn_irg(node));
+	*fine &= irn_verify(node);
 	if (*fine) {
 		*fine &= check_dominance_for_node(node);
 	}
