@@ -69,9 +69,6 @@ $default_copy_attr = "arm_copy_attr";
 	arm_farith_attr_t =>
 		"\tinit_arm_attributes(res, irn_flags_, in_reqs, n_res);\n".
 		"\tinit_arm_farith_attributes(res, op_mode);",
-	arm_CopyB_attr_t =>
-		"\tinit_arm_attributes(res, irn_flags_, in_reqs, n_res);\n".
-		"\tinit_arm_CopyB_attributes(res, size);",
 );
 
 my $unop_shifter_operand = {
@@ -449,16 +446,6 @@ Bl => {
 	attr_type => "arm_Address_attr_t",
 	attr      => "ir_entity *entity, int offset",
 	emit      => 'bl %I',
-},
-
-CopyB => {
-	state     => "pinned",
-	attr      => "unsigned size",
-	attr_type => "arm_CopyB_attr_t",
-	in_reqs   => [ "!sp", "!sp", "gp", "gp", "gp", "none" ],
-	out_reqs  => [ "none" ],
-	outs      => [ "M" ],
-	mode      => "mode_M",
 },
 
 FrameAddr => {

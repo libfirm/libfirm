@@ -496,74 +496,6 @@ static void emit_arm_B(const ir_node *irn)
 	}
 }
 
-/** Sort register in ascending order. */
-static int reg_cmp(const void *a, const void *b)
-{
-	const arch_register_t *const *ra = (const arch_register_t**)a;
-	const arch_register_t *const *rb = (const arch_register_t**)b;
-	return *ra < *rb ? -1 : (*ra != *rb);
-}
-
-/**
- * Create the CopyB instruction sequence.
- */
-static void emit_arm_CopyB(const ir_node *irn)
-{
-	const arm_CopyB_attr_t *attr = get_arm_CopyB_attr_const(irn);
-	unsigned                size = attr->size;
-	/* collect the temporary registers and sort them, we need ascending order */
-	const arch_register_t *tmpregs[] = {
-		arch_get_irn_register_in(irn, 2),
-		arch_get_irn_register_in(irn, 3),
-		arch_get_irn_register_in(irn, 4),
-		&arm_registers[REG_R12],
-	};
-
-	/* Note: R12 is always the last register because the RA did not assign
-	 * higher ones */
-	QSORT(tmpregs, 3, reg_cmp);
-
-	if (be_options.verbose_asm) {
-		arm_emitf(irn, "/* MemCopy (%S1)->(%S0) [%u bytes], Uses %r, %r, %r and %r */",
-		          size, tmpregs[0], tmpregs[1], tmpregs[2], tmpregs[3]);
-	}
-
-	assert(size > 0 && "CopyB needs size > 0" );
-
-	if (size & 3) {
-		be_errorf(irn, "strange hack enabled: copy more bytes than needed");
-		size += 4;
-	}
-
-	size >>= 2;
-	switch (size & 3) {
-	case 0:
-		break;
-	case 1:
-		arm_emitf(irn, "ldr %r, [%S1, #0]", tmpregs[3]);
-		arm_emitf(irn, "str %r, [%S0, #0]", tmpregs[3]);
-		break;
-	case 2:
-		arm_emitf(irn, "ldmia %S1!, {%r, %r}", tmpregs[0], tmpregs[1]);
-		arm_emitf(irn, "stmia %S0!, {%r, %r}", tmpregs[0], tmpregs[1]);
-		break;
-	case 3:
-		arm_emitf(irn, "ldmia %S1!, {%r, %r, %r}", tmpregs[0], tmpregs[1],
-		          tmpregs[2]);
-		arm_emitf(irn, "stmia %S0!, {%r, %r, %r}", tmpregs[0], tmpregs[1],
-		          tmpregs[2]);
-		break;
-	}
-	size >>= 2;
-	while (size) {
-		arm_emitf(irn, "ldmia %S1!, {%r, %r, %r}", tmpregs[0], tmpregs[1],
-		          tmpregs[2], tmpregs[3]);
-		arm_emitf(irn, "stmia %S0!, {%r, %r, %r}", tmpregs[0], tmpregs[1],
-		          tmpregs[2], tmpregs[3]);
-		--size;
-	}
-}
-
 static void emit_arm_SwitchJmp(const ir_node *irn)
 {
 	const arm_SwitchJmp_attr_t *attr = get_arm_SwitchJmp_attr_const(irn);
@@ -673,7 +605,6 @@ static void arm_register_emitters(void)
 	/* custom emitter */
 	be_set_emitter(op_arm_Address,   emit_arm_Address);
 	be_set_emitter(op_arm_B,         emit_arm_B);
-	be_set_emitter(op_arm_CopyB,     emit_arm_CopyB);
 	be_set_emitter(op_arm_fConst,    emit_arm_fConst);
 	be_set_emitter(op_arm_FrameAddr, emit_arm_FrameAddr);
 	be_set_emitter(op_arm_Jmp,       emit_arm_Jmp);

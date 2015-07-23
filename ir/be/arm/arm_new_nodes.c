@@ -247,18 +247,6 @@ const arm_SwitchJmp_attr_t *get_arm_SwitchJmp_attr_const(const ir_node *node)
 	return (const arm_SwitchJmp_attr_t*)get_irn_generic_attr_const(node);
 }
 
-arm_CopyB_attr_t *get_arm_CopyB_attr(ir_node *node)
-{
-	assert(is_arm_CopyB(node));
-	return (arm_CopyB_attr_t*)get_irn_generic_attr(node);
-}
-
-const arm_CopyB_attr_t *get_arm_CopyB_attr_const(const ir_node *node)
-{
-	assert(is_arm_CopyB(node));
-	return (const arm_CopyB_attr_t*)get_irn_generic_attr_const(node);
-}
-
 ir_tarval *get_fConst_value(const ir_node *node)
 {
 	const arm_fConst_attr_t *attr = get_arm_fConst_attr_const(node);
@@ -339,12 +327,6 @@ static void init_arm_farith_attributes(ir_node *res, ir_mode *mode)
 	attr->mode = mode;
 }
 
-static void init_arm_CopyB_attributes(ir_node *res, unsigned size)
-{
-	arm_CopyB_attr_t *attr = get_arm_CopyB_attr(res);
-	attr->size = size;
-}
-
 static void init_arm_SwitchJmp_attributes(ir_node *res,
                                           const ir_switch_table *table)
 {
@@ -370,13 +352,6 @@ static int arm_Address_attrs_equal(const ir_node *a, const ir_node *b)
 	return arm_attrs_equal(a, b)
 	    && attr_a->entity == attr_b->entity
 	    && attr_a->fp_offset == attr_b->fp_offset;
-}
-
-static int arm_CopyB_attrs_equal(const ir_node *a, const ir_node *b)
-{
-	const arm_CopyB_attr_t *attr_a = get_arm_CopyB_attr_const(a);
-	const arm_CopyB_attr_t *attr_b = get_arm_CopyB_attr_const(b);
-	return arm_attrs_equal(a, b) && attr_a->size == attr_b->size;
 }
 
 static int arm_CondJmp_attrs_equal(const ir_node *a, const ir_node *b)

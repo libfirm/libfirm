@@ -1343,27 +1343,6 @@ static void double_to_ints(dbg_info *dbgi, ir_node *block, ir_node *node,
 	*out_value1 = new_r_Proj(ldr1, arm_mode_gp, pn_arm_Ldr_res);
 }
 
-static ir_node *gen_CopyB(ir_node *node)
-{
-	ir_node  *block    = be_transform_nodes_block(node);
-	ir_node  *src      = get_CopyB_src(node);
-	ir_node  *new_src  = be_transform_node(src);
-	ir_node  *dst      = get_CopyB_dst(node);
-	ir_node  *new_dst  = be_transform_node(dst);
-	ir_node  *mem      = get_CopyB_mem(node);
-	ir_node  *new_mem  = be_transform_node(mem);
-	dbg_info *dbg      = get_irn_dbg_info(node);
-	int       size     = get_type_size_bytes(get_CopyB_type(node));
-	ir_node  *src_copy = be_new_Copy(block, new_src);
-	ir_node  *dst_copy = be_new_Copy(block, new_dst);
-
-	return new_bd_arm_CopyB(dbg, block, dst_copy, src_copy,
-	                        be_new_AnyVal(block, &arm_reg_classes[CLASS_arm_gp]),
-	                        be_new_AnyVal(block, &arm_reg_classes[CLASS_arm_gp]),
-	                        be_new_AnyVal(block, &arm_reg_classes[CLASS_arm_gp]),
-	                        new_mem, size);
-}
-
 /**
  * Transform builtin clz.
  */
@@ -2053,7 +2032,6 @@ static void arm_register_transformers(void)
 	be_set_transform_function(op_Cond,        gen_Cond);
 	be_set_transform_function(op_Const,       gen_Const);
 	be_set_transform_function(op_Conv,        gen_Conv);
-	be_set_transform_function(op_CopyB,       gen_CopyB);
 	be_set_transform_function(op_Div,         gen_Div);
 	be_set_transform_function(op_Eor,         gen_Eor);
 	be_set_transform_function(op_Jmp,         gen_Jmp);
