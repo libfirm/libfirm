@@ -17,6 +17,7 @@
 #include "irnode_t.h"
 #include "irop_t.h"
 #include "raw_bitset.h"
+#include "util.h"
 
 arch_register_req_t const arch_no_requirement = {
 	.cls = NULL,
@@ -83,6 +84,28 @@ arch_register_t const *arch_find_register(char const *const name)
 			return reg;
 	}
 	return NULL;
+}
+
+void arch_set_additional_pressure(ir_node *const node,
+                                  arch_register_class_t const *const cls,
+                                  uint8_t const pressure)
+{
+	backend_info_t *const info = be_get_info(node);
+	/* restricted to the first few classes for now */
+	unsigned index = cls->index;
+	assert(index < ARRAY_SIZE(info->add_pressure));
+	info->add_pressure[index] = pressure;
+}
+
+uint8_t arch_get_additional_pressure(ir_node const *const node,
+                                     arch_register_class_t const *const cls)
+{
+	backend_info_t *const info = be_get_info(node);
+	/* restricted to the first few classes for now */
+	unsigned index = cls->index;
+	if (index < ARRAY_SIZE(info->add_pressure))
+		return info->add_pressure[index];
+	return 0;
 }
 
 void be_make_start_mem(be_start_info_t *const info, ir_node *const start, unsigned const pos)

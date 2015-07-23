@@ -120,6 +120,12 @@ static inline void arch_add_irn_flags(ir_node *const node, arch_irn_flags_t cons
 	info->flags |= flags;
 }
 
+void arch_set_additional_pressure(ir_node *node, arch_register_class_t const *,
+                                  uint8_t pressure);
+
+uint8_t arch_get_additional_pressure(ir_node const *node,
+                                     arch_register_class_t const *cls);
+
 /**
  * Returns true if the given node should not be scheduled (has
  * arch_irn_flag_not_scheduled flag set)
