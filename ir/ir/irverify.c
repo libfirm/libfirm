@@ -1018,13 +1018,9 @@ static bool check_irn_storage(ir_graph *irg, const ir_node *node)
 }
 #endif
 
-int irn_verify_irg(const ir_node *n, ir_graph *irg)
+int irn_verify(const ir_node *const n)
 {
-	/* early abort if we have an irg mismatch */
-	if (get_irn_irg(n) != irg) {
-		warn(n, "get_irn_irg() != %+F", irg);
-		return false;
-	}
+	ir_graph *const irg = get_irn_irg(n);
 
 	bool fine = true;
 	/* check_irn_storage is an expensive check for large graphs (it has a
@@ -1066,11 +1062,6 @@ int irn_verify_irg(const ir_node *n, ir_graph *irg)
 		fine &= op->ops.verify_node(n);
 
 	return fine;
-}
-
-int irn_verify(const ir_node *n)
-{
-	return irn_verify_irg(n, get_irn_irg(n));
 }
 
 /**

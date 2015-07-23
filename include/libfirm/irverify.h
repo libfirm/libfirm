@@ -28,13 +28,6 @@
 FIRM_API int irn_verify(const ir_node *node);
 
 /**
- * Tests @p node for well-formedness assuming that it is part of graph @p irg.
- * @see irn_verify()
- * @return NON-zero if no problems were found
- */
-FIRM_API int irn_verify_irg(const ir_node *checknode, ir_graph *irg);
-
-/**
  * Calls irn_verify() for each node in irg. Also checks some global properties
  * like all (non-phi) operands dominating their points of usage; Also checks
  * if the control flow parts of a graph are valid.
