@@ -295,7 +295,7 @@ static unsigned get_distance(ir_node *from, const ir_node *def,
  * In this case reloads must be performed
  */
 static void displace(workset_t *const new_vals, bool const is_usage,
-                     ir_node *const instr)
+                     ir_node *const instr, uint8_t add_pressure)
 {
 	ir_node **to_insert = ALLOCAN(ir_node*, n_regs);
 	bool     *spilled   = ALLOCAN(bool,     n_regs);
@@ -324,6 +324,7 @@ static void displace(workset_t *const new_vals, bool const is_usage,
 		to_insert[demand] = val;
 		++demand;
 	}
+	demand += add_pressure;
 
 	/* 2. Make room for at least 'demand' slots */
 	unsigned len           = workset_get_length(ws);
@@ -364,7 +365,7 @@ static void displace(workset_t *const new_vals, bool const is_usage,
 	}
 
 	/* 3. Insert the new values into the workset */
-	for (unsigned i = 0; i < demand; ++i) {
+	for (unsigned i = 0; i < demand - add_pressure; ++i) {
 		ir_node *val = to_insert[i];
 		workset_insert(ws, val, spilled[i]);
 	}
@@ -717,7 +718,8 @@ static void process_block(ir_node *block)
 			/* (note that "spilled" is irrelevant here) */
 			workset_insert(new_vals, in, false);
 		);
-		displace(new_vals, true, irn);
+		uint8_t add_pressure = arch_get_additional_pressure(irn, cls);
+		displace(new_vals, true, irn, add_pressure);
 
 		/* allocate all values _defined_ by this instruction */
 		workset_clear(new_vals);
@@ -725,7 +727,7 @@ static void process_block(ir_node *block)
 			assert(req->width == 1);
 			workset_insert(new_vals, value, false);
 		);
-		displace(new_vals, false, irn);
+		displace(new_vals, false, irn, add_pressure);
 	}
 
 	/* Remember end-workset for this block */
