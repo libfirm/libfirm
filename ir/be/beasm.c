@@ -5,6 +5,7 @@
 
 #include <ctype.h>
 
+#include "be_t.h"
 #include "bearch.h"
 #include "beasm.h"
 #include "bediagnostic.h"
@@ -236,6 +237,8 @@ ir_node *be_make_asm(ir_node const *const node, ir_node **in, arch_register_req_
 	 */
 	size_t const orig_n_ins  = ARR_LEN(in_reqs);
 	size_t const orig_n_outs = ARR_LEN(out_reqs);
+	uint8_t      add_pressure[isa_if->n_register_classes];
+	memset(add_pressure, 0, sizeof(add_pressure));
 	if (orig_n_outs < orig_n_ins) {
 		bitset_t *const used_ins = bitset_alloca(orig_n_ins);
 		for (size_t o = 0; o < orig_n_outs; ++o) {
@@ -243,10 +246,8 @@ ir_node *be_make_asm(ir_node const *const node, ir_node **in, arch_register_req_
 			if (match_requirement(in_reqs, orig_n_ins, used_ins, outreq))
 				continue;
 
-			/* add a new (dummy) input which occupies the register */
-			assert(outreq->limited != NULL);
-			ARR_APP1(arch_register_req_t const*, in_reqs, outreq);
-			ARR_APP1(ir_node*, in, be_new_AnyVal(block, outreq->cls));
+			unsigned index = outreq->cls->index;
+			add_pressure[index]++;
 		}
 	} else {
 		bitset_t *const used_outs = bitset_alloca(orig_n_outs);
@@ -255,9 +256,8 @@ ir_node *be_make_asm(ir_node const *const node, ir_node **in, arch_register_req_
 			if (match_requirement(out_reqs, orig_n_outs, used_outs, inreq))
 				continue;
 
-			/* add a new (dummy) output which occupies the register */
-			assert(inreq->limited != NULL);
-			ARR_APP1(arch_register_req_t const*, out_reqs, inreq);
+			unsigned index = inreq->cls->index;
+			add_pressure[index]++;
 		}
 	}
 
@@ -271,6 +271,12 @@ ir_node *be_make_asm(ir_node const *const node, ir_node **in, arch_register_req_
 	unsigned  const n_outs   = ARR_LEN(out_reqs);
 	ident    *const text     = get_ASM_text(node);
 	ir_node  *const new_node = be_new_Asm(dbgi, block, n_ins, in, n_outs, text, operands);
+	for (unsigned i = 0, n = isa_if->n_register_classes; i < n; ++i) {
+		if (add_pressure[i] == 0)
+			continue;
+		arch_register_class_t const *const cls = &isa_if->register_classes[i];
+		arch_set_additional_pressure(new_node, cls, add_pressure[i]);
+	}
 
 	backend_info_t *const info = be_get_info(new_node);
 	for (size_t o = 0; o < n_outs; ++o) {

@@ -1852,8 +1852,7 @@ static ir_node *create_sex_32_64(dbg_info *dbgi, ir_node *block,
 
 	ir_node *res;
 	if (ia32_cg_config.use_short_sex_eax) {
-		ir_node *pval = be_new_AnyVal(block, &ia32_reg_classes[CLASS_ia32_gp]);
-		res = new_bd_ia32_Cltd(dbgi, block, val, pval);
+		res = new_bd_ia32_Cltd(dbgi, block, val);
 	} else {
 		ir_graph *const irg   = get_irn_irg(block);
 		ir_node  *const imm31 = ia32_create_Immediate(irg, 31);
@@ -4989,6 +4988,7 @@ static ir_node *gen_Call(ir_node *node)
 	in[n_ia32_Call_fpcw]     = get_initial_fpcw(irg);
 	in_req[n_ia32_Call_fpcw] = fpcw->single_req;
 
+	uint8_t         add_pressure = 0;
 	unsigned        sync_arity = 0;
 	unsigned  const n_params   = get_Call_n_params(node);
 	ir_node **const sync_ins   = ALLOCAN(ir_node*, n_params + 1);
@@ -5034,7 +5034,9 @@ static ir_node *gen_Call(ir_node *node)
 		unsigned goti = in_arity++;
 		in[goti]      = ia32_get_pic_base(irg);
 		in_req[goti]  = ia32_registers[REG_EBX].single_req;
-		panic("Need code to make this register pressure faithful");
+		/* We cannot pair up the "ebx" with any output, causing additional
+		 * register pressure */
+		++add_pressure;
 	}
 	assert(in_arity == n_ins);
 	assert(sync_arity <= n_params + 1);
@@ -5055,6 +5057,8 @@ static ir_node *gen_Call(ir_node *node)
 	/* Create node. */
 	ir_node *const call = new_bd_ia32_Call(dbgi, block, in_arity, in, n_out, cconv->sp_delta, type);
 	arch_set_irn_register_reqs_in(call, in_req);
+	arch_set_additional_pressure(call, &ia32_reg_classes[CLASS_ia32_gp],
+	                             add_pressure);
 
 	SET_IA32_ORIG_NODE(call, node);
 	if (get_irn_pinned(node) == op_pin_state_pinned)

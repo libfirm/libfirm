@@ -954,12 +954,13 @@ FnstCWNOP => {
 
 Cltd => {
 	# we should not rematerialize this node. It has very strict constraints.
-	in_reqs   => [ "eax", "edx" ],
+	in_reqs   => [ "eax" ],
 	out_reqs  => [ "edx" ],
-	ins       => [ "val", "clobbered" ],
+	ins       => [ "val" ],
 	emit      => "cltd",
 	latency   => 1,
 	mode      => $mode_gp,
+	init_attr => "arch_set_additional_pressure(res, &ia32_reg_classes[CLASS_ia32_gp], 1);",
 },
 
 # Load / Store
