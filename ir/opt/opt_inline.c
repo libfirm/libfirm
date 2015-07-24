@@ -511,7 +511,7 @@ static bool inline_method(ir_node *const call, ir_graph *called_graph)
 			cf_pred[n_mem_phi++] = new_r_Proj(ret, mode_M, 1);
 		}
 	}
-	ir_node *const call_mem =
+	ir_node *call_mem =
 		n_mem_phi > 0 ? new_r_Phi(post_bl, n_mem_phi, cf_pred, mode_M)
 		              : new_r_Bad(irg, mode_M);
 	/* Conserve Phi-list for further inlining -- but might be optimized */
@@ -544,12 +544,25 @@ static bool inline_method(ir_node *const call, ir_graph *called_graph)
 			ir_node *const phi = n_ret > 0
 				? new_r_Phi(post_bl, n_ret, cf_pred, res_mode)
 				: new_r_Bad(irg, res_mode);
-			res_pred[j] = phi;
 			/* Conserve Phi-list for further inlining -- but might be
 			 * optimized */
 			if (get_nodes_block(phi) == post_bl) {
 				set_Phi_next(phi, get_Block_phis(post_bl));
 				set_Block_phis(post_bl, phi);
+			}
+
+			if (is_aggregate) {
+				long       call_nr     = get_irn_node_nr(call);
+				ident     *name        = new_id_fmt("Call%ld$inlined%d", call_nr, j);
+				ir_type   *frame_type  = get_irg_frame_type(irg);
+				ir_entity *new_ent     = new_entity(frame_type, name, res_type);
+				ir_node   *frame       = get_irg_frame(irg);
+				ir_node   *member      = new_r_Member(post_bl, frame, new_ent);
+				bool       is_volatile = is_partly_volatile(phi) || is_partly_volatile(member);
+				call_mem = new_r_CopyB(post_bl, call_mem, member, phi, res_type, is_volatile ? cons_volatile : cons_none);
+				res_pred[j] = member;
+			} else {
+				res_pred[j] = phi;
 			}
 		}
 		call_res = new_r_Tuple(post_bl, n_res, res_pred);
