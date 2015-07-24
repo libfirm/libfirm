@@ -340,8 +340,14 @@ static void amd64_emit_am(const ir_node *const node, bool indirect_star)
 		emit_register_mode(reg, binop_attr->base.insn_mode);
 		return;
 	}
-	case AMD64_OP_ADDR_IMM:
-		panic("ADDR_IMM TODO");
+	case AMD64_OP_ADDR_IMM: {
+		const amd64_binop_addr_attr_t *const binop_attr
+			= (const amd64_binop_addr_attr_t*)attr;
+		amd64_emit_immediate32(true, &binop_attr->u.immediate);
+		be_emit_cstring(", ");
+		amd64_emit_addr(node, &attr->addr);
+		return;
+	}
 	case AMD64_OP_ADDR:
 		amd64_emit_addr(node, &attr->addr);
 		return;

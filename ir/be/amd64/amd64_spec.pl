@@ -428,7 +428,7 @@ mov_store => {
 	outs      => [ "M" ],
 	attr_type => "amd64_binop_addr_attr_t",
 	attr      => "const amd64_binop_addr_attr_t *attr_init",
-	emit      => "mov%M %S0, %A",
+	emit      => "mov%M %AM",
 },
 
 jmp_switch => {
