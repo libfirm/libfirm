@@ -30,6 +30,7 @@ static inline bool amd64_has_binop_attr(const ir_node *node)
 	const amd64_attr_t *attr = get_amd64_attr_const(node);
 	return attr->op_mode == AMD64_OP_REG_REG
 	    || attr->op_mode == AMD64_OP_REG_IMM
+	    || attr->op_mode == AMD64_OP_REG_ADDR
 	    || attr->op_mode == AMD64_OP_ADDR_REG
 	    || attr->op_mode == AMD64_OP_ADDR_IMM;
 }

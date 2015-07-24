@@ -44,6 +44,7 @@ typedef enum {
 	AMD64_OP_NONE,
 	AMD64_OP_ADDR,
 	AMD64_OP_REG,
+	AMD64_OP_REG_ADDR,
 	AMD64_OP_REG_REG,
 	AMD64_OP_REG_IMM,
 	AMD64_OP_IMM32,
@@ -83,7 +84,7 @@ typedef struct {
 
 typedef struct {
 	except_attr exc; /**< the exception attribute. MUST be the first one. */
-	ENUMBF(amd64_op_mode_t) op_mode : 4;
+	amd64_op_mode_t op_mode;
 } amd64_attr_t;
 
 typedef struct {

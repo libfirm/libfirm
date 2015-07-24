@@ -714,7 +714,7 @@ static void match_binop(amd64_args_t *args, ir_node *block,
 		addr->mem_input     = mem_input;
 
 		args->mem_proj      = get_Proj_for_pn(load, pn_Load_M);
-		args->attr.base.base.op_mode = AMD64_OP_ADDR_REG;
+		args->attr.base.base.op_mode = AMD64_OP_REG_ADDR;
 	} else {
 		/* simply transform the arguments */
 		args->in[args->arity++] = be_transform_node(op1);
@@ -854,7 +854,7 @@ static ir_node *gen_binop_xmm(ir_node *node, ir_node *op0, ir_node *op1,
 		addr->mem_input    = mem_input;
 
 		args.mem_proj      = get_Proj_for_pn(load, pn_Load_M);
-		args.attr.base.base.op_mode = AMD64_OP_ADDR_REG;
+		args.attr.base.base.op_mode = AMD64_OP_REG_ADDR;
 	} else {
 		args.in[args.arity++] = be_transform_node(op0);
 		args.in[args.arity++] = be_transform_node(op1);
