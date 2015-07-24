@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#! /usr/bin/env perl
 
 #
 # This file is part of libFirm.
@@ -7,11 +7,10 @@
 
 # This script generates C code which creates ands sets up functions and
 # data structures for the register allocator.
-# Creation: 2005/11/14
 
-use strict;
-use Data::Dumper;
 use integer;
+use strict;
+use warnings;
 
 my $specfile   = $ARGV[0];
 my $target_dir = $ARGV[1];
@@ -20,23 +19,15 @@ our $arch;
 our %reg_classes;
 
 # include spec file
-
-my $return;
-
-use strict "subs";
-unless ($return = do $specfile) {
+unless (my $return = do $specfile) {
 	die "Fatal error: couldn't parse $specfile: $@" if $@;
 	die "Fatal error: couldn't do $specfile: $!"    unless defined $return;
 	die "Fatal error: couldn't run $specfile"       unless $return;
 }
-use strict "subs";
-
-my $target_c   = $target_dir."/gen_".$arch."_regalloc_if.c";
-my $target_h   = $target_dir."/gen_".$arch."_regalloc_if.h";
 
 # stacks for output
 my $regtypes_def; # stack for the register type variables definitions
-my @regclasses;   # stack for the register class variables
+my $regclasses;   # stack for the register class variables
 my $classdef;     # stack to define a name for a class index
 my $reqdecls;
 my $regdef;       # stack to define a name for a register index
@@ -45,20 +36,16 @@ my $regcounts;
 my $reginit;      # stack for the register type inits
 my $single_constraints;
 
-my $class_idx = 0;
-
 my %regclass2len = ();
 my %reg2class = ();
 
-$classdef .= "enum reg_classes {\n";
-
 foreach my $class_name (sort(keys(%reg_classes))) {
-	my @class = @{ $reg_classes{"$class_name"} };
+	my @class = @{ $reg_classes{$class_name} };
 
 	my $idx = 0;
 	foreach (@class) {
-		if (defined($_->{name})) {
-			$reg2class{$_->{name}} = {
+		if (defined(my $name = $_->{name})) {
+			$reg2class{$name} = {
 				"class" => $class_name,
 				"index" => $idx
 			};
@@ -68,29 +55,27 @@ foreach my $class_name (sort(keys(%reg_classes))) {
 	$regclass2len{$class_name} = $idx;
 }
 
-sub get_limited_array {
-	my $reg      = shift;
-	my $regclass = $reg2class{"$reg"}{"class"};
-	my $ucname   = uc($reg);
-	my $result   = "{ ";
+sub get_limited_array
+{
+	my ($reg) = @_;
 
-	my $limitedbitsetlen = $regclass2len{$regclass};
-	my $arraylen         = ($limitedbitsetlen+31) / 32;
+	my $result           = "{ ";
+	my $sep              = "";
+	my $regclass         = $reg2class{$reg}{class};
 	my $classuc          = uc($regclass);
-	my $first            = 1;
+	my $ucname           = uc($reg);
+	my $limitedbitsetlen = $regclass2len{$regclass};
+	my $arraylen         = ($limitedbitsetlen + 31) / 32;
 	for (my $i = 0; $i < $arraylen; ++$i) {
-		if ($first) {
-			$first = 0;
-		} else {
-			$result .= ", ";
-		}
+		$result .= $sep;
+		$sep     = ", ";
 
-		my $index = $reg2class{"$reg"}{"index"};
-		if ($index >= $i*32 && $index < ($i+1)*32) {
+		my $index = $reg2class{$reg}{index};
+		if ($i * 32 <= $index && $index < ($i + 1) * 32) {
 			if ($i > 0) {
-				$result .= "(1 << (REG_${classuc}_${ucname} % 32))";
+				$result .= "(1U << (REG_${classuc}_${ucname} % 32))";
 			} else {
-				$result .= "(1 << REG_${classuc}_${ucname})";
+				$result .= "(1U << REG_${classuc}_${ucname})";
 			}
 		} else {
 			$result .= "0";
@@ -99,115 +84,105 @@ sub get_limited_array {
 	$result .= " }";
 }
 
+sub has_flag
+{
+	my ($what, $list) = @_;
+	return (defined($list) && grep { $_ eq $what } $list) ? "true" : "false";
+}
+
 # generate register type and class variable, init function and default requirements
 foreach my $class_name (sort(keys(%reg_classes))) {
-	my @class         = @{ $reg_classes{"$class_name"} };
-	my $old_classname = $class_name;
+	my @class = @{ $reg_classes{$class_name} };
 
-	$class_name = $arch."_".$class_name;
-	my $class_ptr  = "&".$arch."_reg_classes[CLASS_".$class_name."]";
-	my $flags = pop(@class);
-	my $class_mode = $flags->{"mode"};
+	my $arch_class_name = "${arch}_$class_name";
+	my $class_req       = "${arch}_class_reg_req_$class_name";
+	my $class_enum      = "CLASS_$arch_class_name";
+	my $class_ptr       = "&${arch}_reg_classes[$class_enum]";
+	my $flags           = pop(@class);
+	my $class_mode      = $flags->{mode};
 
 	$single_constraints .= <<EOF;
-const arch_register_req_t ${arch}_class_reg_req_${old_classname} = {
-	.cls   = &${arch}_reg_classes[CLASS_${arch}_${old_classname}],
+const arch_register_req_t $class_req = {
+	.cls   = &${arch}_reg_classes[$class_enum],
 	.width = 1,
 };
 EOF
-	$reqdecls .= "extern const arch_register_req_t ${arch}_class_reg_req_${old_classname};\n";
+	$reqdecls .= "extern const arch_register_req_t $class_req;\n";
 
-	$classdef .= "\tCLASS_$class_name = $class_idx,\n";
-	my $numregs = @class;
-	my $manual_ra = "false";
-	for ($flags->{"flags"}) {
-		if (defined($_) && $_ eq "manual_ra") {
-			$manual_ra = "true";
-		}
-	}
-	my $first_reg = "&${arch}_registers[REG_". uc($class[0]->{"name"}) . "]";
-	my $rcdef = <<EOF;
+	$classdef .= "\t$class_enum,\n";
+
+	my $numregs     = @class;
+	my $manual_ra = has_flag("manual_ra", $flags->{flags});
+	my $uname     = uc($class[0]->{name});
+	$regclasses .= <<EOF;
 	{
-		.name      = \"$class_name\",
+		.name      = \"$arch_class_name\",
 		.mode      = NULL,
-		.regs      = $first_reg,
-		.class_req = &${arch}_class_reg_req_${old_classname},
-		.index     = $class_idx,
+		.regs      = &${arch}_registers[REG_$uname],
+		.class_req = &$class_req,
+		.index     = $class_enum,
 		.n_regs    = $numregs,
-		.manual_ra = ${manual_ra},
+		.manual_ra = $manual_ra,
 	},
 EOF
-	push(@regclasses, $rcdef);
 
-	my $idx = 0;
-	$reginit .= "\t$arch\_reg_classes[CLASS_".$class_name."].mode = $class_mode;\n";
+	$reginit .= "\t$arch\_reg_classes[$class_enum].mode = $class_mode;\n";
+	$regdef2 .= "enum {\n";
 	foreach (@class) {
-		my $name   = $_->{"name"};
-		my $ucname = uc($name);
-		my $is_virtual = "false";
-		for ($_->{"type"}) {
-			if (defined($_) && $_ eq "virtual") {
-				$is_virtual = "true";
-			}
-		}
+		my $name         = $_->{name};
 		# realname is name if not set by user
-		$_->{"realname"} = $_->{"name"} if (! exists($_->{"realname"}));
-		my $realname = $_->{realname};
-		my $classuc = uc($old_classname);
+		my $realname     = $_->{realname} // $name;
+		my $single_req   = "${arch}_single_reg_req_${class_name}_${name}";
+		my $classuc      = uc($class_name);
+		my $ucname       = uc($name);
+		my $local_idx    = "REG_${classuc}_$ucname";
+		my $global_idx   = "REG_$ucname";
+		my $dwarf_number = $_->{dwarf} // 0;
+		my $encoding     = $_->{encoding} // $local_idx;
+		my $is_virtual   = has_flag("virtual", $_->{type});
 
-		$regdef  .= "\tREG_${ucname},\n";
-		$regdef2 .= "\tREG_${classuc}_${ucname} = $idx,\n";
-		my $dwarf_number = 0;
-		if (defined($_->{dwarf})) {
-			$dwarf_number = $_->{dwarf};
-		}
-		my $encoding = "REG_${classuc}_${ucname}";
-		if (defined($_->{encoding})) {
-			$encoding = $_->{encoding};
-		}
+		$regdef  .= "\t$global_idx,\n";
+		$regdef2 .= "\t$local_idx,\n";
 
 		$regtypes_def .= <<EOF;
 	{
-		.name         = "${realname}",
-		.cls          = ${class_ptr},
-		.single_req   = &${arch}_single_reg_req_${old_classname}_${name},
-		.index        = REG_${classuc}_${ucname},
-		.global_index = REG_${ucname},
-		.dwarf_number = ${dwarf_number},
-		.encoding     = ${encoding},
-		.is_virtual   = ${is_virtual},
+		.name         = "$realname",
+		.cls          = $class_ptr,
+		.single_req   = &$single_req,
+		.index        = $local_idx,
+		.global_index = $global_idx,
+		.dwarf_number = $dwarf_number,
+		.encoding     = $encoding,
+		.is_virtual   = $is_virtual,
 	},
 EOF
 
+		my $limited_name = "${arch}_limited_${class_name}_${name}";
 		my $limitedarray = get_limited_array($name);
 		$single_constraints .= <<EOF;
-static const unsigned ${arch}_limited_${old_classname}_${name} [] = ${limitedarray};
-const arch_register_req_t ${arch}_single_reg_req_${old_classname}_${name} = {
-	.cls     = ${class_ptr},
-	.limited = ${arch}_limited_${old_classname}_${name},
+static const unsigned ${limited_name}[] = $limitedarray;
+const arch_register_req_t $single_req = {
+	.cls     = $class_ptr,
+	.limited = $limited_name,
 	.width   = 1,
 };
 EOF
-		$reqdecls .= "extern const arch_register_req_t ${arch}_single_reg_req_${old_classname}_${name};\n";
-
-		$idx++;
+		$reqdecls .= "extern const arch_register_req_t $single_req;\n";
 	}
-	$regcounts .= "\tN_${class_name}_REGS = $numregs,\n";
-
-	$class_idx++;
+	$regdef2 .= "};\n\n";
+	$regcounts .= "\tN_${arch_class_name}_REGS = $numregs,\n";
 }
 
 my $archuc = uc($arch);
 
-$classdef .= "\tN_${archuc}_CLASSES = ".scalar(keys(%reg_classes))."\n";
-$classdef .= "};\n\n";
-
-# generate header (external usage) file
-open(OUT, ">$target_h") || die("Fatal error: Could not open $target_h, reason: $!\n");
+$classdef .= "\tN_${archuc}_CLASSES = ".scalar(keys(%reg_classes));
 
 my $creation_time = localtime(time());
 
-print OUT<<EOF;
+# generate header (external usage) file
+my $target_h = "$target_dir/gen_${arch}_regalloc_if.h";
+open(OUT, ">", $target_h) // die("Fatal error: Could not open $target_h, reason: $!\n");
+print OUT <<EOF;
 /**
  * \@file
  * \@brief Contains additional external requirements defs for external includes.
@@ -227,16 +202,17 @@ enum reg_indices {
 ${regdef}
 	N_${archuc}_REGISTERS
 };
-/** local register indices for ${arch} registers */
-enum {
-${regdef2}
-};
 
+/** local register indices for ${arch} registers */
+${regdef2}
 /** number of registers in ${arch} register classes. */
 enum {
 ${regcounts}
 };
+
+enum {
 ${classdef}
+};
 
 ${reqdecls}
 
@@ -250,13 +226,10 @@ void ${arch}_register_init(void);
 EOF
 close(OUT);
 
-
 # generate c file
-open(OUT, ">$target_c") || die("Fatal error: Could not open $target_c, reason: $!\n");
-
-$creation_time = localtime(time());
-
-print OUT<<EOF;
+my $target_c = "$target_dir/gen_${arch}_regalloc_if.c";
+open(OUT, ">", $target_c) // die("Fatal error: Could not open $target_c, reason: $!\n");
+print OUT <<EOF;
 /**
  * \@file
  * \@brief  The generated interface for the register allocator.
@@ -271,11 +244,10 @@ print OUT<<EOF;
 #include "bearch_${arch}_t.h"
 
 ${single_constraints}
-EOF
 
-print OUT "arch_register_class_t ${arch}_reg_classes[] = {\n".join("",@regclasses)."\n};\n\n";
-
-print OUT<<EOF;
+arch_register_class_t ${arch}_reg_classes[] = {
+$regclasses
+};
 
 /** The array of all registers in the ${arch} architecture, sorted by its global index.*/
 const arch_register_t ${arch}_registers[] = {
