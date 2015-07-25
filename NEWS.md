@@ -1,3 +1,17 @@
+libFirm 1.22.0 (2015-07-31)
+---------------------------
+* Improved PIC support, linux/elf is now supported
+* Additional local optimization rules
+* Inline assembly support for sparc/amd64
+* Improved load/store optimization, featuring compound value optimizations
+* Improved amd64 (aka x86_64) backend (but still experimental)
+* Improved arm backend (but still experimental)
+* Improved inliner (can inline compound types)
+* Compiletime performance improvements
+* Cleanups and API simplifications
+* Switch to C99 and corresponding code cleanup and simplification
+* Bugfixes
+
 libFirm 1.21.0 (2012-11-16)
 ---------------------------
 * Improvements of x86 backend (esp. x87 floatingpoint code)
