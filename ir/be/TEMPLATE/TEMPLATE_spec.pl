@@ -20,7 +20,7 @@ $mode_fp = "mode_F";  # mode used by floatingpoint registers
 #   mode      => "mode_Iu",         # optional, predefines the mode
 #   emit      => "emit code with templates",   # optional for virtual nodes
 #   attr      => "additional attribute arguments for constructor", # optional
-#   init_attr => "emit attribute initialization template",         # optional
+#   init      => "emit attribute initialization template",         # optional
 #   hash_func => "name of the hash function for this operation",   # optional, get the default hash function else
 #   attr_type => "name of the attribute struct",                   # optional
 # },
@@ -155,10 +155,10 @@ Not => {
 },
 
 Const => {
-	template   => $constop,
-	attr       => "ir_entity *entity, ir_tarval *value",
-	custominit => "set_TEMPLATE_value(res, entity, value);",
-	emit       => '%D0 = const %I',
+	template => $constop,
+	attr     => "ir_entity *entity, ir_tarval *value",
+	init     => "set_TEMPLATE_value(res, entity, value);",
+	emit     => '%D0 = const %I',
 },
 
 # Control Flow

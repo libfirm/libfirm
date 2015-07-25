@@ -146,7 +146,7 @@ my $binop_flags = {
 	outs      => [ "eflags", "unused", "M" ],
 	am        => "source,binary",
 	attr      => "bool ins_permuted",
-	init_attr => "attr->ins_permuted = ins_permuted;",
+	init      => "attr->ins_permuted = ins_permuted;",
 	mode      => $mode_flags,
 };
 
@@ -292,7 +292,7 @@ my $funop = {
 	in_reqs   => [ "fp" ],
 	out_reqs  => [ "fp" ],
 	ins       => [ "value" ],
-	init_attr => "attr->ls_mode = ia32_mode_E;",
+	init      => "attr->ls_mode = ia32_mode_E;",
 	mode      => $mode_fp87,
 };
 
@@ -301,7 +301,7 @@ my $fconstop = {
 	irn_flags => [ "rematerializable" ],
 	out_reqs  => [ "fp" ],
 	outs      => [ "res" ],
-	init_attr => "attr->ls_mode = ia32_mode_E;",
+	init      => "attr->ls_mode = ia32_mode_E;",
 	fixed     => $x87sim,
 	mode      => $mode_fp87,
 };
@@ -778,11 +778,11 @@ Setcc => {
 	attr      => "x86_condition_code_t condition_code",
 	# The way we handle Setcc with float nodes (potentially) destroys the flags
 	# (when we emit the setX; setp; orb and the setX;setnp;andb sequences)
-	init_attr => "set_ia32_ls_mode(res, mode_Bu);\n"
-		. "\tif (condition_code & x86_cc_additional_float_cases) {\n"
-		. "\t\tarch_add_irn_flags(res, arch_irn_flag_modify_flags);\n"
-		. "\t\t/* attr->latency = 3; */\n"
-		. "\t}\n",
+	init      => "set_ia32_ls_mode(res, mode_Bu);\n".
+	             "\tif (condition_code & x86_cc_additional_float_cases) {\n".
+	             "\t\tarch_add_irn_flags(res, arch_irn_flag_modify_flags);\n".
+	             "\t\t/* attr->latency = 3; */\n".
+	             "\t}\n",
 	latency   => 1,
 	mode      => $mode_gp,
 },
@@ -795,7 +795,7 @@ SetccMem => {
 	ins       => [ "base", "index", "mem","eflags" ],
 	attr_type => "ia32_condcode_attr_t",
 	attr      => "x86_condition_code_t condition_code",
-	init_attr => "set_ia32_ls_mode(res, mode_Bu);\n",
+	init      => "set_ia32_ls_mode(res, mode_Bu);\n",
 	emit      => "set%P3 %AM",
 	latency   => 1,
 	mode      => "mode_M",
@@ -948,13 +948,13 @@ FnstCWNOP => {
 
 Cltd => {
 	# we should not rematerialize this node. It has very strict constraints.
-	in_reqs   => [ "eax" ],
-	out_reqs  => [ "edx" ],
-	ins       => [ "val" ],
-	emit      => "cltd",
-	latency   => 1,
-	mode      => $mode_gp,
-	init_attr => "arch_set_additional_pressure(res, &ia32_reg_classes[CLASS_ia32_gp], 1);",
+	in_reqs  => [ "eax" ],
+	out_reqs => [ "edx" ],
+	ins      => [ "val" ],
+	emit     => "cltd",
+	latency  => 1,
+	mode     => $mode_gp,
+	init     => "arch_set_additional_pressure(res, &ia32_reg_classes[CLASS_ia32_gp], 1);",
 },
 
 # Load / Store
@@ -1001,16 +1001,16 @@ Lea => {
 },
 
 Push => {
-	state     => "exc_pinned",
-	in_reqs   => [ "gp", "gp", "mem", "gp", "esp" ],
-	out_reqs  => [ "mem", "esp:I" ],
-	ins       => [ "base", "index", "mem", "val", "stack" ],
-	emit      => "push%M %AS3",
-	outs      => [ "M", "stack" ],
-	am        => "source,unary",
-	latency   => 2,
-	attr      => "ir_mode *store_mode",
-	init_attr => "attr->ls_mode = store_mode;",
+	state    => "exc_pinned",
+	in_reqs  => [ "gp", "gp", "mem", "gp", "esp" ],
+	out_reqs => [ "mem", "esp:I" ],
+	ins      => [ "base", "index", "mem", "val", "stack" ],
+	emit     => "push%M %AS3",
+	outs     => [ "M", "stack" ],
+	am       => "source,unary",
+	latency  => 2,
+	attr     => "ir_mode *store_mode",
+	init     => "attr->ls_mode = store_mode;",
 },
 
 PushEax => {
@@ -1025,17 +1025,17 @@ PushEax => {
 },
 
 Pop => {
-	state     => "exc_pinned",
+	state   => "exc_pinned",
 	constructors => {
 		""  => { out_reqs => [ "gp",    "none", "mem", "esp:I" ] },
 		ebp => { out_reqs => [ "ebp:I", "none", "mem", "esp:I" ] }
 	},
-	in_reqs   => [ "mem", "esp" ],
-	ins       => [ "mem", "stack" ],
-	outs      => [ "res", "unused", "M", "stack" ],
-	emit      => "pop%M %D0",
-	latency   => 3, # Pop is more expensive than Push on Athlon
-	init_attr => "attr->ls_mode = ia32_mode_gp;",
+	in_reqs => [ "mem", "esp" ],
+	ins     => [ "mem", "stack" ],
+	outs    => [ "res", "unused", "M", "stack" ],
+	emit    => "pop%M %D0",
+	latency => 3, # Pop is more expensive than Push on Athlon
+	init    => "attr->ls_mode = ia32_mode_gp;",
 },
 
 CopyEbpEsp => {
@@ -1424,23 +1424,23 @@ Ucomi => {
 	outs      => [ "flags" ],
 	am        => "source,binary",
 	attr      => "bool ins_permuted",
-	init_attr => "attr->ins_permuted = ins_permuted;",
+	init      => "attr->ins_permuted = ins_permuted;",
 	emit      => "ucomis%FX %B",
 	latency   => 3,
 	mode      => $mode_flags,
 },
 
 xLoad => {
-	op_flags  => [ "uses_memory", "fragile" ],
-	state     => "exc_pinned",
-	in_reqs   => [ "gp", "gp", "mem" ],
-	out_reqs  => [ "xmm", "none", "mem", "exec", "exec" ],
-	ins       => [ "base", "index", "mem" ],
-	outs      => [ "res", "unused", "M", "X_regular", "X_except" ],
-	emit      => "movs%FX %AM, %D0",
-	attr      => "ir_mode *load_mode",
-	init_attr => "attr->ls_mode = load_mode;",
-	latency   => 0,
+	op_flags => [ "uses_memory", "fragile" ],
+	state    => "exc_pinned",
+	in_reqs  => [ "gp", "gp", "mem" ],
+	out_reqs => [ "xmm", "none", "mem", "exec", "exec" ],
+	ins      => [ "base", "index", "mem" ],
+	outs     => [ "res", "unused", "M", "X_regular", "X_except" ],
+	emit     => "movs%FX %AM, %D0",
+	attr     => "ir_mode *load_mode",
+	init     => "attr->ls_mode = load_mode;",
+	latency  => 0,
 },
 
 xStore => {
@@ -1513,57 +1513,57 @@ Cwtl => {
 },
 
 Conv_I2I => {
-	op_flags  => [ "uses_memory", "fragile" ],
-	state     => "exc_pinned",
+	op_flags => [ "uses_memory", "fragile" ],
+	state    => "exc_pinned",
 	constructors => {
 		""     => { in_reqs => [ "gp", "gp", "mem", "gp" ] },
 		"8bit" => { in_reqs => [ "gp", "gp", "mem", "eax ebx ecx edx" ] }
 	},
-	out_reqs  => [ "gp", "none", "mem", "exec", "exec" ],
-	ins       => [ "base", "index", "mem", "val" ],
-	outs      => [ "res", "unused", "M", "X_regular", "X_except" ],
-	emit      => "mov%#Ml %#AS3, %D0",
-	am        => "source,unary",
-	latency   => 1,
-	attr      => "ir_mode *smaller_mode",
-	init_attr => "attr->ls_mode = smaller_mode;",
-	mode      => $mode_gp,
+	out_reqs => [ "gp", "none", "mem", "exec", "exec" ],
+	ins      => [ "base", "index", "mem", "val" ],
+	outs     => [ "res", "unused", "M", "X_regular", "X_except" ],
+	emit     => "mov%#Ml %#AS3, %D0",
+	am       => "source,unary",
+	latency  => 1,
+	attr     => "ir_mode *smaller_mode",
+	init     => "attr->ls_mode = smaller_mode;",
+	mode     => $mode_gp,
 },
 
 Conv_I2FP => {
-	state     => "exc_pinned",
-	in_reqs   => [ "gp", "gp", "mem", "gp" ],
-	out_reqs  => [ "xmm", "mem" ],
-	ins       => [ "base", "index", "mem", "val" ],
-	am        => "source,unary",
-	latency   => 10,
-	attr      => "ir_mode *tgt_mode",
-	init_attr => "attr->ls_mode = tgt_mode;",
-	mode      => $mode_xmm,
+	state    => "exc_pinned",
+	in_reqs  => [ "gp", "gp", "mem", "gp" ],
+	out_reqs => [ "xmm", "mem" ],
+	ins      => [ "base", "index", "mem", "val" ],
+	am       => "source,unary",
+	latency  => 10,
+	attr     => "ir_mode *tgt_mode",
+	init     => "attr->ls_mode = tgt_mode;",
+	mode     => $mode_xmm,
 },
 
 Conv_FP2I => {
-	state     => "exc_pinned",
-	in_reqs   => [ "gp", "gp", "mem", "xmm" ],
-	out_reqs  => [ "gp", "mem" ],
-	ins       => [ "base", "index", "mem", "val" ],
-	am        => "source,unary",
-	latency   => 10,
-	attr      => "ir_mode *src_mode",
-	init_attr => "attr->ls_mode = src_mode;",
-	mode      => $mode_gp,
+	state    => "exc_pinned",
+	in_reqs  => [ "gp", "gp", "mem", "xmm" ],
+	out_reqs => [ "gp", "mem" ],
+	ins      => [ "base", "index", "mem", "val" ],
+	am       => "source,unary",
+	latency  => 10,
+	attr     => "ir_mode *src_mode",
+	init     => "attr->ls_mode = src_mode;",
+	mode     => $mode_gp,
 },
 
 Conv_FP2FP => {
-	state     => "exc_pinned",
-	in_reqs   => [ "gp", "gp", "mem", "xmm" ],
-	out_reqs  => [ "xmm", "mem" ],
-	ins       => [ "base", "index", "mem", "val" ],
-	am        => "source,unary",
-	latency   => 8,
-	attr      => "ir_mode *tgt_mode",
-	init_attr => "attr->ls_mode = tgt_mode;",
-	mode      => $mode_xmm,
+	state    => "exc_pinned",
+	in_reqs  => [ "gp", "gp", "mem", "xmm" ],
+	out_reqs => [ "xmm", "mem" ],
+	ins      => [ "base", "index", "mem", "val" ],
+	am       => "source,unary",
+	latency  => 8,
+	attr     => "ir_mode *tgt_mode",
+	init     => "attr->ls_mode = tgt_mode;",
+	mode     => $mode_xmm,
 },
 
 # rematerialisation disabled for all float nodes for now, because the fpcw
@@ -1616,7 +1616,7 @@ fld => {
 	outs      => [ "res", "unused", "M", "X_regular", "X_except" ],
 	emit      => "fld%FM %AM",
 	attr      => "ir_mode *load_mode",
-	init_attr => "attr->ls_mode = load_mode;",
+	init      => "attr->ls_mode = load_mode;",
 	fixed     => $x87sim,
 	latency   => 2,
 },
@@ -1631,7 +1631,7 @@ fst => {
 	outs      => [ "M", "X_regular", "X_except" ],
 	emit      => "fst%FP%FM %AM",
 	attr      => "ir_mode *store_mode",
-	init_attr => "attr->attr.ls_mode = store_mode;",
+	init      => "attr->attr.ls_mode = store_mode;",
 	latency   => 2,
 	attr_type => "ia32_x87_attr_t",
 },
@@ -1725,7 +1725,7 @@ FucomFnstsw => {
 	emit      => "fucom%FP %F0\n".
 	             "fnstsw %%ax",
 	attr      => "bool ins_permuted",
-	init_attr => "attr->attr.ins_permuted = ins_permuted;",
+	init      => "attr->attr.ins_permuted = ins_permuted;",
 	latency   => 3,
 	attr_type => "ia32_x87_attr_t",
 	mode      => $mode_gp
@@ -1742,7 +1742,7 @@ FucomppFnstsw => {
 	emit      => "fucompp\n".
 	             "fnstsw %%ax",
 	attr      => "bool ins_permuted",
-	init_attr => "attr->attr.ins_permuted = ins_permuted;",
+	init      => "attr->attr.ins_permuted = ins_permuted;",
 	latency   => 3,
 	attr_type => "ia32_x87_attr_t",
 	mode      => $mode_gp
@@ -1756,7 +1756,7 @@ Fucomi => {
 	outs      => [ "flags" ],
 	emit      => "fucom%FPi %F0",
 	attr      => "bool ins_permuted",
-	init_attr => "attr->attr.ins_permuted = ins_permuted;",
+	init      => "attr->attr.ins_permuted = ins_permuted;",
 	latency   => 3,
 	attr_type => "ia32_x87_attr_t",
 	mode      => $mode_flags,
@@ -1771,7 +1771,7 @@ FtstFnstsw => {
 	emit      => "ftst\n".
 	             "fnstsw %%ax",
 	attr      => "bool ins_permuted",
-	init_attr => "attr->ins_permuted = ins_permuted;",
+	init      => "attr->ins_permuted = ins_permuted;",
 	fixed     => $x87sim,
 	latency   => 3,
 	mode      => $mode_gp

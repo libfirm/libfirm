@@ -271,17 +271,12 @@ EOF
 		}
 	}
 
-	if (defined(my $custominit = $n->{custominit})) {
-		$temp .= "\t$custominit\n";
-	}
-
-	$temp .= "$set_out_reqs\n";
-
-	if (defined(my $init_attr = $n->{init_attr})) {
-		$temp .= "\t$init_attr\n";
+	if (defined(my $init = $n->{init})) {
+		$temp .= "\t$init\n";
 	}
 
 	$temp .= <<EOF;
+$set_out_reqs
 	verify_new_node(res);
 	return optimize_node(res);
 }
@@ -294,9 +289,8 @@ my @node_attrs = (
 	"arity",
 	"attr",
 	"comment",
-	"custominit",
 	"in_reqs",
-	"init_attr",
+	"init",
 	"ins",
 	"irn_flags",
 	"mode",

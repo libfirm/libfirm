@@ -125,10 +125,10 @@ my $binop_operand = {
 	out_reqs     => [ "gp" ],
 	constructors => {
 		imm => {
-			attr       => "ir_entity *immediate_entity, int32_t immediate_value",
-			custominit => "sparc_set_attr_imm(res, immediate_entity, immediate_value);",
-			in_reqs    => [ "gp" ],
-			ins        => [ "left" ],
+			attr    => "ir_entity *immediate_entity, int32_t immediate_value",
+			init    => "sparc_set_attr_imm(res, immediate_entity, immediate_value);",
+			in_reqs => [ "gp" ],
+			ins     => [ "left" ],
 		},
 		reg => {
 			in_reqs    => [ "gp", "gp" ],
@@ -143,10 +143,10 @@ my $binopcc_operand = {
 	outs         => [ "res", "flags" ],
 	constructors => {
 		imm => {
-			attr       => "ir_entity *immediate_entity, int32_t immediate_value",
-			custominit => "sparc_set_attr_imm(res, immediate_entity, immediate_value);",
-			in_reqs    => [ "gp" ],
-			ins        => [ "left" ],
+			attr    => "ir_entity *immediate_entity, int32_t immediate_value",
+			init    => "sparc_set_attr_imm(res, immediate_entity, immediate_value);",
+			in_reqs => [ "gp" ],
+			ins     => [ "left" ],
 		},
 		reg => {
 			in_reqs    => [ "gp", "gp" ],
@@ -163,14 +163,14 @@ my $binopx_operand = {
 	out_reqs     => [ "gp" ],
 	constructors => {
 		imm => {
-			attr       => "ir_entity *immediate_entity, int32_t immediate_value",
-			custominit => "sparc_set_attr_imm(res, immediate_entity, immediate_value);",
-			in_reqs    => [ "gp", "flags" ],
-			ins        => [ "left", "carry" ],
+			attr    => "ir_entity *immediate_entity, int32_t immediate_value",
+			init    => "sparc_set_attr_imm(res, immediate_entity, immediate_value);",
+			in_reqs => [ "gp", "flags" ],
+			ins     => [ "left", "carry" ],
 		},
 		reg => {
-			in_reqs    => [ "gp", "gp", "flags" ],
-			ins        => [ "left", "right", "carry" ],
+			in_reqs => [ "gp", "gp", "flags" ],
+			ins     => [ "left", "right", "carry" ],
 		},
 	},
 };
@@ -181,10 +181,10 @@ my $binopcczero_operand = {
 	out_reqs     => [ "flags" ],
 	constructors => {
 		imm => {
-			attr       => "ir_entity *immediate_entity, int32_t immediate_value",
-			custominit => "sparc_set_attr_imm(res, immediate_entity, immediate_value);",
-			in_reqs    => [ "gp" ],
-			ins        => [ "left" ],
+			attr    => "ir_entity *immediate_entity, int32_t immediate_value",
+			init    => "sparc_set_attr_imm(res, immediate_entity, immediate_value);",
+			in_reqs => [ "gp" ],
+			ins     => [ "left" ],
 		},
 		reg => {
 			in_reqs    => [ "gp", "gp" ],
@@ -202,9 +202,9 @@ my $div_operand = {
 	outs         => [ "res", "M" ],
 	constructors => {
 		imm => {
-			attr       => "ir_entity *immediate_entity, int32_t immediate_value",
-			custominit => "sparc_set_attr_imm(res, immediate_entity, immediate_value);",
-			in_reqs    => [ "mem", "gp", "gp" ],
+			attr    => "ir_entity *immediate_entity, int32_t immediate_value",
+			init    => "sparc_set_attr_imm(res, immediate_entity, immediate_value);",
+			in_reqs => [ "mem", "gp", "gp" ],
 		},
 		reg => {
 			in_reqs    => [ "mem", "gp", "gp", "gp" ],
@@ -351,16 +351,16 @@ Ld => {
 	state     => "exc_pinned",
 	constructors => {
 		imm => {
-			in_reqs    => [ "gp", "mem" ],
-			ins        => [ "ptr", "mem" ],
-			attr       => "ir_mode *ls_mode, ir_entity *entity, int32_t offset, bool is_frame_entity",
-			custominit => "init_sparc_load_store_attributes(res, ls_mode, entity, offset, is_frame_entity, false);",
+			in_reqs => [ "gp", "mem" ],
+			ins     => [ "ptr", "mem" ],
+			attr    => "ir_mode *ls_mode, ir_entity *entity, int32_t offset, bool is_frame_entity",
+			init    => "init_sparc_load_store_attributes(res, ls_mode, entity, offset, is_frame_entity, false);",
 		},
 		reg => {
-			in_reqs    => [ "gp", "gp", "mem" ],
-			ins        => [ "ptr", "ptr2", "mem" ],
-			attr       => "ir_mode *ls_mode",
-			custominit => "init_sparc_load_store_attributes(res, ls_mode, NULL, 0, false, true);",
+			in_reqs => [ "gp", "gp", "mem" ],
+			ins     => [ "ptr", "ptr2", "mem" ],
+			attr    => "ir_mode *ls_mode",
+			init    => "init_sparc_load_store_attributes(res, ls_mode, NULL, 0, false, true);",
 		},
 	},
 	ins       => [ "ptr", "mem" ],
@@ -371,13 +371,13 @@ Ld => {
 },
 
 SetHi => {
-	irn_flags  => [ "rematerializable" ],
-	outs       => [ "res" ],
-	mode       => $mode_gp,
-	out_reqs   => [ "gp" ],
-	attr       => "ir_entity *entity, int32_t immediate_value",
-	custominit => "sparc_set_attr_imm(res, entity, immediate_value);",
-	emit       => "sethi %H, %D0"
+	irn_flags => [ "rematerializable" ],
+	outs      => [ "res" ],
+	mode      => $mode_gp,
+	out_reqs  => [ "gp" ],
+	attr      => "ir_entity *entity, int32_t immediate_value",
+	init      => "sparc_set_attr_imm(res, entity, immediate_value);",
+	emit      => "sethi %H, %D0"
 },
 
 St => {
@@ -386,16 +386,16 @@ St => {
 	state     => "exc_pinned",
 	constructors => {
 		imm => {
-			in_reqs    => [ "gp", "gp", "mem" ],
-			ins        => [ "val", "ptr", "mem" ],
-			attr       => "ir_mode *ls_mode, ir_entity *entity, int32_t offset, bool is_frame_entity",
-			custominit => "init_sparc_load_store_attributes(res, ls_mode, entity, offset, is_frame_entity, false);",
+			in_reqs => [ "gp", "gp", "mem" ],
+			ins     => [ "val", "ptr", "mem" ],
+			attr    => "ir_mode *ls_mode, ir_entity *entity, int32_t offset, bool is_frame_entity",
+			init    => "init_sparc_load_store_attributes(res, ls_mode, entity, offset, is_frame_entity, false);",
 		},
 		reg => {
-			in_reqs    => [ "gp", "gp", "gp", "mem" ],
-			ins        => [ "val", "ptr", "ptr2", "mem" ],
-			attr       => "ir_mode *ls_mode",
-			custominit => "init_sparc_load_store_attributes(res, ls_mode, NULL, 0, false, true);",
+			in_reqs => [ "gp", "gp", "gp", "mem" ],
+			ins     => [ "val", "ptr", "ptr2", "mem" ],
+			attr    => "ir_mode *ls_mode",
+			init    => "init_sparc_load_store_attributes(res, ls_mode, NULL, 0, false, true);",
 		},
 	},
 	out_reqs  => [ "mem" ],
@@ -413,10 +413,10 @@ Save => {
 	ins       => [ "stack" ],
 	constructors => {
 		imm => {
-			attr       => "ir_entity *immediate_entity, int32_t immediate_value",
-			custominit => "sparc_set_attr_imm(res, immediate_entity, immediate_value);",
-			in_reqs    => [ "sp" ],
-			ins        => [ "stack" ],
+			attr    => "ir_entity *immediate_entity, int32_t immediate_value",
+			init    => "sparc_set_attr_imm(res, immediate_entity, immediate_value);",
+			in_reqs => [ "sp" ],
+			ins     => [ "stack" ],
 		},
 		reg => {
 			in_reqs    => [ "sp", "gp" ],
@@ -431,14 +431,14 @@ Restore => {
 	outs     => [ "stack", "res" ],
 	constructors => {
 		imm => {
-			attr       => "ir_entity *immediate_entity, int32_t immediate_value",
-			custominit => "sparc_set_attr_imm(res, immediate_entity, immediate_value);",
-			in_reqs    => [ "sp", "reg-fp", "gp" ],
-			ins        => [ "stack", "frame_pointer", "left" ],
+			attr    => "ir_entity *immediate_entity, int32_t immediate_value",
+			init    => "sparc_set_attr_imm(res, immediate_entity, immediate_value);",
+			in_reqs => [ "sp", "reg-fp", "gp" ],
+			ins     => [ "stack", "frame_pointer", "left" ],
 		},
 		reg => {
-			in_reqs    => [ "sp", "reg-fp", "gp", "gp" ],
-			ins        => [ "stack", "frame_pointer", "left", "right" ],
+			in_reqs => [ "sp", "reg-fp", "gp", "gp" ],
+			ins     => [ "stack", "frame_pointer", "left", "right" ],
 		}
 	},
 },
@@ -455,14 +455,14 @@ RestoreZero => {
 SubSP => {
 	constructors => {
 		imm => {
-			attr       => "ir_entity *immediate_entity, int32_t immediate_value",
-			custominit => "sparc_set_attr_imm(res, immediate_entity, immediate_value);",
-			in_reqs    => [ "sp", "mem" ],
-			ins        => [ "stack", "mem" ],
+			attr    => "ir_entity *immediate_entity, int32_t immediate_value",
+			init    => "sparc_set_attr_imm(res, immediate_entity, immediate_value);",
+			in_reqs => [ "sp", "mem" ],
+			ins     => [ "stack", "mem" ],
 		},
 		reg => {
-			in_reqs    => [ "sp", "gp", "mem" ],
-			ins        => [ "stack", "size", "mem" ],
+			in_reqs => [ "sp", "gp", "mem" ],
+			ins     => [ "stack", "size", "mem" ],
 		}
 	},
 	out_reqs => [ "sp:I", "gp", "mem" ],
@@ -479,29 +479,29 @@ AddSP => {
 },
 
 FrameAddr => {
-	op_flags   => [ "constlike" ],
-	irn_flags  => [ "rematerializable" ],
-	attr       => "ir_entity *entity, int32_t offset",
-	in_reqs    => [ "gp" ],
-	out_reqs   => [ "gp" ],
-	ins        => [ "base" ],
-	attr_type  => "sparc_attr_t",
-	custominit => "sparc_set_attr_imm(res, entity, offset);",
-	mode       => $mode_gp,
+	op_flags  => [ "constlike" ],
+	irn_flags => [ "rematerializable" ],
+	attr      => "ir_entity *entity, int32_t offset",
+	in_reqs   => [ "gp" ],
+	out_reqs  => [ "gp" ],
+	ins       => [ "base" ],
+	attr_type => "sparc_attr_t",
+	init      => "sparc_set_attr_imm(res, entity, offset);",
+	mode      => $mode_gp,
 },
 
 Bicc => {
-	template  => $branchcc,
-	attr      => "ir_relation relation, bool is_unsigned",
-	init_attr => "\tinit_sparc_jmp_cond_attr(res, relation, is_unsigned);",
-	in_reqs   => [ "flags" ],
+	template => $branchcc,
+	attr     => "ir_relation relation, bool is_unsigned",
+	init     => "\tinit_sparc_jmp_cond_attr(res, relation, is_unsigned);",
+	in_reqs  => [ "flags" ],
 },
 
 fbfcc => {
-	template  => $branchcc,
-	attr      => "ir_relation relation",
-	init_attr => "\tinit_sparc_jmp_cond_attr(res, relation, false);",
-	in_reqs   => [ "fpflags" ],
+	template => $branchcc,
+	attr     => "ir_relation relation",
+	init     => "\tinit_sparc_jmp_cond_attr(res, relation, false);",
+	in_reqs  => [ "fpflags" ],
 },
 
 Ba => {
@@ -528,8 +528,8 @@ Return => {
 	ins       => [ "mem", "sp", "first_result" ],
 	constructors => {
 		imm => {
-			attr       => "ir_entity *entity, int32_t offset",
-			custominit => "\tsparc_set_attr_imm(res, entity, offset);",
+			attr => "ir_entity *entity, int32_t offset",
+			init => "\tsparc_set_attr_imm(res, entity, offset);",
 		},
 		reg => {}
 	},
@@ -546,13 +546,13 @@ Call => {
 	attr_type => "sparc_call_attr_t",
 	constructors => {
 		imm => {
-			attr       => "ir_type *call_type, ir_entity *entity, int32_t offset, bool aggregate_return",
-			custominit => "\tsparc_set_attr_imm(res, entity, offset);\n".
-			              "\tif (aggregate_return) arch_add_irn_flags(res, (arch_irn_flags_t)sparc_arch_irn_flag_aggregate_return);",
+			attr => "ir_type *call_type, ir_entity *entity, int32_t offset, bool aggregate_return",
+			init => "\tsparc_set_attr_imm(res, entity, offset);\n".
+			        "\tif (aggregate_return) arch_add_irn_flags(res, (arch_irn_flags_t)sparc_arch_irn_flag_aggregate_return);",
 		},
 		reg => {
-			attr       => "ir_type *call_type, bool aggregate_return",
-			custominit => "\tif (aggregate_return) arch_add_irn_flags(res, (arch_irn_flags_t)sparc_arch_irn_flag_aggregate_return);",
+			attr => "ir_type *call_type, bool aggregate_return",
+			init => "\tif (aggregate_return) arch_add_irn_flags(res, (arch_irn_flags_t)sparc_arch_irn_flag_aggregate_return);",
 		}
 	},
 },
@@ -805,13 +805,13 @@ Ldf => {
 		d => { out_reqs => [ "cls-fp:a|2", "mem" ] },
 		q => { out_reqs => [ "cls-fp:a|4", "mem" ] },
 	},
-	in_reqs    => [ "gp", "mem" ],
-	ins        => [ "ptr", "mem" ],
-	outs       => [ "res", "M" ],
-	attr_type  => "sparc_load_store_attr_t",
-	attr       => "ir_mode *ls_mode, ir_entity *entity, int32_t offset, bool is_frame_entity",
-	custominit => "init_sparc_load_store_attributes(res, ls_mode, entity, offset, is_frame_entity, false);",
-	emit       => "ld%ML %MO0, %D0"
+	in_reqs   => [ "gp", "mem" ],
+	ins       => [ "ptr", "mem" ],
+	outs      => [ "res", "M" ],
+	attr_type => "sparc_load_store_attr_t",
+	attr      => "ir_mode *ls_mode, ir_entity *entity, int32_t offset, bool is_frame_entity",
+	init      => "init_sparc_load_store_attributes(res, ls_mode, entity, offset, is_frame_entity, false);",
+	emit      => "ld%ML %MO0, %D0"
 },
 
 Stf => {
@@ -827,7 +827,7 @@ Stf => {
 	outs      => [ "M" ],
 	attr_type => "sparc_load_store_attr_t",
 	attr      => "ir_mode *ls_mode, ir_entity *entity, int32_t offset, bool is_frame_entity",
-	custominit => "init_sparc_load_store_attributes(res, ls_mode, entity, offset, is_frame_entity, false);",
+	init      => "init_sparc_load_store_attributes(res, ls_mode, entity, offset, is_frame_entity, false);",
 	emit      => "st%MS %S0, %MO1",
 	mode      => "mode_M",
 },
