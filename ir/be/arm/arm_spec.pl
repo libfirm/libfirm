@@ -52,22 +52,22 @@ $default_attr_type = "arm_attr_t";
 $default_copy_attr = "arm_copy_attr";
 
 %init_attr = (
-	arm_attr_t           => "\tinit_arm_attributes(res, irn_flags_, in_reqs, n_res);",
+	arm_attr_t           => "\tinit_arm_attributes(res, irn_flags, in_reqs, n_res);",
 	arm_Address_attr_t  =>
-		"\tinit_arm_attributes(res, irn_flags_, in_reqs, n_res);\n".
+		"\tinit_arm_attributes(res, irn_flags, in_reqs, n_res);\n".
 		"\tinit_arm_Address_attributes(res, entity, offset);",
-	arm_CondJmp_attr_t   => "\tinit_arm_attributes(res, irn_flags_, in_reqs, n_res);",
-	arm_SwitchJmp_attr_t => "\tinit_arm_attributes(res, irn_flags_, in_reqs, n_res);",
-	arm_fConst_attr_t    => "\tinit_arm_attributes(res, irn_flags_, in_reqs, n_res);",
+	arm_CondJmp_attr_t   => "\tinit_arm_attributes(res, irn_flags, in_reqs, n_res);",
+	arm_SwitchJmp_attr_t => "\tinit_arm_attributes(res, irn_flags, in_reqs, n_res);",
+	arm_fConst_attr_t    => "\tinit_arm_attributes(res, irn_flags, in_reqs, n_res);",
 	arm_load_store_attr_t =>
-		"\tinit_arm_attributes(res, irn_flags_, in_reqs, n_res);\n".
+		"\tinit_arm_attributes(res, irn_flags, in_reqs, n_res);\n".
 		"\tinit_arm_load_store_attributes(res, ls_mode, entity, entity_sign, offset, is_frame_entity);",
 	arm_shifter_operand_t =>
-		"\tinit_arm_attributes(res, irn_flags_, in_reqs, n_res);\n",
+		"\tinit_arm_attributes(res, irn_flags, in_reqs, n_res);\n",
 	arm_cmp_attr_t =>
-		"\tinit_arm_attributes(res, irn_flags_, in_reqs, n_res);\n",
+		"\tinit_arm_attributes(res, irn_flags, in_reqs, n_res);\n",
 	arm_farith_attr_t =>
-		"\tinit_arm_attributes(res, irn_flags_, in_reqs, n_res);\n".
+		"\tinit_arm_attributes(res, irn_flags, in_reqs, n_res);\n".
 		"\tinit_arm_farith_attributes(res, op_mode);",
 );
 

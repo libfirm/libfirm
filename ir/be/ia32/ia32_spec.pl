@@ -99,30 +99,30 @@ $custom_init_attr_func = \&ia32_custom_init_attr;
 
 %init_attr = (
 	ia32_attr_t     =>
-		"\tinit_ia32_attributes(res, irn_flags_, in_reqs, n_res);",
+		"\tinit_ia32_attributes(res, irn_flags, in_reqs, n_res);",
 	ia32_call_attr_t =>
-		"\tinit_ia32_attributes(res, irn_flags_, in_reqs, n_res);\n".
+		"\tinit_ia32_attributes(res, irn_flags, in_reqs, n_res);\n".
 		"\tinit_ia32_call_attributes(res, pop, call_tp);",
 	ia32_condcode_attr_t =>
-		"\tinit_ia32_attributes(res, irn_flags_, in_reqs, n_res);\n".
+		"\tinit_ia32_attributes(res, irn_flags, in_reqs, n_res);\n".
 		"\tinit_ia32_condcode_attributes(res, condition_code);",
 	ia32_switch_attr_t =>
-		"\tinit_ia32_attributes(res, irn_flags_, in_reqs, n_res);\n".
+		"\tinit_ia32_attributes(res, irn_flags, in_reqs, n_res);\n".
 		"\tinit_ia32_switch_attributes(res, switch_table);",
 	ia32_copyb_attr_t =>
-		"\tinit_ia32_attributes(res, irn_flags_, in_reqs, n_res);\n".
+		"\tinit_ia32_attributes(res, irn_flags, in_reqs, n_res);\n".
 		"\tinit_ia32_copyb_attributes(res, size);",
 	ia32_immediate_attr_t =>
-		"\tinit_ia32_attributes(res, irn_flags_, in_reqs, n_res);\n".
+		"\tinit_ia32_attributes(res, irn_flags, in_reqs, n_res);\n".
 		"\tinit_ia32_immediate_attributes(res, imm);",
 	ia32_x87_attr_t =>
-		"\tinit_ia32_attributes(res, irn_flags_, in_reqs, n_res);\n".
+		"\tinit_ia32_attributes(res, irn_flags, in_reqs, n_res);\n".
 		"\tinit_ia32_x87_attributes(res);",
 	ia32_climbframe_attr_t =>
-		"\tinit_ia32_attributes(res, irn_flags_, in_reqs, n_res);\n".
+		"\tinit_ia32_attributes(res, irn_flags, in_reqs, n_res);\n".
 		"\tinit_ia32_climbframe_attributes(res, count);",
 	ia32_return_attr_t =>
-		"\tinit_ia32_attributes(res, irn_flags_, in_reqs, n_res);\n".
+		"\tinit_ia32_attributes(res, irn_flags, in_reqs, n_res);\n".
 		"\tinit_ia32_return_attributes(res, pop);",
 );
 

@@ -46,7 +46,7 @@ if(!defined($default_attr_type)) {
 }
 if(! %init_attr) {
 	%init_attr = (
-		$default_attr_type => "be_info_init_irn(res, irn_flags_, in_reqs, n_res);",
+		$default_attr_type => "be_info_init_irn(res, irn_flags, in_reqs, n_res);",
 	);
 }
 
@@ -188,7 +188,7 @@ sub create_constructor {
 
 	# emit constructor code
 	$temp = <<EOF;
-	arch_irn_flags_t irn_flags_ = arch_irn_flags_none;
+	arch_irn_flags_t irn_flags = arch_irn_flags_none;
 EOF
 
 	if ($arity != $ARITY_VARIABLE) {
@@ -301,14 +301,14 @@ EOF
 			if (not defined($known_irn_flags{$flag})) {
 				print STDERR "WARNING: irn_flag '$flag' in opcode $op is unknown\n";
 			} else {
-				$temp .= "\tirn_flags_ |= " . $known_irn_flags{$flag} . ";\n";
+				$temp .= "\tirn_flags |= " . $known_irn_flags{$flag} . ";\n";
 			}
 		}
 		$temp .= "\n";
 	}
 
 	# lookup init function
-	my $attr_init_code = "(void)in;(void)irn_flags_;(void)in_reqs;(void)n_res;";
+	my $attr_init_code = "(void)in;(void)irn_flags;(void)in_reqs;(void)n_res;";
 	if ($attr_type ne "") {
 		$attr_init_code = $init_attr{$attr_type};
 		if(!defined($attr_init_code)) {

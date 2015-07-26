@@ -57,25 +57,25 @@ $default_copy_attr = "amd64_copy_attr";
 
 %init_attr = (
 	amd64_attr_t =>
-		"init_amd64_attributes(res, irn_flags_, in_reqs, n_res, op_mode);",
+		"init_amd64_attributes(res, irn_flags, in_reqs, n_res, op_mode);",
 	amd64_addr_attr_t =>
-		"init_amd64_attributes(res, irn_flags_, in_reqs, n_res, op_mode);\n"
+		"init_amd64_attributes(res, irn_flags, in_reqs, n_res, op_mode);\n"
 		."\tattr->insn_mode = insn_mode;\n"
 		."\tattr->addr = addr;",
 	amd64_binop_addr_attr_t =>
-		"be_info_init_irn(res, irn_flags_, in_reqs, n_res);\n"
+		"be_info_init_irn(res, irn_flags, in_reqs, n_res);\n"
 		."\t*attr = *attr_init;",
 	amd64_switch_jmp_attr_t =>
-		"init_amd64_attributes(res, irn_flags_, in_reqs, n_res, op_mode);\n"
+		"init_amd64_attributes(res, irn_flags, in_reqs, n_res, op_mode);\n"
 		."\tinit_amd64_switch_attributes(res, table, table_entity);",
 	amd64_cc_attr_t =>
-		"init_amd64_attributes(res, irn_flags_, in_reqs, n_res, op_mode);\n"
+		"init_amd64_attributes(res, irn_flags, in_reqs, n_res, op_mode);\n"
 		."\tinit_amd64_cc_attributes(res, cc);",
 	amd64_movimm_attr_t =>
-		"init_amd64_attributes(res, irn_flags_, in_reqs, n_res, op_mode);\n"
+		"init_amd64_attributes(res, irn_flags, in_reqs, n_res, op_mode);\n"
 		."\tinit_amd64_movimm_attributes(res, insn_mode, imm);",
 	amd64_shift_attr_t =>
-		"be_info_init_irn(res, irn_flags_, in_reqs, n_res);\n"
+		"be_info_init_irn(res, irn_flags, in_reqs, n_res);\n"
 		."\t*attr = *attr_init;\n",
 );
 
