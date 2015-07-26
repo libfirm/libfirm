@@ -3,6 +3,7 @@ $arch = "amd64";
 $mode_gp    = "mode_Lu";
 $mode_flags = "mode_Iu";
 $mode_xmm   = "amd64_mode_xmm";
+$mode_x87   = "x86_mode_E";
 
 %reg_classes = (
 	gp => [
@@ -46,7 +47,18 @@ $mode_xmm   = "amd64_mode_xmm";
 		{ name => "xmm14", dwarf => 31 },
 		{ name => "xmm15", dwarf => 32 },
 		{ mode => $mode_xmm }
-	]
+	],
+	x87 => [
+		{ name => "st0", realname => "st",    encoding => 0, dwarf => 11 },
+		{ name => "st1", realname => "st(1)", encoding => 1, dwarf => 12 },
+		{ name => "st2", realname => "st(2)", encoding => 2, dwarf => 13 },
+		{ name => "st3", realname => "st(3)", encoding => 3, dwarf => 14 },
+		{ name => "st4", realname => "st(4)", encoding => 4, dwarf => 15 },
+		{ name => "st5", realname => "st(5)", encoding => 5, dwarf => 16 },
+		{ name => "st6", realname => "st(6)", encoding => 6, dwarf => 17 },
+		{ name => "st7", realname => "st(7)", encoding => 7, dwarf => 18 },
+		{ mode => $mode_x87 }
+	],
 );
 
 %custom_irn_flags = (
