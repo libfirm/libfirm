@@ -268,9 +268,6 @@ static void peephole_ia32_Test(ir_node *node)
 
 		ir_node *const flags_proj = be_new_Proj(op, pn_ia32_flags);
 		arch_set_irn_register(flags_proj, &ia32_registers[REG_EFLAGS]);
-
-		assert(get_irn_mode(node) != mode_T);
-
 		be_peephole_exchange(node, flags_proj);
 	} else if (is_ia32_Immediate(right)) {
 		ia32_immediate_attr_t const *const imm = get_ia32_immediate_attr_const(right);
