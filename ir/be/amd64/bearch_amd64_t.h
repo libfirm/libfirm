@@ -11,11 +11,10 @@
 #define FIRM_BE_AMD64_BEARCH_AMD64_T_H
 
 #include "../ia32/x86_cconv.h"
+#include "../ia32/x86_x87.h"
 
 extern pmap *amd64_constants; /**< A map of entities that store const tarvals */
 
-extern ir_mode *amd64_mode_E;
-extern ir_type *amd64_type_E;
 extern ir_mode *amd64_mode_xmm;
 
 extern bool amd64_use_x64_abi;
