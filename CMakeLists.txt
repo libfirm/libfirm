@@ -240,11 +240,21 @@ set(GEN_IR_DIR "${PROJECT_SOURCE_DIR}/scripts")
 set(IR_SPEC "${PROJECT_SOURCE_DIR}/scripts/ir_spec.py")
 set(GEN_TEMPLATEDIR "${PROJECT_SOURCE_DIR}/scripts/templates")
 
+set(Python_ADDITIONAL_VERSIONS 2.7 3.0 3.1 3.2 3.3 3.4)
+include(FindPythonInterp)
+if(NOT PYTHONINTERP_FOUND)
+	message(FATAL_ERROR "Unable to find python interpreter")
+endif()
+include(FindPerl)
+if(NOT PERL_FOUND)
+	message(FATAL_ERROR "Unable to find perl interpreter")
+endif()
+
 function(gen_ir target)
 	get_filename_component(basename "${target}" NAME)
 	add_custom_command (
 		OUTPUT ${target}
-		COMMAND ${GEN_IR_DIR}/gen_ir.py ${IR_SPEC} ${GEN_TEMPLATEDIR}/${basename} > ${target}
+		COMMAND ${PYTHON_EXECUTABLE} ${GEN_IR_DIR}/gen_ir.py ${IR_SPEC} ${GEN_TEMPLATEDIR}/${basename} > ${target}
 		DEPENDS ${GEN_IR_DIR}/gen_ir.py ${GEN_IR_DIR}/jinjautil.py ${GEN_IR_DIR}/irops.py ${IR_SPEC}
 	)
 	list(APPEND SOURCES ${target})
@@ -256,7 +266,7 @@ function(begen generator target spec)
 	set(GENERATOR ${PROJECT_SOURCE_DIR}/ir/be/scripts/${generator})
 	add_custom_command(
 		OUTPUT ${target}
-		COMMAND ${GENERATOR} ${spec} ${TARGETDIR}
+		COMMAND ${PERL_EXECUTABLE} ${GENERATOR} ${spec} ${TARGETDIR}
 		DEPENDS ${GENERATOR} ${spec}
 	)
 	list(APPEND SOURCES ${target})
