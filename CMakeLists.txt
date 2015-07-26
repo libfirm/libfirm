@@ -355,11 +355,11 @@ add_backend(ia32
 	ir/be/ia32/ia32_optimize.c
 	ir/be/ia32/ia32_pic.c
 	ir/be/ia32/ia32_transform.c
-	ir/be/ia32/ia32_x87.c
 	ir/be/ia32/x86_address_mode.c
 	ir/be/ia32/x86_asm.c
 	ir/be/ia32/x86_cconv.c
 	ir/be/ia32/x86_imm.c
+	ir/be/ia32/x86_x87.c
 )
 add_backend(arm
 	ir/be/arm/arm_cconv.c

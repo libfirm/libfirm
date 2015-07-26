@@ -9,6 +9,8 @@
  *              register translation for the ia32 backend.
  * @author      Michael Beck
  */
+#include "x86_x87.h"
+
 #include <assert.h>
 
 #include "bearch_ia32_t.h"
@@ -28,7 +30,6 @@
 #include "pdeq.h"
 #include "debug.h"
 #include "panic.h"
-
 #include "belive.h"
 #include "besched.h"
 #include "benode.h"
@@ -36,7 +37,6 @@
 #include "ia32_new_nodes.h"
 #include "gen_ia32_new_nodes.h"
 #include "gen_ia32_regalloc_if.h"
-#include "ia32_x87.h"
 #include "ia32_architecture.h"
 
 #define N_FLOAT_REGS  (N_ia32_fp_REGS-1)  // exclude NOREG
@@ -1498,7 +1498,7 @@ static void update_liveness_walker(ir_node *block, void *data)
  * Replaces all virtual floating point instructions and registers
  * by real ones.
  */
-void ia32_x87_simulate_graph(ir_graph *irg)
+void x86_x87_simulate_graph(ir_graph *irg)
 {
 #ifndef DEBUG_libfirm
 	if (!requested_x87_sim(irg))
@@ -1542,7 +1542,7 @@ void ia32_x87_simulate_graph(ir_graph *irg)
 }
 
 /* Initializes the x87 simulator. */
-void ia32_init_x87(void)
+void x86_init_x87(void)
 {
-	FIRM_DBG_REGISTER(dbg, "firm.be.ia32.x87");
+	FIRM_DBG_REGISTER(dbg, "firm.be.x86.x87");
 }

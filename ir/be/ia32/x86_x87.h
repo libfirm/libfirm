@@ -9,8 +9,8 @@
  *              register translation for the ia32 backend.
  * @author      Michael Beck
  */
-#ifndef FIRM_BE_IA32_IA32_X87_H
-#define FIRM_BE_IA32_IA32_X87_H
+#ifndef FIRM_BE_IA32_X86_X87_H
+#define FIRM_BE_IA32_X86_X87_H
 
 #include "firm_types.h"
 
@@ -23,11 +23,11 @@
  *
  * Registers must be allocated.
  */
-void ia32_x87_simulate_graph(ir_graph *irg);
+void x86_x87_simulate_graph(ir_graph *irg);
 
 /**
  * Initializes the x87 simulator.
  */
-void ia32_init_x87(void);
+void x86_init_x87(void);
 
 #endif

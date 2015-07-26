@@ -27,7 +27,6 @@
 #include "ia32_new_nodes.h"
 #include "ia32_optimize.h"
 #include "ia32_transform.h"
-#include "ia32_x87.h"
 #include "ident_t.h"
 #include "instrument.h"
 #include "ircons.h"
@@ -45,6 +44,7 @@
 #include "lower_softfloat.h"
 #include "lowering.h"
 #include "panic.h"
+#include "x86_x87.h"
 
 pmap *ia32_tv_ent; /**< A map of entities that store const tarvals */
 
@@ -1140,7 +1140,7 @@ static void ia32_emit(ir_graph *irg)
 	be_dump(DUMP_RA, irg, "2addr");
 
 	/* we might have to rewrite x87 virtual registers */
-	ia32_x87_simulate_graph(irg);
+	x86_x87_simulate_graph(irg);
 	be_dump(DUMP_RA, irg, "x87");
 
 	/* do peephole optimizations */
@@ -1659,6 +1659,6 @@ void be_init_arch_ia32(void)
 	ia32_init_finish();
 	ia32_init_optimize();
 	ia32_init_transform();
-	ia32_init_x87();
+	x86_init_x87();
 	ia32_init_architecture();
 }
