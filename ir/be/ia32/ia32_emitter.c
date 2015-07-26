@@ -182,6 +182,7 @@ static void ia32_emit_relocation(x86_imm32_t const *const imm)
 	be_gas_emit_entity(entity);
 	switch (imm->kind) {
 	case X86_IMM_ADDR:
+	case X86_IMM_PCREL:
 		return;
 	case X86_IMM_TLS_IE: be_emit_cstring("@INDNTPOFF"); return;
 	case X86_IMM_TLS_LE: be_emit_cstring("@NTPOFF");    return;
@@ -1684,7 +1685,7 @@ static void bemit32(const uint32_t u32)
  * Emit address of an entity. If @p is_relative is true then a relative
  * offset from behind the address to the entity is created.
  */
-static void bemit_entity(x86_imm32_t const *const imm, bool is_relative)
+static void bemit_entity(x86_imm32_t const *const imm)
 {
 	ir_entity *entity = imm->entity;
 	int32_t    offset = imm->offset;
@@ -1696,23 +1697,14 @@ static void bemit_entity(x86_imm32_t const *const imm, bool is_relative)
 	/* the final version should remember the position in the bytestream
 	   and patch it with the correct address at linktime... */
 	be_emit_cstring("\t.long ");
-	be_gas_emit_entity(entity);
 
-	if (is_tls_entity(entity)) {
-		if (!entity_has_definition(entity)) {
-			be_emit_cstring("@INDNTPOFF");
-		} else {
-			be_emit_cstring("@NTPOFF");
-		}
-	}
-
-	if (is_relative) {
+	if (imm->kind == X86_IMM_PCREL) {
+		be_gas_emit_entity(entity);
 		be_emit_cstring("-.");
 		offset -= 4;
-	}
-
-	if (offset != 0) {
 		be_emit_irprintf("%+"PRId32, offset);
+	} else {
+		ia32_emit_relocation(imm);
 	}
 	be_emit_char('\n');
 	be_emit_write_line();
@@ -1860,7 +1852,7 @@ static void bemit_mod_am(unsigned reg, const ir_node *node)
 	if (emitoffs == 8) {
 		bemit8((unsigned) offset);
 	} else if (emitoffs == 32) {
-		bemit_entity(&attr->am_imm, false);
+		bemit_entity(&attr->am_imm);
 	}
 }
 
@@ -1899,10 +1891,10 @@ static void bemit_0f_unop_reg(ir_node const *const node, unsigned char const cod
 	bemit_unop_reg(node, code, input);
 }
 
-static void bemit_imm32(ir_node const *const node, bool const relative)
+static void bemit_imm32(ir_node const *const node)
 {
 	const ia32_immediate_attr_t *attr = get_ia32_immediate_attr_const(node);
-	bemit_entity(&attr->imm, relative);
+	bemit_entity(&attr->imm);
 }
 
 static void bemit_imm(ia32_immediate_attr_t const *const attr,
@@ -1911,7 +1903,7 @@ static void bemit_imm(ia32_immediate_attr_t const *const attr,
 	switch (size) {
 	case  8: bemit8(attr->imm.offset);  break;
 	case 16: bemit16(attr->imm.offset); break;
-	case 32: bemit_entity(&attr->imm, false); break;
+	case 32: bemit_entity(&attr->imm);  break;
 	}
 }
 
@@ -1981,7 +1973,7 @@ static void bemit_mov_const(const ir_node *node)
 {
 	arch_register_t const *const out = arch_get_irn_register_out(node, pn_ia32_Const_res);
 	bemit8(0xB8 + out->encoding);
-	bemit_imm32(node, false);
+	bemit_imm32(node);
 }
 
 static bool use_eax_short_form(ir_node const *const node)
@@ -2488,7 +2480,7 @@ static void bemit_load(const ir_node *node)
 			   as 0xA1 [offset] */
 			bemit8(0xA1);
 			ia32_attr_t const *const attr = get_ia32_attr_const(node);
-			bemit_entity(&attr->am_imm, false);
+			bemit_entity(&attr->am_imm);
 			return;
 		}
 	}
@@ -2527,7 +2519,7 @@ static void bemit_store(const ir_node *node)
 					bemit8(0xA3);
 				}
 				ia32_attr_t const *const attr = get_ia32_attr_const(node);
-				bemit_entity(&attr->am_imm, false);
+				bemit_entity(&attr->am_imm);
 				return;
 			}
 		}
@@ -2601,7 +2593,7 @@ static void bemit_call(const ir_node *node)
 
 	if (is_ia32_Immediate(proc)) {
 		bemit8(0xE8);
-		bemit_imm32(proc, true);
+		bemit_imm32(proc);
 	} else {
 		bemit_unop(node, 0xFF, 2, n_ia32_Call_addr);
 	}

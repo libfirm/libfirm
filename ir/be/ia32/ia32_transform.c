@@ -4396,6 +4396,15 @@ static ir_node *gen_Jmp(ir_node *node)
 	return new_node;
 }
 
+static void adjust_pc_relative_relocation(ir_node *node)
+{
+	if (!is_ia32_Immediate(node))
+		return;
+	ia32_immediate_attr_t *attr = get_ia32_immediate_attr(node);
+	if (attr->imm.kind == X86_IMM_ADDR)
+		attr->imm.kind = X86_IMM_PCREL;
+}
+
 /**
  * Transform IJmp
  */
@@ -4408,6 +4417,7 @@ static ir_node *gen_IJmp(ir_node *node)
 	ia32_address_mode_t am;
 	match_arguments(&am, block, NULL, op, NULL,
 	                match_am | match_immediate | match_upconv);
+	adjust_pc_relative_relocation(am.new_op2);
 
 	x86_address_t *addr      = &am.addr;
 	dbg_info      *dbgi      = get_irn_dbg_info(node);
@@ -4936,7 +4946,9 @@ static ir_node *gen_Call(ir_node *node)
 	ir_node      *const old_block = get_nodes_block(node);
 	ir_node      *const callee    = get_Call_ptr(node);
 	ir_node      *const mem       = get_Call_mem(node);
-	match_arguments(&am, old_block, NULL, callee, mem, match_am | match_immediate | match_upconv);
+	match_arguments(&am, old_block, NULL, callee, mem,
+	                match_am | match_immediate | match_upconv);
+	adjust_pc_relative_relocation(am.new_op2);
 
 	ir_type                    *const type     = get_Call_type(node);
 	x86_cconv_t                *const cconv    = ia32_decide_calling_convention(type, NULL);

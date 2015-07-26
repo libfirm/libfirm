@@ -21,11 +21,12 @@
 typedef enum x86_immediate_kind_t {
 	X86_IMM_VALUE,       /**< no relocation, just a value */
 	X86_IMM_ADDR,        /**< "normal" absolute addresses to a symbol */
+	X86_IMM_PCREL,       /**< PC relative address */
 	X86_IMM_PICBASE_REL, /**< relative to pic base address */
 	X86_IMM_TLS_IE,      /**< thread local storage, initial exec */
 	X86_IMM_TLS_LE,      /**< thread local storage, load exec */
 	X86_IMM_FRAMEOFFSET, /**< offset to entity on stackframe */
-	X86_IMM_GOTPCREL,    /**< global offset table entry PIC relative (elf64) */
+	X86_IMM_GOTPCREL,    /**< global offset table entry PC relative (elf64) */
 	X86_IMM_GOTOFF,      /**< address relative to global offset table */
 	X86_IMM_GOT,         /**< global offset table entry offset */
 	X86_IMM_PLT,         /**< address to entry in procedure linkage table */

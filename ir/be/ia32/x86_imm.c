@@ -84,6 +84,7 @@ char const *x86_get_immediate_kind_str(x86_immediate_kind_t const kind)
 	switch (kind) {
 	case X86_IMM_VALUE:       return "value";
 	case X86_IMM_ADDR:        return "addr";
+	case X86_IMM_PCREL:       return "pcrel";
 	case X86_IMM_PICBASE_REL: return "picbase_rel";
 	case X86_IMM_TLS_IE:      return "tls_ie";
 	case X86_IMM_TLS_LE:      return "tls_le";

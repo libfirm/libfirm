@@ -205,7 +205,9 @@ static void emit_relocation_no_offset(x86_immediate_kind_t const kind,
 {
 	be_gas_emit_entity(entity);
 	switch (kind) {
-	case X86_IMM_ADDR:     return;
+	case X86_IMM_ADDR:
+	case X86_IMM_PCREL:
+		return;
 	case X86_IMM_GOTPCREL: be_emit_cstring("@GOTPCREL"); return;
 	case X86_IMM_VALUE:
 	case X86_IMM_TLS_IE:
