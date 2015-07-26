@@ -14,6 +14,7 @@
 #include "beirg.h"
 #include "pmap.h"
 #include "x86_cconv.h"
+#include "x86_x87.h"
 
 #ifdef NDEBUG
 #define SET_IA32_ORIG_NODE(n, o) ((void)(n), (void)(o), (void)0)
@@ -44,9 +45,6 @@ extern pmap *ia32_tv_ent; /**< A map of entities that store const tarvals */
 
 /** The mode for the floating point control word. */
 extern ir_mode *ia32_mode_fpcw;
-/** extended floatingpoint mode */
-extern ir_mode *ia32_mode_E;
-extern ir_type *ia32_type_E;
 extern ir_mode *ia32_mode_gp;
 extern ir_mode *ia32_mode_float64;
 extern ir_mode *ia32_mode_float32;

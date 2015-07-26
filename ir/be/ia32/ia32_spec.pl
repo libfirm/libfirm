@@ -14,7 +14,7 @@
 $arch = "ia32";
 
 $mode_xmm   = "ia32_mode_float64";
-$mode_fp87  = "ia32_mode_E";
+$mode_fp87  = "x86_mode_E";
 $mode_gp    = "ia32_mode_gp";
 $mode_flags = "ia32_mode_flags";
 $mode_fpcw  = "ia32_mode_fpcw";
@@ -286,7 +286,7 @@ my $funop = {
 	in_reqs   => [ "fp" ],
 	out_reqs  => [ "fp" ],
 	ins       => [ "value" ],
-	init      => "attr->ls_mode = ia32_mode_E;",
+	init      => "attr->ls_mode = x86_mode_E;",
 };
 
 my $fconstop = {
@@ -294,7 +294,7 @@ my $fconstop = {
 	irn_flags => [ "rematerializable" ],
 	out_reqs  => [ "fp" ],
 	outs      => [ "res" ],
-	init      => "attr->ls_mode = ia32_mode_E;",
+	init      => "attr->ls_mode = x86_mode_E;",
 	fixed     => $x87sim,
 };
 

@@ -50,8 +50,6 @@ pmap *ia32_tv_ent; /**< A map of entities that store const tarvals */
 
 ir_mode *ia32_mode_fpcw;
 ir_mode *ia32_mode_flags;
-ir_mode *ia32_mode_E;
-ir_type *ia32_type_E;
 ir_mode *ia32_mode_gp;
 ir_mode *ia32_mode_float64;
 ir_mode *ia32_mode_float32;
@@ -980,9 +978,9 @@ static void ia32_collect_frame_entity_nodes(ir_node *node, void *data)
 		 * size to 16bit :-( */
 		if (get_mode_size_bits(mode) == 8) {
 			type = get_type_for_mode(mode_Hu);
-		} else if (mode == ia32_mode_E) {
-			type = ia32_type_E; /* make sure we have the right alignment
-			                       entity size (different from mode size) */
+		} else if (mode == x86_mode_E) {
+			type = x86_type_E; /* make sure we have the right alignment
+			                      entity size (different from mode size) */
 		} else {
 			type = get_type_for_mode(mode);
 		}
@@ -1419,14 +1417,6 @@ static void ia32_init(void)
 	ia32_mode_fpcw = new_non_arithmetic_mode("fpcw", 16);
 	ia32_mode_flags = new_non_arithmetic_mode("flags", 32);
 
-	/* note mantissa is 64bit but with explicitely encoded 1 so the really
-	 * usable part as counted by firm is only 63 bits */
-	ia32_mode_E = new_float_mode("E", irma_x86_extended_float, 15, 64,
-	                             ir_overflow_indefinite);
-	ia32_type_E = new_type_primitive(ia32_mode_E);
-	set_type_size_bytes(ia32_type_E, 12);
-	set_type_alignment_bytes(ia32_type_E, 4);
-
 	ia32_mode_gp = new_int_mode("gp", irma_twos_complement, 32, 0, 32);
 	ia32_mode_float64 = new_float_mode("fp64", irma_ieee754, 11, 52,
 	                                   ir_overflow_indefinite);
@@ -1452,8 +1442,9 @@ static void ia32_init(void)
 		ia32_backend_params.mode_float_arithmetic = NULL;
 		ia32_backend_params.type_long_double = NULL;
 	} else {
-		ia32_backend_params.mode_float_arithmetic = ia32_mode_E;
-		ia32_backend_params.type_long_double      = ia32_type_E;
+		x86_init_x87_type();
+		ia32_backend_params.mode_float_arithmetic = x86_mode_E;
+		ia32_backend_params.type_long_double      = x86_type_E;
 	}
 
 	ia32_register_init();

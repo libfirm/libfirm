@@ -46,6 +46,7 @@
 #include "util.h"
 #include "x86_address_mode.h"
 #include "x86_cconv.h"
+#include "x86_x87.h"
 
 /* define this to construct SSE constants instead of load them */
 #undef CONSTRUCT_SSE_CONST
@@ -285,8 +286,8 @@ static ir_node *try_create_Immediate(const ir_node *node, char const constraint)
 
 static ir_type *get_prim_type(const ir_mode *mode)
 {
-	if (mode == ia32_mode_E) {
-		return ia32_type_E;
+	if (mode == x86_mode_E) {
+		return x86_type_E;
 	} else {
 		return get_type_for_mode(mode);
 	}
@@ -785,7 +786,7 @@ static bool ia32_use_source_address_mode(ir_node *block, ir_node *node,
 		return false;
 	ir_mode *mode = get_irn_mode(node);
 	/* we can't fold mode_E AM */
-	if (mode == ia32_mode_E)
+	if (mode == x86_mode_E)
 		return false;
 	/* we only use address mode if we're the only user of the load
 	 * or the users will be merged later anyway */
@@ -1253,7 +1254,7 @@ static ir_node *skip_float_upconv(ir_node *node)
 
 static void check_x87_floatmode(ir_mode *mode)
 {
-	if (mode != ia32_mode_E) {
+	if (mode != x86_mode_E) {
 		panic("ia32: x87 only supports x86 extended float mode");
 	}
 }
@@ -1291,7 +1292,7 @@ static ir_node *gen_binop_x87_float(ir_node *node, ir_node *op1, ir_node *op2,
 	ir_node       *new_node  = func(dbgi, new_block, addr->base, addr->index,
 	                                addr->mem, am.new_op1, am.new_op2, fpcw);
 	if (am.op_type == ia32_Normal)
-		am.ls_mode = ia32_mode_E;
+		am.ls_mode = x86_mode_E;
 	set_am_attributes(new_node, &am);
 
 	ia32_x87_attr_t *attr = get_ia32_x87_attr(new_node);
@@ -3618,7 +3619,7 @@ static ir_node *gen_Mux(ir_node *node)
 				scale = 2;
 			} else if (new_mode == ia32_mode_float64) {
 				scale = 3;
-			} else if (new_mode == ia32_mode_E) {
+			} else if (new_mode == x86_mode_E) {
 				/* arg, shift 16 NOT supported */
 				scale = 3;
 				new_node = new_bd_ia32_Lea(dbgi, new_block, new_node, new_node);

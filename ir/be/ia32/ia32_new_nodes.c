@@ -36,6 +36,7 @@
 #include "ia32_nodes_attr.h"
 #include "ia32_new_nodes.h"
 #include "gen_ia32_regalloc_if.h"
+#include "x86_x87.h"
 
 struct obstack opcodes_obst;
 

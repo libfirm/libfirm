@@ -27,6 +27,7 @@
 #include "bearch_ia32_t.h"
 #include "gen_ia32_regalloc_if.h"
 #include "begnuas.h"
+#include "x86_x87.h"
 
 typedef enum {
 	no_carry = 0,
@@ -364,14 +365,14 @@ static void ia32_lower_conv64(ir_node *node, ir_mode *mode)
 			/* Convert from float to unsigned 64bit. */
 			ir_graph  *irg = get_irn_irg(node);
 			ir_tarval *flt_tv
-				= new_tarval_from_str("9223372036854775808", 19, ia32_mode_E);
+				= new_tarval_from_str("9223372036854775808", 19, x86_mode_E);
 			ir_node   *flt_corr  = new_r_Const(irg, flt_tv);
 
 			ir_node *lower_blk = part_block_dw(node);
 			ir_node *upper_blk = get_nodes_block(node);
 			set_dw_control_flow_changed();
 
-			ir_node *opc  = new_rd_Conv(dbg, upper_blk, op, ia32_mode_E);
+			ir_node *opc  = new_rd_Conv(dbg, upper_blk, op, x86_mode_E);
 			ir_node *cmp  = new_rd_Cmp(dbg, upper_blk, opc, flt_corr,
 			                           ir_relation_less);
 			ir_node *cond = new_rd_Cond(dbg, upper_blk, cmp);
@@ -394,11 +395,11 @@ static void ia32_lower_conv64(ir_node *node, ir_mode *mode)
 
 			ir_node *fphi_in[] = {
 				opc,
-				new_rd_Sub(dbg, upper_blk, opc, flt_corr, ia32_mode_E)
+				new_rd_Sub(dbg, upper_blk, opc, flt_corr, x86_mode_E)
 			};
 			ir_node *flt_phi
 				= new_r_Phi(lower_blk, ARRAY_SIZE(fphi_in), fphi_in,
-				            ia32_mode_E);
+				            x86_mode_E);
 
 			/* fix Phi links for next part_block() */
 			if (is_Phi(int_phi))
