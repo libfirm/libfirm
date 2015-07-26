@@ -109,6 +109,15 @@ static ir_node *gen_Add(ir_node *node)
 	if (mode_is_float(mode)) {
 		return transform_binop(node, new_bd_TEMPLATE_fAdd);
 	}
+
+	ir_node *const l = get_Add_left(node);
+	ir_node *const r = get_Add_right(node);
+	if (is_Address(l) && is_Const(r)) {
+		ir_entity *const entity = get_Address_entity(l);
+		ir_tarval *const value  = get_Const_tarval(r);
+		return transform_const(node, entity, value);
+	}
+
 	return transform_binop(node, new_bd_TEMPLATE_Add);
 }
 
