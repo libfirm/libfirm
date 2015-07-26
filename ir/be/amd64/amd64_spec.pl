@@ -66,13 +66,13 @@ $default_copy_attr = "amd64_copy_attr";
 		"be_info_init_irn(res, irn_flags, in_reqs, n_res);\n"
 		."\t*attr = *attr_init;",
 	amd64_switch_jmp_attr_t =>
-		"init_amd64_attributes(res, irn_flags, in_reqs, n_res, op_mode);\n"
+		"init_amd64_attributes(res, irn_flags, in_reqs, n_res, AMD64_OP_NONE);\n"
 		."\tinit_amd64_switch_attributes(res, table, table_entity);",
 	amd64_cc_attr_t =>
-		"init_amd64_attributes(res, irn_flags, in_reqs, n_res, op_mode);\n"
+		"init_amd64_attributes(res, irn_flags, in_reqs, n_res, AMD64_OP_NONE);\n"
 		."\tinit_amd64_cc_attributes(res, cc);",
 	amd64_movimm_attr_t =>
-		"init_amd64_attributes(res, irn_flags, in_reqs, n_res, op_mode);\n"
+		"init_amd64_attributes(res, irn_flags, in_reqs, n_res, AMD64_OP_IMM64);\n"
 		."\tinit_amd64_movimm_attributes(res, insn_mode, imm);",
 	amd64_shift_attr_t =>
 		"be_info_init_irn(res, irn_flags, in_reqs, n_res);\n"
@@ -347,7 +347,6 @@ mov_imm => {
 	out_reqs  => [ "gp" ],
 	attr_type => "amd64_movimm_attr_t",
 	attr      => "amd64_insn_mode_t insn_mode, const amd64_imm64_t *imm",
-	fixed     => "amd64_op_mode_t op_mode = AMD64_OP_IMM64;",
 	emit      => 'mov%MM $%C, %D0',
 	mode      => $mode_gp,
 },
@@ -422,7 +421,6 @@ jcc => {
 	outs      => [ "false", "true" ],
 	attr_type => "amd64_cc_attr_t",
 	attr      => "x86_condition_code_t cc",
-	fixed     => "amd64_op_mode_t op_mode = AMD64_OP_NONE;\n",
 },
 
 mov_store => {
@@ -444,7 +442,6 @@ jmp_switch => {
 	out_reqs  => "...",
 	attr_type => "amd64_switch_jmp_attr_t",
 	attr      => "const ir_switch_table *table, ir_entity *table_entity",
-	fixed     => "amd64_op_mode_t op_mode = AMD64_OP_NONE;\n",
 },
 
 call => {
