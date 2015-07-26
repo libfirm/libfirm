@@ -557,6 +557,12 @@ ir_node *be_new_Proj(ir_node *const pred, unsigned const pos)
 	return new_r_Proj(pred, req->cls->mode, pos);
 }
 
+ir_node *be_new_Proj_reg(ir_node *const pred, unsigned const pos, arch_register_t const *const reg)
+{
+	arch_set_irn_register_out(pred, pos, reg);
+	return be_new_Proj(pred, pos);
+}
+
 ir_node *be_get_or_make_Proj_for_pn(ir_node *const irn, unsigned const pn)
 {
 	ir_node *const proj = get_Proj_for_pn(irn, pn);

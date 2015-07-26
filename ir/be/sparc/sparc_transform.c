@@ -1949,8 +1949,7 @@ static ir_node *gen_Alloc(ir_node *node)
 		subsp = new_bd_sparc_SubSP_reg(dbgi, new_block, stack_pred, new_size, new_mem);
 	}
 
-	ir_node *const stack_proj = be_new_Proj(subsp, pn_sparc_SubSP_stack);
-	arch_set_irn_register(stack_proj, sp_reg);
+	ir_node *const stack_proj = be_new_Proj_reg(subsp, pn_sparc_SubSP_stack, sp_reg);
 	/* If we are the last stack producer in a block, we have to keep the
 	 * stack value.  This keeps all producers, which is more than necessary. */
 	keep_alive(stack_proj);

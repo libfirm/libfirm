@@ -315,10 +315,8 @@ static void lower_perm_node(ir_node *const perm, arch_register_class_t const *co
 					ir_node *const in[]  = { p->in_node, q->in_node };
 					ir_node *const xchg  = be_new_Perm(cls, block, ARRAY_SIZE(in), in);
 					DBG((dbg, LEVEL_2, "%+F: inserting %+F for %+F (%s) and %+F (%s)\n", perm, xchg, in[0], arch_get_irn_register(in[0]), in[1], arch_get_irn_register(in[1])));
-					new_p = be_new_Proj(xchg, 0);
-					new_q = be_new_Proj(xchg, 1);
-					arch_set_irn_register_out(xchg, 0, q->in_reg);
-					arch_set_irn_register_out(xchg, 1, q->out_reg);
+					new_p = be_new_Proj_reg(xchg, 0, q->in_reg);
+					new_q = be_new_Proj_reg(xchg, 1, q->out_reg);
 					sched_add_before(perm, xchg);
 					/* Prevent that the broken down Perm is visited by the walker. */
 					mark_irn_visited(xchg);

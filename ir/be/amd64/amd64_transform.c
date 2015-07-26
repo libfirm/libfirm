@@ -2371,10 +2371,8 @@ static ir_node *gen_Alloc(ir_node *node)
 	subsp = new_bd_amd64_sub_sp(dbgi, new_block, arity, in, &attr);
 
 	arch_set_irn_register_reqs_in(subsp, reqs);
-	arch_set_irn_register_out(subsp, pn_amd64_sub_sp_stack,
-	                          &amd64_registers[REG_RSP]);
 
-	ir_node *const stack_proj = be_new_Proj(subsp, pn_amd64_sub_sp_stack);
+	ir_node *const stack_proj = be_new_Proj_reg(subsp, pn_amd64_sub_sp_stack, &amd64_registers[REG_RSP]);
 	keep_alive(stack_proj);
 	pmap_insert(node_to_stack, node, stack_proj);
 

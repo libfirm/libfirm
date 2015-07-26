@@ -141,11 +141,11 @@ carry:;
 
 			if (flags_proj != NULL) {
 				set_irn_mode(adc, mode_T);
-				ir_node *const adc_flags = be_new_Proj(adc, pn_ia32_Adc_flags);
-				arch_set_irn_register(adc_flags, &ia32_registers[REG_EFLAGS]);
+				arch_register_t const *const reg_flags = &ia32_registers[REG_EFLAGS];
+				ir_node               *const adc_flags = be_new_Proj_reg(adc, pn_ia32_Adc_flags, reg_flags);
 
 				ir_node *cmc = new_bd_ia32_Cmc(dbgi, block, adc_flags);
-				arch_set_irn_register(cmc, &ia32_registers[REG_EFLAGS]);
+				arch_set_irn_register(cmc, reg_flags);
 				sched_add_after(irn, cmc);
 				exchange(flags_proj, cmc);
 			}

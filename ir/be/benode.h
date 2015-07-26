@@ -216,6 +216,8 @@ ir_node *be_get_Start_proj(ir_graph *irg, arch_register_t const *reg);
  */
 ir_node *be_new_Proj(ir_node *pred, unsigned pos);
 
+ir_node *be_new_Proj_reg(ir_node *pred, unsigned pos, arch_register_t const *reg);
+
 /**
  * Gets the Proj with number pn from irn.
  * Creates the Proj, if it does not exist, yet.

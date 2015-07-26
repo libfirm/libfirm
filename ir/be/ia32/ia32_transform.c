@@ -4338,10 +4338,8 @@ static ir_node *gen_Alloc(ir_node *node)
 	set_ia32_op_type(new_node, ia32_Normal);
 	set_ia32_ls_mode(new_node, ia32_mode_gp);
 	SET_IA32_ORIG_NODE(new_node, node);
-	arch_set_irn_register_out(new_node, pn_ia32_SubSP_stack,
-	                          &ia32_registers[REG_ESP]);
 
-	ir_node *const stack_proj = be_new_Proj(new_node, pn_ia32_SubSP_stack);
+	ir_node *const stack_proj = be_new_Proj_reg(new_node, pn_ia32_SubSP_stack, &ia32_registers[REG_ESP]);
 	keep_alive(stack_proj);
 	pmap_insert(node_to_stack, node, stack_proj);
 

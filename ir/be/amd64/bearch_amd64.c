@@ -169,9 +169,7 @@ static ir_node *create_pop(ir_node *node, ir_node *schedpoint, ir_node *sp,
 
 static ir_node* create_spproj(ir_node *pred, int pos)
 {
-	ir_node *const sp = be_new_Proj(pred, pos);
-	arch_set_irn_register(sp, &amd64_registers[REG_RSP]);
-	return sp;
+	return be_new_Proj_reg(pred, pos, &amd64_registers[REG_RSP]);
 }
 
 /**
@@ -516,15 +514,13 @@ static void amd64_select_instructions(ir_graph *irg)
 
 static void introduce_epilogue(ir_node *ret)
 {
-	const arch_register_t *sp         = &amd64_registers[REG_RSP];
-	const arch_register_t *bp         = &amd64_registers[REG_RBP];
-	ir_graph              *irg        = get_irn_irg(ret);
-	ir_node               *block      = get_nodes_block(ret);
-	ir_type               *frame_type = get_irg_frame_type(irg);
-	unsigned               frame_size = get_type_size_bytes(frame_type);
-	be_stack_layout_t     *layout     = be_get_irg_stack_layout(irg);
-	ir_node               *first_sp   = get_irn_n(ret, n_amd64_ret_stack);
-	ir_node               *curr_sp    = first_sp;
+	ir_graph          *irg        = get_irn_irg(ret);
+	ir_node           *block      = get_nodes_block(ret);
+	ir_type           *frame_type = get_irg_frame_type(irg);
+	unsigned           frame_size = get_type_size_bytes(frame_type);
+	be_stack_layout_t *layout     = be_get_irg_stack_layout(irg);
+	ir_node           *first_sp   = get_irn_n(ret, n_amd64_ret_stack);
+	ir_node           *curr_sp    = first_sp;
 
 	if (!layout->sp_relative) {
 		int      const n_rbp    = determine_rbp_input(ret);
@@ -532,10 +528,8 @@ static void introduce_epilogue(ir_node *ret)
 		ir_node       *curr_mem = get_irn_n(ret, n_amd64_ret_mem);
 		ir_node *const leave    = new_bd_amd64_leave(NULL, block, curr_bp, curr_mem);
 		curr_mem = be_new_Proj(leave, pn_amd64_leave_M);
-		curr_bp  = be_new_Proj(leave, pn_amd64_leave_frame);
-		curr_sp  = be_new_Proj(leave, pn_amd64_leave_stack);
-		arch_set_irn_register(curr_bp, bp);
-		arch_set_irn_register(curr_sp, sp);
+		curr_bp = be_new_Proj_reg(leave, pn_amd64_leave_frame, &amd64_registers[REG_RBP]);
+		curr_sp = be_new_Proj_reg(leave, pn_amd64_leave_stack, &amd64_registers[REG_RSP]);
 		sched_add_before(ret, leave);
 
 		set_irn_n(ret, n_amd64_ret_mem, curr_mem);
@@ -575,8 +569,7 @@ static void introduce_prologue(ir_graph *const irg)
 		sched_add_after(start, push);
 		ir_node *const curr_mem   = be_new_Proj(push, pn_amd64_push_reg_M);
 		edges_reroute_except(mem, curr_mem, push);
-		ir_node *const curr_sp    = be_new_Proj(push, pn_amd64_push_reg_stack);
-		arch_set_irn_register(curr_sp, sp);
+		ir_node *const curr_sp    = be_new_Proj_reg(push, pn_amd64_push_reg_stack, sp);
 
 		/* move rsp to rbp */
 		ir_node *const curr_bp = be_new_Copy(block, curr_sp);

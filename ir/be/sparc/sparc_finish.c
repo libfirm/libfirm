@@ -485,17 +485,15 @@ static bool is_restorezeroopt_reg(const arch_register_t *reg)
 
 static void replace_with_restore(ir_node *const restore, ir_node *const node, ir_node *const replaced)
 {
- sched_add_before(node, restore);
+	sched_add_before(node, restore);
 
- arch_register_t const *const sp    = &sparc_registers[REG_SP];
- arch_set_irn_register_out(restore, pn_sparc_Restore_stack, sp);
- ir_node               *const stack = be_new_Proj(restore, pn_sparc_Restore_stack);
- be_peephole_exchange(node, stack);
+	arch_register_t const *const sp    = &sparc_registers[REG_SP];
+	ir_node               *const stack = be_new_Proj_reg(restore, pn_sparc_Restore_stack, sp);
+	be_peephole_exchange(node, stack);
 
- arch_register_t const *const reg = arch_get_irn_register(replaced);
- arch_set_irn_register_out(restore, pn_sparc_Restore_res, reg);
- ir_node               *const res = be_new_Proj(restore, pn_sparc_Restore_res);
- be_peephole_exchange(replaced, res);
+	arch_register_t const *const reg = arch_get_irn_register(replaced);
+	ir_node               *const res = be_new_Proj_reg(restore, pn_sparc_Restore_res, reg);
+	be_peephole_exchange(replaced, res);
 }
 
 static void replace_with_restore_reg(ir_node *node, ir_node *replaced,

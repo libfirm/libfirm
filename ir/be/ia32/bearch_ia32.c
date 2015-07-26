@@ -569,17 +569,14 @@ static bool ia32_try_replace_flags(ir_node *consumers, ir_node *flags, ir_node *
 		if (flags_left == avail_right && avail_left == flags_right) {
 			/* We can use available if we reverse the
 			 * consumers' condition codes. */
-			ir_mode               *flag_mode =  ia32_reg_classes[CLASS_ia32_flags].mode;
-			const arch_register_t *flag_reg  = &ia32_reg_classes[CLASS_ia32_flags].regs[0];
-
+			ir_mode *const flag_mode = ia32_reg_classes[CLASS_ia32_flags].mode;
 			for (ir_node *c = consumers; c != NULL; c = get_irn_link(c)) {
 				x86_condition_code_t cc = get_ia32_condcode(c);
 				set_ia32_condcode(c, x86_invert_condition_code(cc));
 
 				foreach_irn_in(c, i, in) {
 					if (get_irn_mode(in) == flag_mode) {
-						ir_node *const proj = be_new_Proj(available, pn);
-						arch_set_irn_register(proj, flag_reg);
+						ir_node *const proj = be_new_Proj_reg(available, pn, &ia32_registers[REG_EFLAGS]);
 						set_irn_n(c, i, proj);
 					}
 				}
@@ -808,9 +805,7 @@ static ir_node *create_pop(ir_node *node, ir_node *schedpoint, ir_node *sp,
 
 static ir_node *create_spproj(ir_node *const pred, unsigned const pos)
 {
-	ir_node *const sp = be_new_Proj(pred, pos);
-	arch_set_irn_register(sp, &ia32_registers[REG_ESP]);
-	return sp;
+	return be_new_Proj_reg(pred, pos, &ia32_registers[REG_ESP]);
 }
 
 /**
@@ -1017,8 +1012,8 @@ static void introduce_epilogue(ir_node *const ret)
 		ir_node  *curr_mem = get_irn_n(ret, n_ia32_Return_mem);
 		if (ia32_cg_config.use_leave) {
 			restore  = new_bd_ia32_Leave(NULL, block, curr_mem, curr_bp);
-			curr_bp  = be_new_Proj(restore, pn_ia32_Leave_frame);
-			curr_sp  = be_new_Proj(restore, pn_ia32_Leave_stack);
+			curr_bp  = be_new_Proj_reg(restore, pn_ia32_Leave_frame, bp);
+			curr_sp  = be_new_Proj_reg(restore, pn_ia32_Leave_stack, sp);
 			curr_mem = be_new_Proj(restore, pn_ia32_Leave_M);
 		} else {
 			/* Copy ebp to esp. */
@@ -1028,13 +1023,11 @@ static void introduce_epilogue(ir_node *const ret)
 
 			/* Pop ebp. */
 			restore  = new_bd_ia32_Pop_ebp(NULL, block, curr_mem, curr_sp);
-			curr_bp  = be_new_Proj(restore, pn_ia32_Pop_res);
-			curr_sp  = be_new_Proj(restore, pn_ia32_Pop_stack);
+			curr_bp  = be_new_Proj_reg(restore, pn_ia32_Pop_res,   bp);
+			curr_sp  = be_new_Proj_reg(restore, pn_ia32_Pop_stack, sp);
 			curr_mem = be_new_Proj(restore, pn_ia32_Pop_M);
 		}
 		sched_add_before(ret, restore);
-		arch_set_irn_register(curr_bp, bp);
-		arch_set_irn_register(curr_sp, sp);
 		set_irn_n(ret, n_ia32_Return_mem, curr_mem);
 		set_irn_n(ret, n_ebp,             curr_bp);
 	} else {
@@ -1070,8 +1063,7 @@ static void introduce_prologue(ir_graph *const irg)
 		sched_add_after(start, push);
 		ir_node *const curr_mem   = be_new_Proj(push, pn_ia32_Push_M);
 		edges_reroute_except(mem, curr_mem, push);
-		ir_node *const curr_sp    = be_new_Proj(push, pn_ia32_Push_stack);
-		arch_set_irn_register(curr_sp, sp);
+		ir_node *const curr_sp    = be_new_Proj_reg(push, pn_ia32_Push_stack, sp);
 
 		/* move esp to ebp */
 		ir_node *const curr_bp = be_new_Copy(block, curr_sp);

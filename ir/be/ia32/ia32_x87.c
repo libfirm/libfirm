@@ -845,14 +845,13 @@ do_pop:
 				ia32_copy_am_attrs(vfld, n);
 				set_ia32_op_type(vfld, ia32_AddrModeS);
 
-				ir_node *const rproj = be_new_Proj(vfld, pn_ia32_fld_res);
-				ir_node *const mproj = be_new_Proj(vfld, pn_ia32_fld_M);
-
-				arch_set_irn_register(rproj, arch_get_irn_register(val));
+				arch_register_t const *const reg   = arch_get_irn_register(val);
+				ir_node               *const rproj = be_new_Proj_reg(vfld, pn_ia32_fld_res, reg);
 				/* Replace TOS by the reloaded value. */
 				x87_set_st(state, rproj, 0);
 
 				/* reroute all former users of the store memory to the load memory */
+				ir_node *const mproj = be_new_Proj(vfld, pn_ia32_fld_M);
 				edges_reroute_except(mem, mproj, vfld);
 
 				sched_add_after(n, vfld);

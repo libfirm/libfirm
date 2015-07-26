@@ -118,9 +118,8 @@ static void impl_parcopy(const arch_register_class_t *cls,
 			if (src == n_regs || src == dst)
 				continue;
 
-			ir_node               *const proj = be_new_Proj(perm, i);
 			arch_register_t const *const reg  = arch_register_for_index(cls, dst);
-			arch_set_irn_register(proj, reg);
+			ir_node               *const proj = be_new_Proj_reg(perm, i, reg);
 
 			ir_node *phi = phis[dst];
 			set_irn_n(phi, pred_nr, proj);
