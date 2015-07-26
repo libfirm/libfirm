@@ -166,16 +166,9 @@ Not => {
 
 Const => {
 	template   => $constop,
-	attr       => "ir_tarval *value",
-	custominit => "set_TEMPLATE_value(res, value);",
+	attr       => "ir_entity *entity, ir_tarval *value",
+	custominit => "set_TEMPLATE_value(res, entity, value);",
 	emit       => '%D0 = const %I',
-},
-
-Address => {
-	template   => $constop,
-	attr       => "ir_entity *entity",
-	custominit => "set_TEMPLATE_entity(res, entity);",
-	emit       => '%D0 = address of %E',
 },
 
 # Control Flow

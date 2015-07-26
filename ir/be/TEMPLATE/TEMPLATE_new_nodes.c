@@ -68,16 +68,11 @@ TEMPLATE_attr_t *get_TEMPLATE_attr(ir_node *node)
 	return (TEMPLATE_attr_t *)get_irn_generic_attr(node);
 }
 
-static void set_TEMPLATE_value(ir_node *node, ir_tarval *value)
-{
-	TEMPLATE_attr_t *attr = get_TEMPLATE_attr(node);
-	attr->value = value;
-}
-
-static void set_TEMPLATE_entity(ir_node *node, ir_entity *entity)
+static void set_TEMPLATE_value(ir_node *const node, ir_entity *const entity, ir_tarval *const value)
 {
 	TEMPLATE_attr_t *attr = get_TEMPLATE_attr(node);
 	attr->entity = entity;
+	attr->value  = value;
 }
 
 static int TEMPLATE_attrs_equal(const ir_node *a, const ir_node *b)

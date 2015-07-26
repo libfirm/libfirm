@@ -43,6 +43,13 @@ static inline bool mode_needs_gp_reg(ir_mode *mode)
 	return get_mode_arithmetic(mode) == irma_twos_complement;
 }
 
+static ir_node *transform_const(ir_node *const node, ir_entity *const entity, ir_tarval *const value)
+{
+	ir_node  *const block = be_transform_nodes_block(node);
+	dbg_info *const dbgi  = get_irn_dbg_info(node);
+	return new_bd_TEMPLATE_Const(dbgi, block, entity, value);
+}
+
 static ir_node *transform_binop(ir_node *node, new_binop_func new_func)
 {
 	ir_node  *new_block = be_transform_nodes_block(node);
@@ -155,18 +162,14 @@ static ir_node *gen_Not(ir_node *node)
 
 static ir_node *gen_Const(ir_node *node)
 {
-	ir_node   *new_block = be_transform_nodes_block(node);
-	dbg_info  *dbgi      = get_irn_dbg_info(node);
-	ir_tarval *value     = get_Const_tarval(node);
-	return new_bd_TEMPLATE_Const(dbgi, new_block, value);
+	ir_tarval *const value = get_Const_tarval(node);
+	return transform_const(node, NULL, value);
 }
 
 static ir_node *gen_Address(ir_node *node)
 {
-	ir_node   *new_block = be_transform_nodes_block(node);
-	dbg_info  *dbgi      = get_irn_dbg_info(node);
-	ir_entity *entity    = get_Address_entity(node);
-	return new_bd_TEMPLATE_Address(dbgi, new_block, entity);
+	ir_entity *const entity = get_Address_entity(node);
+	return transform_const(node, entity, NULL);
 }
 
 static ir_node *gen_Load(ir_node *node)
