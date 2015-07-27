@@ -218,8 +218,6 @@ static void be_opt_register(void)
 
 	be_add_module_list_opt(be_grp, "isa", "the instruction set architecture",
 	                       &isa_ifs, (void**) &isa_if);
-
-	be_init_modules();
 }
 
 /* Parse one argument. */
