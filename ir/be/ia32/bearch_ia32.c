@@ -439,8 +439,8 @@ static ir_node *ia32_turn_back_dest_am(ir_node *node)
 	if (is_ia32_is_reload(node))
 		set_ia32_is_reload(load);
 	sched_add_before(node, load);
-	ir_node *const load_res = new_rd_Proj(dbgi, load, ia32_mode_gp, pn_ia32_Load_res);
-	ir_node *const load_mem = new_rd_Proj(dbgi, load, mode_M, pn_ia32_Load_M);
+	ir_node *const load_res = be_new_Proj(load, pn_ia32_Load_res);
+	ir_node *const load_mem = be_new_Proj(load, pn_ia32_Load_M);
 
 	ir_graph *const irg      = get_irn_irg(node);
 	ir_node  *const noreg    = ia32_new_NoReg_gp(irg);
@@ -449,7 +449,7 @@ static ir_node *ia32_turn_back_dest_am(ir_node *node)
 	ir_node  *const new_node = func(dbgi, block, noreg, noreg, nomem, load_res, operand);
 	set_ia32_ls_mode(new_node, get_ia32_ls_mode(node));
 	set_irn_mode(new_node, mode_T);
-	ir_node *const res_proj = new_rd_Proj(dbgi, new_node, ia32_mode_gp, pn_ia32_res);
+	ir_node *const res_proj = be_new_Proj(new_node, pn_ia32_res);
 
 	ir_node *const store = new_bd_ia32_Store(dbgi, block, base, idx, load_mem, res_proj);
 	ia32_copy_am_attrs(store, node);
@@ -474,7 +474,7 @@ ir_node *ia32_turn_back_am(ir_node *node)
 	ir_node  *idx      = get_irn_n(node, n_ia32_index);
 	ir_node  *mem      = get_irn_n(node, n_ia32_mem);
 	ir_node  *load     = new_bd_ia32_Load(dbgi, block, base, idx, mem);
-	ir_node  *load_res = new_rd_Proj(dbgi, load, ia32_mode_gp, pn_ia32_Load_res);
+	ir_node  *load_res = be_new_Proj(load, pn_ia32_Load_res);
 
 	ia32_copy_am_attrs(load, node);
 	if (is_ia32_is_reload(node))
@@ -577,7 +577,7 @@ static bool ia32_try_replace_flags(ir_node *consumers, ir_node *flags, ir_node *
 
 				foreach_irn_in(c, i, in) {
 					if (get_irn_mode(in) == flag_mode) {
-						ir_node *proj = new_r_Proj(available, flag_mode, pn);
+						ir_node *const proj = be_new_Proj(available, pn);
 						arch_set_irn_register(proj, flag_reg);
 						set_irn_n(c, i, proj);
 					}
@@ -655,12 +655,12 @@ static void remat_simplifier(ir_node *node, void *env)
 				set_ia32_op_type(cmp, ia32_AddrModeS);
 				set_irn_mode(cmp, mode_T);
 
-				ir_node *proj_M = new_r_Proj(cmp, mode_M, pn_ia32_Cmp_M);
+				ir_node *const proj_M = be_new_Proj(cmp, pn_ia32_Cmp_M);
 				for(unsigned i = 0; i < ARR_LEN(mem_users); i++) {
 					set_irn_n(mem_users[i], mem_users_pos[i], proj_M);
 				}
 
-				cmp = new_r_Proj(cmp, ia32_mode_flags, pn_ia32_Cmp_eflags);
+				cmp = be_new_Proj(cmp, pn_ia32_Cmp_eflags);
 			}
 
 			for (unsigned i = 0; i < ARR_LEN(flag_users); i++) {
@@ -703,20 +703,20 @@ static ir_node *ia32_new_spill(ir_node *value, ir_node *after)
 	if (mode_is_float(mode)) {
 		if (ia32_cg_config.use_sse2) {
 			store = new_bd_ia32_xStore(NULL, block, frame, noreg, nomem, value);
-			res   = new_r_Proj(store, mode_M, pn_ia32_xStore_M);
+			res   = be_new_Proj(store, pn_ia32_xStore_M);
 		} else {
 			store = new_bd_ia32_fst(NULL, block, frame, noreg, nomem, value, mode);
-			res   = new_r_Proj(store, mode_M, pn_ia32_fst_M);
+			res   = be_new_Proj(store, pn_ia32_fst_M);
 		}
 	} else if (get_mode_size_bits(mode) == 128) {
 		/* Spill 128 bit SSE registers */
 		store = new_bd_ia32_xxStore(NULL, block, frame, noreg, nomem, value);
-		res   = new_r_Proj(store, mode_M, pn_ia32_xxStore_M);
+		res   = be_new_Proj(store, pn_ia32_xxStore_M);
 	} else {
 		store = get_mode_size_bits(mode) == 8
 			? new_bd_ia32_Store_8bit(NULL, block, frame, noreg, nomem, value)
 			: new_bd_ia32_Store     (NULL, block, frame, noreg, nomem, value);
-		res   = new_r_Proj(store, mode_M, pn_ia32_Store_M);
+		res   = be_new_Proj(store, pn_ia32_Store_M);
 	}
 	set_ia32_op_type(store, ia32_AddrModeD);
 	set_ia32_ls_mode(store, mode);
@@ -731,7 +731,6 @@ static ir_node *ia32_new_reload(ir_node *value, ir_node *spill, ir_node *before)
 {
 	ir_graph *irg       = get_irn_irg(before);
 	ir_node  *block     = get_block(before);
-	ir_mode  *mode      = get_irn_mode(value);
 	ir_mode  *spillmode = get_spill_mode(value);
 	ir_node  *noreg     = ia32_new_NoReg_gp(irg);
 	ir_node  *frame     = get_irg_frame(irg);
@@ -756,8 +755,7 @@ static ir_node *ia32_new_reload(ir_node *value, ir_node *spill, ir_node *before)
 	arch_add_irn_flags(load, arch_irn_flag_reload);
 	sched_add_before(before, load);
 
-	ir_node *proj = new_r_Proj(load, mode, pn_ia32_res);
-	return proj;
+	return be_new_Proj(load, pn_ia32_res);
 }
 
 static ir_node *create_push(ir_node *node, ir_node *schedpoint, ir_node *sp,
@@ -807,13 +805,10 @@ static ir_node *create_pop(ir_node *node, ir_node *schedpoint, ir_node *sp,
 	return pop;
 }
 
-static ir_node* create_spproj(ir_node *node, ir_node *pred, int pos)
+static ir_node *create_spproj(ir_node *const pred, unsigned const pos)
 {
-	dbg_info              *dbgi   = get_irn_dbg_info(node);
-	ir_mode               *spmode = ia32_mode_gp;
-	const arch_register_t *spreg  = &ia32_registers[REG_ESP];
-	ir_node               *sp     = new_rd_Proj(dbgi, pred, spmode, pos);
-	arch_set_irn_register(sp, spreg);
+	ir_node *const sp = be_new_Proj(pred, pos);
+	arch_set_irn_register(sp, &ia32_registers[REG_ESP]);
 	return sp;
 }
 
@@ -855,7 +850,7 @@ static void transform_MemPerm(ir_node *node)
 			}
 
 			ir_node *push = create_push(node, node, sp, mem, inent, mode);
-			sp = create_spproj(node, push, pn_ia32_Push_stack);
+			sp = create_spproj(push, pn_ia32_Push_stack);
 			add_ia32_am_offs_int(push, offset);
 
 			unsigned size = get_mode_size_bytes(mode);
@@ -890,7 +885,7 @@ static void transform_MemPerm(ir_node *node)
 				mode = ia32_mode_gp;
 			}
 			pop = create_pop(node, node, sp, outent, mode);
-			sp  = create_spproj(node, pop, pn_ia32_PopMem_stack);
+			sp  = create_spproj(pop, pn_ia32_PopMem_stack);
 
 			unsigned size = get_mode_size_bytes(mode);
 			offset  -= size;
@@ -1012,9 +1007,8 @@ static void introduce_epilogue(ir_node *const ret)
 	ir_graph          *const irg      = get_irn_irg(ret);
 	be_stack_layout_t *const layout   = be_get_irg_stack_layout(irg);
 	if (!layout->sp_relative) {
-		arch_register_t const *const sp      = &ia32_registers[REG_ESP];
-		arch_register_t const *const bp      = &ia32_registers[REG_EBP];
-		ir_mode               *const mode_gp = ia32_reg_classes[CLASS_ia32_gp].mode;
+		arch_register_t const *const sp = &ia32_registers[REG_ESP];
+		arch_register_t const *const bp = &ia32_registers[REG_EBP];
 
 		ir_node  *restore;
 		int const n_ebp    = determine_ebp_input(ret);
@@ -1022,9 +1016,9 @@ static void introduce_epilogue(ir_node *const ret)
 		ir_node  *curr_mem = get_irn_n(ret, n_ia32_Return_mem);
 		if (ia32_cg_config.use_leave) {
 			restore  = new_bd_ia32_Leave(NULL, block, curr_mem, curr_bp);
-			curr_bp  = new_r_Proj(restore, mode_gp, pn_ia32_Leave_frame);
-			curr_sp  = new_r_Proj(restore, mode_gp, pn_ia32_Leave_stack);
-			curr_mem = new_r_Proj(restore, mode_M,  pn_ia32_Leave_M);
+			curr_bp  = be_new_Proj(restore, pn_ia32_Leave_frame);
+			curr_sp  = be_new_Proj(restore, pn_ia32_Leave_stack);
+			curr_mem = be_new_Proj(restore, pn_ia32_Leave_M);
 		} else {
 			/* Copy ebp to esp. */
 			curr_sp = new_bd_ia32_CopyEbpEsp(NULL, block, curr_bp);
@@ -1033,9 +1027,9 @@ static void introduce_epilogue(ir_node *const ret)
 
 			/* Pop ebp. */
 			restore  = new_bd_ia32_Pop_ebp(NULL, block, curr_mem, curr_sp);
-			curr_bp  = new_r_Proj(restore, mode_gp, pn_ia32_Pop_res);
-			curr_sp  = new_r_Proj(restore, mode_gp, pn_ia32_Pop_stack);
-			curr_mem = new_r_Proj(restore, mode_M,  pn_ia32_Pop_M);
+			curr_bp  = be_new_Proj(restore, pn_ia32_Pop_res);
+			curr_sp  = be_new_Proj(restore, pn_ia32_Pop_stack);
+			curr_mem = be_new_Proj(restore, pn_ia32_Pop_M);
 		}
 		sched_add_before(ret, restore);
 		arch_set_irn_register(curr_bp, bp);
@@ -1065,15 +1059,14 @@ static void introduce_prologue(ir_graph *const irg)
 	unsigned               frame_size = get_type_size_bytes(frame_type);
 	be_stack_layout_t     *layout     = be_get_irg_stack_layout(irg);
 	ir_node               *initial_sp = be_get_initial_reg_value(irg, sp);
-	ir_mode               *mode_gp    = ia32_mode_gp;
 
 	if (!layout->sp_relative) {
 		/* push ebp */
-		ir_node *mem        = get_irg_initial_mem(irg);
-		ir_node *noreg      = ia32_new_NoReg_gp(irg);
-		ir_node *initial_bp = be_get_initial_reg_value(irg, bp);
-		ir_node *push       = new_bd_ia32_Push(NULL, block, noreg, noreg, mem, initial_bp, initial_sp, mode_gp);
-		ir_node *curr_sp    = new_r_Proj(push, mode_gp, pn_ia32_Push_stack);
+		ir_node *const mem        = get_irg_initial_mem(irg);
+		ir_node *const noreg      = ia32_new_NoReg_gp(irg);
+		ir_node *const initial_bp = be_get_initial_reg_value(irg, bp);
+		ir_node *const push       = new_bd_ia32_Push(NULL, block, noreg, noreg, mem, initial_bp, initial_sp, ia32_mode_gp);
+		ir_node *const curr_sp    = be_new_Proj(push, pn_ia32_Push_stack);
 
 		arch_set_irn_register(curr_sp, sp);
 		sched_add_after(start, push);

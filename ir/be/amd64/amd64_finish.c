@@ -107,26 +107,24 @@ static void transform_sub_to_neg_add(ir_node *node,
 		ir_node *xor = new_bd_amd64_xorp(dbgi, block, ARRAY_SIZE(xor_in),
 		                                 xor_in, &xor_attr);
 		arch_set_irn_register_reqs_in(xor, amd64_xmm_reqs);
-		ir_node *neg = new_r_Proj(xor, amd64_mode_xmm, pn_amd64_xorp_res);
+		ir_node *const neg = be_new_Proj(xor, pn_amd64_xorp_res);
 
 		sched_add_before(node, xor);
 		arch_set_irn_register(neg, in2_reg);
 
 		ir_node *in[] = { neg, in1 };
 		add     = new_bd_amd64_adds(dbgi, block, ARRAY_SIZE(in), in, attr);
-		add_res = new_r_Proj(add, amd64_mode_xmm, pn_amd64_adds_res);
+		add_res = be_new_Proj(add, pn_amd64_adds_res);
 	} else {
 		assert(is_amd64_sub(node));
 		ir_node *neg = new_bd_amd64_neg(dbgi, block, in2, attr->base.insn_mode);
 		arch_set_irn_register_out(neg, pn_amd64_neg_res, out_reg);
 		sched_add_before(node, neg);
-		ir_node *neg_res
-			= new_r_Proj(neg, amd64_reg_classes[CLASS_amd64_gp].mode,
-			             pn_amd64_neg_res);
+		ir_node *const neg_res = be_new_Proj(neg, pn_amd64_neg_res);
 
 		ir_node *in[] = { neg_res, in1 };
 		add     = new_bd_amd64_add(dbgi, block, ARRAY_SIZE(in), in, attr);
-		add_res = new_r_Proj(add, mode_Lu, pn_amd64_add_res);
+		add_res = be_new_Proj(add, pn_amd64_add_res);
 	}
 	arch_set_irn_register_reqs_in(add, arch_get_irn_register_reqs_in(node));
 	arch_set_irn_register(add_res, out_reg);
@@ -162,7 +160,7 @@ static ir_node *amd64_turn_back_am(ir_node *node)
 	                                    attr->insn_mode, AMD64_OP_ADDR,
 	                                    new_addr);
 	arch_set_irn_register_reqs_in(load, gp_am_reqs[load_arity - 1]);
-	ir_node *load_res = new_r_Proj(load, mode_Lu, pn_amd64_mov_gp_res);
+	ir_node *const load_res = be_new_Proj(load, pn_amd64_mov_gp_res);
 
 	/* change operation */
 	const amd64_binop_addr_attr_t *binop_attr

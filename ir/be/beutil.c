@@ -90,9 +90,8 @@ ir_node *insert_Perm_before(ir_graph *irg, const arch_register_class_t *cls,
 	free(nodes);
 
 	for (size_t i = 0; i < n; ++i) {
-		ir_node *perm_op = get_irn_n(perm, i);
-		ir_mode *mode    = get_irn_mode(perm_op);
-		ir_node *proj    = new_r_Proj(perm, mode, i);
+		ir_node *const perm_op = get_irn_n(perm, i);
+		ir_node *const proj    = be_new_Proj(perm, i);
 
 		be_ssa_construction_env_t senv;
 		be_ssa_construction_init(&senv, irg);

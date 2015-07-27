@@ -861,12 +861,12 @@ static void permute_values(ir_nodeset_t *live_nodes, ir_node *before,
 
 		unsigned width = 1; /* TODO */
 
-		ir_node *proj0 = new_r_Proj(perm, get_irn_mode(in[0]), 0);
+		ir_node *const proj0 = be_new_Proj(perm, 0);
 		mark_as_copy_of(proj0, in[0]);
 		const arch_register_t *reg0 = arch_register_for_index(cls, old_r);
 		use_reg(proj0, reg0, width);
 
-		ir_node *proj1 = new_r_Proj(perm, get_irn_mode(in[1]), 1);
+		ir_node *const proj1 = be_new_Proj(perm, 1);
 		mark_as_copy_of(proj1, in[1]);
 		const arch_register_t *reg1 = arch_register_for_index(cls, r2);
 		use_reg(proj1, reg1, width);

@@ -340,7 +340,7 @@ static void split_sparc_ldf(ir_node *node)
 			                     attr->base.immediate_value_entity,
 			                     attr->base.immediate_value + 8,
 			                     attr->is_frame_entity);
-		ir_node  *new_mem = new_r_Proj(new_load, mode_M, pn_sparc_Ldf_M);
+		ir_node  *const new_mem = be_new_Proj(new_load, pn_sparc_Ldf_M);
 
 		const arch_register_t *reg
 			= arch_get_irn_register_out(node, pn_sparc_Ldf_res);
@@ -491,11 +491,10 @@ static void replace_with_restore_reg(ir_node *node, ir_node *replaced,
 	ir_node  *stack_in = get_irn_n(node, n_sparc_RestoreZero_stack);
 	ir_node  *fp       = get_irn_n(node, n_sparc_RestoreZero_frame_pointer);
 	ir_node  *block    = get_nodes_block(node);
-	ir_mode  *mode     = get_irn_mode(node);
 	ir_node  *new_node = new_bd_sparc_Restore_reg(dbgi, block, stack_in, fp,
 	                                              op0, op1);
-	ir_node  *stack    = new_r_Proj(new_node, mode, pn_sparc_Restore_stack);
-	ir_node  *res      = new_r_Proj(new_node, mode, pn_sparc_Restore_res);
+	ir_node  *stack    = be_new_Proj(new_node, pn_sparc_Restore_stack);
+	ir_node  *res      = be_new_Proj(new_node, pn_sparc_Restore_res);
 	const arch_register_t *reg = arch_get_irn_register(replaced);
 	const arch_register_t *sp  = &sparc_registers[REG_SP];
 	arch_set_irn_register_out(new_node, pn_sparc_Restore_stack, sp);
@@ -514,11 +513,10 @@ static void replace_with_restore_imm(ir_node *node, ir_node *replaced,
 	ir_node  *stack_in = get_irn_n(node, n_sparc_RestoreZero_stack);
 	ir_node  *fp       = get_irn_n(node, n_sparc_RestoreZero_frame_pointer);
 	ir_node  *block    = get_nodes_block(node);
-	ir_mode  *mode     = get_irn_mode(node);
 	ir_node  *new_node = new_bd_sparc_Restore_imm(dbgi, block, stack_in, fp,
 	                                              op, imm_entity, immediate);
-	ir_node  *stack    = new_r_Proj(new_node, mode, pn_sparc_Restore_stack);
-	ir_node  *res      = new_r_Proj(new_node, mode, pn_sparc_Restore_res);
+	ir_node  *stack    = be_new_Proj(new_node, pn_sparc_Restore_stack);
+	ir_node  *res      = be_new_Proj(new_node, pn_sparc_Restore_res);
 	const arch_register_t *reg = arch_get_irn_register(replaced);
 	const arch_register_t *sp  = &sparc_registers[REG_SP];
 	arch_set_irn_register_out(new_node, pn_sparc_Restore_stack, sp);

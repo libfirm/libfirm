@@ -1107,7 +1107,7 @@ static void add_missing_keep_walker(ir_node *node, void *data)
 			if (!cls->manual_ra) {
 				ir_node *value = existing_projs[i];
 				if (!value) {
-					value = new_r_Proj(node, cls->mode, i);
+					value = be_new_Proj(node, i);
 				} else if (has_real_user(value)) {
 					continue;
 				}

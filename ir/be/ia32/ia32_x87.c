@@ -839,8 +839,8 @@ do_pop:
 				ia32_copy_am_attrs(vfld, n);
 				set_ia32_op_type(vfld, ia32_AddrModeS);
 
-				ir_node *const rproj = new_r_Proj(vfld, mode, pn_ia32_fld_res);
-				ir_node *const mproj = new_r_Proj(vfld, mode_M, pn_ia32_fld_M);
+				ir_node *const rproj = be_new_Proj(vfld, pn_ia32_fld_res);
+				ir_node *const mproj = be_new_Proj(vfld, pn_ia32_fld_M);
 
 				arch_set_irn_register(rproj, arch_get_irn_register(val));
 				/* Replace TOS by the reloaded value. */

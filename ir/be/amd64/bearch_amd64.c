@@ -165,10 +165,8 @@ static ir_node *create_pop(ir_node *node, ir_node *schedpoint, ir_node *sp,
 
 static ir_node* create_spproj(ir_node *pred, int pos)
 {
-	const arch_register_t *spreg = &amd64_registers[REG_RSP];
-	ir_mode               *spmode = spreg->cls->mode;
-	ir_node               *sp     = new_r_Proj(pred, spmode, pos);
-	arch_set_irn_register(sp, spreg);
+	ir_node *const sp = be_new_Proj(pred, pos);
+	arch_set_irn_register(sp, &amd64_registers[REG_RSP]);
 	return sp;
 }
 
@@ -521,15 +519,14 @@ static void introduce_epilogue(ir_node *ret)
 	be_stack_layout_t     *layout     = be_get_irg_stack_layout(irg);
 	ir_node               *first_sp   = get_irn_n(ret, n_amd64_ret_stack);
 	ir_node               *curr_sp    = first_sp;
-	ir_mode               *mode_gp    = mode_Lu;
 
 	if (!layout->sp_relative) {
 		int n_rbp = determine_rbp_input(ret);
 		ir_node *curr_bp = get_irn_n(ret, n_rbp);
 
 		ir_node *leave = new_bd_amd64_leave(NULL, block, curr_bp);
-		curr_bp        = new_r_Proj(leave, mode_gp, pn_amd64_leave_frame);
-		curr_sp        = new_r_Proj(leave, mode_gp, pn_amd64_leave_stack);
+		curr_bp        = be_new_Proj(leave, pn_amd64_leave_frame);
+		curr_sp        = be_new_Proj(leave, pn_amd64_leave_stack);
 		arch_set_irn_register(curr_bp, bp);
 		arch_set_irn_register(curr_sp, sp);
 		sched_add_before(ret, leave);
@@ -561,13 +558,12 @@ static void introduce_prologue(ir_graph *const irg)
 	unsigned               frame_size = get_type_size_bytes(frame_type);
 	be_stack_layout_t     *layout     = be_get_irg_stack_layout(irg);
 	ir_node               *initial_sp = be_get_initial_reg_value(irg, sp);
-	ir_mode               *mode_gp    = mode_Lu;
 
 	if (!layout->sp_relative) {
 		/* push rbp */
 		ir_node *const initial_bp = be_get_initial_reg_value(irg, bp);
 		ir_node *const push       = new_bd_amd64_push_reg(NULL, block, initial_sp, initial_bp);
-		ir_node *const curr_sp    = new_r_Proj(push, mode_gp, pn_amd64_push_reg_stack);
+		ir_node *const curr_sp    = be_new_Proj(push, pn_amd64_push_reg_stack);
 
 		arch_set_irn_register(curr_sp, sp);
 		sched_add_after(start, push);

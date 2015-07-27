@@ -46,7 +46,6 @@ static const arch_register_t *fp_reg = &sparc_registers[REG_FP];
 static calling_convention_t  *current_cconv = NULL;
 static be_stackorder_t       *stackorder;
 static ir_mode               *mode_gp;
-static ir_mode               *mode_flags;
 static ir_mode               *mode_fp;
 static ir_mode               *mode_fp2;
 //static ir_mode               *mode_fp4;
@@ -657,24 +656,6 @@ only_offset:
 	address->offset = offset;
 }
 
-static ir_node *gen_Proj_ASM(ir_node *node)
-{
-	ir_mode *mode     = get_irn_mode(node);
-	ir_node *pred     = get_Proj_pred(node);
-	ir_node *new_pred = be_transform_node(pred);
-	unsigned pn       = get_Proj_num(node);
-
-	if (mode == mode_M) {
-		pn = arch_get_irn_n_outs(new_pred)-1;
-	} else if (mode_needs_gp_reg(mode)) {
-		mode = mode_gp;
-	} else {
-		panic("unexpected proj mode at ASM");
-	}
-
-	return new_r_Proj(new_pred, mode, pn);
-}
-
 /**
  * Creates an sparc Add.
  *
@@ -741,9 +722,9 @@ static ir_node *gen_Proj_AddCC_t(ir_node *node)
 
 	switch (pn) {
 	case pn_sparc_AddCC_t_res:
-		return new_r_Proj(new_pred, mode_gp, pn_sparc_AddCC_res);
+		return be_new_Proj(new_pred, pn_sparc_AddCC_res);
 	case pn_sparc_AddCC_t_flags:
-		return new_r_Proj(new_pred, mode_flags, pn_sparc_AddCC_flags);
+		return be_new_Proj(new_pred, pn_sparc_AddCC_flags);
 	default:
 		panic("invalid proj found");
 	}
@@ -792,9 +773,9 @@ static ir_node *gen_Proj_SubCC_t(ir_node *node)
 
 	switch (pn) {
 	case pn_sparc_SubCC_t_res:
-		return new_r_Proj(new_pred, mode_gp, pn_sparc_SubCC_res);
+		return be_new_Proj(new_pred, pn_sparc_SubCC_res);
 	case pn_sparc_SubCC_t_flags:
-		return new_r_Proj(new_pred, mode_flags, pn_sparc_SubCC_flags);
+		return be_new_Proj(new_pred, pn_sparc_SubCC_flags);
 	default:
 		panic("invalid proj found");
 	}
@@ -1222,7 +1203,7 @@ static ir_node *gen_float_const(dbg_info *dbgi, ir_node *block, ir_tarval *tv)
 	ir_mode   *mode   = get_tarval_mode(tv);
 	ir_node   *new_op
 		= create_ldf(dbgi, block, hi, mem, mode, entity, 0, false);
-	ir_node   *proj   = new_r_Proj(new_op, mode, pn_sparc_Ldf_res);
+	ir_node   *proj   = be_new_Proj(new_op, pn_sparc_Ldf_res);
 
 	set_irn_pinned(new_op, op_pin_state_floats);
 	return proj;
@@ -1289,7 +1270,7 @@ static ir_node *gen_Switch(ir_node *node)
 	/* load from jumptable */
 	ir_node *load = new_bd_sparc_Ld_reg(dbgi, new_block, table_address, idx,
 	                                    get_irg_no_mem(irg), mode_gp);
-	ir_node *address = new_r_Proj(load, mode_gp, pn_sparc_Ld_res);
+	ir_node *address = be_new_Proj(load, pn_sparc_Ld_res);
 
 	unsigned n_outs = get_Switch_n_outs(node);
 	return new_bd_sparc_SwitchJmp(dbgi, new_block, address, n_outs, table, entity);
@@ -1448,7 +1429,7 @@ static ir_node *create_ftoi(dbg_info *dbgi, ir_node *block, ir_node *op,
 	arch_add_irn_flags(stf, arch_irn_flag_spill);
 	ir_node  *ld    = new_bd_sparc_Ld_imm(dbgi, block, sp, stf, mode_gp,
 	                                      NULL, 0, true);
-	ir_node  *res   = new_r_Proj(ld, mode_gp, pn_sparc_Ld_res);
+	ir_node  *res   = be_new_Proj(ld, pn_sparc_Ld_res);
 	set_irn_pinned(stf, op_pin_state_floats);
 	set_irn_pinned(ld, op_pin_state_floats);
 	return res;
@@ -1465,7 +1446,7 @@ static ir_node *create_itof(dbg_info *dbgi, ir_node *block, ir_node *op,
 	arch_add_irn_flags(st, arch_irn_flag_spill);
 	ir_node  *ldf   = new_bd_sparc_Ldf_s(dbgi, block, sp, st, mode_fp,
 	                                     NULL, 0, true);
-	ir_node  *res   = new_r_Proj(ldf, mode_fp, pn_sparc_Ldf_res);
+	ir_node  *res   = be_new_Proj(ldf, pn_sparc_Ldf_res);
 	unsigned  bits  = get_mode_size_bits(dst_mode);
 	set_irn_pinned(st, op_pin_state_floats);
 	set_irn_pinned(ldf, op_pin_state_floats);
@@ -1698,12 +1679,8 @@ static ir_node *gen_Return(ir_node *node)
 		ir_node  *start          = get_irg_start(irg);
 		size_t    n_callee_saves = ARRAY_SIZE(omit_fp_callee_saves);
 		for (size_t i = 0; i < n_callee_saves; ++i) {
-			const arch_register_t *reg   = omit_fp_callee_saves[i];
-			ir_mode               *mode  = reg->cls->mode;
-			ir_node               *value
-					= new_r_Proj(start, mode, i + start_callee_saves_offset);
-			in[p]   = value;
-			reqs[p] = reg->single_req;
+			in[p]   = be_new_Proj(start, i + start_callee_saves_offset);
+			reqs[p] = omit_fp_callee_saves[i]->single_req;
 			++p;
 		}
 	}
@@ -1745,7 +1722,7 @@ static ir_node *bitcast_int_to_float(dbg_info *dbgi, ir_node *block,
 	ir_node *ldf = create_ldf(dbgi, block, sp, mem, mode, NULL, 0, true);
 	set_irn_pinned(ldf, op_pin_state_floats);
 
-	return new_r_Proj(ldf, mode, pn_sparc_Ldf_res);
+	return be_new_Proj(ldf, pn_sparc_Ldf_res);
 }
 
 static void bitcast_float_to_int(dbg_info *dbgi, ir_node *block,
@@ -1779,13 +1756,13 @@ static void bitcast_float_to_int(dbg_info *dbgi, ir_node *block,
 
 		ir_node *ld = new_bd_sparc_Ld_imm(dbgi, block, stack, stf, mode_gp, NULL, 0, true);
 		set_irn_pinned(ld, op_pin_state_floats);
-		result[0] = new_r_Proj(ld, mode_gp, pn_sparc_Ld_res);
+		result[0] = be_new_Proj(ld, pn_sparc_Ld_res);
 
 		if (bits == 64) {
 			ir_node *ld2 = new_bd_sparc_Ld_imm(dbgi, block, stack, stf, mode_gp,
 											   NULL, 4, true);
 			set_irn_pinned(ld, op_pin_state_floats);
-			result[1] = new_r_Proj(ld2, mode_gp, pn_sparc_Ld_res);
+			result[1] = be_new_Proj(ld2, pn_sparc_Ld_res);
 
 			arch_add_irn_flags(ld, (arch_irn_flags_t)sparc_arch_irn_flag_needs_64bit_spillslot);
 			arch_add_irn_flags(ld2, (arch_irn_flags_t)sparc_arch_irn_flag_needs_64bit_spillslot);
@@ -1966,7 +1943,7 @@ static ir_node *gen_Call(ir_node *node)
 	set_irn_pinned(res, get_irn_pinned(node));
 
 	/* IncSP to destroy the call stackframe */
-	ir_node *const call_stack = new_r_Proj(res, mode_gp, pn_sparc_Call_stack);
+	ir_node *const call_stack = be_new_Proj(res, pn_sparc_Call_stack);
 	incsp = be_new_IncSP(sp_reg, new_block, call_stack, -cconv->param_stack_size, 0);
 	/* if we are the last IncSP producer in a block then we have to keep
 	 * the stack value.
@@ -2013,7 +1990,7 @@ static ir_node *gen_Alloc(ir_node *node)
 		subsp = new_bd_sparc_SubSP_reg(dbgi, new_block, stack_pred, new_size, new_mem);
 	}
 
-	ir_node *stack_proj = new_r_Proj(subsp, mode_gp, pn_sparc_SubSP_stack);
+	ir_node *const stack_proj = be_new_Proj(subsp, pn_sparc_SubSP_stack);
 	arch_set_irn_register(stack_proj, sp_reg);
 	/* If we are the last stack producer in a block, we have to keep the
 	 * stack value.  This keeps all producers, which is more than necessary. */
@@ -2031,8 +2008,8 @@ static ir_node *gen_Proj_Alloc(ir_node *node)
 	unsigned pn        = get_Proj_num(node);
 
 	switch ((pn_Alloc)pn) {
-	case pn_Alloc_M:   return new_r_Proj(new_alloc, mode_M,  pn_sparc_SubSP_M);
-	case pn_Alloc_res: return new_r_Proj(new_alloc, mode_gp, pn_sparc_SubSP_addr);
+	case pn_Alloc_M:   return be_new_Proj(new_alloc, pn_sparc_SubSP_M);
+	case pn_Alloc_res: return be_new_Proj(new_alloc, pn_sparc_SubSP_addr);
 	}
 	panic("invalid Proj->Alloc");
 }
@@ -2096,8 +2073,8 @@ static ir_node *gen_saturating_increment(ir_node *node)
 	ir_node  *block     = be_transform_nodes_block(node);
 	ir_node  *operand   = be_transform_node(get_Builtin_param(node, 0));
 	ir_node  *increment = new_bd_sparc_AddCC_imm(dbgi, block, operand, NULL, 1);
-	ir_node  *value     = new_rd_Proj(dbgi, increment, mode_Iu, pn_sparc_AddCC_res);
-	ir_node  *eflags    = new_rd_Proj(dbgi, increment, mode_Iu, pn_sparc_AddCC_flags);
+	ir_node  *value     = be_new_Proj(increment, pn_sparc_AddCC_res);
+	ir_node  *eflags    = be_new_Proj(increment, pn_sparc_AddCC_flags);
 	ir_graph *irg       = get_irn_irg(block);
 	ir_node  *zero      = get_g0(irg);
 	ir_node  *sbb       = new_bd_sparc_SubX_reg(dbgi, block, value, zero, eflags);
@@ -2200,10 +2177,10 @@ static ir_node *gen_Proj_Builtin(ir_node *proj)
 		return new_pred;
 	case ir_bk_compare_swap:
 		if (pn == pn_Builtin_M) {
-			return new_r_Proj(new_pred, mode_M, pn_sparc_Cas_M);
+			return be_new_Proj(new_pred, pn_sparc_Cas_M);
 		} else {
 			assert(pn == pn_Builtin_max+1);
-			return new_r_Proj(new_pred, mode_gp, pn_sparc_Cas_res);
+			return be_new_Proj(new_pred, pn_sparc_Cas_res);
 		}
 	case ir_bk_may_alias:
 		break;
@@ -2233,9 +2210,8 @@ static ir_node *gen_Bitcast(ir_node *node)
 		ir_node *st  = new_bd_sparc_St_imm(dbgi, new_block, new_op, sp, nomem,
 		                                   src_mode, NULL, 0, true);
 		arch_add_irn_flags(st, arch_irn_flag_spill);
-		ir_node *ldf = create_ldf(dbgi, new_block, sp, st, dst_mode, NULL, 0,
-		                          true);
-		ir_node *res = new_r_Proj(ldf, dst_mode, pn_sparc_Ldf_res);
+		ir_node *const ldf = create_ldf(dbgi, new_block, sp, st, dst_mode, NULL, 0, true);
+		ir_node *const res = be_new_Proj(ldf, pn_sparc_Ldf_res);
 		set_irn_pinned(st, op_pin_state_floats);
 		set_irn_pinned(ldf, op_pin_state_floats);
 		return res;
@@ -2246,9 +2222,8 @@ static ir_node *gen_Bitcast(ir_node *node)
 		ir_node *stf = create_stf(dbgi, new_block, new_op, sp, nomem, src_mode,
 		                          NULL, 0, true);
 		arch_add_irn_flags(stf, arch_irn_flag_spill);
-		ir_node *ld  = new_bd_sparc_Ld_imm(dbgi, new_block, sp, stf, dst_mode,
-		                                   NULL, 0, true);
-		ir_node *res = new_r_Proj(ld, dst_mode, pn_sparc_Ld_res);
+		ir_node *const ld  = new_bd_sparc_Ld_imm(dbgi, new_block, sp, stf, dst_mode, NULL, 0, true);
+		ir_node *const res = be_new_Proj(ld, pn_sparc_Ld_res);
 		set_irn_pinned(stf, op_pin_state_floats);
 		set_irn_pinned(ld, op_pin_state_floats);
 		return res;
@@ -2265,7 +2240,6 @@ static ir_node *gen_Proj_Load(ir_node *node)
 {
 	ir_node  *load     = get_Proj_pred(node);
 	ir_node  *new_load = be_transform_node(load);
-	dbg_info *dbgi     = get_irn_dbg_info(node);
 	unsigned  pn       = get_Proj_num(node);
 
 	/* renumber the proj */
@@ -2273,19 +2247,16 @@ static ir_node *gen_Proj_Load(ir_node *node)
 	case iro_sparc_Ld:
 		/* handle all gp loads equal: they have the same proj numbers. */
 		if (pn == pn_Load_res) {
-			return new_rd_Proj(dbgi, new_load, mode_gp, pn_sparc_Ld_res);
+			return be_new_Proj(new_load, pn_sparc_Ld_res);
 		} else if (pn == pn_Load_M) {
-			return new_rd_Proj(dbgi, new_load, mode_M, pn_sparc_Ld_M);
+			return be_new_Proj(new_load, pn_sparc_Ld_M);
 		}
 		break;
 	case iro_sparc_Ldf:
 		if (pn == pn_Load_res) {
-			const sparc_load_store_attr_t *attr
-				= get_sparc_load_store_attr_const(new_load);
-			ir_mode *mode = attr->load_store_mode;
-			return new_rd_Proj(dbgi, new_load, mode, pn_sparc_Ldf_res);
+			return be_new_Proj(new_load, pn_sparc_Ldf_res);
 		} else if (pn == pn_Load_M) {
-			return new_rd_Proj(dbgi, new_load, mode_M, pn_sparc_Ld_M);
+			return be_new_Proj(new_load, pn_sparc_Ld_M);
 		}
 		break;
 	default:
@@ -2326,15 +2297,6 @@ static ir_node *gen_Proj_Div(ir_node *node)
 	ir_node  *pred     = get_Proj_pred(node);
 	ir_node  *new_pred = be_transform_node(pred);
 
-	ir_mode *res_mode;
-	if (is_sparc_SDiv(new_pred) || is_sparc_UDiv(new_pred)) {
-		res_mode = mode_gp;
-	} else if (is_sparc_fdiv(new_pred)) {
-		res_mode = get_Div_resmode(pred);
-	} else {
-		panic("Div transformed to something unexpected: %+F",
-		      new_pred);
-	}
 	assert((unsigned)pn_sparc_SDiv_res == (unsigned)pn_sparc_UDiv_res);
 	assert((unsigned)pn_sparc_SDiv_M   == (unsigned)pn_sparc_UDiv_M);
 	assert((unsigned)pn_sparc_SDiv_res == (unsigned)pn_sparc_fdiv_res);
@@ -2342,9 +2304,9 @@ static ir_node *gen_Proj_Div(ir_node *node)
 	unsigned pn = get_Proj_num(node);
 	switch (pn) {
 	case pn_Div_res:
-		return new_r_Proj(new_pred, res_mode, pn_sparc_SDiv_res);
+		return be_new_Proj(new_pred, pn_sparc_SDiv_res);
 	case pn_Div_M:
-		return new_r_Proj(new_pred, mode_M, pn_sparc_SDiv_M);
+		return be_new_Proj(new_pred, pn_sparc_SDiv_M);
 	default:
 		break;
 	}
@@ -2419,7 +2381,7 @@ static ir_node *gen_Proj_Proj_Start(ir_node *node)
 				ir_node *ld  = new_bd_sparc_Ld_imm(NULL, new_block, fp, mem,
 				                                   mode_gp, param->entity,
 				                                   0, true);
-				value1 = new_r_Proj(ld, mode_gp, pn_sparc_Ld_res);
+				value1 = be_new_Proj(ld, pn_sparc_Ld_res);
 			}
 
 			/* convert integer value to float */
@@ -2437,11 +2399,11 @@ static ir_node *gen_Proj_Proj_Start(ir_node *node)
 		if (mode_is_float(mode)) {
 			load  = create_ldf(NULL, new_block, base, mem, mode,
 			                   param->entity, 0, true);
-			value = new_r_Proj(load, mode_fp, pn_sparc_Ldf_res);
+			value = be_new_Proj(load, pn_sparc_Ldf_res);
 		} else {
 			load  = new_bd_sparc_Ld_imm(NULL, new_block, base, mem, mode,
 			                            param->entity, 0, true);
-			value = new_r_Proj(load, mode_gp, pn_sparc_Ld_res);
+			value = be_new_Proj(load, pn_sparc_Ld_res);
 		}
 		set_irn_pinned(load, op_pin_state_floats);
 
@@ -2457,7 +2419,7 @@ static ir_node *gen_Proj_Call(ir_node *node)
 
 	switch ((pn_Call) pn) {
 	case pn_Call_M:
-		return new_r_Proj(new_call, mode_M, pn_sparc_Call_M);
+		return be_new_Proj(new_call, pn_sparc_Call_M);
 	case pn_Call_X_regular:
 	case pn_Call_X_except:
 	case pn_Call_T_result:
@@ -2470,15 +2432,9 @@ static ir_node *gen_Proj_Proj_Call(ir_node *node)
 {
 	ir_node *const call     = get_Proj_pred(get_Proj_pred(node));
 	ir_node *const new_call = be_transform_node(call);
-
-	ir_mode *mode = get_irn_mode(node);
-	if (mode_needs_gp_reg(mode))
-		mode = mode_gp;
-
-	unsigned const pn     = get_Proj_num(node);
-	unsigned const new_pn = pn_sparc_Call_first_result + pn;
-
-	return new_r_Proj(new_call, mode, new_pn);
+	unsigned const pn       = get_Proj_num(node);
+	unsigned const new_pn   = pn_sparc_Call_first_result + pn;
+	return be_new_Proj(new_call, new_pn);
 }
 
 static ir_node *gen_Proj_Proj(ir_node *node)
@@ -2551,7 +2507,6 @@ static void sparc_register_transformers(void)
 	be_set_transform_function(op_sparc_SubCC_t,gen_SubCC_t);
 
 	be_set_transform_proj_function(op_Alloc,         gen_Proj_Alloc);
-	be_set_transform_proj_function(op_ASM,           gen_Proj_ASM);
 	be_set_transform_proj_function(op_Builtin,       gen_Proj_Builtin);
 	be_set_transform_proj_function(op_Call,          gen_Proj_Call);
 	be_set_transform_proj_function(op_Cond,          be_duplicate_node);
@@ -2583,8 +2538,6 @@ void sparc_transform_graph(ir_graph *irg)
 	mode_fp    = sparc_reg_classes[CLASS_sparc_fp].mode;
 	mode_fp2   = mode_D;
 	//mode_fp4 = ?
-	mode_flags = sparc_reg_classes[CLASS_sparc_flags].mode;
-	assert(sparc_reg_classes[CLASS_sparc_fpflags].mode == mode_flags);
 
 	frame_base = NULL;
 

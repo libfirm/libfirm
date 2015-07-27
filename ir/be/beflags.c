@@ -119,9 +119,8 @@ static void move_other_uses(ir_node *node, ir_node *copy)
 			if (irn_visited(succ) && succ != copy_prev &&
 			    value_strictly_dominates(copy, succ)) {
 				if (new_proj == NULL) {
-					ir_mode *proj_mode = get_irn_mode(proj);
-					unsigned pn        = get_Proj_num(proj);
-					new_proj = new_r_Proj(copy, proj_mode, pn);
+					unsigned const pn = get_Proj_num(proj);
+					new_proj = be_new_Proj(copy, pn);
 				}
 				int n = get_edge_src_pos(edge);
 				set_irn_n(succ, n, new_proj);
@@ -163,8 +162,7 @@ static bool rematerialize_or_move(ir_node *flags_needed, ir_node *node,
 	ir_node *value;
 	if (get_irn_mode(copy) == mode_T) {
 		move_other_uses(flags_needed, copy);
-		ir_mode *mode = flag_class->mode;
-		value = new_r_Proj(copy, mode, pn);
+		value = be_new_Proj(copy, pn);
 	} else {
 		value = copy;
 	}

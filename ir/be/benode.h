@@ -194,6 +194,12 @@ ir_entity *be_get_Relocation_entity(ir_node const* node);
 unsigned be_get_Relocation_kind(ir_node const* node);
 
 /**
+ * Create a new Proj node.  Its mode is determined from the out requirement
+ * @p pos of @p pred.
+ */
+ir_node *be_new_Proj(ir_node *pred, unsigned pos);
+
+/**
  * Search for output of start node with a specific register
  */
 ir_node *be_get_initial_reg_value(ir_graph *irg, const arch_register_t *reg);

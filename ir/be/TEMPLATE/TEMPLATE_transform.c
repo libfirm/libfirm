@@ -33,8 +33,6 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 typedef ir_node* (*new_binop_func)(dbg_info *dbgi, ir_node *block,
                                    ir_node *left, ir_node *right);
 
-static ir_mode *gp_regs_mode;
-
 /**
  * returns true if mode should be stored in a general purpose register
  */
@@ -291,7 +289,7 @@ static ir_node *gen_Proj_Proj(ir_node *node)
 				pn_TEMPLATE_Start_arg2, pn_TEMPLATE_Start_arg3
 			};
 			assert(arg_num < ARRAY_SIZE(pns));
-			return new_r_Proj(new_start, gp_regs_mode, pns[arg_num]);
+			return be_new_Proj(new_start, pns[arg_num]);
 		}
 	}
 	panic("No transformer for %+F -> %+F -> %+F", node, pred, pred_pred);
@@ -303,9 +301,9 @@ static ir_node *gen_Proj_Load(ir_node *node)
 	ir_node *new_load = be_transform_node(load);
 	switch ((pn_Load)get_Proj_num(node)) {
 	case pn_Load_M:
-		return new_r_Proj(new_load, mode_M, pn_TEMPLATE_Load_M);
+		return be_new_Proj(new_load, pn_TEMPLATE_Load_M);
 	case pn_Load_res:
-		return new_r_Proj(new_load, gp_regs_mode, pn_TEMPLATE_Load_res);
+		return be_new_Proj(new_load, pn_TEMPLATE_Load_res);
 	case pn_Load_X_regular:
 	case pn_Load_X_except:
 		panic("exception handling not supported yet");
@@ -329,18 +327,17 @@ static ir_node *gen_Proj_Store(ir_node *node)
 
 static ir_node *gen_Proj_Start(ir_node *node)
 {
-	dbg_info *dbgi      = get_irn_dbg_info(node);
 	ir_node  *start     = get_Proj_pred(node);
 	ir_node  *new_start = be_transform_node(start);
 	unsigned  pn        = get_Proj_num(node);
 
 	switch ((pn_Start)pn) {
 	case pn_Start_M:
-		return new_rd_Proj(dbgi, new_start, mode_M, pn_TEMPLATE_Start_M);
+		return be_new_Proj(new_start, pn_TEMPLATE_Start_M);
 	case pn_Start_T_args:
 		return new_r_Bad(get_irn_irg(node), mode_T);
 	case pn_Start_P_frame_base:
-		return new_rd_Proj(dbgi, new_start, gp_regs_mode, pn_TEMPLATE_Start_stack);
+		return be_new_Proj(new_start, pn_TEMPLATE_Start_stack);
 	}
 	panic("unexpected Start proj %u", pn);
 }
@@ -399,8 +396,6 @@ void TEMPLATE_transform_graph(ir_graph *irg)
 {
 	assure_irg_properties(irg, IR_GRAPH_PROPERTY_NO_TUPLES
 	                         | IR_GRAPH_PROPERTY_NO_BADS);
-
-	gp_regs_mode = TEMPLATE_reg_classes[CLASS_TEMPLATE_gp].mode;
 
 	TEMPLATE_register_transformers();
 

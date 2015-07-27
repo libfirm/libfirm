@@ -68,7 +68,7 @@ static ir_node *arm_new_reload(ir_node *value, ir_node *spill, ir_node *before)
 	ir_mode  *mode   = get_irn_mode(value);
 	ir_node  *load   = new_bd_arm_Ldr(NULL, block, frame, spill, mode, NULL,
 	                                  false, 0, true);
-	ir_node  *proj   = new_r_Proj(load, mode, pn_arm_Ldr_res);
+	ir_node  *proj   = be_new_Proj(load, pn_arm_Ldr_res);
 	arch_add_irn_flags(load, arch_irn_flag_reload);
 	sched_add_before(before, load);
 	return proj;

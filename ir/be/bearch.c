@@ -171,9 +171,8 @@ ir_node *be_get_start_proj(ir_graph *const irg, be_start_info_t *const info)
 {
 	if (!info->irn) {
 		/* This is already the transformed start node. */
-		ir_node                     *const start = get_irg_start(irg);
-		arch_register_class_t const *const cls   = arch_get_irn_register_req_out(start, info->pos)->cls;
-		info->irn = new_r_Proj(start, cls->mode, info->pos);
+		ir_node *const start = get_irg_start(irg);
+		info->irn = be_new_Proj(start, info->pos);
 	}
 	return info->irn;
 }

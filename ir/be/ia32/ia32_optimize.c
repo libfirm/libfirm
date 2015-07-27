@@ -266,8 +266,7 @@ static void peephole_ia32_Test(ir_node *node)
 				kill_node(left);
 		}
 
-		ir_mode *flags_mode = ia32_reg_classes[CLASS_ia32_flags].mode;
-		ir_node *flags_proj = new_r_Proj(op, flags_mode, pn_ia32_flags);
+		ir_node *const flags_proj = be_new_Proj(op, pn_ia32_flags);
 		arch_set_irn_register(flags_proj, &ia32_registers[REG_EFLAGS]);
 
 		assert(get_irn_mode(node) != mode_T);
@@ -420,7 +419,6 @@ static void peephole_IncSP_Store_to_push(ir_node *irn)
 
 	/* walk through the Stores and create Pushs for them */
 	ir_node  *block      = get_nodes_block(irn);
-	ir_mode  *spmode     = get_irn_mode(irn);
 	ir_graph *irg        = get_irn_irg(irn);
 	ir_node  *first_push = NULL;
 	for (; i >= 0; --i) {
@@ -439,7 +437,7 @@ static void peephole_IncSP_Store_to_push(ir_node *irn)
 		sched_add_after(skip_Proj(curr_sp), push);
 
 		/* create stackpointer Proj */
-		curr_sp = new_r_Proj(push, spmode, pn_ia32_Push_stack);
+		curr_sp = be_new_Proj(push, pn_ia32_Push_stack);
 		arch_set_irn_register(curr_sp, spreg);
 
 		/* use the memproj now */
@@ -580,7 +578,7 @@ static void peephole_Load_IncSP_to_pop(ir_node *irn)
 		copy_mark(load, pop);
 
 		/* create stackpointer Proj */
-		pred_sp = new_r_Proj(pop, ia32_mode_gp, pn_ia32_Pop_stack);
+		pred_sp = be_new_Proj(pop, pn_ia32_Pop_stack);
 		arch_set_irn_register(pred_sp, esp);
 
 		sched_add_before(irn, pop);
@@ -631,9 +629,9 @@ static ir_node *create_pop(dbg_info *dbgi, ir_node *block,
 
 	ir_node *pop = new_bd_ia32_Pop(dbgi, block, get_irg_no_mem(irg), stack);
 
-	stack = new_r_Proj(pop, ia32_mode_gp, pn_ia32_Pop_stack);
+	stack = be_new_Proj(pop, pn_ia32_Pop_stack);
 	arch_set_irn_register(stack, esp);
-	ir_node *val = new_r_Proj(pop, ia32_mode_gp, pn_ia32_Pop_res);
+	ir_node *const val = be_new_Proj(pop, pn_ia32_Pop_res);
 	arch_set_irn_register(val, reg);
 
 	sched_add_before(schedpoint, pop);

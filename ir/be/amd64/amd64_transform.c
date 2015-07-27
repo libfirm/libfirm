@@ -36,7 +36,6 @@
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 static ir_mode         *mode_gp;
-static ir_mode         *mode_flags;
 static x86_cconv_t     *current_cconv = NULL;
 static be_start_info_t  start_mem;
 static be_start_info_t  start_val[N_AMD64_REGISTERS];
@@ -359,7 +358,7 @@ static ir_node *create_float_const(dbg_info *dbgi, ir_node *block,
 	arch_set_irn_register_reqs_in(load, mem_reqs);
 	set_irn_pinned(load, op_pin_state_floats);
 
-	return new_r_Proj(load, amd64_mode_xmm, pn_res);
+	return be_new_Proj(load, pn_res);
 }
 
 ir_tarval *create_sign_tv(ir_mode *mode)
@@ -436,7 +435,7 @@ static ir_node *gen_Address(ir_node *node)
 		};
 		ir_node *load = new_bd_amd64_mov_gp(dbgi, block, 0, NULL, INSN_MODE_64,
 		                                    AMD64_OP_ADDR, addr);
-		return new_r_Proj(load, mode_gp, pn_amd64_mov_gp_res);
+		return be_new_Proj(load, pn_amd64_mov_gp_res);
 	}
 }
 
@@ -585,7 +584,7 @@ static ir_node *create_sext(ir_node *new_block, ir_node *const node, ir_mode *mo
 
 	arch_set_irn_register_reqs_in(sar, reg_reqs);
 	arch_set_irn_register_req_out(sar, 0, &amd64_requirement_gp_same_0);
-	return new_r_Proj(sar, mode_gp, pn_amd64_sar_res);
+	return be_new_Proj(sar, pn_amd64_sar_res);
 }
 
 static ir_node *create_zext(ir_node *new_block, ir_node *const node)
@@ -593,7 +592,7 @@ static ir_node *create_zext(ir_node *new_block, ir_node *const node)
 	dbg_info *const dbgi      = get_irn_dbg_info(node);
 	ir_node  *const xor0      = new_bd_amd64_xor_0(dbgi, new_block);
 	arch_set_irn_register_reqs_in(xor0, reg_reqs);
-	return new_r_Proj(xor0, mode_gp, pn_amd64_xor_0_res);
+	return be_new_Proj(xor0, pn_amd64_xor_0_res);
 }
 
 static bool use_address_matching(ir_mode *mode, match_flags_t flags,
@@ -745,12 +744,11 @@ static ir_node *gen_binop_am(ir_node *node, ir_node *op1, ir_node *op2,
 	if (mode_is_float(mode)) {
 		arch_set_irn_register_req_out(new_node, 0,
 		                              &amd64_requirement_xmm_same_0);
-		return new_r_Proj(new_node, amd64_mode_xmm, pn_res);
 	} else {
 		arch_set_irn_register_req_out(new_node, 0,
 		                              &amd64_requirement_gp_same_0);
-		return new_r_Proj(new_node, mode_gp, pn_res);
 	}
+	return be_new_Proj(new_node, pn_res);
 }
 
 static ir_node *gen_binop_rax(ir_node *node, ir_node *op1, ir_node *op2,
@@ -872,7 +870,7 @@ static ir_node *gen_binop_xmm(ir_node *node, ir_node *op0, ir_node *op1,
 
 	arch_set_irn_register_req_out(new_node, 0,
 								  &amd64_requirement_xmm_same_0);
-	return new_r_Proj(new_node, amd64_mode_xmm, pn_amd64_subs_res);
+	return be_new_Proj(new_node, pn_amd64_subs_res);
 }
 
 typedef ir_node *(*construct_shift_func)(dbg_info *dbgi, ir_node *block,
@@ -932,7 +930,7 @@ static ir_node *gen_shift_binop(ir_node *node, ir_node *op1, ir_node *op2,
 	ir_node  *const new_node  = func(dbgi, new_block, arity, in, &attr);
 	arch_set_irn_register_reqs_in(new_node, reqs);
 	arch_set_irn_register_req_out(new_node, 0, out_req0);
-	return new_r_Proj(new_node, mode_gp, pn_res);
+	return be_new_Proj(new_node, pn_res);
 }
 
 static ir_node *create_lea_as_add(ir_node *node, ir_node *op1, ir_node *op2)
@@ -1057,7 +1055,7 @@ static ir_node *gen_Mul(ir_node *const node)
 		            gen_binop_rax(node, op1, op2, new_bd_amd64_imul_1op,
 		                          match_mode_neutral
 		                          | match_commutative);
-		return new_r_Proj(new_node, mode_gp, pn_amd64_imul_1op_res_low);
+		return be_new_Proj(new_node, pn_amd64_imul_1op_res_low);
 	} else if (mode_is_float(mode)) {
 		return gen_binop_am(node, op1, op2, new_bd_amd64_muls,
 		                    pn_amd64_muls_res, match_commutative | match_am);
@@ -1087,7 +1085,7 @@ static ir_node *gen_Mulh(ir_node *const node)
                          match_mode_neutral | match_commutative);
         pn_res = pn_amd64_mul_res_high;
 	}
-	return new_r_Proj(new_node, mode_gp, pn_res);
+	return be_new_Proj(new_node, pn_res);
 }
 
 static ir_node *gen_Shl(ir_node *const node)
@@ -1198,17 +1196,11 @@ static ir_node *gen_Proj_Div(ir_node *const node)
 	assert((unsigned)pn_amd64_divs_M == (unsigned)pn_amd64_idiv_M);
 	assert((unsigned)pn_amd64_divs_res == (unsigned)pn_amd64_idiv_res_div);
 
-	ir_mode *mode;
-	if (mode_is_float(get_Div_resmode(pred)))
-		mode = amd64_mode_xmm;
-	else
-		mode = mode_gp;
-
 	switch ((pn_Div)pn) {
 	case pn_Div_M:
-		return new_r_Proj(new_pred, mode_M, pn_amd64_div_M);
+		return be_new_Proj(new_pred, pn_amd64_div_M);
 	case pn_Div_res:
-		return new_r_Proj(new_pred, mode, pn_amd64_div_res_div);
+		return be_new_Proj(new_pred, pn_amd64_div_res_div);
 	case pn_Div_X_except:
 	case pn_Div_X_regular:
 		panic("amd64 exception NIY");
@@ -1236,9 +1228,9 @@ static ir_node *gen_Proj_Mod(ir_node *const node)
 	assert((unsigned)pn_amd64_div_res_mod == (unsigned)pn_amd64_idiv_res_mod);
 	switch ((pn_Mod)pn) {
 	case pn_Mod_M:
-		return new_r_Proj(new_pred, mode_M, pn_amd64_div_M);
+		return be_new_Proj(new_pred, pn_amd64_div_M);
 	case pn_Mod_res:
-		return new_r_Proj(new_pred, mode_gp, pn_amd64_div_res_mod);
+		return be_new_Proj(new_pred, pn_amd64_div_res_mod);
 	case pn_Mod_X_except:
 	case pn_Mod_X_regular:
 		panic("amd64 exception NIY");
@@ -1260,7 +1252,7 @@ static ir_node *gen_unop(ir_node *const node, int op_pos, unop_constructor gen,
 	amd64_insn_mode_t insn_mode
 		= get_mode_size_bits(mode) > 32 ? INSN_MODE_64 : INSN_MODE_32;
 	ir_node *new_node = gen(dbgi, block, new_op, insn_mode);
-	return new_r_Proj(new_node, mode_gp, pn_res);
+	return be_new_Proj(new_node, pn_res);
 }
 
 /** Create a floating point negation by switching the sign bit using a xor.
@@ -1286,7 +1278,7 @@ static ir_node *gen_float_neg(ir_node *const node)
 	arch_set_irn_register_reqs_in(xor, xmm_xmm_reqs);
 	arch_set_irn_register_req_out(xor, 0, &amd64_requirement_xmm_same_0);
 
-	return new_r_Proj(xor, amd64_mode_xmm, pn_amd64_xorp_res);
+	return be_new_Proj(xor, pn_amd64_xorp_res);
 }
 
 static ir_node *gen_Minus(ir_node *const node)
@@ -1384,8 +1376,7 @@ static ir_node *gen_IJmp(ir_node *node)
 	arch_set_irn_register_reqs_in(jmp, reqs);
 	fix_node_mem_proj(jmp, mem_proj);
 
-	ir_node *proj_X = new_r_Proj(jmp, mode_X, pn_amd64_ijmp_X);
-	return proj_X;
+	return be_new_Proj(jmp, pn_amd64_ijmp_X);
 }
 
 static ir_node *gen_Jmp(ir_node *node)
@@ -1778,7 +1769,7 @@ static ir_node *gen_Call(ir_node *node)
 	set_irn_pinned(call, get_irn_pinned(node));
 
 	/* IncSP to destroy the call stackframe */
-	ir_node *const call_stack = new_r_Proj(call, mode_gp, pn_amd64_call_stack);
+	ir_node *const call_stack = be_new_Proj(call, pn_amd64_call_stack);
 	incsp = amd64_new_IncSP(new_block, call_stack, -cconv->callframe_size, 0);
 	/* if we are the last IncSP producer in a block then we have to keep
 	 * the stack value.
@@ -1798,7 +1789,7 @@ static ir_node *gen_Proj_Call(ir_node *node)
 	ir_node *new_call = be_transform_node(call);
 	switch ((pn_Call)pn) {
 	case pn_Call_M:
-		return new_r_Proj(new_call, mode_M, pn_amd64_call_M);
+		return be_new_Proj(new_call, pn_amd64_call_M);
 	case pn_Call_X_regular:
 	case pn_Call_X_except:
 	case pn_Call_T_result:
@@ -1811,17 +1802,9 @@ static ir_node *gen_Proj_Proj_Call(ir_node *node)
 {
 	ir_node *const call     = get_Proj_pred(get_Proj_pred(node));
 	ir_node *const new_call = be_transform_node(call);
-
-	ir_mode *mode = get_irn_mode(node);
-	if (mode_needs_gp_reg(mode))
-		mode = mode_gp;
-	else if (mode_is_float(mode))
-		mode = amd64_mode_xmm;
-
-	unsigned const pn     = get_Proj_num(node);
-	unsigned const new_pn = pn_amd64_call_first_result + pn;
-
-	return new_r_Proj(new_call, mode, new_pn);
+	unsigned const pn       = get_Proj_num(node);
+	unsigned const new_pn   = pn_amd64_call_first_result + pn;
+	return be_new_Proj(new_call, new_pn);
 }
 
 static ir_node *gen_Proj_Proj_Start(ir_node *node)
@@ -1855,15 +1838,15 @@ static ir_node *gen_Proj_Proj_Start(ir_node *node)
 		if (mode_is_float(mode)) {
 			load  = new_bd_amd64_movs_xmm(NULL, new_block, ARRAY_SIZE(in),
 			                              in, insn_mode, AMD64_OP_ADDR, addr);
-			value = new_r_Proj(load, amd64_mode_xmm, pn_amd64_movs_xmm_res);
+			value = be_new_Proj(load, pn_amd64_movs_xmm_res);
 		} else if (get_mode_size_bits(mode) < 64 && mode_is_signed(mode)) {
 			load  = new_bd_amd64_movs(NULL, new_block, ARRAY_SIZE(in),
 			                          in, insn_mode, AMD64_OP_ADDR, addr);
-			value = new_r_Proj(load, mode_gp, pn_amd64_movs_res);
+			value = be_new_Proj(load, pn_amd64_movs_res);
 		} else {
 			load  = new_bd_amd64_mov_gp(NULL, new_block, ARRAY_SIZE(in),
 			                            in, insn_mode, AMD64_OP_ADDR, addr);
-			value = new_r_Proj(load, mode_gp, pn_amd64_mov_gp_res);
+			value = be_new_Proj(load, pn_amd64_mov_gp_res);
 		}
 		arch_set_irn_register_reqs_in(load, reg_mem_reqs);
 		set_irn_pinned(load, op_pin_state_floats);
@@ -1910,7 +1893,7 @@ static ir_node *gen_Cmp(ir_node *node)
 
 	arch_set_irn_register_reqs_in(new_node, args.reqs);
 	fix_node_mem_proj(new_node, args.mem_proj);
-	return new_r_Proj(new_node, mode_flags, pn_amd64_cmp_flags);
+	return be_new_Proj(new_node, pn_amd64_cmp_flags);
 }
 
 static ir_node *get_flags_node(ir_node *cmp, x86_condition_code_t *cc_out)
@@ -1953,26 +1936,6 @@ static ir_node *gen_Cond(ir_node *node)
 static ir_node *gen_ASM(ir_node *node)
 {
 	return x86_match_ASM(node, amd64_additional_clobber_names, &amd64_asm_constraints);
-}
-
-static ir_node *gen_Proj_ASM(ir_node *node)
-{
-	ir_mode *mode     = get_irn_mode(node);
-	ir_node *pred     = get_Proj_pred(node);
-	ir_node *new_pred = be_transform_node(pred);
-	unsigned pn       = get_Proj_num(node);
-
-	if (mode == mode_M) {
-		pn = arch_get_irn_n_outs(new_pred)-1;
-	} else if (mode_is_int(mode) || mode_is_reference(mode)) {
-		mode = mode_gp;
-	} else if (mode_is_float(mode)) {
-		mode = amd64_mode_xmm;
-	} else {
-		panic("unexpected proj mode at ASM");
-	}
-
-	return new_r_Proj(new_pred, mode, pn);
 }
 
 static ir_node *gen_Phi(ir_node *node)
@@ -2040,8 +2003,7 @@ static ir_node *match_mov(dbg_info *dbgi, ir_node *block, ir_node *value,
 	if (mem_proj != NULL)
 		be_set_transformed_node(load, new_node);
 
-	ir_node *res = new_r_Proj(new_node, amd64_mode_xmm, pn_res);
-	return res;
+	return be_new_Proj(new_node, pn_res);
 }
 
 static ir_node *create_movq(dbg_info *dbgi, ir_node *block, ir_node *value)
@@ -2126,12 +2088,11 @@ static ir_node *gen_Conv(ir_node *node)
 	ir_node *new_op = be_transform_node(op);
 	ir_node *in[1]  = { new_op };
 	ir_node *conv;
-	ir_node *res;
+	unsigned pn_res;
 	const arch_register_req_t **reqs;
 
 	if (src_float && dst_float) {
 		/* float to float */
-		unsigned pn_res;
 		if (src_bits < dst_bits) {
 			conv = new_bd_amd64_cvtss2sd(dbgi, block, ARRAY_SIZE(in),
 			                             in, insn_mode, AMD64_OP_REG,
@@ -2142,7 +2103,6 @@ static ir_node *gen_Conv(ir_node *node)
 			                             in, AMD64_OP_REG, addr);
 			pn_res = pn_amd64_cvtsd2ss_res;
 		}
-		res  = new_r_Proj(conv, amd64_mode_xmm, pn_res);
 		reqs = amd64_xmm_reqs;
 
 	} else if (src_float && !dst_float) {
@@ -2155,7 +2115,6 @@ static ir_node *gen_Conv(ir_node *node)
 			panic("cannot convert floating point to 64-bit unsigned");
 		}
 
-		unsigned pn_res;
 		if (src_bits < 64) {
 			conv = new_bd_amd64_cvttss2si(dbgi, block, ARRAY_SIZE(in),
 			                             in, insn_mode, AMD64_OP_REG,
@@ -2167,7 +2126,6 @@ static ir_node *gen_Conv(ir_node *node)
 			                             addr);
 			pn_res = pn_amd64_cvttsd2si_res;
 		}
-		res  = new_r_Proj(conv, mode_gp, pn_res);
 		reqs = amd64_xmm_reqs;
 
 	} else if (!src_float && dst_float) {
@@ -2185,13 +2143,12 @@ static ir_node *gen_Conv(ir_node *node)
 			                                   in, move_mode,
 			                                   AMD64_OP_REG, addr);
 			arch_set_irn_register_reqs_in(ext, reg_reqs);
-			in[0] = new_r_Proj(ext, mode_gp, pn_amd64_mov_gp_res);
+			in[0] = be_new_Proj(ext, pn_amd64_mov_gp_res);
 
 		} else if (!mode_is_signed(src_mode) && src_bits == 64) {
 			panic("cannot convert 64-bit unsigned to floating point");
 		}
 
-		unsigned pn_res;
 		if (dst_bits < 64) {
 			conv = new_bd_amd64_cvtsi2ss(dbgi, block, ARRAY_SIZE(in),
 			                             in, insn_mode, AMD64_OP_REG,
@@ -2203,12 +2160,10 @@ static ir_node *gen_Conv(ir_node *node)
 			                             addr);
 			pn_res = pn_amd64_cvtsi2sd_res;
 		}
-		res = new_r_Proj(conv, amd64_mode_xmm, pn_res);
 		reqs = reg_reqs;
 
 	} else {
 		/* int to int */
-		unsigned pn_res;
 		if (!mode_is_signed(min_mode) || get_mode_size_bits(min_mode) == 64) {
 			conv = new_bd_amd64_mov_gp(dbgi, block, ARRAY_SIZE(in),
 			                           in, insn_mode, AMD64_OP_REG, addr);
@@ -2218,12 +2173,11 @@ static ir_node *gen_Conv(ir_node *node)
 			                         in, insn_mode, AMD64_OP_REG, addr);
 			pn_res = pn_amd64_movs_res;
 		}
-		res = new_r_Proj(conv, mode_gp, pn_res);
 		reqs = reg_reqs;
 	}
 
 	arch_set_irn_register_reqs_in(conv, reqs);
-	return res;
+	return be_new_Proj(conv, pn_res);
 }
 
 static ir_node *gen_Store(ir_node *node)
@@ -2340,8 +2294,7 @@ ir_node *amd64_new_reload(ir_node *value, ir_node *spill, ir_node *before)
 	sched_add_before(before, load);
 	amd64_addr_attr_t *attr = get_amd64_addr_attr(load);
 	attr->needs_frame_ent = true;
-	ir_node *res = new_r_Proj(load, mode, pn_res);
-	return res;
+	return be_new_Proj(load, pn_res);
 }
 
 static ir_node *gen_Load(ir_node *node)
@@ -2396,7 +2349,7 @@ static ir_node *gen_Unknown(ir_node *node)
 		return new_bd_amd64_xorpd_0(NULL, block);
 	} else {
 		ir_node *res = new_bd_amd64_xor_0(NULL, block);
-		return new_r_Proj(res, mode_gp, pn_amd64_xor_0_res);
+		return be_new_Proj(res, pn_amd64_xor_0_res);
 	}
 }
 
@@ -2406,7 +2359,6 @@ static ir_node *gen_Proj_Load(ir_node *node)
 {
 	ir_node  *load     = get_Proj_pred(node);
 	ir_node  *new_load = be_transform_node(load);
-	dbg_info *dbgi     = get_irn_dbg_info(node);
 	unsigned  pn       = get_Proj_num(node);
 
 	/* loads might be part of source address mode matches, so we don't
@@ -2417,7 +2369,7 @@ static ir_node *gen_Proj_Load(ir_node *node)
 		   reachable through the ProjM */
 		be_enqueue_preds(node);
 		/* do it in 2 steps, to silence firm verifier */
-		ir_node *res = new_rd_Proj(dbgi, load, mode_M, pn_Load_M);
+		ir_node *const res = new_r_Proj(load, mode_M, pn_Load_M);
 		set_Proj_num(res, pn_amd64_mem);
 		return res;
 	}
@@ -2426,10 +2378,9 @@ static ir_node *gen_Proj_Load(ir_node *node)
 	switch (get_amd64_irn_opcode(new_load)) {
 	case iro_amd64_movs_xmm:
 		if (pn == pn_Load_res) {
-			return new_rd_Proj(dbgi, new_load, amd64_mode_xmm,
-			                   pn_amd64_movs_xmm_res);
+			return be_new_Proj(new_load, pn_amd64_movs_xmm_res);
 		} else if (pn == pn_Load_M) {
-			return new_rd_Proj(dbgi, new_load, mode_M, pn_amd64_movs_xmm_M);
+			return be_new_Proj(new_load, pn_amd64_movs_xmm_M);
 		}
 		break;
 	case iro_amd64_movs:
@@ -2438,16 +2389,16 @@ static ir_node *gen_Proj_Load(ir_node *node)
 		assert((unsigned)pn_amd64_movs_M   == (unsigned)pn_amd64_mov_gp_M);
 		/* handle all gp loads equal: they have the same proj numbers. */
 		if (pn == pn_Load_res) {
-			return new_rd_Proj(dbgi, new_load, mode_Lu, pn_amd64_movs_res);
+			return be_new_Proj(new_load, pn_amd64_movs_res);
 		} else if (pn == pn_Load_M) {
-			return new_rd_Proj(dbgi, new_load, mode_M, pn_amd64_movs_M);
+			return be_new_Proj(new_load, pn_amd64_movs_M);
 		}
 		break;
 	case iro_amd64_add:
 	case iro_amd64_and:
 	case iro_amd64_cmp:
 		assert(pn == pn_Load_M);
-		return new_r_Proj(new_load, mode_M, pn_amd64_mem);
+		return be_new_Proj(new_load, pn_amd64_mem);
 	default:
 		panic("unsupported Proj from Load");
 	}
@@ -2504,8 +2455,7 @@ static ir_node *gen_Alloc(ir_node *node)
 	arch_set_irn_register_out(subsp, pn_amd64_sub_sp_stack,
 	                          &amd64_registers[REG_RSP]);
 
-	ir_node *stack_proj = new_r_Proj(subsp, mode_gp, pn_amd64_sub_sp_stack);
-
+	ir_node *const stack_proj = be_new_Proj(subsp, pn_amd64_sub_sp_stack);
 	keep_alive(stack_proj);
 	pmap_insert(node_to_stack, node, stack_proj);
 
@@ -2519,9 +2469,8 @@ static ir_node *gen_Proj_Alloc(ir_node *node)
 	unsigned pn        = get_Proj_num(node);
 
 	switch ((pn_Alloc)pn) {
-	case pn_Alloc_M:   return new_r_Proj(new_alloc, mode_M, pn_amd64_sub_sp_M);
-	case pn_Alloc_res: return new_r_Proj(new_alloc, mode_gp,
-	                                     pn_amd64_sub_sp_addr);
+	case pn_Alloc_M:   return be_new_Proj(new_alloc, pn_amd64_sub_sp_M);
+	case pn_Alloc_res: return be_new_Proj(new_alloc, pn_amd64_sub_sp_addr);
 	}
 	panic("invalid Proj->Alloc");
 }
@@ -2547,8 +2496,8 @@ static ir_node *gen_saturating_increment(ir_node *node)
 	arch_set_irn_register_reqs_in(inc, reg_reqs);
 	arch_set_irn_register_req_out(inc, 0, &amd64_requirement_gp_same_0);
 
-	ir_node *value  = new_rd_Proj(dbgi, inc, mode_gp, pn_amd64_add_res);
-	ir_node *eflags = new_rd_Proj(dbgi, inc, mode_flags, pn_amd64_add_flags);
+	ir_node *const value  = be_new_Proj(inc, pn_amd64_add_res);
+	ir_node *const eflags = be_new_Proj(inc, pn_amd64_add_flags);
 
 	amd64_binop_addr_attr_t sbb_attr;
 	memset(&sbb_attr, 0, sizeof(sbb_attr));
@@ -2587,7 +2536,7 @@ static ir_node *gen_Proj_Builtin(ir_node *proj)
 
 	switch (kind) {
 	case ir_bk_saturating_increment:
-		return new_r_Proj(new_node, mode_gp, pn_amd64_sbb_res);
+		return be_new_Proj(new_node, pn_amd64_sbb_res);
 	default:
 		break;
 	}
@@ -2622,11 +2571,11 @@ static ir_node *gen_Bitcast(ir_node *node)
 	if (src_float && !dst_float) {
 		ir_node * new_node = new_bd_amd64_movd_xmm_gp(
 			dbgi, be_block, be_op, INSN_MODE_64, AMD64_OP_REG, no_addr);
-		return new_r_Proj(new_node, mode_gp, pn_amd64_movd_gp_xmm_res);
+		return be_new_Proj(new_node, pn_amd64_movd_gp_xmm_res);
 	} else if (!src_float && dst_float) {
 		ir_node * new_node = new_bd_amd64_movd_gp_xmm(
 			dbgi, be_block, be_op, INSN_MODE_64, AMD64_OP_REG, no_addr);
-		return new_r_Proj(new_node, amd64_mode_xmm, pn_amd64_movd_xmm_gp_res);
+		return be_new_Proj(new_node, pn_amd64_movd_xmm_gp_res);
 	} else {
 		panic("Unhandled bitcast modes: %+F to %+F\n", src_mode, dst_mode);
 	}
@@ -2698,7 +2647,6 @@ static void amd64_register_transformers(void)
 	be_set_transform_function(op_amd64_l_haddpd,    gen_amd64_l_haddpd);
 
 	be_set_transform_proj_function(op_Alloc,   gen_Proj_Alloc);
-	be_set_transform_proj_function(op_ASM,     gen_Proj_ASM);
 	be_set_transform_proj_function(op_Builtin, gen_Proj_Builtin);
 	be_set_transform_proj_function(op_Call,    gen_Proj_Call);
 	be_set_transform_proj_function(op_Cond,    be_duplicate_node);
@@ -2784,7 +2732,6 @@ void amd64_transform_graph(ir_graph *irg)
 
 	amd64_register_transformers();
 	mode_gp    = mode_Lu;
-	mode_flags = mode_Iu;
 	node_to_stack = pmap_create();
 
 	stackorder = be_collect_stacknodes(irg);

@@ -586,12 +586,9 @@ static void create_memperms(be_fec_env_t *env)
 		i = 0;
 		for (memperm_entry_t *entry = memperm->entries; entry != NULL;
 		     entry = entry->next, ++i) {
-			ir_node* arg = get_irn_n(entry->node, entry->pos);
-
 			be_set_MemPerm_in_entity(mempermnode, i, entry->in);
 			be_set_MemPerm_out_entity(mempermnode, i, entry->out);
-			ir_node *proj = new_r_Proj(mempermnode, get_irn_mode(arg), i);
-
+			ir_node *const proj = be_new_Proj(mempermnode, i);
 			set_irn_n(entry->node, entry->pos, proj);
 		}
 	}

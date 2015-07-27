@@ -40,7 +40,6 @@
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 static const arch_register_t *sp_reg = &arm_registers[REG_SP];
-static ir_mode               *mode_fp;
 static be_stackorder_t       *stackorder;
 static calling_convention_t  *cconv = NULL;
 static be_start_info_t        start_mem;
@@ -666,9 +665,9 @@ static ir_node *gen_Proj_arm_AddS_t(ir_node *node)
 	ir_node *new_pred = be_transform_node(pred);
 	switch ((pn_arm_AddS_t)pn) {
 	case pn_arm_AddS_t_res:
-		return new_r_Proj(new_pred, arm_mode_gp, pn_arm_AddS_res);
+		return be_new_Proj(new_pred, pn_arm_AddS_res);
 	case pn_arm_AddS_t_flags:
-		return new_r_Proj(new_pred, arm_mode_flags, pn_arm_AddS_flags);
+		return be_new_Proj(new_pred, pn_arm_AddS_flags);
 	}
 	panic("%+F: Invalid proj number", node);
 }
@@ -738,9 +737,9 @@ static ir_node *gen_Proj_arm_UMulL_t(ir_node *node)
 	ir_node *new_pred = be_transform_node(pred);
 	switch ((pn_arm_UMulL_t)pn) {
 	case pn_arm_UMulL_t_low:
-		return new_r_Proj(new_pred, arm_mode_gp, pn_arm_UMulL_low);
+		return be_new_Proj(new_pred, pn_arm_UMulL_low);
 	case pn_arm_UMulL_t_high:
-		return new_r_Proj(new_pred, arm_mode_gp, pn_arm_UMulL_high);
+		return be_new_Proj(new_pred, pn_arm_UMulL_high);
 	}
 	panic("%+F: Invalid proj number", node);
 }
@@ -937,9 +936,9 @@ static ir_node *gen_Proj_arm_SubS_t(ir_node *node)
 	assert((int)pn_arm_SubS_res == (int)pn_arm_RsbS_res);
 	switch ((pn_arm_SubS_t)pn) {
 	case pn_arm_SubS_t_res:
-		return new_r_Proj(new_pred, arm_mode_gp, pn_arm_SubS_res);
+		return be_new_Proj(new_pred, pn_arm_SubS_res);
 	case pn_arm_SubS_t_flags:
-		return new_r_Proj(new_pred, arm_mode_flags, pn_arm_SubS_flags);
+		return be_new_Proj(new_pred, pn_arm_SubS_flags);
 	}
 	panic("%+F: Invalid proj number", node);
 }
@@ -1287,7 +1286,7 @@ static ir_node *ints_to_double(dbg_info *dbgi, ir_node *block, ir_node *node0,
 	                              true);
 	set_irn_pinned(ldf, op_pin_state_floats);
 
-	return new_r_Proj(ldf, mode_fp, pn_arm_Ldf_res);
+	return be_new_Proj(ldf, pn_arm_Ldf_res);
 }
 
 static ir_node *int_to_float(dbg_info *dbgi, ir_node *block, ir_node *node)
@@ -1303,7 +1302,7 @@ static ir_node *int_to_float(dbg_info *dbgi, ir_node *block, ir_node *node)
 	                              true);
 	set_irn_pinned(ldf, op_pin_state_floats);
 
-	return new_r_Proj(ldf, mode_fp, pn_arm_Ldf_res);
+	return be_new_Proj(ldf, pn_arm_Ldf_res);
 }
 
 static ir_node *float_to_int(dbg_info *dbgi, ir_node *block, ir_node *node)
@@ -1319,7 +1318,7 @@ static ir_node *float_to_int(dbg_info *dbgi, ir_node *block, ir_node *node)
 	                              NULL, 0, 0, true);
 	set_irn_pinned(ldr, op_pin_state_floats);
 
-	return new_r_Proj(ldr, arm_mode_gp, pn_arm_Ldr_res);
+	return be_new_Proj(ldr, pn_arm_Ldr_res);
 }
 
 static void double_to_ints(dbg_info *dbgi, ir_node *block, ir_node *node,
@@ -1339,8 +1338,8 @@ static void double_to_ints(dbg_info *dbgi, ir_node *block, ir_node *node,
 	                               0, 4, true);
 	set_irn_pinned(ldr1, op_pin_state_floats);
 
-	*out_value0 = new_r_Proj(ldr0, arm_mode_gp, pn_arm_Ldr_res);
-	*out_value1 = new_r_Proj(ldr1, arm_mode_gp, pn_arm_Ldr_res);
+	*out_value0 = be_new_Proj(ldr0, pn_arm_Ldr_res);
+	*out_value1 = be_new_Proj(ldr1, pn_arm_Ldr_res);
 }
 
 /**
@@ -1426,7 +1425,6 @@ static ir_node *gen_Proj_Load(ir_node *node)
 {
 	ir_node  *load     = get_Proj_pred(node);
 	ir_node  *new_load = be_transform_node(load);
-	dbg_info *dbgi     = get_irn_dbg_info(node);
 	unsigned  pn       = get_Proj_num(node);
 
 	/* renumber the proj */
@@ -1434,17 +1432,16 @@ static ir_node *gen_Proj_Load(ir_node *node)
 	case iro_arm_Ldr:
 		/* handle all gp loads equal: they have the same proj numbers. */
 		if (pn == pn_Load_res) {
-			return new_rd_Proj(dbgi, new_load, arm_mode_gp, pn_arm_Ldr_res);
+			return be_new_Proj(new_load, pn_arm_Ldr_res);
 		} else if (pn == pn_Load_M) {
-			return new_rd_Proj(dbgi, new_load, mode_M, pn_arm_Ldr_M);
+			return be_new_Proj(new_load, pn_arm_Ldr_M);
 		}
 		break;
 	case iro_arm_Ldf:
 		if (pn == pn_Load_res) {
-			ir_mode *mode = get_Load_mode(load);
-			return new_rd_Proj(dbgi, new_load, mode, pn_arm_Ldf_res);
+			return be_new_Proj(new_load, pn_arm_Ldf_res);
 		} else if (pn == pn_Load_M) {
-			return new_rd_Proj(dbgi, new_load, mode_M, pn_arm_Ldf_M);
+			return be_new_Proj(new_load, pn_arm_Ldf_M);
 		}
 		break;
 	default:
@@ -1457,15 +1454,13 @@ static ir_node *gen_Proj_Div(ir_node *node)
 {
 	ir_node  *pred     = get_Proj_pred(node);
 	ir_node  *new_pred = be_transform_node(pred);
-	dbg_info *dbgi     = get_irn_dbg_info(node);
-	ir_mode  *mode     = get_irn_mode(node);
 	unsigned  pn       = get_Proj_num(node);
 
 	switch ((pn_Div)pn) {
 	case pn_Div_M:
-		return new_rd_Proj(dbgi, new_pred, mode_M, pn_arm_Dvf_M);
+		return be_new_Proj(new_pred, pn_arm_Dvf_M);
 	case pn_Div_res:
-		return new_rd_Proj(dbgi, new_pred, mode, pn_arm_Dvf_res);
+		return be_new_Proj(new_pred, pn_arm_Dvf_res);
 	case pn_Div_X_regular:
 	case pn_Div_X_except:
 		break;
@@ -1515,7 +1510,7 @@ static ir_node *gen_Proj_Proj_Start(ir_node *node)
 				ir_node *const ldr = new_bd_arm_Ldr(NULL, new_block, fp, mem,
 				                                    arm_mode_gp, param->entity,
 				                                    0, 0, true);
-				value1 = new_r_Proj(ldr, arm_mode_gp, pn_arm_Ldr_res);
+				value1 = be_new_Proj(ldr, pn_arm_Ldr_res);
 			}
 
 			/* convert integer value to float */
@@ -1537,11 +1532,11 @@ static ir_node *gen_Proj_Proj_Start(ir_node *node)
 		if (mode_is_float(mode)) {
 			load  = new_bd_arm_Ldf(NULL, new_block, fp, mem, mode,
 			                       param->entity, 0, 0, true);
-			value = new_r_Proj(load, mode_fp, pn_arm_Ldf_res);
+			value = be_new_Proj(load, pn_arm_Ldf_res);
 		} else {
 			load  = new_bd_arm_Ldr(NULL, new_block, fp, mem, mode,
 			                       param->entity, 0, 0, true);
-			value = new_r_Proj(load, arm_mode_gp, pn_arm_Ldr_res);
+			value = be_new_Proj(load, pn_arm_Ldr_res);
 		}
 		set_irn_pinned(load, op_pin_state_floats);
 
@@ -1578,11 +1573,10 @@ static ir_node *gen_Proj_Proj_Call(ir_node *node)
 	if (regn < 0) {
 		panic("Internal error in calling convention for return %+F", node);
 	}
-	ir_mode *const mode = res->reg0->cls->mode;
 
 	arm_free_calling_convention(cconv);
 
-	return new_r_Proj(new_call, mode, regn);
+	return be_new_Proj(new_call, regn);
 }
 
 static ir_node *gen_Proj_Call(ir_node *node)
@@ -1592,7 +1586,7 @@ static ir_node *gen_Proj_Call(ir_node *node)
 	ir_node *new_call  = be_transform_node(call);
 	switch ((pn_Call)pn) {
 	case pn_Call_M:
-		return new_r_Proj(new_call, mode_M, pn_arm_Bl_M);
+		return be_new_Proj(new_call, pn_arm_Bl_M);
 	case pn_Call_X_regular:
 	case pn_Call_X_except:
 	case pn_Call_T_result:
@@ -1805,12 +1799,8 @@ static ir_node *gen_Return(ir_node *node)
 	/* connect callee saves with their values at the function begin */
 	ir_node *start = get_irg_start(irg);
 	for (unsigned i = 0; i < n_callee_saves; ++i) {
-		const arch_register_t *reg   = callee_saves[i];
-		ir_mode               *mode  = reg->cls->mode;
-		unsigned               idx   = start_callee_saves_offset + i;
-		ir_node               *value = new_r_Proj(start, mode, idx);
-		in[p]   = value;
-		reqs[p] = reg->single_req;
+		in[p]   = be_new_Proj(start, start_callee_saves_offset + i);
+		reqs[p] = callee_saves[i]->single_req;
 		++p;
 	}
 	assert(p == n_ins);
@@ -1966,7 +1956,7 @@ static ir_node *gen_Call(ir_node *node)
 	set_irn_pinned(res, get_irn_pinned(node));
 
 	/* IncSP to destroy the call stackframe */
-	ir_node *const call_stack = new_r_Proj(res, arm_mode_gp, pn_arm_Bl_stack);
+	ir_node *const call_stack = be_new_Proj(res, pn_arm_Bl_stack);
 	incsp = be_new_IncSP(sp_reg, new_block, call_stack, -cconv->param_stack_size, 0);
 	/* if we are the last IncSP producer in a block then we have to keep
 	 * the stack value.
@@ -2098,8 +2088,6 @@ void arm_transform_graph(ir_graph *irg)
 {
 	assure_irg_properties(irg, IR_GRAPH_PROPERTY_NO_TUPLES
 	                         | IR_GRAPH_PROPERTY_NO_BADS);
-
-	mode_fp = arm_reg_classes[CLASS_arm_fpa].mode;
 
 	static bool imm_initialized = false;
 	if (!imm_initialized) {

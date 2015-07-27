@@ -140,9 +140,8 @@ void be_peephole_exchange(ir_node *old, ir_node *nw)
 ir_node *be_peephole_to_tuple(ir_node *const node)
 {
 	be_liveness_remove(lv, node);
-	ir_mode *const mode = get_irn_mode(node);
 	set_irn_mode(node, mode_T);
-	ir_node *const res = new_r_Proj(node, mode, 0);
+	ir_node *const res = be_new_Proj(node, 0);
 	edges_reroute_except(node, res, res);
 	be_liveness_introduce(lv, res);
 	return res;

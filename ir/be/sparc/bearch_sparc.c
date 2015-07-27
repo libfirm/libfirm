@@ -410,9 +410,7 @@ static ir_node *sparc_new_reload(ir_node *value, ir_node *spill,
 	arch_add_irn_flags(load, arch_irn_flag_reload);
 	sched_add_before(before, load);
 	assert((long)pn_sparc_Ld_res == (long)pn_sparc_Ldf_res);
-	ir_node *res = new_r_Proj(load, mode, pn_sparc_Ld_res);
-
-	return res;
+	return be_new_Proj(load, pn_sparc_Ld_res);
 }
 
 static const regalloc_if_t sparc_regalloc_if = {

@@ -119,7 +119,7 @@ static ir_node *create_fpu_mode_reload(void *const env, ir_node *const state, ir
 			set_ia32_frame_use(load, IA32_FRAME_USE_32BIT);
 			sched_add_before(before, load);
 
-			ir_node *const load_res = new_r_Proj(load, ia32_mode_gp, pn_ia32_Load_res);
+			ir_node *const load_res = be_new_Proj(load, pn_ia32_Load_res);
 
 			/* TODO: Make the actual mode configurable in ChangeCW. */
 			ir_node *const or_const = ia32_create_Immediate(irg, 0xC00);
@@ -132,7 +132,7 @@ static ir_node *create_fpu_mode_reload(void *const env, ir_node *const state, ir
 			set_ia32_ls_mode(store, ia32_mode_gp);
 			set_ia32_frame_use(store, IA32_FRAME_USE_32BIT);
 			sched_add_before(before, store);
-			mem = new_r_Proj(store, mode_M, pn_ia32_Store_M);
+			mem = be_new_Proj(store, pn_ia32_Store_M);
 		}
 
 		reload = new_bd_ia32_FldCW(NULL, block, frame, noreg, mem);
@@ -164,7 +164,7 @@ static void collect_fpu_mode_nodes_walker(ir_node *node, void *data)
 		if (get_irn_mode(value) == mode_T) {
 			value = get_Proj_for_pn(node, o);
 			if (value == NULL)
-				value = new_r_Proj(node, ia32_mode_fpcw, o);
+				value = be_new_Proj(node, o);
 		}
 		ARR_APP1(ir_node*, env->state_nodes, value);
 	}

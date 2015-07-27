@@ -118,10 +118,8 @@ static void impl_parcopy(const arch_register_class_t *cls,
 			if (src == n_regs || src == dst)
 				continue;
 
-			ir_node               *in   = perm_ins[i];
-			ir_mode               *mode = get_irn_mode(in);
-			ir_node               *proj = new_r_Proj(perm, mode, i);
-			const arch_register_t *reg  = arch_register_for_index(cls, dst);
+			ir_node               *const proj = be_new_Proj(perm, i);
+			arch_register_t const *const reg  = arch_register_for_index(cls, dst);
 			arch_set_irn_register(proj, reg);
 
 			ir_node *phi = phis[dst];
@@ -130,7 +128,7 @@ static void impl_parcopy(const arch_register_class_t *cls,
 
 			if (lv->sets_valid) {
 				be_liveness_introduce(lv, proj);
-				be_liveness_update(lv, in);
+				be_liveness_update(lv, perm_ins[i]);
 			}
 
 			++i;
