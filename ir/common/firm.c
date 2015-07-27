@@ -51,9 +51,6 @@ lc_opt_entry_t *firm_opt_get_root(void)
 
 void ir_init(void)
 {
-	/* for historical reasons be_init must be run first */
-	firm_be_init();
-
 	firm_init_flags();
 	init_ident();
 	init_edges();
@@ -78,6 +75,7 @@ void ir_init(void)
 
 	init_execfreq();
 	init_stat();
+	firm_be_init();
 
 #ifdef DEBUG_libfirm
 	firm_init_debugger();
