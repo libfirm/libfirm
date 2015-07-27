@@ -479,27 +479,6 @@ void be_set_phi_reg_req(ir_node *node, const arch_register_req_t *req)
 	}
 }
 
-void be_dump_phi_reg_reqs(FILE *F, const ir_node *node, dump_reason_t reason)
-{
-	switch (reason) {
-	case dump_node_opcode_txt:
-		fputs(get_irn_opname(node), F);
-		break;
-	case dump_node_mode_txt:
-		fprintf(F, "%s", get_mode_name(get_irn_mode(node)));
-		break;
-	case dump_node_nodeattr_txt:
-		break;
-	case dump_node_info_txt: {
-		ir_graph *irg = get_irn_irg(node);
-		if (irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_BACKEND)) {
-			be_dump_reqs_and_registers(F, node);
-		}
-		break;
-	}
-	}
-}
-
 ir_node *be_new_Asm(dbg_info *const dbgi, ir_node *const block, int const n_ins, ir_node **const ins, int const n_outs, ident *const text, void *const operands)
 {
 	ir_graph *const irg  = get_irn_irg(block);

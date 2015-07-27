@@ -120,22 +120,24 @@ static void init_walker(ir_node *node, void *data)
 }
 
 static bool         initialized = false;
-static hook_entry_t hook_liveness_info;
+static hook_entry_t hook_backend_info;
 
-static void dump_liveness_info_hook(void *context, FILE *F, const ir_node *node)
+static void dump_backend_info_hook(void *context, FILE *F, const ir_node *node)
 {
 	(void)context;
-	if (!is_Block(node))
-		return;
-	ir_graph *irg = get_irn_irg(node);
+
+	ir_graph *const irg = get_irn_irg(node);
 	if (!irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_BACKEND))
 		return;
 
-	be_lv_t *lv = be_get_irg_liveness(irg);
-	if (!lv->sets_valid)
-		return;
+	if (!is_Proj(node))
+		be_dump_reqs_and_registers(F, node);
 
-	be_dump_liveness_block(lv, F, node);
+	if (is_Block(node)) {
+		be_lv_t *const lv = be_get_irg_liveness(irg);
+		if (lv->sets_valid)
+			be_dump_liveness_block(lv, F, node);
+	}
 }
 
 void be_info_init(void)
@@ -147,12 +149,8 @@ void be_info_init(void)
 	set_op_copy_attr(op_Phi, new_phi_copy_attr);
 	initialized = true;
 
-	/* phis have register and register requirements now which we want to dump */
-	assert(op_Phi->ops.dump_node == NULL);
-	set_op_dump(op_Phi, be_dump_phi_reg_reqs);
-
-	hook_liveness_info.hook._hook_node_info = dump_liveness_info_hook;
-	register_hook(hook_node_info, &hook_liveness_info);
+	hook_backend_info.hook._hook_node_info = dump_backend_info_hook;
+	register_hook(hook_node_info, &hook_backend_info);
 }
 
 /**
@@ -194,8 +192,5 @@ void be_info_free(void)
 	op_Phi->ops.copy_attr = old_phi_copy_attr;
 	initialized = false;
 
-	assert(op_Phi->ops.dump_node == be_dump_phi_reg_reqs);
-	set_op_dump(op_Phi, NULL);
-
-	unregister_hook(hook_node_info, &hook_liveness_info);
+	unregister_hook(hook_node_info, &hook_backend_info);
 }

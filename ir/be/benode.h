@@ -162,8 +162,6 @@ const arch_register_req_t *be_create_reg_req(struct obstack *obst,
  */
 void be_set_phi_reg_req(ir_node *phi, const arch_register_req_t *req);
 
-void be_dump_phi_reg_reqs(FILE *out, const ir_node *node, dump_reason_t reason);
-
 /**
  * Creates a new phi with associated backend informations
  */
