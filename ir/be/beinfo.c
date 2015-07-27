@@ -50,6 +50,7 @@ void be_info_new_node(ir_graph *irg, ir_node *node)
 	 * Set backend info for some middleend nodes which still appear in
 	 * backend graphs
 	 */
+	arch_irn_flags_t flags = arch_irn_flag_not_scheduled;
 	switch (get_irn_opcode(node)) {
 	case iro_Block:
 	case iro_Dummy:
@@ -60,16 +61,17 @@ void be_info_new_node(ir_graph *irg, ir_node *node)
 	case iro_Bad:
 	case iro_End:
 	case iro_Unknown:
-		info->flags |= arch_irn_flag_not_scheduled;
-		/* FALLTHROUGH */
+		break;
 	case iro_Phi:
-		info->out_infos        = NEW_ARR_DZ(reg_out_info_t, obst, 1);
-		info->out_infos[0].req = arch_no_register_req;
-		info->flags |= arch_irn_flag_schedule_first;
+		flags = arch_irn_flag_schedule_first;
 		break;
 	default:
-		break;
+		return;
 	}
+
+	info->flags     = flags;
+	info->out_infos = NEW_ARR_DZ(reg_out_info_t, obst, 1);
+	info->out_infos[0].req = arch_no_register_req;
 }
 
 static void new_phi_copy_attr(ir_graph *irg, const ir_node *old_node,
