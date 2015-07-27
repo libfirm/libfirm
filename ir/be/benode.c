@@ -230,9 +230,8 @@ ir_node *be_new_Keep(ir_node *const block, int const n,
 	attr->exc.pin_state = op_pin_state_pinned;
 
 	for (int i = 0; i < n; ++i) {
-		arch_register_req_t const *req = arch_get_irn_register_req(in[i]);
-		req = req->cls != NULL ? req->cls->class_req : arch_no_register_req;
-		be_node_set_register_req_in(res, i, req);
+		arch_register_req_t const *const req = arch_get_irn_register_req(in[i]);
+		be_node_set_register_req_in(res, i, req->cls->class_req);
 	}
 	keep_alive(res);
 	return res;
@@ -276,9 +275,8 @@ ir_node *be_new_CopyKeep(ir_node *const bl, ir_node *const src, int const n, ir_
 	set_copy_info(irn, irg, src, arch_irn_flag_schedule_first);
 	for (int i = 0; i < n; ++i) {
 		ir_node *pred = in_keep[i];
-		const arch_register_req_t *req = arch_get_irn_register_req(pred);
-		req = req->cls != NULL ? req->cls->class_req : arch_no_register_req;
-		be_node_set_register_req_in(irn, i+1, req);
+		arch_register_req_t const *const req = arch_get_irn_register_req(pred);
+		be_node_set_register_req_in(irn, i + 1, req->cls->class_req);
 	}
 	return irn;
 }
