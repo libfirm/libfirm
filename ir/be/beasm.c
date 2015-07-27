@@ -179,8 +179,6 @@ static bool can_match(arch_register_req_t const *const in, arch_register_req_t c
 
 static bool match_requirement(arch_register_req_t const **reqs, size_t const n_reqs, bitset_t *const used, arch_register_req_t const *const req)
 {
-	if (!req->cls)
-		return true;
 	for (size_t i = 0; i != n_reqs; ++i) {
 		if (bitset_is_set(used, i))
 			continue;
