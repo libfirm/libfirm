@@ -37,4 +37,6 @@ x86_cconv_t *amd64_decide_calling_convention(ir_type *function_type,
 
 void amd64_cconv_init(void);
 
+void amd64_adjust_pic(ir_graph *irg);
+
 #endif

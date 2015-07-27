@@ -13,15 +13,13 @@ Correctness:
 - Support ASM node
 - fail on long double
 - (Support 80bit long double with x87 instructions)
-- Finish PIC code implementation. gen_Address / call with immediate should be
-  fine. However the address mode matcher must not treat GOTPCREL things as
-  addresses, we have to load from the GOT first. The easiest solution is
-  probably a preparation phase similar to ia32_pic.c that create loads.
+- Finish PIC code implementation. This is mostly done now, usual accesses to
+  functions and variables including address mode matching looks fine now.
+  Jumptables are not accessed correctly in PIC yet and
 
 Improve Quality:
 - Immediate32 matching could be better and match SymConst, Add(SymConst, Const)
-  combinations where possible. Be careful with PIC code this may usually not
-  be legal!
+  combinations where possible.
 - Support Destination Address Mode
 - Match Immediate + Address mode for Cmp
 - Support Read-Modify-Store operations (aka destination address mode)

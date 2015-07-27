@@ -263,7 +263,7 @@ static void amd64_emit_addr(const ir_node *const node,
 		if (is_fp_relative(entity)) {
 			entity = NULL; /* only emit offset for frame entities */
 		} else {
-			be_gas_emit_entity(entity);
+			emit_relocation_no_offset(addr->immediate.kind, entity);
 		}
 	}
 

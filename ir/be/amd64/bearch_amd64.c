@@ -497,6 +497,8 @@ static int determine_rbp_input(ir_node *ret)
  */
 static void amd64_select_instructions(ir_graph *irg)
 {
+	amd64_adjust_pic(irg);
+
 	be_timer_push(T_CODEGEN);
 	amd64_transform_graph(irg);
 	be_timer_pop(T_CODEGEN);

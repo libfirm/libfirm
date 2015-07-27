@@ -303,22 +303,17 @@ ir_entity *create_float_const_entity(ir_tarval *const tv)
 	return entity;
 }
 
-typedef enum reference_mode_t {
-	REFERENCE_DIRECT,
-	REFERENCE_IP_RELATIVE,
-	REFERENCE_GOT,
-} reference_mode_t;
-
-static reference_mode_t need_relative_addressing(const ir_entity *entity)
+static void init_lconst_addr(amd64_addr_t *addr, ir_entity *entity)
 {
-	if (!be_options.pic)
-		return REFERENCE_DIRECT;
-
-	/* simply everything is instruction pointer relative, external functions
-	 * use a global offset table */
-	return entity_has_definition(entity)
-	   && (get_entity_linkage(entity) & IR_LINKAGE_MERGE) == 0
-	    ? REFERENCE_IP_RELATIVE : REFERENCE_GOT;
+	assert(entity_has_definition(entity));
+	assert(get_entity_linkage(entity) == IR_LINKAGE_CONSTANT);
+	assert(get_entity_visibility(entity) == ir_visibility_private);
+	memset(addr, 0, sizeof(*addr));
+	x86_immediate_kind_t kind = be_options.pic ? X86_IMM_PCREL : X86_IMM_ADDR;
+	addr->immediate.entity = entity;
+	addr->immediate.kind = kind;
+	addr->index_input = NO_INPUT;
+	addr->base_input = kind == X86_IMM_PCREL ? RIP_INPUT : NO_INPUT;
 }
 
 static ir_node *create_float_const(dbg_info *dbgi, ir_node *block,
@@ -331,21 +326,11 @@ static ir_node *create_float_const(dbg_info *dbgi, ir_node *block,
 
 	ir_node *in[] = { nomem };
 	amd64_addr_t addr;
-	memset(&addr, 0, sizeof(addr));
-
-	addr.immediate.entity       = entity;
-	amd64_insn_mode_t insn_mode = get_insn_mode_from_mode(tv_mode);
-
-	addr.index_input = NO_INPUT;
-	if (need_relative_addressing(entity) == REFERENCE_DIRECT) {
-		addr.base_input = NO_INPUT;
-	} else {
-		assert(need_relative_addressing(entity) == REFERENCE_IP_RELATIVE);
-		addr.base_input = RIP_INPUT;
-	}
+	init_lconst_addr(&addr, entity);
 
 	ir_node *load;
 	unsigned pn_res;
+	amd64_insn_mode_t insn_mode = get_insn_mode_from_mode(tv_mode);
 	if (insn_mode == INSN_MODE_128) {
 		load = new_bd_amd64_movdqa(dbgi, block, ARRAY_SIZE(in), in,
 		                           AMD64_OP_ADDR, addr);
@@ -403,40 +388,45 @@ static ir_node *gen_Address(ir_node *node)
 	dbg_info  *dbgi   = get_irn_dbg_info(node);
 	ir_entity *entity = get_Address_entity(node);
 
-	/* do we need RIP-relative addressing because of PIC? */
-	reference_mode_t mode = need_relative_addressing(entity);
-	if (mode == REFERENCE_DIRECT) {
+	amd64_imm64_t const imm = {
+		.kind   = X86_IMM_ADDR,
+		.entity = entity,
+	};
+	return new_bd_amd64_mov_imm(dbgi, block, INSN_MODE_64, &imm);
+}
+
+static ir_node *gen_be_Relocation(ir_node *node)
+{
+	ir_node             *const block  = be_transform_nodes_block(node);
+	ir_entity           *const entity = be_get_Relocation_entity(node);
+	x86_immediate_kind_t const kind
+		= (x86_immediate_kind_t)be_get_Relocation_kind(node);
+
+	switch (kind) {
+	case X86_IMM_ADDR: {
 		amd64_imm64_t const imm = {
 			.kind   = X86_IMM_ADDR,
 			.entity = entity,
 		};
-		return new_bd_amd64_mov_imm(dbgi, block, INSN_MODE_64, &imm);
+		return new_bd_amd64_mov_imm(NULL, block, INSN_MODE_64, &imm);
 	}
-
-	amd64_addr_t addr;
-	memset(&addr, 0, sizeof(addr));
-	addr.base_input  = RIP_INPUT;
-	addr.index_input = NO_INPUT;
-	addr.mem_input   = NO_INPUT;
-
-	if (mode == REFERENCE_IP_RELATIVE) {
+	case X86_IMM_PCREL:
+	case X86_IMM_GOTPCREL: { /* can GOTPCREL happen here? */
+		amd64_addr_t addr;
+		memset(&addr, 0, sizeof(addr));
+		addr.base_input  = RIP_INPUT;
+		addr.index_input = NO_INPUT;
+		addr.mem_input   = NO_INPUT;
 		addr.immediate = (x86_imm32_t) {
-			/* TODO: create an ip-relative kind? (even though it looks the same
-			 * in the assembler) */
-			.kind   = X86_IMM_ADDR,
+			.kind   = kind,
 			.entity = entity,
 		};
-		return new_bd_amd64_lea(dbgi, block, 0, NULL, INSN_MODE_64, addr);
-	} else {
-		assert(mode == REFERENCE_GOT);
-		addr.immediate = (x86_imm32_t) {
-			.kind   = X86_IMM_GOTPCREL,
-			.entity = entity,
-		};
-		ir_node *load = new_bd_amd64_mov_gp(dbgi, block, 0, NULL, INSN_MODE_64,
-		                                    AMD64_OP_ADDR, addr);
-		return be_new_Proj(load, pn_amd64_mov_gp_res);
+		return new_bd_amd64_lea(NULL, block, 0, NULL, INSN_MODE_64, addr);
 	}
+	default:
+		break;
+	}
+	panic("Unexpected relocation kind");
 }
 
 ir_node *amd64_new_IncSP(ir_node *block, ir_node *old_sp, int offset,
@@ -503,12 +493,12 @@ static bool match_immediate_32(x86_imm32_t *imm, const ir_node *op,
 
 	x86_immediate_kind_t kind = (x86_immediate_kind_t)reloc_kind;
 	if (entity != NULL) {
-		if (!can_match_ip_relative) {
-			/* TODO: check if entity is in lower 4GB address space/relative */
+		if (!can_match_ip_relative)
 			return false;
-		}
-		if (kind == X86_IMM_VALUE)
-			kind = X86_IMM_ADDR;
+		if (kind == X86_IMM_VALUE || kind == X86_IMM_ADDR) {
+			kind = X86_IMM_PCREL;
+		} else if (kind != X86_IMM_PCREL)
+			return false;
 	}
 
 	imm->entity = entity;
@@ -637,13 +627,7 @@ static void perform_address_matching(ir_node *ptr, int *arity,
 		addr->base_input = base_input;
 		in[base_input]   = be_transform_node(maddr.base);
 	} else {
-		ir_entity *entity = maddr.imm.entity;
-		if (entity != NULL
-		    && need_relative_addressing(entity) != REFERENCE_DIRECT) {
-		    addr->base_input = RIP_INPUT;
-		} else {
-			addr->base_input = NO_INPUT;
-		}
+		addr->base_input = maddr.ip_base ? RIP_INPUT : NO_INPUT;
 	}
 	if (maddr.index != NULL) {
 		int index_input = (*arity)++;
@@ -2643,8 +2627,9 @@ static void amd64_register_transformers(void)
 	be_set_transform_function(op_Switch,            gen_Switch);
 	be_set_transform_function(op_Unknown,           gen_Unknown);
 	be_set_transform_function(op_amd64_l_punpckldq, gen_amd64_l_punpckldq);
-	be_set_transform_function(op_amd64_l_subpd,     gen_amd64_l_subpd);
 	be_set_transform_function(op_amd64_l_haddpd,    gen_amd64_l_haddpd);
+	be_set_transform_function(op_amd64_l_subpd,     gen_amd64_l_subpd);
+	be_set_transform_function(op_be_Relocation,     gen_be_Relocation);
 
 	be_set_transform_proj_function(op_Alloc,   gen_Proj_Alloc);
 	be_set_transform_proj_function(op_Builtin, gen_Proj_Builtin);
