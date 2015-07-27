@@ -553,10 +553,12 @@ static void dump_node(FILE *f, const ir_node *irn, dump_reason_t reason)
 	case dump_node_opcode_txt:
 		fputs(get_irn_opname(irn), f);
 		break;
-	case dump_node_mode_txt:
-		if (be_is_Copy(irn) || be_is_CopyKeep(irn))
-			fprintf(f, "%s", get_mode_name(get_irn_mode(irn)));
+	case dump_node_mode_txt: {
+		ir_mode *const mode = get_irn_mode(irn);
+		if (mode != mode_ANY && mode != mode_T)
+			fprintf(f, "%s", get_mode_name(mode));
 		break;
+	}
 	case dump_node_nodeattr_txt:
 		if (be_is_IncSP(irn)) {
 			const be_incsp_attr_t *attr
