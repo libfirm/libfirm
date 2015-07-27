@@ -222,7 +222,7 @@ static void block_count_values(ir_node *block, void *data)
 		be_foreach_value(node, value,
 			arch_register_req_t const *const req
 				= arch_get_irn_register_req(value);
-			if (req->cls == NULL)
+			if (!req->cls->regs)
 				continue;
 			++stats->values;
 			if (req->should_be_same != 0 || is_Phi(value))
@@ -232,7 +232,7 @@ static void block_count_values(ir_node *block, void *data)
 		);
 		for (int i = 0, arity = get_irn_arity(node); i < arity; ++i) {
 			const arch_register_req_t *req = arch_get_irn_register_req_in(node, i);
-			if (req->cls == NULL)
+			if (!req->cls->regs)
 				continue;
 			++stats->uses;
 			if (be_is_Keep(node)) {

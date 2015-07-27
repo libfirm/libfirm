@@ -19,8 +19,18 @@
 #include "raw_bitset.h"
 #include "util.h"
 
+static arch_register_class_t arch_none_cls = {
+	.name      = "none",
+	.mode      = NULL,
+	.regs      = NULL,
+	.class_req = arch_no_register_req,
+	.index     = (unsigned)-1,
+	.n_regs    = 0,
+	.manual_ra = true,
+};
+
 arch_register_req_t const arch_no_requirement = {
-	.cls = NULL,
+	.cls = &arch_none_cls,
 };
 
 static reg_out_info_t *get_out_info_n(const ir_node *node, unsigned pos)
@@ -134,7 +144,7 @@ ir_node *be_get_start_proj(ir_graph *const irg, be_start_info_t *const info)
 		/* This is already the transformed start node. */
 		ir_node                     *const start = get_irg_start(irg);
 		arch_register_class_t const *const cls   = arch_get_irn_register_req_out(start, info->pos)->cls;
-		info->irn = new_r_Proj(start, cls ? cls->mode : mode_M, info->pos);
+		info->irn = new_r_Proj(start, cls->mode ? cls->mode : mode_M, info->pos);
 	}
 	return info->irn;
 }

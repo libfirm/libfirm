@@ -692,11 +692,6 @@ static void prepare_constr_insn(ir_node *const node)
 	 * TODO: This really just checks precolored registers at the moment and
 	 *       ignores the general case of not matching in/out constraints */
 	foreach_irn_in(node, i, op) {
-		const arch_register_req_t *const req
-			= arch_get_irn_register_req_in(node, i);
-		if (req->cls == NULL)
-			continue;
-
 		const arch_register_t *const reg = arch_get_irn_register(op);
 		if (reg == NULL)
 			continue;
@@ -706,6 +701,7 @@ static void prepare_constr_insn(ir_node *const node)
 		    rbitset_is_set(birg->allocatable_regs, reg->global_index))
 			continue;
 
+		arch_register_req_t const *const req = arch_get_irn_register_req_in(node, i);
 		if (req->limited == NULL)
 			continue;
 		if (rbitset_is_set(req->limited, reg->index))
@@ -724,9 +720,6 @@ static void prepare_constr_insn(ir_node *const node)
 	for (int i = 0, arity = get_irn_arity(node); i < arity; ++i) {
 		const arch_register_req_t *const req
 			= arch_get_irn_register_req_in(node, i);
-		const arch_register_class_t *const cls = req->cls;
-		if (cls == NULL)
-			continue;
 		if (req->limited == NULL)
 			continue;
 
@@ -734,6 +727,7 @@ static void prepare_constr_insn(ir_node *const node)
 		const arch_register_req_t *const in_req = arch_get_irn_register_req(in);
 		if (in_req->ignore)
 			continue;
+		arch_register_class_t const *const cls = req->cls;
 		for (int i2 = i + 1; i2 < arity; ++i2) {
 			const arch_register_req_t *const req2
 				= arch_get_irn_register_req_in(node, i2);
@@ -766,13 +760,11 @@ static void prepare_constr_insn(ir_node *const node)
 	unsigned *def_constr = NULL;
 	be_foreach_value(node, value,
 		const arch_register_req_t *const req = arch_get_irn_register_req(value);
-		const arch_register_class_t *const cls = req->cls;
-		if (cls == NULL)
-			continue;
 		if (req->limited == NULL)
 			continue;
 		if (def_constr == NULL)
 			def_constr = rbitset_alloca(isa_if->n_registers);
+		arch_register_class_t const *const cls = req->cls;
 		rbitset_foreach(req->limited, cls->n_regs, e) {
 			const arch_register_t *reg = arch_register_for_index(cls, e);
 			rbitset_set(def_constr, reg->global_index);
@@ -791,9 +783,6 @@ static void prepare_constr_insn(ir_node *const node)
 		 * 3) is constrained to a register occurring in out constraints. */
 		const arch_register_req_t *const req
 			= arch_get_irn_register_req_in(node, i);
-		const arch_register_class_t *const cls = req->cls;
-		if (cls == NULL)
-			continue;
 		if (req->limited == NULL)
 			continue;
 		ir_node *in = get_irn_n(node, i);
@@ -809,7 +798,8 @@ static void prepare_constr_insn(ir_node *const node)
 		if (!be_value_live_after(in, node))
 			continue;
 
-		bool common_limits = false;
+		bool                               common_limits = false;
+		arch_register_class_t const *const cls           = req->cls;
 		rbitset_foreach(req->limited, cls->n_regs, e) {
 			const arch_register_t *reg = arch_register_for_index(cls, e);
 			if (rbitset_is_set(def_constr, reg->global_index)) {
@@ -1114,7 +1104,7 @@ static void add_missing_keep_walker(ir_node *node, void *data)
 		for (unsigned i = 0; i < n_outs; ++i) {
 			arch_register_req_t   const *const req = arch_get_irn_register_req_out(node, i);
 			arch_register_class_t const *const cls = req->cls;
-			if (cls && !cls->manual_ra) {
+			if (!cls->manual_ra) {
 				ir_node *value = existing_projs[i];
 				if (!value) {
 					value = new_r_Proj(node, cls->mode, i);
@@ -1132,7 +1122,7 @@ static void add_missing_keep_walker(ir_node *node, void *data)
 	} else if (!is_Proj(node)) {
 		arch_register_req_t   const *const req = arch_get_irn_register_req(node);
 		arch_register_class_t const *const cls = req->cls;
-		if (cls && !cls->manual_ra) {
+		if (!cls->manual_ra) {
 			if (!has_real_user(node)) {
 				ir_node *const keep = be_new_Keep_one(node);
 				sched_add_after(node, keep);

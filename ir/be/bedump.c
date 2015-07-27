@@ -146,11 +146,6 @@ static void dump_register_req(FILE *const F, arch_register_req_t const *const re
 	}
 
 	arch_register_class_t const *const cls = req->cls;
-	if (!cls) {
-		fputs("none", F);
-		return;
-	}
-
 	fputs(cls->name, F);
 
 	if (req->limited != NULL) {
@@ -166,7 +161,7 @@ static void dump_register_req(FILE *const F, arch_register_req_t const *const re
 	if (req->must_be_different != 0)
 		dump_bitmask(F, " different from", req->must_be_different);
 
-	if (req->width != 1)
+	if (req->width > 1)
 		fprintf(F, " width:%d", req->width);
 	if (req->aligned)
 		fputs(" aligned", F);

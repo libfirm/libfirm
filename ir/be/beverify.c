@@ -558,7 +558,7 @@ typedef struct be_verify_reg_alloc_env_t {
 static void check_output_constraints(be_verify_reg_alloc_env_t *const env, const ir_node *node)
 {
 	arch_register_req_t const *const req = arch_get_irn_register_req(node);
-	if (!req->cls)
+	if (!req->cls->regs)
 		return;
 
 	/* verify output register */
@@ -596,7 +596,7 @@ static void check_input_constraints(be_verify_reg_alloc_env_t *const env, ir_nod
 			env->problem_found = true;
 		}
 
-		if (req->cls == NULL)
+		if (!req->cls->regs)
 			continue;
 
 		if (req->width > pred_req->width) {
