@@ -23,8 +23,6 @@
 #include "lower_calls.h"
 #include "panic.h"
 
-DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
-
 /**
  * Transforms the standard firm graph into a TEMLPATE firm graph
  */
@@ -174,6 +172,5 @@ BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_TEMPLATE)
 void be_init_arch_TEMPLATE(void)
 {
 	be_register_isa_if("TEMPLATE", &TEMPLATE_isa_if);
-	FIRM_DBG_REGISTER(dbg, "firm.be.TEMPLATE.cg");
 	TEMPLATE_init_transform();
 }
