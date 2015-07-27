@@ -1786,7 +1786,7 @@ static ir_node *gen_Return(ir_node *node)
 	ir_node **in = ALLOCAN(ir_node*, n_ins);
 
 	in[n_arm_Return_mem]   = new_mem;
-	reqs[n_arm_Return_mem] = arch_no_register_req;
+	reqs[n_arm_Return_mem] = arch_memory_req;
 
 	in[n_arm_Return_sp]   = sp;
 	reqs[n_arm_Return_sp] = sp_reg->single_req;
@@ -1846,7 +1846,7 @@ static ir_node *gen_Call(ir_node *node)
 
 	/* memory input */
 	int mem_pos     = in_arity++;
-	in_req[mem_pos] = arch_no_register_req;
+	in_req[mem_pos] = arch_memory_req;
 	/* stack pointer (create parameter stackframe + align stack)
 	 * Note that we always need an IncSP to ensure stack alignment */
 	ir_node *new_frame = get_stack_pointer_for(node);
@@ -1954,7 +1954,7 @@ static ir_node *gen_Call(ir_node *node)
 	arch_set_irn_register_reqs_in(res, in_req);
 
 	/* create output register reqs */
-	arch_set_irn_register_req_out(res, pn_arm_Bl_M, arch_no_register_req);
+	arch_set_irn_register_req_out(res, pn_arm_Bl_M, arch_memory_req);
 	arch_copy_irn_out_info(res, pn_arm_Bl_stack, incsp);
 
 	for (size_t o = 0; o < n_caller_saves; ++o) {
@@ -2004,7 +2004,7 @@ static ir_node *gen_Phi(ir_node *node)
 		/* all integer operations are on 32bit registers now */
 		req  = arm_reg_classes[CLASS_arm_gp].class_req;
 	} else {
-		req = arch_no_register_req;
+		req = arch_memory_req;
 	}
 
 	return be_transform_phi(node, req);

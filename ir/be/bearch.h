@@ -20,6 +20,9 @@
 #include "beinfo.h"
 #include "be.h"
 
+extern arch_register_req_t const arch_memory_requirement;
+#define arch_memory_req (&arch_memory_requirement)
+
 extern arch_register_req_t const arch_no_requirement;
 #define arch_no_register_req (&arch_no_requirement)
 

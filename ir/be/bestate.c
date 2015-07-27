@@ -146,7 +146,7 @@ static void spill_phi(minibelady_env_t *env, ir_node *phi)
 
 	/* create a Phi-M */
 	ir_node *const block = get_nodes_block(phi);
-	ir_node *const phim  = be_new_Phi0(block, mode_M, arch_no_register_req);
+	ir_node *const phim  = be_new_Phi0(block, mode_M, arch_memory_req);
 	spill_info->spill = phim;
 	sched_add_after(block, phim);
 

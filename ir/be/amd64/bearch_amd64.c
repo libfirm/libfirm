@@ -115,7 +115,7 @@ static int amd64_get_sp_bias(const ir_node *node)
 static const arch_register_req_t *am_pushpop_base_reqs[] = {
 	&amd64_single_reg_req_gp_rsp,
 	&amd64_class_reg_req_gp,
-	&arch_no_requirement,
+	&arch_memory_requirement,
 };
 
 static ir_node *create_push(ir_node *node, ir_node *schedpoint, ir_node *sp,

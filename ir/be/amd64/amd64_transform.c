@@ -134,54 +134,54 @@ static const arch_register_req_t amd64_requirement_xmm_same_0_not_1 = {
 };
 
 static const arch_register_req_t *mem_reqs[] = {
-	&arch_no_requirement,
+	&arch_memory_requirement,
 };
 
 static const arch_register_req_t *reg_mem_reqs[] = {
 	&amd64_class_reg_req_gp,
-	&arch_no_requirement,
+	&arch_memory_requirement,
 };
 
 static const arch_register_req_t *rsp_mem_reqs[] = {
 	&amd64_single_reg_req_gp_rsp,
-	&arch_no_requirement,
+	&arch_memory_requirement,
 };
 
 static const arch_register_req_t *rsp_reg_mem_reqs[] = {
 	&amd64_single_reg_req_gp_rsp,
 	&amd64_class_reg_req_gp,
-	&arch_no_requirement,
+	&arch_memory_requirement,
 };
 
 static const arch_register_req_t *xmm_mem_reqs[] = {
 	&amd64_class_reg_req_xmm,
-	&arch_no_requirement,
+	&arch_memory_requirement,
 };
 
 static const arch_register_req_t *reg_reg_mem_reqs[] = {
 	&amd64_class_reg_req_gp,
 	&amd64_class_reg_req_gp,
-	&arch_no_requirement,
+	&arch_memory_requirement,
 };
 
 static const arch_register_req_t *xmm_reg_mem_reqs[] = {
 	&amd64_class_reg_req_xmm,
 	&amd64_class_reg_req_gp,
-	&arch_no_requirement,
+	&arch_memory_requirement,
 };
 
 static const arch_register_req_t *reg_reg_reg_mem_reqs[] = {
 	&amd64_class_reg_req_gp,
 	&amd64_class_reg_req_gp,
 	&amd64_class_reg_req_gp,
-	&arch_no_requirement,
+	&arch_memory_requirement,
 };
 
 static const arch_register_req_t *xmm_reg_reg_mem_reqs[] = {
 	&amd64_class_reg_req_xmm,
 	&amd64_class_reg_req_gp,
 	&amd64_class_reg_req_gp,
-	&arch_no_requirement,
+	&arch_memory_requirement,
 };
 
 static const arch_register_req_t *reg_flags_reqs[] = {
@@ -203,7 +203,7 @@ static const arch_register_req_t *rax_reg_rdx_mem_reqs[] = {
 	&amd64_single_reg_req_gp_rax,
 	&amd64_class_reg_req_gp,
 	&amd64_single_reg_req_gp_rdx,
-	&arch_no_requirement,
+	&arch_memory_requirement,
 };
 
 static const arch_register_req_t *reg_reqs[] = {
@@ -1526,7 +1526,7 @@ static ir_node *gen_Return(ir_node *node)
 	ir_node **in = ALLOCAN(ir_node*, n_ins);
 
 	in[n_amd64_ret_mem]   = new_mem;
-	reqs[n_amd64_ret_mem] = arch_no_register_req;
+	reqs[n_amd64_ret_mem] = arch_memory_req;
 
 	in[n_amd64_ret_stack]   = sp;
 	reqs[n_amd64_ret_stack] = amd64_registers[REG_RSP].single_req;
@@ -1720,7 +1720,7 @@ static ir_node *gen_Call(ir_node *node)
 	}
 
 	/* memory input */
-	in_req[in_arity] = arch_no_register_req;
+	in_req[in_arity] = arch_memory_req;
 	int mem_pos      = in_arity;
 	addr.mem_input   = mem_pos;
 	++in_arity;
@@ -1749,7 +1749,7 @@ static ir_node *gen_Call(ir_node *node)
 	fix_node_mem_proj(call, mem_proj);
 
 	/* create output register reqs */
-	arch_set_irn_register_req_out(call, pn_amd64_call_M, arch_no_register_req);
+	arch_set_irn_register_req_out(call, pn_amd64_call_M, arch_memory_req);
 	arch_copy_irn_out_info(call, pn_amd64_call_stack, incsp);
 
 	arch_register_class_t const *const flags = &amd64_reg_classes[CLASS_amd64_flags];
@@ -1985,7 +1985,7 @@ static ir_node *gen_Phi(ir_node *node)
 	} else if (mode_is_float(mode)) {
 		req = amd64_reg_classes[CLASS_amd64_xmm].class_req;
 	} else {
-		req = arch_no_register_req;
+		req = arch_memory_req;
 	}
 
 	return be_transform_phi(node, req);

@@ -178,6 +178,10 @@ ir_node *be_new_MemPerm(ir_node *const block, int n, ir_node *const *const in)
 	ir_node  *const irn = new_ir_node(NULL, irg, block, op_be_MemPerm, mode_T, n, in);
 
 	init_node_attr(irn, n, arch_irn_flags_none);
+	for (int i = 0; i < n; ++i) {
+		be_node_set_register_req_in(  irn, i, arch_memory_req);
+		arch_set_irn_register_req_out(irn, i, arch_memory_req);
+	}
 
 	be_memperm_attr_t *attr = (be_memperm_attr_t*)get_irn_generic_attr(irn);
 	attr->in_entities  = OALLOCNZ(get_irg_obstack(irg), ir_entity*, n);

@@ -4309,7 +4309,7 @@ static ir_node *gen_Return(ir_node *node)
 	ir_node **in = ALLOCAN(ir_node*, n_ins);
 
 	in[n_ia32_Return_mem]   = new_mem;
-	reqs[n_ia32_Return_mem] = arch_no_register_req;
+	reqs[n_ia32_Return_mem] = arch_memory_req;
 
 	in[n_ia32_Return_stack]   = sp;
 	reqs[n_ia32_Return_stack] = ia32_registers[REG_ESP].single_req;
@@ -4397,7 +4397,7 @@ static ir_node *gen_Phi(ir_node *node)
 			req  = ia32_reg_classes[CLASS_ia32_fp].class_req;
 		}
 	} else {
-		req = arch_no_register_req;
+		req = arch_memory_req;
 	}
 	return be_transform_phi(node, req);
 }
@@ -5046,7 +5046,7 @@ static ir_node *gen_Call(ir_node *node)
 		sync_arity == 1 ? sync_ins[0] :
 		new_r_Sync(block, sync_arity, sync_ins);
 	in[n_ia32_Call_mem]     = memin;
-	in_req[n_ia32_Call_mem] = arch_no_register_req;
+	in_req[n_ia32_Call_mem] = arch_memory_req;
 
 	/* Count outputs. */
 	unsigned       o              = pn_ia32_Call_first_result;
@@ -5068,7 +5068,7 @@ static ir_node *gen_Call(ir_node *node)
 	ir_node *const res = fix_mem_proj(call, &am);
 
 	/* Construct outputs. */
-	arch_set_irn_register_req_out(call, pn_ia32_Call_mem, arch_no_register_req);
+	arch_set_irn_register_req_out(call, pn_ia32_Call_mem, arch_memory_req);
 
 	arch_copy_irn_out_info(call, pn_ia32_Call_stack, callframe);
 

@@ -201,16 +201,16 @@ my $div_operand = {
 	op_flags     => [ "uses_memory" ],
 	state        => "exc_pinned",
 	ins          => [ "mem", "dividend_high", "dividend_low", "divisor" ],
-	out_reqs     => [ "gp", "none" ],
+	out_reqs     => [ "gp", "mem" ],
 	outs         => [ "res", "M" ],
 	constructors => {
 		imm => {
 			attr       => "ir_entity *immediate_entity, int32_t immediate_value",
 			custominit => "sparc_set_attr_imm(res, immediate_entity, immediate_value);",
-			in_reqs    => [ "none", "gp", "gp" ],
+			in_reqs    => [ "mem", "gp", "gp" ],
 		},
 		reg => {
-			in_reqs    => [ "none", "gp", "gp", "gp" ],
+			in_reqs    => [ "mem", "gp", "gp", "gp" ],
 		},
 	},
 };
@@ -353,20 +353,20 @@ Ld => {
 	state     => "exc_pinned",
 	constructors => {
 		imm => {
-			in_reqs    => [ "gp", "none" ],
+			in_reqs    => [ "gp", "mem" ],
 			ins        => [ "ptr", "mem" ],
 			attr       => "ir_mode *ls_mode, ir_entity *entity, int32_t offset, bool is_frame_entity",
 			custominit => "init_sparc_load_store_attributes(res, ls_mode, entity, offset, is_frame_entity, false);",
 		},
 		reg => {
-			in_reqs    => [ "gp", "gp", "none" ],
+			in_reqs    => [ "gp", "gp", "mem" ],
 			ins        => [ "ptr", "ptr2", "mem" ],
 			attr       => "ir_mode *ls_mode",
 			custominit => "init_sparc_load_store_attributes(res, ls_mode, NULL, 0, false, true);",
 		},
 	},
 	ins       => [ "ptr", "mem" ],
-	out_reqs  => [ "gp", "none" ],
+	out_reqs  => [ "gp", "mem" ],
 	outs      => [ "res", "M" ],
 	attr_type => "sparc_load_store_attr_t",
 	emit      => "ld%ML %MO0, %D0"
@@ -388,19 +388,19 @@ St => {
 	state     => "exc_pinned",
 	constructors => {
 		imm => {
-			in_reqs    => [ "gp", "gp", "none" ],
+			in_reqs    => [ "gp", "gp", "mem" ],
 			ins        => [ "val", "ptr", "mem" ],
 			attr       => "ir_mode *ls_mode, ir_entity *entity, int32_t offset, bool is_frame_entity",
 			custominit => "init_sparc_load_store_attributes(res, ls_mode, entity, offset, is_frame_entity, false);",
 		},
 		reg => {
-			in_reqs    => [ "gp", "gp", "gp", "none" ],
+			in_reqs    => [ "gp", "gp", "gp", "mem" ],
 			ins        => [ "val", "ptr", "ptr2", "mem" ],
 			attr       => "ir_mode *ls_mode",
 			custominit => "init_sparc_load_store_attributes(res, ls_mode, NULL, 0, false, true);",
 		},
 	},
-	out_reqs  => [ "none" ],
+	out_reqs  => [ "mem" ],
 	ins       => [ "val", "ptr", "mem" ],
 	outs      => [ "M" ],
 	attr_type => "sparc_load_store_attr_t",
@@ -459,15 +459,15 @@ SubSP => {
 		imm => {
 			attr       => "ir_entity *immediate_entity, int32_t immediate_value",
 			custominit => "sparc_set_attr_imm(res, immediate_entity, immediate_value);",
-			in_reqs    => [ "sp", "none" ],
+			in_reqs    => [ "sp", "mem" ],
 			ins        => [ "stack", "mem" ],
 		},
 		reg => {
-			in_reqs    => [ "sp", "gp", "none" ],
+			in_reqs    => [ "sp", "gp", "mem" ],
 			ins        => [ "stack", "size", "mem" ],
 		}
 	},
-	out_reqs => [ "sp:I", "gp", "none" ],
+	out_reqs => [ "sp:I", "gp", "mem" ],
 	outs     => [ "stack", "addr", "M" ],
 },
 
@@ -686,8 +686,8 @@ Stbar => {
 	state    => "exc_pinned",
 	ins      => [ "mem" ],
 	outs     => [ "M" ],
-	in_reqs  => [ "none" ],
-	out_reqs => [ "none" ],
+	in_reqs  => [ "mem" ],
+	out_reqs => [ "mem" ],
 	emit     => "stbar",
 	mode     => "mode_M",
 },
@@ -697,8 +697,8 @@ Cas => {
 	state    => "exc_pinned",
 	ins      => [ "ptr", "old", "new", "mem" ],
 	outs     => [ "res", "M" ],
-	in_reqs  => [ "gp", "gp", "gp", "none" ],
-	out_reqs => [ "in_r3", "none" ],
+	in_reqs  => [ "gp", "gp", "gp", "mem" ],
+	out_reqs => [ "in_r3", "mem" ],
 	# TODO: we need a must-be-same constraint for the CAS
 	# for now we use a custom emitter which at least panics if constraints
 	# are not fulfilled
@@ -741,9 +741,9 @@ fdiv => {
 	ins          => [ "left", "right" ],
 	outs         => [ "res", "M" ],
 	constructors => {
-		s => { in_reqs => [ "cls-fp",     "cls-fp"     ], out_reqs => [ "cls-fp",     "none" ] },
-		d => { in_reqs => [ "cls-fp:a|2", "cls-fp:a|2" ], out_reqs => [ "cls-fp:a|2", "none" ] },
-		q => { in_reqs => [ "cls-fp:a|4", "cls-fp:a|4" ], out_reqs => [ "cls-fp:a|4", "none" ] }
+		s => { in_reqs => [ "cls-fp",     "cls-fp"     ], out_reqs => [ "cls-fp",     "mem" ] },
+		d => { in_reqs => [ "cls-fp:a|2", "cls-fp:a|2" ], out_reqs => [ "cls-fp:a|2", "mem" ] },
+		q => { in_reqs => [ "cls-fp:a|4", "cls-fp:a|4" ], out_reqs => [ "cls-fp:a|4", "mem" ] }
 	},
 },
 
@@ -805,11 +805,11 @@ Ldf => {
 	op_flags  => [ "uses_memory" ],
 	state     => "exc_pinned",
 	constructors => {
-		s => { out_reqs => [ "cls-fp",     "none" ] },
-		d => { out_reqs => [ "cls-fp:a|2", "none" ] },
-		q => { out_reqs => [ "cls-fp:a|4", "none" ] },
+		s => { out_reqs => [ "cls-fp",     "mem" ] },
+		d => { out_reqs => [ "cls-fp:a|2", "mem" ] },
+		q => { out_reqs => [ "cls-fp:a|4", "mem" ] },
 	},
-	in_reqs    => [ "gp", "none" ],
+	in_reqs    => [ "gp", "mem" ],
 	ins        => [ "ptr", "mem" ],
 	outs       => [ "res", "M" ],
 	attr_type  => "sparc_load_store_attr_t",
@@ -822,11 +822,11 @@ Stf => {
 	op_flags  => [ "uses_memory" ],
 	state     => "exc_pinned",
 	constructors => {
-		s => { in_reqs => [ "cls-fp",     "gp", "none" ] },
-		d => { in_reqs => [ "cls-fp:a|2", "gp", "none" ] },
-		q => { in_reqs => [ "cls-fp:a|4", "gp", "none" ] },
+		s => { in_reqs => [ "cls-fp",     "gp", "mem" ] },
+		d => { in_reqs => [ "cls-fp:a|2", "gp", "mem" ] },
+		q => { in_reqs => [ "cls-fp:a|4", "gp", "mem" ] },
 	},
-	out_reqs  => [ "none" ],
+	out_reqs  => [ "mem" ],
 	ins       => [ "val", "ptr", "mem" ],
 	outs      => [ "M" ],
 	attr_type => "sparc_load_store_attr_t",

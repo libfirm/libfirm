@@ -13,11 +13,26 @@
 #include "benode.h"
 #include "beinfo.h"
 #include "beirg.h"
+#include "bemodule.h"
 #include "ircons_t.h"
 #include "irnode_t.h"
 #include "irop_t.h"
 #include "raw_bitset.h"
 #include "util.h"
+
+static arch_register_class_t arch_memory_cls = {
+	.name      = "memory",
+	.mode      = NULL, /* Filled in at initialization. */
+	.regs      = NULL,
+	.class_req = arch_memory_req,
+	.index     = (unsigned)-1,
+	.n_regs    = 0,
+	.manual_ra = true,
+};
+
+arch_register_req_t const arch_memory_requirement = {
+	.cls = &arch_memory_cls,
+};
 
 static arch_register_class_t arch_none_cls = {
 	.name      = "none",
@@ -122,7 +137,7 @@ void be_make_start_mem(be_start_info_t *const info, ir_node *const start, unsign
 {
   info->pos = pos;
   info->irn = NULL;
-  arch_set_irn_register_req_out(start, pos, arch_no_register_req);
+  arch_set_irn_register_req_out(start, pos, arch_memory_req);
 }
 
 void be_make_start_out(be_start_info_t *const info, ir_node *const start,
@@ -144,7 +159,7 @@ ir_node *be_get_start_proj(ir_graph *const irg, be_start_info_t *const info)
 		/* This is already the transformed start node. */
 		ir_node                     *const start = get_irg_start(irg);
 		arch_register_class_t const *const cls   = arch_get_irn_register_req_out(start, info->pos)->cls;
-		info->irn = new_r_Proj(start, cls->mode ? cls->mode : mode_M, info->pos);
+		info->irn = new_r_Proj(start, cls->mode, info->pos);
 	}
 	return info->irn;
 }
@@ -154,4 +169,10 @@ void arch_copy_irn_out_info(ir_node *const dst, unsigned const dst_pos, ir_node 
 	reg_out_info_t *const src_info = get_out_info(src);
 	reg_out_info_t *const dst_info = get_out_info_n(dst, dst_pos);
 	*dst_info = *src_info;
+}
+
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch)
+void be_init_arch(void)
+{
+	arch_memory_cls.mode = mode_M;
 }

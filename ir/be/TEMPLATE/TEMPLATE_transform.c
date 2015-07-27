@@ -243,7 +243,7 @@ static ir_node *gen_Return(ir_node *node)
 	arch_register_req_t const **const reqs  = be_allocate_in_reqs(irg, n_ins);
 
 	in[n_TEMPLATE_Return_mem]   = be_transform_node(get_Return_mem(node));
-	reqs[n_TEMPLATE_Return_mem] = arch_no_register_req;
+	reqs[n_TEMPLATE_Return_mem] = arch_memory_req;
 
 	in[n_TEMPLATE_Return_stack]   = get_irg_frame(irg);
 	reqs[n_TEMPLATE_Return_stack] = TEMPLATE_registers[REG_SP].single_req;
@@ -269,7 +269,7 @@ static ir_node *gen_Phi(ir_node *node)
 	if (mode_needs_gp_reg(mode)) {
 		req  = TEMPLATE_reg_classes[CLASS_TEMPLATE_gp].class_req;
 	} else {
-		req = arch_no_register_req;
+		req = arch_memory_req;
 	}
 
 	return be_transform_phi(node, req);
