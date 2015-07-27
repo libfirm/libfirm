@@ -744,7 +744,7 @@ static void init_ia32_switch_attributes(ir_node *node,
 	attr->table = table;
 
 	be_foreach_out(node, o) {
-		arch_set_irn_register_req_out(node, o, arch_no_register_req);
+		arch_set_irn_register_req_out(node, o, arch_exec_req);
 	}
 }
 

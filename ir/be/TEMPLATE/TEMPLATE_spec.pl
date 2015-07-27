@@ -177,7 +177,7 @@ Jmp => {
 	state     => "pinned",
 	op_flags  => [ "cfopcode" ],
 	irn_flags => [ "simple_jump" ],
-	out_reqs  => [ "none" ],
+	out_reqs  => [ "exec" ],
 	mode      => "mode_X",
 },
 
@@ -193,7 +193,7 @@ Return => {
 	state    => "pinned",
 	op_flags => [ "cfopcode" ],
 	in_reqs  => "...",
-	out_reqs => [ "none" ],
+	out_reqs => [ "exec" ],
 	ins      => [ "mem", "stack", "first_result" ],
 	outs     => [ "X" ],
 	mode     => "mode_X",

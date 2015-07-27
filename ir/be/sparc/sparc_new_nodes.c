@@ -252,7 +252,7 @@ static void init_sparc_switch_jmp_attributes(ir_node *node,
 	attr->table_entity = table_entity;
 
 	be_foreach_out(node, o) {
-		arch_set_irn_register_req_out(node, o, arch_no_register_req);
+		arch_set_irn_register_req_out(node, o, arch_exec_req);
 	}
 }
 

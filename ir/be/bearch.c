@@ -20,6 +20,20 @@
 #include "raw_bitset.h"
 #include "util.h"
 
+static arch_register_class_t arch_exec_cls = {
+	.name      = "exec",
+	.mode      = NULL, /* Filled in at initialization. */
+	.regs      = NULL,
+	.class_req = arch_exec_req,
+	.index     = (unsigned)-1,
+	.n_regs    = 0,
+	.manual_ra = true,
+};
+
+arch_register_req_t const arch_exec_requirement = {
+	.cls = &arch_exec_cls,
+};
+
 static arch_register_class_t arch_memory_cls = {
 	.name      = "memory",
 	.mode      = NULL, /* Filled in at initialization. */
@@ -174,5 +188,6 @@ void arch_copy_irn_out_info(ir_node *const dst, unsigned const dst_pos, ir_node 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch)
 void be_init_arch(void)
 {
+	arch_exec_cls.mode   = mode_X;
 	arch_memory_cls.mode = mode_M;
 }

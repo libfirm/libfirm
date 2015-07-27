@@ -334,7 +334,7 @@ static void init_arm_SwitchJmp_attributes(ir_node *res,
 	attr->table = table;
 
 	be_foreach_out(res, o) {
-		arch_set_irn_register_req_out(res, o, arch_no_register_req);
+		arch_set_irn_register_req_out(res, o, arch_exec_req);
 	}
 }
 

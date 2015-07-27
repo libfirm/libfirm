@@ -1029,7 +1029,9 @@ sub generate_requirements {
 	}
 
 	my $class;
-	if ($reqs eq "mem") {
+	if ($reqs eq "exec") {
+		return "arch_exec_requirement";
+	} elsif ($reqs eq "mem") {
 		return "arch_memory_requirement";
 	} elsif ($reqs eq "none") {
 		return "arch_no_requirement";

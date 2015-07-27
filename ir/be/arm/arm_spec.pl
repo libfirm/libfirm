@@ -488,7 +488,7 @@ B => {
 	state     => "pinned",
 	mode      => "mode_T",
 	in_reqs   => [ "flags" ],
-	out_reqs  => [ "none", "none" ],
+	out_reqs  => [ "exec", "exec" ],
 	ins       => [ "flags" ],
 	attr      => "ir_relation relation",
 	attr_type => "arm_CondJmp_attr_t",
@@ -499,7 +499,7 @@ Jmp => {
 	state     => "pinned",
 	op_flags  => [ "cfopcode" ],
 	irn_flags => [ "simple_jump" ],
-	out_reqs  => [ "none" ],
+	out_reqs  => [ "exec" ],
 	mode      => "mode_X",
 },
 
@@ -648,7 +648,7 @@ Return => {
 	in_reqs  => "...",
 	ins      => [ "mem", "sp", "first_result" ],
 	mode     => "mode_X",
-	out_reqs => [ "none" ],
+	out_reqs => [ "exec" ],
 	emit     => "bx lr",
 },
 

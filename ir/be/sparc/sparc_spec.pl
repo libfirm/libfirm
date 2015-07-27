@@ -275,7 +275,7 @@ my $branchcc = {
 my $xop = {
 	state    => "pinned",
 	op_flags => [ "cfopcode" ],
-	out_reqs => [ "none" ],
+	out_reqs => [ "exec" ],
 	mode     => "mode_X",
 };
 
@@ -497,7 +497,7 @@ Bicc => {
 	attr      => "ir_relation relation, bool is_unsigned",
 	init_attr => "\tinit_sparc_jmp_cond_attr(res, relation, is_unsigned);",
 	in_reqs   => [ "flags" ],
-	out_reqs  => [ "none", "none" ],
+	out_reqs  => [ "exec", "exec" ],
 },
 
 fbfcc => {
@@ -505,7 +505,7 @@ fbfcc => {
 	attr      => "ir_relation relation",
 	init_attr => "\tinit_sparc_jmp_cond_attr(res, relation, false);",
 	in_reqs   => [ "fpflags" ],
-	out_reqs  => [ "none", "none" ],
+	out_reqs  => [ "exec", "exec" ],
 },
 
 Ba => {
