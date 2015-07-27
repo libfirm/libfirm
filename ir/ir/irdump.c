@@ -724,24 +724,10 @@ static void dump_node_mode(FILE *F, const ir_node *n)
 	}
 
 	/* default implementation */
-	unsigned iro = get_irn_opcode(n);
-	switch (iro) {
-	case iro_Address:
-	case iro_Align:
-	case iro_Cmp:
-	case iro_Member:
-	case iro_Offset:
-	case iro_Sel:
-	case iro_Size:
-		break;
-
-	default: {
-		ir_mode *mode = get_irn_mode(n);
-		if ((mode != mode_ANY && mode != mode_BAD && mode != mode_BB && mode != mode_M && mode != mode_T && mode != mode_X) ||
-		    iro == iro_Bad || iro == iro_Proj)
-			fprintf(F, "%s", get_mode_name(mode));
-	}
-	}
+	ir_mode *const mode = get_irn_mode(n);
+	if ((mode != mode_ANY && mode != mode_BAD && mode != mode_BB && mode != mode_M && mode != mode_T && mode != mode_X) ||
+	    is_Bad(n) || is_Proj(n))
+		fprintf(F, "%s", get_mode_name(mode));
 }
 
 /**
