@@ -354,20 +354,19 @@ Ld => {
 	constructors => {
 		imm => {
 			in_reqs    => [ "gp", "none" ],
-			out_reqs   => [ "gp", "none" ],
 			ins        => [ "ptr", "mem" ],
 			attr       => "ir_mode *ls_mode, ir_entity *entity, int32_t offset, bool is_frame_entity",
 			custominit => "init_sparc_load_store_attributes(res, ls_mode, entity, offset, is_frame_entity, false);",
 		},
 		reg => {
 			in_reqs    => [ "gp", "gp", "none" ],
-			out_reqs   => [ "gp", "none" ],
 			ins        => [ "ptr", "ptr2", "mem" ],
 			attr       => "ir_mode *ls_mode",
 			custominit => "init_sparc_load_store_attributes(res, ls_mode, NULL, 0, false, true);",
 		},
 	},
 	ins       => [ "ptr", "mem" ],
+	out_reqs  => [ "gp", "none" ],
 	outs      => [ "res", "M" ],
 	attr_type => "sparc_load_store_attr_t",
 	emit      => "ld%ML %MO0, %D0"
