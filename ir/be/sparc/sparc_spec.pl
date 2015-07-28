@@ -269,6 +269,7 @@ my $branchcc = {
 	state     => "pinned",
 	attr_type => "sparc_jmp_cond_attr_t",
 	ins       => [ "flags" ],
+	out_reqs  => [ "exec", "exec" ],
 	outs      => [ "false", "true" ],
 };
 
@@ -497,7 +498,6 @@ Bicc => {
 	attr      => "ir_relation relation, bool is_unsigned",
 	init_attr => "\tinit_sparc_jmp_cond_attr(res, relation, is_unsigned);",
 	in_reqs   => [ "flags" ],
-	out_reqs  => [ "exec", "exec" ],
 },
 
 fbfcc => {
@@ -505,7 +505,6 @@ fbfcc => {
 	attr      => "ir_relation relation",
 	init_attr => "\tinit_sparc_jmp_cond_attr(res, relation, false);",
 	in_reqs   => [ "fpflags" ],
-	out_reqs  => [ "exec", "exec" ],
 },
 
 Ba => {
