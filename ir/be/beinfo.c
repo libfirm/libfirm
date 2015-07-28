@@ -135,8 +135,7 @@ static void dump_backend_info_hook(void *context, FILE *F, const ir_node *node)
 	if (!irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_BACKEND))
 		return;
 
-	if (!is_Proj(node))
-		be_dump_reqs_and_registers(F, node);
+	be_dump_reqs_and_registers(F, node);
 
 	if (is_Block(node)) {
 		be_lv_t *const lv = be_get_irg_liveness(irg);

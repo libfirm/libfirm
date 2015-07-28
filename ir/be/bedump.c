@@ -176,8 +176,27 @@ static void dump_req_reg(FILE *const F, char const *const ctx, unsigned const id
 	fprintf(F, " [%s]\n", be_dump_reg_name(reg));
 }
 
+static void dump_req_reg_out(FILE *const F, ir_node const *const node, unsigned const pos)
+{
+	arch_register_req_t const *const req = arch_get_irn_register_req_out(node, pos);
+	arch_register_t     const *const reg = arch_get_irn_register_out(node, pos);
+	dump_req_reg(F, "outreq", pos, req, reg);
+}
+
 void be_dump_reqs_and_registers(FILE *const F, ir_node const *const node)
 {
+	if (is_Proj(node)) {
+		ir_node *const pred = get_Proj_pred(node);
+		if (!is_Proj(pred)) {
+			backend_info_t const *const info = be_get_info(pred);
+			if (info && info->out_infos) {
+				unsigned const num = get_Proj_num(node);
+				dump_req_reg_out(F, pred, num);
+			}
+		}
+		return;
+	}
+
 	backend_info_t const *const info = be_get_info(node);
 	/* don't fail on invalid graphs */
 	if (!info) {
@@ -198,9 +217,7 @@ void be_dump_reqs_and_registers(FILE *const F, ir_node const *const node)
 
 	if (info->out_infos) {
 		be_foreach_out(node, o) {
-			arch_register_req_t const *const req = arch_get_irn_register_req_out(node, o);
-			arch_register_t     const *const reg = arch_get_irn_register_out(node, o);
-			dump_req_reg(F, "outreq", o, req, reg);
+			dump_req_reg_out(F, node, o);
 		}
 	} else {
 		fputs("output requirements missing\n", F);
