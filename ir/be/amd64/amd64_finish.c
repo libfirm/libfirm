@@ -87,8 +87,8 @@ static void transform_sub_to_neg_add(ir_node *node,
 	const arch_register_t *in2_reg = arch_get_irn_register(in2);
 
 	const amd64_binop_addr_attr_t *attr = get_amd64_binop_addr_attr(node);
-	ir_node *add, *add_res;
-
+	ir_node                       *add;
+	unsigned                       pos;
 	if (is_amd64_subs(node)) {
 		int bits = get_insn_mode_bits(attr->base.insn_mode);
 		ir_tarval *tv = get_mode_one(amd64_mode_xmm);
@@ -111,8 +111,8 @@ static void transform_sub_to_neg_add(ir_node *node,
 		arch_set_irn_register(neg, in2_reg);
 
 		ir_node *in[] = { neg, in1 };
-		add     = new_bd_amd64_adds(dbgi, block, ARRAY_SIZE(in), in, attr);
-		add_res = be_new_Proj(add, pn_amd64_adds_res);
+		add = new_bd_amd64_adds(dbgi, block, ARRAY_SIZE(in), in, attr);
+		pos = pn_amd64_adds_res;
 	} else {
 		assert(is_amd64_sub(node));
 		ir_node *neg = new_bd_amd64_neg(dbgi, block, in2, attr->base.insn_mode);
@@ -121,11 +121,11 @@ static void transform_sub_to_neg_add(ir_node *node,
 		ir_node *const neg_res = be_new_Proj(neg, pn_amd64_neg_res);
 
 		ir_node *in[] = { neg_res, in1 };
-		add     = new_bd_amd64_add(dbgi, block, ARRAY_SIZE(in), in, attr);
-		add_res = be_new_Proj(add, pn_amd64_add_res);
+		add = new_bd_amd64_add(dbgi, block, ARRAY_SIZE(in), in, attr);
+		pos = pn_amd64_add_res;
 	}
 	arch_set_irn_register_reqs_in(add, arch_get_irn_register_reqs_in(node));
-	arch_set_irn_register(add_res, out_reg);
+	arch_set_irn_register_out(add, pos, out_reg);
 
 	/* exchange the add and the sub */
 	sched_replace(node, add);
