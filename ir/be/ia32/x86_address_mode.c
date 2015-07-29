@@ -41,15 +41,16 @@ static bool tarval_possible(ir_tarval *tv)
 	return val == (long)val32;
 }
 
-static bool eat_imm(x86_address_t *const addr, ir_node const *const node)
+static bool eat_imm(x86_address_t *const addr, ir_node const *const node,
+                    bool basereg_usable)
 {
 	switch (get_irn_opcode(node)) {
 	case iro_Add:
 		/* Add is supported as long as both operands are immediates. */
 		return
 			!x86_is_non_address_mode_node(node) &&
-			eat_imm(addr, get_Add_left(node)) &&
-			eat_imm(addr, get_Add_right(node));
+			eat_imm(addr, get_Add_left(node), basereg_usable) &&
+			eat_imm(addr, get_Add_right(node), basereg_usable);
 
 	case iro_Address:
 		/* The first Address of a DAG can be folded into an immediate. */
@@ -79,7 +80,14 @@ static bool eat_imm(x86_address_t *const addr, ir_node const *const node)
 			if (addr->imm.entity)
 				return false;
 			addr->imm.entity = be_get_Relocation_entity(node);
-			addr->imm.kind = (x86_immediate_kind_t)be_get_Relocation_kind(node);
+			x86_immediate_kind_t const kind
+				= (x86_immediate_kind_t)be_get_Relocation_kind(node);
+			addr->imm.kind = kind;
+			if (kind == X86_IMM_GOTPCREL || kind == X86_IMM_PCREL) {
+				if (!basereg_usable)
+					return false;
+				addr->ip_base = true;
+			}
 			return true;
 		}
 		/* All other nodes are no immediates. */
@@ -95,10 +103,11 @@ static bool eat_imm(x86_address_t *const addr, ir_node const *const node)
  *
  * @return Whether the whole DAG at @p node could be matched as immediate.
  */
-static bool eat_immediate(x86_address_t *const addr, ir_node const *const node)
+static bool eat_immediate(x86_address_t *const addr, ir_node const *const node,
+                          bool basereg_usable)
 {
 	x86_address_t try_addr = *addr;
-	if (eat_imm(&try_addr, node)) {
+	if (eat_imm(&try_addr, node, basereg_usable)) {
 		*addr = try_addr;
 		return true;
 	}
@@ -115,7 +124,8 @@ static bool eat_immediate(x86_address_t *const addr, ir_node const *const node)
  * @return the folded node
  */
 static ir_node *eat_immediates(x86_address_t *addr, ir_node *node,
-                               x86_create_am_flags_t flags)
+                               x86_create_am_flags_t flags,
+                               bool basereg_usable)
 {
 	if (!(flags & x86_create_am_force)
 	    && x86_is_non_address_mode_node(node)
@@ -125,10 +135,12 @@ static ir_node *eat_immediates(x86_address_t *addr, ir_node *node,
 	if (is_Add(node)) {
 		ir_node *left  = get_Add_left(node);
 		ir_node *right = get_Add_right(node);
-		if (eat_immediate(addr, left))
-			return eat_immediates(addr, right, x86_create_am_normal);
-		if (eat_immediate(addr, right))
-			return eat_immediates(addr, left, x86_create_am_normal);
+		if (eat_immediate(addr, left, basereg_usable))
+			return eat_immediates(addr, right, x86_create_am_normal,
+			                      basereg_usable);
+		if (eat_immediate(addr, right, basereg_usable))
+			return eat_immediates(addr, left, x86_create_am_normal,
+			                      basereg_usable);
 	} else if (is_Member(node)) {
 		assert(addr->imm.entity == NULL);
 		addr->imm.entity = get_Member_entity(node);
@@ -200,17 +212,17 @@ void x86_create_address_mode(x86_address_t *addr, ir_node *node,
                              x86_create_am_flags_t flags)
 {
 	addr->imm.kind = X86_IMM_VALUE;
-	if (eat_immediate(addr, node)) {
+	if (eat_immediate(addr, node, true))
 		return;
-	}
 
+	assert(!addr->ip_base);
 	if (!(flags & x86_create_am_force) && x86_is_non_address_mode_node(node)
 	    && (!(flags & x86_create_am_double_use) || get_irn_n_edges(node) > 2)) {
 		addr->base = node;
 		return;
 	}
 
-	ir_node *eat_imms = eat_immediates(addr, node, flags);
+	ir_node *eat_imms = eat_immediates(addr, node, flags, false);
 	if (eat_imms != node) {
 		if (flags & x86_create_am_force) {
 			eat_imms = be_skip_downconv(eat_imms, true);
@@ -229,7 +241,7 @@ void x86_create_address_mode(x86_address_t *addr, ir_node *node,
 		 * instructions, because we want the former as Lea x, x, not Shl x, 1 */
 		if (eat_shl(addr, node))
 			return;
-	} else if (eat_immediate(addr, node)) {
+	} else if (eat_immediate(addr, node, true)) {
 		/* we can hit this case in x86_create_am_force mode */
 		return;
 	} else if (is_Add(node)) {
@@ -240,8 +252,8 @@ void x86_create_address_mode(x86_address_t *addr, ir_node *node,
 			left  = be_skip_downconv(left, true);
 			right = be_skip_downconv(right, true);
 		}
-		left  = eat_immediates(addr, left, flags);
-		right = eat_immediates(addr, right, flags);
+		left  = eat_immediates(addr, left, flags, false);
+		right = eat_immediates(addr, right, flags, false);
 
 		if (eat_shl(addr, left)) {
 			left = NULL;
@@ -402,7 +414,8 @@ static void mark_non_address_nodes(ir_node *node, void *env)
 		 * increase register pressure */
 		x86_address_t addr;
 		memset(&addr, 0, sizeof(addr));
-		if (eat_immediate(&addr, left) || eat_immediate(&addr, right))
+		if (eat_immediate(&addr, left, false)
+		 || eat_immediate(&addr, right, false))
 			return;
 
 		/* Fold AM if any of the two operands does not die here. This duplicates
