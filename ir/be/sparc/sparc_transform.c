@@ -53,7 +53,6 @@ static pmap                  *node_to_stack;
 static be_start_info_t        start_mem;
 static be_start_info_t        start_val[N_SPARC_REGISTERS];
 static ir_node               *frame_base;
-static size_t                 start_callee_saves_offset;
 
 static const arch_register_t *const omit_fp_callee_saves[] = {
 	&sparc_registers[REG_L0],
@@ -1586,14 +1585,10 @@ static ir_node *gen_Start(ir_node *node)
 	}
 	/* we need the values of the callee saves (Note: non omit-fp mode has no
 	 * callee saves) */
-	start_callee_saves_offset = o;
 	if (current_cconv->omit_fp) {
-		size_t n_callee_saves = ARRAY_SIZE(omit_fp_callee_saves);
-		for (size_t c = 0; c < n_callee_saves; ++c) {
-			const arch_register_t *reg = omit_fp_callee_saves[c];
-			arch_set_irn_register_req_out(start, o, reg->single_req);
-			arch_set_irn_register_out(start, o, reg);
-			++o;
+		for (size_t c = 0; c < ARRAY_SIZE(omit_fp_callee_saves); ++c) {
+			arch_register_t const *const reg = omit_fp_callee_saves[c];
+			be_make_start_out(&start_val[reg->global_index], start, o++, reg, false);
 		}
 	}
 	assert(n_outs == o);
@@ -1676,11 +1671,10 @@ static ir_node *gen_Return(ir_node *node)
 	}
 	/* callee saves */
 	if (current_cconv->omit_fp) {
-		ir_node  *start          = get_irg_start(irg);
-		size_t    n_callee_saves = ARRAY_SIZE(omit_fp_callee_saves);
-		for (size_t i = 0; i < n_callee_saves; ++i) {
-			in[p]   = be_new_Proj(start, i + start_callee_saves_offset);
-			reqs[p] = omit_fp_callee_saves[i]->single_req;
+		for (size_t i = 0; i < ARRAY_SIZE(omit_fp_callee_saves); ++i) {
+			arch_register_t const *const reg = omit_fp_callee_saves[i];
+			in[p]   = be_get_start_proj(irg, &start_val[reg->global_index]);
+			reqs[p] = reg->single_req;
 			++p;
 		}
 	}

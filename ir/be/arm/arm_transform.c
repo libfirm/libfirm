@@ -44,7 +44,6 @@ static be_stackorder_t       *stackorder;
 static calling_convention_t  *cconv = NULL;
 static be_start_info_t        start_mem;
 static be_start_info_t        start_val[N_ARM_REGISTERS];
-static unsigned               start_callee_saves_offset;
 static pmap                  *node_to_stack;
 
 static const arch_register_t *const callee_saves[] = {
@@ -1727,12 +1726,9 @@ static ir_node *gen_Start(ir_node *node)
 			be_make_start_out(&start_val[reg1->global_index], start, o++, reg1, false);
 	}
 	/* callee save regs */
-	start_callee_saves_offset = o;
 	for (size_t i = 0; i < ARRAY_SIZE(callee_saves); ++i) {
-		const arch_register_t *reg = callee_saves[i];
-		arch_set_irn_register_req_out(start, o, reg->single_req);
-		arch_set_irn_register_out(start, o, reg);
-		++o;
+		arch_register_t const *const reg = callee_saves[i];
+		be_make_start_out(&start_val[reg->global_index], start, o++, reg, false);
 	}
 	assert(n_outs == o);
 
@@ -1797,10 +1793,10 @@ static ir_node *gen_Return(ir_node *node)
 		++p;
 	}
 	/* connect callee saves with their values at the function begin */
-	ir_node *start = get_irg_start(irg);
 	for (unsigned i = 0; i < n_callee_saves; ++i) {
-		in[p]   = be_new_Proj(start, start_callee_saves_offset + i);
-		reqs[p] = callee_saves[i]->single_req;
+		arch_register_t const *const reg = callee_saves[i];
+		in[p]   = be_get_start_proj(irg, &start_val[reg->global_index]);
+		reqs[p] = reg->single_req;
 		++p;
 	}
 	assert(p == n_ins);
