@@ -767,6 +767,9 @@ static int amd64_is_valid_clobber(const char *clobber)
 
 static void amd64_init_types(void)
 {
+	ir_mode *const ptr_mode = new_reference_mode("p64", irma_twos_complement, 64, 64);
+	set_modeP(ptr_mode);
+
 	amd64_mode_E = new_float_mode("E", irma_x86_extended_float, 15, 64,
 	                              ir_overflow_indefinite);
 	amd64_type_E = new_type_primitive(amd64_mode_E);
