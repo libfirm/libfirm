@@ -303,7 +303,7 @@ ir_entity *create_float_const_entity(ir_tarval *const tv)
 	return entity;
 }
 
-static void init_lconst_addr(amd64_addr_t *addr, ir_entity *entity)
+void init_lconst_addr(amd64_addr_t *addr, ir_entity *entity)
 {
 	assert(entity_has_definition(entity));
 	assert(get_entity_linkage(entity) == IR_LINKAGE_CONSTANT);

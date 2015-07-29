@@ -35,6 +35,8 @@ ir_node *amd64_new_IncSP(ir_node *block, ir_node *old_sp, int offset,
  */
 ir_entity *create_float_const_entity(ir_tarval *const tv);
 
+void init_lconst_addr(amd64_addr_t *addr, ir_entity *entity);
+
 /** Creates a tarval with the given mode and only
   * the most-significant (first) bit set.
   *

@@ -99,9 +99,7 @@ static void transform_sub_to_neg_add(ir_node *node,
 		memset(&xor_attr, 0, sizeof(xor_attr));
 		xor_attr.base.insn_mode             = INSN_MODE_64;
 		xor_attr.base.base.op_mode          = AMD64_OP_REG_ADDR;
-		xor_attr.base.addr.base_input       = NO_INPUT;
-		xor_attr.base.addr.index_input      = NO_INPUT;
-		xor_attr.base.addr.immediate.entity = sign_bit_const;
+		init_lconst_addr(&xor_attr.base.addr, sign_bit_const);
 
 		ir_node *xor_in[] = { in2 };
 		ir_node *xor = new_bd_amd64_xorp(dbgi, block, ARRAY_SIZE(xor_in),
