@@ -92,6 +92,8 @@ static void amd64_set_frame_offset(ir_node *node, int offset)
 		if (layout->sp_relative)
 			attr->addr.immediate.offset -= get_insn_mode_bytes(attr->insn_mode);
 	}
+	attr->addr.immediate.kind = X86_IMM_VALUE;
+	attr->addr.immediate.entity = NULL;
 }
 
 static int amd64_get_sp_bias(const ir_node *node)

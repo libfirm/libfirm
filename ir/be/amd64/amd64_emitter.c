@@ -260,6 +260,7 @@ static void amd64_emit_addr(const ir_node *const node,
 {
 	ir_entity *entity = addr->immediate.entity;
 	if (entity != NULL) {
+		assert(addr->immediate.kind != X86_IMM_VALUE);
 		if (is_fp_relative(entity)) {
 			entity = NULL; /* only emit offset for frame entities */
 		} else {
@@ -275,6 +276,7 @@ static void amd64_emit_addr(const ir_node *const node,
 		if (entity != NULL) {
 			be_emit_irprintf("%+" PRId32, offset);
 		} else {
+			assert(addr->immediate.kind == X86_IMM_VALUE);
 			be_emit_irprintf("%" PRId32, offset);
 		}
 	}
