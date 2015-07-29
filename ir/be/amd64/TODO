@@ -7,10 +7,8 @@ Correctness:
 - Implement more builtins (libgcc lacks several of them that gcc provides
   natively on amd64 so cparser/libfirm when linking to the compilerlib fallback)
 - Builtins not implemented: clz, ctz, ffs, parity, popcount
-- Bitcast not implemented
 - Thread local storage not implemented
 - support for setjmp
-- Support ASM node
 - fail on long double
 - (Support 80bit long double with x87 instructions)
 - Finish PIC code implementation. This is mostly done now, usual accesses to
@@ -20,7 +18,6 @@ Correctness:
 Improve Quality:
 - Immediate32 matching could be better and match SymConst, Add(SymConst, Const)
   combinations where possible.
-- Support Destination Address Mode
 - Match Immediate + Address mode for Cmp
 - Support Read-Modify-Store operations (aka destination address mode)
 - Leave out labels that are not jumped at (improves assembly readability, see
