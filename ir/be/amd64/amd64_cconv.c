@@ -61,6 +61,10 @@ static const arch_register_t* const float_result_regs[] = {
 	&amd64_registers[REG_XMM1],
 };
 
+static const arch_register_t* const x87_result_regs[] = {
+	&amd64_registers[REG_ST0],
+};
+
 static unsigned default_caller_saves[BITSET_SIZE_ELEMS(N_AMD64_REGISTERS)];
 static unsigned default_callee_saves[BITSET_SIZE_ELEMS(N_AMD64_REGISTERS)];
 
@@ -108,7 +112,8 @@ x86_cconv_t *amd64_decide_calling_convention(ir_type *function_type,
 		int      bits = get_mode_size_bits(mode);
 		reg_or_stackslot_t *param = &params[i];
 
-		if (mode_is_float(mode) && float_param_regnum < n_float_param_regs) {
+		if (mode_is_float(mode) && float_param_regnum < n_float_param_regs
+		    && mode != x86_mode_E) {
 			param->reg = float_param_regs[float_param_regnum++];
 			if (amd64_use_x64_abi) {
 				++param_regnum;
@@ -158,15 +163,21 @@ x86_cconv_t *amd64_decide_calling_convention(ir_type *function_type,
 	reg_or_stackslot_t *results = XMALLOCNZ(reg_or_stackslot_t, n_results);
 	unsigned            res_regnum          = 0;
 	unsigned            res_float_regnum    = 0;
+	unsigned            res_x87_regnum      = 0;
 	size_t              n_result_regs       = ARRAY_SIZE(result_regs);
 	size_t              n_float_result_regs = ARRAY_SIZE(float_result_regs);
+	size_t              n_x87_result_regs   = ARRAY_SIZE(x87_result_regs);
 	for (size_t i = 0; i < n_results; ++i) {
 		ir_type            *result_type = get_method_res_type(function_type, i);
 		ir_mode            *result_mode = get_type_mode(result_type);
 		reg_or_stackslot_t *result      = &results[i];
 
 		const arch_register_t *reg;
-		if (mode_is_float(result_mode)) {
+		if (result_mode == x86_mode_E) {
+			if (res_x87_regnum >= n_x87_result_regs)
+				panic("too manu x87 floating point results");
+			reg = x87_result_regs[res_x87_regnum++];
+		} else if (mode_is_float(result_mode)) {
 			if (res_float_regnum >= n_float_result_regs) {
 				panic("too many floating points results");
 			}
