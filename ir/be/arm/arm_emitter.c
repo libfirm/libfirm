@@ -178,7 +178,7 @@ static void arm_emit_shifter_operand(const ir_node *node)
 	case ARM_SHF_ROR_IMM: {
 		arm_emit_source_register(node, attr->shifter_op_input);
 		char const *const mod = get_shf_mod_name(attr->shift_modifier);
-		be_emit_irprintf(", %s #0x%X", mod, attr->shift_immediate);
+		be_emit_irprintf(", %s #%u", mod, attr->shift_immediate);
 		return;
 	}
 
