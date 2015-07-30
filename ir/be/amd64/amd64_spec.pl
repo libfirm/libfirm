@@ -726,4 +726,16 @@ fld1 => {
 	emit     => "fld1",
 },
 
+fld => {
+	irn_flags => [ "rematerializable" ],
+	op_flags  => [ "uses_memory" ],
+	state     => "exc_pinned",
+	in_reqs   => "...",
+	out_reqs  => [ "x87", "none", "mem" ],
+	outs      => [ "res", "unused", "M" ],
+	attr_type => "amd64_addr_attr_t",
+	attr      => "amd64_insn_mode_t insn_mode, amd64_op_mode_t op_mode, amd64_addr_t addr",
+	emit      => "fld%FM %AM",
+},
+
 );

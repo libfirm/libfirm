@@ -293,6 +293,7 @@ static amd64_insn_mode_t get_insn_mode_from_mode(const ir_mode *mode)
 	case  16: return INSN_MODE_16;
 	case  32: return INSN_MODE_32;
 	case  64: return INSN_MODE_64;
+	case  80: return INSN_MODE_128; /* hack for mode_E */
 	case 128: return INSN_MODE_128;
 	}
 	panic("unexpected mode %+F", mode);
@@ -300,6 +301,7 @@ static amd64_insn_mode_t get_insn_mode_from_mode(const ir_mode *mode)
 
 ir_entity *create_float_const_entity(ir_tarval *const tv)
 {
+	/* TODO: share code with ia32 backend */
 	ir_entity *entity = pmap_get(ir_entity, amd64_constants, tv);
 	if (entity != NULL)
 		return entity;
@@ -379,7 +381,29 @@ static ir_node *gen_x87_Const(ir_node *const block, ir_tarval *const tv)
 	} else if (tarval_is_one(tv)) {
 		return new_bd_amd64_fld1(NULL, block);
 	} else {
-		panic("x87 const NIY");
+		ir_mode *mode = get_tarval_mode(tv);
+		/* try to reduce the mode to produce smaller sized entities */
+		ir_mode *const modes[] = { mode_F, mode_D, NULL };
+		for (ir_mode *const *i = modes; *i != NULL; ++i) {
+			ir_mode *const to = *i;
+			if (tarval_ieee754_can_conv_lossless(tv, to)) {
+				tv   = tarval_convert_to(tv, to);
+				mode = to;
+				break;
+			}
+		}
+		ir_entity *entity = create_float_const_entity(tv);
+		ir_graph  *irg    = get_irn_irg(block);
+		ir_node   *nomem  = get_irg_no_mem(irg);
+		ir_node   *in[1]  = { nomem };
+		amd64_addr_t addr;
+		init_lconst_addr(&addr, entity);
+		amd64_insn_mode_t insn_mode = get_insn_mode_from_mode(mode);
+		ir_node *load = new_bd_amd64_fld(NULL, block, ARRAY_SIZE(in), in,
+		                                 mem_reqs, insn_mode, AMD64_OP_ADDR,
+		                                 addr);
+		set_irn_pinned(load, false);
+		return be_new_Proj(load, pn_amd64_fld_res);
 	}
 }
 
@@ -2256,7 +2280,8 @@ static ir_node *gen_Load(ir_node *const node)
 	assert((size_t)arity <= ARRAY_SIZE(in));
 
 	create_mov_func   const cons      =
-		mode_is_float(mode)                                   ? &new_bd_amd64_movs_xmm :
+		mode_is_float(mode)                                   ?
+			(mode == x86_mode_E ? new_bd_amd64_fld : &new_bd_amd64_movs_xmm) :
 		get_mode_size_bits(mode) < 64 && mode_is_signed(mode) ? &new_bd_amd64_movs     :
 		/**/                                                    &new_bd_amd64_mov_gp;
 	amd64_insn_mode_t const insn_mode = get_insn_mode_from_mode(mode);
@@ -2318,6 +2343,13 @@ static ir_node *gen_Proj_Load(ir_node *const node)
 			return be_new_Proj(new_load, pn_amd64_movs_res);
 		} else if (pn == pn_Load_M) {
 			return be_new_Proj(new_load, pn_amd64_movs_M);
+		}
+		break;
+	case iro_amd64_fld:
+		if (pn == pn_Load_res) {
+			return be_new_Proj(new_load, pn_amd64_fld_res);
+		} else if (pn == pn_Load_M) {
+			return be_new_Proj(new_load, pn_amd64_fld_M);
 		}
 		break;
 	case iro_amd64_add:

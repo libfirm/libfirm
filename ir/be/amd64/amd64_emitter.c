@@ -403,6 +403,20 @@ static void emit_shiftop(const ir_node *const node)
 	panic("invalid op_mode for shiftop");
 }
 
+static void amd64_emit_x87_mode_suffix(amd64_insn_mode_t const insn_mode)
+{
+	switch (insn_mode) {
+	case INSN_MODE_32:  be_emit_char('s'); return;
+	case INSN_MODE_64:  be_emit_char('l'); return;
+	case INSN_MODE_128: be_emit_char('t'); return;
+	case INSN_MODE_8:
+	case INSN_MODE_16:
+	case INSN_MODE_INVALID:
+		break;
+	}
+	panic("Invalid insn mode");
+}
+
 void amd64_emitf(ir_node const *const node, char const *fmt, ...)
 {
 	va_list ap;
@@ -481,6 +495,17 @@ end_of_mods:
 			case 'E': {
 				ir_entity const *const ent = va_arg(ap, ir_entity const*);
 				be_gas_emit_entity(ent);
+				break;
+			}
+
+			case 'F': {
+				if (*fmt == 'M') {
+					++fmt;
+					amd64_addr_attr_t const *const attr
+						= get_amd64_addr_attr_const(node);
+					amd64_emit_x87_mode_suffix(attr->insn_mode);
+				} else
+					goto unknown;
 				break;
 			}
 
