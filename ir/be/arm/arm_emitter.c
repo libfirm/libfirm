@@ -139,25 +139,17 @@ static void arm_emit_store_mode(const ir_node *node)
 	}
 }
 
-static void emit_shf_mod_name(arm_shift_modifier_t mod)
+static char const *get_shf_mod_name(arm_shift_modifier_t mod)
 {
 	switch (mod) {
 	case ARM_SHF_ASR_REG:
-	case ARM_SHF_ASR_IMM:
-		be_emit_cstring("asr");
-		return;
+	case ARM_SHF_ASR_IMM: return "asr";
 	case ARM_SHF_LSL_REG:
-	case ARM_SHF_LSL_IMM:
-		be_emit_cstring("lsl");
-		return;
+	case ARM_SHF_LSL_IMM: return "lsl";
 	case ARM_SHF_LSR_REG:
-	case ARM_SHF_LSR_IMM:
-		be_emit_cstring("lsr");
-		return;
+	case ARM_SHF_LSR_IMM: return "lsr";
 	case ARM_SHF_ROR_REG:
-	case ARM_SHF_ROR_IMM:
-		be_emit_cstring("ror");
-		return;
+	case ARM_SHF_ROR_IMM: return "ror";
 	default:
 		break;
 	}
@@ -183,23 +175,23 @@ static void arm_emit_shifter_operand(const ir_node *node)
 	case ARM_SHF_ASR_IMM:
 	case ARM_SHF_LSL_IMM:
 	case ARM_SHF_LSR_IMM:
-	case ARM_SHF_ROR_IMM:
+	case ARM_SHF_ROR_IMM: {
 		arm_emit_source_register(node, attr->shifter_op_input);
-		be_emit_cstring(", ");
-		emit_shf_mod_name(attr->shift_modifier);
-		be_emit_irprintf(" #0x%X", attr->shift_immediate);
+		char const *const mod = get_shf_mod_name(attr->shift_modifier);
+		be_emit_irprintf(", %s #0x%X", mod, attr->shift_immediate);
 		return;
+	}
 
 	case ARM_SHF_ASR_REG:
 	case ARM_SHF_LSL_REG:
 	case ARM_SHF_LSR_REG:
-	case ARM_SHF_ROR_REG:
+	case ARM_SHF_ROR_REG: {
 		arm_emit_source_register(node, attr->shifter_op_input);
-		be_emit_cstring(", ");
-		emit_shf_mod_name(attr->shift_modifier);
-		be_emit_cstring(" ");
+		char const *const mod = get_shf_mod_name(attr->shift_modifier);
+		be_emit_irprintf(", %s ", mod);
 		arm_emit_source_register(node, attr->shifter_op_input+1);
 		return;
+	}
 
 	case ARM_SHF_RRX:
 		arm_emit_source_register(node, attr->shifter_op_input);
