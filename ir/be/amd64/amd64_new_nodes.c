@@ -73,8 +73,9 @@ static const char *get_op_mode_string(amd64_op_mode_t mode)
 	case AMD64_OP_REG:         return "reg";
 	case AMD64_OP_SHIFT_IMM:   return "shift_imm";
 	case AMD64_OP_SHIFT_REG:   return "shift_reg";
+	case AMD64_OP_X87:         return "x87";
 	}
-	panic("invalid op_mode");
+	return "invalid op_mode";
 }
 
 static const char *get_insn_mode_string(amd64_insn_mode_t mode)
@@ -87,7 +88,7 @@ static const char *get_insn_mode_string(amd64_insn_mode_t mode)
 	case INSN_MODE_128: return "128";
 	case INSN_MODE_INVALID: break;
 	}
-	panic("invalid insn_mode");
+	return "invalid insn_mode";
 }
 
 /**

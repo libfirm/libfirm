@@ -54,6 +54,7 @@ typedef enum {
 	AMD64_OP_ADDR_IMM,
 	AMD64_OP_SHIFT_REG,
 	AMD64_OP_SHIFT_IMM,
+	AMD64_OP_X87,
 } amd64_op_mode_t;
 
 enum {

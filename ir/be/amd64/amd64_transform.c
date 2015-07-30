@@ -371,6 +371,18 @@ ir_tarval *create_sign_tv(ir_mode *mode)
 	return tarval_bitcast(sign, mode);
 }
 
+static ir_node *gen_x87_Const(ir_node *const block, ir_tarval *const tv)
+{
+	/* TODO: avoid code duplication with ia32 backend */
+	if (tarval_is_null(tv)) {
+		return new_bd_amd64_fldz(NULL, block);
+	} else if (tarval_is_one(tv)) {
+		return new_bd_amd64_fld1(NULL, block);
+	} else {
+		panic("x87 const NIY");
+	}
+}
+
 static ir_node *gen_Const(ir_node *const node)
 {
 	ir_node  *block = be_transform_nodes_block(node);
@@ -379,10 +391,11 @@ static ir_node *gen_Const(ir_node *const node)
 	ir_tarval *tv = get_Const_tarval(node);
 
 	if (!mode_needs_gp_reg(mode)) {
-		if (tarval_is_null(tv)) {
+		if (mode == x86_mode_E) {
+			return gen_x87_Const(block, tv);
+		} else if (tarval_is_null(tv)) {
 			return new_bd_amd64_xorpd_0(dbgi, block);
 		}
-
 		return create_float_const(dbgi, block, tv);
 	}
 

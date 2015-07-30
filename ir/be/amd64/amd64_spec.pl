@@ -215,6 +215,15 @@ my $movopx = {
 	attr      => "amd64_op_mode_t op_mode, amd64_addr_t addr",
 };
 
+my $x87const = {
+	op_flags  => [ "constlike" ],
+	irn_flags => [ "rematerializable" ],
+	out_reqs  => [ "x87" ],
+	outs      => [ "res" ],
+	fixed     => "amd64_op_mode_t op_mode = AMD64_OP_X87;\n",
+	mode      => $mode_x87,
+};
+
 %nodes = (
 push_am => {
 	op_flags  => [ "uses_memory" ],
@@ -705,6 +714,16 @@ subpd => {
 haddpd => {
 	template => $binopx,
 	emit     => "haddpd %AM",
+},
+
+fldz => {
+	template => $x87const,
+	emit     => "fldz",
+},
+
+fld1 => {
+	template => $x87const,
+	emit     => "fld1",
 },
 
 );

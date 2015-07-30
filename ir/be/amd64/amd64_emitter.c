@@ -367,6 +367,8 @@ emit_reg_in0:;
 		amd64_emit_immediate32(false, &attr->addr.immediate);
 		return;
 
+	case AMD64_OP_X87:
+		return;
 	case AMD64_OP_IMM64:
 	case AMD64_OP_NONE:
 	case AMD64_OP_SHIFT_REG:
