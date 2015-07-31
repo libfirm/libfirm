@@ -535,6 +535,10 @@ static const backend_params *sparc_get_backend_params(void)
 		.type_long_double              = NULL,  /* will be set later */
 		.stack_param_align             = 4,
 		.float_int_overflow            = ir_overflow_min_max,
+		.vararg                        = {
+			.va_list_type = NULL,
+			.lower_va_arg = NULL,
+		},
 	};
 
 	ir_mode *mode_long_long

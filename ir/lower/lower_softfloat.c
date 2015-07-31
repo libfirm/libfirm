@@ -360,13 +360,9 @@ static ir_type *lower_method_type(ir_type *mtp)
 	return res;
 }
 
-/**
- * Adapts the method type of a Call.
- */
-static bool lower_Call(ir_node *node)
+static ir_type *lower_type_if_needed(ir_type *tp)
 {
-	bool     need_lower = false;
-	ir_type *tp         = get_Call_type(node);
+	bool need_lower = false;
 
 	size_t const n_params = get_method_n_params(tp);
 	for (size_t p = 0; p < n_params; ++p) {
@@ -388,11 +384,39 @@ static bool lower_Call(ir_node *node)
 		}
 	}
 
-	if (!need_lower)
+	if (need_lower) {
+		return lower_method_type(tp);
+	} else {
+		return tp;
+	}
+}
+
+/**
+ * Adapts the method type of a Call.
+ */
+static bool lower_Call(ir_node *node)
+{
+	ir_type *tp       = get_Call_type(node);
+	ir_type *lower_tp = lower_type_if_needed(tp);
+	if (lower_tp != tp) {
+		set_Call_type(node, lower_tp);
+	}
+	return true;
+}
+
+/**
+ * Adapts the method type of a va_arg Builtin.
+ */
+static bool lower_Builtin(ir_node *node)
+{
+	if (get_Builtin_kind(node) != ir_bk_va_arg)
 		return false;
 
-	tp = lower_method_type(tp);
-	set_Call_type(node, tp);
+	ir_type *tp       = get_Builtin_type(node);
+	ir_type *lower_tp = lower_type_if_needed(tp);
+	if (lower_tp != tp) {
+		set_Builtin_type(node, lower_tp);
+	}
 	return true;
 }
 
@@ -836,6 +860,7 @@ void lower_floating_point(void)
 	ir_clear_opcodes_generic_func();
 	ir_register_softloat_lower_function(op_Bitcast, lower_Bitcast);
 	ir_register_softloat_lower_function(op_Call,    lower_Call);
+	ir_register_softloat_lower_function(op_Builtin, lower_Builtin);
 	ir_register_softloat_lower_function(op_Const,   lower_Const);
 	ir_register_softloat_lower_function(op_Div,     lower_Div_mode);
 	ir_register_softloat_lower_function(op_Load,    lower_Load);

@@ -1378,6 +1378,8 @@ static ir_node *gen_Builtin(ir_node *node)
 	case ir_bk_saturating_increment:
 	case ir_bk_compare_swap:
 	case ir_bk_may_alias:
+	case ir_bk_va_start:
+	case ir_bk_va_arg:
 		break;
 	}
 	panic("Builtin %s not implemented", get_builtin_kind_name(kind));
@@ -1413,6 +1415,8 @@ static ir_node *gen_Proj_Builtin(ir_node *proj)
 	case ir_bk_saturating_increment:
 	case ir_bk_compare_swap:
 	case ir_bk_may_alias:
+	case ir_bk_va_start:
+	case ir_bk_va_arg:
 		break;
 	}
 	panic("Builtin %s not implemented", get_builtin_kind_name(kind));

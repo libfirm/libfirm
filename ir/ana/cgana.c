@@ -267,6 +267,7 @@ static void free_mark_proj(ir_node *node, unsigned n, pset *set)
 	case iro_Start:
 	case iro_Alloc:
 	case iro_Load:
+	case iro_Builtin:
 		/* nothing: operations are handled in free_ana_walker() */
 		break;
 

@@ -570,6 +570,8 @@ const char *get_builtin_kind_name(ir_builtin_kind kind)
 		X(ir_bk_saturating_increment);
 		X(ir_bk_compare_swap);
 		X(ir_bk_may_alias);
+		X(ir_bk_va_start);
+		X(ir_bk_va_arg);
 	}
 	return "<unknown>";
 #undef X
@@ -826,6 +828,8 @@ int is_irn_const_memory(const ir_node *node)
 		case ir_bk_trap:
 		case ir_bk_debugbreak:
 		case ir_bk_compare_swap:
+		case ir_bk_va_start:
+		case ir_bk_va_arg:
 			return false;
 		case ir_bk_return_address:
 		case ir_bk_frame_address:

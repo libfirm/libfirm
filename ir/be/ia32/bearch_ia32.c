@@ -18,6 +18,7 @@
 #include "bespillslots.h"
 #include "bestack.h"
 #include "beutil.h"
+#include "bevarargs.h"
 #include "gen_ia32_regalloc_if.h"
 #include "ia32_architecture.h"
 #include "ia32_emitter.h"
@@ -29,6 +30,7 @@
 #include "ia32_x87.h"
 #include "ident_t.h"
 #include "instrument.h"
+#include "ircons.h"
 #include "irgmod.h"
 #include "irgopt.h"
 #include "irgwalk.h"
@@ -1398,6 +1400,10 @@ static backend_params ia32_backend_params = {
 	.type_long_double              = NULL,  /* will be set later */
 	.stack_param_align             = 4,
 	.float_int_overflow            = ir_overflow_indefinite,
+	.vararg                        = {
+		.va_list_type = NULL, /* will be set later */
+		.lower_va_arg = be_default_lower_va_arg,
+	},
 };
 
 /**
@@ -1436,6 +1442,10 @@ static void ia32_init(void)
 
 	ia32_backend_params.type_long_long          = type_long_long;
 	ia32_backend_params.type_unsigned_long_long = type_unsigned_long_long;
+
+	// va_list is a void pointer
+	ir_type *type_va_list = new_type_pointer(new_type_primitive(mode_ANY));
+	ia32_backend_params.vararg.va_list_type = type_va_list;
 
 	if (ia32_cg_config.use_sse2 || ia32_cg_config.use_softfloat) {
 		ia32_backend_params.mode_float_arithmetic = NULL;
@@ -1557,6 +1567,7 @@ static void ia32_lower_for_target(void)
 	supported[s++] = ir_bk_outport;
 	supported[s++] = ir_bk_inport;
 	supported[s++] = ir_bk_saturating_increment;
+	supported[s++] = ir_bk_va_start;
 	if (ia32_cg_config.use_popcnt)
 		supported[s++] = ir_bk_popcount;
 	if (ia32_cg_config.use_cmpxchg)

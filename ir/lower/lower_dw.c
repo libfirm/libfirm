@@ -2424,6 +2424,8 @@ static void lower_Builtin(ir_node *builtin, ir_mode *mode)
 	case ir_bk_return_address:
 	case ir_bk_saturating_increment:
 	case ir_bk_trap:
+	case ir_bk_va_start:
+	case ir_bk_va_arg:
 		/* Nothing to do/impossible to lower in a generic way */
 		return;
 	case ir_bk_bswap:

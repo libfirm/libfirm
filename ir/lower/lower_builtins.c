@@ -12,6 +12,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include "adt/pmap.h"
+#include "be.h"
 #include "irnode_t.h"
 #include "ircons_t.h"
 #include "irgmod.h"
@@ -42,6 +43,8 @@ static const char *get_builtin_name(ir_builtin_kind kind)
 	case ir_bk_saturating_increment:
 	case ir_bk_compare_swap:
 	case ir_bk_may_alias:
+	case ir_bk_va_start:
+	case ir_bk_va_arg:
 		break;
 	}
 	abort();
@@ -145,6 +148,10 @@ changed:
 		*changed = true;
 		return;
 
+	case ir_bk_va_arg:
+		be_get_backend_param()->vararg.lower_va_arg(node);
+		return;
+
 	case ir_bk_trap:
 	case ir_bk_debugbreak:
 	case ir_bk_return_address:
@@ -153,6 +160,7 @@ changed:
 	case ir_bk_outport:
 	case ir_bk_saturating_increment:
 	case ir_bk_compare_swap:
+	case ir_bk_va_start:
 		/* can't do anything about these, backend will probably fail now */
 		panic("cannot lower Builtin node of kind %+F", node);
 	}
@@ -168,6 +176,7 @@ void lower_builtins(size_t n_exceptions, ir_builtin_kind *exceptions)
 
 	foreach_irp_irg(i, irg) {
 		bool changed = false;
+		assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
 		irg_walk_graph(irg, NULL, lower_builtin, &changed);
 		confirm_irg_properties(irg, changed ? IR_GRAPH_PROPERTIES_CONTROL_FLOW
 		                                    : IR_GRAPH_PROPERTIES_ALL);

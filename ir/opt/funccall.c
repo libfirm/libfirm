@@ -409,6 +409,9 @@ next_no_change:
 			case ir_bk_inport:
 			case ir_bk_outport:
 				/* anything can happen when accessing periphery... */
+			case ir_bk_va_start:
+			case ir_bk_va_arg:
+				/* The va_list parameter might not be local to the function. */
 				return mtp_no_property;
 			}
 			break;

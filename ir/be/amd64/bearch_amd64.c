@@ -757,7 +757,11 @@ static backend_params amd64_backend_params = {
 	.type_unsigned_long_long       = NULL,  /* will be set later */
 	.type_long_double              = NULL,  /* will be set later */
 	.stack_param_align             = 8,
-	.float_int_overflow            = ir_overflow_indefinite
+	.float_int_overflow            = ir_overflow_indefinite,
+	.vararg                        = {
+		.va_list_type = NULL,
+		.lower_va_arg = NULL,
+	},
 };
 
 static const backend_params *amd64_get_backend_params(void) {

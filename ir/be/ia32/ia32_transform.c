@@ -52,11 +52,13 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
-static x86_cconv_t         *current_cconv;
-static pmap                *node_to_stack;
-static be_stackorder_t     *stackorder;
-static ir_heights_t        *heights;
-static x86_immediate_kind_t lconst_imm_kind;
+static x86_cconv_t          *current_cconv;
+static pmap                 *node_to_stack;
+static be_stackorder_t      *stackorder;
+static ir_heights_t         *heights;
+static x86_immediate_kind_t  lconst_imm_kind;
+static ir_entity            *va_start_entity;
+static ir_node              *initial_va_list;
 
 /** we don't have a concept of aliasing registers, so enumerate them
  * manually for the asm nodes. */
@@ -5520,6 +5522,28 @@ static ir_node *gen_compare_swap(ir_node *node)
 	return new_node;
 }
 
+static ir_node *gen_va_start(ir_node *node)
+{
+	if (initial_va_list == NULL) {
+		dbg_info *dbgi  = get_irn_dbg_info(node);
+		ir_graph *irg   = get_irn_irg(node);
+		ir_node  *block = get_irg_start_block(irg);
+		ir_node  *frame = get_irg_frame(irg);
+		ir_node  *ap    = new_bd_ia32_Lea(dbgi, block, frame, noreg_GP);
+
+		set_ia32_frame_use(ap, IA32_FRAME_USE_AUTO);
+		ia32_attr_t *const attr = get_ia32_attr(ap);
+		attr->am_imm = (x86_imm32_t){
+			.kind   = X86_IMM_FRAMEOFFSET,
+			.entity = va_start_entity,
+		};
+
+		initial_va_list = ap;
+	}
+
+	return initial_va_list;
+}
+
 /**
  * Transform Builtin node.
  */
@@ -5558,7 +5582,10 @@ static ir_node *gen_Builtin(ir_node *node)
 		return gen_saturating_increment(node);
 	case ir_bk_compare_swap:
 		return gen_compare_swap(node);
+	case ir_bk_va_start:
+		return gen_va_start(node);
 	case ir_bk_may_alias:
+	case ir_bk_va_arg:
 		break;
 	}
 	panic("Builtin %s not implemented", get_builtin_kind_name(kind));
@@ -5606,7 +5633,18 @@ static ir_node *gen_Proj_Builtin(ir_node *proj)
 			assert(get_Proj_num(proj) == pn_Builtin_max+1);
 			return be_new_Proj(new_node, pn_ia32_CmpXChgMem_res);
 		}
+	case ir_bk_va_start:
+		switch(get_Proj_num(proj)) {
+		case pn_Builtin_M: {
+			ir_node *mem = get_Builtin_mem(node);
+			return be_transform_node(mem);
+		}
+		case pn_Builtin_max + 1:
+			return new_node;
+		}
+		break;
 	case ir_bk_may_alias:
+	case ir_bk_va_arg:
 		break;
 	}
 	panic("Builtin %s not implemented", get_builtin_kind_name(kind));
@@ -5771,16 +5809,17 @@ static ir_type *ia32_get_between_type(bool omit_fp)
 	return omit_fp ? omit_fp_between_type : between_type;
 }
 
+
 static void ia32_create_stacklayout(ir_graph *irg, const x86_cconv_t *cconv)
 {
 	/* construct argument type */
-	ir_entity  *const entity          = get_irg_entity(irg);
-	ident      *const arg_id          = new_id_fmt("%s_arg_type", get_entity_ident(entity));
-	ir_type    *const arg_type        = new_type_struct(arg_id);
-	ir_type    *const frame_type      = get_irg_frame_type(irg);
-	size_t      const n_params        = cconv->n_parameters;
-	ir_entity **const param_map       = ALLOCANZ(ir_entity*, n_params);
-	ir_entity        *va_start_entity = NULL;
+	ir_entity  *const entity     = get_irg_entity(irg);
+	ident      *const arg_id     = new_id_fmt("%s_arg_type", get_entity_ident(entity));
+	ir_type    *const arg_type   = new_type_struct(arg_id);
+	ir_type    *const frame_type = get_irg_frame_type(irg);
+	size_t      const n_params   = cconv->n_parameters;
+	ir_entity **const param_map  = ALLOCANZ(ir_entity*, n_params);
+
 	for (size_t f = get_compound_n_members(frame_type); f-- > 0; ) {
 		ir_entity *member = get_compound_member(frame_type, f);
 		if (!is_parameter_entity(member))
@@ -5788,13 +5827,6 @@ static void ia32_create_stacklayout(ir_graph *irg, const x86_cconv_t *cconv)
 		set_entity_owner(member, arg_type);
 
 		size_t num = get_entity_parameter_number(member);
-		if (num == IR_VA_START_PARAMETER_NUMBER) {
-			if (va_start_entity != NULL)
-				panic("multiple va_start entities found (%+F,%+F)",
-				      va_start_entity, member);
-			va_start_entity = member;
-			continue;
-		}
 		assert(num < n_params);
 		if (param_map[num] != NULL)
 			panic("multiple entities for parameter %u in %+F found", f, irg);
@@ -5813,9 +5845,15 @@ static void ia32_create_stacklayout(ir_graph *irg, const x86_cconv_t *cconv)
 		param->entity = entity;
 		set_entity_offset(param->entity, param->offset);
 	}
-	if (va_start_entity != NULL) {
+
+
+	ir_type *const function_type = get_entity_type(entity);
+	if (is_method_variadic(function_type)) {
+		ir_type *unknown = get_unknown_type();
+		va_start_entity = new_parameter_entity(arg_type, IR_VA_START_PARAMETER_NUMBER, unknown);
 		set_entity_offset(va_start_entity, cconv->callframe_size);
 	}
+
 	set_type_size_bytes(arg_type, cconv->callframe_size);
 
 	be_stack_layout_t *const layout = be_get_irg_stack_layout(irg);
@@ -5885,6 +5923,7 @@ void ia32_transform_graph(ir_graph *irg)
 	x86_free_calling_convention(current_cconv);
 	pmap_destroy(node_to_stack);
 	node_to_stack = NULL;
+	initial_va_list = NULL;
 }
 
 void ia32_init_transform(void)

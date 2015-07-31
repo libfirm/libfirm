@@ -78,6 +78,20 @@ typedef enum {
 	DW_LANG_Go = 0x0016,
 } dwarf_source_language;
 
+typedef void(*lower_func)(ir_node*);
+
+/**
+ * This structure holds the information on how the backend implements
+ * variadic functions.
+ */
+typedef struct vararg_params {
+	/** Which type is to be used for va_list. If this is NULL, the
+	 * backend does not implement variadic functions. */
+	ir_type    *va_list_type;
+	/** The function to lower a call to the va_arg macro. */
+	lower_func  lower_va_arg;
+} vararg_params;
+
 /**
  * This structure contains parameters that should be
  * propagated to the libFirm parameter set.
@@ -135,6 +149,9 @@ typedef struct backend_params {
 
 	/** Semantic on float->int conversion overflow. */
 	float_int_conversion_overflow_style_t float_int_overflow;
+
+	/** How this backend implements variadic functions. */
+	vararg_params vararg;
 } backend_params;
 
 /**

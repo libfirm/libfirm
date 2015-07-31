@@ -276,6 +276,10 @@ static backend_params arm_backend_params = {
 	.type_long_double              = NULL,
 	.stack_param_align             = 4,
 	.float_int_overflow            = ir_overflow_min_max,
+	.vararg                        = {
+		.va_list_type = NULL,
+		.lower_va_arg = NULL,
+	},
 };
 
 static void arm_init_backend_params(void)

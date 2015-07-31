@@ -293,7 +293,9 @@ typedef enum ir_builtin_kind {
 	ir_bk_compare_swap,         /**< compare exchange (aka. compare and swap) */
 	ir_bk_may_alias,            /**< replaced by 0 if args cannot alias,
 	                                 1 otherwise */
-	ir_bk_last = ir_bk_may_alias,
+	ir_bk_va_start,             /**< va_start from <stdarg.h> */
+	ir_bk_va_arg,               /**< va_arg from <stdarg.h> */
+	ir_bk_last = ir_bk_va_arg,
 } ir_builtin_kind;
 
 /**
