@@ -39,18 +39,6 @@ struct copy_opt_t {
 #define ASSERT_OU_AVAIL(co)     assert((co)->units.next && "Representation as optimization-units not built")
 #define ASSERT_GS_AVAIL(co)     assert((co)->nodes && "Representation as graph not built")
 
-static inline unsigned get_irn_col(const ir_node *node)
-{
-	return arch_get_irn_register(node)->index;
-}
-
-static inline void set_irn_col(const arch_register_class_t *cls, ir_node *node,
-                               unsigned color)
-{
-	const arch_register_t *reg = arch_register_for_index(cls, color);
-	arch_set_irn_register(node, reg);
-}
-
 #define get_Perm_src(irn) (get_irn_n(get_Proj_pred(irn), get_Proj_num(irn)))
 #define is_Perm_Proj(irn) (is_Proj(irn) && be_is_Perm(get_Proj_pred(irn)))
 

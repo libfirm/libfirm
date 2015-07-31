@@ -29,27 +29,21 @@
  *
  *     x_nc, y_ij \in N,   w_ij \in R^+
  */
-#include "be_t.h"
-#include "belive.h"
-#include "beirg.h"
-#include "debug.h"
-#include "panic.h"
-#include "raw_bitset.h"
-#include "pdeq.h"
-
-#include "util.h"
-#include "irgwalk.h"
+#include "bearch.h"
 #include "becopyilp_t.h"
-#include "beifg.h"
+#include "becopyopt_t.h"
+#include "belive.h"
 #include "bemodule.h"
+#include "debug.h"
 #include "irprintf.h"
+#include "panic.h"
+#include "pdeq.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
 typedef struct local_env_t {
-	int             first_x_var;
-	int             last_x_var;
-	const unsigned *allocatable_colors;
+	int first_x_var;
+	int last_x_var;
 } local_env_t;
 
 static unsigned check_alignment_constraints(ir_node *node)
@@ -64,56 +58,47 @@ static unsigned check_alignment_constraints(ir_node *node)
 static void make_color_var_name(char *buf, size_t buf_size,
                                 const ir_node *node, unsigned color)
 {
-	unsigned node_idx = get_irn_idx(node);
+	unsigned const node_idx = get_irn_idx(node);
 	snprintf(buf, buf_size, "x_%u_%u", node_idx, color);
 }
 
 static void build_coloring_cstr(ilp_env_t *ienv)
 {
-	local_env_t    *lenv   = (local_env_t*)ienv->env;
-	be_ifg_t       *ifg    = ienv->co->cenv->ifg;
-	unsigned        n_regs = ienv->co->cls->n_regs;
-	const unsigned *allocatable_colors = lenv->allocatable_colors;
-	char            buf[32];
+	local_env_t    *const lenv               = (local_env_t*)ienv->env;
+	be_ifg_t       *const ifg                = ienv->co->cenv->ifg;
+	unsigned        const n_regs             = ienv->co->cls->n_regs;
+	unsigned const *const allocatable_colors = ienv->co->cenv->allocatable_regs->data;
 
 	unsigned *const colors = rbitset_alloca(n_regs);
 	be_ifg_foreach_node(ifg, irn) {
-		const arch_register_req_t *req;
-		unsigned                   col;
-		int                        cst_idx;
-		unsigned                   curr_node_color;
-		unsigned                   has_alignment_cstr;
-
 		if (sr_is_removed(ienv, irn))
 			continue;
 
-		has_alignment_cstr = check_alignment_constraints(irn);
+		unsigned const has_alignment_cstr = check_alignment_constraints(irn);
 
-		req = arch_get_irn_register_req(irn);
+		arch_register_req_t const *const req = arch_get_irn_register_req(irn);
 
 		/* get assignable colors */
-		if (req->limited != NULL) {
+		if (req->limited) {
 			rbitset_copy(colors, req->limited, n_regs);
 		} else {
 			rbitset_copy(colors, allocatable_colors, n_regs);
 		}
 
 		/* add the coloring constraint */
-		cst_idx = lpp_add_cst(ienv->lp, NULL, lpp_equal, 1.0);
-
-		curr_node_color = get_irn_col(irn);
-		for (col = 0; col < n_regs; ++col) {
-			int    var_idx;
-			double val;
+		int      const cst_idx         = lpp_add_cst(ienv->lp, NULL, lpp_equal, 1.0);
+		unsigned const curr_node_color = get_irn_col(irn);
+		for (unsigned col = 0; col < n_regs; ++col) {
 			if (!rbitset_is_set(colors, col)
 				|| (has_alignment_cstr && ((col % req->width) != 0)))
 				continue;
 
+			char buf[32];
 			make_color_var_name(buf, sizeof(buf), irn, col);
-			var_idx = lpp_add_var(ienv->lp, buf, lpp_binary, 0.0);
+			int const var_idx = lpp_add_var(ienv->lp, buf, lpp_binary, 0.0);
 			lpp_set_factor_fast(ienv->lp, cst_idx, var_idx, 1);
 
-			val = (col == curr_node_color) ? 1.0 : 0.0;
+			double const val = col == curr_node_color ? 1.0 : 0.0;
 			lpp_set_start_value(ienv->lp, var_idx, val);
 
 			lenv->last_x_var = var_idx;
@@ -122,17 +107,16 @@ static void build_coloring_cstr(ilp_env_t *ienv)
 		}
 
 		/* add register constraint constraints */
-		for (col = 0; col < n_regs; ++col) {
-			int cst_idx;
-			int var_idx;
+		for (unsigned col = 0; col < n_regs; ++col) {
 			if (rbitset_is_set(colors, col)
 				// for aligned variable, we set the unaligned part to 0
 				&& (!has_alignment_cstr || ((col % req->width) == 0)))
 				continue;
 
+			char buf[32];
 			make_color_var_name(buf, sizeof(buf), irn, col);
-			cst_idx = lpp_add_cst(ienv->lp, NULL, lpp_equal, 0.0);
-			var_idx = lpp_add_var(ienv->lp, buf, lpp_binary, 0.0);
+			int const cst_idx = lpp_add_cst(ienv->lp, NULL, lpp_equal, 0.0);
+			int const var_idx = lpp_add_var(ienv->lp, buf, lpp_binary, 0.0);
 			lpp_set_start_value(ienv->lp, var_idx, 0.0);
 			lpp_set_factor_fast(ienv->lp, cst_idx, var_idx, 1);
 
@@ -141,24 +125,20 @@ static void build_coloring_cstr(ilp_env_t *ienv)
 	}
 }
 
-static void build_interference_cstr(ilp_env_t *ienv)
+static void build_interference_cstr(ilp_env_t *const ienv)
 {
-	lpp_t          *lpp      = ienv->lp;
-	local_env_t    *lenv     = (local_env_t*)ienv->env;
-	be_ifg_t       *ifg      = ienv->co->cenv->ifg;
-	unsigned        n_colors = ienv->co->cls->n_regs;
-	ir_node       **clique   = ALLOCAN(ir_node*, n_colors);
-	const unsigned *allocatable_colors = lenv->allocatable_colors;
-	cliques_iter_t iter;
-	int            size;
-	unsigned       col;
-	int            i;
+	lpp_t          *const lpp                = ienv->lp;
+	be_ifg_t       *const ifg                = ienv->co->cenv->ifg;
+	unsigned        const n_colors           = ienv->co->cls->n_regs;
+	ir_node       **const clique             = ALLOCAN(ir_node*, n_colors);
+	unsigned const *const allocatable_colors = ienv->co->cenv->allocatable_regs->data;
 
 	/* for each maximal clique */
+	cliques_iter_t iter;
+	int            size;
 	be_ifg_foreach_clique(ifg, &iter, clique, &size) {
 		unsigned realsize = 0;
-
-		for (i=0; i<size; ++i) {
+		for (int i = 0; i < size; ++i) {
 			if (!sr_is_removed(ienv, clique[i]))
 				++realsize;
 		}
@@ -167,34 +147,29 @@ static void build_interference_cstr(ilp_env_t *ienv)
 			continue;
 
 		/* for all colors */
-		for (col=0; col<n_colors; ++col) {
-			int cst_idx;
+		for (unsigned col = 0; col < n_colors; ++col) {
 			if (!rbitset_is_set(allocatable_colors, col))
 				continue;
 
-			cst_idx = lpp_add_cst(lpp, NULL, lpp_less_equal, 1.0);
+			int const cst_idx = lpp_add_cst(lpp, NULL, lpp_less_equal, 1.0);
 
 			/* for each member of this clique */
-			for (i=0; i<size; ++i) {
-				ir_node *irn = clique[i];
-				char     buf[32];
-				int      var_idx;
-				unsigned aligment_offset = 0;
-
+			for (int i = 0; i < size; ++i) {
+				ir_node *const irn = clique[i];
 				if (sr_is_removed(ienv, irn))
 					continue;
 
 				// Use the first part of the large registers for all
 				// interference, since it is the only colorable one.
+				unsigned aligment_offset = 0;
 				if (check_alignment_constraints(irn)) {
-					const arch_register_req_t *req
-						= arch_get_irn_register_req(irn);
+					arch_register_req_t const *const req = arch_get_irn_register_req(irn);
 					aligment_offset = col % req->width;
 				}
 
-				make_color_var_name(buf, sizeof(buf), irn,
-									col - aligment_offset);
-				var_idx = lpp_get_var_idx(lpp, buf);
+				char buf[32];
+				make_color_var_name(buf, sizeof(buf), irn, col - aligment_offset);
+				int const var_idx = lpp_get_var_idx(lpp, buf);
 				lpp_set_factor_fast(lpp, cst_idx, var_idx, 1);
 			}
 		}
@@ -206,11 +181,12 @@ static void make_affinity_var_name(char *buf, size_t buf_size,
 {
 	unsigned n1 = get_irn_idx(node1);
 	unsigned n2 = get_irn_idx(node2);
-	if (n1 < n2) {
-		snprintf(buf, buf_size, "y_%u_%u", n1, n2);
-	} else {
-		snprintf(buf, buf_size, "y_%u_%u", n2, n1);
+	if (n2 < n1) {
+		unsigned const t = n1;
+		n1 = n2;
+		n2 = t;
 	}
+	snprintf(buf, buf_size, "y_%u_%u", n1, n2);
 }
 
 
@@ -265,11 +241,11 @@ typedef struct edge_t {
 
 static int compare_edge_t(const void *k1, const void *k2, size_t size)
 {
-	const edge_t *e1 = (const edge_t*)k1;
-	const edge_t *e2 = (const edge_t*)k2;
-	(void) size;
+	(void)size;
 
-	return ! (e1->n1 == e2->n1 && e1->n2 == e2->n2);
+	edge_t const *const e1 = (edge_t const*)k1;
+	edge_t const *const e2 = (edge_t const*)k2;
+	return e1->n1 != e2->n1 || e1->n2 != e2->n2;
 }
 
 static void init_edge(edge_t *const edge, ir_node *const n1, ir_node *const n2)
@@ -290,7 +266,7 @@ static inline edge_t *add_edge(set *edges, ir_node *n1, ir_node *n2, size_t *cou
 	edge_t new_edge;
 	init_edge(&new_edge, n1, n2);
 
-	(*counter)++;
+	++*counter;
 	return set_insert(edge_t, edges, &new_edge, sizeof(new_edge), HASH_EDGE(&new_edge));
 }
 
@@ -311,7 +287,7 @@ static inline void remove_edge(set *edges, ir_node *n1, ir_node *n2, size_t *cou
 	if (e) {
 		e->n1 = NULL;
 		e->n2 = NULL;
-		(*counter)--;
+		--*counter;
 	}
 }
 
@@ -326,33 +302,28 @@ static void build_clique_star_cstr(ilp_env_t *ienv)
 {
 	/* for each node with affinity edges */
 	co_gs_foreach_aff_node(ienv->co, aff) {
-		struct obstack ob;
-		const ir_node *center = aff->irn;
-		ir_node **nodes;
-		set *edges;
-		int i, o, n_nodes;
-		size_t n_edges;
-
-		if (arch_irn_is_ignore(aff->irn))
+		ir_node const *const center = aff->irn;
+		if (arch_irn_is_ignore(center))
 			continue;
 
+		struct obstack ob;
 		obstack_init(&ob);
-		edges = new_set(compare_edge_t, 8);
+		set *const edges = new_set(compare_edge_t, 8);
 
 		/* get all affinity neighbours */
-		n_nodes = 0;
+		int n_nodes = 0;
 		co_gs_foreach_neighb(aff, nbr) {
 			if (!arch_irn_is_ignore(nbr->irn)) {
 				obstack_ptr_grow(&ob, nbr->irn);
 				++n_nodes;
 			}
 		}
-		nodes = (ir_node**)obstack_finish(&ob);
+		ir_node **const nodes = (ir_node**)obstack_finish(&ob);
 
 		/* get all interference edges between these */
-		n_edges = 0;
-		for (i=0; i<n_nodes; ++i) {
-			for (o=0; o<i; ++o) {
+		size_t n_edges = 0;
+		for (int i = 0; i < n_nodes; ++i) {
+			for (int o = 0; o < i; ++o) {
 				if (be_values_interfere(nodes[i], nodes[o]))
 					add_edge(edges, nodes[i], nodes[o], &n_edges);
 			}
@@ -360,35 +331,33 @@ static void build_clique_star_cstr(ilp_env_t *ienv)
 
 		/* cover all these interference edges with maximal cliques */
 		while (n_edges) {
-			edge_t *e;
-			pset   *clique = pset_new_ptr(8);
-			bool    growed;
-
 			/* get 2 starting nodes to form a clique */
+			edge_t *e;
 			for (e = set_first(edge_t, edges); !e->n1; e = set_next(edge_t, edges)) {}
 
 			/* we could be stepped out of the loop before the set iterated to the end */
 			set_break(edges);
 
+			pset *const clique = pset_new_ptr(8);
 			pset_insert_ptr(clique, e->n1);
 			pset_insert_ptr(clique, e->n2);
 			remove_edge(edges, e->n1, e->n2, &n_edges);
 
 			/* while the clique is growing */
+			bool grew;
 			do {
-				growed = false;
+				grew = false;
 
 				/* search for a candidate to extend the clique */
-				for (i=0; i<n_nodes; ++i) {
-					ir_node *cand = nodes[i];
-					bool     is_cand;
+				for (int i = 0; i < n_nodes; ++i) {
+					ir_node *const cand = nodes[i];
 
 					/* if its already in the clique try the next */
 					if (pset_find_ptr(clique, cand))
 						continue;
 
 					/* are there all necessary interferences? */
-					is_cand = true;
+					bool is_cand = true;
 					pset_foreach(clique, member) {
 						if (!find_edge(edges, cand, member)) {
 							is_cand = false;
@@ -400,28 +369,25 @@ static void build_clique_star_cstr(ilp_env_t *ienv)
 					/* now we know if we have a clique extender */
 					if (is_cand) {
 						/* first remove all covered edges */
-						pset_foreach(clique, member)
+						pset_foreach(clique, member) {
 							remove_edge(edges, cand, member, &n_edges);
+						}
 
 						/* insert into clique */
 						pset_insert_ptr(clique, cand);
-						growed = true;
+						grew = true;
 						break;
 					}
 				}
-			} while (growed);
+			} while (grew);
 
 			/* now the clique is maximal. Finally add the constraint */
 			{
-				int  var_idx;
-				int  cst_idx;
-				char buf[32];
-
-				cst_idx = lpp_add_cst(ienv->lp, NULL, lpp_greater_equal, pset_count(clique)-1);
-
+				int const cst_idx = lpp_add_cst(ienv->lp, NULL, lpp_greater_equal, pset_count(clique)-1);
 				pset_foreach(clique, member) {
+					char buf[32];
 					make_affinity_var_name(buf, sizeof(buf), center, member);
-					var_idx = lpp_get_var_idx(ienv->lp, buf);
+					int const var_idx = lpp_get_var_idx(ienv->lp, buf);
 					lpp_set_factor_fast(ienv->lp, cst_idx, var_idx, 1.0);
 				}
 			}
@@ -436,10 +402,6 @@ static void build_clique_star_cstr(ilp_env_t *ienv)
 
 static void extend_path(ilp_env_t *ienv, pdeq *path, const ir_node *irn)
 {
-	int i, len;
-	ir_node **curr_path;
-	affinity_node_t *aff;
-
 	/* do not walk backwards or in circles */
 	if (pdeq_contains(path, irn))
 		return;
@@ -451,11 +413,11 @@ static void extend_path(ilp_env_t *ienv, pdeq *path, const ir_node *irn)
 	pdeq_putr(path, irn);
 
 	/* check for forbidden interferences */
-	len       = pdeq_len(path);
-	curr_path = ALLOCAN(ir_node*, len);
+	int       const len       = pdeq_len(path);
+	ir_node **const curr_path = ALLOCAN(ir_node*, len);
 	pdeq_copyl(path, (const void **)curr_path);
 
-	for (i=1; i<len; ++i) {
+	for (int i = 1; i < len; ++i) {
 		if (be_values_interfere(irn, curr_path[i]))
 			goto end;
 	}
@@ -467,7 +429,7 @@ static void extend_path(ilp_env_t *ienv, pdeq *path, const ir_node *irn)
 		if (len > 2) {
 			/* finally build the constraint */
 			int cst_idx = lpp_add_cst(ienv->lp, NULL, lpp_greater_equal, 1.0);
-			for (i=1; i<len; ++i) {
+			for (int i = 1; i < len; ++i) {
 				char buf[32];
 				int  var_idx;
 
@@ -482,7 +444,7 @@ static void extend_path(ilp_env_t *ienv, pdeq *path, const ir_node *irn)
 	}
 
 	/* recursively extend the path */
-	aff = get_affinity_info(ienv->co, irn);
+	affinity_node_t *const aff = get_affinity_info(ienv->co, irn);
 	co_gs_foreach_neighb(aff, nbr) {
 		extend_path(ienv, path, nbr->irn);
 	}
@@ -502,18 +464,14 @@ static void build_path_cstr(ilp_env_t *ienv)
 {
 	/* for each node with affinity edges */
 	co_gs_foreach_aff_node(ienv->co, aff_info) {
-		pdeq *path = new_pdeq();
-
+		pdeq *const path = new_pdeq();
 		extend_path(ienv, path, aff_info->irn);
-
 		del_pdeq(path);
 	}
 }
 
 static void ilp2_build(ilp_env_t *ienv)
 {
-	int lower_bound;
-
 	ienv->lp = lpp_new("copyilp", lpp_minimize);
 	build_coloring_cstr(ienv);
 	build_interference_cstr(ienv);
@@ -521,43 +479,41 @@ static void ilp2_build(ilp_env_t *ienv)
 	build_clique_star_cstr(ienv);
 	build_path_cstr(ienv);
 
-	lower_bound = co_get_lower_bound(ienv->co) - co_get_inevit_copy_costs(ienv->co);
+	int const lower_bound = co_get_lower_bound(ienv->co) - co_get_inevit_copy_costs(ienv->co);
 	lpp_set_bound(ienv->lp, lower_bound);
 }
 
-static void ilp2_apply(ilp_env_t *ienv)
+static void ilp2_apply(ilp_env_t *const ienv)
 {
-	local_env_t *lenv = (local_env_t*)ienv->env;
-	ir_graph    *irg  = ienv->co->irg;
+	local_env_t *const lenv = (local_env_t*)ienv->env;
 
 	/* first check if there was sth. to optimize */
 	if (lenv->first_x_var >= 0) {
-		int              count = lenv->last_x_var - lenv->first_x_var + 1;
-		double          *sol   = XMALLOCN(double, count);
-		lpp_sol_state_t  state = lpp_get_solution(ienv->lp, sol, lenv->first_x_var, lenv->last_x_var);
-		int              i;
+		ir_graph        *const irg   = ienv->co->irg;
+		int              const count = lenv->last_x_var - lenv->first_x_var + 1;
+		double          *const sol   = XMALLOCN(double, count);
+		lpp_sol_state_t  const state = lpp_get_solution(ienv->lp, sol, lenv->first_x_var, lenv->last_x_var);
 
 		if (state != lpp_optimal) {
-			ir_printf("WARNING: Solution state of %F register class %s is not 'optimal': %d\n", ienv->co->irg, ienv->co->cls->name, (int)state);
-			if (state < lpp_feasible) {
+			ir_printf("WARNING: Solution state of %F register class %s is not 'optimal': %d\n", irg, ienv->co->cls->name, (int)state);
+			if (state < lpp_feasible)
 				panic("copy coalescing solution not feasible");
-			}
 		}
 
-		for (i=0; i<count; ++i) {
-			unsigned nodenr;
-			unsigned color;
-			char     var_name[32];
-			if (sol[i] <= 1-EPSILON)
+		for (int i = 0; i < count; ++i) {
+			if (sol[i] <= 1 - EPSILON)
 				continue;
 			/* split variable name into components */
-			lpp_get_var_name(ienv->lp, lenv->first_x_var+i, var_name, sizeof(var_name));
+			char var_name[32];
+			lpp_get_var_name(ienv->lp, lenv->first_x_var + i, var_name, sizeof(var_name));
 
+			unsigned nodenr;
+			unsigned color;
 			if (sscanf(var_name, "x_%u_%u", &nodenr, &color) == 2) {
-				ir_node *irn = get_idx_irn(irg, nodenr);
+				ir_node *const irn = get_idx_irn(irg, nodenr);
 				set_irn_col(ienv->co->cls, irn, color);
 			} else {
-				panic("this should be a x-var");
+				panic("this should be an x-var");
 			}
 		}
 
@@ -571,7 +527,7 @@ static void ilp2_apply(ilp_env_t *ienv)
  * Uses the OU and the GRAPH data structure
  * Dependency of the OU structure can be removed
  */
-static int co_solve_ilp2(copy_opt_t *co)
+static int co_solve_ilp2(copy_opt_t *const co)
 {
 	ASSERT_OU_AVAIL(co); //See build_clique_st
 	ASSERT_GS_AVAIL(co);
@@ -579,9 +535,8 @@ static int co_solve_ilp2(copy_opt_t *co)
 	FIRM_DBG_REGISTER(dbg, "firm.be.coilp2");
 
 	local_env_t my;
-	my.first_x_var        = -1;
-	my.last_x_var         = -1;
-	my.allocatable_colors = co->cenv->allocatable_regs->data;
+	my.first_x_var = -1;
+	my.last_x_var  = -1;
 
 	ilp_env_t      *const ienv      = new_ilp_env(co, ilp2_build, ilp2_apply, &my);
 	lpp_sol_state_t const sol_state = ilp_go(ienv);

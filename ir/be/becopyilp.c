@@ -10,26 +10,24 @@
  * @date        28.02.2006
  */
 #include <stdbool.h>
+#include <stdio.h>
 
 #include "be_t.h"
+#include "becopyilp_t.h"
+#include "becopyopt_t.h"
+#include "beifg.h"
 #include "belive.h"
-#include "beirg.h"
-#include "irtools.h"
-#include "irprintf.h"
-
-#include "statev_t.h"
 #include "bemodule.h"
-#include "panic.h"
-
-#include "lpp.h"
-
-#include "lc_opts.h"
+#include "irprintf.h"
+#include "irtools.h"
 #include "lc_opts_enum.h"
+#include "panic.h"
+#include "statev_t.h"
 
 #define DUMP_ILP 1
 
-static int  time_limit = 60;
-static bool solve_log  = false;
+static int      time_limit = 60;
+static bool     solve_log  = false;
 static unsigned dump_flags = 0;
 
 static const lc_opt_enum_mask_items_t dump_items[] = {
@@ -59,9 +57,6 @@ void be_init_copyilp(void)
 
 	lc_opt_add_table(ilp_grp, options);
 }
-
-#include "becopyilp_t.h"
-#include "beifg.h"
 
 /******************************************************************************
     _____ _                        _            _   _
@@ -109,14 +104,13 @@ end:
  */
 static void sr_remove(ilp_env_t *const ienv)
 {
-	bool redo = true;
-	const be_ifg_t *ifg = ienv->co->cenv->ifg;
-
+	be_ifg_t const *const ifg  = ienv->co->cenv->ifg;
+	bool                  redo = true;
 	while (redo) {
 		redo = false;
 		be_ifg_foreach_node(ifg, irn) {
-			const arch_register_req_t *req = arch_get_irn_register_req(irn);
-			if (req->limited != NULL || sr_is_removed(ienv, irn))
+			arch_register_req_t const *const req = arch_get_irn_register_req(irn);
+			if (req->limited || sr_is_removed(ienv, irn))
 				continue;
 			if (co_gs_is_optimizable(ienv->co, irn))
 				continue;
@@ -149,27 +143,24 @@ static void sr_reinsert(ilp_env_t *const ienv)
 		/* get free color by inspecting all neighbors */
 		neighbours_iter_t iter;
 		be_ifg_foreach_neighbour(ifg, &iter, irn, other) {
-			const arch_register_req_t *cur_req;
-			unsigned cur_col;
 
 			/* only inspect nodes which are in graph right now */
 			if (sr_is_removed(ienv, other))
 				continue;
 
-			cur_req = arch_get_irn_register_req(other);
-			cur_col = get_irn_col(other);
-
 			/* Invalidate all single size register when it is a large one */
+			unsigned const width   = arch_get_irn_register_req(other)->width;
+			unsigned       cur_col = get_irn_col(other);
 			do  {
 				rbitset_clear(possible_cols, cur_col);
 				++cur_col;
-			} while ((cur_col % cur_req->width) != 0);
+			} while (cur_col % width != 0);
 		}
 
 		/* now all bits not set are possible colors */
 		/* take one that matches the alignment constraint */
-		unsigned free_col = 0;
 		assert(!rbitset_is_empty(possible_cols, n_regs) && "No free color found. This can not be.");
+		unsigned free_col = 0;
 		for (;;) {
 			free_col = (unsigned)rbitset_next(possible_cols, free_col, true);
 			if (free_col % arch_get_irn_register_req(irn)->width == 0)
@@ -192,40 +183,31 @@ static void sr_reinsert(ilp_env_t *const ienv)
 
  *****************************************************************************/
 
-#include <stdio.h>
-
-ilp_env_t *new_ilp_env(copy_opt_t *co, ilp_callback build, ilp_callback apply, void *env)
+ilp_env_t *new_ilp_env(copy_opt_t *const co, ilp_callback const build, ilp_callback const apply, void *const env)
 {
-	ilp_env_t *res = XMALLOC(ilp_env_t);
-
-	res->co         = co;
-	res->build      = build;
-	res->apply      = apply;
-	res->env        = env;
-	res->col_suff   = NEW_ARR_F(ir_node*, 0);
+	ilp_env_t *const res = XMALLOC(ilp_env_t);
+	res->co       = co;
+	res->build    = build;
+	res->apply    = apply;
+	res->env      = env;
+	res->col_suff = NEW_ARR_F(ir_node*, 0);
 	ir_nodeset_init(&res->all_removed);
 
 	return res;
 }
 
-lpp_sol_state_t ilp_go(ilp_env_t *ienv)
+lpp_sol_state_t ilp_go(ilp_env_t *const ienv)
 {
-	ir_graph *irg = ienv->co->irg;
-
 	sr_remove(ienv);
 
 	ienv->build(ienv);
 
 	if (dump_flags & DUMP_ILP) {
 		char buf[128];
-		FILE *f;
-
-		ir_snprintf(buf, sizeof(buf), "%F_%s-co.ilp", irg,
-		            ienv->co->cenv->cls->name);
-		f = fopen(buf, "wt");
-		if (f == NULL) {
+		ir_snprintf(buf, sizeof(buf), "%F_%s-co.ilp", ienv->co->irg, ienv->co->cenv->cls->name);
+		FILE *const f = fopen(buf, "wt");
+		if (!f)
 			panic("couldn't open '%s' for writing", buf);
-		}
 		lpp_dump_plain(ienv->lp, f);
 		fclose(f);
 	}
@@ -248,7 +230,7 @@ lpp_sol_state_t ilp_go(ilp_env_t *ienv)
 	return lpp_get_sol_state(ienv->lp);
 }
 
-void free_ilp_env(ilp_env_t *ienv)
+void free_ilp_env(ilp_env_t *const ienv)
 {
 	ir_nodeset_destroy(&ienv->all_removed);
 	DEL_ARR_F(ienv->col_suff);

@@ -12,8 +12,11 @@
 #ifndef FIRM_BE_BECOPYILP_T_H
 #define FIRM_BE_BECOPYILP_T_H
 
+#include "be_types.h"
+#include "bearch.h"
 #include "firm_types.h"
-#include "becopyopt_t.h"
+#include "irnodeset.h"
+#include "lpp.h"
 
 /******************************************************************************
     _____                      _        _____ _      _____
@@ -25,13 +28,11 @@
 
  *****************************************************************************/
 
-#include "lpp.h"
-
 #define EPSILON 0.00001
 
 typedef struct ilp_env_t ilp_env_t;
 
-typedef void(*ilp_callback)(ilp_env_t*);
+typedef void (*ilp_callback)(ilp_env_t*);
 
 struct ilp_env_t {
 	copy_opt_t const *co;          /**< the copy opt problem */
@@ -39,8 +40,8 @@ struct ilp_env_t {
 	ir_nodeset_t      all_removed; /**< All nodes removed during problem size reduction */
 	lpp_t            *lp;          /**< the linear programming problem */
 	void             *env;
-	ilp_callback     build;
-	ilp_callback     apply;
+	ilp_callback      build;
+	ilp_callback      apply;
 };
 
 ilp_env_t *new_ilp_env(copy_opt_t *co, ilp_callback build, ilp_callback apply, void *env);
@@ -55,6 +56,17 @@ void free_ilp_env(ilp_env_t *ienv);
 static inline bool sr_is_removed(ilp_env_t const *const ienv, ir_node const *const irn)
 {
 	return ir_nodeset_contains(&ienv->all_removed, irn);
+}
+
+static inline unsigned get_irn_col(ir_node const *const node)
+{
+	return arch_get_irn_register(node)->index;
+}
+
+static inline void set_irn_col(arch_register_class_t const *const cls, ir_node *const node, unsigned const color)
+{
+	arch_register_t const *const reg = arch_register_for_index(cls, color);
+	arch_set_irn_register(node, reg);
 }
 
 #endif
