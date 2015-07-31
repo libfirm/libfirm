@@ -1607,7 +1607,7 @@ static ir_node *gen_Call(ir_node *node)
 			.kind   = X86_IMM_VALUE,
 			.offset = cconv->n_xmm_regs,
 		};
-		ir_node *nxmm = new_bd_amd64_mov_imm(dbgi, block, INSN_MODE_32, &imm);
+		ir_node *nxmm = new_bd_amd64_mov_imm(dbgi, new_block, INSN_MODE_32, &imm);
 		in_req[in_arity] = amd64_registers[REG_RAX].single_req;
 		in[in_arity] = nxmm;
 		++in_arity;
