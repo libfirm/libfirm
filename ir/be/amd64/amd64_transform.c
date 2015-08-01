@@ -1331,6 +1331,13 @@ static ir_node *gen_Minus(ir_node *const node)
 	ir_mode *mode = get_irn_mode(node);
 
 	if (mode_is_float(mode)) {
+		if (mode == x86_mode_E) {
+			dbg_info *dbgi   = get_irn_dbg_info(node);
+			ir_node  *block  = be_transform_node(get_nodes_block(node));
+			ir_node  *op     = get_Minus_op(node);
+			ir_node  *new_op = be_transform_node(op);
+			return new_bd_amd64_fchs(dbgi, block, new_op);
+		}
 		return gen_float_neg(node);
 	} else {
 		return gen_unop(node, n_Minus_op, &new_bd_amd64_neg, pn_amd64_neg_res);

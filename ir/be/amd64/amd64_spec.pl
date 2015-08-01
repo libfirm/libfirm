@@ -224,6 +224,15 @@ my $x87const = {
 	mode      => $mode_x87,
 };
 
+my $x87unop = {
+	irn_flags => [ "rematerializable" ],
+	in_reqs   => [ "x87" ],
+	out_reqs  => [ "x87" ],
+	ins       => [ "value" ],
+	fixed     => "amd64_op_mode_t op_mode = AMD64_OP_X87;\n",
+	mode      => $mode_x87,
+};
+
 %nodes = (
 push_am => {
 	op_flags  => [ "uses_memory" ],
@@ -736,6 +745,11 @@ fld => {
 	attr_type => "amd64_addr_attr_t",
 	attr      => "amd64_insn_mode_t insn_mode, amd64_op_mode_t op_mode, amd64_addr_t addr",
 	emit      => "fld%FM %AM",
+},
+
+fchs => {
+	template => $x87unop,
+	emit     => "fchs",
 },
 
 );
