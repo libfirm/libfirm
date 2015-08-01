@@ -5797,32 +5797,6 @@ static void register_transformers(void)
 	be_set_upper_bits_clean_function(op_Mux, ia32_mux_upper_bits_clean);
 }
 
-static void add_parameter_loads(ir_graph *irg, const x86_cconv_t *cconv)
-{
-	ir_node *start       = get_irg_start(irg);
-	ir_node *start_block = get_irg_start_block(irg);
-	ir_node *nomem       = get_irg_no_mem(irg);
-	ir_node *frame       = get_irg_frame(irg);
-	ir_node *proj_args   = get_Proj_for_pn(start, pn_Start_T_args);
-	foreach_out_edge_safe(proj_args, edge) {
-		ir_node *proj = get_edge_src_irn(edge);
-		if (!is_Proj(proj))
-			continue;
-		unsigned pn   = get_Proj_num(proj);
-		const reg_or_stackslot_t *param = &cconv->parameters[pn];
-		ir_entity *entity = param->entity;
-		if (entity == NULL)
-			continue;
-		ir_type  *const type   = get_entity_type(entity);
-		ir_mode  *const mode   = get_type_mode(type);
-		dbg_info *const dbgi   = get_irn_dbg_info(proj);
-		ir_node  *const member = new_rd_Member(dbgi, start_block, frame, entity);
-		ir_node  *const load   = new_rd_Load(dbgi, start_block, nomem, member, mode, type, cons_none);
-		ir_node  *const res    = new_r_Proj(load, mode, pn_Load_res);
-		exchange(proj, res);
-	}
-}
-
 static ir_type *ia32_get_between_type(bool omit_fp)
 {
 	static ir_type *between_type         = NULL;
@@ -5933,7 +5907,7 @@ void ia32_transform_graph(ir_graph *irg)
 	current_cconv = ia32_decide_calling_convention(mtp, irg);
 	ia32_create_stacklayout(irg, current_cconv);
 	be_add_parameter_entity_stores(irg);
-	add_parameter_loads(irg, current_cconv);
+	x86_create_parameter_loads(irg, current_cconv);
 
 	be_timer_push(T_HEIGHTS);
 	heights = heights_new(irg);

@@ -49,4 +49,6 @@ typedef struct x86_cconv_t
  */
 void x86_free_calling_convention(x86_cconv_t *cconv);
 
+void x86_create_parameter_loads(ir_graph *irg, const x86_cconv_t *cconv);
+
 #endif

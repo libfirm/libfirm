@@ -1772,44 +1772,7 @@ static ir_node *gen_Proj_Proj_Start(ir_node *node)
 	ir_graph                 *const irg   = get_irn_irg(node);
 	unsigned                  const pn    = get_Proj_num(node);
 	reg_or_stackslot_t const *const param = &current_cconv->parameters[pn];
-	arch_register_t    const *const reg   = param->reg;
-	if (reg) {
-		/* argument transmitted in register */
-		return be_get_Start_proj(irg, reg);
-	} else {
-		/* argument transmitted on stack */
-		ir_mode  *mode = get_type_mode(param->type);
-		ir_node  *base = get_frame_base(irg);
-
-		amd64_insn_mode_t insn_mode = get_insn_mode_from_mode(mode);
-		amd64_addr_t      addr;
-		memset(&addr, 0, sizeof(addr));
-		addr.base_input       = 0;
-		addr.index_input      = NO_INPUT;
-		addr.mem_input        = NO_INPUT;
-		addr.immediate.entity = param->entity;
-		ir_node *in[]  = { base };
-		ir_node *load;
-		ir_node *value;
-
-		ir_node *const new_block = be_transform_nodes_block(node);
-		if (mode_is_float(mode)) {
-			load  = new_bd_amd64_movs_xmm(NULL, new_block, ARRAY_SIZE(in),
-			                              in, insn_mode, AMD64_OP_ADDR, addr);
-			value = be_new_Proj(load, pn_amd64_movs_xmm_res);
-		} else if (get_mode_size_bits(mode) < 64 && mode_is_signed(mode)) {
-			load  = new_bd_amd64_movs(NULL, new_block, ARRAY_SIZE(in),
-			                          in, insn_mode, AMD64_OP_ADDR, addr);
-			value = be_new_Proj(load, pn_amd64_movs_res);
-		} else {
-			load  = new_bd_amd64_mov_gp(NULL, new_block, ARRAY_SIZE(in),
-			                            in, insn_mode, AMD64_OP_ADDR, addr);
-			value = be_new_Proj(load, pn_amd64_mov_gp_res);
-		}
-		arch_set_irn_register_reqs_in(load, reg_mem_reqs);
-		set_irn_pinned(load, op_pin_state_floats);
-		return value;
-	}
+	return be_get_Start_proj(irg, param->reg);
 }
 
 static ir_node *gen_Proj_Proj(ir_node *node)
@@ -2715,6 +2678,7 @@ void amd64_transform_graph(ir_graph *irg)
 		amd64_insert_reg_save_area(irg, current_cconv);
 	amd64_create_stacklayout(irg, current_cconv);
 	be_add_parameter_entity_stores(irg);
+	x86_create_parameter_loads(irg, current_cconv);
 
 	heights = heights_new(irg);
 	x86_calculate_non_address_mode_nodes(irg);
