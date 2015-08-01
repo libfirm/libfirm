@@ -187,7 +187,7 @@ static ir_type *lower_mtp(compound_call_lowering_flags flags, ir_type *mtp)
 	for (size_t i = 0; i < nn_ress; ++i)
 		set_method_res_type(lowered, i, results[i]);
 
-	set_method_variadicity(lowered, get_method_variadicity(mtp));
+	set_method_variadic(lowered, is_method_variadic(mtp));
 
 	unsigned cconv = get_method_calling_convention(mtp);
 	if (nn_params > n_params) {

@@ -166,7 +166,7 @@ calling_convention_t *sparc_decide_calling_convention(ir_type *function_type,
 		omit_fp = be_options.omit_fp;
 		/* our current vaarg handling needs the standard space to store the
 		 * args 0-5 in it */
-		if (get_method_variadicity(function_type) == variadicity_variadic)
+		if (is_method_variadic(function_type))
 			omit_fp = false;
 		/* The pointer to the aggregate return value belongs to the 92 magic bytes.
 		 * Thus, if the called functions increases the stack size,

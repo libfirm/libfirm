@@ -165,7 +165,7 @@ bool sparc_variadic_fixups(ir_graph *irg, calling_convention_t *cconv)
 {
 	ir_entity *entity = get_irg_entity(irg);
 	ir_type   *mtp    = get_entity_type(entity);
-	if (get_method_variadicity(mtp) != variadicity_variadic)
+	if (!is_method_variadic(mtp))
 		return false;
 
 	if (cconv->n_param_regs >= SPARC_N_PARAM_REGS)
@@ -269,7 +269,7 @@ static ir_type *compute_arg_type(ir_graph *irg, calling_convention_t *cconv,
 		 * original number of parameters */
 		ir_type *non_lowered   = get_higher_type(mtp);
 		size_t   orig_n_params = get_method_n_params(non_lowered);
-		assert(get_method_variadicity(mtp) == variadicity_variadic);
+		assert(is_method_variadic(mtp));
 		long offset;
 		if (orig_n_params < n_params) {
 			assert(param_map[orig_n_params] != NULL);

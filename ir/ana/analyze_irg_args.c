@@ -216,8 +216,7 @@ ptr_access_kind get_method_param_access(ir_entity *ent, size_t pos)
 {
 #ifndef NDEBUG
 	ir_type *mtp = get_entity_type(ent);
-	bool is_variadic = get_method_variadicity(mtp) == variadicity_variadic;
-	assert(is_variadic || pos < get_method_n_params(mtp));
+	assert(is_method_variadic(mtp) || pos < get_method_n_params(mtp));
 #endif
 
 	if (ent->attr.mtd_attr.param_access) {

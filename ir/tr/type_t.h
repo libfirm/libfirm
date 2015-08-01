@@ -71,7 +71,7 @@ typedef struct {
 	ir_type                 **params;           /**< Array of parameter types. */
 	size_t                    n_res;            /**< Number of results. */
 	ir_type                 **res_type;         /**< Array of result types. */
-	ir_variadicity            variadicity;      /**< The variadicity of the method. */
+	bool                      variadic;         /**< The variadicity of the method. */
 	mtp_additional_properties properties;       /**< Set of additional method properties. */
 	unsigned                  irg_calling_conv; /**< A set of calling convention flags. */
 } mtd_attr;
@@ -414,7 +414,7 @@ ir_type *new_type_segment(ident *name, type_flags flags);
 
 static inline void copy_method_properties(ir_type *const dst, ir_type const *const src)
 {
-	set_method_variadicity(dst, get_method_variadicity(src));
+	set_method_variadic(dst, is_method_variadic(src));
 	set_method_calling_convention(dst, get_method_calling_convention(src));
 	set_method_additional_properties(dst, get_method_additional_properties(src));
 }

@@ -622,8 +622,7 @@ static int verify_node_Call(const ir_node *n)
 	if ((size_t)get_Call_n_params(n) < get_method_n_params(mt)) {
 		warn(n, "call has fewer arguments than method type");
 		return false;
-	} else if ((size_t)get_Call_n_params(n) > get_method_n_params(mt) &&
-	    get_method_variadicity(mt) != variadicity_variadic) {
+	} else if ((size_t)get_Call_n_params(n) > get_method_n_params(mt) && !is_method_variadic(mt)) {
 		warn(n, "call has more arguments than method type");
 		return false;
 	} else {

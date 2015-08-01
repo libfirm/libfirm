@@ -680,14 +680,14 @@ void set_struct_mode(ir_type *tp, ir_mode *mode)
 ir_type *new_type_method(size_t n_param, size_t n_res)
 {
 	ir_type *res = new_type(type_method, mode_P);
-	res->flags               |= tf_layout_fixed;
-	res->size                 = get_mode_size_bytes(mode_P);
-	res->attr.ma.n_params     = n_param;
-	res->attr.ma.params       = XMALLOCNZ(ir_type*, n_param);
-	res->attr.ma.n_res        = n_res;
-	res->attr.ma.res_type     = XMALLOCNZ(ir_type*, n_res);
-	res->attr.ma.variadicity  = variadicity_non_variadic;
-	res->attr.ma.properties   = mtp_no_property;
+	res->flags             |= tf_layout_fixed;
+	res->size               = get_mode_size_bytes(mode_P);
+	res->attr.ma.n_params   = n_param;
+	res->attr.ma.params     = XMALLOCNZ(ir_type*, n_param);
+	res->attr.ma.n_res      = n_res;
+	res->attr.ma.res_type   = XMALLOCNZ(ir_type*, n_res);
+	res->attr.ma.variadic   = false;
+	res->attr.ma.properties = mtp_no_property;
 	set_type_alignment_bytes(res, 1);
 	hook_new_type(res);
 	return res;
@@ -712,7 +712,7 @@ ir_type *clone_type_method(ir_type *tp)
 	res->attr.ma.n_res            = n_res;
 	res->attr.ma.res_type         = XMALLOCN(ir_type*, n_res);
 	MEMCPY(res->attr.ma.res_type, tp->attr.ma.res_type, n_res);
-	res->attr.ma.variadicity      = tp->attr.ma.variadicity;
+	res->attr.ma.variadic         = tp->attr.ma.variadic;
 	res->attr.ma.properties       = tp->attr.ma.properties;
 	res->attr.ma.irg_calling_conv = tp->attr.ma.irg_calling_conv;
 	set_type_alignment_bytes(res, get_type_alignment_bytes(tp));
@@ -767,28 +767,16 @@ void set_method_res_type(ir_type *method, size_t pos, ir_type *tp)
 	method->attr.ma.res_type[pos] = tp;
 }
 
-const char *get_variadicity_name(ir_variadicity vari)
-{
-#define X(a)    case a: return #a
-	switch (vari) {
-	X(variadicity_non_variadic);
-	X(variadicity_variadic);
-	default:
-		return "BAD VALUE";
-	}
-#undef X
-}
-
-ir_variadicity get_method_variadicity(const ir_type *method)
+int is_method_variadic(ir_type const *const method)
 {
 	assert(is_Method_type(method));
-	return method->attr.ma.variadicity;
+	return method->attr.ma.variadic;
 }
 
-void set_method_variadicity(ir_type *method, ir_variadicity vari)
+void set_method_variadic(ir_type *const method, int const is_variadic)
 {
 	assert(is_Method_type(method));
-	method->attr.ma.variadicity = vari;
+	method->attr.ma.variadic = is_variadic;
 }
 
 mtp_additional_properties (get_method_additional_properties)(const ir_type *method)

@@ -738,7 +738,7 @@ void dump_type_to_file(FILE *const F, const ir_type *const tp)
 		if (verbosity & dump_verbosity_typeattrs) {
 			mtp_additional_properties mtp = get_method_additional_properties(tp);
 			unsigned cconv = get_method_calling_convention(tp);
-			fprintf(F, "\n  variadicity: %s", get_variadicity_name(get_method_variadicity(tp)));
+			fprintf(F, "\n  variadic: %s", is_method_variadic(tp) ? "yes" : "no");
 			fprintf(F, "\n  return types: %lu",
 			        (unsigned long) get_method_n_ress(tp));
 			for (size_t i = 0; i < get_method_n_ress(tp); ++i) {
@@ -752,14 +752,13 @@ void dump_type_to_file(FILE *const F, const ir_type *const tp)
 				const ir_type *ptp = get_method_param_type(tp, i);
 				ir_fprintf(F, "\n    %+F", ptp);
 			}
+			if (is_method_variadic(tp))
+				fprintf(F, "\n    ...");
 			fprintf(F, "\n  properties:");
 			print_bitflags(F, mtp_property_names, (unsigned)mtp);
 
 			fprintf(F, "\n  calling convention:");
 			print_bitflags(F, cc_names, (unsigned)cconv);
-			if (get_method_variadicity(tp)) {
-				fprintf(F, "\n    ...");
-			}
 			fprintf(F, "\n");
 		}
 		break;

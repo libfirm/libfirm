@@ -640,7 +640,7 @@ static void write_type_method(write_env_t *env, ir_type *tp)
 		write_type_ref(env, get_method_param_type(tp, i));
 	for (size_t i = 0; i < nresults; i++)
 		write_type_ref(env, get_method_res_type(tp, i));
-	write_unsigned(env, get_method_variadicity(tp));
+	write_unsigned(env, is_method_variadic(tp));
 	fputc('\n', env->file);
 }
 
@@ -1693,8 +1693,8 @@ static void read_type(read_env_t *env)
 			set_method_res_type(type, i, restype);
 		}
 
-		ir_variadicity variadicity = (ir_variadicity) read_long(env);
-		set_method_variadicity(type, variadicity);
+		int const variadic = read_long(env);
+		set_method_variadic(type, variadic);
 
 		set_method_calling_convention(type, callingconv);
 		set_method_additional_properties(type, addprops);

@@ -1636,7 +1636,7 @@ static ir_node *gen_Call(ir_node *node)
 	++in_arity;
 
 	/* vararg calls need the number of SSE registers used */
-	if (get_method_variadicity(type) == variadicity_variadic) {
+	if (is_method_variadic(type)) {
 		amd64_imm64_t const imm = {
 			.kind   = X86_IMM_VALUE,
 			.offset = cconv->n_xmm_regs,

@@ -934,7 +934,7 @@ static void update_calls_to_private(ir_node *call, void *env)
 		/* clear mismatches in variadicity that can happen in obscure C
 		 * programs and break when changing to private calling convention. */
 		ir_type *entity_ctp = get_entity_type(callee);
-		set_method_variadicity(ctp, get_method_variadicity(entity_ctp));
+		set_method_variadic(ctp, is_method_variadic(entity_ctp));
 		set_Call_type(call, ctp);
 		DB((dbgcall, LEVEL_1,
 		    "changed call to private method %+F using cloned type %+F\n",

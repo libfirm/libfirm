@@ -1347,24 +1347,11 @@ FIRM_API ir_type *get_method_res_type(const ir_type *method, size_t pos);
 /** Sets the type of the result at position pos of a method. */
 FIRM_API void set_method_res_type(ir_type *method, size_t pos, ir_type *tp);
 
-/**
- * This enum flags the variadicity of methods (methods with a
- * variable amount of arguments (e.g. C's printf). Default is
- * non_variadic.
- */
-typedef enum ir_variadicity {
-	variadicity_non_variadic, /**< non variadic */
-	variadicity_variadic      /**< variadic */
-} ir_variadicity;
-
-/** Returns the null-terminated name of this variadicity. */
-FIRM_API const char *get_variadicity_name(ir_variadicity vari);
-
 /** Returns the variadicity of a method. */
-FIRM_API ir_variadicity get_method_variadicity(const ir_type *method);
+FIRM_API int is_method_variadic(ir_type const *method);
 
 /** Sets the variadicity of a method. */
-FIRM_API void set_method_variadicity(ir_type *method, ir_variadicity vari);
+FIRM_API void set_method_variadic(ir_type *method, int is_variadic);
 
 /** Returns the mask of the additional graph properties. */
 FIRM_API mtp_additional_properties get_method_additional_properties(const ir_type *method);
