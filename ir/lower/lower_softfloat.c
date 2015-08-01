@@ -352,9 +352,7 @@ static ir_type *lower_method_type(ir_type *mtp)
 		set_method_res_type(res, i, rtp);
 	}
 
-	set_method_variadicity(res, get_method_variadicity(mtp));
-	set_method_calling_convention(res, get_method_calling_convention(mtp));
-	set_method_additional_properties(res, get_method_additional_properties(mtp));
+	copy_method_properties(res, mtp);
 
 	set_higher_type(res, mtp);
 

@@ -197,9 +197,7 @@ bool sparc_variadic_fixups(ir_graph *irg, calling_convention_t *cconv)
 	}
 
 	set_type_dbg_info(new_mtp, dbgi);
-	set_method_variadicity(new_mtp, get_method_variadicity(mtp));
-	set_method_calling_convention(new_mtp, get_method_calling_convention(mtp));
-	set_method_additional_properties(new_mtp, get_method_additional_properties(mtp));
+	copy_method_properties(new_mtp, mtp);
 	set_higher_type(new_mtp, mtp);
 
 	set_entity_type(entity, new_mtp);

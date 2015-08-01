@@ -1638,9 +1638,7 @@ static ir_type *lower_mtp(ir_type *mtp)
 		set_method_res_type(res, n_res++, tp);
 	}
 
-	set_method_variadicity(res, get_method_variadicity(mtp));
-	set_method_calling_convention(res, get_method_calling_convention(mtp));
-	set_method_additional_properties(res, get_method_additional_properties(mtp));
+	copy_method_properties(res, mtp);
 
 	set_higher_type(res, mtp);
 	set_type_link(res, mtp);
@@ -2159,9 +2157,7 @@ static ir_type *lower_Builtin_type_high(ir_type *mtp)
 		set_method_res_type(res, i, tp);
 	}
 
-	set_method_variadicity(res, get_method_variadicity(mtp));
-	set_method_calling_convention(res, get_method_calling_convention(mtp));
-	set_method_additional_properties(res, get_method_additional_properties(mtp));
+	copy_method_properties(res, mtp);
 
 	pmap_insert(lowered_builtin_type_high, mtp, res);
 	return res;
@@ -2243,9 +2239,7 @@ static ir_type *lower_Builtin_type_low(ir_type *mtp)
 		set_method_res_type(res, i, tp);
 	}
 
-	set_method_variadicity(res, get_method_variadicity(mtp));
-	set_method_calling_convention(res, get_method_calling_convention(mtp));
-	set_method_additional_properties(res, get_method_additional_properties(mtp));
+	copy_method_properties(res, mtp);
 
 	pmap_insert(lowered_builtin_type_low, mtp, res);
 	return res;

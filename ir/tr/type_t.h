@@ -412,4 +412,11 @@ static inline bool is_aggregate_type(const ir_type *type)
 
 ir_type *new_type_segment(ident *name, type_flags flags);
 
+static inline void copy_method_properties(ir_type *const dst, ir_type const *const src)
+{
+	set_method_variadicity(dst, get_method_variadicity(src));
+	set_method_calling_convention(dst, get_method_calling_convention(src));
+	set_method_additional_properties(dst, get_method_additional_properties(src));
+}
+
 #endif
