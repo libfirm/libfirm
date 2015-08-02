@@ -644,8 +644,6 @@ static ir_node *create_pop(dbg_info *dbgi, ir_node *block,
  */
 static void peephole_be_IncSP(ir_node *node)
 {
-	const arch_register_t *esp = &ia32_registers[REG_ESP];
-
 	/* first optimize incsp->incsp combinations */
 	if (be_peephole_IncSP_IncSP(node))
 		return;
@@ -655,9 +653,6 @@ static void peephole_be_IncSP(ir_node *node)
 
 	/* transform Load->IncSP combinations to Pop where possible */
 	peephole_Load_IncSP_to_pop(node);
-
-	if (arch_get_irn_register(node) != esp)
-		return;
 
 	/* replace IncSP -4 by Pop freereg when possible */
 	int offset = be_get_IncSP_offset(node);
@@ -685,6 +680,8 @@ static void peephole_be_IncSP(ir_node *node)
 			stack = create_pop(dbgi, block, stack, node, reg);
 		}
 	} else {
+		arch_register_t const *const esp = &ia32_registers[REG_ESP];
+
 		dbg_info *dbgi  = get_irn_dbg_info(node);
 		ir_node  *block = get_nodes_block(node);
 
