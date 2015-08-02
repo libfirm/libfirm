@@ -374,18 +374,14 @@ bool be_can_move_up(ir_heights_t *heights, const ir_node *node,
 	return true;
 }
 
-/*
- * Tries to optimize a beIncSP node with its previous IncSP node.
- * Must be run from a be_peephole_opt() context.
- */
-ir_node *be_peephole_IncSP_IncSP(ir_node *node)
+bool be_peephole_IncSP_IncSP(ir_node *node)
 {
 	ir_node *pred = be_get_IncSP_pred(node);
 	if (!be_is_IncSP(pred))
-		return node;
+		return false;
 
 	if (!be_has_only_one_user(pred))
-		return node;
+		return false;
 
 	/* add node offset to pred and remove our IncSP */
 	int curr_offs = be_get_IncSP_offset(node);
@@ -394,7 +390,7 @@ ir_node *be_peephole_IncSP_IncSP(ir_node *node)
 	be_set_IncSP_offset(pred, offs);
 
 	be_peephole_exchange(node, pred);
-	return pred;
+	return true;
 }
 
 void be_peephole_opt(ir_graph *irg)

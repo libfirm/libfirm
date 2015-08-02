@@ -44,7 +44,8 @@ static bool allowed_arm_immediate(int offset, arm_vals *result)
 static void peephole_be_IncSP(ir_node *node)
 {
 	/* first optimize incsp->incsp combinations */
-	node = be_peephole_IncSP_IncSP(node);
+	if (be_peephole_IncSP_IncSP(node))
+		return;
 
 	int offset = be_get_IncSP_offset(node);
 	/* can be transformed into Add OR Sub */

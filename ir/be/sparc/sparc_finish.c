@@ -454,8 +454,7 @@ static void finish_sparc_Stf(ir_node *node)
 
 static void peephole_be_IncSP(ir_node *node)
 {
-	node = be_peephole_IncSP_IncSP(node);
-	if (!be_is_IncSP(node))
+	if (be_peephole_IncSP_IncSP(node))
 		return;
 
 	ir_node *pred = be_get_IncSP_pred(node);

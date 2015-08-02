@@ -46,9 +46,9 @@ ir_node *be_peephole_to_tuple(ir_node *node);
  *
  * @param node  a be_IncSP node
  *
- * @return the new IncSP node or node itself
+ * @return whether @p node was removed
  */
-ir_node *be_peephole_IncSP_IncSP(ir_node *node);
+bool be_peephole_IncSP_IncSP(ir_node *node);
 
 bool be_has_only_one_user(ir_node *node);
 

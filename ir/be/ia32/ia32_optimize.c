@@ -647,7 +647,8 @@ static void peephole_be_IncSP(ir_node *node)
 	const arch_register_t *esp = &ia32_registers[REG_ESP];
 
 	/* first optimize incsp->incsp combinations */
-	node = be_peephole_IncSP_IncSP(node);
+	if (be_peephole_IncSP_IncSP(node))
+		return;
 
 	/* transform IncSP->Store combinations to Push where possible */
 	peephole_IncSP_Store_to_push(node);
