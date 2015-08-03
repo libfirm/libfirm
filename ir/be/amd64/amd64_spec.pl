@@ -537,7 +537,7 @@ xorpd_0 => {
 	mode      => $mode_xmm,
 },
 
-xorp  => {
+xorp => {
 	template => $binopx_commutative,
 	emit     => "xorp%MX %AM",
 },
@@ -546,7 +546,7 @@ movd_xmm_gp => {
 	state     => "exc_pinned",
 	ins       => [ "operand" ],
 	outs      => [ "res" ],
-	in_reqs  => [ "xmm" ],
+	in_reqs   => [ "xmm" ],
 	out_reqs  => [ "gp" ],
 	mode      => $mode_gp,
 	attr_type => "amd64_addr_attr_t",

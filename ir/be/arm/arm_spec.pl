@@ -3,14 +3,10 @@
 
 $arch = "arm";
 
-#
-# Modes
-#
 $mode_gp    = "arm_mode_gp";
 $mode_flags = "arm_mode_flags";
 $mode_fp    = "mode_F";
 
-# NOTE: Last entry of each class is the largest Firm-Mode a register can hold
 %reg_classes = (
 	gp => [
 		{ name => "r0",  dwarf => 0 },
@@ -52,22 +48,26 @@ $default_attr_type = "arm_attr_t";
 $default_copy_attr = "arm_copy_attr";
 
 %init_attr = (
-	arm_attr_t           => "\tinit_arm_attributes(res, irn_flags, in_reqs, n_res);",
-	arm_Address_attr_t  =>
-		"\tinit_arm_attributes(res, irn_flags, in_reqs, n_res);\n".
+	arm_attr_t =>
+		"init_arm_attributes(res, irn_flags, in_reqs, n_res);",
+	arm_Address_attr_t =>
+		"init_arm_attributes(res, irn_flags, in_reqs, n_res);\n".
 		"\tinit_arm_Address_attributes(res, entity, offset);",
-	arm_CondJmp_attr_t   => "\tinit_arm_attributes(res, irn_flags, in_reqs, n_res);",
-	arm_SwitchJmp_attr_t => "\tinit_arm_attributes(res, irn_flags, in_reqs, n_res);",
-	arm_fConst_attr_t    => "\tinit_arm_attributes(res, irn_flags, in_reqs, n_res);",
+	arm_CondJmp_attr_t =>
+		"init_arm_attributes(res, irn_flags, in_reqs, n_res);",
+	arm_SwitchJmp_attr_t =>
+		"init_arm_attributes(res, irn_flags, in_reqs, n_res);",
+	arm_fConst_attr_t =>
+		"init_arm_attributes(res, irn_flags, in_reqs, n_res);",
 	arm_load_store_attr_t =>
-		"\tinit_arm_attributes(res, irn_flags, in_reqs, n_res);\n".
+		"init_arm_attributes(res, irn_flags, in_reqs, n_res);\n".
 		"\tinit_arm_load_store_attributes(res, ls_mode, entity, entity_sign, offset, is_frame_entity);",
 	arm_shifter_operand_t =>
-		"\tinit_arm_attributes(res, irn_flags, in_reqs, n_res);\n",
+		"init_arm_attributes(res, irn_flags, in_reqs, n_res);",
 	arm_cmp_attr_t =>
-		"\tinit_arm_attributes(res, irn_flags, in_reqs, n_res);\n",
+		"init_arm_attributes(res, irn_flags, in_reqs, n_res);",
 	arm_farith_attr_t =>
-		"\tinit_arm_attributes(res, irn_flags, in_reqs, n_res);\n".
+		"init_arm_attributes(res, irn_flags, in_reqs, n_res);\n".
 		"\tinit_arm_farith_attributes(res, op_mode);",
 );
 
@@ -280,11 +280,11 @@ Mul => {
 	emit         => 'mul %D0, %S0, %S1',
 	mode         => $mode_gp,
 	constructors => {
-		""   => { out_reqs => [ "gp" ]     },
-		# TODO: !in_r1 for out constrains the register allocator more than
+		"" => { out_reqs => [ "gp" ]     },
+		# TODO: !in_r1 for out constraints the register allocator more than
 		# necessary, as usually you can fix the problem by swapping the inputs. But
 		# for this scheme we would need a special if both inputs are the same value.
-		"v5" => { out_reqs => [ "!in_r1" ] },
+		v5 => { out_reqs => [ "!in_r1" ] },
 	},
 },
 
@@ -305,9 +305,9 @@ Mla => {
 	emit      => 'mla %D0, %S0, %S1, %S2',
 	mode      => $mode_gp,
 	constructors => {
-		""   => { out_reqs => [ "gp" ]     },
+		"" => { out_reqs => [ "gp" ]     },
 		# See comments for Mul_v5 out register constraint
-		"v5" => { out_reqs => [ "!in_r1" ] },
+		v5 => { out_reqs => [ "!in_r1" ] },
 	}
 },
 
@@ -382,14 +382,14 @@ RsbS => {
 },
 
 Mov => {
-	template  => $unop_shifter_operand,
-	emit      => 'mov %D0, %O',
-	ins       => [ "Rm", "Rs" ],
+	template => $unop_shifter_operand,
+	emit     => 'mov %D0, %O',
+	ins      => [ "Rm", "Rs" ],
 },
 
 Mvn => {
-	template  => $unop_shifter_operand,
-	emit      => 'mvn %D0, %O',
+	template => $unop_shifter_operand,
+	emit     => 'mvn %D0, %O',
 },
 
 Pkhbt => {
@@ -427,14 +427,14 @@ LinkMovPC => {
 # mov lr, pc\n ldr pc, XXX -- This combination is used for calls to function
 # pointers
 LinkLdrPC => {
-	state      => "exc_pinned",
-	irn_flags  => [ "modify_flags" ],
-	in_reqs    => "...",
-	out_reqs   => "...",
-	attr_type  => "arm_load_store_attr_t",
-	attr       => "ir_mode *ls_mode, ir_entity *entity, int entity_sign, long offset, bool is_frame_entity",
-	emit       => "mov lr, pc\n".
-	              "ldr pc, %O",
+	state     => "exc_pinned",
+	irn_flags => [ "modify_flags" ],
+	in_reqs   => "...",
+	out_reqs  => "...",
+	attr_type => "arm_load_store_attr_t",
+	attr      => "ir_mode *ls_mode, ir_entity *entity, int entity_sign, long offset, bool is_frame_entity",
+	emit      => "mov lr, pc\n".
+	             "ldr pc, %O",
 },
 
 Bl => {
@@ -621,9 +621,7 @@ Stf => {
 	attr      => "ir_mode *ls_mode, ir_entity *entity, int entity_sign, long offset, bool is_frame_entity",
 },
 
-#
 # floating point constants
-#
 fConst => {
 	op_flags  => [ "constlike" ],
 	irn_flags => [ "rematerializable" ],
@@ -698,4 +696,4 @@ OrPl_t => {
 	dump_func => "NULL",
 },
 
-); # end of %nodes
+);

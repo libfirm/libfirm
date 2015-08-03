@@ -13,11 +13,11 @@
 
 $arch = "ia32";
 
-$mode_xmm           = "ia32_mode_float64";
-$mode_fp87          = "ia32_mode_E";
-$mode_gp            = "ia32_mode_gp";
-$mode_flags         = "ia32_mode_flags";
-$mode_fpcw          = "ia32_mode_fpcw";
+$mode_xmm   = "ia32_mode_float64";
+$mode_fp87  = "ia32_mode_E";
+$mode_gp    = "ia32_mode_gp";
+$mode_flags = "ia32_mode_flags";
+$mode_fpcw  = "ia32_mode_fpcw";
 
 %reg_classes = (
 	gp => [
@@ -64,33 +64,28 @@ $mode_fpcw          = "ia32_mode_fpcw";
 		{ name => "eflags", dwarf => 9 },
 		{ mode => "ia32_mode_flags", flags => "manual_ra" }
 	],
-); # %reg_classes
+);
 
 $default_attr_type = "ia32_attr_t";
 $default_copy_attr = "ia32_copy_attr";
 
 sub ia32_custom_init_attr {
-	my $constr = shift;
-	my $node   = shift;
-	my $name   = shift;
-	my $res    = "";
+	my ($constr, $node, $name) = @_;
 
-	if(defined($node->{am})) {
-		my $am = $node->{am};
-		if($am eq "source,unary") {
+	my $res = "";
+	my $am  = $node->{am};
+	if (defined($am)) {
+		if ($am eq "source,unary") {
 			$res .= "\tset_ia32_am_support(res, ia32_am_unary);";
-		} elsif($am eq "source,binary") {
+		} elsif ($am eq "source,binary") {
 			$res .= "\tset_ia32_am_support(res, ia32_am_binary);";
-		} elsif($am eq "none") {
+		} elsif ($am eq "none") {
 			# nothing to do
 		} else {
 			die("Invalid address mode '$am' specified on op $name");
 		}
-		if($am ne "none") {
-			if($node->{state} ne "exc_pinned"
-					and $node->{state} ne "pinned") {
-				die("AM nodes must have pinned or AM pinned state ($name)");
-			}
+		if ($am ne "none" && $node->{state} ne "exc_pinned" && $node->{state} ne "pinned") {
+			die("AM nodes must have pinned or AM pinned state ($name)");
 		}
 	}
 	return $res;
@@ -98,31 +93,31 @@ sub ia32_custom_init_attr {
 $custom_init_attr_func = \&ia32_custom_init_attr;
 
 %init_attr = (
-	ia32_attr_t     =>
-		"\tinit_ia32_attributes(res, irn_flags, in_reqs, n_res);",
+	ia32_attr_t =>
+		"init_ia32_attributes(res, irn_flags, in_reqs, n_res);",
 	ia32_call_attr_t =>
-		"\tinit_ia32_attributes(res, irn_flags, in_reqs, n_res);\n".
+		"init_ia32_attributes(res, irn_flags, in_reqs, n_res);\n".
 		"\tinit_ia32_call_attributes(res, pop, call_tp);",
 	ia32_condcode_attr_t =>
-		"\tinit_ia32_attributes(res, irn_flags, in_reqs, n_res);\n".
+		"init_ia32_attributes(res, irn_flags, in_reqs, n_res);\n".
 		"\tinit_ia32_condcode_attributes(res, condition_code);",
 	ia32_switch_attr_t =>
-		"\tinit_ia32_attributes(res, irn_flags, in_reqs, n_res);\n".
+		"init_ia32_attributes(res, irn_flags, in_reqs, n_res);\n".
 		"\tinit_ia32_switch_attributes(res, switch_table);",
 	ia32_copyb_attr_t =>
-		"\tinit_ia32_attributes(res, irn_flags, in_reqs, n_res);\n".
+		"init_ia32_attributes(res, irn_flags, in_reqs, n_res);\n".
 		"\tinit_ia32_copyb_attributes(res, size);",
 	ia32_immediate_attr_t =>
-		"\tinit_ia32_attributes(res, irn_flags, in_reqs, n_res);\n".
+		"init_ia32_attributes(res, irn_flags, in_reqs, n_res);\n".
 		"\tinit_ia32_immediate_attributes(res, imm);",
 	ia32_x87_attr_t =>
-		"\tinit_ia32_attributes(res, irn_flags, in_reqs, n_res);\n".
+		"init_ia32_attributes(res, irn_flags, in_reqs, n_res);\n".
 		"\tinit_ia32_x87_attributes(res);",
 	ia32_climbframe_attr_t =>
-		"\tinit_ia32_attributes(res, irn_flags, in_reqs, n_res);\n".
+		"init_ia32_attributes(res, irn_flags, in_reqs, n_res);\n".
 		"\tinit_ia32_climbframe_attributes(res, count);",
 	ia32_return_attr_t =>
-		"\tinit_ia32_attributes(res, irn_flags, in_reqs, n_res);\n".
+		"init_ia32_attributes(res, irn_flags, in_reqs, n_res);\n".
 		"\tinit_ia32_return_attributes(res, pop);",
 );
 
@@ -156,15 +151,15 @@ my $binop_flags = {
 };
 
 my $binop_mem = {
-	irn_flags    => [ "modify_flags", "rematerializable" ],
-	state        => "exc_pinned",
+	irn_flags => [ "modify_flags", "rematerializable" ],
+	state     => "exc_pinned",
 	constructors => {
 		""     => { in_reqs => [ "gp", "gp", "mem", "gp" ] },
 		"8bit" => { in_reqs => [ "gp", "gp", "mem", "eax ebx ecx edx" ] },
 	},
-	out_reqs     => [ "none", "flags", "mem" ],
-	ins          => [ "base", "index", "mem", "val" ],
-	outs         => [ "unused", "flags", "M" ],
+	out_reqs  => [ "none", "flags", "mem" ],
+	ins       => [ "base", "index", "mem", "val" ],
+	outs      => [ "unused", "flags", "M" ],
 };
 
 my $shiftop = {
@@ -189,11 +184,11 @@ my $shiftop_double = {
 	irn_flags => [ "modify_flags", "rematerializable" ],
 	in_reqs   => [ "gp", "gp", "ecx" ],
 	constructors => {
-		""    => { out_reqs  => [ "in_r1 !in_r2 !in_r3", "flags" ] },
+		""  => { out_reqs  => [ "in_r1 !in_r2 !in_r3", "flags" ] },
 		# With an immediate shift amount we can swap between ShlD/ShrD and negate
 		# the shift amount, if the output gets the same register as the second
 		# input.
-		"imm" => { out_reqs  => [ "in_r1 in_r2",         "flags" ] },
+		imm => { out_reqs  => [ "in_r1 in_r2",         "flags" ] },
 	},
 	ins       => [ "val_high", "val_low", "count" ],
 	outs      => [ "res", "flags" ],
@@ -451,9 +446,9 @@ IMul => {
 
 IMulImm => {
 	template => $binop_commutative,
-	out_reqs  => [ "gp", "flags", "mem" ],
-	emit      => "imul%M %#S4, %#AS3, %#D0",
-	latency   => 5,
+	out_reqs => [ "gp", "flags", "mem" ],
+	emit     => "imul%M %#S4, %#AS3, %#D0",
+	latency  => 5,
 },
 
 IMul1OP => {
@@ -849,16 +844,16 @@ Jmp => {
 },
 
 IJmp => {
-	state     => "pinned",
-	op_flags  => [ "cfopcode", "unknown_jump" ],
-	in_reqs   => [ "gp", "gp", "mem", "gp" ],
-	out_reqs  => [ "exec", "none", "mem" ],
-	ins       => [ "base", "index", "mem", "target" ],
-	outs      => [ "jmp", "none", "M" ],
-	am        => "source,unary",
-	emit      => "jmp %*AS3",
-	latency   => 1,
-	mode      => "mode_X",
+	state    => "pinned",
+	op_flags => [ "cfopcode", "unknown_jump" ],
+	in_reqs  => [ "gp", "gp", "mem", "gp" ],
+	out_reqs => [ "exec", "none", "mem" ],
+	ins      => [ "base", "index", "mem", "target" ],
+	outs     => [ "jmp", "none", "M" ],
+	am       => "source,unary",
+	emit     => "jmp %*AS3",
+	latency  => 1,
+	mode     => "mode_X",
 },
 
 Const => {
@@ -870,9 +865,9 @@ Const => {
 },
 
 Unknown => {
-	template  => $valueop,
-	latency   => 0,
-	emit      => "",
+	template => $valueop,
+	latency  => 0,
+	emit     => "",
 },
 
 GetEIP => {
@@ -920,36 +915,36 @@ ChangeCW => {
 },
 
 FldCW => {
-	op_flags  => [ "uses_memory" ],
-	state     => "pinned",
-	in_reqs   => [ "gp", "gp", "mem" ],
-	out_reqs  => [ "fpcw" ],
-	ins       => [ "base", "index", "mem" ],
-	latency   => 5,
-	emit      => "fldcw %AM",
-	mode      => $mode_fpcw,
+	op_flags => [ "uses_memory" ],
+	state    => "pinned",
+	in_reqs  => [ "gp", "gp", "mem" ],
+	out_reqs => [ "fpcw" ],
+	ins      => [ "base", "index", "mem" ],
+	latency  => 5,
+	emit     => "fldcw %AM",
+	mode     => $mode_fpcw,
 },
 
 FnstCW => {
-	op_flags  => [ "uses_memory" ],
-	state     => "pinned",
-	in_reqs   => [ "gp", "gp", "mem", "fp_cw" ],
-	out_reqs  => [ "mem" ],
-	ins       => [ "base", "index", "mem", "fpcw" ],
-	latency   => 5,
-	emit      => "fnstcw %AM",
-	mode      => "mode_M",
+	op_flags => [ "uses_memory" ],
+	state    => "pinned",
+	in_reqs  => [ "gp", "gp", "mem", "fp_cw" ],
+	out_reqs => [ "mem" ],
+	ins      => [ "base", "index", "mem", "fpcw" ],
+	latency  => 5,
+	emit     => "fnstcw %AM",
+	mode     => "mode_M",
 },
 
 FnstCWNOP => {
-	op_flags  => [ "uses_memory" ],
-	state     => "pinned",
-	in_reqs   => [ "fp_cw" ],
-	out_reqs  => [ "mem" ],
-	ins       => [ "fpcw" ],
-	latency   => 0,
-	emit      => "",
-	mode      => "mode_M",
+	op_flags => [ "uses_memory" ],
+	state    => "pinned",
+	in_reqs  => [ "fp_cw" ],
+	out_reqs => [ "mem" ],
+	ins      => [ "fpcw" ],
+	latency  => 0,
+	emit     => "",
+	mode     => "mode_M",
 },
 
 Cltd => {
@@ -969,28 +964,28 @@ Cltd => {
 # lateny of 0 for load is correct
 
 Load => {
-	op_flags  => [ "uses_memory", "fragile" ],
-	state     => "exc_pinned",
-	in_reqs   => [ "gp", "gp", "mem" ],
-	out_reqs  => [ "gp", "none", "mem", "exec", "exec" ],
-	ins       => [ "base", "index", "mem" ],
-	outs      => [ "res", "unused", "M", "X_regular", "X_except" ],
-	latency   => 0,
-	emit      => "mov%#Ml %AM, %D0",
+	op_flags => [ "uses_memory", "fragile" ],
+	state    => "exc_pinned",
+	in_reqs  => [ "gp", "gp", "mem" ],
+	out_reqs => [ "gp", "none", "mem", "exec", "exec" ],
+	ins      => [ "base", "index", "mem" ],
+	outs     => [ "res", "unused", "M", "X_regular", "X_except" ],
+	latency  => 0,
+	emit     => "mov%#Ml %AM, %D0",
 },
 
 Store => {
-	op_flags  => [ "uses_memory", "fragile" ],
-	state     => "exc_pinned",
+	op_flags => [ "uses_memory", "fragile" ],
+	state    => "exc_pinned",
 	constructors => {
 		""     => { in_reqs => [ "gp", "gp", "mem", "gp" ] },
 		"8bit" => { in_reqs => [ "gp", "gp", "mem", "eax ebx ecx edx" ] }
 	},
-	out_reqs  => [ "mem", "exec", "exec" ],
-	ins       => [ "base", "index", "mem", "val" ],
-	outs      => [ "M", "X_regular", "X_except" ],
-	emit      => "mov%M %#S3, %AM",
-	latency   => 2,
+	out_reqs => [ "mem", "exec", "exec" ],
+	ins      => [ "base", "index", "mem", "val" ],
+	outs     => [ "M", "X_regular", "X_except" ],
+	emit     => "mov%M %#S3, %AM",
+	latency  => 2,
 },
 
 Lea => {
@@ -1033,12 +1028,8 @@ PushEax => {
 Pop => {
 	state     => "exc_pinned",
 	constructors => {
-		"" => {
-			out_reqs => [ "gp", "none", "mem", "esp:I" ],
-		},
-		"ebp" => {
-			out_reqs => [ "ebp:I", "none", "mem", "esp:I" ],
-		}
+		""  => { out_reqs => [ "gp",    "none", "mem", "esp:I" ] },
+		ebp => { out_reqs => [ "ebp:I", "none", "mem", "esp:I" ] }
 	},
 	in_reqs   => [ "mem", "esp" ],
 	ins       => [ "mem", "stack" ],
@@ -1060,21 +1051,21 @@ CopyEbpEsp => {
 },
 
 PopMem => {
-	state     => "exc_pinned",
-	in_reqs   => [ "gp", "gp", "mem", "esp" ],
-	out_reqs  => [ "none", "none", "mem", "esp:I" ],
-	ins       => [ "base", "index", "mem", "stack" ],
-	outs      => [ "unused0", "unused1", "M", "stack" ],
-	emit      => "pop%M %AM",
-	latency   => 3, # Pop is more expensive than Push on Athlon
+	state    => "exc_pinned",
+	in_reqs  => [ "gp", "gp", "mem", "esp" ],
+	out_reqs => [ "none", "none", "mem", "esp:I" ],
+	ins      => [ "base", "index", "mem", "stack" ],
+	outs     => [ "unused0", "unused1", "M", "stack" ],
+	emit     => "pop%M %AM",
+	latency  => 3, # Pop is more expensive than Push on Athlon
 },
 
 Enter => {
-	in_reqs   => [ "esp" ],
-	out_reqs  => [ "ebp", "esp:I", "mem" ],
-	emit      => "enter",
-	outs      => [ "frame", "stack", "M" ],
-	latency   => 15,
+	in_reqs  => [ "esp" ],
+	out_reqs => [ "ebp", "esp:I", "mem" ],
+	emit     => "enter",
+	outs     => [ "frame", "stack", "M" ],
+	latency  => 15,
 },
 
 Leave => {
@@ -1112,14 +1103,12 @@ SubSP => {
 },
 
 LdTls => {
-	template  => $valueop,
-	emit      => "movl %%gs:0, %D0",
-	latency   => 1,
+	template => $valueop,
+	emit     => "movl %%gs:0, %D0",
+	latency  => 1,
 },
 
-#
 # BT supports source address mode, but this is unused yet
-#
 Bt => {
 	# only CF is set, but the other flags are undefined
 	irn_flags => [ "modify_flags", "rematerializable" ],
@@ -1144,9 +1133,7 @@ Bsr => {
 	latency  => 1,
 },
 
-#
 # SSE4.2 or SSE4a popcnt instruction
-#
 Popcnt => {
 	template => $unop_from_mem,
 	emit     => "popcnt%M %AS3, %D0",
@@ -1189,11 +1176,8 @@ Call => {
 	latency   => 4, # random number
 },
 
-#
 # a Helper node for frame-climbing, needed for __builtin_(frame|return)_address
-#
 # PS: try gcc __builtin_frame_address(100000) :-)
-#
 ClimbFrame => {
 	irn_flags => [ "modify_flags" ],
 	in_reqs   => [ "gp" ],
@@ -1205,18 +1189,12 @@ ClimbFrame => {
 	attr      => "unsigned count",
 },
 
-#
-# bswap
-#
 Bswap => {
 	template => $unop_no_flags,
 	emit     => "bswap%M %D0",
 	latency  => 1,
 },
 
-#
-# bswap16, use xchg here
-#
 Bswap16 => {
 	irn_flags => [ "rematerializable" ],
 	in_reqs   => [ "eax ebx ecx edx" ],
@@ -1239,27 +1217,19 @@ CmpXChgMem => {
 	latency   => 2,
 },
 
-#
-# BreakPoint
-#
 Breakpoint => {
 	template => $memop,
 	latency  => 0,
 	emit     => "int3",
 },
 
-#
-# Undefined Instruction on ALL x86 CPU's
-#
+# Undefined Instruction on ALL x86 CPUs
 UD2 => {
 	template => $memop,
 	latency  => 0,
 	emit     => "ud2",
 },
 
-#
-# outport
-#
 Outport => {
 	irn_flags => [ "rematerializable" ],
 	state     => "pinned",
@@ -1271,9 +1241,6 @@ Outport => {
 	mode      => "mode_M",
 },
 
-#
-# inport
-#
 Inport => {
 	irn_flags => [ "rematerializable" ],
 	state     => "pinned",
@@ -1285,9 +1252,7 @@ Inport => {
 	latency   => 1,
 },
 
-#
 # Intel style prefetching
-#
 Prefetch0 => {
 	template => $prefetchop,
 	latency  => 0,
@@ -1312,9 +1277,7 @@ PrefetchNTA => {
 	emit     => "prefetchnta %AM",
 },
 
-#
 # 3DNow! prefetch instructions
-#
 Prefetch => {
 	template => $prefetchop,
 	latency  => 0,
@@ -1504,16 +1467,15 @@ CvtSI2SD => {
 	latency  => 2,
 },
 
-
 l_LLtoFloat => {
-	ins      => [ "val_high", "val_low" ],
+	ins       => [ "val_high", "val_low" ],
 	attr_type => "",
 	dump_func => "NULL",
 },
 
 l_FloattoLL => {
-	ins      => [ "val" ],
-	outs     => [ "res_high", "res_low" ],
+	ins       => [ "val" ],
+	outs      => [ "res_high", "res_low" ],
 	attr_type => "",
 	dump_func => "NULL",
 },
@@ -1541,14 +1503,14 @@ CopyB_i => {
 },
 
 Cwtl => {
-	state     => "exc_pinned",
-	in_reqs   => [ "eax" ],
-	out_reqs  => [ "eax" ],
-	ins       => [ "val" ],
-	outs      => [ "res" ],
-	emit      => "cwtl",
-	latency   => 1,
-	mode      => $mode_gp,
+	state    => "exc_pinned",
+	in_reqs  => [ "eax" ],
+	out_reqs => [ "eax" ],
+	ins      => [ "val" ],
+	outs     => [ "res" ],
+	emit     => "cwtl",
+	latency  => 1,
+	mode     => $mode_gp,
 },
 
 Conv_I2I => {
@@ -1755,7 +1717,7 @@ fldl2e => {
 
 FucomFnstsw => {
 # we can't allow to rematerialize this node so we don't
-#  accidently produce Phi(Fucom, Fucom(ins_permuted))
+# accidently produce Phi(Fucom, Fucom(ins_permuted))
 #	irn_flags => [ "rematerializable" ],
 	in_reqs   => [ "fp", "fp" ],
 	out_reqs  => [ "eax" ],
@@ -1772,7 +1734,7 @@ FucomFnstsw => {
 
 FucomppFnstsw => {
 # we can't allow to rematerialize this node so we don't
-#  accidently produce Phi(Fucom, Fucom(ins_permuted))
+# accidently produce Phi(Fucom, Fucom(ins_permuted))
 #	irn_flags => [ "rematerializable" ],
 	in_reqs   => [ "fp", "fp" ],
 	out_reqs  => [ "eax" ],
@@ -1829,7 +1791,6 @@ Sahf => {
 
 # fxch, fdup, fpop
 # Note that it is NEVER allowed to do CSE on these nodes
-# Moreover, note the virtual register requierements!
 
 fxch => {
 	op_flags    => [ "keep" ],
@@ -1884,7 +1845,7 @@ femms => {
 	latency     => 3,
 },
 
-# Spilling and reloading of SSE registers, hardcoded, not generated #
+# Spilling and reloading of SSE registers
 
 xxLoad => {
 	op_flags  => [ "uses_memory", "fragile" ],
@@ -1908,27 +1869,28 @@ xxStore => {
 	latency  => 1,
 },
 
-); # end of %nodes
+);
 
 # Transform some attributes
 foreach my $op (keys(%nodes)) {
 	my $node         = $nodes{$op};
 	my $op_attr_init = $node->{op_attr_init};
 
-	if(defined($op_attr_init)) {
+	if (defined($op_attr_init)) {
 		$op_attr_init .= "\n\t";
 	} else {
 		$op_attr_init = "";
 	}
 
-	if(!defined($node->{latency})) {
-		if($op =~ m/^l_/) {
-			$node->{latency} = 0;
+	my $latency = $node->{latency};
+	if (!defined($latency)) {
+		if ($op =~ m/^l_/) {
+			$latency = 0;
 		} else {
 			die("Latency missing for op $op");
 		}
 	}
-	$op_attr_init .= "ia32_init_op(op, ".$node->{latency} . ");";
+	$op_attr_init .= "ia32_init_op(op, $latency);";
 
 	$node->{op_attr_init} = $op_attr_init;
 }

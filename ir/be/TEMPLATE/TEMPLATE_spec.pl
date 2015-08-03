@@ -1,11 +1,9 @@
 # the cpu architecture (ia32, ia64, mips, sparc, ppc, ...)
 $arch = "TEMPLATE";
 
-#
 # Modes
-#
-$mode_gp  = "mode_Iu"; # mode used by general purpose registers
-$mode_fp  = "mode_F";  # mode used by floatingpoint registers
+$mode_gp = "mode_Iu"; # mode used by general purpose registers
+$mode_fp = "mode_F";  # mode used by floatingpoint registers
 
 # The node description is done as a perl hash initializer with the
 # following structure:
@@ -13,12 +11,12 @@ $mode_fp  = "mode_F";  # mode used by floatingpoint registers
 # %nodes = (
 #
 # <op-name> => {
-#   state     => "floats|pinned|mem_pinned|exc_pinned", # optional
+#   state     => "floats|pinned|mem_pinned|exc_pinned", # optional, default floats
 #   comment   => "any comment for constructor",  # optional
 #   in_reqs   => [ "reg_class|register" ] | "...",
 #   out_reqs  => [ "reg_class|register|in_rX" ] | "...",
-#   outs      => { "out1", "out2" },# optional, creates pn_op_out1, ... consts
 #   ins       => { "in1", "in2" },  # optional, creates n_op_in1, ... consts
+#   outs      => { "out1", "out2" },# optional, creates pn_op_out1, ... consts
 #   mode      => "mode_Iu",         # optional, predefines the mode
 #   emit      => "emit code with templates",   # optional for virtual nodes
 #   attr      => "additional attribute arguments for constructor", # optional
@@ -29,28 +27,20 @@ $mode_fp  = "mode_F";  # mode used by floatingpoint registers
 #
 # ... # (all nodes you need to describe)
 #
-# ); # close the %nodes initializer
+# );
 
-# state: state of the operation, OPTIONAL (default is "floats")
-#
-# arity: arity of the operation, MUST NOT BE OMITTED
-#
-# outs:  if a node defines more than one output, the names of the projections
-#        nodes having outs having automatically the mode mode_T
-#
-# comment: OPTIONAL comment for the node constructor
 %reg_classes = (
 	gp => [
-		{ name => "r0" },
-		{ name => "r1" },
-		{ name => "r2" },
-		{ name => "r3" },
-		{ name => "r4" },
-		{ name => "r5" },
-		{ name => "r6" },
-		{ name => "r7" },
-		{ name => "r8" },
-		{ name => "r9" },
+		{ name => "r0"  },
+		{ name => "r1"  },
+		{ name => "r2"  },
+		{ name => "r3"  },
+		{ name => "r4"  },
+		{ name => "r5"  },
+		{ name => "r6"  },
+		{ name => "r7"  },
+		{ name => "r8"  },
+		{ name => "r9"  },
 		{ name => "r10" },
 		{ name => "r11" },
 		{ name => "r12" },
@@ -60,16 +50,16 @@ $mode_fp  = "mode_F";  # mode used by floatingpoint registers
 		{ mode => $mode_gp }
 	],
 	fp => [
-		{ name => "f0" },
-		{ name => "f1" },
-		{ name => "f2" },
-		{ name => "f3" },
-		{ name => "f4" },
-		{ name => "f5" },
-		{ name => "f6" },
-		{ name => "f7" },
-		{ name => "f8" },
-		{ name => "f9" },
+		{ name => "f0"  },
+		{ name => "f1"  },
+		{ name => "f2"  },
+		{ name => "f3"  },
+		{ name => "f4"  },
+		{ name => "f5"  },
+		{ name => "f6"  },
+		{ name => "f7"  },
+		{ name => "f8"  },
+		{ name => "f9"  },
 		{ name => "f10" },
 		{ name => "f11" },
 		{ name => "f12" },

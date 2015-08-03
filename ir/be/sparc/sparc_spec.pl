@@ -1,5 +1,3 @@
-# Creation: 2006/02/13
-
 $arch = "sparc";
 
 $mode_gp      = "mode_Iu";
@@ -63,7 +61,6 @@ $mode_fp4     = "sparc_mode_Q";
 		{ name => "y" },
 		{ mode => $mode_gp, flags => "manual_ra" }
 	],
-	# fp registers can be accessed any time
 	fp => [
 		{ name => "f0",  encoding =>  0, dwarf => 32 },
 		{ name => "f1",  encoding =>  1, dwarf => 33 },
@@ -99,27 +96,27 @@ $mode_fp4     = "sparc_mode_Q";
 		{ name => "f31", encoding => 31, dwarf => 63 },
 		{ mode => $mode_fp }
 	]
-); # %reg_classes
+);
 
 $default_attr_type = "sparc_attr_t";
 $default_copy_attr = "sparc_copy_attr";
 
 %init_attr = (
-	sparc_attr_t             => "be_info_init_irn(res, irn_flags, in_reqs, n_res);",
-	sparc_load_store_attr_t  => "be_info_init_irn(res, irn_flags, in_reqs, n_res);",
-	sparc_jmp_cond_attr_t    => "be_info_init_irn(res, irn_flags, in_reqs, n_res);",
-	sparc_switch_jmp_attr_t  => "be_info_init_irn(res, irn_flags, in_reqs, n_res);\n".
-	                            "\tinit_sparc_switch_jmp_attributes(res, table, jump_table);\n",
-	sparc_fp_attr_t          => "be_info_init_irn(res, irn_flags, in_reqs, n_res);\n".
-	                            "\tinit_sparc_fp_attributes(res, fp_mode);\n",
-	sparc_fp_conv_attr_t     => "be_info_init_irn(res, irn_flags, in_reqs, n_res);\n".
-	                            "\tinit_sparc_fp_conv_attributes(res, src_mode, dest_mode);\n",
-	sparc_call_attr_t        => "be_info_init_irn(res, irn_flags, in_reqs, n_res);\n".
-	                            "\tinit_sparc_call_attributes(res, call_type);",
+	sparc_attr_t            => "be_info_init_irn(res, irn_flags, in_reqs, n_res);",
+	sparc_load_store_attr_t => "be_info_init_irn(res, irn_flags, in_reqs, n_res);",
+	sparc_jmp_cond_attr_t   => "be_info_init_irn(res, irn_flags, in_reqs, n_res);",
+	sparc_switch_jmp_attr_t => "be_info_init_irn(res, irn_flags, in_reqs, n_res);\n".
+	                           "\tinit_sparc_switch_jmp_attributes(res, table, jump_table);\n",
+	sparc_fp_attr_t         => "be_info_init_irn(res, irn_flags, in_reqs, n_res);\n".
+	                           "\tinit_sparc_fp_attributes(res, fp_mode);\n",
+	sparc_fp_conv_attr_t    => "be_info_init_irn(res, irn_flags, in_reqs, n_res);\n".
+	                           "\tinit_sparc_fp_conv_attributes(res, src_mode, dest_mode);\n",
+	sparc_call_attr_t       => "be_info_init_irn(res, irn_flags, in_reqs, n_res);\n".
+	                           "\tinit_sparc_call_attributes(res, call_type);",
 );
 
 %custom_irn_flags = (
-	has_delay_slot    => "(arch_irn_flags_t)sparc_arch_irn_flag_has_delay_slot",
+	has_delay_slot => "(arch_irn_flags_t)sparc_arch_irn_flag_has_delay_slot",
 );
 
 my $binop_operand = {
@@ -560,19 +557,19 @@ Call => {
 	},
 },
 
-Cmp => {  # aka SubccZero
+Cmp => { # aka SubccZero
 	template => $binopcczero_operand,
 	emit     => "cmp %S0, %SI1",
 },
 
 SwitchJmp => {
-	op_flags     => [ "cfopcode", "forking" ],
-	irn_flags    => [ "has_delay_slot" ],
-	state        => "pinned",
-	in_reqs      => [ "gp" ],
-	out_reqs     => "...",
-	attr_type    => "sparc_switch_jmp_attr_t",
-	attr         => "const ir_switch_table *table, ir_entity *jump_table",
+	op_flags  => [ "cfopcode", "forking" ],
+	irn_flags => [ "has_delay_slot" ],
+	state     => "pinned",
+	in_reqs   => [ "gp" ],
+	out_reqs  => "...",
+	attr_type => "sparc_switch_jmp_attr_t",
+	attr      => "const ir_switch_table *table, ir_entity *jump_table",
 },
 
 Sll => {
@@ -752,7 +749,7 @@ fneg => {
 	emit     => "fnegs %S0, %D0",
 },
 
-"fabs" => {
+fabs => {
 	template => $float_unop,
 	# note that we only need the first register even for wide-values
 	emit     => "fabs %S0, %D0",
@@ -801,8 +798,8 @@ fftoi => {
 },
 
 Ldf => {
-	op_flags  => [ "uses_memory" ],
-	state     => "exc_pinned",
+	op_flags   => [ "uses_memory" ],
+	state      => "exc_pinned",
 	constructors => {
 		s => { out_reqs => [ "cls-fp",     "mem" ] },
 		d => { out_reqs => [ "cls-fp:a|2", "mem" ] },
@@ -835,4 +832,4 @@ Stf => {
 	mode      => "mode_M",
 },
 
-); # end of %nodes
+);
