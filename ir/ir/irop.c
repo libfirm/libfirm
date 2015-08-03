@@ -119,14 +119,14 @@ void ir_clear_opcodes_generic_func(void)
 
 void ir_op_set_memory_index(ir_op *op, int memory_index)
 {
-	assert(op->flags & irop_flag_uses_memory);
+	assert(is_op_uses_memory(op));
 	op->memory_index = memory_index;
 }
 
 void ir_op_set_fragile_indices(ir_op *op, unsigned pn_x_regular,
                                unsigned pn_x_except)
 {
-	assert(op->flags & irop_flag_fragile);
+	assert(is_op_fragile(op));
 	op->pn_x_regular = pn_x_regular;
 	op->pn_x_except = pn_x_except;
 }
