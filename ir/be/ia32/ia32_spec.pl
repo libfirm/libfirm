@@ -270,6 +270,7 @@ my $prefetchop = {
 	state     => "exc_pinned",
 	in_reqs   => [ "gp", "gp", "mem" ],
 	out_reqs  => [ "mem" ],
+	mode      => mode_M,
 	ins       => [ "base", "index", "mem" ],
 	outs      => [ "M" ],
 };

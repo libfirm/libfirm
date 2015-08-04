@@ -5264,8 +5264,7 @@ static ir_node *gen_prefetch(ir_node *node)
 	set_address(new_node, &addr);
 
 	SET_IA32_ORIG_NODE(new_node, node);
-
-	return be_new_Proj(new_node, pn_ia32_Prefetch_M);
+	return new_node;
 }
 
 /**
