@@ -121,7 +121,6 @@ $default_copy_attr = "sparc_copy_attr";
 
 my $binop_operand = {
 	irn_flags    => [ "rematerializable" ],
-	mode         => $mode_gp,
 	out_reqs     => [ "gp" ],
 	constructors => {
 		imm => {
@@ -159,7 +158,6 @@ my $binopx_operand = {
 	# At the moment not rematerializable because of assert in beflags.c/
 	# (it claims that spiller can't rematerialize flag stuff correctly)
 	#irn_flags    => [ "rematerializable" ],
-	mode         => $mode_gp,
 	out_reqs     => [ "gp" ],
 	constructors => {
 		imm => {
@@ -177,7 +175,6 @@ my $binopx_operand = {
 
 my $binopcczero_operand = {
 	irn_flags    => [ "rematerializable" ],
-	mode         => $mode_flags,
 	out_reqs     => [ "flags" ],
 	constructors => {
 		imm => {
@@ -221,7 +218,6 @@ my $float_binop = {
 		s => {
 			in_reqs  => [ "cls-fp", "cls-fp" ],
 			out_reqs => [ "cls-fp" ],
-			mode     => $mode_fp,
 		},
 		d => {
 			in_reqs  => [ "cls-fp:a|2", "cls-fp:a|2" ],
@@ -245,7 +241,6 @@ my $float_unop = {
 		s => {
 			in_reqs  => [ "cls-fp" ],
 			out_reqs => [ "cls-fp" ],
-			mode     => $mode_fp,
 		},
 		d => {
 			in_reqs  => [ "cls-fp:a|2" ],
@@ -274,7 +269,6 @@ my $xop = {
 	state    => "pinned",
 	op_flags => [ "cfopcode" ],
 	out_reqs => [ "exec" ],
-	mode     => "mode_X",
 };
 
 %nodes = (
@@ -373,7 +367,6 @@ Ld => {
 SetHi => {
 	irn_flags => [ "rematerializable" ],
 	outs      => [ "res" ],
-	mode      => $mode_gp,
 	out_reqs  => [ "gp" ],
 	attr      => "ir_entity *entity, int32_t immediate_value",
 	init      => "sparc_set_attr_imm(res, entity, immediate_value);",
@@ -382,7 +375,6 @@ SetHi => {
 
 St => {
 	op_flags  => [ "uses_memory" ],
-	mode      => "mode_M",
 	state     => "exc_pinned",
 	constructors => {
 		imm => {
@@ -423,7 +415,6 @@ Save => {
 			ins        => [ "stack", "increment" ],
 		}
 	},
-	mode => $mode_gp,
 },
 
 Restore => {
@@ -449,7 +440,6 @@ RestoreZero => {
 	ins      => [ "stack", "frame_pointer" ],
 	outs     => [ "stack" ],
 	emit     => "restore",
-	mode     => $mode_gp,
 },
 
 SubSP => {
@@ -475,7 +465,6 @@ AddSP => {
 	ins      => [ "stack", "size" ],
 	outs     => [ "stack" ],
 	emit     => "add %S0, %S1, %D0\n",
-	mode     => $mode_gp,
 },
 
 FrameAddr => {
@@ -487,7 +476,6 @@ FrameAddr => {
 	ins       => [ "base" ],
 	attr_type => "sparc_attr_t",
 	init      => "sparc_set_attr_imm(res, entity, offset);",
-	mode      => $mode_gp,
 },
 
 Bicc => {
@@ -685,7 +673,6 @@ Stbar => {
 	in_reqs  => [ "mem" ],
 	out_reqs => [ "mem" ],
 	emit     => "stbar",
-	mode     => "mode_M",
 },
 
 Cas => {
@@ -706,7 +693,6 @@ fcmp => {
 	attr_type => "sparc_fp_attr_t",
 	attr      => "ir_mode *fp_mode",
 	out_reqs  => [ "fpflags" ],
-	mode      => $mode_fpflags,
 	constructors => {
 		s => { in_reqs => [ "cls-fp",     "cls-fp"     ] },
 		d => { in_reqs => [ "cls-fp:a|2", "cls-fp:a|2" ] },
@@ -763,9 +749,9 @@ fftof => {
 	constructors => {
 		s_d => { in_reqs => [ "cls-fp"     ], out_reqs => [ "cls-fp:a|2" ], mode => $mode_fp2, },
 		s_q => { in_reqs => [ "cls-fp"     ], out_reqs => [ "cls-fp:a|2" ], mode => $mode_fp4, },
-		d_s => { in_reqs => [ "cls-fp:a|2" ], out_reqs => [ "cls-fp"     ], mode => $mode_fp,  },
+		d_s => { in_reqs => [ "cls-fp:a|2" ], out_reqs => [ "cls-fp"     ] },
 		d_q => { in_reqs => [ "cls-fp:a|2" ], out_reqs => [ "cls-fp:a|4" ], mode => $mode_fp4, },
-		q_s => { in_reqs => [ "cls-fp:a|4" ], out_reqs => [ "cls-fp"     ], mode => $mode_fp,  },
+		q_s => { in_reqs => [ "cls-fp:a|4" ], out_reqs => [ "cls-fp"     ] },
 		q_d => { in_reqs => [ "cls-fp:a|4" ], out_reqs => [ "cls-fp:a|2" ], mode => $mode_fp2, },
 	},
 },
@@ -777,7 +763,7 @@ fitof => {
 	attr      => "ir_mode *fp_mode",
 	in_reqs   => [ "cls-fp" ],
 	constructors => {
-		s => { out_reqs => [ "cls-fp" ],     mode => $mode_fp,  },
+		s => { out_reqs => [ "cls-fp"     ] },
 		d => { out_reqs => [ "cls-fp:a|2" ], mode => $mode_fp2, },
 		q => { out_reqs => [ "cls-fp:a|4" ], mode => $mode_fp4, },
 	},
@@ -788,7 +774,6 @@ fftoi => {
 	emit      => "f%FMtoi %S0, %D0",
 	attr_type => "sparc_fp_attr_t",
 	attr      => "ir_mode *fp_mode",
-	mode      => $mode_gp,
 	out_reqs  => [ "cls-fp" ],
 	constructors => {
 		s => { in_reqs => [ "cls-fp"     ] },
@@ -829,7 +814,6 @@ Stf => {
 	attr      => "ir_mode *ls_mode, ir_entity *entity, int32_t offset, bool is_frame_entity",
 	init      => "init_sparc_load_store_attributes(res, ls_mode, entity, offset, is_frame_entity, false);",
 	emit      => "st%MS %S0, %MO1",
-	mode      => "mode_M",
 },
 
 );

@@ -348,7 +348,6 @@ mov_imm => {
 	attr_type => "amd64_movimm_attr_t",
 	attr      => "amd64_insn_mode_t insn_mode, const amd64_imm64_t *imm",
 	emit      => 'mov%MM $%C, %D0',
-	mode      => $mode_gp,
 },
 
 movs => {
@@ -386,7 +385,6 @@ jmp => {
 	op_flags => [ "cfopcode" ],
 	out_reqs => [ "exec" ],
 	fixed    => "amd64_op_mode_t op_mode = AMD64_OP_IMM32;",
-	mode     => "mode_X",
 },
 
 cmp => {
@@ -409,7 +407,6 @@ lea => {
 	attr      => "amd64_insn_mode_t insn_mode, amd64_addr_t addr",
 	fixed     => "amd64_op_mode_t op_mode = AMD64_OP_ADDR;\n",
 	emit      => "lea%M %A, %D0",
-	mode      => $mode_gp,
 },
 
 jcc => {
@@ -431,7 +428,6 @@ mov_store => {
 	outs      => [ "M" ],
 	attr_type => "amd64_binop_addr_attr_t",
 	attr      => "const amd64_binop_addr_attr_t *attr_init",
-	mode      => "mode_M",
 	emit      => "mov%M %S0, %A",
 },
 
@@ -472,7 +468,6 @@ ret => {
 	out_reqs => [ "exec" ],
 	ins      => [ "mem", "stack", "first_result" ],
 	fixed    => "amd64_op_mode_t op_mode = AMD64_OP_NONE;\n",
-	mode     => "mode_X",
 	emit     => "ret",
 },
 
@@ -507,7 +502,6 @@ movs_store_xmm => {
 	outs      => [ "M" ],
 	attr_type => "amd64_binop_addr_attr_t",
 	attr      => "const amd64_binop_addr_attr_t *attr_init",
-	mode      => "mode_M",
 	emit      => "movs%MX %^S0, %A",
 },
 
@@ -534,7 +528,6 @@ xorpd_0 => {
 	outs      => [ "res" ],
 	fixed     => "amd64_op_mode_t op_mode = AMD64_OP_REG_REG;",
 	emit      => "xorpd %^D0, %^D0",
-	mode      => $mode_xmm,
 },
 
 xorp => {
@@ -548,7 +541,6 @@ movd_xmm_gp => {
 	outs      => [ "res" ],
 	in_reqs   => [ "xmm" ],
 	out_reqs  => [ "gp" ],
-	mode      => $mode_gp,
 	attr_type => "amd64_addr_attr_t",
 	attr      => "amd64_insn_mode_t insn_mode, amd64_op_mode_t op_mode, amd64_addr_t addr",
 	emit      => "movd %S0, %D0"
@@ -560,7 +552,6 @@ movd_gp_xmm => {
 	outs      => [ "res" ],
 	in_reqs   => [ "gp" ],
 	out_reqs  => [ "xmm" ],
-	mode      => $mode_xmm,
 	attr_type => "amd64_addr_attr_t",
 	attr      => "amd64_insn_mode_t insn_mode, amd64_op_mode_t op_mode, amd64_addr_t addr",
 	emit      => "movd %S0, %D0"
@@ -626,7 +617,6 @@ movdqu_store => {
 	outs      => [ "M" ],
 	attr_type => "amd64_binop_addr_attr_t",
 	attr      => "const amd64_binop_addr_attr_t *attr_init",
-	mode      => "mode_M",
 	emit      => "movdqu %^S0, %A",
 },
 

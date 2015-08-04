@@ -73,7 +73,6 @@ $default_copy_attr = "arm_copy_attr";
 
 my $unop_shifter_operand = {
 	irn_flags    => [ "rematerializable" ],
-	mode         => $mode_gp,
 	attr_type    => "arm_shifter_operand_t",
 	out_reqs     => [ "gp" ],
 	constructors => {
@@ -104,7 +103,6 @@ my $unop_shifter_operand = {
 
 my $binop_shifter_operand = {
 	irn_flags    => [ "rematerializable" ],
-	mode         => $mode_gp,
 	attr_type    => "arm_shifter_operand_t",
 	out_reqs     => [ "gp" ],
 	constructors => {
@@ -169,7 +167,6 @@ my $binop_shifter_operand_setflags = {
 my $binop_shifter_operand_flags = {
 	#irn_flags    => [ "rematerializable" ],
 	attr_type    => "arm_shifter_operand_t",
-	mode         => $mode_gp,
 	out_reqs     => [ "gp" ],
 	constructors => {
 		imm => {
@@ -201,7 +198,6 @@ my $binop_shifter_operand_flags = {
 my $cmp_shifter_operand = {
 	irn_flags    => [ "rematerializable", "modify_flags" ],
 	emit         => 'cmp %S0, %O',
-	mode         => $mode_flags,
 	attr_type    => "arm_cmp_attr_t",
 	out_reqs     => [ "flags" ],
 	constructors => {
@@ -253,7 +249,6 @@ my $binopf = {
 	out_reqs  => [ "fpa" ],
 	attr_type => "arm_farith_attr_t",
 	attr      => "ir_mode *op_mode",
-	mode      => $mode_fp,
 };
 
 
@@ -278,7 +273,6 @@ Mul => {
 	irn_flags    => [ "rematerializable" ],
 	in_reqs      => [ "gp", "gp" ],
 	emit         => 'mul %D0, %S0, %S1',
-	mode         => $mode_gp,
 	constructors => {
 		"" => { out_reqs => [ "gp" ]     },
 		# TODO: !in_r1 for out constraints the register allocator more than
@@ -303,7 +297,6 @@ Mla => {
 	in_reqs   => [ "gp", "gp", "gp" ],
 	ins       => [ "left", "right", "add" ],
 	emit      => 'mla %D0, %S0, %S1, %S2',
-	mode      => $mode_gp,
 	constructors => {
 		"" => { out_reqs => [ "gp" ]     },
 		# See comments for Mul_v5 out register constraint
@@ -317,7 +310,6 @@ Mls => {
 	out_reqs  => [ "gp" ],
 	ins       => [ "left", "right", "sub" ],
 	emit      => 'mls %D0, %S0, %S1, %S2',
-	mode      => $mode_gp,
 },
 
 And => {
@@ -333,7 +325,6 @@ Or => {
 OrPl => {
 	#irn_flags => [ "rematerializable" ],
 	emit      => 'orrpl %D0, %S2, %O',
-	mode      => $mode_gp,
 	attr_type => "arm_shifter_operand_t",
 	in_reqs   => [ "gp", "flags", "gp", "gp" ],
 	out_reqs  => [ "in_r3" ],
@@ -407,7 +398,6 @@ Clz => {
 	in_reqs   => [ "gp" ],
 	out_reqs  => [ "gp" ],
 	emit      => 'clz %D0, %S0',
-	mode      => $mode_gp,
 },
 
 # mov lr, pc\n mov pc, XXX -- This combination is used for calls to function
@@ -456,7 +446,6 @@ FrameAddr => {
 	out_reqs  => [ "gp" ],
 	ins       => [ "base" ],
 	attr_type => "arm_Address_attr_t",
-	mode      => $mode_gp,
 },
 
 Address => {
@@ -465,7 +454,6 @@ Address => {
 	attr      => "ir_entity *entity, int offset",
 	out_reqs  => [ "gp" ],
 	attr_type => "arm_Address_attr_t",
-	mode      => $mode_gp,
 },
 
 Cmn => {
@@ -486,7 +474,6 @@ Tst => {
 B => {
 	op_flags  => [ "cfopcode", "forking" ],
 	state     => "pinned",
-	mode      => "mode_T",
 	in_reqs   => [ "flags" ],
 	out_reqs  => [ "exec", "exec" ],
 	ins       => [ "flags" ],
@@ -500,13 +487,11 @@ Jmp => {
 	op_flags  => [ "cfopcode" ],
 	irn_flags => [ "simple_jump" ],
 	out_reqs  => [ "exec" ],
-	mode      => "mode_X",
 },
 
 SwitchJmp => {
 	op_flags  => [ "cfopcode", "forking" ],
 	state     => "pinned",
-	mode      => "mode_T",
 	attr      => "const ir_switch_table *table",
 	init      => "init_arm_SwitchJmp_attributes(res, table);",
 	in_reqs   => [ "gp" ],
@@ -534,7 +519,6 @@ Str => {
 	in_reqs   => [ "gp", "gp", "mem" ],
 	out_reqs  => [ "mem" ],
 	emit      => 'str%MS %S1, [%S0, #%o]',
-	mode      => "mode_M",
 	attr_type => "arm_load_store_attr_t",
 	attr      => "ir_mode *ls_mode, ir_entity *entity, int entity_sign, long offset, bool is_frame_entity",
 },
@@ -562,7 +546,7 @@ Dvf => {
 	outs      => [ "res", "M" ],
 	attr_type => "arm_farith_attr_t",
 	attr      => "ir_mode *op_mode",
-	mode      => $mode_fp,
+	mode      => "first",
 },
 
 Mvf => {
@@ -572,7 +556,6 @@ Mvf => {
 	emit      => 'mvf%MA %S0, %D0',
 	attr_type => "arm_farith_attr_t",
 	attr      => "ir_mode *op_mode",
-	mode      => $mode_fp,
 },
 
 FltX => {
@@ -582,12 +565,10 @@ FltX => {
 	emit      => 'flt%MA %D0, %S0',
 	attr_type => "arm_farith_attr_t",
 	attr      => "ir_mode *op_mode",
-	mode      => $mode_fp,
 },
 
 Cmfe => {
 	irn_flags => [ "rematerializable", "modify_flags" ],
-	mode      => $mode_flags,
 	attr_type => "arm_cmp_attr_t",
 	attr      => "bool ins_permuted",
 	init      => "init_arm_cmp_attr(res, ins_permuted, false);",
@@ -613,7 +594,6 @@ Stf => {
 	state     => "exc_pinned",
 	ins       => [ "ptr", "val", "mem" ],
 	outs      => [ "M" ],
-	mode      => "mode_M",
 	in_reqs   => [ "gp", "fpa", "mem" ],
 	out_reqs  => [ "mem" ],
 	emit      => 'stf%MF %S1, [%S0, #%o]',
@@ -627,7 +607,6 @@ fConst => {
 	irn_flags => [ "rematerializable" ],
 	attr      => "ir_tarval *tv",
 	init      => "attr->tv = tv;",
-	mode      => $mode_fp,
 	out_reqs  => [ "fpa" ],
 	attr_type => "arm_fConst_attr_t",
 },
@@ -645,7 +624,6 @@ Return => {
 	op_flags => [ "cfopcode" ],
 	in_reqs  => "...",
 	ins      => [ "mem", "sp", "first_result" ],
-	mode     => "mode_X",
 	out_reqs => [ "exec" ],
 	emit     => "bx lr",
 },

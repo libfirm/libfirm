@@ -131,7 +131,7 @@ my $binop_commutative = {
 	ins       => [ "base", "index", "mem", "left", "right" ],
 	outs      => [ "res", "flags", "M" ],
 	am        => "source,binary",
-	mode      => $mode_gp,
+	mode      => "first",
 };
 
 my $binop_flags = {
@@ -147,7 +147,7 @@ my $binop_flags = {
 	am        => "source,binary",
 	attr      => "bool ins_permuted",
 	init      => "attr->ins_permuted = ins_permuted;",
-	mode      => $mode_flags,
+	mode      => "first",
 };
 
 my $binop_mem = {
@@ -168,7 +168,7 @@ my $shiftop = {
 	out_reqs  => [ "in_r1 !in_r2", "flags" ],
 	ins       => [ "val", "count" ],
 	outs      => [ "res", "flags" ],
-	mode      => $mode_gp,
+	mode      => "first",
 };
 
 my $shiftop_mem = {
@@ -192,7 +192,7 @@ my $shiftop_double = {
 	},
 	ins       => [ "val_high", "val_low", "count" ],
 	outs      => [ "res", "flags" ],
-	mode      => $mode_gp,
+	mode      => "first",
 };
 
 my $divop = {
@@ -224,7 +224,7 @@ my $unop = {
 	out_reqs  => [ "in_r1", "flags" ],
 	ins       => [ "val" ],
 	outs      => [ "res", "flags" ],
-	mode      => $mode_gp,
+	mode      => "first",
 };
 
 my $unop_no_flags = {
@@ -234,7 +234,6 @@ my $unop_no_flags = {
 	out_reqs  => [ "in_r1" ],
 	ins       => [ "val" ],
 	outs      => [ "res" ],
-	mode      => $mode_gp,
 };
 
 my $unop_from_mem = {
@@ -245,7 +244,7 @@ my $unop_from_mem = {
 	ins       => [ "base", "index", "mem", "operand" ],
 	outs      => [ "res", "flags", "M" ],
 	am        => "source,unary",
-	mode      => $mode_gp,
+	mode      => "first",
 };
 
 my $unop_mem = {
@@ -262,7 +261,6 @@ my $memop = {
 	in_reqs  => [ "mem" ],
 	out_reqs => [ "mem" ],
 	ins      => [ "mem" ],
-	mode     => "mode_M",
 };
 
 my $prefetchop = {
@@ -270,7 +268,6 @@ my $prefetchop = {
 	state     => "exc_pinned",
 	in_reqs   => [ "gp", "gp", "mem" ],
 	out_reqs  => [ "mem" ],
-	mode      => mode_M,
 	ins       => [ "base", "index", "mem" ],
 	outs      => [ "M" ],
 };
@@ -283,7 +280,7 @@ my $fbinop = {
 	ins       => [ "base", "index", "mem", "left", "right", "fpcw" ],
 	outs      => [ "res", "dummy", "M" ],
 	am        => "source,binary",
-	mode      => $mode_fp87,
+	mode      => "first",
 	attr_type => "ia32_x87_attr_t",
 };
 
@@ -293,7 +290,6 @@ my $funop = {
 	out_reqs  => [ "fp" ],
 	ins       => [ "value" ],
 	init      => "attr->ls_mode = ia32_mode_E;",
-	mode      => $mode_fp87,
 };
 
 my $fconstop = {
@@ -303,7 +299,6 @@ my $fconstop = {
 	outs      => [ "res" ],
 	init      => "attr->ls_mode = ia32_mode_E;",
 	fixed     => $x87sim,
-	mode      => $mode_fp87,
 };
 
 my $valueop = {
@@ -311,7 +306,6 @@ my $valueop = {
 	irn_flags => [ "rematerializable" ],
 	out_reqs  => [ "gp" ],
 	outs      => [ "res" ],
-	mode      => $mode_gp,
 };
 
 my $fpopop = {
@@ -319,7 +313,6 @@ my $fpopop = {
 	out_reqs    => [ "none" ],
 	attrs_equal => "attrs_equal_false",
 	attr_type   => "ia32_x87_attr_t",
-	mode        => "mode_ANY",
 };
 
 my $xbinop = {
@@ -330,7 +323,7 @@ my $xbinop = {
 	ins       => [ "base", "index", "mem", "left", "right" ],
 	outs      => [ "res", "flags", "M" ],
 	am        => "source,binary",
-	mode      => $mode_xmm,
+	mode      => "first",
 };
 
 my $xbinop_commutative = {
@@ -341,7 +334,7 @@ my $xbinop_commutative = {
 	ins       => [ "base", "index", "mem", "left", "right" ],
 	outs      => [ "res", "flags", "M" ],
 	am        => "source,binary",
-	mode      => $mode_xmm,
+	mode      => "first",
 };
 
 my $xconv_i2f = {
@@ -350,14 +343,12 @@ my $xconv_i2f = {
 	out_reqs => [ "xmm" ],
 	ins      => [ "base", "index", "mem", "val" ],
 	am       => "source,unary",
-	mode     => $mode_xmm
 };
 
 my $xshiftop = {
 	irn_flags => [ "rematerializable" ],
 	in_reqs   => [ "xmm", "xmm" ],
 	out_reqs  => [ "in_r1 !in_r2" ],
-	mode      => $mode_xmm,
 };
 
 my $xvalueop = {
@@ -365,7 +356,6 @@ my $xvalueop = {
 	irn_flags => [ "rematerializable" ],
 	out_reqs  => [ "xmm" ],
 	outs      => [ "res" ],
-	mode      => $mode_xmm,
 };
 
 my $carry_user_op = {
@@ -391,7 +381,6 @@ Immediate => {
 	attr_type => "ia32_immediate_attr_t",
 	hash_func => "ia32_hash_Immediate",
 	latency   => 0,
-	mode      => $mode_gp,
 },
 
 Add => {
@@ -416,7 +405,7 @@ Adc => {
 	emit     => "adc%M %B",
 	am       => "source,binary",
 	latency  => 1,
-	mode     => $mode_gp,
+	mode     => "first",
 },
 
 l_Add => {
@@ -508,7 +497,7 @@ Xor0 => {
 	outs      => [ "res", "flags" ],
 	emit      => "xor%M %D0, %D0",
 	latency   => 1,
-	mode      => $mode_gp,
+	mode      => "first",
 },
 
 XorMem => {
@@ -527,7 +516,7 @@ Sub => {
 	am        => "source,binary",
 	emit      => "sub%M %B",
 	latency   => 1,
-	mode      => $mode_gp,
+	mode      => "first",
 },
 
 SubMem => {
@@ -546,7 +535,7 @@ Sbb => {
 	am       => "source,binary",
 	emit     => "sbb%M %B",
 	latency  => 1,
-	mode     => $mode_gp,
+	mode     => "first",
 },
 
 Sbb0 => {
@@ -558,7 +547,7 @@ Sbb0 => {
 	outs     => [ "res", "flags" ],
 	emit     => "sbb%M %D0, %D0",
 	latency  => 1,
-	mode     => $mode_gp,
+	mode     => "first",
 },
 
 l_Sub => {
@@ -734,7 +723,6 @@ Cmc => {
 	out_reqs => [ "flags" ],
 	emit     => "cmc",
 	latency  => 1,
-	mode     => $mode_flags,
 },
 
 Stc => {
@@ -742,7 +730,6 @@ Stc => {
 	out_reqs  => [ "flags" ],
 	emit      => "stc",
 	latency   => 1,
-	mode      => $mode_flags,
 },
 
 Cmp => {
@@ -784,7 +771,6 @@ Setcc => {
 	             "\t\t/* attr->latency = 3; */\n".
 	             "\t}\n",
 	latency   => 1,
-	mode      => $mode_gp,
 },
 
 SetccMem => {
@@ -798,7 +784,6 @@ SetccMem => {
 	init      => "set_ia32_ls_mode(res, mode_Bu);\n",
 	emit      => "set%P3 %AM",
 	latency   => 1,
-	mode      => "mode_M",
 },
 
 CMovcc => {
@@ -815,7 +800,7 @@ CMovcc => {
 	attr      => "x86_condition_code_t condition_code",
 	emit      => "cmov%P5 %#AS4, %#D0",
 	latency   => 1,
-	mode      => $mode_gp,
+	mode      => "first",
 },
 
 Jcc => {
@@ -847,7 +832,6 @@ Jmp => {
 	op_flags  => [ "cfopcode" ],
 	out_reqs  => [ "exec" ],
 	latency   => 1,
-	mode      => "mode_X",
 },
 
 IJmp => {
@@ -860,7 +844,7 @@ IJmp => {
 	am       => "source,unary",
 	emit     => "jmp %*AS3",
 	latency  => 1,
-	mode     => "mode_X",
+	mode     => "first",
 },
 
 Const => {
@@ -888,14 +872,12 @@ NoReg_GP => {
 	template => $noregop,
 	out_reqs => [ "gp_NOREG:I" ],
 	latency  => 0,
-	mode     => $mode_gp
 },
 
 NoReg_FP => {
 	template => $noregop,
 	out_reqs => [ "fp_NOREG:I" ],
 	fixed    => $x87sim,
-	mode     => $mode_fp87,
 	latency  => 0,
 },
 
@@ -903,13 +885,11 @@ NoReg_XMM => {
 	template => $noregop,
 	out_reqs => [ "xmm_NOREG:I" ],
 	latency  => 0,
-	mode     => $mode_xmm,
 },
 
 ChangeCW => {
 	template => $noregop,
 	out_reqs => [ "fpcw" ],
-	mode     => $mode_fpcw,
 	latency  => 3,
 },
 
@@ -921,7 +901,6 @@ FldCW => {
 	ins      => [ "base", "index", "mem" ],
 	latency  => 5,
 	emit     => "fldcw %AM",
-	mode     => $mode_fpcw,
 },
 
 FnstCW => {
@@ -932,7 +911,6 @@ FnstCW => {
 	ins      => [ "base", "index", "mem", "fpcw" ],
 	latency  => 5,
 	emit     => "fnstcw %AM",
-	mode     => "mode_M",
 },
 
 FnstCWNOP => {
@@ -943,7 +921,6 @@ FnstCWNOP => {
 	ins      => [ "fpcw" ],
 	latency  => 0,
 	emit     => "",
-	mode     => "mode_M",
 },
 
 Cltd => {
@@ -953,7 +930,6 @@ Cltd => {
 	ins      => [ "val" ],
 	emit     => "cltd",
 	latency  => 1,
-	mode     => $mode_gp,
 	init     => "arch_set_additional_pressure(res, &ia32_reg_classes[CLASS_ia32_gp], 1);",
 },
 
@@ -997,7 +973,6 @@ Lea => {
 	outs      => [ "res" ],
 	emit      => "leal %AM, %D0",
 	latency   => 2,
-	mode      => $mode_gp,
 },
 
 Push => {
@@ -1021,7 +996,6 @@ PushEax => {
 	outs     => [ "stack" ],
 	emit     => "pushl %%eax",
 	latency  => 2,
-	mode     => $mode_gp,
 },
 
 Pop => {
@@ -1046,7 +1020,6 @@ CopyEbpEsp => {
 	outs     => [ "esp" ],
 	emit     => "movl %S0, %D0",
 	latency  => 1,
-	mode     => $mode_gp,
 },
 
 PopMem => {
@@ -1117,7 +1090,6 @@ Bt => {
 	ins       => [ "left", "right" ],
 	emit      => "bt%M %S1, %S0",
 	latency   => 1,
-	mode      => $mode_flags,
 },
 
 Bsf => {
@@ -1154,7 +1126,6 @@ Return => {
 	in_reqs   => "...",
 	out_reqs  => [ "exec" ],
 	ins       => [ "mem", "stack", "first_result" ],
-	mode      => "mode_X",
 	attr_type => "ia32_return_attr_t",
 	attr      => "uint16_t pop",
 	latency   => 0,
@@ -1202,7 +1173,6 @@ Bswap16 => {
 	ins       => [ "val" ],
 	outs      => [ "res" ],
 	latency   => 1,
-	mode      => $mode_gp,
 },
 
 CmpXChgMem => {
@@ -1237,7 +1207,6 @@ Outport => {
 	ins       => [ "port", "value", "mem" ],
 	emit      => "out%M %#S1, %^S0",
 	latency   => 1,
-	mode      => "mode_M",
 },
 
 Inport => {
@@ -1343,7 +1312,6 @@ xMovd  => {
 	out_reqs  => [ "xmm" ],
 	emit      => "movd %S0, %D0",
 	latency   => 1,
-	mode      => $mode_xmm
 },
 
 xAdd => {
@@ -1404,7 +1372,7 @@ xSub => {
 	am        => "source,binary",
 	emit      => "subs%FX %B",
 	latency   => 4,
-	mode      => $mode_xmm
+	mode      => "first"
 },
 
 xDiv => {
@@ -1427,7 +1395,6 @@ Ucomi => {
 	init      => "attr->ins_permuted = ins_permuted;",
 	emit      => "ucomis%FX %B",
 	latency   => 3,
-	mode      => $mode_flags,
 },
 
 xLoad => {
@@ -1509,7 +1476,6 @@ Cwtl => {
 	outs     => [ "res" ],
 	emit     => "cwtl",
 	latency  => 1,
-	mode     => $mode_gp,
 },
 
 Conv_I2I => {
@@ -1527,7 +1493,7 @@ Conv_I2I => {
 	latency  => 1,
 	attr     => "ir_mode *smaller_mode",
 	init     => "attr->ls_mode = smaller_mode;",
-	mode     => $mode_gp,
+	mode     => "first",
 },
 
 Conv_I2FP => {
@@ -1539,7 +1505,7 @@ Conv_I2FP => {
 	latency  => 10,
 	attr     => "ir_mode *tgt_mode",
 	init     => "attr->ls_mode = tgt_mode;",
-	mode     => $mode_xmm,
+	mode     => "first",
 },
 
 Conv_FP2I => {
@@ -1551,7 +1517,7 @@ Conv_FP2I => {
 	latency  => 10,
 	attr     => "ir_mode *src_mode",
 	init     => "attr->ls_mode = src_mode;",
-	mode     => $mode_gp,
+	mode     => "first",
 },
 
 Conv_FP2FP => {
@@ -1563,7 +1529,7 @@ Conv_FP2FP => {
 	latency  => 8,
 	attr     => "ir_mode *tgt_mode",
 	init     => "attr->ls_mode = tgt_mode;",
-	mode     => $mode_xmm,
+	mode     => "first",
 },
 
 # rematerialisation disabled for all float nodes for now, because the fpcw
@@ -1728,7 +1694,6 @@ FucomFnstsw => {
 	init      => "attr->attr.ins_permuted = ins_permuted;",
 	latency   => 3,
 	attr_type => "ia32_x87_attr_t",
-	mode      => $mode_gp
 },
 
 FucomppFnstsw => {
@@ -1745,7 +1710,6 @@ FucomppFnstsw => {
 	init      => "attr->attr.ins_permuted = ins_permuted;",
 	latency   => 3,
 	attr_type => "ia32_x87_attr_t",
-	mode      => $mode_gp
 },
 
 Fucomi => {
@@ -1759,7 +1723,6 @@ Fucomi => {
 	init      => "attr->attr.ins_permuted = ins_permuted;",
 	latency   => 3,
 	attr_type => "ia32_x87_attr_t",
-	mode      => $mode_flags,
 },
 
 FtstFnstsw => {
@@ -1774,7 +1737,6 @@ FtstFnstsw => {
 	init      => "attr->ins_permuted = ins_permuted;",
 	fixed     => $x87sim,
 	latency   => 3,
-	mode      => $mode_gp
 },
 
 Sahf => {
@@ -1785,7 +1747,6 @@ Sahf => {
 	outs      => [ "flags" ],
 	emit      => "sahf",
 	latency   => 1,
-	mode      => $mode_flags,
 },
 
 # fxch, fdup, fpop
@@ -1797,7 +1758,6 @@ fxch => {
 	attrs_equal => "attrs_equal_false",
 	emit        => "fxch %F0",
 	attr_type   => "ia32_x87_attr_t",
-	mode        => "mode_ANY",
 	latency     => 1,
 },
 
@@ -1830,7 +1790,6 @@ emms => {
 	attrs_equal => "attrs_equal_false",
 	emit        => "emms",
 	fixed       => $x87sim,
-	mode        => "mode_ANY",
 	latency     => 3,
 },
 
@@ -1840,7 +1799,6 @@ femms => {
 	attrs_equal => "attrs_equal_false",
 	emit        => "femms",
 	fixed       => $x87sim,
-	mode        => "mode_ANY",
 	latency     => 3,
 },
 

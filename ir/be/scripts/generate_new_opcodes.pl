@@ -83,6 +83,38 @@ void ${arch}_create_opcodes(void);
 void ${arch}_free_opcodes(void);
 EOF
 
+sub get_requirement_mode
+{
+	my ($in_reqs, $req) = @_;
+
+	if ($req eq "exec") {
+		return "mode_X";
+	} elsif ($req eq "mem") {
+		return "mode_M";
+	} elsif ($req eq "none") {
+		return "mode_ANY";
+	}
+
+	$req =~ s/[ :].*//;
+	if ($req =~ s/^!?in_r//) {
+		$req = $in_reqs->[$req - 1];
+		$req =~ s/[ :].*//;
+	}
+
+	my $cls;
+	if ($req =~ s/^cls-//) {
+		$cls = $reg_classes{$req};
+	} elsif ($req =~ s/^reg-//) {
+		$cls = $reg_classes{$reg2class{$req}->{class}};
+	}
+	$cls //= $reg_classes{$req};
+	$cls //= $reg_classes{$reg2class{$req}->{class}};
+	if (!defined($cls)) {
+		die "cannot determine mode for requirement '$req'";
+	}
+	return $cls->[-1]->{mode};
+}
+
 sub create_constructor
 {
 	my ($op, $name, $n, $on) = @_;
@@ -118,8 +150,19 @@ sub create_constructor
 
 	# determine mode
 	my $mode = $n->{mode};
-	if (!defined($mode) && $out_arity != 0 && $out_arity != 1) {
-		$mode = "mode_T";
+	if (!defined($mode)) {
+		if ($out_arity == 0) {
+			$mode = undef;
+		} elsif ($out_arity == 1) {
+			$mode = get_requirement_mode($in_reqs, $out_reqs->[0]);
+		} else {
+			$mode = "mode_T";
+		}
+	} elsif ($mode eq "first") {
+		if ($out_arity < 1) {
+			die "cannot take first mode of '$op' with no out requirements\n";
+		}
+		$mode = get_requirement_mode($in_reqs, $out_reqs->[0]);
 	}
 
 	# create constructor head
@@ -355,10 +398,6 @@ foreach my $op (sort(keys(%nodes))) {
 			}
 
 			$obst_proj .= "} pn_$op;\n";
-		}
-		# outs have names, it must be a mode_T node
-		if (!defined($n{mode})) {
-			$n{mode} = "mode_T";
 		}
 	}
 	if ($ins) {

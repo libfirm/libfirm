@@ -17,7 +17,7 @@ $mode_fp = "mode_F";  # mode used by floatingpoint registers
 #   out_reqs  => [ "reg_class|register|in_rX" ] | "...",
 #   ins       => { "in1", "in2" },  # optional, creates n_op_in1, ... consts
 #   outs      => { "out1", "out2" },# optional, creates pn_op_out1, ... consts
-#   mode      => "mode_Iu",         # optional, predefines the mode
+#   mode      => "first" | "<mode>" # optional, determines the mode, auto-detected by default
 #   emit      => "emit code with templates",   # optional for virtual nodes
 #   attr      => "additional attribute arguments for constructor", # optional
 #   init      => "emit attribute initialization template",         # optional
@@ -77,27 +77,23 @@ my $binop = {
 	irn_flags => [ "rematerializable" ],
 	in_reqs   => [ "gp", "gp" ],
 	out_reqs  => [ "gp" ],
-	mode      => $mode_gp,
 };
 
 my $constop = {
 	op_flags   => [ "constlike" ],
 	irn_flags  => [ "rematerializable" ],
 	out_reqs   => [ "gp" ],
-	mode       => $mode_gp,
 };
 
 my $fbinop = {
 	in_reqs   => [ "fp", "fp" ],
 	out_reqs  => [ "fp" ],
-	mode      => $mode_fp,
 };
 
 my $unop = {
 	irn_flags => [ "rematerializable" ],
 	in_reqs   => [ "gp" ],
 	out_reqs  => [ "gp" ],
-	mode      => $mode_gp,
 };
 
 %nodes = (
@@ -168,7 +164,6 @@ Jmp => {
 	op_flags  => [ "cfopcode" ],
 	irn_flags => [ "simple_jump" ],
 	out_reqs  => [ "exec" ],
-	mode      => "mode_X",
 },
 
 Start => {
@@ -186,7 +181,6 @@ Return => {
 	out_reqs => [ "exec" ],
 	ins      => [ "mem", "stack", "first_result" ],
 	outs     => [ "X" ],
-	mode     => "mode_X",
 },
 
 # Load / Store
@@ -210,7 +204,6 @@ Store => {
 	out_reqs  => [ "mem" ],
 	ins       => [ "mem", "ptr", "val" ],
 	outs      => [ "M" ],
-	mode      => "mode_M",
 	emit      => '(%S1) = store %S2',
 },
 
@@ -243,7 +236,6 @@ fMinus => {
 	in_reqs   => [ "fp" ],
 	out_reqs  => [ "fp" ],
 	emit      => '%D0 = fneg %S0',
-	mode      => $mode_fp,
 },
 
 fConst => {
@@ -251,7 +243,6 @@ fConst => {
 	irn_flags => [ "rematerializable" ],
 	out_reqs  => [ "fp" ],
 	emit      => '%D0 = fconst %I',
-	mode      => $mode_fp,
 },
 
 # Load / Store
@@ -275,7 +266,6 @@ fStore => {
 	out_reqs  => [ "mem" ],
 	ins       => [ "mem", "ptr", "val" ],
 	outs      => [ "M" ],
-	mode      => "mode_M",
 	emit      => '(%S1) = fstore %S2',
 },
 
