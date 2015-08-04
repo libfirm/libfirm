@@ -294,6 +294,8 @@ static void arm_init(void)
 	                              ARM_MACHINE_SIZE, 0, ARM_MODULO_SHIFT);
 	arm_mode_flags = new_non_arithmetic_mode("arm_flags", 32);
 
+	set_modeP(new_reference_mode("p32", irma_twos_complement, ARM_MACHINE_SIZE, ARM_MODULO_SHIFT));
+
 	arm_register_init();
 	arm_create_opcodes();
 	arm_init_backend_params();
