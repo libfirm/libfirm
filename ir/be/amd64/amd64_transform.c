@@ -2553,13 +2553,9 @@ static ir_node *gen_Bitcast(ir_node *node)
 	};
 
 	if (src_float && !dst_float) {
-		ir_node * new_node = new_bd_amd64_movd_xmm_gp(
-			dbgi, be_block, be_op, INSN_MODE_64, AMD64_OP_REG, no_addr);
-		return be_new_Proj(new_node, pn_amd64_movd_gp_xmm_res);
+		return new_bd_amd64_movd_xmm_gp(dbgi, be_block, be_op, INSN_MODE_64, AMD64_OP_REG, no_addr);
 	} else if (!src_float && dst_float) {
-		ir_node * new_node = new_bd_amd64_movd_gp_xmm(
-			dbgi, be_block, be_op, INSN_MODE_64, AMD64_OP_REG, no_addr);
-		return be_new_Proj(new_node, pn_amd64_movd_xmm_gp_res);
+		return new_bd_amd64_movd_gp_xmm(dbgi, be_block, be_op, INSN_MODE_64, AMD64_OP_REG, no_addr);
 	} else {
 		panic("Unhandled bitcast modes: %+F to %+F\n", src_mode, dst_mode);
 	}
