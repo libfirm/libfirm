@@ -629,7 +629,7 @@ fConst => {
 	irn_flags => [ "rematerializable" ],
 	attr      => "ir_tarval *tv",
 	init_attr => "attr->tv = tv;",
-	mode      => "get_tarval_mode(tv)",
+	mode      => $mode_fp,
 	out_reqs  => [ "fpa" ],
 	attr_type => "arm_fConst_attr_t",
 },

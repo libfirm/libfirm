@@ -402,14 +402,15 @@ static void emit_arm_FrameAddr(const ir_node *irn)
  */
 static void emit_arm_fConst(const ir_node *irn)
 {
-	ent_or_tv_t key;
-	key.u.tv      = get_fConst_value(irn);
-	key.is_entity = false;
-	key.label     = 0;
+	ir_tarval *const tv = get_fConst_value(irn);
+	ent_or_tv_t key = {
+		.u.tv      = tv,
+		.is_entity = false
+	};
 	ent_or_tv_t *entry = get_ent_or_tv_entry(&key);
 
 	/* load the tarval indirect */
-	ir_mode *mode = get_irn_mode(irn);
+	ir_mode *const mode = get_tarval_mode(tv);
 	arm_emitf(irn, "ldf%m %D0, %C", mode, entry);
 }
 
