@@ -1808,7 +1808,7 @@ fdup => {
 	attrs_equal => "attrs_equal_false",
 	emit        => "fld %F0",
 	attr_type   => "ia32_x87_attr_t",
-	mode        => "get_irn_mode(val)",
+	mode        => $mode_fp87,
 	latency     => 1,
 },
 
