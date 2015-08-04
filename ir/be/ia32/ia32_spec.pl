@@ -374,6 +374,12 @@ my $carry_user_op = {
 	fixed     => "x86_condition_code_t condition_code = x86_cc_carry;",
 };
 
+my $noregop = {
+	state     => "pinned",
+	op_flags  => [ "constlike", "dump_noblock" ],
+	irn_flags => [ "not_scheduled" ],
+};
+
 %nodes = (
 
 Immediate => {
@@ -879,40 +885,32 @@ GetEIP => {
 },
 
 NoReg_GP => {
-	state     => "pinned",
-	op_flags  => [ "constlike", "dump_noblock" ],
-	irn_flags => [ "not_scheduled" ],
-	out_reqs  => [ "gp_NOREG:I" ],
-	latency   => 0,
-	mode      => $mode_gp
+	template => $noregop,
+	out_reqs => [ "gp_NOREG:I" ],
+	latency  => 0,
+	mode     => $mode_gp
 },
 
 NoReg_FP => {
-	state     => "pinned",
-	op_flags  => [ "constlike", "dump_noblock" ],
-	irn_flags => [ "not_scheduled" ],
-	out_reqs  => [ "fp_NOREG:I" ],
-	fixed     => $x87sim,
-	mode      => $mode_fp87,
-	latency   => 0,
+	template => $noregop,
+	out_reqs => [ "fp_NOREG:I" ],
+	fixed    => $x87sim,
+	mode     => $mode_fp87,
+	latency  => 0,
 },
 
 NoReg_XMM => {
-	state     => "pinned",
-	op_flags  => [ "constlike", "dump_noblock" ],
-	irn_flags => [ "not_scheduled" ],
-	out_reqs  => [ "xmm_NOREG:I" ],
-	latency   => 0,
-	mode      => $mode_xmm,
+	template => $noregop,
+	out_reqs => [ "xmm_NOREG:I" ],
+	latency  => 0,
+	mode     => $mode_xmm,
 },
 
 ChangeCW => {
-	state     => "pinned",
-	op_flags  => [ "constlike" ],
-	irn_flags => [ "not_scheduled" ],
-	out_reqs  => [ "fpcw" ],
-	mode      => $mode_fpcw,
-	latency   => 3,
+	template => $noregop,
+	out_reqs => [ "fpcw" ],
+	mode     => $mode_fpcw,
+	latency  => 3,
 },
 
 FldCW => {
