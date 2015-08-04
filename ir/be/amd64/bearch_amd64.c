@@ -525,17 +525,19 @@ static void introduce_epilogue(ir_node *ret)
 	ir_node               *curr_sp    = first_sp;
 
 	if (!layout->sp_relative) {
-		int n_rbp = determine_rbp_input(ret);
-		ir_node *curr_bp = get_irn_n(ret, n_rbp);
-
-		ir_node *leave = new_bd_amd64_leave(NULL, block, curr_bp);
-		curr_bp        = be_new_Proj(leave, pn_amd64_leave_frame);
-		curr_sp        = be_new_Proj(leave, pn_amd64_leave_stack);
+		int      const n_rbp    = determine_rbp_input(ret);
+		ir_node       *curr_bp  = get_irn_n(ret, n_rbp);
+		ir_node       *curr_mem = get_irn_n(ret, n_amd64_ret_mem);
+		ir_node *const leave    = new_bd_amd64_leave(NULL, block, curr_bp, curr_mem);
+		curr_mem = be_new_Proj(leave, pn_amd64_leave_M);
+		curr_bp  = be_new_Proj(leave, pn_amd64_leave_frame);
+		curr_sp  = be_new_Proj(leave, pn_amd64_leave_stack);
 		arch_set_irn_register(curr_bp, bp);
 		arch_set_irn_register(curr_sp, sp);
 		sched_add_before(ret, leave);
 
-		set_irn_n(ret, n_rbp, curr_bp);
+		set_irn_n(ret, n_amd64_ret_mem, curr_mem);
+		set_irn_n(ret, n_rbp,           curr_bp);
 	} else {
 		if (frame_size > 0) {
 			ir_node *incsp = amd64_new_IncSP(block, curr_sp,

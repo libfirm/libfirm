@@ -244,9 +244,9 @@ sub_sp => {
 leave => {
 	op_flags  => [ "uses_memory" ],
 	state     => "exc_pinned",
-	in_reqs   => [ "rbp" ],
-	out_reqs  => [ "rbp:I", "rsp:I" ],
-	outs      => [ "frame", "stack" ],
+	in_reqs   => [ "rbp", "mem" ],
+	out_reqs  => [ "rbp:I", "mem", "rsp:I" ],
+	outs      => [ "frame", "M",   "stack" ],
 	fixed     => "amd64_op_mode_t op_mode = AMD64_OP_NONE;\n",
 	emit      => "leave",
 },
