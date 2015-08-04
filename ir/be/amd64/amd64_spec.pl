@@ -209,12 +209,12 @@ push_am => {
 push_reg => {
 	op_flags  => [ "uses_memory" ],
 	state     => "exc_pinned",
-	in_reqs   => [ "rsp", "gp" ],
-	out_reqs  => [ "rsp:I" ],
-	ins       => [ "stack", "val" ],
-	outs      => [ "stack" ],
+	in_reqs   => [ "rsp",   "mem", "gp"  ],
+	ins       => [ "stack", "mem", "val" ],
+	out_reqs  => [ "rsp:I", "mem" ],
+	outs      => [ "stack", "M"   ],
 	fixed     => "amd64_op_mode_t op_mode = AMD64_OP_NONE;\n",
-	emit      => "pushq %^S1",
+	emit      => "pushq %^S2",
 },
 
 pop_am => {

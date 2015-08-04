@@ -1066,10 +1066,11 @@ static void introduce_prologue(ir_graph *const irg)
 		ir_node *const noreg      = ia32_new_NoReg_gp(irg);
 		ir_node *const initial_bp = be_get_initial_reg_value(irg, bp);
 		ir_node *const push       = new_bd_ia32_Push(NULL, block, noreg, noreg, mem, initial_bp, initial_sp, ia32_mode_gp);
-		ir_node *const curr_sp    = be_new_Proj(push, pn_ia32_Push_stack);
-
-		arch_set_irn_register(curr_sp, sp);
 		sched_add_after(start, push);
+		ir_node *const curr_mem   = be_new_Proj(push, pn_ia32_Push_M);
+		edges_reroute_except(mem, curr_mem, push);
+		ir_node *const curr_sp    = be_new_Proj(push, pn_ia32_Push_stack);
+		arch_set_irn_register(curr_sp, sp);
 
 		/* move esp to ebp */
 		ir_node *const curr_bp = be_new_Copy(block, curr_sp);

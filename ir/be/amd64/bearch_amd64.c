@@ -565,12 +565,14 @@ static void introduce_prologue(ir_graph *const irg)
 
 	if (!layout->sp_relative) {
 		/* push rbp */
+		ir_node *const mem        = get_irg_initial_mem(irg);
 		ir_node *const initial_bp = be_get_initial_reg_value(irg, bp);
-		ir_node *const push       = new_bd_amd64_push_reg(NULL, block, initial_sp, initial_bp);
-		ir_node *const curr_sp    = be_new_Proj(push, pn_amd64_push_reg_stack);
-
-		arch_set_irn_register(curr_sp, sp);
+		ir_node *const push       = new_bd_amd64_push_reg(NULL, block, initial_sp, mem, initial_bp);
 		sched_add_after(start, push);
+		ir_node *const curr_mem   = be_new_Proj(push, pn_amd64_push_reg_M);
+		edges_reroute_except(mem, curr_mem, push);
+		ir_node *const curr_sp    = be_new_Proj(push, pn_amd64_push_reg_stack);
+		arch_set_irn_register(curr_sp, sp);
 
 		/* move rsp to rbp */
 		ir_node *const curr_bp = be_new_Copy(block, curr_sp);
