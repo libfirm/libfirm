@@ -299,8 +299,7 @@ static ir_mode *get_spill_mode(const ir_node *value)
 	if (is_ia32_fld(skipped) || is_ia32_Load(skipped))
 		return get_ia32_ls_mode(skipped);
 
-	ir_mode *mode = get_irn_mode(value);
-	return mode_is_float(mode) ? ia32_mode_E : ia32_mode_gp;
+	return get_irn_mode(value);
 }
 
 /**
