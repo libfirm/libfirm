@@ -860,24 +860,25 @@ static void emit_sparc_Cas(const ir_node *node)
 
 static void emit_be_Perm(const ir_node *irn)
 {
-	ir_mode *mode = get_irn_mode(get_irn_n(irn, 0));
-	if (mode_is_float(mode)) {
+	arch_register_req_t const *const req = arch_get_irn_register_req_out(irn, 0);
+	if (req->cls == &sparc_reg_classes[CLASS_sparc_fp]) {
 		arch_register_t const *const reg0 = arch_get_irn_register_out(irn, 0);
 		arch_register_t const *const reg1 = arch_get_irn_register_out(irn, 1);
 		unsigned reg_idx0 = reg0->global_index;
 		unsigned reg_idx1 = reg1->global_index;
-		unsigned width    = arch_get_irn_register_req_out(irn, 0)->width;
-		for (unsigned i = 0; i < width; ++i) {
+		for (unsigned i = 0, width = req->width; i < width; ++i) {
 			const arch_register_t *r0 = &sparc_registers[reg_idx0+i];
 			const arch_register_t *r1 = &sparc_registers[reg_idx1+i];
 			sparc_emitf(irn, "fmovs %R, %%f31", r0);
 			sparc_emitf(irn, "fmovs %R, %R", r1, r0);
 			sparc_emitf(irn, "fmovs %%f31, %R", r1);
 		}
-	} else {
+	} else if (req->cls == &sparc_reg_classes[CLASS_sparc_gp]) {
 		sparc_emitf(irn, "xor %D1, %D0, %D0");
 		sparc_emitf(irn, "xor %D1, %D0, %D1");
 		sparc_emitf(irn, "xor %D1, %D0, %D0");
+	} else {
+		panic("unexpected register class");
 	}
 }
 
