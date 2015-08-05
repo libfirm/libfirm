@@ -217,17 +217,12 @@ static bool is_simple_sse_Const(ir_node *node)
 
 ir_node *ia32_get_pic_base(ir_graph *irg)
 {
-	ia32_irg_data_t *irg_data = ia32_get_irg_data(irg);
-	ir_node         *block;
-	ir_node         *get_eip = irg_data->get_eip;
-	if (get_eip != NULL)
-		return get_eip;
-
-	block             = get_irg_start_block(irg);
-	get_eip           = new_bd_ia32_GetEIP(NULL, block);
-	irg_data->get_eip = get_eip;
-
-	return get_eip;
+	ir_node **const get_eip = &ia32_get_irg_data(irg)->get_eip;
+	if (!*get_eip) {
+		ir_node *const block = get_irg_start_block(irg);
+		*get_eip = new_bd_ia32_GetEIP(NULL, block);
+	}
+	return *get_eip;
 }
 
 /**
