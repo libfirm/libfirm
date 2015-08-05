@@ -747,6 +747,18 @@ fld => {
 	emit      => "fld%FM %AM",
 },
 
+fst => {
+	op_flags  => [ "uses_memory" ],
+	state     => "exc_pinned",
+	in_reqs   => "...",
+	out_reqs  => [ "mem" ],
+	outs      => [ "M" ],
+	attr_type => "amd64_binop_addr_attr_t",
+	attr      => "const amd64_binop_addr_attr_t *attr_init",
+	mode      => "mode_M",
+	emit      => "fst%FM %AM",
+},
+
 fchs => {
 	template => $x87unop,
 	emit     => "fchs",

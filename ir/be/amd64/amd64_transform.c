@@ -157,6 +157,11 @@ static const arch_register_req_t *xmm_mem_reqs[] = {
 	&arch_memory_requirement,
 };
 
+static const arch_register_req_t *x87_mem_reqs[] = {
+	&amd64_class_reg_req_x87,
+	&arch_memory_requirement,
+};
+
 static const arch_register_req_t *reg_reg_mem_reqs[] = {
 	&amd64_class_reg_req_gp,
 	&amd64_class_reg_req_gp,
@@ -165,6 +170,12 @@ static const arch_register_req_t *reg_reg_mem_reqs[] = {
 
 arch_register_req_t const *xmm_reg_mem_reqs[] = {
 	&amd64_class_reg_req_xmm,
+	&amd64_class_reg_req_gp,
+	&arch_memory_requirement,
+};
+
+static const arch_register_req_t *x87_reg_mem_reqs[] = {
+	&amd64_class_reg_req_x87,
 	&amd64_class_reg_req_gp,
 	&arch_memory_requirement,
 };
@@ -178,6 +189,13 @@ static const arch_register_req_t *reg_reg_reg_mem_reqs[] = {
 
 static const arch_register_req_t *xmm_reg_reg_mem_reqs[] = {
 	&amd64_class_reg_req_xmm,
+	&amd64_class_reg_req_gp,
+	&amd64_class_reg_req_gp,
+	&arch_memory_requirement,
+};
+
+static const arch_register_req_t *x87_reg_reg_mem_reqs[] = {
+	&amd64_class_reg_req_x87,
 	&amd64_class_reg_req_gp,
 	&amd64_class_reg_req_gp,
 	&arch_memory_requirement,
@@ -259,6 +277,14 @@ static arch_register_req_t const **const xmm_am_reqs[] = {
 	xmm_mem_reqs,
 	xmm_reg_mem_reqs,
 	xmm_reg_reg_mem_reqs,
+};
+
+static arch_register_req_t const **const x87_am_reqs[] = {
+	NULL,
+	mem_reqs,
+	x87_mem_reqs,
+	x87_reg_mem_reqs,
+	x87_reg_reg_mem_reqs,
 };
 
 static inline bool mode_needs_gp_reg(ir_mode *mode)
@@ -2169,23 +2195,19 @@ static ir_node *gen_Store(ir_node *const node)
 
 	amd64_binop_addr_attr_t attr;
 	memset(&attr, 0, sizeof(attr));
-	amd64_addr_t *addr = &attr.base.addr;
 
 	attr.base.base.op_mode = AMD64_OP_ADDR_REG;
 
 	ir_node *in[4];
 	int      arity = 0;
 
+	/* TODO match immediates for integer stores. */
 	int reg_input    = arity++;
 	in[reg_input]    = be_transform_node(val);
 	attr.u.reg_input = reg_input;
 
 	ir_node *ptr     = get_Store_ptr(node);
-	perform_address_matching(ptr, &arity, in, addr);
-
-	bool const need_xmm = mode_is_float(mode);
-
-	arch_register_req_t const **const reqs = (need_xmm ? xmm_am_reqs : gp_am_reqs)[arity];
+	perform_address_matching(ptr, &arity, in, &attr.base.addr);
 
 	ir_node *mem     = get_Store_mem(node);
 	ir_node *new_mem = be_transform_node(mem);
@@ -2193,9 +2215,20 @@ static ir_node *gen_Store(ir_node *const node)
 	assert((size_t)arity <= ARRAY_SIZE(in));
 	attr.base.insn_mode = get_insn_mode_from_mode(mode);
 
-	ir_node *const new_store = need_xmm ?
-		new_bd_amd64_movs_store_xmm(dbgi, block, arity, in, reqs, &attr) :
-		new_bd_amd64_mov_store(     dbgi, block, arity, in, reqs, &attr);
+	typedef ir_node* (*create_store_func)(dbg_info *dbgi, ir_node *block,
+			int arity, ir_node *const *in, arch_register_req_t const **in_reqs,
+			amd64_binop_addr_attr_t const *addr);
+
+	arch_register_req_t const **const reqs
+		= (mode_is_float(mode) ? (mode == x86_mode_E ? x87_am_reqs
+		                                             : xmm_am_reqs)
+		                       : gp_am_reqs)[arity];
+
+	create_store_func const cons
+		= mode_is_float(mode) ? (mode == x86_mode_E ? &new_bd_amd64_fst
+		                                            : &new_bd_amd64_movs_store_xmm)
+		                      : &new_bd_amd64_mov_store;
+	ir_node *const new_store = cons(dbgi, block, arity, in, reqs, &attr);
 	set_irn_pinned(new_store, get_irn_pinned(node));
 	return new_store;
 }
