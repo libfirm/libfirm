@@ -41,6 +41,11 @@
 
 #define N_FLOAT_REGS  (N_ia32_fp_REGS-1)  // exclude NOREG
 
+static bool is_x87_req(arch_register_req_t const *const req)
+{
+	return req->cls == &ia32_reg_classes[CLASS_ia32_fp];
+}
+
 static bool requested_x87_sim(ir_graph const *const irg)
 {
 	ia32_irg_data_t const *const irg_data = ia32_get_irg_data(irg);
@@ -1035,8 +1040,7 @@ static void sim_Fucom(x87_state *state, ir_node *n)
  */
 static void sim_Copy(x87_state *state, ir_node *n)
 {
-	arch_register_class_t const *const cls = arch_get_irn_register_req(n)->cls;
-	if (cls != &ia32_reg_classes[CLASS_ia32_fp])
+	if (!is_x87_req(arch_get_irn_register_req(n)))
 		return;
 
 	ir_node               *const pred = be_get_Copy_op(n);
@@ -1096,9 +1100,7 @@ static void sim_Call(x87_state *state, ir_node *n)
 		/* If the called function returns a float, it is returned in st(0).
 		 * This even happens if the return value is NOT used.
 		 * Moreover, only one return result is supported. */
-		ir_type *const res_type = get_method_res_type(call_tp, 0);
-		ir_mode *const mode     = get_type_mode(res_type);
-		if (mode && mode_is_float(mode)) {
+		if (is_x87_req(arch_get_irn_register_req_out(n, pn_ia32_Call_first_result))) {
 			ir_node *const res = get_Proj_for_pn(n, pn_ia32_Call_first_result);
 			x87_push(state, res);
 		}
@@ -1113,18 +1115,18 @@ static void sim_Call(x87_state *state, ir_node *n)
  * @param state  the x87 state
  * @param n      the node that should be simulated (and patched)
  */
-static void sim_Return(x87_state *state, ir_node *n)
+static void sim_Return(x87_state *const state, ir_node *const ret)
 {
 #ifdef DEBUG_libfirm
 	/* only floating point return values must reside on stack */
 	unsigned n_float_res = 0;
-	foreach_irn_in(n, i, res) {
-		if (mode_is_float(get_irn_mode(res)))
+	for (unsigned i = 0, n = get_irn_arity(ret); i != n; ++i) {
+		if (is_x87_req(arch_get_irn_register_req_in(ret, i)))
 			++n_float_res;
 	}
 	assert(x87_get_depth(state) == n_float_res);
 #else
-	(void)n;
+	(void)ret;
 #endif
 
 	/* pop them virtually */
@@ -1140,8 +1142,7 @@ static void sim_Return(x87_state *state, ir_node *n)
 static void sim_Perm(x87_state *state, ir_node *irn)
 {
 	/* handle only floating point Perms */
-	ir_node *pred = get_irn_n(irn, 0);
-	if (! mode_is_float(get_irn_mode(pred)))
+	if (!is_x87_req(arch_get_irn_register_req_out(irn, 0)))
 		return;
 
 	DB((dbg, LEVEL_1, ">>> %+F\n", irn));
