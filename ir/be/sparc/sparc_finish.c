@@ -483,6 +483,21 @@ static bool is_restorezeroopt_reg(const arch_register_t *reg)
 	    || (index >= REG_I0 && index <= REG_I7);
 }
 
+static void replace_with_restore(ir_node *const restore, ir_node *const node, ir_node *const replaced)
+{
+ sched_add_before(node, restore);
+
+ arch_register_t const *const sp    = &sparc_registers[REG_SP];
+ arch_set_irn_register_out(restore, pn_sparc_Restore_stack, sp);
+ ir_node               *const stack = be_new_Proj(restore, pn_sparc_Restore_stack);
+ be_peephole_exchange(node, stack);
+
+ arch_register_t const *const reg = arch_get_irn_register(replaced);
+ arch_set_irn_register_out(restore, pn_sparc_Restore_res, reg);
+ ir_node               *const res = be_new_Proj(restore, pn_sparc_Restore_res);
+ be_peephole_exchange(replaced, res);
+}
+
 static void replace_with_restore_reg(ir_node *node, ir_node *replaced,
                                      ir_node *op0, ir_node *op1)
 {
@@ -490,18 +505,8 @@ static void replace_with_restore_reg(ir_node *node, ir_node *replaced,
 	ir_node  *stack_in = get_irn_n(node, n_sparc_RestoreZero_stack);
 	ir_node  *fp       = get_irn_n(node, n_sparc_RestoreZero_frame_pointer);
 	ir_node  *block    = get_nodes_block(node);
-	ir_node  *new_node = new_bd_sparc_Restore_reg(dbgi, block, stack_in, fp,
-	                                              op0, op1);
-	ir_node  *stack    = be_new_Proj(new_node, pn_sparc_Restore_stack);
-	ir_node  *res      = be_new_Proj(new_node, pn_sparc_Restore_res);
-	const arch_register_t *reg = arch_get_irn_register(replaced);
-	const arch_register_t *sp  = &sparc_registers[REG_SP];
-	arch_set_irn_register_out(new_node, pn_sparc_Restore_stack, sp);
-	arch_set_irn_register_out(new_node, pn_sparc_Restore_res, reg);
-
-	sched_add_before(node, new_node);
-	be_peephole_exchange(node, stack);
-	be_peephole_exchange(replaced, res);
+	ir_node  *new_node = new_bd_sparc_Restore_reg(dbgi, block, stack_in, fp, op0, op1);
+	replace_with_restore(new_node, node, replaced);
 }
 
 static void replace_with_restore_imm(ir_node *node, ir_node *replaced,
@@ -512,18 +517,8 @@ static void replace_with_restore_imm(ir_node *node, ir_node *replaced,
 	ir_node  *stack_in = get_irn_n(node, n_sparc_RestoreZero_stack);
 	ir_node  *fp       = get_irn_n(node, n_sparc_RestoreZero_frame_pointer);
 	ir_node  *block    = get_nodes_block(node);
-	ir_node  *new_node = new_bd_sparc_Restore_imm(dbgi, block, stack_in, fp,
-	                                              op, imm_entity, immediate);
-	ir_node  *stack    = be_new_Proj(new_node, pn_sparc_Restore_stack);
-	ir_node  *res      = be_new_Proj(new_node, pn_sparc_Restore_res);
-	const arch_register_t *reg = arch_get_irn_register(replaced);
-	const arch_register_t *sp  = &sparc_registers[REG_SP];
-	arch_set_irn_register_out(new_node, pn_sparc_Restore_stack, sp);
-	arch_set_irn_register_out(new_node, pn_sparc_Restore_res, reg);
-
-	sched_add_before(node, new_node);
-	be_peephole_exchange(node, stack);
-	be_peephole_exchange(replaced, res);
+	ir_node  *new_node = new_bd_sparc_Restore_imm(dbgi, block, stack_in, fp, op, imm_entity, immediate);
+	replace_with_restore(new_node, node, replaced);
 }
 
 static bool can_move_down(const ir_node *schedpoint, const ir_node *node)
