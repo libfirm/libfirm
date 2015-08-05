@@ -438,12 +438,9 @@ ir_node *amd64_new_IncSP(ir_node *block, ir_node *old_sp, int offset,
 	return incsp;
 }
 
-typedef ir_node *(*construct_binop_func)(dbg_info *dbgi, ir_node *block,
-	int arity, ir_node *in[], const amd64_binop_addr_attr_t *attr_init);
+typedef ir_node *(*construct_binop_func)(dbg_info *dbgi, ir_node *block, int arity, ir_node *const in[], amd64_binop_addr_attr_t const *attr_init);
 
-typedef ir_node *(*construct_rax_binop_func)(dbg_info *dbgi, ir_node *block,
-	int arity, ir_node *in[], amd64_insn_mode_t insn_mode,
-	amd64_op_mode_t op_mode, amd64_addr_t addr);
+typedef ir_node *(*construct_rax_binop_func)(dbg_info *dbgi, ir_node *block, int arity, ir_node *const in[], amd64_insn_mode_t insn_mode, amd64_op_mode_t op_mode, amd64_addr_t addr);
 
 typedef enum match_flags_t {
 	match_am           = 1 << 0,
@@ -857,8 +854,7 @@ static ir_node *gen_binop_xmm(ir_node *node, ir_node *op0, ir_node *op1,
 	return be_new_Proj(new_node, pn_amd64_subs_res);
 }
 
-typedef ir_node *(*construct_shift_func)(dbg_info *dbgi, ir_node *block,
-	int arity, ir_node *in[], const amd64_shift_attr_t *attr_init);
+typedef ir_node *(*construct_shift_func)(dbg_info *dbgi, ir_node *block, int arity, ir_node *const in[], amd64_shift_attr_t const *attr_init);
 
 static ir_node *gen_shift_binop(ir_node *node, ir_node *op1, ir_node *op2,
                                 construct_shift_func func, unsigned pn_res,
@@ -1109,7 +1105,7 @@ static ir_node *create_div(ir_node *const node, ir_mode *const mode,
 	ir_node *new_op2 = be_transform_node(op2);
 	ir_node *new_mem = be_transform_node(mem);
 	ir_node *upper_value;
-	ir_node *(*constructor)(dbg_info*,ir_node*,int,ir_node**,amd64_insn_mode_t);
+	ir_node *(*constructor)(dbg_info*, ir_node*, int, ir_node *const*, amd64_insn_mode_t);
 	if (mode_is_signed(mode)) {
 		upper_value = create_sext(new_block, op1, mode);
 		constructor = new_bd_amd64_idiv;
@@ -1938,9 +1934,7 @@ static ir_node *gen_Phi(ir_node *node)
 	return be_transform_phi(node, req);
 }
 
-typedef ir_node* (*create_mov_func)(dbg_info *dbgi, ir_node *block, int arity,
-                                    ir_node **in, amd64_op_mode_t op_mode,
-                                    amd64_addr_t addr);
+typedef ir_node* (*create_mov_func)(dbg_info *dbgi, ir_node *block, int arity, ir_node *const *in, amd64_op_mode_t op_mode, amd64_addr_t addr);
 
 static ir_node *match_mov(dbg_info *dbgi, ir_node *block, ir_node *value,
                           create_mov_func create_mov, unsigned pn_res)

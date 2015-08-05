@@ -168,7 +168,7 @@ sub create_constructor
 	# create constructor head
 	my $complete_args = "";
 	if ($arity == $ARITY_VARIABLE) {
-		$complete_args = ", int arity, ir_node *in[]";
+		$complete_args = ", int arity, ir_node *const in[]";
 	} else {
 		for (my $i = 0; $i < $arity; $i++) {
 			my $opname = $ins ? $$ins[$i] : "op$i";
