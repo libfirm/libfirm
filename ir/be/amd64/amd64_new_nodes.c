@@ -86,8 +86,7 @@ static void amd64_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 	case dump_node_nodeattr_txt:
 		break;
 
-	case dump_node_info_txt:
-		be_dump_reqs_and_registers(F, n);
+	case dump_node_info_txt: {
 		const amd64_attr_t *attr = get_amd64_attr_const(n);
 		amd64_op_mode_t const op_mode = attr->op_mode;
 		fprintf(F, "mode = %s\n", get_op_mode_string(op_mode));
@@ -118,6 +117,7 @@ static void amd64_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 			fputc('\n', F);
 			break;
 		}
+	}
 	}
 }
 

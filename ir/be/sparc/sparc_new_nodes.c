@@ -77,8 +77,7 @@ static void sparc_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 	case dump_node_mode_txt:
 		break;
 
-	case dump_node_info_txt:
-		be_dump_reqs_and_registers(F, n);
+	case dump_node_info_txt: {
 		const sparc_attr_t *sparc_attr = get_sparc_attr_const(n);
 		if (sparc_attr->immediate_value_entity) {
 			ir_fprintf(F, "entity: %+F (offset %d)\n",
@@ -109,6 +108,7 @@ static void sparc_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 			ir_fprintf(F, "conv to: %+F\n", attr->dest_mode);
 		}
 		break;
+	}
 
 	case dump_node_nodeattr_txt:
 		break;

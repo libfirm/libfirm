@@ -90,8 +90,6 @@ static void arm_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 		break;
 
 	case dump_node_info_txt:
-		be_dump_reqs_and_registers(F, n);
-
 		if (has_load_store_attr(n)) {
 			const arm_load_store_attr_t *attr
 				= get_arm_load_store_attr_const(n);

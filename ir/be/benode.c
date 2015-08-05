@@ -554,8 +554,6 @@ static void dump_node(FILE *f, const ir_node *irn, dump_reason_t reason)
 		}
 		break;
 	case dump_node_info_txt:
-		be_dump_reqs_and_registers(f, irn);
-
 		if (be_is_IncSP(irn)) {
 			const be_incsp_attr_t *a
 				= (const be_incsp_attr_t*)get_irn_generic_attr_const(irn);
