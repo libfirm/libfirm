@@ -214,8 +214,7 @@ static int amd64_addr_attrs_equal(const ir_node *a, const ir_node *b)
 	const amd64_addr_attr_t *attr_b = get_amd64_addr_attr_const(b);
 	return amd64_attrs_equal(a, b)
 	    && amd64_addrs_equal(&attr_a->addr, &attr_b->addr)
-	    && attr_a->insn_mode == attr_b->insn_mode
-	    && attr_a->needs_frame_ent == attr_b->needs_frame_ent;
+	    && attr_a->insn_mode == attr_b->insn_mode;
 }
 
 static int amd64_binop_addr_attrs_equal(const ir_node *a,

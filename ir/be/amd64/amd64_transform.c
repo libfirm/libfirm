@@ -1688,9 +1688,8 @@ no_call_mem:
 			.base = {
 				.op_mode = op_mode,
 			},
-			.needs_frame_ent = false,
-			.insn_mode       = INSN_MODE_64,
-			.addr            = addr,
+			.insn_mode = INSN_MODE_64,
+			.addr      = addr,
 		},
 		.call_tp = type,
 	};
@@ -2151,14 +2150,14 @@ ir_node *amd64_new_spill(ir_node *value, ir_node *after)
 
 	amd64_binop_addr_attr_t attr;
 	memset(&attr, 0, sizeof(attr));
-	attr.base.base.op_mode    = AMD64_OP_ADDR_REG;
-	attr.base.insn_mode       = INSN_MODE_64;
-	attr.base.needs_frame_ent = true;
+	attr.base.base.op_mode = AMD64_OP_ADDR_REG;
+	attr.base.insn_mode    = INSN_MODE_64;
 
 	amd64_addr_t *addr = &attr.base.addr;
-	addr->base_input   = 1;
-	addr->index_input  = NO_INPUT;
-	ir_node *in[]      = { value, frame, mem };
+	addr->immediate.kind = X86_IMM_FRAMEOFFSET;
+	addr->base_input     = 1;
+	addr->index_input    = NO_INPUT;
+	ir_node *in[]        = { value, frame, mem };
 
 	ir_node *store;
 	if (mode_is_float(mode) || mode == amd64_mode_xmm) {
@@ -2201,7 +2200,7 @@ ir_node *amd64_new_reload(ir_node *value, ir_node *spill, ir_node *before)
 	arch_add_irn_flags(load, arch_irn_flag_reload);
 	sched_add_before(before, load);
 	amd64_addr_attr_t *attr = get_amd64_addr_attr(load);
-	attr->needs_frame_ent = true;
+	attr->addr.immediate.kind = X86_IMM_FRAMEOFFSET;
 	return be_new_Proj(load, pn_res);
 }
 

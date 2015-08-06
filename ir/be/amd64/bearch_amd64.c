@@ -479,8 +479,9 @@ static void amd64_collect_frame_entity_nodes(ir_node *node, void *data)
 		return;
 
 	const amd64_addr_attr_t *attr = get_amd64_addr_attr_const(node);
-	if (attr->needs_frame_ent) {
-		/* TODO: improve this */
+	x86_imm32_t       const *imm  = &attr->addr.immediate;
+	if (imm->kind == X86_IMM_FRAMEOFFSET && imm->entity == NULL) {
+		/* TODO: do not hardcode node names here */
 		const ir_mode *mode = is_amd64_movdqu(node) ? amd64_mode_xmm
 		                                            : mode_Lu;
 		const ir_type *type = get_type_for_mode(mode);
