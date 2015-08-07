@@ -313,6 +313,7 @@ calling_convention_t *sparc_decide_calling_convention(ir_type *function_type,
 	}
 
 	calling_convention_t *cconv = XMALLOCZ(calling_convention_t);
+	cconv->n_parameters     = n_params;
 	cconv->parameters       = params;
 	cconv->param_stack_size = stack_offset;
 	cconv->n_param_regs     = n_param_regs_used;

@@ -208,8 +208,7 @@ static ir_type *compute_arg_type(ir_graph *irg, calling_convention_t *cconv,
 {
 	ir_entity       *va_start_entity = NULL;
 	const ir_entity *entity          = get_irg_entity(irg);
-	const ir_type   *mtp             = get_entity_type(entity);
-	size_t           n_params        = get_method_n_params(mtp);
+	size_t           n_params        = cconv->n_parameters;
 	ir_entity      **param_map       = ALLOCANZ(ir_entity*, n_params);
 
 	ir_type *frame_type      = get_irg_frame_type(irg);
@@ -265,8 +264,9 @@ static ir_type *compute_arg_type(ir_graph *irg, calling_convention_t *cconv,
 	if (va_start_entity != NULL) {
 		/* sparc_variadic_fixups() fiddled with our type, find out the
 		 * original number of parameters */
-		ir_type *non_lowered   = get_higher_type(mtp);
-		size_t   orig_n_params = get_method_n_params(non_lowered);
+		ir_type const *const mtp           = get_entity_type(entity);
+		ir_type       *const non_lowered   = get_higher_type(mtp);
+		size_t         const orig_n_params = get_method_n_params(non_lowered);
 		assert(is_method_variadic(mtp));
 		long offset;
 		if (orig_n_params < n_params) {

@@ -134,6 +134,7 @@ calling_convention_t *arm_decide_calling_convention(const ir_graph *irg,
 
 	calling_convention_t *cconv = XMALLOCZ(calling_convention_t);
 	cconv->parameters       = params;
+	cconv->n_parameters     = n_params;
 	cconv->param_stack_size = stack_offset;
 	cconv->n_param_regs     = n_param_regs_used;
 	cconv->results          = results;

@@ -162,6 +162,7 @@ x86_cconv_t *amd64_decide_calling_convention(ir_type *function_type,
 
 	x86_cconv_t *cconv    = XMALLOCZ(x86_cconv_t);
 	cconv->parameters     = params;
+	cconv->n_parameters   = n_params;
 	cconv->callframe_size = stack_offset;
 	cconv->n_param_regs   = n_param_regs_used;
 	cconv->n_xmm_regs     = float_param_regnum;

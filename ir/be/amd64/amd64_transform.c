@@ -1392,12 +1392,6 @@ static ir_node *gen_Switch(ir_node *node)
 
 static ir_node *gen_Start(ir_node *node)
 {
-	ir_graph  *irg           = get_irn_irg(node);
-	ir_entity *entity        = get_irg_entity(irg);
-	ir_type   *function_type = get_entity_type(entity);
-	ir_node   *new_block     = be_transform_nodes_block(node);
-	dbg_info  *dbgi          = get_irn_dbg_info(node);
-
 	x86_cconv_t const *const cconv = current_cconv;
 
 	/* start building list of start constraints */
@@ -1410,7 +1404,9 @@ static ir_node *gen_Start(ir_node *node)
 		= rbitset_popcount(cconv->callee_saves, N_AMD64_REGISTERS);
 	n_outs += n_callee_saves;
 
-	ir_node *start = new_bd_amd64_start(dbgi, new_block, n_outs);
+	dbg_info *const dbgi      = get_irn_dbg_info(node);
+	ir_node  *const new_block = be_transform_nodes_block(node);
+	ir_node  *const start     = new_bd_amd64_start(dbgi, new_block, n_outs);
 
 	size_t o = 0;
 
@@ -1421,7 +1417,7 @@ static ir_node *gen_Start(ir_node *node)
 	be_make_start_out(&start_val[REG_RSP], start, o++, &amd64_registers[REG_RSP], true);
 
 	/* function parameters in registers */
-	for (size_t i = 0; i < get_method_n_params(function_type); ++i) {
+	for (size_t i = 0, n = cconv->n_parameters; i != n; ++i) {
 		const reg_or_stackslot_t *param = &current_cconv->parameters[i];
 		const arch_register_t    *reg   = param->reg;
 		if (reg)
@@ -1551,7 +1547,7 @@ static ir_node *gen_Call(ir_node *node)
 	int              sync_arity   = 0;
 	ir_node         *new_frame    = get_stack_pointer_for(node);
 
-	assert(n_params == get_method_n_params(type));
+	assert(n_params == cconv->n_parameters);
 
 	/* construct arguments */
 
@@ -2664,15 +2660,11 @@ static ir_type *amd64_get_between_type(bool omit_fp)
 
 static void amd64_create_stacklayout(ir_graph *irg, const x86_cconv_t *cconv)
 {
-	ir_entity         *entity        = get_irg_entity(irg);
-	ir_type           *function_type = get_entity_type(entity);
-	be_stack_layout_t *layout        = be_get_irg_stack_layout(irg);
-
 	/* construct argument type */
-	ident   *const arg_id   = new_id_fmt("%s_arg_type", get_entity_ident(entity));
-	ir_type *const arg_type = new_type_struct(arg_id);
-	size_t   const n_params = get_method_n_params(function_type);
-	for (size_t p = 0; p < n_params; ++p) {
+	ir_entity *const entity   = get_irg_entity(irg);
+	ident     *const arg_id   = new_id_fmt("%s_arg_type", get_entity_ident(entity));
+	ir_type   *const arg_type = new_type_struct(arg_id);
+	for (size_t p = 0, n_params = cconv->n_parameters; p < n_params; ++p) {
 		reg_or_stackslot_t *param = &cconv->parameters[p];
 		if (param->type == NULL)
 			continue;
@@ -2682,6 +2674,7 @@ static void amd64_create_stacklayout(ir_graph *irg, const x86_cconv_t *cconv)
 		set_entity_offset(param->entity, param->offset);
 	}
 
+	be_stack_layout_t *const layout = be_get_irg_stack_layout(irg);
 	memset(layout, 0, sizeof(*layout));
 	layout->frame_type     = get_irg_frame_type(irg);
 	layout->between_type   = amd64_get_between_type(cconv->omit_fp);

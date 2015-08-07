@@ -1535,12 +1535,6 @@ static ir_node *gen_Unknown(ir_node *node)
  */
 static ir_node *gen_Start(ir_node *node)
 {
-	ir_graph  *irg           = get_irn_irg(node);
-	ir_entity *entity        = get_irg_entity(irg);
-	ir_type   *function_type = get_entity_type(entity);
-	ir_node   *new_block     = be_transform_nodes_block(node);
-	dbg_info  *dbgi          = get_irn_dbg_info(node);
-
 	/* start building list of start constraints */
 
 	/* calculate number of outputs */
@@ -1554,7 +1548,9 @@ static ir_node *gen_Start(ir_node *node)
 		n_outs += ARRAY_SIZE(omit_fp_callee_saves);
 	}
 
-	ir_node *start = new_bd_sparc_Start(dbgi, new_block, n_outs);
+	dbg_info *const dbgi      = get_irn_dbg_info(node);
+	ir_node  *const new_block = be_transform_nodes_block(node);
+	ir_node  *const start     = new_bd_sparc_Start(dbgi, new_block, n_outs);
 
 	size_t o = 0;
 
@@ -1574,7 +1570,7 @@ static ir_node *gen_Start(ir_node *node)
 		be_make_start_out(&start_val[REG_FP], start, o++, fp_reg, true);
 
 	/* function parameters in registers */
-	for (size_t i = 0; i < get_method_n_params(function_type); ++i) {
+	for (size_t i = 0, n = current_cconv->n_parameters; i != n; ++i) {
 		reg_or_stackslot_t const *const param = &current_cconv->parameters[i];
 		arch_register_t    const *const reg0  = param->reg0;
 		if (reg0)
@@ -1796,7 +1792,7 @@ static ir_node *gen_Call(ir_node *node)
 	bool             aggregate_return
 		= get_method_calling_convention(type) & cc_compound_ret;
 
-	assert(n_params == get_method_n_params(type));
+	assert(n_params == cconv->n_parameters);
 
 	/* construct arguments */
 

@@ -663,7 +663,7 @@ static parameter_dbg_info_t *construct_parameter_infos(ir_graph *irg)
 	ir_entity            *entity   = get_irg_entity(irg);
 	ir_type              *type     = get_entity_type(entity);
 	calling_convention_t *cconv    = arm_decide_calling_convention(NULL, type);
-	size_t                n_params = get_method_n_params(type);
+	size_t                n_params = cconv->n_parameters;
 	parameter_dbg_info_t *infos    = XMALLOCNZ(parameter_dbg_info_t, n_params);
 
 	for (size_t i = 0; i < n_params; ++i) {

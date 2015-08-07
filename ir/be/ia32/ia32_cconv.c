@@ -207,6 +207,7 @@ align_stack:;
 	cconv->sp_delta       = (cc & cc_compound_ret) && !(cc & cc_reg_param)
 	                        ? IA32_REGISTER_SIZE : 0;
 	cconv->parameters     = params;
+	cconv->n_parameters   = n_params;
 	cconv->callframe_size = stack_offset;
 	cconv->n_param_regs   = n_param_regs_used;
 	cconv->n_xmm_regs     = float_param_regnum;

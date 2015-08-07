@@ -1657,18 +1657,14 @@ static ir_type *arm_get_between_type(void)
 
 static void create_stacklayout(ir_graph *irg)
 {
-	ir_entity         *entity        = get_irg_entity(irg);
-	ir_type           *function_type = get_entity_type(entity);
-	be_stack_layout_t *layout        = be_get_irg_stack_layout(irg);
-
 	/* calling conventions must be decided by now */
 	assert(cconv != NULL);
 
 	/* construct argument type */
-	ident   *const arg_type_id = new_id_fmt("%s_arg_type", get_entity_ident(entity));
-	ir_type *const arg_type    = new_type_struct(arg_type_id);
-	for (unsigned p = 0, n_params = get_method_n_params(function_type);
-	     p < n_params; ++p) {
+	ir_entity *const entity      = get_irg_entity(irg);
+	ident     *const arg_type_id = new_id_fmt("%s_arg_type", get_entity_ident(entity));
+	ir_type   *const arg_type    = new_type_struct(arg_type_id);
+	for (unsigned p = 0, n_params = cconv->n_parameters; p < n_params; ++p) {
 		reg_or_stackslot_t *param = &cconv->parameters[p];
 		if (param->type == NULL)
 			continue;
@@ -1680,6 +1676,7 @@ static void create_stacklayout(ir_graph *irg)
 
 	/* TODO: what about external functions? we don't know most of the stack
 	 * layout for them. And probably don't need all of this... */
+	be_stack_layout_t *const layout = be_get_irg_stack_layout(irg);
 	memset(layout, 0, sizeof(*layout));
 	layout->frame_type     = get_irg_frame_type(irg);
 	layout->between_type   = arm_get_between_type();
@@ -1699,24 +1696,21 @@ static void create_stacklayout(ir_graph *irg)
  */
 static ir_node *gen_Start(ir_node *node)
 {
-	ir_graph       *irg           = get_irn_irg(node);
-	ir_entity      *entity        = get_irg_entity(irg);
-	ir_type        *function_type = get_entity_type(entity);
-	ir_node        *new_block     = be_transform_nodes_block(node);
-	dbg_info       *dbgi          = get_irn_dbg_info(node);
-
 	unsigned n_outs = 2; /* memory, sp */
 	n_outs += cconv->n_param_regs;
 	n_outs += ARRAY_SIZE(callee_saves);
-	ir_node *start = new_bd_arm_Start(dbgi, new_block, n_outs);
-	unsigned o     = 0;
+	dbg_info *const dbgi      = get_irn_dbg_info(node);
+	ir_node  *const new_block = be_transform_nodes_block(node);
+	ir_node  *const start     = new_bd_arm_Start(dbgi, new_block, n_outs);
+
+	unsigned o = 0;
 
 	be_make_start_mem(&start_mem, start, o++);
 
 	be_make_start_out(&start_val[REG_SP], start, o++, &arm_registers[REG_SP], true);
 
 	/* function parameters in registers */
-	for (size_t i = 0; i < get_method_n_params(function_type); ++i) {
+	for (size_t i = 0, n = cconv->n_parameters; i != n; ++i) {
 		const reg_or_stackslot_t *param = &cconv->parameters[i];
 		const arch_register_t    *reg0  = param->reg0;
 		if (reg0)
@@ -1828,7 +1822,7 @@ static ir_node *gen_Call(ir_node *node)
 	size_t const          n_caller_saves = ARRAY_SIZE(caller_saves);
 	ir_entity            *entity         = NULL;
 
-	assert(n_params == get_method_n_params(type));
+	assert(n_params == cconv->n_parameters);
 
 	/* memory input */
 	int mem_pos     = in_arity++;

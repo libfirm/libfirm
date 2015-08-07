@@ -39,6 +39,7 @@ struct calling_convention_t
 {
 	bool                omit_fp;          /**< do not use frame pointer (and no
 	                                           save/restore) */
+	unsigned            n_parameters;     /**< number of parameters */
 	reg_or_stackslot_t *parameters;       /**< parameter info. */
 	unsigned            param_stack_size; /**< stack size for parameters */
 	unsigned            n_param_regs;     /**< number of values passed in a
