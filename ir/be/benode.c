@@ -416,8 +416,7 @@ ir_node *be_get_initial_reg_value(ir_graph *irg, const arch_register_t *reg)
 {
 	unsigned const i     = get_start_reg_index(irg, reg);
 	ir_node *const start = get_irg_start(irg);
-	ir_node *const proj  = get_Proj_for_pn(start, i);
-	return proj ? proj : be_new_Proj(start, i);
+	return be_get_or_make_Proj_for_pn(start, i);
 }
 
 ir_node *be_new_Phi(ir_node *block, int n_ins, ir_node **ins, ir_mode *mode,
@@ -527,6 +526,12 @@ ir_node *be_new_Proj(ir_node *const pred, unsigned const pos)
 {
 	arch_register_req_t const *const req = arch_get_irn_register_req_out(pred, pos);
 	return new_r_Proj(pred, req->cls->mode, pos);
+}
+
+ir_node *be_get_or_make_Proj_for_pn(ir_node *const irn, unsigned const pn)
+{
+	ir_node *const proj = get_Proj_for_pn(irn, pn);
+	return proj ? proj : be_new_Proj(irn, pn);
 }
 
 /**

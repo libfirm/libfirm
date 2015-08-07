@@ -161,11 +161,8 @@ static void collect_fpu_mode_nodes_walker(ir_node *node, void *data)
 		if (reg != &ia32_registers[REG_FPCW])
 			continue;
 		ir_node *value = node;
-		if (get_irn_mode(value) == mode_T) {
-			value = get_Proj_for_pn(node, o);
-			if (value == NULL)
-				value = be_new_Proj(node, o);
-		}
+		if (get_irn_mode(value) == mode_T)
+			value = be_get_or_make_Proj_for_pn(node, o);
 		ARR_APP1(ir_node*, env->state_nodes, value);
 	}
 }

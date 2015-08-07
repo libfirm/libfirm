@@ -204,6 +204,12 @@ ir_node *be_new_Proj(ir_node *pred, unsigned pos);
  */
 ir_node *be_get_initial_reg_value(ir_graph *irg, const arch_register_t *reg);
 
+/**
+ * Gets the Proj with number pn from irn.
+ * Creates the Proj, if it does not exist, yet.
+ */
+ir_node *be_get_or_make_Proj_for_pn(ir_node *irn, unsigned pn);
+
 static inline bool be_is_Asm       (const ir_node *irn) { return get_irn_op(irn) == op_be_Asm       ; }
 static inline bool be_is_Copy      (const ir_node *irn) { return get_irn_op(irn) == op_be_Copy      ; }
 static inline bool be_is_CopyKeep  (const ir_node *irn) { return get_irn_op(irn) == op_be_CopyKeep  ; }

@@ -496,6 +496,7 @@ ir_node *new_similar_node(ir_node *old, ir_node *block, ir_node **in);
 
 /**
  * Gets the Proj with number pn from irn.
+ * Returns a null pointer, if no such Proj exists.
  */
 ir_node *get_Proj_for_pn(ir_node const *irn, unsigned pn);
 
