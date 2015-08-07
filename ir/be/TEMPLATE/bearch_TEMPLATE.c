@@ -24,7 +24,7 @@
 #include "panic.h"
 
 /**
- * Transforms the standard firm graph into a TEMLPATE firm graph
+ * Transforms the standard firm graph into a TEMPLATE firm graph
  */
 static void TEMPLATE_select_instructions(ir_graph *irg)
 {
