@@ -450,7 +450,8 @@ static void amd64_set_frame_entity(ir_node *node, ir_entity *entity,
 static bool is_frame_load(const ir_node *node)
 {
 	return is_amd64_mov_gp(node) || is_amd64_movs(node)
-	    || is_amd64_movs_xmm(node) || is_amd64_movdqu(node);
+	    || is_amd64_movs_xmm(node) || is_amd64_movdqu(node)
+	    || is_amd64_fld(node);
 }
 
 /**

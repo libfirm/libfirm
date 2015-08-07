@@ -399,7 +399,7 @@ ir_tarval *create_sign_tv(ir_mode *mode)
 	return tarval_bitcast(sign, mode);
 }
 
-static ir_node *gen_x87_Const(ir_node *const block, ir_tarval *const tv)
+static ir_node *gen_x87_Const(ir_node *const block, ir_tarval *tv)
 {
 	/* TODO: avoid code duplication with ia32 backend */
 	if (tarval_is_null(tv)) {
@@ -2033,6 +2033,80 @@ static ir_node *create_cvtsd2ss(dbg_info *dbgi, ir_node *block, ir_node *value)
 	                 pn_amd64_cvtsd2ss_res);
 }
 
+typedef ir_node* (*new_store_func)(dbg_info *dbgi, ir_node *block, int arity,
+                                   ir_node *const *in,
+                                   arch_register_req_t const **in_reqs,
+                                   amd64_binop_addr_attr_t const *addr);
+
+static void store_to_temp(new_store_func new_store, amd64_addr_t *addr, dbg_info *dbgi,
+                          ir_node *block, ir_node **in, int *n_in,
+                          ir_node *op, ir_mode *mode)
+{
+	ir_graph *const irg    = get_irn_irg(block);
+	ir_node  *const frame  = get_irg_frame(irg);
+	ir_node  *const nomem  = get_irg_no_mem(irg);
+	ir_node  *const new_op = be_transform_node(op);
+	ir_node  *      sin[]  = { new_op, frame, nomem };
+
+	amd64_binop_addr_attr_t attr;
+	memset(&attr, 0, sizeof(attr));
+	attr.base.base.op_mode = AMD64_OP_ADDR_REG;
+	attr.base.insn_mode    = get_insn_mode_from_mode(mode);
+	attr.u.reg_input       = 0;
+	amd64_addr_t *const daddr = &attr.base.addr;
+	daddr->base_input     = 1;
+	daddr->index_input    = NO_INPUT;
+	daddr->mem_input      = 2;
+	daddr->immediate.kind = X86_IMM_FRAMEOFFSET;
+
+	ir_node *store = new_store(dbgi, block, ARRAY_SIZE(sin), sin,
+	                           x87_reg_mem_reqs, &attr);
+	set_irn_pinned(store, false);
+
+	int base_input = (*n_in)++;
+	in[base_input] = frame;
+	int mem_input  = (*n_in)++;
+	in[mem_input]  = store;
+	memcpy(addr, daddr, sizeof(*addr));
+	addr->base_input  = base_input;
+	addr->index_input = NO_INPUT;
+	addr->mem_input   = mem_input;
+}
+
+static ir_node *conv_sse_to_x87(dbg_info *dbgi, ir_node *block, ir_node *op)
+{
+	ir_node *in[5];
+	int      n_in = 0;
+	ir_mode *const mode = get_irn_mode(op);
+	amd64_addr_t addr;
+	store_to_temp(new_bd_amd64_movs_store_xmm, &addr, dbgi, block, in, &n_in,
+	              op, mode);
+	assert(n_in < (int)ARRAY_SIZE(in));
+
+	amd64_insn_mode_t insn_mode = get_insn_mode_from_mode(mode);
+	ir_node *load = new_bd_amd64_fld(dbgi, block, n_in, in, reg_mem_reqs,
+	                                 insn_mode, AMD64_OP_ADDR, addr);
+	set_irn_pinned(load, false);
+	return be_new_Proj(load, pn_amd64_fld_res);
+}
+
+static ir_node *conv_x87_to_sse(dbg_info *dbgi, ir_node *block, ir_node *op,
+                                ir_mode *dst_mode)
+{
+	ir_node *in[5];
+	int      n_in = 0;
+	amd64_addr_t addr;
+	store_to_temp(new_bd_amd64_fst, &addr, dbgi, block, in, &n_in, op,
+	              dst_mode);
+	assert(n_in < (int)ARRAY_SIZE(in));
+
+	amd64_insn_mode_t insn_mode = get_insn_mode_from_mode(dst_mode);
+	ir_node *load = new_bd_amd64_movs_xmm(dbgi, block, n_in, in, reg_mem_reqs,
+	                                      insn_mode, AMD64_OP_ADDR, addr);
+	set_irn_pinned(load, false);
+	return be_new_Proj(load, pn_amd64_fld_res);
+}
+
 static ir_node *gen_Conv(ir_node *const node)
 {
 	ir_node  *const block    = be_transform_nodes_block(node);
@@ -2115,6 +2189,17 @@ static ir_node *gen_Conv(ir_node *const node)
 		insn_mode = get_insn_mode_from_mode(src_mode);
 	} else {
 		insn_mode = get_insn_mode_from_mode(min_mode);
+	}
+
+	if (dst_mode == x86_mode_E) {
+		/* TODO: int->mode_E */
+		assert(src_float);
+		/* SSE to x87 */
+		return conv_sse_to_x87(dbgi, block, op);
+	} else if (src_mode == x86_mode_E) {
+		/* TODO: mode_E->int */
+		assert(dst_float);
+		return conv_x87_to_sse(dbgi, block, op, dst_mode);
 	}
 
 	ir_node *new_op = be_transform_node(op);
@@ -2215,16 +2300,12 @@ static ir_node *gen_Store(ir_node *const node)
 	assert((size_t)arity <= ARRAY_SIZE(in));
 	attr.base.insn_mode = get_insn_mode_from_mode(mode);
 
-	typedef ir_node* (*create_store_func)(dbg_info *dbgi, ir_node *block,
-			int arity, ir_node *const *in, arch_register_req_t const **in_reqs,
-			amd64_binop_addr_attr_t const *addr);
-
 	arch_register_req_t const **const reqs
 		= (mode_is_float(mode) ? (mode == x86_mode_E ? x87_am_reqs
 		                                             : xmm_am_reqs)
 		                       : gp_am_reqs)[arity];
 
-	create_store_func const cons
+	new_store_func const cons
 		= mode_is_float(mode) ? (mode == x86_mode_E ? &new_bd_amd64_fst
 		                                            : &new_bd_amd64_movs_store_xmm)
 		                      : &new_bd_amd64_mov_store;
