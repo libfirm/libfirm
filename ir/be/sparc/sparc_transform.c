@@ -50,6 +50,7 @@ static ir_mode               *mode_fp2;
 //static ir_mode               *mode_fp4;
 static pmap                  *node_to_stack;
 static ir_node               *frame_base;
+static ir_node               *initial_va_list;
 
 static const arch_register_t *const omit_fp_callee_saves[] = {
 	&sparc_registers[REG_L0],
@@ -2069,6 +2070,34 @@ static ir_node *gen_compare_swap(ir_node *node)
 	return cas;
 }
 
+static ir_node *get_frame_base(ir_graph *irg)
+{
+	if (frame_base == NULL) {
+		if (current_cconv->omit_fp) {
+			frame_base = get_initial_sp(irg);
+		} else {
+			frame_base = get_initial_fp(irg);
+		}
+	}
+	return frame_base;
+}
+
+static ir_node *gen_va_start(ir_node *node)
+{
+	if (initial_va_list == NULL) {
+		dbg_info  *dbgi   = get_irn_dbg_info(node);
+		ir_graph  *irg    = get_irn_irg(node);
+		ir_node   *block  = get_irg_start_block(irg);
+		ir_entity *entity = sparc_get_va_start_entity();
+		ir_node   *frame  = get_frame_base(irg);
+		ir_node   *ap     = new_bd_sparc_FrameAddr(dbgi, block, frame, entity, 0);
+
+		initial_va_list = ap;
+	}
+
+	return initial_va_list;
+}
+
 /**
  * Transform Builtin node.
  */
@@ -2098,8 +2127,9 @@ static ir_node *gen_Builtin(ir_node *node)
 		return gen_compare_swap(node);
 	case ir_bk_saturating_increment:
 		return gen_saturating_increment(node);
-	case ir_bk_may_alias:
 	case ir_bk_va_start:
+		return gen_va_start(node);
+	case ir_bk_may_alias:
 	case ir_bk_va_arg:
 		break;
 	}
@@ -2142,8 +2172,14 @@ static ir_node *gen_Proj_Builtin(ir_node *proj)
 			assert(pn == pn_Builtin_max+1);
 			return be_new_Proj(new_pred, pn_sparc_Cas_res);
 		}
-	case ir_bk_may_alias:
 	case ir_bk_va_start:
+		if (pn == pn_Builtin_M) {
+			return be_transform_node(get_Builtin_mem(pred));
+		} else {
+			assert(pn == pn_Builtin_max+1);
+			return new_pred;
+		}
+	case ir_bk_may_alias:
 	case ir_bk_va_arg:
 		break;
 	}
@@ -2273,18 +2309,6 @@ static ir_node *gen_Proj_Div(ir_node *node)
 		break;
 	}
 	panic("unsupported Proj from Div");
-}
-
-static ir_node *get_frame_base(ir_graph *irg)
-{
-	if (frame_base == NULL) {
-		if (current_cconv->omit_fp) {
-			frame_base = get_initial_sp(irg);
-		} else {
-			frame_base = get_initial_fp(irg);
-		}
-	}
-	return frame_base;
 }
 
 static ir_node *gen_Proj_Start(ir_node *node)
@@ -2525,6 +2549,7 @@ void sparc_transform_graph(ir_graph *irg)
 
 	pmap_destroy(node_to_stack);
 	node_to_stack = NULL;
+	initial_va_list = NULL;
 
 	/* do code placement, to optimize the position of constants */
 	place_code(irg);

@@ -20,6 +20,8 @@
 #include "besched.h"
 #include "bestack.h"
 
+static ir_entity *va_start_entity;
+
 static void sparc_set_frame_offset(ir_node *node, int offset)
 {
 	if (be_is_MemPerm(node)) {
@@ -206,7 +208,6 @@ bool sparc_variadic_fixups(ir_graph *irg, calling_convention_t *cconv)
 static ir_type *compute_arg_type(ir_graph *irg, calling_convention_t *cconv,
                                  ir_type *between_type)
 {
-	ir_entity       *va_start_entity = NULL;
 	const ir_entity *entity          = get_irg_entity(irg);
 	size_t           n_params        = cconv->n_parameters;
 	ir_entity      **param_map       = ALLOCANZ(ir_entity*, n_params);
@@ -223,13 +224,6 @@ static ir_type *compute_arg_type(ir_graph *irg, calling_convention_t *cconv,
 			continue;
 
 		size_t num = get_entity_parameter_number(member);
-		if (num == IR_VA_START_PARAMETER_NUMBER) {
-			if (va_start_entity != NULL)
-				panic("multiple va_start entities found (%+F,%+F)",
-				      va_start_entity, member);
-			va_start_entity = member;
-			continue;
-		}
 		assert(num < n_params);
 		if (param_map[num] != NULL)
 			panic("multiple entities for parameter %u in %+F found", f, irg);
@@ -261,10 +255,13 @@ static ir_type *compute_arg_type(ir_graph *irg, calling_convention_t *cconv,
 		set_entity_offset(entity, param->offset);
 	}
 
-	if (va_start_entity != NULL) {
+	ir_type *const mtp = get_entity_type(entity);
+	if (is_method_variadic(mtp)) {
+		ir_type *unknown = get_unknown_type();
+		va_start_entity = new_parameter_entity(res, IR_VA_START_PARAMETER_NUMBER, unknown);
+
 		/* sparc_variadic_fixups() fiddled with our type, find out the
 		 * original number of parameters */
-		ir_type const *const mtp           = get_entity_type(entity);
 		ir_type       *const non_lowered   = get_higher_type(mtp);
 		size_t         const orig_n_params = get_method_n_params(non_lowered);
 		assert(is_method_variadic(mtp));
@@ -278,10 +275,18 @@ static ir_type *compute_arg_type(ir_graph *irg, calling_convention_t *cconv,
 			set_entity_owner(va_start_entity, res);
 			set_entity_offset(va_start_entity, cconv->param_stack_size);
 		}
+	} else {
+		va_start_entity = NULL;
 	}
+
 	set_type_size_bytes(res, cconv->param_stack_size);
 
 	return res;
+}
+
+ir_entity *sparc_get_va_start_entity(void)
+{
+	return va_start_entity;
 }
 
 void sparc_create_stacklayout(ir_graph *irg, calling_convention_t *cconv)

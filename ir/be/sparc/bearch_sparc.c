@@ -17,6 +17,7 @@
 #include "bera.h"
 #include "besched.h"
 #include "betranshlp.h"
+#include "bevarargs.h"
 #include "debug.h"
 #include "gen_sparc_regalloc_if.h"
 #include "irarch_t.h"
@@ -480,6 +481,7 @@ static void sparc_lower_for_target(void)
 	supported[s++] = ir_bk_saturating_increment;
 	if (sparc_cg_config.use_cas)
 		supported[s++] = ir_bk_compare_swap;
+	supported[s++] = ir_bk_va_start;
 	assert(s < ARRAY_SIZE(supported));
 	lower_builtins(s, supported);
 	be_after_irp_transform("lower-builtins");
@@ -536,8 +538,8 @@ static const backend_params *sparc_get_backend_params(void)
 		.stack_param_align             = 4,
 		.float_int_overflow            = ir_overflow_min_max,
 		.vararg                        = {
-			.va_list_type = NULL,
-			.lower_va_arg = NULL,
+			.va_list_type = NULL, /* will be set later */
+			.lower_va_arg = be_default_lower_va_arg,
 		},
 	};
 
@@ -548,9 +550,12 @@ static const backend_params *sparc_get_backend_params(void)
 		= new_int_mode("unsigned long long", irma_twos_complement, 64, 0, 64);
 	ir_type *type_unsigned_long_long
 		= new_type_primitive(mode_unsigned_long_long);
+	ir_type *type_va_list
+		= new_type_pointer(new_type_primitive(mode_ANY));
 
 	p.type_long_long          = type_long_long;
 	p.type_unsigned_long_long = type_unsigned_long_long;
+	p.vararg.va_list_type     = type_va_list;
 
 	sparc_mode_Q
 		= new_float_mode("Q", irma_ieee754, 15, 112, ir_overflow_min_max);
