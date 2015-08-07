@@ -171,37 +171,35 @@ bool sparc_variadic_fixups(ir_graph *irg, calling_convention_t *cconv)
 	if (cconv->n_param_regs >= SPARC_N_PARAM_REGS)
 		return false;
 
-	{
-	size_t         n_params     = get_method_n_params(mtp);
-	type_dbg_info *dbgi         = get_type_dbg_info(mtp);
-	size_t         n_ress       = get_method_n_ress(mtp);
-	size_t         new_n_params
-		= n_params + (SPARC_N_PARAM_REGS - cconv->n_param_regs);
-	ir_type       *new_mtp      = new_type_method(new_n_params, n_ress);
-	ir_mode       *gp_reg_mode  = sparc_reg_classes[CLASS_sparc_gp].mode;
-	ir_type       *gp_reg_type  = get_type_for_mode(gp_reg_mode);
-	ir_type       *frame_type   = get_irg_frame_type(irg);
-	size_t         i;
+	size_t   const n_params     = get_method_n_params(mtp);
+	size_t   const n_ress       = get_method_n_ress(mtp);
+	size_t   const new_n_params = n_params + (SPARC_N_PARAM_REGS - cconv->n_param_regs);
+	ir_type *const new_mtp      = new_type_method(new_n_params, n_ress);
 
-	for (i = 0; i < n_ress; ++i) {
+	type_dbg_info *const dbgi = get_type_dbg_info(mtp);
+	set_type_dbg_info(new_mtp, dbgi);
+
+	for (size_t i = 0; i < n_ress; ++i) {
 		ir_type *type = get_method_res_type(mtp, i);
 		set_method_res_type(new_mtp, i, type);
 	}
+	size_t i;
 	for (i = 0; i < n_params; ++i) {
 		ir_type *type = get_method_param_type(mtp, i);
 		set_method_param_type(new_mtp, i, type);
 	}
-	for ( ; i < new_n_params; ++i) {
+	ir_type *const frame_type  = get_irg_frame_type(irg);
+	ir_mode *const gp_reg_mode = sparc_reg_classes[CLASS_sparc_gp].mode;
+	ir_type *const gp_reg_type = get_type_for_mode(gp_reg_mode);
+	for (; i < new_n_params; ++i) {
 		set_method_param_type(new_mtp, i, gp_reg_type);
 		new_parameter_entity(frame_type, i, gp_reg_type);
 	}
 
-	set_type_dbg_info(new_mtp, dbgi);
 	copy_method_properties(new_mtp, mtp);
 	set_higher_type(new_mtp, mtp);
 
 	set_entity_type(entity, new_mtp);
-	}
 	return true;
 }
 
