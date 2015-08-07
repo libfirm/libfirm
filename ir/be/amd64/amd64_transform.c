@@ -11,6 +11,7 @@
 #include "panic.h"
 #include "heights.h"
 #include "ircons.h"
+#include "iredges.h"
 #include "irgmod.h"
 #include "irgraph_t.h"
 #include "irmode_t.h"
@@ -28,6 +29,7 @@
 #include "amd64_new_nodes.h"
 #include "amd64_nodes_attr.h"
 #include "amd64_transform.h"
+#include "amd64_varargs.h"
 #include "../ia32/x86_address_mode.h"
 #include "../ia32/x86_cconv.h"
 
@@ -161,7 +163,7 @@ static const arch_register_req_t *reg_reg_mem_reqs[] = {
 	&arch_memory_requirement,
 };
 
-static const arch_register_req_t *xmm_reg_mem_reqs[] = {
+arch_register_req_t const *xmm_reg_mem_reqs[] = {
 	&amd64_class_reg_req_xmm,
 	&amd64_class_reg_req_gp,
 	&arch_memory_requirement,
@@ -203,7 +205,7 @@ static const arch_register_req_t *rax_reg_rdx_mem_reqs[] = {
 	&arch_memory_requirement,
 };
 
-static const arch_register_req_t *reg_reqs[] = {
+arch_register_req_t const *reg_reqs[] = {
 	&amd64_class_reg_req_gp,
 };
 
@@ -1397,6 +1399,13 @@ static ir_node *gen_Start(ir_node *node)
 			outs[reg->global_index] = BE_START_REG;
 	}
 
+	/* variadic parameters in registers */
+	ir_graph  *const irg           = get_irn_irg(node);
+	ir_entity *const entity        = get_irg_entity(irg);
+	ir_type   *const function_type = get_entity_type(entity);
+	if (is_method_variadic(function_type))
+		amd64_collect_variadic_params(outs, current_cconv);
+
 	/* callee saves */
 	for (size_t i = 0; i < N_AMD64_REGISTERS; ++i) {
 		if (rbitset_is_set(cconv->callee_saves, i))
@@ -1405,7 +1414,6 @@ static ir_node *gen_Start(ir_node *node)
 	if (!cconv->omit_fp)
 		outs[REG_RBP] = BE_START_IGNORE;
 
-	ir_graph *const irg = get_irn_irg(node);
 	return be_new_Start(irg, outs);
 }
 
@@ -2463,6 +2471,18 @@ static ir_node *gen_saturating_increment(ir_node *node)
 	return sbb;
 }
 
+static ir_node *gen_va_start(ir_node *node)
+{
+	ir_graph *irg   = get_irn_irg(node);
+	dbg_info *dbgi  = get_irn_dbg_info(node);
+	ir_node  *block = be_transform_nodes_block(node);
+	ir_node  *mem   = be_transform_node(get_Builtin_mem(node));
+	ir_node  *ap    = be_transform_node(get_irn_n(node, pn_Builtin_max + 1));
+	ir_node  *fp    = get_frame_base(irg);
+
+	return amd64_initialize_va_list(dbgi, block, current_cconv, mem, ap, fp);
+}
+
 static ir_node *gen_Builtin(ir_node *node)
 {
 	ir_builtin_kind kind = get_Builtin_kind(node);
@@ -2470,6 +2490,8 @@ static ir_node *gen_Builtin(ir_node *node)
 	switch (kind) {
 	case ir_bk_saturating_increment:
 		return gen_saturating_increment(node);
+	case ir_bk_va_start:
+		return gen_va_start(node);
 	default:
 		break;
 	}
@@ -2485,6 +2507,9 @@ static ir_node *gen_Proj_Builtin(ir_node *proj)
 	switch (kind) {
 	case ir_bk_saturating_increment:
 		return be_new_Proj(new_node, pn_amd64_sbb_res);
+	case ir_bk_va_start:
+		assert(get_Proj_num(proj) == pn_Builtin_M);
+		return new_node;
 	default:
 		break;
 	}
@@ -2648,6 +2673,14 @@ static void amd64_create_stacklayout(ir_graph *irg, const x86_cconv_t *cconv)
 		set_entity_offset(param->entity, param->offset);
 	}
 
+	ir_type *const function_type = get_entity_type(entity);
+	if (is_method_variadic(function_type)) {
+		ir_entity *stack_args_param = new_parameter_entity(
+			arg_type, IR_VA_START_PARAMETER_NUMBER, get_unknown_type());
+		set_entity_offset(stack_args_param, cconv->callframe_size);
+		amd64_set_va_stack_args_param(stack_args_param);
+	}
+
 	be_stack_layout_t *const layout = be_get_irg_stack_layout(irg);
 	memset(layout, 0, sizeof(*layout));
 	layout->frame_type     = get_irg_frame_type(irg);
@@ -2677,6 +2710,9 @@ void amd64_transform_graph(ir_graph *irg)
 	ir_entity *entity = get_irg_entity(irg);
 	ir_type   *mtp    = get_entity_type(entity);
 	current_cconv = amd64_decide_calling_convention(mtp, irg);
+	bool const is_variadic = is_method_variadic(mtp);
+	if (is_variadic)
+		amd64_insert_reg_save_area(irg, current_cconv);
 	amd64_create_stacklayout(irg, current_cconv);
 	be_add_parameter_entity_stores(irg);
 
@@ -2688,7 +2724,6 @@ void amd64_transform_graph(ir_graph *irg)
 	heights = NULL;
 
 	be_free_stackorder(stackorder);
-	x86_free_calling_convention(current_cconv);
 	pmap_destroy(node_to_stack);
 	node_to_stack = NULL;
 
@@ -2696,6 +2731,12 @@ void amd64_transform_graph(ir_graph *irg)
 	if (get_type_state(frame_type) == layout_undefined)
 		default_layout_compound_type(frame_type);
 
+	if (is_variadic) {
+		ir_node *const fp = get_frame_base(irg);
+		amd64_save_vararg_registers(irg, current_cconv, fp);
+	}
+
+	x86_free_calling_convention(current_cconv);
 	place_code(irg);
 
 	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);

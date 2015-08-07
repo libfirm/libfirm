@@ -11,6 +11,7 @@
 #include "amd64_finish.h"
 #include "amd64_new_nodes.h"
 #include "amd64_transform.h"
+#include "amd64_varargs.h"
 #include "bearch_amd64_t.h"
 #include "beflags.h"
 #include "beirg.h"
@@ -23,6 +24,7 @@
 #include "debug.h"
 #include "gen_amd64_regalloc_if.h"
 #include "irarch_t.h"
+#include "ircons.h"
 #include "irgmod.h"
 #include "irgopt.h"
 #include "irgwalk.h"
@@ -716,9 +718,10 @@ static void amd64_lower_for_target(void)
 		be_after_transform(irg, "lower-copyb");
 	}
 
-	ir_builtin_kind supported[1];
+	ir_builtin_kind supported[2];
 	size_t  s = 0;
 	supported[s++] = ir_bk_saturating_increment;
+	supported[s++] = ir_bk_va_start;
 
 	assert(s <= ARRAY_SIZE(supported));
 	lower_builtins(s, supported);
@@ -759,8 +762,8 @@ static backend_params amd64_backend_params = {
 	.stack_param_align             = 8,
 	.float_int_overflow            = ir_overflow_indefinite,
 	.vararg                        = {
-		.va_list_type = NULL,
-		.lower_va_arg = NULL,
+		.va_list_type = NULL,  /* Will be set later */
+		.lower_va_arg = amd64_lower_va_arg,
 	},
 };
 
@@ -789,6 +792,8 @@ static void amd64_init_types(void)
 	amd64_mode_xmm = new_int_mode("x86_xmm", irma_twos_complement, 128, 0, 0);
 
 	amd64_backend_params.type_long_double = amd64_type_E;
+
+	amd64_backend_params.vararg.va_list_type = amd64_build_va_list_type();
 }
 
 static void amd64_init(void)

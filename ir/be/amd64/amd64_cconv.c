@@ -25,6 +25,10 @@
 #include "bearch_amd64_t.h"
 #include "../ia32/x86_cconv.h"
 
+/*
+ * Note: "X64 ABI" refers to the Windows ABI for x86_64 (the SysV ABI
+ * calls itself "AMD64 ABI").
+ */
 bool amd64_use_x64_abi;
 
 static const unsigned ignore_regs[] = {
@@ -110,21 +114,43 @@ x86_cconv_t *amd64_decide_calling_convention(ir_type *function_type,
 
 		if (mode_is_float(mode) && float_param_regnum < n_float_param_regs) {
 			param->reg = float_param_regs[float_param_regnum++];
-			if (amd64_use_x64_abi)
+			if (amd64_use_x64_abi) {
 				++param_regnum;
+			}
 		} else if (!mode_is_float(mode) && param_regnum < n_param_regs) {
 			param->reg = param_regs[param_regnum++];
-			if (amd64_use_x64_abi)
+			if (amd64_use_x64_abi) {
 				++float_param_regnum;
+			}
 		} else {
 			param->type   = param_type;
 			param->offset = stack_offset;
 			/* increase offset by at least AMD64_REGISTER_SIZE bytes so
 			 * everything is aligned */
 			stack_offset += MAX(bits / 8, AMD64_REGISTER_SIZE);
-			continue;
+		}
+	}
+
+	/* If the function is variadic, we add all unused parameter
+	 * passing registers to the end of the params array, first GP,
+	 * then XMM. */
+	if (is_method_variadic(function_type)) {
+		if (amd64_use_x64_abi) {
+			panic("Variadic functions on Windows ABI not supported");
 		}
 
+		int params_remaining = (n_param_regs - param_regnum) +
+			(n_float_param_regs - float_param_regnum);
+		params = XREALLOC(params, reg_or_stackslot_t, n_params + params_remaining);
+		size_t i = n_params;
+
+		for (; param_regnum < n_param_regs; param_regnum++, i++) {
+			params[i].reg = param_regs[param_regnum];
+		}
+
+		for (; float_param_regnum < n_float_param_regs; float_param_regnum++, i++) {
+			params[i].reg = float_param_regs[float_param_regnum];
+		}
 	}
 
 	unsigned n_param_regs_used

@@ -18,6 +18,9 @@ extern const x86_asm_constraint_list_t amd64_asm_constraints;
 
 extern arch_register_req_t const *amd64_xmm_reqs[];
 extern arch_register_req_t const **const gp_am_reqs[];
+extern arch_register_req_t const *reg_reqs[];
+extern arch_register_req_t const *xmm_reg_mem_reqs[];
+
 
 void amd64_init_transform(void);
 

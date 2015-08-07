@@ -1,0 +1,459 @@
+/*
+ * This file is part of libFirm.
+ * Copyright (C) 2015 University of Karlsruhe.
+ */
+
+/**
+ * @file
+ * @brief       Implements vararg handling for AMD64
+ * @author      Andreas Fried
+ */
+#include "amd64_varargs.h"
+
+#include "amd64_new_nodes.h"
+#include "amd64_nodes_attr.h"
+#include "amd64_transform.h"
+#include "be.h"
+#include "bearch_amd64_t.h"
+#include "besched.h"
+#include "bitfiddle.h"
+#include "gen_amd64_regalloc_if.h"
+#include "ident.h"
+#include "ircons.h"
+#include "irgmod.h"
+#include "irgraph.h"
+#include "panic.h"
+#include "tv.h"
+#include "typerep.h"
+#include "util.h"
+
+static struct va_list_members {
+	ir_entity *gp_offset;
+	ir_entity *xmm_offset;
+	ir_entity *reg_save_ptr;
+	ir_entity *stack_args_ptr;
+} va_list_members;
+
+static size_t            n_gp_params;
+static size_t            n_xmm_params;
+/* The register save area, and the slots for GP and XMM registers
+ * inside of it. */
+static ir_entity        *reg_save_area;
+static ir_entity       **gp_save_slots;
+static ir_entity       **xmm_save_slots;
+/* Parameter entity pointing to the first variadic parameter on the
+ * stack. */
+static ir_entity        *stack_args_param;
+
+void amd64_set_va_stack_args_param(ir_entity *param)
+{
+	stack_args_param = param;
+}
+
+ir_type *amd64_build_va_list_type(void)
+{
+	ir_type *const int_type     = new_type_primitive(mode_Is);
+	ir_type *const ptr_type     = new_type_pointer(new_type_primitive(mode_ANY));
+	ir_type *const va_list_type = new_type_struct(new_id_from_str("builtin:va_list"));
+
+	va_list_members.gp_offset      = new_entity(va_list_type, new_id_from_str("gp_offset"),      int_type);
+	va_list_members.xmm_offset     = new_entity(va_list_type, new_id_from_str("xmm_offset"),     int_type);
+	va_list_members.stack_args_ptr = new_entity(va_list_type, new_id_from_str("stack_args_ptr"), ptr_type);
+	va_list_members.reg_save_ptr   = new_entity(va_list_type, new_id_from_str("reg_save_ptr"),   ptr_type);
+
+	default_layout_compound_type(va_list_type);
+	return va_list_type;
+}
+
+void amd64_collect_variadic_params(be_start_out *const outs, x86_cconv_t *const cconv)
+{
+	size_t gp_params  = 0;
+	size_t xmm_params = 0;
+	size_t p          = 0;
+	for (size_t const n = cconv->n_parameters; p < n; p++) {
+		const arch_register_t *reg = cconv->parameters[p].reg;
+		if (reg) {
+			if (reg->cls == &amd64_reg_classes[CLASS_amd64_gp]) {
+				++gp_params;
+			} else if (reg->cls == &amd64_reg_classes[CLASS_amd64_xmm]) {
+				++xmm_params;
+			} else {
+				panic("unexpected register class");
+			}
+		}
+	}
+
+	n_gp_params  = gp_params;
+	n_xmm_params = xmm_params;
+
+	/* amd64_decide_calling_convention has appended the registers
+	 * which might hold variadic arguments to the parameters
+	 * array, first GP, then XMM. Get them out now. */
+	for (size_t i = gp_params + xmm_params, n = cconv->n_param_regs; i < n; i++, p++) {
+		const arch_register_t *reg = cconv->parameters[p].reg;
+		outs[reg->global_index] = BE_START_REG;
+	}
+}
+
+void amd64_insert_reg_save_area(ir_graph *irg, x86_cconv_t *cconv)
+{
+	ir_entity *const irg_ent = get_irg_entity(irg);
+	ident     *const irg_id  = get_entity_ident(irg_ent);
+
+	ident   *reg_save_type_id = new_id_fmt("__va_reg_save_%s_t", irg_id);
+	ir_type *reg_save_type    = new_type_struct(reg_save_type_id);
+
+	const size_t max_xmm_params = cconv->n_xmm_regs;
+	const size_t max_gp_params  = cconv->n_param_regs - max_xmm_params;
+
+	gp_save_slots = XMALLOCNZ(ir_entity*, max_gp_params);
+	for (size_t i = 0; i < max_gp_params; i++) {
+		ident *id = new_id_fmt("save_gp%d", i);
+		gp_save_slots[i] = new_entity(reg_save_type, id, get_type_for_mode(mode_Lu));
+	}
+
+	xmm_save_slots = XMALLOCNZ(ir_entity*, max_xmm_params);
+	for (size_t i = 0; i < max_xmm_params; i++) {
+		ident *id = new_id_fmt("save_xmm%d", i);
+		xmm_save_slots[i] = new_entity(reg_save_type, id, get_type_for_mode(amd64_mode_xmm));
+	}
+
+	default_layout_compound_type(reg_save_type);
+
+	ir_type *frame_type  = get_irg_frame_type(irg);
+	ident   *reg_save_id = new_id_fmt("__va_reg_save_%s", irg_id);
+	reg_save_area = new_entity(frame_type, reg_save_id, reg_save_type);
+}
+
+static ir_node *load_result(dbg_info *dbgi, ir_node *block, ir_node *ptr, ir_type *type, ir_node **mem)
+{
+	ir_mode *mode    = get_type_mode(type);
+	if (mode == NULL) {
+		mode = mode_P;
+	}
+	ir_node *load    = new_rd_Load(dbgi, block, *mem, ptr, mode, type, cons_none);
+	ir_node *result  = new_rd_Proj(dbgi, load, mode, pn_Load_res);
+	ir_node *new_mem = new_rd_Proj(dbgi, load, mode_M, pn_Load_M);
+	*mem = new_mem;
+	return result;
+}
+
+static void make_store(dbg_info *dbgi, ir_node *block, ir_node *ptr, ir_node *value, ir_type *type, ir_node **mem)
+{
+	ir_node *store   = new_rd_Store(dbgi, block, *mem, ptr, value, type, cons_none);
+	ir_node *new_mem = new_rd_Proj(dbgi, store, mode_M, pn_Store_M);
+	*mem = new_mem;
+}
+
+void amd64_lower_va_arg(ir_node *node)
+{
+	/*
+	 * For explanation see e.g.:
+	 * http://andrewl.dreamhosters.com/blog/variadic_functions_in_amd64_linux/index.html
+	 * and the AMD64 ABI (http://www.x86-64.org/documentation/abi.pdf)
+	 *
+	 * Given:
+	 * va_list ap;
+	 * va_start(ap);
+	 *
+	 * Generate one of the following for "va_arg(ap, T)":
+	 *
+	 * If T is an integral or pointer type:
+	 * if (ap.gp_offset < 6*8) {
+	 *         T result = ap.reg_save_ptr[gp_offset];
+	 *         gp_offset += 8;
+	 *         return result;
+	 * } else {
+	 *         T result = *ap.stack_args_ptr;
+	 *         ap.stack_args_ptr += (sizeof(T) rounded up to multiple of 8);
+	 *         return result;
+	 * }
+	 *
+	 * If T is a floating point type:
+	 * if (ap.xmm_offset < 6*8+8*16) {
+	 *         T result = ap.reg_save_ptr[xmm_offset];
+	 *         gp_offset += 16;
+	 *         return result;
+	 * } else {
+	 *         T result = *ap.stack_args_ptr;
+	 *         ap.stack_args_ptr += (sizeof(T) rounded up to multiple of 8);
+	 *         return result;
+	 * }
+	 */
+
+	ir_graph *irg   = get_irn_irg(node);
+	ir_node  *block = get_nodes_block(node);
+	dbg_info *dbgi  = get_irn_dbg_info(node);
+
+	ir_type *restype = get_method_res_type(get_Builtin_type(node), 0);
+	ir_mode *resmode = get_type_mode(restype);
+	if (resmode == NULL) {
+		resmode = mode_P;
+	}
+
+	ir_node   *max;
+	ir_entity *offset_entity;
+	ir_node   *stride;
+	if (mode_is_int(resmode) || mode_is_reference(resmode)) {
+		max           = new_r_Const_long(irg, mode_Is, 6 * 8);
+		offset_entity = va_list_members.gp_offset;
+		stride        = new_r_Const_long(irg, mode_Is, 8);
+	} else if (mode_is_float(resmode)) {
+		max           = new_r_Const_long(irg, mode_Is, 6 * 8 + 8 * 16);
+		offset_entity = va_list_members.xmm_offset;
+		stride        = new_r_Const_long(irg, mode_Is, 16);
+	} else {
+		panic("amd64_lower_va_arg does not support mode %+F", resmode);
+	}
+
+	ir_node *ap  = get_irn_n(node, pn_Builtin_max + 1);
+	ir_node *mem = get_Builtin_mem(node);
+
+	// Load the current register offset
+	ir_node *offset_ptr  = new_rd_Member(dbgi, block, ap, offset_entity);
+	ir_type *offset_type = get_entity_type(offset_entity);
+	ir_node *offset      = load_result(dbgi, block, offset_ptr, offset_type, &mem);
+
+	// Compare it to the maximum value
+	ir_node *cmp = new_rd_Cmp(dbgi, block, offset, max, ir_relation_less);
+
+	// Construct the if-diamond
+	ir_node *lower_block = part_block_edges(cmp);
+	ir_node *upper_block = get_nodes_block(cmp);
+	ir_node *cond        = new_rd_Cond(dbgi, upper_block, cmp);
+	ir_node *proj_true   = new_r_Proj(cond, mode_X, pn_Cond_true);
+	ir_node *proj_false  = new_r_Proj(cond, mode_X, pn_Cond_false);
+	ir_node *in_true[1]  = { proj_true };
+	ir_node *in_false[1] = { proj_false };
+	ir_node *true_block  = new_r_Block(irg, ARRAY_SIZE(in_true),  in_true);
+	ir_node *false_block = new_r_Block(irg, ARRAY_SIZE(in_false), in_false);
+	ir_node *true_jmp    = new_r_Jmp(true_block);
+	ir_node *false_jmp   = new_r_Jmp(false_block);
+	ir_node *lower_in[2] = { true_jmp, false_jmp };
+	set_irn_in(lower_block, ARRAY_SIZE(lower_in), lower_in);
+
+	// True side: Load from the register save area
+	// Load reg_save_ptr
+	ir_node *true_mem        = mem;
+	ir_node *reg_save_ptr    = new_rd_Member(dbgi, true_block, ap, va_list_members.reg_save_ptr);
+	ir_type *reg_save_type   = get_entity_type(va_list_members.reg_save_ptr);
+	ir_node *reg_save        = load_result(dbgi, true_block, reg_save_ptr, reg_save_type, &true_mem);
+
+	// Load from reg_save + offset
+	ir_mode *mode_reg_save   = get_irn_mode(reg_save);
+	ir_node *true_result_ptr = new_rd_Add(dbgi, true_block, reg_save, offset, mode_reg_save);
+	ir_node *true_result     = load_result(dbgi, true_block, true_result_ptr, restype, &true_mem);
+
+	// Increment offset and write back
+	ir_mode *offset_mode     = get_type_mode(offset_type);
+	ir_node *offset_inc      = new_rd_Add(dbgi, true_block, offset, stride, offset_mode);
+	make_store(dbgi, true_block, offset_ptr, offset_inc, offset_type, &true_mem);
+
+	// False side: Load from the stack
+	// Load stack_args_ptr
+	ir_node *false_mem        = mem;
+	ir_node *stack_args_ptr   = new_rd_Member(dbgi, false_block, ap, va_list_members.stack_args_ptr);
+	ir_type *stack_args_type  = get_entity_type(va_list_members.stack_args_ptr);
+	ir_node *stack_args       = load_result(dbgi, false_block, stack_args_ptr, stack_args_type, &false_mem);
+
+	// Load result from stack
+	ir_node *false_result     = load_result(dbgi, false_block, stack_args, restype, &false_mem);
+
+	// Increment stack_args and write back
+	long     increment        = round_up2(get_mode_size_bytes(resmode), 8);
+	ir_node *sizeof_resmode   = new_r_Const_long(irg, mode_Is, increment);
+	ir_mode *mode_stack_args  = get_irn_mode(stack_args);
+	ir_node *stack_args_inc   = new_rd_Add(dbgi, false_block, stack_args, sizeof_resmode, mode_stack_args);
+	make_store(dbgi, false_block, stack_args_ptr, stack_args_inc, stack_args_type, &false_mem);
+
+	// Phi both sides together
+	ir_node *phiM_in[]  = { true_mem, false_mem };
+	ir_node *phiM       = new_rd_Phi(dbgi, lower_block, ARRAY_SIZE(phiM_in), phiM_in, mode_M);
+	ir_node *phi_in[]   = { true_result, false_result };
+	ir_node *phi        = new_rd_Phi(dbgi, lower_block, ARRAY_SIZE(phi_in), phi_in, resmode);
+	ir_node *tuple_in[] = { phiM, phi };
+	turn_into_tuple(node, ARRAY_SIZE(tuple_in), tuple_in);
+
+	clear_irg_properties(irg, IR_GRAPH_PROPERTY_NO_TUPLES | IR_GRAPH_PROPERTY_NO_BADS);
+}
+
+/*
+ * Make a mov to store the given immediate value into (base + base_offset),
+ * i.e. mov $value, base_offset(%base_reg)
+ */
+static ir_node *make_mov_imm32_to_offset_mem(dbg_info *dbgi, ir_node *block, ir_node *mem, ir_node *base, ir_entity *offset_ent, long value)
+{
+	ir_node *const mov_in[] = { base, mem };
+	int32_t  const offset   = get_entity_offset(offset_ent);
+	amd64_binop_addr_attr_t mov_attr = {
+		.base = {
+			.base = {
+				.op_mode = AMD64_OP_ADDR_IMM,
+			},
+			.insn_mode = INSN_MODE_32,
+			.addr = {
+				.immediate = {
+					.offset = offset,
+					.kind   = X86_IMM_VALUE,
+				},
+				.base_input  = 0,
+				.mem_input   = 1,
+				.index_input = NO_INPUT,
+			},
+		},
+		.u = {
+			.immediate = {
+				.offset = value,
+				.kind   = X86_IMM_VALUE,
+			},
+		},
+	};
+	ir_node *result = new_bd_amd64_mov_store(dbgi, block, ARRAY_SIZE(mov_in), mov_in, &mov_attr);
+	arch_set_irn_register_reqs_in(result, gp_am_reqs[1]);
+	return result;
+}
+
+/*
+ * Make a mov to store the given value into (base + base_offset),
+ * i.e. mov %value_reg, base_offset(%base_reg)
+ */
+static ir_node *make_mov_val64_to_offset_mem(dbg_info *dbgi, ir_node *block, ir_node *mem, ir_node *base, ir_entity *entity, ir_entity *offset_ent, ir_node *value)
+{
+	ir_node *const mov_in[] = { value, base, mem };
+	int32_t  const offset   = get_entity_offset(offset_ent);
+	amd64_binop_addr_attr_t mov_attr = {
+		.base = {
+			.base = {
+				.op_mode = AMD64_OP_ADDR_REG,
+			},
+			.insn_mode = INSN_MODE_64,
+			.addr = {
+				.immediate = {
+					.entity = entity,
+					.offset = offset,
+					.kind   = X86_IMM_VALUE,
+				},
+				.base_input  = 1,
+				.mem_input   = 2,
+				.index_input = NO_INPUT,
+			},
+		},
+		.u = {
+			.reg_input = 0,
+		},
+	};
+	ir_node *result = new_bd_amd64_mov_store(dbgi, block, ARRAY_SIZE(mov_in), mov_in, &mov_attr);
+	arch_set_irn_register_reqs_in(result, gp_am_reqs[2]);
+	return result;
+}
+
+/*
+ * Make a mov to store the given XMM value into (base + base_offset),
+ * i.e. movsd %xmm_value_reg, base_offset(%base_reg)
+ */
+static ir_node *make_mov_xmmval64_to_offset_mem(dbg_info *dbgi, ir_node *block, ir_node *mem, ir_node *base, ir_entity *entity, ir_entity *offset_ent, ir_node *value)
+{
+	ir_node *const mov_in[] = { value, base, mem };
+	int32_t  const offset   = get_entity_offset(offset_ent);
+	amd64_binop_addr_attr_t mov_attr = {
+		.base = {
+			.base = {
+				.op_mode = AMD64_OP_ADDR_REG,
+			},
+			.insn_mode = INSN_MODE_64,
+			.addr = {
+				.immediate = {
+					.entity = entity,
+					.offset = offset,
+					.kind    = X86_IMM_VALUE,
+				},
+				.base_input  = 1,
+				.mem_input   = 2,
+				.index_input = NO_INPUT,
+			},
+		},
+		.u = {
+			.reg_input = 0,
+		},
+	};
+	ir_node *result = new_bd_amd64_movs_store_xmm(dbgi, block, ARRAY_SIZE(mov_in), mov_in, &mov_attr);
+	arch_set_irn_register_reqs_in(result, xmm_reg_mem_reqs);
+	return result;
+}
+
+/*
+ * Make a lea to compute the address of the given entity
+ * i.e. lea entity_offset(%base_reg), %result_reg
+ */
+static ir_node *make_lea_with_offset_entity(dbg_info *dbgi, ir_node *block,
+                                            ir_node *base, ir_entity *offset)
+{
+	ir_node *lea_in[] = { base };
+	amd64_addr_t lea_addr = {
+		.base_input  = 0,
+		.index_input = NO_INPUT,
+		.immediate = {
+			.entity = offset,
+			.kind   = X86_IMM_VALUE,
+		},
+	};
+	ir_node *result = new_bd_amd64_lea(dbgi, block, ARRAY_SIZE(lea_in), lea_in, INSN_MODE_64, lea_addr);
+	arch_set_irn_register_reqs_in(result, reg_reqs);
+	return result;
+}
+
+ir_node *amd64_initialize_va_list(dbg_info *dbgi, ir_node *block, x86_cconv_t *cconv,
+                                  ir_node *mem, ir_node *ap, ir_node *frame)
+{
+	const size_t max_xmm_params = cconv->n_xmm_regs;
+	const size_t max_gp_params  = cconv->n_param_regs - max_xmm_params;
+
+	size_t const initial_gp_offset = n_gp_params * 8;
+	mem = make_mov_imm32_to_offset_mem(dbgi, block, mem, ap, va_list_members.gp_offset, initial_gp_offset);
+
+	// XMM parameters are behind the gp parameters in reg_save_area.
+	size_t const initial_xmm_offset = max_gp_params * 8 + n_xmm_params * 16;
+	mem = make_mov_imm32_to_offset_mem(dbgi, block, mem, ap, va_list_members.xmm_offset, initial_xmm_offset);
+
+	ir_node *const reg_save_ptr = make_lea_with_offset_entity(dbgi, block, frame, reg_save_area);
+	mem = make_mov_val64_to_offset_mem(dbgi, block, mem, ap, NULL, va_list_members.reg_save_ptr, reg_save_ptr);
+
+	ir_node *const stack_args = make_lea_with_offset_entity(dbgi, block, frame, stack_args_param);
+	mem = make_mov_val64_to_offset_mem(dbgi, block, mem, ap, NULL, va_list_members.stack_args_ptr, stack_args);
+
+	return mem;
+}
+
+void amd64_save_vararg_registers(ir_graph *const irg, x86_cconv_t const *const cconv, ir_node *const frame)
+{
+	size_t         gp_params      = n_gp_params;
+	size_t         xmm_params     = n_xmm_params;
+	size_t         reg_params     = gp_params + xmm_params;
+	size_t   const max_reg_params = cconv->n_param_regs;
+	ir_node *const block          = get_irg_start_block(irg);
+	ir_node *const initial_mem    = get_irg_initial_mem(irg);
+	ir_node       *mem            = initial_mem;
+	ir_node       *first_mov      = NULL;
+	for (size_t p = cconv->n_parameters; reg_params != max_reg_params; ++p, ++reg_params) {
+		arch_register_t const *const reg       = cconv->parameters[p].reg;
+		ir_node               *const reg_value = be_get_Start_proj(irg, reg);
+		if (reg->cls == &amd64_reg_classes[CLASS_amd64_gp]) {
+			mem = make_mov_val64_to_offset_mem(NULL, block, mem, frame, reg_save_area, gp_save_slots[gp_params++], reg_value);
+		} else if (reg->cls == &amd64_reg_classes[CLASS_amd64_xmm]) {
+			mem = make_mov_xmmval64_to_offset_mem(NULL, block, mem, frame, reg_save_area, xmm_save_slots[xmm_params++], reg_value);
+		} else {
+			panic("unexpected register class");
+		}
+		if (!first_mov)
+			first_mov = mem;
+	}
+
+	if (mem != initial_mem) {
+		edges_reroute_except(initial_mem, mem, first_mov);
+		set_irg_initial_mem(irg, initial_mem);
+	}
+
+	// We are now done with vararg handling for this irg, free the memory.
+	free(gp_save_slots);
+	free(xmm_save_slots);
+}
