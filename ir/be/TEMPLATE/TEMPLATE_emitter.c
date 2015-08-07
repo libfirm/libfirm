@@ -167,20 +167,6 @@ static void emit_be_IncSP(const ir_node *node)
 	TEMPLATE_emitf(node, "%s %S0, %d, %D0", op, offset);
 }
 
-static void emit_Start(const ir_node *node)
-{
-	ir_graph *irg        = get_irn_irg(node);
-	ir_type  *frame_type = get_irg_frame_type(irg);
-	unsigned  size       = get_type_size_bytes(frame_type);
-
-	/* emit function prolog */
-
-	/* allocate stackframe */
-	if (size > 0) {
-		TEMPLATE_emitf(node, "sub %%sp, %u, %%sp", size);
-	}
-}
-
 static void emit_Return(const ir_node *node)
 {
 	ir_graph *irg        = get_irn_irg(node);
@@ -217,7 +203,6 @@ static void TEMPLATE_register_emitters(void)
 	/* custom emitters not provided by the spec */
 	be_set_emitter(op_TEMPLATE_Jmp,    emit_TEMPLATE_Jmp);
 	be_set_emitter(op_TEMPLATE_Return, emit_Return);
-	be_set_emitter(op_TEMPLATE_Start,  emit_Start);
 	be_set_emitter(op_be_IncSP,        emit_be_IncSP);
 }
 

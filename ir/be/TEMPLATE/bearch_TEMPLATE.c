@@ -15,6 +15,7 @@
 #include "bemodule.h"
 #include "benode.h"
 #include "bera.h"
+#include "besched.h"
 #include "bestack.h"
 #include "debug.h"
 #include "gen_TEMPLATE_regalloc_if.h"
@@ -58,6 +59,19 @@ static const regalloc_if_t TEMPLATE_regalloc_if = {
 	.new_reload  = TEMPLATE_new_reload,
 };
 
+static void introduce_prologue(ir_graph *const irg)
+{
+	arch_register_t const *const sp         = &TEMPLATE_registers[REG_SP];
+	ir_node               *const start      = get_irg_start(irg);
+	ir_node               *const block      = get_nodes_block(start);
+	ir_node               *const initial_sp = be_get_initial_reg_value(irg, sp);
+	ir_type               *const frame_type = get_irg_frame_type(irg);
+	unsigned               const frame_size = get_type_size_bytes(frame_type);
+	ir_node               *const incsp      = be_new_IncSP(sp, block, initial_sp, frame_size, 0);
+	edges_reroute_except(initial_sp, incsp, incsp);
+	sched_add_after(start, incsp);
+}
+
 static void TEMPLATE_generate_code(FILE *output, const char *cup_name)
 {
 	be_begin(output, cup_name);
@@ -74,6 +88,8 @@ static void TEMPLATE_generate_code(FILE *output, const char *cup_name)
 		be_step_schedule(irg);
 
 		be_step_regalloc(irg, &TEMPLATE_regalloc_if);
+
+		introduce_prologue(irg);
 
 		be_fix_stack_nodes(irg, &TEMPLATE_registers[REG_SP]);
 		be_birg_from_irg(irg)->non_ssa_regs = NULL;

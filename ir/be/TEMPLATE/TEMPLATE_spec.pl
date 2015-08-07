@@ -172,6 +172,7 @@ Start => {
 	out_reqs  => [ "sp:I", "r0", "r1", "r2", "r3", "mem" ],
 	outs      => [ "stack", "arg0", "arg1", "arg2", "arg3", "M" ],
 	ins       => [],
+	emit      => "",
 },
 
 Return => {
