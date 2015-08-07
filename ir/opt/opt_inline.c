@@ -181,6 +181,10 @@ static bool can_inline(ir_node *call, ir_graph *called_graph)
 		return false;
 	}
 
+	/* check for variable number of parameters */
+	if (is_method_variadic(called_type))
+		return false;
+
 	/* Argh, compiling C has some bad consequences:
 	 * It is implementation dependent what happens in that case.
 	 * We support inlining, if the bitsize of the types matches AND
@@ -217,15 +221,6 @@ static bool can_inline(ir_node *call, ir_graph *called_graph)
 				return false;
 			/* otherwise we can "reinterpret" the bits */
 		}
-	}
-
-	/* check for variable number of parameters */
-	ir_type *frame_type = get_irg_frame_type(called_graph);
-	for (size_t i = 0, n_entities = get_class_n_members(frame_type);
-	     i < n_entities; ++i) {
-		ir_entity *ent = get_class_member(frame_type, i);
-		if (is_parameter_entity(ent) && (get_entity_parameter_number(ent) == IR_VA_START_PARAMETER_NUMBER))
-			return false;
 	}
 
 	bool res = true;
