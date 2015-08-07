@@ -53,8 +53,6 @@
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
 static x86_cconv_t         *current_cconv;
-static be_start_info_t      start_mem;
-static be_start_info_t      start_val[N_IA32_REGISTERS];
 static pmap                *node_to_stack;
 static be_stackorder_t     *stackorder;
 static ir_heights_t        *heights;
@@ -238,22 +236,17 @@ static ir_node *get_global_base(ir_graph *const irg)
 
 static ir_node *get_initial_sp(ir_graph *irg)
 {
-	return be_get_start_proj(irg, &start_val[REG_ESP]);
+	return be_get_Start_proj(irg, &ia32_registers[REG_ESP]);
 }
 
 static ir_node *get_initial_fp(ir_graph *irg)
 {
-	return be_get_start_proj(irg, &start_val[REG_EBP]);
-}
-
-static ir_node *get_initial_mem(ir_graph *irg)
-{
-	return be_get_start_proj(irg, &start_mem);
+	return be_get_Start_proj(irg, &ia32_registers[REG_EBP]);
 }
 
 static ir_node *get_initial_fpcw(ir_graph *irg)
 {
-	return be_get_start_proj(irg, &start_val[REG_FPCW]);
+	return be_get_Start_proj(irg, &ia32_registers[REG_FPCW]);
 }
 
 ir_node *ia32_create_Immediate_full(ir_graph *const irg,
@@ -4173,46 +4166,26 @@ static ir_node *gen_Start(ir_node *node)
 {
 	x86_cconv_t const *const cconv = current_cconv;
 
-	/* start building list of start constraints */
-
-	/* calculate number of outputs */
-	unsigned n_outs = 2; /* memory, esp */
-	/* function parameters */
-	n_outs += cconv->n_param_regs;
-	unsigned n_callee_saves
-		= rbitset_popcount(cconv->callee_saves, N_IA32_REGISTERS);
-	n_outs += n_callee_saves;
-
-	dbg_info *const dbgi      = get_irn_dbg_info(node);
-	ir_node  *const new_block = be_transform_nodes_block(node);
-	ir_node  *const start     = new_bd_ia32_Start(dbgi, new_block, n_outs);
-
-	unsigned o = 0;
-
-	/* first output is memory */
-	be_make_start_mem(&start_mem, start, o++);
-
-	/* the stack pointer */
-	be_make_start_out(&start_val[REG_ESP], start, o++, &ia32_registers[REG_ESP], true);
+	be_start_out outs[N_IA32_REGISTERS] = { [REG_ESP] = BE_START_IGNORE };
 
 	/* function parameters in registers */
 	for (size_t i = 0, n = cconv->n_parameters; i != n; ++i) {
-		const reg_or_stackslot_t *param = &current_cconv->parameters[i];
-		const arch_register_t    *reg   = param->reg;
+		reg_or_stackslot_t const *const param = &cconv->parameters[i];
+		arch_register_t    const *const reg   = param->reg;
 		if (reg)
-			be_make_start_out(&start_val[reg->global_index], start, o++, reg, false);
+			outs[reg->global_index] = BE_START_REG;
 	}
 
 	/* callee saves */
 	for (size_t i = 0; i < N_IA32_REGISTERS; ++i) {
-		if (!rbitset_is_set(cconv->callee_saves, i))
-			continue;
-		bool ignore = i == REG_EBP && !cconv->omit_fp;
-		be_make_start_out(&start_val[i], start, o++, &ia32_registers[i], ignore);
+		if (rbitset_is_set(cconv->callee_saves, i))
+			outs[i] = BE_START_REG;
 	}
-	assert(n_outs == o);
+	if (!cconv->omit_fp)
+		outs[REG_EBP] = BE_START_IGNORE;
 
-	return start;
+	ir_graph *const irg = get_irn_irg(node);
+	return be_new_Start(irg, outs);
 }
 
 static ir_node *gen_Proj_Start(ir_node *node)
@@ -4223,7 +4196,7 @@ static ir_node *gen_Proj_Start(ir_node *node)
 
 	switch ((pn_Start)pn) {
 	case pn_Start_M:
-		return get_initial_mem(irg);
+		return be_get_Start_mem(irg);
 	case pn_Start_T_args:
 		return new_r_Bad(irg, mode_T);
 	case pn_Start_P_frame_base:
@@ -4243,7 +4216,7 @@ static ir_node *gen_Proj_Proj_Start(ir_node *node)
 	/* stack paramter should have been lowered to loads already */
 	assert(param->reg != NULL);
 	/* argument transmitted in register */
-	return be_get_start_proj(irg, &start_val[param->reg->global_index]);
+	return be_get_Start_proj(irg, param->reg);
 }
 
 static ir_node *get_stack_pointer_for(ir_node *node)
@@ -4303,8 +4276,9 @@ static ir_node *gen_Return(ir_node *node)
 	for (unsigned i = 0; i < N_IA32_REGISTERS; ++i) {
 		if (!rbitset_is_set(cconv->callee_saves, i))
 			continue;
-		in[p]   = be_get_start_proj(irg, &start_val[i]);
-		reqs[p] = ia32_registers[i].single_req;
+		arch_register_t const *const reg = &ia32_registers[i];
+		in[p]   = be_get_Start_proj(irg, reg);
+		reqs[p] = reg->single_req;
 		++p;
 	}
 	assert(p == n_ins);
@@ -5871,9 +5845,6 @@ void ia32_transform_graph(ir_graph *irg)
 	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES
 	                         | IR_GRAPH_PROPERTY_NO_TUPLES
 	                         | IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
-
-	start_mem.irn = NULL;
-	memset(&start_val, 0, sizeof(start_val));
 
 	switch (ia32_pic_style) {
 	case IA32_PIC_NONE:       lconst_imm_kind = X86_IMM_ADDR;        break;

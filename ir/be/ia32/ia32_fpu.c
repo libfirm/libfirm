@@ -182,12 +182,12 @@ static void rewire_fpu_mode_nodes(ir_graph *irg)
 		return;
 	}
 
-	const arch_register_t *reg = &ia32_registers[REG_FPCW];
-	ir_node *initial_value = be_get_initial_reg_value(irg, reg);
 	be_ssa_construction_env_t senv;
 	be_ssa_construction_init(&senv, irg);
 	be_ssa_construction_add_copies(&senv, env.state_nodes,
 	                               ARR_LEN(env.state_nodes));
+	arch_register_t const *const reg           = &ia32_registers[REG_FPCW];
+	ir_node               *const initial_value = be_get_Start_proj(irg, reg);
 	be_ssa_construction_fix_users(&senv, initial_value);
 
 	/* set registers for the phis */

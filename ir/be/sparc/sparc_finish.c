@@ -150,8 +150,8 @@ static void introduce_epilog(ir_node *ret)
 	be_stack_layout_t *const layout = be_get_irg_stack_layout(irg);
 	if (!layout->sp_relative) {
 		arch_register_t const *const fp_reg  = &sparc_registers[REG_FP];
-		ir_node               *const fp      = be_get_initial_reg_value(irg, fp_reg);
-		ir_node               *const new_sp  = be_get_initial_reg_value(irg, sp_reg);
+		ir_node               *const fp      = be_get_Start_proj(irg, fp_reg);
+		ir_node               *const new_sp  = be_get_Start_proj(irg, sp_reg);
 		ir_node               *const restore = new_bd_sparc_RestoreZero(NULL, block, new_sp, fp);
 		sched_add_before(ret, restore);
 		arch_set_irn_register(restore, sp_reg);
@@ -172,7 +172,7 @@ static void sparc_introduce_prolog_epilog(ir_graph *irg)
 	ir_node               *start      = get_irg_start(irg);
 	be_stack_layout_t     *layout     = be_get_irg_stack_layout(irg);
 	ir_node               *block      = get_nodes_block(start);
-	ir_node               *initial_sp = be_get_initial_reg_value(irg, sp_reg);
+	ir_node               *initial_sp = be_get_Start_proj(irg, sp_reg);
 	ir_type               *frame_type = get_irg_frame_type(irg);
 	unsigned               frame_size = get_type_size_bytes(frame_type);
 

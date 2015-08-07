@@ -499,14 +499,6 @@ Ba => {
 	irn_flags => [ "simple_jump" ],
 },
 
-Start => {
-	irn_flags => [ "schedule_first" ],
-	state     => "pinned",
-	out_reqs  => "...",
-	ins       => [],
-	emit      => "",
-},
-
 # This is a Jump instruction, but with the addition that you can add custom
 # register constraints to model your calling conventions
 Return => {

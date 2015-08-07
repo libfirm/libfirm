@@ -64,7 +64,7 @@ static void introduce_prologue(ir_graph *const irg)
 	arch_register_t const *const sp         = &TEMPLATE_registers[REG_SP];
 	ir_node               *const start      = get_irg_start(irg);
 	ir_node               *const block      = get_nodes_block(start);
-	ir_node               *const initial_sp = be_get_initial_reg_value(irg, sp);
+	ir_node               *const initial_sp = be_get_Start_proj(irg, sp);
 	ir_type               *const frame_type = get_irg_frame_type(irg);
 	unsigned               const frame_size = get_type_size_bytes(frame_type);
 	ir_node               *const incsp      = be_new_IncSP(sp, block, initial_sp, frame_size, 0);

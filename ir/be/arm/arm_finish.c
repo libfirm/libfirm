@@ -80,7 +80,7 @@ static void introduce_prolog_epilog(ir_graph *irg)
 	const arch_register_t *sp_reg     = &arm_registers[REG_SP];
 	ir_node               *start      = get_irg_start(irg);
 	ir_node               *block      = get_nodes_block(start);
-	ir_node               *initial_sp = be_get_initial_reg_value(irg, sp_reg);
+	ir_node               *initial_sp = be_get_Start_proj(irg, sp_reg);
 	ir_type               *frame_type = get_irg_frame_type(irg);
 	unsigned               frame_size = get_type_size_bytes(frame_type);
 

@@ -819,7 +819,7 @@ static ir_node *create_spproj(ir_node *const pred, unsigned const pos)
 static void transform_MemPerm(ir_node *node)
 {
 	ir_graph *irg   = get_irn_irg(node);
-	ir_node  *sp    = be_get_initial_reg_value(irg, &ia32_registers[REG_ESP]);
+	ir_node  *sp    = be_get_Start_proj(irg, &ia32_registers[REG_ESP]);
 	int       arity = be_get_MemPerm_entity_arity(node);
 	ir_node **pops  = ALLOCAN(ir_node*, arity);
 
@@ -1057,13 +1057,13 @@ static void introduce_prologue(ir_graph *const irg)
 	ir_type               *frame_type = get_irg_frame_type(irg);
 	unsigned               frame_size = get_type_size_bytes(frame_type);
 	be_stack_layout_t     *layout     = be_get_irg_stack_layout(irg);
-	ir_node               *initial_sp = be_get_initial_reg_value(irg, sp);
+	ir_node               *initial_sp = be_get_Start_proj(irg, sp);
 
 	if (!layout->sp_relative) {
 		/* push ebp */
 		ir_node *const mem        = get_irg_initial_mem(irg);
 		ir_node *const noreg      = ia32_new_NoReg_gp(irg);
-		ir_node *const initial_bp = be_get_initial_reg_value(irg, bp);
+		ir_node *const initial_bp = be_get_Start_proj(irg, bp);
 		ir_node *const push       = new_bd_ia32_Push(NULL, block, noreg, noreg, mem, initial_bp, initial_sp, ia32_mode_gp);
 		sched_add_after(start, push);
 		ir_node *const curr_mem   = be_new_Proj(push, pn_ia32_Push_M);

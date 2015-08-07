@@ -180,7 +180,7 @@ static ir_node* create_spproj(ir_node *pred, int pos)
 static void transform_MemPerm(ir_node *node)
 {
 	ir_graph *irg   = get_irn_irg(node);
-	ir_node  *sp    = be_get_initial_reg_value(irg, &amd64_registers[REG_RSP]);
+	ir_node  *sp    = be_get_Start_proj(irg, &amd64_registers[REG_RSP]);
 	int       arity = be_get_MemPerm_entity_arity(node);
 	ir_node **pops  = ALLOCAN(ir_node*, arity);
 	int       i;
@@ -563,12 +563,12 @@ static void introduce_prologue(ir_graph *const irg)
 	ir_type               *frame_type = get_irg_frame_type(irg);
 	unsigned               frame_size = get_type_size_bytes(frame_type);
 	be_stack_layout_t     *layout     = be_get_irg_stack_layout(irg);
-	ir_node               *initial_sp = be_get_initial_reg_value(irg, sp);
+	ir_node               *initial_sp = be_get_Start_proj(irg, sp);
 
 	if (!layout->sp_relative) {
 		/* push rbp */
 		ir_node *const mem        = get_irg_initial_mem(irg);
-		ir_node *const initial_bp = be_get_initial_reg_value(irg, bp);
+		ir_node *const initial_bp = be_get_Start_proj(irg, bp);
 		ir_node *const push       = new_bd_amd64_push_reg(NULL, block, initial_sp, mem, initial_bp);
 		sched_add_after(start, push);
 		ir_node *const curr_mem   = be_new_Proj(push, pn_amd64_push_reg_M);

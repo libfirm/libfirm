@@ -374,18 +374,6 @@ arch_register_t const *arch_find_register(char const *name);
 bool arch_reg_is_allocatable(const arch_register_req_t *req,
                              const arch_register_t *reg);
 
-typedef struct be_start_info_t {
-	unsigned pos;
-	ir_node *irn;
-} be_start_info_t;
-
-void be_make_start_mem(be_start_info_t *info, ir_node *start, unsigned pos);
-
-void be_make_start_out(be_start_info_t *info, ir_node *start, unsigned pos,
-                       arch_register_t const *reg, bool ignore);
-
-ir_node *be_get_start_proj(ir_graph *irg, be_start_info_t *info);
-
 void arch_copy_irn_out_info(ir_node *dst, unsigned dst_pos, ir_node const *src);
 
 #endif

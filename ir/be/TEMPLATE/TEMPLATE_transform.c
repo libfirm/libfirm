@@ -220,15 +220,24 @@ static ir_node *gen_Jmp(ir_node *node)
 	return new_bd_TEMPLATE_Jmp(dbgi, new_block);
 }
 
+static unsigned const reg_params[] = {
+	REG_R0,
+	REG_R1,
+	REG_R2,
+	REG_R3,
+};
+
 static ir_node *gen_Start(ir_node *node)
 {
-	dbg_info *dbgi      = get_irn_dbg_info(node);
-	ir_node  *new_block = be_transform_nodes_block(node);
-	ir_node  *result    = new_bd_TEMPLATE_Start(dbgi, new_block);
-	/* we have to set ignore registers manually */
-	arch_set_irn_register_out(result, pn_TEMPLATE_Start_stack,
-	                          &TEMPLATE_registers[REG_SP]);
-	return result;
+	be_start_out outs[N_TEMPLATE_REGISTERS] = { [REG_SP] = BE_START_IGNORE };
+
+	/* function parameters in registers */
+	for (size_t i = 0; i != ARRAY_SIZE(reg_params); ++i) {
+		outs[reg_params[i]] = BE_START_REG;
+	}
+
+	ir_graph *const irg = get_irn_irg(node);
+	return be_new_Start(irg, outs);
 }
 
 static ir_node *gen_Return(ir_node *node)
@@ -279,17 +288,12 @@ static ir_node *gen_Proj_Proj(ir_node *node)
 	ir_node *pred_pred = get_Proj_pred(pred);
 	if (is_Start(pred_pred)) {
 		if (get_Proj_num(pred) == pn_Start_T_args) {
-			ir_node *new_start = be_transform_node(pred_pred);
 			// assume everything is passed in gp registers
 			unsigned arg_num = get_Proj_num(node);
-			if (arg_num >= 4)
+			if (arg_num >= ARRAY_SIZE(reg_params))
 				panic("more than 4 arguments not supported");
-			static const unsigned pns[] = {
-				pn_TEMPLATE_Start_arg0, pn_TEMPLATE_Start_arg1,
-				pn_TEMPLATE_Start_arg2, pn_TEMPLATE_Start_arg3
-			};
-			assert(arg_num < ARRAY_SIZE(pns));
-			return be_new_Proj(new_start, pns[arg_num]);
+			ir_graph *const irg = get_irn_irg(node);
+			return be_get_Start_proj(irg, &TEMPLATE_registers[reg_params[arg_num]]);
 		}
 	}
 	panic("No transformer for %+F -> %+F -> %+F", node, pred, pred_pred);
@@ -327,17 +331,15 @@ static ir_node *gen_Proj_Store(ir_node *node)
 
 static ir_node *gen_Proj_Start(ir_node *node)
 {
-	ir_node  *start     = get_Proj_pred(node);
-	ir_node  *new_start = be_transform_node(start);
-	unsigned  pn        = get_Proj_num(node);
-
+	ir_graph *const irg = get_irn_irg(node);
+	unsigned  const pn  = get_Proj_num(node);
 	switch ((pn_Start)pn) {
 	case pn_Start_M:
-		return be_new_Proj(new_start, pn_TEMPLATE_Start_M);
+		return be_get_Start_mem(irg);
 	case pn_Start_T_args:
-		return new_r_Bad(get_irn_irg(node), mode_T);
+		return new_r_Bad(irg, mode_T);
 	case pn_Start_P_frame_base:
-		return be_new_Proj(new_start, pn_TEMPLATE_Start_stack);
+		return be_get_Start_proj(irg, &TEMPLATE_registers[REG_SP]);
 	}
 	panic("unexpected Start proj %u", pn);
 }

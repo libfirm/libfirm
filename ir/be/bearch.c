@@ -147,36 +147,6 @@ uint8_t arch_get_additional_pressure(ir_node const *const node,
 	return 0;
 }
 
-void be_make_start_mem(be_start_info_t *const info, ir_node *const start, unsigned const pos)
-{
-  info->pos = pos;
-  info->irn = NULL;
-  arch_set_irn_register_req_out(start, pos, arch_memory_req);
-}
-
-void be_make_start_out(be_start_info_t *const info, ir_node *const start,
-					   unsigned const pos, arch_register_t const *const reg,
-					   bool const ignore)
-{
-	info->pos = pos;
-	info->irn = NULL;
-	arch_register_req_t const *const req = ignore
-		? be_create_reg_req(be_get_be_obst(get_irn_irg(start)), reg, true)
-		: reg->single_req;
-	arch_set_irn_register_req_out(start, pos, req);
-	arch_set_irn_register_out(start, pos, reg);
-}
-
-ir_node *be_get_start_proj(ir_graph *const irg, be_start_info_t *const info)
-{
-	if (!info->irn) {
-		/* This is already the transformed start node. */
-		ir_node *const start = get_irg_start(irg);
-		info->irn = be_new_Proj(start, info->pos);
-	}
-	return info->irn;
-}
-
 void arch_copy_irn_out_info(ir_node *const dst, unsigned const dst_pos, ir_node const *const src)
 {
 	reg_out_info_t *const src_info = get_out_info(src);

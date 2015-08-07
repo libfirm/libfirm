@@ -42,8 +42,6 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 static const arch_register_t *sp_reg = &arm_registers[REG_SP];
 static be_stackorder_t       *stackorder;
 static calling_convention_t  *cconv = NULL;
-static be_start_info_t        start_mem;
-static be_start_info_t        start_val[N_ARM_REGISTERS];
 static pmap                  *node_to_stack;
 
 static const arch_register_t *const callee_saves[] = {
@@ -1469,16 +1467,17 @@ static ir_node *gen_Proj_Div(ir_node *node)
 
 static ir_node *gen_Proj_Start(ir_node *node)
 {
+	ir_graph *const irg = get_irn_irg(node);
 	unsigned pn = get_Proj_num(node);
 	switch ((pn_Start)pn) {
 	case pn_Start_M:
-		return be_get_start_proj(get_irn_irg(node), &start_mem);
+		return be_get_Start_mem(irg);
 
 	case pn_Start_T_args:
-		return new_r_Bad(get_irn_irg(node), mode_T);
+		return new_r_Bad(irg, mode_T);
 
 	case pn_Start_P_frame_base:
-		return be_get_start_proj(get_irn_irg(node), &start_val[REG_SP]);
+		return be_get_Start_proj(irg, &arm_registers[REG_SP]);
 	}
 	panic("unexpected start proj: %u", pn);
 }
@@ -1495,17 +1494,17 @@ static ir_node *gen_Proj_Proj_Start(ir_node *node)
 	arch_register_t    const *const reg0      = param->reg0;
 	if (reg0 != NULL) {
 		/* argument transmitted in register */
-		ir_node *value = be_get_start_proj(irg, &start_val[reg0->global_index]);
+		ir_node *value = be_get_Start_proj(irg, reg0);
 
 		if (mode_is_float(reg0->cls->mode)) {
 			ir_node *value1 = NULL;
 
 			const arch_register_t *reg1 = param->reg1;
 			if (reg1 != NULL) {
-				value1 = be_get_start_proj(irg, &start_val[reg1->global_index]);
+				value1 = be_get_Start_proj(irg, reg1);
 			} else if (param->entity != NULL) {
 				ir_node *const fp  = get_irg_frame(irg);
-				ir_node *const mem = be_get_start_proj(irg, &start_mem);
+				ir_node *const mem = be_get_Start_mem(irg);
 				ir_node *const ldr = new_bd_arm_Ldr(NULL, new_block, fp, mem,
 				                                    arm_mode_gp, param->entity,
 				                                    0, 0, true);
@@ -1523,7 +1522,7 @@ static ir_node *gen_Proj_Proj_Start(ir_node *node)
 	} else {
 		/* argument transmitted on stack */
 		ir_node *const fp   = get_irg_frame(irg);
-		ir_node *const mem  = be_get_start_proj(irg, &start_mem);
+		ir_node *const mem  = be_get_Start_mem(irg);
 		ir_mode *const mode = get_type_mode(param->type);
 
 		ir_node *load;
@@ -1696,37 +1695,26 @@ static void create_stacklayout(ir_graph *irg)
  */
 static ir_node *gen_Start(ir_node *node)
 {
-	unsigned n_outs = 2; /* memory, sp */
-	n_outs += cconv->n_param_regs;
-	n_outs += ARRAY_SIZE(callee_saves);
-	dbg_info *const dbgi      = get_irn_dbg_info(node);
-	ir_node  *const new_block = be_transform_nodes_block(node);
-	ir_node  *const start     = new_bd_arm_Start(dbgi, new_block, n_outs);
-
-	unsigned o = 0;
-
-	be_make_start_mem(&start_mem, start, o++);
-
-	be_make_start_out(&start_val[REG_SP], start, o++, &arm_registers[REG_SP], true);
+	be_start_out outs[N_ARM_REGISTERS] = { [REG_SP] = BE_START_IGNORE };
 
 	/* function parameters in registers */
 	for (size_t i = 0, n = cconv->n_parameters; i != n; ++i) {
 		const reg_or_stackslot_t *param = &cconv->parameters[i];
 		const arch_register_t    *reg0  = param->reg0;
 		if (reg0)
-			be_make_start_out(&start_val[reg0->global_index], start, o++, reg0, false);
+			outs[reg0->global_index] = BE_START_REG;
 		const arch_register_t *reg1 = param->reg1;
 		if (reg1)
-			be_make_start_out(&start_val[reg1->global_index], start, o++, reg1, false);
+			outs[reg1->global_index] = BE_START_REG;
 	}
+
 	/* callee save regs */
 	for (size_t i = 0; i < ARRAY_SIZE(callee_saves); ++i) {
-		arch_register_t const *const reg = callee_saves[i];
-		be_make_start_out(&start_val[reg->global_index], start, o++, reg, false);
+		outs[callee_saves[i]->global_index] = BE_START_REG;
 	}
-	assert(n_outs == o);
 
-	return start;
+	ir_graph *const irg = get_irn_irg(node);
+	return be_new_Start(irg, outs);
 }
 
 static ir_node *get_stack_pointer_for(ir_node *node)
@@ -1737,7 +1725,7 @@ static ir_node *get_stack_pointer_for(ir_node *node)
 		/* first stack user in the current block. We can simply use the
 		 * initial sp_proj for it */
 		ir_graph *irg = get_irn_irg(node);
-		return be_get_start_proj(irg, &start_val[REG_SP]);
+		return be_get_Start_proj(irg, &arm_registers[REG_SP]);
 	}
 
 	be_transform_node(stack_pred);
@@ -1789,7 +1777,7 @@ static ir_node *gen_Return(ir_node *node)
 	/* connect callee saves with their values at the function begin */
 	for (unsigned i = 0; i < n_callee_saves; ++i) {
 		arch_register_t const *const reg = callee_saves[i];
-		in[p]   = be_get_start_proj(irg, &start_val[reg->global_index]);
+		in[p]   = be_get_Start_proj(irg, reg);
 		reqs[p] = reg->single_req;
 		++p;
 	}

@@ -611,14 +611,6 @@ fConst => {
 	attr_type => "arm_fConst_attr_t",
 },
 
-Start => {
-	irn_flags => [ "schedule_first" ],
-	state     => "pinned",
-	out_reqs  => "...",
-	ins       => [],
-	emit      => "",
-},
-
 Return => {
 	state    => "pinned",
 	op_flags => [ "cfopcode" ],

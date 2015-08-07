@@ -1111,15 +1111,6 @@ Popcnt => {
 	latency  => 1,
 },
 
-Start => {
-	irn_flags => [ "schedule_first" ],
-	state     => "pinned",
-	out_reqs  => "...",
-	ins       => [],
-	latency   => 0,
-	emit      => "",
-},
-
 Return => {
 	state     => "pinned",
 	op_flags  => [ "cfopcode" ],

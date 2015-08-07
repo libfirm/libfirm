@@ -452,15 +452,6 @@ call => {
 	emit      => "call %*AM",
 },
 
-start => {
-	irn_flags => [ "schedule_first" ],
-	state     => "pinned",
-	out_reqs  => "...",
-	ins       => [],
-	fixed     => "amd64_op_mode_t op_mode = AMD64_OP_NONE;\n",
-	emit      => "",
-},
-
 ret => {
 	state    => "pinned",
 	op_flags => [ "cfopcode" ],

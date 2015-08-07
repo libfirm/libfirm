@@ -66,6 +66,7 @@ ir_op *op_be_Keep;
 ir_op *op_be_MemPerm;
 ir_op *op_be_Perm;
 ir_op *op_be_Relocation;
+ir_op *op_be_Start;
 
 #define be_op_tag FOURCC('B', 'E', '\0', '\0')
 
@@ -394,31 +395,6 @@ unsigned be_get_IncSP_align(const ir_node *irn)
 	return a->align;
 }
 
-static unsigned get_start_reg_index(ir_graph *irg, const arch_register_t *reg)
-{
-	/* do a naive linear search... */
-	ir_node *start  = get_irg_start(irg);
-	be_foreach_out(start, i) {
-		arch_register_req_t const *const out_req
-			= arch_get_irn_register_req_out(start, i);
-		if (out_req->limited == NULL)
-			continue;
-		if (out_req->cls != reg->cls)
-			continue;
-		if (!rbitset_is_set(out_req->limited, reg->index))
-			continue;
-		return i;
-	}
-	panic("tried querying undefined register '%s' at Start", reg->name);
-}
-
-ir_node *be_get_initial_reg_value(ir_graph *irg, const arch_register_t *reg)
-{
-	unsigned const i     = get_start_reg_index(irg, reg);
-	ir_node *const start = get_irg_start(irg);
-	return be_get_or_make_Proj_for_pn(start, i);
-}
-
 ir_node *be_new_Phi(ir_node *block, int n_ins, ir_node **ins, ir_mode *mode,
                     const arch_register_req_t *req)
 {
@@ -520,6 +496,59 @@ ir_entity *be_get_Relocation_entity(ir_node const* const node)
 	be_relocation_attr_t const *const attr
 		= (be_relocation_attr_t const*)get_irn_generic_attr_const(node);
 	return attr->entity;
+}
+
+ir_node *be_new_Start(ir_graph *const irg, be_start_out const *const outs)
+{
+	ir_node *const block  = get_irg_start_block(irg);
+	ir_node *const start  = new_ir_node(NULL, irg, block, op_be_Start, mode_T, 0, NULL);
+	unsigned const n_regs = isa_if->n_registers;
+
+	/* Count the number of outsputs. */
+	unsigned k = 1; /* +1 for memory */
+	for (unsigned i = 0; i != n_regs; ++i) {
+		if (outs[i] != BE_START_NO)
+			++k;
+	}
+
+	be_info_init_irn(start, arch_irn_flag_schedule_first, NULL, k);
+
+	/* Set out requirements and registers. */
+	unsigned l = 0;
+	arch_set_irn_register_req_out(start, l++, arch_memory_req);
+	arch_register_t const *const regs = isa_if->registers;
+	for (unsigned i = 0; i != n_regs; ++i) {
+		if (outs[i] != BE_START_NO) {
+			arch_register_t     const *const reg = &regs[i];
+			arch_register_req_t const *const req = outs[i] == BE_START_IGNORE
+				? be_create_reg_req(be_get_be_obst(irg), reg, true)
+				: reg->single_req;
+			arch_set_irn_register_req_out(start, l, req);
+			arch_set_irn_register_out(    start, l, reg);
+			++l;
+		}
+	}
+	assert(l == k);
+
+	return start;
+}
+
+ir_node *be_get_Start_mem(ir_graph *const irg)
+{
+	ir_node *const start = get_irg_start(irg);
+	return be_get_or_make_Proj_for_pn(start, 0);
+}
+
+ir_node *be_get_Start_proj(ir_graph *const irg, arch_register_t const *const reg)
+{
+	ir_node *const start = get_irg_start(irg);
+	/* do a naive linear search... */
+	be_foreach_out(start, i) {
+		arch_register_t const *const out_reg = arch_get_irn_register_out(start, i);
+		if (out_reg == reg)
+			return be_get_or_make_Proj_for_pn(start, i);
+	}
+	panic("tried querying undefined register '%s' at Start", reg->name);
 }
 
 ir_node *be_new_Proj(ir_node *const pred, unsigned const pos)
@@ -642,6 +671,7 @@ void be_init_op(void)
 	op_be_MemPerm    = new_be_op(o+beo_MemPerm,    "be_MemPerm",    op_pin_state_exc_pinned, irop_flag_none,                            oparity_variable, sizeof(be_memperm_attr_t));
 	op_be_Perm       = new_be_op(o+beo_Perm,       "be_Perm",       op_pin_state_exc_pinned, irop_flag_none,                            oparity_variable, sizeof(be_node_attr_t));
 	op_be_Relocation = new_be_op(o+beo_Relocation, "be_Relocation", op_pin_state_floats,     irop_flag_constlike|irop_flag_start_block, oparity_any,      sizeof(be_relocation_attr_t));
+	op_be_Start      = new_be_op(o+beo_Start,      "be_Start",      op_pin_state_pinned,     irop_flag_start_block,                     oparity_variable, sizeof(be_node_attr_t));
 
 	set_op_attrs_equal(op_be_Asm,        be_asm_attr_equal);
 	set_op_attrs_equal(op_be_Copy,       attrs_equal_be_node);

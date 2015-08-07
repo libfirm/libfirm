@@ -42,7 +42,6 @@
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 static const arch_register_t *sp_reg = &sparc_registers[REG_SP];
-static const arch_register_t *fp_reg = &sparc_registers[REG_FP];
 static calling_convention_t  *current_cconv = NULL;
 static be_stackorder_t       *stackorder;
 static ir_mode               *mode_gp;
@@ -50,8 +49,6 @@ static ir_mode               *mode_fp;
 static ir_mode               *mode_fp2;
 //static ir_mode               *mode_fp4;
 static pmap                  *node_to_stack;
-static be_start_info_t        start_mem;
-static be_start_info_t        start_val[N_SPARC_REGISTERS];
 static ir_node               *frame_base;
 
 static const arch_register_t *const omit_fp_callee_saves[] = {
@@ -557,12 +554,12 @@ static ir_node *gen_helper_binopx(ir_node *node, match_flags_t match_flags,
 
 static ir_node *get_g0(ir_graph *irg)
 {
-	return be_get_start_proj(irg, &start_val[REG_G0]);
+	return be_get_Start_proj(irg, &sparc_registers[REG_G0]);
 }
 
 static ir_node *get_g7(ir_graph *irg)
 {
-	return be_get_start_proj(irg, &start_val[REG_G7]);
+	return be_get_Start_proj(irg, &sparc_registers[REG_G7]);
 }
 
 static ir_node *make_tls_offset(dbg_info *dbgi, ir_node *block,
@@ -1535,76 +1532,47 @@ static ir_node *gen_Unknown(ir_node *node)
  */
 static ir_node *gen_Start(ir_node *node)
 {
-	/* start building list of start constraints */
+	calling_convention_t const *const cconv = current_cconv;
 
-	/* calculate number of outputs */
-	size_t n_outs = 4; /* memory, g0, g7, sp */
-	if (!current_cconv->omit_fp)
-		++n_outs; /* frame pointer */
-	/* function parameters */
-	n_outs += current_cconv->n_param_regs;
-	/* callee saves */
-	if (current_cconv->omit_fp) {
-		n_outs += ARRAY_SIZE(omit_fp_callee_saves);
+	be_start_out outs[N_SPARC_REGISTERS] = {
+		[REG_G0] = BE_START_IGNORE, /* the zero register */
+		[REG_G7] = BE_START_IGNORE, /* g7 is used for TLS data */
+		[REG_SP] = BE_START_IGNORE, /* we need an output for the stack pointer */
+	};
+
+	if (cconv->omit_fp) {
+		/* We need the values of the callee saves. */
+		for (size_t c = 0; c < ARRAY_SIZE(omit_fp_callee_saves); ++c) {
+			outs[omit_fp_callee_saves[c]->global_index] = BE_START_REG;
+		}
+	} else {
+		/* Non-omit-fp mode has no callee saves. */
+		outs[REG_FP] = BE_START_IGNORE;
 	}
-
-	dbg_info *const dbgi      = get_irn_dbg_info(node);
-	ir_node  *const new_block = be_transform_nodes_block(node);
-	ir_node  *const start     = new_bd_sparc_Start(dbgi, new_block, n_outs);
-
-	size_t o = 0;
-
-	/* first output is memory */
-	be_make_start_mem(&start_mem, start, o++);
-
-	/* the zero register */
-	be_make_start_out(&start_val[REG_G0], start, o++, &sparc_registers[REG_G0], true);
-
-	/* g7 is used for TLS data */
-	be_make_start_out(&start_val[REG_G7], start, o++, &sparc_registers[REG_G7], true);
-
-	/* we need an output for the stack pointer */
-	be_make_start_out(&start_val[REG_SP], start, o++, sp_reg, true);
-
-	if (!current_cconv->omit_fp)
-		be_make_start_out(&start_val[REG_FP], start, o++, fp_reg, true);
 
 	/* function parameters in registers */
-	for (size_t i = 0, n = current_cconv->n_parameters; i != n; ++i) {
-		reg_or_stackslot_t const *const param = &current_cconv->parameters[i];
+	for (size_t i = 0, n = cconv->n_parameters; i != n; ++i) {
+		reg_or_stackslot_t const *const param = &cconv->parameters[i];
 		arch_register_t    const *const reg0  = param->reg0;
 		if (reg0)
-			be_make_start_out(&start_val[reg0->global_index], start, o++, reg0, false);
+			outs[reg0->global_index] = BE_START_REG;
 		arch_register_t const *const reg1 = param->reg1;
 		if (reg1)
-			be_make_start_out(&start_val[reg1->global_index], start, o++, reg1, false);
+			outs[reg1->global_index] = BE_START_REG;
 	}
-	/* we need the values of the callee saves (Note: non omit-fp mode has no
-	 * callee saves) */
-	if (current_cconv->omit_fp) {
-		for (size_t c = 0; c < ARRAY_SIZE(omit_fp_callee_saves); ++c) {
-			arch_register_t const *const reg = omit_fp_callee_saves[c];
-			be_make_start_out(&start_val[reg->global_index], start, o++, reg, false);
-		}
-	}
-	assert(n_outs == o);
 
-	return start;
+	ir_graph *const irg = get_irn_irg(node);
+	return be_new_Start(irg, outs);
 }
 
 static ir_node *get_initial_sp(ir_graph *irg)
 {
-	return be_get_start_proj(irg, &start_val[REG_SP]);
+	return be_get_Start_proj(irg, &sparc_registers[REG_SP]);
 }
 
 static ir_node *get_initial_fp(ir_graph *irg)
 {
-	return be_get_start_proj(irg, &start_val[REG_FP]);
-}
-
-static ir_node *get_initial_mem(ir_graph *irg)
-{
-	return be_get_start_proj(irg, &start_mem);
+	return be_get_Start_proj(irg, &sparc_registers[REG_FP]);
 }
 
 static ir_node *get_stack_pointer_for(ir_node *node)
@@ -1669,7 +1637,7 @@ static ir_node *gen_Return(ir_node *node)
 	if (current_cconv->omit_fp) {
 		for (size_t i = 0; i < ARRAY_SIZE(omit_fp_callee_saves); ++i) {
 			arch_register_t const *const reg = omit_fp_callee_saves[i];
-			in[p]   = be_get_start_proj(irg, &start_val[reg->global_index]);
+			in[p]   = be_get_Start_proj(irg, reg);
 			reqs[p] = reg->single_req;
 			++p;
 		}
@@ -2324,7 +2292,7 @@ static ir_node *gen_Proj_Start(ir_node *node)
 	switch ((pn_Start) pn) {
 	case pn_Start_M: {
 		ir_graph *irg = get_irn_irg(node);
-		ir_node  *mem = get_initial_mem(irg);
+		ir_node  *mem = be_get_Start_mem(irg);
 		keep_alive(mem);
 		return mem;
 	}
@@ -2348,7 +2316,7 @@ static ir_node *gen_Proj_Proj_Start(ir_node *node)
 	arch_register_t    const *const reg0      = param->reg0;
 	if (reg0) {
 		/* argument transmitted in register */
-		ir_node *value    = be_get_start_proj(irg, &start_val[reg0->global_index]);
+		ir_node *value    = be_get_Start_proj(irg, reg0);
 		bool     is_float = false;
 
 		ir_entity *entity      = get_irg_entity(irg);
@@ -2364,10 +2332,10 @@ static ir_node *gen_Proj_Proj_Start(ir_node *node)
 			ir_node *value1 = NULL;
 
 			if (reg1 != NULL) {
-				value1 = be_get_start_proj(irg, &start_val[reg1->global_index]);
+				value1 = be_get_Start_proj(irg, reg1);
 			} else if (param->entity != NULL) {
 				ir_node *fp  = get_initial_fp(irg);
-				ir_node *mem = get_initial_mem(irg);
+				ir_node *mem = be_get_Start_mem(irg);
 				ir_node *ld  = new_bd_sparc_Ld_imm(NULL, new_block, fp, mem,
 				                                   mode_gp, param->entity,
 				                                   0, true);
@@ -2380,7 +2348,7 @@ static ir_node *gen_Proj_Proj_Start(ir_node *node)
 		return value;
 	} else {
 		/* argument transmitted on stack */
-		ir_node *mem  = get_initial_mem(irg);
+		ir_node *mem  = be_get_Start_mem(irg);
 		ir_mode *mode = get_type_mode(param->type);
 		ir_node *base = get_frame_base(irg);
 
