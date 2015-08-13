@@ -1728,8 +1728,9 @@ no_call_mem:
 		ir_node *const nomem = get_irg_no_mem(irg);
 		ir_node *const in[]  = { new_value, callframe, nomem };
 		ir_node *const store = mode_is_float(mode) ?
-			new_bd_amd64_movs_store_xmm(dbgi, new_block, ARRAY_SIZE(in), in, xmm_reg_mem_reqs, &attr) :
-			new_bd_amd64_mov_store(     dbgi, new_block, ARRAY_SIZE(in), in, reg_reg_mem_reqs, &attr);
+			(mode == x86_mode_E ? new_bd_amd64_fst(dbgi, new_block, ARRAY_SIZE(in), in, x87_reg_mem_reqs, &attr)
+			                    : new_bd_amd64_movs_store_xmm(dbgi, new_block, ARRAY_SIZE(in), in, xmm_reg_mem_reqs, &attr))
+			: new_bd_amd64_mov_store(dbgi, new_block, ARRAY_SIZE(in), in, reg_reg_mem_reqs, &attr);
 
 		set_irn_pinned(store, false);
 		sync_ins[sync_arity++] = store;
