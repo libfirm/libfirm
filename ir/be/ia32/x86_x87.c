@@ -42,11 +42,13 @@
 ir_mode *x86_mode_E;
 ir_type *x86_type_E;
 
-#define N_FLOAT_REGS  (N_ia32_fp_REGS-1)  // exclude NOREG
+#define N_X87_REGS  8
+
+static const arch_register_class_t *x87_regclass;
 
 static bool is_x87_req(arch_register_req_t const *const req)
 {
-	return req->cls == &ia32_reg_classes[CLASS_ia32_fp];
+	return req->cls == x87_regclass;
 }
 
 static bool requested_x87_sim(ir_graph const *const irg)
@@ -73,9 +75,9 @@ typedef struct st_entry {
  * The x87 state.
  */
 typedef struct x87_state {
-	st_entry       st[N_FLOAT_REGS]; /**< the register stack */
-	unsigned       depth;            /**< the current stack depth */
-	x87_simulator *sim;              /**< The simulator. */
+	st_entry       st[N_X87_REGS]; /**< the register stack */
+	unsigned       depth;          /**< the current stack depth */
+	x87_simulator *sim;            /**< The simulator. */
 } x87_state;
 
 /**
@@ -123,7 +125,7 @@ static unsigned x87_get_depth(const x87_state *state)
 static st_entry *x87_get_entry(x87_state *const state, unsigned const pos)
 {
 	assert(pos < state->depth);
-	return &state->st[N_FLOAT_REGS - state->depth + pos];
+	return &state->st[N_X87_REGS - state->depth + pos];
 }
 
 /**
@@ -235,7 +237,7 @@ static void x87_push(x87_state *const state, ir_node *const node)
 {
 	assert(requested_x87_sim(get_irn_irg(node)));
 	assert(x87_on_stack(state, node) == (unsigned)-1 && "double push");
-	assert(state->depth < N_FLOAT_REGS && "stack overrun");
+	assert(state->depth < N_X87_REGS && "stack overrun");
 
 	++state->depth;
 	st_entry *const entry = x87_get_entry(state, 0);
@@ -305,7 +307,7 @@ static x87_state *x87_clone_state(x87_simulator *sim, const x87_state *src)
 
 static inline const arch_register_t *get_st_reg(unsigned index)
 {
-	return &ia32_registers[REG_ST0 + index];
+	return &x87_regclass->regs[index];
 }
 
 /**
@@ -531,7 +533,7 @@ static ir_node *x87_create_fpop(x87_state *const state, ir_node *const n,
  */
 static fp_liveness fp_liveness_transfer(ir_node *irn, fp_liveness live)
 {
-	const arch_register_class_t *cls = &ia32_reg_classes[CLASS_ia32_fp];
+	const arch_register_class_t *cls = x87_regclass;
 	be_foreach_definition(irn, cls, def, req,
 		const arch_register_t *reg = arch_get_irn_register(def);
 		live &= ~(1 << reg->index);
@@ -553,7 +555,7 @@ static fp_liveness fp_liveness_transfer(ir_node *irn, fp_liveness live)
 static fp_liveness fp_liveness_end_of_block(x87_simulator *sim, const ir_node *block)
 {
 	fp_liveness                  live = 0;
-	const arch_register_class_t *cls  = &ia32_reg_classes[CLASS_ia32_fp];
+	const arch_register_class_t *cls  = x87_regclass;
 	const be_lv_t               *lv   = sim->lv;
 
 	be_lv_foreach_cls(lv, block, be_lv_state_end, cls, node) {
@@ -625,7 +627,7 @@ static inline bool is_fp_live(ir_node const *const node, fp_liveness const live)
 static void fp_dump_live(fp_liveness live)
 {
 	DB((dbg, LEVEL_2, "Live after: "));
-	for (unsigned i = 0; i < N_FLOAT_REGS; ++i) {
+	for (unsigned i = 0; i < N_X87_REGS; ++i) {
 		if (live & (1 << i)) {
 			DB((dbg, LEVEL_2, "vf%d ", i));
 		}
@@ -827,7 +829,7 @@ static void sim_store(x87_state *state, ir_node *n)
 			 * Solution:
 			 *   - stack not full: push value and fstp
 			 *   - stack full: fstp value and load again */
-			if (x87_get_depth(state) < N_FLOAT_REGS) {
+			if (x87_get_depth(state) < N_X87_REGS) {
 				/* ok, we have a free register: push + fstp */
 				arch_register_t const *const out = get_st_reg(REG_FP_FP_NOREG);
 				x87_dup_operand(state, n, n_ia32_fst_val, val, out);
@@ -1274,13 +1276,13 @@ static bool is_clobber(ir_node const *const asm_n, ir_node const *const value)
 
 static void sim_Asm(x87_state *const state, ir_node *const n)
 {
-	arch_register_req_t const *const req_t = ia32_registers[REG_ST0].single_req;
-	arch_register_req_t const *const req_u = ia32_registers[REG_ST1].single_req;
+	arch_register_req_t const *const req_t = x87_regclass->regs[0].single_req;
+	arch_register_req_t const *const req_u = x87_regclass->regs[1].single_req;
 
 	/* Collect in requirements. */
 	ir_node *in_t = NULL;
 	ir_node *in_u = NULL;
-	be_foreach_use(n, &ia32_reg_classes[CLASS_ia32_fp], req, value, value_req,
+	be_foreach_use(n, x87_regclass, req, value, value_req,
 		if (reg_req_same_limited(req, req_t)) {
 			assert(!in_t);
 			in_t = value;
@@ -1316,7 +1318,7 @@ static void sim_Asm(x87_state *const state, ir_node *const n)
 	 * Here it is also ok, if it is just an input "t". */
 	ir_node *out_t = in_t;
 	ir_node *out_u = in_u;
-	be_foreach_definition(n, &ia32_reg_classes[CLASS_ia32_fp], value, req,
+	be_foreach_definition(n, x87_regclass, value, req,
 		if (reg_req_same_limited(req, req_t)) {
 			assert(out_t == in_t);
 			out_t = is_clobber(n, value) ? NULL : value;
@@ -1501,12 +1503,16 @@ static void update_liveness_walker(ir_node *block, void *data)
  * Replaces all virtual floating point instructions and registers
  * by real ones.
  */
-void x86_x87_simulate_graph(ir_graph *irg)
+void x86_x87_simulate_graph(ir_graph *irg, const arch_register_class_t *cls)
 {
 #ifndef DEBUG_libfirm
 	if (!requested_x87_sim(irg))
 		return;
 #endif
+	/* Must have N_X87_REGS registers and optionally an additional "NoReg" */
+	assert(cls->n_regs == N_X87_REGS ||
+	       (cls->n_regs == N_X87_REGS+1 && cls->regs[N_X87_REGS].is_virtual));
+	x87_regclass = cls;
 
 	/* create the simulator */
 	x87_simulator sim;

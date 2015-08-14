@@ -12,6 +12,7 @@
 #ifndef FIRM_BE_IA32_X86_X87_H
 #define FIRM_BE_IA32_X86_X87_H
 
+#include "be_types.h"
 #include "firm_types.h"
 
 /**
@@ -20,10 +21,11 @@
  * by real ones.
  *
  * @param irg      the graph to simulate and patch
+ * @param cls      x87 register class
  *
  * Registers must be allocated.
  */
-void x86_x87_simulate_graph(ir_graph *irg);
+void x86_x87_simulate_graph(ir_graph *irg, const arch_register_class_t *cls);
 
 /**
  * Initializes the x87 simulator.
