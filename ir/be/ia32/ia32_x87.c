@@ -316,15 +316,14 @@ static void x87_create_fxch(x87_state *state, ir_node *n, unsigned pos)
 {
 	x87_fxch(state, pos);
 
-	ir_node         *const block = get_nodes_block(n);
-	ir_node         *const fxch  = new_bd_ia32_fxch(NULL, block);
-	ia32_x87_attr_t *const attr  = get_ia32_x87_attr(fxch);
-	attr->reg = get_st_reg(pos);
+	ir_node               *const block = get_nodes_block(n);
+	arch_register_t const *const reg   = get_st_reg(pos);
+	ir_node               *const fxch  = new_bd_ia32_fxch(NULL, block, reg);
 
 	keep_alive(fxch);
 
 	sched_add_before(n, fxch);
-	DB((dbg, LEVEL_1, "<<< %s %s\n", get_irn_opname(fxch), attr->reg->name));
+	DB((dbg, LEVEL_1, "<<< %s %s\n", get_irn_opname(fxch), reg->name));
 }
 
 static void move_to_pos(x87_state *const state, ir_node *const before, ir_node *const val, unsigned const to)
@@ -456,15 +455,16 @@ static x87_state *x87_shuffle(ir_node *block, x87_state *state, const x87_state 
 	return state;
 }
 
-static ir_node *x87_create_fdup(x87_state *const state, ir_node *const block, ir_node *const val, arch_register_t const *const out)
+static ir_node *x87_create_fdup(x87_state *const state, ir_node *const block,
+                                ir_node *const val,
+                                arch_register_t const *const out)
 {
-	ir_node         *const fdup = new_bd_ia32_fdup(NULL, block, val);
-	ia32_x87_attr_t *const attr = get_ia32_x87_attr(fdup);
-	unsigned         const pos  = x87_on_stack(state, val);
-	attr->reg = get_st_reg(pos);
+	unsigned               const pos  = x87_on_stack(state, val);
+	arch_register_t const *const reg  = get_st_reg(pos);
+	ir_node               *const fdup = new_bd_ia32_fdup(NULL, block, val, reg);
 	arch_set_irn_register(fdup, out);
 	x87_push(state, fdup);
-	DB((dbg, LEVEL_1, "<<< %s %s\n", get_irn_opname(fdup), attr->reg->name));
+	DB((dbg, LEVEL_1, "<<< %s %s\n", get_irn_opname(fdup), reg->name));
 	return fdup;
 }
 
@@ -502,16 +502,15 @@ static ir_node *x87_create_fpop(x87_state *const state, ir_node *const n,
 		*dst = *src;
 	}
 	x87_pop(state);
-	ir_node *const block = get_block(n);
-	ir_node *const fpop  = pos == 0 && ia32_cg_config.use_ffreep ?
-		new_bd_ia32_ffreep(NULL, block) :
-		new_bd_ia32_fpop(  NULL, block);
-	ia32_x87_attr_t *const attr = get_ia32_x87_attr(fpop);
-	attr->reg = get_st_reg(pos);
+	ir_node               *const block = get_block(n);
+	arch_register_t const *const reg = get_st_reg(pos);
+	ir_node *const fpop = pos == 0 && ia32_cg_config.use_ffreep ?
+		new_bd_ia32_ffreep(NULL, block, reg) :
+		new_bd_ia32_fpop(  NULL, block, reg);
 
 	keep_alive(fpop);
 	sched_add_after(n, fpop);
-	DB((dbg, LEVEL_1, "<<< %s %s\n", get_irn_opname(fpop), attr->reg->name));
+	DB((dbg, LEVEL_1, "<<< %s %s\n", get_irn_opname(fpop), reg->name));
 	return fpop;
 }
 

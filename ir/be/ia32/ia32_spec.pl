@@ -310,6 +310,8 @@ my $fpopop = {
 	out_reqs    => [ "none" ],
 	attrs_equal => "attrs_equal_false",
 	attr_type   => "ia32_x87_attr_t",
+	attr        => "const arch_register_t *reg",
+	init        => "attr->reg = reg;",
 };
 
 my $xbinop = {
@@ -1773,6 +1775,8 @@ fxch => {
 	attrs_equal => "attrs_equal_false",
 	emit        => "fxch %F0",
 	attr_type   => "ia32_x87_attr_t",
+	attr        => "const arch_register_t *reg",
+	init        => "attr->reg = reg;",
 	latency     => 1,
 },
 
@@ -1783,6 +1787,8 @@ fdup => {
 	attrs_equal => "attrs_equal_false",
 	emit        => "fld %F0",
 	attr_type   => "ia32_x87_attr_t",
+	attr        => "const arch_register_t *reg",
+	init        => "attr->reg = reg;",
 	mode        => $mode_fp87,
 	latency     => 1,
 },
