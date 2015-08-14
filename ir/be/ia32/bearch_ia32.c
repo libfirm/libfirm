@@ -1138,7 +1138,9 @@ static void ia32_emit(ir_graph *irg)
 	be_dump(DUMP_RA, irg, "2addr");
 
 	/* we might have to rewrite x87 virtual registers */
-	x86_x87_simulate_graph(irg, &ia32_reg_classes[CLASS_ia32_fp]);
+	ia32_irg_data_t const *const irg_data = ia32_get_irg_data(irg);
+	if (irg_data->do_x87_sim)
+		x86_x87_simulate_graph(irg, &ia32_reg_classes[CLASS_ia32_fp]);
 	be_dump(DUMP_RA, irg, "x87");
 
 	/* do peephole optimizations */
