@@ -333,7 +333,7 @@ ir_entity *create_float_const_entity(ir_tarval *const tv)
 		return entity;
 
 	ir_mode *mode = get_tarval_mode(tv);
-	ir_type *type = get_type_for_mode(mode);
+	ir_type *type = mode == x86_mode_E ? x86_type_E : get_type_for_mode(mode);
 	ir_type *glob = get_glob_type();
 
 	entity = new_entity(glob, id_unique("C%u"), type);
