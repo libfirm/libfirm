@@ -731,10 +731,10 @@ static void sim_binop(x87_state *const state, ir_node *const n)
 		unsigned const op_reg = x87_on_stack(state, reverse ? op1 : op2);
 		/* Patch the operation. */
 		ia32_x87_attr_t *const attr = get_ia32_x87_attr(n);
-		attr->reg               = get_st_reg(op_reg);
+		attr->x87.reg           = get_st_reg(op_reg);
 		attr->attr.ins_permuted = reverse;
-		attr->res_in_reg        = to_reg;
-		attr->pop               = pop;
+		attr->x87.res_in_reg    = to_reg;
+		attr->x87.pop           = pop;
 
 		x87_set_st(state, get_result_node(n), to_reg ? op_reg : 0);
 		if (pop)
@@ -743,12 +743,13 @@ static void sim_binop(x87_state *const state, ir_node *const n)
 
 	DEBUG_ONLY(
 		ia32_x87_attr_t const *const attr = get_ia32_x87_attr(n);
+		x87_attr_t      const *const x87  = &attr->x87;
 		char            const *const st0  = get_st_reg(0)->name;
-		char            const *const reg  =  attr->reg ? attr->reg->name : "[AM]";
+		char            const *const reg  =  x87->reg ? x87->reg->name : "[AM]";
 		char            const *const l    =  attr->attr.ins_permuted ? reg : st0;
 		char            const *const r    = !attr->attr.ins_permuted ? reg : st0;
-		char            const *const o    =  attr->res_in_reg        ? reg : st0;
-		char            const *const pop  =  attr->pop ? " [pop]" : "";
+		char            const *const o    =  x87->res_in_reg         ? reg : st0;
+		char            const *const pop  =  x87->pop ? " [pop]" : "";
 		DB((dbg, LEVEL_1, "<<< %s %s, %s -> %s%s\n", get_irn_opname(n), l, r, o, pop));
 	)
 }
@@ -863,7 +864,7 @@ do_pop:
 				be_ssa_construction_destroy(&env);
 			}
 
-			get_ia32_x87_attr(n)->pop = true;
+			get_ia32_x87_attr(n)->x87.pop = true;
 		} else {
 			/* we can only store the tos to memory */
 			move_to_tos(state, n, val);
@@ -943,7 +944,7 @@ static void sim_Fucom(x87_state *state, ir_node *n)
 		if (!op1_live_after) {
 			x87_pop(state);
 			ia32_x87_attr_t *const attr = get_ia32_x87_attr(n);
-			attr->pop = true;
+			attr->x87.pop = true;
 		}
 	} else {
 		bool       reverse;
@@ -1001,9 +1002,9 @@ static void sim_Fucom(x87_state *state, ir_node *n)
 		unsigned const op_reg = x87_on_stack(state, reverse ? op1 : op2);
 		/* Patch the operation. */
 		ia32_x87_attr_t *const attr = get_ia32_x87_attr(n);
-		attr->reg                = get_st_reg(op_reg);
+		attr->x87.reg            = get_st_reg(op_reg);
 		attr->attr.ins_permuted ^= reverse;
-		attr->pop                = pops != 0;
+		attr->x87.pop            = pops != 0;
 
 		if (pops != 0) {
 			x87_pop(state);
@@ -1020,11 +1021,12 @@ static void sim_Fucom(x87_state *state, ir_node *n)
 
 	DEBUG_ONLY(
 		ia32_x87_attr_t const *const attr = get_ia32_x87_attr(n);
+		x87_attr_t      const *const x87  = &attr->x87;
 		char            const *const st0  = get_st_reg(0)->name;
-		char            const *const reg  =  attr->reg ? attr->reg->name : "[AM]";
+		char            const *const reg  =  x87->reg ? x87->reg->name : "[AM]";
 		char            const *const l    =  attr->attr.ins_permuted ? reg : st0;
 		char            const *const r    = !attr->attr.ins_permuted ? reg : st0;
-		char            const *const pop  =  attr->pop ? " [pop]" : "";
+		char            const *const pop  =  x87->pop ? " [pop]" : "";
 		DB((dbg, LEVEL_1, "<<< %s %s, %s%s\n", get_irn_opname(n), l, r, pop));
 	)
 }

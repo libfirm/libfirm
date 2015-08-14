@@ -242,9 +242,9 @@ static void ia32_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 				fprintf(F, "size = %u\n", get_ia32_copyb_size(n));
 			} else if (has_ia32_x87_attr(n)) {
 				ia32_x87_attr_t const *const attr = get_ia32_x87_attr_const(n);
-				fprintf(F, "explicit operand = %s\n", be_dump_reg_name(attr->reg));
-				fprintf(F, "result to explicit operand = %s\n", be_dump_yesno(attr->res_in_reg));
-				fprintf(F, "pop = %s\n", be_dump_yesno(attr->pop));
+				fprintf(F, "explicit operand = %s\n", be_dump_reg_name(attr->x87.reg));
+				fprintf(F, "result to explicit operand = %s\n", be_dump_yesno(attr->x87.res_in_reg));
+				fprintf(F, "pop = %s\n", be_dump_yesno(attr->x87.pop));
 			}
 
 			fprintf(F, "commutative = %s\n", be_dump_yesno(is_ia32_commutative(n)));

@@ -13,8 +13,9 @@
 
 #include "firm_types.h"
 #include "irnode_t.h"
-#include "x86_cc.h"
 #include "x86_asm.h"
+#include "x86_cc.h"
+#include "x86_x87.h"
 
 typedef enum {
 	ia32_Normal,
@@ -173,10 +174,8 @@ struct ia32_immediate_attr_t {
  */
 typedef struct ia32_x87_attr_t ia32_x87_attr_t;
 struct ia32_x87_attr_t {
-	ia32_attr_t            attr;       /**< the generic attribute */
-	arch_register_t const *reg;        /**< The explicit register operand. */
-	bool                   res_in_reg; /**< True if the result is in the explicit register operand, %st0 otherwise. */
-	bool                   pop;        /**< Emit a pop suffix. */
+	ia32_attr_t attr;       /**< the generic attribute */
+	x87_attr_t  x87;
 };
 
 /**

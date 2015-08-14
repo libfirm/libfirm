@@ -470,8 +470,8 @@ end_of_mods:
 					case 'F':
 						if (get_ia32_op_type(node) == ia32_Normal) {
 							ia32_x87_attr_t const *const attr = get_ia32_x87_attr_const(node);
-							char            const *const fmt  = attr->res_in_reg ? "%%st, %%%s" : "%%%s, %%st";
-							be_emit_irprintf(fmt, attr->reg->name);
+							char            const *const fmt  = attr->x87.res_in_reg ? "%%st, %%%s" : "%%%s, %%st";
+							be_emit_irprintf(fmt, attr->x87.reg->name);
 							break;
 						} else {
 							goto emit_AM;
@@ -547,7 +547,7 @@ destination_operand:
 					ia32_emit_x87_mode_suffix(node);
 				} else if (*fmt == 'P') {
 					ia32_x87_attr_t const *const attr = get_ia32_x87_attr_const(node);
-					if (attr->pop)
+					if (attr->x87.pop)
 						be_emit_char('p');
 				} else if (*fmt == 'R') {
 					/* NOTE: Work around a gas quirk for non-commutative operations if the
@@ -570,7 +570,7 @@ destination_operand:
 					ia32_emit_xmm_mode_suffix(node);
 				} else if (*fmt == '0') {
 					be_emit_char('%');
-					be_emit_string(get_ia32_x87_attr_const(node)->reg->name);
+					be_emit_string(get_ia32_x87_attr_const(node)->x87.reg->name);
 				} else {
 					goto unknown;
 				}
@@ -2784,19 +2784,20 @@ static void bemit_copybi(const ir_node *node)
 static void bemit_fbinop(ir_node const *const node, unsigned const op_fwd, unsigned const op_rev)
 {
 	ia32_x87_attr_t const *const attr = get_ia32_x87_attr_const(node);
+	x87_attr_t      const *const x87  = &attr->x87;
 	unsigned               const op   = attr->attr.ins_permuted ? op_rev : op_fwd;
 	if (get_ia32_op_type(node) == ia32_Normal) {
-		assert(!attr->pop || attr->res_in_reg);
+		assert(!x87->pop || x87->res_in_reg);
 
 		unsigned char op0 = 0xD8;
-		if (attr->res_in_reg) op0 |= 0x04;
-		if (attr->pop)        op0 |= 0x02;
+		if (x87->res_in_reg) op0 |= 0x04;
+		if (x87->pop)        op0 |= 0x02;
 		bemit8(op0);
 
-		bemit_modru(attr->reg, op);
+		bemit_modru(attr->x87.reg, op);
 	} else {
-		assert(!attr->reg);
-		assert(!attr->pop);
+		assert(!x87->reg);
+		assert(!x87->pop);
 
 		unsigned const size = get_mode_size_bits(get_ia32_ls_mode(node));
 		bemit8(size == 32 ? 0xD8 : 0xDC);
@@ -2807,7 +2808,7 @@ static void bemit_fbinop(ir_node const *const node, unsigned const op_fwd, unsig
 static void bemit_fop_reg(ir_node const *const node, unsigned char const op0, unsigned char const op1)
 {
 	bemit8(op0);
-	bemit8(op1 + get_ia32_x87_attr_const(node)->reg->encoding);
+	bemit8(op1 + get_ia32_x87_attr_const(node)->x87.reg->encoding);
 }
 
 static void bemit_fabs(const ir_node *node)
@@ -2872,10 +2873,10 @@ static void bemit_fist(const ir_node *node)
 	case 64: bemit8(0xDF); op = 6; break; // fistpll
 	default: panic("invalid mode size");
 	}
-	if (get_ia32_x87_attr_const(node)->pop)
+	if (get_ia32_x87_attr_const(node)->x87.pop)
 		++op;
 	// There is only a pop variant for 64 bit integer store.
-	assert(size < 64 || get_ia32_x87_attr_const(node)->pop);
+	assert(size < 64 || get_ia32_x87_attr_const(node)->x87.pop);
 	bemit_mod_am(op, node);
 }
 
@@ -2960,10 +2961,10 @@ static void bemit_fst(const ir_node *node)
 	case 96: bemit8(0xDB); op = 6; break; // fstpt
 	default: panic("invalid mode size");
 	}
-	if (get_ia32_x87_attr_const(node)->pop)
+	if (get_ia32_x87_attr_const(node)->x87.pop)
 		++op;
 	// There is only a pop variant for long double store.
-	assert(size < 80 || get_ia32_x87_attr_const(node)->pop);
+	assert(size < 80 || get_ia32_x87_attr_const(node)->x87.pop);
 	bemit_mod_am(op, node);
 }
 
@@ -2995,15 +2996,15 @@ static void bemit_ftstfnstsw(const ir_node *node)
 static void bemit_fucomi(const ir_node *node)
 {
 	const ia32_x87_attr_t *attr = get_ia32_x87_attr_const(node);
-	bemit8(attr->pop ? 0xDF : 0xDB); // fucom[p]i
-	bemit8(0xE8 + attr->reg->encoding);
+	bemit8(attr->x87.pop ? 0xDF : 0xDB); // fucom[p]i
+	bemit8(0xE8 + attr->x87.reg->encoding);
 }
 
 static void bemit_fucomfnstsw(const ir_node *node)
 {
 	const ia32_x87_attr_t *attr = get_ia32_x87_attr_const(node);
 	bemit8(0xDD); // fucom[p]
-	bemit8((attr->pop ? 0xE8 : 0xE0) + attr->reg->encoding);
+	bemit8((attr->x87.pop ? 0xE8 : 0xE0) + attr->x87.reg->encoding);
 	bemit_fnstsw();
 }
 

@@ -12,8 +12,17 @@
 #ifndef FIRM_BE_IA32_X86_X87_H
 #define FIRM_BE_IA32_X86_X87_H
 
+#include <stdbool.h>
 #include "be_types.h"
 #include "firm_types.h"
+
+/** Attributes for x87 nodes. */
+typedef struct x87_attr_t {
+	arch_register_t const *reg;        /**< The explicit register operand. */
+	/** True if result is in the explicit register operand, %st0 otherwise. */
+	bool                   res_in_reg;
+	bool                   pop;        /**< Emit a pop suffix. */
+} x87_attr_t;
 
 /**
  * Run a simulation and fix all virtual instructions for a graph.
