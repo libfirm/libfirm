@@ -1037,7 +1037,7 @@ static void sim_Fucom(x87_state *state, ir_node *n)
  * @param state  the x87 state
  * @param n      the node that should be simulated (and patched)
  */
-static void sim_Copy(x87_state *state, ir_node *n)
+static void sim_be_Copy(x87_state *state, ir_node *n)
 {
 	if (!is_x87_req(arch_get_irn_register_req(n)))
 		return;
@@ -1138,7 +1138,7 @@ static void sim_Return(x87_state *const state, ir_node *const ret)
  * @param state  the x87 state
  * @param irn    the node that should be simulated (and patched)
  */
-static void sim_Perm(x87_state *state, ir_node *irn)
+static void sim_be_Perm(x87_state *state, ir_node *irn)
 {
 	/* handle only floating point Perms */
 	if (!is_x87_req(arch_get_irn_register_req_out(irn, 0)))
@@ -1269,7 +1269,7 @@ static bool is_clobber(ir_node const *const asm_n, ir_node const *const value)
 	return true;
 }
 
-static void sim_Asm(x87_state *const state, ir_node *const n)
+static void sim_be_Asm(x87_state *const state, ir_node *const n)
 {
 	arch_register_req_t const *const req_t = x87.regclass->regs[0].single_req;
 	arch_register_req_t const *const req_u = x87.regclass->regs[1].single_req;
@@ -1345,7 +1345,7 @@ static void sim_Asm(x87_state *const state, ir_node *const n)
  * @param state  the x87 state
  * @param n      the node that should be simulated (and patched)
  */
-static void sim_Keep(x87_state *state, ir_node *node)
+static void sim_be_Keep(x87_state *state, ir_node *node)
 {
 	DB((dbg, LEVEL_1, ">>> %+F\n", node));
 	x87_kill_deads(state->sim, node, state);
@@ -1445,10 +1445,10 @@ static void x87_init_simulator(x87_simulator *sim, ir_graph *irg)
 	/* set the generic function pointer of instruction we must simulate */
 	ir_clear_opcodes_generic_func();
 
-	register_sim(op_be_Asm,            sim_Asm);
-	register_sim(op_be_Copy,           sim_Copy);
-	register_sim(op_be_Keep,           sim_Keep);
-	register_sim(op_be_Perm,           sim_Perm);
+	register_sim(op_be_Asm,            sim_be_Asm);
+	register_sim(op_be_Copy,           sim_be_Copy);
+	register_sim(op_be_Keep,           sim_be_Keep);
+	register_sim(op_be_Perm,           sim_be_Perm);
 	register_sim(op_ia32_Call,         sim_Call);
 	register_sim(op_ia32_fabs,         sim_unop);
 	register_sim(op_ia32_fadd,         sim_binop);
