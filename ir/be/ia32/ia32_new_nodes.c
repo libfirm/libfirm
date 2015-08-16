@@ -92,6 +92,7 @@ static bool has_ia32_x87_attr(ir_node const *const node)
 	case iro_ia32_fdup:
 	case iro_ia32_ffreep:
 	case iro_ia32_fist:
+	case iro_ia32_fistp:
 	case iro_ia32_fisttp:
 	case iro_ia32_fmul:
 	case iro_ia32_fpop:

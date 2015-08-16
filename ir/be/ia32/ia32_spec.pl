@@ -1613,6 +1613,18 @@ fist => {
 	attr_type => "ia32_x87_attr_t",
 },
 
+fistp => {
+	op_flags  => [ "uses_memory", "fragile" ],
+	state     => "exc_pinned",
+	in_reqs   => [ "gp", "gp", "mem", "fp:K", "fpcw" ],
+	out_reqs  => [ "mem", "exec", "exec" ],
+	ins       => [ "base", "index", "mem", "val", "fpcw" ],
+	outs      => [ "M", "X_regular", "X_except" ],
+	emit      => "fistp%FM %AM",
+	latency   => 4,
+	attr_type => "ia32_x87_attr_t",
+},
+
 # SSE3 fisttp instruction
 fisttp => {
 	op_flags  => [ "uses_memory", "fragile" ],

@@ -816,13 +816,13 @@ static void sim_store(x87_state *state, ir_node *n)
 		move_to_tos(state, n, val);
 		goto do_pop;
 	} else {
-		/* Problem: fst doesn't support 80bit modes (spills), only fstp does
-		 *          fist doesn't support 64bit mode, only fistp
-		 * Solution:
-		 *   - stack not full: push value and fstp
-		 *   - stack full: fstp value and load again */
 		ir_mode *const mode = get_ia32_ls_mode(n);
-		if (get_mode_size_bits(mode) > (mode_is_int(mode) ? 32U : 64U)) {
+		assert(!mode_is_int(mode) || get_mode_size_bits(mode) <= 32);
+		if (get_mode_size_bits(mode) > 64) {
+			/* Problem: fst doesn't support 80bit modes (spills), only fstp does
+			 * Solution:
+			 *   - stack not full: push value and fstp
+			 *   - stack full: fstp value and load again */
 			if (x87_get_depth(state) < N_FLOAT_REGS) {
 				/* ok, we have a free register: push + fstp */
 				arch_register_t const *const out = get_st_reg(REG_FP_FP_NOREG);
@@ -881,8 +881,9 @@ do_pop:
  * @param state  the x87 state
  * @param n      the node that should be simulated (and patched)
  */
-static void sim_fisttp(x87_state *state, ir_node *n)
+static void sim_store_pop(x87_state *state, ir_node *n)
 {
+	assert((int)n_ia32_fisttp_val == (int)n_ia32_fistp_val);
 	ir_node *const val = get_irn_n(n, n_ia32_fisttp_val);
 	DB((dbg, LEVEL_1, ">>> %+F %s ->\n", n, arch_get_irn_register(val)->name));
 
@@ -1455,7 +1456,8 @@ static void x87_init_simulator(x87_simulator *sim, ir_graph *irg)
 	register_sim(op_ia32_fdiv,         sim_binop);
 	register_sim(op_ia32_fild,         sim_load);
 	register_sim(op_ia32_fist,         sim_store);
-	register_sim(op_ia32_fisttp,       sim_fisttp);
+	register_sim(op_ia32_fistp,        sim_store_pop);
+	register_sim(op_ia32_fisttp,       sim_store_pop);
 	register_sim(op_ia32_fld1,         sim_load);
 	register_sim(op_ia32_fld,          sim_load);
 	register_sim(op_ia32_fldz,         sim_load);

@@ -2776,19 +2776,30 @@ static ir_node *gen_float_const_Store(ir_node *node, ir_node *cns)
  * Generate a fist or fisttp instruction.
  */
 static ir_node *gen_fist(dbg_info *dbgi, ir_node *block, ir_node *base,
-                          ir_node *index, ir_node *mem,  ir_node *val)
+                         ir_node *index, ir_node *mem,  ir_node *val,
+                         ir_mode *store_mode)
 {
+	ir_node *res;
 	if (ia32_cg_config.use_fisttp) {
 		/* Note: fisttp ALWAYS pop the tos. We have to ensure here that the
 		 * value is copied if other users exists */
-		return new_bd_ia32_fisttp(dbgi, block, base, index, mem, val);
+		res = new_bd_ia32_fisttp(dbgi, block, base, index, mem, val);
 	} else {
 		ir_graph *const irg        = get_irn_irg(block);
 		ir_node  *const trunc_mode = ia32_new_Fpu_truncate(irg);
-
-		/* do a fist */
-		return new_bd_ia32_fist(dbgi, block, base, index, mem, val, trunc_mode);
+		/* 64bit int store is only available as a pop variant */
+		if (get_mode_size_bits(store_mode) == 64) {
+			res = new_bd_ia32_fistp(dbgi, block, base, index, mem, val,
+			                        trunc_mode);
+		} else {
+			assert(get_mode_size_bits(store_mode) == 32
+				|| get_mode_size_bits(store_mode) == 16);
+			res = new_bd_ia32_fist(dbgi, block, base, index, mem, val,
+			                       trunc_mode);
+		}
 	}
+	set_ia32_ls_mode(res, store_mode);
+	return res;
 }
 
 /**
@@ -2815,7 +2826,7 @@ static ir_node *create_store(dbg_info *dbgi, ir_node *new_block,
 		value = get_Conv_op(value);
 		ir_node *new_val = be_transform_node(value);
 		store = gen_fist(dbgi, new_block, addr->base, addr->index, addr->mem,
-		                 new_val);
+		                 new_val, mode);
 	} else if (!ia32_cg_config.use_sse2 && is_Bitcast(value)) {
 		ir_node *op      = get_Bitcast_op(value);
 		ir_mode *op_mode = get_irn_mode(op);
@@ -3759,7 +3770,16 @@ static ir_node *gen_x87_fp_to_gp(ir_node *node)
 	ir_graph *irg    = get_irn_irg(block);
 	ir_node  *frame  = get_irg_frame(irg);
 
-	ir_node *fist = gen_fist(dbgi, block, frame, noreg_GP, nomem, new_op);
+	ir_mode *mode = get_irn_mode(node);
+	assert(get_mode_size_bits(mode) <= 32);
+	/* exception we can only store signed 32 bit integers, so for unsigned
+	   we store a 64bit (signed) integer and load the lower bits */
+	ir_mode *ls_mode = ia32_mode_gp;
+	if (get_mode_size_bits(mode) == 32 && !mode_is_signed(mode))
+		ls_mode = mode_Ls;
+
+	ir_node *fist = gen_fist(dbgi, block, frame, noreg_GP, nomem, new_op,
+	                         ls_mode);
 	set_irn_pinned(fist, false);
 	set_ia32_op_type(fist, ia32_AddrModeD);
 	arch_add_irn_flags(fist, arch_irn_flag_spill);
@@ -3767,15 +3787,6 @@ static ir_node *gen_x87_fp_to_gp(ir_node *node)
 	assert((unsigned)pn_ia32_fist_M == (unsigned) pn_ia32_fisttp_M);
 	ir_node *const mem = be_new_Proj(fist, pn_ia32_fist_M);
 
-	ir_mode *mode = get_irn_mode(node);
-	assert(get_mode_size_bits(mode) <= 32);
-	/* exception we can only store signed 32 bit integers, so for unsigned
-	   we store a 64bit (signed) integer and load the lower bits */
-	ir_mode *ls_mode = ia32_mode_gp;
-	if (get_mode_size_bits(mode) == 32 && !mode_is_signed(mode)) {
-		ls_mode = mode_Ls;
-	}
-	set_ia32_ls_mode(fist, ls_mode);
 	force_int_stackent(fist, ls_mode);
 	SET_IA32_ORIG_NODE(fist, node);
 
@@ -4577,11 +4588,11 @@ static ir_node *gen_ia32_l_FloattoLL(ir_node *node)
 	ir_node  *val       = get_irn_n(node, n_ia32_l_FloattoLL_val);
 	ir_node  *new_val   = be_transform_node(val);
 
-	ir_node *fist = gen_fist(dbgi, block, frame, noreg_GP, nomem, new_val);
+	ir_node *fist = gen_fist(dbgi, block, frame, noreg_GP, nomem, new_val,
+	                         mode_Ls);
 	set_irn_pinned(fist, false);
 	SET_IA32_ORIG_NODE(fist, node);
 	set_ia32_op_type(fist, ia32_AddrModeD);
-	set_ia32_ls_mode(fist, mode_Ls);
 	arch_add_irn_flags(fist, arch_irn_flag_spill);
 	force_int_stackent(fist, mode_Ls);
 
@@ -4718,7 +4729,10 @@ static ir_node *create_proj_for_store(ir_node *store, pn_Store pn)
 		case pn_Store_X_regular:
 			return be_new_Proj(store, pn_ia32_Store_X_regular);
 		}
-	} else if (is_ia32_fist(store)) {
+	} else if (is_ia32_fist(store) || is_ia32_fistp(store)) {
+		assert((int)pn_ia32_fist_M == (int)pn_ia32_fistp_M);
+		assert((int)pn_ia32_fist_X_except == (int)pn_ia32_fistp_X_except);
+		assert((int)pn_ia32_fist_X_regular == (int)pn_ia32_fistp_X_regular);
 		switch ((pn_Store)pn) {
 		case pn_Store_M:
 			return be_new_Proj(store, pn_ia32_fist_M);
