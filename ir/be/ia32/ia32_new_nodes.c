@@ -97,6 +97,7 @@ static bool has_ia32_x87_attr(ir_node const *const node)
 	case iro_ia32_fmul:
 	case iro_ia32_fpop:
 	case iro_ia32_fst:
+	case iro_ia32_fstp:
 	case iro_ia32_fsub:
 	case iro_ia32_fxch:
 		return true;

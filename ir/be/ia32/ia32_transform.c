@@ -2802,6 +2802,24 @@ static ir_node *gen_fist(dbg_info *dbgi, ir_node *block, ir_node *base,
 	return res;
 }
 
+/** Create a fst or fstp instruction. */
+static ir_node *create_fst(dbg_info *dbgi, ir_node *block, ir_node *base,
+                           ir_node *index, ir_node *mem, ir_node *val,
+                           ir_mode *store_mode)
+{
+	ir_node *res;
+	unsigned bits = get_mode_size_bits(store_mode);
+	if (bits > 64) {
+		/* We only have a pop variant for mode_E stores. */
+		assert(bits == 80 || bits == 96 || bits == 128);
+		res = new_bd_ia32_fstp(dbgi, block, base, index, mem, val, store_mode);
+	} else {
+		assert(bits == 32 || bits == 64);
+		res = new_bd_ia32_fst(dbgi, block, base, index, mem, val, store_mode);
+	}
+	return res;
+}
+
 /**
  * Create a store of a value.
  * @return the created ia32 Store node
@@ -2819,8 +2837,8 @@ static ir_node *create_store(dbg_info *dbgi, ir_node *new_block,
 		} else {
 			value = ia32_skip_float_downconv(value);
 			ir_node *new_val = be_transform_node(value);
-			store = new_bd_ia32_fst(dbgi, new_block, addr->base, addr->index,
-			                        addr->mem, new_val, mode);
+			store = create_fst(dbgi, new_block, addr->base, addr->index,
+			                   addr->mem, new_val, mode);
 		}
 	} else if (!ia32_cg_config.use_sse2 && is_float_to_int_conv(value)) {
 		value = get_Conv_op(value);
@@ -2832,8 +2850,8 @@ static ir_node *create_store(dbg_info *dbgi, ir_node *new_block,
 		ir_mode *op_mode = get_irn_mode(op);
 		assert(mode_is_float(op_mode));
 		ir_node *new_op  = be_transform_node(op);
-		store = new_bd_ia32_fst(dbgi, new_block, addr->base, addr->index,
-		                        addr->mem, new_op, op_mode);
+		store = create_fst(dbgi, new_block, addr->base, addr->index,
+		                   addr->mem, new_op, op_mode);
 		mode = op_mode;
 	} else {
 		value = be_skip_downconv(value, false);
@@ -3812,8 +3830,8 @@ static ir_node *gen_x87_conv(ir_mode *tgt_mode, ir_node *node)
 	dbg_info *dbgi  = get_irn_dbg_info(node);
 	ir_node  *frame = get_irg_frame(irg);
 
-	ir_node *store = new_bd_ia32_fst(dbgi, block, frame, noreg_GP, nomem, node,
-	                                 tgt_mode);
+	ir_node *store = create_fst(dbgi, block, frame, noreg_GP, nomem, node,
+	                            tgt_mode);
 	set_irn_pinned(store, false);
 	set_ia32_frame_use(store, IA32_FRAME_USE_AUTO);
 	set_ia32_op_type(store, ia32_AddrModeD);
@@ -4077,8 +4095,8 @@ static void store_fp(dbg_info *dbgi, ia32_address_mode_t *am, ir_node *block,
 	ir_node  *frame     = get_irg_frame(irg);
 	ir_mode  *mode      = get_irn_mode(value);
 
-	ir_node *fst = new_bd_ia32_fst(dbgi, new_block, frame, noreg_GP, nomem,
-	                               new_value, mode);
+	ir_node *fst = create_fst(dbgi, new_block, frame, noreg_GP, nomem,
+	                          new_value, mode);
 	set_irn_pinned(fst, false);
 	set_ia32_op_type(fst, ia32_AddrModeD);
 	arch_add_irn_flags(fst, arch_irn_flag_spill);
@@ -4750,7 +4768,10 @@ static ir_node *create_proj_for_store(ir_node *store, pn_Store pn)
 		case pn_Store_X_regular:
 			return be_new_Proj(store, pn_ia32_fisttp_X_regular);
 		}
-	} else if (is_ia32_fst(store)) {
+	} else if (is_ia32_fst(store) || is_ia32_fstp(store)) {
+		assert((int)pn_ia32_fst_M == (int)pn_ia32_fstp_M);
+		assert((int)pn_ia32_fst_X_except == (int)pn_ia32_fstp_X_except);
+		assert((int)pn_ia32_fst_X_regular == (int)pn_ia32_fstp_X_regular);
 		switch ((pn_Store)pn) {
 		case pn_Store_M:
 			return be_new_Proj(store, pn_ia32_fst_M);

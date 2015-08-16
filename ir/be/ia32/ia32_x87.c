@@ -819,7 +819,9 @@ static void sim_store(x87_state *state, ir_node *n)
 		ir_mode *const mode = get_ia32_ls_mode(n);
 		assert(!mode_is_int(mode) || get_mode_size_bits(mode) <= 32);
 		if (get_mode_size_bits(mode) > 64) {
-			/* Problem: fst doesn't support 80bit modes (spills), only fstp does
+			/* Problem: fst doesn't support 80bit modes. Code selection chooses
+			 * an explicit fstp in this case which is fine, however if we create
+			 * an 80bit fst because of a spill we may need some fixup here.
 			 * Solution:
 			 *   - stack not full: push value and fstp
 			 *   - stack full: fstp value and load again */
@@ -1463,6 +1465,7 @@ static void x87_init_simulator(x87_simulator *sim, ir_graph *irg)
 	register_sim(op_ia32_fldz,         sim_load);
 	register_sim(op_ia32_fmul,         sim_binop);
 	register_sim(op_ia32_fst,          sim_store);
+	register_sim(op_ia32_fstp,         sim_store_pop);
 	register_sim(op_ia32_fsub,         sim_binop);
 	register_sim(op_ia32_FtstFnstsw,   sim_FtstFnstsw);
 	register_sim(op_ia32_FucomFnstsw,  sim_Fucom);

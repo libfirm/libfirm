@@ -1590,6 +1590,21 @@ fst => {
 	attr_type => "ia32_x87_attr_t",
 },
 
+fstp => {
+	irn_flags => [ "rematerializable" ],
+	op_flags  => [ "uses_memory", "fragile" ],
+	state     => "exc_pinned",
+	in_reqs   => [ "gp", "gp", "mem", "fp:K" ],
+	out_reqs  => [ "mem", "exec", "exec" ],
+	ins       => [ "base", "index", "mem", "val" ],
+	outs      => [ "M", "X_regular", "X_except" ],
+	emit      => "fstp%FM %AM",
+	attr      => "ir_mode *store_mode",
+	init      => "attr->attr.ls_mode = store_mode;",
+	latency   => 2,
+	attr_type => "ia32_x87_attr_t",
+},
+
 fild => {
 	state     => "exc_pinned",
 	in_reqs   => [ "gp", "gp", "mem" ],
