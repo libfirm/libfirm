@@ -101,7 +101,7 @@ void be_liveness_end_of_block(const be_lv_t *lv,
                               const ir_node *bl, ir_nodeset_t *nodeset);
 
 /**
- * Check if value @p value is live after value @p after.
+ * Check if value @p value is live after instruction @p after.
  */
 bool be_value_live_after(const ir_node *value, const ir_node *after);
 
