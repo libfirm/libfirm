@@ -770,9 +770,6 @@ static void prepare_constr_insn(ir_node *const node)
 			rbitset_set(def_constr, reg->global_index);
 		}
 	);
-	/* no output constraints => we're good */
-	if (def_constr == NULL)
-		return;
 
 	/* Insert copies for all constrained arguments living through the node and
 	 * being constrained to a register which also occurs in out constraints. */
@@ -783,25 +780,33 @@ static void prepare_constr_insn(ir_node *const node)
 		 * 3) is constrained to a register occurring in out constraints. */
 		const arch_register_req_t *const req
 			= arch_get_irn_register_req_in(node, i);
-		if (req->limited == NULL)
-			continue;
-		ir_node *in = get_irn_n(node, i);
-		const arch_register_req_t *const in_req = arch_get_irn_register_req(in);
-		if (in_req->ignore)
-			continue;
-		if (!be_value_live_after(in, node))
-			continue;
-
-		bool                               common_limits = false;
-		arch_register_class_t const *const cls           = req->cls;
-		rbitset_foreach(req->limited, cls->n_regs, e) {
-			const arch_register_t *reg = arch_register_for_index(cls, e);
-			if (rbitset_is_set(def_constr, reg->global_index)) {
-				common_limits = true;
-				break;
+		ir_node *const in = get_irn_n(node, i);
+		if (req->kills_value) {
+			/* we need a copy */
+		} else {
+			if (def_constr == NULL || req->limited == NULL)
+				continue;
+			if (!req->kills_value) {
+				const arch_register_req_t *const in_req
+					= arch_get_irn_register_req(in);
+				if (in_req->ignore)
+					continue;
 			}
+
+			bool                               common_limits = false;
+			arch_register_class_t const *const cls           = req->cls;
+			rbitset_foreach(req->limited, cls->n_regs, e) {
+				const arch_register_t *reg = arch_register_for_index(cls, e);
+				if (rbitset_is_set(def_constr, reg->global_index)) {
+					common_limits = true;
+					break;
+				}
+			}
+			if (!common_limits)
+				continue;
 		}
-		if (!common_limits)
+
+		if (!be_value_live_after(in, node))
 			continue;
 
 		/* TODO: This is suboptimal, we should rather have the node use the old

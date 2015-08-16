@@ -886,9 +886,7 @@ static void sim_fisttp(x87_state *state, ir_node *n)
 	ir_node *const val = get_irn_n(n, n_ia32_fisttp_val);
 	DB((dbg, LEVEL_1, ">>> %+F %s ->\n", n, arch_get_irn_register(val)->name));
 
-	/* Note: although the value is still live here, it is destroyed because
-	 * of the pop. The register allocator is aware of that and introduced a copy
-	 * if the value must be alive. */
+	assert(!is_fp_live(val, fp_live_args_after(state->sim, n, 0)));
 
 	/* we can only store the tos to memory */
 	move_to_tos(state, n, val);

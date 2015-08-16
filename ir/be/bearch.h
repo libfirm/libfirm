@@ -222,6 +222,9 @@ struct arch_register_req_t {
 	bool                         ignore : 1;
 	/** The registernumber should be aligned (in case of multiregister values)*/
 	bool                         aligned : 1;
+	/** The instructions modifies the value in the register in an unknown way,
+	 * the value has to be copied if it is needed afterwards. */
+	bool                         kills_value : 1;
 };
 
 static inline bool reg_reqs_equal(const arch_register_req_t *req1,

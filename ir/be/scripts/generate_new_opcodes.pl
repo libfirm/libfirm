@@ -875,7 +875,9 @@ sub generate_requirements
 	if (defined($flags)) {
 		foreach my $f (split(/\|/, $flags)) {
 			if ($f eq "I") {
-				$extra .= "\n\t.ignore  = true,";
+				$extra .= "\n\t.ignore = true,";
+			} elsif ($f eq "K") {
+				$extra .= "\n\t.kills_value = true,";
 			} elsif ($f eq "a") {
 				$extra .= "\n\t.aligned = true,";
 			} elsif ($f eq "2" or $f eq "4" or $f eq "8") {
