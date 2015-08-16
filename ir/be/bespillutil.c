@@ -789,12 +789,6 @@ static void prepare_constr_insn(ir_node *const node)
 		const arch_register_req_t *const in_req = arch_get_irn_register_req(in);
 		if (in_req->ignore)
 			continue;
-		/* Only create the copy if the operand is no copy.
-		 * this is necessary since the assure constraints phase inserts
-		 * Copies and Keeps for operands which must be different from the
-		 * results. Additional copies here would destroy this. */
-		if (be_is_Copy(in))
-			continue;
 		if (!be_value_live_after(in, node))
 			continue;
 
@@ -829,17 +823,6 @@ static void add_missing_copies_in_block(ir_node *block, void *data)
 	}
 }
 
-static ir_node *find_copy(ir_node *irn, ir_node *op)
-{
-	for (ir_node *cur_node = irn;;) {
-		cur_node = sched_prev(cur_node);
-		if (!be_is_Copy(cur_node))
-			return NULL;
-		if (be_get_Copy_op(cur_node) == op && arch_irn_is(cur_node, dont_spill))
-			return cur_node;
-	}
-}
-
 /** Environment for constraints. */
 typedef struct {
 	ir_nodehashmap_t op_set;
@@ -862,32 +845,15 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
 	ir_nodehashmap_t *op_set = &env->op_set;
 	ir_node          *block  = get_nodes_block(irn);
 
-	/* Make a not spillable copy of the different node   */
-	/* this is needed because the different irn could be */
-	/* in block far far away                             */
-	/* The copy is optimized later if not needed         */
-
-	/* check if already exists such a copy in the schedule immediately before */
-	ir_node *cpy = find_copy(skip_Proj(irn), other_different);
-	if (cpy == NULL) {
-		cpy = be_new_Copy(block, other_different);
-		arch_add_irn_flags(cpy, arch_irn_flag_dont_spill);
-		DB((dbg_constr, LEVEL_1, "created non-spillable %+F for value %+F\n", cpy, other_different));
-	} else {
-		DB((dbg_constr, LEVEL_1, "using already existing %+F for value %+F\n", cpy, other_different));
-	}
-
 	/* Add the Keep resp. CopyKeep and reroute the users */
 	/* of the other_different irn in case of CopyKeep.   */
 	ir_node *const in[] = { irn };
-	ir_node *const keep = be_new_CopyKeep(block, cpy, ARRAY_SIZE(in), in);
+	ir_node *const keep = be_new_CopyKeep(block, other_different, ARRAY_SIZE(in), in);
 
-	DB((dbg_constr, LEVEL_1, "created %+F(%+F, %+F)\n\n", keep, irn, cpy));
+	DB((dbg_constr, LEVEL_1, "created %+F(%+F, %+F)\n\n", keep, irn, other_different));
 
 	/* insert copy and keep into schedule */
 	assert(sched_is_scheduled(irn) && "need schedule to assure constraints");
-	if (!sched_is_scheduled(cpy))
-		sched_add_before(skip_Proj(irn), cpy);
 	sched_add_after(skip_Proj(irn), keep);
 
 	/* insert the other different and its copies into the map */
@@ -900,10 +866,7 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
 		ir_nodehashmap_insert(op_set, other_different, entry);
 	}
 
-	/* insert copy */
-	ir_nodeset_insert(&entry->copies, cpy);
-
-	/* insert keep in case of CopyKeep */
+	/* The CopyKeep node is a new copy of the other_different value. */
 	ir_nodeset_insert(&entry->copies, keep);
 }
 
