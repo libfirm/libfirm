@@ -829,11 +829,6 @@ static void add_missing_copies_in_block(ir_node *block, void *data)
 	}
 }
 
-static bool has_irn_users(const ir_node *irn)
-{
-	return get_irn_out_edge_first_kind(irn, EDGE_KIND_NORMAL) != 0;
-}
-
 static ir_node *find_copy(ir_node *irn, ir_node *op)
 {
 	for (ir_node *cur_node = irn;;) {
@@ -884,14 +879,8 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
 
 	/* Add the Keep resp. CopyKeep and reroute the users */
 	/* of the other_different irn in case of CopyKeep.   */
-	ir_node *keep;
-	if (has_irn_users(other_different)) {
-		ir_node *const in[] = { irn };
-		keep = be_new_CopyKeep(block, cpy, ARRAY_SIZE(in), in);
-	} else {
-		ir_node *in[] = { irn, cpy };
-		keep = be_new_Keep(block, ARRAY_SIZE(in), in);
-	}
+	ir_node *const in[] = { irn };
+	ir_node *const keep = be_new_CopyKeep(block, cpy, ARRAY_SIZE(in), in);
 
 	DB((dbg_constr, LEVEL_1, "created %+F(%+F, %+F)\n\n", keep, irn, cpy));
 
@@ -915,8 +904,7 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
 	ir_nodeset_insert(&entry->copies, cpy);
 
 	/* insert keep in case of CopyKeep */
-	if (be_is_CopyKeep(keep))
-		ir_nodeset_insert(&entry->copies, keep);
+	ir_nodeset_insert(&entry->copies, keep);
 }
 
 /**
