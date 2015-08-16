@@ -44,11 +44,11 @@ ir_type *x86_type_E;
 
 #define N_X87_REGS  8
 
-static const arch_register_class_t *x87_regclass;
+static x87_simulator_config_t x87;
 
 static bool is_x87_req(arch_register_req_t const *const req)
 {
-	return req->cls == x87_regclass;
+	return req->cls == x87.regclass;
 }
 
 /** the debug handle */
@@ -300,7 +300,7 @@ static x87_state *x87_clone_state(x87_simulator *sim, const x87_state *src)
 
 static inline const arch_register_t *get_st_reg(unsigned index)
 {
-	return &x87_regclass->regs[index];
+	return &x87.regclass->regs[index];
 }
 
 /**
@@ -316,7 +316,7 @@ static void x87_create_fxch(x87_state *state, ir_node *n, unsigned pos)
 
 	ir_node               *const block = get_nodes_block(n);
 	arch_register_t const *const reg   = get_st_reg(pos);
-	ir_node               *const fxch  = new_bd_ia32_fxch(NULL, block, reg);
+	ir_node               *const fxch  = x87.new_bd_fxch(NULL, block, reg);
 
 	keep_alive(fxch);
 
@@ -459,7 +459,7 @@ static ir_node *x87_create_fdup(x87_state *const state, ir_node *const block,
 {
 	unsigned               const pos  = x87_on_stack(state, val);
 	arch_register_t const *const reg  = get_st_reg(pos);
-	ir_node               *const fdup = new_bd_ia32_fdup(NULL, block, val, reg);
+	ir_node               *const fdup = x87.new_bd_fdup(NULL, block, val, reg);
 	arch_set_irn_register(fdup, out);
 	x87_push(state, fdup);
 	DB((dbg, LEVEL_1, "<<< %s %s\n", get_irn_opname(fdup), reg->name));
@@ -502,9 +502,9 @@ static ir_node *x87_create_fpop(x87_state *const state, ir_node *const n,
 	x87_pop(state);
 	ir_node               *const block = get_block(n);
 	arch_register_t const *const reg = get_st_reg(pos);
-	ir_node *const fpop = pos == 0 && ia32_cg_config.use_ffreep ?
-		new_bd_ia32_ffreep(NULL, block, reg) :
-		new_bd_ia32_fpop(  NULL, block, reg);
+	ir_node *const fpop = pos == 0 && x87.new_bd_ffreep != NULL
+		? x87.new_bd_ffreep(NULL, block, reg)
+		: x87.new_bd_fpop(  NULL, block, reg);
 
 	keep_alive(fpop);
 	sched_add_after(n, fpop);
@@ -526,7 +526,7 @@ static ir_node *x87_create_fpop(x87_state *const state, ir_node *const n,
  */
 static fp_liveness fp_liveness_transfer(ir_node *irn, fp_liveness live)
 {
-	const arch_register_class_t *cls = x87_regclass;
+	const arch_register_class_t *cls = x87.regclass;
 	be_foreach_definition(irn, cls, def, req,
 		const arch_register_t *reg = arch_get_irn_register(def);
 		live &= ~(1 << reg->index);
@@ -548,7 +548,7 @@ static fp_liveness fp_liveness_transfer(ir_node *irn, fp_liveness live)
 static fp_liveness fp_liveness_end_of_block(x87_simulator *sim, const ir_node *block)
 {
 	fp_liveness                  live = 0;
-	const arch_register_class_t *cls  = x87_regclass;
+	const arch_register_class_t *cls  = x87.regclass;
 	const be_lv_t               *lv   = sim->lv;
 
 	be_lv_foreach_cls(lv, block, be_lv_state_end, cls, node) {
@@ -1271,13 +1271,13 @@ static bool is_clobber(ir_node const *const asm_n, ir_node const *const value)
 
 static void sim_Asm(x87_state *const state, ir_node *const n)
 {
-	arch_register_req_t const *const req_t = x87_regclass->regs[0].single_req;
-	arch_register_req_t const *const req_u = x87_regclass->regs[1].single_req;
+	arch_register_req_t const *const req_t = x87.regclass->regs[0].single_req;
+	arch_register_req_t const *const req_u = x87.regclass->regs[1].single_req;
 
 	/* Collect in requirements. */
 	ir_node *in_t = NULL;
 	ir_node *in_u = NULL;
-	be_foreach_use(n, x87_regclass, req, value, value_req,
+	be_foreach_use(n, x87.regclass, req, value, value_req,
 		if (reg_req_same_limited(req, req_t)) {
 			assert(!in_t);
 			in_t = value;
@@ -1313,7 +1313,7 @@ static void sim_Asm(x87_state *const state, ir_node *const n)
 	 * Here it is also ok, if it is just an input "t". */
 	ir_node *out_t = in_t;
 	ir_node *out_u = in_u;
-	be_foreach_definition(n, x87_regclass, value, req,
+	be_foreach_definition(n, x87.regclass, value, req,
 		if (reg_req_same_limited(req, req_t)) {
 			assert(out_t == in_t);
 			out_t = is_clobber(n, value) ? NULL : value;
@@ -1498,12 +1498,14 @@ static void update_liveness_walker(ir_node *block, void *data)
  * Replaces all virtual floating point instructions and registers
  * by real ones.
  */
-void x86_x87_simulate_graph(ir_graph *irg, const arch_register_class_t *cls)
+void x86_x87_simulate_graph(ir_graph *irg, const x87_simulator_config_t *config)
 {
+	x87 = *config;
+
 	/* Must have N_X87_REGS registers and optionally an additional "NoReg" */
-	assert(cls->n_regs == N_X87_REGS ||
-	       (cls->n_regs == N_X87_REGS+1 && cls->regs[N_X87_REGS].is_virtual));
-	x87_regclass = cls;
+	assert(x87.regclass->n_regs == N_X87_REGS ||
+	       (x87.regclass->n_regs == N_X87_REGS+1 &&
+	        x87.regclass->regs[N_X87_REGS].is_virtual));
 
 	/* create the simulator */
 	x87_simulator sim;

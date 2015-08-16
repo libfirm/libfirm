@@ -1139,8 +1139,17 @@ static void ia32_emit(ir_graph *irg)
 
 	/* we might have to rewrite x87 virtual registers */
 	ia32_irg_data_t const *const irg_data = ia32_get_irg_data(irg);
-	if (irg_data->do_x87_sim)
-		x86_x87_simulate_graph(irg, &ia32_reg_classes[CLASS_ia32_fp]);
+	if (irg_data->do_x87_sim) {
+		const x87_simulator_config_t config = {
+			.regclass      = &ia32_reg_classes[CLASS_ia32_fp],
+			.new_bd_fdup   = new_bd_ia32_fdup,
+			.new_bd_fxch   = new_bd_ia32_fxch,
+			.new_bd_fpop   = new_bd_ia32_fpop,
+			.new_bd_ffreep = ia32_cg_config.use_ffreep ? new_bd_ia32_ffreep
+			                                           : NULL,
+		};
+		x86_x87_simulate_graph(irg, &config);
+	}
 	be_dump(DUMP_RA, irg, "x87");
 
 	/* do peephole optimizations */

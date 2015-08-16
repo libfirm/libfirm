@@ -24,17 +24,25 @@ typedef struct x87_attr_t {
 	bool                   pop;        /**< Emit a pop suffix. */
 } x87_attr_t;
 
+typedef struct x87_simulator_config_t {
+	const arch_register_class_t *regclass;
+	ir_node *(*new_bd_fdup)(dbg_info *dbgi, ir_node *block, ir_node *value,
+	                        const arch_register_t *reg);
+	ir_node *(*new_bd_fxch)(dbg_info *dbgi, ir_node *block,
+	                        const arch_register_t *reg);
+	ir_node *(*new_bd_fpop)(dbg_info *dbgi, ir_node *block,
+	                        const arch_register_t *reg);
+	ir_node *(*new_bd_ffreep)(dbg_info *dbgi, ir_node *block,
+	                          const arch_register_t *reg);
+} x87_simulator_config_t;
+
 /**
  * Run a simulation and fix all virtual instructions for a graph.
  * Replaces all virtual floating point instructions and registers
  * by real ones.
- *
- * @param irg      the graph to simulate and patch
- * @param cls      x87 register class
- *
  * Registers must be allocated.
  */
-void x86_x87_simulate_graph(ir_graph *irg, const arch_register_class_t *cls);
+void x86_x87_simulate_graph(ir_graph *irg, const x87_simulator_config_t *cfg);
 
 /**
  * Initializes the x87 simulator.
