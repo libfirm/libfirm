@@ -804,6 +804,11 @@ static void prepare_constr_insn(ir_node *const node)
 		if (!common_limits)
 			continue;
 
+		/* TODO: This is suboptimal, we should rather have the node use the old
+		 * value and all following users use the copy (because that gives us a
+		 * register change for free), need to add some SSA-reconstruction code
+		 * to achieve this. */
+
 		ir_node *block = get_nodes_block(node);
 		ir_node *copy  = be_new_Copy(block, in);
 		sched_add_before(node, copy);
