@@ -11,6 +11,7 @@
 #include "bedwarf_t.h"
 
 #include "array.h"
+#include "be_t.h"
 #include "bearch.h"
 #include "beemitter.h"
 #include "begnuas.h"
@@ -303,6 +304,11 @@ static void emit_pubnames(void)
 	emit_label("pubnames_end");
 }
 
+static bool should_emit_frameinfo(void)
+{
+	return be_options.exceptions || debug_level >= LEVEL_FRAMEINFO;
+}
+
 void be_dwarf_location(dbg_info *dbgi)
 {
 	if (debug_level < LEVEL_LOCATIONS)
@@ -318,29 +324,29 @@ void be_dwarf_location(dbg_info *dbgi)
 
 void be_dwarf_callframe_register(const arch_register_t *reg)
 {
-	if (debug_level < LEVEL_FRAMEINFO)
-		return;
-	be_emit_cstring("\t.cfi_def_cfa_register ");
-	be_emit_irprintf("%d\n", reg->dwarf_number);
-	be_emit_write_line();
+	if (should_emit_frameinfo()) {
+		be_emit_cstring("\t.cfi_def_cfa_register ");
+		be_emit_irprintf("%d\n", reg->dwarf_number);
+		be_emit_write_line();
+	}
 }
 
 void be_dwarf_callframe_offset(int offset)
 {
-	if (debug_level < LEVEL_FRAMEINFO)
-		return;
-	be_emit_cstring("\t.cfi_def_cfa_offset ");
-	be_emit_irprintf("%d\n", offset);
-	be_emit_write_line();
+	if (should_emit_frameinfo()) {
+		be_emit_cstring("\t.cfi_def_cfa_offset ");
+		be_emit_irprintf("%d\n", offset);
+		be_emit_write_line();
+	}
 }
 
 void be_dwarf_callframe_spilloffset(const arch_register_t *reg, int offset)
 {
-	if (debug_level < LEVEL_FRAMEINFO)
-		return;
-	be_emit_cstring("\t.cfi_offset ");
-	be_emit_irprintf("%d, %d\n", reg->dwarf_number, offset);
-	be_emit_write_line();
+	if (should_emit_frameinfo()) {
+		be_emit_cstring("\t.cfi_offset ");
+		be_emit_irprintf("%d, %d\n", reg->dwarf_number, offset);
+		be_emit_write_line();
+	}
 }
 
 static bool is_extern_entity(const ir_entity *entity)
@@ -503,21 +509,21 @@ void be_dwarf_function_before(const ir_entity *entity,
 
 void be_dwarf_function_begin(void)
 {
-	if (debug_level < LEVEL_FRAMEINFO)
-		return;
-	be_emit_cstring("\t.cfi_startproc\n");
-	be_emit_write_line();
+	if (should_emit_frameinfo()) {
+		be_emit_cstring("\t.cfi_startproc\n");
+		be_emit_write_line();
+	}
 }
 
 void be_dwarf_function_end(void)
 {
-	if (debug_level < LEVEL_BASIC)
-		return;
-	const ir_entity *entity = env.cur_ent;
-	be_emit_irprintf("%sfunction_end_%s:\n", be_gas_get_private_prefix(),
-	                 get_entity_ld_name(entity));
+	if (debug_level >= LEVEL_BASIC) {
+		const ir_entity *entity = env.cur_ent;
+		be_emit_irprintf("%sfunction_end_%s:\n", be_gas_get_private_prefix(),
+		                 get_entity_ld_name(entity));
+	}
 
-	if (debug_level >= LEVEL_FRAMEINFO) {
+	if (should_emit_frameinfo()) {
 		be_emit_cstring("\t.cfi_endproc\n");
 		be_emit_write_line();
 	}

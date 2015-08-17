@@ -56,6 +56,9 @@ extern elf_variant_t be_gas_elf_variant;
  */
 extern char                 be_gas_elf_type_char;
 
+/** emit cfi directives required for exception handling */
+extern bool                 be_gas_emit_cfi_directives;
+
 /**
  * Switch the current output section to the given out.
  *
