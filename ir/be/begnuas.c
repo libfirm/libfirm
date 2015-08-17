@@ -37,10 +37,10 @@ typedef enum object_file_format_t {
 } object_file_format_t;
 
 /** by default, we generate assembler code for the Linux gas */
-static object_file_format_t be_gas_object_file_format = OBJECT_FILE_FORMAT_ELF;
-elf_variant_t               be_gas_elf_variant        = ELF_VARIANT_NORMAL;
-bool                        be_gas_emit_types         = true;
-char                        be_gas_elf_type_char      = '@';
+static object_file_format_t be_gas_object_file_format  = OBJECT_FILE_FORMAT_ELF;
+elf_variant_t               be_gas_elf_variant         = ELF_VARIANT_NORMAL;
+bool                        be_gas_emit_types          = true;
+char                        be_gas_elf_type_char       = '@';
 
 static be_gas_section_t current_section = (be_gas_section_t) -1;
 static pmap            *block_numbers;
