@@ -607,15 +607,8 @@ static void dump_node(FILE *f, const ir_node *irn, dump_reason_t reason)
 	}
 }
 
-/**
- * ir_op-Operation:
- * Copies the backend specific attributes from old node to new node.
- */
-static void copy_attr(ir_graph *const irg, ir_node const *const old_node, ir_node *const new_node)
+void be_copy_attr(ir_graph *const irg, ir_node const *const old_node, ir_node *const new_node)
 {
-	assert(is_be_node(old_node));
-	assert(is_be_node(new_node));
-
 	void const *const old_attr = get_irn_generic_attr_const(old_node);
 	void       *const new_attr = get_irn_generic_attr(new_node);
 	memcpy(new_attr, old_attr, get_op_attr_size(get_irn_op(old_node)));
@@ -640,7 +633,7 @@ static ir_op *new_be_op(unsigned code, const char *name, op_pin_state p,
 {
 	ir_op *res = new_ir_op(code, name, p, flags, opar, 0, attr_size);
 	set_op_dump(res, dump_node);
-	set_op_copy_attr(res, copy_attr);
+	set_op_copy_attr(res, be_copy_attr);
 	set_op_tag(res, be_op_tag);
 	return res;
 }

@@ -858,26 +858,6 @@ static int ia32_return_attrs_equal(const ir_node *a, const ir_node *b)
 	    && attr_a->pop == attr_b->pop;
 }
 
-/* copies the ia32 attributes */
-static void ia32_copy_attr(ir_graph *irg, const ir_node *old_node,
-                           ir_node *new_node)
-{
-	struct obstack    *obst     = get_irg_obstack(irg);
-	const ia32_attr_t *attr_old = get_ia32_attr_const(old_node);
-	ia32_attr_t       *attr_new = get_ia32_attr(new_node);
-	backend_info_t    *old_info = be_get_info(old_node);
-	backend_info_t    *new_info = be_get_info(new_node);
-
-	/* copy the attributes */
-	memcpy(attr_new, attr_old, get_op_attr_size(get_irn_op(old_node)));
-
-	/* copy out flags */
-	new_info->out_infos =
-		DUP_ARR_D(reg_out_info_t, obst, old_info->out_infos);
-	new_info->in_reqs = old_info->in_reqs;
-	new_info->flags = old_info->flags;
-}
-
 static void ia32_init_op(ir_op *op, unsigned latency)
 {
 	ia32_op_attr_t *attr = OALLOCZ(&opcodes_obst, ia32_op_attr_t);

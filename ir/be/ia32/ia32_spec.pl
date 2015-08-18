@@ -67,7 +67,6 @@ $mode_fpcw  = "ia32_mode_fpcw";
 );
 
 $default_attr_type = "ia32_attr_t";
-$default_copy_attr = "ia32_copy_attr";
 
 sub ia32_custom_init_attr {
 	my ($constr, $node, $name) = @_;

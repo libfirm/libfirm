@@ -262,27 +262,6 @@ static void init_sparc_call_attributes(ir_node *node, ir_type *call_type)
 	attr->call_type = call_type;
 }
 
-/**
- * copies sparc attributes of  node
- */
-static void sparc_copy_attr(ir_graph *irg, const ir_node *old_node,
-                            ir_node *new_node)
-{
-	struct obstack     *obst     = get_irg_obstack(irg);
-	const sparc_attr_t *attr_old = get_sparc_attr_const(old_node);
-	sparc_attr_t       *attr_new = get_sparc_attr(new_node);
-	backend_info_t     *old_info = be_get_info(old_node);
-	backend_info_t     *new_info = be_get_info(new_node);
-
-	/* copy the attributes */
-	memcpy(attr_new, attr_old, get_op_attr_size(get_irn_op(old_node)));
-	/* copy out flags */
-	new_info->flags = old_info->flags;
-	new_info->out_infos =
-		DUP_ARR_D(reg_out_info_t, obst, old_info->out_infos);
-	new_info->in_reqs = old_info->in_reqs;
-}
-
 static int sparc_attrs_equal(const ir_node *a, const ir_node *b)
 {
 	const sparc_attr_t *attr_a = get_sparc_attr_const(a);

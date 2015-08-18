@@ -238,4 +238,9 @@ static inline be_asm_attr_t const *get_be_asm_attr_const(ir_node const *const as
 	return (be_asm_attr_t const*)get_irn_generic_attr_const(asmn);
 }
 
+/**
+ * Copies the backend specific attributes from old node to new node.
+ */
+void be_copy_attr(ir_graph *irg, ir_node const *old_node, ir_node *new_node);
+
 #endif

@@ -45,7 +45,6 @@ $mode_fp    = "mode_F";
 );
 
 $default_attr_type = "arm_attr_t";
-$default_copy_attr = "arm_copy_attr";
 
 %init_attr = (
 	arm_attr_t =>

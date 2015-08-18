@@ -18,10 +18,8 @@ my $target_dir = $ARGV[1];
 our $arch;
 our %nodes;
 our $default_attr_type;
-our $default_copy_attr;
 our %init_attr;
 our $custom_init_attr_func;
-our %copy_attr;
 our %reg_classes;
 our %custom_irn_flags;
 
@@ -503,15 +501,9 @@ EOF
 		$obst_new_irop .= "\tset_op_attrs_equal(op, $attrs_equal_func);\n";
 	}
 
-	my $copy_attr_func = $copy_attr{$attr_type};
-	if (!defined($copy_attr_func)) {
-		# don't set a copy_attr function if the node has no additional attributes.
-		if ($attr_type ne "") {
-			$copy_attr_func = $default_copy_attr;
-		}
-	}
-	if (defined($copy_attr_func)) {
-		$obst_new_irop .= "\tset_op_copy_attr(op, $copy_attr_func);\n";
+	# don't set a copy_attr function if the node has no additional attributes.
+	if ($attr_type ne "") {
+		$obst_new_irop .= "\tset_op_copy_attr(op, be_copy_attr);\n";
 	}
 
 	# determine hash function
@@ -548,6 +540,7 @@ $d //= '\0';
 
 open(my $out_c, ">", $target_c) // die("Fatal error: Could not open $target_c, reason: $!\n");
 print $out_c <<EOF;
+#include "benode.h"
 #include "gen_${arch}_regalloc_if.h"
 #include "fourcc.h"
 #include "irgopt.h"

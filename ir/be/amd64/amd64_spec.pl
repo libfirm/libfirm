@@ -53,8 +53,6 @@ $mode_xmm   = "amd64_mode_xmm";
 	commutative => "(arch_irn_flags_t)amd64_arch_irn_flag_commutative_binop",
 );
 
-$default_copy_attr = "amd64_copy_attr";
-
 %init_attr = (
 	amd64_attr_t =>
 		"init_amd64_attributes(res, irn_flags, in_reqs, n_res, op_mode);",
