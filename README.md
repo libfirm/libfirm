@@ -9,8 +9,8 @@ description of Firm can be found in [TLB:99].
 
 libFirm contains algorithms for construction of the SSA form directly from the
 attributed syntax tree. A set of analyses and optimization phases is provided.
-This version includes a complete backend for the IA32 architecture, as well as
-some unfinished backends for SPARC, ARM
+This version includes a complete backend for the IA32 and SPARC architecture,
+as well as unfinished backends for MIPS, ARM, and AMD64.
 
 1.1. Features
 -------------
