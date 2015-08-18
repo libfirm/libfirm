@@ -15,7 +15,7 @@ static ir_node *read_{{node.name}}(read_env_t *env)
 	{{attr.type}} {{attr.name}} = read_{{attr.type|simplify_type}}(env);
 	{%- endfor %}
 	{%- if is_dynamic_pinned(node) %}
-	op_pin_state pin_state = read_pin_state(env);
+	int pinned = read_pinned(env);
 	{%- endif %}
 	{%- if "fragile" in node.flags %}
 	bool throws = read_throws(env);
@@ -32,7 +32,7 @@ static ir_node *read_{{node.name}}(read_env_t *env)
 			{%- endif %}
 		{%- endfor %}
 		{%- if is_dynamic_pinned(node) %}
-		| (pin_state == op_pin_state_floats ? cons_floats : cons_none)
+		| (pinned == 0 ? cons_floats : cons_none)
 		{%- endif %}
 		{%- if "fragile" in node.flags %}
 		| (throws ? cons_throws_exception : cons_none)
@@ -53,7 +53,7 @@ static ir_node *read_{{node.name}}(read_env_t *env)
 	{%- endfor %}
 	{%- if not node.constructorFlags %}
 		{%- if is_dynamic_pinned(node) and hasattr(node, "pinned_init") %}
-	set_irn_pinned(res, pin_state);
+	set_irn_pinned(res, pinned);
 		{%- endif %}
 		{%- if "fragile" in node.flags and hasattr(node, "throws_init") %}
 	ir_set_throws_exception(res, throws);

@@ -153,7 +153,7 @@ ir_node *be_new_Perm(arch_register_class_t const *const cls,
 	ir_node  *irn = new_ir_node(NULL, irg, block, op_be_Perm, mode_T, n, in);
 	init_node_attr(irn, n, arch_irn_flags_none);
 	be_node_attr_t *attr = (be_node_attr_t*)get_irn_generic_attr(irn);
-	attr->exc.pin_state = op_pin_state_pinned;
+	attr->exc.pinned = true;
 	for (int i = 0; i < n; ++i) {
 		const ir_node             *input = in[i];
 		const arch_register_req_t *req   = arch_get_irn_register_req(input);
@@ -195,7 +195,7 @@ static void set_copy_info(ir_node *const irn, ir_graph *const irg, ir_node *cons
 {
 	init_node_attr(irn, 1, flags);
 	be_node_attr_t *const attr = (be_node_attr_t*)get_irn_generic_attr(irn);
-	attr->exc.pin_state = op_pin_state_floats;
+	attr->exc.pinned = false;
 
 	arch_register_req_t   const *const op_req = arch_get_irn_register_req(op);
 	arch_register_class_t const *const cls    = op_req->cls;
@@ -232,7 +232,7 @@ ir_node *be_new_Keep(ir_node *const block, int const n,
 	ir_node  *res = new_ir_node(NULL, irg, block, op_be_Keep, mode_ANY, n, in);
 	init_node_attr(res, 1, arch_irn_flag_schedule_first);
 	be_node_attr_t *attr = (be_node_attr_t*) get_irn_generic_attr(res);
-	attr->exc.pin_state = op_pin_state_pinned;
+	attr->exc.pinned = true;
 
 	for (int i = 0; i < n; ++i) {
 		arch_register_req_t const *const req = arch_get_irn_register_req(in[i]);
@@ -257,10 +257,10 @@ ir_node *be_new_IncSP(const arch_register_t *sp, ir_node *bl,
 	ir_node  *irn  = new_ir_node(NULL, irg, bl, op_be_IncSP, sp->cls->mode,
 	                             ARRAY_SIZE(in), in);
 	init_node_attr(irn, 1, arch_irn_flags_none);
-	be_incsp_attr_t *a    = (be_incsp_attr_t*)get_irn_generic_attr(irn);
-	a->offset             = offset;
-	a->align              = align;
-	a->base.exc.pin_state = op_pin_state_pinned;
+	be_incsp_attr_t *a = (be_incsp_attr_t*)get_irn_generic_attr(irn);
+	a->offset          = offset;
+	a->align           = align;
+	a->base.exc.pinned = true;
 
 	/* Set output constraint to stack register. */
 	be_node_set_register_req_in(irn, 0, sp->cls->class_req);

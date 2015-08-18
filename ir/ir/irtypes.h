@@ -227,9 +227,7 @@ typedef struct sel_attr {
 
 /** Attributes for nodes with exceptions (fragile flag). */
 typedef struct except_attr {
-	unsigned  pin_state : 2;         /**< the pin state for operations with
-	                                      variable pinned state. Contains a
-	                                      op_pin_state */
+	bool      pinned : 1;
 	unsigned  throws_exception : 1; /**< if true a fragile op throws and
 	                                     must produce X_except and X_regular
 	                                     values */

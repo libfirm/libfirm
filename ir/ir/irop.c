@@ -253,7 +253,7 @@ static unsigned hash_typeconst(const ir_node *node)
 /** Compares two exception attributes */
 static bool except_attrs_equal(const except_attr *a, const except_attr *b)
 {
-	return a->pin_state == b->pin_state;
+	return a->pinned == b->pinned;
 }
 
 /** Compares the attributes of two Const nodes. */

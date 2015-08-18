@@ -419,15 +419,15 @@ def _preprocess_node(node):
 	if is_dynamic_pinned(node):
 		if node.pinned_init is not None:
 			initattrs.append(
-				Attribute("pin_state", fqname="exc.pin_state",
-				          type="op_pin_state", init=node.pinned_init))
+				Attribute("pinned", fqname="exc.pinned",
+				          type="int", init=node.pinned_init))
 		else:
 			arguments.append(
-				Attribute("pin_state", type="op_pin_state",
+				Attribute("pinned", type="int",
 				          comment = "pinned state"))
 			initattrs.append(
-				Attribute("pin_state", fqname="exc.pin_state",
-				          type="op_pin_state", init="pin_state"))
+				Attribute("pin_state", fqname="exc.pinned",
+				          type="int", init="pinned"))
 	if node.throws_init is not None:
 		initattrs.append(
 			Attribute("throws_exception", fqname="exc.throws_exception",

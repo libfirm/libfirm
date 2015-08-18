@@ -111,17 +111,17 @@ FIRM_API ir_graph *get_irn_irg(const ir_node *node);
    of node cast to long. */
 FIRM_API long get_irn_node_nr(const ir_node *node);
 
-/** Returns the pinned state of a node.
- *
- *  Returns whether the node _always_ must be pinned.
- *  I.e., the node is not floating after global cse.
- *
- * @returns Either state op_pin_state_pinned or op_pin_state_floats.
+/**
+ * Returns whether a node is pinned.
+ * A pinned node must not be moved to a different block even if the operands
+ * would allow this.
+ * Returns 1 if node is pinned, 0 otherwise.
  */
-FIRM_API op_pin_state get_irn_pinned(const ir_node *node);
+FIRM_API int get_irn_pinned(const ir_node *node);
 
-/** Sets pin state for nodes with op pin state op_pin_state_exc_pinned */
-FIRM_API void set_irn_pinned(ir_node *node, op_pin_state state);
+/** Sets pin state for nodes with op pin state op_pin_state_exc_pinned.
+ * @p pinned should be 0 or 1, @see get_irn_pinned() */
+FIRM_API void set_irn_pinned(ir_node *node, int pinned);
 
 /**
  * IR node constructor.

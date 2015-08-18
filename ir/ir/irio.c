@@ -1528,9 +1528,9 @@ static ir_mode_arithmetic read_mode_arithmetic(read_env_t *env)
 	return (ir_mode_arithmetic)read_enum(env, tt_mode_arithmetic);
 }
 
-static op_pin_state read_pin_state(read_env_t *env)
+static bool read_pinned(read_env_t *env)
 {
-	return (op_pin_state)read_enum(env, tt_pin_state);
+	return read_enum(env, tt_pin_state) == op_pin_state_pinned;
 }
 
 static ir_type_state read_type_state(read_env_t *env)
@@ -1989,7 +1989,7 @@ static ir_node *read_ASM(read_env_t *env)
 		ARR_APP1(ident*, clobbers, clobber);
 	}
 
-	op_pin_state pin_state = read_pin_state(env);
+	int pinned = read_pinned(env);
 
 	int       n_in = read_preds(env);
 	ir_node **in   = (ir_node**)obstack_finish(&env->preds_obst);
@@ -2003,7 +2003,7 @@ static ir_node *read_ASM(read_env_t *env)
 	                             input_constraints, ARR_LEN(output_constraints),
 	                             output_constraints, ARR_LEN(clobbers),
 	                             clobbers, asm_text);
-	set_irn_pinned(newnode, pin_state);
+	set_irn_pinned(newnode, pinned);
 	obstack_free(&env->preds_obst, in);
 	DEL_ARR_F(clobbers);
 	DEL_ARR_F(output_constraints);

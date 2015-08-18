@@ -271,15 +271,13 @@ static inline void *get_irn_link_(const ir_node *node)
  *
  * Intern version of libFirm.
  */
-static inline op_pin_state get_irn_pinned_(const ir_node *node)
+static inline int get_irn_pinned_(const ir_node *node)
 {
-	op_pin_state state;
 	assert(node->kind == k_ir_node);
 	/* Check opcode */
-	state = get_op_pinned_(get_irn_op_(node));
-
+	op_pin_state state = get_op_pinned_(get_irn_op_(node));
 	if (state >= op_pin_state_exc_pinned)
-		return (op_pin_state)node->attr.except.pin_state;
+		return (op_pin_state)node->attr.except.pinned;
 
 	return state;
 }

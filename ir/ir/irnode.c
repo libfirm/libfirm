@@ -313,17 +313,16 @@ void *(get_irn_link)(const ir_node *node)
 	return get_irn_link_(node);
 }
 
-op_pin_state (get_irn_pinned)(const ir_node *node)
+int (get_irn_pinned)(const ir_node *node)
 {
 	return get_irn_pinned_(node);
 }
 
-void set_irn_pinned(ir_node *node, op_pin_state state)
+void set_irn_pinned(ir_node *node, int pinned)
 {
 	assert(get_op_pinned(get_irn_op(node)) >= op_pin_state_exc_pinned);
-	assert(state == op_pin_state_pinned || state == op_pin_state_floats);
 
-	node->attr.except.pin_state = state;
+	node->attr.except.pinned = (pinned != 0);
 }
 
 long get_irn_node_nr(const ir_node *node)
