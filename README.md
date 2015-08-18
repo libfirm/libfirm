@@ -4,8 +4,8 @@ libFirm -- A graph based SSA intermediate representation
 1. Introduction
 ---------------
 
-The Firm library implements the Firm intermediate representation (ir). An old
-description of Firm can be found in [TLB:99].
+The Firm library implements the Firm intermediate representation (ir).
+You can find an old description of Firm in [TLB:99].
 
 libFirm contains algorithms for construction of the SSA form directly from the
 attributed syntax tree. A set of analyses and optimization phases is provided.
