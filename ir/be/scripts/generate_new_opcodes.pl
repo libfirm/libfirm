@@ -427,11 +427,7 @@ static inline bool is_$op(ir_node const *const n)
 
 EOF
 
-	my $attr_type = $n{attr_type};
-	if (!defined($attr_type)) {
-		$attr_type = $default_attr_type;
-		$n{attr_type} = $attr_type;
-	}
+	my $attr_type = $n{attr_type} //= $default_attr_type;
 
 	my %constructors;
 	if (exists($n{constructors})) {
@@ -479,13 +475,10 @@ EOF
 		$op_flags_joined = "irop_flag_none";
 	}
 
-	my $attr_size = "0";
-	if ($attr_type ne "") {
-		$attr_size = "sizeof($attr_type)"
-	}
-
-	my $state = $n{state} // "floats";
-	$obst_new_irop .= "\top = new_ir_op(cur_opcode + iro_$op, \"$op\", op_pin_state_$state, $op_flags_joined, ".translate_arity($arity).", -1, $attr_size);\n";
+	my $state     = $n{state} // "floats";
+	my $op_arity  = translate_arity($arity);
+	my $attr_size = $attr_type ne "" ? "sizeof($attr_type)" : "0";
+	$obst_new_irop .= "\top = new_ir_op(cur_opcode + iro_$op, \"$op\", op_pin_state_$state, $op_flags_joined, $op_arity, -1, $attr_size);\n";
 
 	my $dump_func = $n{dump_func} // "${arch}_dump_node";
 	$obst_new_irop .= "\tset_op_dump(op, $dump_func);\n";
