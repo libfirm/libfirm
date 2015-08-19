@@ -33,7 +33,7 @@ struct reg_out_info_t {
 
 struct backend_info_t {
 	sched_info_t                sched_info;
-	/** Additional register pressure for the fist 4 regclasses */
+	/** Additional register pressure for the first 4 regclasses */
 	uint8_t                     add_pressure[4];
 	const arch_register_req_t **in_reqs;
 	reg_out_info_t             *out_infos;
