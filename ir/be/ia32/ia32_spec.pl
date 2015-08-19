@@ -66,8 +66,6 @@ $mode_fpcw  = "ia32_mode_fpcw";
 	],
 );
 
-$default_attr_type = "ia32_attr_t";
-
 sub ia32_custom_init_attr {
 	my ($constr, $node, $name) = @_;
 

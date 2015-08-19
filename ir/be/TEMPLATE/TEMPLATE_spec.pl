@@ -70,8 +70,6 @@ $mode_fp = "mode_F";  # mode used by floatingpoint registers
 	]
 );
 
-$default_attr_type = "TEMPLATE_attr_t";
-
 my $binop = {
 	irn_flags => [ "rematerializable" ],
 	in_reqs   => [ "gp", "gp" ],

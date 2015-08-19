@@ -44,8 +44,6 @@ $mode_fp    = "mode_F";
 	],
 );
 
-$default_attr_type = "arm_attr_t";
-
 %init_attr = (
 	arm_attr_t =>
 		"init_arm_attributes(res, irn_flags, in_reqs, n_res);",

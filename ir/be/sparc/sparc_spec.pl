@@ -98,8 +98,6 @@ $mode_fp4     = "sparc_mode_Q";
 	]
 );
 
-$default_attr_type = "sparc_attr_t";
-
 %init_attr = (
 	sparc_attr_t            => "be_info_init_irn(res, irn_flags, in_reqs, n_res);",
 	sparc_load_store_attr_t => "be_info_init_irn(res, irn_flags, in_reqs, n_res);",
