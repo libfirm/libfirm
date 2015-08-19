@@ -611,34 +611,22 @@ static void dump_node(FILE *f, const ir_node *irn, dump_reason_t reason)
  * ir_op-Operation:
  * Copies the backend specific attributes from old node to new node.
  */
-static void copy_attr(ir_graph *irg, const ir_node *old_node, ir_node *new_node)
+static void copy_attr(ir_graph *const irg, ir_node const *const old_node, ir_node *const new_node)
 {
 	assert(is_be_node(old_node));
 	assert(is_be_node(new_node));
 
-	const void     *old_attr = get_irn_generic_attr_const(old_node);
-	void           *new_attr = get_irn_generic_attr(new_node);
-	struct obstack *obst     = be_get_be_obst(irg);
-	backend_info_t *old_info = be_get_info(old_node);
-	backend_info_t *new_info = be_get_info(new_node);
+	void const *const old_attr = get_irn_generic_attr_const(old_node);
+	void       *const new_attr = get_irn_generic_attr(new_node);
 	memcpy(new_attr, old_attr, get_op_attr_size(get_irn_op(old_node)));
-	new_info->flags     = old_info->flags;
-	new_info->out_infos = old_info->out_infos
-	                    ? DUP_ARR_D(reg_out_info_t, obst, old_info->out_infos)
-	                    : NULL;
 
-	/* input infos */
-	if (old_info->in_reqs != NULL) {
-		unsigned n_ins = get_irn_arity(old_node);
-		/* need dynamic in infos? */
-		if (is_irn_dynamic(old_node)) {
-			new_info->in_reqs = NEW_ARR_F(const arch_register_req_t*, n_ins);
-		} else {
-			new_info->in_reqs = be_allocate_in_reqs(irg, n_ins);
-		}
-		MEMCPY(new_info->in_reqs, old_info->in_reqs, n_ins);
-	} else {
-		new_info->in_reqs = NULL;
+	backend_info_t *const old_info = be_get_info(old_node);
+	backend_info_t *const new_info = be_get_info(new_node);
+	*new_info = *old_info;
+	memset(&new_info->sched_info, 0, sizeof(new_info->sched_info));
+	if (new_info->out_infos) {
+		struct obstack *const obst = be_get_be_obst(irg);
+		new_info->out_infos = DUP_ARR_D(reg_out_info_t, obst, new_info->out_infos);
 	}
 }
 
