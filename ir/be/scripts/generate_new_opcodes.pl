@@ -666,10 +666,10 @@ sub is_reg_class
     return exists($reg_classes{$name});
 }
 
-sub is_ambiguous
+sub is_reg
 {
 	my ($name) = @_;
-	return exists($reg_classes{$name}) && exists($reg2class{$name});
+	return exists($reg2class{$name});
 }
 
 ###
@@ -892,9 +892,12 @@ sub generate_requirements
 		$is_reg = 1;
 	} elsif ($reqs =~ s/^cls-//) {
 		$is_cls = 1;
-	}
-	if (is_ambiguous($reqs) && !$is_reg && !$is_cls) {
-		die("Fatal error: $reqs is ambiguous (try reg-$reqs or cls-$reqs) at node $op")
+	} else {
+		$is_cls = is_reg_class($reqs);
+		$is_reg = is_reg($reqs);
+		if ($is_cls && $is_reg) {
+			die("Fatal error: $reqs is ambiguous (try reg-$reqs or cls-$reqs) at node $op")
+		}
 	}
 
 	my $class;
@@ -905,7 +908,7 @@ sub generate_requirements
 		return "arch_memory_requirement";
 	} elsif ($reqs eq "none") {
 		return "arch_no_requirement";
-	} elsif (is_reg_class($reqs) && !$is_reg) {
+	} elsif ($is_cls) {
 		if (!defined($flags)) {
 			return "${arch}_class_reg_req_$reqs";
 		}
@@ -916,6 +919,9 @@ sub generate_requirements
 	.width = $width,$extra
 };
 EOF
+	} elsif ($is_reg && !defined($flags)) {
+		$class = get_reg_class($reqs);
+		return "${arch}_single_reg_req_${class}_$reqs";
 	} else {
 		my ($regclass, $limit_bitset, $same_pos, $different_pos)
 			= build_subset_class_func($node, $op, $idx, $is_in, $reqs, $flags);
