@@ -906,6 +906,9 @@ sub generate_requirements
 	} elsif ($reqs eq "none") {
 		return "arch_no_requirement";
 	} elsif (is_reg_class($reqs) && !$is_reg) {
+		if (!defined($flags)) {
+			return "${arch}_class_reg_req_$reqs";
+		}
 		$class  = $reqs;
 		$result = <<EOF;
 {
