@@ -1451,10 +1451,10 @@ static void create_duffs_block(ir_graph *const irg)
 
 	DB((dbg, LEVEL_4, "mod ins %N %N\n", ems, loop_info.step));
 	ir_node *const nomem   = get_irg_no_mem(irg);
-	ir_node *const ems_mod = new_r_Mod(block1, nomem, ems, loop_info.step, mode, op_pin_state_pinned);
+	ir_node *const ems_mod = new_r_Mod(block1, nomem, ems, loop_info.step, mode, true);
 	ir_node *const mod_res = new_r_Proj(ems_mod, mode_Iu, pn_Mod_res);
 
-	ir_node *const ems_div = new_r_Div(block1, nomem, ems, loop_info.step, mode, op_pin_state_pinned);
+	ir_node *const ems_div = new_r_Div(block1, nomem, ems, loop_info.step, mode, true);
 	ir_node *const div_res = new_r_Proj(ems_div, mode, pn_Div_res);
 
 	DB((dbg, LEVEL_4, "New modulus node %N\n", ems_mod));
@@ -1530,7 +1530,7 @@ static void create_duffs_block(ir_graph *const irg)
 
 	/* count % unroll_nr */
 	ir_node *const unroll_c = new_r_Const_long(irg, mode, (long)unroll_nr);
-	ir_node *const duff_mod = new_r_Mod(duff_block, nomem, count_phi, unroll_c, mode, op_pin_state_pinned);
+	ir_node *const duff_mod = new_r_Mod(duff_block, nomem, count_phi, unroll_c, mode, true);
 	ir_node *const proj     = new_r_Proj(duff_mod, mode, pn_Mod_res);
 	/* condition does NOT create itself in the block of the proj! */
 	ir_node *const cond     = new_r_Cond(duff_block, proj);

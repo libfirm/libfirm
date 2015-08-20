@@ -1049,13 +1049,6 @@ int irn_verify(const ir_node *const n)
 			fine = false;
 		}
 	}
-	if (get_op_pinned(op) >= op_pin_state_exc_pinned) {
-		op_pin_state state = get_irn_pinned(n);
-		if (state != op_pin_state_floats && state != op_pin_state_pinned) {
-			warn(n, "invalid pin state (%d)", (int)state);
-			fine = false;
-		}
-	}
 
 	if (op->ops.verify_node != NULL)
 		fine &= op->ops.verify_node(n);

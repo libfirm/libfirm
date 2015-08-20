@@ -1202,7 +1202,7 @@ static ir_node *gen_float_const(dbg_info *dbgi, ir_node *block, ir_tarval *tv)
 		= create_ldf(dbgi, block, hi, mem, mode, entity, 0, false);
 	ir_node   *proj   = be_new_Proj(new_op, pn_sparc_Ldf_res);
 
-	set_irn_pinned(new_op, op_pin_state_floats);
+	set_irn_pinned(new_op, false);
 	return proj;
 }
 
@@ -1427,8 +1427,8 @@ static ir_node *create_ftoi(dbg_info *dbgi, ir_node *block, ir_node *op,
 	ir_node  *ld    = new_bd_sparc_Ld_imm(dbgi, block, sp, stf, mode_gp,
 	                                      NULL, 0, true);
 	ir_node  *res   = be_new_Proj(ld, pn_sparc_Ld_res);
-	set_irn_pinned(stf, op_pin_state_floats);
-	set_irn_pinned(ld, op_pin_state_floats);
+	set_irn_pinned(stf, false);
+	set_irn_pinned(ld, false);
 	return res;
 }
 
@@ -1445,8 +1445,8 @@ static ir_node *create_itof(dbg_info *dbgi, ir_node *block, ir_node *op,
 	                                     NULL, 0, true);
 	ir_node  *res   = be_new_Proj(ldf, pn_sparc_Ldf_res);
 	unsigned  bits  = get_mode_size_bits(dst_mode);
-	set_irn_pinned(st, op_pin_state_floats);
-	set_irn_pinned(ldf, op_pin_state_floats);
+	set_irn_pinned(st, false);
+	set_irn_pinned(ldf, false);
 
 	if (bits == 32) {
 		return new_bd_sparc_fitof_s(dbgi, block, res, dst_mode);
@@ -1660,7 +1660,7 @@ static ir_node *bitcast_int_to_float(dbg_info *dbgi, ir_node *block,
 	ir_node  *st    = new_bd_sparc_St_imm(dbgi, block, value0, sp, nomem,
 	                                      mode_gp, NULL, 0, true);
 	arch_add_irn_flags(st, arch_irn_flag_spill);
-	set_irn_pinned(st, op_pin_state_floats);
+	set_irn_pinned(st, false);
 
 	ir_mode *mode;
 	ir_node *mem;
@@ -1670,7 +1670,7 @@ static ir_node *bitcast_int_to_float(dbg_info *dbgi, ir_node *block,
 		arch_add_irn_flags(st1, arch_irn_flag_spill);
 		ir_node *in[2] = { st, st1 };
 		ir_node *sync  = new_r_Sync(block, 2, in);
-		set_irn_pinned(st1, op_pin_state_floats);
+		set_irn_pinned(st1, false);
 		mem  = sync;
 		mode = mode_fp2;
 	} else {
@@ -1679,7 +1679,7 @@ static ir_node *bitcast_int_to_float(dbg_info *dbgi, ir_node *block,
 	}
 
 	ir_node *ldf = create_ldf(dbgi, block, sp, mem, mode, NULL, 0, true);
-	set_irn_pinned(ldf, op_pin_state_floats);
+	set_irn_pinned(ldf, false);
 
 	return be_new_Proj(ldf, pn_sparc_Ldf_res);
 }
@@ -1711,16 +1711,16 @@ static void bitcast_float_to_int(dbg_info *dbgi, ir_node *block,
 		ir_node  *stf   = create_stf(dbgi, block, new_value, stack, nomem,
 		                             float_mode, NULL, 0, true);
 		arch_add_irn_flags(stf, arch_irn_flag_spill);
-		set_irn_pinned(stf, op_pin_state_floats);
+		set_irn_pinned(stf, false);
 
 		ir_node *ld = new_bd_sparc_Ld_imm(dbgi, block, stack, stf, mode_gp, NULL, 0, true);
-		set_irn_pinned(ld, op_pin_state_floats);
+		set_irn_pinned(ld, false);
 		result[0] = be_new_Proj(ld, pn_sparc_Ld_res);
 
 		if (bits == 64) {
 			ir_node *ld2 = new_bd_sparc_Ld_imm(dbgi, block, stack, stf, mode_gp,
 											   NULL, 4, true);
-			set_irn_pinned(ld, op_pin_state_floats);
+			set_irn_pinned(ld, false);
 			result[1] = be_new_Proj(ld2, pn_sparc_Ld_res);
 
 			arch_add_irn_flags(ld, (arch_irn_flags_t)sparc_arch_irn_flag_needs_64bit_spillslot);
@@ -1835,7 +1835,7 @@ static ir_node *gen_Call(ir_node *node)
 			str = new_bd_sparc_St_imm(dbgi, new_block, partial_value, incsp,
 			                          new_mem, mode, NULL, offset, true);
 		}
-		set_irn_pinned(str, op_pin_state_floats);
+		set_irn_pinned(str, false);
 		sync_ins[sync_arity++] = str;
 	}
 
@@ -2210,8 +2210,8 @@ static ir_node *gen_Bitcast(ir_node *node)
 		arch_add_irn_flags(st, arch_irn_flag_spill);
 		ir_node *const ldf = create_ldf(dbgi, new_block, sp, st, dst_mode, NULL, 0, true);
 		ir_node *const res = be_new_Proj(ldf, pn_sparc_Ldf_res);
-		set_irn_pinned(st, op_pin_state_floats);
-		set_irn_pinned(ldf, op_pin_state_floats);
+		set_irn_pinned(st, false);
+		set_irn_pinned(ldf, false);
 		return res;
 	}
 	case irma_ieee754: {
@@ -2222,8 +2222,8 @@ static ir_node *gen_Bitcast(ir_node *node)
 		arch_add_irn_flags(stf, arch_irn_flag_spill);
 		ir_node *const ld  = new_bd_sparc_Ld_imm(dbgi, new_block, sp, stf, dst_mode, NULL, 0, true);
 		ir_node *const res = be_new_Proj(ld, pn_sparc_Ld_res);
-		set_irn_pinned(stf, op_pin_state_floats);
-		set_irn_pinned(ld, op_pin_state_floats);
+		set_irn_pinned(stf, false);
+		set_irn_pinned(ld, false);
 		return res;
 	}
 	default:
@@ -2391,7 +2391,7 @@ static ir_node *gen_Proj_Proj_Start(ir_node *node)
 			                            param->entity, 0, true);
 			value = be_new_Proj(load, pn_sparc_Ld_res);
 		}
-		set_irn_pinned(load, op_pin_state_floats);
+		set_irn_pinned(load, false);
 
 		return value;
 	}

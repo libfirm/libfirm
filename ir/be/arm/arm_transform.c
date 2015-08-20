@@ -1276,12 +1276,12 @@ static ir_node *ints_to_double(dbg_info *dbgi, ir_node *block, ir_node *node0,
 	                                 arm_mode_gp, NULL, 0, 4, true);
 	ir_node  *in[]  = { str0, str1 };
 	ir_node  *sync  = new_r_Sync(block, ARRAY_SIZE(in), in);
-	set_irn_pinned(str0, op_pin_state_floats);
-	set_irn_pinned(str1, op_pin_state_floats);
+	set_irn_pinned(str0, false);
+	set_irn_pinned(str1, false);
 
 	ir_node *ldf = new_bd_arm_Ldf(dbgi, block, stack, sync, mode_D, NULL, 0, 0,
 	                              true);
-	set_irn_pinned(ldf, op_pin_state_floats);
+	set_irn_pinned(ldf, false);
 
 	return be_new_Proj(ldf, pn_arm_Ldf_res);
 }
@@ -1293,11 +1293,11 @@ static ir_node *int_to_float(dbg_info *dbgi, ir_node *block, ir_node *node)
 	ir_node  *nomem = get_irg_no_mem(irg);
 	ir_node  *str   = new_bd_arm_Str(dbgi, block, stack, node, nomem,
 	                                 arm_mode_gp, NULL, 0, 0, true);
-	set_irn_pinned(str, op_pin_state_floats);
+	set_irn_pinned(str, false);
 
 	ir_node *ldf = new_bd_arm_Ldf(dbgi, block, stack, str, mode_F, NULL, 0, 0,
 	                              true);
-	set_irn_pinned(ldf, op_pin_state_floats);
+	set_irn_pinned(ldf, false);
 
 	return be_new_Proj(ldf, pn_arm_Ldf_res);
 }
@@ -1309,11 +1309,11 @@ static ir_node *float_to_int(dbg_info *dbgi, ir_node *block, ir_node *node)
 	ir_node  *nomem = get_irg_no_mem(irg);
 	ir_node  *stf   = new_bd_arm_Stf(dbgi, block, stack, node, nomem, mode_F,
 	                                 NULL, 0, 0, true);
-	set_irn_pinned(stf, op_pin_state_floats);
+	set_irn_pinned(stf, false);
 
 	ir_node *ldr = new_bd_arm_Ldr(dbgi, block, stack, stf, arm_mode_gp,
 	                              NULL, 0, 0, true);
-	set_irn_pinned(ldr, op_pin_state_floats);
+	set_irn_pinned(ldr, false);
 
 	return be_new_Proj(ldr, pn_arm_Ldr_res);
 }
@@ -1326,14 +1326,14 @@ static void double_to_ints(dbg_info *dbgi, ir_node *block, ir_node *node,
 	ir_node  *nomem = get_irg_no_mem(irg);
 	ir_node  *stf   = new_bd_arm_Stf(dbgi, block, stack, node, nomem, mode_D,
 	                                 NULL, 0, 0, true);
-	set_irn_pinned(stf, op_pin_state_floats);
+	set_irn_pinned(stf, false);
 
 	ir_node *ldr0 = new_bd_arm_Ldr(dbgi, block, stack, stf, arm_mode_gp, NULL,
 	                               0, 0, true);
-	set_irn_pinned(ldr0, op_pin_state_floats);
+	set_irn_pinned(ldr0, false);
 	ir_node *ldr1 = new_bd_arm_Ldr(dbgi, block, stack, stf, arm_mode_gp, NULL,
 	                               0, 4, true);
-	set_irn_pinned(ldr1, op_pin_state_floats);
+	set_irn_pinned(ldr1, false);
 
 	*out_value0 = be_new_Proj(ldr0, pn_arm_Ldr_res);
 	*out_value1 = be_new_Proj(ldr1, pn_arm_Ldr_res);
@@ -1540,7 +1540,7 @@ static ir_node *gen_Proj_Proj_Start(ir_node *node)
 			                       param->entity, 0, 0, true);
 			value = be_new_Proj(load, pn_arm_Ldr_res);
 		}
-		set_irn_pinned(load, op_pin_state_floats);
+		set_irn_pinned(load, false);
 
 		return value;
 	}

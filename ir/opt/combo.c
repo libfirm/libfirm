@@ -1305,7 +1305,7 @@ static void collect_touched(list_head *list, int idx, environment_t *env)
 
 			/* ignore the "control input" for non-pinned nodes
 			if we are running in GCSE mode */
-			if (idx < end_idx && get_irn_pinned(succ) != op_pin_state_pinned)
+			if (idx < end_idx && !get_irn_pinned(succ))
 				continue;
 
 			node_t *y = get_irn_node(succ);
@@ -1583,7 +1583,7 @@ static void *lambda_partition(const node_t *node, environment_t *env)
 	/* ignore the "control input" for non-pinned nodes
 	   if we are running in GCSE mode */
 	ir_node *skipped = skip_Proj(irn);
-	if (i < env->end_idx && get_irn_pinned(skipped) != op_pin_state_pinned)
+	if (i < env->end_idx && !get_irn_pinned(skipped))
 		return NULL;
 
 	ir_node *pred = i == -1 ? get_irn_n(skipped, i) : get_irn_n(irn, i);
@@ -1610,7 +1610,7 @@ static void *lambda_commutative_partition(const node_t *node, environment_t *env
 	   if we are running in GCSE mode */
 	ir_node *irn     = node->node;
 	ir_node *skipped = skip_Proj(irn);
-	if (i < env->end_idx && get_irn_pinned(skipped) != op_pin_state_pinned)
+	if (i < env->end_idx && !get_irn_pinned(skipped))
 		return NULL;
 
 	if (i == -1) {
@@ -2290,7 +2290,7 @@ static void compute(node_t *node)
 
 	/* for pinned nodes, check its control input */
 	ir_node *irn = node->node;
-	if (!is_Block(irn) && get_irn_pinned(skip_Proj(irn)) == op_pin_state_pinned) {
+	if (!is_Block(irn) && get_irn_pinned(skip_Proj(irn))) {
 		node_t *block = get_irn_node(get_nodes_block(irn));
 
 		if (!is_reachable(block)) {

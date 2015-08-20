@@ -336,7 +336,7 @@ static ir_node *create_float_const(dbg_info *dbgi, ir_node *block,
 		pn_res = pn_amd64_movs_xmm_res;
 	}
 	arch_set_irn_register_reqs_in(load, mem_reqs);
-	set_irn_pinned(load, op_pin_state_floats);
+	set_irn_pinned(load, false);
 
 	return be_new_Proj(load, pn_res);
 }
@@ -1664,7 +1664,7 @@ static ir_node *gen_Call(ir_node *node)
 
 		arch_set_irn_register_reqs_in(store, reqs);
 
-		set_irn_pinned(store, op_pin_state_floats);
+		set_irn_pinned(store, false);
 		sync_ins[sync_arity++] = store;
 	}
 

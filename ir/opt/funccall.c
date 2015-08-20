@@ -158,7 +158,7 @@ static void fix_const_call_lists(ir_graph *irg, env_t *ctx)
 		set_Call_mem(call, get_irg_no_mem(irg));
 
 		/* finally, this call can float */
-		set_irn_pinned(call, op_pin_state_floats);
+		set_irn_pinned(call, false);
 		hook_func_call(irg, call);
 	}
 

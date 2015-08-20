@@ -2212,8 +2212,7 @@ again:;
 
 			/* create a new store and replace the two small stores */
 			ir_cons_flags flags = cons_unaligned;
-			if (get_irn_pinned(store0) == op_pin_state_floats
-			 || get_irn_pinned(store1) == op_pin_state_floats)
+			if (!get_irn_pinned(store0) || !get_irn_pinned(store1))
 				flags |= cons_floats;
 			ir_node *new_store
 				= new_rd_Store(dbgi, block, mem, store_ptr0, or, type, flags);

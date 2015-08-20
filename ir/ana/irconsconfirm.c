@@ -290,8 +290,7 @@ static void handle_if(ir_node *block, ir_node *cmp, ir_relation rel, env_t *env)
 
 				env->num_eq += 1;
 			} else if (block_dominates(blk, cond_block)
-					&& is_Const(right)
-					&& get_irn_pinned(user) == op_pin_state_floats) {
+					&& is_Const(right) && !get_irn_pinned(user)) {
 				/*
 				 * left == Const and we found a movable user of left in a
 				 * dominator of the Cond block

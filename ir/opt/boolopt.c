@@ -429,9 +429,8 @@ static void collect_phis(ir_node *node, void *env)
 	}
 
 	/* Ignore control flow nodes, these will be removed. */
-	if (get_irn_pinned(node) == op_pin_state_pinned &&
-			!is_Block(node) && !is_cfop(node)) {
-				/* found a pinned non-cf node, mark its block */
+	if (get_irn_pinned(node) && !is_Block(node) && !is_cfop(node)) {
+		/* found a pinned non-cf node, mark its block */
 		ir_node *block = get_nodes_block(node);
 		set_Block_mark(block, 1);
 	}

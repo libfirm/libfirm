@@ -58,7 +58,7 @@ static void place_floats_early(ir_node *n, waitq *worklist)
 	 * This works because in firm each cycle contains a Phi or Block node
 	 * (which are pinned)
 	 */
-	if (get_irn_pinned(n) != op_pin_state_floats) {
+	if (get_irn_pinned(n)) {
 		/* we cannot move pinned nodes */
 		foreach_irn_in(n, i, pred) {
 			pdeq_putr(worklist, pred);
@@ -95,10 +95,9 @@ static void place_floats_early(ir_node *n, waitq *worklist)
 
 /**
  * Floating nodes form subgraphs that begin at nodes as Const, Load,
- * Start, Call and that end at op_pin_state_pinned nodes as Store, Call.
+ * Start, Call and that end at pinned nodes as Store, Call.
  * Place_early places all floating nodes reachable from its argument through
- * floating nodes and adds all beginnings at op_pin_state_pinned nodes to the
- * worklist.
+ * floating nodes and adds all beginnings at pinned nodes to the worklist.
  *
  * @param worklist   a worklist, used for the algorithm, empty on in/output
  */
@@ -265,7 +264,7 @@ static void place_floats_late(ir_node *n, pdeq *worklist)
 		return;
 
 	/* break cycles at pinned nodes (see place place_floats_early) as to why */
-	if (get_irn_pinned(n) != op_pin_state_floats) {
+	if (get_irn_pinned(n)) {
 		foreach_out_edge(n, edge) {
 			ir_node *succ = get_edge_src_irn(edge);
 			pdeq_putr(worklist, succ);

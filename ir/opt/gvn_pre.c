@@ -625,7 +625,7 @@ static unsigned is_nice_value(ir_node *n)
 		return get_Store_volatility(n) == volatility_non_volatile;
 #endif
 
-	if (get_irn_pinned(n) == op_pin_state_pinned)
+	if (get_irn_pinned(n))
 		return 0;
 
 	if (! mode_is_data(mode)) {

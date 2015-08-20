@@ -4806,7 +4806,7 @@ static ir_node *transform_node_Proj_Div(ir_node *proj)
 			ir_node *new_mem = get_Div_mem(div);
 			new_mem = skip_Pin(new_mem);
 			set_Div_mem(div, new_mem);
-			set_irn_pinned(div, op_pin_state_floats);
+			set_irn_pinned(div, false);
 		}
 
 		unsigned proj_nr = get_Proj_num(proj);
@@ -4830,7 +4830,7 @@ static ir_node *transform_node_Proj_Div(ir_node *proj)
 				/* This node can only float up to the Confirm block */
 				new_mem = new_r_Pin(get_nodes_block(confirm), new_mem);
 			}
-			set_irn_pinned(div, op_pin_state_floats);
+			set_irn_pinned(div, false);
 			/* this is a Div without exception, we can remove the memory edge */
 			set_Div_mem(div, new_mem);
 			return res;
@@ -4858,7 +4858,7 @@ static ir_node *transform_node_Proj_Mod(ir_node *proj)
 			ir_node *new_mem = get_Mod_mem(mod);
 			new_mem = skip_Pin(new_mem);
 			set_Mod_mem(mod, new_mem);
-			set_irn_pinned(mod, op_pin_state_floats);
+			set_irn_pinned(mod, false);
 		}
 
 		unsigned proj_nr = get_Proj_num(proj);
@@ -7448,7 +7448,7 @@ static ir_node *transform_node_Load(ir_node *n)
 
 	const ir_node *confirm;
 	if (value_not_null(ptr, &confirm) && confirm == NULL) {
-		set_irn_pinned(n, op_pin_state_floats);
+		set_irn_pinned(n, false);
 	}
 
 	/* if our memory predecessor is a load from the same address, then reuse the
@@ -7538,7 +7538,7 @@ static ir_node *transform_node_Store(ir_node *n)
 
 	const ir_node *confirm;
 	if (value_not_null(ptr, &confirm) && confirm == NULL) {
-		set_irn_pinned(n, op_pin_state_floats);
+		set_irn_pinned(n, false);
 	}
 	return n;
 }
@@ -7723,7 +7723,7 @@ int identities_cmp(const void *elt, const void *key)
 	if (is_Block(a))
 		return 1;
 
-	if (get_irn_pinned(a) == op_pin_state_pinned) {
+	if (get_irn_pinned(a)) {
 		/* for pinned nodes, the block inputs must be equal */
 		if (get_nodes_block(a) != get_nodes_block(b))
 			return 1;
@@ -7939,7 +7939,7 @@ ir_node *optimize_node(ir_node *n)
 	 *
 	 * Checks whether n is already available.
 	 * The block input is used to distinguish different subexpressions. Right
-	 * now all nodes are op_pin_state_pinned to blocks, i.e., the CSE only finds common
+	 * now all nodes are pinned to blocks, i.e., the CSE only finds common
 	 * subexpressions within a block.
 	 */
 	if (get_opt_cse())
@@ -7983,7 +7983,7 @@ ir_node *optimize_in_place_2(ir_node *n)
 	/** common subexpression elimination **/
 	/* Checks whether n is already available. */
 	/* The block input is used to distinguish different subexpressions.
-	 * Right now all nodes are op_pin_state_pinned to blocks, i.e., the cse
+	 * Right now all nodes are pinned to blocks, i.e., the cse
 	 * only finds common subexpressions within a block. */
 	if (get_opt_cse()) {
 		ir_node *o = n;

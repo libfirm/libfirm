@@ -279,7 +279,7 @@ int i_mapper_pow(ir_node *call)
 		}
 
 		irn  = new_r_Const_one(irg, mode);
-		div  = new_rd_Div(dbg, block, mem, irn, left, mode, op_pin_state_pinned);
+		div  = new_rd_Div(dbg, block, mem, irn, left, mode, true);
 		mem  = new_r_Proj(div, mode_M, pn_Div_M);
 		irn  = new_r_Proj(div, mode, pn_Div_res);
 		if (ir_throws_exception(call)) {

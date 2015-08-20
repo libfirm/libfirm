@@ -412,7 +412,7 @@ static void collect_phis(ir_node *node, void *env)
 
 		add_Block_phi(block, node);
 	} else {
-		if (!is_Block(node) && get_irn_pinned(node) == op_pin_state_pinned) {
+		if (!is_Block(node) && get_irn_pinned(node)) {
 			/*
 			 * Ignore control flow nodes (except Raise), these will be removed.
 			 */

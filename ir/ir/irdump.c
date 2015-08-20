@@ -549,8 +549,7 @@ const char *get_irg_dump_name(const ir_graph *irg)
 static int node_floats(const ir_node *n)
 {
 	ir_graph *irg = get_irn_irg(n);
-	return ((get_irn_pinned(n) == op_pin_state_floats) &&
-	        (get_irg_pinned(irg) == op_pin_state_floats));
+	return !get_irn_pinned(n) && get_irg_pinned(irg) == op_pin_state_floats;
 }
 
 /**
@@ -600,10 +599,9 @@ static void collect_node(ir_node *node, void *env)
 
 /** Construct lists to walk ir block-wise.
  *
- * Collects all blocks, nodes not op_pin_state_pinned,
- * Bad, NoMem and Unknown into a flexible array in link field of
- * irg they belong to.  Sets the irg link field to NULL in all
- * graphs not visited.
+ * Collects all blocks, nodes not pinned, Bad, NoMem and Unknown into a
+ * flexible array in link field of irg they belong to.  Sets the irg link field
+ * to NULL in all graphs not visited.
  * Free the list with DEL_ARR_F().
  */
 static ir_node **construct_block_lists(ir_graph *irg)
@@ -1291,7 +1289,7 @@ static void dump_whole_block(FILE *F, const ir_node *block)
 }
 
 /** dumps a graph block-wise. Expects all blockless nodes in arr in irgs link.
- *  The outermost nodes: blocks and nodes not op_pin_state_pinned, Bad, Unknown. */
+ *  The outermost nodes: blocks and nodes not pinned, Bad, Unknown. */
 static void dump_block_graph(FILE *F, ir_graph *irg, ir_node **arr)
 {
 	for (size_t i = 0, n = ARR_LEN(arr); i < n; ++i) {

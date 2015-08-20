@@ -512,7 +512,7 @@ static ir_node *pick_delay_slot_for(ir_node *node)
 			if (has_delay_slot(schedpoint))
 				break;
 			/* can't move pinned nodes accross blocks */
-			if (get_irn_pinned(schedpoint) == op_pin_state_pinned)
+			if (get_irn_pinned(schedpoint))
 				continue;
 			/* restore doesn't model register window switching correctly,
 			 * so it appears like we could move it, which is not true */

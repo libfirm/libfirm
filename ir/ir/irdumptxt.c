@@ -102,7 +102,7 @@ void dump_irnode_to_file(FILE *const F, const ir_node *const n)
 	if (irg != get_const_code_irg())
 		fprintf (F, "  irg:     %s\n", get_ent_dump_name(get_irg_entity(irg)));
 
-	if (get_irn_pinned(n) == op_pin_state_floats &&
+	if (!get_irn_pinned(n) &&
 		get_irg_pinned(get_irn_irg(n)) == op_pin_state_floats) {
 		fprintf(F, "  node was pinned in ");
 		ir_node *const block = get_nodes_block(n);
@@ -329,7 +329,7 @@ void dump_irnode_to_file(FILE *const F, const ir_node *const n)
 		ident **clobber = get_ASM_clobbers(n);
 		for (int i = 0, n_clobbers = get_ASM_n_clobbers(n); i < n_clobbers; ++i)
 			fprintf(F, "%s ", get_id_str(clobber[i]));
-		if (get_irn_pinned(n) != op_pin_state_floats)
+		if (get_irn_pinned(n))
 			fprintf(F, "\n  volatile");
 		fprintf(F, "\n");
 		break;
