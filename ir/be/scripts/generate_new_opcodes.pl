@@ -95,7 +95,7 @@ sub get_requirement_mode
 
 	$req =~ s/[ :].*//;
 	if ($req =~ s/^!?in_r//) {
-		$req = $in_reqs->[$req - 1];
+		$req = $in_reqs->[$req];
 		$req =~ s/[ :].*//;
 	}
 
@@ -740,7 +740,8 @@ sub build_subset_class_func
 	# set/unset registers
 CHECK_REQS: foreach (split(/ /, $regs)) {
 		if (!$is_in && /(!)?in_r(\d+)/) {
-			my $bit_pos = 1 << ($2 - 1);
+			my $idx     = $2;
+			my $bit_pos = 1 << $idx;
 			if ($different_pos & $bit_pos) {
 				if ($1) {
 					print STDERR "duplicate !in constraint\n";
@@ -765,8 +766,7 @@ CHECK_REQS: foreach (split(/ /, $regs)) {
 				$same_pos      |= $bit_pos;
 			}
 
-			my $idx = $2;
-			$class = get_in_req_class($node, $idx - 1);
+			$class = get_in_req_class($node, $idx);
 			if (!$class) {
 				die("Fatal error: Could not get in_reqs register class for '$op' index $idx ... exiting.\n");
 			}

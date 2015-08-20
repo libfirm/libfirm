@@ -272,10 +272,10 @@ Mul => {
 	emit         => 'mul %D0, %S0, %S1',
 	constructors => {
 		"" => { out_reqs => [ "gp" ]     },
-		# TODO: !in_r1 for out constraints the register allocator more than
+		# TODO: !in_r0 for out constraints the register allocator more than
 		# necessary, as usually you can fix the problem by swapping the inputs. But
 		# for this scheme we would need a special if both inputs are the same value.
-		v5 => { out_reqs => [ "!in_r1" ] },
+		v5 => { out_reqs => [ "!in_r0" ] },
 	},
 },
 
@@ -297,7 +297,7 @@ Mla => {
 	constructors => {
 		"" => { out_reqs => [ "gp" ]     },
 		# See comments for Mul_v5 out register constraint
-		v5 => { out_reqs => [ "!in_r1" ] },
+		v5 => { out_reqs => [ "!in_r0" ] },
 	}
 },
 
@@ -324,7 +324,7 @@ OrPl => {
 	emit      => 'orrpl %D0, %S2, %O',
 	attr_type => "arm_shifter_operand_t",
 	in_reqs   => [ "gp", "flags", "gp", "gp" ],
-	out_reqs  => [ "in_r3" ],
+	out_reqs  => [ "in_r2" ],
 	ins       => [ "falseval", "flags", "left", "right" ],
 	init      => "init_arm_shifter_operand(res, 3, 0, ARM_SHF_REG, 0);",
 },
