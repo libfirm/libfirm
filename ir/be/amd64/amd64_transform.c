@@ -1594,7 +1594,13 @@ static ir_node *gen_Start(ir_node *const node)
 {
 	x86_cconv_t const *const cconv = current_cconv;
 
-	be_start_out outs[N_AMD64_REGISTERS] = { [REG_RSP] = BE_START_IGNORE };
+	be_start_out outs[N_AMD64_REGISTERS] = {
+		[REG_RSP] = BE_START_IGNORE,
+		// AL holds the number of FP parameters in the AMD64
+		// ABI. The other bytes are undefined, but I think we
+		// cannot model that here.
+		[REG_RAX] = BE_START_REG,
+	};
 
 	/* function parameters in registers */
 	for (size_t i = 0, n = cconv->n_parameters; i != n; ++i) {

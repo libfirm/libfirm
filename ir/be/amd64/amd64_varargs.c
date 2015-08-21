@@ -430,6 +430,27 @@ static ir_node *make_lea_with_offset_entity(dbg_info *dbgi, ir_node *block,
 	return new_bd_amd64_lea(dbgi, block, ARRAY_SIZE(lea_in), lea_in, reg_reqs, INSN_MODE_64, lea_addr);
 }
 
+/*
+ * Make a test to check if the lower byte of the register is zero. Return the flags.
+ */
+static ir_node *make_test_lower_byte(dbg_info *dbgi, ir_node *block, ir_node *value)
+{
+	ir_node *test_in[] = { value, value };
+	amd64_binop_addr_attr_t test_attr = {
+		.base = {
+			.base = {
+				.op_mode = AMD64_OP_REG_REG,
+			},
+			.insn_mode = INSN_MODE_8,
+		},
+		.u = {
+			.reg_input = 0,
+		},
+	};
+	ir_node *result = new_bd_amd64_test(dbgi, block, ARRAY_SIZE(test_in), test_in, amd64_reg_reg_reqs, &test_attr);
+	return be_new_Proj(result, pn_amd64_test_flags);
+}
+
 ir_node *amd64_initialize_va_list(dbg_info *dbgi, ir_node *block, x86_cconv_t *cconv,
                                   ir_node *mem, ir_node *ap, ir_node *frame)
 {
@@ -456,29 +477,97 @@ void amd64_save_vararg_registers(ir_graph *const irg, x86_cconv_t const *const c
 {
 	size_t         gp_params      = n_gp_params;
 	size_t         xmm_params     = n_xmm_params;
-	size_t         reg_params     = gp_params + xmm_params;
 	size_t   const max_reg_params = cconv->n_param_regs;
-	ir_node *const block          = get_irg_start_block(irg);
+	ir_node       *block          = get_irg_start_block(irg);
 	ir_node *const initial_mem    = get_irg_initial_mem(irg);
 	ir_node       *mem            = initial_mem;
 	ir_node       *first_mov      = NULL;
-	for (size_t p = cconv->n_parameters; reg_params != max_reg_params; ++p, ++reg_params) {
+	ir_node       *phiM           = NULL;
+
+	// Check if any XMM registers are left to pass variadic parameters
+	// (all registers may already contain non-variadic parameters)
+	bool require_xmm_save = false;
+	for (size_t p = cconv->n_parameters, reg_params = gp_params + xmm_params;
+	     reg_params != max_reg_params;
+	     ++p, ++reg_params) {
+		arch_register_t const *const reg       = cconv->parameters[p].reg;
+		if (reg->cls == &amd64_reg_classes[CLASS_amd64_xmm]) {
+			require_xmm_save = true;
+			break;
+		}
+	}
+
+	if (require_xmm_save) {
+		// Emit check if any XMM parameters have been passed
+		ir_node *rax      = be_get_Start_proj(irg, &amd64_registers[REG_RAX]);
+		ir_node *have_xmm = make_test_lower_byte(NULL, block, rax);
+
+		// Split off a block for saving the XMM registers if needed
+		ir_node *lower_block = part_block_edges(have_xmm);
+		ir_node *upper_block = get_nodes_block(have_xmm);
+		ir_node *jz          = new_bd_amd64_jcc(NULL, upper_block, have_xmm, x86_cc_equal);
+		ir_node *proj_true   = new_r_Proj(jz, mode_X, pn_amd64_jcc_true);
+		ir_node *proj_false  = new_r_Proj(jz, mode_X, pn_amd64_jcc_false);
+		ir_node *xmm_in[1]   = { proj_false };
+		ir_node *xmm_block   = new_r_Block(irg, ARRAY_SIZE(xmm_in), xmm_in);
+		ir_node *xmm_jmp     = new_bd_amd64_jmp(NULL, xmm_block);
+		// We must create the dummy block ourselves, because the code
+		// to remove critical edges inserts middleend nodes.
+		ir_node *dummy_in[1] = { proj_true };
+		ir_node *dummy_block = new_r_Block(irg, ARRAY_SIZE(dummy_in), dummy_in);
+		ir_node *dummy_jmp   = new_bd_amd64_jmp(NULL, dummy_block);
+		ir_node *lower_in[2] = { xmm_jmp, dummy_jmp };
+		set_irn_in(lower_block, ARRAY_SIZE(lower_in), lower_in);
+
+		// Save XMM registers in true_block
+		for (size_t p = cconv->n_parameters, reg_params = gp_params + xmm_params;
+		     reg_params != max_reg_params;
+		     ++p, ++reg_params) {
+			arch_register_t const *const reg       = cconv->parameters[p].reg;
+			ir_node               *const reg_value = be_get_Start_proj(irg, reg);
+			if (reg->cls == &amd64_reg_classes[CLASS_amd64_xmm]) {
+				mem = make_mov_xmmval64_to_offset_mem(NULL, xmm_block, mem, frame, reg_save_area,
+				                                      xmm_save_slots[xmm_params++], reg_value);
+				if (!first_mov) {
+					first_mov = mem;
+				}
+			}
+		}
+
+		ir_node *mems[] = { mem, initial_mem };
+		phiM = new_r_Phi(lower_block, ARRAY_SIZE(mems), mems, mode_M);
+		backend_info_t *info = be_get_info(phiM);
+		info->in_reqs = be_allocate_in_reqs(irg, ARRAY_SIZE(mems));
+		for (size_t i = 0; i < ARRAY_SIZE(mems); ++i) {
+			info->in_reqs[i] = arch_memory_req;
+		}
+		arch_set_irn_register_req_out(phiM, 0, arch_memory_req);
+
+		mem   = phiM;
+		block = lower_block;
+	}
+
+	// Save GP registers in lower_block
+	for (size_t p = cconv->n_parameters, reg_params = gp_params + xmm_params;
+	     reg_params != max_reg_params;
+	     ++p, ++reg_params) {
 		arch_register_t const *const reg       = cconv->parameters[p].reg;
 		ir_node               *const reg_value = be_get_Start_proj(irg, reg);
 		if (reg->cls == &amd64_reg_classes[CLASS_amd64_gp]) {
-			mem = make_mov_val64_to_offset_mem(NULL, block, mem, frame, reg_save_area, gp_save_slots[gp_params++], reg_value);
-		} else if (reg->cls == &amd64_reg_classes[CLASS_amd64_xmm]) {
-			mem = make_mov_xmmval64_to_offset_mem(NULL, block, mem, frame, reg_save_area, xmm_save_slots[xmm_params++], reg_value);
-		} else {
-			panic("unexpected register class");
+			mem = make_mov_val64_to_offset_mem(NULL, block, mem, frame, reg_save_area,
+			                                   gp_save_slots[gp_params++], reg_value);
+			if (!first_mov) {
+				first_mov = mem;
+			}
 		}
-		if (!first_mov)
-			first_mov = mem;
 	}
 
 	if (mem != initial_mem) {
 		edges_reroute_except(initial_mem, mem, first_mov);
 		set_irg_initial_mem(irg, initial_mem);
+		if (phiM) {
+			set_irn_n(phiM, 1, initial_mem);
+		}
 	}
 
 	// We are now done with vararg handling for this irg, free the memory.
