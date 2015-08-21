@@ -1995,8 +1995,23 @@ static ir_node *gen_Cmp(ir_node *const node)
 		match_binop(&args, block, cmp_mode, op1, op2, match_am);
 		new_node = new_bd_amd64_ucomis(dbgi, new_block, args.arity, args.in, args.reqs, &args.attr);
 	} else {
-		match_binop(&args, block, cmp_mode, op1, op2, match_immediate | match_am);
-		new_node = new_bd_amd64_cmp(dbgi, new_block, args.arity, args.in, args.reqs, &args.attr);
+		/* See if we can generate a test instruction for (x & y) ==/!= 0 */
+		if (is_Const_(op2) && is_Const_null(op2) &&
+		    is_And(op1) && get_irn_n_edges(op1) == 1) {
+			ir_node *and1  = get_And_left(op1);
+			ir_node *and2 = get_And_right(op1);
+			match_binop(&args, block, cmp_mode, and1, and2,
+			            match_immediate | match_am);
+
+			new_node = new_bd_amd64_test(dbgi, new_block, args.arity,
+			                             args.in, args.reqs, &args.attr);
+		} else {
+			match_binop(&args, block, cmp_mode, op1, op2,
+			            match_immediate | match_am);
+
+			new_node = new_bd_amd64_cmp(dbgi, new_block, args.arity,
+			                            args.in, args.reqs, &args.attr);
+		}
 	}
 
 	fix_node_mem_proj(new_node, args.mem_proj);
