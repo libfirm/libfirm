@@ -486,6 +486,17 @@ setcc => {
 	emit      => "set%P0 %D0",
 },
 
+test => {
+	irn_flags => [ "modify_flags", "rematerializable" ],
+	state     => "exc_pinned",
+	in_reqs   => "...",
+	out_reqs  => [ "none", "flags", "mem" ],
+	outs      => [ "dummy", "flags", "M" ],
+	attr_type => "amd64_binop_addr_attr_t",
+	attr      => "const amd64_binop_addr_attr_t *attr_init",
+	emit      => "test%M %AM",
+},
+
 lea => {
 	irn_flags => [ "rematerializable" ],
 	in_reqs   => "...",
