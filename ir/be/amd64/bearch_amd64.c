@@ -116,12 +116,6 @@ static int amd64_get_sp_bias(const ir_node *node)
 	return 0;
 }
 
-static const arch_register_req_t *am_pushpop_base_reqs[] = {
-	&amd64_single_reg_req_gp_rsp,
-	&amd64_class_reg_req_gp,
-	&arch_memory_requirement,
-};
-
 static ir_node *create_push(ir_node *node, ir_node *schedpoint, ir_node *sp,
                             ir_node *mem, ir_entity *ent,
                             amd64_insn_mode_t insn_mode)
@@ -139,7 +133,7 @@ static ir_node *create_push(ir_node *node, ir_node *schedpoint, ir_node *sp,
 	ir_node *in[] = { sp, frame, mem };
 	ir_node *push = new_bd_amd64_push_am(dbgi, block, ARRAY_SIZE(in), in,
 	                                     insn_mode, addr);
-	arch_set_irn_register_reqs_in(push, am_pushpop_base_reqs);
+	arch_set_irn_register_reqs_in(push, rsp_reg_mem_reqs);
 	sched_add_before(schedpoint, push);
 	return push;
 }
@@ -161,7 +155,7 @@ static ir_node *create_pop(ir_node *node, ir_node *schedpoint, ir_node *sp,
 
 	ir_node *pop = new_bd_amd64_pop_am(dbgi, block, ARRAY_SIZE(in), in,
 	                                   insn_mode, addr);
-	arch_set_irn_register_reqs_in(pop, am_pushpop_base_reqs);
+	arch_set_irn_register_reqs_in(pop, rsp_reg_mem_reqs);
 	sched_add_before(schedpoint, pop);
 
 	return pop;

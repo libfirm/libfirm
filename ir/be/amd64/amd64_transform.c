@@ -146,7 +146,7 @@ static const arch_register_req_t *rsp_mem_reqs[] = {
 	&arch_memory_requirement,
 };
 
-static const arch_register_req_t *rsp_reg_mem_reqs[] = {
+arch_register_req_t const *rsp_reg_mem_reqs[] = {
 	&amd64_single_reg_req_gp_rsp,
 	&amd64_class_reg_req_gp,
 	&arch_memory_requirement,
