@@ -678,6 +678,14 @@ void be_insert_spills_reloads(spill_env_t *env)
 	be_timer_pop(T_RA_SPILL_APPLY);
 }
 
+static void be_new_Copy_for_input(ir_node *const val, ir_node *const before, int const pos)
+{
+	ir_node *const block = get_nodes_block(before);
+	ir_node *const copy  = be_new_Copy(block, val);
+	sched_add_before(before, copy);
+	set_irn_n(before, pos, copy);
+}
+
 static be_irg_t      *birg;
 static be_lv_t       *lv;
 static unsigned long  precol_copies;
@@ -707,13 +715,9 @@ static void prepare_constr_insn(ir_node *const node)
 		if (rbitset_is_set(req->limited, reg->index))
 			continue;
 
-		ir_node *block = get_nodes_block(node);
-		ir_node *copy  = be_new_Copy(block, op);
-		sched_add_before(node, copy);
-		set_irn_n(node, i, copy);
+		be_new_Copy_for_input(op, node, i);
 		++precol_copies;
-		DBG((dbg_constr, LEVEL_3, "inserting ignore arg copy %+F for %+F pos %d\n",
-		     copy, node, i));
+		DBG((dbg_constr, LEVEL_3, "inserting ignore arg copy for %+F pos %d\n", node, i));
 	}
 
 	/* insert copies for nodes that occur constrained more than once. */
@@ -745,14 +749,9 @@ static void prepare_constr_insn(ir_node *const node)
 			if (rbitsets_equal(req->limited, req2->limited, cls->n_regs))
 				continue;
 
-			ir_node *block = get_nodes_block(node);
-			ir_node *copy  = be_new_Copy(block, in);
-			sched_add_before(node, copy);
-			set_irn_n(node, i2, copy);
+			be_new_Copy_for_input(in, node, i2);
 			++multi_precol_copies;
-			DBG((dbg_constr, LEVEL_3,
-			     "inserting multiple constr copy %+F for %+F pos %d\n",
-			     copy, node, i2));
+			DBG((dbg_constr, LEVEL_3, "inserting multiple constr copy for %+F pos %d\n", node, i2));
 		}
 	}
 
@@ -814,13 +813,9 @@ static void prepare_constr_insn(ir_node *const node)
 		 * register change for free), need to add some SSA-reconstruction code
 		 * to achieve this. */
 
-		ir_node *block = get_nodes_block(node);
-		ir_node *copy  = be_new_Copy(block, in);
-		sched_add_before(node, copy);
-		set_irn_n(node, i, copy);
+		be_new_Copy_for_input(in, node, i);
 		++constrained_livethrough_copies;
-		DBG((dbg_constr, LEVEL_3, "inserting constr copy %+F for %+F pos %d\n",
-		     copy, node, i));
+		DBG((dbg_constr, LEVEL_3, "inserting constr copy for %+F pos %d\n", node, i));
 		be_liveness_update(lv, in);
 	}
 }
