@@ -19,6 +19,7 @@
 #include "beirg.h"
 #include "belive.h"
 #include "benode.h"
+#include "besched.h"
 #include "bitfiddle.h"
 #include "fourcc.h"
 #include "irbackedge_t.h"
@@ -223,6 +224,15 @@ ir_node *be_new_Copy(ir_node *bl, ir_node *op)
 ir_node *be_get_Copy_op(const ir_node *cpy)
 {
 	return get_irn_n(cpy, n_be_Copy_op);
+}
+
+ir_node *be_new_Copy_before_reg(ir_node *const val, ir_node *const before, arch_register_t const *const reg)
+{
+	ir_node *const block = get_nodes_block(before);
+	ir_node *const copy  = be_new_Copy(block, val);
+	sched_add_before(before, copy);
+	arch_set_irn_register_out(copy, 0, reg);
+	return copy;
 }
 
 ir_node *be_new_Keep(ir_node *const block, int const n,

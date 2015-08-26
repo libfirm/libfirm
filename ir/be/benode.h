@@ -80,6 +80,11 @@ ir_node *be_new_Copy(ir_node *block, ir_node *in);
 ir_node *be_get_Copy_op(const ir_node *cpy);
 
 /**
+ * Insert a Copy of @p val into @p reg before @p before.
+ */
+ir_node *be_new_Copy_before_reg(ir_node *val, ir_node *before, arch_register_t const *reg);
+
+/**
  * Make a new Perm node.
  */
 ir_node *be_new_Perm(arch_register_class_t const *cls, ir_node *block, int n,

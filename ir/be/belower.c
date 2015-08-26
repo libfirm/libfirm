@@ -203,7 +203,6 @@ static void lower_perm_node(ir_node *const perm, arch_register_class_t const *co
 
 	DBG((dbg, LEVEL_1, "%+F has %d unresolved constraints\n", perm, (int)(pair - pairs)));
 
-	ir_node *const block = get_nodes_block(perm);
 	/* Build Copy chains. */
 	for (unsigned i = 0; i != n_regs; ++i) {
 		if (rbitset_is_set(inregs, i))
@@ -213,11 +212,9 @@ static void lower_perm_node(ir_node *const perm, arch_register_class_t const *co
 		unsigned k = i;
 		for (reg_pair_t const *p; (p = oregmap[k]);) {
 			oregmap[k] = NULL;
-			ir_node *const copy = be_new_Copy(block, p->in_node);
+			ir_node *const copy = be_new_Copy_before_reg(p->in_node, perm, p->out_reg);
 			DBG((dbg, LEVEL_2, "%+F: inserting %+F for %+F from %s to %s\n", perm, copy, p->in_node, p->in_reg, p->out_reg));
-			arch_set_irn_register(copy, p->out_reg);
 			exchange(p->out_node, copy);
-			sched_add_before(perm, copy);
 
 			const unsigned new_k = p->in_reg->index;
 			if (oregmap[new_k] == NULL) {
@@ -249,26 +246,20 @@ static void lower_perm_node(ir_node *const perm, arch_register_class_t const *co
 			}
 			reg_pair_t *start = oregmap[i];
 
-			ir_node *save_copy = be_new_Copy(block, start->in_node);
-			arch_set_irn_register(save_copy, free_reg);
-			sched_add_before(perm, save_copy);
+			ir_node *const save_copy = be_new_Copy_before_reg(start->in_node, perm, free_reg);
 
 			reg_pair_t *p = oregmap[start->in_reg->index];
 			do {
-				ir_node *copy = be_new_Copy(block, p->in_node);
-				arch_set_irn_register(copy, p->out_reg);
+				ir_node *const copy = be_new_Copy_before_reg(p->in_node, perm, p->out_reg);
 				exchange(p->out_node, copy);
-				sched_add_before(perm, copy);
 				unsigned const in_idx = p->in_reg->index;
 				rbitset_clear(inregs, in_idx);
 				p = oregmap[in_idx];
 			} while (p != start);
 
 			rbitset_clear(inregs, start->in_reg->index);
-			ir_node *restore_copy = be_new_Copy(block, save_copy);
-			arch_set_irn_register(restore_copy, start->out_reg);
+			ir_node *const restore_copy = be_new_Copy_before_reg(save_copy, perm, start->out_reg);
 			exchange(start->out_node, restore_copy);
-			sched_add_before(perm, restore_copy);
 		}
 	} else {
 		/* Decompose cycles into transpositions.
@@ -291,6 +282,7 @@ static void lower_perm_node(ir_node *const perm, arch_register_class_t const *co
 		 * r2 r3 r4 r5 r1            +---+
 		 *                  r2 r3 r4 r5 r1
 		 */
+		ir_node *const block = get_nodes_block(perm);
 		for (unsigned i = 0; i != n_regs;) {
 			if (!rbitset_is_set(inregs, i)) {
 				++i;

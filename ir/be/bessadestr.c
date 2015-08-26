@@ -138,12 +138,10 @@ static void impl_parcopy(const arch_register_class_t *cls,
 	for (unsigned i = 0; i < num_restores; ++i) {
 		const unsigned  src_reg = restore_srcs[i];
 		const unsigned  dst_reg = restore_dsts[i];
-		ir_node        *src     = phi_args[src_reg];
-		ir_node        *copy    = be_new_Copy(block, src);
-		sched_add_before(before, copy);
 
-		const arch_register_t *reg = arch_register_for_index(cls, dst_reg);
-		arch_set_irn_register(copy, reg);
+		ir_node               *const src  = phi_args[src_reg];
+		arch_register_t const *const reg  = arch_register_for_index(cls, dst_reg);
+		ir_node               *const copy = be_new_Copy_before_reg(src, before, reg);
 
 		ir_node *phi = phis[dst_reg];
 		set_irn_n(phi, pred_nr, copy);

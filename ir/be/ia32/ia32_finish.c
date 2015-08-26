@@ -269,12 +269,7 @@ static void assure_should_be_same_requirements(ir_node *node)
 			/* no-one else is using the out reg, we can simply copy it
 			 * (the register can't be live since the operation will override it
 			 *  anyway) */
-			ir_node *const block = get_nodes_block(node);
-			ir_node *const copy  = be_new_Copy(block, in_node);
-			/* destination is the out register */
-			arch_set_irn_register(copy, out_reg);
-			/* insert copy before the node into the schedule */
-			sched_add_before(node, copy);
+			ir_node *const copy = be_new_Copy_before_reg(in_node, node, out_reg);
 			/* set copy as in */
 			set_irn_n(node, same_pos, copy);
 

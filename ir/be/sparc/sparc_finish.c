@@ -58,8 +58,6 @@ static int get_first_same(const arch_register_req_t *req)
  */
 static void assure_should_be_same_requirements(ir_node *node)
 {
-	ir_node *block = get_nodes_block(node);
-
 	/* check all OUT requirements, if there is a should_be_same */
 	be_foreach_out(node, i) {
 		const arch_register_req_t *req = arch_get_irn_register_req_out(node, i);
@@ -100,14 +98,7 @@ static void assure_should_be_same_requirements(ir_node *node)
 		 * (the register can't be live since the operation will override it
 		 *  anyway) */
 		if (uses_out_reg == NULL) {
-			ir_node *copy = be_new_Copy(block, in_node);
-
-			/* destination is the out register */
-			arch_set_irn_register(copy, out_reg);
-
-			/* insert copy before the node into the schedule */
-			sched_add_before(node, copy);
-
+			ir_node *const copy = be_new_Copy_before_reg(in_node, node, out_reg);
 			/* set copy as in */
 			set_irn_n(node, same_pos, copy);
 			continue;
