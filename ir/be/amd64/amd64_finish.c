@@ -129,7 +129,7 @@ static void transform_sub_to_neg_add(ir_node *node,
 	exchange(node, add);
 }
 
-static ir_node *amd64_turn_back_am(ir_node *node)
+static void amd64_turn_back_am(ir_node *const node, arch_register_t const *const out_reg)
 {
 	dbg_info          *dbgi  = get_irn_dbg_info(node);
 	ir_node           *block = get_nodes_block(node);
@@ -155,7 +155,7 @@ static ir_node *amd64_turn_back_am(ir_node *node)
 	                                    attr->insn_mode, AMD64_OP_ADDR,
 	                                    new_addr);
 	arch_set_irn_register_reqs_in(load, gp_am_reqs[load_arity - 1]);
-	ir_node *const load_res = be_new_Proj(load, pn_amd64_mov_gp_res);
+	ir_node *const load_res = be_new_Proj_reg(load, pn_amd64_mov_gp_res, out_reg);
 
 	/* change operation */
 	const amd64_binop_addr_attr_t *binop_attr
@@ -180,7 +180,6 @@ static ir_node *amd64_turn_back_am(ir_node *node)
 
 	if (sched_is_scheduled(node))
 		sched_add_before(node, load);
-	return load_res;
 }
 
 /**
@@ -229,8 +228,7 @@ swap:;
 				} else {
 					assert(attr->op_mode == AMD64_OP_REG_ADDR);
 					/* extract load into an own instruction */
-					ir_node *res = amd64_turn_back_am(node);
-					arch_set_irn_register(res, out_reg);
+					amd64_turn_back_am(node, out_reg);
 					goto swap;
 				}
 			}
