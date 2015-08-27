@@ -383,9 +383,6 @@ static void amd64_emit_am(const ir_node *const node, bool indirect_star)
 		return;
 	}
 
-	case AMD64_OP_RAX_ADDR:
-		amd64_emit_addr(node, &attr->addr);
-		return;
 	case AMD64_OP_IMM32:
 	case AMD64_OP_IMM64:
 	case AMD64_OP_NONE:

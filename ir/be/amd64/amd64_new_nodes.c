@@ -38,7 +38,6 @@ static const char *get_op_mode_string(amd64_op_mode_t mode)
 	case AMD64_OP_IMM32:      return "imm32";
 	case AMD64_OP_IMM64:      return "imm64";
 	case AMD64_OP_NONE:       return "none";
-	case AMD64_OP_RAX_ADDR:   return "rax_addr";
 	case AMD64_OP_RAX_REG:    return "rax_reg";
 	case AMD64_OP_REG_ADDR:   return "reg+addr";
 	case AMD64_OP_REG_IMM:    return "reg+imm";

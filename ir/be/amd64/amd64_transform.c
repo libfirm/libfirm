@@ -776,7 +776,7 @@ static ir_node *gen_binop_rax(ir_node *node, ir_node *op1, ir_node *op2,
 		addr.mem_input   = mem_input;
 
 		mem_proj                = get_Proj_for_pn(load, pn_Load_M);
-		op_mode                 = AMD64_OP_RAX_ADDR;
+		op_mode                 = AMD64_OP_ADDR;
 	} else {
 		/* simply transform the arguments */
 		in[arity++] = be_transform_node(op1);
