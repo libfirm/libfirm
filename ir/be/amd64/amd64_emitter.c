@@ -349,6 +349,8 @@ static void amd64_emit_am(const ir_node *const node, bool indirect_star)
 		return;
 	}
 	case AMD64_OP_ADDR:
+		if (indirect_star)
+			be_emit_char('*');
 		amd64_emit_addr(node, &attr->addr);
 		return;
 	case AMD64_OP_ADDR_REG: {
@@ -370,11 +372,6 @@ static void amd64_emit_am(const ir_node *const node, bool indirect_star)
 	}
 	case AMD64_OP_UNOP_IMM32:
 		amd64_emit_immediate32(false, &attr->addr.immediate);
-		return;
-	case AMD64_OP_UNOP_ADDR:
-		if (indirect_star)
-			be_emit_char('*');
-		amd64_emit_addr(node, &attr->addr);
 		return;
 
 	case AMD64_OP_RAX_REG: {

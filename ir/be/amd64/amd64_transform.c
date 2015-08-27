@@ -1334,7 +1334,7 @@ static ir_node *gen_IJmp(ir_node *node)
 			in[mem_input]     = new_mem;
 			addr.mem_input    = mem_input;
 
-			op_mode = AMD64_OP_UNOP_ADDR;
+			op_mode = AMD64_OP_ADDR;
 		} else {
 			op_mode          = AMD64_OP_UNOP_REG;
 			assert(arity == 0); // UNOP_REG always outputs the first input
@@ -1592,7 +1592,7 @@ static ir_node *gen_Call(ir_node *node)
 			ir_node *new_load_mem = be_transform_node(load_mem);
 			sync_ins[sync_arity++] = new_load_mem;
 
-			op_mode = AMD64_OP_UNOP_ADDR;
+			op_mode = AMD64_OP_ADDR;
 		} else {
 			int input = in_arity++;
 			assert(input == 0); /* UNOP_REG is currently hardcoded to always
