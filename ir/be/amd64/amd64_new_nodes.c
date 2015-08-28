@@ -44,7 +44,6 @@ static const char *get_op_mode_string(amd64_op_mode_t mode)
 	case AMD64_OP_REG:        return "reg";
 	case AMD64_OP_SHIFT_IMM:  return "shift_imm";
 	case AMD64_OP_SHIFT_REG:  return "shift_reg";
-	case AMD64_OP_UNOP_IMM32: return "unop_imm32";
 	}
 	panic("invalid op_mode");
 }

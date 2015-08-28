@@ -368,11 +368,10 @@ static void amd64_emit_am(const ir_node *const node, bool indirect_star)
 		emit_register_mode(reg, attr->insn_mode);
 		return;
 	}
-	case AMD64_OP_UNOP_IMM32:
+	case AMD64_OP_IMM32:
 		amd64_emit_immediate32(false, &attr->addr.immediate);
 		return;
 
-	case AMD64_OP_IMM32:
 	case AMD64_OP_IMM64:
 	case AMD64_OP_NONE:
 	case AMD64_OP_SHIFT_REG:

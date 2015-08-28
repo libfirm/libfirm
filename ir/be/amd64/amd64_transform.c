@@ -1315,7 +1315,7 @@ static ir_node *gen_IJmp(ir_node *node)
 	ir_node                    *mem_proj = NULL;
 	if (match_immediate_32(&addr.immediate, op, true, false)) {
 		// TODO: do we need a must_match_ip_relative in match_immediate_32
-		op_mode = AMD64_OP_UNOP_IMM32;
+		op_mode = AMD64_OP_IMM32;
 		arity   = 0;
 		reqs    = no_reqs;
 	} else {
@@ -1552,7 +1552,7 @@ static ir_node *gen_Call(ir_node *node)
 	arch_register_req_t const **const in_req = be_allocate_in_reqs(irg, max_inputs);
 
 	if (match_immediate_32(&addr.immediate, callee, true, true)) {
-		op_mode = AMD64_OP_UNOP_IMM32;
+		op_mode = AMD64_OP_IMM32;
 	} else {
 		ir_node *load    = source_am_possible(block, callee);
 		bool     am_okay = false;
