@@ -3094,6 +3094,13 @@ static ir_node *try_get_sub_flags(ir_node *cmp, ir_node *sub, bool *swap)
 		return NULL;
 	}
 
+	ir_mode *sub_mode = get_irn_mode(sub_left);
+	if (get_mode_size_bits(sub_mode) != 32 &&
+	    (!be_upper_bits_clean(sub_left,  sub_mode) ||
+	     !be_upper_bits_clean(sub_right, sub_mode))) {
+		return NULL;
+	}
+
 	ir_node *ia32_sub = skip_Proj(transform_sub_or_store(sub));
 	if (is_ia32_Sub(ia32_sub)) {
 		return be_new_Proj(ia32_sub, pn_ia32_Sub_flags);
