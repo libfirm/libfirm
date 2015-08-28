@@ -382,7 +382,7 @@ jmp => {
 	state    => "pinned",
 	op_flags => [ "cfopcode" ],
 	out_reqs => [ "exec" ],
-	fixed    => "amd64_op_mode_t op_mode = AMD64_OP_IMM32;",
+	fixed    => "amd64_op_mode_t op_mode = AMD64_OP_NONE;",
 },
 
 cmp => {
