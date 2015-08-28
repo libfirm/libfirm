@@ -55,9 +55,6 @@ typedef enum {
 	AMD64_OP_UNOP_IMM32,
 	AMD64_OP_SHIFT_REG,
 	AMD64_OP_SHIFT_IMM,
-	/** A binary operation with 1 operand being RAX (which is usually not
-	 * explicitly given in the assembly) */
-	AMD64_OP_RAX_REG,
 } amd64_op_mode_t;
 
 enum {

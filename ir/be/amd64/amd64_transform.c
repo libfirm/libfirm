@@ -193,14 +193,14 @@ static const arch_register_req_t *reg_reg_reqs[] = {
 	&amd64_class_reg_req_gp,
 };
 
-static const arch_register_req_t *rax_reg_reqs[] = {
-	&amd64_single_reg_req_gp_rax,
+static const arch_register_req_t *reg_rax_reqs[] = {
 	&amd64_class_reg_req_gp,
+	&amd64_single_reg_req_gp_rax,
 };
 
-static const arch_register_req_t *rax_reg_rdx_mem_reqs[] = {
-	&amd64_single_reg_req_gp_rax,
+static const arch_register_req_t *reg_rax_rdx_mem_reqs[] = {
 	&amd64_class_reg_req_gp,
+	&amd64_single_reg_req_gp_rax,
 	&amd64_single_reg_req_gp_rdx,
 	&arch_memory_requirement,
 };
@@ -781,8 +781,8 @@ static ir_node *gen_binop_rax(ir_node *node, ir_node *op1, ir_node *op2,
 		/* simply transform the arguments */
 		in[arity++] = be_transform_node(op1);
 		in[arity++] = be_transform_node(op2);
-		reqs        = rax_reg_reqs;
-		op_mode     = AMD64_OP_RAX_REG;
+		reqs        = reg_rax_reqs;
+		op_mode     = AMD64_OP_REG;
 	}
 
 	assert((size_t)arity <= ARRAY_SIZE(in));
@@ -1109,9 +1109,9 @@ static ir_node *create_div(ir_node *const node, ir_mode *const mode,
 		constructor = new_bd_amd64_div;
 	}
 
-	ir_node *in[] = { new_op1, new_op2, upper_value, new_mem };
-	ir_node *res = constructor(dbgi, new_block, ARRAY_SIZE(in), in, insn_mode);
-	arch_set_irn_register_reqs_in(res, rax_reg_rdx_mem_reqs);
+	ir_node *const in[] = { new_op2, new_op1, upper_value, new_mem };
+	ir_node *const res  = constructor(dbgi, new_block, ARRAY_SIZE(in), in, insn_mode);
+	arch_set_irn_register_reqs_in(res, reg_rax_rdx_mem_reqs);
 	return res;
 }
 
