@@ -361,11 +361,9 @@ static void amd64_emit_am(const ir_node *const node, bool indirect_star)
 		amd64_emit_addr(node, &attr->addr);
 		return;
 	}
-	case AMD64_OP_UNOP_REG:
+	case AMD64_OP_REG: {
 		if (indirect_star)
 			be_emit_char('*');
-		/* FALLTHROUGH */
-	case AMD64_OP_REG: {
 		const arch_register_t *reg = arch_get_irn_register_in(node, 0);
 		emit_register_mode(reg, attr->insn_mode);
 		return;

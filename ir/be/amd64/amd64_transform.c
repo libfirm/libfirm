@@ -1336,8 +1336,8 @@ static ir_node *gen_IJmp(ir_node *node)
 
 			op_mode = AMD64_OP_ADDR;
 		} else {
-			op_mode          = AMD64_OP_UNOP_REG;
-			assert(arity == 0); // UNOP_REG always outputs the first input
+			op_mode          = AMD64_OP_REG;
+			assert(arity == 0); // AMD64_OP_REG always outputs the first input
 			in[arity++]      = be_transform_node(op);
 			addr.base_input  = NO_INPUT;
 			addr.index_input = NO_INPUT;
@@ -1595,13 +1595,13 @@ static ir_node *gen_Call(ir_node *node)
 			op_mode = AMD64_OP_ADDR;
 		} else {
 			int input = in_arity++;
-			assert(input == 0); /* UNOP_REG is currently hardcoded to always
+			assert(input == 0); /* AMD64_OP_REG is currently hardcoded to always
 			                     * output the register of the first input. */
 			in[input]          = be_transform_node(callee);
 			in_req[input]      = &amd64_class_reg_req_gp;
 			addr.base_input    = NO_INPUT;
 			addr.index_input   = NO_INPUT;
-			op_mode            = AMD64_OP_UNOP_REG;
+			op_mode            = AMD64_OP_REG;
 		}
 	}
 
