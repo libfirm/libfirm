@@ -321,13 +321,11 @@ static void amd64_emit_am(const ir_node *const node, bool indirect_star)
 		return;
 	}
 	case AMD64_OP_REG_REG: {
-		const amd64_addr_attr_t *const addr_attr
-			= (const amd64_addr_attr_t*)attr;
 		const arch_register_t *reg0 = arch_get_irn_register_in(node, 0);
 		const arch_register_t *reg1 = arch_get_irn_register_in(node, 1);
-		emit_register_mode(reg1, addr_attr->insn_mode);
+		emit_register_mode(reg1, attr->insn_mode);
 		be_emit_cstring(", ");
-		emit_register_mode(reg0, addr_attr->insn_mode);
+		emit_register_mode(reg0, attr->insn_mode);
 		return;
 	}
 	case AMD64_OP_REG_ADDR: {
