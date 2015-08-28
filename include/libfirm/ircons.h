@@ -384,6 +384,7 @@ FIRM_API ir_node *new_Phi_loop(int arity, ir_node *in[]);
  * @param   *op1   The first operand.
  * @param   *op2   The second operand.
  * @param   *mode  The mode of the result.
+ * @param   pinned Whether the node is pinned in its block.
  */
 FIRM_API ir_node *new_rd_DivRL(dbg_info *db, ir_node *block, ir_node *memop,
                                ir_node *op1, ir_node *op2, ir_mode *mode,
@@ -396,7 +397,7 @@ FIRM_API ir_node *new_rd_DivRL(dbg_info *db, ir_node *block, ir_node *memop,
  * @param *op1   The first operand.
  * @param *op2   The second operand.
  * @param *mode  The mode of the result.
- * @param state  The pinned state.
+ * @param pinned Whether the node is pinned in its block.
  */
 FIRM_API ir_node *new_r_DivRL(ir_node *block, ir_node *memop,
                               ir_node *op1, ir_node *op2, ir_mode *mode,
@@ -411,7 +412,7 @@ FIRM_API ir_node *new_r_DivRL(ir_node *block, ir_node *memop,
  * @param   *op1   The first operand.
  * @param   *op2   The second operand.
  * @param   *mode  The mode of the result.
- * @param   state  The pinned state.
+ * @param   pinned Whether the node is pinned in its block.
  */
 FIRM_API ir_node *new_d_DivRL(dbg_info *db, ir_node *memop,
                               ir_node *op1, ir_node *op2, ir_mode *mode,
@@ -425,7 +426,7 @@ FIRM_API ir_node *new_d_DivRL(dbg_info *db, ir_node *memop,
  * @param   *op1   The first operand.
  * @param   *op2   The second operand.
  * @param   *mode  The mode of the result.
- * @param   state  The pinned state.
+ * @param   pinned Whether the node is pinned in its block.
  */
 FIRM_API ir_node *new_DivRL(ir_node *memop, ir_node *op1, ir_node *op2,
                             ir_mode *mode, int pinned);
