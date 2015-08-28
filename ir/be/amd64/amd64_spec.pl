@@ -306,7 +306,7 @@ sar => {
 
 sub => {
 	template  => $binop,
-	irn_flags => [ "rematerializable" ],
+	irn_flags => [ "modify_flags", "rematerializable" ],
 	emit      => "sub%M %AM",
 },
 
