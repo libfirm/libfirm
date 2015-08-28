@@ -571,9 +571,8 @@ static ir_node *create_sext(ir_node *new_block, ir_node *const node, ir_mode *mo
 
 static ir_node *create_zext(ir_node *new_block, ir_node *const node)
 {
-	dbg_info *const dbgi      = get_irn_dbg_info(node);
-	ir_node  *const xor0      = new_bd_amd64_xor_0(dbgi, new_block);
-	arch_set_irn_register_reqs_in(xor0, reg_reqs);
+	dbg_info *const dbgi = get_irn_dbg_info(node);
+	ir_node  *const xor0 = new_bd_amd64_xor_0(dbgi, new_block);
 	return be_new_Proj(xor0, pn_amd64_xor_0_res);
 }
 
