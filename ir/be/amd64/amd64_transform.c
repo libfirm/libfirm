@@ -630,7 +630,7 @@ static void perform_address_matching(ir_node *ptr, int *arity,
 	ir_entity *entity = maddr.imm.entity;
 	if (entity != NULL && is_parameter_entity(entity) &&
 		get_entity_parameter_number(entity) == IR_VA_START_PARAMETER_NUMBER)
-		panic("VA_START not supported yet");
+		panic("perform_address_matching: Request for invalid parameter (va_start parameter)");
 
 	addr->immediate = maddr.imm;
 	addr->log_scale = maddr.scale;
@@ -1283,7 +1283,7 @@ static ir_node *gen_Member(ir_node *const node)
 		panic("Sel not lowered");
 	if (is_parameter_entity(entity) &&
 	    get_entity_parameter_number(entity) == IR_VA_START_PARAMETER_NUMBER)
-	    panic("va_start NIY");
+	    panic("gen_Member: Request for invalid parameter (va_start parameter)");
 	amd64_addr_t addr;
 	memset(&addr, 0, sizeof(addr));
 	addr.base_input  = 0;
