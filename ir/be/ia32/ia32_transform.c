@@ -3083,8 +3083,8 @@ static ir_node *try_get_sub_flags(ir_node *cmp, ir_node *sub, bool *swap)
 
 	if (!(block_dominates(cmp_block, sub_block) ||
 	      block_dominates(sub_block, cmp_block))) {
-		    return NULL;
-	    }
+		return NULL;
+	}
 
 	ir_node *cmp_left  = get_Cmp_left(cmp);
 	ir_node *cmp_right = get_Cmp_right(cmp);
