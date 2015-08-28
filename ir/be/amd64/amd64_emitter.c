@@ -316,17 +316,13 @@ static void amd64_emit_am(const ir_node *const node, bool indirect_star)
 			= (const amd64_binop_addr_attr_t*)attr;
 		amd64_emit_immediate32(true, &binop_attr->u.immediate);
 		be_emit_cstring(", ");
-		const arch_register_t *reg = arch_get_irn_register_in(node, 0);
-		emit_register_mode(reg, binop_attr->base.insn_mode);
-		return;
+		goto emit_reg_in0;
 	}
 	case AMD64_OP_REG_REG: {
-		const arch_register_t *reg0 = arch_get_irn_register_in(node, 0);
 		const arch_register_t *reg1 = arch_get_irn_register_in(node, 1);
 		emit_register_mode(reg1, attr->insn_mode);
 		be_emit_cstring(", ");
-		emit_register_mode(reg0, attr->insn_mode);
-		return;
+		goto emit_reg_in0;
 	}
 	case AMD64_OP_REG_ADDR: {
 		const amd64_binop_addr_attr_t *const binop_attr
@@ -343,25 +339,25 @@ static void amd64_emit_am(const ir_node *const node, bool indirect_star)
 			= (const amd64_binop_addr_attr_t*)attr;
 		amd64_emit_immediate32(true, &binop_attr->u.immediate);
 		be_emit_cstring(", ");
-		amd64_emit_addr(node, &attr->addr);
-		return;
+		goto emit_addr;
 	}
 	case AMD64_OP_ADDR:
 		if (indirect_star)
 			be_emit_char('*');
-		amd64_emit_addr(node, &attr->addr);
-		return;
+		goto emit_addr;
 	case AMD64_OP_ADDR_REG: {
 		amd64_binop_addr_attr_t const *const binop_attr = (amd64_binop_addr_attr_t const*)attr;
 		arch_register_t const *const reg = arch_get_irn_register_in(node, binop_attr->u.reg_input);
 		emit_register_mode(reg, binop_attr->base.insn_mode);
 		be_emit_cstring(", ");
+emit_addr:
 		amd64_emit_addr(node, &attr->addr);
 		return;
 	}
 	case AMD64_OP_REG: {
 		if (indirect_star)
 			be_emit_char('*');
+emit_reg_in0:;
 		const arch_register_t *reg = arch_get_irn_register_in(node, 0);
 		emit_register_mode(reg, attr->insn_mode);
 		return;
