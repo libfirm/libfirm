@@ -335,7 +335,7 @@ xor_0 => {
 	irn_flags => [ "modify_flags", "rematerializable" ],
 	out_reqs  => [ "gp", "flags" ],
 	outs      => [ "res", "flags" ],
-	fixed     => "amd64_op_mode_t op_mode = AMD64_OP_REG_REG;",
+	fixed     => "amd64_op_mode_t op_mode = AMD64_OP_NONE;",
 	emit      => "xorl %3D0, %3D0",
 },
 
@@ -515,7 +515,7 @@ xorpd_0 => {
 	irn_flags => [ "rematerializable" ],
 	out_reqs  => [ "xmm" ],
 	outs      => [ "res" ],
-	fixed     => "amd64_op_mode_t op_mode = AMD64_OP_REG_REG;",
+	fixed     => "amd64_op_mode_t op_mode = AMD64_OP_NONE;",
 	emit      => "xorpd %^D0, %^D0",
 },
 

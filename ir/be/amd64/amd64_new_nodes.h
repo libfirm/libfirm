@@ -38,12 +38,10 @@ static inline bool amd64_has_binop_attr(const ir_node *node)
 static inline bool amd64_has_addr_attr(const ir_node *node)
 {
 	const amd64_attr_t *attr = get_amd64_attr_const(node);
-	return (amd64_has_binop_attr(node)
+	return amd64_has_binop_attr(node)
 		|| attr->op_mode == AMD64_OP_ADDR
 		|| attr->op_mode == AMD64_OP_REG
-		|| attr->op_mode == AMD64_OP_IMM32)
-	    && !is_amd64_xor_0(node)
-	    && !is_amd64_xorpd_0(node);
+		|| attr->op_mode == AMD64_OP_IMM32;
 }
 
 static inline amd64_addr_attr_t *get_amd64_addr_attr(ir_node *node)
