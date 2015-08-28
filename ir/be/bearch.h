@@ -29,6 +29,13 @@ extern arch_register_req_t const arch_memory_requirement;
 extern arch_register_req_t const arch_no_requirement;
 #define arch_no_register_req (&arch_no_requirement)
 
+static inline reg_out_info_t *get_out_info_n(ir_node const *const node, unsigned const pos)
+{
+	backend_info_t const *const info = be_get_info(node);
+	assert(pos < ARR_LEN(info->out_infos));
+	return &info->out_infos[pos];
+}
+
 /**
  * Get the register allocated for a value.
  */
@@ -63,16 +70,15 @@ static inline const arch_register_req_t *arch_get_irn_register_req_in(
 static inline const arch_register_req_t *arch_get_irn_register_req_out(
 		const ir_node *node, unsigned pos)
 {
-	const backend_info_t *info = be_get_info(node);
-	return info->out_infos[pos].req;
+	reg_out_info_t const *const out = get_out_info_n(node, pos);
+	return out->req;
 }
 
 static inline void arch_set_irn_register_req_out(ir_node *node, unsigned pos,
 		const arch_register_req_t *req)
 {
-	backend_info_t *info = be_get_info(node);
-	assert(pos < (unsigned)ARR_LEN(info->out_infos));
-	info->out_infos[pos].req = req;
+	reg_out_info_t *const out = get_out_info_n(node, pos);
+	out->req = req;
 }
 
 static inline void arch_set_irn_register_reqs_in(ir_node *node,
@@ -98,9 +104,7 @@ static inline reg_out_info_t *get_out_info(const ir_node *node)
 		node = get_Proj_pred(node);
 	}
 
-	const backend_info_t *info = be_get_info(node);
-	assert(pos < ARR_LEN(info->out_infos));
-	return &info->out_infos[pos];
+	return get_out_info_n(node, pos);
 }
 
 static inline const arch_register_req_t *arch_get_irn_register_req(const ir_node *node)

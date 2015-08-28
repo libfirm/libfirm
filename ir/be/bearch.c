@@ -62,14 +62,6 @@ arch_register_req_t const arch_no_requirement = {
 	.cls = &arch_none_cls,
 };
 
-static reg_out_info_t *get_out_info_n(const ir_node *node, unsigned pos)
-{
-	const backend_info_t *info = be_get_info(node);
-	assert(pos < (unsigned)ARR_LEN(info->out_infos));
-	return &info->out_infos[pos];
-}
-
-
 const arch_register_t *arch_get_irn_register(const ir_node *node)
 {
 	const reg_out_info_t *out = get_out_info(node);
