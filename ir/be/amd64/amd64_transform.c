@@ -1690,9 +1690,22 @@ static ir_node *gen_Call(ir_node *node)
 	unsigned const n_caller_saves = rbitset_popcount(cconv->caller_saves, N_AMD64_REGISTERS);
 	unsigned const out_arity      = o + cconv->n_reg_results + n_caller_saves;
 
+	/* create call attributes */
+	amd64_call_addr_attr_t call_attr = {
+		.base = {
+			.base = {
+				.op_mode = op_mode,
+			},
+			.needs_frame_ent = false,
+			.insn_mode       = INSN_MODE_64,
+			.addr            = addr,
+		},
+		.call_tp = type,
+	};
+
 	/* create call node */
 	ir_node *call = new_bd_amd64_call(dbgi, new_block, in_arity, in, out_arity,
-	                                  op_mode, addr);
+	                                  &call_attr);
 	arch_set_irn_register_reqs_in(call, in_req);
 
 	fix_node_mem_proj(call, mem_proj);

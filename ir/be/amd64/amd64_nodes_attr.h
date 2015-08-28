@@ -118,4 +118,9 @@ typedef struct {
 	ir_entity             *table_entity;
 } amd64_switch_jmp_attr_t;
 
+typedef struct {
+	amd64_addr_attr_t  base;
+	ir_type           *call_tp;
+} amd64_call_addr_attr_t;
+
 #endif

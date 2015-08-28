@@ -75,6 +75,9 @@ $mode_xmm   = "amd64_mode_xmm";
 	amd64_shift_attr_t =>
 		"be_info_init_irn(res, irn_flags, in_reqs, n_res);\n"
 		."\t*attr = *attr_init;\n",
+	amd64_call_addr_attr_t =>
+		"be_info_init_irn(res, irn_flags, in_reqs, n_res);\n"
+		."\t*attr = *attr_init;",
 );
 
 my $binop = {
@@ -444,9 +447,8 @@ call => {
 	in_reqs   => "...",
 	out_reqs  => "...",
 	outs      => [ "M", "stack", "flags", "first_result" ],
-	attr_type => "amd64_addr_attr_t",
-	attr      => "amd64_op_mode_t op_mode, amd64_addr_t addr",
-	fixed     => "amd64_insn_mode_t insn_mode = INSN_MODE_64;\n",
+	attr_type => "amd64_call_addr_attr_t",
+	attr      => "const amd64_call_addr_attr_t *attr_init",
 	emit      => "call %*AM",
 },
 

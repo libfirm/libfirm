@@ -239,5 +239,15 @@ static int amd64_switch_jmp_attrs_equal(const ir_node *const a,
 	return amd64_attrs_equal(a, b) && attr_a->table == attr_b->table;
 }
 
+static int amd64_call_addr_attrs_equal(const ir_node *const a,
+                                        const ir_node *const b)
+{
+	const amd64_call_addr_attr_t *const attr_a
+		= get_amd64_call_addr_attr_const(a);
+	const amd64_call_addr_attr_t *const attr_b
+		= get_amd64_call_addr_attr_const(b);
+	return amd64_addr_attrs_equal(a, b) && attr_a->call_tp == attr_b->call_tp;
+}
+
 /* Include the generated constructor functions */
 #include "gen_amd64_new_nodes.c.inl"

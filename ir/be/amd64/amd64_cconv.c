@@ -85,12 +85,8 @@ x86_cconv_t *amd64_decide_calling_convention(ir_type *function_type,
 			irg_walk_graph(irg, check_omit_fp, NULL, &omit_fp);
 	}
 
-	mtp_additional_properties mtp
-		= get_method_additional_properties(function_type);
 	unsigned *caller_saves = rbitset_malloc(N_AMD64_REGISTERS);
 	unsigned *callee_saves = rbitset_malloc(N_AMD64_REGISTERS);
-	if (mtp & mtp_property_returns_twice)
-		panic("amd64: returns_twice calling convention NIY");
 	rbitset_copy(caller_saves, default_caller_saves, N_AMD64_REGISTERS);
 	rbitset_copy(callee_saves, default_callee_saves, N_AMD64_REGISTERS);
 
