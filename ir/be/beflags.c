@@ -58,12 +58,11 @@ static bool default_check_modifies(const ir_node *node)
 	return arch_irn_is(node, modify_flags);
 }
 
-static bool default_try_replace(ir_node *consumers, ir_node *flags, ir_node *available, unsigned pn)
+static bool default_try_replace(ir_node *consumers, ir_node *flags, ir_node *available)
 {
 	(void)consumers;
 	(void)flags;
 	(void)available;
-	(void)pn;
 	return false;
 }
 
@@ -152,10 +151,8 @@ static bool rematerialize_or_move(ir_node *flags_needed, ir_node *node,
 	}
 
 	/* Try to use the flags available at this point. */
-	if (available_flags != NULL &&
-	    try_replace(flag_consumers, flags_needed, available_flags, pn)) {
+	if (available_flags && try_replace(flag_consumers, flags_needed, available_flags))
 		return true;
-	}
 
 	changed = true;
 	ir_node *copy = remat(flags_needed, node);

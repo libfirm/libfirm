@@ -555,13 +555,18 @@ COMPILETIME_ASSERT((int)(n_ia32_Sub_minuend)    == (int)(n_ia32_Cmp_left) &&
                    (int)(n_ia32_Sub_subtrahend) == (int)(n_ia32_Cmp_right),
                    Cmp_and_Sub_operand_numbers_equal)
 
-static bool ia32_try_replace_flags(ir_node *consumers, ir_node *flags, ir_node *available, unsigned pn)
+static bool ia32_try_replace_flags(ir_node *consumers, ir_node *flags, ir_node *available)
 {
 	if (!is_ia32_Sub(flags) && !is_ia32_Cmp(flags))
 		return false;
-	if (!is_ia32_Sub(available) && !is_ia32_Cmp(available))
+	unsigned pn;
+	if (is_ia32_Sub(available)) {
+		pn = pn_ia32_Sub_flags;
+	} else if (is_ia32_Cmp(available)) {
+		pn = pn_ia32_Cmp_eflags;
+	} else {
 		return false;
-
+	}
 	/* Assuming CSE would have found the more obvious case */
 	ir_node *const flags_left  = get_irn_n(flags,     n_ia32_binary_left);
 	ir_node *const avail_right = get_irn_n(available, n_ia32_binary_right);
