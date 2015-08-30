@@ -254,14 +254,11 @@ static void fix_flags_walker(ir_node *block, void *env)
 				pn           = get_Proj_num(flags_needed);
 				flags_needed = get_Proj_pred(flags_needed);
 			}
-			flag_consumers = node;
-			set_irn_link(flag_consumers, NULL);
 			assert(arch_irn_is(flags_needed, rematerializable));
-		} else {
-			/* link all consumers in a list */
-			set_irn_link(node, flag_consumers);
-			flag_consumers = node;
 		}
+		/* link all consumers in a list */
+		set_irn_link(node, flag_consumers);
+		flag_consumers = node;
 	}
 
 	if (flags_needed != NULL) {
