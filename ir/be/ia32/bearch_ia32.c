@@ -573,16 +573,16 @@ static bool ia32_try_replace_flags(ir_node *consumers, ir_node *flags, ir_node *
 		return false;
 
 	/* We can use available if we reverse the consumers' condition codes. */
+	arch_set_irn_register_out(available, pn, &ia32_registers[REG_EFLAGS]);
+	ir_node *const proj      = be_get_or_make_Proj_for_pn(available, pn);
 	ir_mode *const flag_mode = ia32_reg_classes[CLASS_ia32_flags].mode;
 	for (ir_node *c = consumers; c != NULL; c = get_irn_link(c)) {
 		x86_condition_code_t cc = get_ia32_condcode(c);
 		set_ia32_condcode(c, x86_invert_condition_code(cc));
 
 		foreach_irn_in(c, i, in) {
-			if (get_irn_mode(in) == flag_mode) {
-				ir_node *const proj = be_new_Proj_reg(available, pn, &ia32_registers[REG_EFLAGS]);
+			if (get_irn_mode(in) == flag_mode)
 				set_irn_n(c, i, proj);
-			}
 		}
 	}
 	return true;
