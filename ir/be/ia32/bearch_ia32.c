@@ -557,34 +557,35 @@ COMPILETIME_ASSERT((int)(n_ia32_Sub_minuend)    == (int)(n_ia32_Cmp_left) &&
 
 static bool ia32_try_replace_flags(ir_node *consumers, ir_node *flags, ir_node *available, unsigned pn)
 {
-	if ((is_ia32_Sub(flags) || is_ia32_Cmp(flags)) &&
-	    (is_ia32_Sub(available) || is_ia32_Cmp(available))) {
+	if (!is_ia32_Sub(flags) && !is_ia32_Cmp(flags))
+		return false;
+	if (!is_ia32_Sub(available) && !is_ia32_Cmp(available))
+		return false;
 
-		ir_node *flags_left  = get_irn_n(flags,     n_ia32_Cmp_left);
-		ir_node *flags_right = get_irn_n(flags,     n_ia32_Cmp_right);
-		ir_node *avail_left  = get_irn_n(available, n_ia32_Cmp_left);
-		ir_node *avail_right = get_irn_n(available, n_ia32_Cmp_right);
+	/* Assuming CSE would have found the more obvious case */
+	ir_node *const flags_left  = get_irn_n(flags,     n_ia32_binary_left);
+	ir_node *const avail_right = get_irn_n(available, n_ia32_binary_right);
+	if (flags_left != avail_right)
+		return false;
+	ir_node *const avail_left  = get_irn_n(available, n_ia32_binary_left);
+	ir_node *const flags_right = get_irn_n(flags,     n_ia32_binary_right);
+	if (avail_left != flags_right)
+		return false;
 
-		/* Assuming CSE would have found the more obvious case */
-		if (flags_left == avail_right && avail_left == flags_right) {
-			/* We can use available if we reverse the
-			 * consumers' condition codes. */
-			ir_mode *const flag_mode = ia32_reg_classes[CLASS_ia32_flags].mode;
-			for (ir_node *c = consumers; c != NULL; c = get_irn_link(c)) {
-				x86_condition_code_t cc = get_ia32_condcode(c);
-				set_ia32_condcode(c, x86_invert_condition_code(cc));
+	/* We can use available if we reverse the consumers' condition codes. */
+	ir_mode *const flag_mode = ia32_reg_classes[CLASS_ia32_flags].mode;
+	for (ir_node *c = consumers; c != NULL; c = get_irn_link(c)) {
+		x86_condition_code_t cc = get_ia32_condcode(c);
+		set_ia32_condcode(c, x86_invert_condition_code(cc));
 
-				foreach_irn_in(c, i, in) {
-					if (get_irn_mode(in) == flag_mode) {
-						ir_node *const proj = be_new_Proj_reg(available, pn, &ia32_registers[REG_EFLAGS]);
-						set_irn_n(c, i, proj);
-					}
-				}
+		foreach_irn_in(c, i, in) {
+			if (get_irn_mode(in) == flag_mode) {
+				ir_node *const proj = be_new_Proj_reg(available, pn, &ia32_registers[REG_EFLAGS]);
+				set_irn_n(c, i, proj);
 			}
-			return true;
 		}
 	}
-	return false;
+	return true;
 }
 
 static void remat_simplifier(ir_node *node, void *env)
