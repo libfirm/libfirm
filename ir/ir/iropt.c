@@ -6289,8 +6289,11 @@ bool may_leave_out_middle_conv(ir_mode *m0, ir_mode *m1, ir_mode *m2)
 {
 	int n_floats = mode_is_float(m0) + mode_is_float(m1) + mode_is_float(m2);
 	if (n_floats == 1) {
-		/* because overflow gives strange results we don't touch this case */
-		return false;
+		int n_signed = mode_is_signed(m0) + mode_is_signed(m1) + mode_is_signed(m2);
+		/* we assume that float modes are always signed */
+		if ((n_signed & 1) != 1) {
+			return false;
+		}
 	} else if (n_floats == 2 && !mode_is_float(m1)) {
 		return false;
 	}
