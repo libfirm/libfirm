@@ -1645,10 +1645,8 @@ static ir_node *gen_Return(ir_node *node)
 	}
 	assert(p == n_ins);
 
-	ir_node *bereturn = new_bd_sparc_Return_reg(dbgi, new_block, n_ins, in);
-	arch_set_irn_register_reqs_in(bereturn, reqs);
-
-	return bereturn;
+	ir_node *const ret = new_bd_sparc_Return_reg(dbgi, new_block, n_ins, in, reqs);
+	return ret;
 }
 
 static ir_node *bitcast_int_to_float(dbg_info *dbgi, ir_node *block,
@@ -1862,15 +1860,9 @@ static ir_node *gen_Call(ir_node *node)
 	unsigned const out_arity = o + cconv->n_reg_results + n_caller_saves;
 
 	/* create call node */
-	ir_node *res;
-	if (entity != NULL) {
-		res = new_bd_sparc_Call_imm(dbgi, new_block, in_arity, in, out_arity,
-		                            type, entity, 0, aggregate_return);
-	} else {
-		res = new_bd_sparc_Call_reg(dbgi, new_block, in_arity, in, out_arity,
-		                            type, aggregate_return);
-	}
-	arch_set_irn_register_reqs_in(res, in_req);
+	ir_node *const res = entity ?
+		new_bd_sparc_Call_imm(dbgi, new_block, in_arity, in, in_req, out_arity, type, entity, 0, aggregate_return) :
+		new_bd_sparc_Call_reg(dbgi, new_block, in_arity, in, in_req, out_arity, type,            aggregate_return);
 
 	/* create output register reqs */
 	arch_set_irn_register_req_out(res, pn_sparc_Call_M, arch_memory_req);

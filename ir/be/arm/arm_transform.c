@@ -1787,8 +1787,7 @@ static ir_node *gen_Return(ir_node *node)
 	}
 	assert(p == n_ins);
 
-	ir_node *ret = new_bd_arm_Return(dbgi, new_block, n_ins, in);
-	arch_set_irn_register_reqs_in(ret, reqs);
+	ir_node *const ret = new_bd_arm_Return(dbgi, new_block, n_ins, in, reqs);
 	return ret;
 }
 
@@ -1913,17 +1912,14 @@ static ir_node *gen_Call(ir_node *node)
 	if (entity != NULL) {
 		/* TODO: use a generic address matcher here
 		 * so we can also handle entity+offset, etc. */
-		res = new_bd_arm_Bl(dbgi, new_block, in_arity, in, out_arity,entity, 0);
+		res = new_bd_arm_Bl(dbgi, new_block, in_arity, in, in_req, out_arity, entity, 0);
 	} else {
 		/* TODO:
 		 * - use a proper shifter_operand matcher
 		 * - we could also use LinkLdrPC
 		 */
-		res = new_bd_arm_LinkMovPC(dbgi, new_block, in_arity, in, out_arity,
-		                           shiftop_input, ARM_SHF_REG, 0, 0);
+		res = new_bd_arm_LinkMovPC(dbgi, new_block, in_arity, in, in_req, out_arity, shiftop_input, ARM_SHF_REG, 0, 0);
 	}
-
-	arch_set_irn_register_reqs_in(res, in_req);
 
 	/* create output register reqs */
 	arch_set_irn_register_req_out(res, pn_arm_Bl_M, arch_memory_req);

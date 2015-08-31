@@ -166,7 +166,7 @@ sub create_constructor
 	# create constructor head
 	my $complete_args = "";
 	if ($arity == $ARITY_VARIABLE) {
-		$complete_args = ", int arity, ir_node *const in[]";
+		$complete_args = ", int const arity, ir_node *const *const in, arch_register_req_t const **const in_reqs";
 	} else {
 		for (my $i = 0; $i < $arity; $i++) {
 			my $opname = $ins ? $$ins[$i] : "op$i";
@@ -216,7 +216,7 @@ EOF
 			$temp .= "\t\t&$reqstruct,\n";
 		}
 		$temp .= "\t};\n";
-	} else {
+	} elsif ($arity == 0) {
 		$temp .= "\tarch_register_req_t const **const in_reqs = NULL;\n";
 	}
 
@@ -288,7 +288,7 @@ EOF
 		$temp .= "\tint const n_res = $out_arity;\n"
 	}
 
-	my $attr_init_code = "(void)irn_flags;(void)in_reqs;(void)n_res;";
+	my $attr_init_code = "(void)irn_flags, (void)n_res;";
 	if ((my $attr_type = $on->{attr_type}) ne "") {
 		$attr_init_code = $init_attr{$attr_type};
 		if (!defined($attr_init_code)) {
@@ -606,6 +606,7 @@ print $out_h <<EOF;
 #ifndef FIRM_BE_${uarch}_GEN_${uarch}_NEW_NODES_H
 #define FIRM_BE_${uarch}_GEN_${uarch}_NEW_NODES_H
 
+#include "be_types.h"
 #include "irnode_t.h"
 
 $obst_enum_op

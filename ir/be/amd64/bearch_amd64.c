@@ -131,9 +131,7 @@ static ir_node *create_push(ir_node *node, ir_node *schedpoint, ir_node *sp,
 	addr.index_input      = NO_INPUT;
 	addr.immediate.entity = ent;
 	ir_node *in[] = { sp, frame, mem };
-	ir_node *push = new_bd_amd64_push_am(dbgi, block, ARRAY_SIZE(in), in,
-	                                     insn_mode, addr);
-	arch_set_irn_register_reqs_in(push, rsp_reg_mem_reqs);
+	ir_node *const push = new_bd_amd64_push_am(dbgi, block, ARRAY_SIZE(in), in, rsp_reg_mem_reqs, insn_mode, addr);
 	sched_add_before(schedpoint, push);
 	return push;
 }
@@ -153,9 +151,7 @@ static ir_node *create_pop(ir_node *node, ir_node *schedpoint, ir_node *sp,
 	addr.immediate.entity = ent;
 	ir_node *in[] = { sp, frame, get_irg_no_mem(irg) };
 
-	ir_node *pop = new_bd_amd64_pop_am(dbgi, block, ARRAY_SIZE(in), in,
-	                                   insn_mode, addr);
-	arch_set_irn_register_reqs_in(pop, rsp_reg_mem_reqs);
+	ir_node *const pop = new_bd_amd64_pop_am(dbgi, block, ARRAY_SIZE(in), in, rsp_reg_mem_reqs, insn_mode, addr);
 	sched_add_before(schedpoint, pop);
 
 	return pop;

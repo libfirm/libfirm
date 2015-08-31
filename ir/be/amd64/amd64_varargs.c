@@ -308,9 +308,7 @@ static ir_node *make_mov_imm32_to_offset_mem(dbg_info *dbgi, ir_node *block, ir_
 			},
 		},
 	};
-	ir_node *result = new_bd_amd64_mov_store(dbgi, block, ARRAY_SIZE(mov_in), mov_in, &mov_attr);
-	arch_set_irn_register_reqs_in(result, gp_am_reqs[1]);
-	return result;
+	return new_bd_amd64_mov_store(dbgi, block, ARRAY_SIZE(mov_in), mov_in, gp_am_reqs[1], &mov_attr);
 }
 
 /*
@@ -342,9 +340,7 @@ static ir_node *make_mov_val64_to_offset_mem(dbg_info *dbgi, ir_node *block, ir_
 			.reg_input = 0,
 		},
 	};
-	ir_node *result = new_bd_amd64_mov_store(dbgi, block, ARRAY_SIZE(mov_in), mov_in, &mov_attr);
-	arch_set_irn_register_reqs_in(result, gp_am_reqs[2]);
-	return result;
+	return new_bd_amd64_mov_store(dbgi, block, ARRAY_SIZE(mov_in), mov_in, gp_am_reqs[2], &mov_attr);
 }
 
 /*
@@ -376,9 +372,7 @@ static ir_node *make_mov_xmmval64_to_offset_mem(dbg_info *dbgi, ir_node *block, 
 			.reg_input = 0,
 		},
 	};
-	ir_node *result = new_bd_amd64_movs_store_xmm(dbgi, block, ARRAY_SIZE(mov_in), mov_in, &mov_attr);
-	arch_set_irn_register_reqs_in(result, xmm_reg_mem_reqs);
-	return result;
+	return new_bd_amd64_movs_store_xmm(dbgi, block, ARRAY_SIZE(mov_in), mov_in, xmm_reg_mem_reqs, &mov_attr);
 }
 
 /*
@@ -397,9 +391,7 @@ static ir_node *make_lea_with_offset_entity(dbg_info *dbgi, ir_node *block,
 			.kind   = X86_IMM_VALUE,
 		},
 	};
-	ir_node *result = new_bd_amd64_lea(dbgi, block, ARRAY_SIZE(lea_in), lea_in, INSN_MODE_64, lea_addr);
-	arch_set_irn_register_reqs_in(result, reg_reqs);
-	return result;
+	return new_bd_amd64_lea(dbgi, block, ARRAY_SIZE(lea_in), lea_in, reg_reqs, INSN_MODE_64, lea_addr);
 }
 
 ir_node *amd64_initialize_va_list(dbg_info *dbgi, ir_node *block, x86_cconv_t *cconv,

@@ -263,9 +263,7 @@ static ir_node *gen_Return(ir_node *node)
 
 	dbg_info *const dbgi  = get_irn_dbg_info(node);
 	ir_node  *const block = be_transform_nodes_block(node);
-	ir_node  *const ret   = new_bd_TEMPLATE_Return(dbgi, block, n_ins, in);
-	arch_set_irn_register_reqs_in(ret, reqs);
-
+	ir_node  *const ret   = new_bd_TEMPLATE_Return(dbgi, block, n_ins, in, reqs);
 	return ret;
 }
 

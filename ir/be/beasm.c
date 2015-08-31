@@ -264,11 +264,12 @@ ir_node *be_make_asm(ir_node const *const node, ir_node **in, arch_register_req_
 	ARR_APP1(arch_register_req_t const*, in_reqs,  arch_memory_req);
 	ARR_APP1(arch_register_req_t const*, out_reqs, arch_memory_req);
 
-	dbg_info *const dbgi     = get_irn_dbg_info(node);
-	unsigned  const n_ins    = ARR_LEN(in);
-	unsigned  const n_outs   = ARR_LEN(out_reqs);
-	ident    *const text     = get_ASM_text(node);
-	ir_node  *const new_node = be_new_Asm(dbgi, block, n_ins, in, n_outs, text, operands);
+	dbg_info                   *const dbgi        = get_irn_dbg_info(node);
+	unsigned                    const n_ins       = ARR_LEN(in);
+	unsigned                    const n_outs      = ARR_LEN(out_reqs);
+	ident                      *const text        = get_ASM_text(node);
+	arch_register_req_t const **const dup_in_reqs = DUP_ARR_D(arch_register_req_t const*, obst, in_reqs);
+	ir_node                    *const new_node    = be_new_Asm(dbgi, block, n_ins, in, dup_in_reqs, n_outs, text, operands);
 	for (unsigned i = 0, n = isa_if->n_register_classes; i < n; ++i) {
 		if (add_pressure[i] == 0)
 			continue;
@@ -280,8 +281,6 @@ ir_node *be_make_asm(ir_node const *const node, ir_node **in, arch_register_req_
 	for (size_t o = 0; o < n_outs; ++o) {
 		info->out_infos[o].req = out_reqs[o];
 	}
-	arch_register_req_t const **const dup_in_reqs = DUP_ARR_D(arch_register_req_t const*, obst, in_reqs);
-	arch_set_irn_register_reqs_in(new_node, dup_in_reqs);
 
 	DEL_ARR_F(in);
 	DEL_ARR_F(in_reqs);

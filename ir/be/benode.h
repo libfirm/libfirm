@@ -186,7 +186,7 @@ ir_node *be_new_Phi0(ir_node *block, ir_mode *mode, arch_register_req_t const *r
  */
 ir_node *be_complete_Phi(ir_node *phi, unsigned n_ins, ir_node **ins);
 
-ir_node *be_new_Asm(dbg_info *dbgi, ir_node *block, int n_ins, ir_node **ins, int n_outs, ident *text, void *operands);
+ir_node *be_new_Asm(dbg_info *dbgi, ir_node *block, int n_ins, ir_node **ins, arch_register_req_t const **in_reqs, int n_outs, ident *text, void *operands);
 
 /**
  * Create a new Relocation node. The node returns the reference to an entity

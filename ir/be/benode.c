@@ -466,11 +466,11 @@ void be_set_phi_reg_req(ir_node *node, const arch_register_req_t *req)
 	}
 }
 
-ir_node *be_new_Asm(dbg_info *const dbgi, ir_node *const block, int const n_ins, ir_node **const ins, int const n_outs, ident *const text, void *const operands)
+ir_node *be_new_Asm(dbg_info *const dbgi, ir_node *const block, int const n_ins, ir_node **const ins, arch_register_req_t const **const in_reqs, int const n_outs, ident *const text, void *const operands)
 {
 	ir_graph *const irg  = get_irn_irg(block);
 	ir_node  *const asmn = new_ir_node(dbgi, irg, block, op_be_Asm, mode_T, n_ins, ins);
-	be_info_init_irn(asmn, arch_irn_flags_none, NULL, n_outs);
+	be_info_init_irn(asmn, arch_irn_flags_none, in_reqs, n_outs);
 
 	be_asm_attr_t *const attr = (be_asm_attr_t*)get_irn_generic_attr(asmn);
 	attr->text     = text;

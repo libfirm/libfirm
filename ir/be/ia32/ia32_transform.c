@@ -4329,11 +4329,8 @@ static ir_node *gen_Return(ir_node *node)
 	}
 	assert(p == n_ins);
 
-	ir_node *returnn = new_bd_ia32_Return(dbgi, new_block, n_ins, in,
-	                                      current_cconv->sp_delta);
-	arch_set_irn_register_reqs_in(returnn, reqs);
-
-	return returnn;
+	ir_node *const ret = new_bd_ia32_Return(dbgi, new_block, n_ins, in, reqs, current_cconv->sp_delta);
+	return ret;
 }
 
 static ir_node *gen_Alloc(ir_node *node)
@@ -5063,8 +5060,7 @@ static ir_node *gen_Call(ir_node *node)
 	unsigned const n_out          = o + n_reg_results + n_caller_saves;
 
 	/* Create node. */
-	ir_node *const call = new_bd_ia32_Call(dbgi, block, in_arity, in, n_out, cconv->sp_delta, type);
-	arch_set_irn_register_reqs_in(call, in_req);
+	ir_node *const call = new_bd_ia32_Call(dbgi, block, in_arity, in, in_req, n_out, cconv->sp_delta, type);
 	arch_set_additional_pressure(call, &ia32_reg_classes[CLASS_ia32_gp],
 	                             add_pressure);
 

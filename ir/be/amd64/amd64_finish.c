@@ -102,14 +102,12 @@ static void transform_sub_to_neg_add(ir_node *node,
 		init_lconst_addr(&xor_attr.base.addr, sign_bit_const);
 
 		ir_node *xor_in[] = { in2 };
-		ir_node *xor = new_bd_amd64_xorp(dbgi, block, ARRAY_SIZE(xor_in),
-		                                 xor_in, &xor_attr);
-		arch_set_irn_register_reqs_in(xor, amd64_xmm_reqs);
+		ir_node *const xor = new_bd_amd64_xorp(dbgi, block, ARRAY_SIZE(xor_in), xor_in, amd64_xmm_reqs, &xor_attr);
 		sched_add_before(node, xor);
 		ir_node *const neg = be_new_Proj_reg(xor, pn_amd64_xorp_res, in2_reg);
 
 		ir_node *in[] = { neg, in1 };
-		add = new_bd_amd64_adds(dbgi, block, ARRAY_SIZE(in), in, attr);
+		add = new_bd_amd64_adds(dbgi, block, ARRAY_SIZE(in), in, amd64_xmm_xmm_reqs, attr);
 		pos = pn_amd64_adds_res;
 	} else {
 		assert(is_amd64_sub(node));
@@ -118,10 +116,9 @@ static void transform_sub_to_neg_add(ir_node *node,
 		ir_node *const neg_res = be_new_Proj_reg(neg, pn_amd64_neg_res, out_reg);
 
 		ir_node *in[] = { neg_res, in1 };
-		add = new_bd_amd64_add(dbgi, block, ARRAY_SIZE(in), in, attr);
+		add = new_bd_amd64_add(dbgi, block, ARRAY_SIZE(in), in, amd64_reg_reg_reqs, attr);
 		pos = pn_amd64_add_res;
 	}
-	arch_set_irn_register_reqs_in(add, arch_get_irn_register_reqs_in(node));
 	arch_set_irn_register_out(add, pos, out_reg);
 
 	/* exchange the add and the sub */
@@ -151,10 +148,7 @@ static void amd64_turn_back_am(ir_node *const node, arch_register_t const *const
 	new_addr.mem_input = load_arity;
 	load_in[load_arity++] = get_irn_n(node, attr->addr.mem_input);
 
-	ir_node *load = new_bd_amd64_mov_gp(dbgi, block, load_arity, load_in,
-	                                    attr->insn_mode, AMD64_OP_ADDR,
-	                                    new_addr);
-	arch_set_irn_register_reqs_in(load, gp_am_reqs[load_arity - 1]);
+	ir_node *const load     = new_bd_amd64_mov_gp(dbgi, block, load_arity, load_in, gp_am_reqs[load_arity - 1], attr->insn_mode, AMD64_OP_ADDR, new_addr);
 	ir_node *const load_res = be_new_Proj_reg(load, pn_amd64_mov_gp_res, out_reg);
 
 	/* change operation */
