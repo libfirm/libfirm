@@ -6261,7 +6261,7 @@ static unsigned get_significand_size(ir_mode *mode)
 }
 
 /**
- * Returns true if a conversion from mode @p m0 to @p m1 has the same effect
+ * Returns true if a conversion from mode @p m0 to @p m2 has the same effect
  * as converting from @p m0 to @p m1 and then to @p m2.
  * Classifying the 3 modes as the big(b), middle(m) and small(s) mode this
  * gives the following truth table:
