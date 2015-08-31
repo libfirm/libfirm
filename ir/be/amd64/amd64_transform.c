@@ -1875,9 +1875,10 @@ static ir_node *gen_Phi(ir_node *node)
 	return be_transform_phi(node, req);
 }
 
-typedef ir_node* (*create_mov_func)(dbg_info *dbgi, ir_node *block, int arity, ir_node *const *in, amd64_op_mode_t op_mode, amd64_addr_t addr);
+typedef ir_node* (*create_mov_func)(dbg_info *dbgi, ir_node *block, int arity, ir_node *const *in,
+                                    amd64_insn_mode_t insn_mode, amd64_op_mode_t op_mode, amd64_addr_t addr);
 
-static ir_node *match_mov(dbg_info *dbgi, ir_node *block, ir_node *value,
+static ir_node *match_mov(dbg_info *dbgi, ir_node *block, ir_node *value, amd64_insn_mode_t insn_mode,
                           create_mov_func create_mov, unsigned pn_res)
 {
 	amd64_addr_t addr;
@@ -1915,8 +1916,8 @@ static ir_node *match_mov(dbg_info *dbgi, ir_node *block, ir_node *value,
 	}
 
 	assert((size_t)arity <= ARRAY_SIZE(in));
-	ir_node *new_node = create_mov(dbgi, block, arity, in, op_mode,
-	                               addr);
+	ir_node *new_node = create_mov(dbgi, block, arity, in,
+	                               insn_mode, op_mode, addr);
 	arch_set_irn_register_reqs_in(new_node, reqs);
 
 	if (mem_proj != NULL)
@@ -1925,14 +1926,37 @@ static ir_node *match_mov(dbg_info *dbgi, ir_node *block, ir_node *value,
 	return be_new_Proj(new_node, pn_res);
 }
 
+static ir_node *create_extend_mov(dbg_info *dbgi, ir_node *block, ir_node *value, amd64_insn_mode_t insn_mode)
+{
+	ir_mode         *value_mode  = get_irn_mode(value);
+	bool             is_signed   = mode_is_signed(value_mode);
+	create_mov_func  constructor = is_signed ? new_bd_amd64_movs : new_bd_amd64_mov_gp;
+	int              pn          = is_signed ? pn_amd64_movs_res : pn_amd64_mov_gp_res;
+	return match_mov(dbgi, block, value, insn_mode, constructor, pn);
+}
+
+static ir_node *new_movq_wrapper(dbg_info *dbgi, ir_node *block, int arity, ir_node *const *in,
+                                 amd64_insn_mode_t insn_mode, amd64_op_mode_t op_mode, amd64_addr_t addr)
+{
+	assert(insn_mode == INSN_MODE_64);
+	return new_bd_amd64_movq(dbgi, block, arity, in, op_mode, addr);
+}
+
 static ir_node *create_movq(dbg_info *dbgi, ir_node *block, ir_node *value)
 {
-	return match_mov(dbgi, block, value, new_bd_amd64_movq, pn_amd64_movq_res);
+	return match_mov(dbgi, block, value, INSN_MODE_64, new_movq_wrapper, pn_amd64_movq_res);
+}
+
+static ir_node *new_cvtsd2ss_wrapper(dbg_info *dbgi, ir_node *block, int arity, ir_node *const *in,
+                                     amd64_insn_mode_t insn_mode, amd64_op_mode_t op_mode, amd64_addr_t addr)
+{
+	assert(insn_mode == INSN_MODE_64);
+	return new_bd_amd64_cvtsd2ss(dbgi, block, arity, in, op_mode, addr);
 }
 
 static ir_node *create_cvtsd2ss(dbg_info *dbgi, ir_node *block, ir_node *value)
 {
-	return match_mov(dbgi, block, value, new_bd_amd64_cvtsd2ss,
+	return match_mov(dbgi, block, value, INSN_MODE_64, new_cvtsd2ss_wrapper,
 	                 pn_amd64_cvtsd2ss_res);
 }
 
@@ -1951,9 +1975,26 @@ static ir_node *gen_Conv(ir_node *node)
 	if (dst_bits == 128) {
 		/* int -> 2xdouble */
 		assert(get_mode_arithmetic(src_mode) == irma_twos_complement);
-		assert(src_bits == 64);
 		assert(dst_mode == amd64_mode_xmm);
-		return create_movq(dbgi, block, op);
+
+		if (src_bits < 64) {
+			amd64_insn_mode_t insn_mode = get_insn_mode_from_mode(src_mode);
+			op = create_extend_mov(dbgi, block, op, insn_mode);
+			// No point in address matching here, the
+			// sign-/zero-extending mov has done that
+			// already.
+			ir_node *in[] = { op };
+			amd64_addr_t addr = {
+				.base_input = NO_INPUT,
+				.index_input = NO_INPUT,
+				.mem_input = NO_INPUT,
+			};
+			ir_node *movq = new_bd_amd64_movq(dbgi, block, 1, in, AMD64_OP_REG, addr);
+			arch_set_irn_register_reqs_in(movq, reg_reqs);
+			return be_new_Proj(movq, pn_amd64_movq_res);
+		} else {
+			return create_movq(dbgi, block, op);
+		}
 	} else if (src_bits == 128) {
 		/* 2xdouble -> float */
 		assert(src_mode == amd64_mode_xmm);
