@@ -804,6 +804,7 @@ static ir_node *gen_binop_xmm(ir_node *node, ir_node *op0, ir_node *op1,
 	ir_mode *mode  = get_irn_mode(op0);
 	amd64_args_t args;
 	memset(&args, 0, sizeof(args));
+	args.attr.base.insn_mode = INSN_MODE_64;
 
 	ir_node *load;
 	ir_node *op;
