@@ -5398,64 +5398,65 @@ cmp_x_eq_0:
 
 		/* for integer modes, we have more */
 		if (mode_is_int(mode) && !is_Const(left)) {
-			if ((relation == ir_relation_less || relation == ir_relation_greater_equal) &&
-				tarval_cmp(tv, get_mode_null(mode)) == ir_relation_greater) {
-				bitinfo const *const bl = get_bitinfo(left);
-				if (bl && !is_relation(ir_relation_false, relation, possible)
-				       && !is_relation(ir_relation_true,  relation, possible)) {
-					ir_tarval *const uneq = tarval_or(tarval_andnot(tv, bl->z), tarval_andnot(bl->o, tv));
-					int        const hi   = get_tarval_highest_bit(uneq);
-					if (hi >= 0) {
-						/* Example: 0b????0101 < 0b11001000 -> 0b????0101 <= 0b11000101
-						 * It is possible that o <= tv <= z and it is known that left and
-						 * tv differ in at least one bit.  Reduce the constant by the
-						 * value of the highest differing bit and set all bits below to
-						 * the maximum possible value of the left hand side, i.e. z.
-						 * This converges in O(n) in comparison to l < c -> l <= c - 1,
-						 * which converges in O(2**n). */
-						ir_tarval *const one   = get_mode_one(mode);
-						ir_tarval *const hibit = tarval_shl_unsigned(one, hi);
-						ir_tarval *const mask  = tarval_sub(hibit, one, NULL);
-						tv = tarval_or(tarval_andnot(tarval_sub(tv, hibit, NULL), mask), tarval_and(bl->z, mask));
-						goto reduced_tv;
+			if (!is_relation(ir_relation_false, relation, possible) &&
+			    !is_relation(ir_relation_true,  relation, possible)) {
+				if ((relation == ir_relation_less || relation == ir_relation_greater_equal) &&
+					tarval_cmp(tv, get_mode_null(mode)) == ir_relation_greater) {
+					bitinfo const *const bl = get_bitinfo(left);
+					if (bl) {
+						ir_tarval *const uneq = tarval_or(tarval_andnot(tv, bl->z), tarval_andnot(bl->o, tv));
+						int        const hi   = get_tarval_highest_bit(uneq);
+						if (hi >= 0) {
+							/* Example: 0b????0101 < 0b11001000 -> 0b????0101 <= 0b11000101
+							 * It is possible that o <= tv <= z and it is known that left and
+							 * tv differ in at least one bit.  Reduce the constant by the
+							 * value of the highest differing bit and set all bits below to
+							 * the maximum possible value of the left hand side, i.e. z.
+							 * This converges in O(n) in comparison to l < c -> l <= c - 1,
+							 * which converges in O(2**n). */
+							ir_tarval *const one   = get_mode_one(mode);
+							ir_tarval *const hibit = tarval_shl_unsigned(one, hi);
+							ir_tarval *const mask  = tarval_sub(hibit, one, NULL);
+							tv = tarval_or(tarval_andnot(tarval_sub(tv, hibit, NULL), mask), tarval_and(bl->z, mask));
+							goto reduced_tv;
+						}
 					}
-				}
 
-				/* c > 0 : a < c  ==>  a <= (c - 1)    a >= c  ==>  a > (c - 1) */
-				tv = tarval_sub(tv, get_mode_one(mode), NULL);
-				goto reduced_tv;
-			} else if ((relation == ir_relation_greater || relation == ir_relation_less_equal) &&
-				tarval_cmp(tv, get_mode_null(mode)) == ir_relation_less) {
-				bitinfo const *const bl = get_bitinfo(left);
-				if (bl && !is_relation(ir_relation_false, relation, possible)
-				       && !is_relation(ir_relation_true,  relation, possible)) {
-					ir_tarval *const uneq = tarval_or(tarval_andnot(tv, bl->z), tarval_andnot(bl->o, tv));
-					int        const hi   = get_tarval_highest_bit(uneq);
-					if (hi >= 0) {
-						/* Example: 0b????0101 > 0b11001000 -> 0b????0101 >= 0b11010101
-						 * It is possible that o <= tv <= z and it is known that left and
-						 * tv differ in at least one bit.  Increase the constant by the
-						 * value of the highest differing bit and set all bits below to
-						 * the maximum possible value of the left hand side, i.e. z.
-						 * This converges in O(n) in comparison to l > c -> l >= c + 1,
-						 * which converges in O(2**n). */
-						ir_tarval *const one   = get_mode_one(mode);
-						ir_tarval *const hibit = tarval_shl_unsigned(one, hi);
-						ir_tarval *const mask  = tarval_sub(hibit, one, NULL);
-						tv = tarval_or(tarval_andnot(tarval_add(tv, hibit), mask), tarval_and(bl->o, mask));
-						goto reduced_tv;
+					/* c > 0 : a < c  ==>  a <= (c - 1)    a >= c  ==>  a > (c - 1) */
+					tv = tarval_sub(tv, get_mode_one(mode), NULL);
+					goto reduced_tv;
+				} else if ((relation == ir_relation_greater || relation == ir_relation_less_equal) &&
+					tarval_cmp(tv, get_mode_null(mode)) == ir_relation_less) {
+					bitinfo const *const bl = get_bitinfo(left);
+					if (bl) {
+						ir_tarval *const uneq = tarval_or(tarval_andnot(tv, bl->z), tarval_andnot(bl->o, tv));
+						int        const hi   = get_tarval_highest_bit(uneq);
+						if (hi >= 0) {
+							/* Example: 0b????0101 > 0b11001000 -> 0b????0101 >= 0b11010101
+							 * It is possible that o <= tv <= z and it is known that left and
+							 * tv differ in at least one bit.  Increase the constant by the
+							 * value of the highest differing bit and set all bits below to
+							 * the maximum possible value of the left hand side, i.e. z.
+							 * This converges in O(n) in comparison to l > c -> l >= c + 1,
+							 * which converges in O(2**n). */
+							ir_tarval *const one   = get_mode_one(mode);
+							ir_tarval *const hibit = tarval_shl_unsigned(one, hi);
+							ir_tarval *const mask  = tarval_sub(hibit, one, NULL);
+							tv = tarval_or(tarval_andnot(tarval_add(tv, hibit), mask), tarval_and(bl->o, mask));
+							goto reduced_tv;
+						}
 					}
-				}
 
-				/* c < 0 : a > c  ==>  a >= (c + 1)    a <= c  ==>  a < (c + 1) */
-				tv = tarval_add(tv, get_mode_one(mode));
+					/* c < 0 : a > c  ==>  a >= (c + 1)    a <= c  ==>  a < (c + 1) */
+					tv = tarval_add(tv, get_mode_one(mode));
 
 reduced_tv:
-				assert(tarval_is_constant(tv));
-				relation ^= ir_relation_equal;
-				rel_eq    = get_complementary_relations(ir_relation_equal, relation, possible);
-				changedc  = true;
-				DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_CNST_MAGN);
+					assert(tarval_is_constant(tv));
+					relation ^= ir_relation_equal;
+					rel_eq    = get_complementary_relations(ir_relation_equal, relation, possible);
+					changedc  = true;
+					DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_CNST_MAGN);
+				}
 			}
 
 			/* the following reassociations work only for == and != */
