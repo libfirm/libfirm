@@ -511,7 +511,7 @@ static ir_node *pick_delay_slot_for(ir_node *node)
 		sched_foreach(succ, schedpoint) {
 			if (has_delay_slot(schedpoint))
 				break;
-			/* can't move pinned nodes accross blocks */
+			/* can't move pinned nodes across blocks */
 			if (get_irn_pinned(schedpoint))
 				continue;
 			/* restore doesn't model register window switching correctly,
@@ -524,7 +524,7 @@ static ir_node *pick_delay_slot_for(ir_node *node)
 			if (!is_legal_delay_slot_filler(schedpoint))
 				continue;
 			if (can_move_up_into_delayslot(schedpoint, node)) {
-				/* it's fine to move the insn accross blocks */
+				/* it's fine to move the insn across blocks */
 				return schedpoint;
 			} else if (is_sparc_Bicc(node) || is_sparc_fbfcc(node)) {
 				ir_node *proj = get_Block_cfgpred(succ, 0);
