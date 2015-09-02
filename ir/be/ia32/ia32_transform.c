@@ -2939,21 +2939,16 @@ static ir_node *gen_Switch(ir_node *node)
 	const ir_switch_table *table = get_Switch_table(node);
 	table = ir_switch_table_duplicate(irg, table);
 
-	dbg_info *dbgi     = get_irn_dbg_info(node);
-	ir_node  *block    = be_transform_nodes_block(node);
-	unsigned  n_outs   = get_Switch_n_outs(node);
-	ir_node  *new_node = new_bd_ia32_SwitchJmp(dbgi, block, noreg_GP, new_sel,
-	                                           n_outs, table);
+	dbg_info *const dbgi     = get_irn_dbg_info(node);
+	ir_node  *const block    = be_transform_nodes_block(node);
+	ir_node  *const base     = get_global_base(irg);
+	unsigned  const n_outs   = get_Switch_n_outs(node);
+	ir_node  *const new_node = new_bd_ia32_SwitchJmp(dbgi, block, base, new_sel, n_outs, table);
 	set_ia32_am_scale(new_node, 2);
 	set_ia32_op_type(new_node, ia32_AddrModeS);
 	set_ia32_ls_mode(new_node, ia32_mode_gp);
 	SET_IA32_ORIG_NODE(new_node, node);
-	ia32_attr_t *const attr = get_ia32_attr(new_node);
-	attr->am_imm = (x86_imm32_t) {
-		// FIXME This seems wrong. GCC uses PIC for switch on OS X.
-		.kind   = X86_IMM_ADDR,
-		.entity = entity,
-	};
+	set_am_const_entity(new_node, entity);
 
 	return new_node;
 }
