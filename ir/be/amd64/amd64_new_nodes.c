@@ -29,6 +29,36 @@
 #include "bearch_amd64_t.h"
 #include "gen_amd64_regalloc_if.h"
 
+amd64_insn_mode_t get_amd64_insn_mode(const ir_node *node)
+{
+	if (is_amd64_mov_imm(node)) {
+		const amd64_movimm_attr_t *const attr
+			= get_amd64_movimm_attr_const(node);
+		return attr->insn_mode;
+	} else if (amd64_has_addr_attr(node)) {
+		amd64_addr_attr_t const *const attr = get_amd64_addr_attr_const(node);
+		return attr->insn_mode;
+	} else if (amd64_has_cc_attr(node)) {
+		amd64_cc_attr_t const *const attr = get_amd64_cc_attr_const(node);
+		return attr->insn_mode;
+	} else {
+		panic("Node attributes do not contain insn_mode");
+	}
+}
+
+int get_insn_mode_bits(amd64_insn_mode_t insn_mode)
+{
+	switch (insn_mode) {
+	case INSN_MODE_8:       return 8;
+	case INSN_MODE_16:      return 16;
+	case INSN_MODE_32:      return 32;
+	case INSN_MODE_64:      return 64;
+	case INSN_MODE_128:     return 128;
+	case INSN_MODE_INVALID:
+	default:                panic("bad insn mode");
+	}
+}
+
 static const char *get_op_mode_string(amd64_op_mode_t mode)
 {
 	switch (mode) {

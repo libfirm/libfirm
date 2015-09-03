@@ -149,6 +149,9 @@ static inline amd64_call_addr_attr_t *get_amd64_call_addr_attr (ir_node *node)
 	return (amd64_call_addr_attr_t*)get_irn_generic_attr(node);
 }
 
+amd64_insn_mode_t get_amd64_insn_mode(const ir_node *node);
+int get_insn_mode_bits(amd64_insn_mode_t insn_mode);
+
 /* Include the generated headers */
 #include "gen_amd64_new_nodes.h"
 

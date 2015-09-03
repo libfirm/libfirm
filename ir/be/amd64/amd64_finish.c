@@ -58,19 +58,6 @@ static bool try_swap_inputs(ir_node *node)
 	return false;
 }
 
-static int get_insn_mode_bits(amd64_insn_mode_t insn_mode)
-{
-	switch (insn_mode) {
-	case INSN_MODE_8:       return 8;
-	case INSN_MODE_16:      return 16;
-	case INSN_MODE_32:      return 32;
-	case INSN_MODE_64:      return 64;
-	case INSN_MODE_128:     return 128;
-	case INSN_MODE_INVALID:
-	default:                panic("bad insn mode");
-	}
-}
-
 /**
   * Transforms a Sub to a Neg + Add, which subsequently allows swapping
   * of the inputs. The swapping is also (implicitly) done here.

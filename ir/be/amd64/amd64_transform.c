@@ -274,7 +274,7 @@ static amd64_insn_mode_t get_insn_mode_from_mode(const ir_mode *mode)
 	case  64: return INSN_MODE_64;
 	case 128: return INSN_MODE_128;
 	}
-	panic("unexpected mode");
+	panic("unexpected mode %+F", mode);
 }
 
 ir_entity *create_float_const_entity(ir_tarval *const tv)
@@ -1208,6 +1208,26 @@ static ir_node *gen_unop(ir_node *const node, int op_pos, unop_constructor gen,
 	amd64_insn_mode_t insn_mode
 		= get_mode_size_bits(mode) > 32 ? INSN_MODE_64 : INSN_MODE_32;
 	ir_node *new_node = gen(dbgi, block, new_op, insn_mode);
+	return be_new_Proj(new_node, pn_res);
+}
+
+typedef ir_node* (*unop_out_constructor)(dbg_info*, ir_node *block,ir_node *op,
+                                         amd64_insn_mode_t insn_mode, amd64_op_mode_t opmode,
+                                         amd64_addr_t addr);
+
+static ir_node *gen_unop_out(ir_node *const node, int op_pos, unop_out_constructor gen,
+                             unsigned pn_res)
+{
+	dbg_info     *const dbgi    = get_irn_dbg_info(node);
+	ir_node      *const block   = be_transform_nodes_block(node);
+	ir_node      *const op      = get_irn_n(node, op_pos);
+	ir_node      *const new_op  = be_transform_node(op);
+	ir_mode      *const op_mode = get_irn_mode(op);
+	// TODO match_am
+	amd64_addr_t  const addr    = { .immediate = { .entity = NULL, }, };
+
+	amd64_insn_mode_t insn_mode = get_insn_mode_from_mode(op_mode);
+	ir_node *new_node = gen(dbgi, block, new_op, insn_mode, AMD64_OP_OUTREG_REG, addr);
 	return be_new_Proj(new_node, pn_res);
 }
 
@@ -2342,6 +2362,119 @@ static ir_node *gen_Proj_Alloc(ir_node *node)
 	panic("invalid Proj->Alloc");
 }
 
+static ir_node *gen_clz(ir_node *node)
+{
+	ir_node           *bsr       = gen_unop_out(node, n_Builtin_max + 1,
+	                                            new_bd_amd64_bsr, pn_amd64_bsr_res);
+	ir_node           *real      = skip_Proj(bsr);
+	dbg_info          *dbgi      = get_irn_dbg_info(real);
+	ir_node           *block     = get_nodes_block(real);
+	amd64_insn_mode_t  insn_mode = get_amd64_insn_mode(real);
+	size_t             mask      = get_insn_mode_bits(insn_mode) - 1;
+	ir_node           *in[]      = { bsr };
+	amd64_binop_addr_attr_t attr = {
+		.base = {
+			.base = {
+				.op_mode = AMD64_OP_REG_IMM,
+			},
+			.insn_mode = insn_mode,
+			.addr = {
+				.immediate = {
+					.entity = NULL,
+				},
+			},
+		},
+		.u = {
+			.immediate = {
+				.entity = NULL,
+				.offset = mask,
+			},
+		},
+	};
+	ir_node *xor = new_bd_amd64_xor(dbgi, block, ARRAY_SIZE(in), in, reg_reqs, &attr);
+	return be_new_Proj(xor, pn_amd64_xor_res);
+}
+
+static ir_node *gen_ctz(ir_node *node)
+{
+	return gen_unop_out(node, n_Builtin_max + 1, new_bd_amd64_bsf, pn_amd64_bsf_res);
+}
+
+static ir_node *gen_ffs(ir_node *node)
+{
+	/* bsf input, result */
+	ir_node           *bsf_res     = gen_unop_out(node, n_Builtin_max + 1,
+	                                            new_bd_amd64_bsf, pn_amd64_bsf_res);
+	ir_node           *bsf         = skip_Proj(bsf_res);
+
+	/* seteq temp */
+	dbg_info          *dbgi        = get_irn_dbg_info(bsf);
+	ir_node           *block       = get_nodes_block(bsf);
+	ir_node           *flags       = be_new_Proj(bsf, pn_amd64_bsf_flags);
+	ir_node           *setcc       = new_bd_amd64_setcc(dbgi, block, flags, x86_cc_equal);
+
+	/* movzbl temp, temp */
+	ir_node           *movzbl_in[] = { setcc };
+	amd64_addr_t movzbl_addr = {
+		.immediate = {
+			.entity = NULL,
+		},
+	};
+	ir_node *movzbl     = new_bd_amd64_mov_gp(dbgi, block, ARRAY_SIZE(movzbl_in), movzbl_in, reg_reqs,
+	                                          INSN_MODE_8, AMD64_OP_REG, movzbl_addr);
+	ir_node *movzbl_res = be_new_Proj(movzbl, pn_amd64_mov_gp_res);
+
+	/* neg temp */
+	amd64_insn_mode_t  insn_mode   = get_amd64_insn_mode(bsf);
+	ir_node *neg     = new_bd_amd64_neg(dbgi, block, movzbl_res, insn_mode);
+	ir_node *neg_res = be_new_Proj(neg, pn_amd64_neg_res);
+
+	/* or temp, result */
+	ir_node *or_in[] = { neg_res, bsf_res };
+	amd64_binop_addr_attr_t or_attr = {
+		.base = {
+			.base = {
+				.op_mode = AMD64_OP_REG_REG,
+			},
+			.insn_mode = insn_mode,
+			.addr = {
+				.immediate = {
+					.entity = NULL,
+				},
+			},
+		},
+		.u = {
+			.reg_input = 1,
+		},
+	};
+	ir_node *or     = new_bd_amd64_or(dbgi, block, ARRAY_SIZE(or_in), or_in, amd64_reg_reg_reqs, &or_attr);
+	ir_node *or_res = be_new_Proj(or, pn_amd64_or_res);
+
+	/* add $1, result */
+	ir_node *inc_in[] = { or_res };
+	amd64_binop_addr_attr_t inc_attr = {
+		.base = {
+			.base = {
+				.op_mode = AMD64_OP_REG_IMM,
+			},
+			.insn_mode = insn_mode,
+			.addr = {
+				.immediate = {
+					.entity = NULL,
+				},
+			},
+		},
+		.u = {
+			.immediate = {
+				.entity = NULL,
+				.offset = 1,
+			},
+		},
+	};
+	ir_node *inc = new_bd_amd64_add(dbgi, block, ARRAY_SIZE(inc_in), inc_in, reg_reqs, &inc_attr);
+	return be_new_Proj(inc, pn_amd64_add_res);
+}
+
 static ir_node *gen_saturating_increment(ir_node *node)
 {
 	dbg_info *dbgi      = get_irn_dbg_info(node);
@@ -2393,6 +2526,12 @@ static ir_node *gen_Builtin(ir_node *node)
 	ir_builtin_kind kind = get_Builtin_kind(node);
 
 	switch (kind) {
+	case ir_bk_clz:
+		return gen_clz(node);
+	case ir_bk_ctz:
+		return gen_ctz(node);
+	case ir_bk_ffs:
+		return gen_ffs(node);
 	case ir_bk_saturating_increment:
 		return gen_saturating_increment(node);
 	case ir_bk_va_start:
@@ -2410,6 +2549,11 @@ static ir_node *gen_Proj_Builtin(ir_node *proj)
 	ir_builtin_kind kind = get_Builtin_kind(node);
 
 	switch (kind) {
+	case ir_bk_clz:
+	case ir_bk_ctz:
+	case ir_bk_ffs:
+	case ir_bk_parity:
+		return new_node;
 	case ir_bk_saturating_increment:
 		return be_new_Proj(new_node, pn_amd64_sbb_res);
 	case ir_bk_va_start:

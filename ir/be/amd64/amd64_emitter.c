@@ -389,19 +389,6 @@ emit_reg_in0:;
 	panic("invalid op_mode");
 }
 
-static amd64_insn_mode_t get_amd64_insn_mode(const ir_node *node)
-{
-	if (is_amd64_mov_imm(node)) {
-		const amd64_movimm_attr_t *const attr
-			= get_amd64_movimm_attr_const(node);
-		return attr->insn_mode;
-	} else {
-		amd64_addr_attr_t const *const attr = get_amd64_addr_attr_const(node);
-		return attr->insn_mode;
-	}
-}
-
-
 static void emit_shiftop(const ir_node *const node)
 {
 	amd64_shift_attr_t const *const attr = get_amd64_shift_attr_const(node);

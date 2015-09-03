@@ -714,8 +714,11 @@ static void amd64_lower_for_target(void)
 		be_after_transform(irg, "lower-copyb");
 	}
 
-	ir_builtin_kind supported[2];
+	ir_builtin_kind supported[5];
 	size_t  s = 0;
+	supported[s++] = ir_bk_ffs;
+	supported[s++] = ir_bk_clz;
+	supported[s++] = ir_bk_ctz;
 	supported[s++] = ir_bk_saturating_increment;
 	supported[s++] = ir_bk_va_start;
 
