@@ -503,8 +503,15 @@ end_of_mods:
 			case 'P': {
 				x86_condition_code_t cc;
 				if (*fmt == 'X') {
+					// Fetch cc from varargs
 					++fmt;
 					cc = (x86_condition_code_t)va_arg(ap, int);
+				} else if (is_digit(*fmt)) {
+					// Format string is backwards compatible to IA32 backend.
+					// Fetch cc from node attributes
+					++fmt;
+					assert(amd64_has_cc_attr(node));
+					cc = get_amd64_cc_attr_const(node)->cc;
 				} else {
 					panic("unknown modifier");
 				}

@@ -68,7 +68,7 @@ $mode_xmm   = "amd64_mode_xmm";
 		."\tinit_amd64_switch_attributes(res, table, table_entity);",
 	amd64_cc_attr_t =>
 		"init_amd64_attributes(res, irn_flags, in_reqs, n_res, AMD64_OP_NONE);\n"
-		."\tinit_amd64_cc_attributes(res, cc);",
+		."\tinit_amd64_cc_attributes(res, cc, insn_mode);",
 	amd64_movimm_attr_t =>
 		"init_amd64_attributes(res, irn_flags, in_reqs, n_res, AMD64_OP_IMM64);\n"
 		."\tinit_amd64_movimm_attributes(res, insn_mode, imm);",
@@ -399,6 +399,19 @@ cmp => {
 	emit      => "cmp%M %AM",
 },
 
+# TODO Setcc can also operate on memory
+setcc => {
+	irn_flags => [  ],
+	in_reqs   => [ "eflags" ],
+	out_reqs  => [ "gp" ],
+	ins       => [ "eflags" ],
+	outs      => [ "res" ],
+	attr_type => "amd64_cc_attr_t",
+	attr      => "x86_condition_code_t cc",
+	fixed     => "amd64_insn_mode_t insn_mode = INSN_MODE_8;",
+	emit      => "set%P0 %D0",
+},
+
 lea => {
 	irn_flags => [ "rematerializable" ],
 	in_reqs   => "...",
@@ -419,6 +432,7 @@ jcc => {
 	outs      => [ "false", "true" ],
 	attr_type => "amd64_cc_attr_t",
 	attr      => "x86_condition_code_t cc",
+	fixed     => "amd64_insn_mode_t insn_mode = INSN_MODE_64;",
 },
 
 mov_store => {

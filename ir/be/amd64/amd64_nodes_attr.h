@@ -110,6 +110,7 @@ typedef struct {
 typedef struct {
 	amd64_attr_t         base;
 	x86_condition_code_t cc;
+	ENUMBF(amd64_insn_mode_t) insn_mode       : 3;
 } amd64_cc_attr_t;
 
 typedef struct {

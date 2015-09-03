@@ -103,16 +103,21 @@ static inline amd64_switch_jmp_attr_t *get_amd64_switch_jmp_attr(ir_node *node)
 	return (amd64_switch_jmp_attr_t*)get_irn_generic_attr(node);
 }
 
+static inline bool amd64_has_cc_attr(const ir_node *node)
+{
+	return is_amd64_jcc(node) || is_amd64_setcc(node);
+}
+
 static inline const amd64_cc_attr_t *get_amd64_cc_attr_const(
 	const ir_node *node)
 {
-	assert(is_amd64_jcc(node));
+	assert(amd64_has_cc_attr(node));
 	return (const amd64_cc_attr_t*)get_irn_generic_attr_const(node);
 }
 
 static inline amd64_cc_attr_t *get_amd64_cc_attr(ir_node *node)
 {
-	assert(is_amd64_jcc(node));
+	assert(amd64_has_cc_attr(node));
 	return (amd64_cc_attr_t*)get_irn_generic_attr(node);
 }
 

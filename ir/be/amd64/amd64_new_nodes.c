@@ -138,10 +138,13 @@ static void init_amd64_switch_attributes(ir_node *node,
 	}
 }
 
-static void init_amd64_cc_attributes(ir_node *node, x86_condition_code_t cc)
+static void init_amd64_cc_attributes(ir_node *node,
+                                     x86_condition_code_t cc,
+                                     amd64_insn_mode_t insn_mode)
 {
 	amd64_cc_attr_t *attr = get_amd64_cc_attr(node);
-	attr->cc = cc;
+	attr->cc        = cc;
+	attr->insn_mode = insn_mode;
 }
 
 static void init_amd64_movimm_attributes(ir_node *node,
