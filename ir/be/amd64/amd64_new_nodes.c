@@ -32,18 +32,20 @@
 static const char *get_op_mode_string(amd64_op_mode_t mode)
 {
 	switch (mode) {
-	case AMD64_OP_ADDR_IMM:   return "addr+imm";
-	case AMD64_OP_ADDR_REG:   return "addr+reg";
-	case AMD64_OP_ADDR:       return "addr";
-	case AMD64_OP_IMM32:      return "imm32";
-	case AMD64_OP_IMM64:      return "imm64";
-	case AMD64_OP_NONE:       return "none";
-	case AMD64_OP_REG_ADDR:   return "reg+addr";
-	case AMD64_OP_REG_IMM:    return "reg+imm";
-	case AMD64_OP_REG_REG:    return "reg+reg";
-	case AMD64_OP_REG:        return "reg";
-	case AMD64_OP_SHIFT_IMM:  return "shift_imm";
-	case AMD64_OP_SHIFT_REG:  return "shift_reg";
+	case AMD64_OP_ADDR_IMM:    return "addr+imm";
+	case AMD64_OP_ADDR_REG:    return "addr+reg";
+	case AMD64_OP_ADDR:        return "addr";
+	case AMD64_OP_IMM32:       return "imm32";
+	case AMD64_OP_IMM64:       return "imm64";
+	case AMD64_OP_NONE:        return "none";
+	case AMD64_OP_REG_ADDR:    return "reg+addr";
+	case AMD64_OP_REG_IMM:     return "reg+imm";
+	case AMD64_OP_REG_REG:     return "reg+reg";
+	case AMD64_OP_OUTREG_REG:  return "outreg+reg";
+	case AMD64_OP_OUTREG_ADDR: return "outreg+addr";
+	case AMD64_OP_REG:         return "reg";
+	case AMD64_OP_SHIFT_IMM:   return "shift_imm";
+	case AMD64_OP_SHIFT_REG:   return "shift_reg";
 	}
 	panic("invalid op_mode");
 }

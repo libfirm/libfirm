@@ -147,6 +147,16 @@ my $unop = {
 	            ."amd64_addr_t addr = { { NULL, 0, X86_IMM_VALUE }, NO_INPUT, NO_INPUT, NO_INPUT, 0, AMD64_SEGMENT_DEFAULT };",
 };
 
+my $unop_out = {
+	irn_flags => [ "modify_flags", "rematerializable" ],
+	in_reqs   => [ "gp" ],
+	out_reqs  => [ "gp", "flags" ],
+	ins       => [ "val" ],
+	outs      => [ "res", "flags" ],
+	attr_type => "amd64_addr_attr_t",
+	attr      => "amd64_insn_mode_t insn_mode, amd64_op_mode_t op_mode, amd64_addr_t addr",
+};
+
 my $binopx = {
 	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
@@ -474,6 +484,16 @@ ret => {
 	ins      => [ "mem", "stack", "first_result" ],
 	fixed    => "amd64_op_mode_t op_mode = AMD64_OP_NONE;\n",
 	emit     => "ret",
+},
+
+bsf => {
+	template => $unop_out,
+	emit => "bsf%M %AM",
+},
+
+bsr => {
+	template => $unop_out,
+	emit => "bsr%M %AM",
 },
 
 # SSE
