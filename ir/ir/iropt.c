@@ -2729,6 +2729,27 @@ static ir_node *transform_node_Or_(ir_node *n)
 		}
 	}
 
+	if (is_Shrs(a) && is_Const(b) && only_one_user(a)) {
+		ir_node *ab = get_Shrs_right(a);
+		if (is_Const(ab)) {
+			ir_tarval *tv_or        = get_Const_tarval(b);
+			ir_tarval *tv_not       = tarval_not(tv_or);
+			long       highest_bit  = get_tarval_highest_bit(tv_not);
+			long       shift_amount = get_Const_long(ab);
+			unsigned   bit_size     = get_mode_size_bits(mode);
+			if (highest_bit + shift_amount < (long)bit_size) {
+				/* (x >>s 16) | 0xFFFF0000 => (x >> 16) | 0xFFFF0000 */
+				ir_node  *const aa         = get_Shrs_left(a);
+				dbg_info *const shrs_dbgi  = get_irn_dbg_info(a);
+				ir_node  *const shrs_block = get_nodes_block(a);
+				ir_node  *const shr        = new_rd_Shr(shrs_dbgi, shrs_block, aa, ab, mode);
+				dbg_info *const dbgi       = get_irn_dbg_info(n);
+				ir_node  *const block      = get_nodes_block(n);
+				return new_rd_Or(dbgi, block, shr, b, mode);
+			}
+		}
+	}
+
 	ir_node *c;
 	HANDLE_BINOP_CHOICE((eval_func) tarval_or, a, b, c, mode);
 
@@ -4478,6 +4499,26 @@ absorb:;
 			ir_node  *const block    = get_nodes_block(n);
 			ir_node  *const minus_op = get_Minus_op(a);
 			return new_rd_And(dbgi, block, minus_op, b, mode);
+		}
+	}
+
+	if (is_Shrs(a) && is_Const(b) && only_one_user(a)) {
+		ir_node *ab = get_Shrs_right(a);
+		if (is_Const(ab)) {
+			ir_tarval *tv_and       = get_Const_tarval(b);
+			long       highest_bit  = get_tarval_highest_bit(tv_and);
+			long       shift_amount = get_Const_long(ab);
+			unsigned   bit_size     = get_mode_size_bits(mode);
+			if (highest_bit + shift_amount < (long)bit_size) {
+				/* (x >>s 16) & 0xFFFF => (x >> 16) & 0xFFFF */
+				ir_node  *const aa         = get_Shrs_left(a);
+				dbg_info *const shrs_dbgi  = get_irn_dbg_info(a);
+				ir_node  *const shrs_block = get_nodes_block(a);
+				ir_node  *const shr        = new_rd_Shr(shrs_dbgi, shrs_block, aa, ab, mode);
+				dbg_info *const dbgi       = get_irn_dbg_info(n);
+				ir_node  *const block      = get_nodes_block(n);
+				return new_rd_And(dbgi, block, shr, b, mode);
+			}
 		}
 	}
 
