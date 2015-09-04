@@ -1829,8 +1829,6 @@ static ir_node *transform_AM_mem(ir_node *const block,
 static ir_node *create_sex_32_64(dbg_info *dbgi, ir_node *block,
                                  ir_node *val, const ir_node *orig)
 {
-	(void)orig;
-
 	ir_node *res;
 	if (ia32_cg_config.use_short_sex_eax) {
 		res = new_bd_ia32_Cltd(dbgi, block, val);
@@ -3962,8 +3960,6 @@ static ir_node *gen_x87_gp_to_fp(ir_node *node)
  */
 static ir_node *create_I2I_Conv(ir_mode *const src_mode, dbg_info *const dbgi, ir_node *const block, ir_node *op, ir_node *const node)
 {
-	(void)node;
-
 #ifdef DEBUG_libfirm
 	if (is_Const(op))
 		be_warningf(op, "unoptimized conv after constant");
