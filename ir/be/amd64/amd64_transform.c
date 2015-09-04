@@ -1951,6 +1951,7 @@ static ir_node *create_extend_mov(dbg_info *dbgi, ir_node *block, ir_node *value
 static ir_node *new_movq_wrapper(dbg_info *dbgi, ir_node *block, int arity, ir_node *const *in,
                                  amd64_insn_mode_t insn_mode, amd64_op_mode_t op_mode, amd64_addr_t addr)
 {
+	(void)insn_mode;
 	assert(insn_mode == INSN_MODE_64);
 	return new_bd_amd64_movq(dbgi, block, arity, in, op_mode, addr);
 }
@@ -1963,6 +1964,7 @@ static ir_node *create_movq(dbg_info *dbgi, ir_node *block, ir_node *value)
 static ir_node *new_cvtsd2ss_wrapper(dbg_info *dbgi, ir_node *block, int arity, ir_node *const *in,
                                      amd64_insn_mode_t insn_mode, amd64_op_mode_t op_mode, amd64_addr_t addr)
 {
+	(void)insn_mode;
 	assert(insn_mode == INSN_MODE_64);
 	return new_bd_amd64_cvtsd2ss(dbgi, block, arity, in, op_mode, addr);
 }
