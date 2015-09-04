@@ -1268,14 +1268,12 @@ ir_entity *frame_alloc_area(ir_type *frame_type, int size, unsigned alignment,
 	}
 
 	ir_entity *area = new_entity(frame_type, name, tp);
+	set_entity_visibility(area, ir_visibility_private);
 	set_entity_offset(area, offset);
 	set_type_size_bytes(frame_type, frame_size);
 	if (alignment > frame_align) {
 		set_type_alignment_bytes(frame_type, alignment);
 	}
-
-	/* mark this entity as compiler generated */
-	set_entity_compiler_generated(area, 1);
 
 	set_type_state(frame_type, layout_fixed);
 	return area;

@@ -140,7 +140,6 @@ static void add_constructor(ir_entity *method)
 	ir_node   *const val          = new_r_Address(irg, method);
 
 	set_entity_ld_ident(ptr, NEW_IDENT(""));
-	set_entity_compiler_generated(ptr, 1);
 	set_entity_linkage(ptr, IR_LINKAGE_CONSTANT | IR_LINKAGE_HIDDEN_USER);
 	set_entity_visibility(ptr, ir_visibility_private);
 	set_atomic_ent_value(ptr, val);
@@ -368,8 +367,7 @@ static ir_entity *new_array_entity(ident *name, int size)
 	set_type_state(array_type, layout_fixed);
 
 	ir_entity *const result = new_entity(get_glob_type(), name, array_type);
-	set_entity_visibility(result, ir_visibility_local);
-	set_entity_compiler_generated(result, 1);
+	set_entity_visibility(result, ir_visibility_private);
 
 	return result;
 }
@@ -391,9 +389,8 @@ static ir_entity *new_static_string_entity(ident *name, const char *string)
 	set_type_state(string_type, layout_fixed);
 
 	ir_entity *const result = new_entity(get_glob_type(), name, string_type);
-	set_entity_visibility(result, ir_visibility_local);
+	set_entity_visibility(result, ir_visibility_private);
 	set_entity_linkage(result, IR_LINKAGE_CONSTANT);
-	set_entity_compiler_generated(result, 1);
 
 	/* There seems to be no simpler way to do this. Or at least, cparser
 	 * does exactly the same thing... */

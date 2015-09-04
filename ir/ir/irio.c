@@ -743,7 +743,6 @@ static void write_entity(write_env_t *env, ir_entity *ent)
 	write_type_ref(env, type);
 	if (ent->entity_kind != IR_ENTITY_LABEL)
 		write_type_ref(env, owner);
-	write_long(env, is_entity_compiler_generated(ent));
 	write_volatility(env, get_entity_volatility(ent));
 
 	switch ((ir_entity_kind)ent->entity_kind) {
@@ -1784,8 +1783,7 @@ static void read_entity(read_env_t *env, ir_entity_kind kind)
 	if (kind != IR_ENTITY_LABEL)
 		owner = read_type_ref(env);
 
-	bool          compiler_generated = read_long(env) != 0;
-	ir_volatility volatility         = read_volatility(env);
+	ir_volatility volatility = read_volatility(env);
 
 	switch (kind) {
 	case IR_ENTITY_ALIAS: {
@@ -1847,7 +1845,6 @@ static void read_entity(read_env_t *env, ir_entity_kind kind)
 		panic("read_entity with IR_ENTITY_UNKNOWN");
 	}
 
-	set_entity_compiler_generated(entity, compiler_generated);
 	set_entity_volatility(entity, volatility);
 	set_entity_visibility(entity, visibility);
 	set_entity_linkage(entity, linkage);

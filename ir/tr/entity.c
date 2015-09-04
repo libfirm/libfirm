@@ -395,16 +395,6 @@ void remove_entity_linkage(ir_entity *entity, ir_linkage linkage)
 	entity->linkage &= ~linkage;
 }
 
-int (is_entity_compiler_generated)(const ir_entity *ent)
-{
-	return _is_entity_compiler_generated(ent);
-}
-
-void (set_entity_compiler_generated)(ir_entity *ent, int flag)
-{
-	_set_entity_compiler_generated(ent, flag);
-}
-
 ir_entity_usage (get_entity_usage)(const ir_entity *ent)
 {
 	return _get_entity_usage(ent);

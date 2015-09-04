@@ -411,12 +411,6 @@ FIRM_API void set_entity_label(ir_entity *ent, ir_label_t label);
 /** Returns label number of an entity with code type */
 FIRM_API ir_label_t get_entity_label(const ir_entity *ent);
 
-/** Checks if an entity is compiler generated. */
-FIRM_API int is_entity_compiler_generated(const ir_entity *ent);
-
-/** Sets/resets the compiler generated flag. */
-FIRM_API void set_entity_compiler_generated(ir_entity *ent, int flag);
-
 /**
  * Bitfield type indicating the way an entity is used.
  */

@@ -406,9 +406,8 @@ ir_entity *create_Block_entity(ir_node *block)
 	if (entity == NULL) {
 		ir_label_t nr = get_irp_next_label_nr();
 		entity = new_label_entity(nr);
-		set_entity_visibility(entity, ir_visibility_local);
+		set_entity_visibility(entity, ir_visibility_private);
 		set_entity_linkage(entity, IR_LINKAGE_CONSTANT);
-		set_entity_compiler_generated(entity, 1);
 
 		block->attr.block.entity = entity;
 	}

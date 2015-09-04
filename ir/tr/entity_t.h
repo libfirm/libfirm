@@ -20,45 +20,43 @@
 #include "type_t.h"
 #include "ident.h"
 
-#define get_entity_name(ent)                     _get_entity_name(ent)
-#define get_entity_ident(ent)                    _get_entity_ident(ent)
-#define set_entity_ident(ent, id)                _set_entity_ident(ent, id)
-#define get_entity_owner(ent)                    _get_entity_owner(ent)
-#define get_entity_ld_ident(ent)                 _get_entity_ld_ident(ent)
-#define set_entity_ld_ident(ent, ld_ident)       _set_entity_ld_ident(ent, ld_ident)
-#define get_entity_ld_name(ent)                  _get_entity_ld_name(ent)
-#define get_entity_type(ent)                     _get_entity_type(ent)
-#define get_entity_linkage(ent)                  _get_entity_linkage(ent)
-#define get_entity_volatility(ent)               _get_entity_volatility(ent)
-#define set_entity_volatility(ent, vol)          _set_entity_volatility(ent, vol)
-#define set_entity_alignment(ent, alignment)     _set_entity_alignment(ent, alignment)
-#define get_entity_alignment(ent)                _get_entity_alignment(ent)
-#define get_entity_align(ent)                    _get_entity_align(ent)
-#define set_entity_align(ent, a)                 _set_entity_align(ent, a)
-#define is_entity_compiler_generated(ent)        _is_entity_compiler_generated(ent)
-#define set_entity_compiler_generated(ent, flag) _set_entity_compiler_generated(ent, flag)
-#define get_entity_usage(ent)                    _get_entity_usage(ent)
-#define set_entity_usage(ent, flags)             _set_entity_usage(ent, flags)
-#define get_entity_initializer(ent)              _get_entity_initializer(ent)
-#define get_entity_offset(ent)                   _get_entity_offset(ent)
-#define set_entity_offset(ent, offset)           _set_entity_offset(ent, offset)
-#define get_entity_bitfield_offset(ent)          _get_entity_bitfield_offset(ent)
-#define set_entity_bitfield_offset(ent, o)       _set_entity_bitfield_offset(ent, o)
-#define get_entity_bitfield_size(ent)            _get_entity_bitfield_size(ent)
-#define set_entity_bitfield_size(ent, s)         _set_entity_bitfield_size(ent, s)
-#define get_entity_link(ent)                     _get_entity_link(ent)
-#define set_entity_link(ent, l)                  _set_entity_link(ent, l)
-#define get_entity_irg(ent)                      _get_entity_irg(ent)
-#define get_entity_linktime_irg(ent)             _get_entity_linktime_irg(ent)
-#define is_parameter_entity(ent)                 _is_parameter_entity(ent)
-#define get_entity_parameter_number(ent)         _get_entity_parameter_number(ent)
-#define get_entity_visited(ent)                  _get_entity_visited(ent)
-#define set_entity_visited(ent, num)             _set_entity_visited(ent, num)
-#define mark_entity_visited(ent)                 _mark_entity_visited(ent)
-#define entity_visited(ent)                      _entity_visited(ent)
-#define entity_not_visited(ent)                  _entity_not_visited(ent)
-#define get_entity_dbg_info(ent)                 _get_entity_dbg_info(ent)
-#define set_entity_dbg_info(ent, db)             _set_entity_dbg_info(ent, db)
+#define get_entity_name(ent)                 _get_entity_name(ent)
+#define get_entity_ident(ent)                _get_entity_ident(ent)
+#define set_entity_ident(ent, id)            _set_entity_ident(ent, id)
+#define get_entity_owner(ent)                _get_entity_owner(ent)
+#define get_entity_ld_ident(ent)             _get_entity_ld_ident(ent)
+#define set_entity_ld_ident(ent, ld_ident)   _set_entity_ld_ident(ent, ld_ident)
+#define get_entity_ld_name(ent)              _get_entity_ld_name(ent)
+#define get_entity_type(ent)                 _get_entity_type(ent)
+#define get_entity_linkage(ent)              _get_entity_linkage(ent)
+#define get_entity_volatility(ent)           _get_entity_volatility(ent)
+#define set_entity_volatility(ent, vol)      _set_entity_volatility(ent, vol)
+#define set_entity_alignment(ent, alignment) _set_entity_alignment(ent, alignment)
+#define get_entity_alignment(ent)            _get_entity_alignment(ent)
+#define get_entity_align(ent)                _get_entity_align(ent)
+#define set_entity_align(ent, a)             _set_entity_align(ent, a)
+#define get_entity_usage(ent)                _get_entity_usage(ent)
+#define set_entity_usage(ent, flags)         _set_entity_usage(ent, flags)
+#define get_entity_initializer(ent)          _get_entity_initializer(ent)
+#define get_entity_offset(ent)               _get_entity_offset(ent)
+#define set_entity_offset(ent, offset)       _set_entity_offset(ent, offset)
+#define get_entity_bitfield_offset(ent)      _get_entity_bitfield_offset(ent)
+#define set_entity_bitfield_offset(ent, o)   _set_entity_bitfield_offset(ent, o)
+#define get_entity_bitfield_size(ent)        _get_entity_bitfield_size(ent)
+#define set_entity_bitfield_size(ent, s)     _set_entity_bitfield_size(ent, s)
+#define get_entity_link(ent)                 _get_entity_link(ent)
+#define set_entity_link(ent, l)              _set_entity_link(ent, l)
+#define get_entity_irg(ent)                  _get_entity_irg(ent)
+#define get_entity_linktime_irg(ent)         _get_entity_linktime_irg(ent)
+#define is_parameter_entity(ent)             _is_parameter_entity(ent)
+#define get_entity_parameter_number(ent)     _get_entity_parameter_number(ent)
+#define get_entity_visited(ent)              _get_entity_visited(ent)
+#define set_entity_visited(ent, num)         _set_entity_visited(ent, num)
+#define mark_entity_visited(ent)             _mark_entity_visited(ent)
+#define entity_visited(ent)                  _entity_visited(ent)
+#define entity_not_visited(ent)              _entity_not_visited(ent)
+#define get_entity_dbg_info(ent)             _get_entity_dbg_info(ent)
+#define set_entity_dbg_info(ent, db)         _set_entity_dbg_info(ent, db)
 
 typedef struct ir_initializer_base_t {
 	ir_initializer_kind_t kind;
@@ -178,7 +176,6 @@ struct ir_entity {
 	ENUMBF(ir_align)        aligned:1;     /**< Alignment of entity content. */
 	ENUMBF(ir_entity_usage) usage:4;       /**< Usage type of entity */
 	ENUMBF(ir_visibility)   visibility:2;  /**< Visibility of entity. */
-	bool compiler_gen:1; /**< If set, this entity was compiler generated. */
 	uint16_t                alignment;     /**< entity alignment in bytes */
 	ir_visited_t visit;      /**< visited counter for walks of the type
 	                              information. */
@@ -324,18 +321,6 @@ static inline void _set_entity_aligned(ir_entity *ent, ir_align a)
 {
 	assert(ent->kind == k_entity);
 	ent->aligned = a;
-}
-
-static inline int _is_entity_compiler_generated(const ir_entity *ent)
-{
-	assert(ent->kind == k_entity);
-	return ent->compiler_gen;
-}
-
-static inline void _set_entity_compiler_generated(ir_entity *ent, int flag)
-{
-	assert(ent->kind == k_entity);
-	ent->compiler_gen = flag ? 1 : 0;
 }
 
 static inline ir_entity_usage _get_entity_usage(const ir_entity *ent)
