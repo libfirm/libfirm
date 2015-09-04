@@ -3057,7 +3057,7 @@ static ir_node *transform_sub_or_store(ir_node *sub)
 
 	if (outs == 1) {
 		ir_node *succ = get_irn_out(sub, 0);
-		if (is_Store(succ)) {
+		if (is_Store(succ) && !be_is_transformed(succ)) {
 			ir_node *new_store = be_transform_node(succ);
 			if (is_ia32_SubMem(new_store)) {
 				return new_store;
