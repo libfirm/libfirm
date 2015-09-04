@@ -449,12 +449,9 @@ static size_t get_free_methods(ir_entity ***free_methods)
 	pset *free_set = pset_new_ptr_default();
 
 	foreach_irp_irg(i, irg) {
-		ir_entity *const ent     = get_irg_entity(irg);
-		ir_linkage const linkage = get_entity_linkage(ent);
-
-		if ((linkage & IR_LINKAGE_HIDDEN_USER) || entity_is_externally_visible(ent)) {
+		ir_entity *const ent = get_irg_entity(irg);
+		if (entity_is_externally_visible(ent))
 			pset_insert_ptr(free_set, ent);
-		}
 
 		ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 		/* Find all method entities that gets "visible" through this graphs,
