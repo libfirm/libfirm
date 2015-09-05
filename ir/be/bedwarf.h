@@ -30,15 +30,15 @@ void be_dwarf_unit_begin(const char *filename);
 /** end compilation unit */
 void be_dwarf_unit_end(void);
 
-/** output debug info necessary right before defining a method */
-void be_dwarf_method_before(const ir_entity *ent,
-                            const parameter_dbg_info_t *infos);
+/** output debug info necessary right before defining a function */
+void be_dwarf_function_before(const ir_entity *ent,
+                              const parameter_dbg_info_t *infos);
 
 /** output debug info right before beginning to output assembly instructions */
-void be_dwarf_method_begin(void);
+void be_dwarf_function_begin(void);
 
-/** debug for a method end */
-void be_dwarf_method_end(void);
+/** debug for a function end */
+void be_dwarf_function_end(void);
 
 /** dump a variable in the global type */
 void be_dwarf_variable(const ir_entity *ent);

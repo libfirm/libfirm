@@ -522,7 +522,7 @@ static void emit_visibility(const ir_entity *entity, bool implicit_globl)
 void be_gas_emit_function_prolog(const ir_entity *entity, unsigned po2alignment,
                                  const parameter_dbg_info_t *parameter_infos)
 {
-	be_dwarf_method_before(entity, parameter_infos);
+	be_dwarf_function_before(entity, parameter_infos);
 
 	be_gas_section_t section = determine_section(NULL, entity);
 	emit_section(section, entity);
@@ -577,12 +577,12 @@ void be_gas_emit_function_prolog(const ir_entity *entity, unsigned po2alignment,
 	be_emit_cstring(":\n");
 	be_emit_write_line();
 
-	be_dwarf_method_begin();
+	be_dwarf_function_begin();
 }
 
 void be_gas_emit_function_epilog(const ir_entity *entity)
 {
-	be_dwarf_method_end();
+	be_dwarf_function_end();
 
 	if (be_gas_object_file_format == OBJECT_FILE_FORMAT_ELF) {
 		be_emit_cstring("\t.size\t");
@@ -1309,7 +1309,7 @@ static void emit_global(be_main_env_t const *const main_env,
 	if (kind == IR_ENTITY_LABEL)
 		return;
 
-	/* we already emitted all methods with graphs in other functions like
+	/* we already emitted all functions with graphs in other functions like
 	 * be_gas_emit_function_prolog(). All others don't need to be emitted. */
 	be_gas_section_t const section = determine_section(main_env, entity);
 	if (kind == IR_ENTITY_METHOD && section != GAS_SECTION_PIC_TRAMPOLINES)

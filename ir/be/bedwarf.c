@@ -74,7 +74,7 @@ typedef enum custom_abbrevs {
  * The dwarf handle.
  */
 typedef struct dwarf_t {
-	const ir_entity  *cur_ent;      /**< current method entity */
+	const ir_entity  *cur_ent;      /**< current function entity */
 	unsigned          next_type_nr; /**< next type number */
 	pmap             *file_map;     /**< a map from file names to number in
 	                                     file list */
@@ -453,8 +453,8 @@ static void emit_function_parameters(const ir_entity *entity,
 	}
 }
 
-void be_dwarf_method_before(const ir_entity *entity,
-                            const parameter_dbg_info_t *parameter_infos)
+void be_dwarf_function_before(const ir_entity *entity,
+                              const parameter_dbg_info_t *parameter_infos)
 {
 	if (debug_level < LEVEL_BASIC)
 		return;
@@ -483,7 +483,7 @@ void be_dwarf_method_before(const ir_entity *entity,
 	}
 	emit_int8(is_extern_entity(entity));
 	emit_ref(entity);
-	be_emit_irprintf("\t.long %smethod_end_%s\n", be_gas_get_private_prefix(),
+	be_emit_irprintf("\t.long %sfunction_end_%s\n", be_gas_get_private_prefix(),
 	                 get_entity_ld_name(entity));
 	/* frame_base prog */
 	emit_int8(1);
@@ -497,7 +497,7 @@ void be_dwarf_method_before(const ir_entity *entity,
 	env.cur_ent = entity;
 }
 
-void be_dwarf_method_begin(void)
+void be_dwarf_function_begin(void)
 {
 	if (debug_level < LEVEL_FRAMEINFO)
 		return;
@@ -505,12 +505,12 @@ void be_dwarf_method_begin(void)
 	be_emit_write_line();
 }
 
-void be_dwarf_method_end(void)
+void be_dwarf_function_end(void)
 {
 	if (debug_level < LEVEL_BASIC)
 		return;
 	const ir_entity *entity = env.cur_ent;
-	be_emit_irprintf("%smethod_end_%s:\n", be_gas_get_private_prefix(),
+	be_emit_irprintf("%sfunction_end_%s:\n", be_gas_get_private_prefix(),
 	                 get_entity_ld_name(entity));
 
 	if (debug_level >= LEVEL_FRAMEINFO) {
