@@ -43,12 +43,11 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 static const arch_register_t *sp_reg = &sparc_registers[REG_SP];
 static calling_convention_t  *current_cconv = NULL;
-static be_stackorder_t       *stackorder;
+static be_stack_env_t         stack_env;
 static ir_mode               *mode_gp;
 static ir_mode               *mode_fp;
 static ir_mode               *mode_fp2;
 //static ir_mode               *mode_fp4;
-static pmap                  *node_to_stack;
 static ir_node               *frame_base;
 static ir_node               *initial_va_list;
 
@@ -1576,26 +1575,6 @@ static ir_node *get_initial_fp(ir_graph *irg)
 	return be_get_Start_proj(irg, &sparc_registers[REG_FP]);
 }
 
-static ir_node *get_stack_pointer_for(ir_node *node)
-{
-	/* get predecessor in stack_order list */
-	ir_node *stack_pred = be_get_stack_pred(stackorder, node);
-	if (stack_pred == NULL) {
-		/* first stack user in the current block. We can simply use the
-		 * initial sp_proj for it */
-		ir_graph *irg = get_irn_irg(node);
-		return get_initial_sp(irg);
-	}
-
-	be_transform_node(stack_pred);
-	ir_node *stack = pmap_get(ir_node, node_to_stack, stack_pred);
-	if (stack == NULL) {
-		return get_stack_pointer_for(stack_pred);
-	}
-
-	return stack;
-}
-
 /**
  * transform a Return node into epilogue code + return statement
  */
@@ -1606,7 +1585,6 @@ static ir_node *gen_Return(ir_node *node)
 	dbg_info *dbgi      = get_irn_dbg_info(node);
 	ir_node  *mem       = get_Return_mem(node);
 	ir_node  *new_mem   = be_transform_node(mem);
-	ir_node  *sp        = get_stack_pointer_for(node);
 	size_t    n_res     = get_Return_n_ress(node);
 
 	/* estimate number of return values */
@@ -1621,7 +1599,7 @@ static ir_node *gen_Return(ir_node *node)
 	in[n_sparc_Return_mem]   = new_mem;
 	reqs[n_sparc_Return_mem] = arch_memory_req;
 
-	in[n_sparc_Return_sp]   = sp;
+	in[n_sparc_Return_sp]   = get_initial_sp(irg);
 	reqs[n_sparc_Return_sp] = sp_reg->single_req;
 
 	/* result values */
@@ -1646,6 +1624,7 @@ static ir_node *gen_Return(ir_node *node)
 	assert(p == n_ins);
 
 	ir_node *const ret = new_bd_sparc_Return_reg(dbgi, new_block, n_ins, in, reqs);
+	be_stack_record_chain(&stack_env, ret, n_sparc_Return_sp, NULL);
 	return ret;
 }
 
@@ -1755,7 +1734,6 @@ static ir_node *gen_Call(ir_node *node)
 	int              n_caller_saves
 		= rbitset_popcount(cconv->caller_saves, N_SPARC_REGISTERS);
 	ir_entity       *entity       = NULL;
-	ir_node         *new_frame    = get_stack_pointer_for(node);
 	bool             aggregate_return
 		= get_method_calling_convention(type) & cc_compound_ret;
 
@@ -1771,11 +1749,10 @@ static ir_node *gen_Call(ir_node *node)
 	/* stack pointer input */
 	/* construct an IncSP -> we have to always be sure that the stack is
 	 * aligned even if we don't push arguments on it */
-	ir_node *incsp = be_new_IncSP(sp_reg, new_block, new_frame,
-	                              cconv->param_stack_size,
-	                              SPARC_PO2_STACK_ALIGNMENT);
+	ir_node *const new_frame = get_initial_sp(irg);
+	ir_node *const callframe = be_new_IncSP(sp_reg, new_block, new_frame, cconv->param_stack_size, SPARC_PO2_STACK_ALIGNMENT);
 	in_req[in_arity] = sp_reg->single_req;
-	in[in_arity]     = incsp;
+	in[in_arity]     = callframe;
 	++in_arity;
 
 	/* parameters */
@@ -1786,7 +1763,6 @@ static ir_node *gen_Call(ir_node *node)
 		ir_mode                  *mode       = get_type_mode(param_type);
 		ir_node                  *partial_value;
 		ir_node                  *new_values[2];
-		ir_node                  *str;
 		int                       offset;
 
 		if (mode_is_float(mode) && param->reg0 != NULL) {
@@ -1826,13 +1802,9 @@ static ir_node *gen_Call(ir_node *node)
 		 * arguments on stack */
 		offset = param->offset + SPARC_MIN_STACKSIZE;
 
-		if (mode_is_float(mode)) {
-			str = create_stf(dbgi, new_block, partial_value, incsp, new_mem,
-			                 mode, NULL, offset, true);
-		} else {
-			str = new_bd_sparc_St_imm(dbgi, new_block, partial_value, incsp,
-			                          new_mem, mode, NULL, offset, true);
-		}
+		ir_node *const str = mode_is_float(mode) ?
+			create_stf(         dbgi, new_block, partial_value, callframe, new_mem, mode, NULL, offset, true) :
+			new_bd_sparc_St_imm(dbgi, new_block, partial_value, callframe, new_mem, mode, NULL, offset, true);
 		set_irn_pinned(str, false);
 		sync_ins[sync_arity++] = str;
 	}
@@ -1866,7 +1838,7 @@ static ir_node *gen_Call(ir_node *node)
 
 	/* create output register reqs */
 	arch_set_irn_register_req_out(res, pn_sparc_Call_M, arch_memory_req);
-	arch_copy_irn_out_info(res, pn_sparc_Call_stack, incsp);
+	arch_copy_irn_out_info(res, pn_sparc_Call_stack, callframe);
 
 	/* add register requirements for the result regs */
 	for (size_t r = 0; r < n_ress; ++r) {
@@ -1895,13 +1867,8 @@ static ir_node *gen_Call(ir_node *node)
 
 	/* IncSP to destroy the call stackframe */
 	ir_node *const call_stack = be_new_Proj(res, pn_sparc_Call_stack);
-	incsp = be_new_IncSP(sp_reg, new_block, call_stack, -cconv->param_stack_size, 0);
-	/* if we are the last IncSP producer in a block then we have to keep
-	 * the stack value.
-	 * Note: This here keeps all producers which is more than necessary */
-	keep_alive(incsp);
-
-	pmap_insert(node_to_stack, node, incsp);
+	ir_node *const incsp      = be_new_IncSP(sp_reg, new_block, call_stack, -cconv->param_stack_size, 0);
+	be_stack_record_chain(&stack_env, callframe, n_be_IncSP_pred, incsp);
 
 	sparc_free_calling_convention(cconv);
 	return res;
@@ -1927,7 +1894,8 @@ static ir_node *gen_Alloc(ir_node *node)
 	dbg_info *dbgi       = get_irn_dbg_info(node);
 	ir_node  *new_block  = be_transform_nodes_block(node);
 	ir_node  *size       = get_Alloc_size(node);
-	ir_node  *stack_pred = get_stack_pointer_for(node);
+	ir_graph *irg        = get_irn_irg(node);
+	ir_node  *stack_pred = get_initial_sp(irg);
 	ir_node  *mem        = get_Alloc_mem(node);
 	ir_node  *new_mem    = be_transform_node(mem);
 
@@ -1942,11 +1910,7 @@ static ir_node *gen_Alloc(ir_node *node)
 	}
 
 	ir_node *const stack_proj = be_new_Proj_reg(subsp, pn_sparc_SubSP_stack, sp_reg);
-	/* If we are the last stack producer in a block, we have to keep the
-	 * stack value.  This keeps all producers, which is more than necessary. */
-	keep_alive(stack_proj);
-
-	pmap_insert(node_to_stack, node, stack_proj);
+	be_stack_record_chain(&stack_env, subsp, n_sparc_SubSP_stack, stack_proj);
 
 	return subsp;
 }
@@ -2509,8 +2473,6 @@ void sparc_transform_graph(ir_graph *irg)
 
 	sparc_register_transformers();
 
-	node_to_stack = pmap_create();
-
 	mode_gp    = sparc_reg_classes[CLASS_sparc_gp].mode;
 	mode_fp    = sparc_reg_classes[CLASS_sparc_fp].mode;
 	mode_fp2   = mode_D;
@@ -2518,7 +2480,7 @@ void sparc_transform_graph(ir_graph *irg)
 
 	frame_base = NULL;
 
-	stackorder = be_collect_stacknodes(irg);
+	be_stack_init(&stack_env);
 	current_cconv
 		= sparc_decide_calling_convention(get_entity_type(entity), irg);
 	if (sparc_variadic_fixups(irg, current_cconv)) {
@@ -2531,15 +2493,13 @@ void sparc_transform_graph(ir_graph *irg)
 
 	be_transform_graph(irg, NULL);
 
-	be_free_stackorder(stackorder);
+	be_stack_finish(&stack_env);
 	sparc_free_calling_convention(current_cconv);
 
 	ir_type *frame_type = get_irg_frame_type(irg);
 	if (get_type_state(frame_type) == layout_undefined)
 		default_layout_compound_type(frame_type);
 
-	pmap_destroy(node_to_stack);
-	node_to_stack = NULL;
 	initial_va_list = NULL;
 
 	/* do code placement, to optimize the position of constants */

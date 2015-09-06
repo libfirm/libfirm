@@ -37,10 +37,9 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
-static ir_mode         *mode_gp;
-static x86_cconv_t     *current_cconv = NULL;
-static pmap            *node_to_stack;
-static be_stackorder_t *stackorder;
+static ir_mode        *mode_gp;
+static x86_cconv_t    *current_cconv = NULL;
+static be_stack_env_t  stack_env;
 
 /** we don't have a concept of aliasing registers, so enumerate them
  * manually for the asm nodes. */
@@ -1448,26 +1447,6 @@ static ir_node *gen_Proj_Start(ir_node *node)
 	panic("unexpected Start Proj: %u", pn);
 }
 
-static ir_node *get_stack_pointer_for(ir_node *node)
-{
-	/* get predecessor in stack_order list */
-	ir_node *stack_pred = be_get_stack_pred(stackorder, node);
-	if (stack_pred == NULL) {
-		/* first stack user in the current block. We can simply use the
-		 * initial sp_proj for it */
-		ir_graph *irg = get_irn_irg(node);
-		return get_initial_sp(irg);
-	}
-
-	be_transform_node(stack_pred);
-	ir_node *stack = pmap_get(ir_node, node_to_stack, stack_pred);
-	if (stack == NULL) {
-		return get_stack_pointer_for(stack_pred);
-	}
-
-	return stack;
-}
-
 static ir_node *gen_Return(ir_node *node)
 {
 	ir_graph *irg       = get_irn_irg(node);
@@ -1475,7 +1454,6 @@ static ir_node *gen_Return(ir_node *node)
 	dbg_info *dbgi      = get_irn_dbg_info(node);
 	ir_node  *mem       = get_Return_mem(node);
 	ir_node  *new_mem   = be_transform_node(mem);
-	ir_node  *sp        = get_stack_pointer_for(node);
 	size_t    n_res     = get_Return_n_ress(node);
 	x86_cconv_t    *cconv   = current_cconv;
 
@@ -1490,7 +1468,7 @@ static ir_node *gen_Return(ir_node *node)
 	in[n_amd64_ret_mem]   = new_mem;
 	reqs[n_amd64_ret_mem] = arch_memory_req;
 
-	in[n_amd64_ret_stack]   = sp;
+	in[n_amd64_ret_stack]   = get_initial_sp(irg);
 	reqs[n_amd64_ret_stack] = amd64_registers[REG_RSP].single_req;
 
 	/* result values */
@@ -1514,6 +1492,7 @@ static ir_node *gen_Return(ir_node *node)
 	assert(p == n_ins);
 
 	ir_node *const ret = new_bd_amd64_ret(dbgi, new_block, n_ins, in, reqs);
+	be_stack_record_chain(&stack_env, ret, n_amd64_ret_stack, NULL);
 	return ret;
 }
 
@@ -1538,7 +1517,6 @@ static ir_node *gen_Call(ir_node *node)
 	ir_node        **in           = ALLOCAN(ir_node*, max_inputs);
 	int              in_arity     = 0;
 	int              sync_arity   = 0;
-	ir_node         *new_frame    = get_stack_pointer_for(node);
 
 	assert(n_params == cconv->n_parameters);
 
@@ -1547,10 +1525,8 @@ static ir_node *gen_Call(ir_node *node)
 	/* stack pointer input */
 	/* construct an IncSP -> we have to always be sure that the stack is
 	 * aligned even if we don't push arguments on it */
-	const arch_register_t *sp_reg = &amd64_registers[REG_RSP];
-	ir_node *incsp = amd64_new_IncSP(new_block, new_frame,
-	                                 cconv->callframe_size,
-	                                 AMD64_PO2_STACK_ALIGNMENT);
+	ir_node *const stack     = get_initial_sp(irg);
+	ir_node *const callframe = amd64_new_IncSP(new_block, stack, cconv->callframe_size, AMD64_PO2_STACK_ALIGNMENT);
 
 	/* match callee */
 	amd64_addr_t addr;
@@ -1620,8 +1596,8 @@ static ir_node *gen_Call(ir_node *node)
 	sync_ins[sync_arity++] = be_transform_node(mem);
 no_call_mem:
 
-	in_req[in_arity] = sp_reg->single_req;
-	in[in_arity]     = incsp;
+	in_req[in_arity] = amd64_registers[REG_RSP].single_req;
+	in[in_arity]     = callframe;
 	++in_arity;
 
 	/* vararg calls need the number of SSE registers used */
@@ -1662,7 +1638,7 @@ no_call_mem:
 		attr.base.addr.index_input      = NO_INPUT;
 		attr.base.insn_mode             = INSN_MODE_64;
 		ir_node *const nomem = get_irg_no_mem(irg);
-		ir_node *const in[]  = { new_value, incsp, nomem };
+		ir_node *const in[]  = { new_value, callframe, nomem };
 		ir_node *const store = mode_is_float(mode) ?
 			new_bd_amd64_movs_store_xmm(dbgi, new_block, ARRAY_SIZE(in), in, xmm_reg_mem_reqs, &attr) :
 			new_bd_amd64_mov_store(     dbgi, new_block, ARRAY_SIZE(in), in, reg_reg_mem_reqs, &attr);
@@ -1708,7 +1684,7 @@ no_call_mem:
 
 	/* create output register reqs */
 	arch_set_irn_register_req_out(call, pn_amd64_call_M, arch_memory_req);
-	arch_copy_irn_out_info(call, pn_amd64_call_stack, incsp);
+	arch_copy_irn_out_info(call, pn_amd64_call_stack, callframe);
 
 	arch_register_class_t const *const flags = &amd64_reg_classes[CLASS_amd64_flags];
 	arch_set_irn_register_req_out(call, pn_amd64_call_flags, flags->class_req);
@@ -1737,13 +1713,8 @@ no_call_mem:
 
 	/* IncSP to destroy the call stackframe */
 	ir_node *const call_stack = be_new_Proj(call, pn_amd64_call_stack);
-	incsp = amd64_new_IncSP(new_block, call_stack, -cconv->callframe_size, 0);
-	/* if we are the last IncSP producer in a block then we have to keep
-	 * the stack value.
-	 * Note: This here keeps all producers which is more than necessary */
-	keep_alive(incsp);
-
-	pmap_insert(node_to_stack, node, incsp);
+	ir_node *const incsp      = amd64_new_IncSP(new_block, call_stack, -cconv->callframe_size, 0);
+	be_stack_record_chain(&stack_env, callframe, n_be_IncSP_pred, incsp);
 
 	x86_free_calling_convention(cconv);
 	return call;
@@ -2335,7 +2306,6 @@ static ir_node *gen_Alloc(ir_node *node)
 	ir_node  *size      = get_Alloc_size(node);
 	ir_node  *mem       = get_Alloc_mem(node);
 	ir_node  *new_mem   = be_transform_node(mem);
-	ir_node  *sp        = get_stack_pointer_for(node);
 
 	const arch_register_req_t **reqs;
 	amd64_binop_addr_attr_t attr;
@@ -2345,7 +2315,9 @@ static ir_node *gen_Alloc(ir_node *node)
 	ir_node *subsp;
 	ir_node *in[3];
 	unsigned arity = 0;
-	in[arity++]    = sp;
+
+	ir_graph *const irg = get_irn_irg(node);
+	in[arity++] = get_initial_sp(irg);
 
 	if (is_Const(size)) {
 		ir_tarval *tv           = get_Const_tarval(size);
@@ -2363,8 +2335,7 @@ static ir_node *gen_Alloc(ir_node *node)
 	subsp = new_bd_amd64_sub_sp(dbgi, new_block, arity, in, reqs, &attr);
 
 	ir_node *const stack_proj = be_new_Proj_reg(subsp, pn_amd64_sub_sp_stack, &amd64_registers[REG_RSP]);
-	keep_alive(stack_proj);
-	pmap_insert(node_to_stack, node, stack_proj);
+	be_stack_record_chain(&stack_env, subsp, n_amd64_sub_sp_stack, stack_proj);
 
 	return subsp;
 }
@@ -2836,10 +2807,9 @@ void amd64_transform_graph(ir_graph *irg)
 	                         | IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
 
 	amd64_register_transformers();
-	mode_gp    = mode_Lu;
-	node_to_stack = pmap_create();
+	mode_gp = mode_Lu;
 
-	stackorder = be_collect_stacknodes(irg);
+	be_stack_init(&stack_env);
 	ir_entity *entity = get_irg_entity(irg);
 	ir_type   *mtp    = get_entity_type(entity);
 	current_cconv = amd64_decide_calling_convention(mtp, irg);
@@ -2857,9 +2827,7 @@ void amd64_transform_graph(ir_graph *irg)
 	heights_free(heights);
 	heights = NULL;
 
-	be_free_stackorder(stackorder);
-	pmap_destroy(node_to_stack);
-	node_to_stack = NULL;
+	be_stack_finish(&stack_env);
 
 	ir_type *frame_type = get_irg_frame_type(irg);
 	if (get_type_state(frame_type) == layout_undefined)

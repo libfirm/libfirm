@@ -40,9 +40,8 @@
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 static const arch_register_t *sp_reg = &arm_registers[REG_SP];
-static be_stackorder_t       *stackorder;
+static be_stack_env_t         stack_env;
 static calling_convention_t  *cconv = NULL;
-static pmap                  *node_to_stack;
 
 static const arch_register_t *const callee_saves[] = {
 	&arm_registers[REG_R4],
@@ -72,6 +71,11 @@ static const arch_register_t *const caller_saves[] = {
 	&arm_registers[REG_F6],
 	&arm_registers[REG_F7],
 };
+
+static ir_node *get_initial_sp(ir_graph *const irg)
+{
+	return be_get_Start_proj(irg, &arm_registers[REG_SP]);
+}
 
 void arm_gen_vals_from_word(uint32_t value, arm_vals *result)
 {
@@ -1481,7 +1485,7 @@ static ir_node *gen_Proj_Start(ir_node *node)
 		return new_r_Bad(irg, mode_T);
 
 	case pn_Start_P_frame_base:
-		return be_get_Start_proj(irg, &arm_registers[REG_SP]);
+		return get_initial_sp(irg);
 	}
 	panic("unexpected start proj: %u", pn);
 }
@@ -1721,26 +1725,6 @@ static ir_node *gen_Start(ir_node *node)
 	return be_new_Start(irg, outs);
 }
 
-static ir_node *get_stack_pointer_for(ir_node *node)
-{
-	/* get predecessor in stack_order list */
-	ir_node *stack_pred = be_get_stack_pred(stackorder, node);
-	if (stack_pred == NULL) {
-		/* first stack user in the current block. We can simply use the
-		 * initial sp_proj for it */
-		ir_graph *irg = get_irn_irg(node);
-		return be_get_Start_proj(irg, &arm_registers[REG_SP]);
-	}
-
-	be_transform_node(stack_pred);
-	ir_node *stack = pmap_get(ir_node, node_to_stack, stack_pred);
-	if (stack == NULL) {
-		return get_stack_pointer_for(stack_pred);
-	}
-
-	return stack;
-}
-
 /**
  * transform a Return node into epilogue code + return statement
  */
@@ -1751,7 +1735,6 @@ static ir_node *gen_Return(ir_node *node)
 	ir_node        *mem            = get_Return_mem(node);
 	ir_node        *new_mem        = be_transform_node(mem);
 	unsigned        n_callee_saves = ARRAY_SIZE(callee_saves);
-	ir_node        *sp             = get_stack_pointer_for(node);
 	unsigned        n_res          = get_Return_n_ress(node);
 	ir_graph       *irg            = get_irn_irg(node);
 
@@ -1764,7 +1747,7 @@ static ir_node *gen_Return(ir_node *node)
 	in[n_arm_Return_mem]   = new_mem;
 	reqs[n_arm_Return_mem] = arch_memory_req;
 
-	in[n_arm_Return_sp]   = sp;
+	in[n_arm_Return_sp]   = get_initial_sp(irg);
 	reqs[n_arm_Return_sp] = sp_reg->single_req;
 
 	/* result values */
@@ -1788,6 +1771,7 @@ static ir_node *gen_Return(ir_node *node)
 	assert(p == n_ins);
 
 	ir_node *const ret = new_bd_arm_Return(dbgi, new_block, n_ins, in, reqs);
+	be_stack_record_chain(&stack_env, ret, n_arm_Return_sp, NULL);
 	return ret;
 }
 
@@ -1820,13 +1804,11 @@ static ir_node *gen_Call(ir_node *node)
 	in_req[mem_pos] = arch_memory_req;
 	/* stack pointer (create parameter stackframe + align stack)
 	 * Note that we always need an IncSP to ensure stack alignment */
-	ir_node *new_frame = get_stack_pointer_for(node);
-	ir_node *incsp     = be_new_IncSP(sp_reg, new_block, new_frame,
-	                                  cconv->param_stack_size,
-	                                  ARM_PO2_STACK_ALIGNMENT);
+	ir_node *const new_frame = get_initial_sp(irg);
+	ir_node *const callframe = be_new_IncSP(sp_reg, new_block, new_frame, cconv->param_stack_size, ARM_PO2_STACK_ALIGNMENT);
 	int sp_pos = in_arity++;
 	in_req[sp_pos] = sp_reg->single_req;
-	in[sp_pos]     = incsp;
+	in[sp_pos]     = callframe;
 
 	/* parameters */
 	for (size_t p = 0; p < n_params; ++p) {
@@ -1871,14 +1853,9 @@ static ir_node *gen_Call(ir_node *node)
 		}
 
 		/* create a parameter frame if necessary */
-		ir_node *str;
-		if (mode_is_float(mode)) {
-			str = new_bd_arm_Stf(dbgi, new_block, incsp, new_value, new_mem,
-			                     mode, NULL, 0, param->offset, true);
-		} else {
-			str = new_bd_arm_Str(dbgi, new_block, incsp, new_value, new_mem,
-								 mode, NULL, 0, param->offset, true);
-		}
+		ir_node *const str = mode_is_float(mode) ?
+			new_bd_arm_Stf(dbgi, new_block, callframe, new_value, new_mem, mode, NULL, 0, param->offset, true) :
+			new_bd_arm_Str(dbgi, new_block, callframe, new_value, new_mem, mode, NULL, 0, param->offset, true);
 		sync_ins[sync_arity++] = str;
 	}
 
@@ -1923,7 +1900,7 @@ static ir_node *gen_Call(ir_node *node)
 
 	/* create output register reqs */
 	arch_set_irn_register_req_out(res, pn_arm_Bl_M, arch_memory_req);
-	arch_copy_irn_out_info(res, pn_arm_Bl_stack, incsp);
+	arch_copy_irn_out_info(res, pn_arm_Bl_stack, callframe);
 
 	for (size_t o = 0; o < n_caller_saves; ++o) {
 		const arch_register_t *reg = caller_saves[o];
@@ -1935,13 +1912,8 @@ static ir_node *gen_Call(ir_node *node)
 
 	/* IncSP to destroy the call stackframe */
 	ir_node *const call_stack = be_new_Proj(res, pn_arm_Bl_stack);
-	incsp = be_new_IncSP(sp_reg, new_block, call_stack, -cconv->param_stack_size, 0);
-	/* if we are the last IncSP producer in a block then we have to keep
-	 * the stack value.
-	 * Note: This here keeps all producers which is more than necessary */
-	keep_alive(incsp);
-
-	pmap_insert(node_to_stack, node, incsp);
+	ir_node *const incsp      = be_new_IncSP(sp_reg, new_block, call_stack, -cconv->param_stack_size, 0);
+	be_stack_record_chain(&stack_env, callframe, n_be_IncSP_pred, incsp);
 
 	arm_free_calling_convention(cconv);
 	return res;
@@ -2074,10 +2046,8 @@ void arm_transform_graph(ir_graph *irg)
 	}
 	arm_register_transformers();
 
-	node_to_stack = pmap_create();
-
 	assert(cconv == NULL);
-	stackorder = be_collect_stacknodes(irg);
+	be_stack_init(&stack_env);
 	ir_entity *entity = get_irg_entity(irg);
 	cconv = arm_decide_calling_convention(irg, get_entity_type(entity));
 	create_stacklayout(irg);
@@ -2085,8 +2055,7 @@ void arm_transform_graph(ir_graph *irg)
 
 	be_transform_graph(irg, NULL);
 
-	be_free_stackorder(stackorder);
-	stackorder = NULL;
+	be_stack_finish(&stack_env);
 
 	arm_free_calling_convention(cconv);
 	cconv = NULL;
@@ -2095,9 +2064,6 @@ void arm_transform_graph(ir_graph *irg)
 	if (get_type_state(frame_type) == layout_undefined) {
 		default_layout_compound_type(frame_type);
 	}
-
-	pmap_destroy(node_to_stack);
-	node_to_stack = NULL;
 }
 
 void arm_init_transform(void)

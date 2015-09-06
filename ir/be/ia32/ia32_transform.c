@@ -53,8 +53,7 @@
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
 static x86_cconv_t          *current_cconv;
-static pmap                 *node_to_stack;
-static be_stackorder_t      *stackorder;
+static be_stack_env_t        stack_env;
 static ir_heights_t         *heights;
 static x86_immediate_kind_t  lconst_imm_kind;
 static ir_entity            *va_start_entity;
@@ -4265,25 +4264,6 @@ static ir_node *gen_Proj_Proj_Start(ir_node *node)
 	return be_get_Start_proj(irg, param->reg);
 }
 
-static ir_node *get_stack_pointer_for(ir_node *node)
-{
-	/* get predecessor in stack_order list */
-	ir_node *stack_pred = be_get_stack_pred(stackorder, node);
-	if (stack_pred == NULL) {
-		/* first stack user in the current block. We can simply use the
-		 * initial sp_proj for it */
-		ir_graph *irg = get_irn_irg(node);
-		return get_initial_sp(irg);
-	}
-
-	be_transform_node(stack_pred);
-	ir_node *stack = pmap_get(ir_node, node_to_stack, stack_pred);
-	if (stack == NULL)
-		return get_stack_pointer_for(stack_pred);
-
-	return stack;
-}
-
 static ir_node *gen_Return(ir_node *node)
 {
 	ir_graph *irg       = get_irn_irg(node);
@@ -4291,7 +4271,7 @@ static ir_node *gen_Return(ir_node *node)
 	dbg_info *dbgi      = get_irn_dbg_info(node);
 	ir_node  *mem       = get_Return_mem(node);
 	ir_node  *new_mem   = be_transform_node(mem);
-	ir_node  *sp        = get_stack_pointer_for(node);
+	ir_node  *sp        = get_initial_sp(irg);
 	unsigned  n_res     = get_Return_n_ress(node);
 	x86_cconv_t    *cconv = current_cconv;
 
@@ -4330,6 +4310,7 @@ static ir_node *gen_Return(ir_node *node)
 	assert(p == n_ins);
 
 	ir_node *const ret = new_bd_ia32_Return(dbgi, new_block, n_ins, in, reqs, current_cconv->sp_delta);
+	be_stack_record_chain(&stack_env, ret, n_ia32_Return_stack, NULL);
 	return ret;
 }
 
@@ -4339,7 +4320,8 @@ static ir_node *gen_Alloc(ir_node *node)
 	ir_node  *const new_block = be_transform_nodes_block(node);
 	ir_node  *const mem       = get_Alloc_mem(node);
 	ir_node  *const new_mem   = be_transform_node(mem);
-	ir_node  *const stack     = get_stack_pointer_for(node);
+	ir_graph *const irg       = get_irn_irg(node);
+	ir_node  *const stack     = get_initial_sp(irg);
 	/* TODO: match address mode for size... */
 	ir_node  *const size      = get_Alloc_size(node);
 	ir_node  *const new_size  = create_immediate_or_transform(size, 'i');
@@ -4347,8 +4329,7 @@ static ir_node *gen_Alloc(ir_node *node)
 	SET_IA32_ORIG_NODE(new_node, node);
 
 	ir_node *const stack_proj = be_new_Proj_reg(new_node, pn_ia32_SubSP_stack, &ia32_registers[REG_ESP]);
-	keep_alive(stack_proj);
-	pmap_insert(node_to_stack, node, stack_proj);
+	be_stack_record_chain(&stack_env, new_node, n_ia32_SubSP_stack, stack_proj);
 
 	return new_node;
 }
@@ -4974,12 +4955,13 @@ static ir_node *gen_Call(ir_node *node)
 	in_req[n_ia32_Call_callee] = req_gp;
 
 	ir_node *const block               = be_transform_node(old_block);
-	ir_node *const new_frame           = get_stack_pointer_for(node);
+	ir_node *const stack               = get_initial_sp(irg);
 	unsigned const po2_stack_alignment = ia32_cg_config.po2_stack_alignment;
 	unsigned const callframe_size      = cconv->callframe_size;
+	bool     const needs_stack         = callframe_size != 0 || po2_stack_alignment != 0;
 	ir_node *const callframe           =
-		callframe_size == 0 && po2_stack_alignment == 0 ? new_frame:
-		ia32_new_IncSP(block, new_frame, callframe_size, ia32_cg_config.po2_stack_alignment);
+		!needs_stack ? stack :
+		ia32_new_IncSP(block, stack, callframe_size, ia32_cg_config.po2_stack_alignment);
 	in[n_ia32_Call_stack]     = callframe;
 	in_req[n_ia32_Call_stack] = sp->single_req;
 
@@ -5096,12 +5078,12 @@ static ir_node *gen_Call(ir_node *node)
 	/* IncSp to destroy callframe. */
 	ir_node       *new_stack   = be_new_Proj(call, pn_ia32_Call_stack);
 	unsigned const reduce_size = callframe_size - cconv->sp_delta;
-	if (reduce_size > 0 || po2_stack_alignment != 0) {
+	if (reduce_size > 0 || po2_stack_alignment != 0)
 		new_stack = ia32_new_IncSP(block, new_stack, -(int)reduce_size, 0);
-		keep_alive(new_stack);
-	}
+	ir_node *const old_stack     = needs_stack ? callframe       : call;
+	unsigned const old_stack_pos = needs_stack ? n_be_IncSP_pred : n_ia32_Call_stack;
+	be_stack_record_chain(&stack_env, old_stack, old_stack_pos, new_stack);
 
-	pmap_insert(node_to_stack, node, new_stack);
 	x86_free_calling_convention(cconv);
 
 	return res;
@@ -5904,8 +5886,7 @@ void ia32_transform_graph(ir_graph *irg)
 
 	register_transformers();
 
-	stackorder    = be_collect_stacknodes(irg);
-	node_to_stack = pmap_create();
+	be_stack_init(&stack_env);
 	ir_entity *entity = get_irg_entity(irg);
 	ir_type   *mtp    = get_entity_type(entity);
 	current_cconv = ia32_decide_calling_convention(mtp, irg);
@@ -5930,10 +5911,8 @@ void ia32_transform_graph(ir_graph *irg)
 	x86_free_non_address_mode_nodes();
 	heights_free(heights);
 	heights = NULL;
-	be_free_stackorder(stackorder);
+	be_stack_finish(&stack_env);
 	x86_free_calling_convention(current_cconv);
-	pmap_destroy(node_to_stack);
-	node_to_stack = NULL;
 	initial_va_list = NULL;
 }
 

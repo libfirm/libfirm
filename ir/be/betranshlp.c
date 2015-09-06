@@ -552,53 +552,6 @@ void be_map_exc_node_to_runtime_call(ir_node *node, ir_mode *res_mode,
 	turn_into_tuple(node, n_operands, tuple_in);
 }
 
-/**
- * Link the node into its block list as a new head.
- */
-static void collect_node(ir_node *node)
-{
-	ir_node *block = get_nodes_block(node);
-	ir_node *old   = (ir_node*)get_irn_link(block);
-
-	set_irn_link(node, old);
-	set_irn_link(block, node);
-}
-
-/**
- * Post-walker: link all nodes that probably access the stack into lists of their block.
- */
-static void link_ops_in_block_walker(ir_node *node, void *data)
-{
-	(void) data;
-
-	switch (get_irn_opcode(node)) {
-	case iro_Return:
-	case iro_Call:
-		collect_node(node);
-		break;
-	case iro_Alloc:
-		/** all non-stack alloc nodes should be lowered before the backend */
-		collect_node(node);
-		break;
-	case iro_Free:
-		collect_node(node);
-		break;
-	case iro_Builtin:
-		if (get_Builtin_kind(node) == ir_bk_return_address) {
-			ir_node *const param = get_Builtin_param(node, 0);
-			long     const value = get_Const_long(param); /* must be Const */
-			if (value > 0) {
-				/* not the return address of the current function:
-				 * we need the stack pointer for the frame climbing */
-				collect_node(node);
-			}
-		}
-		break;
-	default:
-		break;
-	}
-}
-
 static ir_heights_t *heights;
 
 /**
@@ -614,20 +567,44 @@ static int dependent_on(const ir_node *n1, const ir_node *n2)
 	return heights_reachable_in_block(heights, n1, n2);
 }
 
+struct be_stack_change_t {
+	ir_node  *before;
+	unsigned  pos;
+	ir_node  *after;
+};
+
 /**
  * Classical qsort() comparison function behavior:
  *
- * 0  if both elements are equal, no node depend on the other
+ *  0 if both elements are equal, no node depend on the other
  * +1 if first depends on second (first is greater)
  * -1 if second depends on first (second is greater)
 */
-static int cmp_call_dependency(const void *c1, const void *c2)
+static int cmp_stack_dependency(const void *c1, const void *c2)
 {
-	const ir_node *n1 = *(const ir_node **) c1;
-	const ir_node *n2 = *(const ir_node **) c2;
-	if (dependent_on(n1, n2))
+	be_stack_change_t const *const s1 = (be_stack_change_t const*)c1;
+	be_stack_change_t const *const s2 = (be_stack_change_t const*)c2;
+
+	/* Sort blockwise. */
+	ir_node *const b1 = get_nodes_block(s1->before);
+	ir_node *const b2 = get_nodes_block(s2->before);
+	if (b1 != b2)
+		return get_irn_idx(b2) - get_irn_idx(b1);
+
+	/* If one change chain does not produce a new value, it must be the last. */
+	ir_node *const n1 = s1->after;
+	if (!n1)
 		return 1;
-	if (dependent_on(n2, n1))
+	ir_node *const n2 = s2->after;
+	if (!n2)
+		return -1;
+
+	/* If one change chain is data dependent on the other, it must come later.
+	 * The after nodes cannot be dependent on each other, because they are unused.
+	 * So compare after of one with before of the other. */
+	if (dependent_on(n1, s2->before))
+		return 1;
+	if (dependent_on(n2, s1->before))
 		return -1;
 
 	/* The nodes have no depth order, but we need a total order because qsort()
@@ -646,69 +623,51 @@ static int cmp_call_dependency(const void *c1, const void *c2)
 	return get_irn_idx(n2) - get_irn_idx(n1);
 }
 
-/**
- * Block-walker: sorts dependencies and remember them into a phase
- */
-static void process_ops_in_block(ir_node *block, void *data)
+void be_stack_init(be_stack_env_t *const env)
 {
-	ir_nodemap *const map = (ir_nodemap*)data;
+	env->changes = NEW_ARR_F(be_stack_change_t, 0);
+}
 
-	ir_node **nodes = NEW_ARR_F(ir_node*, 0);
-	for (ir_node *node = block; (node = (ir_node*)get_irn_link(node));) {
-		ARR_APP1(ir_node*, nodes, node);
-	}
+void be_stack_record_chain(be_stack_env_t *const env, ir_node *const before, unsigned const pos, ir_node *const after)
+{
+	assert(!after || get_nodes_block(after) == get_nodes_block(before));
 
-	unsigned const n_nodes = ARR_LEN(nodes);
-	if (n_nodes != 0) {
-		/* order nodes according to their data dependencies */
-		QSORT(nodes, n_nodes, cmp_call_dependency);
+	be_stack_change_t const change = { before, pos, after };
+	ARR_APP1(be_stack_change_t, env->changes, change);
+	/* FIXME: This should be not be necessary, but not keeping the till now unused
+	 * stack nodes triggers problems with out edges, because they get deactivated
+	 * before be_stack_finish() is called. It should suffice to keep the last
+	 * stack producer per block in be_stack_finish(). */
+	if (after)
+		keep_alive(after);
+}
 
-		/* remember the calculated dependency into a phase */
-		for (unsigned n = n_nodes - 1; n > 0; --n) {
-			ir_node *const node = nodes[n];
-			ir_node *const pred = nodes[n - 1];
-			ir_nodemap_insert(map, node, pred);
+void be_stack_finish(be_stack_env_t *const env)
+{
+	be_stack_change_t *const changes = env->changes;
+	env->changes = NULL;
+
+	unsigned const n_changes = ARR_LEN(changes);
+	if (n_changes != 0) {
+		/* Order the stack changes according to their data dependencies. */
+		ir_graph *const irg = get_irn_irg(changes[0].before);
+		heights = heights_new(irg);
+		QSORT(changes, n_changes, cmp_stack_dependency);
+		heights_free(heights);
+
+		/* Wire the stack change chains within each block, i.e. connect before of
+		 * each change to after of its predecessor. */
+		ir_node *prev_block = NULL;
+		for (unsigned n = n_changes; n-- != 0;) {
+			be_stack_change_t const *const c     = &changes[n];
+			ir_node                 *const block = get_nodes_block(c->before);
+			if (block == prev_block)
+				set_irn_n(c[1].before, c[1].pos, c[0].after);
+			prev_block = block;
 		}
 	}
 
-	DEL_ARR_F(nodes);
-}
-
-struct be_stackorder_t {
-	ir_nodemap stack_order; /**< a phase to handle stack dependencies. */
-};
-
-be_stackorder_t *be_collect_stacknodes(ir_graph *irg)
-{
-	be_stackorder_t *env = XMALLOCZ(be_stackorder_t);
-
-	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
-
-	/* collect all potential^stack accessing nodes */
-	irg_walk_graph(irg, firm_clear_link, link_ops_in_block_walker, NULL);
-
-	ir_nodemap_init(&env->stack_order, irg);
-
-	/* use heights to create a total order for those nodes: this order is stored
-	 * in the created phase */
-	heights = heights_new(irg);
-	irg_block_walk_graph(irg, NULL, process_ops_in_block, &env->stack_order);
-	heights_free(heights);
-
-	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
-
-	return env;
-}
-
-ir_node *be_get_stack_pred(const be_stackorder_t *env, const ir_node *node)
-{
-	return ir_nodemap_get(ir_node, &env->stack_order, node);
-}
-
-void be_free_stackorder(be_stackorder_t *env)
-{
-	ir_nodemap_destroy(&env->stack_order);
-	free(env);
+	DEL_ARR_F(changes);
 }
 
 static void create_stores_for_type(ir_graph *irg, ir_type *type)

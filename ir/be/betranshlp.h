@@ -15,8 +15,6 @@
 #include "be_types.h"
 #include "firm_types.h"
 
-typedef struct be_stackorder_t be_stackorder_t;
-
 /**
  * A callback to pre-transform some nodes before the transformation starts.
  */
@@ -109,26 +107,44 @@ void be_map_exc_node_to_runtime_call(ir_node *node, ir_mode *res_mode,
                                      long pn_M, long pn_X_regular,
                                      long pn_X_except, long pn_res);
 
-/**
- * In the normal firm representation some nodes like pure calls, builtins
- * have no memory inputs+outputs. However in the backend these sometimes have to
- * access the stack to work and therefore suddenly need to be enqueued into the
- * memory edge again.
- * This API creates a possible order to enqueue them so we can be sure to create
- * a legal dependency graph when transforming them.
- */
-be_stackorder_t *be_collect_stacknodes(ir_graph *irg);
+typedef struct be_stack_change_t be_stack_change_t;
+
+typedef struct be_stack_env_t {
+	be_stack_change_t *changes;
+} be_stack_env_t;
 
 /**
- * return node that should produce the predecessor stack node in a block.
- * returns NULL if there's no predecessor in the current block.
+ * Initialize a stack change environment.
+ *
+ * Usually architectures use a machine stack to store local information, e.g.
+ * arguments of function calls.  This concept is not present in the middleend,
+ * appears during code selection and causes chains of stack changes, which may
+ * not be interleaved.  To prevent interleaving, the instruction scheduler has
+ * to be aware of these chains or a total order has to be established for them
+ * beforehand.  This interface performs the latter.
+ * The change chains are recorded during code selection and wired afterwards.
+ *
+ * @param env  The stack environment to initialize.
  */
-ir_node *be_get_stack_pred(const be_stackorder_t *env, const ir_node *node);
+void be_stack_init(be_stack_env_t *env);
 
 /**
- * free memory associated with a stackorder structure
+ * Record one stack change chain.
+ *
+ * @param before  The first node of the stack change chain.
+ * @param pos     The operand number of the stack of @p before.
+ * @param after   The stack value produced by this change, or NULL for the last
+ *                change, e.g. return.
  */
-void be_free_stackorder(be_stackorder_t *env);
+void be_stack_record_chain(be_stack_env_t *env, ir_node *before, unsigned pos, ir_node *after);
+
+/**
+ * Wire all recorded stack change chains within each block and free all recorded
+ * information.
+ *
+ * @param env  The stack environment.
+ */
+void be_stack_finish(be_stack_env_t *env);
 
 /**
  * In case where a parameter is transmitted via register but someone takes its

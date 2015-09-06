@@ -452,6 +452,7 @@ SubSP => {
 			ins     => [ "stack", "size", "mem" ],
 		}
 	},
+	ins      => [ "stack" ],
 	out_reqs => [ "sp:I", "gp", "mem" ],
 	outs     => [ "stack", "addr", "M" ],
 },
