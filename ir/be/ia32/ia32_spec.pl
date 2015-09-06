@@ -764,7 +764,7 @@ Setcc => {
 	attr      => "x86_condition_code_t condition_code",
 	# The way we handle Setcc with float nodes (potentially) destroys the flags
 	# (when we emit the setX; setp; orb and the setX;setnp;andb sequences)
-	init      => "set_ia32_ls_mode(res, mode_Bu);\n".
+	init      => "attr->attr.ls_mode = mode_Bu;\n".
 	             "\tif (condition_code & x86_cc_additional_float_cases) {\n".
 	             "\t\tarch_add_irn_flags(res, arch_irn_flag_modify_flags);\n".
 	             "\t\t/* attr->latency = 3; */\n".
@@ -780,7 +780,7 @@ SetccMem => {
 	ins       => [ "base", "index", "mem","eflags" ],
 	attr_type => "ia32_condcode_attr_t",
 	attr      => "x86_condition_code_t condition_code",
-	init      => "set_ia32_ls_mode(res, mode_Bu);\n",
+	init      => "attr->attr.ls_mode = mode_Bu;",
 	emit      => "set%P3 %AM",
 	latency   => 1,
 },
