@@ -1067,6 +1067,7 @@ SubSP => {
 	out_reqs  => [ "esp:I", "gp", "mem" ],
 	ins       => [ "base", "index", "mem", "stack", "size" ],
 	am        => "source,binary",
+	init      => "attr->ls_mode = ia32_mode_gp;",
 	emit      => "subl %B\n".
 	             "movl %%esp, %D1",
 	latency   => 2,

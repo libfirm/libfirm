@@ -4335,22 +4335,15 @@ static ir_node *gen_Return(ir_node *node)
 
 static ir_node *gen_Alloc(ir_node *node)
 {
-	ir_node *stack    = get_stack_pointer_for(node);
-	ir_node *size     = get_Alloc_size(node);
-	ir_node *new_size = try_create_Immediate(size, 'i');
-	ir_node *mem      = get_Alloc_mem(node);
-	ir_node *new_mem  = be_transform_node(mem);
-	if (new_size == NULL)
-		new_size = be_transform_node(size);
+	dbg_info *const dbgi      = get_irn_dbg_info(node);
+	ir_node  *const new_block = be_transform_nodes_block(node);
+	ir_node  *const mem       = get_Alloc_mem(node);
+	ir_node  *const new_mem   = be_transform_node(mem);
+	ir_node  *const stack     = get_stack_pointer_for(node);
 	/* TODO: match address mode for size... */
-
-	dbg_info *dbgi      = get_irn_dbg_info(node);
-	ir_node  *new_block = be_transform_nodes_block(node);
-	ir_node *new_node
-		= new_bd_ia32_SubSP(dbgi, new_block, noreg_GP, noreg_GP, new_mem, stack,
-		                    new_size);
-	set_ia32_op_type(new_node, ia32_Normal);
-	set_ia32_ls_mode(new_node, ia32_mode_gp);
+	ir_node  *const size      = get_Alloc_size(node);
+	ir_node  *const new_size  = create_immediate_or_transform(size, 'i');
+	ir_node  *const new_node  = new_bd_ia32_SubSP(dbgi, new_block, noreg_GP, noreg_GP, new_mem, stack, new_size);
 	SET_IA32_ORIG_NODE(new_node, node);
 
 	ir_node *const stack_proj = be_new_Proj_reg(new_node, pn_ia32_SubSP_stack, &ia32_registers[REG_ESP]);
