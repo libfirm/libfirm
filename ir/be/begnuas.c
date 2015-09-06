@@ -641,10 +641,6 @@ static void emit_init_expression(ir_node *const init)
 	int      bytes = get_mode_size_bytes(mode);
 
 	switch (get_irn_opcode(init)) {
-	case iro_Id:
-		emit_init_expression(get_Id_pred(init));
-		return;
-
 	case iro_Conv:
 		emit_init_expression(get_Conv_op(init));
 		return;
