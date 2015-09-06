@@ -373,13 +373,13 @@ const arch_register_req_t *be_create_reg_req(struct obstack *obst,
 ir_node *be_get_IncSP_pred(ir_node *irn)
 {
 	assert(be_is_IncSP(irn));
-	return get_irn_n(irn, 0);
+	return get_irn_n(irn, n_be_IncSP_pred);
 }
 
 void be_set_IncSP_pred(ir_node *incsp, ir_node *pred)
 {
 	assert(be_is_IncSP(incsp));
-	set_irn_n(incsp, 0, pred);
+	set_irn_n(incsp, n_be_IncSP_pred, pred);
 }
 
 void be_set_IncSP_offset(ir_node *irn, int offset)
