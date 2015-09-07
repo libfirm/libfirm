@@ -42,18 +42,6 @@ void ir_verify_arr(const void *arr)
 #endif
 }
 
-/**
- * Creates a dynamic array on a obstack.
- *
- * @param obstack    An struct obstack * were the data will be allocated
- * @param nelts      The number of elements
- * @param elts_size  The size of the array elements.
- *
- * @return A pointer to the dynamic array (can be used as a pointer to the
- *         first element of this array).
- *
- * @remark Helper function, use NEW_ARR_D() instead.
- */
 void *ir_new_arr_d(struct obstack *obstack, size_t nelts, size_t elts_size)
 {
 	ir_arr_descr *dp;
@@ -66,17 +54,6 @@ void *ir_new_arr_d(struct obstack *obstack, size_t nelts, size_t elts_size)
 	return dp->elts;
 }
 
-/**
- * Creates a flexible array.
- *
- * @param nelts      The number of elements
- * @param elts_size  The size of the array elements.
- *
- * @return A pointer to the flexible array (can be used as a pointer to the
- *         first element of this array).
- *
- * @remark Helper function, use NEW_ARR_F() instead.
- */
 void *ir_new_arr_f(size_t nelts, size_t elts_size)
 {
 	ir_arr_descr *newa;
@@ -87,13 +64,6 @@ void *ir_new_arr_f(size_t nelts, size_t elts_size)
 	return newa->elts;
 }
 
-/**
- * Delete a flexible array.
- *
- * @param elts    The flexible array (pointer to the first element).
- *
- * @remark Helper function, use DEL_ARR_F() instead.
- */
 void ir_del_arr_f(void *elts)
 {
 	ir_arr_descr *dp = ARR_DESCR (elts);
@@ -107,18 +77,6 @@ void ir_del_arr_f(void *elts)
 	free(dp);
 }
 
-/**
- * Resize a flexible array, always reallocate data.
- *
- * @param elts       The flexible array (pointer to the first element).
- * @param nelts      The new number of elements.
- * @param elts_size  The size of the array elements.
- *
- * @return A resized flexible array, possibly other address than
- *         elts.
- *
- * @remark Helper function, use ARR_SETLEN() instead.
- */
 void *ir_arr_setlen (void *elts, size_t nelts, size_t elts_size)
 {
 	ir_arr_descr *dp = ARR_DESCR (elts);
@@ -132,19 +90,6 @@ void *ir_arr_setlen (void *elts, size_t nelts, size_t elts_size)
 	return dp->elts;
 }
 
-/**
- * Resize a flexible array, allocate more data if needed but do NOT
- * reduce.
- *
- * @param elts     The flexible array (pointer to the first element).
- * @param nelts    The new number of elements.
- * @param eltsize  The size of the array elements.
- *
- * @return A resized flexible array, possibly other address than
- *         elts.
- *
- * @remark Helper function, use ARR_RESIZE() instead.
- */
 void *ir_arr_resize(void *elts, size_t nelts, size_t eltsize)
 {
 	ir_arr_descr *dp = ARR_DESCR(elts);
