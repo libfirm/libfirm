@@ -51,48 +51,71 @@ static unsigned         next_block_nr;
 
 static void emit_section_macho(be_gas_section_t section)
 {
-	be_gas_section_t  base  = section & GAS_SECTION_TYPE_MASK;
-	be_gas_section_t  flags = section & ~GAS_SECTION_TYPE_MASK;
+	be_gas_section_t base  = section & GAS_SECTION_TYPE_MASK;
+	be_gas_section_t flags = section & ~GAS_SECTION_TYPE_MASK;
 
 	if (current_section == section)
 		return;
 	current_section = section;
 
-	/* shortforms */
-	const char *name;
-	if (flags == 0) {
-		switch (base) {
-		case GAS_SECTION_TEXT:            name = "text";          break;
-		case GAS_SECTION_DATA:            name = "data";          break;
-		case GAS_SECTION_RODATA:          name = "const";         break;
-		case GAS_SECTION_BSS:             name = "data";          break;
-		case GAS_SECTION_CONSTRUCTORS:    name = "mod_init_func"; break;
-		case GAS_SECTION_DESTRUCTORS:     name = "mod_term_func"; break;
-		case GAS_SECTION_PIC_TRAMPOLINES: name = "section\t__IMPORT,__jump_table,symbol_stubs,self_modifying_code+pure_instructions,5"; break;
-		case GAS_SECTION_PIC_SYMBOLS:     name = "section\t__IMPORT,__pointers,non_lazy_symbol_pointers"; break;
-		case GAS_SECTION_CSTRING:         name = "cstring";       break;
-		case GAS_SECTION_DEBUG_INFO:      name = "section __DWARF,__debug_info,regular,debug"; break;
-		case GAS_SECTION_DEBUG_ABBREV:    name = "section __DWARF,__debug_abbrev,regular,debug"; break;
-		case GAS_SECTION_DEBUG_LINE:      name = "section __DWARF,__debug_line,regular,debug"; break;
-		case GAS_SECTION_DEBUG_PUBNAMES:  name = "section __DWARF,__debug_pubnames,regular,debug"; break;
-		case GAS_SECTION_DEBUG_FRAME:     name = "section __DWARF,__debug_frame,regular,debug"; break;
-		default: panic("unsupported scetion type 0x%X", section);
+	static char const *const macho_shortforms[] = {
+		[GAS_SECTION_CONSTRUCTORS] = "mod_init_func",
+		[GAS_SECTION_DESTRUCTORS]  = "mod_term_func",
+	};
+	if (flags == 0 && base < ARRAY_SIZE(macho_shortforms)) {
+		const char *const shortform = macho_shortforms[base];
+		if (shortform != NULL) {
+			be_emit_irprintf("\t.%s\n", shortform);
+			be_emit_write_line();
+			return;
 		}
-	} else if (flags & GAS_SECTION_FLAG_COMDAT) {
-		switch (base) {
-		case GAS_SECTION_TEXT:            name = "section __TEXT,__textcoal_nt,coalesced,pure_instructions"; break;
-		case GAS_SECTION_BSS:
-		case GAS_SECTION_DATA:            name = "section __DATA,__datacoal_nt,coalesced"; break;
-		case GAS_SECTION_RODATA:          name = "section __TEXT,__const_coal,coalesced"; break;
-		case GAS_SECTION_CSTRING:         name = "section __TEXT,__const_coal,coalesced"; break;
-		default: panic("unsupported scetion type 0x%X", section);
-		}
-	} else if (flags & GAS_SECTION_FLAG_TLS) {
-		panic("thread local storage not supported on macho (section 0x%X)", section);
-	} else {
-		panic("unsupported section type 0x%X", section);
 	}
-	be_emit_irprintf("\t.%s\n", name);
+
+	typedef struct {
+		const char *segment_section;
+		const char *flags;
+	} macho_sectioninfo_t;
+
+	static const macho_sectioninfo_t macho_sectioninfos[] = {
+		[GAS_SECTION_TEXT]            = { "__TEXT,__text",            "regular,pure_instructions" },
+		[GAS_SECTION_DATA]            = { "__DATA,__data",            NULL },
+		[GAS_SECTION_RODATA]          = { "__TEXT,__const",           NULL },
+		[GAS_SECTION_BSS]             = { "__DATA,__bss",             NULL },
+		[GAS_SECTION_CSTRING]         = { "__TEXT,__cstring",         "cstring_literals" },
+		[GAS_SECTION_PIC_TRAMPOLINES] = { "__IMPORT,__jump_table",    "symbol_stubs,self_modifying_code+pure_instructions,5" },
+		[GAS_SECTION_PIC_SYMBOLS]     = { "__IMPORT,__pointers",      "non_lazy_symbol_pointers" },
+		[GAS_SECTION_DEBUG_INFO]      = { "__DWARF,__debug_info",     "regular,debug" },
+		[GAS_SECTION_DEBUG_ABBREV]    = { "__DWARF,__debug_abbrev",   "regular,debug" },
+		[GAS_SECTION_DEBUG_LINE]      = { "__DWARF,__debug_line",     "regular,debug" },
+		[GAS_SECTION_DEBUG_PUBNAMES]  = { "__DWARF,__debug_pubnames", "regular,debug" },
+		[GAS_SECTION_DEBUG_FRAME]     = { "__DWARF,__debug_frame",    "regular,debug" },
+	};
+	static const macho_sectioninfo_t macho_sectioninfos_coalesce[] = {
+		[GAS_SECTION_TEXT]    = { "__TEXT,__textcoal_nt", "coalesced,pure_instructions" },
+		[GAS_SECTION_DATA]    = { "__DATA,__datacoal_nt", "coalesced" },
+		[GAS_SECTION_BSS]     = { "__DATA,__datacoal_nt", "coalesced" },
+		[GAS_SECTION_RODATA]  = { "__TEXT,__const_coal",  "coalesced" },
+		[GAS_SECTION_CSTRING] = { "__TEXT,__const_coal",  "coalesced" },
+	};
+
+	if (flags & GAS_SECTION_FLAG_TLS)
+		panic("thread local storage not supported on macho (section 0x%X)", section);
+
+	macho_sectioninfo_t const *info;
+	if (flags & GAS_SECTION_FLAG_COMDAT) {
+		assert(base < ARRAY_SIZE(macho_sectioninfos_coalesce));
+		info = &macho_sectioninfos_coalesce[base];
+	} else {
+		assert(base < ARRAY_SIZE(macho_sectioninfos));
+		info = &macho_sectioninfos[base];
+	}
+	if (info->segment_section == NULL)
+		panic("Unsupported macho section requested");
+
+	be_emit_irprintf("\t.section\t%s", info->segment_section);
+	if (info->flags != NULL)
+		be_emit_irprintf(",%s", info->flags);
+	be_emit_char('\n');
 	be_emit_write_line();
 }
 
