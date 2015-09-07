@@ -19,7 +19,6 @@
 #include "util.h"
 #include "xmalloc.h"
 
-/* Pointer Double Ended Queue */
 #define PDEQ_MAGIC1 FOURCC('P','D','E','1')
 #define PDEQ_MAGIC2 FOURCC('P','D','E','2')
 
@@ -99,7 +98,6 @@ static inline pdeq *alloc_pdeq_block (void)
 	return p;
 }
 
-/* Creates a new double ended pointer list. */
 pdeq *new_pdeq(void)
 {
 	pdeq *dq;
@@ -117,7 +115,6 @@ pdeq *new_pdeq(void)
 	return dq;
 }
 
-/* Delete a double ended pointer list. */
 void del_pdeq(pdeq *dq)
 {
 	pdeq *q, *qq;
@@ -137,14 +134,12 @@ void del_pdeq(pdeq *dq)
 	} while ((q = qq));
 }
 
-/* Checks if a list is empty. */
 int pdeq_empty(pdeq *dq)
 {
 	VRFY(dq);
 	return dq->l_end->n == 0;
 }
 
-/* Returns the length of a double ended pointer list. */
 size_t pdeq_len(pdeq *dq)
 {
 	size_t n;
@@ -162,7 +157,6 @@ size_t pdeq_len(pdeq *dq)
 	return n;
 }
 
-/* Add a pointer to the right site of a double ended pointer list. */
 pdeq *pdeq_putr(pdeq *dq, const void *x)
 {
 	pdeq *rdq;
@@ -200,7 +194,6 @@ pdeq *pdeq_putr(pdeq *dq, const void *x)
 	return dq;
 }
 
-/* Add a pointer to the left site of a double ended pointer list. */
 pdeq *pdeq_putl(pdeq *dq, const void *x)
 {
 	pdeq *ldq;
@@ -240,7 +233,6 @@ pdeq *pdeq_putl(pdeq *dq, const void *x)
 	return dq;
 }
 
-/* Retrieve a pointer from the right site of a double ended pointer list. */
 void *pdeq_getr(pdeq *dq)
 {
 	pdeq *rdq;
@@ -272,7 +264,6 @@ void *pdeq_getr(pdeq *dq)
 	return (void *)x;
 }
 
-/* Retrieve a pointer from the left site of a double ended pointer list. */
 void *pdeq_getl(pdeq *dq)
 {
 	pdeq *ldq;
@@ -305,10 +296,6 @@ void *pdeq_getl(pdeq *dq)
 	return (void *)x;
 }
 
-/*
- * Returns non-zero if a double ended pointer list
- * contains a pointer x.
- */
 int pdeq_contains(pdeq *dq, const void *x)
 {
 	pdeq *q;
@@ -339,12 +326,6 @@ int pdeq_contains(pdeq *dq, const void *x)
 	return 0;
 }
 
-/*
- * Search a key in a double ended pointer list, the search
- * is controlled by a compare function.
- * An element is found, if the compare function returns 0.
- * The search is started from the left site of the list.
- */
 void *pdeq_search(pdeq *dq, cmp_fun cmp, const void *key)
 {
 	pdeq *q;
@@ -376,10 +357,6 @@ void *pdeq_search(pdeq *dq, cmp_fun cmp, const void *key)
 	return NULL;
 }
 
-/*
- * Convert the double ended pointer list into a linear array beginning from
- * left, the first element in the linear array will be the left one.
- */
 void **pdeq_copyl(pdeq *dq, const void **dst)
 {
 	pdeq *q;
@@ -408,10 +385,6 @@ void **pdeq_copyl(pdeq *dq, const void **dst)
 	return (void **)dst;
 }
 
-/*
- * Convert the double ended pointer list into a linear array beginning from
- * right, the first element in the linear array will be the right one.
- */
 void **pdeq_copyr(pdeq *dq, const void **dst)
 {
 	pdeq *q;
