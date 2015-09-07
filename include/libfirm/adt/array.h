@@ -24,6 +24,101 @@
  * @{
  */
 
+/** @cond PRIVATE */
+
+/** A type that has most constrained alignment.  */
+typedef union {
+  long double d;
+  void       *p;
+  long        l;
+} aligned_type;
+
+/**
+ * The array descriptor header type.
+ */
+typedef struct {
+	int magic;              /**< array magic. */
+	size_t allocated;       /**< number of allocated elements. */
+	size_t nelts;           /**< current length of the array. */
+	aligned_type elts[];    /**< start of the array data. */
+} ir_arr_descr;
+
+extern ir_arr_descr arr_mt_descr;
+
+/**
+ * Creates a flexible array.
+ *
+ * @param nelts      The number of elements
+ * @param elts_size  The size of the array elements.
+ *
+ * @return A pointer to the flexible array (can be used as a pointer to the
+ *         first element of this array).
+ *
+ * @remark Helper function, use NEW_ARR_F() instead.
+ */
+FIRM_API void *ir_new_arr_f(size_t nelts, size_t elts_size);
+
+/**
+ * Creates a dynamic array on a obstack.
+ *
+ * @param obstack    An struct obstack * were the data will be allocated
+ * @param nelts      The number of elements
+ * @param elts_size  The size of the array elements.
+ *
+ * @return A pointer to the dynamic array (can be used as a pointer to the
+ *         first element of this array).
+ *
+ * @remark Helper function, use NEW_ARR_D() instead.
+ */
+FIRM_API void *ir_new_arr_d(struct obstack *obstack, size_t nelts, size_t elts_size);
+
+/**
+ * Resize a flexible array, allocate more data if needed but do NOT
+ * reduce.
+ *
+ * @param elts     The flexible array (pointer to the first element).
+ * @param nelts    The new number of elements.
+ * @param eltsize  The size of the array elements.
+ *
+ * @return A resized flexible array, possibly other address than
+ *         elts.
+ *
+ * @remark Helper function, use ARR_RESIZE() instead.
+ */
+FIRM_API void *ir_arr_resize(void *elts, size_t nelts, size_t elts_size);
+
+/**
+ * Resize a flexible array, always reallocate data.
+ *
+ * @param elts       The flexible array (pointer to the first element).
+ * @param nelts      The new number of elements.
+ * @param elts_size  The size of the array elements.
+ *
+ * @return A resized flexible array, possibly other address than
+ *         elts.
+ *
+ * @remark Helper function, use ARR_SETLEN() instead.
+ */
+FIRM_API void *ir_arr_setlen(void *elts, size_t nelts, size_t elts_size);
+
+FIRM_API void ir_verify_arr(const void *elts);
+
+#define ARR_ELTS_OFFS offsetof(ir_arr_descr, elts)
+#define ARR_DESCR(elts) ((ir_arr_descr *)(void *)((char *)(elts) - ARR_ELTS_OFFS))
+
+/** Set a length smaller than the current length of the array.  Do not
+ *  resize. len must be <= ARR_LEN(arr). */
+static inline void ARR_SHRINKLEN(void *arr, size_t new_len)
+{
+#ifndef NDEBUG
+	ir_verify_arr(arr);
+#endif
+	assert(ARR_DESCR(arr)->nelts >= new_len);
+	ARR_DESCR(arr)->nelts = new_len;
+}
+
+/** @endcond */
+
 /**
  * Creates a flexible array.
  *
@@ -65,7 +160,7 @@
  *
  * @param arr    The flexible array.
  */
-#define DEL_ARR_F(arr) (ir_del_arr_f((void *)(arr)))
+FIRM_API void DEL_ARR_F(void *elts);
 
 /**
  * Creates a dynamic array on an obstack.
@@ -112,7 +207,13 @@
  *
  * @param arr  a flexible, dynamic, automatic or static array.
  */
-#define ARR_LEN(arr) (ARR_VRFY((arr)), ARR_DESCR((arr))->nelts)
+static inline size_t ARR_LEN(void const *const arr)
+{
+#ifndef NDEBUG
+	ir_verify_arr(arr);
+#endif
+	return ARR_DESCR(arr)->nelts;
+}
 
 /**
  * Resize a flexible array, allocate more data if needed but do NOT
@@ -175,119 +276,6 @@
  */
 #define ARR_APP1(type, arr, elt) \
   (ARR_EXTEND(type, (arr), 1), (arr)[ARR_LEN((arr))-1] = (elt))
-
-#ifdef NDEBUG
-# define ARR_VRFY(arr)          ((void)0)
-# define ARR_IDX_VRFY(arr, idx) ((void)0)
-#else
-/** Check array for consistency */
-# define ARR_VRFY(arr)          ir_verify_arr(arr)
-/** Check if index is within array bounds */
-# define ARR_IDX_VRFY(arr, idx) \
-    assert((0 <= (idx)) && ((idx) < ARR_LEN((arr))))
-#endif
-
-/** @cond PRIVATE */
-
-/** A type that has most constrained alignment.  */
-typedef union {
-  long double d;
-  void *p;
-  long l;
-} aligned_type;
-
-/**
- * The array descriptor header type.
- */
-typedef struct {
-	int magic;                    /**< array magic. */
-	size_t allocated;         /**< number of allocated elements. */
-	size_t nelts;                 /**< current length of the array. */
-	aligned_type elts[1];         /**< start of the array data. */
-} ir_arr_descr;
-
-extern ir_arr_descr arr_mt_descr;
-
-/**
- * Creates a flexible array.
- *
- * @param nelts      The number of elements
- * @param elts_size  The size of the array elements.
- *
- * @return A pointer to the flexible array (can be used as a pointer to the
- *         first element of this array).
- *
- * @remark Helper function, use NEW_ARR_F() instead.
- */
-FIRM_API void *ir_new_arr_f(size_t nelts, size_t elts_size);
-
-/**
- * Delete a flexible array.
- *
- * @param elts    The flexible array (pointer to the first element).
- *
- * @remark Helper function, use DEL_ARR_F() instead.
- */
-FIRM_API void ir_del_arr_f(void *elts);
-
-/**
- * Creates a dynamic array on a obstack.
- *
- * @param obstack    An struct obstack * were the data will be allocated
- * @param nelts      The number of elements
- * @param elts_size  The size of the array elements.
- *
- * @return A pointer to the dynamic array (can be used as a pointer to the
- *         first element of this array).
- *
- * @remark Helper function, use NEW_ARR_D() instead.
- */
-FIRM_API void *ir_new_arr_d(struct obstack *obstack, size_t nelts, size_t elts_size);
-
-/**
- * Resize a flexible array, allocate more data if needed but do NOT
- * reduce.
- *
- * @param elts     The flexible array (pointer to the first element).
- * @param nelts    The new number of elements.
- * @param eltsize  The size of the array elements.
- *
- * @return A resized flexible array, possibly other address than
- *         elts.
- *
- * @remark Helper function, use ARR_RESIZE() instead.
- */
-FIRM_API void *ir_arr_resize(void *elts, size_t nelts, size_t elts_size);
-
-/**
- * Resize a flexible array, always reallocate data.
- *
- * @param elts       The flexible array (pointer to the first element).
- * @param nelts      The new number of elements.
- * @param elts_size  The size of the array elements.
- *
- * @return A resized flexible array, possibly other address than
- *         elts.
- *
- * @remark Helper function, use ARR_SETLEN() instead.
- */
-FIRM_API void *ir_arr_setlen(void *elts, size_t nelts, size_t elts_size);
-
-FIRM_API void ir_verify_arr(const void *elts);
-
-#define ARR_ELTS_OFFS offsetof(ir_arr_descr, elts)
-#define ARR_DESCR(elts) ((ir_arr_descr *)(void *)((char *)(elts) - ARR_ELTS_OFFS))
-
-/** Set a length smaller than the current length of the array.  Do not
- *  resize. len must be <= ARR_LEN(arr). */
-static inline void ARR_SHRINKLEN(void *arr, size_t new_len)
-{
-	ARR_VRFY(arr);
-	assert(ARR_DESCR(arr)->nelts >= new_len);
-	ARR_DESCR(arr)->nelts = new_len;
-}
-
-/** @endcond */
 
 /** @} */
 
