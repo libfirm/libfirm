@@ -51,7 +51,7 @@ struct pdeq {
 	pdeq *l, *r;          /**< left and right neighbor */
 	size_t n;             /**< number of elements in the current chunk */
 	size_t p;             /**< the read/write pointer */
-	const void *data[];   /**< storage for elements */
+	void const *data[];   /**< storage for elements */
 };
 
 
@@ -70,7 +70,7 @@ static unsigned pdeqs_cached;
  *
  * @param p   The pdeq chunk.
  */
-static inline void free_pdeq_block (pdeq *p)
+static inline void free_pdeq_block(pdeq *p)
 {
 #ifndef NDEBUG
 	p->magic = 0xbadf00d1;
@@ -78,7 +78,7 @@ static inline void free_pdeq_block (pdeq *p)
 	if (pdeqs_cached < TUNE_NSAVED_PDEQS) {
 		pdeq_block_cache[pdeqs_cached++] = p;
 	} else {
-		free (p);
+		free(p);
 	}
 }
 
@@ -87,23 +87,20 @@ static inline void free_pdeq_block (pdeq *p)
  *
  * @return A new pdeq chunk.
  */
-static inline pdeq *alloc_pdeq_block (void)
+static inline pdeq *alloc_pdeq_block(void)
 {
 	pdeq *p;
 	if (pdeqs_cached > 0) {
 		p = pdeq_block_cache[--pdeqs_cached];
 	} else {
-		p = (pdeq*) xmalloc(PREF_MALLOC_SIZE);
+		p = (pdeq*)xmalloc(PREF_MALLOC_SIZE);
 	}
 	return p;
 }
 
 pdeq *new_pdeq(void)
 {
-	pdeq *dq;
-
-	dq = alloc_pdeq_block();
-
+	pdeq *dq = alloc_pdeq_block();
 #ifndef NDEBUG
 	dq->magic = PDEQ_MAGIC1;
 #endif
@@ -117,21 +114,20 @@ pdeq *new_pdeq(void)
 
 void del_pdeq(pdeq *dq)
 {
-	pdeq *q, *qq;
-
 	VRFY(dq);
 
-	q = dq->l_end; /* left end of chain */
+	pdeq *q = dq->l_end; /* left end of chain */
 	/* pdeq trunk empty, but !pdeq_empty() ==> trunk not in chain */
 	if (dq->n == 0 && dq->l_end != dq ) {
 		free_pdeq_block(dq);
 	}
 
 	/* Free all blocks in the pdeq chain */
+	pdeq *qq;
 	do {
 		qq = q->r;
 		free_pdeq_block(q);
-	} while ((q = qq));
+	} while ((q = qq) != NULL);
 }
 
 int pdeq_empty(pdeq *dq)
@@ -142,13 +138,10 @@ int pdeq_empty(pdeq *dq)
 
 size_t pdeq_len(pdeq *dq)
 {
-	size_t n;
-	pdeq *q;
-
 	VRFY(dq);
 
-	n = 0;
-	q = dq->l_end;
+	size_t n = 0;
+	pdeq *q = dq->l_end;
 	do {
 		n += q->n;
 		q = q->r;
@@ -157,18 +150,13 @@ size_t pdeq_len(pdeq *dq)
 	return n;
 }
 
-pdeq *pdeq_putr(pdeq *dq, const void *x)
+pdeq *pdeq_putr(pdeq *dq, void const *x)
 {
-	pdeq *rdq;
-	size_t n;
-
 	VRFY(dq);
 
-	rdq = dq->r_end;
+	pdeq *rdq = dq->r_end;
 	if (rdq->n >= NDATA) {  /* tailblock full */
-		pdeq *ndq;
-
-		ndq = dq;           /* try to reuse trunk, but ... */
+		pdeq *ndq = dq;     /* try to reuse trunk, but ... */
 		if (dq->n) {        /* ... if trunk used */
 			/* allocate and init new block */
 			ndq = alloc_pdeq_block();
@@ -185,8 +173,9 @@ pdeq *pdeq_putr(pdeq *dq, const void *x)
 		rdq = ndq;
 	}
 
-	n = rdq->n++ + rdq->p;
-	if (n >= NDATA) n -= NDATA;
+	size_t n = rdq->n++ + rdq->p;
+	if (n >= NDATA)
+		n -= NDATA;
 
 	rdq->data[n] = x;
 
@@ -194,17 +183,13 @@ pdeq *pdeq_putr(pdeq *dq, const void *x)
 	return dq;
 }
 
-pdeq *pdeq_putl(pdeq *dq, const void *x)
+pdeq *pdeq_putl(pdeq *dq, void const *x)
 {
-	pdeq *ldq;
-
 	VRFY(dq);
 
-	ldq = dq->l_end;
+	pdeq *ldq = dq->l_end;
 	if (ldq->n >= NDATA) {  /* headblock full */
-		pdeq *ndq;
-
-		ndq = dq;           /* try to reuse trunk, but ... */
+		pdeq *ndq = dq;     /* try to reuse trunk, but ... */
 		if (dq->n) {        /* ... if trunk used */
 			/* allocate and init new block */
 			ndq = alloc_pdeq_block();
@@ -235,17 +220,14 @@ pdeq *pdeq_putl(pdeq *dq, const void *x)
 
 void *pdeq_getr(pdeq *dq)
 {
-	pdeq *rdq;
-	const void *x;
-	size_t n;
-
 	VRFY(dq);
 	assert(dq->l_end->n);
 
-	rdq = dq->r_end;
-	n = rdq->p + --rdq->n;
-	if (n >= NDATA) n -= NDATA;
-	x = rdq->data[n];
+	pdeq  *const rdq = dq->r_end;
+	size_t       n   = rdq->p + --rdq->n;
+	if (n >= NDATA)
+		n -= NDATA;
+	void const *const x = rdq->data[n];
 
 	if (rdq->n == 0) {
 		if (rdq->l) {
@@ -255,9 +237,8 @@ void *pdeq_getr(pdeq *dq)
 		} else {
 			dq->r_end = dq->l_end = dq;
 		}
-		if (dq != rdq) {
+		if (dq != rdq)
 			free_pdeq_block(rdq);
-		}
 	}
 
 	VRFY(dq);
@@ -266,17 +247,14 @@ void *pdeq_getr(pdeq *dq)
 
 void *pdeq_getl(pdeq *dq)
 {
-	pdeq *ldq;
-	const void *x;
-	size_t p;
-
 	VRFY(dq);
 	assert(dq->l_end->n);
 
-	ldq = dq->l_end;
-	p = ldq->p;
-	x = ldq->data[p];
-	if (++p >= NDATA) p = 0;
+	pdeq       *const ldq = dq->l_end;
+	size_t            p   = ldq->p;
+	void const *const x = ldq->data[p];
+	if (++p >= NDATA)
+		p = 0;
 	ldq->p = p;
 
 	if (--ldq->n == 0) {
@@ -287,68 +265,64 @@ void *pdeq_getl(pdeq *dq)
 		} else {
 			dq->l_end = dq->r_end = dq;
 		}
-		if (dq != ldq) {
+		if (dq != ldq)
 			free_pdeq_block(ldq);
-		}
 	}
 
 	VRFY(dq);
 	return (void *)x;
 }
 
-int pdeq_contains(pdeq *dq, const void *x)
+int pdeq_contains(pdeq *dq, void const *x)
 {
-	pdeq *q;
-
 	VRFY(dq);
 
-	q = dq->l_end;
+	pdeq *q = dq->l_end;
 	do {
-		size_t p, ep;
-
-		p = q->p; ep = p + q->n;
+		size_t p  = q->p;
+		size_t ep = p + q->n;
 
 		if (ep > NDATA) {
 			do {
-				if (q->data[p] == x) return 1;
+				if (q->data[p] == x)
+					return true;
 			} while (++p < NDATA);
 			p = 0;
 			ep -= NDATA;
 		}
 
 		while (p < ep) {
-			if (q->data[p++] == x) return 1;
+			if (q->data[p++] == x)
+				return true;
 		}
 
 		q = q->r;
-	} while (q);
+	} while (q != NULL);
 
-	return 0;
+	return false;
 }
 
-void *pdeq_search(pdeq *dq, cmp_fun cmp, const void *key)
+void *pdeq_search(pdeq *dq, cmp_fun cmp, void const *key)
 {
-	pdeq *q;
-	size_t p;
-
 	VRFY(dq);
 
-	q = dq->l_end;
+	pdeq *q = dq->l_end;
 	do {
-		size_t ep;
-
-		p = q->p; ep = p + q->n;
+		size_t p  = q->p;
+		size_t ep = p + q->n;
 
 		if (ep > NDATA) {
 			do {
-				if (!cmp(q->data[p], key)) return (void *)q->data[p-1];
+				if (!cmp(q->data[p], key))
+					return (void *)q->data[p-1];
 			} while (++p < NDATA);
 			p = 0;
 			ep -= NDATA;
 		}
 
 		while (p < ep) {
-			if (!cmp(q->data[p++], key)) return (void *)q->data[p-1];
+			if (!cmp(q->data[p++], key))
+				return (void *)q->data[p-1];
 		}
 
 		q = q->r;
@@ -357,18 +331,15 @@ void *pdeq_search(pdeq *dq, cmp_fun cmp, const void *key)
 	return NULL;
 }
 
-void **pdeq_copyl(pdeq *dq, const void **dst)
+void **pdeq_copyl(pdeq *dq, void const **dst)
 {
-	pdeq *q;
-	const void **d = dst;
-
 	VRFY(dq);
 
-	q = dq->l_end;
-	while (q) {
-		size_t p, n;
-
-		p = q->p; n = q->n;
+	void const **d = dst;
+	pdeq        *q = dq->l_end;
+	while (q != NULL) {
+		size_t p = q->p;
+		size_t n = q->n;
 
 		if (n + p > NDATA) {
 			/* p is always < NDATA */
@@ -385,18 +356,15 @@ void **pdeq_copyl(pdeq *dq, const void **dst)
 	return (void **)dst;
 }
 
-void **pdeq_copyr(pdeq *dq, const void **dst)
+void **pdeq_copyr(pdeq *dq, void const **dst)
 {
-	pdeq *q;
-	const void **d = dst;
-
 	VRFY(dq);
 
-	q = dq->r_end;
-	while (q) {
-		size_t p, i;
-
-		p = q->p; i = q->n + p - 1;
+	pdeq        *q = dq->r_end;
+	void const **d = dst;
+	while (q != NULL) {
+		size_t p = q->p;
+		size_t i = q->n + p - 1;
 		if (i >= NDATA) {
 			i -= NDATA;
 			for (;; --i) {
