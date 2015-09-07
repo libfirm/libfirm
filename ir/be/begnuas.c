@@ -1070,8 +1070,7 @@ static void emit_initializer(ir_entity const *const entity)
 
 	ir_type *type = get_entity_type(entity);
 	size_t   size = get_initializer_size(initializer, type);
-	if (size == 0)
-		return;
+	assert(size > 0);
 
 	/*
 	 * In the worst case, every initializer allocates one byte.
@@ -1374,14 +1373,23 @@ static void emit_global(be_main_env_t const *const main_env,
 			be_emit_write_line();
 		}
 
-		if (entity_is_null(entity)) {
-			/* we should use .space for stuff in the bss segment */
-			ir_type *const type = get_entity_type(entity);
-			unsigned const size = get_type_size_bytes(type);
-			if (size > 0) {
-				be_emit_irprintf("\t.space %u, 0\n", size);
+		ir_type *const type = get_entity_type(entity);
+		unsigned const size = get_type_size_bytes(type);
+		if (size == 0) {
+			/* We need to output at least 1 byte, otherwise macho will merge
+			 * the label with the next thing */
+			if (be_gas_object_file_format == OBJECT_FILE_FORMAT_MACH_O) {
+				be_emit_cstring("\t.byte\t0\n");
 				be_emit_write_line();
 			}
+			return;
+		}
+
+		if (entity_is_null(entity)) {
+			assert(size > 0);
+			/* use .space for stuff in the bss segment */
+			be_emit_irprintf("\t.space %u, 0\n", size);
+			be_emit_write_line();
 		} else {
 			emit_initializer(entity);
 		}
