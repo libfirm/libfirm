@@ -87,6 +87,7 @@ static const tp_op_ops
 	},
 	/** tpop operations for primitive types */
 	null_ops = {
+		.free_attrs = NULL,
 	}
 ;
 
