@@ -114,7 +114,7 @@ FIRM_API int hungarian_solve(hungarian_problem_t *p, unsigned *assignment,
  * @param p          The hungarian object
  * @param cost_width The minimum field width of the costs
  */
-FIRM_API void hungarian_print_cost_matrix(hungarian_problem_t *p,
+FIRM_API void hungarian_print_cost_matrix(hungarian_problem_t const *p,
                                           int cost_width);
 
 /** @} */
