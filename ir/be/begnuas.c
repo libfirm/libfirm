@@ -389,7 +389,7 @@ static bool entity_is_string_const(const ir_entity *ent, bool only_suffix_null)
 	return initializer_is_string_const(init, only_suffix_null);
 }
 
-static bool entity_is_null(const ir_entity *entity)
+static bool entity_is_zero_initialized(ir_entity const *entity)
 {
 	ir_initializer_t *initializer = get_entity_initializer(entity);
 	return initializer == NULL || initializer_is_null(initializer);
@@ -482,7 +482,7 @@ static be_gas_section_t determine_basic_section(const ir_entity *entity)
 			return GAS_SECTION_RODATA;
 		}
 	}
-	if (entity_is_null(entity) && !is_alias_entity(entity))
+	if (entity_is_zero_initialized(entity) && !is_alias_entity(entity))
 		return GAS_SECTION_BSS;
 
 	return GAS_SECTION_DATA;
@@ -1454,7 +1454,7 @@ static void emit_global(be_main_env_t const *const main_env,
 			return;
 		}
 
-		if (entity_is_null(entity)) {
+		if (entity_is_zero_initialized(entity)) {
 			assert(size > 0);
 			/* use .space for stuff in the bss segment */
 			be_emit_irprintf("\t.space %u, 0\n", size);
