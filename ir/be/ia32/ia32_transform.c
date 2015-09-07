@@ -2944,37 +2944,23 @@ static ir_node *gen_Switch(ir_node *node)
 
 	ir_node *switchjmp;
 	ir_node *table_am;
-	ir_node *target;
-	switch (ia32_pic_style) {
-	case IA32_PIC_NONE:
+	if (ia32_pic_style == IA32_PIC_NONE) {
 		switchjmp = new_bd_ia32_SwitchJmp(dbgi, block, base, new_sel, n_outs,
 		                                  table, entity);
 		table_am = switchjmp;
-		goto finish;
-	case IA32_PIC_ELF_PLT:
-	case IA32_PIC_ELF_NO_PLT: {
-		ir_node *const load = new_bd_ia32_Load(dbgi, block, base, new_sel,
-											   nomem);
-		table_am = load;
-		ir_node *const load_res = be_new_Proj(load, pn_ia32_Load_res);
-		target = new_bd_ia32_Lea(dbgi, block, base, load_res);
-		goto simple_jmp;
-	}
-	case IA32_PIC_MACH_O: {
-		target = new_bd_ia32_Add(dbgi, block, base, new_sel, nomem, base,
-		                         noreg_GP);
-		set_ia32_commutative(target);
-		table_am = target;
-	simple_jmp:
-		switchjmp = new_bd_ia32_SwitchJmp(dbgi, block, target, noreg_GP, n_outs,
+	} else {
+		assert(ia32_pic_style == IA32_PIC_ELF_PLT
+		    || ia32_pic_style == IA32_PIC_ELF_NO_PLT
+		    || ia32_pic_style == IA32_PIC_MACH_O);
+		ir_node *const add = new_bd_ia32_Add(dbgi, block, base, new_sel, nomem,
+		                                     base, noreg_GP);
+		set_ia32_commutative(add);
+		table_am = add;
+		switchjmp = new_bd_ia32_SwitchJmp(dbgi, block, add, noreg_GP, n_outs,
 		                                  table, entity);
 		set_ia32_op_type(switchjmp, ia32_Normal);
 		set_ia32_ls_mode(switchjmp, ia32_mode_gp);
-		goto finish;
 	}
-	}
-	panic("invalid PIC style");
-finish:
 	set_ia32_am_scale(table_am, 2);
 	set_ia32_op_type(table_am, ia32_AddrModeS);
 	set_ia32_ls_mode(table_am, ia32_mode_gp);
