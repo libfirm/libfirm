@@ -24,23 +24,18 @@
 /** @cond DISABLED */
 
 #define _FIRM_FNV_OFFSET_BASIS 2166136261U
-#define _FIRM_FNV_FNV_PRIME 16777619U
-
-/* Computing x * _FIRM_FNV_FNV_PRIME */
-#define _FIRM_FNV_TIMES_PRIME(x) ((x) * _FIRM_FNV_FNV_PRIME)
+#define _FIRM_FNV_FNV_PRIME    16777619U
 
 /** @endcond */
 
 /**
  * Returns a hash value for a block of data.
  */
-static inline unsigned hash_data(const unsigned char *data, size_t bytes)
+static inline unsigned hash_data(unsigned char const *data, size_t bytes)
 {
-	size_t   i;
 	unsigned hash = _FIRM_FNV_OFFSET_BASIS;
-
-	for(i = 0; i < bytes; ++i) {
-		hash = _FIRM_FNV_TIMES_PRIME(hash);
+	for (size_t i = 0; i < bytes; ++i) {
+		hash *= _FIRM_FNV_FNV_PRIME;
 		hash ^= data[i];
 	}
 
@@ -52,14 +47,12 @@ static inline unsigned hash_data(const unsigned char *data, size_t bytes)
  * @param str The string (can be const).
  * @return A hash value for the string.
  */
-static inline unsigned hash_str(const char *str)
+static inline unsigned hash_str(char const *const str)
 {
-	unsigned i;
 	unsigned hash = _FIRM_FNV_OFFSET_BASIS;
-
-	for(i = 0; str[i] != '\0'; ++i) {
-		hash = _FIRM_FNV_TIMES_PRIME(hash);
-		hash ^= str[i];
+	for(char const *c = str; *c != '\0'; ++c) {
+		hash *= _FIRM_FNV_FNV_PRIME;
+		hash ^= *c;
 	}
 
 	return hash;
@@ -70,9 +63,9 @@ static inline unsigned hash_str(const char *str)
  * Pointer addresses are mostly aligned to 4 or 8 bytes. So we remove the
  * lowest 3 bits.
  */
-static inline unsigned hash_ptr(const void *ptr)
+static inline unsigned hash_ptr(void const *const ptr)
 {
-	return ((unsigned)(((char *) (ptr) - (char *)0) >> 3));
+	return (unsigned)(((char const *)ptr - (char const *)0) >> 3);
 }
 
 /**
@@ -81,11 +74,12 @@ static inline unsigned hash_ptr(const void *ptr)
  * @param y Another hash value.
  * @return  A hash value computed from both.
  */
-static inline unsigned hash_combine(unsigned x, unsigned y)
+static inline unsigned hash_combine(unsigned const x, unsigned const y)
 {
-	unsigned hash = _FIRM_FNV_TIMES_PRIME(_FIRM_FNV_OFFSET_BASIS);
+	unsigned hash = _FIRM_FNV_OFFSET_BASIS;
+	hash *= _FIRM_FNV_FNV_PRIME;
 	hash ^= x;
-	hash  = _FIRM_FNV_TIMES_PRIME(hash);
+	hash *= _FIRM_FNV_FNV_PRIME;
 	hash ^= y;
 	return hash;
 }
