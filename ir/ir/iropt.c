@@ -6748,20 +6748,14 @@ static ir_node *transform_Mux_set(ir_node *n, ir_relation relation)
 				if (left_low_bit == left_high_bit && right_low_bit == right_high_bit &&
 				    (left_low_bit == -1 || right_low_bit == -1 || left_low_bit == right_low_bit)) {
 					/* (a & (1 << c)) != (b & (1 << c)) <=> (a ^ b) >> c */
-					dbg_info *dbgi      = get_irn_dbg_info(n);
-					ir_node  *block     = get_nodes_block(n);
-					ir_mode  *calc_mode = mode;
-					if (get_mode_size_bits(mode) < get_mode_size_bits(dest_mode)) {
-						left      = new_rd_Conv(dbgi, block, left, dest_mode);
-						right     = new_rd_Conv(dbgi, block, right, dest_mode);
-						calc_mode = dest_mode;
-					}
+					dbg_info *dbgi         = get_irn_dbg_info(n);
+					ir_node  *block        = get_nodes_block(n);
 					ir_graph *irg          = get_irn_irg(block);
-					ir_node  *eor          = new_rd_Eor(dbgi, block, left, right, calc_mode);
+					ir_node  *eor          = new_rd_Eor(dbgi, block, left, right, mode);
 					unsigned  shift_amount = MAX(left_low_bit, right_low_bit);
 					ir_node  *shift_cnt    = new_rd_Const_long(dbgi, irg, mode_Iu, shift_amount);
-					ir_node  *shift        = new_rd_Shr(dbgi, block, eor, shift_cnt, calc_mode);
-					if (calc_mode != dest_mode) {
+					ir_node  *shift        = new_rd_Shr(dbgi, block, eor, shift_cnt, mode);
+					if (mode != dest_mode) {
 						shift = new_rd_Conv(dbgi, block, shift, dest_mode);
 					}
 
