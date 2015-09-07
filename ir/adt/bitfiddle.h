@@ -49,9 +49,9 @@ static inline unsigned nlz(uint32_t x)
 		return 32;
 	return __builtin_clz(x);
 #else
-   unsigned y;
-   int n = 32;
 
+   unsigned y;
+   unsigned n = 32;
    y = x >>16;  if (y != 0) { n -= 16;  x = y; }
    y = x >> 8;  if (y != 0) { n -=  8;  x = y; }
    y = x >> 4;  if (y != 0) { n -=  4;  x = y; }
@@ -117,10 +117,10 @@ static inline unsigned round_up2(unsigned x, unsigned pot)
  */
 static inline uint32_t floor_po2(uint32_t x)
 {
-#if defined(__GNUC__) && __GNUC__ >= 4 // in this case nlz is fast
+#if defined(__GNUC__) && __GNUC__ >= 4 /* in this case nlz is fast */
 	if (x == 0)
 		return 0;
-	// note that x != 0 here, so nlz(x) < 32!
+	/* note that x != 0 here, so nlz(x) < 32! */
 	return 0x80000000U >> nlz(x);
 #else
 	x |= x >> 1;
@@ -143,8 +143,8 @@ static inline uint32_t ceil_po2(uint32_t x)
 		return 0;
 	assert(x < (1U << 31));
 
-#if defined(__GNUC__) && __GNUC__ >= 4 // in this case nlz is fast
-	// note that x != 0 here!
+#if defined(__GNUC__) && __GNUC__ >= 4 /* in this case nlz is fast */
+	/* note that x != 0 here! */
 	return 0x80000000U >> (nlz(x-1) - 1);
 #else
 	x = x - 1;
