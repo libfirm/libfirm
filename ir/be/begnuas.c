@@ -916,9 +916,21 @@ static size_t get_initializer_size(const ir_initializer_t *initializer,
 	panic("found invalid initializer");
 }
 
+static unsigned long compute_entity_size(ir_entity const *const entity)
+{
+	ir_type *const type = get_entity_type(entity);
+	unsigned long  size = get_type_size_bytes(type);
+	/* Note that for variable array/compound types we may have to inspect the
+	 * initializer to get the actualy size */
+	ir_initializer_t const *const initializer = get_entity_initializer(entity);
+	if (initializer != NULL)
+		size = get_initializer_size(initializer, type);
+	return size;
+}
+
 #ifndef NDEBUG
 static normal_or_bitfield *glob_vals;
-static size_t              max_vals;
+static unsigned long       max_vals;
 #endif
 
 static void emit_bitfield(normal_or_bitfield *vals, unsigned offset_bits,
@@ -991,7 +1003,7 @@ static void emit_ir_initializer(normal_or_bitfield *vals,
                                 const ir_initializer_t *initializer,
                                 ir_type *type)
 {
-	assert((size_t) (vals - glob_vals) <= max_vals);
+	assert((unsigned long) (vals - glob_vals) <= max_vals);
 
 	if (initializer_is_string_const(initializer, false)) {
 		assert(vals->kind != BITFIELD);
@@ -1129,7 +1141,8 @@ static void emit_node_data(ir_node *const init, ir_type *const type)
 	be_emit_write_line();
 }
 
-static void emit_initializer(ir_entity const *const entity)
+static void emit_initializer(ir_entity const *const entity,
+                             unsigned long const size)
 {
 	ir_initializer_t const *const initializer = get_entity_initializer(entity);
 	if (initializer_is_string_const(initializer, false)) {
@@ -1138,7 +1151,6 @@ static void emit_initializer(ir_entity const *const entity)
 	}
 
 	ir_type *type = get_entity_type(entity);
-	size_t   size = get_initializer_size(initializer, type);
 	assert(size > 0);
 
 	/*
@@ -1442,8 +1454,7 @@ static void emit_global(be_main_env_t const *const main_env,
 			be_emit_write_line();
 		}
 
-		ir_type *const type = get_entity_type(entity);
-		unsigned const size = get_type_size_bytes(type);
+		unsigned long const size = compute_entity_size(entity);
 		if (size == 0) {
 			/* We need to output at least 1 byte, otherwise macho will merge
 			 * the label with the next thing */
@@ -1460,7 +1471,7 @@ static void emit_global(be_main_env_t const *const main_env,
 			be_emit_irprintf("\t.space %u, 0\n", size);
 			be_emit_write_line();
 		} else {
-			emit_initializer(entity);
+			emit_initializer(entity, size);
 		}
 	}
 }
