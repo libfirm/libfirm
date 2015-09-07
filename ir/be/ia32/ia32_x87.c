@@ -103,7 +103,7 @@ struct x87_simulator {
 	be_lv_t       *lv;         /**< intrablock liveness. */
 	fp_liveness   *live;       /**< Liveness information. */
 	unsigned       n_idx;      /**< The cached get_irg_last_idx() result. */
-	waitq         *worklist;   /**< Worklist of blocks that must be processed. */
+	pdeq          *worklist;   /**< Worklist of blocks that must be processed. */
 };
 
 /**
@@ -1399,7 +1399,7 @@ static void x87_simulate_block(x87_simulator *sim, ir_node *block)
 			DEBUG_ONLY(x87_dump_stack(state);)
 			succ_state->begin = state;
 
-			waitq_put(sim->worklist, succ);
+			pdeq_putr(sim->worklist, succ);
 		} else {
 			DB((dbg, LEVEL_2, "succ %+F already has a state, shuffling\n", succ));
 			/* There is already a begin state for the successor, bad.
@@ -1516,8 +1516,8 @@ void ia32_x87_simulate_graph(ir_graph *irg)
 	x87_state const empty = { .sim = &sim };
 	bl_state->begin = &empty;
 
-	sim.worklist = new_waitq();
-	waitq_put(sim.worklist, start_block);
+	sim.worklist = new_pdeq();
+	pdeq_putr(sim.worklist, start_block);
 
 	be_assure_live_sets(irg);
 	sim.lv = be_get_irg_liveness(irg);
@@ -1532,12 +1532,12 @@ void ia32_x87_simulate_graph(ir_graph *irg)
 
 	/* iterate */
 	do {
-		ir_node *block = (ir_node*)waitq_get(sim.worklist);
+		ir_node *block = (ir_node*)pdeq_getl(sim.worklist);
 		x87_simulate_block(&sim, block);
-	} while (! waitq_empty(sim.worklist));
+	} while (!pdeq_empty(sim.worklist));
 
 	/* kill it */
-	del_waitq(sim.worklist);
+	del_pdeq(sim.worklist);
 	x87_destroy_simulator(&sim);
 }
 

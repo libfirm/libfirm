@@ -156,56 +156,6 @@ FIRM_API void *pdeq_getl(pdeq *dq);
 FIRM_API void *pdeq_getr(pdeq *dq);
 
 /**
- * The pdeq is often used as a wait queue. A helper
- * type to support this.
- */
-typedef pdeq waitq;
-
-/**
- * Creates a new pointer wait queue (fifo).
- *
- * @return A new queue.
- */
-#define new_waitq()  new_pdeq()
-
-/**
- * Delete a wait queue (fifo)
- *
- * @param wq   The wait queue.
- */
-#define del_waitq(wq) del_pdeq(wq)
-
-/**
- * Retrieve a pointer from the wait queue (fifo).
- *
- * @param wq   The wait queue.
- *
- * @return The pointer element.
- *
- * @remark This function will fail if the queue is empty.
- */
-#define waitq_get(wq)  pdeq_getl(wq)
-
-/**
- * Add a pointer to the wait queue (fifo).
- *
- * @param wq  The wait queue
- * @param x   The pointer element to be added
- *
- * @return The wait queue.
- */
-#define waitq_put(wq, x) pdeq_putr((wq), (x))
-
-/**
- * Checks if a wait queue is empty.
- *
- * @param wq   The wait queue.
- *
- * @return  non-zero if the queue is empty.
- */
-#define waitq_empty(wq) pdeq_empty(wq)
-
-/**
  * The pdeq can be used as a stack. A helper
  * type to support this.
  */

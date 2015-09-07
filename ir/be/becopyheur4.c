@@ -674,20 +674,20 @@ static void expand_chunk_from(co_mst_env_t *env, co_mst_irn_t *node,
                               aff_chunk_t *orig_chunk, decide_func_t *decider,
                               unsigned col)
 {
-	waitq *nodes = new_waitq();
+	pdeq *nodes = new_pdeq();
 
 	DBG((dbg, LEVEL_1, "\n\tExpanding new chunk (#%u) from %+F, color %d:",
 	     chunk->id, node->irn, col));
 
 	/* init queue and chunk */
-	waitq_put(nodes, node);
+	pdeq_putr(nodes, node);
 	bitset_set(visited, get_irn_idx(node->irn));
 	aff_chunk_add_node(chunk, node);
 	DB((dbg, LEVEL_1, " %+F", node->irn));
 
 	/* as long as there are nodes in the queue */
-	while (!waitq_empty(nodes)) {
-		co_mst_irn_t    *n  = (co_mst_irn_t*)waitq_get(nodes);
+	while (!pdeq_empty(nodes)) {
+		co_mst_irn_t    *n  = (co_mst_irn_t*)pdeq_getl(nodes);
 		affinity_node_t *an = get_affinity_info(env->co, n->irn);
 
 		/* check all affinity neighbors */
@@ -713,14 +713,14 @@ static void expand_chunk_from(co_mst_env_t *env, co_mst_irn_t *node,
 					aff_chunk_add_node(chunk, n2);
 					DB((dbg, LEVEL_1, " %+F", n2->irn));
 					/* enqueue for further search */
-					waitq_put(nodes, n2);
+					pdeq_putr(nodes, n2);
 				}
 			}
 		}
 	}
 	DB((dbg, LEVEL_1, "\n"));
 
-	del_waitq(nodes);
+	del_pdeq(nodes);
 }
 
 /**
@@ -728,7 +728,7 @@ static void expand_chunk_from(co_mst_env_t *env, co_mst_irn_t *node,
  * color.
  */
 static aff_chunk_t *fragment_chunk(co_mst_env_t *env, unsigned col,
-                                   aff_chunk_t *c, waitq *tmp)
+                                   aff_chunk_t *c, pdeq *tmp)
 {
 	bitset_t    *visited = bitset_malloc(get_irg_last_idx(env->co->irg));
 	aff_chunk_t *best    = NULL;
@@ -752,7 +752,7 @@ static aff_chunk_t *fragment_chunk(co_mst_env_t *env, unsigned col,
 
 		/* create a new chunk starting at current node */
 		aff_chunk_t *tmp_chunk = new_aff_chunk(env);
-		waitq_put(tmp, tmp_chunk);
+		pdeq_putr(tmp, tmp_chunk);
 		expand_chunk_from(env, node, visited, tmp_chunk, c, decider, col);
 		assert(ARR_LEN(tmp_chunk->n) > 0 && "No nodes added to chunk");
 
@@ -1068,8 +1068,8 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c)
 	 * which one to take anyway.
 	 * TODO Sebastian: Perhaps we should at all nodes and figure out
 	 * a suitable color using costs as done above (determine_color_costs). */
-	waitq       *tmp_chunks  = new_waitq();
-	waitq       *best_starts = NULL;
+	pdeq        *tmp_chunks  = new_pdeq();
+	pdeq        *best_starts = NULL;
 	unsigned     n_nodes     = ARR_LEN(c->n);
 	aff_chunk_t *best_chunk  = NULL;
 	int          best_color  = -1;
@@ -1083,7 +1083,7 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c)
 
 		/* try to bring all nodes of given chunk to the current color. */
 		unsigned n_succeeded = 0;
-		waitq   *good_starts = new_waitq();
+		pdeq    *good_starts = new_pdeq();
 		for (size_t idx = 0, len = ARR_LEN(c->n); idx < len; ++idx) {
 			const ir_node   *irn  = c->n[idx];
 			co_mst_irn_t    *node = get_co_mst_irn(env, irn);
@@ -1099,7 +1099,7 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c)
 			bool good = change_node_color(env, node, col, &changed);
 			stat_ev_tim_pop("heur4_recolor");
 			if (good) {
-				waitq_put(good_starts, node);
+				pdeq_putr(good_starts, node);
 				materialize_coloring(&changed);
 				node->fixed = 1;
 			} else {
@@ -1118,7 +1118,7 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c)
 
 		/* try next color when failed */
 		if (n_succeeded == 0) {
-			del_waitq(good_starts);
+			del_pdeq(good_starts);
 			continue;
 		}
 
@@ -1137,15 +1137,15 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c)
 				best_chunk = local_best;
 				best_color = col;
 				if (best_starts)
-					del_waitq(best_starts);
+					del_pdeq(best_starts);
 				best_starts = good_starts;
 				DB((dbg, LEVEL_3, "\n\t\t... setting global best chunk (id %u), color %d\n", best_chunk->id, best_color));
 			} else {
 				DB((dbg, LEVEL_3, "\n\t\t... omitting, global best is better\n"));
-				del_waitq(good_starts);
+				del_pdeq(good_starts);
 			}
 		} else {
-			del_waitq(good_starts);
+			del_pdeq(good_starts);
 		}
 
 		/* if all nodes were recolored, bail out */
@@ -1156,17 +1156,17 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c)
 	stat_ev_int("heur4_colors_tried", i);
 
 	/* free all intermediate created chunks except best one */
-	while (!waitq_empty(tmp_chunks)) {
-		aff_chunk_t *tmp = (aff_chunk_t*)waitq_get(tmp_chunks);
+	while (!pdeq_empty(tmp_chunks)) {
+		aff_chunk_t *tmp = (aff_chunk_t*)pdeq_getl(tmp_chunks);
 		if (tmp != best_chunk)
 			delete_aff_chunk(tmp);
 	}
-	del_waitq(tmp_chunks);
+	del_pdeq(tmp_chunks);
 
 	/* return if coloring failed */
 	if (!best_chunk) {
 		if (best_starts)
-			del_waitq(best_starts);
+			del_pdeq(best_starts);
 		return;
 	}
 
@@ -1243,7 +1243,7 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c)
 	delete_aff_chunk(best_chunk);
 	free(visited);
 	if (best_starts)
-		del_waitq(best_starts);
+		del_pdeq(best_starts);
 
 	stat_ev_ctx_pop("heur4_color_chunk");
 }

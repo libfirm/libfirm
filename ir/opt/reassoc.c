@@ -262,11 +262,11 @@ static int reassoc_commutative(ir_node **node)
  */
 static void wq_walker(ir_node *n, void *env)
 {
-	waitq *const wq = (waitq *)env;
+	pdeq *const wq = (pdeq*)env;
 
 	set_irn_link(n, NULL);
 	if (!is_Block(n)) {
-		waitq_put(wq, n);
+		pdeq_putr(wq, n);
 		set_irn_link(n, wq);
 	}
 }
@@ -274,10 +274,10 @@ static void wq_walker(ir_node *n, void *env)
 /**
  * The walker for the reassociation.
  */
-static void do_reassociation(waitq *const wq)
+static void do_reassociation(pdeq *const wq)
 {
-	while (!waitq_empty(wq)) {
-		ir_node *n = (ir_node *)waitq_get(wq);
+	while (!pdeq_empty(wq)) {
+		ir_node *n = (ir_node *)pdeq_getl(wq);
 		set_irn_link(n, NULL);
 
 		hook_reassociate(1);
@@ -305,7 +305,7 @@ static void do_reassociation(waitq *const wq)
 		if (changed) {
 			foreach_irn_in_r(n, i, pred) {
 				if (get_irn_link(pred) != wq) {
-					waitq_put(wq, pred);
+					pdeq_putr(wq, pred);
 					set_irn_link(pred, wq);
 				}
 			}
@@ -2036,14 +2036,14 @@ static bool walk_chains(ir_node *node)
  */
 static void do_chaining(ir_graph *irg)
 {
-	waitq *const wq = new_waitq();
+	pdeq *const wq = new_pdeq();
 
 	/* now we have collected enough information, optimize */
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 	irg_walk_graph(irg, NULL, wq_walker, wq);
 
-	while (!waitq_empty(wq)) {
-		ir_node *n = (ir_node *)waitq_get(wq);
+	while (!pdeq_empty(wq)) {
+		ir_node *n = (ir_node *)pdeq_getl(wq);
 		set_irn_link(n, NULL);
 
 		hook_reassociate(1);
@@ -2066,7 +2066,7 @@ static void do_chaining(ir_graph *irg)
 		if (changed) {
 			foreach_irn_in_r(n, i, pred) {
 				if (get_irn_link(pred) != wq) {
-					waitq_put(wq, pred);
+					pdeq_putr(wq, pred);
 					set_irn_link(pred, wq);
 				}
 			}
@@ -2074,7 +2074,7 @@ static void do_chaining(ir_graph *irg)
 	}
 
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
-	del_waitq(wq);
+	del_pdeq(wq);
 }
 
 /*
@@ -2102,7 +2102,7 @@ void optimize_reassociation(ir_graph *irg)
 	DBG((dbg, LEVEL_5, "setsort start...\n"));
 	do_Setsort(irg);
 
-	waitq *const wq = new_waitq();
+	pdeq *const wq = new_pdeq();
 
 	/* now we have collected enough information, optimize */
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
@@ -2113,7 +2113,7 @@ void optimize_reassociation(ir_graph *irg)
 	/* reverse those rules that do not result in collapsed constants */
 	irg_walk_graph(irg, NULL, reverse_rules, NULL);
 
-	del_waitq(wq);
+	del_pdeq(wq);
 
 	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_CONTROL_FLOW);
 }

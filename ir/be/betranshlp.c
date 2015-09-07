@@ -36,8 +36,7 @@
 #include "util.h"
 
 typedef struct be_transform_env_t {
-	waitq    *worklist;    /**< worklist of nodes that still need to be
-	                            transformed */
+	pdeq *worklist;  /**< worklist of nodes that still need to be transformed */
 } be_transform_env_t;
 
 static be_transform_env_t env;
@@ -254,7 +253,7 @@ static void transform_nodes(ir_graph *irg, arch_pretrans_nodes *pre_transform)
 
 	inc_irg_visited(irg);
 
-	env.worklist = new_waitq();
+	env.worklist = new_pdeq();
 
 	ir_node *const old_anchor = irg->anchor;
 	ir_node *const new_anchor = new_r_Anchor(irg);
@@ -272,8 +271,8 @@ static void transform_nodes(ir_graph *irg, arch_pretrans_nodes *pre_transform)
 		pre_transform(irg);
 
 	/* process worklist (this should transform all nodes in the graph) */
-	while (! waitq_empty(env.worklist)) {
-		ir_node *node = (ir_node*)waitq_get(env.worklist);
+	while (!pdeq_empty(env.worklist)) {
+		ir_node *node = (ir_node*)pdeq_getl(env.worklist);
 		be_transform_node(node);
 	}
 
@@ -283,7 +282,7 @@ static void transform_nodes(ir_graph *irg, arch_pretrans_nodes *pre_transform)
 		fix_loops(n);
 	}
 
-	del_waitq(env.worklist);
+	del_pdeq(env.worklist);
 	free_End(old_end);
 	hook_dead_node_elim(irg, 0);
 }

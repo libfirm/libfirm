@@ -42,7 +42,7 @@ static bool is_block_reachable(ir_node *block)
  * this may still be a dead block, but then there is no real use, as
  * the control flow will be dead later.
  */
-static void place_floats_early(ir_node *n, waitq *worklist)
+static void place_floats_early(ir_node *n, pdeq *worklist)
 {
 	/* we must not run into an infinite loop */
 	if (irn_visited_else_mark(n))
@@ -101,7 +101,7 @@ static void place_floats_early(ir_node *n, waitq *worklist)
  *
  * @param worklist   a worklist, used for the algorithm, empty on in/output
  */
-static void place_early(ir_graph *irg, waitq *worklist)
+static void place_early(ir_graph *irg, pdeq *worklist)
 {
 	assert(worklist);
 	inc_irg_visited(irg);
@@ -110,8 +110,8 @@ static void place_early(ir_graph *irg, waitq *worklist)
 	place_floats_early(get_irg_end(irg), worklist);
 
 	/* Work the content of the worklist. */
-	while (!waitq_empty(worklist)) {
-		ir_node *n = (ir_node*)waitq_get(worklist);
+	while (!pdeq_empty(worklist)) {
+		ir_node *n = (ir_node*)pdeq_getl(worklist);
 		if (!irn_visited(n))
 			place_floats_early(n, worklist);
 	}
@@ -310,7 +310,7 @@ static void place_floats_late(ir_node *n, pdeq *worklist)
  *
  * @param worklist   the worklist containing the nodes to place
  */
-static void place_late(ir_graph *irg, waitq *worklist)
+static void place_late(ir_graph *irg, pdeq *worklist)
 {
 	assert(worklist);
 	inc_irg_visited(irg);
@@ -319,8 +319,8 @@ static void place_late(ir_graph *irg, waitq *worklist)
 	place_floats_late(get_irg_start_block(irg), worklist);
 
 	/* And now empty the worklist again... */
-	while (!waitq_empty(worklist)) {
-		ir_node *n = (ir_node*)waitq_get(worklist);
+	while (!pdeq_empty(worklist)) {
+		ir_node *n = (ir_node*)pdeq_getl(worklist);
 		if (!irn_visited(n))
 			place_floats_late(n, worklist);
 	}
@@ -339,7 +339,7 @@ void place_code(ir_graph *irg)
 
 	/* Place all floating nodes as early as possible. This guarantees
 	 a legal code placement. */
-	waitq *worklist = new_waitq();
+	pdeq *worklist = new_pdeq();
 	place_early(irg, worklist);
 
 	/* While GCSE might place nodes in unreachable blocks,
@@ -352,6 +352,6 @@ void place_code(ir_graph *irg)
 	   unnecessary executions of the node. */
 	place_late(irg, worklist);
 
-	del_waitq(worklist);
+	del_pdeq(worklist);
 	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_CONTROL_FLOW);
 }

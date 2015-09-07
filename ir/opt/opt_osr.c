@@ -403,10 +403,10 @@ static void update_scc(ir_node *iv, node_entry *e, iv_env *env)
 	scc     *pscc   = e->pscc;
 	ir_node *header = e->header;
 	pscc->head = NULL;
-	waitq    *wq = new_waitq();
-	waitq_put(wq, iv);
+	pdeq    *wq = new_pdeq();
+	pdeq_putr(wq, iv);
 	do {
-		ir_node    *irn = (ir_node*)waitq_get(wq);
+		ir_node    *irn = (ir_node*)pdeq_getl(wq);
 		node_entry *ne  = get_irn_ne(irn, env);
 
 		ne->pscc   = pscc;
@@ -420,11 +420,11 @@ static void update_scc(ir_node *iv, node_entry *e, iv_env *env)
 			if (pe->header == header && pe->pscc == NULL) {
 				/* set the pscc here to ensure that the node is NOT enqueued another time */
 				pe->pscc = pscc;
-				waitq_put(wq, pred);
+				pdeq_putr(wq, pred);
 			}
 		}
-	} while (!waitq_empty(wq));
-	del_waitq(wq);
+	} while (!pdeq_empty(wq));
+	del_pdeq(wq);
 	DB((dbg, LEVEL_2, "\n"));
 }
 

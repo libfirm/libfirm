@@ -45,7 +45,7 @@ typedef struct be_ssa_construction_env_t {
 	ir_graph                    *irg;
 	ir_mode                     *mode;
 	const arch_register_req_t   *phi_req;
-	waitq                       *worklist;
+	pdeq                        *worklist;
 	ir_node                    **new_phis;
 	bool                         iterated_domfront_calculated;
 	ir_nodemap                   infos;

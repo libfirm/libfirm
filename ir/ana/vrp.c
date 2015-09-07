@@ -28,7 +28,7 @@
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
 typedef struct vrp_env_t {
-	waitq       *workqueue;
+	pdeq        *workqueue;
 	bitset_t    *visited;
 	ir_vrp_info *info;
 } vrp_env_t;
@@ -476,7 +476,7 @@ static void vrp_first_pass(ir_node *n, void *e)
 	foreach_irn_out_r(n, i, succ) {
 		if (bitset_is_set(env->visited, get_irn_idx(succ))) {
 			/* we found a loop*/
-			waitq_put(env->workqueue, succ);
+			pdeq_putr(env->workqueue, succ);
 		}
 	}
 }
@@ -520,7 +520,7 @@ void set_vrp_data(ir_graph *irg)
 	}
 
 	vrp_env_t *env = OALLOCZ(&irg->vrp.obst, vrp_env_t);
-	env->workqueue = new_waitq();
+	env->workqueue = new_pdeq();
 	env->info      = info;
 
 	env->visited = bitset_malloc(get_irg_last_idx(irg));
@@ -528,17 +528,17 @@ void set_vrp_data(ir_graph *irg)
 	free(env->visited);
 
 	/* while there are entries in the worklist, continue*/
-	while (!waitq_empty(env->workqueue)) {
-		ir_node *node = (ir_node*) waitq_get(env->workqueue);
+	while (!pdeq_empty(env->workqueue)) {
+		ir_node *node = (ir_node*) pdeq_getl(env->workqueue);
 
 		if (vrp_update_node(info, node)) {
 			/* if something changed, add successors to worklist*/
 			foreach_irn_out_r(node, i, succ) {
-				waitq_put(env->workqueue, succ);
+				pdeq_putr(env->workqueue, succ);
 			}
 		}
 	}
-	del_waitq(env->workqueue);
+	del_pdeq(env->workqueue);
 }
 
 void free_vrp_data(ir_graph *irg)
