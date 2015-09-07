@@ -121,11 +121,13 @@ static void emit_section_macho(be_gas_section_t section)
 	be_emit_write_line();
 }
 
-static const struct {
+typedef struct {
 	const char *name;
 	const char *type;
 	const char *flags;
-} elf_sectioninfos[] = {
+} elf_sectioninfo_t;
+
+static const elf_sectioninfo_t elf_sectioninfos[] = {
 	[GAS_SECTION_TEXT]           = { "text",              "progbits", "ax" },
 	[GAS_SECTION_DATA]           = { "data",              "progbits", "aw" },
 	[GAS_SECTION_RODATA]         = { "rodata",            "progbits", "a"  },
@@ -194,7 +196,6 @@ static void emit_section(be_gas_section_t section, const ir_entity *entity)
 {
 	be_gas_section_t base = section & GAS_SECTION_TYPE_MASK;
 	be_gas_section_t flags = section & ~GAS_SECTION_TYPE_MASK;
-	const char *f;
 
 	if (be_gas_object_file_format == OBJECT_FILE_FORMAT_MACH_O) {
 		emit_section_macho(section);
@@ -233,13 +234,13 @@ static void emit_section(be_gas_section_t section, const ir_entity *entity)
 	}
 
 	assert(base < (be_gas_section_t) ARRAY_SIZE(elf_sectioninfos));
+	elf_sectioninfo_t const *const info = &elf_sectioninfos[base];
+	assert(info->name != NULL);
 	be_emit_cstring("\t.section\t.");
 	/* section name */
 	if (flags & GAS_SECTION_FLAG_TLS)
 		be_emit_char('t');
-	char const *const name = elf_sectioninfos[base].name;
-	assert(name != NULL);
-	be_emit_string(name);
+	be_emit_string(info->name);
 	if (flags & GAS_SECTION_FLAG_COMDAT) {
 		be_emit_char('.');
 		be_gas_emit_entity(entity);
@@ -247,9 +248,7 @@ static void emit_section(be_gas_section_t section, const ir_entity *entity)
 
 	/* section flags */
 	be_emit_cstring(",\"");
-	for (f = elf_sectioninfos[base].flags; *f != '\0'; ++f) {
-		be_emit_char(*f);
-	}
+	be_emit_string(info->flags);
 	if (flags & GAS_SECTION_FLAG_TLS)
 		be_emit_char('T');
 	if (flags & GAS_SECTION_FLAG_COMDAT)
@@ -259,7 +258,7 @@ static void emit_section(be_gas_section_t section, const ir_entity *entity)
 	if (be_gas_object_file_format != OBJECT_FILE_FORMAT_COFF) {
 		be_emit_cstring("\",");
 		be_emit_char(be_gas_elf_type_char);
-		be_emit_string(elf_sectioninfos[base].type);
+		be_emit_string(info->type);
 	}
 
 	if (flags & GAS_SECTION_FLAG_COMDAT) {
