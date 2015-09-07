@@ -207,9 +207,9 @@ static inline bool rbitset_is_set(const unsigned *bitset, size_t pos)
  * @param bitset  the bitset
  * @param size    size of the bitset in bits
  */
-static inline size_t rbitset_popcount(const unsigned *bitset, size_t size)
+static inline unsigned rbitset_popcount(const unsigned *bitset, size_t size)
 {
-	size_t res = 0;
+	unsigned res = 0;
 	for (size_t i = 0, n = BITSET_SIZE_ELEMS(size); i < n; ++i) {
 		res += popcount(bitset[i]);
 	}

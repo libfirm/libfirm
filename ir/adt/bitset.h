@@ -19,28 +19,26 @@
 #include "bitfiddle.h"
 #include "raw_bitset.h"
 
-typedef struct bitset_t {
-	size_t size;       /**< size of the bitset in bits */
-	unsigned data[1];  /**< data (should be declared data[] but this is only
-	                        allowed in C99) */
+typedef struct {
+	size_t   size;    /**< size of the bitset in bits */
+	unsigned data[];
 } bitset_t;
 
 /**
- * return the number of bytes a bitset would need
+ * Return the number of bytes a bitset would need
  */
-static inline size_t bitset_total_size(size_t n_bits)
+static inline size_t bitset_total_size(size_t const n_bits)
 {
-	return sizeof(bitset_t) - sizeof(((bitset_t*)0)->data)
-		+ BITSET_SIZE_BYTES(n_bits);
+	return sizeof(bitset_t) + BITSET_SIZE_BYTES(n_bits);
 }
 
 /**
- * initialize a bitset for bitsize size (bitset should point to memory
+ * Initialize a bitset for bitsize size (bitset should point to memory
  * with a size calculated by bitset_total_size)
  */
 static inline bitset_t *bitset_init(void *memory, size_t size)
 {
-	bitset_t *result = (bitset_t*) memory;
+	bitset_t *result = (bitset_t*)memory;
 	result->size = size;
 	rbitset_clear_all(result->data, size);
 	return result;
@@ -86,7 +84,7 @@ static inline bitset_t *bitset_malloc(size_t n_bits)
  * @param bs The bitset.
  * @return The highest bit which can be set or cleared plus 1.
  */
-static inline size_t bitset_size(const bitset_t *bitset)
+static inline size_t bitset_size(bitset_t const *bitset)
 {
 	return bitset->size;
 }
@@ -119,7 +117,7 @@ static inline void bitset_clear(bitset_t *bs, size_t bit)
  * @param bit The bit to check for.
  * @return 1, if the bit was set, 0 if not.
  */
-static inline bool bitset_is_set(const bitset_t *bs, size_t bit)
+static inline bool bitset_is_set(bitset_t const *bs, size_t bit)
 {
 	assert(bit < bs->size);
 	return rbitset_is_set(bs->data, bit);
@@ -152,7 +150,7 @@ static inline void bitset_flip_all(bitset_t *bs)
  * @param src The source bitset.
  * @return The target bitset.
  */
-static inline void bitset_copy(bitset_t *tgt, const bitset_t *src)
+static inline void bitset_copy(bitset_t *tgt, bitset_t const *src)
 {
 	assert(tgt->size == src->size);
 	rbitset_copy(tgt->data, src->data, src->size);
@@ -166,7 +164,7 @@ static inline void bitset_copy(bitset_t *tgt, const bitset_t *src)
  * @return The next set bit from pos on, or (size_t)-1, if no unset bit was
  * found after pos.
  */
-static inline size_t bitset_next_clear(const bitset_t *bs, size_t pos)
+static inline size_t bitset_next_clear(bitset_t const *bs, size_t pos)
 {
 	return rbitset_next_max(bs->data, pos, bs->size, false);
 }
@@ -179,7 +177,7 @@ static inline size_t bitset_next_clear(const bitset_t *bs, size_t pos)
  * @return The next set bit from pos on, or (size_t)-1, if no set bit was
  * found after pos.
  */
-static inline size_t bitset_next_set(const bitset_t *bs, size_t pos)
+static inline size_t bitset_next_set(bitset_t const *bs, size_t pos)
 {
 	return rbitset_next_max(bs->data, pos, bs->size, true);
 }
@@ -203,7 +201,7 @@ static inline size_t bitset_next_set(const bitset_t *bs, size_t pos)
  * @return The previous unset bit from pos on, or (size_t)-1, if no unset bit was
  * found before pos.
  */
-static inline size_t bitset_prev_clear(const bitset_t *bs, size_t pos)
+static inline size_t bitset_prev_clear(bitset_t const *bs, size_t pos)
 {
 	return rbitset_prev(bs->data, pos, false);
 }
@@ -215,7 +213,7 @@ static inline size_t bitset_prev_clear(const bitset_t *bs, size_t pos)
  * @return The previous set bit from pos on, or (size_t)-1, if no set bit was
  * found before pos.
  */
-static inline size_t bitset_prev_set(const bitset_t *bs, size_t pos)
+static inline size_t bitset_prev_set(bitset_t const *bs, size_t pos)
 {
 	return rbitset_prev(bs->data, pos, true);
 }
@@ -234,7 +232,7 @@ static inline size_t bitset_prev_set(const bitset_t *bs, size_t pos)
  * @param bs The bitset.
  * @return The number of bits set in the bitset.
  */
-static inline size_t bitset_popcount(const bitset_t *bs)
+static inline size_t bitset_popcount(bitset_t const *bs)
 {
 	return rbitset_popcount(bs->data, bs->size);
 }
@@ -266,7 +264,7 @@ static inline void bitset_set_all(bitset_t *bs)
  * @param rhs Another bitset.
  * @return 1, if all bits in lhs are also set in rhs, 0 otherwise.
  */
-static inline bool bitset_contains(const bitset_t *lhs, const bitset_t *rhs)
+static inline bool bitset_contains(bitset_t const *lhs, bitset_t const *rhs)
 {
 	assert(lhs->size == rhs->size);
 	return rbitset_contains(lhs->data, rhs->data, lhs->size);
@@ -288,7 +286,7 @@ static inline void bitset_minus1(bitset_t *bs)
  * @param b The second bitset.
  * @return 1 if they have a bit in common, 0 if not.
  */
-static inline bool bitset_intersect(const bitset_t *a, const bitset_t *b)
+static inline bool bitset_intersect(bitset_t const *a, bitset_t const *b)
 {
 	assert(a->size == b->size);
 	return rbitsets_have_common(a->data, b->data, a->size);
@@ -327,7 +325,7 @@ static inline void bitset_mod_range(bitset_t *a, size_t from, size_t to,
  * @param a The bitset.
  * @return 1, if the bitset is empty, 0 if not.
  */
-static inline bool bitset_is_empty(const bitset_t *bs)
+static inline bool bitset_is_empty(bitset_t const *bs)
 {
 	return rbitset_is_empty(bs->data, bs->size);
 }
@@ -346,7 +344,7 @@ void bitset_fprint(FILE *file, bitset_t const *bs);
  * @param src  The source bitset.
  * @return the tgt set.
  */
-static inline void bitset_and(bitset_t *tgt, const bitset_t *src)
+static inline void bitset_and(bitset_t *tgt, bitset_t const *src)
 {
 	assert(tgt->size == src->size);
 	rbitset_and(tgt->data, src->data, src->size);
@@ -358,7 +356,7 @@ static inline void bitset_and(bitset_t *tgt, const bitset_t *src)
  * @param src  The source bitset.
  * @return the tgt set.
  */
-static inline void bitset_andnot(bitset_t *tgt, const bitset_t *src)
+static inline void bitset_andnot(bitset_t *tgt, bitset_t const *src)
 {
 	assert(tgt->size == src->size);
 	rbitset_andnot(tgt->data, src->data, src->size);
@@ -370,7 +368,7 @@ static inline void bitset_andnot(bitset_t *tgt, const bitset_t *src)
  * @param src  The source bitset.
  * @return the tgt set.
  */
-static inline void bitset_or(bitset_t *tgt, const bitset_t *src)
+static inline void bitset_or(bitset_t *tgt, bitset_t const *src)
 {
 	assert(tgt->size == src->size);
 	rbitset_or(tgt->data, src->data, src->size);
@@ -382,7 +380,7 @@ static inline void bitset_or(bitset_t *tgt, const bitset_t *src)
  * @param src  The source bitset.
  * @return the tgt set.
  */
-static inline void bitset_xor(bitset_t *tgt, const bitset_t *src)
+static inline void bitset_xor(bitset_t *tgt, bitset_t const *src)
 {
 	assert(tgt->size == src->size);
 	rbitset_xor(tgt->data, src->data, src->size);
