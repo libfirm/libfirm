@@ -5,14 +5,6 @@
 
 /**
  * @file
- * @author  Christian Wuerdig, Matthias Braun
- * @brief   Priority Queue implementation based on the heap datastructure
- */
-#include "array.h"
-#include "pqueue.h"
-#include "panic.h"
-
-/*
  * Implements a heap.
  *
  * Implementation note: It might seem strange that we start indexing at 0
@@ -27,11 +19,17 @@
  * left and right child. (At the expense that stuff easily breaks when you make
  * changes and don't think that the left child of 0 is 0 :-/)
  *
+ * @author  Christian Wuerdig, Matthias Braun
+ * @brief   Priority Queue implementation based on the heap datastructure
  */
+#include "pqueue.h"
+
+#include "array.h"
+#include "panic.h"
 
 typedef struct pqueue_el_t {
 	void *data;
-	int  priority;
+	int   priority;
 } pqueue_el_t;
 
 struct pqueue_t {
@@ -45,24 +43,19 @@ struct pqueue_t {
 static void pqueue_heapify(pqueue_t *q, size_t pos)
 {
 	size_t len = ARR_LEN(q->elems);
-
 	while (pos * 2 < len) {
-		pqueue_el_t tmp;
-		size_t      exchange = pos;
-
-		if (q->elems[exchange].priority < q->elems[pos * 2].priority) {
+		size_t exchange = pos;
+		if (q->elems[exchange].priority < q->elems[pos * 2].priority)
 			exchange = pos * 2;
-		}
 
 		if ((pos * 2 + 1) < len
-				&& q->elems[exchange].priority < q->elems[pos * 2 + 1].priority) {
+				&& q->elems[exchange].priority < q->elems[pos * 2 + 1].priority)
 			exchange = pos * 2 + 1;
-		}
 
 		if (exchange == pos)
 			break;
 
-		tmp                = q->elems[pos];
+		pqueue_el_t tmp    = q->elems[pos];
 		q->elems[pos]      = q->elems[exchange];
 		q->elems[exchange] = tmp;
 
@@ -76,9 +69,7 @@ static void pqueue_heapify(pqueue_t *q, size_t pos)
 static void pqueue_sift_up(pqueue_t *q, size_t pos)
 {
 	while (q->elems[pos].priority > q->elems[pos / 2].priority) {
-		pqueue_el_t tmp;
-
-		tmp               = q->elems[pos];
+		pqueue_el_t tmp   = q->elems[pos];
 		q->elems[pos]     = q->elems[pos / 2];
 		q->elems[pos / 2] = tmp;
 
@@ -101,11 +92,10 @@ void del_pqueue(pqueue_t *q)
 
 void pqueue_put(pqueue_t *q, void *data, int priority)
 {
-	pqueue_el_t el;
-
-	el.data     = data;
-	el.priority = priority;
-
+	pqueue_el_t el = {
+		.data = data,
+		.priority = priority
+	};
 	ARR_APP1(pqueue_el_t, q->elems, el);
 
 	pqueue_sift_up(q, ARR_LEN(q->elems) - 1);
@@ -114,30 +104,29 @@ void pqueue_put(pqueue_t *q, void *data, int priority)
 void *pqueue_pop_front(pqueue_t *q)
 {
 	switch (ARR_LEN(q->elems)) {
-		case 0:
-			panic("attempt to retrieve element from empty priority queue");
-		case 1:
-			ARR_SHRINKLEN(q->elems, 0);
-			return q->elems[0].data;
-		default: {
-			void   *data = q->elems[0].data;
-			size_t len   = ARR_LEN(q->elems) - 1;
+	case 0:
+		panic("attempt to retrieve element from empty priority queue");
+	case 1:
+		ARR_SHRINKLEN(q->elems, 0);
+		return q->elems[0].data;
+	default: {
+		void   *data = q->elems[0].data;
+		size_t len   = ARR_LEN(q->elems) - 1;
 
-			q->elems[0] = q->elems[len];
-			ARR_SHRINKLEN(q->elems, len);
-			pqueue_heapify(q, 0);
-
-			return data;
-		}
+		q->elems[0] = q->elems[len];
+		ARR_SHRINKLEN(q->elems, len);
+		pqueue_heapify(q, 0);
+		return data;
+	}
 	}
 }
 
-size_t pqueue_length(const pqueue_t *q)
+size_t pqueue_length(pqueue_t const *q)
 {
 	return ARR_LEN(q->elems);
 }
 
-int pqueue_empty(const pqueue_t *q)
+int pqueue_empty(pqueue_t const *q)
 {
 	return ARR_LEN(q->elems) == 0;
 }

@@ -13,6 +13,8 @@
 #ifndef FIRM_ADT_PQUEUE_H
 #define FIRM_ADT_PQUEUE_H
 
+#include <stddef.h>
+
 #include "../begin.h"
 
 /**
@@ -58,14 +60,14 @@ FIRM_API void *pqueue_pop_front(pqueue_t *q);
  * @param q   The priority queue.
  * @return The length of the queue.
  */
-FIRM_API size_t pqueue_length(const pqueue_t *q);
+FIRM_API size_t pqueue_length(pqueue_t const *q);
 
 /**
  * Returns true if queue is empty.
  * @param q   The priority queue.
  * @return 1 if the queue is empty, 0 otherwise.
  */
-FIRM_API int pqueue_empty(const pqueue_t *q);
+FIRM_API int pqueue_empty(pqueue_t const *q);
 
 /** @} */
 
