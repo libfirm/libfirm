@@ -921,7 +921,7 @@ static unsigned long compute_entity_size(ir_entity const *const entity)
 	ir_type *const type = get_entity_type(entity);
 	unsigned long  size = get_type_size_bytes(type);
 	/* Note that for variable array/compound types we may have to inspect the
-	 * initializer to get the actualy size */
+	 * initializer to get the actual size */
 	ir_initializer_t const *const initializer = get_entity_initializer(entity);
 	if (initializer != NULL)
 		size = get_initializer_size(initializer, type);
