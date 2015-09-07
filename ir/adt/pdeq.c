@@ -130,18 +130,18 @@ void del_pdeq(pdeq *dq)
 	} while ((q = qq) != NULL);
 }
 
-int pdeq_empty(pdeq *dq)
+int pdeq_empty(pdeq const *dq)
 {
 	VRFY(dq);
 	return dq->l_end->n == 0;
 }
 
-size_t pdeq_len(pdeq *dq)
+size_t pdeq_len(pdeq const *dq)
 {
 	VRFY(dq);
 
-	size_t n = 0;
-	pdeq *q = dq->l_end;
+	size_t      n = 0;
+	pdeq const *q = dq->l_end;
 	do {
 		n += q->n;
 		q = q->r;
@@ -273,11 +273,11 @@ void *pdeq_getl(pdeq *dq)
 	return (void *)x;
 }
 
-int pdeq_contains(pdeq *dq, void const *x)
+int pdeq_contains(pdeq const *dq, void const *x)
 {
 	VRFY(dq);
 
-	pdeq *q = dq->l_end;
+	pdeq const *q = dq->l_end;
 	do {
 		size_t p  = q->p;
 		size_t ep = p + q->n;
@@ -302,11 +302,11 @@ int pdeq_contains(pdeq *dq, void const *x)
 	return false;
 }
 
-void *pdeq_search(pdeq *dq, cmp_fun cmp, void const *key)
+void *pdeq_search(pdeq const *dq, cmp_fun cmp, void const *key)
 {
 	VRFY(dq);
 
-	pdeq *q = dq->l_end;
+	pdeq const *q = dq->l_end;
 	do {
 		size_t p  = q->p;
 		size_t ep = p + q->n;
@@ -331,12 +331,12 @@ void *pdeq_search(pdeq *dq, cmp_fun cmp, void const *key)
 	return NULL;
 }
 
-void **pdeq_copyl(pdeq *dq, void const **dst)
+void **pdeq_copyl(pdeq const *dq, void const **dst)
 {
 	VRFY(dq);
 
 	void const **d = dst;
-	pdeq        *q = dq->l_end;
+	pdeq const  *q = dq->l_end;
 	while (q != NULL) {
 		size_t p = q->p;
 		size_t n = q->n;
@@ -356,11 +356,11 @@ void **pdeq_copyl(pdeq *dq, void const **dst)
 	return (void **)dst;
 }
 
-void **pdeq_copyr(pdeq *dq, void const **dst)
+void **pdeq_copyr(pdeq const *dq, void const **dst)
 {
 	VRFY(dq);
 
-	pdeq        *q = dq->r_end;
+	pdeq const  *q = dq->r_end;
 	void const **d = dst;
 	while (q != NULL) {
 		size_t p = q->p;

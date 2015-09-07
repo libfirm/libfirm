@@ -56,7 +56,7 @@ FIRM_API void del_pdeq(pdeq *dq);
  *
  * @param dq   The list.
  */
-FIRM_API size_t pdeq_len(pdeq *dq);
+FIRM_API size_t pdeq_len(pdeq const *dq);
 
 /**
  * Checks if a list is empty.
@@ -65,7 +65,7 @@ FIRM_API size_t pdeq_len(pdeq *dq);
  *
  * @return  non-zero if the list is empty.
  */
-FIRM_API int pdeq_empty(pdeq *dq);
+FIRM_API int pdeq_empty(pdeq const *dq);
 
 /**
  * Returns non-zero if a double ended pointer list
@@ -74,7 +74,7 @@ FIRM_API int pdeq_empty(pdeq *dq);
  * @param dq  The list.
  * @param x   The pointer to be searched for.
  */
-FIRM_API int pdeq_contains(pdeq *dq, const void *x);
+FIRM_API int pdeq_contains(pdeq const *dq, const void *x);
 
 /**
  * Search a key in a double ended pointer list, the search
@@ -89,7 +89,7 @@ FIRM_API int pdeq_contains(pdeq *dq, const void *x);
  * @return The address of the element entry if the key was found,
  *         NULL else.
  */
-FIRM_API void *pdeq_search(pdeq *qp, cmp_fun cmp, const void *key);
+FIRM_API void *pdeq_search(pdeq const *qp, cmp_fun cmp, const void *key);
 
 /**
  * Convert the double ended pointer list into a linear array beginning from
@@ -101,7 +101,7 @@ FIRM_API void *pdeq_search(pdeq *qp, cmp_fun cmp, const void *key);
  *
  * @return  dst
  */
-FIRM_API void **pdeq_copyl(pdeq *qp, const void **dst);
+FIRM_API void **pdeq_copyl(const pdeq *qp, const void **dst);
 
 /**
  * Convert the double ended pointer list into a linear array beginning from
@@ -113,7 +113,7 @@ FIRM_API void **pdeq_copyl(pdeq *qp, const void **dst);
  *
  * @return  dst
  */
-FIRM_API void **pdeq_copyr(pdeq *qp, const void **dst);
+FIRM_API void **pdeq_copyr(const pdeq *qp, const void **dst);
 
 /**
  * Add a pointer to the left side of a double ended pointer list.
