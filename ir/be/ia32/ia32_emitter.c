@@ -874,16 +874,30 @@ static void emit_ia32_Setcc(const ir_node *node)
 	}
 }
 
+static void emit_jumptable_target(ir_entity const *const table,
+                                  ir_node const *const proj_x)
+{
+	(void)table;
+	ir_node const *const block = get_cfop_target_block(proj_x);
+	be_gas_emit_block_name(block);
+	if (ia32_pic_style == IA32_PIC_ELF_PLT
+	 || ia32_pic_style  == IA32_PIC_ELF_NO_PLT) {
+		be_emit_cstring("@GOTOFF");
+	} else if (ia32_pic_style == IA32_PIC_MACH_O) {
+		be_emit_char('-');
+		be_emit_string(pic_base_label);
+	}
+}
+
 /**
  * Emits code for a SwitchJmp
  */
 static void emit_ia32_SwitchJmp(const ir_node *node)
 {
-	ir_entity             *jump_table = get_ia32_am_ent(node);
-	const ir_switch_table *table      = get_ia32_switch_table(node);
-
-	ia32_emitf(node, "jmp %*AM");
-	be_emit_jump_table(node, table, jump_table, get_cfop_target_block);
+	ia32_switch_attr_t const *const attr = get_ia32_switch_attr_const(node);
+	ia32_emitf(node, "jmp %*AS0");
+	be_emit_jump_table(node, attr->table, attr->table_entity,
+	                   emit_jumptable_target);
 }
 
 /**
@@ -2702,7 +2716,7 @@ static void bemit_switchjmp(const ir_node *node)
 	bemit8(0xFF); // jmp *tbl.label(,%in,4)
 	bemit_mod_am(0x05, node);
 
-	be_emit_jump_table(node, table, jump_table, get_cfop_target_block);
+	be_emit_jump_table(node, table, jump_table, emit_jumptable_target);
 }
 
 static void bemit_return(const ir_node *node)

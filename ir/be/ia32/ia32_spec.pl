@@ -100,7 +100,7 @@ $custom_init_attr_func = \&ia32_custom_init_attr;
 		"\tinit_ia32_condcode_attributes(res, condition_code);",
 	ia32_switch_attr_t =>
 		"init_ia32_attributes(res, irn_flags, in_reqs, n_res);\n".
-		"\tinit_ia32_switch_attributes(res, switch_table);",
+		"\tinit_ia32_switch_attributes(res, switch_table, table_entity);",
 	ia32_copyb_attr_t =>
 		"init_ia32_attributes(res, irn_flags, in_reqs, n_res);\n".
 		"\tinit_ia32_copyb_attributes(res, size);",
@@ -821,7 +821,7 @@ SwitchJmp => {
 	ins       => [ "base", "index" ],
 	out_reqs  => "...",
 	attr_type => "ia32_switch_attr_t",
-	attr      => "const ir_switch_table *switch_table",
+	attr      => "const ir_switch_table *switch_table, const ir_entity *table_entity",
 	latency   => 2,
 },
 

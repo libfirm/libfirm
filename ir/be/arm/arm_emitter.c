@@ -489,12 +489,19 @@ static void emit_arm_B(const ir_node *irn)
 	}
 }
 
+static void emit_jumptable_target(ir_entity const *const table,
+                                  ir_node const *const proj_x)
+{
+	(void)table;
+	arm_emit_cfop_target(proj_x);
+}
+
 static void emit_arm_SwitchJmp(const ir_node *irn)
 {
 	const arm_SwitchJmp_attr_t *attr = get_arm_SwitchJmp_attr_const(irn);
 	arm_emitf(irn, "ldrls pc, [pc, %S0, asl #2]");
 
-	be_emit_jump_table(irn, attr->table, NULL, get_cfop_target_block);
+	be_emit_jump_table(irn, attr->table, NULL, emit_jumptable_target);
 }
 
 /** Emit an IncSP node */

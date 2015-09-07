@@ -123,14 +123,14 @@ void be_gas_end_compilation_unit(const be_main_env_t *env);
  */
 const char *be_gas_insn_label_prefix(void);
 
-typedef ir_node* (*get_cfop_target_func)(const ir_node *cfop);
+typedef void (*emit_target_func)(ir_entity const *table, ir_node const *proj_x);
 
 /**
  * Emits a jump table for switch operations
  */
 void be_emit_jump_table(const ir_node *node, const ir_switch_table *table,
-                        ir_entity *entity,
-                        get_cfop_target_func get_cfop_target);
+                        ir_entity const *entity,
+                        emit_target_func get_cfop_target);
 
 bool be_gas_produces_dwarf_line_info(void);
 

@@ -1504,17 +1504,16 @@ static void emit_global_decls(const be_main_env_t *main_env)
 }
 
 void be_emit_jump_table(const ir_node *node, const ir_switch_table *table,
-                        ir_entity *entity, get_cfop_target_func get_cfop_target)
+                        ir_entity const *const entity,
+                        emit_target_func emit_target)
 {
 	/* go over all proj's and collect their jump targets */
 	unsigned        n_outs  = arch_get_irn_n_outs(node);
 	const ir_node **targets = XMALLOCNZ(const ir_node*, n_outs);
 	foreach_out_edge(node, edge) {
-		ir_node *proj   = get_edge_src_irn(edge);
-		unsigned pn     = get_Proj_num(proj);
-		ir_node *target = get_cfop_target(proj);
-		assert(targets[pn] == NULL);
-		targets[pn] = target;
+		ir_node *proj = get_edge_src_irn(edge);
+		unsigned pn   = get_Proj_num(proj);
+		targets[pn]   = proj;
 	}
 
 	/* go over table to determine max value (note that we normalized the
@@ -1580,11 +1579,11 @@ void be_emit_jump_table(const ir_node *node, const ir_switch_table *table,
 	}
 
 	for (unsigned long i = 0; i < length; ++i) {
-		const ir_node *block = labels[i];
-		if (block == NULL)
-			block = targets[0];
+		const ir_node *target = labels[i];
+		if (target == NULL)
+			target = targets[0];
 		emit_size_type(pointer_size);
-		be_gas_emit_block_name(block);
+		emit_target(entity, target);
 		be_emit_char('\n');
 		be_emit_write_line();
 	}

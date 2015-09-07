@@ -735,13 +735,15 @@ static void init_ia32_climbframe_attributes(ir_node *res, unsigned count)
 }
 
 static void init_ia32_switch_attributes(ir_node *node,
-                                        const ir_switch_table *table)
+                                        ir_switch_table const *const table,
+                                        ir_entity const *const table_entity)
 {
 	ia32_switch_attr_t *attr = (ia32_switch_attr_t*) get_irn_generic_attr(node);
 #ifndef NDEBUG
 	attr->attr.attr_type |= IA32_ATTR_ia32_switch_attr_t;
 #endif
-	attr->table = table;
+	attr->table        = table;
+	attr->table_entity = table_entity;
 
 	be_foreach_out(node, o) {
 		arch_set_irn_register_req_out(node, o, arch_exec_req);
@@ -849,7 +851,7 @@ static int ia32_switch_attrs_equal(const ir_node *a, const ir_node *b)
 	const ia32_switch_attr_t *attr_b = get_ia32_switch_attr_const(b);
 	return ia32_attrs_equal_(&attr_a->attr, &attr_b->attr)
 	    && attr_a->table == attr_b->table
-	    && attr_a->jump_table == attr_b->jump_table;
+	    && attr_a->table_entity == attr_b->table_entity;
 }
 
 static int ia32_return_attrs_equal(const ir_node *a, const ir_node *b)

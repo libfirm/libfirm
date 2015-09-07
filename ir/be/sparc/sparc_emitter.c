@@ -1267,6 +1267,13 @@ static void emit_sparc_Ba(const ir_node *node)
 	}
 }
 
+static void emit_jumptable_target(ir_entity const *const table,
+                                  ir_node const *const proj_x)
+{
+	(void)table;
+	sparc_emit_cfop_target(proj_x);
+}
+
 static void emit_sparc_SwitchJmp(const ir_node *node)
 {
 	const sparc_switch_jmp_attr_t *attr = get_sparc_switch_jmp_attr_const(node);
@@ -1274,7 +1281,8 @@ static void emit_sparc_SwitchJmp(const ir_node *node)
 	sparc_emitf(node, "jmp %S0");
 	fill_delay_slot(node);
 
-	be_emit_jump_table(node, attr->table, attr->table_entity, get_jump_target);
+	be_emit_jump_table(node, attr->table, attr->table_entity,
+	                   emit_jumptable_target);
 }
 
 static void emit_fmov(const ir_node *node, const arch_register_t *src_reg,

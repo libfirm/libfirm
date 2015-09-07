@@ -712,13 +712,24 @@ static void emit_amd64_jmp(const ir_node *node)
 	}
 }
 
+static void emit_jumptable_target(ir_entity const *const table,
+                                  ir_node const *const proj_x)
+{
+	ir_node const *const block = get_cfop_target_block(proj_x);
+	be_gas_emit_block_name(block);
+	if (be_options.pic) {
+		be_emit_char('-');
+		be_gas_emit_entity(table);
+	}
+}
+
 static void emit_amd64_jmp_switch(const ir_node *node)
 {
 	const amd64_switch_jmp_attr_t *attr = get_amd64_switch_jmp_attr_const(node);
 
 	amd64_emitf(node, "jmp *%E(,%^S0,8)", attr->table_entity);
 	be_emit_jump_table(node, attr->table, attr->table_entity,
-	                   get_cfop_target_block);
+	                   emit_jumptable_target);
 }
 
 /**
