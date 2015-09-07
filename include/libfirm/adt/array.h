@@ -157,10 +157,9 @@ static inline void ARR_SHRINKLEN(void *arr, size_t new_len)
 
 /**
  * Delete a flexible array.
- *
  * @param arr    The flexible array.
  */
-FIRM_API void DEL_ARR_F(void *elts);
+FIRM_API void DEL_ARR_F(void *arr);
 
 /**
  * Creates a dynamic array on an obstack.

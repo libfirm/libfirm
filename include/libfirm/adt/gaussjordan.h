@@ -17,7 +17,7 @@
 /**
  * Solves a system of linear equations.
  *
- * @param matrix  the linear equations as matrix (square matrix, \t n x \p n)
+ * @param matrix  the linear equations as matrix (square matrix, \p n x \p n)
  * @param result  the result vector, will contain the result if successful
  * @param n       the size of the equation system
  * @returns  0 if successful, -1 if ill-conditioned matrix
