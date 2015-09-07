@@ -155,49 +155,6 @@ FIRM_API void *pdeq_getl(pdeq *dq);
  */
 FIRM_API void *pdeq_getr(pdeq *dq);
 
-/**
- * The pdeq can be used as a stack. A helper
- * type to support this.
- */
-typedef pdeq stack;
-
-/**
- * Creates a new pointer stack (lifo).
- *
- * @return A new stack.
- */
-#define new_stack()  new_pdeq()
-
-/**
- * Pop a pointer from the stack (lifo).
- *
- * @param st   The stack.
- *
- * @return The pointer element.
- *
- * @remark This function will fail if the stack is empty.
- */
-#define stack_pop(st)  pdeq_getr(st)
-
-/**
- * Push a pointer to the stack (lifo).
- *
- * @param st  The stack.
- * @param x   The pointer element to be added
- *
- * @return The stack.
- */
-#define stack_push(st, x) pdeq_putr((st), (x))
-
-/**
- * Checks if a stack is empty.
- *
- * @param st   The stack.
- *
- * @return  non-zero if the stack is empty.
- */
-#define stack_empty(st) pdeq_empty(wq)
-
 /** @} */
 
 #include "../end.h"
