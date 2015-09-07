@@ -24,47 +24,41 @@
 /* Inverse Theory--1984 p210 ), but performs actual     */
 /* row switching to simplify the programming.           */
 /* Partial pivoting is used.                            */
-/*                                                      */
-/* A[][] is a square matrix, N x N                      */
-/* vec[] is N x 1 of the matrix                         */
-/* nsize is the size of the equation system             */
-/*                                                      */
-/* returns 0 if successful                              */
-/* returns -1 if ill-conditioned matrix                 */
 /*------------------------------------------------------*/
+#include "gaussjordan.h"
+
 #include <math.h>
 #include <stdlib.h>
 #include "xmalloc.h"
 
-#include "gaussjordan.h"
-
 #define SMALL 0.00001
 
-int firm_gaussjordansolve(double *A, double *vec, int nsize)
+int firm_gaussjordansolve(double *A, double *vec, unsigned nsize)
 {
-	int i, j, row, col, col2, biggest_r = 0, biggest_c = 0, t;
-	double big, temp, sum;
-	double *scramvec = XMALLOCN(double, nsize);
-	int    *x        = XMALLOCN(int,    nsize);
-	int res = 0;
+	double   *scramvec  = XMALLOCN(double,   nsize);
+	unsigned *x         = XMALLOCN(unsigned, nsize);
+	int       res       = 0;
 
 #define _A(row,col) A[(row)*nsize + (col)]
 	/* init x[] */
-	for (i = 0; i < nsize; ++i)
+	for (unsigned i = 0; i < nsize; ++i) {
 		x[i] = i;
+	}
 
 	/* triangularize A */
 	/* ie A has zeros below its diagonal */
-	for (col = 0; col < nsize - 1; ++col) {
-		big = 0;
+	unsigned biggest_r = 0;
+	unsigned biggest_c = 0;
+	for (unsigned col = 0; col < nsize - 1; ++col) {
+		double big = 0;
 		/* find the largest left in LRH box */
-		for (row = col; row < nsize; ++row) {
-			for (col2 = col; col2 < nsize; ++col2) {
-				temp = fabs(_A(row,col2));
+		for (unsigned row = col; row < nsize; ++row) {
+			for (unsigned col2 = col; col2 < nsize; ++col2) {
+				double temp = fabs(_A(row,col2));
 				if (temp > big) {
 					biggest_r = row;
 					biggest_c = col2;
-					big = temp; /* largest element left */
+					big       = temp; /* largest element left */
 				}
 			}
 		}
@@ -74,36 +68,35 @@ int firm_gaussjordansolve(double *A, double *vec, int nsize)
 		}
 
 		/* swap rows */
-		for (i=0;i<nsize;i++) {
-			temp = _A(col,i);
+		for (unsigned i = 0; i < nsize; ++i) {
+			double temp = _A(col,i);
 			_A(col,i) = _A(biggest_r,i);
 			_A(biggest_r,i) = temp;
 		}
 		/* swap vec elements */
-		temp = vec[col];
+		double temp = vec[col];
 		vec[col] = vec[biggest_r];
 		vec[biggest_r] = temp;
 
 		/* swap columns */
-		for (i=0;i<nsize;i++) {
-			temp = _A(i,col);
+		for (unsigned i = 0; i < nsize; ++i) {
+			double temp = _A(i,col);
 			_A(i,col) = _A(i,biggest_c);
 			_A(i,biggest_c) = temp;
 		}
 		/* swap unknowns */
-		t = x[col];
+		unsigned t = x[col];
 		x[col] = x[biggest_c];
 		x[biggest_c] = t;
 
 		/* partially annihilate this col */
 		/* zero columns below diag */
-		for (row=col+1;row<nsize;row++) {
-
+		for (unsigned row = col+1; row < nsize; ++row) {
 			/* changes during calc */
-			temp = _A(row,col) / _A(col,col);
+			double temp = _A(row,col) / _A(col,col);
 
 			/* annihilates A[][] */
-			for (i=col;i<nsize;i++)
+			for (unsigned i = col; i < nsize; ++i)
 				_A(row,i) = _A(row,i) - temp * _A(col,i);
 
 			/* same op on vec */
@@ -115,15 +108,15 @@ int firm_gaussjordansolve(double *A, double *vec, int nsize)
 	scramvec[nsize - 1] = vec[nsize - 1] / _A(nsize - 1,nsize - 1);
 
 	/* answer needs sorting */
-	for (i=nsize-2;i>=0;i--) {
-		sum = 0;
-		for (j=i+1;j<nsize;j++)
-			sum = sum + _A(i,j) * scramvec[j];
+	for (unsigned i = nsize - 1; i-- > 0;) {
+		int sum = 0;
+		for (unsigned j = i+1; j < nsize; ++j)
+			sum += _A(i,j) * scramvec[j];
 		scramvec[i] = (vec[i] - sum) / _A(i,i);
 	}
 	/* reorder unknowns--return in vec */
-	for (i=0;i<nsize;i++) {
-		j = x[i];
+	for (unsigned i = 0; i < nsize; ++i) {
+		unsigned j = x[i];
 		vec[j] = scramvec[i];
 	}
 

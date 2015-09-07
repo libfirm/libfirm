@@ -15,13 +15,14 @@
  */
 
 /**
- * solves a system of linear equations and returns 0 if successful
+ * Solves a system of linear equations.
  *
- * @param A       the linear equations as matrix
- * @param b       the result vector, will contain the result if successful
- * @param nsize   the size of the equation system
+ * @param matrix  the linear equations as matrix (square matrix, \t n x \p n)
+ * @param result  the result vector, will contain the result if successful
+ * @param n       the size of the equation system
+ * @returns  0 if successful, -1 if ill-conditioned matrix
  */
-FIRM_API int firm_gaussjordansolve(double *A, double *b, int nsize);
+FIRM_API int firm_gaussjordansolve(double *matrix, double *result, unsigned n);
 
 /** @} */
 
