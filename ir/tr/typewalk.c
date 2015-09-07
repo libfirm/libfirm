@@ -30,15 +30,15 @@
 /**
  * The walker environment
  */
-typedef struct type_walk_env {
+typedef struct {
 	type_walk_func *pre;    /**< Pre-walker function */
 	type_walk_func *post;   /**< Post-walker function */
-	void *env;              /**< environment for walker functions */
+	void           *env;    /**< environment for walker functions */
 } type_walk_env;
 
-/* a walker for irn's */
-static void irn_type_walker(
-	ir_node *node, type_walk_func *pre, type_walk_func *post, void *env);
+/** a walker for irn's */
+static void irn_type_walker(ir_node *node, type_walk_func *pre,
+                            type_walk_func *post, void *env);
 
 static void walk_initializer(ir_initializer_t *initializer,
                              type_walk_func *pre, type_walk_func *post,
@@ -69,9 +69,7 @@ static void walk_initializer(ir_initializer_t *initializer,
  * type entity.
  */
 static void do_type_walk(ir_type *const tp, ir_entity *const ent,
-                         type_walk_func *pre,
-                         type_walk_func *post,
-                         void *env)
+                         type_walk_func *pre, type_walk_func *post, void *env)
 {
 	/* marked? */
 	if (ent) {
@@ -180,8 +178,10 @@ static void do_type_walk(ir_type *const tp, ir_entity *const ent,
 		post(tp, ent, env);
 }
 
-/**  Check whether node contains types or entities as an attribute.
-     If so start a walk over that information. */
+/**
+ * Check whether node contains types or entities as an attribute.
+ * If so start a walk over that information.
+ */
 static void irn_type_walker(ir_node *node, type_walk_func *pre,
                             type_walk_func *post, void *env)
 {
@@ -193,8 +193,10 @@ static void irn_type_walker(ir_node *node, type_walk_func *pre,
 		do_type_walk(typ, NULL, pre, post, env);
 }
 
-/**  Check whether node contains types or entities as an attribute.
-     If so start a walk over that information. */
+/**
+ * Check whether node contains types or entities as an attribute.
+ * If so start a walk over that information.
+ */
 static void start_type_walk(ir_node *node, void *ctx)
 {
 	type_walk_env  *env  = (type_walk_env*)ctx;
@@ -215,9 +217,7 @@ void type_walk(type_walk_func *pre, type_walk_func *post, void *env)
 	irp_free_resources(irp, IRP_RESOURCE_TYPE_VISITED);
 }
 
-void type_walk_irg(ir_graph *irg,
-                   type_walk_func *pre,
-                   type_walk_func *post,
+void type_walk_irg(ir_graph *irg, type_walk_func *pre, type_walk_func *post,
                    void *env)
 {
 	/* this is needed to pass the parameters to the walker that actually
@@ -228,14 +228,13 @@ void type_walk_irg(ir_graph *irg,
 	type_env.env  = env;
 
 	/* We walk over the irg to find all IR-nodes that contain an attribute
-	   with type information.  If we find one we call a type walker to
-	   touch the reachable type information.
-	   The same type can be referenced by several IR-nodes.  To avoid
-	   repeated visits of the same type node we must decrease the
-	   type visited flag for each walk.  This is done in start_type_walk().
-	   Here we initially increase the flag.  We only call do_type_walk that does
-	   not increase the flag.
-	*/
+	 * with type information.  If we find one we call a type walker to
+	 * touch the reachable type information.  The same type can be referenced
+	 * by several IR-nodes.  To avoid repeated visits of the same type node we
+	 * must decrease the type visited flag for each walk.  This is done in
+	 * start_type_walk().  Here we initially increase the flag.  We only call
+	 * do_type_walk that does not increase the flag.
+	 */
 	irp_reserve_resources(irp, IRP_RESOURCE_TYPE_VISITED);
 	inc_master_type_visited();
 	irg_walk(get_irg_end(irg), start_type_walk, NULL, &type_env);
@@ -246,10 +245,8 @@ void type_walk_irg(ir_graph *irg,
 	irp_free_resources(irp, IRP_RESOURCE_TYPE_VISITED);
 }
 
-static void type_walk_s2s_2(ir_type *const tp,
-                            type_walk_func *pre,
-                            type_walk_func *post,
-                            void *env)
+static void type_walk_s2s_2(ir_type *const tp, type_walk_func *pre,
+                            type_walk_func *post, void *env)
 {
 	if (type_visited(tp))
 		return;
@@ -288,9 +285,7 @@ static void type_walk_s2s_2(ir_type *const tp,
 	}
 }
 
-void type_walk_super2sub(type_walk_func *pre,
-                         type_walk_func *post,
-                         void *env)
+void type_walk_super2sub(type_walk_func *pre, type_walk_func *post, void *env)
 {
 	irp_reserve_resources(irp, IRP_RESOURCE_TYPE_VISITED);
 	inc_master_type_visited();
@@ -300,8 +295,6 @@ void type_walk_super2sub(type_walk_func *pre,
 	}
 	irp_free_resources(irp, IRP_RESOURCE_TYPE_VISITED);
 }
-
-/*****************************************************************************/
 
 static void type_walk_super_2(ir_type *const tp, type_walk_func *pre,
                               type_walk_func *post, void *env)
@@ -350,9 +343,6 @@ void type_walk_super(type_walk_func *pre, type_walk_func *post, void *env)
 	irp_free_resources(irp, IRP_RESOURCE_TYPE_VISITED);
 }
 
-/*****************************************************************************/
-
-
 static void class_walk_s2s_2(ir_type *tp, class_walk_func *pre,
                              class_walk_func *post, void *env)
 {
@@ -380,8 +370,7 @@ static void class_walk_s2s_2(ir_type *tp, class_walk_func *pre,
 		post(tp, env);
 }
 
-void class_walk_super2sub(class_walk_func *pre,
-                          class_walk_func *post,
+void class_walk_super2sub(class_walk_func *pre, class_walk_func *post,
                           void *env)
 {
 	irp_reserve_resources(irp, IRP_RESOURCE_TYPE_VISITED);
@@ -399,10 +388,7 @@ void class_walk_super2sub(class_walk_func *pre,
 	irp_free_resources(irp, IRP_RESOURCE_TYPE_VISITED);
 }
 
-
-void walk_types_entities(ir_type *tp,
-                         entity_walk_func *doit,
-                         void *env)
+void walk_types_entities(ir_type *tp, entity_walk_func *doit, void *env)
 {
 	switch (get_type_tpop_code(tp)) {
 	case tpo_class:
