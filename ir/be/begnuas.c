@@ -80,6 +80,8 @@ static void emit_section_macho(be_gas_section_t section)
 		[GAS_SECTION_TEXT]            = { "__TEXT,__text",            "regular,pure_instructions" },
 		[GAS_SECTION_DATA]            = { "__DATA,__data",            NULL },
 		[GAS_SECTION_RODATA]          = { "__TEXT,__const",           NULL },
+		[GAS_SECTION_REL_RO]          = { "__DATA,__const",           NULL },
+		[GAS_SECTION_REL_RO_LOCAL]    = { "__DATA,__const",           NULL },
 		[GAS_SECTION_BSS]             = { "__DATA,__bss",             NULL },
 		[GAS_SECTION_CSTRING]         = { "__TEXT,__cstring",         "cstring_literals" },
 		[GAS_SECTION_PIC_TRAMPOLINES] = { "__IMPORT,__jump_table",    "symbol_stubs,self_modifying_code+pure_instructions,5" },
@@ -124,18 +126,20 @@ static const struct {
 	const char *type;
 	const char *flags;
 } elf_sectioninfos[] = {
-	[GAS_SECTION_TEXT]           = { "text",           "progbits", "ax" },
-	[GAS_SECTION_DATA]           = { "data",           "progbits", "aw" },
-	[GAS_SECTION_RODATA]         = { "rodata",         "progbits", "a"  },
-	[GAS_SECTION_BSS]            = { "bss",            "nobits",   "aw" },
-	[GAS_SECTION_CONSTRUCTORS]   = { "ctors",          "progbits", "aw" },
-	[GAS_SECTION_DESTRUCTORS]    = { "dtors",          "progbits", "aw" },
-	[GAS_SECTION_JCR]            = { "jcr",            "progbits", "aw" },
-	[GAS_SECTION_DEBUG_INFO]     = { "debug_info",     "progbits", ""   },
-	[GAS_SECTION_DEBUG_ABBREV]   = { "debug_abbrev",   "progbits", ""   },
-	[GAS_SECTION_DEBUG_LINE]     = { "debug_line",     "progbits", ""   },
-	[GAS_SECTION_DEBUG_PUBNAMES] = { "debug_pubnames", "progbits", ""   },
-	[GAS_SECTION_DEBUG_FRAME]    = { "debug_frame",    "progbits", ""   },
+	[GAS_SECTION_TEXT]           = { "text",              "progbits", "ax" },
+	[GAS_SECTION_DATA]           = { "data",              "progbits", "aw" },
+	[GAS_SECTION_RODATA]         = { "rodata",            "progbits", "a"  },
+	[GAS_SECTION_REL_RO_LOCAL]   = { "data.rel.ro.local", "progbits", "aw" },
+	[GAS_SECTION_REL_RO]         = { "data.rel.ro",       "progbits", "aw" },
+	[GAS_SECTION_BSS]            = { "bss",               "nobits",   "aw" },
+	[GAS_SECTION_CONSTRUCTORS]   = { "ctors",             "progbits", "aw" },
+	[GAS_SECTION_DESTRUCTORS]    = { "dtors",             "progbits", "aw" },
+	[GAS_SECTION_JCR]            = { "jcr",               "progbits", "aw" },
+	[GAS_SECTION_DEBUG_INFO]     = { "debug_info",        "progbits", ""   },
+	[GAS_SECTION_DEBUG_ABBREV]   = { "debug_abbrev",      "progbits", ""   },
+	[GAS_SECTION_DEBUG_LINE]     = { "debug_line",        "progbits", ""   },
+	[GAS_SECTION_DEBUG_PUBNAMES] = { "debug_pubnames",    "progbits", ""   },
+	[GAS_SECTION_DEBUG_FRAME]    = { "debug_frame",       "progbits", ""   },
 };
 
 static void emit_section_sparc(be_gas_section_t section,
@@ -399,19 +403,85 @@ static bool is_comdat(const ir_entity *entity)
 		&& (linkage & IR_LINKAGE_GARBAGE_COLLECT);
 }
 
+typedef enum reloc_class_t {
+	NO_RELOCATIONS,
+	ONLY_LOCAL_RELOCATIONS,
+	ANY_RELOCATIONS,
+} reloc_class_t;
+
+static reloc_class_t classify_expr_relocs(ir_node const *const node)
+{
+	switch (get_irn_opcode(node)) {
+	case iro_Conv:
+		return classify_expr_relocs(get_Conv_op(node));
+	case iro_Address: {
+		ir_entity const *const entity     = get_Address_entity(node);
+		ir_visibility    const visibility = get_entity_visibility(entity);
+		return visibility == ir_visibility_local
+		    || visibility == ir_visibility_private ? ONLY_LOCAL_RELOCATIONS
+		                                           : ANY_RELOCATIONS;
+	}
+	case iro_Offset:
+	case iro_Align:
+	case iro_Const:
+	case iro_Size:
+	case iro_Unknown:
+		return NO_RELOCATIONS;
+	case iro_Add:
+	case iro_Sub:
+	case iro_Mul:
+		return MAX(classify_expr_relocs(get_binop_left(node)),
+		           classify_expr_relocs(get_binop_right(node)));
+	default:
+		panic("unsupported IR-node %+F in initializer", node);
+	}
+}
+
+static reloc_class_t classify_initializer_relocs(
+		ir_initializer_t const *const init)
+{
+	switch (get_initializer_kind(init)) {
+	case IR_INITIALIZER_NULL:
+	case IR_INITIALIZER_TARVAL:
+		return NO_RELOCATIONS;
+	case IR_INITIALIZER_CONST:
+		return classify_expr_relocs(get_initializer_const_value(init));
+	case IR_INITIALIZER_COMPOUND: {
+		reloc_class_t result = NO_RELOCATIONS;
+		for (size_t i = 0, n = get_initializer_compound_n_entries(init); i < n;
+		     ++i) {
+			ir_initializer_t const *const subinit
+				= get_initializer_compound_value(init, i);
+			result = MAX(result, classify_initializer_relocs(subinit));
+		}
+		return result;
+	}
+	}
+	panic("invalid initializer");
+}
+
 static be_gas_section_t determine_basic_section(const ir_entity *entity)
 {
 	if (is_method_entity(entity) || is_alias_entity(entity))
 		return GAS_SECTION_TEXT;
 
-	ir_linkage linkage = get_entity_linkage(entity);
-	if (linkage & IR_LINKAGE_CONSTANT) {
+	if (get_entity_linkage(entity) & IR_LINKAGE_CONSTANT) {
 		/* mach-o is the only one with a cstring section */
 		if (be_gas_object_file_format == OBJECT_FILE_FORMAT_MACH_O
 		    && entity_is_string_const(entity, true))
 			return GAS_SECTION_CSTRING;
 
-		return GAS_SECTION_RODATA;
+		if (be_options.pic) {
+			ir_initializer_t const *const init = get_entity_initializer(entity);
+			switch (classify_initializer_relocs(init)) {
+			case ONLY_LOCAL_RELOCATIONS: return GAS_SECTION_REL_RO_LOCAL;
+			case ANY_RELOCATIONS:        return GAS_SECTION_REL_RO;
+			case NO_RELOCATIONS:         return GAS_SECTION_RODATA;
+			}
+			panic("invalid relocation class");
+		} else {
+			return GAS_SECTION_RODATA;
+		}
 	}
 	if (entity_is_null(entity) && !is_alias_entity(entity))
 		return GAS_SECTION_BSS;

@@ -20,7 +20,9 @@
 typedef enum {
 	GAS_SECTION_TEXT,            /**< text section - program code */
 	GAS_SECTION_DATA,            /**< data section - arbitrary data */
-	GAS_SECTION_RODATA,          /**< rodata section - read-only data */
+	GAS_SECTION_RODATA,          /**< read only data no relocations */
+	GAS_SECTION_REL_RO,          /**< read only data containing relocations */
+	GAS_SECTION_REL_RO_LOCAL,    /**< read only data containing local relocs */
 	GAS_SECTION_BSS,             /**< bss section - zero initialized data */
 	GAS_SECTION_CONSTRUCTORS,    /**< ctors section */
 	GAS_SECTION_DESTRUCTORS,     /**< dtors section */
@@ -48,6 +50,7 @@ typedef enum elf_variant_t {
 
 extern bool          be_gas_emit_types;
 extern elf_variant_t be_gas_elf_variant;
+extern bool          be_gas_pic;
 
 /**
  * the .type directive needs to specify @function, #function or %function

@@ -191,9 +191,11 @@ void ia32_adjust_pic(ir_graph *irg)
 		return;
 	case IA32_PIC_ELF_PLT:
 	case IA32_PIC_ELF_NO_PLT:
+		be_options.pic = true;
 		irg_walk_graph(irg, fix_address_elf, NULL, NULL);
 		return;
 	case IA32_PIC_MACH_O:
+		be_options.pic = true;
 		irg_walk_graph(irg, fix_address_macho, NULL, NULL);
 		return;
 	}
