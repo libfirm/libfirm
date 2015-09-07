@@ -215,8 +215,6 @@ x86_condition_code_t get_ia32_condcode(const ir_node *node);
  */
 void set_ia32_condcode(ir_node *node, x86_condition_code_t code);
 
-const ir_switch_table *get_ia32_switch_table(const ir_node *node);
-
 unsigned get_ia32_copyb_size(const ir_node *node);
 
 /**

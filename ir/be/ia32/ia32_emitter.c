@@ -2710,13 +2710,12 @@ static void bemit_ia32_jcc(const ir_node *node)
 
 static void bemit_switchjmp(const ir_node *node)
 {
-	ir_entity             *jump_table = get_ia32_am_ent(node);
-	const ir_switch_table *table      = get_ia32_switch_table(node);
-
 	bemit8(0xFF); // jmp *tbl.label(,%in,4)
 	bemit_mod_am(0x05, node);
 
-	be_emit_jump_table(node, table, jump_table, emit_jumptable_target);
+	ia32_switch_attr_t const *const attr = get_ia32_switch_attr_const(node);
+	be_emit_jump_table(node, attr->table, attr->table_entity,
+	                   emit_jumptable_target);
 }
 
 static void bemit_return(const ir_node *node)

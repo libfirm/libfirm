@@ -573,12 +573,6 @@ unsigned get_ia32_latency(const ir_node *node)
 	return op_attr->latency;
 }
 
-const ir_switch_table *get_ia32_switch_table(const ir_node *node)
-{
-	const ia32_switch_attr_t *attr = get_ia32_switch_attr_const(node);
-	return attr->table;
-}
-
 x86_condition_code_t get_ia32_condcode(const ir_node *node)
 {
 	const ia32_condcode_attr_t *attr = get_ia32_condcode_attr_const(node);
