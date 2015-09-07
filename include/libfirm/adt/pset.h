@@ -32,7 +32,7 @@
  * @param y A pointer.
  * @return 0 if @p x and @p y are equal. Some value != 0 otherwise.
  */
-FIRM_API int pset_default_ptr_cmp(const void *x, const void *y);
+FIRM_API int pset_default_ptr_cmp(void const *x, void const *y);
 
 /**
  * The abstract type of a pset (Set of pointers).
@@ -57,10 +57,11 @@ typedef struct pset pset;
 /** Creates new pointer set with default compare function and default size */
 #define pset_new_ptr_default()    pset_new_ptr(64)
 
-/** The entry of a pset, representing an element pointer in the set and its meta-information */
+/** The entry of a pset, representing an element pointer in the set and its
+ * meta-information */
 typedef struct {
   unsigned hash; /**< hash value of element */
-  void *dptr;    /**< pointer to element data */
+  void    *dptr; /**< pointer to element data */
 } pset_entry;
 
 /**
@@ -72,7 +73,7 @@ typedef struct {
  * @return
  *    0 if the elements are identically, non-zero else
  */
-typedef int (*pset_cmp_fun) (const void *elt, const void *key);
+typedef int (*pset_cmp_fun) (void const *elt, void const *key);
 
 /**
  * Creates a new pset.
@@ -80,9 +81,7 @@ typedef int (*pset_cmp_fun) (const void *elt, const void *key);
  * @param func    The compare function of this pset.
  * @param slots   Initial number of collision chains.  I.e., \#slots
  *                different keys can be hashed without collisions.
- *
- * @returns
- *    created pset
+ * @returns created pset
  */
 FIRM_API pset *new_pset(pset_cmp_fun func, size_t slots);
 
@@ -101,7 +100,7 @@ FIRM_API void del_pset(pset *pset);
  *
  * @param pset   the pset
  */
-FIRM_API size_t pset_count(pset *pset);
+FIRM_API size_t pset_count(pset const *pset);
 
 /**
  * Searches an element pointer in a pset.
@@ -113,7 +112,7 @@ FIRM_API size_t pset_count(pset *pset);
  * @return
  *    the pointer of the found element in the pset or NULL if it was not found
  */
-FIRM_API void *pset_find(pset *pset, const void *key, unsigned hash);
+FIRM_API void *pset_find(pset *pset, void const *key, unsigned hash);
 
 /**
  * Inserts an element pointer into a pset.
@@ -128,9 +127,8 @@ FIRM_API void *pset_find(pset *pset, const void *key, unsigned hash);
  *    It is not possible to insert an element more than once. If an element
  *    that should be inserted is already in the set, this functions does
  *    nothing but returning its already existing set_entry.
-
  */
-FIRM_API void *pset_insert(pset *pset, const void *key, unsigned hash);
+FIRM_API void *pset_insert(pset *pset, void const *key, unsigned hash);
 
 /**
  * Inserts an element pointer into a pset and returns its pset_entry.
@@ -146,7 +144,7 @@ FIRM_API void *pset_insert(pset *pset, const void *key, unsigned hash);
  *    that should be inserted is already in the pset, this functions does
  *    nothing but returning its pset_entry.
  */
-FIRM_API pset_entry *pset_hinsert(pset *pset, const void *key, unsigned hash);
+FIRM_API pset_entry *pset_hinsert(pset *pset, void const *key, unsigned hash);
 
 /**
  * Removes an element from a pset.
@@ -164,7 +162,7 @@ FIRM_API pset_entry *pset_hinsert(pset *pset, const void *key, unsigned hash);
  *    Further, it is allowed to remove elements during an iteration
  *    including the current one.
  */
-FIRM_API void *pset_remove(pset *pset, const void *key, unsigned hash);
+FIRM_API void *pset_remove(pset *pset, void const *key, unsigned hash);
 
 /**
  * Returns the first element of a pset.
@@ -249,7 +247,8 @@ FIRM_API void pset_insert_pset_ptr(pset *target, pset *src);
 
 typedef enum { _pset_find, _pset_insert, _pset_hinsert } _pset_action;
 
-FIRM_API void *_pset_search(pset *, const void *, unsigned, _pset_action);
+FIRM_API void *_pset_search(pset *set, void const *key, unsigned hash,
+                            _pset_action action);
 
 /** @endcond */
 

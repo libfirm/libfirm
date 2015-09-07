@@ -56,7 +56,7 @@ typedef struct set_entry {
  *    of two elements of a set, they can be only equal if their sizes are
  *    are equal. This is checked before the compare function is called.
  */
-typedef int (*set_cmp_fun) (const void *elt, const void *key, size_t size);
+typedef int (*set_cmp_fun) (void const *elt, void const *key, size_t size);
 
 /**
  * Creates a new set.
@@ -82,7 +82,7 @@ FIRM_API void del_set(set *set);
  *
  * @param set   the set
  */
-FIRM_API size_t set_count(set *set);
+FIRM_API size_t set_count(set const *set);
 
 /**
  * Searches an element in a set.
@@ -91,11 +91,10 @@ FIRM_API size_t set_count(set *set);
  * @param key   the element to is searched
  * @param size  the size of key
  * @param hash  the hash value of key
- *
  * @return
  *    The address of the found element in the set or NULL if it was not found.
  */
-FIRM_API void *set_find(set *set, const void *key, size_t size, unsigned hash);
+FIRM_API void *set_find(set *set, void const *key, size_t size, unsigned hash);
 
 /**
  * Inserts an element into a set.
@@ -112,7 +111,7 @@ FIRM_API void *set_find(set *set, const void *key, size_t size, unsigned hash);
  *    that should be inserted is already in the set, this functions does
  *    nothing but returning its pointer.
  */
-FIRM_API void *set_insert(set *set, const void *key, size_t size, unsigned hash);
+FIRM_API void *set_insert(set *set, void const *key, size_t size, unsigned hash);
 
 /**
  * Inserts an element into a set and returns its set_entry.
@@ -129,7 +128,8 @@ FIRM_API void *set_insert(set *set, const void *key, size_t size, unsigned hash)
  *    that should be inserted is already in the set, this functions does
  *    nothing but returning its set_entry.
  */
-FIRM_API set_entry *set_hinsert(set *set, const void *key, size_t size, unsigned hash);
+FIRM_API set_entry *set_hinsert(set *set, void const *key, size_t size,
+                                unsigned hash);
 
 /**
  * Inserts an element into a set, zero-terminate it and returns its set_entry.
@@ -146,7 +146,8 @@ FIRM_API set_entry *set_hinsert(set *set, const void *key, size_t size, unsigned
  *    that should be inserted is already in the set, this functions does
  *    nothing but returning its set_entry.
  */
-FIRM_API set_entry *set_hinsert0(set *set, const void *key, size_t size, unsigned hash);
+FIRM_API set_entry *set_hinsert0(set *set, void const *key, size_t size,
+                                 unsigned hash);
 
 /**
  * Returns the first element of a set.
@@ -225,7 +226,8 @@ FIRM_API void set_break(set *set);
 
 typedef enum { _set_find, _set_insert, _set_hinsert, _set_hinsert0 } _set_action;
 
-FIRM_API void *_set_search(set *, const void *, size_t, unsigned, _set_action);
+FIRM_API void *_set_search(set *set, void const *key, size_t size,
+                           unsigned hash, _set_action action);
 
 /** @endcond */
 
