@@ -96,26 +96,30 @@ static void emit_section_macho(be_gas_section_t section)
 	be_emit_write_line();
 }
 
+static const struct {
+	const char *name;
+	const char *type;
+	const char *flags;
+} elf_sectioninfos[] = {
+	[GAS_SECTION_TEXT]           = { "text",           "progbits", "ax" },
+	[GAS_SECTION_DATA]           = { "data",           "progbits", "aw" },
+	[GAS_SECTION_RODATA]         = { "rodata",         "progbits", "a"  },
+	[GAS_SECTION_BSS]            = { "bss",            "nobits",   "aw" },
+	[GAS_SECTION_CONSTRUCTORS]   = { "ctors",          "progbits", "aw" },
+	[GAS_SECTION_DESTRUCTORS]    = { "dtors",          "progbits", "aw" },
+	[GAS_SECTION_JCR]            = { "jcr",            "progbits", "aw" },
+	[GAS_SECTION_DEBUG_INFO]     = { "debug_info",     "progbits", ""   },
+	[GAS_SECTION_DEBUG_ABBREV]   = { "debug_abbrev",   "progbits", ""   },
+	[GAS_SECTION_DEBUG_LINE]     = { "debug_line",     "progbits", ""   },
+	[GAS_SECTION_DEBUG_PUBNAMES] = { "debug_pubnames", "progbits", ""   },
+	[GAS_SECTION_DEBUG_FRAME]    = { "debug_frame",    "progbits", ""   },
+};
+
 static void emit_section_sparc(be_gas_section_t section,
                                const ir_entity *entity)
 {
 	be_gas_section_t base  = section & GAS_SECTION_TYPE_MASK;
 	be_gas_section_t flags = section & ~GAS_SECTION_TYPE_MASK;
-	static const char *const basename[GAS_SECTION_LAST+1] = {
-		[GAS_SECTION_TEXT]           = "text",
-		[GAS_SECTION_DATA]           = "data",
-		[GAS_SECTION_RODATA]         = "rodata",
-		[GAS_SECTION_BSS]            = "bss",
-		[GAS_SECTION_CONSTRUCTORS]   = "ctors",
-		[GAS_SECTION_DESTRUCTORS]    = "dtors",
-		[GAS_SECTION_JCR]            = "jcr",
-		[GAS_SECTION_DEBUG_INFO]     = "debug_info",
-		[GAS_SECTION_DEBUG_ABBREV]   = "debug_abbrev",
-		[GAS_SECTION_DEBUG_LINE]     = "debug_line",
-		[GAS_SECTION_DEBUG_PUBNAMES] = "debug_pubnames",
-		[GAS_SECTION_DEBUG_FRAME]    = "debug_frame",
-	};
-
 	if (current_section == section && !(section & GAS_SECTION_FLAG_COMDAT))
 		return;
 	current_section = section;
@@ -125,8 +129,8 @@ static void emit_section_sparc(be_gas_section_t section,
 	/* Part1: section-name */
 	if (flags & GAS_SECTION_FLAG_TLS)
 		be_emit_char('t');
-	assert(base < (be_gas_section_t)ARRAY_SIZE(basename));
-	char const *const name = basename[base];
+	assert(base < (be_gas_section_t)ARRAY_SIZE(elf_sectioninfos));
+	char const *const name = elf_sectioninfos[base].name;
 	assert(name != NULL);
 	be_emit_string(name);
 
@@ -164,24 +168,6 @@ static void emit_section(be_gas_section_t section, const ir_entity *entity)
 	be_gas_section_t base = section & GAS_SECTION_TYPE_MASK;
 	be_gas_section_t flags = section & ~GAS_SECTION_TYPE_MASK;
 	const char *f;
-	static const struct {
-		const char *name;
-		const char *type;
-		const char *flags;
-	} sectioninfos[GAS_SECTION_LAST+1] = {
-		[GAS_SECTION_TEXT]           = { "text",           "progbits", "ax" },
-		[GAS_SECTION_DATA]           = { "data",           "progbits", "aw" },
-		[GAS_SECTION_RODATA]         = { "rodata",         "progbits", "a"  },
-		[GAS_SECTION_BSS]            = { "bss",            "nobits",   "aw" },
-		[GAS_SECTION_CONSTRUCTORS]   = { "ctors",          "progbits", "aw" },
-		[GAS_SECTION_DESTRUCTORS]    = { "dtors",          "progbits", "aw" },
-		[GAS_SECTION_JCR]            = { "jcr",            "progbits", "aw" },
-		[GAS_SECTION_DEBUG_INFO]     = { "debug_info",     "progbits", ""   },
-		[GAS_SECTION_DEBUG_ABBREV]   = { "debug_abbrev",   "progbits", ""   },
-		[GAS_SECTION_DEBUG_LINE]     = { "debug_line",     "progbits", ""   },
-		[GAS_SECTION_DEBUG_PUBNAMES] = { "debug_pubnames", "progbits", ""   },
-		[GAS_SECTION_DEBUG_FRAME]    = { "debug_frame",    "progbits", ""   },
-	};
 
 	if (be_gas_object_file_format == OBJECT_FILE_FORMAT_MACH_O) {
 		emit_section_macho(section);
@@ -219,12 +205,12 @@ static void emit_section(be_gas_section_t section, const ir_entity *entity)
 		}
 	}
 
-	assert(base < (be_gas_section_t) ARRAY_SIZE(sectioninfos));
+	assert(base < (be_gas_section_t) ARRAY_SIZE(elf_sectioninfos));
 	be_emit_cstring("\t.section\t.");
 	/* section name */
 	if (flags & GAS_SECTION_FLAG_TLS)
 		be_emit_char('t');
-	char const *const name = sectioninfos[base].name;
+	char const *const name = elf_sectioninfos[base].name;
 	assert(name != NULL);
 	be_emit_string(name);
 	if (flags & GAS_SECTION_FLAG_COMDAT) {
@@ -234,7 +220,7 @@ static void emit_section(be_gas_section_t section, const ir_entity *entity)
 
 	/* section flags */
 	be_emit_cstring(",\"");
-	for (f = sectioninfos[base].flags; *f != '\0'; ++f) {
+	for (f = elf_sectioninfos[base].flags; *f != '\0'; ++f) {
 		be_emit_char(*f);
 	}
 	if (flags & GAS_SECTION_FLAG_TLS)
@@ -246,7 +232,7 @@ static void emit_section(be_gas_section_t section, const ir_entity *entity)
 	if (be_gas_object_file_format != OBJECT_FILE_FORMAT_COFF) {
 		be_emit_cstring("\",");
 		be_emit_char(be_gas_elf_type_char);
-		be_emit_string(sectioninfos[base].type);
+		be_emit_string(elf_sectioninfos[base].type);
 	}
 
 	if (flags & GAS_SECTION_FLAG_COMDAT) {
