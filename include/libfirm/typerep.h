@@ -1107,7 +1107,8 @@ FIRM_API ir_entity *get_class_member(const ir_type *clss, size_t pos);
 #define INVALID_MEMBER_INDEX ((size_t)-1)
 
 /** Returns index of mem in clss, INVALID_MEMBER_INDEX if not contained. */
-FIRM_API size_t get_class_member_index(const ir_type *clss, ir_entity *mem);
+FIRM_API size_t get_class_member_index(ir_type const *clss,
+                                       ir_entity const *mem);
 
 /** Adds subtype as subtype to clss.
  *
@@ -1216,7 +1217,8 @@ FIRM_API size_t get_struct_n_members(const ir_type *strct);
 FIRM_API ir_entity *get_struct_member(const ir_type *strct, size_t pos);
 
 /** Returns index of member in strct, -1 if not contained. */
-FIRM_API size_t get_struct_member_index(const ir_type *strct, ir_entity *member);
+FIRM_API size_t get_struct_member_index(ir_type const *strct,
+                                        ir_entity const *member);
 
 /** Returns true if a type is a struct type. */
 FIRM_API int is_Struct_type(const ir_type *strct);
@@ -1266,7 +1268,8 @@ FIRM_API size_t get_union_n_members(const ir_type *uni);
 FIRM_API ir_entity *get_union_member(const ir_type *uni, size_t pos);
 
 /** Returns index of member in uni, -1 if not contained. */
-FIRM_API size_t get_union_member_index(const ir_type *uni, ir_entity *member);
+FIRM_API size_t get_union_member_index(ir_type const *uni,
+                                       ir_entity const *member);
 
 /** Returns true if a type is a union type. */
 FIRM_API int is_Union_type(const ir_type *uni);
@@ -1671,7 +1674,8 @@ FIRM_API size_t get_compound_n_members(const ir_type *tp);
 FIRM_API ir_entity *get_compound_member(const ir_type *tp, size_t pos);
 
 /** Returns index of member in tp, -1 if not contained. */
-FIRM_API size_t get_compound_member_index(const ir_type *tp, ir_entity *member);
+FIRM_API size_t get_compound_member_index(ir_type const *tp,
+                                          ir_entity const *member);
 
 /** Remove a member from a compound type. */
 FIRM_API void remove_compound_member(ir_type *compound, ir_entity *entity);

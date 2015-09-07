@@ -146,16 +146,11 @@ static void free_type_attrs(ir_type *tp)
 
 void free_type(ir_type *tp)
 {
-	const tp_op *op = get_type_tpop(tp);
-
 	free_type_entities(tp);
 	/* Remove from list of all types */
 	remove_irp_type(tp);
 	/* Free the attributes of the type. */
 	free_type_attrs(tp);
-	/* Free entities automatically allocated with the ir_type */
-	if (op->ops.free_auto_entities)
-		op->ops.free_auto_entities(tp);
 	/* And now the type itself... */
 #ifdef DEBUG_libfirm
 	tp->kind = k_BAD;
@@ -382,8 +377,8 @@ static void compound_free_entities(ir_type *type)
 		free_entity(compound_get_member(type, i));
 }
 
-static size_t compound_get_member_index(const ir_type *type,
-                                        const ir_entity *entity)
+static size_t compound_get_member_index(ir_type const *const type,
+                                        ir_entity const *const entity)
 {
 	for (size_t i = 0, n = compound_get_n_members(type); i < n; ++i) {
 		if (compound_get_member(type, i) == entity)
@@ -452,7 +447,7 @@ size_t (get_class_n_members)(const ir_type *clss)
 	return get_class_n_members_(clss);
 }
 
-size_t get_class_member_index(const ir_type *clss, ir_entity *mem)
+size_t get_class_member_index(ir_type const *clss, ir_entity const *const mem)
 {
 	assert(is_Class_type(clss));
 	return compound_get_member_index(clss, mem);
@@ -651,7 +646,7 @@ ir_entity *get_struct_member(const ir_type *strct, size_t pos)
 	return compound_get_member(strct, pos);
 }
 
-size_t get_struct_member_index(const ir_type *strct, ir_entity *mem)
+size_t get_struct_member_index(ir_type const *strct, ir_entity const *const mem)
 {
 	assert(is_Struct_type(strct));
 	return compound_get_member_index(strct, mem);
@@ -878,7 +873,7 @@ ir_entity *get_union_member(const ir_type *uni, size_t pos)
 	return compound_get_member(uni, pos);
 }
 
-size_t get_union_member_index(const ir_type *uni, ir_entity *mem)
+size_t get_union_member_index(ir_type const *uni, ir_entity const *const mem)
 {
 	assert(is_Union_type(uni));
 	return compound_get_member_index(uni, mem);
@@ -1071,10 +1066,10 @@ ir_entity *get_compound_member(const ir_type *tp, size_t pos)
 	return op->ops.get_member(tp, pos);
 }
 
-size_t get_compound_member_index(const ir_type *tp, ir_entity *member)
+size_t get_compound_member_index(ir_type const *tp, ir_entity const *const mem)
 {
 	const tp_op *op = get_type_tpop(tp);
-	return op->ops.get_member_index(tp, member);
+	return op->ops.get_member_index(tp, mem);
 }
 
 void set_compound_variable_size(ir_type *tp, int variable_size_flag)
