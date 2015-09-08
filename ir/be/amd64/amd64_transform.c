@@ -205,6 +205,27 @@ static const arch_register_req_t *reg_rax_rdx_mem_reqs[] = {
 	&arch_memory_requirement,
 };
 
+static const arch_register_req_t *rax_reg_mem_reqs[] = {
+	&amd64_single_reg_req_gp_rax,
+	&amd64_class_reg_req_gp,
+	&arch_memory_requirement,
+};
+
+static const arch_register_req_t *reg_rax_reg_mem_reqs[] = {
+	&amd64_class_reg_req_gp,
+	&amd64_single_reg_req_gp_rax,
+	&amd64_class_reg_req_gp,
+	&arch_memory_requirement,
+};
+
+static const arch_register_req_t *reg_reg_rax_reg_mem_reqs[] = {
+	&amd64_class_reg_req_gp,
+	&amd64_class_reg_req_gp,
+	&amd64_single_reg_req_gp_rax,
+	&amd64_class_reg_req_gp,
+	&arch_memory_requirement,
+};
+
 arch_register_req_t const *reg_reqs[] = {
 	&amd64_class_reg_req_gp,
 };
@@ -2474,6 +2495,60 @@ static ir_node *gen_ffs(ir_node *node)
 	return be_new_Proj(inc, pn_amd64_add_res);
 }
 
+static ir_node *gen_compare_swap(ir_node *node)
+{
+	dbg_info *dbgi    = get_irn_dbg_info(node);
+	ir_node  *block   = be_transform_nodes_block(node);
+	ir_node  *ptr     = get_Builtin_param(node, 0);
+	ir_node  *old     = get_Builtin_param(node, 1);
+	ir_node  *new     = get_Builtin_param(node, 2);
+	ir_node  *mem     = get_Builtin_mem(node);
+	ir_node  *new_old = be_transform_node(old);
+	ir_node  *new_new = be_transform_node(new);
+	ir_node  *new_mem = be_transform_node(mem);
+	ir_mode  *mode    = get_irn_mode(new);
+	assert(get_irn_mode(old) == mode);
+
+	ir_node *in[5];
+	int arity = 0;
+	amd64_addr_t addr;
+	perform_address_matching(ptr, &arity, in, &addr);
+	in[arity++] = new_old;
+	int new_input = arity;
+	in[arity++] = new_new;
+	in[arity++] = new_mem;
+
+	arch_register_req_t const **reqs;
+	switch (arity) {
+	case 3:
+		reqs = rax_reg_mem_reqs;
+		break;
+	case 4:
+		reqs = reg_rax_reg_mem_reqs;
+		break;
+	case 5:
+		reqs = reg_reg_rax_reg_mem_reqs;
+		break;
+	default:
+		panic("gen_compare_swap: Unexpected arity %d", arity);
+	}
+
+	amd64_binop_addr_attr_t attr = {
+		.base = {
+			.base = {
+				.op_mode = AMD64_OP_ADDR_REG,
+			},
+			.insn_mode = get_insn_mode_from_mode(mode),
+			.addr = addr,
+		},
+		.u = {
+			.reg_input = new_input,
+		},
+	};
+
+	return new_bd_amd64_cmpxchg(dbgi, block, arity, in, reqs, &attr);
+}
+
 static ir_node *gen_saturating_increment(ir_node *node)
 {
 	dbg_info *dbgi      = get_irn_dbg_info(node);
@@ -2531,6 +2606,8 @@ static ir_node *gen_Builtin(ir_node *node)
 		return gen_ctz(node);
 	case ir_bk_ffs:
 		return gen_ffs(node);
+	case ir_bk_compare_swap:
+		return gen_compare_swap(node);
 	case ir_bk_saturating_increment:
 		return gen_saturating_increment(node);
 	case ir_bk_va_start:
@@ -2553,6 +2630,14 @@ static ir_node *gen_Proj_Builtin(ir_node *proj)
 	case ir_bk_ffs:
 	case ir_bk_parity:
 		return new_node;
+	case ir_bk_compare_swap:
+		assert(is_amd64_cmpxchg(new_node));
+		if (get_Proj_num(proj) == pn_Builtin_M) {
+			return be_new_Proj(new_node, pn_amd64_cmpxchg_M);
+		} else {
+			assert(get_Proj_num(proj) == pn_Builtin_max+1);
+			return be_new_Proj(new_node, pn_amd64_cmpxchg_res);
+		}
 	case ir_bk_saturating_increment:
 		return be_new_Proj(new_node, pn_amd64_sbb_res);
 	case ir_bk_va_start:

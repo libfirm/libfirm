@@ -409,6 +409,17 @@ cmp => {
 	emit      => "cmp%M %AM",
 },
 
+cmpxchg => {
+	irn_flags => [ "modify_flags" ],
+	state     => "exc_pinned",
+	in_reqs   => "...",
+	out_reqs  => [ "rax", "flags", "mem" ],
+	outs      => [ "res", "flags", "M" ],
+	attr_type => "amd64_binop_addr_attr_t",
+	attr      => "const amd64_binop_addr_attr_t *attr_init",
+	emit      => "lock cmpxchg%M %AM",
+},
+
 # TODO Setcc can also operate on memory
 setcc => {
 	irn_flags => [  ],
