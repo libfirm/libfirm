@@ -133,7 +133,7 @@ void bipartite_matching(bipartite_t const *const gr, int *const matching)
 void bipartite_dump_f(FILE *const f, bipartite_t const *gr)
 {
 	for (unsigned i = 0; i < gr->n_left; ++i) {
-		fprintf(f, "%d: ", i);
+		fprintf(f, "%u: ", i);
 		bitset_fprint(f, gr->adj[i]);
 		fprintf(f, "\n");
 	}
