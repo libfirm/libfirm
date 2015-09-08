@@ -19,6 +19,7 @@
 #include "irnodeset.h"
 #include "irgwalk.h"
 #include "irmode.h"
+#include "irop_t.h"
 #include "iropt_dbg.h"
 #include "iroptimize.h"
 #include "irprog_t.h"

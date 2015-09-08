@@ -15,7 +15,6 @@
 
 #include <stdbool.h>
 
-#include "irtypes.h"
 #include "tv.h"
 
 #define get_op_code(op)         get_op_code_(op)
@@ -28,6 +27,53 @@
 
 #define set_generic_function_ptr(op, func) set_generic_function_ptr_((op), (op_func)(func))
 #define get_generic_function_ptr(type, op) ((type*)get_generic_function_ptr_((op)))
+
+/**
+ * Operation specific callbacks.
+ */
+typedef struct {
+	hash_func             hash;                 /**< Calculate a hash value for an IR node. */
+	computed_value_func   computed_value;       /**< Evaluates a node into a tarval if possible. */
+	computed_value_func   computed_value_Proj;  /**< Evaluates a Proj node into a tarval if possible. */
+	equivalent_node_func  equivalent_node;      /**< Optimizes the node by returning an equivalent one. */
+	equivalent_node_func  equivalent_node_Proj; /**< Optimizes the Proj node by returning an equivalent one. */
+	transform_node_func   transform_node;       /**< Optimizes the node by transforming it. */
+	transform_node_func   transform_node_Proj;  /**< Optimizes the Proj node by transforming it. */
+	node_attrs_equal_func  attrs_equal;         /**< Compares two node attributes. */
+	reassociate_func      reassociate;          /**< Reassociate a tree. */
+	copy_attr_func        copy_attr;            /**< Copy node attributes. */
+	get_type_attr_func    get_type_attr;        /**< Returns the type attribute of a node. */
+	get_entity_attr_func  get_entity_attr;      /**< Returns the entity attribute of a node. */
+	verify_node_func      verify_node;          /**< Verify the node. */
+	verify_proj_node_func verify_proj_node;     /**< Verify the Proj node. */
+	dump_node_func        dump_node;            /**< Dump a node. */
+	op_func               generic;              /**< A generic function pointer. */
+	op_func               generic1;             /**< A generic function pointer. */
+	op_func               generic2;             /**< A generic function pointer. */
+} ir_op_ops;
+
+/** The type of an ir_op. */
+struct ir_op {
+	unsigned     code;         /**< The unique opcode of the op. */
+	ident       *name;         /**< The name of the op. */
+	size_t       attr_size;    /**< Space needed in memory for private
+	                                attributes */
+	op_pin_state pin_state;    /**< How to deal with the node in CSE, PRE. */
+	op_arity     opar;         /**< The arity of operator. */
+	int          op_index;     /**< The index of the first data operand, 0 for
+	                                most cases, 1 for Div etc. */
+	int          memory_index; /**< index of memory input for memory nodes */
+	unsigned     pn_x_regular; /**< for fragile ops the position of the
+	                                X_regular output */
+	unsigned     pn_x_except;  /**< for fragile ops the position of the
+	                                X_except output */
+	unsigned     flags;        /**< Flags describing the behavior of the ir_op,
+	                                a bitmasks of irop_flags. */
+	unsigned     tag;          /**< Custom TAG from the op's creator */
+	void        *attr;         /**< custom pointer where op's creator can attach
+	                                attribute stuff to. */
+	ir_op_ops    ops;          /**< The operations of the this op. */
+};
 
 /** Initialize the irop module. */
 void firm_init_op(void);
