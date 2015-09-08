@@ -72,7 +72,7 @@ tech-report 1999-14.
 ----------
 
 Official website
-	<http://pp.ipd.kit.edu/firm/>
+	<http://libfirm.org/>
 
 You can contact us at
 	<firm@ipd.info.uni-karlsruhe.de>
@@ -81,4 +81,4 @@ There's a mailing list here:
 	<https://lists.sourceforge.net/lists/listinfo/libfirm-user>
 
 We have a bugtracker at:
-	<http://pp.ipd.kit.edu/firm/bugs>
+	<http://pp.ipd.kit.edu/~firm/bugs>
