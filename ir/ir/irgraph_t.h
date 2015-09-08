@@ -11,16 +11,19 @@
 #ifndef FIRM_IR_IRGRAPH_T_H
 #define FIRM_IR_IRGRAPH_T_H
 
-#include "firm_types.h"
 #include "irgraph.h"
 
-#include "irtypes.h"
-#include "irprog.h"
-#include "type_t.h"
 #include "entity_t.h"
+#include "firm_types.h"
 #include "iredgekinds.h"
+#include "iredgeset.h"
 #include "irloop.h"
+#include "irnodemap.h"
+#include "irprog.h"
+#include "list.h"
 #include "obst.h"
+#include "pset.h"
+#include "type_t.h"
 
 #define get_irg_start_block(irg)              get_irg_start_block_(irg)
 #define set_irg_start_block(irg, node)        set_irg_start_block_(irg, node)
@@ -65,6 +68,102 @@
 #define ir_reserve_resources(irg,resources)   ir_reserve_resources_(irg,resources)
 #define ir_free_resources(irg,resources)      ir_free_resources_(irg,resources)
 #define ir_resources_reserved(irg)            ir_resources_reserved_(irg)
+
+/**
+ * Edge info to put into an irg.
+ */
+typedef struct irg_edge_info_t {
+	ir_edgeset_t     edges;          /**< A set containing all edges of the current graph. */
+	struct list_head free_edges;     /**< list of all free edges. */
+	struct obstack   edges_obst;     /**< Obstack, where edges are allocated on. */
+	unsigned         allocated : 1;  /**< Set if edges are allocated on the obstack. */
+	unsigned         activated : 1;  /**< Set if edges are activated for the graph. */
+} irg_edge_info_t;
+
+typedef irg_edge_info_t irg_edges_info_t[EDGE_KIND_LAST+1];
+
+/** A callgraph entry for callees. */
+typedef struct cg_callee_entry {
+	ir_graph  *irg;        /**< The called irg. */
+	ir_node  **call_list;  /**< The list of all calls to the irg. */
+	size_t     max_depth;  /**< Maximum depth of all Call nodes to irg. */
+} cg_callee_entry;
+
+typedef struct ir_bitinfo {
+	struct ir_nodemap map;
+	struct obstack    obst;
+} ir_bitinfo;
+
+typedef struct ir_vrp_info {
+	struct ir_nodemap infos;
+	struct obstack    obst;
+} ir_vrp_info;
+
+/**
+ * An ir_graph represents the code of a function as a graph of nodes.
+ */
+struct ir_graph {
+	firm_kind              kind;          /**< Always set to k_ir_graph. */
+	unsigned               last_node_idx; /**< Last node index for graph. */
+	/** The entity of this procedure, i.e., the type of the procedure and the
+	 * class it belongs to. */
+	ir_entity             *ent;
+	/** A type representing the stack frame. */
+	ir_type               *frame_type;
+	ir_node               *anchor;        /**< Pointer to the anchor node. */
+	struct obstack         obst;          /**< obstack allocator for nodes. */
+
+	ir_graph_properties_t  properties;
+	ir_graph_constraints_t constraints;
+	op_pin_state           irg_pinned_state;  /**< Flag for status of nodes. */
+	irg_callee_info_state  callee_info_state; /**< Validity of callee info. */
+
+	/** this flag is an identifier for ir walk. it will be incremented every
+	 * time someone walks through the graph */
+	ir_visited_t     visited;
+	ir_visited_t     block_visited; /**< Visited flag for block nodes. */
+	ir_visited_t     self_visited;  /**< Visited flag of the irg */
+	ir_node        **idx_irn_map;   /**< Map of node indexes to nodes. */
+	size_t           index;         /**< a unique number for each graph */
+	/** A void* field to link any information to the graph. */
+	void            *link;
+	void            *be_data;       /**< backend can put in private data here */
+	unsigned short   dump_nr;       /**< number of graph dumps */
+
+	unsigned char    mem_disambig_opt;
+
+	/** Number of local variables in this function during construction. */
+	int      n_loc;
+	void   **loc_descriptions; /**< Descriptions for variables. */
+	ir_node *current_block;    /**< Block for new_*()ly created nodes. */
+
+	/** Hash table for global value numbering (CSE) */
+	pset               *value_table;
+	struct obstack      out_obst;    /**< Space for the Def-Use arrays. */
+	bool                out_obst_allocated;
+	ir_bitinfo          bitinfo;     /**< bit info */
+	ir_vrp_info         vrp;         /**< vrp info */
+	ir_loop            *loop;        /**< The outermost loop for this graph. */
+	ir_dom_front_info_t domfront;    /**< dominance frontier analysis data */
+	irg_edges_info_t    edge_info;   /**< edge info for automatic outs */
+	ir_graph          **callers;     /**< Callgraph: list of callers. */
+	unsigned           *caller_isbe; /**< Callgraph: bitset if backedge info is
+	                                      calculated. */
+	cg_callee_entry   **callees;     /**< Callgraph: list of callee calls */
+	unsigned           *callee_isbe; /**< Callgraph: bitset if backedge info is
+	                                      calculated. */
+	ir_loop            *l;           /**< For callgraph analysis. */
+
+#ifdef DEBUG_libfirm
+	/** Unique graph number for each graph to make output readable. */
+	long                graph_nr;
+#endif
+#ifndef NDEBUG
+	/** Debug helper: Phases/Analysis can indicate here which exclusive
+	 * resources (e.g. link fields of the graph nodes) they are using. */
+	ir_resources_t      reserved_resources;
+#endif
+};
 
 /**
  * Set the number of locals for a given graph.
@@ -115,10 +214,6 @@ static inline struct obstack *get_irg_obstack(ir_graph *const irg)
  * @param n the IR node
  */
 int node_is_in_irgs_storage(const ir_graph *irg, const ir_node *n);
-
-/*-------------------------------------------------------------------*/
-/* inline functions for graphs                                       */
-/*-------------------------------------------------------------------*/
 
 /** Returns the start block of a graph. */
 static inline ir_node *get_irg_start_block_(const ir_graph *irg)

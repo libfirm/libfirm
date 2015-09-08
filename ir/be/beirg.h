@@ -15,7 +15,7 @@
 #include "be.h"
 #include "be_types.h"
 #include "be_t.h"
-#include "irtypes.h"
+#include "irgraph_t.h"
 
 void be_assure_live_sets(ir_graph *irg);
 void be_assure_live_chk(ir_graph *irg);
