@@ -13,7 +13,7 @@
 #define FIRM_TV_FLTCALC_H
 
 #include <stdlib.h>
-#include "irtypes.h"
+#include "irmode_t.h"
 #include "strcalc.h"
 
 typedef enum {

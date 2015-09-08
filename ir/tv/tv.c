@@ -24,6 +24,7 @@
 #include <strings.h>
 
 #include "bitfiddle.h"
+#include "hashptr.h"
 #include "tv_t.h"
 #include "set.h"
 #include "entity_t.h"

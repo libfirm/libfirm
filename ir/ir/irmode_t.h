@@ -12,8 +12,11 @@
 #ifndef FIRM_IR_IRMODE_T_H
 #define FIRM_IR_IRMODE_T_H
 
-#include "irtypes.h"
 #include "irmode.h"
+
+#include <stdbool.h>
+#include "compiler.h"
+#include "firm_common.h"
 
 #define get_mode_ident(mode)           get_mode_ident_(mode)
 #define get_mode_sort(mode)            get_mode_sort_(mode)
@@ -30,6 +33,65 @@
 #define get_type_for_mode(mode)        get_type_for_mode_(mode)
 #define get_mode_mantissa_size(mode)   get_mode_mantissa_size_(mode)
 #define get_mode_exponent_size(mode)   get_mode_exponent_size_(mode)
+
+/** Helper values for ir_mode_sort. */
+enum ir_mode_sort_helper {
+	irmsh_is_num  = 0x10, /**< mode represents a number */
+	irmsh_is_data = 0x20, /**< mode represents data that can be in a register */
+};
+
+/**
+ * These values represent the different mode classes of value representations.
+ */
+typedef enum ir_mode_sort {
+	irms_auxiliary        = 0,
+	irms_internal_boolean = 1 | irmsh_is_data,
+	irms_data             = 2 | irmsh_is_data,
+	irms_reference        = 3 | irmsh_is_data,
+	irms_int_number       = 4 | irmsh_is_data | irmsh_is_num,
+	irms_float_number     = 5 | irmsh_is_data | irmsh_is_num,
+} ir_mode_sort;
+
+/**
+ * A descriptor for an IEEE754 float value.
+ */
+typedef struct float_descriptor_t {
+	unsigned char exponent_size;    /**< size of exponent in bits */
+	unsigned char mantissa_size;    /**< size of mantissa in bits */
+	bool          explicit_one;     /**< set if the leading one is explicit */
+} float_descriptor_t;
+
+/**
+ * Contains relevant information about a mode.
+ *
+ * Necessary information about a mode is stored in this struct which is used by
+ * the tarval module to perform calculations and comparisons of values of a
+ * such described mode.
+ */
+struct ir_mode {
+	firm_kind          kind;       /**< Distinguishes this thing from others */
+	ident             *name;       /**< Name ident of this mode */
+	ir_type           *type;       /**< Corresponding primitive type */
+	ir_mode_sort       sort;       /**< Coarse classification of this mode */
+	ir_mode_arithmetic arithmetic; /**< Class of possible arithmetic ops */
+	unsigned           size;       /**< Size of the mode in Bits. */
+	bool               sign:1;     /**< Whether mode has a sign bit. */
+	ENUMBF(float_int_conversion_overflow_style_t)
+	                   int_conv_overflow:1;
+	/** For shift operations the effective shift amount will be calculated
+	 * modulo this value. */
+	unsigned           modulo_shift;
+	float_descriptor_t float_desc; /**< Floatingpoint descriptor */
+
+	ir_tarval          *min;       /**< smallest representable (real) value */
+	ir_tarval          *max;       /**< biggest representable (real) value */
+	ir_tarval          *null;      /**< The value 0 */
+	ir_tarval          *one;       /**< The value 1 */
+	ir_tarval          *all_one;   /**< The value where all bits are set */
+	ir_tarval          *infinity;  /**< The (positive) infinity value */
+	/** For pointer modes, the equivalent unsigned integer one. */
+	ir_mode            *eq_unsigned;
+};
 
 static inline ident *get_mode_ident_(const ir_mode *mode)
 {

@@ -9,6 +9,7 @@
  * @author      Michael Beck, Matthias Braun
  */
 #include <stdbool.h>
+#include <string.h>
 
 #include "irmode_t.h"
 #include "lc_opts.h"
