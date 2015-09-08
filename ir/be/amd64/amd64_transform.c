@@ -1503,12 +1503,11 @@ static ir_node *gen_Call(ir_node *node)
 	ir_node         *new_block    = be_transform_node(block);
 	dbg_info        *dbgi         = get_irn_dbg_info(node);
 	ir_node         *mem          = get_Call_mem(node);
-	ir_node         *new_mem      = be_transform_node(mem);
 	ir_type         *type         = get_Call_type(node);
 	size_t           n_params     = get_Call_n_params(node);
 	size_t           n_ress       = get_method_n_ress(type);
-	/* max inputs: memory, callee, register arguments */
-	ir_node        **sync_ins     = ALLOCAN(ir_node*, n_params+1);
+	/* max inputs: call, callee, arguments */
+	ir_node        **sync_ins     = ALLOCAN(ir_node*, 1 + 1 + n_params);
 	ir_graph        *irg          = get_irn_irg(node);
 	x86_cconv_t   *cconv
 		= amd64_decide_calling_convention(type, NULL);
@@ -1584,6 +1583,8 @@ static ir_node *gen_Call(ir_node *node)
 			sync_ins[sync_arity++] = new_load_mem;
 
 			op_mode = AMD64_OP_ADDR;
+			if (mem == load_mem || (is_Proj(mem) && get_Proj_pred(mem) == load))
+				goto no_call_mem;
 		} else {
 			int input = in_arity++;
 			assert(input == 0); /* AMD64_OP_REG is currently hardcoded to always
@@ -1595,6 +1596,8 @@ static ir_node *gen_Call(ir_node *node)
 			op_mode            = AMD64_OP_REG;
 		}
 	}
+	sync_ins[sync_arity++] = be_transform_node(mem);
+no_call_mem:
 
 	in_req[in_arity] = sp_reg->single_req;
 	in[in_arity]     = incsp;
@@ -1637,8 +1640,8 @@ static ir_node *gen_Call(ir_node *node)
 		attr.base.addr.base_input       = 1;
 		attr.base.addr.index_input      = NO_INPUT;
 		attr.base.insn_mode             = INSN_MODE_64;
-		ir_node *in[] = { new_value, incsp, new_mem };
-
+		ir_node *const nomem = get_irg_no_mem(irg);
+		ir_node *const in[]  = { new_value, incsp, nomem };
 		ir_node *const store = mode_is_float(mode) ?
 			new_bd_amd64_movs_store_xmm(dbgi, new_block, ARRAY_SIZE(in), in, xmm_reg_mem_reqs, &attr) :
 			new_bd_amd64_mov_store(     dbgi, new_block, ARRAY_SIZE(in), in, reg_reg_mem_reqs, &attr);
@@ -1654,13 +1657,9 @@ static ir_node *gen_Call(ir_node *node)
 	++in_arity;
 
 	/* construct memory input */
-	if (sync_arity == 0) {
-		in[mem_pos] = new_mem;
-	} else if (sync_arity == 1) {
-		in[mem_pos] = sync_ins[0];
-	} else {
-		in[mem_pos] = new_r_Sync(new_block, sync_arity, sync_ins);
-	}
+	in[mem_pos] =
+		sync_arity == 1 ? sync_ins[0] :
+		new_r_Sync(new_block, sync_arity, sync_ins);
 
 	assert(in_arity <= (int)max_inputs);
 
