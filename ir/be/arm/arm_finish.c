@@ -20,6 +20,7 @@
 #include "be_types.h"
 #include "firm_types.h"
 #include "gen_arm_regalloc_if.h"
+#include "iredges_t.h"
 #include "irgwalk.h"
 #include "panic.h"
 

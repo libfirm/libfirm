@@ -22,6 +22,7 @@
 #include "besched.h"
 #include "gen_amd64_emitter.h"
 #include "gen_amd64_regalloc_if.h"
+#include "iredges_t.h"
 #include "irgwalk.h"
 #include "panic.h"
 

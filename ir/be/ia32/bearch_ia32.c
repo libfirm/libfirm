@@ -31,6 +31,7 @@
 #include "ident_t.h"
 #include "instrument.h"
 #include "ircons.h"
+#include "iredges_t.h"
 #include "irgmod.h"
 #include "irgopt.h"
 #include "irgwalk.h"

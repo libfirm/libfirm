@@ -8,6 +8,8 @@
  * @brief       ia32 architecture variants
  * @author      Michael Beck, Matthias Braun
  */
+#include "ia32_architecture.h"
+
 #include <stdbool.h>
 #include <string.h>
 
@@ -15,7 +17,6 @@
 #include "lc_opts.h"
 #include "lc_opts_enum.h"
 #include "irtools.h"
-#include "ia32_architecture.h"
 #include "tv.h"
 
 #undef NATIVE_X86

@@ -26,7 +26,7 @@
 #include "irgwalk.h"
 #include "tv_t.h"
 #include "irouts_t.h"
-#include "iredges.h"
+#include "iredges_t.h"
 #include "irdom.h"
 #include "irloop_t.h"
 #include "callgraph.h"

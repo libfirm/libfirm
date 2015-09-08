@@ -27,7 +27,7 @@
 #include "array.h"
 #include "pdeq.h"
 #include "beirg.h"
-#include "iredges.h"
+#include "iredges_t.h"
 #include "irgwalk.h"
 #include "irnode_t.h"
 #include "irgraph_t.h"

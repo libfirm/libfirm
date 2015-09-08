@@ -22,6 +22,7 @@
 #include "irgwalk.h"
 #include "counter.h"
 #include "irhooks.h"
+#include "set.h"
 
 /*
  * just be make some things clear :-), the

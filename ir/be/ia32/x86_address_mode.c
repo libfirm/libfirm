@@ -21,7 +21,6 @@
 #include "irgwalk.h"
 #include "irnode_t.h"
 #include "irprintf.h"
-#include "irtypes.h"
 
 static bitset_t *non_address_mode_nodes;
 

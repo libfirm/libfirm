@@ -25,7 +25,7 @@
 #include "irop.h"
 #include "irverify_t.h"
 #include "irprintf.h"
-#include "iredges.h"
+#include "iredges_t.h"
 #include "xmalloc.h"
 
 #include "bearch.h"

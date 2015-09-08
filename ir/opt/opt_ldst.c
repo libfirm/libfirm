@@ -23,6 +23,7 @@
 #include "iropt.h"
 #include "iroptimize.h"
 #include "irnodehashmap.h"
+#include "irmemory.h"
 #include "raw_bitset.h"
 #include "debug.h"
 #include "panic.h"

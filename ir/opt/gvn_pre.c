@@ -13,7 +13,7 @@
 #include "debug.h"
 #include "ircons.h"
 #include "irdom.h"
-#include "iredges.h"
+#include "iredges_t.h"
 #include "irflag.h"
 #include "irgmod.h"
 #include "irgopt.h"

@@ -23,6 +23,7 @@
 #include "bemodule.h"
 #include "entity_t.h"
 #include "execfreq.h"
+#include "iredges_t.h"
 #include "irnode.h"
 #include "irprog.h"
 #include "irtools.h"

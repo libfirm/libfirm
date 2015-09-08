@@ -17,6 +17,7 @@
 #include "irgwalk.h"
 #include "irdump.h"
 #include "irdom_t.h"
+#include "iredges_t.h"
 #include "irprintf.h"
 #include "irouts.h"
 #include "irflag_t.h"

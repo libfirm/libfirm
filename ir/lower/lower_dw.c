@@ -22,6 +22,7 @@
 #include "firmstat.h"
 #include "ircons_t.h"
 #include "irdump.h"
+#include "iredges_t.h"
 #include "irflag.h"
 #include "irflag_t.h"
 #include "irgmod.h"

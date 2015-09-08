@@ -16,6 +16,7 @@
 #include "irgwalk.h"
 #include "irhooks.h"
 #include "irnode_t.h"
+#include "iredges_t.h"
 #include "statev_t.h"
 #include "util.h"
 

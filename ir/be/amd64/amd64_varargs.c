@@ -20,6 +20,7 @@
 #include "gen_amd64_regalloc_if.h"
 #include "ident.h"
 #include "ircons.h"
+#include "iredges_t.h"
 #include "irgmod.h"
 #include "irgraph.h"
 #include "panic.h"

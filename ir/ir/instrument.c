@@ -13,7 +13,7 @@
 
 #include "instrument.h"
 #include "ircons.h"
-#include "iredges.h"
+#include "iredges_t.h"
 #include "irgraph_t.h"
 
 void instrument_initcall(ir_graph *irg, ir_entity *ent)

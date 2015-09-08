@@ -8,14 +8,13 @@
  * @brief   analyze graph to provide value range information
  * @author  Jonas Fietz
  */
-#include "irtypes.h"
 #include "vrp.h"
 #include "iroptimize.h"
 #include "irouts_t.h"
 #include "irgraph_t.h"
 #include "irgopt.h"
 #include "irgwalk.h"
-#include "iredges.h"
+#include "iredges_t.h"
 #include "tv.h"
 #include "irop.h"
 #include "irprintf.h"

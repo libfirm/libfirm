@@ -16,6 +16,7 @@
 #include "firm_types.h"
 #include "heights.h"
 #include "ircons.h"
+#include "iredges_t.h"
 #include "irgmod.h"
 #include "irgwalk.h"
 #include "irmemory.h"

@@ -16,7 +16,7 @@
 #define DISABLE_STATEV
 
 #include <assert.h>
-#include "iredges.h"
+#include "iredges_t.h"
 #include "irgraph_t.h"
 #include "irprintf.h"
 #include "irdom_t.h"

@@ -13,7 +13,7 @@
 
 #include "debug.h"
 
-#include "iredges.h"
+#include "iredges_t.h"
 #include "bechordal.h"
 #include "bechordal_t.h"
 #include "beirg.h"

@@ -42,7 +42,7 @@
 #include "irnode_t.h"
 #include "irloop.h"
 #include "irgwalk.h"
-#include "iredges.h"
+#include "iredges_t.h"
 #include "irouts.h"
 #include "util.h"
 #include "irhooks.h"

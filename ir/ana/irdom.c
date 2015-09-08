@@ -21,7 +21,7 @@
 #include "irnode_t.h"
 #include "ircons_t.h"
 #include "array.h"
-#include "iredges.h"
+#include "iredges_t.h"
 
 static inline ir_dom_info *get_dom_info(ir_node *block)
 {

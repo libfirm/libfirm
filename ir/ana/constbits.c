@@ -8,11 +8,13 @@
  * @brief   Data-flow driven minimal fixpoint value range analysis
  * @author  Christoph Mallon
  */
+#include "constbits.h"
+
 #include <assert.h>
 
 #include "adt/pdeq.h"
-#include "constbits.h"
 #include "debug.h"
+#include "iredges_t.h"
 #include "irgwalk.h"
 #include "irnode_t.h"
 #include "irnodemap.h"

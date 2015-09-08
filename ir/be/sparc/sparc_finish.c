@@ -29,6 +29,7 @@
 #include "irprog.h"
 #include "irgmod.h"
 #include "ircons.h"
+#include "iredges_t.h"
 #include "irgwalk.h"
 #include "heights.h"
 #include "beirg.h"

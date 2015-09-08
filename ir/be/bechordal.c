@@ -18,6 +18,7 @@
 #include "bemodule.h"
 #include "debug.h"
 #include "irdump.h"
+#include "iredges_t.h"
 
 #define USE_HUNGARIAN 0
 

@@ -11,13 +11,15 @@
 #ifndef FIRM_IR_IRNODE_T_H
 #define FIRM_IR_IRNODE_T_H
 
-#include "irtypes.h"
+#include "array.h"
+#include "bitset.h"
+#include "irdom_t.h"
+#include "iredgekinds.h"
+#include "irflag_t.h"
+#include "irgraph.h"
 #include "irnode.h"
 #include "irop_t.h"
-#include "irgraph_t.h"
-#include "irflag_t.h"
-#include "array.h"
-#include "iredges_t.h"
+#include "list.h"
 
 /* This section MUST come first, so the inline functions get used in this header. */
 #define get_irn_arity(node)                   get_irn_arity_(node)
@@ -71,6 +73,259 @@
 #define get_Phi_next(node)                    get_Phi_next_(node)
 
 #define ir_switch_table_get_n_entries(table)  ir_switch_table_get_n_entries_(table)
+
+typedef struct ir_switch_table_entry {
+	ir_tarval *min;
+	ir_tarval *max;
+	unsigned   pn;
+} ir_switch_table_entry;
+
+struct ir_switch_table {
+	size_t                n_entries;
+	ir_switch_table_entry entries[];
+};
+
+/** Attributes for Block nodes. */
+typedef struct block_attr {
+	ir_visited_t block_visited; /**< Visited flag for block walker. */
+	unsigned    is_matured : 1; /**< If set, all inputs are fixed. */
+	unsigned    dynamic_ins: 1; /**< If set in-array is an ARR_F on the heap. */
+	unsigned    marked     : 1; /**< Can be used to temporary mark the block. */
+	ir_node   **graph_arr;      /**< An array to store construction values. */
+	ir_dom_info dom;            /**< Information about dominators. */
+	ir_dom_info pdom;           /**< Information about post-dominators. */
+	bitset_t   *backedge;       /**< Bit n set to true if pred n is backedge.*/
+	ir_entity  *entity;         /**< entity representing this block */
+	ir_node    *phis;           /**< The list of Phi nodes in this block. */
+	double      execfreq;       /**< block execution frequency */
+} block_attr;
+
+/** Attributes for Cond nodes. */
+typedef struct cond_attr {
+	cond_jmp_predicate jmp_pred; /**< Jump predication. */
+} cond_attr;
+
+/** Attributes for Const nodes. */
+typedef struct const_attr {
+	ir_tarval *tarval;  /**< The value. */
+} const_attr;
+
+/** Attributes for Address and Offset nodes. */
+typedef struct entconst_attr {
+	ir_entity *entity;
+} entconst_attr;
+
+/** Attributes for TypeConst nodes. */
+typedef struct typeconst_attr {
+	ir_type *type;
+} typeconst_attr;
+
+/** Attributes for Member nodes. */
+typedef struct member_attr {
+	ir_entity *entity; /**< entity to select */
+} member_attr;
+
+/** Attributes for Sel nodes. */
+typedef struct sel_attr {
+	ir_type *type;
+} sel_attr;
+
+/** Attributes for nodes with exceptions (fragile flag). */
+typedef struct except_attr {
+	bool      pinned           : 1;
+	/** Whether a fragile op produces X_except and X_regular values. */
+	unsigned  throws_exception : 1;
+} except_attr;
+
+/** Attributes for Call nodes. */
+typedef struct call_attr {
+	except_attr exc;          /**< Exception attribute. MUST be first. */
+	ir_type     *type;        /**< type of called procedure */
+	ir_entity   **callee_arr; /**< result of callee analysis */
+} call_attr;
+
+/** Attributes for Builtin nodes. */
+typedef struct builtin_attr {
+	except_attr     exc;   /**< Exception attribute. MUST be first. */
+	ir_builtin_kind kind;  /**< kind of the called builtin procedure */
+	ir_type         *type; /**< type of called builtin procedure */
+} builtin_attr;
+
+/** Attributes for Alloc nodes. */
+typedef struct alloc_attr {
+	unsigned alignment;
+} alloc_attr;
+
+/** Attributes for Load nodes. */
+typedef struct load_attr {
+	except_attr   exc;           /**< Exception attribute. MUST be first. */
+	ENUMBF(ir_volatility) volatility:1; /**< Volatility of this Load */
+	ENUMBF(ir_align)      unaligned:1;  /**< Address may be unaligend. */
+	ir_mode       *mode;         /**< Mode of this Load operation. */
+	ir_type       *type;         /**< Type of the object loaded. */
+} load_attr;
+
+/** Attributes for Store nodes. */
+typedef struct store_attr {
+	except_attr   exc;   /**< Exception attribute. MUST be first. */
+	ir_type       *type; /**< Type of the object stored. */
+	ENUMBF(ir_volatility) volatility:1;   /**< Volatility of this Store. */
+	ENUMBF(ir_align)      unaligned:1;    /**< Address may be unaligned. */
+} store_attr;
+
+/** Attributes for Phi nodes. */
+typedef struct phi_attr {
+	ir_node *next; /**< Points to the next Phi in the Phi list of a block. */
+	union {
+		bitset_t *backedge; /**< Raw Bitset: pred n is backedge iff n is set. */
+		/** For Phi0. Used to remember the value defined by this Phi node.
+		 * Needed when the Phi is completed to call get_r_internal_value() to
+		 * find the predecessors. If this attribute is set, the Phi node takes
+		 * the role of the obsolete Phi0 node, therefore the name. */
+		int       pos;
+	} u;
+	unsigned loop:1; /**< Set to true if this is a loop PhiM node. */
+} phi_attr;
+
+/** Attributes for Cmp nodes. */
+typedef struct cmp_attr {
+	ir_relation relation; /**< comparison condition. */
+} cmp_attr;
+
+/** Attributes for Confirm nodes. */
+typedef struct confirm_attr {
+	ir_relation relation; /**< relation between value and bound */
+} confirm_attr;
+
+/** Attributes for CopyB nodes. */
+typedef struct copyb_attr {
+	ir_type *type;                      /**< Type of the copied entity. */
+	ENUMBF(ir_volatility) volatility:1; /**< Volatility of this CopyB. */
+} copyb_attr;
+
+/** Attributes for Div nodes. */
+typedef struct div_attr {
+	except_attr exc;          /**< Exception attribute. MUST be first. */
+	ir_mode    *resmode;      /**< Result mode for the division. */
+	unsigned    no_remainder:1; /**< Set, if known that a division can be done
+	                                 without a remainder. */
+} div_attr;
+
+/** Attributes for Mod nodes. */
+typedef struct mod_attr {
+	except_attr exc;     /**< Exception attribute. MUST be first. */
+	ir_mode    *resmode; /**< Result mode for the division. */
+} mod_attr;
+
+/** Attributes for ASM nodes. */
+typedef struct asm_attr {
+	except_attr        exc; /**< Exception attribute. MUST be first. */
+	ident             *text;               /**< The inline assembler text. */
+	ir_asm_constraint *input_constraints;  /**< Input constraints. */
+	ir_asm_constraint *output_constraints; /**< Output constraints. */
+	ident            **clobbers;           /**< List of clobbered registers. */
+} asm_attr;
+
+/** Attributes for Proj nodes. */
+typedef struct proj_attr {
+	unsigned num; /**< number of tuple sub-value which is projected */
+} proj_attr;
+
+/** Attributes for Switch nodes. */
+typedef struct switch_attr {
+	unsigned         n_outs;
+	ir_switch_table *table;
+} switch_attr;
+
+/** Union with all possible node attributes. */
+typedef union ir_attr {
+	block_attr     block;
+	cmp_attr       cmp;
+	cond_attr      cond;
+	const_attr     con;
+	entconst_attr  entc;
+	typeconst_attr typec;
+	sel_attr       sel;
+	member_attr    member;
+	call_attr      call;
+	builtin_attr   builtin;
+	alloc_attr     alloc;
+	load_attr      load;
+	store_attr     store;
+	phi_attr       phi;
+	proj_attr      proj;
+	confirm_attr   confirm;
+	except_attr    except;
+	copyb_attr     copyb;
+	div_attr       div;
+	mod_attr       mod;
+	asm_attr       assem;
+	switch_attr    switcha;
+} ir_attr;
+
+/**
+ * Edge info to put into an irn.
+ */
+typedef struct irn_edge_kind_info_t {
+	struct list_head outs_head;  /**< The list of all outs. */
+	unsigned edges_built : 1;    /**< Set edges where built for this node. */
+	unsigned out_count   : 31;   /**< Number of outs in the list. */
+} irn_edge_info_t;
+
+typedef irn_edge_info_t irn_edges_info_t[EDGE_KIND_LAST+1];
+
+/**
+ * A Def-Use edge.
+ */
+typedef struct ir_def_use_edge {
+	ir_node *use;            /** The use node of that edge. */
+	int     pos;             /** The position of this edge in use's input array. */
+} ir_def_use_edge;
+
+typedef struct ir_def_use_edges {
+	unsigned        n_edges;
+	ir_def_use_edge edges[];
+} ir_def_use_edges;
+
+/**
+ * Data of a function graph node.
+ */
+struct ir_node {
+	firm_kind        kind;     /**< Distinguishes this node from others. */
+	unsigned         node_idx; /**< The node index of this node in its graph. */
+	ir_op           *op;       /**< The Opcode of this node. */
+	ir_mode         *mode;     /**< The Mode of this node. */
+	struct ir_node **in;       /**< The array of predecessors / operands. */
+	ir_graph        *irg;
+	ir_visited_t     visited;  /**< Visited counter for walks of the graph. */
+	void            *link;     /**< To attach additional information to the
+	                                node, e.g. used during optimization to link
+	                                to nodes that shall replace a node. */
+	dbg_info        *dbi;      /**< Information for debug support. */
+	long             node_nr;  /**< Globally unique node number. */
+
+	union {
+		ir_def_use_edges *out;    /**< array of def-use edges. */
+		unsigned          n_outs; /**< number of def-use edges (temporarily used
+		                               during construction of datastructure ) */
+	} o;
+	ir_loop         *loop;         /**< Loop information. */
+	void            *backend_info;
+	irn_edges_info_t edge_info;    /**< Everlasting out edges. */
+
+	/** Attributes of this node. Depends on opcode. Must be last field. */
+	ir_attr attr;
+};
+
+/* forward declaration to avoid circular dependency problems */
+#define get_irg_block_visited(irg) get_irg_block_visited_(irg)
+#define get_irg_visited(irg)       get_irg_visited_(irg)
+#define ir_resources_reserved(irg) ir_resources_reserved_(irg)
+#define is_Id(node)                is_Id_(node)
+static inline ir_visited_t get_irg_visited_(const ir_graph *irg);
+static inline ir_visited_t get_irg_block_visited_(const ir_graph *irg);
+static inline ir_resources_t ir_resources_reserved_(const ir_graph *irg);
+static inline int is_Id_(const ir_node *node);
 
 /**
  * Returns the array with the ins.  The content of the array must not be
@@ -139,10 +394,6 @@ static inline int get_irn_arity_(const ir_node *node)
 {
 	return (int)(ARR_LEN(node->in) - 1);
 }
-
-/* forward decl... */
-#define is_Id(node) is_Id_(node)
-static inline int is_Id_(const ir_node *node);
 
 /**
  * Intern version for libFirm.
@@ -223,7 +474,7 @@ static inline void set_irn_visited_(ir_node *node, ir_visited_t visited)
  */
 static inline void mark_irn_visited_(ir_node *node)
 {
-	node->visited = get_irn_irg(node)->visited;
+	node->visited = get_irg_visited(get_irn_irg(node));
 }
 
 /**
@@ -233,7 +484,7 @@ static inline void mark_irn_visited_(ir_node *node)
 static inline int irn_visited_(const ir_node *node)
 {
 	ir_graph *irg = get_irn_irg(node);
-	return node->visited >= irg->visited;
+	return node->visited >= get_irg_visited(irg);
 }
 
 static inline int irn_visited_else_mark_(ir_node *node)
@@ -324,12 +575,13 @@ static inline void set_Block_block_visited_(ir_node *node, ir_visited_t visit)
 
 static inline void mark_Block_block_visited_(ir_node *node)
 {
-	node->attr.block.block_visited = get_irg_block_visited(node->irg);
+	node->attr.block.block_visited = get_irg_block_visited(get_irn_irg(node));
 }
 
 static inline int Block_block_visited_(const ir_node *node)
 {
-	return node->attr.block.block_visited >= get_irg_block_visited(node->irg);
+	ir_graph const *const irg = get_irn_irg(node);
+	return node->attr.block.block_visited >= get_irg_block_visited(irg);
 }
 
 static inline long get_Const_long(ir_node const *const node)
@@ -526,5 +778,8 @@ static inline ir_node const *get_block_const(ir_node const *const irn)
 		for (ir_node const *const pred##__irn = (irn); pred##__b; pred##__b = false) \
 			for (int idx = get_irn_arity(pred##__irn); pred##__b && idx-- != 0;) \
 				for (ir_node *const pred = (pred##__b = false, get_irn_n(pred##__irn, idx)); !pred##__b; pred##__b = true)
+
+/* pull in real inline definitions */
+#include "irgraph_t.h"
 
 #endif

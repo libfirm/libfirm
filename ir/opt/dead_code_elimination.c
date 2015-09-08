@@ -25,6 +25,7 @@
 #include "irouts.h"
 #include "iropt_t.h"
 #include "pmap.h"
+#include "vrp.h"
 
 /**
  * Reroute the inputs of a node from nodes in the old graph to copied nodes in

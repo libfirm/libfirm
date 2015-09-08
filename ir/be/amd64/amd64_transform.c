@@ -11,7 +11,7 @@
 #include "panic.h"
 #include "heights.h"
 #include "ircons.h"
-#include "iredges.h"
+#include "iredges_t.h"
 #include "irgmod.h"
 #include "irgraph_t.h"
 #include "irmode_t.h"

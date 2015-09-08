@@ -10,7 +10,7 @@
  */
 #include "irgmod.h"
 #include "ircons.h"
-#include "iredges.h"
+#include "iredges_t.h"
 
 #include "bediagnostic.h"
 #include "benode.h"

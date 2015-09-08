@@ -14,7 +14,7 @@
 #include "ircons.h"
 #include "irtools.h"
 #include "firm_types.h"
-#include "iredges.h"
+#include "iredges_t.h"
 #include "tv.h"
 #include "irgmod.h"
 #include "irgwalk.h"

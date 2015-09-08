@@ -13,7 +13,7 @@
 #include "ircons.h"
 #include "irgmod.h"
 #include "irgwalk.h"
-#include "iredges.h"
+#include "iredges_t.h"
 #include "pdeq.h"
 #include "panic.h"
 #include "firmstat_t.h"

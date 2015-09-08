@@ -13,6 +13,7 @@
 #include "type_t.h"
 #include "entity_t.h"
 #include "irprog_t.h"
+#include "irnode_t.h"
 #include "irgwalk.h"
 #include "panic.h"
 #include "debug.h"

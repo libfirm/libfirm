@@ -20,7 +20,7 @@
 #include "execfreq_t.h"
 #include "heights.h"
 #include "ircons_t.h"
-#include "iredges.h"
+#include "iredges_t.h"
 #include "irgmod.h"
 #include "irgraph_t.h"
 #include "irgwalk.h"
@@ -34,6 +34,7 @@
 #include "panic.h"
 #include "pdeq.h"
 #include "util.h"
+#include "vrp.h"
 
 typedef struct be_transform_env_t {
 	pdeq *worklist;  /**< worklist of nodes that still need to be transformed */

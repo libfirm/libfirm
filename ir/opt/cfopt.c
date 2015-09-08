@@ -17,6 +17,7 @@
 #include <stdbool.h>
 
 #include "debug.h"
+#include "iredges_t.h"
 #include "irgmod.h"
 #include "irgraph_t.h"
 #include "irgwalk.h"

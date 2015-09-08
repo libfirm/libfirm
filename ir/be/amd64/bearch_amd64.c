@@ -25,6 +25,7 @@
 #include "gen_amd64_regalloc_if.h"
 #include "irarch_t.h"
 #include "ircons.h"
+#include "iredges_t.h"
 #include "irgmod.h"
 #include "irgopt.h"
 #include "irgwalk.h"

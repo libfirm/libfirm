@@ -14,7 +14,7 @@
 #include "dbginfo_t.h"
 #include "panic.h"
 #include "ircons_t.h"
-#include "iredges.h"
+#include "iredges_t.h"
 #include "irgmod.h"
 #include "irnodeset.h"
 #include "irgwalk.h"

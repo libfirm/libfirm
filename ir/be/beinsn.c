@@ -11,7 +11,7 @@
 #include "irgraph_t.h"
 #include "irmode_t.h"
 #include "irnode_t.h"
-#include "iredges.h"
+#include "iredges_t.h"
 
 #include "bearch.h"
 #include "bechordal_t.h"

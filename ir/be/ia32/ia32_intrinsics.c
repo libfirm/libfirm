@@ -9,7 +9,7 @@
  *              functions to code or library calls.
  * @author      Michael Beck
  */
-#include "iredges.h"
+#include "iredges_t.h"
 #include "irgmod.h"
 #include "irop.h"
 #include "irnode_t.h"

@@ -22,7 +22,7 @@
 #include "obst.h"
 #include "irdump.h"
 #include "irflag_t.h"
-#include "iredges.h"
+#include "iredges_t.h"
 #include "type_t.h"
 
 typedef struct parallelize_info

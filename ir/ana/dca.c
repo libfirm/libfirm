@@ -23,7 +23,6 @@
 #include "debug.h"
 #include "irnode_t.h"
 #include "tv.h"
-#include "irtypes.h"
 #include "pdeq.h"
 #include "irgwalk.h"
 #include "dca.h"

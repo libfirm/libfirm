@@ -18,7 +18,7 @@
 #include "irflag.h"
 #include "irgwalk.h"
 #include "irtools.h"
-#include "iredges.h"
+#include "iredges_t.h"
 #include "iropt_t.h"
 #include "irgmod.h"
 #include "tv.h"

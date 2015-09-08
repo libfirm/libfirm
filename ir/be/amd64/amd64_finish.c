@@ -19,6 +19,7 @@
 #include "panic.h"
 #include "gen_amd64_new_nodes.h"
 #include "gen_amd64_regalloc_if.h"
+#include "iredges_t.h"
 #include "irgwalk.h"
 #include "util.h"
 #include "irgmod.h"

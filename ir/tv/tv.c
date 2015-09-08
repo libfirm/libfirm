@@ -28,6 +28,7 @@
 #include "tv_t.h"
 #include "set.h"
 #include "entity_t.h"
+#include "hashptr.h"
 #include "irmode_t.h"
 #include "irprintf.h"
 #include "irnode.h"

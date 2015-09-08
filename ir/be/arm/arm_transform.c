@@ -13,7 +13,7 @@
 #include "irgraph_t.h"
 #include "irmode_t.h"
 #include "irgmod.h"
-#include "iredges.h"
+#include "iredges_t.h"
 #include "ircons.h"
 #include "dbginfo.h"
 #include "iropt_t.h"

@@ -13,7 +13,7 @@
 #include <stdint.h>
 
 #include "compiler.h"
-#include "irtypes.h"
+#include "irnode_t.h"
 #include "../ia32/x86_cc.h"
 #include "../ia32/x86_asm.h"
 

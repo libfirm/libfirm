@@ -17,6 +17,7 @@
 #include "irgmod.h"
 #include "irgopt.h"
 #include "iropt_dbg.h"
+#include "iredges_t.h"
 #include "irflag_t.h"
 #include "irgwalk.h"
 #include "irouts.h"

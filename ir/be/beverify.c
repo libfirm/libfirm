@@ -19,7 +19,7 @@
 #include "irgwalk.h"
 #include "irprintf.h"
 #include "irdump_t.h"
-#include "iredges.h"
+#include "iredges_t.h"
 
 #include "beverify.h"
 #include "belive.h"

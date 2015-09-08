@@ -165,6 +165,10 @@ struct ir_graph {
 #endif
 };
 
+/* Note: keeping this include below the structs avoids circular include
+ * problems. */
+#include "irnode_t.h"
+
 /**
  * Set the number of locals for a given graph.
  *

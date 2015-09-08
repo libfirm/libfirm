@@ -15,7 +15,7 @@
 #include "irgraph_t.h"
 #include "type_t.h"
 #include "irouts_t.h"
-#include "iredges.h"
+#include "iredges_t.h"
 
 /*
  * Optimize the frame type of an irg by removing

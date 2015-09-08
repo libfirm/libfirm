@@ -21,7 +21,6 @@
 #include "irgwalk.h"
 #include "irnode.h"
 #include "irnode_t.h"
-#include "iredges.h"
 #include "iredges_t.h"
 #include "irtools.h"
 #include "tv.h"

@@ -23,7 +23,7 @@
 #include "hashptr.h"
 #include "ircons.h"
 #include "irdom.h"
-#include "iredges.h"
+#include "iredges_t.h"
 #include "irflag_t.h"
 #include "irgmod.h"
 #include "irgwalk.h"

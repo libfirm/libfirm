@@ -15,7 +15,7 @@
 
 #include "be_types.h"
 #include "firm_types.h"
-#include "irtypes.h"
+#include "irnode_t.h"
 
 typedef struct sparc_attr_t  sparc_attr_t;
 

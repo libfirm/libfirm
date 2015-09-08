@@ -14,6 +14,7 @@
 #include "gen_arm_new_nodes.h"
 #include "gen_arm_regalloc_if.h"
 #include "ircons_t.h"
+#include "iredges_t.h"
 #include "lower_dw.h"
 #include "panic.h"
 #include "util.h"

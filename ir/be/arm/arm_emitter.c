@@ -23,6 +23,7 @@
 #include "debug.h"
 #include "gen_arm_emitter.h"
 #include "gen_arm_regalloc_if.h"
+#include "iredges_t.h"
 #include "irgwalk.h"
 #include "panic.h"
 #include "pmap.h"

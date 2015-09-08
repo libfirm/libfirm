@@ -14,7 +14,6 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-#include "irtypes.h"
 #include "x86_imm.h"
 
 /**

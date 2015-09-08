@@ -20,7 +20,7 @@
 #include "irbackedge_t.h"
 #include "ircons_t.h"
 #include "irdom.h"
-#include "iredges.h"
+#include "iredges_t.h"
 #include "irgmod.h"
 #include "irgopt.h"
 #include "irgwalk.h"
