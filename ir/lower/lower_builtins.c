@@ -61,8 +61,50 @@ static const char *get_gcc_machmode(ir_type *type)
 	}
 }
 
+/*
+ * The 64-bit version of libgcc does not contain some builtin
+ * functions for 32-bit values (__<builtin>si2) anymore.
+ */
+static void widen_builtin(ir_node *node)
+{
+	ir_type *mtp  = get_Builtin_type(node);
+	ir_type *arg1 = get_method_param_type(mtp, 0);
+
+	// Nothing to do, if argument size is at least machine size.
+	if (8 * get_type_size_bytes(arg1) >= be_get_machine_size()) {
+		return;
+	}
+
+	// Only touch builtins with no 32-bit version.
+	ir_builtin_kind kind = get_Builtin_kind(node);
+	if (kind != ir_bk_clz    &&
+	    kind != ir_bk_ctz    &&
+	    kind != ir_bk_ffs    &&
+	    kind != ir_bk_parity &&
+	    kind != ir_bk_popcount) {
+		return;
+	}
+
+	ir_mode  *target_mode = get_reference_mode_unsigned_eq(mode_P);
+	dbg_info *dbgi        = get_irn_dbg_info(node);
+	ir_node  *block       = get_nodes_block(node);
+	ir_node  *op          = get_irn_n(node, n_Builtin_max + 1);
+
+	ir_node *conv = new_rd_Conv(dbgi, block, op, target_mode);
+	set_irn_n(node, n_Builtin_max + 1, conv);
+
+	ir_type *new_arg1   = get_type_for_mode(target_mode);
+	ir_type *new_result = get_method_res_type(mtp, 0);
+	ir_type *new_type   = new_type_method(1, 1);
+	set_method_param_type(new_type, 0, new_arg1);
+	set_method_res_type(new_type, 0, new_result);
+	set_Builtin_type(node, new_type);
+}
+
 static void replace_with_call(ir_node *node)
 {
+	widen_builtin(node);
+
 	ir_type        *const mtp      = get_Builtin_type(node);
 	ir_builtin_kind const kind     = get_Builtin_kind(node);
 	char     const *const name     = get_builtin_name(kind);
