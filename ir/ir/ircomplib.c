@@ -9,10 +9,9 @@
  * @date    2011-09-22
  * @author  Manuel Mohr
  */
-#include "irprog.h"
 #include "iroptimize.h"
+#include "irprog_t.h"
 #include "typerep.h"
-#include "irtypes.h"
 
 #include <assert.h>
 

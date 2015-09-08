@@ -13,12 +13,12 @@
 #define FIRM_IR_IRPROG_T_H
 
 #include "irprog.h"
-#include "irtypes.h"
-#include "irmemory.h"
-
-#include "callgraph.h"
 
 #include "array.h"
+#include "callgraph.h"
+#include "irmemory.h"
+#include "pmap.h"
+#include "typerep.h"
 
 /* Inline functions. */
 #define get_irp_n_irgs()                      get_irp_n_irgs_()
@@ -34,7 +34,50 @@
 #define irp_free_resources(irp, resources)    irp_free_resources_(irp, resources)
 #define irp_resources_reserved(irp)           irp_resources_reserved_(irp)
 
-/* inline functions */
+/**
+ * Data structure that holds central information about a program / module /
+ * translation unit.
+ */
+struct ir_prog {
+	ident     *name;                /**< A file name or the like. */
+	ir_graph  *main_irg;            /**< The entry point to the compiled program
+	                                     or NULL if no point exists. */
+	ir_graph **graphs;              /**< A list of all graphs in the ir. */
+	/** This graph holds nodes for global entity initialization expressions.
+	 * It is not a function. */
+	ir_graph  *const_code_irg;
+	ir_entity *unknown_entity;      /**< unique 'unknown'-entity */
+	ir_type   *segment_types[IR_SEGMENT_LAST+1];
+	ir_type  **types;               /**< A list of all types in the ir. */
+	ir_type   *code_type;           /**< unique 'code'-type */
+	ir_type   *unknown_type;        /**< unique 'unknown'-type */
+	ir_type   *dummy_owner;         /**< owner for internal entities */
+	ir_type   *byte_type;           /**< type for a 'byte' */
+	ident    **global_asms;         /**< An array of global ASM insertions. */
+
+	/** Validity of callee information. Lowest value for all irgs. */
+	irg_callee_info_state          callee_info_state;
+	/** State of transitive closure of inheritance relations. */
+	inh_transitive_closure_state   inh_trans_closure_state;
+	irp_callgraph_state            callgraph_state; /**< State of callgraph. */
+	/** Outermost callgraph loop */
+	ir_loop                       *outermost_cg_loop;
+	/** State of loop nesting depth information. */
+	loop_nesting_depth_state       lnd_state;
+	ir_entity_usage_computed_state globals_entity_usage_state;
+
+	ir_label_t last_label_nr;        /**< Highest number for unique labels. */
+	size_t     max_irg_idx;          /**< highest unused irg index */
+	long       max_node_nr;          /**< Highest number unique node numbers. */
+	unsigned   dump_nr;              /**< number of program info dumps */
+	/** Maps ident* to ir_entity* of the compilerlib */
+	pmap      *compilerlib_entities;
+#ifndef NDEBUG
+	/** Bitset for tracking used global resources. */
+	irp_resources_t reserved_resources;
+#endif
+};
+
 static inline ir_type *get_segment_type_(ir_segment_t segment)
 {
 	assert(segment <= IR_SEGMENT_LAST);

@@ -30,10 +30,6 @@
 #include "obst.h"
 #include "vrp.h"
 
-struct ir_nodemap {
-	void **data;  /**< maps node indices to void* */
-};
-
 /* note: we use "long" here because that is the type used for Proj-Numbers */
 typedef struct ir_switch_table_entry {
 	ir_tarval *min;
@@ -286,59 +282,6 @@ struct ir_node {
 	/* ------- Opcode depending fields -------- */
 	ir_attr attr;            /**< The set of attributes of this node. Depends on opcode.
 	                              Must be last field of struct ir_node. */
-};
-
-/**
- * Data structure that holds central information about a program
- * or a module.
- * One irp is created by libFirm on construction, so irp should never be NULL.
- *
- * - main_irg:  The ir graph that is the entry point to the program.
- *              (Anything not reachable from here may be optimized away
- *              if this irp represents a whole program.
- * - graphs:    List of all ir graphs in the program or module.
- * - types:     A list containing all types known to the translated program.
- *              Some types can have several entries in this list (as a result of
- *              using exchange_types()).
- */
-struct ir_prog {
-	ident     *name;                /**< A file name or the like. */
-	ir_graph  *main_irg;            /**< The entry point to the compiled program
-	                                     or NULL if no point exists. */
-	ir_graph **graphs;              /**< A list of all graphs in the ir. */
-	ir_graph  *const_code_irg;      /**< This ir graph gives the proper environment
-	                                     to allocate nodes the represent values
-	                                     of constant entities. It is not meant as
-	                                     a procedure.  */
-	ir_entity *unknown_entity;      /**< unique 'unknown'-entity */
-	ir_type   *segment_types[IR_SEGMENT_LAST+1];
-	ir_type  **types;               /**< A list of all types in the ir. */
-	ir_type   *code_type;           /**< unique 'code'-type */
-	ir_type   *unknown_type;        /**< unique 'unknown'-type */
-	ir_type   *dummy_owner;         /**< owner for internal entities */
-	ir_type   *byte_type;           /**< type for a 'byte' */
-	ident    **global_asms;         /**< An array of global ASM insertions. */
-
-	/* -- states of and access to generated information -- */
-	irg_callee_info_state callee_info_state; /**< Validity of callee information.
-	                                              Contains the lowest value or all irgs.  */
-	inh_transitive_closure_state inh_trans_closure_state;  /**< State of transitive closure
-	                                                            of inheritance relations. */
-
-	irp_callgraph_state callgraph_state; /**< The state of the callgraph. */
-	ir_loop *outermost_cg_loop;          /**< For callgraph analysis: entry point
-	                                              to looptree over callgraph. */
-	loop_nesting_depth_state lnd_state;  /**< The state of loop nesting depth information. */
-	ir_entity_usage_computed_state globals_entity_usage_state;
-
-	ir_label_t last_label_nr;            /**< The highest label number for generating unique labels. */
-	size_t max_irg_idx;                  /**< highest unused irg index */
-	long max_node_nr;                    /**< to generate unique numbers for nodes. */
-	unsigned dump_nr;                    /**< number of program info dumps */
-	pmap *compilerlib_entities;          /**< maps ident* to ir_entity* of the compilerlib */
-#ifndef NDEBUG
-	irp_resources_t reserved_resources;  /**< Bitset for tracking used global resources. */
-#endif
 };
 
 #endif

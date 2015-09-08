@@ -33,6 +33,7 @@
 #include "irgraph_t.h"
 #include "entity_t.h"
 #include "irprintf.h"
+#include "irprog_t.h"
 #include "irdump.h"
 #include "iredges_t.h"
 #include "debug.h"

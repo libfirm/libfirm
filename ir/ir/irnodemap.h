@@ -14,11 +14,11 @@
 #ifndef FIRM_IRNODEMAP_H
 #define FIRM_IRNODEMAP_H
 
+#include "irnodemap_t.h"
 #include "firm_types.h"
 #include "array.h"
-#include "irtypes.h"
-
-typedef struct ir_nodemap ir_nodemap;
+#include "irnode_t.h"
+#include "irgraph_t.h"
 
 /**
  * Allocate and initialize a new nodemap object

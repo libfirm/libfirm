@@ -17,6 +17,7 @@
 #include "irmode_t.h"
 #include "irnode_t.h"
 #include "iropt_t.h"
+#include "irprog_t.h"
 #include "tv_t.h"
 #include "util.h"
 
