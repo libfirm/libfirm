@@ -121,9 +121,7 @@ static ir_type *new_type(tp_op const *type_op, ir_mode *mode)
 	res->align      = 0;
 	res->visit      = 0;
 	res->link       = NULL;
-#ifdef DEBUG_libfirm
 	res->nr         = get_irp_new_node_nr();
-#endif /* defined DEBUG_libfirm */
 
 	add_irp_type(res);   /* Remember the new type global. */
 
@@ -212,11 +210,7 @@ void set_type_mode(ir_type *tp, ir_mode *mode)
 long get_type_nr(const ir_type *tp)
 {
 	assert(is_type(tp));
-#ifdef DEBUG_libfirm
 	return tp->nr;
-#else
-	return (long)PTR_TO_INT(tp);
-#endif
 }
 
 unsigned (get_type_size_bytes)(const ir_type *tp)

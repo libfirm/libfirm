@@ -146,10 +146,7 @@ struct ir_type {
 	type_dbg_info *dbi;      /**< A pointer to information for debug support. */
 	ir_type *higher_type;    /**< link to highlevel type in case of lowered
 	                              types */
-#ifdef DEBUG_libfirm
-	long nr;                 /**< An unique node number for each node to make
-	                              output readable. */
-#endif
+	long nr;                 /**< An unique number for each type. */
 	tp_attr attr;            /**< Type kind specific fields. This must be the
 	                              last entry in this struct!  Varying size! */
 };
