@@ -20,6 +20,20 @@
 #include "irnodemap.h"
 #include "iropt.h"
 
+#ifndef VERIFY_CONSTBITS
+#	ifdef DEBUG_libfirm
+#		define VERIFY_CONSTBITS 1
+#	else
+#		define VERIFY_CONSTBITS 0
+#	endif
+#endif
+
+#if VERIFY_CONSTBITS
+#include "irdump.h"
+#include "irprintf.h"
+#include "panic.h"
+#endif
+
 /* TODO:
  * - Implement cleared/set bit calculation for Div, Mod
  * - Implement min/max calculation for And, Eor, Or, Not, Conv, Shl, Shr, Shrs, Mux
@@ -826,6 +840,33 @@ static void calc_bitinfo_walker(ir_node *const n, void *const env)
 		get_bitinfo_recursive(n);
 }
 
+#if VERIFY_CONSTBITS
+static void verify_constbits_walker(ir_node *const n, void *const env)
+{
+	bool *const failed = (bool*)env;
+
+	bitinfo *const bi = get_bitinfo_direct(n);
+	if (bi) {
+		bitinfo const old = *bi;
+		if (transfer(n)) {
+			ir_fprintf(stderr, "---> no fixpoint for %+F\n", n);
+			*bi     = old;
+			*failed = true;
+		}
+	}
+}
+
+static void verify_constbits(ir_graph *const irg)
+{
+	bool failed = false;
+	irg_walk_graph(irg, NULL, verify_constbits_walker, &failed);
+	if (failed) {
+		dump_ir_graph(irg, "verify-constbits");
+		panic("verify constbits failed");
+	}
+}
+#endif
+
 void constbits_analyze(ir_graph *const irg)
 {
 	FIRM_DBG_REGISTER(dbg, "firm.ana.fp-vrp");
@@ -838,6 +879,10 @@ void constbits_analyze(ir_graph *const irg)
 	get_bitinfo_func = &get_bitinfo_recursive;
 	irg_walk_graph(irg, NULL, calc_bitinfo_walker, NULL);
 	get_bitinfo_func = &get_bitinfo_direct;
+
+#if VERIFY_CONSTBITS
+	verify_constbits(irg);
+#endif
 }
 
 void constbits_clear(ir_graph *const irg)
