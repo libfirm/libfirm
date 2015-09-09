@@ -46,9 +46,7 @@ static ir_entity *intern_new_entity(ir_type *owner, ir_entity_kind kind,
 	res->aligned     = align_is_aligned;
 	res->usage       = ir_usage_unknown;
 	res->visibility  = ir_visibility_external;
-#ifdef DEBUG_libfirm
 	res->nr          = get_irp_new_node_nr();
-#endif
 
 	/* Remember entity in its owner. */
 	add_compound_member(owner, res);
@@ -166,9 +164,7 @@ static ir_entity *deep_entity_copy(ir_entity *old)
 	newe->overwrites    = NULL;
 	newe->overwrittenby = NULL;
 
-#ifdef DEBUG_libfirm
 	newe->nr = get_irp_new_node_nr();
-#endif
 	hook_new_entity(newe);
 	return newe;
 }
@@ -218,11 +214,7 @@ void free_entity(ir_entity *ent)
 long get_entity_nr(const ir_entity *ent)
 {
 	assert(ent->kind == k_entity);
-#ifdef DEBUG_libfirm
 	return ent->nr;
-#else
-	return (long)PTR_TO_INT(ent);
-#endif
 }
 
 const char *(get_entity_name)(const ir_entity *ent)

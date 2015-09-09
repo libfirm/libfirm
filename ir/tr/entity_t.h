@@ -185,11 +185,7 @@ struct ir_entity {
 	ir_entity **overwrites;  /**< A list of entities this entity overwrites. */
 	ir_entity **overwrittenby; /**< A list of entities that overwrite this
 	                                entity. */
-
-#ifdef DEBUG_libfirm
-	long nr;             /**< A unique node number for each node to make output
-	                          readable. */
-#endif
+	long nr;                 /**< A unique number for each entity. */
 
 	union {
 		/** attributes for normal entities */
