@@ -10,7 +10,7 @@
  * @date        19.02.2007
  */
 #include "set.h"
-#include "irnode.h"
+#include "irnode_t.h"
 #include "util.h"
 #include "irloop_t.h"
 #include "debug.h"

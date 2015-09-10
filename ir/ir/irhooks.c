@@ -8,9 +8,9 @@
  * @brief    Generic hooks for various libFirm functions.
  * @author   Michael Beck
  */
-#include <assert.h>
-
 #include "irhooks.h"
+
+#include <assert.h>
 
 hook_entry_t *hooks[hook_last];
 

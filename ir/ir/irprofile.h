@@ -16,7 +16,6 @@
 #include <stdint.h>
 
 #include "firm_types.h"
-#include "irnode.h"
 
 /**
  * Instruments all irgs in the program with profile code.

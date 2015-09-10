@@ -19,7 +19,6 @@
 #include "irgmod.h"
 #include "irgopt.h"
 #include "irgwalk.h"
-#include "irnode.h"
 #include "irnode_t.h"
 #include "iredges_t.h"
 #include "irtools.h"

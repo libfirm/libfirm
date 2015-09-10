@@ -25,7 +25,7 @@
 #include "irgopt.h"
 #include "irgwalk.h"
 #include "irloop_t.h"
-#include "irnode.h"
+#include "irnode_t.h"
 #include "irnodemap.h"
 #include "iroptimize.h"
 #include "irouts.h"

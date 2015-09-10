@@ -13,7 +13,7 @@
 #include "irdom_t.h"
 #include "irgraph_t.h"
 #include "irgwalk.h"
-#include "irnode.h"
+#include "irnode_t.h"
 #include "pmap.h"
 #include "obst.h"
 #include "xmalloc.h"

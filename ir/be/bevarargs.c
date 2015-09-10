@@ -15,7 +15,7 @@
 #include "bitfiddle.h"
 #include "ircons.h"
 #include "irgmod.h"
-#include "irnode.h"
+#include "irnode_t.h"
 #include "util.h"
 
 void be_default_lower_va_arg(ir_node *node)

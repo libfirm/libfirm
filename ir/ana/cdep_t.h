@@ -12,7 +12,7 @@
 #define FIRM_ANA_CDEP_T_H
 
 #include "cdep.h"
-#include "irnode.h"
+#include "irnode_t.h"
 
 /**
  * An entry in the control dependence list.

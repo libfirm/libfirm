@@ -9,7 +9,7 @@
  * @author      Matthias Braun, Christian Wuerdig
  */
 #include "debug.h"
-#include "irnode.h"
+#include "irnode_t.h"
 #include "irprog_t.h"
 #include "ircons.h"
 #include "irtools.h"

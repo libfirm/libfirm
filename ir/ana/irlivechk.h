@@ -17,8 +17,8 @@
 #ifndef FIRM_ANA_IRLIVECHK_H
 #define FIRM_ANA_IRLIVECHK_H
 
-#include "irnode.h"
 #include <stdbool.h>
+#include "irnode_t.h"
 
 typedef enum {
 	lv_chk_state_in  = 1u << 0,

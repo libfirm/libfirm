@@ -15,7 +15,7 @@
 #include "set.h"
 #include "array.h"
 
-#include "irnode.h"
+#include "irnode_t.h"
 #include "irgwalk.h"
 #include "irprintf.h"
 #include "irdump_t.h"

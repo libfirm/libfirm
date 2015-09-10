@@ -13,7 +13,7 @@
 #ifndef _FIRM_IRNODEHASHMAP_H_
 #define _FIRM_IRNODEHASHMAP_H_
 
-#include "irnode.h"
+#include "firm_types.h"
 
 typedef struct ir_nodehashmap_entry_t {
 	ir_node *node;

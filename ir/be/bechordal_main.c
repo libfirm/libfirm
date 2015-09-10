@@ -27,7 +27,7 @@
 #include "irdump.h"
 #include "irdom.h"
 #include "ircons.h"
-#include "irnode.h"
+#include "irnode_t.h"
 #include "ircons.h"
 #include "irtools.h"
 #include "execfreq.h"

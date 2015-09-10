@@ -11,8 +11,8 @@
 #ifndef FIRM_IR_IRHOOKS_H
 #define FIRM_IR_IRHOOKS_H
 
-#include "irop.h"
-#include "irnode.h"
+#include <stdio.h>
+#include "firm_types.h"
 
 /**
  * options for the hook_merge_nodes hook

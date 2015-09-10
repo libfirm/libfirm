@@ -24,7 +24,7 @@
 #include "entity_t.h"
 #include "execfreq.h"
 #include "iredges_t.h"
-#include "irnode.h"
+#include "irnode_t.h"
 #include "irprog.h"
 #include "irtools.h"
 #include "lc_opts_enum.h"

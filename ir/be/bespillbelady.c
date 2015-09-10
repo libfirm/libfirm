@@ -13,7 +13,7 @@
 
 #include "debug.h"
 #include "obst.h"
-#include "irnode.h"
+#include "irnode_t.h"
 #include "irmode.h"
 #include "irgwalk.h"
 #include "irloop.h"

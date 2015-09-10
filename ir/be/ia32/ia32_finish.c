@@ -9,7 +9,7 @@
  * @author  Christian Wuerdig
  */
 #include "debug.h"
-#include "irnode.h"
+#include "irnode_t.h"
 #include "ircons.h"
 #include "irgmod.h"
 #include "irgwalk.h"

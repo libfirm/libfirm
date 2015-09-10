@@ -11,7 +11,7 @@
 #ifndef FIRM_BE_IA32_IA32_EMITTER_H
 #define FIRM_BE_IA32_IA32_EMITTER_H
 
-#include "irnode.h"
+#include "firm_types.h"
 
 /**
  * fmt  parameter               output

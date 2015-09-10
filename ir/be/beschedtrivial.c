@@ -15,7 +15,7 @@
 #include "bemodule.h"
 #include "besched.h"
 #include "irgwalk.h"
-#include "irnode.h"
+#include "irnode_t.h"
 #include "irnodeset.h"
 
 /**

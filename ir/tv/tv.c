@@ -31,7 +31,7 @@
 #include "hashptr.h"
 #include "irmode_t.h"
 #include "irprintf.h"
-#include "irnode.h"
+#include "irnode_t.h"
 #include "strcalc.h"
 #include "fltcalc.h"
 #include "util.h"
