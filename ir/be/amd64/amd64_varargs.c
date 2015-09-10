@@ -22,7 +22,7 @@
 #include "ircons.h"
 #include "iredges_t.h"
 #include "irgmod.h"
-#include "irgraph.h"
+#include "irgraph_t.h"
 #include "panic.h"
 #include "tv.h"
 #include "typerep.h"

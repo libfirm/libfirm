@@ -10,7 +10,7 @@
 #ifndef FIRM_BE_AMD64_AMD64_FINISH_H
 #define FIRM_BE_AMD64_AMD64_FINISH_H
 
-#include "irgraph.h"
+#include "firm_types.h"
 
 /**
  * Check 2-Addresscode constraints.
