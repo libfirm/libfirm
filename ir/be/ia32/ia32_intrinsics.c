@@ -11,7 +11,7 @@
  */
 #include "iredges_t.h"
 #include "irgmod.h"
-#include "irop.h"
+#include "irop_t.h"
 #include "irnode_t.h"
 #include "ircons_t.h"
 #include "irprog_t.h"

@@ -19,7 +19,7 @@
 #include "irgraph_t.h"
 #include "irprog_t.h"
 #include "entity_t.h"
-#include "irop.h"
+#include "irop_t.h"
 
 #include "irdump_t.h"
 

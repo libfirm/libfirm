@@ -17,7 +17,7 @@
 #include "irmode_t.h"
 #include "ircons_t.h"
 #include "iropt_t.h"
-#include "irop.h"
+#include "irop_t.h"
 #include "irprintf.h"
 #include "xmalloc.h"
 #include "bedump.h"

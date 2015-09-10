@@ -34,7 +34,7 @@
 #include "irnode_t.h"
 #include "iropt_t.h"
 #include "irgwalk.h"
-#include "irop.h"
+#include "irop_t.h"
 #include "irouts_t.h"
 #include "irgmod.h"
 #include "iropt_dbg.h"
