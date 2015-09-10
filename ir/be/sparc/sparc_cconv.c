@@ -11,7 +11,7 @@
 #include "be_t.h"
 #include "beirg.h"
 #include "sparc_cconv.h"
-#include "irmode.h"
+#include "irmode_t.h"
 #include "irgwalk.h"
 #include "typerep.h"
 #include "xmalloc.h"

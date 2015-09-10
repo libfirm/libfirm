@@ -13,7 +13,7 @@
 
 #include "ident.h"
 #include "irop_t.h"
-#include "irmode.h"
+#include "irmode_t.h"
 #include "firmstat_t.h"
 #include "pattern_dmp.h"
 

@@ -10,7 +10,7 @@
  */
 #include "arm_cconv.h"
 #include "beirg.h"
-#include "irmode.h"
+#include "irmode_t.h"
 #include "typerep.h"
 #include "xmalloc.h"
 #include "panic.h"

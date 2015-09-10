@@ -14,7 +14,7 @@
 #include "debug.h"
 #include "obst.h"
 #include "irnode_t.h"
-#include "irmode.h"
+#include "irmode_t.h"
 #include "irgwalk.h"
 #include "irloop.h"
 #include "iredges_t.h"

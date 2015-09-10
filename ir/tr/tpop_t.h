@@ -15,7 +15,6 @@
 
 #include "firm_types.h"
 #include "typerep.h"
-#include "irmode.h"
 
 #define get_tpop_code(op)      _get_tpop_code(op)
 #define get_tpop_ident(op)     _get_tpop_ident(op)
