@@ -149,10 +149,9 @@ my $unop = {
 
 my $unop_out = {
 	irn_flags => [ "modify_flags", "rematerializable" ],
-	in_reqs   => [ "gp" ],
-	out_reqs  => [ "gp", "flags" ],
-	ins       => [ "val" ],
-	outs      => [ "res", "flags" ],
+	in_reqs   => "...",
+	out_reqs  => [ "gp", "flags", "mem" ],
+	outs      => [ "res", "flags", "M" ],
 	attr_type => "amd64_addr_attr_t",
 	attr      => "amd64_insn_mode_t insn_mode, amd64_op_mode_t op_mode, amd64_addr_t addr",
 };

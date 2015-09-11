@@ -1232,23 +1232,39 @@ static ir_node *gen_unop(ir_node *const node, int op_pos, unop_constructor gen,
 	return be_new_Proj(new_node, pn_res);
 }
 
-typedef ir_node* (*unop_out_constructor)(dbg_info*, ir_node *block,ir_node *op,
+typedef ir_node* (*unop_out_constructor)(dbg_info*, ir_node *block, const int arity, ir_node *const *const in,
+                                         arch_register_req_t const ** const reqs,
                                          amd64_insn_mode_t insn_mode, amd64_op_mode_t opmode,
                                          amd64_addr_t addr);
 
 static ir_node *gen_unop_out(ir_node *const node, int op_pos, unop_out_constructor gen,
                              unsigned pn_res)
 {
-	dbg_info     *const dbgi    = get_irn_dbg_info(node);
-	ir_node      *const block   = be_transform_nodes_block(node);
-	ir_node      *const op      = get_irn_n(node, op_pos);
-	ir_node      *const new_op  = be_transform_node(op);
-	ir_mode      *const op_mode = get_irn_mode(op);
-	// TODO match_am
-	amd64_addr_t  const addr    = { .immediate = { .entity = NULL, }, };
+	dbg_info          *const dbgi      = get_irn_dbg_info(node);
+	ir_node           *const block     = get_nodes_block(node);
+	ir_node           *const op        = get_irn_n(node, op_pos);
+	ir_mode           *const op_mode   = get_irn_mode(op);
+	ir_node           *const new_block = be_transform_nodes_block(node);
+	amd64_insn_mode_t  const insn_mode = get_insn_mode_from_mode(op_mode);
+	ir_node           *const load      = source_am_possible(block, op);
+	ir_node           *      new_node;
 
-	amd64_insn_mode_t insn_mode = get_insn_mode_from_mode(op_mode);
-	ir_node *new_node = gen(dbgi, block, new_op, insn_mode, AMD64_OP_REG, addr);
+	if (load != NULL) {
+		amd64_addr_t  addr;
+		ir_node      *in[5];
+		int           arity = 0;
+		perform_address_matching(get_Load_ptr(load), &arity, in, &addr);
+		new_node = gen(dbgi, new_block, arity, in, gp_am_reqs[arity], insn_mode, AMD64_OP_ADDR, addr);
+
+		ir_node *mem_proj = get_Proj_for_pn(load, pn_Load_M);
+		fix_node_mem_proj(new_node, mem_proj);
+
+	} else {
+		amd64_addr_t  addr = { .immediate = { .entity = NULL } };
+		ir_node      *in[] = { be_transform_node(op) };
+		new_node = gen(dbgi, new_block, ARRAY_SIZE(in), in, reg_reqs, insn_mode, AMD64_OP_REG, addr);
+	}
+
 	return be_new_Proj(new_node, pn_res);
 }
 
