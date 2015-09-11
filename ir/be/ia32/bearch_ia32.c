@@ -453,6 +453,13 @@ static ir_node *ia32_turn_back_dest_am(ir_node *node)
 	set_irn_mode(new_node, mode_T);
 	ir_node *const res_proj = be_new_Proj(new_node, pn_ia32_res);
 
+	/* Fix out info of the flags Proj */
+	ir_node *flags_proj = get_Proj_for_pn(node, pn_ia32_flags);
+	if (flags_proj != NULL) {
+		arch_register_t const *const flags_reg = arch_get_irn_register(flags_proj);
+		arch_set_irn_register_out(new_node, pn_ia32_flags, flags_reg);
+	}
+
 	ir_node *const store = new_bd_ia32_Store(dbgi, block, base, idx, load_mem, res_proj);
 	ia32_copy_am_attrs(store, node);
 	set_ia32_op_type(store, ia32_AddrModeD);
