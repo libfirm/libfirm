@@ -1248,7 +1248,7 @@ static ir_node *gen_unop_out(ir_node *const node, int op_pos, unop_out_construct
 	amd64_addr_t  const addr    = { .immediate = { .entity = NULL, }, };
 
 	amd64_insn_mode_t insn_mode = get_insn_mode_from_mode(op_mode);
-	ir_node *new_node = gen(dbgi, block, new_op, insn_mode, AMD64_OP_OUTREG_REG, addr);
+	ir_node *new_node = gen(dbgi, block, new_op, insn_mode, AMD64_OP_REG, addr);
 	return be_new_Proj(new_node, pn_res);
 }
 

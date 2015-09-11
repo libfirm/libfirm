@@ -70,8 +70,6 @@ static const char *get_op_mode_string(amd64_op_mode_t mode)
 	case AMD64_OP_REG_ADDR:    return "reg+addr";
 	case AMD64_OP_REG_IMM:     return "reg+imm";
 	case AMD64_OP_REG_REG:     return "reg+reg";
-	case AMD64_OP_OUTREG_REG:  return "outreg+reg";
-	case AMD64_OP_OUTREG_ADDR: return "outreg+addr";
 	case AMD64_OP_REG:         return "reg";
 	case AMD64_OP_SHIFT_IMM:   return "shift_imm";
 	case AMD64_OP_SHIFT_REG:   return "shift_reg";

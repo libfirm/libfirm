@@ -500,12 +500,12 @@ ret => {
 
 bsf => {
 	template => $unop_out,
-	emit => "bsf%M %AM",
+	emit => "bsf%M %AM, %D0",
 },
 
 bsr => {
 	template => $unop_out,
-	emit => "bsr%M %AM",
+	emit => "bsr%M %AM, %D0",
 },
 
 # SSE
