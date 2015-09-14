@@ -307,7 +307,7 @@ struct ir_node {
 	union {
 		ir_def_use_edges *out;    /**< array of def-use edges. */
 		unsigned          n_outs; /**< number of def-use edges (temporarily used
-		                               during construction of datastructure ) */
+		                               during construction of data structure) */
 	} o;
 	ir_loop         *loop;         /**< Loop information. */
 	void            *backend_info;
