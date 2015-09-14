@@ -175,7 +175,11 @@ ir_node *be_transform_node(ir_node *node)
 	if (be_is_transformed(node)) {
 		new_node = (ir_node*)get_irn_link(node);
 	} else {
-		DEBUG_ONLY(be_set_transformed_node(node, NULL);)
+#ifdef DEBUG_libfirm
+		be_set_transformed_node(node, NULL);
+#else
+		mark_irn_visited(node);
+#endif
 
 		ir_op             *const op        = get_irn_op(node);
 		be_transform_func *const transform = (be_transform_func*)op->ops.generic;
