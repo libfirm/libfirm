@@ -587,10 +587,12 @@ static int cmp_stack_dependency(const void *c1, const void *c2)
 	be_stack_change_t const *const s2 = (be_stack_change_t const*)c2;
 
 	/* Sort blockwise. */
-	ir_node *const b1 = get_nodes_block(s1->before);
-	ir_node *const b2 = get_nodes_block(s2->before);
-	if (b1 != b2)
-		return get_irn_idx(b2) - get_irn_idx(b1);
+	ir_node *const b1  = s1->before;
+	ir_node *const b2  = s2->before;
+	ir_node *const bl1 = get_nodes_block(b1);
+	ir_node *const bl2 = get_nodes_block(b2);
+	if (bl1 != bl2)
+		return get_irn_idx(bl2) - get_irn_idx(bl1);
 
 	/* If one change chain does not produce a new value, it must be the last. */
 	ir_node *const n1 = s1->after;
@@ -603,9 +605,9 @@ static int cmp_stack_dependency(const void *c1, const void *c2)
 	/* If one change chain is data dependent on the other, it must come later.
 	 * The after nodes cannot be dependent on each other, because they are unused.
 	 * So compare after of one with before of the other. */
-	if (dependent_on(n1, s2->before))
+	if (dependent_on(n1, b2))
 		return 1;
-	if (dependent_on(n2, s1->before))
+	if (dependent_on(n2, b1))
 		return -1;
 
 	/* The nodes have no depth order, but we need a total order because qsort()
