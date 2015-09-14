@@ -616,8 +616,8 @@ static int cmp_stack_dependency(const void *c1, const void *c2)
 	 * Additionally, we need to respect transitive dependencies. Consider a
 	 * Call a depending on Call b and an independent Call c.
 	 * We MUST NOT order c > a and b > c. */
-	unsigned h1 = get_irn_height(heights, n1);
-	unsigned h2 = get_irn_height(heights, n2);
+	unsigned h1 = get_irn_height(heights, b1);
+	unsigned h2 = get_irn_height(heights, b2);
 	if (h1 < h2)
 		return 1;
 	if (h1 > h2)
