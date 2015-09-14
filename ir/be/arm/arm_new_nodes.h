@@ -53,8 +53,8 @@ arm_CopyB_attr_t *get_arm_CopyB_attr(ir_node *node);
 const arm_CopyB_attr_t *get_arm_CopyB_attr_const(const ir_node *node);
 
 /**
-* Return the tarval of a fConst
-*/
+ * Return the tarval of a fConst
+ */
 ir_tarval *get_fConst_value(const ir_node *node);
 
 /**

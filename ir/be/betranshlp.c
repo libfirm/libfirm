@@ -580,7 +580,7 @@ struct be_stack_change_t {
  *  0 if both elements are equal, no node depend on the other
  * +1 if first depends on second (first is greater)
  * -1 if second depends on first (second is greater)
-*/
+ */
 static int cmp_stack_dependency(const void *c1, const void *c2)
 {
 	be_stack_change_t const *const s1 = (be_stack_change_t const*)c1;

@@ -1546,8 +1546,8 @@ typedef struct loop_env {
 } loop_env;
 
 /**
-* Gets the node_entry of a node
-*/
+ * Gets the node_entry of a node
+ */
 static node_entry *get_irn_ne(ir_node *irn, loop_env *env)
 {
 	node_entry *e = ir_nodehashmap_get(node_entry, &env->map, irn);

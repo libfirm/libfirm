@@ -97,8 +97,8 @@ static ir_node *gen_ptr_add(ir_node *node, ir_node *frame, const arm_vals *v)
 }
 
 /**
-* creates the address by Subs
-*/
+ * creates the address by Subs
+ */
 static ir_node *gen_ptr_sub(ir_node *node, ir_node *frame, const arm_vals *v)
 {
 	dbg_info *dbgi  = get_irn_dbg_info(node);

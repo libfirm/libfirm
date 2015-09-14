@@ -1803,9 +1803,10 @@ FIRM_API void type_walk_irg(ir_graph *irg, type_walk_func *pre,
 FIRM_API void type_walk_super2sub(type_walk_func *pre, type_walk_func *post,
                                   void *env);
 
-/** Walker for class types in inheritance order.
+/**
+ * Walker for class types in inheritance order.
  *
- *  Touches every class in specified order:
+ * Touches every class in specified order:
  *   - first the super class
  *   - second the class itself
  *   If new classes are created during the traversal these
@@ -1818,12 +1819,13 @@ FIRM_API void type_walk_super2sub(type_walk_func *pre, type_walk_func *post,
 FIRM_API void type_walk_super(type_walk_func *pre, type_walk_func *post,
                               void *env);
 
-/** Same as type_walk_super2sub, but visits only class types.
-   Executes pre for a class if all superclasses have been visited.
-   Then iterates to subclasses.  Executes post after return from
-   subclass.
-   Does not visit global type, frame types.
-*/
+/**
+ * Same as type_walk_super2sub, but visits only class types.
+ * Executes pre for a class if all superclasses have been visited.
+ * Then iterates to subclasses.  Executes post after return from
+ * subclass.
+ * Does not visit global type, frame types.
+ */
 FIRM_API void class_walk_super2sub(class_walk_func *pre, class_walk_func *post,
                                    void *env);
 
