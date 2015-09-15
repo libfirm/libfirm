@@ -667,6 +667,39 @@ static bool prevents_AM(ir_node *const block, ir_node *const am_candidate,
 	}
 }
 
+static bool cmp_can_use_sub_flags(ir_node *cmp, ir_node *sub, bool *swap)
+{
+	ir_node *cmp_block = get_nodes_block(cmp);
+	ir_node *sub_block = get_nodes_block(sub);
+
+	if (!(block_dominates(cmp_block, sub_block) ||
+	      block_dominates(sub_block, cmp_block))) {
+		return false;
+	}
+
+	ir_node *cmp_left  = get_Cmp_left(cmp);
+	ir_node *cmp_right = get_Cmp_right(cmp);
+	ir_node *sub_left  = get_Sub_left(sub);
+	ir_node *sub_right = get_Sub_right(sub);
+
+	if (cmp_left == sub_left && cmp_right == sub_right) {
+		*swap = false;
+	} else if (cmp_left == sub_right && cmp_right == sub_left) {
+		*swap = true;
+	} else {
+		return false;
+	}
+
+	ir_mode *sub_mode = get_irn_mode(sub_left);
+	if (get_mode_size_bits(sub_mode) != 32 &&
+	    (!be_upper_bits_clean(sub_left,  sub_mode) ||
+	     !be_upper_bits_clean(sub_right, sub_mode))) {
+		return false;
+	}
+
+	return true;
+}
+
 /**
  * return true if the users of the given value will be merged by later
  * optimization. This applies to multiple Cmp nodes (and maybe a Sub
@@ -674,50 +707,36 @@ static bool prevents_AM(ir_node *const block, ir_node *const am_candidate,
  */
 static bool users_will_merge(ir_node *proj)
 {
-	ir_node *first     = NULL;
-	ir_node *block     = NULL;
-	ir_node *left      = NULL;
-	ir_node *right     = NULL;
-	bool     found_sub = false;
+	ir_node *sub = NULL;
+
+	/* Check that there is one Sub and some Cmps. */
+	foreach_out_edge(proj, edge) {
+		ir_node *user = get_edge_src_irn(edge);
+
+		if (is_Sub(user)) {
+			if (sub == NULL) {
+				sub = user;
+			} else {
+				/* Two Subs will not merge */
+				return false;
+			}
+		} else if (!is_Cmp(user)) {
+			return false;
+		}
+	}
+
+	if (sub == NULL) {
+		/* Cmps only will not merge.
+		 * (probably need to be rematerialized later anyway) */
+		return false;
+	}
 
 	foreach_out_edge(proj, edge) {
 		ir_node *user = get_edge_src_irn(edge);
 
-		if (first == NULL) {
-			if (is_Cmp(user) || is_Sub(user)) {
-				// Take the first user as a sample to compare
-				// the next ones to.
-				first     = user;
-				block     = get_nodes_block(user);
-				left      = get_binop_left(user);
-				right     = get_binop_right(user);
-				found_sub = is_Sub(user);
-			} else {
-				return false;
-			}
-		} else {
-			if (get_nodes_block(user) != block) {
-				return false;
-			}
-
-			if (is_Cmp(user) || is_Sub(user)) {
-				ir_node *user_left  = get_binop_left(user);
-				ir_node *user_right = get_binop_right(user);
-
-				if (found_sub && is_Sub(user)) {
-					// Two subs will not be merged
-					return false;
-				}
-				found_sub |= is_Sub(user);
-
-				if ((is_Sub(user) || is_Sub(first)) &&
-				    user_left == right && user_right == left) {
-					continue;
-				}
-				if (user_left != left || user_right != right) {
-					return false;
-				}
-			} else {
+		if (is_Cmp(user)) {
+			bool dump;
+			if (!cmp_can_use_sub_flags(user, sub, &dump)) {
 				return false;
 			}
 		}
@@ -3090,31 +3109,7 @@ static ir_node *transform_sub_or_store(ir_node *sub)
 
 static ir_node *try_get_sub_flags(ir_node *cmp, ir_node *sub, bool *swap)
 {
-	ir_node *cmp_block = get_nodes_block(cmp);
-	ir_node *sub_block = get_nodes_block(sub);
-
-	if (!(block_dominates(cmp_block, sub_block) ||
-	      block_dominates(sub_block, cmp_block))) {
-		return NULL;
-	}
-
-	ir_node *cmp_left  = get_Cmp_left(cmp);
-	ir_node *cmp_right = get_Cmp_right(cmp);
-	ir_node *sub_left  = get_Sub_left(sub);
-	ir_node *sub_right = get_Sub_right(sub);
-
-	if (cmp_left == sub_left && cmp_right == sub_right) {
-		*swap = false;
-	} else if (cmp_left == sub_right && cmp_right == sub_left) {
-		*swap = true;
-	} else {
-		return NULL;
-	}
-
-	ir_mode *sub_mode = get_irn_mode(sub_left);
-	if (get_mode_size_bits(sub_mode) != 32 &&
-	    (!be_upper_bits_clean(sub_left,  sub_mode) ||
-	     !be_upper_bits_clean(sub_right, sub_mode))) {
+	if (!cmp_can_use_sub_flags(cmp, sub, swap)) {
 		return NULL;
 	}
 
