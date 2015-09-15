@@ -2037,7 +2037,8 @@ static void arm_init_fpa_immediate(void)
 void arm_transform_graph(ir_graph *irg)
 {
 	assure_irg_properties(irg, IR_GRAPH_PROPERTY_NO_TUPLES
-	                         | IR_GRAPH_PROPERTY_NO_BADS);
+	                         | IR_GRAPH_PROPERTY_NO_BADS
+	                         | IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
 
 	static bool imm_initialized = false;
 	if (!imm_initialized) {
