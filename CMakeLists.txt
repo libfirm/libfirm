@@ -39,6 +39,22 @@ set(SOURCES
 	ir/ana/irmemory.c
 	ir/ana/irouts.c
 	ir/ana/vrp.c
+	ir/be/amd64/amd64_cconv.c
+	ir/be/amd64/amd64_emitter.c
+	ir/be/amd64/amd64_finish.c
+	ir/be/amd64/amd64_new_nodes.c
+	ir/be/amd64/amd64_pic.c
+	ir/be/amd64/amd64_transform.c
+	ir/be/amd64/amd64_varargs.c
+	ir/be/amd64/bearch_amd64.c
+	ir/be/arm/arm_cconv.c
+	ir/be/arm/arm_emitter.c
+	ir/be/arm/arm_finish.c
+	ir/be/arm/arm_lower64.c
+	ir/be/arm/arm_new_nodes.c
+	ir/be/arm/arm_optimize.c
+	ir/be/arm/arm_transform.c
+	ir/be/arm/bearch_arm.c
 	ir/be/bearch.c
 	ir/be/beasm.c
 	ir/be/beblocksched.c
@@ -88,27 +104,52 @@ set(SOURCES
 	ir/be/betranshlp.c
 	ir/be/beuses.c
 	ir/be/beutil.c
+	ir/be/bevarargs.c
 	ir/be/beverify.c
+	ir/be/ia32/bearch_ia32.c
+	ir/be/ia32/ia32_architecture.c
+	ir/be/ia32/ia32_cconv.c
+	ir/be/ia32/ia32_emitter.c
+	ir/be/ia32/ia32_finish.c
+	ir/be/ia32/ia32_fpu.c
+	ir/be/ia32/ia32_intrinsics.c
+	ir/be/ia32/ia32_new_nodes.c
+	ir/be/ia32/ia32_optimize.c
+	ir/be/ia32/ia32_pic.c
+	ir/be/ia32/ia32_transform.c
+	ir/be/ia32/ia32_x87.c
+	ir/be/ia32/x86_address_mode.c
+	ir/be/ia32/x86_asm.c
+	ir/be/ia32/x86_cconv.c
+	ir/be/ia32/x86_imm.c
+	ir/be/sparc/bearch_sparc.c
+	ir/be/sparc/sparc_cconv.c
+	ir/be/sparc/sparc_emitter.c
+	ir/be/sparc/sparc_finish.c
+	ir/be/sparc/sparc_lower64.c
+	ir/be/sparc/sparc_new_nodes.c
+	ir/be/sparc/sparc_stackframe.c
+	ir/be/sparc/sparc_transform.c
+	ir/be/TEMPLATE/bearch_TEMPLATE.c
+	ir/be/TEMPLATE/TEMPLATE_emitter.c
+	ir/be/TEMPLATE/TEMPLATE_new_nodes.c
+	ir/be/TEMPLATE/TEMPLATE_transform.c
 	ir/common/debug.c
 	ir/common/debugger.c
 	ir/common/firm.c
 	ir/common/firm_common.c
-	ir/common/irtools.c
 	ir/common/panic.c
 	ir/common/timing.c
 	ir/ident/ident.c
 	ir/ir/dbginfo.c
-	ir/ir/instrument.c
 	ir/ir/irarch.c
 	ir/ir/irargs.c
-	ir/ir/ircomplib.c
 	ir/ir/ircons.c
 	ir/ir/irdump.c
 	ir/ir/irdumptxt.c
 	ir/ir/iredges.c
 	ir/ir/irflag.c
 	ir/ir/irgmod.c
-	ir/ir/irgopt.c
 	ir/ir/irgraph.c
 	ir/ir/irgwalk.c
 	ir/ir/irgwalk_blk.c
@@ -119,15 +160,12 @@ set(SOURCES
 	ir/ir/irnodehashmap.c
 	ir/ir/irnodeset.c
 	ir/ir/irop.c
-	ir/ir/iropt.c
 	ir/ir/irprintf.c
 	ir/ir/irprofile.c
 	ir/ir/irprog.c
 	ir/ir/irssacons.c
+	ir/ir/irtools.c
 	ir/ir/irverify.c
-	ir/ir/rm_bads.c
-	ir/ir/rm_tuples.c
-	ir/ir/unreachable.c
 	ir/ir/valueset.c
 	ir/kaps/brute_force.c
 	ir/kaps/bucket.c
@@ -175,7 +213,11 @@ set(SOURCES
 	ir/opt/garbage_collect.c
 	ir/opt/gvn_pre.c
 	ir/opt/ifconv.c
+	ir/opt/instrument.c
 	ir/opt/ircgopt.c
+	ir/opt/ircomplib.c
+	ir/opt/irgopt.c
+	ir/opt/iropt.c
 	ir/opt/jumpthreading.c
 	ir/opt/ldstopt.c
 	ir/opt/loop.c
@@ -190,8 +232,11 @@ set(SOURCES
 	ir/opt/proc_cloning.c
 	ir/opt/reassoc.c
 	ir/opt/return.c
+	ir/opt/rm_bads.c
+	ir/opt/rm_tuples.c
 	ir/opt/scalar_replace.c
 	ir/opt/tailrec.c
+	ir/opt/unreachable.c
 	ir/stat/const_stat.c
 	ir/stat/dags.c
 	ir/stat/distrib.c
