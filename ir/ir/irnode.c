@@ -191,9 +191,6 @@ void set_irn_n(ir_node *node, int n, ir_node *in)
 	assert(in && in->kind == k_ir_node);
 	assert(!is_Deleted(in));
 
-	/* Call the hook */
-	hook_set_irn_n(node, n, in, node->in[n + 1]);
-
 	/* Here, we rely on src and tgt being in the current ir graph */
 	edges_notify_edge(node, n, in, node->in[n + 1], irg);
 
@@ -211,9 +208,6 @@ int add_irn_n(ir_node *node, ir_node *in)
 	int pos = ARR_LEN(node->in) - 1;
 	ARR_APP1(ir_node *, node->in, in);
 	edges_notify_edge(node, pos, node->in[pos + 1], NULL, irg);
-
-	/* Call the hook */
-	hook_set_irn_n(node, pos, node->in[pos + 1], NULL);
 
 	/* update irg flags */
 	clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS);

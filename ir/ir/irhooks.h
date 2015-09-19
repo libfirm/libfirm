@@ -28,10 +28,6 @@ struct hook_entry {
 		/** This hook is called, after a new IR-node was created and before it is optimized. */
 		void (*_hook_new_node)(void *context, ir_node *node);
 
-		/** This hook is called, before a node input was changed. */
-		void (*_hook_set_irn_n)(void *context, ir_node *src,
-		                        int pos, ir_node *tgt, ir_node *old_tgt);
-
 		/** This hook is called, before a node is replaced (exchange()) by another. */
 		void (*_hook_replace)(void *context, ir_node *old_node, ir_node *new_node);
 
@@ -109,7 +105,6 @@ struct hook_entry {
  */
 typedef enum {
 	hook_new_node,             /**< type for hook_new_node() hook */
-	hook_set_irn_n,            /**< type for hook_set_irn_n() hook */
 	hook_replace,              /**< type for hook_replace() hook */
 	hook_turn_into_id,         /**< type for hook_turn_into_id() hook */
 	hook_normalize,            /**< type for hook_normalize() hook */
@@ -169,9 +164,6 @@ extern hook_entry_t *hooks[hook_last];
 
 /** Called after a new node has been created */
 #define hook_new_node(node)               hook_exec(hook_new_node, (hook_ctx_, node))
-/** Called when a nodes input is changed */
-#define hook_set_irn_n(src, pos, tgt, old_tgt) \
-  hook_exec(hook_set_irn_n, (hook_ctx_, src, pos, tgt, old_tgt))
 /** Called when a node is replaced */
 #define hook_replace(old, nw)             hook_exec(hook_replace, (hook_ctx_, old, nw))
 /** Called when a node is turned into an Id node */

@@ -418,10 +418,7 @@ void add_immBlock_pred(ir_node *block, ir_node *jmp)
 	assert(!get_Block_matured(block) && "Error: Block already matured!\n");
 	assert(jmp->kind == k_ir_node);
 
-	int const n = ARR_LEN(block->in) - 1;
 	ARR_APP1(ir_node *, block->in, jmp);
-	/* Call the hook */
-	hook_set_irn_n(block, n, jmp, NULL);
 }
 
 void set_cur_block(ir_node *target)
