@@ -37,7 +37,6 @@
 #include "bitfiddle.h"
 #include "be.h"
 #include "panic.h"
-#include "firmstat_t.h"
 
 #include "entity_t.h"
 

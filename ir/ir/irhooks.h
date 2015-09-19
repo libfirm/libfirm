@@ -15,41 +15,6 @@
 #include "firm_types.h"
 
 /**
- * options for the hook_merge_nodes hook
- */
-typedef enum {
-	HOOK_OPT_DEAD_BLOCK,  /**< a block was removed because it's dead */
-	HOOK_OPT_STG,         /**< straightening optimization */
-	HOOK_OPT_IFSIM,       /**< if simplification */
-	HOOK_OPT_CONST_EVAL,  /**< constant evaluation */
-	HOOK_OPT_ALGSIM,      /**< algebraic simplification */
-	HOOK_OPT_PHI,         /**< Phi optimization */
-	HOOK_OPT_SYNC,        /**< Sync optimization */
-	HOOK_OPT_WAW,         /**< Write-After-Write optimization */
-	HOOK_OPT_WAR,         /**< Write-After-Read optimization */
-	HOOK_OPT_RAW,         /**< Read-After-Write optimization */
-	HOOK_OPT_RAR,         /**< Read-After-Read optimization */
-	HOOK_OPT_RC,          /**< Read-a-Const optimization */
-	HOOK_OPT_TUPLE,       /**< Tuple optimization */
-	HOOK_OPT_ID,          /**< ID optimization */
-	HOOK_OPT_CSE,         /**< common subexpression elimination */
-	HOOK_OPT_STRENGTH_RED,/**< strength reduction */
-	HOOK_OPT_ARCH_DEP,    /**< architecture dependent optimization */
-	HOOK_OPT_REASSOC,     /**< reassociation */
-	HOOK_OPT_POLY_CALL,   /**< polymorphic call optimization */
-	HOOK_OPT_IF_CONV,     /**< an if conversion was tried */
-	HOOK_OPT_FUNC_CALL,   /**< a real function call was removed */
-	HOOK_OPT_CONFIRM,     /**< a value was substituted by another due to a Confirm */
-	HOOK_OPT_CONFIRM_C,   /**< a value was substituted by a const due to a Confirm */
-	HOOK_OPT_CONFIRM_E,   /**< a value was evaluated due to a Confirm */
-	HOOK_OPT_EXC_REM,     /**< a exception edge was removed due to a Confirmation prove */
-	HOOK_OPT_NORMALIZE,   /**< a commutative node was normalized */
-	HOOK_LOWERED,         /**< lowered */
-	HOOK_BACKEND,         /**< a backend transformation */
-	HOOK_OPT_LAST
-} hook_opt_kind;
-
-/**
  * A generic function type.
  */
 typedef void (generic_func)(void);

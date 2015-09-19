@@ -237,13 +237,6 @@ set(SOURCES
 	ir/opt/scalar_replace.c
 	ir/opt/tailrec.c
 	ir/opt/unreachable.c
-	ir/stat/const_stat.c
-	ir/stat/dags.c
-	ir/stat/distrib.c
-	ir/stat/firmstat.c
-	ir/stat/pattern.c
-	ir/stat/pattern_dmp.c
-	ir/stat/stat_dmp.c
 	ir/stat/stat_timing.c
 	ir/stat/statev.c
 	ir/tr/entity.c
@@ -448,7 +441,6 @@ set(INSTALL_HEADERS
 	include/libfirm/firm.h
 	include/libfirm/firm_common.h
 	include/libfirm/firm_types.h
-	include/libfirm/firmstat.h
 	include/libfirm/heights.h
 	include/libfirm/ident.h
 	include/libfirm/irarch.h

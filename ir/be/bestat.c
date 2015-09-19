@@ -12,7 +12,6 @@
 
 #include "panic.h"
 #include "execfreq.h"
-#include "firmstat_t.h"
 #include "irgwalk.h"
 #include "irhooks.h"
 #include "irnode_t.h"
@@ -58,7 +57,6 @@ static void check_reg_pressure_class(pressure_walker_env_t *env,
 	if (max_live > env->max_pressure)
 		env->max_pressure = max_live;
 
-	stat_be_block_regpressure(env->irg, block, max_live, cls->name);
 	ir_nodeset_destroy(&live_nodes);
 }
 

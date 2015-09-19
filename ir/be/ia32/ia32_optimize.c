@@ -22,7 +22,6 @@
 #include "irprintf.h"
 #include "irdump.h"
 #include "panic.h"
-#include "firmstat_t.h"
 
 #include "be_t.h"
 #include "bediagnostic.h"

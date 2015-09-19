@@ -26,7 +26,6 @@
 #include "tv_t.h"
 #include "valueset.h"
 #include "irloop.h"
-#include "firmstat_t.h"
 
 #include "irgraph_t.h"
 #include "irnode_t.h"

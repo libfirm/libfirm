@@ -27,7 +27,6 @@
 #include "irtools.h"
 #include "irverify.h"
 #include "iroptimize.h"
-#include "firmstat.h"
 #include "execfreq_t.h"
 #include "irprofile.h"
 #include "ircons.h"

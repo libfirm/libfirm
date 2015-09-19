@@ -16,7 +16,6 @@
 #include "iredges_t.h"
 #include "pdeq.h"
 #include "panic.h"
-#include "firmstat_t.h"
 
 #include "bearch.h"
 #include "besched.h"

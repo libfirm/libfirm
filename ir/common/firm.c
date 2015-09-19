@@ -28,7 +28,6 @@
 #include "irgraph_t.h"
 #include "type_t.h"
 #include "entity_t.h"
-#include "firmstat.h"
 #include "irarch.h"
 #include "irhooks.h"
 #include "iredges_t.h"
@@ -38,7 +37,6 @@
 #include "be_t.h"
 #include "irtools.h"
 #include "execfreq_t.h"
-#include "firmstat_t.h"
 
 /* returns the firm root */
 lc_opt_entry_t *firm_opt_get_root(void)
@@ -74,7 +72,6 @@ void ir_init(void)
 	arch_dep_set_opts(arch_dep_none);
 
 	init_execfreq();
-	init_stat();
 	firm_be_init();
 
 #ifdef DEBUG_libfirm

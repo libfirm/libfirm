@@ -74,7 +74,6 @@
 #include "dbginfo.h"
 #include "execfreq.h"
 #include "firm_common.h"
-#include "firmstat.h"
 #include "firm_types.h"
 #include "heights.h"
 #include "ident.h"

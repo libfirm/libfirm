@@ -13,7 +13,6 @@
 
 #include "dbginfo_t.h"
 #include "irhooks.h"
-#include "firmstat.h"
 #include "util.h"
 
 /**

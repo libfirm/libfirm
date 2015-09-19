@@ -43,7 +43,6 @@
 #include "panic.h"
 #include "irnodeset.h"
 #include "tv_t.h"
-#include "firmstat_t.h"
 
 #include "irprintf.h"
 #include "irdump.h"

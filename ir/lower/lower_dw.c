@@ -19,7 +19,6 @@
 #include "constbits.h"
 #include "dbginfo_t.h"
 #include "debug.h"
-#include "firmstat.h"
 #include "ircons_t.h"
 #include "irdump.h"
 #include "iredges_t.h"

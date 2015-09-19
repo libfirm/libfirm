@@ -26,7 +26,6 @@
 #include "iroptimize.h"
 #include "iropt_dbg.h"
 #include "vrp.h"
-#include "firmstat_t.h"
 
 #undef AVOID_PHIB
 

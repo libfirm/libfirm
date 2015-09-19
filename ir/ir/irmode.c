@@ -19,7 +19,6 @@
 #include "irhooks.h"
 #include "array.h"
 #include "panic.h"
-#include "pattern_dmp.h"
 #include "strcalc.h"
 
 /** Obstack to hold all modes. */

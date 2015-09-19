@@ -26,7 +26,6 @@
 #include "panic.h"
 #include "be.h"
 #include "util.h"
-#include "firmstat_t.h"
 #include "tv_t.h"
 
 /** Walker environment. */
