@@ -50,7 +50,6 @@ typedef enum elf_variant_t {
 
 extern bool          be_gas_emit_types;
 extern elf_variant_t be_gas_elf_variant;
-extern bool          be_gas_pic;
 
 /**
  * the .type directive needs to specify @function, #function or %function
