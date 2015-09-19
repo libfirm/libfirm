@@ -159,7 +159,6 @@ static void fix_const_call_lists(ir_graph *irg, env_t *ctx)
 
 		/* finally, this call can float */
 		set_irn_pinned(call, false);
-		hook_func_call(irg, call);
 	}
 
 	if (exc_changed) {
@@ -243,8 +242,6 @@ static void fix_nothrow_call_list(ir_graph *irg, ir_node **call_list)
 				break;
 			}
 		}
-
-		hook_func_call(irg, call);
 	}
 
 	/* changes were done ... */

@@ -65,8 +65,6 @@ void exchange(ir_node *old, ir_node *nw)
 		set_irn_op(old, op_Deleted);
 	} else {
 		/* Else, do it the old-fashioned way. */
-		hook_turn_into_id(old);
-
 		ir_node *block = old->in[0];
 		if (block == NULL) {
 			block = get_block(nw);

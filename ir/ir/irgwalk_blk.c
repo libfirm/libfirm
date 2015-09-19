@@ -402,13 +402,11 @@ static void do_irg_walk_blk(ir_graph *irg, irg_walk_func *pre,
 void irg_walk_blkwise_graph(ir_graph *irg, irg_walk_func *pre,
                             irg_walk_func *post, void *env)
 {
-	hook_irg_walk_blkwise(irg, (generic_func*)pre, (generic_func*)post);
 	do_irg_walk_blk(irg, pre, post, env, traverse_blocks);
 }
 
 void irg_walk_blkwise_dom_top_down(ir_graph *irg, irg_walk_func *pre,
                                    irg_walk_func *post, void *env)
 {
-	hook_irg_walk_blkwise(irg, (generic_func*)pre, (generic_func*)post);
 	do_irg_walk_blk(irg, pre, post, env, traverse_dom_blocks_top_down);
 }

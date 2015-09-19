@@ -281,8 +281,6 @@ static void do_reassociation(pdeq *const wq)
 		ir_node *n = (ir_node *)pdeq_getl(wq);
 		set_irn_link(n, NULL);
 
-		hook_reassociate(1);
-
 		/* reassociation must run until a fixpoint is reached. */
 		bool changed = false;
 		bool res;
@@ -301,7 +299,6 @@ static void do_reassociation(pdeq *const wq)
 				changed |= res;
 			}
 		} while (res);
-		hook_reassociate(0);
 
 		if (changed) {
 			foreach_irn_in_r(n, i, pred) {
@@ -2047,8 +2044,6 @@ static void do_chaining(ir_graph *irg)
 		ir_node *n = (ir_node *)pdeq_getl(wq);
 		set_irn_link(n, NULL);
 
-		hook_reassociate(1);
-
 		/* reassociation must run until a fixpoint is reached. */
 		bool changed = false;
 		bool res;
@@ -2062,7 +2057,6 @@ static void do_chaining(ir_graph *irg)
 			changed |= res;
 
 		} while (res);
-		hook_reassociate(0);
 
 		if (changed) {
 			foreach_irn_in_r(n, i, pred) {

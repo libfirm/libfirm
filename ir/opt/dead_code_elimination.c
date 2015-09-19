@@ -76,9 +76,6 @@ void dead_node_elimination(ir_graph *irg)
 {
 	edges_deactivate(irg);
 
-	/* inform statistics that we started a dead-node elimination run */
-	hook_dead_node_elim(irg, 1);
-
 	/* Handle graph state */
 	free_callee_info(irg);
 	free_irg_outs(irg);
@@ -104,7 +101,4 @@ void dead_node_elimination(ir_graph *irg)
 
 	/* Free memory from old unoptimized obstack */
 	obstack_free(&graveyard_obst, 0);  /* First empty the obstack ... */
-
-	/* inform statistics that the run is over */
-	hook_dead_node_elim(irg, 0);
 }

@@ -129,7 +129,6 @@ void irg_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post,
 void irg_walk_graph(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post,
                     void *env)
 {
-	hook_irg_walk(irg, (generic_func*)pre, (generic_func*)post);
 	irg_walk(get_irg_end(irg), pre, post, env);
 }
 
@@ -243,7 +242,6 @@ void irg_walk_in_or_dep(ir_node *node, irg_walk_func *pre, irg_walk_func *post,
 void irg_walk_in_or_dep_graph(ir_graph *irg, irg_walk_func *pre,
                               irg_walk_func *post, void *env)
 {
-	hook_irg_walk(irg, (generic_func *)pre, (generic_func *)post);
 	irg_walk_in_or_dep(get_irg_end(irg), pre, post, env);
 }
 
@@ -286,8 +284,6 @@ void irg_block_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post,
 {
 	ir_graph *const irg   = get_irn_irg(node);
 	ir_node  *const block = get_block(node);
-
-	hook_irg_block_walk(irg, node, (generic_func *)pre, (generic_func *)post);
 
 	ir_reserve_resources(irg, IR_RESOURCE_BLOCK_VISITED);
 	inc_irg_block_visited(irg);

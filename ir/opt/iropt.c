@@ -7833,7 +7833,6 @@ void ir_normalize_node(ir_node *n)
 		if (!operands_are_normalized(l, r)) {
 			set_binop_left(n, r);
 			set_binop_right(n, l);
-			hook_normalize(n);
 		}
 	} else if (is_Sync(n)) {
 		/* we assume that most of the time the inputs of a Sync node are already

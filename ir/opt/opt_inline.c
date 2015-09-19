@@ -349,9 +349,6 @@ static bool inline_method(ir_node *const call, ir_graph *called_graph)
 	clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_ENTITY_USAGE);
 	edges_deactivate(irg);
 
-	/* here we know we WILL inline, so inform the statistics */
-	hook_inline(call, called_graph);
-
 	/* -- Decide how to handle exception control flow: Is there a handler
 	   for the Call node, or do we branch directly to End on an exception?
 	   exc_handling:

@@ -560,7 +560,6 @@ ir_node *arch_dep_replace_mul_with_shifts(ir_node *irn)
 	if (tv != NULL) {
 		res = do_decomposition(irn, operand, tv);
 		if (res != irn) {
-			hook_arch_dep_replace_mul_with_shifts(irn);
 			exchange(irn, res);
 		}
 	}
@@ -972,9 +971,6 @@ ir_node *arch_dep_replace_div_by_const(ir_node *irn)
 		res = left;
 	}
 
-	if (res != irn)
-		hook_arch_dep_replace_division_by_const(irn);
-
 	return res;
 }
 
@@ -1055,9 +1051,6 @@ ir_node *arch_dep_replace_mod_by_const(ir_node *irn)
 		res = new_rd_Mul(dbg, block, res, c, mode);
 		res = new_rd_Sub(dbg, block, left, res, mode);
 	}
-
-	if (res != irn)
-		hook_arch_dep_replace_division_by_const(irn);
 
 	return res;
 }

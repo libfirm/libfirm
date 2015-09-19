@@ -444,7 +444,6 @@ static bool replace(ir_node *irn, ir_node *iv, ir_node *rc, iv_env *env)
 
 	ir_node *result = reduce(irn, iv, rc, env);
 	if (result != irn) {
-		hook_strength_red(get_irn_irg(irn), irn);
 		exchange(irn, result);
 		node_entry *e = get_irn_ne(result, env);
 		if (e->pscc == NULL) {

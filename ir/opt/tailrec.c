@@ -601,7 +601,6 @@ void opt_tail_rec_irg(ir_graph *irg)
 		DB((dbg, LEVEL_2,
 		    "  Performing tail recursion for graph %s and %u Calls\n",
 		    get_entity_ld_name(get_irg_entity(irg)), n_tail_calls));
-		hook_tail_rec(irg, n_tail_calls);
 		do_opt_tail_rec(irg, &env);
 		confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_NONE);
 		set_irg_callee_info_state(irg, irg_callee_info_inconsistent);

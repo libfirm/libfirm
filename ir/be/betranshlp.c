@@ -254,8 +254,6 @@ static void fix_loops(ir_node *node)
  */
 static void transform_nodes(ir_graph *irg, arch_pretrans_nodes *pre_transform)
 {
-	hook_dead_node_elim(irg, 1);
-
 	inc_irg_visited(irg);
 
 	env.worklist = new_pdeq();
@@ -289,7 +287,6 @@ static void transform_nodes(ir_graph *irg, arch_pretrans_nodes *pre_transform)
 
 	del_pdeq(env.worklist);
 	free_End(old_end);
-	hook_dead_node_elim(irg, 0);
 }
 
 void be_transform_graph(ir_graph *irg, arch_pretrans_nodes *func)
