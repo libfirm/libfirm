@@ -64,9 +64,6 @@ typedef enum {
 } irop_flags;
 ENUM_BITSET(irop_flags)
 
-/** Returns the ident for the opcode name */
-FIRM_API ident *get_op_ident(const ir_op *op);
-
 /** Returns the string for the opcode. */
 FIRM_API const char *get_op_name(const ir_op *op);
 

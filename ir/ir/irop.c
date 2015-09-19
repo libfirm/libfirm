@@ -56,7 +56,7 @@ ir_op *new_ir_op(unsigned code, const char *name, op_pin_state p,
 	ir_op *res = XMALLOCZ(ir_op);
 
 	res->code      = code;
-	res->name      = new_id_from_str(name);
+	res->name      = name;
 	res->pin_state = p;
 	res->attr_size = attr_size;
 	res->flags     = flags;
@@ -133,17 +133,12 @@ void ir_op_set_fragile_indices(ir_op *op, unsigned pn_x_regular,
 
 const char *get_op_name (const ir_op *op)
 {
-	return get_id_str(op->name);
+	return op->name;
 }
 
 unsigned (get_op_code)(const ir_op *op)
 {
   return get_op_code_(op);
-}
-
-ident *(get_op_ident)(const ir_op *op)
-{
-  return get_op_ident_(op);
 }
 
 const char *get_op_pin_state_name(op_pin_state s)

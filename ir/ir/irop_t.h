@@ -18,7 +18,6 @@
 #include "tv.h"
 
 #define get_op_code(op)         get_op_code_(op)
-#define get_op_ident(op)        get_op_ident_(op)
 #define get_op_pinned(op)       get_op_pinned_(op)
 #define set_op_tag(op, tag)     set_op_tag_((op), (tag))
 #define get_op_tag(op)          get_op_tag_(op)
@@ -55,7 +54,7 @@ typedef struct {
 /** The type of an ir_op. */
 struct ir_op {
 	unsigned     code;         /**< The unique opcode of the op. */
-	ident       *name;         /**< The name of the op. */
+	const char  *name;         /**< The name of the op. */
 	size_t       attr_size;    /**< Space needed in memory for private
 	                                attributes */
 	op_pin_state pin_state;    /**< How to deal with the node in CSE, PRE. */
@@ -148,11 +147,6 @@ static inline bool is_op_start_block_placed(const ir_op *op)
 static inline unsigned get_op_code_(const ir_op *op)
 {
 	return op->code;
-}
-
-static inline ident *get_op_ident_(const ir_op *op)
-{
-	return op->name;
 }
 
 static inline op_pin_state get_op_pinned_(const ir_op *op)
