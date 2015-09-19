@@ -25,12 +25,6 @@ typedef void (generic_func)(void);
 struct hook_entry {
 	/** A union of all possible hook types. */
 	union {
-		/** This hook is called, after a new ir_op was created. */
-		void (*_hook_new_ir_op)(void *context, ir_op *op);
-
-		/** This hook is called, before am ir_op is destroyed. */
-		void (*_hook_free_ir_op)(void *context, ir_op *op);
-
 		/** This hook is called, after a new IR-node was created and before it is optimized. */
 		void (*_hook_new_node)(void *context, ir_node *node);
 
@@ -114,8 +108,6 @@ struct hook_entry {
  * possible hooks
  */
 typedef enum {
-	hook_new_ir_op,            /**< type for hook_new_ir_op() hook */
-	hook_free_ir_op,           /**< type for hook_free_ir_op() hook */
 	hook_new_node,             /**< type for hook_new_node() hook */
 	hook_set_irn_n,            /**< type for hook_set_irn_n() hook */
 	hook_replace,              /**< type for hook_replace() hook */
@@ -175,10 +167,6 @@ extern hook_entry_t *hooks[hook_last];
 	}                                          \
 } while (0)
 
-/** Called when a new node opcode has been created */
-#define hook_new_ir_op(op)                hook_exec(hook_new_ir_op, (hook_ctx_, op))
-/** Called when a node opcode has been freed */
-#define hook_free_ir_op(op)               hook_exec(hook_free_ir_op, (hook_ctx_, op))
 /** Called after a new node has been created */
 #define hook_new_node(node)               hook_exec(hook_new_node, (hook_ctx_, node))
 /** Called when a nodes input is changed */

@@ -80,14 +80,11 @@ ir_op *new_ir_op(unsigned code, const char *name, op_pin_state p,
 		panic("opcode registered twice");
 	opcodes[code] = res;
 
-	hook_new_ir_op(res);
 	return res;
 }
 
 void free_ir_op(ir_op *code)
 {
-	hook_free_ir_op(code);
-
 	assert(opcodes[code->code] == code);
 	opcodes[code->code] = NULL;
 
