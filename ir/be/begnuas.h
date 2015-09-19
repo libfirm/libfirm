@@ -35,7 +35,6 @@ typedef enum {
 	GAS_SECTION_DEBUG_LINE,      /**< dwarf debug line */
 	GAS_SECTION_DEBUG_PUBNAMES,  /**< dwarf pub names */
 	GAS_SECTION_DEBUG_FRAME,     /**< dwarf callframe infos */
-	GAS_SECTION_LAST = GAS_SECTION_DEBUG_FRAME,
 	GAS_SECTION_TYPE_MASK    = 0xFF,
 
 	GAS_SECTION_FLAG_TLS     = 1 << 8,  /**< thread local flag */
