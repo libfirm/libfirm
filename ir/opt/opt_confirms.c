@@ -321,13 +321,12 @@ static bool is_transitive(ir_relation relation)
  * Return the value of a Cmp if one or both predecessors
  * are Confirm nodes.
  *
- * @param cmp      the Cmp node
  * @param left     the left operand of the Cmp
  * @param right    the right operand of the Cmp
  * @param relation the compare relation
  */
-ir_tarval *computed_value_Cmp_Confirm(const ir_node *cmp, ir_node *left,
-                                      ir_node *right, ir_relation relation)
+ir_tarval *computed_value_Cmp_Confirm(ir_node *left, ir_node *right,
+                                      ir_relation relation)
 {
 	if (is_Confirm(right)) {
 		/* we want the Confirm on the left side */
@@ -371,13 +370,11 @@ ir_tarval *computed_value_Cmp_Confirm(const ir_node *cmp, ir_node *left,
 					ir_relation res_relation = (l_relation & ~ir_relation_equal) | (l_relation & r_inc_relation & ir_relation_equal);
 
 					if ((relation == res_relation) || ((relation & ~ir_relation_equal) == res_relation)) {
-						DBG_EVAL_CONFIRM(cmp);
 						return tarval_b_true;
 					} else {
 						ir_relation neg_relation = get_negated_relation(relation);
 
 						if ((neg_relation == res_relation) || ((neg_relation & ~ir_relation_equal) == res_relation)) {
-							DBG_EVAL_CONFIRM(cmp);
 							return tarval_b_false;
 						}
 					}
@@ -396,7 +393,6 @@ ir_tarval *computed_value_Cmp_Confirm(const ir_node *cmp, ir_node *left,
 			 * We know that a CMP b and check for that
 			 */
 			if ((r_relation == relation) || (r_relation == (relation & ~ir_relation_equal))) {
-				DBG_EVAL_CONFIRM(cmp);
 				return tarval_b_true;
 			} else {
 				/*
@@ -407,7 +403,6 @@ ir_tarval *computed_value_Cmp_Confirm(const ir_node *cmp, ir_node *left,
 				ir_relation neg_relation = get_negated_relation(relation);
 
 				if ((r_relation == neg_relation) || (r_relation == (neg_relation & ~ir_relation_equal))) {
-					DBG_EVAL_CONFIRM(cmp);
 					return tarval_b_false;
 				}
 			}
@@ -420,7 +415,6 @@ ir_tarval *computed_value_Cmp_Confirm(const ir_node *cmp, ir_node *left,
 			relation);
 
 		if (tv != tarval_unknown) {
-			DBG_EVAL_CONFIRM(cmp);
 			return tv;
 		}
 	}
@@ -437,7 +431,6 @@ ir_tarval *computed_value_Cmp_Confirm(const ir_node *cmp, ir_node *left,
 		 * We know that a CMP b and check for that
 		 */
 		if ((l_relation == relation) || (l_relation == (relation & ~ir_relation_equal))) {
-			DBG_EVAL_CONFIRM(cmp);
 			return tarval_b_true;
 		} else {
 			/*
@@ -448,7 +441,6 @@ ir_tarval *computed_value_Cmp_Confirm(const ir_node *cmp, ir_node *left,
 			ir_relation neg_relation = get_negated_relation(relation);
 
 			if ((l_relation == neg_relation) || (l_relation == (neg_relation & ~ir_relation_equal))) {
-				DBG_EVAL_CONFIRM(cmp);
 				return tarval_b_false;
 			}
 		}
@@ -462,9 +454,6 @@ ir_tarval *computed_value_Cmp_Confirm(const ir_node *cmp, ir_node *left,
 			get_interval_from_tv(&r_iv, tv),
 			relation);
 	}
-
-	if (tv != tarval_unknown)
-		DBG_EVAL_CONFIRM(cmp);
 
 	return tv;
 }

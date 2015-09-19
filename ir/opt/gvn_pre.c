@@ -85,7 +85,6 @@ typedef struct elim_pair {
 	ir_node *old_node;      /* node that will be replaced */
 	ir_node *new_node;      /* replacement for old_node */
 	struct elim_pair *next; /* links all instances for easy access */
-	int     reason;         /* reason for the replacement */
 } elim_pair;
 
 /** environment for the GVN-PRE algorithm */
@@ -1709,10 +1708,6 @@ static void eliminate(ir_node *irn, void *ctx)
 				p->old_node = irn;
 				p->new_node = expr;
 				p->next     = env->pairs;
-				if (get_irn_idx(expr) > env->last_idx)
-					p->reason = FS_OPT_GVN_PARTLY;
-				else
-					p->reason = FS_OPT_GVN_FULLY;
 				env->pairs = p;
 				DEBUG_ONLY(inc_stats(gvnpre_stats->replaced);)
 			}
@@ -1755,7 +1750,7 @@ static void eliminate_nodes(elim_pair *pairs, ir_nodeset_t *keeps)
 				p->new_node = res;
 			}
 		}
-		DBG_OPT_GVN_PRE(p->old_node, p->new_node, p->reason);
+		DBG_OPT_GVN_PRE(p->old_node, p->new_node);
 
 		exchange(p->old_node, p->new_node);
 	}

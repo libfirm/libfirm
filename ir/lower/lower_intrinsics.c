@@ -184,7 +184,7 @@ int i_mapper_abs(ir_node *call)
 
 	/* construct Mux */
 	mux = new_rd_Mux(dbg, block, cmp, op, minus_op, mode);
-	DBG_OPT_ALGSIM0(call, mux, FS_OPT_RTS_ABS);
+	DBG_OPT_ALGSIM0(call, mux);
 	replace_call(mux, call, mem, NULL, NULL);
 	return 1;
 }
@@ -205,7 +205,7 @@ int i_mapper_sqrt(ir_node *call)
 	mem = get_Call_mem(call);
 
 	/* sqrt(0) = 0, sqrt(1) = 1 */
-	DBG_OPT_ALGSIM0(call, op, FS_OPT_RTS_SQRT);
+	DBG_OPT_ALGSIM0(call, op);
 	replace_call(op, call, mem, NULL, NULL);
 	return 1;
 }
@@ -226,7 +226,7 @@ int i_mapper_cbrt(ir_node *call)
 	mem = get_Call_mem(call);
 
 	/* cbrt(0) = 0, cbrt(1) = 1, cbrt(-1) = -1 */
-	DBG_OPT_ALGSIM0(call, op, FS_OPT_RTS_CBRT);
+	DBG_OPT_ALGSIM0(call, op);
 	replace_call(op, call, mem, NULL, NULL);
 	return 1;
 }
@@ -291,7 +291,7 @@ int i_mapper_pow(ir_node *call)
 			irn = new_r_Conv(block, irn, result_mode);
 		}
 	}
-	DBG_OPT_ALGSIM0(call, irn, FS_OPT_RTS_POW);
+	DBG_OPT_ALGSIM0(call, irn);
 	replace_call(irn, call, mem, reg_jmp, exc_jmp);
 	return 1;
 }
@@ -306,7 +306,7 @@ int i_mapper_exp(ir_node *call)
 		ir_mode *mode  = get_irn_mode(val);
 		ir_node *irn   = new_r_Const_one(irg, mode);
 		ir_node *mem   = get_Call_mem(call);
-		DBG_OPT_ALGSIM0(call, irn, FS_OPT_RTS_EXP);
+		DBG_OPT_ALGSIM0(call, irn);
 		replace_call(irn, call, mem, NULL, NULL);
 		return 1;
 	}
@@ -326,14 +326,14 @@ int i_mapper_exp10(ir_node *call)
 /**
  * A mapper for mapping f(0.0) to 0.0.
  */
-static int i_mapper_zero_to_zero(ir_node *call, int reason)
+static int i_mapper_zero_to_zero(ir_node *call)
 {
 	ir_node *val  = get_Call_param(call, 0);
 
 	if (is_Const(val) && is_Const_null(val)) {
 		/* f(0.0) = 0.0 */
 		ir_node *mem = get_Call_mem(call);
-		DBG_OPT_ALGSIM0(call, val, reason);
+		DBG_OPT_ALGSIM0(call, val);
 		replace_call(val, call, mem, NULL, NULL);
 		return 1;
 	}
@@ -343,7 +343,7 @@ static int i_mapper_zero_to_zero(ir_node *call, int reason)
 /**
  * A mapper for mapping f(1.0) to 0.0.
  */
-static int i_mapper_one_to_zero(ir_node *call, int reason)
+static int i_mapper_one_to_zero(ir_node *call)
 {
 	ir_node *val  = get_Call_param(call, 0);
 
@@ -353,7 +353,7 @@ static int i_mapper_one_to_zero(ir_node *call, int reason)
 		ir_mode *mode = get_irn_mode(val);
 		ir_node *irn  = new_r_Const_null(irg, mode);
 		ir_node *mem  = get_Call_mem(call);
-		DBG_OPT_ALGSIM0(call, irn, reason);
+		DBG_OPT_ALGSIM0(call, irn);
 		replace_call(irn, call, mem, NULL, NULL);
 		return 1;
 	}
@@ -365,7 +365,7 @@ static int i_mapper_one_to_zero(ir_node *call, int reason)
  * f(-x)  = f(x).
  * f(0.0) = 1.0
  */
-static int i_mapper_symmetric_zero_to_one(ir_node *call, int reason)
+static int i_mapper_symmetric_zero_to_one(ir_node *call)
 {
 	int      changed = 0;
 	ir_node *val     = get_Call_param(call, 0);
@@ -380,14 +380,14 @@ static int i_mapper_symmetric_zero_to_one(ir_node *call, int reason)
 
 			op = get_Minus_op(op);
 			val = new_rd_Conv(dbg, block, op, mode);
-			DBG_OPT_ALGSIM2(call, op, call, FS_OPT_RTS_SYMMETRIC);
+			DBG_OPT_ALGSIM2(call, op, call);
 			set_Call_param(call, 0, val);
 			changed = 1;
 		}
 	} else if (is_Minus(val)) {
 		/* f(-x) = f(x) */
 		val = get_Minus_op(val);
-		DBG_OPT_ALGSIM2(call, val, call, FS_OPT_RTS_SYMMETRIC);
+		DBG_OPT_ALGSIM2(call, val, call);
 		set_Call_param(call, 0, val);
 		changed = 1;
 	}
@@ -398,7 +398,7 @@ static int i_mapper_symmetric_zero_to_one(ir_node *call, int reason)
 		ir_mode *mode  = get_irn_mode(val);
 		ir_node *irn   = new_r_Const_one(irg, mode);
 		ir_node *mem   = get_Call_mem(call);
-		DBG_OPT_ALGSIM0(call, irn, reason);
+		DBG_OPT_ALGSIM0(call, irn);
 		replace_call(irn, call, mem, NULL, NULL);
 		changed = 1;
 	}
@@ -408,73 +408,73 @@ static int i_mapper_symmetric_zero_to_one(ir_node *call, int reason)
 int i_mapper_log(ir_node *call)
 {
 	/* log(1.0) = 0.0 */
-	return i_mapper_one_to_zero(call, FS_OPT_RTS_LOG);
+	return i_mapper_one_to_zero(call);
 }
 
 int i_mapper_log2(ir_node *call)
 {
 	/* log2(1.0) = 0.0 */
-	return i_mapper_one_to_zero(call, FS_OPT_RTS_LOG);
+	return i_mapper_one_to_zero(call);
 }
 
 int i_mapper_log10(ir_node *call)
 {
 	/* log10(1.0) = 0.0 */
-	return i_mapper_one_to_zero(call, FS_OPT_RTS_LOG);
+	return i_mapper_one_to_zero(call);
 }
 
 int i_mapper_sin(ir_node *call)
 {
 	/* sin(0.0) = 0.0 */
-	return i_mapper_zero_to_zero(call, FS_OPT_RTS_SIN);
+	return i_mapper_zero_to_zero(call);
 }
 
 int i_mapper_cos(ir_node *call)
 {
 	/* cos(0.0) = 1.0, cos(-x) = x */
-	return i_mapper_symmetric_zero_to_one(call, FS_OPT_RTS_COS);
+	return i_mapper_symmetric_zero_to_one(call);
 }
 
 int i_mapper_tan(ir_node *call)
 {
 	/* tan(0.0) = 0.0 */
-	return i_mapper_zero_to_zero(call, FS_OPT_RTS_TAN);
+	return i_mapper_zero_to_zero(call);
 }
 
 int i_mapper_asin(ir_node *call)
 {
 	/* asin(0.0) = 0.0 */
-	return i_mapper_zero_to_zero(call, FS_OPT_RTS_ASIN);
+	return i_mapper_zero_to_zero(call);
 }
 
 int i_mapper_acos(ir_node *call)
 {
 	/* acos(1.0) = 0.0 */
-	return i_mapper_one_to_zero(call, FS_OPT_RTS_ACOS);
+	return i_mapper_one_to_zero(call);
 }
 
 int i_mapper_atan(ir_node *call)
 {
 	/* atan(0.0) = 0.0 */
-	return i_mapper_zero_to_zero(call, FS_OPT_RTS_ATAN);
+	return i_mapper_zero_to_zero(call);
 }
 
 int i_mapper_sinh(ir_node *call)
 {
 	/* sinh(0.0) = 0.0 */
-	return i_mapper_zero_to_zero(call, FS_OPT_RTS_SINH);
+	return i_mapper_zero_to_zero(call);
 }
 
 int i_mapper_cosh(ir_node *call)
 {
 	/* cosh(0.0) = 1.0, cosh(-x) = x */
-	return i_mapper_symmetric_zero_to_one(call, FS_OPT_RTS_COSH);
+	return i_mapper_symmetric_zero_to_one(call);
 }
 
 int i_mapper_tanh(ir_node *call)
 {
 	/* tanh(0.0) = 0.0 */
-	return i_mapper_zero_to_zero(call, FS_OPT_RTS_TANH);
+	return i_mapper_zero_to_zero(call);
 }
 
 /**
@@ -599,7 +599,7 @@ int i_mapper_strlen(ir_node *call)
 
 		if (irn) {
 			ir_node *mem = get_Call_mem(call);
-			DBG_OPT_ALGSIM0(call, irn, FS_OPT_RTS_STRLEN);
+			DBG_OPT_ALGSIM0(call, irn);
 			replace_call(irn, call, mem, NULL, NULL);
 			return 1;
 		}
@@ -753,7 +753,7 @@ int i_mapper_strcmp(ir_node *call)
 		ir_mode *mode = get_type_mode(res_tp);
 
 		irn = new_r_Const_null(irg, mode);
-		DBG_OPT_ALGSIM0(call, irn, FS_OPT_RTS_STRCMP);
+		DBG_OPT_ALGSIM0(call, irn);
 		replace_call(irn, call, mem, NULL, NULL);
 		return 1;
 	}
@@ -808,7 +808,7 @@ replace_by_call:
 	}
 
 	if (irn != NULL) {
-		DBG_OPT_ALGSIM0(call, irn, FS_OPT_RTS_STRCMP);
+		DBG_OPT_ALGSIM0(call, irn);
 		replace_call(irn, call, mem, reg, exc);
 		return 1;
 	}
@@ -835,7 +835,7 @@ int i_mapper_strncmp(ir_node *call)
 		ir_mode   *mode    = get_type_mode(res_tp);
 
 		irn = new_r_Const_null(irg, mode);
-		DBG_OPT_ALGSIM0(call, irn, FS_OPT_RTS_STRNCMP);
+		DBG_OPT_ALGSIM0(call, irn);
 		replace_call(irn, call, mem, NULL, NULL);
 		return 1;
 	}
@@ -852,7 +852,7 @@ int i_mapper_strcpy(ir_node *call)
 		ir_node *mem = get_Call_mem(call);
 		ir_node *dst = get_Call_param(call, 0);
 
-		DBG_OPT_ALGSIM0(call, dst, FS_OPT_RTS_STRCPY);
+		DBG_OPT_ALGSIM0(call, dst);
 		replace_call(dst, call, mem, NULL, NULL);
 		return 1;
 	}
@@ -870,7 +870,7 @@ int i_mapper_memcpy(ir_node *call)
 		   a memcpy(d, s, 0) ==> d */
 		ir_node *mem = get_Call_mem(call);
 
-		DBG_OPT_ALGSIM0(call, dst, FS_OPT_RTS_MEMCPY);
+		DBG_OPT_ALGSIM0(call, dst);
 		replace_call(dst, call, mem, NULL, NULL);
 		return 1;
 	}
@@ -888,7 +888,7 @@ int i_mapper_memmove(ir_node *call)
 		   a memmove(d, s, 0) ==> d */
 		ir_node *mem = get_Call_mem(call);
 
-		DBG_OPT_ALGSIM0(call, dst, FS_OPT_RTS_MEMMOVE);
+		DBG_OPT_ALGSIM0(call, dst);
 		replace_call(dst, call, mem, NULL, NULL);
 		return 1;
 	}
@@ -904,7 +904,7 @@ int i_mapper_memset(ir_node *call)
 		ir_node *mem = get_Call_mem(call);
 		ir_node *dst = get_Call_param(call, 0);
 
-		DBG_OPT_ALGSIM0(call, dst, FS_OPT_RTS_MEMSET);
+		DBG_OPT_ALGSIM0(call, dst);
 		replace_call(dst, call, mem, NULL, NULL);
 		return 1;
 	}
@@ -930,7 +930,7 @@ int i_mapper_memcmp(ir_node *call)
 		ir_mode   *mode    = get_type_mode(res_tp);
 
 		irn = new_r_Const_null(irg, mode);
-		DBG_OPT_ALGSIM0(call, irn, FS_OPT_RTS_MEMCMP);
+		DBG_OPT_ALGSIM0(call, irn);
 		replace_call(irn, call, mem, NULL, NULL);
 		return 1;
 	}

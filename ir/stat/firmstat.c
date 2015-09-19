@@ -1345,51 +1345,6 @@ static void removed_due_opt(ir_node *n, hmap_opt_entry_t *hmap, hook_opt_kind ki
 }
 
 /**
- * Hook: Some nodes were optimized into some others due to an optimization.
- *
- * @param ctx  the hook context
- */
-static void stat_merge_nodes(void *ctx, ir_node *const *new_node_array, int new_num_entries, ir_node *const *old_node_array, int old_num_entries, hook_opt_kind opt)
-{
-	(void)ctx;
-	if (!status->stat_options)
-		return;
-
-	STAT_ENTER;
-	{
-		assert(old_num_entries > 0);
-		graph_entry_t *const graph = get_graph_entry(old_node_array[0], status->irg_hash);
-
-		cnt_inc(&status->num_opts[opt]);
-		if (status->reassoc_run)
-			opt = HOOK_OPT_REASSOC;
-
-		for (int i = 0; i < old_num_entries; ++i) {
-			/* nodes might be in new and old, so if we found a node
-			   in both sets, this one is NOT removed */
-			int j;
-			for (j = 0; j < new_num_entries; ++j) {
-				if (old_node_array[i] == new_node_array[j])
-					break;
-			}
-			if (j >= new_num_entries) {
-				int xopt = opt;
-
-				/* sometimes we did not detect, that it is replaced by a Const */
-				if (opt == HOOK_OPT_CONFIRM && new_num_entries == 1) {
-					ir_node *const irn = new_node_array[0];
-					if (is_const(irn))
-						xopt = HOOK_OPT_CONFIRM_C;
-				}
-
-				removed_due_opt(old_node_array[i], graph->opt_hash[xopt], (hook_opt_kind)xopt);
-			}
-		}
-	}
-	STAT_LEAVE;
-}
-
-/**
  * Hook: Reassociation is started/stopped.
  *
  * @param ctx   the hook context
@@ -1713,7 +1668,6 @@ void firm_init_stat(void)
 	HOOK(hook_irg_walk,                           stat_irg_walk);
 	HOOK(hook_irg_walk_blkwise,                   stat_irg_walk_blkwise);
 	HOOK(hook_irg_block_walk,                     stat_irg_block_walk);
-	HOOK(hook_merge_nodes,                        stat_merge_nodes);
 	HOOK(hook_reassociate,                        stat_reassociate);
 	HOOK(hook_lower,                              stat_lower);
 	HOOK(hook_inline,                             stat_inline);

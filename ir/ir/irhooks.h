@@ -98,12 +98,6 @@ struct hook_entry {
 		/** This hook is called before an block walk is started. */
 		void (*_hook_irg_block_walk)(void *context, ir_graph *irg, ir_node *node, generic_func *pre, generic_func *post);
 
-		/** This hook is called, when debug info must be merged. */
-		void (*_hook_merge_nodes)(void *context, ir_node *const *new_node_array,
-		                          int new_num_entries,
-		                          ir_node *const *old_node_array,
-		                          int old_num_entries, hook_opt_kind opt);
-
 		/** This hook is called, when reassociation is started/stopped. */
 		void (*_hook_reassociate)(void *context, int start);
 
@@ -167,7 +161,6 @@ typedef enum {
 	hook_irg_walk,             /**< type for hook_irg_walk() hook */
 	hook_irg_walk_blkwise,     /**< type for hook_irg_walk_blkwise() hook */
 	hook_irg_block_walk,       /**< type for hook_irg_block_walk() hook */
-	hook_merge_nodes,          /**< type for hook_merge_nodes() hook */
 	hook_reassociate,          /**< type for hook_reassociate() hook */
 	hook_lower,                /**< type for hook_lower() hook */
 	hook_inline,               /**< type for hook_inline() hook */
@@ -244,9 +237,6 @@ extern hook_entry_t *hooks[hook_last];
 /** Called before a block walk is started */
 #define hook_irg_block_walk(irg, node, pre, post) \
   hook_exec(hook_irg_block_walk, (hook_ctx_, irg, node, pre, post))
-/** Called before 2 nodes get merged */
-#define hook_merge_nodes(new_node_array, new_num_entries, old_node_array, old_num_entries, opt) \
-  hook_exec(hook_merge_nodes, (hook_ctx_, new_node_array, new_num_entries, old_node_array, old_num_entries, opt))
 /** Called before node inputs get reassociated */
 #define hook_reassociate(start)           hook_exec(hook_reassociate, (hook_ctx_, start))
 /** Called before a node gets lowered */

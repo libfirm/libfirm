@@ -2783,7 +2783,7 @@ static void apply_cf(ir_node *block, void *ctx)
 		if (can_exchange(pred, block)) {
 			ir_node *new_block = get_nodes_block(pred);
 			DB((dbg, LEVEL_1, "Fuse %+F with %+F\n", block, new_block));
-			DBG_OPT_COMBO(block, new_block, FS_OPT_COMBO_CF);
+			DBG_OPT_COMBO(block, new_block);
 			exchange(block, new_block);
 			node->node = new_block;
 			env->modified = true;
@@ -2821,7 +2821,7 @@ static void apply_cf(ir_node *block, void *ctx)
 			set_irn_node(c, node);
 			node->node = c;
 			DB((dbg, LEVEL_1, "%+F is replaced by %+F\n", phi, c));
-			DBG_OPT_COMBO(phi, c, FS_OPT_COMBO_CONST);
+			DBG_OPT_COMBO(phi, c);
 			exchange(phi, c);
 			env->modified = true;
 		} else {
@@ -2843,7 +2843,7 @@ static void apply_cf(ir_node *block, void *ctx)
 
 				node->node = s;
 				DB((dbg, LEVEL_1, "%+F is replaced by %+F because of cf change\n", phi, s));
-				DBG_OPT_COMBO(phi, s, FS_OPT_COMBO_FOLLOWER);
+				DBG_OPT_COMBO(phi, s);
 				exchange(phi, s);
 				phi_node->node = s;
 				env->modified = true;
@@ -2861,7 +2861,7 @@ static void apply_cf(ir_node *block, void *ctx)
 
 		if (can_exchange(pred, block)) {
 			ir_node *new_block = get_nodes_block(pred);
-			DBG_OPT_COMBO(block, new_block, FS_OPT_COMBO_CF);
+			DBG_OPT_COMBO(block, new_block);
 			exchange(block, new_block);
 			node->node = new_block;
 			env->modified = true;
@@ -3016,7 +3016,7 @@ static void apply_result(ir_node *irn, void *ctx)
 					set_irn_node(jmp, node);
 					node->node = jmp;
 					DB((dbg, LEVEL_1, "%+F is replaced by %+F\n", irn, jmp));
-					DBG_OPT_COMBO(irn, jmp, FS_OPT_COMBO_CF);
+					DBG_OPT_COMBO(irn, jmp);
 					exchange(irn, jmp);
 					env->modified = true;
 				} else if (is_Switch(cond)) {
@@ -3046,7 +3046,7 @@ static void apply_result(ir_node *irn, void *ctx)
 			set_irn_node(c, node);
 			node->node = c;
 			DB((dbg, LEVEL_1, "%+F is replaced by %+F\n", irn, c));
-			DBG_OPT_COMBO(irn, c, FS_OPT_COMBO_CONST);
+			DBG_OPT_COMBO(irn, c);
 			exchange_leader(irn, c);
 			env->modified = true;
 		}
@@ -3059,7 +3059,7 @@ static void apply_result(ir_node *irn, void *ctx)
 			node->node = addr;
 
 			DB((dbg, LEVEL_1, "%+F is replaced by %+F\n", irn, addr));
-			DBG_OPT_COMBO(irn, addr, FS_OPT_COMBO_CONST);
+			DBG_OPT_COMBO(irn, addr);
 			exchange_leader(irn, addr);
 			env->modified = true;
 		}
@@ -3088,9 +3088,9 @@ static void apply_result(ir_node *irn, void *ctx)
 			if (!non_strict_phi) {
 				DB((dbg, LEVEL_1, "%+F from part%d is replaced by %+F\n", irn, node->part->nr, leader));
 				if (node->is_follower)
-					DBG_OPT_COMBO(irn, leader, FS_OPT_COMBO_FOLLOWER);
+					DBG_OPT_COMBO(irn, leader);
 				else
-					DBG_OPT_COMBO(irn, leader, FS_OPT_COMBO_CONGRUENT);
+					DBG_OPT_COMBO(irn, leader);
 				exchange_leader(irn, leader);
 				env->modified = true;
 			}

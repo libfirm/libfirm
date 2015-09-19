@@ -367,7 +367,7 @@ static int eval_cmp(jumpthreading_env_t *env, ir_node *cand)
 		return eval_cmp_tv(env->relation, tv_cand, tv_cmp);
 	} else {
 		assert(is_Confirm(cand));
-		ir_tarval *res = computed_value_Cmp_Confirm(env->cmp, cand, env->cnst,
+		ir_tarval *res = computed_value_Cmp_Confirm(cand, env->cnst,
 		                                            env->relation);
 		if (!tarval_is_constant(res))
 			return -1;
