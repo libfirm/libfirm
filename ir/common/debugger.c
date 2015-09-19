@@ -67,7 +67,6 @@ typedef enum bp_reasons_t {
 	BP_ON_NEW_THING,   /**< break if node, entity or type with number is created */
 	BP_ON_REPLACE,     /**< break if node with number is replaced */
 	BP_ON_LOWER,       /**< break if node with number is lowered */
-	BP_ON_REMIRG,      /**< break if an IRG is removed */
 	BP_ON_NEW_ENT,     /**< break if a new entity is created */
 	BP_MAX_REASON
 } bp_reasons_t;
@@ -253,45 +252,6 @@ static void dbg_lower(void *ctx, ir_node *node)
 }
 
 /**
- * A graph will be deleted.
- *
- * @param ctx   the hook context
- * @param irg   the IR graph that will be deleted
- */
-static void dbg_free_graph(void *ctx, ir_graph *irg)
-{
-	(void) ctx;
-
-	bp_nr_t key;
-	key.nr        = get_irg_graph_nr(irg);
-	key.bp.reason = BP_ON_REMIRG;
-
-	bp_nr_t *elem
-		= set_find(bp_nr_t, bp_numbers, &key, sizeof(key), HASH_NR_BP(key));
-	if (elem && elem->bp.active) {
-		ir_printf("Firm BP %u reached, %+F will be deleted\n", elem->bp.bpnr,
-		          irg);
-		firm_debug_break();
-	}
-
-	ir_entity *ent = get_irg_entity(irg);
-	if (ent == NULL)
-		return;
-
-	bp_ident_t ikey;
-	ikey.id        = get_entity_ident(ent);
-	ikey.bp.reason = BP_ON_REMIRG;
-
-	bp_ident_t *ielem = set_find(bp_ident_t, bp_idents, &ikey, sizeof(ikey),
-	                             HASH_IDENT_BP(ikey));
-	if (ielem && ielem->bp.active) {
-		dbg_printf("Firm BP %u reached, %+F will be deleted\n", ielem->bp.bpnr,
-		           ent);
-		firm_debug_break();
-	}
-}
-
-/**
  * An entity was created.
  *
  * @param ctx   the hook context
@@ -352,7 +312,6 @@ static const char *reason_str(bp_reasons_t reason)
 	case BP_ON_NEW_THING: return "node, entity or type creation";
 	case BP_ON_REPLACE:   return "node replace";
 	case BP_ON_LOWER:     return "node lowering";
-	case BP_ON_REMIRG:    return "removing IRG";
 	case BP_ON_NEW_ENT:   return "entity creation";
 	case BP_MAX_REASON:   break;
 	}
@@ -399,7 +358,6 @@ static void update_hooks(breakpoint *bp)
 		switch (bp->reason) {
 		CASE_ON(BP_ON_REPLACE, hook_replace,    dbg_replace);
 		CASE_ON(BP_ON_LOWER,   hook_lower,      dbg_lower);
-		CASE_ON(BP_ON_REMIRG,  hook_free_graph, dbg_free_graph);
 		CASE_ON(BP_ON_NEW_ENT, hook_new_entity, dbg_new_entity);
 		case BP_ON_NEW_THING:
 			if (!IS_HOOKED(hook_new_node))
@@ -417,7 +375,6 @@ static void update_hooks(breakpoint *bp)
 		switch (bp->reason) {
 		CASE_OFF(BP_ON_REPLACE,  hook_replace);
 		CASE_OFF(BP_ON_LOWER,    hook_lower);
-		CASE_OFF(BP_ON_REMIRG,   hook_free_graph);
 		CASE_OFF(BP_ON_NEW_ENT,  hook_new_entity);
 		case BP_ON_NEW_THING:
 			if (IS_HOOKED(hook_new_node))
@@ -1004,18 +961,6 @@ void firm_debug(const char *cmd)
 			if (token != tok_number)
 				goto error;
 			break_on_nr(lexer.number, BP_ON_LOWER);
-			break;
-
-		case tok_remirg:
-			token = get_token();
-
-			if (token == tok_number) {
-				break_on_nr(lexer.number, BP_ON_REMIRG);
-			} else if (token == tok_identifier) {
-				get_token_text(name, sizeof(name));
-				break_on_ident(name, BP_ON_REMIRG);
-			} else
-				goto error;
 			break;
 
 		case tok_newent:

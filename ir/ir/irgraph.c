@@ -260,7 +260,6 @@ void free_ir_graph(ir_graph *irg)
 	remove_irp_irg(irg);
 	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_NONE);
 
-	hook_free_graph(irg);
 	free_irg_outs(irg);
 	del_identities(irg);
 	if (irg->ent) {

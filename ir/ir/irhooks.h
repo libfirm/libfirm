@@ -35,9 +35,6 @@ struct hook_entry {
 		 * on this graph is built. */
 		void (*_hook_new_graph)(void *context, ir_graph *irg, ir_entity *ent);
 
-		/** This hook is called before a graph is freed. */
-		void (*_hook_free_graph)(void *context, ir_graph *irg);
-
 		/** This hook is called, before a node is lowered. */
 		void (*_hook_lower)(void *context, ir_node *node);
 
@@ -68,7 +65,6 @@ typedef enum {
 	hook_new_node,             /**< type for hook_new_node() hook */
 	hook_replace,              /**< type for hook_replace() hook */
 	hook_new_graph,            /**< type for hook_new_graph() hook */
-	hook_free_graph,           /**< type for hook_free_graph() hook */
 	hook_lower,                /**< type for hook_lower() hook */
 	hook_new_mode,             /**< type for hook_new_mode() hook */
 	hook_new_entity,           /**< type for hook_new_entity() hook */
@@ -114,8 +110,6 @@ extern hook_entry_t *hooks[hook_last];
 #define hook_replace(old, nw)             hook_exec(hook_replace, (hook_ctx_, old, nw))
 /** Called after a new graph has been created */
 #define hook_new_graph(irg, ent)          hook_exec(hook_new_graph, (hook_ctx_, irg, ent))
-/** Called after a graph has been freed */
-#define hook_free_graph(irg)              hook_exec(hook_free_graph, (hook_ctx_, irg))
 /** Called before a node gets lowered */
 #define hook_lower(node)                  hook_exec(hook_lower, (hook_ctx_, node))
 /** Called when a new mode has been created */
