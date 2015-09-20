@@ -67,6 +67,9 @@ void x86_sim_x87_unop(x87_state *state, ir_node *node);
 void x86_sim_x87_binop(x87_state *state, ir_node *node, int n_op0, int n_op1,
                        arch_register_t const *out);
 
+unsigned x86_sim_x87_fucom(x87_state *state, ir_node *node,
+                           ir_node *op0, ir_node *op1);
+
 /** Push a value on the x87 stack. Intended to be used in sim functions. */
 void x86_x87_push(x87_state *state, ir_node *value);
 

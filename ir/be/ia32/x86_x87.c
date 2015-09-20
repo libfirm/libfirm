@@ -943,69 +943,62 @@ static void sim_FtstFnstsw(x87_state *state, ir_node *n)
 		x87_create_fpop(state, n, 0);
 }
 
-/**
- * Simulate a Fucom
- *
- * @param state  the x87 state
- * @param n      the node that should be simulated (and patched)
- */
-static void sim_Fucom(x87_state *state, ir_node *n)
+unsigned x86_sim_x87_fucom(x87_state *const state, ir_node *const node,
+                           ir_node *const op0, ir_node *const op1)
 {
-	ir_node     *const op1            = get_irn_n(n, n_ia32_FucomFnstsw_left);
-	ir_node     *const op2            = get_irn_n(n, n_ia32_FucomFnstsw_right);
-	fp_liveness  const live           = fp_live_args_after(state->sim, n, 0);
-	bool         const op1_live_after = is_fp_live(op1, live);
+	fp_liveness  const live           = fp_live_args_after(state->sim, node, 0);
+	bool         const op0_live_after = is_fp_live(op0, live);
 
-	DB((dbg, LEVEL_1, ">>> %+F %+F, %+F\n", n, op1, op2));
+	DB((dbg, LEVEL_1, ">>> %+F %+F, %+F\n", node, op0, op1));
 	DEBUG_ONLY(fp_dump_live(live);)
 	DB((dbg, LEVEL_1, "Stack before: "));
 	DEBUG_ONLY(x87_dump_stack(state);)
 
 	bool       reverse;
 	unsigned   pops           = 0;
-	bool const op2_live_after = is_fp_live(op2, live);
-	if (op1_live_after) {
-		if (op2_live_after) {
+	bool const op1_live_after = is_fp_live(op1, live);
+	if (op0_live_after) {
+		if (op1_live_after) {
 			/* Both operands are live. */
-			if (is_at_pos(state, op2, 0)) {
+			if (is_at_pos(state, op1, 0)) {
 				reverse = true;
 			} else {
 				/* Move the first one to tos. */
-				move_to_tos(state, n, op1);
+				move_to_tos(state, node, op0);
 				reverse = false;
 			}
 		} else {
 			/* First live, second dead: Pop second. */
-			move_to_tos(state, n, op2);
+			move_to_tos(state, node, op1);
 			reverse = true;
 			pops    = 1;
 		}
 	} else {
-		if (op2_live_after) {
+		if (op1_live_after) {
 			/* First dead, Second live: Pop first. */
-			move_to_tos(state, n, op1);
+			move_to_tos(state, node, op0);
 			reverse = false;
 			pops    = 1;
 		} else {
 			/* Both dead. */
-			if (op1 == op2) {
+			if (op0 == op1) {
 				/* Operands are identical: One pop. */
-				move_to_tos(state, n, op1);
+				move_to_tos(state, node, op0);
 				reverse = false;
 				pops    = 1;
 			} else {
 				/* Both operands are dead.
 				 * Move one operand to tos. Move the one not at
 				 * pos 1, so we get a chance to use fucompp. */
-				if (is_at_pos(state, op1, 0)) {
+				if (is_at_pos(state, op0, 0)) {
 					reverse = false;
-				} else if (is_at_pos(state, op2, 0)) {
+				} else if (is_at_pos(state, op1, 0)) {
 					reverse = true;
-				} else if (is_at_pos(state, op1, 1)) {
-					move_to_tos(state, n, op2);
+				} else if (is_at_pos(state, op0, 1)) {
+					move_to_tos(state, node, op1);
 					reverse = true;
 				} else {
-					move_to_tos(state, n, op1);
+					move_to_tos(state, node, op0);
 					reverse = false;
 				}
 				pops = 2;
@@ -1013,34 +1006,60 @@ static void sim_Fucom(x87_state *state, ir_node *n)
 		}
 	}
 
-	unsigned const op_reg = x87_on_stack(state, reverse ? op1 : op2);
+	unsigned const op_reg = x87_on_stack(state, reverse ? op0 : op1);
 	/* Patch the operation. */
-	ia32_x87_attr_t *const attr = get_ia32_x87_attr(n);
-	attr->x87.reg            = get_st_reg(op_reg);
-	attr->x87.pop            = pops != 0;
-	attr->attr.ins_permuted ^= reverse;
+	x87_attr_t *const attr = x87.get_x87_attr(node);
+	attr->reg     = get_st_reg(op_reg);
+	attr->pop     = pops != 0;
+	attr->reverse = reverse;
 
-	if (pops != 0) {
+	unsigned additional_pop = ~0u;
+	if (pops > 0) {
 		x87_pop(state);
-		if (pops == 2) {
-			if (is_ia32_FucomFnstsw(n) && op_reg == 1) {
-				set_irn_op(n, op_ia32_FucomppFnstsw);
-				x87_pop(state);
-			} else {
-				x87_create_fpop(state, n, op_reg - 1 /* Due to prior pop. */);
-			}
-		}
+		assert(pops == 1 || pops == 2);
+		if (pops == 2)
+			additional_pop = op_reg - 1; /* -1 due to prior pop */
 	}
 
 	DEBUG_ONLY(
-		x87_attr_t const *const x87  = &attr->x87;
 		char       const *const st0  = get_st_reg(0)->name;
-		char       const *const reg  =  x87->reg ? x87->reg->name : "[AM]";
-		char       const *const l    =  attr->attr.ins_permuted ? reg : st0;
-		char       const *const r    = !attr->attr.ins_permuted ? reg : st0;
-		char       const *const pop  =  x87->pop ? " [pop]" : "";
-		DB((dbg, LEVEL_1, "<<< %s %s, %s%s\n", get_irn_opname(n), l, r, pop));
+		char       const *const reg  =  attr->reg ? attr->reg->name : "[AM]";
+		char       const *const l    =  reverse ? reg : st0;
+		char       const *const r    = !reverse ? reg : st0;
+		char       const *const pop  =  attr->pop ? " [pop]" : "";
+		DB((dbg, LEVEL_1, "<<< %s %s, %s%s\n", get_irn_opname(node), l, r, pop));
 	)
+	return additional_pop;
+}
+
+static void sim_ia32_FucomFnstsw(x87_state *const state, ir_node *const node)
+{
+	ir_node *const op0 = get_irn_n(node, n_ia32_FucomFnstsw_left);
+	ir_node *const op1 = get_irn_n(node, n_ia32_FucomFnstsw_right);
+	unsigned const additional_pop = x86_sim_x87_fucom(state, node, op0, op1);
+
+	ia32_x87_attr_t *const attr = get_ia32_x87_attr(node);
+	attr->attr.ins_permuted ^= attr->x87.reverse;
+	if (additional_pop != ~0u) {
+		if (additional_pop == 0) {
+			set_irn_op(node, op_ia32_FucomppFnstsw);
+			x87_pop(state);
+		} else {
+			x87_create_fpop(state, node, additional_pop);
+		}
+	}
+}
+
+static void sim_ia32_Fucomi(x87_state *const state, ir_node *const node)
+{
+	ir_node *const op0 = get_irn_n(node, n_ia32_Fucomi_left);
+	ir_node *const op1 = get_irn_n(node, n_ia32_Fucomi_right);
+	unsigned const additional_pop = x86_sim_x87_fucom(state, node, op0, op1);
+
+	ia32_x87_attr_t *const attr = get_ia32_x87_attr(node);
+	attr->attr.ins_permuted ^= attr->x87.reverse;
+	if (additional_pop != ~0u)
+		x87_create_fpop(state, node, additional_pop);
 }
 
 /**
@@ -1458,8 +1477,8 @@ void x86_prepare_x87_callbacks_ia32(void)
 	x86_register_x87_sim(op_ia32_fstp,        sim_ia32_fstp);
 	x86_register_x87_sim(op_ia32_fsub,        sim_ia32_binop_am);
 	x86_register_x87_sim(op_ia32_FtstFnstsw,  sim_FtstFnstsw);
-	x86_register_x87_sim(op_ia32_FucomFnstsw, sim_Fucom);
-	x86_register_x87_sim(op_ia32_Fucomi,      sim_Fucom);
+	x86_register_x87_sim(op_ia32_FucomFnstsw, sim_ia32_FucomFnstsw);
+	x86_register_x87_sim(op_ia32_Fucomi,      sim_ia32_Fucomi);
 	x86_register_x87_sim(op_ia32_Return,      x86_sim_x87_ret);
 }
 
