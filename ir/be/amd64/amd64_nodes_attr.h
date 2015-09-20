@@ -21,13 +21,14 @@ enum amd64_arch_irn_flags_t {
 	amd64_arch_irn_flag_commutative_binop = arch_irn_flag_backend << 0,
 };
 
+/** instruction data size. Keep sorted! */
 typedef enum {
 	INSN_MODE_INVALID = 0,
-	INSN_MODE_128,
-	INSN_MODE_64,
-	INSN_MODE_32,
+	INSN_MODE_8,
 	INSN_MODE_16,
-	INSN_MODE_8
+	INSN_MODE_32,
+	INSN_MODE_64,
+	INSN_MODE_128,
 } amd64_insn_mode_t;
 
 typedef enum {

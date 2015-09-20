@@ -1643,6 +1643,9 @@ no_call_mem:
 		}
 
 		ir_mode *mode  = get_type_mode(get_method_param_type(type, p));
+		amd64_insn_mode_t insn_mode = get_insn_mode_from_mode(mode);
+		if (insn_mode < INSN_MODE_32)
+			insn_mode = INSN_MODE_32;
 
 		/* we need a store if we're here */
 		amd64_binop_addr_attr_t attr;
@@ -1651,7 +1654,7 @@ no_call_mem:
 		attr.base.addr.immediate.offset = param->offset;
 		attr.base.addr.base_input       = 1;
 		attr.base.addr.index_input      = NO_INPUT;
-		attr.base.insn_mode             = INSN_MODE_64;
+		attr.base.insn_mode             = insn_mode;
 		ir_node *const nomem = get_irg_no_mem(irg);
 		ir_node *const in[]  = { new_value, callframe, nomem };
 		ir_node *const store = mode_is_float(mode) ?
