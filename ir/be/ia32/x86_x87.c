@@ -219,7 +219,7 @@ static unsigned is_at_pos(x87_state const *const state, ir_node const *const val
  * @param state     the x87 state
  * @param node      the node that produces the value of the fp register
  */
-static void x87_push(x87_state *const state, ir_node *const node)
+void x86_x87_push(x87_state *const state, ir_node *const node)
 {
 	assert(x87_on_stack(state, node) == (unsigned)-1 && "double push");
 	assert(state->depth < N_X87_REGS && "stack overrun");
@@ -453,7 +453,7 @@ static ir_node *x87_create_fdup(x87_state *const state, ir_node *const block,
 	arch_register_t const *const reg  = get_st_reg(pos);
 	ir_node               *const fdup = x87.new_bd_fdup(NULL, block, val, reg);
 	arch_set_irn_register(fdup, out);
-	x87_push(state, fdup);
+	x86_x87_push(state, fdup);
 	DB((dbg, LEVEL_1, "<<< %s %s\n", get_irn_opname(fdup), reg->name));
 	return fdup;
 }
@@ -781,7 +781,7 @@ static void sim_unop(x87_state *state, ir_node *n)
 void x86_sim_x87_load(x87_state *state, ir_node *n, ir_node *value)
 {
 	DB((dbg, LEVEL_1, ">>> %+F\n", n));
-	x87_push(state, value);
+	x86_x87_push(state, value);
 	DB((dbg, LEVEL_1, "<<< %s -> %s\n", get_irn_opname(n), get_st_reg(0)->name));
 }
 
@@ -1075,7 +1075,7 @@ static void sim_be_Copy(x87_state *state, ir_node *n)
 			copy = exact_copy(pred);
 			set_nodes_block(copy, block);
 			arch_set_irn_register(copy, out);
-			x87_push(state, copy);
+			x86_x87_push(state, copy);
 		} else {
 			copy = x87_create_fdup(state, block, pred, out);
 		}
@@ -1103,7 +1103,7 @@ static void sim_be_Copy(x87_state *state, ir_node *n)
  * @param state      the x87 state
  * @param n          the node that should be simulated (and patched)
  */
-static void sim_Call(x87_state *state, ir_node *n)
+static void sim_ia32_Call(x87_state *const state, ir_node *const n)
 {
 	DB((dbg, LEVEL_1, ">>> %+F\n", n));
 
@@ -1117,7 +1117,7 @@ static void sim_Call(x87_state *state, ir_node *n)
 		 * Moreover, only one return result is supported. */
 		if (is_x87_req(arch_get_irn_register_req_out(n, pn_ia32_Call_first_result))) {
 			ir_node *const res = get_Proj_for_pn(n, pn_ia32_Call_first_result);
-			x87_push(state, res);
+			x86_x87_push(state, res);
 		}
 	}
 	DB((dbg, LEVEL_1, "Stack after: "));
@@ -1342,11 +1342,11 @@ static void sim_be_Asm(x87_state *const state, ir_node *const n)
 	if (out_u) {
 		if (!out_t && !in_t)
 			panic("\"u\" output constraint without \"t\" constraint in %+F", n);
-		x87_push(state, out_u);
+		x86_x87_push(state, out_u);
 	}
 
 	if (out_t)
-		x87_push(state, out_t);
+		x86_x87_push(state, out_t);
 
 	/* Remove dying values. */
 	x87_kill_deads(state->sim, n, state);
@@ -1445,7 +1445,7 @@ void x86_prepare_x87_callbacks(void)
 void x86_prepare_x87_callbacks_ia32(void)
 {
 	x86_prepare_x87_callbacks();
-	x86_register_x87_sim(op_ia32_Call,        sim_Call);
+	x86_register_x87_sim(op_ia32_Call,        sim_ia32_Call);
 	x86_register_x87_sim(op_ia32_fabs,        sim_unop);
 	x86_register_x87_sim(op_ia32_fadd,        sim_binop);
 	x86_register_x87_sim(op_ia32_fchs,        sim_unop);

@@ -125,6 +125,7 @@ typedef struct {
 
 typedef struct {
 	amd64_addr_attr_t  base;
+	unsigned           n_reg_results; /**< number of results in registers */
 	ir_type           *call_tp;
 } amd64_call_addr_attr_t;
 

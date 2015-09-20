@@ -1775,7 +1775,8 @@ no_call_mem:
 			.insn_mode = INSN_MODE_64,
 			.addr      = addr,
 		},
-		.call_tp = type,
+		.call_tp       = type,
+		.n_reg_results = cconv->n_reg_results,
 	};
 
 	/* create call node */
@@ -1791,11 +1792,12 @@ no_call_mem:
 
 	/* add register requirements for the result regs */
 	for (size_t r = 0; r < n_ress; ++r) {
-		const reg_or_stackslot_t  *result_info = &cconv->results[r];
-		const arch_register_t     *reg         = result_info->reg;
+		const reg_or_stackslot_t *result_info = &cconv->results[r];
+		const arch_register_t    *reg         = result_info->reg;
 		if (reg != NULL)
 			arch_set_irn_register_req_out(call, o++, reg->single_req);
 	}
+
 	const unsigned *allocatable_regs = be_birg_from_irg(irg)->allocatable_regs;
 	for (size_t i = 0; i < N_AMD64_REGISTERS; ++i) {
 		if (!rbitset_is_set(cconv->caller_saves, i))

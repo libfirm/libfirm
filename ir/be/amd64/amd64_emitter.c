@@ -512,6 +512,12 @@ end_of_mods:
 						= amd64_get_x87_attr_const(node);
 					if (attr->pop)
 						be_emit_char('p');
+				} else if (*fmt == '0') {
+					++fmt;
+					x87_attr_t const *const attr
+						= amd64_get_x87_attr_const(node);
+					be_emit_char('%');
+					be_emit_string(attr->reg->name);
 				} else {
 					x87_attr_t const *const attr
 						= amd64_get_x87_attr_const(node);

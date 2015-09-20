@@ -36,9 +36,25 @@ static void sim_amd64_fld(x87_state *const state, ir_node *const node)
 	x86_sim_x87_load(state, node, value);
 }
 
+static void sim_amd64_call(x87_state *const state, ir_node *const node)
+{
+	/** push fp results onto x87 stack */
+	amd64_call_addr_attr_t const *const attr
+		= get_amd64_call_addr_attr(node);
+	for (unsigned o = 0, n = attr->n_reg_results; o < n; ++o) {
+		unsigned const pn = pn_amd64_call_first_result + o;
+		arch_register_t const *const reg = arch_get_irn_register_out(node, pn);
+		if (reg->cls == &amd64_reg_classes[CLASS_amd64_x87]) {
+			ir_node *const value = get_Proj_for_pn(node, pn);
+			x86_x87_push(state, value);
+		}
+	}
+}
+
 static void prepare_callbacks(void)
 {
 	x86_prepare_x87_callbacks();
+	x86_register_x87_sim(op_amd64_call, sim_amd64_call);
 	x86_register_x87_sim(op_amd64_fld,  sim_amd64_fld);
 	x86_register_x87_sim(op_amd64_fst,  sim_amd64_fst);
 	x86_register_x87_sim(op_amd64_fstp, sim_amd64_fstp);
