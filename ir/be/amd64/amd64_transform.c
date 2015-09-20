@@ -932,6 +932,21 @@ static ir_node *gen_binop_xmm(ir_node *node, ir_node *op0, ir_node *op1,
 	return be_new_Proj(new_node, pn_amd64_subs_res);
 }
 
+typedef ir_node *(*construct_x87_binop_func)(
+		dbg_info *dbgi, ir_node *block, ir_node *op0, ir_node *op1);
+
+static ir_node *gen_binop_x87(ir_node *const node, ir_node *const op0,
+                              ir_node *const op1, construct_x87_binop_func cons)
+{
+	dbg_info *const dbgi      = get_irn_dbg_info(node);
+	ir_node  *const new_block = be_transform_node(get_nodes_block(node));
+	ir_node  *const new_op0   = be_transform_node(op0);
+	ir_node  *const new_op1   = be_transform_node(op1);
+	ir_node  *const res       = cons(dbgi, new_block, new_op0, new_op1);
+	/* TODO: address modes */
+	return res;
+}
+
 typedef ir_node *(*construct_shift_func)(dbg_info *dbgi, ir_node *block, int arity, ir_node *const *in, arch_register_req_t const **in_reqs, amd64_shift_attr_t const *attr_init);
 
 static ir_node *gen_shift_binop(ir_node *node, ir_node *op1, ir_node *op2,
@@ -1029,6 +1044,8 @@ static ir_node *gen_Add(ir_node *const node)
 	ir_node *const block = get_nodes_block(node);
 
 	if (mode_is_float(mode)) {
+		if (mode == x86_mode_E)
+			return gen_binop_x87(node, op1, op2, new_bd_amd64_fadd);
 		return gen_binop_am(node, op1, op2, new_bd_amd64_adds,
 							pn_amd64_adds_res, match_commutative | match_am);
 	}
@@ -1058,6 +1075,8 @@ static ir_node *gen_Sub(ir_node *const node)
 	ir_mode *const mode = get_irn_mode(node);
 
 	if (mode_is_float(mode)) {
+		if (mode == x86_mode_E)
+			return gen_binop_x87(node, op1, op2, new_bd_amd64_fsub);
 		return gen_binop_am(node, op1, op2, new_bd_amd64_subs,
 		                    pn_amd64_subs_res, match_am);
 	} else {
@@ -1108,6 +1127,8 @@ static ir_node *gen_Mul(ir_node *const node)
 			                match_mode_neutral | match_commutative);
 		return be_new_Proj(new_node, pn_amd64_imul_1op_res_low);
 	} else if (mode_is_float(mode)) {
+		if (mode == x86_mode_E)
+			return gen_binop_x87(node, op1, op2, new_bd_amd64_fmul);
 		return gen_binop_am(node, op1, op2, new_bd_amd64_muls,
 		                    pn_amd64_muls_res, match_commutative | match_am);
 	} else {
@@ -1227,10 +1248,13 @@ static ir_node *gen_Div(ir_node *const node)
 	ir_node *const op2  = get_Div_right(node);
 	ir_node *const mem  = get_Div_mem(node);
 
-	if (mode_is_float(mode))
+	if (mode_is_float(mode)) {
+		if (mode == x86_mode_E)
+			return gen_binop_x87(node, op1, op2, new_bd_amd64_fdiv);
 		return create_sse_div(node, mode, op1, op2);
-	else
+	} else {
 		return create_div(node, mode, op1, op2, mem);
+	}
 }
 
 static ir_node *gen_Proj_Div(ir_node *const node)

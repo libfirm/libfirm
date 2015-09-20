@@ -51,16 +51,44 @@ static void sim_amd64_call(x87_state *const state, ir_node *const node)
 	}
 }
 
+static void sim_amd64_fadd(x87_state *const state, ir_node *const node)
+{
+	arch_register_t const *const out = arch_get_irn_register_out(node, 0);
+	x86_sim_x87_binop(state, node, n_amd64_fadd_left, n_amd64_fadd_right, out);
+}
+
+static void sim_amd64_fsub(x87_state *const state, ir_node *const node)
+{
+	arch_register_t const *const out = arch_get_irn_register_out(node, 0);
+	x86_sim_x87_binop(state, node, n_amd64_fsub_left, n_amd64_fsub_right, out);
+}
+
+static void sim_amd64_fmul(x87_state *const state, ir_node *const node)
+{
+	arch_register_t const *const out = arch_get_irn_register_out(node, 0);
+	x86_sim_x87_binop(state, node, n_amd64_fmul_left, n_amd64_fmul_right, out);
+}
+
+static void sim_amd64_fdiv(x87_state *const state, ir_node *const node)
+{
+	arch_register_t const *const out = arch_get_irn_register_out(node, 0);
+	x86_sim_x87_binop(state, node, n_amd64_fdiv_left, n_amd64_fdiv_right, out);
+}
+
 static void prepare_callbacks(void)
 {
 	x86_prepare_x87_callbacks();
 	x86_register_x87_sim(op_amd64_call, sim_amd64_call);
+	x86_register_x87_sim(op_amd64_fadd, sim_amd64_fadd);
+	x86_register_x87_sim(op_amd64_fchs, x86_sim_x87_unop);
+	x86_register_x87_sim(op_amd64_fdiv, sim_amd64_fdiv);
 	x86_register_x87_sim(op_amd64_fld,  sim_amd64_fld);
 	x86_register_x87_sim(op_amd64_fld1, x86_x87_push);
 	x86_register_x87_sim(op_amd64_fldz, x86_x87_push);
-	x86_register_x87_sim(op_amd64_fchs, x86_sim_x87_unop);
+	x86_register_x87_sim(op_amd64_fmul, sim_amd64_fmul);
 	x86_register_x87_sim(op_amd64_fst,  sim_amd64_fst);
 	x86_register_x87_sim(op_amd64_fstp, sim_amd64_fstp);
+	x86_register_x87_sim(op_amd64_fsub, sim_amd64_fsub);
 	x86_register_x87_sim(op_amd64_ret,  x86_sim_x87_ret);
 }
 

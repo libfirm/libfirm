@@ -240,7 +240,17 @@ my $x87unop = {
 	in_reqs   => [ "x87" ],
 	out_reqs  => [ "x87" ],
 	ins       => [ "value" ],
-	fixed     => "amd64_op_mode_t op_mode = AMD64_OP_X87;\n",
+	attr_type => "amd64_x87_attr_t",
+	mode      => $mode_x87,
+};
+
+my $x87binop = {
+	# TODO: AM variants
+	irn_flags => [ "rematerializable" ],
+	in_reqs   => [ "x87", "x87" ],
+	out_reqs  => [ "x87" ],
+	ins       => [ "left", "right" ],
+	attr_type => "amd64_x87_attr_t",
 	mode      => $mode_x87,
 };
 
@@ -780,6 +790,29 @@ fstp => {
 	attr      => "const amd64_binop_addr_attr_t *attr_init",
 	mode      => "mode_M",
 	emit      => "fstp%FM %AM",
+},
+
+fadd => {
+	template => $x87binop,
+	emit     => "fadd%FP %AF",
+},
+
+fdiv => {
+	template => $x87binop,
+	emit     => "fdiv%FR%FP %AF",
+	outs     => [ "res", "flags", "M" ],
+	out_reqs => [ "x87", "flags", "mem" ],
+	mode     => "mode_T",
+},
+
+fmul => {
+	template => $x87binop,
+	emit     => "fmul%FP %AF",
+},
+
+fsub => {
+	template => $x87binop,
+	emit     => "fadd%FR%FP %AF",
 },
 
 fchs => {

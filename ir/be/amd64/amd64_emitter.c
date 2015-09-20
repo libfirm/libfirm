@@ -469,6 +469,14 @@ end_of_mods:
 
 			case 'A':
 				switch (*fmt++) {
+				case 'F': {
+					x87_attr_t const *const attr
+						= amd64_get_x87_attr_const(node);
+					char const *const fmt
+						= attr->res_in_reg ? "%%st, %%%s" : "%%%s, %%st";
+					be_emit_irprintf(fmt, attr->reg->name);
+					break;
+				}
 				case 'M':
 					amd64_emit_am(node, mod & EMIT_INDIRECT_STAR);
 					break;
@@ -518,13 +526,15 @@ end_of_mods:
 						= amd64_get_x87_attr_const(node);
 					be_emit_char('%');
 					be_emit_string(attr->reg->name);
-				} else {
+				} else if (*fmt == 'R') {
+					++fmt;
 					x87_attr_t const *const attr
 						= amd64_get_x87_attr_const(node);
-					char const *const fmt
-						= attr->res_in_reg ? "%%st, %%%s" : "%%%s, %%st";
-					be_emit_irprintf(fmt, attr->reg->name);
-				}
+					/** see also ia32_emitter comment */
+					if (attr->reverse)
+						be_emit_char('r');
+				} else
+					goto unknown;
 				break;
 			}
 
