@@ -1978,7 +1978,9 @@ static ir_node *gen_Phi(ir_node *const node)
 		/* all integer operations are on 64bit registers now */
 		req = amd64_reg_classes[CLASS_amd64_gp].class_req;
 	} else if (mode_is_float(mode)) {
-		req = amd64_reg_classes[CLASS_amd64_xmm].class_req;
+		req = mode == x86_mode_E
+		    ? amd64_reg_classes[CLASS_amd64_x87].class_req
+		    : amd64_reg_classes[CLASS_amd64_xmm].class_req;
 	} else {
 		req = arch_memory_req;
 	}
