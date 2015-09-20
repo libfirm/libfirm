@@ -403,11 +403,13 @@ static bool amd64_rewrite_Conv(ir_node *node)
 	bool     from_float = mode_is_float(from_mode);
 
 	if (to_float && !from_float && !mode_is_signed(from_mode)
-	    && get_mode_size_bits(from_mode) == 64) {
+	    && get_mode_size_bits(from_mode) == 64
+	    && to_mode != x86_mode_E) {
 		rewrite_unsigned_float_Conv(node);
 		return true;
 	} else if (from_float && !to_float && !mode_is_signed(to_mode)
-	           && get_mode_size_bits(to_mode) == 64) {
+	           && get_mode_size_bits(to_mode) == 64
+	           && from_mode != x86_mode_E) {
 		rewrite_float_unsigned_Conv(node);
 		return true;
 	}
