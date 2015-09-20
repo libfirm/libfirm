@@ -843,6 +843,8 @@ static void emit_be_Copy(const ir_node *irn)
 		amd64_emitf(irn, "mov %^S0, %^D0");
 	} else if (cls == &amd64_reg_classes[CLASS_amd64_xmm]) {
 		amd64_emitf(irn, "movapd %^S0, %^D0");
+	} else if (cls == &amd64_reg_classes[CLASS_amd64_x87]) {
+		/* nothing to do */
 	} else {
 		panic("move not supported for this register class");
 	}
