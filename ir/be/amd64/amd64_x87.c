@@ -58,6 +58,7 @@ static void prepare_callbacks(void)
 	x86_register_x87_sim(op_amd64_fld,  sim_amd64_fld);
 	x86_register_x87_sim(op_amd64_fld1, x86_x87_push);
 	x86_register_x87_sim(op_amd64_fldz, x86_x87_push);
+	x86_register_x87_sim(op_amd64_fchs, x86_sim_x87_unop);
 	x86_register_x87_sim(op_amd64_fst,  sim_amd64_fst);
 	x86_register_x87_sim(op_amd64_fstp, sim_amd64_fstp);
 	x86_register_x87_sim(op_amd64_ret,  x86_sim_x87_ret);

@@ -746,30 +746,26 @@ static void sim_binop(x87_state *const state, ir_node *const n)
 	)
 }
 
-/**
- * Simulate a virtual Unop.
- *
- * @param state  the x87 state
- * @param n      the node that should be simulated (and patched)
- */
-static void sim_unop(x87_state *state, ir_node *n)
+void x86_sim_x87_unop(x87_state *const state, ir_node *const node)
 {
-	arch_register_t const *const out  = arch_get_irn_register(n);
-	fp_liveness            const live = fp_live_args_after(state->sim, n, REGMASK(out));
-	DB((dbg, LEVEL_1, ">>> %+F -> %s\n", n, out->name));
+	arch_register_t const *const out  = arch_get_irn_register(node);
+	fp_liveness            const live = fp_live_args_after(state->sim, node,
+	                                                       REGMASK(out));
+	DB((dbg, LEVEL_1, ">>> %+F -> %s\n", node, out->name));
 	DEBUG_ONLY(fp_dump_live(live);)
 
-	ir_node *const val = get_irn_n(n, 0);
+	ir_node *const val = get_irn_n(node, 0);
 	if (is_fp_live(val, live)) {
 		/* push the operand here */
-		x87_dup_operand(state, n, 0, val, out);
+		x87_dup_operand(state, node, 0, val, out);
 	} else {
 		/* operand is dead, bring it to tos */
-		move_to_tos(state, n, val);
+		move_to_tos(state, node, val);
 	}
 
-	x87_set_st(state, n, 0);
-	DB((dbg, LEVEL_1, "<<< %s -> %s\n", get_irn_opname(n), get_st_reg(0)->name));
+	x87_set_st(state, node, 0);
+	DB((dbg, LEVEL_1, "<<< %s -> %s\n", get_irn_opname(node),
+	    get_st_reg(0)->name));
 }
 
 /**
@@ -1446,9 +1442,9 @@ void x86_prepare_x87_callbacks_ia32(void)
 {
 	x86_prepare_x87_callbacks();
 	x86_register_x87_sim(op_ia32_Call,        sim_ia32_Call);
-	x86_register_x87_sim(op_ia32_fabs,        sim_unop);
+	x86_register_x87_sim(op_ia32_fabs,        x86_sim_x87_unop);
 	x86_register_x87_sim(op_ia32_fadd,        sim_binop);
-	x86_register_x87_sim(op_ia32_fchs,        sim_unop);
+	x86_register_x87_sim(op_ia32_fchs,        x86_sim_x87_unop);
 	x86_register_x87_sim(op_ia32_fdiv,        sim_binop);
 	x86_register_x87_sim(op_ia32_fild,        sim_ia32_x87_load);
 	x86_register_x87_sim(op_ia32_fist,        sim_ia32_fist);

@@ -60,6 +60,8 @@ void x86_sim_x87_store_pop(x87_state *state, ir_node *n, int val_pos);
 
 void x86_sim_x87_ret(x87_state *state, ir_node *node);
 
+void x86_sim_x87_unop(x87_state *state, ir_node *node);
+
 /** Push a value on the x87 stack. Intended to be used in sim functions. */
 void x86_x87_push(x87_state *state, ir_node *value);
 
