@@ -271,7 +271,7 @@ static int amd64_switch_jmp_attrs_equal(const ir_node *const a,
 }
 
 static int amd64_call_addr_attrs_equal(const ir_node *const a,
-                                        const ir_node *const b)
+                                       const ir_node *const b)
 {
 	const amd64_call_addr_attr_t *const attr_a
 		= get_amd64_call_addr_attr_const(a);
