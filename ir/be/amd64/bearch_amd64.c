@@ -40,8 +40,6 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
-static bool use_x87_long_double;
-
 pmap *amd64_constants;
 
 ir_mode *amd64_mode_xmm;
@@ -793,9 +791,8 @@ static void amd64_init_types(void)
 	amd64_mode_xmm = new_int_mode("x86_xmm", irma_twos_complement, 128, 0, 0);
 
 	x86_init_x87_type();
-	if (use_x87_long_double) {
-		amd64_backend_params.type_long_double = x86_type_E;
-	}
+	amd64_backend_params.type_long_double = x86_type_E;
+
 	amd64_backend_params.vararg.va_list_type = amd64_build_va_list_type();
 }
 
@@ -838,7 +835,6 @@ void be_init_arch_amd64(void)
 	static const lc_opt_table_entry_t options[] = {
 		LC_OPT_ENT_BOOL("x64abi", "Use x64 ABI (otherwise system V)",
 						&amd64_use_x64_abi),
-		LC_OPT_ENT_BOOL("x87", "Use x87 for long double", &use_x87_long_double),
 		LC_OPT_LAST
 	};
 	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
