@@ -564,7 +564,7 @@ destination_operand:
 					 * This means that it is sufficient to test whether the operands are
 					 * permuted.  In particular it is not necessary to consider wether the
 					 * result is to be placed into the explicit register operand. */
-					if (get_ia32_x87_attr_const(node)->attr.ins_permuted)
+					if (get_ia32_x87_attr_const(node)->x87.reverse)
 						be_emit_char('r');
 				} else if (*fmt == 'X') {
 					ia32_emit_xmm_mode_suffix(node);

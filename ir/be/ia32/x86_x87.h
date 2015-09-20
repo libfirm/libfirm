@@ -22,6 +22,8 @@ typedef struct x87_attr_t {
 	/** True if result is in the explicit register operand, %st0 otherwise. */
 	bool                   res_in_reg;
 	bool                   pop;        /**< Emit a pop suffix. */
+	bool                   reverse;    /**< Use reverse variant of binop
+	                                        (i.e. fsubr instead of fsub) */
 } x87_attr_t;
 
 typedef struct x87_simulator_config_t {
@@ -61,6 +63,9 @@ void x86_sim_x87_store_pop(x87_state *state, ir_node *n, int val_pos);
 void x86_sim_x87_ret(x87_state *state, ir_node *node);
 
 void x86_sim_x87_unop(x87_state *state, ir_node *node);
+
+void x86_sim_x87_binop(x87_state *state, ir_node *node, int n_op0, int n_op1,
+                       arch_register_t const *out);
 
 /** Push a value on the x87 stack. Intended to be used in sim functions. */
 void x86_x87_push(x87_state *state, ir_node *value);

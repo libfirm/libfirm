@@ -629,141 +629,152 @@ static ir_node *get_result_node(ir_node *const n)
 }
 
 /**
- * Simulate a virtual binop.
- *
- * @param state  the x87 state
- * @param n      the node that should be simulated (and patched)
+ * Duplicate or shuffle a value to TOS so it can get used + popped by the next
+ * instruction.
  */
-static void sim_binop(x87_state *const state, ir_node *const n)
+static void value_to_tos(x87_state *const state, ir_node *const node,
+                         int const in, arch_register_t const *const out)
 {
-	ir_node                     *op1            = get_irn_n(n, n_ia32_binary_left);
-	ir_node               *const op2            = get_irn_n(n, n_ia32_binary_right);
-	arch_register_t const *const out            = arch_get_irn_register_out(n, pn_ia32_res);
-	fp_liveness            const live           = fp_live_args_after(state->sim, n, REGMASK(out));
-	bool                   const op1_live_after = is_fp_live(op1, live);
+	fp_liveness const live = fp_live_args_after(state->sim, node, REGMASK(out));
+	ir_node    *const value = get_irn_n(node, in);
+	if (is_fp_live(value, live)) {
+		/* Operand still alive after instruction? Duplicate it. */
+		x87_dup_operand(state, node, in, value, out);
+	} else {
+		/* Operand dies? Shuffle it to tos. */
+		move_to_tos(state, node, value);
+	}
+}
 
-	DB((dbg, LEVEL_1, ">>> %+F %+F, %+F -> %s\n", n, op1, op2, out->name));
+void x86_sim_x87_binop(x87_state *const state, ir_node *const node,
+                       int const n_op0, int const n_op1,
+                       arch_register_t const *const out)
+{
+	ir_node    *      op0            = get_irn_n(node, n_op0);
+	ir_node    *const op1            = get_irn_n(node, n_op1);
+	fp_liveness const live           = fp_live_args_after(state->sim, node,
+	                                                      REGMASK(out));
+	bool        const op0_live_after = is_fp_live(op0, live);
+	bool        const op1_live_after = is_fp_live(op1, live);
+
+	DB((dbg, LEVEL_1, ">>> %+F %+F, %+F -> %s\n", node, op0, op1, out->name));
 	DEBUG_ONLY(fp_dump_live(live);)
 	DB((dbg, LEVEL_1, "Stack before: "));
 	DEBUG_ONLY(x87_dump_stack(state);)
 
-	if (is_ia32_NoReg_FP(op2)) {
-		/* Second operand is an address mode. */
+	assert(!is_ia32_NoReg_FP(op1));
+
+	bool reverse;
+	bool to_reg;
+	bool pop = false;
+	if (op0_live_after) {
 		if (op1_live_after) {
-			/* First operand is live: Duplicate it. */
-			x87_dup_operand(state, n, n_ia32_binary_left, op1, out);
+			/* Both operands are live: push the first one.
+			 * This works even for op0 == op1. */
+			op0     = x87_dup_operand(state, node, n_op0, op0, out);
+			reverse = false;
+			to_reg  = false;
 		} else {
-			/* First operand is dead: Move it to tos. */
-			move_to_tos(state, n, op1);
+			/* First live, second dead: Overwrite second. */
+			if (is_at_pos(state, op0, 0)) {
+				reverse = false;
+				to_reg  = true;
+			} else {
+				move_to_tos(state, node, op1);
+				reverse = true;
+				to_reg  = false;
+			}
 		}
-		x87_set_st(state, get_result_node(n), 0);
 	} else {
-		bool       reverse;
-		bool       to_reg;
-		bool       pop            = false;
-		bool const op2_live_after = is_fp_live(op2, live);
 		if (op1_live_after) {
-			if (op2_live_after) {
-				/* Both operands are live: push the first one.
-				 * This works even for op1 == op2. */
-				op1     = x87_dup_operand(state, n, n_ia32_binary_left, op1, out);
+			/* First dead, Second live: Overwrite first. */
+			if (is_at_pos(state, op1, 0)) {
+				reverse = true;
+				to_reg  = true;
+			} else {
+				move_to_tos(state, node, op0);
+				reverse = false;
+				to_reg  = false;
+			}
+		} else {
+			/* Both dead. */
+			if (op0 == op1) {
+				/* Operands are identical: No pop. */
+				move_to_tos(state, node, op0);
 				reverse = false;
 				to_reg  = false;
 			} else {
-				/* First live, second dead: Overwrite second. */
-				if (is_at_pos(state, op1, 0)) {
+				/* Bring one operand to tos. Heuristically swap the operand not at
+				 * st(1) to tos. This way, if any operand was at st(1), the result
+				 * will end up in the new st(0) after the implicit pop. If the next
+				 * operation uses the result, then no fxch will be necessary. */
+				if (is_at_pos(state, op0, 0)) {
 					reverse = false;
-					to_reg  = true;
-				} else {
-					move_to_tos(state, n, op2);
+				} else if (is_at_pos(state, op1, 0)) {
 					reverse = true;
-					to_reg  = false;
-				}
-			}
-		} else {
-			if (op2_live_after) {
-				/* First dead, Second live: Overwrite first. */
-				if (is_at_pos(state, op2, 0)) {
+				} else if (is_at_pos(state, op0, 1)) {
+					move_to_tos(state, node, op1);
 					reverse = true;
-					to_reg  = true;
 				} else {
-					move_to_tos(state, n, op1);
+					move_to_tos(state, node, op0);
 					reverse = false;
-					to_reg  = false;
 				}
-			} else {
-				/* Both dead. */
-				if (op1 == op2) {
-					/* Operands are identical: No pop. */
-					move_to_tos(state, n, op1);
-					reverse = false;
-					to_reg  = false;
-				} else {
-					/* Bring one operand to tos. Heuristically swap the operand not at
-					 * st(1) to tos. This way, if any operand was at st(1), the result
-					 * will end up in the new st(0) after the implicit pop. If the next
-					 * operation uses the result, then no fxch will be necessary. */
-					if (is_at_pos(state, op1, 0)) {
-						reverse = false;
-					} else if (is_at_pos(state, op2, 0)) {
-						reverse = true;
-					} else if (is_at_pos(state, op1, 1)) {
-						move_to_tos(state, n, op2);
-						reverse = true;
-					} else {
-						move_to_tos(state, n, op1);
-						reverse = false;
-					}
-					to_reg = true;
-					pop    = true;
-				}
+				to_reg = true;
+				pop    = true;
 			}
 		}
-
-		unsigned const op_reg = x87_on_stack(state, reverse ? op1 : op2);
-		/* Patch the operation. */
-		ia32_x87_attr_t *const attr = get_ia32_x87_attr(n);
-		attr->x87.reg           = get_st_reg(op_reg);
-		attr->attr.ins_permuted = reverse;
-		attr->x87.res_in_reg    = to_reg;
-		attr->x87.pop           = pop;
-
-		x87_set_st(state, get_result_node(n), to_reg ? op_reg : 0);
-		if (pop)
-			x87_pop(state);
 	}
 
+	unsigned const op_reg = x87_on_stack(state, reverse ? op0 : op1);
+	/* Patch the operation. */
+	x87_attr_t *const attr = x87.get_x87_attr(node);
+	attr->reg        = get_st_reg(op_reg);
+	attr->reverse    = reverse;
+	attr->res_in_reg = to_reg;
+	attr->pop        = pop;
+
+	x87_set_st(state, get_result_node(node), to_reg ? op_reg : 0);
+	if (pop)
+		x87_pop(state);
+
 	DEBUG_ONLY(
-		ia32_x87_attr_t const *const attr = get_ia32_x87_attr(n);
-		x87_attr_t      const *const x87  = &attr->x87;
-		char            const *const st0  = get_st_reg(0)->name;
-		char            const *const reg  =  x87->reg ? x87->reg->name : "[AM]";
-		char            const *const l    =  attr->attr.ins_permuted ? reg : st0;
-		char            const *const r    = !attr->attr.ins_permuted ? reg : st0;
-		char            const *const o    =  x87->res_in_reg         ? reg : st0;
-		char            const *const pop  =  x87->pop ? " [pop]" : "";
-		DB((dbg, LEVEL_1, "<<< %s %s, %s -> %s%s\n", get_irn_opname(n), l, r, o, pop));
+		char const *const st0  = get_st_reg(0)->name;
+		char const *const reg  =  attr->reg ? attr->reg->name : "[AM]";
+		char const *const l    =  attr->reverse    ? reg : st0;
+		char const *const r    = !attr->reverse    ? reg : st0;
+		char const *const o    =  attr->res_in_reg ? reg : st0;
+		char const *const pops =  pop ? " [pop]" : "";
+		DB((dbg, LEVEL_1, "<<< %s %s, %s -> %s%s\n", get_irn_opname(node), l, r,
+		    o, pops));
 	)
 }
+
+static void sim_ia32_binop_am(x87_state *const state, ir_node *const node)
+{
+	ir_node               *const right = get_irn_n(node, n_ia32_binary_right);
+	arch_register_t const *const out   = arch_get_irn_register_out(node, pn_ia32_res);
+
+	if (is_ia32_NoReg_FP(right)) {
+		/* if one operand is an address mode then this behaves like an unop */
+		value_to_tos(state, node, n_ia32_binary_left, out);
+		x87_set_st(state, get_result_node(node), 0);
+	} else {
+		x86_sim_x87_binop(state, node, n_ia32_binary_left, n_ia32_binary_right,
+						  out);
+	}
+	ia32_x87_attr_t *const attr = get_ia32_x87_attr(node);
+	attr->x87.reverse ^= attr->attr.ins_permuted;
+}
+
 
 void x86_sim_x87_unop(x87_state *const state, ir_node *const node)
 {
 	arch_register_t const *const out  = arch_get_irn_register(node);
-	fp_liveness            const live = fp_live_args_after(state->sim, node,
-	                                                       REGMASK(out));
 	DB((dbg, LEVEL_1, ">>> %+F -> %s\n", node, out->name));
-	DEBUG_ONLY(fp_dump_live(live);)
 
-	ir_node *const val = get_irn_n(node, 0);
-	if (is_fp_live(val, live)) {
-		/* push the operand here */
-		x87_dup_operand(state, node, 0, val, out);
-	} else {
-		/* operand is dead, bring it to tos */
-		move_to_tos(state, node, val);
-	}
-
+	value_to_tos(state, node, 0, out);
 	x87_set_st(state, node, 0);
+
 	DB((dbg, LEVEL_1, "<<< %s -> %s\n", get_irn_opname(node),
 	    get_st_reg(0)->name));
 }
@@ -1015,8 +1026,8 @@ static void sim_Fucom(x87_state *state, ir_node *n)
 		/* Patch the operation. */
 		ia32_x87_attr_t *const attr = get_ia32_x87_attr(n);
 		attr->x87.reg            = get_st_reg(op_reg);
-		attr->attr.ins_permuted ^= reverse;
 		attr->x87.pop            = pops != 0;
+		attr->attr.ins_permuted ^= reverse;
 
 		if (pops != 0) {
 			x87_pop(state);
@@ -1443,9 +1454,9 @@ void x86_prepare_x87_callbacks_ia32(void)
 	x86_prepare_x87_callbacks();
 	x86_register_x87_sim(op_ia32_Call,        sim_ia32_Call);
 	x86_register_x87_sim(op_ia32_fabs,        x86_sim_x87_unop);
-	x86_register_x87_sim(op_ia32_fadd,        sim_binop);
+	x86_register_x87_sim(op_ia32_fadd,        sim_ia32_binop_am);
 	x86_register_x87_sim(op_ia32_fchs,        x86_sim_x87_unop);
-	x86_register_x87_sim(op_ia32_fdiv,        sim_binop);
+	x86_register_x87_sim(op_ia32_fdiv,        sim_ia32_binop_am);
 	x86_register_x87_sim(op_ia32_fild,        sim_ia32_x87_load);
 	x86_register_x87_sim(op_ia32_fist,        sim_ia32_fist);
 	x86_register_x87_sim(op_ia32_fistp,       sim_ia32_fistp);
@@ -1453,10 +1464,10 @@ void x86_prepare_x87_callbacks_ia32(void)
 	x86_register_x87_sim(op_ia32_fld1,        sim_ia32_x87_load);
 	x86_register_x87_sim(op_ia32_fld,         sim_ia32_x87_load);
 	x86_register_x87_sim(op_ia32_fldz,        sim_ia32_x87_load);
-	x86_register_x87_sim(op_ia32_fmul,        sim_binop);
+	x86_register_x87_sim(op_ia32_fmul,        sim_ia32_binop_am);
 	x86_register_x87_sim(op_ia32_fst,         sim_ia32_fst);
 	x86_register_x87_sim(op_ia32_fstp,        sim_ia32_fstp);
-	x86_register_x87_sim(op_ia32_fsub,        sim_binop);
+	x86_register_x87_sim(op_ia32_fsub,        sim_ia32_binop_am);
 	x86_register_x87_sim(op_ia32_FtstFnstsw,  sim_FtstFnstsw);
 	x86_register_x87_sim(op_ia32_FucomFnstsw, sim_Fucom);
 	x86_register_x87_sim(op_ia32_Fucomi,      sim_Fucom);
