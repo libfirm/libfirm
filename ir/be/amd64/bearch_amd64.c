@@ -637,6 +637,8 @@ static void amd64_finish_and_emit(ir_graph *irg)
 	/* Fix 2-address code constraints. */
 	amd64_finish_irg(irg);
 
+	amd64_simulate_graph_x87(irg);
+
 	/* emit code */
 	be_timer_push(T_EMIT);
 	amd64_emit_function(irg);

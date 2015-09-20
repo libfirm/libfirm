@@ -1107,6 +1107,12 @@ static void introduce_prologue_epilogue(ir_graph *const irg)
 	introduce_prologue(irg);
 }
 
+static x87_attr_t *ia32_get_x87_attr(ir_node *const node)
+{
+	ia32_x87_attr_t *const attr = get_ia32_x87_attr(node);
+	return &attr->x87;
+}
+
 static void ia32_emit(ir_graph *irg)
 {
 	/*
@@ -1140,6 +1146,7 @@ static void ia32_emit(ir_graph *irg)
 	/* we might have to rewrite x87 virtual registers */
 	ia32_irg_data_t const *const irg_data = ia32_get_irg_data(irg);
 	if (irg_data->do_x87_sim) {
+		x86_prepare_x87_callbacks_ia32();
 		const x87_simulator_config_t config = {
 			.regclass      = &ia32_reg_classes[CLASS_ia32_fp],
 			.new_bd_fdup   = new_bd_ia32_fdup,
@@ -1147,6 +1154,7 @@ static void ia32_emit(ir_graph *irg)
 			.new_bd_fpop   = new_bd_ia32_fpop,
 			.new_bd_ffreep = ia32_cg_config.use_ffreep ? new_bd_ia32_ffreep
 			                                           : NULL,
+			.get_x87_attr  = ia32_get_x87_attr,
 		};
 		x86_x87_simulate_graph(irg, &config);
 	}

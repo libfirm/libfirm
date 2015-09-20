@@ -38,4 +38,6 @@ void amd64_cconv_init(void);
 
 void amd64_adjust_pic(ir_graph *irg);
 
+void amd64_simulate_graph_x87(ir_graph *irg);
+
 #endif

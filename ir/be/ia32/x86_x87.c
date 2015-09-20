@@ -68,19 +68,11 @@ typedef struct st_entry {
 /**
  * The x87 state.
  */
-typedef struct x87_state {
+struct x87_state {
 	st_entry       st[N_X87_REGS]; /**< the register stack */
 	unsigned       depth;          /**< the current stack depth */
 	x87_simulator *sim;            /**< The simulator. */
-} x87_state;
-
-/**
- * The type of an instruction simulator function.
- *
- * @param state  the x87 state
- * @param n      the node to be simulated
- */
-typedef void (*sim_func)(x87_state *state, ir_node *n);
+};
 
 /**
  * A block state: Every block has a x87 state at the beginning and at the end.
@@ -786,15 +778,17 @@ static void sim_unop(x87_state *state, ir_node *n)
  * @param state  the x87 state
  * @param n      the node that should be simulated (and patched)
  */
-static void sim_load(x87_state *state, ir_node *n)
+void x86_sim_x87_load(x87_state *state, ir_node *n, ir_node *value)
 {
-	assert((unsigned)pn_ia32_fld_res == (unsigned)pn_ia32_fild_res
-	    && (unsigned)pn_ia32_fld_res == (unsigned)pn_ia32_fld1_res
-	    && (unsigned)pn_ia32_fld_res == (unsigned)pn_ia32_fldz_res);
-
 	DB((dbg, LEVEL_1, ">>> %+F\n", n));
-	x87_push(state, get_result_node(n));
+	x87_push(state, value);
 	DB((dbg, LEVEL_1, "<<< %s -> %s\n", get_irn_opname(n), get_st_reg(0)->name));
+}
+
+static void sim_ia32_x87_load(x87_state *state, ir_node *n)
+{
+	ir_node *value = get_result_node(n);
+	x86_sim_x87_load(state, n, value);
 }
 
 /**
@@ -803,9 +797,10 @@ static void sim_load(x87_state *state, ir_node *n)
  * @param state  the x87 state
  * @param n      the node that should be simulated (and patched)
  */
-static void sim_store(x87_state *state, ir_node *n)
+void x86_sim_x87_store(x87_state *state, ir_node *n, int val_pos,
+                       unsigned store_bits)
 {
-	ir_node *const val = get_irn_n(n, n_ia32_fst_val);
+	ir_node *const val = get_irn_n(n, val_pos);
 	DB((dbg, LEVEL_1, ">>> %+F %+F ->\n", n, val));
 
 	fp_liveness const live = fp_live_args_after(state->sim, n, 0);
@@ -814,9 +809,7 @@ static void sim_store(x87_state *state, ir_node *n)
 		move_to_tos(state, n, val);
 		goto do_pop;
 	} else {
-		ir_mode *const mode = get_ia32_ls_mode(n);
-		assert(!mode_is_int(mode) || get_mode_size_bits(mode) <= 32);
-		if (get_mode_size_bits(mode) > 64) {
+		if (store_bits > 64) {
 			/* Problem: fst doesn't support 80bit modes. Code selection chooses
 			 * an explicit fstp in this case which is fine, however if we create
 			 * an 80bit fst because of a spill we may need some fixup here.
@@ -838,7 +831,7 @@ do_pop:
 				ir_node *const mem   = get_Proj_for_pn(n, pn_ia32_st_M);
 				ir_node *const base  = get_irn_n(n, n_ia32_base);
 				ir_node *const idx   = get_irn_n(n, n_ia32_index);
-				ir_node *const vfld  = new_bd_ia32_fld(NULL, block, base, idx, mem, mode);
+				ir_node *const vfld  = new_bd_ia32_fld(NULL, block, base, idx, mem, x86_mode_E);
 
 				/* copy all attributes */
 				ia32_copy_am_attrs(vfld, n);
@@ -864,7 +857,7 @@ do_pop:
 				be_ssa_construction_destroy(&env);
 			}
 
-			get_ia32_x87_attr(n)->x87.pop = true;
+			x87.get_x87_attr(n)->pop = true;
 		} else {
 			/* we can only store the tos to memory */
 			move_to_tos(state, n, val);
@@ -874,26 +867,50 @@ do_pop:
 	DB((dbg, LEVEL_1, "<<< %s %s ->\n", get_irn_opname(n), get_st_reg(0)->name));
 }
 
-/**
- * Simulate a virtual fisttp.
- *
- * @param state  the x87 state
- * @param n      the node that should be simulated (and patched)
- */
-static void sim_store_pop(x87_state *state, ir_node *n)
+static void sim_ia32_fst(x87_state *state, ir_node *n)
 {
-	assert((int)n_ia32_fisttp_val == (int)n_ia32_fistp_val);
-	ir_node *const val = get_irn_n(n, n_ia32_fisttp_val);
-	DB((dbg, LEVEL_1, ">>> %+F %s ->\n", n, arch_get_irn_register(val)->name));
+	unsigned bits = get_mode_size_bits(get_ia32_ls_mode(n));
+	x86_sim_x87_store(state, n, n_ia32_fst_val, bits);
+}
 
-	assert(!is_fp_live(val, fp_live_args_after(state->sim, n, 0)));
+static void sim_ia32_fist(x87_state *state, ir_node *n)
+{
+	unsigned bits = get_mode_size_bits(get_ia32_ls_mode(n));
+	x86_sim_x87_store(state, n, n_ia32_fist_val, bits);
+}
+
+void x86_sim_x87_store_pop(x87_state *const state, ir_node *const node,
+                           int const val_pos)
+{
+	ir_node *const val = get_irn_n(node, val_pos);
+	DB((dbg, LEVEL_1, ">>> %+F %s ->\n", node,
+	    arch_get_irn_register(val)->name));
+
+	/* input has a killed register req and cannot be alive after instruction */
+	assert(!is_fp_live(val, fp_live_args_after(state->sim, node, 0)));
 
 	/* we can only store the tos to memory */
-	move_to_tos(state, n, val);
+	move_to_tos(state, node, val);
 
 	x87_pop(state);
 
-	DB((dbg, LEVEL_1, "<<< %s %s ->\n", get_irn_opname(n), get_st_reg(0)->name));
+	DB((dbg, LEVEL_1, "<<< %s %s ->\n", get_irn_opname(node),
+	    get_st_reg(0)->name));
+}
+
+static void sim_ia32_fisttp(x87_state *state, ir_node *n)
+{
+	x86_sim_x87_store_pop(state, n, n_ia32_fisttp_val);
+}
+
+static void sim_ia32_fistp(x87_state *state, ir_node *n)
+{
+	x86_sim_x87_store_pop(state, n, n_ia32_fistp_val);
+}
+
+static void sim_ia32_fstp(x87_state *state, ir_node *n)
+{
+	x86_sim_x87_store_pop(state, n, n_ia32_fstp_val);
 }
 
 /**
@@ -943,8 +960,7 @@ static void sim_Fucom(x87_state *state, ir_node *n)
 		/* Pop first operand, if it is dead. */
 		if (!op1_live_after) {
 			x87_pop(state);
-			ia32_x87_attr_t *const attr = get_ia32_x87_attr(n);
-			attr->x87.pop = true;
+			x87.get_x87_attr(n)->pop = true;
 		}
 	} else {
 		bool       reverse;
@@ -1109,12 +1125,9 @@ static void sim_Call(x87_state *state, ir_node *n)
 }
 
 /**
- * Simulate a be_Return.
- *
- * @param state  the x87 state
- * @param n      the node that should be simulated (and patched)
+ * Simulate a return node.
  */
-static void sim_Return(x87_state *const state, ir_node *const ret)
+void x86_sim_x87_ret(x87_state *const state, ir_node *const ret)
 {
 #ifdef DEBUG_libfirm
 	/* only floating point return values must reside on stack */
@@ -1414,61 +1427,44 @@ static void x87_simulate_block(x87_simulator *sim, ir_node *block)
 	bl_state->end = state;
 }
 
-/**
- * Register a simulator function.
- *
- * @param op    the opcode to simulate
- * @param func  the simulator function for the opcode
- */
-static void register_sim(ir_op *op, sim_func func)
+void x86_register_x87_sim(ir_op *op, sim_func func)
 {
 	assert(op->ops.generic == NULL);
 	op->ops.generic = (op_func)func;
 }
 
-/**
- * Create a new x87 simulator.
- *
- * @param sim       a simulator handle, will be initialized
- * @param irg       the current graph
- */
-static void x87_init_simulator(x87_simulator *sim, ir_graph *irg)
+void x86_prepare_x87_callbacks(void)
 {
-	obstack_init(&sim->obst);
-	sim->blk_states = pmap_create();
-	sim->n_idx      = get_irg_last_idx(irg);
-	sim->live       = OALLOCN(&sim->obst, fp_liveness, sim->n_idx);
-
-	DB((dbg, LEVEL_1, "--------------------------------\n"
-		"x87 Simulator started for %+F\n", irg));
-
-	/* set the generic function pointer of instruction we must simulate */
 	ir_clear_opcodes_generic_func();
+	x86_register_x87_sim(op_be_Asm,  sim_be_Asm);
+	x86_register_x87_sim(op_be_Copy, sim_be_Copy);
+	x86_register_x87_sim(op_be_Keep, sim_be_Keep);
+	x86_register_x87_sim(op_be_Perm, sim_be_Perm);
+}
 
-	register_sim(op_be_Asm,            sim_be_Asm);
-	register_sim(op_be_Copy,           sim_be_Copy);
-	register_sim(op_be_Keep,           sim_be_Keep);
-	register_sim(op_be_Perm,           sim_be_Perm);
-	register_sim(op_ia32_Call,         sim_Call);
-	register_sim(op_ia32_fabs,         sim_unop);
-	register_sim(op_ia32_fadd,         sim_binop);
-	register_sim(op_ia32_fchs,         sim_unop);
-	register_sim(op_ia32_fdiv,         sim_binop);
-	register_sim(op_ia32_fild,         sim_load);
-	register_sim(op_ia32_fist,         sim_store);
-	register_sim(op_ia32_fistp,        sim_store_pop);
-	register_sim(op_ia32_fisttp,       sim_store_pop);
-	register_sim(op_ia32_fld1,         sim_load);
-	register_sim(op_ia32_fld,          sim_load);
-	register_sim(op_ia32_fldz,         sim_load);
-	register_sim(op_ia32_fmul,         sim_binop);
-	register_sim(op_ia32_fst,          sim_store);
-	register_sim(op_ia32_fstp,         sim_store_pop);
-	register_sim(op_ia32_fsub,         sim_binop);
-	register_sim(op_ia32_FtstFnstsw,   sim_FtstFnstsw);
-	register_sim(op_ia32_FucomFnstsw,  sim_Fucom);
-	register_sim(op_ia32_Fucomi,       sim_Fucom);
-	register_sim(op_ia32_Return,       sim_Return);
+void x86_prepare_x87_callbacks_ia32(void)
+{
+	x86_prepare_x87_callbacks();
+	x86_register_x87_sim(op_ia32_Call,        sim_Call);
+	x86_register_x87_sim(op_ia32_fabs,        sim_unop);
+	x86_register_x87_sim(op_ia32_fadd,        sim_binop);
+	x86_register_x87_sim(op_ia32_fchs,        sim_unop);
+	x86_register_x87_sim(op_ia32_fdiv,        sim_binop);
+	x86_register_x87_sim(op_ia32_fild,        sim_ia32_x87_load);
+	x86_register_x87_sim(op_ia32_fist,        sim_ia32_fist);
+	x86_register_x87_sim(op_ia32_fistp,       sim_ia32_fistp);
+	x86_register_x87_sim(op_ia32_fisttp,      sim_ia32_fisttp);
+	x86_register_x87_sim(op_ia32_fld1,        sim_ia32_x87_load);
+	x86_register_x87_sim(op_ia32_fld,         sim_ia32_x87_load);
+	x86_register_x87_sim(op_ia32_fldz,        sim_ia32_x87_load);
+	x86_register_x87_sim(op_ia32_fmul,        sim_binop);
+	x86_register_x87_sim(op_ia32_fst,         sim_ia32_fst);
+	x86_register_x87_sim(op_ia32_fstp,        sim_ia32_fstp);
+	x86_register_x87_sim(op_ia32_fsub,        sim_binop);
+	x86_register_x87_sim(op_ia32_FtstFnstsw,  sim_FtstFnstsw);
+	x86_register_x87_sim(op_ia32_FucomFnstsw, sim_Fucom);
+	x86_register_x87_sim(op_ia32_Fucomi,      sim_Fucom);
+	x86_register_x87_sim(op_ia32_Return,      x86_sim_x87_ret);
 }
 
 /**
@@ -1509,7 +1505,13 @@ void x86_x87_simulate_graph(ir_graph *irg, const x87_simulator_config_t *config)
 
 	/* create the simulator */
 	x87_simulator sim;
-	x87_init_simulator(&sim, irg);
+	obstack_init(&sim.obst);
+	sim.blk_states = pmap_create();
+	sim.n_idx      = get_irg_last_idx(irg);
+	sim.live       = OALLOCN(&sim.obst, fp_liveness, sim.n_idx);
+
+	DB((dbg, LEVEL_1, "--------------------------------\n"
+		"x87 Simulator started for %+F\n", irg));
 
 	ir_node   *start_block = get_irg_start_block(irg);
 	blk_state *bl_state    = x87_get_bl_state(&sim, start_block);

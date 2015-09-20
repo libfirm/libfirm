@@ -343,6 +343,8 @@ static void amd64_emit_am(const ir_node *const node, bool indirect_star)
 		goto emit_addr;
 	}
 	case AMD64_OP_ADDR:
+	case AMD64_OP_X87_ADDR:
+	case AMD64_OP_X87_ADDR_REG:
 		if (indirect_star)
 			be_emit_char('*');
 		goto emit_addr;
@@ -504,8 +506,19 @@ end_of_mods:
 					amd64_addr_attr_t const *const attr
 						= get_amd64_addr_attr_const(node);
 					amd64_emit_x87_mode_suffix(attr->insn_mode);
-				} else
-					goto unknown;
+				} else if (*fmt == 'P') {
+					++fmt;
+					x87_attr_t const *const attr
+						= amd64_get_x87_attr_const(node);
+					if (attr->pop)
+						be_emit_char('p');
+				} else {
+					x87_attr_t const *const attr
+						= amd64_get_x87_attr_const(node);
+					char const *const fmt
+						= attr->res_in_reg ? "%%st, %%%s" : "%%%s, %%st";
+					be_emit_irprintf(fmt, attr->reg->name);
+				}
 				break;
 			}
 

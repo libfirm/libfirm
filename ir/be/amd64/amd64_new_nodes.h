@@ -32,7 +32,8 @@ static inline bool amd64_has_binop_attr(const ir_node *node)
 	    || attr->op_mode == AMD64_OP_REG_IMM
 	    || attr->op_mode == AMD64_OP_REG_ADDR
 	    || attr->op_mode == AMD64_OP_ADDR_REG
-	    || attr->op_mode == AMD64_OP_ADDR_IMM;
+	    || attr->op_mode == AMD64_OP_ADDR_IMM
+	    || attr->op_mode == AMD64_OP_X87_ADDR_REG;
 }
 
 static inline bool amd64_has_addr_attr(const ir_node *node)
@@ -41,7 +42,8 @@ static inline bool amd64_has_addr_attr(const ir_node *node)
 	return amd64_has_binop_attr(node)
 		|| attr->op_mode == AMD64_OP_ADDR
 		|| attr->op_mode == AMD64_OP_REG
-		|| attr->op_mode == AMD64_OP_IMM32;
+		|| attr->op_mode == AMD64_OP_IMM32
+		|| attr->op_mode == AMD64_OP_X87_ADDR;
 }
 
 static inline amd64_addr_attr_t *get_amd64_addr_attr(ir_node *node)
@@ -146,6 +148,29 @@ static inline amd64_call_addr_attr_t *get_amd64_call_addr_attr(ir_node *node)
 	assert(is_amd64_call(node));
 	return (amd64_call_addr_attr_t*)get_irn_generic_attr(node);
 }
+
+static inline const amd64_x87_attr_t *get_amd64_x87_attr_const(
+		const ir_node *node)
+{
+	assert(get_amd64_attr_const(node)->op_mode == AMD64_OP_X87);
+	return (const amd64_x87_attr_t*)get_irn_generic_attr_const(node);
+}
+
+static inline amd64_x87_attr_t *get_amd64_x87_attr(ir_node *node)
+{
+	assert(get_amd64_attr_const(node)->op_mode == AMD64_OP_X87);
+	return (amd64_x87_attr_t*)get_irn_generic_attr(node);
+}
+
+static inline amd64_x87_binop_addr_attr_t *get_amd64_x87_binop_addr_attr(
+		ir_node *const node)
+{
+	assert(get_amd64_attr_const(node)->op_mode == AMD64_OP_X87_ADDR_REG);
+	return (amd64_x87_binop_addr_attr_t*)get_irn_generic_attr(node);
+}
+
+x87_attr_t *amd64_get_x87_attr(ir_node *node);
+x87_attr_t const *amd64_get_x87_attr_const(ir_node const *node);
 
 amd64_insn_mode_t get_amd64_insn_mode(const ir_node *node);
 int get_insn_mode_bits(amd64_insn_mode_t insn_mode);

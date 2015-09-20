@@ -34,7 +34,39 @@ typedef struct x87_simulator_config_t {
 	                        const arch_register_t *reg);
 	ir_node *(*new_bd_ffreep)(dbg_info *dbgi, ir_node *block,
 	                          const arch_register_t *reg);
+	x87_attr_t *(*get_x87_attr)(ir_node *node);
 } x87_simulator_config_t;
+
+typedef struct x87_state x87_state;
+
+/**
+ * The type of an instruction simulator function.
+ *
+ * @param state  the x87 state
+ * @param n      the node to be simulated
+ */
+typedef void (*sim_func)(x87_state *state, ir_node *n);
+
+void x86_prepare_x87_callbacks(void);
+
+void x86_prepare_x87_callbacks_ia32(void);
+
+void x86_sim_x87_load(x87_state *state, ir_node *n, ir_node *value);
+
+void x86_sim_x87_store(x87_state *state, ir_node *n, int val_pos,
+                       unsigned store_bits);
+
+void x86_sim_x87_store_pop(x87_state *state, ir_node *n, int val_pos);
+
+void x86_sim_x87_ret(x87_state *state, ir_node *node);
+
+/**
+ * Register a simulator function.
+ *
+ * @param op    the opcode to simulate
+ * @param func  the simulator function for the opcode
+ */
+void x86_register_x87_sim(ir_op *op, sim_func func);
 
 /**
  * Run a simulation and fix all virtual instructions for a graph.

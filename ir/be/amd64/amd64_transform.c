@@ -132,6 +132,12 @@ static const arch_register_req_t amd64_requirement_xmm_same_0_not_1 = {
 	.width             = 1,
 };
 
+static const arch_register_req_t amd64_requirement_x87killed = {
+	.cls         = &amd64_reg_classes[CLASS_amd64_x87],
+	.width       = 1,
+	.kills_value = true,
+};
+
 static const arch_register_req_t *mem_reqs[] = {
 	&arch_memory_requirement,
 };
@@ -157,8 +163,8 @@ static const arch_register_req_t *xmm_mem_reqs[] = {
 	&arch_memory_requirement,
 };
 
-static const arch_register_req_t *x87_mem_reqs[] = {
-	&amd64_class_reg_req_x87,
+static const arch_register_req_t *x87K_mem_reqs[] = {
+	&amd64_requirement_x87killed,
 	&arch_memory_requirement,
 };
 
@@ -180,6 +186,12 @@ static const arch_register_req_t *x87_reg_mem_reqs[] = {
 	&arch_memory_requirement,
 };
 
+static const arch_register_req_t *x87K_reg_mem_reqs[] = {
+	&amd64_requirement_x87killed,
+	&amd64_class_reg_req_gp,
+	&arch_memory_requirement,
+};
+
 static const arch_register_req_t *reg_reg_reg_mem_reqs[] = {
 	&amd64_class_reg_req_gp,
 	&amd64_class_reg_req_gp,
@@ -194,8 +206,8 @@ static const arch_register_req_t *xmm_reg_reg_mem_reqs[] = {
 	&arch_memory_requirement,
 };
 
-static const arch_register_req_t *x87_reg_reg_mem_reqs[] = {
-	&amd64_class_reg_req_x87,
+static const arch_register_req_t *x87K_reg_reg_mem_reqs[] = {
+	&amd64_requirement_x87killed,
 	&amd64_class_reg_req_gp,
 	&amd64_class_reg_req_gp,
 	&arch_memory_requirement,
@@ -279,12 +291,12 @@ static arch_register_req_t const **const xmm_am_reqs[] = {
 	xmm_reg_reg_mem_reqs,
 };
 
-static arch_register_req_t const **const x87_am_reqs[] = {
+static arch_register_req_t const **const x87K_am_reqs[] = {
 	NULL,
 	mem_reqs,
-	x87_mem_reqs,
-	x87_reg_mem_reqs,
-	x87_reg_reg_mem_reqs,
+	x87K_mem_reqs,
+	x87K_reg_mem_reqs,
+	x87K_reg_reg_mem_reqs,
 };
 
 static inline bool mode_needs_gp_reg(ir_mode *mode)
@@ -1728,7 +1740,7 @@ no_call_mem:
 		ir_node *const nomem = get_irg_no_mem(irg);
 		ir_node *const in[]  = { new_value, callframe, nomem };
 		ir_node *const store = mode_is_float(mode) ?
-			(mode == x86_mode_E ? new_bd_amd64_fst(dbgi, new_block, ARRAY_SIZE(in), in, x87_reg_mem_reqs, &attr)
+			(mode == x86_mode_E ? new_bd_amd64_fstp(dbgi, new_block, ARRAY_SIZE(in), in, x87K_reg_mem_reqs, &attr)
 			                    : new_bd_amd64_movs_store_xmm(dbgi, new_block, ARRAY_SIZE(in), in, xmm_reg_mem_reqs, &attr))
 			: new_bd_amd64_mov_store(dbgi, new_block, ARRAY_SIZE(in), in, reg_reg_mem_reqs, &attr);
 
@@ -2097,6 +2109,7 @@ static ir_node *conv_x87_to_sse(dbg_info *dbgi, ir_node *block, ir_node *op,
 	ir_node *in[5];
 	int      n_in = 0;
 	amd64_addr_t addr;
+	assert(get_mode_size_bits(dst_mode) <= 64);
 	store_to_temp(new_bd_amd64_fst, &addr, dbgi, block, in, &n_in, op,
 	              dst_mode);
 	assert(n_in < (int)ARRAY_SIZE(in));
@@ -2302,12 +2315,12 @@ static ir_node *gen_Store(ir_node *const node)
 	attr.base.insn_mode = get_insn_mode_from_mode(mode);
 
 	arch_register_req_t const **const reqs
-		= (mode_is_float(mode) ? (mode == x86_mode_E ? x87_am_reqs
+		= (mode_is_float(mode) ? (mode == x86_mode_E ? x87K_am_reqs
 		                                             : xmm_am_reqs)
 		                       : gp_am_reqs)[arity];
 
 	new_store_func const cons
-		= mode_is_float(mode) ? (mode == x86_mode_E ? &new_bd_amd64_fst
+		= mode_is_float(mode) ? (mode == x86_mode_E ? &new_bd_amd64_fstp
 		                                            : &new_bd_amd64_movs_store_xmm)
 		                      : &new_bd_amd64_mov_store;
 	ir_node *const new_store = cons(dbgi, block, arity, in, reqs, &attr);

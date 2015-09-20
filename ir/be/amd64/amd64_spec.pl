@@ -90,6 +90,17 @@ $mode_x87   = "x86_mode_E";
 	amd64_call_addr_attr_t =>
 		"be_info_init_irn(res, irn_flags, in_reqs, n_res);\n"
 		."\t*attr = *attr_init;",
+	amd64_x87_attr_t =>
+		"init_amd64_attributes(res, irn_flags, in_reqs, n_res, AMD64_OP_X87);\n",
+	amd64_x87_addr_attr_t =>
+		"init_amd64_attributes(res, irn_flags, in_reqs, n_res, op_mode);\n"
+		."\tattr->base.insn_mode = insn_mode;\n"
+		."\tattr->base.addr      = addr;\n",
+	amd64_x87_binop_addr_attr_t =>
+		"be_info_init_irn(res, irn_flags, in_reqs, n_res);\n"
+		."\tattr->base = *attr_init;\n"
+		."\tassert(attr_init->base.base.op_mode == AMD64_OP_ADDR_REG);\n"
+		."\tattr->base.base.base.op_mode = AMD64_OP_X87_ADDR_REG;\n",
 );
 
 my $binop = {
@@ -742,7 +753,7 @@ fld => {
 	in_reqs   => "...",
 	out_reqs  => [ "x87", "none", "mem" ],
 	outs      => [ "res", "unused", "M" ],
-	attr_type => "amd64_addr_attr_t",
+	attr_type => "amd64_x87_addr_attr_t",
 	attr      => "amd64_insn_mode_t insn_mode, amd64_op_mode_t op_mode, amd64_addr_t addr",
 	emit      => "fld%FM %AM",
 },
@@ -753,15 +764,57 @@ fst => {
 	in_reqs   => "...",
 	out_reqs  => [ "mem" ],
 	outs      => [ "M" ],
-	attr_type => "amd64_binop_addr_attr_t",
+	attr_type => "amd64_x87_binop_addr_attr_t",
 	attr      => "const amd64_binop_addr_attr_t *attr_init",
 	mode      => "mode_M",
-	emit      => "fst%FM %AM",
+	emit      => "fst%FP%FM %AM",
+},
+
+fstp => {
+	op_flags  => [ "uses_memory" ],
+	state     => "exc_pinned",
+	in_reqs   => "...",
+	out_reqs  => [ "mem" ],
+	outs      => [ "M" ],
+	attr_type => "amd64_x87_binop_addr_attr_t",
+	attr      => "const amd64_binop_addr_attr_t *attr_init",
+	mode      => "mode_M",
+	emit      => "fstp%FM %AM",
 },
 
 fchs => {
 	template => $x87unop,
 	emit     => "fchs",
+},
+
+fdup => {
+	in_reqs     => [ "x87" ],
+	out_reqs    => [ "x87" ],
+	ins         => [ "val" ],
+	attrs_equal => "attrs_equal_false",
+	attr_type   => "amd64_x87_attr_t",
+	attr        => "const arch_register_t *reg",
+	init        => "attr->x87.reg = reg;",
+	emit        => "fld %F0",
+},
+
+fxch => {
+	op_flags    => [ "keep" ],
+	out_reqs    => [ "none" ],
+	attrs_equal => "attrs_equal_false",
+	attr_type   => "amd64_x87_attr_t",
+	attr        => "const arch_register_t *reg",
+	init        => "attr->x87.reg = reg;",
+	emit        => "fxch %F0",
+},
+
+fpop => {
+	op_flags    => [ "keep" ],
+	out_reqs    => [ "none" ],
+	attr_type   => "amd64_x87_attr_t",
+	attr        => "const arch_register_t *reg",
+	init        => "attr->x87.reg = reg;",
+	emit        => "fstp %F0",
 },
 
 );

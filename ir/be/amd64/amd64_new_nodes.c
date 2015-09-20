@@ -45,6 +45,28 @@ amd64_insn_mode_t get_amd64_insn_mode(const ir_node *node)
 	}
 }
 
+x87_attr_t *amd64_get_x87_attr(ir_node *const node)
+{
+	amd64_attr_t const *const attr = get_amd64_attr_const(node);
+	switch (attr->op_mode) {
+	case AMD64_OP_X87:
+		return &get_amd64_x87_attr(node)->x87;
+	case AMD64_OP_X87_ADDR:
+		panic("TODO");
+	case AMD64_OP_X87_ADDR_REG:
+		return &get_amd64_x87_binop_addr_attr(node)->x87;
+	default:
+		break;
+	}
+	panic("try to get x87 attr from invalid node '%s'", node);
+}
+
+x87_attr_t const *amd64_get_x87_attr_const(ir_node const *const node)
+{
+	/* hacky */
+	return amd64_get_x87_attr((ir_node *)node);
+}
+
 int get_insn_mode_bits(amd64_insn_mode_t insn_mode)
 {
 	switch (insn_mode) {
@@ -61,19 +83,21 @@ int get_insn_mode_bits(amd64_insn_mode_t insn_mode)
 static const char *get_op_mode_string(amd64_op_mode_t mode)
 {
 	switch (mode) {
-	case AMD64_OP_ADDR_IMM:    return "addr+imm";
-	case AMD64_OP_ADDR_REG:    return "addr+reg";
-	case AMD64_OP_ADDR:        return "addr";
-	case AMD64_OP_IMM32:       return "imm32";
-	case AMD64_OP_IMM64:       return "imm64";
-	case AMD64_OP_NONE:        return "none";
-	case AMD64_OP_REG_ADDR:    return "reg+addr";
-	case AMD64_OP_REG_IMM:     return "reg+imm";
-	case AMD64_OP_REG_REG:     return "reg+reg";
-	case AMD64_OP_REG:         return "reg";
-	case AMD64_OP_SHIFT_IMM:   return "shift_imm";
-	case AMD64_OP_SHIFT_REG:   return "shift_reg";
-	case AMD64_OP_X87:         return "x87";
+	case AMD64_OP_ADDR_IMM:     return "addr+imm";
+	case AMD64_OP_ADDR_REG:     return "addr+reg";
+	case AMD64_OP_ADDR:         return "addr";
+	case AMD64_OP_IMM32:        return "imm32";
+	case AMD64_OP_IMM64:        return "imm64";
+	case AMD64_OP_NONE:         return "none";
+	case AMD64_OP_REG_ADDR:     return "reg+addr";
+	case AMD64_OP_REG_IMM:      return "reg+imm";
+	case AMD64_OP_REG_REG:      return "reg+reg";
+	case AMD64_OP_REG:          return "reg";
+	case AMD64_OP_SHIFT_IMM:    return "shift_imm";
+	case AMD64_OP_SHIFT_REG:    return "shift_reg";
+	case AMD64_OP_X87:          return "x87";
+	case AMD64_OP_X87_ADDR:     return "x87+addr";
+	case AMD64_OP_X87_ADDR_REG: return "x87+addr+reg";
 	}
 	return "invalid op_mode";
 }
@@ -279,6 +303,27 @@ static int amd64_call_addr_attrs_equal(const ir_node *const a,
 	const amd64_call_addr_attr_t *const attr_b
 		= get_amd64_call_addr_attr_const(b);
 	return amd64_addr_attrs_equal(a, b) && attr_a->call_tp == attr_b->call_tp;
+}
+
+static int amd64_x87_attrs_equal(const ir_node *const a,
+                                 const ir_node *const b)
+{
+	/* we ignore x87 attributes for now */
+	return amd64_attrs_equal(a, b);
+}
+
+static int amd64_x87_addr_attrs_equal(const ir_node *const a,
+                                      const ir_node *const b)
+{
+	/* ignore x87 part for now */
+	return amd64_addr_attrs_equal(a, b);
+}
+
+static int amd64_x87_binop_addr_attrs_equal(const ir_node *const a,
+                                            const ir_node *const b)
+{
+	/* ignore x87 part for now */
+	return amd64_binop_addr_attrs_equal(a, b);
 }
 
 /* Include the generated constructor functions */

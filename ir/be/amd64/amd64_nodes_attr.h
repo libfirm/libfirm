@@ -12,10 +12,11 @@
 
 #include <stdint.h>
 
+#include "../ia32/x86_asm.h"
+#include "../ia32/x86_cc.h"
+#include "../ia32/x86_x87.h"
 #include "compiler.h"
 #include "irnode_t.h"
-#include "../ia32/x86_cc.h"
-#include "../ia32/x86_asm.h"
 
 enum amd64_arch_irn_flags_t {
 	amd64_arch_irn_flag_commutative_binop = arch_irn_flag_backend << 0,
@@ -55,6 +56,8 @@ typedef enum {
 	AMD64_OP_SHIFT_REG,
 	AMD64_OP_SHIFT_IMM,
 	AMD64_OP_X87,
+	AMD64_OP_X87_ADDR,
+	AMD64_OP_X87_ADDR_REG,
 } amd64_op_mode_t;
 
 enum {
@@ -124,5 +127,20 @@ typedef struct {
 	amd64_addr_attr_t  base;
 	ir_type           *call_tp;
 } amd64_call_addr_attr_t;
+
+typedef struct {
+	amd64_attr_t base;
+	x87_attr_t   x87;
+} amd64_x87_attr_t;
+
+typedef struct {
+	amd64_addr_attr_t base;
+	x87_attr_t        x87;
+} amd64_x87_addr_attr_t;
+
+typedef struct {
+	amd64_binop_addr_attr_t base;
+	x87_attr_t              x87;
+} amd64_x87_binop_addr_attr_t;
 
 #endif
