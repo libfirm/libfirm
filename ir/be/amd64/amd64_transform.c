@@ -292,7 +292,6 @@ static arch_register_req_t const **const xmm_am_reqs[] = {
 };
 
 static arch_register_req_t const **const x87K_am_reqs[] = {
-	NULL,
 	mem_reqs,
 	x87K_mem_reqs,
 	x87K_reg_mem_reqs,
