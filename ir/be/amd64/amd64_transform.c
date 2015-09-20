@@ -2355,7 +2355,7 @@ static ir_node *gen_Store(ir_node *const node)
 	arch_register_req_t const **const reqs
 		= (mode_is_float(mode) ? (mode == x86_mode_E ? x87K_am_reqs
 		                                             : xmm_am_reqs)
-		                       : gp_am_reqs)[arity];
+		                       : gp_am_reqs)[arity-1];
 
 	new_store_func const cons
 		= mode_is_float(mode) ? (mode == x86_mode_E ? &new_bd_amd64_fstp
