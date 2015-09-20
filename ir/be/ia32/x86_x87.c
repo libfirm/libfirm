@@ -474,17 +474,8 @@ static ir_node *x87_dup_operand(x87_state *const state, ir_node *const n, unsign
 	return fdup;
 }
 
-/**
- * Create a fpop before node n.
- * This overwrites st(pos) with st(0) and pops st(0).
- *
- * @param state   the x87 state
- * @param n       the node after which to schedule the fpop
- * @param pos     the index of the entry to remove the register stack
- * @return the fpop node
- */
-static ir_node *x87_create_fpop(x87_state *const state, ir_node *const n,
-                                unsigned const pos)
+ir_node *x86_x87_create_fpop(x87_state *const state, ir_node *const n,
+                             unsigned const pos)
 {
 	if (pos != 0) {
 		st_entry *const dst = x87_get_entry(state, pos);
@@ -940,7 +931,7 @@ static void sim_FtstFnstsw(x87_state *state, ir_node *n)
 	move_to_tos(state, n, val);
 
 	if (!is_fp_live(val, live))
-		x87_create_fpop(state, n, 0);
+		x86_x87_create_fpop(state, n, 0);
 }
 
 unsigned x86_sim_x87_fucom(x87_state *const state, ir_node *const node,
@@ -1045,7 +1036,7 @@ static void sim_ia32_FucomFnstsw(x87_state *const state, ir_node *const node)
 			set_irn_op(node, op_ia32_FucomppFnstsw);
 			x87_pop(state);
 		} else {
-			x87_create_fpop(state, node, additional_pop);
+			x86_x87_create_fpop(state, node, additional_pop);
 		}
 	}
 }
@@ -1059,7 +1050,7 @@ static void sim_ia32_Fucomi(x87_state *const state, ir_node *const node)
 	ia32_x87_attr_t *const attr = get_ia32_x87_attr(node);
 	attr->attr.ins_permuted ^= attr->x87.reverse;
 	if (additional_pop != ~0u)
-		x87_create_fpop(state, node, additional_pop);
+		x86_x87_create_fpop(state, node, additional_pop);
 }
 
 /**
@@ -1261,7 +1252,7 @@ free_all:;
 				}
 			}
 		}
-		insert      = x87_create_fpop(state, insert, i);
+		insert      = x86_x87_create_fpop(state, insert, i);
 		depth      -= 1;
 		kill_mask >>= 1;
 	}

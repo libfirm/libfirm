@@ -1893,6 +1893,16 @@ static ir_node *gen_Proj_Proj(ir_node *const node)
 	panic("amd64: unexpected Proj(Proj) after %+F", pred_pred);
 }
 
+static ir_node *match_cmp_x87(ir_node *const node, ir_node *const op0,
+                              ir_node *op1)
+{
+	dbg_info *const dbgi      = get_irn_dbg_info(node);
+	ir_node  *const new_block = be_transform_node(get_nodes_block(node));
+	ir_node  *const new_op0   = be_transform_node(op0);
+	ir_node  *const new_op1   = be_transform_node(op1);
+	return new_bd_amd64_fucomi(dbgi, new_block, new_op0, new_op1);
+}
+
 static ir_node *gen_Cmp(ir_node *const node)
 {
 	ir_node  *const op1       = get_Cmp_left(node);
@@ -1905,6 +1915,8 @@ static ir_node *gen_Cmp(ir_node *const node)
 	ir_node     *new_node;
 	amd64_args_t args;
 	if (mode_is_float(cmp_mode)) {
+		if (cmp_mode == x86_mode_E)
+			return match_cmp_x87(node, op1, op2);
 		match_binop(&args, block, cmp_mode, op1, op2, match_am);
 		new_node = new_bd_amd64_ucomis(dbgi, new_block, args.arity, args.in, args.reqs, &args.attr);
 	} else {

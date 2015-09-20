@@ -75,21 +75,37 @@ static void sim_amd64_fdiv(x87_state *const state, ir_node *const node)
 	x86_sim_x87_binop(state, node, n_amd64_fdiv_left, n_amd64_fdiv_right, out);
 }
 
+static void sim_amd64_fucomi(x87_state *const state, ir_node *const node)
+{
+	ir_node *const op0 = get_irn_n(node, n_amd64_fucomi_left);
+	ir_node *const op1 = get_irn_n(node, n_amd64_fucomi_right);
+	unsigned const additional_pop = x86_sim_x87_fucom(state, node, op0, op1);
+	if (additional_pop != ~0u)
+		x86_x87_create_fpop(state, node, additional_pop);
+
+	/* TODO remove the following check once all emitters that test flags
+	 * check the predecessor nodes for reverse condition */
+	x87_attr_t const *const x87 = amd64_get_x87_attr(node);
+	if (x87->reverse)
+		panic("reverse not handled yet");
+}
+
 static void prepare_callbacks(void)
 {
 	x86_prepare_x87_callbacks();
-	x86_register_x87_sim(op_amd64_call, sim_amd64_call);
-	x86_register_x87_sim(op_amd64_fadd, sim_amd64_fadd);
-	x86_register_x87_sim(op_amd64_fchs, x86_sim_x87_unop);
-	x86_register_x87_sim(op_amd64_fdiv, sim_amd64_fdiv);
-	x86_register_x87_sim(op_amd64_fld,  sim_amd64_fld);
-	x86_register_x87_sim(op_amd64_fld1, x86_x87_push);
-	x86_register_x87_sim(op_amd64_fldz, x86_x87_push);
-	x86_register_x87_sim(op_amd64_fmul, sim_amd64_fmul);
-	x86_register_x87_sim(op_amd64_fst,  sim_amd64_fst);
-	x86_register_x87_sim(op_amd64_fstp, sim_amd64_fstp);
-	x86_register_x87_sim(op_amd64_fsub, sim_amd64_fsub);
-	x86_register_x87_sim(op_amd64_ret,  x86_sim_x87_ret);
+	x86_register_x87_sim(op_amd64_call,   sim_amd64_call);
+	x86_register_x87_sim(op_amd64_fadd,   sim_amd64_fadd);
+	x86_register_x87_sim(op_amd64_fchs,   x86_sim_x87_unop);
+	x86_register_x87_sim(op_amd64_fdiv,   sim_amd64_fdiv);
+	x86_register_x87_sim(op_amd64_fld,    sim_amd64_fld);
+	x86_register_x87_sim(op_amd64_fld1,   x86_x87_push);
+	x86_register_x87_sim(op_amd64_fldz,   x86_x87_push);
+	x86_register_x87_sim(op_amd64_fmul,   sim_amd64_fmul);
+	x86_register_x87_sim(op_amd64_fst,    sim_amd64_fst);
+	x86_register_x87_sim(op_amd64_fstp,   sim_amd64_fstp);
+	x86_register_x87_sim(op_amd64_fsub,   sim_amd64_fsub);
+	x86_register_x87_sim(op_amd64_fucomi, sim_amd64_fucomi);
+	x86_register_x87_sim(op_amd64_ret,    x86_sim_x87_ret);
 }
 
 void amd64_simulate_graph_x87(ir_graph *irg)

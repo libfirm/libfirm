@@ -74,6 +74,18 @@ unsigned x86_sim_x87_fucom(x87_state *state, ir_node *node,
 void x86_x87_push(x87_state *state, ir_node *value);
 
 /**
+ * Create a fpop before node n.
+ * This overwrites st(pos) with st(0) and pops st(0).
+ *
+ * @param state   the x87 state
+ * @param n       the node after which to schedule the fpop
+ * @param pos     the index of the entry to remove the register stack
+ * @return the fpop node
+ */
+ir_node *x86_x87_create_fpop(x87_state *const state, ir_node *const n,
+                             unsigned const pos);
+
+/**
  * Register a simulator function.
  *
  * @param op    the opcode to simulate

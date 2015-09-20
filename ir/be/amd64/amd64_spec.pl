@@ -820,6 +820,16 @@ fchs => {
 	emit     => "fchs",
 },
 
+fucomi => {
+	irn_flags => [ "rematerializable" ],
+	in_reqs   => [ "x87", "x87" ],
+	out_reqs  => [ "flags" ],
+	ins       => [ "left", "right" ],
+	outs      => [ "flags" ],
+	attr_type => "amd64_x87_attr_t",
+	emit      => "fucom%FPi %F0",
+},
+
 fdup => {
 	in_reqs     => [ "x87" ],
 	out_reqs    => [ "x87" ],
