@@ -793,8 +793,8 @@ static void amd64_init_types(void)
 	x86_init_x87_type();
 	if (use_x87_long_double) {
 		amd64_backend_params.type_long_double = x86_type_E;
-		amd64_backend_params.vararg.va_list_type = amd64_build_va_list_type();
 	}
+	amd64_backend_params.vararg.va_list_type = amd64_build_va_list_type();
 }
 
 static void amd64_init(void)
