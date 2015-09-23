@@ -2191,8 +2191,10 @@ static ir_node *gen_Conv(ir_node *const node)
 			};
 			ir_node *const movq = new_bd_amd64_movq(dbgi, block, 1, in, reg_reqs, AMD64_OP_REG, addr);
 			return be_new_Proj(movq, pn_amd64_movq_res);
-		} else {
+		} else if (src_bits == 64) {
 			return create_movq(dbgi, block, op);
+		} else {
+			panic("amd64: can't transform %+F", node);
 		}
 	} else if (src_bits == 128) {
 		/* 2xdouble -> float */
@@ -2245,13 +2247,13 @@ static ir_node *gen_Conv(ir_node *const node)
 	}
 
 	if (dst_mode == x86_mode_E) {
-		/* TODO: int->mode_E */
-		assert(src_float);
+		if (!src_float)
+			panic("amd64: int -> mode_E NIY");
 		/* SSE to x87 */
 		return conv_sse_to_x87(dbgi, block, op);
 	} else if (src_mode == x86_mode_E) {
-		/* TODO: mode_E->int */
-		assert(dst_float);
+		if (!dst_float)
+			panic("amd64: int -> mode_E NIY");
 		return conv_x87_to_sse(dbgi, block, op, dst_mode);
 	}
 
@@ -2262,12 +2264,14 @@ static ir_node *gen_Conv(ir_node *const node)
 
 	if (src_float && dst_float) {
 		/* float to float */
-		if (src_bits < dst_bits) {
+		if (src_bits == 32 && dst_bits == 64) {
 			conv   = new_bd_amd64_cvtss2sd(dbgi, block, ARRAY_SIZE(in), in, amd64_xmm_reqs, insn_mode, AMD64_OP_REG, addr);
 			pn_res = pn_amd64_cvtss2sd_res;
-		} else {
+		} else if (src_bits == 64 && dst_bits == 32) {
 			conv   = new_bd_amd64_cvtsd2ss(dbgi, block, ARRAY_SIZE(in), in, amd64_xmm_reqs, AMD64_OP_REG, addr);
 			pn_res = pn_amd64_cvtsd2ss_res;
+		} else {
+			panic("amd64: cannot transform %+F", node);
 		}
 	} else if (src_float && !dst_float) {
 		/* float to int */
@@ -2279,12 +2283,14 @@ static ir_node *gen_Conv(ir_node *const node)
 			panic("cannot convert floating point to 64-bit unsigned");
 		}
 
-		if (src_bits < 64) {
+		if (src_bits == 32) {
 			conv   = new_bd_amd64_cvttss2si(dbgi, block, ARRAY_SIZE(in), in, amd64_xmm_reqs, insn_mode, AMD64_OP_REG, addr);
 			pn_res = pn_amd64_cvttss2si_res;
-		} else {
+		} else if (src_bits == 64) {
 			conv   = new_bd_amd64_cvttsd2si(dbgi, block, ARRAY_SIZE(in), in, amd64_xmm_reqs, insn_mode, AMD64_OP_REG, addr);
 			pn_res = pn_amd64_cvttsd2si_res;
+		} else {
+			panic("amd64: cannot transform %+F", node);
 		}
 	} else if (!src_float && dst_float) {
 		/* int to float */
@@ -2303,12 +2309,14 @@ static ir_node *gen_Conv(ir_node *const node)
 			panic("cannot convert 64-bit unsigned to floating point");
 		}
 
-		if (dst_bits < 64) {
+		if (dst_bits == 32) {
 			conv   = new_bd_amd64_cvtsi2ss(dbgi, block, ARRAY_SIZE(in), in, reg_reqs, insn_mode, AMD64_OP_REG, addr);
 			pn_res = pn_amd64_cvtsi2ss_res;
-		} else {
+		} else if (dst_bits == 64) {
 			conv   = new_bd_amd64_cvtsi2sd(dbgi, block, ARRAY_SIZE(in), in, reg_reqs, insn_mode, AMD64_OP_REG, addr);
 			pn_res = pn_amd64_cvtsi2sd_res;
+		} else {
+			panic("amd64: cannot transform %+F", node);
 		}
 	} else {
 		/* int to int */
@@ -2316,6 +2324,7 @@ static ir_node *gen_Conv(ir_node *const node)
 			conv   = new_bd_amd64_mov_gp(dbgi, block, ARRAY_SIZE(in), in, reg_reqs, insn_mode, AMD64_OP_REG, addr);
 			pn_res = pn_amd64_mov_gp_res;
 		} else {
+			assert(get_mode_size_bits(min_mode) <= 32);
 			conv   = new_bd_amd64_movs(dbgi, block, ARRAY_SIZE(in), in, reg_reqs, insn_mode, AMD64_OP_REG, addr);
 			pn_res = pn_amd64_movs_res;
 		}
