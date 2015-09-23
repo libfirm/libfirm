@@ -1282,7 +1282,7 @@ static void emit_sparc_SwitchJmp(const ir_node *node)
 	sparc_emitf(node, "jmp %S0");
 	fill_delay_slot(node);
 
-	be_emit_jump_table(node, attr->table, attr->table_entity,
+	be_emit_jump_table(node, attr->table, attr->table_entity, mode_P,
 	                   emit_jumptable_target);
 }
 

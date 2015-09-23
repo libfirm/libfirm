@@ -482,6 +482,22 @@ static ir_node *gen_Address(ir_node *const node)
 	return new_bd_amd64_mov_imm(dbgi, block, INSN_MODE_64, &imm);
 }
 
+static ir_node *create_picaddr_lea(ir_node *const block,
+                                   x86_immediate_kind_t const kind,
+                                   ir_entity *const entity)
+{
+	amd64_addr_t addr = {
+		.immediate = (x86_imm32_t) {
+			.kind   = kind,
+			.entity = entity,
+		},
+		.base_input  = RIP_INPUT,
+		.index_input = NO_INPUT,
+		.mem_input   = NO_INPUT,
+	};
+	return new_bd_amd64_lea(NULL, block, 0, NULL, NULL, INSN_MODE_64, addr);
+}
+
 static ir_node *gen_be_Relocation(ir_node *const node)
 {
 	ir_node             *const block  = be_transform_nodes_block(node);
@@ -498,18 +514,8 @@ static ir_node *gen_be_Relocation(ir_node *const node)
 		return new_bd_amd64_mov_imm(NULL, block, INSN_MODE_64, &imm);
 	}
 	case X86_IMM_PCREL:
-	case X86_IMM_GOTPCREL: { /* can GOTPCREL happen here? */
-		amd64_addr_t addr;
-		memset(&addr, 0, sizeof(addr));
-		addr.base_input  = RIP_INPUT;
-		addr.index_input = NO_INPUT;
-		addr.mem_input   = NO_INPUT;
-		addr.immediate = (x86_imm32_t) {
-			.kind   = kind,
-			.entity = entity,
-		};
-		return new_bd_amd64_lea(NULL, block, 0, NULL, NULL, INSN_MODE_64, addr);
-	}
+	case X86_IMM_GOTPCREL: /* can GOTPCREL happen here? */
+		return create_picaddr_lea(block, kind, entity);
 	default:
 		break;
 	}
@@ -1004,35 +1010,42 @@ static ir_node *gen_shift_binop(ir_node *node, ir_node *op1, ir_node *op2,
 	return be_new_Proj(new_node, pn_res);
 }
 
-static ir_node *create_lea_as_add(ir_node *node, ir_node *op1, ir_node *op2)
+static ir_node *create_add_lea(dbg_info *dbgi, ir_node *new_block,
+                               amd64_insn_mode_t insn_mode, ir_node *op1,
+                               ir_node *op2)
 {
-	dbg_info *const dbgi      = get_irn_dbg_info(node);
-	ir_node  *const new_block = be_transform_nodes_block(node);
-	ir_mode  *const mode      = get_irn_mode(node);
+	ir_node *in[] = { op1, op2 };
+	amd64_addr_t addr = {
+		.base_input  = 0,
+		.index_input = 1,
+	};
+	return new_bd_amd64_lea(dbgi, new_block, ARRAY_SIZE(in), in,
+	                        amd64_reg_reg_reqs, insn_mode, addr);
+}
 
-	amd64_insn_mode_t insn_mode = get_mode_size_bits(mode) <= 32
-	                            ? INSN_MODE_32 : INSN_MODE_64;
-
-	const arch_register_req_t **reqs;
-	amd64_addr_t addr;
-	memset(&addr, 0, sizeof(addr));
-
-	ir_node *in[2];
-	int      arity = 0;
-
-	if (match_immediate_32(&addr.immediate, op2, false, true)) {
-		in[arity++]      = be_transform_node(op1);
-		reqs             = reg_reqs;
-		addr.index_input = NO_INPUT;
+static ir_node *match_simple_lea(dbg_info *dbgi, ir_node *new_block,
+                                 amd64_insn_mode_t insn_mode, ir_node *op1,
+                                 ir_node *op2)
+{
+	x86_imm32_t immediate;
+	memset(&immediate, 0, sizeof(immediate));
+	if (match_immediate_32(&immediate, op2, false, true)) {
+		ir_node *in[] = {
+			be_transform_node(op1)
+		};
+		amd64_addr_t addr = {
+			.immediate   = immediate,
+			.base_input  = 0,
+			.index_input = NO_INPUT,
+			.mem_input   = NO_INPUT,
+		};
+		return new_bd_amd64_lea(dbgi, new_block, ARRAY_SIZE(in), in, reg_reqs,
+		                        insn_mode, addr);
 	} else {
-		in[arity++]      = be_transform_node(op1);
-		in[arity++]      = be_transform_node(op2);
-		addr.base_input  = 0;
-		addr.index_input = 1;
-		reqs             = amd64_reg_reg_reqs;
+		ir_node *const new_op1 = be_transform_node(op1);
+		ir_node *const new_op2 = be_transform_node(op2);
+		return create_add_lea(dbgi, new_block, insn_mode, new_op1, new_op2);
 	}
-
-	return new_bd_amd64_lea(dbgi, new_block, arity, in, reqs, insn_mode, addr);
 }
 
 static ir_node *gen_Add(ir_node *const node)
@@ -1060,8 +1073,13 @@ static ir_node *gen_Add(ir_node *const node)
 	if (use_am)
 		res = gen_binop_am(node, op1, op2, new_bd_amd64_add, pn_amd64_add_res,
 		                   flags);
-	else
-		res = create_lea_as_add(node, op1, op2);
+	else {
+		amd64_insn_mode_t insn_mode = get_mode_size_bits(mode) <= 32
+			? INSN_MODE_32 : INSN_MODE_64;
+		dbg_info *const dbgi      = get_irn_dbg_info(node);
+		ir_node  *const new_block = be_transform_node(block);
+		res = match_simple_lea(dbgi, new_block, insn_mode, op1, op2);
+	}
 
 	x86_mark_non_am(node);
 	return res;
@@ -1511,10 +1529,60 @@ static ir_node *gen_Switch(ir_node *const node)
 	set_entity_visibility(entity, ir_visibility_private);
 	add_entity_linkage(entity, IR_LINKAGE_CONSTANT);
 
+	arch_register_req_t const **in_reqs;
+	amd64_op_mode_t op_mode;
+	int arity = 0;
+	ir_node *in[1];
+	amd64_addr_t addr;
+	if (be_options.pic) {
+		ir_node *const base
+			= create_picaddr_lea(new_block, X86_IMM_PCREL, entity);
+		ir_node *load_in[3];
+		int load_arity = 0;
+		int load_base = load_arity++;
+		int load_index = load_arity++;
+		load_in[load_base]  = base;
+		load_in[load_index] = new_sel;
+		addr = (amd64_addr_t) {
+			.base_input  = load_base,
+			.index_input = load_index,
+			.mem_input   = NO_INPUT,
+			.log_scale   = 2,
+		};
+		ir_node *const load
+			= new_bd_amd64_movs(dbgi, new_block, load_arity, load_in,
+			                    amd64_reg_reg_reqs, INSN_MODE_32,
+			                    AMD64_OP_ADDR, addr);
+		ir_node *const load_res = be_new_Proj(load, pn_amd64_movs_res);
+
+		ir_node *const add = create_add_lea(dbgi, new_block, INSN_MODE_64,
+		                                    base, load_res);
+
+		memset(&addr, 0, sizeof(addr));
+		op_mode = AMD64_OP_REG;
+		in[arity++] = add;
+		in_reqs = reg_reqs;
+	} else {
+		int index_in = arity++;
+		in[index_in] = new_sel;
+		in_reqs = reg_reqs;
+		addr = (amd64_addr_t) {
+			.immediate = {
+				.kind   = X86_IMM_ADDR,
+				.entity = entity,
+			},
+			.base_input  = NO_INPUT,
+			.index_input = index_in,
+			.log_scale   = 3,
+		};
+		op_mode = AMD64_OP_ADDR;
+	}
+
 	table = ir_switch_table_duplicate(irg, table);
 
-	ir_node *const out = new_bd_amd64_jmp_switch(dbgi, new_block, new_sel,
-	                                             n_outs, table, entity);
+	ir_node *const out = new_bd_amd64_jmp_switch(dbgi, new_block, arity, in,
+	                                             in_reqs, n_outs, op_mode,
+	                                             &addr, table, entity);
 	return out;
 }
 

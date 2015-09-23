@@ -76,7 +76,9 @@ $mode_x87   = "x86_mode_E";
 		"be_info_init_irn(res, irn_flags, in_reqs, n_res);\n"
 		."\t*attr = *attr_init;",
 	amd64_switch_jmp_attr_t =>
-		"init_amd64_attributes(res, irn_flags, in_reqs, n_res, AMD64_OP_NONE);\n"
+		"init_amd64_attributes(res, irn_flags, in_reqs, n_res, op_mode);\n"
+		."\tattr->base.insn_mode = INSN_MODE_64;\n"
+		."\tattr->base.addr = *addr;\n"
 		."\tinit_amd64_switch_attributes(res, table, table_entity);",
 	amd64_cc_attr_t =>
 		"init_amd64_attributes(res, irn_flags, in_reqs, n_res, AMD64_OP_NONE);\n"
@@ -521,10 +523,10 @@ mov_store => {
 jmp_switch => {
 	op_flags  => [ "cfopcode", "forking" ],
 	state     => "pinned",
-	in_reqs   => [ "gp" ],
+	in_reqs   => "...",
 	out_reqs  => "...",
 	attr_type => "amd64_switch_jmp_attr_t",
-	attr      => "const ir_switch_table *table, ir_entity *table_entity",
+	attr      => "amd64_op_mode_t op_mode, const amd64_addr_t *addr, const ir_switch_table *table, ir_entity *table_entity",
 },
 
 call => {

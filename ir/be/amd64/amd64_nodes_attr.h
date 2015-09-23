@@ -118,7 +118,7 @@ typedef struct {
 } amd64_cc_attr_t;
 
 typedef struct {
-	amd64_attr_t           base;
+	amd64_addr_attr_t      base;
 	const ir_switch_table *table;
 	ir_entity             *table_entity;
 } amd64_switch_jmp_attr_t;

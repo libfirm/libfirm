@@ -896,7 +896,7 @@ static void emit_ia32_SwitchJmp(const ir_node *node)
 {
 	ia32_switch_attr_t const *const attr = get_ia32_switch_attr_const(node);
 	ia32_emitf(node, "jmp %*AS0");
-	be_emit_jump_table(node, attr->table, attr->table_entity,
+	be_emit_jump_table(node, attr->table, attr->table_entity, mode_P,
 	                   emit_jumptable_target);
 }
 
@@ -2714,7 +2714,7 @@ static void bemit_switchjmp(const ir_node *node)
 	bemit_mod_am(0x05, node);
 
 	ia32_switch_attr_t const *const attr = get_ia32_switch_attr_const(node);
-	be_emit_jump_table(node, attr->table, attr->table_entity,
+	be_emit_jump_table(node, attr->table, attr->table_entity, mode_P,
 	                   emit_jumptable_target);
 }
 

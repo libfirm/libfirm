@@ -129,7 +129,7 @@ typedef void (*emit_target_func)(ir_entity const *table, ir_node const *proj_x);
  * Emits a jump table for switch operations
  */
 void be_emit_jump_table(const ir_node *node, const ir_switch_table *table,
-                        ir_entity const *entity,
+                        ir_entity const *entity, ir_mode *entry_mode,
                         emit_target_func get_cfop_target);
 
 bool be_gas_produces_dwarf_line_info(void);

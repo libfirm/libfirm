@@ -1515,7 +1515,7 @@ static void emit_global_decls(const be_main_env_t *main_env)
 }
 
 void be_emit_jump_table(const ir_node *node, const ir_switch_table *table,
-                        ir_entity const *const entity,
+                        ir_entity const *const entity, ir_mode *entry_mode,
                         emit_target_func emit_target)
 {
 	/* go over all proj's and collect their jump targets */
@@ -1581,9 +1581,10 @@ void be_emit_jump_table(const ir_node *node, const ir_switch_table *table,
 	}
 
 	/* emit table */
-	unsigned pointer_size = get_mode_size_bytes(mode_P);
+	unsigned pointer_size = get_mode_size_bytes(entry_mode);
 	if (entity != NULL) {
-		be_gas_emit_switch_section(GAS_SECTION_RODATA);
+		if (be_gas_object_file_format != OBJECT_FILE_FORMAT_MACH_O)
+			be_gas_emit_switch_section(GAS_SECTION_RODATA);
 		be_emit_irprintf("\t.align %u\n", pointer_size);
 		be_gas_emit_entity(entity);
 		be_emit_cstring(":\n");
@@ -1599,7 +1600,8 @@ void be_emit_jump_table(const ir_node *node, const ir_switch_table *table,
 		be_emit_write_line();
 	}
 
-	if (entity != NULL)
+	if (entity != NULL
+	 && be_gas_object_file_format != OBJECT_FILE_FORMAT_MACH_O)
 		be_gas_emit_switch_section(GAS_SECTION_TEXT);
 
 	free(labels);

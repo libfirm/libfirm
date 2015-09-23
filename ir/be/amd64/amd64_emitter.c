@@ -778,8 +778,9 @@ static void emit_amd64_jmp_switch(const ir_node *node)
 {
 	const amd64_switch_jmp_attr_t *attr = get_amd64_switch_jmp_attr_const(node);
 
-	amd64_emitf(node, "jmp *%E(,%^S0,8)", attr->table_entity);
-	be_emit_jump_table(node, attr->table, attr->table_entity,
+	amd64_emitf(node, "jmp %*AM");
+	ir_mode *entry_mode = be_options.pic ? mode_Iu : mode_Lu;
+	be_emit_jump_table(node, attr->table, attr->table_entity, entry_mode,
 	                   emit_jumptable_target);
 }
 
