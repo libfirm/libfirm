@@ -2090,9 +2090,10 @@ typedef ir_node* (*new_store_func)(dbg_info *dbgi, ir_node *block, int arity,
                                    arch_register_req_t const **in_reqs,
                                    amd64_binop_addr_attr_t const *addr);
 
-static void store_to_temp(new_store_func new_store, amd64_addr_t *addr,
-                          dbg_info *dbgi, ir_node *block, ir_node **in,
-                          int *n_in, ir_node *op, ir_mode *mode)
+static void store_to_temp(new_store_func new_store,
+		arch_register_req_t const **const in_reqs,
+		amd64_addr_t *addr, dbg_info *dbgi, ir_node *block, ir_node **in,
+		int *n_in, ir_node *op, ir_mode *mode)
 {
 	ir_graph *const irg    = get_irn_irg(block);
 	ir_node  *const frame  = get_irg_frame(irg);
@@ -2111,8 +2112,8 @@ static void store_to_temp(new_store_func new_store, amd64_addr_t *addr,
 	daddr->mem_input      = 2;
 	daddr->immediate.kind = X86_IMM_FRAMEOFFSET;
 
-	ir_node *store = new_store(dbgi, block, ARRAY_SIZE(sin), sin,
-	                           x87_reg_mem_reqs, &attr);
+	ir_node *const store
+		= new_store(dbgi, block, ARRAY_SIZE(sin), sin, in_reqs, &attr);
 	set_irn_pinned(store, false);
 
 	int base_input = (*n_in)++;
@@ -2131,8 +2132,8 @@ static ir_node *conv_sse_to_x87(dbg_info *dbgi, ir_node *block, ir_node *op)
 	int      n_in = 0;
 	ir_mode *const mode = get_irn_mode(op);
 	amd64_addr_t addr;
-	store_to_temp(new_bd_amd64_movs_store_xmm, &addr, dbgi, block, in, &n_in,
-	              op, mode);
+	store_to_temp(new_bd_amd64_movs_store_xmm, xmm_reg_mem_reqs, &addr, dbgi,
+	              block, in, &n_in, op, mode);
 	assert(n_in < (int)ARRAY_SIZE(in));
 
 	amd64_insn_mode_t insn_mode = get_insn_mode_from_mode(mode);
@@ -2149,8 +2150,8 @@ static ir_node *conv_x87_to_sse(dbg_info *dbgi, ir_node *block, ir_node *op,
 	int      n_in = 0;
 	amd64_addr_t addr;
 	assert(get_mode_size_bits(dst_mode) <= 64);
-	store_to_temp(new_bd_amd64_fst, &addr, dbgi, block, in, &n_in, op,
-	              dst_mode);
+	store_to_temp(new_bd_amd64_fst, x87_reg_mem_reqs, &addr, dbgi, block, in,
+	              &n_in, op, dst_mode);
 	assert(n_in < (int)ARRAY_SIZE(in));
 
 	amd64_insn_mode_t insn_mode = get_insn_mode_from_mode(dst_mode);
