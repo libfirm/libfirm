@@ -2388,7 +2388,6 @@ ir_node *amd64_new_spill(ir_node *value, ir_node *after)
 	amd64_binop_addr_attr_t attr;
 	memset(&attr, 0, sizeof(attr));
 	attr.base.base.op_mode = AMD64_OP_ADDR_REG;
-	attr.base.insn_mode    = INSN_MODE_64;
 
 	amd64_addr_t *addr = &attr.base.addr;
 	addr->immediate.kind = X86_IMM_FRAMEOFFSET;
@@ -2396,19 +2395,42 @@ ir_node *amd64_new_spill(ir_node *value, ir_node *after)
 	addr->index_input    = NO_INPUT;
 	ir_node *in[]        = { value, frame, mem };
 
-	ir_node *store;
+	amd64_insn_mode_t           insn_mode;
+	new_store_func              cons;
+	arch_register_req_t const **reqs;
 	if (mode_is_float(mode) || mode == amd64_mode_xmm) {
-		/* TODO: currently our stack alignment is messed up so we can't use
-		 * movdqa for spilling... */
-		attr.base.insn_mode = INSN_MODE_128;
-		store = new_bd_amd64_movdqu_store(NULL, block, ARRAY_SIZE(in), in, xmm_reg_mem_reqs, &attr);
+		if (mode == x86_mode_E) {
+			insn_mode = INSN_MODE_128;
+			cons      = &new_bd_amd64_fst;
+			reqs      = x87_reg_mem_reqs;
+		} else {
+			insn_mode = INSN_MODE_128;
+			/* TODO: currently our stack alignment is messed up so we can't use
+			 * movdqa for spilling... */
+			cons      = new_bd_amd64_movdqu_store;
+			reqs      = xmm_reg_mem_reqs;
+		}
 	} else {
-		store = new_bd_amd64_mov_store(NULL, block, ARRAY_SIZE(in), in, reg_reg_mem_reqs, &attr);
+		insn_mode = INSN_MODE_64;
+		cons      = &new_bd_amd64_mov_store;
+		reqs      = reg_reg_mem_reqs;
 	}
 
+	attr.base.insn_mode = insn_mode;
+	ir_node *const store = cons(NULL, block, ARRAY_SIZE(in), in, reqs, &attr);
 	arch_add_irn_flags(store, arch_irn_flag_spill);
 	sched_add_after(after, store);
 	return store;
+}
+
+static ir_node *create_sse_spill(dbg_info *const dbgi, ir_node *const block,
+		int const arity, ir_node *const *const in,
+		arch_register_req_t const **const in_reqs,
+		amd64_insn_mode_t const insn_mode, amd64_op_mode_t const op_mode,
+		amd64_addr_t const addr)
+{
+	(void)insn_mode; /* TODO */
+	return new_bd_amd64_movdqu(dbgi, block, arity, in, in_reqs, op_mode, addr);
 }
 
 ir_node *amd64_new_reload(ir_node *value, ir_node *spill, ir_node *before)
@@ -2425,15 +2447,26 @@ ir_node *amd64_new_reload(ir_node *value, ir_node *spill, ir_node *before)
 
 	ir_node *in[] = { frame, spill };
 
-	unsigned pn_res;
-	ir_node *load;
+	unsigned          pn_res;
+	create_mov_func   cons;
+	amd64_insn_mode_t insn_mode;
 	if (mode_is_float(mode) || mode == amd64_mode_xmm) {
-		load   = new_bd_amd64_movdqu(NULL, block, ARRAY_SIZE(in), in, reg_mem_reqs, AMD64_OP_ADDR, addr);
-		pn_res = pn_amd64_movdqu_res;
+		if (mode == x86_mode_E) {
+			insn_mode = INSN_MODE_128;
+			cons      = &new_bd_amd64_fld;
+			pn_res    = pn_amd64_fld_res;
+		} else {
+			insn_mode = INSN_MODE_128;
+			cons      = &create_sse_spill;
+			pn_res    = pn_amd64_movdqu_res;
+		}
 	} else {
-		load   = new_bd_amd64_mov_gp(NULL, block, ARRAY_SIZE(in), in, reg_mem_reqs, INSN_MODE_64, AMD64_OP_ADDR, addr);
-		pn_res = pn_amd64_mov_gp_res;
+		insn_mode = INSN_MODE_64;
+		cons      = &new_bd_amd64_mov_gp;
+		pn_res    = pn_amd64_mov_gp_res;
 	}
+	ir_node *const load = cons(NULL, block, ARRAY_SIZE(in), in, reg_mem_reqs,
+	                           insn_mode, AMD64_OP_ADDR, addr);
 	arch_add_irn_flags(load, arch_irn_flag_reload);
 	sched_add_before(before, load);
 	amd64_addr_attr_t *attr = get_amd64_addr_attr(load);
