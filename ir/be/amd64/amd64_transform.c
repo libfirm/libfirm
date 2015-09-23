@@ -2090,15 +2090,15 @@ typedef ir_node* (*new_store_func)(dbg_info *dbgi, ir_node *block, int arity,
                                    arch_register_req_t const **in_reqs,
                                    amd64_binop_addr_attr_t const *addr);
 
-static void store_to_temp(new_store_func new_store, amd64_addr_t *addr, dbg_info *dbgi,
-                          ir_node *block, ir_node **in, int *n_in,
-                          ir_node *op, ir_mode *mode)
+static void store_to_temp(new_store_func new_store, amd64_addr_t *addr,
+                          dbg_info *dbgi, ir_node *block, ir_node **in,
+                          int *n_in, ir_node *op, ir_mode *mode)
 {
 	ir_graph *const irg    = get_irn_irg(block);
 	ir_node  *const frame  = get_irg_frame(irg);
 	ir_node  *const nomem  = get_irg_no_mem(irg);
 	ir_node  *const new_op = be_transform_node(op);
-	ir_node  *      sin[]  = { new_op, frame, nomem };
+	ir_node  *const sin[]  = { new_op, frame, nomem };
 
 	amd64_binop_addr_attr_t attr;
 	memset(&attr, 0, sizeof(attr));
