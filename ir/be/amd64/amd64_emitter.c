@@ -783,6 +783,17 @@ static void emit_amd64_jmp_switch(const ir_node *node)
 	                   emit_jumptable_target);
 }
 
+static x86_condition_code_t determine_final_cc(ir_node const *const flags,
+                                               x86_condition_code_t cc)
+{
+	if (is_amd64_fucomi(flags)) {
+		amd64_x87_attr_t const *const attr = get_amd64_x87_attr_const(flags);
+		if (attr->x87.reverse)
+			cc = x86_invert_condition_code(cc);
+	}
+	return cc;
+}
+
 /**
  * Emit a Compare with conditional branch.
  */
@@ -792,8 +803,9 @@ static void emit_amd64_jcc(const ir_node *irn)
 	const ir_node         *proj_false = NULL;
 	const ir_node         *block;
 	const ir_node         *next_block;
-	const amd64_cc_attr_t *attr = get_amd64_cc_attr_const(irn);
-	x86_condition_code_t   cc   = attr->cc;
+	const ir_node         *flags = get_irn_n(irn, n_amd64_jcc_eflags);
+	const amd64_cc_attr_t *attr  = get_amd64_cc_attr_const(irn);
+	x86_condition_code_t   cc    = determine_final_cc(flags, attr->cc);
 
 	foreach_out_edge(irn, edge) {
 		ir_node *proj = get_edge_src_irn(edge);

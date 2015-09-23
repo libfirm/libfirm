@@ -82,12 +82,6 @@ static void sim_amd64_fucomi(x87_state *const state, ir_node *const node)
 	unsigned const additional_pop = x86_sim_x87_fucom(state, node, op0, op1);
 	if (additional_pop != ~0u)
 		x86_x87_create_fpop(state, node, additional_pop);
-
-	/* TODO remove the following check once all emitters that test flags
-	 * check the predecessor nodes for reverse condition */
-	x87_attr_t const *const x87 = amd64_get_x87_attr(node);
-	if (x87->reverse)
-		panic("reverse not handled yet");
 }
 
 static void prepare_callbacks(void)
