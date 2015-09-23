@@ -821,6 +821,10 @@ void x86_sim_x87_store(x87_state *state, ir_node *n, int val_pos,
 do_pop:
 				x87_pop(state);
 			} else {
+				/* This is still ia32 specific code */
+				if (!is_ia32_fst(n))
+					panic("TODO: out of stack spill case");
+
 				/* we can only store the tos to memory */
 				move_to_tos(state, n, val);
 
