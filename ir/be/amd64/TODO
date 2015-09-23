@@ -2,23 +2,23 @@ amd64 backend TODO:
 Correctness:
 - SSE Division is not commutative and we have no neg-add style workaround like
   for the Sub node. So maybe we need finally need a must_be_same constraint.
-- stdarg.h/varargs va_start
 - compound return calling convention
 - Implement more builtins (libgcc lacks several of them that gcc provides
   natively on amd64 so cparser/libfirm when linking to the compilerlib fallback)
-- Builtins not implemented: clz, ctz, ffs, parity, popcount
+- Builtins not implemented: parity, popcount
 - Thread local storage not implemented
-- support for setjmp
-- fail on long double
-- (Support 80bit long double with x87 instructions)
 - Finish PIC code implementation. This is mostly done now, usual accesses to
   functions and variables including address mode matching looks fine now.
   Jumptables are not accessed correctly in PIC yet and
+- x87: Implement int -> x87 and x87 -> int conversions.
+- x87: Adapt fix spill with full float-stack case to amd64 (see panic in
+  x86_x87.c).
 
 Improve Quality:
 - Immediate32 matching could be better and match SymConst, Add(SymConst, Const)
   combinations where possible.
 - Match Immediate + Address mode for Cmp
+- Do stores of immediates in 1 instruction!
 - Support Read-Modify-Store operations (aka destination address mode)
 - Leave out labels that are not jumped at (improves assembly readability, see
   ia32 backend output)
@@ -38,3 +38,4 @@ Improve Quality:
   for example swap inputs to enable load folding, or immediates.
 - Lea needs to support all address modes (base, index +shifts, symconsts)
 - Match RCPxx SSE instruction
+- x87: Support source address modes.
