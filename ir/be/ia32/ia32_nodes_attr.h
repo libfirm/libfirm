@@ -16,6 +16,7 @@
 #include "x86_asm.h"
 #include "x86_cc.h"
 #include "x86_x87.h"
+#include "x86_address_mode.h"
 
 typedef enum {
 	ia32_Normal,
@@ -84,6 +85,16 @@ typedef enum ia32_frame_use_t {
 	IA32_FRAME_USE_AUTO,
 } ia32_frame_use_t;
 
+typedef struct {
+	x86_imm32_t immediate;
+	uint8_t     base_input;
+	uint8_t     index_input;
+	uint8_t     mem_input;
+	unsigned    log_scale : 2; /* 0, 1, 2, 3  (giving scale 1, 2, 4, 8) */
+	//ENUMBF(amd64_segment_selector_t) segment : 3;
+	ENUMBF(x86_addr_variant_t)       variant : 3;
+} x86_addr_t;
+
 /**
  * The generic ia32 attributes. Every node has them.
  */
@@ -106,12 +117,12 @@ struct ia32_attr_t {
 	unsigned is_spill:1;
 	unsigned is_remat:1;
 
-	x86_imm32_t am_imm;             /**< imm32 for address mode */
-
 	ir_mode   *ls_mode;       /**< Load/Store mode: This is the mode of the
 	                               value that is manipulated by this node. */
 
 	ir_label_t        exc_label;       /**< the exception label iff this instruction can throw an exception */
+
+	x86_addr_t        addr; /**< address mode specification */
 
 #ifndef NDEBUG
 	const char       *orig_node;      /**< holds the name of the original ir node */

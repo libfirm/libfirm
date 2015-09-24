@@ -147,8 +147,8 @@ void ia32_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 				ia32_dump_immediate(F, attr->imm.entity, attr->imm.offset);
 			} else {
 				ia32_attr_t const *const attr   = get_ia32_attr_const(n);
-				int32_t            const offset = attr->am_imm.offset;
-				ir_entity         *const entity = attr->am_imm.entity;
+				int32_t            const offset = attr->addr.immediate.offset;
+				ir_entity         *const entity = attr->addr.immediate.entity;
 				if (entity || offset != 0) {
 					fputs(" [", F);
 					ia32_dump_immediate(F, entity, offset);
@@ -206,7 +206,7 @@ void ia32_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 
 			const ia32_attr_t *attr = get_ia32_attr_const(n);
 			fputs("AM immediate = ", F);
-			x86_dump_imm32(&attr->am_imm, F);
+			x86_dump_imm32(&attr->addr.immediate, F);
 			fputc('\n', F);
 
 			/* dump AM scale */
@@ -249,7 +249,7 @@ void ia32_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 			fprintf(F, "frame use = %s\n", get_frame_use_str(n));
 			if (attr->old_frame_ent != NULL) {
 				fprintf(F, "frame entity = ");
-				ir_entity *entity = attr->am_imm.entity;
+				ir_entity *entity = attr->addr.immediate.entity;
 				if (entity != NULL) {
 					ir_fprintf(F, "%+F", entity);
 				} else {
@@ -415,31 +415,31 @@ void set_ia32_am_support(ir_node *node, ia32_am_type_t arity)
 int32_t get_ia32_am_offs_int(const ir_node *node)
 {
 	const ia32_attr_t *attr = get_ia32_attr_const(node);
-	return attr->am_imm.offset;
+	return attr->addr.immediate.offset;
 }
 
 void set_ia32_am_offs_int(ir_node *node, int32_t offset)
 {
 	ia32_attr_t *attr = get_ia32_attr(node);
-	attr->am_imm.offset = offset;
+	attr->addr.immediate.offset = offset;
 }
 
 void add_ia32_am_offs_int(ir_node *node, int32_t offset)
 {
 	ia32_attr_t *attr = get_ia32_attr(node);
-	attr->am_imm.offset += offset;
+	attr->addr.immediate.offset += offset;
 }
 
 ir_entity *get_ia32_am_ent(const ir_node *node)
 {
 	const ia32_attr_t *attr = get_ia32_attr_const(node);
-	return attr->am_imm.entity;
+	return attr->addr.immediate.entity;
 }
 
 void set_ia32_am_ent(ir_node *node, ir_entity *entity)
 {
 	ia32_attr_t *attr = get_ia32_attr(node);
-	attr->am_imm.entity = entity;
+	attr->addr.immediate.entity = entity;
 }
 
 void set_ia32_am_tls_segment(ir_node *node, bool value)
@@ -471,8 +471,8 @@ void ia32_copy_am_attrs(ir_node *to, const ir_node *from)
 {
 	ia32_attr_t const *const from_attr = get_ia32_attr_const(from);
 	ia32_attr_t       *const to_attr   = get_ia32_attr(to);
-	to_attr->am_imm = from_attr->am_imm;
-	to_attr->frame_use = from_attr->frame_use;
+	to_attr->addr.immediate = from_attr->addr.immediate;
+	to_attr->frame_use      = from_attr->frame_use;
 
 	set_ia32_ls_mode(to, get_ia32_ls_mode(from));
 	set_ia32_am_scale(to, get_ia32_am_scale(from));
@@ -718,7 +718,7 @@ static int ia32_attrs_equal_(const ia32_attr_t *a, const ia32_attr_t *b)
 
 	return a->tp == b->tp
 	    && a->am_scale == b->am_scale
-	    && x86_imm32_equal(&a->am_imm, &b->am_imm)
+	    && x86_imm32_equal(&a->addr.immediate, &b->addr.immediate)
 	    && a->ls_mode == b->ls_mode
 	    && a->frame_use == b->frame_use
 	    && a->has_except_label == b->has_except_label

@@ -134,7 +134,7 @@ static void ia32_set_frame_entity(ir_node *node, ir_entity *entity,
 	attr->am_imm = (x86_imm32_t) {
 		.kind   = X86_IMM_FRAMEENT,
 		.entity = entity,
-		.offset = attr->am_imm.offset,
+		.offset = attr->addr.immediate.offset,
 	};
 	assert(get_ia32_frame_use(node) != IA32_FRAME_USE_NONE);
 
@@ -478,8 +478,8 @@ ir_node *ia32_turn_back_am(ir_node *node)
 	set_irn_n(node, n_ia32_base,  noreg);
 	set_irn_n(node, n_ia32_index, noreg);
 	ia32_attr_t *const attr = get_ia32_attr(node);
-	attr->am_imm = (x86_imm32_t) { .kind = X86_IMM_VALUE, .offset = 0 };
-	attr->frame_use = IA32_FRAME_USE_NONE;
+	attr->addr.immediate = (x86_imm32_t) { .kind = X86_IMM_VALUE, .offset = 0 };
+	attr->frame_use      = IA32_FRAME_USE_NONE;
 	set_ia32_am_scale(node, 0);
 
 	/* rewire mem-proj */
@@ -910,7 +910,7 @@ static void ia32_collect_frame_entity_nodes(ir_node *node, void *data)
 		assert(get_ia32_frame_use(node) == IA32_FRAME_USE_NONE);
 		return;
 	}
-	if (attr->am_imm.entity != NULL)
+	if (attr->addr.immediate.entity != NULL)
 		return;
 
 	ir_type const *type;

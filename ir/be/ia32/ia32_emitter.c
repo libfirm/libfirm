@@ -372,16 +372,16 @@ static void ia32_emit_am(ir_node const *const node)
 
 	/* emit offset */
 	ia32_attr_t const *const attr = get_ia32_attr_const(node);
-	int32_t          const offset = attr->am_imm.offset;
-	ir_entity const *const entity = attr->am_imm.entity;
+	int32_t          const offset = attr->addr.immediate.offset;
+	ir_entity const *const entity = attr->addr.immediate.entity;
 	if (entity) {
-		assert(attr->am_imm.kind != X86_IMM_VALUE);
+		assert(attr->addr.immediate.kind != X86_IMM_VALUE);
 		const ia32_attr_t *attr = get_ia32_attr_const(node);
-		ia32_emit_relocation(&attr->am_imm);
+		ia32_emit_relocation(&attr->addr.immediate);
 		if (offset != 0)
 			be_emit_irprintf("%+"PRId32, offset);
 	} else if (offset != 0 || (!base && !idx)) {
-		assert(attr->am_imm.kind == X86_IMM_VALUE);
+		assert(attr->addr.immediate.kind == X86_IMM_VALUE);
 		/* also handle special case if nothing is set */
 		be_emit_irprintf("%"PRId32, offset);
 	}

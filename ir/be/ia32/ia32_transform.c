@@ -333,7 +333,7 @@ static ir_entity *create_float_const_entity(ir_tarval *tv, ident *name)
 static void set_am_const_entity(ir_node *node, ir_entity *entity)
 {
 	ia32_attr_t *const attr = get_ia32_attr(node);
-	attr->am_imm = (x86_imm32_t) {
+	attr->addr.immediate = (x86_imm32_t) {
 		.kind   = lconst_imm_kind,
 		.entity = entity,
 	};
@@ -477,7 +477,7 @@ static ir_node *gen_Address(ir_node *node)
 		ir_node *tls_base = new_bd_ia32_LdTls(NULL, block);
 		ir_node *lea      = new_bd_ia32_Lea(dbgi, block, tls_base, noreg_GP);
 		ia32_attr_t *const attr = get_ia32_attr(lea);
-		attr->am_imm = imm;
+		attr->addr.immediate = imm;
 		cnst = lea;
 	} else {
 		cnst = new_bd_ia32_Const(dbgi, block, &imm);
@@ -882,7 +882,7 @@ static void build_address(ia32_address_mode_t *am, ir_node *node,
 static void set_address(ir_node *node, const x86_address_t *addr)
 {
 	ia32_attr_t *const attr = get_ia32_attr(node);
-	attr->am_imm = addr->imm;
+	attr->addr.immediate = addr->imm;
 	set_ia32_am_scale(node, addr->scale);
 	set_ia32_am_tls_segment(node, addr->tls_segment);
 	if (addr->imm.kind == X86_IMM_FRAMEENT)
