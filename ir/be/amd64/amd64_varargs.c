@@ -295,9 +295,9 @@ static ir_node *make_mov_imm32_to_offset_mem(dbg_info *dbgi, ir_node *block, ir_
 					.offset = offset,
 					.kind   = X86_IMM_VALUE,
 				},
-				.base_input  = 0,
-				.mem_input   = 1,
-				.index_input = NO_INPUT,
+				.variant    = X86_ADDR_BASE,
+				.base_input = 0,
+				.mem_input  = 1,
 			},
 		},
 		.u = {
@@ -328,9 +328,9 @@ static ir_node *make_mov_val64_to_offset_mem(dbg_info *dbgi, ir_node *block, ir_
 					.offset = offset,
 					.kind   = X86_IMM_FRAMEOFFSET,
 				},
-				.base_input  = 1,
-				.mem_input   = 2,
-				.index_input = NO_INPUT,
+				.variant    = X86_ADDR_BASE,
+				.base_input = 1,
+				.mem_input  = 2,
 			},
 		},
 		.u = {
@@ -358,9 +358,9 @@ static ir_node *make_mov_xmmval64_to_offset_mem(dbg_info *dbgi, ir_node *block, 
 					.offset = offset,
 					.kind   = X86_IMM_FRAMEOFFSET,
 				},
-				.base_input  = 1,
-				.mem_input   = 2,
-				.index_input = NO_INPUT,
+				.variant    = X86_ADDR_BASE,
+				.base_input = 1,
+				.mem_input  = 2,
 			},
 		},
 		.u = {
@@ -379,12 +379,12 @@ static ir_node *make_lea_with_offset_entity(dbg_info *dbgi, ir_node *block,
 {
 	ir_node *lea_in[] = { base };
 	amd64_addr_t lea_addr = {
-		.base_input  = 0,
-		.index_input = NO_INPUT,
 		.immediate = {
 			.entity = offset,
 			.kind   = X86_IMM_VALUE,
 		},
+		.variant    = X86_ADDR_BASE,
+		.base_input = 0,
 	};
 	return new_bd_amd64_lea(dbgi, block, ARRAY_SIZE(lea_in), lea_in, reg_reqs, INSN_MODE_64, lea_addr);
 }

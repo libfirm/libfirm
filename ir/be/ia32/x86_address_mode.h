@@ -16,6 +16,15 @@
 #include <stdint.h>
 #include "x86_imm.h"
 
+typedef enum {
+	X86_ADDR_INVALID,
+	X86_ADDR_JUST_IMM,
+	X86_ADDR_BASE,
+	X86_ADDR_BASE_INDEX,
+	X86_ADDR_INDEX,
+	X86_ADDR_RIP,
+} x86_addr_variant_t;
+
 /**
  * The address mode data: Used to construct (memory) address modes.
  */
@@ -25,6 +34,7 @@ typedef struct x86_address_t {
 	ir_node    *mem;             /**< value for memory input (if any). */
 	x86_imm32_t imm;
 	unsigned   scale       : 8; /**< An integer scale. {0,1,2,3} */
+	ENUMBF(x86_addr_variant_t) variant : 8; /**< Addres mode variant */
 	bool       tls_segment : 1; /**< Set if AM is relative to TLS */
 	bool       ip_base     : 1; /**< Base is instruction pointer (IP) */
 } x86_address_t;

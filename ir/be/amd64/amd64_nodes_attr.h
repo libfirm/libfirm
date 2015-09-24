@@ -15,6 +15,7 @@
 #include "../ia32/x86_asm.h"
 #include "../ia32/x86_cc.h"
 #include "../ia32/x86_x87.h"
+#include "../ia32/x86_address_mode.h"
 #include "compiler.h"
 #include "irnode_t.h"
 
@@ -60,11 +61,6 @@ typedef enum {
 	AMD64_OP_X87_ADDR_REG,
 } amd64_op_mode_t;
 
-enum {
-	NO_INPUT  = 0xFF,
-	RIP_INPUT = 0xFE, /* can be used as base_input for PIC code */
-};
-
 typedef struct {
 	ir_entity                   *entity;
 	int64_t                      offset;
@@ -77,7 +73,8 @@ typedef struct {
 	uint8_t     index_input;
 	uint8_t     mem_input;
 	unsigned    log_scale : 2; /* 0, 1, 2, 3  (giving scale 1, 2, 4, 8) */
-	ENUMBF(amd64_segment_selector_t) segment : 4;
+	ENUMBF(amd64_segment_selector_t) segment : 3;
+	ENUMBF(x86_addr_variant_t)       variant : 3;
 } amd64_addr_t;
 
 typedef struct {

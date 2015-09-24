@@ -123,18 +123,21 @@ static void amd64_turn_back_am(ir_node *const node, arch_register_t const *const
 	amd64_addr_t new_addr = attr->addr;
 	ir_node *load_in[3];
 	int      load_arity = 0;
-	if (attr->addr.base_input != NO_INPUT &&
-	    attr->addr.base_input != RIP_INPUT) {
-		new_addr.base_input = load_arity;
-		load_in[load_arity++] = get_irn_n(node, attr->addr.base_input);
+	x86_addr_variant_t variant = attr->addr.variant;
+	if (variant == X86_ADDR_BASE || variant == X86_ADDR_BASE_INDEX) {
+		int base_input = load_arity++;
+		new_addr.base_input = base_input;
+		load_in[base_input] = get_irn_n(node, attr->addr.base_input);
 	}
-	if (attr->addr.index_input != NO_INPUT) {
-		new_addr.index_input = load_arity;
-		load_in[load_arity++] = get_irn_n(node, attr->addr.index_input);
+	if (variant == X86_ADDR_INDEX || variant == X86_ADDR_BASE_INDEX) {
+		int index_input = load_arity++;
+		new_addr.index_input = index_input;
+		load_in[index_input] = get_irn_n(node, attr->addr.index_input);
 	}
-	assert(attr->addr.mem_input != NO_INPUT);
-	new_addr.mem_input = load_arity;
-	load_in[load_arity++] = get_irn_n(node, attr->addr.mem_input);
+	int mem_input = load_arity++;
+	new_addr.mem_input = mem_input;
+	load_in[mem_input] = get_irn_n(node, attr->addr.mem_input);
+	assert(get_irn_mode(load_in[mem_input]) == mode_M);
 
 	ir_node *const load     = new_bd_amd64_mov_gp(dbgi, block, load_arity, load_in, gp_am_reqs[load_arity - 1], attr->insn_mode, AMD64_OP_ADDR, new_addr);
 	ir_node *const load_res = be_new_Proj_reg(load, pn_amd64_mov_gp_res, out_reg);
@@ -146,9 +149,10 @@ static void amd64_turn_back_am(ir_node *const node, arch_register_t const *const
 	new_in[0] = get_irn_n(node, binop_attr->u.reg_input);
 	new_in[1] = load_res;
 	set_irn_in(node, ARRAY_SIZE(new_in), new_in);
-	attr->base.op_mode     = AMD64_OP_REG_REG;
-	attr->addr.base_input  = NO_INPUT;
-	attr->addr.index_input = NO_INPUT;
+	attr->base.op_mode = AMD64_OP_REG_REG;
+#ifndef NDEBUG
+	memset(&attr->addr, 0, sizeof(attr->addr));
+#endif
 
 	/* rewire mem-proj */
 	foreach_out_edge(node, edge) {

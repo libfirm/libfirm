@@ -210,25 +210,28 @@ void x86_create_address_mode(x86_address_t *addr, ir_node *node,
                              x86_create_am_flags_t flags)
 {
 	addr->imm.kind = X86_IMM_VALUE;
-	if (eat_immediate(addr, node, true))
+	if (eat_immediate(addr, node, true)) {
+		addr->variant = addr->ip_base ? X86_ADDR_RIP : X86_ADDR_JUST_IMM;
 		return;
+	}
 
 	assert(!addr->ip_base);
 	if (!(flags & x86_create_am_force) && x86_is_non_address_mode_node(node)
 	    && (!(flags & x86_create_am_double_use) || get_irn_n_edges(node) > 2)) {
-		addr->base = node;
+	    addr->variant = X86_ADDR_BASE;
+		addr->base    = node;
 		return;
 	}
 
 	ir_node *eat_imms = eat_immediates(addr, node, flags, false);
 	if (eat_imms != node) {
-		if (flags & x86_create_am_force) {
+		if (flags & x86_create_am_force)
 			eat_imms = be_skip_downconv(eat_imms, true);
-		}
 
 		node = eat_imms;
 		if (x86_is_non_address_mode_node(node)) {
-			addr->base = node;
+			addr->variant = X86_ADDR_BASE;
+			addr->base    = node;
 			return;
 		}
 	}
@@ -237,10 +240,13 @@ void x86_create_address_mode(x86_address_t *addr, ir_node *node,
 	if (is_Shl(node)) {
 		/* We don't want to eat add x, x as shl here, so only test for real Shl
 		 * instructions, because we want the former as Lea x, x, not Shl x, 1 */
-		if (eat_shl(addr, node))
+		if (eat_shl(addr, node)) {
+			addr->variant = X86_ADDR_INDEX;
 			return;
+		}
 	} else if (eat_immediate(addr, node, true)) {
 		/* we can hit this case in x86_create_am_force mode */
+		addr->variant = addr->ip_base ? X86_ADDR_RIP : X86_ADDR_JUST_IMM;
 		return;
 	} else if (is_Add(node)) {
 		ir_node *left  = get_Add_left(node);
@@ -286,9 +292,10 @@ tryit:
 						long       val          = get_tarval_long(shift_amount);
 
 						if (and_mask == shift_mask && val >= 0 && val <= 3) {
-							addr->base  = shr;
-							addr->index = shr;
-							addr->scale = val;
+							addr->variant = X86_ADDR_BASE_INDEX;
+							addr->base    = shr;
+							addr->index   = shr;
+							addr->scale   = val;
 							return;
 						}
 					}
@@ -299,8 +306,11 @@ tryit:
 		if (left != NULL) {
 			ir_node *base = addr->base;
 			if (base == NULL) {
-				addr->base = left;
+				addr->variant = addr->index != NULL ? X86_ADDR_BASE_INDEX
+				                                    : X86_ADDR_BASE;
+				addr->base    = left;
 			} else {
+				addr->variant = X86_ADDR_BASE_INDEX;
 				assert(addr->index == NULL && addr->scale == 0);
 				assert(right == NULL);
 				/* esp must be used as base */
@@ -315,8 +325,11 @@ tryit:
 		if (right != NULL) {
 			ir_node *base = addr->base;
 			if (base == NULL) {
-				addr->base = right;
+				addr->variant = addr->index != NULL ? X86_ADDR_BASE_INDEX
+				                                    : X86_ADDR_BASE;
+				addr->base    = right;
 			} else {
+				addr->variant = X86_ADDR_BASE_INDEX;
 				assert(addr->index == NULL && addr->scale == 0);
 				/* esp must be used as base */
 				if (is_Proj(right) && is_Start(get_Proj_pred(right))) {
@@ -330,7 +343,8 @@ tryit:
 		return;
 	}
 
-	addr->base = node;
+	addr->variant = X86_ADDR_BASE;
+	addr->base    = node;
 }
 
 void x86_mark_non_am(ir_node *node)

@@ -259,10 +259,10 @@ static bool is_fp_relative(const ir_entity *entity)
 static void amd64_emit_addr(const ir_node *const node,
                             const amd64_addr_t *const addr)
 {
-	int32_t    const offset      = addr->immediate.offset;
-	ir_entity *const entity      = addr->immediate.entity;
-	uint8_t    const base_input  = addr->base_input;
-	uint8_t    const index_input = addr->index_input;
+	int32_t            const offset  = addr->immediate.offset;
+	ir_entity         *const entity  = addr->immediate.entity;
+	x86_addr_variant_t const variant = addr->variant;
+	assert(variant != X86_ADDR_INVALID);
 
 	if (entity != NULL) {
 		assert(addr->immediate.kind != X86_IMM_VALUE);
@@ -270,32 +270,33 @@ static void amd64_emit_addr(const ir_node *const node,
 		emit_relocation_no_offset(addr->immediate.kind, entity);
 		if (offset != 0)
 			be_emit_irprintf("%+" PRId32, offset);
-	} else if (offset != 0
-	           || (base_input == NO_INPUT && index_input == NO_INPUT)) {
+	} else if (offset != 0 || variant == X86_ADDR_JUST_IMM) {
 		assert(addr->immediate.kind == X86_IMM_VALUE);
 		be_emit_irprintf("%" PRId32, offset);
 	}
 
-	if (base_input != NO_INPUT || index_input != NO_INPUT) {
+	if (variant != X86_ADDR_JUST_IMM) {
 		be_emit_char('(');
 
-		if (base_input == RIP_INPUT) {
+		if (variant == X86_ADDR_RIP) {
 			be_emit_cstring("%rip");
-		} else if (base_input != NO_INPUT) {
-			const arch_register_t *reg
-				= arch_get_irn_register_in(node, base_input);
-			emit_register(reg);
-		}
+		} else {
+			if (variant == X86_ADDR_BASE || variant == X86_ADDR_BASE_INDEX) {
+				arch_register_t const *const reg
+					= arch_get_irn_register_in(node, addr->base_input);
+				emit_register(reg);
+			}
 
-		if (index_input != NO_INPUT) {
-			be_emit_char(',');
-			const arch_register_t *reg
-				= arch_get_irn_register_in(node, index_input);
-			emit_register(reg);
+			if (variant == X86_ADDR_BASE_INDEX || variant == X86_ADDR_INDEX) {
+				be_emit_char(',');
+				arch_register_t const *const reg
+					= arch_get_irn_register_in(node, addr->index_input);
+				emit_register(reg);
 
-			unsigned scale = addr->log_scale;
-			if (scale > 0)
-				be_emit_irprintf(",%u", 1 << scale);
+				unsigned scale = addr->log_scale;
+				if (scale > 0)
+					be_emit_irprintf(",%u", 1 << scale);
+			}
 		}
 		be_emit_char(')');
 	}

@@ -363,12 +363,14 @@ void init_lconst_addr(amd64_addr_t *addr, ir_entity *entity)
 	assert(entity_has_definition(entity));
 	assert(get_entity_linkage(entity) == IR_LINKAGE_CONSTANT);
 	assert(get_entity_visibility(entity) == ir_visibility_private);
-	memset(addr, 0, sizeof(*addr));
 	x86_immediate_kind_t kind = be_options.pic ? X86_IMM_PCREL : X86_IMM_ADDR;
-	addr->immediate.entity = entity;
-	addr->immediate.kind = kind;
-	addr->index_input = NO_INPUT;
-	addr->base_input = kind == X86_IMM_PCREL ? RIP_INPUT : NO_INPUT;
+	*addr = (amd64_addr_t) {
+		.immediate = {
+			.entity = entity,
+			.kind   = kind,
+		},
+		.variant = kind == X86_IMM_PCREL ? X86_ADDR_RIP : X86_ADDR_JUST_IMM,
+	};
 }
 
 static ir_node *create_float_const(dbg_info *dbgi, ir_node *block,
@@ -491,9 +493,7 @@ static ir_node *create_picaddr_lea(ir_node *const block,
 			.kind   = kind,
 			.entity = entity,
 		},
-		.base_input  = RIP_INPUT,
-		.index_input = NO_INPUT,
-		.mem_input   = NO_INPUT,
+		.variant = X86_ADDR_RIP,
 	};
 	return new_bd_amd64_lea(NULL, block, 0, NULL, NULL, INSN_MODE_64, addr);
 }
@@ -708,19 +708,21 @@ static void perform_address_matching(ir_node *ptr, int *arity,
 	memset(&maddr, 0, sizeof(maddr));
 	x86_create_address_mode(&maddr, ptr, x86_create_am_normal);
 
-	if (maddr.base != NULL) {
+	x86_addr_variant_t variant = maddr.variant;
+	assert(variant != X86_ADDR_INVALID);
+	if (variant == X86_ADDR_BASE || variant == X86_ADDR_BASE_INDEX) {
 		int base_input   = (*arity)++;
 		addr->base_input = base_input;
 		in[base_input]   = be_transform_node(maddr.base);
 	} else {
-		addr->base_input = maddr.ip_base ? RIP_INPUT : NO_INPUT;
+		assert(maddr.base == NULL);
 	}
-	if (maddr.index != NULL) {
-		int index_input = (*arity)++;
+	if (variant == X86_ADDR_INDEX || variant == X86_ADDR_BASE_INDEX) {
+		int index_input   = (*arity)++;
 		addr->index_input = index_input;
-		in[index_input]  = be_transform_node(maddr.index);
+		in[index_input]   = be_transform_node(maddr.index);
 	} else {
-		addr->index_input = NO_INPUT;
+		assert(maddr.index == NULL);
 	}
 	ir_entity *entity = maddr.imm.entity;
 	if (entity != NULL && is_parameter_entity(entity) &&
@@ -729,6 +731,7 @@ static void perform_address_matching(ir_node *ptr, int *arity,
 
 	addr->immediate = maddr.imm;
 	addr->log_scale = maddr.scale;
+	addr->variant   = variant;
 }
 
 static void match_binop(amd64_args_t *args, ir_node *block,
@@ -1016,6 +1019,7 @@ static ir_node *create_add_lea(dbg_info *dbgi, ir_node *new_block,
 {
 	ir_node *in[] = { op1, op2 };
 	amd64_addr_t addr = {
+		.variant     = X86_ADDR_BASE_INDEX,
 		.base_input  = 0,
 		.index_input = 1,
 	};
@@ -1034,10 +1038,8 @@ static ir_node *match_simple_lea(dbg_info *dbgi, ir_node *new_block,
 			be_transform_node(op1)
 		};
 		amd64_addr_t addr = {
-			.immediate   = immediate,
-			.base_input  = 0,
-			.index_input = NO_INPUT,
-			.mem_input   = NO_INPUT,
+			.immediate = immediate,
+			.variant   = X86_ADDR_BASE,
 		};
 		return new_bd_amd64_lea(dbgi, new_block, ARRAY_SIZE(in), in, reg_reqs,
 		                        insn_mode, addr);
@@ -1447,8 +1449,8 @@ static ir_node *gen_Member(ir_node *const node)
 			.entity = entity,
 			.kind   = X86_IMM_FRAMEOFFSET,
 		},
-		.base_input  = 0,
-		.index_input = NO_INPUT,
+		.variant    = X86_ADDR_BASE,
+		.base_input = 0,
 	};
 	ir_node *in[] = { base };
 	return new_bd_amd64_lea(dbgi, new_block, ARRAY_SIZE(in), in, reg_reqs, INSN_MODE_64, addr);
@@ -1493,12 +1495,10 @@ static ir_node *gen_IJmp(ir_node *const node)
 
 			op_mode = AMD64_OP_ADDR;
 		} else {
-			op_mode          = AMD64_OP_REG;
 			assert(arity == 0); // AMD64_OP_REG always outputs the first input
-			in[arity++]      = be_transform_node(op);
-			addr.base_input  = NO_INPUT;
-			addr.index_input = NO_INPUT;
-			reqs             = reg_reqs;
+			op_mode     = AMD64_OP_REG;
+			in[arity++] = be_transform_node(op);
+			reqs        = reg_reqs;
 		}
 	}
 
@@ -1548,9 +1548,9 @@ static ir_node *gen_Switch(ir_node *const node)
 		load_in[load_base]  = base;
 		load_in[load_index] = new_sel;
 		addr = (amd64_addr_t) {
+			.variant     = X86_ADDR_BASE_INDEX,
 			.base_input  = load_base,
 			.index_input = load_index,
-			.mem_input   = NO_INPUT,
 			.log_scale   = 2,
 		};
 		ir_node *const load
@@ -1575,7 +1575,7 @@ static ir_node *gen_Switch(ir_node *const node)
 				.kind   = X86_IMM_ADDR,
 				.entity = entity,
 			},
-			.base_input  = NO_INPUT,
+			.variant     = X86_ADDR_INDEX,
 			.index_input = index_in,
 			.log_scale   = 3,
 		};
@@ -1719,7 +1719,6 @@ static ir_node *gen_Call(ir_node *const node)
 	/* match callee */
 	amd64_addr_t addr;
 	memset(&addr, 0, sizeof(addr));
-	addr.mem_input = NO_INPUT;
 	amd64_op_mode_t op_mode;
 
 	ir_node *mem_proj = NULL;
@@ -1759,13 +1758,11 @@ static ir_node *gen_Call(ir_node *const node)
 
 			perform_address_matching(load_ptr, &in_arity, in, &addr);
 
-			if (addr.base_input != NO_INPUT) {
+			x86_addr_variant_t variant = addr.variant;
+			if (variant == X86_ADDR_BASE || variant == X86_ADDR_BASE_INDEX)
 				in_req[addr.base_input] = &amd64_class_reg_req_gp;
-			}
-
-			if (addr.index_input != NO_INPUT) {
+			if (variant == X86_ADDR_BASE_INDEX || variant == X86_ADDR_INDEX)
 				in_req[addr.index_input] = &amd64_class_reg_req_gp;
-			}
 
 			ir_node *load_mem     = get_Load_mem(load);
 			ir_node *new_load_mem = be_transform_node(load_mem);
@@ -1778,11 +1775,9 @@ static ir_node *gen_Call(ir_node *const node)
 			int input = in_arity++;
 			assert(input == 0); /* AMD64_OP_REG is currently hardcoded to always
 			                     * output the register of the first input. */
-			in[input]          = be_transform_node(callee);
-			in_req[input]      = &amd64_class_reg_req_gp;
-			addr.base_input    = NO_INPUT;
-			addr.index_input   = NO_INPUT;
-			op_mode            = AMD64_OP_REG;
+			in[input]     = be_transform_node(callee);
+			in_req[input] = &amd64_class_reg_req_gp;
+			op_mode       = AMD64_OP_REG;
 		}
 	}
 	sync_ins[sync_arity++] = be_transform_node(mem);
@@ -1825,13 +1820,15 @@ no_call_mem:
 			insn_mode = INSN_MODE_32;
 
 		/* we need a store if we're here */
-		amd64_binop_addr_attr_t attr;
-		memset(&attr, 0, sizeof(attr));
-		attr.base.base.op_mode          = AMD64_OP_ADDR_REG;
-		attr.base.addr.immediate.offset = param->offset;
-		attr.base.addr.base_input       = 1;
-		attr.base.addr.index_input      = NO_INPUT;
-		attr.base.insn_mode             = insn_mode;
+		amd64_binop_addr_attr_t attr = {
+			.base.base.op_mode = AMD64_OP_ADDR_REG,
+			.base.addr = {
+				.immediate.offset = param->offset,
+				.variant          = X86_ADDR_BASE,
+				.base_input       = 1,
+			},
+			.base.insn_mode = insn_mode,
+		};
 		ir_node *const nomem = get_irg_no_mem(irg);
 		ir_node *const in[]  = { new_value, callframe, nomem };
 		ir_node *const store = mode_is_float(mode) ?
@@ -2173,16 +2170,17 @@ static void store_to_temp(new_store_func new_store,
 	ir_node  *const new_op = be_transform_node(op);
 	ir_node  *const sin[]  = { new_op, frame, nomem };
 
-	amd64_binop_addr_attr_t attr;
-	memset(&attr, 0, sizeof(attr));
-	attr.base.base.op_mode = AMD64_OP_ADDR_REG;
-	attr.base.insn_mode    = get_insn_mode_from_mode(mode);
-	attr.u.reg_input       = 0;
-	amd64_addr_t *const daddr = &attr.base.addr;
-	daddr->base_input     = 1;
-	daddr->index_input    = NO_INPUT;
-	daddr->mem_input      = 2;
-	daddr->immediate.kind = X86_IMM_FRAMEOFFSET;
+	amd64_binop_addr_attr_t const attr = {
+		.base.base.op_mode = AMD64_OP_ADDR_REG,
+		.base.insn_mode    = get_insn_mode_from_mode(mode),
+		.base.addr = {
+			.immediate.kind = X86_IMM_FRAMEOFFSET,
+			.variant     = X86_ADDR_BASE,
+			.base_input  = 1,
+			.mem_input   = 2,
+		},
+		.u.reg_input = 0,
+	};
 
 	ir_node *const store
 		= new_store(dbgi, block, ARRAY_SIZE(sin), sin, in_reqs, &attr);
@@ -2192,10 +2190,9 @@ static void store_to_temp(new_store_func new_store,
 	in[base_input] = frame;
 	int mem_input  = (*n_in)++;
 	in[mem_input]  = store;
-	memcpy(addr, daddr, sizeof(*addr));
-	addr->base_input  = base_input;
-	addr->index_input = NO_INPUT;
-	addr->mem_input   = mem_input;
+	*addr = attr.base.addr;
+	addr->base_input = base_input;
+	addr->mem_input  = mem_input;
 }
 
 static ir_node *conv_sse_to_x87(dbg_info *dbgi, ir_node *block, ir_node *op)
@@ -2257,11 +2254,7 @@ static ir_node *gen_Conv(ir_node *const node)
 			// sign-/zero-extending mov has done that
 			// already.
 			ir_node *in[] = { op_ext };
-			amd64_addr_t addr = {
-				.base_input = NO_INPUT,
-				.index_input = NO_INPUT,
-				.mem_input = NO_INPUT,
-			};
+			amd64_addr_t addr = { .variant = X86_ADDR_JUST_IMM };
 			ir_node *const movq = new_bd_amd64_movq(dbgi, block, 1, in, reg_reqs, AMD64_OP_REG, addr);
 			return be_new_Proj(movq, pn_amd64_movq_res);
 		} else if (src_bits == 64) {
@@ -2457,15 +2450,16 @@ ir_node *amd64_new_spill(ir_node *value, ir_node *after)
 	ir_node  *const mem   = get_irg_no_mem(irg);
 	ir_mode  *const mode  = get_irn_mode(value);
 
-	amd64_binop_addr_attr_t attr;
-	memset(&attr, 0, sizeof(attr));
-	attr.base.base.op_mode = AMD64_OP_ADDR_REG;
-
-	amd64_addr_t *addr = &attr.base.addr;
-	addr->immediate.kind = X86_IMM_FRAMEOFFSET;
-	addr->base_input     = 1;
-	addr->index_input    = NO_INPUT;
-	ir_node *in[]        = { value, frame, mem };
+	amd64_binop_addr_attr_t attr = {
+		.base.base.op_mode = AMD64_OP_ADDR_REG,
+		.base.addr = {
+			.immediate.kind = X86_IMM_FRAMEOFFSET,
+			.variant        = X86_ADDR_BASE,
+			.base_input     = 1,
+		},
+		.u.reg_input = 0,
+	};
+	ir_node *in[] = { value, frame, mem };
 
 	amd64_insn_mode_t           insn_mode;
 	new_store_func              cons;
@@ -2512,11 +2506,12 @@ ir_node *amd64_new_reload(ir_node *value, ir_node *spill, ir_node *before)
 	ir_node  *const frame = get_irg_frame(irg);
 	ir_mode  *const mode  = get_irn_mode(value);
 
-	amd64_addr_t addr;
-	memset(&addr, 0, sizeof(addr));
-	addr.base_input  = 0;
-	addr.index_input = NO_INPUT;
-
+	amd64_addr_t addr = {
+		.immediate.kind = X86_IMM_FRAMEOFFSET,
+		.variant    = X86_ADDR_BASE,
+		.base_input = 0,
+		.mem_input  = 1,
+	};
 	ir_node *in[] = { frame, spill };
 
 	unsigned          pn_res;
@@ -2998,16 +2993,7 @@ static ir_node *gen_Bitcast(ir_node *const node)
 	ir_node  *const be_op     = be_transform_node(op);
 	ir_node  *const be_block  = get_nodes_block(be_op);
 
-	amd64_addr_t const no_addr = {
-		.immediate = {
-			.entity = NULL,
-			.offset = 0,
-		},
-		.base_input  = NO_INPUT,
-		.index_input = NO_INPUT,
-		.mem_input   = NO_INPUT,
-		.log_scale   = AMD64_SEGMENT_DEFAULT
-	};
+	amd64_addr_t const no_addr = { .variant = X86_ADDR_JUST_IMM };
 
 	if (src_float && !dst_float) {
 		return new_bd_amd64_movd_xmm_gp(dbgi, be_block, be_op, INSN_MODE_64, AMD64_OP_REG, no_addr);

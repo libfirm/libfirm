@@ -122,8 +122,8 @@ static ir_node *create_push(ir_node *node, ir_node *schedpoint, ir_node *sp,
 			.kind   = X86_IMM_FRAMEOFFSET,
 			.entity = ent,
 		},
-		.base_input  = 1,
-		.index_input = NO_INPUT,
+		.variant    = X86_ADDR_BASE,
+		.base_input = 1,
 	};
 	ir_node *in[] = { sp, frame, mem };
 	ir_node *const push = new_bd_amd64_push_am(dbgi, block, ARRAY_SIZE(in), in, rsp_reg_mem_reqs, insn_mode, addr);
@@ -144,8 +144,8 @@ static ir_node *create_pop(ir_node *node, ir_node *schedpoint, ir_node *sp,
 			.kind   = X86_IMM_FRAMEOFFSET,
 			.entity = ent,
 		},
+		.variant     = X86_ADDR_BASE,
 		.base_input  = 1,
-		.index_input = NO_INPUT,
 	};
 	ir_node *in[] = { sp, frame, get_irg_no_mem(irg) };
 
