@@ -144,7 +144,6 @@ static ir_node *eat_immediates(x86_address_t *addr, ir_node *node,
 		assert(addr->imm.entity == NULL);
 		addr->imm.entity = get_Member_entity(node);
 		addr->imm.kind   = X86_IMM_FRAMEOFFSET;
-		addr->use_frame  = true;
 		ir_node *ptr = get_Member_ptr(node);
 		assert(is_Start(get_Proj_pred(ptr)));
 		return ptr;

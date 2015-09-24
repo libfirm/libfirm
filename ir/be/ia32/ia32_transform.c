@@ -860,7 +860,6 @@ static void build_address(ia32_address_mode_t *am, ir_node *node,
 		};
 		adjust_relocation(&addr->imm);
 		addr->tls_segment = false;
-		addr->use_frame   = false;
 		am->ls_mode       = get_type_mode(get_entity_type(entity));
 		am->pinned        = false;
 		return;
@@ -889,12 +888,8 @@ static void set_address(ir_node *node, const x86_address_t *addr)
 	attr->am_imm = addr->imm;
 	set_ia32_am_scale(node, addr->scale);
 	set_ia32_am_tls_segment(node, addr->tls_segment);
-	if (addr->imm.kind == X86_IMM_FRAMEOFFSET) {
-		assert(addr->use_frame);
+	if (addr->imm.kind == X86_IMM_FRAMEOFFSET)
 		set_ia32_frame_use(node, IA32_FRAME_USE_AUTO);
-	} else {
-		assert(!addr->use_frame);
-	}
 }
 
 /**
@@ -1442,7 +1437,7 @@ static ir_node *create_lea_from_address(dbg_info *dbgi, ir_node *block,
 static bool am_has_immediates(const x86_address_t *addr)
 {
 	return addr->imm.offset != 0 || addr->imm.entity != NULL
-		|| addr->use_frame;
+		|| addr->imm.kind == X86_IMM_FRAMEOFFSET;
 }
 
 typedef ir_node* (*new_shiftd_func)(dbg_info *dbgi, ir_node *block,
@@ -3937,7 +3932,6 @@ static void store_gp(dbg_info *dbgi, ia32_address_mode_t *am, ir_node *block,
 	addr->index     = noreg_GP;
 	addr->mem       = store_mem;
 	addr->imm       = (x86_imm32_t) { .kind = X86_IMM_FRAMEOFFSET };
-	addr->use_frame = true;
 	am->op_type     = ia32_AddrModeS;
 	am->ls_mode     = store_mode;
 	am->pinned      = false;
@@ -3960,7 +3954,7 @@ static ir_node *gen_x87_gp_to_fp(ir_node *node)
 	ir_node *const fild     = new_bd_ia32_fild(dbgi, new_block, addr->base, addr->index, addr->mem);
 	ir_node *const new_node = be_new_Proj(fild, pn_ia32_fild_res);
 	set_am_attributes(fild, &am);
-	if (addr->use_frame && addr->imm.entity == NULL
+	if (addr->imm.kind == X86_IMM_FRAMEOFFSET && addr->imm.entity == NULL
 	    && get_mode_arithmetic(am.ls_mode) != irma_twos_complement)
 		force_int_stackent(fild, am.ls_mode);
 
@@ -4122,7 +4116,6 @@ static void store_fp(dbg_info *dbgi, ia32_address_mode_t *am, ir_node *block,
 	addr->index     = noreg_GP;
 	addr->mem       = mem;
 	addr->imm       = (x86_imm32_t) { .kind = X86_IMM_FRAMEOFFSET };
-	addr->use_frame = true;
 	am->op_type     = ia32_AddrModeS;
 	am->ls_mode     = mode;
 	am->pinned      = false;

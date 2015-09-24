@@ -25,7 +25,6 @@ typedef struct x86_address_t {
 	ir_node    *mem;             /**< value for memory input (if any). */
 	x86_imm32_t imm;
 	unsigned   scale       : 8; /**< An integer scale. {0,1,2,3} */
-	bool       use_frame   : 1; /**< Set, if the frame is accessed */
 	bool       tls_segment : 1; /**< Set if AM is relative to TLS */
 	bool       ip_base     : 1; /**< Base is instruction pointer (IP) */
 } x86_address_t;
