@@ -1059,7 +1059,10 @@ static void match_arguments(ia32_address_mode_t *am, ir_node *block,
 		}
 		am->op_type = ia32_AddrModeS;
 	} else {
-		am->op_type = ia32_Normal;
+		am->op_type    = ia32_Normal;
+		am->addr.base  = noreg_GP;
+		am->addr.index = noreg_GP;
+		am->addr.mem   = nomem;
 
 		if (flags & match_try_am) {
 			am->new_op1 = NULL;
@@ -1092,13 +1095,6 @@ static void match_arguments(ia32_address_mode_t *am, ir_node *block,
 		}
 		am->ls_mode = mode;
 	}
-	x86_address_t *addr = &am->addr;
-	if (addr->base == NULL)
-		addr->base = noreg_GP;
-	if (addr->index == NULL)
-		addr->index = noreg_GP;
-	if (addr->mem == NULL)
-		addr->mem = nomem;
 
 	am->new_op1     = new_op1;
 	am->new_op2     = new_op2;
