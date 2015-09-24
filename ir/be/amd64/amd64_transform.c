@@ -1441,11 +1441,15 @@ static ir_node *gen_Member(ir_node *const node)
 	if (is_parameter_entity(entity) &&
 	    get_entity_parameter_number(entity) == IR_VA_START_PARAMETER_NUMBER)
 	    panic("gen_Member: Request for invalid parameter (va_start parameter)");
-	amd64_addr_t addr;
-	memset(&addr, 0, sizeof(addr));
-	addr.base_input  = 0;
-	addr.index_input = NO_INPUT;
-	addr.immediate.entity = entity;
+
+	amd64_addr_t addr = {
+		.immediate = {
+			.entity = entity,
+			.kind   = X86_IMM_FRAMEOFFSET,
+		},
+		.base_input  = 0,
+		.index_input = NO_INPUT,
+	};
 	ir_node *in[] = { base };
 	return new_bd_amd64_lea(dbgi, new_block, ARRAY_SIZE(in), in, reg_reqs, INSN_MODE_64, addr);
 }

@@ -51,17 +51,9 @@ static ir_entity *amd64_get_frame_entity(const ir_node *node)
 	if (!amd64_has_addr_attr(node))
 		return NULL;
 	const amd64_addr_attr_t *attr = get_amd64_addr_attr_const(node);
-	ir_entity *entity = attr->addr.immediate.entity;
-	if (entity == NULL)
+	if (attr->addr.immediate.kind != X86_IMM_FRAMEOFFSET)
 		return NULL;
-	ir_type *owner = get_entity_owner(entity);
-	if (is_frame_type(owner))
-		return entity;
-	ir_graph *irg = get_irn_irg(node);
-	be_stack_layout_t *layout = be_get_irg_stack_layout(irg);
-	if (owner == layout->arg_type)
-		return entity;
-	return NULL;
+	return attr->addr.immediate.entity;
 }
 
 static int get_insn_mode_bytes(amd64_insn_mode_t insn_mode)
@@ -93,6 +85,7 @@ static void amd64_set_frame_offset(ir_node *node, int offset)
 		if (layout->sp_relative)
 			attr->addr.immediate.offset -= get_insn_mode_bytes(attr->insn_mode);
 	}
+	assert(attr->addr.immediate.kind == X86_IMM_FRAMEOFFSET);
 	attr->addr.immediate.kind = X86_IMM_VALUE;
 	attr->addr.immediate.entity = NULL;
 }
@@ -124,11 +117,14 @@ static ir_node *create_push(ir_node *node, ir_node *schedpoint, ir_node *sp,
 	ir_graph *irg   = get_irn_irg(node);
 	ir_node  *frame = get_irg_frame(irg);
 
-	amd64_addr_t addr;
-	memset(&addr, 0, sizeof(addr));
-	addr.base_input       = 1;
-	addr.index_input      = NO_INPUT;
-	addr.immediate.entity = ent;
+	amd64_addr_t addr = {
+		.immediate = {
+			.kind   = X86_IMM_FRAMEOFFSET,
+			.entity = ent,
+		},
+		.base_input  = 1,
+		.index_input = NO_INPUT,
+	};
 	ir_node *in[] = { sp, frame, mem };
 	ir_node *const push = new_bd_amd64_push_am(dbgi, block, ARRAY_SIZE(in), in, rsp_reg_mem_reqs, insn_mode, addr);
 	sched_add_before(schedpoint, push);
@@ -143,11 +139,14 @@ static ir_node *create_pop(ir_node *node, ir_node *schedpoint, ir_node *sp,
 	ir_graph *irg   = get_irn_irg(node);
 	ir_node  *frame = get_irg_frame(irg);
 
-	amd64_addr_t addr;
-	memset(&addr, 0, sizeof(addr));
-	addr.base_input  = 1;
-	addr.index_input = NO_INPUT;
-	addr.immediate.entity = ent;
+	amd64_addr_t addr = {
+		.immediate = {
+			.kind   = X86_IMM_FRAMEOFFSET,
+			.entity = ent,
+		},
+		.base_input  = 1,
+		.index_input = NO_INPUT,
+	};
 	ir_node *in[] = { sp, frame, get_irg_no_mem(irg) };
 
 	ir_node *const pop = new_bd_amd64_pop_am(dbgi, block, ARRAY_SIZE(in), in, rsp_reg_mem_reqs, insn_mode, addr);
