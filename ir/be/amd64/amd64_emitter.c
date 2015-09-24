@@ -259,27 +259,21 @@ static bool is_fp_relative(const ir_entity *entity)
 static void amd64_emit_addr(const ir_node *const node,
                             const amd64_addr_t *const addr)
 {
-	ir_entity *entity = addr->immediate.entity;
+	int32_t    const offset      = addr->immediate.offset;
+	ir_entity *const entity      = addr->immediate.entity;
+	uint8_t    const base_input  = addr->base_input;
+	uint8_t    const index_input = addr->index_input;
+
 	if (entity != NULL) {
 		assert(addr->immediate.kind != X86_IMM_VALUE);
-		if (is_fp_relative(entity)) {
-			entity = NULL; /* only emit offset for frame entities */
-		} else {
-			emit_relocation_no_offset(addr->immediate.kind, entity);
-		}
-	}
-
-	int32_t offset      = addr->immediate.offset;
-	uint8_t base_input  = addr->base_input;
-	uint8_t index_input = addr->index_input;
-	if (offset != 0 || (entity == NULL && base_input == NO_INPUT
-	                    && index_input == NO_INPUT)) {
-		if (entity != NULL) {
+		assert(!is_fp_relative(entity));
+		emit_relocation_no_offset(addr->immediate.kind, entity);
+		if (offset != 0)
 			be_emit_irprintf("%+" PRId32, offset);
-		} else {
-			assert(addr->immediate.kind == X86_IMM_VALUE);
-			be_emit_irprintf("%" PRId32, offset);
-		}
+	} else if (offset != 0
+	           || (base_input == NO_INPUT && index_input == NO_INPUT)) {
+		assert(addr->immediate.kind == X86_IMM_VALUE);
+		be_emit_irprintf("%" PRId32, offset);
 	}
 
 	if (base_input != NO_INPUT || index_input != NO_INPUT) {
