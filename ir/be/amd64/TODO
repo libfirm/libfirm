@@ -39,3 +39,4 @@ Improve Quality:
 - Lea needs to support all address modes (base, index +shifts, symconsts)
 - Match RCPxx SSE instruction
 - x87: Support source address modes.
+- Address mode support for Div/IDiv
