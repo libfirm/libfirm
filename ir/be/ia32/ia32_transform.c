@@ -442,11 +442,8 @@ end:
 		return res;
 	} else { /* non-float mode */
 		tv = tarval_convert_to(tv, ia32_mode_gp);
-
-		if (tv == get_tarval_bad() || tv == get_tarval_unknown() ||
-		    tv == NULL) {
+		if (tv == get_tarval_bad())
 			panic("couldn't convert constant tarval (%+F)", node);
-		}
 
 		x86_imm32_t imm = { .offset = get_tarval_long(tv) };
 		ir_node *cnst = new_bd_ia32_Const(dbgi, block, &imm);
