@@ -288,7 +288,6 @@ tryit:
 						ir_mode   *mode         = get_irn_mode(and);
 						ir_tarval *all_one      = get_mode_all_one(mode);
 						ir_tarval *shift_mask   = tarval_shl(tarval_shr(all_one, shift_amount), shift_amount);
-						assert(tarval_is_long(shift_amount));
 						long       val          = get_tarval_long(shift_amount);
 
 						if (and_mask == shift_mask && val >= 0 && val <= 3) {

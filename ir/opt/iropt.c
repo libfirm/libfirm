@@ -5265,7 +5265,6 @@ cmp_x_eq_0:
 					ir_tarval *c2 = get_Const_tarval(lr);
 					ir_tarval *c3 = get_Const_tarval(right);
 
-					assert(tarval_is_long(c1));
 					ir_mode *mode = get_irn_mode(left);
 					long     l1   = get_tarval_long(c1);
 					long     h2   = get_tarval_highest_bit(c2);
