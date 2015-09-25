@@ -20,8 +20,7 @@ typedef struct reg_or_stackslot_t
 {
 	const arch_register_t *reg0;   /**< if != NULL, the first register used for this parameter. */
 	const arch_register_t *reg1;   /**< if != NULL, the second register used. */
-	ir_type               *type;   /**< indicates that an entity of the specific
-									    type is needed */
+	ir_type               *type;   /**< indicates that an entity of the specific type is needed */
 	unsigned               offset; /**< if transmitted via stack, the offset for this parameter. */
 	ir_entity             *entity; /**< entity in frame type */
 } reg_or_stackslot_t;

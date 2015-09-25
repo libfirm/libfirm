@@ -172,8 +172,8 @@ struct arch_register_t {
 	const arch_register_req_t   *single_req;
 	unsigned short               index;        /**< The index of the register in
 	                                                the class. */
-	unsigned short               global_index; /**< The global index this
-												    register in the architecture. */
+	/** The global index this register in the architecture. */
+	unsigned short               global_index;
 	/** register number in dwarf debugging format */
 	unsigned short               dwarf_number;
 	/** register number in instruction encoding */

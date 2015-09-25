@@ -2019,7 +2019,7 @@ static ir_node *gen_compare_swap(ir_node *node)
 	assert(get_irn_mode(new) == mode);
 	if ((!mode_is_int(mode) && !mode_is_reference(mode))
 	    || get_mode_size_bits(mode) != 32) {
-	    panic("sparc: compare and swap only allowed for 32bit values");
+		panic("sparc: compare and swap only allowed for 32bit values");
 	}
 
 	return cas;

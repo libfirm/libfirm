@@ -688,9 +688,9 @@ static void emit_compound_type(const ir_type *type)
 		int        offset      = get_entity_offset(member);
 
 		if (get_entity_bitfield_size(member) > 0) {
-		    unsigned bit_offset = get_entity_bitfield_offset(member);
-		    unsigned bit_size   = get_entity_bitfield_size(member);
-		    unsigned base_size  = get_type_size_bytes(member_type);
+			unsigned bit_offset = get_entity_bitfield_offset(member);
+			unsigned bit_size   = get_entity_bitfield_size(member);
+			unsigned base_size  = get_type_size_bytes(member_type);
 
 			bit_offset = base_size*8 - bit_offset - bit_size;
 

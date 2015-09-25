@@ -258,8 +258,8 @@ static bool sparc_rewrite_Conv(ir_node *node)
 	if (mode_is_float(from_mode) && mode_is_int(to_mode)
 	    && get_mode_size_bits(to_mode) <= 32
 	    && !mode_is_signed(to_mode)) {
-	    rewrite_float_unsigned_Conv(node);
-	    return true;
+		rewrite_float_unsigned_Conv(node);
+		return true;
 	}
 
 	return false;

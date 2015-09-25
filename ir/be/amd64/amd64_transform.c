@@ -576,7 +576,7 @@ static bool match_immediate_32(x86_imm32_t *imm, const ir_node *op,
 		 * this is not what we want. */
 		if (!upper32_dont_care && val < 0
 		    && !mode_is_signed(get_tarval_mode(tv)))
-		    return false;
+			return false;
 	} else {
 		val = 0;
 	}
@@ -1442,7 +1442,7 @@ static ir_node *gen_Member(ir_node *const node)
 		panic("Sel not lowered");
 	if (is_parameter_entity(entity) &&
 	    get_entity_parameter_number(entity) == IR_VA_START_PARAMETER_NUMBER)
-	    panic("gen_Member: Request for invalid parameter (va_start parameter)");
+		panic("gen_Member: Request for invalid parameter (va_start parameter)");
 
 	amd64_addr_t addr = {
 		.immediate = {

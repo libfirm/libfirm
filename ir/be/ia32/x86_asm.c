@@ -165,7 +165,7 @@ ir_node *x86_match_ASM(ir_node const *const node, x86_clobber_name_t const *cons
 		char               const imm_type = parsed_constraint.immediate_type;
 		if (imm_type != '\0'
 		    && x86_match_immediate(&op->u.imm32, pred, imm_type)) {
-		    op->kind = ASM_OP_IMMEDIATE;
+			op->kind = ASM_OP_IMMEDIATE;
 			continue;
 		}
 

@@ -218,7 +218,7 @@ void x86_create_address_mode(x86_address_t *addr, ir_node *node,
 	assert(!addr->ip_base);
 	if (!(flags & x86_create_am_force) && x86_is_non_address_mode_node(node)
 	    && (!(flags & x86_create_am_double_use) || get_irn_n_edges(node) > 2)) {
-	    addr->variant = X86_ADDR_BASE;
+		addr->variant = X86_ADDR_BASE;
 		addr->base    = node;
 		return;
 	}
@@ -332,8 +332,8 @@ tryit:
 				assert(addr->index == NULL && addr->scale == 0);
 				/* esp must be used as base */
 				if (is_Proj(right) && is_Start(get_Proj_pred(right))) {
-				    addr->index = base;
-				    addr->base  = right;
+					addr->index = base;
+					addr->base  = right;
 				} else {
 					addr->index = right;
 				}
