@@ -326,7 +326,7 @@ static ir_node *make_mov_val64_to_offset_mem(dbg_info *dbgi, ir_node *block, ir_
 				.immediate = {
 					.entity = entity,
 					.offset = offset,
-					.kind   = X86_IMM_FRAMEOFFSET,
+					.kind   = entity ? X86_IMM_FRAMEOFFSET : X86_IMM_VALUE,
 				},
 				.variant    = X86_ADDR_BASE,
 				.base_input = 1,
@@ -381,7 +381,7 @@ static ir_node *make_lea_with_offset_entity(dbg_info *dbgi, ir_node *block,
 	amd64_addr_t lea_addr = {
 		.immediate = {
 			.entity = offset,
-			.kind   = X86_IMM_VALUE,
+			.kind   = X86_IMM_FRAMEOFFSET,
 		},
 		.variant    = X86_ADDR_BASE,
 		.base_input = 0,
