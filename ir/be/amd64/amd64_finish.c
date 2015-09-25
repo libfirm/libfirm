@@ -124,12 +124,12 @@ static void amd64_turn_back_am(ir_node *const node, arch_register_t const *const
 	ir_node *load_in[3];
 	int      load_arity = 0;
 	x86_addr_variant_t variant = attr->addr.variant;
-	if (variant == X86_ADDR_BASE || variant == X86_ADDR_BASE_INDEX) {
+	if (x86_addr_variant_has_base(variant)) {
 		int base_input = load_arity++;
 		new_addr.base_input = base_input;
 		load_in[base_input] = get_irn_n(node, attr->addr.base_input);
 	}
-	if (variant == X86_ADDR_INDEX || variant == X86_ADDR_BASE_INDEX) {
+	if (x86_addr_variant_has_index(variant)) {
 		int index_input = load_arity++;
 		new_addr.index_input = index_input;
 		load_in[index_input] = get_irn_n(node, attr->addr.index_input);

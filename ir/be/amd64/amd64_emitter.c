@@ -281,13 +281,13 @@ static void amd64_emit_addr(const ir_node *const node,
 		if (variant == X86_ADDR_RIP) {
 			be_emit_cstring("%rip");
 		} else {
-			if (variant == X86_ADDR_BASE || variant == X86_ADDR_BASE_INDEX) {
+			if (x86_addr_variant_has_base(variant)) {
 				arch_register_t const *const reg
 					= arch_get_irn_register_in(node, addr->base_input);
 				emit_register(reg);
 			}
 
-			if (variant == X86_ADDR_BASE_INDEX || variant == X86_ADDR_INDEX) {
+			if (x86_addr_variant_has_index(variant)) {
 				be_emit_char(',');
 				arch_register_t const *const reg
 					= arch_get_irn_register_in(node, addr->index_input);

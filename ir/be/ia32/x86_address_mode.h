@@ -25,6 +25,16 @@ typedef enum {
 	X86_ADDR_RIP,
 } x86_addr_variant_t;
 
+static inline bool x86_addr_variant_has_base(x86_addr_variant_t const variant)
+{
+	return variant == X86_ADDR_BASE || variant == X86_ADDR_BASE_INDEX;
+}
+
+static inline bool x86_addr_variant_has_index(x86_addr_variant_t const variant)
+{
+	return variant == X86_ADDR_INDEX || variant == X86_ADDR_BASE_INDEX;
+}
+
 /**
  * The address mode data: Used to construct (memory) address modes.
  */

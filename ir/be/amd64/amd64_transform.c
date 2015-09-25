@@ -710,14 +710,14 @@ static void perform_address_matching(ir_node *ptr, int *arity,
 
 	x86_addr_variant_t variant = maddr.variant;
 	assert(variant != X86_ADDR_INVALID);
-	if (variant == X86_ADDR_BASE || variant == X86_ADDR_BASE_INDEX) {
+	if (x86_addr_variant_has_base(variant)) {
 		int base_input   = (*arity)++;
 		addr->base_input = base_input;
 		in[base_input]   = be_transform_node(maddr.base);
 	} else {
 		assert(maddr.base == NULL);
 	}
-	if (variant == X86_ADDR_INDEX || variant == X86_ADDR_BASE_INDEX) {
+	if (x86_addr_variant_has_index(variant)) {
 		int index_input   = (*arity)++;
 		addr->index_input = index_input;
 		in[index_input]   = be_transform_node(maddr.index);
@@ -1759,9 +1759,9 @@ static ir_node *gen_Call(ir_node *const node)
 			perform_address_matching(load_ptr, &in_arity, in, &addr);
 
 			x86_addr_variant_t variant = addr.variant;
-			if (variant == X86_ADDR_BASE || variant == X86_ADDR_BASE_INDEX)
+			if (x86_addr_variant_has_base(variant))
 				in_req[addr.base_input] = &amd64_class_reg_req_gp;
-			if (variant == X86_ADDR_BASE_INDEX || variant == X86_ADDR_INDEX)
+			if (x86_addr_variant_has_index(variant))
 				in_req[addr.index_input] = &amd64_class_reg_req_gp;
 
 			ir_node *load_mem     = get_Load_mem(load);
