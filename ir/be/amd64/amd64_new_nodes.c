@@ -159,8 +159,12 @@ static void amd64_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 		if (amd64_has_addr_attr(n)) {
 			const amd64_addr_attr_t *addr_attr = get_amd64_addr_attr_const(n);
 			fprintf(F, "size = %s\n", get_insn_mode_string(addr_attr->insn_mode));
-			fprintf(F, "base input: %d\n", addr_attr->addr.base_input);
-			fprintf(F, "index input: %d\n", addr_attr->addr.index_input);
+			x86_addr_variant_t const variant = addr_attr->addr.variant;
+			fprintf(F, "am variant = %s\n", x86_get_addr_variant_str(variant));
+			if (x86_addr_variant_has_base(variant))
+				fprintf(F, "base input: %d\n", addr_attr->addr.base_input);
+			if (x86_addr_variant_has_index(variant))
+				fprintf(F, "index input: %d\n", addr_attr->addr.index_input);
 			fputs("am imm: ", F);
 			x86_dump_imm32(&addr_attr->addr.immediate, F);
 			fputc('\n', F);

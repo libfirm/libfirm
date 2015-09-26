@@ -25,6 +25,8 @@ typedef enum {
 	X86_ADDR_RIP,
 } x86_addr_variant_t;
 
+char const *x86_get_addr_variant_str(x86_addr_variant_t);
+
 static inline bool x86_addr_variant_has_base(x86_addr_variant_t const variant)
 {
 	return variant == X86_ADDR_BASE || variant == X86_ADDR_BASE_INDEX;
