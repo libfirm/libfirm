@@ -39,6 +39,15 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
+static bool is_hl_register(arch_register_t const *const reg)
+{
+	return
+		reg == &ia32_registers[REG_EAX] ||
+		reg == &ia32_registers[REG_EBX] ||
+		reg == &ia32_registers[REG_ECX] ||
+		reg == &ia32_registers[REG_EDX];
+}
+
 static void copy_mark(const ir_node *old, ir_node *newn)
 {
 	if (is_ia32_is_reload(old))
@@ -128,6 +137,44 @@ check_shift_amount:
 }
 
 /**
+ * Use shorter instructions:
+ * x & 0xFFFFFF00 -> xorb x, x (6 bytes -> 2 bytes)
+ * x & 0xFFFF0000 -> xorw x, x (6 bytes -> 3 bytes)
+ */
+static void peephole_ia32_And(ir_node *const node)
+{
+	ir_node *const right = get_irn_n(node, n_ia32_And_right);
+	if (!is_ia32_Immediate(right))
+		return;
+
+	ia32_immediate_attr_t const *const imm = get_ia32_immediate_attr_const(right);
+	if (imm->imm.entity)
+		return;
+
+	/* Perform the replacement only, if the flags are ununsed.
+	 * Xor sets the flags differntly than And. */
+	if (get_irn_mode(node) == mode_T && get_Proj_for_pn(node, pn_ia32_And_flags))
+		return;
+
+	ir_node                   *(*cons)(dbg_info*, ir_node*, ir_node*);
+	arch_register_t const *const reg = arch_get_irn_register_out(node, pn_ia32_And_res);
+	uint32_t               const val = imm->imm.offset;
+	if (val == 0xFFFF0000) {
+		cons = &new_bd_ia32_Xor0Low_w;
+		goto make_xor0;
+	} else if (val == 0xFFFFFF00 && is_hl_register(reg)) {
+		cons = &new_bd_ia32_Xor0Low_b;
+make_xor0:;
+		dbg_info *const dbgi  = get_irn_dbg_info(node);
+		ir_node  *const block = get_nodes_block(node);
+		ir_node  *const left  = get_irn_n(node, n_ia32_And_left);
+		ir_node  *const xor0  = cons(dbgi, block, left);
+		arch_set_irn_register_out(xor0, pn_ia32_Xor0Low_res, reg);
+		replace(node, xor0);
+	}
+}
+
+/**
  * Replace Cmp(x, 0) by a Test(x, x)
  */
 static void peephole_ia32_Cmp(ir_node *const node)
@@ -168,15 +215,6 @@ static void peephole_ia32_Cmp(ir_node *const node)
 	}
 
 	replace(node, test);
-}
-
-static bool is_hl_register(arch_register_t const *const reg)
-{
-	return
-		reg == &ia32_registers[REG_EAX] ||
-		reg == &ia32_registers[REG_EBX] ||
-		reg == &ia32_registers[REG_ECX] ||
-		reg == &ia32_registers[REG_EDX];
 }
 
 /**
@@ -916,6 +954,7 @@ void ia32_peephole_optimization(ir_graph *irg)
 
 	/* pass 2 */
 	ir_clear_opcodes_generic_func();
+	register_peephole_optimization(op_ia32_And,     peephole_ia32_And);
 	register_peephole_optimization(op_ia32_Const,   peephole_ia32_Const);
 	register_peephole_optimization(op_be_IncSP,     peephole_be_IncSP);
 	register_peephole_optimization(op_ia32_Test,    peephole_ia32_Test);

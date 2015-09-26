@@ -1177,6 +1177,26 @@ CmpXChgMem => {
 	latency   => 2,
 },
 
+Xor0Low => {
+	irn_flags    => [ "rematerializable" ],
+	state        => "exc_pinned",
+	constructors => {
+		"b" => {
+			in_reqs => [ "eax ebx ecx edx" ],
+			init    => "attr->ls_mode = mode_Bu;",
+		},
+		"w" => {
+			in_reqs => [ "gp" ],
+			init    => "attr->ls_mode = mode_Hu;",
+		},
+	},
+	out_reqs  => [ "in_r0" ],
+	ins       => [ "src" ],
+	outs      => [ "res" ],
+	emit      => "xor%M %#D0, %#D0",
+	latency   => 1,
+},
+
 Breakpoint => {
 	template => $memop,
 	latency  => 0,
