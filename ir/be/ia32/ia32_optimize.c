@@ -203,9 +203,7 @@ static void peephole_ia32_Cmp(ir_node *const node)
 		? new_bd_ia32_Test_8bit(dbgi, block, noreg, noreg, nomem, op, op, ins_permuted)
 		: new_bd_ia32_Test     (dbgi, block, noreg, noreg, nomem, op, op, ins_permuted);
 	set_ia32_ls_mode(test, ls_mode);
-
-	arch_register_t const *const reg = arch_get_irn_register_out(node, pn_ia32_Cmp_eflags);
-	arch_set_irn_register_out(test, pn_ia32_Test_eflags, reg);
+	arch_set_irn_register_out(test, pn_ia32_Test_eflags, &ia32_registers[REG_EFLAGS]);
 
 	foreach_out_edge_safe(node, edge) {
 		ir_node *const user = get_edge_src_irn(edge);
