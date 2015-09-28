@@ -597,94 +597,68 @@ static bool ia32_try_replace_flags(ir_node *consumers, ir_node *flags, ir_node *
 static void remat_simplifier(ir_node *node, void *env)
 {
 	(void)env;
-	const arch_register_t *flags_reg = &(ia32_reg_classes[CLASS_ia32_flags].regs[0]);
 
 	/* A Sub with unused result is a Cmp. */
 	if (is_ia32_Sub(node) && get_irn_mode(node) == mode_T) {
-		bool      has_res_users  = false;
-		ir_node  *res_keep       = NULL;
-		ir_node **flag_users     = NEW_ARR_F(ir_node*, 0);
-		int      *flag_users_pos = NEW_ARR_F(int, 0);
-		ir_node **mem_users      = NEW_ARR_F(ir_node*, 0);
-		int      *mem_users_pos  = NEW_ARR_F(int, 0);
-
+		ir_node *projs[] = { [pn_ia32_Sub_M] = NULL };
 		foreach_out_edge(node, out) {
-			ir_node *proj = get_edge_src_irn(out);
-			ir_mode *proj_mode = get_irn_mode(proj);
-			if (proj_mode == ia32_mode_flags) {
-				foreach_out_edge(proj, out2) {
-					ir_node *user = get_edge_src_irn(out2);
-					ARR_APP1(ir_node*, flag_users, user);
-					ARR_APP1(int, flag_users_pos, get_edge_src_pos(out2));
+			ir_node *const proj = get_edge_src_irn(out);
+			unsigned const num  = get_Proj_num(proj);
+			assert(num < ARRAY_SIZE(projs));
+			assert(!projs[num] && "duplicate Proj");
+			projs[num] = proj;
+		}
+
+		ir_node       *res_keep = NULL;
+		ir_node *const sub_res  = projs[pn_ia32_Sub_res];
+		if (sub_res) {
+			foreach_out_edge(sub_res, out) {
+				ir_node *const user = get_edge_src_irn(out);
+				if (be_is_Keep(user)) {
+					assert(!res_keep && "Proj has two be_Keep");
+					res_keep = user;
+				} else {
+					return;
 				}
-			} else if (proj_mode == ia32_mode_gp) {
-				foreach_out_edge(proj, out2) {
-					ir_node *user = get_edge_src_irn(out2);
-					if (!be_is_Keep(user)) {
-						has_res_users = true;
-					} else {
-						assert(res_keep == NULL && "Proj has two be_Keep");
-						res_keep = user;
-					}
-				}
-			} else if (proj_mode == mode_M) {
-				foreach_out_edge(proj, out2) {
-					ir_node *user = get_edge_src_irn(out2);
-					ARR_APP1(ir_node*, mem_users, user);
-					ARR_APP1(int, mem_users_pos, get_edge_src_pos(out2));
-				}
-			} else {
-				panic("unexpected mode for %+F", proj);
 			}
 		}
 
-		if (!has_res_users) {
-			ir_node *cmp = new_bd_ia32_Cmp(
-				get_irn_dbg_info(node),
-				get_nodes_block(node),
-				get_irn_n(node, n_ia32_Sub_base),
-				get_irn_n(node, n_ia32_Sub_index),
-				get_irn_n(node, n_ia32_Sub_mem),
-				get_irn_n(node, n_ia32_Sub_minuend),
-				get_irn_n(node, n_ia32_Sub_subtrahend),
-				false);
-			arch_set_irn_register(cmp, flags_reg);
-			ia32_copy_am_attrs(cmp, node);
+		dbg_info *const dbgi  = get_irn_dbg_info(node);
+		ir_node  *const block = get_nodes_block(node);
+		ir_node  *const base  = get_irn_n(node, n_ia32_Sub_base);
+		ir_node  *const idx   = get_irn_n(node, n_ia32_Sub_index);
+		ir_node  *const mem   = get_irn_n(node, n_ia32_Sub_mem);
+		ir_node  *const minu  = get_irn_n(node, n_ia32_Sub_minuend);
+		ir_node  *const subt  = get_irn_n(node, n_ia32_Sub_subtrahend);
+		ir_node        *cmp   = new_bd_ia32_Cmp(dbgi, block, base, idx, mem, minu, subt, false);
+		arch_set_irn_register(cmp, &ia32_registers[REG_EFLAGS]);
+		ia32_copy_am_attrs(cmp, node);
 
-			sched_replace(node, cmp);
+		sched_replace(node, cmp);
 
-			if (get_ia32_op_type(node) == ia32_AddrModeD) {
-				panic("unexpected DestAM node %+F", node);
-			}
-			if (get_ia32_op_type(node) == ia32_AddrModeS) {
-				set_ia32_op_type(cmp, ia32_AddrModeS);
-				set_irn_mode(cmp, mode_T);
+		if (get_ia32_op_type(node) == ia32_AddrModeS) {
+			set_ia32_op_type(cmp, ia32_AddrModeS);
+			set_irn_mode(cmp, mode_T);
 
+			ir_node *const sub_mem = projs[pn_ia32_Sub_M];
+			if (sub_mem) {
 				ir_node *const proj_M = be_new_Proj(cmp, pn_ia32_Cmp_M);
-				for(unsigned i = 0; i < ARR_LEN(mem_users); i++) {
-					set_irn_n(mem_users[i], mem_users_pos[i], proj_M);
-				}
-
-				cmp = be_new_Proj(cmp, pn_ia32_Cmp_eflags);
+				exchange(sub_mem, proj_M);
 			}
 
-			for (unsigned i = 0; i < ARR_LEN(flag_users); i++) {
-				set_irn_n(flag_users[i], flag_users_pos[i], cmp);
-			}
-
-			if (res_keep) {
-				sched_remove(res_keep);
-				remove_keep_alive(res_keep);
-				kill_node(res_keep);
-			}
-			kill_node(node);
-			node = cmp;
+			cmp = be_new_Proj(cmp, pn_ia32_Cmp_eflags);
+		} else {
+			assert(get_ia32_op_type(node) == ia32_Normal);
 		}
 
-		DEL_ARR_F(flag_users);
-		DEL_ARR_F(flag_users_pos);
-		DEL_ARR_F(mem_users);
-		DEL_ARR_F(mem_users_pos);
+		exchange(projs[pn_ia32_Sub_flags], cmp);
+
+		if (res_keep) {
+			sched_remove(res_keep);
+			remove_keep_alive(res_keep);
+			kill_node(res_keep);
+		}
+		kill_node(node);
 	}
 }
 
