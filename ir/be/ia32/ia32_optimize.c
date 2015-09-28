@@ -691,39 +691,24 @@ static void peephole_be_IncSP(ir_node *node)
 	    (offset != +8 || ia32_cg_config.use_sub_esp_8))
 		return;
 
-	ir_node *stack;
-
+	ir_node  *stack = be_get_IncSP_pred(node);
+	dbg_info *dbgi  = get_irn_dbg_info(node);
+	ir_node  *block = get_nodes_block(node);
 	if (offset < 0) {
 		/* we need a free register for pop */
-		const arch_register_t *reg = get_free_gp_reg(get_irn_irg(node));
-		if (reg == NULL)
+		arch_register_t const *const reg = get_free_gp_reg(get_irn_irg(node));
+		if (!reg)
 			return;
 
-		dbg_info *dbgi  = get_irn_dbg_info(node);
-		ir_node  *block = get_nodes_block(node);
-
-		stack = be_get_IncSP_pred(node);
-		stack = create_pop(dbgi, block, stack, node, reg);
-
-		if (offset == -8) {
+		do {
 			stack = create_pop(dbgi, block, stack, node, reg);
-		}
+		} while ((offset += 4) != 0);
 	} else {
-		arch_register_t const *const esp = &ia32_registers[REG_ESP];
-
-		dbg_info *dbgi  = get_irn_dbg_info(node);
-		ir_node  *block = get_nodes_block(node);
-
-		stack = be_get_IncSP_pred(node);
-		stack = new_bd_ia32_PushEax(dbgi, block, stack);
-		arch_set_irn_register(stack, esp);
-		sched_add_before(node, stack);
-
-		if (offset == +8) {
+		do {
 			stack = new_bd_ia32_PushEax(dbgi, block, stack);
-			arch_set_irn_register(stack, esp);
+			arch_set_irn_register(stack, &ia32_registers[REG_ESP]);
 			sched_add_before(node, stack);
-		}
+		} while ((offset -= 4) != 0);
 	}
 
 	be_peephole_exchange(node, stack);
