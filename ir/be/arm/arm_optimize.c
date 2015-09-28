@@ -74,26 +74,27 @@ static void peephole_be_IncSP(ir_node *node)
 	edges_reroute_except(first, node, sched_next(first));
 }
 
+typedef ir_node *new_binop_imm(dbg_info*, ir_node*, ir_node*, unsigned char, unsigned char);
+
+static ir_node *gen_ptr(new_binop_imm *const cons, ir_node *const node, ir_node *const frame, arm_vals const *const v)
+{
+	dbg_info *const dbgi  = get_irn_dbg_info(node);
+	ir_node  *const block = get_nodes_block(node);
+	ir_node        *ptr   = frame;
+	for (unsigned cnt = 0; cnt < v->ops; ++cnt) {
+		ptr = cons(dbgi, block, ptr, v->values[cnt], v->rors[cnt]);
+		arch_set_irn_register(ptr, &arm_registers[REG_R12]);
+		sched_add_before(node, ptr);
+	}
+	return ptr;
+}
+
 /**
  * creates the address by Adds
  */
 static ir_node *gen_ptr_add(ir_node *node, ir_node *frame, const arm_vals *v)
 {
-	dbg_info *dbgi  = get_irn_dbg_info(node);
-	ir_node  *block = get_nodes_block(node);
-	ir_node  *ptr   = new_bd_arm_Add_imm(dbgi, block, frame, v->values[0],
-	                                     v->rors[0]);
-	arch_set_irn_register(ptr, &arm_registers[REG_R12]);
-	sched_add_before(node, ptr);
-
-	for (unsigned cnt = 1; cnt < v->ops; ++cnt) {
-		ir_node *next = new_bd_arm_Add_imm(dbgi, block, ptr, v->values[cnt],
-		                                   v->rors[cnt]);
-		arch_set_irn_register(next, &arm_registers[REG_R12]);
-		sched_add_before(node, next);
-		ptr = next;
-	}
-	return ptr;
+	return gen_ptr(&new_bd_arm_Add_imm, node, frame, v);
 }
 
 /**
@@ -101,21 +102,7 @@ static ir_node *gen_ptr_add(ir_node *node, ir_node *frame, const arm_vals *v)
  */
 static ir_node *gen_ptr_sub(ir_node *node, ir_node *frame, const arm_vals *v)
 {
-	dbg_info *dbgi  = get_irn_dbg_info(node);
-	ir_node  *block = get_nodes_block(node);
-	ir_node  *ptr   = new_bd_arm_Sub_imm(dbgi, block, frame, v->values[0],
-	                                     v->rors[0]);
-	arch_set_irn_register(ptr, &arm_registers[REG_R12]);
-	sched_add_before(node, ptr);
-
-	for (unsigned cnt = 1; cnt < v->ops; ++cnt) {
-		ir_node *next = new_bd_arm_Sub_imm(dbgi, block, ptr, v->values[cnt],
-		                                   v->rors[cnt]);
-		arch_set_irn_register(next, &arm_registers[REG_R12]);
-		sched_add_before(node, next);
-		ptr = next;
-	}
-	return ptr;
+	return gen_ptr(&new_bd_arm_Sub_imm, node, frame, v);
 }
 
 /** fix frame addresses which are too big */
