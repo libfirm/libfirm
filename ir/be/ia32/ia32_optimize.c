@@ -49,6 +49,13 @@ static void copy_mark(const ir_node *old, ir_node *newn)
 		set_ia32_is_remat(newn);
 }
 
+static void replace(ir_node *const old, ir_node *const newn)
+{
+	sched_add_before(old, newn);
+	copy_mark(old, newn);
+	be_peephole_exchange(old, newn);
+}
+
 typedef enum produces_flag_t {
 	produces_no_flag,
 	produces_zero_sign,
@@ -160,9 +167,7 @@ static void peephole_ia32_Cmp(ir_node *const node)
 			exchange(user, test);
 	}
 
-	sched_add_before(node, test);
-	copy_mark(node, test);
-	be_peephole_exchange(node, test);
+	replace(node, test);
 }
 
 static bool is_hl_register(arch_register_t const *const reg)
@@ -711,11 +716,7 @@ static void peephole_ia32_Const(ir_node *node)
 	dbg_info *dbgi  = get_irn_dbg_info(node);
 	ir_node  *xorn  = new_bd_ia32_Xor0(dbgi, block);
 	arch_set_irn_register(xorn, reg);
-
-	sched_add_before(node, xorn);
-
-	copy_mark(node, xorn);
-	be_peephole_exchange(node, xorn);
+	replace(node, xorn);
 }
 
 static bool is_disp_const(ir_node const *const node, int32_t const val)
@@ -813,9 +814,7 @@ exchange:
 	/* Replace the Lea by Add/Shl. */
 	arch_set_irn_register(res, out_reg);
 	SET_IA32_ORIG_NODE(res, node);
-	sched_add_before(node, res);
-	copy_mark(node, res);
-	be_peephole_exchange(node, res);
+	replace(node, res);
 }
 
 /**
