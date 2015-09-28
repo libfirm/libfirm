@@ -121,6 +121,17 @@ static char const *get_frame_use_str(ir_node const *const node)
 }
 #endif
 
+static void ia32_dump_immediate(FILE *const F, ir_entity *const entity, int32_t const offset)
+{
+	if (entity) {
+		fputs(get_entity_name(entity), F);
+		if (offset != 0)
+			fprintf(F, "%+" PRId32, offset);
+	} else {
+		fprintf(F, "%" PRId32, offset);
+	}
+}
+
 /**
  * Dumper interface for dumping ia32 nodes in vcg.
  * @param n        the node to dump
@@ -137,37 +148,16 @@ static void ia32_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 			fprintf(F, "%s", get_irn_opname(n));
 
 			if (is_ia32_Immediate(n) || is_ia32_Const(n)) {
-				const ia32_immediate_attr_t *attr
-					= get_ia32_immediate_attr_const(n);
-
+				ia32_immediate_attr_t const *const attr = get_ia32_immediate_attr_const(n);
 				fputc(' ', F);
-				ir_entity *entity = attr->imm.entity;
-				if (entity)
-					fputs(get_entity_name(entity), F);
-				int32_t offset = attr->imm.offset;
-				if (offset != 0 || entity == NULL) {
-					if (offset > 0 && entity != NULL) {
-						fputc('+', F);
-					}
-					fprintf(F, "%"PRId32, offset);
-				}
+				ia32_dump_immediate(F, attr->imm.entity, attr->imm.offset);
 			} else {
-				const ia32_attr_t *attr = get_ia32_attr_const(n);
-
-				int32_t    offset = attr->am_imm.offset;
-				ir_entity *entity = attr->am_imm.entity;
-				if (entity != NULL || offset != 0) {
+				ia32_attr_t const *const attr   = get_ia32_attr_const(n);
+				int32_t            const offset = attr->am_imm.offset;
+				ir_entity         *const entity = attr->am_imm.entity;
+				if (entity || offset != 0) {
 					fputs(" [", F);
-
-					if (entity != NULL)
-						fputs(get_entity_name(entity), F);
-					if (offset != 0) {
-						if (offset > 0 && entity != NULL) {
-							fputc('+', F);
-						}
-						fprintf(F, "%d", offset);
-					}
-
+					ia32_dump_immediate(F, entity, offset);
 					fputc(']', F);
 				}
 			}
