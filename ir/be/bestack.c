@@ -177,7 +177,7 @@ void be_abi_fix_stack_bias(ir_graph *irg, get_sp_bias_func get_sp_bias,
 	bw.get_frame_entity = get_frame_entity;
 	bw.start_block_bias = process_stack_bias(&bw, bw.start_block, stack_layout->initial_bias);
 
-	/* fix the bias is all other blocks */
+	/* fix the bias in all other blocks */
 	irg_block_walk_graph(irg, stack_bias_walker, NULL, &bw);
 }
 
