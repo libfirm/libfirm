@@ -272,6 +272,11 @@ static ir_node *load_va_from_register_or_stack(dbg_info *dbgi, ir_node *block,
 
 void amd64_lower_va_arg(ir_node *node)
 {
+	static const size_t n_gp_args  = 6;
+	static const size_t n_xmm_args = 8;
+	static const size_t gp_size    = 8;
+	static const size_t xmm_size   = 16;
+
 	ir_type *restype = get_method_res_type(get_Builtin_type(node), 0);
 	ir_mode *resmode = get_type_mode(restype);
 	if (resmode == NULL) {
@@ -292,13 +297,14 @@ void amd64_lower_va_arg(ir_node *node)
 		ir_entity *offset_entity;
 		ir_node   *stride;
 		if (mode_is_int(resmode) || mode_is_reference(resmode)) {
-			max           = new_r_Const_long(irg, mode_Is, 6 * 8);
+			max           = new_r_Const_long(irg, mode_Is, n_gp_args * gp_size);
 			offset_entity = va_list_members.gp_offset;
-			stride        = new_r_Const_long(irg, mode_Is, 8);
+			stride        = new_r_Const_long(irg, mode_Is, gp_size);
 		} else if (mode_is_float(resmode)) {
-			max           = new_r_Const_long(irg, mode_Is, 6 * 8 + 8 * 16);
+			max           = new_r_Const_long(irg, mode_Is,
+			                                 n_gp_args * gp_size + n_xmm_args * xmm_size);
 			offset_entity = va_list_members.xmm_offset;
-			stride        = new_r_Const_long(irg, mode_Is, 16);
+			stride        = new_r_Const_long(irg, mode_Is, xmm_size);
 		} else {
 			panic("amd64_lower_va_arg does not support mode %+F", resmode);
 		}
