@@ -126,6 +126,47 @@ void amd64_insert_reg_save_area(ir_graph *irg, x86_cconv_t *cconv)
 	reg_save_area = new_entity(frame_type, reg_save_id, reg_save_type);
 }
 
+/*
+ * Lowering of va_arg
+ *
+ * For explanation see e.g.:
+ * http://andrewl.dreamhosters.com/blog/variadic_functions_in_amd64_linux/index.html
+ * and the AMD64 ABI (http://www.x86-64.org/documentation/abi.pdf)
+ *
+ * Given:
+ * va_list ap;
+ * va_start(ap);
+ *
+ * Generate one of the following for "va_arg(ap, T)":
+ *
+ * If T is an integral or pointer type:
+ * if (ap.gp_offset < 6*8) {
+ *         T result = ap.reg_save_ptr[gp_offset];
+ *         gp_offset += 8;
+ *         return result;
+ * } else {
+ *         T result = *ap.stack_args_ptr;
+ *         ap.stack_args_ptr += (sizeof(T) rounded up to multiple of 8);
+ *         return result;
+ * }
+ *
+ * If T is an SSE floating point type:
+ * if (ap.xmm_offset < 6*8+8*16) {
+ *         T result = ap.reg_save_ptr[xmm_offset];
+ *         xmm_offset += 16;
+ *         return result;
+ * } else {
+ *         T result = *ap.stack_args_ptr;
+ *         ap.stack_args_ptr += (sizeof(T) rounded up to multiple of 8);
+ *         return result;
+ * }
+ *
+ * If T is an x87 floating point type (i.e. long double):
+ * T result = *ap.stack_args_ptr;
+ * ap.stack_args_ptr += sizeof(T)
+ * return result;
+ */
+
 static ir_node *load_result(dbg_info *dbgi, ir_node *block, ir_node *ptr, ir_type *type, ir_node **mem)
 {
 	ir_mode *mode    = get_type_mode(type);
@@ -146,74 +187,39 @@ static void make_store(dbg_info *dbgi, ir_node *block, ir_node *ptr, ir_node *va
 	*mem = new_mem;
 }
 
-void amd64_lower_va_arg(ir_node *node)
+static ir_node *load_va_from_stack(dbg_info *dbgi, ir_node *block, ir_mode *resmode, ir_type *restype, ir_node *ap, ir_node **mem)
 {
-	/*
-	 * For explanation see e.g.:
-	 * http://andrewl.dreamhosters.com/blog/variadic_functions_in_amd64_linux/index.html
-	 * and the AMD64 ABI (http://www.x86-64.org/documentation/abi.pdf)
-	 *
-	 * Given:
-	 * va_list ap;
-	 * va_start(ap);
-	 *
-	 * Generate one of the following for "va_arg(ap, T)":
-	 *
-	 * If T is an integral or pointer type:
-	 * if (ap.gp_offset < 6*8) {
-	 *         T result = ap.reg_save_ptr[gp_offset];
-	 *         gp_offset += 8;
-	 *         return result;
-	 * } else {
-	 *         T result = *ap.stack_args_ptr;
-	 *         ap.stack_args_ptr += (sizeof(T) rounded up to multiple of 8);
-	 *         return result;
-	 * }
-	 *
-	 * If T is an SSE floating point type:
-	 * if (ap.xmm_offset < 6*8+8*16) {
-	 *         T result = ap.reg_save_ptr[xmm_offset];
-	 *         xmm_offset += 16;
-	 *         return result;
-	 * } else {
-	 *         T result = *ap.stack_args_ptr;
-	 *         ap.stack_args_ptr += (sizeof(T) rounded up to multiple of 8);
-	 *         return result;
-	 * }
-	 */
+	ir_graph *irg = get_irn_irg(block);
 
-	ir_graph *irg   = get_irn_irg(node);
-	ir_node  *block = get_nodes_block(node);
-	dbg_info *dbgi  = get_irn_dbg_info(node);
+	// Load stack_args_ptr
+	ir_node *stack_args_ptr  = new_rd_Member(dbgi, block, ap, va_list_members.stack_args_ptr);
+	ir_type *stack_args_type = get_entity_type(va_list_members.stack_args_ptr);
+	ir_node *stack_args      = load_result(dbgi, block, stack_args_ptr, stack_args_type, mem);
 
-	ir_type *restype = get_method_res_type(get_Builtin_type(node), 0);
-	ir_mode *resmode = get_type_mode(restype);
-	if (resmode == NULL) {
-		resmode = mode_P;
-	}
+	// Load result from stack
+	ir_node *result          = load_result(dbgi, block, stack_args, restype, mem);
 
-	ir_node   *max;
-	ir_entity *offset_entity;
-	ir_node   *stride;
-	if (mode_is_int(resmode) || mode_is_reference(resmode)) {
-		max           = new_r_Const_long(irg, mode_Is, 6 * 8);
-		offset_entity = va_list_members.gp_offset;
-		stride        = new_r_Const_long(irg, mode_Is, 8);
-	} else if (mode_is_float(resmode)) {
-		max           = new_r_Const_long(irg, mode_Is, 6 * 8 + 8 * 16);
-		offset_entity = va_list_members.xmm_offset;
-		stride        = new_r_Const_long(irg, mode_Is, 16);
-	} else {
-		panic("amd64_lower_va_arg does not support mode %+F", resmode);
-	}
+	// Increment stack_args and write back
+	long     increment       = round_up2(get_mode_size_bytes(resmode), 8);
+	ir_node *sizeof_resmode  = new_r_Const_long(irg, mode_Is, increment);
+	ir_mode *mode_stack_args = get_irn_mode(stack_args);
+	ir_node *stack_args_inc  = new_rd_Add(dbgi, block, stack_args, sizeof_resmode, mode_stack_args);
+	make_store(dbgi, block, stack_args_ptr, stack_args_inc, stack_args_type, mem);
 
-	ir_node *ap  = get_irn_n(node, pn_Builtin_max + 1);
-	ir_node *mem = get_Builtin_mem(node);
+	return result;
+}
+
+static ir_node *load_va_from_register_or_stack(dbg_info *dbgi, ir_node *block,
+                                               ir_mode *resmode, ir_type *restype,
+                                               ir_node *max, ir_entity *offset_entity, ir_node *stride,
+                                               ir_node *ap, ir_node **mem)
+{
+	ir_graph *irg = get_irn_irg(block);
 
 	// Load the current register offset
 	ir_node *offset_ptr  = new_rd_Member(dbgi, block, ap, offset_entity);
 	ir_type *offset_type = get_entity_type(offset_entity);
-	ir_node *offset      = load_result(dbgi, block, offset_ptr, offset_type, &mem);
+	ir_node *offset      = load_result(dbgi, block, offset_ptr, offset_type, mem);
 
 	// Compare it to the maximum value
 	ir_node *cmp = new_rd_Cmp(dbgi, block, offset, max, ir_relation_less);
@@ -235,7 +241,7 @@ void amd64_lower_va_arg(ir_node *node)
 
 	// True side: Load from the register save area
 	// Load reg_save_ptr
-	ir_node *true_mem        = mem;
+	ir_node *true_mem        = *mem;
 	ir_node *reg_save_ptr    = new_rd_Member(dbgi, true_block, ap, va_list_members.reg_save_ptr);
 	ir_type *reg_save_type   = get_entity_type(va_list_members.reg_save_ptr);
 	ir_node *reg_save        = load_result(dbgi, true_block, reg_save_ptr, reg_save_type, &true_mem);
@@ -251,28 +257,57 @@ void amd64_lower_va_arg(ir_node *node)
 	make_store(dbgi, true_block, offset_ptr, offset_inc, offset_type, &true_mem);
 
 	// False side: Load from the stack
-	// Load stack_args_ptr
-	ir_node *false_mem        = mem;
-	ir_node *stack_args_ptr   = new_rd_Member(dbgi, false_block, ap, va_list_members.stack_args_ptr);
-	ir_type *stack_args_type  = get_entity_type(va_list_members.stack_args_ptr);
-	ir_node *stack_args       = load_result(dbgi, false_block, stack_args_ptr, stack_args_type, &false_mem);
-
-	// Load result from stack
-	ir_node *false_result     = load_result(dbgi, false_block, stack_args, restype, &false_mem);
-
-	// Increment stack_args and write back
-	long     increment        = round_up2(get_mode_size_bytes(resmode), 8);
-	ir_node *sizeof_resmode   = new_r_Const_long(irg, mode_Is, increment);
-	ir_mode *mode_stack_args  = get_irn_mode(stack_args);
-	ir_node *stack_args_inc   = new_rd_Add(dbgi, false_block, stack_args, sizeof_resmode, mode_stack_args);
-	make_store(dbgi, false_block, stack_args_ptr, stack_args_inc, stack_args_type, &false_mem);
+	ir_node *false_mem    = *mem;
+	ir_node *false_result = load_va_from_stack(dbgi, false_block, resmode, restype, ap, &false_mem);
 
 	// Phi both sides together
 	ir_node *phiM_in[]  = { true_mem, false_mem };
 	ir_node *phiM       = new_rd_Phi(dbgi, lower_block, ARRAY_SIZE(phiM_in), phiM_in, mode_M);
 	ir_node *phi_in[]   = { true_result, false_result };
 	ir_node *phi        = new_rd_Phi(dbgi, lower_block, ARRAY_SIZE(phi_in), phi_in, resmode);
-	ir_node *tuple_in[] = { phiM, phi };
+
+	*mem = phiM;
+	return phi;
+}
+
+void amd64_lower_va_arg(ir_node *node)
+{
+	ir_type *restype = get_method_res_type(get_Builtin_type(node), 0);
+	ir_mode *resmode = get_type_mode(restype);
+	if (resmode == NULL) {
+		resmode = mode_P;
+	}
+	ir_mode *mode_long_double = get_type_mode(be_get_backend_param()->type_long_double);
+
+	dbg_info *dbgi  = get_irn_dbg_info(node);
+	ir_graph *irg   = get_irn_irg(node);
+	ir_node  *block = get_nodes_block(node);
+	ir_node  *ap    = get_irn_n(node, pn_Builtin_max + 1);
+	ir_node  *mem   = get_Builtin_mem(node);
+	ir_node  *result;
+	if (resmode == mode_long_double) {
+		result = load_va_from_stack(dbgi, block, resmode, restype, ap, &mem);
+	} else {
+		ir_node   *max;
+		ir_entity *offset_entity;
+		ir_node   *stride;
+		if (mode_is_int(resmode) || mode_is_reference(resmode)) {
+			max           = new_r_Const_long(irg, mode_Is, 6 * 8);
+			offset_entity = va_list_members.gp_offset;
+			stride        = new_r_Const_long(irg, mode_Is, 8);
+		} else if (mode_is_float(resmode)) {
+			max           = new_r_Const_long(irg, mode_Is, 6 * 8 + 8 * 16);
+			offset_entity = va_list_members.xmm_offset;
+			stride        = new_r_Const_long(irg, mode_Is, 16);
+		} else {
+			panic("amd64_lower_va_arg does not support mode %+F", resmode);
+		}
+		result = load_va_from_register_or_stack(dbgi, block,
+		                                        resmode, restype,
+		                                        max, offset_entity, stride,
+		                                        ap, &mem);
+	}
+	ir_node *tuple_in[] = { mem, result };
 	turn_into_tuple(node, ARRAY_SIZE(tuple_in), tuple_in);
 
 	clear_irg_properties(irg, IR_GRAPH_PROPERTY_NO_TUPLES | IR_GRAPH_PROPERTY_NO_BADS);
