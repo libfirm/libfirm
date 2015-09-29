@@ -170,10 +170,10 @@ void amd64_lower_va_arg(ir_node *node)
 	 *         return result;
 	 * }
 	 *
-	 * If T is a floating point type:
+	 * If T is an SSE floating point type:
 	 * if (ap.xmm_offset < 6*8+8*16) {
 	 *         T result = ap.reg_save_ptr[xmm_offset];
-	 *         gp_offset += 16;
+	 *         xmm_offset += 16;
 	 *         return result;
 	 * } else {
 	 *         T result = *ap.stack_args_ptr;
