@@ -74,8 +74,6 @@ static void stack_frame_compute_initial_offset(be_stack_layout_t *frame)
  * A helper struct for the bias walker.
  */
 typedef struct bias_walk {
-	int      start_block_bias; /**< The bias at the end of the start block. */
-	ir_node *start_block;      /**< The start block of the current graph. */
 	get_sp_bias_func      get_sp_bias;
 	set_frame_offset_func set_frame_offset;
 	get_frame_entity_func get_frame_entity;
@@ -86,12 +84,15 @@ typedef struct bias_walk {
  *
  * @param bl         the block to process
  * @param real_bias  the bias value
- *
- * @return the bias at the end of this block
  */
-static int process_stack_bias(const bias_walk *bw, ir_node *bl, int real_bias)
+static void process_stack_bias(bias_walk *bw, ir_node *bl, int real_bias, int wanted_bias)
 {
-	int                wanted_bias = real_bias;
+	if (Block_block_visited(bl)) {
+		return;
+	}
+
+	mark_Block_block_visited(bl);
+
 	ir_graph          *irg         = get_irn_irg(bl);
 	be_stack_layout_t *layout      = be_get_irg_stack_layout(irg);
 	bool               sp_relative = layout->sp_relative;
@@ -146,19 +147,13 @@ static int process_stack_bias(const bias_walk *bw, ir_node *bl, int real_bias)
 		}
 	}
 
-	assert(real_bias == wanted_bias);
-	return real_bias;
-}
+	assert(real_bias >= wanted_bias);
 
-/**
- * Block-Walker: fix all stack offsets for all blocks
- * except the start block
- */
-static void stack_bias_walker(ir_node *bl, void *data)
-{
-	bias_walk *bw = (bias_walk*)data;
-	if (bl != bw->start_block)
-		process_stack_bias(bw, bl, bw->start_block_bias);
+	/* Since we know our biases, we can now handle our control flow successors. */
+	foreach_out_edge_kind_safe(bl, edge, EDGE_KIND_BLOCK) {
+		ir_node *pred = get_edge_src_irn(edge);
+		process_stack_bias(bw, pred, real_bias, wanted_bias);
+	}
 }
 
 void be_abi_fix_stack_bias(ir_graph *irg, get_sp_bias_func get_sp_bias,
@@ -169,16 +164,18 @@ void be_abi_fix_stack_bias(ir_graph *irg, get_sp_bias_func get_sp_bias,
 
 	stack_frame_compute_initial_offset(stack_layout);
 
-	/* Determine the stack bias at the end of the start block. */
-	bias_walk bw;
-	bw.start_block      = get_irg_start_block(irg);
-	bw.get_sp_bias      = get_sp_bias;
-	bw.set_frame_offset = set_frame_offset;
-	bw.get_frame_entity = get_frame_entity;
-	bw.start_block_bias = process_stack_bias(&bw, bw.start_block, stack_layout->initial_bias);
+	int      initial_bias = stack_layout->initial_bias;
+	ir_node *start_block  = get_irg_start_block(irg);
+	bias_walk bw = {
+		.get_sp_bias      = get_sp_bias,
+		.set_frame_offset = set_frame_offset,
+		.get_frame_entity = get_frame_entity,
+	};
 
-	/* fix the bias in all other blocks */
-	irg_block_walk_graph(irg, stack_bias_walker, NULL, &bw);
+	ir_reserve_resources(irg, IR_RESOURCE_BLOCK_VISITED);
+	inc_irg_block_visited(irg);
+	process_stack_bias(&bw, start_block, initial_bias, initial_bias);
+	ir_free_resources(irg, IR_RESOURCE_BLOCK_VISITED);
 }
 
 typedef struct fix_stack_walker_env_t {
