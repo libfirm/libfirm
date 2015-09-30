@@ -286,6 +286,19 @@ static void finish_sparc_FrameAddr(ir_node *node)
 	}
 }
 
+static void finish_load_store(ir_node *const old, ir_node *const nw, sparc_load_store_attr_t const *const ldst_attr)
+{
+	sparc_load_store_attr_t *const new_ldst_attr = get_sparc_load_store_attr(nw);
+	new_ldst_attr->is_frame_entity = ldst_attr->is_frame_entity;
+	new_ldst_attr->is_reg_reg      = ldst_attr->is_reg_reg;
+
+	be_foreach_out(old, i) {
+		arch_set_irn_register_out(nw, i, arch_get_irn_register_out(old, i));
+	}
+	sched_add_before(old, nw);
+	be_peephole_exchange(old, nw);
+}
+
 static void finish_sparc_Ld(ir_node *node)
 {
 	sparc_attr_t                  *attr            = get_sparc_attr(node);
@@ -303,18 +316,8 @@ static void finish_sparc_Ld(ir_node *node)
 		ir_mode                 *load_store_mode = load_store_attr->load_store_mode;
 		ir_node                 *constant        = create_constant_from_immediate(node, offset);
 		ir_node                 *new_load        = new_bd_sparc_Ld_reg(dbgi, block, ptr, constant, mem, load_store_mode);
-		sparc_load_store_attr_t *new_load_attr   = get_sparc_load_store_attr(new_load);
-
-		new_load_attr->is_frame_entity = load_store_attr->is_frame_entity;
-		new_load_attr->is_reg_reg      = load_store_attr->is_reg_reg;
-
-		sched_add_before(node, new_load);
-		be_foreach_out(node, i) {
-			arch_set_irn_register_out(new_load, i, arch_get_irn_register_out(node, i));
-		}
-		be_peephole_exchange(node, new_load);
+		finish_load_store(node, new_load, load_store_attr);
 	}
-
 }
 
 static void split_sparc_ldf(ir_node *node)
@@ -365,18 +368,8 @@ static void finish_sparc_Ldf(ir_node *node)
 		ir_node                 *constant        = create_constant_from_immediate(node, offset);
 		ir_node                 *new_ptr         = new_bd_sparc_Add_reg(dbgi, block, ptr, constant);
 		ir_node                 *new_load        = new_bd_sparc_Ldf_s(dbgi, block, new_ptr, mem, load_store_mode, NULL, 0, true);
-		sparc_load_store_attr_t *new_load_attr   = get_sparc_load_store_attr(new_load);
-
-		new_load_attr->is_frame_entity = load_store_attr->is_frame_entity;
-		new_load_attr->is_reg_reg      = load_store_attr->is_reg_reg;
-
-		sched_add_before(node, new_load);
-		be_foreach_out(node, i) {
-			arch_set_irn_register_out(new_load, i, arch_get_irn_register_out(node, i));
-		}
-		be_peephole_exchange(node, new_load);
+		finish_load_store(node, new_load, load_store_attr);
 	}
-
 }
 
 static void finish_sparc_St(ir_node *node)
@@ -397,18 +390,8 @@ static void finish_sparc_St(ir_node *node)
 		ir_mode                 *load_store_mode = load_store_attr->load_store_mode;
 		ir_node                 *constant        = create_constant_from_immediate(node, offset);
 		ir_node                 *new_load        = new_bd_sparc_St_reg(dbgi, block, value, ptr, constant, mem, load_store_mode);
-		sparc_load_store_attr_t *new_load_attr   = get_sparc_load_store_attr(new_load);
-
-		new_load_attr->is_frame_entity = load_store_attr->is_frame_entity;
-		new_load_attr->is_reg_reg      = load_store_attr->is_reg_reg;
-
-		sched_add_before(node, new_load);
-		be_foreach_out(node, i) {
-			arch_set_irn_register_out(new_load, i, arch_get_irn_register_out(node, i));
-		}
-		be_peephole_exchange(node, new_load);
+		finish_load_store(node, new_load, load_store_attr);
 	}
-
 }
 
 static void finish_sparc_Stf(ir_node *node)
@@ -430,18 +413,8 @@ static void finish_sparc_Stf(ir_node *node)
 		ir_node  *constant        = create_constant_from_immediate(node, offset);
 		ir_node  *new_ptr         = new_bd_sparc_Add_reg(dbgi, block, ptr, constant);
 		ir_node  *new_load        = new_bd_sparc_Stf_s(dbgi, block, value, new_ptr, mem, load_store_mode, NULL, 0, true);
-		sparc_load_store_attr_t *new_load_attr = get_sparc_load_store_attr(new_load);
-
-		new_load_attr->is_frame_entity = load_store_attr->is_frame_entity;
-		new_load_attr->is_reg_reg      = load_store_attr->is_reg_reg;
-
-		sched_add_before(node, new_load);
-		be_foreach_out(node, i) {
-			arch_set_irn_register_out(new_load, i, arch_get_irn_register_out(node, i));
-		}
-		be_peephole_exchange(node, new_load);
+		finish_load_store(node, new_load, load_store_attr);
 	}
-
 }
 
 static void peephole_be_IncSP(ir_node *node)
