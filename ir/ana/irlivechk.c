@@ -46,15 +46,15 @@ typedef struct bl_info_t {
 	const ir_node *block;      /**< The block. */
 
 	unsigned be_tgt_calc : 1;
-	unsigned id : 31;          /**< a tight number for the block.
-								 we're just reusing the pre num from
-								 the DFS. */
+	unsigned id : 31;          /**< A tight number for the block.
+	                                we're just reusing the pre num from
+	                                the DFS. */
 	bitset_t *red_reachable;   /**< Holds all id's if blocks reachable
-								 in the CFG modulo back edges. */
+	                                in the CFG modulo back edges. */
 
-	bitset_t *be_tgt_reach;    /**< target blocks of back edges whose
-								 sources are reachable from this block
-								 in the reduced graph. */
+	bitset_t *be_tgt_reach;    /**< Target blocks of back edges whose
+	                                sources are reachable from this block
+	                                in the reduced graph. */
 } bl_info_t;
 
 struct lv_chk_t {
