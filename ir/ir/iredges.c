@@ -834,6 +834,7 @@ static void irg_walk_edges2(ir_node *node, irg_walk_func *pre,
 	foreach_out_edge_kind_safe(node, edge, EDGE_KIND_NORMAL) {
 		/* find the corresponding successor block. */
 		ir_node *pred = get_edge_src_irn(edge);
+		assert(pred != NULL && "edge deleted while iterating?");
 		irg_walk_edges2(pred, pre, post, env);
 	}
 
