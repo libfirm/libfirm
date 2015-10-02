@@ -353,6 +353,7 @@ void dump_irnode_to_file(FILE *const F, const ir_node *const n)
 		case BITINFO_IN_FLIGHT: fputs(" (in flight)", F); break;
 		case BITINFO_UNSTABLE:  fputs(" (unstable)",  F); break;
 		}
+		fputc('\n', F);
 	}
 }
 
