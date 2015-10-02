@@ -137,6 +137,12 @@ void be_peephole_exchange(ir_node *old, ir_node *nw)
 	be_liveness_introduce(lv, nw);
 }
 
+void be_peephole_replace(ir_node *const old, ir_node *const nw)
+{
+	sched_add_before(old, nw);
+	be_peephole_exchange(old, nw);
+}
+
 ir_node *be_peephole_to_tuple(ir_node *const node)
 {
 	be_liveness_remove(lv, node);

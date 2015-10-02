@@ -60,9 +60,8 @@ static void copy_mark(const ir_node *old, ir_node *newn)
 
 static void replace(ir_node *const old, ir_node *const newn)
 {
-	sched_add_before(old, newn);
 	copy_mark(old, newn);
-	be_peephole_exchange(old, newn);
+	be_peephole_replace(old, newn);
 }
 
 typedef enum produces_flag_t {
@@ -883,8 +882,7 @@ static void peephole_ia32_Conv_I2I(ir_node *node)
 	ir_node  *block = get_nodes_block(node);
 	ir_node  *cwtl  = new_bd_ia32_Cwtl(dbgi, block, val);
 	arch_set_irn_register(cwtl, eax);
-	sched_add_before(node, cwtl);
-	be_peephole_exchange(node, cwtl);
+	be_peephole_replace(node, cwtl);
 }
 
 /* Replace rolw $8, %[abcd]x by shorter xchgb %[abcd]l, %[abcd]h */
@@ -898,8 +896,7 @@ static void peephole_ia32_Rol(ir_node *node)
 			ir_node  *const val   = get_irn_n(node, n_ia32_Rol_val);
 			ir_node  *const xchg  = new_bd_ia32_Bswap16(dbgi, block, val);
 			arch_set_irn_register_out(xchg, pn_ia32_Bswap16_res, reg);
-			sched_add_before(node, xchg);
-			be_peephole_exchange(node, xchg);
+			be_peephole_replace(node, xchg);
 		}
 	}
 }

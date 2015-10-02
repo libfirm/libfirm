@@ -234,9 +234,8 @@ static void finish_sparc_Save(ir_node *node)
 		/* we have a Save with immediate */
 		assert(get_irn_arity(node) == 1);
 
-		sched_add_before(node, new_save);
 		arch_set_irn_register(new_save, reg);
-		be_peephole_exchange(node, new_save);
+		be_peephole_replace(node, new_save);
 	}
 }
 
@@ -256,9 +255,8 @@ static void finish_be_IncSP(ir_node *node)
 		ir_node  *constant = create_constant_from_immediate(node, offset);
 		ir_node  *sub      = new_bd_sparc_Sub_reg(dbgi, block, sp, constant);
 
-		sched_add_before(node, sub);
 		arch_set_irn_register(sub, &sparc_registers[REG_SP]);
-		be_peephole_exchange(node, sub);
+		be_peephole_replace(node, sub);
 	}
 }
 
@@ -280,9 +278,8 @@ static void finish_sparc_FrameAddr(ir_node *node)
 		ir_node               *new_frameaddr = new_bd_sparc_Add_reg(dbgi, block, base, constant);
 		const arch_register_t *reg           = arch_get_irn_register(node);
 
-		sched_add_before(node, new_frameaddr);
 		arch_set_irn_register(new_frameaddr, reg);
-		be_peephole_exchange(node, new_frameaddr);
+		be_peephole_replace(node, new_frameaddr);
 	}
 }
 
@@ -295,8 +292,7 @@ static void finish_load_store(ir_node *const old, ir_node *const nw, sparc_load_
 	be_foreach_out(old, i) {
 		arch_set_irn_register_out(nw, i, arch_get_irn_register_out(old, i));
 	}
-	sched_add_before(old, nw);
-	be_peephole_exchange(old, nw);
+	be_peephole_replace(old, nw);
 }
 
 static void finish_sparc_Ld(ir_node *node)

@@ -38,6 +38,12 @@ typedef void (*peephole_opt_func) (ir_node *node);
  */
 void be_peephole_exchange(ir_node *old, ir_node *nw);
 
+/**
+ * Same as be_peephole_exchange(), but also replace @p old in the schedule
+ * by @p nw.
+ */
+void be_peephole_replace(ir_node *old, ir_node *nw);
+
 ir_node *be_peephole_to_tuple(ir_node *node);
 
 /**
