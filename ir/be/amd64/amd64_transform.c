@@ -1827,6 +1827,7 @@ no_call_mem:
 				},
 				.addr = {
 					.immediate = {
+						.kind   = X86_IMM_VALUE,
 						.offset = param->offset,
 					},
 					.variant    = X86_ADDR_BASE,
