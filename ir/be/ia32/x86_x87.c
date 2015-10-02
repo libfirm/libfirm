@@ -778,6 +778,7 @@ void x86_sim_x87_unop(x87_state *const state, ir_node *const node)
  */
 void x86_sim_x87_load(x87_state *state, ir_node *n, ir_node *value)
 {
+	(void)n;
 	DB((dbg, LEVEL_1, ">>> %+F\n", n));
 	x86_x87_push(state, value);
 	DB((dbg, LEVEL_1, "<<< %s -> %s\n", get_irn_opname(n), get_st_reg(0)->name));

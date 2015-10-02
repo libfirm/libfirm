@@ -250,11 +250,13 @@ static void amd64_emit_immediate32(bool const prefix,
 		be_emit_irprintf("%+" PRId32, imm->offset);
 }
 
+#ifndef NDEBUG
 static bool is_fp_relative(const ir_entity *entity)
 {
 	ir_type *owner = get_entity_owner(entity);
 	return is_frame_type(owner) || owner == layout->arg_type;
 }
+#endif
 
 static void amd64_emit_addr(const ir_node *const node,
                             const amd64_addr_t *const addr)
