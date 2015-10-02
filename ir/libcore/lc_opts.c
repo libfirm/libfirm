@@ -246,11 +246,13 @@ lc_opt_entry_t *lc_opt_resolve_opt(const lc_opt_entry_t *root,
 	return lc_opt_find_opt(grp, names[n - 1]);
 }
 
-static char *strtolower(char *buf, size_t n, const char *str)
+static bool streq_lower(const char *s0, const char *s1)
 {
-	for (unsigned i = 0; i < n; ++i)
-		buf[i] = tolower((unsigned char)str[i]);
-	return buf;
+	for ( ; *s0 != '\0' && *s1 != '\0'; ++s0, ++s1) {
+		if (tolower((unsigned char)*s0) != tolower((unsigned char)*s1))
+			return false;
+	}
+	return *s0 == *s1;
 }
 
 static bool string_to_bool(bool *const val, char const *const value)
@@ -269,10 +271,8 @@ static bool string_to_bool(bool *const val, char const *const value)
 		{ "0",     0 },
 	};
 
-	char buf[16];
-	strtolower(buf, sizeof(buf), value);
 	for (unsigned i = 0; i < ARRAY_SIZE(bool_strings); ++i) {
-		if (strcmp(buf, bool_strings[i].str) == 0) {
+		if (streq_lower(value, bool_strings[i].str)) {
 			*val = bool_strings[i].val;
 			return true;
 		}
