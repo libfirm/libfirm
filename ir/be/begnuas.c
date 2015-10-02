@@ -1442,7 +1442,7 @@ static void emit_global(be_main_env_t const *const main_env,
 			be_gas_emit_entity(entity);
 			be_emit_cstring(", ");
 			be_emit_char(be_gas_elf_type_char);
-			be_emit_cstring("object\n\t.size\t");\
+			be_emit_cstring("object\n\t.size\t");
 			be_gas_emit_entity(entity);
 			ir_type *const type = get_entity_type(entity);
 			be_emit_irprintf(", %u\n", get_type_size_bytes(type));
