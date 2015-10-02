@@ -1821,13 +1821,19 @@ no_call_mem:
 
 		/* we need a store if we're here */
 		amd64_binop_addr_attr_t attr = {
-			.base.base.op_mode = AMD64_OP_ADDR_REG,
-			.base.addr = {
-				.immediate.offset = param->offset,
-				.variant          = X86_ADDR_BASE,
-				.base_input       = 1,
+			.base = {
+				.base = {
+					.op_mode = AMD64_OP_ADDR_REG,
+				},
+				.addr = {
+					.immediate = {
+						.offset = param->offset,
+					},
+					.variant    = X86_ADDR_BASE,
+					.base_input = 1,
+				},
+				.insn_mode = insn_mode,
 			},
-			.base.insn_mode = insn_mode,
 		};
 		ir_node *const nomem = get_irg_no_mem(irg);
 		ir_node *const in[]  = { new_value, callframe, nomem };
@@ -2171,13 +2177,19 @@ static void store_to_temp(new_store_func new_store,
 	ir_node  *const sin[]  = { new_op, frame, nomem };
 
 	amd64_binop_addr_attr_t const attr = {
-		.base.base.op_mode = AMD64_OP_ADDR_REG,
-		.base.insn_mode    = get_insn_mode_from_mode(mode),
-		.base.addr = {
-			.immediate.kind = X86_IMM_FRAMEOFFSET,
-			.variant     = X86_ADDR_BASE,
-			.base_input  = 1,
-			.mem_input   = 2,
+		.base = {
+			.base = {
+				.op_mode = AMD64_OP_ADDR_REG,
+			},
+			.insn_mode = get_insn_mode_from_mode(mode),
+			.addr = {
+				.immediate = {
+					.kind = X86_IMM_FRAMEOFFSET,
+				},
+				.variant     = X86_ADDR_BASE,
+				.base_input  = 1,
+				.mem_input   = 2,
+			},
 		},
 		.u.reg_input = 0,
 	};
