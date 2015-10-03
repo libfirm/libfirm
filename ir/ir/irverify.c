@@ -324,9 +324,9 @@ static bool verify_node_Proj_fragile(const ir_node *node)
 
 	if (!is_x_except_Proj(node) && !is_x_regular_Proj(node))
 		return true;
-	int throws_exception = ir_throws_exception(pred);
-	if (!throws_exception) {
-		warn(node, "exception Proj on %+F which is not marked as throwing exceptions", pred);
+	if (!ir_throws_exception(pred)) {
+		const char *kind = is_x_except_Proj(node) ? "exception" : "regular";
+		warn(node, "%s Proj on %+F which is not marked as throwing exceptions", kind, pred);
 		return false;
 	}
 	return true;
@@ -336,8 +336,9 @@ static int verify_node_Proj(const ir_node *p)
 {
 	ir_graph *irg  = get_irn_irg(p);
 	ir_node  *pred = get_Proj_pred(p);
-	if (get_irn_mode(pred) != mode_T) {
-		warn(p, "predecessor %+F does not have mode_T", pred);
+	ir_mode  *mode = get_irn_mode(pred);
+	if (mode != mode_T) {
+		warn(p, "predecessor %+F has mode %s (expected mode_T)", pred, get_mode_name(mode));
 		return false;
 	}
 	bool fine = true;
@@ -509,6 +510,8 @@ static int verify_node_Return(const ir_node *n)
 	ir_type  *mt  = get_entity_type(get_irg_entity(irg));
 	if (!is_Method_type(mt)) /* someone else should report that problem */
 		return true;
+
+	/* Check number and types of return values */
 	if ((size_t)get_Return_n_ress(n) != get_method_n_ress(mt)) {
 		warn(n, "number of inputs does not match method type (%zu inputs, %zu declared)",
 		     get_Return_n_ress(n), get_method_n_ress(mt));
@@ -524,6 +527,7 @@ static int verify_node_Return(const ir_node *n)
 			}
 		}
 	}
+
 	return fine;
 }
 

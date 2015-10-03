@@ -182,7 +182,7 @@ static void verify_schedule_walker(ir_node *block, void *data)
 		} else if (cfchange_found != NULL) {
 			/* keepany isn't a real instruction. */
 			if (!be_is_Keep(node)) {
-				verify_warnf(block, "%+F scheduled after control flow changing node", node);
+				verify_warnf(block, "%+F scheduled after control flow changing node %+F", node, cfchange_found);
 				env->problem_found = true;
 			}
 		}
