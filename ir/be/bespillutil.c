@@ -1095,6 +1095,10 @@ static void add_missing_keep_walker(ir_node *node, void *data)
 		/* are keeps missing? */
 		unsigned n_to_keep = 0;
 		for (unsigned i = 0; i < n_outs; ++i) {
+			if (is_fragile_op(node) && (i == node->op->pn_x_regular || i == node->op->pn_x_except)) {
+				/* Ignore control-flow outs */
+				continue;
+			}
 			arch_register_req_t   const *const req = arch_get_irn_register_req_out(node, i);
 			arch_register_class_t const *const cls = req->cls;
 			if (!cls->manual_ra) {

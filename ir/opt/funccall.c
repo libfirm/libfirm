@@ -477,6 +477,8 @@ static mtp_additional_properties analyze_irg(ir_graph *irg)
 	foreach_irn_in(endbl, i, pred) {
 		if (is_Bad(pred))
 			continue;
+		if (is_x_except_Proj(pred))
+			continue;
 		if (is_Return(pred)) {
 			ir_node *mem = get_Return_mem(pred);
 			max_prop &= follow_mem(mem, min_prop, max_prop);

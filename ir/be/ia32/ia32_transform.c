@@ -4973,6 +4973,8 @@ static ir_node *gen_Call(ir_node *node)
 	ir_node *const call = new_bd_ia32_Call(dbgi, block, in_arity, in, in_req,
 	                                       n_out, cconv->sp_delta,
 	                                       n_reg_results);
+	int throws_exception = ir_throws_exception(node);
+	ir_set_throws_exception(call, throws_exception);
 	arch_set_additional_pressure(call, &ia32_reg_classes[CLASS_ia32_gp],
 	                             add_pressure);
 
@@ -4984,8 +4986,9 @@ static ir_node *gen_Call(ir_node *node)
 
 	/* Construct outputs. */
 	arch_set_irn_register_req_out(call, pn_ia32_Call_mem, arch_memory_req);
-
 	arch_copy_irn_out_info(call, pn_ia32_Call_stack, callframe);
+	arch_set_irn_register_req_out(call, pn_ia32_Call_X_regular, arch_exec_req);
+	arch_set_irn_register_req_out(call, pn_ia32_Call_X_except, arch_exec_req);
 
 	unsigned const n_ress = get_method_n_ress(type);
 	for (unsigned r = 0; r < n_ress; ++r) {
@@ -5028,11 +5031,14 @@ static ir_node *gen_Proj_Call(ir_node *node)
 	unsigned pn       = get_Proj_num(node);
 	ir_node *call     = get_Proj_pred(node);
 	ir_node *new_call = be_transform_node(call);
+
 	switch ((pn_Call)pn) {
 	case pn_Call_M:
 		return be_new_Proj(new_call, pn_ia32_Call_mem);
 	case pn_Call_X_regular:
+		return be_new_Proj(new_call, pn_ia32_Call_X_regular);
 	case pn_Call_X_except:
+		return be_new_Proj(new_call, pn_ia32_Call_X_except);
 	case pn_Call_T_result:
 		break;
 	}
