@@ -77,7 +77,7 @@ __EOF__
 		print " { $t };\n";
 		print "\t\t\\draw ";
 		outputcoord($t, $miny);
-		print "	-- ";
+		print "\t-- ";
 		outputcoord($t, $miny, "yshift=$tikzlen_x");
 		print ";\n";
 	}
@@ -88,7 +88,7 @@ __EOF__
 		print " { $t };\n";
 		print "\t\t\\draw ";
 		outputcoord($minx, $t);
-		print "	-- ";
+		print "\t-- ";
 		outputcoord($minx, $t, "xshift=$tikzlen_y");
 		print ";\n";
 	}
@@ -165,7 +165,7 @@ sub draw_regression {
 
 	print "\t\\draw[$style] ";
 	outputcoord($start_x, $a + $start_x * $b);
-	print "	-- ";
+	print "\t-- ";
 	outputcoord($end_x, $a + $end_x * $b);
 	print ";\n";
 }
