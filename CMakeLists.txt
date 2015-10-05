@@ -117,7 +117,7 @@ set(SOURCES
 	ir/be/ia32/ia32_optimize.c
 	ir/be/ia32/ia32_pic.c
 	ir/be/ia32/ia32_transform.c
-	ir/be/ia32/ia32_x87.c
+	ir/be/ia32/x86_x87.c
 	ir/be/ia32/x86_address_mode.c
 	ir/be/ia32/x86_asm.c
 	ir/be/ia32/x86_cconv.c
@@ -387,6 +387,7 @@ add_backend(amd64
 	ir/be/amd64/amd64_finish.c
 	ir/be/amd64/amd64_new_nodes.c
 	ir/be/amd64/amd64_transform.c
+	ir/be/amd64/amd64_x87.c
 	ir/be/amd64/bearch_amd64.c
 )
 add_backend(TEMPLATE
