@@ -199,9 +199,17 @@ static bool check_initializer(const ir_initializer_t *initializer,
 
 static bool is_externally_visible(const ir_entity *entity)
 {
-	ir_visibility visibility = get_entity_visibility(entity);
-	return visibility == ir_visibility_external
-	    || visibility == ir_visibility_external_private;
+	switch (get_entity_visibility(entity)) {
+	case ir_visibility_external:
+	case ir_visibility_external_private:
+	case ir_visibility_external_protected:
+		return true;
+	case ir_visibility_private:
+	case ir_visibility_local:
+		return false;
+	}
+	/* Return true here, the verification will fail elsewhere for this */
+	return true;
 }
 
 static bool check_external_linkage(const ir_entity *entity, ir_linkage linkage,

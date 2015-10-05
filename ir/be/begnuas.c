@@ -564,6 +564,17 @@ static const char *get_visibility_directive(const ir_entity *entity,
 		}
 		panic("invalid object file format");
 	}
+	case ir_visibility_external_protected: {
+		switch (be_gas_object_file_format) {
+		case OBJECT_FILE_FORMAT_MACH_O:
+			return NULL;
+		case OBJECT_FILE_FORMAT_ELF:
+			return ".protected";
+		case OBJECT_FILE_FORMAT_COFF:
+			panic("ir_visibility_external_protected not supported for COFF");
+		}
+		panic("invalid object file format");
+	}
 	case ir_visibility_local:
 	case ir_visibility_private:
 		*output_global = false;

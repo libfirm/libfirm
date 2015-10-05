@@ -91,6 +91,12 @@ typedef enum {
 	 */
 	ir_visibility_external_private,
 	/**
+	 * The entity is visible across compilation units and modules and cannot be
+	 * overridden by other modules.
+	 * Equivalent to __attribute__((visible("protected"))) in gcc.
+	 */
+	ir_visibility_external_protected,
+	/**
 	 * The entity is local to the compilation unit.
 	 * A local entity is not visible in other compilation units.
 	 * Note that the entity might still be accessed indirectly from other units

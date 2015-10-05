@@ -175,8 +175,8 @@ struct ir_entity {
 	ENUMBF(ir_volatility)   volatility:1;  /**< Volatility of entity content.*/
 	ENUMBF(ir_align)        aligned:1;     /**< Alignment of entity content. */
 	ENUMBF(ir_entity_usage) usage:4;       /**< Usage type of entity */
-	ENUMBF(ir_visibility)   visibility:2;  /**< Visibility of entity. */
-	uint16_t                alignment;     /**< entity alignment in bytes */
+	ENUMBF(ir_visibility)   visibility:3;  /**< Visibility of entity. */
+	ENUMBF(unsigned)        alignment:12;  /**< entity alignment in bytes */
 	ir_visited_t visit;      /**< visited counter for walks of the type
 	                              information. */
 	dbg_info *dbi;           /**< A pointer to information for debug support. */

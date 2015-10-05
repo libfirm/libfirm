@@ -860,9 +860,10 @@ int entity_is_externally_visible(const ir_entity *entity)
 	switch (visibility) {
 	case ir_visibility_local:
 	case ir_visibility_private:
-		return get_entity_linkage(entity) & IR_LINKAGE_HIDDEN_USER;
+		return (get_entity_linkage(entity) & IR_LINKAGE_HIDDEN_USER) != 0;
 	case ir_visibility_external:
 	case ir_visibility_external_private:
+	case ir_visibility_external_protected:
 		return true;
 	}
 	panic("Invalid visibility for entity %+F", entity);
