@@ -97,9 +97,8 @@ static void visit_segment(ir_type *segment)
 {
 	for (int i = 0, n = get_compound_n_members(segment); i < n; ++i) {
 		ir_entity *entity = get_compound_member(segment, i);
-		if (get_entity_visibility(entity) != ir_visibility_external
-				&& !(get_entity_linkage(entity) & IR_LINKAGE_HIDDEN_USER)
-				&& !(get_entity_linkage(entity) & IR_LINKAGE_NO_CODEGEN))
+		if (!entity_is_externally_visible(entity)
+		 && !(get_entity_linkage(entity) & IR_LINKAGE_NO_CODEGEN))
 			continue;
 
 		visit_entity(entity);

@@ -856,8 +856,16 @@ void (set_entity_dbg_info)(ir_entity *ent, dbg_info *db)
 
 int entity_is_externally_visible(const ir_entity *entity)
 {
-	return get_entity_visibility(entity) != ir_visibility_local
-		|| (get_entity_linkage(entity) & IR_LINKAGE_HIDDEN_USER);
+	ir_visibility visibility = get_entity_visibility(entity);
+	switch (visibility) {
+	case ir_visibility_local:
+	case ir_visibility_private:
+		return get_entity_linkage(entity) & IR_LINKAGE_HIDDEN_USER;
+	case ir_visibility_external:
+	case ir_visibility_external_private:
+		return true;
+	}
+	panic("Invalid visibility for entity %+F", entity);
 }
 
 int entity_has_definition(const ir_entity *entity)

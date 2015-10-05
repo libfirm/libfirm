@@ -197,13 +197,20 @@ static bool check_initializer(const ir_initializer_t *initializer,
 	return false;
 }
 
+static bool is_externally_visible(const ir_entity *entity)
+{
+	ir_visibility visibility = get_entity_visibility(entity);
+	return visibility == ir_visibility_external
+	    || visibility == ir_visibility_external_private;
+}
+
 static bool check_external_linkage(const ir_entity *entity, ir_linkage linkage,
                                    const char *linkage_name)
 {
 	bool fine = true;
 	if ((get_entity_linkage(entity) & linkage) == 0)
 		return true;
-	if (get_entity_visibility(entity) != ir_visibility_external) {
+	if (!is_externally_visible(entity)) {
 		report_error("entity %+F has IR_LINKAGE_%s but is not externally visible", entity, linkage_name);
 		fine = false;
 	}
@@ -232,7 +239,7 @@ int check_entity(const ir_entity *entity)
 			report_error("entity %+F has IR_LINKAGE_NO_CODEGEN but has no ir-graph anyway", entity);
 			fine = false;
 		}
-		if (get_entity_visibility(entity) != ir_visibility_external) {
+		if (!is_externally_visible(entity)) {
 			report_error("entity %+F has IR_LINKAGE_NO_CODEGEN but is not externally visible", entity);
 			fine = false;
 		}
