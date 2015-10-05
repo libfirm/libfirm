@@ -65,7 +65,7 @@ enum
    variable by default points to the internal function
    `print_and_abort'.  */
 static FIRM_NORETURN print_and_abort (void);
-FIRM_NORETURN (*obstack_alloc_failed_handler) (void) = print_and_abort;
+FIRM_NORETURN_FUNCPTR (*obstack_alloc_failed_handler) (void) = print_and_abort;
 
 /* Exit value used when `print_and_abort' is used.  */
 # include <stdlib.h>

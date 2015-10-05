@@ -38,16 +38,28 @@
  * @def FIRM_NORETURN
  * Attribute to mark a function which never returns.
  */
-#if defined(__STDC__) && (__STDC_VERSION__ >= 201112L)
+#if defined(__GNUC__) && __GNUC__ >= 3 || (__GNUC__ == 2 && __GNUC_MINOR__ >= 70)
+# define FIRM_NORETURN __attribute__((__noreturn__)) void
+#elif defined(__STDC__) && (__STDC_VERSION__ >= 201112L)
 # define FIRM_NORETURN _Noreturn void
-#elif defined(__GNUC__)
-# if __GNUC__ >= 3 || (__GNUC__ == 2 && __GNUC_MINOR__ >= 70)
-#  define FIRM_NORETURN __attribute__((__noreturn__)) void
-# endif
 #elif defined(_MSC_VER)
 # define FIRM_NORETURN void __declspec(noreturn)
 #else
 # define FIRM_NORETURN void
+#endif
+
+/**
+ * @def FIRM_NORETURN_FUNCPTR
+ * Attribute to mark a function pointers target as noreturn.
+ *
+ * Unfortunately some platforms only allow noreturn on functions but not on
+ * function pointer targets making it necessary to have FIRM_NORETURN and
+ * FIRM_NORETURN_FUNCPTR.
+ */
+#if defined(__GNUC__) && __GNUC__ >= 3 || (__GNUC__ == 2 && __GNUC_MINOR__ >= 70)
+# define FIRM_NORETURN_FUNCPTR __attribute__((__noreturn__)) void
+#else
+# define FIRM_NORETURN_FUNCPTR void
 #endif
 
 #endif
