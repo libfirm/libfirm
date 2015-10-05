@@ -618,11 +618,10 @@ static void update_Load_memop(memop_t *m)
 	/* check if we can determine the entity that will be loaded */
 	ent = find_constant_entity(ptr);
 
-	if (ent != NULL && get_entity_visibility(ent) != ir_visibility_external) {
-		/* a static allocation that is not external: there should be NO exception
-		 * when loading even if we cannot replace the load itself. */
+	if (ent != NULL && value_not_null(ptr, NULL)) {
+		/* There should be NO exception when loading even if we cannot replace
+		 * the load itself. */
 
-		/* no exception, clear the m fields as it might be checked later again */
 		if (m->projs[pn_Load_X_except]) {
 			ir_graph *irg = get_irn_irg(ptr);
 			exchange(m->projs[pn_Load_X_except], new_r_Bad(irg, mode_X));
