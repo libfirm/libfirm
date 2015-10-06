@@ -45,7 +45,7 @@ static ir_entity *create_ent(ir_entity **const dst, int value, const char *name)
 		ir_entity *const ent  = new_entity(glob, id, type);
 		set_entity_ld_ident(ent, id);
 		set_entity_visibility(ent, ir_visibility_local);
-		add_entity_linkage(ent, IR_LINKAGE_CONSTANT);
+		add_entity_linkage(ent, IR_LINKAGE_CONSTANT | IR_LINKAGE_NO_IDENTITY);
 
 		ir_graph *const cnst_irg = get_const_code_irg();
 		ir_node  *const cnst     = new_r_Const_long(cnst_irg, mode, value);

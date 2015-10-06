@@ -468,6 +468,7 @@ static be_gas_section_t determine_basic_section(const ir_entity *entity)
 	if (get_entity_linkage(entity) & IR_LINKAGE_CONSTANT) {
 		/* mach-o is the only one with a cstring section */
 		if (be_gas_object_file_format == OBJECT_FILE_FORMAT_MACH_O
+		    && (get_entity_linkage(entity) & IR_LINKAGE_NO_IDENTITY)
 		    && entity_is_string_const(entity, true))
 			return GAS_SECTION_CSTRING;
 

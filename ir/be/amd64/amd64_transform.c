@@ -349,7 +349,7 @@ ir_entity *create_float_const_entity(ir_tarval *const tv)
 
 	entity = new_entity(glob, id_unique("C%u"), type);
 	set_entity_visibility(entity, ir_visibility_private);
-	add_entity_linkage(entity, IR_LINKAGE_CONSTANT);
+	add_entity_linkage(entity, IR_LINKAGE_CONSTANT | IR_LINKAGE_NO_IDENTITY);
 
 	ir_initializer_t *initializer = create_initializer_tarval(tv);
 	set_entity_initializer(entity, initializer);
@@ -361,7 +361,7 @@ ir_entity *create_float_const_entity(ir_tarval *const tv)
 void init_lconst_addr(amd64_addr_t *addr, ir_entity *entity)
 {
 	assert(entity_has_definition(entity));
-	assert(get_entity_linkage(entity) == IR_LINKAGE_CONSTANT);
+	assert(get_entity_linkage(entity) & IR_LINKAGE_CONSTANT);
 	assert(get_entity_visibility(entity) == ir_visibility_private);
 	x86_immediate_kind_t kind = be_options.pic ? X86_IMM_PCREL : X86_IMM_ADDR;
 	*addr = (amd64_addr_t) {
@@ -1531,7 +1531,7 @@ static ir_node *gen_Switch(ir_node *const node)
 	ir_entity *const entity
 		= new_entity(irp->dummy_owner, id_unique("TBL%u"), utype);
 	set_entity_visibility(entity, ir_visibility_private);
-	add_entity_linkage(entity, IR_LINKAGE_CONSTANT);
+	add_entity_linkage(entity, IR_LINKAGE_CONSTANT | IR_LINKAGE_NO_IDENTITY);
 
 	arch_register_req_t const **in_reqs;
 	amd64_op_mode_t op_mode;

@@ -320,7 +320,7 @@ static ir_entity *create_float_const_entity(ir_tarval *tv, ident *name)
 		res = new_entity(get_glob_type(), name, tp);
 		set_entity_ld_ident(res, get_entity_ident(res));
 		set_entity_visibility(res, ir_visibility_private);
-		add_entity_linkage(res, IR_LINKAGE_CONSTANT);
+		add_entity_linkage(res, IR_LINKAGE_CONSTANT | IR_LINKAGE_NO_IDENTITY);
 
 		ir_initializer_t *const initializer = create_initializer_tarval(tv);
 		set_entity_initializer(res, initializer);
@@ -583,7 +583,7 @@ ir_entity *ia32_gen_fp_known_const(ia32_known_const_t const kct)
 
 			set_entity_ld_ident(ent, name);
 			set_entity_visibility(ent, ir_visibility_private);
-			add_entity_linkage(ent, IR_LINKAGE_CONSTANT);
+			add_entity_linkage(ent, IR_LINKAGE_CONSTANT|IR_LINKAGE_NO_IDENTITY);
 
 			ir_initializer_t *initializer = create_initializer_compound(2);
 			set_initializer_compound_value(initializer, 0,
@@ -2943,7 +2943,7 @@ static ir_node *gen_Switch(ir_node *node)
 	ir_entity *const entity
 		= new_entity(irp->dummy_owner, id_unique("TBL%u"), utype);
 	set_entity_visibility(entity, ir_visibility_private);
-	add_entity_linkage(entity, IR_LINKAGE_CONSTANT);
+	add_entity_linkage(entity, IR_LINKAGE_CONSTANT | IR_LINKAGE_NO_IDENTITY);
 
 	ir_graph              *irg   = get_irn_irg(node);
 	const ir_switch_table *table = get_Switch_table(node);
@@ -3354,7 +3354,7 @@ static ir_entity *ia32_create_const_array(ir_node *c0, ir_node *c1,
 
 	set_entity_ld_ident(ent, get_entity_ident(ent));
 	set_entity_visibility(ent, ir_visibility_private);
-	add_entity_linkage(ent, IR_LINKAGE_CONSTANT);
+	add_entity_linkage(ent, IR_LINKAGE_CONSTANT | IR_LINKAGE_NO_IDENTITY);
 
 	ir_initializer_t *initializer = create_initializer_compound(2);
 

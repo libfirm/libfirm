@@ -171,7 +171,7 @@ struct ir_entity {
 	ir_type *owner;          /**< The compound type (e.g. class type) this
 							      entity belongs to. */
 	ENUMBF(ir_entity_kind)  entity_kind:3; /**< entity kind */
-	ENUMBF(ir_linkage)      linkage:6;     /**< Linkage type */
+	ENUMBF(ir_linkage)      linkage:7;     /**< Linkage type */
 	ENUMBF(ir_volatility)   volatility:1;  /**< Volatility of entity content.*/
 	ENUMBF(ir_align)        aligned:1;     /**< Alignment of entity content. */
 	ENUMBF(ir_entity_usage) usage:4;       /**< Usage type of entity */
