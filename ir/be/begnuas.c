@@ -1419,13 +1419,13 @@ static void emit_global(be_main_env_t const *const main_env,
 	                          || visibility == ir_visibility_private
 	                          || (linkage & IR_LINKAGE_MERGE));
 
-	emit_visibility(entity, use_common_directive);
-
 	if (use_common_directive) {
+		emit_visibility(entity, true);
 		emit_common(entity, visibility == ir_visibility_local
 		                 || visibility == ir_visibility_private);
 	} else {
 		emit_section(section, entity);
+		emit_visibility(entity, false);
 
 		if (section == GAS_SECTION_PIC_TRAMPOLINES
 		 || section == GAS_SECTION_PIC_SYMBOLS) {
