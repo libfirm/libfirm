@@ -393,7 +393,7 @@ static bool entity_is_string_const(const ir_entity *ent, bool only_suffix_null)
 static bool entity_is_zero_initialized(ir_entity const *entity)
 {
 	ir_initializer_t *initializer = get_entity_initializer(entity);
-	return initializer == NULL || initializer_is_null(initializer);
+	return initializer != NULL && initializer_is_null(initializer);
 }
 
 static bool is_comdat(const ir_entity *entity)
@@ -484,7 +484,7 @@ static be_gas_section_t determine_basic_section(const ir_entity *entity)
 			return GAS_SECTION_RODATA;
 		}
 	}
-	if (entity_is_zero_initialized(entity) && !is_alias_entity(entity))
+	if (entity_is_zero_initialized(entity))
 		return GAS_SECTION_BSS;
 
 	return GAS_SECTION_DATA;
@@ -591,15 +591,13 @@ static void emit_visibility(const ir_entity *entity, bool implicit_globl)
 	if (linkage & IR_LINKAGE_WEAK)
 		emit_weak(entity);
 
-	if (entity_has_definition(entity)) {
-		bool output_global = !implicit_globl;
-		const char *const directive
-			= get_visibility_directive(entity, &output_global);
-		if (output_global)
-			emit_symbol_directive(".globl", entity);
-		if (directive != NULL)
-			emit_symbol_directive(directive, entity);
-	}
+	bool output_global = !implicit_globl;
+	const char *const directive
+		= get_visibility_directive(entity, &output_global);
+	if (output_global)
+		emit_symbol_directive(".globl", entity);
+	if (directive != NULL)
+		emit_symbol_directive(directive, entity);
 
 	if (be_gas_object_file_format == OBJECT_FILE_FORMAT_MACH_O
 			&& (linkage & IR_LINKAGE_HIDDEN_USER)
@@ -1240,16 +1238,17 @@ static unsigned get_effective_entity_alignment(const ir_entity *entity)
 	return alignment;
 }
 
-static void emit_common(const ir_entity *entity, bool is_local)
+static void emit_common(const ir_entity *entity, unsigned long size,
+                        bool is_local)
 {
-	unsigned const size      = get_type_size_bytes(get_entity_type(entity));
 	unsigned const alignment = get_effective_entity_alignment(entity);
 
 	switch (be_gas_object_file_format) {
 	case OBJECT_FILE_FORMAT_MACH_O:
-		be_emit_string(is_local ? "\t.lcomm " : "\t.comm ");
+		assert(!is_local);
+		be_emit_string("\t.comm ");
 		be_gas_emit_entity(entity);
-		be_emit_irprintf(",%u,%u\n", size, log2_floor(alignment));
+		be_emit_irprintf(",%lu,%u\n", size, log2_floor(alignment));
 		be_emit_write_line();
 		return;
 	case OBJECT_FILE_FORMAT_ELF:
@@ -1257,17 +1256,30 @@ static void emit_common(const ir_entity *entity, bool is_local)
 			emit_symbol_directive(".local", entity);
 		be_emit_cstring("\t.comm ");
 		be_gas_emit_entity(entity);
-		be_emit_irprintf(",%u,%u\n", size, alignment);
+		be_emit_irprintf(",%lu,%u\n", size, alignment);
 		be_emit_write_line();
 		return;
 	case OBJECT_FILE_FORMAT_COFF:
 		be_emit_cstring(is_local ? "\t.lcomm " : "\t.comm ");
 		be_gas_emit_entity(entity);
-		be_emit_irprintf(",%u # %u\n", size, alignment);
+		be_emit_irprintf(",%lu # %u\n", size, alignment);
 		be_emit_write_line();
 		return;
 	}
 	panic("invalid object file format");
+}
+
+static void emit_zerofill(const ir_entity *entity, const char *section_segment,
+                          unsigned long const size)
+{
+	be_emit_cstring("\t.zerofill\t");
+	be_emit_string(section_segment);
+	be_emit_char(',');
+	be_gas_emit_entity(entity);
+	unsigned const alignment
+		= get_effective_entity_alignment(entity);
+	be_emit_irprintf(",%lu,%u\n", size, log2_floor(alignment));
+	be_emit_write_line();
 }
 
 static void emit_indirect_symbol(const ir_entity *entity,
@@ -1411,81 +1423,106 @@ static void emit_global(be_main_env_t const *const main_env,
 	if (kind == IR_ENTITY_METHOD && section != GAS_SECTION_PIC_TRAMPOLINES)
 		return;
 
+	if (section == GAS_SECTION_PIC_TRAMPOLINES
+	 || section == GAS_SECTION_PIC_SYMBOLS) {
+		emit_section(section, entity);
+		emit_indirect_symbol(entity, section);
+		return;
+	}
+
 	be_dwarf_variable(entity);
 
-	ir_visibility visibility = get_entity_visibility(entity);
-	ir_linkage    linkage    = get_entity_linkage(entity);
-	bool use_common_directive = section == GAS_SECTION_BSS
-	                         && (visibility == ir_visibility_local
-	                          || visibility == ir_visibility_private
-	                          || (linkage & IR_LINKAGE_MERGE));
+	ir_visibility const visibility       = get_entity_visibility(entity);
+	ir_linkage    const linkage          = get_entity_linkage(entity);
+	bool          const zero_initializer = entity_is_zero_initialized(entity);
+	unsigned long       size             = compute_entity_size(entity);
 
-	if (use_common_directive) {
-		emit_visibility(entity, true);
-		emit_common(entity, visibility == ir_visibility_local
-		                 || visibility == ir_visibility_private);
-	} else {
-		emit_section(section, entity);
-		emit_visibility(entity, false);
+	/* We need to output at least 1 byte, otherwise macho will merge
+	 * the label with the next thing */
+	if (size == 0)
+		size = 1;
 
-		if (section == GAS_SECTION_PIC_TRAMPOLINES
-		 || section == GAS_SECTION_PIC_SYMBOLS) {
-			emit_indirect_symbol(entity, section);
-			return;
-		} else if (kind == IR_ENTITY_ALIAS) {
-			emit_alias(entity);
-			return;
-		}
-
-		/* nothing left to do without an initializer */
-		if (!entity_has_definition(entity))
-			return;
-
-		/* alignment */
-		unsigned alignment = get_effective_entity_alignment(entity);
-		if (!is_po2(alignment))
-			panic("alignment not a power of 2");
-		if (alignment > 1) {
-			emit_align(alignment);
-		}
-		if (be_gas_object_file_format == OBJECT_FILE_FORMAT_ELF
-			&& be_gas_emit_types && visibility != ir_visibility_private) {
-			be_emit_cstring("\t.type\t");
-			be_gas_emit_entity(entity);
-			be_emit_cstring(", ");
-			be_emit_char(be_gas_elf_type_char);
-			be_emit_cstring("object\n\t.size\t");
-			be_gas_emit_entity(entity);
-			ir_type *const type = get_entity_type(entity);
-			be_emit_irprintf(", %u\n", get_type_size_bytes(type));
-		}
-
-		ident *ld_ident = get_entity_ld_ident(entity);
-		if (get_id_str(ld_ident)[0] != '\0') {
-			be_gas_emit_entity(entity);
-			be_emit_cstring(":\n");
-			be_emit_write_line();
-		}
-
-		unsigned long const size = compute_entity_size(entity);
-		if (size == 0) {
-			/* We need to output at least 1 byte, otherwise macho will merge
-			 * the label with the next thing */
-			if (be_gas_object_file_format == OBJECT_FILE_FORMAT_MACH_O) {
-				be_emit_cstring("\t.byte\t0\n");
-				be_emit_write_line();
+	if (((linkage & IR_LINKAGE_MERGE) || zero_initializer)
+	  && !(section & GAS_SECTION_FLAG_TLS)) {
+		switch (visibility) {
+		case ir_visibility_external:
+		case ir_visibility_external_private:
+		case ir_visibility_external_protected:
+			if (linkage & IR_LINKAGE_MERGE) {
+				emit_visibility(entity, true);
+				emit_common(entity, size, false);
+				return;
+			} else if (be_gas_object_file_format == OBJECT_FILE_FORMAT_MACH_O
+			       && !(linkage & IR_LINKAGE_CONSTANT)) {
+				emit_visibility(entity, false);
+				emit_zerofill(entity, "__DATA,__common", size);
+				return;
 			}
-			return;
+			break;
+		case ir_visibility_local:
+		case ir_visibility_private:
+			if (!(linkage & IR_LINKAGE_CONSTANT)) {
+				if (be_gas_object_file_format == OBJECT_FILE_FORMAT_ELF
+				 || be_gas_object_file_format == OBJECT_FILE_FORMAT_COFF) {
+					emit_visibility(entity, true);
+					emit_common(entity, size, true);
+					return;
+				} else if (be_gas_object_file_format == OBJECT_FILE_FORMAT_MACH_O) {
+					emit_visibility(entity, false);
+					emit_zerofill(entity, "__DATA,__bss", size);
+					return;
+				}
+			}
+			break;
 		}
+	}
 
-		if (entity_is_zero_initialized(entity)) {
-			assert(size > 0);
+	/* nothing left to do without an initializer */
+	if (!entity_has_definition(entity))
+		return;
+
+	emit_section(section, entity);
+	emit_visibility(entity, false);
+
+	if (kind == IR_ENTITY_ALIAS) {
+		emit_alias(entity);
+		return;
+	}
+
+	/* alignment */
+	unsigned alignment = get_effective_entity_alignment(entity);
+	if (!is_po2(alignment))
+		panic("alignment not a power of 2");
+	if (alignment > 1) {
+		emit_align(alignment);
+	}
+	if (be_gas_object_file_format == OBJECT_FILE_FORMAT_ELF
+		&& be_gas_emit_types && visibility != ir_visibility_private) {
+		be_emit_cstring("\t.type\t");
+		be_gas_emit_entity(entity);
+		be_emit_cstring(", ");
+		be_emit_char(be_gas_elf_type_char);
+		be_emit_cstring("object\n\t.size\t");
+		be_gas_emit_entity(entity);
+		ir_type *const type = get_entity_type(entity);
+		be_emit_irprintf(", %u\n", get_type_size_bytes(type));
+	}
+
+	ident *ld_ident = get_entity_ld_ident(entity);
+	if (get_id_str(ld_ident)[0] != '\0') {
+		be_gas_emit_entity(entity);
+		be_emit_cstring(":\n");
+		be_emit_write_line();
+	}
+
+	if (zero_initializer) {
+		if (size > 0) {
 			/* use .space for stuff in the bss segment */
 			be_emit_irprintf("\t.space %u, 0\n", size);
 			be_emit_write_line();
-		} else {
-			emit_initializer(entity, size);
 		}
+	} else {
+		emit_initializer(entity, size);
 	}
 }
 
