@@ -392,6 +392,8 @@ static bool entity_is_string_const(const ir_entity *ent, bool only_suffix_null)
 
 static bool entity_is_zero_initialized(ir_entity const *entity)
 {
+	if (is_alias_entity(entity))
+		return false;
 	ir_initializer_t *initializer = get_entity_initializer(entity);
 	return initializer != NULL && initializer_is_null(initializer);
 }
@@ -931,6 +933,9 @@ static unsigned long compute_entity_size(ir_entity const *const entity)
 {
 	ir_type *const type = get_entity_type(entity);
 	unsigned long  size = get_type_size_bytes(type);
+	if (is_alias_entity(entity))
+		return size;
+
 	/* Note that for variable array/compound types we may have to inspect the
 	 * initializer to get the actual size */
 	ir_initializer_t const *const initializer = get_entity_initializer(entity);
