@@ -1427,9 +1427,9 @@ static ir_node *equivalent_node_Pin(ir_node *n)
 {
 	ir_node *const op = get_Pin_op(n);
 	/* Pin(Pin(x)) -> Pin(x) */
-	if (get_nodes_block(op) == get_nodes_block(n))
+	if (is_Pin(op) && get_nodes_block(op) == get_nodes_block(n))
 		return op;
-	return op;
+	return n;
 }
 
 /**
