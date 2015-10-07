@@ -3869,7 +3869,8 @@ static ir_node *transform_node_Mul(ir_node *n)
 					goto transform_div_mul;
 				}
 			}
-		} else if (is_Proj(b)) {
+		}
+		if (is_Proj(b)) {
 			div_proj = b;
 			div      = get_Proj_pred(div_proj);
 			if (is_Div(div)) {
