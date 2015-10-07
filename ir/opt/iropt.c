@@ -1423,6 +1423,15 @@ static ir_node *equivalent_node_Sync(ir_node *n)
 	return op;
 }
 
+static ir_node *equivalent_node_Pin(ir_node *n)
+{
+	ir_node *const op = get_Pin_op(n);
+	/* Pin(Pin(x)) -> Pin(x) */
+	if (get_nodes_block(op) == get_nodes_block(n))
+		return op;
+	return op;
+}
+
 /**
  * Optimize Proj(Tuple).
  */
@@ -7688,6 +7697,7 @@ void ir_register_opt_node_ops(void)
 	set_op_equivalent_node(op_Not,     equivalent_node_Not);
 	set_op_equivalent_node(op_Or,      equivalent_node_Or);
 	set_op_equivalent_node(op_Phi,     equivalent_node_Phi);
+	set_op_equivalent_node(op_Pin,     equivalent_node_Pin);
 	set_op_equivalent_node(op_Proj,    equivalent_node_Proj);
 	set_op_equivalent_node(op_Shl,     equivalent_node_left_zero);
 	set_op_equivalent_node(op_Shr,     equivalent_node_left_zero);
