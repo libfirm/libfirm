@@ -29,7 +29,8 @@
  * Note: "X64 ABI" refers to the Windows ABI for x86_64 (the SysV ABI
  * calls itself "AMD64 ABI").
  */
-bool amd64_use_x64_abi = false;
+bool amd64_use_x64_abi  = false;
+bool amd64_use_red_zone = true;
 
 static const unsigned ignore_regs[] = {
 	REG_RSP,

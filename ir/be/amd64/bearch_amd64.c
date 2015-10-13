@@ -832,7 +832,8 @@ void be_init_arch_amd64(void)
 	FIRM_DBG_REGISTER(dbg, "firm.be.amd64.cg");
 
 	static const lc_opt_table_entry_t options[] = {
-		LC_OPT_ENT_BOOL("x64abi", "Use x64 ABI (otherwise system V)", &amd64_use_x64_abi),
+		LC_OPT_ENT_BOOL("x64abi",      "Use x64 ABI (otherwise system V)", &amd64_use_x64_abi),
+		LC_OPT_ENT_BOOL("no-red-zone", "gcc compatibility",                &amd64_use_red_zone),
 		LC_OPT_LAST
 	};
 	lc_opt_entry_t *be_grp    = lc_opt_get_grp(firm_opt_get_root(), "be");

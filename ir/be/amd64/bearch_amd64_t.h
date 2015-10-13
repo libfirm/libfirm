@@ -17,6 +17,7 @@ extern pmap *amd64_constants; /**< A map of entities that store const tarvals */
 
 extern ir_mode *amd64_mode_xmm;
 
+extern bool amd64_use_red_zone;
 extern bool amd64_use_x64_abi;
 
 #define AMD64_REGISTER_SIZE   8
