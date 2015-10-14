@@ -93,8 +93,6 @@ static void process_bias(ir_node *block, bool sp_relative, int bias,
 
 	/* process schedule */
 	sched_foreach(block, irn) {
-		int irn_bias;
-
 		/* set bias to nodes with entities */
 		ir_entity *entity = sparc_get_frame_entity(irn);
 		if (entity != NULL) {
@@ -112,19 +110,17 @@ static void process_bias(ir_node *block, bool sp_relative, int bias,
 			assert(free_bytes == 0);
 		}
 
-		irn_bias = sparc_get_sp_bias(irn);
+		int irn_bias = sparc_get_sp_bias(irn);
 		if (irn_bias == 0) {
 			/* do nothing */
 		} else if (irn_bias == SP_BIAS_RESET) {
 			bias = 0;
 		} else {
 			/* adjust values to respect stack alignment */
-			int new_bias_unaligned;
-			int new_bias_aligned;
 			irn_bias -= free_bytes;
 
-			new_bias_unaligned = bias + irn_bias;
-			new_bias_aligned
+			int new_bias_unaligned = bias + irn_bias;
+			int new_bias_aligned
 				= round_up2(new_bias_unaligned, SPARC_STACK_ALIGNMENT);
 			free_bytes = new_bias_aligned - new_bias_unaligned;
 			set_irn_sp_bias(irn, new_bias_aligned - bias);
