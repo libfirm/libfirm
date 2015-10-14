@@ -2161,12 +2161,7 @@ static ir_node *create_cvtsd2ss(dbg_info *dbgi, ir_node *block, ir_node *value)
 	                 pn_amd64_cvtsd2ss_res);
 }
 
-typedef ir_node* (*new_store_func)(dbg_info *dbgi, ir_node *block, int arity,
-                                   ir_node *const *in,
-                                   arch_register_req_t const **in_reqs,
-                                   amd64_binop_addr_attr_t const *addr);
-
-static void store_to_temp(new_store_func new_store,
+static void store_to_temp(construct_binop_func const new_store,
 		arch_register_req_t const **const in_reqs,
 		amd64_addr_t *addr, dbg_info *dbgi, ir_node *block, ir_node **in,
 		int *n_in, ir_node *op, ir_mode *mode)
@@ -2446,7 +2441,7 @@ static ir_node *gen_Store(ir_node *const node)
 		                                             : xmm_am_reqs)
 		                       : gp_am_reqs)[arity-1];
 
-	new_store_func const cons
+	construct_binop_func const cons
 		= mode_is_float(mode) ? (mode == x86_mode_E ? &new_bd_amd64_fstp
 		                                            : &new_bd_amd64_movs_store_xmm)
 		                      : &new_bd_amd64_mov_store;
@@ -2475,7 +2470,7 @@ ir_node *amd64_new_spill(ir_node *value, ir_node *after)
 	ir_node *in[] = { value, frame, mem };
 
 	amd64_insn_mode_t           insn_mode;
-	new_store_func              cons;
+	construct_binop_func        cons;
 	arch_register_req_t const **reqs;
 	if (mode_is_float(mode) || mode == amd64_mode_xmm) {
 		if (mode == x86_mode_E) {
