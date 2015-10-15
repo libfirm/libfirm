@@ -1688,6 +1688,25 @@ static ir_node *gen_Return(ir_node *const node)
 	return ret;
 }
 
+static ir_node *make_store_for_mode(ir_mode *const mode, dbg_info *const dbgi, ir_node *const block, int const arity, ir_node *const *const in, amd64_binop_addr_attr_t const *const attr, bool const pinned)
+{
+	construct_binop_func               cons;
+	arch_register_req_t const **const *reqs;
+	if (!mode_is_float(mode)) {
+		cons = &new_bd_amd64_mov_store;
+		reqs = gp_am_reqs;
+	} else if (mode == x86_mode_E) {
+		cons = &new_bd_amd64_fstp;
+		reqs = x87K_am_reqs;
+	} else {
+		cons = &new_bd_amd64_movs_store_xmm;
+		reqs = xmm_am_reqs;
+	}
+	ir_node *const new_store = cons(dbgi, block, arity, in, reqs[arity - 1], attr);
+	set_irn_pinned(new_store, pinned);
+	return new_store;
+}
+
 static ir_node *gen_Call(ir_node *const node)
 {
 	ir_node           *const callee       = get_Call_ptr(node);
@@ -1838,13 +1857,7 @@ no_call_mem:
 		};
 		ir_node *const nomem = get_irg_no_mem(irg);
 		ir_node *const in[]  = { new_value, callframe, nomem };
-		ir_node *const store = mode_is_float(mode) ?
-			(mode == x86_mode_E ? new_bd_amd64_fstp(dbgi, new_block, ARRAY_SIZE(in), in, x87K_reg_mem_reqs, &attr)
-			                    : new_bd_amd64_movs_store_xmm(dbgi, new_block, ARRAY_SIZE(in), in, xmm_reg_mem_reqs, &attr))
-			: new_bd_amd64_mov_store(dbgi, new_block, ARRAY_SIZE(in), in, reg_reg_mem_reqs, &attr);
-
-		set_irn_pinned(store, false);
-		sync_ins[sync_arity++] = store;
+		sync_ins[sync_arity++] = make_store_for_mode(mode, dbgi, new_block, ARRAY_SIZE(in), in, &attr, false);
 	}
 
 	/* memory input */
@@ -2435,19 +2448,8 @@ static ir_node *gen_Store(ir_node *const node)
 	in[arity++]      = new_mem;
 	assert((size_t)arity <= ARRAY_SIZE(in));
 	attr.base.insn_mode = get_insn_mode_from_mode(mode);
-
-	arch_register_req_t const **const reqs
-		= (mode_is_float(mode) ? (mode == x86_mode_E ? x87K_am_reqs
-		                                             : xmm_am_reqs)
-		                       : gp_am_reqs)[arity-1];
-
-	construct_binop_func const cons
-		= mode_is_float(mode) ? (mode == x86_mode_E ? &new_bd_amd64_fstp
-		                                            : &new_bd_amd64_movs_store_xmm)
-		                      : &new_bd_amd64_mov_store;
-	ir_node *const new_store = cons(dbgi, block, arity, in, reqs, &attr);
-	set_irn_pinned(new_store, get_irn_pinned(node));
-	return new_store;
+	bool const pinned = get_irn_pinned(node);
+	return make_store_for_mode(mode, dbgi, block, arity, in, &attr, pinned);
 }
 
 ir_node *amd64_new_spill(ir_node *value, ir_node *after)
