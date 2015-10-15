@@ -4761,6 +4761,20 @@ static ir_node *transform_node_Minus(ir_node *n)
 		}
 	}
 
+	if (is_Shl(op) && only_one_user(op)) {
+		ir_mode *mode = get_irn_mode(n);
+		if (get_mode_arithmetic(mode) == irma_twos_complement) {
+			ir_node *l         = get_Shl_left(op);
+			ir_node *negated_l = can_negate_cheaply(NULL, l);
+			if (negated_l != NULL) {
+				/* -((a - b) << c) -> (b - a) << c */
+				ir_node *block = get_nodes_block(n);
+				ir_node *r     = get_Shl_right(op);
+				return new_rd_Shl(dbgi, block, negated_l, r, mode);
+			}
+		}
+	}
+
 	return n;
 }
 
