@@ -40,7 +40,7 @@
 
 #include "entity_t.h"
 
-static int imprecise_float_transforms_allowed;
+static bool imprecise_float_transforms_allowed;
 
 void ir_allow_imprecise_float_transforms(int enable)
 {
@@ -263,7 +263,7 @@ static ir_tarval *computed_value_Offset(const ir_node *n)
  */
 static ir_tarval *computed_value_Align(const ir_node *n)
 {
-	ir_type *const type = get_Align_type(n);
+	ir_type const *const type = get_Align_type(n);
 	if (get_type_state(type) == layout_fixed)
 		return new_tarval_from_long(get_type_alignment_bytes(type), get_irn_mode(n));
 	return tarval_unknown;
@@ -274,7 +274,7 @@ static ir_tarval *computed_value_Align(const ir_node *n)
  */
 static ir_tarval *computed_value_Size(const ir_node *n)
 {
-	ir_type *const type = get_Size_type(n);
+	ir_type const *const type = get_Size_type(n);
 	if (get_type_state(type) == layout_fixed)
 		return new_tarval_from_long(get_type_size_bytes(type), get_irn_mode(n));
 	return tarval_unknown;
@@ -377,17 +377,16 @@ static ir_tarval *computed_value_Mul(const ir_node *n)
 	ir_tarval     *tb   = value_of(b);
 	ir_mode       *mode = get_irn_mode(n);
 
-	if (ta != tarval_unknown && tb != tarval_unknown) {
+	if (ta != tarval_unknown && tb != tarval_unknown)
 		return tarval_mul(ta, tb);
-	} else {
-		/* a * 0 != 0 if a == NaN or a == Inf */
-		if (!mode_is_float(mode)) {
-			/* a*0 = 0 or 0*b = 0 */
-			if (tarval_is_null(ta))
-				return ta;
-			if (tarval_is_null(tb))
-				return tb;
-		}
+
+	/* a * 0 != 0 if a == NaN or a == Inf */
+	if (!mode_is_float(mode)) {
+		/* a*0 = 0 or 0*b = 0 */
+		if (tarval_is_null(ta))
+			return ta;
+		if (tarval_is_null(tb))
+			return tb;
 	}
 	return tarval_unknown;
 }
@@ -464,9 +463,9 @@ static ir_tarval *computed_value_Eor(const ir_node *n)
 
 	ir_tarval *ta = value_of(a);
 	ir_tarval *tb = value_of(b);
-
 	if (ta != tarval_unknown && tb != tarval_unknown)
 		return tarval_eor(ta, tb);
+
 	return tarval_unknown;
 }
 
