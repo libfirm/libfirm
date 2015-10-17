@@ -1666,6 +1666,12 @@ static ir_node *equivalent_node_Confirm(ir_node *n)
 	ir_node     *pred     = get_Confirm_value(n);
 	ir_relation  relation = get_Confirm_relation(n);
 
+	/* Confirm(x, ==, b) => b
+	 * Note: irconsconfirm.c has a shortcut for this case, but there may be
+	 * cases where other localopts have to reveal this case first. */
+	if (relation == ir_relation_equal)
+		return pred;
+
 	while (is_Confirm(pred) && relation == get_Confirm_relation(pred)) {
 		/*
 		 * rare case: two identical Confirms one after another,
