@@ -626,10 +626,9 @@ static void fix_int_return(const cl_entry *entry, ir_node *base_addr,
 	for (unsigned i = 0; i < n_int_rets; ++i) {
 		ir_node *addr = base_addr;
 		if (i > 0) {
-			ir_mode *mode_int
-				= get_reference_mode_unsigned_eq(mode_ref);
+			ir_mode *mode_offset = get_reference_offset_mode(mode_ref);
 			int      offset      = i * get_mode_size_bytes(int_return_mode);
-			ir_node *offset_cnst = new_r_Const_long(irg, mode_int, offset);
+			ir_node *offset_cnst = new_r_Const_long(irg, mode_offset, offset);
 			addr = new_r_Add(block, addr, offset_cnst, mode_ref);
 		}
 		ir_node *const value     = new_r_Proj(proj_res, int_return_mode, pn+i);
@@ -792,11 +791,11 @@ static void transform_return(ir_node *ret, size_t n_ret_com, wlk_env *env)
 					ir_node *addr = pred;
 					ir_mode *mode_ref = get_irn_mode(addr);
 					if (i > 0) {
-						ir_mode *mode_int
-							= get_reference_mode_unsigned_eq(mode_ref);
+						ir_mode *mode_offset
+							= get_reference_offset_mode(mode_ref);
 						int offset = i * get_mode_size_bytes(int_return_mode);
 						ir_node *offset_cnst
-							= new_r_Const_long(irg, mode_int, offset);
+							= new_r_Const_long(irg, mode_offset, offset);
 						addr = new_r_Add(block, addr, offset_cnst, mode_ref);
 					}
 					ir_node *load = new_r_Load(block, mem, addr,

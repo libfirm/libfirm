@@ -85,7 +85,7 @@ static void widen_builtin(ir_node *node)
 		return;
 	}
 
-	ir_mode  *target_mode = get_reference_mode_unsigned_eq(mode_P);
+	ir_mode  *target_mode = get_reference_offset_mode(mode_P);
 	dbg_info *dbgi        = get_irn_dbg_info(node);
 	ir_node  *block       = get_nodes_block(node);
 	ir_node  *op          = get_irn_n(node, n_Builtin_max + 1);

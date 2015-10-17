@@ -33,21 +33,21 @@ static void lower_sel(ir_node *sel)
 	if (element_size == 0) {
 		newn = ptr;
 	} else {
-		dbg_info *const dbg      = get_irn_dbg_info(sel);
-		ir_node  *const index    = get_Sel_index(sel);
-		ir_node  *const bl       = get_nodes_block(sel);
-		ir_mode  *const mode     = get_irn_mode(sel);
-		ir_mode  *const idx_mode = get_reference_mode_unsigned_eq(mode);
-		ir_node  *const idx_conv = new_rd_Conv(dbg, bl, index, idx_mode);
+		dbg_info *const dbg         = get_irn_dbg_info(sel);
+		ir_node  *const index       = get_Sel_index(sel);
+		ir_node  *const bl          = get_nodes_block(sel);
+		ir_mode  *const mode        = get_irn_mode(sel);
+		ir_mode  *const offset_mode = get_reference_offset_mode(mode);
+		ir_node  *const idx_conv    = new_rd_Conv(dbg, bl, index, offset_mode);
 
 		ir_node  *scaled_index;
 		if (element_size == 1) {
 			scaled_index = idx_conv;
 		} else {
 			ir_graph *const irg      = get_irn_irg(sel);
-			ir_node  *const el_size  = new_rd_Const_long(dbg, irg, idx_mode,
+			ir_node  *const el_size  = new_rd_Const_long(dbg, irg, offset_mode,
 			                                             element_size);
-			scaled_index = new_rd_Mul(dbg, bl, idx_conv, el_size, idx_mode);
+			scaled_index = new_rd_Mul(dbg, bl, idx_conv, el_size, offset_mode);
 		}
 		newn = new_rd_Add(dbg, bl, ptr, scaled_index, mode);
 	}
@@ -75,11 +75,12 @@ static void lower_member(ir_node *member)
 	/* replace Member by add(ptr, const(ent.offset)) */
 	ir_node *newn;
 	if (offset != 0) {
-		dbg_info *const dbg       = get_irn_dbg_info(member);
-		ir_mode  *const mode      = get_irn_mode(member);
-		ir_node  *const bl        = get_nodes_block(member);
-		ir_mode  *const mode_UInt = get_reference_mode_unsigned_eq(mode);
-		ir_node  *const cnst      = new_r_Const_long(irg, mode_UInt, offset);
+		dbg_info *const dbg         = get_irn_dbg_info(member);
+		ir_mode  *const mode        = get_irn_mode(member);
+		ir_node  *const bl          = get_nodes_block(member);
+		ir_mode  *const mode_offset = get_reference_offset_mode(mode);
+		ir_node  *const cnst
+			= new_r_Const_long(irg, mode_offset, offset);
 		newn = new_rd_Add(dbg, bl, ptr, cnst, mode);
 	} else {
 		newn = ptr;

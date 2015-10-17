@@ -2111,7 +2111,7 @@ static ir_node *transform_node_AddSub(ir_node *n)
 
 			if (mode_is_signed(rmode) && get_mode_arithmetic(rmode) == irma_twos_complement) {
 				/* convert a AddP(P, *s) into AddP(P, *u) */
-				ir_mode *nm = get_reference_mode_unsigned_eq(mode);
+				ir_mode *nm = get_reference_offset_mode(mode);
 
 				ir_node *pre = new_r_Conv(get_nodes_block(n), right, nm);
 				set_binop_right(n, pre);
@@ -2689,18 +2689,18 @@ static ir_node *transform_node_Or_(ir_node *n)
 		    && !mode_is_float(cmp_mode_left)
 		    && !mode_is_float(cmp_mode_right)) {
 			if (mode_is_reference(cmp_mode_left)) {
-				ir_mode  *umode = get_reference_mode_unsigned_eq(cmp_mode_left);
+				ir_mode  *omode = get_reference_offset_mode(cmp_mode_left);
 				dbg_info *dbgi  = get_irn_dbg_info(a_left);
 				ir_node  *block = get_nodes_block(n);
-				a_left  = new_rd_Conv(dbgi, block, a_left,  umode);
-				a_right = new_rd_Conv(dbgi, block, a_right, umode);
+				a_left  = new_rd_Conv(dbgi, block, a_left,  omode);
+				a_right = new_rd_Conv(dbgi, block, a_right, omode);
 			}
 			if (mode_is_reference(cmp_mode_right)) {
-				ir_mode  *umode = get_reference_mode_unsigned_eq(cmp_mode_right);
+				ir_mode  *omode = get_reference_offset_mode(cmp_mode_right);
 				dbg_info *dbgi  = get_irn_dbg_info(b_left);
 				ir_node  *block = get_nodes_block(n);
-				b_left  = new_rd_Conv(dbgi, block, b_left,  umode);
-				b_right = new_rd_Conv(dbgi, block, b_right, umode);
+				b_left  = new_rd_Conv(dbgi, block, b_left,  omode);
+				b_right = new_rd_Conv(dbgi, block, b_right, omode);
 			}
 			ir_mode *a_mode = get_irn_mode(a_left);
 			ir_mode *b_mode = get_irn_mode(b_left);
@@ -4339,18 +4339,18 @@ static ir_node *transform_node_And(ir_node *n)
 		    && !mode_is_float(cmp_mode_left)
 		    && !mode_is_float(cmp_mode_right)) {
 			if (mode_is_reference(cmp_mode_left)) {
-				ir_mode  *umode = get_reference_mode_unsigned_eq(cmp_mode_left);
+				ir_mode  *omode = get_reference_offset_mode(cmp_mode_left);
 				dbg_info *dbgi  = get_irn_dbg_info(a_left);
 				ir_node  *block = get_nodes_block(n);
-				a_left  = new_rd_Conv(dbgi, block, a_left,  umode);
-				a_right = new_rd_Conv(dbgi, block, a_right, umode);
+				a_left  = new_rd_Conv(dbgi, block, a_left,  omode);
+				a_right = new_rd_Conv(dbgi, block, a_right, omode);
 			}
 			if (mode_is_reference(cmp_mode_right)) {
-				ir_mode  *umode = get_reference_mode_unsigned_eq(cmp_mode_right);
+				ir_mode  *omode = get_reference_offset_mode(cmp_mode_right);
 				dbg_info *dbgi  = get_irn_dbg_info(b_left);
 				ir_node  *block = get_nodes_block(n);
-				b_left  = new_rd_Conv(dbgi, block, b_left,  umode);
-				b_right = new_rd_Conv(dbgi, block, b_right, umode);
+				b_left  = new_rd_Conv(dbgi, block, b_left,  omode);
+				b_right = new_rd_Conv(dbgi, block, b_right, omode);
 			}
 			ir_mode *a_mode = get_irn_mode(a_left);
 			ir_mode *b_mode = get_irn_mode(b_left);

@@ -64,7 +64,7 @@ static void lower_small_copyb_node(ir_node *irn)
 	while (offset < size) {
 		ir_mode *mode = get_ir_mode(mode_bytes);
 		for (; offset + mode_bytes <= size; offset += mode_bytes) {
-			ir_mode *mode_ref_int = get_reference_mode_unsigned_eq(mode_ref);
+			ir_mode *mode_ref_int = get_reference_offset_mode(mode_ref);
 
 			/* construct offset */
 			ir_node *addr_const = new_r_Const_long(irg, mode_ref_int, offset);

@@ -89,8 +89,9 @@ struct ir_mode {
 	ir_tarval          *one;       /**< The value 1 */
 	ir_tarval          *all_one;   /**< The value where all bits are set */
 	ir_tarval          *infinity;  /**< The (positive) infinity value */
-	/** For pointer modes, the equivalent unsigned integer one. */
-	ir_mode            *eq_unsigned;
+	/** For reference modes, a signed integer mode used to add/subtract
+	 * offsets. */
+	ir_mode            *offset_mode;
 };
 
 static inline ident *get_mode_ident_(const ir_mode *mode)

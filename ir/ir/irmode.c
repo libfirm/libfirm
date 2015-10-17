@@ -159,13 +159,14 @@ ir_mode *new_reference_mode(const char *name, ir_mode_arithmetic arithmetic,
 	                             0, modulo_shift);
 	ir_mode *res = register_mode(result);
 
-	/* construct the unsigned_eq mode */
-	char buf[64];
-	snprintf(buf, sizeof(buf), "%s_iu", name);
-	ir_mode *unsigned_eq = alloc_mode(buf, irms_int_number, arithmetic,
-	                                  bit_size, 0, modulo_shift);
-	unsigned_eq = register_mode(unsigned_eq);
-	set_reference_mode_unsigned_eq(res, unsigned_eq);
+	/* Construct offset mode if none is set yet. */
+	if (res->offset_mode == NULL) {
+		char buf[64];
+		snprintf(buf, sizeof(buf), "%s_i", name);
+		ir_mode *offset_mode = new_int_mode(buf, arithmetic, bit_size, 1,
+		                                    modulo_shift);
+		res->offset_mode = offset_mode;
+	}
 	return res;
 }
 
@@ -415,17 +416,18 @@ int values_in_mode(const ir_mode *sm, const ir_mode *lm)
 	return false;
 }
 
-ir_mode *get_reference_mode_unsigned_eq(const ir_mode *mode)
+ir_mode *get_reference_offset_mode(const ir_mode *mode)
 {
 	assert(mode_is_reference(mode));
-	return mode->eq_unsigned;
+	return mode->offset_mode;
 }
 
-void set_reference_mode_unsigned_eq(ir_mode *ref_mode, ir_mode *int_mode)
+void set_reference_offset_mode(ir_mode *ref_mode, ir_mode *int_mode)
 {
 	assert(mode_is_reference(ref_mode));
 	assert(mode_is_int(int_mode));
-	ref_mode->eq_unsigned = int_mode;
+	assert(get_mode_size_bits(ref_mode) == get_mode_size_bits(int_mode));
+	ref_mode->offset_mode = int_mode;
 }
 
 void init_mode(void)

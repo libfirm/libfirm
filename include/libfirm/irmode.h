@@ -354,14 +354,15 @@ FIRM_API int mode_overflow_on_unary_Minus(const ir_mode *mode);
 FIRM_API int mode_wrap_around(const ir_mode *mode);
 
 /**
- * Returns the unsigned integer equivalent mode for an reference mode.
+ * Returns the integer equivalent mode for an reference mode. This is typically
+ * used to add/subtract offsets from reference values.
  */
-FIRM_API ir_mode *get_reference_mode_unsigned_eq(const ir_mode *mode);
+FIRM_API ir_mode *get_reference_offset_mode(const ir_mode *mode);
 
 /**
- * Sets the unsigned integer equivalent mode for an reference mode.
+ * Sets the (signed) integer equivalent mode for an reference mode.
  */
-FIRM_API void set_reference_mode_unsigned_eq(ir_mode *ref_mode, ir_mode *int_mode);
+FIRM_API void set_reference_offset_mode(ir_mode *ref_mode, ir_mode *int_mode);
 
 /**
  * Returns size of bits used for to encode the mantissa (for float modes).
