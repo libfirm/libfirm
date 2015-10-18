@@ -34,13 +34,13 @@ static void fix_address_pic(ir_node *const node, void *const data)
 		if (i == n_Call_ptr && is_Call(node)) {
 			// Somehow we can always call PC relative. Are there trampolines
 			// involved?
-			res = be_new_Relocation(irg, X86_IMM_PCREL, entity);
+			res = be_new_Relocation(irg, X86_IMM_PCREL, entity, mode_P);
 		} else if (entity_has_definition(entity)
 		        && !(get_entity_linkage(entity) & IR_LINKAGE_MERGE)) {
-			res = be_new_Relocation(irg, X86_IMM_PCREL, entity);
+			res = be_new_Relocation(irg, X86_IMM_PCREL, entity, mode_P);
 		} else {
 			ir_node *const addr
-				= be_new_Relocation(irg, X86_IMM_GOTPCREL, entity);
+				= be_new_Relocation(irg, X86_IMM_GOTPCREL, entity, mode_P);
 			ir_type *const type  = get_entity_type(entity);
 			ir_node *const nomem = get_irg_no_mem(irg);
 			ir_node *const block = get_irg_start_block(irg);

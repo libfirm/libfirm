@@ -5870,6 +5870,10 @@ void ia32_transform_graph(ir_graph *irg)
 	case IA32_PIC_ELF_PLT:
 	case IA32_PIC_ELF_NO_PLT: lconst_imm_kind = X86_IMM_GOTOFF;      break;
 	}
+	/* fix get_eip mode ia32_pic sets it to mode_P */
+	ir_node *const get_eip = ia32_get_irg_data(irg)->get_eip;
+	if (get_eip != NULL)
+		set_irn_mode(get_eip, ia32_mode_gp);
 
 	register_transformers();
 

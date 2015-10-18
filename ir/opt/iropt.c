@@ -2045,83 +2045,6 @@ static ir_node *apply_conv_on_mux(ir_node *mux, ir_mode *mode)
 	return new_r_Mux(block, sel, irn_false, irn_true, mode);
 }
 
-/**
- * Transform AddP(P, ConvIs(Iu)), AddP(P, ConvIu(Is)) and
- * SubP(P, ConvIs(Iu)), SubP(P, ConvIu(Is)).
- * If possible, remove the Conv's.
- */
-static ir_node *transform_node_AddSub(ir_node *n)
-{
-	const ir_mode *mode = get_irn_mode(n);
-
-	if (mode_is_reference(mode)) {
-		const ir_node *left     = get_binop_left(n);
-		ir_node       *right    = get_binop_right(n);
-		unsigned       ref_bits = get_mode_size_bits(mode);
-
-		if (is_Conv(left)) {
-			const ir_mode *lmode = get_irn_mode(left);
-			unsigned       bits  = get_mode_size_bits(lmode);
-
-			if (ref_bits == bits &&
-			    mode_is_int(lmode) &&
-			    get_mode_arithmetic(lmode) == irma_twos_complement) {
-				ir_node       *pre      = get_Conv_op(left);
-				const ir_mode *pre_mode = get_irn_mode(pre);
-
-				if (mode_is_int(pre_mode) &&
-				    get_mode_size_bits(pre_mode) == bits &&
-				    get_mode_arithmetic(pre_mode) == irma_twos_complement) {
-					/* ok, this conv just changes to sign, moreover the calculation
-					 * is done with same number of bits as our address mode, so
-					 * we can ignore the conv as address calculation can be viewed
-					 * as either signed or unsigned
-					 */
-					set_binop_left(n, pre);
-				}
-			}
-		}
-
-		if (is_Conv(right)) {
-			const ir_mode *rmode = get_irn_mode(right);
-			unsigned       bits  = get_mode_size_bits(rmode);
-
-			if (ref_bits == bits &&
-			    mode_is_int(rmode) &&
-			    get_mode_arithmetic(rmode) == irma_twos_complement) {
-				ir_node       *pre      = get_Conv_op(right);
-				const ir_mode *pre_mode = get_irn_mode(pre);
-
-				if (mode_is_int(pre_mode) &&
-				    get_mode_size_bits(pre_mode) == bits &&
-				    get_mode_arithmetic(pre_mode) == irma_twos_complement) {
-					/* ok, this conv just changes to sign, moreover the calculation
-					 * is done with same number of bits as our address mode, so
-					 * we can ignore the conv as address calculation can be viewed
-					 * as either signed or unsigned
-					 */
-					set_binop_right(n, pre);
-				}
-			}
-		}
-
-		/* let address arithmetic use unsigned modes */
-		if (is_Const(right)) {
-			const ir_mode *rmode = get_irn_mode(right);
-
-			if (mode_is_signed(rmode) && get_mode_arithmetic(rmode) == irma_twos_complement) {
-				/* convert a AddP(P, *s) into AddP(P, *u) */
-				ir_mode *nm = get_reference_offset_mode(mode);
-
-				ir_node *pre = new_r_Conv(get_nodes_block(n), right, nm);
-				set_binop_right(n, pre);
-			}
-		}
-	}
-
-	return n;
-}
-
 /*
  * Macros to include the constant folding optimizations for nodes with
  * a choice of data (i.e. Phi and Mux).
@@ -3086,10 +3009,6 @@ static ir_node *transform_node_Add(ir_node *n)
 	if (n != oldn)
 		return n;
 
-	n = transform_node_AddSub(n);
-	if (n != oldn)
-		return n;
-
 	ir_node *a    = get_Add_left(n);
 	ir_node *b    = get_Add_right(n);
 	ir_mode *mode = get_irn_mode(n);
@@ -3289,8 +3208,6 @@ static ir_node *transform_node_Sub(ir_node *n)
 {
 	ir_node *oldn = n;
 
-	n = transform_node_AddSub(n);
-
 	ir_node *a    = get_Sub_left(n);
 	ir_node *b    = get_Sub_right(n);
 	ir_mode *mode = get_irn_mode(n);
@@ -3331,7 +3248,6 @@ static ir_node *transform_node_Sub(ir_node *n)
 	}
 
 	ir_node *c;
-restart:
 	HANDLE_BINOP_CHOICE((eval_func) tarval_sub, a, b, c, mode);
 
 	/* these optimizations are imprecise for floating-point ops */
@@ -3489,18 +3405,22 @@ restart:
 			ir_mode *mb = get_irn_mode(op_b);
 
 			if (mode_is_reference(ma) && mode_is_reference(mb)) {
-				unsigned mode_size = get_mode_size_bits(mode);
-				unsigned ma_size   = get_mode_size_bits(ma);
-				unsigned mb_size   = get_mode_size_bits(mb);
+				unsigned  const mode_size     = get_mode_size_bits(mode);
+				unsigned  const ma_size       = get_mode_size_bits(ma);
+				unsigned  const mb_size       = get_mode_size_bits(mb);
+				ir_mode  *const offset_mode_a = get_reference_offset_mode(ma);
+				ir_mode  *const offset_mode_b = get_reference_offset_mode(mb);
 
-				if (ma_size == mode_size && mb_size == mode_size) {
+				if (ma_size == mode_size && mb_size == mode_size
+				 && offset_mode_a == offset_mode_b) {
 					/* SubInt(ConvInt(aP), ConvInt(bP)) -> SubInt(aP,bP) */
-					a = op_a;
-					b = op_b;
-					set_Sub_left(n, a);
-					set_Sub_right(n, b);
-
-					goto restart;
+					dbg_info *const dbgi  = get_irn_dbg_info(n);
+					ir_node  *const block = get_nodes_block(n);
+					ir_node  *const new_sub
+						= new_rd_Sub(dbgi, block, op_a, op_b, offset_mode_a);
+					ir_node  *const conv
+						= new_rd_Conv(dbgi, block, new_sub, mode);
+					return conv;
 				}
 			}
 		}

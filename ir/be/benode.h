@@ -198,7 +198,8 @@ ir_node *be_new_Asm(dbg_info *dbgi, ir_node *block, int n_ins, ir_node **ins, ar
  * specific. This node is meant to be used in preparation phases for position
  * independent code.
  */
-ir_node *be_new_Relocation(ir_graph *irg, unsigned kind, ir_entity *entity);
+ir_node *be_new_Relocation(ir_graph *irg, unsigned kind, ir_entity *entity,
+                           ir_mode *mode);
 
 ir_entity *be_get_Relocation_entity(ir_node const* node);
 

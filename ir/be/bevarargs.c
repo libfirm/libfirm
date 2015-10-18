@@ -43,10 +43,11 @@ void be_default_lower_va_arg(ir_node *node)
 		new_mem = node_mem;
 	}
 
-	const backend_params *be_params  = be_get_backend_param();
-	unsigned              round_up   = round_up2(get_type_size_bytes(aptype), be_params->stack_param_align);
-	ir_node *const        diff_const = new_r_Const_long(irg, mode_Iu, round_up);
-	ir_node *const        new_ap     = new_rd_Add(dbgi, block, ap, diff_const, mode_P);
+	backend_params const *const be_params = be_get_backend_param();
+	unsigned       round_up    = round_up2(get_type_size_bytes(aptype), be_params->stack_param_align);
+	ir_mode *const offset_mode = get_reference_offset_mode(mode_P);
+	ir_node *const offset      = new_r_Const_long(irg, offset_mode, round_up);
+	ir_node *const new_ap      = new_rd_Add(dbgi, block, ap, offset, mode_P);
 
 	ir_node *const in[] = { new_mem, res, new_ap };
 	turn_into_tuple(node, ARRAY_SIZE(in), in);

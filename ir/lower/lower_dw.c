@@ -2731,8 +2731,9 @@ void ir_lower_dw_ops(void)
 		unop_tp_s  = make_type_2_2(even, odd);
 	}
 
+	ir_mode *offset_mode = get_reference_offset_mode(mode_P);
 	env.tv_mode_bytes = new_tarval_from_long(env.p.doubleword_size/(2*8),
-	                                         env.p.word_unsigned);
+	                                         offset_mode);
 	env.waitq         = new_pdeq();
 
 	irp_reserve_resources(irp, IRP_RESOURCE_TYPE_LINK

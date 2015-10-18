@@ -654,12 +654,15 @@ static int verify_node_Add(const ir_node *n)
 		fine &= check_mode_same_input(n, n_Add_left, "left");
 		fine &= check_mode_same_input(n, n_Add_right, "right");
 	} else if (mode_is_reference(mode)) {
-		ir_mode *left_mode  = get_irn_mode(get_Add_left(n));
-		ir_mode *right_mode = get_irn_mode(get_Add_right(n));
+		ir_mode *left_mode   = get_irn_mode(get_Add_left(n));
+		ir_mode *right_mode  = get_irn_mode(get_Add_right(n));
+		ir_mode *offset_mode = get_reference_offset_mode(mode);
 		if (mode_is_int(left_mode)) {
+			fine &= check_input_mode(n, n_Add_left, "left", offset_mode);
 			fine &= check_mode_same_input(n, n_Add_right, "right");
 		} else if (mode_is_int(right_mode)) {
 			fine &= check_mode_same_input(n, n_Add_left, "left");
+			fine &= check_input_mode(n, n_Add_right, "right", offset_mode);
 		} else {
 			warn(n, "AddP has no integer input");
 			fine = false;
@@ -688,7 +691,8 @@ static int verify_node_Sub(const ir_node *n)
 		}
 	} else if (mode_is_reference(mode)) {
 		fine &= check_mode_same_input(n, n_Sub_left, "left");
-		fine &= check_input_func(n, n_Sub_right, "right", mode_is_int, "int");
+		ir_mode *offset_mode = get_reference_offset_mode(mode);
+		fine &= check_input_mode(n, n_Sub_right, "right", offset_mode);
 	}
 	return fine;
 }

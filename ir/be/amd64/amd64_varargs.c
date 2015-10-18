@@ -201,7 +201,8 @@ static ir_node *load_va_from_stack(dbg_info *dbgi, ir_node *block, ir_mode *resm
 
 	// Increment stack_args and write back
 	long     increment       = round_up2(get_mode_size_bytes(resmode), 8);
-	ir_node *sizeof_resmode  = new_r_Const_long(irg, mode_Is, increment);
+	ir_mode *offset_mode     = get_reference_offset_mode(mode_P);
+	ir_node *sizeof_resmode  = new_r_Const_long(irg, offset_mode, increment);
 	ir_mode *mode_stack_args = get_irn_mode(stack_args);
 	ir_node *stack_args_inc  = new_rd_Add(dbgi, block, stack_args, sizeof_resmode, mode_stack_args);
 	make_store(dbgi, block, stack_args_ptr, stack_args_inc, stack_args_type, mem);
@@ -248,12 +249,13 @@ static ir_node *load_va_from_register_or_stack(dbg_info *dbgi, ir_node *block,
 
 	// Load from reg_save + offset
 	ir_mode *mode_reg_save   = get_irn_mode(reg_save);
-	ir_node *true_result_ptr = new_rd_Add(dbgi, true_block, reg_save, offset, mode_reg_save);
+	ir_mode *offset_mode     = get_reference_offset_mode(mode_reg_save);
+	ir_node *conv_offset     = new_r_Conv(true_block, offset, offset_mode);
+	ir_node *true_result_ptr = new_rd_Add(dbgi, true_block, reg_save, conv_offset, mode_reg_save);
 	ir_node *true_result     = load_result(dbgi, true_block, true_result_ptr, restype, &true_mem);
 
 	// Increment offset and write back
-	ir_mode *offset_mode     = get_type_mode(offset_type);
-	ir_node *offset_inc      = new_rd_Add(dbgi, true_block, offset, stride, offset_mode);
+	ir_node *offset_inc      = new_rd_Add(dbgi, true_block, offset, stride, mode_Is);
 	make_store(dbgi, true_block, offset_ptr, offset_inc, offset_type, &true_mem);
 
 	// False side: Load from the stack

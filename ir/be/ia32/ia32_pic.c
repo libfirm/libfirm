@@ -85,8 +85,11 @@ static ir_node *get_eip_relative(ir_graph *const irg,
 {
 	/* Everything else is accessed relative to EIP. */
 	ir_node *const pic_base = ia32_get_pic_base(irg);
+	/* cheat a bit and set pic_base node to mode_P for now */
+	set_irn_mode(pic_base, mode_P);
 	ir_node *const block    = get_irg_start_block(irg);
-	ir_node *reloc = be_new_Relocation(irg, (unsigned)kind, entity);
+	ir_mode *const offset_mode = get_reference_offset_mode(mode_P);
+	ir_node *reloc = be_new_Relocation(irg, (unsigned)kind, entity, offset_mode);
 	/* All ok now for locally constructed stuff. */
 	ir_node *add = new_rd_Add(NULL, block, pic_base, reloc, mode_P);
 	/* Make sure the walker doesn't visit this add again. */
@@ -126,7 +129,7 @@ static void fix_address_elf(ir_node *const node, void *const data)
 				continue;
 
 			if (ia32_pic_style == IA32_PIC_ELF_PLT) {
-				res = be_new_Relocation(irg, X86_IMM_PLT, entity);
+				res = be_new_Relocation(irg, X86_IMM_PLT, entity, mode_P);
 			} else {
 				assert(ia32_pic_style == IA32_PIC_ELF_NO_PLT);
 				res = get_table_load(irg, X86_IMM_GOT, entity);
@@ -169,7 +172,7 @@ static void fix_address_macho(ir_node *const node, void *const data)
 				continue;
 
 			ir_entity *const trampoline = get_trampoline(be, entity);
-			res = be_new_Relocation(irg, X86_IMM_ADDR, trampoline);
+			res = be_new_Relocation(irg, X86_IMM_ADDR, trampoline, mode_P);
 		} else {
 			/* Everything else is accessed relative to EIP. */
 			if (entity_has_definition(entity)
