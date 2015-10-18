@@ -47,11 +47,6 @@ static void compare_tv(const char *file, unsigned line,
 typedef ir_tarval* (*binop)(ir_tarval *op0, ir_tarval *op1);
 typedef ir_tarval* (*unop)(ir_tarval *op);
 
-static ir_tarval *simple_sub(ir_tarval *op0, ir_tarval *op1)
-{
-	return tarval_sub(op0, op1, get_tarval_mode(op0));
-}
-
 /* tarval_div, except that x/0 == 0 */
 static ir_tarval *safe_div(ir_tarval *op0, ir_tarval *op1)
 {
@@ -288,7 +283,7 @@ static void test_int_tarvals(ir_mode *mode)
 
 	/* binops - neutral elements */
 	test_neutral(tarval_add, zero, true);
-	test_neutral(simple_sub, zero, false);
+	test_neutral(tarval_sub, zero, false);
 	test_neutral(tarval_mul, one, true);
 	test_neutral(tarval_div, one, false);
 	/* tarval_mod has no neutral element */
@@ -315,7 +310,7 @@ static void test_int_tarvals(ir_mode *mode)
 
 	/* binops - inverse elements */
 	test_inverse(tarval_add, tarval_neg, zero);
-	test_inverse(simple_sub, tarval_id, zero);
+	test_inverse(tarval_sub, tarval_id, zero);
 	test_inverse(tarval_and, tarval_not, zero);
 	test_inverse(tarval_andnot, tarval_id, zero);
 	test_inverse(tarval_or, tarval_not, all_one);
@@ -486,7 +481,7 @@ static void test_float_tarvals(ir_mode *mode)
 
 	/* binops - neutral elements */
 	test_neutral(tarval_add, minus_zero, true);
-	test_neutral(simple_sub, zero, false);
+	test_neutral(tarval_sub, zero, false);
 	test_neutral(tarval_mul, one, true);
 	test_neutral(tarval_div, one, false);
 	/* zero is a neutral element for tarval_add, except for the
@@ -510,7 +505,7 @@ static void test_float_tarvals(ir_mode *mode)
 			TEST(tarval_is_quiet_nan(tarval_mul(value, zero)));
 		} else {
 			TVS_EQUAL(tarval_mul(value, zero), tarval_is_negative(value) ? minus_zero : zero);
-			TVS_EQUAL(simple_sub(value, value), zero);
+			TVS_EQUAL(tarval_sub(value, value), zero);
 		}
 	}
 
@@ -523,7 +518,7 @@ static void test_float_tarvals(ir_mode *mode)
 		ir_tarval *nan = i == 0 ? qnan : snan;
 
 		test_binop_nan(tarval_add, nan);
-		test_binop_nan(simple_sub, nan);
+		test_binop_nan(tarval_sub, nan);
 		test_binop_nan(tarval_mul, nan);
 		test_binop_nan(tarval_div, nan);
 		test_unop_nan(tarval_abs, nan);
@@ -544,7 +539,7 @@ static void test_float_tarvals(ir_mode *mode)
 	TEST(tarval_is_quiet_nan(tarval_mul(minus_zero, minus_inf)));
 
 	TEST(tarval_is_quiet_nan(tarval_add(minus_inf, inf)));
-	TEST(tarval_is_quiet_nan(simple_sub(inf, inf)));
+	TEST(tarval_is_quiet_nan(tarval_sub(inf, inf)));
 
 	/* infinity results */
 	for (unsigned i = 0, n = n_tarvals; i < n; ++i) {

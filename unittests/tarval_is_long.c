@@ -43,7 +43,7 @@ int main(void)
 	ir_tarval *one      = new_tarval_from_long(1, big_s);
 	ir_tarval *longmaxp = tarval_add(longmax, one);
 	assert(!tarval_is_long(longmaxp));
-	ir_tarval *longmax3 = tarval_sub(longmaxp, one, big_s);
+	ir_tarval *longmax3 = tarval_sub(longmaxp, one);
 	assert(tarval_is_long(longmax3));
 
 	ir_tarval *longmax2 = sizeof(long) == 8 ? get_mode_max(mode_Ls)
