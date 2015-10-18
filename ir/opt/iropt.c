@@ -64,9 +64,8 @@ static bool is_Or_Eor_Add(const ir_node *node)
 		/* if each bit is guaranteed to be zero on either the left or right
 		 * then an Add will have the same effect as the Eor/Or.
 		 */
-		if (bl && br && tarval_is_null(tarval_and(bl->z, br->z))) {
+		if (bl && br && tarval_is_null(tarval_and(bl->z, br->z)))
 			return true;
-		}
 	}
 	return false;
 }
@@ -676,9 +675,8 @@ ir_relation ir_get_possible_cmp_relations(const ir_node *left,
 	}
 
 	/* NaN never compares successfully to anything */
-	if (tarval_is_nan(tv_l) || tarval_is_nan(tv_r)) {
+	if (tarval_is_nan(tv_l) || tarval_is_nan(tv_r))
 		return ir_relation_unordered;
-	}
 
 	/* a == a is never less or greater (but might be equal or unordered) */
 	if (left == right)
@@ -715,12 +713,10 @@ ir_relation ir_get_possible_cmp_relations(const ir_node *left,
 			ir_tarval *r_max = tarval_and(r_z, tarval_ornot(r_o, min));
 			ir_tarval *r_min = tarval_or(r_o, tarval_and(r_z, min));
 
-			if (!(tarval_cmp(l_max, r_min) & ir_relation_greater)) {
+			if (!(tarval_cmp(l_max, r_min) & ir_relation_greater))
 				possible &= ~ir_relation_greater;
-			}
-			if (!(tarval_cmp(l_min, r_max) & ir_relation_less)) {
+			if (!(tarval_cmp(l_min, r_max) & ir_relation_less))
 				possible &= ~ir_relation_less;
-			}
 		}
 
 		if (!tarval_is_null(tarval_andnot(l_o, r_z))
@@ -739,9 +735,8 @@ ir_relation ir_get_possible_cmp_relations(const ir_node *left,
 	if (is_And(right) && !mode_is_signed(mode) && get_commutative_other_op(right, left))
 		possible &= ~ir_relation_less;
 	/* stuff known through confirm nodes */
-	if (is_Confirm(left) && get_Confirm_bound(left) == right) {
+	if (is_Confirm(left) && get_Confirm_bound(left) == right)
 		possible &= get_Confirm_relation(left);
-	}
 	if (is_Confirm(right) && get_Confirm_bound(right) == left) {
 		ir_relation relation = get_Confirm_relation(right);
 		relation = get_inversed_relation(relation);
@@ -865,8 +860,7 @@ static ir_tarval *do_computed_value_Mod(const ir_node *a, const ir_node *b)
 	/* a % 1 == 0 */
 	/* a % -1 == 0 */
 	ir_mode *mode = get_irn_mode(a);
-	if (tarval_is_one(tb)
-	    || (mode_is_signed(mode) && tarval_is_all_one(tb)))
+	if (tarval_is_one(tb) || (mode_is_signed(mode) && tarval_is_all_one(tb)))
 		return get_mode_null(mode);
 
 	/* constant folding */
@@ -1483,8 +1477,7 @@ static ir_node *equivalent_node_Proj_Store(ir_node *proj)
 
 	if (is_Proj(store_mem) && is_Proj(store_value)) {
 		const ir_node *load = get_Proj_pred(store_mem);
-		if (is_Load(load) &&
-		    get_Proj_pred(store_value) == load &&
+		if (is_Load(load) && get_Proj_pred(store_value) == load &&
 		    get_Load_ptr(load) == store_ptr) {
 			return store_mem;
 		}
@@ -1541,11 +1534,10 @@ static ir_node *equivalent_node_Mux(ir_node *n)
 	const ir_node   *sel  = get_Mux_sel(n);
 	const ir_tarval *ts   = value_of(sel);
 
-	if (!tarval_is_constant(ts) && is_Cmp(sel)) {
-		/* try again with a direct call to compute_cmp, as we don't care
-		 * about the MODEB_LOWERED flag here */
+	/* try again with a direct call to compute_cmp, as we don't care
+	 * about the MODEB_LOWERED flag here */
+	if (!tarval_is_constant(ts) && is_Cmp(sel))
 		ts = compute_cmp_ext(sel);
-	}
 
 	/* Mux(true, f, t) == t */
 	if (ts == tarval_b_true) {
@@ -1699,7 +1691,7 @@ static bool only_one_user(const ir_node *node)
  */
 static bool is_const_Phi(ir_node *n)
 {
-	if (! is_Phi(n) || get_irn_arity(n) == 0)
+	if (!is_Phi(n) || get_irn_arity(n) == 0)
 		return false;
 	foreach_irn_in_r(n, i, pred) {
 		if (!is_Const(pred))
@@ -1714,9 +1706,7 @@ static bool is_const_Phi(ir_node *n)
  */
 static int is_const_Mux(ir_node *n)
 {
-	return is_Mux(n) &&
-		is_Const(get_Mux_false(n)) &&
-		is_Const(get_Mux_true(n));
+	return is_Mux(n) && is_Const(get_Mux_false(n)) && is_Const(get_Mux_true(n));
 }
 
 typedef ir_tarval *(*tarval_binop_type)(ir_tarval *a, ir_tarval *b);
@@ -1741,10 +1731,9 @@ static ir_node *apply_binop_on_phi(ir_node *phi, ir_tarval *other, tarval_binop_
 			ir_tarval *tv        = get_Const_tarval(pred);
 			ir_tarval *evaluated = eval(other, tv);
 
-			if (!tarval_is_constant(evaluated)) {
-				/* folding failed, abort */
+			/* abort if folding failed */
+			if (!tarval_is_constant(evaluated))
 				return NULL;
-			}
 			tvs[i] = evaluated;
 		}
 	} else {
@@ -1752,10 +1741,9 @@ static ir_node *apply_binop_on_phi(ir_node *phi, ir_tarval *other, tarval_binop_
 			ir_tarval *tv        = get_Const_tarval(pred);
 			ir_tarval *evaluated = eval(tv, other);
 
-			if (!tarval_is_constant(evaluated)) {
-				/* folding failed, abort */
+			/* abort if folding failed */
+			if (!tarval_is_constant(evaluated))
 				return NULL;
-			}
 			tvs[i] = evaluated;
 		}
 	}
@@ -1792,10 +1780,9 @@ static ir_node *apply_binop_on_2_phis(ir_node *a, ir_node *b, tarval_binop_type 
 		ir_tarval     *tv_r   = get_Const_tarval(pred_b);
 		ir_tarval     *tv     = eval(tv_l, tv_r);
 
-		if (!tarval_is_constant(tv)) {
-			/* folding failed, bad */
+		/* abort if folding failed */
+		if (!tarval_is_constant(tv))
 			return NULL;
-		}
 		tvs[i] = tv;
 	}
 	ir_graph  *irg = get_irn_irg(a);
@@ -1823,10 +1810,9 @@ static ir_node *apply_unop_on_phi(ir_node *phi, ir_tarval *(*eval)(ir_tarval *))
 		ir_tarval *tv = get_Const_tarval(pred);
 		tv = eval(tv);
 
-		if (!tarval_is_constant(tv)) {
-			/* folding failed, abort */
+		/* abort if folding failed */
+		if (!tarval_is_constant(tv))
 			return NULL;
-		}
 		tvs[i] = tv;
 	}
 	ir_graph  *irg = get_irn_irg(phi);
@@ -1854,10 +1840,9 @@ static ir_node *apply_conv_on_phi(ir_node *phi, ir_mode *mode)
 		ir_tarval *tv = get_Const_tarval(pred);
 		tv = tarval_convert_to(tv, mode);
 
-		if (!tarval_is_constant(tv)) {
-			/* folding failed, abort */
+		/* abort if folding failed */
+		if (!tarval_is_constant(tv))
 			return NULL;
-		}
 		tvs[i] = tv;
 	}
 	ir_graph  *irg = get_irn_irg(phi);
@@ -1882,9 +1867,8 @@ static ir_node *apply_conv_on_phi(ir_node *phi, ir_mode *mode)
  */
 static ir_node *apply_binop_on_mux(ir_node *mux, ir_tarval *other, tarval_binop_type eval, ir_mode *mode, bool left)
 {
-	if (!only_one_user(mux)) {
+	if (!only_one_user(mux))
 		return NULL;
-	}
 
 	ir_tarval *true_val  = get_Const_tarval(get_Mux_true(mux));
 	ir_tarval *false_val = get_Const_tarval(get_Mux_false(mux));
@@ -1898,9 +1882,8 @@ static ir_node *apply_binop_on_mux(ir_node *mux, ir_tarval *other, tarval_binop_
 		new_false = eval(false_val, other);
 	}
 
-	if (!tarval_is_constant(new_true) || !tarval_is_constant(new_false)) {
+	if (!tarval_is_constant(new_true) || !tarval_is_constant(new_false))
 		return NULL;
-	}
 
 	ir_node  *sel       = get_Mux_sel(mux);
 	ir_graph *irg       = get_irn_irg(mux);
@@ -1922,12 +1905,10 @@ static ir_node *apply_binop_on_mux(ir_node *mux, ir_tarval *other, tarval_binop_
  */
 static ir_node *apply_binop_on_2_muxs(ir_node *a, ir_node *b, tarval_binop_type eval, ir_mode *mode)
 {
-	if (!only_one_user(a) || !only_one_user(b)) {
+	if (!only_one_user(a) || !only_one_user(b))
 		return NULL;
-	}
-	if (get_nodes_block(a) != get_nodes_block(b)) {
+	if (get_nodes_block(a) != get_nodes_block(b))
 		return NULL;
-	}
 
 	ir_node *sel_a = get_Mux_sel(a);
 	ir_node *sel_b = get_Mux_sel(b);
@@ -1944,9 +1925,8 @@ static ir_node *apply_binop_on_2_muxs(ir_node *a, ir_node *b, tarval_binop_type 
 		ir_tarval *new_false = eval(false_a, false_b);
 		ir_tarval *new_true  = eval(true_a, true_b);
 
-		if (!tarval_is_constant(new_true) || !tarval_is_constant(new_false)) {
+		if (!tarval_is_constant(new_true) || !tarval_is_constant(new_false))
 			return NULL;
-		}
 
 		ir_graph *irg       = get_irn_irg(a);
 		ir_node  *irn_false = new_r_Const(irg, new_false);
@@ -1968,9 +1948,8 @@ static ir_node *apply_binop_on_2_muxs(ir_node *a, ir_node *b, tarval_binop_type 
  */
 static ir_node *apply_unop_on_mux(ir_node *mux, ir_tarval *(*eval)(ir_tarval *))
 {
-	if (!only_one_user(mux)) {
+	if (!only_one_user(mux))
 		return NULL;
-	}
 
 	ir_tarval *true_val  = get_Const_tarval(get_Mux_true(mux));
 	ir_tarval *false_val = get_Const_tarval(get_Mux_false(mux));
@@ -1978,9 +1957,8 @@ static ir_node *apply_unop_on_mux(ir_node *mux, ir_tarval *(*eval)(ir_tarval *))
 	ir_tarval *new_true  = eval(true_val);
 	ir_tarval *new_false = eval(false_val);
 
-	if (!tarval_is_constant(new_true) || !tarval_is_constant(new_false)) {
+	if (!tarval_is_constant(new_true) || !tarval_is_constant(new_false))
 		return NULL;
-	}
 
 	ir_node  *sel       = get_Mux_sel(mux);
 	ir_graph *irg       = get_irn_irg(mux);
@@ -2000,9 +1978,8 @@ static ir_node *apply_unop_on_mux(ir_node *mux, ir_tarval *(*eval)(ir_tarval *))
  */
 static ir_node *apply_conv_on_mux(ir_node *mux, ir_mode *mode)
 {
-	if (!only_one_user(mux)) {
+	if (!only_one_user(mux))
 		return NULL;
-	}
 
 	ir_tarval *true_val  = get_Const_tarval(get_Mux_true(mux));
 	ir_tarval *false_val = get_Const_tarval(get_Mux_false(mux));
@@ -2010,9 +1987,8 @@ static ir_node *apply_conv_on_mux(ir_node *mux, ir_mode *mode)
 	ir_tarval *new_true  = tarval_convert_to(true_val, mode);
 	ir_tarval *new_false = tarval_convert_to(false_val, mode);
 
-	if (!tarval_is_constant(new_true) || !tarval_is_constant(new_false)) {
+	if (!tarval_is_constant(new_true) || !tarval_is_constant(new_false))
 		return NULL;
-	}
 
 	ir_node  *sel       = get_Mux_sel(mux);
 	ir_graph *irg       = get_irn_irg(mux);
@@ -2104,9 +2080,8 @@ static bool operands_are_normalized(const ir_node *l, const ir_node *r)
 {
 	const const_class l_order = classify_const(l);
 	const const_class r_order = classify_const(r);
-	return
-		l_order > r_order ||
-		(l_order == r_order && get_irn_idx(l) <= get_irn_idx(r));
+	return l_order > r_order
+	    || (l_order == r_order && get_irn_idx(l) <= get_irn_idx(r));
 }
 
 static bool is_cmp_unequal(const ir_node *node)
@@ -2313,10 +2288,8 @@ static ir_node *transform_bitwise_distributive(ir_node *n)
 		}
 	}
 
-	if (op == op_Eor) {
-		/* nothing to gain here */
-		return n;
-	}
+	if (op == op_Eor)
+		return n; /* nothing to gain here */
 
 	if (op == op_Shrs || op == op_Shr || op == op_Shl
 	    || op == op_And || op == op_Or || op == op_Eor) {
@@ -2401,10 +2374,9 @@ static ir_node *transform_node_bitop_shift(ir_node *n)
 		return n;
 
 	/* doing it with Shrs is not legal if the Or/Eor affects the topmost bit */
-	if (is_Shrs(left)) {
-		/* TODO this could be improved */
+	/* TODO this could be improved */
+	if (is_Shrs(left))
 		return n;
-	}
 
 	ir_node   *shift_left = get_binop_left(left);
 	ir_node   *block      = get_nodes_block(n);
@@ -2428,13 +2400,10 @@ static ir_node *transform_node_bitop_shift(ir_node *n)
 		}
 	} else {
 		assert(is_Shr(left));
-		if (!is_And(n)) {
-			/*
-			 * TODO this can be improved by checking whether
-			 *      the left shift produces an overflow
-			 */
+		/* TODO this can be improved by checking whether
+		 *      the left shift produces an overflow */
+		if (!is_And(n))
 			return n;
-		}
 		tv_bitop = tarval_shl(tv2, tv1);
 	}
 	ir_node *new_bitop;
@@ -2903,9 +2872,8 @@ static ir_node *transform_node_Eor_(ir_node *n)
 				assert(is_Or(tb));
 				t = new_rd_And(dbgi, block, new_rd_Not(dbgi, block, l, mode), r, mode);
 			}
-			if (nots) {
+			if (nots)
 				t = new_rd_Not(dbgi, block, t, mode);
-			}
 			return t;
 		}
 	}
@@ -2937,9 +2905,8 @@ static ir_node *transform_node_Eor_(ir_node *n)
 				assert(is_Or(ta));
 				t = new_rd_And(dbgi, block, new_rd_Not(dbgi, block, l, mode), r, mode);
 			}
-			if (nots) {
+			if (nots)
 				t = new_rd_Not(dbgi, block, t, mode);
-			}
 			return t;
 		}
 	}
@@ -3326,18 +3293,16 @@ static ir_node *transform_node_Sub(ir_node *n)
 
 		/* FIXME: Does the Conv's work only for two complement or generally? */
 		if (left == b) {
-			if (mode != get_irn_mode(right)) {
-				/* This Sub is an effective Cast */
+			/* This Sub is an effective Cast */
+			if (mode != get_irn_mode(right))
 				right = new_r_Conv(get_nodes_block(n), right, mode);
-			}
 			n = right;
 			DBG_OPT_ALGSIM1(oldn, a, b, n);
 			return n;
 		} else if (right == b) {
-			if (mode != get_irn_mode(left)) {
-				/* This Sub is an effective Cast */
+			/* This Sub is an effective Cast */
+			if (mode != get_irn_mode(left))
 				left = new_r_Conv(get_nodes_block(n), left, mode);
-			}
 			n = left;
 			DBG_OPT_ALGSIM1(oldn, a, b, n);
 			return n;
@@ -3352,20 +3317,18 @@ static ir_node *transform_node_Sub(ir_node *n)
 			ir_mode *r_mode = get_irn_mode(right);
 
 			n = new_r_Minus(get_nodes_block(n), right, r_mode);
-			if (mode != r_mode) {
-				/* This Sub is an effective Cast */
+			/* This Sub is an effective Cast */
+			if (mode != r_mode)
 				n = new_r_Conv(get_nodes_block(n), n, mode);
-			}
 			DBG_OPT_ALGSIM1(oldn, a, b, n);
 			return n;
 		} else if (right == a) {
 			ir_mode *l_mode = get_irn_mode(left);
 
 			n = new_r_Minus(get_nodes_block(n), left, l_mode);
-			if (mode != l_mode) {
-				/* This Sub is an effective Cast */
+			/* This Sub is an effective Cast */
+			if (mode != l_mode)
 				n = new_r_Conv(get_nodes_block(n), n, mode);
-			}
 			DBG_OPT_ALGSIM1(oldn, a, b, n);
 			return n;
 		}
@@ -3535,9 +3498,8 @@ static ir_node *can_negate_cheaply(dbg_info *const dbgi, ir_node *const node)
 		return new_r_Const(irg, negtv);
 	}
 	/* -(-X) => X */
-	if (is_Minus(node)) {
+	if (is_Minus(node))
 		return get_Minus_op(node);
-	}
 	/* -(a-b) => b-a */
 	ir_mode  *mode  = get_irn_mode(node);
 	if (is_Sub(node)) {
@@ -3763,9 +3725,8 @@ static ir_node *transform_node_Mul(ir_node *n)
 			div      = get_Proj_pred(div_proj);
 			if (is_Div(div)) {
 				div_right = get_Div_right(div);
-				if (div_right == b) {
+				if (div_right == b)
 					goto transform_div_mul;
-				}
 			}
 		}
 		if (is_Proj(b)) {
@@ -4023,11 +3984,10 @@ static ir_node *transform_node_Cond(ir_node *n)
 
 	ir_node   *a  = get_Cond_selector(n);
 	ir_tarval *ta = value_of(a);
-	if (!tarval_is_constant(ta) && is_Cmp(a)) {
-		/* try again with a direct call to compute_cmp, as we don't care
-		 * about the MODEB_LOWERED flag here */
+	/* try again with a direct call to compute_cmp, as we don't care
+	 * about the MODEB_LOWERED flag here */
+	if (!tarval_is_constant(ta) && is_Cmp(a))
 		ta = compute_cmp_ext(a);
-	}
 
 	if (tarval_is_constant(ta)) {
 		/* It's branching on a boolean constant.
@@ -4146,10 +4106,9 @@ static ir_node *transform_node_shift_bitop(ir_node *n)
 		return n;
 
 	/* doing it with Shrs is not legal if the Or/Eor affects the topmost bit */
-	if (is_Shrs(n) && (op_left == op_Or || op_left == op_Eor)) {
-		/* TODO: test if sign bit is affected */
+	/* TODO: test if sign bit is affected */
+	if (is_Shrs(n) && (op_left == op_Or || op_left == op_Eor))
 		return n;
-	}
 
 	ir_node *bitop_right = get_binop_right(left);
 	if (!is_Const(bitop_right))
@@ -4776,10 +4735,10 @@ static ir_node *transform_node_Proj_Div(ir_node *proj)
 			ir_node  *res     = get_Div_mem(div);
 			ir_node  *new_mem = get_irg_no_mem(irg);
 
-			if (confirm) {
-				/* This node can only float up to the Confirm block */
+			/* This node can only float up to the Confirm block */
+			if (confirm)
 				new_mem = new_r_Pin(get_nodes_block(confirm), new_mem);
-			}
+
 			set_irn_pinned(div, false);
 			/* this is a Div without exception, we can remove the memory edge */
 			set_Div_mem(div, new_mem);
@@ -4828,10 +4787,10 @@ static ir_node *transform_node_Proj_Mod(ir_node *proj)
 			ir_node  *res     = get_Mod_mem(mod);
 			ir_node  *new_mem = get_irg_no_mem(irg);
 
-			if (confirm) {
-				/* This node can only float up to the Confirm block */
+			/* This node can only float up to the Confirm block */
+			if (confirm)
 				new_mem = new_r_Pin(get_nodes_block(confirm), new_mem);
-			}
+
 			/* this is a Mod without exception, we can remove the memory edge */
 			set_Mod_mem(mod, new_mem);
 			return res;
@@ -5463,10 +5422,8 @@ reduced_tv:
 			case iro_And:
 				c1 = get_And_right(left);
 				if (is_Const(c1)) {
-					/*
-					 * And(x, C1) == C2 ==> FALSE if C2 & C1 != C2
-					 * And(x, C1) != C2 ==> TRUE if C2 & C1 != C2
-					 */
+					/* And(x, C1) == C2 ==> FALSE if C2 & C1 != C2
+					 * And(x, C1) != C2 ==> TRUE if C2 & C1 != C2 */
 					ir_tarval *tv1  = get_Const_tarval(c1);
 					ir_tarval *mask = tarval_and(tv1, tv);
 					if (mask != tv) {
@@ -5477,14 +5434,12 @@ reduced_tv:
 					}
 
 					if (get_tarval_popcount(tv) == 1) {
-						/*
-						 * optimization for AND:
+						/* optimization for AND:
 						 * Optimize:
 						 *   And(x, C) == C  ==>  And(x, C) != 0
 						 *   And(x, C) != C  ==>  And(X, C) == 0
 						 *
-						 * if C is a single Bit constant.
-						 */
+						 * if C is a single Bit constant.  */
 
 						/* check for Constant's match. We have check hare the tarvals,
 						   because our const might be changed */
@@ -5500,10 +5455,8 @@ reduced_tv:
 					if (mode_is_signed(mode) &&
 					    get_mode_arithmetic(mode) == irma_twos_complement &&
 					    get_mode_min(mode) == tv1 && tarval_is_null(tv)) {
-						/*
-						 * And(x, 0x80000000) == 0 ==> x >= 0
-						 * And(x, 0x80000000) != 0 ==> x <  0
-						 */
+						/* And(x, 0x80000000) == 0 ==> x >= 0
+						 * And(x, 0x80000000) != 0 ==> x <  0 */
 						left     = get_And_left(left);
 						relation = rel_eq != ir_relation_equal ? ir_relation_less : ir_relation_greater_equal;
 						changedc = true;
@@ -5514,10 +5467,8 @@ reduced_tv:
 			case iro_Or:
 				c1 = get_Or_right(left);
 				if (is_Const(c1) && tarval_is_null(tv)) {
-					/*
-					 * Or(x, C) == 0  && C != 0 ==> FALSE
-					 * Or(x, C) != 0  && C != 0 ==> TRUE
-					 */
+					/* Or(x, C) == 0  && C != 0 ==> FALSE
+					 * Or(x, C) != 0  && C != 0 ==> TRUE */
 					if (! tarval_is_null(get_Const_tarval(c1))) {
 						/* TODO: move to constant evaluation */
 						c1 = create_bool_const(irg, rel_eq != ir_relation_equal);
@@ -5801,10 +5752,9 @@ static ir_node *transform_node_shift(ir_node *n)
 		return n;
 
 	ir_mode *count_mode = get_tarval_mode(tv1);
-	if (get_tarval_mode(tv2) != count_mode) {
-		/* TODO: search bigger mode or something and convert... */
+	/* TODO: search bigger mode or something and convert... */
+	if (get_tarval_mode(tv2) != count_mode)
 		return n;
-	}
 
 	ir_mode  *mode       = get_irn_mode(n);
 	unsigned  modulo_shf = get_mode_modulo_shift(mode);
@@ -6038,14 +5988,12 @@ static ir_node *transform_node_shift_and(ir_node *n, new_shift_func new_shift)
 {
 	ir_mode *mode         = get_irn_mode(n);
 	unsigned modulo_shift = get_mode_modulo_shift(mode);
-	if (modulo_shift == 0) {
+	if (modulo_shift == 0)
 		return n;
-	}
 
 	ir_node *amount = get_binop_right(n);
-	if (!is_And(amount)) {
+	if (!is_And(amount))
 		return n;
-	}
 
 	assert(is_po2(modulo_shift));
 	ir_mode   *amount_mode = get_irn_mode(amount);
@@ -6240,9 +6188,8 @@ bool may_leave_out_middle_conv(ir_mode *m0, ir_mode *m1, ir_mode *m2)
 	if (n_floats == 1) {
 		int n_signed = mode_is_signed(m0) + mode_is_signed(m1) + mode_is_signed(m2);
 		/* we assume that float modes are always signed */
-		if ((n_signed & 1) != 1) {
+		if ((n_signed & 1) != 1)
 			return false;
-		}
 	} else if (n_floats == 2 && !mode_is_float(m1)) {
 		return false;
 	}
@@ -6297,17 +6244,15 @@ static ir_node *transform_node_Conv(ir_node *n)
 		ir_node  *block = get_nodes_block(n);
 		if (is_Conv(l)) {
 			ir_node *lop = get_Conv_op(l);
-			if (get_irn_mode(lop) == mode) {
-				/* ConvP(AddI(ConvI(P), x)) -> AddP(P, x) */
+			/* ConvP(AddI(ConvI(P), x)) -> AddP(P, x) */
+			if (get_irn_mode(lop) == mode)
 				return new_rd_Add(dbgi, block, lop, r, mode);
-			}
 		}
 		if (is_Conv(r)) {
 			ir_node *rop = get_Conv_op(r);
-			if (get_irn_mode(rop) == mode) {
-				/* ConvP(AddI(x, ConvI(P))) -> AddP(x, P) */
+			/* ConvP(AddI(x, ConvI(P))) -> AddP(x, P) */
+			if (get_irn_mode(rop) == mode)
 				return new_rd_Add(dbgi, block, l, rop, mode);
-			}
 		}
 	}
 
@@ -6539,11 +6484,10 @@ bool ir_is_optimizable_mux(const ir_node *sel, const ir_node *mux_false,
 	 * optimize the Mux completely away */
 
 	ir_mode *const mode = get_irn_mode(mux_false);
+	/* abs(x) = x^(x >>s 31) - (x >>s 31) */
 	if (get_mode_arithmetic(mode) == irma_twos_complement
-	    && ir_mux_is_abs(sel, mux_false, mux_true)) {
-		/* abs(x) = x^(x >>s 31) - (x >>s 31) */
+	 && ir_mux_is_abs(sel, mux_false, mux_true))
 		return true;
-	}
 
 	ir_node const *f = mux_false;
 	ir_node const *t = mux_true;
@@ -6570,9 +6514,8 @@ bool ir_is_optimizable_mux(const ir_node *sel, const ir_node *mux_false,
 		    get_mode_arithmetic(cmp_mode) == irma_twos_complement) {
 			if (is_Const(t)) {
 				if (is_Const_one(t)) {
-					if (ir_is_optimizable_mux_set(sel, relation, mode)) {
+					if (ir_is_optimizable_mux_set(sel, relation, mode))
 						return true;
-					}
 				} else if (is_Const_all_one(t) && is_Const(cmp_r) && is_Const_null(cmp_r)) {
 					ir_relation possible = ir_get_possible_cmp_relations(cmp_l, cmp_r);
 					if (get_complementary_relations(ir_relation_less, relation, possible) != ir_relation_false) {
@@ -6662,9 +6605,8 @@ static ir_node *transform_Mux_set(ir_node *n, ir_relation relation)
 					unsigned  shift_amount = MAX(left_low_bit, right_low_bit);
 					ir_node  *shift_cnt    = new_rd_Const_long(dbgi, irg, mode_Iu, shift_amount);
 					ir_node  *shift        = new_rd_Shr(dbgi, block, eor, shift_cnt, mode);
-					if (mode != dest_mode) {
+					if (mode != dest_mode)
 						shift = new_rd_Conv(dbgi, block, shift, dest_mode);
-					}
 
 					return shift;
 				}
@@ -6696,9 +6638,8 @@ static ir_node *transform_Mux_set(ir_node *n, ir_relation relation)
 					ir_node   *shift        = new_rd_Shr(dbgi, block, a, shift_cnt, calc_mode);
 					ir_node   *c            = new_rd_Const_one(dbgi, irg, calc_mode);
 					ir_node   *and          = new_rd_And(dbgi, block, shift, c, calc_mode);
-					if (calc_mode != dest_mode) {
+					if (calc_mode != dest_mode)
 						and = new_rd_Conv(dbgi, block, and, dest_mode);
-					}
 
 					return and;
 				}
@@ -6750,17 +6691,15 @@ static ir_node *transform_Mux_set(ir_node *n, ir_relation relation)
 	}
 
 	ir_node *sub = new_rd_Sub(dbgi, block, a, b, calc_mode);
-	if (need_not) {
+	if (need_not)
 		sub = new_rd_Not(dbgi, block, sub, calc_mode);
-	}
 
 	ir_graph  *irg       = get_irn_irg(block);
 	unsigned   bits      = get_mode_size_bits(calc_mode);
 	ir_node   *shift_cnt = new_rd_Const_long(dbgi, irg, mode_Iu, bits - 1);
 	ir_node   *shift     = new_rd_Shr(dbgi, block, sub, shift_cnt, calc_mode);
-	if (calc_mode != dest_mode) {
+	if (calc_mode != dest_mode)
 		shift = new_rd_Conv(dbgi, block, shift, dest_mode);
-	}
 
 	return shift;
 }
@@ -6834,18 +6773,16 @@ static ir_node *transform_node_Mux(ir_node *n)
 						dbg_info *dbgi      = get_irn_dbg_info(n);
 
 						/* Mux(a < 0, 0, 0xFFFFFFFF) => a >>s 31 */
-						if (rel_lt == ir_relation_greater_equal) {
-							/* Mux(a >= 0, 0, 0xFFFFFFFF) => ~a >>s 31 */
+						/* Mux(a >= 0, 0, 0xFFFFFFFF) => ~a >>s 31 */
+						if (rel_lt == ir_relation_greater_equal)
 							cmp_l = new_rd_Not(dbgi, block, cmp_l, cmp_mode);
-						}
 
 						unsigned  bits = get_mode_size_bits(cmp_mode);
 						ir_node  *c    = new_rd_Const_long(dbgi, irg, mode_Iu, bits - 1U);
 						ir_node  *shrs = new_rd_Shrs(dbgi, block, cmp_l, c, cmp_mode);
 
-						if (cmp_mode != mode) {
+						if (cmp_mode != mode)
 							shrs = new_rd_Conv(dbgi, block, shrs, mode);
-						}
 
 						return shrs;
 					}
@@ -6862,9 +6799,8 @@ static ir_node *transform_node_Mux(ir_node *n)
 					dbg_info    *dbgi     = get_irn_dbg_info(n);
 					assert(rel_eq != ir_relation_false);
 
-					if (mode != cmp_mode) {
+					if (mode != cmp_mode)
 						cmp_l = new_rd_Conv(dbgi, block, cmp_l, mode);
-					}
 
 					if (rel_eq == ir_relation_equal ? is_Const_one(cmp_r) : is_Const_null(cmp_r)) {
 						/* Mux((a & 1) != 0, 0, b) => -a & b */
@@ -7388,14 +7324,12 @@ static ir_node *transform_node_Load(ir_node *n)
 	ir_node *mem  = get_Load_mem(n);
 	ir_mode *mode = get_Load_mode(n);
 	ir_node *val  = predict_load(ptr, mode);
-	if (val != NULL) {
+	if (val != NULL)
 		return create_load_replacement_tuple(n, mem, val);
-	}
 
 	const ir_node *confirm;
-	if (value_not_null(ptr, &confirm) && confirm == NULL) {
+	if (value_not_null(ptr, &confirm) && confirm == NULL)
 		set_irn_pinned(n, false);
-	}
 
 	/* if our memory predecessor is a load from the same address, then reuse the
 	 * previous result */
@@ -7483,9 +7417,8 @@ static ir_node *transform_node_Store(ir_node *n)
 		return n;
 
 	const ir_node *confirm;
-	if (value_not_null(ptr, &confirm) && confirm == NULL) {
+	if (value_not_null(ptr, &confirm) && confirm == NULL)
 		set_irn_pinned(n, false);
-	}
 	return n;
 }
 
@@ -7551,9 +7484,8 @@ restart:;
 		(iro == iro_Proj)) {    /* Flags tested local. */
 		if (n->op->ops.transform_node != NULL) {
 			n = n->op->ops.transform_node(n);
-			if (n != old_n) {
+			if (n != old_n)
 				goto restart;
-			}
 		}
 	}
 
@@ -7645,21 +7577,21 @@ void ir_register_opt_node_ops(void)
 	set_op_transform_node_proj(op_Store,   transform_node_Proj_Store);
 }
 
-/* **************** Common Subexpression Elimination **************** */
-
 /** The size of the hash table used, should estimate the number of nodes
-    in a graph. */
+ * in a graph. */
 #define N_IR_NODES 512
 
-int identities_cmp(const void *elt, const void *key)
+static int identities_cmp(const void *elt, const void *key)
 {
 	ir_node *a = (ir_node *)elt;
 	ir_node *b = (ir_node *)key;
 
-	if (a == b) return 0;
+	if (a == b)
+		return 0;
 
 	if ((get_irn_op(a) != get_irn_op(b)) ||
-	    (get_irn_mode(a) != get_irn_mode(b))) return 1;
+	    (get_irn_mode(a) != get_irn_mode(b)))
+	    return 1;
 
 	/* compare if a's in and b's in are of equal length */
 	int irn_arity_a = get_irn_arity(a);
@@ -7677,7 +7609,7 @@ int identities_cmp(const void *elt, const void *key)
 	} else {
 		ir_node *block_a = get_nodes_block(a);
 		ir_node *block_b = get_nodes_block(b);
-		if (! get_opt_global_cse()) {
+		if (!get_opt_global_cse()) {
 			/* for block-local CSE both nodes must be in the same Block */
 			if (block_a != block_b)
 				return 1;
@@ -7688,7 +7620,7 @@ int identities_cmp(const void *elt, const void *key)
 			 * So we use a very conservative variant here and only CSE if 1 value dominates the
 			 * other. */
 			if (!block_dominates(block_a, block_b)
-			    && !block_dominates(block_b, block_a))
+			 && !block_dominates(block_b, block_a))
 			    return 1;
 		}
 	}
@@ -7785,10 +7717,9 @@ ir_node *identify_remember(ir_node *n)
 	/* lookup or insert in hash table with given hash key. */
 	ir_node *nn = (ir_node *)pset_insert(value_table, n, ir_node_hash(n));
 
-	if (nn != n) {
-		/* n is reachable again */
+	/* nn is reachable again */
+	if (nn != n)
 		edges_node_revival(nn);
-	}
 
 	return nn;
 }
@@ -7835,7 +7766,8 @@ ir_node *optimize_node(ir_node *n)
 	unsigned  iro  = get_irn_opcode(n);
 
 	/* Always optimize Phi nodes: part of the construction. */
-	if ((!get_optimize()) && (iro != iro_Phi)) return n;
+	if (!get_optimize() && (iro != iro_Phi))
+		return n;
 
 	ir_graph *irg = get_irn_irg(n);
 
@@ -7846,10 +7778,8 @@ ir_node *optimize_node(ir_node *n)
 			/* try to evaluate */
 			ir_tarval *tv = computed_value(n);
 			if (tarval_is_constant(tv)) {
-				/*
-				 * we MUST copy the node here temporarily, because it's still
-				 * needed for DBG_OPT_CSTEVAL
-				 */
+				/* we MUST copy the node here temporarily, because it's still
+				 * needed for DBG_OPT_CSTEVAL */
 				size_t node_size = offsetof(ir_node, attr) +  n->op->attr_size;
 				oldn = (ir_node *)alloca(node_size);
 
@@ -7900,7 +7830,7 @@ ir_node *optimize_node(ir_node *n)
 	}
 
 	/* Some more constant expression evaluation that does not allow to
-	   free the node. */
+	 * free the node. */
 	iro = get_irn_opcode(n);
 	if (get_opt_algebraic_simplification() ||
 		(iro == iro_Cond) ||
@@ -7921,7 +7851,8 @@ ir_node *optimize_node(ir_node *n)
 
 ir_node *optimize_in_place_2(ir_node *n)
 {
-	if (!get_optimize() && !is_Phi(n)) return n;
+	if (!get_optimize() && !is_Phi(n))
+		return n;
 
 	if (is_Deleted(n))
 		return n;

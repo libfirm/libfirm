@@ -52,12 +52,6 @@ void del_identities(ir_graph *irg);
 void add_identities(ir_node *node);
 
 /**
- * Compare function for two nodes in the hash table. Gets two
- * nodes as parameters.  Returns 0 if the nodes are a cse.
- */
-int identities_cmp(const void *elt, const void *key);
-
-/**
  * Return the canonical node computing the same value as n.
  * Looks up the node in a hash table, enters it in the table
  * if it isn't there yet.
