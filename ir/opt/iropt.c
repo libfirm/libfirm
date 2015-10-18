@@ -340,7 +340,7 @@ static ir_tarval *computed_value_Sub(const ir_node *n)
 	ir_tarval *ta = value_of(a);
 	ir_tarval *tb = value_of(b);
 	if (ta != tarval_unknown && tb != tarval_unknown)
-		return tarval_sub(ta, tb, mode);
+		return tarval_sub(ta, tb);
 
 	return tarval_unknown;
 }
@@ -1719,30 +1719,7 @@ static int is_const_Mux(ir_node *n)
 		is_Const(get_Mux_true(n));
 }
 
-typedef ir_tarval *(*tarval_sub_type)(ir_tarval *a, ir_tarval *b, ir_mode *mode);
 typedef ir_tarval *(*tarval_binop_type)(ir_tarval *a, ir_tarval *b);
-
-/**
- * in reality eval_func should be tarval (*eval_func)() but incomplete
- * declarations are bad style and generate noisy warnings
- */
-typedef void (*eval_func)(void);
-
-/**
- * Wrapper for the tarval binop evaluation, tarval_sub has one more parameter.
- */
-static ir_tarval *do_eval(eval_func eval, ir_tarval *a, ir_tarval *b, ir_mode *mode)
-{
-	if (eval == (eval_func) tarval_sub) {
-		tarval_sub_type func = (tarval_sub_type)eval;
-
-		return func(a, b, mode);
-	} else {
-		tarval_binop_type func = (tarval_binop_type)eval;
-
-		return func(a, b);
-	}
-}
 
 /**
  * Apply an evaluator on a binop with a constant operators (and one Phi).
@@ -1755,14 +1732,14 @@ static ir_tarval *do_eval(eval_func eval, ir_tarval *a, ir_tarval *b, ir_mode *m
  *
  * @return a new Phi node if the conversion was successful, NULL else
  */
-static ir_node *apply_binop_on_phi(ir_node *phi, ir_tarval *other, eval_func eval, ir_mode *mode, bool left)
+static ir_node *apply_binop_on_phi(ir_node *phi, ir_tarval *other, tarval_binop_type eval, ir_mode *mode, bool left)
 {
 	int         n   = get_irn_arity(phi);
 	ir_tarval **tvs = ALLOCAN(ir_tarval*, n);
 	if (left) {
 		foreach_irn_in(phi, i, pred) {
 			ir_tarval *tv        = get_Const_tarval(pred);
-			ir_tarval *evaluated = do_eval(eval, other, tv, mode);
+			ir_tarval *evaluated = eval(other, tv);
 
 			if (!tarval_is_constant(evaluated)) {
 				/* folding failed, abort */
@@ -1773,7 +1750,7 @@ static ir_node *apply_binop_on_phi(ir_node *phi, ir_tarval *other, eval_func eva
 	} else {
 		foreach_irn_in(phi, i, pred) {
 			ir_tarval *tv        = get_Const_tarval(pred);
-			ir_tarval *evaluated = do_eval(eval, tv, other, mode);
+			ir_tarval *evaluated = eval(tv, other);
 
 			if (!tarval_is_constant(evaluated)) {
 				/* folding failed, abort */
@@ -1801,7 +1778,7 @@ static ir_node *apply_binop_on_phi(ir_node *phi, ir_tarval *other, eval_func eva
  *
  * @return a new Phi node if the conversion was successful, NULL else
  */
-static ir_node *apply_binop_on_2_phis(ir_node *a, ir_node *b, eval_func eval, ir_mode *mode)
+static ir_node *apply_binop_on_2_phis(ir_node *a, ir_node *b, tarval_binop_type eval, ir_mode *mode)
 {
 	if (get_nodes_block(a) != get_nodes_block(b))
 		return NULL;
@@ -1813,7 +1790,7 @@ static ir_node *apply_binop_on_2_phis(ir_node *a, ir_node *b, eval_func eval, ir
 		ir_tarval     *tv_l   = get_Const_tarval(pred_a);
 		const ir_node *pred_b = get_irn_n(b, i);
 		ir_tarval     *tv_r   = get_Const_tarval(pred_b);
-		ir_tarval     *tv     = do_eval(eval, tv_l, tv_r, mode);
+		ir_tarval     *tv     = eval(tv_l, tv_r);
 
 		if (!tarval_is_constant(tv)) {
 			/* folding failed, bad */
@@ -1903,7 +1880,7 @@ static ir_node *apply_conv_on_phi(ir_node *phi, ir_mode *mode)
  *
  * @return a new Mux node if the conversion was successful, NULL else
  */
-static ir_node *apply_binop_on_mux(ir_node *mux, ir_tarval *other, eval_func eval, ir_mode *mode, bool left)
+static ir_node *apply_binop_on_mux(ir_node *mux, ir_tarval *other, tarval_binop_type eval, ir_mode *mode, bool left)
 {
 	if (!only_one_user(mux)) {
 		return NULL;
@@ -1914,11 +1891,11 @@ static ir_node *apply_binop_on_mux(ir_node *mux, ir_tarval *other, eval_func eva
 
 	ir_tarval *new_true, *new_false;
 	if (left) {
-		new_true  = do_eval(eval, other, true_val, mode);
-		new_false = do_eval(eval, other, false_val, mode);
+		new_true  = eval(other, true_val);
+		new_false = eval(other, false_val);
 	} else {
-		new_true  = do_eval(eval, true_val, other, mode);
-		new_false = do_eval(eval, false_val, other, mode);
+		new_true  = eval(true_val, other);
+		new_false = eval(false_val, other);
 	}
 
 	if (!tarval_is_constant(new_true) || !tarval_is_constant(new_false)) {
@@ -1943,7 +1920,7 @@ static ir_node *apply_binop_on_mux(ir_node *mux, ir_tarval *other, eval_func eva
  *
  * @return a new Mux node if the conversion was successful, NULL else
  */
-static ir_node *apply_binop_on_2_muxs(ir_node *a, ir_node *b, eval_func eval, ir_mode *mode)
+static ir_node *apply_binop_on_2_muxs(ir_node *a, ir_node *b, tarval_binop_type eval, ir_mode *mode)
 {
 	if (!only_one_user(a) || !only_one_user(b)) {
 		return NULL;
@@ -1964,8 +1941,8 @@ static ir_node *apply_binop_on_2_muxs(ir_node *a, ir_node *b, eval_func eval, ir
 		ir_tarval *true_a  = get_Const_tarval(get_Mux_true(a));
 		ir_tarval *true_b  = get_Const_tarval(get_Mux_true(b));
 
-		ir_tarval *new_false = do_eval(eval, false_a, false_b, mode);
-		ir_tarval *new_true  = do_eval(eval, true_a, true_b, mode);
+		ir_tarval *new_false = eval(false_a, false_b);
+		ir_tarval *new_true  = eval(true_a, true_b);
 
 		if (!tarval_is_constant(new_true) || !tarval_is_constant(new_false)) {
 			return NULL;
@@ -2556,7 +2533,7 @@ static ir_node *transform_node_Or_(ir_node *n)
 			ir_tarval *const one = get_mode_one(mode);
 
 			/* Create mask for rightmost may-1-bit and the trailing 0's. */
-			mask = tarval_eor(z, tarval_sub(z, one, NULL));
+			mask = tarval_eor(z, tarval_sub(z, one));
 		} else {
 			mask = get_mode_one(mode);
 		}
@@ -2674,7 +2651,7 @@ static ir_node *transform_node_Or_(ir_node *n)
 	}
 
 	ir_node *c;
-	HANDLE_BINOP_CHOICE((eval_func) tarval_or, a, b, c, mode);
+	HANDLE_BINOP_CHOICE(tarval_or, a, b, c, mode);
 
 	n = transform_bitop_chain(n);
 	if (n != oldn)
@@ -2734,7 +2711,7 @@ static ir_node *transform_node_Eor_(ir_node *n)
 	}
 
 	ir_node *c;
-	HANDLE_BINOP_CHOICE((eval_func) tarval_eor, a, b, c, mode);
+	HANDLE_BINOP_CHOICE(tarval_eor, a, b, c, mode);
 
 	/* normalize not nodes... ~a ^ b <=> a ^ ~b */
 	if (is_Not(a) && only_one_user(a) &&
@@ -2781,7 +2758,7 @@ static ir_node *transform_node_Eor_(ir_node *n)
 						ir_node   *block = get_nodes_block(n);
 						ir_node   *aa    = get_Add_left(a);
 						ir_tarval *tab   = get_Const_tarval(ab);
-						ir_tarval *tc    = tarval_sub(tb, tab, NULL);
+						ir_tarval *tc    = tarval_sub(tb, tab);
 						ir_node   *c     = new_rd_Const(dbgi, irg, tc);
 						return new_rd_Sub(dbgi, block, c, aa, mode);
 					}
@@ -2794,7 +2771,7 @@ static ir_node *transform_node_Eor_(ir_node *n)
 						ir_node   *block = get_nodes_block(n);
 						ir_node   *ab    = get_Sub_right(a);
 						ir_tarval *taa   = get_Const_tarval(aa);
-						ir_tarval *tc    = tarval_sub(tb, taa, NULL);
+						ir_tarval *tc    = tarval_sub(tb, taa);
 						ir_node   *c     = new_rd_Const(dbgi, irg, tc);
 						return new_rd_Add(dbgi, block, ab, c, mode);
 					}
@@ -3044,7 +3021,7 @@ static ir_node *transform_node_Add(ir_node *n)
 	}
 
 	ir_node *c;
-	HANDLE_BINOP_CHOICE((eval_func) tarval_add, a, b, c, mode);
+	HANDLE_BINOP_CHOICE(tarval_add, a, b, c, mode);
 
 	/* these optimizations are imprecise for floating-point ops */
 	if (mode_is_float(mode) && !ir_imprecise_float_transforms_allowed())
@@ -3094,7 +3071,7 @@ static ir_node *transform_node_Add(ir_node *n)
 				if (is_Const(b)) {
 					ir_tarval *const tv  = get_Const_tarval(b);
 					ir_tarval *const one = get_mode_one(mode);
-					ir_tarval *const add = tarval_sub(tv, one, NULL);
+					ir_tarval *const add = tarval_sub(tv, one);
 
 					if (tarval_is_constant(add)) {
 						/* ~x + C = (C - 1) - x */
@@ -3248,7 +3225,7 @@ static ir_node *transform_node_Sub(ir_node *n)
 	}
 
 	ir_node *c;
-	HANDLE_BINOP_CHOICE((eval_func) tarval_sub, a, b, c, mode);
+	HANDLE_BINOP_CHOICE(tarval_sub, a, b, c, mode);
 
 	/* these optimizations are imprecise for floating-point ops */
 	if (mode_is_float(mode) && !ir_imprecise_float_transforms_allowed())
@@ -3273,7 +3250,7 @@ static ir_node *transform_node_Sub(ir_node *n)
 
 		if (tarval_is_constant(tr)) {
 			ir_tarval *ta = get_Const_tarval(a);
-			ir_tarval *tv = tarval_sub(ta, tr, NULL);
+			ir_tarval *tv = tarval_sub(ta, tr);
 
 			if (tarval_is_constant(tv)) {
 				/* C1 - (x + C2) = (C1 - C2) - x*/
@@ -3650,7 +3627,7 @@ static ir_node *transform_node_Mul(ir_node *n)
 	ir_node *a    = get_Mul_left(n);
 	ir_node *b    = get_Mul_right(n);
 	ir_node *c;
-	HANDLE_BINOP_CHOICE((eval_func) tarval_mul, a, b, c, mode);
+	HANDLE_BINOP_CHOICE(tarval_mul, a, b, c, mode);
 
 	ir_mode_arithmetic arith = get_mode_arithmetic(mode);
 	if (is_Const(b)) {
@@ -3840,21 +3817,21 @@ static ir_node *transform_node_Div(ir_node *n)
 	if (mode_is_int(mode)) {
 		if (is_Const(b) && is_const_Phi(a)) {
 			/* check for Div(Phi, Const) */
-			value = apply_binop_on_phi(a, get_Const_tarval(b), (eval_func) tarval_div, mode, 0);
+			value = apply_binop_on_phi(a, get_Const_tarval(b), tarval_div, mode, 0);
 			if (value) {
 				DBG_OPT_ALGSIM0(n, value);
 				goto make_tuple;
 			}
 		} else if (is_Const(a) && is_const_Phi(b)) {
 			/* check for Div(Const, Phi) */
-			value = apply_binop_on_phi(b, get_Const_tarval(a), (eval_func) tarval_div, mode, 1);
+			value = apply_binop_on_phi(b, get_Const_tarval(a), tarval_div, mode, 1);
 			if (value) {
 				DBG_OPT_ALGSIM0(n, value);
 				goto make_tuple;
 			}
 		} else if (is_const_Phi(a) && is_const_Phi(b)) {
 			/* check for Div(Phi, Phi) */
-			value = apply_binop_on_2_phis(a, b, (eval_func) tarval_div, mode);
+			value = apply_binop_on_2_phis(a, b, tarval_div, mode);
 			if (value) {
 				DBG_OPT_ALGSIM0(n, value);
 				goto make_tuple;
@@ -3944,21 +3921,21 @@ static ir_node *transform_node_Mod(ir_node *n)
 
 	if (is_Const(b) && is_const_Phi(a)) {
 		/* check for Div(Phi, Const) */
-		value = apply_binop_on_phi(a, get_Const_tarval(b), (eval_func) tarval_mod, mode, 0);
+		value = apply_binop_on_phi(a, get_Const_tarval(b), tarval_mod, mode, 0);
 		if (value) {
 			DBG_OPT_ALGSIM0(n, value);
 			goto make_tuple;
 		}
 	} else if (is_Const(a) && is_const_Phi(b)) {
 		/* check for Div(Const, Phi) */
-		value = apply_binop_on_phi(b, get_Const_tarval(a), (eval_func) tarval_mod, mode, 1);
+		value = apply_binop_on_phi(b, get_Const_tarval(a), tarval_mod, mode, 1);
 		if (value) {
 			DBG_OPT_ALGSIM0(n, value);
 			goto make_tuple;
 		}
 	} else if (is_const_Phi(a) && is_const_Phi(b)) {
 		/* check for Div(Phi, Phi) */
-		value = apply_binop_on_2_phis(a, b, (eval_func) tarval_mod, mode);
+		value = apply_binop_on_2_phis(a, b, tarval_mod, mode);
 		if (value) {
 			DBG_OPT_ALGSIM0(n, value);
 			goto make_tuple;
@@ -4301,7 +4278,7 @@ static ir_node *transform_node_And(ir_node *n)
 
 	ir_node *c;
 	ir_mode *mode = get_irn_mode(n);
-	HANDLE_BINOP_CHOICE((eval_func) tarval_and, a, b, c, mode);
+	HANDLE_BINOP_CHOICE(tarval_and, a, b, c, mode);
 
 	if (is_Or(a) || is_Or_Eor_Add(a)) {
 		ir_node *or_left  = get_binop_left(a);
@@ -4408,7 +4385,7 @@ absorb:;
 			ir_tarval *const one = get_mode_one(mode);
 
 			/* Create mask for rightmost may-1-bit and the trailing 0's. */
-			mask = tarval_eor(z, tarval_sub(z, one, NULL));
+			mask = tarval_eor(z, tarval_sub(z, one));
 		} else {
 			mask = get_mode_one(mode);
 		}
@@ -5098,7 +5075,7 @@ cmp_x_eq_0:
 				if (tarval_is_null(tarval_and(tarval_or(leq, req), min))) {
 					ir_tarval *const c     = get_Const_tarval(lr);
 					ir_tarval *const one   = get_mode_one(mode);
-					ir_tarval *const mask  = tarval_sub(tarval_shl(one, c), one, NULL);
+					ir_tarval *const mask  = tarval_sub(tarval_shl(one, c), one);
 					ir_tarval *const lmask = tarval_and(leq, mask);
 					ir_tarval *const rmask = tarval_and(req, mask);
 					if (tarval_is_null(tarval_or(lmask, rmask)) &&
@@ -5169,7 +5146,7 @@ cmp_x_eq_0:
 					ir_node *blk  = get_nodes_block(op);
 					ir_mode *mode = get_irn_mode(v);
 
-					tv      = tarval_sub(tv, get_mode_one(mode), NULL);
+					tv      = tarval_sub(tv, get_mode_one(mode));
 					left    = new_rd_And(get_irn_dbg_info(op), blk, v, new_r_Const(irg, tv), mode);
 					changed = true;
 					DBG_OPT_ALGSIM0(n, n);
@@ -5387,14 +5364,14 @@ cmp_x_eq_0:
 							 * which converges in O(2**n). */
 							ir_tarval *const one   = get_mode_one(mode);
 							ir_tarval *const hibit = tarval_shl_unsigned(one, hi);
-							ir_tarval *const mask  = tarval_sub(hibit, one, NULL);
-							tv = tarval_or(tarval_andnot(tarval_sub(tv, hibit, NULL), mask), tarval_and(bl->z, mask));
+							ir_tarval *const mask  = tarval_sub(hibit, one);
+							tv = tarval_or(tarval_andnot(tarval_sub(tv, hibit), mask), tarval_and(bl->z, mask));
 							goto reduced_tv;
 						}
 					}
 
 					/* c > 0 : a < c  ==>  a <= (c - 1)    a >= c  ==>  a > (c - 1) */
-					tv = tarval_sub(tv, get_mode_one(mode), NULL);
+					tv = tarval_sub(tv, get_mode_one(mode));
 					goto reduced_tv;
 				} else if ((relation == ir_relation_greater || relation == ir_relation_less_equal) &&
 					tarval_cmp(tv, get_mode_null(mode)) == ir_relation_less) {
@@ -5412,7 +5389,7 @@ cmp_x_eq_0:
 							 * which converges in O(2**n). */
 							ir_tarval *const one   = get_mode_one(mode);
 							ir_tarval *const hibit = tarval_shl_unsigned(one, hi);
-							ir_tarval *const mask  = tarval_sub(hibit, one, NULL);
+							ir_tarval *const mask  = tarval_sub(hibit, one);
 							tv = tarval_or(tarval_andnot(tarval_add(tv, hibit), mask), tarval_and(bl->o, mask));
 							goto reduced_tv;
 						}
@@ -5454,7 +5431,7 @@ reduced_tv:
 						/* a + c1 ==/!= c2  ==>  a ==/!= c2 - c1 */
 						ir_tarval *tv2 = value_of(get_binop_right(left));
 						if (tarval_is_constant(tv2)) {
-							tv2 = tarval_sub(tv, tv2, NULL);
+							tv2 = tarval_sub(tv, tv2);
 							if (tarval_is_constant(tv2)) {
 								left     = get_binop_left(left);
 								relation = rel_eq;
@@ -5623,7 +5600,7 @@ reduced_tv:
 					ir_tarval *all_one = get_mode_all_one(mode);
 					ir_tarval *cond    = new_tarval_from_long(get_mode_size_bits(mode) - 1, get_tarval_mode(tv1));
 
-					cond = tarval_sub(cond, tv1, NULL);
+					cond = tarval_sub(cond, tv1);
 					cond = tarval_shrs(tv, cond);
 
 					if (!tarval_is_all_one(cond) && !tarval_is_null(cond)) {
@@ -5944,7 +5921,7 @@ static ir_node *transform_node_shl_shr(ir_node *n)
 
 	ir_node *new_shift;
 	if (relation == ir_relation_less || relation == ir_relation_equal) {
-		ir_tarval *tv_shift  = tarval_sub(tv_shr, tv_shl, NULL);
+		ir_tarval *tv_shift  = tarval_sub(tv_shr, tv_shl);
 		ir_node   *new_const = new_r_Const(irg, tv_shift);
 		if (need_shrs) {
 			new_shift = new_rd_Shrs(dbgi, block, x, new_const, mode);
@@ -5953,7 +5930,7 @@ static ir_node *transform_node_shl_shr(ir_node *n)
 		}
 	} else {
 		assert(relation == ir_relation_greater);
-		ir_tarval *tv_shift  = tarval_sub(tv_shl, tv_shr, NULL);
+		ir_tarval *tv_shift  = tarval_sub(tv_shl, tv_shr);
 		ir_node   *new_const = new_r_Const(irg, tv_shift);
 		new_shift = new_rd_Shl(dbgi, block, x, new_const, mode);
 	}
@@ -6105,7 +6082,7 @@ static ir_node *transform_node_Shr(ir_node *n)
 	ir_mode *mode  = get_irn_mode(n);
 
 	ir_node *c;
-	HANDLE_BINOP_CHOICE((eval_func) tarval_shr, left, right, c, mode);
+	HANDLE_BINOP_CHOICE(tarval_shr, left, right, c, mode);
 	n = transform_node_shift(n);
 
 	if (is_Shr(n))
@@ -6141,7 +6118,7 @@ static ir_node *transform_node_Shrs(ir_node *n)
 	}
 
 	ir_node *c;
-	HANDLE_BINOP_CHOICE((eval_func) tarval_shrs, a, b, c, mode);
+	HANDLE_BINOP_CHOICE(tarval_shrs, a, b, c, mode);
 	n = transform_node_shift(n);
 	if (n != oldn)
 		return n;
@@ -6199,7 +6176,7 @@ static ir_node *transform_node_Shl(ir_node *n)
 		}
 	}
 
-	HANDLE_BINOP_CHOICE((eval_func) tarval_shl, a, b, c, mode);
+	HANDLE_BINOP_CHOICE(tarval_shl, a, b, c, mode);
 	n = transform_node_shift(n);
 
 	if (is_Shl(n))

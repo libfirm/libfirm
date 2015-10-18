@@ -414,11 +414,10 @@ FIRM_API ir_tarval *tarval_add(ir_tarval *a, ir_tarval *b);
  *
  * @param a         the first tarval
  * @param b         the second tarval
- * @param dst_mode  the mode of the result, needed for mode_P - mode_P, else NULL
  *
  * @return a - b or tarval_bad
  */
-FIRM_API ir_tarval *tarval_sub(ir_tarval *a, ir_tarval *b, ir_mode *dst_mode);
+FIRM_API ir_tarval *tarval_sub(ir_tarval *a, ir_tarval *b);
 
 /**
  * Multiplication of tarvals.

@@ -148,7 +148,7 @@ static void normalize_table(ir_node *switchn, ir_mode *new_mode,
 		ir_tarval *min = entry->min;
 		min = tarval_convert_to(min, new_mode);
 		if (delta != NULL)
-			min = tarval_sub(min, delta, NULL);
+			min = tarval_sub(min, delta);
 
 		if (entry->min == entry->max) {
 			entry->min = min;
@@ -157,7 +157,7 @@ static void normalize_table(ir_node *switchn, ir_mode *new_mode,
 			ir_tarval *max = entry->max;
 			max = tarval_convert_to(max, new_mode);
 			if (delta != NULL)
-				max = tarval_sub(max, delta, NULL);
+				max = tarval_sub(max, delta);
 			entry->min = min;
 			entry->max = max;
 		}
@@ -245,7 +245,7 @@ static bool normalize_switch(switch_info_t *info, ir_mode *selector_mode)
 		dbg_info *dbgi      = get_irn_dbg_info(switchn);
 		selector = new_rd_Sub(dbgi, block, selector, min_const, mode);
 
-		info->switch_max = tarval_sub(info->switch_max, min, mode);
+		info->switch_max = tarval_sub(info->switch_max, min);
 		info->switch_min = get_mode_null(mode);
 		delta            = min;
 	}
@@ -285,7 +285,7 @@ static ir_node *create_case_cond(const ir_switch_table_entry *entry,
 	if (entry->min == entry->max) {
 		cmp = new_rd_Cmp(dbgi, block, selector, minconst, ir_relation_equal);
 	} else {
-		ir_tarval *adjusted_max = tarval_sub(entry->max, entry->min, NULL);
+		ir_tarval *adjusted_max = tarval_sub(entry->max, entry->min);
 		ir_node   *sub          = new_rd_Sub(dbgi, block, selector, minconst,
 		                                     get_tarval_mode(adjusted_max));
 		ir_node   *maxconst     = new_r_Const(irg, adjusted_max);
@@ -404,12 +404,12 @@ static void find_switch_nodes(ir_node *block, void *ctx)
 	 * We do an if-cascade if there are too many spare numbers.
 	 */
 	ir_mode   *selector_mode = get_irn_mode(get_Switch_selector(switchn));
-	ir_tarval *spare = tarval_sub(info.switch_max, info.switch_min, selector_mode);
+	ir_tarval *spare = tarval_sub(info.switch_max, info.switch_min);
 	ir_mode   *mode  = find_unsigned_mode(selector_mode);
 	spare = tarval_convert_to(spare, mode);
 	ir_tarval *num_cases_minus_one
 		= new_tarval_from_long(info.num_cases-1, mode);
-	spare = tarval_sub(spare, num_cases_minus_one, mode);
+	spare = tarval_sub(spare, num_cases_minus_one);
 	ir_tarval *spare_size = new_tarval_from_long(env->spare_size, mode);
 	bool lower_switch = info.num_cases <= env->small_switch
 		|| (tarval_cmp(spare, spare_size) & ir_relation_greater_equal);

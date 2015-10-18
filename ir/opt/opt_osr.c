@@ -1024,8 +1024,8 @@ static ir_node *apply_one_edge(ir_node *iv, ir_node *rc, ldtr_edge_t *e,
 			DB((dbg, LEVEL_4, " + %+F", tv_r));
 			break;
 		case iro_Sub:
-			tv      = tarval_sub(tv_l, tv_r, NULL);
-			tv_init = tarval_sub(tv_init, tv_r, NULL);
+			tv      = tarval_sub(tv_l, tv_r);
+			tv_init = tarval_sub(tv_init, tv_r);
 			DB((dbg, LEVEL_4, " - %+F", tv_r));
 			break;
 		default:
@@ -1050,7 +1050,7 @@ static ir_node *apply_one_edge(ir_node *iv, ir_node *rc, ldtr_edge_t *e,
 			tv_end = tarval_add(tv, tv_incr);
 		} else {
 			assert(pscc->code == iro_Sub);
-			tv_end = tarval_sub(tv, tv_incr, NULL);
+			tv_end = tarval_sub(tv, tv_incr);
 		}
 
 		tarval_set_wrap_on_overflow(old_wrap_on_overflow);

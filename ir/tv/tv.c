@@ -769,30 +769,37 @@ ir_tarval *tarval_add(ir_tarval *a, ir_tarval *b)
 	panic("invalid mode sort");
 }
 
-ir_tarval *tarval_sub(ir_tarval *a, ir_tarval *b, ir_mode *dst_mode)
+ir_tarval *tarval_sub(ir_tarval *a, ir_tarval *b)
 {
-	if (dst_mode != NULL) {
-		if (a->mode != dst_mode)
+	ir_mode *dst_mode;
+	if (mode_is_reference(a->mode)) {
+		if (mode_is_reference(b->mode)) {
+			dst_mode = get_reference_offset_mode(a->mode);
+			assert(get_reference_offset_mode(b->mode) == dst_mode);
 			a = tarval_convert_to(a, dst_mode);
-		if (b->mode != dst_mode)
-			b = tarval_convert_to(b, dst_mode);
+		} else {
+			dst_mode = a->mode;
+		}
+		b = tarval_convert_to(b, dst_mode);
+	} else {
+		assert(a->mode == b->mode);
+		dst_mode = a->mode;
 	}
-	assert(a->mode == b->mode);
 
-	switch (get_mode_sort(a->mode)) {
+	switch (get_mode_sort(dst_mode)) {
 	case irms_reference:
 	case irms_int_number: {
 		/* modes of a,b are equal, so result has mode of a as this might be the
 		 * character */
 		sc_word *buffer = ALLOCAN(sc_word, sc_value_length);
 		sc_sub(a->value, b->value, buffer);
-		return get_int_tarval_overflow(buffer, a->mode);
+		return get_int_tarval_overflow(buffer, dst_mode);
 	}
 
 	case irms_float_number: {
 		fp_value *buffer = (fp_value*)ALLOCAN(char, fp_value_size);
 		fc_sub((const fp_value*)a->value, (const fp_value*)b->value, buffer);
-		return get_fp_tarval(buffer, a->mode);
+		return get_fp_tarval(buffer, dst_mode);
 	}
 
 	case irms_auxiliary:

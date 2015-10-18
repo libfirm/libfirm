@@ -378,8 +378,8 @@ undefined:
 						const long        modulo_shift  = get_mode_modulo_shift(m);
 						ir_mode    *const rmode         = get_irn_mode(right);
 						ir_tarval  *const rone          = get_mode_one(rmode);
-						ir_tarval  *const size_mask     = tarval_sub(new_tarval_from_long(size_bits, rmode), rone, NULL);
-						ir_tarval  *const modulo_mask   = tarval_sub(new_tarval_from_long(modulo_shift, rmode), rone, NULL);
+						ir_tarval  *const size_mask     = tarval_sub(new_tarval_from_long(size_bits, rmode), rone);
+						ir_tarval  *const modulo_mask   = tarval_sub(new_tarval_from_long(modulo_shift, rmode), rone);
 						ir_tarval  *const zero          = get_mode_null(m);
 						ir_tarval  *const all_one       = get_mode_all_one(m);
 						ir_tarval  *const oversize_mask = tarval_andnot(modulo_mask, size_mask);
@@ -422,8 +422,8 @@ undefined:
 						const long        modulo_shift  = get_mode_modulo_shift(m);
 						ir_mode    *const rmode         = get_irn_mode(right);
 						ir_tarval  *const rone          = get_mode_one(rmode);
-						ir_tarval  *const size_mask     = tarval_sub(new_tarval_from_long(size_bits, rmode), rone, NULL);
-						ir_tarval  *const modulo_mask   = tarval_sub(new_tarval_from_long(modulo_shift, rmode), rone, NULL);
+						ir_tarval  *const size_mask     = tarval_sub(new_tarval_from_long(size_bits, rmode), rone);
+						ir_tarval  *const modulo_mask   = tarval_sub(new_tarval_from_long(modulo_shift, rmode), rone);
 						ir_tarval  *const zero          = get_mode_null(m);
 						ir_tarval  *const all_one       = get_mode_all_one(m);
 						ir_tarval  *const oversize_mask = tarval_andnot(modulo_mask, size_mask);
@@ -466,8 +466,8 @@ undefined:
 						const long        modulo_shift  = get_mode_modulo_shift(m);
 						ir_mode    *const rmode         = get_irn_mode(right);
 						ir_tarval  *const rone          = get_mode_one(rmode);
-						ir_tarval  *const size_mask     = tarval_sub(new_tarval_from_long(size_bits, rmode), rone, NULL);
-						ir_tarval  *const modulo_mask   = tarval_sub(new_tarval_from_long(modulo_shift, rmode), rone, NULL);
+						ir_tarval  *const size_mask     = tarval_sub(new_tarval_from_long(size_bits, rmode), rone);
+						ir_tarval  *const modulo_mask   = tarval_sub(new_tarval_from_long(modulo_shift, rmode), rone);
 						ir_tarval  *const zero          = get_mode_null(m);
 						ir_tarval  *const all_one       = get_mode_all_one(m);
 						ir_tarval  *const oversize_mask = tarval_andnot(modulo_mask, size_mask);
@@ -523,8 +523,8 @@ undefined:
 					ir_tarval *const lo  = l->o;
 					ir_tarval *const rz  = r->z;
 					ir_tarval *const ro  = r->o;
-					ir_tarval *const vz  = tarval_sub(lo, rz, m);
-					ir_tarval *const vo  = tarval_sub(lz, ro, m);
+					ir_tarval *const vz  = tarval_sub(lo, rz);
+					ir_tarval *const vo  = tarval_sub(lz, ro);
 					ir_tarval *const lnc = tarval_eor(lz, lo);
 					ir_tarval *const rnc = tarval_eor(rz, ro);
 					ir_tarval *const vnc = tarval_eor(vz, vo);

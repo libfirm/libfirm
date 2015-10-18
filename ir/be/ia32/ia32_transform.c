@@ -3428,7 +3428,7 @@ static void find_const_transform(x86_condition_code_t cc,
 			res->steps[step].transform = SETCC_TR_OR;
 		} else {
 			/* Normalize f to zero. */
-			ir_tarval *t_sub = tarval_sub(t, f, NULL);
+			ir_tarval *t_sub = tarval_sub(t, f);
 
 			t = t_sub;
 			res->steps[step].transform = SETCC_TR_ADD;
@@ -3442,7 +3442,7 @@ static void find_const_transform(x86_condition_code_t cc,
 
 		res->steps[step].val = get_tarval_long(f);
 		++step;
-		f = tarval_sub(f, f, NULL);
+		f = tarval_sub(f, f);
 		assert(tarval_is_null(f));
 	}
 

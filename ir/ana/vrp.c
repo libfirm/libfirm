@@ -152,8 +152,8 @@ static int vrp_update_node(ir_vrp_info *info, ir_node *node)
 		 && vrp_right->range_type == VRP_RANGE) {
 			int old_wrap_on_overflow = tarval_get_wrap_on_overflow();
 			tarval_set_wrap_on_overflow(false);
-			ir_tarval *new_top = tarval_sub(vrp_left->range_top, vrp_right->range_bottom, NULL);
-			ir_tarval *new_bottom = tarval_sub(vrp_left->range_bottom, vrp_right->range_top, NULL);
+			ir_tarval *new_top = tarval_sub(vrp_left->range_top, vrp_right->range_bottom);
+			ir_tarval *new_bottom = tarval_sub(vrp_left->range_bottom, vrp_right->range_top);
 			tarval_set_wrap_on_overflow(old_wrap_on_overflow);
 
 			if (new_top != tarval_bad && new_bottom != tarval_bad) {

@@ -173,7 +173,7 @@ static ir_node *bool_and(cond_pair* const cpair, ir_node *dst_block)
 	           (rel_hi == ir_relation_equal || rel_hi == ir_relation_greater_equal || rel_hi == ir_relation_greater)) {
 		/* x >=|>|!= lo && x ==|>=|> hi ==> x ==|>=|> hi */
 		return cmp_hi;
-	} else if (tarval_is_one(tarval_sub(tv_hi, tv_lo, NULL))) { /* lo + 1 == hi */
+	} else if (tarval_is_one(tarval_sub(tv_hi, tv_lo))) { /* lo + 1 == hi */
 		if (rel_lo == ir_relation_greater_equal && rel_hi == ir_relation_less) {
 			/* x >= c && x < c + 1 ==> x == c */
 			return make_Cmp(dst_block, cmp_lo, ir_relation_equal);
@@ -228,7 +228,7 @@ static ir_node *bool_and(cond_pair* const cpair, ir_node *dst_block)
 			}
 			c    = new_r_Const(irg, tv_lo);
 			sub  = new_r_Sub(block, x, c, mode);
-			subc = new_r_Const(irg, tarval_sub(tv_hi, tv_lo, NULL));
+			subc = new_r_Const(irg, tarval_sub(tv_hi, tv_lo));
 			cmp  = new_r_Cmp(block, sub, subc, rel_hi);
 			return cmp;
 		}
@@ -299,7 +299,7 @@ static ir_node *bool_or(cond_pair *const cpair, ir_node *dst_block)
 	           (rel_hi == ir_relation_equal || rel_hi == ir_relation_greater_equal || rel_hi == ir_relation_greater)) {
 		/* x >=|>|!= lo || x ==|>=|> hi ==> x >=|>|!= lo */
 		return cmp_lo;
-	} else if (tarval_is_one(tarval_sub(tv_hi, tv_lo, NULL))) { /* lo + 1 == hi */
+	} else if (tarval_is_one(tarval_sub(tv_hi, tv_lo))) { /* lo + 1 == hi */
 		if (rel_lo == ir_relation_less && rel_hi == ir_relation_greater_equal) {
 			/* x < c || x >= c + 1 ==> x != c */
 			return make_Cmp(dst_block, cmp_lo, ir_relation_less_greater);
@@ -354,7 +354,7 @@ static ir_node *bool_or(cond_pair *const cpair, ir_node *dst_block)
 			}
 			c    = new_r_Const(irg, tv_lo);
 			sub  = new_r_Sub(block, x, c, mode);
-			subc = new_r_Const(irg, tarval_sub(tv_hi, tv_lo, NULL));
+			subc = new_r_Const(irg, tarval_sub(tv_hi, tv_lo));
 			cmp  = new_r_Cmp(block, sub, subc, rel_hi);
 			return cmp;
 		}

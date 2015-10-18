@@ -675,7 +675,7 @@ static ir_node *eval_strcmp(ir_graph *irg, ir_entity *left, ir_entity *right,
 			ir_mode   *const res_mode = get_type_mode(res_tp);
 			ir_tarval *const res_l    = tarval_convert_to(tv_l, res_mode);
 			ir_tarval *const res_r    = tarval_convert_to(tv_r, res_mode);
-			ir_tarval *const tv       = tarval_sub(res_l, res_r, res_mode);
+			ir_tarval *const tv       = tarval_sub(res_l, res_r);
 			return new_r_Const(irg, tv);
 		}
 

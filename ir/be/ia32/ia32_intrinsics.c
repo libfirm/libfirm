@@ -113,9 +113,9 @@ static carry_result lower_sub_borrow(ir_node *left, ir_node *right, ir_mode *mod
 	int old_wrap_on_overflow = tarval_get_wrap_on_overflow();
 	tarval_set_wrap_on_overflow(false);
 
-	if (tarval_sub(lmin, rmax, NULL) == tarval_bad) {
+	if (tarval_sub(lmin, rmax) == tarval_bad) {
 		result = can_carry;
-		if (tarval_sub(lmax, rmin, NULL) == tarval_bad) {
+		if (tarval_sub(lmax, rmin) == tarval_bad) {
 			result = must_carry;
 		}
 	}

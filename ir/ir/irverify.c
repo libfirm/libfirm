@@ -132,22 +132,16 @@ static bool check_mode_same_input(const ir_node *n, int input,
 	return true;
 }
 
-static bool check_mode_same_size_input(const ir_node *n, int input,
-                                       const char *inputname)
+static bool check_mode_ptrdiff_input(const ir_node *n, int input,
+                                     const char *inputname)
 {
-	ir_mode  *mode         = get_irn_mode(n);
-	unsigned  mode_size    = get_mode_size_bits(mode);
 	ir_node  *in           = get_irn_n(n, input);
 	ir_mode  *in_mode      = get_irn_mode(in);
-	unsigned  in_mode_size = get_mode_size_bits(in_mode);
-	if (mode_size != in_mode_size) {
-		char num[16];
-		if (inputname == NULL) {
-			snprintf(num, sizeof(num), "input %d", input);
-			inputname = num;
-		}
-		warn(n, "mode size of input '%s' different from output mode size",
-		     inputname);
+	ir_mode  *expected     = get_reference_offset_mode(in_mode);
+	ir_mode  *mode         = get_irn_mode(n);
+	if (mode != expected) {
+		warn(n, "Sub with mode %+F at input %s expected mode %+F but has %+F",
+		     in_mode, inputname, expected, mode);
 		return false;
 	}
 	return true;
@@ -683,8 +677,8 @@ static int verify_node_Sub(const ir_node *n)
 		if (mode_is_reference(mode_left)) {
 			fine &= check_input_func(n, n_Sub_left, "left", mode_is_reference, "reference");
 			fine &= check_input_func(n, n_Sub_right, "right", mode_is_reference, "reference");
-			fine &= check_mode_same_size_input(n, n_Sub_left, "left");
-			fine &= check_mode_same_size_input(n, n_Sub_right, "right");
+			fine &= check_mode_ptrdiff_input(n, n_Sub_left, "left");
+			fine &= check_mode_ptrdiff_input(n, n_Sub_right, "right");
 		} else {
 			fine &= check_mode_same_input(n, n_Sub_left, "left");
 			fine &= check_mode_same_input(n, n_Sub_right, "right");
