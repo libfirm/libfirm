@@ -660,6 +660,8 @@ void be_gas_emit_function_prolog(const ir_entity *entity, unsigned po2alignment,
 		be_emit_write_line();
 		break;
 	case OBJECT_FILE_FORMAT_MACH_O:
+		if (section == (GAS_SECTION_TEXT | GAS_SECTION_FLAG_COMDAT))
+			emit_symbol_directive(".weak_definition", entity);
 		break;
 	}
 	be_gas_emit_entity(entity);
