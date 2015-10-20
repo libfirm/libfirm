@@ -3107,6 +3107,39 @@ mul_y_plus_z:;
 					}
 				}
 			}
+
+			ir_node *conv_op;
+			ir_node *other_op;
+			ir_mode *ref_mode;
+			if (is_Conv(a)) {
+				conv_op  = get_Conv_op(a);
+				other_op = b;
+				ref_mode = get_irn_mode(conv_op);
+				if (mode_is_reference(ref_mode)
+				 && get_mode_size_bits(ref_mode) == get_mode_size_bits(mode))
+					goto normalize_p;
+			}
+			if (is_Conv(b)) {
+				conv_op  = get_Conv_op(b);
+				other_op = a;
+				ref_mode = get_irn_mode(conv_op);
+				if (mode_is_reference(ref_mode)
+				 && get_mode_size_bits(ref_mode) == get_mode_size_bits(mode)) {
+normalize_p:;
+					/* AddI(ConvI(op_P), b) -> ConvI(AddP(op_P, ConvI(b)))
+					 * Note: The Convs are all same size and no-ops. */
+					dbg_info *const dbgi  = get_irn_dbg_info(n);
+					ir_node  *const block = get_nodes_block(n);
+					ir_mode  *const offset_mode
+						= get_reference_offset_mode(ref_mode);
+					ir_node  *const conv_o  = new_r_Conv(block, other_op,
+					                                     offset_mode);
+					ir_node  *const new_add = new_rd_Add(dbgi, block, conv_op,
+					                                     conv_o, ref_mode);
+					ir_node  *const conv = new_r_Conv(block, new_add, mode);
+					return conv;
+				}
+			}
 		}
 	}
 
@@ -3478,6 +3511,25 @@ static ir_node *transform_node_Sub(ir_node *n)
 				ir_node  *notn  = new_rd_Not(dbgi, block, y, mode);
 				ir_node  *andn  = new_rd_And(dbgi, block, a, notn, mode);
 				return andn;
+			}
+		}
+		if (is_Conv(a) && mode_is_int(mode)) {
+			ir_node *const conv_op  = get_Conv_op(a);
+			ir_mode *const ref_mode = get_irn_mode(conv_op);
+			if (mode_is_reference(ref_mode)
+			 && get_mode_size_bits(ref_mode) == get_mode_size_bits(mode)) {
+				/* SubI(ConvI(op_P), b) -> ConvI(SubP(op_P, ConvI(b)))
+				 * Note: The Convs are all same size and no-ops. */
+				dbg_info *const dbgi  = get_irn_dbg_info(n);
+				ir_node  *const block = get_nodes_block(n);
+				ir_mode  *const offset_mode
+					= get_reference_offset_mode(ref_mode);
+				ir_node  *const conv_b  = new_r_Conv(block, b,
+													 offset_mode);
+				ir_node  *const new_add = new_rd_Add(dbgi, block, conv_op,
+													 conv_b, ref_mode);
+				ir_node  *const conv = new_r_Conv(block, new_add, mode);
+				return conv;
 			}
 		}
 	}
@@ -6233,27 +6285,6 @@ static ir_node *transform_node_Conv(ir_node *n)
 	if (c) {
 		DBG_OPT_ALGSIM0(oldn, c);
 		return c;
-	}
-
-	if (mode_is_reference(mode) &&
-	        get_mode_size_bits(mode) == get_mode_size_bits(get_irn_mode(a)) &&
-	        is_Add(a)) {
-		ir_node  *l     = get_Add_left(a);
-		ir_node  *r     = get_Add_right(a);
-		dbg_info *dbgi  = get_irn_dbg_info(a);
-		ir_node  *block = get_nodes_block(n);
-		if (is_Conv(l)) {
-			ir_node *lop = get_Conv_op(l);
-			/* ConvP(AddI(ConvI(P), x)) -> AddP(P, x) */
-			if (get_irn_mode(lop) == mode)
-				return new_rd_Add(dbgi, block, lop, r, mode);
-		}
-		if (is_Conv(r)) {
-			ir_node *rop = get_Conv_op(r);
-			/* ConvP(AddI(x, ConvI(P))) -> AddP(x, P) */
-			if (get_irn_mode(rop) == mode)
-				return new_rd_Add(dbgi, block, l, rop, mode);
-		}
 	}
 
 	return n;
