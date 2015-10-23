@@ -869,7 +869,7 @@ static void verify_constbits(ir_graph *const irg)
 
 void constbits_analyze(ir_graph *const irg)
 {
-	FIRM_DBG_REGISTER(dbg, "firm.ana.fp-vrp");
+	FIRM_DBG_REGISTER(dbg, "firm.ana.constbits");
 	DB((dbg, LEVEL_1, "---> activating constbits for %+F\n", irg));
 
 	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
