@@ -282,7 +282,8 @@ result_unknown_X:
 			bitinfo *const b = get_bitinfo_recursive(pred_block);
 			if (b->z == t) {
 				reachable = true;
-				break;
+				/* We need to iterate all operands to reach a global fix point.
+				 * Thus, do not use a break here. */
 			}
 		}
 
