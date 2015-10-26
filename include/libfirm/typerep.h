@@ -164,8 +164,8 @@ typedef enum ir_linkage {
 	IR_LINKAGE_NO_CODEGEN      = 1 << 5,
 	/**
 	 * The entity does not need to have an address that is different from other
-	 * entities. This is property is necessary when the entity should be merged
-	 * with other entities with the same content.
+	 * entities. When this property is set the entity may be safely merged with
+	 * entities with the same content.
 	 */
 	IR_LINKAGE_NO_IDENTITY     = 1 << 6,
 } ir_linkage;
