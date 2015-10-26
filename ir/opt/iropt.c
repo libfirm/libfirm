@@ -4906,20 +4906,26 @@ static ir_node *flips_bit(const ir_node *node, ir_tarval *tv)
  */
 static ir_node *transform_node_Cmp(ir_node *n)
 {
-	ir_node    *left     = get_Cmp_left(n);
-	ir_node    *right    = get_Cmp_right(n);
-	ir_graph   *irg      = get_irn_irg(n);
-	ir_mode    *mode     = get_irn_mode(left);
-	bool        changed  = false;
-	bool        changedc = false;
-	ir_relation relation = get_Cmp_relation(n);
-	ir_relation possible = ir_get_possible_cmp_relations(left, right);
+	ir_graph    *irg      = get_irn_irg(n);
+	ir_node     *left     = get_Cmp_left(n);
+	ir_node     *right    = get_Cmp_right(n);
+	ir_relation  relation = get_Cmp_relation(n);
+	bool         changed  = false;
+
+restart:
+	if (relation == ir_relation_false || relation == ir_relation_true) {
+		return create_bool_const(irg, relation == ir_relation_true);
+	}
+
+	ir_mode     *mode     = get_irn_mode(left);
+	ir_relation  possible = ir_get_possible_cmp_relations(left, right);
 
 	/* mask out impossible relations */
 	ir_relation new_relation = relation & possible;
 	if (new_relation != relation) {
 		relation = new_relation;
 		changed  = true;
+		goto restart;
 	}
 
 	/*
@@ -4940,18 +4946,20 @@ static ir_node *transform_node_Cmp(ir_node *n)
 					right   = op_right;
 					changed = true;
 					DBG_OPT_ALGSIM0(n, n);
+					goto restart;
 				} else if (smaller_mode(mode_left, mode_right)) {
 					left    = new_r_Conv(block, op_left, mode_right);
 					right   = op_right;
 					changed = true;
 					DBG_OPT_ALGSIM0(n, n);
+					goto restart;
 				} else if (smaller_mode(mode_right, mode_left)) {
 					left    = op_left;
 					right   = new_r_Conv(block, op_right, mode_left);
 					changed = true;
 					DBG_OPT_ALGSIM0(n, n);
+					goto restart;
 				}
-				mode = get_irn_mode(left);
 			}
 		}
 	}
@@ -4967,6 +4975,7 @@ static ir_node *transform_node_Cmp(ir_node *n)
 		relation = get_inversed_relation(relation);
 		changed  = true;
 		DBG_OPT_ALGSIM0(n, n);
+		goto restart;
 	}
 
 	/* remove operation on both sides if possible */
@@ -4986,7 +4995,7 @@ static ir_node *transform_node_Cmp(ir_node *n)
 				right   = get_irn_n(right, n_Not_op);
 				changed = true;
 				DBG_OPT_ALGSIM0(n, n);
-				break;
+				goto restart;
 
 			case iro_Add:
 			case iro_Eor: {
@@ -4999,6 +5008,7 @@ static ir_node *transform_node_Cmp(ir_node *n)
 					right   = r0;
 					changed = true;
 					DBG_OPT_ALGSIM0(n, n);
+					goto restart;
 				} else {
 					ir_node *const r1 = get_commutative_other_op(right, lr);
 					if (r1) {
@@ -5007,6 +5017,7 @@ static ir_node *transform_node_Cmp(ir_node *n)
 						right   = r1;
 						changed = true;
 						DBG_OPT_ALGSIM0(n, n);
+						goto restart;
 					}
 				}
 				break;
@@ -5023,12 +5034,14 @@ static ir_node *transform_node_Cmp(ir_node *n)
 					right   = rr;
 					changed = true;
 					DBG_OPT_ALGSIM0(n, n);
+					goto restart;
 				} else if (lr == rr) {
 					/* a - X CMP b - X ==> a CMP b */
 					left    = ll;
 					right   = rl;
 					changed = true;
 					DBG_OPT_ALGSIM0(n, n);
+					goto restart;
 				}
 				break;
 			}
@@ -5062,6 +5075,7 @@ cmp_x_eq_0:
 				relation = rel_eq;
 				changed  = true;
 				DBG_OPT_ALGSIM0(n, n);
+				goto restart;
 			}
 		}
 	}
@@ -5092,6 +5106,7 @@ cmp_x_eq_0:
 						/* Cmp(x >> c, y >> c) -> Cmp(x,y) */
 						left  = get_binop_left(left);
 						right = get_binop_left(right);
+						goto restart;
 					}
 				}
 			}
@@ -5109,8 +5124,8 @@ cmp_x_eq_0:
 		right = t;
 
 		relation = get_inversed_relation(relation);
-		possible = get_inversed_relation(possible);
 		changed  = true;
+		goto restart;
 	}
 
 	/*
@@ -5130,12 +5145,11 @@ cmp_x_eq_0:
 			ir_tarval *new_tv = tarval_convert_to(tv, mode_left);
 			tarval_set_wrap_on_overflow(old_wrap_on_overflow);
 			if (tarval_is_constant(new_tv)) {
-				left     = op_left;
-				right    = new_r_Const(irg, new_tv);
-				mode     = get_irn_mode(left);
-				possible = ir_get_possible_cmp_relations(left, right);
-				changed  = true;
+				left    = op_left;
+				right   = new_r_Const(irg, new_tv);
+				changed = true;
 				DBG_OPT_ALGSIM0(n, n);
+				goto restart;
 			}
 		}
 	}
@@ -5159,6 +5173,7 @@ cmp_x_eq_0:
 					left    = new_rd_And(get_irn_dbg_info(op), blk, v, new_r_Const(irg, tv), mode);
 					changed = true;
 					DBG_OPT_ALGSIM0(n, n);
+					goto restart;
 				}
 			}
 		}
@@ -5172,6 +5187,7 @@ cmp_x_eq_0:
 		left     = get_binop_left(left);
 		relation = rel_eq;
 		changed  = true;
+		goto restart;
 	}
 
 	if (is_And(left) && rel_eq != ir_relation_false) {
@@ -5187,11 +5203,10 @@ cmp_x_eq_0:
 					ir_tarval *c2 = get_Const_tarval(lr);
 					ir_tarval *c3 = get_Const_tarval(right);
 
-					ir_mode *mode = get_irn_mode(left);
-					long     l1   = get_tarval_long(c1);
-					long     h2   = get_tarval_highest_bit(c2);
-					long     h3   = get_tarval_highest_bit(c3);
-					long     bits = get_mode_size_bits(mode);
+					long l1   = get_tarval_long(c1);
+					long h2   = get_tarval_highest_bit(c2);
+					long h3   = get_tarval_highest_bit(c3);
+					long bits = get_mode_size_bits(mode);
 
 					if (l1 + h2 < bits && l1 + h3 < bits) {
 						dbg_info *dbg   = get_irn_dbg_info(left);
@@ -5204,6 +5219,7 @@ cmp_x_eq_0:
 						right    = new_r_Const(irg, value);
 						relation = rel_eq;
 						changed  = true;
+						goto restart;
 					}
 				}
 			}
@@ -5212,11 +5228,10 @@ cmp_x_eq_0:
 		/* a complicated Cmp(And(1bit, val), 1bit) "bit-testing" can be replaced
 		 * by the simpler Cmp(And(1bit, val), 0) negated pnc */
 		if (get_commutative_other_op(left, right) && is_single_bit(right)) {
-			rel_eq  ^= ir_relation_less_equal_greater;
-			relation = rel_eq;
+			relation = rel_eq ^ ir_relation_less_equal_greater;
 			right    = new_r_Const_null(irg, mode);
-			possible = ir_get_possible_cmp_relations(left, right);
 			changed  = true;
+			goto restart;
 		}
 
 		if (is_Const(right) && is_Const_null(right)) {
@@ -5232,9 +5247,9 @@ cmp_x_eq_0:
 						dbg_info *dbgi  = get_irn_dbg_info(left);
 						ir_node  *block = get_nodes_block(left);
 						relation = get_negated_relation(relation);
-						rel_eq   = get_complementary_relations(ir_relation_equal, relation, possible);
 						left     = new_rd_And(dbgi, block, flipped, and1, mode);
 						changed  = true;
+						goto restart;
 					}
 				}
 			}
@@ -5249,8 +5264,6 @@ cmp_x_eq_0:
 	 */
 	ir_tarval *tv = value_of(right);
 	if (tarval_is_constant(tv)) {
-		ir_mode *mode = get_irn_mode(right);
-
 		/* cmp(mux(x, cf, ct), c2) can be eliminated:
 		 *   cmp(ct,c2) | cmp(cf,c2) | result
 		 *   -----------|------------|--------
@@ -5276,6 +5289,7 @@ cmp_x_eq_0:
 					if (rel_true == rel_false) {
 						relation = rel_true ? ir_relation_true
 						                    : ir_relation_false;
+						goto restart;
 					} else if (rel_true) {
 						return cond;
 					} else {
@@ -5303,11 +5317,12 @@ cmp_x_eq_0:
 			    !mode_is_float(op_mode)) {
 				if (!mode_is_signed(mode) && mode_is_signed(op_mode))
 					relation = rel_eq;
-				tv       = get_mode_null(op_mode);
-				left     = op;
-				mode     = op_mode;
-				changedc = true;
+				tv      = get_mode_null(op_mode);
+				left    = op;
+				right   = new_r_Const(irg, tv);
+				changed = true;
 				DBG_OPT_ALGSIM0(n, n);
+				goto restart;
 			}
 		}
 
@@ -5337,10 +5352,10 @@ cmp_x_eq_0:
 				} else {
 					relation = get_inversed_relation(relation);
 				}
-				right    = new_r_Const(irg, tv);
-				possible = ir_get_possible_cmp_relations(left, right);
-				changed  = true;
+				right   = new_r_Const(irg, tv);
+				changed = true;
 				DBG_OPT_ALGSIM0(n, n);
+				goto restart;
 			}
 		} else if (is_Not(left) && rel_eq != ir_relation_false) {
 			/* Not(a) ==/!= c  ==>  a ==/!= Not(c) */
@@ -5348,9 +5363,11 @@ cmp_x_eq_0:
 			assert(tarval_is_constant(tv));
 
 			left     = get_Not_op(left);
+			right    = new_r_Const(irg, tv);
 			relation = rel_eq;
-			changedc = true;
+			changed  = true;
 			DBG_OPT_ALGSIM0(n, n);
+			goto restart;
 		}
 
 		/* for integer modes, we have more */
@@ -5410,9 +5427,10 @@ cmp_x_eq_0:
 reduced_tv:
 					assert(tarval_is_constant(tv));
 					relation ^= ir_relation_equal;
-					rel_eq    = get_complementary_relations(ir_relation_equal, relation, possible);
-					changedc  = true;
+					right     = new_r_Const(irg, tv);
+					changed   = true;
 					DBG_OPT_ALGSIM0(n, n);
+					goto restart;
 				}
 			}
 
@@ -5429,10 +5447,11 @@ reduced_tv:
 
 							if (tarval_is_constant(tv2)) {
 								left     = get_Sub_left(left);
+								right    = new_r_Const(irg, tv2);
 								relation = rel_eq;
-								tv       = tv2;
-								changedc = true;
+								changed  = true;
 								DBG_OPT_ALGSIM0(n, n);
+								goto restart;
 							}
 						}
 					} else if ((is_Add(left) || is_Or_Eor_Add(left))
@@ -5443,10 +5462,11 @@ reduced_tv:
 							tv2 = tarval_sub(tv, tv2);
 							if (tarval_is_constant(tv2)) {
 								left     = get_binop_left(left);
+								right    = new_r_Const(irg, tv2);
 								relation = rel_eq;
-								tv       = tv2;
-								changedc = true;
+								changed  = true;
 								DBG_OPT_ALGSIM0(n, n);
+								goto restart;
 							}
 						}
 					} else if (is_Minus(left)) {
@@ -5455,10 +5475,11 @@ reduced_tv:
 
 						if (tarval_is_constant(tv2)) {
 							left     = get_Minus_op(left);
+							right    = new_r_Const(irg, tv2);
 							relation = rel_eq;
-							tv       = tv2;
-							changedc = true;
+							changed  = true;
 							DBG_OPT_ALGSIM0(n, n);
+							goto restart;
 						}
 					}
 				}
@@ -5496,9 +5517,11 @@ reduced_tv:
 						if (get_Const_tarval(c1) == tv) {
 							/* fine: do the transformation */
 							tv = get_mode_null(get_tarval_mode(tv));
+							right     = new_r_Const(irg, tv);
 							relation ^= ir_relation_less_equal_greater;
-							changedc = true;
+							changed   = true;
 							DBG_OPT_ALGSIM0(n, n);
+							goto restart;
 						}
 					}
 
@@ -5509,7 +5532,8 @@ reduced_tv:
 						 * And(x, 0x80000000) != 0 ==> x <  0 */
 						left     = get_And_left(left);
 						relation = rel_eq != ir_relation_equal ? ir_relation_less : ir_relation_greater_equal;
-						changedc = true;
+						changed  = true;
+						goto restart;
 					}
 
 				}
@@ -5537,7 +5561,6 @@ reduced_tv:
 				c1 = get_Shl_right(left);
 				if (is_Const(c1)) {
 					ir_tarval *tv1    = get_Const_tarval(c1);
-					ir_mode   *mode   = get_irn_mode(left);
 					ir_tarval *minus1 = get_mode_all_one(mode);
 					ir_tarval *cmask  = tarval_shl(minus1, tv1);
 
@@ -5550,11 +5573,13 @@ reduced_tv:
 					ir_tarval *amask = tarval_shr(minus1, tv1);
 					ir_node   *sl    = get_Shl_left(left);
 					ir_node   *blk   = get_nodes_block(n);
-					left     = new_rd_And(get_irn_dbg_info(left), blk, sl, new_r_Const(irg, amask), mode);
-					relation = rel_eq;
 					tv       = tarval_shr(tv, tv1);
-					changedc = true;
+					left     = new_rd_And(get_irn_dbg_info(left), blk, sl, new_r_Const(irg, amask), mode);
+					right    = new_r_Const(irg, tv);
+					relation = rel_eq;
+					changed  = true;
 					DBG_OPT_ALGSIM0(n, n);
+					goto restart;
 				}
 				break;
 			case iro_Shr:
@@ -5567,7 +5592,6 @@ reduced_tv:
 				c1 = get_Shr_right(left);
 				if (is_Const(c1)) {
 					ir_tarval *tv1    = get_Const_tarval(c1);
-					ir_mode   *mode   = get_irn_mode(left);
 					ir_tarval *minus1 = get_mode_all_one(mode);
 					ir_tarval *cmask  = tarval_shr(minus1, tv1);
 
@@ -5580,11 +5604,13 @@ reduced_tv:
 					ir_tarval *amask = tarval_shl(minus1, tv1);
 					ir_node   *sl    = get_Shr_left(left);
 					ir_node   *blk   = get_nodes_block(n);
-					left     = new_rd_And(get_irn_dbg_info(left), blk, sl, new_r_Const(irg, amask), mode);
-					relation = rel_eq;
 					tv       = tarval_shl(tv, tv1);
-					changedc = true;
+					left     = new_rd_And(get_irn_dbg_info(left), blk, sl, new_r_Const(irg, amask), mode);
+					right    = new_r_Const(irg, tv);
+					relation = rel_eq;
+					changed  = true;
 					DBG_OPT_ALGSIM0(n, n);
+					goto restart;
 				}
 				break;
 			case iro_Shrs:
@@ -5597,7 +5623,6 @@ reduced_tv:
 				c1 = get_Shrs_right(left);
 				if (is_Const(c1)) {
 					ir_tarval *tv1     = get_Const_tarval(c1);
-					ir_mode   *mode    = get_irn_mode(left);
 					ir_tarval *all_one = get_mode_all_one(mode);
 					ir_tarval *cond    = new_tarval_from_long(get_mode_size_bits(mode) - 1, get_tarval_mode(tv1));
 
@@ -5613,20 +5638,17 @@ reduced_tv:
 					ir_tarval *amask = tarval_shl(all_one, tv1);
 					ir_node   *sl    = get_Shrs_left(left);
 					ir_node   *blk   = get_nodes_block(n);
-					left     = new_rd_And(get_irn_dbg_info(left), blk, sl, new_r_Const(irg, amask), mode);
-					relation = rel_eq;
 					tv       = tarval_shl(tv, tv1);
-					changedc = true;
+					left     = new_rd_And(get_irn_dbg_info(left), blk, sl, new_r_Const(irg, amask), mode);
+					right    = new_r_Const(irg, tv);
+					relation = rel_eq;
+					changed  = true;
 					DBG_OPT_ALGSIM0(n, n);
+					goto restart;
 				}
 				break;
 			}
 		}
-	}
-
-	if (changedc) {     /* need a new Const */
-		right   = new_r_Const(irg, tv);
-		changed = true;
 	}
 
 	if (changed) {
