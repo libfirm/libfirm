@@ -525,7 +525,7 @@ static ir_tarval *computed_value_Shr(const ir_node *n)
 
 	if (ta != tarval_unknown && tb != tarval_unknown)
 		return tarval_shr(ta, tb);
-	if (is_oversize_shift(n))
+	if (a == b || is_oversize_shift(n))
 		return get_mode_null(get_irn_mode(n));
 	return tarval_unknown;
 }
