@@ -2097,14 +2097,12 @@ static bool is_cmp_unequal(const ir_node *node)
 /**
  * returns true for Cmp(x == 0) or Cmp(x != 0)
  */
-static bool is_cmp_equality_zero(const ir_node *node, ir_relation relation)
+static bool is_cmp_equality_zero(const ir_node *left, const ir_node *right, ir_relation relation)
 {
-	const ir_node *right = get_Cmp_right(node);
 	if (!is_Const(right) || !is_Const_null(right))
 		return false;
 
-	const ir_node *left     = get_Cmp_left(node);
-	ir_relation    possible = ir_get_possible_cmp_relations(left, right);
+	ir_relation possible = ir_get_possible_cmp_relations(left, right);
 
 	return get_complementary_relations(ir_relation_equal, relation, possible) != ir_relation_false;
 }
@@ -5168,7 +5166,7 @@ cmp_x_eq_0:
 
 	/* Cmp(Eor(x, y), 0) <=> Cmp(Sub(x, y), 0) <=> Cmp(x, y)
 	 * at least for the ==0, !=0 cases */
-	if (mode_is_int(mode) && is_cmp_equality_zero(n, relation) &&
+	if (mode_is_int(mode) && is_cmp_equality_zero(left, right, relation) &&
 	    (is_Eor(left) || is_Sub(left) || is_Or_Eor_Add(left))) {
 		right    = get_binop_right(left);
 		left     = get_binop_left(left);
@@ -6568,7 +6566,7 @@ bool ir_is_optimizable_mux(const ir_node *sel, const ir_node *mux_false,
 			}
 		}
 
-		if (mode_is_int(mode) && is_cmp_equality_zero(sel, relation) && is_And(cmp_l) && f == cmp_r) {
+		if (mode_is_int(mode) && is_cmp_equality_zero(cmp_l, cmp_r, relation) && is_And(cmp_l) && f == cmp_r) {
 			const ir_node *and_l = get_And_left(cmp_l);
 			const ir_node *and_r = get_And_right(cmp_l);
 
