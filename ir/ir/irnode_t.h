@@ -623,6 +623,41 @@ static inline int is_irn_start_block_placed_(const ir_node *node)
 	return is_op_start_block_placed(get_irn_op_(node));
 }
 
+/**
+ * Tests whether a block can be reached only via an X_except Proj
+ */
+static inline int is_x_except_block(const ir_node *block)
+{
+	assert(is_Block(block));
+	if (is_Block_end_block(block))
+		return false;
+	for (int i = 0; i < get_Block_n_cfgpreds(block); ++i) {
+		if (is_x_except_Proj(get_Block_cfgpred(block, i)))
+			return true;
+	}
+	return false;
+}
+
+/**
+ * Tests whether a node is an X_except Proj, X_except block or the Return of an X_except block.
+ */
+static inline int is_x_except_branch(const ir_node *node)
+{
+	return is_x_except_Proj(node)
+		|| (is_Block(node) && is_x_except_block(node))
+		|| (is_Return(node) && is_x_except_block(get_nodes_block(node)));
+}
+
+/**
+ * Tests whether a block can be reached only via an X_regular Proj
+ */
+static inline int is_x_regular_block(const ir_node *block)
+{
+	assert(is_Block(block));
+	return get_Block_n_cfgpreds(block) == 1 &&
+		is_x_regular_Proj(get_Block_cfgpred(block, 0));
+}
+
 static inline void *get_irn_generic_attr_(ir_node *node)
 {
 	return &node->attr;
