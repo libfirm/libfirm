@@ -5,7 +5,7 @@
 
 /**
  * @file
- * @brief   A little printf helper unterstanding firm types
+ * @brief   A little printf helper understanding firm types
  * @author  Sebastian Hack
  * @date    29.11.2004
  */
