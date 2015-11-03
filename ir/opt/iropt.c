@@ -3524,9 +3524,9 @@ static ir_node *transform_node_Sub(ir_node *n)
 					= get_reference_offset_mode(ref_mode);
 				ir_node  *const conv_b  = new_r_Conv(block, b,
 													 offset_mode);
-				ir_node  *const new_add = new_rd_Add(dbgi, block, conv_op,
+				ir_node  *const new_sub = new_rd_Sub(dbgi, block, conv_op,
 													 conv_b, ref_mode);
-				ir_node  *const conv = new_r_Conv(block, new_add, mode);
+				ir_node  *const conv = new_r_Conv(block, new_sub, mode);
 				return conv;
 			}
 		}
