@@ -2383,7 +2383,7 @@ static ir_node *dest_am_binop(ir_node *node, ir_node *op1, ir_node *op2,
                               ir_node *mem, ir_node *ptr, ir_mode *mode,
                               construct_binop_dest_func *func,
                               construct_binop_dest_func *func8bit,
-							  match_flags_t flags, const char imm_mode)
+                              match_flags_t flags, const char imm_mode)
 {
 	assert(flags & match_immediate); /* there is no destam node without... */
 	bool commutative = (flags & match_commutative) != 0;
