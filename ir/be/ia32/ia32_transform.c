@@ -2516,31 +2516,16 @@ static ir_node *try_create_SetMem(ir_node *node, ir_node *ptr, ir_node *mem)
 
 static ir_node *try_create_dest_am(ir_node *node)
 {
-	ir_node  *val  = get_Store_value(node);
-	ir_mode  *mode = get_irn_mode(val);
-	unsigned  bits = get_mode_size_bits(mode);
+	ir_node *val  = get_Store_value(node);
+	ir_mode *mode = get_irn_mode(val);
 
 	/* handle only GP modes for now... */
 	if (!mode_needs_gp_reg(mode))
 		return NULL;
 
-	for (;;) {
-		/* store must be the only user of the val node */
-		if (get_irn_n_edges(val) > 1)
-			return NULL;
-		/* skip pointless convs */
-		if (is_Conv(val)) {
-			ir_node *conv_op   = get_Conv_op(val);
-			ir_mode *pred_mode = get_irn_mode(conv_op);
-			if (!mode_needs_gp_reg(pred_mode))
-				break;
-			if (bits <= get_mode_size_bits(pred_mode)) {
-				val = conv_op;
-				continue;
-			}
-		}
-		break;
-	}
+	/* store must be the only user of the val node */
+	if (get_irn_n_edges(val) > 1)
+		return NULL;
 
 	/* value must be in the same block */
 	if (get_nodes_block(node) != get_nodes_block(val))
