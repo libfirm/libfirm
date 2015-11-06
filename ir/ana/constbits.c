@@ -307,6 +307,7 @@ result_unknown_X:
 		if (is_Phi(irn)) {
 			ir_node *const block = get_nodes_block(irn);
 
+repeatphi:
 			z = get_mode_null(m);
 			o = get_mode_all_one(m);
 			foreach_irn_in(block, i, pred_block) {
@@ -315,6 +316,17 @@ result_unknown_X:
 					bitinfo *const b = get_bitinfo_recursive(get_Phi_pred(irn, i));
 					z = tarval_or( z, b->z);
 					o = tarval_and(o, b->o);
+				}
+			}
+			/* Computing bitinfo for operand 1 might render operand 0 unstable.
+			 * Thus, evaluate the operands until all of them are stable. */
+			foreach_irn_in(block, i, pred_block) {
+				bitinfo *const b_cfg = get_bitinfo_recursive(pred_block);
+				if (b_cfg->z != f) {
+					bitinfo *const b = get_bitinfo_direct(get_Phi_pred(irn, i));
+					if (b->state == BITINFO_UNSTABLE) {
+						goto repeatphi;
+					}
 				}
 			}
 		} else {
