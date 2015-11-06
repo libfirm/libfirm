@@ -357,7 +357,8 @@ static ir_node *search_def_and_create_phis(ir_node *const block, ir_mode *const 
 	for (int i = 0; i < n_cfgpreds; ++i)
 		in[i] = new_r_Dummy(irg, mode);
 
-	ir_node *const phi = new_r_Phi(block, n_cfgpreds, in, mode);
+	ir_node *const phi = mode == mode_M ? new_r_Phi_loop(block, n_cfgpreds, in)
+	                                    : new_r_Phi(block, n_cfgpreds, in, mode);
 	/* Important: always keep block phi list up to date. */
 	add_Block_phi(block, phi);
 	DB((dbg, LEVEL_5, "ssa phi creation: link new phi %N to block %N\n", phi, block));
