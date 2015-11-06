@@ -313,11 +313,8 @@ result_unknown_X:
 				bitinfo *const b_cfg = get_bitinfo_recursive(pred_block);
 				if (b_cfg->z != f) {
 					bitinfo *const b = get_bitinfo_recursive(get_Phi_pred(irn, i));
-					/* Only use input if it's not undefined. */
-					if (!is_undefined(b)) {
-						z = tarval_or( z, b->z);
-						o = tarval_and(o, b->o);
-					}
+					z = tarval_or( z, b->z);
+					o = tarval_and(o, b->o);
 				}
 			}
 		} else {
