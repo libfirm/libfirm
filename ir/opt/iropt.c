@@ -6157,10 +6157,8 @@ static ir_node *transform_node_Shrs(ir_node *n)
 	const bitinfo *const bn = get_bitinfo(n);
 	if (bn != NULL &&
 	    get_mode_arithmetic(mode) == irma_twos_complement) {
-		ir_tarval *z           = bn->z;
-		unsigned   mode_bits   = get_mode_size_bits(mode);
-		unsigned   highest_bit = get_tarval_highest_bit(z);
-		if (highest_bit + 1U != mode_bits) {
+		unsigned const mode_bits = get_mode_size_bits(mode);
+		if (tarval_get_bit(bn->z, mode_bits - 1) == 0) {
 			dbg_info *const dbgi  = get_irn_dbg_info(n);
 			ir_node  *const block = get_nodes_block(n);
 			n = new_rd_Shr(dbgi, block, a, b, mode);
