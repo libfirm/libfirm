@@ -617,44 +617,83 @@ static int cmp_stack_dependency(const void *c1, const void *c2)
 	be_stack_change_t const *const s1 = (be_stack_change_t const*)c1;
 	be_stack_change_t const *const s2 = (be_stack_change_t const*)c2;
 
-	/* Sort blockwise. */
-	ir_node *const b1  = s1->before;
-	ir_node *const b2  = s2->before;
-	ir_node *const bl1 = get_nodes_block(b1);
-	ir_node *const bl2 = get_nodes_block(b2);
-	if (bl1 != bl2)
-		return get_irn_idx(bl2) - get_irn_idx(bl1);
-
 	/* If one change chain does not produce a new value, it must be the last. */
-	ir_node *const n1 = s1->after;
-	if (!n1)
+	ir_node const *const a1 = s1->after;
+	if (a1 == NULL)
 		return 1;
-	ir_node *const n2 = s2->after;
-	if (!n2)
+	ir_node const *const a2 = s2->after;
+	if (a2 == NULL)
 		return -1;
 
-	/* If one change chain is data dependent on the other, it must come later.
-	 * The after nodes cannot be dependent on each other, because they are unused.
-	 * So compare after of one with before of the other. */
-	if (dependent_on(n1, b2))
-		return 1;
-	if (dependent_on(n2, b1))
-		return -1;
+	ir_node const *const b1  = s1->before;
+	ir_node const *const b2  = s2->before;
+	ir_node const *const bl1 = get_nodes_block(b1);
+	ir_node const *const bl2 = get_nodes_block(b2);
 
-	/* The nodes have no depth order, but we need a total order because qsort()
-	 * is not stable.
-	 *
-	 * Additionally, we need to respect transitive dependencies. Consider a
-	 * Call a depending on Call b and an independent Call c.
-	 * We MUST NOT order c > a and b > c. */
-	unsigned h1 = get_irn_height(heights, b1);
-	unsigned h2 = get_irn_height(heights, b2);
-	if (h1 < h2)
-		return 1;
-	if (h1 > h2)
-		return -1;
-	/* Same height, so use a random (but stable) order */
-	return get_irn_idx(n2) - get_irn_idx(n1);
+	if (bl1 == bl2) {
+		/* If one change chain is data dependent on the other, it must come later.
+		 * The after nodes cannot be dependent on each other, because they are unused.
+		 * So compare after of one with before of the other. */
+		if (dependent_on(a1, b2))
+			return 1;
+		if (dependent_on(a2, b1))
+			return -1;
+
+		/* The nodes have no depth order, but we need a total order because qsort()
+		 * is not stable.
+		 *
+		 * Additionally, we need to respect transitive dependencies. Consider a
+		 * call a depending on call b and an independent call c.
+		 * We MUST NOT order c > a and b > c. */
+		unsigned h1 = get_irn_height(heights, b1);
+		unsigned h2 = get_irn_height(heights, b2);
+		if (h1 < h2)
+			return 1;
+		if (h1 > h2)
+			return -1;
+		/* Same height, so use a random (but stable) order */
+		return get_irn_idx(a2) - get_irn_idx(a1);
+	} else {
+		/* Nodes are in different blocks but may still have a depth order iff
+		 * X_except/X_regular blocks are involved. As an example, consider two
+		 * nested calls 'f(g())' where the 'f' may throw.  Then the call to 'g'
+		 * is in the X_regular block of the call to 'f':
+		 * +-----------+
+		 * |     b1    |
+		 * |     |     |
+		 * |   Call f  |
+		 * +--/---\----+
+		 *  exc    \ reg
+		 *  ...   +----------+
+		 *        |      b2  |
+		 *        |     /    |
+		 *        | Call 'g' |
+		 *        +----------+
+		 *
+		 * This happens only for X_except/X_regular blocks as all other blocks
+		 * are "real" basic blocks with actual jumps between them.
+		 */
+		ir_node const *bl1_parent = bl1;
+		ir_node const *bl2_parent = bl2;
+
+		while (is_x_regular_block(bl1_parent)) {
+			bl1_parent = get_Block_cfgpred_block(bl1_parent, 0);
+			if (bl1_parent == bl2) {
+				return 1;
+			}
+		}
+
+		while (is_x_regular_block(bl2_parent)) {
+			bl2_parent = get_Block_cfgpred_block(bl2_parent, 0);
+			if (bl2_parent == bl1) {
+				return -1;
+			}
+		}
+
+		/* Nodes are in different blocks and don't share a common call root.
+		 * TODO comment this */
+		return get_irn_idx(bl2_parent) - get_irn_idx(bl1_parent);
+	}
 }
 
 void be_stack_init(be_stack_env_t *const env)
@@ -682,7 +721,8 @@ void be_stack_finish(be_stack_env_t *const env)
 	env->changes = NULL;
 
 	unsigned const n_changes = ARR_LEN(changes);
-	if (n_changes != 0) {
+
+	if (n_changes > 1) {
 		/* Order the stack changes according to their data dependencies. */
 		ir_graph *const irg = get_irn_irg(changes[0].before);
 		heights = heights_new(irg);
@@ -691,11 +731,25 @@ void be_stack_finish(be_stack_env_t *const env)
 
 		/* Wire the stack change chains within each block, i.e. connect 'before' of
 		 * each change to 'after' of its predecessor. */
-		ir_node *prev_block = NULL;
-		for (unsigned n = n_changes; n-- != 0;) {
+		ir_node const *prev_block = get_nodes_block(changes[n_changes-1].before);
+		for (unsigned n = n_changes-1; n-- != 0;) {
 			be_stack_change_t const *const c     = &changes[n];
-			ir_node                 *const block = get_nodes_block(c->before);
+			ir_node           const *const block = get_nodes_block(c->before);
+			int should_connect = false;
 			if (block == prev_block) {
+				should_connect = true;
+			} else {
+				/* See comment in 'cmp_stack_dependency' */
+				ir_node const *prev_parent_block = prev_block;
+				while (is_x_regular_block(prev_parent_block)) {
+					prev_parent_block = get_Block_cfgpred_block(prev_parent_block, 0);
+					if (block == prev_parent_block) {
+						should_connect = true;
+						break;
+					}
+				}
+			}
+			if (should_connect) {
 				/* before <-- c[0] <-- after  <==  before <-- c[1] <-- after
 				 *                            ~~~                         */
 				set_irn_n(c[1].before, c[1].pos, c[0].after);
@@ -727,13 +781,7 @@ void be_stack_finish(be_stack_env_t *const env)
 
 		if (is_cfop(call)) {
 			/* Find X_regular out */
-			ir_node const *x_regular = NULL;
-			foreach_out_edge(call, edge) {
-				if (is_x_regular_Proj(edge->src)) {
-					x_regular = edge->src;
-					break;
-				}
-			}
+			ir_node const *const x_regular = get_Proj_for_pn(call, call->op->pn_x_regular);
 			if (x_regular == NULL) {
 				/* If the call has no X_regular out (only X_except out),
 				 * delete 'after' entirely as it is unreachable.
@@ -741,6 +789,8 @@ void be_stack_finish(be_stack_env_t *const env)
 				 * If 'after' is a Proj, we can keep it to no harm; only if
 				 * it's an IncSP we have to make it unreachable as to satisfy
 				 * the verifier. */
+				assert(get_Proj_for_pn(call, call->op->pn_x_except) != NULL
+					&& "cfop with neither X_except nor X_regular block");
 				if (be_is_IncSP(after)) {
 					ir_graph *const irg = get_irn_irg(after);
 					ir_node  *const end = get_irg_end(irg);
