@@ -700,15 +700,70 @@ void be_stack_finish(be_stack_env_t *const env)
 		QSORT(changes, n_changes, cmp_stack_dependency);
 		heights_free(heights);
 
-		/* Wire the stack change chains within each block, i.e. connect before of
-		 * each change to after of its predecessor. */
+		/* Wire the stack change chains within each block, i.e. connect 'before' of
+		 * each change to 'after' of its predecessor. */
 		ir_node *prev_block = NULL;
 		for (unsigned n = n_changes; n-- != 0;) {
 			be_stack_change_t const *const c     = &changes[n];
 			ir_node                 *const block = get_nodes_block(c->before);
-			if (block == prev_block)
+			if (block == prev_block) {
+				/* before <-- c[0] <-- after  <==  before <-- c[1] <-- after
+				 *                            ~~~                         */
 				set_irn_n(c[1].before, c[1].pos, c[0].after);
+			}
 			prev_block = block;
+		}
+	}
+
+	/* Move the 'after' (read: IncSP) of any fragile call into the call's X_regular block.
+	 * If no X_regular block exists, remove 'after'. */
+	for (unsigned n = 0; n < n_changes; n++) {
+		be_stack_change_t const *const c = &changes[n];
+		ir_node                 *const after = c->after;
+
+		if (after == NULL) {
+			/* Change belongs to a Return, not a Call => nothing to be done. */
+			continue;
+		}
+
+		assert(be_is_IncSP(after) || is_Proj(after));
+		ir_node const *proj;
+		if (be_is_IncSP(after)) {
+			proj = be_get_IncSP_pred(after);
+		} else {
+			proj = after;
+		}
+		assert(is_Proj(proj));
+		ir_node const *const call = get_Proj_pred(proj);
+
+		if (is_cfop(call)) {
+			/* Find X_regular out */
+			ir_node const *x_regular = NULL;
+			foreach_out_edge(call, edge) {
+				if (is_x_regular_Proj(edge->src)) {
+					x_regular = edge->src;
+					break;
+				}
+			}
+			if (x_regular == NULL) {
+				/* If the call has no X_regular out (only X_except out),
+				 * delete 'after' entirely as it is unreachable.
+				 * (Maybe it shouldn't have been created in the first place.)
+				 * If 'after' is a Proj, we can keep it to no harm; only if
+				 * it's an IncSP we have to make it unreachable as to satisfy
+				 * the verifier. */
+				if (be_is_IncSP(after)) {
+					ir_graph *const irg = get_irn_irg(after);
+					ir_node  *const end = get_irg_end(irg);
+					remove_End_keepalive(end, after);
+				}
+			} else {
+				/* Move 'after' to X_regular block */
+				assert(get_irn_n_edges(x_regular) == 1);
+				assert(get_irn_n_edges_kind(x_regular, EDGE_KIND_BLOCK) == 0);
+				ir_node *const target_block = get_irn_out_edge_first(x_regular)->src;
+				set_nodes_block(after, target_block);
+			}
 		}
 	}
 
