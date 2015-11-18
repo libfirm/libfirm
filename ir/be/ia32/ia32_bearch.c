@@ -1048,7 +1048,7 @@ static void introduce_prologue_epilogue(ir_graph *const irg, bool omit_fp)
 {
 	/* introduce epilogue for every return node */
 	foreach_irn_in(get_irg_end_block(irg), i, pred) {
-		if (is_x_except_Proj(pred)) {
+		if (is_x_except_branch(pred)) {
 			/* Don't generate any code for X_except ins */
 		} else {
 			assert(is_ia32_Return(pred));
