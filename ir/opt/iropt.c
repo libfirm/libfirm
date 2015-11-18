@@ -3967,6 +3967,25 @@ static ir_node *transform_node_Mod(ir_node *n)
 		ir_tarval *tv = get_Const_tarval(b);
 		assert(get_mode_arithmetic(mode) == irma_twos_complement);
 
+		if (is_Proj(a) && only_one_user(a)) {
+			ir_node *mod = get_Proj_pred(a);
+			if (is_Mod(mod)) {
+				ir_node *mod_b = get_Mod_right(mod);
+				if (is_Const(mod_b)) {
+					ir_tarval *tv_mod = get_Const_tarval(mod_b);
+					if (tarval_is_null(tarval_mod(tv_mod, tv))) {
+						/* (a % c1) % c2 -> a % c2 */
+						ir_node  *mod_a  = get_Mod_left(mod);
+						dbg_info *dbgi   = get_irn_dbg_info(n);
+						ir_node  *block  = get_nodes_block(n);
+						ir_node  *mem    = get_Mod_mem(mod);
+						int       pinned = get_irn_pinned(n);
+						return new_rd_Mod(dbgi, block, mem, mod_a, b, mode, pinned);
+					}
+				}
+			}
+		}
+
 		bitinfo *ba = get_bitinfo(a);
 		if (ba != NULL) {
 			ir_tarval *const baz  = ba->z;
