@@ -21,7 +21,7 @@
 /**
  * An empty dynamic array descriptor.
  */
-ir_arr_descr arr_mt_descr = { ARR_D_MAGIC, 0, 0, { { 0 } } };
+ir_arr_descr arr_mt_descr = { ARR_D_MAGIC, 0, 0 };
 
 void ir_verify_arr(const void *arr)
 {
