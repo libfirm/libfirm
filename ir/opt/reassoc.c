@@ -930,10 +930,8 @@ static match_result_t replace_until_other_user(ir_node *node, ir_node *a, ir_nod
  *  (a ^ b) | f(a, b) ->  (a ^ b) | f(a,  a)
  * ~(a ^ b) | f(a, b) -> ~(a ^ b) | f(a, ~a)
  */
-static void walk_equality(ir_node *node, void *env)
+static void walk_equality(ir_node *node)
 {
-	(void)env;
-
 	if (!is_And(node) && !is_Or(node)) {
 		return;
 	}
@@ -2092,15 +2090,22 @@ void optimize_reassociation(ir_graph *irg)
 	do_shannon(irg);
 
 	DBG((dbg, LEVEL_5, "Eor equality start...\n"));
-	irg_walk_edges(get_irg_start_block(irg), walk_equality, NULL, NULL);
+
+	pdeq *const wq = new_pdeq();
+
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
+	irg_walk_edges(get_irg_start_block(irg), wq_walker, NULL, wq);
+	while (!pdeq_empty(wq)) {
+		ir_node *n = (ir_node *)pdeq_getl(wq);
+		set_irn_link(n, NULL);
+
+		walk_equality(n);
+	}
 
 	DBG((dbg, LEVEL_5, "setsort start...\n"));
 	do_Setsort(irg);
 
-	pdeq *const wq = new_pdeq();
-
 	/* now we have collected enough information, optimize */
-	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 	irg_walk_graph(irg, NULL, wq_walker, wq);
 	do_reassociation(wq);
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
