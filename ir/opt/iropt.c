@@ -6351,9 +6351,13 @@ again:
 	}
 
 	if (new_op != orig_op) {
-		dbg_info *dbgi  = get_irn_dbg_info(n);
-		ir_node  *block = get_nodes_block(n);
-		ir_mode  *mode  = get_irn_mode(n);
+		dbg_info *dbgi    = get_irn_dbg_info(n);
+		ir_node  *block   = get_nodes_block(n);
+		ir_mode  *mode    = get_irn_mode(n);
+		ir_mode  *op_mode = get_irn_mode(new_op);
+		if (get_mode_arithmetic(mode) == get_mode_arithmetic(op_mode)) {
+			return new_rd_Conv(dbgi, block, new_op, mode);
+		}
 		return new_rd_Bitcast(dbgi, block, new_op, mode);
 	}
 	return n;
