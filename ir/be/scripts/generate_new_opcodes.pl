@@ -413,6 +413,26 @@ foreach my $op (sort(keys(%nodes))) {
 		}
 	}
 
+	if ($ins) {
+		my $num_ins = scalar(@$ins);
+		for (my $idx = 0; $idx < $num_ins - 1; $idx++) {
+			if ($$ins[$idx] =~ /^first_/) {
+				die "Op $op input '$$ins[$idx]' has 'first_' prefix and should " .
+				    "probably be last in the list as to avoid memory corruption\n";
+			}
+		}
+	}
+
+	if ($outs) {
+		my $num_outs = scalar(@$outs);
+		for (my $idx = 0; $idx < $num_outs - 1; $idx++) {
+			if ($$outs[$idx] =~ /^first_/) {
+				die "Op $op output '$$outs[$idx]' has 'first_' prefix and should " .
+				    "probably be last as to avoid memory corruption\n";
+			}
+		}
+	}
+
 	# Create opcode
 	$obst_opvar .= "ir_op *op_$op = NULL;\n";
 
