@@ -164,8 +164,8 @@ static void peephole_ia32_And(ir_node *const node)
 	if (imm->imm.entity)
 		return;
 
-	/* Perform the replacement only, if the flags are ununsed.
-	 * Xor sets the flags differntly than And. */
+	/* Perform the replacement only, if the flags are unused.
+	 * Xor sets the flags differently than And. */
 	if (get_irn_mode(node) == mode_T && get_Proj_for_pn(node, pn_ia32_And_flags))
 		return;
 
