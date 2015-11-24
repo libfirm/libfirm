@@ -18,6 +18,7 @@
 #include "irgwalk.h"
 #include "ircons_t.h"
 #include "irgmod.h"
+#include "iredges.h"
 #include "irgopt.h"
 #include "irverify.h"
 #include "pmap.h"
@@ -101,6 +102,7 @@ static void call_mapper(ir_node *node, void *data)
 
 void ir_lower_intrinsics(ir_graph *irg, ir_intrinsics_map *map)
 {
+	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
 	if (map->part_block_used) {
 		ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST);
 		collect_phiprojs_and_start_block_nodes(irg);
@@ -120,33 +122,38 @@ void ir_lower_intrinsics(ir_graph *irg, ir_intrinsics_map *map)
  * @param irn      the result node
  * @param call     the call to replace
  * @param mem      the new mem result
- * @param reg_jmp  new regular control flow, if NULL, a Jmp will be used
- * @param exc_jmp  new exception control flow, if reg_jmp == NULL, a Bad will be used
  */
-static void replace_call(ir_node *irn, ir_node *call, ir_node *mem,
-                         ir_node *reg_jmp, ir_node *exc_jmp)
+static void replace_call(ir_node *irn, ir_node *call, ir_node *mem)
 {
-	ir_node  *block = get_nodes_block(call);
-	ir_graph *irg   = get_irn_irg(block);
-	ir_node  *rest  = new_r_Tuple(block, 1, &irn);
+	ir_node *block = get_nodes_block(call);
+	ir_node *rest  = new_r_Tuple(block, 1, &irn);
 
 	if (ir_throws_exception(call)) {
-		if (reg_jmp == NULL) {
-			reg_jmp = new_r_Jmp(block);
-		}
-		if (exc_jmp == NULL) {
-			exc_jmp = new_r_Bad(irg, mode_X);
-		}
-		ir_node *const in[] = {
+		/* Find X_except out Proj if present. As we're dealing with libc
+		 * routines here, in most cases, these should be absent.
+		 * If we still find some then it's usually due to the libc routine
+		 * being redeclared locally without the 'nothrow' attribute.
+		 * The C standard allows us to put in our own implementation/optimization
+		 * anyways, and since our own implementation does not throw, we can
+		 * safely remove the X_except proj from the original Call node.
+		 */
+		ir_node  *const x_except_proj = get_Proj_for_pn(call, call->op->pn_x_except);
+		ir_graph *const irg           = get_irn_irg(block);
+		ir_node  *const reg_jmp       = new_r_Jmp(block);
+		ir_node  *const exc_jmp       = new_r_Bad(irg, mode_X);
+		ir_node  *const in[] = {
 			[pn_Call_M]         = mem,
 			[pn_Call_T_result]  = rest,
 			[pn_Call_X_regular] = reg_jmp,
 			[pn_Call_X_except]  = exc_jmp,
 		};
 		turn_into_tuple(call, ARRAY_SIZE(in), in);
+
+		/* Replace X_except Proj by Bad. */
+		if (x_except_proj) {
+			exchange(x_except_proj, new_r_Bad(irg, mode_X));
+		}
 	} else {
-		assert(reg_jmp == NULL);
-		assert(exc_jmp == NULL);
 		assert(pn_Call_M <= pn_Call_T_result);
 		assert(pn_Call_X_regular > pn_Call_T_result);
 		assert(pn_Call_X_except > pn_Call_T_result);
@@ -184,7 +191,7 @@ int i_mapper_abs(ir_node *call)
 	/* construct Mux */
 	mux = new_rd_Mux(dbg, block, cmp, op, minus_op, mode);
 	DBG_OPT_ALGSIM0(call, mux);
-	replace_call(mux, call, mem, NULL, NULL);
+	replace_call(mux, call, mem);
 	return 1;
 }
 
@@ -205,7 +212,7 @@ int i_mapper_sqrt(ir_node *call)
 
 	/* sqrt(0) = 0, sqrt(1) = 1 */
 	DBG_OPT_ALGSIM0(call, op);
-	replace_call(op, call, mem, NULL, NULL);
+	replace_call(op, call, mem);
 	return 1;
 }
 
@@ -226,7 +233,7 @@ int i_mapper_cbrt(ir_node *call)
 
 	/* cbrt(0) = 0, cbrt(1) = 1, cbrt(-1) = -1 */
 	DBG_OPT_ALGSIM0(call, op);
-	replace_call(op, call, mem, NULL, NULL);
+	replace_call(op, call, mem);
 	return 1;
 }
 
@@ -236,8 +243,6 @@ int i_mapper_pow(ir_node *call)
 	ir_node  *right   = get_Call_param(call, 1);
 	ir_node  *block   = get_nodes_block(call);
 	ir_graph *irg     = get_irn_irg(block);
-	ir_node  *reg_jmp = NULL;
-	ir_node  *exc_jmp = NULL;
 	ir_node  *irn;
 	dbg_info *dbg;
 	ir_node  *mem;
@@ -282,17 +287,12 @@ int i_mapper_pow(ir_node *call)
 		div  = new_rd_Div(dbg, block, mem, irn, left, mode, true);
 		mem  = new_r_Proj(div, mode_M, pn_Div_M);
 		irn  = new_r_Proj(div, mode, pn_Div_res);
-		if (ir_throws_exception(call)) {
-			reg_jmp = new_r_Proj(div, mode_X, pn_Div_X_regular);
-			exc_jmp = new_r_Proj(div, mode_X, pn_Div_X_except);
-			ir_set_throws_exception(div, true);
-		}
 		if (result_mode != mode) {
 			irn = new_r_Conv(block, irn, result_mode);
 		}
 	}
 	DBG_OPT_ALGSIM0(call, irn);
-	replace_call(irn, call, mem, reg_jmp, exc_jmp);
+	replace_call(irn, call, mem);
 	return 1;
 }
 
@@ -307,7 +307,7 @@ int i_mapper_exp(ir_node *call)
 		ir_node *irn   = new_r_Const_one(irg, mode);
 		ir_node *mem   = get_Call_mem(call);
 		DBG_OPT_ALGSIM0(call, irn);
-		replace_call(irn, call, mem, NULL, NULL);
+		replace_call(irn, call, mem);
 		return 1;
 	}
 	return 0;
@@ -334,7 +334,7 @@ static int i_mapper_zero_to_zero(ir_node *call)
 		/* f(0.0) = 0.0 */
 		ir_node *mem = get_Call_mem(call);
 		DBG_OPT_ALGSIM0(call, val);
-		replace_call(val, call, mem, NULL, NULL);
+		replace_call(val, call, mem);
 		return 1;
 	}
 	return 0;
@@ -354,7 +354,7 @@ static int i_mapper_one_to_zero(ir_node *call)
 		ir_node *irn  = new_r_Const_null(irg, mode);
 		ir_node *mem  = get_Call_mem(call);
 		DBG_OPT_ALGSIM0(call, irn);
-		replace_call(irn, call, mem, NULL, NULL);
+		replace_call(irn, call, mem);
 		return 1;
 	}
 	return 0;
@@ -399,7 +399,7 @@ static int i_mapper_symmetric_zero_to_one(ir_node *call)
 		ir_node *irn   = new_r_Const_one(irg, mode);
 		ir_node *mem   = get_Call_mem(call);
 		DBG_OPT_ALGSIM0(call, irn);
-		replace_call(irn, call, mem, NULL, NULL);
+		replace_call(irn, call, mem);
 		changed = 1;
 	}
 	return changed;
@@ -600,7 +600,7 @@ int i_mapper_strlen(ir_node *call)
 		if (irn) {
 			ir_node *mem = get_Call_mem(call);
 			DBG_OPT_ALGSIM0(call, irn);
-			replace_call(irn, call, mem, NULL, NULL);
+			replace_call(irn, call, mem);
 			return 1;
 		}
 	}
@@ -728,8 +728,6 @@ int i_mapper_strcmp(ir_node *call)
 	ir_node   *left    = get_Call_param(call, 0);
 	ir_node   *right   = get_Call_param(call, 1);
 	ir_node   *irn     = NULL;
-	ir_node   *exc     = NULL;
-	ir_node   *reg     = NULL;
 	ir_type   *call_tp = get_Call_type(call);
 	ir_type   *res_tp  = get_method_res_type(call_tp, 0);
 	ir_entity *ent_l, *ent_r;
@@ -754,7 +752,7 @@ int i_mapper_strcmp(ir_node *call)
 
 		irn = new_r_Const_null(irg, mode);
 		DBG_OPT_ALGSIM0(call, irn);
-		replace_call(irn, call, mem, NULL, NULL);
+		replace_call(irn, call, mem);
 		return 1;
 	}
 	ent_l = get_const_entity(left);
@@ -787,14 +785,6 @@ replace_by_call:
 			irn = new_rd_Load(dbg, block, mem, v, mode, char_tp, cons_none);
 			mem = new_r_Proj(irn, mode_M, pn_Load_M);
 			irn = new_r_Proj(irn, mode, pn_Load_res);
-			if (ir_throws_exception(call)) {
-				exc = new_r_Proj(irn, mode_X, pn_Load_X_except);
-				reg = new_r_Proj(irn, mode_X, pn_Load_X_regular);
-				ir_set_throws_exception(irn, true);
-			} else {
-				exc = NULL;
-				reg = NULL;
-			}
 
 			/* conv to the result mode */
 			mode = get_type_mode(res_tp);
@@ -809,7 +799,7 @@ replace_by_call:
 
 	if (irn != NULL) {
 		DBG_OPT_ALGSIM0(call, irn);
-		replace_call(irn, call, mem, reg, exc);
+		replace_call(irn, call, mem);
 		return 1;
 	}
 
@@ -836,7 +826,7 @@ int i_mapper_strncmp(ir_node *call)
 
 		irn = new_r_Const_null(irg, mode);
 		DBG_OPT_ALGSIM0(call, irn);
-		replace_call(irn, call, mem, NULL, NULL);
+		replace_call(irn, call, mem);
 		return 1;
 	}
 	return 0;
@@ -853,7 +843,7 @@ int i_mapper_strcpy(ir_node *call)
 		ir_node *dst = get_Call_param(call, 0);
 
 		DBG_OPT_ALGSIM0(call, dst);
-		replace_call(dst, call, mem, NULL, NULL);
+		replace_call(dst, call, mem);
 		return 1;
 	}
 	return 0;
@@ -871,7 +861,7 @@ int i_mapper_memcpy(ir_node *call)
 		ir_node *mem = get_Call_mem(call);
 
 		DBG_OPT_ALGSIM0(call, dst);
-		replace_call(dst, call, mem, NULL, NULL);
+		replace_call(dst, call, mem);
 		return 1;
 	}
 	return 0;
@@ -889,7 +879,7 @@ int i_mapper_memmove(ir_node *call)
 		ir_node *mem = get_Call_mem(call);
 
 		DBG_OPT_ALGSIM0(call, dst);
-		replace_call(dst, call, mem, NULL, NULL);
+		replace_call(dst, call, mem);
 		return 1;
 	}
 	return 0;
@@ -905,7 +895,7 @@ int i_mapper_memset(ir_node *call)
 		ir_node *dst = get_Call_param(call, 0);
 
 		DBG_OPT_ALGSIM0(call, dst);
-		replace_call(dst, call, mem, NULL, NULL);
+		replace_call(dst, call, mem);
 		return 1;
 	}
 	return 0;
@@ -931,7 +921,7 @@ int i_mapper_memcmp(ir_node *call)
 
 		irn = new_r_Const_null(irg, mode);
 		DBG_OPT_ALGSIM0(call, irn);
-		replace_call(irn, call, mem, NULL, NULL);
+		replace_call(irn, call, mem);
 		return 1;
 	}
 	return 0;
