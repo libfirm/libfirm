@@ -1867,9 +1867,7 @@ no_call_mem:
 	++in_arity;
 
 	/* construct memory input */
-	in[mem_pos] =
-		sync_arity == 1 ? sync_ins[0] :
-		new_r_Sync(new_block, sync_arity, sync_ins);
+	in[mem_pos] = be_make_Sync(new_block, sync_arity, sync_ins);
 
 	assert(in_arity <= (int)max_inputs);
 

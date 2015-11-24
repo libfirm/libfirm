@@ -173,4 +173,6 @@ ir_node *be_skip_sameconv(ir_node *node);
 bool be_match_immediate(ir_node const *node, ir_tarval **tarval_out,
                         ir_entity **entity_out, unsigned *reloc_kind_out);
 
+ir_node *be_make_Sync(ir_node *block, int arity, ir_node **ins);
+
 #endif

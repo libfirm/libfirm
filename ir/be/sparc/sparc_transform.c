@@ -1812,10 +1812,8 @@ static ir_node *gen_Call(ir_node *node)
 	/* construct memory input */
 	if (sync_arity == 0) {
 		in[mem_pos] = new_mem;
-	} else if (sync_arity == 1) {
-		in[mem_pos] = sync_ins[0];
 	} else {
-		in[mem_pos] = new_r_Sync(new_block, sync_arity, sync_ins);
+		in[mem_pos] = be_make_Sync(new_block, sync_arity, sync_ins);
 	}
 
 	if (is_Address(callee)) {

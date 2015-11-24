@@ -4994,10 +4994,7 @@ static ir_node *gen_Call(ir_node *node)
 	assert(sync_arity <= n_params + 1);
 
 	/* Memory input. */
-	ir_node *const memin =
-		sync_arity == 1 ? sync_ins[0] :
-		new_r_Sync(block, sync_arity, sync_ins);
-	in[n_ia32_Call_mem]     = memin;
+	in[n_ia32_Call_mem]     = be_make_Sync(block, sync_arity, sync_ins);
 	in_req[n_ia32_Call_mem] = arch_memory_req;
 
 	/* Count outputs. */

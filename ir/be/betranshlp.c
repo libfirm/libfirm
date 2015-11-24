@@ -872,3 +872,10 @@ bool be_match_immediate(ir_node const *const node, ir_tarval **const tarval_out,
 	*reloc_kind_out = reloc_kind;
 	return true;
 }
+
+ir_node *be_make_Sync(ir_node *const block, int const arity, ir_node **const ins)
+{
+	return
+		arity == 1 ? ins[0] :
+		new_r_Sync(block, arity, ins);
+}
