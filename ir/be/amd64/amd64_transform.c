@@ -1735,6 +1735,33 @@ static ir_node *make_store_for_mode(ir_mode *const mode, dbg_info *const dbgi, i
 	return new_store;
 }
 
+static bool call_am_okay(ir_node const *const node, ir_node **out_load)
+{
+	ir_node *const block  = get_nodes_block(node);
+	ir_node *const callee = get_Call_ptr(node);
+	ir_node *const load = source_am_possible(block, callee);
+	if (load == NULL)
+		return false;
+
+	/* none of the other Call inputs must depend on the load */
+	foreach_irn_in(node, i, in) {
+		if (i == n_Call_ptr)
+			continue;
+		/* if the memory input is the load memory output, then we are
+		 * fine.
+		 * TODO: handle more complicated Sync cases
+		 */
+		if (i == n_Call_mem && is_Proj(in) && get_Proj_pred(in) == load)
+			continue;
+		if (input_depends_on_load(load, in)) {
+			return false;
+		}
+	}
+
+	*out_load = load;
+	return true;
+}
+
 static ir_node *gen_Call(ir_node *const node)
 {
 	ir_node           *const callee       = get_Call_ptr(node);
@@ -1785,27 +1812,8 @@ static ir_node *gen_Call(ir_node *const node)
 	if (match_immediate_32(&addr.immediate, callee, true)) {
 		op_mode = AMD64_OP_IMM32;
 	} else {
-		ir_node *load    = source_am_possible(block, callee);
-		bool     am_okay = false;
-		if (load != NULL) {
-			am_okay = true;
-			/* none of the other Call inputs must depend on the load */
-			foreach_irn_in(node, i, in) {
-				if (i == n_Call_ptr)
-					continue;
-				/* if the memory input is the load memory output, then we are
-				 * fine.
-				 * TODO: handle more complicated Sync cases
-				 */
-				if (i == n_Call_mem && is_Proj(in) && get_Proj_pred(in) == load)
-					continue;
-				if (input_depends_on_load(load, in)) {
-					am_okay = false;
-					break;
-				}
-			}
-		}
-		if (am_okay) {
+		ir_node *load;
+		if (call_am_okay(node, &load)) {
 			ir_node *load_ptr = get_Load_ptr(load);
 			mem_proj = get_Proj_for_pn(load, pn_Load_M);
 
@@ -2154,6 +2162,8 @@ static ir_node *match_mov(dbg_info *dbgi, ir_node *block, ir_node *value,
 		mem_proj = get_Proj_for_pn(load, pn_Load_M);
 		op_mode  = AMD64_OP_ADDR;
 	} else {
+		assert(arity == 0); /* AMD64_OP_REG is currently hardcoded to always
+				     * output the register of the first input. */
 		ir_node *new_value = be_transform_node(value);
 		int const input = arity++;
 		addr = (x86_addr_t) {

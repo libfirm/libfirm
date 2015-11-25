@@ -28,6 +28,11 @@
 #include "irgwalk.h"
 #include "panic.h"
 
+static bool fallthrough_possible(const ir_node *block, const ir_node *target)
+{
+	return be_emit_get_prev_block(target) == block;
+}
+
 static char get_gp_size_suffix(x86_insn_size_t const size)
 {
 	switch (size) {
@@ -647,14 +652,36 @@ static void emit_amd64_asm(const ir_node *node)
 	be_emit_asm(node, emit_amd64_asm_operand);
 }
 
+static void emit_amd64_call(const ir_node* node)
+{
+	amd64_emitf(node, "call %*AM");
+
+	if (is_cfop(node)) {
+		/* If the call throws we have to add a jump to its X_regular block. */
+		const ir_node* const block           = get_nodes_block(node);
+		const ir_node* const x_regular_proj  = get_Proj_for_pn(node, node->op->pn_x_regular);
+		if (x_regular_proj == NULL) {
+			/* Call always throws and/or never returns. */
+		} else {
+			const ir_node* const x_regular_block = be_emit_get_cfop_target(x_regular_proj);
+			assert(x_regular_block != NULL);
+			if (!fallthrough_possible(block, x_regular_block)) {
+				amd64_emitf(x_regular_proj, "jmp %L");
+			} else if (be_options.verbose_asm) {
+				amd64_emitf(x_regular_proj, "/* fallthrough to %L */");
+			}
+		}
+	}
+}
+
 /**
  * Emit a Jmp.
  */
 static void emit_amd64_jmp(const ir_node *node)
 {
-	ir_node const *const block  = get_nodes_block(node);
-	ir_node const *const target = be_emit_get_cfop_target(node);
-	if (be_emit_get_prev_block(target) != block) {
+	const ir_node *const block        = get_nodes_block(node);
+	const ir_node *const target_block = be_emit_get_cfop_target(node);
+	if (!fallthrough_possible(block, target_block)) {
 		amd64_emitf(node, "jmp %L");
 	} else if (be_options.verbose_asm) {
 		amd64_emitf(node, "/* fallthrough to %L */");
@@ -699,28 +726,19 @@ static x86_condition_code_t determine_final_cc(ir_node const *const flags,
  */
 static void emit_amd64_jcc(const ir_node *irn)
 {
-	const ir_node         *proj_true  = NULL;
-	const ir_node         *proj_false = NULL;
+	const ir_node *const block        = get_nodes_block(irn);
+	const ir_node *      proj_true    = get_Proj_for_pn(irn, pn_Cond_true);
+	const ir_node *      proj_false   = get_Proj_for_pn(irn, pn_Cond_false);
+	const ir_node *const target_true  = be_emit_get_cfop_target(proj_true);
+	const ir_node *const target_false = be_emit_get_cfop_target(proj_false);
+
 	const ir_node         *flags = get_irn_n(irn, n_amd64_jcc_eflags);
 	const amd64_cc_attr_t *attr  = get_amd64_cc_attr_const(irn);
 	x86_condition_code_t   cc    = determine_final_cc(flags, attr->cc);
 
-	foreach_out_edge(irn, edge) {
-		ir_node *proj = get_edge_src_irn(edge);
-		unsigned nr = get_Proj_num(proj);
-		if (nr == pn_Cond_true) {
-			proj_true = proj;
-		} else {
-			proj_false = proj;
-		}
-	}
-
-	ir_node const *const block       = get_nodes_block(irn);
-	ir_node const *const true_target = be_emit_get_cfop_target(proj_true);
-	if (be_emit_get_prev_block(true_target) == block) {
+	if (fallthrough_possible(block, target_true)) {
 		/* exchange both proj's so the second one can be omitted */
 		const ir_node *t = proj_true;
-
 		proj_true  = proj_false;
 		proj_false = t;
 		cc         = x86_negate_condition_code(cc);
@@ -739,8 +757,7 @@ static void emit_amd64_jcc(const ir_node *irn)
 	/* emit the true proj */
 	amd64_emitf(proj_true, "j%PX %L", (int)cc);
 
-	ir_node const *const false_target = be_emit_get_cfop_target(proj_false);
-	if (be_emit_get_prev_block(false_target) != block) {
+	if (!fallthrough_possible(block, target_false)) {
 		amd64_emitf(proj_false, "jmp %L");
 	} else if (be_options.verbose_asm) {
 		amd64_emitf(proj_false, "/* fallthrough to %L */");
