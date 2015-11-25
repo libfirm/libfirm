@@ -34,6 +34,11 @@ static bool omit_fp;
 static int  frame_type_size;
 static int  callframe_offset;
 
+static bool fallthrough_possible(const ir_node *block, const ir_node *target)
+{
+	return be_emit_get_prev_block(target) == block;
+}
+
 static char get_gp_size_suffix(x86_insn_size_t const size)
 {
 	switch (size) {
@@ -590,6 +595,28 @@ static void emit_amd64_asm_operand(ir_node const *const node, char const modifie
 static void emit_amd64_asm(const ir_node *node)
 {
 	be_emit_asm(node, emit_amd64_asm_operand);
+}
+
+static void emit_amd64_call(const ir_node* node)
+{
+	amd64_emitf(node, "call %*AM");
+
+	if (is_cfop(node)) {
+		/* If the call throws we have to add a jump to its X_regular block. */
+		const ir_node* const block           = get_nodes_block(node);
+		const ir_node* const x_regular_proj  = get_Proj_for_pn(node, node->op->pn_x_regular);
+		if (x_regular_proj == NULL) {
+			/* Call always throws and/or never returns. */
+		} else {
+			const ir_node* const x_regular_block = be_emit_get_cfop_target(x_regular_proj);
+			assert(x_regular_block != NULL);
+			if (!fallthrough_possible(block, x_regular_block)) {
+				amd64_emitf(x_regular_proj, "jmp %L");
+			} else if (be_options.verbose_asm) {
+				amd64_emitf(x_regular_proj, "/* fallthrough to %L */");
+			}
+		}
+	}
 }
 
 /**

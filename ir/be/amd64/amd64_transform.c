@@ -2198,6 +2198,8 @@ static ir_node *match_mov(dbg_info *dbgi, ir_node *block, ir_node *value,
 		mem_proj = get_Proj_for_pn(load, pn_Load_M);
 		op_mode  = AMD64_OP_ADDR;
 	} else {
+		assert(arity == 0); /* AMD64_OP_REG is currently hardcoded to always
+				     * output the register of the first input. */
 		ir_node *new_value = be_transform_node(value);
 		int const input = arity++;
 		addr = (x86_addr_t) {
