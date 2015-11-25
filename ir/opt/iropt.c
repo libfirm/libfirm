@@ -7493,6 +7493,15 @@ static ir_node *transform_node_Store(ir_node *n)
 	return n;
 }
 
+static bool always_optimize(unsigned const iro)
+{
+	return
+		iro == iro_Block ||
+		iro == iro_Id    ||
+		iro == iro_Phi   ||
+		iro == iro_Proj;
+}
+
 /**
  * Tries several [inplace] [optimizing] transformations and returns an
  * equivalent node.  The difference to equivalent_node() is that these
@@ -7539,11 +7548,7 @@ restart:;
 	}
 
 	/* remove unnecessary nodes */
-	if (get_opt_constant_folding() ||
-		(iro == iro_Phi)  ||   /* always optimize these nodes. */
-		(iro == iro_Id)   ||   /* ... */
-		(iro == iro_Proj) ||   /* ... */
-		(iro == iro_Block)) {  /* Flags tested local. */
+	if (get_opt_constant_folding() || always_optimize(iro)) {
 		n = equivalent_node(n);
 		if (n != old_n)
 			goto restart;
@@ -7875,11 +7880,7 @@ ir_node *optimize_node(ir_node *n)
 	}
 
 	/* remove unnecessary nodes */
-	if (get_opt_algebraic_simplification() ||
-	    (iro == iro_Phi)  ||   /* always optimize these nodes. */
-	    (iro == iro_Id)   ||
-	    (iro == iro_Proj) ||
-	    (iro == iro_Block)  )  /* Flags tested local. */
+	if (get_opt_algebraic_simplification() || always_optimize(iro))
 		n = equivalent_node(n);
 
 	/* Common Subexpression Elimination.
