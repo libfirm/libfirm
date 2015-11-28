@@ -330,12 +330,11 @@ static inline int is_Id_(const ir_node *node);
 /**
  * Returns the array with the ins.  The content of the array must not be
  * changed.
- * Note that this function returns the whole in array including the
- * block predecessor. So, it is NOT symmetric to set_irn_in().
+ * This is symmetric to set_irn_in().
  */
 static inline ir_node **get_irn_in(ir_node const *const node)
 {
-	return node->in;
+	return node->in + 1;
 }
 
 /*-------------------------------------------------------------------*/

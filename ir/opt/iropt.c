@@ -7771,7 +7771,7 @@ void ir_normalize_node(ir_node *n)
 		}
 
 		if (!ins_sorted) {
-			ir_node **ins     = get_irn_in(n)+1;
+			ir_node **ins     = get_irn_in(n);
 			ir_node **new_ins = XMALLOCN(ir_node*, arity);
 			MEMCPY(new_ins, ins, arity);
 			QSORT(new_ins, arity, cmp_node_nr);

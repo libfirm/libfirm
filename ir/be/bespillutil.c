@@ -1139,7 +1139,7 @@ void be_spill_prepare_for_constraints(ir_graph *irg)
 			if (be_is_CopyKeep(cp) && get_irn_n_edges(cp) < 1) {
 				int      arity = get_irn_arity(cp);
 				ir_node *block = get_nodes_block(cp);
-				ir_node *keep  = be_new_Keep(block, arity, get_irn_in(cp) + 1);
+				ir_node *keep  = be_new_Keep(block, arity, get_irn_in(cp));
 				sched_replace(cp, keep);
 
 				/* Set all ins (including the block) of the CopyKeep BAD to keep the verifier happy. */

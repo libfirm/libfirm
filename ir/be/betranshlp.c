@@ -61,7 +61,7 @@ ir_node *be_transform_phi(ir_node *node, const arch_register_req_t *req)
 
 	/* phi nodes allow loops, so we use the old arguments for now
 	 * and fix this later */
-	ir_node **ins   = get_irn_in(node)+1;
+	ir_node **ins   = get_irn_in(node);
 	int       arity = get_irn_arity(node);
 	ir_mode  *mode  = req->cls->mode;
 	ir_node  *phi   = new_ir_node(dbgi, irg, block, op_Phi, mode, arity, ins);

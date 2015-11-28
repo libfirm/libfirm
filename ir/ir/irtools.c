@@ -54,7 +54,7 @@ ir_node *irn_copy_into_irg(const ir_node *node, ir_graph *irg)
 	ir_node  *block = op != op_Block ? get_nodes_block(node) : NULL;
 	dbg_info *dbgi  = get_irn_dbg_info(node);
 	ir_mode  *mode  = get_irn_mode(node);
-	ir_node **ins   = get_irn_in(node) + 1;
+	ir_node **ins   = get_irn_in(node);
 	int       arity = get_irn_arity(node);
 	ir_node  *res   = new_ir_node(dbgi, irg, block, op, mode, arity, ins);
 

@@ -77,7 +77,7 @@ static inline void set_{{node.name}}_{{node.input_name}}_(ir_node *node, int pos
 static inline ir_node **get_{{node.name}}_{{node.input_name}}_arr_(ir_node *node)
 {
 	assert(is_{{node.name}}(node));
-	return get_irn_in(node) + 1{% if node.ins %}+ (n_{{node.name}}_max + 1){% endif %};
+	return get_irn_in(node){% if node.ins %} + (n_{{node.name}}_max + 1){% endif %};
 }
 {% endif -%}
 {% endfor -%}
