@@ -3953,7 +3953,6 @@ static ir_node *transform_node_Mod(ir_node *n)
 		}
 	}
 
-	value = n;
 	ir_tarval *tv  = do_computed_value_Mod(a, b);
 	ir_graph  *irg = get_irn_irg(n);
 	if (tarval_is_constant(tv)) {
