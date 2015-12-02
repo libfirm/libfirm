@@ -387,32 +387,27 @@ follow_ptr2:
 	}
 
 check_classes:;
-	ir_storage_class_class_t mod1   = classify_pointer(addr1, base1);
-	ir_storage_class_class_t mod2   = classify_pointer(addr2, base2);
-	ir_storage_class_class_t class1 = mod1 & ~ir_sc_modifiers;
-	ir_storage_class_class_t class2 = mod2 & ~ir_sc_modifiers;
-
 	/* no alias if 1 is a primitive object and the other a compound object */
-	if (((mod1|mod2) & (ir_sc_modifier_obj_comp|ir_sc_modifier_obj_prim))
-	    == (ir_sc_modifier_obj_comp|ir_sc_modifier_obj_prim))
+	const ir_storage_class_class_t mod1 = classify_pointer(addr1, base1);
+	const ir_storage_class_class_t mod2 = classify_pointer(addr2, base2);
+	if (((mod1 | mod2) & (ir_sc_modifier_obj_comp | ir_sc_modifier_obj_prim))
+	    == (ir_sc_modifier_obj_comp | ir_sc_modifier_obj_prim))
 		return ir_no_alias;
 
+	const ir_storage_class_class_t class1 = mod1 & ~ir_sc_modifiers;
+	const ir_storage_class_class_t class2 = mod2 & ~ir_sc_modifiers;
 	if (class1 == ir_sc_pointer || class2 == ir_sc_pointer) {
-		/* swap pointer class to class1 */
-		if (class2 == ir_sc_pointer) {
-			ir_storage_class_class_t temp = mod1;
-			mod1 = mod2;
-			mod2 = temp;
-
-			temp = class1;
-			class1 = class2;
-			class2 = temp;
+		ir_storage_class_class_t other_class = class2;
+		ir_storage_class_class_t other_mod   = mod2;
+		if (class1 != ir_sc_pointer) {
+			other_class = class1;
+			other_mod   = mod1;
 		}
 		/* a pointer and an object whose address was never taken */
-		if (mod2 & ir_sc_modifier_nottaken)
+		if (other_mod & ir_sc_modifier_nottaken)
 			return ir_no_alias;
 		/* the null pointer aliases nothing */
-		if (class2 == ir_sc_null)
+		if (other_class == ir_sc_null)
 			return ir_no_alias;
 	} else if (class1 != class2) {
 		/* objects from different memory spaces cannot alias */
