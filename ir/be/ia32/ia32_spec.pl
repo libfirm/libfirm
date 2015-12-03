@@ -123,7 +123,10 @@ my $x87sim = "ia32_request_x87_sim(irg);";
 my $binop_commutative = {
 	irn_flags => [ "modify_flags", "rematerializable" ],
 	state     => "exc_pinned",
-	in_reqs   => [ "gp", "gp", "mem", "gp", "gp" ],
+	constructors => {
+		""     => { in_reqs => [ "gp", "gp", "mem", "gp", "gp" ] },
+		"8bit" => { in_reqs => [ "gp", "gp", "mem", "eax ebx ecx edx", "eax ebx ecx edx" ] }
+	},
 	out_reqs  => [ "in_r3 in_r4", "flags", "mem" ],
 	ins       => [ "base", "index", "mem", "left", "right" ],
 	outs      => [ "res", "flags", "M" ],
@@ -485,7 +488,7 @@ OrMem => {
 
 Xor => {
 	template => $binop_commutative,
-	emit     => "xor%M %B",
+	emit     => "xor%M %#B",
 	latency  => 1,
 },
 
@@ -1175,26 +1178,6 @@ CmpXChgMem => {
 	outs      => [ "res", "flags", "M" ],
 	emit      => "lock cmpxchg%M %S4, %AM",
 	latency   => 2,
-},
-
-Xor0Low => {
-	irn_flags    => [ "rematerializable" ],
-	state        => "exc_pinned",
-	constructors => {
-		"b" => {
-			in_reqs => [ "eax ebx ecx edx" ],
-			init    => "attr->ls_mode = mode_Bu;",
-		},
-		"w" => {
-			in_reqs => [ "gp" ],
-			init    => "attr->ls_mode = mode_Hu;",
-		},
-	},
-	out_reqs  => [ "in_r0" ],
-	ins       => [ "src" ],
-	outs      => [ "res" ],
-	emit      => "xor%M %D0, %D0",
-	latency   => 1,
 },
 
 Breakpoint => {

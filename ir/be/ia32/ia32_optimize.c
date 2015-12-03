@@ -135,6 +135,19 @@ check_shift_amount:
 	return pn == pn_ia32_res ? produces_zero_sign : produces_no_flag;
 }
 
+static void make_xor(ir_node *const and, ir_node *(*const cons)(dbg_info*, ir_node*, ir_node*, ir_node*, ir_node*, ir_node*, ir_node*), ir_mode *const mode, arch_register_t const *const reg)
+{
+	dbg_info *const dbgi  = get_irn_dbg_info(and);
+	ir_node  *const block = get_nodes_block(and);
+	ir_node  *const noreg = get_irn_n(and, n_ia32_And_base);
+	ir_node  *const nomem = get_irn_n(and, n_ia32_And_mem);
+	ir_node  *const left  = get_irn_n(and, n_ia32_And_left);
+	ir_node  *const xor   = cons(dbgi, block, noreg, noreg, nomem, left, left);
+	set_ia32_ls_mode(xor, mode);
+	arch_set_irn_register_out(xor, pn_ia32_Xor_res, reg);
+	replace(and, xor);
+}
+
 /**
  * Use shorter instructions:
  * x & 0xFFFFFF00 -> xorb x, x (6 bytes -> 2 bytes)
@@ -155,21 +168,12 @@ static void peephole_ia32_And(ir_node *const node)
 	if (get_irn_mode(node) == mode_T && get_Proj_for_pn(node, pn_ia32_And_flags))
 		return;
 
-	ir_node                   *(*cons)(dbg_info*, ir_node*, ir_node*);
 	arch_register_t const *const reg = arch_get_irn_register_out(node, pn_ia32_And_res);
 	uint32_t               const val = imm->imm.offset;
 	if (val == 0xFFFF0000) {
-		cons = &new_bd_ia32_Xor0Low_w;
-		goto make_xor0;
+		make_xor(node, &new_bd_ia32_Xor, mode_Hu, reg);
 	} else if (val == 0xFFFFFF00 && is_hl_register(reg)) {
-		cons = &new_bd_ia32_Xor0Low_b;
-make_xor0:;
-		dbg_info *const dbgi  = get_irn_dbg_info(node);
-		ir_node  *const block = get_nodes_block(node);
-		ir_node  *const left  = get_irn_n(node, n_ia32_And_left);
-		ir_node  *const xor0  = cons(dbgi, block, left);
-		arch_set_irn_register_out(xor0, pn_ia32_Xor0Low_res, reg);
-		replace(node, xor0);
+		make_xor(node, &new_bd_ia32_Xor_8bit, mode_Bu, reg);
 	}
 }
 
