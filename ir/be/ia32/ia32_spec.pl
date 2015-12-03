@@ -390,7 +390,7 @@ Add => {
 
 AddMem => {
 	template => $binop_mem,
-	emit     => "add%M %#S3, %AM",
+	emit     => "add%M %S3, %AM",
 	latency  => 1,
 },
 
@@ -442,7 +442,7 @@ IMul => {
 IMulImm => {
 	template => $binop_commutative,
 	out_reqs => [ "gp", "flags", "mem" ],
-	emit     => "imul%M %#S4, %#AS3, %#D0",
+	emit     => "imul%M %S4, %AS3, %D0",
 	latency  => 5,
 },
 
@@ -467,7 +467,7 @@ And => {
 
 AndMem => {
 	template => $binop_mem,
-	emit     => "and%M %#S3, %AM",
+	emit     => "and%M %S3, %AM",
 	latency  => 1,
 },
 
@@ -479,7 +479,7 @@ Or => {
 
 OrMem => {
 	template => $binop_mem,
-	emit     => "or%M %#S3, %AM",
+	emit     => "or%M %S3, %AM",
 	latency  => 1,
 },
 
@@ -501,7 +501,7 @@ Xor0 => {
 
 XorMem => {
 	template => $binop_mem,
-	emit     => "xor%M %#S3, %AM",
+	emit     => "xor%M %S3, %AM",
 	latency  => 1,
 },
 
@@ -520,7 +520,7 @@ Sub => {
 
 SubMem => {
 	template => $binop_mem,
-	emit     => "sub%M %#S3, %AM",
+	emit     => "sub%M %S3, %AM",
 	latency  => 1,
 },
 
@@ -636,7 +636,7 @@ RorMem => {
 
 Rol => {
 	template => $shiftop,
-	emit     => "rol%M %<,S1 %#D0",
+	emit     => "rol%M %<,S1 %D0",
 	latency  => 1,
 },
 
@@ -797,7 +797,7 @@ CMovcc => {
 	am        => "source,binary",
 	attr_type => "ia32_condcode_attr_t",
 	attr      => "x86_condition_code_t condition_code",
-	emit      => "cmov%P5 %#AS4, %#D0",
+	emit      => "cmov%P5 %AS4, %D0",
 	latency   => 1,
 	mode      => "first",
 },
@@ -945,7 +945,7 @@ Load => {
 	ins      => [ "base", "index", "mem" ],
 	outs     => [ "res", "unused", "M", "X_regular", "X_except" ],
 	latency  => 0,
-	emit     => "mov%#Ml %AM, %D0",
+	emit     => "mov%#Ml %AM, %#D0",
 },
 
 Store => {
@@ -958,7 +958,7 @@ Store => {
 	out_reqs => [ "mem", "exec", "exec" ],
 	ins      => [ "base", "index", "mem", "val" ],
 	outs     => [ "M", "X_regular", "X_except" ],
-	emit     => "mov%M %#S3, %AM",
+	emit     => "mov%M %S3, %AM",
 	latency  => 2,
 },
 
@@ -1173,7 +1173,7 @@ CmpXChgMem => {
 	out_reqs  => [ "eax", "flags", "mem" ],
 	ins       => [ "base", "index", "mem", "old", "new" ],
 	outs      => [ "res", "flags", "M" ],
-	emit      => "lock cmpxchg%M %#S4, %AM",
+	emit      => "lock cmpxchg%M %S4, %AM",
 	latency   => 2,
 },
 
@@ -1193,7 +1193,7 @@ Xor0Low => {
 	out_reqs  => [ "in_r0" ],
 	ins       => [ "src" ],
 	outs      => [ "res" ],
-	emit      => "xor%M %#D0, %#D0",
+	emit      => "xor%M %D0, %D0",
 	latency   => 1,
 },
 
@@ -1216,7 +1216,7 @@ Outport => {
 	in_reqs   => [ "edx", "eax", "mem" ],
 	out_reqs  => [ "mem" ],
 	ins       => [ "port", "value", "mem" ],
-	emit      => "out%M %#S1, %^S0",
+	emit      => "out%M %S1, %^S0",
 	latency   => 1,
 },
 
@@ -1227,7 +1227,7 @@ Inport => {
 	out_reqs  => [ "eax", "mem" ],
 	ins       => [ "port", "mem" ],
 	outs      => [ "res", "M" ],
-	emit      => "in%M %^S0, %#D0",
+	emit      => "in%M %^S0, %D0",
 	latency   => 1,
 },
 
@@ -1298,21 +1298,21 @@ xAllOnes => {
 # integer shift left, dword
 xPslld => {
 	template => $xshiftop,
-	emit     => "pslld %#S1, %D0",
+	emit     => "pslld %S1, %D0",
 	latency  => 3,
 },
 
 # integer shift left, qword
 xPsllq => {
 	template => $xshiftop,
-	emit     => "psllq %#S1, %D0",
+	emit     => "psllq %S1, %D0",
 	latency  => 3,
 },
 
 # integer shift right, dword
 xPsrld => {
 	template => $xshiftop,
-	emit     => "psrld %#S1, %D0",
+	emit     => "psrld %S1, %D0",
 	latency  => 1,
 },
 
@@ -1499,7 +1499,7 @@ Conv_I2I => {
 	out_reqs => [ "gp", "none", "mem", "exec", "exec" ],
 	ins      => [ "base", "index", "mem", "val" ],
 	outs     => [ "res", "unused", "M", "X_regular", "X_except" ],
-	emit     => "mov%#Ml %#AS3, %D0",
+	emit     => "mov%#Ml %AS3, %#D0",
 	am       => "source,unary",
 	latency  => 1,
 	attr     => "ir_mode *smaller_mode",

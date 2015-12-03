@@ -343,12 +343,12 @@ void x86_emit_condition_code(x86_condition_code_t cc)
 
 typedef enum ia32_emit_mod_t {
 	EMIT_NONE         = 0,
-	EMIT_RESPECT_LS   = 1U << 0,
-	EMIT_ALTERNATE_AM = 1U << 1,
-	EMIT_LONG         = 1U << 2,
+	EMIT_ALTERNATE_AM = 1U << 0,
+	EMIT_LONG         = 1U << 1,
+	EMIT_LOW_REG      = 1U << 2,
 	EMIT_HIGH_REG     = 1U << 3,
-	EMIT_LOW_REG      = 1U << 4,
-	EMIT_16BIT_REG    = 1U << 5,
+	EMIT_16BIT_REG    = 1U << 4,
+	EMIT_32BIT_REG    = 1U << 5,
 	EMIT_SHIFT_COMMA  = 1U << 6,
 } ia32_emit_mod_t;
 ENUM_BITSET(ia32_emit_mod_t)
@@ -444,11 +444,11 @@ void ia32_emitf(ir_node const *const node, char const *fmt, ...)
 		for (;;) {
 			switch (*fmt) {
 			case '*': mod |= EMIT_ALTERNATE_AM; break;
-			case '#': mod |= EMIT_RESPECT_LS;   break;
 			case 'l': mod |= EMIT_LONG;         break;
-			case '>': mod |= EMIT_HIGH_REG;     break;
 			case '<': mod |= EMIT_LOW_REG;      break;
+			case '>': mod |= EMIT_HIGH_REG;     break;
 			case '^': mod |= EMIT_16BIT_REG;    break;
+			case '#': mod |= EMIT_32BIT_REG;    break;
 			case ',': mod |= EMIT_SHIFT_COMMA;  break;
 			default:
 				goto end_of_mods;
@@ -600,7 +600,7 @@ emit_I:
 				ir_mode *mode = get_ia32_ls_mode(node);
 				if (!mode)
 					mode = ia32_mode_gp;
-				if (mod & EMIT_RESPECT_LS) {
+				if (mod & EMIT_32BIT_REG) {
 					if (get_mode_size_bits(mode) == 32)
 						break;
 					be_emit_char(mode_is_signed(mode) ? 's' : 'z');
@@ -636,10 +636,10 @@ emit_R:
 					name = get_register_name_8bit_low(reg);
 				} else if (mod & EMIT_16BIT_REG) {
 					name = get_register_name_16bit(reg);
+				} else if (mod & EMIT_32BIT_REG) {
+					name = reg->name;
 				} else {
-					name = mod & EMIT_RESPECT_LS
-						 ? get_register_name_mode(reg, get_ia32_ls_mode(node))
-						 : reg->name;
+					name = get_register_name_mode(reg, get_ia32_ls_mode(node));
 				}
 				be_emit_char('%');
 				be_emit_string(name);
@@ -870,7 +870,7 @@ static void emit_ia32_Setcc(const ir_node *node)
 			ia32_emitf(node, "andb %>R, %<R", dreg, dreg);
 		}
 	} else {
-		ia32_emitf(node, "set%PX %#R", (int)cc, dreg);
+		ia32_emitf(node, "set%PX %R", (int)cc, dreg);
 	}
 }
 
@@ -1062,9 +1062,9 @@ static void emit_be_IncSP(const ir_node *node)
 		return;
 
 	if (offs > 0) {
-		ia32_emitf(node, "subl $%u, %D0", offs);
+		ia32_emitf(node, "subl $%u, %#D0", offs);
 	} else {
-		ia32_emitf(node, "addl $%u, %D0", -offs);
+		ia32_emitf(node, "addl $%u, %#D0", -offs);
 	}
 }
 
@@ -1082,7 +1082,7 @@ static void Copy_emitter(const ir_node *node, const ir_node *op)
 	if (in->cls == &ia32_reg_classes[CLASS_ia32_fp])
 		return;
 
-	ia32_emitf(node, "movl %R, %R", in, out);
+	ia32_emitf(node, "movl %#R, %#R", in, out);
 }
 
 static void emit_be_Copy(const ir_node *node)
@@ -1107,11 +1107,11 @@ static void emit_be_Perm(const ir_node *node)
 	assert(cls == reg1->cls && "Register class mismatch at Perm");
 
 	if (cls == &ia32_reg_classes[CLASS_ia32_gp]) {
-		ia32_emitf(node, "xchg %R, %R", reg1, reg0);
+		ia32_emitf(node, "xchg %#R, %#R", reg1, reg0);
 	} else if (cls == &ia32_reg_classes[CLASS_ia32_xmm]) {
-		ia32_emitf(NULL, "xorpd %R, %R", reg1, reg0);
-		ia32_emitf(NULL, "xorpd %R, %R", reg0, reg1);
-		ia32_emitf(node, "xorpd %R, %R", reg1, reg0);
+		ia32_emitf(NULL, "xorpd %#R, %#R", reg1, reg0);
+		ia32_emitf(NULL, "xorpd %#R, %#R", reg0, reg1);
+		ia32_emitf(node, "xorpd %#R, %#R", reg1, reg0);
 	} else if (cls == &ia32_reg_classes[CLASS_ia32_fp]) {
 		/* is a NOP */
 	} else {
@@ -1966,9 +1966,9 @@ static void bemit_perm(const ir_node *node)
 		bemit_xchg(reg0, reg1);
 	} else if (cls == &ia32_reg_classes[CLASS_ia32_xmm]) {
 		panic("unimplemented"); // TODO implement
-		//ia32_emitf(NULL, "xorpd %R, %R", reg1, reg0);
-		//ia32_emitf(NULL, "xorpd %R, %R", reg0, reg1);
-		//ia32_emitf(node, "xorpd %R, %R", reg1, reg0);
+		//ia32_emitf(NULL, "xorpd %#R, %#R", reg1, reg0);
+		//ia32_emitf(NULL, "xorpd %#R, %#R", reg0, reg1);
+		//ia32_emitf(node, "xorpd %#R, %#R", reg1, reg0);
 	} else if (cls == &ia32_reg_classes[CLASS_ia32_fp]) {
 		/* is a NOP */
 	} else {
@@ -3196,7 +3196,7 @@ void ia32_emit_thunks(void)
 
 		be_gas_emit_function_prolog(entity, ia32_cg_config.function_alignment,
 									NULL);
-		ia32_emitf(NULL, "movl (%%esp), %R", reg);
+		ia32_emitf(NULL, "movl (%%esp), %#R", reg);
 		ia32_emitf(NULL, "ret");
 		be_gas_emit_function_epilog(entity);
 	}
