@@ -488,7 +488,7 @@ OrMem => {
 
 Xor => {
 	template => $binop_commutative,
-	emit     => "xor%M %#B",
+	emit     => "xor%M %B",
 	latency  => 1,
 },
 

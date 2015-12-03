@@ -155,6 +155,8 @@ static const char *get_register_name_mode(const arch_register_t *reg,
 {
 	if (mode == NULL)
 		return reg->name;
+	if (mode == ia32_mode_8h)
+		return get_register_name_8bit_high(reg);
 	unsigned size = get_mode_size_bits(mode);
 	if (size == 8)
 		return get_register_name_8bit_low(reg);
@@ -226,7 +228,7 @@ static void emit_ia32_immediate_attr(bool const prefix, ir_node const *const nod
 
 static void ia32_emit_mode_suffix_mode(const ir_mode *mode)
 {
-	assert(mode_is_int(mode) || mode_is_reference(mode));
+	assert(mode_is_int(mode) || mode_is_reference(mode) || mode == ia32_mode_8h);
 	switch (get_mode_size_bits(mode)) {
 		case 8:  be_emit_char('b');     return;
 		case 16: be_emit_char('w');     return;

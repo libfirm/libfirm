@@ -150,8 +150,9 @@ static void make_xor(ir_node *const and, ir_node *(*const cons)(dbg_info*, ir_no
 
 /**
  * Use shorter instructions:
- * x & 0xFFFFFF00 -> xorb x, x (6 bytes -> 2 bytes)
- * x & 0xFFFF0000 -> xorw x, x (6 bytes -> 3 bytes)
+ * r & 0xFFFFFF00 -> xorb rl, rl (6 bytes -> 2 bytes)
+ * r & 0xFFFF00FF -> xorb rh, rh (6 bytes -> 2 bytes)
+ * r & 0xFFFF0000 -> xorw rx, rx (6 bytes -> 3 bytes)
  */
 static void peephole_ia32_And(ir_node *const node)
 {
@@ -172,8 +173,12 @@ static void peephole_ia32_And(ir_node *const node)
 	uint32_t               const val = imm->imm.offset;
 	if (val == 0xFFFF0000) {
 		make_xor(node, &new_bd_ia32_Xor, mode_Hu, reg);
-	} else if (val == 0xFFFFFF00 && is_hl_register(reg)) {
-		make_xor(node, &new_bd_ia32_Xor_8bit, mode_Bu, reg);
+	} else if (is_hl_register(reg)) {
+		if (val == 0xFFFFFF00) {
+			make_xor(node, &new_bd_ia32_Xor_8bit, mode_Bu, reg);
+		} else if (val == 0xFFFF00FF) {
+			make_xor(node, &new_bd_ia32_Xor_8bit, ia32_mode_8h, reg);
+		}
 	}
 }
 
