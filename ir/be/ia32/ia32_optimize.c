@@ -135,6 +135,24 @@ check_shift_amount:
 	return pn == pn_ia32_res ? produces_zero_sign : produces_no_flag;
 }
 
+static ia32_immediate_attr_t const *get_op_imm_no_ent(ir_node *const node, unsigned const n)
+{
+	ir_node *const op = get_irn_n(node, n);
+	if (!is_ia32_Immediate(op))
+		return NULL;
+
+	ia32_immediate_attr_t const *const imm = get_ia32_immediate_attr_const(op);
+	if (imm->imm.entity)
+		return NULL;
+
+	return imm;
+}
+
+static bool is_res_used(ir_node *const node, unsigned const num)
+{
+	return get_irn_mode(node) == mode_T && get_Proj_for_pn(node, num);
+}
+
 static void make_xor(ir_node *const and, ir_node *(*const cons)(dbg_info*, ir_node*, ir_node*, ir_node*, ir_node*, ir_node*, ir_node*), ir_mode *const mode, arch_register_t const *const reg)
 {
 	dbg_info *const dbgi  = get_irn_dbg_info(and);
@@ -156,17 +174,13 @@ static void make_xor(ir_node *const and, ir_node *(*const cons)(dbg_info*, ir_no
  */
 static void peephole_ia32_And(ir_node *const node)
 {
-	ir_node *const right = get_irn_n(node, n_ia32_And_right);
-	if (!is_ia32_Immediate(right))
-		return;
-
-	ia32_immediate_attr_t const *const imm = get_ia32_immediate_attr_const(right);
-	if (imm->imm.entity)
+	ia32_immediate_attr_t const *const imm = get_op_imm_no_ent(node, n_ia32_And_right);
+	if (!imm)
 		return;
 
 	/* Perform the replacement only, if the flags are unused.
 	 * Xor sets the flags differently than And. */
-	if (get_irn_mode(node) == mode_T && get_Proj_for_pn(node, pn_ia32_And_flags))
+	if (is_res_used(node, pn_ia32_And_flags))
 		return;
 
 	arch_register_t const *const reg = arch_get_irn_register_out(node, pn_ia32_And_res);
@@ -178,6 +192,47 @@ static void peephole_ia32_And(ir_node *const node)
 			make_xor(node, &new_bd_ia32_Xor_8bit, mode_Bu, reg);
 		} else if (val == 0xFFFF00FF) {
 			make_xor(node, &new_bd_ia32_Xor_8bit, ia32_mode_8h, reg);
+		}
+	}
+}
+
+static void make_not(ir_node *const xor, ir_node *(*const cons)(dbg_info*, ir_node*, ir_node*), ir_mode *const mode, arch_register_t const *const reg)
+{
+	dbg_info *const dbgi  = get_irn_dbg_info(xor);
+	ir_node  *const block = get_nodes_block(xor);
+	ir_node  *const left  = get_irn_n(xor, n_ia32_Xor_left);
+	ir_node  *const not   = cons(dbgi, block, left);
+	set_ia32_ls_mode(not, mode);
+	arch_set_irn_register_out(not, pn_ia32_Not_res, reg);
+	replace(xor, not);
+}
+
+/**
+ * Use shorter instructions:
+ * r ^ 0x000000FF -> notb rl, rl (6[-1] bytes -> 2 bytes)
+ * r ^ 0x0000FF00 -> notb rh, rh (6[-1] bytes -> 2 bytes)
+ * r ^ 0x0000FFFF -> notw rx, rx (6[-1] bytes -> 3 bytes)
+ */
+static void peephole_ia32_Xor(ir_node *const node)
+{
+	ia32_immediate_attr_t const *const imm = get_op_imm_no_ent(node, n_ia32_Xor_right);
+	if (!imm)
+		return;
+
+	/* Perform the replacement only, if the flags are unused.
+	 * Not does not set the flags, while Xor does. */
+	if (is_res_used(node, pn_ia32_Xor_flags))
+		return;
+
+	arch_register_t const *const reg = arch_get_irn_register_out(node, pn_ia32_Xor_res);
+	uint32_t               const val = imm->imm.offset;
+	if (val == 0x0000FFFF) {
+		make_not(node, &new_bd_ia32_Not, mode_Hu, reg);
+	} else if (is_hl_register(reg)) {
+		if (val == 0x000000FF) {
+			make_not(node, &new_bd_ia32_Not_8bit, mode_Bu, reg);
+		} else if (val == 0x0000FF00) {
+			make_not(node, &new_bd_ia32_Not_8bit, ia32_mode_8h, reg);
 		}
 	}
 }
@@ -948,6 +1003,7 @@ void ia32_peephole_optimization(ir_graph *irg)
 	register_peephole_optimization(op_be_IncSP,     peephole_be_IncSP);
 	register_peephole_optimization(op_ia32_Test,    peephole_ia32_Test);
 	register_peephole_optimization(op_ia32_Return,  peephole_ia32_Return);
+	register_peephole_optimization(op_ia32_Xor,     peephole_ia32_Xor);
 	be_peephole_opt(irg);
 }
 

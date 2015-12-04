@@ -703,6 +703,10 @@ DecMem => {
 
 Not => {
 	template => $unop_no_flags,
+	constructors => {
+		""     => { in_reqs => [ "gp" ] },
+		"8bit" => { in_reqs => [ "eax ebx ecx edx" ] },
+	},
 	emit     => "not%M %D0",
 	latency  => 1,
 },
