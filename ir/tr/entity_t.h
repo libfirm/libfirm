@@ -102,8 +102,8 @@ typedef struct normal_ent_attr {
 /** The attributes for methods. */
 typedef struct method_ent_attr {
 	mtp_additional_properties properties; /**< Additional graph properties can
-											   be stored in a entity if no irg
-											   is available. Must be first. */
+	                                           be stored in a entity if no irg
+	                                           is available. Must be first. */
 	ir_graph *irg;                 /**< The corresponding irg if known.
 	                                    The ir_graph constructor automatically sets this field. */
 
@@ -143,8 +143,8 @@ typedef struct parameter_ent_attr {
 
 typedef struct alias_ent_attr {
 	mtp_additional_properties properties; /**< Additional graph properties can
-											   be stored in a entity if no irg
-											   is available. Must be first. */
+	                                           be stored in a entity if no irg
+	                                           is available. Must be first. */
 	ir_entity                *aliased;
 } alias_ent_attr;
 
