@@ -1525,9 +1525,8 @@ static void fix_parameter_entities(ir_graph *irg, ir_type *orig_mtp)
 				 * know which is/was a lowered doubleword.
 				 * So we just mark/remember it for later */
 				if (entity != NULL) {
-					assert(entity->attr.parameter.doubleword_low_mode == NULL);
-					entity->attr.parameter.doubleword_low_mode
-						= env.p.word_unsigned;
+					assert(!entity->attr.parameter.is_lowered_doubleword);
+					entity->attr.parameter.is_lowered_doubleword = true;
 				}
 			}
 		}

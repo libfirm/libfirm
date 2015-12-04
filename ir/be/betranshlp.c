@@ -695,21 +695,25 @@ static void create_stores_for_type(ir_graph *irg, ir_type *type)
 		if (arg == IR_VA_START_PARAMETER_NUMBER)
 			continue;
 
-		ir_node *addr = new_r_Member(start_block, frame, entity);
-		if (entity->attr.parameter.doubleword_low_mode != NULL) {
-			ir_mode *mode      = entity->attr.parameter.doubleword_low_mode;
-			ir_node *val0      = new_r_Proj(args, mode, arg);
-			ir_node *val1      = new_r_Proj(args, mode, arg+1);
-			ir_node *store0    = new_r_Store(start_block, mem, addr, val0,
-			                                 tp, cons_none);
-			ir_node *mem0      = new_r_Proj(store0, mode_M, pn_Store_M);
-			size_t   offset    = get_mode_size_bits(mode)/8;
-			ir_mode *mode_ref  = get_irn_mode(addr);
-			ir_mode *mode_offs = get_reference_offset_mode(mode_ref);
-			ir_node *cnst      = new_r_Const_long(irg, mode_offs, offset);
-			ir_node *next_addr = new_r_Add(start_block, addr, cnst, mode_ref);
-			ir_node *store1    = new_r_Store(start_block, mem0, next_addr, val1,
-			                                 tp, cons_none);
+		ir_node *addr        = new_r_Member(start_block, frame, entity);
+		ir_type *mt          = get_entity_type(get_irg_entity(irg));
+		ir_type *param_type0 = get_method_param_type(mt, arg);
+		if (entity->attr.parameter.is_lowered_doubleword) {
+			ir_type *param_type1 = get_method_param_type(mt, arg + 1);
+			ir_mode *m0          = get_type_mode(param_type0);
+			ir_mode *m1          = get_type_mode(param_type1);
+			ir_node *val0        = new_r_Proj(args, m0, arg);
+			ir_node *val1        = new_r_Proj(args, m1, arg + 1);
+			ir_node *store0      = new_r_Store(start_block, mem, addr, val0,
+			                                   tp, cons_none);
+			ir_node *mem0        = new_r_Proj(store0, mode_M, pn_Store_M);
+			size_t   offset      = get_mode_size_bytes(m0);
+			ir_mode *mode_ref    = get_irn_mode(addr);
+			ir_mode *mode_offs   = get_reference_offset_mode(mode_ref);
+			ir_node *cnst        = new_r_Const_long(irg, mode_offs, offset);
+			ir_node *next_addr   = new_r_Add(start_block, addr, cnst, mode_ref);
+			ir_node *store1      = new_r_Store(start_block, mem0, next_addr, val1,
+			                                   tp, cons_none);
 			mem = new_r_Proj(store1, mode_M, pn_Store_M);
 			if (first_store == NULL)
 				first_store = store0;

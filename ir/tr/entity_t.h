@@ -132,13 +132,13 @@ typedef struct parameter_ent_attr {
 	compound_member_ent_attr  base; /**< a parameter is also a compound_member
 	                                     of the frame type. */
 	size_t   number; /**< corresponding parameter number */
-	ir_mode *doubleword_low_mode;/**< entity is a lowered doubleword parameter,
-								so additional stores because of calling
-								convention are correctly performed.
-	                            Matze: This is a hack. In an ideal
-	                            wor^H^H^Hlibfirm we would first establish
-	                            calling conventions and then perform doubleword
-	                            lowering...) */
+	bool     is_lowered_doubleword; /**< entity is a lowered doubleword parameter,
+	                                     so additional stores because of calling
+	                                     convention are correctly performed.
+	                                     Matze: This is a hack. In an ideal
+	                                     wor^H^H^Hlibfirm we would first establish
+	                                     calling conventions and then perform doubleword
+	                                     lowering...) */
 } parameter_ent_attr;
 
 typedef struct alias_ent_attr {
