@@ -21,7 +21,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdlib.h>
-#include <strings.h>
 
 #include "bitfiddle.h"
 #include "hashptr.h"
