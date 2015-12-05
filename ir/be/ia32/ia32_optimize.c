@@ -135,6 +135,12 @@ check_shift_amount:
 	return pn == pn_ia32_res ? produces_zero_sign : produces_no_flag;
 }
 
+static bool is_op_32bit(ir_node *const node)
+{
+	ir_mode *const ls_mode = get_ia32_ls_mode(node);
+	return !ls_mode || get_mode_size_bits(ls_mode) == 32;
+}
+
 static ia32_immediate_attr_t const *get_op_imm_no_ent(ir_node *const node, unsigned const n)
 {
 	ir_node *const op = get_irn_n(node, n);
@@ -153,17 +159,32 @@ static bool is_res_used(ir_node *const node, unsigned const num)
 	return get_irn_mode(node) == mode_T && get_Proj_for_pn(node, num);
 }
 
-static void make_xor(ir_node *const and, ir_node *(*const cons)(dbg_info*, ir_node*, ir_node*, ir_node*, ir_node*, ir_node*, ir_node*), ir_mode *const mode, arch_register_t const *const reg)
+typedef ir_node *cons_binop(dbg_info*, ir_node*, ir_node*, ir_node*, ir_node*, ir_node*, ir_node*);
+
+static void make_binop(ir_node *const node, cons_binop *const cons, ir_node *const left, ir_node *const right, ir_mode *const mode, arch_register_t const *const reg)
 {
-	dbg_info *const dbgi  = get_irn_dbg_info(and);
-	ir_node  *const block = get_nodes_block(and);
-	ir_node  *const noreg = get_irn_n(and, n_ia32_And_base);
-	ir_node  *const nomem = get_irn_n(and, n_ia32_And_mem);
-	ir_node  *const left  = get_irn_n(and, n_ia32_And_left);
-	ir_node  *const xor   = cons(dbgi, block, noreg, noreg, nomem, left, left);
-	set_ia32_ls_mode(xor, mode);
-	arch_set_irn_register_out(xor, pn_ia32_Xor_res, reg);
-	replace(and, xor);
+	dbg_info *const dbgi  = get_irn_dbg_info(node);
+	ir_node  *const block = get_nodes_block(node);
+	ir_node  *const noreg = get_irn_n(node, n_ia32_base);
+	ir_node  *const nomem = get_irn_n(node, n_ia32_mem);
+	ir_node  *const binop = cons(dbgi, block, noreg, noreg, nomem, left, right);
+	set_ia32_ls_mode(binop, mode);
+	arch_set_irn_register_out(binop, pn_ia32_res, reg);
+	replace(node, binop);
+}
+
+static void make_binop_imm(ir_node *const node, cons_binop *const cons, unsigned const val, ir_mode *const mode, arch_register_t const *const reg)
+{
+	ir_node  *const left  = get_irn_n(node, n_ia32_binary_left);
+	ir_graph *const irg   = get_irn_irg(node);
+	ir_node  *const right = ia32_create_Immediate(irg, val);
+	make_binop(node, cons, left, right, mode, reg);
+}
+
+static void make_xor(ir_node *const and, cons_binop *const cons, ir_mode *const mode, arch_register_t const *const reg)
+{
+	ir_node *const left = get_irn_n(and, n_ia32_And_left);
+	make_binop(and, cons, left, left, mode, reg);
 }
 
 /**
@@ -174,6 +195,9 @@ static void make_xor(ir_node *const and, ir_node *(*const cons)(dbg_info*, ir_no
  */
 static void peephole_ia32_And(ir_node *const node)
 {
+	if (!is_op_32bit(node))
+		return;
+
 	ia32_immediate_attr_t const *const imm = get_op_imm_no_ent(node, n_ia32_And_right);
 	if (!imm)
 		return;
@@ -192,6 +216,38 @@ static void peephole_ia32_And(ir_node *const node)
 			make_xor(node, &new_bd_ia32_Xor_8bit, mode_Bu, reg);
 		} else if (val == 0xFFFF00FF) {
 			make_xor(node, &new_bd_ia32_Xor_8bit, ia32_mode_8h, reg);
+		} else if ((val & 0xFFFFFF80) == 0xFFFFFF00) {
+			make_binop_imm(node, &new_bd_ia32_And_8bit, val & 0xFF, mode_Bu, reg);
+		} else if ((val & 0xFFFF00FF) == 0xFFFF00FF) {
+			make_binop_imm(node, &new_bd_ia32_And_8bit, val >> 8 & 0xFF, ia32_mode_8h, reg);
+		}
+	}
+}
+
+/**
+ * Use shorter instructions:
+ * r | 0x000000XX -> orb $0xXX, rl (6[-1] bytes -> 3[-1] bytes)
+ * r | 0x0000XX00 -> orb $0xXX, rh (6[-1] bytes -> 3[-1] bytes)
+ */
+static void peephole_ia32_Or(ir_node *const node)
+{
+	if (!is_op_32bit(node))
+		return;
+
+	ia32_immediate_attr_t const *const imm = get_op_imm_no_ent(node, n_ia32_Or_right);
+	if (!imm)
+		return;
+
+	if (is_res_used(node, pn_ia32_Or_flags))
+		return;
+
+	arch_register_t const *const reg = arch_get_irn_register_out(node, pn_ia32_Or_res);
+	if (is_hl_register(reg)) {
+		uint32_t const val = imm->imm.offset;
+		if ((val & 0xFFFFFF80) == 0x00000080) {
+			make_binop_imm(node, &new_bd_ia32_Or_8bit, val, mode_Bu, reg);
+		} else if ((val & 0xFFFF00FF) == 0) {
+			make_binop_imm(node, &new_bd_ia32_Or_8bit, val >> 8, ia32_mode_8h, reg);
 		}
 	}
 }
@@ -212,9 +268,15 @@ static void make_not(ir_node *const xor, ir_node *(*const cons)(dbg_info*, ir_no
  * r ^ 0x000000FF -> notb rl, rl (6[-1] bytes -> 2 bytes)
  * r ^ 0x0000FF00 -> notb rh, rh (6[-1] bytes -> 2 bytes)
  * r ^ 0x0000FFFF -> notw rx, rx (6[-1] bytes -> 3 bytes)
+ *
+ * r ^ 0x000000XX -> xorb $0xXX, rl (6[-1] bytes -> 3[-1] bytes)
+ * r ^ 0x0000XX00 -> xorb $0xXX, rh (6[-1] bytes -> 3[-1] bytes)
  */
 static void peephole_ia32_Xor(ir_node *const node)
 {
+	if (!is_op_32bit(node))
+		return;
+
 	ia32_immediate_attr_t const *const imm = get_op_imm_no_ent(node, n_ia32_Xor_right);
 	if (!imm)
 		return;
@@ -233,6 +295,10 @@ static void peephole_ia32_Xor(ir_node *const node)
 			make_not(node, &new_bd_ia32_Not_8bit, mode_Bu, reg);
 		} else if (val == 0x0000FF00) {
 			make_not(node, &new_bd_ia32_Not_8bit, ia32_mode_8h, reg);
+		} else if ((val & 0xFFFFFF80) == 0x00000080) {
+			make_binop_imm(node, &new_bd_ia32_Xor_8bit, val, mode_Bu, reg);
+		} else if ((val & 0xFFFF00FF) == 0) {
+			make_binop_imm(node, &new_bd_ia32_Xor_8bit, val >> 8, ia32_mode_8h, reg);
 		}
 	}
 }
@@ -1001,6 +1067,7 @@ void ia32_peephole_optimization(ir_graph *irg)
 	register_peephole_optimization(op_ia32_And,     peephole_ia32_And);
 	register_peephole_optimization(op_ia32_Const,   peephole_ia32_Const);
 	register_peephole_optimization(op_be_IncSP,     peephole_be_IncSP);
+	register_peephole_optimization(op_ia32_Or,      peephole_ia32_Or);
 	register_peephole_optimization(op_ia32_Test,    peephole_ia32_Test);
 	register_peephole_optimization(op_ia32_Return,  peephole_ia32_Return);
 	register_peephole_optimization(op_ia32_Xor,     peephole_ia32_Xor);
