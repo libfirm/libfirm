@@ -13,6 +13,7 @@
 #include <stdbool.h>
 
 #include "bemodule.h"
+#include "util.h"
 #include "xmalloc.h"
 
 /**
@@ -149,7 +150,7 @@ static bool set_opt_module(void *const data, size_t const length, char const *co
 	bool                     res     = false;
 	for (const be_module_list_entry_t *module = *(moddata->list_head);
 	     module != NULL; module = module->next) {
-		if (strcmp(module->name, opt) == 0) {
+		if (streq(module->name, opt)) {
 			*(moddata->var) = module->data;
 			res = true;
 			break;

@@ -588,7 +588,7 @@ static ir_type *find_type_name(const char *name)
 		if (!is_compound_type(tp))
 			continue;
 
-		if (strcmp(get_compound_name(tp), name) == 0)
+		if (streq(get_compound_name(tp), name))
 			return tp;
 	}
 	return NULL;
@@ -624,9 +624,8 @@ static void check_ent_name(ir_type *const type, ir_entity *const entity, void *c
 	(void)type;
 
 	find_env_t *env = (find_env_t*)ctx;
-	if (entity && strcmp(get_entity_name(entity), env->u.name) == 0) {
+	if (entity && streq(get_entity_name(entity), env->u.name))
 		env->res = entity;
-	}
 }
 
 /**
@@ -1091,7 +1090,7 @@ void firm_debug(const char *cmd)
 			if (token == tok_number) {
 				dbg_printf("Setting initial node number to %u\n", lexer.number);
 				irp->max_node_nr = lexer.number;
-			} else if (token == tok_identifier && !strcmp(lexer.s, "rand")) {
+			} else if (token == tok_identifier && streq(lexer.s, "rand")) {
 				dbg_printf("Randomizing initial node number\n");
 				srand(time(0));
 				irp->max_node_nr += rand() % 6666;

@@ -36,7 +36,7 @@ arch_register_t const *x86_parse_clobber(x86_clobber_name_t const *const additio
 		return reg;
 	arch_register_t const *const regs = isa_if->registers;
 	for (size_t i = 0; additional_clobber_names[i].name != NULL; ++i) {
-		if (strcmp(additional_clobber_names[i].name, clobber) == 0)
+		if (streq(additional_clobber_names[i].name, clobber))
 			return &regs[additional_clobber_names[i].index];
 	}
 	return NULL;

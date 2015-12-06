@@ -545,7 +545,7 @@ static void emit_base_type(const ir_type *type)
 	ir_mode *mode = get_type_mode(type);
 	if (mode_is_int(mode)) {
 		/* bool hack */
-		if (strcmp(buf, "_Bool")==0 || strcmp(buf, "bool")==0) {
+		if (streq(buf, "_Bool") || streq(buf, "bool")) {
 			emit_int8(DW_ATE_boolean);
 		} else {
 			emit_int8(mode_is_signed(mode) ? DW_ATE_signed : DW_ATE_unsigned);

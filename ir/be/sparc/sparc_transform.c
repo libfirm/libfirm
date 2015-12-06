@@ -229,7 +229,7 @@ static const arch_register_t *find_register(const char *name)
 {
 	for (size_t i = 0; i < N_SPARC_REGISTERS; ++i) {
 		const arch_register_t *const reg = &sparc_registers[i];
-		if (strcmp(reg->name, name) == 0)
+		if (streq(reg->name, name))
 			return reg;
 	}
 	return NULL;
@@ -296,9 +296,8 @@ static ir_node *gen_ASM(ir_node *node)
 
 	for (size_t c = 0; c < get_ASM_n_clobbers(node); ++c) {
 		const char *const clobber = get_id_str(clobbers[c]);
-		if (strcmp(clobber, "cc") == 0) {
+		if (streq(clobber, "cc"))
 			continue;
-		}
 
 		const arch_register_t *reg = find_register(clobber);
 		if (reg == NULL)
@@ -377,7 +376,7 @@ static ir_node *gen_ASM(ir_node *node)
 	/* parse clobbers */
 	for (size_t c = 0; c < get_ASM_n_clobbers(node); ++c) {
 		const char *const clobber = get_id_str(clobbers[c]);
-		if (strcmp(clobber, "cc") == 0) {
+		if (streq(clobber, "cc")) {
 			ARR_APP1(arch_register_req_t const*, out_reqs, sparc_registers[REG_PSR].single_req);
 			ARR_APP1(arch_register_req_t const*, out_reqs, sparc_registers[REG_FSR].single_req);
 			continue;

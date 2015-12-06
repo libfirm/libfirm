@@ -30,7 +30,7 @@ static void set_name(lc_opt_entry_t *ent, const char *name)
 }
 
 #define entry_matches(ent,hash_val,str) \
-	((ent)->hash == hash_val && strcmp((ent)->name, (str)) == 0)
+	((ent)->hash == hash_val && streq((ent)->name, (str)))
 
 static lc_opt_entry_t *init_entry(lc_opt_entry_t *ent, lc_opt_entry_t *parent,
                                   const char *name, const char *desc)

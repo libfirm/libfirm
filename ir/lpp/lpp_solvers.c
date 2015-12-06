@@ -10,6 +10,7 @@
 #include "lpp_solvers.h"
 #include "lpp_cplex.h"
 #include "lpp_gurobi.h"
+#include "util.h"
 
 lpp_solver_t lpp_solvers[] = {
 #ifdef WITH_CPLEX
@@ -29,7 +30,7 @@ lpp_solver_func_t *lpp_find_solver(const char *name)
 		return lpp_solvers[0].solver;
 
 	for(i = 0; lpp_solvers[i].solver != NULL; i++)
-		if(strcmp(lpp_solvers[i].name, name) == 0)
+		if (streq(lpp_solvers[i].name, name))
 			return lpp_solvers[i].solver;
 
 	return NULL;

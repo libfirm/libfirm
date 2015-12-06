@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <inttypes.h>
 #include "strcalc.h"
+#include "util.h"
 
 bool fine = true;
 
@@ -18,7 +19,7 @@ static void test(const unsigned char *bytes, unsigned from, unsigned to,
 
 	char print_buf[32];
 	char *res = sc_print_buf(print_buf, sizeof(print_buf), val0, 32, SC_HEX, false);
-	if (strcmp(res, expected) != 0) {
+	if (!streq(res, expected)) {
 		printf("Failed: 0x%02X%02X%02X%02X [%u:%u) => %s (expected %s)\n",
 			   bytes[3], bytes[2], bytes[1], bytes[0], from, to, res, expected);
 		fine = false;

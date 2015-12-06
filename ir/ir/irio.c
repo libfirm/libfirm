@@ -31,6 +31,7 @@
 #include "obst.h"
 #include "pmap.h"
 #include "pdeq.h"
+#include "util.h"
 
 #define SYMERROR ((unsigned) ~0)
 
@@ -1275,7 +1276,7 @@ static char *read_string_null(read_env_t *env)
 	skip_ws(env);
 	if (env->c == 'N') {
 		char *str = read_word(env);
-		if (strcmp(str, "NULL") == 0) {
+		if (streq(str, "NULL")) {
 			obstack_free(&env->obst, str);
 			return NULL;
 		}
@@ -1407,11 +1408,10 @@ static ir_type *get_type(read_env_t *env, long typenr)
 static ir_type *read_type_ref(read_env_t *env)
 {
 	char *str = read_word(env);
-	if (strcmp(str, "unknown") == 0) {
+	if (streq(str, "unknown")) {
 		obstack_free(&env->obst, str);
 		return get_unknown_type();
-	}
-	if (strcmp(str, "code") == 0) {
+	} else if (streq(str, "code")) {
 		obstack_free(&env->obst, str);
 		return get_code_type();
 	}
@@ -1455,7 +1455,7 @@ static ir_mode *read_mode_ref(read_env_t *env)
 	char *str = read_string(env);
 	for (size_t i = 0, n = ir_get_n_modes(); i < n; i++) {
 		ir_mode *mode = ir_get_mode(i);
-		if (strcmp(str, get_mode_name(mode)) == 0) {
+		if (streq(str, get_mode_name(mode))) {
 			obstack_free(&env->obst, str);
 			return mode;
 		}
@@ -1652,7 +1652,7 @@ static void read_type(read_env_t *env)
 		ir_type *elemtype = read_type_ref(env);
 		type = new_type_array(elemtype);
 		char *str = read_word(env);
-		if (strcmp(str, "unknown") != 0) {
+		if (!streq(str, "unknown")) {
 			long size = atol(str);
 			set_array_size_int(type, size);
 		}
@@ -1798,11 +1798,11 @@ static void read_entity(read_env_t *env, ir_entity_kind kind)
 		if (ld_name != NULL)
 			set_entity_ld_ident(entity, ld_name);
 		const char *str = read_word(env);
-		if (strcmp(str, "initializer") == 0) {
+		if (streq(str, "initializer")) {
 			ir_initializer_t *initializer = read_initializer(env);
 			if (initializer != NULL)
 				set_entity_initializer(entity, initializer);
-		} else if (strcmp(str, "none") == 0) {
+		} else if (streq(str, "none")) {
 			/* do nothing */
 		} else {
 			parse_error(env, "expected 'initializer' or 'none' got '%s'\n", str);
@@ -1826,7 +1826,7 @@ static void read_entity(read_env_t *env, ir_entity_kind kind)
 	case IR_ENTITY_PARAMETER: {
 		char  *str = read_word(env);
 		size_t parameter_number;
-		if (strcmp(str, "va_start") == 0) {
+		if (streq(str, "va_start")) {
 			parameter_number = IR_VA_START_PARAMETER_NUMBER;
 		} else {
 			parameter_number = atol(str);

@@ -188,10 +188,10 @@ int be_is_valid_clobber(const char *clobber)
 
 	/* memory is a valid clobber. (the frontend has to detect this case too,
 	 * because it has to add memory edges to the asm) */
-	if (strcmp(clobber, "memory") == 0)
+	if (streq(clobber, "memory"))
 		return 1;
 	/* cc (condition code) is always valid */
-	if (strcmp(clobber, "cc") == 0)
+	if (streq(clobber, "cc"))
 		return 1;
 
 	return isa_if->is_valid_clobber(clobber);
@@ -223,7 +223,7 @@ static void be_opt_register(void)
 int be_parse_arg(const char *arg)
 {
 	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
-	if (strcmp(arg, "help") == 0 || (arg[0] == '?' && arg[1] == '\0')) {
+	if (streq(arg, "help") || streq(arg, "?")) {
 		lc_opt_print_help_for_entry(be_grp, '-', stdout);
 		return -1;
 	}

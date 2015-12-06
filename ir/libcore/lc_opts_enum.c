@@ -8,6 +8,7 @@
 
 #include "lc_opts_t.h"
 #include "lc_opts_enum.h"
+#include "util.h"
 #include "xmalloc.h"
 
 static const char *delim = " \t|,";
@@ -39,7 +40,7 @@ bool lc_opt_enum_ ## N ## _cb(void *const data, size_t const len, char const *co
 		s[end - begin] = '\0'; \
 		\
 		for (i = 0; items[i].name != NULL; ++i) { \
-			if (strcmp(s, items[i].name) == 0) { \
+			if (streq(s, items[i].name)) { \
 				*var->value op items[i].value; \
 				res = true; \
 			} \

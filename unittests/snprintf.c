@@ -4,11 +4,7 @@
 #include <stdbool.h>
 #include "irprintf.h"
 #include "firm.h"
-
-static bool streq(const char *a, const char *b)
-{
-	return strcmp(a, b) == 0;
-}
+#include "util.h"
 
 int main(void)
 {

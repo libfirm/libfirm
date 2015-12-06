@@ -24,11 +24,6 @@ static bool equal(const sc_word *v0, const sc_word *v1)
 	return memcmp(v0, v1, len) == 0;
 }
 
-static bool streq(const char *str0, const char *str1)
-{
-	return strcmp(str0, str1) == 0;
-}
-
 static void test_conv_print(unsigned long v, enum base_t base,
                             const char *expected)
 {

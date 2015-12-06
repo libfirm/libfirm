@@ -20,6 +20,7 @@
 #include "array.h"
 #include "panic.h"
 #include "strcalc.h"
+#include "util.h"
 
 /** Obstack to hold all modes. */
 static struct obstack modes;
@@ -32,7 +33,7 @@ static bool modes_are_equal(const ir_mode *m, const ir_mode *n)
 	if (m->sort != n->sort)
 		return false;
 	if (m->sort == irms_auxiliary || m->sort == irms_data)
-		return strcmp(m->name, n->name) == 0;
+		return streq(m->name, n->name);
 	return m->arithmetic        == n->arithmetic
 	    && m->size              == n->size
 	    && m->sign              == n->sign

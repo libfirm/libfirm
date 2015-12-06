@@ -111,7 +111,7 @@ arch_register_t const *arch_find_register(char const *const name)
 	arch_register_t const *const regs = isa_if->registers;
 	for (size_t i = 0, n = isa_if->n_registers; i < n; ++i) {
 		arch_register_t const *const reg = &regs[i];
-		if (strcmp(reg->name, name) == 0)
+		if (streq(reg->name, name))
 			return reg;
 	}
 	return NULL;

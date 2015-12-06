@@ -18,6 +18,7 @@
 #include "lc_opts_enum.h"
 #include "irtools.h"
 #include "tv.h"
+#include "util.h"
 
 #undef NATIVE_X86
 
@@ -825,11 +826,11 @@ static void autodetect_arch(void)
 		cpu_info.ecx_features   = regs.r.ecx;
 		cpu_info.add_features   = regs.r.ebx;
 
-		if        (0 == strcmp(vendorid, "GenuineIntel")) {
+		if        (streq(vendorid, "GenuineIntel")) {
 			auto_arch = auto_detect_Intel(&cpu_info);
-		} else if (0 == strcmp(vendorid, "AuthenticAMD")) {
+		} else if (streq(vendorid, "AuthenticAMD")) {
 			auto_arch = auto_detect_AMD(&cpu_info);
-		} else if (0 == strcmp(vendorid, "Geode by NSC")) {
+		} else if (streq(vendorid, "Geode by NSC")) {
 			auto_arch = cpu_geode_generic;
 		}
 

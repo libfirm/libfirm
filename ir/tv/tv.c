@@ -1247,9 +1247,9 @@ ir_tarval *ir_tarval_from_ascii(const char *buf, ir_mode *mode)
 	}
 	case irms_data:
 	case irms_auxiliary:
-		if (strcmp(buf, "bad") == 0)
+		if (streq(buf, "bad"))
 			return tarval_bad;
-		else if (strcmp(buf, "unknown") == 0)
+		else if (streq(buf, "unknown"))
 			return tarval_unknown;
 		break;
 	}

@@ -64,4 +64,9 @@ static inline bool is_digit(char const c)
 	return '0' <= c && c <= '9';
 }
 
+static inline bool streq(char const *const a, char const *const b)
+{
+	return strcmp(a, b) == 0;
+}
+
 #endif
