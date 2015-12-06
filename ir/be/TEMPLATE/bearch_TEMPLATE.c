@@ -156,12 +156,6 @@ static const backend_params *TEMPLATE_get_backend_params(void)
 	return &p;
 }
 
-static int TEMPLATE_is_valid_clobber(const char *clobber)
-{
-	(void)clobber;
-	return false;
-}
-
 static unsigned TEMPLATE_get_op_estimated_cost(const ir_node *node)
 {
 	if (is_TEMPLATE_Load(node))
@@ -181,7 +175,7 @@ static arch_isa_if_t const TEMPLATE_isa_if = {
 	.get_params            = TEMPLATE_get_backend_params,
 	.generate_code         = TEMPLATE_generate_code,
 	.lower_for_target      = TEMPLATE_lower_for_target,
-	.is_valid_clobber      = TEMPLATE_is_valid_clobber,
+	.is_valid_clobber      = be_default_is_valid_clobber,
 	.get_op_estimated_cost = TEMPLATE_get_op_estimated_cost,
 };
 

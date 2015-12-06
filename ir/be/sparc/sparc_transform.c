@@ -245,11 +245,6 @@ void sparc_init_asm_constraints(void)
 	 * at the moment. see gcc/config/sparc/constraints.md */
 }
 
-int sparc_is_valid_clobber(const char *clobber)
-{
-	return strcmp(clobber, "memory") == 0 || strcmp(clobber, "cc") == 0;
-}
-
 static bool sparc_check_immediate_constraint(long const val, char const imm_type)
 {
 	switch (imm_type) {

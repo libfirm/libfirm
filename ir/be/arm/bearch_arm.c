@@ -214,12 +214,6 @@ static int arm_is_mux_allowed(ir_node *sel, ir_node *mux_false,
 	return false;
 }
 
-static int arm_is_valid_clobber(const char *clobber)
-{
-	(void)clobber;
-	return false;
-}
-
 static void arm_lower_for_target(void)
 {
 	/* lower compound param handling */
@@ -326,7 +320,7 @@ static arch_isa_if_t const arm_isa_if = {
 	.get_params            = arm_get_libfirm_params,
 	.generate_code         = arm_generate_code,
 	.lower_for_target      = arm_lower_for_target,
-	.is_valid_clobber      = arm_is_valid_clobber,
+	.is_valid_clobber      = be_default_is_valid_clobber,
 	.handle_intrinsics     = arm_handle_intrinsics,
 	.get_op_estimated_cost = arm_get_op_estimated_cost,
 };

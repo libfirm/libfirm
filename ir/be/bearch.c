@@ -146,6 +146,12 @@ void arch_copy_irn_out_info(ir_node *const dst, unsigned const dst_pos, ir_node 
 	*dst_info = *src_info;
 }
 
+int be_default_is_valid_clobber(char const *const clobber)
+{
+	(void)clobber;
+	return false;
+}
+
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch)
 void be_init_arch(void)
 {

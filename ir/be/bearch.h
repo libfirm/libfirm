@@ -383,4 +383,6 @@ bool arch_reg_is_allocatable(const arch_register_req_t *req,
 
 void arch_copy_irn_out_info(ir_node *dst, unsigned dst_pos, ir_node const *src);
 
+int be_default_is_valid_clobber(char const *clobber);
+
 #endif
