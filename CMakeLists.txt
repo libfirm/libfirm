@@ -1,5 +1,13 @@
-cmake_minimum_required(VERSION 3.0)
-project(libfirm VERSION 1.22.0)
+cmake_minimum_required(VERSION 2.8.12)
+if(POLICY CMP0042)
+	cmake_policy(SET CMP0042 NEW)
+endif()
+if(POLICY CMP0063)
+	cmake_policy(SET CMP0063 OLD)
+endif()
+
+project(libfirm C)
+set(libfirm_VERSION "1.22.0")
 set(PROJECT_DESCRIPTION "library implementing the intermediate representation Firm")
 
 set(CMAKE_C_VISIBILITY_PRESET hidden)
@@ -397,7 +405,20 @@ add_backend(TEMPLATE
 	ir/be/TEMPLATE/TEMPLATE_transform.c
 )
 
-add_library(firm SHARED ${SOURCES})
+# Produce revision.h
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
+if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git/HEAD)
+	set(REVISIONH "${CMAKE_CURRENT_BINARY_DIR}/firm_revision.h")
+	set(REVGEN echo '\#define libfirm_VERSION_REVISION \"'`git describe --abbrev=40 --always --dirty --match ''`'\"')
+	add_custom_command(
+		OUTPUT ${REVISIONH}
+		DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/.git/HEAD
+		COMMAND ${REVGEN} | cmp -s - "${REVISIONH}" 2> /dev/null || ${REVGEN} > "${REVISIONH}"
+		WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+	)
+	SET_SOURCE_FILES_PROPERTIES(ir/common/firm.c PROPERTIES OBJECT_DEPENDS ${REVISIONH})
+	add_definitions(-DHAVE_FIRM_REVISION_H)
+endif()
 
 # Enable C99
 if(CMAKE_VERSION VERSION_LESS "3.1")
@@ -409,6 +430,13 @@ else()
 endif()
 # Indicate that we build a shared library
 add_definitions(-DFIRM_BUILD -DFIRM_DLL)
+
+# Build library
+set(BUILD_SHARED_LIBS Off CACHE BOOL "whether to build shared libraries")
+add_library(firm ${SOURCES})
+if(UNIX)
+	target_link_libraries(firm LINK_PUBLIC m)
+endif()
 
 # Create install target
 set(INSTALL_HEADERS
@@ -479,8 +507,7 @@ set(INSTALL_HEADERS
 
 install(TARGETS firm
 	EXPORT libfirmTargets
-	LIBRARY DESTINATION lib
-	ARCHIVE DESTINATION lib
+	DESTINATION lib
 )
 foreach(header ${INSTALL_HEADERS})
 	get_filename_component(DIR ${header} DIRECTORY)
