@@ -478,7 +478,7 @@ set(INSTALL_HEADERS
 )
 
 install(TARGETS firm
-	EXPORT libfirm
+	EXPORT libfirmTargets
 	LIBRARY DESTINATION lib
 	ARCHIVE DESTINATION lib
 )
@@ -488,25 +488,35 @@ foreach(header ${INSTALL_HEADERS})
 endforeach(header)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/gen/include/libfirm/nodes.h DESTINATION include/libfirm)
 
-# Generate cmake configuration that external projects can include
-file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/libfirm-config.cmake
-"add_library(firm SHARED IMPORTED)
-find_library(FIRM_LIBRARY_PATH firm)
-set_target_properties(firm PROPERTIES IMPORTED_LOCATION \"\${FIRM_LIBRARY_PATH}\")"
+# Generate cmake Config file
+include(CMakePackageConfigHelpers)
+set(libfirm_INCLUDE_DIRS include)
+set(ConfigPackageLocation lib/cmake/libfirm)
+configure_package_config_file(support/libfirmConfig.cmake.in
+	${CMAKE_CURRENT_BINARY_DIR}/libfirmConfig.cmake
+	INSTALL_DESTINATION ${ConfigPackageLocation}
+	PATH_VARS libfirm_INCLUDE_DIRS
 )
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libfirm-config.cmake DESTINATION lib/cmake/libfirm)
+write_basic_package_version_file(
+	${CMAKE_CURRENT_BINARY_DIR}/libfirmConfigVersion.cmake
+	VERSION ${libfirm_VERSION}
+	COMPATIBILITY ExactVersion
+)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libfirmConfig.cmake
+              ${CMAKE_CURRENT_BINARY_DIR}/libfirmConfigVersion.cmake
+        DESTINATION ${ConfigPackageLocation}
+)
+install(EXPORT libfirmTargets
+	FILE libfirmTargets.cmake
+	NAMESPACE libfirm::
+	DESTINATION ${ConfigPackageLocation}
+)
 
 # Generate pkg-config for external projects
-file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/libfirm.pc
-"prefix=${CMAKE_INSTALL_PREFIX}
-libdir=\${prefix}/lib
-includedir=\${prefix}/include
-
-Name: ${PROJECT_NAME}
-Description: ${PROJECT_DESCRIPTION}
-Version: ${PROJECT_VERSION}
-Requires:
-Libs: -L\${libfir} -lfirm -lm
-Cflags: -I\${includedir}"
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/support/libfirm.pc.in
+	${CMAKE_CURRENT_BINARY_DIR}/libfirm.pc
+	@ONLY
 )
-install(FILES "${CMAKE_CURRENT_BINARY_DIR}/libfirm.pc" DESTINATION lib/pkgconfig)
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/libfirm.pc"
+	DESTINATION lib/pkgconfig
+)
