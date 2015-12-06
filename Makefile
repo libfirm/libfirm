@@ -179,14 +179,15 @@ clean:
 .PHONY: install
 PREFIX ?= /usr/local
 INSTALL ?= install
+INSTALLPREFIX = $(DESTDIR)$(PREFIX)
 install: $(libfirm_a)
-	install -d "$(PREFIX)/include/libfirm"
-	install -m0644 include/libfirm/*.h "$(PREFIX)/include/libfirm"
-	install -m0644 "$(gendir)"/include/libfirm/*.h "$(PREFIX)/include/libfirm"
-	install -d "$(PREFIX)/include/libfirm/adt"
-	install -m0644 include/libfirm/adt/*.h "$(PREFIX)/include/libfirm/adt"
-	install -d "$(PREFIX)/lib"
-	install -m0644 $< "$(PREFIX)/lib"
+	install -d "$(INSTALLPREFIX)/include/libfirm"
+	install -m0644 include/libfirm/*.h "$(INSTALLPREFIX)/include/libfirm"
+	install -m0644 "$(gendir)"/include/libfirm/*.h "$(INSTALLPREFIX)/include/libfirm"
+	install -d "$(INSTALLPREFIX)/include/libfirm/adt"
+	install -m0644 include/libfirm/adt/*.h "$(INSTALLPREFIX)/include/libfirm/adt"
+	install -d "$(INSTALLPREFIX)/lib"
+	install -m0644 $< "$(INSTALLPREFIX)/lib"
 
 # Ensure all output directories are created
 UNUSED1 := $(shell mkdir -p $(libfirm_BUILDDIRS))
