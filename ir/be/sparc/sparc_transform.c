@@ -296,8 +296,6 @@ static ir_node *gen_ASM(ir_node *node)
 
 	for (size_t c = 0; c < get_ASM_n_clobbers(node); ++c) {
 		const char *const clobber = get_id_str(clobbers[c]);
-		if (strcmp(clobber, "memory") == 0)
-			continue;
 		if (strcmp(clobber, "cc") == 0) {
 			continue;
 		}
@@ -379,8 +377,6 @@ static ir_node *gen_ASM(ir_node *node)
 	/* parse clobbers */
 	for (size_t c = 0; c < get_ASM_n_clobbers(node); ++c) {
 		const char *const clobber = get_id_str(clobbers[c]);
-		if (strcmp(clobber, "memory") == 0)
-			continue;
 		if (strcmp(clobber, "cc") == 0) {
 			ARR_APP1(arch_register_req_t const*, out_reqs, sparc_registers[REG_PSR].single_req);
 			ARR_APP1(arch_register_req_t const*, out_reqs, sparc_registers[REG_FSR].single_req);
