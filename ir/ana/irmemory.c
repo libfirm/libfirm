@@ -49,7 +49,8 @@ const char *get_ir_alias_relation_name(ir_alias_relation rel)
 	panic("unknown alias relation");
 }
 
-unsigned get_irg_memory_disambiguator_options(const ir_graph *irg)
+ir_disambiguator_options get_irg_memory_disambiguator_options(
+		ir_graph const *const irg)
 {
 	unsigned opt = irg->mem_disambig_opt;
 	if (opt & aa_opt_inherited)
@@ -57,12 +58,13 @@ unsigned get_irg_memory_disambiguator_options(const ir_graph *irg)
 	return opt;
 }
 
-void set_irg_memory_disambiguator_options(ir_graph *irg, unsigned options)
+void set_irg_memory_disambiguator_options(ir_graph *irg,
+                                          ir_disambiguator_options options)
 {
 	irg->mem_disambig_opt = options & ~aa_opt_inherited;
 }
 
-void set_irp_memory_disambiguator_options(unsigned options)
+void set_irp_memory_disambiguator_options(ir_disambiguator_options options)
 {
 	global_mem_disamgig_opt = options;
 }
