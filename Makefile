@@ -176,6 +176,18 @@ clean:
 	@echo CLEAN
 	$(Q)rm -fr $(builddir) $(gendir) $(docdir)
 
+.PHONY: install
+PREFIX ?= /usr/local
+INSTALL ?= install
+install: $(libfirm_a)
+	install -d "$(PREFIX)/include/libfirm"
+	install -m0644 include/libfirm/*.h "$(PREFIX)/include/libfirm"
+	install -m0644 "$(gendir)"/include/libfirm/*.h "$(PREFIX)/include/libfirm"
+	install -d "$(PREFIX)/include/libfirm/adt"
+	install -m0644 include/libfirm/adt/*.h "$(PREFIX)/include/libfirm/adt"
+	install -d "$(PREFIX)/lib"
+	install -m0644 $< "$(PREFIX)/lib"
+
 # Ensure all output directories are created
 UNUSED1 := $(shell mkdir -p $(libfirm_BUILDDIRS))
 
