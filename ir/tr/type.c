@@ -365,7 +365,7 @@ static void compound_add_member(ir_type *type, ir_entity *entity)
 	ARR_APP1(ir_entity *, type->attr.ca.members, entity);
 }
 
-static void compound_free_entities(ir_type *type)
+void free_compound_entities(ir_type *type)
 {
 	for (size_t i = compound_get_n_members(type); i-- > 0; )
 		free_entity(compound_get_member(type, i));
@@ -401,12 +401,6 @@ ir_type *new_type_class(ident *name)
 	res->attr.cla.supertypes = NEW_ARR_F(ir_type*, 0);
 	hook_new_type(res);
 	return res;
-}
-
-void free_class_entities(ir_type *clss)
-{
-	assert(is_Class_type(clss));
-	compound_free_entities(clss);
 }
 
 void free_class_attrs(ir_type *clss)
@@ -593,12 +587,6 @@ ir_type *new_type_struct(ident *name)
 	compound_init(res, name);
 	hook_new_type(res);
 	return res;
-}
-
-void free_struct_entities(ir_type *strct)
-{
-	assert(is_Struct_type(strct));
-	compound_free_entities(strct);
 }
 
 void free_struct_attrs(ir_type *strct)
@@ -821,12 +809,6 @@ ir_type *new_type_union(ident *name)
 	compound_init(res, name);
 	hook_new_type(res);
 	return res;
-}
-
-void free_union_entities(ir_type *uni)
-{
-	assert(is_Union_type(uni));
-	compound_free_entities(uni);
 }
 
 void free_union_attrs(ir_type *uni)

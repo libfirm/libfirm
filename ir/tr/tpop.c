@@ -44,7 +44,7 @@ static const tp_op_ops
 	/** tpop operations for class types */
 	class_ops = {
 		.free_attrs         = free_class_attrs,
-		.free_entities      = free_class_entities,
+		.free_entities      = free_compound_entities,
 		.set_type_mode      = set_class_mode,
 		.set_type_size      = set_default_size,
 		.get_n_members      = get_class_n_members,
@@ -54,7 +54,7 @@ static const tp_op_ops
 	/** tpop operations for struct types */
 	struct_ops = {
 		.free_attrs         = free_struct_attrs,
-		.free_entities      = free_struct_entities,
+		.free_entities      = free_compound_entities,
 		.set_type_mode      = set_struct_mode,
 		.set_type_size      = set_default_size,
 		.get_n_members      = get_struct_n_members,
@@ -68,7 +68,7 @@ static const tp_op_ops
 	/** tpop operations for union types */
 	union_ops = {
 		.free_attrs       = free_union_attrs,
-		.free_entities    = free_union_entities,
+		.free_entities    = free_compound_entities,
 		.set_type_size    = set_default_size,
 		.get_n_members    = get_union_n_members,
 		.get_member       = get_union_member,
