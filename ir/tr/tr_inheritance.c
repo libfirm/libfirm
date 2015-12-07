@@ -160,8 +160,9 @@ static void compute_down_closure(ir_type *tp)
 	}
 
 	/* entities */
-	for (size_t i = 0, n_members = get_class_n_members(tp); i < n_members; ++i) {
-		ir_entity *mem = get_class_member(tp, i);
+	for (size_t i = 0, n_members = get_compound_n_members(tp); i < n_members;
+	     ++i) {
+		ir_entity *mem = get_compound_member(tp, i);
 		size_t j, n_overwrittenby = get_entity_n_overwrittenby(mem);
 
 		myset = get_entity_map(mem, d_down);
@@ -209,8 +210,9 @@ static void compute_up_closure(ir_type *tp)
 	}
 
 	/* entities */
-	for (size_t i = 0, n_members = get_class_n_members(tp); i < n_members; ++i) {
-		ir_entity *mem   = get_class_member(tp, i);
+	for (size_t i = 0, n_members = get_compound_n_members(tp); i < n_members;
+	     ++i) {
+		ir_entity *mem   = get_compound_member(tp, i);
 		pset      *myset = get_entity_map(mem, d_up);
 		for (size_t j = 0, n_overwrites = get_entity_n_overwrites(mem);
 		     j < n_overwrites; ++j) {

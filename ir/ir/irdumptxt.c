@@ -652,6 +652,24 @@ void dump_entity_to_file(FILE *const out, const ir_entity *const ent)
 	fprintf(out, "\n");
 }
 
+static void dump_compound_members(FILE *const F, ir_type const *const type)
+{
+	if ((verbosity & (dump_verbosity_methods|dump_verbosity_fields)) == 0
+	 || !(verbosity & dump_verbosity_nostatic))
+		return;
+
+	fprintf(F, "\n  members:\n");
+	for (size_t i = 0, n = get_compound_n_members(type); i < n; ++i) {
+		const ir_entity *mem = get_compound_member(type, i);
+		if (is_method_entity(mem)) {
+			if (!(verbosity & dump_verbosity_methods))
+				continue;
+		} else if (!(verbosity & dump_verbosity_fields))
+			continue;
+		dump_entity_to_file_prefix(F, mem, "    ");
+	}
+}
+
 void dump_type_to_file(FILE *const F, const ir_type *const tp)
 {
 	ir_fprintf(F, "%+F", tp);
@@ -659,18 +677,7 @@ void dump_type_to_file(FILE *const F, const ir_type *const tp)
 
 	switch (get_type_tpop_code(tp)) {
 	case tpo_class:
-		if ((verbosity & dump_verbosity_methods) || (verbosity & dump_verbosity_fields)) {
-			fprintf(F, "\n  members:\n");
-		}
-		for (size_t i = 0; i < get_class_n_members(tp); ++i) {
-			const ir_entity *mem = get_class_member(tp, i);
-			if (((verbosity & dump_verbosity_methods) &&  is_Method_type(get_entity_type(mem))) ||
-				((verbosity & dump_verbosity_fields)  && !is_Method_type(get_entity_type(mem)))   ) {
-				if (!(verbosity & dump_verbosity_nostatic)) {
-					dump_entity_to_file_prefix(F, mem, "    ");
-				}
-			}
-		}
+		dump_compound_members(F, tp);
 		if (verbosity & dump_verbosity_typeattrs) {
 			fprintf(F, "  supertypes: ");
 			for (size_t i = 0; i < get_class_n_supertypes(tp); ++i) {
@@ -700,14 +707,7 @@ void dump_type_to_file(FILE *const F, const ir_type *const tp)
 
 	case tpo_union:
 	case tpo_struct:
-		if (verbosity & dump_verbosity_fields)
-			fprintf(F, "\n  members: ");
-		for (size_t i = 0; i < get_compound_n_members(tp); ++i) {
-			const ir_entity *mem = get_compound_member(tp, i);
-			if (verbosity & dump_verbosity_fields) {
-				dump_entity_to_file_prefix(F, mem, "    ");
-			}
-		}
+		dump_compound_members(F, tp);
 		break;
 
 	case tpo_array:
@@ -795,9 +795,9 @@ void dump_types_as_text(FILE *const out)
 void dump_globals_as_text(FILE *const out)
 {
 	const ir_type *global_type = get_glob_type();
-	for (size_t i = 0, n_members = get_class_n_members(global_type);
+	for (size_t i = 0, n_members = get_compound_n_members(global_type);
 	     i < n_members; ++i) {
-		const ir_entity *entity = get_class_member(global_type, i);
+		const ir_entity *entity = get_compound_member(global_type, i);
 		dump_entity_to_file(out, entity);
 	}
 }

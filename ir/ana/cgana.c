@@ -462,8 +462,8 @@ static size_t get_free_methods(ir_entity ***free_methods)
 
 	/* insert all methods that are used in global variables initializers */
 	ir_type *global_tp = get_glob_type();
-	for (size_t j = 0, m = get_class_n_members(global_tp); j < m; ++j) {
-		ir_entity *const ent = get_class_member(global_tp, j);
+	for (size_t j = 0, m = get_compound_n_members(global_tp); j < m; ++j) {
+		ir_entity *const ent = get_compound_member(global_tp, j);
 		add_method_address(ent, free_set);
 	}
 	ir_type *tls_tp = get_tls_type();

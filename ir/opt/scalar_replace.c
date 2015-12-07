@@ -284,8 +284,8 @@ static bool find_possible_replacements(ir_graph *irg)
 {
 	/* First, clear the link field of all interesting entities. */
 	ir_type *frame_tp = get_irg_frame_type(irg);
-	for (size_t i = get_class_n_members(frame_tp); i-- > 0;) {
-		ir_entity *ent = get_class_member(frame_tp, i);
+	for (size_t i = get_compound_n_members(frame_tp); i-- > 0;) {
+		ir_entity *ent = get_compound_member(frame_tp, i);
 		set_entity_link(ent, NULL);
 	}
 

@@ -1464,13 +1464,12 @@ static void dump_type_info(ir_type *const tp, ir_entity *const ent, void *const 
 			for (size_t i = get_class_n_supertypes(tp); i-- > 0;) {
 				print_type_type_edge(F, tp, get_class_supertype(tp, i), TYPE_SUPER_EDGE_ATTR);
 			}
-			for (size_t i = get_class_n_members(tp); i-- > 0;) {
-				print_type_ent_edge(F, tp, get_class_member(tp, i), TYPE_MEMBER_EDGE_ATTR);
-			}
-			break;
+			/* FALLTHROUGH */
+		case tpo_union:
 		case tpo_struct:
-			for (size_t i = get_struct_n_members(tp); i-- > 0;) {
-				print_type_ent_edge(F, tp, get_struct_member(tp, i), TYPE_MEMBER_EDGE_ATTR);
+			for (size_t i = get_compound_n_members(tp); i-- > 0;) {
+				ir_entity const *const entity = get_compound_member(tp, i);
+				print_type_ent_edge(F, tp, entity, TYPE_MEMBER_EDGE_ATTR);
 			}
 			break;
 		case tpo_method:
@@ -1479,11 +1478,6 @@ static void dump_type_info(ir_type *const tp, ir_entity *const ent, void *const 
 			}
 			for (size_t i = get_method_n_ress(tp); i-- > 0;) {
 				print_type_type_edge(F, tp, get_method_res_type(tp, i), METH_RES_EDGE_ATTR,i);
-			}
-			break;
-		case tpo_union:
-			for (size_t i = get_union_n_members(tp); i-- > 0;) {
-				print_type_ent_edge(F, tp, get_union_member(tp, i), TYPE_MEMBER_EDGE_ATTR);
 			}
 			break;
 		case tpo_array:

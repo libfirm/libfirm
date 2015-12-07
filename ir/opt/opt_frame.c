@@ -24,7 +24,7 @@
 void opt_frame_irg(ir_graph *irg)
 {
 	ir_type *frame_tp = get_irg_frame_type(irg);
-	size_t   n        = get_class_n_members(frame_tp);
+	size_t   n        = get_compound_n_members(frame_tp);
 	if (n <= 0)
 		return;
 
@@ -33,7 +33,7 @@ void opt_frame_irg(ir_graph *irg)
 
 	/* clear all entity links */
 	for (size_t i = n; i-- > 0;) {
-		ir_entity *entity = get_class_member(frame_tp, i);
+		ir_entity *entity = get_compound_member(frame_tp, i);
 		set_entity_link(entity, NULL);
 	}
 
@@ -51,7 +51,7 @@ void opt_frame_irg(ir_graph *irg)
 	/* link unused ones */
 	ir_entity *list = NULL;
 	for (size_t i = n; i-- > 0;) {
-		ir_entity *entity = get_class_member(frame_tp, i);
+		ir_entity *entity = get_compound_member(frame_tp, i);
 		if (get_entity_link(entity) == NULL) {
 			set_entity_link(entity, list);
 			list = entity;

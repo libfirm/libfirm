@@ -121,9 +121,9 @@ static void do_type_walk(ir_type *const tp, ir_entity *const ent,
 			     i < n_types; ++i) {
 				do_type_walk(get_class_supertype(tp, i), NULL, pre, post, env);
 			}
-			for (size_t i = 0, n_mem = get_class_n_members(tp);
+			for (size_t i = 0, n_mem = get_compound_n_members(tp);
 			     i < n_mem; ++i) {
-				do_type_walk(NULL, get_class_member(tp, i), pre, post, env);
+				do_type_walk(NULL, get_compound_member(tp, i), pre, post, env);
 			}
 			for (size_t i = 0, n_types = get_class_n_subtypes(tp);
 			     i < n_types; ++i) {
@@ -132,9 +132,10 @@ static void do_type_walk(ir_type *const tp, ir_entity *const ent,
 			break;
 
 		case tpo_struct:
-			for (size_t i = 0, n_mem = get_struct_n_members(tp);
+		case tpo_union:
+			for (size_t i = 0, n_mem = get_compound_n_members(tp);
 			     i < n_mem; ++i) {
-				do_type_walk(NULL, get_struct_member(tp, i), pre, post, env);
+				do_type_walk(NULL, get_compound_member(tp, i), pre, post, env);
 			}
 			break;
 
@@ -145,13 +146,6 @@ static void do_type_walk(ir_type *const tp, ir_entity *const ent,
 			}
 			for (size_t i = 0, n_res = get_method_n_ress(tp); i < n_res; ++i) {
 				do_type_walk(get_method_res_type(tp, i), NULL, pre, post, env);
-			}
-			break;
-
-		case tpo_union:
-			for (size_t i = 0, n_members = get_union_n_members(tp);
-			     i < n_members; ++i) {
-				do_type_walk(NULL, get_union_member(tp, i), pre, post, env);
 			}
 			break;
 
@@ -392,16 +386,10 @@ void walk_types_entities(ir_type *tp, entity_walk_func *doit, void *env)
 {
 	switch (get_type_tpop_code(tp)) {
 	case tpo_class:
-		for (size_t i = 0, n = get_class_n_members(tp); i < n; ++i)
-			doit(get_class_member(tp, i), env);
-		break;
 	case tpo_struct:
-		for (size_t i = 0, n = get_struct_n_members(tp); i < n; ++i)
-			doit(get_struct_member(tp, i), env);
-		break;
 	case tpo_union:
-		for (size_t i = 0, n = get_union_n_members(tp); i < n; ++i)
-			doit(get_union_member(tp, i), env);
+		for (size_t i = 0, n = get_compound_n_members(tp); i < n; ++i)
+			doit(get_compound_member(tp, i), env);
 		break;
 	case tpo_array:
 	case tpo_code:

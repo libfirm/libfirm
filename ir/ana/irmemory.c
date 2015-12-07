@@ -657,8 +657,8 @@ static void analyse_irg_entity_usage(ir_graph *irg)
 
 	/* set initial state to not_taken, as this is the "smallest" state */
 	ir_type *frame_type = get_irg_frame_type(irg);
-	for (size_t i = 0, n = get_class_n_members(frame_type); i < n; ++i) {
-		ir_entity *ent = get_class_member(frame_type, i);
+	for (size_t i = 0, n = get_compound_n_members(frame_type); i < n; ++i) {
+		ir_entity *ent = get_compound_member(frame_type, i);
 		/* methods can only be analyzed globally */
 		if (is_method_entity(ent))
 			continue;

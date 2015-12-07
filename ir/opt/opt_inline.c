@@ -243,9 +243,9 @@ static void copy_frame_entities(ir_graph *from, ir_graph *to)
 	ir_type *from_frame = get_irg_frame_type(from);
 	ir_type *to_frame   = get_irg_frame_type(to);
 	assert(from_frame != to_frame);
-	for (size_t i = 0, n_members = get_class_n_members(from_frame);
+	for (size_t i = 0, n_members = get_compound_n_members(from_frame);
 	     i < n_members; ++i) {
-		ir_entity *old_ent = get_class_member(from_frame, i);
+		ir_entity *old_ent = get_compound_member(from_frame, i);
 
 		// parameter entities are already copied and the link has been set
 		if (!is_parameter_entity(old_ent)) {
@@ -267,9 +267,9 @@ static void copy_parameter_entities(ir_node *call, ir_graph *called_graph)
 	ir_node  *call_mem     = get_Call_mem(call);
 	ir_node **sync_mem     = NULL;
 
-	for (size_t i = 0, n_entities = get_class_n_members(called_frame);
+	for (size_t i = 0, n_entities = get_compound_n_members(called_frame);
 	     i < n_entities; ++i) {
-		ir_entity *old_entity = get_class_member(called_frame, i);
+		ir_entity *old_entity = get_compound_member(called_frame, i);
 		if (!is_parameter_entity(old_entity))
 			continue;
 
