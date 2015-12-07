@@ -841,22 +841,6 @@ static void get_text(void)
 }
 
 /**
- * Simple custom strncasecmp variant to avoid posix strings.h inclusion.
- */
-static bool firm_strncaseequal(const char *str0, const char *str1, size_t len)
-{
-	for (size_t i = 0; i < len; ++i) {
-		unsigned char const c0 = str0[i];
-		unsigned char const c1 = str1[i];
-		if (toupper(c0) != toupper(c1))
-			return false;
-		if (c0 == '\0')
-			break;
-	}
-	return true;
-}
-
-/**
  * The lexer.
  */
 static unsigned get_token(void)
@@ -881,7 +865,7 @@ static unsigned get_token(void)
 			--len;
 		}
 		for (size_t i = ARRAY_SIZE(reserved); i-- != 0;) {
-			if (firm_strncaseequal(tok_start, reserved[i], len)
+			if (strncmp(tok_start, reserved[i], len) == 0
 			    && reserved[i][len] == '\0')
 				return first_token + i;
 		}
