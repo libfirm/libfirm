@@ -153,12 +153,10 @@ struct ir_type {
 
 void free_type_entities(ir_type *tp);
 
-void free_compound_entities(ir_type *type);
+void free_compound_attrs(ir_type *type);
 
 void free_class_attrs(ir_type *clss);
-void free_struct_attrs(ir_type *strct);
 void free_method_attrs(ir_type *method);
-void free_union_attrs(ir_type *uni);
 
 void add_compound_member(ir_type *compound, ir_entity *entity);
 

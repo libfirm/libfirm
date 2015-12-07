@@ -51,6 +51,7 @@
 #include "array.h"
 
 static ir_type *new_type(tp_op const *type_op, ir_mode *mode);
+static void free_compound_entities(ir_type *type);
 
 ir_type *get_code_type(void)
 {
@@ -128,11 +129,10 @@ static ir_type *new_type(tp_op const *type_op, ir_mode *mode)
 	return res;
 }
 
-void free_type_entities(ir_type *tp)
+void free_type_entities(ir_type *const type)
 {
-	const tp_op *op = get_type_tpop(tp);
-	if (op->ops.free_entities != NULL)
-		op->ops.free_entities(tp);
+	if (is_compound_type(type))
+		free_compound_entities(type);
 }
 
 static void free_type_attrs(ir_type *tp)
@@ -316,34 +316,15 @@ static void compound_init(ir_type *const type, ident *const name)
 	type->attr.ca.members = NEW_ARR_F(ir_entity*, 0);
 }
 
-static void compound_free_attrs(ir_type *type)
+void free_compound_attrs(ir_type *type)
 {
 	DEL_ARR_F(type->attr.ca.members);
 }
 
-static void compound_add_member(ir_type *type, ir_entity *entity)
-{
-	/* try to detect double-add */
-	assert(get_entity_type(entity) != type);
-	ARR_APP1(ir_entity *, type->attr.ca.members, entity);
-}
-
-void free_compound_entities(ir_type *type)
+static void free_compound_entities(ir_type *type)
 {
 	for (size_t i = get_compound_n_members(type); i-- > 0; )
 		free_entity(get_compound_member(type, i));
-}
-
-static void compound_remove_member(ir_type *type, const ir_entity *member)
-{
-	for (size_t i = 0, n = ARR_LEN(type->attr.ca.members); i < n; ++i) {
-		if (get_compound_member(type, i) == member) {
-			for (; i < n - 1; ++i)
-				type->attr.ca.members[i] = type->attr.ca.members[i+1];
-			ARR_SETLEN(ir_entity*, type->attr.ca.members, n-1);
-			break;
-		}
-	}
 }
 
 ir_type *new_type_class(ident *name)
@@ -359,7 +340,7 @@ ir_type *new_type_class(ident *name)
 void free_class_attrs(ir_type *clss)
 {
 	assert(is_Class_type(clss));
-	compound_free_attrs(clss);
+	free_compound_attrs(clss);
 	DEL_ARR_F(clss->attr.cla.subtypes);
 	DEL_ARR_F(clss->attr.cla.supertypes);
 }
@@ -375,12 +356,6 @@ const char *get_class_name(const ir_type *clss)
 	if (get_class_ident(clss) == NULL)
 		return NULL;
 	return get_id_str(get_class_ident(clss));
-}
-
-static void add_class_member(ir_type *clss, ir_entity *member)
-{
-	assert(is_Class_type(clss));
-	compound_add_member(clss, member);
 }
 
 size_t get_class_n_members(const ir_type *clss)
@@ -399,12 +374,6 @@ size_t get_class_member_index(ir_type const *clss, ir_entity const *const mem)
 {
 	assert(is_Class_type(clss));
 	return get_compound_member_index(clss, mem);
-}
-
-static void remove_class_member(ir_type *clss, ir_entity *member)
-{
-	assert(is_Class_type(clss));
-	compound_remove_member(clss, member);
 }
 
 void add_class_subtype(ir_type *clss, ir_type *subtype)
@@ -535,12 +504,6 @@ ir_type *new_type_struct(ident *name)
 	return res;
 }
 
-void free_struct_attrs(ir_type *strct)
-{
-	assert(is_Struct_type(strct));
-	compound_free_attrs(strct);
-}
-
 ident *get_struct_ident(const ir_type *strct)
 {
 	assert(is_Struct_type(strct));
@@ -561,13 +524,6 @@ size_t get_struct_n_members(const ir_type *strct)
 	return get_compound_n_members(strct);
 }
 
-static void add_struct_member(ir_type *strct, ir_entity *member)
-{
-	assert(is_Struct_type(strct));
-	assert(get_type_tpop(get_entity_type(member)) != type_method);
-	compound_add_member(strct, member);
-}
-
 ir_entity *get_struct_member(const ir_type *strct, size_t pos)
 {
 	assert(is_Struct_type(strct));
@@ -578,12 +534,6 @@ size_t get_struct_member_index(ir_type const *strct, ir_entity const *const mem)
 {
 	assert(is_Struct_type(strct));
 	return get_compound_member_index(strct, mem);
-}
-
-static void remove_struct_member(ir_type *strct, ir_entity *member)
-{
-	assert(is_Struct_type(strct));
-	compound_remove_member(strct, member);
 }
 
 int (is_Struct_type)(const ir_type *strct)
@@ -748,12 +698,6 @@ ir_type *new_type_union(ident *name)
 	return res;
 }
 
-void free_union_attrs(ir_type *uni)
-{
-	assert(is_Union_type(uni));
-	compound_free_attrs(uni);
-}
-
 ident *get_union_ident(const ir_type *uni)
 {
 	assert(is_Union_type(uni));
@@ -774,12 +718,6 @@ size_t get_union_n_members(const ir_type *uni)
 	return get_compound_n_members(uni);
 }
 
-static void add_union_member(ir_type *uni, ir_entity *member)
-{
-	assert(is_Union_type(uni));
-	compound_add_member(uni, member);
-}
-
 ir_entity *get_union_member(const ir_type *uni, size_t pos)
 {
 	assert(is_Union_type(uni));
@@ -790,12 +728,6 @@ size_t get_union_member_index(ir_type const *uni, ir_entity const *const mem)
 {
 	assert(is_Union_type(uni));
 	return get_compound_member_index(uni, mem);
-}
-
-static void remove_union_member(ir_type *uni, ir_entity *member)
-{
-	assert(is_Union_type(uni));
-	compound_remove_member(uni, member);
 }
 
 int (is_Union_type)(const ir_type *uni)
@@ -1019,26 +951,25 @@ const char *get_compound_name(const ir_type *tp)
 	return get_id_str(get_compound_ident(tp));
 }
 
-void remove_compound_member(ir_type *compound, ir_entity *entity)
+void remove_compound_member(ir_type *type, ir_entity *member)
 {
-	switch (get_type_tpop_code(compound)) {
-	case tpo_class:  remove_class_member(compound, entity);  break;
-	case tpo_struct: remove_struct_member(compound, entity); break;
-	case tpo_union:  remove_union_member(compound, entity);  break;
-	default:
-		panic("argument for remove_compound_member not a compound type");
+	assert(is_compound_type(type));
+	for (size_t i = 0, n = ARR_LEN(type->attr.ca.members); i < n; ++i) {
+		if (get_compound_member(type, i) == member) {
+			for (; i < n - 1; ++i)
+				type->attr.ca.members[i] = type->attr.ca.members[i+1];
+			ARR_SETLEN(ir_entity*, type->attr.ca.members, n-1);
+			break;
+		}
 	}
 }
 
-void add_compound_member(ir_type *compound, ir_entity *entity)
+void add_compound_member(ir_type *type, ir_entity *entity)
 {
-	switch (get_type_tpop_code(compound)) {
-	case tpo_class:  add_class_member(compound, entity);  break;
-	case tpo_struct: add_struct_member(compound, entity); break;
-	case tpo_union:  add_union_member(compound, entity);  break;
-	default:
-		panic("argument for add_compound_member not a compound type");
-	}
+	assert(is_compound_type(type));
+	/* try to detect double-add */
+	assert(get_entity_type(entity) != type);
+	ARR_APP1(ir_entity *, type->attr.ca.members, entity);
 }
 
 int is_code_type(const ir_type *tp)

@@ -25,8 +25,6 @@
 typedef struct tp_op_ops {
 	/** Called to free the attributes of a type. */
 	void (*free_attrs)(ir_type *type);
-	/** Called to free the owned entities of a type. */
-	void (*free_entities)(ir_type *type);
 } tp_op_ops;
 
 /** possible flags for a type opcode */

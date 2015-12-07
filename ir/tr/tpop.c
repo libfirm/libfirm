@@ -44,12 +44,10 @@ static const tp_op_ops
 	/** tpop operations for class types */
 	class_ops = {
 		.free_attrs         = free_class_attrs,
-		.free_entities      = free_compound_entities,
 	},
 	/** tpop operations for struct types */
 	struct_ops = {
-		.free_attrs         = free_struct_attrs,
-		.free_entities      = free_compound_entities,
+		.free_attrs         = free_compound_attrs,
 	},
 	/** tpop operations for method types */
 	method_ops = {
@@ -57,8 +55,7 @@ static const tp_op_ops
 	},
 	/** tpop operations for union types */
 	union_ops = {
-		.free_attrs       = free_union_attrs,
-		.free_entities    = free_compound_entities,
+		.free_attrs       = free_compound_attrs,
 	},
 	null_ops = {
 		.free_attrs = NULL,
