@@ -143,7 +143,7 @@ $(libfirm_dll): $(libfirm_OBJECTS)
 	$(Q)$(LINK) -shared $^ -o $@ $(LINKFLAGS)
 
 # Determine if we can use cparser-beta for quickcheck
-QUICKCHECK_DEFAULT := $(shell which cparser-beta || echo true) -fsyntax-only
+QUICKCHECK_DEFAULT := $(shell which cparser-beta 2> /dev/null || echo true) -fsyntax-only
 QUICKCHECK ?= $(QUICKCHECK_DEFAULT)
 QUICKCHECK_FLAGS ?= -m32 -Wno-compat-option -Wno-shadow -Wno-shadow-local -Wunreachable-code
 
