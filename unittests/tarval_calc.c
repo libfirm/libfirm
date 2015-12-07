@@ -580,7 +580,6 @@ static void test_float_tarvals(ir_mode *mode)
 int main(void)
 {
 	init_ident();
-	init_tpop();
 	init_tarval_1();
 	init_irprog_1();
 	init_mode();
@@ -623,7 +622,6 @@ int main(void)
 
 	finish_tarval();
 	finish_mode();
-	finish_tpop();
 	finish_ident();
 	return result;
 }
