@@ -312,6 +312,7 @@ void (set_type_dbg_info)(ir_type *tp, type_dbg_info *db)
 
 static void compound_init(ir_type *const type, ident *const name)
 {
+	type->flags          |= tf_compound;
 	type->name            = name;
 	type->attr.ca.members = NEW_ARR_F(ir_entity*, 0);
 }
@@ -935,7 +936,7 @@ int is_compound_variable_size(const ir_type *tp)
 int is_compound_type(const ir_type *tp)
 {
 	assert(tp->kind == k_type);
-	return tp->type_op->flags & TP_OP_FLAG_COMPOUND;
+	return (tp->flags & tf_compound) != 0;
 }
 
 ident *get_compound_ident(const ir_type *tp)

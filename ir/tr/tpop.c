@@ -23,13 +23,12 @@ const tp_op *type_primitive; const tp_op *get_tpop_primitive(void) { return type
 const tp_op *tpop_code;      const tp_op *get_tpop_code_type(void) { return tpop_code;      }
 const tp_op *tpop_unknown;   const tp_op *get_tpop_unknown  (void) { return tpop_unknown;   }
 
-const tp_op *new_tpop(tp_opcode code, ident *name, unsigned flags,
-                      size_t attr_size, const tp_op_ops *ops)
+const tp_op *new_tpop(tp_opcode code, ident *name, size_t attr_size,
+                      const tp_op_ops *ops)
 {
 	tp_op *res = XMALLOC(tp_op);
 	res->code      = code;
 	res->name      = name;
-	res->flags     = flags;
 	res->attr_size = attr_size;
 	res->ops       = *ops;
 	return res;
@@ -64,15 +63,15 @@ static const tp_op_ops
 
 void init_tpop(void)
 {
-	type_class     = new_tpop(tpo_class,     NEW_IDENT("class"),     TP_OP_FLAG_COMPOUND, sizeof(cls_attr),      &class_ops);
-	type_struct    = new_tpop(tpo_struct,    NEW_IDENT("struct"),    TP_OP_FLAG_COMPOUND, sizeof(compound_attr), &struct_ops);
-	type_method    = new_tpop(tpo_method,    NEW_IDENT("method"),    0,                   sizeof(mtd_attr),      &method_ops);
-	type_union     = new_tpop(tpo_union,     NEW_IDENT("union"),     TP_OP_FLAG_COMPOUND, sizeof(compound_attr), &union_ops);
-	type_array     = new_tpop(tpo_array,     NEW_IDENT("array"),     0,                   sizeof(arr_attr),      &null_ops);
-	type_pointer   = new_tpop(tpo_pointer,   NEW_IDENT("pointer"),   0,                   sizeof(ptr_attr),      &null_ops);
-	type_primitive = new_tpop(tpo_primitive, NEW_IDENT("primitive"), 0,                   0,                     &null_ops);
-	tpop_code      = new_tpop(tpo_code,      NEW_IDENT("code"),      0,                   0,                     &null_ops);
-	tpop_unknown   = new_tpop(tpo_unknown,   NEW_IDENT("Unknown"),   0,                   0,                     &null_ops);
+	type_class     = new_tpop(tpo_class,     NEW_IDENT("class"),     sizeof(cls_attr),      &class_ops);
+	type_struct    = new_tpop(tpo_struct,    NEW_IDENT("struct"),    sizeof(compound_attr), &struct_ops);
+	type_method    = new_tpop(tpo_method,    NEW_IDENT("method"),    sizeof(mtd_attr),      &method_ops);
+	type_union     = new_tpop(tpo_union,     NEW_IDENT("union"),     sizeof(compound_attr), &union_ops);
+	type_array     = new_tpop(tpo_array,     NEW_IDENT("array"),     sizeof(arr_attr),      &null_ops);
+	type_pointer   = new_tpop(tpo_pointer,   NEW_IDENT("pointer"),   sizeof(ptr_attr),      &null_ops);
+	type_primitive = new_tpop(tpo_primitive, NEW_IDENT("primitive"), 0,                     &null_ops);
+	tpop_code      = new_tpop(tpo_code,      NEW_IDENT("code"),      0,                     &null_ops);
+	tpop_unknown   = new_tpop(tpo_unknown,   NEW_IDENT("Unknown"),   0,                     &null_ops);
 }
 
 void finish_tpop(void)

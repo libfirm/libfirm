@@ -99,16 +99,17 @@ typedef union {
 /** Additional type flags. */
 typedef enum type_flags {
 	tf_none          = 0,       /**< No flags. */
-	tf_lowered_type  = 1U << 0, /**< Set if this is a lowered type. */
-	tf_layout_fixed  = 1U << 1, /**< Set if the layout of a type is fixed */
+	tf_compound      = 1U << 0, /**< Set if type is a compound type. */
+	tf_lowered_type  = 1U << 1, /**< Set if this is a lowered type. */
+	tf_layout_fixed  = 1U << 2, /**< Set if the layout of a type is fixed */
 
-	tf_frame_type    = 1U << 2, /**< Set if this is a frame type. */
-	tf_segment       = 1U << 3, /**< type represents a linker segment */
-	tf_global_type   = 1U << 4, /**< Set only for the global type */
-	tf_tls_type      = 1U << 5, /**< Set only for the tls type */
-	tf_info          = 1U << 6, /**< infos (for example constructor, destructor pointers) */
-	tf_variable_size = 1U << 7, /**< compound or array type may have variable size last element */
-	tf_lowered_dw    = 1U << 8, /**< hack to identify lowered doubleword params */
+	tf_frame_type    = 1U << 3, /**< Set if this is a frame type. */
+	tf_segment       = 1U << 4, /**< type represents a linker segment */
+	tf_global_type   = 1U << 5, /**< Set only for the global type */
+	tf_tls_type      = 1U << 6, /**< Set only for the tls type */
+	tf_info          = 1U << 7, /**< infos (for example constructor, destructor pointers) */
+	tf_variable_size = 1U << 8, /**< compound or array type may have variable size last element */
+	tf_lowered_dw    = 1U << 9, /**< hack to identify lowered doubleword params */
 } type_flags;
 ENUM_BITSET(type_flags)
 

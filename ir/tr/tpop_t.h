@@ -27,17 +27,11 @@ typedef struct tp_op_ops {
 	void (*free_attrs)(ir_type *type);
 } tp_op_ops;
 
-/** possible flags for a type opcode */
-enum tp_op_flags_t {
-	TP_OP_FLAG_COMPOUND = 1   /**< is a compound type */
-};
-
 /** The type opcode. */
 struct tp_op {
 	tp_opcode code;      /**< The tpop code. */
 	ident     *name;     /**< The name of the type opcode. */
 	size_t    attr_size; /**< The attribute size for a type of this opcode. */
-	unsigned  flags;     /**< Flags for this opcode. */
 	tp_op_ops ops;       /**< tp_op operations. */
 };
 
@@ -50,14 +44,13 @@ struct tp_op {
  *
  * @param code        the enum for this type opcode.
  * @param name        an ident for the name of the type opcode.
- * @param flags       additional flags
  * @param attr_size   the size of the attributes necessary for a type with
  *                    this opcode
  * @param ops         the tp_op operations for this type
  * @return A new type opcode.
  */
-tp_op const *new_tpop(tp_opcode code, ident *name, unsigned flags,
-                      size_t attr_size, tp_op_ops const *ops);
+tp_op const *new_tpop(tp_opcode code, ident *name, size_t attr_size,
+                      tp_op_ops const *ops);
 
 /**
  * Free a tpop data structure.
