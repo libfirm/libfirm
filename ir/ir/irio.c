@@ -1706,7 +1706,7 @@ static void read_type(read_env_t *env)
 		ir_mode *mode     = read_mode_ref(env);
 		ir_type *pointsto = get_type(env, read_long(env));
 		type = new_type_pointer(pointsto);
-		set_type_mode(type, mode);
+		set_pointer_mode(type, mode);
 		goto finish_type;
 	}
 

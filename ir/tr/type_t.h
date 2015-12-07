@@ -160,10 +160,6 @@ void free_struct_attrs(ir_type *strct);
 void free_method_attrs(ir_type *method);
 void free_union_attrs(ir_type *uni);
 
-void set_class_mode(ir_type *tp, ir_mode *mode);
-void set_struct_mode(ir_type *tp, ir_mode *mode);
-void set_pointer_mode(ir_type *tp, ir_mode *mode);
-
 void set_default_size(ir_type *tp, unsigned bytes);
 
 void add_compound_member(ir_type *compound, ir_entity *entity);

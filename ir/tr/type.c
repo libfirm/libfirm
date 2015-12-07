@@ -197,16 +197,6 @@ ir_mode *(get_type_mode)(const ir_type *tp)
 	return get_type_mode_(tp);
 }
 
-void set_type_mode(ir_type *tp, ir_mode *mode)
-{
-	const tp_op *tpop = get_type_tpop(tp);
-	if (tpop->ops.set_type_mode) {
-		tpop->ops.set_type_mode(tp, mode);
-	} else {
-		panic("setting a mode is NOT allowed for this type");
-	}
-}
-
 long get_type_nr(const ir_type *tp)
 {
 	assert(is_type(tp));
@@ -571,15 +561,6 @@ int (is_Class_type)(const ir_type *clss)
 	return is_class_type_(clss);
 }
 
-void set_class_mode(ir_type *tp, ir_mode *mode)
-{
-	/* for classes and structs we allow to set a mode if the layout is fixed
-	 * AND the size matches */
-	assert(get_type_state(tp) == layout_fixed &&
-	       tp->size == get_mode_size_bytes(mode));
-	tp->mode = mode;
-}
-
 
 ir_type *new_type_struct(ident *name)
 {
@@ -643,15 +624,6 @@ static void remove_struct_member(ir_type *strct, ir_entity *member)
 int (is_Struct_type)(const ir_type *strct)
 {
 	return is_struct_type_(strct);
-}
-
-void set_struct_mode(ir_type *tp, ir_mode *mode)
-{
-	/* for classes and structs we allow to set a mode if the layout is fixed
-	 * AND the size matches */
-	assert(get_type_state(tp) == layout_fixed &&
-	       tp->size == get_mode_size_bytes(mode));
-	tp->mode = mode;
 }
 
 ir_type *new_type_method(size_t n_param, size_t n_res)

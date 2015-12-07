@@ -995,12 +995,6 @@ FIRM_API void set_type_state(ir_type *tp, ir_type_state state);
  */
 FIRM_API ir_mode *get_type_mode(const ir_type *tp);
 
-/** Sets the mode of a type.
- *
- * Only has an effect on primitive and pointer types.
- */
-FIRM_API void set_type_mode(ir_type *tp, ir_mode* m);
-
 /** Returns the size of a type in bytes. */
 FIRM_API unsigned get_type_size_bytes(const ir_type *tp);
 
@@ -1533,6 +1527,9 @@ FIRM_API const tp_op *get_tpop_array(void);
 
 /** Creates a new type pointer. */
 FIRM_API ir_type *new_type_pointer(ir_type *points_to);
+
+/** Set mode of a pointer typer. */
+FIRM_API void set_pointer_mode(ir_type *pointer, ir_mode *mode);
 
 /** Sets the type to which a pointer points to. */
 FIRM_API void set_pointer_points_to_type(ir_type *pointer, ir_type *tp);
