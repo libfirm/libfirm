@@ -729,18 +729,6 @@ ENUM_BITSET(ptr_access_kind)
  */
 
 /**
- * @defgroup tp_op  Type Opcodes
- *  This module specifies the kinds of types available in firm.
- *
- *  They are called type opcodes. These include classes, structs, methods,
- *  unions, arrays, pointers and primitive types.
- *  Special types with own opcodes are the id type, a type representing an
- *  unknown type and a type used to specify that something has no type.
- *
- * @{
- */
-
-/**
  *  An enum for the type kinds.
  *  For each type kind exists a typecode to identify it.
  */
@@ -759,33 +747,9 @@ typedef enum tp_opcode {
 } tp_opcode;
 
 /**
- * A structure containing information about a kind of type.
- * A structure containing information about a kind of type.  So far
- * this is only the kind name, an enum for case-switching and some
- * internal values.
- *
- * @see  get_tpop_name(), get_tpop_code()
+ * Returns the name of the type opcode @p opcode.
  */
-typedef struct tp_op tp_op;
-
-
-/**
- * Returns the string for the type opcode.
- *
- * @param op  The type opcode to get the string from.
- * @return    a string.
- */
-FIRM_API const char *get_tpop_name(const tp_op *op);
-
-/**
- * Returns an enum for the type opcode.
- *
- * @param op   The type opcode to get the enum from.
- * @return the enum.
- */
-FIRM_API tp_opcode get_tpop_code(const tp_op *op);
-
-/** @} */
+FIRM_API const char *get_type_opcode_name(tp_opcode opcode);
 
 /** Returns true if low is subclass of high.
  *
@@ -939,14 +903,8 @@ FIRM_API int tr_verify(void);
  */
 FIRM_API void free_type(ir_type *tp);
 
-/** Returns type opcode of type @p tp */
-FIRM_API const tp_op *get_type_tpop(const ir_type *tp);
-/** Returns name identifier of type opcode of type @p tp */
-FIRM_API ident *get_type_tpop_nameid(const ir_type *tp);
-/** Returns name of type opcode of type @p tp */
-FIRM_API const char *get_type_tpop_name(const ir_type *tp);
-/** Returns opcode of type opcode of type @p tp */
-FIRM_API tp_opcode get_type_tpop_code(const ir_type *tp);
+/** Returns opcode of type @p type */
+FIRM_API tp_opcode get_type_opcode(const ir_type *type);
 
 /**
  * construct a string representing the type.
@@ -1175,18 +1133,6 @@ FIRM_API void remove_class_supertype(ir_type *clss, ir_type *supertype);
 /** Returns true if a type is a class type. */
 FIRM_API int is_Class_type(const ir_type *clss);
 
-/**
- * This type opcode marks that the corresponding type is a class type.
- *
- * Consequently the type refers to supertypes, subtypes and entities.
- * Entities can be any fields, but also methods.
- * This struct is dynamically allocated but constant for the lifetime
- * of the library.
- */
-FIRM_API const tp_op *type_class;
-/** Returns type opcode for class type. @see type_class */
-FIRM_API const tp_op *get_tpop_class(void);
-
 /** @} */
 
 /** @ingroup compound_type
@@ -1229,19 +1175,6 @@ FIRM_API size_t get_struct_member_index(ir_type const *strct,
 /** Returns true if a type is a struct type. */
 FIRM_API int is_Struct_type(const ir_type *strct);
 
-/**
- * This type opcode marks that the corresponding type is a compound type
- * as a struct in C.
- *
- * Consequently the type refers to a list of entities
- * which may not be methods (but pointers to methods).
- * This struct is dynamically allocated but constant for the lifetime
- * of the library.
- */
-FIRM_API const tp_op *type_struct;
-/** Returns type opcode for struct type. @see type_struct */
-FIRM_API const tp_op *get_tpop_struct(void);
-
 /** @} */
 
 /**
@@ -1279,17 +1212,6 @@ FIRM_API size_t get_union_member_index(ir_type const *uni,
 
 /** Returns true if a type is a union type. */
 FIRM_API int is_Union_type(const ir_type *uni);
-
-/**
- * This type opcode marks that the corresponding type is a union type.
- *
- * Consequently it refers to a list of unioned types.
- * This struct is dynamically allocated but constant for the lifetime
- * of the library.
- */
-FIRM_API const tp_op *type_union;
-/** Returns type opcode for union type. @see type_union */
-FIRM_API const tp_op *get_tpop_union(void);
 
 /** @} */
 
@@ -1442,17 +1364,6 @@ FIRM_API void set_method_n_regparams(ir_type *method, unsigned n_regs);
 /** Returns true if a type is a method type. */
 FIRM_API int is_Method_type(const ir_type *method);
 
-/**
- * This type opcode marks that the corresponding type is a method type.
- *
- * Consequently it refers to a list of arguments and results.
- * This struct is dynamically allocated but constant for the lifetime
- * of the library.
- */
-FIRM_API const tp_op *type_method;
-/** Returns type opcode for method type @see type_method */
-FIRM_API const tp_op *get_tpop_method(void);
-
 /** @} */
 
 /**
@@ -1503,18 +1414,6 @@ FIRM_API int is_array_variable_size(const ir_type *array);
 /** Returns true if a type is an array type. */
 FIRM_API int is_Array_type(const ir_type *array);
 
-/**
- * This type opcode marks that the corresponding type is an array type.
- *
- * Consequently it contains a list of dimensions (lower and upper bounds)
- * and an element type.
- * This struct is dynamically allocated but constant for the lifetime
- * of the library.
- */
-FIRM_API const tp_op *type_array;
-/** Returns type opcode for array type. @see type_array */
-FIRM_API const tp_op *get_tpop_array(void);
-
 /** @} */
 
 /**
@@ -1545,17 +1444,6 @@ FIRM_API int is_Pointer_type(const ir_type *pointer);
  *  If not found returns firm_unknown_type. */
 FIRM_API ir_type *find_pointer_type_to_type(ir_type *tp);
 
-/**
- * This type opcode marks that the corresponding type is a pointer type.
- *
- * It contains a reference to the type the pointer points to.
- * This struct is dynamically allocated but constant for the lifetime
- * of the library.
- */
-FIRM_API const tp_op *type_pointer;
-/** Returns type opcode for pointer type. @see type_pointer */
-FIRM_API const tp_op *get_tpop_pointer(void);
-
 /** @} */
 
 /**
@@ -1572,18 +1460,6 @@ FIRM_API ir_type *new_type_primitive(ir_mode *mode);
 /** Returns true if a type is a primitive type. */
 FIRM_API int is_Primitive_type(const ir_type *primitive);
 
-/**
- * This type opcode marks that the corresponding type is a primitive type.
- *
- * Primitive types are types that are directly mapped to target machine
- * modes.
- * This struct is dynamically allocated but constant for the lifetime
- * of the library.
- */
-FIRM_API const tp_op *type_primitive;
-/** Returns type opcode for primitive type. @see type_primitive */
-FIRM_API const tp_op *get_tpop_primitive(void);
-
 /** @} */
 
 /** @defgroup code_type Code
@@ -1595,12 +1471,6 @@ FIRM_API ir_type *get_code_type(void);
  * Checks whether a type is a code type.
  */
 FIRM_API int is_code_type(const ir_type *tp);
-/**
- * The code type is used to mark pieces of code (basic blocks)
- */
-FIRM_API const tp_op *tpop_code;
-/** Returns type opcode for code type. @see tpop_code */
-FIRM_API const tp_op *get_tpop_code_type(void);
 /** @} */
 
 /**
@@ -1625,17 +1495,6 @@ FIRM_API const tp_op *get_tpop_code_type(void);
 FIRM_API ir_type *get_unknown_type(void);
 /** Checks whether type @p type is the unknown type */
 FIRM_API int is_unknown_type(const ir_type *type);
-/**
- * This type opcode is an auxiliary opcode dedicated to support type analyses.
- *
- * Types with this opcode represents that there could be a type, but it is not
- * known.  This type can be used to initialize fields before an analysis (not known
- * yet) or to represent the top of a lattice (could not be determined).  There exists
- * exactly one type with this opcode.
- */
-FIRM_API const tp_op *tpop_unknown;
-/** Returns type opcode for unknown type. @see tpop_unknown */
-FIRM_API const tp_op *get_tpop_unknown(void);
 /** @} */
 
 /**

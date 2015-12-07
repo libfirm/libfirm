@@ -126,8 +126,9 @@ static int firm_emit(lc_appendable_t *app, const lc_arg_occ_t *occ,
 		ir_type *type = (ir_type*)X;
 		char type_name[256];
 		ir_print_type(type_name, sizeof(type_name), type);
+		tp_opcode opcode = get_type_opcode(type);
 		snprintf(buf, sizeof(buf), "%s%s:%s", A("type"),
-		         get_type_tpop_name(type), type_name);
+		         get_type_opcode_name(opcode), type_name);
 		snprintf(add, sizeof(add), "[%ld]", get_type_nr(type));
 		break;
 	}

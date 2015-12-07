@@ -39,6 +39,7 @@
 #include "array.h"
 #include "pmap.h"
 #include "obst.h"
+#include "panic.h"
 #include "pset.h"
 #include "util.h"
 
@@ -1404,7 +1405,8 @@ void dump_type_node(FILE *F, ir_type *tp)
 	if (tp->dbi != NULL) {
 		char buf[1024];
 		ir_print_type(buf, sizeof(buf), tp);
-		fprintf(F, "%s '%s'", get_type_tpop_name(tp), buf);
+		tp_opcode opcode = get_type_opcode(tp);
+		fprintf(F, "%s '%s'", get_type_opcode_name(opcode), buf);
 	} else {
 		ir_fprintf(F, "%+F", tp);
 	}
@@ -1459,7 +1461,7 @@ static void dump_type_info(ir_type *const tp, ir_entity *const ent, void *const 
 	} else  {
 		dump_type_node(F, tp);
 		/* and now the edges */
-		switch (get_type_tpop_code(tp)) {
+		switch (get_type_opcode(tp)) {
 		case tpo_class:
 			for (size_t i = get_class_n_supertypes(tp); i-- > 0;) {
 				print_type_type_edge(F, tp, get_class_supertype(tp, i), TYPE_SUPER_EDGE_ATTR);
@@ -1471,7 +1473,7 @@ static void dump_type_info(ir_type *const tp, ir_entity *const ent, void *const 
 				ir_entity const *const entity = get_compound_member(tp, i);
 				print_type_ent_edge(F, tp, entity, TYPE_MEMBER_EDGE_ATTR);
 			}
-			break;
+			return;
 		case tpo_method:
 			for (size_t i = get_method_n_params(tp); i-- > 0;) {
 				print_type_type_edge(F, tp, get_method_param_type(tp, i), METH_PAR_EDGE_ATTR,i);
@@ -1479,22 +1481,23 @@ static void dump_type_info(ir_type *const tp, ir_entity *const ent, void *const 
 			for (size_t i = get_method_n_ress(tp); i-- > 0;) {
 				print_type_type_edge(F, tp, get_method_res_type(tp, i), METH_RES_EDGE_ATTR,i);
 			}
-			break;
+			return;
 		case tpo_array:
 			print_type_type_edge(F, tp, get_array_element_type(tp), ARR_ELT_TYPE_EDGE_ATTR);
 			ir_node *size = get_array_size(tp);
 			print_node_type_edge(F, size, tp, "label: \"size\"");
 			dump_const_expression(F, size);
-			break;
+			return;
 		case tpo_pointer:
 			print_type_type_edge(F, tp, get_pointer_points_to_type(tp), PTR_PTS_TO_EDGE_ATTR);
-			break;
+			return;
 		case tpo_unknown:
 		case tpo_code:
 		case tpo_uninitialized:
 		case tpo_primitive:
-			break;
+			return;
 		}
+		panic("invalid type");
 	}
 }
 
@@ -1524,16 +1527,13 @@ static void dump_class_hierarchy_node(ir_type *const tp, ir_entity *const ent, v
 	} else {
 		if (tp == get_glob_type())
 			return;
-		switch (get_type_tpop_code(tp)) {
-		case tpo_class:
+		if (is_Class_type(tp)) {
 			dump_type_node(F, tp);
 			/* and now the edges */
 			for (size_t i = get_class_n_supertypes(tp); i-- > 0;) {
-				print_type_type_edge(F,tp,get_class_supertype(tp, i),TYPE_SUPER_EDGE_ATTR);
+				print_type_type_edge(F, tp, get_class_supertype(tp, i),
+				                     TYPE_SUPER_EDGE_ATTR);
 			}
-			break;
-		default:
-			break;
 		}
 	}
 }

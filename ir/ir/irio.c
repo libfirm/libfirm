@@ -366,7 +366,7 @@ static void write_entity_ref(write_env_t *env, ir_entity *entity)
 
 static void write_type_ref(write_env_t *env, ir_type *type)
 {
-	switch (get_type_tpop_code(type)) {
+	switch (get_type_opcode(type)) {
 	case tpo_unknown:
 		write_symbol(env, "unknown");
 		return;
@@ -554,7 +554,7 @@ static void write_type_common(write_env_t *env, ir_type *tp)
 	fputc('\t', env->file);
 	write_symbol(env, "type");
 	write_long(env, get_type_nr(tp));
-	write_symbol(env, get_type_tpop_name(tp));
+	write_symbol(env, get_type_opcode_name(get_type_opcode(tp)));
 	write_unsigned(env, get_type_size_bytes(tp));
 	write_unsigned(env, get_type_alignment_bytes(tp));
 	write_type_state(env, get_type_state(tp));
@@ -664,7 +664,7 @@ static void write_type(write_env_t *env, ir_type *tp)
 		return;
 	mark_type_visited(tp);
 
-	switch ((tp_opcode)get_type_tpop_code(tp)) {
+	switch (get_type_opcode(tp)) {
 	case tpo_unknown:
 	case tpo_code:
 	case tpo_uninitialized:
@@ -1640,14 +1640,14 @@ static ir_initializer_t *read_initializer(read_env_t *env)
 static void read_type(read_env_t *env)
 {
 	long           typenr = read_long(env);
-	tp_opcode      tpop   = (tp_opcode) read_enum(env, tt_tpo);
+	tp_opcode      opcode = (tp_opcode) read_enum(env, tt_tpo);
 	unsigned       size   = (unsigned) read_long(env);
 	unsigned       align  = (unsigned) read_long(env);
 	ir_type_state  state  = read_type_state(env);
 	unsigned       flags  = (unsigned) read_long(env);
 	ir_type       *type;
 
-	switch (tpop) {
+	switch (opcode) {
 	case tpo_array: {
 		ir_type *elemtype = read_type_ref(env);
 		type = new_type_array(elemtype);
@@ -1734,10 +1734,10 @@ static void read_type(read_env_t *env)
 	case tpo_code:
 	case tpo_unknown:
 	case tpo_uninitialized:
-		parse_error(env, "can't import this type kind (%d)", tpop);
+		parse_error(env, "can't import this type kind (%d)", opcode);
 		return;
 	}
-	parse_error(env, "unknown type kind: \"%d\"\n", tpop);
+	parse_error(env, "unknown type kind: \"%d\"\n", opcode);
 	skip_to(env, '\n');
 	return;
 

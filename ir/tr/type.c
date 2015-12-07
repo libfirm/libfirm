@@ -38,7 +38,6 @@
 #include "xmalloc.h"
 #include "irprog_t.h"
 #include "ircons.h"
-#include "tpop_t.h"
 #include "tv_t.h"
 #include "irhooks.h"
 #include "util.h"
@@ -50,8 +49,25 @@
 
 #include "array.h"
 
-static ir_type *new_type(tp_op const *type_op, ir_mode *mode);
+static ir_type *new_type(tp_opcode opcode, size_t attr_size, ir_mode *mode);
 static void free_compound_entities(ir_type *type);
+
+const char *get_type_opcode_name(tp_opcode const opcode)
+{
+	switch (opcode) {
+	case tpo_array:         return "array";
+	case tpo_class:         return "class";
+	case tpo_code:          return "code";
+	case tpo_method:        return "method";
+	case tpo_pointer:       return "pointer";
+	case tpo_primitive:     return "primitive";
+	case tpo_struct:        return "struct";
+	case tpo_uninitialized: return "uninitialized";
+	case tpo_union:         return "union";
+	case tpo_unknown:       return "unknown";
+	}
+	panic("Invalid type opcode");
+}
 
 ir_type *get_code_type(void)
 {
@@ -65,10 +81,10 @@ ir_type *get_unknown_type(void)
 
 void ir_init_type(ir_prog *irp)
 {
-	irp->code_type = new_type(tpop_code, mode_ANY);
+	irp->code_type = new_type(tpo_code, 0, mode_ANY);
 	set_type_state(irp->code_type, layout_fixed);
 
-	irp->unknown_type = new_type(tpop_unknown, mode_ANY);
+	irp->unknown_type = new_type(tpo_unknown, 0, mode_ANY);
 	set_type_state (irp->unknown_type, layout_fixed);
 
 	irp->dummy_owner = new_type_struct(new_id_from_str("$dummy_owner$"));
@@ -100,21 +116,18 @@ void inc_master_type_visited(void)
 
 /**
  *   Creates a new type representation:
- *
- *   @param type_op  the kind of this type.  May not be type_id.
- *   @param mode     the mode to be used for this type, may be NULL
- *
  *   @return A new type of the given type.  The remaining private attributes are
  *           not initialized.  The type is in state layout_undefined.
  */
-static ir_type *new_type(tp_op const *type_op, ir_mode *mode)
+static ir_type *new_type(tp_opcode const opcode, size_t attr_size,
+                         ir_mode *const mode)
 {
-	size_t   const node_size = offsetof(ir_type, attr) +  type_op->attr_size;
+	size_t   const node_size = offsetof(ir_type, attr) +  attr_size;
 	ir_type *const res       = (ir_type*)xmalloc(node_size);
 	memset(res, 0, node_size);
 
 	res->kind       = k_type;
-	res->type_op    = type_op;
+	res->opcode     = opcode;
 	res->mode       = mode;
 	res->visibility = ir_visibility_external;
 	res->flags      = tf_none;
@@ -137,7 +150,7 @@ void free_type_entities(ir_type *const type)
 
 static void free_type_attrs(ir_type *const type)
 {
-	switch (type->type_op->code) {
+	switch (get_type_opcode(type)) {
 	case tpo_class:
 		free_class_attrs(type);
 		return;
@@ -183,30 +196,14 @@ void (set_type_link)(ir_type *tp, void *l)
 	set_type_link_(tp, l);
 }
 
-const tp_op *(get_type_tpop)(const ir_type *tp)
-{
-	return get_type_tpop_(tp);
-}
-
-ident *(get_type_tpop_nameid)(const ir_type *tp)
-{
-	return get_type_tpop_nameid_(tp);
-}
-
 static inline bool is_type(const void *thing)
 {
 	return get_kind(thing) == k_type;
 }
 
-const char* get_type_tpop_name(const ir_type *tp)
+tp_opcode (get_type_opcode)(ir_type const *const type)
 {
-	assert(is_type(tp));
-	return get_id_str(tp->type_op->name);
-}
-
-tp_opcode (get_type_tpop_code)(const ir_type *tp)
-{
-	return get_type_tpop_code_(tp);
+	return get_type_opcode_(type);
 }
 
 ir_mode *(get_type_mode)(const ir_type *tp)
@@ -274,8 +271,9 @@ void set_type_state(ir_type *tp, ir_type_state state)
 {
 	assert(is_type(tp));
 
-	if (tp->type_op == type_pointer || tp->type_op == type_primitive
-	    || tp->type_op == type_method)
+	tp_opcode opcode = get_type_opcode(tp);
+	if (opcode == tpo_pointer || opcode == tpo_primitive
+	 || opcode == tpo_method)
 		return;
 
 #ifndef NDEBUG
@@ -347,7 +345,7 @@ static void free_compound_entities(ir_type *type)
 
 ir_type *new_type_class(ident *name)
 {
-	ir_type *res = new_type(type_class, NULL);
+	ir_type *res = new_type(tpo_class, sizeof(cls_attr), NULL);
 	compound_init(res, name);
 	res->attr.cla.subtypes   = NEW_ARR_F(ir_type*, 0);
 	res->attr.cla.supertypes = NEW_ARR_F(ir_type*, 0);
@@ -454,7 +452,7 @@ void remove_class_subtype(ir_type *clss, ir_type *subtype)
 void add_class_supertype(ir_type *clss, ir_type *supertype)
 {
 	assert(is_Class_type(clss));
-	assert(supertype->type_op == type_class);
+	assert(is_Class_type(supertype));
 	ARR_APP1(ir_type *, clss->attr.cla.supertypes, supertype);
 	for (size_t i = 0, n = get_class_n_subtypes(supertype); i < n; ++i) {
 		if (get_class_subtype(supertype, i) == clss)
@@ -516,7 +514,7 @@ int (is_Class_type)(const ir_type *clss)
 
 ir_type *new_type_struct(ident *name)
 {
-	ir_type *res = new_type(type_struct, NULL);
+	ir_type *res = new_type(tpo_struct, sizeof(compound_attr), NULL);
 	compound_init(res, name);
 	hook_new_type(res);
 	return res;
@@ -561,7 +559,7 @@ int (is_Struct_type)(const ir_type *strct)
 
 ir_type *new_type_method(size_t n_param, size_t n_res)
 {
-	ir_type *res = new_type(type_method, mode_P);
+	ir_type *res = new_type(tpo_method, sizeof(mtd_attr), mode_P);
 	res->flags             |= tf_layout_fixed;
 	res->size               = get_mode_size_bytes(mode_P);
 	res->attr.ma.n_params   = n_param;
@@ -582,7 +580,7 @@ ir_type *clone_type_method(ir_type *tp)
 	size_t         n_params = tp->attr.ma.n_params;
 	size_t         n_res    = tp->attr.ma.n_res;
 	type_dbg_info *db       = tp->dbi;
-	ir_type       *res      = new_type(type_method, mode);
+	ir_type       *res      = new_type(tpo_method, sizeof(mtd_attr), mode);
 	set_type_dbg_info(res, db);
 
 	res->flags                    = tp->flags;
@@ -710,7 +708,7 @@ int (is_Method_type)(const ir_type *method)
 
 ir_type *new_type_union(ident *name)
 {
-	ir_type *res = new_type(type_union, NULL);
+	ir_type *res = new_type(tpo_union, sizeof(compound_attr), NULL);
 	compound_init(res, name);
 	hook_new_type(res);
 	return res;
@@ -769,7 +767,7 @@ ir_type *new_type_array(ir_type *element_type)
 {
 	assert(!is_Method_type(element_type));
 
-	ir_type  *res = new_type(type_array, NULL);
+	ir_type  *res = new_type(tpo_array, sizeof(arr_attr), NULL);
 	res->attr.aa.element_type = element_type;
 	res->attr.aa.size         = new_r_Unknown(get_const_code_irg(), mode_Iu);
 	set_type_alignment_bytes(res, get_type_alignment_bytes(element_type));
@@ -846,7 +844,7 @@ int (is_Array_type)(const ir_type *array)
 ir_type *new_type_pointer(ir_type *points_to)
 {
 	ir_mode *const mode = mode_P;
-	ir_type *const res  = new_type(type_pointer, mode);
+	ir_type *const res  = new_type(tpo_pointer, sizeof(ptr_attr), mode);
 	res->attr.pa.points_to = points_to;
 	unsigned size = get_mode_size_bytes(mode);
 	res->size = size;
@@ -898,7 +896,7 @@ ir_type *new_type_primitive(ir_mode *mode)
 	unsigned align = (size > 0 && size != (unsigned)-1)
 	               ? ceil_po2(size) : 1;
 
-	ir_type *res = new_type(type_primitive, mode);
+	ir_type *res = new_type(tpo_primitive, 0, mode);
 	res->size  = size;
 	res->flags |= tf_layout_fixed;
 	set_type_alignment_bytes(res, align);
@@ -990,21 +988,20 @@ void add_compound_member(ir_type *type, ir_entity *entity)
 	ARR_APP1(ir_entity *, type->attr.ca.members, entity);
 }
 
-int is_code_type(const ir_type *tp)
+int is_code_type(ir_type const *const type)
 {
-	assert(is_type(tp));
-	return tp->type_op == tpop_code;
+	return get_type_opcode(type) == tpo_code;
 }
 
-int is_unknown_type(const ir_type *tp)
+int is_unknown_type(ir_type const *const type)
 {
-	assert(is_type(tp));
-	return tp->type_op == tpop_unknown;
+	return get_type_opcode(type) == tpo_unknown;
 }
 
-int is_frame_type(const ir_type *tp)
+int is_frame_type(ir_type const *const type)
 {
-	return tp->flags & tf_frame_type;
+	assert(type->kind == k_type);
+	return (type->flags & tf_frame_type) != 0;
 }
 
 ir_type *new_type_frame(void)
@@ -1142,7 +1139,7 @@ void ir_print_type(char *buffer, size_t buffer_size, const ir_type *type)
 	}
 
 	/* we have to construct some name... */
-	switch (get_type_tpop_code(type)) {
+	switch (get_type_opcode(type)) {
 	case tpo_uninitialized:
 		break;
 	case tpo_code:

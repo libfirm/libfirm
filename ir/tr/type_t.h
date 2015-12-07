@@ -7,14 +7,13 @@
  * @file
  * @brief   Representation of types -- private header.
  * @author  Goetz Lindenmaier, Michael Beck
- * @see     type.h tpop_t.h tpop.h
+ * @see     type.h
  */
 #ifndef FIRM_TR_TYPE_T_H
 #define FIRM_TR_TYPE_T_H
 
 #include <stdbool.h>
 #include "typerep.h"
-#include "tpop_t.h"
 #include "firm_common.h"
 
 #include "array.h"
@@ -22,9 +21,7 @@
 #define get_master_type_visited()         get_master_type_visited_()
 #define get_type_link(tp)                 get_type_link_(tp)
 #define set_type_link(tp, l)              set_type_link_(tp, l)
-#define get_type_tpop(tp)                 get_type_tpop_(tp)
-#define get_type_tpop_nameid(tp)          get_type_tpop_nameid_(tp)
-#define get_type_tpop_code(tp)            get_type_tpop_code_(tp)
+#define get_type_opcode(tp)               get_type_opcode_(tp)
 #define get_type_mode(tp)                 get_type_mode_(tp)
 #define get_type_alignment_bytes(tp)      get_type_alignment_bytes_(tp)
 #define get_type_size_bytes(tp)           get_type_size_bytes_(tp)
@@ -129,7 +126,7 @@ ENUM_BITSET(type_flags)
  */
 struct ir_type {
 	firm_kind kind;          /**< the firm kind, must be k_type */
-	const tp_op *type_op;    /**< the type operation of the type */
+	tp_opcode opcode;
 	ident *name;             /**< The name of the type */
 	ir_visibility visibility;/**< Visibility of entities of this type. */
 	unsigned flags;          /**< Type flags, a bitmask of enum type_flags. */
@@ -212,22 +209,10 @@ static inline void set_type_link_(ir_type *tp, void *l)
 	tp -> link = l;
 }
 
-static inline const tp_op *get_type_tpop_(const ir_type *tp)
+static inline tp_opcode get_type_opcode_(const ir_type *tp)
 {
 	assert(tp->kind == k_type);
-	return tp->type_op;
-}
-
-static inline ident *get_type_tpop_nameid_(const ir_type *tp)
-{
-	assert(tp->kind == k_type);
-	return get_tpop_ident(tp->type_op);
-}
-
-static inline tp_opcode get_type_tpop_code_(const ir_type *tp)
-{
-	assert(tp->kind == k_type);
-	return get_tpop_code(tp->type_op);
+	return tp->opcode;
 }
 
 static inline ir_mode *get_type_mode_(const ir_type *tp)
@@ -289,9 +274,9 @@ static inline void set_type_dbg_info_(ir_type *tp, type_dbg_info *db)
 	tp->dbi = db;
 }
 
-static inline int is_class_type_(const ir_type *clss)
+static inline int is_class_type_(const ir_type *type)
 {
-	return clss->type_op == type_class;
+	return get_type_opcode(type) == tpo_class;
 }
 
 static inline size_t get_compound_n_members_(const ir_type *type)
@@ -308,83 +293,80 @@ static inline ir_entity *get_compound_member_(ir_type const *const type,
 	return type->attr.ca.members[pos];
 }
 
-static inline int is_struct_type_(const ir_type *strct)
+static inline int is_struct_type_(ir_type const *const type)
 {
-	return (strct->type_op == type_struct);
+	return get_type_opcode(type) == tpo_struct;
 }
 
-static inline int is_method_type_(const ir_type *method)
+static inline int is_method_type_(ir_type const *const type)
 {
-	return (method->type_op == type_method);
+	return get_type_opcode(type) == tpo_method;
 }
 
-static inline int is_union_type_(const ir_type *uni)
+static inline int is_union_type_(ir_type const *const type)
 {
-	return (uni->type_op == type_union);
+	return get_type_opcode(type) == tpo_union;
 }
 
-static inline int is_array_type_(const ir_type *array)
+static inline int is_array_type_(ir_type const *const type)
 {
-	return (array->type_op == type_array);
+	return get_type_opcode(type) == tpo_array;
 }
 
-static inline int is_pointer_type_(const ir_type *pointer)
+static inline int is_pointer_type_(ir_type const *const type)
 {
-	return (pointer->type_op == type_pointer);
+	return get_type_opcode(type) == tpo_pointer;
 }
 
-/** Returns true if a type is a primitive type. */
-static inline int is_primitive_type_(const ir_type *primitive)
+static inline int is_primitive_type_(ir_type const *const type)
 {
-	assert(primitive->kind == k_type);
-	return (primitive->type_op == type_primitive);
+	return get_type_opcode(type) == tpo_primitive;
 }
 
-static inline int is_atomic_type_(const ir_type *tp)
+static inline int is_atomic_type_(ir_type const *const type)
 {
-	assert(tp->kind == k_type);
-	return is_Primitive_type(tp) || is_Pointer_type(tp);
+	return is_Primitive_type(type) || is_Pointer_type(type);
 }
 
 static inline size_t get_method_n_params_(const ir_type *method)
 {
-	assert(method->type_op == type_method);
+	assert(is_Method_type(method));
 	return method->attr.ma.n_params;
 }
 
 static inline size_t get_method_n_ress_(const ir_type *method)
 {
-	assert(method->type_op == type_method);
+	assert(is_Method_type(method));
 	return method->attr.ma.n_res;
 }
 
 static inline mtp_additional_properties get_method_additional_properties_(const ir_type *method)
 {
-	assert(method->type_op == type_method);
+	assert(is_Method_type(method));
 	return method->attr.ma.properties;
 }
 
 static inline void set_method_additional_properties_(ir_type *method, mtp_additional_properties properties)
 {
-	assert(method->type_op == type_method);
+	assert(is_Method_type(method));
 	method->attr.ma.properties = properties;
 }
 
 static inline void add_method_additional_properties_(ir_type *method, mtp_additional_properties properties)
 {
-	assert(method->type_op == type_method);
+	assert(is_Method_type(method));
 	method->attr.ma.properties |= properties;
 }
 
 static inline unsigned get_method_calling_convention_(const ir_type *method)
 {
-	assert(method->type_op == type_method);
+	assert(is_Method_type(method));
 	return method->attr.ma.irg_calling_conv;
 }
 
 static inline void set_method_calling_convention_(ir_type *method, unsigned cc_mask)
 {
-	assert(method->type_op == type_method);
+	assert(is_Method_type(method));
 	method->attr.ma.irg_calling_conv = cc_mask;
 }
 

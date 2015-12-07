@@ -20,7 +20,6 @@
 #include "firm.h"
 #include "irflag_t.h"
 #include "tv_t.h"
-#include "tpop_t.h"
 #include "irprog_t.h"
 #include "irnode_t.h"
 #include "irmode_t.h"
@@ -52,7 +51,6 @@ void ir_init(void)
 	firm_init_flags();
 	init_ident();
 	init_edges();
-	init_tpop();
 	init_tarval_1();
 	/* Builds a basic program representation, so modes can be added. */
 	init_irprog_1();
@@ -91,7 +89,6 @@ void ir_finish(void)
 	firm_finish_op();
 	finish_tarval();
 	finish_mode();
-	finish_tpop();
 	finish_ident();
 }
 

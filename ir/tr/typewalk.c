@@ -115,7 +115,7 @@ static void do_type_walk(ir_type *const tp, ir_entity *const ent,
 			break;
 		}
 	} else {
-		switch (get_type_tpop_code(tp)) {
+		switch (get_type_opcode(tp)) {
 		case tpo_class:
 			for (size_t i = 0, n_types = get_class_n_supertypes(tp);
 			     i < n_types; ++i) {
@@ -247,8 +247,7 @@ static void type_walk_s2s_2(ir_type *const tp, type_walk_func *pre,
 
 	/* iterate */
 	mark_type_visited(tp);
-	switch (get_type_tpop_code(tp)) {
-	case tpo_class: {
+	if (is_Class_type(tp)) {
 		for (size_t i = 0, n = get_class_n_supertypes(tp); i < n; ++i) {
 			type_walk_s2s_2(get_class_supertype(tp, i), pre, post, env);
 		}
@@ -263,19 +262,6 @@ static void type_walk_s2s_2(ir_type *const tp, type_walk_func *pre,
 		/* execute post method */
 		if (post)
 			post(tp, NULL, env);
-		break;
-	}
-	case tpo_struct:
-	case tpo_method:
-	case tpo_union:
-	case tpo_array:
-	case tpo_pointer:
-	case tpo_primitive:
-		/* dont care */
-		break;
-	default:
-		printf(" *** Faulty type! \n");
-		break;
 	}
 }
 
@@ -298,8 +284,7 @@ static void type_walk_super_2(ir_type *const tp, type_walk_func *pre,
 
 	/* iterate */
 	mark_type_visited(tp);
-	switch (get_type_tpop_code(tp)) {
-	case tpo_class:
+	if (is_Class_type(tp)) {
 		/* execute pre method */
 		if (pre)
 			pre(tp, NULL, env);
@@ -311,18 +296,6 @@ static void type_walk_super_2(ir_type *const tp, type_walk_func *pre,
 		/* execute post method */
 		if (post)
 			post(tp, NULL, env);
-		break;
-	case tpo_struct:
-	case tpo_method:
-	case tpo_union:
-	case tpo_array:
-	case tpo_pointer:
-	case tpo_primitive:
-		/* don't care */
-		break;
-	default:
-		printf(" *** Faulty type! \n");
-		break;
 	}
 }
 
@@ -384,13 +357,13 @@ void class_walk_super2sub(class_walk_func *pre, class_walk_func *post,
 
 void walk_types_entities(ir_type *tp, entity_walk_func *doit, void *env)
 {
-	switch (get_type_tpop_code(tp)) {
+	switch (get_type_opcode(tp)) {
 	case tpo_class:
 	case tpo_struct:
 	case tpo_union:
 		for (size_t i = 0, n = get_compound_n_members(tp); i < n; ++i)
 			doit(get_compound_member(tp, i), env);
-		break;
+		return;
 	case tpo_array:
 	case tpo_code:
 	case tpo_method:
@@ -398,6 +371,7 @@ void walk_types_entities(ir_type *tp, entity_walk_func *doit, void *env)
 	case tpo_primitive:
 	case tpo_uninitialized:
 	case tpo_unknown:
-		break;
+		return;
 	}
+	panic("invalid type");
 }

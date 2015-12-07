@@ -81,7 +81,7 @@ static bool check_pointer_type(const ir_type *tp)
 
 int check_type(const ir_type *tp)
 {
-	switch (get_type_tpop_code(tp)) {
+	switch (get_type_opcode(tp)) {
 	case tpo_union:
 	case tpo_struct:
 	case tpo_class:     return check_compound_type(tp);
@@ -92,9 +92,10 @@ int check_type(const ir_type *tp)
 	case tpo_uninitialized:
 	case tpo_unknown:
 	case tpo_code:
-		break;
+		return true;
 	}
-	return true;
+	report_error("Invalid type opcode");
+	return false;
 }
 
 static bool check_visited_flag(ir_graph *irg, ir_node *n)

@@ -248,7 +248,6 @@ set(SOURCES
 	ir/stat/stat_timing.c
 	ir/stat/statev.c
 	ir/tr/entity.c
-	ir/tr/tpop.c
 	ir/tr/tr_inheritance.c
 	ir/tr/trverify.c
 	ir/tr/type.c

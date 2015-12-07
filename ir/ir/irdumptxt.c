@@ -670,12 +670,9 @@ static void dump_compound_members(FILE *const F, ir_type const *const type)
 	}
 }
 
-void dump_type_to_file(FILE *const F, const ir_type *const tp)
+static void dump_type_details(FILE *const F, ir_type const *const tp)
 {
-	ir_fprintf(F, "%+F", tp);
-	if (verbosity & dump_verbosity_onlynames) { fprintf(F, "\n"); return; }
-
-	switch (get_type_tpop_code(tp)) {
+	switch (get_type_opcode(tp)) {
 	case tpo_class:
 		dump_compound_members(F, tp);
 		if (verbosity & dump_verbosity_typeattrs) {
@@ -703,12 +700,12 @@ void dump_type_to_file(FILE *const F, const ir_type *const tp)
 				}
 			}
 		}
-		break;
+		return;
 
 	case tpo_union:
 	case tpo_struct:
 		dump_compound_members(F, tp);
-		break;
+		return;
 
 	case tpo_array:
 		if (verbosity & dump_verbosity_typeattrs) {
@@ -726,14 +723,14 @@ void dump_type_to_file(FILE *const F, const ir_type *const tp)
 			ir_fprintf(F, "] of <%+F>", elem_tp);
 			fprintf(F, "\n");
 		}
-		break;
+		return;
 
 	case tpo_pointer:
 		if (verbosity & dump_verbosity_typeattrs) {
 			const ir_type *tt = get_pointer_points_to_type(tp);
 			ir_fprintf(F, "\n  points to %+F\n", tt);
 		}
-		break;
+		return;
 
 	case tpo_method:
 		if (verbosity & dump_verbosity_typeattrs) {
@@ -762,18 +759,24 @@ void dump_type_to_file(FILE *const F, const ir_type *const tp)
 			print_bitflags(F, cc_names, (unsigned)cconv);
 			fprintf(F, "\n");
 		}
-		break;
+		return;
 
 	case tpo_primitive:
 	case tpo_unknown:
+	case tpo_code:
+	case tpo_uninitialized:
 		fprintf(F, "\n");
-		break;
-
-	default:
-		if (verbosity & dump_verbosity_typeattrs) {
-			fprintf(F, ": details not implemented\n");
-		}
+		return;
 	}
+	panic("invalid type");
+}
+
+void dump_type_to_file(FILE *const F, const ir_type *const tp)
+{
+	ir_fprintf(F, "%+F", tp);
+	if (verbosity & dump_verbosity_onlynames) { fprintf(F, "\n"); return; }
+
+	dump_type_details(F, tp);
 
 	fprintf(F, "  state:      %s,\n", get_type_state_name(get_type_state(tp)));
 	fprintf(F, "  size:       %2u Bytes,\n", get_type_size_bytes(tp));

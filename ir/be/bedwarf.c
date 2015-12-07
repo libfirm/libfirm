@@ -768,17 +768,20 @@ static void emit_type(ir_type *type)
 	if (!pset_new_insert(&env.emitted_types, type))
 		return;
 
-	switch (get_type_tpop_code(type)) {
-	case tpo_primitive: emit_base_type(type);       break;
-	case tpo_pointer:   emit_pointer_type(type);    break;
-	case tpo_array:     emit_array_type(type);      break;
+	switch (get_type_opcode(type)) {
+	case tpo_primitive: emit_base_type(type);       return;
+	case tpo_pointer:   emit_pointer_type(type);    return;
+	case tpo_array:     emit_array_type(type);      return;
 	case tpo_class:
 	case tpo_struct:
-	case tpo_union:     emit_compound_type(type);   break;
-	case tpo_method:    emit_subroutine_type(type); break;
-	default:
-		panic("type %+F not implemented yet", type);
+	case tpo_union:     emit_compound_type(type);   return;
+	case tpo_method:    emit_subroutine_type(type); return;
+	case tpo_code:
+	case tpo_unknown:
+	case tpo_uninitialized:
+		panic("unexpected type %+F", type);
 	}
+	panic("invalid type");
 }
 
 static void emit_op_addr(const ir_entity *entity)

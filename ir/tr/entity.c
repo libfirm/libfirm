@@ -761,18 +761,16 @@ int is_unknown_entity(const ir_entity *entity)
 
 int is_atomic_entity(const ir_entity *ent)
 {
-	ir_type     *t  = get_entity_type(ent);
-	const tp_op *op = get_type_tpop(t);
-	return op == type_primitive || op == type_pointer
-	    || op == type_method;
+	ir_type const *const type   = get_entity_type(ent);
+	tp_opcode      const opcode = get_type_opcode(type);
+	return opcode == tpo_primitive || opcode == tpo_pointer
+	    || opcode == tpo_method;
 }
 
 int is_compound_entity(const ir_entity *ent)
 {
-	ir_type     *t  = get_entity_type(ent);
-	const tp_op *op = get_type_tpop(t);
-	return (op == type_class || op == type_struct ||
-	        op == type_array || op == type_union);
+	ir_type const *const type = get_entity_type(ent);
+	return is_compound_type(type);
 }
 
 int is_method_entity(const ir_entity *ent)
