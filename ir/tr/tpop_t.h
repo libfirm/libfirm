@@ -29,12 +29,6 @@ typedef struct tp_op_ops {
 	void (*free_entities)(ir_type *type);
 	/** Called to set the byte size of a type. */
 	void (*set_type_size)(ir_type *type, unsigned size);
-	/** Called to return the number of compound members. */
-	size_t (*get_n_members)(ir_type const *type);
-	/** Called to get the pos'th compound member. */
-	ir_entity *(*get_member)(ir_type const *type, size_t pos);
-	/** Called to get the index of a compound member. */
-	size_t (*get_member_index)(ir_type const *type, ir_entity const *member);
 } tp_op_ops;
 
 /** possible flags for a type opcode */

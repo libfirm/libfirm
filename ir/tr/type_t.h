@@ -35,9 +35,9 @@
 #define type_visited(tp)                  type_visited_(tp)
 #define get_type_dbg_info(tp)             get_type_dbg_info_(tp)
 #define set_type_dbg_info(tp, db)         set_type_dbg_info_(tp, db)
+#define get_compound_n_members(type)      get_compound_n_members_(type)
+#define get_compound_member(type, pos)    get_compound_member_(type, pos)
 #define is_Class_type(clss)               is_class_type_(clss)
-#define get_class_n_members(clss)         get_class_n_members_(clss)
-#define get_class_member(clss, pos)       get_class_member_(clss, pos)
 #define is_Struct_type(strct)             is_struct_type_(strct)
 #define is_Method_type(method)            is_method_type_(method)
 #define is_Union_type(uni)                is_union_type_(uni)
@@ -297,17 +297,18 @@ static inline int is_class_type_(const ir_type *clss)
 	return clss->type_op == type_class;
 }
 
-static inline size_t get_class_n_members_(const ir_type *clss)
+static inline size_t get_compound_n_members_(const ir_type *type)
 {
-	assert(clss->type_op == type_class);
-	return ARR_LEN(clss->attr.ca.members);
+	assert(is_compound_type(type));
+	return ARR_LEN(type->attr.ca.members);
 }
 
-static inline ir_entity *get_class_member_(const ir_type *clss, size_t pos)
+static inline ir_entity *get_compound_member_(ir_type const *const type,
+                                             size_t const pos)
 {
-	assert(clss->type_op == type_class);
-	assert(pos < get_class_n_members_(clss));
-	return clss->attr.ca.members[pos];
+	assert(is_compound_type(type));
+	assert(pos < get_compound_n_members(type));
+	return type->attr.ca.members[pos];
 }
 
 static inline int is_struct_type_(const ir_type *strct)

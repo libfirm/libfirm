@@ -264,29 +264,14 @@ void set_type_state(ir_type *tp, ir_type_state state)
 
 #ifndef NDEBUG
 	/* Just a correctness check: */
-	if (state == layout_fixed) {
-		switch (get_type_tpop_code(tp)) {
-		case tpo_class:
-			if (tp != get_glob_type()) {
-				for (size_t i = 0, n_mem = get_class_n_members(tp);
-				     i < n_mem; i++) {
-					ir_entity *entity = get_class_member(tp, i);
-					if (is_Method_type(get_entity_type(entity)))
-						continue;
-					assert(get_entity_offset(entity) > -1);
-				}
-			}
-			break;
-		case tpo_struct:
-			for (size_t i = 0, n_members = get_struct_n_members(tp);
-			     i < n_members; i++) {
-				assert(get_entity_offset(get_struct_member(tp, i)) > -1);
-			}
-			break;
-		case tpo_union:
-		case tpo_array:
-		default:
-			break;
+	if (state == layout_fixed && is_compound_type(tp)
+	 && !(tp->flags & tf_segment)) {
+		for (size_t i = 0, n_mem = get_compound_n_members(tp);
+			 i < n_mem; i++) {
+			ir_entity *entity = get_compound_member(tp, i);
+			if (is_Method_type(get_entity_type(entity)))
+				continue;
+			assert(get_entity_offset(entity) > -1);
 		}
 	}
 #endif
@@ -337,17 +322,6 @@ static void compound_free_attrs(ir_type *type)
 	DEL_ARR_F(type->attr.ca.members);
 }
 
-static size_t compound_get_n_members(const ir_type *type)
-{
-	return ARR_LEN(type->attr.ca.members);
-}
-
-static ir_entity *compound_get_member(const ir_type *type, size_t index)
-{
-	assert(index < ARR_LEN(type->attr.ca.members));
-	return type->attr.ca.members[index];
-}
-
 static void compound_add_member(ir_type *type, ir_entity *entity)
 {
 	/* try to detect double-add */
@@ -357,24 +331,14 @@ static void compound_add_member(ir_type *type, ir_entity *entity)
 
 void free_compound_entities(ir_type *type)
 {
-	for (size_t i = compound_get_n_members(type); i-- > 0; )
-		free_entity(compound_get_member(type, i));
-}
-
-static size_t compound_get_member_index(ir_type const *const type,
-                                        ir_entity const *const entity)
-{
-	for (size_t i = 0, n = compound_get_n_members(type); i < n; ++i) {
-		if (compound_get_member(type, i) == entity)
-			return i;
-	}
-	return INVALID_MEMBER_INDEX;
+	for (size_t i = get_compound_n_members(type); i-- > 0; )
+		free_entity(get_compound_member(type, i));
 }
 
 static void compound_remove_member(ir_type *type, const ir_entity *member)
 {
 	for (size_t i = 0, n = ARR_LEN(type->attr.ca.members); i < n; ++i) {
-		if (compound_get_member(type, i) == member) {
+		if (get_compound_member(type, i) == member) {
 			for (; i < n - 1; ++i)
 				type->attr.ca.members[i] = type->attr.ca.members[i+1];
 			ARR_SETLEN(ir_entity*, type->attr.ca.members, n-1);
@@ -420,20 +384,22 @@ static void add_class_member(ir_type *clss, ir_entity *member)
 	compound_add_member(clss, member);
 }
 
-size_t (get_class_n_members)(const ir_type *clss)
+size_t get_class_n_members(const ir_type *clss)
 {
-	return get_class_n_members_(clss);
+	assert(is_Class_type(clss));
+	return get_compound_n_members(clss);
+}
+
+ir_entity *get_class_member(ir_type const *const clss, size_t const pos)
+{
+	assert(is_Class_type(clss));
+	return get_compound_member(clss, pos);
 }
 
 size_t get_class_member_index(ir_type const *clss, ir_entity const *const mem)
 {
 	assert(is_Class_type(clss));
-	return compound_get_member_index(clss, mem);
-}
-
-ir_entity *(get_class_member)(const ir_type *clss, size_t pos)
-{
-	return get_class_member_(clss, pos);
+	return get_compound_member_index(clss, mem);
 }
 
 static void remove_class_member(ir_type *clss, ir_entity *member)
@@ -593,7 +559,7 @@ const char *get_struct_name(const ir_type *strct)
 size_t get_struct_n_members(const ir_type *strct)
 {
 	assert(is_Struct_type(strct));
-	return compound_get_n_members(strct);
+	return get_compound_n_members(strct);
 }
 
 static void add_struct_member(ir_type *strct, ir_entity *member)
@@ -606,13 +572,13 @@ static void add_struct_member(ir_type *strct, ir_entity *member)
 ir_entity *get_struct_member(const ir_type *strct, size_t pos)
 {
 	assert(is_Struct_type(strct));
-	return compound_get_member(strct, pos);
+	return get_compound_member(strct, pos);
 }
 
 size_t get_struct_member_index(ir_type const *strct, ir_entity const *const mem)
 {
 	assert(is_Struct_type(strct));
-	return compound_get_member_index(strct, mem);
+	return get_compound_member_index(strct, mem);
 }
 
 static void remove_struct_member(ir_type *strct, ir_entity *member)
@@ -806,7 +772,7 @@ const char *get_union_name(const ir_type *uni)
 size_t get_union_n_members(const ir_type *uni)
 {
 	assert(is_Union_type(uni));
-	return compound_get_n_members(uni);
+	return get_compound_n_members(uni);
 }
 
 static void add_union_member(ir_type *uni, ir_entity *member)
@@ -818,13 +784,13 @@ static void add_union_member(ir_type *uni, ir_entity *member)
 ir_entity *get_union_member(const ir_type *uni, size_t pos)
 {
 	assert(is_Union_type(uni));
-	return compound_get_member(uni, pos);
+	return get_compound_member(uni, pos);
 }
 
 size_t get_union_member_index(ir_type const *uni, ir_entity const *const mem)
 {
 	assert(is_Union_type(uni));
-	return compound_get_member_index(uni, mem);
+	return get_compound_member_index(uni, mem);
 }
 
 static void remove_union_member(ir_type *uni, ir_entity *member)
@@ -996,28 +962,30 @@ int (is_Primitive_type)(const ir_type *primitive)
 	return is_primitive_type_(primitive);
 }
 
-
 int (is_atomic_type)(const ir_type *tp)
 {
 	return is_atomic_type_(tp);
 }
 
-size_t get_compound_n_members(const ir_type *tp)
+size_t (get_compound_n_members)(ir_type const *const type)
 {
-	const tp_op *op = get_type_tpop(tp);
-	return op->ops.get_n_members(tp);
+	return get_compound_n_members_(type);
 }
 
-ir_entity *get_compound_member(const ir_type *tp, size_t pos)
+ir_entity *(get_compound_member)(ir_type const *const type, size_t const pos)
 {
-	const tp_op *op = get_type_tpop(tp);
-	return op->ops.get_member(tp, pos);
+	return get_compound_member_(type, pos);
 }
 
-size_t get_compound_member_index(ir_type const *tp, ir_entity const *const mem)
+size_t get_compound_member_index(ir_type const *const type,
+                                 ir_entity const *const entity)
 {
-	const tp_op *op = get_type_tpop(tp);
-	return op->ops.get_member_index(tp, mem);
+	assert(is_compound_type(type));
+	for (size_t i = 0, n = get_compound_n_members(type); i < n; ++i) {
+		if (get_compound_member(type, i) == entity)
+			return i;
+	}
+	return INVALID_MEMBER_INDEX;
 }
 
 void set_compound_variable_size(ir_type *tp, int variable_size_flag)
@@ -1106,8 +1074,8 @@ ir_type *clone_frame_type(ir_type *type)
 	assert(irp_resources_reserved(irp) & IRP_RESOURCE_ENTITY_LINK);
 
 	ir_type *res = new_type_frame();
-	for (size_t i = 0, n = get_class_n_members(type); i < n; ++i) {
-		ir_entity *ent  = get_class_member(type, i);
+	for (size_t i = 0, n = get_compound_n_members(type); i < n; ++i) {
+		ir_entity *ent  = get_compound_member(type, i);
 		ir_entity *nent = copy_entity_own(ent, res);
 		set_entity_link(ent, nent);
 		set_entity_link(nent, ent);
@@ -1196,8 +1164,8 @@ ir_entity *frame_alloc_area(ir_type *frame_type, int size, unsigned alignment,
 	if (at_start) {
 		unsigned delta = (size + frame_align - 1) & ~(frame_align - 1);
 		/* fix all offsets so far */
-		for (size_t i = 0, n = get_class_n_members(frame_type); i < n; ++i) {
-			ir_entity *ent = get_class_member(frame_type, i);
+		for (size_t i = 0, n = get_compound_n_members(frame_type); i < n; ++i) {
+			ir_entity *ent = get_compound_member(frame_type, i);
 
 			set_entity_offset(ent, get_entity_offset(ent) + delta);
 		}

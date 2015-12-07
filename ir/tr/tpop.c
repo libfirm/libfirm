@@ -46,18 +46,12 @@ static const tp_op_ops
 		.free_attrs         = free_class_attrs,
 		.free_entities      = free_compound_entities,
 		.set_type_size      = set_default_size,
-		.get_n_members      = get_class_n_members,
-		.get_member         = get_class_member,
-		.get_member_index   = get_class_member_index
 	},
 	/** tpop operations for struct types */
 	struct_ops = {
 		.free_attrs         = free_struct_attrs,
 		.free_entities      = free_compound_entities,
 		.set_type_size      = set_default_size,
-		.get_n_members      = get_struct_n_members,
-		.get_member         = get_struct_member,
-		.get_member_index   = get_struct_member_index
 	},
 	/** tpop operations for method types */
 	method_ops = {
@@ -68,9 +62,6 @@ static const tp_op_ops
 		.free_attrs       = free_union_attrs,
 		.free_entities    = free_compound_entities,
 		.set_type_size    = set_default_size,
-		.get_n_members    = get_union_n_members,
-		.get_member       = get_union_member,
-		.get_member_index = get_union_member_index
 	},
 	/** tpop operations for array types */
 	array_ops = {
