@@ -135,11 +135,28 @@ void free_type_entities(ir_type *const type)
 		free_compound_entities(type);
 }
 
-static void free_type_attrs(ir_type *tp)
+static void free_type_attrs(ir_type *const type)
 {
-	const tp_op *tpop = get_type_tpop(tp);
-	if (tpop->ops.free_attrs)
-		tpop->ops.free_attrs(tp);
+	switch (type->type_op->code) {
+	case tpo_class:
+		free_class_attrs(type);
+		return;
+	case tpo_union:
+	case tpo_struct:
+		free_compound_attrs(type);
+		return;
+	case tpo_method:
+		free_method_attrs(type);
+		return;
+	case tpo_code:
+	case tpo_primitive:
+	case tpo_pointer:
+	case tpo_array:
+	case tpo_unknown:
+	case tpo_uninitialized:
+		return;
+	}
+	panic("Invalid type");
 }
 
 void free_type(ir_type *tp)

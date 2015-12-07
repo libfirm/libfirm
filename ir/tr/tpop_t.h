@@ -19,20 +19,11 @@
 #define get_tpop_code(op)      _get_tpop_code(op)
 #define get_tpop_ident(op)     _get_tpop_ident(op)
 
-/**
- * tp_op operations.
- */
-typedef struct tp_op_ops {
-	/** Called to free the attributes of a type. */
-	void (*free_attrs)(ir_type *type);
-} tp_op_ops;
-
 /** The type opcode. */
 struct tp_op {
 	tp_opcode code;      /**< The tpop code. */
 	ident     *name;     /**< The name of the type opcode. */
 	size_t    attr_size; /**< The attribute size for a type of this opcode. */
-	tp_op_ops ops;       /**< tp_op operations. */
 };
 
 /**
@@ -46,11 +37,9 @@ struct tp_op {
  * @param name        an ident for the name of the type opcode.
  * @param attr_size   the size of the attributes necessary for a type with
  *                    this opcode
- * @param ops         the tp_op operations for this type
  * @return A new type opcode.
  */
-tp_op const *new_tpop(tp_opcode code, ident *name, size_t attr_size,
-                      tp_op_ops const *ops);
+tp_op const *new_tpop(tp_opcode code, ident *name, size_t attr_size);
 
 /**
  * Free a tpop data structure.
