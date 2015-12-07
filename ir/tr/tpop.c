@@ -45,13 +45,11 @@ static const tp_op_ops
 	class_ops = {
 		.free_attrs         = free_class_attrs,
 		.free_entities      = free_compound_entities,
-		.set_type_size      = set_default_size,
 	},
 	/** tpop operations for struct types */
 	struct_ops = {
 		.free_attrs         = free_struct_attrs,
 		.free_entities      = free_compound_entities,
-		.set_type_size      = set_default_size,
 	},
 	/** tpop operations for method types */
 	method_ops = {
@@ -61,14 +59,6 @@ static const tp_op_ops
 	union_ops = {
 		.free_attrs       = free_union_attrs,
 		.free_entities    = free_compound_entities,
-		.set_type_size    = set_default_size,
-	},
-	/** tpop operations for array types */
-	array_ops = {
-		.set_type_size = set_default_size,
-	},
-	primitive_ops = {
-		.set_type_size = set_default_size,
 	},
 	null_ops = {
 		.free_attrs = NULL,
@@ -81,9 +71,9 @@ void init_tpop(void)
 	type_struct    = new_tpop(tpo_struct,    NEW_IDENT("struct"),    TP_OP_FLAG_COMPOUND, sizeof(compound_attr), &struct_ops);
 	type_method    = new_tpop(tpo_method,    NEW_IDENT("method"),    0,                   sizeof(mtd_attr),      &method_ops);
 	type_union     = new_tpop(tpo_union,     NEW_IDENT("union"),     TP_OP_FLAG_COMPOUND, sizeof(compound_attr), &union_ops);
-	type_array     = new_tpop(tpo_array,     NEW_IDENT("array"),     0,                   sizeof(arr_attr),      &array_ops);
+	type_array     = new_tpop(tpo_array,     NEW_IDENT("array"),     0,                   sizeof(arr_attr),      &null_ops);
 	type_pointer   = new_tpop(tpo_pointer,   NEW_IDENT("pointer"),   0,                   sizeof(ptr_attr),      &null_ops);
-	type_primitive = new_tpop(tpo_primitive, NEW_IDENT("primitive"), 0,                   0,                     &primitive_ops);
+	type_primitive = new_tpop(tpo_primitive, NEW_IDENT("primitive"), 0,                   0,                     &null_ops);
 	tpop_code      = new_tpop(tpo_code,      NEW_IDENT("code"),      0,                   0,                     &null_ops);
 	tpop_unknown   = new_tpop(tpo_unknown,   NEW_IDENT("Unknown"),   0,                   0,                     &null_ops);
 }

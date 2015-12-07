@@ -222,8 +222,7 @@ void set_type_visibility(ir_type *tp, ir_visibility v)
 
 void set_type_size_bytes(ir_type *tp, unsigned size)
 {
-	const tp_op *tpop = get_type_tpop(tp);
-	tpop->ops.set_type_size(tp, size);
+	tp->size = size;
 }
 
 unsigned (get_type_alignment_bytes)(const ir_type *type)
@@ -1081,11 +1080,6 @@ ir_type *clone_frame_type(ir_type *type)
 		set_entity_link(nent, ent);
 	}
 	return res;
-}
-
-void set_default_size(ir_type *tp, unsigned size)
-{
-	tp->size = size;
 }
 
 void default_layout_compound_type(ir_type *type)
