@@ -654,7 +654,6 @@ static void write_type_pointer(write_env_t *env, ir_type *tp)
 	write_type(env, points_to);
 
 	write_type_common(env, tp);
-	write_mode_ref(env, get_type_mode(tp));
 	write_type_ref(env, points_to);
 	fputc('\n', env->file);
 }
@@ -1703,10 +1702,8 @@ static void read_type(read_env_t *env)
 	}
 
 	case tpo_pointer: {
-		ir_mode *mode     = read_mode_ref(env);
 		ir_type *pointsto = get_type(env, read_long(env));
 		type = new_type_pointer(pointsto);
-		set_pointer_mode(type, mode);
 		goto finish_type;
 	}
 

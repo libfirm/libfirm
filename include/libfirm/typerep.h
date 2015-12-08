@@ -1427,9 +1427,6 @@ FIRM_API int is_Array_type(const ir_type *array);
 /** Creates a new type pointer. */
 FIRM_API ir_type *new_type_pointer(ir_type *points_to);
 
-/** Set mode of a pointer typer. */
-FIRM_API void set_pointer_mode(ir_type *pointer, ir_mode *mode);
-
 /** Sets the type to which a pointer points to. */
 FIRM_API void set_pointer_points_to_type(ir_type *pointer, ir_type *tp);
 

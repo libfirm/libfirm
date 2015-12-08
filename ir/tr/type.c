@@ -871,14 +871,6 @@ int (is_Pointer_type)(const ir_type *pointer)
 	return is_pointer_type_(pointer);
 }
 
-void set_pointer_mode(ir_type *tp, ir_mode *mode)
-{
-	assert(is_Pointer_type(tp));
-	assert(mode_is_reference(mode));
-	tp->size = get_mode_size_bytes(mode);
-	tp->mode = mode;
-}
-
 ir_type *find_pointer_type_to_type(ir_type *tp)
 {
 	for (size_t i = 0, n = get_irp_n_types(); i < n; ++i) {
