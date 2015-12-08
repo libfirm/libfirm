@@ -9,44 +9,26 @@
 #include "lc_opts_t.h"
 #include "lc_opts_enum.h"
 #include "util.h"
-#include "xmalloc.h"
-
-static const char *delim = " \t|,";
 
 #define DECL_CB(N, op) \
-bool lc_opt_enum_ ## N ## _cb(void *const data, size_t const len, char const *const arg) \
+bool lc_opt_enum_##N##_cb(void *const data, size_t const len, char const *const arg) \
 { \
-	lc_opt_enum_ ## N ## _var_t *var           = (lc_opt_enum_ ## N ## _var_t*)data; \
-	const lc_opt_enum_ ## N ## _items_t *items = var->items; \
- \
-	char *s, *tmp; \
-	size_t begin, end; \
+	lc_opt_enum_##N##_var_t const *const var = (lc_opt_enum_##N##_var_t*)data; \
+	(void)len; \
+	\
 	bool res = false; \
- \
-	(void) len; \
-	\
-	end     = strlen(arg); \
-	tmp = s = (char*)malloc((end + 1) * sizeof(arg[0])); \
-	strcpy(s, arg); \
-	s[end]  = '\0'; \
-	\
-	end = 0; \
-	while (arg[end] != '\0') { \
-		unsigned int i; \
-		\
-		begin  = end + strspn(arg + end, delim); \
-		end    = begin + strcspn(arg + begin, delim); \
-		s      = tmp + begin; \
-		s[end - begin] = '\0'; \
-		\
-		for (i = 0; items[i].name != NULL; ++i) { \
-			if (streq(s, items[i].name)) { \
-				*var->value op items[i].value; \
+	for (char const *a = arg; *a != '\0';) { \
+		char const *const delim = " \t|,"; \
+		a += strspn(a, delim); \
+		char const *const end = a + strcspn(a, delim); \
+		for (lc_opt_enum_##N##_items_t const *i = var->items; i->name; ++i) { \
+			if (strstart(a, i->name) == end) { \
+				*var->value op i->value; \
 				res = true; \
 			} \
 		} \
+		a = end; \
 	} \
-	free(tmp); \
 	return res; \
 } \
 
