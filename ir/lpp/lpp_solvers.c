@@ -12,7 +12,13 @@
 #include "lpp_gurobi.h"
 #include "util.h"
 
-lpp_solver_t lpp_solvers[] = {
+typedef struct lpp_solver_t {
+	lpp_solver_func_t *solver;
+	char        const *name;
+	int                n_instances;
+} lpp_solver_t;
+
+static lpp_solver_t const lpp_solvers[] = {
 #ifdef WITH_CPLEX
 	{ lpp_solve_cplex,   "cplex",   1 },
 #endif
@@ -22,16 +28,15 @@ lpp_solver_t lpp_solvers[] = {
 	{ NULL,              NULL,      0 }
 };
 
-lpp_solver_func_t *lpp_find_solver(const char *name)
+lpp_solver_func_t *lpp_find_solver(char const *const name)
 {
-	int i;
-
 	if (name[0] == '\0')
 		return lpp_solvers[0].solver;
 
-	for(i = 0; lpp_solvers[i].solver != NULL; i++)
-		if (streq(lpp_solvers[i].name, name))
-			return lpp_solvers[i].solver;
+	for (lpp_solver_t const *i = lpp_solvers; i->solver; ++i) {
+		if (streq(i->name, name))
+			return i->solver;
+	}
 
 	return NULL;
 }
