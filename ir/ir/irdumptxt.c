@@ -660,13 +660,9 @@ static void dump_compound_members(FILE *const F, ir_type const *const type)
 
 	fprintf(F, "\n  members:\n");
 	for (size_t i = 0, n = get_compound_n_members(type); i < n; ++i) {
-		const ir_entity *mem = get_compound_member(type, i);
-		if (is_method_entity(mem)) {
-			if (!(verbosity & dump_verbosity_methods))
-				continue;
-		} else if (!(verbosity & dump_verbosity_fields))
-			continue;
-		dump_entity_to_file_prefix(F, mem, "    ");
+		ir_entity const *const mem = get_compound_member(type, i);
+		if (verbosity & (is_method_entity(mem) ? dump_verbosity_methods : dump_verbosity_fields))
+			dump_entity_to_file_prefix(F, mem, "    ");
 	}
 }
 
