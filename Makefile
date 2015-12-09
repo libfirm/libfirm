@@ -26,7 +26,7 @@ AR ?= ar
 DLLEXT ?= .so
 
 # Variants
-CFLAGS_all        = -std=c99 -fPIC -DHAVE_FIRM_REVISION_H -DWITH_GUROBI -I/data1/mohr/gurobi510/linux64/include
+CFLAGS_all        = -std=gnu99 -fPIC -DHAVE_FIRM_REVISION_H
 CFLAGS_debug      = $(CFLAGS_all) -O0 -g3 -DDEBUG_libfirm
 CFLAGS_profile    = $(CFLAGS_all) -O3 -pg -DNDEBUG -fno-inline
 CFLAGS_coverage   = $(CFLAGS_all) -O0 --coverage -DDEBUG_libfirm
