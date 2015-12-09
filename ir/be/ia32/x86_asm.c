@@ -31,13 +31,12 @@
 
 arch_register_t const *x86_parse_clobber(x86_clobber_name_t const *const additional_clobber_names, char const *const clobber)
 {
-	arch_register_t const *reg = arch_find_register(clobber);
-	if (reg != NULL)
+	arch_register_t const *const reg = arch_find_register(clobber);
+	if (reg)
 		return reg;
-	arch_register_t const *const regs = isa_if->registers;
-	for (size_t i = 0; additional_clobber_names[i].name != NULL; ++i) {
-		if (streq(additional_clobber_names[i].name, clobber))
-			return &regs[additional_clobber_names[i].index];
+	for (x86_clobber_name_t const *i = additional_clobber_names; i->name; ++i) {
+		if (streq(i->name, clobber))
+			return &isa_if->registers[i->index];
 	}
 	return NULL;
 }
