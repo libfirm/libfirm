@@ -229,11 +229,6 @@ static bool can_inline(ir_node *call, ir_graph *called_graph)
 	return res;
 }
 
-enum exc_mode {
-	exc_handler,    /**< There is a handler. */
-	exc_no_handler  /**< Exception handling not represented. */
-};
-
 /**
  * copy all entities on the stack frame on 1 irg to the stack frame of another.
  * Sets entity links of the old entities to the copies
@@ -349,18 +344,17 @@ static bool inline_method(ir_node *const call, ir_graph *called_graph)
 	clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_ENTITY_USAGE);
 	edges_deactivate(irg);
 
-	/* -- Decide how to handle exception control flow: Is there a handler
-	   for the Call node, or do we branch directly to End on an exception?
-	   exc_handling:
-	   0 There is a handler.
-	   2 Exception handling not represented in Firm. -- */
-	ir_node *Xproj = NULL;
+	/* Decide how to handle exception control flow: Is there a handler
+	   for the Call node, or do we branch directly to End on an exception? */
+	bool has_exception = false;
 	for (ir_node *proj = (ir_node*)get_irn_link(call); proj != NULL;
-		 proj = (ir_node*)get_irn_link(proj)) {
+	     proj = (ir_node*)get_irn_link(proj)) {
 		unsigned proj_nr = get_Proj_num(proj);
-		if (proj_nr == pn_Call_X_except) Xproj = proj;
+		if (proj_nr == pn_Call_X_except) {
+			has_exception = true;
+			break;
+		}
 	}
-	enum exc_mode exc_handling = Xproj != NULL ? exc_handler : exc_no_handler;
 
 	/* entity link is used to link entities on old stack frame to the
 	 * new stack frame */
@@ -573,7 +567,7 @@ static bool inline_method(ir_node *const call, ir_graph *called_graph)
 	   branches to the End node.
 	 */
 	ir_node *call_x_exc;
-	if (exc_handling == exc_handler) {
+	if (has_exception) {
 		int n_exc = 0;
 		for (int i = 0; i < arity; i++) {
 			ir_node *ret = get_Block_cfgpred(end_bl, i);
@@ -595,7 +589,6 @@ static bool inline_method(ir_node *const call, ir_graph *called_graph)
 			call_x_exc = new_r_Bad(irg, mode_X);
 		}
 	} else {
-		/* assert(exc_handling == 1 || no exceptions. ) */
 		int n_exc = 0;
 		for (int i = 0; i < arity; i++) {
 			ir_node *ret = get_Block_cfgpred(end_bl, i);
