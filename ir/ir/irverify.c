@@ -533,7 +533,7 @@ static int verify_node_Return(const ir_node *n)
 
 static int verify_node_Raise(const ir_node *n)
 {
-	bool fine = check_mode(n, mode_X);
+	bool fine = check_mode(n, mode_T);
 	fine &= check_input_func(n, n_Raise_exo_ptr, "exo_ptr", mode_is_reference, "reference");
 	fine &= check_input_mode(n, n_Raise_mem, "mem", mode_M);
 	return fine;
