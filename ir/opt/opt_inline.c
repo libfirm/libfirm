@@ -327,6 +327,22 @@ static bool inline_method(ir_node *const call, ir_graph *called_graph)
 
 	DB((dbg, LEVEL_1, "Inlining %+F(%+F) into %+F\n", call, called_graph, irg));
 
+	/* Check if the Call has an X_except block (landing pad).
+	 * This has to be done here as later below we disable out edges. */
+	ir_node const *x_except_block = NULL;
+	if (ir_throws_exception(call)) {
+		assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
+		ir_node const *const x_except_proj = get_Proj_for_pn(call, call->op->pn_x_except);
+		if (x_except_proj != NULL) {
+			assert(get_irn_n_edges(x_except_proj) == 1);
+			assert(get_irn_n_edges_kind(x_except_proj, EDGE_KIND_BLOCK) == 0);
+			x_except_block = get_edge_src_irn(get_irn_out_edge_first(x_except_proj));
+			if (x_except_block == get_irg_end_block(irg)) {
+				x_except_block = NULL;
+			}
+		}
+	}
+
 	/* optimizations can cause problems when allocating new nodes */
 	int rem_opt = get_optimize();
 	set_optimize(0);
@@ -541,27 +557,46 @@ static bool inline_method(ir_node *const call, ir_graph *called_graph)
 		call_res = new_r_Bad(irg, mode_T);
 	}
 
-	/* Finally the exception control flow.
-	   We have two possible situations:
-	   First if the Call branches to an exception handler:
+	/* Finally the exception control flow.  We have two possible situations:
+
+	   Case 1) The Call branches to an X_except block that is not the end block.
 	   We need to add a Phi node to collect the memory containing the exception
 	   objects.  Further we need to add another block to get a correct
 	   representation of this Phi.  To this block we add a Jmp that resolves
 	   into the X output of the Call when the Call is turned into a tuple.
-	   Second: There is no exception edge. Just add all inlined exception
-	   branches to the End node.
+
+	   Case 2) There is no X_except block. This also includes the case that the
+	   Call has an X_except out that branches directly to the end block.
+	   => Just add all inlined exception branches to the End node.
 	 */
-	ir_node *call_x_exc;
-	if (ir_throws_exception(call)) {
-		int n_exc = 0;
-		for (int i = 0; i < arity; i++) {
-			ir_node *ret = get_Block_cfgpred(end_bl, i);
-			ir_node *irn = skip_Proj(ret);
-			if (is_fragile_op(irn) || is_Raise(irn)) {
-				cf_pred[n_exc] = ret;
-				++n_exc;
-			}
+	int n_exc = 0;
+	for (int i = 0; i < arity; i++) {
+		ir_node *ret = get_Block_cfgpred(end_bl, i);
+		if (is_x_except_branch(ret)) {
+			cf_pred[n_exc] = ret;
+			n_exc++;
 		}
+	}
+	ir_node *call_x_exc;
+	if (x_except_block != NULL) {
+		/* Wire inlined except flow into a common successor block that is used
+		 * as X_except input to the tuple constructed later.
+		 * exc1 exc2 exc3
+		 *   \   |   /
+		 *   +-------+
+		 *   |  Jmp  |
+		 *   +---|---+
+		 *       |
+		 *   +-------+
+		 *   | Tuple |
+		 *   +-------+
+		 *  This has the effect that if an exception happens in one of the
+		 *  inlined places, first the inlined handler ("exc1") and then the
+		 *  Call's exception handler ("x_except_block") is executed.
+		 *
+		 *  As an optimization, if there's only one inlined handler, we can
+		 *  directly route it into the tuple, circumventing the need to create
+		 *  an intermedite block. */
 		if (n_exc > 0) {
 			if (n_exc == 1) {
 				/* simple fix */
@@ -574,16 +609,14 @@ static bool inline_method(ir_node *const call, ir_graph *called_graph)
 			call_x_exc = new_r_Bad(irg, mode_X);
 		}
 	} else {
-		int n_exc = 0;
-		for (int i = 0; i < arity; i++) {
-			ir_node *ret = get_Block_cfgpred(end_bl, i);
-			ir_node *irn = skip_Proj(ret);
-
-			if (is_fragile_op(irn) || is_Raise(irn)) {
-				cf_pred[n_exc] = ret;
-				n_exc++;
-			}
-		}
+		/* Directly wire the inline except flow to the end block as the Call
+		 * either has no exception flow at all or the exception flow consists
+		 * only of an X_except Proj directly connected to the End block.  If
+		 * the Call has an X_except Proj, we can safely ignore it here: Either
+		 * the inlined method has some exception flow, then any place where an
+		 * exception may happen is covered by rewiring its handler to the End
+		 * block. Or the inlined method doesn't have any exception flow either,
+		 * then there's no exception flow at all to worry about. */
 		ir_node  *main_end_bl       = get_irg_end_block(irg);
 		int       main_end_bl_arity = get_irn_arity(main_end_bl);
 		ir_node **end_preds         = XMALLOCN(ir_node*, n_exc+main_end_bl_arity);
@@ -1051,6 +1084,7 @@ static void maybe_push_call(pqueue_t *pqueue, call_entry *call,
 
 	pqueue_put(pqueue, call, benefice);
 }
+
 
 /**
  * Try to inline calls into a graph.
