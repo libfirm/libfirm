@@ -136,7 +136,7 @@ ir/ir/irio.c : $(gendir)/ir/ir/gen_irio.c.inl
 $(libfirm_a): $(libfirm_OBJECTS)
 	@echo AR $@
 	$(Q)rm -f $@
-	$(Q)$(AR) -crsu $@ $^
+	$(Q)$(AR) -crs $@ $^
 
 $(libfirm_dll): $(libfirm_OBJECTS)
 	@echo LINK $@
