@@ -49,7 +49,8 @@ endif
 
 # General flags
 CPPFLAGS  ?=
-CFLAGS    += $(CFLAGS_$(variant)) -std=c99 -fPIC -DHAVE_FIRM_REVISION_H
+PICFLAG   ?= -fPIC
+CFLAGS    += $(CFLAGS_$(variant)) -std=c99 $(PICFLAG) -DHAVE_FIRM_REVISION_H
 CFLAGS    += -Wall -W -Wextra -Wstrict-prototypes -Wmissing-prototypes -Wwrite-strings
 LINKFLAGS += $(LINKFLAGS_$(variant)) -lm
 VPATH = $(srcdir) $(gendir)
