@@ -317,10 +317,10 @@ static ir_entity *create_float_const_entity(ir_tarval *tv, ident *name)
 			name = id_unique("C%u");
 
 		ir_type *const tp = get_prim_type(mode);
-		res = new_entity(get_glob_type(), name, tp);
+		res = new_global_entity(get_glob_type(), name, tp,
+		                        ir_visibility_private,
+		                        IR_LINKAGE_CONSTANT | IR_LINKAGE_NO_IDENTITY);
 		set_entity_ld_ident(res, get_entity_ident(res));
-		set_entity_visibility(res, ir_visibility_private);
-		add_entity_linkage(res, IR_LINKAGE_CONSTANT | IR_LINKAGE_NO_IDENTITY);
 
 		ir_initializer_t *const initializer = create_initializer_tarval(tv);
 		set_entity_initializer(res, initializer);
@@ -579,11 +579,11 @@ ir_entity *ia32_gen_fp_known_const(ia32_known_const_t const kct)
 			ir_type *type  = get_prim_type(ia32_mode_float32);
 			ir_type *atype = ia32_create_float_array(type);
 
-			ent = new_entity(get_glob_type(), name, atype);
+			ent = new_global_entity(get_glob_type(), name, atype,
+			                        ir_visibility_private,
+			                        IR_LINKAGE_CONSTANT|IR_LINKAGE_NO_IDENTITY);
 
 			set_entity_ld_ident(ent, name);
-			set_entity_visibility(ent, ir_visibility_private);
-			add_entity_linkage(ent, IR_LINKAGE_CONSTANT|IR_LINKAGE_NO_IDENTITY);
 
 			ir_initializer_t *initializer = create_initializer_compound(2);
 			set_initializer_compound_value(initializer, 0,
@@ -2926,9 +2926,9 @@ static ir_node *gen_Switch(ir_node *node)
 
 	ir_type   *const utype = get_unknown_type();
 	ir_entity *const entity
-		= new_entity(irp->dummy_owner, id_unique("TBL%u"), utype);
-	set_entity_visibility(entity, ir_visibility_private);
-	add_entity_linkage(entity, IR_LINKAGE_CONSTANT | IR_LINKAGE_NO_IDENTITY);
+		= new_global_entity(irp->dummy_owner, id_unique("TBL%u"), utype,
+		                    ir_visibility_private,
+		                    IR_LINKAGE_CONSTANT | IR_LINKAGE_NO_IDENTITY);
 
 	ir_graph              *irg   = get_irn_irg(node);
 	const ir_switch_table *table = get_Switch_table(node);
@@ -3335,7 +3335,10 @@ static ir_entity *ia32_create_const_array(ir_node *c0, ir_node *c1,
 	ir_type *tp = get_prim_type(mode);
 	tp = ia32_create_float_array(tp);
 
-	ir_entity *ent = new_entity(get_glob_type(), id_unique("C%u"), tp);
+	ir_entity *ent
+		= new_global_entity(get_glob_type(), id_unique("C%u"), tp,
+		                    ir_visibility_private,
+		                    IR_LINKAGE_CONSTANT | IR_LINKAGE_NO_IDENTITY);
 
 	set_entity_ld_ident(ent, get_entity_ident(ent));
 	set_entity_visibility(ent, ir_visibility_private);

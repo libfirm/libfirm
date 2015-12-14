@@ -1238,9 +1238,8 @@ static void emit_ia32_GetEIP(const ir_node *node)
 		char const *const name = get_register_name_16bit(reg);
 		ident      *const id   = new_id_fmt("__x86.get_pc_thunk.%s", name);
 		ir_type    *const tp   = get_thunk_type();
-		thunk = new_entity(glob, id, tp);
-		set_entity_visibility(thunk, ir_visibility_external_private);
-		add_entity_linkage(thunk, IR_LINKAGE_MERGE|IR_LINKAGE_GARBAGE_COLLECT);
+		thunk = new_global_entity(glob, id, tp, ir_visibility_external_private,
+		                          IR_LINKAGE_MERGE|IR_LINKAGE_GARBAGE_COLLECT);
 		/* Note that we do not create a proper method graph, but rather cheat
 		 * later and emit the instructions manually. This is just necessary so
 		 * firm knows we will actually output code for this entity. */

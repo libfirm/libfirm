@@ -1169,9 +1169,9 @@ static ir_entity *create_float_const_entity(ir_tarval *const tv)
 	ir_mode *mode   = get_tarval_mode(tv);
 	ir_type *type   = get_type_for_mode(mode);
 	ir_type *glob   = get_glob_type();
-	entity = new_entity(glob, id_unique("C%u"), type);
-	set_entity_visibility(entity, ir_visibility_private);
-	add_entity_linkage(entity, IR_LINKAGE_CONSTANT | IR_LINKAGE_NO_IDENTITY);
+	entity = new_global_entity(glob, id_unique("C%u"), type,
+	                           ir_visibility_private,
+	                           IR_LINKAGE_CONSTANT | IR_LINKAGE_NO_IDENTITY);
 
 	ir_initializer_t *initializer = create_initializer_tarval(tv);
 	set_entity_initializer(entity, initializer);
@@ -1245,9 +1245,9 @@ static ir_node *gen_Switch(ir_node *node)
 
 	ir_type   *const utype = get_unknown_type();
 	ir_entity *const entity
-		= new_entity(irp->dummy_owner, id_unique("TBL%u"), utype);
-	set_entity_visibility(entity, ir_visibility_private);
-	add_entity_linkage(entity, IR_LINKAGE_CONSTANT | IR_LINKAGE_NO_IDENTITY);
+		= new_global_entity(irp->dummy_owner, id_unique("TBL%u"), utype,
+		                    ir_visibility_private,
+		                    IR_LINKAGE_CONSTANT | IR_LINKAGE_NO_IDENTITY);
 
 	/* construct base address */
 	ir_node *table_address = make_address(dbgi, new_block, entity, 0);

@@ -1795,7 +1795,7 @@ static void read_entity(read_env_t *env, ir_entity_kind kind)
 	switch (kind) {
 	case IR_ENTITY_ALIAS: {
 		ir_entity *aliased = read_entity_ref(env);
-		entity = new_alias_entity(owner, name, aliased, type);
+		entity = new_alias_entity(owner, name, aliased, type, visibility);
 		break;
 	}
 	case IR_ENTITY_NORMAL:

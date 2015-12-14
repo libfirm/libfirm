@@ -1163,10 +1163,9 @@ static void ia32_select_instructions(ir_graph *irg)
 		if (mcount == NULL) {
 			ir_type *tp = new_type_method(0, 0);
 			ident   *id = new_id_from_str("mcount");
-			mcount = new_entity(get_glob_type(), id, tp);
-			/* FIXME: enter the right ld_ident here */
-			set_entity_ld_ident(mcount, get_entity_ident(mcount));
-			set_entity_visibility(mcount, ir_visibility_external);
+			mcount = new_global_entity(get_glob_type(), id, tp,
+			                           ir_visibility_external,
+			                           IR_LINKAGE_DEFAULT);
 		}
 		instrument_initcall(irg, mcount);
 	}

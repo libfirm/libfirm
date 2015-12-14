@@ -118,9 +118,9 @@ static ir_entity *create_64_intrinsic_fkt(ir_type *method, const ir_op *op,
 	}
 	ident     *id     = new_id_from_str(name);
 	ir_type   *glob   = get_glob_type();
-	ir_entity *result = new_entity(glob, id, method);
-	set_entity_ld_ident(result, id);
-	set_entity_visibility(result, ir_visibility_external);
+	ir_entity *result = new_global_entity(glob, id, method,
+	                                      ir_visibility_external,
+	                                      IR_LINKAGE_DEFAULT);
 	return result;
 }
 

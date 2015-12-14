@@ -32,20 +32,22 @@ ir_entity *get_unknown_entity(void)
 }
 
 static ir_entity *intern_new_entity(ir_type *owner, ir_entity_kind kind,
-                                    ident *name, ir_type *type)
+                                    ident *name, ir_type *type,
+                                    ir_visibility visibility)
 {
 	assert(owner != NULL);
 
 	ir_entity *res = XMALLOCZ(ir_entity);
 	res->kind        = k_entity;
 	res->name        = name;
+	res->ld_name     = name;
 	res->type        = type;
 	res->owner       = owner;
 	res->entity_kind = kind;
 	res->volatility  = volatility_non_volatile;
 	res->aligned     = align_is_aligned;
 	res->usage       = ir_usage_unknown;
-	res->visibility  = ir_visibility_external;
+	res->visibility  = visibility;
 	res->nr          = get_irp_new_node_nr();
 
 	/* Remember entity in its owner. */
@@ -55,11 +57,12 @@ static ir_entity *intern_new_entity(ir_type *owner, ir_entity_kind kind,
 	return res;
 }
 
-ir_entity *new_entity(ir_type *owner, ident *name, ir_type *type)
+static ir_entity *new_entity_vis(ir_type *owner, ident *name, ir_type *type,
+                                 ir_visibility vis)
 {
 	ir_entity *res;
 	if (is_Method_type(type)) {
-		res = intern_new_entity(owner, IR_ENTITY_METHOD, name, type);
+		res = intern_new_entity(owner, IR_ENTITY_METHOD, name, type, vis);
 		res->linkage                     = IR_LINKAGE_CONSTANT;
 		res->attr.mtd_attr.properties    = get_method_additional_properties(type);
 		res->attr.mtd_attr.vtable_number = IR_VTABLE_NUM_NOT_SET;
@@ -67,12 +70,28 @@ ir_entity *new_entity(ir_type *owner, ident *name, ir_type *type)
 		res->attr.mtd_attr.param_weight  = NULL;
 		res->attr.mtd_attr.irg           = NULL;
 	} else if (is_compound_type(owner) && !is_segment_type(owner)) {
-		res = intern_new_entity(owner, IR_ENTITY_COMPOUND_MEMBER, name, type);
+		res = intern_new_entity(owner, IR_ENTITY_COMPOUND_MEMBER, name, type,
+		                        vis);
 		res->attr.compound_member.offset = -1;
 	} else {
-		res = intern_new_entity(owner, IR_ENTITY_NORMAL, name, type);
+		res = intern_new_entity(owner, IR_ENTITY_NORMAL, name, type, vis);
 	}
 
+	hook_new_entity(res);
+	return res;
+}
+
+ir_entity *new_entity(ir_type *owner, ident *name, ir_type *type)
+{
+	return new_entity_vis(owner, name, type, ir_visibility_external);
+}
+
+ir_entity *new_global_entity(ir_type *segment, ident *ld_name, ir_type *type,
+                             ir_visibility visibility, ir_linkage linkage)
+{
+	assert(is_segment_type(segment) || segment == irp->dummy_owner);
+	ir_entity *res = new_entity_vis(segment, ld_name, type, visibility);
+	add_entity_linkage(res, linkage);
 	hook_new_entity(res);
 	return res;
 }
@@ -80,7 +99,8 @@ ir_entity *new_entity(ir_type *owner, ident *name, ir_type *type)
 ir_entity *new_parameter_entity(ir_type *owner, size_t pos, ir_type *type)
 {
 	ident     *name = new_id_fmt("parameter.%lu", (unsigned long)pos);
-	ir_entity *res  = intern_new_entity(owner, IR_ENTITY_PARAMETER, name, type);
+	ir_entity *res  = intern_new_entity(owner, IR_ENTITY_PARAMETER, name, type,
+	                                    ir_visibility_private);
 	res->attr.compound_member.offset = -1;
 	res->attr.parameter.number = pos;
 	hook_new_entity(res);
@@ -92,16 +112,17 @@ ir_entity *new_label_entity(ir_label_t label)
 	ident *name = id_unique("label_%u");
 	ir_type *global_type = get_glob_type();
 	ir_entity *res = intern_new_entity(global_type, IR_ENTITY_LABEL, name,
-	                                   get_code_type());
+	                                   get_code_type(), ir_visibility_private);
 	res->attr.code_attr.label = label;
 	hook_new_entity(res);
 	return res;
 }
 
 ir_entity *new_alias_entity(ir_type *owner, ident *name, ir_entity *aliased,
-                            ir_type *type)
+                            ir_type *type, ir_visibility visibility)
 {
-	ir_entity *res = intern_new_entity(owner, IR_ENTITY_ALIAS, name, type);
+	ir_entity *res = intern_new_entity(owner, IR_ENTITY_ALIAS, name, type,
+	                                   visibility);
 	res->attr.alias.aliased = aliased;
 	hook_new_entity(res);
 	return res;
@@ -258,7 +279,8 @@ void set_entity_ld_ident(ir_entity *const ent, ident *const ld_ident)
 	ent->ld_name = ld_ident;
 	if (old_ident != ld_ident) {
 		ir_type *owner = get_entity_owner(ent);
-		if (is_segment_type(owner) && !(owner->flags & tf_info)) {
+		if (is_segment_type(owner) && !(owner->flags & tf_info)
+		 && get_entity_visibility(ent) != ir_visibility_private) {
 			pmap *globals = irp->globals;
 			pmap_insert(globals, old_ident, NULL);
 			assert(!pmap_contains(globals, ld_ident));
@@ -903,7 +925,7 @@ void ir_init_entity(ir_prog *irp)
 	ident   *const id    = new_id_from_str(UNKNOWN_ENTITY_NAME);
 	ir_type *const utype = get_unknown_type();
 	irp->unknown_entity = intern_new_entity(irp->dummy_owner, IR_ENTITY_UNKNOWN,
-	                                        id, utype);
+	                                        id, utype, ir_visibility_private);
 	set_entity_visibility(irp->unknown_entity, ir_visibility_external);
 	set_entity_ld_ident(irp->unknown_entity, id);
 	hook_new_entity(irp->unknown_entity);

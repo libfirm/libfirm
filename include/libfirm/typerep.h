@@ -209,6 +209,13 @@ FIRM_API int entity_has_definition(const ir_entity *entity);
 FIRM_API ir_entity *new_entity(ir_type *owner, ident *name, ir_type *tp);
 
 /**
+ * Creates a new global entity.
+ */
+FIRM_API ir_entity *new_global_entity(ir_type *segment, ident *ld_name,
+                                      ir_type *type, ir_visibility visibility,
+                                      ir_linkage linkage);
+
+/**
  * Creates a new entity corresponding to a function parameter.
  * This must be created on an irgs frame_type
  */
@@ -230,7 +237,8 @@ FIRM_API ir_entity *new_parameter_entity(ir_type *owner, size_t pos,
  * @return       the newly created entity
  */
 FIRM_API ir_entity *new_alias_entity(ir_type *owner, ident *name,
-                                     ir_entity *alias, ir_type *type);
+                                     ir_entity *alias, ir_type *type,
+                                     ir_visibility visibility);
 
 /**
  * Sets the entity an alias entity aliases.
