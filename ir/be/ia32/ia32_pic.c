@@ -34,8 +34,10 @@ static ir_entity *create_trampoline(be_main_env_t *be, ir_entity *method)
 	ident     *old_id = get_entity_ld_ident(method);
 	ident     *id     = new_id_fmt("%s$stub", old_id);
 	ir_type   *parent = be->pic_trampolines_type;
-	ir_entity *ent    = new_entity(parent, old_id, type);
+	ir_entity *ent    = new_entity(parent, id, type);
 	set_entity_ld_ident(ent, id);
+	/* We misuse the ident field to point to the old entity */
+	set_entity_ident(ent, old_id);
 	set_entity_visibility(ent, ir_visibility_private);
 
 	return ent;
@@ -62,8 +64,9 @@ static ir_entity *create_nonlazyptr(be_main_env_t *be, ir_entity *entity)
 	ir_type   *e_type = get_entity_type(entity);
 	ir_type   *type   = new_type_pointer(e_type);
 	ir_type   *parent = be->pic_symbols_type;
-	ir_entity *ent    = new_entity(parent, old_id, type);
+	ir_entity *ent    = new_entity(parent, id, type);
 	set_entity_ld_ident(ent, id);
+	set_entity_ident(ent, old_id);
 	set_entity_visibility(ent, ir_visibility_private);
 
 	return ent;

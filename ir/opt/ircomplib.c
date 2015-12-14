@@ -9,11 +9,12 @@
  * @date    2011-09-22
  * @author  Manuel Mohr
  */
+#include <assert.h>
+
 #include "iroptimize.h"
 #include "irprog_t.h"
+#include "type_t.h"
 #include "typerep.h"
-
-#include <assert.h>
 
 /* The default implementation does not set a different ld name. */
 static ident *compilerlib_name_mangle_default(ident *id, ir_type *mt)
@@ -38,27 +39,17 @@ compilerlib_name_mangle_t get_compilerlib_name_mangle(void)
 
 ir_entity *create_compilerlib_entity(ident *id, ir_type *mt)
 {
-	ir_entity *entity = pmap_get(ir_entity, irp->compilerlib_entities, id);
+	ident *ld_name = compilerlib_mangler(id, mt);
+
+	/* Look for existing entity. */
+	ir_entity *entity = ir_get_global(ld_name);
 	if (entity != NULL)
 		return entity;
 
-	/* let frontend mangle the name */
-	ident *ld_name = compilerlib_mangler(id, mt);
-	/* search for an existing entity */
+	/* Create a new one */
 	ir_type *glob = get_glob_type();
-	for (size_t i = 0, n_members = get_compound_n_members(glob);
-	     i < n_members; ++i) {
-	    ir_entity *member = get_compound_member(glob, i);
-	    if (get_entity_ld_ident(member) == ld_name) {
-			entity = member;
-			goto found;
-		}
-	}
-	entity = new_entity(glob, id, mt);
+	entity = new_entity(glob, ld_name, mt);
 	set_entity_ld_ident(entity, ld_name);
 	set_entity_visibility(entity, ir_visibility_external);
-
-found:
-	pmap_insert(irp->compilerlib_entities, id, entity);
 	return entity;
 }

@@ -25,7 +25,6 @@
 #define set_entity_ident(ent, id)            _set_entity_ident(ent, id)
 #define get_entity_owner(ent)                _get_entity_owner(ent)
 #define get_entity_ld_ident(ent)             _get_entity_ld_ident(ent)
-#define set_entity_ld_ident(ent, ld_ident)   _set_entity_ld_ident(ent, ld_ident)
 #define get_entity_ld_name(ent)              _get_entity_ld_name(ent)
 #define get_entity_type(ent)                 _get_entity_type(ent)
 #define get_entity_linkage(ent)              _get_entity_linkage(ent)
@@ -257,12 +256,6 @@ static inline ident *_get_entity_ld_ident(const ir_entity *ent)
 	if (ent->ld_name)
 		return ent->ld_name;
 	return ent->name;
-}
-
-static inline void _set_entity_ld_ident(ir_entity *ent, ident *ld_ident)
-{
-	assert(ent->kind == k_entity);
-	ent->ld_name = ld_ident;
 }
 
 static inline const char *_get_entity_ld_name(const ir_entity *ent)

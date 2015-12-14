@@ -185,6 +185,13 @@ FIRM_API ir_type *get_glob_type(void);
 FIRM_API ir_type *get_tls_type(void);
 
 /**
+ * Returns global entity with name \p name.
+ * A global entity is an entity in one of the segment types.
+ * \see get_glob_type(), \see get_segment_type()
+ */
+FIRM_API ir_entity *ir_get_global(ident *name);
+
+/**
  * Returns the number of all types in the irp.
  * @deprecated
  */

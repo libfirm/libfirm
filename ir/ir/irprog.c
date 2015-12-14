@@ -44,7 +44,7 @@ static ir_prog *new_incomplete_ir_prog(void)
 #ifndef NDEBUG
 	res->reserved_resources = IRP_RESOURCE_NONE;
 #endif
-	res->compilerlib_entities = pmap_create();
+	res->globals        = pmap_create();
 
 	return res;
 }
@@ -115,7 +115,8 @@ void free_ir_prog(void)
 
 	DEL_ARR_F(irp->global_asms);
 
-	pmap_destroy(irp->compilerlib_entities);
+	pmap_destroy(irp->globals);
+
 	irp->name           = NULL;
 	irp->const_code_irg = NULL;
 	free(irp);
@@ -153,6 +154,11 @@ ir_type *(get_glob_type)(void)
 ir_type *(get_tls_type)(void)
 {
 	return get_tls_type_();
+}
+
+ir_entity *ir_get_global(ident *name)
+{
+	return pmap_get(ir_entity, irp->globals, name);
 }
 
 void add_irp_irg(ir_graph *irg)

@@ -252,9 +252,19 @@ ident *(get_entity_ld_ident)(const ir_entity *ent)
 	return _get_entity_ld_ident(ent);
 }
 
-void (set_entity_ld_ident)(ir_entity *ent, ident *ld_ident)
+void set_entity_ld_ident(ir_entity *const ent, ident *const ld_ident)
 {
-	_set_entity_ld_ident(ent, ld_ident);
+	ident *old_ident = get_entity_ld_ident(ent);
+	ent->ld_name = ld_ident;
+	if (old_ident != ld_ident) {
+		ir_type *owner = get_entity_owner(ent);
+		if (is_segment_type(owner) && !(owner->flags & tf_info)) {
+			pmap *globals = irp->globals;
+			pmap_insert(globals, old_ident, NULL);
+			assert(!pmap_contains(globals, ld_ident));
+			pmap_insert(globals, ld_ident, ent);
+		}
+	}
 }
 
 const char *(get_entity_ld_name)(const ir_entity *ent)

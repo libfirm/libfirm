@@ -43,6 +43,7 @@ struct ir_prog {
 	ir_graph  *main_irg;            /**< The entry point to the compiled program
 	                                     or NULL if no point exists. */
 	ir_graph **graphs;              /**< A list of all graphs in the ir. */
+	pmap      *globals;             /**< Map identifiers to global entities. */
 	/** This graph holds nodes for global entity initialization expressions.
 	 * It is not a function. */
 	ir_graph  *const_code_irg;
@@ -70,8 +71,6 @@ struct ir_prog {
 	size_t     max_irg_idx;          /**< highest unused irg index */
 	long       max_node_nr;          /**< Highest number unique node numbers. */
 	unsigned   dump_nr;              /**< number of program info dumps */
-	/** Maps ident* to ir_entity* of the compilerlib */
-	pmap      *compilerlib_entities;
 #ifndef NDEBUG
 	/** Bitset for tracking used global resources. */
 	irp_resources_t reserved_resources;
