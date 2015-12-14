@@ -234,6 +234,7 @@ FIRM_API ir_entity *new_parameter_entity(ir_type *owner, size_t pos,
  * @param alias  entity that is aliased
  * @param type   type of the aliased entity, should but need not be the same
  *               type as the one of the aliased entity
+ * @param visibility  visibility of the entity
  * @return       the newly created entity
  */
 FIRM_API ir_entity *new_alias_entity(ir_type *owner, ident *name,
