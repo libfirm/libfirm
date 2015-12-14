@@ -345,59 +345,51 @@ static void check_tore(ir_type *const type, ir_entity *const entity, void *const
 	}
 }
 
+static bool verify_info_member(ir_type const *const segment,
+                               ir_entity const *const entity)
+{
+	bool fine = true;
+	/* Mach-O does not allow labels in segments like constructors,
+	 * destructors, ... */
+	ident *const ld_ident = get_entity_ld_ident(entity);
+	if (ld_ident[0] != '\0') {
+		report_error("entity %+F in %s segment must not have an ld_name",
+					 entity, get_id_str(get_segment_ident(segment)));
+		fine = false;
+	}
+	if ((get_entity_linkage(entity) & IR_LINKAGE_HIDDEN_USER) == 0) {
+		report_error("entity %+F in segment %s without LINKAGE_HIDDEN_USER",
+					 entity, get_id_str(get_segment_ident(segment)));
+		fine = false;
+	}
+	return fine;
+}
+
 int tr_verify(void)
 {
 	bool     fine = true;
-	ir_type *constructors;
-	ir_type *destructors;
-	ir_type *thread_locals;
 
 	type_walk(check_tore, NULL, &fine);
 
 	for (ir_segment_t s = IR_SEGMENT_FIRST; s <= IR_SEGMENT_LAST; ++s) {
-		const ir_type *type = get_segment_type(s);
-		for (size_t e = 0; e < get_compound_n_members(type); ++e) {
-			ir_entity *entity = get_compound_member(type, e);
-			if (get_entity_ld_ident(entity) == NULL &&
+		ir_type const *const segment = get_segment_type(s);
+		for (size_t e = 0; e < get_compound_n_members(segment); ++e) {
+			ir_entity const *const entity = get_compound_member(segment, e);
+			ident           *const ld_ident = get_entity_ld_ident(entity);
+			if (ld_ident == NULL &&
 				get_entity_visibility(entity) != ir_visibility_private) {
 				report_error("public segment member %+F has no name",
 				             entity);
 				fine = false;
+				continue;
 			}
+			if (segment->flags & tf_info)
+				fine &= verify_info_member(segment, entity);
 		}
 	}
 
-	constructors = get_segment_type(IR_SEGMENT_CONSTRUCTORS);
-	for (size_t i = 0, n = get_compound_n_members(constructors); i < n; ++i) {
-		const ir_entity *entity = get_compound_member(constructors, i);
-		if ((get_entity_linkage(entity) & IR_LINKAGE_HIDDEN_USER) == 0) {
-			report_error("entity %+F in constructors without LINKAGE_HIDDEN_USER",
-			             entity);
-			fine = false;
-		}
-		/* Mach-O doesn't like labels in this section */
-		if (get_entity_ld_name(entity)[0] != '\0') {
-			report_error("entity %+F in constructors must not have an ld_name",
-			             entity);
-			fine = false;
-		}
-	}
-	destructors = get_segment_type(IR_SEGMENT_DESTRUCTORS);
-	for (size_t i = 0, n = get_compound_n_members(destructors); i < n; ++i) {
-		const ir_entity *entity = get_compound_member(destructors, i);
-		if ((get_entity_linkage(entity) & IR_LINKAGE_HIDDEN_USER) == 0) {
-			report_error("entity %+F in destructors without LINKAGE_HIDDEN_USER",
-			             entity);
-			fine = false;
-		}
-		/* Mach-O doesn't like labels in this section */
-		if (get_entity_ld_name(entity)[0] != '\0') {
-			report_error("entity %+F in destructors must not have an ld_name",
-			             entity);
-			fine = false;
-		}
-	}
-	thread_locals = get_segment_type(IR_SEGMENT_THREAD_LOCAL);
+	ir_type const *const thread_locals
+		= get_segment_type(IR_SEGMENT_THREAD_LOCAL);
 	for (size_t i = 0, n = get_compound_n_members(thread_locals); i < n; ++i) {
 		const ir_entity *entity = get_compound_member(thread_locals, i);
 		/* this is odd and should not be allowed I think */
