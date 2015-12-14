@@ -116,12 +116,8 @@ static ir_entity *make_divmod(char const *const name, ir_type *const even, ir_ty
 	set_method_res_type(mtp, 2, even);
 	set_method_res_type(mtp, 3, odd);
 
-	ident     *const id   = new_id_from_str(name);
-	ir_type   *const glob = get_glob_type();
-	ir_entity *const ent  = new_global_entity(glob, id, mtp,
-	                                          ir_visibility_external,
-	                                          IR_LINKAGE_DEFAULT);
-	return ent;
+	ident *const id = new_id_from_str(name);
+	return create_compilerlib_entity(id, mtp);
 }
 
 static void create_divmod_intrinsics(ir_mode *mode_unsigned,
