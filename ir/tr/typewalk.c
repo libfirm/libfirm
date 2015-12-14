@@ -133,6 +133,7 @@ static void do_type_walk(ir_type *const tp, ir_entity *const ent,
 
 		case tpo_struct:
 		case tpo_union:
+		case tpo_segment:
 			for (size_t i = 0, n_mem = get_compound_n_members(tp);
 			     i < n_mem; ++i) {
 				do_type_walk(NULL, get_compound_member(tp, i), pre, post, env);
@@ -361,6 +362,7 @@ void walk_types_entities(ir_type *tp, entity_walk_func *doit, void *env)
 	case tpo_class:
 	case tpo_struct:
 	case tpo_union:
+	case tpo_segment:
 		for (size_t i = 0, n = get_compound_n_members(tp); i < n; ++i)
 			doit(get_compound_member(tp, i), env);
 		return;

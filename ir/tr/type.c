@@ -61,6 +61,7 @@ const char *get_type_opcode_name(tp_opcode const opcode)
 	case tpo_method:        return "method";
 	case tpo_pointer:       return "pointer";
 	case tpo_primitive:     return "primitive";
+	case tpo_segment:       return "segment";
 	case tpo_struct:        return "struct";
 	case tpo_uninitialized: return "uninitialized";
 	case tpo_union:         return "union";
@@ -154,8 +155,9 @@ static void free_type_attrs(ir_type *const type)
 	case tpo_class:
 		free_class_attrs(type);
 		return;
-	case tpo_union:
+	case tpo_segment:
 	case tpo_struct:
+	case tpo_union:
 		free_compound_attrs(type);
 		return;
 	case tpo_method:
@@ -279,7 +281,7 @@ void set_type_state(ir_type *tp, ir_type_state state)
 #ifndef NDEBUG
 	/* Just a correctness check: */
 	if (state == layout_fixed && is_compound_type(tp)
-	 && !(tp->flags & tf_segment)) {
+	 && !is_segment_type(tp)) {
 		for (size_t i = 0, n_mem = get_compound_n_members(tp);
 			 i < n_mem; i++) {
 			ir_entity *entity = get_compound_member(tp, i);
@@ -753,14 +755,21 @@ int (is_Union_type)(const ir_type *uni)
 
 ir_type *new_type_segment(ident *const name, type_flags const flags)
 {
-	ir_type *const seg = new_type_class(name);
-	seg->flags |= tf_segment | flags;
-	return seg;
+	ir_type *const res = new_type(tpo_segment, sizeof(compound_attr), NULL);
+	compound_init(res, name);
+	res->flags |= flags;
+	return res;
 }
 
-int is_segment_type(const ir_type *type)
+int (is_segment_type)(ir_type const *const type)
 {
-	return (type->flags & tf_segment) != 0;
+	return is_segment_type_(type);
+}
+
+ident *get_segment_ident(ir_type const *type)
+{
+	assert(is_segment_type(type));
+	return type->name;
 }
 
 ir_type *new_type_array(ir_type *element_type)
@@ -1153,6 +1162,12 @@ void ir_print_type(char *buffer, size_t buffer_size, const ir_type *type)
 	case tpo_union: {
 		ident *id = get_union_ident(type);
 		snprintf(buffer, buffer_size, "union '%s'", get_id_str(id));
+		return;
+	}
+
+	case tpo_segment: {
+		ident *id = get_segment_ident(type);
+		snprintf(buffer, buffer_size, "segment '%s'", get_id_str(id));
 		return;
 	}
 

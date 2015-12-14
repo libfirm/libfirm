@@ -38,6 +38,7 @@
 #define is_Struct_type(strct)             is_struct_type_(strct)
 #define is_Method_type(method)            is_method_type_(method)
 #define is_Union_type(uni)                is_union_type_(uni)
+#define is_segment_type(type)             is_segment_type_(type)
 #define is_Array_type(array)              is_array_type_(array)
 #define is_Pointer_type(pointer)          is_pointer_type_(pointer)
 #define is_Primitive_type(primitive)      is_primitive_type_(primitive)
@@ -101,12 +102,11 @@ typedef enum type_flags {
 	tf_layout_fixed  = 1U << 2, /**< Set if the layout of a type is fixed */
 
 	tf_frame_type    = 1U << 3, /**< Set if this is a frame type. */
-	tf_segment       = 1U << 4, /**< type represents a linker segment */
-	tf_global_type   = 1U << 5, /**< Set only for the global type */
-	tf_tls_type      = 1U << 6, /**< Set only for the tls type */
-	tf_info          = 1U << 7, /**< infos (for example constructor, destructor pointers) */
-	tf_variable_size = 1U << 8, /**< compound or array type may have variable size last element */
-	tf_lowered_dw    = 1U << 9, /**< hack to identify lowered doubleword params */
+	tf_global_type   = 1U << 4, /**< Set only for the global type */
+	tf_tls_type      = 1U << 5, /**< Set only for the tls type */
+	tf_info          = 1U << 6, /**< infos (for example constructor, destructor pointers) */
+	tf_variable_size = 1U << 7, /**< compound or array type may have variable size last element */
+	tf_lowered_dw    = 1U << 8, /**< hack to identify lowered doubleword params */
 } type_flags;
 ENUM_BITSET(type_flags)
 
@@ -306,6 +306,11 @@ static inline int is_method_type_(ir_type const *const type)
 static inline int is_union_type_(ir_type const *const type)
 {
 	return get_type_opcode(type) == tpo_union;
+}
+
+static inline int is_segment_type_(ir_type const *const type)
+{
+	return get_type_opcode(type) == tpo_segment;
 }
 
 static inline int is_array_type_(ir_type const *const type)

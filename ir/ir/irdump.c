@@ -1469,6 +1469,7 @@ static void dump_type_info(ir_type *const tp, ir_entity *const ent, void *const 
 			/* FALLTHROUGH */
 		case tpo_union:
 		case tpo_struct:
+		case tpo_segment:
 			for (size_t i = get_compound_n_members(tp); i-- > 0;) {
 				ir_entity const *const entity = get_compound_member(tp, i);
 				print_type_ent_edge(F, tp, entity, TYPE_MEMBER_EDGE_ATTR);

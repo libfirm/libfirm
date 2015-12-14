@@ -66,7 +66,7 @@ ir_entity *new_entity(ir_type *owner, ident *name, ir_type *type)
 		res->attr.mtd_attr.param_access  = NULL;
 		res->attr.mtd_attr.param_weight  = NULL;
 		res->attr.mtd_attr.irg           = NULL;
-	} else if (is_compound_type(owner) && !(owner->flags & tf_segment)) {
+	} else if (is_compound_type(owner) && !is_segment_type(owner)) {
 		res = intern_new_entity(owner, IR_ENTITY_COMPOUND_MEMBER, name, type);
 		res->attr.compound_member.offset = -1;
 	} else {

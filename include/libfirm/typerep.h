@@ -734,10 +734,11 @@ ENUM_BITSET(ptr_access_kind)
  */
 typedef enum tp_opcode {
 	tpo_uninitialized = 0,   /* not a type opcode */
-	tpo_class,               /**< A class type. */
 	tpo_struct,              /**< A struct type. */
-	tpo_method,              /**< A method type. */
 	tpo_union,               /**< An union type. */
+	tpo_class,               /**< A class type. */
+	tpo_segment,             /**< A segment type. */
+	tpo_method,              /**< A method type. */
 	tpo_array,               /**< An array type. */
 	tpo_pointer,             /**< A pointer type. */
 	tpo_primitive,           /**< A primitive type. */
@@ -1018,12 +1019,6 @@ FIRM_API type_dbg_info *get_type_dbg_info(const ir_type *tp);
  *  of the type cast to long.
  */
 FIRM_API long get_type_nr(const ir_type *tp);
-
-/**
- * Returns true if a type is a segment type.
- * A segment type is one of the global types returned by get_segment_type().
- */
-FIRM_API int is_segment_type(const ir_type *tp);
 
 /**
  * @ingroup compound_type
@@ -1612,6 +1607,20 @@ FIRM_API ir_type *clone_frame_type(ir_type *type);
  */
 FIRM_API ir_entity *frame_alloc_area(ir_type *frame_type, int size,
                                      unsigned alignment, int at_start);
+
+/** @} */
+
+/** @defgroup segment_type Segment
+ *
+ * Segment types represent segments in the object file.
+ * @{
+ */
+
+/** Checks, whether a type is a frame type. */
+FIRM_API int is_segment_type(const ir_type *tp);
+
+/** Returns segment identifier. */
+FIRM_API ident *get_segment_ident(ir_type const *type);
 
 /** @} */
 

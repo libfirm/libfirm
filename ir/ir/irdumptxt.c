@@ -700,6 +700,7 @@ static void dump_type_details(FILE *const F, ir_type const *const tp)
 
 	case tpo_union:
 	case tpo_struct:
+	case tpo_segment:
 		dump_compound_members(F, tp);
 		return;
 

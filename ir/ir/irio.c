@@ -191,6 +191,7 @@ static void symtbl_init(void)
 	INSERT(tt_tpo, "method", tpo_method);
 	INSERT(tt_tpo, "pointer", tpo_pointer);
 	INSERT(tt_tpo, "primitive", tpo_primitive);
+	INSERT(tt_tpo, "segment", tpo_segment);
 	INSERT(tt_tpo, "struct", tpo_struct);
 	INSERT(tt_tpo, "union", tpo_union);
 	INSERT(tt_tpo, "Unknown", tpo_unknown);
@@ -674,6 +675,7 @@ static void write_type(write_env_t *env, ir_type *tp)
 	case tpo_union:
 	case tpo_struct:
 	case tpo_class:
+	case tpo_segment:
 		write_type_compound(env, tp);
 		return;
 
@@ -1725,6 +1727,12 @@ static void read_type(read_env_t *env)
 		ident *id = read_ident_null(env);
 		type = new_type_union(id);
 		set_type_size_bytes(type, size);
+		goto finish_type;
+	}
+
+	case tpo_segment: {
+		ident *id = read_ident_null(env);
+		type = new_type_segment(id, 0);
 		goto finish_type;
 	}
 

@@ -539,8 +539,9 @@ static int verify_node_Address(const ir_node *n)
 {
 	ir_entity *ent  = get_Address_entity(n);
 	bool       fine = check_mode_func(n, mode_is_reference, "reference");
-	if (!(get_entity_owner(ent)->flags & tf_segment) && !is_method_entity(ent)) {
-		warn(n, "entity of %+F is not in a segment type but %+F", ent, get_entity_owner(ent));
+	if (!is_segment_type(get_entity_owner(ent)) && !is_method_entity(ent)) {
+		warn(n, "entity of %+F is not in a segment type but %+F", ent,
+		     get_entity_owner(ent));
 		fine = false;
 	}
 	return fine;
@@ -590,7 +591,7 @@ static int verify_node_Member(const ir_node *n)
 	if (entity == NULL) {
 		warn(n, "entity is NULL");
 		fine = false;
-	} else if (get_entity_owner(entity)->flags & tf_segment) {
+	} else if (is_segment_type(get_entity_owner(entity))) {
 		warn(n, "Member from entity with global/segment type owner");
 		fine = false;
 	}

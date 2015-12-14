@@ -776,6 +776,7 @@ static void emit_type(ir_type *type)
 	case tpo_struct:
 	case tpo_union:     emit_compound_type(type);   return;
 	case tpo_method:    emit_subroutine_type(type); return;
+	case tpo_segment:
 	case tpo_code:
 	case tpo_unknown:
 	case tpo_uninitialized:

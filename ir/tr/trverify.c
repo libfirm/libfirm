@@ -84,7 +84,8 @@ int check_type(const ir_type *tp)
 	switch (get_type_opcode(tp)) {
 	case tpo_union:
 	case tpo_struct:
-	case tpo_class:     return check_compound_type(tp);
+	case tpo_class:
+	case tpo_segment:   return check_compound_type(tp);
 	case tpo_primitive: return check_primitive_type(tp);
 	case tpo_pointer:   return check_pointer_type(tp);
 	case tpo_array:
