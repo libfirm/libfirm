@@ -594,7 +594,7 @@ static void handle_const_Calls(env_t *ctx)
 
 		confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_CONTROL_FLOW
 		                          | IR_GRAPH_PROPERTY_ONE_RETURN
-								  | IR_GRAPH_PROPERTY_MANY_RETURNS);
+		                          | IR_GRAPH_PROPERTY_MANY_RETURNS);
 	}
 }
 
