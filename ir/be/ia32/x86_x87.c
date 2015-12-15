@@ -6,7 +6,32 @@
 /**
  * @file
  * @brief       This file implements the x87 support and virtual to stack
- *              register translation for the ia32 backend.
+ *              register translation for the ia32 backend.  The simulator
+ *              walks through the instructions of all blocks and computes the
+ *              floating point stack changes done by these computations.
+ *
+ *              Every block has a begin and end stack state.  Simulation
+ *              starts with an empty stack for the start block, but the there
+ *              may be blocks whose initial stack is non-empty. This happens if
+ *              control is transferred to those blocks at a point in the program
+ *              where the floating point stack isn't empty.  In particular,
+ *              every block begins with its predecessor's stack state.
+ *
+ *              If a block has multiple predecssors then it has to be made sure
+ *              that the floating point values used by that block lie on the
+ *              stack in same order no matter from which predecessor block
+ *              control has been transferred. This problem is solved by permuting
+ *              the floating point stack at the end of the predecessor if necessary.
+ *
+ *              Note that an X_except block's begin state is always expected to
+ *              be empty: Before making a call that may throw, the stack must be
+ *              empty per calling convention. If the call throws, no return value
+ *              is put on the stack; thus the stack is empty. Since in this case
+ *              control is transferred to the X_except block (possibly by some
+ *              unwind library involved in the backend), the X_except block must
+ *              have empty begin state.
+ *              If the call exits cleanly, the stack has depth of at most 1.
+ *
  * @author      Michael Beck
  */
 #include "x86_x87.h"
@@ -1501,13 +1526,27 @@ static void x87_simulate_block(x87_simulator *sim, ir_node *block)
 
 	/* check if the state must be shuffled */
 	foreach_block_succ(block, edge) {
-		ir_node   *succ       = get_edge_src_irn(edge);
-		blk_state *succ_state = x87_get_bl_state(sim, succ);
+		ir_node *const succ    = get_edge_src_irn(edge);
+		ir_node *const cfgpred = get_irn_n(succ, get_edge_src_pos(edge));
+
+		/* Next block's begin state must be equal to this block's end state.
+		 * If the next block is an X_except block, it must have empty begin state. */
+		x87_state *next_state;
+		if (is_x_except_Proj(cfgpred)) {
+			/* Empty begin state. */
+			next_state = OALLOCZ(&sim->obst, x87_state);
+			next_state->sim = sim;
+		} else {
+			/* This block's end state. */
+			next_state = state;
+		}
+
+		blk_state *const succ_state = x87_get_bl_state(sim, succ);
 
 		if (succ_state->begin == NULL) {
 			DB((dbg, LEVEL_2, "Set begin state for succ %+F:\n", succ));
-			DEBUG_ONLY(x87_dump_stack(state);)
-			succ_state->begin = state;
+			DEBUG_ONLY(x87_dump_stack(next_state);)
+			succ_state->begin = next_state;
 
 			pdeq_putr(sim->worklist, succ);
 		} else {
@@ -1519,7 +1558,7 @@ static void x87_simulate_block(x87_simulator *sim, ir_node *block)
 			   If the successor has more than one possible input, then it must
 			   be the only one.
 			 */
-			x87_shuffle(block, state, succ_state->begin);
+			x87_shuffle(block, next_state, succ_state->begin);
 		}
 	}
 	bl_state->end = state;
