@@ -33,14 +33,6 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
-/**
- * The walker environment for updating function calls.
- */
-typedef struct env_t {
-	ir_node **pure_call_list;    /**< The list of all floating pure function calls that will be changed. */
-	ir_node **nothrow_call_list; /**< The list of all nothrow function calls that will be changed. */
-} env_t;
-
 /** Ready IRG's are marked in the ready set. */
 static unsigned *ready_set;
 
@@ -69,7 +61,7 @@ static bool method_type_contains_aggregate(const ir_type *type)
  */
 static void collect_const_calls(ir_node *node, void *env)
 {
-	env_t *ctx = (env_t*)env;
+	ir_node ***pure_call_list = (ir_node ***)env;
 
 	if (is_Call(node)) {
 		ir_type   *type   = get_Call_type(node);
@@ -81,7 +73,7 @@ static void collect_const_calls(ir_node *node, void *env)
 		/* ok, if we get here we found a call to a pure function,
 		 * if it also terminates then we can transform it */
 		if ((prop & mtp_property_pure) && (prop & mtp_property_terminates)) {
-			ARR_APP1(ir_node*, ctx->pure_call_list, node);
+			ARR_APP1(ir_node*, *pure_call_list, node);
 		}
 	} else if (is_Proj(node)) {
 		/* Collect all memory and exception Proj's from
@@ -108,16 +100,16 @@ static void collect_const_calls(ir_node *node, void *env)
 /**
  * Fix the list of collected Calls.
  *
- * @param irg  the graph that contained calls to const functions
- * @param ctx  context
+ * @param irg        the graph that contained calls to const functions
+ * @param call_list  the list of all call sites of const functions
  */
-static void fix_const_call_lists(ir_graph *irg, env_t *ctx)
+static void fix_const_call_lists(ir_graph *irg, ir_node **pure_call_list)
 {
 	/* Fix all calls by removing their memory input, let them float and fix
 	 * their Projs. */
 	bool exc_changed = false;
-	for (size_t i = ARR_LEN(ctx->pure_call_list); i-- > 0;) {
-		ir_node *const call = ctx->pure_call_list[i];
+	for (size_t i = ARR_LEN(pure_call_list); i-- > 0;) {
+		ir_node *const call = pure_call_list[i];
 		/* currently we cannot change the call if it contains aggregate
 		 * parameters or results (as firm uses memory with known addresses
 		 * to transfer them. */
@@ -174,7 +166,7 @@ static void fix_const_call_lists(ir_graph *irg, env_t *ctx)
  */
 static void collect_nothrow_calls(ir_node *node, void *env)
 {
-	env_t *ctx = (env_t*)env;
+	ir_node ***nothrow_call_list = (ir_node ***)env;
 
 	if (is_Call(node)) {
 		ir_entity *callee = get_Call_callee(node);
@@ -184,7 +176,7 @@ static void collect_nothrow_calls(ir_node *node, void *env)
 		if ((prop & mtp_property_nothrow) == 0)
 			return;
 		/* ok, if we get here we found a call to a nothrow function */
-		ARR_APP1(ir_node*, ctx->nothrow_call_list, node);
+		ARR_APP1(ir_node*, *nothrow_call_list, node);
 	} else if (is_Proj(node)) {
 		/*
 		 * Collect all memory and exception Proj's from
@@ -575,21 +567,19 @@ early_finish:
 
 /**
  * Handle calls to const functions.
- *
- * @param ctx  context
  */
-static void handle_const_Calls(env_t *ctx)
+static void handle_const_Calls(void)
 {
 	/* all calls of pure functions can be transformed */
 	foreach_irp_irg(i, irg) {
-		ctx->pure_call_list = NEW_ARR_F(ir_node*, 0);
+		ir_node **pure_call_list = NEW_ARR_F(ir_node*, 0);
 
 		ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
-		irg_walk_graph(irg, firm_clear_link, collect_const_calls, ctx);
-		fix_const_call_lists(irg, ctx);
+		irg_walk_graph(irg, firm_clear_link, collect_const_calls, &pure_call_list);
+		fix_const_call_lists(irg, pure_call_list);
 		ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 
-		DEL_ARR_F(ctx->pure_call_list);
+		DEL_ARR_F(pure_call_list);
 
 		confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_CONTROL_FLOW
 		                          | IR_GRAPH_PROPERTY_ONE_RETURN
@@ -599,22 +589,20 @@ static void handle_const_Calls(env_t *ctx)
 
 /**
  * Handle calls to nothrow functions.
- *
- * @param ctx  context
  */
-static void handle_nothrow_Calls(env_t *ctx)
+static void handle_nothrow_Calls(void)
 {
 	/* all calls of nothrow functions can be transformed */
 	foreach_irp_irg(i, irg) {
-		ctx->nothrow_call_list = NEW_ARR_F(ir_node*, 0);
+		ir_node **nothrow_call_list = NEW_ARR_F(ir_node*, 0);
 
 		ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
-		irg_walk_graph(irg, firm_clear_link, collect_nothrow_calls, ctx);
+		irg_walk_graph(irg, firm_clear_link, collect_nothrow_calls, &nothrow_call_list);
 
-		fix_nothrow_call_list(irg, ctx->nothrow_call_list);
+		fix_nothrow_call_list(irg, nothrow_call_list);
 		ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 
-		DEL_ARR_F(ctx->nothrow_call_list);
+		DEL_ARR_F(nothrow_call_list);
 	}
 }
 
@@ -876,8 +864,7 @@ void optimize_funccalls(void)
 
 	/* second step: remove exception edges: this must be done before the
 	   detection of pure functions take place. */
-	env_t ctx;
-	handle_nothrow_Calls(&ctx);
+	handle_nothrow_Calls();
 
 	rbitset_clear_all(ready_set, last_idx);
 	rbitset_clear_all(busy_set, last_idx);
@@ -886,7 +873,7 @@ void optimize_funccalls(void)
 	foreach_irp_irg(i, irg) {
 		analyze_irg(irg);
 	}
-	handle_const_Calls(&ctx);
+	handle_const_Calls();
 
 	free(busy_set);
 	free(ready_set);
