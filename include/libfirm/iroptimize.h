@@ -462,7 +462,7 @@ FIRM_API void garbage_collect_entities(void);
  *
  *  Dead_node_elimination is only performed if options `optimize' and
  *  `opt_dead_node_elimination' are set.  The graph may
- *  not be in state phase_building.  The outs datastructure is freed,
+ *  not be in state phase_building.  The outs data structure is freed,
  *  the outs state set to outs_none.  Backedge information is conserved.
  *  Removes old attributes of nodes.  Sets link field to NULL.
  *  Callee information must be freed (irg_callee_info_none).

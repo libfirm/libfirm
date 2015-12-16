@@ -21,7 +21,7 @@
  * @ingroup adt
  * @defgroup pqueue  Priority Queue
  * A priority queue.
- * Implementation based on a heap datastructure
+ * Implementation based on a heap data structure
  * @{
  */
 

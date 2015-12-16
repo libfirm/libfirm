@@ -83,7 +83,7 @@ void cg_remove_call_callee_arr(ir_node *node)
 
 
 /*--------------------------------------------------------------------------*/
-/* Initialize datastructures, remove unwanted constructs, optimize          */
+/* Initialize data structures, remove unwanted constructs, optimize         */
 /* call target computations.                                                */
 /*--------------------------------------------------------------------------*/
 
@@ -441,7 +441,7 @@ static void add_method_address(ir_entity *ent, pset *set)
  * returns a list of 'free' methods, i.e., the methods that can be called
  * from external or via function pointers.
  *
- * the datastructures for sel_methods must be constructed before calling
+ * the data structures for sel_methods must be constructed before calling
  * get_free_methods().
  */
 static size_t get_free_methods(ir_entity ***free_methods)

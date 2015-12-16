@@ -36,7 +36,7 @@
  *  variable, the array contains the unknown_entity. (See
  *  set_Call_callee()). cgana() returns the set of 'free' methods, i.e.,
  *  the methods that can be called from external or via function
- *  pointers.  This datastructure must be freed with 'xfree()' by the
+ *  pointers.  This data structure must be freed with 'xfree()' by the
  *  caller of cgana().
  *
  *  cgana() sets the callee_info_state of each graph and the program to

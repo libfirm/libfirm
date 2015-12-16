@@ -20,7 +20,7 @@
  * changes and don't think that the left child of 0 is 0 :-/)
  *
  * @author  Christian Wuerdig, Matthias Braun
- * @brief   Priority Queue implementation based on the heap datastructure
+ * @brief   Priority Queue implementation based on the heap data structure
  */
 #include "pqueue.h"
 

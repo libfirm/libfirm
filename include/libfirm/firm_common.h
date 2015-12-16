@@ -42,7 +42,7 @@ FIRM_API const char *ir_get_version_build(void);
 
 /**
  * A list of firm kinds.
- * Most important datastructures in firm contain a firm_kind field at the
+ * Most important data structures in firm contain a firm_kind field at the
  * beginning so given void* pointer you can usually still guess the kind
  * of thing the pointer points to.
  * This is used in debug helper functions and printers.

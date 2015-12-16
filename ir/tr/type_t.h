@@ -161,7 +161,7 @@ void add_compound_member(ir_type *compound, ir_entity *entity);
 /** Initialize the type module. */
 void ir_init_type(ir_prog *irp);
 
-/** free internal datastructures of type module */
+/** free internal data structures of type module */
 void ir_finish_type(ir_prog *irp);
 
 /** Clone an existing method type.

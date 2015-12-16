@@ -5,7 +5,7 @@
 
 /**
  * @file
- * @brief       hashset: datastructure containing objects accessible by their key
+ * @brief       hashset: data structure containing objects accessible by their key
  * @author      Markus Armbruster
  */
 #ifndef FIRM_ADT_SET_H

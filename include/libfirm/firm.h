@@ -61,7 +61,7 @@
 
 /** @defgroup printing Printing and Visualisation
  * This module contains functions for printing and visualizing libfirm
- * datastructures like programs, graphs and nodes for humans.
+ * data structures like programs, graphs and nodes for humans.
  */
 #ifndef FIRM_COMMON_FIRM_H
 #define FIRM_COMMON_FIRM_H

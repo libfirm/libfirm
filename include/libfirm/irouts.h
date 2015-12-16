@@ -77,7 +77,7 @@ FIRM_API void compute_irg_outs(ir_graph *irg);
 /** Recomputes out edges if necessary */
 FIRM_API void assure_irg_outs(ir_graph *irg);
 
-/** Frees memory occupied by out edges datastructures */
+/** Frees memory occupied by out edges data structures */
 FIRM_API void free_irg_outs(ir_graph *irg);
 
 /** @} */

@@ -5,7 +5,7 @@
 
 /**
  * @file
- * @brief       Code for dumping backend datastructures (i.e. interference graphs)
+ * @brief       Code for dumping backend data structures (i.e. interference graphs)
  * @author      Matthias Braun
  */
 #include "bedump.h"

@@ -208,7 +208,7 @@ void irg_out_block_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post,
 }
 
 /*--------------------------------------------------------------------*/
-/** Building and Removing the out datastructure                      **/
+/** Building and Removing the out data structure                     **/
 /**                                                                  **/
 /** The outs of a graph are allocated in a single, large array.      **/
 /** This allows to allocate and deallocate the memory for the outs   **/

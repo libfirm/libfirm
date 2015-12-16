@@ -95,7 +95,7 @@ struct allocation_info_t {
 };
 typedef struct allocation_info_t allocation_info_t;
 
-/** helper datastructure used when sorting register preferences */
+/** helper data structure used when sorting register preferences */
 struct reg_pref_t {
 	unsigned num;
 	float    pref;

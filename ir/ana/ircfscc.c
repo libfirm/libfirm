@@ -6,7 +6,7 @@
 /**
  * @file
  * @brief     Compute the strongly connected regions and build backedge/cfloop
- *            datastructures. A variation on the Tarjan algorithm. See also
+ *            data structures. A variation on the Tarjan algorithm. See also
  *            [Trapp:99], Chapter 5.2.1.2.
  * @author    Goetz Lindenmaier
  * @date      7.2002
@@ -220,7 +220,7 @@ static inline void pop_scc_unmark_visit(ir_node *n)
 }
 
 /**********************************************************************/
-/* The loop datastructure.                                           **/
+/* The loop data structure.                                          **/
 /**********************************************************************/
 
 /**

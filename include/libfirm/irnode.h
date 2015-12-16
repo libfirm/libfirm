@@ -474,8 +474,8 @@ FIRM_API const char *gdb_node_helper(const void *firm_object);
  */
 
 /**
- * Creates a new switch_table datastructure with @p n_entries entries.
- * The datastructure is allocated on the obstack of @p irg.
+ * Creates a new switch_table data structure with @p n_entries entries.
+ * The data structure is allocated on the obstack of @p irg.
  */
 FIRM_API ir_switch_table *ir_new_switch_table(ir_graph *irg, size_t n_entries);
 

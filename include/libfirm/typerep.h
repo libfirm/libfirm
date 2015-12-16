@@ -5,7 +5,7 @@
 
 /**
  * @file
- * @brief Declarations for functions and datastructures to represent types
+ * @brief Declarations for functions and data structures to represent types
  */
 #ifndef FIRM_TYPEREP_H
 #define FIRM_TYPEREP_H
@@ -719,7 +719,7 @@ ENUM_BITSET(ptr_access_kind)
  *
  *  Datastructure to hold type information.
  *
- *  This module supplies a datastructure to represent all types
+ *  This module supplies a data structure to represent all types
  *  known in the compiled program.  This includes types specified
  *  in the program as well as types defined by the language.  In the
  *  view of the intermediate representation there is no difference

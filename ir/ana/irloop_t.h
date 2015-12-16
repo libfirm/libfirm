@@ -5,7 +5,7 @@
 
 /**
  * @file
- * @brief    Loop datastructure and access functions -- private stuff.
+ * @brief    Loop data structure and access functions -- private stuff.
  * @author   Goetz Lindenmaier
  * @date     7.2002
  */

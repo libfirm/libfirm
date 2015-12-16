@@ -16,9 +16,9 @@
 /**
  * @page visited_counters Visited Counters
  * A visited counter is an alternative to a visited flag for elements of a
- * graph datastructure.
+ * graph data structure.
  * A visited counter is an integer number added to the elements of a graph.
- * There is also a global reference number for the whole datastructure. It is
+ * There is also a global reference number for the whole data structure. It is
  * now possible to mark nodes by setting their visited counter to the global
  * reference counter. Testing is done by comparing with the global reference
  * counter.

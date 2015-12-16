@@ -5,7 +5,7 @@
 
 /**
  * @file
- * @brief    Loop datastructure and access functions.
+ * @brief    Loop data structure and access functions.
  * @author   Goetz Lindenmaier
  * @date     7.2002
  * @brief

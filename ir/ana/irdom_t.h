@@ -5,7 +5,7 @@
 
 /**
  * @file
- * @brief    Construct and access dominator tree -- private datastructures.
+ * @brief    Construct and access dominator tree -- private data structures.
  * @author   Goetz Lindenmaier
  * @date     2.2002
  */
