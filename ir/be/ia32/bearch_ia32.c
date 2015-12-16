@@ -80,6 +80,9 @@ static inline ir_node *create_const(ir_graph *irg, ir_node **place,
 	ir_node *res   = func(NULL, block);
 	arch_set_irn_register(res, reg);
 	*place = res;
+	/* We need a keep edge on our cached nodes, so that following firm
+	 * irgwalks will not miss them. */
+	keep_alive(res);
 	return res;
 }
 

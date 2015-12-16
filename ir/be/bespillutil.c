@@ -1076,6 +1076,9 @@ static bool has_real_user(const ir_node *node)
 
 static void add_missing_keep_walker(ir_node *node, void *data)
 {
+	if (!sched_is_scheduled(node))
+		return;
+
 	(void)data;
 	if (get_irn_mode(node) == mode_T) {
 		unsigned const n_outs = arch_get_irn_n_outs(node);
