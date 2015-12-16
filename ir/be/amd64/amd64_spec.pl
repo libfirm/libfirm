@@ -814,7 +814,7 @@ fmul => {
 
 fsub => {
 	template => $x87binop,
-	emit     => "fadd%FR%FP %AF",
+	emit     => "fsub%FR%FP %AF",
 },
 
 fchs => {
