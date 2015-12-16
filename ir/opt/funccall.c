@@ -37,7 +37,7 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg;)
  * The walker environment for updating function calls.
  */
 typedef struct env_t {
-	ir_node **pure_call_list;    /**< The list of all floating const function calls that will be changed. */
+	ir_node **pure_call_list;    /**< The list of all floating pure function calls that will be changed. */
 	ir_node **nothrow_call_list; /**< The list of all nothrow function calls that will be changed. */
 } env_t;
 
@@ -64,10 +64,10 @@ static bool method_type_contains_aggregate(const ir_type *type)
 }
 
 /**
- * Walker: Collect all calls to const and pure functions
+ * Walker: Collect all calls to const functions
  * to lists. Collect all Proj(Call) nodes into a Proj list.
  */
-static void collect_const_and_pure_calls(ir_node *node, void *env)
+static void collect_const_calls(ir_node *node, void *env)
 {
 	env_t *ctx = (env_t*)env;
 
@@ -78,7 +78,7 @@ static void collect_const_and_pure_calls(ir_node *node, void *env)
 		if (callee != NULL)
 			prop |= get_entity_additional_properties(callee);
 
-		/* ok, if we get here we found a call to a const or a pure function,
+		/* ok, if we get here we found a call to a pure function,
 		 * if it also terminates then we can transform it */
 		if ((prop & mtp_property_pure) && (prop & mtp_property_terminates)) {
 			ARR_APP1(ir_node*, ctx->pure_call_list, node);
@@ -108,7 +108,7 @@ static void collect_const_and_pure_calls(ir_node *node, void *env)
 /**
  * Fix the list of collected Calls.
  *
- * @param irg  the graph that contained calls to pure functions
+ * @param irg  the graph that contained calls to const functions
  * @param ctx  context
  */
 static void fix_const_call_lists(ir_graph *irg, env_t *ctx)
@@ -212,8 +212,8 @@ static void collect_nothrow_calls(ir_node *node, void *env)
 /**
  * Fix the list of collected nothrow Calls.
  *
- * @param irg        the graph that contained calls to pure functions
- * @param call_list  the list of all call sites of const functions
+ * @param irg        the graph that contained calls to nothrow functions
+ * @param call_list  the list of all call sites of nothrow functions
  */
 static void fix_nothrow_call_list(ir_graph *irg, ir_node **call_list)
 {
@@ -331,9 +331,8 @@ static mtp_additional_properties check_termination(ir_graph *irg)
  * Follow the memory chain starting at node and determine
  * the mtp_property.
  *
- * @return mtp_property_const if only calls of const functions are detected
- *         mtp_property_pure  if only Loads and const/pure calls detected
- *         mtp_no_property    else
+ * @return mtp_property_pure  if only Loads and pure calls detected
+ *         mtp_no_property    otherwise
  */
 static mtp_additional_properties follow_mem(ir_node *node,
 	const mtp_additional_properties min_prop,
@@ -415,7 +414,7 @@ next_no_change:
 		}
 
 		case iro_Call: {
-			/* A call is only tolerable if its either constant or pure. */
+			/* A call is only tolerable if it is pure. */
 			ir_type *type = get_Call_type(node);
 			mtp_additional_properties callprops
 				= get_method_additional_properties(type);
@@ -463,7 +462,7 @@ finish:
 }
 
 /**
- * Check if a graph may be a const or a pure function. This checks memory
+ * Check if a graph may be a pure function. This checks memory
  * accesses as well as calls to other functions. It does not check for
  * potentially endless loops yet.
  *
@@ -581,12 +580,12 @@ early_finish:
  */
 static void handle_const_Calls(env_t *ctx)
 {
-	/* all calls of const functions can be transformed */
+	/* all calls of pure functions can be transformed */
 	foreach_irp_irg(i, irg) {
 		ctx->pure_call_list = NEW_ARR_F(ir_node*, 0);
 
 		ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
-		irg_walk_graph(irg, firm_clear_link, collect_const_and_pure_calls, ctx);
+		irg_walk_graph(irg, firm_clear_link, collect_const_calls, ctx);
 		fix_const_call_lists(irg, ctx);
 		ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 
@@ -605,7 +604,7 @@ static void handle_const_Calls(env_t *ctx)
  */
 static void handle_nothrow_Calls(env_t *ctx)
 {
-	/* all calls of const functions can be transformed */
+	/* all calls of nothrow functions can be transformed */
 	foreach_irp_irg(i, irg) {
 		ctx->nothrow_call_list = NEW_ARR_F(ir_node*, 0);
 
@@ -876,14 +875,14 @@ void optimize_funccalls(void)
 	}
 
 	/* second step: remove exception edges: this must be done before the
-	   detection of const and pure functions take place. */
+	   detection of pure functions take place. */
 	env_t ctx;
 	handle_nothrow_Calls(&ctx);
 
 	rbitset_clear_all(ready_set, last_idx);
 	rbitset_clear_all(busy_set, last_idx);
 
-	/* third step: detect, which functions are const or pure */
+	/* third step: detect, which functions are const */
 	foreach_irp_irg(i, irg) {
 		analyze_irg(irg);
 	}

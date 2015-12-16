@@ -197,7 +197,7 @@ static ir_type *lower_mtp(compound_call_lowering_flags flags, ir_type *mtp)
 	set_method_calling_convention(lowered, cconv);
 
 	mtp_additional_properties mtp_properties = get_method_additional_properties(mtp);
-	/* after lowering the call is not const/pure anymore, since it writes to the
+	/* after lowering the call is not pure anymore, since it writes to the
 	 * memory for the return value passed to it */
 	mtp_properties &= ~(mtp_property_no_write | mtp_property_pure);
 	set_method_additional_properties(lowered, mtp_properties);
@@ -558,11 +558,11 @@ static void get_dest_addrs(const cl_entry *entry, ir_node **ins,
 			continue;
 
 		/* Special case for calls with NoMem memory input. This can happen
-		 * for mtp_property_const functions. The call needs a memory input
-		 * after lowering, so patch it here to be the input of the CopyB.
-		 * Note that in case of multiple CopyB return values this code
-		 * may break the order: fix it if you find a language that actually
-		 * uses this. */
+		 * for mtp_property_const & mtp_property_terminates functions.
+		 * The call needs a memory input after lowering, so patch it here
+		 * to be the input of the CopyB. Note that in case of multiple CopyB
+		 * return values this code may break the order: fix it if you find a
+		 * language that actually uses this. */
 		ir_node *copyb_mem = get_CopyB_mem(copyb);
 		ir_node *call_mem  = get_Call_mem(call);
 		if (is_NoMem(call_mem)) {
