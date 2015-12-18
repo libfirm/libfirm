@@ -137,6 +137,7 @@ static void fix_const_call_lists(ir_graph *irg, ir_node **pure_call_list)
 
 			case pn_Call_X_except:
 				exc_changed = true;
+				ir_set_throws_exception(call, false);
 				exchange(proj, new_r_Bad(irg, mode_X));
 				break;
 
@@ -161,7 +162,8 @@ static void fix_const_call_lists(ir_graph *irg, ir_node **pure_call_list)
 	if (exc_changed) {
 		/* ... including exception edges */
 		clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE
-		                   | IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO);
+		                   | IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO
+		                   | IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE);
 	}
 }
 
@@ -186,6 +188,7 @@ static void fix_nothrow_call_list(ir_graph *irg, ir_node **call_list)
 			switch (get_Proj_num(proj)) {
 			case pn_Call_X_except:
 				exc_changed = true;
+				ir_set_throws_exception(call, false);
 				exchange(proj, new_r_Bad(irg, mode_X));
 				break;
 			case pn_Call_X_regular: {
@@ -204,7 +207,8 @@ static void fix_nothrow_call_list(ir_graph *irg, ir_node **call_list)
 	if (exc_changed) {
 		/* ... including exception edges */
 		clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE
-		                   | IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO);
+		                   | IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO
+		                   | IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE);
 	}
 }
 
@@ -847,6 +851,10 @@ void optimize_funccalls(void)
 
 	free(busy_set);
 	free(ready_set);
+
+	foreach_irp_irg(i, irg) {
+		assure_irg_properties(irg, IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE);
+	}
 }
 
 void firm_init_funccalls(void)
