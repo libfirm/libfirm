@@ -1251,7 +1251,6 @@ Call => {
 	ins       => [ "base", "index", "mem", "callee", "stack", "first_argument" ],
 	outs      => [ "mem", "stack", "X_regular", "X_except", "first_result" ],
 	fixed     => "x86_insn_size_t const size = X86_SIZE_32;",
-	emit      => "call %*AS3",
 	attr_type => "ia32_call_attr_t",
 	attr      => "uint8_t pop, uint8_t n_reg_results",
 	am        => "source,unary",

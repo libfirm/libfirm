@@ -653,6 +653,11 @@ static void ia32_emit_exc_label(const ir_node *node)
 	be_emit_irprintf("%lu", get_ia32_exc_label_id(node));
 }
 
+static bool fallthrough_possible(const ir_node *block, const ir_node *target)
+{
+	return be_emit_get_prev_block(target) == block;
+}
+
 /**
  * Emits the jump sequence for a conditional jump (cmp + jmp_true + jmp_false)
  */
@@ -1168,6 +1173,29 @@ static void emit_ia32_Return(const ir_node *node)
 	}
 }
 
+static void emit_ia32_Call(const ir_node *node)
+{
+	ia32_emitf(node, "call %*AS3");
+
+	if (is_cfop(node)) {
+		/* If the call throws we have to add a jump to its X_regular block. */
+		const ir_node* const block           = get_nodes_block(node);
+		const ir_node* const x_regular_proj  = get_Proj_for_pn(node, node->op->pn_x_regular);
+		if (x_regular_proj == NULL) {
+			/* Call always throws and/or never returns. */
+		} else {
+			const ir_node* const x_regular_block = be_emit_get_cfop_target(x_regular_proj);
+			assert(x_regular_block != NULL);
+			if (fallthrough_possible(block, x_regular_block)) {
+				if (be_options.verbose_asm)
+					ia32_emitf(x_regular_proj, "/* fallthrough to %L */");
+			} else {
+				ia32_emitf(x_regular_proj, "jmp %L");
+			}
+		}
+	}
+}
+
 /**
  * Enters the emitter functions for handled nodes into the generic
  * pointer of an opcode.
@@ -1196,6 +1224,7 @@ static void ia32_register_emitters(void)
 	be_set_emitter(op_ia32_Minus64,    emit_ia32_Minus64);
 	be_set_emitter(op_ia32_Setcc,      emit_ia32_Setcc);
 	be_set_emitter(op_ia32_SwitchJmp,  emit_ia32_SwitchJmp);
+	be_set_emitter(op_ia32_Call,       emit_ia32_Call);
 }
 
 /**
