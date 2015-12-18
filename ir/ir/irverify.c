@@ -143,6 +143,20 @@ static bool invalid_proj(const ir_node *proj)
 	return false;
 }
 
+static bool verify_fragile_node(const ir_node *n)
+{
+	int throws_exception = ir_throws_exception(n);
+	if (throws_exception && edges_activated(get_irn_irg(n))) {
+		const ir_node *const x_regular_proj = get_Proj_for_pn(n, n->op->pn_x_regular);
+		const ir_node *const x_except_proj = get_Proj_for_pn(n, n->op->pn_x_except);
+		if (x_regular_proj == NULL && x_except_proj == NULL) {
+			warn(n, "throws_exception set but no X_regular or X_except Proj found");
+			return false;
+		}
+	}
+	return true;
+}
+
 static int verify_node_Proj_Start(const ir_node *p)
 {
 	switch ((pn_Start)get_Proj_num(p)) {
@@ -605,7 +619,9 @@ static int mode_is_data_not_b(const ir_mode *mode)
 
 static int verify_node_Call(const ir_node *n)
 {
-	bool fine = check_mode(n, mode_T);
+	bool fine = verify_fragile_node(n);
+
+	fine &= check_mode(n, mode_T);
 	fine &= check_input_mode(n, n_Call_mem, "mem", mode_M);
 	fine &= check_input_func(n, n_Call_ptr, "ptr", mode_is_reference, "reference");
 
