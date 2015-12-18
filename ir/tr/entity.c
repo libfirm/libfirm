@@ -283,7 +283,7 @@ void set_entity_ld_ident(ir_entity *const ent, ident *const ld_ident)
 		 && get_entity_visibility(ent) != ir_visibility_private) {
 			pmap *globals = irp->globals;
 			pmap_insert(globals, old_ident, NULL);
-			assert(!pmap_contains(globals, ld_ident));
+			assert(NULL == pmap_get(ir_entity, globals, ld_ident));
 			pmap_insert(globals, ld_ident, ent);
 		}
 	}

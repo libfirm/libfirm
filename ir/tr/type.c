@@ -998,7 +998,7 @@ void add_compound_member(ir_type *type, ir_entity *entity)
 		ident *id = get_entity_ld_ident(entity);
 		pmap *globals = irp->globals;
 		/* Globals must have unique names. */
-		assert(!pmap_contains(globals, id));
+		assert(NULL == pmap_get(ir_entity, globals, id));
 		pmap_insert(globals, id, entity);
 	}
 }
