@@ -755,7 +755,7 @@ static void fix_int_return(cl_entry const *const entry,
 
 	/* if the Call throws an exception, then we cannot add instruction
 	 * immediately behind it as the call ends the basic block */
-	assert(!ir_throws_exception(call));
+	assert(!is_cfop(call));
 	ir_mode *const mode_ref = get_irn_mode(base_addr);
 
 	ir_node *proj_mem = entry->proj_M;
