@@ -191,6 +191,12 @@ static void collect_egde_frequency(ir_node *block, void *data)
 	set_irn_link(block, entry);
 
 	int arity = get_Block_n_cfgpreds(block);
+	for (int i = 0; i < arity; ++i) {
+		ir_node *const cfgpred = get_Block_cfgpred(block, i);
+		if (is_x_except_branch(cfgpred))
+			return;
+	}
+
 	if (arity == 0) {
 		/* must be the start block, everything else is dead code and should be
 		 * removed by now */
