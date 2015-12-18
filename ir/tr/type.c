@@ -972,17 +972,18 @@ void remove_compound_member(ir_type *type, ir_entity *member)
 {
 	assert(is_compound_type(type));
 	for (size_t i = 0, n = ARR_LEN(type->attr.ca.members); i < n; ++i) {
-		if (get_compound_member(type, i) == member) {
-			for (; i < n - 1; ++i)
-				type->attr.ca.members[i] = type->attr.ca.members[i+1];
-			ARR_SETLEN(ir_entity*, type->attr.ca.members, n-1);
-			if (is_segment_type(type) && !(type->flags & tf_info)
-			 && get_entity_visibility(member) != ir_visibility_private) {
-				pmap *globals = irp->globals;
-				pmap_insert(globals, get_entity_ld_ident(member), NULL);
-			}
-			break;
+		if (get_compound_member(type, i) != member)
+			continue;
+		for (; i < n - 1; ++i)
+			type->attr.ca.members[i] = type->attr.ca.members[i+1];
+		ARR_SETLEN(ir_entity*, type->attr.ca.members, n-1);
+		/* members of global type must also be removed from map */
+		if (is_segment_type(type) && !(type->flags & tf_info)
+		 && get_entity_visibility(member) != ir_visibility_private) {
+			pmap *globals = irp->globals;
+			pmap_insert(globals, get_entity_ld_ident(member), NULL);
 		}
+		break;
 	}
 }
 
