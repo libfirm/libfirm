@@ -322,7 +322,7 @@ static bool verify_node_Proj_fragile(const ir_node *node)
 	if (!is_fragile_op(pred))
 		return true;
 
-	if (!is_x_except_Proj(node) && !is_x_regular_Proj(node))
+	if (!is_x_except_Proj(node))
 		return true;
 	if (!ir_throws_exception(pred)) {
 		const char *kind = is_x_except_Proj(node) ? "exception" : "regular";
@@ -361,7 +361,7 @@ static int verify_node_Block(const ir_node *n)
 	bool fine = check_mode(n, mode_BB);
 	for (int i = 0, n_cfgpreds = get_Block_n_cfgpreds(n); i < n_cfgpreds; ++i) {
 		fine &= check_input_mode(n, i, NULL, mode_X);
-		ir_node *pred         = get_Block_cfgpred(n, i);
+		ir_node *pred = get_Block_cfgpred(n, i);
 		ir_node *skipped_pred = skip_Proj(skip_Tuple(pred));
 		if (!is_cfop(skipped_pred) && !is_Bad(skipped_pred)) {
 			warn(n, "predecessor %d of block is not a cfop, but %+F", i,
@@ -382,16 +382,16 @@ static int verify_node_Block(const ir_node *n)
 		fine = false;
 	} else if (n == get_irg_end_block(irg)
 	           && !irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_BACKEND)) {
-		/* End block may only have Return, Raise or fragile ops as preds. */
-		for (int i = 0, n_cfgpreds = get_Block_n_cfgpreds(n); i < n_cfgpreds;
-		     ++i) {
-		    ir_node *pred         = get_Block_cfgpred(n, i);
+		/* End block may only have Return, Raise, Bad or x_except_Proj as preds. */
+		for (int i = 0, n_cfgpreds = get_Block_n_cfgpreds(n); i < n_cfgpreds; ++i) {
+			ir_node *pred = get_Block_cfgpred(n, i);
 			ir_node *skipped_pred = skip_Proj(skip_Tuple(pred));
-			if (!is_Return(skipped_pred) && !is_Bad(skipped_pred)
-			    && !is_Raise(skipped_pred)) {
-			    warn(n, "end block must have Return or Raise predecessor, found %+F",
-			         skipped_pred);
-			    fine = false;
+			if (!is_Return(skipped_pred)
+			    && !is_Bad(skipped_pred)
+			    && !is_Raise(skipped_pred)
+			    && !is_x_except_Proj(pred)) {
+				warn(n, "end block must have Return, Raise or fragile op predecessor, found %+F", skipped_pred);
+				fine = false;
 			}
 		}
 	}
@@ -1373,12 +1373,6 @@ void ir_register_verify_node_ops(void)
 	set_op_verify_proj(op_Tuple,  verify_node_Proj_Tuple);
 }
 
-static bool has_multiple_X_succs(const ir_node *node)
-{
-	return is_Cond(node) || is_Switch(node)
-	    || (is_fragile_op(node) && ir_throws_exception(node));
-}
-
 static unsigned n_returns;
 static bool     properties_fine;
 
@@ -1415,7 +1409,7 @@ static void check_simple_properties(ir_node *node, void *env)
 		    && irg_has_properties(irg, IR_GRAPH_PROPERTY_NO_CRITICAL_EDGES)) {
 			foreach_irn_in(node, p, pred) {
 				ir_node *skipped = skip_Proj(skip_Tuple(pred));
-				if (has_multiple_X_succs(skipped)) {
+				if (is_Cond(skipped) || is_Switch(skipped)) {
 					warn(node, "IR_GRAPH_PROPERTY_NO_CRITICAL_EDGES set, but edge %+F->%+F is critical", node, skipped);
 					properties_fine = false;
 				}
