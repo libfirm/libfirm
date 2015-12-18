@@ -33,6 +33,11 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
+typedef struct env {
+	ir_node                   **call_list;
+	mtp_additional_properties   filter_property;
+} env_t;
+
 /** Ready IRG's are marked in the ready set. */
 static unsigned *ready_set;
 
@@ -56,24 +61,24 @@ static bool method_type_contains_aggregate(const ir_type *type)
 }
 
 /**
- * Walker: Collect all calls to const functions
- * to lists. Collect all Proj(Call) nodes into a Proj list.
+ * Walker: Collect all calls with a given property to lists.
+ * Collect all Proj(Call) nodes into a Proj list.
  */
-static void collect_const_calls(ir_node *node, void *env)
+static void collect_calls(ir_node *node, void *ctx)
 {
-	ir_node ***pure_call_list = (ir_node ***)env;
+	env_t *env = (env_t *)ctx;
 
 	if (is_Call(node)) {
 		ir_type   *type   = get_Call_type(node);
 		unsigned   prop   = get_method_additional_properties(type);
 		ir_entity *callee = get_Call_callee(node);
-		if (callee != NULL)
+		if (callee != NULL) {
 			prop |= get_entity_additional_properties(callee);
+		}
 
-		/* ok, if we get here we found a call to a pure function,
-		 * if it also terminates then we can transform it */
-		if ((prop & mtp_property_pure) && (prop & mtp_property_terminates)) {
-			ARR_APP1(ir_node*, *pure_call_list, node);
+		mtp_additional_properties filter_property = env->filter_property;
+		if ((filter_property & ~prop) == 0) {
+			ARR_APP1(ir_node*, env->call_list, node);
 		}
 	} else if (is_Proj(node)) {
 		/* Collect all memory and exception Proj's from
@@ -157,47 +162,6 @@ static void fix_const_call_lists(ir_graph *irg, ir_node **pure_call_list)
 		/* ... including exception edges */
 		clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE
 		                   | IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO);
-	}
-}
-
-/**
- * Walker: Collect all calls to nothrow functions
- * to lists. Collect all Proj(Call) nodes into a Proj list.
- */
-static void collect_nothrow_calls(ir_node *node, void *env)
-{
-	ir_node ***nothrow_call_list = (ir_node ***)env;
-
-	if (is_Call(node)) {
-		ir_entity *callee = get_Call_callee(node);
-		if (callee == NULL)
-			return;
-		unsigned prop = get_entity_additional_properties(callee);
-		if ((prop & mtp_property_nothrow) == 0)
-			return;
-		/* ok, if we get here we found a call to a nothrow function */
-		ARR_APP1(ir_node*, *nothrow_call_list, node);
-	} else if (is_Proj(node)) {
-		/*
-		 * Collect all memory and exception Proj's from
-		 * calls.
-		 */
-		ir_node *call = get_Proj_pred(node);
-		if (!is_Call(call))
-			return;
-
-		/* collect the Proj's in the Proj list */
-		switch (get_Proj_num(node)) {
-		case pn_Call_M:
-		case pn_Call_X_except:
-		case pn_Call_X_regular:
-			set_irn_link(node, get_irn_link(call));
-			set_irn_link(call, node);
-			break;
-
-		default:
-			break;
-		}
 	}
 }
 
@@ -572,14 +536,16 @@ static void handle_const_Calls(void)
 {
 	/* all calls of pure functions can be transformed */
 	foreach_irp_irg(i, irg) {
-		ir_node **pure_call_list = NEW_ARR_F(ir_node*, 0);
-
+		env_t env = {
+			.call_list       = NEW_ARR_F(ir_node*, 0),
+			.filter_property = mtp_property_pure | mtp_property_terminates,
+		};
 		ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
-		irg_walk_graph(irg, firm_clear_link, collect_const_calls, &pure_call_list);
-		fix_const_call_lists(irg, pure_call_list);
+		irg_walk_graph(irg, firm_clear_link, collect_calls, &env);
+		fix_const_call_lists(irg, env.call_list);
 		ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 
-		DEL_ARR_F(pure_call_list);
+		DEL_ARR_F(env.call_list);
 
 		confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_CONTROL_FLOW
 		                          | IR_GRAPH_PROPERTY_ONE_RETURN
@@ -594,15 +560,17 @@ static void handle_nothrow_Calls(void)
 {
 	/* all calls of nothrow functions can be transformed */
 	foreach_irp_irg(i, irg) {
-		ir_node **nothrow_call_list = NEW_ARR_F(ir_node*, 0);
-
+		env_t env = {
+			.call_list       = NEW_ARR_F(ir_node*, 0),
+			.filter_property = mtp_property_nothrow,
+		};
 		ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
-		irg_walk_graph(irg, firm_clear_link, collect_nothrow_calls, &nothrow_call_list);
+		irg_walk_graph(irg, firm_clear_link, collect_calls, &env);
 
-		fix_nothrow_call_list(irg, nothrow_call_list);
+		fix_nothrow_call_list(irg, env.call_list);
 		ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 
-		DEL_ARR_F(nothrow_call_list);
+		DEL_ARR_F(env.call_list);
 	}
 }
 
