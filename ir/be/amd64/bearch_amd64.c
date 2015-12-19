@@ -64,6 +64,7 @@ static int get_insn_mode_bytes(amd64_insn_mode_t insn_mode)
 	case INSN_MODE_32:      return 4;
 	case INSN_MODE_64:      return 8;
 	case INSN_MODE_128:     return 16;
+	case INSN_MODE_80:
 	case INSN_MODE_INVALID: break;
 	}
 	panic("bad insn mode");
