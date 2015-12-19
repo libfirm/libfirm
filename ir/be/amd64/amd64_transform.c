@@ -2122,15 +2122,15 @@ static ir_node *match_mov(dbg_info *dbgi, ir_node *block, ir_node *value,
 	return be_new_Proj(new_node, pn_res);
 }
 
-static ir_node *create_extend_mov(dbg_info *dbgi, ir_node *block,
-                                  ir_node *value, amd64_insn_mode_t insn_mode)
+static ir_node *gen_extend(dbg_info *const dbgi, ir_node *const block,
+                           ir_node *const value, ir_mode *const from)
 {
-	ir_mode         *const value_mode  = get_irn_mode(value);
-	bool             const is_signed   = mode_is_signed(value_mode);
-	create_mov_func  const constructor = is_signed ? new_bd_amd64_movs
-	                                               : new_bd_amd64_mov_gp;
-	int              const pn          = is_signed ? pn_amd64_movs_res
-	                                               : pn_amd64_mov_gp_res;
+	amd64_insn_mode_t const insn_mode   = get_insn_mode_from_mode(from);
+	bool              const is_signed   = mode_is_signed(from);
+	create_mov_func   const constructor = is_signed ? new_bd_amd64_movs
+	                                                : new_bd_amd64_mov_gp;
+	unsigned          const pn          = is_signed ? pn_amd64_movs_res
+	                                                : pn_amd64_mov_gp_res;
 	return match_mov(dbgi, block, value, insn_mode, constructor, pn);
 }
 
@@ -2263,14 +2263,15 @@ static ir_node *gen_Conv(ir_node *const node)
 		assert(dst_mode == amd64_mode_xmm);
 
 		if (src_bits < 64) {
-			amd64_insn_mode_t insn_mode = get_insn_mode_from_mode(src_mode);
-			ir_node *const op_ext = create_extend_mov(dbgi, block, op, insn_mode);
-			// No point in address matching here, the
-			// sign-/zero-extending mov has done that
-			// already.
-			ir_node *in[] = { op_ext };
-			amd64_addr_t addr = { .variant = X86_ADDR_JUST_IMM };
-			ir_node *const movq = new_bd_amd64_movq(dbgi, block, 1, in, reg_reqs, AMD64_OP_REG, addr);
+			ir_node *const op_ext = gen_extend(dbgi, block, op, src_mode);
+			// No point in address matching here, the sign-/zero-extending mov
+			// has done that already.
+			ir_node *const in[] = { op_ext };
+			unsigned const n_in = ARRAY_SIZE(in);
+			amd64_addr_t const addr = { .variant = X86_ADDR_JUST_IMM };
+			ir_node *const movq = new_bd_amd64_movq(dbgi, block, n_in, in,
+			                                        reg_reqs, AMD64_OP_REG,
+			                                        addr);
 			return be_new_Proj(movq, pn_amd64_movq_res);
 		} else if (src_bits == 64) {
 			return create_movq(dbgi, block, op);
@@ -2336,20 +2337,28 @@ static ir_node *gen_Conv(ir_node *const node)
 		if (!dst_float)
 			panic("amd64: int -> mode_E NIY");
 		return conv_x87_to_sse(dbgi, block, op, dst_mode);
+	} else if (!src_float && !dst_float) {
+		/* int to int */
+		assert(get_mode_size_bits(min_mode) < 64);
+		return gen_extend(dbgi, block, op, min_mode);
 	}
 
-	ir_node *new_op = be_transform_node(op);
-	ir_node *in[1]  = { new_op };
+	ir_node *const new_op = be_transform_node(op);
+	ir_node *      in[]   = { new_op };
+	unsigned const n_in   = ARRAY_SIZE(in);
+
 	ir_node *conv;
 	unsigned pn_res;
-
 	if (src_float && dst_float) {
 		/* float to float */
 		if (src_bits == 32 && dst_bits == 64) {
-			conv   = new_bd_amd64_cvtss2sd(dbgi, block, ARRAY_SIZE(in), in, amd64_xmm_reqs, insn_mode, AMD64_OP_REG, addr);
+			conv   = new_bd_amd64_cvtss2sd(dbgi, block, n_in, in,
+			                               amd64_xmm_reqs, insn_mode,
+			                               AMD64_OP_REG, addr);
 			pn_res = pn_amd64_cvtss2sd_res;
 		} else if (src_bits == 64 && dst_bits == 32) {
-			conv   = new_bd_amd64_cvtsd2ss(dbgi, block, ARRAY_SIZE(in), in, amd64_xmm_reqs, AMD64_OP_REG, addr);
+			conv   = new_bd_amd64_cvtsd2ss(dbgi, block, n_in, in,
+			                               amd64_xmm_reqs, AMD64_OP_REG, addr);
 			pn_res = pn_amd64_cvtsd2ss_res;
 		} else {
 			panic("amd64: cannot transform %+F", node);
@@ -2365,16 +2374,21 @@ static ir_node *gen_Conv(ir_node *const node)
 		}
 
 		if (src_bits == 32) {
-			conv   = new_bd_amd64_cvttss2si(dbgi, block, ARRAY_SIZE(in), in, amd64_xmm_reqs, insn_mode, AMD64_OP_REG, addr);
+			conv   = new_bd_amd64_cvttss2si(dbgi, block, n_in, in,
+			                                amd64_xmm_reqs, insn_mode,
+			                                AMD64_OP_REG, addr);
 			pn_res = pn_amd64_cvttss2si_res;
 		} else if (src_bits == 64) {
-			conv   = new_bd_amd64_cvttsd2si(dbgi, block, ARRAY_SIZE(in), in, amd64_xmm_reqs, insn_mode, AMD64_OP_REG, addr);
+			conv   = new_bd_amd64_cvttsd2si(dbgi, block, n_in, in,
+			                                amd64_xmm_reqs, insn_mode,
+			                                AMD64_OP_REG, addr);
 			pn_res = pn_amd64_cvttsd2si_res;
 		} else {
 			panic("amd64: cannot transform %+F", node);
 		}
-	} else if (!src_float && dst_float) {
+	} else {
 		/* int to float */
+		assert(!src_float && dst_float);
 
 		if (!mode_is_signed(src_mode) && src_bits <= 32) {
 			/* Conversion is signed only, therefore use up to 64-bit register
@@ -2384,33 +2398,26 @@ static ir_node *gen_Conv(ir_node *const node)
 			insn_mode = INSN_MODE_64;
 			amd64_insn_mode_t move_mode = get_insn_mode_from_mode(src_mode);
 
-			ir_node *const ext = new_bd_amd64_mov_gp(dbgi, block, ARRAY_SIZE(in), in, reg_reqs, move_mode, AMD64_OP_REG, addr);
+			ir_node *const ext = new_bd_amd64_mov_gp(dbgi, block, n_in, in,
+			                                         reg_reqs, move_mode,
+			                                         AMD64_OP_REG, addr);
 			in[0] = be_new_Proj(ext, pn_amd64_mov_gp_res);
 		} else if (!mode_is_signed(src_mode) && src_bits == 64) {
 			panic("cannot convert 64-bit unsigned to floating point");
 		}
 
 		if (dst_bits == 32) {
-			conv   = new_bd_amd64_cvtsi2ss(dbgi, block, ARRAY_SIZE(in), in, reg_reqs, insn_mode, AMD64_OP_REG, addr);
+			conv   = new_bd_amd64_cvtsi2ss(dbgi, block, n_in, in, reg_reqs,
+			                               insn_mode, AMD64_OP_REG, addr);
 			pn_res = pn_amd64_cvtsi2ss_res;
 		} else if (dst_bits == 64) {
-			conv   = new_bd_amd64_cvtsi2sd(dbgi, block, ARRAY_SIZE(in), in, reg_reqs, insn_mode, AMD64_OP_REG, addr);
+			conv   = new_bd_amd64_cvtsi2sd(dbgi, block, n_in, in, reg_reqs,
+			                               insn_mode, AMD64_OP_REG, addr);
 			pn_res = pn_amd64_cvtsi2sd_res;
 		} else {
 			panic("amd64: cannot transform %+F", node);
 		}
-	} else {
-		/* int to int */
-		if (!mode_is_signed(min_mode) || get_mode_size_bits(min_mode) == 64) {
-			conv   = new_bd_amd64_mov_gp(dbgi, block, ARRAY_SIZE(in), in, reg_reqs, insn_mode, AMD64_OP_REG, addr);
-			pn_res = pn_amd64_mov_gp_res;
-		} else {
-			assert(get_mode_size_bits(min_mode) <= 32);
-			conv   = new_bd_amd64_movs(dbgi, block, ARRAY_SIZE(in), in, reg_reqs, insn_mode, AMD64_OP_REG, addr);
-			pn_res = pn_amd64_movs_res;
-		}
 	}
-
 	return be_new_Proj(conv, pn_res);
 }
 
