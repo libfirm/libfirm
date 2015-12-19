@@ -647,28 +647,20 @@ static bool needs_extension(ir_node *op)
 	return !be_upper_bits_clean(op, mode);
 }
 
-static ir_node *create_sext(ir_node *new_block, ir_node *const node, ir_mode *mode)
+static ir_node *create_sar(dbg_info *dbgi, ir_node *const new_block,
+                           amd64_insn_mode_t insn_mode, ir_node *const value,
+                           int32_t immediate)
 {
-	amd64_insn_mode_t insn_mode = get_insn_mode_from_mode(mode);
-	dbg_info *const   dbgi      = get_irn_dbg_info(node);
-	ir_node  *const   new_node  = be_transform_node(node);
-
 	amd64_shift_attr_t attr;
 	memset(&attr, 0, sizeof(attr));
 	attr.base.op_mode = AMD64_OP_SHIFT_IMM;
 	attr.insn_mode    = insn_mode;
-	attr.immediate    = get_mode_size_bits(mode) - 1;
-	ir_node *in[1]    = { new_node };
-	ir_node *const sar = new_bd_amd64_sar(dbgi, new_block, ARRAY_SIZE(in), in, reg_reqs, &attr);
+	attr.immediate    = immediate;
+	ir_node *in[1]    = { value };
+	ir_node *const sar = new_bd_amd64_sar(dbgi, new_block, ARRAY_SIZE(in), in,
+	                                      reg_reqs, &attr);
 	arch_set_irn_register_req_out(sar, 0, &amd64_requirement_gp_same_0);
 	return be_new_Proj(sar, pn_amd64_sar_res);
-}
-
-static ir_node *create_zext(ir_node *new_block, ir_node *const node)
-{
-	dbg_info *const dbgi = get_irn_dbg_info(node);
-	ir_node  *const xor0 = new_bd_amd64_xor_0(dbgi, new_block);
-	return be_new_Proj(xor0, pn_amd64_xor_0_res);
 }
 
 static bool use_address_matching(ir_mode *mode, match_flags_t flags,
@@ -1216,12 +1208,16 @@ static ir_node *create_div(ir_node *const node, ir_mode *const mode,
 	ir_node *const new_op2 = be_transform_node(op2);
 	ir_node *const new_mem = be_transform_node(mem);
 	ir_node *upper_value;
-	ir_node *(*constructor)(dbg_info*, ir_node*, int, ir_node *const*, arch_register_req_t const**, amd64_insn_mode_t);
+	ir_node *(*constructor)(dbg_info*, ir_node*, int, ir_node *const*,
+	                        arch_register_req_t const**, amd64_insn_mode_t);
+	/* We have to extend the value to a 2nd register */
 	if (mode_is_signed(mode)) {
-		upper_value = create_sext(new_block, op1, mode);
+		int32_t bits = get_insn_mode_bits(insn_mode);
+		upper_value = create_sar(dbgi, new_block, insn_mode, new_op1, bits-1);
 		constructor = new_bd_amd64_idiv;
 	} else {
-		upper_value = create_zext(new_block, node);
+		ir_node *const xor0 = new_bd_amd64_xor_0(dbgi, new_block);
+		upper_value = be_new_Proj(xor0, pn_amd64_xor_0_res);
 		constructor = new_bd_amd64_div;
 	}
 
