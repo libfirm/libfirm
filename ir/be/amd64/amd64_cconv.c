@@ -249,6 +249,14 @@ void amd64_cconv_init(void)
 		REG_XMM13,
 		REG_XMM14,
 		REG_XMM15,
+		REG_ST0,
+		REG_ST1,
+		REG_ST2,
+		REG_ST3,
+		REG_ST4,
+		REG_ST5,
+		REG_ST6,
+		REG_ST7,
 	};
 	for (size_t i = 0; i < ARRAY_SIZE(common_caller_saves); ++i) {
 		rbitset_set(default_caller_saves, common_caller_saves[i]);
