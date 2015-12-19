@@ -7,11 +7,12 @@
 static unsigned get_bits_from_insn_mode(amd64_insn_mode_t const insn_mode)
 {
 	switch (insn_mode) {
-	case INSN_MODE_8: return 8;
+	case INSN_MODE_8:  return 8;
 	case INSN_MODE_16: return 16;
 	case INSN_MODE_32: return 32;
 	case INSN_MODE_64: return 64;
-	case INSN_MODE_128: return 128;
+	case INSN_MODE_80: return 80;
+	case INSN_MODE_128:
 	case INSN_MODE_INVALID:
 		break;
 	}

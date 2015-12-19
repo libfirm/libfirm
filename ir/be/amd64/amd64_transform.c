@@ -330,7 +330,7 @@ static amd64_insn_mode_t get_insn_mode_from_mode(const ir_mode *mode)
 	case  16: return INSN_MODE_16;
 	case  32: return INSN_MODE_32;
 	case  64: return INSN_MODE_64;
-	case  80: return INSN_MODE_128; /* hack for mode_E */
+	case  80: return INSN_MODE_80;
 	case 128: return INSN_MODE_128;
 	}
 	panic("unexpected mode %+F", mode);
@@ -2477,7 +2477,7 @@ ir_node *amd64_new_spill(ir_node *value, ir_node *after)
 	arch_register_req_t const **reqs;
 	if (mode_is_float(mode) || mode == amd64_mode_xmm) {
 		if (mode == x86_mode_E) {
-			insn_mode = INSN_MODE_128;
+			insn_mode = INSN_MODE_80;
 			cons      = &new_bd_amd64_fst;
 			reqs      = x87_reg_mem_reqs;
 		} else {
@@ -2530,7 +2530,7 @@ ir_node *amd64_new_reload(ir_node *value, ir_node *spill, ir_node *before)
 	amd64_insn_mode_t insn_mode;
 	if (mode_is_float(mode) || mode == amd64_mode_xmm) {
 		if (mode == x86_mode_E) {
-			insn_mode = INSN_MODE_128;
+			insn_mode = INSN_MODE_80;
 			cons      = &new_bd_amd64_fld;
 			pn_res    = pn_amd64_fld_res;
 		} else {

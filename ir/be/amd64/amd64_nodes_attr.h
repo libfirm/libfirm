@@ -30,6 +30,7 @@ typedef enum {
 	INSN_MODE_16,
 	INSN_MODE_32,
 	INSN_MODE_64,
+	INSN_MODE_80,
 	INSN_MODE_128,
 } amd64_insn_mode_t;
 

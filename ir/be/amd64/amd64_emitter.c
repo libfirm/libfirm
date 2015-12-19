@@ -36,13 +36,14 @@ static ir_node *get_cfop_target_block(const ir_node *irn)
 	return (ir_node*)get_irn_link(irn);
 }
 
-static char get_gp_mode_suffix(const amd64_insn_mode_t mode)
+static char get_gp_mode_suffix(amd64_insn_mode_t const insn_mode)
 {
-	switch (mode) {
+	switch (insn_mode) {
 	case INSN_MODE_8:  return 'b';
 	case INSN_MODE_16: return 'w';
 	case INSN_MODE_32: return 'l';
 	case INSN_MODE_64: return 'q';
+	case INSN_MODE_80:
 	case INSN_MODE_128:
 	case INSN_MODE_INVALID:
 		break;
@@ -50,28 +51,49 @@ static char get_gp_mode_suffix(const amd64_insn_mode_t mode)
 	panic("invalid insn mode");
 }
 
-static void amd64_emit_insn_mode_suffix(const amd64_insn_mode_t mode)
+static void amd64_emit_insn_mode_suffix(amd64_insn_mode_t const insn_mode)
 {
-	be_emit_char(get_gp_mode_suffix(mode));
+	be_emit_char(get_gp_mode_suffix(insn_mode));
 }
 
-static char get_xmm_mode_suffix(const amd64_insn_mode_t mode)
+static char get_xmm_mode_suffix(amd64_insn_mode_t const insn_mode)
 {
-	switch (mode) {
+	switch (insn_mode) {
 	case INSN_MODE_32:  return 's';
 	case INSN_MODE_64:  return 'd';
 	case INSN_MODE_128: return 'q';
 	case INSN_MODE_8:
 	case INSN_MODE_16:
+	case INSN_MODE_80:
 	case INSN_MODE_INVALID:
 		break;
 	}
 	panic("invalid insn mode");
 }
 
-static void amd64_emit_xmm_mode_suffix(const amd64_insn_mode_t mode)
+static void amd64_emit_xmm_mode_suffix(amd64_insn_mode_t const insn_mode)
 {
-	be_emit_char(get_xmm_mode_suffix(mode));
+	be_emit_char(get_xmm_mode_suffix(insn_mode));
+}
+
+static char get_x87_mode_suffix(amd64_insn_mode_t const insn_mode)
+{
+	switch (insn_mode) {
+	case INSN_MODE_32: return 's';
+	case INSN_MODE_64: return 'l';
+	case INSN_MODE_80: return 't';
+	case INSN_MODE_8:
+	case INSN_MODE_16:
+	case INSN_MODE_128:
+	case INSN_MODE_INVALID:
+		break;
+	}
+	panic("Invalid insn mode");
+}
+
+static void amd64_emit_x87_mode_suffix(amd64_insn_mode_t const insn_mode)
+{
+	be_emit_char(get_x87_mode_suffix(insn_mode));
 }
 
 static const char *get_register_name_8bit(const arch_register_t *reg)
@@ -168,6 +190,7 @@ static const char *get_register_name_mode(const arch_register_t *reg,
 	case INSN_MODE_16: return get_register_name_16bit(reg);
 	case INSN_MODE_32: return get_register_name_32bit(reg);
 	case INSN_MODE_64:
+	case INSN_MODE_80:
 	case INSN_MODE_128: return reg->name;
 	case INSN_MODE_INVALID:
 		break;
@@ -400,20 +423,6 @@ static void emit_shiftop(const ir_node *const node)
 		break;
 	}
 	panic("invalid op_mode for shiftop");
-}
-
-static void amd64_emit_x87_mode_suffix(amd64_insn_mode_t const insn_mode)
-{
-	switch (insn_mode) {
-	case INSN_MODE_32:  be_emit_char('s'); return;
-	case INSN_MODE_64:  be_emit_char('l'); return;
-	case INSN_MODE_128: be_emit_char('t'); return;
-	case INSN_MODE_8:
-	case INSN_MODE_16:
-	case INSN_MODE_INVALID:
-		break;
-	}
-	panic("Invalid insn mode");
 }
 
 void amd64_emitf(ir_node const *const node, char const *fmt, ...)
@@ -859,6 +868,7 @@ static void emit_amd64_mov_gp(const ir_node *node)
 	case INSN_MODE_16: amd64_emitf(node, "movzwq %AM, %^D0"); return;
 	case INSN_MODE_32: amd64_emitf(node, "movl %AM, %3D0");   return;
 	case INSN_MODE_64: amd64_emitf(node, "movq %AM, %^D0");   return;
+	case INSN_MODE_80:
 	case INSN_MODE_128:
 	case INSN_MODE_INVALID:
 		break;
