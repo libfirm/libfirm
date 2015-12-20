@@ -37,6 +37,12 @@ static void sim_amd64_fld(x87_state *const state, ir_node *const node)
 	x86_sim_x87_load(state, node, value);
 }
 
+static void sim_amd64_fild(x87_state *const state, ir_node *const node)
+{
+	ir_node *const value = get_Proj_for_pn(node, pn_amd64_fild_res);
+	x86_sim_x87_load(state, node, value);
+}
+
 static void sim_amd64_call(x87_state *const state, ir_node *const node)
 {
 	/** push fp results onto x87 stack */
@@ -92,6 +98,7 @@ static void prepare_callbacks(void)
 	x86_register_x87_sim(op_amd64_fadd,   sim_amd64_fadd);
 	x86_register_x87_sim(op_amd64_fchs,   x86_sim_x87_unop);
 	x86_register_x87_sim(op_amd64_fdiv,   sim_amd64_fdiv);
+	x86_register_x87_sim(op_amd64_fild,   sim_amd64_fild);
 	x86_register_x87_sim(op_amd64_fld,    sim_amd64_fld);
 	x86_register_x87_sim(op_amd64_fld1,   x86_x87_push);
 	x86_register_x87_sim(op_amd64_fldz,   x86_x87_push);

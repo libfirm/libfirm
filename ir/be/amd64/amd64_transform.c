@@ -2160,6 +2160,14 @@ static ir_node *gen_extend(dbg_info *const dbgi, ir_node *const block,
 	return match_mov(dbgi, block, value, insn_mode, constructor, pn);
 }
 
+static ir_node *extend_if_necessary(dbg_info *const dbgi,
+                                    ir_node *const block, ir_node *const value)
+{
+	if (!needs_extension(value))
+		return be_transform_node(value);
+	return gen_extend(dbgi, block, value, get_irn_mode(value));
+}
+
 static ir_node *new_movq_wrapper(dbg_info *dbgi, ir_node *block, int arity,
                                  ir_node *const *in,
                                  arch_register_req_t const **in_reqs,
@@ -2195,14 +2203,13 @@ static ir_node *create_cvtsd2ss(dbg_info *dbgi, ir_node *block, ir_node *value)
 }
 
 static void store_to_temp(construct_binop_func const new_store,
-		arch_register_req_t const **const in_reqs,
-		amd64_addr_t *addr, dbg_info *dbgi, ir_node *block, ir_node **in,
-		int *n_in, ir_node *op, ir_mode *mode)
+		arch_register_req_t const **const in_reqs, amd64_addr_t *addr,
+		dbg_info *dbgi, ir_node *block, ir_node **in, int *n_in,
+		ir_node *new_op, amd64_insn_mode_t insn_mode)
 {
 	ir_graph *const irg    = get_irn_irg(block);
 	ir_node  *const frame  = get_irg_frame(irg);
 	ir_node  *const nomem  = get_irg_no_mem(irg);
-	ir_node  *const new_op = be_transform_node(op);
 	ir_node  *const sin[]  = { new_op, frame, nomem };
 
 	amd64_binop_addr_attr_t const attr = {
@@ -2210,7 +2217,7 @@ static void store_to_temp(construct_binop_func const new_store,
 			.base = {
 				.op_mode = AMD64_OP_ADDR_REG,
 			},
-			.insn_mode = get_insn_mode_from_mode(mode),
+			.insn_mode = insn_mode,
 			.addr = {
 				.immediate = {
 					.kind = X86_IMM_FRAMEOFFSET,
@@ -2238,33 +2245,59 @@ static void store_to_temp(construct_binop_func const new_store,
 
 static ir_node *conv_sse_to_x87(dbg_info *dbgi, ir_node *block, ir_node *op)
 {
+	ir_mode          *const mode      = get_irn_mode(op);
+	amd64_insn_mode_t const insn_mode = get_insn_mode_from_mode(mode);
+	ir_node          *const new_op    = be_transform_node(op);
 	ir_node *in[5];
 	int      n_in = 0;
-	ir_mode *const mode = get_irn_mode(op);
 	amd64_addr_t addr;
 	store_to_temp(new_bd_amd64_movs_store_xmm, xmm_reg_mem_reqs, &addr, dbgi,
-	              block, in, &n_in, op, mode);
+	              block, in, &n_in, new_op, insn_mode);
 	assert(n_in < (int)ARRAY_SIZE(in));
 
-	amd64_insn_mode_t insn_mode = get_insn_mode_from_mode(mode);
 	ir_node *load = new_bd_amd64_fld(dbgi, block, n_in, in, reg_mem_reqs,
 	                                 insn_mode, AMD64_OP_ADDR, addr);
 	set_irn_pinned(load, false);
 	return be_new_Proj(load, pn_amd64_fld_res);
 }
 
+static ir_node *conv_int_to_x87(dbg_info *dbgi, ir_node *block, ir_node *op)
+{
+	ir_mode          *const mode      = get_irn_mode(op);
+	ir_node          *const new_op    = extend_if_necessary(dbgi, block, op);
+	amd64_insn_mode_t       insn_mode = get_insn_mode_from_mode(mode);
+	if (insn_mode < INSN_MODE_32)
+		insn_mode = INSN_MODE_32;
+	assert(insn_mode == INSN_MODE_32 || insn_mode == INSN_MODE_64);
+	if (!mode_is_signed(mode))
+		panic("unsigned int -> x87 NIY");
+
+	ir_node *in[5];
+	int      n_in = 0;
+	amd64_addr_t addr;
+	store_to_temp(new_bd_amd64_mov_store, reg_reg_mem_reqs, &addr, dbgi, block,
+				  in, &n_in, new_op, insn_mode);
+	assert(n_in < (int)ARRAY_SIZE(in));
+
+	ir_node *load = new_bd_amd64_fild(dbgi, block, n_in, in, reg_mem_reqs,
+	                                  INSN_MODE_32, AMD64_OP_ADDR, addr);
+	set_irn_pinned(load, false);
+	return be_new_Proj(load, pn_amd64_fild_res);
+}
+
 static ir_node *conv_x87_to_sse(dbg_info *dbgi, ir_node *block, ir_node *op,
                                 ir_mode *dst_mode)
 {
+	amd64_insn_mode_t const insn_mode = get_insn_mode_from_mode(dst_mode);
+	ir_node          *const new_op    = be_transform_node(op);
 	ir_node *in[5];
 	int      n_in = 0;
 	amd64_addr_t addr;
 	assert(get_mode_size_bits(dst_mode) <= 64);
 	store_to_temp(new_bd_amd64_fst, x87_reg_mem_reqs, &addr, dbgi, block, in,
-	              &n_in, op, dst_mode);
+	              &n_in, new_op, insn_mode);
 	assert(n_in < (int)ARRAY_SIZE(in));
 
-	amd64_insn_mode_t insn_mode = get_insn_mode_from_mode(dst_mode);
 	ir_node *load = new_bd_amd64_movs_xmm(dbgi, block, n_in, in, reg_mem_reqs,
 	                                      insn_mode, AMD64_OP_ADDR, addr);
 	set_irn_pinned(load, false);
@@ -2362,7 +2395,7 @@ static ir_node *gen_Conv(ir_node *const node)
 
 	if (dst_mode == x86_mode_E) {
 		if (!src_float)
-			panic("amd64: int -> mode_E NIY");
+			return conv_int_to_x87(dbgi, block, op);
 		/* SSE to x87 */
 		return conv_sse_to_x87(dbgi, block, op);
 	} else if (src_mode == x86_mode_E) {
