@@ -2150,6 +2150,7 @@ static ir_node *match_mov(dbg_info *dbgi, ir_node *block, ir_node *value,
 static ir_node *gen_extend(dbg_info *const dbgi, ir_node *const block,
                            ir_node *const value, ir_mode *const from)
 {
+	assert(get_mode_size_bits(from) != 64);
 	amd64_insn_mode_t const insn_mode   = get_insn_mode_from_mode(from);
 	bool              const is_signed   = mode_is_signed(from);
 	create_mov_func   const constructor = is_signed ? new_bd_amd64_movs
@@ -2353,6 +2354,12 @@ static ir_node *gen_Conv(ir_node *const node)
 		insn_mode = get_insn_mode_from_mode(min_mode);
 	}
 
+	if (is_gp) {
+		/* int to int */
+		assert(get_mode_size_bits(min_mode) < 64);
+		return gen_extend(dbgi, block, op, min_mode);
+	}
+
 	if (dst_mode == x86_mode_E) {
 		if (!src_float)
 			panic("amd64: int -> mode_E NIY");
@@ -2362,10 +2369,6 @@ static ir_node *gen_Conv(ir_node *const node)
 		if (!dst_float)
 			panic("amd64: int -> mode_E NIY");
 		return conv_x87_to_sse(dbgi, block, op, dst_mode);
-	} else if (!src_float && !dst_float) {
-		/* int to int */
-		assert(get_mode_size_bits(min_mode) < 64);
-		return gen_extend(dbgi, block, op, min_mode);
 	}
 
 	ir_node *const new_op = be_transform_node(op);
