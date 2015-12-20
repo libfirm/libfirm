@@ -802,9 +802,6 @@ fadd => {
 fdiv => {
 	template => $x87binop,
 	emit     => "fdiv%FR%FP %AF",
-	outs     => [ "res", "flags", "M" ],
-	out_reqs => [ "x87", "flags", "mem" ],
-	mode     => "mode_T",
 },
 
 fmul => {

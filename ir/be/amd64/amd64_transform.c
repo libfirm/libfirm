@@ -1276,23 +1276,48 @@ static ir_node *gen_Proj_Div(ir_node *const node)
 {
 	ir_node *const pred     = get_Proj_pred(node);
 	ir_node *const new_pred = be_transform_node(pred);
-	unsigned const pn       = get_Proj_num(node);
+	pn_Div   const pn       = get_Proj_num(node);
 
-	assert((unsigned)pn_amd64_div_M == (unsigned)pn_amd64_idiv_M);
-	assert((unsigned)pn_amd64_div_res_div == (unsigned)pn_amd64_idiv_res_div);
-	assert((unsigned)pn_amd64_divs_M == (unsigned)pn_amd64_idiv_M);
-	assert((unsigned)pn_amd64_divs_res == (unsigned)pn_amd64_idiv_res_div);
-
-	switch ((pn_Div)pn) {
-	case pn_Div_M:
-		return be_new_Proj(new_pred, pn_amd64_div_M);
-	case pn_Div_res:
-		return be_new_Proj(new_pred, pn_amd64_div_res_div);
-	case pn_Div_X_except:
-	case pn_Div_X_regular:
-		panic("amd64 exception NIY");
+	if (is_amd64_fdiv(new_pred)) {
+		switch (pn) {
+		case pn_Div_M:
+			/* float divs don't trap, skip memory */
+			return be_transform_node(get_Div_mem(pred));
+		case pn_Div_res:
+			return new_pred;
+		case pn_Div_X_except:
+		case pn_Div_X_regular:
+			panic("amd64 exception NIY");
+		}
+		panic("invalid Div Proj");
+	} else if (is_amd64_divs(new_pred)) {
+		switch (pn) {
+		case pn_Div_M:
+			/* float divs don't trap, skip memory */
+			return be_transform_node(get_Div_mem(pred));
+		case pn_Div_res:
+			return be_new_Proj(new_pred, pn_amd64_divs_res);
+		case pn_Div_X_except:
+		case pn_Div_X_regular:
+			panic("amd64 exception NIY");
+		}
+		panic("invalid Div Proj");
+	} else {
+		assert(is_amd64_div(new_pred) || is_amd64_idiv(new_pred));
+		assert((unsigned)pn_amd64_div_M == (unsigned)pn_amd64_idiv_M);
+		assert((unsigned)pn_amd64_div_res_mod
+		    == (unsigned)pn_amd64_idiv_res_mod);
+		switch (pn) {
+		case pn_Div_M:
+			return be_new_Proj(new_pred, pn_amd64_div_M);
+		case pn_Div_res:
+			return be_new_Proj(new_pred, pn_amd64_div_res_div);
+		case pn_Div_X_except:
+		case pn_Div_X_regular:
+			panic("amd64 exception NIY");
+		}
+		panic("invalid Div Proj");
 	}
-	panic("invalid Div Proj");
 }
 
 static ir_node *gen_Mod(ir_node *const node)
