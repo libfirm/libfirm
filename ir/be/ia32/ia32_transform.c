@@ -3077,7 +3077,8 @@ static ir_node *transform_sub_or_store(ir_node *sub)
 				return new_store;
 			} else {
 				ir_node *result = get_irn_n(new_store, n_ia32_Store_val);
-				if (is_Proj(result)) result = get_Proj_pred(result);
+				if (is_Proj(result))
+					result = get_Proj_pred(result);
 				return result;
 			}
 		}
