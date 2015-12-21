@@ -732,7 +732,7 @@ Cmc => {
 },
 
 Stc => {
-	irn_flags => [ "modify_flags" ],
+	irn_flags => [ "modify_flags", "rematerializable" ],
 	out_reqs  => [ "flags" ],
 	emit      => "stc",
 	latency   => 1,
