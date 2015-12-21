@@ -2211,6 +2211,16 @@ static bool is_bt_relation(ir_relation const relation, ir_mode *const mode)
 
 static ir_node *get_flags_node(ir_node *cmp, x86_condition_code_t *cc_out)
 {
+	if (is_Const(cmp)) {
+		/* For -O0 and some enabled optimizations,
+		 * we might end up with mode_b constants. */
+		*cc_out = is_Const_null(cmp) ? x86_cc_above_equal : x86_cc_below;
+
+		dbg_info *dbgi  = get_irn_dbg_info(cmp);
+		ir_node  *block = be_transform_nodes_block(cmp);
+		return new_bd_ia32_Stc(dbgi, block);
+	}
+
 	/* must have a Cmp as input */
 	ir_relation relation = get_Cmp_relation(cmp);
 	ir_node    *l        = get_Cmp_left(cmp);
