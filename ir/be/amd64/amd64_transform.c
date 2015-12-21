@@ -1808,24 +1808,32 @@ static ir_node *gen_Call(ir_node *const node)
 		amd64_get_irg_data(irg)->has_returns_twice_call = true;
 
 	/* construct arguments */
+	x86_addr_t addr;
+	memset(&addr, 0, sizeof(addr));
+	amd64_op_mode_t op_mode;
+
+	ir_node                   **const in     = ALLOCAN(ir_node*, max_inputs);
+	arch_register_req_t const **const in_req = be_allocate_in_reqs(irg, max_inputs);
+
+	/* memory input */
+	in_req[n_amd64_call_mem] = arch_memory_req;
+	addr.mem_input = n_amd64_call_mem;
+	/* (actual input constructed later) */
 
 	/* stack pointer input */
 	ir_node *const stack           = get_initial_sp(irg);
 	unsigned       param_stacksize = cconv->param_stacksize;
 	/* Always construct an IncSP, so calls do not accidentally CSE. */
 	ir_node *const callframe       = amd64_new_IncSP(new_block, stack, param_stacksize, false);
+	in_req[n_amd64_call_stack] = amd64_registers[REG_RSP].single_req;
+	in[n_amd64_call_stack]     = callframe;
 
 	/* match callee */
-	x86_addr_t addr;
-	memset(&addr, 0, sizeof(addr));
-	amd64_op_mode_t op_mode;
-
 	ir_node *mem_proj = NULL;
 
-	arch_register_req_t const **const in_req = be_allocate_in_reqs(irg, max_inputs);
-
-	ir_node **const in         = ALLOCAN(ir_node*, max_inputs);
-	int             in_arity   = 0;
+	assert(n_amd64_call_mem == 0);
+	assert(n_amd64_call_stack == 1);
+	int             in_arity   = 2;
 	ir_node **const sync_ins   = ALLOCAN(ir_node*, 1 + 1 + n_params);
 	int             sync_arity = 0;
 
@@ -1889,10 +1897,6 @@ no_call_mem:;
 	// Reset for next sync
 	sync_arity = 0;
 
-	int const call_sp_pos = in_arity++;
-	in_req[call_sp_pos]   = amd64_registers[REG_RSP].single_req;
-	in[call_sp_pos]       = callframe;
-
 	/* vararg calls need the number of SSE registers used */
 	if (is_method_variadic(type)) {
 		ir_node *const nxmm = make_const(dbgi, new_block, cconv->n_xmm_regs);
@@ -1954,14 +1958,8 @@ no_call_mem:;
 		sync_ins[sync_arity++] = sync1;
 	}
 
-	/* memory input */
-	in_req[in_arity] = arch_memory_req;
-	int mem_pos      = in_arity;
-	addr.mem_input   = mem_pos;
-	++in_arity;
-
 	/* construct memory input */
-	in[mem_pos] = be_make_Sync(new_block, sync_arity, sync_ins);
+	in[n_amd64_call_mem] = be_make_Sync(new_block, sync_arity, sync_ins);
 
 	assert(in_arity <= (int)max_inputs);
 
@@ -1987,7 +1985,7 @@ no_call_mem:;
 	fix_node_mem_proj(call, mem_proj);
 
 	/* create output register reqs */
-	arch_set_irn_register_req_out(call, pn_amd64_call_M, arch_memory_req);
+	arch_set_irn_register_req_out(call, pn_amd64_call_mem, arch_memory_req);
 	arch_copy_irn_out_info(call, pn_amd64_call_stack, callframe);
 
 	arch_register_class_t const *const flags = &amd64_reg_classes[CLASS_amd64_flags];
@@ -2033,7 +2031,7 @@ static ir_node *gen_Proj_Call(ir_node *const node)
 	ir_node *const new_call = be_transform_node(call);
 	switch ((pn_Call)pn) {
 	case pn_Call_M:
-		return be_new_Proj(new_call, pn_amd64_call_M);
+		return be_new_Proj(new_call, pn_amd64_call_mem);
 	case pn_Call_X_regular:
 	case pn_Call_X_except:
 	case pn_Call_T_result:
@@ -2198,8 +2196,6 @@ static ir_node *match_mov(dbg_info *dbgi, ir_node *block, ir_node *value,
 		mem_proj = get_Proj_for_pn(load, pn_Load_M);
 		op_mode  = AMD64_OP_ADDR;
 	} else {
-		assert(arity == 0); /* AMD64_OP_REG is currently hardcoded to always
-				     * output the register of the first input. */
 		ir_node *new_value = be_transform_node(value);
 		int const input = arity++;
 		addr = (x86_addr_t) {
