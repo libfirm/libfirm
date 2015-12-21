@@ -509,8 +509,8 @@ again:;
 			can_opt = true;
 			for (int j = 0, n_pred_cfgpreds = get_Block_n_cfgpreds(predb);
 			     j < n_pred_cfgpreds; ++j) {
-			    ir_node *predpred = get_Block_cfgpred(predb, j);
-			    if (is_Bad(predpred))
+				ir_node *predpred = get_Block_cfgpred(predb, j);
+				if (is_Bad(predpred))
 					continue;
 				++new_n_cfgpreds;
 			}
