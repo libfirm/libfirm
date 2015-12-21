@@ -2973,9 +2973,9 @@ static ir_node *gen_Switch(ir_node *node)
 static ir_node *gen_Cond(ir_node *node)
 {
 	/* we get flags from a Cmp */
-	ir_node              *sel = get_Cond_selector(node);
+	ir_node              *sel   = get_Cond_selector(node);
 	x86_condition_code_t  cc;
-	ir_node *flags = get_flags_node(sel, &cc);
+	ir_node              *flags = get_flags_node(sel, &cc);
 
 	dbg_info *dbgi      = get_irn_dbg_info(node);
 	ir_node  *new_block = be_transform_nodes_block(node);
