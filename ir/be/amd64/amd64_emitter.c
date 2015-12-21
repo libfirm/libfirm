@@ -852,6 +852,7 @@ static void amd64_register_emitters(void)
 	be_set_emitter(op_amd64_jcc,        emit_amd64_jcc);
 	be_set_emitter(op_amd64_jmp,        emit_amd64_jmp);
 	be_set_emitter(op_amd64_jmp_switch, emit_amd64_jmp_switch);
+	be_set_emitter(op_amd64_call,       emit_amd64_call);
 	be_set_emitter(op_amd64_mov_gp,     emit_amd64_mov_gp);
 	be_set_emitter(op_be_Asm,           emit_amd64_asm);
 	be_set_emitter(op_be_Copy,          emit_be_Copy);
