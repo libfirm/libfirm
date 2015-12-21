@@ -81,6 +81,7 @@ typedef struct x86_addr_t {
 	uint8_t     base_input;
 	uint8_t     index_input;
 	uint8_t     mem_input;
+	uint8_t     reg_input;
 	unsigned    log_scale : 2; /* 0, 1, 2, 3  (giving scale 1, 2, 4, 8) */
 	ENUMBF(x86_segment_selector_t) segment : 3;
 	ENUMBF(x86_addr_variant_t)     variant : 3;
