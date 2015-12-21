@@ -3082,14 +3082,11 @@ static ir_node *transform_sub_or_store(ir_node *sub)
 	if (outs == 1) {
 		ir_node *succ = get_irn_out(sub, 0);
 		if (is_Store(succ) && !be_is_transformed(succ)) {
-			ir_node *new_store = be_transform_node(succ);
-			if (is_ia32_SubMem(new_store)) {
+			ir_node *new_store = try_create_dest_am(succ);
+			if (new_store) {
+				assert(is_ia32_SubMem(new_store));
+				be_set_transformed_node(succ, new_store);
 				return new_store;
-			} else {
-				ir_node *result = get_irn_n(new_store, n_ia32_Store_val);
-				if (is_Proj(result))
-					result = get_Proj_pred(result);
-				return result;
 			}
 		}
 	}
