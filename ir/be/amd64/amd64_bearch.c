@@ -513,9 +513,13 @@ static void introduce_prologue(ir_graph *const irg, bool omit_fp)
 static void introduce_prologue_epilogue(ir_graph *irg, bool omit_fp)
 {
 	/* introduce epilogue for every return node */
-	foreach_irn_in(get_irg_end_block(irg), i, ret) {
-		assert(is_amd64_ret(ret));
-		introduce_epilogue(ret, omit_fp);
+	foreach_irn_in(get_irg_end_block(irg), i, pred) {
+		if (is_x_except_branch(pred)) {
+			/* Don't generate any code for X_except ins */
+		} else {
+			assert(is_amd64_ret(pred));
+			introduce_epilogue(pred, omit_fp);
+		}
 	}
 
 	introduce_prologue(irg, omit_fp);

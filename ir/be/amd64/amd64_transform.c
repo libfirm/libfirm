@@ -1982,11 +1982,14 @@ no_call_mem:;
 
 	/* create call node */
 	ir_node *const call = new_bd_amd64_call(dbgi, new_block, in_arity, in, in_req, out_arity, &call_attr);
+	ir_set_throws_exception(call, ir_throws_exception(node));
 	fix_node_mem_proj(call, mem_proj);
 
 	/* create output register reqs */
 	arch_set_irn_register_req_out(call, pn_amd64_call_mem, arch_memory_req);
 	arch_copy_irn_out_info(call, pn_amd64_call_stack, callframe);
+	arch_set_irn_register_req_out(call, pn_amd64_call_X_regular, arch_exec_req);
+	arch_set_irn_register_req_out(call, pn_amd64_call_X_except,  arch_exec_req);
 
 	arch_register_class_t const *const flags = &amd64_reg_classes[CLASS_amd64_flags];
 	arch_set_irn_register_req_out(call, pn_amd64_call_flags, flags->class_req);
@@ -2033,7 +2036,9 @@ static ir_node *gen_Proj_Call(ir_node *const node)
 	case pn_Call_M:
 		return be_new_Proj(new_call, pn_amd64_call_mem);
 	case pn_Call_X_regular:
+		return be_new_Proj(new_call, pn_amd64_call_X_regular);
 	case pn_Call_X_except:
+		return be_new_Proj(new_call, pn_amd64_call_X_except);
 	case pn_Call_T_result:
 		break;
 	}

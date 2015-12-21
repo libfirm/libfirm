@@ -545,10 +545,9 @@ call => {
 	in_reqs   => "...",
 	out_reqs  => "...",
 	ins       => [ "mem", "stack" ],
-	outs      => [ "mem", "stack", "flags", "first_result" ],
+	outs      => [ "mem", "stack", "flags", "X_regular", "X_except", "first_result" ],
 	attr_type => "amd64_call_addr_attr_t",
 	attr      => "const amd64_call_addr_attr_t *attr_init",
-	emit      => "call %*AM",
 },
 
 ret => {
