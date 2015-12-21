@@ -3960,7 +3960,7 @@ static ir_node *create_I2I_Conv(ir_mode *const src_mode, dbg_info *const dbgi, i
 		be_warningf(op, "unoptimized conv after constant");
 #endif
 
-	op = be_skip_downconv(op, false);
+	op = be_skip_downconv(op, true);
 
 	if (be_upper_bits_clean(op, src_mode)) {
 		return be_transform_node(op);
