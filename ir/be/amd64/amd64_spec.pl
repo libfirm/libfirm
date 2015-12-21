@@ -81,7 +81,7 @@ $mode_x87   = "x86_mode_E";
 		."\tattr->base.addr = *addr;\n"
 		."\tinit_amd64_switch_attributes(res, table, table_entity);",
 	amd64_cc_attr_t =>
-		"init_amd64_attributes(res, irn_flags, in_reqs, n_res, AMD64_OP_NONE);\n"
+		"init_amd64_attributes(res, irn_flags, in_reqs, n_res, AMD64_OP_CC);\n"
 		."\tinit_amd64_cc_attributes(res, cc, insn_mode);",
 	amd64_movimm_attr_t =>
 		"init_amd64_attributes(res, irn_flags, in_reqs, n_res, AMD64_OP_IMM64);\n"

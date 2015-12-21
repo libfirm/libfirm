@@ -59,6 +59,7 @@ typedef enum {
 	AMD64_OP_SHIFT_IMM,
 	AMD64_OP_X87,
 	AMD64_OP_X87_ADDR_REG,
+	AMD64_OP_CC,
 } amd64_op_mode_t;
 
 typedef struct {

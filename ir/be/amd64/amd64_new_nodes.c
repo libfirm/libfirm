@@ -34,10 +34,12 @@ amd64_insn_mode_t get_amd64_insn_mode(const ir_node *node)
 		const amd64_movimm_attr_t *const attr
 			= get_amd64_movimm_attr_const(node);
 		return attr->insn_mode;
-	} else if (amd64_has_addr_attr(node)) {
+	}
+	amd64_op_mode_t const op_mode = get_amd64_attr_const(node)->op_mode;
+	if (amd64_has_addr_attr(op_mode)) {
 		amd64_addr_attr_t const *const attr = get_amd64_addr_attr_const(node);
 		return attr->insn_mode;
-	} else if (amd64_has_cc_attr(node)) {
+	} else if (op_mode == AMD64_OP_CC) {
 		amd64_cc_attr_t const *const attr = get_amd64_cc_attr_const(node);
 		return attr->insn_mode;
 	} else {
@@ -78,9 +80,9 @@ int get_insn_mode_bits(amd64_insn_mode_t insn_mode)
 	}
 }
 
-static const char *get_op_mode_string(amd64_op_mode_t mode)
+static const char *get_op_mode_string(amd64_op_mode_t const op_mode)
 {
-	switch (mode) {
+	switch (op_mode) {
 	case AMD64_OP_ADDR_IMM:     return "addr+imm";
 	case AMD64_OP_ADDR_REG:     return "addr+reg";
 	case AMD64_OP_ADDR:         return "addr";
@@ -95,6 +97,7 @@ static const char *get_op_mode_string(amd64_op_mode_t mode)
 	case AMD64_OP_SHIFT_REG:    return "shift_reg";
 	case AMD64_OP_X87:          return "x87";
 	case AMD64_OP_X87_ADDR_REG: return "x87+addr+reg";
+	case AMD64_OP_CC:           return "cc";
 	}
 	return "invalid op_mode";
 }
@@ -154,7 +157,7 @@ static void amd64_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 		default:
 			break;
 		}
-		if (amd64_has_addr_attr(n)) {
+		if (amd64_has_addr_attr(op_mode)) {
 			const amd64_addr_attr_t *addr_attr = get_amd64_addr_attr_const(n);
 			fprintf(F, "size = %s\n", get_insn_mode_string(addr_attr->insn_mode));
 			x86_addr_variant_t const variant = addr_attr->addr.variant;

@@ -394,6 +394,7 @@ emit_reg_in0:;
 	case AMD64_OP_NONE:
 	case AMD64_OP_SHIFT_REG:
 	case AMD64_OP_SHIFT_IMM:
+	case AMD64_OP_CC:
 		break;
 	}
 	panic("invalid op_mode");
@@ -559,7 +560,6 @@ end_of_mods:
 					// Format string is backwards compatible to IA32 backend.
 					// Fetch cc from node attributes
 					++fmt;
-					assert(amd64_has_cc_attr(node));
 					cc = get_amd64_cc_attr_const(node)->cc;
 				} else {
 					panic("unknown modifier");

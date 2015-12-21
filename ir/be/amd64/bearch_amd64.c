@@ -48,7 +48,7 @@ static ir_entity *amd64_get_frame_entity(const ir_node *node)
 {
 	if (!is_amd64_irn(node))
 		return NULL;
-	if (!amd64_has_addr_attr(node))
+	if (!amd64_has_addr_attr(get_amd64_attr_const(node)->op_mode))
 		return NULL;
 	const amd64_addr_attr_t *attr = get_amd64_addr_attr_const(node);
 	if (attr->addr.immediate.kind != X86_IMM_FRAMEOFFSET)
@@ -449,23 +449,18 @@ static void amd64_set_frame_entity(ir_node *node, ir_entity *entity,
 	attr->addr.immediate.entity = entity;
 }
 
-static bool is_frame_load(const ir_node *node)
-{
-	return is_amd64_mov_gp(node) || is_amd64_movs(node)
-	    || is_amd64_movs_xmm(node) || is_amd64_movdqu(node)
-	    || is_amd64_fld(node);
-}
-
 /**
  * Collects nodes that need frame entities assigned.
  */
 static void amd64_collect_frame_entity_nodes(ir_node *node, void *data)
 {
-	be_fec_env_t  *env  = (be_fec_env_t*)data;
+	if (!is_amd64_irn(node))
+		return;
 
 	/* Disable coalescing for "returns twice" calls: In case of setjmp/longjmp
 	 * our control flow graph isn't completely correct: There are no backedges
 	 * from longjmp to the setjmp => coalescing would produce wrong results. */
+	be_fec_env_t *const env = (be_fec_env_t*)data;
 	if (is_amd64_call(node)) {
 		const amd64_call_addr_attr_t    *attrs = get_amd64_call_addr_attr_const(node);
 		const ir_type                   *type  = attrs->call_tp;
@@ -476,7 +471,7 @@ static void amd64_collect_frame_entity_nodes(ir_node *node, void *data)
 	}
 
 	/* we are only interested to report Load nodes */
-	if (!is_frame_load(node))
+	if (!amd64_loads(node))
 		return;
 
 	const amd64_addr_attr_t *attr = get_amd64_addr_attr_const(node);
