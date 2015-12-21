@@ -19,6 +19,7 @@
 #include "debug.h"
 #include "irdump.h"
 #include "iredges_t.h"
+#include "util.h"
 
 #define USE_HUNGARIAN 0
 
@@ -47,39 +48,100 @@ static unsigned const *get_decisive_partner_regs(be_operand_t const *const o1, s
 	}
 }
 
-static void pair_up_operands(be_chordal_env_t const *const env, be_insn_t *const insn)
-{
-	/* For each out operand, try to find an in operand which can be assigned the
-	 * same register as the out operand. */
-	int       const n_regs = env->cls->n_regs;
-	unsigned *const bs     = rbitset_alloca(n_regs);
-	for (int j = 0; j < insn->use_start; ++j) {
-		/* Try to find an in operand which has ... */
-		be_operand_t       *smallest        = NULL;
-		int                 smallest_n_regs = n_regs + 1;
-		be_operand_t *const out_op          = &insn->ops[j];
-		for (int i = insn->use_start, n_ops = insn->n_ops; i < n_ops; ++i) {
-			be_operand_t *const op = &insn->ops[i];
-			if (op->partner || be_value_live_after(op->carrier, insn->irn))
-				continue;
+typedef struct pair_entry {
+	be_operand_t *operand;
+	int           pos;
+	bool          is_def;
+} pair_entry_t;
 
-			rbitset_copy(bs, op->regs, n_regs);
-			rbitset_and(bs, out_op->regs, n_regs);
-			int const n_total = rbitset_popcount(op->regs, n_regs);
-			if (!rbitset_is_empty(bs, n_regs) && n_total < smallest_n_regs) {
-				smallest        = op;
-				smallest_n_regs = n_total;
+static unsigned n_regs;
+
+static int compare_entries(const void *a, const void *b)
+{
+	pair_entry_t *a_entry = (pair_entry_t *)a;
+	pair_entry_t *b_entry = (pair_entry_t *)b;
+
+	be_operand_t   *a_op    = a_entry->operand;
+	be_operand_t   *b_op    = b_entry->operand;
+	const unsigned *a_regs  = a_op->regs;
+	const unsigned *b_regs  = b_op->regs;
+	int             a_count = rbitset_popcount(a_regs, n_regs);
+	int             b_count = rbitset_popcount(b_regs, n_regs);
+	if (a_count != b_count) {
+		return a_count - b_count;
+	}
+
+	for (size_t i = 0, n = BITSET_SIZE_ELEMS(n_regs); i < n; ++i) {
+		unsigned a_regs_i = a_regs[i];
+		unsigned b_regs_i = b_regs[i];
+		if (a_regs_i != b_regs_i) {
+			return a_regs_i < b_regs_i ? -1 : 1;
+		}
+	}
+
+	bool a_is_def = a_entry->is_def;
+	bool b_is_def = b_entry->is_def;
+	if (a_is_def != b_is_def) {
+		return a_is_def - b_is_def;
+	}
+
+	return a_entry->pos - b_entry->pos;
+}
+
+static void pair_up_operands(be_chordal_env_t *const env, be_insn_t *const insn)
+{
+	int           n_ops     = insn->n_ops;
+	int           use_start = insn->use_start;
+	pair_entry_t *entries   = OALLOCNZ(&env->obst, pair_entry_t, n_ops);
+
+	/* Put definitions and uses into a single list. */
+	for (int i = 0; i < n_ops; ++i) {
+		pair_entry_t *entry = &entries[i];
+		be_operand_t *op    = &insn->ops[i];
+		entry->operand = op;
+		entry->is_def  = i < use_start;
+		if (entry->is_def) {
+			ir_node *carrier = op->carrier;
+			if (is_Proj(carrier)) {
+				entry->pos = get_Proj_num(carrier);
+			} else {
+				assert(i == 0);
+				entry->pos = 0;
 			}
+		} else {
+			entry->pos = i - use_start;
+		}
+	}
+
+	/**
+	 * Sort the list by register constraints (more restricted operands first).
+	 * Use a stable compare function that only depends on the graph structure.
+	 */
+	n_regs = env->cls->n_regs;
+	QSORT(entries, n_ops, compare_entries);
+
+	/* Greedily pair definitions/uses. */
+	for (int i = 0; i < n_ops; ++i) {
+		pair_entry_t *op_entry  = &entries[i];
+		be_operand_t *op        = op_entry->operand;
+		bool          op_is_def = op_entry->is_def;
+		if (op->partner ||
+		    (!op_is_def && be_value_live_after(op->carrier, insn->irn))) {
+			continue;
 		}
 
-		if (smallest != NULL) {
-			for (int i = insn->use_start, n_ops = insn->n_ops; i < n_ops; ++i) {
-				if (insn->ops[i].carrier == smallest->carrier)
-					insn->ops[i].partner = out_op;
+		for (int j = i + 1; j < n_ops; ++j) {
+			pair_entry_t *partner_entry  = &entries[j];
+			be_operand_t *partner        = partner_entry->operand;
+			bool          partner_is_def = partner_entry->is_def;
+			if (!partner->partner &&
+			    op_is_def != partner_is_def &&
+			    rbitsets_have_common(op->regs, partner->regs, n_regs) &&
+			    (partner_is_def || !be_value_live_after(partner->carrier, insn->irn))) {
+				op->partner      = partner;
+				partner->partner = op;
+				break;
 			}
-
-			out_op->partner   = smallest;
-			smallest->partner = out_op;
 		}
 	}
 }
