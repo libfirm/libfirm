@@ -3094,9 +3094,9 @@ static ir_node *try_get_sub_flags(ir_node *cmp, ir_node *sub, bool *swap)
 
 	ir_node *ia32_sub = skip_Proj(transform_sub_or_store(sub));
 	if (is_ia32_Sub(ia32_sub)) {
-		return be_new_Proj(ia32_sub, pn_ia32_Sub_flags);
+		return be_get_or_make_Proj_for_pn(ia32_sub, pn_ia32_Sub_flags);
 	} else if (is_ia32_SubMem(ia32_sub)) {
-		return be_new_Proj(ia32_sub, pn_ia32_SubMem_flags);
+		return be_get_or_make_Proj_for_pn(ia32_sub, pn_ia32_SubMem_flags);
 	} else {
 		panic("unknown variant of Sub at %+F", ia32_sub);
 	}
