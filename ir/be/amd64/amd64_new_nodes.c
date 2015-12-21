@@ -51,8 +51,6 @@ x87_attr_t *amd64_get_x87_attr(ir_node *const node)
 	switch (attr->op_mode) {
 	case AMD64_OP_X87:
 		return &get_amd64_x87_attr(node)->x87;
-	case AMD64_OP_X87_ADDR:
-		panic("TODO");
 	case AMD64_OP_X87_ADDR_REG:
 		return &get_amd64_x87_binop_addr_attr(node)->x87;
 	default:
@@ -96,7 +94,6 @@ static const char *get_op_mode_string(amd64_op_mode_t mode)
 	case AMD64_OP_SHIFT_IMM:    return "shift_imm";
 	case AMD64_OP_SHIFT_REG:    return "shift_reg";
 	case AMD64_OP_X87:          return "x87";
-	case AMD64_OP_X87_ADDR:     return "x87+addr";
 	case AMD64_OP_X87_ADDR_REG: return "x87+addr+reg";
 	}
 	return "invalid op_mode";

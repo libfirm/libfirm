@@ -42,8 +42,7 @@ static inline bool amd64_has_addr_attr(const ir_node *node)
 	return amd64_has_binop_attr(node)
 		|| attr->op_mode == AMD64_OP_ADDR
 		|| attr->op_mode == AMD64_OP_REG
-		|| attr->op_mode == AMD64_OP_IMM32
-		|| attr->op_mode == AMD64_OP_X87_ADDR;
+		|| attr->op_mode == AMD64_OP_IMM32;
 }
 
 static inline amd64_addr_attr_t *get_amd64_addr_attr(ir_node *node)

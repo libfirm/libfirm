@@ -363,7 +363,6 @@ static void amd64_emit_am(const ir_node *const node, bool indirect_star)
 		goto emit_addr;
 	}
 	case AMD64_OP_ADDR:
-	case AMD64_OP_X87_ADDR:
 	case AMD64_OP_X87_ADDR_REG:
 		if (indirect_star)
 			be_emit_char('*');
