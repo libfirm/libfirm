@@ -1,9 +1,11 @@
-libFirm 1.22.0 (2015-07-31)
+libFirm 1.22.0 (2015-12-23)
 ---------------------------
 * Improved PIC support, linux/elf is now supported
 * Additional local optimization rules
 * Inline assembly support for sparc/amd64
+* Improved constant bit analysis
 * Improved load/store optimization, featuring compound value optimizations
+* Improved reassociation pass
 * Improved amd64 (aka x86_64) backend (but still experimental)
 * Improved arm backend (but still experimental)
 * Improved inliner (can inline compound types)
