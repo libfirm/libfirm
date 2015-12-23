@@ -195,7 +195,7 @@ static void x87_fxch(x87_state *state, unsigned pos)
  * @param state    the x87 state
  * @param node     the node to find
  * @return the stack position where the node is stacked
- *         or -1 if the node was not found
+ *         or ~0u if the node was not found
  */
 static unsigned x87_on_stack(x87_state const *const state, ir_node const *const node)
 {
@@ -204,7 +204,7 @@ static unsigned x87_on_stack(x87_state const *const state, ir_node const *const 
 		if (x87_get_st_reg(state, i) == reg_idx)
 			return i;
 	}
-	return (unsigned)-1;
+	return ~0u;
 }
 
 static unsigned is_at_pos(x87_state const *const state, ir_node const *const val, unsigned const pos)
@@ -221,7 +221,7 @@ static unsigned is_at_pos(x87_state const *const state, ir_node const *const val
  */
 void x86_x87_push(x87_state *const state, ir_node *const node)
 {
-	assert(x87_on_stack(state, node) == (unsigned)-1 && "double push");
+	assert(x87_on_stack(state, node) == ~0u && "double push");
 	assert(state->depth < N_X87_REGS && "stack overrun");
 
 	++state->depth;
@@ -319,7 +319,7 @@ static void x87_create_fxch(x87_state *state, ir_node *n, unsigned pos)
 static void move_to_pos(x87_state *const state, ir_node *const before, ir_node *const val, unsigned const to)
 {
 	unsigned const from = x87_on_stack(state, val);
-	assert(from != (unsigned)-1);
+	assert(from != ~0u);
 	if (from != to) {
 		if (from != 0)
 			x87_create_fxch(state, before, from);
@@ -1180,7 +1180,7 @@ static void sim_be_Perm(x87_state *state, ir_node *irn)
 	/* collect old stack positions */
 	foreach_irn_in(irn, i, pred) {
 		unsigned const idx = x87_on_stack(state, pred);
-		assert(idx != (unsigned)-1);
+		assert(idx != ~0u);
 		stack_pos[i] = idx;
 	}
 	/* now do the permutation */
