@@ -114,6 +114,13 @@ static st_entry *x87_get_entry(x87_state *const state, unsigned const pos)
 	return &state->st[N_X87_REGS - state->depth + pos];
 }
 
+static st_entry const *x87_get_entry_const(x87_state const *const state,
+                                           unsigned const pos)
+{
+	assert(pos < state->depth);
+	return &state->st[N_X87_REGS - state->depth + pos];
+}
+
 /**
  * Return the node at st(pos).
  *
@@ -121,9 +128,10 @@ static st_entry *x87_get_entry(x87_state *const state, unsigned const pos)
  * @param pos    a stack position
  * @return the node that produced the value at st(pos)
  */
-static ir_node *x87_get_st_node(x87_state const *const state, unsigned const pos)
+static ir_node *x87_get_st_node(x87_state const *const state,
+                                unsigned const pos)
 {
-	return x87_get_entry((x87_state*)state, pos)->node;
+	return x87_get_entry_const(state, pos)->node;
 }
 
 /**
@@ -135,7 +143,7 @@ static ir_node *x87_get_st_node(x87_state const *const state, unsigned const pos
  */
 static unsigned x87_get_st_reg(const x87_state *state, unsigned pos)
 {
-	return x87_get_entry((x87_state*)state, pos)->reg_idx;
+	return x87_get_entry_const(state, pos)->reg_idx;
 }
 
 #ifdef DEBUG_libfirm
@@ -147,7 +155,7 @@ static unsigned x87_get_st_reg(const x87_state *state, unsigned pos)
 static void x87_dump_stack(const x87_state *state)
 {
 	for (unsigned i = state->depth; i-- > 0;) {
-		st_entry const *const entry = x87_get_entry((x87_state*)state, i);
+		st_entry const *const entry = x87_get_entry_const(state, i);
 		DB((dbg, LEVEL_2, "vf%d(%+F) ", entry->reg_idx, entry->node));
 	}
 	DB((dbg, LEVEL_2, "<-- TOS\n"));
@@ -161,7 +169,8 @@ static void x87_dump_stack(const x87_state *state)
  * @param node     the IR node that produces the value of the fp register
  * @param pos      the stack position where the new value should be entered
  */
-static void x87_set_st(x87_state *const state, ir_node *const node, unsigned const pos)
+static void x87_set_st(x87_state *const state, ir_node *const node,
+                       unsigned const pos)
 {
 	st_entry *const entry = x87_get_entry(state, pos);
 	entry->reg_idx = arch_get_irn_register(node)->index;
@@ -197,7 +206,8 @@ static void x87_fxch(x87_state *state, unsigned pos)
  * @return the stack position where the node is stacked
  *         or ~0u if the node was not found
  */
-static unsigned x87_on_stack(x87_state const *const state, ir_node const *const node)
+static unsigned x87_on_stack(x87_state const *const state,
+                             ir_node const *const node)
 {
 	unsigned const reg_idx = arch_get_irn_register(node)->index;
 	for (unsigned i = 0; i < state->depth; ++i) {
@@ -207,7 +217,8 @@ static unsigned x87_on_stack(x87_state const *const state, ir_node const *const 
 	return ~0u;
 }
 
-static unsigned is_at_pos(x87_state const *const state, ir_node const *const val, unsigned const pos)
+static unsigned is_at_pos(x87_state const *const state,
+                          ir_node const *const val, unsigned const pos)
 {
 	arch_register_t const *const reg = arch_get_irn_register(val);
 	return x87_get_st_reg(state, pos) == reg->index;
@@ -316,7 +327,8 @@ static void x87_create_fxch(x87_state *state, ir_node *n, unsigned pos)
 	DB((dbg, LEVEL_1, "<<< %s %s\n", get_irn_opname(fxch), reg->name));
 }
 
-static void move_to_pos(x87_state *const state, ir_node *const before, ir_node *const val, unsigned const to)
+static void move_to_pos(x87_state *const state, ir_node *const before,
+                        ir_node *const val, unsigned const to)
 {
 	unsigned const from = x87_on_stack(state, val);
 	assert(from != ~0u);
@@ -328,7 +340,8 @@ static void move_to_pos(x87_state *const state, ir_node *const before, ir_node *
 	}
 }
 
-static void move_to_tos(x87_state *const state, ir_node *const before, ir_node *const val)
+static void move_to_tos(x87_state *const state, ir_node *const before,
+                        ir_node *const val)
 {
 	move_to_pos(state, before, val, 0);
 }
@@ -349,7 +362,8 @@ static void move_to_tos(x87_state *const state, ir_node *const before, ir_node *
  * @param dst_state  destination state
  * @return state
  */
-static x87_state *x87_shuffle(ir_node *block, x87_state *state, const x87_state *dst_state)
+static x87_state *x87_shuffle(ir_node *block, x87_state *state,
+                              const x87_state *dst_state)
 {
 	assert(state->depth == dst_state->depth);
 
@@ -465,7 +479,9 @@ static ir_node *x87_create_fdup(x87_state *const state, ir_node *const block,
  * @param n         the node after the fdup
  * @param val       the value to duplicate
  */
-static ir_node *x87_dup_operand(x87_state *const state, ir_node *const n, unsigned const op_n, ir_node *const val, arch_register_t const *const out)
+static ir_node *x87_dup_operand(x87_state *const state, ir_node *const n,
+                                unsigned const op_n, ir_node *const val,
+                                arch_register_t const *const out)
 {
 	ir_node *const block = get_nodes_block(n);
 	ir_node *const fdup  = x87_create_fdup(state, block, val, out);
@@ -495,16 +511,17 @@ ir_node *x86_x87_create_fpop(x87_state *const state, ir_node *const n,
 	return fpop;
 }
 
-/* --------------------------------- liveness ------------------------------------------ */
+/* --------------------------------- liveness ------------------------------- */
 
 /**
  * The liveness transfer function.
  * Updates a live set over a single step from a given node to its predecessor.
- * Everything defined at the node is removed from the set, the uses of the node get inserted.
+ * Everything defined at the node is removed from the set, the uses of the node
+ * get inserted.
  *
  * @param irn      The node at which liveness should be computed.
- * @param live     The bitset of registers live before @p irn. This set gets modified by updating it to
- *                 the registers live after irn.
+ * @param live     The bitset of registers live before @p irn. This set gets
+ *                 modified by updating it to the registers live after irn.
  * @return The live bitset.
  */
 static fp_liveness fp_liveness_transfer(ir_node *irn, fp_liveness live)
@@ -528,7 +545,8 @@ static fp_liveness fp_liveness_transfer(ir_node *irn, fp_liveness live)
  * @param bl       the block
  * @return The live bitset at the end of this block
  */
-static fp_liveness fp_liveness_end_of_block(x87_simulator *sim, const ir_node *block)
+static fp_liveness fp_liveness_end_of_block(x87_simulator *sim,
+                                            const ir_node *block)
 {
 	fp_liveness                  live = 0;
 	const arch_register_class_t *cls  = x87.regclass;
@@ -604,15 +622,14 @@ static void fp_dump_live(fp_liveness live)
 {
 	DB((dbg, LEVEL_2, "Live after: "));
 	for (unsigned i = 0; i < N_X87_REGS; ++i) {
-		if (live & (1 << i)) {
+		if (live & (1 << i))
 			DB((dbg, LEVEL_2, "vf%d ", i));
-		}
 	}
 	DB((dbg, LEVEL_2, "\n"));
 }
 #endif /* DEBUG_libfirm */
 
-/* --------------------------------- simulators ---------------------------------------- */
+/* ------------------------------- simulators -------------------------------*/
 
 static ir_node *get_result_node(ir_node *const n)
 {
@@ -695,10 +712,11 @@ void x86_sim_x87_binop(x87_state *const state, ir_node *const node,
 				reverse = false;
 				to_reg  = false;
 			} else {
-				/* Bring one operand to tos. Heuristically swap the operand not at
-				 * st(1) to tos. This way, if any operand was at st(1), the result
-				 * will end up in the new st(0) after the implicit pop. If the next
-				 * operation uses the result, then no fxch will be necessary. */
+				/* Bring one operand to tos. Heuristically swap the operand not
+				 * at st(1) to tos. This way, if any operand was at st(1), the
+				 * result will end up in the new st(0) after the implicit pop.
+				 * If the next operation uses the result, then no fxch will be
+				 * necessary. */
 				if (is_at_pos(state, op0, 0)) {
 					reverse = false;
 				} else if (is_at_pos(state, op1, 0)) {
@@ -743,7 +761,8 @@ void x86_sim_x87_binop(x87_state *const state, ir_node *const node,
 static void sim_ia32_binop_am(x87_state *const state, ir_node *const node)
 {
 	ir_node               *const right = get_irn_n(node, n_ia32_binary_right);
-	arch_register_t const *const out   = arch_get_irn_register_out(node, pn_ia32_res);
+	arch_register_t const *const out
+		= arch_get_irn_register_out(node, pn_ia32_res);
 
 	if (is_ia32_NoReg_FP(right)) {
 		/* if one operand is an address mode then this behaves like an unop */
@@ -781,7 +800,8 @@ void x86_sim_x87_load(x87_state *state, ir_node *n, ir_node *value)
 	(void)n;
 	DB((dbg, LEVEL_1, ">>> %+F\n", n));
 	x86_x87_push(state, value);
-	DB((dbg, LEVEL_1, "<<< %s -> %s\n", get_irn_opname(n), get_st_reg(0)->name));
+	DB((dbg, LEVEL_1, "<<< %s -> %s\n", get_irn_opname(n),
+	    get_st_reg(0)->name));
 }
 
 static void sim_ia32_x87_load(x87_state *state, ir_node *n)
@@ -834,24 +854,27 @@ do_pop:
 				ir_node *const mem   = get_Proj_for_pn(n, pn_ia32_st_M);
 				ir_node *const base  = get_irn_n(n, n_ia32_base);
 				ir_node *const idx   = get_irn_n(n, n_ia32_index);
-				ir_node *const vfld  = new_bd_ia32_fld(NULL, block, base, idx, mem, x86_mode_E);
+				ir_node *const vfld  = new_bd_ia32_fld(NULL, block, base, idx,
+				                                       mem, x86_mode_E);
 
 				/* copy all attributes */
 				ia32_copy_am_attrs(vfld, n);
 				set_ia32_op_type(vfld, ia32_AddrModeS);
 
 				arch_register_t const *const reg   = arch_get_irn_register(val);
-				ir_node               *const rproj = be_new_Proj_reg(vfld, pn_ia32_fld_res, reg);
+				ir_node               *const rproj
+					= be_new_Proj_reg(vfld, pn_ia32_fld_res, reg);
 				/* Replace TOS by the reloaded value. */
 				x87_set_st(state, rproj, 0);
 
-				/* reroute all former users of the store memory to the load memory */
+				/* reroute all users of the store memory to the load memory */
 				ir_node *const mproj = be_new_Proj(vfld, pn_ia32_fld_M);
 				edges_reroute_except(mem, mproj, vfld);
 
 				sched_add_after(n, vfld);
 
-				/* rewire all users, scheduled after the store, to the loaded value */
+				/* rewire all users, scheduled after the store, to the loaded
+				 * value */
 				ir_graph *irg = get_irn_irg(val);
 				be_ssa_construction_env_t env;
 				be_ssa_construction_init(&env, irg);
@@ -867,7 +890,8 @@ do_pop:
 		}
 	}
 
-	DB((dbg, LEVEL_1, "<<< %s %s ->\n", get_irn_opname(n), get_st_reg(0)->name));
+	DB((dbg, LEVEL_1, "<<< %s %s ->\n", get_irn_opname(n),
+	    get_st_reg(0)->name));
 }
 
 static void sim_ia32_fst(x87_state *state, ir_node *n)
@@ -1023,7 +1047,8 @@ unsigned x86_sim_x87_fucom(x87_state *const state, ir_node *const node,
 		char       const *const l    =  reverse ? reg : st0;
 		char       const *const r    = !reverse ? reg : st0;
 		char       const *const pop  =  attr->pop ? " [pop]" : "";
-		DB((dbg, LEVEL_1, "<<< %s %s, %s%s\n", get_irn_opname(node), l, r, pop));
+		DB((dbg, LEVEL_1, "<<< %s %s, %s%s\n", get_irn_opname(node), l, r,
+		    pop));
 	)
 	return additional_pop;
 }
@@ -1071,7 +1096,8 @@ static void sim_be_Copy(x87_state *state, ir_node *n)
 
 	ir_node               *const pred = be_get_Copy_op(n);
 	arch_register_t const *const out  = arch_get_irn_register(n);
-	fp_liveness            const live = fp_live_args_after(state->sim, n, REGMASK(out));
+	fp_liveness            const live
+		= fp_live_args_after(state->sim, n, REGMASK(out));
 
 	DB((dbg, LEVEL_1, ">>> %+F %+F -> %s\n", n, pred, out->name));
 	DEBUG_ONLY(fp_dump_live(live);)
@@ -1126,7 +1152,9 @@ static void sim_ia32_Call(x87_state *const state, ir_node *const n)
 		/* If the called function returns a float, it is returned in st(0).
 		 * This even happens if the return value is NOT used.
 		 * Moreover, only one return result is supported. */
-		if (is_x87_req(arch_get_irn_register_req_out(n, pn_ia32_Call_first_result))) {
+		const arch_register_req_t *req
+			= arch_get_irn_register_req_out(n, pn_ia32_Call_first_result);
+		if (is_x87_req(req)) {
 			ir_node *const res = get_Proj_for_pn(n, pn_ia32_Call_first_result);
 			x86_x87_push(state, res);
 		}
@@ -1201,7 +1229,8 @@ static void sim_be_Perm(x87_state *state, ir_node *irn)
  * @param after  the node after which values might be dead
  * @param state  the x87 state after @p after
  */
-static void x87_kill_deads(x87_simulator *const sim, ir_node *const after, x87_state *const state)
+static void x87_kill_deads(x87_simulator *const sim, ir_node *const after,
+                           x87_state *const state)
 {
 	unsigned depth = x87_get_depth(state);
 	if (depth == 0)
@@ -1248,8 +1277,8 @@ free_all:;
 			/* Pop from TOS, if possible, looks nicer. */
 			i = 0;
 		} else {
-			/* Remove deepest dead value from stack, so TOS gets moved there and later
-			 * more pops from TOS might follow. */
+			/* Remove deepest dead value from stack, so TOS gets moved there and
+			 * later more pops from TOS might follow. */
 			for (i = depth; i-- > 0;) {
 				if (kill_mask & (1 << i)) {
 					kill_mask &= ~(1 << i);
@@ -1263,7 +1292,8 @@ free_all:;
 	}
 }
 
-static bool reg_req_same_limited(arch_register_req_t const *const req, arch_register_req_t const *const ref_req)
+static bool reg_req_same_limited(arch_register_req_t const *const req,
+                                 arch_register_req_t const *const ref_req)
 {
 	if (req == ref_req)
 		return true;
@@ -1283,7 +1313,8 @@ static bool is_clobber(ir_node const *const asm_n, ir_node const *const value)
 		return false;
 
 	unsigned                 const num      = get_Proj_num(value);
-	x86_asm_operand_t const *const operands = (x86_asm_operand_t const*)get_be_asm_attr_const(asm_n)->operands;
+	x86_asm_operand_t const *const operands
+		= (x86_asm_operand_t const*)get_be_asm_attr_const(asm_n)->operands;
 	for (size_t i = 0, n = ARR_LEN(operands); i != n; ++i) {
 		x86_asm_operand_t const *const op = &operands[i];
 		if (op->kind == ASM_OP_OUT_REG && op->inout_pos == num)
@@ -1313,8 +1344,9 @@ static void sim_be_Asm(x87_state *const state, ir_node *const n)
 		}
 	);
 
-	/* Move inputs to the correct place in the x87 stack and remove them from the
-	 * simulator stack.  If they are not overwritten, they get pushed back later. */
+	/* Move inputs to the correct place in the x87 stack and remove them from
+	 * the simulator stack.  If they are not overwritten, they get pushed back
+	 * later. */
 	if (in_u) {
 		if (!in_t)
 			panic("\"u\" input constraint without \"t\" input constraint in %+F", n);
@@ -1331,8 +1363,8 @@ static void sim_be_Asm(x87_state *const state, ir_node *const n)
 
 	/* Collect out requirements.
 	 * If inputs are not overweritten, it is assumed that they remain on the
-	 * stack.  Clobbering a register means that the value is popped from the stack
-	 * by the inline assembler statement.
+	 * stack.  Clobbering a register means that the value is popped from the
+	 * stack by the inline assembler statement.
 	 * Extension: GCC only allows an output "u" if there is an output "t".
 	 * Here it is also ok, if it is just an input "t". */
 	ir_node *out_t = in_t;
@@ -1411,7 +1443,8 @@ static void x87_simulate_block(x87_simulator *sim, ir_node *block)
 		}
 	}
 
-	DB((dbg, LEVEL_2, "State at Block end:\n ")); DEBUG_ONLY(x87_dump_stack(state);)
+	DB((dbg, LEVEL_2, "State at Block end:\n "));
+	DEBUG_ONLY(x87_dump_stack(state);)
 
 	/* check if the state must be shuffled */
 	foreach_block_succ(block, edge) {
@@ -1425,7 +1458,8 @@ static void x87_simulate_block(x87_simulator *sim, ir_node *block)
 
 			pdeq_putr(sim->worklist, succ);
 		} else {
-			DB((dbg, LEVEL_2, "succ %+F already has a state, shuffling\n", succ));
+			DB((dbg, LEVEL_2, "succ %+F already has a state, shuffling\n",
+			    succ));
 			/* There is already a begin state for the successor, bad.
 			   Do the necessary permutations.
 			   Note that critical edges are removed, so this is always possible:
