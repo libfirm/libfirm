@@ -49,7 +49,7 @@ void be_emit_node(ir_node const *node);
  * This function expects that you require the IR_RESOURCE_IRN_LINK prior
  * to using it.
  */
-void be_emit_init_cf_links(ir_node **block_schedule);
+void be_emit_init_cf_links(ir_node *const *const block_schedule);
 
 /**
  * Returns the target block for a control flow node.
