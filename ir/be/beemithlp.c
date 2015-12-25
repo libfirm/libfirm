@@ -51,7 +51,7 @@ void be_emit_pad_comment(void)
 	be_emit_string_len("                                  ", 34 - col);
 }
 
-void be_emit_init_cf_links(ir_node **const block_schedule)
+void be_emit_init_cf_links(ir_node *const *const block_schedule)
 {
 	ir_node *prev = NULL;
 	for (size_t i = 0, n = ARR_LEN(block_schedule); i < n; ++i) {
