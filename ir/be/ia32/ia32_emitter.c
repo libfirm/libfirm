@@ -81,6 +81,16 @@ static bool fallthrough_possible(const ir_node *source_block, const ir_node *tar
 	return be_emit_get_prev_block(target_block) == source_block;
 }
 
+static bool is_fallthrough(const ir_node *const node)
+{
+	if (is_ia32_SwitchJmp(skip_Proj_const(node)))
+		return false;
+
+	const ir_node *const source_block = get_nodes_block(node);
+	const ir_node *const target_block = be_emit_get_cfop_target(node);
+	return fallthrough_possible(source_block, target_block);
+}
+
 /**
  * returns non-zero if the given block needs a label
  * because of being a jump-target (and not a fall-through)
@@ -99,10 +109,8 @@ static bool block_needs_label(const ir_node *block)
 		 * can fall through if that predecessor block is scheduled
 		 * exactly "above" the block, and the predecessor node isn't a
 		 * SwitchJmp. */
-		ir_node *const cfgpred       = get_Block_cfgpred(block, 0);
-		ir_node *const cfgpred_block = get_nodes_block(cfgpred);
-		return !fallthrough_possible(cfgpred_block, block)
-			|| is_ia32_SwitchJmp(skip_Proj(cfgpred));
+		ir_node *const cfgpred = get_Block_cfgpred(block, 0);
+		return !is_fallthrough(cfgpred);
 	} else {
 		/* n_cfgpreds == 0, unreachable block. */
 		return false;
@@ -724,8 +732,7 @@ static void emit_ia32_Jcc(const ir_node *node)
 	ir_node const *proj_true   = get_Proj_for_pn(node, pn_ia32_Jcc_true);
 	ir_node const *target_true = be_emit_get_cfop_target(proj_true);
 	ir_node const *proj_false  = get_Proj_for_pn(node, pn_ia32_Jcc_false);
-	ir_node const *block       = get_nodes_block(node);
-	if (fallthrough_possible(block, target_true)) {
+	if (is_fallthrough(proj_true)) {
 		/* exchange both proj's so the second one can be omitted */
 		const ir_node *t = proj_true;
 		proj_true  = proj_false;
@@ -733,7 +740,7 @@ static void emit_ia32_Jcc(const ir_node *node)
 		cc         = x86_negate_condition_code(cc);
 	}
 	const ir_node *target_false = be_emit_get_cfop_target(proj_false);
-	bool           fallthrough  = fallthrough_possible(block, target_false);
+	bool           fallthrough  = is_fallthrough(proj_false);
 	/* if we can't have a fallthrough anyway, put the more likely case first */
 	if (!fallthrough) {
 		/* We would need execfreq for the concrete edge, but don't have it
@@ -843,9 +850,7 @@ static void emit_ia32_SwitchJmp(const ir_node *node)
 static void emit_ia32_Jmp(const ir_node *node)
 {
 	/* we have a block schedule */
-	ir_node *block  = get_nodes_block(node);
-	ir_node *target = be_emit_get_cfop_target(node);
-	if (!fallthrough_possible(block, target)) {
+	if (!is_fallthrough(node)) {
 		ia32_emitf(node, "jmp %L");
 	} else if (be_options.verbose_asm) {
 		ia32_emitf(node, "/* fallthrough to %L */");
@@ -1268,14 +1273,11 @@ static void emit_ia32_Call(const ir_node *node)
 
 	if (is_cfop(node)) {
 		/* If the call throws we have to add a jump to its X_regular block. */
-		const ir_node* const block           = get_nodes_block(node);
-		const ir_node* const x_regular_proj  = get_Proj_for_pn(node, node->op->pn_x_regular);
+		const ir_node* const x_regular_proj = get_Proj_for_pn(node, node->op->pn_x_regular);
 		if (x_regular_proj == NULL) {
 			/* Call always throws and/or never returns. */
 		} else {
-			const ir_node* const x_regular_block = be_emit_get_cfop_target(x_regular_proj);
-			assert(x_regular_block != NULL);
-			if (fallthrough_possible(block, x_regular_block)) {
+			if (is_fallthrough(x_regular_proj)) {
 				if (be_options.verbose_asm)
 					ia32_emitf(x_regular_proj, "/* fallthrough to %L */");
 			} else {
@@ -1448,8 +1450,8 @@ static void ia32_emit_block_header(ir_node *block)
 			   we can always align the label. */
 			bool has_fallthrough = false;
 			for (int i = get_Block_n_cfgpreds(block); i-- > 0; ) {
-				ir_node *pred_block = get_Block_cfgpred_block(block, i);
-				if (fallthrough_possible(pred_block, block)) {
+				ir_node *pred_block = get_Block_cfgpred(block, i);
+				if (is_fallthrough(pred_block)) {
 					has_fallthrough = true;
 					break;
 				}
