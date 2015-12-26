@@ -2261,30 +2261,6 @@ static ir_node *conv_sse_to_x87(dbg_info *dbgi, ir_node *block, ir_node *op)
 	return be_new_Proj(load, pn_amd64_fld_res);
 }
 
-static ir_node *conv_int_to_x87(dbg_info *dbgi, ir_node *block, ir_node *op)
-{
-	ir_mode          *const mode      = get_irn_mode(op);
-	ir_node          *const new_op    = extend_if_necessary(dbgi, block, op);
-	amd64_insn_mode_t       insn_mode = get_insn_mode_from_mode(mode);
-	if (insn_mode < INSN_MODE_32)
-		insn_mode = INSN_MODE_32;
-	assert(insn_mode == INSN_MODE_32 || insn_mode == INSN_MODE_64);
-	if (!mode_is_signed(mode))
-		panic("unsigned int -> x87 NIY");
-
-	ir_node *in[5];
-	int      n_in = 0;
-	amd64_addr_t addr;
-	store_to_temp(new_bd_amd64_mov_store, reg_reg_mem_reqs, &addr, dbgi, block,
-				  in, &n_in, new_op, insn_mode);
-	assert(n_in < (int)ARRAY_SIZE(in));
-
-	ir_node *load = new_bd_amd64_fild(dbgi, block, n_in, in, reg_mem_reqs,
-	                                  INSN_MODE_32, AMD64_OP_ADDR, addr);
-	set_irn_pinned(load, false);
-	return be_new_Proj(load, pn_amd64_fild_res);
-}
-
 static ir_node *conv_x87_to_sse(dbg_info *dbgi, ir_node *block, ir_node *op,
                                 ir_mode *dst_mode)
 {
@@ -2302,6 +2278,55 @@ static ir_node *conv_x87_to_sse(dbg_info *dbgi, ir_node *block, ir_node *op,
 	                                      insn_mode, AMD64_OP_ADDR, addr);
 	set_irn_pinned(load, false);
 	return be_new_Proj(load, pn_amd64_fld_res);
+}
+
+static ir_node *conv_int_to_x87(dbg_info *dbgi, ir_node *block, ir_node *val)
+{
+	ir_mode          *const mode      = get_irn_mode(val);
+	ir_node          *const new_val   = extend_if_necessary(dbgi, block, val);
+	amd64_insn_mode_t       insn_mode = get_insn_mode_from_mode(mode);
+	if (insn_mode < INSN_MODE_32)
+		insn_mode = INSN_MODE_32;
+	assert(insn_mode == INSN_MODE_32 || insn_mode == INSN_MODE_64);
+	if (!mode_is_signed(mode))
+		panic("unsigned int -> x87 NIY");
+
+	ir_node *in[5];
+	int      n_in = 0;
+	amd64_addr_t addr;
+	store_to_temp(new_bd_amd64_mov_store, reg_reg_mem_reqs, &addr, dbgi, block,
+				  in, &n_in, new_val, insn_mode);
+	assert(n_in < (int)ARRAY_SIZE(in));
+
+	ir_node *load = new_bd_amd64_fild(dbgi, block, n_in, in, reg_mem_reqs,
+	                                  insn_mode, AMD64_OP_ADDR, addr);
+	set_irn_pinned(load, false);
+	return be_new_Proj(load, pn_amd64_fild_res);
+}
+
+static ir_node *conv_x87_to_int(dbg_info *const dbgi, ir_node *const block,
+                                ir_node *const val, ir_mode *const dest_mode)
+{
+	ir_node *const new_val = be_transform_node(val);
+
+	amd64_insn_mode_t const insn_mode_dest = get_insn_mode_from_mode(dest_mode);
+	amd64_insn_mode_t const insn_mode_src  = insn_mode_dest > INSN_MODE_32
+		? INSN_MODE_64 : INSN_MODE_32;
+
+	ir_node *in[5];
+	int      n_in = 0;
+	amd64_addr_t addr;
+	store_to_temp(new_bd_amd64_fisttp, x87K_reg_mem_reqs, &addr, dbgi, block,
+				  in, &n_in, new_val, insn_mode_src);
+	assert(n_in < (int)ARRAY_SIZE(in));
+
+	create_mov_func new_mov = insn_mode_dest < INSN_MODE_64
+		? new_bd_amd64_movs : new_bd_amd64_mov_gp;
+
+	ir_node *load = new_mov(dbgi, block, n_in, in, reg_mem_reqs, insn_mode_dest,
+	                        AMD64_OP_ADDR, addr);
+	set_irn_pinned(load, false);
+	return be_new_Proj(load, pn_amd64_movs_res);
 }
 
 static ir_node *gen_Conv(ir_node *const node)
@@ -2360,11 +2385,11 @@ static ir_node *gen_Conv(ir_node *const node)
 		min_mode = src_mode;
 	} else if (src_bits > dst_bits) {
 		min_mode = dst_mode;
-	} else if ((src_float && dst_float) || is_gp) {
-		/* skip unnecessary conv */
-		return be_transform_node(op);
 	} else {
-		/* src_bits == dst_bits, but one is float the other integer*/
+		assert(src_bits == dst_bits);
+		/* skip unnecessary conv */
+		if ((src_float && dst_float) || is_gp)
+			return be_transform_node(op);
 		min_mode = src_mode;
 	}
 
@@ -2400,7 +2425,7 @@ static ir_node *gen_Conv(ir_node *const node)
 		return conv_sse_to_x87(dbgi, block, op);
 	} else if (src_mode == x86_mode_E) {
 		if (!dst_float)
-			panic("amd64: int -> mode_E NIY");
+			return conv_x87_to_int(dbgi, block, op, dst_mode);
 		return conv_x87_to_sse(dbgi, block, op, dst_mode);
 	}
 

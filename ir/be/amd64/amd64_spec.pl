@@ -256,6 +256,17 @@ my $x87binop = {
 	mode      => $mode_x87,
 };
 
+my $x87store = {
+	op_flags  => [ "uses_memory" ],
+	state     => "exc_pinned",
+	in_reqs   => "...",
+	out_reqs  => [ "mem" ],
+	outs      => [ "M" ],
+	attr_type => "amd64_x87_binop_addr_attr_t",
+	attr      => "const amd64_binop_addr_attr_t *attr_init",
+	mode      => "mode_M",
+};
+
 %nodes = (
 push_am => {
 	op_flags  => [ "uses_memory" ],
@@ -779,31 +790,22 @@ fild => {
 	outs      => [ "res", "unused", "M" ],
 	attr_type => "amd64_x87_addr_attr_t",
 	attr      => "amd64_insn_mode_t insn_mode, amd64_op_mode_t op_mode, amd64_addr_t addr",
-	emit      => "fild%FM %AM",
+	emit      => "fild%M %AM",
+},
+
+fisttp => {
+	template => $x87store,
+	emit     => "fisttp%M %AM",
 },
 
 fst => {
-	op_flags  => [ "uses_memory" ],
-	state     => "exc_pinned",
-	in_reqs   => "...",
-	out_reqs  => [ "mem" ],
-	outs      => [ "M" ],
-	attr_type => "amd64_x87_binop_addr_attr_t",
-	attr      => "const amd64_binop_addr_attr_t *attr_init",
-	mode      => "mode_M",
-	emit      => "fst%FP%FM %AM",
+	template => $x87store,
+	emit     => "fst%FP%FM %AM",
 },
 
 fstp => {
-	op_flags  => [ "uses_memory" ],
-	state     => "exc_pinned",
-	in_reqs   => "...",
-	out_reqs  => [ "mem" ],
-	outs      => [ "M" ],
-	attr_type => "amd64_x87_binop_addr_attr_t",
-	attr      => "const amd64_binop_addr_attr_t *attr_init",
-	mode      => "mode_M",
-	emit      => "fstp%FM %AM",
+	template => $x87store,
+	emit     => "fstp%FM %AM",
 },
 
 fadd => {
@@ -865,6 +867,7 @@ fxch => {
 fpop => {
 	op_flags    => [ "keep" ],
 	out_reqs    => [ "none" ],
+	attrs_equal => "attrs_equal_false",
 	attr_type   => "amd64_x87_attr_t",
 	attr        => "const arch_register_t *reg",
 	init        => "attr->x87.reg = reg;",
