@@ -179,6 +179,21 @@ static void emit_fp_suffix(const ir_mode *mode)
 	}
 }
 
+static bool fallthrough_possible(const ir_node *const source_block, const ir_node *const target_block)
+{
+	return be_emit_get_prev_block(target_block) == source_block;
+}
+
+static bool is_fallthrough(const ir_node *const node)
+{
+	if (is_sparc_SwitchJmp(skip_Proj_const(node)))
+		return false;
+
+	const ir_node *const source_block = get_nodes_block(node);
+	const ir_node *const target_block = be_emit_get_cfop_target(node);
+	return fallthrough_possible(source_block, target_block);
+}
+
 /**
  * returns true if a sparc_call calls a register and not an immediate
  */
@@ -1297,10 +1312,10 @@ static int cmp_block_execfreqs(const void *d1, const void *d2)
 	return get_irn_node_nr(*p2)-get_irn_node_nr(*p1);
 }
 
-static void pick_delay_slots(size_t n_blocks, ir_node **blocks)
+static void pick_delay_slots(size_t n_blocks, ir_node *const *const blocks)
 {
 	/* create blocklist sorted by execution frequency */
-	ir_node **sorted_blocks = XMALLOCN(ir_node*, n_blocks);
+	ir_node **const sorted_blocks = XMALLOCN(ir_node*, n_blocks);
 	MEMCPY(sorted_blocks, blocks, n_blocks);
 	QSORT(sorted_blocks, n_blocks, cmp_block_execfreqs);
 
@@ -1308,7 +1323,7 @@ static void pick_delay_slots(size_t n_blocks, ir_node **blocks)
 		sched_foreach(sorted_blocks[i], node) {
 			if (!has_delay_slot(node))
 				continue;
-			ir_node *filler = pick_delay_slot_for(node);
+			ir_node *const filler = pick_delay_slot_for(node);
 			if (filler == NULL)
 				continue;
 			rbitset_set(delay_slot_fillers, get_irn_idx(filler));
@@ -1328,7 +1343,7 @@ void sparc_emit_function(ir_graph *irg)
 	sparc_register_emitters();
 
 	/* create the block schedule. For now, we don't need it earlier. */
-	ir_node **block_schedule = be_create_block_schedule(irg);
+	ir_node *const *const block_schedule = be_create_block_schedule(irg);
 
 	sparc_emit_func_prolog(irg);
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
