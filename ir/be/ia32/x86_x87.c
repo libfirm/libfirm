@@ -622,6 +622,26 @@ static inline bool is_fp_live(ir_node const *const node, fp_liveness const live)
 	return live & (1 << reg_idx);
 }
 
+static const arch_register_t *find_unused_vreg(x87_state const *const state)
+{
+	unsigned depth = x87_get_depth(state);
+	if (depth >= N_X87_REGS)
+		return NULL;
+
+	fp_liveness live = 0;
+	for (unsigned i = 0; i < depth; ++i) {
+		st_entry const *const entry = x87_get_entry_const(state, i);
+		live |= 1u << entry->reg_idx;
+	}
+
+	for (unsigned i = 0; i < N_X87_REGS; ++i) {
+		if ((live & (1u << i)) == 0)
+			return &x87.regclass->regs[i];
+	}
+	/* We should not get here if depth is smaller than N_X87_REGS */
+	panic("inconsistent state");
+}
+
 #ifdef DEBUG_libfirm
 /**
  * Dump liveness info.
@@ -847,8 +867,8 @@ void x86_sim_x87_store(x87_state *state, ir_node *n, int val_pos,
 			 *   - stack full: fstp value and load again */
 			if (x87_get_depth(state) < N_X87_REGS) {
 				/* ok, we have a free register: push + fstp */
-				arch_register_t const *const out = get_st_reg(REG_FP_FP_NOREG);
-				x87_dup_operand(state, n, n_ia32_fst_val, val, out);
+				arch_register_t const *const out = find_unused_vreg(state);
+				x87_dup_operand(state, n, val_pos, val, out);
 do_pop:
 				x87_pop(state);
 			} else {
