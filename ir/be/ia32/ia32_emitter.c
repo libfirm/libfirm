@@ -1179,14 +1179,11 @@ static void emit_ia32_Call(const ir_node *node)
 
 	if (is_cfop(node)) {
 		/* If the call throws we have to add a jump to its X_regular block. */
-		const ir_node* const block           = get_nodes_block(node);
-		const ir_node* const x_regular_proj  = get_Proj_for_pn(node, node->op->pn_x_regular);
+		const ir_node* const x_regular_proj = get_Proj_for_pn(node, node->op->pn_x_regular);
 		if (x_regular_proj == NULL) {
 			/* Call always throws and/or never returns. */
 		} else {
-			const ir_node* const x_regular_block = be_emit_get_cfop_target(x_regular_proj);
-			assert(x_regular_block != NULL);
-			if (fallthrough_possible(block, x_regular_block)) {
+			if (is_fallthrough(x_regular_proj)) {
 				if (be_options.verbose_asm)
 					ia32_emitf(x_regular_proj, "/* fallthrough to %L */");
 			} else {
