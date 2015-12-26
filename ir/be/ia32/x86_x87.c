@@ -209,9 +209,18 @@ static void x87_fxch(x87_state *state, unsigned pos)
 static unsigned x87_on_stack(x87_state const *const state,
                              ir_node const *const node)
 {
-	unsigned const reg_idx = arch_get_irn_register(node)->index;
 	for (unsigned i = 0; i < state->depth; ++i) {
-		if (x87_get_st_reg(state, i) == reg_idx)
+		if (x87_get_st_node(state, i) == node)
+			return i;
+	}
+	return ~0u;
+}
+
+static unsigned x87_reg_on_stack(x87_state const *const state,
+                                 unsigned vreg_idx)
+{
+	for (unsigned i = 0; i < state->depth; ++i) {
+		if (x87_get_st_reg(state, i) == vreg_idx)
 			return i;
 	}
 	return ~0u;
@@ -407,7 +416,8 @@ static x87_state *x87_shuffle(ir_node *block, x87_state *state,
 		cycles[n_cycles] = (1 << i);
 		cycle_idx[n_cycles][k++] = i;
 		for (unsigned src_idx = i, dst_idx; ; src_idx = dst_idx) {
-			dst_idx = x87_on_stack(dst_state, x87_get_st_node(state, src_idx));
+			unsigned src_vreg = x87_get_st_reg(state, src_idx);
+			dst_idx = x87_reg_on_stack(dst_state, src_vreg);
 
 			if ((all_mask & (1 << dst_idx)) == 0)
 				break;
@@ -1222,6 +1232,29 @@ static void sim_be_Perm(x87_state *state, ir_node *irn)
 	DB((dbg, LEVEL_1, "<<< %+F\n", irn));
 }
 
+static void sim_Phi(x87_state *state, ir_node *node)
+{
+	if (!is_x87_req(arch_get_irn_register_req(node)))
+		return;
+
+	/* just update the value we remember on stack */
+	unsigned reg_idx   = arch_get_irn_register(node)->index;
+	unsigned stack_idx = x87_reg_on_stack(state, reg_idx);
+#ifndef NDEBUG
+	/* The current node at stack_idx must be one of the phi inputs. */
+	ir_node const *const existing = x87_get_st_node(state, stack_idx);
+	bool                 found    = false;
+	foreach_irn_in(node, i, pred) {
+		if (pred == existing) {
+			found = true;
+			break;
+		}
+	}
+	assert(found);
+#endif
+	x87_set_st(state, node, stack_idx);
+}
+
 /**
  * Kill any dead registers after @p after by popping them from the stack.
  *
@@ -1481,6 +1514,7 @@ void x86_register_x87_sim(ir_op *op, sim_func func)
 void x86_prepare_x87_callbacks(void)
 {
 	ir_clear_opcodes_generic_func();
+	x86_register_x87_sim(op_Phi,     sim_Phi);
 	x86_register_x87_sim(op_be_Asm,  sim_be_Asm);
 	x86_register_x87_sim(op_be_Copy, sim_be_Copy);
 	x86_register_x87_sim(op_be_Keep, sim_be_Keep);
