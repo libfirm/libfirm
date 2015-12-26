@@ -1673,7 +1673,7 @@ static void bitcast_float_to_int(dbg_info *dbgi, ir_node *block,
 	}
 }
 
-static ir_node *gen_Call(ir_node *node)
+static ir_node *gen_Call(ir_node *const node)
 {
 	ir_graph        *irg          = get_irn_irg(node);
 	ir_node         *callee       = get_Call_ptr(node);
@@ -1798,10 +1798,13 @@ static ir_node *gen_Call(ir_node *node)
 	ir_node *const res = entity ?
 		new_bd_sparc_Call_imm(dbgi, new_block, in_arity, in, in_req, out_arity, type, entity, 0, aggregate_return) :
 		new_bd_sparc_Call_reg(dbgi, new_block, in_arity, in, in_req, out_arity, type,            aggregate_return);
+	ir_set_throws_exception(res, ir_throws_exception(node));
 
 	/* create output register reqs */
-	arch_set_irn_register_req_out(res, pn_sparc_Call_M, arch_memory_req);
+	arch_set_irn_register_req_out(res, pn_sparc_Call_mem, arch_memory_req);
 	arch_copy_irn_out_info(res, pn_sparc_Call_stack, callframe);
+	arch_set_irn_register_req_out(res, pn_sparc_Call_X_regular, arch_exec_req);
+	arch_set_irn_register_req_out(res, pn_sparc_Call_X_except,  arch_exec_req);
 
 	/* add register requirements for the result regs */
 	for (size_t r = 0; r < n_ress; ++r) {
@@ -2315,9 +2318,11 @@ static ir_node *gen_Proj_Call(ir_node *node)
 
 	switch ((pn_Call) pn) {
 	case pn_Call_M:
-		return be_new_Proj(new_call, pn_sparc_Call_M);
+		return be_new_Proj(new_call, pn_sparc_Call_mem);
 	case pn_Call_X_regular:
+		return be_new_Proj(new_call, pn_sparc_Call_X_regular);
 	case pn_Call_X_except:
+		return be_new_Proj(new_call, pn_sparc_Call_X_except);
 	case pn_Call_T_result:
 		break;
 	}
