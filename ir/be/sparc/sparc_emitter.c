@@ -190,12 +190,27 @@ static void emit_fp_suffix(const ir_mode *mode)
 	}
 }
 
+static bool fallthrough_possible(const ir_node *const source_block, const ir_node *const target_block)
+{
+	return be_emit_get_prev_block(target_block) == source_block;
+}
+
+static bool is_fallthrough(const ir_node *const node)
+{
+	if (is_sparc_SwitchJmp(skip_Proj_const(node)))
+		return false;
+
+	const ir_node *const source_block = get_nodes_block(node);
+	const ir_node *const target_block = be_emit_get_cfop_target(node);
+	return fallthrough_possible(source_block, target_block);
+}
+
 /**
  * Returns the target label for a control flow node.
  */
 static void sparc_emit_cfop_target(const ir_node *node)
 {
-	ir_node *block = be_emit_get_cfop_target(node);
+	const ir_node *const block = be_emit_get_cfop_target(node);
 	be_gas_emit_block_name(block);
 }
 
@@ -214,13 +229,6 @@ static int get_sparc_Call_dest_addr_pos(const ir_node *node)
 	return get_irn_arity(node)-1;
 }
 
-static bool ba_is_fallthrough(const ir_node *node)
-{
-	ir_node *const block  = get_nodes_block(node);
-	ir_node *const target = be_emit_get_cfop_target(node);
-	return be_emit_get_prev_block(target) == block;
-}
-
 static bool is_no_instruction(const ir_node *node)
 {
 	/* copies are nops if src_reg == dest_reg */
@@ -234,7 +242,7 @@ static bool is_no_instruction(const ir_node *node)
 	if (be_is_IncSP(node) && be_get_IncSP_offset(node) == 0)
 		return true;
 	/* Ba is not emitted if it is a simple fallthrough */
-	if (is_sparc_Ba(node) && ba_is_fallthrough(node))
+	if (is_sparc_Ba(node) && is_fallthrough(node))
 		return true;
 
 	return be_is_Keep(node) || be_is_Start(node) || is_Phi(node);
@@ -243,7 +251,7 @@ static bool is_no_instruction(const ir_node *node)
 static bool has_delay_slot(const ir_node *node)
 {
 	if (is_sparc_Ba(node)) {
-		return !ba_is_fallthrough(node);
+		return !is_fallthrough(node);
 	}
 
 	return arch_get_irn_flags(node) & sparc_arch_irn_flag_has_delay_slot;
@@ -414,27 +422,16 @@ static bool can_move_up_into_delayslot(const ir_node *node, const ir_node *to)
 
 static void optimize_fallthrough(ir_node *node)
 {
-	ir_node *proj_true  = NULL;
-	ir_node *proj_false = NULL;
-
 	assert((unsigned)pn_sparc_Bicc_false == (unsigned)pn_sparc_fbfcc_false);
 	assert((unsigned)pn_sparc_Bicc_true  == (unsigned)pn_sparc_fbfcc_true);
-	foreach_out_edge(node, edge) {
-		ir_node *proj = get_edge_src_irn(edge);
-		unsigned pn   = get_Proj_num(proj);
-		if (pn == pn_sparc_Bicc_true) {
-			proj_true = proj;
-		} else {
-			assert(pn == pn_sparc_Bicc_false);
-			proj_false = proj;
-		}
-	}
-	assert(proj_true != NULL && proj_false != NULL);
 
-	ir_node const *const block       = get_nodes_block(node);
-	ir_node const *const true_target = be_emit_get_cfop_target(proj_true);
+	ir_node *const proj_true = get_Proj_for_pn(node, pn_sparc_Bicc_true);
+	ir_node *const proj_false = get_Proj_for_pn(node, pn_sparc_Bicc_false);
 
-	if (be_emit_get_prev_block(true_target) == block) {
+	assert(proj_true != NULL);
+	assert(proj_false != NULL);
+
+	if (is_fallthrough(proj_true)) {
 		/* exchange both proj destinations so the second one can be omitted */
 		set_Proj_num(proj_true,  pn_sparc_Bicc_false);
 		set_Proj_num(proj_false, pn_sparc_Bicc_true);
@@ -1184,9 +1181,7 @@ static void emit_sparc_branch(const ir_node *node, get_cc_func get_cc)
 	sparc_emitf(node, "%s%A %L", get_cc(relation), proj_true);
 	fill_delay_slot(node);
 
-	const ir_node *block       = get_nodes_block(node);
-	const ir_node *proj_target = be_emit_get_cfop_target(proj_false);
-	if (be_emit_get_prev_block(proj_target) != block) {
+	if (!is_fallthrough(proj_false)) {
 		sparc_emitf(node, "ba %L", proj_false);
 		/* TODO: fill this slot as well */
 		emitting_delay_slot = true;
@@ -1224,7 +1219,7 @@ static void emit_sparc_fbfcc(const ir_node *node)
 
 static void emit_sparc_Ba(const ir_node *node)
 {
-	if (!ba_is_fallthrough(node)) {
+	if (!is_fallthrough(node)) {
 		sparc_emitf(node, "ba %L", node);
 		fill_delay_slot(node);
 	} else if (be_options.verbose_asm) {
@@ -1327,18 +1322,20 @@ static bool block_needs_label(const ir_node *block)
 	if (get_Block_entity(block) != NULL)
 		return true;
 
-	int n_cfgpreds = get_Block_n_cfgpreds(block);
-	if (n_cfgpreds == 0) {
-		return false;
-	} else if (n_cfgpreds == 1) {
-		ir_node *cfgpred       = get_Block_cfgpred(block, 0);
-		ir_node *cfgpred_block = get_nodes_block(cfgpred);
-		if (is_Proj(cfgpred) && is_sparc_SwitchJmp(get_Proj_pred(cfgpred)))
-			return true;
-		return be_emit_get_prev_block(block) != cfgpred_block
-		    || be_emit_get_cfop_target(cfgpred) != block;
-	} else {
+	unsigned n_cfgpreds = get_Block_n_cfgpreds(block);
+	if (n_cfgpreds > 1) {
+		/* Can't fallthrough from multiple predecessors. */
 		return true;
+	} else if (n_cfgpreds == 1) {
+		/* If the block has only a single predecessor block, then we
+		 * can fall through if that predecessor block is scheduled
+		 * exactly "above" the block, and the predecessor node isn't a
+		 * SwitchJmp. */
+		ir_node *const cfgpred = get_Block_cfgpred(block, 0);
+		return !is_fallthrough(cfgpred);
+	} else {
+		/* n_cfgpreds == 0, unreachable block. */
+		return false;
 	}
 }
 
@@ -1389,10 +1386,10 @@ static int cmp_block_execfreqs(const void *d1, const void *d2)
 	return get_irn_node_nr(*p2)-get_irn_node_nr(*p1);
 }
 
-static void pick_delay_slots(size_t n_blocks, ir_node **blocks)
+static void pick_delay_slots(size_t n_blocks, ir_node *const *const blocks)
 {
 	/* create blocklist sorted by execution frequency */
-	ir_node **sorted_blocks = XMALLOCN(ir_node*, n_blocks);
+	ir_node **const sorted_blocks = XMALLOCN(ir_node*, n_blocks);
 	MEMCPY(sorted_blocks, blocks, n_blocks);
 	QSORT(sorted_blocks, n_blocks, cmp_block_execfreqs);
 
@@ -1400,7 +1397,7 @@ static void pick_delay_slots(size_t n_blocks, ir_node **blocks)
 		sched_foreach(sorted_blocks[i], node) {
 			if (!has_delay_slot(node))
 				continue;
-			ir_node *filler = pick_delay_slot_for(node);
+			ir_node *const filler = pick_delay_slot_for(node);
 			if (filler == NULL)
 				continue;
 			rbitset_set(delay_slot_fillers, get_irn_idx(filler));
@@ -1420,7 +1417,7 @@ void sparc_emit_function(ir_graph *irg)
 	sparc_register_emitters();
 
 	/* create the block schedule. For now, we don't need it earlier. */
-	ir_node **block_schedule = be_create_block_schedule(irg);
+	ir_node *const *const block_schedule = be_create_block_schedule(irg);
 
 	sparc_emit_func_prolog(irg);
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
