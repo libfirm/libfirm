@@ -204,7 +204,7 @@ static void x87_fxch(x87_state *state, unsigned pos)
  * @param state    the x87 state
  * @param node     the node to find
  * @return the stack position where the node is stacked
- *         or ~0u if the node was not found
+ *         or X87_NOT_ON_STACK if the node was not found
  */
 static unsigned x87_on_stack(x87_state const *const state,
                              ir_node const *const node)
@@ -213,7 +213,7 @@ static unsigned x87_on_stack(x87_state const *const state,
 		if (x87_get_st_node(state, i) == node)
 			return i;
 	}
-	return ~0u;
+	return X87_NOT_ON_STACK;
 }
 
 static unsigned x87_reg_on_stack(x87_state const *const state,
@@ -223,7 +223,7 @@ static unsigned x87_reg_on_stack(x87_state const *const state,
 		if (x87_get_st_reg(state, i) == vreg_idx)
 			return i;
 	}
-	return ~0u;
+	return X87_NOT_ON_STACK;
 }
 
 static unsigned is_at_pos(x87_state const *const state,
@@ -241,7 +241,7 @@ static unsigned is_at_pos(x87_state const *const state,
  */
 void x86_x87_push(x87_state *const state, ir_node *const node)
 {
-	assert(x87_on_stack(state, node) == ~0u && "double push");
+	assert(x87_on_stack(state, node) == X87_NOT_ON_STACK && "double push");
 	assert(state->depth < N_X87_REGS && "stack overrun");
 
 	++state->depth;
@@ -340,7 +340,7 @@ static void move_to_pos(x87_state *const state, ir_node *const before,
                         ir_node *const val, unsigned const to)
 {
 	unsigned const from = x87_on_stack(state, val);
-	assert(from != ~0u);
+	assert(from != X87_NOT_ON_STACK);
 	if (from != to) {
 		if (from != 0)
 			x87_create_fxch(state, before, from);
@@ -1063,7 +1063,7 @@ unsigned x86_sim_x87_fucom(x87_state *const state, ir_node *const node,
 	attr->pop     = pops != 0;
 	attr->reverse = reverse;
 
-	unsigned additional_pop = ~0u;
+	unsigned additional_pop = X87_NOT_ON_STACK;
 	if (pops > 0) {
 		x87_pop(state);
 		assert(pops == 1 || pops == 2);
@@ -1091,7 +1091,7 @@ static void sim_ia32_FucomFnstsw(x87_state *const state, ir_node *const node)
 
 	ia32_x87_attr_t *const attr = get_ia32_x87_attr(node);
 	attr->attr.ins_permuted ^= attr->x87.reverse;
-	if (additional_pop != ~0u) {
+	if (additional_pop != X87_NOT_ON_STACK) {
 		if (additional_pop == 0) {
 			set_irn_op(node, op_ia32_FucomppFnstsw);
 			x87_pop(state);
@@ -1109,7 +1109,7 @@ static void sim_ia32_Fucomi(x87_state *const state, ir_node *const node)
 
 	ia32_x87_attr_t *const attr = get_ia32_x87_attr(node);
 	attr->attr.ins_permuted ^= attr->x87.reverse;
-	if (additional_pop != ~0u)
+	if (additional_pop != X87_NOT_ON_STACK)
 		x86_x87_create_fpop(state, node, additional_pop);
 }
 
@@ -1238,7 +1238,7 @@ static void sim_be_Perm(x87_state *state, ir_node *irn)
 	/* collect old stack positions */
 	foreach_irn_in(irn, i, pred) {
 		unsigned const idx = x87_on_stack(state, pred);
-		assert(idx != ~0u);
+		assert(idx != X87_NOT_ON_STACK);
 		stack_pos[i] = idx;
 	}
 	/* now do the permutation */

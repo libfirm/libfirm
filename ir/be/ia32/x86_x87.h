@@ -16,6 +16,8 @@
 #include "be_types.h"
 #include "firm_types.h"
 
+#define X87_NOT_ON_STACK (~0U)
+
 /** Attributes for x87 nodes. */
 typedef struct x87_attr_t {
 	arch_register_t const *reg;        /**< The explicit register operand. */

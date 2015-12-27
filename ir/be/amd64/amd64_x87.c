@@ -92,7 +92,7 @@ static void sim_amd64_fucomi(x87_state *const state, ir_node *const node)
 	ir_node *const op0 = get_irn_n(node, n_amd64_fucomi_left);
 	ir_node *const op1 = get_irn_n(node, n_amd64_fucomi_right);
 	unsigned const additional_pop = x86_sim_x87_fucom(state, node, op0, op1);
-	if (additional_pop != ~0u)
+	if (additional_pop != X87_NOT_ON_STACK)
 		x86_x87_create_fpop(state, node, additional_pop);
 }
 
