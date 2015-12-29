@@ -71,17 +71,12 @@ for people preparing packages for distribution.
 3. Further information and Contact
 ----------------------------------
 
-Official website
-	<http://libfirm.org/>
+Official website: http://libfirm.org/
 
-Contact E-Mail:
-	<firm@ipd.info.uni-karlsruhe.de>
+Contact E-Mail: firm@ipd.info.uni-karlsruhe.de
 
-Mailing list:
-	<https://lists.sourceforge.net/lists/listinfo/libfirm-user>
+Mailing list: https://lists.sourceforge.net/lists/listinfo/libfirm-user
 
-Bugtracker:
-	<http://pp.ipd.kit.edu/~firm/bugs>
+Bugtracker: http://pp.ipd.kit.edu/~firm/bugs
 
-Internet relay chat:
-	<irc://chat.freenode.net/#firm>
+Internet relay chat: irc://chat.freenode.net/#firm
