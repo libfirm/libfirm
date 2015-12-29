@@ -68,16 +68,8 @@ can adapt the compiler and linker flags to build shared libraries for a wider
 range of systems, provides an installation target and is often more familiar
 for people preparing packages for distribution.
 
-3. Usage
---------
-
-To generate FIRM code from a compiler frontend read the documentation
-"libFIRM: A Library for Compiler Optimization Reaserch Implementing
-Firm", UKA tech-report 2002-5. About Firm you can learn in UKA
-tech-report 1999-14.
-
-4. Contact
-----------
+3. Further information and Contact
+----------------------------------
 
 Official website
 	<http://libfirm.org/>
