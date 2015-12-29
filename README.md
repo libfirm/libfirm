@@ -74,11 +74,14 @@ tech-report 1999-14.
 Official website
 	<http://libfirm.org/>
 
-You can contact us at
+Contact E-Mail:
 	<firm@ipd.info.uni-karlsruhe.de>
 
-There's a mailing list here:
+Mailing list:
 	<https://lists.sourceforge.net/lists/listinfo/libfirm-user>
 
-We have a bugtracker at:
+Bugtracker:
 	<http://pp.ipd.kit.edu/~firm/bugs>
+
+Internet relay chat:
+	<irc://chat.freenode.net/#firm>
