@@ -48,17 +48,25 @@ as well as unfinished backends for MIPS, ARM, and AMD64.
 
 Prerequisites for the build:
 
-* python (2.6.x, 2.7.x or >=3.3 are supported)
+* python (2.7.x or >=3.3 are supported)
 * perl
 * an ANSI C99 compiler (gcc, clang, icc are known to work)
 
-Building on unix variants/cygwin:
+2.1 Build using make
+--------------------
 
-1. Change into the directory containing libfirms source
-2. Create a directory named build 'mkdir build'. Change into this directory
-   and execute the configure script. 'cd build ; ../configure'
-3. Type 'make' to compile the package
-4. You may install libfirm as super user by typing 'make install'
+Just type 'make' inside libfirms source directory. The results are put into a
+directory called "build". You can override the existing preprocessor, compiler
+and linker flags by creating a 'config.mak' file.
+
+2.2 Using cmake
+---------------
+
+libfirm supports a cmake build system. CMake is a complexer build system than
+the makefile based build and most libfirm developers do not use it. However it
+can adapt the compiler and linker flags to build shared libraries for a wider
+range of systems, provides an installation target and is often more familiar
+for people preparing packages for distribution.
 
 3. Usage
 --------
