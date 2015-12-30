@@ -268,8 +268,8 @@ void mature_immBlock(ir_node *block)
 			new_in[1] = new_r_Bad(irg, mode_X);
 		} else {
 			new_in = DUP_ARR_D(ir_node*, obst, block->in);
-			DEL_ARR_F(block->in);
 		}
+		DEL_ARR_F(block->in);
 		block->in                     = new_in;
 		block->attr.block.backedge    = new_backedge_arr(obst, n_preds);
 		block->attr.block.dynamic_ins = false;
