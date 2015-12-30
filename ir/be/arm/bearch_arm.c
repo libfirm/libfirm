@@ -170,7 +170,7 @@ static void arm_generate_code(FILE *output, const char *cup_name)
 	be_gas_elf_type_char = '%';
 
 	be_begin(output, cup_name);
-	unsigned *const sp_is_non_ssa = rbitset_malloc(N_ARM_REGISTERS);
+	unsigned *const sp_is_non_ssa = rbitset_alloca(N_ARM_REGISTERS);
 	rbitset_set(sp_is_non_ssa, REG_SP);
 
 	arm_emit_file_prologue();

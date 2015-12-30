@@ -658,7 +658,7 @@ static void amd64_generate_code(FILE *output, const char *cup_name)
 {
 	amd64_constants = pmap_create();
 	be_begin(output, cup_name);
-	unsigned *const sp_is_non_ssa = rbitset_malloc(N_AMD64_REGISTERS);
+	unsigned *const sp_is_non_ssa = rbitset_alloca(N_AMD64_REGISTERS);
 	rbitset_set(sp_is_non_ssa, REG_RSP);
 
 	foreach_irp_irg(i, irg) {

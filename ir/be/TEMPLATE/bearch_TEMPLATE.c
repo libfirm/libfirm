@@ -76,7 +76,7 @@ static void introduce_prologue(ir_graph *const irg)
 static void TEMPLATE_generate_code(FILE *output, const char *cup_name)
 {
 	be_begin(output, cup_name);
-	unsigned *const sp_is_non_ssa = rbitset_malloc(N_TEMPLATE_REGISTERS);
+	unsigned *const sp_is_non_ssa = rbitset_alloca(N_TEMPLATE_REGISTERS);
 	rbitset_set(sp_is_non_ssa, REG_SP);
 
 	foreach_irp_irg(i, irg) {

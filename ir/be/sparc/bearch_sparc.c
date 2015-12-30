@@ -428,7 +428,7 @@ static void sparc_generate_code(FILE *output, const char *cup_name)
 	sparc_constants = pmap_create();
 
 	be_begin(output, cup_name);
-	unsigned *const sp_is_non_ssa = rbitset_malloc(N_SPARC_REGISTERS);
+	unsigned *const sp_is_non_ssa = rbitset_alloca(N_SPARC_REGISTERS);
 	rbitset_set(sp_is_non_ssa, REG_SP);
 
 	foreach_irp_irg(i, irg) {
