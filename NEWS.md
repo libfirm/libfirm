@@ -1,17 +1,42 @@
-libFirm 1.22.0 (2015-12-23)
+libFirm 1.22.0 (2015-12-31)
 ---------------------------
 * Improved PIC support, linux/elf is now supported
-* Additional local optimization rules
+* Many additional local optimization rules (instcombine)
 * Inline assembly support for sparc/amd64
 * Improved constant bit analysis
 * Improved load/store optimization, featuring compound value optimizations
 * Improved reassociation pass
-* Improved amd64 (aka x86_64) backend (but still experimental)
+* Improved amd64 (aka x86_64) backend, it is now able to bootstrap libfirm
 * Improved arm backend (but still experimental)
 * Improved inliner (can inline compound types)
 * Compiletime performance improvements
 * Cleanups and API simplifications
 * Switch to C99 and corresponding code cleanup and simplification
+* More details in dumped IR graphs
+* Streamlined IR
+* Improved IR graph verifiers
+* Further unify backend infrastructure
+* Support for arrays as parameter and return types
+* Updated documentation
+* Perform precise 80bit spilling for x87 floating point
+* Improved permutation decomposition for copy coalescing
+* Added bitwise 'don't care' analysis and use it for optimizing occult constants
+* Support builtin 'saturating increment' (amd64, ia32, sparc)
+* Improved generated code for division by constant
+* Support builtin 'compare and swap' (amd64, ia32, sparc)
+* Support alias entities
+* Improved scalar conversion optimization
+* Added store combine optimization
+* Overhauled representation and handling of infinite loops
+* Improved use of flag results generated as side effect of instructions (ia32)
+* Improved calculation of execution frequency estimation for large graphs
+* Improved instruction selection (amd64, arm, ia32, sparc)
+* Improved x87 floating point code generation
+* Support early clobbers in inline assembly
+* Support x87 constraints in inline assembly (ia32)
+* Support __attribute__((visibility("hidden"))) and __attribute__((visible("protected")))
+* Optionally use CMake as build system
+* Support 'make install' with the usual variables (INSTALLPREFIX, ...)
 * Bugfixes
 
 libFirm 1.21.0 (2012-11-16)
