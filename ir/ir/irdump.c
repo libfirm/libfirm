@@ -111,7 +111,7 @@ typedef struct proj_lookup {
 	const pns_lookup_t *data;     /**< the data */
 } proj_lookup_t;
 
-#include "gen_irdump.c.inl"
+#include "gen_proj_names.h"
 
 static ir_dump_flags_t flags =
 	ir_dump_flag_blocks_as_subgraphs |

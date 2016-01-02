@@ -111,7 +111,7 @@ $(foreach backend,$(backends),$(eval $(call backend_template,$(backend))))
 # generators
 IR_SPEC_GENERATED_INCLUDES := \
 	$(gendir)/include/libfirm/nodes.h \
-	$(gendir)/ir/ir/gen_irdump.c.inl  \
+	$(gendir)/ir/ir/gen_proj_names.h  \
 	$(gendir)/ir/ir/gen_irnode.h
 IR_SPEC_GENERATOR := $(srcdir)/scripts/gen_ir.py
 IR_SPEC_GENERATOR_DEPS := $(IR_SPEC_GENERATOR) $(srcdir)/scripts/jinjautil.py $(srcdir)/scripts/irops.py $(srcdir)/scripts/filters.py
