@@ -42,7 +42,7 @@ Official website: http://libfirm.org/
 
 Contact E-Mail: firm@ipd.info.uni-karlsruhe.de
 
-Mailing list: https://lists.sourceforge.net/lists/listinfo/libfirm-user
+Mailing list: https://lists.ira.uni-karlsruhe.de/mailman/listinfo/firm
 
 Bugtracker: http://pp.ipd.kit.edu/~firm/bugs
 
