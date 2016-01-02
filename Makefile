@@ -118,8 +118,11 @@ IR_SPEC_GENERATOR_DEPS := $(IR_SPEC_GENERATOR) $(srcdir)/scripts/jinjautil.py $(
 IR_SPEC := $(srcdir)/scripts/ir_spec.py
 libfirm_BUILDDIRS += $(gendir)/include/libfirm
 
-libfirm_GEN_SOURCES += ir/ir/gen_irnode.c
+libfirm_GEN_SOURCES += \
+	ir/ir/gen_irnode.c \
+	ir/ir/gen_irio.c
 $(builddir)/ir/ir/gen_irnode.o: $(gendir)/ir/ir/gen_irnode.c
+$(builddir)/ir/ir/gen_irio.o: $(gendir)/ir/ir/gen_irio.c
 
 $(gendir)/ir/ir/% : scripts/templates/% $(IR_SPEC_GENERATOR_DEPS) $(IR_SPEC)
 	@echo GEN $@
@@ -130,8 +133,6 @@ $(gendir)/include/libfirm/% : scripts/templates/% $(IR_SPEC_GENERATOR_DEPS) $(IR
 	$(Q)$(IR_SPEC_GENERATOR) $(IR_SPEC) "$<" > "$@"
 
 libfirm_GEN_DIRS += ir/ir include/libfirm
-
-ir/ir/irio.c : $(gendir)/ir/ir/gen_irio.c.inl
 
 $(libfirm_a): $(libfirm_OBJECTS)
 	@echo AR $@

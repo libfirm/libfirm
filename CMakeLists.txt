@@ -300,7 +300,7 @@ foreach(file
 	include/libfirm/nodes.h
 	ir/ir/gen_irnode.h
 	ir/ir/gen_proj_names.h
-	ir/ir/gen_irio.c.inl
+	ir/ir/gen_irio.c
 	ir/ir/gen_irnode.c)
 	gen_ir(${GEN_DIR}/${file})
 endforeach(file)

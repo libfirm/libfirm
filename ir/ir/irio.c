@@ -8,69 +8,29 @@
  * @brief   Write textual representation of firm to file.
  * @author  Moritz Kroll, Matthias Braun
  */
+#include "irio.h"
+
 #include <string.h>
 #include <ctype.h>
 #include <stdbool.h>
 #include <stdarg.h>
 
-#include "irio.h"
-
-#include "irnode_t.h"
-#include "irprog_t.h"
-#include "irgraph_t.h"
-#include "irprintf.h"
-#include "ircons_t.h"
-#include "irgmod.h"
-#include "irflag_t.h"
-#include "irgwalk.h"
-#include "tv_t.h"
 #include "array.h"
-#include "panic.h"
-#include "typerep.h"
-#include "set.h"
+#include "ircons_t.h"
+#include "irflag_t.h"
+#include "irgmod.h"
+#include "irgraph_t.h"
+#include "irgwalk.h"
+#include "irio_t.h"
+#include "irprintf.h"
+#include "irprog_t.h"
 #include "obst.h"
+#include "panic.h"
 #include "pmap.h"
-#include "pdeq.h"
+#include "tv_t.h"
 #include "util.h"
 
 #define SYMERROR ((unsigned) ~0)
-
-static void register_generated_node_readers(void);
-static void register_generated_node_writers(void);
-
-typedef struct delayed_initializer_t {
-	ir_initializer_t *initializer;
-	long              node_nr;
-} delayed_initializer_t;
-
-typedef struct delayed_pred_t {
-	ir_node *node;
-	int      n_preds;
-	long     preds[];
-} delayed_pred_t;
-
-typedef struct read_env_t {
-	int            c;           /**< currently read char */
-	FILE          *file;
-	const char    *inputname;
-	unsigned       line;
-
-	ir_graph      *irg;
-	set           *idset;       /**< id_entry set, which maps from file ids to
-	                                 new Firm elements */
-	ir_type      **fixedtypes;
-	bool           read_errors;
-	struct obstack obst;
-	struct obstack preds_obst;
-	delayed_initializer_t *delayed_initializers;
-	const delayed_pred_t **delayed_preds;
-} read_env_t;
-
-typedef struct write_env_t {
-	FILE *file;
-	pdeq *write_queue;
-	pdeq *entity_queue;
-} write_env_t;
 
 typedef enum typetag_t {
 	tt_align,
@@ -335,38 +295,38 @@ static unsigned symbol(const char *str, typetag_t typetag)
 	return entry ? entry->code : SYMERROR;
 }
 
-static void write_long(write_env_t *env, long value)
+void write_long(write_env_t *env, long value)
 {
 	fprintf(env->file, "%ld ", value);
 }
 
-static void write_int(write_env_t *env, int value)
+void write_int(write_env_t *env, int value)
 {
 	fprintf(env->file, "%d ", value);
 }
 
-static void write_unsigned(write_env_t *env, unsigned value)
+void write_unsigned(write_env_t *env, unsigned value)
 {
 	fprintf(env->file, "%u ", value);
 }
 
-static void write_size_t(write_env_t *env, size_t value)
+void write_size_t(write_env_t *env, size_t value)
 {
 	ir_fprintf(env->file, "%zu ", value);
 }
 
-static void write_symbol(write_env_t *env, const char *symbol)
+void write_symbol(write_env_t *env, const char *symbol)
 {
 	fputs(symbol, env->file);
 	fputc(' ', env->file);
 }
 
-static void write_entity_ref(write_env_t *env, ir_entity *entity)
+void write_entity_ref(write_env_t *env, ir_entity *entity)
 {
 	write_long(env, get_entity_nr(entity));
 }
 
-static void write_type_ref(write_env_t *env, ir_type *type)
+void write_type_ref(write_env_t *env, ir_type *type)
 {
 	switch (get_type_opcode(type)) {
 	case tpo_unknown:
@@ -381,7 +341,7 @@ static void write_type_ref(write_env_t *env, ir_type *type)
 	write_long(env, get_type_nr(type));
 }
 
-static void write_string(write_env_t *env, const char *string)
+void write_string(write_env_t *env, const char *string)
 {
 	fputc('"', env->file);
 	for (const char *c = string; *c != '\0'; ++c) {
@@ -403,12 +363,12 @@ static void write_string(write_env_t *env, const char *string)
 	fputc(' ', env->file);
 }
 
-static void write_ident(write_env_t *env, ident *id)
+void write_ident(write_env_t *env, ident *id)
 {
 	write_string(env, get_id_str(id));
 }
 
-static void write_ident_null(write_env_t *env, ident *id)
+void write_ident_null(write_env_t *env, ident *id)
 {
 	if (id == NULL) {
 		fputs("NULL ", env->file);
@@ -417,12 +377,12 @@ static void write_ident_null(write_env_t *env, ident *id)
 	}
 }
 
-static void write_mode_ref(write_env_t *env, ir_mode *mode)
+void write_mode_ref(write_env_t *env, ir_mode *mode)
 {
 	write_string(env, get_mode_name(mode));
 }
 
-static void write_tarval_ref(write_env_t *env, ir_tarval *tv)
+void write_tarval_ref(write_env_t *env, ir_tarval *tv)
 {
 	ir_mode *mode = get_tarval_mode(tv);
 	write_mode_ref(env, mode);
@@ -432,35 +392,35 @@ static void write_tarval_ref(write_env_t *env, ir_tarval *tv)
 	fputc(' ', env->file);
 }
 
-static void write_align(write_env_t *env, ir_align align)
+void write_align(write_env_t *env, ir_align align)
 {
 	fputs(get_align_name(align), env->file);
 	fputc(' ', env->file);
 }
 
-static void write_builtin_kind(write_env_t *env, ir_builtin_kind kind)
+void write_builtin_kind(write_env_t *env, ir_builtin_kind kind)
 {
 	fputs(get_builtin_kind_name(kind), env->file);
 	fputc(' ', env->file);
 }
 
-static void write_cond_jmp_predicate(write_env_t *env, cond_jmp_predicate pred)
+void write_cond_jmp_predicate(write_env_t *env, cond_jmp_predicate pred)
 {
 	fputs(get_cond_jmp_predicate_name(pred), env->file);
 	fputc(' ', env->file);
 }
 
-static void write_relation(write_env_t *env, ir_relation relation)
+void write_relation(write_env_t *env, ir_relation relation)
 {
 	write_long(env, (long)relation);
 }
 
-static void write_throws(write_env_t *env, bool throws)
+void write_throws(write_env_t *env, bool throws)
 {
 	write_symbol(env, throws ? "throw" : "nothrow");
 }
 
-static void write_loop(write_env_t *env, bool loop)
+void write_loop(write_env_t *env, bool loop)
 {
 	write_symbol(env, loop ? "loop" : "noloop");
 }
@@ -485,12 +445,13 @@ static void write_scope_end(write_env_t *env)
 	fputs("}\n\n", env->file);
 }
 
-static void write_node_ref(write_env_t *env, const ir_node *node)
+void write_node_ref(write_env_t *env, const ir_node *node)
 {
 	write_long(env, get_irn_node_nr(node));
 }
 
-static void write_initializer(write_env_t *const env, ir_initializer_t const *const ini)
+void write_initializer(write_env_t *const env,
+                       ir_initializer_t const *const ini)
 {
 	FILE *f = env->file;
 	ir_initializer_kind_t ini_kind = get_initializer_kind(ini);
@@ -521,13 +482,13 @@ static void write_initializer(write_env_t *const env, ir_initializer_t const *co
 	panic("unknown initializer kind");
 }
 
-static void write_pin_state(write_env_t *env, op_pin_state state)
+void write_pin_state(write_env_t *env, op_pin_state state)
 {
 	fputs(get_op_pin_state_name(state), env->file);
 	fputc(' ', env->file);
 }
 
-static void write_volatility(write_env_t *env, ir_volatility vol)
+void write_volatility(write_env_t *env, ir_volatility vol)
 {
 	fputs(get_volatility_name(vol), env->file);
 	fputc(' ', env->file);
@@ -539,7 +500,7 @@ static void write_type_state(write_env_t *env, ir_type_state state)
 	fputc(' ', env->file);
 }
 
-static void write_visibility(write_env_t *env, ir_visibility visibility)
+void write_visibility(write_env_t *env, ir_visibility visibility)
 {
 	fputs(get_visibility_name(visibility), env->file);
 	fputc(' ', env->file);
@@ -793,8 +754,7 @@ static void write_entity(write_env_t *env, ir_entity *ent)
 	fputc('\n', env->file);
 }
 
-static void write_switch_table_ref(write_env_t *env,
-                                   const ir_switch_table *table)
+void write_switch_table_ref(write_env_t *env, const ir_switch_table *table)
 {
 	size_t n_entries = ir_switch_table_get_n_entries(table);
 	write_size_t(env, n_entries);
@@ -808,7 +768,7 @@ static void write_switch_table_ref(write_env_t *env,
 	}
 }
 
-static void write_pred_refs(write_env_t *env, const ir_node *node, int from)
+void write_pred_refs(write_env_t *env, const ir_node *node, int from)
 {
 	write_list_begin(env);
 	int arity = get_irn_arity(node);
@@ -820,7 +780,7 @@ static void write_pred_refs(write_env_t *env, const ir_node *node, int from)
 	write_list_end(env);
 }
 
-static void write_node_nr(write_env_t *env, const ir_node *node)
+void write_node_nr(write_env_t *env, const ir_node *node)
 {
 	write_long(env, get_irn_node_nr(node));
 }
@@ -900,9 +860,7 @@ static void write_Anchor(write_env_t *env, const ir_node *node)
 	write_pred_refs(env, node, 0);
 }
 
-typedef void write_node_func(write_env_t *env, ir_node const *node);
-
-static void register_node_writer(ir_op *op, write_node_func *func)
+void register_node_writer(ir_op *op, write_node_func *func)
 {
 	set_generic_function_ptr(op, func);
 }
@@ -1322,17 +1280,17 @@ static long read_long(read_env_t *env)
 	return result;
 }
 
-static int read_int(read_env_t *env)
+int read_int(read_env_t *env)
 {
 	return (int) read_long(env);
 }
 
-static unsigned read_unsigned(read_env_t *env)
+unsigned read_unsigned(read_env_t *env)
 {
 	return (unsigned) read_long(env);
 }
 
-static size_t read_size_t(read_env_t *env)
+size_t read_size_t(read_env_t *env)
 {
 	/* FIXME */
 	return (size_t) read_unsigned(env);
@@ -1406,7 +1364,7 @@ static ir_type *get_type(read_env_t *env, long typenr)
 	return type;
 }
 
-static ir_type *read_type_ref(read_env_t *env)
+ir_type *read_type_ref(read_env_t *env)
 {
 	char *str = read_word(env);
 	if (streq(str, "unknown")) {
@@ -1445,13 +1403,13 @@ static ir_entity *get_entity(read_env_t *env, long entnr)
 	return entity;
 }
 
-static ir_entity *read_entity_ref(read_env_t *env)
+ir_entity *read_entity_ref(read_env_t *env)
 {
 	long nr = read_long(env);
 	return get_entity(env, nr);
 }
 
-static ir_mode *read_mode_ref(read_env_t *env)
+ir_mode *read_mode_ref(read_env_t *env)
 {
 	char *str = read_string(env);
 	for (size_t i = 0, n = ir_get_n_modes(); i < n; i++) {
@@ -1505,17 +1463,17 @@ static unsigned read_enum(read_env_t *env, typetag_t typetag)
 	return 0;
 }
 
-static ir_align read_align(read_env_t *env)
+ir_align read_align(read_env_t *env)
 {
 	return (ir_align)read_enum(env, tt_align);
 }
 
-static ir_builtin_kind read_builtin_kind(read_env_t *env)
+ir_builtin_kind read_builtin_kind(read_env_t *env)
 {
 	return (ir_builtin_kind)read_enum(env, tt_builtin_kind);
 }
 
-static cond_jmp_predicate read_cond_jmp_predicate(read_env_t *env)
+cond_jmp_predicate read_cond_jmp_predicate(read_env_t *env)
 {
 	return (cond_jmp_predicate)read_enum(env, tt_cond_jmp_predicate);
 }
@@ -1530,7 +1488,7 @@ static ir_mode_arithmetic read_mode_arithmetic(read_env_t *env)
 	return (ir_mode_arithmetic)read_enum(env, tt_mode_arithmetic);
 }
 
-static bool read_pinned(read_env_t *env)
+bool read_pinned(read_env_t *env)
 {
 	return read_enum(env, tt_pin_state) == op_pin_state_pinned;
 }
@@ -1550,17 +1508,17 @@ static ir_linkage read_linkage(read_env_t *env)
 	return (ir_linkage)read_enum(env, tt_linkage);
 }
 
-static ir_volatility read_volatility(read_env_t *env)
+ir_volatility read_volatility(read_env_t *env)
 {
 	return (ir_volatility)read_enum(env, tt_volatility);
 }
 
-static bool read_throws(read_env_t *env)
+bool read_throws(read_env_t *env)
 {
 	return (bool)read_enum(env, tt_throws);
 }
 
-static bool read_loop(read_env_t *env)
+bool read_loop(read_env_t *env)
 {
 	return (bool)read_enum(env, tt_loop);
 }
@@ -1570,12 +1528,12 @@ static keyword_t read_keyword(read_env_t *env)
 	return (keyword_t)read_enum(env, tt_keyword);
 }
 
-static ir_relation read_relation(read_env_t *env)
+ir_relation read_relation(read_env_t *env)
 {
 	return (ir_relation)read_long(env);
 }
 
-static ir_tarval *read_tarval_ref(read_env_t *env)
+ir_tarval *read_tarval_ref(read_env_t *env)
 {
 	ir_mode   *tvmode = read_mode_ref(env);
 	char      *str    = read_word(env);
@@ -1585,7 +1543,7 @@ static ir_tarval *read_tarval_ref(read_env_t *env)
 	return tv;
 }
 
-static ir_switch_table *read_switch_table_ref(read_env_t *env)
+ir_switch_table *read_switch_table_ref(read_env_t *env)
 {
 	size_t           n_entries = read_size_t(env);
 	ir_switch_table *table     = ir_new_switch_table(env->irg, n_entries);
@@ -1913,14 +1871,7 @@ static void read_typegraph(read_env_t *env)
 	env->irg = old_irg;
 }
 
-/**
- * Read a node reference and return the node for it. This assumes that the node
- * was previously read. This is fine for all normal nodes.
- * (Note: that we "break" loops by having special code for phi, block or anchor
- *  nodes in place, firm guarantees us that a loop in the graph always contains
- *  a phi, block or anchor node)
- */
-static ir_node *read_node_ref(read_env_t *env)
+ir_node *read_node_ref(read_env_t *env)
 {
 	long     nr   = read_long(env);
 	ir_node *node = get_node_or_null(env, nr);
@@ -1931,7 +1882,7 @@ static ir_node *read_node_ref(read_env_t *env)
 	return node;
 }
 
-static int read_preds(read_env_t *env)
+int read_preds(read_env_t *env)
 {
 	expect_list_begin(env);
 	assert(obstack_object_size(&env->preds_obst) == 0);
@@ -2049,10 +2000,9 @@ static ir_node *read_Anchor(read_env_t *env)
 	return res;
 }
 
-typedef ir_node* read_node_func(read_env_t *env);
 static pmap *node_readers;
 
-static void register_node_reader(char const *const name, read_node_func *const func)
+void register_node_reader(char const *const name, read_node_func *const func)
 {
 	ident *const id = new_id_from_str(name);
 	pmap_insert(node_readers, id, (void*)func);
@@ -2339,5 +2289,3 @@ int ir_import_file(FILE *input, const char *inputname)
 
 	return env->read_errors;
 }
-
-#include "gen_irio.c.inl"

@@ -1,4 +1,7 @@
 {{warning}}
+
+#include "irio_t.h"
+
 {%- for node in nodes|has('serializer') %}
 static ir_node *read_{{node.name}}(read_env_t *env)
 {
@@ -92,14 +95,14 @@ static void write_{{node.name}}(write_env_t *env, const ir_node *node)
 }
 {% endfor %}
 
-static void register_generated_node_readers(void)
+void register_generated_node_readers(void)
 {
 	{%- for node in nodes|has('serializer') %}
 	register_node_reader("{{node.name}}", read_{{node.name}});
 	{%- endfor %}
 }
 
-static void register_generated_node_writers(void)
+void register_generated_node_writers(void)
 {
 	{%- for node in nodes|has('serializer') %}
 	register_node_writer(op_{{node.name}}, write_{{node.name}});
