@@ -34,9 +34,9 @@ libFirm 1.22.0 (2015-12-31)
 * Improved x87 floating point code generation
 * Support early clobbers in inline assembly
 * Support x87 constraints in inline assembly (ia32)
-* Support __attribute__((visibility("hidden"))) and __attribute__((visible("protected")))
+* Support `__attribute__((visibility("hidden")))` and `__attribute__((visible("protected")))`
 * Optionally use CMake as build system
-* Support 'make install' with the usual variables (INSTALLPREFIX, ...)
+* Support `make install` with the usual variables (INSTALLPREFIX, ...)
 * Bugfixes
 
 libFirm 1.21.0 (2012-11-16)
