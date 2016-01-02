@@ -30,5 +30,17 @@ grep -q "set(libfirm_VERSION \"${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_MICRO
 echo "Checking version in NEWS.md"
 grep -q "$VERSION_MAJOR.$VERSION_MINOR.$VERSION_MICRO" NEWS.md
 
-echo "Creating $RELEASEFILE"
-git archive --prefix libfirm-$VERSION/ HEAD | bzip2 > "$RELEASEFILE"
+RELEASEBZ2="build/libfirm-$VERSION.tar.bz2"
+echo "creating $RELEASEBZ2"
+mkdir -p "$(dirname "$RELEASEBZ2")"
+git archive --prefix libfirm-$VERSION/ HEAD | bzip2 -9 > "$RELEASEBZ2"
+
+RELEASEGZ="build/libfirm-$VERSION.tar.gz"
+echo "creating $RELEASEGZ"
+mkdir -p "$(dirname "$RELEASEGZ")"
+git archive --prefix libfirm-$VERSION/ HEAD | gzip -9 > "$RELEASEGZ"
+
+RELEASEXZ="build/libfirm-$VERSION.tar.xz"
+echo "creating $RELEASEXZ"
+mkdir -p "$(dirname "$RELEASEXZ")"
+git archive --prefix libfirm-$VERSION/ HEAD | xz -9 > "$RELEASEXZ"
