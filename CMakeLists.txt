@@ -296,9 +296,11 @@ if(NOT PERL_FOUND)
 endif()
 
 function(gen_ir target)
-	get_filename_component(basename "${target}" NAME)
+	get_filename_component(basename ${target} NAME)
+	get_filename_component(target_dir ${target} DIRECTORY)
 	add_custom_command (
 		OUTPUT ${target}
+		COMMAND ${CMAKE_COMMAND} -E make_directory ${target_dir}
 		COMMAND ${PYTHON_EXECUTABLE} ${GEN_IR_DIR}/gen_ir.py ${IR_SPEC} ${GEN_TEMPLATEDIR}/${basename} > ${target}
 		DEPENDS ${GEN_IR_DIR}/gen_ir.py ${GEN_IR_DIR}/jinjautil.py ${GEN_IR_DIR}/irops.py ${IR_SPEC}
 	)
@@ -307,11 +309,12 @@ function(gen_ir target)
 endfunction()
 
 function(begen generator target spec)
-	get_filename_component(TARGETDIR "${target}" DIRECTORY)
+	get_filename_component(target_dir ${target} DIRECTORY)
 	set(GENERATOR ${PROJECT_SOURCE_DIR}/ir/be/scripts/${generator})
 	add_custom_command(
 		OUTPUT ${target}
-		COMMAND ${PERL_EXECUTABLE} ${GENERATOR} ${spec} ${TARGETDIR}
+		COMMAND ${CMAKE_COMMAND} -E make_directory ${target_dir}
+		COMMAND ${PERL_EXECUTABLE} ${GENERATOR} ${spec} ${target_dir}
 		DEPENDS ${GENERATOR} ${spec}
 	)
 	list(APPEND SOURCES ${target})
