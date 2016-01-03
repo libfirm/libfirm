@@ -47,22 +47,6 @@ set(SOURCES
 	ir/ana/irmemory.c
 	ir/ana/irouts.c
 	ir/ana/vrp.c
-	ir/be/amd64/amd64_cconv.c
-	ir/be/amd64/amd64_emitter.c
-	ir/be/amd64/amd64_finish.c
-	ir/be/amd64/amd64_new_nodes.c
-	ir/be/amd64/amd64_pic.c
-	ir/be/amd64/amd64_transform.c
-	ir/be/amd64/amd64_varargs.c
-	ir/be/amd64/bearch_amd64.c
-	ir/be/arm/arm_cconv.c
-	ir/be/arm/arm_emitter.c
-	ir/be/arm/arm_finish.c
-	ir/be/arm/arm_lower64.c
-	ir/be/arm/arm_new_nodes.c
-	ir/be/arm/arm_optimize.c
-	ir/be/arm/arm_transform.c
-	ir/be/arm/bearch_arm.c
 	ir/be/bearch.c
 	ir/be/beasm.c
 	ir/be/beblocksched.c
@@ -114,34 +98,6 @@ set(SOURCES
 	ir/be/beutil.c
 	ir/be/bevarargs.c
 	ir/be/beverify.c
-	ir/be/ia32/bearch_ia32.c
-	ir/be/ia32/ia32_architecture.c
-	ir/be/ia32/ia32_cconv.c
-	ir/be/ia32/ia32_emitter.c
-	ir/be/ia32/ia32_finish.c
-	ir/be/ia32/ia32_fpu.c
-	ir/be/ia32/ia32_intrinsics.c
-	ir/be/ia32/ia32_new_nodes.c
-	ir/be/ia32/ia32_optimize.c
-	ir/be/ia32/ia32_pic.c
-	ir/be/ia32/ia32_transform.c
-	ir/be/ia32/x86_x87.c
-	ir/be/ia32/x86_address_mode.c
-	ir/be/ia32/x86_asm.c
-	ir/be/ia32/x86_cconv.c
-	ir/be/ia32/x86_imm.c
-	ir/be/sparc/bearch_sparc.c
-	ir/be/sparc/sparc_cconv.c
-	ir/be/sparc/sparc_emitter.c
-	ir/be/sparc/sparc_finish.c
-	ir/be/sparc/sparc_lower64.c
-	ir/be/sparc/sparc_new_nodes.c
-	ir/be/sparc/sparc_stackframe.c
-	ir/be/sparc/sparc_transform.c
-	ir/be/TEMPLATE/bearch_TEMPLATE.c
-	ir/be/TEMPLATE/TEMPLATE_emitter.c
-	ir/be/TEMPLATE/TEMPLATE_new_nodes.c
-	ir/be/TEMPLATE/TEMPLATE_transform.c
 	ir/common/debug.c
 	ir/common/debugger.c
 	ir/common/firm.c
@@ -396,7 +352,9 @@ add_backend(amd64
 	ir/be/amd64/amd64_emitter.c
 	ir/be/amd64/amd64_finish.c
 	ir/be/amd64/amd64_new_nodes.c
+	ir/be/amd64/amd64_pic.c
 	ir/be/amd64/amd64_transform.c
+	ir/be/amd64/amd64_varargs.c
 	ir/be/amd64/amd64_x87.c
 	ir/be/amd64/bearch_amd64.c
 )
