@@ -1,0 +1,40 @@
+/*
+ * This file is part of libFirm.
+ * Copyright (C) 2016 Matthias Braun
+ */
+
+/**
+ * @file
+ * @brief   Internal declarations used by gen_new_nodes.c
+ */
+#ifndef FIRM_BE_AMD64_AMD64_NEW_NODES_T_H
+#define FIRM_BE_AMD64_AMD64_NEW_NODES_T_H
+
+void amd64_dump_node(FILE *F, const ir_node *n, dump_reason_t reason);
+
+void init_amd64_attributes(ir_node *node, arch_irn_flags_t flags,
+                           const arch_register_req_t **in_reqs,
+                           int n_res, amd64_op_mode_t op_mode);
+
+void init_amd64_switch_attributes(ir_node *node, const ir_switch_table *table,
+                                  ir_entity *table_entity);
+
+void init_amd64_cc_attributes(ir_node *node, x86_condition_code_t cc,
+                              amd64_insn_mode_t insn_mode);
+
+void init_amd64_movimm_attributes(ir_node *node, amd64_insn_mode_t insn_mode,
+                                  const amd64_imm64_t *imm);
+
+int amd64_attrs_equal(const ir_node *a, const ir_node *b);
+int amd64_addr_attrs_equal(const ir_node *a, const ir_node *b);
+int amd64_binop_addr_attrs_equal(const ir_node *a, const ir_node *b);
+int amd64_movimm_attrs_equal(const ir_node *a, const ir_node *b);
+int amd64_shift_attrs_equal(const ir_node *a, const ir_node *b);
+int amd64_cc_attrs_equal(const ir_node *a, const ir_node *b);
+int amd64_switch_jmp_attrs_equal(const ir_node *a, const ir_node *b);
+int amd64_call_addr_attrs_equal(const ir_node *a, const ir_node *b);
+int amd64_x87_attrs_equal(const ir_node *a, const ir_node *b);
+int amd64_x87_addr_attrs_equal(const ir_node *a, const ir_node *b);
+int amd64_x87_binop_addr_attrs_equal(const ir_node *a, const ir_node *b);
+
+#endif

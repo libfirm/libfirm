@@ -34,7 +34,7 @@
 
 #include "bearch_ia32_t.h"
 #include "ia32_nodes_attr.h"
-#include "ia32_new_nodes.h"
+#include "ia32_new_nodes_t.h"
 #include "gen_ia32_regalloc_if.h"
 #include "x86_x87.h"
 
@@ -121,7 +121,8 @@ static char const *get_frame_use_str(ir_node const *const node)
 }
 #endif
 
-static void ia32_dump_immediate(FILE *const F, ir_entity *const entity, int32_t const offset)
+static void ia32_dump_immediate(FILE *const F, ir_entity *const entity,
+                                int32_t const offset)
 {
 	if (entity) {
 		fputs(get_entity_name(entity), F);
@@ -132,14 +133,7 @@ static void ia32_dump_immediate(FILE *const F, ir_entity *const entity, int32_t 
 	}
 }
 
-/**
- * Dumper interface for dumping ia32 nodes in vcg.
- * @param n        the node to dump
- * @param F        the output file
- * @param reason   indicates which kind of information should be dumped
- * @return 0 on success or != 0 on failure
- */
-static void ia32_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
+void ia32_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 {
 	ir_mode *mode = NULL;
 
@@ -643,9 +637,8 @@ void ia32_swap_left_right(ir_node *node)
 	set_irn_n(node, n_ia32_binary_right, left);
 }
 
-static void init_ia32_attributes(ir_node *node, arch_irn_flags_t flags,
-                                 const arch_register_req_t **in_reqs,
-                                 int n_res)
+void init_ia32_attributes(ir_node *node, arch_irn_flags_t flags,
+                          const arch_register_req_t **in_reqs, int n_res)
 {
 	be_info_init_irn(node, flags, in_reqs, n_res);
 
@@ -655,7 +648,7 @@ static void init_ia32_attributes(ir_node *node, arch_irn_flags_t flags,
 #endif
 }
 
-static void init_ia32_x87_attributes(ir_node *res)
+void init_ia32_x87_attributes(ir_node *res)
 {
 #ifndef NDEBUG
 	ia32_attr_t *attr  = get_ia32_attr(res);
@@ -665,8 +658,7 @@ static void init_ia32_x87_attributes(ir_node *res)
 	ia32_request_x87_sim(irg);
 }
 
-static void init_ia32_immediate_attributes(ir_node *res,
-                                           x86_imm32_t const *const imm)
+void init_ia32_immediate_attributes(ir_node *res, x86_imm32_t const *const imm)
 {
 	ia32_immediate_attr_t *attr = (ia32_immediate_attr_t*)get_irn_generic_attr(res);
 
@@ -676,8 +668,7 @@ static void init_ia32_immediate_attributes(ir_node *res,
 	attr->imm           = *imm;
 }
 
-static void init_ia32_call_attributes(ir_node* res, unsigned pop,
-                                      ir_type* call_tp)
+void init_ia32_call_attributes(ir_node* res, unsigned pop, ir_type* call_tp)
 {
 	ia32_call_attr_t *attr = (ia32_call_attr_t*)get_irn_generic_attr(res);
 
@@ -688,7 +679,7 @@ static void init_ia32_call_attributes(ir_node* res, unsigned pop,
 	attr->call_tp = call_tp;
 }
 
-static void init_ia32_copyb_attributes(ir_node *res, unsigned size)
+void init_ia32_copyb_attributes(ir_node *res, unsigned size)
 {
 	ia32_copyb_attr_t *attr = (ia32_copyb_attr_t*)get_irn_generic_attr(res);
 
@@ -698,8 +689,7 @@ static void init_ia32_copyb_attributes(ir_node *res, unsigned size)
 	attr->size = size;
 }
 
-static void init_ia32_condcode_attributes(ir_node *res,
-                                          x86_condition_code_t cc)
+void init_ia32_condcode_attributes(ir_node *res, x86_condition_code_t cc)
 {
 	ia32_condcode_attr_t *attr = (ia32_condcode_attr_t*)get_irn_generic_attr(res);
 
@@ -709,7 +699,7 @@ static void init_ia32_condcode_attributes(ir_node *res,
 	attr->condition_code = cc;
 }
 
-static void init_ia32_climbframe_attributes(ir_node *res, unsigned count)
+void init_ia32_climbframe_attributes(ir_node *res, unsigned count)
 {
 	ia32_climbframe_attr_t *attr = (ia32_climbframe_attr_t*)get_irn_generic_attr(res);
 
@@ -719,9 +709,9 @@ static void init_ia32_climbframe_attributes(ir_node *res, unsigned count)
 	attr->count = count;
 }
 
-static void init_ia32_switch_attributes(ir_node *node,
-                                        ir_switch_table const *const table,
-                                        ir_entity const *const table_entity)
+void init_ia32_switch_attributes(ir_node *node,
+                                 ir_switch_table const *const table,
+                                 ir_entity const *const table_entity)
 {
 	ia32_switch_attr_t *attr = (ia32_switch_attr_t*) get_irn_generic_attr(node);
 #ifndef NDEBUG
@@ -735,7 +725,7 @@ static void init_ia32_switch_attributes(ir_node *node,
 	}
 }
 
-static void init_ia32_return_attributes(ir_node *node, uint16_t pop)
+void init_ia32_return_attributes(ir_node *node, uint16_t pop)
 {
 	ia32_return_attr_t *attr = (ia32_return_attr_t*)get_irn_generic_attr(node);
 #ifndef NDEBUG
@@ -760,16 +750,14 @@ static int ia32_attrs_equal_(const ia32_attr_t *a, const ia32_attr_t *b)
 	    && a->ins_permuted == b->ins_permuted;
 }
 
-/** Compare nodes attributes for all "normal" nodes. */
-static int ia32_attrs_equal(const ir_node *a, const ir_node *b)
+int ia32_attrs_equal(const ir_node *a, const ir_node *b)
 {
 	const ia32_attr_t* attr_a = get_ia32_attr_const(a);
 	const ia32_attr_t* attr_b = get_ia32_attr_const(b);
 	return ia32_attrs_equal_(attr_a, attr_b);
 }
 
-/** Compare node attributes for nodes with condition code. */
-static int ia32_condcode_attrs_equal(const ir_node *a, const ir_node *b)
+int ia32_condcode_attrs_equal(const ir_node *a, const ir_node *b)
 {
 	const ia32_condcode_attr_t *attr_a = get_ia32_condcode_attr_const(a);
 	const ia32_condcode_attr_t *attr_b = get_ia32_condcode_attr_const(b);
@@ -777,8 +765,7 @@ static int ia32_condcode_attrs_equal(const ir_node *a, const ir_node *b)
 	    && attr_a->condition_code == attr_b->condition_code;
 }
 
-/** Compare node attributes for call nodes. */
-static int ia32_call_attrs_equal(const ir_node *a, const ir_node *b)
+int ia32_call_attrs_equal(const ir_node *a, const ir_node *b)
 {
 	const ia32_call_attr_t *attr_a = get_ia32_call_attr_const(a);
 	const ia32_call_attr_t *attr_b = get_ia32_call_attr_const(b);
@@ -786,8 +773,7 @@ static int ia32_call_attrs_equal(const ir_node *a, const ir_node *b)
 	    && attr_a->pop == attr_b->pop && attr_a->call_tp == attr_b->call_tp;
 }
 
-/** Compare node attributes for CopyB nodes. */
-static int ia32_copyb_attrs_equal(const ir_node *a, const ir_node *b)
+int ia32_copyb_attrs_equal(const ir_node *a, const ir_node *b)
 {
 	const ia32_copyb_attr_t *attr_a = get_ia32_copyb_attr_const(a);
 	const ia32_copyb_attr_t *attr_b = get_ia32_copyb_attr_const(b);
@@ -795,34 +781,28 @@ static int ia32_copyb_attrs_equal(const ir_node *a, const ir_node *b)
 	    && attr_a->size == attr_b->size;
 }
 
-/**
- * Hash function for Immediates
- */
-static unsigned ia32_hash_Immediate(const ir_node *irn)
+unsigned ia32_hash_Immediate(const ir_node *irn)
 {
 	const ia32_immediate_attr_t *a = get_ia32_immediate_attr_const(irn);
 
 	return hash_ptr(a->imm.entity) + (unsigned)a->imm.offset;
 }
 
-/** Compare node attributes for Immediates. */
-static int ia32_immediate_attrs_equal(const ir_node *a, const ir_node *b)
+int ia32_immediate_attrs_equal(const ir_node *a, const ir_node *b)
 {
 	const ia32_immediate_attr_t *attr_a = get_ia32_immediate_attr_const(a);
 	const ia32_immediate_attr_t *attr_b = get_ia32_immediate_attr_const(b);
 	return x86_imm32_equal(&attr_a->imm, &attr_b->imm);
 }
 
-/** Compare node attributes for x87 nodes. */
-static int ia32_x87_attrs_equal(const ir_node *a, const ir_node *b)
+int ia32_x87_attrs_equal(const ir_node *a, const ir_node *b)
 {
 	const ia32_x87_attr_t *attr_a = get_ia32_x87_attr_const(a);
 	const ia32_x87_attr_t *attr_b = get_ia32_x87_attr_const(b);
 	return ia32_attrs_equal_(&attr_a->attr, &attr_b->attr);
 }
 
-/** Compare node attributes for ClimbFrame nodes. */
-static int ia32_climbframe_attrs_equal(const ir_node *a, const ir_node *b)
+int ia32_climbframe_attrs_equal(const ir_node *a, const ir_node *b)
 {
 	const ia32_climbframe_attr_t *attr_a = get_ia32_climbframe_attr_const(a);
 	const ia32_climbframe_attr_t *attr_b = get_ia32_climbframe_attr_const(b);
@@ -830,7 +810,7 @@ static int ia32_climbframe_attrs_equal(const ir_node *a, const ir_node *b)
 	    && attr_a->count == attr_b->count;
 }
 
-static int ia32_switch_attrs_equal(const ir_node *a, const ir_node *b)
+int ia32_switch_attrs_equal(const ir_node *a, const ir_node *b)
 {
 	const ia32_switch_attr_t *attr_a = get_ia32_switch_attr_const(a);
 	const ia32_switch_attr_t *attr_b = get_ia32_switch_attr_const(b);
@@ -839,7 +819,7 @@ static int ia32_switch_attrs_equal(const ir_node *a, const ir_node *b)
 	    && attr_a->table_entity == attr_b->table_entity;
 }
 
-static int ia32_return_attrs_equal(const ir_node *a, const ir_node *b)
+int ia32_return_attrs_equal(const ir_node *a, const ir_node *b)
 {
 	const ia32_return_attr_t *attr_a = get_ia32_return_attr_const(a);
 	const ia32_return_attr_t *attr_b = get_ia32_return_attr_const(b);
@@ -847,12 +827,9 @@ static int ia32_return_attrs_equal(const ir_node *a, const ir_node *b)
 	    && attr_a->pop == attr_b->pop;
 }
 
-static void ia32_init_op(ir_op *op, unsigned latency)
+void ia32_init_op(ir_op *op, unsigned latency)
 {
 	ia32_op_attr_t *attr = OALLOCZ(&opcodes_obst, ia32_op_attr_t);
 	attr->latency = latency;
 	set_op_attr(op, attr);
 }
-
-/* Include the generated constructor functions */
-#include "gen_ia32_new_nodes.c.inl"

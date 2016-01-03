@@ -25,6 +25,7 @@
 
 #include "amd64_nodes_attr.h"
 #include "amd64_new_nodes.h"
+#include "amd64_new_nodes_t.h"
 #include "bearch_amd64_t.h"
 #include "gen_amd64_regalloc_if.h"
 
@@ -116,13 +117,7 @@ static const char *get_insn_mode_string(amd64_insn_mode_t mode)
 	return "invalid insn_mode";
 }
 
-/**
- * Dumper interface for dumping amd64 nodes in vcg.
- * @param F        the output file
- * @param n        the node to dump
- * @param reason   indicates which kind of information should be dumped
- */
-static void amd64_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
+void amd64_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 {
 	switch (reason) {
 	case dump_node_opcode_txt:
@@ -175,18 +170,17 @@ static void amd64_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 	}
 }
 
-static void init_amd64_attributes(ir_node *node, arch_irn_flags_t flags,
-                                  const arch_register_req_t **in_reqs,
-                                  int n_res, amd64_op_mode_t op_mode)
+void init_amd64_attributes(ir_node *node, arch_irn_flags_t flags,
+                           const arch_register_req_t **in_reqs,
+                           int n_res, amd64_op_mode_t op_mode)
 {
 	be_info_init_irn(node, flags, in_reqs, n_res);
 	amd64_attr_t *attr = get_amd64_attr(node);
 	attr->op_mode = op_mode;
 }
 
-static void init_amd64_switch_attributes(ir_node *node,
-                                         const ir_switch_table *table,
-                                         ir_entity *table_entity)
+void init_amd64_switch_attributes(ir_node *node, const ir_switch_table *table,
+                                  ir_entity *table_entity)
 {
 	amd64_switch_jmp_attr_t *attr = get_amd64_switch_jmp_attr(node);
 	attr->table        = table;
@@ -197,18 +191,16 @@ static void init_amd64_switch_attributes(ir_node *node,
 	}
 }
 
-static void init_amd64_cc_attributes(ir_node *node,
-                                     x86_condition_code_t cc,
-                                     amd64_insn_mode_t insn_mode)
+void init_amd64_cc_attributes(ir_node *node, x86_condition_code_t cc,
+                              amd64_insn_mode_t insn_mode)
 {
 	amd64_cc_attr_t *attr = get_amd64_cc_attr(node);
 	attr->cc        = cc;
 	attr->insn_mode = insn_mode;
 }
 
-static void init_amd64_movimm_attributes(ir_node *node,
-                                         amd64_insn_mode_t insn_mode,
-                                         const amd64_imm64_t *imm)
+void init_amd64_movimm_attributes(ir_node *node, amd64_insn_mode_t insn_mode,
+                                  const amd64_imm64_t *imm)
 {
 	amd64_movimm_attr_t *attr = get_amd64_movimm_attr(node);
 	attr->insn_mode = insn_mode;
@@ -231,14 +223,14 @@ static bool amd64_addrs_equal(const amd64_addr_t *const am0,
 	    && am0->segment == am1->segment;
 }
 
-static int amd64_attrs_equal(const ir_node *a, const ir_node *b)
+int amd64_attrs_equal(const ir_node *a, const ir_node *b)
 {
 	const amd64_attr_t *attr_a = get_amd64_attr_const(a);
 	const amd64_attr_t *attr_b = get_amd64_attr_const(b);
 	return attr_a->op_mode == attr_b->op_mode;
 }
 
-static int amd64_addr_attrs_equal(const ir_node *a, const ir_node *b)
+int amd64_addr_attrs_equal(const ir_node *a, const ir_node *b)
 {
 	const amd64_addr_attr_t *attr_a = get_amd64_addr_attr_const(a);
 	const amd64_addr_attr_t *attr_b = get_amd64_addr_attr_const(b);
@@ -247,8 +239,7 @@ static int amd64_addr_attrs_equal(const ir_node *a, const ir_node *b)
 	    && attr_a->insn_mode == attr_b->insn_mode;
 }
 
-static int amd64_binop_addr_attrs_equal(const ir_node *a,
-                                        const ir_node *b)
+int amd64_binop_addr_attrs_equal(const ir_node *a, const ir_node *b)
 {
 	const amd64_binop_addr_attr_t *attr_a = get_amd64_binop_addr_attr_const(a);
 	const amd64_binop_addr_attr_t *attr_b = get_amd64_binop_addr_attr_const(b);
@@ -262,8 +253,7 @@ static int amd64_binop_addr_attrs_equal(const ir_node *a,
 	}
 }
 
-static int amd64_movimm_attrs_equal(const ir_node *const a,
-                                    const ir_node *const b)
+int amd64_movimm_attrs_equal(const ir_node *const a, const ir_node *const b)
 {
 	const amd64_movimm_attr_t *const attr_a = get_amd64_movimm_attr_const(a);
 	const amd64_movimm_attr_t *const attr_b = get_amd64_movimm_attr_const(b);
@@ -272,8 +262,7 @@ static int amd64_movimm_attrs_equal(const ir_node *const a,
 	    && attr_a->insn_mode == attr_b->insn_mode;
 }
 
-static int amd64_shift_attrs_equal(const ir_node *const a,
-                                   const ir_node *const b)
+int amd64_shift_attrs_equal(const ir_node *const a, const ir_node *const b)
 {
 	const amd64_shift_attr_t *const attr_a = get_amd64_shift_attr_const(a);
 	const amd64_shift_attr_t *const attr_b = get_amd64_shift_attr_const(b);
@@ -282,16 +271,14 @@ static int amd64_shift_attrs_equal(const ir_node *const a,
 	    && attr_a->insn_mode == attr_b->insn_mode;
 }
 
-static int amd64_cc_attrs_equal(const ir_node *const a,
-                                const ir_node *const b)
+int amd64_cc_attrs_equal(const ir_node *const a, const ir_node *const b)
 {
 	const amd64_cc_attr_t *const attr_a = get_amd64_cc_attr_const(a);
 	const amd64_cc_attr_t *const attr_b = get_amd64_cc_attr_const(b);
 	return amd64_attrs_equal(a, b) && attr_a->cc == attr_b->cc;
 }
 
-static int amd64_switch_jmp_attrs_equal(const ir_node *const a,
-                                        const ir_node *const b)
+int amd64_switch_jmp_attrs_equal(const ir_node *const a, const ir_node *const b)
 {
 	const amd64_switch_jmp_attr_t *const attr_a
 		= get_amd64_switch_jmp_attr_const(a);
@@ -300,8 +287,7 @@ static int amd64_switch_jmp_attrs_equal(const ir_node *const a,
 	return amd64_attrs_equal(a, b) && attr_a->table == attr_b->table;
 }
 
-static int amd64_call_addr_attrs_equal(const ir_node *const a,
-                                       const ir_node *const b)
+int amd64_call_addr_attrs_equal(const ir_node *const a, const ir_node *const b)
 {
 	const amd64_call_addr_attr_t *const attr_a
 		= get_amd64_call_addr_attr_const(a);
@@ -310,26 +296,21 @@ static int amd64_call_addr_attrs_equal(const ir_node *const a,
 	return amd64_addr_attrs_equal(a, b) && attr_a->call_tp == attr_b->call_tp;
 }
 
-static int amd64_x87_attrs_equal(const ir_node *const a,
-                                 const ir_node *const b)
+int amd64_x87_attrs_equal(const ir_node *const a, const ir_node *const b)
 {
 	/* we ignore x87 attributes for now */
 	return amd64_attrs_equal(a, b);
 }
 
-static int amd64_x87_addr_attrs_equal(const ir_node *const a,
-                                      const ir_node *const b)
+int amd64_x87_addr_attrs_equal(const ir_node *const a, const ir_node *const b)
 {
 	/* ignore x87 part for now */
 	return amd64_addr_attrs_equal(a, b);
 }
 
-static int amd64_x87_binop_addr_attrs_equal(const ir_node *const a,
-                                            const ir_node *const b)
+int amd64_x87_binop_addr_attrs_equal(const ir_node *const a,
+                                     const ir_node *const b)
 {
 	/* ignore x87 part for now */
 	return amd64_binop_addr_attrs_equal(a, b);
 }
-
-/* Include the generated constructor functions */
-#include "gen_amd64_new_nodes.c.inl"

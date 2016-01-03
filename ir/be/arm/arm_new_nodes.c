@@ -23,7 +23,7 @@
 #include "irprintf.h"
 #include "xmalloc.h"
 
-#include "arm_new_nodes.h"
+#include "arm_new_nodes_t.h"
 #include "arm_nodes_attr.h"
 #include "arm_optimize.h"
 #include "bearch_arm_t.h"
@@ -60,13 +60,7 @@ static bool has_farith_attr(const ir_node *node)
 	    || is_arm_Dvf(node) || is_arm_Mvf(node) || is_arm_FltX(node);
 }
 
-/**
- * Dumper interface for dumping arm nodes in vcg.
- * @param F        the output file
- * @param n        the node to dump
- * @param reason   indicates which kind of information should be dumped
- */
-static void arm_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
+void arm_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 {
 	switch (reason) {
 	case dump_node_opcode_txt:
@@ -270,19 +264,18 @@ void set_arm_CondJmp_relation(ir_node *node, ir_relation relation)
 }
 
 /* Set the ARM machine node attributes to default values. */
-static void init_arm_attributes(ir_node *node, arch_irn_flags_t flags,
-                         const arch_register_req_t ** in_reqs,
-						 int n_res)
+void init_arm_attributes(ir_node *node, arch_irn_flags_t flags,
+                         const arch_register_req_t **in_reqs,
+                         int n_res)
 {
 	be_info_init_irn(node, flags, in_reqs, n_res);
 	arm_attr_t *const attr = get_arm_attr(node);
 	attr->is_load_store    = false;
 }
 
-static void init_arm_load_store_attributes(ir_node *res, ir_mode *ls_mode,
-                                           ir_entity *entity,
-                                           int entity_sign, long offset,
-                                           bool is_frame_entity)
+void init_arm_load_store_attributes(ir_node *res, ir_mode *ls_mode,
+                                    ir_entity *entity, int entity_sign,
+                                    long offset, bool is_frame_entity)
 {
 	arm_load_store_attr_t *attr = get_arm_load_store_attr(res);
 	attr->load_store_mode    = ls_mode;
@@ -293,10 +286,10 @@ static void init_arm_load_store_attributes(ir_node *res, ir_mode *ls_mode,
 	attr->base.is_load_store = true;
 }
 
-static void init_arm_shifter_operand(ir_node *res, unsigned shifter_op_input,
-                                     unsigned immediate_value,
-                                     arm_shift_modifier_t shift_modifier,
-                                     unsigned shift_immediate)
+void init_arm_shifter_operand(ir_node *res, unsigned shifter_op_input,
+                              unsigned immediate_value,
+                              arm_shift_modifier_t shift_modifier,
+                              unsigned shift_immediate)
 {
 	arm_shifter_operand_t *attr = get_arm_shifter_operand_attr(res);
 	attr->immediate_value  = immediate_value;
@@ -305,28 +298,27 @@ static void init_arm_shifter_operand(ir_node *res, unsigned shifter_op_input,
 	attr->shift_immediate  = shift_immediate;
 }
 
-static void init_arm_cmp_attr(ir_node *res, bool ins_permuted, bool is_unsigned)
+void init_arm_cmp_attr(ir_node *res, bool ins_permuted, bool is_unsigned)
 {
 	arm_cmp_attr_t *attr = get_arm_cmp_attr(res);
 	attr->ins_permuted = ins_permuted;
 	attr->is_unsigned  = is_unsigned;
 }
 
-static void init_arm_Address_attributes(ir_node *res, ir_entity *entity, int offset)
+void init_arm_Address_attributes(ir_node *res, ir_entity *entity, int offset)
 {
 	arm_Address_attr_t *attr = get_arm_Address_attr(res);
 	attr->entity    = entity;
 	attr->fp_offset = offset;
 }
 
-static void init_arm_farith_attributes(ir_node *res, ir_mode *mode)
+void init_arm_farith_attributes(ir_node *res, ir_mode *mode)
 {
 	arm_farith_attr_t *attr = get_arm_farith_attr(res);
 	attr->mode = mode;
 }
 
-static void init_arm_SwitchJmp_attributes(ir_node *res,
-                                          const ir_switch_table *table)
+void init_arm_SwitchJmp_attributes(ir_node *res, const ir_switch_table *table)
 {
 	arm_SwitchJmp_attr_t *attr = get_arm_SwitchJmp_attr(res);
 	attr->table = table;
@@ -336,14 +328,14 @@ static void init_arm_SwitchJmp_attributes(ir_node *res,
 	}
 }
 
-static int arm_attrs_equal(const ir_node *a, const ir_node *b)
+int arm_attrs_equal(const ir_node *a, const ir_node *b)
 {
 	(void)a;
 	(void)b;
 	return true;
 }
 
-static int arm_Address_attrs_equal(const ir_node *a, const ir_node *b)
+int arm_Address_attrs_equal(const ir_node *a, const ir_node *b)
 {
 	const arm_Address_attr_t *attr_a = get_arm_Address_attr_const(a);
 	const arm_Address_attr_t *attr_b = get_arm_Address_attr_const(b);
@@ -352,27 +344,26 @@ static int arm_Address_attrs_equal(const ir_node *a, const ir_node *b)
 	    && attr_a->fp_offset == attr_b->fp_offset;
 }
 
-static int arm_CondJmp_attrs_equal(const ir_node *a, const ir_node *b)
+int arm_CondJmp_attrs_equal(const ir_node *a, const ir_node *b)
 {
 	const arm_CondJmp_attr_t *attr_a = get_arm_CondJmp_attr_const(a);
 	const arm_CondJmp_attr_t *attr_b = get_arm_CondJmp_attr_const(b);
 	return arm_attrs_equal(a, b) && attr_a->relation == attr_b->relation;
 }
 
-static int arm_SwitchJmp_attrs_equal(const ir_node *a, const ir_node *b)
+int arm_SwitchJmp_attrs_equal(const ir_node *a, const ir_node *b)
 {
 	const arm_SwitchJmp_attr_t *attr_a = get_arm_SwitchJmp_attr_const(a);
 	const arm_SwitchJmp_attr_t *attr_b = get_arm_SwitchJmp_attr_const(b);
 	return arm_attrs_equal(a, b) && attr_a->table == attr_b->table;
 }
 
-static int arm_fConst_attrs_equal(const ir_node *a, const ir_node *b)
+int arm_fConst_attrs_equal(const ir_node *a, const ir_node *b)
 {
 	const arm_fConst_attr_t *attr_a = get_arm_fConst_attr_const(a);
 	const arm_fConst_attr_t *attr_b = get_arm_fConst_attr_const(b);
 	return arm_attrs_equal(a, b) && attr_a->tv == attr_b->tv;
 }
-
 
 arm_load_store_attr_t *get_arm_load_store_attr(ir_node *node)
 {
@@ -405,7 +396,7 @@ const arm_cmp_attr_t *get_arm_cmp_attr_const(const ir_node *node)
 	return (const arm_cmp_attr_t*) get_irn_generic_attr_const(node);
 }
 
-static int arm_load_store_attrs_equal(const ir_node *a, const ir_node *b)
+int arm_load_store_attrs_equal(const ir_node *a, const ir_node *b)
 {
 	const arm_load_store_attr_t *attr_a = get_arm_load_store_attr_const(a);
 	const arm_load_store_attr_t *attr_b = get_arm_load_store_attr_const(b);
@@ -415,7 +406,7 @@ static int arm_load_store_attrs_equal(const ir_node *a, const ir_node *b)
 	    && attr_a->offset == attr_b->offset;
 }
 
-static int arm_shifter_operands_equal(const ir_node *a, const ir_node *b)
+int arm_shifter_operands_equal(const ir_node *a, const ir_node *b)
 {
 	const arm_shifter_operand_t *attr_a = get_arm_shifter_operand_attr_const(a);
 	const arm_shifter_operand_t *attr_b = get_arm_shifter_operand_attr_const(b);
@@ -425,7 +416,7 @@ static int arm_shifter_operands_equal(const ir_node *a, const ir_node *b)
 	    && attr_a->shift_immediate == attr_b->shift_immediate;
 }
 
-static int arm_cmp_attrs_equal(const ir_node *a, const ir_node *b)
+int arm_cmp_attrs_equal(const ir_node *a, const ir_node *b)
 {
 	const arm_cmp_attr_t *attr_a = get_arm_cmp_attr_const(a);
 	const arm_cmp_attr_t *attr_b = get_arm_cmp_attr_const(b);
@@ -434,12 +425,9 @@ static int arm_cmp_attrs_equal(const ir_node *a, const ir_node *b)
 	    && attr_a->is_unsigned == attr_b->is_unsigned;
 }
 
-static int arm_farith_attrs_equal(const ir_node *a, const ir_node *b)
+int arm_farith_attrs_equal(const ir_node *a, const ir_node *b)
 {
 	const arm_farith_attr_t *attr_a = get_arm_farith_attr_const(a);
 	const arm_farith_attr_t *attr_b = get_arm_farith_attr_const(b);
 	return arm_attrs_equal(a, b) && attr_a->mode == attr_b->mode;
 }
-
-/* Include the generated constructor functions */
-#include "gen_arm_new_nodes.c.inl"

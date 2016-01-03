@@ -30,7 +30,7 @@ unless (my $return = do $specfile) {
 	die "Fatal error: couldn't run $specfile"       unless $return;
 }
 
-my $target_c = "$target_dir/gen_${arch}_new_nodes.c.inl";
+my $target_c = "$target_dir/gen_${arch}_new_nodes.c";
 my $target_h = "$target_dir/gen_${arch}_new_nodes.h";
 
 $default_attr_type //= "${arch}_attr_t";
@@ -534,9 +534,13 @@ $d //= '\0';
 open(my $out_c, ">", $target_c) // die("Fatal error: Could not open $target_c, reason: $!\n");
 print $out_c <<EOF;
 #include "benode.h"
+#include "bearch_${arch}_t.h"
 #include "gen_${arch}_regalloc_if.h"
+#include "gen_${arch}_new_nodes.h"
+#include "${arch}_new_nodes_t.h"
 #include "fourcc.h"
 #include "irgopt.h"
+#include "ircons_t.h"
 
 $obst_opvar
 

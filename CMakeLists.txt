@@ -287,7 +287,7 @@ function(add_backend name)
 		${GEN_DIR}/ir/be/${name}/gen_${name}_regalloc_if.c
 		${SPEC})
 	begen(generate_new_opcodes.pl
-		${GEN_DIR}/ir/be/${name}/gen_${name}_new_nodes.c.inl
+		${GEN_DIR}/ir/be/${name}/gen_${name}_new_nodes.c
 		${SPEC})
 	set(SOURCES ${SOURCES} PARENT_SCOPE)
 	include_directories(

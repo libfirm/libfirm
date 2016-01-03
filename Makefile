@@ -91,12 +91,11 @@ $$(gendir)/ir/be/$(1)/gen_$(1)_regalloc_if.h $$(gendir)/ir/be/$(1)/gen_$(1)_rega
 $(1)_GEN_SOURCES += ir/be/$(1)/gen_$(1)_regalloc_if.c
 $(1)_GEN_HEADERS += $$(gendir)/ir/be/$(1)/gen_$(1)_regalloc_if.h
 
-$$(gendir)/ir/be/$(1)/gen_$(1)_new_nodes.h $$(gendir)/ir/be/$(1)/gen_$(1)_new_nodes.c.inl: $$($(1)_SPEC) $$(OPCODES_GENERATOR)
+$$(gendir)/ir/be/$(1)/gen_$(1)_new_nodes.h $$(gendir)/ir/be/$(1)/gen_$(1)_new_nodes.c: $$($(1)_SPEC) $$(OPCODES_GENERATOR)
 	@echo GEN $$@
 	$(Q)$$(OPCODES_GENERATOR) $$< $$(gendir)/ir/be/$(1)
+$(1)_GEN_SOURCES += ir/be/$(1)/gen_$(1)_new_nodes.c
 $(1)_GEN_HEADERS += $$(gendir)/ir/be/$(1)/gen_$(1)_new_nodes.h
-
-$$(srcdir)/ir/be/$(1)/$(1)_new_nodes.c: $$(gendir)/ir/be/$(1)/gen_$(1)_new_nodes.c.inl
 
 # We need to inform make of the headers it doesn't know yet...
 $(1)_OBJECTS = $$($(1)_SOURCES:%.c=$$(builddir)/%.o) $$($(1)_GEN_SOURCES:%.c=$$(builddir)/%.o)

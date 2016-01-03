@@ -27,7 +27,7 @@
 #include "bedump.h"
 
 #include "sparc_nodes_attr.h"
-#include "sparc_new_nodes.h"
+#include "sparc_new_nodes_t.h"
 #include "gen_sparc_regalloc_if.h"
 
 bool sparc_has_load_store_attr(const ir_node *node)
@@ -67,7 +67,7 @@ static bool has_fp_conv_attr(const ir_node *node)
  * @param n        the node to dump
  * @param reason   indicates which kind of information should be dumped
  */
-static void sparc_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
+void sparc_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 {
 	switch (reason) {
 	case dump_node_opcode_txt:
@@ -115,8 +115,8 @@ static void sparc_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 	}
 }
 
-static void sparc_set_attr_imm(ir_node *res, ir_entity *entity,
-                               int32_t immediate_value)
+void sparc_set_attr_imm(ir_node *res, ir_entity *entity,
+                        int32_t immediate_value)
 {
 	sparc_attr_t *attr           = (sparc_attr_t*)get_irn_generic_attr(res);
 	attr->immediate_value_entity = entity;
@@ -124,8 +124,8 @@ static void sparc_set_attr_imm(ir_node *res, ir_entity *entity,
 	arch_add_irn_flags(res, (arch_irn_flags_t)sparc_arch_irn_flag_immediate_form);
 }
 
-static void init_sparc_jmp_cond_attr(ir_node *node, ir_relation relation,
-                                     bool is_unsigned)
+void init_sparc_jmp_cond_attr(ir_node *node, ir_relation relation,
+                              bool is_unsigned)
 {
 	sparc_jmp_cond_attr_t *attr = get_sparc_jmp_cond_attr(node);
 	attr->relation    = relation;
@@ -216,10 +216,9 @@ const sparc_call_attr_t *get_sparc_call_attr_const(const ir_node *node)
 	return (const sparc_call_attr_t*)get_irn_generic_attr_const(node);
 }
 
-static void init_sparc_load_store_attributes(ir_node *res, ir_mode *ls_mode,
-                                             ir_entity *entity, int32_t offset,
-                                             bool is_frame_entity,
-                                             bool is_reg_reg)
+void init_sparc_load_store_attributes(ir_node *res, ir_mode *ls_mode,
+                                      ir_entity *entity, int32_t offset,
+                                      bool is_frame_entity, bool is_reg_reg)
 {
 	sparc_load_store_attr_t *attr     = get_sparc_load_store_attr(res);
 	attr->base.immediate_value_entity = entity;
@@ -229,23 +228,23 @@ static void init_sparc_load_store_attributes(ir_node *res, ir_mode *ls_mode,
 	attr->is_reg_reg                  = is_reg_reg;
 }
 
-static void init_sparc_fp_attributes(ir_node *res, ir_mode *fp_mode)
+void init_sparc_fp_attributes(ir_node *res, ir_mode *fp_mode)
 {
 	sparc_fp_attr_t *attr = get_sparc_fp_attr(res);
 	attr->fp_mode = fp_mode;
 }
 
-static void init_sparc_fp_conv_attributes(ir_node *res, ir_mode *src_mode,
-                                          ir_mode *dest_mode)
+void init_sparc_fp_conv_attributes(ir_node *res, ir_mode *src_mode,
+                                   ir_mode *dest_mode)
 {
 	sparc_fp_conv_attr_t *attr = get_sparc_fp_conv_attr(res);
 	attr->src_mode = src_mode;
 	attr->dest_mode = dest_mode;
 }
 
-static void init_sparc_switch_jmp_attributes(ir_node *node,
-                                             const ir_switch_table *table,
-                                             ir_entity *table_entity)
+void init_sparc_switch_jmp_attributes(ir_node *node,
+                                      const ir_switch_table *table,
+                                      ir_entity *table_entity)
 {
 	sparc_switch_jmp_attr_t *attr = get_sparc_switch_jmp_attr(node);
 	attr->table        = table;
@@ -256,13 +255,13 @@ static void init_sparc_switch_jmp_attributes(ir_node *node,
 	}
 }
 
-static void init_sparc_call_attributes(ir_node *node, ir_type *call_type)
+void init_sparc_call_attributes(ir_node *node, ir_type *call_type)
 {
 	sparc_call_attr_t *attr = get_sparc_call_attr(node);
 	attr->call_type = call_type;
 }
 
-static int sparc_attrs_equal(const ir_node *a, const ir_node *b)
+int sparc_attrs_equal(const ir_node *a, const ir_node *b)
 {
 	const sparc_attr_t *attr_a = get_sparc_attr_const(a);
 	const sparc_attr_t *attr_b = get_sparc_attr_const(b);
@@ -270,7 +269,7 @@ static int sparc_attrs_equal(const ir_node *a, const ir_node *b)
 	    && attr_a->immediate_value_entity == attr_b->immediate_value_entity;
 }
 
-static int sparc_load_store_attrs_equal(const ir_node *a, const ir_node *b)
+int sparc_load_store_attrs_equal(const ir_node *a, const ir_node *b)
 {
 	const sparc_load_store_attr_t *attr_a = get_sparc_load_store_attr_const(a);
 	const sparc_load_store_attr_t *attr_b = get_sparc_load_store_attr_const(b);
@@ -279,7 +278,7 @@ static int sparc_load_store_attrs_equal(const ir_node *a, const ir_node *b)
 	    && attr_a->load_store_mode == attr_b->load_store_mode;
 }
 
-static int sparc_jmp_cond_attrs_equal(const ir_node *a, const ir_node *b)
+int sparc_jmp_cond_attrs_equal(const ir_node *a, const ir_node *b)
 {
 	const sparc_jmp_cond_attr_t *attr_a = get_sparc_jmp_cond_attr_const(a);
 	const sparc_jmp_cond_attr_t *attr_b = get_sparc_jmp_cond_attr_const(b);
@@ -288,14 +287,14 @@ static int sparc_jmp_cond_attrs_equal(const ir_node *a, const ir_node *b)
 	    && attr_a->is_unsigned == attr_b->is_unsigned;
 }
 
-static int sparc_fp_attrs_equal(const ir_node *a, const ir_node *b)
+int sparc_fp_attrs_equal(const ir_node *a, const ir_node *b)
 {
 	const sparc_fp_attr_t *attr_a = get_sparc_fp_attr_const(a);
 	const sparc_fp_attr_t *attr_b = get_sparc_fp_attr_const(b);
 	return sparc_attrs_equal(a, b) && attr_a->fp_mode == attr_b->fp_mode;
 }
 
-static int sparc_fp_conv_attrs_equal(const ir_node *a, const ir_node *b)
+int sparc_fp_conv_attrs_equal(const ir_node *a, const ir_node *b)
 {
 	const sparc_fp_conv_attr_t *attr_a = get_sparc_fp_conv_attr_const(a);
 	const sparc_fp_conv_attr_t *attr_b = get_sparc_fp_conv_attr_const(b);
@@ -304,14 +303,14 @@ static int sparc_fp_conv_attrs_equal(const ir_node *a, const ir_node *b)
 	    && attr_a->dest_mode == attr_b->dest_mode;
 }
 
-static int sparc_call_attrs_equal(const ir_node *a, const ir_node *b)
+int sparc_call_attrs_equal(const ir_node *a, const ir_node *b)
 {
 	const sparc_call_attr_t *attr_a = get_sparc_call_attr_const(a);
 	const sparc_call_attr_t *attr_b = get_sparc_call_attr_const(b);
 	return sparc_attrs_equal(a, b) && attr_a->call_type == attr_b->call_type;
 }
 
-static int sparc_switch_jmp_attrs_equal(const ir_node *a, const ir_node *b)
+int sparc_switch_jmp_attrs_equal(const ir_node *a, const ir_node *b)
 {
 	const sparc_switch_jmp_attr_t *attr_a = get_sparc_switch_jmp_attr_const(a);
 	const sparc_switch_jmp_attr_t *attr_b = get_sparc_switch_jmp_attr_const(b);
@@ -319,6 +318,3 @@ static int sparc_switch_jmp_attrs_equal(const ir_node *a, const ir_node *b)
 	    && attr_a->table == attr_b->table
 	    && attr_a->table_entity == attr_b->table_entity;
 }
-
-/* Include the generated constructor functions */
-#include "gen_sparc_new_nodes.c.inl"
