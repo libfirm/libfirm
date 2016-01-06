@@ -1,3 +1,7 @@
+libFirm 1.22.1 (2014-01-07)
+---------------------------
+* Fix cmake/make build
+
 libFirm 1.22.0 (2015-12-31)
 ---------------------------
 * Improved PIC support, linux/elf is now supported

@@ -7,7 +7,7 @@ if(POLICY CMP0063)
 endif()
 
 project(libfirm C)
-set(libfirm_VERSION "1.22.0")
+set(libfirm_VERSION "1.22.1")
 set(PROJECT_DESCRIPTION "library implementing the intermediate representation Firm")
 
 set(CMAKE_C_VISIBILITY_PRESET hidden)
