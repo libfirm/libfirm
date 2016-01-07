@@ -35,6 +35,8 @@ FIRM_API void ir_finish(void);
 FIRM_API unsigned ir_get_version_major(void);
 /** returns libFirm minor version number */
 FIRM_API unsigned ir_get_version_minor(void);
+/** returns libFirm micro version number */
+FIRM_API unsigned ir_get_version_micro(void);
 /** returns string describing libFirm revision */
 FIRM_API const char *ir_get_version_revision(void);
 /** returns string describing libFirm build */

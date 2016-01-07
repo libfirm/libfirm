@@ -102,6 +102,11 @@ unsigned ir_get_version_minor(void)
 	return libfirm_VERSION_MINOR;
 }
 
+unsigned ir_get_version_micro(void)
+{
+	return libfirm_VERSION_MICRO;
+}
+
 const char *ir_get_version_revision(void)
 {
 #ifdef libfirm_VERSION_REVISION
