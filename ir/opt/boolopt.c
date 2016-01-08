@@ -115,8 +115,14 @@ static ir_node *make_Cmp(ir_node *const block, ir_node *const cmp, ir_relation c
  */
 static ir_node *bool_and(cond_pair* const cpair, ir_node *dst_block)
 {
-	ir_node     *const cmp_lo = cpair->cmp_lo;
-	ir_node     *const cmp_hi = cpair->cmp_hi;
+	ir_node *const cmp_lo = cpair->cmp_lo;
+	ir_node *const cmp_hi = cpair->cmp_hi;
+	if (is_Const(cmp_lo))
+		return is_Const_null(cmp_lo) ? cmp_hi : cmp_lo;
+
+	if (is_Const(cmp_hi))
+		return is_Const_null(cmp_hi) ? cmp_lo : cmp_hi;
+
 	ir_relation        rel_lo = cpair->rel_lo;
 	ir_relation  const rel_hi = cpair->rel_hi;
 	ir_tarval   *      tv_lo  = cpair->tv_lo;
@@ -240,8 +246,14 @@ static ir_node *bool_and(cond_pair* const cpair, ir_node *dst_block)
  */
 static ir_node *bool_or(cond_pair *const cpair, ir_node *dst_block)
 {
-	ir_node     *const cmp_lo = cpair->cmp_lo;
-	ir_node     *const cmp_hi = cpair->cmp_hi;
+	ir_node *const cmp_lo = cpair->cmp_lo;
+	ir_node *const cmp_hi = cpair->cmp_hi;
+	if (is_Const(cmp_lo))
+		return is_Const_null(cmp_lo) ? cmp_hi : cmp_lo;
+
+	if (is_Const(cmp_hi))
+		return is_Const_null(cmp_hi) ? cmp_lo : cmp_hi;
+
 	ir_relation        rel_lo = cpair->rel_lo;
 	ir_relation  const rel_hi = cpair->rel_hi;
 	ir_tarval   *      tv_lo  = cpair->tv_lo;
