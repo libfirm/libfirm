@@ -115,48 +115,47 @@ static ir_node *make_Cmp(ir_node *const block, ir_node *const cmp, ir_relation c
  */
 static ir_node *bool_and(cond_pair* const cpair, ir_node *dst_block)
 {
-	ir_node    *const cmp_lo  = cpair->cmp_lo;
-	ir_node    *const cmp_hi  = cpair->cmp_hi;
-	ir_relation       rel_lo  = cpair->rel_lo;
-	ir_relation const rel_hi  = cpair->rel_hi;
-	ir_tarval  *      tv_lo   = cpair->tv_lo;
-	ir_tarval  *      tv_hi   = cpair->tv_hi;
-	ir_mode    *      mode    = cpair->lo_mode;
-	ir_graph   *      irg     = get_irn_irg(cmp_lo);
-
+	ir_node     *const cmp_lo = cpair->cmp_lo;
+	ir_node     *const cmp_hi = cpair->cmp_hi;
+	ir_relation        rel_lo = cpair->rel_lo;
+	ir_relation  const rel_hi = cpair->rel_hi;
+	ir_tarval   *      tv_lo  = cpair->tv_lo;
+	ir_tarval   *      tv_hi  = cpair->tv_hi;
+	ir_mode     *      mode   = cpair->lo_mode;
+	ir_graph    *      irg    = get_irn_irg(cmp_lo);
 	if ((rel_lo & ~ir_relation_unordered) == ir_relation_equal
-	     && (rel_hi & ~ir_relation_unordered) == rel_lo
-	     && tarval_is_null(tv_lo) && tarval_is_null(tv_hi)
-	     && mode == get_tarval_mode(tv_hi)) {
+	    && (rel_hi & ~ir_relation_unordered) == rel_lo
+	    && tarval_is_null(tv_lo) && tarval_is_null(tv_hi)
+	    && mode == get_tarval_mode(tv_hi)) {
 		/* p == NULL && q == NULL ==> (p&q) == NULL) */
 		ir_node *lol, *hil, *cmp, *c, *p;
 
 		if (mode_is_reference(mode)) {
 			mode = find_unsigned_mode(mode);
-			if (! mode)
+			if (!mode)
 				return NULL;
 			tv_lo = tarval_convert_to(tv_lo, mode);
 			if (tv_lo == tarval_bad)
 				return NULL;
 		}
 		if (mode_is_int(mode)) {
-			lol   = get_Cmp_left(cmp_lo);
-			lol   = new_r_Conv(dst_block, lol, mode);
-			hil   = get_Cmp_left(cmp_hi);
-			hil   = new_r_Conv(dst_block, hil, mode);
-			p     = new_r_And(dst_block, lol, hil, mode);
-			c     = new_r_Const(irg, tv_lo);
-			cmp   = new_r_Cmp(dst_block, p, c, ir_relation_equal);
+			lol = get_Cmp_left(cmp_lo);
+			lol = new_r_Conv(dst_block, lol, mode);
+			hil = get_Cmp_left(cmp_hi);
+			hil = new_r_Conv(dst_block, hil, mode);
+			p   = new_r_And(dst_block, lol, hil, mode);
+			c   = new_r_Const(irg, tv_lo);
+			cmp = new_r_Cmp(dst_block, p, c, ir_relation_equal);
 			return cmp;
 		}
 	}
 
 	/* the following tests expect one common operand */
-	if (get_Cmp_left(cmp_lo) !=  get_Cmp_left(cmp_hi))
+	if (get_Cmp_left(cmp_lo) != get_Cmp_left(cmp_hi))
 		return NULL;
 
 	/* TODO: for now reject float modes */
-	if (! mode_is_int(mode))
+	if (!mode_is_int(mode))
 		return NULL;
 
 	/* Beware of NaN's, we can only check for (ordered) != here (which is Lg, not Ne) */
@@ -241,15 +240,14 @@ static ir_node *bool_and(cond_pair* const cpair, ir_node *dst_block)
  */
 static ir_node *bool_or(cond_pair *const cpair, ir_node *dst_block)
 {
-	ir_node    *const cmp_lo  = cpair->cmp_lo;
-	ir_node    *const cmp_hi  = cpair->cmp_hi;
-	ir_relation       rel_lo  = cpair->rel_lo;
-	ir_relation const rel_hi  = cpair->rel_hi;
-	ir_tarval  *      tv_lo   = cpair->tv_lo;
-	ir_tarval  *      tv_hi   = cpair->tv_hi;
-	ir_mode    *      mode    = cpair->lo_mode;
-	ir_graph   *      irg     = get_irn_irg(cmp_lo);
-
+	ir_node     *const cmp_lo = cpair->cmp_lo;
+	ir_node     *const cmp_hi = cpair->cmp_hi;
+	ir_relation        rel_lo = cpair->rel_lo;
+	ir_relation  const rel_hi = cpair->rel_hi;
+	ir_tarval   *      tv_lo  = cpair->tv_lo;
+	ir_tarval   *      tv_hi  = cpair->tv_hi;
+	ir_mode     *      mode   = cpair->lo_mode;
+	ir_graph    *      irg    = get_irn_irg(cmp_lo);
 	if ((rel_lo & ~ir_relation_unordered) == ir_relation_less_greater
 	    && (rel_hi & ~ir_relation_unordered) == ir_relation_less_greater
 	    && tarval_is_null(tv_lo) && tarval_is_null(tv_hi)
@@ -259,30 +257,30 @@ static ir_node *bool_or(cond_pair *const cpair, ir_node *dst_block)
 
 		if (mode_is_reference(mode)) {
 			mode = find_unsigned_mode(mode);
-			if (! mode)
+			if (!mode)
 				return NULL;
 			tv_lo = tarval_convert_to(tv_lo, mode);
 			if (tv_lo == tarval_bad)
 				return NULL;
 		}
 		if (mode_is_int(mode)) {
-			lol   = get_Cmp_left(cmp_lo);
-			lol   = new_r_Conv(dst_block, lol, mode);
-			hil   = get_Cmp_left(cmp_hi);
-			hil   = new_r_Conv(dst_block, hil, mode);
-			p     = new_r_Or(dst_block, lol, hil, mode);
-			c     = new_r_Const(irg, tv_lo);
-			cmp   = new_r_Cmp(dst_block, p, c, ir_relation_less_greater);
+			lol = get_Cmp_left(cmp_lo);
+			lol = new_r_Conv(dst_block, lol, mode);
+			hil = get_Cmp_left(cmp_hi);
+			hil = new_r_Conv(dst_block, hil, mode);
+			p   = new_r_Or(dst_block, lol, hil, mode);
+			c   = new_r_Const(irg, tv_lo);
+			cmp = new_r_Cmp(dst_block, p, c, ir_relation_less_greater);
 			return cmp;
 		}
 	}
 
 	/* the following tests expect one common operand */
-	if (get_Cmp_left(cmp_lo) !=  get_Cmp_left(cmp_hi))
+	if (get_Cmp_left(cmp_lo) != get_Cmp_left(cmp_hi))
 		return NULL;
 
 	/* TODO: for now reject float modes */
-	if (! mode_is_int(mode))
+	if (!mode_is_int(mode))
 		return NULL;
 
 	/* Beware of NaN's, we can only check for (ordered) != here (which is Lg, not Ne) */
