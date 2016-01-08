@@ -88,6 +88,16 @@ static int compare_entries(const void *a, const void *b)
 	return a_entry->pos - b_entry->pos;
 }
 
+static bool list_has_irn_else_add(ir_node **const list, size_t const n, ir_node *const irn)
+{
+	for (ir_node *const *i = list; i != list + n; ++i) {
+		if (*i == irn)
+			return true;
+	}
+	list[n] = irn;
+	return false;
+}
+
 static void pair_up_operands(be_chordal_env_t *const env, be_insn_t *const insn)
 {
 	int           n_ops     = insn->n_ops;
@@ -121,10 +131,20 @@ static void pair_up_operands(be_chordal_env_t *const env, be_insn_t *const insn)
 	QSORT(entries, n_ops, compare_entries);
 
 	/* Greedily pair definitions/uses. */
+	size_t          n_paired     = 0;
+	ir_node **const paired_nodes = ALLOCAN(ir_node*, n_regs);
 	for (int i = 0; i < n_ops; ++i) {
-		pair_entry_t *op_entry  = &entries[i];
-		be_operand_t *op        = op_entry->operand;
-		bool          op_is_def = op_entry->is_def;
+		pair_entry_t *op_entry = &entries[i];
+		be_operand_t *op       = op_entry->operand;
+
+		if (list_has_irn_else_add(paired_nodes, n_paired, op->carrier)) {
+			if (!op->partner)
+				op->carrier = NULL;
+			continue;
+		}
+		++n_paired;
+
+		bool op_is_def = op_entry->is_def;
 		if (op->partner ||
 		    (!op_is_def && be_value_live_after(op->carrier, insn->irn))) {
 			continue;
@@ -137,22 +157,15 @@ static void pair_up_operands(be_chordal_env_t *const env, be_insn_t *const insn)
 			if (!partner->partner &&
 			    op_is_def != partner_is_def &&
 			    rbitsets_have_common(op->regs, partner->regs, n_regs) &&
-			    (partner_is_def || !be_value_live_after(partner->carrier, insn->irn))) {
+			    (partner_is_def || !be_value_live_after(partner->carrier, insn->irn)) &&
+			    !list_has_irn_else_add(paired_nodes, n_paired, partner->carrier)) {
+				++n_paired;
 				op->partner      = partner;
 				partner->partner = op;
 				break;
 			}
 		}
 	}
-}
-
-static bool list_contains_irn(ir_node *const *const list, size_t const n, ir_node *const irn)
-{
-	for (ir_node *const *i = list; i != list + n; ++i) {
-		if (*i == irn)
-			return true;
-	}
-	return false;
 }
 
 static void handle_constraints(be_chordal_env_t *const env, ir_node *const irn)
@@ -190,6 +203,8 @@ static void handle_constraints(be_chordal_env_t *const env, ir_node *const irn)
 		 * for allocation by associating the node and its partner with the
 		 * set of admissible registers via a bipartite graph. */
 		be_operand_t *const op = &insn->ops[i];
+		if (!op->carrier)
+			continue;
 		if (op->partner && pmap_contains(partners, op->partner->carrier))
 			continue;
 
@@ -197,10 +212,6 @@ static void handle_constraints(be_chordal_env_t *const env, ir_node *const irn)
 		pmap_insert(partners, op->carrier, partner);
 		if (partner != NULL)
 			pmap_insert(partners, partner, op->carrier);
-
-		/* Don't insert a node twice. */
-		if (list_contains_irn(alloc_nodes, n_alloc, op->carrier))
-			continue;
 
 		alloc_nodes[n_alloc] = op->carrier;
 
