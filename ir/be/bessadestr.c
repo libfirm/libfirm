@@ -54,6 +54,8 @@
 
 #include "lc_opts.h"
 
+#include "gen_sparc_regalloc_if.h"
+
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 DEBUG_ONLY(static firm_dbg_module_t *dbg_icore = NULL;)
 
@@ -238,7 +240,8 @@ static unsigned find_longest_chain(unsigned *parcopy, unsigned *n_used,
 }
 
 static void impl_parallel_copy(ir_node *before, unsigned *parcopy, unsigned *n_used,
-                               ir_node **phis, ir_node **phi_args, unsigned prednr)
+                               ir_node **phis, ir_node **phi_args, unsigned prednr,
+                               unsigned opt_costs)
 {
 	ir_node        *block  = get_nodes_block(before);
 	const unsigned  n_regs = the_env->cls->n_regs;
@@ -385,11 +388,13 @@ static void impl_parallel_copy(ir_node *before, unsigned *parcopy, unsigned *n_u
 	if (perm != NULL) {
 		stat_ev_ctx_push_fmt("perm_stats", "%ld", get_irn_node_nr(perm));
 		stat_ev_int("perm_num_restores", num_restores);
+		stat_ev_int("perm_opt_costs", opt_costs);
 		stat_ev_ctx_pop("perm_stats");
 		const int already_in_prtg_form = num_restores == 0;
 		stat_ev_int("bessadestr_already_in_prtg_form", already_in_prtg_form);
 	} else if (num_restores > 0) {
 		stat_ev_int("bessadestr_copies", num_restores);
+		stat_ev_int("bessadestr_opt_costs", opt_costs);
 		stat_ev_int("bessadestr_already_in_prtg_form", 0);
 	}
 #endif
@@ -419,6 +424,8 @@ static void impl_parallel_copy(ir_node *before, unsigned *parcopy, unsigned *n_u
 		DB((dbg_icore, LEVEL_2, "Finished placing restore movs.\n"));
 	}
 }
+
+unsigned find_costs_general(unsigned *rtg, unsigned *numUsed, unsigned numRegs, bool dump);
 
 static void analyze_parallel_copies_walker(ir_node *block, void *data)
 {
@@ -499,7 +506,25 @@ static void analyze_parallel_copies_walker(ir_node *block, void *data)
 			print_parcopy(parcopy, n_used);
 			stat_ev_int("bessadestr_num_rtg_nodes", num_rtg_nodes);
 #endif
-			impl_parallel_copy(before, parcopy, n_used, phis, phi_args, i);
+
+			unsigned opt_costs;
+			{
+				unsigned raw_rtg[n_regs];
+				unsigned raw_n_used[n_regs];
+				for (unsigned i = 0; i < n_regs; ++i) {
+					if (parcopy[i] != i)
+						raw_rtg[i] = parcopy[i];
+					else if (keep_val[i] || i == REG_GP_G0)
+						raw_rtg[i] = i;
+					else
+						raw_rtg[i] = n_regs;
+
+					raw_n_used[i] = n_used[i] + (i == REG_GP_G0 && !keep_val[i]);
+				}
+				opt_costs = find_costs_general(raw_rtg, raw_n_used, n_regs, false);
+			}
+
+			impl_parallel_copy(before, parcopy, n_used, phis, phi_args, i, opt_costs);
 			DB((dbg_icore, LEVEL_2, "\n"));
 		}
 	}
