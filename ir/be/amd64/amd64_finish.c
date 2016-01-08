@@ -237,7 +237,7 @@ static void amd64_finish_irg_walker(ir_node *const block, void *const env)
 
 	/* Insert copies for should_be_same constraints. */
 	sched_foreach_safe(block, irn) {
-		if (is_amd64_irn(irn))
+		if (is_amd64_irn(irn) || be_is_Asm(irn))
 			assure_should_be_same_requirements(irn);
 	}
 }

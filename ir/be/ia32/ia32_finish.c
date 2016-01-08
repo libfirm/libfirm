@@ -206,14 +206,17 @@ static void ia32_transform_ShlD_to_ShrD_imm(ir_node *const irn)
 static inline int need_constraint_copy(ir_node *irn)
 {
 	/* TODO this should be determined from the node specification */
-	switch (get_ia32_irn_opcode(irn)) {
+	if (is_ia32_irn(irn)) {
+		switch (get_ia32_irn_opcode(irn)) {
 		case iro_ia32_Lea:
 		case iro_ia32_Minus64:
 			return 0;
 
 		default:
 			return 1;
+		}
 	}
+	return be_is_Asm(irn);
 }
 
 /**
@@ -354,12 +357,10 @@ static void ia32_finish_irg_walker(ir_node *block, void *env)
 
 	/* second: insert copies and finish irg */
 	sched_foreach_safe(block, irn) {
-		if (is_ia32_irn(irn)) {
-			/* some nodes are just a bit less efficient, but need no fixing if the
-			 * should be same requirement is not fulfilled */
-			if (need_constraint_copy(irn))
-				assure_should_be_same_requirements(irn);
-		}
+		/* some nodes are just a bit less efficient, but need no fixing if the
+		 * should be same requirement is not fulfilled */
+		if (need_constraint_copy(irn))
+			assure_should_be_same_requirements(irn);
 	}
 }
 
