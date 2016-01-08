@@ -449,6 +449,16 @@ static void amd64_set_frame_entity(ir_node *node, ir_entity *entity,
 	attr->addr.immediate.entity = entity;
 }
 
+static ir_type *get_type_for_insn_mode(amd64_insn_mode_t const insn_mode)
+{
+	/* TODO: do not hardcode node names here */
+	switch (insn_mode) {
+	case INSN_MODE_128: return get_type_for_mode(amd64_mode_xmm);
+	case INSN_MODE_80:  return x86_type_E;
+	default:            return get_type_for_mode(mode_Lu);
+	}
+}
+
 /**
  * Collects nodes that need frame entities assigned.
  */
@@ -477,10 +487,7 @@ static void amd64_collect_frame_entity_nodes(ir_node *node, void *data)
 	const amd64_addr_attr_t *attr = get_amd64_addr_attr_const(node);
 	x86_imm32_t       const *imm  = &attr->addr.immediate;
 	if (imm->kind == X86_IMM_FRAMEOFFSET && imm->entity == NULL) {
-		/* TODO: do not hardcode node names here */
-		const ir_mode *mode = is_amd64_movdqu(node) ? amd64_mode_xmm
-		                                            : mode_Lu;
-		const ir_type *type = get_type_for_mode(mode);
+		const ir_type *type = get_type_for_insn_mode(attr->insn_mode);
 		be_load_needs_frame_entity(env, node, type);
 	}
 }
