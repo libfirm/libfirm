@@ -153,11 +153,11 @@ static ir_node *bool_and(cond_pair* const cpair, ir_node *dst_block)
 
 	/* the following tests expect one common operand */
 	if (get_Cmp_left(cmp_lo) !=  get_Cmp_left(cmp_hi))
-		return 0;
+		return NULL;
 
 	/* TODO: for now reject float modes */
 	if (! mode_is_int(mode))
-		return 0;
+		return NULL;
 
 	/* Beware of NaN's, we can only check for (ordered) != here (which is Lg, not Ne) */
 	if ((rel_lo == ir_relation_less || rel_lo == ir_relation_less_equal || rel_lo == ir_relation_equal) &&
@@ -279,11 +279,11 @@ static ir_node *bool_or(cond_pair *const cpair, ir_node *dst_block)
 
 	/* the following tests expect one common operand */
 	if (get_Cmp_left(cmp_lo) !=  get_Cmp_left(cmp_hi))
-		return 0;
+		return NULL;
 
 	/* TODO: for now reject float modes */
 	if (! mode_is_int(mode))
-		return 0;
+		return NULL;
 
 	/* Beware of NaN's, we can only check for (ordered) != here (which is Lg, not Ne) */
 	if ((rel_lo == ir_relation_greater_equal || rel_lo == ir_relation_greater || rel_lo == ir_relation_less_greater) &&
