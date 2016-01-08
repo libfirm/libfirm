@@ -168,7 +168,7 @@ struct ir_entity {
 	                              mangling based on the name should happen */
 	ir_type *type;           /**< The type of this entity */
 	ir_type *owner;          /**< The compound type (e.g. class type) this
-							      entity belongs to. */
+	                              entity belongs to. */
 	ENUMBF(ir_entity_kind)  entity_kind:3; /**< entity kind */
 	ENUMBF(ir_linkage)      linkage:7;     /**< Linkage type */
 	ENUMBF(ir_volatility)   volatility:1;  /**< Volatility of entity content.*/
