@@ -492,7 +492,7 @@ static int determine_rbp_input(ir_node *ret)
 		if (arch_get_irn_register(input) == bp)
 			return i;
 	}
-    panic("no rbp input found at %+F", ret);
+	panic("no rbp input found at %+F", ret);
 }
 
 /**
