@@ -47,7 +47,7 @@ typedef struct spill_t {
 
 /**
  * A spillweb specifies the type of the values that a set of spills has to
- * prodcue. All spills that are joined through Phis form a spillweb.
+ * produce. All spills that are joined through Phis form a spillweb.
  */
 struct spillweb_t {
 	spillweb_t    *merged_with;
