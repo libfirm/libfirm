@@ -26,7 +26,6 @@
 #include "be_t.h"
 #include "beutil.h"
 #include "debug.h"
-#include "entity_t.h"
 #include "execfreq.h"
 #include "ident_t.h"
 #include "irbackedge_t.h"
