@@ -231,11 +231,8 @@ static void handle_constraints(be_chordal_env_t *const env, ir_node *const irn)
 			ir_node *const proj = get_edge_src_irn(edge);
 			assert(is_Proj(proj));
 
-			if (!be_value_live_after(proj, irn) || pmap_contains(partners, proj))
-				continue;
-
 			/* Don't insert a node twice. */
-			if (list_contains_irn(alloc_nodes, n_alloc, proj))
+			if (pmap_contains(partners, proj))
 				continue;
 
 			assert(n_alloc < n_regs);
@@ -271,45 +268,13 @@ static void handle_constraints(be_chordal_env_t *const env, ir_node *const irn)
 		arch_register_t const *const reg = arch_register_for_index(env->cls, assignment[i]);
 
 		ir_node *const irn = alloc_nodes[i];
-		if (irn != NULL) {
-			arch_set_irn_register(irn, reg);
-			DBG((dbg, LEVEL_2, "\tsetting %+F to register %s\n", irn, reg->name));
-		}
+		arch_set_irn_register(irn, reg);
+		DBG((dbg, LEVEL_2, "\tsetting %+F to register %s\n", irn, reg->name));
 
-		ir_node *const partner = pmap_get(ir_node, partners, alloc_nodes[i]);
+		ir_node *const partner = pmap_get(ir_node, partners, irn);
 		if (partner != NULL) {
 			arch_set_irn_register(partner, reg);
 			DBG((dbg, LEVEL_2, "\tsetting %+F to register %s\n", partner, reg->name));
-		}
-	}
-
-	/* Allocate the non-constrained Projs of the Perm. */
-	if (perm != NULL) {
-		bitset_t *const available = bitset_alloca(n_regs);
-		bitset_copy(available, env->allocatable_regs);
-
-		/* Put the colors of all Projs in a bitset. */
-		foreach_out_edge(perm, edge) {
-			ir_node               *const proj = get_edge_src_irn(edge);
-			arch_register_t const *const reg  = arch_get_irn_register(proj);
-			if (reg != NULL)
-				bitset_clear(available, reg->index);
-		}
-
-		/* Assign the not yet assigned Projs of the Perm a suitable color. */
-		foreach_out_edge(perm, edge) {
-			ir_node               *const proj = get_edge_src_irn(edge);
-			arch_register_t const *const reg  = arch_get_irn_register(proj);
-
-			DBG((dbg, LEVEL_2, "\tchecking reg of %+F: %s\n", proj, reg ? reg->name : "<none>"));
-
-			if (reg == NULL) {
-				size_t const col = get_next_free_reg(available);
-				arch_register_t const *const new_reg = arch_register_for_index(env->cls, col);
-				bitset_clear(available, new_reg->index);
-				arch_set_irn_register(proj, new_reg);
-				DBG((dbg, LEVEL_2, "\tsetting %+F to register %s\n", proj, new_reg->name));
-			}
 		}
 	}
 
