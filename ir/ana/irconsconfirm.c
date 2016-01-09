@@ -370,8 +370,10 @@ static void handle_if(ir_node *block, ir_node *cmp, ir_relation rel, env_t *env)
 					if (rc == NULL)
 						rc = new_r_Confirm(block, right, left, rel);
 
-					set_irn_n(succ, pos, rc);
-					DB((dbg, LEVEL_2, "Replacing input %d of node %+F with %+F\n", pos, succ, rc));
+					if (succ != rc) {
+						set_irn_n(succ, pos, rc);
+						DB((dbg, LEVEL_2, "Replacing input %d of node %+F with %+F\n", pos, succ, rc));
+					}
 
 					env->num_confirms += 1;
 				}
