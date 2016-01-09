@@ -341,7 +341,6 @@ static void handle_if(ir_node *block, ir_node *cmp, ir_relation rel, env_t *env)
 				if (c == NULL)
 					c = new_r_Confirm(block, left, right, rel);
 
-				pos = get_edge_src_pos(edge);
 				set_irn_n(succ, pos, c);
 				DB((dbg, LEVEL_2, "Replacing input %d of node %+F with %+F\n", pos, succ, c));
 
@@ -371,7 +370,6 @@ static void handle_if(ir_node *block, ir_node *cmp, ir_relation rel, env_t *env)
 					if (rc == NULL)
 						rc = new_r_Confirm(block, right, left, rel);
 
-					pos = get_edge_src_pos(edge);
 					set_irn_n(succ, pos, rc);
 					DB((dbg, LEVEL_2, "Replacing input %d of node %+F with %+F\n", pos, succ, rc));
 
