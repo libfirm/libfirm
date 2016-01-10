@@ -227,6 +227,10 @@ int be_parse_arg(const char *arg)
 		lc_opt_print_help_for_entry(be_grp, '-', stdout);
 		return -1;
 	}
+
+	/* backend args may not have an effect anymore after the backend
+	 * has been initialized */
+	assert(!isa_initialized);
 	return lc_opt_from_single_arg(be_grp, arg);
 }
 
