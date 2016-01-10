@@ -233,6 +233,7 @@ static void emit_relocation_no_offset(x86_immediate_kind_t const kind,
 	case X86_IMM_PCREL:
 		return;
 	case X86_IMM_GOTPCREL: be_emit_cstring("@GOTPCREL"); return;
+	case X86_IMM_PLT:      be_emit_cstring("@PLT");      return;
 	case X86_IMM_VALUE:
 	case X86_IMM_TLS_IE:
 	case X86_IMM_TLS_LE:
@@ -240,7 +241,6 @@ static void emit_relocation_no_offset(x86_immediate_kind_t const kind,
 	case X86_IMM_FRAMEOFFSET:
 	case X86_IMM_GOT:
 	case X86_IMM_GOTOFF:
-	case X86_IMM_PLT:
 		break;
 	}
 	panic("unexpected or invalid immediate kind");

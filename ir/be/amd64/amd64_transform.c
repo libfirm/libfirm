@@ -588,7 +588,7 @@ static bool match_immediate_32(x86_imm32_t *imm, const ir_node *op,
 			return false;
 		if (kind == X86_IMM_VALUE || kind == X86_IMM_ADDR) {
 			kind = X86_IMM_PCREL;
-		} else if (kind != X86_IMM_PCREL)
+		} else if (kind != X86_IMM_PCREL && kind != X86_IMM_PLT)
 			return false;
 	}
 

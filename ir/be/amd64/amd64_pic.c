@@ -10,16 +10,44 @@
  */
 #include "bearch_amd64_t.h"
 
+#include "amd64_new_nodes.h"
 #include "be_t.h"
 #include "beutil.h"
 #include "entity_t.h"
-#include "amd64_new_nodes.h"
 #include "ircons_t.h"
 #include "irgwalk.h"
 #include "irnode_t.h"
+#include "panic.h"
 #include "x86_imm.h"
 
-static void fix_address_pic(ir_node *const node, void *const data)
+static bool is_externally_visible(ir_entity const *const entity)
+{
+	ir_visibility const vis = get_entity_visibility(entity);
+	switch (vis) {
+	case ir_visibility_private:
+	case ir_visibility_local:
+		return false;
+	case ir_visibility_external:
+	case ir_visibility_external_private:
+	case ir_visibility_external_protected:
+		return true;
+	}
+	panic("invalid visibility in %+F", entity);
+}
+
+static ir_node *create_gotpcrel_load(ir_graph  *irg, ir_entity *const entity)
+{
+	ir_node *const addr
+		= be_new_Relocation(irg, X86_IMM_GOTPCREL, entity, mode_P);
+	ir_type *const type  = get_entity_type(entity);
+	ir_node *const nomem = get_irg_no_mem(irg);
+	ir_node *const block = get_irg_start_block(irg);
+	ir_node *const load  = new_rd_Load(NULL, block, nomem, addr, mode_P,
+									   type, cons_floats);
+	return new_r_Proj(load, mode_P, pn_Load_res);
+}
+
+static void fix_address_pic_mach_o(ir_node *const node, void *const data)
 {
 	(void)data;
 	foreach_irn_in(node, i, pred) {
@@ -39,14 +67,35 @@ static void fix_address_pic(ir_node *const node, void *const data)
 		        && !(get_entity_linkage(entity) & IR_LINKAGE_MERGE)) {
 			res = be_new_Relocation(irg, X86_IMM_PCREL, entity, mode_P);
 		} else {
-			ir_node *const addr
-				= be_new_Relocation(irg, X86_IMM_GOTPCREL, entity, mode_P);
-			ir_type *const type  = get_entity_type(entity);
-			ir_node *const nomem = get_irg_no_mem(irg);
-			ir_node *const block = get_irg_start_block(irg);
-			ir_node *const load  = new_rd_Load(NULL, block, nomem, addr, mode_P,
-			                                   type, cons_floats);
-			res = new_r_Proj(load, mode_P, pn_Load_res);
+			res = create_gotpcrel_load(irg, entity);
+		}
+		set_irn_n(node, i, res);
+	}
+}
+
+static void fix_address_pic_elf(ir_node *const node, void *const data)
+{
+	(void)data;
+	foreach_irn_in(node, i, pred) {
+		if (!is_Address(pred))
+			continue;
+		ir_entity *const entity = get_Address_entity(pred);
+		if (is_tls_entity(entity))
+			continue;
+
+		ir_graph *const irg         = get_irn_irg(node);
+		bool      const ext_visible = is_externally_visible(entity);
+		ir_node  *      res;
+		if (i == n_Call_ptr && is_Call(node)) {
+			/* We can compilation-unit local functions directly, everything else
+			 * goes through the PLT */
+			x86_immediate_kind_t const reloc
+				= ext_visible ? X86_IMM_PLT : X86_IMM_PCREL;
+			res = be_new_Relocation(irg, reloc, entity, mode_P);
+		} else if (!ext_visible) {
+			res = be_new_Relocation(irg, X86_IMM_PCREL, entity, mode_P);
+		} else {
+			res = create_gotpcrel_load(irg, entity);
 		}
 		set_irn_n(node, i, res);
 	}
@@ -54,8 +103,17 @@ static void fix_address_pic(ir_node *const node, void *const data)
 
 void amd64_adjust_pic(ir_graph *irg)
 {
-	if (be_options.pic_style == BE_PIC_NONE)
+	switch (be_options.pic_style) {
+	case BE_PIC_NONE:
 		return;
-	irg_walk_graph(irg, fix_address_pic, NULL, NULL);
+	case BE_PIC_ELF_PLT:
+		irg_walk_graph(irg, fix_address_pic_elf, NULL, NULL);
+		break;
+	case BE_PIC_ELF_NO_PLT:
+		panic("amd64 elf/no-plt not implemented yet");
+	case BE_PIC_MACH_O:
+		irg_walk_graph(irg, fix_address_pic_mach_o, NULL, NULL);
+		break;
+	}
 	be_dump(DUMP_BE, irg, "pic");
 }
