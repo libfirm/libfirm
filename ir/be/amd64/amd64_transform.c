@@ -2517,15 +2517,19 @@ static ir_node *gen_Store(ir_node *const node)
 	amd64_binop_addr_attr_t attr;
 	memset(&attr, 0, sizeof(attr));
 
-	attr.base.base.op_mode = AMD64_OP_ADDR_REG;
 
 	ir_node *in[4];
 	int      arity = 0;
 
-	/* TODO match immediates for integer stores. */
-	int reg_input    = arity++;
-	in[reg_input]    = be_transform_node(val);
-	attr.u.reg_input = reg_input;
+	if (mode_needs_gp_reg(mode)
+	 && match_immediate_32(&attr.u.immediate, val, false, true)) {
+		attr.base.base.op_mode = AMD64_OP_ADDR_IMM;
+	} else {
+		attr.base.base.op_mode = AMD64_OP_ADDR_REG;
+		int reg_input    = arity++;
+		in[reg_input]    = be_transform_node(val);
+		attr.u.reg_input = reg_input;
+	}
 
 	ir_node *ptr     = get_Store_ptr(node);
 	perform_address_matching(ptr, &arity, in, &attr.base.addr);
