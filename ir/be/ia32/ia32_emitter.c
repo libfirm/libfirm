@@ -882,12 +882,19 @@ static void emit_jumptable_target(ir_entity const *const table,
 	(void)table;
 	ir_node const *const block = get_cfop_target_block(proj_x);
 	be_gas_emit_block_name(block);
-	be_pic_style_t const pic_style = be_options.pic_style;
-	if (pic_style == BE_PIC_ELF_PLT || pic_style == BE_PIC_ELF_NO_PLT) {
+	switch (be_options.pic_style) {
+	case BE_PIC_NONE:
+		break;
+
+	case BE_PIC_ELF_NO_PLT:
+	case BE_PIC_ELF_PLT:
 		be_emit_cstring("@GOTOFF");
-	} else if (pic_style == BE_PIC_MACH_O) {
+		break;
+
+	case BE_PIC_MACH_O:
 		be_emit_char('-');
 		be_emit_string(pic_base_label);
+		break;
 	}
 }
 
