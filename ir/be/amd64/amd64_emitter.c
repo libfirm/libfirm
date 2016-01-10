@@ -773,7 +773,7 @@ static void emit_jumptable_target(ir_entity const *const table,
 {
 	ir_node const *const block = get_cfop_target_block(proj_x);
 	be_gas_emit_block_name(block);
-	if (be_options.pic) {
+	if (be_options.pic_style != BE_PIC_NONE) {
 		be_emit_char('-');
 		be_gas_emit_entity(table);
 	}
@@ -784,7 +784,8 @@ static void emit_amd64_jmp_switch(const ir_node *node)
 	const amd64_switch_jmp_attr_t *attr = get_amd64_switch_jmp_attr_const(node);
 
 	amd64_emitf(node, "jmp %*AM");
-	ir_mode *entry_mode = be_options.pic ? mode_Iu : mode_Lu;
+	ir_mode *entry_mode = be_options.pic_style != BE_PIC_NONE ? mode_Iu
+	                                                          : mode_Lu;
 	be_emit_jump_table(node, attr->table, attr->table_entity, entry_mode,
 	                   emit_jumptable_target);
 }

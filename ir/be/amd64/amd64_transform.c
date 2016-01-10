@@ -363,7 +363,8 @@ void init_lconst_addr(amd64_addr_t *addr, ir_entity *entity)
 	assert(entity_has_definition(entity));
 	assert(get_entity_linkage(entity) & IR_LINKAGE_CONSTANT);
 	assert(get_entity_visibility(entity) == ir_visibility_private);
-	x86_immediate_kind_t kind = be_options.pic ? X86_IMM_PCREL : X86_IMM_ADDR;
+	x86_immediate_kind_t kind = be_options.pic_style != BE_PIC_NONE
+	                          ? X86_IMM_PCREL : X86_IMM_ADDR;
 	*addr = (amd64_addr_t) {
 		.immediate = {
 			.entity = entity,
@@ -1559,7 +1560,7 @@ static ir_node *gen_Switch(ir_node *const node)
 	int arity = 0;
 	ir_node *in[1];
 	amd64_addr_t addr;
-	if (be_options.pic) {
+	if (be_options.pic_style != BE_PIC_NONE) {
 		ir_node *const base
 			= create_picaddr_lea(new_block, X86_IMM_PCREL, entity);
 		ir_node *load_in[3];

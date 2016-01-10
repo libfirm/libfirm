@@ -23,8 +23,6 @@
 #include "irnode_t.h"
 #include "x86_imm.h"
 
-ia32_pic_style_t ia32_pic_style = IA32_PIC_NONE;
-
 /**
  * Create a trampoline entity for the given method.
  */
@@ -130,10 +128,10 @@ static void fix_address_elf(ir_node *const node, void *const data)
 			 && !(get_entity_linkage(entity) & IR_LINKAGE_MERGE))
 				continue;
 
-			if (ia32_pic_style == IA32_PIC_ELF_PLT) {
+			if (be_options.pic_style == BE_PIC_ELF_PLT) {
 				res = be_new_Relocation(irg, X86_IMM_PLT, entity, mode_P);
 			} else {
-				assert(ia32_pic_style == IA32_PIC_ELF_NO_PLT);
+				assert(be_options.pic_style == BE_PIC_ELF_NO_PLT);
 				res = get_table_load(irg, X86_IMM_GOT, entity);
 			}
 		} else {
@@ -191,16 +189,14 @@ static void fix_address_macho(ir_node *const node, void *const data)
 
 void ia32_adjust_pic(ir_graph *irg)
 {
-	switch (ia32_pic_style) {
-	case IA32_PIC_NONE:
+	switch (be_options.pic_style) {
+	case BE_PIC_NONE:
 		return;
-	case IA32_PIC_ELF_PLT:
-	case IA32_PIC_ELF_NO_PLT:
-		be_options.pic = true;
+	case BE_PIC_ELF_PLT:
+	case BE_PIC_ELF_NO_PLT:
 		irg_walk_graph(irg, fix_address_elf, NULL, NULL);
 		return;
-	case IA32_PIC_MACH_O:
-		be_options.pic = true;
+	case BE_PIC_MACH_O:
 		irg_walk_graph(irg, fix_address_macho, NULL, NULL);
 		return;
 	}

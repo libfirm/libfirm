@@ -33,6 +33,13 @@ typedef enum be_dump_flags_t {
 	DUMP_BE       = 1 << 6
 } be_dump_flags_t;
 
+typedef enum be_pic_style_t {
+	BE_PIC_NONE,
+	BE_PIC_MACH_O,
+	BE_PIC_ELF_PLT,
+	BE_PIC_ELF_NO_PLT,
+} be_pic_style_t;
+
 /** Backend options */
 struct be_options_t {
 	unsigned dump_flags;       /**< backend dumping flags */
@@ -40,10 +47,10 @@ struct be_options_t {
 	bool opt_profile_generate; /**< instrument code for profiling */
 	bool opt_profile_use;      /**< use existing profile data */
 	bool omit_fp;              /**< try to omit the frame pointer */
-	bool pic;                  /**< create position independent code */
 	bool do_verify;            /**< backend verify option */
 	char ilp_solver[128];      /**< the ilp solver name */
 	bool verbose_asm;          /**< dump verbose assembler */
+	be_pic_style_t pic_style;
 };
 extern be_options_t be_options;
 

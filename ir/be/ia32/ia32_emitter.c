@@ -882,10 +882,10 @@ static void emit_jumptable_target(ir_entity const *const table,
 	(void)table;
 	ir_node const *const block = get_cfop_target_block(proj_x);
 	be_gas_emit_block_name(block);
-	if (ia32_pic_style == IA32_PIC_ELF_PLT
-	 || ia32_pic_style  == IA32_PIC_ELF_NO_PLT) {
+	be_pic_style_t const pic_style = be_options.pic_style;
+	if (pic_style == BE_PIC_ELF_PLT || pic_style == BE_PIC_ELF_NO_PLT) {
 		be_emit_cstring("@GOTOFF");
-	} else if (ia32_pic_style == IA32_PIC_MACH_O) {
+	} else if (pic_style == BE_PIC_MACH_O) {
 		be_emit_char('-');
 		be_emit_string(pic_base_label);
 	}
@@ -1249,16 +1249,16 @@ static void emit_ia32_GetEIP(const ir_node *node)
 	}
 
 	ia32_emitf(node, "call %E", thunk);
-	switch (ia32_pic_style) {
-	case IA32_PIC_MACH_O:
+	switch (be_options.pic_style) {
+	case BE_PIC_MACH_O:
 		be_emit_irprintf("%s:\n", pic_base_label);
 		be_emit_write_line();
 		return;
-	case IA32_PIC_ELF_PLT:
-	case IA32_PIC_ELF_NO_PLT:
+	case BE_PIC_ELF_PLT:
+	case BE_PIC_ELF_NO_PLT:
 		ia32_emitf(node, "addl $_GLOBAL_OFFSET_TABLE_, %D0");
 		return;
-	case IA32_PIC_NONE:
+	case BE_PIC_NONE:
 		break;
 	}
 	panic("invalid pic_style");

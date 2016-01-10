@@ -474,7 +474,7 @@ static be_gas_section_t determine_basic_section(const ir_entity *entity)
 		    && entity_is_string_const(entity, true))
 			return GAS_SECTION_CSTRING;
 
-		if (be_options.pic) {
+		if (be_options.pic_style != BE_PIC_NONE) {
 			ir_initializer_t const *const init = get_entity_initializer(entity);
 			switch (classify_initializer_relocs(init)) {
 			case ONLY_LOCAL_RELOCATIONS: return GAS_SECTION_REL_RO_LOCAL;

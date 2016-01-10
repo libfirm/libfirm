@@ -63,10 +63,10 @@ be_options_t be_options = {
 	.opt_profile_generate = false,
 	.opt_profile_use      = false,
 	.omit_fp              = false,
-	.pic                  = false,
 	.do_verify            = true,
 	.ilp_solver           = "",
 	.verbose_asm          = true,
+	.pic_style            = BE_PIC_NONE,
 };
 
 /* back end instruction set architecture to use */
@@ -85,6 +85,17 @@ static const lc_opt_enum_mask_items_t dump_items[] = {
 	{ NULL,         0 }
 };
 
+static const lc_opt_enum_int_items_t pic_style_items[] = {
+	{ "none",      BE_PIC_NONE       },
+	{ "mach-o",    BE_PIC_MACH_O     },
+	{ "elf",       BE_PIC_ELF_PLT    },
+	{ "elf-noplt", BE_PIC_ELF_NO_PLT },
+	{ NULL,        BE_PIC_NONE       },
+};
+static lc_opt_enum_int_var_t pic_style_var = {
+	(int*)&be_options.pic_style, pic_style_items
+};
+
 static lc_opt_enum_mask_var_t dump_var = {
 	&be_options.dump_flags, dump_items
 };
@@ -92,7 +103,7 @@ static lc_opt_enum_mask_var_t dump_var = {
 static const lc_opt_table_entry_t be_main_options[] = {
 	LC_OPT_ENT_ENUM_MASK("dump",       "dump irg on several occasions",                       &dump_var),
 	LC_OPT_ENT_BOOL     ("omitfp",     "omit frame pointer",                                  &be_options.omit_fp),
-	LC_OPT_ENT_BOOL     ("pic",        "create PIC code",                                     &be_options.pic),
+	LC_OPT_ENT_ENUM_INT ("pic",        "Generate position independent code",                  &pic_style_var),
 	LC_OPT_ENT_BOOL     ("verify",     "verify the backend irg",                              &be_options.do_verify),
 	LC_OPT_ENT_BOOL     ("time",       "get backend timing statistics",                       &be_options.timing),
 	LC_OPT_ENT_BOOL     ("profilegenerate", "instrument the code for execution count profiling", &be_options.opt_profile_generate),

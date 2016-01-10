@@ -1599,24 +1599,12 @@ static const backend_params *ia32_get_libfirm_params(void)
 	return &ia32_backend_params;
 }
 
-static const lc_opt_enum_int_items_t pic_style_items[] = {
-	{ "none",      IA32_PIC_NONE       },
-	{ "mach-o",    IA32_PIC_MACH_O     },
-	{ "elf",       IA32_PIC_ELF_PLT    },
-	{ "elf-noplt", IA32_PIC_ELF_NO_PLT },
-	{ NULL,        IA32_PIC_NONE       },
-};
-static lc_opt_enum_int_var_t pic_style_var = {
-	(int*)&ia32_pic_style, pic_style_items
-};
 static const lc_opt_table_entry_t ia32_options[] = {
 	LC_OPT_ENT_BOOL("gprof", "Create gprof profiling code", &gprof),
 	LC_OPT_ENT_BOOL("precise_float_spill", "Spill floatingpoint values precisely (the whole 80 bits)", &precise_x87_spills),
 	LC_OPT_ENT_BOOL("struct_in_reg",
 					"Return small structs in integer registers",
 					&return_small_struct_in_regs),
-	LC_OPT_ENT_ENUM_INT("pic", "Generate position independent code",
-	                    &pic_style_var),
 	LC_OPT_LAST
 };
 

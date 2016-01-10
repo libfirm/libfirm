@@ -54,7 +54,7 @@ static void fix_address_pic(ir_node *const node, void *const data)
 
 void amd64_adjust_pic(ir_graph *irg)
 {
-	if (!be_options.pic)
+	if (be_options.pic_style == BE_PIC_NONE)
 		return;
 	irg_walk_graph(irg, fix_address_pic, NULL, NULL);
 	be_dump(DUMP_BE, irg, "pic");

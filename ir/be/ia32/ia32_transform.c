@@ -231,7 +231,7 @@ ir_node *ia32_get_pic_base(ir_graph *irg)
  */
 static ir_node *get_global_base(ir_graph *const irg)
 {
-	if (ia32_pic_style != IA32_PIC_NONE)
+	if (be_options.pic_style != BE_PIC_NONE)
 		return ia32_get_pic_base(irg);
 	return noreg_GP;
 }
@@ -2951,14 +2951,15 @@ static ir_node *gen_Switch(ir_node *node)
 
 	ir_node *switchjmp;
 	ir_node *table_am;
-	if (ia32_pic_style == IA32_PIC_NONE) {
+	be_pic_style_t const pic_style = be_options.pic_style;
+	if (pic_style == BE_PIC_NONE) {
 		switchjmp = new_bd_ia32_SwitchJmp(dbgi, block, base, new_sel, n_outs,
 		                                  table, entity);
 		table_am = switchjmp;
 	} else {
-		assert(ia32_pic_style == IA32_PIC_ELF_PLT
-		    || ia32_pic_style == IA32_PIC_ELF_NO_PLT
-		    || ia32_pic_style == IA32_PIC_MACH_O);
+		assert(pic_style == BE_PIC_ELF_PLT
+		    || pic_style == BE_PIC_ELF_NO_PLT
+		    || pic_style == BE_PIC_MACH_O);
 		ir_node *const add = new_bd_ia32_Add(dbgi, block, base, new_sel, nomem,
 		                                     base, noreg_GP);
 		set_ia32_commutative(add);
@@ -5857,11 +5858,11 @@ void ia32_transform_graph(ir_graph *irg)
 	                         | IR_GRAPH_PROPERTY_NO_TUPLES
 	                         | IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 
-	switch (ia32_pic_style) {
-	case IA32_PIC_NONE:       lconst_imm_kind = X86_IMM_ADDR;        break;
-	case IA32_PIC_MACH_O:     lconst_imm_kind = X86_IMM_PICBASE_REL; break;
-	case IA32_PIC_ELF_PLT:
-	case IA32_PIC_ELF_NO_PLT: lconst_imm_kind = X86_IMM_GOTOFF;      break;
+	switch (be_options.pic_style) {
+	case BE_PIC_NONE:       lconst_imm_kind = X86_IMM_ADDR;        break;
+	case BE_PIC_MACH_O:     lconst_imm_kind = X86_IMM_PICBASE_REL; break;
+	case BE_PIC_ELF_PLT:
+	case BE_PIC_ELF_NO_PLT: lconst_imm_kind = X86_IMM_GOTOFF;      break;
 	}
 	/* fix get_eip mode ia32_pic sets it to mode_P */
 	ir_node *const get_eip = ia32_get_irg_data(irg)->get_eip;
