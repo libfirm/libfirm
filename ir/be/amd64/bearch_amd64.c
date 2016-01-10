@@ -756,7 +756,7 @@ static const ir_settings_arch_dep_t amd64_arch_dep = {
 
 static backend_params amd64_backend_params = {
 	.byte_order_big_endian         = false,
-	.pic_supported                 = false,
+	.pic_supported                 = true,
 	.unaligned_memaccess_supported = true,
 	.modulo_shift                  = 32,
 	.dep_param                     = &amd64_arch_dep,
