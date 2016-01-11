@@ -2950,25 +2950,19 @@ static ir_node *gen_compare_swap(ir_node *const node)
 	int arity = 0;
 	amd64_addr_t addr;
 	perform_address_matching(ptr, &arity, in, &addr);
+
+	static arch_register_req_t const **const am_rax_reg_mem_reqs[] = {
+		rax_reg_mem_reqs,
+		reg_rax_reg_mem_reqs,
+		reg_reg_rax_reg_mem_reqs,
+	};
+	assert((size_t)arity < ARRAY_SIZE(am_rax_reg_mem_reqs));
+	arch_register_req_t const **const reqs = am_rax_reg_mem_reqs[arity];
+
 	in[arity++] = new_old;
 	int new_input = arity;
 	in[arity++] = new_new;
 	in[arity++] = new_mem;
-
-	arch_register_req_t const **reqs;
-	switch (arity) {
-	case 3:
-		reqs = rax_reg_mem_reqs;
-		break;
-	case 4:
-		reqs = reg_rax_reg_mem_reqs;
-		break;
-	case 5:
-		reqs = reg_reg_rax_reg_mem_reqs;
-		break;
-	default:
-		panic("gen_compare_swap: Unexpected arity %d", arity);
-	}
 
 	amd64_binop_addr_attr_t const attr = {
 		.base = {
