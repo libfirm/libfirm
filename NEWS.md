@@ -1,6 +1,7 @@
 libFirm 1.22.1 (2016-01-07)
 ---------------------------
 * Fix cmake/make build
+* Support PIC with PLT for ELF (amd64)
 * Bugfixes
 
 libFirm 1.22.0 (2015-12-31)
