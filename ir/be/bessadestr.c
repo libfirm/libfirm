@@ -458,6 +458,9 @@ static void analyze_parallel_copies_walker(ir_node *block, void *data)
 		memset(phi_args, 0, n_regs * sizeof(ir_node*));
 		memset(phis, 0, n_regs * sizeof(ir_node*));
 
+		// Always keep %g0.
+		keep_val[REG_GP_G0] = 1;
+
 		for (ir_node *phi = (ir_node *) get_irn_link(block); phi != NULL;
 		     phi = (ir_node *) get_irn_link(phi)) {
 
@@ -514,12 +517,12 @@ static void analyze_parallel_copies_walker(ir_node *block, void *data)
 				for (unsigned i = 0; i < n_regs; ++i) {
 					if (parcopy[i] != i)
 						raw_rtg[i] = parcopy[i];
-					else if (keep_val[i] || i == REG_GP_G0)
+					else if (keep_val[i])
 						raw_rtg[i] = i;
 					else
 						raw_rtg[i] = n_regs;
 
-					raw_n_used[i] = n_used[i] + (i == REG_GP_G0 && !keep_val[i]);
+					raw_n_used[i] = n_used[i];
 				}
 				opt_costs = find_costs_general(raw_rtg, raw_n_used, n_regs, false);
 			}
