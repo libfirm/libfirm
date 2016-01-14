@@ -81,17 +81,23 @@ const arch_register_t *arch_get_irn_register_in(const ir_node *node, int pos)
 	return arch_get_irn_register(op);
 }
 
+static inline void set_out_info_reg(reg_out_info_t *const out, arch_register_t const *const reg)
+{
+	assert(arch_reg_is_allocatable(out->req, reg));
+	out->reg = reg;
+}
+
 void arch_set_irn_register_out(ir_node *node, unsigned pos,
                                const arch_register_t *reg)
 {
 	reg_out_info_t *out = get_out_info_n(node, pos);
-	out->reg            = reg;
+	set_out_info_reg(out, reg);
 }
 
 void arch_set_irn_register(ir_node *node, const arch_register_t *reg)
 {
 	reg_out_info_t *out = get_out_info(node);
-	out->reg = reg;
+	set_out_info_reg(out, reg);
 }
 
 bool arch_reg_is_allocatable(const arch_register_req_t *req,
