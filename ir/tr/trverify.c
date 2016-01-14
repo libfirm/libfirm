@@ -144,7 +144,7 @@ static bool check_initializer(const ir_initializer_t *initializer,
 	case IR_INITIALIZER_TARVAL: {
 		ir_tarval *tv = get_initializer_tarval_value(initializer);
 		if (get_type_mode(type) != get_tarval_mode(tv)) {
-			report_error("initializer for entity %+F has wrong mode", context);
+			report_error("tarval initializer for entity %+F has wrong mode: %+F vs %+F", context, get_type_mode(type), get_tarval_mode(tv));
 			fine = false;
 		}
 		return fine;
@@ -152,7 +152,7 @@ static bool check_initializer(const ir_initializer_t *initializer,
 	case IR_INITIALIZER_CONST: {
 		ir_node *value = get_initializer_const_value(initializer);
 		if (get_type_mode(type) != get_irn_mode(value)) {
-			report_error("initializer for entity %+F has wrong mode", context);
+			report_error("const initializer for entity %+F has wrong mode: %+F vs %+F", context, get_type_mode(type), get_irn_mode(value));
 			fine = false;
 		}
 		if (!constant_on_correct_irg(value)) {
