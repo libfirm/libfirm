@@ -238,10 +238,8 @@ static ir_type *compute_arg_type(ir_graph *irg, calling_convention_t *cconv,
 		if (param->reg0 != NULL) {
 			/* use reserved spill space on between type */
 			if (entity != NULL) {
-				long offset = SPARC_PARAMS_SPILL_OFFSET + i * SPARC_REGISTER_SIZE;
-				assert(i < SPARC_N_PARAM_REGS);
 				set_entity_owner(entity, between_type);
-				set_entity_offset(entity, offset);
+				set_entity_offset(entity, param->offset);
 			}
 			continue;
 		}

@@ -220,6 +220,7 @@ calling_convention_t *sparc_decide_calling_convention(ir_type *function_type,
 		}
 
 		if (regnum < n_param_regs) {
+			param->offset = SPARC_PARAMS_SPILL_OFFSET + regnum * SPARC_REGISTER_SIZE;
 			arch_register_t const *reg = param_regs[regnum++];
 			if (irg == NULL || omit_fp)
 				reg = map_i_to_o_reg(reg);
