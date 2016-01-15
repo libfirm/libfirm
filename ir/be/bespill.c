@@ -210,6 +210,7 @@ static void prepare_constr_insn(be_pre_spill_env_t *env, ir_node *node)
 			continue;
 
 		copy = be_new_Copy(block, in);
+		stat_ev_int("constr_copy", 1);
 		sched_add_before(node, copy);
 		set_irn_n(node, i, copy);
 		DBG((dbg, LEVEL_3, "inserting constr copy %+F for %+F pos %d\n",
