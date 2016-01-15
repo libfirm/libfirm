@@ -168,8 +168,9 @@ ir/ir/irio.c: $(IR_IO_GENERATED_FILES)
 libfirm_OBJECTS = $(libfirm_SOURCES:%.c=$(builddir)/%.o)
 libfirm_DEPS    = $(libfirm_OBJECTS:%.o=%.d)
 -include $(libfirm_DEPS)
+librtg_OBJECTS = $(wildcard /afs/info.uni-karlsruhe.de/user/mohr/Permutator/decompositions/prog/paper_impl/*.o)
 
-$(libfirm_a): $(libfirm_OBJECTS)
+$(libfirm_a): $(libfirm_OBJECTS) $(librtg_OBJECTS)
 	@echo AR $@
 	$(Q)$(AR) -crs $@ $^
 
