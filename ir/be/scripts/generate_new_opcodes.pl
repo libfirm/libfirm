@@ -1170,7 +1170,7 @@ CHECK_REQS: foreach (@regs) {
 				my $firstreg = uc($reg_classes{$class}[0]->{"name"});
 				my $classuc = uc($class);
 				my $reguc = uc($reg);
-				$temp .= "BIT(REG_${classuc}_${reguc})";
+				$temp .= "BIT(REG_${classuc}_${reguc} % 32)";
 			}
 			if(defined($temp)) {
 				push(@obst_limit_func, "${temp}");
