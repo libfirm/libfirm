@@ -80,6 +80,11 @@ static void process_stack_bias(sp_sim_func const sim, ir_node *const block,
 	/* Continue at our control flow successors. */
 	foreach_out_edge_kind(block, edge, EDGE_KIND_BLOCK) {
 		ir_node *succ = get_edge_src_irn(edge);
+
+		/* XXX HACK, this should be treated with 7a92bdea4edfe16c6a8e22aab0d92a8a34b03b05 as well */
+		if ((succ == get_irg_end_block(get_irn_irg(block)) && is_x_except_branch(get_irn_in(succ)[edge->pos])))
+			continue;
+
 		process_stack_bias(sim, succ, p2align, misalign,
 		                   state.offset, state.align_padding);
 	}
