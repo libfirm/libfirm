@@ -137,7 +137,7 @@ static ir_node **assignments;
  * the information is per firm-node.
  */
 struct allocation_info_t {
-	unsigned  last_uses[2];   /**< bitset indicating last uses (input pos) */
+	unsigned  last_uses[4];   /**< bitset indicating last uses (input pos) */
 	ir_node  *current_value;  /**< copy of the value that should be used */
 	ir_node  *original_value; /**< for copies point to original value */
 	float     prefs[];        /**< register preferences */
