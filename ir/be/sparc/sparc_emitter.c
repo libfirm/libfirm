@@ -954,6 +954,9 @@ static unsigned get_permi_register_index(const arch_register_t *reg)
 	case REG_GP_I5:            return 29;
 	case REG_GP_FRAME_POINTER: return 30;
 	case REG_GP_I7:            return 31;
+	default:
+		// XXX HACK!
+		return 1;
 	}
 
 	panic("get_permi_register_index: Unknown register");
