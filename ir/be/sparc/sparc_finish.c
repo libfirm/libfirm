@@ -583,16 +583,22 @@ static bool has_flags_user(ir_node *node)
 	return get_Proj_for_pn(node, pn_sparc_AddCC_flags) != NULL;
 }
 
+static void remove_unused_CC(ir_node *const node, ir_op *const op)
+{
+	assert((int)pn_sparc_AddCC_flags == (int)pn_sparc_SubCC_flags);
+	if (has_flags_user(node))
+		return;
+	set_irn_op(node, op);
+	backend_info_t *const info = be_get_info(node);
+	ARR_SHRINKLEN(info->out_infos, 1);
+}
+
 /*
  * Transform AddCC into Add if flags output is unused.
  */
 static void peephole_sparc_AddCC(ir_node *node)
 {
-	if (has_flags_user(node))
-		return;
-
-	set_irn_op(node, op_sparc_Add);
-	arch_set_irn_register_out(node, pn_sparc_AddCC_flags, NULL);
+	remove_unused_CC(node, op_sparc_Add);
 }
 
 /*
@@ -600,13 +606,7 @@ static void peephole_sparc_AddCC(ir_node *node)
  */
 static void peephole_sparc_SubCC(ir_node *node)
 {
-	assert((int)pn_sparc_AddCC_flags == (int)pn_sparc_SubCC_flags);
-
-	if (has_flags_user(node))
-		return;
-
-	set_irn_op(node, op_sparc_Sub);
-	arch_set_irn_register_out(node, pn_sparc_SubCC_flags, NULL);
+	remove_unused_CC(node, op_sparc_Sub);
 }
 
 static void register_peephole_optimization(ir_op *op, peephole_opt_func func)
