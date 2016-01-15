@@ -132,7 +132,7 @@ static void pair_up_operands(be_chordal_env_t *const env, be_insn_t *const insn)
 	size_t          n_uses = 0;
 	ir_node **const uses   = ALLOCAN(ir_node*, n_regs);
 	for (int i = use_start; i < n_ops; ++i) {
-		be_operand_t *op = &insn->ops[i];
+		be_operand_t *op = entries[i].operand;
 		if (list_has_irn_else_add(uses, n_uses, op->carrier)) {
 			op->carrier = NULL;
 		} else {
