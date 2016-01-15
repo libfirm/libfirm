@@ -124,28 +124,34 @@ static void pair_up_operands(be_chordal_env_t *const env, be_insn_t *const insn)
 	}
 
 	/**
+	 * Only use most restricted node for each carrier.
+	 */
+	n_regs = env->cls->n_regs;
+	QSORT(entries + use_start, n_ops - use_start, compare_entries);
+
+	size_t          n_uses = 0;
+	ir_node **const uses   = ALLOCAN(ir_node*, n_regs);
+	for (int i = use_start; i < n_ops; ++i) {
+		be_operand_t *op = &insn->ops[i];
+		if (list_has_irn_else_add(uses, n_uses, op->carrier)) {
+			op->carrier = NULL;
+		} else {
+			++n_uses;
+		}
+	}
+
+	/**
 	 * Sort the list by register constraints (more restricted operands first).
 	 * Use a stable compare function that only depends on the graph structure.
 	 */
-	n_regs = env->cls->n_regs;
 	QSORT(entries, n_ops, compare_entries);
 
 	/* Greedily pair definitions/uses. */
-	size_t          n_paired     = 0;
-	ir_node **const paired_nodes = ALLOCAN(ir_node*, n_regs);
 	for (int i = 0; i < n_ops; ++i) {
-		pair_entry_t *op_entry = &entries[i];
-		be_operand_t *op       = op_entry->operand;
-
-		if (list_has_irn_else_add(paired_nodes, n_paired, op->carrier)) {
-			if (!op->partner)
-				op->carrier = NULL;
-			continue;
-		}
-		++n_paired;
-
-		bool op_is_def = op_entry->is_def;
-		if (op->partner ||
+		pair_entry_t *op_entry  = &entries[i];
+		be_operand_t *op        = op_entry->operand;
+		bool          op_is_def = op_entry->is_def;
+		if (op->partner || !op->carrier ||
 		    (!op_is_def && be_value_live_after(op->carrier, insn->irn))) {
 			continue;
 		}
@@ -155,11 +161,10 @@ static void pair_up_operands(be_chordal_env_t *const env, be_insn_t *const insn)
 			be_operand_t *partner        = partner_entry->operand;
 			bool          partner_is_def = partner_entry->is_def;
 			if (!partner->partner &&
+			    partner->carrier &&
 			    op_is_def != partner_is_def &&
 			    rbitsets_have_common(op->regs, partner->regs, n_regs) &&
-			    (partner_is_def || !be_value_live_after(partner->carrier, insn->irn)) &&
-			    !list_has_irn_else_add(paired_nodes, n_paired, partner->carrier)) {
-				++n_paired;
+			    (partner_is_def || !be_value_live_after(partner->carrier, insn->irn))) {
 				op->partner      = partner;
 				partner->partner = op;
 				break;
