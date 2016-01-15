@@ -286,9 +286,6 @@ static void analyze_block(ir_node *block, void *data)
 			check_defs(&live_nodes, weight, value, req);
 		);
 
-		/* the allocation info node currently only uses 1 unsigned value
-		   to mark last used inputs. So we will fail for a node with more than
-		   32 inputs. */
 		allocation_info_t *info = get_allocation_info(node);
 		if (get_irn_arity(node) >= (int)sizeof(info->last_uses) * 8) {
 			panic("node with more than %d inputs not supported yet",
