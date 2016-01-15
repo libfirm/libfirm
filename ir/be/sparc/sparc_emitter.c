@@ -249,7 +249,7 @@ static bool emits_multiple_instructions(const ir_node *node)
 		return true;
 
 	if (is_sparc_Call(node))
-		return arch_get_irn_flags(node) & sparc_arch_irn_flag_aggregate_return;
+		return is_cfop(node) || arch_get_irn_flags(node) & sparc_arch_irn_flag_aggregate_return;
 
 	return is_sparc_SMulh(node) || is_sparc_UMulh(node)
 		|| is_sparc_SDiv(node) || is_sparc_UDiv(node)
@@ -765,6 +765,22 @@ static void emit_sparc_Call(const ir_node *node)
 
 	if (arch_get_irn_flags(node) & sparc_arch_irn_flag_aggregate_return) {
 		sparc_emitf(NULL, "unimp 8");
+	}
+
+	if (is_cfop(node)) {
+		/* If the call throws we have to add a jump to its X_regular block. */
+		const ir_node* const x_regular_proj = get_Proj_for_pn(node, node->op->pn_x_regular);
+		if (x_regular_proj == NULL) {
+			/* Call always throws and/or never returns. */
+		} else if (!is_fallthrough(x_regular_proj)) {
+			sparc_emitf(node, "ba %L", x_regular_proj);
+			/* TODO: fill this slot as well */
+			emitting_delay_slot = true;
+			sparc_emitf(NULL, "nop");
+			emitting_delay_slot = false;
+		} else if (be_options.verbose_asm) {
+			sparc_emitf(node, "/* fallthrough to %L */", x_regular_proj);
+		}
 	}
 }
 
