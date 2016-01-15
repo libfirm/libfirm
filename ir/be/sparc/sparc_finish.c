@@ -102,9 +102,13 @@ static void sparc_introduce_prolog_epilog(ir_graph *irg, bool omit_fp)
 	unsigned               frame_size = get_type_size(frame_type);
 
 	/* introduce epilog for every return node */
-	foreach_irn_in(get_irg_end_block(irg), i, ret) {
-		assert(is_sparc_Return(ret));
-		introduce_epilog(ret, omit_fp);
+	foreach_irn_in(get_irg_end_block(irg), i, pred) {
+		if (is_x_except_branch(pred)) {
+			/* Don't generate any code for X_except ins */
+		} else {
+			assert(is_sparc_Return(pred));
+			introduce_epilog(pred, omit_fp);
+		}
 	}
 
 	if (!omit_fp) {
