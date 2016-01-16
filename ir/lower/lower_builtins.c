@@ -204,7 +204,8 @@ changed:
 	case ir_bk_compare_swap:
 	case ir_bk_va_start:
 		/* can't do anything about these, backend will probably fail now */
-		panic("cannot lower Builtin node of kind %+F", node);
+		panic("builtin kind %s not supported (for this target)",
+		      get_builtin_kind_name(kind));
 	}
 	panic("unexpected builtin %+F", node);
 }
