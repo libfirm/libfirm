@@ -37,12 +37,6 @@ bool be_verify_register_pressure(ir_graph *irg,
 bool be_verify_schedule(ir_graph *irg);
 
 /**
- * Verify spillslots
- */
-bool be_verify_spillslots(ir_graph *irg,
-                          get_frame_entity_func get_frame_entity);
-
-/**
  * Verify register allocation: Checks that no 2 live nodes have the same
  * register assigned, also checks that each scheduled node has a register
  * assigned.
