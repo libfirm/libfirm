@@ -5117,7 +5117,8 @@ static ir_node *gen_debugbreak(ir_node *node)
 	return new_bd_ia32_Breakpoint(dbgi, block, mem);
 }
 
-static ir_node *make_load_from_frame(ir_node *const node, ir_entity *(*const get_ent)(ir_graph*))
+static ir_node *make_load_from_frame(ir_node *const node,
+                                     ir_entity *(*const get_ent)(ir_graph*))
 {
 	dbg_info *const dbgi  = get_irn_dbg_info(node);
 	ir_node  *const block = be_transform_nodes_block(node);
@@ -5135,7 +5136,7 @@ static ir_node *make_load_from_frame(ir_node *const node, ir_entity *(*const get
 	set_irn_pinned(load, get_irn_pinned(node));
 	set_ia32_op_type(load, ia32_AddrModeS);
 	set_ia32_ls_mode(load, ia32_mode_gp);
-	ia32_attr_t *const attr = get_ia32_attr(node);
+	ia32_attr_t *const attr = get_ia32_attr(load);
 	attr->am_imm = (x86_imm32_t) {
 		.kind   = X86_IMM_FRAMEOFFSET,
 		.entity = get_ent(irg),
