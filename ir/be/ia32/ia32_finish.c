@@ -159,12 +159,8 @@ carry:;
 
 			/* generate the add */
 			res = new_bd_ia32_Add(dbgi, block, noreg, noreg, nomem, res, in1);
-			if (flags_proj != NULL) {
-				arch_set_irn_register_out(res, pn_ia32_res, out_reg);
-				arch_set_irn_register_out(res, pn_ia32_flags, &ia32_registers[REG_EFLAGS]);
-			} else {
-				arch_set_irn_register(res, out_reg);
-			}
+			arch_set_irn_register_out(res, pn_ia32_res,   out_reg);
+			arch_set_irn_register_out(res, pn_ia32_flags, &ia32_registers[REG_EFLAGS]);
 			set_ia32_commutative(res);
 		}
 	}
