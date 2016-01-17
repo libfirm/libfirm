@@ -104,6 +104,8 @@ typedef struct backend_params {
 	/** unaligned memory accesses are not supported natively (but the backend
 	 * may break the access up into several smaller ones) */
 	unsigned unaligned_memaccess_supported:1;
+	/** Whether thread local storage is supported. */
+	unsigned thread_local_storage_supported:1;
 
 	/**
 	 * Shifts on this architecture only read some bits of the shift value.

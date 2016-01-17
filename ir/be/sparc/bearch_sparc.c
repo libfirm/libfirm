@@ -524,20 +524,21 @@ static const backend_params *sparc_get_backend_params(void)
 		.max_bits_for_mulh    = 32,
 	};
 	static backend_params p = {
-		.byte_order_big_endian         = true,
-		.pic_supported                 = false,
-		.unaligned_memaccess_supported = false,
-		.modulo_shift                  = 32,
-		.dep_param                     = &arch_dep,
-		.allow_ifconv                  = sparc_is_mux_allowed,
-		.machine_size                  = 32,
-		.mode_float_arithmetic         = NULL,  /* will be set later */
-		.type_long_long                = NULL,  /* will be set later */
-		.type_unsigned_long_long       = NULL,  /* will be set later */
-		.type_long_double              = NULL,  /* will be set later */
-		.stack_param_align             = 4,
-		.float_int_overflow            = ir_overflow_min_max,
-		.vararg                        = {
+		.byte_order_big_endian          = true,
+		.pic_supported                  = false,
+		.unaligned_memaccess_supported  = false,
+		.thread_local_storage_supported = true,
+		.modulo_shift                   = 32,
+		.dep_param                      = &arch_dep,
+		.allow_ifconv                   = sparc_is_mux_allowed,
+		.machine_size                   = 32,
+		.mode_float_arithmetic          = NULL,  /* will be set later */
+		.type_long_long                 = NULL,  /* will be set later */
+		.type_unsigned_long_long        = NULL,  /* will be set later */
+		.type_long_double               = NULL,  /* will be set later */
+		.stack_param_align              = 4,
+		.float_int_overflow             = ir_overflow_min_max,
+		.vararg                         = {
 			.va_list_type = NULL, /* will be set later */
 			.lower_va_arg = be_default_lower_va_arg,
 		},
