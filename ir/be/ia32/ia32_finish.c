@@ -365,31 +365,11 @@ static void ia32_finish_irg_walker(ir_node *block, void *env)
 }
 
 /**
- * Block walker: pushes all blocks on a wait queue
- */
-static void ia32_push_on_queue_walker(ir_node *block, void *env)
-{
-	pdeq *wq = (pdeq*)env;
-	pdeq_putr(wq, block);
-}
-
-
-/**
  * Add Copy nodes for not fulfilled should_be_equal constraints
  */
 void ia32_finish_irg(ir_graph *irg)
 {
-	pdeq *wq = new_pdeq();
-
-	/* Push the blocks on the pdeq because ia32_finish_irg_walker starts more
-	 * walks ... */
-	irg_block_walk_graph(irg, NULL, ia32_push_on_queue_walker, wq);
-
-	while (!pdeq_empty(wq)) {
-		ir_node *block = (ir_node*)pdeq_getl(wq);
-		ia32_finish_irg_walker(block, NULL);
-	}
-	del_pdeq(wq);
+	irg_block_walk_graph(irg, NULL, ia32_finish_irg_walker, NULL);
 }
 
 void ia32_init_finish(void)
