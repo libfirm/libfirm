@@ -47,6 +47,7 @@
 #include "irgwalk.h"
 #include "irtools.h"
 #include "lc_opts.h"
+#include "lc_opts_enum.h"
 #include "panic.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
@@ -60,6 +61,13 @@ static int        frame_type_size;
 static int        callframe_offset;
 static ir_entity *thunks[N_ia32_gp_REGS];
 static ir_type   *thunk_type;
+
+typedef enum get_ip_style_t {
+	IA32_GET_IP_POP,
+	IA32_GET_IP_THUNK,
+} get_ip_style_t;
+
+static int get_ip_style = IA32_GET_IP_THUNK;
 
 /** Return the next block in Block schedule */
 static ir_node *get_prev_block_sched(const ir_node *block)
@@ -1238,36 +1246,63 @@ static ir_type *get_thunk_type(void)
 
 static void emit_ia32_GetEIP(const ir_node *node)
 {
-	const arch_register_t *reg = arch_get_irn_register_out(node, 0);
-	ir_entity *thunk = thunks[reg->index];
-	if (thunk == NULL) {
-		ir_type    *const glob = get_glob_type();
-		char const *const name = get_register_name_16bit(reg);
-		ident      *const id   = new_id_fmt("__x86.get_pc_thunk.%s", name);
-		ir_type    *const tp   = get_thunk_type();
-		thunk = new_global_entity(glob, id, tp, ir_visibility_external_private,
-		                          IR_LINKAGE_MERGE|IR_LINKAGE_GARBAGE_COLLECT);
-		/* Note that we do not create a proper method graph, but rather cheat
-		 * later and emit the instructions manually. This is just necessary so
-		 * firm knows we will actually output code for this entity. */
-		new_ir_graph(thunk, 0);
-
-		thunks[reg->index] = thunk;
-	}
-
-	ia32_emitf(node, "call %E", thunk);
-	switch (be_options.pic_style) {
-	case BE_PIC_MACH_O:
-		be_emit_irprintf("%s:\n", pic_base_label);
+	switch ((get_ip_style_t)get_ip_style) {
+	case IA32_GET_IP_POP: {
+		char const *const base = pic_base_label;
+		ia32_emitf(node, "call %s", base);
+		be_emit_irprintf("%s:\n", base);
 		be_emit_write_line();
-		return;
-	case BE_PIC_ELF_PLT:
-	case BE_PIC_ELF_NO_PLT:
-		ia32_emitf(node, "addl $_GLOBAL_OFFSET_TABLE_, %D0");
-		return;
-	case BE_PIC_NONE:
+		ia32_emitf(node, "popl %D0");
+		switch (be_options.pic_style) {
+		case BE_PIC_ELF_PLT:
+		case BE_PIC_ELF_NO_PLT:
+			ia32_emitf(node, "addl $_GLOBAL_OFFSET_TABLE_ - (%s - .), %D0", base);
+			return;
+
+		case BE_PIC_MACH_O:
+			return;
+
+		case BE_PIC_NONE:
+			break;
+		}
 		break;
 	}
+
+	case IA32_GET_IP_THUNK: {
+		const arch_register_t *reg = arch_get_irn_register_out(node, 0);
+		ir_entity *thunk = thunks[reg->index];
+		if (thunk == NULL) {
+			ir_type    *const glob = get_glob_type();
+			char const *const name = get_register_name_16bit(reg);
+			ident      *const id   = new_id_fmt("__x86.get_pc_thunk.%s", name);
+			ir_type    *const tp   = get_thunk_type();
+			thunk = new_global_entity(glob, id, tp, ir_visibility_external_private,
+					IR_LINKAGE_MERGE|IR_LINKAGE_GARBAGE_COLLECT);
+			/* Note that we do not create a proper method graph, but rather cheat
+			 * later and emit the instructions manually. This is just necessary so
+			 * firm knows we will actually output code for this entity. */
+			new_ir_graph(thunk, 0);
+
+			thunks[reg->index] = thunk;
+		}
+
+		ia32_emitf(node, "call %E", thunk);
+		switch (be_options.pic_style) {
+		case BE_PIC_MACH_O:
+			be_emit_irprintf("%s:\n", pic_base_label);
+			be_emit_write_line();
+			return;
+		case BE_PIC_ELF_PLT:
+		case BE_PIC_ELF_NO_PLT:
+			ia32_emitf(node, "addl $_GLOBAL_OFFSET_TABLE_, %D0");
+			return;
+		case BE_PIC_NONE:
+			break;
+		}
+		break;
+	}
+	}
+
 	panic("invalid pic_style");
 }
 
@@ -1640,8 +1675,19 @@ static void ia32_emit_function_text(ir_graph *const irg, ir_node **const blk_sch
 	DEL_ARR_F(exc_list);
 }
 
+static const lc_opt_enum_int_items_t get_ip_syle_items[] = {
+  { "pop",   IA32_GET_IP_POP   },
+  { "thunk", IA32_GET_IP_THUNK },
+  { NULL, 0 }
+};
+
+static lc_opt_enum_int_var_t get_ip_style_var = {
+  &get_ip_style, get_ip_syle_items
+};
+
 static const lc_opt_table_entry_t ia32_emitter_options[] = {
-	LC_OPT_ENT_BOOL("mark_spill_reload",   "mark spills and reloads with ud opcodes", &mark_spill_reload),
+	LC_OPT_ENT_BOOL    ("mark_spill_reload", "mark spills and reloads with ud opcodes", &mark_spill_reload),
+	LC_OPT_ENT_ENUM_INT("get_ip",            "method to get IP for the pic base",       &get_ip_style_var),
 	LC_OPT_LAST
 };
 
