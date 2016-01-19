@@ -32,9 +32,6 @@
 #include "beirg.h"
 #include "bespillutil.h"
 
-#define DBG_COALESCING      1
-#define DBG_INTERFERENCES   2
-
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 typedef struct spillweb_t spillweb_t;
@@ -140,9 +137,8 @@ static void merge_spilltypes(spillweb_t *web, const ir_type *type1)
 		return;
 	}
 	assert(modes_compatible(get_type_mode(type0), get_type_mode(type1)));
-	web->type
-		= get_type_size_bytes(type1) > get_type_size_bytes(type0)
-		? type1 : type0;
+	web->type = get_type_size_bytes(type1) > get_type_size_bytes(type0)
+	          ? type1 : type0;
 }
 
 static spillweb_t *get_spill_web(spillweb_t *begin)
@@ -152,8 +148,7 @@ static spillweb_t *get_spill_web(spillweb_t *begin)
 		result = result->merged_with;
 	}
 	/* path compression */
-	for (spillweb_t *web = begin, *next; web != result;
-	     web = next) {
+	for (spillweb_t *web = begin, *next; web != result; web = next) {
 		next = web->merged_with;
 		web->merged_with = result;
 	}
@@ -203,7 +198,7 @@ static spill_t *collect_spill(be_fec_env_t *env, ir_node *node, spillweb_t *web)
 	spill->web       = web;
 	ARR_APP1(spill_t*, env->spills, spill);
 	set_irn_link(node, spill);
-	DB((dbg, DBG_COALESCING, "Slot %d: %+F (%+F)\n", spill->spillslot,
+	DB((dbg, LEVEL_1, "Slot %d: %+F (%+F)\n", spill->spillslot,
 	    skip_Proj(node), node));
 
 	if (is_Phi(node)) {
@@ -243,7 +238,7 @@ void be_load_needs_frame_entity(be_fec_env_t *env, ir_node *node,
 {
 	ir_node *mem   = get_memory_edge(node);
 	spill_t *spill = collect_spill(env, mem, NULL);
-	DB((dbg, DBG_COALESCING, "Slot %d: Reload: %+F Type %+F\n",
+	DB((dbg, LEVEL_1, "Slot %d: Reload: %+F Type %+F\n",
 	    spill->spillslot, node, type));
 	ARR_APP1(ir_node*, env->reloads, node);
 	merge_spilltypes(spill->web, type);
@@ -286,7 +281,7 @@ static void do_greedy_coalescing(be_fec_env_t *env)
 	if (spillcount == 0)
 		return;
 
-	DB((dbg, DBG_COALESCING, "Coalescing %d spillslots\n", spillcount));
+	DB((dbg, LEVEL_1, "Coalescing %d spillslots\n", spillcount));
 
 	struct obstack data;
 	obstack_init(&data);
@@ -312,8 +307,7 @@ static void do_greedy_coalescing(be_fec_env_t *env)
 				continue;
 
 			if (be_memory_values_interfere(spill1, spill2)) {
-				DB((dbg, DBG_INTERFERENCES,
-				     "Slot %d and %d interfere\n", i, i2));
+				DB((dbg, LEVEL_1, "Slot %d and %d interfere\n", i, i2));
 
 				bitset_set(interferences[i], i2);
 				bitset_set(interferences[i2], i);
@@ -336,13 +330,13 @@ static void do_greedy_coalescing(be_fec_env_t *env)
 			continue;
 		}
 
-		DB((dbg, DBG_COALESCING,
+		DB((dbg, LEVEL_1,
 		    "Merging %d and %d because of affinity edge\n", s1, s2));
 
 		merge_interferences(env, interferences, spillslot_unionfind, s1, s2);
 	}
 
-	/* try to merge as much remaining spillslots as possible */
+	/* Try to merge as much remaining spillslots as possible */
 	for (size_t i = 0; i < spillcount; ++i) {
 		int s1 = uf_find(spillslot_unionfind, i);
 		if (s1 != (int)i)
@@ -353,27 +347,26 @@ static void do_greedy_coalescing(be_fec_env_t *env)
 			if (s2 != (int)i2)
 				continue;
 
-			/* test if values interfere
-			 * we have to test n1-n2 and n2-n1, because only 1 side gets updated
-			 * when node merging occurs
-			 */
+			/* Test if values interfere, we have to test n1-n2 and n2-n1,
+			 * because only 1 side gets updated when node merging occurs */
 			if (bitset_is_set(interferences[s1], s2)) {
 				assert(bitset_is_set(interferences[s2], s1));
 				continue;
 			}
 
-			DB((dbg, DBG_COALESCING,
-			     "Merging %d and %d because it is possible\n", s1, s2));
+			DB((dbg, LEVEL_1,
+			    "Merging %d and %d because it is possible\n", s1, s2));
 
-			if (merge_interferences(env, interferences, spillslot_unionfind, s1, s2) != 0) {
-				/* we can break the loop here, because s2 is the new supernode
+			if (merge_interferences(env, interferences, spillslot_unionfind,
+			                        s1, s2) != 0) {
+				/* We can break the loop here, because s2 is the new supernode
 				 * now and we'll test s2 again later anyway */
 				break;
 			}
 		}
 	}
 
-	/* assign spillslots to spills */
+	/* Assign spillslots to spills */
 	for (size_t i = 0; i < spillcount; ++i) {
 		spills[i]->spillslot = uf_find(spillslot_unionfind, i);
 	}
@@ -443,9 +436,9 @@ static ir_entity* create_stack_entity(be_fec_env_t *env, spill_slot_t *slot)
  */
 static void enlarge_spillslot(spill_slot_t *slot, int otheralign, int othersize)
 {
-	if (othersize > slot->size) {
+	if (othersize > slot->size)
 		slot->size = othersize;
-	}
+
 	if (otheralign > slot->align) {
 		if (otheralign % slot->align != 0)
 			slot->align *= otheralign;
@@ -507,9 +500,8 @@ static void assign_spillslots(be_fec_env_t *env)
 		int            slotid = spill->spillslot;
 		spill_slot_t  *slot   = &spillslots[slotid];
 
-		if (slot->entity == NULL) {
+		if (slot->entity == NULL)
 			create_stack_entity(env, slot);
-		}
 
 		if (is_Phi(node)) {
 			ir_node *block = get_nodes_block(node);
@@ -526,9 +518,8 @@ static void assign_spillslots(be_fec_env_t *env)
 					memperm_t       *memperm;
 					memperm_entry_t *entry;
 					spill_slot_t    *argslot = &spillslots[argslotid];
-					if (argslot->entity == NULL) {
+					if (argslot->entity == NULL)
 						create_stack_entity(env, argslot);
-					}
 
 					memperm = get_memperm(env, predblock);
 
@@ -656,20 +647,16 @@ void be_assign_entities(be_fec_env_t *env,
 	env->set_frame_entity = set_frame_entity;
 	env->at_begin         = alloc_entities_at_begin;
 
-	if (stat_ev_enabled) {
+	if (stat_ev_enabled)
 		stat_ev_dbl("spillslots", ARR_LEN(env->spills));
-	}
 
-	if (be_coalesce_spill_slots && !env->coalescing_forbidden) {
+	if (be_coalesce_spill_slots && !env->coalescing_forbidden)
 		do_greedy_coalescing(env);
-	}
 
-	if (stat_ev_enabled) {
+	if (stat_ev_enabled)
 		stat_ev_dbl("spillslots_after_coalescing", count_spillslots(env));
-	}
 
 	assign_spillslots(env);
-
 	create_memperms(env);
 }
 
