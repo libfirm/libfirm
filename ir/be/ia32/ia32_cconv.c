@@ -12,6 +12,7 @@
 #include "bearch_ia32_t.h"
 #include "becconv.h"
 #include "beirg.h"
+#include "ia32_architecture.h"
 #include "x86_cconv.h"
 #include "irmode_t.h"
 #include "irgwalk.h"
@@ -69,10 +70,13 @@ static const arch_register_t* const sse_result_regs[] = {
 };
 #endif
 
-static const unsigned caller_saves[] = {
+static const unsigned caller_saves_gp[] = {
 	REG_EAX,
 	REG_ECX,
 	REG_EDX,
+};
+
+static const unsigned caller_saves_fp[] = {
 	REG_ST0,
 	REG_ST1,
 	REG_ST2,
@@ -90,6 +94,7 @@ static const unsigned caller_saves[] = {
 	REG_XMM6,
 	REG_XMM7,
 };
+
 static unsigned default_caller_saves[BITSET_SIZE_ELEMS(N_IA32_REGISTERS)];
 
 static const unsigned callee_saves[] = {
@@ -97,7 +102,6 @@ static const unsigned callee_saves[] = {
 	REG_EBP,
 	REG_ESI,
 	REG_EDI,
-	REG_FPCW,
 };
 static unsigned default_callee_saves[BITSET_SIZE_ELEMS(N_IA32_REGISTERS)];
 
@@ -232,6 +236,10 @@ align_stack:;
 
 void ia32_cconv_init(void)
 {
-	be_cconv_add_regs(default_caller_saves, caller_saves, ARRAY_SIZE(caller_saves));
+	be_cconv_add_regs(default_caller_saves, caller_saves_gp, ARRAY_SIZE(caller_saves_gp));
 	be_cconv_add_regs(default_callee_saves, callee_saves, ARRAY_SIZE(callee_saves));
+	if (!ia32_cg_config.use_softfloat) {
+		be_cconv_add_regs(default_caller_saves, caller_saves_fp, ARRAY_SIZE(caller_saves_fp));
+		rbitset_set(default_callee_saves, REG_FPCW);
+	}
 }

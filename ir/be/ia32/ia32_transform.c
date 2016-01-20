@@ -4953,9 +4953,10 @@ static ir_node *gen_Call(ir_node *node)
 	x86_cconv_t                *const cconv    = ia32_decide_calling_convention(type, NULL);
 	ir_graph                   *const irg      = get_irn_irg(node);
 	unsigned                          in_arity = n_ia32_Call_first_argument;
+	bool                        const has_fpcw = !ia32_cg_config.use_softfloat;
 	bool                        const is_plt   = callee_is_plt(callee);
 	unsigned                    const n_ins
-		= in_arity + cconv->n_param_regs + is_plt;
+		= has_fpcw + in_arity + cconv->n_param_regs + is_plt;
 	ir_node                   **const in       = ALLOCAN(ir_node*, n_ins);
 	arch_register_req_t const **const in_req   = be_allocate_in_reqs(irg, n_ins);
 
@@ -4978,8 +4979,11 @@ static ir_node *gen_Call(ir_node *node)
 	in[n_ia32_Call_stack]     = callframe;
 	in_req[n_ia32_Call_stack] = sp->single_req;
 
-	in[n_ia32_Call_fpcw]     = get_initial_fpcw(irg);
-	in_req[n_ia32_Call_fpcw] = fpcw->single_req;
+	if (has_fpcw) {
+		unsigned const fpcwi = in_arity++;
+		in[fpcwi]     = get_initial_fpcw(irg);
+		in_req[fpcwi] = fpcw->single_req;
+	}
 
 	uint8_t         add_pressure = 0;
 	unsigned        sync_arity = 0;
@@ -5042,7 +5046,7 @@ static ir_node *gen_Call(ir_node *node)
 	unsigned       o              = pn_ia32_Call_first_result;
 	unsigned const n_reg_results  = cconv->n_reg_results;
 	unsigned const n_caller_saves = rbitset_popcount(cconv->caller_saves, N_IA32_REGISTERS);
-	unsigned const n_out          = o + n_reg_results + n_caller_saves;
+	unsigned const n_out          = has_fpcw + o + n_reg_results + n_caller_saves;
 
 	/* Create node. */
 	ir_node *const call = new_bd_ia32_Call(dbgi, block, in_arity, in, in_req, n_out, cconv->sp_delta, type);
@@ -5061,9 +5065,6 @@ static ir_node *gen_Call(ir_node *node)
 
 	arch_copy_irn_out_info(call, pn_ia32_Call_stack, callframe);
 
-	arch_set_irn_register_req_out(call, pn_ia32_Call_fpcw, fpcw->single_req);
-	arch_set_irn_register_out(call, pn_ia32_Call_fpcw, fpcw);
-
 	unsigned const n_ress = get_method_n_ress(type);
 	for (unsigned r = 0; r < n_ress; ++r) {
 		arch_register_t const *const reg = cconv->results[r].reg;
@@ -5072,6 +5073,13 @@ static ir_node *gen_Call(ir_node *node)
 		if (reg->cls == &ia32_reg_classes[CLASS_ia32_fp])
 			ia32_request_x87_sim(irg);
 	}
+
+	if (has_fpcw) {
+		unsigned const fpcwo = o++;
+		arch_set_irn_register_req_out(call, fpcwo, fpcw->single_req);
+		arch_set_irn_register_out(    call, fpcwo, fpcw);
+	}
+
 	/* Caller saves. */
 	unsigned const *const allocatable_regs = be_birg_from_irg(irg)->allocatable_regs;
 	for (unsigned i = 0; i < N_IA32_REGISTERS; ++i) {
