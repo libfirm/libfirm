@@ -13,6 +13,7 @@
  *  - MSDN - "x64 Software Conventions"
  */
 #include "be_t.h"
+#include "becconv.h"
 #include "beirg.h"
 #include "irmode_t.h"
 #include "irgwalk.h"
@@ -207,15 +208,10 @@ x86_cconv_t *amd64_decide_calling_convention(ir_type *function_type,
 	cconv->n_reg_results  = n_reg_results;
 
 	if (irg != NULL) {
-		be_irg_t       *birg      = be_birg_from_irg(irg);
-		size_t          n_ignores = ARRAY_SIZE(ignore_regs);
-		struct obstack *obst      = &birg->obst;
+		be_irg_t *birg = be_birg_from_irg(irg);
 
-		birg->allocatable_regs = rbitset_obstack_alloc(obst, N_AMD64_REGISTERS);
-		rbitset_set_all(birg->allocatable_regs, N_AMD64_REGISTERS);
-		for (size_t r = 0; r < n_ignores; ++r) {
-			rbitset_clear(birg->allocatable_regs, ignore_regs[r]);
-		}
+		birg->allocatable_regs = be_cconv_alloc_all_regs(&birg->obst, N_AMD64_REGISTERS);
+		be_cconv_rem_regs(birg->allocatable_regs, ignore_regs, ARRAY_SIZE(ignore_regs));
 		if (!omit_fp)
 			rbitset_clear(birg->allocatable_regs, REG_RBP);
 	}
@@ -258,13 +254,11 @@ void amd64_cconv_init(void)
 		REG_ST6,
 		REG_ST7,
 	};
-	for (size_t i = 0; i < ARRAY_SIZE(common_caller_saves); ++i) {
-		rbitset_set(default_caller_saves, common_caller_saves[i]);
-	}
-	if (!amd64_use_x64_abi) {
-		rbitset_set(default_caller_saves, REG_RSI);
-		rbitset_set(default_caller_saves, REG_RDI);
-	}
+	static unsigned const x64_callee_saves[] = { REG_RSI, REG_RDI };
+
+	be_cconv_add_regs(default_caller_saves, common_caller_saves, ARRAY_SIZE(common_caller_saves));
+	if (!amd64_use_x64_abi)
+		be_cconv_add_regs(default_caller_saves, x64_callee_saves, ARRAY_SIZE(x64_callee_saves));
 
 	static const unsigned common_callee_saves[] = {
 		REG_RBX,
@@ -274,13 +268,9 @@ void amd64_cconv_init(void)
 		REG_R14,
 		REG_R15,
 	};
-	for (size_t i = 0; i < ARRAY_SIZE(common_callee_saves); ++i) {
-		rbitset_set(default_callee_saves, common_callee_saves[i]);
-	}
-	if (amd64_use_x64_abi) {
-		rbitset_set(default_callee_saves, REG_RSI);
-		rbitset_set(default_callee_saves, REG_RDI);
-	}
+	be_cconv_add_regs(default_callee_saves, common_callee_saves, ARRAY_SIZE(common_callee_saves));
+	if (amd64_use_x64_abi)
+		be_cconv_add_regs(default_callee_saves, x64_callee_saves, ARRAY_SIZE(x64_callee_saves));
 
 	static const arch_register_t* const param_regs_list[] = {
 		&amd64_registers[REG_RDI],

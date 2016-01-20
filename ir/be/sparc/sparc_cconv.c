@@ -9,6 +9,7 @@
  * @author  Matthias Braun
  */
 #include "be_t.h"
+#include "becconv.h"
 #include "beirg.h"
 #include "sparc_cconv.h"
 #include "irmode_t.h"
@@ -325,16 +326,10 @@ calling_convention_t *sparc_decide_calling_convention(ir_type *function_type,
 
 	/* setup ignore register array */
 	if (irg != NULL) {
-		be_irg_t       *birg      = be_birg_from_irg(irg);
-		size_t          n_ignores = ARRAY_SIZE(ignore_regs);
-		struct obstack *obst      = &birg->obst;
-		size_t          r;
+		be_irg_t *birg = be_birg_from_irg(irg);
 
-		birg->allocatable_regs = rbitset_obstack_alloc(obst, N_SPARC_REGISTERS);
-		rbitset_set_all(birg->allocatable_regs, N_SPARC_REGISTERS);
-		for (r = 0; r < n_ignores; ++r) {
-			rbitset_clear(birg->allocatable_regs, ignore_regs[r]);
-		}
+		birg->allocatable_regs = be_cconv_alloc_all_regs(&birg->obst, N_SPARC_REGISTERS);
+		be_cconv_rem_regs(birg->allocatable_regs, ignore_regs, ARRAY_SIZE(ignore_regs));
 	}
 
 	return cconv;
@@ -350,17 +345,11 @@ void sparc_free_calling_convention(calling_convention_t *cconv)
 
 void sparc_cconv_init(void)
 {
-	for (size_t i = 0; i < ARRAY_SIZE(caller_saves); ++i) {
-		rbitset_set(default_caller_saves, caller_saves[i]);
-	}
+	be_cconv_add_regs(default_caller_saves, caller_saves, ARRAY_SIZE(caller_saves));
 
 	rbitset_set_all(default_returns_twice_saves, N_SPARC_REGISTERS);
-	for (size_t i = 0; i < ARRAY_SIZE(returns_twice_saved); ++i) {
-		rbitset_clear(default_returns_twice_saves, returns_twice_saved[i]);
-	}
-	for (size_t i = 0; i < ARRAY_SIZE(ignore_regs); ++i) {
-		rbitset_clear(default_returns_twice_saves, ignore_regs[i]);
-	}
+	be_cconv_rem_regs(default_returns_twice_saves, returns_twice_saved, ARRAY_SIZE(returns_twice_saved));
+	be_cconv_rem_regs(default_returns_twice_saves, ignore_regs,         ARRAY_SIZE(ignore_regs));
 
 	for (size_t i = 0; i < ARRAY_SIZE(float_result_reqs_double); i += 2) {
 		arch_register_req_t *req = &float_result_reqs_double[i];

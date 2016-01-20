@@ -10,6 +10,7 @@
  */
 #include "be_t.h"
 #include "bearch_ia32_t.h"
+#include "becconv.h"
 #include "beirg.h"
 #include "x86_cconv.h"
 #include "irmode_t.h"
@@ -218,15 +219,10 @@ align_stack:;
 	cconv->n_reg_results  = n_reg_results;
 
 	if (irg != NULL) {
-		be_irg_t       *birg      = be_birg_from_irg(irg);
-		size_t          n_ignores = ARRAY_SIZE(ignore_regs);
-		struct obstack *obst      = &birg->obst;
+		be_irg_t *birg = be_birg_from_irg(irg);
 
-		birg->allocatable_regs = rbitset_obstack_alloc(obst, N_IA32_REGISTERS);
-		rbitset_set_all(birg->allocatable_regs, N_IA32_REGISTERS);
-		for (size_t r = 0; r < n_ignores; ++r) {
-			rbitset_clear(birg->allocatable_regs, ignore_regs[r]);
-		}
+		birg->allocatable_regs = be_cconv_alloc_all_regs(&birg->obst, N_IA32_REGISTERS);
+		be_cconv_rem_regs(birg->allocatable_regs, ignore_regs, ARRAY_SIZE(ignore_regs));
 		if (!omit_fp)
 			rbitset_clear(birg->allocatable_regs, REG_EBP);
 	}
@@ -236,10 +232,6 @@ align_stack:;
 
 void ia32_cconv_init(void)
 {
-	for (size_t i = 0; i < ARRAY_SIZE(caller_saves); ++i) {
-		rbitset_set(default_caller_saves, caller_saves[i]);
-	}
-	for (size_t i = 0; i < ARRAY_SIZE(callee_saves); ++i) {
-		rbitset_set(default_callee_saves, callee_saves[i]);
-	}
+	be_cconv_add_regs(default_caller_saves, caller_saves, ARRAY_SIZE(caller_saves));
+	be_cconv_add_regs(default_callee_saves, callee_saves, ARRAY_SIZE(callee_saves));
 }
