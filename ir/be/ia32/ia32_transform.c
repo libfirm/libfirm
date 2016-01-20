@@ -2072,6 +2072,18 @@ static ir_node *gen_Not(ir_node *node)
 {
 	assert(get_irn_mode(node) != mode_b); /* should be lowered already */
 	ir_node *op = get_Not_op(node);
+
+	if (is_Shl_1(op)) {
+		/* ~(1 << x) -> Rol(~1, x) */
+		dbg_info   *const dbgi    = get_irn_dbg_info(node);
+		ir_node    *const block   = be_transform_nodes_block(node);
+		x86_imm32_t const imm     = { .offset = -2 };
+		ir_node    *const m2      = new_bd_ia32_Const(NULL, block, &imm);
+		ir_node    *const val     = get_Shl_right(op);
+		ir_node    *const new_val = be_transform_node(val);
+		return new_bd_ia32_Rol(dbgi, block, m2, new_val);
+	}
+
 	return gen_unop(node, op, new_bd_ia32_Not, match_mode_neutral);
 }
 
