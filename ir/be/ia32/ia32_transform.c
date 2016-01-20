@@ -1726,7 +1726,6 @@ static ir_node *gen_Or(ir_node *node)
 	if (res != NULL)
 		return res;
 
-	assert(!mode_is_float(get_irn_mode(node)));
 	ir_node *op1 = get_Or_left(node);
 	ir_node *op2 = get_Or_right(node);
 	return gen_binop(node, op1, op2, new_bd_ia32_Or,
