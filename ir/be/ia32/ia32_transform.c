@@ -1675,6 +1675,11 @@ static ir_node *gen_Mulh(ir_node *node)
 	return proj_res_high;
 }
 
+static bool is_Shl_1(ir_node *const node)
+{
+	return is_Shl(node) && is_Const_1(get_Shl_left(node));
+}
+
 /**
  * Creates an ia32 And.
  *
@@ -2237,8 +2242,7 @@ static ir_node *get_flags_node(ir_node *cmp, x86_condition_code_t *cc_out)
 			ra = tmp;
 		}
 		if (is_Shl(la)) {
-			ir_node *c = get_Shl_left(la);
-			if (is_Const_1(c) && is_Const_0(r)) {
+			if (is_Shl_1(la) && is_Const_0(r)) {
 				/* (1 << n) & ra) */
 				ir_node *n     = get_Shl_right(la);
 				ir_node *flags = gen_bt(cmp, ra, n);
