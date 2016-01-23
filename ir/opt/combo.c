@@ -2734,6 +2734,11 @@ static bool only_one_reachable_proj(ir_node *n)
  */
 static bool can_exchange(ir_node *pred, ir_node *block)
 {
+	if (is_x_except_Proj(pred)) {
+		/* See comment about Raise */
+		return false;
+	}
+	pred = skip_Proj(pred);
 	if (get_Block_entity(block) != NULL) {
 		return false;
 	} else if (is_Jmp(pred)) {
@@ -2775,10 +2780,10 @@ static void apply_cf(ir_node *block, void *ctx)
 
 	if (n == 1) {
 		/* only one predecessor combine */
-		ir_node *pred = skip_Proj(get_Block_cfgpred(block, 0));
+		ir_node *pred = get_Block_cfgpred(block, 0);
 
 		if (can_exchange(pred, block)) {
-			ir_node *new_block = get_nodes_block(pred);
+			ir_node *new_block = get_nodes_block(skip_Proj(pred));
 			DB((dbg, LEVEL_1, "Fuse %+F with %+F\n", block, new_block));
 			DBG_OPT_COMBO(block, new_block);
 			exchange(block, new_block);
@@ -2854,10 +2859,10 @@ static void apply_cf(ir_node *block, void *ctx)
 	/* fix block */
 	if (k == 1) {
 		/* this Block has only one live predecessor */
-		ir_node *pred = skip_Proj(in_X[0]);
+		ir_node *pred = in_X[0];
 
 		if (can_exchange(pred, block)) {
-			ir_node *new_block = get_nodes_block(pred);
+			ir_node *new_block = get_nodes_block(skip_Proj(pred));
 			DBG_OPT_COMBO(block, new_block);
 			exchange(block, new_block);
 			node->node = new_block;
