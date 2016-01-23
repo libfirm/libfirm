@@ -255,6 +255,7 @@ void ia32_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 				} else {
 					fprintf(F, "n/a");
 				}
+				fprintf(F, "\n");
 			}
 			/* dump original ir node name */
 			char const *orig = get_ia32_attr_const(n)->orig_node;
