@@ -77,6 +77,7 @@ static const unsigned caller_saves_gp[] = {
 };
 
 static const unsigned caller_saves_fp[] = {
+	REG_FPCW,
 	REG_ST0,
 	REG_ST1,
 	REG_ST2,

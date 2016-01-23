@@ -5046,7 +5046,7 @@ static ir_node *gen_Call(ir_node *node)
 	unsigned       o              = pn_ia32_Call_first_result;
 	unsigned const n_reg_results  = cconv->n_reg_results;
 	unsigned const n_caller_saves = rbitset_popcount(cconv->caller_saves, N_IA32_REGISTERS);
-	unsigned const n_out          = has_fpcw + o + n_reg_results + n_caller_saves;
+	unsigned const n_out          = o + n_reg_results + n_caller_saves;
 
 	/* Create node. */
 	ir_node *const call = new_bd_ia32_Call(dbgi, block, in_arity, in, in_req, n_out, cconv->sp_delta, type);
@@ -5072,12 +5072,6 @@ static ir_node *gen_Call(ir_node *node)
 		/* Run the x87 simulator, if the call returns a float value. */
 		if (reg->cls == &ia32_reg_classes[CLASS_ia32_fp])
 			ia32_request_x87_sim(irg);
-	}
-
-	if (has_fpcw) {
-		unsigned const fpcwo = o++;
-		arch_set_irn_register_req_out(call, fpcwo, fpcw->single_req);
-		arch_set_irn_register_out(    call, fpcwo, fpcw);
 	}
 
 	/* Caller saves. */
