@@ -137,7 +137,7 @@ static void be_init_default_asm_constraint_flags(void)
 	/* List of constraints supported by gcc for any machine (or at least
 	 * recognized). Mark them as NO_SUPPORT so we can differentiate them
 	 * from INVALID. Backends should change the flags they support. */
-	char const *const gcc_common_flags = "%,0123456789<>EFGHIJKLMNOPVXgimoprs";
+	char const *const gcc_common_flags = ",0123456789<>EFGHIJKLMNOPVXgimoprs";
 	be_set_constraint_support(ASM_CONSTRAINT_FLAG_NO_SUPPORT, gcc_common_flags);
 	/* Skip whitespace.
 	 * TODO '*' actually penalizes the selection of the next constraint letter.
@@ -173,6 +173,7 @@ asm_constraint_flags_t be_parse_asm_constraints(const char *constraint)
 	switch (*c) {
 	case '=': ++c; flags = ASM_CONSTRAINT_FLAG_MODIFIER_WRITE; break;
 	case '+': ++c; flags = ASM_CONSTRAINT_FLAG_MODIFIER_READ | ASM_CONSTRAINT_FLAG_MODIFIER_WRITE; break;
+	case '%': ++c; /* FALLTHROUGH */ /* TODO stub, should mark this operand as commutative with the next. */
 	default:       flags = ASM_CONSTRAINT_FLAG_MODIFIER_READ; break;
 	}
 

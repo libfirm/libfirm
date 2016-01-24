@@ -5,6 +5,7 @@ libFirm 1.22.1 (2016-01-07)
 * Add `ia32-get_ip={pop,thunk}`
 * Generate 'mov $~1, %r; rol x, %r' for '~(1 << x)' (ia32)
 * Generate 'mov $~0x80000000, %r; ror x, %r' for '~(0x80000000 >> x)' (ia32)
+* Stub support for the asm constraint modifier '%'
 * Bugfixes
 
 libFirm 1.22.0 (2015-12-31)

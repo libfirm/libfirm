@@ -82,6 +82,7 @@ void be_parse_asm_constraints_internal(be_asm_constraint_t *const constraint, id
 		case ' ':
 		case '\t':
 		case '\n':
+		case '%':
 		case '=':
 		case '+':
 		case '&':
