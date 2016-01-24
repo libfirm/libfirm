@@ -93,6 +93,7 @@ const x86_asm_constraint_list_t ia32_asm_constraints = {
 	['b'] = { MATCH_REG, GP, 1 << REG_GP_EBX },
 	['c'] = { MATCH_REG, GP, 1 << REG_GP_ECX },
 	['d'] = { MATCH_REG, GP, 1 << REG_GP_EDX },
+	['e'] = { MATCH_IMM, GP, 0 },
 	['f'] = { MATCH_REG, FP, 0 },
 	['g'] = { MATCH_ANY, GP, 0 },
 	['i'] = { MATCH_IMM, GP, 0 },

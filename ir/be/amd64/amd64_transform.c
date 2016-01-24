@@ -87,6 +87,7 @@ const x86_asm_constraint_list_t amd64_asm_constraints = {
 	['b'] = { MATCH_REG, GP, 1 << REG_GP_RBX },
 	['c'] = { MATCH_REG, GP, 1 << REG_GP_RCX },
 	['d'] = { MATCH_REG, GP, 1 << REG_GP_RDX },
+	['e'] = { MATCH_IMM, GP, 0 },
 	['g'] = { MATCH_ANY, GP, 0 },
 	['i'] = { MATCH_IMM, GP, 0 },
 	['l'] = { MATCH_REG, GP, 1 << REG_GP_RAX | 1 << REG_GP_RBX

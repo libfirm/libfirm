@@ -22,11 +22,14 @@
 
 static bool check_immediate_constraint(long val, char immediate_constraint_type)
 {
+	/* Workaround for warning about always true comparison when long has 32 bits. */
+	long long const v31 = 2147483648;
 	switch (immediate_constraint_type) {
 	case 'g':
 	case 'i':
 	case 'n': return true;
 
+	case 'e': return -v31 <= val && val < v31;
 	case 'I': return 0 <= val && val <=  31;
 	case 'J': return 0 <= val && val <=  63;
 	case 'K': return -128 <= val && val < 128;
@@ -65,9 +68,13 @@ bool x86_match_immediate(x86_imm32_t *immediate, const ir_node *node,
 
 	x86_immediate_kind_t kind = (x86_immediate_kind_t)reloc_kind;
 	if (entity != NULL) {
-		/* we need full 32bits for entities */
-		if (constraint != 'i' && constraint != 'g')
-			return false;
+		/* We need an immediate, which can hold all bits of an address. */
+		switch (constraint) {
+		case 'e': if (get_mode_size_bits(mode_P) > 32) return false;
+		case 'g': break;
+		case 'i': break;
+		default:  return false;
+		}
 		if (kind == X86_IMM_VALUE)
 			kind = X86_IMM_ADDR;
 	}
