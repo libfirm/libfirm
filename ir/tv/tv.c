@@ -649,7 +649,7 @@ ir_tarval *tarval_convert_to(ir_tarval const *const src,
 		break;
 
 	case irms_reference:
-		if (mode_is_int(dst_mode)) {
+		if (get_mode_arithmetic(dst_mode) == irma_twos_complement) {
 			sc_word *const buffer = ALLOCAN(sc_word, sc_value_length);
 			memcpy(buffer, src->value, sc_value_length);
 			unsigned bits = get_mode_size_bits(src->mode);
@@ -671,61 +671,47 @@ ir_tarval *tarval_convert_to(ir_tarval const *const src,
 	return tarval_bad;
 }
 
-ir_tarval *tarval_bitcast(ir_tarval const *src, ir_mode *dst_mode)
+ir_tarval *tarval_bitcast(ir_tarval const *src, ir_mode *const dst_mode)
 {
-	const ir_mode *src_mode = get_tarval_mode(src);
+	ir_mode *const src_mode = get_tarval_mode(src);
 	if (src_mode == dst_mode)
 		return (ir_tarval*)src;
-	unsigned size = get_mode_size_bits(src_mode);
+	unsigned const size = get_mode_size_bits(src_mode);
 	assert(get_mode_size_bits(dst_mode) == size);
 
-	unsigned       buf_len = size/CHAR_BIT + (size%CHAR_BIT != 0);
-	unsigned char *buffer  = ALLOCAN(unsigned char, buf_len);
+	unsigned       const buf_len = size/CHAR_BIT + (size%CHAR_BIT != 0);
+	unsigned char *const buffer  = ALLOCAN(unsigned char, buf_len);
 	tarval_to_bytes(buffer, src);
 	return new_tarval_from_bytes(buffer, dst_mode);
 }
 
 ir_tarval *tarval_not(ir_tarval const *const a)
 {
-	switch (get_mode_sort(a->mode)) {
-	case irms_reference:
-	case irms_int_number: {
-		sc_word *const buffer = ALLOCAN(sc_word, sc_value_length);
-		sc_not(a->value, buffer);
-		return get_int_tarval(buffer, a->mode);
-	}
+	ir_mode *const mode = a->mode;
+	if (get_mode_sort(mode) == irms_internal_boolean)
+		return a == tarval_b_true ? tarval_b_false : tarval_b_true;
 
-	case irms_internal_boolean:
-		if (a == tarval_b_true)
-			return tarval_b_false;
-		if (a == tarval_b_false)
-			return tarval_b_true;
-		return tarval_bad;
-
-	case irms_auxiliary:
-	case irms_data:
-	case irms_float_number:
-		break;
-	}
-	panic("invalid mode sort");
+	assert(get_mode_arithmetic(mode) == irma_twos_complement);
+	sc_word *const buffer = ALLOCAN(sc_word, sc_value_length);
+	sc_not(a->value, buffer);
+	return get_int_tarval(buffer, mode);
 }
 
 ir_tarval *tarval_neg(ir_tarval const *const a)
 {
-	/* note: negation is allowed even for unsigned modes. */
-
-	switch (get_mode_sort(a->mode)) {
+	ir_mode *const mode = a->mode;
+	switch (get_mode_sort(mode)) {
 	case irms_int_number:
 	case irms_reference: {
 		sc_word *const buffer = ALLOCAN(sc_word, sc_value_length);
 		sc_neg(a->value, buffer);
-		return get_int_tarval_overflow(buffer, a->mode);
+		return get_int_tarval_overflow(buffer, mode);
 	}
 
 	case irms_float_number: {
 		fp_value *const buffer = (fp_value*)ALLOCAN(char, fp_value_size);
 		fc_neg((const fp_value*)a->value, buffer);
-		return get_fp_tarval(buffer, a->mode);
+		return get_fp_tarval(buffer, mode);
 	}
 
 	case irms_auxiliary:
@@ -744,22 +730,23 @@ ir_tarval *tarval_add(ir_tarval const *a, ir_tarval const *b)
 		a = tarval_convert_to(a, b->mode);
 	}
 
-	assert(a->mode == b->mode);
+	ir_mode *const mode = a->mode;
+	assert(mode == b->mode);
 
-	switch (get_mode_sort(a->mode)) {
+	switch (get_mode_sort(mode)) {
 	case irms_reference:
 	case irms_int_number: {
 		/* modes of a,b are equal, so result has mode of a as this might be the
 		 * character */
 		sc_word *const buffer = ALLOCAN(sc_word, sc_value_length);
 		sc_add(a->value, b->value, buffer);
-		return get_int_tarval_overflow(buffer, a->mode);
+		return get_int_tarval_overflow(buffer, mode);
 	}
 
 	case irms_float_number: {
 		fp_value *const buffer = (fp_value*)ALLOCAN(char, fp_value_size);
 		fc_add((const fp_value*)a->value, (const fp_value*)b->value, buffer);
-		return get_fp_tarval(buffer, a->mode);
+		return get_fp_tarval(buffer, mode);
 	}
 
 	case irms_auxiliary:
@@ -813,21 +800,22 @@ ir_tarval *tarval_sub(ir_tarval const *a, ir_tarval const *b)
 
 ir_tarval *tarval_mul(ir_tarval const *const a, ir_tarval const *const b)
 {
-	assert(a->mode == b->mode);
+	ir_mode *const mode = a->mode;
+	assert(mode == b->mode);
 
-	switch (get_mode_sort(a->mode)) {
+	switch (get_mode_sort(mode)) {
 	case irms_int_number:
 	case irms_reference: {
 		/* modes of a,b are equal */
 		sc_word *const buffer = ALLOCAN(sc_word, sc_value_length);
 		sc_mul(a->value, b->value, buffer);
-		return get_int_tarval_overflow(buffer, a->mode);
+		return get_int_tarval_overflow(buffer, mode);
 	}
 
 	case irms_float_number: {
 		fp_value *const buffer = (fp_value*)ALLOCAN(char, fp_value_size);
 		fc_mul((const fp_value*)a->value, (const fp_value*)b->value, buffer);
-		return get_fp_tarval(buffer, a->mode);
+		return get_fp_tarval(buffer, mode);
 	}
 
 	case irms_auxiliary:
@@ -871,56 +859,34 @@ ir_tarval *tarval_div(ir_tarval const *const a, ir_tarval const *const b)
 
 ir_tarval *tarval_mod(ir_tarval const *const a, ir_tarval const *const b)
 {
-	assert((a->mode == b->mode) && mode_is_int(a->mode));
+	ir_mode *const mode = a->mode;
+	assert(b->mode == mode);
+	assert(get_mode_arithmetic(mode) == irma_twos_complement);
 
-	switch (get_mode_sort(a->mode)) {
-	case irms_int_number:
-	case irms_reference: {
-		/* x/0 error */
-		if (b == get_mode_null(b->mode))
-			return tarval_bad;
-		/* modes of a,b are equal */
-		sc_word *const buffer = ALLOCAN(sc_word, sc_value_length);
-		sc_mod(a->value, b->value, buffer);
-		return get_int_tarval(buffer, a->mode);
-	}
-
-	case irms_auxiliary:
-	case irms_data:
-	case irms_internal_boolean:
-	case irms_float_number:
-		break;
-	}
-	panic("invalid mode sort");
+	/* x/0 error */
+	if (b == get_mode_null(mode))
+		return tarval_bad;
+	sc_word *const buffer = ALLOCAN(sc_word, sc_value_length);
+	sc_mod(a->value, b->value, buffer);
+	return get_int_tarval(buffer, mode);
 }
 
 ir_tarval *tarval_divmod(ir_tarval const *const a, ir_tarval const *const b,
                          ir_tarval **const mod)
 {
-	assert((a->mode == b->mode) && mode_is_int(a->mode));
+	ir_mode *const mode = a->mode;
+	assert(b->mode == mode);
+	assert(get_mode_arithmetic(mode) == irma_twos_complement);
 
-	switch (get_mode_sort(a->mode)) {
-	case irms_int_number:
-	case irms_reference: {
-		sc_word *div_res = ALLOCAN(sc_word, sc_value_length);
-		sc_word *mod_res = ALLOCAN(sc_word, sc_value_length);
+	sc_word *const div_res = ALLOCAN(sc_word, sc_value_length);
+	sc_word *const mod_res = ALLOCAN(sc_word, sc_value_length);
 
-		/* x/0 error */
-		if (b == get_mode_null(b->mode))
-			return tarval_bad;
-		/* modes of a,b are equal */
-		sc_divmod(a->value, b->value, div_res, mod_res);
-		*mod = get_int_tarval(mod_res, a->mode);
-		return get_int_tarval(div_res, a->mode);
-	}
-
-	case irms_auxiliary:
-	case irms_data:
-	case irms_internal_boolean:
-	case irms_float_number:
-		break;
-	}
-	panic("invalid mode sort");
+	/* x/0 error */
+	if (b == get_mode_null(mode))
+		return tarval_bad;
+	sc_divmod(a->value, b->value, div_res, mod_res);
+	*mod = get_int_tarval(mod_res, mode);
+	return get_int_tarval(div_res, mode);
 }
 
 ir_tarval *tarval_abs(ir_tarval const *const a)
@@ -932,135 +898,86 @@ ir_tarval *tarval_abs(ir_tarval const *const a)
 
 ir_tarval *tarval_and(ir_tarval const *const a, ir_tarval const *const b)
 {
-	assert(a->mode == b->mode);
-
-	switch (get_mode_sort(a->mode)) {
-	case irms_internal_boolean:
+	ir_mode *const mode = a->mode;
+	assert(b->mode == mode);
+	if (get_mode_sort(mode) == irms_internal_boolean)
 		return a == tarval_b_false ? (ir_tarval*)a : (ir_tarval*)b;
 
-	case irms_reference:
-	case irms_int_number: {
-		sc_word *const buffer = ALLOCAN(sc_word, sc_value_length);
-		sc_and(a->value, b->value, buffer);
-		return get_int_tarval(buffer, a->mode);
-	}
-
-	case irms_auxiliary:
-	case irms_data:
-	case irms_float_number:
-		break;
-	}
-	panic("invalid mode sort");
+	assert(get_mode_arithmetic(mode) == irma_twos_complement);
+	sc_word *const buffer = ALLOCAN(sc_word, sc_value_length);
+	sc_and(a->value, b->value, buffer);
+	return get_int_tarval(buffer, mode);
 }
 
 ir_tarval *tarval_andnot(ir_tarval const *const a, ir_tarval const *const b)
 {
-	assert(a->mode == b->mode);
-
-	switch (get_mode_sort(a->mode)) {
-	case irms_internal_boolean:
-		return a == tarval_b_true && b == tarval_b_false ? tarval_b_true : tarval_b_false;
-
-	case irms_reference:
-	case irms_int_number: {
-		sc_word *const buffer = ALLOCAN(sc_word, sc_value_length);
-		sc_andnot(a->value, b->value, buffer);
-		return get_int_tarval(buffer, a->mode);
-	}
-
-	case irms_auxiliary:
-	case irms_data:
-	case irms_float_number:
-		break;
-	}
-	panic("invalid mode sort");
+	ir_mode *const mode = a->mode;
+	assert(b->mode == mode);
+	if (get_mode_sort(mode) == irms_internal_boolean)
+		return a == tarval_b_true && b == tarval_b_false ? tarval_b_true
+		                                                 : tarval_b_false;
+	assert(get_mode_arithmetic(mode) == irma_twos_complement);
+	sc_word *const buffer = ALLOCAN(sc_word, sc_value_length);
+	sc_andnot(a->value, b->value, buffer);
+	return get_int_tarval(buffer, mode);
 }
 
 ir_tarval *tarval_or(ir_tarval const *const a, ir_tarval const *const b)
 {
-	assert(a->mode == b->mode);
-
-	switch (get_mode_sort(a->mode)) {
-	case irms_internal_boolean:
+	ir_mode *const mode = a->mode;
+	assert(b->mode == mode);
+	if (get_mode_sort(mode) == irms_internal_boolean)
 		return a == tarval_b_true ? (ir_tarval*)a : (ir_tarval*)b;
 
-	case irms_reference:
-	case irms_int_number: {
-		sc_word *const buffer = ALLOCAN(sc_word, sc_value_length);
-		sc_or(a->value, b->value, buffer);
-		return get_int_tarval(buffer, a->mode);
-	}
-
-	case irms_auxiliary:
-	case irms_data:
-	case irms_float_number:
-		break;
-	}
-	panic("invalid mode sort");
+	assert(get_mode_arithmetic(mode) == irma_twos_complement);
+	sc_word *const buffer = ALLOCAN(sc_word, sc_value_length);
+	sc_or(a->value, b->value, buffer);
+	return get_int_tarval(buffer, mode);
 }
 
 ir_tarval *tarval_ornot(ir_tarval const *const a, ir_tarval const *const b)
 {
-	assert(a->mode == b->mode);
-
-	switch (get_mode_sort(a->mode)) {
-	case irms_internal_boolean:
-		return a == tarval_b_true || b == tarval_b_false ? tarval_b_true : tarval_b_false;
-
-	case irms_reference:
-	case irms_int_number: {
-		sc_word *const buffer = ALLOCAN(sc_word, sc_value_length);
-		sc_ornot(a->value, b->value, buffer);
-		return get_int_tarval(buffer, a->mode);
-	}
-
-	case irms_auxiliary:
-	case irms_data:
-	case irms_float_number:
-		break;
-	}
-	panic("invalid mode sort");
+	ir_mode *const mode = a->mode;
+	assert(b->mode == mode);
+	if (get_mode_sort(mode) == irms_internal_boolean)
+		return a == tarval_b_true || b == tarval_b_false ? tarval_b_true
+		                                                 : tarval_b_false;
+	assert(get_mode_arithmetic(mode) == irma_twos_complement);
+	sc_word *const buffer = ALLOCAN(sc_word, sc_value_length);
+	sc_ornot(a->value, b->value, buffer);
+	return get_int_tarval(buffer, mode);
 }
 
 ir_tarval *tarval_eor(ir_tarval const *const a, ir_tarval const *const b)
 {
-	assert(a->mode == b->mode);
+	ir_mode *const mode = a->mode;
+	assert(b->mode == mode);
+	if (get_mode_sort(mode) == irms_internal_boolean)
+		return a == b ? tarval_b_false : tarval_b_true;
 
-	switch (get_mode_sort(a->mode)) {
-	case irms_internal_boolean:
-		return (a == b)? tarval_b_false : tarval_b_true;
-
-	case irms_reference:
-	case irms_int_number: {
-		sc_word *const buffer = ALLOCAN(sc_word, sc_value_length);
-		sc_xor(a->value, b->value, buffer);
-		return get_int_tarval(buffer, a->mode);
-	}
-
-	case irms_auxiliary:
-	case irms_data:
-	case irms_float_number:
-		break;
-	}
-	panic("invalid mode sort");
+	assert(get_mode_arithmetic(mode) == irma_twos_complement);
+	sc_word *const buffer = ALLOCAN(sc_word, sc_value_length);
+	sc_xor(a->value, b->value, buffer);
+	return get_int_tarval(buffer, mode);
 }
 
 ir_tarval *tarval_shl(ir_tarval const *const a, ir_tarval const *const b)
 {
-	ir_mode *a_mode = a->mode;
-	assert(mode_is_int(a_mode) && mode_is_int(b->mode));
+	ir_mode *const a_mode = a->mode;
+	assert(get_mode_arithmetic(a_mode) == irma_twos_complement);
+	assert(get_mode_arithmetic(b->mode) == irma_twos_complement);
 
 	sc_word *temp_val;
 	if (get_mode_modulo_shift(a_mode) != 0) {
 		temp_val = ALLOCAN(sc_word, sc_value_length);
-		sc_word *temp2 = ALLOCAN(sc_word, sc_value_length);
+		sc_word *const temp2 = ALLOCAN(sc_word, sc_value_length);
 		sc_val_from_ulong(get_mode_modulo_shift(a_mode), temp2);
 		sc_mod(b->value, temp2, temp_val);
 	} else {
 		temp_val = (sc_word*)b->value;
 	}
 
-	sc_word *temp = ALLOCAN(sc_word, sc_value_length);
+	sc_word *const temp = ALLOCAN(sc_word, sc_value_length);
 	sc_shl(a->value, temp_val, temp);
 	return get_int_tarval(temp, a_mode);
 }
@@ -1068,8 +985,9 @@ ir_tarval *tarval_shl(ir_tarval const *const a, ir_tarval const *const b)
 ir_tarval *tarval_shl_unsigned(ir_tarval const *const a, unsigned b)
 {
 	ir_mode *const mode = a->mode;
-	assert(mode_is_int(mode));
-	unsigned modulo = get_mode_modulo_shift(mode);
+	assert(get_mode_arithmetic(mode) == irma_twos_complement);
+
+	unsigned const modulo = get_mode_modulo_shift(mode);
 	if (modulo != 0)
 		b %= modulo;
 	assert((unsigned)(long)b==b);
@@ -1081,20 +999,21 @@ ir_tarval *tarval_shl_unsigned(ir_tarval const *const a, unsigned b)
 
 ir_tarval *tarval_shr(ir_tarval const *const a, ir_tarval const *const b)
 {
-	ir_mode *a_mode = a->mode;
-	assert(mode_is_int(a_mode) && mode_is_int(b->mode));
+	ir_mode *const a_mode = a->mode;
+	assert(get_mode_arithmetic(a_mode) == irma_twos_complement);
+	assert(get_mode_arithmetic(b->mode) == irma_twos_complement);
 
 	sc_word *temp_val;
 	if (get_mode_modulo_shift(a_mode) != 0) {
 		temp_val = ALLOCAN(sc_word, sc_value_length);
-		sc_word *temp2 = ALLOCAN(sc_word, sc_value_length);
+		sc_word *const temp2 = ALLOCAN(sc_word, sc_value_length);
 		sc_val_from_ulong(get_mode_modulo_shift(a_mode), temp2);
 		sc_mod(b->value, temp2, temp_val);
 	} else {
 		temp_val = (sc_word*)b->value;
 	}
 
-	sc_word *temp = ALLOCAN(sc_word, sc_value_length);
+	sc_word *const temp = ALLOCAN(sc_word, sc_value_length);
 	/* workaround for unnecessary internal higher precision */
 	memcpy(temp, a->value, sc_value_length);
 	sc_zero_extend(temp, get_mode_size_bits(a_mode));
@@ -1105,13 +1024,14 @@ ir_tarval *tarval_shr(ir_tarval const *const a, ir_tarval const *const b)
 ir_tarval *tarval_shr_unsigned(ir_tarval const *const a, unsigned b)
 {
 	ir_mode *const mode = a->mode;
-	assert(mode_is_int(mode));
-	unsigned modulo = get_mode_modulo_shift(mode);
+	assert(get_mode_arithmetic(mode) == irma_twos_complement);
+
+	unsigned const modulo = get_mode_modulo_shift(mode);
 	if (modulo != 0)
 		b %= modulo;
 	assert((unsigned)(long)b==b);
 
-	sc_word *temp = ALLOCAN(sc_word, sc_value_length);
+	sc_word *const temp = ALLOCAN(sc_word, sc_value_length);
 	/* workaround for unnecessary internal higher precision */
 	memcpy(temp, a->value, sc_value_length);
 	sc_zero_extend(temp, get_mode_size_bits(a->mode));
@@ -1121,20 +1041,21 @@ ir_tarval *tarval_shr_unsigned(ir_tarval const *const a, unsigned b)
 
 ir_tarval *tarval_shrs(ir_tarval const *const a, ir_tarval const *const b)
 {
-	ir_mode *a_mode = a->mode;
-	assert(mode_is_int(a_mode) && mode_is_int(b->mode));
+	ir_mode *const a_mode = a->mode;
+	assert(get_mode_arithmetic(a_mode) == irma_twos_complement);
+	assert(get_mode_arithmetic(b->mode) == irma_twos_complement);
 
 	sc_word *temp_val;
 	if (get_mode_modulo_shift(a_mode) != 0) {
 		temp_val = ALLOCAN(sc_word, sc_value_length);
-		sc_word *temp2 = ALLOCAN(sc_word, sc_value_length);
+		sc_word *const temp2 = ALLOCAN(sc_word, sc_value_length);
 		sc_val_from_ulong(get_mode_modulo_shift(a_mode), temp2);
 		sc_mod(b->value, temp2, temp_val);
 	} else {
 		temp_val = (sc_word*)b->value;
 	}
 
-	sc_word *temp = ALLOCAN(sc_word, sc_value_length);
+	sc_word *const temp = ALLOCAN(sc_word, sc_value_length);
 	sc_shrs(a->value, temp_val, get_mode_size_bits(a->mode), temp);
 	return get_int_tarval(temp, a->mode);
 }
@@ -1142,13 +1063,14 @@ ir_tarval *tarval_shrs(ir_tarval const *const a, ir_tarval const *const b)
 ir_tarval *tarval_shrs_unsigned(ir_tarval const *const a, unsigned b)
 {
 	ir_mode *const mode = a->mode;
-	assert(mode_is_int(mode));
-	unsigned modulo = get_mode_modulo_shift(mode);
+	assert(get_mode_arithmetic(mode) == irma_twos_complement);
+
+	unsigned const modulo = get_mode_modulo_shift(mode);
 	if (modulo != 0)
 		b %= modulo;
 	assert((unsigned)(long)b==b);
 
-	sc_word *temp = ALLOCAN(sc_word, sc_value_length);
+	sc_word *const temp = ALLOCAN(sc_word, sc_value_length);
 	sc_shrsI(a->value, (long)b, get_mode_size_bits(mode), temp);
 	return get_int_tarval(temp, mode);
 }
