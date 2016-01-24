@@ -67,7 +67,7 @@ struct ir_tarval {
 /*
  * Access routines for tarval fields ========================================
  */
-static inline ir_mode *get_tarval_mode_(const ir_tarval *tv)
+static inline ir_mode *get_tarval_mode_(ir_tarval const *tv)
 {
 	return tv->mode;
 }
@@ -92,7 +92,7 @@ static inline ir_tarval *get_tarval_b_true_(void)
 	return tarval_b_true;
 }
 
-static inline int tarval_is_constant_(const ir_tarval *tv)
+static inline int tarval_is_constant_(ir_tarval const *tv)
 {
 	return tv != tarval_bad && tv != tarval_unknown;
 }
@@ -117,7 +117,7 @@ static inline bool is_tarval(const void *thing)
  * If the output is bigger than buf_len the behaviour is undefined. The
  * final value may be near the end of the buffer, use the return value!
  */
-const char *ir_tarval_to_ascii(char *buf, size_t buf_len, ir_tarval *tv);
+const char *ir_tarval_to_ascii(char *buf, size_t buf_len, ir_tarval const *tv);
 
 /**
  * Converts ascii representation to tarval with specified mode. Compatible with
@@ -125,11 +125,11 @@ const char *ir_tarval_to_ascii(char *buf, size_t buf_len, ir_tarval *tv);
  */
 ir_tarval *ir_tarval_from_ascii(const char *buf, ir_mode *mode);
 
-uint64_t get_tarval_uint64(const ir_tarval *tv);
+uint64_t get_tarval_uint64(ir_tarval const *tv);
 
-bool tarval_is_uint64(const ir_tarval *tv);
+bool tarval_is_uint64(ir_tarval const *tv);
 
-bool tarval_is_minus_one(const ir_tarval *tv);
+bool tarval_is_minus_one(ir_tarval const *tv);
 
 ir_tarval *get_tarval_small(ir_mode *mode);
 

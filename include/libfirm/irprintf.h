@@ -96,7 +96,7 @@ FIRM_API int ir_obst_vprintf(struct obstack *obst, const char *fmt,
  * @param buflen  the length of the buffer
  * @param tv      the tarval
  */
-FIRM_API int tarval_snprintf(char *buf, size_t buflen, ir_tarval *tv);
+FIRM_API int tarval_snprintf(char *buf, size_t buflen, ir_tarval const *tv);
 
 /** @} */
 #include "end.h"

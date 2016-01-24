@@ -157,18 +157,18 @@ FIRM_API ir_tarval *new_tarval_from_bytes(unsigned char const *buf,
  * @param payload    if != NULL puts the integer tarval into the mantissa.
  */
 FIRM_API ir_tarval *new_tarval_nan(ir_mode *mode, int signaling,
-                                   ir_tarval *payload);
+                                   ir_tarval const *payload);
 
 /**
  * Write tarval to a sequence of bytes. The value is written in a
  * "little endian" fashion which means the less significant bytes come first.
  */
-FIRM_API void tarval_to_bytes(unsigned char *buffer, ir_tarval *tv);
+FIRM_API void tarval_to_bytes(unsigned char *buffer, ir_tarval const *tv);
 
 /**
  * Returns value as long if possible.
  */
-FIRM_API long get_tarval_long(const ir_tarval *tv);
+FIRM_API long get_tarval_long(ir_tarval const *tv);
 
 /**
  * This validates if get_tarval_long() will return something sensible.
@@ -179,7 +179,7 @@ FIRM_API long get_tarval_long(const ir_tarval *tv);
  *
  * @param tv    the tarval
  */
-FIRM_API int tarval_is_long(const ir_tarval *tv);
+FIRM_API int tarval_is_long(ir_tarval const *tv);
 
 /**
  * Constructor function for new tarvals.
@@ -224,12 +224,12 @@ FIRM_API ir_tarval *new_tarval_from_long_double(long double d, ir_mode *mode);
  *
  * @param tv    the tarval
  */
-FIRM_API double get_tarval_double(const ir_tarval *tv);
+FIRM_API double get_tarval_double(ir_tarval const *tv);
 
 /**
  * same as get_tarval_double but returns a long double value
  */
-FIRM_API long double get_tarval_long_double(const ir_tarval *tv);
+FIRM_API long double get_tarval_long_double(ir_tarval const *tv);
 
 /**
  * This validates if tarval_to_double() will return a satisfying
@@ -238,47 +238,47 @@ FIRM_API long double get_tarval_long_double(const ir_tarval *tv);
  *
  * @param tv    the tarval
  */
-FIRM_API int tarval_is_double(const ir_tarval *tv);
+FIRM_API int tarval_is_double(ir_tarval const *tv);
 
 /**
  * Returns the mode of the tarval.
  *
  * @param tv    the tarval
  */
-FIRM_API ir_mode *get_tarval_mode(const ir_tarval *tv);
+FIRM_API ir_mode *get_tarval_mode(ir_tarval const *tv);
 
 /**
  * Returns 1 if tv is negative
  *
  * @param tv    the tarval
  */
-FIRM_API int tarval_is_negative(const ir_tarval *tv);
+FIRM_API int tarval_is_negative(ir_tarval const *tv);
 
 /**
  * Returns 1 if tv is null
  *
  * @param tv    the tarval
  */
-FIRM_API int tarval_is_null(const ir_tarval *tv);
+FIRM_API int tarval_is_null(ir_tarval const *tv);
 
 /**
  * Returns 1 if tv is the "one"
  *
  * @param tv    the tarval
  */
-FIRM_API int tarval_is_one(const ir_tarval *tv);
+FIRM_API int tarval_is_one(ir_tarval const *tv);
 
 /**
  * returns non-zero if all bits in the tarval are set.
  * This means the value is -1 for signed modes with irma_twos_complement.
  */
-FIRM_API int tarval_is_all_one(const ir_tarval *tv);
+FIRM_API int tarval_is_all_one(ir_tarval const *tv);
 
 /**
  * Returns non-zero if the tarval is a constant (i.e. NOT
  * a reserved tarval like bad, undef, reachable etc.)
  */
-FIRM_API int tarval_is_constant(const ir_tarval *tv);
+FIRM_API int tarval_is_constant(ir_tarval const *tv);
 
 /** The 'bad' tarval. Representing "no value", do not confuse this with
  * tarval_unknown. */
@@ -323,7 +323,7 @@ FIRM_API int tarval_get_wrap_on_overflow(void);
  * @param a   the first tarval to be compared
  * @param b   the second tarval to be compared
  */
-FIRM_API ir_relation tarval_cmp(const ir_tarval *a, const ir_tarval *b);
+FIRM_API ir_relation tarval_cmp(ir_tarval const *a, ir_tarval const *b);
 
 /**
  * Converts a tarval to another mode.
@@ -347,14 +347,14 @@ FIRM_API ir_relation tarval_cmp(const ir_tarval *a, const ir_tarval *b);
  *    FIRM documentation for conversion rules
  *    mode_is_smaller defined in irmode.h
  */
-FIRM_API ir_tarval *tarval_convert_to(ir_tarval *src, ir_mode *mode);
+FIRM_API ir_tarval *tarval_convert_to(ir_tarval const *src, ir_mode *mode);
 
 /**
  * Converts a tarval to another mode by reinterpreting the contained
  * bits. This is only allowed if the source and destination mode have the
  * same number of bits.
  */
-FIRM_API ir_tarval *tarval_bitcast(ir_tarval *src, ir_mode *mode);
+FIRM_API ir_tarval *tarval_bitcast(ir_tarval const *src, ir_mode *mode);
 
 /*
  * These function implement basic computations representable as opcodes
@@ -388,7 +388,7 @@ FIRM_API ir_tarval *tarval_bitcast(ir_tarval *src, ir_mode *mode);
  *
  * @return ~a or tarval_bad
  */
-FIRM_API ir_tarval *tarval_not(ir_tarval *a);
+FIRM_API ir_tarval *tarval_not(ir_tarval const *a);
 
 /**
  * Arithmetic Negation of a tarval.
@@ -397,7 +397,7 @@ FIRM_API ir_tarval *tarval_not(ir_tarval *a);
  *
  * @return -a or tarval_bad
  */
-FIRM_API ir_tarval *tarval_neg(ir_tarval *a);
+FIRM_API ir_tarval *tarval_neg(ir_tarval const *a);
 
 /**
  * Addition of two tarvals.
@@ -407,7 +407,7 @@ FIRM_API ir_tarval *tarval_neg(ir_tarval *a);
  *
  * @return a + b or tarval_bad
  */
-FIRM_API ir_tarval *tarval_add(ir_tarval *a, ir_tarval *b);
+FIRM_API ir_tarval *tarval_add(ir_tarval const *a, ir_tarval const *b);
 
 /**
  * Subtraction from a tarval.
@@ -417,7 +417,7 @@ FIRM_API ir_tarval *tarval_add(ir_tarval *a, ir_tarval *b);
  *
  * @return a - b or tarval_bad
  */
-FIRM_API ir_tarval *tarval_sub(ir_tarval *a, ir_tarval *b);
+FIRM_API ir_tarval *tarval_sub(ir_tarval const *a, ir_tarval const *b);
 
 /**
  * Multiplication of tarvals.
@@ -427,7 +427,7 @@ FIRM_API ir_tarval *tarval_sub(ir_tarval *a, ir_tarval *b);
  *
  * @return a * b or tarval_bad
  */
-FIRM_API ir_tarval *tarval_mul(ir_tarval *a, ir_tarval *b);
+FIRM_API ir_tarval *tarval_mul(ir_tarval const *a, ir_tarval const *b);
 
 /**
  * Integer division of two tarvals.
@@ -437,7 +437,7 @@ FIRM_API ir_tarval *tarval_mul(ir_tarval *a, ir_tarval *b);
  *
  * @return a / b or tarval_bad
  */
-FIRM_API ir_tarval *tarval_div(ir_tarval *a, ir_tarval *b);
+FIRM_API ir_tarval *tarval_div(ir_tarval const *a, ir_tarval const *b);
 
 /**
  * Remainder of integer division.
@@ -447,7 +447,7 @@ FIRM_API ir_tarval *tarval_div(ir_tarval *a, ir_tarval *b);
  *
  * @return a % b or tarval_bad
  */
-FIRM_API ir_tarval *tarval_mod(ir_tarval *a, ir_tarval *b);
+FIRM_API ir_tarval *tarval_mod(ir_tarval const *a, ir_tarval const *b);
 
 /**
  * Integer division AND remainder.
@@ -458,7 +458,8 @@ FIRM_API ir_tarval *tarval_mod(ir_tarval *a, ir_tarval *b);
  *
  * @return a / b or tarval_bad
  */
-FIRM_API ir_tarval *tarval_divmod(ir_tarval *a, ir_tarval *b, ir_tarval **mod_res);
+FIRM_API ir_tarval *tarval_divmod(ir_tarval const *a, ir_tarval const *b,
+                                  ir_tarval **mod_res);
 
 /**
  * Absolute value of a tarval.
@@ -467,7 +468,7 @@ FIRM_API ir_tarval *tarval_divmod(ir_tarval *a, ir_tarval *b, ir_tarval **mod_re
  *
  * @return |a| or tarval_bad
  */
-FIRM_API ir_tarval *tarval_abs(ir_tarval *a);
+FIRM_API ir_tarval *tarval_abs(ir_tarval const *a);
 
 /**
  * Bitwise and of two integer tarvals.
@@ -477,7 +478,7 @@ FIRM_API ir_tarval *tarval_abs(ir_tarval *a);
  *
  * @return a & b or tarval_bad
  */
-FIRM_API ir_tarval *tarval_and(ir_tarval *a, ir_tarval *b);
+FIRM_API ir_tarval *tarval_and(ir_tarval const *a, ir_tarval const *b);
 
 /**
  * Bitwise and not of two integer tarvals.
@@ -487,7 +488,7 @@ FIRM_API ir_tarval *tarval_and(ir_tarval *a, ir_tarval *b);
  *
  * @return a & ~b or tarval_bad
  */
-FIRM_API ir_tarval *tarval_andnot(ir_tarval *a, ir_tarval *b);
+FIRM_API ir_tarval *tarval_andnot(ir_tarval const *a, ir_tarval const *b);
 
 /**
  * Bitwise or of two integer tarvals.
@@ -497,7 +498,7 @@ FIRM_API ir_tarval *tarval_andnot(ir_tarval *a, ir_tarval *b);
  *
  * @return a | b or tarval_bad
  */
-FIRM_API ir_tarval *tarval_or(ir_tarval *a, ir_tarval *b);
+FIRM_API ir_tarval *tarval_or(ir_tarval const *a, ir_tarval const *b);
 
 /**
  * Bitwise or not of two integer tarvals.
@@ -507,7 +508,7 @@ FIRM_API ir_tarval *tarval_or(ir_tarval *a, ir_tarval *b);
  *
  * @return a | ~b or tarval_bad
  */
-FIRM_API ir_tarval *tarval_ornot(ir_tarval *a, ir_tarval *b);
+FIRM_API ir_tarval *tarval_ornot(ir_tarval const *a, ir_tarval const *b);
 
 /**
  * Bitwise exclusive or of two integer tarvals.
@@ -517,7 +518,7 @@ FIRM_API ir_tarval *tarval_ornot(ir_tarval *a, ir_tarval *b);
  *
  * @return a ^ b or tarval_bad
  */
-FIRM_API ir_tarval *tarval_eor(ir_tarval *a, ir_tarval *b);
+FIRM_API ir_tarval *tarval_eor(ir_tarval const *a, ir_tarval const *b);
 
 /**
  * Logical Left shift.
@@ -527,13 +528,13 @@ FIRM_API ir_tarval *tarval_eor(ir_tarval *a, ir_tarval *b);
  *
  * @return a << b or tarval_bad
  */
-FIRM_API ir_tarval *tarval_shl(ir_tarval *a, ir_tarval *b);
+FIRM_API ir_tarval *tarval_shl(ir_tarval const *a, ir_tarval const *b);
 
 /**
  * logical left shift (variant with unsigned argument).
  * @see tarval_shl()
  */
-FIRM_API ir_tarval *tarval_shl_unsigned(ir_tarval *a, unsigned b);
+FIRM_API ir_tarval *tarval_shl_unsigned(ir_tarval const *a, unsigned b);
 
 /**
  * Unsigned (logical) right shift.
@@ -543,13 +544,13 @@ FIRM_API ir_tarval *tarval_shl_unsigned(ir_tarval *a, unsigned b);
  *
  * @return a >>u b or tarval_bad
  */
-FIRM_API ir_tarval *tarval_shr(ir_tarval *a, ir_tarval *b);
+FIRM_API ir_tarval *tarval_shr(ir_tarval const *a, ir_tarval const *b);
 
 /**
  * unsigned (logical) right shift (variant with unsigned argument).
  * @see tarval_shr()
  */
-FIRM_API ir_tarval *tarval_shr_unsigned(ir_tarval *a, unsigned b);
+FIRM_API ir_tarval *tarval_shr_unsigned(ir_tarval const *a, unsigned b);
 
 /**
  * Signed (arithmetic) right shift.
@@ -559,13 +560,13 @@ FIRM_API ir_tarval *tarval_shr_unsigned(ir_tarval *a, unsigned b);
  *
  * @return a >>s b or tarval_bad
  */
-FIRM_API ir_tarval *tarval_shrs(ir_tarval *a, ir_tarval *b);
+FIRM_API ir_tarval *tarval_shrs(ir_tarval const *a, ir_tarval const *b);
 
 /**
  * signed (arithmetic) right shift (variant with unsigned argument).
  * @see tarval_shrs()
  */
-FIRM_API ir_tarval *tarval_shrs_unsigned(ir_tarval *a, unsigned b);
+FIRM_API ir_tarval *tarval_shrs_unsigned(ir_tarval const *a, unsigned b);
 
 /**
  * Returns the bitpattern of the bytes_ofs byte.
@@ -593,7 +594,7 @@ FIRM_API ir_tarval *tarval_shrs_unsigned(ir_tarval *a, unsigned b);
  *   The result of this function is undefined if the mode is neither integer
  *   nor float.
  */
-FIRM_API unsigned char get_tarval_sub_bits(const ir_tarval *tv, unsigned byte_ofs);
+FIRM_API unsigned char get_tarval_sub_bits(ir_tarval const *tv, unsigned byte_ofs);
 
 /**
  * Returns the number of set bits in a given (integer) tarval.
@@ -602,7 +603,7 @@ FIRM_API unsigned char get_tarval_sub_bits(const ir_tarval *tv, unsigned byte_of
  *
  * @return number of set bits or -1 on error
  */
-FIRM_API int get_tarval_popcount(const ir_tarval *tv);
+FIRM_API int get_tarval_popcount(ir_tarval const *tv);
 
 /**
  * Returns the number of the lowest set bit in a given (integer) tarval.
@@ -611,7 +612,7 @@ FIRM_API int get_tarval_popcount(const ir_tarval *tv);
  *
  * @return number of lowest set bit or -1 on error
  */
-FIRM_API int get_tarval_lowest_bit(const ir_tarval *tv);
+FIRM_API int get_tarval_lowest_bit(ir_tarval const *tv);
 
 /**
  * Return the number of the highest set bit in a given (integer) tarval.
@@ -620,7 +621,7 @@ FIRM_API int get_tarval_lowest_bit(const ir_tarval *tv);
  *
  * @return number of highest set bit or -1 on error
  */
-FIRM_API int get_tarval_highest_bit(const ir_tarval *tv);
+FIRM_API int get_tarval_highest_bit(ir_tarval const *tv);
 
 /**
  * Returns non-zero if the mantissa of a floating point tarval is zero
@@ -628,7 +629,7 @@ FIRM_API int get_tarval_highest_bit(const ir_tarval *tv);
  *
  * @param tv    the tarval
  */
-FIRM_API int tarval_zero_mantissa(const ir_tarval *tv);
+FIRM_API int tarval_zero_mantissa(ir_tarval const *tv);
 
 /**
  * Returns the exponent of a floating point IEEE-754
@@ -636,7 +637,7 @@ FIRM_API int tarval_zero_mantissa(const ir_tarval *tv);
  *
  * @param tv    the tarval
  */
-FIRM_API int tarval_get_exponent(const ir_tarval *tv);
+FIRM_API int tarval_get_exponent(ir_tarval const *tv);
 
 /**
  * Check if the tarval can be converted to the given mode without
@@ -645,7 +646,7 @@ FIRM_API int tarval_get_exponent(const ir_tarval *tv);
  * @param tv    the tarval
  * @param mode  the mode to convert to
  */
-FIRM_API int tarval_ieee754_can_conv_lossless(const ir_tarval *tv, const ir_mode *mode);
+FIRM_API int tarval_ieee754_can_conv_lossless(ir_tarval const *tv, const ir_mode *mode);
 
 /**
  * Returns non-zero if the result of the last IEEE-754 operation was exact.
@@ -657,28 +658,28 @@ FIRM_API unsigned tarval_ieee754_get_exact(void);
  *
  * @param tv    the tarval
  */
-FIRM_API int tarval_is_nan(const ir_tarval *tv);
+FIRM_API int tarval_is_nan(ir_tarval const *tv);
 
 /**
  * Check if @p tv is a floating point quiet NaN.
  *
  * @param tv    the tarval
  */
-FIRM_API int tarval_is_quiet_nan(const ir_tarval *tv);
+FIRM_API int tarval_is_quiet_nan(ir_tarval const *tv);
 
 /**
  * Check if @p tv is a floating point signaling NaN.
  *
  * @param tv    the tarval
  */
-FIRM_API int tarval_is_signaling_nan(const ir_tarval *tv);
+FIRM_API int tarval_is_signaling_nan(ir_tarval const *tv);
 
 /**
  * Check if the tarval represents a finite value, ie neither NaN nor inf.
  *
  * @param tv    the tarval
  */
-FIRM_API int tarval_is_finite(const ir_tarval *tv);
+FIRM_API int tarval_is_finite(ir_tarval const *tv);
 
 /** @} */
 

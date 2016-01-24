@@ -52,7 +52,7 @@ static unsigned fp_value_size;
 static bool wrap_on_overflow = true;
 
 /** Hash a tarval. */
-static unsigned hash_tv(const ir_tarval *tv)
+static unsigned hash_tv(ir_tarval const *const tv)
 {
 	return hash_combine(hash_ptr(tv->mode), hash_data(tv->value, tv->length));
 }
@@ -60,15 +60,15 @@ static unsigned hash_tv(const ir_tarval *tv)
 static int cmp_tv(const void *p1, const void *p2, size_t n)
 {
 	(void)n;
-	const ir_tarval *tv1 = (const ir_tarval*)p1;
-	const ir_tarval *tv2 = (const ir_tarval*)p2;
+	ir_tarval const *const tv1 = (ir_tarval const*)p1;
+	ir_tarval const *const tv2 = (ir_tarval const*)p2;
 	if (tv1->mode != tv2->mode)
 		return 1;
 	assert(tv1->length == tv2->length);
 	return memcmp(tv1->value, tv2->value, tv1->length);
 }
 
-static ir_tarval *identify_tarval(const ir_tarval *tv)
+static ir_tarval *identify_tarval(ir_tarval const *const tv)
 {
 	unsigned hash = hash_tv(tv);
 	return set_insert(ir_tarval, tarvals, tv, sizeof(ir_tarval) + tv->length,
@@ -231,11 +231,12 @@ ir_tarval *new_tarval_from_long(long l, ir_mode *mode)
 	return get_int_tarval(buffer, mode);
 }
 
-ir_tarval *new_tarval_nan(ir_mode *mode, int signaling, ir_tarval *payload)
+ir_tarval *new_tarval_nan(ir_mode *mode, int signaling,
+                          ir_tarval const *payload)
 {
 	assert(payload == NULL || get_mode_arithmetic(get_tarval_mode(payload))
 	                          == irma_twos_complement);
-	sc_word *sc_payload = payload != NULL ? payload->value : NULL;
+	sc_word const *sc_payload = payload != NULL ? payload->value : NULL;
 
 	assert(mode_is_float(mode));
 	fp_value                 *buffer = (fp_value*)ALLOCAN(char, fp_value_size);
@@ -267,7 +268,7 @@ ir_tarval *new_tarval_from_bytes(unsigned char const *buf,
 	panic("tarval from byte requested for non storable mode");
 }
 
-void tarval_to_bytes(unsigned char *buffer, ir_tarval *tv)
+void tarval_to_bytes(unsigned char *buffer, ir_tarval const *tv)
 {
 	switch (get_mode_arithmetic(get_tarval_mode(tv))) {
 	case irma_ieee754:
@@ -287,7 +288,7 @@ void tarval_to_bytes(unsigned char *buffer, ir_tarval *tv)
 	panic("unexpected arithmetic mode");
 }
 
-int tarval_is_long(const ir_tarval *tv)
+int tarval_is_long(ir_tarval const *tv)
 {
 	ir_mode *mode = get_tarval_mode(tv);
 	if (get_mode_arithmetic(mode) != irma_twos_complement)
@@ -317,7 +318,7 @@ long get_tarval_long(const ir_tarval* tv)
 	return sc_val_to_long(tv->value);
 }
 
-bool tarval_is_uint64(const ir_tarval *tv)
+bool tarval_is_uint64(ir_tarval const *tv)
 {
 	ir_mode *mode = get_tarval_mode(tv);
 	if (get_mode_arithmetic(mode) != irma_twos_complement)
@@ -331,7 +332,7 @@ bool tarval_is_uint64(const ir_tarval *tv)
 	return sc_comp(tv->value, temp) & ir_relation_less_equal;
 }
 
-uint64_t get_tarval_uint64(const ir_tarval *tv)
+uint64_t get_tarval_uint64(ir_tarval const *tv)
 {
 	assert(tarval_is_uint64(tv));
 	return sc_val_to_uint64(tv->value);
@@ -351,23 +352,23 @@ ir_tarval *new_tarval_from_double(double d, ir_mode *mode)
 	return new_tarval_from_long_double(d, mode);
 }
 
-int tarval_is_double(const ir_tarval *tv)
+int tarval_is_double(ir_tarval const *tv)
 {
 	return mode_is_float(tv->mode);
 }
 
-long double get_tarval_long_double(const ir_tarval *tv)
+long double get_tarval_long_double(ir_tarval const *tv)
 {
 	assert(tarval_is_double(tv));
 	return fc_val_to_ieee754((const fp_value*) tv->value);
 }
 
-double get_tarval_double(const ir_tarval *tv)
+double get_tarval_double(ir_tarval const *tv)
 {
 	return get_tarval_long_double(tv);
 }
 
-ir_mode *(get_tarval_mode)(const ir_tarval *tv)
+ir_mode *(get_tarval_mode)(ir_tarval const *tv)
 {
 	return get_tarval_mode_(tv);
 }
@@ -382,7 +383,7 @@ ir_mode *(get_tarval_mode)(const ir_tarval *tv)
  * therefore the irmode functions should be preferred to the functions below.
  */
 
-int (tarval_is_constant)(const ir_tarval *tv)
+int (tarval_is_constant)(ir_tarval const *tv)
 {
 	return tarval_is_constant_(tv);
 }
@@ -484,7 +485,7 @@ void init_mode_values(ir_mode* mode)
 	}
 }
 
-int tarval_is_negative(const ir_tarval *a)
+int tarval_is_negative(ir_tarval const *const a)
 {
 	switch (get_mode_sort(a->mode)) {
 	case irms_int_number:
@@ -506,22 +507,22 @@ int tarval_is_negative(const ir_tarval *a)
 	panic("invalid mode sort");
 }
 
-int tarval_is_null(const ir_tarval *tv)
+int tarval_is_null(ir_tarval const *tv)
 {
 	return tv == get_tarval_mode(tv)->null && tv != tarval_bad;
 }
 
-int tarval_is_one(const ir_tarval *tv)
+int tarval_is_one(ir_tarval const *tv)
 {
 	return tv == get_tarval_mode(tv)->one && tv != tarval_bad;
 }
 
-int tarval_is_all_one(const ir_tarval *tv)
+int tarval_is_all_one(ir_tarval const *tv)
 {
 	return tv == get_tarval_mode(tv)->all_one && tv != tarval_bad;
 }
 
-bool tarval_is_minus_one(const ir_tarval *tv)
+bool tarval_is_minus_one(ir_tarval const *tv)
 {
 	assert(mode_is_float(get_tarval_mode(tv)));
 	const fp_value *val = (const fp_value*)tv->value;
@@ -529,7 +530,7 @@ bool tarval_is_minus_one(const ir_tarval *tv)
 	    && fc_get_exponent(val) == 0 && !fc_is_inf(val) && !fc_is_nan(val);
 }
 
-ir_relation tarval_cmp(const ir_tarval *a, const ir_tarval *b)
+ir_relation tarval_cmp(ir_tarval const *const a, ir_tarval const *const b)
 {
 	if (a == tarval_unknown || b == tarval_unknown)
 		return ir_relation_true;
@@ -563,10 +564,10 @@ ir_relation tarval_cmp(const ir_tarval *a, const ir_tarval *b)
 	panic("invalid mode sort");
 }
 
-ir_tarval *tarval_convert_to(ir_tarval *src, ir_mode *dst_mode)
+ir_tarval *tarval_convert_to(ir_tarval const *src, ir_mode *dst_mode)
 {
 	if (src->mode == dst_mode)
-		return src;
+		return (ir_tarval*)src;
 
 	switch (get_mode_sort(src->mode)) {
 	/* cast float to something */
@@ -669,11 +670,11 @@ ir_tarval *tarval_convert_to(ir_tarval *src, ir_mode *dst_mode)
 	return tarval_bad;
 }
 
-ir_tarval *tarval_bitcast(ir_tarval *src, ir_mode *dst_mode)
+ir_tarval *tarval_bitcast(ir_tarval const *src, ir_mode *dst_mode)
 {
 	const ir_mode *src_mode = get_tarval_mode(src);
 	if (src_mode == dst_mode)
-		return src;
+		return (ir_tarval*)src;
 	unsigned size = get_mode_size_bits(src_mode);
 	assert(get_mode_size_bits(dst_mode) == size);
 
@@ -683,7 +684,7 @@ ir_tarval *tarval_bitcast(ir_tarval *src, ir_mode *dst_mode)
 	return new_tarval_from_bytes(buffer, dst_mode);
 }
 
-ir_tarval *tarval_not(ir_tarval *a)
+ir_tarval *tarval_not(ir_tarval const *const a)
 {
 	switch (get_mode_sort(a->mode)) {
 	case irms_reference:
@@ -708,7 +709,7 @@ ir_tarval *tarval_not(ir_tarval *a)
 	panic("invalid mode sort");
 }
 
-ir_tarval *tarval_neg(ir_tarval *a)
+ir_tarval *tarval_neg(ir_tarval const *const a)
 {
 	/* note: negation is allowed even for unsigned modes. */
 
@@ -734,7 +735,7 @@ ir_tarval *tarval_neg(ir_tarval *a)
 	panic("invalid mode sort");
 }
 
-ir_tarval *tarval_add(ir_tarval *a, ir_tarval *b)
+ir_tarval *tarval_add(ir_tarval const *a, ir_tarval const *b)
 {
 	if (mode_is_reference(a->mode) && a->mode != b->mode) {
 		b = tarval_convert_to(b, a->mode);
@@ -768,7 +769,7 @@ ir_tarval *tarval_add(ir_tarval *a, ir_tarval *b)
 	panic("invalid mode sort");
 }
 
-ir_tarval *tarval_sub(ir_tarval *a, ir_tarval *b)
+ir_tarval *tarval_sub(ir_tarval const *a, ir_tarval const *b)
 {
 	ir_mode *dst_mode;
 	if (mode_is_reference(a->mode)) {
@@ -809,7 +810,7 @@ ir_tarval *tarval_sub(ir_tarval *a, ir_tarval *b)
 	panic("invalid mode sort");
 }
 
-ir_tarval *tarval_mul(ir_tarval *a, ir_tarval *b)
+ir_tarval *tarval_mul(ir_tarval const *const a, ir_tarval const *const b)
 {
 	assert(a->mode == b->mode);
 
@@ -836,7 +837,7 @@ ir_tarval *tarval_mul(ir_tarval *a, ir_tarval *b)
 	panic("invalid mode sort");
 }
 
-ir_tarval *tarval_div(ir_tarval *a, ir_tarval *b)
+ir_tarval *tarval_div(ir_tarval const *const a, ir_tarval const *const b)
 {
 	ir_mode *mode = a->mode;
 	assert(mode == b->mode);
@@ -867,7 +868,7 @@ ir_tarval *tarval_div(ir_tarval *a, ir_tarval *b)
 	panic("invalid mode sort");
 }
 
-ir_tarval *tarval_mod(ir_tarval *a, ir_tarval *b)
+ir_tarval *tarval_mod(ir_tarval const *const a, ir_tarval const *const b)
 {
 	assert((a->mode == b->mode) && mode_is_int(a->mode));
 
@@ -892,7 +893,8 @@ ir_tarval *tarval_mod(ir_tarval *a, ir_tarval *b)
 	panic("invalid mode sort");
 }
 
-ir_tarval *tarval_divmod(ir_tarval *a, ir_tarval *b, ir_tarval **mod)
+ir_tarval *tarval_divmod(ir_tarval const *const a, ir_tarval const *const b,
+                         ir_tarval **const mod)
 {
 	assert((a->mode == b->mode) && mode_is_int(a->mode));
 
@@ -920,20 +922,20 @@ ir_tarval *tarval_divmod(ir_tarval *a, ir_tarval *b, ir_tarval **mod)
 	panic("invalid mode sort");
 }
 
-ir_tarval *tarval_abs(ir_tarval *a)
+ir_tarval *tarval_abs(ir_tarval const *const a)
 {
 	if (tarval_is_negative(a))
 		return tarval_neg(a);
-	return a;
+	return (ir_tarval*)a;
 }
 
-ir_tarval *tarval_and(ir_tarval *a, ir_tarval *b)
+ir_tarval *tarval_and(ir_tarval const *const a, ir_tarval const *const b)
 {
 	assert(a->mode == b->mode);
 
 	switch (get_mode_sort(a->mode)) {
 	case irms_internal_boolean:
-		return (a == tarval_b_false) ? a : b;
+		return a == tarval_b_false ? (ir_tarval*)a : (ir_tarval*)b;
 
 	case irms_reference:
 	case irms_int_number: {
@@ -950,7 +952,7 @@ ir_tarval *tarval_and(ir_tarval *a, ir_tarval *b)
 	panic("invalid mode sort");
 }
 
-ir_tarval *tarval_andnot(ir_tarval *a, ir_tarval *b)
+ir_tarval *tarval_andnot(ir_tarval const *const a, ir_tarval const *const b)
 {
 	assert(a->mode == b->mode);
 
@@ -973,13 +975,13 @@ ir_tarval *tarval_andnot(ir_tarval *a, ir_tarval *b)
 	panic("invalid mode sort");
 }
 
-ir_tarval *tarval_or(ir_tarval *a, ir_tarval *b)
+ir_tarval *tarval_or(ir_tarval const *const a, ir_tarval const *const b)
 {
 	assert(a->mode == b->mode);
 
 	switch (get_mode_sort(a->mode)) {
 	case irms_internal_boolean:
-		return (a == tarval_b_true) ? a : b;
+		return a == tarval_b_true ? (ir_tarval*)a : (ir_tarval*)b;
 
 	case irms_reference:
 	case irms_int_number: {
@@ -996,7 +998,7 @@ ir_tarval *tarval_or(ir_tarval *a, ir_tarval *b)
 	panic("invalid mode sort");
 }
 
-ir_tarval *tarval_ornot(ir_tarval *a, ir_tarval *b)
+ir_tarval *tarval_ornot(ir_tarval const *const a, ir_tarval const *const b)
 {
 	assert(a->mode == b->mode);
 
@@ -1019,7 +1021,7 @@ ir_tarval *tarval_ornot(ir_tarval *a, ir_tarval *b)
 	panic("invalid mode sort");
 }
 
-ir_tarval *tarval_eor(ir_tarval *a, ir_tarval *b)
+ir_tarval *tarval_eor(ir_tarval const *const a, ir_tarval const *const b)
 {
 	assert(a->mode == b->mode);
 
@@ -1042,7 +1044,7 @@ ir_tarval *tarval_eor(ir_tarval *a, ir_tarval *b)
 	panic("invalid mode sort");
 }
 
-ir_tarval *tarval_shl(ir_tarval *a, ir_tarval *b)
+ir_tarval *tarval_shl(ir_tarval const *const a, ir_tarval const *const b)
 {
 	ir_mode *a_mode = a->mode;
 	assert(mode_is_int(a_mode) && mode_is_int(b->mode));
@@ -1062,7 +1064,7 @@ ir_tarval *tarval_shl(ir_tarval *a, ir_tarval *b)
 	return get_int_tarval(temp, a_mode);
 }
 
-ir_tarval *tarval_shl_unsigned(ir_tarval *a, unsigned b)
+ir_tarval *tarval_shl_unsigned(ir_tarval const *const a, unsigned b)
 {
 	ir_mode *mode = a->mode;
 	assert(mode_is_int(mode));
@@ -1076,7 +1078,7 @@ ir_tarval *tarval_shl_unsigned(ir_tarval *a, unsigned b)
 	return get_int_tarval(buffer, mode);
 }
 
-ir_tarval *tarval_shr(ir_tarval *a, ir_tarval *b)
+ir_tarval *tarval_shr(ir_tarval const *const a, ir_tarval const *const b)
 {
 	ir_mode *a_mode = a->mode;
 	assert(mode_is_int(a_mode) && mode_is_int(b->mode));
@@ -1099,7 +1101,7 @@ ir_tarval *tarval_shr(ir_tarval *a, ir_tarval *b)
 	return get_int_tarval(temp, a_mode);
 }
 
-ir_tarval *tarval_shr_unsigned(ir_tarval *a, unsigned b)
+ir_tarval *tarval_shr_unsigned(ir_tarval const *const a, unsigned b)
 {
 	ir_mode *mode = a->mode;
 	assert(mode_is_int(mode));
@@ -1116,7 +1118,7 @@ ir_tarval *tarval_shr_unsigned(ir_tarval *a, unsigned b)
 	return get_int_tarval(temp, mode);
 }
 
-ir_tarval *tarval_shrs(ir_tarval *a, ir_tarval *b)
+ir_tarval *tarval_shrs(ir_tarval const *const a, ir_tarval const *const b)
 {
 	ir_mode *a_mode = a->mode;
 	assert(mode_is_int(a_mode) && mode_is_int(b->mode));
@@ -1136,7 +1138,7 @@ ir_tarval *tarval_shrs(ir_tarval *a, ir_tarval *b)
 	return get_int_tarval(temp, a->mode);
 }
 
-ir_tarval *tarval_shrs_unsigned(ir_tarval *a, unsigned b)
+ir_tarval *tarval_shrs_unsigned(ir_tarval const *const a, unsigned b)
 {
 	ir_mode *mode = a->mode;
 	assert(mode_is_int(mode));
@@ -1150,7 +1152,7 @@ ir_tarval *tarval_shrs_unsigned(ir_tarval *a, unsigned b)
 	return get_int_tarval(temp, mode);
 }
 
-int tarval_snprintf(char *buf, size_t len, ir_tarval *tv)
+int tarval_snprintf(char *buf, size_t len, ir_tarval const *tv)
 {
 	switch (get_mode_sort(tv->mode)) {
 	case irms_reference:
@@ -1192,7 +1194,7 @@ static unsigned hexval(char c)
 	return (c - 'A')+10;
 }
 
-const char *ir_tarval_to_ascii(char *buf, size_t len, ir_tarval *tv)
+const char *ir_tarval_to_ascii(char *buf, size_t len, ir_tarval const *tv)
 {
 	ir_mode *mode = get_tarval_mode(tv);
 	switch (get_mode_sort(mode)) {
@@ -1256,7 +1258,7 @@ ir_tarval *ir_tarval_from_ascii(const char *buf, ir_mode *mode)
 	panic("invalid mode for tarval_from_ascii");
 }
 
-unsigned char get_tarval_sub_bits(const ir_tarval *tv, unsigned byte_ofs)
+unsigned char get_tarval_sub_bits(ir_tarval const *tv, unsigned byte_ofs)
 {
 	switch (get_mode_arithmetic(tv->mode)) {
 	case irma_twos_complement:
@@ -1269,7 +1271,7 @@ unsigned char get_tarval_sub_bits(const ir_tarval *tv, unsigned byte_ofs)
 	}
 }
 
-int get_tarval_popcount(const ir_tarval *tv)
+int get_tarval_popcount(ir_tarval const *tv)
 {
 	ir_mode *mode = get_tarval_mode(tv);
 	if (!mode_is_int(mode))
@@ -1278,7 +1280,7 @@ int get_tarval_popcount(const ir_tarval *tv)
 	return sc_popcount(tv->value, get_mode_size_bits(mode));
 }
 
-int get_tarval_lowest_bit(const ir_tarval *tv)
+int get_tarval_lowest_bit(ir_tarval const *tv)
 {
 	assert(get_mode_arithmetic(tv->mode) == irma_twos_complement);
 
@@ -1292,7 +1294,7 @@ int get_tarval_lowest_bit(const ir_tarval *tv)
 	return -1;
 }
 
-int get_tarval_highest_bit(const ir_tarval *tv)
+int get_tarval_highest_bit(ir_tarval const *tv)
 {
 	assert(get_mode_arithmetic(tv->mode) == irma_twos_complement);
 
@@ -1306,21 +1308,21 @@ int get_tarval_highest_bit(const ir_tarval *tv)
 	return -1;
 }
 
-int tarval_zero_mantissa(const ir_tarval *tv)
+int tarval_zero_mantissa(ir_tarval const *tv)
 {
 	assert(get_mode_arithmetic(tv->mode) == irma_ieee754
 	       || get_mode_arithmetic(tv->mode) == irma_x86_extended_float);
 	return fc_zero_mantissa((const fp_value*) tv->value);
 }
 
-int tarval_get_exponent(const ir_tarval *tv)
+int tarval_get_exponent(ir_tarval const *tv)
 {
 	assert(get_mode_arithmetic(tv->mode) == irma_ieee754
 	       || get_mode_arithmetic(tv->mode) == irma_x86_extended_float);
 	return fc_get_exponent((const fp_value*) tv->value);
 }
 
-int tarval_ieee754_can_conv_lossless(const ir_tarval *tv, const ir_mode *mode)
+int tarval_ieee754_can_conv_lossless(ir_tarval const *tv, const ir_mode *mode)
 {
 	const float_descriptor_t *desc = get_descriptor(mode);
 	return fc_can_lossless_conv_to((const fp_value*) tv->value, desc);
@@ -1331,28 +1333,28 @@ unsigned tarval_ieee754_get_exact(void)
 	return fc_is_exact();
 }
 
-int tarval_is_nan(const ir_tarval *tv)
+int tarval_is_nan(ir_tarval const *tv)
 {
 	if (!mode_is_float(tv->mode))
 		return 0;
 	return fc_is_nan((const fp_value*) tv->value);
 }
 
-int tarval_is_quiet_nan(const ir_tarval *tv)
+int tarval_is_quiet_nan(ir_tarval const *tv)
 {
 	if (!tarval_is_nan(tv))
 		return false;
 	return fc_nan_is_quiet((const fp_value*)tv->value);
 }
 
-int tarval_is_signaling_nan(const ir_tarval *tv)
+int tarval_is_signaling_nan(ir_tarval const *tv)
 {
 	if (!tarval_is_nan(tv))
 		return false;
 	return !fc_nan_is_quiet((const fp_value*)tv->value);
 }
 
-int tarval_is_finite(const ir_tarval *tv)
+int tarval_is_finite(ir_tarval const *tv)
 {
 	if (mode_is_float(tv->mode))
 		return !fc_is_nan((const fp_value*) tv->value)

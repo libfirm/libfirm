@@ -1709,7 +1709,7 @@ static int is_const_Mux(ir_node *n)
 	return is_Mux(n) && is_Const(get_Mux_false(n)) && is_Const(get_Mux_true(n));
 }
 
-typedef ir_tarval *(*tarval_binop_type)(ir_tarval *a, ir_tarval *b);
+typedef ir_tarval *(*tarval_binop)(ir_tarval const *a, ir_tarval const *b);
 
 /**
  * Apply an evaluator on a binop with a constant operators (and one Phi).
@@ -1722,7 +1722,8 @@ typedef ir_tarval *(*tarval_binop_type)(ir_tarval *a, ir_tarval *b);
  *
  * @return a new Phi node if the conversion was successful, NULL else
  */
-static ir_node *apply_binop_on_phi(ir_node *phi, ir_tarval *other, tarval_binop_type eval, ir_mode *mode, bool left)
+static ir_node *apply_binop_on_phi(ir_node *phi, ir_tarval *other,
+                                   tarval_binop eval, ir_mode *mode, bool left)
 {
 	int         n   = get_irn_arity(phi);
 	ir_tarval **tvs = ALLOCAN(ir_tarval*, n);
@@ -1766,7 +1767,8 @@ static ir_node *apply_binop_on_phi(ir_node *phi, ir_tarval *other, tarval_binop_
  *
  * @return a new Phi node if the conversion was successful, NULL else
  */
-static ir_node *apply_binop_on_2_phis(ir_node *a, ir_node *b, tarval_binop_type eval, ir_mode *mode)
+static ir_node *apply_binop_on_2_phis(ir_node *a, ir_node *b,
+                                      tarval_binop eval, ir_mode *mode)
 {
 	if (get_nodes_block(a) != get_nodes_block(b))
 		return NULL;
@@ -1794,6 +1796,8 @@ static ir_node *apply_binop_on_2_phis(ir_node *a, ir_node *b, tarval_binop_type 
 	return new_r_Phi(block, n, res, mode);
 }
 
+typedef ir_tarval *(*tarval_unop)(ir_tarval const *a);
+
 /**
  * Apply an evaluator on a unop with a constant operator (a Phi).
  *
@@ -1802,7 +1806,7 @@ static ir_node *apply_binop_on_2_phis(ir_node *a, ir_node *b, tarval_binop_type 
  *
  * @return a new Phi node if the conversion was successful, NULL else
  */
-static ir_node *apply_unop_on_phi(ir_node *phi, ir_tarval *(*eval)(ir_tarval *))
+static ir_node *apply_unop_on_phi(ir_node *phi, tarval_unop eval)
 {
 	int         n   = get_irn_arity(phi);
 	ir_tarval **tvs = ALLOCAN(ir_tarval*, n);
@@ -1865,7 +1869,8 @@ static ir_node *apply_conv_on_phi(ir_node *phi, ir_mode *mode)
  *
  * @return a new Mux node if the conversion was successful, NULL else
  */
-static ir_node *apply_binop_on_mux(ir_node *mux, ir_tarval *other, tarval_binop_type eval, ir_mode *mode, bool left)
+static ir_node *apply_binop_on_mux(ir_node *mux, ir_tarval *other,
+                                   tarval_binop eval, ir_mode *mode, bool left)
 {
 	if (!only_one_user(mux))
 		return NULL;
@@ -1903,7 +1908,8 @@ static ir_node *apply_binop_on_mux(ir_node *mux, ir_tarval *other, tarval_binop_
  *
  * @return a new Mux node if the conversion was successful, NULL else
  */
-static ir_node *apply_binop_on_2_muxs(ir_node *a, ir_node *b, tarval_binop_type eval, ir_mode *mode)
+static ir_node *apply_binop_on_2_muxs(ir_node *a, ir_node *b, tarval_binop eval,
+                                      ir_mode *mode)
 {
 	if (!only_one_user(a) || !only_one_user(b))
 		return NULL;
@@ -1946,7 +1952,7 @@ static ir_node *apply_binop_on_2_muxs(ir_node *a, ir_node *b, tarval_binop_type 
  *
  * @return a new Mux node if the conversion was successful, NULL else
  */
-static ir_node *apply_unop_on_mux(ir_node *mux, ir_tarval *(*eval)(ir_tarval *))
+static ir_node *apply_unop_on_mux(ir_node *mux, tarval_unop eval)
 {
 	if (!only_one_user(mux))
 		return NULL;
@@ -2427,15 +2433,12 @@ static ir_node *transform_node_bitop_shift(ir_node *n)
 	return new_shift;
 }
 
-typedef ir_tarval *(tv_fold_binop_func)(ir_tarval *a, ir_tarval *b);
-
 /**
  * for associative operations fold:
  *   op(op(x, c0), c1) to op(x, op(c0, c1)) with constants folded.
  * This is a "light" version of the reassociation phase
  */
-static ir_node *fold_constant_associativity(ir_node *node,
-                                            tv_fold_binop_func fold)
+static ir_node *fold_constant_associativity(ir_node *node, tarval_binop fold)
 {
 	const ir_node *right = get_binop_right(node);
 	if (!is_Const(right))
