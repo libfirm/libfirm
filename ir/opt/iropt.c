@@ -3682,7 +3682,8 @@ static ir_node *transform_node_Mul(ir_node *n)
 			dbg_info *dbgi  = get_irn_dbg_info(n);
 			ir_node  *block = get_nodes_block(n);
 			return new_rd_Minus(dbgi, block, a, mode);
-		} else if (get_tarval_popcount(c1) == 1) {
+		} else if (arith == irma_twos_complement
+		        && get_tarval_popcount(c1) == 1) {
 			/* multiplication behaves Shl-like */
 			n = transform_node_shl_shr(n);
 			if (n != oldn)

@@ -1275,9 +1275,7 @@ unsigned char get_tarval_sub_bits(ir_tarval const *tv, unsigned byte_ofs)
 int get_tarval_popcount(ir_tarval const *tv)
 {
 	ir_mode *const mode = get_tarval_mode(tv);
-	if (!mode_is_int(mode))
-		return -1;
-
+	assert(get_mode_arithmetic(mode) == irma_twos_complement);
 	return sc_popcount(tv->value, get_mode_size_bits(mode));
 }
 
