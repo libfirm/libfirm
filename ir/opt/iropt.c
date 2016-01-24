@@ -3004,15 +3004,9 @@ static ir_node *transform_node_Add(ir_node *n)
 			ir_node  *const block = get_nodes_block(n);
 			if (!irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_ARCH_DEP)) {
 				/* a + a -> a * 2 */
-				ir_tarval *tv_two;
-				if (get_mode_arithmetic(mode) == irma_twos_complement) {
-					tv_two = new_tarval_from_long(2, mode);
-				} else {
-					assert(mode_is_float(mode));
-					tv_two = new_tarval_from_long(2, mode_Is);
-					tv_two = tarval_convert_to(tv_two, mode);
-				}
-				ir_node *const two = new_r_Const(irg, tv_two);
+				ir_tarval *const tv_one = get_mode_one(mode);
+				ir_tarval *const tv_two = tarval_add(tv_one, tv_one);
+				ir_node   *const two    = new_r_Const(irg, tv_two);
 				n = new_rd_Mul(dbgi, block, a, two, mode);
 				DBG_OPT_ALGSIM0(oldn, n);
 				return n;
