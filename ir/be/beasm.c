@@ -193,6 +193,8 @@ static bool match_requirement(arch_register_req_t const **reqs, size_t const n_r
 
 ir_node *be_make_asm(ir_node const *const node, ir_node **in, arch_register_req_t const **in_reqs, arch_register_req_t const **out_reqs, void *const operands)
 {
+	assert(ARR_LEN(in) == ARR_LEN(in_reqs));
+
 	ir_graph       *const irg  = get_irn_irg(node);
 	struct obstack *const obst = get_irg_obstack(irg);
 
