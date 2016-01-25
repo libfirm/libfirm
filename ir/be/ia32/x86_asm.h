@@ -67,4 +67,6 @@ ir_node *x86_match_ASM(ir_node const *node, x86_clobber_name_t const *names, x86
 
 void x86_set_be_asm_constraint_support(const x86_asm_constraint_list_t *constraints);
 
+char const *x86_get_constraint_name(x86_asm_operand_kind_t);
+
 #endif

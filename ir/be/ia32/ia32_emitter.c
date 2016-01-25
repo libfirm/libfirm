@@ -952,12 +952,18 @@ static void emit_ia32_asm_register(const arch_register_t *reg, char modifier,
 
 static void emit_ia32_asm_operand(ir_node const *const node, char const modifier, unsigned const pos)
 {
+	x86_asm_operand_kind_t required;
 	switch (modifier) {
 	case '\0':
 	case 'b':
 	case 'h':
 	case 'k':
 	case 'w':
+		required = ASM_OP_INVALID;
+		break;
+
+	case 'c':
+		required = ASM_OP_IMMEDIATE;
 		break;
 
 	default:
@@ -967,6 +973,13 @@ static void emit_ia32_asm_operand(ir_node const *const node, char const modifier
 
 	be_asm_attr_t     const *const attr = get_be_asm_attr_const(node);
 	x86_asm_operand_t const *const op   = &((x86_asm_operand_t const*)attr->operands)[pos];
+
+	if (required != ASM_OP_INVALID && required != op->kind) {
+		char const *const name = x86_get_constraint_name(required);
+		be_errorf(node, "asm modifier '%c' requires an operand of type '%s'", modifier, name);
+		return;
+	}
+
 	switch ((x86_asm_operand_kind_t)op->kind) {
 	case ASM_OP_INVALID:
 		panic("invalid asm operand");
@@ -990,7 +1003,7 @@ static void emit_ia32_asm_operand(ir_node const *const node, char const modifier
 	}
 
 	case ASM_OP_IMMEDIATE:
-		emit_ia32_immediate(true, &op->u.imm32);
+		emit_ia32_immediate(modifier != 'c', &op->u.imm32);
 		return;
 	}
 	panic("invalid asm operand kind");

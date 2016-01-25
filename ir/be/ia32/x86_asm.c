@@ -231,3 +231,15 @@ fine:
 	be_set_constraint_support(ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER,
 	                          "0123456789");
 }
+
+char const *x86_get_constraint_name(x86_asm_operand_kind_t const kind)
+{
+	switch (kind) {
+	case ASM_OP_INVALID:   return "invalid";
+	case ASM_OP_IN_REG:    return "input register";
+	case ASM_OP_OUT_REG:   return "output register";
+	case ASM_OP_MEMORY:    return "memory";
+	case ASM_OP_IMMEDIATE: return "immediate";
+	}
+	panic("invalid constraint kind");
+}
