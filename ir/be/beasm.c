@@ -197,7 +197,7 @@ ir_node *be_make_asm(ir_node const *const node, ir_node **in, arch_register_req_
 	struct obstack *const obst = get_irg_obstack(irg);
 
 	/* Handle early clobbers. */
-	unsigned                 const n_inputs          = get_ASM_n_inputs(node);
+	size_t                   const orig_n_ins        = ARR_LEN(in_reqs);
 	ir_asm_constraint const *const out_constraints   = get_ASM_output_constraints(node);
 	unsigned                 const n_out_constraints = get_ASM_n_output_constraints(node);
 	for (unsigned o = 0; o != n_out_constraints; ++o) {
@@ -207,7 +207,7 @@ ir_node *be_make_asm(ir_node const *const node, ir_node **in, arch_register_req_
 		arch_register_req_t const *const oreq = out_reqs[o];
 
 		unsigned different = 0;
-		for (unsigned i = 0; i != n_inputs; ++i) {
+		for (unsigned i = 0; i != orig_n_ins; ++i) {
 			if (in_reqs[i]->cls == oreq->cls)
 				different |= 1U << i;
 		}
@@ -234,7 +234,6 @@ ir_node *be_make_asm(ir_node const *const node, ir_node **in, arch_register_req_
 	 *        before...
 	 * FIXME: need to do this per register class...
 	 */
-	size_t const orig_n_ins  = ARR_LEN(in_reqs);
 	size_t const orig_n_outs = ARR_LEN(out_reqs);
 	uint8_t      add_pressure[isa_if->n_register_classes];
 	memset(add_pressure, 0, sizeof(add_pressure));
