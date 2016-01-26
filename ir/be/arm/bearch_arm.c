@@ -217,7 +217,7 @@ static int arm_is_mux_allowed(ir_node *sel, ir_node *mux_false,
 static void arm_lower_for_target(void)
 {
 	/* lower compound param handling */
-	lower_calls_with_compounds(LF_RETURN_HIDDEN);
+	lower_calls_with_compounds(LF_RETURN_HIDDEN, NULL);
 	be_after_irp_transform("lower-calls");
 
 	foreach_irp_irg(i, irg) {

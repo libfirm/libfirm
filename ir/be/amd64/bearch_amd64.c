@@ -696,7 +696,7 @@ static void amd64_generate_code(FILE *output, const char *cup_name)
 static void amd64_lower_for_target(void)
 {
 	/* lower compound param handling */
-	lower_calls_with_compounds(LF_RETURN_HIDDEN);
+	lower_calls_with_compounds(LF_RETURN_HIDDEN, NULL);
 	be_after_irp_transform("lower-calls");
 
 	foreach_irp_irg(i, irg) {

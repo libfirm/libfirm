@@ -21,13 +21,27 @@ typedef enum compound_call_lowering_flags {
 	LF_RETURN_HIDDEN        = 1 << 0, /**< return the hidden address instead of void */
 	LF_DONT_LOWER_ARGUMENTS = 1 << 1, /**< don't lower compound call arguments
 	                                       (some backends can handle them themselves) */
-	/** Return small arrays as integer values instead of storing them into
-	 * memory. */
-	LF_RETURN_SMALL_ARRAY_IN_INTS = 1 << 2,
-	/** Return small structs as integer values */
-	LF_RETURN_SMALL_STRUCT_IN_INTS = 1 << 3,
 } compound_call_lowering_flags;
 ENUM_BITSET(compound_call_lowering_flags)
+
+/**
+ * Specify how exactly a compound type should be returned in values (which will
+ * probably be mapped to registers in the backend).
+ * For now this is specified as an array of ir_modes. The complete struct is
+ * decomposed into these values. So the sum of all mode sizes must equal the
+ * struct size.
+ */
+typedef struct {
+	unsigned        n_values;
+	ir_mode *const *modes;
+} aggregate_spec_t;
+
+/**
+ * Callback to decide how the specified struct should be returned by a
+ * function.
+ */
+typedef aggregate_spec_t const* (*decide_aggregate_ret_func)
+	(ir_type const *type);
 
 /**
  * Lower calls with compound parameter and return types.
@@ -88,6 +102,7 @@ ENUM_BITSET(compound_call_lowering_flags)
    }
    @endcode
  */
-void lower_calls_with_compounds(compound_call_lowering_flags flags);
+void lower_calls_with_compounds(compound_call_lowering_flags flags,
+                                decide_aggregate_ret_func func);
 
 #endif

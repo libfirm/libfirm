@@ -1518,6 +1518,92 @@ static int ia32_is_valid_clobber(const char *clobber)
 	return x86_parse_clobber(ia32_additional_clobber_names, clobber) != NULL;
 }
 
+static bool is_float(ir_type const *const type)
+{
+	return is_atomic_type(type) && mode_is_float(get_type_mode(type));
+}
+
+static ir_mode *iu4_iu4_modes[2];
+static aggregate_spec_t const iu4_iu4_spec = {
+	.n_values = 2,
+	.modes    = iu4_iu4_modes,
+};
+static aggregate_spec_t const iu4_spec = {
+	.n_values = 1,
+	.modes    = iu4_iu4_modes,
+};
+static ir_mode *iu2_modes[1];
+static aggregate_spec_t const iu2_spec = {
+	.n_values = 1,
+	.modes    = iu2_modes,
+};
+static ir_mode *iu1_modes[1];
+static aggregate_spec_t const iu1_spec = {
+	.n_values = 1,
+	.modes    = iu1_modes,
+};
+static ir_mode *float_modes[1];
+static aggregate_spec_t const float_spec = {
+	.n_values = 1,
+	.modes    = float_modes,
+};
+static ir_mode *double_modes[1];
+static aggregate_spec_t const double_spec = {
+	.n_values = 1,
+	.modes    = double_modes,
+};
+
+static void init_aggregate_specs(void)
+{
+	iu4_iu4_modes[0] = mode_Iu;
+	iu4_iu4_modes[1] = mode_Iu;
+	iu2_modes[0]     = mode_Hu;
+	iu1_modes[0]     = mode_Bu;
+	float_modes[0]   = mode_F;
+	double_modes[0]  = mode_D;
+}
+
+static aggregate_spec_t const *decide_compound_ret(ir_type const *type)
+{
+	unsigned size = get_type_size_bytes(type);
+	if (is_Array_type(type)) {
+		/* This is used for returning complex float numbers */
+		if (size == 8 && has_array_size(type) && get_array_size_int(type) == 2
+		 && is_float(get_array_element_type(type))) {
+			return &iu4_iu4_spec;
+		}
+		return NULL;
+	}
+
+	assert(is_compound_type(type));
+
+	/* return_small_struct_in_regs is used on OS X */
+	if (return_small_struct_in_regs && size <= 8) {
+		if (get_compound_n_members(type) == 1) {
+			ir_entity *const member      = get_compound_member(type, 0);
+			ir_type   *const member_type = get_entity_type(member);
+			if (is_float(member_type)) {
+				unsigned member_size = get_type_size_bytes(member_type);
+				if (member_size == 4) {
+					fprintf(stderr, "FLoatSPEC\n");
+					return &float_spec;
+				}
+				if (member_size == 8)
+					return &double_spec;
+			}
+		}
+
+		switch (size) {
+		case 1: return &iu1_spec;
+		case 2: return &iu2_spec;
+		case 4: return &iu4_spec;
+		case 8: return &iu4_iu4_spec;
+		}
+	}
+
+	return NULL;
+}
+
 static void ia32_lower_for_target(void)
 {
 	ir_mode *mode_gp = ia32_reg_classes[CLASS_ia32_gp].mode;
@@ -1528,12 +1614,10 @@ static void ia32_lower_for_target(void)
 	 * (This also forces us to always allocate space for the compound arguments
 	 *  on the callframe and we can't just use an arbitrary position on the
 	 *  stackframe) */
+	init_aggregate_specs();
 	compound_call_lowering_flags lower_call_flags
-		= LF_RETURN_HIDDEN | LF_DONT_LOWER_ARGUMENTS
-		| LF_RETURN_SMALL_ARRAY_IN_INTS
-		| (return_small_struct_in_regs ? LF_RETURN_SMALL_STRUCT_IN_INTS
-		                               : LF_NONE);
-	lower_calls_with_compounds(lower_call_flags);
+		= LF_RETURN_HIDDEN | LF_DONT_LOWER_ARGUMENTS;
+	lower_calls_with_compounds(lower_call_flags, decide_compound_ret);
 	be_after_irp_transform("lower-calls");
 
 	/* replace floating point operations by function calls */
