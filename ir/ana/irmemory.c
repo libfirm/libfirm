@@ -266,7 +266,7 @@ static ir_alias_relation _get_alias_relation(
 	 * sym_offset{1,2} to be sets, and compare the sets.
 	 */
 
-	while (have_const_offsets && is_Add(addr1)) {
+	while (is_Add(addr1)) {
 		ir_mode *mode_left = get_irn_mode(get_Add_left(addr1));
 
 		ir_node *ptr_node;
@@ -299,7 +299,7 @@ follow_ptr1:
 		addr1 = ptr_node;
 	}
 
-	while (have_const_offsets && is_Add(addr2)) {
+	while (is_Add(addr2)) {
 		ir_mode *mode_left = get_irn_mode(get_Add_left(addr2));
 
 		ir_node *ptr_node;
