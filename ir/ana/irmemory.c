@@ -284,6 +284,11 @@ follow_ptr:
 			break;
 		}
 
+		case iro_Sub:
+			has_const_offset = false;
+			addr             = get_Sub_left(addr);
+			break;
+
 		default:
 			return (address_info){ addr, sym_offset, offset, has_const_offset };
 		}
