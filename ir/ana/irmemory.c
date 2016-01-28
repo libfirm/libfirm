@@ -238,6 +238,58 @@ analyze_entity:
 	return res;
 }
 
+typedef struct address_info {
+	ir_node const *base;
+	ir_node const *sym_offset;
+	long           offset;
+	bool           has_const_offset;
+} address_info;
+
+static address_info get_address_info(ir_node const *addr)
+{
+	ir_node *sym_offset       = NULL;
+	long     offset           = 0;
+	bool     has_const_offset = true;
+	for (;;) {
+		switch (get_irn_opcode(addr)) {
+		case iro_Add: {
+			ir_node       *ptr_node;
+			ir_node       *int_node;
+			ir_mode *const mode_left = get_irn_mode(get_Add_left(addr));
+			if (mode_is_reference(mode_left)) {
+				ptr_node = get_Add_left(addr);
+				int_node = get_Add_right(addr);
+			} else {
+				ptr_node = get_Add_right(addr);
+				int_node = get_Add_left(addr);
+			}
+
+			if (is_Const(int_node)) {
+				ir_tarval *tv = get_Const_tarval(int_node);
+				if (tarval_is_long(tv)) {
+					/* TODO: check for overflow */
+					offset += get_tarval_long(tv);
+					goto follow_ptr;
+				}
+			}
+			if (!sym_offset) {
+				sym_offset = int_node;
+			} else {
+				// addr has more than one symbolic offset, give up.
+				has_const_offset = false;
+			}
+
+follow_ptr:
+			addr = ptr_node;
+			break;
+		}
+
+		default:
+			return (address_info){ addr, sym_offset, offset, has_const_offset };
+		}
+	}
+}
+
 static ir_alias_relation _get_alias_relation(
 	const ir_node *addr1, const ir_type *const objt1, unsigned size1,
 	const ir_node *addr2, const ir_type *const objt2, unsigned size2)
@@ -254,87 +306,22 @@ static ir_alias_relation _get_alias_relation(
 
 	/* do the addresses have constants offsets from the same base?
 	 *  Note: sub X, C is normalized to add X, -C */
-	long           offset1            = 0;
-	long           offset2            = 0;
-	const ir_node *sym_offset1        = NULL;
-	const ir_node *sym_offset2        = NULL;
-	bool           have_const_offsets = true;
 
 	/*
 	 * Currently, only expressions with at most one symbolic
 	 * offset can be handled.  To extend this, change
-	 * sym_offset{1,2} to be sets, and compare the sets.
+	 * sym_offset to be a set, and compare the sets.
 	 */
-
-	while (is_Add(addr1)) {
-		ir_mode *mode_left = get_irn_mode(get_Add_left(addr1));
-
-		ir_node *ptr_node;
-		ir_node *int_node;
-		if (mode_is_reference(mode_left)) {
-			ptr_node = get_Add_left(addr1);
-			int_node = get_Add_right(addr1);
-		} else {
-			ptr_node = get_Add_right(addr1);
-			int_node = get_Add_left(addr1);
-		}
-
-		if (is_Const(int_node)) {
-			ir_tarval *tv = get_Const_tarval(int_node);
-			if (tarval_is_long(tv)) {
-				/* TODO: check for overflow */
-				offset1 += get_tarval_long(tv);
-				goto follow_ptr1;
-			}
-		}
-		if (sym_offset1 == NULL) {
-			sym_offset1 = int_node;
-		} else {
-			// addr1 has more than one symbolic offset.
-			// Give up
-			have_const_offsets = false;
-		}
-
-follow_ptr1:
-		addr1 = ptr_node;
-	}
-
-	while (is_Add(addr2)) {
-		ir_mode *mode_left = get_irn_mode(get_Add_left(addr2));
-
-		ir_node *ptr_node;
-		ir_node *int_node;
-		if (mode_is_reference(mode_left)) {
-			ptr_node = get_Add_left(addr2);
-			int_node = get_Add_right(addr2);
-		} else {
-			ptr_node = get_Add_right(addr2);
-			int_node = get_Add_left(addr2);
-		}
-
-		if (is_Const(int_node)) {
-			ir_tarval *tv = get_Const_tarval(int_node);
-			if (tarval_is_long(tv)) {
-				/* TODO: check for overflow */
-				offset2 += get_tarval_long(tv);
-				goto follow_ptr2;
-			}
-		}
-		if (sym_offset2 == NULL) {
-			sym_offset2 = int_node;
-		} else {
-			// addr2 has more than one symbolic offset.
-			// Give up
-			have_const_offsets = false;
-		}
-
-follow_ptr2:
-		addr2 = ptr_node;
-	}
+	address_info const info1   = get_address_info(addr1);
+	address_info const info2   = get_address_info(addr2);
+	long               offset1 = info1.offset;
+	long               offset2 = info2.offset;
+	addr1 = info1.base;
+	addr2 = info2.base;
 
 	/* same base address -> compare offsets if possible.
 	 * FIXME: type long is not sufficient for this task ... */
-	if (addr1 == addr2 && sym_offset1 == sym_offset2 && have_const_offsets) {
+	if (addr1 == addr2 && info1.sym_offset == info2.sym_offset && info1.has_const_offset && info2.has_const_offset) {
 		unsigned long first_offset;
 		unsigned long last_offset;
 		unsigned first_size;
@@ -398,13 +385,16 @@ check_classes:;
 
 	const ir_storage_class_class_t class1 = mod1 & ~ir_sc_modifiers;
 	const ir_storage_class_class_t class2 = mod2 & ~ir_sc_modifiers;
-	if (class1 == ir_sc_pointer || class2 == ir_sc_pointer) {
-		ir_storage_class_class_t other_class = class2;
-		ir_storage_class_class_t other_mod   = mod2;
-		if (class1 != ir_sc_pointer) {
-			other_class = class1;
-			other_mod   = mod1;
-		}
+	ir_storage_class_class_t other_class;
+	ir_storage_class_class_t other_mod;
+	if (class1 == ir_sc_pointer) {
+		other_class = class2;
+		other_mod   = mod2;
+		goto pointer;
+	} else if (class2 == ir_sc_pointer) {
+		other_class = class1;
+		other_mod   = mod1;
+pointer:
 		/* a pointer and an object whose address was never taken */
 		if (other_mod & ir_sc_modifier_nottaken)
 			return ir_no_alias;
