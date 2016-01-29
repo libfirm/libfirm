@@ -8,25 +8,20 @@
  * @brief   This file implements functions to finalize the irg for emit.
  * @author  Christian Wuerdig
  */
-#include "debug.h"
-#include "irnode_t.h"
-#include "ircons.h"
-#include "irgmod.h"
-#include "irgwalk.h"
-#include "iredges_t.h"
-#include "pdeq.h"
-#include "panic.h"
+#include "ia32_finish.h"
 
 #include "bearch.h"
-#include "besched.h"
-#include "benode.h"
-
 #include "bearch_ia32_t.h"
-#include "ia32_finish.h"
+#include "besched.h"
+#include "debug.h"
+#include "gen_ia32_regalloc_if.h"
 #include "ia32_new_nodes.h"
 #include "ia32_transform.h"
-#include "ia32_optimize.h"
-#include "gen_ia32_regalloc_if.h"
+#include "iredges_t.h"
+#include "irgmod.h"
+#include "irgwalk.h"
+#include "irnode_t.h"
+#include "panic.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
