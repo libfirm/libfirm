@@ -14,11 +14,6 @@
 #include "firm_types.h"
 
 /**
- * Prepares irg for codegeneration.
- */
-void ia32_pre_transform_phase(ir_graph *irg);
-
-/**
  * Performs conv and address mode optimizations.
  * @param cg  The ia32 codegenerator object
  */
