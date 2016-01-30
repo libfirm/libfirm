@@ -804,7 +804,7 @@ CMovcc => {
 	am        => "source,binary",
 	attr_type => "ia32_condcode_attr_t",
 	attr      => "x86_condition_code_t condition_code",
-	emit      => "cmov%P5 %AS4, %D0",
+	emit      => "cmov%P5 %B",
 	latency   => 1,
 	mode      => "first",
 },
