@@ -44,27 +44,27 @@ static void compare_tv(const char *file, unsigned line,
 }
 #define TVS_EQUAL(val0,val1) compare_tv(__FILE__, __LINE__, #val0, val0, #val1, val1)
 
-typedef ir_tarval* (*binop)(ir_tarval *op0, ir_tarval *op1);
-typedef ir_tarval* (*unop)(ir_tarval *op);
+typedef ir_tarval* (*binop)(ir_tarval const *op0, ir_tarval const *op1);
+typedef ir_tarval* (*unop)(ir_tarval const *op);
 
 /* tarval_div, except that x/0 == 0 */
-static ir_tarval *safe_div(ir_tarval *op0, ir_tarval *op1)
+static ir_tarval *safe_div(ir_tarval const *op0, ir_tarval const *op1)
 {
 	if (tarval_is_null(op1))
-		return op1;
+		return (ir_tarval*)op1;
 	return tarval_div(op0, op1);
 }
 
-static ir_tarval *safe_mod(ir_tarval *op0, ir_tarval *op1)
+static ir_tarval *safe_mod(ir_tarval const *op0, ir_tarval const *op1)
 {
 	if (tarval_is_null(op1))
-		return op1;
+		return (ir_tarval*)op1;
 	return tarval_mod(op0, op1);
 }
 
-static ir_tarval *tarval_id(ir_tarval *tv)
+static ir_tarval *tarval_id(ir_tarval const *tv)
 {
-	return tv;
+	return (ir_tarval*)tv;
 }
 
 static void test_neutral_(binop op, const char *new_op_name,
