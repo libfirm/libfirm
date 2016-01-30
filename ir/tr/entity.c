@@ -168,56 +168,29 @@ static void free_entity_attrs(ir_entity *ent)
 	}
 }
 
-/**
- * Creates a deep copy of an entity.
- */
-static ir_entity *deep_entity_copy(ir_entity *old)
+ir_entity *clone_entity(ir_entity const *const old, ident *const name,
+                        ir_type *const owner)
 {
-	ir_entity *newe = XMALLOC(ir_entity);
+	ir_entity *res = XMALLOC(ir_entity);
 
-	*newe = *old;
+	*res = *old;
 	/* FIXME: the initializers are NOT copied */
 	if (is_method_entity(old)) {
 		/* do NOT copy them, reanalyze. This might be the best solution */
-		newe->attr.mtd_attr.param_access = NULL;
-		newe->attr.mtd_attr.param_weight = NULL;
+		res->attr.mtd_attr.param_access = NULL;
+		res->attr.mtd_attr.param_weight = NULL;
 	}
-	newe->overwrites    = NULL;
-	newe->overwrittenby = NULL;
+	res->overwrites    = NULL;
+	res->overwrittenby = NULL;
 
-	newe->nr = get_irp_new_node_nr();
-	hook_new_entity(newe);
-	return newe;
-}
-
-ir_entity *copy_entity_own(ir_entity *old, ir_type *new_owner)
-{
-	assert(old->kind == k_entity);
-	assert(is_compound_type(new_owner));
-	assert(get_type_state(new_owner) != layout_fixed);
-	if (old->owner == new_owner)
-		return old;
-
-	/* create a deep copy so we are safe of aliasing and double-freeing. */
-	ir_entity *newe = deep_entity_copy(old);
-	newe->owner = new_owner;
-	add_compound_member(new_owner, newe);
-
-	return newe;
-}
-
-ir_entity *copy_entity_name(ir_entity *old, ident *new_name)
-{
-	assert(old->kind == k_entity);
-	if (old->name == new_name)
-		return old;
-
-	ir_entity *newe = deep_entity_copy(old);
-	newe->name    = new_name;
-	newe->ld_name = NULL;
-	add_compound_member(old->owner, newe);
-
-	return newe;
+	res->nr    = get_irp_new_node_nr();
+	res->name  = name;
+	res->visit = 0;
+	res->usage = ir_usage_unknown;
+	res->owner = owner;
+	add_compound_member(owner, res);
+	hook_new_entity(res);
+	return res;
 }
 
 void free_entity(ir_entity *ent)

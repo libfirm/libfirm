@@ -244,7 +244,8 @@ static void copy_frame_entities(ir_graph *from, ir_graph *to)
 
 		// parameter entities are already copied and the link has been set
 		if (!is_parameter_entity(old_ent)) {
-			ir_entity *new_ent = copy_entity_own(old_ent, to_frame);
+			ident     *name    = get_entity_name(old_ent);
+			ir_entity *new_ent = clone_entity(old_ent, name, to_frame);
 			set_entity_link(old_ent, new_ent);
 		}
 	}

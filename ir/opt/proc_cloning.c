@@ -429,7 +429,8 @@ static ir_entity *clone_method(const quadruple_t *q)
 	/* We get a new ident for our clone method.*/
 	ident     *const clone_ident = get_clone_ident(get_entity_ident(q->ent), q->pos, nr);
 	/* We get our entity for the clone method. */
-	ir_entity *const new_entity  = copy_entity_name(q->ent, clone_ident);
+	ir_type   *const owner       = get_entity_owner(q->ent);
+	ir_entity *const new_entity  = clone_entity(q->ent, clone_ident, owner);
 
 	/* a cloned entity is always local */
 	set_entity_visibility(new_entity, ir_visibility_local);

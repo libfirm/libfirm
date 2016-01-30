@@ -259,24 +259,13 @@ FIRM_API ir_entity *get_entity_alias(const ir_entity *alias);
 FIRM_API int check_entity(const ir_entity *ent);
 
 /**
- * Copies the entity if the new_owner is different from the
- * owner of the old entity,  else returns the old entity.
+ * Create a new entity with attributes copied from an existing entity.
  *
- * Automatically inserts the new entity as a member of owner.
- * Resets the overwrites/overwritten_by fields.
- * Keeps the old atomic value.
+ * Does not copy the overwrites/overwritte_by, visited an dusage fields, sets
+ * a new name and inserts the entity into \p owner.
  */
-FIRM_API ir_entity *copy_entity_own(ir_entity *old, ir_type *new_owner);
-
-/**
- * Copies the entity if the new_name is different from the
- * name of the old entity, else returns the old entity.
- *
- * Automatically inserts the new entity as a member of owner.
- * The mangled name ld_name is set to NULL.
- * Overwrites relation is copied from old.
- */
-FIRM_API ir_entity *copy_entity_name(ir_entity *old, ident *new_name);
+FIRM_API ir_entity *clone_entity(ir_entity const *old, ident *name,
+                                 ir_type *owner);
 
 /**
  * Frees the entity.
