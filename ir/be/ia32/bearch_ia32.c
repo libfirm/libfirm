@@ -1572,7 +1572,7 @@ static aggregate_spec_t const *decide_compound_ret(ir_type const *type)
 		 && is_float(get_array_element_type(type))) {
 			return &iu4_iu4_spec;
 		}
-		return NULL;
+		return &no_values_aggregate_spec;
 	}
 
 	assert(is_compound_type(type));
@@ -1601,7 +1601,7 @@ static aggregate_spec_t const *decide_compound_ret(ir_type const *type)
 		}
 	}
 
-	return NULL;
+	return &no_values_aggregate_spec;
 }
 
 static void ia32_lower_for_target(void)

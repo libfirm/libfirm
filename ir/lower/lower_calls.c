@@ -40,6 +40,17 @@ typedef struct lowering_env_t {
 	decide_aggregate_ret_func    aggregate_ret;
 } lowering_env_t;
 
+aggregate_spec_t const no_values_aggregate_spec = {
+	.n_values = 0,
+	.modes    = NULL,
+};
+
+static aggregate_spec_t const *get_no_values(ir_type const *const type)
+{
+	(void)type;
+	return &no_values_aggregate_spec;
+}
+
 /**
  * Default implementation for finding a pointer type for a given element type.
  * Simply create a new one.
@@ -136,7 +147,7 @@ static ir_type *lower_mtp(lowering_env_t const *const env, ir_type *mtp)
 
 		if (is_aggregate_type(res_tp)) {
 			aggregate_spec_t const *const ret_spec = env->aggregate_ret(res_tp);
-			unsigned const n_values = ret_spec != NULL ? ret_spec->n_values : 0;
+			unsigned                const n_values = ret_spec->n_values;
 			if (n_values > 0) {
 				for (unsigned i = 0; i < n_values; ++i) {
 					ir_mode *const mode = ret_spec->modes[i];
@@ -665,7 +676,7 @@ static void fix_call_compound_ret(const cl_entry *entry,
 
 		ir_node *dest_addr = dest_addrs[c++];
 		aggregate_spec_t const *const ret_spec = env->env->aggregate_ret(type);
-		unsigned const n_values = ret_spec != NULL ? ret_spec->n_values : 0;
+		unsigned                const n_values = ret_spec->n_values;
 		if (n_values > 0) {
 			fix_int_return(entry, dest_addr, ret_spec, i, pn);
 			pn += n_values;
@@ -776,7 +787,7 @@ static void transform_return(ir_node *ret, size_t n_ret_com, wlk_env *env)
 		}
 
 		aggregate_spec_t const *const ret_spec = env->env->aggregate_ret(type);
-		unsigned const n_values = ret_spec != NULL ? ret_spec->n_values : 0;
+		unsigned                const n_values = ret_spec->n_values;
 		if (n_values > 0) {
 			if (is_Unknown(pred)) {
 				for (unsigned i = 0; i < n_values; ++i) {
@@ -875,10 +886,9 @@ static void transform_irg(lowering_env_t const *const env, ir_graph *const irg)
 			++n_ret_com;
 
 			aggregate_spec_t const *const ret_spec = env->aggregate_ret(type);
-			unsigned const n_values = ret_spec != NULL ? ret_spec->n_values : 0;
 			/* if we don't return it as values, then we will add a new parameter
 			 * with the address of the destination memory */
-			if (n_values == 0)
+			if (ret_spec->n_values == 0)
 				++arg_shift;
 		}
 	}
@@ -978,7 +988,7 @@ void lower_calls_with_compounds(compound_call_lowering_flags flags,
 
 	lowering_env_t env = {
 		.flags         = flags,
-		.aggregate_ret = aggregate_ret,
+		.aggregate_ret = aggregate_ret != NULL ? aggregate_ret : get_no_values,
 	};
 
 	/* first step: Transform all graphs */

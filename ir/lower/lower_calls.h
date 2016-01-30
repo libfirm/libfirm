@@ -31,10 +31,12 @@ ENUM_BITSET(compound_call_lowering_flags)
  * decomposed into these values. So the sum of all mode sizes must equal the
  * struct size.
  */
-typedef struct {
+typedef struct aggregate_spec_t {
 	unsigned        n_values;
 	ir_mode *const *modes;
 } aggregate_spec_t;
+
+extern aggregate_spec_t const no_values_aggregate_spec;
 
 /**
  * Callback to decide how the specified struct should be returned by a
