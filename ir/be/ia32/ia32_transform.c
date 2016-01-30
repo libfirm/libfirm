@@ -1976,7 +1976,7 @@ static ir_node *gen_Shr(ir_node *node)
  */
 static ir_node *gen_Shrs(ir_node *node)
 {
-	ir_node *left  = get_Shrs_left(node);
+	ir_node *left  = be_skip_sameconv(get_Shrs_left(node));
 	ir_node *right = get_Shrs_right(node);
 
 	if (is_Const(right)) {
