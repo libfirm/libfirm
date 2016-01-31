@@ -1091,7 +1091,7 @@ static x87_attr_t *ia32_get_x87_attr(ir_node *const node)
 	return &attr->x87;
 }
 
-static void ia32_emit(ir_graph *irg)
+static void ia32_before_emit(ir_graph *irg)
 {
 	/*
 	 * Last touchups for the graph before emit: x87 simulation to replace the
@@ -1142,10 +1142,6 @@ static void ia32_emit(ir_graph *irg)
 	ia32_peephole_optimization(irg);
 
 	be_remove_dead_nodes_from_schedule(irg);
-
-	be_timer_push(T_EMIT);
-	ia32_emit_function(irg);
-	be_timer_pop(T_EMIT);
 }
 
 /**
@@ -1476,6 +1472,29 @@ static const regalloc_if_t ia32_regalloc_if = {
 	.perform_memory_operand = ia32_perform_memory_operand,
 };
 
+static bool lower_for_emit(ir_graph *const irg, unsigned *const sp_is_non_ssa)
+{
+	if (!be_step_first(irg))
+		return false;
+
+	be_birg_from_irg(irg)->non_ssa_regs = sp_is_non_ssa;
+	ia32_select_instructions(irg);
+
+	be_step_schedule(irg);
+
+	be_timer_push(T_RA_PREPARATION);
+	ia32_setup_fpu_mode(irg);
+	be_sched_fix_flags(irg, &ia32_reg_classes[CLASS_ia32_flags],
+					   &flags_remat, NULL, &ia32_try_replace_flags);
+	simplify_remat_nodes(irg);
+	be_timer_pop(T_RA_PREPARATION);
+
+	be_step_regalloc(irg, &ia32_regalloc_if);
+
+	ia32_before_emit(irg);
+	return true;
+}
+
 static void ia32_generate_code(FILE *output, const char *cup_name)
 {
 	ia32_tv_ent = pmap_create();
@@ -1485,24 +1504,12 @@ static void ia32_generate_code(FILE *output, const char *cup_name)
 	rbitset_set(sp_is_non_ssa, REG_ESP);
 
 	foreach_irp_irg(i, irg) {
-		if (!be_step_first(irg))
+		if (!lower_for_emit(irg, sp_is_non_ssa))
 			continue;
 
-		be_birg_from_irg(irg)->non_ssa_regs = sp_is_non_ssa;
-		ia32_select_instructions(irg);
-
-		be_step_schedule(irg);
-
-		be_timer_push(T_RA_PREPARATION);
-		ia32_setup_fpu_mode(irg);
-		be_sched_fix_flags(irg, &ia32_reg_classes[CLASS_ia32_flags],
-						   &flags_remat, NULL, &ia32_try_replace_flags);
-		simplify_remat_nodes(irg);
-		be_timer_pop(T_RA_PREPARATION);
-
-		be_step_regalloc(irg, &ia32_regalloc_if);
-
-		ia32_emit(irg);
+		be_timer_push(T_EMIT);
+		ia32_emit_function(irg);
+		be_timer_pop(T_EMIT);
 
 		be_step_last(irg);
 	}
@@ -1511,6 +1518,23 @@ static void ia32_generate_code(FILE *output, const char *cup_name)
 
 	be_finish();
 	pmap_destroy(ia32_tv_ent);
+}
+
+static ir_jit_function_t *ia32_jit_compile(ir_jit_segment_t *const segment,
+                                           ir_graph *const irg)
+{
+	unsigned *const sp_is_non_ssa = rbitset_alloca(N_IA32_REGISTERS);
+	rbitset_set(sp_is_non_ssa, REG_ESP);
+
+	if (!lower_for_emit(irg, sp_is_non_ssa))
+		return NULL;
+
+	be_timer_push(T_EMIT);
+	ir_jit_function_t *const res = ia32_emit_jit(segment, irg);
+	be_timer_pop(T_EMIT);
+
+	be_step_last(irg);
+	return res;
 }
 
 static int ia32_is_valid_clobber(const char *clobber)
@@ -1700,6 +1724,8 @@ static arch_isa_if_t const ia32_isa_if = {
 	.finish                = ia32_finish,
 	.get_params            = ia32_get_libfirm_params,
 	.generate_code         = ia32_generate_code,
+	.jit_compile           = ia32_jit_compile,
+	.emit_function         = ia32_emit_jit_function,
 	.lower_for_target      = ia32_lower_for_target,
 	.is_valid_clobber      = ia32_is_valid_clobber,
 	.get_op_estimated_cost = ia32_get_op_estimated_cost,
