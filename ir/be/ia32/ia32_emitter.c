@@ -1617,75 +1617,29 @@ static parameter_dbg_info_t *construct_parameter_infos(ir_graph *irg)
 	return infos;
 }
 
-/**
- * Main driver. Emits the code for one routine.
- */
-static void ia32_emit_function_text(ir_graph *const irg, ir_node **const blk_sched)
+static void emit_function_text(ir_graph *const irg, exc_entry **const exc_list)
 {
-	ir_entity         *entity   = get_irg_entity(irg);
-	exc_entry         *exc_list = NEW_ARR_F(exc_entry, 0);
-	be_stack_layout_t *layout   = be_get_irg_stack_layout(irg);
-
-	be_gas_elf_type_char = '@';
-
 	ia32_register_emitters();
 
-	get_unique_label(pic_base_label, sizeof(pic_base_label), "PIC_BASE");
-
-	parameter_dbg_info_t *infos = construct_parameter_infos(irg);
-	be_gas_emit_function_prolog(entity, ia32_cg_config.function_alignment,
-	                            infos);
-	free(infos);
-
-	sp_relative = layout->sp_relative;
-	if (layout->sp_relative) {
-		ir_type *frame_type = get_irg_frame_type(irg);
-		frame_type_size = get_type_size_bytes(frame_type);
-		be_dwarf_callframe_register(&ia32_registers[REG_ESP]);
-	} else {
-		/* well not entirely correct here, we should emit this after the
-		 * "movl esp, ebp" */
-		be_dwarf_callframe_register(&ia32_registers[REG_EBP]);
-		/* TODO: do not hardcode the following */
-		be_dwarf_callframe_offset(8);
-		be_dwarf_callframe_spilloffset(&ia32_registers[REG_EBP], -8);
-	}
+	ir_node  **const blk_sched = be_create_block_schedule(irg);
 
 	/* we use links to point to target blocks */
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
-	irg_block_walk_graph(irg, ia32_gen_labels, NULL, &exc_list);
+	irg_block_walk_graph(irg, ia32_gen_labels, NULL, exc_list);
 
 	/* initialize next block links */
-	size_t n = ARR_LEN(blk_sched);
+	size_t     const n         = ARR_LEN(blk_sched);
 	for (size_t i = 0; i < n; ++i) {
-		ir_node *block = blk_sched[i];
-		ir_node *prev  = i > 0 ? blk_sched[i-1] : NULL;
-
+		ir_node *const block = blk_sched[i];
+		ir_node *const prev  = i > 0 ? blk_sched[i-1] : NULL;
 		set_irn_link(block, prev);
 	}
 
 	for (size_t i = 0; i < n; ++i) {
-		ir_node *block = blk_sched[i];
-
+		ir_node *const block = blk_sched[i];
 		ia32_gen_block(block);
 	}
-
-	be_gas_emit_function_epilog(entity);
-
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
-
-	/* Sort the exception table using the exception label id's.
-	   Those are ascending with ascending addresses. */
-	QSORT_ARR(exc_list, cmp_exc_entry);
-	for (size_t e = 0; e < ARR_LEN(exc_list); ++e) {
-		be_emit_cstring("\t.long ");
-		ia32_emit_exc_label(exc_list[e].exc_instr);
-		be_emit_char('\n');
-		be_emit_cstring("\t.long ");
-		be_gas_emit_block_name(exc_list[e].block);
-		be_emit_char('\n');
-	}
-	DEL_ARR_F(exc_list);
 }
 
 static const lc_opt_enum_int_items_t get_ip_syle_items[] = {
@@ -3208,16 +3162,11 @@ static void gen_binary_block(ir_node *block)
 	}
 }
 
-static void ia32_emit_function_binary(ir_graph *const irg, ir_node **const blk_sched)
+static void emit_function_binary(ir_graph *const irg)
 {
-	ir_entity *entity = get_irg_entity(irg);
-
 	ia32_register_binary_emitters();
 
-	parameter_dbg_info_t *infos = construct_parameter_infos(irg);
-	be_gas_emit_function_prolog(entity, ia32_cg_config.function_alignment,
-	                            NULL);
-	free(infos);
+	ir_node **const blk_sched = be_create_block_schedule(irg);
 
 	/* we use links to point to target blocks */
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
@@ -3235,22 +3184,57 @@ static void ia32_emit_function_binary(ir_graph *const irg, ir_node **const blk_s
 		ir_node *block = blk_sched[i];
 		gen_binary_block(block);
 	}
-
-	be_gas_emit_function_epilog(entity);
-
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 }
 
 void ia32_emit_function(ir_graph *const irg)
 {
-	ir_node **const blk_sched = be_create_block_schedule(irg);
+	exc_entry *exc_list = NEW_ARR_F(exc_entry, 0);
+	be_gas_elf_type_char = '@';
 
-	/* emit the code */
-	if (ia32_cg_config.emit_machcode) {
-		ia32_emit_function_binary(irg, blk_sched);
+	ir_entity *const entity = get_irg_entity(irg);
+	parameter_dbg_info_t *infos = construct_parameter_infos(irg);
+	be_gas_emit_function_prolog(entity, ia32_cg_config.function_alignment,
+	                            NULL);
+	free(infos);
+
+	be_stack_layout_t *const layout = be_get_irg_stack_layout(irg);
+	sp_relative = layout->sp_relative;
+	if (layout->sp_relative) {
+		ir_type *frame_type = get_irg_frame_type(irg);
+		frame_type_size = get_type_size_bytes(frame_type);
+		be_dwarf_callframe_register(&ia32_registers[REG_ESP]);
 	} else {
-		ia32_emit_function_text(irg, blk_sched);
+		/* well not entirely correct here, we should emit this after the
+		 * "movl esp, ebp" */
+		be_dwarf_callframe_register(&ia32_registers[REG_EBP]);
+		/* TODO: do not hardcode the following */
+		be_dwarf_callframe_offset(8);
+		be_dwarf_callframe_spilloffset(&ia32_registers[REG_EBP], -8);
 	}
+
+	get_unique_label(pic_base_label, sizeof(pic_base_label), "PIC_BASE");
+
+	if (ia32_cg_config.emit_machcode) {
+		emit_function_binary(irg);
+	} else {
+		emit_function_text(irg, &exc_list);
+	}
+
+	be_gas_emit_function_epilog(entity);
+
+	/* Sort the exception table using the exception label id's.
+	   Those are ascending with ascending addresses. */
+	QSORT_ARR(exc_list, cmp_exc_entry);
+	for (size_t e = 0; e < ARR_LEN(exc_list); ++e) {
+		be_emit_cstring("\t.long ");
+		ia32_emit_exc_label(exc_list[e].exc_instr);
+		be_emit_char('\n');
+		be_emit_cstring("\t.long ");
+		be_gas_emit_block_name(exc_list[e].block);
+		be_emit_char('\n');
+	}
+	DEL_ARR_F(exc_list);
 }
 
 void ia32_emit_thunks(void)
