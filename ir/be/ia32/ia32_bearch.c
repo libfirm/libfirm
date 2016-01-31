@@ -357,7 +357,6 @@ static void ia32_perform_memory_operand(ir_node *irn, unsigned int i)
 	set_irn_n(irn, n_ia32_mem,  spill);
 	set_irn_n(irn, i,           ia32_get_admissible_noreg(irn, i));
 	attr->addr.variant = X86_ADDR_BASE;
-	set_ia32_is_reload(irn);
 
 	/* kill the reload */
 	assert(get_irn_n_edges(op) == 0);
@@ -396,8 +395,6 @@ static ir_node *ia32_turn_back_dest_am(ir_node *node)
 	ir_node  *const mem   = get_irn_n(node, n_ia32_mem);
 	ir_node  *const load  = new_bd_ia32_Load(dbgi, block, base, idx, mem, size, false);
 	ia32_copy_am_attrs(load, node);
-	if (is_ia32_is_reload(node))
-		set_ia32_is_reload(load);
 	sched_add_before(node, load);
 	ir_node *const load_res = be_new_Proj(load, pn_ia32_Load_res);
 	ir_node *const load_mem = be_new_Proj(load, pn_ia32_Load_M);
@@ -441,8 +438,6 @@ ir_node *ia32_turn_back_am(ir_node *node)
 	ir_node  *load_res = be_new_Proj(load, pn_ia32_Load_res);
 
 	ia32_copy_am_attrs(load, node);
-	if (is_ia32_is_reload(node))
-		set_ia32_is_reload(load);
 	set_irn_n(node, n_ia32_mem, get_irg_no_mem(irg));
 
 	switch (get_ia32_am_support(node)) {
@@ -673,7 +668,7 @@ static ir_node *ia32_new_spill(ir_node *value, ir_node *after)
 	attr->addr.variant = X86_ADDR_BASE;
 	set_ia32_op_type(store, ia32_AddrModeD);
 	set_ia32_frame_use(store, IA32_FRAME_USE_AUTO);
-	set_ia32_is_spill(store);
+	arch_add_irn_flags(store, arch_irn_flag_spill);
 	sched_add_after(after, store);
 
 	return res;
@@ -712,7 +707,6 @@ static ir_node *ia32_new_reload(ir_node *value, ir_node *spill, ir_node *before)
 	attr->addr.variant = X86_ADDR_BASE;
 	set_ia32_op_type(load, ia32_AddrModeS);
 	set_ia32_frame_use(load, IA32_FRAME_USE_AUTO);
-	set_ia32_is_reload(load);
 	arch_add_irn_flags(load, arch_irn_flag_reload);
 	sched_add_before(before, load);
 
@@ -741,7 +735,7 @@ static ir_node *create_push(ir_node *node, ir_node *schedpoint, ir_node *sp,
 	};
 	set_ia32_frame_use(push, IA32_FRAME_USE_AUTO);
 	set_ia32_op_type(push, ia32_AddrModeS);
-	set_ia32_is_spill(push);
+	arch_add_irn_flags(push, arch_irn_flag_spill);
 
 	sched_add_before(schedpoint, push);
 	return push;
@@ -767,7 +761,7 @@ static ir_node *create_pop(ir_node *node, ir_node *schedpoint, ir_node *sp,
 	};
 	set_ia32_frame_use(pop, IA32_FRAME_USE_AUTO);
 	set_ia32_op_type(pop, ia32_AddrModeD);
-	set_ia32_is_reload(pop);
+	arch_add_irn_flags(pop, arch_irn_flag_reload);
 	sched_add_before(schedpoint, pop);
 	return pop;
 }
@@ -1016,6 +1010,7 @@ static void introduce_prologue(ir_graph *const irg, bool omit_fp)
 		ir_node *const noreg      = ia32_new_NoReg_gp(irg);
 		ir_node *const initial_bp = be_get_Start_proj(irg, bp);
 		ir_node *const push       = new_bd_ia32_Push(NULL, block, noreg, noreg, mem, initial_bp, initial_sp, X86_SIZE_32);
+		arch_add_irn_flags(push, arch_irn_flag_spill);
 		sched_add_after(start, push);
 		ir_node *const curr_mem   = be_new_Proj(push, pn_ia32_Push_M);
 		edges_reroute_except(mem, curr_mem, push);
@@ -1427,16 +1422,9 @@ static void ia32_finish(void)
 	obstack_free(&opcodes_obst, NULL);
 }
 
-static void ia32_mark_remat(ir_node *node)
-{
-	if (is_ia32_irn(node))
-		set_ia32_is_remat(node);
-}
-
 static const regalloc_if_t ia32_regalloc_if = {
 	.spill_cost             = 7,
 	.reload_cost            = 5,
-	.mark_remat             = ia32_mark_remat,
 	.new_spill              = ia32_new_spill,
 	.new_reload             = ia32_new_reload,
 	.perform_memory_operand = ia32_perform_memory_operand,

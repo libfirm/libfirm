@@ -423,14 +423,14 @@ static ir_node *do_remat(spill_env_t *env, ir_node *spilled, ir_node *reloader)
 	/* create a copy of the node */
 	ir_node *const bl  = get_nodes_block(reloader);
 	ir_node *const res = new_similar_node(spilled, bl, ins);
-	if (env->regif.mark_remat)
-		env->regif.mark_remat(res);
 
 	DBG((dbg, LEVEL_1, "Insert remat %+F of %+F before reloader %+F\n", res,
 	     spilled, reloader));
 
-	if (!is_Proj(res))
+	if (!is_Proj(res)) {
+		arch_add_irn_flags(res, arch_irn_flag_rematerialized);
 		sched_add_before(reloader, res);
+	}
 
 	return res;
 }

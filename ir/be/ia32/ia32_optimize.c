@@ -37,6 +37,10 @@
 #include "ia32_architecture.h"
 #include "util.h"
 
+static const arch_irn_flags_t spill_flags = arch_irn_flag_spill
+                                          | arch_irn_flag_reload
+                                          | arch_irn_flag_rematerialized;
+
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 static bool is_hl_register(arch_register_t const *const reg)
@@ -48,19 +52,16 @@ static bool is_hl_register(arch_register_t const *const reg)
 		reg == &ia32_registers[REG_EDX];
 }
 
-static void copy_mark(const ir_node *old, ir_node *newn)
+static void copy_spillflags(const ir_node *old, ir_node *const newn)
 {
-	if (is_ia32_is_reload(old))
-		set_ia32_is_reload(newn);
-	if (is_ia32_is_spill(old))
-		set_ia32_is_spill(newn);
-	if (is_ia32_is_remat(old))
-		set_ia32_is_remat(newn);
+	/* Copy old spill flags */
+	const arch_irn_flags_t old_flags = arch_get_irn_flags(old) & spill_flags;
+	arch_add_irn_flags(newn, old_flags);
 }
 
 static void replace(ir_node *const old, ir_node *const newn)
 {
-	copy_mark(old, newn);
+	copy_spillflags(old, newn);
 	be_peephole_replace(old, newn);
 }
 
@@ -611,7 +612,8 @@ static void peephole_IncSP_Store_to_push(ir_node *irn)
 		ir_node  *const mem   = get_irn_n(store, n_ia32_mem);
 		ir_node  *const val   = get_irn_n(store, n_ia32_unary_op);
 		ir_node  *const push  = new_bd_ia32_Push(dbgi, block, noreg, noreg, mem, val, curr_sp, X86_SIZE_32);
-		copy_mark(store, push);
+
+		copy_spillflags(store, push);
 
 		if (first_push == NULL)
 			first_push = push;
@@ -758,10 +760,10 @@ static void peephole_Load_IncSP_to_pop(ir_node *irn)
 		ir_node *pop = new_bd_ia32_Pop(get_irn_dbg_info(load), block, mem, pred_sp, size);
 		arch_set_irn_register_out(pop, pn_ia32_Load_res, reg);
 
-		copy_mark(load, pop);
-
 		/* create stackpointer Proj */
 		pred_sp = be_new_Proj_reg(pop, pn_ia32_Pop_stack, &ia32_registers[REG_ESP]);
+
+		copy_spillflags(load, pop);
 
 		sched_add_before(irn, pop);
 		be_peephole_exchange(load, pop);
@@ -1054,7 +1056,7 @@ static void peephole_ia32_Conv_I2I(ir_node *node)
 	ir_node  *block = get_nodes_block(node);
 	ir_node  *cwtl  = new_bd_ia32_Cwtl(dbgi, block, val);
 	arch_set_irn_register(cwtl, eax);
-	be_peephole_replace(node, cwtl);
+	replace(node, cwtl);
 }
 
 /* Replace rolw $8, %[abcd]x by shorter xchgb %[abcd]l, %[abcd]h */
@@ -1070,7 +1072,7 @@ static void peephole_ia32_Rol(ir_node *node)
 			ir_node  *const val   = get_irn_n(node, n_ia32_Rol_val);
 			ir_node  *const xchg  = new_bd_ia32_Bswap16(dbgi, block, val);
 			arch_set_irn_register_out(xchg, pn_ia32_Bswap16_res, reg);
-			be_peephole_replace(node, xchg);
+			replace(node, xchg);
 		}
 	}
 }

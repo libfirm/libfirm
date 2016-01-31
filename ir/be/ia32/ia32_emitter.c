@@ -60,7 +60,6 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 static char       pic_base_label[128];
 static ir_label_t exc_label_id;
-static bool       mark_spill_reload;
 
 static bool       omit_fp;
 static int        frame_type_size;
@@ -730,8 +729,9 @@ static void emit_ia32_Jcc(const ir_node *node)
 
 	/* get both Projs */
 	ir_node const *proj_true   = get_Proj_for_pn(node, pn_ia32_Jcc_true);
-	ir_node const *target_true = be_emit_get_cfop_target(proj_true);
 	ir_node const *proj_false  = get_Proj_for_pn(node, pn_ia32_Jcc_false);
+
+	ir_node const *target_true = be_emit_get_cfop_target(proj_true);
 	if (is_fallthrough(proj_true)) {
 		/* exchange both proj's so the second one can be omitted */
 		const ir_node *t = proj_true;
@@ -739,12 +739,12 @@ static void emit_ia32_Jcc(const ir_node *node)
 		proj_false = t;
 		cc         = x86_negate_condition_code(cc);
 	}
-	const ir_node *target_false = be_emit_get_cfop_target(proj_false);
-	bool           fallthrough  = is_fallthrough(proj_false);
+	bool fallthrough  = is_fallthrough(proj_false);
 	/* if we can't have a fallthrough anyway, put the more likely case first */
 	if (!fallthrough) {
 		/* We would need execfreq for the concrete edge, but don't have it
 		 * available here, so we use the block execfreq :-( */
+		const ir_node *target_false = be_emit_get_cfop_target(proj_false);
 		double freq_true  = get_block_execfreq(target_true);
 		double freq_false = get_block_execfreq(target_false);
 		if (freq_false > freq_true) {
@@ -1342,18 +1342,9 @@ static void ia32_emit_node(ir_node *node)
 {
 	DBG((dbg, LEVEL_1, "emitting code for %+F\n", node));
 
-	if (is_ia32_irn(node)) {
-		/* emit the exception label of this instruction */
-		if (get_ia32_exc_label(node))
-			ia32_assign_exc_label(node);
-		if (mark_spill_reload) {
-			if (is_ia32_is_spill(node))
-				ia32_emitf(NULL, "xchg %ebx, %ebx        /* spill mark */");
-			if (is_ia32_is_reload(node))
-				ia32_emitf(NULL, "xchg %edx, %edx        /* reload mark */");
-			if (is_ia32_is_remat(node))
-				ia32_emitf(NULL, "xchg %ecx, %ecx        /* remat mark */");
-		}
+	/* emit the exception label of this instruction */
+	if (is_ia32_irn(node) && get_ia32_exc_label(node)) {
+		ia32_assign_exc_label(node);
 	}
 
 	be_emit_node(node);
@@ -1585,7 +1576,6 @@ static lc_opt_enum_int_var_t get_ip_style_var = {
 };
 
 static const lc_opt_table_entry_t ia32_emitter_options[] = {
-	LC_OPT_ENT_BOOL    ("mark_spill_reload", "mark spills and reloads with ud opcodes", &mark_spill_reload),
 	LC_OPT_ENT_ENUM_INT("get_ip",            "method to get IP for the pic base",       &get_ip_style_var),
 	LC_OPT_LAST
 };

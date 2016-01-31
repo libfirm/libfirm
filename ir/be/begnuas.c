@@ -1655,18 +1655,37 @@ void be_gas_end_compilation_unit(const be_main_env_t *env)
 	be_dwarf_close();
 }
 
+static const char* get_spillmark(const ir_node* const node)
+{
+	const char *spillmark = "";
+	if (be_options.mark_spill_reload) {
+		spillmark = "         ";
+		if (!is_Proj(node)) {
+			if (arch_irn_is(node, spill)) {
+				spillmark = " (spill) ";
+			} else if (arch_irn_is(node, reload)) {
+				spillmark = " (reload)";
+			} else if (arch_irn_is(node, rematerialized)) {
+				spillmark = " (remat) ";
+			}
+		}
+	}
+	return spillmark;
+}
+
 void be_emit_finish_line_gas(const ir_node *node)
 {
 	if (node && be_options.verbose_asm) {
 		be_emit_pad_comment();
 		dbg_info   *const dbg = get_irn_dbg_info(node);
 		src_loc_t   const loc = ir_retrieve_dbg_info(dbg);
+		const char* const spillmark = get_spillmark(node);
 		char const *const fmt =
-			!loc.file       ? "/* %+F */\n"       :
-			loc.line   == 0 ? "/* %+F %s */\n"    :
-			loc.column == 0 ? "/* %+F %s:%u */\n" :
-			/*             */ "/* %+F %s:%u:%u */\n";
-		be_emit_irprintf(fmt, node, loc.file, loc.line, loc.column);
+			!loc.file       ? "/*%s %+F */\n"       :
+			loc.line   == 0 ? "/*%s %+F %s */\n"    :
+			loc.column == 0 ? "/*%s %+F %s:%u */\n" :
+			/*             */ "/*%s %+F %s:%u:%u */\n";
+		be_emit_irprintf(fmt, spillmark, node, loc.file, loc.line, loc.column);
 	} else {
 		be_emit_char('\n');
 	}

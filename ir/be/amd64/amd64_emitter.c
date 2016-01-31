@@ -731,13 +731,12 @@ static void emit_amd64_jcc(const ir_node *irn)
 	const ir_node *const block        = get_nodes_block(irn);
 	const ir_node *      proj_true    = get_Proj_for_pn(irn, pn_Cond_true);
 	const ir_node *      proj_false   = get_Proj_for_pn(irn, pn_Cond_false);
-	const ir_node *const target_true  = be_emit_get_cfop_target(proj_true);
-	const ir_node *const target_false = be_emit_get_cfop_target(proj_false);
 
 	const ir_node         *flags = get_irn_n(irn, n_amd64_jcc_eflags);
 	const amd64_cc_attr_t *attr  = get_amd64_cc_attr_const(irn);
 	x86_condition_code_t   cc    = determine_final_cc(flags, attr->cc);
 
+	const ir_node *const target_true  = be_emit_get_cfop_target(proj_true);
 	if (fallthrough_possible(block, target_true)) {
 		/* exchange both proj's so the second one can be omitted */
 		const ir_node *t = proj_true;
@@ -759,6 +758,7 @@ static void emit_amd64_jcc(const ir_node *irn)
 	/* emit the true proj */
 	amd64_emitf(proj_true, "j%PX %L", (int)cc);
 
+	const ir_node *const target_false = be_emit_get_cfop_target(proj_false);
 	if (!fallthrough_possible(block, target_false)) {
 		amd64_emitf(proj_false, "jmp %L");
 	} else if (be_options.verbose_asm) {

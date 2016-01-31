@@ -108,9 +108,10 @@ static const lc_opt_table_entry_t be_main_options[] = {
 	LC_OPT_ENT_BOOL     ("exceptions", "enable exception handling",                           &be_options.exceptions),
 	LC_OPT_ENT_BOOL     ("verify",     "verify the backend irg",                              &be_options.do_verify),
 	LC_OPT_ENT_BOOL     ("time",       "get backend timing statistics",                       &be_options.timing),
-	LC_OPT_ENT_BOOL     ("profilegenerate", "instrument the code for execution count profiling", &be_options.opt_profile_generate),
-	LC_OPT_ENT_BOOL     ("profileuse",      "use existing profile data",                         &be_options.opt_profile_use),
-	LC_OPT_ENT_BOOL     ("verboseasm", "enable verbose assembler output",                        &be_options.verbose_asm),
+	LC_OPT_ENT_BOOL     ("profilegenerate",   "instrument the code for execution count profiling", &be_options.opt_profile_generate),
+	LC_OPT_ENT_BOOL     ("profileuse",        "use existing profile data",                         &be_options.opt_profile_use),
+	LC_OPT_ENT_BOOL     ("verboseasm",        "enable verbose assembler output",                   &be_options.verbose_asm),
+	LC_OPT_ENT_BOOL     ("mark_spill_reload", "mark spills and reloads",                           &be_options.mark_spill_reload),
 
 	LC_OPT_ENT_STR("ilp.solver", "the ilp solver name", &be_options.ilp_solver),
 	LC_OPT_LAST
