@@ -1683,13 +1683,28 @@ enum Mod {
 	MOD_REG          = 0xC0  /**< reg1 */
 };
 
+typedef enum reg_modifier {
+	REG_LOW  = 0,
+	REG_HIGH = 4
+} reg_modifier_t;
+
 /** create R/M encoding for ModR/M */
-#define ENC_RM(x) (x)
+static uint8_t ENC_RM(unsigned const regnum, reg_modifier_t const modifier)
+{
+	return regnum | modifier;
+}
+
 /** create REG encoding for ModR/M */
-#define ENC_REG(x) ((x) << 3)
+static uint8_t ENC_REG(unsigned const regnum, reg_modifier_t const modifier)
+{
+	return (regnum | modifier) << 3;
+}
 
 /** create encoding for a SIB byte */
-#define ENC_SIB(scale, index, base) ((scale) << 6 | (index) << 3 | (base))
+static uint8_t ENC_SIB(uint8_t scale, uint8_t index, uint8_t base)
+{
+	return scale << 6 | index << 3 | base;
+}
 
 /* Node: The following routines are supposed to append bytes, words, dwords
    to the output stream.
@@ -1756,18 +1771,13 @@ static void bemit_jmp_destination(const ir_node *dest_block)
 /* end emit routines, all emitters following here should only use the functions
    above. */
 
-typedef enum reg_modifier {
-	REG_LOW  = 0,
-	REG_HIGH = 4
-} reg_modifier_t;
-
 /** Create a ModR/M byte for src1,src2 registers */
 static void bemit_modrr(const arch_register_t *src1,
                         const arch_register_t *src2)
 {
 	unsigned char modrm = MOD_REG;
-	modrm |= ENC_RM(src1->encoding);
-	modrm |= ENC_REG(src2->encoding);
+	modrm |= ENC_RM(src1->encoding, REG_LOW);
+	modrm |= ENC_REG(src2->encoding, REG_LOW);
 	bemit8(modrm);
 }
 
@@ -1776,8 +1786,8 @@ static void bemit_modrr8(reg_modifier_t high_part1, const arch_register_t *src1,
 						 reg_modifier_t high_part2, const arch_register_t *src2)
 {
 	unsigned char modrm = MOD_REG;
-	modrm |= ENC_RM( high_part1 | src1->encoding);
-	modrm |= ENC_REG(high_part2 | src2->encoding);
+	modrm |= ENC_RM(src1->encoding, high_part1);
+	modrm |= ENC_REG(src2->encoding, high_part2);
 	bemit8(modrm);
 }
 
@@ -1786,8 +1796,8 @@ static void bemit_modru(const arch_register_t *reg, unsigned ext)
 {
 	unsigned char modrm = MOD_REG;
 	assert(ext <= 7);
-	modrm |= ENC_RM(reg->encoding);
-	modrm |= ENC_REG(ext);
+	modrm |= ENC_RM(reg->encoding, REG_LOW);
+	modrm |= ENC_REG(ext, REG_LOW);
 	bemit8(modrm);
 }
 
@@ -1796,7 +1806,7 @@ static void bemit_modrm8(reg_modifier_t high_part, const arch_register_t *reg)
 {
 	unsigned char modrm = MOD_REG;
 	assert(reg->encoding < 4);
-	modrm |= ENC_RM(high_part | reg->encoding);
+	modrm |= ENC_RM(reg->encoding, high_part);
 	modrm |= MOD_REG;
 	bemit8(modrm);
 }
@@ -1856,18 +1866,18 @@ static void bemit_mod_am(unsigned reg, const ir_node *node)
 		arch_register_t const *const reg_index = arch_get_irn_register(idx);
 		unsigned               const scale     = get_ia32_am_scale(node);
 		/* R/M set to ESP means SIB in 32bit mode. */
-		modrm   |= ENC_RM(0x04);
+		modrm   |= ENC_RM(0x04, REG_LOW);
 		sib      = ENC_SIB(scale, reg_index->encoding, base_enc);
 		emitsib = true;
 	} else if (base_enc == 0x04) {
 		/* for the above reason we are forced to emit a SIB when base is ESP.
 		 * Only the base is used, index must be ESP too, which means no index.
 		 */
-		modrm   |= ENC_RM(0x04);
+		modrm   |= ENC_RM(0x04, REG_LOW);
 		sib      = ENC_SIB(0, 0x04, 0x04);
 		emitsib  = true;
 	} else {
-		modrm |= ENC_RM(base_enc);
+		modrm |= ENC_RM(base_enc, REG_LOW);
 	}
 
 	/* We are forced to emit an 8bit offset as EBP base without offset is a
@@ -1877,7 +1887,7 @@ static void bemit_mod_am(unsigned reg, const ir_node *node)
 		emitoffs  = 8;
 	}
 
-	modrm |= ENC_REG(reg);
+	modrm |= ENC_REG(reg, REG_LOW);
 
 	bemit8(modrm);
 	if (emitsib)
@@ -1889,41 +1899,6 @@ static void bemit_mod_am(unsigned reg, const ir_node *node)
 	} else if (emitoffs == 32) {
 		bemit_entity(&attr->am_imm);
 	}
-}
-
-/**
- * Emit an unop.
- */
-static void bemit_unop(const ir_node *node, unsigned char code, unsigned char ext, int input)
-{
-	bemit8(code);
-	if (get_ia32_op_type(node) == ia32_Normal) {
-		const arch_register_t *in = arch_get_irn_register_in(node, input);
-		bemit_modru(in, ext);
-	} else {
-		bemit_mod_am(ext, node);
-	}
-}
-
-static void bemit_unop_reg(const ir_node *node, unsigned char code, int input)
-{
-	arch_register_t const *const out = arch_get_irn_register_out(node, pn_ia32_res);
-	bemit_unop(node, code, out->encoding, input);
-}
-
-static void bemit_unop_mem(const ir_node *node, unsigned char code, unsigned char ext)
-{
-	unsigned size = get_mode_size_bits(get_ia32_ls_mode(node));
-	if (size == 16)
-		bemit8(0x66);
-	bemit8(size == 8 ? code : code | OP_16_32);
-	bemit_mod_am(ext, node);
-}
-
-static void bemit_0f_unop_reg(ir_node const *const node, unsigned char const code, int const input)
-{
-	bemit8(0x0F);
-	bemit_unop_reg(node, code, input);
 }
 
 static void bemit_imm32(ir_node const *const node)
@@ -2011,6 +1986,57 @@ static void bemit_mov_const(const ir_node *node)
 	bemit_imm32(node);
 }
 
+/**
+ * Emit an unop.
+ */
+static void bemit_unop(ir_node const *const node, uint8_t const code,
+                       uint8_t const ext, int const input)
+{
+	bemit8(code);
+	if (get_ia32_op_type(node) == ia32_Normal) {
+		const arch_register_t *in = arch_get_irn_register_in(node, input);
+		bemit_modru(in, ext);
+	} else {
+		bemit_mod_am(ext, node);
+	}
+}
+
+static void bemit_not(ir_node const *const node)
+{
+	bemit_unop(node, 0xF7, 2, n_ia32_Not_val);
+}
+
+static void bemit_neg(ir_node const *const node)
+{
+	bemit_unop(node, 0xF7, 3, n_ia32_Neg_val);
+}
+
+static void bemit_mul(ir_node const *const node)
+{
+	bemit_unop(node, 0xF7, 4, n_ia32_Mul_right);
+}
+
+static void bemit_imul1op(ir_node const *const node)
+{
+	bemit_unop(node, 0xF7, 5, n_ia32_IMul1OP_right);
+}
+
+static void bemit_div(ir_node const *const node)
+{
+	bemit_unop(node, 0xF7, 6, n_ia32_Div_divisor);
+}
+
+static void bemit_idiv(ir_node const *const node)
+{
+	bemit_unop(node, 0xF7, 7, n_ia32_IDiv_divisor);
+}
+
+static void bemit_ijmp(ir_node const *const node)
+{
+	/* TODO: am support for IJmp */
+	bemit_unop(node, 0xFF, 4, n_ia32_IJmp_target);
+}
+
 static bool use_eax_short_form(ir_node const *const node)
 {
 	return
@@ -2063,24 +2089,45 @@ static void bemit_binop(ir_node const *const node, unsigned const code)
 	}
 }
 
-/**
- * Create a function for a binop.
- */
-#define BINOP(op, code) \
-	static void bemit_##op(ir_node const *const node) \
-	{ \
-		bemit_binop(node, code); \
-	}
+static void bemit_add(ir_node const *const node)
+{
+	bemit_binop(node, 0);
+}
 
-/*    insn opcode */
-BINOP(add, 0)
-BINOP(or,  1)
-BINOP(adc, 2)
-BINOP(sbb, 3)
-BINOP(and, 4)
-BINOP(sub, 5)
-BINOP(xor, 6)
-BINOP(cmp, 7)
+static void bemit_or(ir_node const *const node)
+{
+	bemit_binop(node, 1);
+}
+
+static void bemit_adc(ir_node const *const node)
+{
+	bemit_binop(node, 2);
+}
+
+static void bemit_sbb(ir_node const *const node)
+{
+	bemit_binop(node, 3);
+}
+
+static void bemit_and(ir_node const *const node)
+{
+	bemit_binop(node, 4);
+}
+
+static void bemit_sub(ir_node const *const node)
+{
+	bemit_binop(node, 5);
+}
+
+static void bemit_xor(ir_node const *const node)
+{
+	bemit_binop(node, 6);
+}
+
+static void bemit_cmp(ir_node const *const node)
+{
+	bemit_binop(node, 7);
+}
 
 static void bemit_binop_mem(ir_node const *const node, unsigned const code)
 {
@@ -2109,86 +2156,118 @@ static void bemit_binop_mem(ir_node const *const node, unsigned const code)
 	}
 }
 
-#define BINOPMEM(op, code) \
-	static void bemit_##op(ir_node const *const node) \
-	{ \
-		bemit_binop_mem(node, code); \
+static void bemit_addmem(ir_node const *const node)
+{
+	bemit_binop_mem(node, 0);
+}
+
+static void bemit_ormem(ir_node const *const node)
+{
+	bemit_binop_mem(node, 1);
+}
+
+static void bemit_andmem(ir_node const *const node)
+{
+	bemit_binop_mem(node, 4);
+}
+
+static void bemit_submem(ir_node const *const node)
+{
+	bemit_binop_mem(node, 5);
+}
+
+static void bemit_xormem(ir_node const *const node)
+{
+	bemit_binop_mem(node, 6);
+}
+
+static void bemit_shiftop(ir_node const *const node, uint8_t const ext)
+{
+	arch_register_t const *const out
+		= arch_get_irn_register_out(node, pn_ia32_res);
+	ir_node         const *const count = get_irn_n(node, 1);
+	if (is_ia32_Immediate(count)) {
+		int32_t const offset = get_ia32_immediate_attr_const(count)->imm.offset;
+		if (offset == 1) {
+			bemit8(0xD1);
+			bemit_modru(out, ext);
+		} else {
+			bemit8(0xC1);
+			bemit_modru(out, ext);
+			bemit8(offset);
+		}
+	} else {
+		bemit8(0xD3);
+		bemit_modru(out, ext);
 	}
-
-BINOPMEM(addmem,  0)
-BINOPMEM(ormem,   1)
-BINOPMEM(andmem,  4)
-BINOPMEM(submem,  5)
-BINOPMEM(xormem,  6)
-
-
-/**
- * Creates a function for an Unop with code /ext encoding.
- */
-#define UNOP(op, code, ext, input)              \
-static void bemit_ ## op(const ir_node *node) { \
-	bemit_unop(node, code, ext, input);         \
 }
 
-UNOP(not,     0xF7, 2, n_ia32_Not_val)
-UNOP(neg,     0xF7, 3, n_ia32_Neg_val)
-UNOP(mul,     0xF7, 4, n_ia32_Mul_right)
-UNOP(imul1op, 0xF7, 5, n_ia32_IMul1OP_right)
-UNOP(div,     0xF7, 6, n_ia32_Div_divisor)
-UNOP(idiv,    0xF7, 7, n_ia32_IDiv_divisor)
-
-/* TODO: am support for IJmp */
-UNOP(ijmp,    0xFF, 4, n_ia32_IJmp_target)
-
-#define SHIFT(op, ext) \
-static void bemit_##op(const ir_node *node) \
-{ \
-	arch_register_t const *const out   = arch_get_irn_register_out(node, pn_ia32_res); \
-	ir_node               *const count = get_irn_n(node, 1); \
-	if (is_ia32_Immediate(count)) { \
-		int32_t offset = get_ia32_immediate_attr_const(count)->imm.offset; \
-		if (offset == 1) { \
-			bemit8(0xD1); \
-			bemit_modru(out, ext); \
-		} else { \
-			bemit8(0xC1); \
-			bemit_modru(out, ext); \
-			bemit8(offset); \
-		} \
-	} else { \
-		bemit8(0xD3); \
-		bemit_modru(out, ext); \
-	} \
-} \
- \
-static void bemit_##op##mem(const ir_node *node) \
-{ \
-	ir_node *count; \
-	unsigned size = get_mode_size_bits(get_ia32_ls_mode(node)); \
-	if (size == 16) \
-		bemit8(0x66); \
-	count = get_irn_n(node, 1); \
-	if (is_ia32_Immediate(count)) { \
-		int32_t offset = get_ia32_immediate_attr_const(count)->imm.offset; \
-		if (offset == 1) { \
-			bemit8(size == 8 ? 0xD0 : 0xD1); \
-			bemit_mod_am(ext, node); \
-		} else { \
-			bemit8(size == 8 ? 0xC0 : 0xC1); \
-			bemit_mod_am(ext, node); \
-			bemit8(offset); \
-		} \
-	} else { \
-		bemit8(size == 8 ? 0xD2 : 0xD3); \
-		bemit_mod_am(ext, node); \
-	} \
+static void bemit_shiftop_mem(ir_node const *const node, uint8_t const ext)
+{
+	unsigned const size = get_mode_size_bits(get_ia32_ls_mode(node));
+	if (size == 16)
+		bemit8(0x66);
+	ir_node const *const count = get_irn_n(node, 1);
+	if (is_ia32_Immediate(count)) {
+		int32_t const offset = get_ia32_immediate_attr_const(count)->imm.offset;
+		if (offset == 1) {
+			bemit8(size == 8 ? 0xD0 : 0xD1);
+			bemit_mod_am(ext, node);
+		} else {
+			bemit8(size == 8 ? 0xC0 : 0xC1);
+			bemit_mod_am(ext, node);
+			bemit8(offset);
+		}
+	} else {
+		bemit8(size == 8 ? 0xD2 : 0xD3);
+		bemit_mod_am(ext, node);
+	}
 }
 
-SHIFT(rol, 0)
-SHIFT(ror, 1)
-SHIFT(shl, 4)
-SHIFT(shr, 5)
-SHIFT(sar, 7)
+static void bemit_rol(ir_node const *const node)
+{
+	bemit_shiftop(node, 0);
+}
+static void bemit_rolmem(ir_node const *const node)
+{
+	bemit_shiftop_mem(node, 0);
+}
+
+static void bemit_ror(ir_node const *const node)
+{
+	bemit_shiftop(node, 1);
+}
+static void bemit_rormem(ir_node const *const node)
+{
+	bemit_shiftop_mem(node, 1);
+}
+
+static void bemit_shl(ir_node const *const node)
+{
+	bemit_shiftop(node, 4);
+}
+static void bemit_shlmem(ir_node const *const node)
+{
+	bemit_shiftop_mem(node, 4);
+}
+
+static void bemit_shr(ir_node const *const node)
+{
+	bemit_shiftop(node, 5);
+}
+static void bemit_shrmem(ir_node const *const node)
+{
+	bemit_shiftop_mem(node, 5);
+}
+
+static void bemit_sar(ir_node const *const node)
+{
+	bemit_shiftop(node, 7);
+}
+static void bemit_sarmem(ir_node const *const node)
+{
+	bemit_shiftop_mem(node, 7);
+}
 
 static void bemit_shld(const ir_node *node)
 {
@@ -2273,6 +2352,21 @@ static void bemit_setcc(const ir_node *node)
 		bemit8(0x90 | pnc2cc(cc));
 		bemit_modrm8(REG_LOW, dreg);
 	}
+}
+
+static void bemit_unop_reg(ir_node const *const node, uint8_t const code,
+                           int const input)
+{
+	arch_register_t const *const out
+		= arch_get_irn_register_out(node, pn_ia32_res);
+	bemit_unop(node, code, out->encoding, input);
+}
+
+static void bemit_0f_unop_reg(ir_node const *const node, uint8_t const code,
+                              int const input)
+{
+	bemit8(0x0F);
+	bemit_unop_reg(node, code, input);
 }
 
 static void bemit_bsf(ir_node const *const node)
@@ -2366,16 +2460,35 @@ static void bemit_inc(const ir_node *node)
 	bemit8(0x40 + out->encoding);
 }
 
-#define UNOPMEM(op, code, ext) \
-static void bemit_##op(const ir_node *node) \
-{ \
-	bemit_unop_mem(node, code, ext); \
+static void bemit_unop_mem(ir_node const *const node, uint8_t const code,
+                           uint8_t const ext)
+{
+	unsigned size = get_mode_size_bits(get_ia32_ls_mode(node));
+	if (size == 16)
+		bemit8(0x66);
+	bemit8(size == 8 ? code : code | OP_16_32);
+	bemit_mod_am(ext, node);
 }
 
-UNOPMEM(notmem, 0xF6, 2)
-UNOPMEM(negmem, 0xF6, 3)
-UNOPMEM(incmem, 0xFE, 0)
-UNOPMEM(decmem, 0xFE, 1)
+static void bemit_notmem(ir_node const *const node)
+{
+	bemit_unop_mem(node, 0xF6, 2);
+}
+
+static void bemit_negmem(ir_node const *const node)
+{
+	bemit_unop_mem(node, 0xF6, 3);
+}
+
+static void bemit_incmem(ir_node const *const node)
+{
+	bemit_unop_mem(node, 0xFE, 0);
+}
+
+static void bemit_decmem(ir_node const *const node)
+{
+	bemit_unop_mem(node, 0xFE, 1);
+}
 
 static void bemit_ldtls(const ir_node *node)
 {
@@ -2385,7 +2498,7 @@ static void bemit_ldtls(const ir_node *node)
 		bemit8(0xA1); // movl 0, %eax
 	} else {
 		bemit8(0x88 | OP_MEM_SRC | OP_16_32); // movl 0, %reg
-		bemit8(MOD_IND | ENC_REG(out->encoding) | ENC_RM(0x05));
+		bemit8(MOD_IND | ENC_REG(out->encoding, REG_LOW) | ENC_RM(0x05, REG_LOW));
 	}
 	bemit32(0);
 }
@@ -2483,22 +2596,47 @@ zero_neg:
 	bemit_helper_sbb( in_hi, out_hi);
 }
 
-/**
- * Emit a single opcode.
- */
-#define EMIT_SINGLEOP(op, code)                 \
-static void bemit_ ## op(const ir_node *node) { \
-	(void) node;                                \
-	bemit8(code);                               \
+static void bemit_cwtl(ir_node const *const node)
+{
+	(void)node;
+	bemit8(0x98);
 }
 
-EMIT_SINGLEOP(cwtl,  0x98)
-EMIT_SINGLEOP(cltd,  0x99)
-EMIT_SINGLEOP(sahf,  0x9E)
-EMIT_SINGLEOP(leave, 0xC9)
-EMIT_SINGLEOP(int3,  0xCC)
-EMIT_SINGLEOP(cmc,   0xF5)
-EMIT_SINGLEOP(stc,   0xF9)
+static void bemit_cltd(ir_node const *const node)
+{
+	(void)node;
+	bemit8(0x99);
+}
+
+static void bemit_sahf(ir_node const *const node)
+{
+	(void)node;
+	bemit8(0x9E);
+}
+
+static void bemit_leave(ir_node const *const node)
+{
+	(void)node;
+	bemit8(0xC9);
+}
+
+static void bemit_int3(ir_node const *const node)
+{
+	(void)node;
+	bemit8(0xCC);
+}
+
+static void bemit_cmc(ir_node const *const node)
+{
+	(void)node;
+	bemit8(0xF5);
+}
+
+static void bemit_stc(ir_node const *const node)
+{
+	(void)node;
+	bemit8(0xF9);
+}
 
 /**
  * Emits a MOV out, [MEM].
