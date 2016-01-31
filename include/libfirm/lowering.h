@@ -93,29 +93,22 @@ FIRM_API void lower_switch(ir_graph *irg, unsigned small_switch,
 
 /**
  * Replaces Offsets and TypeConsts by a real constant if possible.
- * Replaces Sel nodes by address computation.  Also resolves array access.
- * Handle bit fields by added And/Or calculations.
+ * Replaces Member and Sel nodes by address computation.
  *
- * @param irg               the graph to lower
- *
- * @note: There is NO lowering ob objects oriented types. This is highly compiler
- *        and ABI specific and should be placed directly in the compiler.
+ * @param irg  the graph to lower
  */
 FIRM_API void lower_highlevel_graph(ir_graph *irg);
 
 /**
- * Replaces Offsets and TypeConsts by a real constant if possible.
- * Replaces Sel nodes by address computation.  Also resolves array access.
- * Handle bit fields by added And/Or calculations.
- * Lowers all graphs.
- *
- * @note There is NO lowering of objects oriented types. This is highly compiler
- *       and ABI specific and should be placed directly in the compiler.
+ * Performs lowering on all graphs. \see lower_highlevel_graph().
  */
 FIRM_API void lower_highlevel(void);
 
 /**
- * does the same as lower_highlevel for all nodes on the const code irg
+ * Performs lowering on all nodes of the const code irg.
+ * \see lower_highlevel_graph()
+ * This is a separate function because the nodes of the const code irg will not
+ * be found with a lower_highlevel_graph(get_const_code_irg()).
  */
 FIRM_API void lower_const_code(void);
 
