@@ -323,7 +323,7 @@ void be_dwarf_callframe_register(const arch_register_t *reg)
 {
 	if (should_emit_frameinfo()) {
 		be_emit_cstring("\t.cfi_def_cfa_register ");
-		be_emit_irprintf("%d\n", reg->dwarf_number);
+		be_emit_irprintf("%%%s\n", reg->name);
 		be_emit_write_line();
 	}
 }
@@ -341,7 +341,7 @@ void be_dwarf_callframe_spilloffset(const arch_register_t *reg, int offset)
 {
 	if (should_emit_frameinfo()) {
 		be_emit_cstring("\t.cfi_offset ");
-		be_emit_irprintf("%d, %d\n", reg->dwarf_number, offset);
+		be_emit_irprintf("%%%s, %d\n", reg->name, offset);
 		be_emit_write_line();
 	}
 }
