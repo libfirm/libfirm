@@ -3167,25 +3167,16 @@ static void bemit_fxch(const ir_node *node)
 	bemit_fop_reg(node, 0xD9, 0xC8);
 }
 
-static void bemit_ignore(ir_node const *const node)
-{
-	(void)node;
-}
-
 static void ia32_register_binary_emitters(void)
 {
-	/* first clear the generic function pointer for all ops */
-	ir_clear_opcodes_generic_func();
+	be_init_emitters();
 
 	/* benode emitter */
-	be_set_emitter(op_Phi,                bemit_ignore);
 	be_set_emitter(op_be_Asm,             emit_ia32_Asm); // TODO implement binary emitter
 	be_set_emitter(op_be_Copy,            bemit_copy);
 	be_set_emitter(op_be_CopyKeep,        bemit_copy);
 	be_set_emitter(op_be_IncSP,           bemit_incsp);
-	be_set_emitter(op_be_Keep,            bemit_ignore);
 	be_set_emitter(op_be_Perm,            bemit_perm);
-	be_set_emitter(op_be_Start,           bemit_ignore);
 	be_set_emitter(op_ia32_Return,        bemit_return);
 	be_set_emitter(op_ia32_Adc,           bemit_adc);
 	be_set_emitter(op_ia32_Add,           bemit_add);
