@@ -153,6 +153,9 @@ static void initialize_isa(void)
 		return;
 	be_init_default_asm_constraint_flags();
 	isa_if->init();
+
+	obstack_init(&obst);
+	memset(be_asm_constraint_flags, 0, sizeof(be_asm_constraint_flags));
 	isa_initialized = true;
 }
 
@@ -352,9 +355,6 @@ static ir_graph *be_prepare_profile(const char *const cup_name)
 
 void be_begin(FILE *file_handle, const char *cup_name)
 {
-	obstack_init(&obst);
-	memset(be_asm_constraint_flags, 0, sizeof(be_asm_constraint_flags));
-
 	bemain_timer = NULL;
 	if (be_options.timing) {
 		bemain_timer = ir_timer_new();
@@ -664,4 +664,30 @@ void be_main(FILE *file_handle, const char *cup_name)
 {
 	/* Let the target control how the codegeneration works. */
 	isa_if->generate_code(file_handle, cup_name);
+}
+
+ir_jit_function_t *be_jit_compile(ir_jit_segment_t *const segment,
+                                  ir_graph *const irg)
+{
+	initialize_isa();
+	if (isa_if->jit_compile == NULL)
+		return NULL;
+
+	obstack_init(&obst);
+
+	ir_entity *entity = get_irg_entity(irg);
+	if (get_entity_linkage(entity) & IR_LINKAGE_NO_CODEGEN)
+		return NULL;
+	be_irg_t *const birg = OALLOCZ(&obst, be_irg_t);
+	initialize_birg(birg, irg, &env);
+	if (isa_if->handle_intrinsics)
+		isa_if->handle_intrinsics(irg);
+	be_dump(DUMP_INITIAL, irg, "prepared");
+
+	return isa_if->jit_compile(segment, irg);
+}
+
+void be_emit_function(char *const buffer, ir_jit_function_t *const function)
+{
+	isa_if->emit_function(buffer, function);
 }

@@ -1,6 +1,7 @@
 libFirm 1.22.1 (2016-01-07)
 ---------------------------
 * Fix cmake/make build
+* New just in time compilation mode which compiles into a memory buffer (ia32)
 * Support PIC with PLT for ELF (amd64)
 * Add `ia32-get_ip={pop,thunk}`
 * Generate 'mov $~1, %r; rol x, %r' for '~(1 << x)' (ia32)

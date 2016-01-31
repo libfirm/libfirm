@@ -14,6 +14,7 @@
 #include <stdbool.h>
 
 #include "firm_types.h"
+#include "jit.h"
 #include "raw_bitset.h"
 
 #include "be_types.h"
@@ -287,6 +288,10 @@ struct arch_isa_if_t {
 	 * Generate code for the current firm program.
 	 */
 	void (*generate_code)(FILE *output, const char *cup_name);
+
+	ir_jit_function_t* (*jit_compile)(ir_jit_segment_t *segment, ir_graph *irg);
+
+	void (*emit_function)(char *buffer, ir_jit_function_t *function);
 
 	/**
 	 * lowers current program for target. See the documentation for

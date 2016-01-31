@@ -16,9 +16,10 @@
 #include <stdint.h>
 
 #include "compiler.h"
-#include "typerep.h"
-#include "type_t.h"
 #include "ident.h"
+#include "panic.h"
+#include "type_t.h"
+#include "typerep.h"
 
 #define get_entity_name(ent)                 _get_entity_name(ent)
 #define get_entity_ident(ent)                _get_entity_ident(ent)
@@ -94,15 +95,20 @@ union ir_initializer_t {
 	ir_initializer_tarval_t    tarval;
 };
 
+typedef struct global_ent_attr {
+	void const *jit_addr;
+	/**< Additional graph properties for methods+alias */
+	mtp_additional_properties properties;
+} global_ent_attr;
+
 typedef struct normal_ent_attr {
+	global_ent_attr   base;
 	ir_initializer_t *initializer; /**< entity initializer */
 } normal_ent_attr;
 
 /** The attributes for methods. */
 typedef struct method_ent_attr {
-	mtp_additional_properties properties; /**< Additional graph properties can
-	                                           be stored in a entity if no irg
-	                                           is available. Must be first. */
+	global_ent_attr           base;
 	ir_graph *irg;                 /**< The corresponding irg if known.
 	                                    The ir_graph constructor automatically sets this field. */
 
@@ -141,10 +147,8 @@ typedef struct parameter_ent_attr {
 } parameter_ent_attr;
 
 typedef struct alias_ent_attr {
-	mtp_additional_properties properties; /**< Additional graph properties can
-	                                           be stored in a entity if no irg
-	                                           is available. Must be first. */
-	ir_entity                *aliased;
+	global_ent_attr  base;
+	ir_entity       *aliased;
 } alias_ent_attr;
 
 typedef enum ir_entity_kind {
@@ -199,8 +203,8 @@ struct ir_entity {
 		parameter_ent_attr       parameter;
 		/** alias attributes */
 		alias_ent_attr           alias;
-		/** additional properties shared by method+alias entities */
-		mtp_additional_properties properties;
+		/** properties shared by global entities */
+		global_ent_attr          global;
 	} attr; /**< type specific attributes */
 };
 
@@ -450,6 +454,22 @@ static inline dbg_info *_get_entity_dbg_info(const ir_entity *ent)
 static inline void _set_entity_dbg_info(ir_entity *ent, dbg_info *db)
 {
 	ent->dbi = db;
+}
+
+static inline bool is_global_entity(ir_entity const *const entity)
+{
+	switch (entity->entity_kind) {
+	case IR_ENTITY_ALIAS:
+	case IR_ENTITY_METHOD:
+	case IR_ENTITY_NORMAL:
+		return true;
+	case IR_ENTITY_COMPOUND_MEMBER:
+	case IR_ENTITY_LABEL:
+	case IR_ENTITY_PARAMETER:
+	case IR_ENTITY_UNKNOWN:
+		return false;
+	}
+	panic("Invalid entity");
 }
 
 #endif

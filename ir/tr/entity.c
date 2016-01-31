@@ -64,7 +64,8 @@ static ir_entity *new_entity_vis(ir_type *owner, ident *name, ir_type *type,
 	if (is_Method_type(type)) {
 		res = intern_new_entity(owner, IR_ENTITY_METHOD, name, type, vis);
 		res->linkage                     = IR_LINKAGE_CONSTANT;
-		res->attr.mtd_attr.properties    = get_method_additional_properties(type);
+		res->attr.global.jit_addr        = (void*)-1;
+		res->attr.global.properties      = get_method_additional_properties(type);
 		res->attr.mtd_attr.vtable_number = IR_VTABLE_NUM_NOT_SET;
 		res->attr.mtd_attr.param_access  = NULL;
 		res->attr.mtd_attr.param_weight  = NULL;
@@ -75,6 +76,7 @@ static ir_entity *new_entity_vis(ir_type *owner, ident *name, ir_type *type,
 		res->attr.compound_member.offset = -1;
 	} else {
 		res = intern_new_entity(owner, IR_ENTITY_NORMAL, name, type, vis);
+		res->attr.global.jit_addr = (void*)-1;
 	}
 
 	hook_new_entity(res);
@@ -123,7 +125,8 @@ ir_entity *new_alias_entity(ir_type *owner, ident *name, ir_entity *aliased,
 {
 	ir_entity *res = intern_new_entity(owner, IR_ENTITY_ALIAS, name, type,
 	                                   visibility);
-	res->attr.alias.aliased = aliased;
+	res->attr.alias.base.jit_addr = (void*)-1;
+	res->attr.alias.aliased       = aliased;
 	hook_new_entity(res);
 	return res;
 }
@@ -822,7 +825,7 @@ int entity_has_additional_properties(const ir_entity *entity)
 mtp_additional_properties get_entity_additional_properties(const ir_entity *ent)
 {
 	assert(entity_has_additional_properties(ent));
-	return ent->attr.properties;
+	return ent->attr.global.properties;
 }
 
 void set_entity_additional_properties(ir_entity *ent,
@@ -834,7 +837,7 @@ void set_entity_additional_properties(ir_entity *ent,
 
 	/* do not allow to set the mtp_property_inherited flag or
 	 * the automatic inheritance of flags will not work */
-	ent->attr.properties = property_mask;
+	ent->attr.global.properties = property_mask;
 }
 
 void add_entity_additional_properties(ir_entity *ent,
@@ -844,7 +847,7 @@ void add_entity_additional_properties(ir_entity *ent,
 
 	/* do not allow to set the mtp_property_inherited flag or
 	 * the automatic inheritance of flags will not work */
-	ent->attr.properties |= properties;
+	ent->attr.global.properties |= properties;
 }
 
 dbg_info *(get_entity_dbg_info)(const ir_entity *ent)
