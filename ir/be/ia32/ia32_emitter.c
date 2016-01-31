@@ -27,6 +27,7 @@
  *   pnc_Ne  => P || NE
  */
 #include <inttypes.h>
+#include <dlfcn.h>
 
 #include "be_t.h"
 #include "bearch_ia32_t.h"
@@ -34,6 +35,7 @@
 #include "beblocksched.h"
 #include "bediagnostic.h"
 #include "begnuas.h"
+#include "bejit.h"
 #include "besched.h"
 #include "bestack.h"
 #include "beutil.h"
@@ -45,6 +47,7 @@
 #include "ia32_emitter.h"
 #include "ia32_new_nodes.h"
 #include "irgwalk.h"
+#include "irnodehashmap.h"
 #include "irtools.h"
 #include "lc_opts.h"
 #include "lc_opts_enum.h"
@@ -1569,7 +1572,7 @@ static void ia32_gen_labels(ir_node *block, void *data)
 		set_irn_link(pred, block);
 
 		pred = skip_Proj(pred);
-		if (is_ia32_irn(pred) && get_ia32_exc_label(pred)) {
+		if (is_ia32_irn(pred) && get_ia32_exc_label(pred) && exc_list != NULL) {
 			exc_entry e;
 
 			e.exc_instr = pred;
@@ -1660,6 +1663,8 @@ static const lc_opt_table_entry_t ia32_emitter_options[] = {
 
 /* ==== Experimental binary emitter ==== */
 
+static ir_nodehashmap_t block_fragmentnum;
+
 /** Returns the encoding for a pnc field. */
 static unsigned char pnc2cc(x86_condition_code_t cc)
 {
@@ -1688,6 +1693,10 @@ typedef enum reg_modifier {
 	REG_HIGH = 4
 } reg_modifier_t;
 
+enum {
+	BEMIT_RELOCATION_RELJUMP = 128,
+};
+
 /** create R/M encoding for ModR/M */
 static uint8_t ENC_RM(unsigned const regnum, reg_modifier_t const modifier)
 {
@@ -1706,66 +1715,27 @@ static uint8_t ENC_SIB(uint8_t scale, uint8_t index, uint8_t base)
 	return scale << 6 | index << 3 | base;
 }
 
-/* Node: The following routines are supposed to append bytes, words, dwords
-   to the output stream.
-   Currently the implementation is stupid in that it still creates output
-   for an "assembler" in the form of .byte, .long
-   We will change this when enough infrastructure is there to create complete
-   machine code in memory/object files */
-
-static void bemit8(const uint8_t byte)
-{
-	be_emit_irprintf("\t.byte 0x%x\n", byte);
-	be_emit_write_line();
-}
-
-static void bemit16(const uint16_t u16)
-{
-	be_emit_irprintf("\t.word 0x%x\n", u16);
-	be_emit_write_line();
-}
-
-static void bemit32(const uint32_t u32)
-{
-	be_emit_irprintf("\t.long 0x%x\n", u32);
-	be_emit_write_line();
-}
-
 /**
  * Emit address of an entity. If @p is_relative is true then a relative
  * offset from behind the address to the entity is created.
  */
-static void bemit_entity(x86_imm32_t const *const imm)
+static void bemit_relocation(x86_imm32_t const *const imm)
 {
 	ir_entity *entity = imm->entity;
 	int32_t    offset = imm->offset;
 	if (entity == NULL) {
-		bemit32(offset);
+		be_emit32(offset);
 		return;
 	}
 
-	/* the final version should remember the position in the bytestream
-	   and patch it with the correct address at linktime... */
-	be_emit_cstring("\t.long ");
-
-	if (imm->kind == X86_IMM_PCREL) {
-		be_gas_emit_entity(entity);
-		be_emit_cstring("-.");
-		offset -= 4;
-		be_emit_irprintf("%+"PRId32, offset);
-	} else {
-		ia32_emit_relocation(imm);
-	}
-	be_emit_char('\n');
-	be_emit_write_line();
+	be_emit_reloc_entity(4, imm->kind, entity, offset);
 }
 
-static void bemit_jmp_destination(const ir_node *dest_block)
+static void bemit_jmp_destination(ir_node const *const dest_block)
 {
-	be_emit_cstring("\t.long ");
-	be_gas_emit_block_name(dest_block);
-	be_emit_cstring(" - . - 4\n");
-	be_emit_write_line();
+	unsigned const fragment_num
+		= PTR_TO_INT(ir_nodehashmap_get(void, &block_fragmentnum, dest_block));
+	be_emit_reloc_fragment(4, BEMIT_RELOCATION_RELJUMP, fragment_num, -4);
 }
 
 /* end emit routines, all emitters following here should only use the functions
@@ -1778,7 +1748,7 @@ static void bemit_modrr(const arch_register_t *src1,
 	unsigned char modrm = MOD_REG;
 	modrm |= ENC_RM(src1->encoding, REG_LOW);
 	modrm |= ENC_REG(src2->encoding, REG_LOW);
-	bemit8(modrm);
+	be_emit8(modrm);
 }
 
 /** Create a ModR/M8 byte for src1,src2 registers */
@@ -1788,7 +1758,7 @@ static void bemit_modrr8(reg_modifier_t high_part1, const arch_register_t *src1,
 	unsigned char modrm = MOD_REG;
 	modrm |= ENC_RM(src1->encoding, high_part1);
 	modrm |= ENC_REG(src2->encoding, high_part2);
-	bemit8(modrm);
+	be_emit8(modrm);
 }
 
 /** Create a ModR/M byte for one register and extension */
@@ -1798,7 +1768,7 @@ static void bemit_modru(const arch_register_t *reg, unsigned ext)
 	assert(ext <= 7);
 	modrm |= ENC_RM(reg->encoding, REG_LOW);
 	modrm |= ENC_REG(ext, REG_LOW);
-	bemit8(modrm);
+	be_emit8(modrm);
 }
 
 /** Create a ModR/M8 byte for one register */
@@ -1808,7 +1778,7 @@ static void bemit_modrm8(reg_modifier_t high_part, const arch_register_t *reg)
 	assert(reg->encoding < 4);
 	modrm |= ENC_RM(reg->encoding, high_part);
 	modrm |= MOD_REG;
-	bemit8(modrm);
+	be_emit8(modrm);
 }
 
 static bool ia32_is_8bit_imm(ia32_immediate_attr_t const *const imm)
@@ -1889,48 +1859,48 @@ static void bemit_mod_am(unsigned reg, const ir_node *node)
 
 	modrm |= ENC_REG(reg, REG_LOW);
 
-	bemit8(modrm);
+	be_emit8(modrm);
 	if (emitsib)
-		bemit8(sib);
+		be_emit8(sib);
 
 	/* emit displacement */
 	if (emitoffs == 8) {
-		bemit8((unsigned) offset);
+		be_emit8((unsigned) offset);
 	} else if (emitoffs == 32) {
-		bemit_entity(&attr->am_imm);
+		bemit_relocation(&attr->am_imm);
 	}
 }
 
 static void bemit_imm32(ir_node const *const node)
 {
 	const ia32_immediate_attr_t *attr = get_ia32_immediate_attr_const(node);
-	bemit_entity(&attr->imm);
+	bemit_relocation(&attr->imm);
 }
 
 static void bemit_imm(ia32_immediate_attr_t const *const attr,
                       unsigned const size)
 {
 	switch (size) {
-	case  8: bemit8(attr->imm.offset);  break;
-	case 16: bemit16(attr->imm.offset); break;
-	case 32: bemit_entity(&attr->imm);  break;
+	case  8: be_emit8(attr->imm.offset);  break;
+	case 16: be_emit16(attr->imm.offset); break;
+	case 32: bemit_relocation(&attr->imm);  break;
 	}
 }
 
 static void bemit_mov(arch_register_t const *const src, arch_register_t const *const dst)
 {
-	bemit8(0x88 | OP_MEM_SRC | OP_16_32); // movl %src, %dst
+	be_emit8(0x88 | OP_MEM_SRC | OP_16_32); // movl %src, %dst
 	bemit_modrr(src, dst);
 }
 
 static void bemit_xchg(arch_register_t const *const src, arch_register_t const *const dst)
 {
 	if (src->index == REG_GP_EAX) {
-		bemit8(0x90 + dst->encoding); // xchgl %eax, %dst
+		be_emit8(0x90 + dst->encoding); // xchgl %eax, %dst
 	} else if (dst->index == REG_GP_EAX) {
-		bemit8(0x90 + src->encoding); // xchgl %src, %eax
+		be_emit8(0x90 + src->encoding); // xchgl %src, %eax
 	} else {
-		bemit8(0x86 | OP_16_32); // xchgl %src, %dst
+		be_emit8(0x86 | OP_16_32); // xchgl %src, %dst
 		bemit_modrr(src, dst);
 	}
 }
@@ -1974,7 +1944,7 @@ static void bemit_perm(const ir_node *node)
 
 static void bemit_xor0(const ir_node *node)
 {
-	bemit8(0x31);
+	be_emit8(0x31);
 	arch_register_t const *const out = arch_get_irn_register_out(node, pn_ia32_Xor0_res);
 	bemit_modrr(out, out);
 }
@@ -1982,7 +1952,7 @@ static void bemit_xor0(const ir_node *node)
 static void bemit_mov_const(const ir_node *node)
 {
 	arch_register_t const *const out = arch_get_irn_register_out(node, pn_ia32_Const_res);
-	bemit8(0xB8 + out->encoding);
+	be_emit8(0xB8 + out->encoding);
 	bemit_imm32(node);
 }
 
@@ -1992,7 +1962,7 @@ static void bemit_mov_const(const ir_node *node)
 static void bemit_unop(ir_node const *const node, uint8_t const code,
                        uint8_t const ext, int const input)
 {
-	bemit8(code);
+	be_emit8(code);
 	if (get_ia32_op_type(node) == ia32_Normal) {
 		const arch_register_t *in = arch_get_irn_register_in(node, input);
 		bemit_modru(in, ext);
@@ -2046,7 +2016,7 @@ static bool use_eax_short_form(ir_node const *const node)
 
 static void bemit_binop_reg(ir_node const *const node, unsigned char const code, ir_node const *const right)
 {
-	bemit8(code);
+	be_emit8(code);
 	arch_register_t const *const dst = arch_get_irn_register_in(node, n_ia32_binary_left);
 	if (get_ia32_op_type(node) == ia32_Normal) {
 		arch_register_t const *const src = arch_get_irn_register(right);
@@ -2064,7 +2034,7 @@ static void bemit_binop(ir_node const *const node, unsigned const code)
 	ir_mode *const ls_mode = get_ia32_ls_mode(node);
 	unsigned       size    = ls_mode ? get_mode_size_bits(ls_mode) : 32;
 	if (size == 16)
-		bemit8(0x66);
+		be_emit8(0x66);
 
 	unsigned       op    = size == 8 ? OP_8 : OP_16_32;
 	ir_node *const right = get_irn_n(node, n_ia32_binary_right);
@@ -2078,7 +2048,7 @@ static void bemit_binop(ir_node const *const node, unsigned const code)
 
 		/* Emit the main opcode. */
 		if (op != OP_16_32_IMM8 && use_eax_short_form(node)) {
-			bemit8(code << 3 | OP_EAX | op);
+			be_emit8(code << 3 | OP_EAX | op);
 		} else {
 			bemit_unop(node, 0x80 | op, code, n_ia32_binary_left);
 		}
@@ -2133,7 +2103,7 @@ static void bemit_binop_mem(ir_node const *const node, unsigned const code)
 {
 	unsigned size = get_mode_size_bits(get_ia32_ls_mode(node));
 	if (size == 16)
-		bemit8(0x66);
+		be_emit8(0x66);
 
 	unsigned       op  = size == 8 ? OP_8 : OP_16_32;
 	ir_node *const val = get_irn_n(node, n_ia32_unary_op);
@@ -2146,12 +2116,12 @@ static void bemit_binop_mem(ir_node const *const node, unsigned const code)
 		}
 
 		/* Emit the main opcode. */
-		bemit8(0x80 | op);
+		be_emit8(0x80 | op);
 		bemit_mod_am(code, node);
 
 		bemit_imm(attr, size);
 	} else {
-		bemit8(code << 3 | op);
+		be_emit8(code << 3 | op);
 		bemit_mod_am(arch_get_irn_register(val)->encoding, node);
 	}
 }
@@ -2189,15 +2159,15 @@ static void bemit_shiftop(ir_node const *const node, uint8_t const ext)
 	if (is_ia32_Immediate(count)) {
 		int32_t const offset = get_ia32_immediate_attr_const(count)->imm.offset;
 		if (offset == 1) {
-			bemit8(0xD1);
+			be_emit8(0xD1);
 			bemit_modru(out, ext);
 		} else {
-			bemit8(0xC1);
+			be_emit8(0xC1);
 			bemit_modru(out, ext);
-			bemit8(offset);
+			be_emit8(offset);
 		}
 	} else {
-		bemit8(0xD3);
+		be_emit8(0xD3);
 		bemit_modru(out, ext);
 	}
 }
@@ -2206,20 +2176,20 @@ static void bemit_shiftop_mem(ir_node const *const node, uint8_t const ext)
 {
 	unsigned const size = get_mode_size_bits(get_ia32_ls_mode(node));
 	if (size == 16)
-		bemit8(0x66);
+		be_emit8(0x66);
 	ir_node const *const count = get_irn_n(node, 1);
 	if (is_ia32_Immediate(count)) {
 		int32_t const offset = get_ia32_immediate_attr_const(count)->imm.offset;
 		if (offset == 1) {
-			bemit8(size == 8 ? 0xD0 : 0xD1);
+			be_emit8(size == 8 ? 0xD0 : 0xD1);
 			bemit_mod_am(ext, node);
 		} else {
-			bemit8(size == 8 ? 0xC0 : 0xC1);
+			be_emit8(size == 8 ? 0xC0 : 0xC1);
 			bemit_mod_am(ext, node);
-			bemit8(offset);
+			be_emit8(offset);
 		}
 	} else {
-		bemit8(size == 8 ? 0xD2 : 0xD3);
+		be_emit8(size == 8 ? 0xD2 : 0xD3);
 		bemit_mod_am(ext, node);
 	}
 }
@@ -2274,13 +2244,13 @@ static void bemit_shld(const ir_node *node)
 	const arch_register_t *in  = arch_get_irn_register_in(node, n_ia32_ShlD_val_low);
 	const arch_register_t *out = arch_get_irn_register_out(node, pn_ia32_ShlD_res);
 	ir_node *count = get_irn_n(node, n_ia32_ShlD_count);
-	bemit8(0x0F);
+	be_emit8(0x0F);
 	if (is_ia32_Immediate(count)) {
-		bemit8(0xA4);
+		be_emit8(0xA4);
 		bemit_modrr(out, in);
-		bemit8(get_ia32_immediate_attr_const(count)->imm.offset);
+		be_emit8(get_ia32_immediate_attr_const(count)->imm.offset);
 	} else {
-		bemit8(0xA5);
+		be_emit8(0xA5);
 		bemit_modrr(out, in);
 	}
 }
@@ -2290,20 +2260,20 @@ static void bemit_shrd(const ir_node *node)
 	const arch_register_t *in  = arch_get_irn_register_in(node, n_ia32_ShrD_val_low);
 	const arch_register_t *out = arch_get_irn_register_out(node, pn_ia32_ShrD_res);
 	ir_node *count = get_irn_n(node, n_ia32_ShrD_count);
-	bemit8(0x0F);
+	be_emit8(0x0F);
 	if (is_ia32_Immediate(count)) {
-		bemit8(0xAC);
+		be_emit8(0xAC);
 		bemit_modrr(out, in);
-		bemit8(get_ia32_immediate_attr_const(count)->imm.offset);
+		be_emit8(get_ia32_immediate_attr_const(count)->imm.offset);
 	} else {
-		bemit8(0xAD);
+		be_emit8(0xAD);
 		bemit_modrr(out, in);
 	}
 }
 
 static void bemit_sbb0(ir_node const *const node)
 {
-	bemit8(0x1B);
+	be_emit8(0x1B);
 	arch_register_t const *const out = arch_get_irn_register_out(node, pn_ia32_Sbb0_res);
 	bemit_modrr(out, out);
 }
@@ -2319,37 +2289,37 @@ static void bemit_setcc(const ir_node *node)
 	if (cc & x86_cc_float_parity_cases) {
 		if (cc & x86_cc_negated) {
 			/* set%PNC <dreg */
-			bemit8(0x0F);
-			bemit8(0x90 | pnc2cc(cc));
+			be_emit8(0x0F);
+			be_emit8(0x90 | pnc2cc(cc));
 			bemit_modrm8(REG_LOW, dreg);
 
 			/* setp >dreg */
-			bemit8(0x0F);
-			bemit8(0x9A);
+			be_emit8(0x0F);
+			be_emit8(0x9A);
 			bemit_modrm8(REG_HIGH, dreg);
 
 			/* orb %>dreg, %<dreg */
-			bemit8(0x08);
+			be_emit8(0x08);
 			bemit_modrr8(REG_LOW, dreg, REG_HIGH, dreg);
 		} else {
 			 /* set%PNC <dreg */
-			bemit8(0x0F);
-			bemit8(0x90 | pnc2cc(cc));
+			be_emit8(0x0F);
+			be_emit8(0x90 | pnc2cc(cc));
 			bemit_modrm8(REG_LOW, dreg);
 
 			/* setnp >dreg */
-			bemit8(0x0F);
-			bemit8(0x9B);
+			be_emit8(0x0F);
+			be_emit8(0x9B);
 			bemit_modrm8(REG_HIGH, dreg);
 
 			/* andb %>dreg, %<dreg */
-			bemit8(0x20);
+			be_emit8(0x20);
 			bemit_modrr8(REG_LOW, dreg, REG_HIGH, dreg);
 		}
 	} else {
 		/* set%PNC <dreg */
-		bemit8(0x0F);
-		bemit8(0x90 | pnc2cc(cc));
+		be_emit8(0x0F);
+		be_emit8(0x90 | pnc2cc(cc));
 		bemit_modrm8(REG_LOW, dreg);
 	}
 }
@@ -2365,7 +2335,7 @@ static void bemit_unop_reg(ir_node const *const node, uint8_t const code,
 static void bemit_0f_unop_reg(ir_node const *const node, uint8_t const code,
                               int const input)
 {
-	bemit8(0x0F);
+	be_emit8(0x0F);
 	bemit_unop_reg(node, code, input);
 }
 
@@ -2381,30 +2351,30 @@ static void bemit_bsr(ir_node const *const node)
 
 static void bemit_bswap(ir_node const *const node)
 {
-	bemit8(0x0F);
+	be_emit8(0x0F);
 	bemit_modru(arch_get_irn_register_out(node, pn_ia32_Bswap_res), 1);
 }
 
 static void bemit_bt(ir_node const *const node)
 {
-	bemit8(0x0F);
+	be_emit8(0x0F);
 	arch_register_t const *const lreg  = arch_get_irn_register_in(node, n_ia32_Bt_left);
 	ir_node         const *const right = get_irn_n(node, n_ia32_Bt_right);
 	if (is_ia32_Immediate(right)) {
 		ia32_immediate_attr_t const *const attr = get_ia32_immediate_attr_const(right);
 		assert(ia32_is_8bit_imm(attr));
-		bemit8(0xBA);
+		be_emit8(0xBA);
 		bemit_modru(lreg, 4);
-		bemit8(attr->imm.offset);
+		be_emit8(attr->imm.offset);
 	} else {
-		bemit8(0xA3);
+		be_emit8(0xA3);
 		bemit_modrr(lreg, arch_get_irn_register(right));
 	}
 }
 
 static void bemit_cmovcc(const ir_node *node)
 {
-	bemit8(0x0F);
+	be_emit8(0x0F);
 	ir_node       const *const val_true = get_irn_n(node, n_ia32_CMovcc_val_true);
 	x86_condition_code_t const cc       = determine_final_cc(node, n_ia32_CMovcc_eflags);
 	if (cc & x86_cc_float_parity_cases)
@@ -2416,14 +2386,14 @@ static void bemit_test(ir_node const *const node)
 {
 	unsigned const size = get_mode_size_bits(get_ia32_ls_mode(node));
 	if (size == 16)
-		bemit8(0x66);
+		be_emit8(0x66);
 
 	unsigned const op    = size == 8 ? OP_8 : OP_16_32;
 	ir_node *const right = get_irn_n(node, n_ia32_Test_right);
 	if (is_ia32_Immediate(right)) {
 		/* Emit the main opcode. */
 		if (use_eax_short_form(node)) {
-			bemit8(0xA8 | op);
+			be_emit8(0xA8 | op);
 		} else {
 			bemit_unop(node, 0xF6, 0, n_ia32_Test_left);
 		}
@@ -2451,13 +2421,13 @@ static void bemit_imulimm(const ir_node *node)
 static void bemit_dec(const ir_node *node)
 {
 	const arch_register_t *out = arch_get_irn_register_out(node, pn_ia32_Dec_res);
-	bemit8(0x48 + out->encoding);
+	be_emit8(0x48 + out->encoding);
 }
 
 static void bemit_inc(const ir_node *node)
 {
 	const arch_register_t *out = arch_get_irn_register_out(node, pn_ia32_Inc_res);
-	bemit8(0x40 + out->encoding);
+	be_emit8(0x40 + out->encoding);
 }
 
 static void bemit_unop_mem(ir_node const *const node, uint8_t const code,
@@ -2465,8 +2435,8 @@ static void bemit_unop_mem(ir_node const *const node, uint8_t const code,
 {
 	unsigned size = get_mode_size_bits(get_ia32_ls_mode(node));
 	if (size == 16)
-		bemit8(0x66);
-	bemit8(size == 8 ? code : code | OP_16_32);
+		be_emit8(0x66);
+	be_emit8(size == 8 ? code : code | OP_16_32);
 	bemit_mod_am(ext, node);
 }
 
@@ -2492,15 +2462,15 @@ static void bemit_decmem(ir_node const *const node)
 
 static void bemit_ldtls(const ir_node *node)
 {
-	bemit8(0x65); // gs:
+	be_emit8(0x65); // gs:
 	arch_register_t const *const out = arch_get_irn_register_out(node, pn_ia32_LdTls_res);
 	if (out->index == REG_GP_EAX) {
-		bemit8(0xA1); // movl 0, %eax
+		be_emit8(0xA1); // movl 0, %eax
 	} else {
-		bemit8(0x88 | OP_MEM_SRC | OP_16_32); // movl 0, %reg
-		bemit8(MOD_IND | ENC_REG(out->encoding, REG_LOW) | ENC_RM(0x05, REG_LOW));
+		be_emit8(0x88 | OP_MEM_SRC | OP_16_32); // movl 0, %reg
+		be_emit8(MOD_IND | ENC_REG(out->encoding, REG_LOW) | ENC_RM(0x05, REG_LOW));
 	}
-	bemit32(0);
+	be_emit32(0);
 }
 
 /**
@@ -2508,7 +2478,7 @@ static void bemit_ldtls(const ir_node *node)
  */
 static void bemit_lea(const ir_node *node)
 {
-	bemit8(0x8D);
+	be_emit8(0x8D);
 	arch_register_t const *const out = arch_get_irn_register_out(node, pn_ia32_Lea_res);
 	bemit_mod_am(out->encoding, node);
 }
@@ -2516,29 +2486,29 @@ static void bemit_lea(const ir_node *node)
 /* helper function for bemit_minus64bit */
 static void bemit_helper_neg(const arch_register_t *reg)
 {
-	bemit8(0xF7); // negl %reg
+	be_emit8(0xF7); // negl %reg
 	bemit_modru(reg, 3);
 }
 
 /* helper function for bemit_minus64bit */
 static void bemit_helper_sbb0(const arch_register_t *reg)
 {
-	bemit8(0x80 | OP_16_32_IMM8); // sbbl $0, %reg
+	be_emit8(0x80 | OP_16_32_IMM8); // sbbl $0, %reg
 	bemit_modru(reg, 3);
-	bemit8(0);
+	be_emit8(0);
 }
 
 /* helper function for bemit_minus64bit */
 static void bemit_helper_sbb(const arch_register_t *src, const arch_register_t *dst)
 {
-	bemit8(0x1B); // sbbl %src, %dst
+	be_emit8(0x1B); // sbbl %src, %dst
 	bemit_modrr(src, dst);
 }
 
 /* helper function for bemit_minus64bit */
 static void bemit_helper_zero(const arch_register_t *reg)
 {
-	bemit8(0x33); // xorl %reg, %reg
+	be_emit8(0x33); // xorl %reg, %reg
 	bemit_modrr(reg, reg);
 }
 
@@ -2599,43 +2569,43 @@ zero_neg:
 static void bemit_cwtl(ir_node const *const node)
 {
 	(void)node;
-	bemit8(0x98);
+	be_emit8(0x98);
 }
 
 static void bemit_cltd(ir_node const *const node)
 {
 	(void)node;
-	bemit8(0x99);
+	be_emit8(0x99);
 }
 
 static void bemit_sahf(ir_node const *const node)
 {
 	(void)node;
-	bemit8(0x9E);
+	be_emit8(0x9E);
 }
 
 static void bemit_leave(ir_node const *const node)
 {
 	(void)node;
-	bemit8(0xC9);
+	be_emit8(0xC9);
 }
 
 static void bemit_int3(ir_node const *const node)
 {
 	(void)node;
-	bemit8(0xCC);
+	be_emit8(0xCC);
 }
 
 static void bemit_cmc(ir_node const *const node)
 {
 	(void)node;
-	bemit8(0xF5);
+	be_emit8(0xF5);
 }
 
 static void bemit_stc(ir_node const *const node)
 {
 	(void)node;
-	bemit8(0xF9);
+	be_emit8(0xF9);
 }
 
 /**
@@ -2651,13 +2621,13 @@ static void bemit_load(const ir_node *node)
 		if (!base && !idx) {
 			/* load from constant address to EAX can be encoded
 			   as 0xA1 [offset] */
-			bemit8(0xA1);
+			be_emit8(0xA1);
 			ia32_attr_t const *const attr = get_ia32_attr_const(node);
-			bemit_entity(&attr->am_imm);
+			bemit_relocation(&attr->am_imm);
 			return;
 		}
 	}
-	bemit8(0x88 | OP_MEM_SRC | OP_16_32);
+	be_emit8(0x88 | OP_MEM_SRC | OP_16_32);
 	bemit_mod_am(out->encoding, node);
 }
 
@@ -2671,8 +2641,8 @@ static void bemit_store(const ir_node *node)
 
 	if (is_ia32_Immediate(value)) {
 		if (size == 16)
-			bemit8(0x66);
-		bemit8(0xC6 | (size != 8 ? OP_16_32 : 0));
+			be_emit8(0x66);
+		be_emit8(0xC6 | (size != 8 ? OP_16_32 : 0));
 		bemit_mod_am(0, node);
 		bemit_imm(get_ia32_immediate_attr_const(value), size);
 	} else {
@@ -2685,21 +2655,21 @@ static void bemit_store(const ir_node *node)
 				/* store to constant address from EAX can be encoded as
 				 * 0xA2/0xA3 [offset]*/
 				if (size == 8) {
-					bemit8(0xA2);
+					be_emit8(0xA2);
 				} else {
 					if (size == 16)
-						bemit8(0x66);
-					bemit8(0xA3);
+						be_emit8(0x66);
+					be_emit8(0xA3);
 				}
 				ia32_attr_t const *const attr = get_ia32_attr_const(node);
-				bemit_entity(&attr->am_imm);
+				bemit_relocation(&attr->am_imm);
 				return;
 			}
 		}
 
 		if (size == 16)
-			bemit8(0x66);
-		bemit8(0x88 | (size != 8 ? OP_16_32 : 0));
+			be_emit8(0x66);
+		be_emit8(0x88 | (size != 8 ? OP_16_32 : 0));
 		bemit_mod_am(in->encoding, node);
 	}
 }
@@ -2718,7 +2688,7 @@ static void bemit_conv_i2i(const ir_node *node)
 
 static void bemit_popcnt(ir_node const *const node)
 {
-	bemit8(0xF3);
+	be_emit8(0xF3);
 	bemit_0f_unop_reg(node, 0xB8, n_ia32_Popcnt_operand);
 }
 
@@ -2729,16 +2699,16 @@ static void bemit_push(const ir_node *node)
 {
 	ir_node const *const value = get_irn_n_reg(node, n_ia32_Push_val);
 	if (!value) {
-		bemit8(0xFF);
+		be_emit8(0xFF);
 		bemit_mod_am(6, node);
 	} else if (is_ia32_Immediate(value)) {
 		ia32_immediate_attr_t const *const attr = get_ia32_immediate_attr_const(value);
 		bool                         const imm8 = ia32_is_8bit_imm(attr);
-		bemit8(0x68 | (imm8 ? OP_IMM8 : 0));
+		be_emit8(0x68 | (imm8 ? OP_IMM8 : 0));
 		bemit_imm(attr, imm8 ? 8 : 32);
 	} else {
 		arch_register_t const *const reg = arch_get_irn_register(value);
-		bemit8(0x50 + reg->encoding);
+		be_emit8(0x50 + reg->encoding);
 	}
 }
 
@@ -2746,7 +2716,7 @@ static void bemit_pusheax(ir_node const *const node)
 {
 	(void)node;
 	arch_register_t const *const reg = &ia32_registers[REG_EAX];
-	bemit8(0x50 + reg->encoding);
+	be_emit8(0x50 + reg->encoding);
 }
 
 /**
@@ -2755,34 +2725,45 @@ static void bemit_pusheax(ir_node const *const node)
 static void bemit_pop(const ir_node *node)
 {
 	arch_register_t const *const reg = arch_get_irn_register_out(node, pn_ia32_Pop_res);
-	bemit8(0x58 + reg->encoding);
+	be_emit8(0x58 + reg->encoding);
 }
 
 static void bemit_popmem(const ir_node *node)
 {
-	bemit8(0x8F);
+	be_emit8(0x8F);
 	bemit_mod_am(0, node);
 }
 
-static void bemit_call(const ir_node *node)
+static void bemit_call(ir_node const *const node)
 {
-#if 0
-	ir_node *proc = get_irn_n(node, n_ia32_Call_addr);
+	ir_node *const callee = get_irn_n(node, n_ia32_Call_callee);
+	if (is_ia32_Immediate(callee)) {
+		x86_imm32_t const *const imm
+			= &get_ia32_immediate_attr_const(callee)->imm;
+		assert(imm->kind == X86_IMM_PCREL);
 
-	if (is_ia32_Immediate(proc)) {
-		bemit8(0xE8);
-		bemit_imm32(proc);
+		if (ia32_cg_config.emit_machcode) {
+			/* Cheat because I cannot find a way to output .long ENTITY
+			 * as a PC relative relocation. See emit_jit_entity_relocation_asm()
+			 * for the other half of the cheat! */
+			be_emit_reloc_entity(5, X86_IMM_PCREL, imm->entity, imm->offset);
+		} else {
+			be_emit8(0xE8);
+			x86_imm32_t const call_imm = {
+				.kind   = X86_IMM_PCREL,
+				.entity = imm->entity,
+				.offset = imm->offset - 4,
+			};
+			bemit_relocation(&call_imm);
+		}
 	} else {
-		bemit_unop(node, 0xFF, 2, n_ia32_Call_addr);
+		bemit_unop(node, 0xFF, 2, n_ia32_Call_callee);
 	}
-#else
-	ia32_emitf(node, "call %*AS3");
-#endif
 }
 
 static void bemit_jmp(const ir_node *dest_block)
 {
-	bemit8(0xE9);
+	be_emit8(0xE9);
 	bemit_jmp_destination(dest_block);
 }
 
@@ -2799,15 +2780,15 @@ static void bemit_jump(const ir_node *node)
 static void bemit_jcc(x86_condition_code_t pnc, const ir_node *dest_block)
 {
 	unsigned char cc = pnc2cc(pnc);
-	bemit8(0x0F);
-	bemit8(0x80 + cc);
+	be_emit8(0x0F);
+	be_emit8(0x80 + cc);
 	bemit_jmp_destination(dest_block);
 }
 
 static void bemit_jp(bool odd, const ir_node *dest_block)
 {
-	bemit8(0x0F);
-	bemit8(0x8A + odd);
+	be_emit8(0x0F);
+	be_emit8(0x8A + odd);
 	bemit_jmp_destination(dest_block);
 }
 
@@ -2857,8 +2838,8 @@ static void bemit_ia32_jcc(const ir_node *node)
 			/* we need a local label if the false proj is a fallthrough
 			 * as the falseblock might have no label emitted then */
 			if (fallthrough) {
-				bemit8(0x7A);
-				bemit8(0x06);  // jp + 6
+				be_emit8(0x7A);
+				be_emit8(0x06);  // jp + 6
 			} else {
 				bemit_jp(false, target_false);
 			}
@@ -2876,7 +2857,7 @@ static void bemit_ia32_jcc(const ir_node *node)
 
 static void bemit_switchjmp(const ir_node *node)
 {
-	bemit8(0xFF); // jmp *tbl.label(,%in,4)
+	be_emit8(0xFF); // jmp *tbl.label(,%in,4)
 	bemit_mod_am(0x05, node);
 
 	ia32_switch_attr_t const *const attr = get_ia32_switch_attr_const(node);
@@ -2889,10 +2870,10 @@ static void bemit_return(const ir_node *node)
 	const ia32_return_attr_t *attr = get_ia32_return_attr_const(node);
 	unsigned pop = attr->pop;
 	if (attr->emit_pop || pop > 0) {
-		bemit8(0xC2);
-		bemit16(pop);
+		be_emit8(0xC2);
+		be_emit16(pop);
 	} else {
-		bemit8(0xC3);
+		be_emit8(0xC3);
 	}
 }
 
@@ -2920,15 +2901,15 @@ static void bemit_incsp(const ir_node *node)
 	}
 
 	bool const imm8b = ia32_is_8bit_val(offs);
-	bemit8(0x80 | OP_16_32 | (imm8b ? OP_IMM8 : 0));
+	be_emit8(0x80 | OP_16_32 | (imm8b ? OP_IMM8 : 0));
 
 	const arch_register_t *reg  = arch_get_irn_register_out(node, 0);
 	bemit_modru(reg, ext);
 
 	if (imm8b) {
-		bemit8(offs);
+		be_emit8(offs);
 	} else {
-		bemit32(offs);
+		be_emit32(offs);
 	}
 }
 
@@ -2936,14 +2917,14 @@ static void bemit_copybi(const ir_node *node)
 {
 	unsigned size = get_ia32_copyb_size(node);
 	if (size & 1)
-		bemit8(0xA4); // movsb
+		be_emit8(0xA4); // movsb
 	if (size & 2) {
-		bemit8(0x66);
-		bemit8(0xA5); // movsw
+		be_emit8(0x66);
+		be_emit8(0xA5); // movsw
 	}
 	size >>= 2;
 	while (size--) {
-		bemit8(0xA5); // movsl
+		be_emit8(0xA5); // movsl
 	}
 }
 
@@ -2958,7 +2939,7 @@ static void bemit_fbinop(ir_node const *const node, unsigned const op_fwd, unsig
 		unsigned char op0 = 0xD8;
 		if (x87->res_in_reg) op0 |= 0x04;
 		if (x87->pop)        op0 |= 0x02;
-		bemit8(op0);
+		be_emit8(op0);
 
 		bemit_modru(attr->x87.reg, op);
 	} else {
@@ -2966,22 +2947,22 @@ static void bemit_fbinop(ir_node const *const node, unsigned const op_fwd, unsig
 		assert(!x87->pop);
 
 		unsigned const size = get_mode_size_bits(get_ia32_ls_mode(node));
-		bemit8(size == 32 ? 0xD8 : 0xDC);
+		be_emit8(size == 32 ? 0xD8 : 0xDC);
 		bemit_mod_am(op, node);
 	}
 }
 
 static void bemit_fop_reg(ir_node const *const node, unsigned char const op0, unsigned char const op1)
 {
-	bemit8(op0);
-	bemit8(op1 + get_ia32_x87_attr_const(node)->x87.reg->encoding);
+	be_emit8(op0);
+	be_emit8(op1 + get_ia32_x87_attr_const(node)->x87.reg->encoding);
 }
 
 static void bemit_fabs(const ir_node *node)
 {
 	(void)node;
-	bemit8(0xD9);
-	bemit8(0xE1);
+	be_emit8(0xD9);
+	be_emit8(0xE1);
 }
 
 static void bemit_fadd(const ir_node *node)
@@ -2992,8 +2973,8 @@ static void bemit_fadd(const ir_node *node)
 static void bemit_fchs(const ir_node *node)
 {
 	(void)node;
-	bemit8(0xD9);
-	bemit8(0xE0);
+	be_emit8(0xD9);
+	be_emit8(0xE0);
 }
 
 static void bemit_fdiv(const ir_node *node)
@@ -3010,17 +2991,17 @@ static void bemit_fild(const ir_node *node)
 {
 	switch (get_mode_size_bits(get_ia32_ls_mode(node))) {
 	case 16:
-		bemit8(0xDF); // filds
+		be_emit8(0xDF); // filds
 		bemit_mod_am(0, node);
 		return;
 
 	case 32:
-		bemit8(0xDB); // fildl
+		be_emit8(0xDB); // fildl
 		bemit_mod_am(0, node);
 		return;
 
 	case 64:
-		bemit8(0xDF); // fildll
+		be_emit8(0xDF); // fildll
 		bemit_mod_am(5, node);
 		return;
 
@@ -3034,9 +3015,9 @@ static void bemit_fist(const ir_node *node)
 	unsigned       op;
 	unsigned const size = get_mode_size_bits(get_ia32_ls_mode(node));
 	switch (size) {
-	case 16: bemit8(0xDF); op = 2; break; // fist[p]s
-	case 32: bemit8(0xDB); op = 2; break; // fist[p]l
-	case 64: bemit8(0xDF); op = 6; break; // fistpll
+	case 16: be_emit8(0xDF); op = 2; break; // fist[p]s
+	case 32: be_emit8(0xDB); op = 2; break; // fist[p]l
+	case 64: be_emit8(0xDF); op = 6; break; // fistpll
 	default: panic("invalid mode size");
 	}
 	if (get_ia32_x87_attr_const(node)->x87.pop)
@@ -3049,9 +3030,9 @@ static void bemit_fist(const ir_node *node)
 static void bemit_fisttp(ir_node const *const node)
 {
 	switch (get_mode_size_bits(get_ia32_ls_mode(node))) {
-	case 16: bemit8(0xDF); break; // fisttps
-	case 32: bemit8(0xDB); break; // fisttpl
-	case 64: bemit8(0xDD); break; // fisttpll
+	case 16: be_emit8(0xDF); break; // fisttps
+	case 32: be_emit8(0xDB); break; // fisttpl
+	case 64: be_emit8(0xDD); break; // fisttpll
 	default: panic("invalid mode size");
 	}
 	bemit_mod_am(1, node);
@@ -3061,18 +3042,18 @@ static void bemit_fld(const ir_node *node)
 {
 	switch (get_mode_size_bits(get_ia32_ls_mode(node))) {
 	case 32:
-		bemit8(0xD9); // flds
+		be_emit8(0xD9); // flds
 		bemit_mod_am(0, node);
 		return;
 
 	case 64:
-		bemit8(0xDD); // fldl
+		be_emit8(0xDD); // fldl
 		bemit_mod_am(0, node);
 		return;
 
 	case 80:
 	case 96:
-		bemit8(0xDB); // fldt
+		be_emit8(0xDB); // fldt
 		bemit_mod_am(5, node);
 		return;
 
@@ -3084,21 +3065,21 @@ static void bemit_fld(const ir_node *node)
 static void bemit_fld1(const ir_node *node)
 {
 	(void)node;
-	bemit8(0xD9);
-	bemit8(0xE8); // fld1
+	be_emit8(0xD9);
+	be_emit8(0xE8); // fld1
 }
 
 static void bemit_fldcw(const ir_node *node)
 {
-	bemit8(0xD9); // fldcw
+	be_emit8(0xD9); // fldcw
 	bemit_mod_am(5, node);
 }
 
 static void bemit_fldz(const ir_node *node)
 {
 	(void)node;
-	bemit8(0xD9);
-	bemit8(0xEE); // fldz
+	be_emit8(0xD9);
+	be_emit8(0xEE); // fldz
 }
 
 static void bemit_fmul(const ir_node *node)
@@ -3121,10 +3102,10 @@ static void bemit_fst(const ir_node *node)
 	unsigned       op;
 	unsigned const size = get_mode_size_bits(get_ia32_ls_mode(node));
 	switch (size) {
-	case 32: bemit8(0xD9); op = 2; break; // fst[p]s
-	case 64: bemit8(0xDD); op = 2; break; // fst[p]l
+	case 32: be_emit8(0xD9); op = 2; break; // fst[p]s
+	case 64: be_emit8(0xDD); op = 2; break; // fst[p]l
 	case 80:
-	case 96: bemit8(0xDB); op = 6; break; // fstpt
+	case 96: be_emit8(0xDB); op = 6; break; // fstpt
 	default: panic("invalid mode size");
 	}
 	if (get_ia32_x87_attr_const(node)->x87.pop)
@@ -3141,44 +3122,44 @@ static void bemit_fsub(const ir_node *node)
 
 static void bemit_fnstcw(const ir_node *node)
 {
-	bemit8(0xD9); // fnstcw
+	be_emit8(0xD9); // fnstcw
 	bemit_mod_am(7, node);
 }
 
 static void bemit_fnstsw(void)
 {
-	bemit8(0xDF); // fnstsw %ax
-	bemit8(0xE0);
+	be_emit8(0xDF); // fnstsw %ax
+	be_emit8(0xE0);
 }
 
 static void bemit_ftstfnstsw(const ir_node *node)
 {
 	(void)node;
-	bemit8(0xD9); // ftst
-	bemit8(0xE4);
+	be_emit8(0xD9); // ftst
+	be_emit8(0xE4);
 	bemit_fnstsw();
 }
 
 static void bemit_fucomi(const ir_node *node)
 {
 	const ia32_x87_attr_t *attr = get_ia32_x87_attr_const(node);
-	bemit8(attr->x87.pop ? 0xDF : 0xDB); // fucom[p]i
-	bemit8(0xE8 + attr->x87.reg->encoding);
+	be_emit8(attr->x87.pop ? 0xDF : 0xDB); // fucom[p]i
+	be_emit8(0xE8 + attr->x87.reg->encoding);
 }
 
 static void bemit_fucomfnstsw(const ir_node *node)
 {
 	const ia32_x87_attr_t *attr = get_ia32_x87_attr_const(node);
-	bemit8(0xDD); // fucom[p]
-	bemit8((attr->x87.pop ? 0xE8 : 0xE0) + attr->x87.reg->encoding);
+	be_emit8(0xDD); // fucom[p]
+	be_emit8((attr->x87.pop ? 0xE8 : 0xE0) + attr->x87.reg->encoding);
 	bemit_fnstsw();
 }
 
 static void bemit_fucomppfnstsw(const ir_node *node)
 {
 	(void)node;
-	bemit8(0xDA); // fucompp
-	bemit8(0xE9);
+	be_emit8(0xDA); // fucompp
+	be_emit8(0xE9);
 	bemit_fnstsw();
 }
 
@@ -3306,39 +3287,168 @@ static void ia32_register_binary_emitters(void)
 	be_set_emitter(op_ia32_fxch,          bemit_fxch);
 }
 
-static void gen_binary_block(ir_node *block)
+static void assign_block_fragment_num(ir_node *const block, unsigned const num)
 {
-	ia32_emit_block_header(block);
+	assert(ir_nodehashmap_get(void, &block_fragmentnum, block) == NULL);
+	ir_nodehashmap_insert(&block_fragmentnum, block, INT_TO_PTR(num));
+}
+
+static void gen_binary_block(ir_node *const block)
+{
+	ir_graph *const irg = get_irn_irg(block);
+
+	uint8_t p2align  = 0;
+	uint8_t max_skip = 0;
+	if (block != get_irg_end_block(irg)
+	 && ia32_cg_config.label_alignment > 0 && should_align_block(block)) {
+		p2align  = ia32_cg_config.label_alignment;
+		max_skip = ia32_cg_config.label_alignment_max_skip;
+	}
+
+	unsigned fragment_num = be_begin_fragment(p2align, max_skip);
+	assert(fragment_num
+	       == (unsigned)PTR_TO_INT(ir_nodehashmap_get(void, &block_fragmentnum, block)));
+	(void)fragment_num;
 
 	/* emit the contents of the block */
 	sched_foreach(block, node) {
 		ia32_emit_node(node);
 	}
+
+	be_finish_fragment();
 }
 
-static void emit_function_binary(ir_graph *const irg)
+ir_jit_function_t *ia32_emit_jit(ir_jit_segment_t *const segment,
+                                 ir_graph *const irg)
 {
 	ia32_register_binary_emitters();
 
 	ir_node **const blk_sched = be_create_block_schedule(irg);
+
+	be_jit_begin_function(segment);
 
 	/* we use links to point to target blocks */
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 	irg_block_walk_graph(irg, ia32_gen_labels, NULL, NULL);
 
 	/* initialize next block links */
+	ir_nodehashmap_init(&block_fragmentnum);
 	size_t n = ARR_LEN(blk_sched);
 	for (size_t i = 0; i < n; ++i) {
 		ir_node *block = blk_sched[i];
 		ir_node *prev  = i > 0 ? blk_sched[i-1] : NULL;
 
 		set_irn_link(block, prev);
+		assign_block_fragment_num(block, (unsigned)i);
 	}
 	for (size_t i = 0; i < n; ++i) {
 		ir_node *block = blk_sched[i];
 		gen_binary_block(block);
 	}
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
+	ir_nodehashmap_destroy(&block_fragmentnum);
+
+	return be_jit_finish_function();
+}
+
+static unsigned emit_jit_entity_relocation_asm(char *const buffer,
+                                               uint8_t const be_kind,
+                                               ir_entity *const entity,
+                                               int32_t const offset)
+{
+	assert(buffer == NULL);
+	if (be_kind == BEMIT_RELOCATION_RELJUMP) {
+		be_emit_irprintf("\t.long %"PRId32"\n", offset);
+		be_emit_write_line();
+		return 4;
+	}
+
+	x86_imm32_t imm = {
+		.kind   = be_kind,
+		.entity = entity,
+		.offset = offset,
+	};
+	unsigned res = 4;
+	if (be_kind == X86_IMM_PCREL) {
+		/* cheat... */
+		be_emit_cstring("\tcall ");
+		res = 5;
+	} else {
+		be_emit_cstring("\t.long ");
+	}
+	ia32_emit_relocation(&imm);
+	be_emit_char('\n');
+	be_emit_write_line();
+	return res;
+}
+
+static void bemit_nop_callback(char *buffer, unsigned size)
+{
+	memset(buffer, 0, size);
+	while (size > 0) {
+		switch (size) {
+		case 1: buffer[0] = 0x90; return;
+		case 2:
+			buffer[0] = 0x66;
+			++buffer;
+			--size;
+			continue;
+		case 3:
+		sequence_0f1f:
+			buffer[0] = 0x0F;
+			buffer[1] = 0x1F;
+			return;
+		case 4: buffer[2] = 0x40; goto sequence_0f1f;
+		case 5: buffer[2] = 0x44; goto sequence_0f1f;
+		case 6:
+			buffer[0] = 0x66;
+			++buffer;
+			--size;
+			continue;
+		case 7: buffer[2] = 0x80; goto sequence_0f1f;
+		case 8: buffer[2] = 0x84; goto sequence_0f1f;
+		default:
+			buffer[0] = 0x66;
+			buffer[1] = 0x0F;
+			buffer[2] = 0x1F;
+			buffer[3] = 0x84;
+			buffer += 9;
+			size   -= 9;
+			continue;
+		}
+	}
+}
+
+static unsigned bemit_relocation_callback(char *const buffer,
+                                          uint8_t const be_kind,
+                                          ir_entity *const entity,
+                                          int32_t const offset)
+{
+	if (be_kind == BEMIT_RELOCATION_RELJUMP) {
+		int32_t *dest = (int32_t*)buffer;
+		*dest = offset;
+		return 4;
+	}
+
+	uint32_t const entity_addr = (uint32_t)be_jit_get_entity_addr(entity);
+	if (entity_addr == ~0u)
+		panic("Could not resolve address of entity %+F", entity);
+	uint32_t addr = entity_addr + offset;
+	if (be_kind == X86_IMM_PCREL)
+		addr -= (uint32_t)buffer;
+
+	uint32_t *dest = (uint32_t*)buffer;
+	*dest = addr;
+	return 4;
+}
+
+void ia32_emit_jit_function(char *buffer, ir_jit_function_t *const function)
+{
+	static const be_jit_emit_interface_t jit_emit_interface = {
+		.nops       = bemit_nop_callback,
+		.relocation = bemit_relocation_callback,
+	};
+	be_jit_emit_memory(buffer, function, &jit_emit_interface);
 }
 
 void ia32_emit_function(ir_graph *const irg)
@@ -3370,7 +3480,12 @@ void ia32_emit_function(ir_graph *const irg)
 	get_unique_label(pic_base_label, sizeof(pic_base_label), "PIC_BASE");
 
 	if (ia32_cg_config.emit_machcode) {
-		emit_function_binary(irg);
+		/* For debugging we can jit the code and output it embedded into a
+		 * normal .s file with .byte directives etc. */
+		ir_jit_segment_t *const segment = be_new_jit_segment();
+		ir_jit_function_t *const function = ia32_emit_jit(segment, irg);
+		be_jit_emit_as_asm(function, emit_jit_entity_relocation_asm);
+		be_destroy_jit_segment(segment);
 	} else {
 		emit_function_text(irg, &exc_list);
 	}

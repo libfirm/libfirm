@@ -12,6 +12,7 @@
 #define FIRM_BE_IA32_IA32_EMITTER_H
 
 #include "firm_types.h"
+#include "jit.h"
 
 /**
  * fmt  parameter               output
@@ -51,6 +52,10 @@
 void ia32_emitf(ir_node const *node, char const *fmt, ...);
 
 void ia32_emit_function(ir_graph *irg);
+
+ir_jit_function_t *ia32_emit_jit(ir_jit_segment_t *segment, ir_graph *irg);
+
+void ia32_emit_jit_function(char *buffer, ir_jit_function_t *function);
 
 void ia32_emit_thunks(void);
 
