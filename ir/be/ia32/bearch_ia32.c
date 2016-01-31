@@ -1584,10 +1584,8 @@ static aggregate_spec_t const *decide_compound_ret(ir_type const *type)
 			ir_type   *const member_type = get_entity_type(member);
 			if (is_float(member_type)) {
 				unsigned member_size = get_type_size_bytes(member_type);
-				if (member_size == 4) {
-					fprintf(stderr, "FLoatSPEC\n");
+				if (member_size == 4)
 					return &float_spec;
-				}
 				if (member_size == 8)
 					return &double_spec;
 			}
