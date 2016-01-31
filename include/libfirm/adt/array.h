@@ -245,18 +245,11 @@ static inline size_t ARR_LEN(void const *const arr)
  * @param type     The element type of the array.
  * @param arr      The array, which must be an lvalue.
  * @param delta    The delta number of elements.
- * @return  The address of the newly grown elements.
  *
  * @remark  This macro may change arr, so update all references!
  */
 #define ARR_EXTEND(type, arr, delta) \
-  (ARR_RESIZE(type, (arr), ARR_LEN((arr)) + (delta)), (arr)+ARR_LEN((arr))-(delta))
-
-/**
- * Resize a flexible array by growing it by 1 element.
- * @return The address of the newly grown element.
- */
-#define ARR_EXTEND1(type, arr)  ARR_EXTEND(type, (arr), 1)
+  ARR_RESIZE(type, (arr), ARR_LEN((arr)) + (delta))
 
 /**
  * Resize a flexible array to hold n elements only if it is currently shorter
@@ -280,7 +273,8 @@ static inline size_t ARR_LEN(void const *const arr)
  * @param arr      The array, which must be an lvalue.
  * @param elt      The new element, must be of type (type).
  */
-#define ARR_APP1(type, arr, elt)   (*ARR_EXTEND1(type, (arr)) = (elt))
+#define ARR_APP1(type, arr, elt) \
+  (ARR_EXTEND(type, (arr), 1), (arr)[ARR_LEN((arr))-1] = (elt))
 
 /** @} */
 
