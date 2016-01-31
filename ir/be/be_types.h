@@ -41,7 +41,9 @@ typedef enum arch_irn_flags_t {
 	arch_irn_flag_spill            = 1U << 6,
 	/** node performs a reload like operation */
 	arch_irn_flag_reload           = 1U << 7,
-	arch_irn_flag_backend          = 1U << 8, /**< begin of custom backend
+	/** node is rematerialized */
+	arch_irn_flag_rematerialized   = 1U << 8,
+	arch_irn_flag_backend          = 1U << 9, /**< begin of custom backend
 	                                               flags */
 } arch_irn_flags_t;
 ENUM_BITSET(arch_irn_flags_t)

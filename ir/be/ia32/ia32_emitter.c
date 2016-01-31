@@ -59,7 +59,6 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 static char       pic_base_label[128];
 static ir_label_t exc_label_id;
-static bool       mark_spill_reload;
 
 static bool       omit_fp;
 static int        frame_type_size;
@@ -1248,18 +1247,9 @@ static void ia32_emit_node(ir_node *node)
 {
 	DBG((dbg, LEVEL_1, "emitting code for %+F\n", node));
 
-	if (is_ia32_irn(node)) {
-		/* emit the exception label of this instruction */
-		if (get_ia32_exc_label(node))
-			ia32_assign_exc_label(node);
-		if (mark_spill_reload) {
-			if (is_ia32_is_spill(node))
-				ia32_emitf(NULL, "xchg %ebx, %ebx        /* spill mark */");
-			if (is_ia32_is_reload(node))
-				ia32_emitf(NULL, "xchg %edx, %edx        /* reload mark */");
-			if (is_ia32_is_remat(node))
-				ia32_emitf(NULL, "xchg %ecx, %ecx        /* remat mark */");
-		}
+	/* emit the exception label of this instruction */
+	if (is_ia32_irn(node) && get_ia32_exc_label(node)) {
+		ia32_assign_exc_label(node);
 	}
 
 	be_emit_node(node);
@@ -1486,7 +1476,6 @@ static lc_opt_enum_int_var_t get_ip_style_var = {
 };
 
 static const lc_opt_table_entry_t ia32_emitter_options[] = {
-	LC_OPT_ENT_BOOL    ("mark_spill_reload", "mark spills and reloads with ud opcodes", &mark_spill_reload),
 	LC_OPT_ENT_ENUM_INT("get_ip",            "method to get IP for the pic base",       &get_ip_style_var),
 	LC_OPT_LAST
 };
