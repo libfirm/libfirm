@@ -280,7 +280,7 @@ static inline size_t ARR_LEN(void const *const arr)
  * @param arr      The array, which must be an lvalue.
  * @param elt      The new element, must be of type (type).
  */
-#define ARR_APP1(type, arr, elt)   (*ARR_EXTEND1(type, (arr)) = (elt))
+#define ARR_APP1(type, arr, elt)   (*ARR_EXTEND1(type, (arr)) = (elt), (arr)+ARR_LEN((arr))-1)
 
 /** @} */
 
