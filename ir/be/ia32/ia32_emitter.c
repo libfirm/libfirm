@@ -3429,12 +3429,13 @@ static unsigned bemit_relocation_callback(char *const buffer,
 		return 4;
 	}
 
-	uint32_t const entity_addr = (uint32_t)be_jit_get_entity_addr(entity);
+	uint32_t const entity_addr
+		= (uint32_t)(intptr_t)be_jit_get_entity_addr(entity);
 	if (entity_addr == ~0u)
 		panic("Could not resolve address of entity %+F", entity);
 	uint32_t addr = entity_addr + offset;
 	if (be_kind == X86_IMM_PCREL)
-		addr -= (uint32_t)buffer;
+		addr -= (uint32_t)(intptr_t)buffer;
 
 	uint32_t *dest = (uint32_t*)buffer;
 	*dest = addr;
