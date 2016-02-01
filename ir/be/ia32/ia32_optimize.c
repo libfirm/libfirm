@@ -877,8 +877,6 @@ static bool is_disp_const(ir_node const *const node, int32_t const val)
  */
 static void peephole_ia32_Lea(ir_node *node)
 {
-	assert(is_ia32_Lea(node));
-
 	/* We can only do this if it is allowed to clobber the flags. */
 	if (be_peephole_get_value(REG_EFLAGS))
 		return;
