@@ -853,8 +853,6 @@ static void peephole_ia32_Const(ir_node *node)
 	/* try to transform a mov 0, reg to xor reg reg */
 	if (attr->imm.offset != 0 || attr->imm.entity != NULL)
 		return;
-	if (ia32_cg_config.use_mov_0)
-		return;
 	/* xor destroys the flags, so no-one must be using them */
 	if (be_peephole_get_value(REG_EFLAGS) != NULL)
 		return;
@@ -1065,7 +1063,8 @@ void ia32_peephole_optimization(ir_graph *irg)
 	/* pass 2 */
 	ir_clear_opcodes_generic_func();
 	register_peephole_optimization(op_ia32_And,     peephole_ia32_And);
-	register_peephole_optimization(op_ia32_Const,   peephole_ia32_Const);
+	if (!ia32_cg_config.use_mov_0)
+		register_peephole_optimization(op_ia32_Const, peephole_ia32_Const);
 	register_peephole_optimization(op_be_IncSP,     peephole_be_IncSP);
 	register_peephole_optimization(op_ia32_Or,      peephole_ia32_Or);
 	register_peephole_optimization(op_ia32_Test,    peephole_ia32_Test);
