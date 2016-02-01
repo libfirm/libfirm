@@ -1731,8 +1731,10 @@ static void bemit_relocation(x86_imm32_t const *const imm)
 	be_emit_reloc_entity(4, imm->kind, entity, offset);
 }
 
-static void bemit_jmp_destination(ir_node const *const dest_block)
+static void bemit_jmp_destination(ir_node const *const cfop)
 {
+	assert(get_irn_mode(cfop) == mode_X);
+	ir_node const *const dest_block = get_cfop_target_block(cfop);
 	unsigned const fragment_num
 		= PTR_TO_INT(ir_nodehashmap_get(void, &block_fragmentnum, dest_block));
 	be_emit_reloc_fragment(4, BEMIT_RELOCATION_RELJUMP, fragment_num, -4);
@@ -2761,10 +2763,10 @@ static void bemit_call(ir_node const *const node)
 	}
 }
 
-static void bemit_jmp(const ir_node *dest_block)
+static void bemit_jmp(ir_node const *const cfop)
 {
 	be_emit8(0xE9);
-	bemit_jmp_destination(dest_block);
+	bemit_jmp_destination(cfop);
 }
 
 static void bemit_jump(const ir_node *node)
@@ -2774,22 +2776,22 @@ static void bemit_jump(const ir_node *node)
 	if (fallthrough_possible(block, target))
 		return;
 
-	bemit_jmp(get_cfop_target_block(node));
+	bemit_jmp(node);
 }
 
-static void bemit_jcc(x86_condition_code_t pnc, const ir_node *dest_block)
+static void bemit_jcc(x86_condition_code_t pnc, ir_node const *const cfop)
 {
 	unsigned char cc = pnc2cc(pnc);
 	be_emit8(0x0F);
 	be_emit8(0x80 + cc);
-	bemit_jmp_destination(dest_block);
+	bemit_jmp_destination(cfop);
 }
 
-static void bemit_jp(bool odd, const ir_node *dest_block)
+static void bemit_jp(bool odd, ir_node const *const cfop)
 {
 	be_emit8(0x0F);
 	be_emit8(0x8A + odd);
-	bemit_jmp_destination(dest_block);
+	bemit_jmp_destination(cfop);
 }
 
 static void bemit_ia32_jcc(const ir_node *node)
@@ -2798,9 +2800,9 @@ static void bemit_ia32_jcc(const ir_node *node)
 
 	/* get both Projs */
 	ir_node const *proj_true    = get_Proj_for_pn(node, pn_ia32_Jcc_true);
+	ir_node const *target_true  = get_cfop_target_block(proj_true);
 	ir_node const *proj_false   = get_Proj_for_pn(node, pn_ia32_Jcc_false);
 	ir_node const *block        = get_nodes_block(node);
-	ir_node const *target_true  = get_cfop_target_block(proj_true);
 	if (fallthrough_possible(block, target_true)) {
 		/* exchange both proj's so the second one can be omitted */
 		const ir_node *t = proj_true;
@@ -2826,14 +2828,11 @@ static void bemit_ia32_jcc(const ir_node *node)
 		}
 	}
 
-	target_true  = get_cfop_target_block(proj_true);
-	target_false = get_cfop_target_block(proj_false);
-
 	if (cc & x86_cc_float_parity_cases) {
 		/* Some floating point comparisons require a test of the parity flag,
 		 * which indicates that the result is unordered */
 		if (cc & x86_cc_negated) {
-			bemit_jp(false, target_true);
+			bemit_jp(false, proj_true);
 		} else {
 			/* we need a local label if the false proj is a fallthrough
 			 * as the falseblock might have no label emitted then */
@@ -2841,17 +2840,17 @@ static void bemit_ia32_jcc(const ir_node *node)
 				be_emit8(0x7A);
 				be_emit8(0x06);  // jp + 6
 			} else {
-				bemit_jp(false, target_false);
+				bemit_jp(false, proj_false);
 			}
 		}
 	}
-	bemit_jcc(cc, target_true);
+	bemit_jcc(cc, proj_true);
 
 	/* the second Proj might be a fallthrough */
 	if (fallthrough) {
 		/* it's a fallthrough */
 	} else {
-		bemit_jmp(target_false);
+		bemit_jmp(proj_false);
 	}
 }
 
