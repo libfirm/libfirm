@@ -64,6 +64,19 @@ static void replace(ir_node *const old, ir_node *const newn)
 	be_peephole_replace(old, newn);
 }
 
+static ia32_immediate_attr_t const *get_op_imm_no_ent(ir_node *const node, unsigned const n)
+{
+	ir_node *const op = get_irn_n(node, n);
+	if (!is_ia32_Immediate(op))
+		return NULL;
+
+	ia32_immediate_attr_t const *const imm = get_ia32_immediate_attr_const(op);
+	if (imm->imm.entity)
+		return NULL;
+
+	return imm;
+}
+
 typedef enum produces_flag_t {
 	produces_no_flag,
 	produces_zero_sign,
@@ -83,8 +96,6 @@ static produces_flag_t check_produces_zero_sign(ir_node *node, unsigned pn)
 	if (!is_ia32_irn(node))
 		return produces_no_flag;
 
-	ir_node *count;
-
 	switch (get_ia32_irn_opcode(node)) {
 		case iro_ia32_Adc:
 		case iro_ia32_Add:
@@ -99,30 +110,21 @@ static produces_flag_t check_produces_zero_sign(ir_node *node, unsigned pn)
 		case iro_ia32_Xor:
 			break;
 
-		case iro_ia32_ShlD:
-		case iro_ia32_ShrD:
-			assert((int)n_ia32_ShlD_count == (int)n_ia32_ShrD_count);
-			count = get_irn_n(node, n_ia32_ShlD_count);
-			goto check_shift_amount;
-
-		case iro_ia32_Sar:
-		case iro_ia32_Shl:
-		case iro_ia32_Shr:
-			assert((int)n_ia32_Shl_count == (int)n_ia32_Shr_count
-					&& (int)n_ia32_Shl_count == (int)n_ia32_Sar_count);
-			count = get_irn_n(node, n_ia32_Shl_count);
-check_shift_amount:
+		{
+			unsigned count_pos;
+		case iro_ia32_ShlD: count_pos = n_ia32_ShlD_count; goto check_shift_amount;
+		case iro_ia32_ShrD: count_pos = n_ia32_ShrD_count; goto check_shift_amount;
+		case iro_ia32_Sar:  count_pos = n_ia32_Sar_count;  goto check_shift_amount;
+		case iro_ia32_Shl:  count_pos = n_ia32_Shl_count;  goto check_shift_amount;
+		case iro_ia32_Shr:  count_pos = n_ia32_Shr_count;  goto check_shift_amount;
+check_shift_amount:;
 			/* when shift count is zero the flags are not affected, so we can only
 			 * do this for constants != 0 */
-			if (!is_ia32_Immediate(count))
-				return produces_no_flag;
-
-			const ia32_immediate_attr_t *imm_attr = get_ia32_immediate_attr_const(count);
-			if (imm_attr->imm.entity != NULL)
-				return produces_no_flag;
-			if ((imm_attr->imm.offset & 0x1f) == 0)
+			ia32_immediate_attr_t const *const imm = get_op_imm_no_ent(node, count_pos);
+			if (!imm || (imm->imm.offset & 0x1f) == 0)
 				return produces_no_flag;
 			break;
+		}
 
 		case iro_ia32_Mul:
 			return pn == pn_ia32_Mul_res_high ?
@@ -139,19 +141,6 @@ static bool is_op_32bit(ir_node *const node)
 {
 	ir_mode *const ls_mode = get_ia32_ls_mode(node);
 	return !ls_mode || get_mode_size_bits(ls_mode) == 32;
-}
-
-static ia32_immediate_attr_t const *get_op_imm_no_ent(ir_node *const node, unsigned const n)
-{
-	ir_node *const op = get_irn_n(node, n);
-	if (!is_ia32_Immediate(op))
-		return NULL;
-
-	ia32_immediate_attr_t const *const imm = get_ia32_immediate_attr_const(op);
-	if (imm->imm.entity)
-		return NULL;
-
-	return imm;
 }
 
 static bool is_res_used(ir_node *const node, unsigned const num)
@@ -311,12 +300,8 @@ static void peephole_ia32_Cmp(ir_node *const node)
 	if (get_ia32_op_type(node) != ia32_Normal)
 		return;
 
-	ir_node *const right = get_irn_n(node, n_ia32_Cmp_right);
-	if (!is_ia32_Immediate(right))
-		return;
-
-	ia32_immediate_attr_t const *const imm = get_ia32_immediate_attr_const(right);
-	if (imm->imm.entity != NULL || imm->imm.offset != 0)
+	ia32_immediate_attr_t const *const imm = get_op_imm_no_ent(node, n_ia32_Cmp_right);
+	if (!imm || imm->imm.offset != 0)
 		return;
 
 	dbg_info *const dbgi         = get_irn_dbg_info(node);
@@ -437,11 +422,10 @@ static void peephole_ia32_Test(ir_node *node)
 
 		ir_node *const flags_proj = be_new_Proj_reg(op, pn_ia32_flags, &ia32_registers[REG_EFLAGS]);
 		be_peephole_exchange(node, flags_proj);
-	} else if (is_ia32_Immediate(right)) {
-		ia32_immediate_attr_t const *const imm = get_ia32_immediate_attr_const(right);
-
+	} else {
 		/* A test with an entity is rather strange, but better safe than sorry */
-		if (imm->imm.entity != NULL)
+		ia32_immediate_attr_t const *const imm = get_op_imm_no_ent(node, n_ia32_Test_right);
+		if (!imm)
 			return;
 
 		/*
