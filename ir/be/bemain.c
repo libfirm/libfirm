@@ -155,7 +155,6 @@ static void initialize_isa(void)
 	isa_if->init();
 
 	obstack_init(&obst);
-	memset(be_asm_constraint_flags, 0, sizeof(be_asm_constraint_flags));
 	isa_initialized = true;
 }
 
@@ -355,6 +354,8 @@ static ir_graph *be_prepare_profile(const char *const cup_name)
 
 void be_begin(FILE *file_handle, const char *cup_name)
 {
+	memset(be_asm_constraint_flags, 0, sizeof(be_asm_constraint_flags));
+
 	bemain_timer = NULL;
 	if (be_options.timing) {
 		bemain_timer = ir_timer_new();
