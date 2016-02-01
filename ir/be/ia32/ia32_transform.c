@@ -5496,7 +5496,35 @@ static ir_node *gen_Proj_Proj(ir_node *node)
 
 ir_node *ia32_autotransform(ir_node *node)
 {
-	return NULL;
+dbg_info *dbgi     = get_irn_dbg_info(node);
+ir_node  *block    = get_nodes_block(node);
+ir_node  *new_node = NULL;
+
+// ia_ror32-> or32(shl32(VAR_0, neg32(VAR_1, ), ), shr32(VAR_0, VAR_1, ), )
+if (is_Or(node) && is_Shl(get_irn_n(node, 0)) && get_irn_mode(get_irn_n(node, 0)) == mode_Is && true && is_Minus(get_irn_n(get_irn_n(node, 0), 1)) && true && is_Shr(get_irn_n(node, 1)) && get_irn_mode(get_irn_n(node, 1)) == mode_Is && true && true) {
+new_node = new_bd_ia32_Ror(dbgi, block, be_transform_node(get_irn_n(get_irn_n(node, 0), 0)), be_transform_node(get_irn_n(get_irn_n(get_irn_n(node, 0), 1), 0)));
+}
+// ia_ror32-> or32(shl32(VAR_0, neg32(VAR_1, ), ), shr32(VAR_0, VAR_1, ), )
+if (is_Or(node) && is_Shl(get_irn_n(node, 0)) && get_irn_mode(get_irn_n(node, 0)) == mode_Is && true && is_Minus(get_irn_n(get_irn_n(node, 0), 1)) && true && is_Shr(get_irn_n(node, 1)) && get_irn_mode(get_irn_n(node, 1)) == mode_Is && true && true) {
+new_node = new_bd_ia32_Ror(dbgi, block, be_transform_node(get_irn_n(get_irn_n(node, 0), 0)), be_transform_node(get_irn_n(get_irn_n(get_irn_n(node, 0), 1), 0)));
+}
+// ia_ror32-> or32(shl32(VAR_0, neg32(VAR_1, ), ), shr32(VAR_0, VAR_1, ), )
+if (is_Or(node) && is_Shl(get_irn_n(node, 0)) && get_irn_mode(get_irn_n(node, 0)) == mode_Is && true && is_Minus(get_irn_n(get_irn_n(node, 0), 1)) && true && is_Shr(get_irn_n(node, 1)) && get_irn_mode(get_irn_n(node, 1)) == mode_Is && true && true) {
+new_node = new_bd_ia32_Ror(dbgi, block, be_transform_node(get_irn_n(get_irn_n(node, 0), 0)), be_transform_node(get_irn_n(get_irn_n(get_irn_n(node, 0), 1), 0)));
+}
+// ia_ror32-> or32(shl32(VAR_0, VAR_1, ), shr32(VAR_0, neg32(VAR_1, ), ), )
+if (is_Or(node) && is_Shl(get_irn_n(node, 0)) && get_irn_mode(get_irn_n(node, 0)) == mode_Is && true && true && is_Shr(get_irn_n(node, 1)) && get_irn_mode(get_irn_n(node, 1)) == mode_Is && true && is_Minus(get_irn_n(get_irn_n(node, 1), 1)) && true) {
+new_node = new_bd_ia32_Rol(dbgi, block, be_transform_node(get_irn_n(get_irn_n(node, 0), 0)), be_transform_node(get_irn_n(get_irn_n(node, 0), 1)));
+}
+// ia_ror32-> or32(shr32(VAR_0, neg32(VAR_1, ), ), shl32(VAR_0, VAR_1, ), )
+if (is_Or(node) && is_Shr(get_irn_n(node, 0)) && get_irn_mode(get_irn_n(node, 0)) == mode_Is && true && is_Minus(get_irn_n(get_irn_n(node, 0), 1)) && true && is_Shl(get_irn_n(node, 1)) && get_irn_mode(get_irn_n(node, 1)) == mode_Is && true && true) {
+new_node = new_bd_ia32_Rol(dbgi, block, be_transform_node(get_irn_n(get_irn_n(node, 0), 0)), be_transform_node(get_irn_n(get_irn_n(get_irn_n(node, 0), 1), 0)));
+}
+// ia_ror32-> or32(shl32(VAR_0, VAR_1, ), shr32(VAR_0, neg32(VAR_1, ), ), )
+if (is_Or(node) && is_Shl(get_irn_n(node, 0)) && get_irn_mode(get_irn_n(node, 0)) == mode_Is && true && true && is_Shr(get_irn_n(node, 1)) && get_irn_mode(get_irn_n(node, 1)) == mode_Is && true && is_Minus(get_irn_n(get_irn_n(node, 1), 1)) && true) {
+new_node = new_bd_ia32_Rol(dbgi, block, be_transform_node(get_irn_n(get_irn_n(node, 0), 0)), be_transform_node(get_irn_n(get_irn_n(node, 0), 1)));
+}
+return new_node;
 }
 
 /**
