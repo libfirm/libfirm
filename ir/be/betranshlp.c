@@ -44,6 +44,8 @@ typedef struct be_transform_env_t {
 
 static be_transform_env_t env;
 
+static ir_node *(*autotransform)(ir_node *);
+
 #ifndef NDEBUG
 static void be_set_orig_node_rec(ir_node *const node, char const *const name)
 {
@@ -83,6 +85,11 @@ void be_set_transformed_node(ir_node *old_node, ir_node *new_node)
 bool be_is_transformed(const ir_node *node)
 {
 	return irn_visited(node);
+}
+
+void be_set_autotransform(ir_node *(*at)(ir_node *))
+{
+	autotransform = at;
 }
 
 ir_node *be_transform_phi(ir_node *node, const arch_register_req_t *req)
@@ -211,7 +218,7 @@ ir_node *be_gen_Proj_default(ir_node *const node)
 
 ir_node *be_transform_node(ir_node *node)
 {
-	ir_node *new_node;
+	ir_node *new_node = NULL;
 	if (be_is_transformed(node)) {
 		new_node = (ir_node*)get_irn_link(node);
 	} else {
@@ -220,14 +227,23 @@ ir_node *be_transform_node(ir_node *node)
 #endif
 		mark_irn_visited(node);
 
-		ir_op             *const op        = get_irn_op(node);
-		be_transform_func *const transform = (be_transform_func*)op->ops.generic;
+		if (autotransform != NULL && !is_Block(node)) {
+			new_node = autotransform(node);
+			if (new_node != NULL) {
+				ir_printf("%+F autotransformed to %+F\n", node, new_node);
+			}
+		}
+
+		if (new_node == NULL) {
+			ir_op             *const op        = get_irn_op(node);
+			be_transform_func *const transform = (be_transform_func*)op->ops.generic;
 #ifdef DEBUG_libfirm
-		if (!transform)
-			panic("no transformer for %+F", node);
+			if (!transform)
+				panic("no transformer for %+F", node);
 #endif
 
-		new_node = transform(node);
+			new_node = transform(node);
+		}
 		be_set_transformed_node(node, new_node);
 	}
 	assert(new_node);
