@@ -5522,6 +5522,11 @@ static ir_node *gen_Proj_default(ir_node *node)
 	return be_new_Proj(new_pred, pn);
 }
 
+ir_node *ia32_autotransform(ir_node *node)
+{
+	return NULL;
+}
+
 /**
  * Enters all transform functions into the generic pointer
  */
@@ -5529,6 +5534,8 @@ static void register_transformers(void)
 {
 	/* first clear the generic function pointer for all ops */
 	be_start_transform_setup();
+
+	be_set_autotransform(ia32_autotransform);
 
 	be_set_transform_function(op_Add,              gen_Add);
 	be_set_transform_function(op_Address,          gen_Address);
