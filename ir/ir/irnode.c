@@ -359,6 +359,12 @@ ir_node *(get_Block_cfgpred_block)(const ir_node *node, int pos)
 	return get_Block_cfgpred_block_(node, pos);
 }
 
+int is_Block_end_block(const ir_node *const block)
+{
+	assert(is_Block(block));
+	return get_irg_end_block(get_irn_irg(block)) == block;
+}
+
 int get_Block_matured(const ir_node *node)
 {
 	assert(is_Block(node));
