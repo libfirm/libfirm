@@ -172,6 +172,9 @@ FIRM_API void set_nodes_block(ir_node *node, ir_node *block);
  */
 FIRM_API ir_node *get_Block_cfgpred_block(const ir_node *node, int pos);
 
+/** Return true if block is its contain irg's end block. */
+FIRM_API int is_Block_end_block(const ir_node *block);
+
 /** Returns the matured flag of a block */
 FIRM_API int get_Block_matured(const ir_node *block);
 /** set the matured flag of a block. */
