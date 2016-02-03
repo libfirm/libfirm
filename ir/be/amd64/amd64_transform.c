@@ -1998,6 +1998,7 @@ static ir_node *gen_Proj_Call(ir_node *const node)
 	case pn_Call_X_regular:
 		return be_new_Proj(new_call, pn_amd64_call_X_regular);
 	case pn_Call_X_except:
+		set_needs_exc_label(new_call, true);
 		return be_new_Proj(new_call, pn_amd64_call_X_except);
 	case pn_Call_T_result:
 		break;

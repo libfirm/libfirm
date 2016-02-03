@@ -132,9 +132,11 @@ typedef struct sel_attr {
 
 /** Attributes for nodes with exceptions (fragile flag). */
 typedef struct except_attr {
-	bool      pinned           : 1;
-	/** Whether a fragile op produces X_except and X_regular values. */
-	unsigned  throws_exception : 1;
+	bool pinned             : 1;
+	/**< Whether a fragile op produces X_except and X_regular values. */
+	bool throws_exception   : 1;
+	/**< Whether this node needs a label because of possible exception. */
+	bool needs_except_label : 1;
 } except_attr;
 
 /** Attributes for Call nodes. */
@@ -686,6 +688,17 @@ static inline dbg_info *get_irn_dbg_info_(const ir_node *n)
 static inline void set_irn_dbg_info_(ir_node *n, dbg_info *db)
 {
 	n->dbi = db;
+}
+
+static inline int needs_exc_label(const ir_node *node)
+{
+	return is_fragile_op(node) && node->attr.except.needs_except_label;
+}
+
+static inline void set_needs_exc_label(ir_node *node, int flag)
+{
+	assert(is_fragile_op(node));
+	node->attr.except.needs_except_label = flag;
 }
 
 /**
