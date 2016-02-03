@@ -4483,7 +4483,7 @@ static ir_node *gen_Proj_Load(ir_node *node)
 			return be_new_Proj(new_pred, pn_ia32_Load_M);
 		case pn_Load_X_except:
 			/* This Load might raise an exception. Mark it. */
-			set_ia32_exc_label(new_pred, 1);
+			set_needs_exc_label(new_pred, true);
 			return be_new_Proj(new_pred, pn_ia32_Load_X_except);
 		case pn_Load_X_regular:
 			return be_new_Proj(new_pred, pn_ia32_Load_X_regular);
@@ -4497,7 +4497,7 @@ static ir_node *gen_Proj_Load(ir_node *node)
 			return be_new_Proj(new_pred, pn_ia32_M);
 		case pn_Load_X_except:
 			/* This Load might raise an exception. Mark it. */
-			set_ia32_exc_label(new_pred, 1);
+			set_needs_exc_label(new_pred, true);
 			return be_new_Proj(new_pred, pn_ia32_Conv_I2I_X_except);
 		case pn_Load_X_regular:
 			return be_new_Proj(new_pred, pn_ia32_Conv_I2I_X_regular);
@@ -4510,7 +4510,7 @@ static ir_node *gen_Proj_Load(ir_node *node)
 			return be_new_Proj(new_pred, pn_ia32_xLoad_M);
 		case pn_Load_X_except:
 			/* This Load might raise an exception. Mark it. */
-			set_ia32_exc_label(new_pred, 1);
+			set_needs_exc_label(new_pred, true);
 			return be_new_Proj(new_pred, pn_ia32_xLoad_X_except);
 		case pn_Load_X_regular:
 			return be_new_Proj(new_pred, pn_ia32_xLoad_X_regular);
@@ -4523,7 +4523,7 @@ static ir_node *gen_Proj_Load(ir_node *node)
 			return be_new_Proj(new_pred, pn_ia32_fld_M);
 		case pn_Load_X_except:
 			/* This Load might raise an exception. Mark it. */
-			set_ia32_exc_label(new_pred, 1);
+			set_needs_exc_label(new_pred, true);
 			return be_new_Proj(new_pred, pn_ia32_fld_X_except);
 		case pn_Load_X_regular:
 			return be_new_Proj(new_pred, pn_ia32_fld_X_regular);
@@ -4663,7 +4663,7 @@ static ir_node *gen_Proj_Div(ir_node *node)
 			panic("Div transformed to unexpected thing %+F", new_pred);
 		}
 	case pn_Div_X_except:
-		set_ia32_exc_label(new_pred, 1);
+		set_needs_exc_label(new_pred, true);
 		return be_new_Proj(new_pred, pn_ia32_Div_X_except);
 	case pn_Div_X_regular:
 		return be_new_Proj(new_pred, pn_ia32_Div_X_regular);
@@ -4691,7 +4691,7 @@ static ir_node *gen_Proj_Mod(ir_node *node)
 	case pn_Mod_res:
 		return be_new_Proj(new_pred, pn_ia32_Div_mod_res);
 	case pn_Mod_X_except:
-		set_ia32_exc_label(new_pred, 1);
+		set_needs_exc_label(new_pred, true);
 		return be_new_Proj(new_pred, pn_ia32_Div_X_except);
 	case pn_Mod_X_regular:
 		return be_new_Proj(new_pred, pn_ia32_Div_X_regular);
@@ -4923,6 +4923,7 @@ static ir_node *gen_Proj_Call(ir_node *node)
 	case pn_Call_X_regular:
 		return be_new_Proj(new_call, pn_ia32_Call_X_regular);
 	case pn_Call_X_except:
+		set_needs_exc_label(new_call, true);
 		return be_new_Proj(new_call, pn_ia32_Call_X_except);
 	case pn_Call_T_result:
 		break;

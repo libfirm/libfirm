@@ -435,34 +435,6 @@ unsigned get_ia32_copyb_size(const ir_node *node)
 	return attr->size;
 }
 
-unsigned get_ia32_exc_label(const ir_node *node)
-{
-	const ia32_attr_t *attr = get_ia32_attr_const(node);
-	return attr->has_except_label;
-}
-
-void set_ia32_exc_label(ir_node *node, unsigned flag)
-{
-	ia32_attr_t *attr = get_ia32_attr(node);
-	attr->has_except_label = flag;
-}
-
-ir_label_t get_ia32_exc_label_id(const ir_node *node)
-{
-	const ia32_attr_t *attr = get_ia32_attr_const(node);
-
-	assert(attr->has_except_label);
-	return attr->exc_label;
-}
-
-void set_ia32_exc_label_id(ir_node *node, ir_label_t id)
-{
-	ia32_attr_t *attr = get_ia32_attr(node);
-
-	assert(attr->has_except_label);
-	attr->exc_label = id;
-}
-
 void ia32_swap_left_right(ir_node *node)
 {
 	ia32_attr_t *attr  = get_ia32_attr(node);

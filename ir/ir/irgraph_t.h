@@ -310,7 +310,7 @@ static inline void set_irg_entity_(ir_graph *irg, ir_entity *ent)
 	irg->ent = ent;
 }
 
-static inline ir_type *get_irg_frame_type_(ir_graph *irg)
+static inline ir_type *get_irg_frame_type_(const ir_graph *const irg)
 {
 	assert(irg->frame_type);
 	return irg->frame_type;

@@ -38,6 +38,7 @@
 #include "besched.h"
 #include "bestack.h"
 #include "beutil.h"
+#include "beexc.h"
 #include "debug.h"
 #include "execfreq.h"
 #include "gen_ia32_emitter.h"
@@ -58,7 +59,6 @@
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 static char       pic_base_label[128];
-static ir_label_t exc_label_id;
 
 static bool       omit_fp;
 static int        frame_type_size;
@@ -74,6 +74,11 @@ typedef enum get_ip_style_t {
 static int get_ip_style = IA32_GET_IP_THUNK;
 
 /** Checks if the current block is a fall-through target. */
+static bool fallthrough_possible(const ir_node *source_block, const ir_node *target_block)
+{
+	return be_emit_get_prev_block(target_block) == source_block;
+}
+
 static bool is_fallthrough(const ir_node *cfgpred)
 {
 	if (!is_Proj(cfgpred))
@@ -644,20 +649,6 @@ x86_condition_code_t ia32_determine_final_cc(ir_node const *const node,
 }
 
 /**
- * Emits an exception label for a given node.
- */
-static void ia32_emit_exc_label(const ir_node *node)
-{
-	be_emit_string(be_gas_insn_label_prefix());
-	be_emit_irprintf("%lu", get_ia32_exc_label_id(node));
-}
-
-static bool fallthrough_possible(const ir_node *block, const ir_node *target)
-{
-	return be_emit_get_prev_block(target) == block;
-}
-
-/**
  * Emits the jump sequence for a conditional jump (cmp + jmp_true + jmp_false)
  */
 static void emit_ia32_Jcc(const ir_node *node)
@@ -1176,6 +1167,9 @@ static void emit_ia32_Call(const ir_node *node)
 {
 	ia32_emitf(node, "call %*AS3");
 
+	if (be_options.exceptions)
+		be_exc_emit_irn_label(node);
+
 	if (is_cfop(node)) {
 		/* If the call throws we have to add a jump to its X_regular block. */
 		const ir_node* const x_regular_proj = get_Proj_for_pn(node, node->op->pn_x_regular);
@@ -1224,33 +1218,11 @@ static void ia32_register_emitters(void)
 }
 
 /**
- * Assign and emit an exception label if the current instruction can fail.
- */
-static void ia32_assign_exc_label(ir_node *node)
-{
-	/* assign a new ID to the instruction */
-	set_ia32_exc_label_id(node, ++exc_label_id);
-	/* print it */
-	ia32_emit_exc_label(node);
-	be_emit_char(':');
-	be_emit_pad_comment();
-	be_emit_cstring("/* exception to Block ");
-	be_emit_cfop_target(node);
-	be_emit_cstring(" */\n");
-	be_emit_write_line();
-}
-
-/**
  * Emits code for a node.
  */
 static void ia32_emit_node(ir_node *node)
 {
 	DBG((dbg, LEVEL_1, "emitting code for %+F\n", node));
-
-	/* emit the exception label of this instruction */
-	if (is_ia32_irn(node) && get_ia32_exc_label(node)) {
-		ia32_assign_exc_label(node);
-	}
 
 	be_emit_node(node);
 
@@ -1382,79 +1354,12 @@ static void ia32_gen_block(ir_node *block)
 	}
 }
 
-typedef struct exc_entry {
-	ir_node *exc_instr;  /** The instruction that can issue an exception. */
-	ir_node *block;      /** The block to call then. */
-} exc_entry;
-
-/**
- * Block-walker:
- * Sets labels for control flow nodes (jump target).
- * Links control predecessors to there destination blocks.
- */
-static void ia32_gen_labels(ir_node *block, void *data)
-{
-	exc_entry **exc_list = (exc_entry**)data;
-	for (unsigned n = get_Block_n_cfgpreds(block); n-- > 0; ) {
-		ir_node *pred = get_Block_cfgpred(block, n);
-
-		pred = skip_Proj(pred);
-		if (is_ia32_irn(pred) && get_ia32_exc_label(pred) && exc_list != NULL) {
-			exc_entry e;
-
-			e.exc_instr = pred;
-			e.block     = block;
-			ARR_APP1(exc_entry, *exc_list, e);
-			set_irn_link(pred, block);
-		}
-	}
-}
-
-/**
- * Compare two exception_entries.
- */
-static int cmp_exc_entry(const void *a, const void *b)
-{
-	const exc_entry *ea = (const exc_entry*)a;
-	const exc_entry *eb = (const exc_entry*)b;
-	if (get_ia32_exc_label_id(ea->exc_instr) < get_ia32_exc_label_id(eb->exc_instr))
-		return -1;
-	return +1;
-}
-
-static parameter_dbg_info_t *construct_parameter_infos(ir_graph *irg)
-{
-	ir_entity            *entity     = get_irg_entity(irg);
-	ir_type              *type       = get_entity_type(entity);
-	ir_type              *frame_type = get_irg_frame_type(irg);
-	size_t                n_params   = get_method_n_params(type);
-	parameter_dbg_info_t *infos     = XMALLOCNZ(parameter_dbg_info_t, n_params);
-
-	for (size_t i = 0, n_members = get_compound_n_members(frame_type);
-	     i < n_members; ++i) {
-		ir_entity *member = get_compound_member(frame_type, i);
-		if (!is_parameter_entity(member))
-			continue;
-		size_t param = get_entity_parameter_number(member);
-		if (param == IR_VA_START_PARAMETER_NUMBER)
-			continue;
-		assert(infos[param].entity == NULL && infos[param].reg == NULL);
-		infos[param].reg    = NULL;
-		infos[param].entity = member;
-	}
-
-	return infos;
-}
-
-static void emit_function_text(ir_graph *const irg, exc_entry **const exc_list)
+static void emit_function_text(ir_graph *const irg, ir_node *const *const blk_sched)
 {
 	ia32_register_emitters();
 
-	ir_node  **const blk_sched = be_create_block_schedule(irg);
-
 	/* we use links to point to target blocks */
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
-	irg_block_walk_graph(irg, ia32_gen_labels, NULL, exc_list);
 
 	be_emit_init_cf_links(blk_sched);
 
@@ -1511,13 +1416,11 @@ static unsigned emit_jit_entity_relocation_asm(char *const buffer,
 
 void ia32_emit_function(ir_graph *const irg)
 {
-	exc_entry *exc_list = NEW_ARR_F(exc_entry, 0);
 	be_gas_elf_type_char = '@';
+	get_unique_label(pic_base_label, sizeof(pic_base_label), "PIC_BASE");
 
 	ir_entity *const entity = get_irg_entity(irg);
-	parameter_dbg_info_t *infos = construct_parameter_infos(irg);
-	be_gas_emit_function_prolog(entity, ia32_cg_config.function_alignment, infos);
-	free(infos);
+	be_gas_emit_function_prolog(entity, ia32_cg_config.function_alignment, NULL);
 
 	omit_fp = ia32_get_irg_data(irg)->omit_fp;
 	if (omit_fp) {
@@ -1533,9 +1436,6 @@ void ia32_emit_function(ir_graph *const irg)
 		be_dwarf_callframe_spilloffset(&ia32_registers[REG_EBP], -8);
 	}
 
-	get_unique_label(pic_base_label, sizeof(pic_base_label), "PIC_BASE");
-	x86_pic_base_label = pic_base_label;
-
 	if (ia32_cg_config.emit_machcode) {
 		/* For debugging we can jit the code and output it embedded into a
 		 * normal .s file with .byte directives etc. */
@@ -1544,23 +1444,22 @@ void ia32_emit_function(ir_graph *const irg)
 		be_jit_emit_as_asm(function, emit_jit_entity_relocation_asm);
 		be_destroy_jit_segment(segment);
 	} else {
-		emit_function_text(irg, &exc_list);
+		ir_node *const *const blk_sched = be_create_block_schedule(irg);
+
+		if (be_options.exceptions) {
+			be_exc_init(entity, blk_sched);
+			be_exc_emit_function_prolog();
+		}
+
+		emit_function_text(irg, blk_sched);
+
+		if (be_options.exceptions) {
+			be_exc_emit_table();
+			be_exc_finish();
+		}
 	}
 
 	be_gas_emit_function_epilog(entity);
-
-	/* Sort the exception table using the exception label id's.
-	   Those are ascending with ascending addresses. */
-	QSORT_ARR(exc_list, cmp_exc_entry);
-	for (size_t e = 0; e < ARR_LEN(exc_list); ++e) {
-		be_emit_cstring("\t.long ");
-		ia32_emit_exc_label(exc_list[e].exc_instr);
-		be_emit_char('\n');
-		be_emit_cstring("\t.long ");
-		be_gas_emit_block_name(exc_list[e].block);
-		be_emit_char('\n');
-	}
-	DEL_ARR_F(exc_list);
 }
 
 void ia32_emit_thunks(void)

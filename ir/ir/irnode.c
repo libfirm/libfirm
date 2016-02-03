@@ -666,15 +666,15 @@ int is_x_regular_Proj(const ir_node *node)
 
 void ir_set_throws_exception(ir_node *node, int throws_exception)
 {
-	except_attr *attr = &node->attr.except;
 	assert(is_fragile_op(node));
+	except_attr *attr = &node->attr.except;
 	attr->throws_exception = throws_exception;
 }
 
 int ir_throws_exception(const ir_node *node)
 {
-	const except_attr *attr = &node->attr.except;
 	assert(is_fragile_op(node));
+	const except_attr *attr = &node->attr.except;
 	return attr->throws_exception;
 }
 

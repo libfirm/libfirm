@@ -12,16 +12,19 @@
 #include "amd64_bearch_t.h"
 #include "amd64_new_nodes.h"
 #include "amd64_nodes_attr.h"
-#include "be_t.h"
+#include "bearch.h"
 #include "beasm.h"
 #include "beblocksched.h"
 #include "bediagnostic.h"
 #include "beemithlp.h"
 #include "beemitter.h"
+#include "beexc.h"
 #include "begnuas.h"
 #include "beirg.h"
 #include "benode.h"
 #include "besched.h"
+#include "bestack.h"
+#include "be_t.h"
 #include "gen_amd64_emitter.h"
 #include "gen_amd64_regalloc_if.h"
 #include "iredges_t.h"
@@ -608,6 +611,9 @@ static void emit_amd64_call(const ir_node* node)
 {
 	amd64_emitf(node, "call %*AM");
 
+	if (be_options.exceptions)
+		be_exc_emit_irn_label(node);
+
 	if (is_cfop(node)) {
 		/* If the call throws we have to add a jump to its X_regular block. */
 		const ir_node* const x_regular_proj = get_Proj_for_pn(node, node->op->pn_x_regular);
@@ -883,25 +889,24 @@ static void amd64_gen_block(ir_node *block)
 
 void amd64_emit_function(ir_graph *irg)
 {
-	const ir_entity *const entity = get_irg_entity(irg);
-
 	/* register all emitter functions */
 	amd64_register_emitters();
 
 	ir_node *const *const blk_sched = be_create_block_schedule(irg);
 
-	be_gas_emit_function_prolog(entity, 4, NULL);
-
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 
 	be_emit_init_cf_links(blk_sched);
 
-	amd64_irg_data_t const *const irg_data = amd64_get_irg_data(irg);
-	omit_fp = irg_data->omit_fp;
+	const ir_entity *const entity = get_irg_entity(irg);
+	be_gas_emit_function_prolog(entity, 4, NULL);
+	if (be_options.exceptions) {
+		be_exc_init(entity, blk_sched);
+		be_exc_emit_function_prolog();
+	}
 
+	bool omit_fp = amd64_get_irg_data(irg)->omit_fp;
 	if (omit_fp) {
-		ir_type *frame_type = get_irg_frame_type(irg);
-		frame_type_size = get_type_size(frame_type);
 		be_dwarf_callframe_register(&amd64_registers[REG_RSP]);
 	} else {
 		/* well not entirely correct here, we should emit this after the
@@ -912,11 +917,20 @@ void amd64_emit_function(ir_graph *irg)
 		be_dwarf_callframe_spilloffset(&amd64_registers[REG_RBP], -16);
 	}
 
+	/* register all emitter functions */
+	amd64_register_emitters();
+
 	for (size_t i = 0, n = ARR_LEN(blk_sched); i < n; ++i) {
-		ir_node *block = blk_sched[i];
+		ir_node *const block = blk_sched[i];
 		amd64_gen_block(block);
 	}
+
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
+
+	if (be_options.exceptions) {
+		be_exc_emit_table();
+		be_exc_finish();
+	}
 
 	be_gas_emit_function_epilog(entity);
 }
