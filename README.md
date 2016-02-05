@@ -29,10 +29,10 @@ and linker flags by creating a 'config.mak' file.
 
 ### Building with cmake
 
-libFirm has an additional cmake build system. CMake is a complexer build system
-than the make based build and most libFirm developers do not use it.  However
-it can adapt the compiler and linker flags to build shared libraries for a
-wider range of systems, provides an installation target and is often more
+libFirm has an additional cmake build system. CMake is a more complex build
+system than the make based one and most libFirm developers do not use it.
+However it can adapt the compiler and linker flags to build shared libraries
+for a wider range of systems, provides an installation target and is often more
 familiar for people preparing packages for distribution.
 
 Further Information and Contact
