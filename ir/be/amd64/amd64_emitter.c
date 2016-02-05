@@ -722,8 +722,9 @@ static void emit_amd64_asm_operand(ir_node const *const node, char const modifie
 	x86_asm_operand_t const *const op   = &((x86_asm_operand_t const*)attr->operands)[pos];
 
 	if (required != ASM_OP_INVALID && required != op->kind) {
-		char const *const name = x86_get_constraint_name(required);
-		be_errorf(node, "asm modifier '%c' requires an operand of type '%s'", modifier, name);
+		char const *const want = x86_get_constraint_name(required);
+		char const *const have = x86_get_constraint_name(op->kind);
+		be_errorf(node, "modifier of operand '%%%c%u' requires an operand of type '%s', but got '%s'", modifier, pos, want, have);
 		return;
 	}
 
