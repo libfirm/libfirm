@@ -36,64 +36,61 @@ static ir_node *get_cfop_target_block(const ir_node *irn)
 	return (ir_node*)get_irn_link(irn);
 }
 
-static char get_gp_mode_suffix(amd64_insn_mode_t const insn_mode)
+static char get_gp_size_suffix(amd64_insn_size_t const size)
 {
-	switch (insn_mode) {
-	case INSN_MODE_8:  return 'b';
-	case INSN_MODE_16: return 'w';
-	case INSN_MODE_32: return 'l';
-	case INSN_MODE_64: return 'q';
-	case INSN_MODE_80:
-	case INSN_MODE_128:
-	case INSN_MODE_INVALID:
+	switch (size) {
+	case INSN_SIZE_8:  return 'b';
+	case INSN_SIZE_16: return 'w';
+	case INSN_SIZE_32: return 'l';
+	case INSN_SIZE_64: return 'q';
+	case INSN_SIZE_80:
+	case INSN_SIZE_128:
 		break;
 	}
 	panic("invalid insn mode");
 }
 
-static void amd64_emit_insn_mode_suffix(amd64_insn_mode_t const insn_mode)
+static void amd64_emit_insn_size_suffix(amd64_insn_size_t const size)
 {
-	be_emit_char(get_gp_mode_suffix(insn_mode));
+	be_emit_char(get_gp_size_suffix(size));
 }
 
-static char get_xmm_mode_suffix(amd64_insn_mode_t const insn_mode)
+static char get_xmm_size_suffix(amd64_insn_size_t const size)
 {
-	switch (insn_mode) {
-	case INSN_MODE_32:  return 's';
-	case INSN_MODE_64:  return 'd';
-	case INSN_MODE_128: return 'q';
-	case INSN_MODE_8:
-	case INSN_MODE_16:
-	case INSN_MODE_80:
-	case INSN_MODE_INVALID:
+	switch (size) {
+	case INSN_SIZE_32:  return 's';
+	case INSN_SIZE_64:  return 'd';
+	case INSN_SIZE_128: return 'q';
+	case INSN_SIZE_8:
+	case INSN_SIZE_16:
+	case INSN_SIZE_80:
 		break;
 	}
 	panic("invalid insn mode");
 }
 
-static void amd64_emit_xmm_mode_suffix(amd64_insn_mode_t const insn_mode)
+static void amd64_emit_xmm_size_suffix(amd64_insn_size_t const size)
 {
-	be_emit_char(get_xmm_mode_suffix(insn_mode));
+	be_emit_char(get_xmm_size_suffix(size));
 }
 
-static char get_x87_mode_suffix(amd64_insn_mode_t const insn_mode)
+static char get_x87_size_suffix(amd64_insn_size_t const size)
 {
-	switch (insn_mode) {
-	case INSN_MODE_32: return 's';
-	case INSN_MODE_64: return 'l';
-	case INSN_MODE_80: return 't';
-	case INSN_MODE_8:
-	case INSN_MODE_16:
-	case INSN_MODE_128:
-	case INSN_MODE_INVALID:
+	switch (size) {
+	case INSN_SIZE_32: return 's';
+	case INSN_SIZE_64: return 'l';
+	case INSN_SIZE_80: return 't';
+	case INSN_SIZE_8:
+	case INSN_SIZE_16:
+	case INSN_SIZE_128:
 		break;
 	}
 	panic("Invalid insn mode");
 }
 
-static void amd64_emit_x87_mode_suffix(amd64_insn_mode_t const insn_mode)
+static void amd64_emit_x87_size_suffix(amd64_insn_size_t const size)
 {
-	be_emit_char(get_x87_mode_suffix(insn_mode));
+	be_emit_char(get_x87_size_suffix(size));
 }
 
 static const char *get_register_name_8bit(const arch_register_t *reg)
@@ -183,35 +180,34 @@ static void emit_register(const arch_register_t *reg)
 }
 
 static const char *get_register_name_mode(const arch_register_t *reg,
-                                          const amd64_insn_mode_t mode)
+                                          const amd64_insn_size_t size)
 {
-	switch (mode) {
-	case INSN_MODE_8:  return get_register_name_8bit(reg);
-	case INSN_MODE_16: return get_register_name_16bit(reg);
-	case INSN_MODE_32: return get_register_name_32bit(reg);
-	case INSN_MODE_64:
-	case INSN_MODE_80:
-	case INSN_MODE_128: return reg->name;
-	case INSN_MODE_INVALID:
+	switch (size) {
+	case INSN_SIZE_8:  return get_register_name_8bit(reg);
+	case INSN_SIZE_16: return get_register_name_16bit(reg);
+	case INSN_SIZE_32: return get_register_name_32bit(reg);
+	case INSN_SIZE_64:
+	case INSN_SIZE_80:
+	case INSN_SIZE_128: return reg->name;
 		break;
 	}
 	panic("invalid mode");
 }
 
-static void emit_register_insn_mode(const arch_register_t *reg,
-                                    const amd64_insn_mode_t mode)
+static void emit_register_sized(const arch_register_t *reg,
+                                const amd64_insn_size_t size)
 {
 	be_emit_char('%');
-	be_emit_string(get_register_name_mode(reg, mode));
+	be_emit_string(get_register_name_mode(reg, size));
 }
 
 static void emit_register_mode(const arch_register_t *reg,
-                               amd64_insn_mode_t insn_mode)
+                               amd64_insn_size_t size)
 {
 	if (reg->cls == &amd64_reg_classes[CLASS_amd64_xmm]) {
 		emit_register(reg);
 	} else {
-		emit_register_insn_mode(reg, insn_mode);
+		emit_register_sized(reg, size);
 	}
 }
 
@@ -341,7 +337,7 @@ static void amd64_emit_am(const ir_node *const node, bool indirect_star)
 	}
 	case AMD64_OP_REG_REG: {
 		const arch_register_t *reg1 = arch_get_irn_register_in(node, 1);
-		emit_register_mode(reg1, attr->insn_mode);
+		emit_register_mode(reg1, attr->size);
 		be_emit_cstring(", ");
 		goto emit_reg_in0;
 	}
@@ -352,7 +348,7 @@ static void amd64_emit_am(const ir_node *const node, bool indirect_star)
 		be_emit_cstring(", ");
 		const arch_register_t *reg
 			= arch_get_irn_register_in(node, binop_attr->u.reg_input);
-		emit_register_mode(reg, binop_attr->base.insn_mode);
+		emit_register_mode(reg, binop_attr->base.size);
 		return;
 	}
 	case AMD64_OP_ADDR_IMM: {
@@ -370,7 +366,7 @@ static void amd64_emit_am(const ir_node *const node, bool indirect_star)
 	case AMD64_OP_ADDR_REG: {
 		amd64_binop_addr_attr_t const *const binop_attr = (amd64_binop_addr_attr_t const*)attr;
 		arch_register_t const *const reg = arch_get_irn_register_in(node, binop_attr->u.reg_input);
-		emit_register_mode(reg, binop_attr->base.insn_mode);
+		emit_register_mode(reg, binop_attr->base.size);
 		be_emit_cstring(", ");
 emit_addr:
 		amd64_emit_addr(node, &attr->addr);
@@ -381,7 +377,7 @@ emit_addr:
 			be_emit_char('*');
 emit_reg_in0:;
 		const arch_register_t *reg = arch_get_irn_register_in(node, 0);
-		emit_register_mode(reg, attr->insn_mode);
+		emit_register_mode(reg, attr->size);
 		return;
 	}
 	case AMD64_OP_IMM32:
@@ -408,15 +404,15 @@ static void emit_shiftop(const ir_node *const node)
 	case AMD64_OP_SHIFT_IMM: {
 		be_emit_irprintf("$0x%X, ", attr->immediate);
 		const arch_register_t *reg = arch_get_irn_register_in(node, 0);
-		emit_register_mode(reg, attr->insn_mode);
+		emit_register_mode(reg, attr->size);
 		return;
 	}
 	case AMD64_OP_SHIFT_REG: {
 		const arch_register_t *reg0 = arch_get_irn_register_in(node, 0);
 		const arch_register_t *reg1 = arch_get_irn_register_in(node, 1);
-		emit_register_mode(reg1, INSN_MODE_8);
+		emit_register_mode(reg1, INSN_SIZE_8);
 		be_emit_cstring(", ");
-		emit_register_mode(reg0, attr->insn_mode);
+		emit_register_mode(reg0, attr->size);
 		return;
 	}
 	default:
@@ -519,7 +515,7 @@ end_of_mods:
 					++fmt;
 					amd64_addr_attr_t const *const attr
 						= get_amd64_addr_attr_const(node);
-					amd64_emit_x87_mode_suffix(attr->insn_mode);
+					amd64_emit_x87_size_suffix(attr->size);
 				} else if (*fmt == 'P') {
 					++fmt;
 					x87_attr_t const *const attr
@@ -586,15 +582,15 @@ emit_R:
 				if (mod & EMIT_IGNORE_MODE) {
 					emit_register(reg);
 				} else if (mod & EMIT_FORCE_32) {
-					emit_register_mode(reg, INSN_MODE_32);
+					emit_register_mode(reg, INSN_SIZE_32);
 				} else if (mod & EMIT_CONV_DEST) {
-					amd64_insn_mode_t src_mode  = get_amd64_insn_mode(node);
-					amd64_insn_mode_t dest_mode = src_mode == INSN_MODE_64
-					                            ? INSN_MODE_64 : INSN_MODE_32;
-					emit_register_mode(reg, dest_mode);
+					amd64_insn_size_t src_size  = get_amd64_insn_size(node);
+					amd64_insn_size_t dest_size = src_size == INSN_SIZE_64
+					                            ? INSN_SIZE_64 : INSN_SIZE_32;
+					emit_register_mode(reg, dest_size);
 				} else {
-					amd64_insn_mode_t insn_mode = get_amd64_insn_mode(node);
-					emit_register_mode(reg, insn_mode);
+					amd64_insn_size_t size = get_amd64_insn_size(node);
+					emit_register_mode(reg, size);
 				}
 				break;
 			}
@@ -604,21 +600,21 @@ emit_R:
 					++fmt;
 					const amd64_shift_attr_t *attr
 						= get_amd64_shift_attr_const(node);
-					amd64_emit_insn_mode_suffix(attr->insn_mode);
+					amd64_emit_insn_size_suffix(attr->size);
 				} else if (*fmt == 'M') {
 					++fmt;
 					const amd64_movimm_attr_t *attr
 						= get_amd64_movimm_attr_const(node);
-					amd64_emit_insn_mode_suffix(attr->insn_mode);
+					amd64_emit_insn_size_suffix(attr->size);
 				} else if (*fmt == 'X') {
 					++fmt;
 					amd64_addr_attr_t const *const attr
 						= get_amd64_addr_attr_const(node);
-					amd64_emit_xmm_mode_suffix(attr->insn_mode);
+					amd64_emit_xmm_size_suffix(attr->size);
 				} else {
 					amd64_addr_attr_t const *const attr
 						= get_amd64_addr_attr_const(node);
-					amd64_emit_insn_mode_suffix(attr->insn_mode);
+					amd64_emit_insn_size_suffix(attr->size);
 				}
 				break;
 			}
@@ -877,14 +873,13 @@ static void emit_amd64_jcc(const ir_node *irn)
 static void emit_amd64_mov_gp(const ir_node *node)
 {
 	const amd64_addr_attr_t *attr = get_amd64_addr_attr_const(node);
-	switch (attr->insn_mode) {
-	case INSN_MODE_8:  amd64_emitf(node, "movzbq %AM, %^D0"); return;
-	case INSN_MODE_16: amd64_emitf(node, "movzwq %AM, %^D0"); return;
-	case INSN_MODE_32: amd64_emitf(node, "movl %AM, %3D0");   return;
-	case INSN_MODE_64: amd64_emitf(node, "movq %AM, %^D0");   return;
-	case INSN_MODE_80:
-	case INSN_MODE_128:
-	case INSN_MODE_INVALID:
+	switch (attr->size) {
+	case INSN_SIZE_8:  amd64_emitf(node, "movzbq %AM, %^D0"); return;
+	case INSN_SIZE_16: amd64_emitf(node, "movzwq %AM, %^D0"); return;
+	case INSN_SIZE_32: amd64_emitf(node, "movl %AM, %3D0");   return;
+	case INSN_SIZE_64: amd64_emitf(node, "movq %AM, %^D0");   return;
+	case INSN_SIZE_80:
+	case INSN_SIZE_128:
 		break;
 	}
 	panic("invalid insn mode");

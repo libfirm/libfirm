@@ -56,16 +56,15 @@ static ir_entity *amd64_get_frame_entity(const ir_node *node)
 	return attr->addr.immediate.entity;
 }
 
-static int get_insn_mode_bytes(amd64_insn_mode_t insn_mode)
+static int get_insn_size_bytes(amd64_insn_size_t size)
 {
-	switch (insn_mode) {
-	case INSN_MODE_8:       return 1;
-	case INSN_MODE_16:      return 2;
-	case INSN_MODE_32:      return 4;
-	case INSN_MODE_64:      return 8;
-	case INSN_MODE_128:     return 16;
-	case INSN_MODE_80:
-	case INSN_MODE_INVALID: break;
+	switch (size) {
+	case INSN_SIZE_8:       return 1;
+	case INSN_SIZE_16:      return 2;
+	case INSN_SIZE_32:      return 4;
+	case INSN_SIZE_64:      return 8;
+	case INSN_SIZE_128:     return 16;
+	case INSN_SIZE_80:      break;
 	}
 	panic("bad insn mode");
 }
@@ -84,7 +83,7 @@ static void amd64_set_frame_offset(ir_node *node, int offset)
 		ir_graph          *irg    = get_irn_irg(node);
 		be_stack_layout_t *layout = be_get_irg_stack_layout(irg);
 		if (layout->sp_relative)
-			attr->addr.immediate.offset -= get_insn_mode_bytes(attr->insn_mode);
+			attr->addr.immediate.offset -= get_insn_size_bytes(attr->size);
 	}
 	assert(attr->addr.immediate.kind == X86_IMM_FRAMEOFFSET);
 	attr->addr.immediate.kind = X86_IMM_VALUE;
@@ -95,13 +94,13 @@ static int amd64_get_sp_bias(const ir_node *node)
 {
 	if (is_amd64_push_am(node)) {
 		const amd64_addr_attr_t *attr = get_amd64_addr_attr_const(node);
-		return get_insn_mode_bytes(attr->insn_mode);
+		return get_insn_size_bytes(attr->size);
 	} else if (is_amd64_push_reg(node)) {
 		/* 64-bit register size */
 		return AMD64_REGISTER_SIZE;
 	} else if (is_amd64_pop_am(node)) {
 		const amd64_addr_attr_t *attr = get_amd64_addr_attr_const(node);
-		return -get_insn_mode_bytes(attr->insn_mode);
+		return -get_insn_size_bytes(attr->size);
 	} else if (is_amd64_leave(node)) {
 		return SP_BIAS_RESET;
 	}
@@ -111,7 +110,7 @@ static int amd64_get_sp_bias(const ir_node *node)
 
 static ir_node *create_push(ir_node *node, ir_node *schedpoint, ir_node *sp,
                             ir_node *mem, ir_entity *ent,
-                            amd64_insn_mode_t insn_mode)
+                            amd64_insn_size_t size)
 {
 	dbg_info *dbgi  = get_irn_dbg_info(node);
 	ir_node  *block = get_nodes_block(node);
@@ -127,13 +126,13 @@ static ir_node *create_push(ir_node *node, ir_node *schedpoint, ir_node *sp,
 		.base_input = 1,
 	};
 	ir_node *in[] = { sp, frame, mem };
-	ir_node *const push = new_bd_amd64_push_am(dbgi, block, ARRAY_SIZE(in), in, rsp_reg_mem_reqs, insn_mode, addr);
+	ir_node *const push = new_bd_amd64_push_am(dbgi, block, ARRAY_SIZE(in), in, rsp_reg_mem_reqs, size, addr);
 	sched_add_before(schedpoint, push);
 	return push;
 }
 
 static ir_node *create_pop(ir_node *node, ir_node *schedpoint, ir_node *sp,
-                           ir_entity *ent, amd64_insn_mode_t insn_mode)
+                           ir_entity *ent, amd64_insn_size_t size)
 {
 	dbg_info *dbgi  = get_irn_dbg_info(node);
 	ir_node  *block = get_nodes_block(node);
@@ -150,7 +149,7 @@ static ir_node *create_pop(ir_node *node, ir_node *schedpoint, ir_node *sp,
 	};
 	ir_node *in[] = { sp, frame, get_irg_no_mem(irg) };
 
-	ir_node *const pop = new_bd_amd64_pop_am(dbgi, block, ARRAY_SIZE(in), in, rsp_reg_mem_reqs, insn_mode, addr);
+	ir_node *const pop = new_bd_amd64_pop_am(dbgi, block, ARRAY_SIZE(in), in, rsp_reg_mem_reqs, size, addr);
 	sched_add_before(schedpoint, pop);
 
 	return pop;
@@ -189,25 +188,25 @@ static void transform_MemPerm(ir_node *node)
 
 		int offset = 0;
 		do {
-			amd64_insn_mode_t insn_mode;
+			amd64_insn_size_t size;
 			if (entsize%2 == 1) {
-				insn_mode = INSN_MODE_8;
+				size = INSN_SIZE_8;
 			} else if (entsize % 4 == 2) {
-				insn_mode = INSN_MODE_16;
+				size = INSN_SIZE_16;
 			} else if (entsize % 8 == 4) {
-				insn_mode = INSN_MODE_32;
+				size = INSN_SIZE_32;
 			} else {
 				assert(entsize%8 == 0);
-				insn_mode = INSN_MODE_64;
+				size = INSN_SIZE_64;
 			}
 
-			ir_node *push = create_push(node, node, sp, mem, inent, insn_mode);
+			ir_node *push = create_push(node, node, sp, mem, inent, size);
 			sp = create_spproj(push, pn_amd64_push_am_stack);
 			get_amd64_addr_attr(push)->addr.immediate.offset = offset;
 
-			unsigned size = get_insn_mode_bytes(insn_mode);
-			offset  += size;
-			entsize -= size;
+			unsigned bytes = get_insn_size_bytes(size);
+			offset  += bytes;
+			entsize -= bytes;
 		} while(entsize > 0);
 		set_irn_n(node, i, new_r_Bad(irg, mode_X));
 	}
@@ -227,24 +226,24 @@ static void transform_MemPerm(ir_node *node)
 		int      offset = entsize;
 		ir_node *pop;
 		do {
-			amd64_insn_mode_t insn_mode;
+			amd64_insn_size_t size;
 			if (entsize%2 == 1) {
-				insn_mode = INSN_MODE_8;
+				size = INSN_SIZE_8;
 			} else if (entsize % 4 == 2) {
-				insn_mode = INSN_MODE_16;
+				size = INSN_SIZE_16;
 			} else if (entsize % 8 == 4) {
-				insn_mode = INSN_MODE_32;
+				size = INSN_SIZE_32;
 			} else {
 				assert(entsize%8 == 0);
-				insn_mode = INSN_MODE_64;
+				size = INSN_SIZE_64;
 			}
 
-			pop = create_pop(node, node, sp, outent, insn_mode);
+			pop = create_pop(node, node, sp, outent, size);
 			sp  = create_spproj(pop, pn_amd64_pop_am_stack);
 
-			unsigned size = get_insn_mode_bytes(insn_mode);
-			offset  -= size;
-			entsize -= size;
+			unsigned bytes = get_insn_size_bytes(size);
+			offset  -= bytes;
+			entsize -= bytes;
 			get_amd64_addr_attr(pop)->addr.immediate.offset = offset;
 		} while(entsize > 0);
 		pops[i] = pop;
@@ -449,12 +448,12 @@ static void amd64_set_frame_entity(ir_node *node, ir_entity *entity,
 	attr->addr.immediate.entity = entity;
 }
 
-static ir_type *get_type_for_insn_mode(amd64_insn_mode_t const insn_mode)
+static ir_type *get_type_for_insn_size(amd64_insn_size_t const size)
 {
 	/* TODO: do not hardcode node names here */
-	switch (insn_mode) {
-	case INSN_MODE_128: return get_type_for_mode(amd64_mode_xmm);
-	case INSN_MODE_80:  return x86_type_E;
+	switch (size) {
+	case INSN_SIZE_128: return get_type_for_mode(amd64_mode_xmm);
+	case INSN_SIZE_80:  return x86_type_E;
 	default:            return get_type_for_mode(mode_Lu);
 	}
 }
@@ -487,7 +486,7 @@ static void amd64_collect_frame_entity_nodes(ir_node *node, void *data)
 	const amd64_addr_attr_t *attr = get_amd64_addr_attr_const(node);
 	x86_imm32_t       const *imm  = &attr->addr.immediate;
 	if (imm->kind == X86_IMM_FRAMEOFFSET && imm->entity == NULL) {
-		const ir_type *type = get_type_for_insn_mode(attr->insn_mode);
+		const ir_type *type = get_type_for_insn_size(attr->size);
 		be_load_needs_frame_entity(env, node, type);
 	}
 }

@@ -20,9 +20,9 @@ void init_amd64_switch_attributes(ir_node *node, const ir_switch_table *table,
                                   ir_entity *table_entity);
 
 void init_amd64_cc_attributes(ir_node *node, x86_condition_code_t cc,
-                              amd64_insn_mode_t insn_mode);
+                              amd64_insn_size_t size);
 
-void init_amd64_movimm_attributes(ir_node *node, amd64_insn_mode_t insn_mode,
+void init_amd64_movimm_attributes(ir_node *node, amd64_insn_size_t size,
                                   const amd64_imm64_t *imm);
 
 int amd64_attrs_equal(const ir_node *a, const ir_node *b);

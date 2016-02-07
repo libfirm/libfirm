@@ -332,7 +332,7 @@ static ir_node *make_mov_imm32_to_offset_mem(dbg_info *dbgi, ir_node *block, ir_
 	amd64_binop_addr_attr_t mov_attr = {
 		.base = {
 			.base.op_mode = AMD64_OP_ADDR_IMM,
-			.insn_mode    = INSN_MODE_32,
+			.size         = INSN_SIZE_32,
 			.addr = {
 				.immediate = {
 					.offset = offset,
@@ -364,7 +364,7 @@ static ir_node *make_mov_val64_to_offset_mem(dbg_info *dbgi, ir_node *block, ir_
 	amd64_binop_addr_attr_t mov_attr = {
 		.base = {
 			.base.op_mode = AMD64_OP_ADDR_REG,
-			.insn_mode    = INSN_MODE_64,
+			.size         = INSN_SIZE_64,
 			.addr = {
 				.immediate = {
 					.entity = entity,
@@ -394,7 +394,7 @@ static ir_node *make_mov_xmmval64_to_offset_mem(dbg_info *dbgi, ir_node *block, 
 	amd64_binop_addr_attr_t mov_attr = {
 		.base = {
 			.base.op_mode = AMD64_OP_ADDR_REG,
-			.insn_mode    = INSN_MODE_64,
+			.size         = INSN_SIZE_64,
 			.addr = {
 				.immediate = {
 					.entity = entity,
@@ -429,7 +429,7 @@ static ir_node *make_lea_with_offset_entity(dbg_info *dbgi, ir_node *block,
 		.variant    = X86_ADDR_BASE,
 		.base_input = 0,
 	};
-	return new_bd_amd64_lea(dbgi, block, ARRAY_SIZE(lea_in), lea_in, reg_reqs, INSN_MODE_64, lea_addr);
+	return new_bd_amd64_lea(dbgi, block, ARRAY_SIZE(lea_in), lea_in, reg_reqs, INSN_SIZE_64, lea_addr);
 }
 
 ir_node *amd64_initialize_va_list(dbg_info *dbgi, ir_node *block, x86_cconv_t *cconv,

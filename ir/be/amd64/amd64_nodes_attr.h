@@ -25,14 +25,13 @@ enum amd64_arch_irn_flags_t {
 
 /** instruction data size. Keep sorted! */
 typedef enum {
-	INSN_MODE_INVALID = 0,
-	INSN_MODE_8,
-	INSN_MODE_16,
-	INSN_MODE_32,
-	INSN_MODE_64,
-	INSN_MODE_80,
-	INSN_MODE_128,
-} amd64_insn_mode_t;
+	INSN_SIZE_8,
+	INSN_SIZE_16,
+	INSN_SIZE_32,
+	INSN_SIZE_64,
+	INSN_SIZE_80,
+	INSN_SIZE_128,
+} amd64_insn_size_t;
 
 typedef enum {
 	AMD64_SEGMENT_DEFAULT,
@@ -85,7 +84,7 @@ typedef struct {
 
 typedef struct {
 	amd64_attr_t base;
-	ENUMBF(amd64_insn_mode_t) insn_mode : 3;
+	ENUMBF(amd64_insn_size_t) size : 3;
 	amd64_addr_t addr;
 } amd64_addr_attr_t;
 
@@ -98,21 +97,21 @@ typedef struct {
 } amd64_binop_addr_attr_t;
 
 typedef struct {
-	amd64_attr_t base;
-	ENUMBF(amd64_insn_mode_t) insn_mode : 3;
+	amd64_attr_t              base;
+	ENUMBF(amd64_insn_size_t) size : 3;
 	uint8_t                   immediate;
 } amd64_shift_attr_t;
 
 typedef struct {
-	amd64_attr_t base;
-	ENUMBF(amd64_insn_mode_t) insn_mode : 3;
+	amd64_attr_t              base;
+	ENUMBF(amd64_insn_size_t) size : 3;
 	amd64_imm64_t             immediate;
 } amd64_movimm_attr_t;
 
 typedef struct {
-	amd64_attr_t         base;
-	x86_condition_code_t cc;
-	ENUMBF(amd64_insn_mode_t) insn_mode       : 3;
+	amd64_attr_t              base;
+	x86_condition_code_t      cc;
+	ENUMBF(amd64_insn_size_t) size : 3;
 } amd64_cc_attr_t;
 
 typedef struct {

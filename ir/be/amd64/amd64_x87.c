@@ -4,25 +4,10 @@
 #include "gen_amd64_regalloc_if.h"
 #include "../ia32/x86_x87.h"
 
-static unsigned get_bits_from_insn_mode(amd64_insn_mode_t const insn_mode)
-{
-	switch (insn_mode) {
-	case INSN_MODE_8:  return 8;
-	case INSN_MODE_16: return 16;
-	case INSN_MODE_32: return 32;
-	case INSN_MODE_64: return 64;
-	case INSN_MODE_80: return 80;
-	case INSN_MODE_128:
-	case INSN_MODE_INVALID:
-		break;
-	}
-	panic("invalid insn_mode");
-}
-
 static void sim_amd64_fst(x87_state *const state, ir_node *const node)
 {
 	amd64_addr_attr_t const *const attr = get_amd64_addr_attr_const(node);
-	unsigned const bits = get_bits_from_insn_mode(attr->insn_mode);
+	unsigned const bits = get_insn_size_bits(attr->size);
 	x86_sim_x87_store(state, node, 0, bits);
 }
 
