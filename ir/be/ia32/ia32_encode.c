@@ -1414,22 +1414,23 @@ static unsigned enc_relocation_callback(char *const buffer,
                                         ir_entity *const entity,
                                         int32_t const offset)
 {
-	if (be_kind == IA32_RELOCATION_RELJUMP) {
-		int32_t *dest = (int32_t*)buffer;
-		*dest = offset;
-		return 4;
+	uint32_t value;
+	if (entity == NULL) {
+		assert(be_kind == IA32_RELOCATION_RELJUMP);
+		value = (uint32_t)offset;
+	} else {
+		intptr_t const entity_addr = (intptr_t)be_jit_get_entity_addr(entity);
+		if (entity_addr == (intptr_t)-1)
+			panic("Could not resolve address of entity %+F", entity);
+		intptr_t addr = entity_addr + offset;
+		if (be_kind == X86_IMM_PCREL)
+			addr -= (intptr_t)buffer;
+		value = (uint32_t)addr;
+		if ((intptr_t)value != addr)
+			panic("Overflow in relocation");
 	}
 
-	uint32_t const entity_addr
-		= (uint32_t)(intptr_t)be_jit_get_entity_addr(entity);
-	if (entity_addr == ~0u)
-		panic("Could not resolve address of entity %+F", entity);
-	uint32_t addr = entity_addr + offset;
-	if (be_kind == X86_IMM_PCREL)
-		addr -= (uint32_t)(intptr_t)buffer;
-
-	uint32_t *dest = (uint32_t*)buffer;
-	*dest = addr;
+	memcpy(buffer, &value, 4);
 	return 4;
 }
 
