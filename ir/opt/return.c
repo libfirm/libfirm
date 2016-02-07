@@ -315,7 +315,7 @@ void normalize_n_returns(ir_graph *irg)
 		endbl_in[i] = final;
 	}
 
-	exchange(endbl, new_r_Block(irg, n_finals, endbl_in));
+	set_irn_in(endbl, n_finals, endbl_in);
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 
 	/* Invalidate analysis information:
