@@ -132,7 +132,7 @@ my $divop = {
 	out_reqs  => [ "rax", "flags", "mem", "rdx" ],
 	outs      => [ "res_div", "flags", "M", "res_mod" ],
 	attr_type => "amd64_addr_attr_t",
-	fixed     => "amd64_addr_t addr = { { .offset = 0 }, .variant = X86_ADDR_JUST_IMM };\n"
+	fixed     => "amd64_addr_t addr = { .base_input = 0, .variant = X86_ADDR_REG };\n"
 	            ."amd64_op_mode_t op_mode = AMD64_OP_REG;\n",
 	attr      => "amd64_insn_size_t size",
 };
@@ -169,7 +169,7 @@ my $unop = {
 	attr_type => "amd64_addr_attr_t",
 	attr      => "amd64_insn_size_t size",
 	fixed     => "amd64_op_mode_t op_mode = AMD64_OP_REG;\n"
-	            ."amd64_addr_t addr = { { .offset = 0 }, .variant = X86_ADDR_JUST_IMM };",
+	            ."amd64_addr_t addr = { .base_input = 0, .variant = X86_ADDR_REG };",
 };
 
 my $unop_out = {

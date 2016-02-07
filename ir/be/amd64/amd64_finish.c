@@ -83,10 +83,12 @@ static void transform_sub_to_neg_add(ir_node *node,
 		tv = tarval_shl_unsigned(tv, bits - 1);
 		ir_entity *sign_bit_const = create_float_const_entity(tv);
 
-		amd64_binop_addr_attr_t xor_attr;
-		memset(&xor_attr, 0, sizeof(xor_attr));
-		xor_attr.base.size                  = INSN_SIZE_64;
-		xor_attr.base.base.op_mode          = AMD64_OP_REG_ADDR;
+		amd64_binop_addr_attr_t xor_attr = {
+			.base = {
+				.base.op_mode = AMD64_OP_REG_ADDR,
+				.size         = INSN_SIZE_64,
+			},
+		};
 		init_lconst_addr(&xor_attr.base.addr, sign_bit_const);
 
 		ir_node *xor_in[] = { in2 };
@@ -150,9 +152,10 @@ static void amd64_turn_back_am(ir_node *const node, arch_register_t const *const
 	new_in[1] = load_res;
 	set_irn_in(node, ARRAY_SIZE(new_in), new_in);
 	attr->base.op_mode = AMD64_OP_REG_REG;
-#ifndef NDEBUG
-	memset(&attr->addr, 0, sizeof(attr->addr));
-#endif
+	attr->addr = (amd64_addr_t) {
+		.base_input = 0,
+		.variant    = X86_ADDR_REG,
+	};
 
 	/* rewire mem-proj */
 	foreach_out_edge(node, edge) {

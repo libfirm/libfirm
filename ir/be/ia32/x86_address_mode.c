@@ -471,12 +471,14 @@ void x86_free_non_address_mode_nodes(void)
 char const *x86_get_addr_variant_str(x86_addr_variant_t const variant)
 {
 	switch (variant) {
-	case X86_ADDR_INVALID:    return "invalid";
+	case X86_ADDR_REG:        return "reg";
 	case X86_ADDR_JUST_IMM:   return "immediate";
 	case X86_ADDR_BASE:       return "base";
 	case X86_ADDR_BASE_INDEX: return "base+index";
 	case X86_ADDR_INDEX:      return "index";
 	case X86_ADDR_RIP:        return "rip";
+	case X86_ADDR_INVALID:
+		break;
 	}
 	return "<BAD>";
 }

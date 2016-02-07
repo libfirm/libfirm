@@ -333,13 +333,13 @@ static void amd64_emit_am(const ir_node *const node, bool indirect_star)
 			= (const amd64_binop_addr_attr_t*)attr;
 		amd64_emit_immediate32(true, &binop_attr->u.immediate);
 		be_emit_cstring(", ");
-		goto emit_reg_in0;
+		goto emit_addr_reg;
 	}
 	case AMD64_OP_REG_REG: {
 		const arch_register_t *reg1 = arch_get_irn_register_in(node, 1);
 		emit_register_mode(reg1, attr->size);
 		be_emit_cstring(", ");
-		goto emit_reg_in0;
+		goto emit_addr_reg;
 	}
 	case AMD64_OP_REG_ADDR: {
 		const amd64_binop_addr_attr_t *const binop_attr
@@ -375,8 +375,10 @@ emit_addr:
 	case AMD64_OP_REG: {
 		if (indirect_star)
 			be_emit_char('*');
-emit_reg_in0:;
-		const arch_register_t *reg = arch_get_irn_register_in(node, 0);
+emit_addr_reg:
+		assert(attr->addr.variant == X86_ADDR_REG);
+		arch_register_t const *const reg
+			= arch_get_irn_register_in(node, attr->addr.base_input);
 		emit_register_mode(reg, attr->size);
 		return;
 	}
