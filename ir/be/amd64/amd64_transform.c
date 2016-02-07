@@ -1213,7 +1213,7 @@ static ir_node *create_div(ir_node *const node, ir_mode *const mode,
 	                        arch_register_req_t const**, amd64_insn_size_t);
 	/* We have to extend the value to a 2nd register */
 	if (mode_is_signed(mode)) {
-		int32_t bits = get_insn_size_bits(size);
+		int32_t bits = amd64_get_insn_size_bits(size);
 		upper_value = create_sar(dbgi, new_block, size, new_op1, bits-1);
 		constructor = new_bd_amd64_idiv;
 	} else {
@@ -2824,7 +2824,7 @@ static ir_node *gen_clz(ir_node *const node)
 	dbg_info          *const dbgi  = get_irn_dbg_info(real);
 	ir_node           *const block = get_nodes_block(real);
 	amd64_insn_size_t  const size  = get_amd64_insn_size(real);
-	size_t             const mask  = get_insn_size_bits(size) - 1;
+	size_t             const mask  = amd64_get_insn_size_bits(size) - 1;
 	ir_node           *const in[]  = { bsr };
 	amd64_binop_addr_attr_t attr = {
 		.base = {

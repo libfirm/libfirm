@@ -68,16 +68,17 @@ x87_attr_t const *amd64_get_x87_attr_const(ir_node const *const node)
 	return amd64_get_x87_attr((ir_node *)node);
 }
 
-unsigned get_insn_size_bits(amd64_insn_size_t size)
+unsigned amd64_get_insn_size_bits(amd64_insn_size_t const size)
 {
 	switch (size) {
-	case INSN_SIZE_8:       return 8;
-	case INSN_SIZE_16:      return 16;
-	case INSN_SIZE_32:      return 32;
-	case INSN_SIZE_64:      return 64;
-	case INSN_SIZE_128:     return 128;
-	default:                panic("bad insn mode");
+	case INSN_SIZE_8:   return 8;
+	case INSN_SIZE_16:  return 16;
+	case INSN_SIZE_32:  return 32;
+	case INSN_SIZE_64:  return 64;
+	case INSN_SIZE_80:  return 80;
+	case INSN_SIZE_128: return 128;
 	}
+	panic("bad insn mode");
 }
 
 static const char *get_op_mode_string(amd64_op_mode_t const op_mode)
