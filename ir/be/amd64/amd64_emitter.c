@@ -989,7 +989,7 @@ static void amd64_gen_block(ir_node *block)
 static void amd64_gen_labels(ir_node *block, void *env)
 {
 	(void)env;
-	for (int n = get_Block_n_cfgpreds(block)-1; n >= 0; n--) {
+	for (int n = get_Block_n_cfgpreds(block); n-- != 0;) {
 		ir_node *const pred = get_Block_cfgpred(block, n);
 		set_irn_link(pred, block);
 	}
