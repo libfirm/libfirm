@@ -3043,7 +3043,10 @@ static ir_node *gen_saturating_increment(ir_node *const node)
 			},
 			.size = get_insn_size_from_mode(mode),
 		},
-		.u.immediate.offset = 1,
+		.u.immediate = {
+			.kind   = X86_IMM_VALUE,
+			.offset = 1,
+		},
 	};
 	ir_node  *inc_in[]          = { operand };
 
@@ -3062,7 +3065,10 @@ static ir_node *gen_saturating_increment(ir_node *const node)
 			},
 			.size = get_insn_size_from_mode(mode),
 		},
-		.u.immediate.offset = 0,
+		.u.immediate = {
+			.kind   = X86_IMM_VALUE,
+			.offset = 0,
+		},
 	};
 	ir_node *in[2]     = { value, eflags };
 
