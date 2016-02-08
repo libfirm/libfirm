@@ -53,13 +53,17 @@ void ia32_emitf(ir_node const *node, char const *fmt, ...);
 
 void ia32_emit_function(ir_graph *irg);
 
-ir_jit_function_t *ia32_emit_jit(ir_jit_segment_t *segment, ir_graph *irg);
-
-void ia32_emit_jit_function(char *buffer, ir_jit_function_t *function);
-
 void ia32_emit_thunks(void);
 
 /** Initializes the Emitter. */
 void ia32_init_emitter(void);
+
+x86_condition_code_t ia32_determine_final_cc(ir_node const *node,
+                                             int flags_pos);
+
+void ia32_emit_jumptable_target(ir_entity const *const table,
+                                ir_node const *const proj_x);
+
+bool ia32_should_align_block(ir_node const *block);
 
 #endif
