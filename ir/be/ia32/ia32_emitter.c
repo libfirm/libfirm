@@ -74,12 +74,6 @@ typedef enum get_ip_style_t {
 
 static int get_ip_style = IA32_GET_IP_THUNK;
 
-/** Return the next block in Block schedule */
-static ir_node *get_prev_block_sched(const ir_node *block)
-{
-	return (ir_node*)get_irn_link(block);
-}
-
 /** Checks if the current block is a fall-through target. */
 static bool is_fallthrough(const ir_node *cfgpred)
 {
@@ -100,20 +94,18 @@ static bool block_needs_label(const ir_node *block)
 	if (get_Block_entity(block) != NULL)
 		return true;
 
-	int  n_cfgpreds = get_Block_n_cfgpreds(block);
-	bool need_label = true;
+	int n_cfgpreds = get_Block_n_cfgpreds(block);
 	if (n_cfgpreds == 0) {
-		need_label = 0;
+		return false;
 	} else if (n_cfgpreds == 1) {
 		ir_node *cfgpred       = get_Block_cfgpred(block, 0);
 		ir_node *cfgpred_block = get_nodes_block(cfgpred);
-		if (get_prev_block_sched(block) == cfgpred_block
-		    && is_fallthrough(cfgpred)) {
-			need_label = 0;
-		}
+		if (!is_fallthrough(cfgpred))
+			return true;
+		return be_emit_get_prev_block(block) != cfgpred_block;
+	} else {
+		return true;
 	}
-
-	return need_label;
 }
 
 /**
@@ -303,20 +295,11 @@ static void ia32_emit_xmm_mode_suffix(ir_node const *const node)
 }
 
 /**
- * Returns the target block for a control flow node.
- */
-static ir_node *get_cfop_target_block(const ir_node *irn)
-{
-	assert(get_irn_mode(irn) == mode_X);
-	return (ir_node*)get_irn_link(irn);
-}
-
-/**
  * Emits the target label for a control flow node.
  */
 static void ia32_emit_cfop_target(const ir_node *node)
 {
-	ir_node *block = get_cfop_target_block(node);
+	ir_node *block = be_emit_get_cfop_target(node);
 	be_gas_emit_block_name(block);
 }
 
@@ -794,7 +777,7 @@ static void ia32_emit_exc_label(const ir_node *node)
 
 static bool fallthrough_possible(const ir_node *block, const ir_node *target)
 {
-	return get_prev_block_sched(target) == block;
+	return be_emit_get_prev_block(target) == block;
 }
 
 /**
@@ -806,7 +789,7 @@ static void emit_ia32_Jcc(const ir_node *node)
 
 	/* get both Projs */
 	ir_node const *proj_true   = get_Proj_for_pn(node, pn_ia32_Jcc_true);
-	ir_node const *target_true = get_cfop_target_block(proj_true);
+	ir_node const *target_true = be_emit_get_cfop_target(proj_true);
 	ir_node const *proj_false  = get_Proj_for_pn(node, pn_ia32_Jcc_false);
 	ir_node const *block       = get_nodes_block(node);
 	if (fallthrough_possible(block, target_true)) {
@@ -817,7 +800,7 @@ static void emit_ia32_Jcc(const ir_node *node)
 		proj_false = t;
 		cc         = x86_negate_condition_code(cc);
 	}
-	const ir_node *target_false = get_cfop_target_block(proj_false);
+	const ir_node *target_false = be_emit_get_cfop_target(proj_false);
 	bool           fallthrough  = fallthrough_possible(block, target_false);
 	/* if we can't have a fallthrough anyway, put the more likely case first */
 	if (!fallthrough) {
@@ -893,7 +876,7 @@ static void emit_jumptable_target(ir_entity const *const table,
                                   ir_node const *const proj_x)
 {
 	(void)table;
-	ir_node const *const block = get_cfop_target_block(proj_x);
+	ir_node const *const block = be_emit_get_cfop_target(proj_x);
 	be_gas_emit_block_name(block);
 	switch (be_options.pic_style) {
 	case BE_PIC_NONE:
@@ -929,7 +912,7 @@ static void emit_ia32_Jmp(const ir_node *node)
 {
 	/* we have a block schedule */
 	ir_node *block  = get_nodes_block(node);
-	ir_node *target = get_cfop_target_block(node);
+	ir_node *target = be_emit_get_cfop_target(node);
 	if (fallthrough_possible(block, target)) {
 		if (be_options.verbose_asm)
 			ia32_emitf(node, "/* fallthrough to %L */");
@@ -1456,7 +1439,7 @@ static void ia32_emit_align_label(void)
 static bool should_align_block(const ir_node *block)
 {
 	static const double DELTA = .0001;
-	ir_node *prev      = get_prev_block_sched(block);
+	ir_node *prev      = be_emit_get_prev_block(block);
 	double   prev_freq = 0;  /**< execfreq of the fallthrough block */
 	double   jmp_freq  = 0;  /**< execfreq of all non-fallthrough blocks */
 
@@ -1572,7 +1555,6 @@ static void ia32_gen_labels(ir_node *block, void *data)
 	exc_entry **exc_list = (exc_entry**)data;
 	for (unsigned n = get_Block_n_cfgpreds(block); n-- > 0; ) {
 		ir_node *pred = get_Block_cfgpred(block, n);
-		set_irn_link(pred, block);
 
 		pred = skip_Proj(pred);
 		if (is_ia32_irn(pred) && get_ia32_exc_label(pred) && exc_list != NULL) {
@@ -1633,15 +1615,9 @@ static void emit_function_text(ir_graph *const irg, exc_entry **const exc_list)
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 	irg_block_walk_graph(irg, ia32_gen_labels, NULL, exc_list);
 
-	/* initialize next block links */
-	size_t     const n         = ARR_LEN(blk_sched);
-	for (size_t i = 0; i < n; ++i) {
-		ir_node *const block = blk_sched[i];
-		ir_node *const prev  = i > 0 ? blk_sched[i-1] : NULL;
-		set_irn_link(block, prev);
-	}
+	be_emit_init_cf_links(blk_sched);
 
-	for (size_t i = 0; i < n; ++i) {
+	for (size_t i = 0, n = ARR_LEN(blk_sched); i < n; ++i) {
 		ir_node *const block = blk_sched[i];
 		ia32_gen_block(block);
 	}
@@ -1737,7 +1713,7 @@ static void bemit_relocation(x86_imm32_t const *const imm)
 static void bemit_jmp_destination(ir_node const *const cfop)
 {
 	assert(get_irn_mode(cfop) == mode_X);
-	ir_node const *const dest_block = get_cfop_target_block(cfop);
+	ir_node const *const dest_block = be_emit_get_cfop_target(cfop);
 	unsigned const fragment_num
 		= PTR_TO_INT(ir_nodehashmap_get(void, &block_fragmentnum, dest_block));
 	be_emit_reloc_fragment(4, BEMIT_RELOCATION_RELJUMP, fragment_num, -4);
@@ -2775,7 +2751,7 @@ static void bemit_jmp(ir_node const *const cfop)
 static void bemit_jump(const ir_node *node)
 {
 	ir_node *block  = get_nodes_block(node);
-	ir_node *target = get_cfop_target_block(node);
+	ir_node *target = be_emit_get_cfop_target(node);
 	if (fallthrough_possible(block, target))
 		return;
 
@@ -2803,7 +2779,7 @@ static void bemit_ia32_jcc(const ir_node *node)
 
 	/* get both Projs */
 	ir_node const *proj_true    = get_Proj_for_pn(node, pn_ia32_Jcc_true);
-	ir_node const *target_true  = get_cfop_target_block(proj_true);
+	ir_node const *target_true  = be_emit_get_cfop_target(proj_true);
 	ir_node const *proj_false   = get_Proj_for_pn(node, pn_ia32_Jcc_false);
 	ir_node const *block        = get_nodes_block(node);
 	if (fallthrough_possible(block, target_true)) {
@@ -2815,7 +2791,7 @@ static void bemit_ia32_jcc(const ir_node *node)
 		cc         = x86_negate_condition_code(cc);
 	}
 
-	ir_node const *target_false = get_cfop_target_block(proj_false);
+	ir_node const *target_false = be_emit_get_cfop_target(proj_false);
 	bool const     fallthrough  = fallthrough_possible(block, target_false);
 	/* if we can't have a fallthrough anyway, put the more likely case first */
 	if (!fallthrough) {
@@ -3324,14 +3300,12 @@ ir_jit_function_t *ia32_emit_jit(ir_jit_segment_t *const segment,
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 	irg_block_walk_graph(irg, ia32_gen_labels, NULL, NULL);
 
-	/* initialize next block links */
+	be_emit_init_cf_links(blk_sched);
+
 	ir_nodehashmap_init(&block_fragmentnum);
 	size_t n = ARR_LEN(blk_sched);
 	for (size_t i = 0; i < n; ++i) {
 		ir_node *block = blk_sched[i];
-		ir_node *prev  = i > 0 ? blk_sched[i-1] : NULL;
-
-		set_irn_link(block, prev);
 		assign_block_fragment_num(block, (unsigned)i);
 	}
 	for (size_t i = 0; i < n; ++i) {

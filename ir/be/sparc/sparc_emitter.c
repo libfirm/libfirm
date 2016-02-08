@@ -190,22 +190,12 @@ static void emit_fp_suffix(const ir_mode *mode)
 	}
 }
 
-static void set_jump_target(ir_node *jump, ir_node *target)
-{
-	set_irn_link(jump, target);
-}
-
-static ir_node *get_jump_target(const ir_node *jump)
-{
-	return (ir_node*)get_irn_link(jump);
-}
-
 /**
  * Returns the target label for a control flow node.
  */
 static void sparc_emit_cfop_target(const ir_node *node)
 {
-	ir_node *block = get_jump_target(node);
+	ir_node *block = be_emit_get_cfop_target(node);
 	be_gas_emit_block_name(block);
 }
 
@@ -226,9 +216,9 @@ static int get_sparc_Call_dest_addr_pos(const ir_node *node)
 
 static bool ba_is_fallthrough(const ir_node *node)
 {
-	ir_node *block      = get_nodes_block(node);
-	ir_node *next_block = (ir_node*)get_irn_link(block);
-	return get_jump_target(node) == next_block;
+	ir_node *const block  = get_nodes_block(node);
+	ir_node *const target = be_emit_get_cfop_target(node);
+	return be_emit_get_prev_block(target) == block;
 }
 
 static bool is_no_instruction(const ir_node *node)
@@ -441,13 +431,10 @@ static void optimize_fallthrough(ir_node *node)
 	}
 	assert(proj_true != NULL && proj_false != NULL);
 
-	/* for now, the code works for scheduled and non-schedules blocks */
-	const ir_node *block = get_nodes_block(node);
+	ir_node const *const block       = get_nodes_block(node);
+	ir_node const *const true_target = be_emit_get_cfop_target(proj_true);
 
-	/* we have a block schedule */
-	const ir_node *next_block = (ir_node*)get_irn_link(block);
-
-	if (get_jump_target(proj_true) == next_block) {
+	if (be_emit_get_prev_block(true_target) == block) {
 		/* exchange both proj destinations so the second one can be omitted */
 		set_Proj_num(proj_true,  pn_sparc_Bicc_false);
 		set_Proj_num(proj_false, pn_sparc_Bicc_true);
@@ -1217,10 +1204,9 @@ static void emit_sparc_branch(const ir_node *node, get_cc_func get_cc)
 	sparc_emitf(node, "%s%A %L", get_cc(relation), proj_true);
 	fill_delay_slot(node);
 
-	const ir_node *block      = get_nodes_block(node);
-	const ir_node *next_block = (ir_node*)get_irn_link(block);
-
-	if (get_jump_target(proj_false) == next_block) {
+	const ir_node *block       = get_nodes_block(node);
+	const ir_node *proj_target = be_emit_get_cfop_target(proj_false);
+	if (be_emit_get_prev_block(proj_target) == block) {
 		if (be_options.verbose_asm) {
 			sparc_emitf(node, "/* fallthrough to %L */", proj_false);
 		}
@@ -1360,7 +1346,7 @@ static void sparc_register_emitters(void)
 	be_set_emitter(op_sparc_fbfcc,     emit_sparc_fbfcc);
 }
 
-static bool block_needs_label(const ir_node *block, const ir_node *sched_prev)
+static bool block_needs_label(const ir_node *block)
 {
 	if (get_Block_entity(block) != NULL)
 		return true;
@@ -1368,14 +1354,15 @@ static bool block_needs_label(const ir_node *block, const ir_node *sched_prev)
 	int n_cfgpreds = get_Block_n_cfgpreds(block);
 	if (n_cfgpreds == 0) {
 		return false;
-	} else if (n_cfgpreds > 1) {
-		return true;
-	} else {
+	} else if (n_cfgpreds == 1) {
 		ir_node *cfgpred       = get_Block_cfgpred(block, 0);
 		ir_node *cfgpred_block = get_nodes_block(cfgpred);
 		if (is_Proj(cfgpred) && is_sparc_SwitchJmp(get_Proj_pred(cfgpred)))
 			return true;
-		return sched_prev != cfgpred_block || get_jump_target(cfgpred) != block;
+		return be_emit_get_prev_block(block) != cfgpred_block
+		    || be_emit_get_cfop_target(cfgpred) != block;
+	} else {
+		return true;
 	}
 }
 
@@ -1383,9 +1370,9 @@ static bool block_needs_label(const ir_node *block, const ir_node *sched_prev)
  * Walks over the nodes in a block connected by scheduling edges
  * and emits code for each node.
  */
-static void sparc_emit_block(ir_node *block, ir_node *prev)
+static void sparc_emit_block(ir_node *block)
 {
-	bool needs_label = block_needs_label(block, prev);
+	bool needs_label = block_needs_label(block);
 	be_gas_begin_block(block, needs_label);
 
 	sched_foreach(block, node) {
@@ -1411,17 +1398,6 @@ static void sparc_emit_func_epilog(ir_graph *irg)
 {
 	ir_entity *entity = get_irg_entity(irg);
 	be_gas_emit_function_epilog(entity);
-}
-
-static void init_jump_links(ir_node *block, void *env)
-{
-	(void) env;
-
-	int n = get_Block_n_cfgpreds(block);
-	for (n--; n >= 0; n--) {
-		ir_node *pred = get_Block_cfgpred(block, n);
-		set_jump_target(pred, block);
-	}
 }
 
 static int cmp_block_execfreqs(const void *d1, const void *d2)
@@ -1472,24 +1448,17 @@ void sparc_emit_function(ir_graph *irg)
 
 	sparc_emit_func_prolog(irg);
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
-	irg_block_walk_graph(irg, init_jump_links, NULL, NULL);
 
-	/* inject block scheduling links & emit code of each block */
+	be_emit_init_cf_links(block_schedule);
+
 	size_t n_blocks = ARR_LEN(block_schedule);
-	for (size_t i = 0; i < n_blocks; ++i) {
-		ir_node *block      = block_schedule[i];
-		ir_node *next_block = i+1 < n_blocks ? block_schedule[i+1] : NULL;
-		set_irn_link(block, next_block);
-	}
-
 	pick_delay_slots(n_blocks, block_schedule);
 
 	for (size_t i = 0; i < n_blocks; ++i) {
 		ir_node *block = block_schedule[i];
-		ir_node *prev  = i>=1 ? block_schedule[i-1] : NULL;
 		if (block == get_irg_end_block(irg))
 			continue;
-		sparc_emit_block(block, prev);
+		sparc_emit_block(block);
 	}
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 

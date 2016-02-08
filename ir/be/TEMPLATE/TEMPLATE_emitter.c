@@ -57,7 +57,7 @@ static void TEMPLATE_emit_dest_register(const ir_node *node, int pos)
  */
 static void TEMPLATE_emit_cfop_target(const ir_node *node)
 {
-	ir_node *block = (ir_node*)get_irn_link(node);
+	ir_node *block = be_emit_get_cfop_target(node);
 	be_gas_emit_block_name(block);
 }
 
@@ -221,18 +221,6 @@ static void TEMPLATE_emit_block(ir_node *block)
 	}
 }
 
-/**
- * Sets labels for control flow nodes (jump target)
- */
-static void TEMPLATE_gen_labels(ir_node *block, void *env)
-{
-	(void)env;
-	for (int n = get_Block_n_cfgpreds(block); n-- > 0; ) {
-		ir_node *pred = get_Block_cfgpred(block, n);
-		set_irn_link(pred, block);
-	}
-}
-
 void TEMPLATE_emit_function(ir_graph *irg)
 {
 	/* register all emitter functions */
@@ -247,7 +235,8 @@ void TEMPLATE_emit_function(ir_graph *irg)
 
 	/* populate jump link fields with their destinations */
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
-	irg_block_walk_graph(irg, TEMPLATE_gen_labels, NULL, NULL);
+
+	be_emit_init_cf_links(block_schedule);
 
 	for (size_t i = 0, n = ARR_LEN(block_schedule); i < n; ++i) {
 		ir_node *block = block_schedule[i];

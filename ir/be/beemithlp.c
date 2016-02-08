@@ -50,3 +50,24 @@ void be_emit_pad_comment(void)
 	/* 34 spaces */
 	be_emit_string_len("                                  ", 34 - col);
 }
+
+void be_emit_init_cf_links(ir_node **const block_schedule)
+{
+	ir_graph *const irg = get_irn_irg(block_schedule[0]);
+	assert(ir_resources_reserved(irg) & IR_RESOURCE_IRN_LINK);
+
+	ir_node *prev = NULL;
+	for (size_t i = 0, n = ARR_LEN(block_schedule); i < n; ++i) {
+		ir_node *const block = block_schedule[i];
+
+		/* Initialize cfop link */
+		for (unsigned n = get_Block_n_cfgpreds(block); n-- > 0; ) {
+			ir_node *pred = get_Block_cfgpred(block, n);
+			set_irn_link(pred, block);
+		}
+
+		/* initialize pred block links */
+		set_irn_link(block, prev);
+		prev = block;
+	}
+}

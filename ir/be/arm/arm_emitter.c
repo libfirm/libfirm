@@ -221,19 +221,11 @@ static void emit_constant_name(const ent_or_tv_t *entry)
 }
 
 /**
- * Returns the target block for a control flow node.
- */
-static ir_node *get_cfop_target_block(const ir_node *irn)
-{
-	return (ir_node*)get_irn_link(irn);
-}
-
-/**
  * Emit the target label for a control flow node.
  */
 static void arm_emit_cfop_target(const ir_node *irn)
 {
-	ir_node *block = get_cfop_target_block(irn);
+	ir_node *block = be_emit_get_cfop_target(irn);
 	be_gas_emit_block_name(block);
 }
 
@@ -418,14 +410,6 @@ static void emit_arm_fConst(const ir_node *irn)
 }
 
 /**
- * Returns the next block in a block schedule.
- */
-static ir_node *sched_next_block(const ir_node *block)
-{
-    return (ir_node*)get_irn_link(block);
-}
-
-/**
  * Emit a Compare with conditional branch.
  */
 static void emit_arm_B(const ir_node *irn)
@@ -451,14 +435,12 @@ static void emit_arm_B(const ir_node *irn)
 	if (cmp_attr->ins_permuted)
 		relation = get_inversed_relation(relation);
 
-	/* for now, the code works for scheduled and non-schedules blocks */
-	const ir_node *block      = get_nodes_block(irn);
-	const ir_node *next_block = sched_next_block(block);
-
 	assert(relation != ir_relation_false);
 	assert(relation != ir_relation_true);
 
-	if (get_cfop_target_block(proj_true) == next_block) {
+	ir_node const *const block       = get_nodes_block(irn);
+	ir_node const *const true_target = be_emit_get_cfop_target(proj_true);
+	if (be_emit_get_prev_block(true_target) == block) {
 		/* exchange both proj's so the second one can be omitted */
 		const ir_node *t = proj_true;
 
@@ -483,7 +465,8 @@ static void emit_arm_B(const ir_node *irn)
 	/* emit the true proj */
 	arm_emitf(irn, "b%s %t", suffix, proj_true);
 
-	if (get_cfop_target_block(proj_false) == next_block) {
+	ir_node const *const false_target = be_emit_get_cfop_target(proj_false);
+	if (be_emit_get_prev_block(false_target) == block) {
 		if (be_options.verbose_asm) {
 			arm_emitf(irn, "/* fallthrough to %t */", proj_false);
 		}
@@ -583,14 +566,12 @@ static void emit_be_MemPerm(const ir_node *node)
 static void emit_arm_Jmp(const ir_node *node)
 {
 	/* for now, the code works for scheduled and non-schedules blocks */
-	const ir_node *block      = get_nodes_block(node);
-	const ir_node *next_block = sched_next_block(block);
-	if (get_cfop_target_block(node) != next_block) {
+	ir_node const *const block  = get_nodes_block(node);
+	ir_node const *const target = be_emit_get_cfop_target(node);
+	if (be_emit_get_prev_block(target) != block) {
 		arm_emitf(node, "b %t", node);
-	} else {
-		if (be_options.verbose_asm) {
-			arm_emitf(node, "/* fallthrough to %t */", node);
-		}
+	} else if (be_options.verbose_asm) {
+		arm_emitf(node, "/* fallthrough to %t */", node);
 	}
 }
 
@@ -622,7 +603,7 @@ static void arm_register_emitters(void)
 /**
  * emit the block label if needed.
  */
-static void arm_emit_block_header(ir_node *block, ir_node *prev)
+static void arm_emit_block_header(ir_node *block)
 {
 	int  n_cfgpreds = get_Block_n_cfgpreds(block);
 	bool need_label;
@@ -633,7 +614,7 @@ static void arm_emit_block_header(ir_node *block, ir_node *prev)
 		/* we don't need labels for fallthrough blocks, however switch-jmps
 		 * are no fallthroughs */
 		need_label =
-			pred_block != prev ||
+			pred_block != be_emit_get_prev_block(block) ||
 			(is_Proj(pred) && is_arm_SwitchJmp(get_Proj_pred(pred)));
 	} else {
 		need_label = true;
@@ -646,25 +627,12 @@ static void arm_emit_block_header(ir_node *block, ir_node *prev)
  * Walks over the nodes in a block connected by scheduling edges
  * and emits code for each node.
  */
-static void arm_gen_block(ir_node *block, ir_node *prev_block)
+static void arm_gen_block(ir_node *block)
 {
-	arm_emit_block_header(block, prev_block);
+	arm_emit_block_header(block);
 	be_dwarf_location(get_irn_dbg_info(block));
 	sched_foreach(block, irn) {
 		be_emit_node(irn);
-	}
-}
-
-/**
- * Block-walker:
- * Sets labels for control flow nodes (jump target)
- */
-static void arm_gen_labels(ir_node *block, void *env)
-{
-	(void)env;
-	for (int n = get_Block_n_cfgpreds(block); n-- > 0; ) {
-		ir_node *pred = get_Block_cfgpred(block, n);
-		set_irn_link(pred, block);
 	}
 }
 
@@ -708,17 +676,12 @@ void arm_emit_function(ir_graph *irg)
 	be_gas_emit_function_prolog(entity, 4, infos);
 
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
-	irg_block_walk_graph(irg, arm_gen_labels, NULL, NULL);
 
-	ir_node *last_block = NULL;
+	be_emit_init_cf_links(blk_sched);
+
 	for (size_t i = 0, n = ARR_LEN(blk_sched); i < n;) {
-		ir_node *block   = blk_sched[i++];
-		ir_node *next_bl = i < n ? blk_sched[i] : NULL;
-
-		/* set here the link. the emitter expects to find the next block here */
-		set_irn_link(block, next_bl);
-		arm_gen_block(block, last_block);
-		last_block = block;
+		ir_node *block = blk_sched[i++];
+		arm_gen_block(block);
 	}
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 

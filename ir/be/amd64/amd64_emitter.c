@@ -30,14 +30,6 @@
 
 static be_stack_layout_t *layout;
 
-/**
- * Returns the target block for a control flow node.
- */
-static ir_node *get_cfop_target_block(const ir_node *irn)
-{
-	return (ir_node*)get_irn_link(irn);
-}
-
 static char get_gp_size_suffix(amd64_insn_size_t const size)
 {
 	switch (size) {
@@ -545,7 +537,7 @@ end_of_mods:
 			}
 
 			case 'L': {
-				ir_node *const block = get_cfop_target_block(node);
+				ir_node *const block = be_emit_get_cfop_target(node);
 				be_gas_emit_block_name(block);
 				break;
 			}
@@ -649,14 +641,6 @@ unknown:
 
 	be_emit_finish_line_gas(node);
 	va_end(ap);
-}
-
-/**
- * Returns the next block in a block schedule.
- */
-static ir_node *sched_next_block(const ir_node *block)
-{
-    return (ir_node*)get_irn_link(block);
 }
 
 static const char *get_register_name_ir_mode(const arch_register_t *reg,
@@ -768,14 +752,9 @@ static void emit_amd64_asm(const ir_node *node)
  */
 static void emit_amd64_jmp(const ir_node *node)
 {
-	ir_node *block, *next_block;
-
-	/* for now, the code works for scheduled and non-schedules blocks */
-	block = get_nodes_block(node);
-
-	/* we have a block schedule */
-	next_block = sched_next_block(block);
-	if (get_cfop_target_block(node) != next_block) {
+	ir_node const *const block  = get_nodes_block(node);
+	ir_node const *const target = be_emit_get_cfop_target(node);
+	if (be_emit_get_prev_block(target) != block) {
 		amd64_emitf(node, "jmp %L");
 	} else if (be_options.verbose_asm) {
 		amd64_emitf(node, "/* fallthrough to %L */");
@@ -785,7 +764,7 @@ static void emit_amd64_jmp(const ir_node *node)
 static void emit_jumptable_target(ir_entity const *const table,
                                   ir_node const *const proj_x)
 {
-	ir_node const *const block = get_cfop_target_block(proj_x);
+	ir_node const *const block = be_emit_get_cfop_target(proj_x);
 	be_gas_emit_block_name(block);
 	if (be_options.pic_style != BE_PIC_NONE) {
 		be_emit_char('-');
@@ -822,8 +801,6 @@ static void emit_amd64_jcc(const ir_node *irn)
 {
 	const ir_node         *proj_true  = NULL;
 	const ir_node         *proj_false = NULL;
-	const ir_node         *block;
-	const ir_node         *next_block;
 	const ir_node         *flags = get_irn_n(irn, n_amd64_jcc_eflags);
 	const amd64_cc_attr_t *attr  = get_amd64_cc_attr_const(irn);
 	x86_condition_code_t   cc    = determine_final_cc(flags, attr->cc);
@@ -838,13 +815,9 @@ static void emit_amd64_jcc(const ir_node *irn)
 		}
 	}
 
-	/* for now, the code works for scheduled and non-schedules blocks */
-	block = get_nodes_block(irn);
-
-	/* we have a block schedule */
-	next_block = sched_next_block(block);
-
-	if (get_cfop_target_block(proj_true) == next_block) {
+	ir_node const *const block       = get_nodes_block(irn);
+	ir_node const *const true_target = be_emit_get_cfop_target(proj_true);
+	if (be_emit_get_prev_block(true_target) == block) {
 		/* exchange both proj's so the second one can be omitted */
 		const ir_node *t = proj_true;
 
@@ -866,7 +839,8 @@ static void emit_amd64_jcc(const ir_node *irn)
 	/* emit the true proj */
 	amd64_emitf(proj_true, "j%PX %L", (int)cc);
 
-	if (get_cfop_target_block(proj_false) == next_block) {
+	ir_node const *const false_target = be_emit_get_cfop_target(proj_false);
+	if (be_emit_get_prev_block(false_target) == block) {
 		if (be_options.verbose_asm)
 			amd64_emitf(proj_false, "/* fallthrough to %L */");
 	} else  {
@@ -983,47 +957,24 @@ static void amd64_gen_block(ir_node *block)
 	}
 }
 
-
-/**
- * Sets labels for control flow nodes (jump target)
- * TODO: Jump optimization
- */
-static void amd64_gen_labels(ir_node *block, void *env)
-{
-	(void)env;
-	for (int n = get_Block_n_cfgpreds(block); n-- != 0;) {
-		ir_node *const pred = get_Block_cfgpred(block, n);
-		set_irn_link(pred, block);
-	}
-}
-
 void amd64_emit_function(ir_graph *irg)
 {
 	ir_entity *entity = get_irg_entity(irg);
-	ir_node  **blk_sched;
-	size_t i, n;
 
 	layout = be_get_irg_stack_layout(irg);
 
 	/* register all emitter functions */
 	amd64_register_emitters();
 
-	blk_sched = be_create_block_schedule(irg);
+	ir_node **blk_sched = be_create_block_schedule(irg);
 
 	be_gas_emit_function_prolog(entity, 4, NULL);
 
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
-	irg_block_walk_graph(irg, amd64_gen_labels, NULL, NULL);
 
-	n = ARR_LEN(blk_sched);
-	for (i = 0; i < n; i++) {
-		ir_node *block = blk_sched[i];
-		ir_node *next  = (i + 1) < n ? blk_sched[i+1] : NULL;
+	be_emit_init_cf_links(blk_sched);
 
-		set_irn_link(block, next);
-	}
-
-	for (i = 0; i < n; ++i) {
+	for (size_t i = 0, n = ARR_LEN(blk_sched); i < n; ++i) {
 		ir_node *block = blk_sched[i];
 		amd64_gen_block(block);
 	}
