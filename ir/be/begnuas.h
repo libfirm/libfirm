@@ -14,7 +14,6 @@
 
 #include <stdbool.h>
 #include "be_types.h"
-#include "beemitter.h"
 #include "bedwarf.h"
 
 typedef enum {
@@ -131,5 +130,13 @@ void be_emit_jump_table(const ir_node *node, const ir_switch_table *table,
                         emit_target_func get_cfop_target);
 
 bool be_gas_produces_dwarf_line_info(void);
+
+/**
+ * Flush the line in the current line buffer to the emitter file and
+ * appends a gas-style comment with the node number and writes the line
+ *
+ * @param node  the node to get the debug info from
+ */
+void be_emit_finish_line_gas(const ir_node *node);
 
 #endif

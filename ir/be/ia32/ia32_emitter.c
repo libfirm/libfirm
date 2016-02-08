@@ -34,6 +34,8 @@
 #include "beasm.h"
 #include "beblocksched.h"
 #include "bediagnostic.h"
+#include "beemithlp.h"
+#include "beemitter.h"
 #include "begnuas.h"
 #include "bejit.h"
 #include "besched.h"

@@ -11,6 +11,8 @@
 #include "TEMPLATE_new_nodes.h"
 #include "bearch.h"
 #include "beblocksched.h"
+#include "beemithlp.h"
+#include "beemitter.h"
 #include "begnuas.h"
 #include "benode.h"
 #include "besched.h"

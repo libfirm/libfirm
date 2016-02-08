@@ -19,8 +19,10 @@
 #include "be_t.h"
 #include "bearch.h"
 #include "bedwarf.h"
+#include "beemithlp.h"
 #include "beemitter.h"
 #include "bemodule.h"
+#include "dbginfo.h"
 #include "entity_t.h"
 #include "execfreq.h"
 #include "iredges_t.h"
@@ -1703,6 +1705,24 @@ void be_gas_end_compilation_unit(const be_main_env_t *env)
 
 	be_dwarf_unit_end();
 	be_dwarf_close();
+}
+
+void be_emit_finish_line_gas(const ir_node *node)
+{
+	if (node && be_options.verbose_asm) {
+		be_emit_pad_comment();
+		dbg_info   *const dbg = get_irn_dbg_info(node);
+		src_loc_t   const loc = ir_retrieve_dbg_info(dbg);
+		char const *const fmt =
+			!loc.file       ? "/* %+F */\n"       :
+			loc.line   == 0 ? "/* %+F %s */\n"    :
+			loc.column == 0 ? "/* %+F %s:%u */\n" :
+			/*             */ "/* %+F %s:%u:%u */\n";
+		be_emit_irprintf(fmt, node, loc.file, loc.line, loc.column);
+	} else {
+		be_emit_char('\n');
+	}
+	be_emit_write_line();
 }
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_gas)

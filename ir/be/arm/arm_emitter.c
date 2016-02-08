@@ -17,6 +17,8 @@
 #include "bearch_arm_t.h"
 #include "beblocksched.h"
 #include "bediagnostic.h"
+#include "beemithlp.h"
+#include "beemitter.h"
 #include "begnuas.h"
 #include "benode.h"
 #include "besched.h"

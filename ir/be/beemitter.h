@@ -5,20 +5,18 @@
 
 /**
  * @file
- * @brief       Interface for assembler output.
+ * @brief       Interface for text output.
  * @author      Matthias Braun
  * @date        12.03.2007
  *
- * This is a framework for emitting data (usually the final assembly code)
+ * This is a framework for emitting line base text used by most backends to
+ * emit assembly code.
  */
 #ifndef FIRM_BE_BEEMITTER_H
 #define FIRM_BE_BEEMITTER_H
 
 #include <stdio.h>
-#include "firm_types.h"
 #include "obst.h"
-#include "be.h"
-#include "irop_t.h"
 
 /* don't use the following vars directly, they're only here for the inlines */
 extern struct obstack  emit_obst;
@@ -92,36 +90,10 @@ void be_emit_irvprintf(const char *fmt, va_list args);
  */
 void be_emit_write_line(void);
 
-/**
- * Flush the line in the current line buffer to the emitter file and
- * appends a gas-style comment with the node number and writes the line
- *
- * @param node  the node to get the debug info from
- */
-void be_emit_finish_line_gas(const ir_node *node);
-
-/**
- * Emit spaces until the comment position is reached.
- */
-void be_emit_pad_comment(void);
-
-/**
- * The type of a emitter function.
- */
-typedef void emit_func(ir_node const *node);
-
-static inline void be_set_emitter(ir_op *const op, emit_func *const func)
+/** Return column in current line. Counting starts at 0. */
+static inline size_t be_emit_get_column(void)
 {
-	set_generic_function_ptr(op, func);
+	return obstack_object_size(&emit_obst);
 }
-
-void be_init_emitters(void);
-
-void be_emit_nothing(ir_node const *node);
-
-/**
- * Emit code for a node.
- */
-void be_emit_node(ir_node const *node);
 
 #endif

@@ -10,6 +10,7 @@
 #include "beasm.h"
 #include "bediagnostic.h"
 #include "beemitter.h"
+#include "begnuas.h"
 #include "benode.h"
 #include "betranshlp.h"
 #include "ident_t.h"
