@@ -25,34 +25,48 @@ unless (my $return = do $specfile) {
 }
 
 # buffers for output
-my $obst_func     = ""; # buffer for the emit functions
-my $obst_register = ""; # buffer for emitter register code
+my $obst_func            = ""; # buffer for the emit functions
+my $obst_register        = ""; # buffer for emitter register code
+my $obst_register_binary = ""; # buffer for emitter register code
 
 foreach my $op (sort(keys(%nodes))) {
 	my $n = $nodes{$op};
 
 	my $emit = $n->{emit};
-	if (!defined($emit)) {
-		# no emit information is available, skip this node description
-		next;
-	}
+	if (defined($emit)) {
+		my $emit_func;
+		if ($emit eq "") {
+			$emit_func = "be_emit_nothing";
+		} else {
+			$emit_func = "emit_${arch}_$op";
 
-	my $emit_func;
-	if ($emit eq "") {
-		$emit_func = "be_emit_nothing";
-	} else {
-		$emit_func = "emit_${arch}_$op";
-
-		$obst_func .= "static void $emit_func(ir_node const *const node)\n";
-		$obst_func .= "{\n";
-		foreach my $template (split(/\n/, $emit)) {
-			if ($template ne '') {
-				$obst_func .= "\t${arch}_emitf(node, \"$template\");\n";
+			$obst_func .= "static void $emit_func(ir_node const *const node)\n";
+			$obst_func .= "{\n";
+			foreach my $template (split(/\n/, $emit)) {
+				if ($template ne '') {
+					$obst_func .= "\t${arch}_emitf(node, \"$template\");\n";
+				}
 			}
+			$obst_func .= "}\n\n";
 		}
-		$obst_func .= "}\n\n";
+		$obst_register .= "\tbe_set_emitter(op_${arch}_$op, $emit_func);\n";
 	}
-	$obst_register .= "\tbe_set_emitter(op_${arch}_$op, $emit_func);\n";
+	my $encode = $n->{encode};
+	if (defined($encode)) {
+		my $emit_func;
+		if ($encode eq "") {
+			$emit_func = "be_emit_nothing";
+		} else {
+			$emit_func = "enc_${arch}_$op";
+
+			$obst_func .= "static void $emit_func(ir_node const *const node)\n";
+			$obst_func .= "{\n";
+			$obst_func .= "\t(void)node; /* avoid potential warning */\n";
+			$obst_func .= "\t${encode};\n";
+			$obst_func .= "}\n\n";
+		}
+		$obst_register_binary .= "\tbe_set_emitter(op_${arch}_$op, $emit_func);\n";
+	}
 }
 
 my $creation_time = localtime(time());
@@ -82,6 +96,7 @@ print $out_h <<EOF;
 #define FIRM_BE_${uarch}_GEN_${uarch}_EMITTER_H
 
 void ${arch}_register_spec_emitters(void);
+void ${arch}_register_spec_binary_emitters(void);
 
 #endif
 EOF
@@ -95,15 +110,16 @@ print $out_c <<EOF;
 #include "${arch}_new_nodes.h"
 #include "${arch}_emitter.h"
 
-$obst_func
+${obst_func}
 
-/**
- * Enters the emitter functions for handled nodes into the generic
- * pointer of an opcode.
- */
 void ${arch}_register_spec_emitters(void)
 {
-$obst_register
+${obst_register}
+}
+
+void ${arch}_register_spec_binary_emitters(void)
+{
+${obst_register_binary}
 }
 EOF
 close($out_c);

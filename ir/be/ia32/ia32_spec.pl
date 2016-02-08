@@ -388,12 +388,14 @@ Immediate => {
 Add => {
 	template => $binop_commutative,
 	emit     => "add%M %B",
+	encode   => "ia32_enc_binop(node, 0)",
 	latency  => 1,
 },
 
 AddMem => {
 	template => $binop_mem,
 	emit     => "add%M %S3, %AM",
+	encode   => "ia32_enc_binop_mem(node, 0)",
 	latency  => 1,
 },
 
@@ -405,6 +407,7 @@ Adc => {
 	ins      => [ "base", "index", "mem", "left", "right", "eflags" ],
 	outs     => [ "res", "flags", "M" ],
 	emit     => "adc%M %B",
+	encode   => "ia32_enc_binop(node, 2)",
 	am       => "source,binary",
 	latency  => 1,
 	mode     => "first",
@@ -426,6 +429,7 @@ l_Adc => {
 Mul => {
 	template => $mulop,
 	emit     => "mul%M %AS4",
+	encode   => "ia32_enc_unop(node, 0xF7, 4, n_ia32_Mul_right)",
 	latency  => 10,
 },
 
@@ -439,6 +443,7 @@ l_Mul => {
 IMul => {
 	template => $binop_commutative,
 	emit     => "imul%M %B",
+	encode   => "ia32_enc_0f_unop_reg(node, 0xAF, n_ia32_IMul_right)",
 	latency  => 5,
 },
 
@@ -452,6 +457,7 @@ IMulImm => {
 IMul1OP => {
 	template => $mulop,
 	emit     => "imul%M %AS4",
+	encode   => "ia32_enc_unop(node, 0xF7, 5, n_ia32_IMul1OP_right)",
 	latency  => 5,
 },
 
@@ -465,30 +471,35 @@ l_IMul => {
 And => {
 	template => $binop_commutative,
 	emit     => "and%M %B",
+	encode   => "ia32_enc_binop(node, 4)",
 	latency  => 1,
 },
 
 AndMem => {
 	template => $binop_mem,
 	emit     => "and%M %S3, %AM",
+	encode   => "ia32_enc_binop_mem(node, 4)",
 	latency  => 1,
 },
 
 Or => {
 	template => $binop_commutative,
 	emit     => "or%M %B",
+	encode   => "ia32_enc_binop(node, 1)",
 	latency  => 1,
 },
 
 OrMem => {
 	template => $binop_mem,
 	emit     => "or%M %S3, %AM",
+	encode   => "ia32_enc_binop_mem(node, 1)",
 	latency  => 1,
 },
 
 Xor => {
 	template => $binop_commutative,
 	emit     => "xor%M %B",
+	encode   => "ia32_enc_binop(node, 6)",
 	latency  => 1,
 },
 
@@ -505,6 +516,7 @@ Xor0 => {
 XorMem => {
 	template => $binop_mem,
 	emit     => "xor%M %S3, %AM",
+	encode   => "ia32_enc_binop_mem(node, 6)",
 	latency  => 1,
 },
 
@@ -517,6 +529,7 @@ Sub => {
 	outs      => [ "res", "flags", "M" ],
 	am        => "source,binary",
 	emit      => "sub%M %B",
+	encode    => "ia32_enc_binop(node, 5)",
 	latency   => 1,
 	mode      => "first",
 },
@@ -524,6 +537,7 @@ Sub => {
 SubMem => {
 	template => $binop_mem,
 	emit     => "sub%M %S3, %AM",
+	encode   => "ia32_enc_binop_mem(node, 5)",
 	latency  => 1,
 },
 
@@ -536,6 +550,7 @@ Sbb => {
 	outs     => [ "res", "flags", "M" ],
 	am       => "source,binary",
 	emit     => "sbb%M %B",
+	encode   => "ia32_enc_binop(node, 3)",
 	latency  => 1,
 	mode     => "first",
 },
@@ -568,24 +583,28 @@ l_Sbb => {
 IDiv => {
 	template => $divop,
 	emit     => "idiv%M %AS3",
+	encode   => "ia32_enc_unop(node, 0xF7, 7, n_ia32_IDiv_divisor)",
 	latency  => 25,
 },
 
 Div => {
 	template => $divop,
 	emit     => "div%M %AS3",
+	encode   => "ia32_enc_unop(node, 0xF7, 6, n_ia32_Div_divisor)",
 	latency  => 25,
 },
 
 Shl => {
 	template => $shiftop,
 	emit     => "shl%M %<,S1 %D0",
+	encode   => "ia32_enc_shiftop(node, 4)",
 	latency  => 1,
 },
 
 ShlMem => {
 	template => $shiftop_mem,
 	emit     => "shl%M %<,S3 %AM",
+	encode   => "ia32_enc_shiftop_mem(node, 4)",
 	latency  => 1,
 },
 
@@ -598,12 +617,14 @@ ShlD => {
 Shr => {
 	template => $shiftop,
 	emit     => "shr%M %<,S1 %D0",
+	encode   => "ia32_enc_shiftop(node, 5)",
 	latency  => 1,
 },
 
 ShrMem => {
 	template => $shiftop_mem,
 	emit     => "shr%M %<,S3 %AM",
+	encode   => "ia32_enc_shiftop_mem(node, 5)",
 	latency  => 1,
 },
 
@@ -616,48 +637,56 @@ ShrD => {
 Sar => {
 	template => $shiftop,
 	emit     => "sar%M %<,S1 %D0",
+	encode   => "ia32_enc_shiftop(node, 7)",
 	latency  => 1,
 },
 
 SarMem => {
 	template => $shiftop_mem,
 	emit     => "sar%M %<,S3 %AM",
+	encode   => "ia32_enc_shiftop_mem(node, 7)",
 	latency  => 1,
 },
 
 Ror => {
 	template => $shiftop,
 	emit     => "ror%M %<,S1 %D0",
+	encode   => "ia32_enc_shiftop(node, 1)",
 	latency  => 1,
 },
 
 RorMem => {
 	template => $shiftop_mem,
 	emit     => "ror%M %<,S3 %AM",
+	encode   => "ia32_enc_shiftop_mem(node, 1)",
 	latency  => 1,
 },
 
 Rol => {
 	template => $shiftop,
 	emit     => "rol%M %<,S1 %D0",
+	encode   => "ia32_enc_shiftop(node, 0)",
 	latency  => 1,
 },
 
 RolMem => {
 	template => $shiftop_mem,
 	emit     => "rol%M %<,S3 %AM",
+	encode   => "ia32_enc_shiftop_mem(node, 0)",
 	latency  => 1,
 },
 
 Neg => {
 	template => $unop,
 	emit     => "neg%M %D0",
+	encode   => "ia32_enc_unop(node, 0xF7, 3, n_ia32_Neg_val)",
 	latency  => 1,
 },
 
 NegMem => {
 	template => $unop_mem,
 	emit     => "neg%M %AM",
+	encode   => "ia32_enc_unop_mem(node, 0xF6, 3)",
 	latency  => 1,
 },
 
@@ -686,6 +715,7 @@ Inc => {
 IncMem => {
 	template => $unop_mem,
 	emit     => "inc%M %AM",
+	encode   => "ia32_enc_unop_mem(node, 0xFE, 0)",
 	latency  => 1,
 },
 
@@ -698,6 +728,7 @@ Dec => {
 DecMem => {
 	template => $unop_mem,
 	emit     => "dec%M %AM",
+	encode   => "ia32_enc_unop_mem(node, 0xFE, 1)",
 	latency  => 1,
 },
 
@@ -708,6 +739,7 @@ Not => {
 		"8bit" => { in_reqs => [ "eax ebx ecx edx" ] },
 	},
 	emit     => "not%M %D0",
+	encode   => "ia32_enc_unop(node, 0xF7, 2, n_ia32_Not_val)",
 	latency  => 1,
 },
 
@@ -719,6 +751,7 @@ NotMem => {
 	ins       => [ "base", "index", "mem" ],
 	outs      => [ "unused0", "unused1", "M" ],
 	emit      => "not%M %AM",
+	encode    => "ia32_enc_unop_mem(node, 0xF6, 2)",
 	latency   => 1,
 	# no flags modified
 },
@@ -728,6 +761,7 @@ Cmc => {
 	in_reqs  => [ "flags" ],
 	out_reqs => [ "flags" ],
 	emit     => "cmc",
+	encode   => "ia32_enc_simple(0xF5)",
 	latency  => 1,
 },
 
@@ -735,12 +769,14 @@ Stc => {
 	irn_flags => [ "modify_flags", "rematerializable" ],
 	out_reqs  => [ "flags" ],
 	emit      => "stc",
+	encode    => "ia32_enc_simple(0xF9)",
 	latency   => 1,
 },
 
 Cmp => {
 	template => $binop_flags,
 	emit     => "cmp%M %B",
+	encode   => "ia32_enc_binop(node, 7)",
 	latency  => 1,
 },
 
@@ -849,6 +885,8 @@ IJmp => {
 	outs     => [ "jmp", "none", "M" ],
 	am       => "source,unary",
 	emit     => "jmp %*AS3",
+	# TOOD: No AM when using ia32_enc_unop
+	encode   => "ia32_enc_unop(node, 0xFF, 4, n_ia32_IJmp_target)",
 	latency  => 1,
 	mode     => "first",
 },
@@ -935,6 +973,7 @@ Cltd => {
 	out_reqs => [ "edx" ],
 	ins      => [ "val" ],
 	emit     => "cltd",
+	encode   => "ia32_enc_simple(0x99)",
 	latency  => 1,
 	init     => "arch_set_additional_pressure(res, &ia32_reg_classes[CLASS_ia32_gp], 1);",
 },
@@ -1050,6 +1089,7 @@ Leave => {
 	in_reqs  => [ "mem", "ebp" ],
 	out_reqs => [ "ebp:I", "mem", "esp:I" ],
 	emit     => "leave",
+	encode   => "ia32_enc_simple(0xC9)",
 	outs     => [ "frame", "M", "stack" ],
 	latency  => 3,
 	state    => "exc_pinned",
@@ -1102,12 +1142,14 @@ Bt => {
 Bsf => {
 	template => $unop_from_mem,
 	emit     => "bsf%M %AS3, %D0",
+	encode   => "ia32_enc_0f_unop_reg(node, 0xBC, n_ia32_Bsf_operand)",
 	latency  => 1,
 },
 
 Bsr => {
 	template => $unop_from_mem,
 	emit     => "bsr%M %AS3, %D0",
+	encode   => "ia32_enc_0f_unop_reg(node, 0xBD, n_ia32_Bsr_operand)",
 	latency  => 1,
 },
 
@@ -1188,6 +1230,7 @@ Breakpoint => {
 	template => $memop,
 	latency  => 0,
 	emit     => "int3",
+	encode   => "ia32_enc_simple(0xCC)",
 },
 
 # Undefined Instruction on ALL x86 CPUs
@@ -1473,6 +1516,7 @@ Cwtl => {
 	ins      => [ "val" ],
 	outs     => [ "res" ],
 	emit     => "cwtl",
+	encode   => "ia32_enc_simple(0x98)",
 	latency  => 1,
 },
 
@@ -1536,24 +1580,28 @@ Conv_FP2FP => {
 fadd => {
 	template => $fbinop,
 	emit     => "fadd%FP%FM %AF",
+	encode   => "ia32_enc_fbinop(node, 0, 0)",
 	latency  => 4,
 },
 
 fmul => {
 	template => $fbinop,
 	emit     => "fmul%FP%FM %AF",
+	encode   => "ia32_enc_fbinop(node, 1, 1)",
 	latency  => 4,
 },
 
 fsub => {
 	template => $fbinop,
 	emit     => "fsub%FR%FP%FM %AF",
+	encode   => "ia32_enc_fbinop(node, 4, 5)",
 	latency  => 4,
 },
 
 fdiv => {
 	template => $fbinop,
 	emit     => "fdiv%FR%FP%FM %AF",
+	encode   => "ia32_enc_fbinop(node, 6, 7)",
 	latency  => 20,
 	mode     => "mode_T"
 },
@@ -1561,12 +1609,14 @@ fdiv => {
 fabs => {
 	template => $funop,
 	emit     => "fabs",
+	encode   => "ia32_enc_fsimple(0xE1)",
 	latency  => 2,
 },
 
 fchs => {
 	template => $funop,
 	emit     => "fchs",
+	encode   => "ia32_enc_fsimple(0xE0)",
 	latency  => 2,
 },
 
@@ -1666,12 +1716,14 @@ fisttp => {
 fldz => {
 	template => $fconstop,
 	emit     => "fldz",
+	encode   => "ia32_enc_fsimple(0xEE)",
 	latency  => 4,
 },
 
 fld1 => {
 	template => $fconstop,
 	emit     => "fld1",
+	encode   => "ia32_enc_fsimple(0xE8)",
 	latency  => 4,
 },
 
@@ -1771,6 +1823,7 @@ Sahf => {
 	ins       => [ "val" ],
 	outs      => [ "flags" ],
 	emit      => "sahf",
+	encode    => "ia32_enc_simple(0x9E)",
 	latency   => 1,
 },
 
@@ -1782,6 +1835,7 @@ fxch => {
 	out_reqs    => [ "none" ],
 	attrs_equal => "attrs_equal_false",
 	emit        => "fxch %F0",
+	encode      => "ia32_enc_fop_reg(node, 0xD9, 0xC8)",
 	attr_type   => "ia32_x87_attr_t",
 	attr        => "const arch_register_t *reg",
 	init        => "attr->x87.reg = reg;",
@@ -1794,6 +1848,7 @@ fdup => {
 	ins         => [ "val" ],
 	attrs_equal => "attrs_equal_false",
 	emit        => "fld %F0",
+	encode      => "ia32_enc_fop_reg(node, 0xD9, 0xC0)",
 	attr_type   => "ia32_x87_attr_t",
 	attr        => "const arch_register_t *reg",
 	init        => "attr->x87.reg = reg;",
@@ -1804,12 +1859,14 @@ fdup => {
 fpop => {
 	template => $fpopop,
 	emit     => "fstp %F0",
+	encode   => "ia32_enc_fop_reg(node, 0xDD, 0xD8)",
 	latency  => 1,
 },
 
 ffreep => {
 	template => $fpopop,
 	emit     => "ffreep %F0",
+	encode   => "ia32_enc_fop_reg(node, 0xDF, 0xC0)",
 	latency  => 1,
 },
 

@@ -12,6 +12,7 @@
 #define FIRM_BE_IA32_IA32_EMITTER_H
 
 #include "firm_types.h"
+#include "ia32_encode.h"
 #include "jit.h"
 
 /**

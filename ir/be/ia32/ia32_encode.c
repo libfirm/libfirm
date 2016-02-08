@@ -19,6 +19,7 @@
 #include "bejit.h"
 #include "besched.h"
 #include "execfreq.h"
+#include "gen_ia32_emitter.h"
 #include "gen_ia32_regalloc_if.h"
 #include "ia32_architecture.h"
 #include "ia32_emitter.h"
@@ -323,11 +324,13 @@ static void enc_mov_const(const ir_node *node)
 	enc_imm32(node);
 }
 
-/**
- * Emit an unop.
- */
-static void enc_unop(ir_node const *const node, uint8_t const code,
-                       uint8_t const ext, int const input)
+void ia32_enc_simple(uint8_t const opcode)
+{
+	be_emit8(opcode);
+}
+
+void ia32_enc_unop(ir_node const *const node, uint8_t const code,
+                   uint8_t const ext, int const input)
 {
 	be_emit8(code);
 	if (get_ia32_op_type(node) == ia32_Normal) {
@@ -338,40 +341,14 @@ static void enc_unop(ir_node const *const node, uint8_t const code,
 	}
 }
 
-static void enc_not(ir_node const *const node)
+void ia32_enc_unop_mem(ir_node const *const node, uint8_t const code,
+                       uint8_t const ext)
 {
-	enc_unop(node, 0xF7, 2, n_ia32_Not_val);
-}
-
-static void enc_neg(ir_node const *const node)
-{
-	enc_unop(node, 0xF7, 3, n_ia32_Neg_val);
-}
-
-static void enc_mul(ir_node const *const node)
-{
-	enc_unop(node, 0xF7, 4, n_ia32_Mul_right);
-}
-
-static void enc_imul1op(ir_node const *const node)
-{
-	enc_unop(node, 0xF7, 5, n_ia32_IMul1OP_right);
-}
-
-static void enc_div(ir_node const *const node)
-{
-	enc_unop(node, 0xF7, 6, n_ia32_Div_divisor);
-}
-
-static void enc_idiv(ir_node const *const node)
-{
-	enc_unop(node, 0xF7, 7, n_ia32_IDiv_divisor);
-}
-
-static void enc_ijmp(ir_node const *const node)
-{
-	/* TODO: am support for IJmp */
-	enc_unop(node, 0xFF, 4, n_ia32_IJmp_target);
+	unsigned size = get_mode_size_bits(get_ia32_ls_mode(node));
+	if (size == 16)
+		be_emit8(0x66);
+	be_emit8(size == 8 ? code : code | OP_16_32);
+	enc_mod_am(ext, node);
 }
 
 static bool use_eax_short_form(ir_node const *const node)
@@ -393,10 +370,7 @@ static void enc_binop_reg(ir_node const *const node, unsigned char const code, i
 	}
 }
 
-/**
- * Emit a binop.
- */
-static void enc_binop(ir_node const *const node, unsigned const code)
+void ia32_enc_binop(ir_node const *const node, unsigned const code)
 {
 	ir_mode *const ls_mode = get_ia32_ls_mode(node);
 	unsigned       size    = ls_mode ? get_mode_size_bits(ls_mode) : 32;
@@ -417,7 +391,7 @@ static void enc_binop(ir_node const *const node, unsigned const code)
 		if (op != OP_16_32_IMM8 && use_eax_short_form(node)) {
 			be_emit8(code << 3 | OP_EAX | op);
 		} else {
-			enc_unop(node, 0x80 | op, code, n_ia32_binary_left);
+			ia32_enc_unop(node, 0x80 | op, code, n_ia32_binary_left);
 		}
 
 		enc_imm(attr, size);
@@ -426,47 +400,7 @@ static void enc_binop(ir_node const *const node, unsigned const code)
 	}
 }
 
-static void enc_add(ir_node const *const node)
-{
-	enc_binop(node, 0);
-}
-
-static void enc_or(ir_node const *const node)
-{
-	enc_binop(node, 1);
-}
-
-static void enc_adc(ir_node const *const node)
-{
-	enc_binop(node, 2);
-}
-
-static void enc_sbb(ir_node const *const node)
-{
-	enc_binop(node, 3);
-}
-
-static void enc_and(ir_node const *const node)
-{
-	enc_binop(node, 4);
-}
-
-static void enc_sub(ir_node const *const node)
-{
-	enc_binop(node, 5);
-}
-
-static void enc_xor(ir_node const *const node)
-{
-	enc_binop(node, 6);
-}
-
-static void enc_cmp(ir_node const *const node)
-{
-	enc_binop(node, 7);
-}
-
-static void enc_binop_mem(ir_node const *const node, unsigned const code)
+void ia32_enc_binop_mem(ir_node const *const node, unsigned const code)
 {
 	unsigned size = get_mode_size_bits(get_ia32_ls_mode(node));
 	if (size == 16)
@@ -493,32 +427,7 @@ static void enc_binop_mem(ir_node const *const node, unsigned const code)
 	}
 }
 
-static void enc_addmem(ir_node const *const node)
-{
-	enc_binop_mem(node, 0);
-}
-
-static void enc_ormem(ir_node const *const node)
-{
-	enc_binop_mem(node, 1);
-}
-
-static void enc_andmem(ir_node const *const node)
-{
-	enc_binop_mem(node, 4);
-}
-
-static void enc_submem(ir_node const *const node)
-{
-	enc_binop_mem(node, 5);
-}
-
-static void enc_xormem(ir_node const *const node)
-{
-	enc_binop_mem(node, 6);
-}
-
-static void enc_shiftop(ir_node const *const node, uint8_t const ext)
+void ia32_enc_shiftop(ir_node const *const node, uint8_t const ext)
 {
 	arch_register_t const *const out
 		= arch_get_irn_register_out(node, pn_ia32_res);
@@ -539,7 +448,7 @@ static void enc_shiftop(ir_node const *const node, uint8_t const ext)
 	}
 }
 
-static void enc_shiftop_mem(ir_node const *const node, uint8_t const ext)
+void ia32_enc_shiftop_mem(ir_node const *const node, uint8_t const ext)
 {
 	unsigned const size = get_mode_size_bits(get_ia32_ls_mode(node));
 	if (size == 16)
@@ -559,51 +468,6 @@ static void enc_shiftop_mem(ir_node const *const node, uint8_t const ext)
 		be_emit8(size == 8 ? 0xD2 : 0xD3);
 		enc_mod_am(ext, node);
 	}
-}
-
-static void enc_rol(ir_node const *const node)
-{
-	enc_shiftop(node, 0);
-}
-static void enc_rolmem(ir_node const *const node)
-{
-	enc_shiftop_mem(node, 0);
-}
-
-static void enc_ror(ir_node const *const node)
-{
-	enc_shiftop(node, 1);
-}
-static void enc_rormem(ir_node const *const node)
-{
-	enc_shiftop_mem(node, 1);
-}
-
-static void enc_shl(ir_node const *const node)
-{
-	enc_shiftop(node, 4);
-}
-static void enc_shlmem(ir_node const *const node)
-{
-	enc_shiftop_mem(node, 4);
-}
-
-static void enc_shr(ir_node const *const node)
-{
-	enc_shiftop(node, 5);
-}
-static void enc_shrmem(ir_node const *const node)
-{
-	enc_shiftop_mem(node, 5);
-}
-
-static void enc_sar(ir_node const *const node)
-{
-	enc_shiftop(node, 7);
-}
-static void enc_sarmem(ir_node const *const node)
-{
-	enc_shiftop_mem(node, 7);
 }
 
 static void enc_shld(const ir_node *node)
@@ -697,24 +561,14 @@ static void enc_unop_reg(ir_node const *const node, uint8_t const code,
 {
 	arch_register_t const *const out
 		= arch_get_irn_register_out(node, pn_ia32_res);
-	enc_unop(node, code, out->encoding, input);
+	ia32_enc_unop(node, code, out->encoding, input);
 }
 
-static void enc_0f_unop_reg(ir_node const *const node, uint8_t const code,
-                              int const input)
+void ia32_enc_0f_unop_reg(ir_node const *const node, uint8_t const code,
+                          int const input)
 {
 	be_emit8(0x0F);
 	enc_unop_reg(node, code, input);
-}
-
-static void enc_bsf(ir_node const *const node)
-{
-	enc_0f_unop_reg(node, 0xBC, n_ia32_Bsf_operand);
-}
-
-static void enc_bsr(ir_node const *const node)
-{
-	enc_0f_unop_reg(node, 0xBD, n_ia32_Bsr_operand);
 }
 
 static void enc_bswap(ir_node const *const node)
@@ -764,18 +618,13 @@ static void enc_test(ir_node const *const node)
 		if (use_eax_short_form(node)) {
 			be_emit8(0xA8 | op);
 		} else {
-			enc_unop(node, 0xF6, 0, n_ia32_Test_left);
+			ia32_enc_unop(node, 0xF6, 0, n_ia32_Test_left);
 		}
 
 		enc_imm(get_ia32_immediate_attr_const(right), size);
 	} else {
 		enc_binop_reg(node, 0x84 | op, right);
 	}
-}
-
-static void enc_imul(const ir_node *node)
-{
-	enc_0f_unop_reg(node, 0xAF, n_ia32_IMul_right);
 }
 
 static void enc_imulimm(const ir_node *node)
@@ -797,36 +646,6 @@ static void enc_inc(const ir_node *node)
 {
 	const arch_register_t *out = arch_get_irn_register_out(node, pn_ia32_Inc_res);
 	be_emit8(0x40 + out->encoding);
-}
-
-static void enc_unop_mem(ir_node const *const node, uint8_t const code,
-                           uint8_t const ext)
-{
-	unsigned size = get_mode_size_bits(get_ia32_ls_mode(node));
-	if (size == 16)
-		be_emit8(0x66);
-	be_emit8(size == 8 ? code : code | OP_16_32);
-	enc_mod_am(ext, node);
-}
-
-static void enc_notmem(ir_node const *const node)
-{
-	enc_unop_mem(node, 0xF6, 2);
-}
-
-static void enc_negmem(ir_node const *const node)
-{
-	enc_unop_mem(node, 0xF6, 3);
-}
-
-static void enc_incmem(ir_node const *const node)
-{
-	enc_unop_mem(node, 0xFE, 0);
-}
-
-static void enc_decmem(ir_node const *const node)
-{
-	enc_unop_mem(node, 0xFE, 1);
 }
 
 static void enc_ldtls(const ir_node *node)
@@ -935,48 +754,6 @@ zero_neg:
 	enc_helper_sbb( in_hi, out_hi);
 }
 
-static void enc_cwtl(ir_node const *const node)
-{
-	(void)node;
-	be_emit8(0x98);
-}
-
-static void enc_cltd(ir_node const *const node)
-{
-	(void)node;
-	be_emit8(0x99);
-}
-
-static void enc_sahf(ir_node const *const node)
-{
-	(void)node;
-	be_emit8(0x9E);
-}
-
-static void enc_leave(ir_node const *const node)
-{
-	(void)node;
-	be_emit8(0xC9);
-}
-
-static void enc_int3(ir_node const *const node)
-{
-	(void)node;
-	be_emit8(0xCC);
-}
-
-static void enc_cmc(ir_node const *const node)
-{
-	(void)node;
-	be_emit8(0xF5);
-}
-
-static void enc_stc(ir_node const *const node)
-{
-	(void)node;
-	be_emit8(0xF9);
-}
-
 /**
  * Emits a MOV out, [MEM].
  */
@@ -1052,13 +829,13 @@ static void enc_conv_i2i(const ir_node *node)
 	unsigned       opcode       = 0xB6;
 	if (mode_is_signed(smaller_mode))           opcode |= 0x08;
 	if (get_mode_size_bits(smaller_mode) == 16) opcode |= 0x01;
-	enc_0f_unop_reg(node, opcode, n_ia32_Conv_I2I_val);
+	ia32_enc_0f_unop_reg(node, opcode, n_ia32_Conv_I2I_val);
 }
 
 static void enc_popcnt(ir_node const *const node)
 {
 	be_emit8(0xF3);
-	enc_0f_unop_reg(node, 0xB8, n_ia32_Popcnt_operand);
+	ia32_enc_0f_unop_reg(node, 0xB8, n_ia32_Popcnt_operand);
 }
 
 /**
@@ -1126,7 +903,7 @@ static void enc_call(ir_node const *const node)
 			enc_relocation(&call_imm);
 		}
 	} else {
-		enc_unop(node, 0xFF, 2, n_ia32_Call_callee);
+		ia32_enc_unop(node, 0xFF, 2, n_ia32_Call_callee);
 	}
 }
 
@@ -1251,7 +1028,7 @@ static void enc_return(const ir_node *node)
 static void enc_subsp(const ir_node *node)
 {
 	/* sub %in, %esp */
-	enc_sub(node);
+	ia32_enc_binop(node, 5);
 	/* mov %esp, %out */
 	arch_register_t const *const out = arch_get_irn_register_out(node, pn_ia32_SubSP_addr);
 	enc_mov(&ia32_registers[REG_ESP], out);
@@ -1299,7 +1076,14 @@ static void enc_copybi(const ir_node *node)
 	}
 }
 
-static void enc_fbinop(ir_node const *const node, unsigned const op_fwd, unsigned const op_rev)
+void ia32_enc_fsimple(uint8_t const opcode)
+{
+	be_emit8(0xD9);
+	be_emit8(opcode);
+}
+
+void ia32_enc_fbinop(ir_node const *const node, unsigned const op_fwd,
+                     unsigned const op_rev)
 {
 	ia32_x87_attr_t const *const attr = get_ia32_x87_attr_const(node);
 	x87_attr_t      const *const x87  = &attr->x87;
@@ -1323,39 +1107,11 @@ static void enc_fbinop(ir_node const *const node, unsigned const op_fwd, unsigne
 	}
 }
 
-static void enc_fop_reg(ir_node const *const node, unsigned char const op0, unsigned char const op1)
+void ia32_enc_fop_reg(ir_node const *const node, uint8_t const op0,
+                      uint8_t const op1)
 {
 	be_emit8(op0);
 	be_emit8(op1 + get_ia32_x87_attr_const(node)->x87.reg->encoding);
-}
-
-static void enc_fabs(const ir_node *node)
-{
-	(void)node;
-	be_emit8(0xD9);
-	be_emit8(0xE1);
-}
-
-static void enc_fadd(const ir_node *node)
-{
-	enc_fbinop(node, 0, 0);
-}
-
-static void enc_fchs(const ir_node *node)
-{
-	(void)node;
-	be_emit8(0xD9);
-	be_emit8(0xE0);
-}
-
-static void enc_fdiv(const ir_node *node)
-{
-	enc_fbinop(node, 6, 7);
-}
-
-static void enc_ffreep(ir_node const *const node)
-{
-	enc_fop_reg(node, 0xDF, 0xC0);
 }
 
 static void enc_fild(const ir_node *node)
@@ -1433,39 +1189,10 @@ static void enc_fld(const ir_node *node)
 	}
 }
 
-static void enc_fld1(const ir_node *node)
-{
-	(void)node;
-	be_emit8(0xD9);
-	be_emit8(0xE8); // fld1
-}
-
 static void enc_fldcw(const ir_node *node)
 {
 	be_emit8(0xD9); // fldcw
 	enc_mod_am(5, node);
-}
-
-static void enc_fldz(const ir_node *node)
-{
-	(void)node;
-	be_emit8(0xD9);
-	be_emit8(0xEE); // fldz
-}
-
-static void enc_fmul(const ir_node *node)
-{
-	enc_fbinop(node, 1, 1);
-}
-
-static void enc_fpop(const ir_node *node)
-{
-	enc_fop_reg(node, 0xDD, 0xD8);
-}
-
-static void enc_fdup(const ir_node *node)
-{
-	enc_fop_reg(node, 0xD9, 0xC0);
 }
 
 static void enc_fst(const ir_node *node)
@@ -1484,11 +1211,6 @@ static void enc_fst(const ir_node *node)
 	// There is only a pop variant for long double store.
 	assert(size < 80 || get_ia32_x87_attr_const(node)->x87.pop);
 	enc_mod_am(op, node);
-}
-
-static void enc_fsub(const ir_node *node)
-{
-	enc_fbinop(node, 4, 5);
 }
 
 static void enc_fnstcw(const ir_node *node)
@@ -1534,14 +1256,11 @@ static void enc_fucomppfnstsw(const ir_node *node)
 	enc_fnstsw();
 }
 
-static void enc_fxch(const ir_node *node)
-{
-	enc_fop_reg(node, 0xD9, 0xC8);
-}
-
 static void ia32_register_binary_emitters(void)
 {
 	be_init_emitters();
+
+	ia32_register_spec_binary_emitters();
 
 	/* benode emitter */
 	be_set_emitter(op_be_Copy,            enc_copy);
@@ -1549,103 +1268,47 @@ static void ia32_register_binary_emitters(void)
 	be_set_emitter(op_be_IncSP,           enc_incsp);
 	be_set_emitter(op_be_Perm,            enc_perm);
 	be_set_emitter(op_ia32_Return,        enc_return);
-	be_set_emitter(op_ia32_Adc,           enc_adc);
-	be_set_emitter(op_ia32_Add,           enc_add);
-	be_set_emitter(op_ia32_AddMem,        enc_addmem);
-	be_set_emitter(op_ia32_And,           enc_and);
-	be_set_emitter(op_ia32_AndMem,        enc_andmem);
-	be_set_emitter(op_ia32_Breakpoint,    enc_int3);
-	be_set_emitter(op_ia32_Bsf,           enc_bsf);
-	be_set_emitter(op_ia32_Bsr,           enc_bsr);
 	be_set_emitter(op_ia32_Bswap,         enc_bswap);
 	be_set_emitter(op_ia32_Bt,            enc_bt);
 	be_set_emitter(op_ia32_CMovcc,        enc_cmovcc);
 	be_set_emitter(op_ia32_Call,          enc_call);
-	be_set_emitter(op_ia32_Cltd,          enc_cltd);
-	be_set_emitter(op_ia32_Cmc,           enc_cmc);
-	be_set_emitter(op_ia32_Cmp,           enc_cmp);
 	be_set_emitter(op_ia32_Const,         enc_mov_const);
 	be_set_emitter(op_ia32_Conv_I2I,      enc_conv_i2i);
 	be_set_emitter(op_ia32_CopyB_i,       enc_copybi);
-	be_set_emitter(op_ia32_Cwtl,          enc_cwtl);
 	be_set_emitter(op_ia32_Dec,           enc_dec);
-	be_set_emitter(op_ia32_DecMem,        enc_decmem);
-	be_set_emitter(op_ia32_Div,           enc_div);
 	be_set_emitter(op_ia32_FldCW,         enc_fldcw);
 	be_set_emitter(op_ia32_FnstCW,        enc_fnstcw);
 	be_set_emitter(op_ia32_FtstFnstsw,    enc_ftstfnstsw);
 	be_set_emitter(op_ia32_FucomFnstsw,   enc_fucomfnstsw);
 	be_set_emitter(op_ia32_Fucomi,        enc_fucomi);
 	be_set_emitter(op_ia32_FucomppFnstsw, enc_fucomppfnstsw);
-	be_set_emitter(op_ia32_IDiv,          enc_idiv);
-	be_set_emitter(op_ia32_IJmp,          enc_ijmp);
-	be_set_emitter(op_ia32_IMul,          enc_imul);
-	be_set_emitter(op_ia32_IMul1OP,       enc_imul1op);
 	be_set_emitter(op_ia32_IMulImm,       enc_imulimm);
 	be_set_emitter(op_ia32_Inc,           enc_inc);
-	be_set_emitter(op_ia32_IncMem,        enc_incmem);
 	be_set_emitter(op_ia32_Jcc,           enc_ia32_jcc);
 	be_set_emitter(op_ia32_Jmp,           enc_jump);
 	be_set_emitter(op_ia32_LdTls,         enc_ldtls);
 	be_set_emitter(op_ia32_Lea,           enc_lea);
-	be_set_emitter(op_ia32_Leave,         enc_leave);
 	be_set_emitter(op_ia32_Load,          enc_load);
 	be_set_emitter(op_ia32_Minus64,       enc_minus64);
-	be_set_emitter(op_ia32_Mul,           enc_mul);
-	be_set_emitter(op_ia32_Neg,           enc_neg);
-	be_set_emitter(op_ia32_NegMem,        enc_negmem);
-	be_set_emitter(op_ia32_Not,           enc_not);
-	be_set_emitter(op_ia32_NotMem,        enc_notmem);
-	be_set_emitter(op_ia32_Or,            enc_or);
-	be_set_emitter(op_ia32_OrMem,         enc_ormem);
 	be_set_emitter(op_ia32_Pop,           enc_pop);
 	be_set_emitter(op_ia32_PopMem,        enc_popmem);
 	be_set_emitter(op_ia32_Popcnt,        enc_popcnt);
 	be_set_emitter(op_ia32_Push,          enc_push);
 	be_set_emitter(op_ia32_PushEax,       enc_pusheax);
-	be_set_emitter(op_ia32_Rol,           enc_rol);
-	be_set_emitter(op_ia32_RolMem,        enc_rolmem);
-	be_set_emitter(op_ia32_Ror,           enc_ror);
-	be_set_emitter(op_ia32_RorMem,        enc_rormem);
-	be_set_emitter(op_ia32_Sahf,          enc_sahf);
-	be_set_emitter(op_ia32_Sar,           enc_sar);
-	be_set_emitter(op_ia32_SarMem,        enc_sarmem);
-	be_set_emitter(op_ia32_Sbb,           enc_sbb);
 	be_set_emitter(op_ia32_Sbb0,          enc_sbb0);
 	be_set_emitter(op_ia32_Setcc,         enc_setcc);
-	be_set_emitter(op_ia32_Shl,           enc_shl);
 	be_set_emitter(op_ia32_ShlD,          enc_shld);
-	be_set_emitter(op_ia32_ShlMem,        enc_shlmem);
-	be_set_emitter(op_ia32_Shr,           enc_shr);
 	be_set_emitter(op_ia32_ShrD,          enc_shrd);
-	be_set_emitter(op_ia32_ShrMem,        enc_shrmem);
-	be_set_emitter(op_ia32_Stc,           enc_stc);
 	be_set_emitter(op_ia32_Store,         enc_store);
-	be_set_emitter(op_ia32_Sub,           enc_sub);
-	be_set_emitter(op_ia32_SubMem,        enc_submem);
 	be_set_emitter(op_ia32_SubSP,         enc_subsp);
 	be_set_emitter(op_ia32_SwitchJmp,     enc_switchjmp);
 	be_set_emitter(op_ia32_Test,          enc_test);
-	be_set_emitter(op_ia32_Xor,           enc_xor);
 	be_set_emitter(op_ia32_Xor0,          enc_xor0);
-	be_set_emitter(op_ia32_XorMem,        enc_xormem);
-	be_set_emitter(op_ia32_fabs,          enc_fabs);
-	be_set_emitter(op_ia32_fadd,          enc_fadd);
-	be_set_emitter(op_ia32_fchs,          enc_fchs);
-	be_set_emitter(op_ia32_fdiv,          enc_fdiv);
-	be_set_emitter(op_ia32_ffreep,        enc_ffreep);
 	be_set_emitter(op_ia32_fild,          enc_fild);
 	be_set_emitter(op_ia32_fist,          enc_fist);
 	be_set_emitter(op_ia32_fisttp,        enc_fisttp);
 	be_set_emitter(op_ia32_fld,           enc_fld);
-	be_set_emitter(op_ia32_fld1,          enc_fld1);
-	be_set_emitter(op_ia32_fldz,          enc_fldz);
-	be_set_emitter(op_ia32_fmul,          enc_fmul);
-	be_set_emitter(op_ia32_fpop,          enc_fpop);
-	be_set_emitter(op_ia32_fdup,          enc_fdup);
 	be_set_emitter(op_ia32_fst,           enc_fst);
-	be_set_emitter(op_ia32_fsub,          enc_fsub);
-	be_set_emitter(op_ia32_fxch,          enc_fxch);
 }
 
 static void assign_block_fragment_num(ir_node *const block, unsigned const num)
