@@ -15,9 +15,6 @@
  * In combination with the VRP bitinfo, it ought to become the basis
  * for an improved Conv optimization.  It also allows finding
  * additional constants (vrp->z ^ vrp->o & dc == 0).
- *
- * There is a commented-out walker at the end of this file that might
- * be useful when revising this code.
  */
 #include "constbits.h"
 #include "debug.h"
