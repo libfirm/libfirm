@@ -356,15 +356,29 @@ static bool push_through_perm(ir_node *const perm, arch_register_class_t const *
 	DB((dbg_permmove, LEVEL_1, "perm move %+F irg %+F\n", perm, get_irn_irg(perm)));
 
 	unsigned new_size = arity;
-	ir_node *node     = perm;
-	for (;;) {
-		node = sched_prev(node);
+	ir_node *node     = sched_prev(perm);
+	for (ir_node *next;; node = next) {
 		if (sched_is_begin(node))
 			break;
 		if (arch_irn_is(node, schedule_first)) {
 			DB((dbg_permmove, LEVEL_2, "\tcannot move past schedule_first %+F\n", node));
 			break;
 		}
+
+		next = sched_prev(node);
+
+		/* Remove Copy with src-reg = dst-reg, which would otherwise block moving
+		 * the Perm. */
+		if (be_is_Copy(node)) {
+			ir_node *const op = get_irn_n(node, n_be_Copy_op);
+			if (arch_get_irn_register_out(node, 0) == arch_get_irn_register(op)) {
+				DB((dbg_permmove, LEVEL_2, "\tremoving nop %+F\n", node));
+				sched_remove(node);
+				exchange(node, op);
+				continue;
+			}
+		}
+
 		be_foreach_use(node, cls, in_req, op, op_req,
 			/* A Perm will only be pushed up to the first instruction
 			 * which lets an operand of itself die.
