@@ -357,15 +357,13 @@ static bool push_through_perm(ir_node *const perm, arch_register_class_t const *
 
 	unsigned new_size = arity;
 	ir_node *node     = sched_prev(perm);
-	for (ir_node *next;; node = next) {
-		if (sched_is_begin(node))
-			break;
+	for (ir_node *prev; !sched_is_begin(node); node = prev) {
 		if (arch_irn_is(node, schedule_first)) {
 			DB((dbg_permmove, LEVEL_2, "\tcannot move past schedule_first %+F\n", node));
 			break;
 		}
 
-		next = sched_prev(node);
+		prev = sched_prev(node);
 
 		/* Remove Copy with src-reg = dst-reg, which would otherwise block moving
 		 * the Perm. */
