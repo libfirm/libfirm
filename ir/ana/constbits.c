@@ -748,6 +748,7 @@ undefined:
 						o = b->o;
 						goto set_info;
 					}
+					goto cannot_analyse;
 				}
 
 				default: {
