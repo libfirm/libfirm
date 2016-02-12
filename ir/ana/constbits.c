@@ -870,6 +870,7 @@ static void verify_constbits_walker(ir_node *const n, void *const env)
 static void verify_constbits(ir_graph *const irg)
 {
 	bool failed = false;
+	DB((dbg, LEVEL_1, "---> verifying constbits for %+F\n", irg));
 	irg_walk_graph(irg, NULL, verify_constbits_walker, &failed);
 	if (failed) {
 		dump_ir_graph(irg, "verify-constbits");
