@@ -765,8 +765,10 @@ result_unknown:
 		return false;
 	}
 
-set_info:
-	return set_bitinfo(irn, z, o);
+set_info:;
+	bool changed = set_bitinfo(irn, z, o);
+	DB((dbg, LEVEL_4, "finish transfer %+F\n", irn));
+	return changed;
 }
 
 static void trigger_users(ir_node const *irn);
