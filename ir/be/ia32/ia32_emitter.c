@@ -1646,6 +1646,7 @@ static unsigned emit_jit_entity_relocation_asm(char *const buffer,
                                                ir_entity *const entity,
                                                int32_t const offset)
 {
+	(void)buffer;
 	assert(buffer == NULL);
 	if (be_kind == IA32_RELOCATION_RELJUMP) {
 		be_emit_irprintf("\t.long %"PRId32"\n", offset);
