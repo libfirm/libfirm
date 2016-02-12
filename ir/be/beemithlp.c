@@ -53,9 +53,6 @@ void be_emit_pad_comment(void)
 
 void be_emit_init_cf_links(ir_node **const block_schedule)
 {
-	ir_graph *const irg = get_irn_irg(block_schedule[0]);
-	assert(ir_resources_reserved(irg) & IR_RESOURCE_IRN_LINK);
-
 	ir_node *prev = NULL;
 	for (size_t i = 0, n = ARR_LEN(block_schedule); i < n; ++i) {
 		ir_node *const block = block_schedule[i];
