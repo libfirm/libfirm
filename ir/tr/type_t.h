@@ -61,7 +61,7 @@ typedef struct {
 	compound_attr base;
 	ir_type     **subtypes;   /**< Array containing the direct subtypes. */
 	ir_type     **supertypes; /**< Array containing the direct supertypes */
-} cls_attr;
+} class_attr;
 
 /** Method type attributes. */
 typedef struct {
@@ -72,27 +72,18 @@ typedef struct {
 	bool                      variadic;         /**< The variadicity of the method. */
 	mtp_additional_properties properties;       /**< Set of additional method properties. */
 	unsigned                  irg_calling_conv; /**< A set of calling convention flags. */
-} mtd_attr;
+} method_attr;
 
 /** Array type attributes. */
 typedef struct {
 	ir_node *size;         /**< number of elements in the array. */
 	ir_type *element_type; /**< The type of the array elements. */
-} arr_attr;
+} array_attr;
 
 /** Pointer type attributes. */
 typedef struct {
 	ir_type *points_to;  /**< The type of the ir_entity the pointer points to. */
-} ptr_attr;
-
-/** General type attributes. */
-typedef union {
-	compound_attr ca; /**< Attributes of a compount type */
-	cls_attr      cla;
-	mtd_attr      ma; /**< Attributes of a method type */
-	arr_attr      aa; /**< Attributes of an array type */
-	ptr_attr      pa; /**< Attributes of a pointer type */
-} tp_attr;
+} pointer_attr;
 
 /** Additional type flags. */
 typedef enum type_flags {
@@ -145,8 +136,13 @@ struct ir_type {
 	ir_type *higher_type;    /**< link to highlevel type in case of lowered
 	                              types */
 	long nr;                 /**< An unique number for each type. */
-	tp_attr attr;            /**< Type kind specific fields. This must be the
-	                              last entry in this struct!  Varying size! */
+	union {
+		compound_attr compound;
+		class_attr    cls;
+		method_attr   method;
+		array_attr    array;
+		pointer_attr  pointer;
+	} attr;
 };
 
 void free_type_entities(ir_type *tp);
@@ -282,7 +278,7 @@ static inline int is_class_type_(const ir_type *type)
 static inline size_t get_compound_n_members_(const ir_type *type)
 {
 	assert(is_compound_type(type));
-	return ARR_LEN(type->attr.ca.members);
+	return ARR_LEN(type->attr.compound.members);
 }
 
 static inline ir_entity *get_compound_member_(ir_type const *const type,
@@ -290,7 +286,7 @@ static inline ir_entity *get_compound_member_(ir_type const *const type,
 {
 	assert(is_compound_type(type));
 	assert(pos < get_compound_n_members(type));
-	return type->attr.ca.members[pos];
+	return type->attr.compound.members[pos];
 }
 
 static inline int is_struct_type_(ir_type const *const type)
@@ -336,43 +332,43 @@ static inline int is_atomic_type_(ir_type const *const type)
 static inline size_t get_method_n_params_(const ir_type *method)
 {
 	assert(is_Method_type(method));
-	return method->attr.ma.n_params;
+	return method->attr.method.n_params;
 }
 
 static inline size_t get_method_n_ress_(const ir_type *method)
 {
 	assert(is_Method_type(method));
-	return method->attr.ma.n_res;
+	return method->attr.method.n_res;
 }
 
 static inline mtp_additional_properties get_method_additional_properties_(const ir_type *method)
 {
 	assert(is_Method_type(method));
-	return method->attr.ma.properties;
+	return method->attr.method.properties;
 }
 
 static inline void set_method_additional_properties_(ir_type *method, mtp_additional_properties properties)
 {
 	assert(is_Method_type(method));
-	method->attr.ma.properties = properties;
+	method->attr.method.properties = properties;
 }
 
 static inline void add_method_additional_properties_(ir_type *method, mtp_additional_properties properties)
 {
 	assert(is_Method_type(method));
-	method->attr.ma.properties |= properties;
+	method->attr.method.properties |= properties;
 }
 
 static inline unsigned get_method_calling_convention_(const ir_type *method)
 {
 	assert(is_Method_type(method));
-	return method->attr.ma.irg_calling_conv;
+	return method->attr.method.irg_calling_conv;
 }
 
 static inline void set_method_calling_convention_(ir_type *method, unsigned cc_mask)
 {
 	assert(is_Method_type(method));
-	method->attr.ma.irg_calling_conv = cc_mask;
+	method->attr.method.irg_calling_conv = cc_mask;
 }
 
 /**

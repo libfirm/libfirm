@@ -329,14 +329,14 @@ void (set_type_dbg_info)(ir_type *tp, type_dbg_info *db)
 
 static void compound_init(ir_type *const type, ident *const name)
 {
-	type->flags          |= tf_compound;
-	type->name            = name;
-	type->attr.ca.members = NEW_ARR_F(ir_entity*, 0);
+	type->flags                |= tf_compound;
+	type->name                  = name;
+	type->attr.compound.members = NEW_ARR_F(ir_entity*, 0);
 }
 
 void free_compound_attrs(ir_type *type)
 {
-	DEL_ARR_F(type->attr.ca.members);
+	DEL_ARR_F(type->attr.compound.members);
 }
 
 static void free_compound_entities(ir_type *type)
@@ -347,10 +347,10 @@ static void free_compound_entities(ir_type *type)
 
 ir_type *new_type_class(ident *name)
 {
-	ir_type *res = new_type(tpo_class, sizeof(cls_attr), NULL);
+	ir_type *res = new_type(tpo_class, sizeof(class_attr), NULL);
 	compound_init(res, name);
-	res->attr.cla.subtypes   = NEW_ARR_F(ir_type*, 0);
-	res->attr.cla.supertypes = NEW_ARR_F(ir_type*, 0);
+	res->attr.cls.subtypes   = NEW_ARR_F(ir_type*, 0);
+	res->attr.cls.supertypes = NEW_ARR_F(ir_type*, 0);
 	hook_new_type(res);
 	return res;
 }
@@ -359,8 +359,8 @@ void free_class_attrs(ir_type *clss)
 {
 	assert(is_Class_type(clss));
 	free_compound_attrs(clss);
-	DEL_ARR_F(clss->attr.cla.subtypes);
-	DEL_ARR_F(clss->attr.cla.supertypes);
+	DEL_ARR_F(clss->attr.cls.subtypes);
+	DEL_ARR_F(clss->attr.cls.supertypes);
 }
 
 ident *get_class_ident(const ir_type *clss)
@@ -397,27 +397,27 @@ size_t get_class_member_index(ir_type const *clss, ir_entity const *const mem)
 void add_class_subtype(ir_type *clss, ir_type *subtype)
 {
 	assert(is_Class_type(clss));
-	ARR_APP1(ir_type *, clss->attr.cla.subtypes, subtype);
+	ARR_APP1(ir_type *, clss->attr.cls.subtypes, subtype);
 	for (size_t i = 0, n_supertypes = get_class_n_supertypes(subtype);
 	     i < n_supertypes; i++) {
 		if (get_class_supertype(subtype, i) == clss)
 			/* Class already registered */
 			return;
 	}
-	ARR_APP1(ir_type *, subtype->attr.cla.supertypes, clss);
+	ARR_APP1(ir_type *, subtype->attr.cls.supertypes, clss);
 }
 
 size_t get_class_n_subtypes(const ir_type *clss)
 {
 	assert(is_Class_type(clss));
-	return ARR_LEN(clss->attr.cla.subtypes);
+	return ARR_LEN(clss->attr.cls.subtypes);
 }
 
 ir_type *get_class_subtype(const ir_type *clss, size_t pos)
 {
 	assert(is_Class_type(clss));
 	assert(pos < get_class_n_subtypes(clss));
-	return clss->attr.cla.subtypes[pos];
+	return clss->attr.cls.subtypes[pos];
 }
 
 size_t get_class_subtype_index(const ir_type *clss, const ir_type *subclass)
@@ -435,17 +435,17 @@ void set_class_subtype(ir_type *clss, ir_type *subtype, size_t pos)
 {
 	assert(is_Class_type(clss));
 	assert(pos < get_class_n_subtypes(clss));
-	clss->attr.cla.subtypes[pos] = subtype;
+	clss->attr.cls.subtypes[pos] = subtype;
 }
 
 void remove_class_subtype(ir_type *clss, ir_type *subtype)
 {
 	assert(is_Class_type(clss));
-	for (size_t i = 0; i < ARR_LEN(clss->attr.cla.subtypes); ++i) {
-		if (clss->attr.cla.subtypes[i] == subtype) {
-			for (; i < ARR_LEN(clss->attr.cla.subtypes) - 1; ++i)
-				clss->attr.cla.subtypes[i] = clss->attr.cla.subtypes[i+1];
-			ARR_SETLEN(ir_type*, clss->attr.cla.subtypes, ARR_LEN(clss->attr.cla.subtypes) - 1);
+	for (size_t i = 0; i < ARR_LEN(clss->attr.cls.subtypes); ++i) {
+		if (clss->attr.cls.subtypes[i] == subtype) {
+			for (; i < ARR_LEN(clss->attr.cls.subtypes) - 1; ++i)
+				clss->attr.cls.subtypes[i] = clss->attr.cls.subtypes[i+1];
+			ARR_SETLEN(ir_type*, clss->attr.cls.subtypes, ARR_LEN(clss->attr.cls.subtypes) - 1);
 			break;
 		}
 	}
@@ -455,19 +455,19 @@ void add_class_supertype(ir_type *clss, ir_type *supertype)
 {
 	assert(is_Class_type(clss));
 	assert(is_Class_type(supertype));
-	ARR_APP1(ir_type *, clss->attr.cla.supertypes, supertype);
+	ARR_APP1(ir_type *, clss->attr.cls.supertypes, supertype);
 	for (size_t i = 0, n = get_class_n_subtypes(supertype); i < n; ++i) {
 		if (get_class_subtype(supertype, i) == clss)
 			/* Class already registered */
 			return;
 	}
-	ARR_APP1(ir_type *, supertype->attr.cla.subtypes, clss);
+	ARR_APP1(ir_type *, supertype->attr.cls.subtypes, clss);
 }
 
 size_t get_class_n_supertypes(const ir_type *clss)
 {
 	assert(is_Class_type(clss));
-	return ARR_LEN(clss->attr.cla.supertypes);
+	return ARR_LEN(clss->attr.cls.supertypes);
 }
 
 size_t get_class_supertype_index(const ir_type *clss, const ir_type *super_clss)
@@ -485,24 +485,24 @@ ir_type *get_class_supertype(const ir_type *clss, size_t pos)
 {
 	assert(is_Class_type(clss));
 	assert(pos < get_class_n_supertypes(clss));
-	return clss->attr.cla.supertypes[pos];
+	return clss->attr.cls.supertypes[pos];
 }
 
 void set_class_supertype(ir_type *clss, ir_type *supertype, size_t pos)
 {
 	assert(is_Class_type(clss));
 	assert(pos < get_class_n_supertypes(clss));
-	clss->attr.cla.supertypes[pos] = supertype;
+	clss->attr.cls.supertypes[pos] = supertype;
 }
 
 void remove_class_supertype(ir_type *clss, ir_type *supertype)
 {
 	assert(is_Class_type(clss));
-	for (size_t i = 0; i < ARR_LEN(clss->attr.cla.supertypes); ++i) {
-		if (clss->attr.cla.supertypes[i] == supertype) {
-			for (; i < ARR_LEN(clss->attr.cla.supertypes) - 1; ++i)
-				clss->attr.cla.supertypes[i] = clss->attr.cla.supertypes[i+1];
-			ARR_SETLEN(ir_type*, clss->attr.cla.supertypes, ARR_LEN(clss->attr.cla.supertypes) - 1);
+	for (size_t i = 0; i < ARR_LEN(clss->attr.cls.supertypes); ++i) {
+		if (clss->attr.cls.supertypes[i] == supertype) {
+			for (; i < ARR_LEN(clss->attr.cls.supertypes) - 1; ++i)
+				clss->attr.cls.supertypes[i] = clss->attr.cls.supertypes[i+1];
+			ARR_SETLEN(ir_type*, clss->attr.cls.supertypes, ARR_LEN(clss->attr.cls.supertypes) - 1);
 			break;
 		}
 	}
@@ -561,15 +561,15 @@ int (is_Struct_type)(const ir_type *strct)
 
 ir_type *new_type_method(size_t n_param, size_t n_res)
 {
-	ir_type *res = new_type(tpo_method, sizeof(mtd_attr), mode_P);
-	res->flags             |= tf_layout_fixed;
-	res->size               = get_mode_size_bytes(mode_P);
-	res->attr.ma.n_params   = n_param;
-	res->attr.ma.params     = XMALLOCNZ(ir_type*, n_param);
-	res->attr.ma.n_res      = n_res;
-	res->attr.ma.res_type   = XMALLOCNZ(ir_type*, n_res);
-	res->attr.ma.variadic   = false;
-	res->attr.ma.properties = mtp_no_property;
+	ir_type *res = new_type(tpo_method, sizeof(method_attr), mode_P);
+	res->flags                 |= tf_layout_fixed;
+	res->size                   = get_mode_size_bytes(mode_P);
+	res->attr.method.n_params   = n_param;
+	res->attr.method.params     = XMALLOCNZ(ir_type*, n_param);
+	res->attr.method.n_res      = n_res;
+	res->attr.method.res_type   = XMALLOCNZ(ir_type*, n_res);
+	res->attr.method.variadic   = false;
+	res->attr.method.properties = mtp_no_property;
 	set_type_alignment_bytes(res, 1);
 	hook_new_type(res);
 	return res;
@@ -579,24 +579,24 @@ ir_type *clone_type_method(ir_type *tp)
 {
 	assert(is_Method_type(tp));
 	ir_mode       *mode     = tp->mode;
-	size_t         n_params = tp->attr.ma.n_params;
-	size_t         n_res    = tp->attr.ma.n_res;
+	size_t         n_params = tp->attr.method.n_params;
+	size_t         n_res    = tp->attr.method.n_res;
 	type_dbg_info *db       = tp->dbi;
-	ir_type       *res      = new_type(tpo_method, sizeof(mtd_attr), mode);
+	ir_type       *res      = new_type(tpo_method, sizeof(method_attr), mode);
 	set_type_dbg_info(res, db);
 
-	res->flags                    = tp->flags;
-	res->higher_type              = tp->higher_type;
-	res->size                     = tp->size;
-	res->attr.ma.n_params         = n_params;
-	res->attr.ma.params           = XMALLOCN(ir_type*, n_params);
-	MEMCPY(res->attr.ma.params, tp->attr.ma.params, n_params);
-	res->attr.ma.n_res            = n_res;
-	res->attr.ma.res_type         = XMALLOCN(ir_type*, n_res);
-	MEMCPY(res->attr.ma.res_type, tp->attr.ma.res_type, n_res);
-	res->attr.ma.variadic         = tp->attr.ma.variadic;
-	res->attr.ma.properties       = tp->attr.ma.properties;
-	res->attr.ma.irg_calling_conv = tp->attr.ma.irg_calling_conv;
+	res->flags                        = tp->flags;
+	res->higher_type                  = tp->higher_type;
+	res->size                         = tp->size;
+	res->attr.method.n_params         = n_params;
+	res->attr.method.params           = XMALLOCN(ir_type*, n_params);
+	MEMCPY(res->attr.method.params, tp->attr.method.params, n_params);
+	res->attr.method.n_res            = n_res;
+	res->attr.method.res_type         = XMALLOCN(ir_type*, n_res);
+	MEMCPY(res->attr.method.res_type, tp->attr.method.res_type, n_res);
+	res->attr.method.variadic         = tp->attr.method.variadic;
+	res->attr.method.properties       = tp->attr.method.properties;
+	res->attr.method.irg_calling_conv = tp->attr.method.irg_calling_conv;
 	set_type_alignment_bytes(res, get_type_alignment_bytes(tp));
 	hook_new_type(res);
 	return res;
@@ -605,8 +605,8 @@ ir_type *clone_type_method(ir_type *tp)
 void free_method_attrs(ir_type *method)
 {
 	assert(is_Method_type(method));
-	free(method->attr.ma.params);
-	free(method->attr.ma.res_type);
+	free(method->attr.method.params);
+	free(method->attr.method.res_type);
 }
 
 size_t (get_method_n_params)(const ir_type *method)
@@ -618,7 +618,7 @@ ir_type *get_method_param_type(const ir_type *method, size_t pos)
 {
 	assert(is_Method_type(method));
 	assert(pos < get_method_n_params(method));
-	ir_type *res = method->attr.ma.params[pos];
+	ir_type *res = method->attr.method.params[pos];
 	return res;
 }
 
@@ -626,7 +626,7 @@ void set_method_param_type(ir_type *method, size_t pos, ir_type *tp)
 {
 	assert(is_Method_type(method));
 	assert(pos < get_method_n_params(method));
-	method->attr.ma.params[pos] = tp;
+	method->attr.method.params[pos] = tp;
 }
 
 size_t (get_method_n_ress)(const ir_type *method)
@@ -638,7 +638,7 @@ ir_type *get_method_res_type(const ir_type *method, size_t pos)
 {
 	assert(is_Method_type(method));
 	assert(pos < get_method_n_ress(method));
-	ir_type *res = method->attr.ma.res_type[pos];
+	ir_type *res = method->attr.method.res_type[pos];
 	return res;
 }
 
@@ -646,19 +646,19 @@ void set_method_res_type(ir_type *method, size_t pos, ir_type *tp)
 {
 	assert(is_Method_type(method));
 	assert(pos < get_method_n_ress(method));
-	method->attr.ma.res_type[pos] = tp;
+	method->attr.method.res_type[pos] = tp;
 }
 
 int is_method_variadic(ir_type const *const method)
 {
 	assert(is_Method_type(method));
-	return method->attr.ma.variadic;
+	return method->attr.method.variadic;
 }
 
 void set_method_variadic(ir_type *const method, int const is_variadic)
 {
 	assert(is_Method_type(method));
-	method->attr.ma.variadic = is_variadic;
+	method->attr.method.variadic = is_variadic;
 }
 
 mtp_additional_properties (get_method_additional_properties)(const ir_type *method)
@@ -776,9 +776,9 @@ ir_type *new_type_array(ir_type *element_type)
 {
 	assert(!is_Method_type(element_type));
 
-	ir_type  *res = new_type(tpo_array, sizeof(arr_attr), NULL);
-	res->attr.aa.element_type = element_type;
-	res->attr.aa.size         = new_r_Unknown(get_const_code_irg(), mode_Iu);
+	ir_type  *res = new_type(tpo_array, sizeof(array_attr), NULL);
+	res->attr.array.element_type = element_type;
+	res->attr.array.size         = new_r_Unknown(get_const_code_irg(), mode_Iu);
 	set_type_alignment_bytes(res, get_type_alignment_bytes(element_type));
 
 	hook_new_type(res);
@@ -789,7 +789,7 @@ void set_array_size(ir_type *array, ir_node *size)
 {
 	assert(is_Array_type(array));
 	assert(size != NULL);
-	array->attr.aa.size = size;
+	array->attr.array.size = size;
 }
 
 void set_array_size_int(ir_type *array, unsigned size)
@@ -801,19 +801,19 @@ void set_array_size_int(ir_type *array, unsigned size)
 int has_array_size(const ir_type *array)
 {
 	assert(is_Array_type(array));
-	return !is_Unknown(array->attr.aa.size);
+	return !is_Unknown(array->attr.array.size);
 }
 
 ir_node *get_array_size(const ir_type *array)
 {
 	assert(is_Array_type(array));
-	return array->attr.aa.size;
+	return array->attr.array.size;
 }
 
 unsigned get_array_size_int(const ir_type *array)
 {
 	assert(is_Array_type(array));
-	ir_node *node = array->attr.aa.size;
+	ir_node *node = array->attr.array.size;
 	return get_Const_long(node);
 }
 
@@ -821,14 +821,14 @@ void set_array_element_type(ir_type *array, ir_type *tp)
 {
 	assert(is_Array_type(array));
 	assert(!is_Method_type(tp));
-	array->attr.aa.element_type = tp;
+	array->attr.array.element_type = tp;
 	set_type_alignment_bytes(array, get_type_alignment_bytes(tp));
 }
 
 ir_type *get_array_element_type(const ir_type *array)
 {
 	assert(is_Array_type(array));
-	return array->attr.aa.element_type;
+	return array->attr.array.element_type;
 }
 
 int is_array_variable_size(const ir_type *array)
@@ -853,8 +853,8 @@ int (is_Array_type)(const ir_type *array)
 ir_type *new_type_pointer(ir_type *points_to)
 {
 	ir_mode *const mode = mode_P;
-	ir_type *const res  = new_type(tpo_pointer, sizeof(ptr_attr), mode);
-	res->attr.pa.points_to = points_to;
+	ir_type *const res  = new_type(tpo_pointer, sizeof(pointer_attr), mode);
+	res->attr.pointer.points_to = points_to;
 	unsigned size = get_mode_size_bytes(mode);
 	res->size = size;
 	res->flags |= tf_layout_fixed;
@@ -866,13 +866,13 @@ ir_type *new_type_pointer(ir_type *points_to)
 void set_pointer_points_to_type(ir_type *pointer, ir_type *tp)
 {
 	assert(is_Pointer_type(pointer));
-	pointer->attr.pa.points_to = tp;
+	pointer->attr.pointer.points_to = tp;
 }
 
 ir_type *get_pointer_points_to_type(const ir_type *pointer)
 {
 	assert(is_Pointer_type(pointer));
-	return pointer->attr.pa.points_to;
+	return pointer->attr.pointer.points_to;
 }
 
 int (is_Pointer_type)(const ir_type *pointer)
@@ -971,12 +971,12 @@ const char *get_compound_name(const ir_type *tp)
 void remove_compound_member(ir_type *type, ir_entity *member)
 {
 	assert(is_compound_type(type));
-	for (size_t i = 0, n = ARR_LEN(type->attr.ca.members); i < n; ++i) {
+	for (size_t i = 0, n = ARR_LEN(type->attr.compound.members); i < n; ++i) {
 		if (get_compound_member(type, i) != member)
 			continue;
 		for (; i < n - 1; ++i)
-			type->attr.ca.members[i] = type->attr.ca.members[i+1];
-		ARR_SETLEN(ir_entity*, type->attr.ca.members, n-1);
+			type->attr.compound.members[i] = type->attr.compound.members[i+1];
+		ARR_SETLEN(ir_entity*, type->attr.compound.members, n-1);
 		/* members of global type must also be removed from map */
 		if (is_segment_type(type) && !(type->flags & tf_info)
 		 && get_entity_visibility(member) != ir_visibility_private) {
@@ -992,7 +992,7 @@ void add_compound_member(ir_type *type, ir_entity *entity)
 	assert(is_compound_type(type));
 	/* try to detect double-add */
 	assert(get_entity_type(entity) != type);
-	ARR_APP1(ir_entity *, type->attr.ca.members, entity);
+	ARR_APP1(ir_entity *, type->attr.compound.members, entity);
 	/* Add segment members to globals map. */
 	if (is_segment_type(type) && !(type->flags & tf_info)
 	 && get_entity_visibility(entity) != ir_visibility_private) {
