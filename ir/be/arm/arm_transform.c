@@ -1656,7 +1656,7 @@ static ir_type *arm_get_between_type(void)
 	static ir_type *between_type = NULL;
 	if (between_type == NULL) {
 		between_type = new_type_class(new_id_from_str("arm_between_type"));
-		set_type_size_bytes(between_type, 0);
+		set_type_size(between_type, 0);
 	}
 
 	return between_type;

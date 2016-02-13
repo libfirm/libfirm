@@ -754,11 +754,11 @@ static void emit_init_expression(ir_node *const init)
 		return;
 
 	case iro_Align:
-		be_emit_irprintf("%u", get_type_alignment_bytes(get_Align_type(init)));
+		be_emit_irprintf("%u", get_type_alignment(get_Align_type(init)));
 		return;
 
 	case iro_Size:
-		be_emit_irprintf("%u", get_type_size_bytes(get_Size_type(init)));
+		be_emit_irprintf("%u", get_type_size(get_Size_type(init)));
 		return;
 
 	case iro_Add:
@@ -894,28 +894,27 @@ static size_t get_initializer_size(const ir_initializer_t *initializer,
 	switch (get_initializer_kind(initializer)) {
 	case IR_INITIALIZER_TARVAL:
 		assert(get_tarval_mode(get_initializer_tarval_value(initializer)) == get_type_mode(type));
-		return get_type_size_bytes(type);
+		return get_type_size(type);
 	case IR_INITIALIZER_CONST:
 	case IR_INITIALIZER_NULL:
-		return get_type_size_bytes(type);
+		return get_type_size(type);
 	case IR_INITIALIZER_COMPOUND:
 		if (is_Array_type(type)) {
 			if (is_array_variable_size(type)) {
-				ir_type   *element_type = get_array_element_type(type);
-				unsigned   element_size = get_type_size_bytes(element_type);
-				unsigned   element_align
-					= get_type_alignment_bytes(element_type);
-				unsigned   misalign     = element_size % element_align;
+				ir_type   *element_type  = get_array_element_type(type);
+				unsigned   element_size  = get_type_size(element_type);
+				unsigned   element_align = get_type_alignment(element_type);
+				unsigned   misalign      = element_size % element_align;
 				size_t     n_inits
 					= get_initializer_compound_n_entries(initializer);
 				element_size += element_align - misalign;
 				return n_inits * element_size;
 			} else {
-				return get_type_size_bytes(type);
+				return get_type_size(type);
 			}
 		} else {
 			assert(is_compound_type(type));
-			size_t size = get_type_size_bytes(type);
+			size_t size = get_type_size(type);
 			if (is_compound_variable_size(type)) {
 				/* last initializer has to be an array of variable size */
 				size_t l = get_initializer_compound_n_entries(initializer)-1;
@@ -936,7 +935,7 @@ static size_t get_initializer_size(const ir_initializer_t *initializer,
 static unsigned long compute_entity_size(ir_entity const *const entity)
 {
 	ir_type *const type = get_entity_type(entity);
-	unsigned long  size = get_type_size_bytes(type);
+	unsigned long  size = get_type_size(type);
 	if (is_alias_entity(entity))
 		return size;
 
@@ -981,7 +980,7 @@ static void emit_bitfield(normal_or_bitfield *vals, unsigned offset_bits,
 		panic("couldn't get numeric value for bitfield initializer");
 	}
 
-	int    value_len  = get_type_size_bytes(type);
+	int    value_len  = get_type_size(type);
 	size_t bit_offset = 0;
 	size_t end        = bitfield_size;
 	bool   big_endian = be_get_backend_param()->byte_order_big_endian;
@@ -1041,7 +1040,7 @@ static void emit_ir_initializer(normal_or_bitfield *vals,
 		vals->type     = type;
 		vals->v.tarval = get_initializer_tarval_value(initializer);
 		assert(get_type_mode(type) == get_tarval_mode(vals->v.tarval));
-		for (size_t i = 1; i < get_type_size_bytes(type); ++i) {
+		for (size_t i = 1; i < get_type_size(type); ++i) {
 			vals[i].kind    = NORMAL;
 			vals[i].type    = NULL;
 			vals[i].v.value = NULL;
@@ -1053,7 +1052,7 @@ static void emit_ir_initializer(normal_or_bitfield *vals,
 		vals->kind    = NORMAL;
 		vals->type    = type;
 		vals->v.value = get_initializer_const_value(initializer);
-		for (size_t i = 1; i < get_type_size_bytes(type); ++i) {
+		for (size_t i = 1; i < get_type_size(type); ++i) {
 			vals[i].kind    = NORMAL;
 			vals[i].type    = NULL;
 			vals[i].v.value = NULL;
@@ -1063,8 +1062,8 @@ static void emit_ir_initializer(normal_or_bitfield *vals,
 	case IR_INITIALIZER_COMPOUND:
 		if (is_Array_type(type)) {
 			ir_type *element_type = get_array_element_type(type);
-			size_t   skip         = get_type_size_bytes(element_type);
-			size_t   alignment    = get_type_alignment_bytes(element_type);
+			size_t   skip         = get_type_size(element_type);
+			size_t   alignment    = get_type_alignment(element_type);
 			size_t   misalign     = skip % alignment;
 			if (misalign != 0) {
 				skip += alignment - misalign;
@@ -1111,7 +1110,7 @@ static void emit_ir_initializer(normal_or_bitfield *vals,
 
 static void emit_tarval_data(ir_type *type, ir_tarval *tv)
 {
-	size_t size = get_type_size_bytes(type);
+	size_t size = get_type_size(type);
 	if (size > 8) {
 		assert(size % 4 == 0);
 		if (be_get_backend_param()->byte_order_big_endian) {
@@ -1145,7 +1144,7 @@ static void emit_tarval_data(ir_type *type, ir_tarval *tv)
  */
 static void emit_node_data(ir_node *const init, ir_type *const type)
 {
-	size_t size = get_type_size_bytes(type);
+	size_t size = get_type_size(type);
 	if (size == 12 || size == 16) {
 		if (!is_Const(init)) {
 			panic("12/16byte initializers only support Const nodes yet");
@@ -1195,14 +1194,14 @@ static void emit_initializer(ir_entity const *const entity,
 		case NORMAL:
 			if (vals[k].v.value != NULL) {
 				emit_node_data(vals[k].v.value, vals[k].type);
-				elem_size = get_type_size_bytes(vals[k].type);
+				elem_size = get_type_size(vals[k].type);
 			} else {
 				elem_size = 0;
 			}
 			break;
 		case TARVAL:
 			emit_tarval_data(vals[k].type, vals[k].v.tarval);
-			elem_size = get_type_size_bytes(vals[k].type);
+			elem_size = get_type_size(vals[k].type);
 			break;
 		case STRING:
 			elem_size = emit_string_initializer(vals[k].v.string);
@@ -1242,7 +1241,7 @@ static unsigned get_effective_entity_alignment(const ir_entity *entity)
 	unsigned alignment = get_entity_alignment(entity);
 	if (alignment == 0) {
 		ir_type *type = get_entity_type(entity);
-		alignment     = get_type_alignment_bytes(type);
+		alignment     = get_type_alignment(type);
 	}
 	return alignment;
 }
@@ -1514,7 +1513,7 @@ static void emit_global(be_main_env_t const *const main_env,
 		be_emit_cstring("object\n\t.size\t");
 		be_gas_emit_entity(entity);
 		ir_type *const type = get_entity_type(entity);
-		be_emit_irprintf(", %u\n", get_type_size_bytes(type));
+		be_emit_irprintf(", %u\n", get_type_size(type));
 	}
 
 	ident *ld_ident = get_entity_ld_ident(entity);

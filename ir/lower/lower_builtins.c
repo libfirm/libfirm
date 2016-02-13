@@ -53,7 +53,7 @@ static const char *get_builtin_name(ir_builtin_kind kind)
 static const char *get_gcc_machmode(ir_type *type)
 {
 	assert(is_Primitive_type(type));
-	switch (get_type_size_bytes(type)) {
+	switch (get_type_size(type)) {
 	case 4: return "si";
 	case 8: return "di";
 	default:
@@ -71,7 +71,7 @@ static void widen_builtin(ir_node *node)
 	ir_type *arg1 = get_method_param_type(mtp, 0);
 
 	// Nothing to do, if argument size is at least machine size.
-	if (8 * get_type_size_bytes(arg1) >= be_get_machine_size()) {
+	if (8 * get_type_size(arg1) >= be_get_machine_size()) {
 		return;
 	}
 

@@ -953,20 +953,20 @@ FIRM_API void set_type_state(ir_type *tp, ir_type_state state);
 FIRM_API ir_mode *get_type_mode(const ir_type *tp);
 
 /** Returns the size of a type in bytes. */
-FIRM_API unsigned get_type_size_bytes(const ir_type *tp);
+FIRM_API unsigned get_type_size(const ir_type *tp);
 
 /** Sets the size of a type in bytes.
  *
  * For primitive, pointer and method types the size is always fixed.
  * This call is legal but has no effect.
  */
-FIRM_API void set_type_size_bytes(ir_type *tp, unsigned size);
+FIRM_API void set_type_size(ir_type *tp, unsigned size);
 
 /** Returns the alignment of a type in bytes. */
-FIRM_API unsigned get_type_alignment_bytes(const ir_type *tp);
+FIRM_API unsigned get_type_alignment(const ir_type *tp);
 
 /** Sets the alignment of a type in bytes. */
-FIRM_API void set_type_alignment_bytes(ir_type *tp, unsigned align);
+FIRM_API void set_type_alignment(ir_type *tp, unsigned align);
 
 /** Returns the visited counter of a type.
  * @see @ref visited_counters */
@@ -1394,7 +1394,7 @@ FIRM_API ir_type *get_array_element_type(const ir_type *array);
 /**
  * Sets the array variable size flag.
  * If this flag is set then no upper/lower bounds need to be set and
- * get_type_size_bytes() returns -1
+ * get_type_size() returns -1
  */
 FIRM_API void set_array_variable_size(ir_type *array, int variable_size_flag);
 
@@ -1541,9 +1541,9 @@ FIRM_API void remove_compound_member(ir_type *compound, ir_entity *entity);
 /**
  * Sets the variable size flag of a compound type.
  * The last member of a variable size compound type may be an array type
- * without explicit size. So the get_type_size_bytes() of a variable size
- * compound type only returns a minimum size for the type (the size if the
- * last members size is 0)
+ * without explicit size. So the get_type_size() of a variable size compound
+ * type only returns a minimum size for the type (the size if the last members
+ * size is 0)
  */
 FIRM_API void set_compound_variable_size(ir_type *compound, int variable_size);
 

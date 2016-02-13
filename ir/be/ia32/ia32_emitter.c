@@ -1688,7 +1688,7 @@ void ia32_emit_function(ir_graph *const irg)
 	sp_relative = layout->sp_relative;
 	if (layout->sp_relative) {
 		ir_type *frame_type = get_irg_frame_type(irg);
-		frame_type_size = get_type_size_bytes(frame_type);
+		frame_type_size = get_type_size(frame_type);
 		be_dwarf_callframe_register(&ia32_registers[REG_ESP]);
 	} else {
 		/* well not entirely correct here, we should emit this after the

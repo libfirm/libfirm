@@ -39,7 +39,7 @@ static ir_entity *create_ent(ir_entity **const dst, int value, const char *name)
 	if (!*dst) {
 		ir_mode   *const mode = mode_Hu;
 		ir_type   *const type = new_type_primitive(mode);
-		set_type_alignment_bytes(type, 4);
+		set_type_alignment(type, 4);
 		ir_type   *const glob = get_glob_type();
 		ident     *const id   = new_id_from_str(name);
 		ir_entity *const ent

@@ -341,7 +341,7 @@ static void get_base_and_offset(ir_node *ptr, base_offset_t *base_offset)
 				break;
 
 			/* TODO: may overflow here */
-			int size = get_type_size_bytes(element_type);
+			int size = get_type_size(element_type);
 			offset += size * get_Const_long(index);
 			ptr     = get_Sel_ptr(ptr);
 		} else if (is_Member(ptr)) {
@@ -581,7 +581,7 @@ static bool try_update_ptr_CopyB(track_load_env_t *env, ir_node *copyb)
 		return false;
 
 	ir_type       *copyb_type      = get_CopyB_type(copyb);
-	long           n_copy          = get_type_size_bytes(copyb_type);
+	long           n_copy          = get_type_size(copyb_type);
 	ir_node       *copyb_src       = get_CopyB_src(copyb);
 	base_offset_t  src_base_offset;
 	get_base_and_offset(copyb_src, &src_base_offset);
@@ -693,7 +693,7 @@ static changes_t follow_load_mem_chain(track_load_env_t *env, ir_node *start)
 			/* check aliasing with the CopyB */
 			ir_node           *dst  = get_CopyB_dst(node);
 			ir_type           *type = get_CopyB_type(node);
-			unsigned           size = get_type_size_bytes(type);
+			unsigned           size = get_type_size(type);
 			ir_alias_relation  rel  = get_alias_relation(
 				dst, type, size,
 				env->ptr, load_type, load_size);
@@ -937,7 +937,7 @@ static changes_t follow_store_mem_chain(ir_node *store, ir_node *start,
 		} else if (is_CopyB(node)) {
 			ir_node           *copyb_src  = get_CopyB_src(node);
 			ir_type           *copyb_type = get_CopyB_type(node);
-			unsigned           copyb_size = get_type_size_bytes(copyb_type);
+			unsigned           copyb_size = get_type_size(copyb_type);
 			ir_alias_relation  src_rel    = get_alias_relation(
 				copyb_src, copyb_type, copyb_size,
 				ptr, type, size);
@@ -1039,8 +1039,8 @@ static bool ptr_is_in_struct(ir_node *ptr, ir_type *ptr_type,
 	long     ptr_offset    = base_offset.offset;
 	base_offset_t struct_offset;
 	get_base_and_offset(struct_ptr, &struct_offset);
-	unsigned ptr_size      = get_type_size_bytes(ptr_type);
-	unsigned struct_size   = get_type_size_bytes(struct_type);
+	unsigned ptr_size      = get_type_size(ptr_type);
+	unsigned struct_size   = get_type_size(struct_type);
 
 	return base_offset.base == struct_offset.base &&
 		ptr_offset >= struct_offset.offset &&
@@ -1063,7 +1063,7 @@ static changes_t follow_copyb_mem_chain(ir_node *copyb, ir_node *start,
 	ir_node  *src   = get_CopyB_src(copyb);
 	ir_node  *dst   = get_CopyB_dst(copyb);
 	ir_type  *type  = get_CopyB_type(copyb);
-	unsigned  size  = get_type_size_bytes(type);
+	unsigned  size  = get_type_size(type);
 	ir_node  *block = get_nodes_block(copyb);
 
 	ir_node *node = start;
@@ -1130,7 +1130,7 @@ static changes_t follow_copyb_mem_chain(ir_node *copyb, ir_node *start,
 			ir_node  *pred_dst  = get_CopyB_dst(node);
 			ir_node  *pred_src  = get_CopyB_src(node);
 			ir_type  *pred_type = get_CopyB_type(node);
-			unsigned  pred_size = get_type_size_bytes(pred_type);
+			unsigned  pred_size = get_type_size(pred_type);
 
 			if (src == pred_dst && size == pred_size
 			    && get_CopyB_volatility(node) == volatility_non_volatile) {

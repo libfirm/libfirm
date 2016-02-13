@@ -229,15 +229,15 @@ static void ia32_build_between_type(void)
 		ret_addr_ent = new_entity(between_type, NEW_IDENT("ret_addr"), ret_addr_type);
 
 		set_entity_offset(old_bp_ent, 0);
-		set_entity_offset(ret_addr_ent, get_type_size_bytes(old_bp_type));
-		set_type_size_bytes(between_type, get_type_size_bytes(old_bp_type) + get_type_size_bytes(ret_addr_type));
+		set_entity_offset(ret_addr_ent, get_type_size(old_bp_type));
+		set_type_size(between_type, get_type_size(old_bp_type) + get_type_size(ret_addr_type));
 		set_type_state(between_type, layout_fixed);
 
 		omit_fp_between_type = new_type_struct(NEW_IDENT("ia32_between_type_omit_fp"));
 		omit_fp_ret_addr_ent = new_entity(omit_fp_between_type, NEW_IDENT("ret_addr"), ret_addr_type);
 
 		set_entity_offset(omit_fp_ret_addr_ent, 0);
-		set_type_size_bytes(omit_fp_between_type, get_type_size_bytes(ret_addr_type));
+		set_type_size(omit_fp_between_type, get_type_size(ret_addr_type));
 		set_type_state(omit_fp_between_type, layout_fixed);
 	}
 }
@@ -811,8 +811,8 @@ static void transform_MemPerm(ir_node *node)
 		ir_entity *inent = be_get_MemPerm_in_entity(node, i);
 		ir_entity *outent = be_get_MemPerm_out_entity(node, i);
 		ir_type *enttype = get_entity_type(inent);
-		unsigned entsize = get_type_size_bytes(enttype);
-		unsigned entsize2 = get_type_size_bytes(get_entity_type(outent));
+		unsigned entsize = get_type_size(enttype);
+		unsigned entsize2 = get_type_size(get_entity_type(outent));
 		ir_node *mem = get_irn_n(node, i);
 
 		/* work around cases where entities have different sizes */
@@ -847,8 +847,8 @@ static void transform_MemPerm(ir_node *node)
 		ir_entity *inent = be_get_MemPerm_in_entity(node, i);
 		ir_entity *outent = be_get_MemPerm_out_entity(node, i);
 		ir_type *enttype = get_entity_type(outent);
-		unsigned entsize = get_type_size_bytes(enttype);
-		unsigned entsize2 = get_type_size_bytes(get_entity_type(inent));
+		unsigned entsize = get_type_size(enttype);
+		unsigned entsize2 = get_type_size(get_entity_type(inent));
 
 		/* work around cases where entities have different sizes */
 		if (entsize2 < entsize)
@@ -1018,7 +1018,7 @@ static void introduce_epilogue(ir_node *const ret)
 		set_irn_n(ret, n_ebp,             curr_bp);
 	} else {
 		ir_type *const frame_type = get_irg_frame_type(irg);
-		unsigned const frame_size = get_type_size_bytes(frame_type);
+		unsigned const frame_size = get_type_size(frame_type);
 		curr_sp = ia32_new_IncSP(block, first_sp, -(int)frame_size, 0);
 		sched_add_before(ret, curr_sp);
 	}
@@ -1036,7 +1036,7 @@ static void introduce_prologue(ir_graph *const irg)
 	ir_node               *start      = get_irg_start(irg);
 	ir_node               *block      = get_nodes_block(start);
 	ir_type               *frame_type = get_irg_frame_type(irg);
-	unsigned               frame_size = get_type_size_bytes(frame_type);
+	unsigned               frame_size = get_type_size(frame_type);
 	be_stack_layout_t     *layout     = be_get_irg_stack_layout(irg);
 	ir_node               *initial_sp = be_get_Start_proj(irg, sp);
 
@@ -1590,7 +1590,7 @@ static void init_aggregate_specs(void)
 
 static aggregate_spec_t const *decide_compound_ret(ir_type const *type)
 {
-	unsigned size = get_type_size_bytes(type);
+	unsigned size = get_type_size(type);
 	if (is_Array_type(type)) {
 		/* This is used for returning complex float numbers */
 		if (size == 8 && has_array_size(type) && get_array_size_int(type) == 2
@@ -1608,7 +1608,7 @@ static aggregate_spec_t const *decide_compound_ret(ir_type const *type)
 			ir_entity *const member      = get_compound_member(type, 0);
 			ir_type   *const member_type = get_entity_type(member);
 			if (is_float(member_type)) {
-				unsigned member_size = get_type_size_bytes(member_type);
+				unsigned member_size = get_type_size(member_type);
 				if (member_size == 4)
 					return &float_spec;
 				if (member_size == 8)

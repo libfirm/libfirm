@@ -438,7 +438,7 @@ pointer:
 		ir_alias_relation rel;
 
 		if (options & aa_opt_byte_type_may_alias) {
-			if (get_type_size_bytes(objt1) == 1 || get_type_size_bytes(objt2) == 1) {
+			if (get_type_size(objt1) == 1 || get_type_size(objt2) == 1) {
 				/* One of the types address a byte. Assume a ir_may_alias and leave
 				   the type based check. */
 				goto leave_type_based_alias;
@@ -447,7 +447,7 @@ pointer:
 
 		/* cheap check: If the type sizes did not match, the types MUST be different */
 		/* No, one might be part of the other. */
-		/* if (get_type_size_bytes(objt1) != get_type_size_bytes(objt2)) */
+		/* if (get_type_size(objt1) != get_type_size(objt2)) */
 		/*         return ir_no_alias; */
 
 		/* cheap test: if only one is a reference type, no alias */

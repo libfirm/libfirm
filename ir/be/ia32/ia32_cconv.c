@@ -153,7 +153,7 @@ x86_cconv_t *ia32_decide_calling_convention(ir_type *function_type,
 		if (is_aggregate_type(param_type)) {
 			param->type   = param_type;
 			param->offset = stack_offset;
-			stack_offset += get_type_size_bytes(param_type);
+			stack_offset += get_type_size(param_type);
 			goto align_stack;
 		}
 
@@ -165,7 +165,7 @@ x86_cconv_t *ia32_decide_calling_convention(ir_type *function_type,
 		} else {
 			param->type   = param_type;
 			param->offset = stack_offset;
-			stack_offset += get_type_size_bytes(param_type);
+			stack_offset += get_type_size(param_type);
 align_stack:;
 			/* increase offset by at least IA32_REGISTER_SIZE bytes so
 			 * everything is aligned */

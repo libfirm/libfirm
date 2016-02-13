@@ -64,7 +64,7 @@ static void introduce_epilog(ir_node *ret)
 	ir_node  *const block      = get_nodes_block(ret);
 	ir_graph *const irg        = get_irn_irg(ret);
 	ir_type  *const frame_type = get_irg_frame_type(irg);
-	unsigned  const frame_size = get_type_size_bytes(frame_type);
+	unsigned  const frame_size = get_type_size(frame_type);
 	ir_node  *const incsp      = be_new_IncSP(sp_reg, block, sp, -frame_size, 0);
 	set_irn_n(ret, n_arm_Return_sp, incsp);
 	sched_add_before(ret, incsp);
@@ -83,7 +83,7 @@ static void introduce_prolog_epilog(ir_graph *irg)
 	ir_node               *block      = get_nodes_block(start);
 	ir_node               *initial_sp = be_get_Start_proj(irg, sp_reg);
 	ir_type               *frame_type = get_irg_frame_type(irg);
-	unsigned               frame_size = get_type_size_bytes(frame_type);
+	unsigned               frame_size = get_type_size(frame_type);
 
 	ir_node *const incsp = be_new_IncSP(sp_reg, block, initial_sp, frame_size, 0);
 	edges_reroute_except(initial_sp, incsp, incsp);

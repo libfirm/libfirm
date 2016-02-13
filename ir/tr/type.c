@@ -219,9 +219,9 @@ long get_type_nr(const ir_type *tp)
 	return tp->nr;
 }
 
-unsigned (get_type_size_bytes)(const ir_type *tp)
+unsigned (get_type_size)(const ir_type *tp)
 {
-	return get_type_size_bytes_(tp);
+	return get_type_size_(tp);
 }
 
 ir_visibility get_type_visibility(const ir_type *tp)
@@ -236,17 +236,17 @@ void set_type_visibility(ir_type *tp, ir_visibility v)
 	tp->visibility = v;
 }
 
-void set_type_size_bytes(ir_type *tp, unsigned size)
+void set_type_size(ir_type *tp, unsigned size)
 {
 	tp->size = size;
 }
 
-unsigned (get_type_alignment_bytes)(const ir_type *type)
+unsigned (get_type_alignment)(const ir_type *type)
 {
-	return get_type_alignment_bytes_(type);
+	return get_type_alignment_(type);
 }
 
-void set_type_alignment_bytes(ir_type *type, unsigned align)
+void set_type_alignment(ir_type *type, unsigned align)
 {
 	assert(is_type(type));
 	assert(align > 0);
@@ -570,7 +570,7 @@ ir_type *new_type_method(size_t n_param, size_t n_res)
 	res->attr.method.res_type   = XMALLOCNZ(ir_type*, n_res);
 	res->attr.method.variadic   = false;
 	res->attr.method.properties = mtp_no_property;
-	set_type_alignment_bytes(res, 1);
+	set_type_alignment(res, 1);
 	hook_new_type(res);
 	return res;
 }
@@ -597,7 +597,7 @@ ir_type *clone_type_method(ir_type *tp)
 	res->attr.method.variadic         = tp->attr.method.variadic;
 	res->attr.method.properties       = tp->attr.method.properties;
 	res->attr.method.irg_calling_conv = tp->attr.method.irg_calling_conv;
-	set_type_alignment_bytes(res, get_type_alignment_bytes(tp));
+	set_type_alignment(res, get_type_alignment(tp));
 	hook_new_type(res);
 	return res;
 }
@@ -779,7 +779,7 @@ ir_type *new_type_array(ir_type *element_type)
 	ir_type  *res = new_type(tpo_array, sizeof(array_attr), NULL);
 	res->attr.array.element_type = element_type;
 	res->attr.array.size         = new_r_Unknown(get_const_code_irg(), mode_Iu);
-	set_type_alignment_bytes(res, get_type_alignment_bytes(element_type));
+	set_type_alignment(res, get_type_alignment(element_type));
 
 	hook_new_type(res);
 	return res;
@@ -822,7 +822,7 @@ void set_array_element_type(ir_type *array, ir_type *tp)
 	assert(is_Array_type(array));
 	assert(!is_Method_type(tp));
 	array->attr.array.element_type = tp;
-	set_type_alignment_bytes(array, get_type_alignment_bytes(tp));
+	set_type_alignment(array, get_type_alignment(tp));
 }
 
 ir_type *get_array_element_type(const ir_type *array)
@@ -858,7 +858,7 @@ ir_type *new_type_pointer(ir_type *points_to)
 	unsigned size = get_mode_size_bytes(mode);
 	res->size = size;
 	res->flags |= tf_layout_fixed;
-	set_type_alignment_bytes(res, size);
+	set_type_alignment(res, size);
 	hook_new_type(res);
 	return res;
 }
@@ -900,7 +900,7 @@ ir_type *new_type_primitive(ir_mode *mode)
 	ir_type *res = new_type(tpo_primitive, 0, mode);
 	res->size  = size;
 	res->flags |= tf_layout_fixed;
-	set_type_alignment_bytes(res, align);
+	set_type_alignment(res, align);
 	hook_new_type(res);
 	return res;
 }
@@ -1063,12 +1063,12 @@ void default_layout_compound_type(ir_type *type)
 		unsigned entity_size;
 		if (i+1 < n || !var_size) {
 			assert(get_type_state(entity_type) == layout_fixed);
-			entity_size = get_type_size_bytes(entity_type);
+			entity_size = get_type_size(entity_type);
 		} else {
 			entity_size = 0;
 		}
 
-		unsigned const align = get_type_alignment_bytes(entity_type);
+		unsigned const align = get_type_alignment(entity_type);
 		align_all = MAX(align, align_all);
 
 		unsigned offset;
@@ -1090,8 +1090,8 @@ void default_layout_compound_type(ir_type *type)
 	if (align_all > 0 && size % align_all) {
 		size += align_all - (size % align_all);
 	}
-	set_type_alignment_bytes(type, align_all);
-	set_type_size_bytes(type, size);
+	set_type_alignment(type, align_all);
+	set_type_size(type, size);
 	set_type_state(type, layout_fixed);
 }
 
@@ -1102,7 +1102,7 @@ ir_entity *frame_alloc_area(ir_type *frame_type, int size, unsigned alignment,
 
 	assert(is_frame_type(frame_type));
 	assert(get_type_state(frame_type) == layout_fixed);
-	assert(get_type_alignment_bytes(frame_type) > 0);
+	assert(get_type_alignment(frame_type) > 0);
 	set_type_state(frame_type, layout_undefined);
 
 	if (irp->byte_type == NULL)
@@ -1112,11 +1112,11 @@ ir_entity *frame_alloc_area(ir_type *frame_type, int size, unsigned alignment,
 
 	ir_type *tp = new_type_array(irp->byte_type);
 	set_array_size_int(tp, size);
-	set_type_alignment_bytes(tp, alignment);
-	set_type_size_bytes(tp, size);
+	set_type_alignment(tp, alignment);
+	set_type_size(tp, size);
 
-	unsigned frame_size  = get_type_size_bytes(frame_type);
-	unsigned frame_align = get_type_alignment_bytes(frame_type);
+	unsigned frame_size  = get_type_size(frame_type);
+	unsigned frame_align = get_type_alignment(frame_type);
 	int      offset;
 	if (at_start) {
 		unsigned delta = round_up2(size, frame_align);
@@ -1138,9 +1138,9 @@ ir_entity *frame_alloc_area(ir_type *frame_type, int size, unsigned alignment,
 	ir_entity *area = new_entity(frame_type, name, tp);
 	set_entity_visibility(area, ir_visibility_private);
 	set_entity_offset(area, offset);
-	set_type_size_bytes(frame_type, frame_size);
+	set_type_size(frame_type, frame_size);
 	if (alignment > frame_align) {
-		set_type_alignment_bytes(frame_type, alignment);
+		set_type_alignment(frame_type, alignment);
 	}
 
 	set_type_state(frame_type, layout_fixed);

@@ -1657,6 +1657,6 @@ void x86_init_x87_type(void)
 	x86_mode_E = new_float_mode("E", irma_x86_extended_float, 15, 64,
 	                             ir_overflow_indefinite);
 	x86_type_E = new_type_primitive(x86_mode_E);
-	set_type_size_bytes(x86_type_E, 12);
-	set_type_alignment_bytes(x86_type_E, 4);
+	set_type_size(x86_type_E, 12);
+	set_type_alignment(x86_type_E, 4);
 }

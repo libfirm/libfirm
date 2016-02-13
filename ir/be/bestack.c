@@ -37,7 +37,7 @@ int be_get_stack_entity_offset(be_stack_layout_t *frame, ir_entity *ent,
 		if (frame->order[index] == t)
 			break;
 		/* Add the size of all the types below the one of the entity to the entity's offset */
-		ofs += get_type_size_bytes(frame->order[index]);
+		ofs += get_type_size(frame->order[index]);
 	}
 	/* correct the offset by the initial position of the frame pointer */
 	ofs -= frame->initial_offset;
@@ -64,7 +64,7 @@ static void stack_frame_compute_initial_offset(be_stack_layout_t *frame)
 	ir_type   *base = frame->between_type;
 	ir_entity *ent  = search_ent_with_offset(base, 0);
 	if (ent == NULL) {
-		frame->initial_offset = get_type_size_bytes(frame->frame_type);
+		frame->initial_offset = get_type_size(frame->frame_type);
 	} else {
 		frame->initial_offset = be_get_stack_entity_offset(frame, ent, 0);
 	}
@@ -116,7 +116,7 @@ static void process_stack_bias(bias_walk *bw, ir_node *bl, int real_bias, int wa
 			/* fill in real stack frame size */
 			if (align > 0) {
 				/* patch IncSP to produce an aligned stack pointer */
-				int const between_size = get_type_size_bytes(layout->between_type);
+				int const between_size = get_type_size(layout->between_type);
 				int const alignment    = 1 << align;
 				int const delta        = (real_bias + ofs + between_size) & (alignment - 1);
 				assert(ofs >= 0);

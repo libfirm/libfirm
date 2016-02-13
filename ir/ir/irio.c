@@ -518,8 +518,8 @@ static void write_type_common(write_env_t *env, ir_type *tp)
 	write_symbol(env, "type");
 	write_long(env, get_type_nr(tp));
 	write_symbol(env, get_type_opcode_name(get_type_opcode(tp)));
-	write_unsigned(env, get_type_size_bytes(tp));
-	write_unsigned(env, get_type_alignment_bytes(tp));
+	write_unsigned(env, get_type_size(tp));
+	write_unsigned(env, get_type_alignment(tp));
 	write_type_state(env, get_type_state(tp));
 	write_unsigned(env, tp->flags);
 }
@@ -1616,7 +1616,7 @@ static void read_type(read_env_t *env)
 			set_array_size_int(type, size);
 		}
 		obstack_free(&env->obst, str);
-		set_type_size_bytes(type, size);
+		set_type_size(type, size);
 		goto finish_type;
 	}
 
@@ -1627,7 +1627,7 @@ static void read_type(read_env_t *env)
 			type = get_glob_type();
 		else
 			type = new_type_class(id);
-		set_type_size_bytes(type, size);
+		set_type_size(type, size);
 		goto finish_type;
 	}
 
@@ -1670,21 +1670,21 @@ static void read_type(read_env_t *env)
 	case tpo_primitive: {
 		ir_mode *mode = read_mode_ref(env);
 		type = new_type_primitive(mode);
-		set_type_size_bytes(type, size);
+		set_type_size(type, size);
 		goto finish_type;
 	}
 
 	case tpo_struct: {
 		ident *id = read_ident_null(env);
 		type = new_type_struct(id);
-		set_type_size_bytes(type, size);
+		set_type_size(type, size);
 		goto finish_type;
 	}
 
 	case tpo_union: {
 		ident *id = read_ident_null(env);
 		type = new_type_union(id);
-		set_type_size_bytes(type, size);
+		set_type_size(type, size);
 		goto finish_type;
 	}
 
@@ -1706,7 +1706,7 @@ static void read_type(read_env_t *env)
 
 finish_type:
 	if (align > 0)
-		set_type_alignment_bytes(type, align);
+		set_type_alignment(type, align);
 	type->flags = flags;
 
 	if (state == layout_fixed)

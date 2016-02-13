@@ -274,7 +274,7 @@ static ir_type *compute_arg_type(ir_graph *irg, calling_convention_t *cconv,
 		va_start_entity = NULL;
 	}
 
-	set_type_size_bytes(res, cconv->param_stack_size);
+	set_type_size(res, cconv->param_stack_size);
 
 	return res;
 }
@@ -291,9 +291,9 @@ void sparc_create_stacklayout(ir_graph *irg, calling_convention_t *cconv)
 
 	ir_type *between_type = new_type_class(new_id_from_str("sparc_between_type"));
 	if (cconv->omit_fp) {
-		set_type_size_bytes(between_type, 0);
+		set_type_size(between_type, 0);
 	} else {
-		set_type_size_bytes(between_type, SPARC_MIN_STACKSIZE);
+		set_type_size(between_type, SPARC_MIN_STACKSIZE);
 	}
 
 	layout->frame_type     = get_irg_frame_type(irg);
@@ -334,11 +334,11 @@ void sparc_adjust_stack_entity_offsets(ir_graph *irg)
 	 *      low address  |-----------------------------|
 	 */
 	ir_type *between_type = layout->between_type;
-	unsigned between_size = get_type_size_bytes(between_type);
+	unsigned between_size = get_type_size(between_type);
 
 	ir_type *frame_type  = get_irg_frame_type(irg);
-	unsigned frame_size  = get_type_size_bytes(frame_type);
-	unsigned frame_align = get_type_alignment_bytes(frame_type);
+	unsigned frame_size  = get_type_size(frame_type);
+	unsigned frame_align = get_type_alignment(frame_type);
 
 	/* There's the tricky case of the stackframe size not being a multiple
 	 * of the alignment. There are 2 variants:
@@ -356,7 +356,7 @@ void sparc_adjust_stack_entity_offsets(ir_graph *irg)
 		unsigned misalign = (SPARC_MIN_STACKSIZE+frame_size) % frame_align;
 		frame_size += misalign;
 	}
-	set_type_size_bytes(frame_type, frame_size);
+	set_type_size(frame_type, frame_size);
 
 	ir_type *arg_type = layout->arg_type;
 

@@ -27,7 +27,7 @@ static void lower_sel(ir_node *sel)
 	ir_node *const ptr          = get_Sel_ptr(sel);
 	ir_type *const type         = get_Sel_type(sel);
 	ir_type *const element_type = get_array_element_type(type);
-	unsigned const element_size = get_type_size_bytes(element_type);
+	unsigned const element_size = get_type_size(element_type);
 
 	ir_node *newn;
 	if (element_size == 0) {
@@ -119,7 +119,7 @@ static void lower_align(ir_node *const align)
 	ir_type *const tp = get_Align_type(align);
 	assert(get_type_state(tp) == layout_fixed);
 	/* rewrite the Align node by a Const node */
-	replace_by_Const(align, get_type_alignment_bytes(tp));
+	replace_by_Const(align, get_type_alignment(tp));
 }
 
 /**
@@ -130,7 +130,7 @@ static void lower_size(ir_node *const size)
 	ir_type *const tp = get_Size_type(size);
 	assert(get_type_state(tp) == layout_fixed);
 	/* rewrite the Size node by a Const node */
-	replace_by_Const(size, get_type_size_bytes(tp));
+	replace_by_Const(size, get_type_size(tp));
 }
 
 /**

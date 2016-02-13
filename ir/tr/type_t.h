@@ -23,8 +23,8 @@
 #define set_type_link(tp, l)              set_type_link_(tp, l)
 #define get_type_opcode(tp)               get_type_opcode_(tp)
 #define get_type_mode(tp)                 get_type_mode_(tp)
-#define get_type_alignment_bytes(tp)      get_type_alignment_bytes_(tp)
-#define get_type_size_bytes(tp)           get_type_size_bytes_(tp)
+#define get_type_alignment(tp)            get_type_alignment_(tp)
+#define get_type_size(tp)                 get_type_size_(tp)
 #define get_type_state(tp)                get_type_state_(tp)
 #define get_type_visited(tp)              get_type_visited_(tp)
 #define set_type_visited(tp, num)         set_type_visited_(tp, num)
@@ -217,13 +217,13 @@ static inline ir_mode *get_type_mode_(const ir_type *tp)
 	return tp->mode;
 }
 
-static inline unsigned get_type_alignment_bytes_(const ir_type *type)
+static inline unsigned get_type_alignment_(const ir_type *type)
 {
 	assert(type->kind == k_type);
 	return type->align;
 }
 
-static inline unsigned get_type_size_bytes_(const ir_type *tp)
+static inline unsigned get_type_size_(const ir_type *tp)
 {
 	assert(tp->kind == k_type);
 	return tp->size;

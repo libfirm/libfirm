@@ -137,8 +137,7 @@ static void merge_spilltypes(spillweb_t *web, const ir_type *type1)
 		return;
 	}
 	assert(modes_compatible(get_type_mode(type0), get_type_mode(type1)));
-	web->type = get_type_size_bytes(type1) > get_type_size_bytes(type0)
-	          ? type1 : type0;
+	web->type = get_type_size(type1) > get_type_size(type0) ? type1 : type0;
 }
 
 static spillweb_t *get_spill_web(spillweb_t *begin)
@@ -482,8 +481,8 @@ static void assign_spillslots(be_fec_env_t *env)
 		int               slotid = spill->spillslot;
 		const spillweb_t *web    = get_spill_web(spill->web);
 		const ir_type    *type   = web->type;
-		int               size   = get_type_size_bytes(type);
-		int               align  = get_type_alignment_bytes(type);
+		int               size   = get_type_size(type);
+		int               align  = get_type_alignment(type);
 		spill_slot_t     *slot   = &spillslots[slotid];
 
 		if (slot->align == 0 && slot->size == 0) {

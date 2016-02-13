@@ -178,8 +178,8 @@ static void transform_MemPerm(ir_node *node)
 		ir_entity *inent = be_get_MemPerm_in_entity(node, i);
 		ir_entity *outent = be_get_MemPerm_out_entity(node, i);
 		ir_type *enttype = get_entity_type(inent);
-		unsigned entsize = get_type_size_bytes(enttype);
-		unsigned entsize2 = get_type_size_bytes(get_entity_type(outent));
+		unsigned entsize = get_type_size(enttype);
+		unsigned entsize2 = get_type_size(get_entity_type(outent));
 		ir_node *mem = get_irn_n(node, i);
 
 		/* work around cases where entities have different sizes */
@@ -216,8 +216,8 @@ static void transform_MemPerm(ir_node *node)
 		ir_entity *inent = be_get_MemPerm_in_entity(node, i);
 		ir_entity *outent = be_get_MemPerm_out_entity(node, i);
 		ir_type *enttype = get_entity_type(outent);
-		unsigned entsize = get_type_size_bytes(enttype);
-		unsigned entsize2 = get_type_size_bytes(get_entity_type(inent));
+		unsigned entsize = get_type_size(enttype);
+		unsigned entsize2 = get_type_size(get_entity_type(inent));
 
 		/* work around cases where entities have different sizes */
 		if (entsize2 < entsize)
@@ -524,7 +524,7 @@ static void introduce_epilogue(ir_node *ret)
 	ir_graph          *irg        = get_irn_irg(ret);
 	ir_node           *block      = get_nodes_block(ret);
 	ir_type           *frame_type = get_irg_frame_type(irg);
-	unsigned           frame_size = get_type_size_bytes(frame_type);
+	unsigned           frame_size = get_type_size(frame_type);
 	be_stack_layout_t *layout     = be_get_irg_stack_layout(irg);
 	ir_node           *first_sp   = get_irn_n(ret, n_amd64_ret_stack);
 	ir_node           *curr_sp    = first_sp;
@@ -564,7 +564,7 @@ static void introduce_prologue(ir_graph *const irg)
 	ir_node               *start      = get_irg_start(irg);
 	ir_node               *block      = get_nodes_block(start);
 	ir_type               *frame_type = get_irg_frame_type(irg);
-	unsigned               frame_size = get_type_size_bytes(frame_type);
+	unsigned               frame_size = get_type_size(frame_type);
 	be_stack_layout_t     *layout     = be_get_irg_stack_layout(irg);
 	ir_node               *initial_sp = be_get_Start_proj(irg, sp);
 

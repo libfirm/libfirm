@@ -56,9 +56,9 @@ static void lower_small_copyb_node(ir_node *irn)
 	ir_node  *addr_dst   = get_CopyB_dst(irn);
 	ir_node  *mem        = get_CopyB_mem(irn);
 	ir_mode  *mode_ref   = get_irn_mode(addr_src);
-	unsigned  mode_bytes =
-		allow_misalignments ? native_mode_bytes : get_type_alignment_bytes(tp);
-	unsigned  size       = get_type_size_bytes(tp);
+	unsigned  mode_bytes = allow_misalignments ? native_mode_bytes
+	                                           : get_type_alignment(tp);
+	unsigned  size       = get_type_size(tp);
 	unsigned  offset     = 0;
 
 	while (offset < size) {
@@ -126,7 +126,7 @@ static void lower_large_copyb_node(ir_node *irn)
 	ir_node  *addr_src = get_CopyB_src(irn);
 	ir_node  *addr_dst = get_CopyB_dst(irn);
 	ir_type  *copyb_tp = get_CopyB_type(irn);
-	unsigned  size     = get_type_size_bytes(copyb_tp);
+	unsigned  size     = get_type_size(copyb_tp);
 
 	ir_node  *callee      = get_memcpy_address(irg);
 	ir_type  *call_tp     = get_memcpy_methodtype();
@@ -142,7 +142,7 @@ static void lower_large_copyb_node(ir_node *irn)
 static void lower_copyb_node(ir_node *irn)
 {
 	ir_type *tp   = get_CopyB_type(irn);
-	unsigned size = get_type_size_bytes(tp);
+	unsigned size = get_type_size(tp);
 
 	if (size <= max_small_size)
 		lower_small_copyb_node(irn);
@@ -164,7 +164,7 @@ static void find_copyb_nodes(ir_node *irn, void *ctx)
 	if (get_type_state(tp) != layout_fixed)
 		return;
 
-	unsigned size         = get_type_size_bytes(tp);
+	unsigned size         = get_type_size(tp);
 	bool     medium_sized = max_small_size < size && size < min_large_size;
 	if (medium_sized)
 		return; /* Nothing to do for medium-sized CopyBs. */

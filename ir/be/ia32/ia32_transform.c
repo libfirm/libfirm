@@ -502,14 +502,14 @@ static ir_node *gen_be_Relocation(ir_node *node)
 
 static ir_type *make_array_type(ir_type *tp)
 {
-	unsigned alignment = get_type_alignment_bytes(tp);
-	unsigned size      = get_type_size_bytes(tp);
+	unsigned alignment = get_type_alignment(tp);
+	unsigned size      = get_type_size(tp);
 	ir_type *res       = new_type_array(tp);
-	set_type_alignment_bytes(res, alignment);
+	set_type_alignment(res, alignment);
 	set_array_size_int(res, 2);
 	if (alignment > size)
 		size = alignment;
-	set_type_size_bytes(res, 2 * size);
+	set_type_size(res, 2 * size);
 	set_type_state(res, layout_fixed);
 	return res;
 }
@@ -4902,7 +4902,7 @@ static ir_node *gen_CopyB(ir_node *node)
 	ir_node  *mem      = get_CopyB_mem(node);
 	ir_node  *new_mem  = be_transform_node(mem);
 	dbg_info *dbgi     = get_irn_dbg_info(node);
-	int      size      = get_type_size_bytes(get_CopyB_type(node));
+	int      size      = get_type_size(get_CopyB_type(node));
 	int      rem;
 
 	/* If we have to copy more than 32 bytes, we use REP MOVSx and */
@@ -5004,7 +5004,7 @@ static ir_node *gen_Call(ir_node *node)
 			set_ia32_ls_mode(lea, ia32_mode_gp);
 
 			ir_node *const new_value = be_transform_node(value);
-			unsigned const size      = get_type_size_bytes(param_type);
+			unsigned const size      = get_type_size(param_type);
 			ir_node *const copyb     = new_bd_ia32_CopyB_i(dbgi, block, lea, new_value, nomem, size);
 			sync_ins[sync_arity++] = be_new_Proj(copyb, pn_ia32_CopyB_i_M);
 		} else if (param->reg) {
@@ -5806,11 +5806,11 @@ static ir_type *ia32_get_between_type(bool omit_fp)
 		between_type = new_type_class(new_id_from_str("ia32_between_type"));
 		/* between type contains return address + saved base pointer */
 		unsigned gp_size = get_mode_size_bytes(ia32_mode_gp);
-		set_type_size_bytes(between_type, 2*gp_size);
+		set_type_size(between_type, 2*gp_size);
 
 		omit_fp_between_type = new_type_class(new_id_from_str("ia32_between_type"));
 		/* between type contains return address */
-		set_type_size_bytes(omit_fp_between_type, gp_size);
+		set_type_size(omit_fp_between_type, gp_size);
 	}
 
 	return omit_fp ? omit_fp_between_type : between_type;
@@ -5861,7 +5861,7 @@ static void ia32_create_stacklayout(ir_graph *irg, const x86_cconv_t *cconv)
 		set_entity_offset(va_start_entity, cconv->callframe_size);
 	}
 
-	set_type_size_bytes(arg_type, cconv->callframe_size);
+	set_type_size(arg_type, cconv->callframe_size);
 
 	be_stack_layout_t *const layout = be_get_irg_stack_layout(irg);
 	memset(layout, 0, sizeof(*layout));

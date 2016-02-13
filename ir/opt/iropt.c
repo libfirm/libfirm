@@ -264,7 +264,7 @@ static ir_tarval *computed_value_Align(const ir_node *n)
 {
 	ir_type const *const type = get_Align_type(n);
 	if (get_type_state(type) == layout_fixed)
-		return new_tarval_from_long(get_type_alignment_bytes(type), get_irn_mode(n));
+		return new_tarval_from_long(get_type_alignment(type), get_irn_mode(n));
 	return tarval_unknown;
 }
 
@@ -275,7 +275,7 @@ static ir_tarval *computed_value_Size(const ir_node *n)
 {
 	ir_type const *const type = get_Size_type(n);
 	if (get_type_state(type) == layout_fixed)
-		return new_tarval_from_long(get_type_size_bytes(type), get_irn_mode(n));
+		return new_tarval_from_long(get_type_size(type), get_irn_mode(n));
 	return tarval_unknown;
 }
 
@@ -7113,7 +7113,7 @@ static bool sim_store_bitfield(unsigned char *buf, ir_mode *mode, long offset,
 	ir_tarval *masked_value  = tarval_and(shifted_value, mask);
 
 	unsigned mode_size        = get_mode_size_bytes(mode);
-	unsigned initializer_size = get_type_size_bytes(type);
+	unsigned initializer_size = get_type_size(type);
 	for (unsigned b = (unsigned)MAX(0, offset); b < initializer_size; ++b) {
 		if (b > (unsigned)offset + mode_size)
 			continue;
@@ -7134,7 +7134,7 @@ static bool sim_store(unsigned char *buf, ir_mode *mode, long offset,
 	unsigned mode_size = get_mode_size_bytes(mode);
 	if (offset + (int)mode_size <= 0)
 		return true;
-	unsigned initializer_size = get_type_size_bytes(type);
+	unsigned initializer_size = get_type_size(type);
 	assert(initializer_size > 0);
 	if (offset >= (long)initializer_size)
 		return true;
@@ -7168,7 +7168,7 @@ handle_tv:
 	case IR_INITIALIZER_COMPOUND:
 		if (is_Array_type(type)) {
 			ir_type  *el_type = get_array_element_type(type);
-			unsigned  el_size = get_type_size_bytes(el_type);
+			unsigned  el_size = get_type_size(el_type);
 			assert(el_size > 0);
 			long   offset0   = MAX(0, offset);
 			size_t first_idx = (size_t) ((unsigned)offset0 / el_size);
@@ -7197,7 +7197,7 @@ handle_tv:
 				const ir_type   *member_type = get_entity_type(member);
 				int              member_offs = get_entity_offset(member);
 				if (member_offs >= offset + (long)get_mode_size_bytes(mode)
-				    || offset >= member_offs + (long)get_type_size_bytes(member_type))
+				    || offset >= member_offs + (long)get_type_size(member_type))
 				    continue;
 				if (i > get_initializer_compound_n_entries(initializer))
 					continue;
@@ -7260,7 +7260,7 @@ static ir_node *extract_from_initializer(const ir_type *type,
 {
 	if (offset < 0)
 		return NULL;
-	unsigned size = get_type_size_bytes(type);
+	unsigned size = get_type_size(type);
 	if ((unsigned long)offset >= size)
 		return NULL;
 
@@ -7310,7 +7310,7 @@ handle_tv:;
 	case IR_INITIALIZER_COMPOUND: {
 		if (is_Array_type(type)) {
 			ir_type  *el_type = get_array_element_type(type);
-			unsigned  el_size = get_type_size_bytes(el_type);
+			unsigned  el_size = get_type_size(el_type);
 			assert(el_size > 0);
 			unsigned  idx     = (unsigned)offset / el_size;
 			if ((size_t)idx >= get_initializer_compound_n_entries(initializer))
@@ -7329,7 +7329,7 @@ handle_tv:;
 				const ir_type   *member_type = get_entity_type(member);
 				int              member_offs = get_entity_offset(member);
 				if (member_offs >= offset + (long)get_mode_size_bytes(mode)
-				    || offset >= member_offs + (long)get_type_size_bytes(member_type))
+				    || offset >= member_offs + (long)get_type_size(member_type))
 				    continue;
 				if (get_entity_bitfield_size(member) > 0)
 					return NULL;

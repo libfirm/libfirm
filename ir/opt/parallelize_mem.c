@@ -82,7 +82,7 @@ static void parallelize_load(parallelize_info *pi, ir_node *irn)
 			ir_node *org_ptr    = pi->origin_ptr;
 			ir_type *copyB_type = get_CopyB_type(irn);
 			ir_node *copyB_dst  = get_CopyB_dst(irn);
-			unsigned copyB_size = get_type_size_bytes(copyB_type);
+			unsigned copyB_size = get_type_size(copyB_type);
 			if (get_alias_relation(org_ptr, org_type, org_size,
 			                       copyB_dst, copyB_type, copyB_size) == ir_no_alias) {
 				ir_node *mem = get_CopyB_mem(irn);
@@ -151,7 +151,7 @@ static void parallelize_store(parallelize_info *pi, ir_node *irn)
 			ir_node *copyB_src  = get_CopyB_src(irn);
 			ir_node *copyB_dst  = get_CopyB_dst(irn);
 			ir_type *copyB_type = get_CopyB_type(irn);
-			unsigned copyB_size = get_type_size_bytes(copyB_type);
+			unsigned copyB_size = get_type_size(copyB_type);
 			if (get_alias_relation(org_ptr, org_type, org_size,
 			                       copyB_src, copyB_type, copyB_size) == ir_no_alias &&
 			    get_alias_relation(org_ptr, org_type, org_size,
@@ -226,7 +226,7 @@ static void parallelize_copyB(parallelize_info *pi, ir_node *origin, ir_node *ir
 			ir_node *copyB_src  = get_CopyB_src(irn);
 			ir_node *copyB_dst  = get_CopyB_dst(irn);
 			ir_type *copyB_type = get_CopyB_type(irn);
-			unsigned copyB_size = get_type_size_bytes(copyB_type);
+			unsigned copyB_size = get_type_size(copyB_type);
 			if (get_alias_relation(org_src, org_type, org_size,
 			                       copyB_dst, copyB_type, copyB_size) == ir_no_alias &&
 			    get_alias_relation(org_dst, org_type, org_size,
@@ -297,7 +297,7 @@ static void walker(ir_node *proj, void *env)
 
 		pi.origin_block = block;
 		pi.origin_type  = get_CopyB_type(mem_op);
-		pi.origin_size  = get_type_size_bytes(pi.origin_type);
+		pi.origin_size  = get_type_size(pi.origin_type);
 		/* parallelize_copyB uses the node itself, because the
 		 * information does not fit in a parallelize_info. */
 		ir_nodeset_init(&pi.this_mem);

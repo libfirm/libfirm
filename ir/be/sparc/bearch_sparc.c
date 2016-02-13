@@ -561,8 +561,8 @@ static const backend_params *sparc_get_backend_params(void)
 	sparc_mode_Q
 		= new_float_mode("Q", irma_ieee754, 15, 112, ir_overflow_min_max);
 	ir_type *type_long_double = new_type_primitive(sparc_mode_Q);
-	set_type_alignment_bytes(type_long_double, 8);
-	set_type_size_bytes(type_long_double, 16);
+	set_type_alignment(type_long_double, 8);
+	set_type_size(type_long_double, 16);
 	p.type_long_double = type_long_double;
 	return &p;
 }

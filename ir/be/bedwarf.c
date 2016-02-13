@@ -577,7 +577,7 @@ static void emit_pointer_type_abbrev(void)
 static void emit_pointer_type(const ir_type *type)
 {
 	ir_type *points_to = get_pointer_points_to_type(type);
-	unsigned size      = get_type_size_bytes(type);
+	unsigned size      = get_type_size(type);
 	assert(size < 256);
 
 	if (!is_Primitive_type(points_to) || get_type_mode(points_to) != mode_ANY) {
@@ -681,7 +681,7 @@ static void emit_compound_type(const ir_type *type)
 		assert(is_Class_type(type));
 		emit_uleb128(abbrev_class_type);
 	}
-	emit_uleb128(get_type_size_bytes(type));
+	emit_uleb128(get_type_size(type));
 	for (size_t i = 0; i < n_members; ++i) {
 		ir_entity *member      = get_compound_member(type, i);
 		ir_type   *member_type = get_entity_type(member);
@@ -690,7 +690,7 @@ static void emit_compound_type(const ir_type *type)
 		if (get_entity_bitfield_size(member) > 0) {
 			unsigned bit_offset = get_entity_bitfield_offset(member);
 			unsigned bit_size   = get_entity_bitfield_size(member);
-			unsigned base_size  = get_type_size_bytes(member_type);
+			unsigned base_size  = get_type_size(member_type);
 
 			bit_offset = base_size*8 - bit_offset - bit_size;
 

@@ -186,7 +186,7 @@ static ir_graph *gen_initializer_irg(ir_entity *ent_filename, ir_entity *bblock_
 
 	ir_graph *const irg              = new_ir_graph(ent, 0);
 	ir_type  *const empty_frame_type = get_irg_frame_type(irg);
-	set_type_size_bytes(empty_frame_type, 0);
+	set_type_size(empty_frame_type, 0);
 	set_type_state(empty_frame_type, layout_fixed);
 
 	ir_node   *const bb        = get_r_cur_block(irg);
@@ -358,12 +358,10 @@ static void instrument_irg(ir_graph *irg, ir_entity *counters, block_id_walker_d
 static ir_entity *new_array_entity(ident *name, int size)
 {
 	ir_type *const uint_type = new_type_primitive(mode_Iu);
-	set_type_alignment_bytes(uint_type, get_type_size_bytes(uint_type));
 
 	ir_type *const array_type = new_type_array(uint_type);
 	set_array_size_int(array_type, size);
-	set_type_size_bytes(array_type, size * get_mode_size_bytes(mode_Iu));
-	set_type_alignment_bytes(array_type, get_mode_size_bytes(mode_Iu));
+	set_type_size(array_type, size * get_mode_size_bytes(mode_Iu));
 	set_type_state(array_type, layout_fixed);
 
 	ir_entity *const result = new_entity(get_glob_type(), name, array_type);
@@ -384,8 +382,7 @@ static ir_entity *new_static_string_entity(ident *name, const char *string)
 
 	/* Create the type for a fixed-length string */
 	set_array_size_int(string_type, length);
-	set_type_size_bytes(string_type, length);
-	set_type_alignment_bytes(string_type, 1);
+	set_type_size(string_type, length);
 	set_type_state(string_type, layout_fixed);
 
 	ir_entity *const result = new_entity(get_glob_type(), name, string_type);

@@ -173,7 +173,7 @@ static void emit_Return(const ir_node *node)
 {
 	ir_graph *irg        = get_irn_irg(node);
 	ir_type  *frame_type = get_irg_frame_type(irg);
-	unsigned  size       = get_type_size_bytes(frame_type);
+	unsigned  size       = get_type_size(frame_type);
 
 	/* emit function epilog here */
 
