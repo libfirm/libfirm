@@ -135,7 +135,7 @@ static bool set_bitinfo(ir_node const *const irn, ir_tarval *const z, ir_tarval 
 	}
 	b->z = z;
 	b->o = o;
-	DB((dbg, LEVEL_3, "Set %+F: 0:%T 1:%T\n", irn, z, o));
+	DB((dbg, LEVEL_3, "Set %+F: 0:%T 1:%T%s\n", irn, z, o, is_undefined(b) ? " (bottom)" : tarval_is_all_one(z) && tarval_is_null(o) ? " (top)" : ""));
 	return true;
 }
 
