@@ -48,7 +48,7 @@ ir_valueset_entry_t *ir_valueset_find_(const ir_valueset_t *self,
 
 #define HAVE_OWN_RESIZE
 
-#include "hashset.c.inl"
+#include "hashset.c.h"
 
 /**
  * Resize the hashset

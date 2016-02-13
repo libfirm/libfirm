@@ -52,7 +52,7 @@ size_t ir_edgeset_size(const ir_edgeset_t *self);
 #define hashset_iterator_next   ir_edgeset_iterator_next
 #define hashset_remove_iterator ir_edgeset_remove_iterator
 
-#include "hashset.c.inl"
+#include "hashset.c.h"
 
 /**
  * A function that allows for setting an edge.

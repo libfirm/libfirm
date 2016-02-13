@@ -32,4 +32,4 @@
 #define hashset_iterator_next   pset_new_iterator_next
 #define hashset_remove_iterator pset_new_remove_iterator
 
-#include "hashset.c.inl"
+#include "hashset.c.h"

@@ -37,7 +37,7 @@ void cpset_init_size_(cpset_t *self, size_t expected_elems);
 #define hashset_iterator_next   cpset_iterator_next
 #define hashset_remove_iterator cpset_remove_iterator
 
-#include "hashset.c.inl"
+#include "hashset.c.h"
 
 void cpset_init(cpset_t *this_, cpset_hash_function hash_function,
                 cpset_cmp_function cmp_function)
