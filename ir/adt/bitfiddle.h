@@ -158,9 +158,9 @@ static inline uint32_t ceil_po2(uint32_t x)
 }
 
 /**
- * Tests whether @p x is a power of 2
+ * Returns true if \p x is a power of two or zero.
  */
-static inline bool is_po2(unsigned x)
+static inline bool is_po2_or_zero(unsigned x)
 {
 	return (x & (x-1)) == 0;
 }

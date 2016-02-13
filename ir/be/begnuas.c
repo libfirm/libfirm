@@ -1500,7 +1500,7 @@ static void emit_global(be_main_env_t const *const main_env,
 
 	/* alignment */
 	unsigned alignment = get_effective_entity_alignment(entity);
-	if (!is_po2(alignment))
+	if (!is_po2_or_zero(alignment))
 		panic("alignment not a power of 2");
 	if (alignment > 1) {
 		emit_align(alignment);

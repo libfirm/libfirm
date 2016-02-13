@@ -783,7 +783,7 @@ static void lower_shr_helper(ir_node *node, ir_mode *mode,
 			|| modulo_shift2<<1 != modulo_shift) {
 		panic("Shr lowering only implemented for modulo shift shr operations");
 	}
-	if (!is_po2(modulo_shift) || !is_po2(modulo_shift2)) {
+	if (!is_po2_or_zero(modulo_shift) || !is_po2_or_zero(modulo_shift2)) {
 		panic("Shr lowering only implemented for power-of-2 modes");
 	}
 	/* without 2-complement the -x instead of (bit_width-x) trick won't work */
@@ -899,7 +899,7 @@ static void lower_Shl(ir_node *node, ir_mode *mode)
 	    || modulo_shift2<<1 != modulo_shift) {
 		panic("Shl lowering only implemented for modulo shift shl operations");
 	}
-	if (!is_po2(modulo_shift) || !is_po2(modulo_shift2)) {
+	if (!is_po2_or_zero(modulo_shift) || !is_po2_or_zero(modulo_shift2)) {
 		panic("Shl lowering only implemented for power-of-2 modes");
 	}
 	/* without 2-complement the -x instead of (bit_width-x) trick won't work */

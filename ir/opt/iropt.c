@@ -5862,7 +5862,7 @@ static ir_node *transform_node_shift(ir_node *n)
 		assert(get_mode_arithmetic(count_mode) == irma_twos_complement);
 		/* modulo shifts should always be a power of 2 (otherwise modulo_mask
 		 * above will be invalid) */
-		assert(is_po2(modulo_shf));
+		assert(is_po2_or_zero(modulo_shf));
 
 		tv1 = tarval_and(tv1, modulo_mask);
 		tv2 = tarval_and(tv2, modulo_mask);
@@ -6014,7 +6014,7 @@ static ir_node *transform_node_shift_modulo(ir_node *n,
 		return n;
 	if (get_mode_arithmetic(mode) != irma_twos_complement)
 		return n;
-	if (!is_po2(modulo))
+	if (!is_po2_or_zero(modulo))
 		return n;
 
 	ir_graph *irg        = get_irn_irg(n);
@@ -6091,7 +6091,7 @@ static ir_node *transform_node_shift_and(ir_node *n, new_shift_func new_shift)
 	if (!is_And(amount))
 		return n;
 
-	assert(is_po2(modulo_shift));
+	assert(is_po2_or_zero(modulo_shift));
 	ir_mode   *amount_mode = get_irn_mode(amount);
 	ir_tarval *all_one     = get_mode_all_one(amount_mode);
 	unsigned   shift       = get_mode_size_bits(amount_mode)

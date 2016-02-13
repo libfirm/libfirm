@@ -769,7 +769,7 @@ void init_strcalc(unsigned precision)
 {
 	if (output_buffer == NULL) {
 		/* round up to multiple of SC_BITS */
-		assert(is_po2(SC_BITS));
+		assert(is_po2_or_zero(SC_BITS));
 		precision = (precision + (SC_BITS-1)) & ~(SC_BITS-1);
 
 		bit_pattern_size = precision;

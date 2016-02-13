@@ -2120,7 +2120,7 @@ again:;
 			if (get_mode_arithmetic(store_mode) != irma_twos_complement)
 				continue;
 			unsigned store_size = get_mode_size_bits(store_mode);
-			if (store_size >= machine_size || !is_po2(store_size))
+			if (store_size >= machine_size || !is_po2_or_zero(store_size))
 				continue;
 			ir_mode *mode_unsigned = find_unsigned_mode(store_mode);
 			if (mode_unsigned == NULL)

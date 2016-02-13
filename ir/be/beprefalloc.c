@@ -1085,7 +1085,7 @@ static void solve_lpp(ir_nodeset_t *live_nodes, ir_node *node,
 static bool is_aligned(unsigned num, unsigned alignment)
 {
 	unsigned mask = alignment-1;
-	assert(is_po2(alignment));
+	assert(is_po2_or_zero(alignment));
 	return (num&mask) == 0;
 }
 

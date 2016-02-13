@@ -82,7 +82,7 @@ static ir_tarval *create_modulo_shift_mask(ir_mode *mode, ir_mode *dest_mode)
 	if (modulo_shift == 0)
 		return NULL;
 
-	assert(is_po2(modulo_shift));
+	assert(is_po2_or_zero(modulo_shift));
 	return new_tarval_from_long(modulo_shift - 1, dest_mode);
 }
 

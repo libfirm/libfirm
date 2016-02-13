@@ -929,7 +929,7 @@ static void assure_different_constraints(ir_node *irn, ir_node *skipped_irn, con
 		if (req->should_be_same != 0) {
 			const unsigned same = req->should_be_same;
 
-			if (is_po2(other) && is_po2(same)) {
+			if (is_po2_or_zero(other) && is_po2_or_zero(same)) {
 				int idx_other = ntz(other);
 				int idx_same  = ntz(same);
 
