@@ -18,6 +18,7 @@
 #include "array.h"
 #include "beemitter.h"
 #include "begnuas.h"
+#include "bitfiddle.h"
 #include "compiler.h"
 #include "entity_t.h"
 #include "obst.h"
@@ -117,9 +118,8 @@ static void layout_fragments(ir_jit_function_t *const function,
 		assert(fragment->address == ~0u);
 		assert(fragment->len != ~0u);
 
-		unsigned const align      = 1 << fragment->p2align;
-		unsigned const align_mask = ~(align-1);
-		unsigned const aligned    = (address + align - 1) & align_mask;
+		unsigned const align   = 1 << fragment->p2align;
+		unsigned const aligned = round_up2(address, align);
 		if (aligned - address <= fragment->max_skip)
 			address = aligned;
 

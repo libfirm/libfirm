@@ -1119,7 +1119,7 @@ ir_entity *frame_alloc_area(ir_type *frame_type, int size, unsigned alignment,
 	unsigned frame_align = get_type_alignment_bytes(frame_type);
 	int      offset;
 	if (at_start) {
-		unsigned delta = (size + frame_align - 1) & ~(frame_align - 1);
+		unsigned delta = round_up2(size, frame_align);
 		/* fix all offsets so far */
 		for (size_t i = 0, n = get_compound_n_members(frame_type); i < n; ++i) {
 			ir_entity *ent = get_compound_member(frame_type, i);

@@ -351,7 +351,7 @@ void sparc_adjust_stack_entity_offsets(ir_graph *irg)
 	 *   frame_size accordingly.
 	 */
 	if (!layout->sp_relative) {
-		frame_size = (frame_size + frame_align-1) & ~(frame_align-1);
+		frame_size = round_up2(frame_size, frame_align);
 	} else {
 		unsigned misalign = (SPARC_MIN_STACKSIZE+frame_size) % frame_align;
 		frame_size += misalign;

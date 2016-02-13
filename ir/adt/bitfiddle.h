@@ -100,18 +100,6 @@ static inline uint32_t log2_ceil(uint32_t x)
 }
 
 /**
- * Round up to the next multiple of a power of two.
- * @param x A value.
- * @param pot A power of two.
- * @return x rounded up to the next multiple of pot.
- */
-static inline unsigned round_up2(unsigned x, unsigned pot)
-{
-	unsigned pot_m1 = pot-1;
-	return (x + pot_m1) & ~pot_m1;
-}
-
-/**
  * Returns the biggest power of 2 that is equal or smaller than @p x
  * (see hackers delight power-of-2 boundaries, page 48)
  */
@@ -163,6 +151,20 @@ static inline uint32_t ceil_po2(uint32_t x)
 static inline bool is_po2_or_zero(unsigned x)
 {
 	return (x & (x-1)) == 0;
+}
+
+/**
+ * Round up to the next multiple of a power of two.
+ * @param x A value.
+ * @param pot A power of two.
+ * @return x rounded up to the next multiple of pot.
+ */
+static inline unsigned round_up2(unsigned x, unsigned po2)
+{
+	assert(is_po2_or_zero(po2) && po2 > 0);
+	unsigned const po2_minus_one = po2-1;
+	unsigned const po2_mask      = ~po2_minus_one;
+	return (x + po2_minus_one) & po2_mask;
 }
 
 #endif
