@@ -287,7 +287,7 @@ void set_type_state(ir_type *tp, ir_type_state state)
 			ir_entity *entity = get_compound_member(tp, i);
 			if (is_Method_type(get_entity_type(entity)))
 				continue;
-			assert(get_entity_offset(entity) > -1);
+			assert(get_entity_offset(entity) != INVALID_OFFSET);
 		}
 	}
 #endif

@@ -73,7 +73,7 @@ static ir_entity *new_entity_vis(ir_type *owner, ident *name, ir_type *type,
 	} else if (is_compound_type(owner) && !is_segment_type(owner)) {
 		res = intern_new_entity(owner, IR_ENTITY_COMPOUND_MEMBER, name, type,
 		                        vis);
-		res->attr.compound_member.offset = -1;
+		res->attr.compound_member.offset = INVALID_OFFSET;
 	} else {
 		res = intern_new_entity(owner, IR_ENTITY_NORMAL, name, type, vis);
 		res->attr.global.jit_addr = (void*)-1;
@@ -103,7 +103,7 @@ ir_entity *new_parameter_entity(ir_type *owner, size_t pos, ir_type *type)
 	ident     *name = new_id_fmt("parameter.%lu", (unsigned long)pos);
 	ir_entity *res  = intern_new_entity(owner, IR_ENTITY_PARAMETER, name, type,
 	                                    ir_visibility_private);
-	res->attr.compound_member.offset = -1;
+	res->attr.compound_member.offset = INVALID_OFFSET;
 	res->attr.parameter.number = pos;
 	hook_new_entity(res);
 	return res;

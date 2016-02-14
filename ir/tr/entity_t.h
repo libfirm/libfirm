@@ -14,6 +14,7 @@
 #include <assert.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <limits.h>
 
 #include "compiler.h"
 #include "ident.h"
@@ -57,6 +58,8 @@
 #define entity_not_visited(ent)              _entity_not_visited(ent)
 #define get_entity_dbg_info(ent)             _get_entity_dbg_info(ent)
 #define set_entity_dbg_info(ent, db)         _set_entity_dbg_info(ent, db)
+
+#define INVALID_OFFSET    INT_MAX
 
 typedef struct ir_initializer_base_t {
 	ir_initializer_kind_t kind;
