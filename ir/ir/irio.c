@@ -678,6 +678,8 @@ static void write_entity(write_env_t *env, ir_entity *ent)
 		write_symbol(env, "unknown");
 		write_long(env, get_entity_nr(ent));
 		return;
+	case IR_ENTITY_SPILLSLOT:
+		panic("Unexpected entity %+F", ent); // Should only exist in backend
 	}
 	write_long(env, get_entity_nr(ent));
 
@@ -747,6 +749,7 @@ static void write_entity(write_env_t *env, ir_entity *ent)
 		break;
 	case IR_ENTITY_UNKNOWN:
 	case IR_ENTITY_LABEL:
+	case IR_ENTITY_SPILLSLOT:
 		break;
 	}
 
@@ -1805,8 +1808,9 @@ static void read_entity(read_env_t *env, ir_entity_kind kind)
 		entity = new_label_entity(nr);
 		break;
 	}
+	case IR_ENTITY_SPILLSLOT:
 	case IR_ENTITY_UNKNOWN:
-		panic("read_entity with IR_ENTITY_UNKNOWN");
+		panic("read_entity with unexpected kind");
 	}
 
 	set_entity_volatility(entity, volatility);

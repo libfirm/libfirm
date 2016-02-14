@@ -330,6 +330,17 @@ int check_entity(const ir_entity *entity)
 
 	case IR_ENTITY_UNKNOWN:
 		break;
+
+	case IR_ENTITY_SPILLSLOT:
+		if (is_frame_type(owner)) {
+			report_error("spillslot %+F must be on frame type", entity);
+			fine = false;
+		}
+		break;
+	}
+	if (is_frame_type(owner) && entity_has_definition(entity)) {
+		report_error("entity %+F on frame %+F has initialized", entity, owner);
+		fine = false;
 	}
 
 	return fine;

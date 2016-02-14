@@ -118,6 +118,19 @@ ir_entity *new_label_entity(ir_label_t label)
 	return res;
 }
 
+ir_entity *new_spillslot(ir_type *const frame, unsigned const size,
+                         unsigned const alignment)
+{
+	assert(is_frame_type(frame));
+	ir_type   *const type = get_unknown_type();
+	ir_entity *const res  = intern_new_entity(frame, IR_ENTITY_SPILLSLOT, NULL,
+	                                          type, ir_visibility_private);
+	set_entity_alignment(res, alignment);
+	res->attr.spillslot.base.offset = INVALID_OFFSET;
+	res->attr.spillslot.size = size;
+	return res;
+}
+
 ir_entity *new_alias_entity(ir_type *owner, ident *name, ir_entity *aliased,
                             ir_type *type, ir_visibility visibility)
 {
@@ -295,6 +308,8 @@ void set_entity_type(ir_entity *ent, ir_type *type)
 	case IR_ENTITY_UNKNOWN:
 	case IR_ENTITY_COMPOUND_MEMBER:
 		break;
+	case IR_ENTITY_SPILLSLOT:
+		panic("Cannot set type of this entity");
 	}
 	ent->type = type;
 }
@@ -888,6 +903,7 @@ int entity_has_definition(const ir_entity *entity)
 	case IR_ENTITY_PARAMETER:
 	case IR_ENTITY_UNKNOWN:
 	case IR_ENTITY_COMPOUND_MEMBER:
+	case IR_ENTITY_SPILLSLOT:
 		return false;
 	}
 	panic("invalid entity kind");

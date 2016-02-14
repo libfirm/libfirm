@@ -285,7 +285,7 @@ void set_type_state(ir_type *tp, ir_type_state state)
 		for (size_t i = 0, n_mem = get_compound_n_members(tp);
 			 i < n_mem; i++) {
 			ir_entity *entity = get_compound_member(tp, i);
-			if (is_Method_type(get_entity_type(entity)))
+			if (is_method_entity(entity))
 				continue;
 			assert(get_entity_offset(entity) != INVALID_OFFSET);
 		}
@@ -991,7 +991,6 @@ void add_compound_member(ir_type *type, ir_entity *entity)
 {
 	assert(is_compound_type(type));
 	/* try to detect double-add */
-	assert(get_entity_type(entity) != type);
 	ARR_APP1(ir_entity *, type->attr.compound.members, entity);
 	/* Add segment members to globals map. */
 	if (is_segment_type(type) && !(type->flags & tf_info)

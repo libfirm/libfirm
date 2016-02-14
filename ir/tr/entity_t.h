@@ -154,6 +154,11 @@ typedef struct alias_ent_attr {
 	ir_entity       *aliased;
 } alias_ent_attr;
 
+typedef struct spillslot_ent_attr {
+	compound_member_ent_attr base;
+	unsigned                 size;
+} spillslot_ent_attr;
+
 typedef enum ir_entity_kind {
 	IR_ENTITY_ALIAS,
 	IR_ENTITY_COMPOUND_MEMBER,
@@ -161,6 +166,7 @@ typedef enum ir_entity_kind {
 	IR_ENTITY_METHOD,
 	IR_ENTITY_NORMAL,
 	IR_ENTITY_PARAMETER,
+	IR_ENTITY_SPILLSLOT,
 	IR_ENTITY_UNKNOWN,
 } ir_entity_kind;
 
@@ -208,6 +214,8 @@ struct ir_entity {
 		alias_ent_attr           alias;
 		/** properties shared by global entities */
 		global_ent_attr          global;
+		/** properties of spill slot entities */
+		spillslot_ent_attr        spillslot;
 	} attr; /**< type specific attributes */
 };
 
@@ -219,6 +227,8 @@ void ir_init_entity(ir_prog *irp);
  * (the basic block is marked with a label id).
  */
 ir_entity *new_label_entity(ir_label_t label);
+
+ir_entity *new_spillslot(ir_type *frame, unsigned size, unsigned alignment);
 
 void set_entity_irg(ir_entity *ent, ir_graph *irg);
 
@@ -274,6 +284,7 @@ static inline const char *_get_entity_ld_name(const ir_entity *ent)
 static inline ir_type *_get_entity_type(const ir_entity *ent)
 {
 	assert(ent->firm_tag == k_entity);
+	assert(ent->kind != IR_ENTITY_SPILLSLOT);
 	return ent->type;
 }
 
@@ -334,7 +345,8 @@ static inline void _set_entity_usage(ir_entity *ent, ir_entity_usage state)
 static inline bool is_entity_compound_member(const ir_entity *entity)
 {
 	return entity->kind == IR_ENTITY_COMPOUND_MEMBER
-	    || entity->kind == IR_ENTITY_PARAMETER;
+	    || entity->kind == IR_ENTITY_PARAMETER
+	    || entity->kind == IR_ENTITY_SPILLSLOT;
 }
 
 static inline ir_initializer_t *_get_entity_initializer(ir_entity const *const ent)
@@ -470,6 +482,7 @@ static inline bool is_global_entity(ir_entity const *const entity)
 	case IR_ENTITY_LABEL:
 	case IR_ENTITY_PARAMETER:
 	case IR_ENTITY_UNKNOWN:
+	case IR_ENTITY_SPILLSLOT:
 		return false;
 	}
 	panic("Invalid entity");

@@ -95,6 +95,9 @@ static void print_entity_name(char *buffer, size_t buffer_size,
 	case IR_ENTITY_LABEL:
 		snprintf(buffer, buffer_size, "%slabel", add);
 		return;
+	case IR_ENTITY_SPILLSLOT:
+		snprintf(buffer, buffer_size, "%sspillslot", add);
+		return;
 	default:
 		snprintf(buffer, buffer_size, "%s%s", add, get_entity_ld_name(entity));
 		return;
