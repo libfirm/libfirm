@@ -32,29 +32,6 @@ static const unsigned ignore_regs[] = {
 static const arch_register_t* const default_param_regs[] = {};
 static const arch_register_t* const float_param_regs[]   = {};
 
-#if 0
-static const arch_register_t* const regparam_param_regs[] = {
-	&ia32_registers[REG_EAX],
-	&ia32_registers[REG_EDX],
-	&ia32_registers[REG_ECX],
-};
-
-static const arch_register_t* const this_param_regs[] = {
-	&ia32_registers[REG_ECX],
-};
-
-static const arch_register_t* const sse_param_regs[] = {
-	&ia32_registers[REG_XMM0],
-	&ia32_registers[REG_XMM1],
-	&ia32_registers[REG_XMM2],
-	&ia32_registers[REG_XMM3],
-	&ia32_registers[REG_XMM4],
-	&ia32_registers[REG_XMM5],
-	&ia32_registers[REG_XMM6],
-	&ia32_registers[REG_XMM7],
-};
-#endif
-
 static const arch_register_t* const result_regs[] = {
 	&ia32_registers[REG_EAX],
 	&ia32_registers[REG_EDX],
@@ -63,12 +40,6 @@ static const arch_register_t* const result_regs[] = {
 static const arch_register_t* const float_result_regs[] = {
 	&ia32_registers[REG_ST0],
 };
-
-#if 0
-static const arch_register_t* const sse_result_regs[] = {
-	&ia32_registers[REG_XMM0],
-};
-#endif
 
 static const unsigned caller_saves_gp[] = {
 	REG_EAX,
@@ -117,7 +88,7 @@ static void check_omit_fp(ir_node *node, void *env)
 	}
 }
 
-x86_cconv_t *ia32_decide_calling_convention(ir_type *function_type,
+x86_cconv_t *ia32_decide_calling_convention(ir_type const *const function_type,
                                             ir_graph *irg)
 {
 	bool omit_fp = false;
