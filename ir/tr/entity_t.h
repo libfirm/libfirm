@@ -165,7 +165,7 @@ typedef enum ir_entity_kind {
  * An abstract data type to represent program entities.
  */
 struct ir_entity {
-	firm_kind kind;          /**< The dynamic type tag for entity. */
+	firm_kind firm_tag;      /**< The dynamic type tag for entity. */
 	ident *name;             /**< The name of this entity. */
 	ident *ld_name;          /**< Unique name of this entity, i.e., the mangled
 	                              name. May be NULL to indicate that a default
@@ -173,7 +173,7 @@ struct ir_entity {
 	ir_type *type;           /**< The type of this entity */
 	ir_type *owner;          /**< The compound type (e.g. class type) this
 	                              entity belongs to. */
-	ENUMBF(ir_entity_kind)  entity_kind:3; /**< entity kind */
+	ENUMBF(ir_entity_kind)  kind:3;        /**< entity kind */
 	ENUMBF(ir_linkage)      linkage:7;     /**< Linkage type */
 	ENUMBF(ir_volatility)   volatility:1;  /**< Volatility of entity content.*/
 	ENUMBF(ir_align)        aligned:1;     /**< Alignment of entity content. */
@@ -227,36 +227,36 @@ static inline bool is_entity(const void *thing)
 
 static inline ir_entity_kind get_entity_kind(const ir_entity *entity)
 {
-	return (ir_entity_kind)entity->entity_kind;
+	return (ir_entity_kind)entity->kind;
 }
 
 static inline ident *_get_entity_ident(const ir_entity *ent)
 {
-	assert(ent->kind == k_entity);
+	assert(ent->firm_tag == k_entity);
 	return ent->name;
 }
 
 static inline const char *_get_entity_name(const ir_entity *ent)
 {
-	assert(ent->kind == k_entity);
+	assert(ent->firm_tag == k_entity);
 	return get_id_str(get_entity_ident(ent));
 }
 
 static inline void _set_entity_ident(ir_entity *ent, ident *id)
 {
-	assert(ent->kind == k_entity);
+	assert(ent->firm_tag == k_entity);
 	ent->name = id;
 }
 
 static inline ir_type *_get_entity_owner(const ir_entity *ent)
 {
-	assert(ent->kind == k_entity);
+	assert(ent->firm_tag == k_entity);
 	return ent->owner;
 }
 
 static inline ident *_get_entity_ld_ident(const ir_entity *ent)
 {
-	assert(ent->kind == k_entity);
+	assert(ent->firm_tag == k_entity);
 	if (ent->ld_name)
 		return ent->ld_name;
 	return ent->name;
@@ -264,79 +264,79 @@ static inline ident *_get_entity_ld_ident(const ir_entity *ent)
 
 static inline const char *_get_entity_ld_name(const ir_entity *ent)
 {
-	assert(ent->kind == k_entity);
+	assert(ent->firm_tag == k_entity);
 	return get_id_str(get_entity_ld_ident(ent));
 }
 
 static inline ir_type *_get_entity_type(const ir_entity *ent)
 {
-	assert(ent->kind == k_entity);
+	assert(ent->firm_tag == k_entity);
 	return ent->type;
 }
 
 static inline ir_linkage _get_entity_linkage(const ir_entity *ent)
 {
-	assert(ent->kind == k_entity);
+	assert(ent->firm_tag == k_entity);
 	return (ir_linkage) ent->linkage;
 }
 
 static inline ir_volatility _get_entity_volatility(const ir_entity *ent)
 {
-	assert(ent->kind == k_entity);
+	assert(ent->firm_tag == k_entity);
 	return (ir_volatility) ent->volatility;
 }
 
 static inline void _set_entity_volatility(ir_entity *ent, ir_volatility vol)
 {
-	assert(ent->kind == k_entity);
+	assert(ent->firm_tag == k_entity);
 	ent->volatility = vol;
 }
 
 static inline unsigned _get_entity_alignment(const ir_entity *ent)
 {
-	assert(ent->kind == k_entity);
+	assert(ent->firm_tag == k_entity);
 	return ent->alignment;
 }
 
 static inline void _set_entity_alignment(ir_entity *ent, unsigned alignment)
 {
-	assert(ent->kind == k_entity);
+	assert(ent->firm_tag == k_entity);
 	ent->alignment = alignment;
 }
 
 static inline ir_align _get_entity_aligned(const ir_entity *ent)
 {
-	assert(ent->kind == k_entity);
+	assert(ent->firm_tag == k_entity);
 	return (ir_align) ent->aligned;
 }
 
 static inline void _set_entity_aligned(ir_entity *ent, ir_align a)
 {
-	assert(ent->kind == k_entity);
+	assert(ent->firm_tag == k_entity);
 	ent->aligned = a;
 }
 
 static inline ir_entity_usage _get_entity_usage(const ir_entity *ent)
 {
-	assert(ent->kind == k_entity);
+	assert(ent->firm_tag == k_entity);
 	return (ir_entity_usage) ent->usage;
 }
 
 static inline void _set_entity_usage(ir_entity *ent, ir_entity_usage state)
 {
-	assert(ent->kind == k_entity);
+	assert(ent->firm_tag == k_entity);
 	ent->usage = state;
 }
 
 static inline bool is_entity_compound_member(const ir_entity *entity)
 {
-	return entity->entity_kind == IR_ENTITY_COMPOUND_MEMBER
-	    || entity->entity_kind == IR_ENTITY_PARAMETER;
+	return entity->kind == IR_ENTITY_COMPOUND_MEMBER
+	    || entity->kind == IR_ENTITY_PARAMETER;
 }
 
 static inline ir_initializer_t *_get_entity_initializer(ir_entity const *const ent)
 {
-	assert(ent->entity_kind == IR_ENTITY_NORMAL);
+	assert(ent->kind == IR_ENTITY_NORMAL);
 	return ent->attr.normal.initializer;
 }
 
@@ -378,20 +378,20 @@ static inline void _set_entity_bitfield_size(ir_entity *entity, unsigned size)
 
 static inline void *_get_entity_link(const ir_entity *ent)
 {
-	assert(ent->kind == k_entity);
+	assert(ent->firm_tag == k_entity);
 	return ent->link;
 }
 
 static inline void _set_entity_link(ir_entity *ent, void *l)
 {
-	assert(ent->kind == k_entity);
+	assert(ent->firm_tag == k_entity);
 	ent->link = l;
 }
 
 static inline ir_graph *_get_entity_irg(const ir_entity *ent)
 {
-	assert(ent->kind == k_entity);
-	assert(ent->entity_kind == IR_ENTITY_METHOD);
+	assert(ent->firm_tag == k_entity);
+	assert(ent->kind == IR_ENTITY_METHOD);
 	return ent->attr.mtd_attr.irg;
 }
 
@@ -402,26 +402,26 @@ static inline ir_graph *_get_entity_linktime_irg(const ir_entity *entity)
 	if (get_entity_linkage(entity) & IR_LINKAGE_WEAK)
 		return NULL;
 	/* only method entities have an irg field (alias etc. does not) */
-	if (entity->entity_kind != IR_ENTITY_METHOD)
+	if (entity->kind != IR_ENTITY_METHOD)
 		return NULL;
 	return get_entity_irg(entity);
 }
 
 static inline ir_visited_t _get_entity_visited(const ir_entity *ent)
 {
-	assert(ent->kind == k_entity);
+	assert(ent->firm_tag == k_entity);
 	return ent->visit;
 }
 
 static inline void _set_entity_visited(ir_entity *ent, ir_visited_t num)
 {
-	assert(ent->kind == k_entity);
+	assert(ent->firm_tag == k_entity);
 	ent->visit = num;
 }
 
 static inline void _mark_entity_visited(ir_entity *ent)
 {
-	assert(ent->kind == k_entity);
+	assert(ent->firm_tag == k_entity);
 	ent->visit = firm_type_visited;
 }
 
@@ -437,7 +437,7 @@ static inline int _entity_not_visited(const ir_entity *ent)
 
 static inline int _is_parameter_entity(const ir_entity *entity)
 {
-	return entity->entity_kind == IR_ENTITY_PARAMETER;
+	return entity->kind == IR_ENTITY_PARAMETER;
 }
 
 static inline size_t _get_entity_parameter_number(const ir_entity *entity)
@@ -458,7 +458,7 @@ static inline void _set_entity_dbg_info(ir_entity *ent, dbg_info *db)
 
 static inline bool is_global_entity(ir_entity const *const entity)
 {
-	switch (entity->entity_kind) {
+	switch (entity->kind) {
 	case IR_ENTITY_ALIAS:
 	case IR_ENTITY_METHOD:
 	case IR_ENTITY_NORMAL:

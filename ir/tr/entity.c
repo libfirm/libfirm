@@ -38,12 +38,12 @@ static ir_entity *intern_new_entity(ir_type *owner, ir_entity_kind kind,
 	assert(owner != NULL);
 
 	ir_entity *res = XMALLOCZ(ir_entity);
-	res->kind        = k_entity;
+	res->firm_tag    = k_entity;
 	res->name        = name;
 	res->ld_name     = name;
 	res->type        = type;
 	res->owner       = owner;
-	res->entity_kind = kind;
+	res->kind        = kind;
 	res->volatility  = volatility_non_volatile;
 	res->aligned     = align_is_aligned;
 	res->usage       = ir_usage_unknown;
@@ -159,7 +159,7 @@ static void free_entity_attrs(ir_entity *ent)
 
 	/* TODO: free initializers */
 
-	if (ent->entity_kind == IR_ENTITY_METHOD) {
+	if (ent->kind == IR_ENTITY_METHOD) {
 		if (ent->attr.mtd_attr.param_access) {
 			DEL_ARR_F(ent->attr.mtd_attr.param_access);
 			ent->attr.mtd_attr.param_access = NULL;
@@ -200,17 +200,17 @@ void free_entity(ir_entity *ent)
 {
 	remove_compound_member(ent->owner, ent);
 
-	assert(ent->kind == k_entity);
+	assert(ent->firm_tag == k_entity);
 	free_entity_attrs(ent);
 #ifdef DEBUG_libfirm
-	ent->kind = k_BAD;
+	ent->firm_tag = k_BAD;
 #endif
 	free(ent);
 }
 
 long get_entity_nr(const ir_entity *ent)
 {
-	assert(ent->kind == k_entity);
+	assert(ent->firm_tag == k_entity);
 	return ent->nr;
 }
 
@@ -236,7 +236,7 @@ ir_type *(get_entity_owner)(const ir_entity *ent)
 
 void set_entity_owner(ir_entity *ent, ir_type *owner)
 {
-	assert(ent->kind == k_entity);
+	assert(ent->firm_tag == k_entity);
 	assert(is_compound_type(owner));
 
 	remove_compound_member(ent->owner, ent);
@@ -282,7 +282,7 @@ ir_type *(get_entity_type)(const ir_entity *ent)
 
 void set_entity_type(ir_entity *ent, ir_type *type)
 {
-	switch (ent->entity_kind) {
+	switch (ent->kind) {
 	case IR_ENTITY_METHOD:
 		assert(is_Method_type(type));
 		break;
@@ -355,13 +355,13 @@ const char *get_align_name(ir_align a)
 
 void set_entity_label(ir_entity *ent, ir_label_t label)
 {
-	assert(ent->entity_kind == IR_ENTITY_LABEL);
+	assert(ent->kind == IR_ENTITY_LABEL);
 	ent->attr.code_attr.label = label;
 }
 
 ir_label_t get_entity_label(const ir_entity *ent)
 {
-	assert(ent->entity_kind == IR_ENTITY_LABEL);
+	assert(ent->kind == IR_ENTITY_LABEL);
 	return ent->attr.code_attr.label;
 }
 
@@ -764,7 +764,7 @@ void set_entity_vtable_number(ir_entity *ent, unsigned vtable_number)
 
 int is_unknown_entity(const ir_entity *entity)
 {
-	return entity->entity_kind == IR_ENTITY_UNKNOWN;
+	return entity->kind == IR_ENTITY_UNKNOWN;
 }
 
 int is_atomic_entity(const ir_entity *ent)
@@ -783,12 +783,12 @@ int is_compound_entity(const ir_entity *ent)
 
 int is_method_entity(const ir_entity *ent)
 {
-	return ent->entity_kind == IR_ENTITY_METHOD;
+	return ent->kind == IR_ENTITY_METHOD;
 }
 
 int is_alias_entity(const ir_entity *entity)
 {
-	return entity->entity_kind == IR_ENTITY_ALIAS;
+	return entity->kind == IR_ENTITY_ALIAS;
 }
 
 ir_visited_t (get_entity_visited)(const ir_entity *ent)
@@ -818,8 +818,7 @@ int (entity_not_visited)(const ir_entity *ent)
 
 int entity_has_additional_properties(const ir_entity *entity)
 {
-	return entity->entity_kind == IR_ENTITY_METHOD
-	    || entity->entity_kind == IR_ENTITY_ALIAS;
+	return entity->kind == IR_ENTITY_METHOD || entity->kind == IR_ENTITY_ALIAS;
 }
 
 mtp_additional_properties get_entity_additional_properties(const ir_entity *ent)

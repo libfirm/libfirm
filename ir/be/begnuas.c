@@ -1342,7 +1342,7 @@ static bool check_needs_quotes(char const *const s)
 
 void be_gas_emit_entity(const ir_entity *entity)
 {
-	if (entity->entity_kind == IR_ENTITY_LABEL) {
+	if (entity->kind == IR_ENTITY_LABEL) {
 		ir_label_t label = get_entity_label(entity);
 		be_emit_irprintf("%s_%lu", be_gas_get_private_prefix(), label);
 		return;

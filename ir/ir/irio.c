@@ -667,7 +667,7 @@ static void write_entity(write_env_t *env, ir_entity *ent)
 	}
 
 	fputc('\t', env->file);
-	switch ((ir_entity_kind)ent->entity_kind) {
+	switch ((ir_entity_kind)ent->kind) {
 	case IR_ENTITY_ALIAS:           write_symbol(env, "alias");           break;
 	case IR_ENTITY_NORMAL:          write_symbol(env, "entity");          break;
 	case IR_ENTITY_METHOD:          write_symbol(env, "method");          break;
@@ -681,8 +681,7 @@ static void write_entity(write_env_t *env, ir_entity *ent)
 	}
 	write_long(env, get_entity_nr(ent));
 
-	if (ent->entity_kind != IR_ENTITY_LABEL
-	 && ent->entity_kind != IR_ENTITY_PARAMETER) {
+	if (ent->kind != IR_ENTITY_LABEL && ent->kind != IR_ENTITY_PARAMETER) {
 		write_ident_null(env, get_entity_ident(ent));
 		if (!entity_has_ld_ident(ent)) {
 			write_ident_null(env, NULL);
@@ -706,11 +705,11 @@ static void write_entity(write_env_t *env, ir_entity *ent)
 	write_list_end(env);
 
 	write_type_ref(env, type);
-	if (ent->entity_kind != IR_ENTITY_LABEL)
+	if (ent->kind != IR_ENTITY_LABEL)
 		write_type_ref(env, owner);
 	write_volatility(env, get_entity_volatility(ent));
 
-	switch ((ir_entity_kind)ent->entity_kind) {
+	switch ((ir_entity_kind)ent->kind) {
 	case IR_ENTITY_ALIAS:
 		write_entity_ref(env, get_entity_alias(ent));
 		break;
@@ -1394,7 +1393,7 @@ static ir_entity *get_entity(read_env_t *env, long entnr)
 		parse_error(env, "unknown entity: %ld\n", entnr);
 		return create_error_entity();
 	}
-	if (entity->kind != k_entity) {
+	if (!is_entity(entity)) {
 		parse_error(env, "Object %ld is not an entity (but should be)\n",
 		            entnr);
 		return create_error_entity();
