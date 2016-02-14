@@ -1128,10 +1128,8 @@ flt2int_result_t fc_flt2int(const fp_value *a, sc_word *result,
 					   : FLT2INT_POSITIVE_OVERFLOW;
 	case FC_SUBNORMAL:
 	case FC_NORMAL:
-		if (a->sign && !result_signed) {
-			/* FIXME: for now we cannot convert this */
-			return FLT2INT_BAD;
-		}
+		if (a->sign && !result_signed)
+			return FLT2INT_NEGATIVE_OVERFLOW;
 
 		unsigned tgt_bits = result_bits - result_signed;
 
