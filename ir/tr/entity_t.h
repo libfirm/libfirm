@@ -131,8 +131,8 @@ typedef struct code_ent_attr {
 typedef struct compound_member_ent_attr {
 	int offset;               /**< Offset in bytes for this entity. Fixed
 	                               when layout of owner is determined. */
-	unsigned bitfield_offset; /**< for bitfields: offset in bits from base */
-	unsigned bitfield_size;   /**< for bitfields: size of entity in bits,
+	uint16_t bitfield_offset; /**< for bitfields: offset in bits from base */
+	uint16_t bitfield_size;   /**< for bitfields: size of entity in bits,
 	                               0 if entity is not a bitfield. */
 } compound_member_ent_attr;
 
