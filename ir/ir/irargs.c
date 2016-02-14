@@ -83,14 +83,22 @@ static int firm_emit_dbg(lc_appendable_t *app, const lc_arg_occ_t *occ,
 	return size;
 }
 
-/**
- * Beware: do not set the entity ld_name
- */
-static const char *get_entity_ld_name_ex(ir_entity *ent)
+static void print_entity_name(char *buffer, size_t buffer_size,
+                              char const *const add,
+                              ir_entity const *const entity)
 {
-	if (ent->ld_name != NULL)
-		return get_entity_ld_name(ent);
-	return get_entity_name(ent);
+	switch (entity->kind) {
+	case IR_ENTITY_PARAMETER:
+		snprintf(buffer, buffer_size, "%sparameter.%lu", add,
+				 get_entity_parameter_number(entity));
+		return;
+	case IR_ENTITY_LABEL:
+		snprintf(buffer, buffer_size, "%slabel", add);
+		return;
+	default:
+		snprintf(buffer, buffer_size, "%s%s", add, get_entity_ld_name(entity));
+		return;
+	}
 }
 
 /**
@@ -116,9 +124,8 @@ static int firm_emit(lc_appendable_t *app, const lc_arg_occ_t *occ,
 		snprintf(add, sizeof(add), "[%p]", X);
 		break;
 	case k_entity: {
-		ir_entity *entity = (ir_entity*)X;
-		snprintf(buf, sizeof(buf), "%s%s", A("ent"),
-			isupper((unsigned char)occ->conversion) ? get_entity_ld_name_ex(entity): get_entity_name(entity));
+		ir_entity const *const entity = (ir_entity const*)X;
+		print_entity_name(buf, sizeof(buf), A("ent"), entity);
 		snprintf(add, sizeof(add), "[%ld]", get_entity_nr(entity));
 		break;
 	}

@@ -100,8 +100,7 @@ ir_entity *new_global_entity(ir_type *segment, ident *ld_name, ir_type *type,
 
 ir_entity *new_parameter_entity(ir_type *owner, size_t pos, ir_type *type)
 {
-	ident     *name = new_id_fmt("parameter.%lu", (unsigned long)pos);
-	ir_entity *res  = intern_new_entity(owner, IR_ENTITY_PARAMETER, name, type,
+	ir_entity *res  = intern_new_entity(owner, IR_ENTITY_PARAMETER, NULL, type,
 	                                    ir_visibility_private);
 	res->attr.compound_member.offset = INVALID_OFFSET;
 	res->attr.parameter.number = pos;
@@ -111,9 +110,8 @@ ir_entity *new_parameter_entity(ir_type *owner, size_t pos, ir_type *type)
 
 ir_entity *new_label_entity(ir_label_t label)
 {
-	ident *name = id_unique("label_%u");
 	ir_type *global_type = get_glob_type();
-	ir_entity *res = intern_new_entity(global_type, IR_ENTITY_LABEL, name,
+	ir_entity *res = intern_new_entity(global_type, IR_ENTITY_LABEL, NULL,
 	                                   get_code_type(), ir_visibility_private);
 	res->attr.code_attr.label = label;
 	hook_new_entity(res);
