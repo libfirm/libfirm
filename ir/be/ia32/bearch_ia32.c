@@ -137,7 +137,7 @@ static ir_entity *ia32_get_frame_entity(const ir_node *node)
 	if (!is_ia32_irn(node))
 		return NULL;
 	ia32_attr_t const *const attr = get_ia32_attr_const(node);
-	if (attr->am_imm.kind == X86_IMM_FRAMEOFFSET) {
+	if (attr->am_imm.kind == X86_IMM_FRAMEENT) {
 		assert(get_ia32_frame_use(node) != IA32_FRAME_USE_NONE);
 		return attr->am_imm.entity;
 	}
@@ -150,7 +150,7 @@ static void ia32_set_frame_entity(ir_node *node, ir_entity *entity,
 {
 	ia32_attr_t *const attr = get_ia32_attr(node);
 	attr->am_imm = (x86_imm32_t) {
-		.kind   = X86_IMM_FRAMEOFFSET,
+		.kind   = X86_IMM_FRAMEENT,
 		.entity = entity,
 		.offset = attr->am_imm.offset,
 	};
@@ -173,7 +173,7 @@ static void ia32_set_frame_entity(ir_node *node, ir_entity *entity,
 static void ia32_set_frame_offset(ir_node *node, int bias)
 {
 	ia32_attr_t *const attr = get_ia32_attr(node);
-	assert(attr->am_imm.kind == X86_IMM_FRAMEOFFSET);
+	assert(attr->am_imm.kind == X86_IMM_FRAMEENT);
 
 	/* Pop nodes modify the stack pointer before calculating the
 	 * destination address, fix this here */
@@ -755,7 +755,7 @@ static ir_node *create_push(ir_node *node, ir_node *schedpoint, ir_node *sp,
 	                                       noreg, sp, mode);
 	ia32_attr_t *const attr = get_ia32_attr(push);
 	attr->am_imm = (x86_imm32_t) {
-		.kind   = X86_IMM_FRAMEOFFSET,
+		.kind   = X86_IMM_FRAMEENT,
 		.entity = ent,
 	};
 	set_ia32_frame_use(push, IA32_FRAME_USE_AUTO);
@@ -778,7 +778,7 @@ static ir_node *create_pop(ir_node *node, ir_node *schedpoint, ir_node *sp,
 	                                     get_irg_no_mem(irg), sp);
 	ia32_attr_t *const attr = get_ia32_attr(pop);
 	attr->am_imm = (x86_imm32_t) {
-		.kind   = X86_IMM_FRAMEOFFSET,
+		.kind   = X86_IMM_FRAMEENT,
 		.entity = ent,
 	};
 	set_ia32_frame_use(pop, IA32_FRAME_USE_AUTO);
@@ -931,7 +931,7 @@ static void ia32_collect_frame_entity_nodes(ir_node *node, void *data)
 	if (!is_ia32_irn(node) || get_ia32_op_type(node) != ia32_AddrModeS)
 		return;
 	ia32_attr_t const *const attr = get_ia32_attr_const(node);
-	if (attr->am_imm.kind != X86_IMM_FRAMEOFFSET) {
+	if (attr->am_imm.kind != X86_IMM_FRAMEENT) {
 		assert(get_ia32_frame_use(node) == IA32_FRAME_USE_NONE);
 		return;
 	}
@@ -941,7 +941,7 @@ static void ia32_collect_frame_entity_nodes(ir_node *node, void *data)
 	ir_type const *type;
 	switch (get_ia32_frame_use(node)) {
 	case IA32_FRAME_USE_NONE:
-		panic("X86_IMM_FRAMEOFFSET but IA32_FRAME_USE_NONE");
+		panic("X86_IMM_FRAMEENT but IA32_FRAME_USE_NONE");
 	case IA32_FRAME_USE_32BIT:
 		type = get_type_for_mode(ia32_mode_gp);
 		goto request_entity;

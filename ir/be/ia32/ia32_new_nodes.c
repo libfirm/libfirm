@@ -739,7 +739,7 @@ static int ia32_attrs_equal_(const ia32_attr_t *a, const ia32_attr_t *b)
 {
 	/* nodes with not yet assigned entities shouldn't be CSEd (important for
 	 * unsigned int -> double conversions */
-	if (a->am_imm.kind == X86_IMM_FRAMEOFFSET && a->am_imm.entity == NULL)
+	if (a->am_imm.kind == X86_IMM_FRAMEENT && a->am_imm.entity == NULL)
 		return false;
 
 	return a->tp == b->tp

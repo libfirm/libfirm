@@ -228,7 +228,7 @@ static void emit_relocation_no_offset(x86_immediate_kind_t const kind,
 	case X86_IMM_TLS_IE:
 	case X86_IMM_TLS_LE:
 	case X86_IMM_PICBASE_REL:
-	case X86_IMM_FRAMEOFFSET:
+	case X86_IMM_FRAMEENT:
 	case X86_IMM_GOT:
 	case X86_IMM_GOTOFF:
 		break;

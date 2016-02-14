@@ -1495,7 +1495,7 @@ static ir_node *gen_Member(ir_node *const node)
 	amd64_addr_t addr = {
 		.immediate = {
 			.entity = entity,
-			.kind   = X86_IMM_FRAMEOFFSET,
+			.kind   = X86_IMM_FRAMEENT,
 		},
 		.variant    = X86_ADDR_BASE,
 		.base_input = 0,
@@ -2259,7 +2259,7 @@ static void store_to_temp(construct_binop_func const new_store,
 			.size = size,
 			.addr = {
 				.immediate = {
-					.kind = X86_IMM_FRAMEOFFSET,
+					.kind = X86_IMM_FRAMEENT,
 				},
 				.variant     = X86_ADDR_BASE,
 				.base_input  = 1,
@@ -2597,7 +2597,7 @@ ir_node *amd64_new_spill(ir_node *value, ir_node *after)
 	amd64_binop_addr_attr_t attr = {
 		.base.base.op_mode = AMD64_OP_ADDR_REG,
 		.base.addr = {
-			.immediate.kind = X86_IMM_FRAMEOFFSET,
+			.immediate.kind = X86_IMM_FRAMEENT,
 			.variant        = X86_ADDR_BASE,
 			.base_input     = 1,
 		},
@@ -2651,7 +2651,7 @@ ir_node *amd64_new_reload(ir_node *value, ir_node *spill, ir_node *before)
 	ir_mode  *const mode  = get_irn_mode(value);
 
 	amd64_addr_t addr = {
-		.immediate.kind = X86_IMM_FRAMEOFFSET,
+		.immediate.kind = X86_IMM_FRAMEENT,
 		.variant    = X86_ADDR_BASE,
 		.base_input = 0,
 		.mem_input  = 1,
@@ -2681,7 +2681,7 @@ ir_node *amd64_new_reload(ir_node *value, ir_node *spill, ir_node *before)
 	arch_add_irn_flags(load, arch_irn_flag_reload);
 	sched_add_before(before, load);
 	amd64_addr_attr_t *attr = get_amd64_addr_attr(load);
-	attr->addr.immediate.kind = X86_IMM_FRAMEOFFSET;
+	attr->addr.immediate.kind = X86_IMM_FRAMEENT;
 	return be_new_Proj(load, pn_res);
 }
 

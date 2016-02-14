@@ -167,8 +167,8 @@ static inline void set_ia32_frame_use(ir_node *const node, ia32_frame_use_t cons
 	attr->frame_use = val;
 	if (val != IA32_FRAME_USE_NONE) {
 		assert(attr->am_imm.kind == X86_IMM_VALUE ||
-		       attr->am_imm.kind == X86_IMM_FRAMEOFFSET);
-		attr->am_imm.kind = X86_IMM_FRAMEOFFSET;
+		       attr->am_imm.kind == X86_IMM_FRAMEENT);
+		attr->am_imm.kind = X86_IMM_FRAMEENT;
 	}
 }
 

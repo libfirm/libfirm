@@ -886,7 +886,7 @@ static void set_address(ir_node *node, const x86_address_t *addr)
 	attr->am_imm = addr->imm;
 	set_ia32_am_scale(node, addr->scale);
 	set_ia32_am_tls_segment(node, addr->tls_segment);
-	if (addr->imm.kind == X86_IMM_FRAMEOFFSET)
+	if (addr->imm.kind == X86_IMM_FRAMEENT)
 		set_ia32_frame_use(node, IA32_FRAME_USE_AUTO);
 }
 
@@ -1435,7 +1435,7 @@ static ir_node *create_lea_from_address(dbg_info *dbgi, ir_node *block,
 static bool am_has_immediates(const x86_address_t *addr)
 {
 	return addr->imm.offset != 0 || addr->imm.entity != NULL
-		|| addr->imm.kind == X86_IMM_FRAMEOFFSET;
+		|| addr->imm.kind == X86_IMM_FRAMEENT;
 }
 
 typedef ir_node* (*new_shiftd_func)(dbg_info *dbgi, ir_node *block,
@@ -3955,7 +3955,7 @@ static void store_gp(dbg_info *dbgi, ia32_address_mode_t *am, ir_node *block,
 	addr->base      = frame;
 	addr->index     = noreg_GP;
 	addr->mem       = store_mem;
-	addr->imm       = (x86_imm32_t) { .kind = X86_IMM_FRAMEOFFSET };
+	addr->imm       = (x86_imm32_t) { .kind = X86_IMM_FRAMEENT };
 	am->op_type     = ia32_AddrModeS;
 	am->ls_mode     = store_mode;
 	am->pinned      = false;
@@ -3978,7 +3978,7 @@ static ir_node *gen_x87_gp_to_fp(ir_node *node)
 	ir_node *const fild     = new_bd_ia32_fild(dbgi, new_block, addr->base, addr->index, addr->mem);
 	ir_node *const new_node = be_new_Proj(fild, pn_ia32_fild_res);
 	set_am_attributes(fild, &am);
-	if (addr->imm.kind == X86_IMM_FRAMEOFFSET && addr->imm.entity == NULL
+	if (addr->imm.kind == X86_IMM_FRAMEENT && addr->imm.entity == NULL
 	    && get_mode_arithmetic(am.ls_mode) != irma_twos_complement)
 		force_int_stackent(fild, am.ls_mode);
 
@@ -4139,7 +4139,7 @@ static void store_fp(dbg_info *dbgi, ia32_address_mode_t *am, ir_node *block,
 	addr->base      = frame;
 	addr->index     = noreg_GP;
 	addr->mem       = mem;
-	addr->imm       = (x86_imm32_t) { .kind = X86_IMM_FRAMEOFFSET };
+	addr->imm       = (x86_imm32_t) { .kind = X86_IMM_FRAMEENT };
 	am->op_type     = ia32_AddrModeS;
 	am->ls_mode     = mode;
 	am->pinned      = false;
@@ -5170,7 +5170,7 @@ static ir_node *make_load_from_frame(ir_node *const node,
 	set_ia32_ls_mode(load, ia32_mode_gp);
 	ia32_attr_t *const attr = get_ia32_attr(load);
 	attr->am_imm = (x86_imm32_t) {
-		.kind   = X86_IMM_FRAMEOFFSET,
+		.kind   = X86_IMM_FRAMEENT,
 		.entity = get_ent(irg),
 	};
 	set_ia32_frame_use(load, IA32_FRAME_USE_AUTO);
@@ -5567,7 +5567,7 @@ static ir_node *gen_va_start(ir_node *node)
 		set_ia32_frame_use(ap, IA32_FRAME_USE_AUTO);
 		ia32_attr_t *const attr = get_ia32_attr(ap);
 		attr->am_imm = (x86_imm32_t){
-			.kind   = X86_IMM_FRAMEOFFSET,
+			.kind   = X86_IMM_FRAMEENT,
 			.entity = va_start_entity,
 		};
 

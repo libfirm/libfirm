@@ -51,7 +51,7 @@ static ir_entity *amd64_get_frame_entity(const ir_node *node)
 	if (!amd64_has_addr_attr(get_amd64_attr_const(node)->op_mode))
 		return NULL;
 	const amd64_addr_attr_t *attr = get_amd64_addr_attr_const(node);
-	if (attr->addr.immediate.kind != X86_IMM_FRAMEOFFSET)
+	if (attr->addr.immediate.kind != X86_IMM_FRAMEENT)
 		return NULL;
 	return attr->addr.immediate.entity;
 }
@@ -85,7 +85,7 @@ static void amd64_set_frame_offset(ir_node *node, int offset)
 		if (layout->sp_relative)
 			attr->addr.immediate.offset -= get_insn_size_bytes(attr->size);
 	}
-	assert(attr->addr.immediate.kind == X86_IMM_FRAMEOFFSET);
+	assert(attr->addr.immediate.kind == X86_IMM_FRAMEENT);
 	attr->addr.immediate.kind = X86_IMM_VALUE;
 	attr->addr.immediate.entity = NULL;
 }
@@ -119,7 +119,7 @@ static ir_node *create_push(ir_node *node, ir_node *schedpoint, ir_node *sp,
 
 	amd64_addr_t addr = {
 		.immediate = {
-			.kind   = X86_IMM_FRAMEOFFSET,
+			.kind   = X86_IMM_FRAMEENT,
 			.entity = ent,
 		},
 		.variant    = X86_ADDR_BASE,
@@ -141,7 +141,7 @@ static ir_node *create_pop(ir_node *node, ir_node *schedpoint, ir_node *sp,
 
 	amd64_addr_t addr = {
 		.immediate = {
-			.kind   = X86_IMM_FRAMEOFFSET,
+			.kind   = X86_IMM_FRAMEENT,
 			.entity = ent,
 		},
 		.variant     = X86_ADDR_BASE,
@@ -485,7 +485,7 @@ static void amd64_collect_frame_entity_nodes(ir_node *node, void *data)
 
 	const amd64_addr_attr_t *attr = get_amd64_addr_attr_const(node);
 	x86_imm32_t       const *imm  = &attr->addr.immediate;
-	if (imm->kind == X86_IMM_FRAMEOFFSET && imm->entity == NULL) {
+	if (imm->kind == X86_IMM_FRAMEENT && imm->entity == NULL) {
 		const ir_type *type = get_type_for_insn_size(attr->size);
 		be_load_needs_frame_entity(env, node, type);
 	}

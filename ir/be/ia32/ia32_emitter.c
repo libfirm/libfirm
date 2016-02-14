@@ -201,7 +201,7 @@ static void ia32_emit_relocation(x86_imm32_t const *const imm)
 		be_emit_char('-');
 		be_emit_string(pic_base_label);
 		return;
-	case X86_IMM_FRAMEOFFSET:
+	case X86_IMM_FRAMEENT:
 	case X86_IMM_GOTPCREL:
 	case X86_IMM_VALUE:
 		break;
