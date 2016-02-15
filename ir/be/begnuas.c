@@ -731,7 +731,6 @@ const char *be_gas_insn_label_prefix(void)
 static void emit_init_expression(ir_node *const init)
 {
 	ir_mode *mode  = get_irn_mode(init);
-	int      bytes = get_mode_size_bytes(mode);
 
 	switch (get_irn_opcode(init)) {
 	case iro_Conv:
@@ -739,8 +738,9 @@ static void emit_init_expression(ir_node *const init)
 		return;
 
 	case iro_Const: {
-		ir_tarval *tv = get_Const_tarval(init);
 		/* it's an arithmetic value */
+		int        const bytes = get_mode_size_bytes(mode);
+		ir_tarval *const tv    = get_Const_tarval(init);
 		emit_tv(tv, 0, bytes);
 		return;
 	}
