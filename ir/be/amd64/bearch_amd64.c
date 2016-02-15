@@ -80,9 +80,8 @@ static void amd64_set_frame_offset(ir_node *node, int offset)
 	amd64_addr_attr_t *attr = get_amd64_addr_attr(node);
 	attr->addr.immediate.offset += offset;
 	if (is_amd64_pop_am(node)) {
-		ir_graph          *irg    = get_irn_irg(node);
-		be_stack_layout_t *layout = be_get_irg_stack_layout(irg);
-		if (layout->sp_relative)
+		ir_graph *irg = get_irn_irg(node);
+		if (amd64_get_irg_data(irg)->omit_fp)
 			attr->addr.immediate.offset -= get_insn_size_bytes(attr->size);
 	}
 	assert(attr->addr.immediate.kind == X86_IMM_FRAMEENT);
@@ -519,17 +518,16 @@ static void amd64_select_instructions(ir_graph *irg)
 	be_dump(DUMP_BE, irg, "opt");
 }
 
-static void introduce_epilogue(ir_node *ret)
+static void introduce_epilogue(ir_node *ret, bool omit_fp)
 {
 	ir_graph          *irg        = get_irn_irg(ret);
 	ir_node           *block      = get_nodes_block(ret);
 	ir_type           *frame_type = get_irg_frame_type(irg);
 	unsigned           frame_size = get_type_size(frame_type);
-	be_stack_layout_t *layout     = be_get_irg_stack_layout(irg);
 	ir_node           *first_sp   = get_irn_n(ret, n_amd64_ret_stack);
 	ir_node           *curr_sp    = first_sp;
 
-	if (!layout->sp_relative) {
+	if (!omit_fp) {
 		int      const n_rbp    = determine_rbp_input(ret);
 		ir_node       *curr_bp  = get_irn_n(ret, n_rbp);
 		ir_node       *curr_mem = get_irn_n(ret, n_amd64_ret_mem);
@@ -557,7 +555,7 @@ static void introduce_epilogue(ir_node *ret)
 	}
 }
 
-static void introduce_prologue(ir_graph *const irg)
+static void introduce_prologue(ir_graph *const irg, bool omit_fp)
 {
 	const arch_register_t *sp         = &amd64_registers[REG_RSP];
 	const arch_register_t *bp         = &amd64_registers[REG_RBP];
@@ -565,10 +563,9 @@ static void introduce_prologue(ir_graph *const irg)
 	ir_node               *block      = get_nodes_block(start);
 	ir_type               *frame_type = get_irg_frame_type(irg);
 	unsigned               frame_size = get_type_size(frame_type);
-	be_stack_layout_t     *layout     = be_get_irg_stack_layout(irg);
 	ir_node               *initial_sp = be_get_Start_proj(irg, sp);
 
-	if (!layout->sp_relative) {
+	if (!omit_fp) {
 		/* push rbp */
 		ir_node *const mem        = get_irg_initial_mem(irg);
 		ir_node *const initial_bp = be_get_Start_proj(irg, bp);
@@ -591,6 +588,7 @@ static void introduce_prologue(ir_graph *const irg)
 		/* make sure the initial IncSP is really used by someone */
 		be_keep_if_unused(incsp);
 
+		be_stack_layout_t *const layout = be_get_irg_stack_layout(irg);
 		layout->initial_bias = -8;
 	} else {
 		if (frame_size > 0) {
@@ -602,15 +600,15 @@ static void introduce_prologue(ir_graph *const irg)
 	}
 }
 
-static void introduce_prologue_epilogue(ir_graph *irg)
+static void introduce_prologue_epilogue(ir_graph *irg, bool omit_fp)
 {
 	/* introduce epilogue for every return node */
 	foreach_irn_in(get_irg_end_block(irg), i, ret) {
 		assert(is_amd64_ret(ret));
-		introduce_epilogue(ret);
+		introduce_epilogue(ret, omit_fp);
 	}
 
-	introduce_prologue(irg);
+	introduce_prologue(irg, omit_fp);
 }
 
 /**
@@ -618,18 +616,17 @@ static void introduce_prologue_epilogue(ir_graph *irg)
  */
 static void amd64_finish_and_emit(ir_graph *irg)
 {
-	be_stack_layout_t *stack_layout = be_get_irg_stack_layout(irg);
-	bool               at_begin     = stack_layout->sp_relative;
-	be_fec_env_t      *fec_env      = be_new_frame_entity_coalescer(irg);
+	bool          omit_fp = amd64_get_irg_data(irg)->omit_fp;
+	be_fec_env_t *fec_env = be_new_frame_entity_coalescer(irg);
 
 	/* create and coalesce frame entities */
 	irg_walk_graph(irg, NULL, amd64_collect_frame_entity_nodes, fec_env);
-	be_assign_entities(fec_env, amd64_set_frame_entity, at_begin);
+	be_assign_entities(fec_env, amd64_set_frame_entity, omit_fp);
 	be_free_frame_entity_coalescer(fec_env);
 
 	irg_block_walk_graph(irg, NULL, amd64_after_ra_walker, NULL);
 
-	introduce_prologue_epilogue(irg);
+	introduce_prologue_epilogue(irg, omit_fp);
 
 	/* fix stack entity offsets */
 	be_fix_stack_nodes(irg, &amd64_registers[REG_RSP]);
@@ -670,6 +667,9 @@ static void amd64_generate_code(FILE *output, const char *cup_name)
 	foreach_irp_irg(i, irg) {
 		if (!be_step_first(irg))
 			continue;
+
+		struct obstack *obst = be_get_be_obst(irg);
+		be_birg_from_irg(irg)->isa_link = OALLOCZ(obst, amd64_irg_data_t);
 
 		be_birg_from_irg(irg)->non_ssa_regs = sp_is_non_ssa;
 		amd64_select_instructions(irg);

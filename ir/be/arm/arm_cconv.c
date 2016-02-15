@@ -9,6 +9,8 @@
  * @author  Matthias Braun
  */
 #include "arm_cconv.h"
+
+#include "bearch_arm_t.h"
 #include "becconv.h"
 #include "beirg.h"
 #include "irmode_t.h"
@@ -147,6 +149,7 @@ calling_convention_t *arm_decide_calling_convention(const ir_graph *irg,
 		assert(birg->allocatable_regs == NULL);
 		birg->allocatable_regs = be_cconv_alloc_all_regs(&birg->obst, N_ARM_REGISTERS);
 		be_cconv_rem_regs(birg->allocatable_regs, ignore_regs, ARRAY_SIZE(ignore_regs));
+		arm_get_irg_data(irg)->omit_fp = true;
 	}
 
 	return cconv;

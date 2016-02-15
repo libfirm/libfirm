@@ -13,7 +13,12 @@
 
 #include <stdbool.h>
 
+#include "beirg.h"
 #include "firm_types.h"
+
+typedef struct arm_irg_data_t {
+	bool omit_fp;
+} arm_irg_data_t;
 
 typedef struct arm_isa_t arm_isa_t;
 
@@ -44,6 +49,11 @@ extern arm_codegen_config_t arm_cg_config;
 
 extern ir_mode *arm_mode_gp;
 extern ir_mode *arm_mode_flags;
+
+static inline arm_irg_data_t *arm_get_irg_data(ir_graph const *const irg)
+{
+	return (arm_irg_data_t*)be_birg_from_irg(irg)->isa_link;
+}
 
 void arm_finish_graph(ir_graph *irg);
 

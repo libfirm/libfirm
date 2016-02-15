@@ -173,12 +173,11 @@ static ir_entity *arm_get_frame_entity(const ir_node *irn)
 
 void arm_finish_graph(ir_graph *irg)
 {
-	be_stack_layout_t *stack_layout = be_get_irg_stack_layout(irg);
-	bool               at_begin     = stack_layout->sp_relative;
-	be_fec_env_t      *fec_env      = be_new_frame_entity_coalescer(irg);
+	bool          omit_fp = arm_get_irg_data(irg)->omit_fp;
+	be_fec_env_t *fec_env = be_new_frame_entity_coalescer(irg);
 
 	irg_walk_graph(irg, NULL, arm_collect_frame_entity_nodes, fec_env);
-	be_assign_entities(fec_env, arm_set_frame_entity, at_begin);
+	be_assign_entities(fec_env, arm_set_frame_entity, omit_fp);
 	be_free_frame_entity_coalescer(fec_env);
 
 	introduce_prolog_epilog(irg);

@@ -89,6 +89,7 @@ x86_cconv_t *amd64_decide_calling_convention(ir_type *function_type,
 		omit_fp = be_options.omit_fp;
 		if (omit_fp)
 			irg_walk_graph(irg, check_omit_fp, NULL, &omit_fp);
+		amd64_get_irg_data(irg)->omit_fp = omit_fp;
 	}
 
 	unsigned *caller_saves = rbitset_malloc(N_AMD64_REGISTERS);

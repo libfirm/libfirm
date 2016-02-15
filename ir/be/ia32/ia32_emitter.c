@@ -62,7 +62,7 @@ static char       pic_base_label[128];
 static ir_label_t exc_label_id;
 static bool       mark_spill_reload;
 
-static bool       sp_relative;
+static bool       omit_fp;
 static int        frame_type_size;
 static int        callframe_offset;
 static ir_entity *thunks[N_ia32_gp_REGS];
@@ -1403,7 +1403,7 @@ static void ia32_emit_node(ir_node *node)
 
 	be_emit_node(node);
 
-	if (sp_relative) {
+	if (omit_fp) {
 		int sp_change = ia32_get_sp_bias(node);
 		if (sp_change != 0) {
 			assert(sp_change != SP_BIAS_RESET);
@@ -1524,7 +1524,7 @@ static void ia32_gen_block(ir_node *block)
 {
 	ia32_emit_block_header(block);
 
-	if (sp_relative) {
+	if (omit_fp) {
 		ir_graph *irg = get_irn_irg(block);
 		callframe_offset = 4; /* 4 bytes for the return address */
 		/* ESP guessing, TODO perform a real ESP simulation */
@@ -1684,9 +1684,8 @@ void ia32_emit_function(ir_graph *const irg)
 	                            NULL);
 	free(infos);
 
-	be_stack_layout_t *const layout = be_get_irg_stack_layout(irg);
-	sp_relative = layout->sp_relative;
-	if (layout->sp_relative) {
+	omit_fp = ia32_get_irg_data(irg)->omit_fp;
+	if (omit_fp) {
 		ir_type *frame_type = get_irg_frame_type(irg);
 		frame_type_size = get_type_size(frame_type);
 		be_dwarf_callframe_register(&ia32_registers[REG_ESP]);

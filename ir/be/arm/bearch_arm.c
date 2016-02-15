@@ -179,6 +179,9 @@ static void arm_generate_code(FILE *output, const char *cup_name)
 		if (!be_step_first(irg))
 			continue;
 
+		struct obstack *obst = be_get_be_obst(irg);
+		be_birg_from_irg(irg)->isa_link = OALLOCZ(obst, arm_irg_data_t);
+
 		be_birg_from_irg(irg)->non_ssa_regs = sp_is_non_ssa;
 		arm_select_instructions(irg);
 

@@ -915,7 +915,7 @@ static int get_real_entity_offset(const ir_node *node, ir_entity *ent)
 	be_stack_layout_t *layout  = be_get_irg_stack_layout(irg);
 	const int          off_ent = be_get_stack_entity_offset(layout, ent, 0);
 
-	if (layout->sp_relative) {
+	if (sparc_get_irg_data(irg)->omit_fp) {
 		ir_entity *ent_ref   = be_get_MemPerm_in_entity(node, 0);
 		const int  off_ref   = be_get_stack_entity_offset(layout, ent_ref, 0);
 		const int  delta_ent = off_ent - off_ref;
@@ -930,11 +930,10 @@ static int get_real_entity_offset(const ir_node *node, ir_entity *ent)
 static void memperm_emit_copy(const ir_node *node, ir_entity *in_ent,
                               ir_entity *out_ent)
 {
-	ir_graph          *irg     = get_irn_irg(node);
-	be_stack_layout_t *layout  = be_get_irg_stack_layout(irg);
-	const char        *reg     = layout->sp_relative ? "sp" : "fp";
-	const int          off_in  = get_real_entity_offset(node, in_ent);
-	const int          off_out = get_real_entity_offset(node, out_ent);
+	ir_graph   *irg     = get_irn_irg(node);
+	const char *reg     = sparc_get_irg_data(irg)->omit_fp ? "sp" : "fp";
+	const int   off_in  = get_real_entity_offset(node, in_ent);
+	const int   off_out = get_real_entity_offset(node, out_ent);
 
 	sparc_emitf(node, "ld [%%%s%+d], %%l0", reg, off_in);
 	sparc_emitf(node, "st %%l0, [%%%s%+d]", reg, off_out);
@@ -943,11 +942,10 @@ static void memperm_emit_copy(const ir_node *node, ir_entity *in_ent,
 static void memperm_emit_swap(const ir_node *node, ir_entity *ent1,
                               ir_entity *ent2)
 {
-	ir_graph          *irg    = get_irn_irg(node);
-	be_stack_layout_t *layout = be_get_irg_stack_layout(irg);
-	const char        *reg    = layout->sp_relative ? "sp" : "fp";
-	const int          off1   = get_real_entity_offset(node, ent1);
-	const int          off2   = get_real_entity_offset(node, ent2);
+	ir_graph   *irg  = get_irn_irg(node);
+	const char *reg  = sparc_get_irg_data(irg)->omit_fp ? "sp" : "fp";
+	const int   off1 = get_real_entity_offset(node, ent1);
+	const int   off2 = get_real_entity_offset(node, ent2);
 
 	sparc_emitf(node, "ld [%%%s%+d], %%l0", reg, off1);
 	sparc_emitf(node, "ld [%%%s%+d], %%l1", reg, off2);

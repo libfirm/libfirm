@@ -178,6 +178,7 @@ calling_convention_t *sparc_decide_calling_convention(ir_type *function_type,
 			omit_fp = false;
 		if (omit_fp)
 			irg_walk_graph(irg, check_omit_fp, NULL, &omit_fp);
+		sparc_get_irg_data(irg)->omit_fp = omit_fp;
 	}
 
 	mtp_additional_properties mtp

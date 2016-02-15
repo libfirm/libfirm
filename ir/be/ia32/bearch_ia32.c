@@ -247,9 +247,9 @@ static void ia32_build_between_type(void)
  */
 ir_entity *ia32_get_return_address_entity(ir_graph *irg)
 {
-	const be_stack_layout_t *layout = be_get_irg_stack_layout(irg);
 	ia32_build_between_type();
-	return layout->sp_relative ? omit_fp_ret_addr_ent : ret_addr_ent;
+	return ia32_get_irg_data(irg)->omit_fp ? omit_fp_ret_addr_ent
+	                                       : ret_addr_ent;
 }
 
 /**
@@ -257,9 +257,8 @@ ir_entity *ia32_get_return_address_entity(ir_graph *irg)
  */
 ir_entity *ia32_get_frame_address_entity(ir_graph *irg)
 {
-	const be_stack_layout_t *layout = be_get_irg_stack_layout(irg);
 	ia32_build_between_type();
-	return layout->sp_relative ? NULL : old_bp_ent;
+	return ia32_get_irg_data(irg)->omit_fp ? NULL : old_bp_ent;
 }
 
 /**
@@ -981,14 +980,13 @@ static int determine_ebp_input(ir_node *ret)
 	panic("no ebp input found at %+F", ret);
 }
 
-static void introduce_epilogue(ir_node *const ret)
+static void introduce_epilogue(ir_node *const ret, bool const omit_fp)
 {
-	ir_node                 *curr_sp;
-	ir_node           *const first_sp = get_irn_n(ret, n_ia32_Return_stack);
-	ir_node           *const block    = get_nodes_block(ret);
-	ir_graph          *const irg      = get_irn_irg(ret);
-	be_stack_layout_t *const layout   = be_get_irg_stack_layout(irg);
-	if (!layout->sp_relative) {
+	ir_node        *curr_sp;
+	ir_node  *const first_sp = get_irn_n(ret, n_ia32_Return_stack);
+	ir_node  *const block    = get_nodes_block(ret);
+	ir_graph *const irg      = get_irn_irg(ret);
+	if (!omit_fp) {
 		arch_register_t const *const sp = &ia32_registers[REG_ESP];
 		arch_register_t const *const bp = &ia32_registers[REG_EBP];
 
@@ -1029,7 +1027,7 @@ static void introduce_epilogue(ir_node *const ret)
 		kill_node(first_sp);
 }
 
-static void introduce_prologue(ir_graph *const irg)
+static void introduce_prologue(ir_graph *const irg, bool omit_fp)
 {
 	const arch_register_t *sp         = &ia32_registers[REG_ESP];
 	const arch_register_t *bp         = &ia32_registers[REG_EBP];
@@ -1037,10 +1035,9 @@ static void introduce_prologue(ir_graph *const irg)
 	ir_node               *block      = get_nodes_block(start);
 	ir_type               *frame_type = get_irg_frame_type(irg);
 	unsigned               frame_size = get_type_size(frame_type);
-	be_stack_layout_t     *layout     = be_get_irg_stack_layout(irg);
 	ir_node               *initial_sp = be_get_Start_proj(irg, sp);
 
-	if (!layout->sp_relative) {
+	if (!omit_fp) {
 		/* push ebp */
 		ir_node *const mem        = get_irg_initial_mem(irg);
 		ir_node *const noreg      = ia32_new_NoReg_gp(irg);
@@ -1064,6 +1061,7 @@ static void introduce_prologue(ir_graph *const irg)
 		/* make sure the initial IncSP is really used by someone */
 		be_keep_if_unused(incsp);
 
+		be_stack_layout_t *const layout = be_get_irg_stack_layout(irg);
 		layout->initial_bias = -4;
 	} else {
 		ir_node *const incsp = ia32_new_IncSP(block, initial_sp, frame_size, 0);
@@ -1075,15 +1073,15 @@ static void introduce_prologue(ir_graph *const irg)
 /**
  * Put the prologue code at the beginning, epilogue code before each return
  */
-static void introduce_prologue_epilogue(ir_graph *const irg)
+static void introduce_prologue_epilogue(ir_graph *const irg, bool omit_fp)
 {
 	/* introduce epilogue for every return node */
 	foreach_irn_in(get_irg_end_block(irg), i, ret) {
 		assert(is_ia32_Return(ret));
-		introduce_epilogue(ret);
+		introduce_epilogue(ret, omit_fp);
 	}
 
-	introduce_prologue(irg);
+	introduce_prologue(irg, omit_fp);
 }
 
 static x87_attr_t *ia32_get_x87_attr(ir_node *const node)
@@ -1099,18 +1097,17 @@ static void ia32_before_emit(ir_graph *irg)
 	 * virtual with real x87 instructions, creating a block schedule and
 	 * peephole optimizations.
 	 */
-	be_stack_layout_t *stack_layout = be_get_irg_stack_layout(irg);
-	bool               at_begin     = stack_layout->sp_relative;
-	be_fec_env_t      *fec_env      = be_new_frame_entity_coalescer(irg);
+	bool          omit_fp = ia32_get_irg_data(irg)->omit_fp;
+	be_fec_env_t *fec_env = be_new_frame_entity_coalescer(irg);
 
 	/* create and coalesce frame entities */
 	irg_walk_graph(irg, NULL, ia32_collect_frame_entity_nodes, fec_env);
-	be_assign_entities(fec_env, ia32_set_frame_entity, at_begin);
+	be_assign_entities(fec_env, ia32_set_frame_entity, omit_fp);
 	be_free_frame_entity_coalescer(fec_env);
 
 	irg_block_walk_graph(irg, NULL, ia32_after_ra_walker, NULL);
 
-	introduce_prologue_epilogue(irg);
+	introduce_prologue_epilogue(irg, omit_fp);
 
 	/* fix stack entity offsets */
 	be_fix_stack_nodes(irg, &ia32_registers[REG_ESP]);
@@ -1123,8 +1120,7 @@ static void ia32_before_emit(ir_graph *irg)
 	be_dump(DUMP_RA, irg, "2addr");
 
 	/* we might have to rewrite x87 virtual registers */
-	ia32_irg_data_t const *const irg_data = ia32_get_irg_data(irg);
-	if (irg_data->do_x87_sim) {
+	if (ia32_get_irg_data(irg)->do_x87_sim) {
 		x86_prepare_x87_callbacks_ia32();
 		const x87_simulator_config_t config = {
 			.regclass      = &ia32_reg_classes[CLASS_ia32_fp],
@@ -1150,11 +1146,6 @@ static void ia32_before_emit(ir_graph *irg)
  */
 static void ia32_select_instructions(ir_graph *irg)
 {
-	struct obstack  *obst     = be_get_be_obst(irg);
-	ia32_irg_data_t *irg_data = OALLOCZ(obst, ia32_irg_data_t);
-
-	be_birg_from_irg(irg)->isa_link = irg_data;
-
 	if (gprof) {
 		/* Linux gprof implementation needs base pointer */
 		be_options.omit_fp = 0;
@@ -1477,6 +1468,9 @@ static bool lower_for_emit(ir_graph *const irg, unsigned *const sp_is_non_ssa)
 {
 	if (!be_step_first(irg))
 		return false;
+
+	struct obstack *obst = be_get_be_obst(irg);
+	be_birg_from_irg(irg)->isa_link = OALLOCZ(obst, ia32_irg_data_t);
 
 	be_birg_from_irg(irg)->non_ssa_regs = sp_is_non_ssa;
 	ia32_select_instructions(irg);

@@ -86,8 +86,7 @@ ir_entity *sparc_get_frame_entity(const ir_node *node)
 	return NULL;
 }
 
-static void process_bias(ir_node *block, bool sp_relative, int bias,
-                         int free_bytes)
+static void process_bias(ir_node *block, bool omit_fp, int bias, int free_bytes)
 {
 	mark_Block_block_visited(block);
 
@@ -97,7 +96,7 @@ static void process_bias(ir_node *block, bool sp_relative, int bias,
 		ir_entity *entity = sparc_get_frame_entity(irn);
 		if (entity != NULL) {
 			int offset = get_entity_offset(entity);
-			if (sp_relative)
+			if (omit_fp)
 				offset += bias + SPARC_MIN_STACKSIZE;
 			sparc_set_frame_offset(irn, offset);
 		}
@@ -139,7 +138,7 @@ static void process_bias(ir_node *block, bool sp_relative, int bias,
 		ir_node *succ = get_edge_src_irn(edge);
 		if (Block_block_visited(succ))
 			continue;
-		process_bias(succ, sp_relative, bias, free_bytes);
+		process_bias(succ, omit_fp, bias, free_bytes);
 	}
 }
 
@@ -312,7 +311,7 @@ void sparc_create_stacklayout(ir_graph *irg, calling_convention_t *cconv)
 /* Assign entity offsets, to all stack-related entities.
  * The offsets are relative to the begin of the stack frame.
  */
-void sparc_adjust_stack_entity_offsets(ir_graph *irg)
+void sparc_adjust_stack_entity_offsets(ir_graph *irg, bool omit_fp)
 {
 	be_stack_layout_t *layout = be_get_irg_stack_layout(irg);
 
@@ -350,7 +349,7 @@ void sparc_adjust_stack_entity_offsets(ir_graph *irg)
 	 *   Stackframesize + SPARC_MIN_STACK_SIZE has to be aligned. Increase
 	 *   frame_size accordingly.
 	 */
-	if (!layout->sp_relative) {
+	if (!omit_fp) {
 		frame_size = round_up2(frame_size, frame_align);
 	} else {
 		unsigned misalign = (SPARC_MIN_STACKSIZE+frame_size) % frame_align;
@@ -367,12 +366,12 @@ void sparc_adjust_stack_entity_offsets(ir_graph *irg)
 
 void sparc_fix_stack_bias(ir_graph *irg)
 {
-	bool sp_relative = be_get_irg_stack_layout(irg)->sp_relative;
+	bool omit_fp = sparc_get_irg_data(irg)->omit_fp;
 
 	ir_node *start_block = get_irg_start_block(irg);
 
 	ir_reserve_resources(irg, IR_RESOURCE_BLOCK_VISITED);
 	inc_irg_block_visited(irg);
-	process_bias(start_block, sp_relative, 0, 0);
+	process_bias(start_block, omit_fp, 0, 0);
 	ir_free_resources(irg, IR_RESOURCE_BLOCK_VISITED);
 }

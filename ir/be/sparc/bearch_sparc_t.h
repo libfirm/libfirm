@@ -14,10 +14,15 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "beirg.h"
 #include "firm_types.h"
 #include "pmap.h"
 
 typedef struct calling_convention_t calling_convention_t;
+
+typedef struct sparc_irg_data_t {
+	bool omit_fp;
+} sparc_irg_data_t;
 
 typedef struct sparc_codegen_config_t {
 	bool use_fpu;
@@ -58,13 +63,18 @@ static inline bool sparc_is_value_imm_encodeable(int32_t value)
 	return SPARC_IMMEDIATE_MIN <= value && value <= SPARC_IMMEDIATE_MAX;
 }
 
+static inline sparc_irg_data_t *sparc_get_irg_data(ir_graph const *const irg)
+{
+	return (sparc_irg_data_t*)be_birg_from_irg(irg)->isa_link;
+}
+
 void sparc_finish_graph(ir_graph *irg);
 
 void sparc_lower_64bit(void);
 
 bool sparc_variadic_fixups(ir_graph *irg, calling_convention_t *cconv);
 void sparc_create_stacklayout(ir_graph *irg, calling_convention_t *cconv);
-void sparc_adjust_stack_entity_offsets(ir_graph *irg);
+void sparc_adjust_stack_entity_offsets(ir_graph *irg, bool omit_fp);
 void sparc_fix_stack_bias(ir_graph *irg);
 ir_entity *sparc_get_va_start_entity(void);
 

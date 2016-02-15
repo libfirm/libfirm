@@ -96,6 +96,7 @@ x86_cconv_t *ia32_decide_calling_convention(ir_type const *const function_type,
 		omit_fp = be_options.omit_fp;
 		if (omit_fp)
 			irg_walk_graph(irg, check_omit_fp, NULL, &omit_fp);
+		ia32_get_irg_data(irg)->omit_fp = omit_fp;
 	}
 
 	mtp_additional_properties mtp
