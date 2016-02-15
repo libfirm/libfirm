@@ -167,8 +167,7 @@ void optimize_graph_df(ir_graph *irg)
 	}
 
 	new_identities(irg);
-	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES
-	                         | IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
+	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
 
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 
