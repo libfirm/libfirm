@@ -180,19 +180,19 @@ align_stack:;
 
 	calling_convention cc = get_method_calling_convention(function_type);
 
-	x86_cconv_t *cconv    = XMALLOCZ(x86_cconv_t);
-	cconv->sp_delta       = (cc & cc_compound_ret) && !(cc & cc_reg_param)
-	                        ? IA32_REGISTER_SIZE : 0;
-	cconv->parameters     = params;
-	cconv->n_parameters   = n_params;
-	cconv->callframe_size = stack_offset;
-	cconv->n_param_regs   = n_param_regs_used;
-	cconv->n_xmm_regs     = float_param_regnum;
-	cconv->results        = results;
-	cconv->omit_fp        = omit_fp;
-	cconv->caller_saves   = caller_saves;
-	cconv->callee_saves   = callee_saves;
-	cconv->n_reg_results  = n_reg_results;
+	x86_cconv_t *cconv     = XMALLOCZ(x86_cconv_t);
+	cconv->sp_delta        = (cc & cc_compound_ret) && !(cc & cc_reg_param)
+	                         ? IA32_REGISTER_SIZE : 0;
+	cconv->parameters      = params;
+	cconv->n_parameters    = n_params;
+	cconv->param_stacksize = stack_offset;
+	cconv->n_param_regs    = n_param_regs_used;
+	cconv->n_xmm_regs      = float_param_regnum;
+	cconv->results         = results;
+	cconv->omit_fp         = omit_fp;
+	cconv->caller_saves    = caller_saves;
+	cconv->callee_saves    = callee_saves;
+	cconv->n_reg_results   = n_reg_results;
 
 	if (irg != NULL) {
 		be_irg_t *birg = be_birg_from_irg(irg);

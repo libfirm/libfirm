@@ -1787,7 +1787,9 @@ static ir_node *gen_Call(ir_node *const node)
 	/* construct an IncSP -> we have to always be sure that the stack is
 	 * aligned even if we don't push arguments on it */
 	ir_node *const stack     = get_initial_sp(irg);
-	ir_node *const callframe = amd64_new_IncSP(new_block, stack, cconv->callframe_size, AMD64_PO2_STACK_ALIGNMENT);
+	ir_node *const callframe
+		= amd64_new_IncSP(new_block, stack, cconv->param_stacksize,
+		                  AMD64_PO2_STACK_ALIGNMENT);
 
 	/* match callee */
 	amd64_addr_t addr;
@@ -1981,7 +1983,8 @@ no_call_mem:
 
 	/* IncSP to destroy the call stackframe */
 	ir_node *const call_stack = be_new_Proj(call, pn_amd64_call_stack);
-	ir_node *const incsp      = amd64_new_IncSP(new_block, call_stack, -cconv->callframe_size, 0);
+	ir_node *const incsp      = amd64_new_IncSP(new_block, call_stack,
+	                                            -cconv->param_stacksize, 0);
 	be_stack_record_chain(&stack_env, callframe, n_be_IncSP_pred, incsp);
 
 	x86_free_calling_convention(cconv);
@@ -3295,7 +3298,7 @@ static void amd64_create_stacklayout(ir_graph *irg, const x86_cconv_t *cconv)
 	if (is_method_variadic(function_type)) {
 		ir_entity *stack_args_param = new_parameter_entity(
 			arg_type, IR_VA_START_PARAMETER_NUMBER, get_unknown_type());
-		set_entity_offset(stack_args_param, cconv->callframe_size);
+		set_entity_offset(stack_args_param, cconv->param_stacksize);
 		amd64_set_va_stack_args_param(stack_args_param);
 	}
 

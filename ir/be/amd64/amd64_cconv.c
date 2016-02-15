@@ -195,17 +195,17 @@ x86_cconv_t *amd64_decide_calling_convention(ir_type *function_type,
 		++n_reg_results;
 	}
 
-	x86_cconv_t *cconv    = XMALLOCZ(x86_cconv_t);
-	cconv->parameters     = params;
-	cconv->n_parameters   = n_params;
-	cconv->callframe_size = stack_offset;
-	cconv->n_param_regs   = n_param_regs_used;
-	cconv->n_xmm_regs     = float_param_regnum;
-	cconv->results        = results;
-	cconv->omit_fp        = omit_fp;
-	cconv->caller_saves   = caller_saves;
-	cconv->callee_saves   = callee_saves;
-	cconv->n_reg_results  = n_reg_results;
+	x86_cconv_t *cconv     = XMALLOCZ(x86_cconv_t);
+	cconv->parameters      = params;
+	cconv->n_parameters    = n_params;
+	cconv->param_stacksize = stack_offset;
+	cconv->n_param_regs    = n_param_regs_used;
+	cconv->n_xmm_regs      = float_param_regnum;
+	cconv->results         = results;
+	cconv->omit_fp         = omit_fp;
+	cconv->caller_saves    = caller_saves;
+	cconv->callee_saves    = callee_saves;
+	cconv->n_reg_results   = n_reg_results;
 
 	if (irg != NULL) {
 		be_irg_t *birg = be_birg_from_irg(irg);

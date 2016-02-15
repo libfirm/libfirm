@@ -4972,11 +4972,12 @@ static ir_node *gen_Call(ir_node *node)
 	ir_node *const block               = be_transform_node(old_block);
 	ir_node *const stack               = get_initial_sp(irg);
 	unsigned const po2_stack_alignment = ia32_cg_config.po2_stack_alignment;
-	unsigned const callframe_size      = cconv->callframe_size;
-	bool     const needs_stack         = callframe_size != 0 || po2_stack_alignment != 0;
+	unsigned const param_stacksize     = cconv->param_stacksize;
+	bool     const needs_stack         = param_stacksize != 0
+	                                     || po2_stack_alignment != 0;
 	ir_node *const callframe           =
 		!needs_stack ? stack :
-		ia32_new_IncSP(block, stack, callframe_size, ia32_cg_config.po2_stack_alignment);
+		ia32_new_IncSP(block, stack, param_stacksize, ia32_cg_config.po2_stack_alignment);
 	in[n_ia32_Call_stack]     = callframe;
 	in_req[n_ia32_Call_stack] = sp->single_req;
 
@@ -5090,7 +5091,7 @@ static ir_node *gen_Call(ir_node *node)
 
 	/* IncSp to destroy callframe. */
 	ir_node       *new_stack   = be_new_Proj(call, pn_ia32_Call_stack);
-	unsigned const reduce_size = callframe_size - cconv->sp_delta;
+	unsigned const reduce_size = param_stacksize - cconv->sp_delta;
 	if (reduce_size > 0 || po2_stack_alignment != 0)
 		new_stack = ia32_new_IncSP(block, new_stack, -(int)reduce_size, 0);
 	ir_node *const old_stack     = needs_stack ? callframe       : call;
@@ -5858,10 +5859,10 @@ static void ia32_create_stacklayout(ir_graph *irg, const x86_cconv_t *cconv)
 	if (is_method_variadic(function_type)) {
 		ir_type *unknown = get_unknown_type();
 		va_start_entity = new_parameter_entity(arg_type, IR_VA_START_PARAMETER_NUMBER, unknown);
-		set_entity_offset(va_start_entity, cconv->callframe_size);
+		set_entity_offset(va_start_entity, cconv->param_stacksize);
 	}
 
-	set_type_size(arg_type, cconv->callframe_size);
+	set_type_size(arg_type, cconv->param_stacksize);
 
 	be_stack_layout_t *const layout = be_get_irg_stack_layout(irg);
 	memset(layout, 0, sizeof(*layout));

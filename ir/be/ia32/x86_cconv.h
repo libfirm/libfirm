@@ -19,10 +19,11 @@
 typedef struct reg_or_stackslot_t
 {
 	const arch_register_t *reg;
-	ir_type               *type;   /**< indicates that an entity of the
-	                                    specific type is needed */
-	unsigned               offset; /**< if transmitted via stack, the offset
-	                                    for this parameter. */
+	/** Type of parameter if it is transfered on the stack, otherwise NULL. */
+	ir_type               *type;
+	/** Offset of parameter relative to the stackpointer immediately before the
+	 * call. Undefined if a register is used. */
+	unsigned               offset;
 	ir_entity             *entity; /**< entity in frame type */
 } reg_or_stackslot_t;
 
@@ -34,7 +35,7 @@ typedef struct x86_cconv_t
 	unsigned            sp_delta;
 	reg_or_stackslot_t *parameters;       /**< parameter info. */
 	unsigned            n_parameters;     /**< number of parameters */
-	unsigned            callframe_size;   /**< stack size for parameters */
+	unsigned            param_stacksize;  /**< stack size for parameters */
 	unsigned            n_param_regs;     /**< number of values passed in a
 	                                           register (gp + xmm) */
 	unsigned            n_xmm_regs;       /**< number of xmm registers used */
