@@ -90,7 +90,7 @@ static void print_entity_name(char *buffer, size_t buffer_size,
 	switch (entity->kind) {
 	case IR_ENTITY_PARAMETER:
 		snprintf(buffer, buffer_size, "%sparameter.%lu", add,
-				 get_entity_parameter_number(entity));
+		         (unsigned long)get_entity_parameter_number(entity));
 		return;
 	case IR_ENTITY_LABEL:
 		snprintf(buffer, buffer_size, "%slabel", add);
