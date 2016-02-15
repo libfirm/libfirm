@@ -197,7 +197,7 @@ calling_convention_t *sparc_decide_calling_convention(ir_type *function_type,
 	reg_or_stackslot_t *params   = XMALLOCNZ(reg_or_stackslot_t, n_params);
 
 	int      n_param_regs = ARRAY_SIZE(param_regs);
-	unsigned stack_offset = 0;
+	unsigned stack_offset = SPARC_MIN_STACKSIZE;
 	for (int i = 0; i < n_params; ++i) {
 		ir_type            *param_type = get_method_param_type(function_type,i);
 		ir_mode            *mode;
@@ -217,12 +217,15 @@ calling_convention_t *sparc_decide_calling_convention(ir_type *function_type,
 			/* special case, we have reserved space for this on the between
 			 * type */
 			param->type   = param_type;
-			param->offset = -SPARC_MIN_STACKSIZE+SPARC_AGGREGATE_RETURN_OFFSET;
+			param->offset = SPARC_AGGREGATE_RETURN_OFFSET;
+			param->already_stored = true;
 			continue;
 		}
 
 		if (regnum < n_param_regs) {
-			param->offset = SPARC_PARAMS_SPILL_OFFSET + regnum * SPARC_REGISTER_SIZE;
+			param->offset = SPARC_PARAMS_SPILL_OFFSET
+			                + regnum * SPARC_REGISTER_SIZE;
+			param->type   = param_type;
 			arch_register_t const *reg = param_regs[regnum++];
 			if (irg == NULL || omit_fp)
 				reg = map_i_to_o_reg(reg);
@@ -231,7 +234,9 @@ calling_convention_t *sparc_decide_calling_convention(ir_type *function_type,
 		} else {
 			param->type   = param_type;
 			param->offset = stack_offset;
-			/* increase offset by at least SPARC_REGISTER_SIZE bytes so everything is aligned */
+			param->already_stored = true;
+			/* increase offset by at least SPARC_REGISTER_SIZE bytes so
+			 * everything is aligned */
 			stack_offset += MAX(bits / 8, SPARC_REGISTER_SIZE);
 			continue;
 		}
@@ -242,6 +247,8 @@ calling_convention_t *sparc_decide_calling_convention(ir_type *function_type,
 				panic("only 32 and 64bit modes supported");
 
 			if (regnum < n_param_regs) {
+				param->offset = SPARC_PARAMS_SPILL_OFFSET
+				                + regnum * SPARC_REGISTER_SIZE;
 				arch_register_t const *reg = param_regs[regnum++];
 				if (irg == NULL || omit_fp)
 					reg = map_i_to_o_reg(reg);
@@ -318,7 +325,7 @@ calling_convention_t *sparc_decide_calling_convention(ir_type *function_type,
 	calling_convention_t *cconv = XMALLOCZ(calling_convention_t);
 	cconv->n_parameters     = n_params;
 	cconv->parameters       = params;
-	cconv->param_stack_size = stack_offset;
+	cconv->param_stack_size = stack_offset - SPARC_MIN_STACKSIZE;
 	cconv->n_param_regs     = n_param_regs_used;
 	cconv->results          = results;
 	cconv->omit_fp          = omit_fp;

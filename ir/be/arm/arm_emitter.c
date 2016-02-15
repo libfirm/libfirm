@@ -540,7 +540,9 @@ static void emit_be_MemPerm(const ir_node *node)
 	if (memperm_arity > 12)
 		panic("memperm with more than 12 inputs not supported yet");
 
-	int sp_change = 0;
+	int const memperm_offset = be_get_MemPerm_offset(node);
+
+	int sp_change = memperm_offset;
 	for (int i = 0; i < memperm_arity; ++i) {
 		/* spill register */
 		arm_emitf(node, "str r%d, [sp, #-4]!", i);
@@ -560,7 +562,7 @@ static void emit_be_MemPerm(const ir_node *node)
 		arm_emitf(node, "ldr r%d, [sp], #4", i);
 		sp_change -= 4;
 	}
-	assert(sp_change == 0);
+	assert(sp_change == memperm_offset);
 }
 
 static void emit_arm_Jmp(const ir_node *node)

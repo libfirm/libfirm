@@ -58,12 +58,7 @@ ir_mode *ia32_mode_float64;
 ir_mode *ia32_mode_float32;
 
 /** The current omit-fp state */
-static ir_type   *omit_fp_between_type;
-static ir_type   *between_type;
-static ir_entity *old_bp_ent;
-static ir_entity *ret_addr_ent;
-static ir_entity *omit_fp_ret_addr_ent;
-static bool       return_small_struct_in_regs;
+static bool return_small_struct_in_regs;
 
 typedef ir_node *(*create_const_node_func) (dbg_info *dbgi, ir_node *block);
 
@@ -132,19 +127,6 @@ static ir_node *ia32_get_admissible_noreg(ir_node *irn, int pos)
 	}
 }
 
-static ir_entity *ia32_get_frame_entity(const ir_node *node)
-{
-	if (!is_ia32_irn(node))
-		return NULL;
-	ia32_attr_t const *const attr = get_ia32_attr_const(node);
-	if (attr->am_imm.kind == X86_IMM_FRAMEENT) {
-		assert(get_ia32_frame_use(node) != IA32_FRAME_USE_NONE);
-		return attr->am_imm.entity;
-	}
-	assert(get_ia32_frame_use(node) == IA32_FRAME_USE_NONE);
-	return NULL;
-}
-
 static void ia32_set_frame_entity(ir_node *node, ir_entity *entity,
                                   const ir_type *type)
 {
@@ -162,103 +144,88 @@ static void ia32_set_frame_entity(ir_node *node, ir_entity *entity,
 	    || is_ia32_Cmp(node) || is_ia32_Conv_I2I(node))
 		return;
 	ir_mode *mode = get_type_mode(type);
-	/** we 8bit stores have a special register requirement, so we can't simply
+	/** 8bit stores have a special register requirement, so we can't simply
 	 * change the ls_mode to 8bit here. The "hack" in
-	 * ia32_collect_frame_entity_nodes() should take care that it never happens
+	 * ia32_collect_frame_entity_nodes() should take care that it never happens.
 	 */
 	assert(!is_ia32_Store(node) || get_mode_size_bits(mode) > 8);
 	set_ia32_ls_mode(node, mode);
 }
 
-static void ia32_set_frame_offset(ir_node *node, int bias)
+static bool node_has_sp_base(ir_node const *const node)
 {
-	ia32_attr_t *const attr = get_ia32_attr(node);
-	assert(attr->am_imm.kind == X86_IMM_FRAMEENT);
-
-	/* Pop nodes modify the stack pointer before calculating the
-	 * destination address, fix this here */
-	if (is_ia32_PopMem(node)) {
-		ir_node *base = get_irn_n(node, n_ia32_PopMem_base);
-		if (arch_get_irn_register(base) == &ia32_registers[REG_ESP]) {
-			ir_mode *mode = get_ia32_ls_mode(node);
-			bias -= get_mode_size_bytes(mode);
-		}
-	}
-
-#ifndef NDEBUG
-	attr->old_frame_ent = attr->am_imm.entity;
-#endif
-	/* This is just a simple 32bit value now */
-	attr->am_imm.offset += bias;
-	attr->am_imm.entity = NULL;
-	attr->am_imm.kind   = X86_IMM_VALUE;
+	assert(is_ia32_irn(node));
+	arch_register_t const *const base_reg
+		= arch_get_irn_register_in(node, n_ia32_base);
+	return base_reg == &ia32_registers[REG_ESP];
 }
 
-int ia32_get_sp_bias(const ir_node *node)
+static void ia32_determine_frameoffset(ir_node *node, int sp_offset)
 {
-	if (is_ia32_Call(node))
-		return -(int)get_ia32_call_attr_const(node)->pop;
+	if (!is_ia32_irn(node))
+		return;
 
-	if (is_ia32_Push(node)) {
-		ir_mode *ls_mode = get_ia32_ls_mode(node);
-		return get_mode_size_bytes(ls_mode);
+	ia32_attr_t *const attr = get_ia32_attr(node);
+	if (attr->am_imm.kind == X86_IMM_FRAMEENT) {
+#ifndef NDEBUG
+		attr->old_frame_ent = attr->am_imm.entity;
+#endif
+		attr->am_imm.offset += get_entity_offset(attr->am_imm.entity);
+		attr->am_imm.entity  = NULL;
+		attr->am_imm.kind    = X86_IMM_FRAMEOFFSET;
 	}
 
+	if (attr->am_imm.kind == X86_IMM_FRAMEOFFSET) {
+		if (node_has_sp_base(node))
+			attr->am_imm.offset += sp_offset;
+		else {
+			assert(arch_get_irn_register_in(node, n_ia32_base)
+			       == &ia32_registers[REG_EBP]);
+			/* we calculate offsets relative to the SP value at function begin,
+			 * but EBP points after the saved old frame pointer */
+			attr->am_imm.offset += IA32_REGISTER_SIZE;
+		}
+		attr->am_imm.kind = X86_IMM_VALUE;
+	}
+}
+
+static void ia32_sp_sim(ir_node *const node, stack_pointer_state_t *state)
+{
+	/* Pop nodes modify the stack pointer before calculating destination
+	 * address, so do this first */
 	if (is_ia32_Pop(node) || is_ia32_PopMem(node)) {
 		ir_mode *ls_mode = get_ia32_ls_mode(node);
-		return -get_mode_size_bytes(ls_mode);
+		state->offset       -= get_mode_size_bytes(ls_mode);
 	}
 
-	if (is_ia32_Leave(node) || is_ia32_CopyEbpEsp(node))
-		return SP_BIAS_RESET;
+	if (!state->no_change)
+		ia32_determine_frameoffset(node, state->offset);
 
-	return 0;
-}
-
-/**
- * Build the between type and entities if not already built.
- */
-static void ia32_build_between_type(void)
-{
-	if (between_type == NULL) {
-		ir_type *old_bp_type   = new_type_primitive(ia32_mode_gp);
-		ir_type *ret_addr_type = new_type_primitive(ia32_mode_gp);
-
-		between_type = new_type_struct(NEW_IDENT("ia32_between_type"));
-		old_bp_ent   = new_entity(between_type, NEW_IDENT("old_bp"), old_bp_type);
-		ret_addr_ent = new_entity(between_type, NEW_IDENT("ret_addr"), ret_addr_type);
-
-		set_entity_offset(old_bp_ent, 0);
-		set_entity_offset(ret_addr_ent, get_type_size(old_bp_type));
-		set_type_size(between_type, get_type_size(old_bp_type) + get_type_size(ret_addr_type));
-		set_type_state(between_type, layout_fixed);
-
-		omit_fp_between_type = new_type_struct(NEW_IDENT("ia32_between_type_omit_fp"));
-		omit_fp_ret_addr_ent = new_entity(omit_fp_between_type, NEW_IDENT("ret_addr"), ret_addr_type);
-
-		set_entity_offset(omit_fp_ret_addr_ent, 0);
-		set_type_size(omit_fp_between_type, get_type_size(ret_addr_type));
-		set_type_state(omit_fp_between_type, layout_fixed);
+	if (is_ia32_Call(node)) {
+		state->offset -= get_ia32_call_attr_const(node)->pop;
+	} else if (is_ia32_Push(node)) {
+		ir_mode *ls_mode = get_ia32_ls_mode(node);
+		state->offset       += get_mode_size_bytes(ls_mode);
+	} else if (is_ia32_Leave(node) || is_ia32_CopyEbpEsp(node)) {
+		state->offset        = 0;
+		state->align_padding = 0;
+	} else if (is_ia32_SubSP(node)) {
+		state->align_padding = 0;
 	}
 }
 
-/**
- * Return the stack entity that contains the return address.
- */
-ir_entity *ia32_get_return_address_entity(ir_graph *irg)
+int ia32_get_sp_change(ir_node *const node)
 {
-	ia32_build_between_type();
-	return ia32_get_irg_data(irg)->omit_fp ? omit_fp_ret_addr_ent
-	                                       : ret_addr_ent;
-}
-
-/**
- * Return the stack entity that contains the frame address.
- */
-ir_entity *ia32_get_frame_address_entity(ir_graph *irg)
-{
-	ia32_build_between_type();
-	return ia32_get_irg_data(irg)->omit_fp ? NULL : old_bp_ent;
+	if (be_is_IncSP(node))
+		return -be_get_IncSP_offset(node);
+	stack_pointer_state_t state = {
+		.offset    = 160,
+		.no_change = true,
+	};
+	ia32_sp_sim(node, &state);
+	int res = 160 - state.offset;
+	assert(-16 <= res && res <= 16);
+	return res;
 }
 
 /**
@@ -816,9 +783,10 @@ static void transform_MemPerm(ir_node *node)
 	for (int i = 0; i < arity; ++i) {
 		ir_entity *inent = be_get_MemPerm_in_entity(node, i);
 		ir_entity *outent = be_get_MemPerm_out_entity(node, i);
-		ir_type *enttype = get_entity_type(inent);
-		unsigned entsize = get_type_size(enttype);
-		unsigned entsize2 = get_type_size(get_entity_type(outent));
+		assert(inent->kind == IR_ENTITY_SPILLSLOT);
+		assert(outent->kind == IR_ENTITY_SPILLSLOT);
+		unsigned entsize = inent->attr.spillslot.size;
+		unsigned entsize2 = outent->attr.spillslot.size;
 		ir_node *mem = get_irn_n(node, i);
 
 		/* work around cases where entities have different sizes */
@@ -852,9 +820,10 @@ static void transform_MemPerm(ir_node *node)
 	for (int i = arity; i-- > 0; ) {
 		ir_entity *inent = be_get_MemPerm_in_entity(node, i);
 		ir_entity *outent = be_get_MemPerm_out_entity(node, i);
-		ir_type *enttype = get_entity_type(outent);
-		unsigned entsize = get_type_size(enttype);
-		unsigned entsize2 = get_type_size(get_entity_type(inent));
+		assert(inent->kind == IR_ENTITY_SPILLSLOT);
+		assert(outent->kind == IR_ENTITY_SPILLSLOT);
+		unsigned entsize = outent->attr.spillslot.size;
+		unsigned entsize2 = inent->attr.spillslot.size;
 
 		/* work around cases where entities have different sizes */
 		if (entsize2 < entsize)
@@ -1024,7 +993,7 @@ static void introduce_epilogue(ir_node *const ret, bool const omit_fp)
 	} else {
 		ir_type *const frame_type = get_irg_frame_type(irg);
 		unsigned const frame_size = get_type_size(frame_type);
-		curr_sp = ia32_new_IncSP(block, first_sp, -(int)frame_size, 0);
+		curr_sp = ia32_new_IncSP(block, first_sp, -(int)frame_size, true);
 		sched_add_before(ret, curr_sp);
 	}
 	set_irn_n(ret, n_ia32_Return_stack, curr_sp);
@@ -1061,17 +1030,15 @@ static void introduce_prologue(ir_graph *const irg, bool omit_fp)
 		arch_copy_irn_out_info(curr_bp, 0, initial_bp);
 		edges_reroute_except(initial_bp, curr_bp, push);
 
-		ir_node *incsp = ia32_new_IncSP(block, curr_sp, frame_size, 0);
+		ir_node *incsp = ia32_new_IncSP(block, curr_sp, frame_size, false);
 		edges_reroute_except(initial_sp, incsp, push);
 		sched_add_after(curr_bp, incsp);
 
 		/* make sure the initial IncSP is really used by someone */
 		be_keep_if_unused(incsp);
-
-		be_stack_layout_t *const layout = be_get_irg_stack_layout(irg);
-		layout->initial_bias = -4;
 	} else {
-		ir_node *const incsp = ia32_new_IncSP(block, initial_sp, frame_size, 0);
+		ir_node *const incsp = ia32_new_IncSP(block, initial_sp, frame_size,
+		                                      false);
 		edges_reroute_except(initial_sp, incsp, incsp);
 		sched_add_after(start, incsp);
 	}
@@ -1099,18 +1066,23 @@ static x87_attr_t *ia32_get_x87_attr(ir_node *const node)
 
 static void ia32_before_emit(ir_graph *irg)
 {
-	/*
-	 * Last touchups for the graph before emit: x87 simulation to replace the
+	/* Last touchups for the graph before emit: x87 simulation to replace the
 	 * virtual with real x87 instructions, creating a block schedule and
 	 * peephole optimizations.
 	 */
-	bool          omit_fp = ia32_get_irg_data(irg)->omit_fp;
-	be_fec_env_t *fec_env = be_new_frame_entity_coalescer(irg);
+	bool omit_fp = ia32_get_irg_data(irg)->omit_fp;
 
 	/* create and coalesce frame entities */
+	be_fec_env_t *fec_env = be_new_frame_entity_coalescer(irg);
 	irg_walk_graph(irg, NULL, ia32_collect_frame_entity_nodes, fec_env);
 	be_assign_entities(fec_env, ia32_set_frame_entity, omit_fp);
 	be_free_frame_entity_coalescer(fec_env);
+
+	ir_type *const frame = get_irg_frame_type(irg);
+	be_sort_frame_entities(frame, omit_fp);
+	unsigned const misalign = IA32_REGISTER_SIZE; /* return address on stack */
+	int      const begin    = omit_fp ? 0 : -IA32_REGISTER_SIZE;
+	be_layout_frame_type(frame, begin, misalign);
 
 	irg_block_walk_graph(irg, NULL, ia32_after_ra_walker, NULL);
 
@@ -1119,8 +1091,8 @@ static void ia32_before_emit(ir_graph *irg)
 	/* fix stack entity offsets */
 	be_fix_stack_nodes(irg, &ia32_registers[REG_ESP]);
 	be_birg_from_irg(irg)->non_ssa_regs = NULL;
-	be_abi_fix_stack_bias(irg, ia32_get_sp_bias, ia32_set_frame_offset,
-	                      ia32_get_frame_entity);
+	unsigned const p2align = ia32_cg_config.po2_stack_alignment;
+	be_sim_stack_pointer(irg, misalign, p2align, ia32_sp_sim);
 
 	/* fix 2-address code constraints */
 	ia32_finish_irg(irg);
@@ -1182,10 +1154,6 @@ static void ia32_select_instructions(ir_graph *irg)
 	ia32_optimize_graph(irg);
 
 	be_dump(DUMP_BE, irg, "opt");
-
-	ir_type *frame_type = get_irg_frame_type(irg);
-	if (get_type_state(frame_type) == layout_undefined)
-		default_layout_compound_type(frame_type);
 
 	/* do code placement, to optimize the position of constants */
 	place_code(irg);
@@ -1448,10 +1416,6 @@ static void ia32_init(void)
 
 static void ia32_finish(void)
 {
-	if (between_type != NULL) {
-		free_type(between_type);
-		between_type = NULL;
-	}
 	ia32_free_opcodes();
 	obstack_free(&opcodes_obst, NULL);
 }

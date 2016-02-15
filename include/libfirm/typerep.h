@@ -1592,21 +1592,6 @@ FIRM_API int is_frame_type(const ir_type *tp);
  */
 FIRM_API ir_type *clone_frame_type(ir_type *type);
 
-/**
- * Allocate an area of size bytes aligned at alignment
- * at the start or the end of a frame type.
- * The frame type must already have a fixed layout.
- *
- * @param frame_type a frame type
- * @param size       the size of the entity
- * @param alignment  the alignment of the entity
- * @param at_start   if true, put the area at the frame type's start, else at end
- *
- * @return the entity representing the area
- */
-FIRM_API ir_entity *frame_alloc_area(ir_type *frame_type, int size,
-                                     unsigned alignment, int at_start);
-
 /** @} */
 
 /** @defgroup segment_type Segment

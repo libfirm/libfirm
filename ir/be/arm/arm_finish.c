@@ -66,7 +66,8 @@ static void introduce_epilog(ir_node *ret)
 	ir_graph *const irg        = get_irn_irg(ret);
 	ir_type  *const frame_type = get_irg_frame_type(irg);
 	unsigned  const frame_size = get_type_size(frame_type);
-	ir_node  *const incsp      = be_new_IncSP(sp_reg, block, sp, -frame_size, 0);
+	ir_node  *const incsp      = be_new_IncSP(sp_reg, block, sp, -frame_size,
+	                                          true);
 	set_irn_n(ret, n_arm_Return_sp, incsp);
 	sched_add_before(ret, incsp);
 }
@@ -86,72 +87,61 @@ static void introduce_prolog_epilog(ir_graph *irg)
 	ir_type               *frame_type = get_irg_frame_type(irg);
 	unsigned               frame_size = get_type_size(frame_type);
 
-	ir_node *const incsp = be_new_IncSP(sp_reg, block, initial_sp, frame_size, 0);
+	ir_node *const incsp = be_new_IncSP(sp_reg, block, initial_sp, frame_size,
+	                                    false);
 	edges_reroute_except(initial_sp, incsp, incsp);
 	sched_add_after(start, incsp);
 }
 
-/**
- * This function is called by the generic backend to correct offsets for
- * nodes accessing the stack.
- */
-static void arm_set_frame_offset(ir_node *irn, int bias)
-{
-	if (be_is_MemPerm(irn)) {
-		be_set_MemPerm_offset(irn, bias);
-	} else if (is_arm_FrameAddr(irn)) {
-		arm_Address_attr_t *attr = get_arm_Address_attr(irn);
-		attr->fp_offset += bias;
-	} else {
-		arm_load_store_attr_t *attr = get_arm_load_store_attr(irn);
-		assert(attr->base.is_load_store);
-		attr->offset += bias;
-	}
-}
 
-static int arm_get_sp_bias(const ir_node *node)
+static void arm_determine_frameoffset(ir_node *node, int sp_offset)
 {
-	(void)node;
-	return 0;
-}
-
-static ir_entity *arm_get_frame_entity(const ir_node *irn)
-{
-	if (be_is_MemPerm(irn))
-		return be_get_MemPerm_in_entity(irn, 0);
-	if (!is_arm_irn(irn))
-		return NULL;
-	const arm_attr_t *attr = get_arm_attr_const(irn);
-	if (is_arm_FrameAddr(irn)) {
-		const arm_Address_attr_t *frame_attr = get_arm_Address_attr_const(irn);
-		return frame_attr->entity;
-	}
-	if (attr->is_load_store) {
-		const arm_load_store_attr_t *load_store_attr
-			= get_arm_load_store_attr_const(irn);
+	if (!is_arm_irn(node))
+		return;
+	const arm_attr_t *attr   = get_arm_attr_const(node);
+	if (is_arm_FrameAddr(node)) {
+		arm_Address_attr_t *const attr   = get_arm_Address_attr(node);
+		ir_entity const    *const entity = attr->entity;
+		if (entity != NULL)
+			attr->fp_offset += get_entity_offset(entity);
+		attr->fp_offset += sp_offset;
+	} else if (attr->is_load_store) {
+		arm_load_store_attr_t *const load_store_attr
+			= get_arm_load_store_attr(node);
 		if (load_store_attr->is_frame_entity) {
-			return load_store_attr->entity;
+			ir_entity const *const entity = load_store_attr->entity;
+			if (entity != NULL)
+				load_store_attr->offset += get_entity_offset(entity);
+			load_store_attr->offset += sp_offset;
 		}
 	}
-	return NULL;
+}
+
+static void arm_sp_sim(ir_node *const node, stack_pointer_state_t *state)
+{
+	arm_determine_frameoffset(node, state->offset);
 }
 
 void arm_finish_graph(ir_graph *irg)
 {
-	bool          omit_fp = arm_get_irg_data(irg)->omit_fp;
-	be_fec_env_t *fec_env = be_new_frame_entity_coalescer(irg);
+	bool omit_fp = arm_get_irg_data(irg)->omit_fp;
 
+	be_fec_env_t *fec_env = be_new_frame_entity_coalescer(irg);
 	irg_walk_graph(irg, NULL, arm_collect_frame_entity_nodes, fec_env);
 	be_assign_entities(fec_env, arm_set_frame_entity, omit_fp);
 	be_free_frame_entity_coalescer(fec_env);
+
+	ir_type *const frame = get_irg_frame_type(irg);
+	be_sort_frame_entities(frame, omit_fp);
+	unsigned const misalign = 0;
+	be_layout_frame_type(frame, 0, misalign);
 
 	introduce_prolog_epilog(irg);
 
 	/* fix stack entity offsets */
 	be_fix_stack_nodes(irg, &arm_registers[REG_SP]);
 	be_birg_from_irg(irg)->non_ssa_regs = NULL;
-	be_abi_fix_stack_bias(irg, arm_get_sp_bias, arm_set_frame_offset,
-	                      arm_get_frame_entity);
+	be_sim_stack_pointer(irg, misalign, 2, arm_sp_sim);
 
 	/* do peephole optimizations and fix stack offsets */
 	arm_peephole_optimization(irg);

@@ -202,6 +202,7 @@ static void ia32_emit_relocation(x86_imm32_t const *const imm)
 		be_emit_string(pic_base_label);
 		return;
 	case X86_IMM_FRAMEENT:
+	case X86_IMM_FRAMEOFFSET:
 	case X86_IMM_GOTPCREL:
 	case X86_IMM_VALUE:
 		break;
@@ -1309,18 +1310,6 @@ static void emit_ia32_GetEIP(const ir_node *node)
 	panic("invalid pic_style");
 }
 
-static void emit_ia32_ClimbFrame(const ir_node *node)
-{
-	const ia32_climbframe_attr_t *attr = get_ia32_climbframe_attr_const(node);
-
-	ia32_emitf(node, "movl $%u, %D1", attr->count);
-	be_emit_cstring("0:\n");
-	be_emit_write_line();
-	ia32_emitf(node, "movl (%D0), %D0");
-	ia32_emitf(node, "dec %D1");
-	ia32_emitf(node, "jnz 0b");
-}
-
 static void emit_ia32_Return(const ir_node *node)
 {
 	const ia32_return_attr_t *attr = get_ia32_return_attr_const(node);
@@ -1349,7 +1338,6 @@ static void ia32_register_emitters(void)
 	be_set_emitter(op_be_IncSP,        emit_be_IncSP);
 	be_set_emitter(op_be_Perm,         emit_be_Perm);
 	be_set_emitter(op_ia32_Return,     emit_ia32_Return);
-	be_set_emitter(op_ia32_ClimbFrame, emit_ia32_ClimbFrame);
 	be_set_emitter(op_ia32_Conv_FP2FP, emit_ia32_Conv_FP2FP);
 	be_set_emitter(op_ia32_Conv_FP2I,  emit_ia32_Conv_FP2I);
 	be_set_emitter(op_ia32_Conv_I2FP,  emit_ia32_Conv_I2FP);
@@ -1404,9 +1392,8 @@ static void ia32_emit_node(ir_node *node)
 	be_emit_node(node);
 
 	if (omit_fp) {
-		int sp_change = ia32_get_sp_bias(node);
+		int sp_change = -ia32_get_sp_change(node);
 		if (sp_change != 0) {
-			assert(sp_change != SP_BIAS_RESET);
 			callframe_offset += sp_change;
 			be_dwarf_callframe_offset(callframe_offset);
 		}
@@ -1579,16 +1566,15 @@ static int cmp_exc_entry(const void *a, const void *b)
 
 static parameter_dbg_info_t *construct_parameter_infos(ir_graph *irg)
 {
-	ir_entity            *entity    = get_irg_entity(irg);
-	ir_type              *type      = get_entity_type(entity);
-	size_t                n_params  = get_method_n_params(type);
-	be_stack_layout_t    *layout    = be_get_irg_stack_layout(irg);
-	ir_type              *arg_type  = layout->arg_type;
-	size_t                n_members = get_compound_n_members(arg_type);
+	ir_entity            *entity     = get_irg_entity(irg);
+	ir_type              *type       = get_entity_type(entity);
+	ir_type              *frame_type = get_irg_frame_type(irg);
+	size_t                n_params   = get_method_n_params(type);
 	parameter_dbg_info_t *infos     = XMALLOCNZ(parameter_dbg_info_t, n_params);
 
-	for (size_t i = 0; i < n_members; ++i) {
-		ir_entity *member = get_compound_member(arg_type, i);
+	for (size_t i = 0, n_members = get_compound_n_members(frame_type);
+	     i < n_members; ++i) {
+		ir_entity *member = get_compound_member(frame_type, i);
 		if (!is_parameter_entity(member))
 			continue;
 		size_t param = get_entity_parameter_number(member);

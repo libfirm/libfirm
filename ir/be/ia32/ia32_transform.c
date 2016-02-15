@@ -57,7 +57,6 @@ static x86_cconv_t          *current_cconv;
 static be_stack_env_t        stack_env;
 static ir_heights_t         *heights;
 static x86_immediate_kind_t  lconst_imm_kind;
-static ir_entity            *va_start_entity;
 static ir_node              *initial_va_list;
 
 /** we don't have a concept of aliasing registers, so enumerate them
@@ -4971,13 +4970,11 @@ static ir_node *gen_Call(ir_node *node)
 
 	ir_node *const block               = be_transform_node(old_block);
 	ir_node *const stack               = get_initial_sp(irg);
-	unsigned const po2_stack_alignment = ia32_cg_config.po2_stack_alignment;
 	unsigned const param_stacksize     = cconv->param_stacksize;
-	bool     const needs_stack         = param_stacksize != 0
-	                                     || po2_stack_alignment != 0;
+	bool     const needs_stack         = param_stacksize != 0;
 	ir_node *const callframe           =
-		!needs_stack ? stack :
-		ia32_new_IncSP(block, stack, param_stacksize, ia32_cg_config.po2_stack_alignment);
+		!needs_stack ? stack
+		             : ia32_new_IncSP(block, stack, param_stacksize, false);
 	in[n_ia32_Call_stack]     = callframe;
 	in_req[n_ia32_Call_stack] = sp->single_req;
 
@@ -5092,8 +5089,8 @@ static ir_node *gen_Call(ir_node *node)
 	/* IncSp to destroy callframe. */
 	ir_node       *new_stack   = be_new_Proj(call, pn_ia32_Call_stack);
 	unsigned const reduce_size = param_stacksize - cconv->sp_delta;
-	if (reduce_size > 0 || po2_stack_alignment != 0)
-		new_stack = ia32_new_IncSP(block, new_stack, -(int)reduce_size, 0);
+	if (reduce_size > 0)
+		new_stack = ia32_new_IncSP(block, new_stack, -(int)reduce_size, false);
 	ir_node *const old_stack     = needs_stack ? callframe       : call;
 	unsigned const old_stack_pos = needs_stack ? n_be_IncSP_pred : n_ia32_Call_stack;
 	be_stack_record_chain(&stack_env, old_stack, old_stack_pos, new_stack);
@@ -5150,60 +5147,58 @@ static ir_node *gen_debugbreak(ir_node *node)
 	return new_bd_ia32_Breakpoint(dbgi, block, mem);
 }
 
-static ir_node *make_load_from_frame(ir_node *const node,
-                                     ir_entity *(*const get_ent)(ir_graph*))
+static ir_node *create_frame_load(dbg_info *const dbgi, ir_node *const block,
+                                  ir_node *const base, x86_imm32_t const imm)
 {
-	dbg_info *const dbgi  = get_irn_dbg_info(node);
-	ir_node  *const block = be_transform_nodes_block(node);
-	ir_graph *const irg   = get_irn_irg(node);
-
-	ir_node            *ptr      = get_irg_frame(irg);
-	ir_node      *const n_frames = get_Builtin_param(node, 0);
-	unsigned long const value    = get_Const_long(n_frames);
-	if (value != 0) {
-		ir_node *const cfr = new_bd_ia32_ClimbFrame(dbgi, block, ptr, value);
-		ptr = be_new_Proj(cfr, pn_ia32_ClimbFrame_res);
-	}
-
-	ir_node *const load = new_bd_ia32_Load(dbgi, block, ptr, noreg_GP, nomem);
-	set_irn_pinned(load, get_irn_pinned(node));
+	ir_node *const load = new_bd_ia32_Load(dbgi, block, base, noreg_GP, nomem);
+	set_irn_pinned(load, false);
 	set_ia32_op_type(load, ia32_AddrModeS);
 	set_ia32_ls_mode(load, ia32_mode_gp);
 	ia32_attr_t *const attr = get_ia32_attr(load);
-	attr->am_imm = (x86_imm32_t) {
-		.kind   = X86_IMM_FRAMEENT,
-		.entity = get_ent(irg),
-	};
-	set_ia32_frame_use(load, IA32_FRAME_USE_AUTO);
-
-	if (!get_irn_pinned(node)) {
-		assert((int)pn_ia32_xLoad_res == (int)pn_ia32_fld_res
-				&& (int)pn_ia32_fld_res == (int)pn_ia32_Load_res
-				&& (int)pn_ia32_Load_res == (int)pn_ia32_res);
-		arch_add_irn_flags(load, arch_irn_flag_rematerializable);
-	}
-
-	SET_IA32_ORIG_NODE(load, node);
+	attr->am_imm = imm;
 	return be_new_Proj(load, pn_ia32_Load_res);
 }
 
-/**
- * Transform Builtin return_address
- */
-static ir_node *gen_return_address(ir_node *node)
+static ir_node *climb_frame(dbg_info *const dbgi, ir_node *const block,
+							unsigned const levels)
 {
-	/* Load the return address from this frame. */
-	return make_load_from_frame(node, &ia32_get_return_address_entity);
+	ir_graph *irg = get_irn_irg(block);
+	ir_node  *ptr = get_irg_frame(irg);
+	for (unsigned i = 0; i < levels; ++i) {
+		x86_imm32_t const imm = i == 0
+			? (x86_imm32_t) { .kind = X86_IMM_FRAMEOFFSET, .offset = -4 }
+			: (x86_imm32_t) { .kind = X86_IMM_VALUE,       .offset =  0 };
+		ptr = create_frame_load(dbgi, block, ptr, imm);
+	}
+	return ptr;
 }
 
-/**
- * Transform Builtin frame_address
- */
+static ir_node *gen_return_address(ir_node *node)
+{
+	dbg_info     *const dbgi     = get_irn_dbg_info(node);
+	ir_node      *const block    = be_transform_nodes_block(node);
+	ir_node      *const n_frames = get_Builtin_param(node, 0);
+	unsigned long const value    = get_Const_long(n_frames);
+	if (value > 256)
+		panic("Enormeous level argument for return_address builtin");
+
+	ir_node *const base = climb_frame(dbgi, block, value);
+	x86_imm32_t const imm = value == 0
+		? (x86_imm32_t) { .kind = X86_IMM_FRAMEOFFSET, .offset = 0 }
+		: (x86_imm32_t) { .kind = X86_IMM_VALUE,       .offset = 4 };
+	return create_frame_load(dbgi, block, base, imm);
+}
+
 static ir_node *gen_frame_address(ir_node *node)
 {
-	/* Load the frame address from this frame.
-	 * Will fail if frame pointer is omitted, but gcc does this. */
-	return make_load_from_frame(node, &ia32_get_frame_address_entity);
+	dbg_info     *const dbgi     = get_irn_dbg_info(node);
+	ir_node      *const block    = be_transform_nodes_block(node);
+	ir_node      *const n_frames = get_Builtin_param(node, 0);
+	unsigned long const value    = get_Const_long(n_frames);
+	if (value > 256)
+		panic("Enormeous level argument for frame_address builtin");
+
+	return climb_frame(dbgi, block, value);
 }
 
 /**
@@ -5569,7 +5564,7 @@ static ir_node *gen_va_start(ir_node *node)
 		ia32_attr_t *const attr = get_ia32_attr(ap);
 		attr->am_imm = (x86_imm32_t){
 			.kind   = X86_IMM_FRAMEENT,
-			.entity = va_start_entity,
+			.entity = current_cconv->va_start_addr,
 		};
 
 		initial_va_list = ap;
@@ -5685,10 +5680,10 @@ static ir_node *gen_Proj_Builtin(ir_node *proj)
 }
 
 ir_node *ia32_new_IncSP(ir_node *block, ir_node *old_sp, int offset,
-                        unsigned align)
+                        bool no_align)
 {
 	ir_node *incsp = be_new_IncSP(&ia32_registers[REG_ESP], block, old_sp,
-	                              offset, align);
+	                              offset, no_align);
 	arch_add_irn_flags(incsp, arch_irn_flag_modify_flags);
 	return incsp;
 }
@@ -5798,87 +5793,6 @@ static void register_transformers(void)
 	be_set_upper_bits_clean_function(op_Mux, ia32_mux_upper_bits_clean);
 }
 
-static ir_type *ia32_get_between_type(bool omit_fp)
-{
-	static ir_type *between_type         = NULL;
-	static ir_type *omit_fp_between_type = NULL;
-
-	if (between_type == NULL) {
-		between_type = new_type_class(new_id_from_str("ia32_between_type"));
-		/* between type contains return address + saved base pointer */
-		unsigned gp_size = get_mode_size_bytes(ia32_mode_gp);
-		set_type_size(between_type, 2*gp_size);
-
-		omit_fp_between_type = new_type_class(new_id_from_str("ia32_between_type"));
-		/* between type contains return address */
-		set_type_size(omit_fp_between_type, gp_size);
-	}
-
-	return omit_fp ? omit_fp_between_type : between_type;
-}
-
-
-static void ia32_create_stacklayout(ir_graph *irg, const x86_cconv_t *cconv)
-{
-	/* construct argument type */
-	ir_entity  *const entity     = get_irg_entity(irg);
-	ident      *const arg_id     = new_id_fmt("%s_arg_type", get_entity_ident(entity));
-	ir_type    *const arg_type   = new_type_struct(arg_id);
-	ir_type    *const frame_type = get_irg_frame_type(irg);
-	size_t      const n_params   = cconv->n_parameters;
-	ir_entity **const param_map  = ALLOCANZ(ir_entity*, n_params);
-
-	for (size_t f = get_compound_n_members(frame_type); f-- > 0; ) {
-		ir_entity *member = get_compound_member(frame_type, f);
-		if (!is_parameter_entity(member))
-			continue;
-		set_entity_owner(member, arg_type);
-
-		size_t num = get_entity_parameter_number(member);
-		assert(num < n_params);
-		if (param_map[num] != NULL)
-			panic("multiple entities for parameter %u in %+F found", f, irg);
-		param_map[num] = member;
-	}
-
-	/* calculate offsets */
-	for (size_t p = 0; p < n_params; ++p) {
-		reg_or_stackslot_t *param = &cconv->parameters[p];
-		if (param->type == NULL)
-			continue;
-
-		ir_entity *entity = param_map[p];
-		if (entity == NULL)
-			entity = new_parameter_entity(arg_type, p, param->type);
-		param->entity = entity;
-		set_entity_offset(param->entity, param->offset);
-	}
-
-
-	ir_type *const function_type = get_entity_type(entity);
-	if (is_method_variadic(function_type)) {
-		ir_type *unknown = get_unknown_type();
-		va_start_entity = new_parameter_entity(arg_type, IR_VA_START_PARAMETER_NUMBER, unknown);
-		set_entity_offset(va_start_entity, cconv->param_stacksize);
-	}
-
-	set_type_size(arg_type, cconv->param_stacksize);
-
-	be_stack_layout_t *const layout = be_get_irg_stack_layout(irg);
-	memset(layout, 0, sizeof(*layout));
-	layout->frame_type     = frame_type;
-	layout->between_type   = ia32_get_between_type(cconv->omit_fp);
-	layout->arg_type       = arg_type;
-	layout->initial_offset = 0;
-	layout->initial_bias   = 0;
-	layout->sp_relative    = cconv->omit_fp;
-
-	assert(N_FRAME_TYPES == 3);
-	layout->order[0] = layout->frame_type;
-	layout->order[1] = layout->between_type;
-	layout->order[2] = layout->arg_type;
-}
-
 static void ia32_pretransform_node(ir_graph *irg)
 {
 	nomem    = get_irg_no_mem(irg);
@@ -5909,7 +5823,7 @@ void ia32_transform_graph(ir_graph *irg)
 	ir_entity *entity = get_irg_entity(irg);
 	ir_type   *mtp    = get_entity_type(entity);
 	current_cconv = ia32_decide_calling_convention(mtp, irg);
-	ia32_create_stacklayout(irg, current_cconv);
+	x86_layout_param_entities(irg, current_cconv, IA32_REGISTER_SIZE);
 	be_add_parameter_entity_stores(irg);
 	x86_create_parameter_loads(irg, current_cconv);
 

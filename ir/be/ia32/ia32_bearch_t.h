@@ -11,6 +11,7 @@
 #ifndef FIRM_BE_IA32_IA32_BEARCH_T_H
 #define FIRM_BE_IA32_IA32_BEARCH_T_H
 
+#include <limits.h>
 #include "beirg.h"
 #include "pmap.h"
 #include "x86_cconv.h"
@@ -94,8 +95,6 @@ void ia32_adjust_pic(ir_graph *irg);
 
 ir_node *ia32_get_pic_base(ir_graph *irg);
 
-int ia32_get_sp_bias(const ir_node *node);
-
 static inline bool ia32_is_8bit_val(int32_t const v)
 {
 	return -128 <= v && v < 128;
@@ -108,6 +107,8 @@ static inline bool ia32_is_8bit_val(int32_t const v)
  */
 x86_cconv_t *ia32_decide_calling_convention(ir_type const *function_type,
                                             ir_graph *irg);
+
+int ia32_get_sp_change(ir_node *node);
 
 void ia32_cconv_init(void);
 

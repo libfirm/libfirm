@@ -29,8 +29,12 @@ typedef struct reg_or_stackslot_t
 	const arch_register_t *reg1;
 	/** indicates that an entity of the specific type is needed */
 	ir_type               *type;
-	unsigned               offset; /**< if transmitted via stack, the offset for
-	                                    this parameter. */
+	/** If transmitted via stack, the offset for this parameter.
+	 * The offset is relative to the end of the space that contains all
+	 * parameters (which is relative to SP + SPARC_MIN_STACK_SIZE immediately
+	 * before the call). */
+	int                    offset;
+	bool                   already_stored;
 	ir_entity             *entity; /**< entity in frame type */
 } reg_or_stackslot_t;
 
@@ -47,6 +51,7 @@ struct calling_convention_t
 	reg_or_stackslot_t *results;          /**< result info. */
 	unsigned            n_reg_results;
 	unsigned           *caller_saves;     /**< bitset of caller save registers */
+	ir_entity          *va_start_addr;
 };
 
 /**

@@ -1730,7 +1730,8 @@ static ir_node *gen_Call(ir_node *node)
 	/* construct an IncSP -> we have to always be sure that the stack is
 	 * aligned even if we don't push arguments on it */
 	ir_node *const new_frame = get_initial_sp(irg);
-	ir_node *const callframe = be_new_IncSP(sp_reg, new_block, new_frame, cconv->param_stack_size, SPARC_PO2_STACK_ALIGNMENT);
+	ir_node *const callframe = be_new_IncSP(sp_reg, new_block, new_frame,
+	                                        cconv->param_stack_size, false);
 	in_req[in_arity] = sp_reg->single_req;
 	in[in_arity]     = callframe;
 	++in_arity;
@@ -1780,7 +1781,7 @@ static ir_node *gen_Call(ir_node *node)
 
 		/* we need to skip over our save area when constructing the call
 		 * arguments on stack */
-		offset = param->offset + SPARC_MIN_STACKSIZE;
+		offset = param->offset;
 
 		ir_node *const str = mode_is_float(mode) ?
 			create_stf(         dbgi, new_block, partial_value, callframe, new_mem, mode, NULL, offset, true) :
@@ -1845,7 +1846,8 @@ static ir_node *gen_Call(ir_node *node)
 
 	/* IncSP to destroy the call stackframe */
 	ir_node *const call_stack = be_new_Proj(res, pn_sparc_Call_stack);
-	ir_node *const incsp      = be_new_IncSP(sp_reg, new_block, call_stack, -cconv->param_stack_size, 0);
+	ir_node *const incsp      = be_new_IncSP(sp_reg, new_block, call_stack,
+	                                         -cconv->param_stack_size, false);
 	be_stack_record_chain(&stack_env, callframe, n_be_IncSP_pred, incsp);
 
 	sparc_free_calling_convention(cconv);
@@ -2019,7 +2021,7 @@ static ir_node *gen_va_start(ir_node *node)
 		dbg_info  *dbgi   = get_irn_dbg_info(node);
 		ir_graph  *irg    = get_irn_irg(node);
 		ir_node   *block  = get_irg_start_block(irg);
-		ir_entity *entity = sparc_get_va_start_entity();
+		ir_entity *entity = current_cconv->va_start_addr;
 		ir_node   *frame  = get_frame_base(irg);
 		ir_node   *ap     = new_bd_sparc_FrameAddr(dbgi, block, frame, entity, 0);
 
@@ -2464,17 +2466,26 @@ void sparc_transform_graph(ir_graph *irg)
 		current_cconv
 			= sparc_decide_calling_convention(get_entity_type(entity), irg);
 	}
-	sparc_create_stacklayout(irg, current_cconv);
-	be_add_parameter_entity_stores(irg);
+	sparc_layout_param_entities(irg, current_cconv);
+
+	ir_entity *need_stores[current_cconv->n_param_regs];
+	unsigned   n_stores = 0;
+	for (size_t i = 0, n = current_cconv->n_parameters; i < n; ++i) {
+		reg_or_stackslot_t const *const param  = &current_cconv->parameters[i];
+		if (param->already_stored)
+			continue;
+		ir_entity *const entity = param->entity;
+		if (entity == NULL)
+			continue;
+		assert(n_stores < current_cconv->n_param_regs);
+		need_stores[n_stores++] = entity;
+	}
+	be_add_parameter_entity_stores_list(irg, n_stores, need_stores);
 
 	be_transform_graph(irg, NULL);
 
 	be_stack_finish(&stack_env);
 	sparc_free_calling_convention(current_cconv);
-
-	ir_type *frame_type = get_irg_frame_type(irg);
-	if (get_type_state(frame_type) == layout_undefined)
-		default_layout_compound_type(frame_type);
 
 	initial_va_list = NULL;
 

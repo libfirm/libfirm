@@ -46,7 +46,7 @@ ir_entity *ia32_gen_fp_known_const(ia32_known_const_t kct);
 void ia32_init_transform(void);
 
 ir_node *ia32_new_IncSP(ir_node *block, ir_node *old_sp, int offset,
-                        unsigned align);
+                        bool no_align);
 
 const arch_register_t *ia32_get_clobber_register(const char *clobber);
 

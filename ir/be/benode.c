@@ -44,7 +44,7 @@ typedef struct {
 	be_node_attr_t base;
 	int            offset; /**< The offset by which the stack shall be
 	                            expanded/shrinked. */
-	unsigned       align;  /**< alignment after the IncSP (0=no alignment) */
+	bool           no_align;
 } be_incsp_attr_t;
 
 typedef struct {
@@ -87,7 +87,9 @@ static int be_incsp_attrs_equal(const ir_node *a, const ir_node *b)
 		= (const be_incsp_attr_t*)get_irn_generic_attr_const(a);
 	const be_incsp_attr_t *attr_b
 		= (const be_incsp_attr_t*)get_irn_generic_attr_const(b);
-	return attr_a->offset == attr_b->offset && attrs_equal_be_node(a, b);
+	return attr_a->offset == attr_b->offset
+	    && attr_a->no_align == attr_b->no_align
+		&& attrs_equal_be_node(a, b);
 }
 
 static int be_relocation_attrs_equal(ir_node const *a, ir_node const *b)
@@ -245,7 +247,7 @@ ir_node *be_new_Keep_one(ir_node *const kept)
 }
 
 ir_node *be_new_IncSP(const arch_register_t *sp, ir_node *bl,
-                      ir_node *old_sp, int offset, unsigned align)
+                      ir_node *old_sp, int offset, bool no_align)
 {
 	ir_graph *irg = get_irn_irg(bl);
 	ir_node  *in[] = { old_sp };
@@ -254,7 +256,7 @@ ir_node *be_new_IncSP(const arch_register_t *sp, ir_node *bl,
 	init_node_attr(irn, 1, arch_irn_flags_none);
 	be_incsp_attr_t *a = (be_incsp_attr_t*)get_irn_generic_attr(irn);
 	a->offset          = offset;
-	a->align           = align;
+	a->no_align        = no_align;
 	a->base.exc.pinned = true;
 
 	/* Set output constraint to stack register. */
@@ -366,12 +368,12 @@ int be_get_IncSP_offset(const ir_node *irn)
 	return a->offset;
 }
 
-unsigned be_get_IncSP_align(const ir_node *irn)
+bool be_get_IncSP_no_align(const ir_node *irn)
 {
 	assert(be_is_IncSP(irn));
 	const be_incsp_attr_t *a
 		= (const be_incsp_attr_t*)get_irn_generic_attr_const(irn);
-	return a->align;
+	return a->no_align;
 }
 
 ir_node *be_new_Phi(ir_node *block, int n_ins, ir_node **ins, ir_mode *mode,
@@ -575,7 +577,7 @@ static void dump_node(FILE *f, const ir_node *irn, dump_reason_t reason)
 		if (be_is_IncSP(irn)) {
 			const be_incsp_attr_t *a
 				= (const be_incsp_attr_t*)get_irn_generic_attr_const(irn);
-			fprintf(f, "align: %u\n", a->align);
+			fprintf(f, "no_align: %s\n", a->no_align ? "true" : "false");
 			fprintf(f, "offset: %d\n", a->offset);
 		} else if (be_is_MemPerm(irn)) {
 			for (unsigned i = 0; i < be_get_MemPerm_entity_arity(irn); ++i) {

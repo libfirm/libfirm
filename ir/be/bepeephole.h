@@ -58,6 +58,8 @@ bool be_peephole_IncSP_IncSP(ir_node *node);
 
 bool be_has_only_one_user(ir_node *node);
 
+typedef ir_entity *(*get_frame_entity_func)(const ir_node *node);
+
 /**
  * In a scheduled program with registers assigned,
  * checks whether @p node can be moved before @p before without changing program

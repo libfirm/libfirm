@@ -1094,58 +1094,6 @@ void default_layout_compound_type(ir_type *type)
 	set_type_state(type, layout_fixed);
 }
 
-ir_entity *frame_alloc_area(ir_type *frame_type, int size, unsigned alignment,
-                            int at_start)
-{
-	static unsigned area_cnt = 0;
-
-	assert(is_frame_type(frame_type));
-	assert(get_type_state(frame_type) == layout_fixed);
-	assert(get_type_alignment(frame_type) > 0);
-	set_type_state(frame_type, layout_undefined);
-
-	if (irp->byte_type == NULL)
-		irp->byte_type = new_type_primitive(mode_Bu);
-
-	ident *const name = new_id_fmt("area%u", area_cnt++);
-
-	ir_type *tp = new_type_array(irp->byte_type);
-	set_array_size_int(tp, size);
-	set_type_alignment(tp, alignment);
-	set_type_size(tp, size);
-
-	unsigned frame_size  = get_type_size(frame_type);
-	unsigned frame_align = get_type_alignment(frame_type);
-	int      offset;
-	if (at_start) {
-		unsigned delta = round_up2(size, frame_align);
-		/* fix all offsets so far */
-		for (size_t i = 0, n = get_compound_n_members(frame_type); i < n; ++i) {
-			ir_entity *ent = get_compound_member(frame_type, i);
-
-			set_entity_offset(ent, get_entity_offset(ent) + delta);
-		}
-		/* calculate offset and new type size */
-		offset = 0;
-		frame_size += delta;
-	} else {
-		/* calculate offset and new type size */
-		offset = (frame_size + alignment - 1) & ~(alignment - 1);
-		frame_size = offset + size;
-	}
-
-	ir_entity *area = new_entity(frame_type, name, tp);
-	set_entity_visibility(area, ir_visibility_private);
-	set_entity_offset(area, offset);
-	set_type_size(frame_type, frame_size);
-	if (alignment > frame_align) {
-		set_type_alignment(frame_type, alignment);
-	}
-
-	set_type_state(frame_type, layout_fixed);
-	return area;
-}
-
 void ir_print_type(char *buffer, size_t buffer_size, const ir_type *type)
 {
 	type_dbg_info *tdbgi = get_type_dbg_info(type);

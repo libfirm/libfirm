@@ -16,165 +16,85 @@
  *    and the spills.
  */
 #include "bestack.h"
-#include "beirg.h"
-#include "besched.h"
-#include "benode.h"
-#include "bessaconstr.h"
 
+#include "beirg.h"
+#include "benode.h"
+#include "besched.h"
+#include "bessaconstr.h"
 #include "ircons_t.h"
 #include "iredges_t.h"
-#include "irnode_t.h"
-#include "irgwalk.h"
 #include "irgmod.h"
+#include "irgwalk.h"
+#include "irnode_t.h"
+#include "util.h"
 
-int be_get_stack_entity_offset(be_stack_layout_t *frame, ir_entity *ent,
-                               int bias)
+static unsigned round_up2_misaligned(unsigned const offset,
+		unsigned const alignment, unsigned const misalign)
 {
-	ir_type *t   = get_entity_owner(ent);
-	int      ofs = get_entity_offset(ent);
-	/* Find the type the entity is contained in. */
-	for (unsigned index = 0; index < N_FRAME_TYPES; ++index) {
-		if (frame->order[index] == t)
-			break;
-		/* Add the size of all the types below the one of the entity to the entity's offset */
-		ofs += get_type_size(frame->order[index]);
-	}
-	/* correct the offset by the initial position of the frame pointer */
-	ofs -= frame->initial_offset;
-	/* correct the offset with the current bias. */
-	ofs += bias;
-	return ofs;
+	return round_up2(offset + misalign, alignment) - misalign;
+}
+
+static void sim_be_IncSP(ir_node *node, stack_pointer_state_t *state)
+{
+	int      const ofs         = be_get_IncSP_offset(node);
+	unsigned const p2align     = be_get_IncSP_no_align(node) ? 0
+	                                                         : state->p2align;
+	unsigned const alignment   = 1u << p2align;
+	int      const prev_offset = state->offset;
+	int      const new_offset  = prev_offset - state->align_padding + ofs;
+	int      const aligned
+		= round_up2_misaligned(new_offset, alignment, state->misalign);
+	be_set_IncSP_offset(node, aligned - prev_offset);
+	state->align_padding = aligned - new_offset;
+	state->offset        = aligned;
 }
 
 /**
- * Retrieve the entity with given offset from a frame type.
+ * Simulate stack pointer offset relative to offset at function begin.
  */
-static ir_entity *search_ent_with_offset(ir_type *t, int offset)
+static void process_stack_bias(sp_sim_func const sim, ir_node *const block,
+                               unsigned const p2align, unsigned const misalign,
+                               int offset, unsigned align_padding)
 {
-	for (size_t i = 0, n = get_compound_n_members(t); i < n; ++i) {
-		ir_entity *ent = get_compound_member(t, i);
-		if (get_entity_offset(ent) == offset)
-			return ent;
-	}
-	return NULL;
-}
-
-static void stack_frame_compute_initial_offset(be_stack_layout_t *frame)
-{
-	ir_type   *base = frame->between_type;
-	ir_entity *ent  = search_ent_with_offset(base, 0);
-	if (ent == NULL) {
-		frame->initial_offset = get_type_size(frame->frame_type);
-	} else {
-		frame->initial_offset = be_get_stack_entity_offset(frame, ent, 0);
-	}
-}
-
-/**
- * A helper struct for the bias walker.
- */
-typedef struct bias_walk {
-	get_sp_bias_func      get_sp_bias;
-	set_frame_offset_func set_frame_offset;
-	get_frame_entity_func get_frame_entity;
-} bias_walk;
-
-/**
- * Fix all stack accessing operations in the block bl.
- *
- * @param bl         the block to process
- * @param real_bias  the bias value
- */
-static void process_stack_bias(bias_walk *bw, ir_node *bl, int real_bias, int wanted_bias)
-{
-	if (Block_block_visited(bl)) {
+	/* TODO: We really should check that offset corresponds to the one we got
+	 * last time when the block was already visited. Add a map in debug mode? */
+	if (Block_block_visited(block))
 		return;
-	}
+	mark_Block_block_visited(block);
 
-	mark_Block_block_visited(bl);
+	stack_pointer_state_t state = {
+		.misalign      = misalign,
+		.p2align       = p2align,
+		.offset        = offset,
+		.align_padding = align_padding,
+	};
 
-	ir_graph          *irg         = get_irn_irg(bl);
-	be_stack_layout_t *layout      = be_get_irg_stack_layout(irg);
-	bool               sp_relative = layout->sp_relative;
-
-	sched_foreach(bl, irn) {
-		/* Check, if the node relates to an entity on the stack frame.
-		 * If so, set the true offset (including the bias) for that
-		 * node. */
-		ir_entity *ent = bw->get_frame_entity(irn);
-		if (ent != NULL) {
-			int bias   = sp_relative ? real_bias : 0;
-			int offset = be_get_stack_entity_offset(layout, ent, bias);
-			bw->set_frame_offset(irn, offset);
-		}
-
-		/* If the node modifies the stack pointer by a constant offset,
-		 * record that in the bias. */
-		if (be_is_IncSP(irn)) {
-			int      ofs   = be_get_IncSP_offset(irn);
-			unsigned align = be_get_IncSP_align(irn);
-			/* fill in real stack frame size */
-			if (align > 0) {
-				/* patch IncSP to produce an aligned stack pointer */
-				int const between_size = get_type_size(layout->between_type);
-				int const alignment    = 1 << align;
-				int const delta        = (real_bias + ofs + between_size) & (alignment - 1);
-				assert(ofs >= 0);
-				if (delta > 0) {
-					be_set_IncSP_offset(irn, ofs + alignment - delta);
-					real_bias += alignment - delta;
-				}
-			} else {
-				/* adjust so real_bias corresponds with wanted_bias */
-				int delta = wanted_bias - real_bias;
-				assert(delta <= 0);
-				if (delta != 0) {
-					be_set_IncSP_offset(irn, ofs + delta);
-					real_bias += delta;
-				}
-			}
-			real_bias   += ofs;
-			wanted_bias += ofs;
+	sched_foreach(block, node) {
+		if (be_is_IncSP(node)) {
+			sim_be_IncSP(node, &state);
+		} else if (be_is_MemPerm(node)) {
+			be_set_MemPerm_offset(node, state.offset);
 		} else {
-			int ofs = bw->get_sp_bias(irn);
-			if (ofs == SP_BIAS_RESET) {
-				real_bias   = 0;
-				wanted_bias = 0;
-			} else {
-				real_bias   += ofs;
-				wanted_bias += ofs;
-			}
+			sim(node, &state);
 		}
 	}
 
-	assert(real_bias >= wanted_bias);
-
-	/* Since we know our biases, we can now handle our control flow successors. */
-	foreach_out_edge_kind_safe(bl, edge, EDGE_KIND_BLOCK) {
-		ir_node *pred = get_edge_src_irn(edge);
-		process_stack_bias(bw, pred, real_bias, wanted_bias);
+	/* Continue at our control flow successors. */
+	foreach_out_edge_kind(block, edge, EDGE_KIND_BLOCK) {
+		ir_node *succ = get_edge_src_irn(edge);
+		process_stack_bias(sim, succ, p2align, misalign,
+		                   state.offset, state.align_padding);
 	}
 }
 
-void be_abi_fix_stack_bias(ir_graph *irg, get_sp_bias_func get_sp_bias,
-                           set_frame_offset_func set_frame_offset,
-                           get_frame_entity_func get_frame_entity)
+void be_sim_stack_pointer(ir_graph *const irg, unsigned const misalign,
+                          unsigned const p2align, sp_sim_func const sim)
 {
-	be_stack_layout_t *stack_layout = be_get_irg_stack_layout(irg);
-
-	stack_frame_compute_initial_offset(stack_layout);
-
-	int      initial_bias = stack_layout->initial_bias;
-	ir_node *start_block  = get_irg_start_block(irg);
-	bias_walk bw = {
-		.get_sp_bias      = get_sp_bias,
-		.set_frame_offset = set_frame_offset,
-		.get_frame_entity = get_frame_entity,
-	};
+	ir_node *const start_block = get_irg_start_block(irg);
 
 	ir_reserve_resources(irg, IR_RESOURCE_BLOCK_VISITED);
 	inc_irg_block_visited(irg);
-	process_stack_bias(&bw, start_block, initial_bias, initial_bias);
+	process_stack_bias(sim, start_block, p2align, misalign, 0, 0);
 	ir_free_resources(irg, IR_RESOURCE_BLOCK_VISITED);
 }
 
@@ -256,4 +176,73 @@ void be_fix_stack_nodes(ir_graph *const irg, arch_register_t const *const sp)
 			}
 		}
 	}
+}
+
+static int cmp_slots_last(void const *const p0, void const *const p1)
+{
+	ir_entity const *const e0 = *(ir_entity const**)p0;
+	ir_entity const *const e1 = *(ir_entity const**)p1;
+	if (e0->kind == IR_ENTITY_SPILLSLOT) {
+		if (e1->kind != IR_ENTITY_SPILLSLOT)
+			return -1;
+	} else if (e1->kind == IR_ENTITY_SPILLSLOT)
+		return 1;
+
+	return QSORT_CMP(e1->nr, e0->nr);
+}
+
+static int cmp_slots_first(void const *const p0, void const *const p1)
+{
+	ir_entity const *const e0 = *(ir_entity const**)p0;
+	ir_entity const *const e1 = *(ir_entity const**)p1;
+	if (e0->kind == IR_ENTITY_SPILLSLOT) {
+		if (e1->kind != IR_ENTITY_SPILLSLOT)
+			return 1;
+	} else if (e1->kind == IR_ENTITY_SPILLSLOT)
+		return -1;
+
+	return QSORT_CMP(e0->nr, e1->nr);
+}
+
+void be_sort_frame_entities(ir_type *const frame, bool spillslots_first)
+{
+	unsigned const n_members = get_compound_n_members(frame);
+	assert(is_compound_type(frame));
+	qsort(frame->attr.compound.members, n_members,
+		  sizeof(frame->attr.compound.members[0]),
+		  spillslots_first ? cmp_slots_first : cmp_slots_last);
+}
+
+void be_layout_frame_type(ir_type *const frame, int const begin,
+                          unsigned const misalign)
+{
+	/* Layout entities into negative direction. */
+	int offset = begin;
+	for (unsigned i = 0, n_members = get_compound_n_members(frame);
+		 i < n_members; ++i) {
+		ir_entity *const member        = get_compound_member(frame, i);
+		int        const member_offset = get_entity_offset(member);
+		if (member_offset != INVALID_OFFSET) {
+			assert(member_offset >= begin);
+			continue;
+		}
+		assert(get_entity_bitfield_size(member) == 0);
+
+		unsigned size;
+		unsigned alignment = get_entity_alignment(member);
+		if (member->kind == IR_ENTITY_SPILLSLOT) {
+			size = member->attr.spillslot.size;
+		} else {
+			ir_type const *const type           = get_entity_type(member);
+			unsigned       const type_alignment = get_type_alignment(type);
+			size      = get_type_size(type);
+			alignment = MAX(alignment, type_alignment);
+		}
+
+		offset -= size;
+		offset  = -round_up2_misaligned(-offset, alignment, misalign);
+		set_entity_offset(member, offset);
+	}
+	set_type_size(frame, -(offset-begin));
+	set_type_state(frame, layout_fixed);
 }

@@ -13,20 +13,22 @@
 #define FIRM_BE_BESTACK_H
 
 #include <limits.h>
+#include <stdbool.h>
 
-#include "firm_types.h"
 #include "be_types.h"
+#include "firm_types.h"
 
-/**
- * this constant is returned by the get_sp_bias_func functions if the stack
- * is reset (usually because the frame pointer is copied to the stack
- * pointer
- */
-#define SP_BIAS_RESET      INT_MIN
-
-typedef void (*set_frame_offset_func)(ir_node *node, int offset);
-
-typedef int (*get_sp_bias_func)(const ir_node *node);
+typedef struct stack_pointer_state_t {
+	/** Misalignment of stack pointer when offset == 0 */
+	unsigned misalign;
+	/** Target alignment for stack pointer in log 2. */
+	unsigned p2align;
+	/** Offset of stack pointer value to value at function begin. */
+	int      offset;
+	/** Extra bytes allocated to keep the stack pointer alignment. */
+	unsigned align_padding;
+	bool     no_change;
+} stack_pointer_state_t;
 
 /**
  * Rewire all stack modifying nodes and their users to assure SSA property.
@@ -34,22 +36,23 @@ typedef int (*get_sp_bias_func)(const ir_node *node);
  */
 void be_fix_stack_nodes(ir_graph *irg, arch_register_t const *sp);
 
-/**
- * Fix the stack bias for all nodes accessing the stack frame using the
- * stack pointer.
- * @p get_sp_bias should return the delta of the stackpointer for nodes
- * that increment or decrement the stackpointer with constant values.
- * (Such as push and pop variants, be_IncSP, ...). A positive value stands
- * for an expanding stack area, a negative value for a shrinking one,
- * regardless of the actual stack direction of the calling convention.
- * Note that the code already contains a special case for IncSP nodes so the
- * callback does not need to handle them.
- */
-void be_abi_fix_stack_bias(ir_graph *irg, get_sp_bias_func get_sp_bias,
-                           set_frame_offset_func set_frame_offset,
-                           get_frame_entity_func get_frame_entity);
+typedef void (*sp_sim_func)(ir_node *node, stack_pointer_state_t *state);
 
-int be_get_stack_entity_offset(be_stack_layout_t *frame, ir_entity *ent,
-                               int bias);
+/**
+ * From function begin simulate relative stack pointer offset along the
+ * function.
+ * Note that the code already contains a special case for IncSP and MemPerm
+ * nodes which need no handling in the callback.
+ */
+void be_sim_stack_pointer(ir_graph *irg, unsigned misalign, unsigned p2align,
+                          sp_sim_func func);
+
+/**
+ * Layout entities in frame type. This will not touch entities which already
+ * have offsets assigned.
+ */
+void be_layout_frame_type(ir_type *frame, int begin, unsigned misalign);
+
+void be_sort_frame_entities(ir_type *const frame, bool spillslots_first);
 
 #endif

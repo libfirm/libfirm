@@ -73,10 +73,8 @@ void sparc_finish_graph(ir_graph *irg);
 void sparc_lower_64bit(void);
 
 bool sparc_variadic_fixups(ir_graph *irg, calling_convention_t *cconv);
-void sparc_create_stacklayout(ir_graph *irg, calling_convention_t *cconv);
-void sparc_adjust_stack_entity_offsets(ir_graph *irg, bool omit_fp);
+void sparc_layout_param_entities(ir_graph *irg, calling_convention_t *cconv);
 void sparc_fix_stack_bias(ir_graph *irg);
-ir_entity *sparc_get_va_start_entity(void);
 
 ir_entity *sparc_get_frame_entity(const ir_node *node);
 

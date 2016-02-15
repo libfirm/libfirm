@@ -114,14 +114,13 @@ enum {
  *               (negative offset). Note that the offset is independent of the
  *               natural stack direction of the architecture but just specifies
  *               abstract expanding/shrinking of the stack area.
- * @param align  force stack alignment to this power of 2. (i.e. specifying 4
- *               results in a 2**4 = 16 bytes stack alignment)
+ * @param no_align   Ignore SP alignment requirements.
  * @return       A new stack pointer increment/decrement node.
  * @note         This node sets a register constraint to the @p sp register on
  *               its output.
  */
 ir_node *be_new_IncSP(const arch_register_t *sp, ir_node *block,
-                      ir_node *old_sp, int offset, unsigned align);
+                      ir_node *old_sp, int offset, bool no_align);
 
 /** Returns the previous node that computes the stack pointer. */
 ir_node *be_get_IncSP_pred(ir_node *incsp);
@@ -139,9 +138,7 @@ void be_set_IncSP_offset(ir_node *irn, int offset);
 
 /** Gets the offset from a IncSP node. */
 int be_get_IncSP_offset(const ir_node *irn);
-/** Return requested stack alignment (as a logarithm of two, i.e. 4 means
- * the stack alignment will be 2**4=16 bytes) */
-unsigned be_get_IncSP_align(const ir_node *irn);
+bool be_get_IncSP_no_align(const ir_node *irn);
 
 enum {
 	n_be_CopyKeep_op,

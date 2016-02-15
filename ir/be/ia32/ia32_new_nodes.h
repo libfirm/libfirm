@@ -67,12 +67,6 @@ const ia32_call_attr_t *get_ia32_call_attr_const(const ir_node *node);
 ia32_copyb_attr_t *get_ia32_copyb_attr(ir_node *node);
 const ia32_copyb_attr_t *get_ia32_copyb_attr_const(const ir_node *node);
 
-/**
- * Gets the ClimbFrame node attributes.
- */
-ia32_climbframe_attr_t *get_ia32_climbframe_attr(ir_node *node);
-const ia32_climbframe_attr_t *get_ia32_climbframe_attr_const(const ir_node *node);
-
 ia32_switch_attr_t *get_ia32_switch_attr(ir_node *node);
 const ia32_switch_attr_t *get_ia32_switch_attr_const(const ir_node *node);
 

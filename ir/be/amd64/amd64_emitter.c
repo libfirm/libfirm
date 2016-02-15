@@ -28,8 +28,6 @@
 #include "irgwalk.h"
 #include "panic.h"
 
-static be_stack_layout_t *layout;
-
 static char get_gp_size_suffix(amd64_insn_size_t const size)
 {
 	switch (size) {
@@ -229,6 +227,7 @@ static void emit_relocation_no_offset(x86_immediate_kind_t const kind,
 	case X86_IMM_TLS_LE:
 	case X86_IMM_PICBASE_REL:
 	case X86_IMM_FRAMEENT:
+	case X86_IMM_FRAMEOFFSET:
 	case X86_IMM_GOT:
 	case X86_IMM_GOTOFF:
 		break;
@@ -263,14 +262,6 @@ static void amd64_emit_immediate32(bool const prefix,
 		be_emit_irprintf("%+" PRId32, imm->offset);
 }
 
-#ifndef NDEBUG
-static bool is_fp_relative(const ir_entity *entity)
-{
-	ir_type *owner = get_entity_owner(entity);
-	return is_frame_type(owner) || owner == layout->arg_type;
-}
-#endif
-
 static void amd64_emit_addr(const ir_node *const node,
                             const amd64_addr_t *const addr)
 {
@@ -281,7 +272,7 @@ static void amd64_emit_addr(const ir_node *const node,
 
 	if (entity != NULL) {
 		assert(addr->immediate.kind != X86_IMM_VALUE);
-		assert(!is_fp_relative(entity));
+		assert(!is_frame_type(get_entity_owner(entity)));
 		emit_relocation_no_offset(addr->immediate.kind, entity);
 		if (offset != 0)
 			be_emit_irprintf("%+" PRId32, offset);
@@ -960,8 +951,6 @@ static void amd64_gen_block(ir_node *block)
 void amd64_emit_function(ir_graph *irg)
 {
 	ir_entity *entity = get_irg_entity(irg);
-
-	layout = be_get_irg_stack_layout(irg);
 
 	/* register all emitter functions */
 	amd64_register_emitters();

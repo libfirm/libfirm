@@ -43,6 +43,7 @@ typedef struct x86_cconv_t
 	unsigned            n_reg_results;
 	unsigned           *caller_saves;     /**< bitset: caller saved registers */
 	unsigned           *callee_saves;     /**< bitset: callee saved registers */
+	ir_entity          *va_start_addr;
 } x86_cconv_t;
 
 /**
@@ -51,5 +52,8 @@ typedef struct x86_cconv_t
 void x86_free_calling_convention(x86_cconv_t *cconv);
 
 void x86_create_parameter_loads(ir_graph *irg, const x86_cconv_t *cconv);
+
+void x86_layout_param_entities(ir_graph *irg, x86_cconv_t *cconv,
+                               int params_offset);
 
 #endif

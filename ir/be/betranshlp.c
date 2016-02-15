@@ -674,31 +674,30 @@ void be_stack_finish(be_stack_env_t *const env)
 	DEL_ARR_F(changes);
 }
 
-static void create_stores_for_type(ir_graph *irg, ir_type *type)
+void be_add_parameter_entity_stores_list(ir_graph *irg, unsigned n_entities,
+                                         ir_entity **entities)
 {
-	ir_node *frame       = get_irg_frame(irg);
-	ir_node *initial_mem = get_irg_initial_mem(irg);
-	ir_node *mem         = initial_mem;
-	ir_node *first_store = NULL;
-	ir_node *start_block = get_irg_start_block(irg);
-	ir_node *args        = get_irg_args(irg);
+	if (n_entities == 0)
+		return;
+
+	ir_node *const frame       = get_irg_frame(irg);
+	ir_node *const initial_mem = get_irg_initial_mem(irg);
+	ir_node *const start_block = get_irg_start_block(irg);
+	ir_node *const args        = get_irg_args(irg);
 
 	/* all parameter entities left in the frame type require stores.
 	 * (The ones passed on the stack have been moved to the arg type) */
-	for (size_t i = 0, n = get_compound_n_members(type); i < n; ++i) {
-		ir_entity *entity = get_compound_member(type, i);
-		ir_type   *tp     = get_entity_type(entity);
-		if (!is_parameter_entity(entity))
-			continue;
+	ir_node *first_store = NULL;
+	ir_node *mem         = initial_mem;
+	for (unsigned i = 0; i < n_entities; ++i) {
+		ir_entity *const entity = entities[i];
+		ir_type   *const tp     = get_entity_type(entity);
+		size_t     const arg    = get_entity_parameter_number(entity);
+		ir_node   *const addr   = new_r_Member(start_block, frame, entity);
 
-		size_t arg = get_entity_parameter_number(entity);
-		if (arg == IR_VA_START_PARAMETER_NUMBER)
-			continue;
-
-		ir_node *addr        = new_r_Member(start_block, frame, entity);
-		ir_type *mt          = get_entity_type(get_irg_entity(irg));
-		ir_type *param_type0 = get_method_param_type(mt, arg);
 		if (entity->attr.parameter.is_lowered_doubleword) {
+			ir_type *mt          = get_entity_type(get_irg_entity(irg));
+			ir_type *param_type0 = get_method_param_type(mt, arg);
 			ir_type *param_type1 = get_method_param_type(mt, arg + 1);
 			ir_mode *m0          = get_type_mode(param_type0);
 			ir_mode *m1          = get_type_mode(param_type1);
@@ -717,31 +716,46 @@ static void create_stores_for_type(ir_graph *irg, ir_type *type)
 			mem = new_r_Proj(store1, mode_M, pn_Store_M);
 			if (first_store == NULL)
 				first_store = store0;
+
 		} else {
-			ir_mode *mode  = is_compound_type(tp) ? mode_P : get_type_mode(tp);
-			ir_node *val   = new_r_Proj(args, mode, arg);
-			ir_node *store = new_r_Store(start_block, mem, addr, val, tp, cons_none);
+			ir_mode *const mode  = is_compound_type(tp) ? mode_P
+			                                            : get_type_mode(tp);
+			ir_node *const val   = new_r_Proj(args, mode, arg);
+			ir_node *const store = new_r_Store(start_block, mem, addr, val, tp,
+			                                   cons_none);
 			mem = new_r_Proj(store, mode_M, pn_Store_M);
 			if (first_store == NULL)
 				first_store = store;
 		}
 	}
 
-	if (mem != initial_mem) {
-		edges_reroute_except(initial_mem, mem, first_store);
-		set_irg_initial_mem(irg, initial_mem);
-	}
+	edges_reroute_except(initial_mem, mem, first_store);
+	set_irg_initial_mem(irg, initial_mem);
 }
 
 void be_add_parameter_entity_stores(ir_graph *irg)
 {
-	ir_type           *frame_type   = get_irg_frame_type(irg);
-	be_stack_layout_t *layout       = be_get_irg_stack_layout(irg);
-	ir_type           *between_type = layout->between_type;
+	ir_type    *function_type = get_entity_type(get_irg_entity(irg));
+	unsigned    n_parameters  = get_method_n_params(function_type);
+	ir_entity **need_stores   = XMALLOCN(ir_entity*, n_parameters);
+	unsigned    n_need_stores = 0;
+	ir_type    *type          = get_irg_frame_type(irg);
 
-	create_stores_for_type(irg, frame_type);
-	if (between_type != NULL)
-		create_stores_for_type(irg, between_type);
+
+	/* Assume that all parameter entities without an explicit offset set need a
+	 * store. */
+	for (size_t i = 0, n = get_compound_n_members(type); i < n; ++i) {
+		ir_entity *entity = get_compound_member(type, i);
+		if (!is_parameter_entity(entity))
+			continue;
+		if (get_entity_offset(entity) != INVALID_OFFSET)
+			continue;
+
+		assert(n_need_stores < n_parameters);
+		need_stores[n_need_stores++] = entity;
+	}
+	be_add_parameter_entity_stores_list(irg, n_need_stores, need_stores);
+	free(need_stores);
 }
 
 unsigned be_get_n_allocatable_regs(const ir_graph *irg,

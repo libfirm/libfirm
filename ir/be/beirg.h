@@ -36,30 +36,6 @@ void be_invalidate_live_chk(ir_graph *irg);
  */
 void be_free_birg(ir_graph *irg);
 
-/** The number of parts of the stack layout. */
-#define N_FRAME_TYPES 3
-
-/**
- * This type describes the stack layout.
- * The stack is divided into 3 parts:
- * - arg_type:     A struct type describing the stack arguments and its order.
- * - between_type: A struct type describing the stack layout between arguments
- *                 and frame type. In architectures that put the return address
- *                 automatically on the stack, the return address is put here.
- * - frame_type:   A class type describing the frame layout.
- */
-struct be_stack_layout_t {
-	ir_type *arg_type;
-	ir_type *between_type;
-	ir_type *frame_type;
-	ir_type *order[N_FRAME_TYPES]; /**< arg, between and frame types ordered. */
-	/** the initial difference between stack pointer and frame pointer */
-	int  initial_offset;
-	int  initial_bias;      /**< the initial stack bias */
-	/** entities are addressed relative to stack pointer (omit-fp mode) */
-	bool sp_relative : 1;
-};
-
 /**
  * An ir_graph with additional analysis data about this irg. Also includes some
  * backend structures
@@ -67,7 +43,6 @@ struct be_stack_layout_t {
 typedef struct be_irg_t {
 	be_main_env_t    *main_env;
 	be_lv_t          *lv;
-	be_stack_layout_t stack_layout;
 	/** bitset of registers available for the allocator */
 	unsigned         *allocatable_regs;
 	/** bitset of registers for which verification errors are not reported.
@@ -102,11 +77,6 @@ static inline struct obstack *be_get_be_obst(const ir_graph *irg)
 	struct obstack *const obst = &birg->obst;
 	assert(obstack_object_size(obst) == 0);
 	return obst;
-}
-
-static inline be_stack_layout_t *be_get_irg_stack_layout(const ir_graph *irg)
-{
-	return &be_birg_from_irg(irg)->stack_layout;
 }
 
 #endif

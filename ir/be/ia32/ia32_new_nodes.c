@@ -388,22 +388,6 @@ const ia32_copyb_attr_t *get_ia32_copyb_attr_const(const ir_node *node)
 	return copyb_attr;
 }
 
-ia32_climbframe_attr_t *get_ia32_climbframe_attr(ir_node *node)
-{
-	ia32_attr_t            *attr            = get_ia32_attr(node);
-	ia32_climbframe_attr_t *climbframe_attr = CAST_IA32_ATTR(ia32_climbframe_attr_t, attr);
-
-	return climbframe_attr;
-}
-
-const ia32_climbframe_attr_t *get_ia32_climbframe_attr_const(const ir_node *node)
-{
-	const ia32_attr_t            *attr            = get_ia32_attr_const(node);
-	const ia32_climbframe_attr_t *climbframe_attr = CONST_CAST_IA32_ATTR(ia32_climbframe_attr_t, attr);
-
-	return climbframe_attr;
-}
-
 ia32_op_type_t get_ia32_op_type(const ir_node *node)
 {
 	const ia32_attr_t *attr = get_ia32_attr_const(node);
@@ -700,16 +684,6 @@ void init_ia32_condcode_attributes(ir_node *res, x86_condition_code_t cc)
 	attr->condition_code = cc;
 }
 
-void init_ia32_climbframe_attributes(ir_node *res, unsigned count)
-{
-	ia32_climbframe_attr_t *attr = (ia32_climbframe_attr_t*)get_irn_generic_attr(res);
-
-#ifndef NDEBUG
-	attr->attr.attr_type  |= IA32_ATTR_ia32_climbframe_attr_t;
-#endif
-	attr->count = count;
-}
-
 void init_ia32_switch_attributes(ir_node *node,
                                  ir_switch_table const *const table,
                                  ir_entity const *const table_entity)
@@ -801,14 +775,6 @@ int ia32_x87_attrs_equal(const ir_node *a, const ir_node *b)
 	const ia32_x87_attr_t *attr_a = get_ia32_x87_attr_const(a);
 	const ia32_x87_attr_t *attr_b = get_ia32_x87_attr_const(b);
 	return ia32_attrs_equal_(&attr_a->attr, &attr_b->attr);
-}
-
-int ia32_climbframe_attrs_equal(const ir_node *a, const ir_node *b)
-{
-	const ia32_climbframe_attr_t *attr_a = get_ia32_climbframe_attr_const(a);
-	const ia32_climbframe_attr_t *attr_b = get_ia32_climbframe_attr_const(b);
-	return ia32_attrs_equal_(&attr_a->attr, &attr_b->attr)
-	    && attr_a->count == attr_b->count;
 }
 
 int ia32_switch_attrs_equal(const ir_node *a, const ir_node *b)

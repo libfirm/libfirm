@@ -418,17 +418,6 @@ static memperm_t *get_memperm(be_fec_env_t *env, ir_node *block)
 	return res;
 }
 
-static ir_entity* create_stack_entity(be_fec_env_t *env, spill_slot_t *slot)
-{
-	ir_graph  *irg   = env->irg;
-	ir_type   *frame = get_irg_frame_type(irg);
-	ir_entity *res   = frame_alloc_area(frame, slot->size, slot->align,
-	                                    env->at_begin);
-	slot->entity = res;
-
-	return res;
-}
-
 /**
  * Enlarges a spillslot (if necessary) so that it can carry a value of size
  * @p othersize and alignment @p otheralign.
@@ -493,6 +482,7 @@ static void assign_spillslots(be_fec_env_t *env)
 		}
 	}
 
+	ir_type *const frame = get_irg_frame_type(env->irg);
 	for (size_t s = 0; s < spillcount; ++s) {
 		const spill_t *spill  = spills[s];
 		ir_node       *node   = spill->spill;
@@ -500,7 +490,7 @@ static void assign_spillslots(be_fec_env_t *env)
 		spill_slot_t  *slot   = &spillslots[slotid];
 
 		if (slot->entity == NULL)
-			create_stack_entity(env, slot);
+			slot->entity = new_spillslot(frame, slot->size, slot->align);
 
 		if (is_Phi(node)) {
 			ir_node *block = get_nodes_block(node);
@@ -518,7 +508,8 @@ static void assign_spillslots(be_fec_env_t *env)
 					memperm_entry_t *entry;
 					spill_slot_t    *argslot = &spillslots[argslotid];
 					if (argslot->entity == NULL)
-						create_stack_entity(env, argslot);
+						argslot->entity = new_spillslot(frame, argslot->size,
+						                                argslot->align);
 
 					memperm = get_memperm(env, predblock);
 

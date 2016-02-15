@@ -110,9 +110,6 @@ $custom_init_attr_func = \&ia32_custom_init_attr;
 	ia32_x87_attr_t =>
 		"init_ia32_attributes(res, irn_flags, in_reqs, n_res);\n".
 		"\tinit_ia32_x87_attributes(res);",
-	ia32_climbframe_attr_t =>
-		"init_ia32_attributes(res, irn_flags, in_reqs, n_res);\n".
-		"\tinit_ia32_climbframe_attributes(res, count);",
 	ia32_return_attr_t =>
 		"init_ia32_attributes(res, irn_flags, in_reqs, n_res);\n".
 		"\tinit_ia32_return_attributes(res, pop);",
@@ -1202,19 +1199,6 @@ Call => {
 	attr      => "unsigned pop, ir_type *call_tp",
 	am        => "source,unary",
 	latency   => 4, # random number
-},
-
-# a Helper node for frame-climbing, needed for __builtin_(frame|return)_address
-# PS: try gcc __builtin_frame_address(100000) :-)
-ClimbFrame => {
-	irn_flags => [ "modify_flags" ],
-	in_reqs   => [ "gp" ],
-	out_reqs  => [ "in_r0", "!in_r0" ],
-	ins       => [ "frame" ],
-	outs      => [ "res", "cnt" ],
-	latency   => 4, # random number
-	attr_type => "ia32_climbframe_attr_t",
-	attr      => "unsigned count",
 },
 
 Bswap => {

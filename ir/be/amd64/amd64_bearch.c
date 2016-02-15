@@ -45,18 +45,6 @@ pmap *amd64_constants;
 
 ir_mode *amd64_mode_xmm;
 
-static ir_entity *amd64_get_frame_entity(const ir_node *node)
-{
-	if (!is_amd64_irn(node))
-		return NULL;
-	if (!amd64_has_addr_attr(get_amd64_attr_const(node)->op_mode))
-		return NULL;
-	const amd64_addr_attr_t *attr = get_amd64_addr_attr_const(node);
-	if (attr->addr.immediate.kind != X86_IMM_FRAMEENT)
-		return NULL;
-	return attr->addr.immediate.entity;
-}
-
 static int get_insn_size_bytes(amd64_insn_size_t size)
 {
 	switch (size) {
@@ -68,44 +56,6 @@ static int get_insn_size_bytes(amd64_insn_size_t size)
 	case INSN_SIZE_80:      break;
 	}
 	panic("bad insn mode");
-}
-
-/**
- * This function is called by the generic backend to correct offsets for
- * nodes accessing the stack.
- */
-static void amd64_set_frame_offset(ir_node *node, int offset)
-{
-	if (!is_amd64_irn(node))
-		return;
-	amd64_addr_attr_t *attr = get_amd64_addr_attr(node);
-	attr->addr.immediate.offset += offset;
-	if (is_amd64_pop_am(node)) {
-		ir_graph *irg = get_irn_irg(node);
-		if (amd64_get_irg_data(irg)->omit_fp)
-			attr->addr.immediate.offset -= get_insn_size_bytes(attr->size);
-	}
-	assert(attr->addr.immediate.kind == X86_IMM_FRAMEENT);
-	attr->addr.immediate.kind = X86_IMM_VALUE;
-	attr->addr.immediate.entity = NULL;
-}
-
-static int amd64_get_sp_bias(const ir_node *node)
-{
-	if (is_amd64_push_am(node)) {
-		const amd64_addr_attr_t *attr = get_amd64_addr_attr_const(node);
-		return get_insn_size_bytes(attr->size);
-	} else if (is_amd64_push_reg(node)) {
-		/* 64-bit register size */
-		return AMD64_REGISTER_SIZE;
-	} else if (is_amd64_pop_am(node)) {
-		const amd64_addr_attr_t *attr = get_amd64_addr_attr_const(node);
-		return -get_insn_size_bytes(attr->size);
-	} else if (is_amd64_leave(node)) {
-		return SP_BIAS_RESET;
-	}
-
-	return 0;
 }
 
 static ir_node *create_push(ir_node *node, ir_node *schedpoint, ir_node *sp,
@@ -171,15 +121,15 @@ static void transform_MemPerm(ir_node *node)
 	ir_node  *sp    = be_get_Start_proj(irg, &amd64_registers[REG_RSP]);
 	int       arity = be_get_MemPerm_entity_arity(node);
 	ir_node **pops  = ALLOCAN(ir_node*, arity);
-	int       i;
 
 	/* create Pushs */
-	for (i = 0; i < arity; ++i) {
+	for (int i = 0; i < arity; ++i) {
 		ir_entity *inent = be_get_MemPerm_in_entity(node, i);
 		ir_entity *outent = be_get_MemPerm_out_entity(node, i);
-		ir_type *enttype = get_entity_type(inent);
-		unsigned entsize = get_type_size(enttype);
-		unsigned entsize2 = get_type_size(get_entity_type(outent));
+		assert(inent->kind == IR_ENTITY_SPILLSLOT);
+		assert(outent->kind == IR_ENTITY_SPILLSLOT);
+		unsigned entsize = inent->attr.spillslot.size;
+		unsigned entsize2 = outent->attr.spillslot.size;
 		ir_node *mem = get_irn_n(node, i);
 
 		/* work around cases where entities have different sizes */
@@ -212,12 +162,13 @@ static void transform_MemPerm(ir_node *node)
 	}
 
 	/* create pops */
-	for (i = arity; i-- > 0; ) {
+	for (int i = arity; i-- > 0; ) {
 		ir_entity *inent = be_get_MemPerm_in_entity(node, i);
 		ir_entity *outent = be_get_MemPerm_out_entity(node, i);
-		ir_type *enttype = get_entity_type(outent);
-		unsigned entsize = get_type_size(enttype);
-		unsigned entsize2 = get_type_size(get_entity_type(inent));
+		assert(inent->kind == IR_ENTITY_SPILLSLOT);
+		assert(outent->kind == IR_ENTITY_SPILLSLOT);
+		unsigned entsize = outent->attr.spillslot.size;
+		unsigned entsize2 = inent->attr.spillslot.size;
 
 		/* work around cases where entities have different sizes */
 		if (entsize2 < entsize)
@@ -521,12 +472,10 @@ static void amd64_select_instructions(ir_graph *irg)
 
 static void introduce_epilogue(ir_node *ret, bool omit_fp)
 {
-	ir_graph          *irg        = get_irn_irg(ret);
-	ir_node           *block      = get_nodes_block(ret);
-	ir_type           *frame_type = get_irg_frame_type(irg);
-	unsigned           frame_size = get_type_size(frame_type);
-	ir_node           *first_sp   = get_irn_n(ret, n_amd64_ret_stack);
-	ir_node           *curr_sp    = first_sp;
+	ir_graph *irg      = get_irn_irg(ret);
+	ir_node  *block    = get_nodes_block(ret);
+	ir_node  *first_sp = get_irn_n(ret, n_amd64_ret_stack);
+	ir_node  *curr_sp  = first_sp;
 
 	if (!omit_fp) {
 		int      const n_rbp    = determine_rbp_input(ret);
@@ -541,12 +490,12 @@ static void introduce_epilogue(ir_node *ret, bool omit_fp)
 		set_irn_n(ret, n_amd64_ret_mem, curr_mem);
 		set_irn_n(ret, n_rbp,           curr_bp);
 	} else {
-		if (frame_size > 0) {
-			ir_node *incsp = amd64_new_IncSP(block, curr_sp,
-			                                 -(int)frame_size, 0);
-			sched_add_before(ret, incsp);
-			curr_sp = incsp;
-		}
+		ir_type *frame_type = get_irg_frame_type(irg);
+		unsigned frame_size = get_type_size(frame_type);
+		ir_node *incsp = amd64_new_IncSP(block, curr_sp, -(int)frame_size,
+										 true);
+		sched_add_before(ret, incsp);
+		curr_sp = incsp;
 	}
 	set_irn_n(ret, n_amd64_ret_stack, curr_sp);
 
@@ -582,22 +531,17 @@ static void introduce_prologue(ir_graph *const irg, bool omit_fp)
 		arch_copy_irn_out_info(curr_bp, 0, initial_bp);
 		edges_reroute_except(initial_bp, curr_bp, push);
 
-		ir_node *incsp = amd64_new_IncSP(block, curr_sp, frame_size, 0);
+		ir_node *incsp = amd64_new_IncSP(block, curr_sp, frame_size, false);
 		sched_add_after(curr_bp, incsp);
 		edges_reroute_except(initial_sp, incsp, push);
 
 		/* make sure the initial IncSP is really used by someone */
 		be_keep_if_unused(incsp);
-
-		be_stack_layout_t *const layout = be_get_irg_stack_layout(irg);
-		layout->initial_bias = -8;
 	} else {
-		if (frame_size > 0) {
-			ir_node *const incsp = amd64_new_IncSP(block, initial_sp,
-			                                       frame_size, 0);
-			sched_add_after(start, incsp);
-			edges_reroute_except(initial_sp, incsp, incsp);
-		}
+		ir_node *const incsp = amd64_new_IncSP(block, initial_sp,
+											   frame_size, false);
+		sched_add_after(start, incsp);
+		edges_reroute_except(initial_sp, incsp, incsp);
 	}
 }
 
@@ -612,18 +556,84 @@ static void introduce_prologue_epilogue(ir_graph *irg, bool omit_fp)
 	introduce_prologue(irg, omit_fp);
 }
 
+static bool node_has_sp_base(ir_node const *const node,
+                             amd64_addr_t const *const addr)
+{
+	if (!x86_addr_variant_has_base(addr->variant))
+		return false;
+	arch_register_t const *const base_reg
+		= arch_get_irn_register_in(node, addr->base_input);
+	return base_reg == &amd64_registers[REG_RSP];
+}
+
+static void amd64_determine_frameoffset(ir_node *node, int sp_offset)
+{
+	if (!is_amd64_irn(node)
+	 || !amd64_has_addr_attr(get_amd64_attr_const(node)->op_mode))
+		return;
+
+	amd64_addr_t *const addr = &get_amd64_addr_attr(node)->addr;
+	if (addr->immediate.kind == X86_IMM_FRAMEENT) {
+		addr->immediate.offset += get_entity_offset(addr->immediate.entity);
+		addr->immediate.entity  = NULL;
+		addr->immediate.kind    = X86_IMM_FRAMEOFFSET;
+	}
+
+	if (addr->immediate.kind == X86_IMM_FRAMEOFFSET) {
+		if (node_has_sp_base(node, addr))
+			addr->immediate.offset += sp_offset;
+		else {
+			/* we calculate offsets relative to the SP value at function begin,
+			 * but RBP points after the saved old frame pointer */
+			addr->immediate.offset += AMD64_REGISTER_SIZE;
+		}
+		addr->immediate.kind = X86_IMM_VALUE;
+	}
+}
+
+static void amd64_sp_sim(ir_node *const node, stack_pointer_state_t *state)
+{
+	/* Pop nodes modify the stack pointer before calculating destination
+	 * address, so do this first */
+	if (is_amd64_pop_am(node)) {
+		const amd64_addr_attr_t *attr = get_amd64_addr_attr_const(node);
+		state->offset -= get_insn_size_bytes(attr->size);
+	}
+
+	amd64_determine_frameoffset(node, state->offset);
+
+	if (is_amd64_push_am(node)) {
+		const amd64_addr_attr_t *attr = get_amd64_addr_attr_const(node);
+		state->offset       += get_insn_size_bytes(attr->size);
+	} else if (is_amd64_push_reg(node)) {
+		/* 64-bit register size */
+		state->offset       += AMD64_REGISTER_SIZE;
+	} else if (is_amd64_leave(node)) {
+		state->offset        = 0;
+		state->align_padding = 0;
+	} else if (is_amd64_sub_sp(node)) {
+		state->align_padding = 0;
+	}
+}
+
 /**
  * Called immediatly before emit phase.
  */
 static void amd64_finish_and_emit(ir_graph *irg)
 {
-	bool          omit_fp = amd64_get_irg_data(irg)->omit_fp;
-	be_fec_env_t *fec_env = be_new_frame_entity_coalescer(irg);
+	bool omit_fp = amd64_get_irg_data(irg)->omit_fp;
 
 	/* create and coalesce frame entities */
+	be_fec_env_t *fec_env = be_new_frame_entity_coalescer(irg);
 	irg_walk_graph(irg, NULL, amd64_collect_frame_entity_nodes, fec_env);
 	be_assign_entities(fec_env, amd64_set_frame_entity, omit_fp);
 	be_free_frame_entity_coalescer(fec_env);
+
+	ir_type *const frame = get_irg_frame_type(irg);
+	be_sort_frame_entities(frame, omit_fp);
+	unsigned const misalign = AMD64_REGISTER_SIZE; /* return address on stack */
+	int      const begin    = omit_fp ? 0 : -AMD64_REGISTER_SIZE;
+	be_layout_frame_type(frame, begin, misalign);
 
 	irg_block_walk_graph(irg, NULL, amd64_after_ra_walker, NULL);
 
@@ -632,8 +642,8 @@ static void amd64_finish_and_emit(ir_graph *irg)
 	/* fix stack entity offsets */
 	be_fix_stack_nodes(irg, &amd64_registers[REG_RSP]);
 	be_birg_from_irg(irg)->non_ssa_regs = NULL;
-	be_abi_fix_stack_bias(irg, amd64_get_sp_bias, amd64_set_frame_offset,
-	                      amd64_get_frame_entity);
+	unsigned const p2align = AMD64_PO2_STACK_ALIGNMENT;
+	be_sim_stack_pointer(irg, misalign, p2align, amd64_sp_sim);
 
 	/* Fix 2-address code constraints. */
 	amd64_finish_irg(irg);

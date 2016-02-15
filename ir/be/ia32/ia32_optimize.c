@@ -716,7 +716,8 @@ static void peephole_Load_IncSP_to_pop(ir_node *irn)
 	/* create a new IncSP if needed */
 	ir_node *const block = get_nodes_block(irn);
 	if (inc_ofs > 0) {
-		pred_sp = ia32_new_IncSP(block, pred_sp, -inc_ofs, be_get_IncSP_align(irn));
+		pred_sp = ia32_new_IncSP(block, pred_sp, -inc_ofs,
+		                         be_get_IncSP_no_align(irn));
 		sched_add_before(irn, pred_sp);
 	}
 

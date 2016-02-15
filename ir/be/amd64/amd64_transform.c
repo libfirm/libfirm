@@ -524,10 +524,10 @@ static ir_node *gen_be_Relocation(ir_node *const node)
 }
 
 ir_node *amd64_new_IncSP(ir_node *block, ir_node *old_sp, int offset,
-                         unsigned align)
+                         bool no_align)
 {
 	ir_node *incsp = be_new_IncSP(&amd64_registers[REG_RSP], block, old_sp,
-	                              offset, align);
+	                              offset, no_align);
 	arch_add_irn_flags(incsp, arch_irn_flag_modify_flags);
 	return incsp;
 }
@@ -1776,10 +1776,10 @@ static ir_node *gen_Call(ir_node *const node)
 	/* stack pointer input */
 	/* construct an IncSP -> we have to always be sure that the stack is
 	 * aligned even if we don't push arguments on it */
-	ir_node *const stack     = get_initial_sp(irg);
-	ir_node *const callframe
-		= amd64_new_IncSP(new_block, stack, cconv->param_stacksize,
-		                  AMD64_PO2_STACK_ALIGNMENT);
+	ir_node *const stack           = get_initial_sp(irg);
+	unsigned       param_stacksize = cconv->param_stacksize;
+	ir_node       *callframe       = param_stacksize == 0 ? stack
+		: amd64_new_IncSP(new_block, stack, param_stacksize, false);
 
 	/* match callee */
 	amd64_addr_t addr;
@@ -1849,11 +1849,11 @@ static ir_node *gen_Call(ir_node *const node)
 		}
 	}
 	sync_ins[sync_arity++] = be_transform_node(mem);
-no_call_mem:
+no_call_mem:;
 
-	in_req[in_arity] = amd64_registers[REG_RSP].single_req;
-	in[in_arity]     = callframe;
-	++in_arity;
+	int const call_sp_pos = in_arity++;
+	in_req[call_sp_pos]   = amd64_registers[REG_RSP].single_req;
+	in[call_sp_pos]       = callframe;
 
 	/* vararg calls need the number of SSE registers used */
 	if (is_method_variadic(type)) {
@@ -1974,9 +1974,19 @@ no_call_mem:
 
 	/* IncSP to destroy the call stackframe */
 	ir_node *const call_stack = be_new_Proj(call, pn_amd64_call_stack);
-	ir_node *const incsp      = amd64_new_IncSP(new_block, call_stack,
-	                                            -cconv->param_stacksize, 0);
-	be_stack_record_chain(&stack_env, callframe, n_be_IncSP_pred, incsp);
+	ir_node *sp;
+	ir_node *first_sp_node;
+	unsigned first_sp_pos;
+	if (param_stacksize > 0) {
+		sp = amd64_new_IncSP(new_block, call_stack, -param_stacksize, false);
+		first_sp_node = callframe;
+		first_sp_pos  = n_be_IncSP_pred;
+	} else {
+		sp = call_stack;
+		first_sp_node = call;
+		first_sp_pos = call_sp_pos;
+	}
+	be_stack_record_chain(&stack_env, first_sp_node, first_sp_pos, sp);
 
 	x86_free_calling_convention(cconv);
 	return call;
@@ -3250,64 +3260,6 @@ static void amd64_register_transformers(void)
 	be_set_upper_bits_clean_function(op_Shrs, NULL);
 }
 
-static ir_type *amd64_get_between_type(bool omit_fp)
-{
-	static ir_type *between_type         = NULL;
-	static ir_type *omit_fp_between_type = NULL;
-
-	if (between_type == NULL) {
-		between_type = new_type_class(new_id_from_str("amd64_between_type"));
-		/* between type contains return address + saved base pointer */
-		set_type_size(between_type, 2*get_mode_size_bytes(mode_gp));
-
-		omit_fp_between_type
-			= new_type_class(new_id_from_str("amd64_between_type"));
-		/* between type contains return address */
-		set_type_size(omit_fp_between_type, get_mode_size_bytes(mode_gp));
-	}
-
-	return omit_fp ? omit_fp_between_type : between_type;
-}
-
-static void amd64_create_stacklayout(ir_graph *irg, const x86_cconv_t *cconv)
-{
-	/* construct argument type */
-	ir_entity *const entity   = get_irg_entity(irg);
-	ident     *const arg_id   = new_id_fmt("%s_arg_type", get_entity_ident(entity));
-	ir_type   *const arg_type = new_type_struct(arg_id);
-	for (size_t p = 0, n_params = cconv->n_parameters; p < n_params; ++p) {
-		reg_or_stackslot_t *param = &cconv->parameters[p];
-		if (param->type == NULL)
-			continue;
-
-		ident *const id = new_id_fmt("param_%u", (unsigned)p);
-		param->entity = new_entity(arg_type, id, param->type);
-		set_entity_offset(param->entity, param->offset);
-	}
-
-	ir_type *const function_type = get_entity_type(entity);
-	if (is_method_variadic(function_type)) {
-		ir_entity *stack_args_param = new_parameter_entity(
-			arg_type, IR_VA_START_PARAMETER_NUMBER, get_unknown_type());
-		set_entity_offset(stack_args_param, cconv->param_stacksize);
-		amd64_set_va_stack_args_param(stack_args_param);
-	}
-
-	be_stack_layout_t *const layout = be_get_irg_stack_layout(irg);
-	memset(layout, 0, sizeof(*layout));
-	layout->frame_type     = get_irg_frame_type(irg);
-	layout->between_type   = amd64_get_between_type(cconv->omit_fp);
-	layout->arg_type       = arg_type;
-	layout->initial_offset = 0;
-	layout->initial_bias   = 0;
-	layout->sp_relative    = cconv->omit_fp;
-
-	assert(N_FRAME_TYPES == 3);
-	layout->order[0] = layout->frame_type;
-	layout->order[1] = layout->between_type;
-	layout->order[2] = layout->arg_type;
-}
-
 void amd64_transform_graph(ir_graph *irg)
 {
 	assure_irg_properties(irg, IR_GRAPH_PROPERTY_NO_TUPLES
@@ -3324,7 +3276,8 @@ void amd64_transform_graph(ir_graph *irg)
 	bool const is_variadic = is_method_variadic(mtp);
 	if (is_variadic)
 		amd64_insert_reg_save_area(irg, current_cconv);
-	amd64_create_stacklayout(irg, current_cconv);
+	x86_layout_param_entities(irg, current_cconv, AMD64_REGISTER_SIZE);
+	amd64_set_va_stack_args_param(current_cconv->va_start_addr);
 	be_add_parameter_entity_stores(irg);
 	x86_create_parameter_loads(irg, current_cconv);
 
@@ -3336,10 +3289,6 @@ void amd64_transform_graph(ir_graph *irg)
 	heights = NULL;
 
 	be_stack_finish(&stack_env);
-
-	ir_type *frame_type = get_irg_frame_type(irg);
-	if (get_type_state(frame_type) == layout_undefined)
-		default_layout_compound_type(frame_type);
 
 	if (is_variadic) {
 		ir_node *const fp = get_frame_base(irg);

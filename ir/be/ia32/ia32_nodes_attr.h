@@ -72,9 +72,8 @@ typedef enum {
 	IA32_ATTR_ia32_condcode_attr_t   = 1 << 4,
 	IA32_ATTR_ia32_copyb_attr_t      = 1 << 5,
 	IA32_ATTR_ia32_call_attr_t       = 1 << 6,
-	IA32_ATTR_ia32_climbframe_attr_t = 1 << 7,
-	IA32_ATTR_ia32_switch_attr_t     = 1 << 8,
-	IA32_ATTR_ia32_return_attr_t     = 1 << 9,
+	IA32_ATTR_ia32_switch_attr_t     = 1 << 7,
+	IA32_ATTR_ia32_return_attr_t     = 1 << 8,
 } ia32_attr_type_t;
 #endif
 
@@ -116,7 +115,7 @@ struct ia32_attr_t {
 
 #ifndef NDEBUG
 	const char       *orig_node;      /**< holds the name of the original ir node */
-	ir_entity        *old_frame_ent;  /**< frame entity referenced */
+	ir_entity const  *old_frame_ent;  /**< frame entity referenced */
 	unsigned          attr_type;      /**< bitfield indicating the attribute type */
 #endif
 };
@@ -177,15 +176,6 @@ struct ia32_x87_attr_t {
 	x87_attr_t  x87;
 };
 
-/**
- * The attributes for the ClimbFrame node.
- */
-typedef struct ia32_climbframe_attr_t ia32_climbframe_attr_t;
-struct ia32_climbframe_attr_t {
-	ia32_attr_t attr;      /**< generic attribute */
-	unsigned    count;     /**< number of frames to climb up */
-};
-
 typedef struct ia32_return_attr_t ia32_return_attr_t;
 struct ia32_return_attr_t {
 	ia32_attr_t attr;
@@ -202,7 +192,6 @@ union allow_casts_attr_t_ {
 	ia32_copyb_attr_t      cpy_attr;
 	ia32_x87_attr_t        x87_attr;
 	ia32_immediate_attr_t  immediate_attr;
-	ia32_climbframe_attr_t climbframe_attr;
 	ia32_switch_attr_t     switch_attr;
 	ia32_return_attr_t     return_attr;
 };
