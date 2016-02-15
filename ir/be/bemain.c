@@ -163,6 +163,7 @@ static void finish_isa(void)
 	if (isa_initialized) {
 		isa_if->finish();
 		isa_initialized = false;
+		obstack_free(&obst, NULL);
 	}
 }
 
@@ -658,7 +659,6 @@ void be_finish(void)
 	pmap_destroy(env.ent_pic_symbol_map);
 	free_type(env.pic_trampolines_type);
 	free_type(env.pic_symbols_type);
-	obstack_free(&obst, NULL);
 }
 
 void be_main(FILE *file_handle, const char *cup_name)
