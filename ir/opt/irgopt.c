@@ -187,6 +187,7 @@ void optimize_graph_df(ir_graph *irg)
 		 * We want this intertwined with localopts for better optimization
 		 * (phase coupling) */
 		compute_doms(irg);
+		assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
 		irg_block_walk_graph(irg, NULL, find_unreachable_blocks, waitq);
 	}
 	del_pdeq(waitq);
