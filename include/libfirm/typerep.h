@@ -155,9 +155,10 @@ typedef enum ir_linkage {
 	 */
 	IR_LINKAGE_HIDDEN_USER     = 1 << 4,
 	/**
-	 * Do not generate code even if the entity has a graph attached. The graph
-	 * is only used for inlining. Otherwise the entity is regarded as a
-	 * declaration of an externally defined entity.
+	 * Do not generate code even if the entity has a graph or
+	 * initialization data attached.  The graph/data is only used for
+	 * inlining.  Otherwise the entity is regarded as a declaration of
+	 * an externally defined entity.
 	 * This linkage flag can be used to implement C99 "inline" or GNU89
 	 * "extern inline".
 	 */

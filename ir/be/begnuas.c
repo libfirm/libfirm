@@ -1543,6 +1543,10 @@ static void be_gas_emit_globals(ir_type *const gt, be_main_env_t const *const ma
 {
 	for (size_t i = 0, n = get_compound_n_members(gt); i < n; i++) {
 		ir_entity *ent = get_compound_member(gt, i);
+
+		if (get_entity_linkage(ent) & IR_LINKAGE_NO_CODEGEN)
+			continue;
+
 		emit_global(main_env, ent);
 	}
 }
