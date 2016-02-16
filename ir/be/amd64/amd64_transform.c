@@ -1804,7 +1804,9 @@ static ir_node *gen_Call(ir_node *const node)
 	int             in_arity   = 0;
 	ir_node **const sync_ins   = ALLOCAN(ir_node*, 1 + 1 + n_params);
 	int             sync_arity = 0;
-	if (match_immediate_32(&addr.immediate, callee, true, true)) {
+
+	if ((!is_Const(callee) || be_options.pic_style == BE_PIC_NONE)
+		&& match_immediate_32(&addr.immediate, callee, true, true)) {
 		op_mode = AMD64_OP_IMM32;
 	} else {
 		ir_node *load    = source_am_possible(block, callee);
