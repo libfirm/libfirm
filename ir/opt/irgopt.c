@@ -57,8 +57,9 @@ void local_optimize_node(ir_node *n)
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 }
 
-static void enqueue_node(ir_node *node, pdeq *waitq)
+static void enqueue_node(ir_node *node, void *env)
 {
+	pdeq *waitq = (pdeq *)env;
 	if (get_irn_link(node) == waitq)
 		return;
 	pdeq_putr(waitq, node);
@@ -173,7 +174,7 @@ void optimize_graph_df(ir_graph *irg)
 
 	constbits_analyze(irg);
 
-	irg_walk_graph(irg, NULL, opt_walker, waitq);
+	irg_walk_graph(irg, NULL, enqueue_node, waitq);
 
 	/* any optimized nodes are stored in the wait queue,
 	 * so if it's not empty, the graph has been changed */
