@@ -552,7 +552,7 @@ typedef struct amd64_args_t {
 } amd64_args_t;
 
 static bool match_immediate_32(x86_imm32_t *imm, const ir_node *op,
-                               bool can_match_ip_relative,
+                               bool must_match_ip_relative,
                                bool upper32_dont_care)
 {
 	assert(mode_needs_gp_reg(get_irn_mode(op)));
@@ -582,10 +582,11 @@ static bool match_immediate_32(x86_imm32_t *imm, const ir_node *op,
 		val = 0;
 	}
 
+	if ((entity != NULL) != must_match_ip_relative)
+		return false;
+
 	x86_immediate_kind_t kind = (x86_immediate_kind_t)reloc_kind;
 	if (entity != NULL) {
-		if (!can_match_ip_relative)
-			return false;
 		if (kind == X86_IMM_VALUE || kind == X86_IMM_ADDR) {
 			kind = X86_IMM_PCREL;
 		} else if (kind != X86_IMM_PCREL && kind != X86_IMM_PLT)
@@ -1805,8 +1806,7 @@ static ir_node *gen_Call(ir_node *const node)
 	ir_node **const sync_ins   = ALLOCAN(ir_node*, 1 + 1 + n_params);
 	int             sync_arity = 0;
 
-	if ((!is_Const(callee) || be_options.pic_style == BE_PIC_NONE)
-		&& match_immediate_32(&addr.immediate, callee, true, true)) {
+	if (match_immediate_32(&addr.immediate, callee, true, true)) {
 		op_mode = AMD64_OP_IMM32;
 	} else {
 		ir_node *load    = source_am_possible(block, callee);
