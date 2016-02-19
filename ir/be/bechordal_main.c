@@ -80,6 +80,7 @@
 #include "benode.h"
 
 #include "bepbqpcoloring.h"
+#include "gen_sparc_regalloc_if.h"
 
 static be_ra_chordal_opts_t options = {
 	BE_CH_DUMP_NONE,
@@ -343,6 +344,59 @@ static void post_spill(post_spill_env_t *pse, int iteration)
 	bitset_free(chordal_env->allocatable_regs);
 }
 
+static void rtg_walker(ir_node *irn, void *data)
+{
+	if (!be_is_Perm(irn))
+		return;
+
+	const arch_register_class_t *cls    = data;
+	const unsigned               n_regs = cls->n_regs;
+
+	unsigned n_used[n_regs];
+	memset(n_used, 0, n_regs * sizeof(*n_used));
+	unsigned parcopy[n_regs];
+	for (unsigned i = 0; i < n_regs; ++i)
+		parcopy[i] = n_regs;
+
+	/* Special case for %g0. */
+	parcopy[REG_GP_G0] = REG_GP_G0;
+	++n_used[REG_GP_G0];
+
+	foreach_out_edge_safe(irn, edge) {
+		ir_node *proj = get_edge_src_irn(edge);
+		long     pn   = get_Proj_proj(proj);
+		ir_node *op   = get_irn_n(irn, pn);
+		if (be_is_Copy(op))
+			op = be_get_Copy_op(op);
+
+		const unsigned in_index  = arch_get_irn_register(op)->index;
+		const unsigned out_index = arch_get_irn_register(proj)->index;
+
+		assert(parcopy[out_index] == n_regs);
+		parcopy[out_index] = in_index;
+		++n_used[in_index];
+	}
+
+	bool trivial = true;
+	for (unsigned i = 0; i < n_regs; ++i)
+		if (parcopy[i] != n_regs && (parcopy[i] != i || n_used[i] > 1))
+			trivial = false;
+
+	if (!trivial) {
+		ir_printf("Detected RTG at %+F in block %+F of %+F:\n", irn, get_nodes_block(irn), get_irn_irg(irn));
+		for (unsigned i = 0; i < n_regs; ++i) {
+			if (parcopy[i] != n_regs && (parcopy[i] != i || n_used[i] > 1))
+				ir_printf("  %s -> %s\n", arch_register_for_index(cls, parcopy[i])->name, arch_register_for_index(cls, i)->name);
+		}
+	}
+}
+
+static void analyze_rtgs(ir_graph *irg, void *data)
+{
+	irg_walk_graph(irg, NULL, rtg_walker, data);
+}
+
+
 /**
  * Performs chordal register allocation for each register class on given irg.
  *
@@ -416,6 +470,8 @@ static void be_ra_chordal_main(ir_graph *irg)
 			be_copy_node_stats(&last_node_stats, &node_stats);
 			stat_ev_ctx_pop("bechordal_cls");
 		}
+
+		analyze_rtgs(irg, (void*)cls);
 	}
 
 	be_timer_push(T_VERIFY);
