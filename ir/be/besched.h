@@ -146,6 +146,7 @@ void sched_replace(ir_node *old, ir_node *irn);
  */
 static inline bool sched_comes_before(const ir_node *a, const ir_node *b)
 {
+	assert(get_nodes_block(a) == get_nodes_block(b));
 	sched_timestep_t const as = sched_get_time_step(a);
 	sched_timestep_t const bs = sched_get_time_step(b);
 	return as < bs;
