@@ -356,7 +356,7 @@ static void rtg_walker(ir_node *irn, void *data)
 	memset(n_used, 0, n_regs * sizeof(*n_used));
 	unsigned parcopy[n_regs];
 	for (unsigned i = 0; i < n_regs; ++i)
-		parcopy[i] = n_regs;
+		parcopy[i] = i;
 
 	/* Special case for %g0. */
 	parcopy[REG_GP_G0] = REG_GP_G0;
@@ -372,20 +372,23 @@ static void rtg_walker(ir_node *irn, void *data)
 		const unsigned in_index  = arch_get_irn_register(op)->index;
 		const unsigned out_index = arch_get_irn_register(proj)->index;
 
-		assert(parcopy[out_index] == n_regs);
+		assert(parcopy[out_index] == out_index);
 		parcopy[out_index] = in_index;
 		++n_used[in_index];
 	}
 
 	bool trivial = true;
-	for (unsigned i = 0; i < n_regs; ++i)
-		if (parcopy[i] != n_regs && (parcopy[i] != i || n_used[i] > 1))
+	for (unsigned i = 0; i < n_regs; ++i) {
+		if (parcopy[i] != i) {
 			trivial = false;
+			break;
+		}
+	}
 
 	if (!trivial) {
 		ir_printf("Detected RTG at %+F in block %+F of %+F:\n", irn, get_nodes_block(irn), get_irn_irg(irn));
 		for (unsigned i = 0; i < n_regs; ++i) {
-			if (parcopy[i] != n_regs && (parcopy[i] != i || n_used[i] > 1))
+			if (parcopy[i] != i || n_used[i] > 1)
 				ir_printf("  %s -> %s\n", arch_register_for_index(cls, parcopy[i])->name, arch_register_for_index(cls, i)->name);
 		}
 	}
