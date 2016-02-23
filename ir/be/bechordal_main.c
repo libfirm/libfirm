@@ -46,7 +46,9 @@
 #include "irdom.h"
 #include "ircons.h"
 #include "irnode.h"
+#include "irnodeset.h"
 #include "ircons.h"
+#include "irgmod.h"
 #include "irtools.h"
 #include "debug.h"
 #include "execfreq.h"
@@ -81,6 +83,9 @@
 
 #include "bepbqpcoloring.h"
 #include "gen_sparc_regalloc_if.h"
+#include "bertg.h"
+
+DEBUG_ONLY(static firm_dbg_module_t *dbg_icore = NULL;)
 
 static be_ra_chordal_opts_t options = {
 	BE_CH_DUMP_NONE,
@@ -344,12 +349,27 @@ static void post_spill(post_spill_env_t *pse, int iteration)
 	bitset_free(chordal_env->allocatable_regs);
 }
 
-static void rtg_walker(ir_node *irn, void *data)
+static const char *get_reg_name(const arch_register_class_t *cls, unsigned index)
+{
+	return arch_register_for_index(cls, index)->name;
+}
+
+static void collect_rtgs(ir_node *irn, void *data)
 {
 	if (!be_is_Perm(irn))
 		return;
+	ir_nodeset_t *nodeset = data;
+	ir_nodeset_insert(nodeset, irn);
+}
 
-	const arch_register_class_t *cls    = data;
+static void transform_rtg_impl(ir_node *irn)
+{
+	assert(be_is_Perm(irn));
+	if (get_irn_arity(irn) == 0)
+		return;
+
+	ir_node                     *op0    = get_irn_n(irn, 0);
+	const arch_register_class_t *cls    = arch_get_irn_reg_class(op0);
 	const unsigned               n_regs = cls->n_regs;
 
 	unsigned n_used[n_regs];
@@ -362,15 +382,25 @@ static void rtg_walker(ir_node *irn, void *data)
 	parcopy[REG_GP_G0] = REG_GP_G0;
 	++n_used[REG_GP_G0];
 
+	ir_node *operands[n_regs];
+	ir_node *users[n_regs];
+	memset(operands, 0, n_regs * sizeof(*operands));
+	memset(users, 0, n_regs * sizeof(*users));
+	//ir_fprintf(stderr, "\n");
 	foreach_out_edge_safe(irn, edge) {
 		ir_node *proj = get_edge_src_irn(edge);
 		long     pn   = get_Proj_proj(proj);
 		ir_node *op   = get_irn_n(irn, pn);
-		if (be_is_Copy(op))
+		if (be_is_Copy(op) && get_irn_n_edges_kind(op, EDGE_KIND_NORMAL) == 1) {
+			sched_remove(op);
 			op = be_get_Copy_op(op);
+		}
 
 		const unsigned in_index  = arch_get_irn_register(op)->index;
 		const unsigned out_index = arch_get_irn_register(proj)->index;
+		//ir_fprintf(stderr, "Found mapping operand[%u]=%+F -> user[%u]=%+F\n", in_index, op, out_index, proj);
+		operands[in_index] = op;
+		users[out_index]   = proj;
 
 		assert(parcopy[out_index] == out_index);
 		parcopy[out_index] = in_index;
@@ -385,20 +415,139 @@ static void rtg_walker(ir_node *irn, void *data)
 		}
 	}
 
-	if (!trivial) {
-		ir_printf("Detected RTG at %+F in block %+F of %+F:\n", irn, get_nodes_block(irn), get_irn_irg(irn));
-		for (unsigned i = 0; i < n_regs; ++i) {
-			if (parcopy[i] != i || n_used[i] > 1)
-				ir_printf("  %s -> %s\n", arch_register_for_index(cls, parcopy[i])->name, arch_register_for_index(cls, i)->name);
+	if (trivial)
+		return;
+
+	#if 0
+	ir_fprintf(stderr, "Detected RTG at %+F in block %+F of %+F:\n", irn, get_nodes_block(irn), get_irn_irg(irn));
+	for (unsigned i = 0; i < n_regs; ++i) {
+		if (parcopy[i] != i || n_used[i] > 1)
+			ir_fprintf(stderr, "  %s -> %s\n", arch_register_for_index(cls, parcopy[i])->name, arch_register_for_index(cls, i)->name);
+	}
+	#endif
+
+	unsigned restore_srcs[n_regs];
+	unsigned restore_dsts[n_regs];
+	unsigned num_restores = 0;
+	decompose_rtg(parcopy, n_used, restore_srcs, restore_dsts, &num_restores, cls);
+
+	ir_node *before = sched_next(irn);
+	sched_remove(irn);
+
+	/* Step 3: The remaining parallel copy must be suitable for a Perm. */
+	unsigned perm_size = 0;
+	ir_node *ins[n_regs];
+	for (unsigned r = 0; r < n_regs; ++r) {
+		unsigned src = parcopy[r];
+		if (src != r) {
+			assert(operands[src] != NULL);
+			ins[perm_size++] = operands[src];
+		} else if (n_used[r] > 0 && users[r] != NULL && operands[r] != NULL) {
+			bool do_exchange = true;
+			for (unsigned u = 0; u < n_regs; ++u) {
+				if (u != r && parcopy[u] == r) {
+					do_exchange = false;
+					break;
+				}
+			}
+
+			if (do_exchange) {
+				//ir_fprintf(stderr, "Exchanging user[%u](%s)=%+F and operand[%u](%s)=%+F\n", r, get_reg_name(cls, r), users[r], src, get_reg_name(cls, src), operands[src]);
+				exchange(users[r], operands[src]);
+			}
 		}
+	}
+
+	ir_node *perm  = NULL;
+	ir_node *block = get_nodes_block(irn);
+	if (perm_size > 0) {
+		perm = be_new_Perm(cls, block, perm_size, ins);
+		DB((dbg_icore, LEVEL_2, "Created %+F using permutation.\n", perm));
+		sched_add_before(before, perm);
+		unsigned input = 0;
+		for (unsigned r = 0; r < n_regs; ++r) {
+			unsigned src = parcopy[r];
+			if (src != r) {
+				ir_node *proj = new_r_Proj(perm, get_irn_mode(ins[input]), input);
+
+				const arch_register_t *reg = arch_register_for_index(cls, r);
+				arch_set_irn_register(proj, reg);
+
+				assert(n_used[src] == 1);
+
+				ir_node *old_proj = users[r];
+				assert(old_proj != NULL);
+				//ir_fprintf(stderr, "Exchanging old_proj=%+F and proj=%+F\n", old_proj, proj);
+				exchange(old_proj, proj);
+
+				operands[r] = proj;
+
+				++input;
+				parcopy[r] = r;
+			}
+		}
+	}
+
+#ifndef NDEBUG
+	/* now we should only have fixpoints left */
+	for (unsigned r = 0; r < n_regs; ++r) {
+		assert(parcopy[r] == r);
+	}
+#endif
+
+#if 0
+	/* Emit statistics. */
+	if (perm != NULL) {
+		stat_ev_ctx_push_fmt("perm_stats", "%ld", get_irn_node_nr(perm));
+		stat_ev_int("perm_num_restores", num_restores);
+		stat_ev_int("perm_opt_costs", opt_costs);
+		stat_ev_ctx_pop("perm_stats");
+		const int already_in_prtg_form = num_restores == 0;
+		stat_ev_int("bessadestr_already_in_prtg_form", already_in_prtg_form);
+	} else if (num_restores > 0) {
+		stat_ev_int("bessadestr_copies", num_restores);
+		stat_ev_int("bessadestr_opt_costs", opt_costs);
+		stat_ev_int("bessadestr_already_in_prtg_form", 0);
+	}
+#endif
+
+	if (num_restores > 0) {
+		/* Step 4: Place restore movs. */
+		DB((dbg_icore, LEVEL_2, "Placing restore movs.\n"));
+		for (unsigned i = 0; i < num_restores; ++i) {
+			unsigned src_reg = restore_srcs[i];
+			unsigned dst_reg = restore_dsts[i];
+			ir_node *src     = operands[src_reg];
+			assert(src != NULL);
+			ir_node *copy    = be_new_Copy(block, src);
+			sched_add_before(before, copy);
+			assert(sched_is_scheduled(copy));
+
+			DB((dbg_icore, LEVEL_2, "Inserted restore copy %+F %s -> %s before=%+F\n", copy, get_reg_name(cls, src_reg), get_reg_name(cls, dst_reg), before));
+			const arch_register_t *reg = arch_register_for_index(cls, dst_reg);
+			arch_set_irn_register(copy, reg);
+
+			ir_node *old_proj = users[dst_reg];
+			assert(old_proj != NULL);
+			//ir_fprintf(stderr, "Exchanging old_proj=%+F copy=%+F\n", old_proj, copy);
+			exchange(old_proj, copy);
+
+			//ir_fprintf(stderr, "Scheduled %+F after %+F and before %+F\n", copy, sched_prev(copy), sched_next(copy));
+		}
+		DB((dbg_icore, LEVEL_2, "Finished placing restore movs.\n"));
 	}
 }
 
-static void analyze_rtgs(ir_graph *irg, void *data)
+static void transform_rtg_impls(ir_graph *irg)
 {
-	irg_walk_graph(irg, NULL, rtg_walker, data);
+	ir_nodeset_t nodeset;
+	ir_nodeset_init(&nodeset);
+	irg_walk_graph(irg, NULL, collect_rtgs, &nodeset);
+	foreach_ir_nodeset(&nodeset, node, iter) {
+		transform_rtg_impl(node);
+	}
+	ir_nodeset_destroy(&nodeset);
 }
-
 
 /**
  * Performs chordal register allocation for each register class on given irg.
@@ -473,9 +622,11 @@ static void be_ra_chordal_main(ir_graph *irg)
 			be_copy_node_stats(&last_node_stats, &node_stats);
 			stat_ev_ctx_pop("bechordal_cls");
 		}
-
-		analyze_rtgs(irg, (void*)cls);
 	}
+
+	//dump_ir_graph(irg, "before-rtgs");
+	transform_rtg_impls(irg);
+	//dump_ir_graph(irg, "after-rtgs");
 
 	be_timer_push(T_VERIFY);
 	if (chordal_env.opts->vrfy_option == BE_CH_VRFY_WARN) {
@@ -498,6 +649,8 @@ static void be_ra_chordal_main(ir_graph *irg)
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_chordal_main)
 void be_init_chordal_main(void)
 {
+	FIRM_DBG_REGISTER(dbg_icore, "ir.be.chordal.icore");
+
 	static be_ra_t be_ra_chordal_allocator = {
 		be_ra_chordal_main,
 	};
