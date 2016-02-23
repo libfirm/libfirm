@@ -406,17 +406,6 @@ static void transform_rtg_impl(ir_node *irn)
 		++n_used[in_index];
 	}
 
-	bool trivial = true;
-	for (unsigned i = 0; i < n_regs; ++i) {
-		if (parcopy[i] != i) {
-			trivial = false;
-			break;
-		}
-	}
-
-	if (trivial)
-		return;
-
 	#if 0
 	ir_fprintf(stderr, "Detected RTG at %+F in block %+F of %+F:\n", irn, get_nodes_block(irn), get_irn_irg(irn));
 	for (unsigned i = 0; i < n_regs; ++i) {
