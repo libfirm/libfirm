@@ -381,7 +381,7 @@ static ir_node *transform_rtg_impl(ir_node *irn)
 		ir_node *proj = get_edge_src_irn(edge);
 		long     pn   = get_Proj_proj(proj);
 		ir_node *op   = get_irn_n(irn, pn);
-		if (be_is_Copy(op) && get_irn_n_edges_kind(op, EDGE_KIND_NORMAL) == 1) {
+		if (be_is_Copy(op) && get_nodes_block(op) == get_nodes_block(irn)) {
 			sched_remove(op);
 			op = be_get_Copy_op(op);
 		}
