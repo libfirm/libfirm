@@ -46,7 +46,6 @@
 #include "irdom.h"
 #include "ircons.h"
 #include "irnode.h"
-#include "irnodeset.h"
 #include "ircons.h"
 #include "irgmod.h"
 #include "irtools.h"
@@ -353,19 +352,11 @@ static const char *get_reg_name(const arch_register_class_t *cls, unsigned index
 	return arch_register_for_index(cls, index)->name;
 }
 
-static void collect_rtgs(ir_node *irn, void *data)
-{
-	if (!be_is_Perm(irn))
-		return;
-	ir_nodeset_t *nodeset = data;
-	ir_nodeset_insert(nodeset, irn);
-}
-
-static void transform_rtg_impl(ir_node *irn)
+static ir_node *transform_rtg_impl(ir_node *irn)
 {
 	assert(be_is_Perm(irn));
 	if (get_irn_arity(irn) == 0)
-		return;
+		return sched_prev(irn);
 
 	ir_node                     *op0    = get_irn_n(irn, 0);
 	const arch_register_class_t *cls    = arch_get_irn_reg_class(op0);
@@ -483,22 +474,6 @@ static void transform_rtg_impl(ir_node *irn)
 	}
 #endif
 
-#if 0
-	/* Emit statistics. */
-	if (perm != NULL) {
-		stat_ev_ctx_push_fmt("perm_stats", "%ld", get_irn_node_nr(perm));
-		stat_ev_int("perm_num_restores", num_restores);
-		stat_ev_int("perm_opt_costs", opt_costs);
-		stat_ev_ctx_pop("perm_stats");
-		const int already_in_prtg_form = num_restores == 0;
-		stat_ev_int("bessadestr_already_in_prtg_form", already_in_prtg_form);
-	} else if (num_restores > 0) {
-		stat_ev_int("bessadestr_copies", num_restores);
-		stat_ev_int("bessadestr_opt_costs", opt_costs);
-		stat_ev_int("bessadestr_already_in_prtg_form", 0);
-	}
-#endif
-
 	if (num_restores > 0) {
 		/* Step 4: Place restore movs. */
 		DB((dbg_icore, LEVEL_2, "Placing restore movs.\n"));
@@ -524,17 +499,43 @@ static void transform_rtg_impl(ir_node *irn)
 		}
 		DB((dbg_icore, LEVEL_2, "Finished placing restore movs.\n"));
 	}
+
+#ifdef DEBUG_libfirm
+	/* Emit statistics. */
+	stat_ev_ctx_push_fmt("rtg_constr", "%ld", get_irn_node_nr(before));
+	//stat_ev_int("rtg_cflow_opt_costs", opt_costs);
+	stat_ev_int("rtg_constr_num_copies", num_restores);
+	if (perm != NULL) {
+		stat_ev_int("rtg_constr_created_perm", get_irn_node_nr(perm));
+	}
+	stat_ev_ctx_pop("rtg_constr");
+#endif
+
+	if (perm != NULL) {
+		return sched_prev(perm);
+	} else {
+		return sched_prev(before);
+	}
+}
+
+static void transform_rtgs_in_block(ir_node *block, void *data)
+{
+	(void)data;
+	ir_node *irn = sched_last(block);
+	if (irn == block)
+		return;
+	while (sched_has_prev(irn)) {
+		if (be_is_Perm(irn)) {
+			irn = transform_rtg_impl(irn);
+		} else {
+			irn = sched_prev(irn);
+		}
+	}
 }
 
 static void transform_rtg_impls(ir_graph *irg)
 {
-	ir_nodeset_t nodeset;
-	ir_nodeset_init(&nodeset);
-	irg_walk_graph(irg, NULL, collect_rtgs, &nodeset);
-	foreach_ir_nodeset(&nodeset, node, iter) {
-		transform_rtg_impl(node);
-	}
-	ir_nodeset_destroy(&nodeset);
+	irg_block_walk_graph(irg, transform_rtgs_in_block, NULL, NULL);
 }
 
 /**
