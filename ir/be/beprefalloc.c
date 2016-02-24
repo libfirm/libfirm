@@ -1483,22 +1483,6 @@ static void permute_values_icore(ir_nodeset_t *live_nodes, ir_node *before,
 	}
 #endif
 
-#ifdef DEBUG_libfirm
-	/* Emit statistics. */
-	if (perm != NULL) {
-		stat_ev_ctx_push_fmt("perm_stats", "%ld", get_irn_node_nr(perm));
-		stat_ev_int("perm_num_restores", num_restores);
-		stat_ev_int("perm_opt_costs", opt_costs);
-		stat_ev_ctx_pop("perm_stats");
-		const int already_in_prtg_form = num_restores == 0;
-		stat_ev_int("bessadestr_already_in_prtg_form", already_in_prtg_form);
-	} else if (num_restores > 0) {
-		stat_ev_int("bessadestr_copies", num_restores);
-		stat_ev_int("bessadestr_opt_costs", opt_costs);
-		stat_ev_int("bessadestr_already_in_prtg_form", 0);
-	}
-#endif
-
 	if (num_restores > 0) {
 		/* Step 4: Place restore movs. */
 		DB((dbg_icore, LEVEL_2, "Placing restore movs.\n"));
@@ -1521,6 +1505,17 @@ static void permute_values_icore(ir_nodeset_t *live_nodes, ir_node *before,
 		}
 		DB((dbg_icore, LEVEL_2, "Finished placing restore movs.\n"));
 	}
+
+#ifdef DEBUG_libfirm
+	/* Emit statistics. */
+	stat_ev_ctx_push_fmt("rtg_cflow", "%ld", get_irn_node_nr(block));
+	stat_ev_int("rtg_cflow_opt_costs", opt_costs);
+	stat_ev_int("rtg_cflow_num_copies", num_restores);
+	if (perm != NULL) {
+		stat_ev_int("rtg_cflow_created_perm", get_irn_node_nr(perm));
+	}
+	stat_ev_ctx_pop("rtg_cflow");
+#endif
 }
 
 static void permute_values(ir_nodeset_t *live_nodes, ir_node *before,
