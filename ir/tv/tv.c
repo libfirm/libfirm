@@ -1229,6 +1229,23 @@ int get_tarval_highest_bit(ir_tarval const *tv)
 	return -1;
 }
 
+unsigned get_tarval_magnitude(ir_tarval const *tv)
+{
+	assert(get_mode_arithmetic(tv->mode) == irma_twos_complement);
+	unsigned const size = get_mode_size_bits(tv->mode);
+	unsigned const neg  = tarval_get_bit(tv, size - 1);
+	unsigned const ext  = neg ? (1U << SC_BITS) - 1 : 0;
+
+	unsigned l = get_mode_size_bytes(tv->mode);
+	for (unsigned i = l; i-- != 0;) {
+		unsigned char const v = get_tarval_sub_bits(tv, i);
+		if (v != ext)
+			return i * SC_BITS + (32 - nlz(v ^ ext)) + 1;
+	}
+
+	return 1;
+}
+
 int tarval_zero_mantissa(ir_tarval const *tv)
 {
 	assert(get_mode_arithmetic(tv->mode) == irma_ieee754

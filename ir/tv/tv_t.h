@@ -136,6 +136,11 @@ ir_tarval *get_tarval_small(ir_mode *mode);
 ir_tarval *get_tarval_epsilon(ir_mode *mode);
 
 /**
+ * Get the number of bits required to reconstruct this tarval by sign extension.
+ */
+unsigned get_tarval_magnitude(ir_tarval const *tv);
+
+/**
  * Get the @p idx'th bit of the internal representation of the given tarval
  * @p tv.
  */
