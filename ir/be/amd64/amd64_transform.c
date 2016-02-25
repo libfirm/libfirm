@@ -551,9 +551,7 @@ typedef struct amd64_args_t {
 	const arch_register_req_t **reqs;
 } amd64_args_t;
 
-static bool match_immediate_32(x86_imm32_t *imm, const ir_node *op,
-                               bool must_match_ip_relative,
-                               bool upper32_dont_care)
+static bool match_immediate_32(x86_imm32_t *const imm, ir_node const *const op, bool const must_match_ip_relative)
 {
 	assert(mode_needs_gp_reg(get_irn_mode(op)));
 	assert(imm->offset == 0 && imm->entity == NULL
@@ -567,17 +565,9 @@ static bool match_immediate_32(x86_imm32_t *imm, const ir_node *op,
 
 	int32_t val;
 	if (tv) {
-		if (!tarval_is_long(tv))
+		if (get_tarval_magnitude(tv) > 32)
 			return false;
-		long lval = get_tarval_long(tv);
-		val = (int32_t)lval;
-		if ((long)val != lval)
-			return false;
-		/** the immediate value is signed extended to 64bit, sometimes
-		 * this is not what we want. */
-		if (!upper32_dont_care && val < 0
-		    && !mode_is_signed(get_tarval_mode(tv)))
-			return false;
+		val = get_tarval_uint64(tv);
 	} else {
 		val = 0;
 	}
@@ -756,8 +746,7 @@ static void match_binop(amd64_args_t *args, ir_node *block,
 		= use_address_matching(mode, flags, block, op1, op2, &load, &op);
 
 	amd64_addr_t *addr = &attr->base.addr;
-	if (use_immediate
-	    && match_immediate_32(&attr->u.immediate, op2, false, mode_neutral)) {
+	if (use_immediate && match_immediate_32(&attr->u.immediate, op2, false)) {
 		assert(!use_xmm && "Can't (yet) match binop with xmm immediate");
 		/* fine, we found an immediate */
 		int const reg_input = args->arity++;
@@ -1045,7 +1034,7 @@ static ir_node *match_simple_lea(dbg_info *dbgi, ir_node *new_block,
 {
 	x86_imm32_t immediate;
 	memset(&immediate, 0, sizeof(immediate));
-	if (match_immediate_32(&immediate, op2, false, true)) {
+	if (match_immediate_32(&immediate, op2, false)) {
 		ir_node *in[] = {
 			be_transform_node(op1)
 		};
@@ -1521,7 +1510,7 @@ static ir_node *gen_IJmp(ir_node *const node)
 	const arch_register_req_t **reqs;
 	amd64_op_mode_t             op_mode;
 	ir_node                    *mem_proj = NULL;
-	if (match_immediate_32(&addr.immediate, op, true, false)) {
+	if (match_immediate_32(&addr.immediate, op, true)) {
 		// TODO: do we need a must_match_ip_relative in match_immediate_32
 		op_mode = AMD64_OP_IMM32;
 		arity   = 0;
@@ -1806,7 +1795,7 @@ static ir_node *gen_Call(ir_node *const node)
 	ir_node **const sync_ins   = ALLOCAN(ir_node*, 1 + 1 + n_params);
 	int             sync_arity = 0;
 
-	if (match_immediate_32(&addr.immediate, callee, true, true)) {
+	if (match_immediate_32(&addr.immediate, callee, true)) {
 		op_mode = AMD64_OP_IMM32;
 	} else {
 		ir_node *load    = source_am_possible(block, callee);
@@ -2570,7 +2559,7 @@ static ir_node *gen_Store(ir_node *const node)
 	int      arity = 0;
 
 	if (mode_needs_gp_reg(mode)
-	 && match_immediate_32(&attr.u.immediate, val, false, true)) {
+	 && match_immediate_32(&attr.u.immediate, val, false)) {
 		attr.base.base.op_mode = AMD64_OP_ADDR_IMM;
 	} else {
 		attr.base.base.op_mode = AMD64_OP_ADDR_REG;
