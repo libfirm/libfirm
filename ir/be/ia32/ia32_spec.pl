@@ -124,10 +124,15 @@ my $binop_commutative = {
 	irn_flags => [ "modify_flags", "rematerializable" ],
 	state     => "exc_pinned",
 	constructors => {
-		""     => { in_reqs => [ "gp", "gp", "mem", "gp", "gp" ] },
-		"8bit" => { in_reqs => [ "gp", "gp", "mem", "eax ebx ecx edx", "eax ebx ecx edx" ] }
+		""     => {
+			in_reqs  => [ "gp", "gp", "mem", "gp", "gp" ],
+			out_reqs => [ "in_r3 in_r4", "flags", "mem" ],
+		},
+		"8bit" => {
+			in_reqs  => [ "gp", "gp", "mem", "eax ebx ecx edx", "eax ebx ecx edx" ],
+			out_reqs => [ "eax ebx ecx edx in_r3 in_r4", "flags", "mem" ],
+		},
 	},
-	out_reqs  => [ "in_r3 in_r4", "flags", "mem" ],
 	ins       => [ "base", "index", "mem", "left", "right" ],
 	outs      => [ "res", "flags", "M" ],
 	am        => "source,binary",
@@ -449,7 +454,12 @@ IMul => {
 
 IMulImm => {
 	template => $binop_commutative,
-	out_reqs => [ "gp", "flags", "mem" ],
+	constructors => {
+		"" => {
+			in_reqs  => [ "gp", "gp", "mem", "gp", "gp" ],
+			out_reqs => [ "gp", "flags", "mem" ],
+		}
+	},
 	emit     => "imul%M %S4, %AS3, %D0",
 	latency  => 5,
 },
@@ -784,7 +794,7 @@ XorHighLow => {
 	irn_flags => [ "modify_flags", "rematerializable" ],
 	state     => "exc_pinned",
 	in_reqs   => [ "eax ebx ecx edx" ],
-	out_reqs  => [ "in_r0", "flags" ],
+	out_reqs  => [ "eax ebx ecx edx in_r0", "flags" ],
 	emit      => "xorb %>D0, %<D0",
 	ins       => [ "value" ],
 	outs      => [ "res", "flags" ],
@@ -1208,7 +1218,7 @@ Bswap => {
 Bswap16 => {
 	irn_flags => [ "rematerializable" ],
 	in_reqs   => [ "eax ebx ecx edx" ],
-	out_reqs  => [ "in_r0" ],
+	out_reqs  => [ "eax ebx ecx edx in_r0" ],
 	emit      => "xchg %<D0, %>D0",
 	ins       => [ "val" ],
 	outs      => [ "res" ],
