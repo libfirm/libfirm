@@ -178,7 +178,7 @@ static ir_node *bool_and(cond_pair* const cpair, ir_node *dst_block)
 	           (rel_hi == ir_relation_equal || rel_hi == ir_relation_greater_equal || rel_hi == ir_relation_greater)) {
 		/* x >=|>|!= lo && x ==|>=|> hi ==> x ==|>=|> hi */
 		return cmp_hi;
-	} else if (get_tarval_mode(tv_hi) == get_tarval_mode(tv_lo) && tarval_is_one(tarval_sub(tv_hi, tv_lo))) { /* lo + 1 == hi */
+	} else if (tarval_is_one(tarval_sub(tv_hi, tv_lo))) { /* lo + 1 == hi */
 		if (rel_lo == ir_relation_greater_equal && rel_hi == ir_relation_less) {
 			/* x >= c && x < c + 1 ==> x == c */
 			return make_Cmp(dst_block, cmp_lo, ir_relation_equal);
@@ -309,7 +309,7 @@ static ir_node *bool_or(cond_pair *const cpair, ir_node *dst_block)
 	           (rel_hi == ir_relation_equal || rel_hi == ir_relation_greater_equal || rel_hi == ir_relation_greater)) {
 		/* x >=|>|!= lo || x ==|>=|> hi ==> x >=|>|!= lo */
 		return cmp_lo;
-	} else if (get_tarval_mode(tv_hi) == get_tarval_mode(tv_lo) && tarval_is_one(tarval_sub(tv_hi, tv_lo))) { /* lo + 1 == hi */
+	} else if (tarval_is_one(tarval_sub(tv_hi, tv_lo))) { /* lo + 1 == hi */
 		if (rel_lo == ir_relation_less && rel_hi == ir_relation_greater_equal) {
 			/* x < c || x >= c + 1 ==> x != c */
 			return make_Cmp(dst_block, cmp_lo, ir_relation_less_greater);
@@ -540,6 +540,19 @@ static void move_nodes_to_block(ir_node *jmp, ir_node *to_block)
 		exchange(jmp, new_jmp);
 }
 
+static void normalize_cmp(ir_node **io_cmp, ir_relation *io_rel, ir_tarval **io_tv)
+{
+	ir_node     *cmp   = *io_cmp;
+	ir_relation  rel   = *io_rel;
+	ir_node     *block = get_nodes_block(cmp);
+	dbg_info    *dbgi  = get_irn_dbg_info(cmp);
+	ir_node     *left  = get_Cmp_left(cmp);
+	ir_node     *right = get_Cmp_right(cmp);
+	*io_rel = get_negated_relation(rel);
+	*io_cmp = new_rd_Cmp(dbgi, block, left, right, *io_rel);
+	*io_tv  = get_Const_tarval(get_Cmp_right(*io_cmp));
+}
+
 /**
  * Block walker:
  *
@@ -638,38 +651,16 @@ restart:
 			 * common block (i.e. conjunctive normal form) */
 			if (get_Proj_num(lower_cf) == pn_Cond_false) {
 				if (cpair.cmp_lo == cond_selector) {
-					ir_node  *cmp   = cpair.cmp_lo;
-					ir_node  *block = get_nodes_block(cmp);
-					dbg_info *dbgi  = get_irn_dbg_info(cmp);
-					cpair.rel_lo    = get_negated_relation(cpair.rel_lo);
-					cpair.cmp_lo    = new_rd_Cmp(dbgi, block,
-							get_Cmp_left(cmp), get_Cmp_right(cmp), cpair.rel_lo);
+					normalize_cmp(&cpair.cmp_lo, &cpair.rel_lo, &cpair.tv_lo);
 				} else {
-					ir_node  *cmp   = cpair.cmp_hi;
-					ir_node  *block = get_nodes_block(cmp);
-					dbg_info *dbgi  = get_irn_dbg_info(cmp);
-					assert(cmp == cond_selector);
-					cpair.rel_hi = get_negated_relation(cpair.rel_hi);
-					cpair.cmp_hi = new_rd_Cmp(dbgi, block,
-							get_Cmp_left(cmp), get_Cmp_right(cmp), cpair.rel_hi);
+					normalize_cmp(&cpair.cmp_hi, &cpair.rel_hi, &cpair.tv_hi);
 				}
 			}
 			if (get_Proj_num(upper_cf) == pn_Cond_false) {
 				if (cpair.cmp_lo == upper_cond_selector) {
-					ir_node  *cmp   = cpair.cmp_lo;
-					ir_node  *block = get_nodes_block(cmp);
-					dbg_info *dbgi  = get_irn_dbg_info(cmp);
-					cpair.rel_lo    = get_negated_relation(cpair.rel_lo);
-					cpair.cmp_lo    = new_rd_Cmp(dbgi, block,
-							get_Cmp_left(cmp), get_Cmp_right(cmp), cpair.rel_lo);
+					normalize_cmp(&cpair.cmp_lo, &cpair.rel_lo, &cpair.tv_lo);
 				} else {
-					ir_node  *cmp   = cpair.cmp_hi;
-					ir_node  *block = get_nodes_block(cmp);
-					dbg_info *dbgi  = get_irn_dbg_info(cmp);
-					assert(cmp == upper_cond_selector);
-					cpair.rel_hi   = get_negated_relation(cpair.rel_hi);
-					cpair.cmp_hi   = new_rd_Cmp(dbgi, block,
-							get_Cmp_left(cmp), get_Cmp_right(cmp), cpair.rel_hi);
+					normalize_cmp(&cpair.cmp_hi, &cpair.rel_hi, &cpair.tv_hi);
 				}
 			}
 
