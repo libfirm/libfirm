@@ -197,11 +197,12 @@ static ir_entity *default_get_entity_attr(const ir_node *node)
 static unsigned default_hash_node(const ir_node *node)
 {
 	/* hash table value = 9*(9*(9*(9*(9*arity+in[0])+in[1])+ ...)+mode)+code */
-	int      arity = get_irn_arity(node);
-	unsigned hash  = (unsigned)arity;
+	int      arity          = get_irn_arity(node);
+	unsigned hash           = (unsigned)arity;
+	bool     consider_block = is_cfop(node) || (!get_opt_global_cse() && !is_Block(node));
 
 	/* consider all in nodes... except the block if not a control flow. */
-	for (int i = is_cfop(node) ? -1 : 0;  i < arity;  ++i) {
+	for (int i = consider_block ? -1 : 0;  i < arity;  ++i) {
 		ir_node *pred = get_irn_n(node, i);
 		hash = 9*hash + hash_ptr(pred);
 	}
