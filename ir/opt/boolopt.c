@@ -550,7 +550,9 @@ static void normalize_cmp(ir_node **io_cmp, ir_relation *io_rel, ir_tarval **io_
 	ir_node     *right = get_Cmp_right(cmp);
 	*io_rel = get_negated_relation(rel);
 	*io_cmp = new_rd_Cmp(dbgi, block, left, right, *io_rel);
-	*io_tv  = get_Const_tarval(get_Cmp_right(*io_cmp));
+	if (is_Cmp(*io_cmp)) {
+		*io_tv  = get_Const_tarval(get_Cmp_right(*io_cmp));
+	}
 }
 
 /**
