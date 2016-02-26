@@ -7727,8 +7727,7 @@ unsigned ir_node_hash(const ir_node *node)
 
 void new_identities(ir_graph *irg)
 {
-	if (irg->value_table != NULL)
-		del_pset(irg->value_table);
+	del_identities(irg);
 	irg->value_table = new_pset(identities_cmp, N_IR_NODES);
 }
 
