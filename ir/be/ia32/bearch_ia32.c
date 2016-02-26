@@ -631,14 +631,17 @@ static void remat_simplifier(ir_node *node, void *env)
 			}
 		}
 
-		dbg_info *const dbgi  = get_irn_dbg_info(node);
-		ir_node  *const block = get_nodes_block(node);
-		ir_node  *const base  = get_irn_n(node, n_ia32_Sub_base);
-		ir_node  *const idx   = get_irn_n(node, n_ia32_Sub_index);
-		ir_node  *const mem   = get_irn_n(node, n_ia32_Sub_mem);
-		ir_node  *const minu  = get_irn_n(node, n_ia32_Sub_minuend);
-		ir_node  *const subt  = get_irn_n(node, n_ia32_Sub_subtrahend);
-		ir_node        *cmp   = new_bd_ia32_Cmp(dbgi, block, base, idx, mem, minu, subt, false);
+		dbg_info *const dbgi    = get_irn_dbg_info(node);
+		ir_node  *const block   = get_nodes_block(node);
+		ir_node  *const base    = get_irn_n(node, n_ia32_Sub_base);
+		ir_node  *const idx     = get_irn_n(node, n_ia32_Sub_index);
+		ir_node  *const mem     = get_irn_n(node, n_ia32_Sub_mem);
+		ir_node  *const minu    = get_irn_n(node, n_ia32_Sub_minuend);
+		ir_node  *const subt    = get_irn_n(node, n_ia32_Sub_subtrahend);
+		ir_mode  *const ls_mode = get_ia32_ls_mode(node);
+		bool            is_8bit = get_mode_size_bits(ls_mode) == 8;
+		ir_node        *cmp     = is_8bit ? new_bd_ia32_Cmp_8bit(dbgi, block, base, idx, mem, minu, subt, false)
+		                                  : new_bd_ia32_Cmp(dbgi, block, base, idx, mem, minu, subt, false);
 		arch_set_irn_register(cmp, &ia32_registers[REG_EFLAGS]);
 		ia32_copy_am_attrs(cmp, node);
 
