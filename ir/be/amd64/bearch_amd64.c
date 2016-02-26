@@ -10,6 +10,7 @@
 #include "amd64_emitter.h"
 #include "amd64_finish.h"
 #include "amd64_new_nodes.h"
+#include "amd64_optimize.h"
 #include "amd64_transform.h"
 #include "amd64_varargs.h"
 #include "bearch_amd64_t.h"
@@ -638,6 +639,8 @@ static void amd64_finish_and_emit(ir_graph *irg)
 	amd64_finish_irg(irg);
 
 	amd64_simulate_graph_x87(irg);
+
+	amd64_peephole_optimization(irg);
 
 	/* emit code */
 	be_timer_push(T_EMIT);
