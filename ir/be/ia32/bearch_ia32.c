@@ -423,13 +423,16 @@ static ir_node *ia32_turn_back_dest_am(ir_node *node)
 		ir_node *base, ir_node *index, ir_node *mem,
 		ir_node *op1, ir_node *op2);
 
+	ir_mode *ls_mode = get_ia32_ls_mode(node);
+	bool     is_8bit = get_mode_size_bits(ls_mode) == 8;
+
 	construct_binop_func *func;
 	switch (get_ia32_irn_opcode(node)) {
-	case iro_ia32_AddMem: func = new_bd_ia32_Add; break;
-	case iro_ia32_AndMem: func = new_bd_ia32_And; break;
-	case iro_ia32_OrMem:  func = new_bd_ia32_Or;  break;
-	case iro_ia32_SubMem: func = new_bd_ia32_Sub; break;
-	case iro_ia32_XorMem: func = new_bd_ia32_Xor; break;
+	case iro_ia32_AddMem: func = is_8bit ? new_bd_ia32_Add_8bit : new_bd_ia32_Add; break;
+	case iro_ia32_AndMem: func = is_8bit ? new_bd_ia32_And_8bit : new_bd_ia32_And; break;
+	case iro_ia32_OrMem:  func = is_8bit ? new_bd_ia32_Or_8bit  : new_bd_ia32_Or;  break;
+	case iro_ia32_SubMem: func = is_8bit ? new_bd_ia32_Sub_8bit : new_bd_ia32_Sub; break;
+	case iro_ia32_XorMem: func = is_8bit ? new_bd_ia32_Xor_8bit : new_bd_ia32_Xor; break;
 	default: panic("cannot turn back DestAM for %+F", node);
 	}
 
@@ -451,13 +454,14 @@ static ir_node *ia32_turn_back_dest_am(ir_node *node)
 	ir_node  *const nomem    = get_irg_no_mem(irg);
 	ir_node  *const operand  = get_irn_n(node, n_ia32_binary_left);
 	ir_node  *const new_node = func(dbgi, block, noreg, noreg, nomem, load_res, operand);
-	set_ia32_ls_mode(new_node, get_ia32_ls_mode(node));
+	set_ia32_ls_mode(new_node, ls_mode);
 	set_irn_mode(new_node, mode_T);
 
 	arch_set_irn_register_out(new_node, pn_ia32_flags, &ia32_registers[REG_EFLAGS]);
 
 	ir_node *const res_proj = be_new_Proj(new_node, pn_ia32_res);
-	ir_node *const store    = new_bd_ia32_Store(dbgi, block, base, idx, load_mem, res_proj);
+	ir_node *const store    = is_8bit ? new_bd_ia32_Store_8bit(dbgi, block, base, idx, load_mem, res_proj)
+	                                  : new_bd_ia32_Store(dbgi, block, base, idx, load_mem, res_proj);
 	ia32_copy_am_attrs(store, node);
 	set_ia32_op_type(store, ia32_AddrModeD);
 	sched_add_after(node, store);
