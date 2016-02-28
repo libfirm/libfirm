@@ -107,7 +107,7 @@ const x86_asm_constraint_list_t amd64_asm_constraints = {
 
 #define BIT(x)    (1u << x)
 
-static const arch_register_req_t amd64_requirement_gp_same_0 = {
+arch_register_req_t const amd64_requirement_gp_same_0 = {
 	.cls               = &amd64_reg_classes[CLASS_amd64_gp],
 	.should_be_same    = BIT(0),
 	.width             = 1,

@@ -16,13 +16,14 @@
 extern const x86_clobber_name_t        amd64_additional_clobber_names[];
 extern const x86_asm_constraint_list_t amd64_asm_constraints;
 
-extern arch_register_req_t const *amd64_xmm_reqs[];
+extern arch_register_req_t const         amd64_requirement_gp_same_0;
+extern arch_register_req_t const        *amd64_xmm_reqs[];
 extern arch_register_req_t const **const gp_am_reqs[];
-extern arch_register_req_t const *reg_reqs[];
-extern arch_register_req_t const *rsp_reg_mem_reqs[];
-extern arch_register_req_t const *xmm_reg_mem_reqs[];
-extern arch_register_req_t const *amd64_reg_reg_reqs[];
-extern arch_register_req_t const *amd64_xmm_xmm_reqs[];
+extern arch_register_req_t const        *reg_reqs[];
+extern arch_register_req_t const        *rsp_reg_mem_reqs[];
+extern arch_register_req_t const        *xmm_reg_mem_reqs[];
+extern arch_register_req_t const        *amd64_reg_reg_reqs[];
+extern arch_register_req_t const        *amd64_xmm_xmm_reqs[];
 
 
 void amd64_init_transform(void);
