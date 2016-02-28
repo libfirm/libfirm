@@ -9,6 +9,10 @@ libFirm 1.22.1 (2016-01-07)
 * Stub support for the asm constraint modifier '%'
 * Support the asm constraint 'e' (amd64, ia32)
 * Support the asm modifier 'c' (amd64, ia32)
+* Support JIT compilation (ia32)
+* Improve permutation moving for copy coalescing
+* Improve handling of negative overflow in float to int tarval conversion
+* Improve matching of immediates during instruction selection (amd64)
 * Bugfixes
 
 libFirm 1.22.0 (2015-12-31)
