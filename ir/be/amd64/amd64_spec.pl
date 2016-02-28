@@ -420,6 +420,7 @@ mov_imm => {
 	op_flags  => [ "constlike" ],
 	irn_flags => [ "rematerializable" ],
 	out_reqs  => [ "gp" ],
+	outs      => [ "res" ],
 	attr_type => "amd64_movimm_attr_t",
 	attr      => "amd64_insn_size_t size, const amd64_imm64_t *imm",
 	emit      => 'mov%MM $%C, %D0',

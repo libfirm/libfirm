@@ -13,6 +13,7 @@ libFirm 1.22.1 (2016-01-07)
 * Improve permutation moving for copy coalescing
 * Improve handling of negative overflow in float to int tarval conversion
 * Improve matching of immediates during instruction selection (amd64)
+* Add peephole optimization 'mov $0, %r' -> 'xorl %r, %r' (amd64)
 * Bugfixes
 
 libFirm 1.22.0 (2015-12-31)
