@@ -1011,16 +1011,6 @@ static void peephole_ia32_Rol(ir_node *node)
 	}
 }
 
-
-/**
- * Register a peephole optimization function.
- */
-static void register_peephole_optimization(ir_op *op, peephole_opt_func func)
-{
-	assert(op->ops.generic == NULL);
-	op->ops.generic = (op_func)func;
-}
-
 /* Perform peephole-optimizations. */
 void ia32_peephole_optimization(ir_graph *irg)
 {

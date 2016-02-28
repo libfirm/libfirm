@@ -163,15 +163,6 @@ static void peephole_arm_Str_Ldr(ir_node *node)
 	attr->offset = 0;
 }
 
-/**
- * Register a peephole optimization function.
- */
-static void register_peephole_optimization(ir_op *op, peephole_opt_func func)
-{
-	assert(op->ops.generic == NULL);
-	op->ops.generic = (op_func)func;
-}
-
 /* Perform peephole-optimizations. */
 void arm_peephole_optimization(ir_graph *irg)
 {

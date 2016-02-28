@@ -74,6 +74,15 @@ bool be_can_move_up(ir_heights_t *heights, const ir_node *node,
                     const ir_node *after);
 
 /**
+ * Register a peephole optimization function.
+ */
+static inline void register_peephole_optimization(ir_op *const op, peephole_opt_func const func)
+{
+	assert(!op->ops.generic);
+	op->ops.generic = (op_func)func;
+}
+
+/**
  * Do peephole optimizations. It traverses the schedule of all blocks in
  * backward direction. The register_values variable indicates which (live)
  * values are stored in which register.

@@ -607,12 +607,6 @@ static void peephole_sparc_SubCC(ir_node *node)
 	remove_unused_CC(node, op_sparc_Sub);
 }
 
-static void register_peephole_optimization(ir_op *op, peephole_opt_func func)
-{
-	assert(op->ops.generic == NULL);
-	op->ops.generic = (op_func) func;
-}
-
 static bool is_frame_load(const ir_node *node)
 {
 	return is_sparc_Ld(node) || is_sparc_Ldf(node);
