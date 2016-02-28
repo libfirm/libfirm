@@ -1,24 +1,19 @@
 amd64 backend TODO:
 Correctness:
-- SSE Division is not commutative and we have no neg-add style workaround like
-  for the Sub node. So maybe we need finally need a must_be_same constraint.
 - compound return calling convention
 - Implement more builtins (libgcc lacks several of them that gcc provides
   natively on amd64 so cparser/libfirm when linking to the compilerlib fallback)
 - Builtins not implemented: parity, popcount
 - Thread local storage not implemented
-- Finish PIC code implementation. This is mostly done now, usual accesses to
-  functions and variables including address mode matching looks fine now.
-  Jumptables are not accessed correctly in PIC yet and
-- x87: Implement int -> x87 and x87 -> int conversions.
+- x87: Implement unsigned -> x87 and x87 -> unsigned conversions.
 - x87: Adapt fix spill with full float-stack case to amd64 (see panic in
   x86_x87.c).
 
 Improve Quality:
+- Perform IncSP/IncSP peephole
 - Immediate32 matching could be better and match SymConst, Add(SymConst, Const)
   combinations where possible.
-- Match Immediate + Address mode for Cmp
-- Do stores of immediates in 1 instruction!
+- Cmp allows Immediate and Address mode at the same time
 - Support Read-Modify-Store operations (aka destination address mode)
 - Leave out labels that are not jumped at (improves assembly readability, see
   ia32 backend output)
@@ -26,8 +21,6 @@ Improve Quality:
 - Implement CMov/Set and announce this in mux_allowed callback
 - We always Spill/Reload 64bit, we should improve the spiller to allow smaller
   spills where possible.
-- Perform some benchmark comparison with clang/gcc and distill more issues to
-  put on this list.
 - Support folding reloads into nodes (amd64_irn_ops: possible_memory_operand()
    perform_memory_operand())
 - Report instruction costs (amd64_irn_ops: get_op_estimated_cost())
@@ -40,3 +33,5 @@ Improve Quality:
 - Match RCPxx SSE instruction
 - x87: Support source address modes.
 - Address mode support for Div/IDiv
+- Perform some benchmark comparison with clang/gcc and distill more issues to
+  put on this list.
