@@ -139,14 +139,15 @@ void sched_replace(ir_node *old, ir_node *irn);
 
 /**
  * Checks, if node @p a comes before node @p b.
- * @param a   A node.
- * @param b   Another node.
+ * @param a   A node.  May be a block, which represents the start of the
+ *            schedule.
+ * @param b   Another node. Must not be a block.
  * @return    true, if a is in front of b in the schedule, false else.
  * @note      Both nodes must be in the same block.
  */
 static inline bool sched_comes_before(const ir_node *a, const ir_node *b)
 {
-	assert(get_nodes_block(a) == get_nodes_block(b));
+	assert(get_block_const(a) == get_nodes_block(b));
 	sched_timestep_t const as = sched_get_time_step(a);
 	sched_timestep_t const bs = sched_get_time_step(b);
 	return as < bs;
