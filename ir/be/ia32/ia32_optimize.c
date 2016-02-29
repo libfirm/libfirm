@@ -856,95 +856,101 @@ static bool is_disp_const(ir_node const *const node, int32_t const val)
 	return !get_ia32_am_ent(node) && get_ia32_am_offs_int(node) == val;
 }
 
+static ir_node *make_add(ir_node *const node, ir_node *const l, ir_node *const r)
+{
+	dbg_info *const dbgi  = get_irn_dbg_info(node);
+	ir_node  *const block = get_nodes_block(node);
+	ir_graph *const irg   = get_irn_irg(node);
+	ir_node  *const noreg = ia32_new_NoReg_gp(irg);
+	ir_node  *const nomem = get_irg_no_mem(irg);
+	ir_node  *const add   = new_bd_ia32_Add(dbgi, block, noreg, noreg, nomem, l, r);
+	set_ia32_commutative(add);
+	return add;
+}
+
 /**
  * Transforms a Lea into an Add or Shl if possible.
  */
 static void peephole_ia32_Lea(ir_node *node)
 {
-	/* We can only do this if it is allowed to clobber the flags. */
-	if (be_peephole_get_value(REG_EFLAGS))
-		return;
-
 	/* Frame entities should already be expressed in the offsets. */
 	assert(get_ia32_attr_const(node)->am_imm.kind != X86_IMM_FRAMEENT);
 
-	/* We can transform Leas where the out register is the same as either the
-	 * base or index register back to an Add or Shl. */
-	ir_node                     *op1;
-	ir_node                     *op2;
-	ir_node               *const base    = get_irn_n(node, n_ia32_Lea_base);
-	ir_node               *const index   = get_irn_n(node, n_ia32_Lea_index);
-	arch_register_t const *const out_reg = arch_get_irn_register(node);
-	if (out_reg == arch_get_irn_register(base)) {
-		op1 = base;
-		op2 = index;
-	} else if (out_reg == arch_get_irn_register(index)) {
-		op1 = index;
-		op2 = base;
-	} else {
+	/* Simplify leas for shorter opcode:
+	 * BISC
+	 * b---         mov %b, %d
+	 * -i0-         mov %i, %d (error)
+	 * -is-  d=i -> shl $s, %i; s=1 -> lea (%i, %i), %d
+	 * bi0-  d=b -> add %i, %b; d=i -> add %b, %i
+	 * bis-         -
+	 * ---c         mov $c, %d (error)
+	 * b--c  d=b -> add $c, %b
+	 * -i0c  d=i -> add $c, %i (error)
+	 * -isc         -
+	 * bi0c         -
+	 * bisc         -
+	 */
+	ir_node               *const base  = get_irn_n(node, n_ia32_Lea_base);
+	arch_register_t const *const breg  = is_ia32_NoReg_GP(base) ? NULL : arch_get_irn_register(base);
+	ir_node               *const idx   = get_irn_n(node, n_ia32_Lea_index);
+	arch_register_t const *const ireg  = is_ia32_NoReg_GP(idx)  ? NULL : arch_get_irn_register(idx);
+	unsigned               const scale = get_ia32_am_scale(node);
+	arch_register_t const *const oreg  = arch_get_irn_register_out(node, pn_ia32_Lea_res);
 #ifdef DEBUG_libfirm
-		/* We shouldn't construct these in the first place. */
-		if (is_ia32_NoReg_GP(base) && is_ia32_NoReg_GP(index))
-			be_warningf(node, "found unoptimized Lea which is a Const");
+	if (!breg && !ireg)
+		be_warningf(node, "found lea which is a const");
+	if (!breg && ireg && scale == 0)
+		be_warningf(node, "found baseless lea with unscaled index");
 #endif
-		return; /* Neither base nor index use the same register as the Lea. */
-	}
-
-	ir_node       *res;
-	bool     const has_2ops = !is_ia32_NoReg_GP(op2);
-	bool     const has_disp = !is_disp_const(node, 0);
-	unsigned const scale    = get_ia32_am_scale(node);
-	if (scale == 0) {
-		if (!has_2ops) {
-			/* Lea base/index + disp -> Add+Imm. */
-#ifdef DEBUG_libfirm
-			if (!has_disp)
-				be_warningf(node, "found unoptimized Lea which is a Copy");
-#endif
-			if (ia32_cg_config.use_incdec) {
-				if (is_disp_const(node, 1)) {
-					dbg_info *const dbgi  = get_irn_dbg_info(node);
-					ir_node  *const block = get_nodes_block(node);
-					res = new_bd_ia32_Inc(dbgi, block, op1);
-					goto exchange;
-				} else if (is_disp_const(node, -1)) {
-					dbg_info *const dbgi  = get_irn_dbg_info(node);
-					ir_node  *const block = get_nodes_block(node);
-					res = new_bd_ia32_Dec(dbgi, block, op1);
-					goto exchange;
-				}
+	if (!be_peephole_get_value(REG_EFLAGS)) {
+		ir_node *res;
+		if (is_disp_const(node, 0)) {
+			if (!breg && ireg == oreg) {
+				/* lea (, %i, 1 << s), %i -> shl $s, %i */
+				dbg_info *const dbgi  = get_irn_dbg_info(node);
+				ir_node  *const block = get_nodes_block(node);
+				ir_graph *const irg   = get_irn_irg(node);
+				ir_node  *const amt   = ia32_create_Immediate(irg, scale);
+				res = new_bd_ia32_Shl(dbgi, block, idx, amt);
+				goto exchange;
+			} else if (breg == oreg && ireg && scale == 0) {
+				/* lea (%b, %i), %b -> add %i, %b */
+				res = make_add(node, base, idx);
+				goto exchange;
+			} else if (breg && ireg == oreg && scale == 0) {
+				/* lea (%b, %i), %i -> add %b, %i */
+				res = make_add(node, idx, base);
+				goto exchange;
 			}
-			ir_graph          *const irg  = get_irn_irg(node);
-			ia32_attr_t const *const attr = get_ia32_attr_const(node);
-			op2 = ia32_create_Immediate_full(irg, &attr->am_imm);
-		} else if (has_disp) {
-			return; /* Lea has base, index and displacement. */
-		}
-		/* Lea base + index, base/index + disp -> Add. */
-		dbg_info *const dbgi  = get_irn_dbg_info(node);
-		ir_node  *const block = get_nodes_block(node);
-		ir_graph *const irg   = get_irn_irg(node);
-		ir_node  *const noreg = ia32_new_NoReg_gp(irg);
-		ir_node  *const nomem = get_irg_no_mem(irg);
-		res = new_bd_ia32_Add(dbgi, block, noreg, noreg, nomem, op1, op2);
-		set_ia32_commutative(res);
-	} else if (!has_2ops && !has_disp) {
-		/* Lea index * scale -> Shl+Imm. */
-		assert(op1 == index);
-		dbg_info *const dbgi  = get_irn_dbg_info(node);
-		ir_node  *const block = get_nodes_block(node);
-		ir_graph *const irg   = get_irn_irg(node);
-		ir_node  *const amt   = ia32_create_Immediate(irg, scale);
-		res = new_bd_ia32_Shl(dbgi, block, op1, amt);
-	} else {
-		return; /* Lea has scaled index as well as base and/or displacement. */
-	}
-
+		} else {
+			if (breg == oreg && !ireg) {
+				if (ia32_cg_config.use_incdec) {
+					if (is_disp_const(node, 1)) {
+						/* lea 1(%b), %b -> inc %b */
+						dbg_info *const dbgi  = get_irn_dbg_info(node);
+						ir_node  *const block = get_nodes_block(node);
+						res = new_bd_ia32_Inc(dbgi, block, base);
+						goto exchange;
+					} else if (is_disp_const(node, -1)) {
+						/* lea -1(%b), %b -> dec %b */
+						dbg_info *const dbgi  = get_irn_dbg_info(node);
+						ir_node  *const block = get_nodes_block(node);
+						res = new_bd_ia32_Dec(dbgi, block, base);
+						goto exchange;
+					}
+				}
+				/* lea c(%b), %b -> add $c, %b */
+				ir_graph          *const irg  = get_irn_irg(node);
+				ia32_attr_t const *const attr = get_ia32_attr_const(node);
+				ir_node           *const imm  = ia32_create_Immediate_full(irg, &attr->am_imm);
+				res = make_add(node, base, imm);
 exchange:
-	/* Replace the Lea by Add/Shl. */
-	arch_set_irn_register(res, out_reg);
-	SET_IA32_ORIG_NODE(res, node);
-	replace(node, res);
+				arch_set_irn_register(res, oreg);
+				SET_IA32_ORIG_NODE(res, node);
+				replace(node, res);
+			}
+		}
+	}
 }
 
 /**
