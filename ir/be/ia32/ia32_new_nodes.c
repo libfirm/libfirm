@@ -125,7 +125,7 @@ static void ia32_dump_immediate(FILE *const F, ir_entity *const entity,
                                 int32_t const offset)
 {
 	if (entity) {
-		fputs(get_entity_name(entity), F);
+		ir_fprintf(F, "%F", entity);
 		if (offset != 0)
 			fprintf(F, "%+" PRId32, offset);
 	} else {

@@ -619,12 +619,16 @@ static void check_ent_nr(ir_type *const type, ir_entity *const entity, void *con
 /**
  * Type-walker: Find an entity with given name.
  */
-static void check_ent_name(ir_type *const type, ir_entity *const entity, void *const ctx)
+static void check_ent_name(ir_type *const type, ir_entity *const entity,
+                           void *const ctx)
 {
 	(void)type;
+	if (entity == NULL)
+		return;
 
 	find_env_t *env = (find_env_t*)ctx;
-	if (entity && streq(get_entity_name(entity), env->u.name))
+	const char *name = get_entity_name(entity);
+	if (streq(name, env->u.name))
 		env->res = entity;
 }
 

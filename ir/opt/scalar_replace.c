@@ -407,10 +407,10 @@ static unsigned allocate_value_numbers(pset *members, ir_entity *ent,
 
 #ifdef DEBUG_libfirm
 			/* Debug output */
-			DB((dbg, SET_LEVEL_2, "  %s", get_entity_name(key->path[0].ent)));
+			DB((dbg, SET_LEVEL_2, "  %F", key->path[0].ent));
 			for (unsigned i = 1; i < key->path_len; ++i) {
 				if (is_entity(key->path[i].ent))
-					DB((dbg, SET_LEVEL_2, ".%s", get_entity_name(key->path[i].ent)));
+					DB((dbg, SET_LEVEL_2, ".%F", key->path[i].ent));
 				else
 					DB((dbg, SET_LEVEL_2, "[%ld]", get_tarval_long(key->path[i].tv)));
 			}
@@ -605,11 +605,11 @@ void scalar_replacement_opt(ir_graph *irg)
 			ir_type *ent_type = get_entity_type(ent);
 
 			if (is_Array_type(ent_type)) {
-				DB((dbg, SET_LEVEL_1, "  found array %s\n", get_entity_name(ent)));
+				DB((dbg, SET_LEVEL_1, "  found array %F\n", ent));
 			} else if (is_compound_type(ent_type)) {
-				DB((dbg, SET_LEVEL_1, "  found struct %s\n", get_entity_name(ent)));
+				DB((dbg, SET_LEVEL_1, "  found struct %F\n", ent));
 			} else if (is_atomic_type(ent_type)) {
-				DB((dbg, SET_LEVEL_1, "  found atomic value %s\n", get_entity_name(ent)));
+				DB((dbg, SET_LEVEL_1, "  found atomic value %F\n", ent));
 			} else {
 				panic("neither an array nor a struct or atomic value found in scalar replace");
 			}

@@ -222,7 +222,7 @@ void dump_irnode_to_file(FILE *const F, const ir_node *const n)
 	case iro_Member: {
 		const ir_entity *ent = get_Member_entity(n);
 		if (ent != NULL) {
-			fprintf(F, "  Selecting entity %s (%ld)\n", get_entity_name(ent), get_entity_nr(ent));
+			ir_fprintf(F, "  Selecting entity %+F\n", ent);
 			ir_fprintf(F, "    of type    %+F\n",  get_entity_type(ent));
 			ir_fprintf(F, "    with owner %+F.\n", get_entity_owner(ent));
 		} else {
@@ -510,15 +510,13 @@ static void dump_entity_to_file_prefix(FILE *const F,
 	const ir_type *owner = get_entity_owner(ent);
 	const ir_type *type  = get_entity_type(ent);
 	if (verbosity & dump_verbosity_onlynames) {
-		fprintf(F, "%sentity %s.%s (%ld)\n", prefix,
-		        get_compound_name(owner), get_entity_name(ent),
-		        get_entity_nr(ent));
+		ir_fprintf(F, "%sentity %s.%+F\n", prefix, get_compound_name(owner),
+		           ent);
 		return;
 	}
 
 	if (verbosity & dump_verbosity_entattrs) {
-		fprintf(F, "%sentity %s (%ld)\n", prefix, get_entity_name(ent),
-		        get_entity_nr(ent));
+		ir_fprintf(F, "%sentity %+F\n", prefix, ent);
 		ir_fprintf(F, "%s  type:  %+F\n", prefix, type);
 		ir_fprintf(F, "%s  owner: %+F\n", prefix, owner);
 
@@ -527,8 +525,8 @@ static void dump_entity_to_file_prefix(FILE *const F,
 				fprintf(F, "%s  overwrites:\n", prefix);
 				for (size_t i = 0; i < get_entity_n_overwrites(ent); ++i) {
 					const ir_entity *ov = get_entity_overwrites(ent, i);
-					ir_fprintf(F, "%s    %d: %s of class %+F\n", prefix, i,
-					        get_entity_name(ov), get_entity_owner(ov));
+					ir_fprintf(F, "%s    %d: %F of class %+F\n", prefix, i, ov,
+					           get_entity_owner(ov));
 				}
 			} else {
 				fprintf(F, "%s  Does not overwrite other entities.\n", prefix);
@@ -537,8 +535,8 @@ static void dump_entity_to_file_prefix(FILE *const F,
 				fprintf(F, "%s  overwritten by:\n", prefix);
 				for (size_t i = 0; i < get_entity_n_overwrittenby(ent); ++i) {
 					const ir_entity *ov = get_entity_overwrittenby(ent, i);
-					ir_fprintf(F, "%s    %d: %s of class %+F\n", prefix, i,
-					           get_entity_name(ov), get_entity_owner(ov));
+					ir_fprintf(F, "%s    %d: %F of class %+F\n", prefix, i, ov,
+					           get_entity_owner(ov));
 				}
 			} else {
 				fprintf(F, "%s  Is not overwritten by other entities.\n",
@@ -549,14 +547,14 @@ static void dump_entity_to_file_prefix(FILE *const F,
 				fprintf(F, "%s  transitive overwrites:\n", prefix);
 				for (const ir_entity *ov = get_entity_trans_overwrites_first(ent);
 				     ov != NULL; ov = get_entity_trans_overwrites_next(ent)) {
-					ir_fprintf(F, "%s    : %s of class %+F\n", prefix,
-					           get_entity_name(ov), get_entity_owner(ov));
+					ir_fprintf(F, "%s    : %F of class %+F\n", prefix, ov,
+					           get_entity_owner(ov));
 				}
 				fprintf(F, "%s  transitive overwritten by:\n", prefix);
 				for (const ir_entity *ov = get_entity_trans_overwrittenby_first(ent);
 				     ov != NULL; ov = get_entity_trans_overwrittenby_next(ent)) {
-					ir_fprintf(F, "%s    : %s of class %+F\n", prefix,
-					           get_entity_name(ov), get_entity_owner(ov));
+					ir_fprintf(F, "%s    : %F of class %+F\n", prefix, ov,
+					           get_entity_owner(ov));
 				}
 			}
 		}
@@ -587,7 +585,7 @@ static void dump_entity_to_file_prefix(FILE *const F,
 			}
 		}
 	} else {  /* no entattrs */
-		ir_fprintf(F, "%s %+F: %s", prefix, type, get_entity_name(ent));
+		ir_fprintf(F, "%s %+F: %F", prefix, type, ent);
 		if (is_Method_type(type))
 			fputs("(...)", F);
 		if (is_entity_compound_member(ent)) {

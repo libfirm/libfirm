@@ -144,7 +144,7 @@ static int firm_emit(lc_appendable_t *app, const lc_arg_occ_t *occ,
 		if (irg == get_const_code_irg())
 			snprintf(buf, sizeof(buf), "%s<ConstCodeIrg>", A("irg"));
 		else
-			snprintf(buf, sizeof(buf), "%s%s", A("irg"), get_entity_name(get_irg_entity(irg)));
+			ir_snprintf(buf, sizeof(buf), "%s%F", A("irg"), get_irg_entity(irg));
 		snprintf(add, sizeof(add), "[%ld]", get_irg_graph_nr(irg));
 		break;
 	}

@@ -615,9 +615,9 @@ static void dump_node(FILE *f, const ir_node *irn, dump_reason_t reason)
 				ir_entity *in  = be_get_MemPerm_in_entity(irn, i);
 				ir_entity *out = be_get_MemPerm_out_entity(irn, i);
 				if (in != NULL)
-					fprintf(f, "\nin[%u]: %s\n", i, get_entity_name(in));
+					ir_fprintf(f, "\nin[%u]: %F\n", i, in);
 				if (out != NULL)
-					fprintf(f, "\nout[%u]: %s\n", i, get_entity_name(out));
+					ir_fprintf(f, "\nout[%u]: %F\n", i, out);
 			}
 		}
 		break;

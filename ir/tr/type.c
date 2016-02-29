@@ -1037,7 +1037,7 @@ ir_type *clone_frame_type(ir_type *type)
 	ir_type *res = new_type_frame();
 	for (size_t i = 0, n = get_compound_n_members(type); i < n; ++i) {
 		ir_entity *ent  = get_compound_member(type, i);
-		ident     *name = get_entity_name(ent);
+		ident     *name = get_entity_ident(ent);
 		ir_entity *nent = clone_entity(ent, name, res);
 		set_entity_link(ent, nent);
 		set_entity_link(nent, ent);

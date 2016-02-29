@@ -68,10 +68,8 @@ void arm_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 
 		if (arm_has_address_attr(n)) {
 			const arm_Address_attr_t *attr = get_arm_Address_attr_const(n);
-			if (attr->entity != NULL) {
-				fputc(' ', F);
-				fputs(get_entity_name(attr->entity), F);
-			}
+			if (attr->entity != NULL)
+				ir_fprintf(F, " %F", attr->entity);
 		}
 		break;
 
@@ -152,7 +150,7 @@ void arm_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 
 			fprintf(F, "entity = ");
 			if (attr->entity != NULL) {
-				fprintf(F, "'%s'", get_entity_name(attr->entity));
+				ir_fprintf(F, "'%F'", attr->entity);
 			} else {
 				fputs("NULL", F);
 			}
