@@ -948,8 +948,14 @@ exchange:
 				arch_set_irn_register(res, oreg);
 				SET_IA32_ORIG_NODE(res, node);
 				replace(node, res);
+				return;
 			}
 		}
+	}
+	if (!breg && scale == 1) {
+		/* lea c(, %i, 2), %d -> lea c(%i, %i), %d */
+		set_irn_n(node, n_ia32_Lea_base, idx);
+		set_ia32_am_scale(node, 0);
 	}
 }
 
