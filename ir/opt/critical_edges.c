@@ -94,5 +94,5 @@ void remove_critical_cf_edges_ex(ir_graph *irg, int ignore_exception_edges)
 
 void remove_critical_cf_edges(ir_graph *irg)
 {
-	remove_critical_cf_edges_ex(irg, true);
+	remove_critical_cf_edges_ex(irg, false);
 }
