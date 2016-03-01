@@ -913,6 +913,14 @@ static void peephole_ia32_Lea(ir_node *node)
 				ir_node  *const amt   = ia32_create_Immediate(irg, scale);
 				res = new_bd_ia32_Shl(dbgi, block, idx, amt);
 				goto exchange;
+			} else if (breg && !ireg) {
+				/* lea (%b), %d -> mov %b, %d */
+				dbg_info *const dbgi  = get_irn_dbg_info(node);
+				ir_node  *const block = get_nodes_block(node);
+				res = be_new_d_Copy(dbgi, block, base);
+				arch_set_irn_register(res, oreg);
+				be_peephole_replace(node, res);
+				return;
 			} else if (breg == oreg && ireg && scale == 0) {
 				/* lea (%b, %i), %b -> add %i, %b */
 				res = make_add(node, base, idx);
