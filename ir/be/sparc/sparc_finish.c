@@ -561,18 +561,6 @@ static void peephole_sparc_RestoreZero(ir_node *node)
 	}
 }
 
-static void finish_sparc_Return(ir_node *node)
-{
-	/* Ensure that the restore is directly before the return. */
-	sched_foreach_reverse_before(node, restore) {
-		if (is_sparc_Restore(restore) || is_sparc_RestoreZero(restore)) {
-			sched_remove(restore);
-			sched_add_before(node, restore);
-			break;
-		}
-	}
-}
-
 /**
  * Check whether the flags of the node are used.
  */
@@ -709,7 +697,6 @@ void sparc_finish_graph(ir_graph *irg)
 	register_peephole_optimization(op_sparc_FrameAddr, finish_sparc_FrameAddr);
 	register_peephole_optimization(op_sparc_Ld,        finish_sparc_Ld);
 	register_peephole_optimization(op_sparc_Ldf,       finish_sparc_Ldf);
-	register_peephole_optimization(op_sparc_Return,    finish_sparc_Return);
 	register_peephole_optimization(op_sparc_Save,      finish_sparc_Save);
 	register_peephole_optimization(op_sparc_St,        finish_sparc_St);
 	register_peephole_optimization(op_sparc_Stf,       finish_sparc_Stf);
