@@ -75,6 +75,7 @@ enum {
 /**
  * Make a new Copy node.
  */
+ir_node *be_new_d_Copy(dbg_info *dbgi, ir_node *block, ir_node *op);
 ir_node *be_new_Copy(ir_node *block, ir_node *in);
 /** Returns the Copy Argument. */
 ir_node *be_get_Copy_op(const ir_node *cpy);

@@ -211,14 +211,18 @@ static void set_copy_info(ir_node *const irn, ir_graph *const irg, ir_node *cons
 	arch_set_irn_register_req_out(irn, 0, out_req);
 }
 
-ir_node *be_new_Copy(ir_node *bl, ir_node *op)
+ir_node *be_new_d_Copy(dbg_info *const dbgi, ir_node *const block, ir_node *const op)
 {
-	ir_graph *irg  = get_irn_irg(bl);
-	ir_node  *in[] = { op };
-	ir_node  *res  = new_ir_node(NULL, irg, bl, op_be_Copy, get_irn_mode(op),
-	                             ARRAY_SIZE(in), in);
+	ir_graph *const irg  = get_irn_irg(block);
+	ir_node  *const in[] = { op };
+	ir_node  *const res  = new_ir_node(dbgi, irg, block, op_be_Copy, get_irn_mode(op), ARRAY_SIZE(in), in);
 	set_copy_info(res, irg, op, arch_irn_flags_none);
 	return res;
+}
+
+ir_node *be_new_Copy(ir_node *const bl, ir_node *const op)
+{
+	return be_new_d_Copy(NULL, bl, op);
 }
 
 ir_node *be_get_Copy_op(const ir_node *cpy)
