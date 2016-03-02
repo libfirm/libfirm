@@ -468,6 +468,10 @@ set_mode_low:
 				/* Technically we should build a Test8Bit because of the register
 				 * constraints, but nobody changes registers at this point anymore. */
 				set_ia32_ls_mode(node, mode_Bu);
+			} else if ((offset & 0xFFFF80FF) == 0) {
+				/* testl $0x0000XX00, %eRx -> testb 0xXX, %Rh */
+				set_test_imm(node, offset >> 8);
+				set_ia32_ls_mode(node, ia32_mode_8h);
 			}
 		}
 	}
