@@ -329,6 +329,13 @@ static void peephole_ia32_Cmp(ir_node *const node)
 	replace(node, test);
 }
 
+static void set_test_imm(ir_node *const test, int32_t const val)
+{
+	ir_graph *const irg = get_irn_irg(test);
+	ir_node  *const imm = ia32_create_Immediate(irg, val);
+	set_irn_n(test, n_ia32_Test_right, imm);
+}
+
 /**
  * Peephole optimization for Test instructions.
  * - Remove the Test, if an appropriate flag was produced which is still live
@@ -433,39 +440,36 @@ static void peephole_ia32_Test(ir_node *node)
 		 * testl(128, 128) -> SF=0
 		 * testb(128, 128) -> SF=1
 		 */
-		unsigned offset = imm->imm.offset;
+		uint32_t const offset = imm->imm.offset;
 		if (get_ia32_op_type(node) == ia32_AddrModeS) {
-			ia32_attr_t *const attr = get_ia32_attr(node);
-			ir_graph    *const irg  = get_irn_irg(node);
-
+			/* testl $0x0...0XX0...0, mem -> testb $0xXX, delta+mem */
+			int32_t delta;
 			if ((offset & 0xFFFFFF80) == 0) {
-				/* attr->am_imm.offset += 0; */
+				/* delta = 0; */
+				goto set_mode_low;
 			} else if ((offset & 0xFFFF80FF) == 0) {
-				ir_node *const imm_node = ia32_create_Immediate(irg, offset >>  8);
-				set_irn_n(node, n_ia32_Test_right, imm_node);
-				attr->am_imm.offset += 1;
+				delta = 1;
+				goto adjust_test;
 			} else if ((offset & 0xFF80FFFF) == 0) {
-				ir_node *const imm_node = ia32_create_Immediate(irg, offset >> 16);
-				set_irn_n(node, n_ia32_Test_right, imm_node);
-				attr->am_imm.offset += 2;
+				delta = 2;
+				goto adjust_test;
 			} else if ((offset & 0x00FFFFFF) == 0) {
-				ir_node *const imm_node = ia32_create_Immediate(irg, offset >> 24);
-				set_irn_n(node, n_ia32_Test_right, imm_node);
-				attr->am_imm.offset += 3;
-			} else {
-				return;
+				delta = 3;
+adjust_test:;
+				ia32_attr_t *const attr = get_ia32_attr(node);
+				attr->am_imm.offset += delta;
+				set_test_imm(node, offset >> (8 * delta));
+				goto set_mode_low;
 			}
-		} else if ((offset & 0xFFFFFF80) == 0) {
-			arch_register_t const* const reg = arch_get_irn_register(left);
-			if (!is_hl_register(reg))
-				return;
-		} else {
-			return;
+		} else if (is_hl_register(arch_get_irn_register(left))) {
+			if ((offset & 0xFFFFFF80) == 0) {
+				/* testl $0x000000XX, %eRx -> testb 0xXX, %Rl */
+set_mode_low:
+				/* Technically we should build a Test8Bit because of the register
+				 * constraints, but nobody changes registers at this point anymore. */
+				set_ia32_ls_mode(node, mode_Bu);
+			}
 		}
-
-		/* Technically we should build a Test8Bit because of the register
-		 * constraints, but nobody changes registers at this point anymore. */
-		set_ia32_ls_mode(node, mode_Bu);
 	}
 }
 
