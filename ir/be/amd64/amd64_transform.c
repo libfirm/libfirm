@@ -1684,6 +1684,23 @@ static ir_node *gen_Proj_Start(ir_node *const node)
 	panic("unexpected Start Proj: %u", pn);
 }
 
+static void add_callee_saves(ir_graph *const irg, x86_cconv_t const *cconv,
+                             ir_node **in, arch_register_req_t const **in_reqs)
+{
+	size_t pos = 0;
+	for (size_t i = 0; i < N_AMD64_REGISTERS; ++i) {
+		if (!rbitset_is_set(cconv->callee_saves, i))
+			continue;
+		arch_register_t const *const reg = &amd64_registers[i];
+		in[pos]   = be_get_Start_proj(irg, reg);
+		in_reqs[pos] = reg->single_req;
+		++pos;
+	}
+
+	size_t const n_callee_saves = rbitset_popcount(cconv->callee_saves, N_AMD64_REGISTERS);
+	assert(pos == n_callee_saves);
+}
+
 static ir_node *gen_Return(ir_node *const node)
 {
 	ir_graph          *const irg       = get_irn_irg(node);
@@ -1717,16 +1734,9 @@ static ir_node *gen_Return(ir_node *const node)
 		reqs[p] = slot->reg->single_req;
 		++p;
 	}
-	/* callee saves */
-	for (size_t i = 0; i < N_AMD64_REGISTERS; ++i) {
-		if (!rbitset_is_set(cconv->callee_saves, i))
-			continue;
-		arch_register_t const *const reg = &amd64_registers[i];
-		in[p]   = be_get_Start_proj(irg, reg);
-		reqs[p] = reg->single_req;
-		++p;
-	}
-	assert(p == n_ins);
+	assert(p == n_ins - n_callee_saves);
+
+	add_callee_saves(irg, cconv, &in[p], &reqs[p]);
 
 	ir_node *const ret = new_bd_amd64_ret(dbgi, new_block, n_ins, in, reqs);
 	be_stack_record_chain(&stack_env, ret, n_amd64_ret_stack, NULL);
@@ -1798,9 +1808,10 @@ static ir_node *gen_Call(ir_node *const node)
 	ir_graph          *const irg          = get_irn_irg(node);
 	x86_cconv_t       *const cconv
 		= amd64_decide_calling_convention(type, NULL);
-	size_t             const n_param_regs = cconv->n_param_regs;
+	size_t             const n_callee_saves = rbitset_popcount(cconv->callee_saves, N_AMD64_REGISTERS);
+	size_t             const n_param_regs   = cconv->n_param_regs;
 	/* param-regs + mem + stackpointer + callee(2) + n_sse_regs */
-	unsigned           const max_inputs   = 5 + n_param_regs;
+	unsigned           const max_inputs     = 5 + n_param_regs + n_callee_saves;
 
 	assert(n_params == cconv->n_parameters);
 
@@ -1961,6 +1972,12 @@ no_call_mem:;
 	/* construct memory input */
 	in[n_amd64_call_mem] = be_make_Sync(new_block, sync_arity, sync_ins);
 
+	if (ir_needs_reloaded_callee_saves(node)) {
+		/* add callee saves */
+		add_callee_saves(irg, cconv, &in[in_arity], &in_req[in_arity]);
+		in_arity += n_callee_saves;
+	}
+
 	assert(in_arity <= (int)max_inputs);
 
 	/* count outputs */
@@ -1983,6 +2000,7 @@ no_call_mem:;
 	/* create call node */
 	ir_node *const call = new_bd_amd64_call(dbgi, new_block, in_arity, in, in_req, out_arity, &call_attr);
 	ir_set_throws_exception(call, ir_throws_exception(node));
+	ir_set_needs_reloaded_callee_saves(call, ir_needs_reloaded_callee_saves(node));
 	fix_node_mem_proj(call, mem_proj);
 
 	/* create output register reqs */
