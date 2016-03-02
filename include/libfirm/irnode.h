@@ -299,6 +299,15 @@ FIRM_API void ir_set_throws_exception(ir_node *node, int throws_exception);
 /** Returns throws_exception attribute of a fragile node */
 FIRM_API int ir_throws_exception(const ir_node *node);
 
+/**
+ * Sets needs reloaded callee saves attribute of a fragile node
+ * @p throws_exception must be 0 or 1
+ */
+FIRM_API void ir_set_needs_reloaded_callee_saves(ir_node *node, int needs_reloaded_callee_saves);
+
+/** Returns throws_exception attribute of a fragile node */
+FIRM_API int ir_needs_reloaded_callee_saves(const ir_node *node);
+
 /** Returns the name of an ir_relation */
 FIRM_API const char *get_relation_string(ir_relation relation);
 

@@ -565,8 +565,8 @@ void be_map_exc_node_to_runtime_call(ir_node *node, ir_mode *res_mode,
 	ir_node  *mem   = get_memop_mem(node);
 	ir_node  *call  = new_rd_Call(dbgi, block, mem, addr, n_in, in, mtp);
 	set_irn_pinned(call, get_irn_pinned(node));
-	int throws_exception = ir_throws_exception(node);
-	ir_set_throws_exception(call, throws_exception);
+	ir_set_throws_exception(call, ir_throws_exception(node));
+	ir_set_needs_reloaded_callee_saves(call, ir_needs_reloaded_callee_saves(node));
 
 	assert(pn_M < 2 && pn_res < 2 && pn_X_regular < 4 && pn_X_except < 4);
 	int const         n_proj     = 4;
@@ -575,7 +575,7 @@ void be_map_exc_node_to_runtime_call(ir_node *node, ir_mode *res_mode,
 	tuple_in[pn_M] = new_r_Proj(call, mode_M, pn_Call_M);
 	ir_node *ress = new_r_Proj(call, mode_T, pn_Call_T_result);
 	tuple_in[pn_res] = new_r_Proj(ress, res_mode, 0);
-	if (throws_exception) {
+	if (ir_throws_exception(call)) {
 		tuple_in[pn_X_regular]  = new_r_Proj(call, mode_X, pn_Call_X_regular);
 		tuple_in[pn_X_except]   = new_r_Proj(call, mode_X, pn_Call_X_except);
 		n_operands             += 2;

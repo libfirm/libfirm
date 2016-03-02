@@ -137,6 +137,8 @@ typedef struct except_attr {
 	bool throws_exception   : 1;
 	/**< Whether this node needs a label because of possible exception. */
 	bool needs_except_label : 1;
+	/**< Whether this node requires all callee-saves to be reloaded. */
+	bool needs_reloaded_callee_saves : 1;
 } except_attr;
 
 /** Attributes for Call nodes. */

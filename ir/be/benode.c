@@ -101,7 +101,7 @@ static int be_relocation_attrs_equal(ir_node const *a, ir_node const *b)
 	return attr_a->entity == attr_b->entity && attr_a->kind == attr_b->kind;
 }
 
-arch_register_req_t const **be_allocate_in_reqs(ir_graph *const irg, unsigned const n)
+arch_register_req_t const **be_allocate_in_reqs(ir_graph *irg, unsigned const n)
 {
 	struct obstack *const obst = be_get_be_obst(irg);
 	return OALLOCN(obst, arch_register_req_t const*, n);
@@ -519,7 +519,7 @@ ir_node *be_get_Start_mem(ir_graph *const irg)
 	return be_get_or_make_Proj_for_pn(start, 0);
 }
 
-ir_node *be_get_Start_proj(ir_graph *const irg, arch_register_t const *const reg)
+ir_node *be_get_Start_proj(ir_graph *irg, arch_register_t const *const reg)
 {
 	ir_node *const start = get_irg_start(irg);
 	/* do a naive linear search... */

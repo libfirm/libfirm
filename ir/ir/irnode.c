@@ -680,6 +680,21 @@ int ir_throws_exception(const ir_node *node)
 	return attr->throws_exception;
 }
 
+void ir_set_needs_reloaded_callee_saves(ir_node *node, int needs_reloaded_callee_saves)
+{
+	assert(is_fragile_op(node));
+	except_attr *attr = &node->attr.except;
+	attr->needs_reloaded_callee_saves = needs_reloaded_callee_saves;
+}
+
+int ir_needs_reloaded_callee_saves(const ir_node *node)
+{
+	if (!is_fragile_op(node))
+		return false;
+	const except_attr *attr = &node->attr.except;
+	return attr->needs_reloaded_callee_saves;
+}
+
 size_t get_ASM_n_output_constraints(const ir_node *node)
 {
 	assert(is_ASM(node));
