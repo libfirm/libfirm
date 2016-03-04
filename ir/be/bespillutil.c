@@ -784,12 +784,10 @@ static void prepare_constr_insn(ir_node *const node)
 		} else {
 			if (def_constr == NULL || req->limited == NULL)
 				continue;
-			if (!req->kills_value) {
-				const arch_register_req_t *const in_req
-					= arch_get_irn_register_req(in);
-				if (in_req->ignore)
-					continue;
-			}
+			const arch_register_req_t *const in_req
+				= arch_get_irn_register_req(in);
+			if (in_req->ignore)
+				continue;
 
 			bool                               common_limits = false;
 			arch_register_class_t const *const cls           = req->cls;
