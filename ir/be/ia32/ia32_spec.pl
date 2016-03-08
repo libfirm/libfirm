@@ -543,7 +543,6 @@ Sub => {
 			out_reqs => [ "eax ebx ecx edx in_r3", "flags", "mem" ],
 		},
 	},
-	out_reqs  => [ "in_r3", "flags", "mem" ],
 	ins       => [ "base", "index", "mem", "minuend", "subtrahend" ],
 	outs      => [ "res", "flags", "M" ],
 	am        => "source,binary",
