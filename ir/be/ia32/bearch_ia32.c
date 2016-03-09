@@ -62,7 +62,6 @@ static ir_type   *between_type;
 static ir_entity *old_bp_ent;
 static ir_entity *ret_addr_ent;
 static ir_entity *omit_fp_ret_addr_ent;
-static bool       precise_x87_spills;
 static bool       return_small_struct_in_regs;
 
 typedef ir_node *(*create_const_node_func) (dbg_info *dbgi, ir_node *block);
@@ -1710,7 +1709,6 @@ static const backend_params *ia32_get_libfirm_params(void)
 
 static const lc_opt_table_entry_t ia32_options[] = {
 	LC_OPT_ENT_BOOL("gprof", "Create gprof profiling code", &gprof),
-	LC_OPT_ENT_BOOL("precise_float_spill", "Spill floatingpoint values precisely (the whole 80 bits)", &precise_x87_spills),
 	LC_OPT_ENT_BOOL("struct_in_reg",
 					"Return small structs in integer registers",
 					&return_small_struct_in_regs),
