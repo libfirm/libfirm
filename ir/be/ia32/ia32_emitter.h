@@ -14,6 +14,7 @@
 #include "firm_types.h"
 #include "ia32_encode.h"
 #include "jit.h"
+#include "x86_cc.h"
 
 /**
  * fmt  parameter               output

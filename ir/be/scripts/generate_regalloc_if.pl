@@ -194,7 +194,6 @@ print OUT <<EOF;
 #ifndef FIRM_BE_${archuc}_GEN_${archuc}_REGALLOC_IF_H
 #define FIRM_BE_${archuc}_GEN_${archuc}_REGALLOC_IF_H
 
-#include "${arch}_nodes_attr.h"
 #include "bearch.h"
 
 /** global register indices for ${arch} registers */
@@ -241,6 +240,7 @@ print OUT <<EOF;
  * \$date    $creation_time
  */
 #include "gen_${arch}_regalloc_if.h"
+
 #include "bearch_${arch}_t.h"
 
 ${single_constraints}

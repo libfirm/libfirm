@@ -533,10 +533,11 @@ $d //= '\0';
 
 open(my $out_c, ">", $target_c) // die("Fatal error: Could not open $target_c, reason: $!\n");
 print $out_c <<EOF;
+#include "gen_${arch}_new_nodes.h"
+
 #include "benode.h"
 #include "bearch_${arch}_t.h"
 #include "gen_${arch}_regalloc_if.h"
-#include "gen_${arch}_new_nodes.h"
 #include "${arch}_new_nodes_t.h"
 #include "fourcc.h"
 #include "irgopt.h"
@@ -612,6 +613,7 @@ print $out_h <<EOF;
 
 #include "be_types.h"
 #include "irnode_t.h"
+#include "${arch}_nodes_attr.h"
 
 $obst_enum_op
 int is_${arch}_irn(const ir_node *node);

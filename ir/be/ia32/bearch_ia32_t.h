@@ -14,6 +14,7 @@
 #include "beirg.h"
 #include "pmap.h"
 #include "x86_cconv.h"
+#include "x86_x87.h"
 
 #ifdef NDEBUG
 #define SET_IA32_ORIG_NODE(n, o) ((void)(n), (void)(o), (void)0)

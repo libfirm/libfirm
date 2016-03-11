@@ -104,10 +104,10 @@ close($out_h);
 
 my $out_c = create_with_header("$target_dir/gen_${arch}_emitter.c", "Generated functions to emit code for assembler ir nodes.");
 print $out_c <<EOF;
-#include "beemithlp.h"
-#include "beemitter.h"
 #include "gen_${arch}_emitter.h"
-#include "${arch}_new_nodes.h"
+
+#include "beemithlp.h"
+#include "gen_${arch}_new_nodes.h"
 #include "${arch}_emitter.h"
 
 ${obst_func}

@@ -10,6 +10,8 @@
 #ifndef FIRM_BE_AMD64_AMD64_NEW_NODES_T_H
 #define FIRM_BE_AMD64_AMD64_NEW_NODES_T_H
 
+#include "amd64_nodes_attr.h"
+
 void amd64_dump_node(FILE *F, const ir_node *n, dump_reason_t reason);
 
 void init_amd64_attributes(ir_node *node, arch_irn_flags_t flags,
