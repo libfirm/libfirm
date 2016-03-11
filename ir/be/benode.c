@@ -456,7 +456,7 @@ ir_node *be_complete_Phi(ir_node *const phi, unsigned const n_ins, ir_node **con
 	info->in_reqs = in_reqs;
 
 	verify_new_node(phi);
-	return optimize_node(phi);
+	return phi;
 }
 
 void be_set_phi_reg_req(ir_node *node, const arch_register_req_t *req)
