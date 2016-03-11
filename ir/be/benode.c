@@ -425,8 +425,7 @@ ir_node *be_new_Phi(ir_node *block, int n_ins, ir_node **ins, ir_mode *mode,
 		info->in_reqs[i] = req;
 	}
 	verify_new_node(phi);
-	phi = optimize_node(phi);
-	return phi;
+	return optimize_node(phi);
 }
 
 ir_node *be_new_Phi0(ir_node *const block, ir_mode *const mode, arch_register_req_t const *const req)
