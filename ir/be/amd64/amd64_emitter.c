@@ -9,6 +9,7 @@
  */
 #include <inttypes.h>
 
+#include "amd64_bearch_t.h"
 #include "amd64_emitter.h"
 #include "amd64_new_nodes.h"
 #include "amd64_nodes_attr.h"
@@ -27,6 +28,10 @@
 #include "iredges_t.h"
 #include "irgwalk.h"
 #include "panic.h"
+
+static bool               omit_fp;
+static int                frame_type_size;
+static int                callframe_offset;
 
 static bool fallthrough_possible(const ir_node *block, const ir_node *target)
 {
@@ -864,6 +869,22 @@ static void amd64_register_emitters(void)
 }
 
 /**
+ * Emits code for a node.
+ */
+static void amd64_emit_node(ir_node *node)
+{
+	be_emit_node(node);
+
+	if (omit_fp) {
+		int sp_change = -amd64_get_sp_change(node);
+		if (sp_change != 0) {
+			callframe_offset += sp_change;
+			be_dwarf_callframe_offset(callframe_offset);
+		}
+	}
+}
+
+/**
  * Walks over the nodes in a block connected by scheduling edges
  * and emits code for each node.
  */
@@ -871,8 +892,19 @@ static void amd64_gen_block(ir_node *block)
 {
 	be_gas_begin_block(block, true);
 
+	if (omit_fp) {
+		ir_graph *irg = get_irn_irg(block);
+		callframe_offset = 8; /* 8 bytes for the return address */
+		/* ESP guessing, TODO perform a real RSP simulation */
+		if (block != get_irg_start_block(irg)) {
+			callframe_offset += frame_type_size;
+		}
+		be_dwarf_callframe_offset(callframe_offset);
+	}
+
+	/* emit the contents of the block */
 	sched_foreach(block, node) {
-		be_emit_node(node);
+		amd64_emit_node(node);
 	}
 }
 
@@ -886,6 +918,20 @@ void amd64_emit_function(ir_graph *irg)
 	ir_node *const *const blk_sched = be_create_block_schedule(irg);
 
 	be_gas_emit_function_prolog(entity, 4, NULL);
+
+	omit_fp = amd64_get_irg_data(irg)->omit_fp;
+	if (omit_fp) {
+		ir_type *frame_type = get_irg_frame_type(irg);
+		frame_type_size = get_type_size(frame_type);
+		be_dwarf_callframe_register(&amd64_registers[REG_RSP]);
+	} else {
+		/* well not entirely correct here, we should emit this after the
+		 * "movl esp, ebp" */
+		be_dwarf_callframe_register(&amd64_registers[REG_RBP]);
+		/* TODO: do not hardcode the following */
+		be_dwarf_callframe_offset(16);
+		be_dwarf_callframe_spilloffset(&amd64_registers[REG_RBP], -16);
+	}
 
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 

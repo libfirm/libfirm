@@ -577,6 +577,21 @@ static void amd64_sp_sim(ir_node *const node, stack_pointer_state_t *state)
 	}
 }
 
+int amd64_get_sp_change(ir_node *const node)
+{
+	if (be_is_IncSP(node))
+		return -be_get_IncSP_offset(node);
+	// TODO: Check magic number 160
+	stack_pointer_state_t state = {
+		.offset    = 160,
+		.no_change = true,
+	};
+	amd64_sp_sim(node, &state);
+	int res = 160 - state.offset;
+	assert(-16 <= res && res <= 16);
+	return res;
+}
+
 /**
  * Called immediately before emit phase.
  */
