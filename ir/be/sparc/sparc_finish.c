@@ -508,11 +508,8 @@ static void peephole_sparc_RestoreZero(ir_node *node)
 		if (arch_get_irn_n_outs(schedpoint) == 0)
 			continue;
 
-		if (!mode_is_data(get_irn_mode(schedpoint)))
-			return;
-
-		arch_register_t const *const reg = arch_get_irn_register(schedpoint);
-		if (!is_restorezeroopt_reg(reg))
+		arch_register_t const *const reg = arch_get_irn_register_out(schedpoint, 0);
+		if (!reg || !is_restorezeroopt_reg(reg))
 			continue;
 
 		if (be_is_Copy(schedpoint) && can_move_down(schedpoint, node)) {
