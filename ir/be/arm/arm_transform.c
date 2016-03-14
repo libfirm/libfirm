@@ -712,7 +712,6 @@ static ir_node *gen_Mul(ir_node *node)
 			panic("softfloat not lowered");
 		}
 	}
-	assert(mode_is_data(mode));
 	if (arm_cg_config.variant < ARM_VARIANT_6) {
 		return new_bd_arm_Mul_v5(dbg, block, new_op1, new_op2);
 	} else {
@@ -1092,7 +1091,6 @@ static ir_node *gen_Minus(ir_node *node)
 			panic("softfloat not lowered");
 		}
 	}
-	assert(mode_is_data(mode));
 	return new_bd_arm_Rsb_imm(dbgi, block, new_op, 0, 0);
 }
 
@@ -1117,8 +1115,6 @@ static ir_node *gen_Load(ir_node *node)
 			panic("softfloat not lowered");
 		}
 	} else {
-		assert(mode_is_data(mode) && "unsupported mode for Load");
-
 		new_load = new_bd_arm_Ldr(dbgi, block, new_ptr, new_mem, mode, NULL, 0, 0, false);
 	}
 	set_irn_pinned(new_load, get_irn_pinned(node));
@@ -1149,7 +1145,6 @@ static ir_node *gen_Store(ir_node *node)
 			panic("softfloat not lowered");
 		}
 	} else {
-		assert(mode_is_data(mode) && "unsupported mode for Store");
 		new_store = new_bd_arm_Str(dbgi, block, new_ptr, new_val, new_mem, mode,
 		                           NULL, 0, 0, false);
 	}
