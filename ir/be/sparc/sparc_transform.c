@@ -225,16 +225,6 @@ static void parse_asm_constraints(be_asm_constraint_t *const constraint, ident *
 	be_parse_asm_constraints_internal(constraint, constraint_text, is_output, &sparc_parse_constraint_letter, NULL);
 }
 
-static const arch_register_t *find_register(const char *name)
-{
-	for (size_t i = 0; i < N_SPARC_REGISTERS; ++i) {
-		const arch_register_t *const reg = &sparc_registers[i];
-		if (streq(reg->name, name))
-			return reg;
-	}
-	return NULL;
-}
-
 void sparc_init_asm_constraints(void)
 {
 	be_set_constraint_support(ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER,  "0123456789efr");
@@ -299,7 +289,7 @@ static ir_node *gen_ASM(ir_node *node)
 		if (streq(clobber, "cc"))
 			continue;
 
-		const arch_register_t *reg = find_register(clobber);
+		arch_register_t const const *reg = arch_find_register(clobber);
 		if (reg == NULL)
 			panic("invalid clobber in sparc asm");
 
@@ -382,7 +372,7 @@ static ir_node *gen_ASM(ir_node *node)
 			continue;
 		}
 
-		const arch_register_t *reg = find_register(clobber);
+		arch_register_t const *const reg = arch_find_register(clobber);
 		assert(reg != NULL); /* otherwise we had a panic earlier */
 		ARR_APP1(arch_register_req_t const*, out_reqs, reg->single_req);
 	}
