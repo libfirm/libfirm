@@ -97,6 +97,9 @@ typedef struct vararg_params {
  * propagated to the libFirm parameter set.
  */
 typedef struct backend_params {
+	/* Info whether this backend is unfinished. */
+	char const *experimental;
+
 	/** the backend uses big-endian byte ordering if set, else little endian */
 	unsigned byte_order_big_endian:1;
 	/** 1 if backend supports generation of position independent code (PIC) */

@@ -260,6 +260,7 @@ static const ir_settings_arch_dep_t arm_arch_dep = {
 	.max_bits_for_mulh    = ARM_MACHINE_SIZE,
 };
 static backend_params arm_backend_params = {
+	.experimental                  = "the arm backend is highly experimental and unfinished",
 	.byte_order_big_endian         = false,
 	.pic_supported                 = false,
 	.unaligned_memaccess_supported = false,

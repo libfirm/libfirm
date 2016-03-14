@@ -139,6 +139,7 @@ static int TEMPLATE_is_mux_allowed(ir_node *sel, ir_node *mux_false,
 static const backend_params *TEMPLATE_get_backend_params(void)
 {
 	static backend_params p = {
+		.experimental                  = "The TEMPLATE backend is just a demo for writing backends",
 		.byte_order_big_endian         = false,
 		.pic_supported                 = false,
 		.unaligned_memaccess_supported = false,

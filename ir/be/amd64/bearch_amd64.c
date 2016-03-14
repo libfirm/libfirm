@@ -757,6 +757,7 @@ static const ir_settings_arch_dep_t amd64_arch_dep = {
 };
 
 static backend_params amd64_backend_params = {
+	.experimental                  = "the amd64 backend is highly experimental and unfinished (consider the ia32 backend)",
 	.byte_order_big_endian         = false,
 	.pic_supported                 = true,
 	.unaligned_memaccess_supported = true,
