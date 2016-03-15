@@ -7,8 +7,8 @@
  * @file
  * @brief   declarations for AMD64 backend -- private header
  */
-#ifndef FIRM_BE_AMD64_BEARCH_AMD64_T_H
-#define FIRM_BE_AMD64_BEARCH_AMD64_T_H
+#ifndef FIRM_BE_AMD64_AMD64_BEARCH_T_H
+#define FIRM_BE_AMD64_AMD64_BEARCH_T_H
 
 #include "beirg.h"
 #include "../ia32/x86_cconv.h"

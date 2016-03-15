@@ -13,9 +13,9 @@
 
 #include <assert.h>
 
-#include "bearch_ia32_t.h"
 #include "beirg.h"
 #include "beutil.h"
+#include "ia32_bearch_t.h"
 #include "irnode_t.h"
 #include "irop_t.h"
 #include "irprog.h"

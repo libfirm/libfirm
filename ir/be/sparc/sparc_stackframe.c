@@ -8,12 +8,13 @@
  * @brief   Manage addressing into the stackframe
  * @author  Matthias Braun
  */
+#include "sparc_bearch_t.h"
+
 #include "beirg.h"
 #include "panic.h"
 #include "firm_types.h"
 #include "iredges_t.h"
 #include "irnode_t.h"
-#include "bearch_sparc_t.h"
 #include "sparc_new_nodes.h"
 #include "sparc_cconv.h"
 #include "bitfiddle.h"

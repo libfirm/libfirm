@@ -29,9 +29,9 @@
 #include "besched.h"
 #include "bepeephole.h"
 
+#include "ia32_bearch_t.h"
 #include "ia32_new_nodes.h"
 #include "ia32_optimize.h"
-#include "bearch_ia32_t.h"
 #include "gen_ia32_regalloc_if.h"
 #include "ia32_transform.h"
 #include "ia32_architecture.h"

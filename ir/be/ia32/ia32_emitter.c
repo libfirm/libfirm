@@ -30,7 +30,6 @@
 #include <dlfcn.h>
 
 #include "be_t.h"
-#include "bearch_ia32_t.h"
 #include "beasm.h"
 #include "beblocksched.h"
 #include "bediagnostic.h"
@@ -46,6 +45,7 @@
 #include "gen_ia32_emitter.h"
 #include "gen_ia32_regalloc_if.h"
 #include "ia32_architecture.h"
+#include "ia32_bearch_t.h"
 #include "ia32_emitter.h"
 #include "ia32_encode.h"
 #include "ia32_new_nodes.h"

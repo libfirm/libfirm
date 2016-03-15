@@ -8,8 +8,8 @@
  * @brief   declarations for arm backend -- private header
  * @author  Oliver Richter, Tobias Gneist
  */
-#ifndef FIRM_BE_ARM_BEARCH_ARM_T_H
-#define FIRM_BE_ARM_BEARCH_ARM_T_H
+#ifndef FIRM_BE_ARM_ARM_BEARCH_T_H
+#define FIRM_BE_ARM_ARM_BEARCH_T_H
 
 #include <stdbool.h>
 

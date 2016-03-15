@@ -8,8 +8,8 @@
  * @brief       This is the main ia32 firm backend driver.
  * @author      Christian Wuerdig
  */
-#ifndef FIRM_BE_IA32_BEARCH_IA32_T_H
-#define FIRM_BE_IA32_BEARCH_IA32_T_H
+#ifndef FIRM_BE_IA32_IA32_BEARCH_T_H
+#define FIRM_BE_IA32_IA32_BEARCH_T_H
 
 #include "beirg.h"
 #include "pmap.h"

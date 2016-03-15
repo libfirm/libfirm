@@ -23,10 +23,10 @@
 
 #include "benode.h"
 #include "betranshlp.h"
-#include "bearch_amd64_t.h"
 #include "beirg.h"
 #include "besched.h"
 
+#include "amd64_bearch_t.h"
 #include "amd64_new_nodes.h"
 #include "amd64_nodes_attr.h"
 #include "amd64_transform.h"

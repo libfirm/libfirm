@@ -10,7 +10,6 @@
  */
 #include <inttypes.h>
 
-#include "bearch_sparc_t.h"
 #include "beasm.h"
 #include "beblocksched.h"
 #include "bediagnostic.h"
@@ -32,6 +31,7 @@
 #include "irgwalk.h"
 #include "panic.h"
 #include "pmap.h"
+#include "sparc_bearch_t.h"
 #include "sparc_emitter.h"
 #include "sparc_new_nodes.h"
 #include "util.h"

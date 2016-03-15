@@ -32,7 +32,7 @@
 #include "bedump.h"
 #include "beinfo.h"
 
-#include "bearch_ia32_t.h"
+#include "ia32_bearch_t.h"
 #include "ia32_nodes_attr.h"
 #include "ia32_new_nodes_t.h"
 #include "gen_ia32_regalloc_if.h"

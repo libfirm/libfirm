@@ -9,6 +9,8 @@
  *              functions to code or library calls.
  * @author      Michael Beck
  */
+#include "ia32_bearch_t.h"
+
 #include "iredges_t.h"
 #include "irgmod.h"
 #include "irop_t.h"
@@ -24,7 +26,6 @@
 #include "tv.h"
 
 #include "ia32_new_nodes.h"
-#include "bearch_ia32_t.h"
 #include "gen_ia32_regalloc_if.h"
 #include "begnuas.h"
 #include "x86_x87.h"

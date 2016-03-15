@@ -12,6 +12,8 @@
  *  - http://www.x86-64.org/documentation/abi.pdf
  *  - MSDN - "x64 Software Conventions"
  */
+#include "amd64_bearch_t.h"
+
 #include "be_t.h"
 #include "becconv.h"
 #include "beirg.h"
@@ -23,7 +25,6 @@
 #include "panic.h"
 #include "gen_amd64_regalloc_if.h"
 #include "bitfiddle.h"
-#include "bearch_amd64_t.h"
 #include "../ia32/x86_cconv.h"
 
 /*

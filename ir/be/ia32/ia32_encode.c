@@ -12,7 +12,6 @@
 
 #include <stdint.h>
 #include "bearch.h"
-#include "bearch_ia32_t.h"
 #include "beblocksched.h"
 #include "beemithlp.h"
 #include "begnuas.h"
@@ -22,6 +21,7 @@
 #include "gen_ia32_emitter.h"
 #include "gen_ia32_regalloc_if.h"
 #include "ia32_architecture.h"
+#include "ia32_bearch_t.h"
 #include "ia32_emitter.h"
 #include "ia32_new_nodes.h"
 #include "irnodehashmap.h"

@@ -536,7 +536,7 @@ print $out_c <<EOF;
 #include "gen_${arch}_new_nodes.h"
 
 #include "benode.h"
-#include "bearch_${arch}_t.h"
+#include "${arch}_bearch_t.h"
 #include "gen_${arch}_regalloc_if.h"
 #include "${arch}_new_nodes_t.h"
 #include "fourcc.h"

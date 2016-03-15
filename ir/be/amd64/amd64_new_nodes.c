@@ -23,10 +23,10 @@
 #include "xmalloc.h"
 #include "bedump.h"
 
+#include "amd64_bearch_t.h"
 #include "amd64_nodes_attr.h"
 #include "amd64_new_nodes.h"
 #include "amd64_new_nodes_t.h"
-#include "bearch_amd64_t.h"
 #include "gen_amd64_regalloc_if.h"
 
 amd64_insn_size_t get_amd64_insn_size(const ir_node *node)

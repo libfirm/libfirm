@@ -23,10 +23,10 @@
 #include "irprintf.h"
 #include "xmalloc.h"
 
+#include "arm_bearch_t.h"
 #include "arm_new_nodes_t.h"
 #include "arm_nodes_attr.h"
 #include "arm_optimize.h"
-#include "bearch_arm_t.h"
 #include "bedump.h"
 
 static bool arm_has_address_attr(const ir_node *node)

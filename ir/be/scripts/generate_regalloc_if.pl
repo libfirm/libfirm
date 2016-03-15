@@ -241,7 +241,7 @@ print OUT <<EOF;
  */
 #include "gen_${arch}_regalloc_if.h"
 
-#include "bearch_${arch}_t.h"
+#include "${arch}_bearch_t.h"
 
 ${single_constraints}
 

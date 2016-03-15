@@ -8,8 +8,9 @@
  * @brief       This is the main ia32 firm backend driver.
  * @author      Christian Wuerdig
  */
+#include "ia32_bearch_t.h"
+
 #include "be_t.h"
-#include "bearch_ia32_t.h"
 #include "beflags.h"
 #include "begnuas.h"
 #include "bemodule.h"

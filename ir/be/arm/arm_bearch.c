@@ -8,11 +8,12 @@
  * @brief   The main arm backend driver file.
  * @author  Matthias Braun, Oliver Richter, Tobias Gneist
  */
+#include "arm_bearch_t.h"
+
 #include "arm_emitter.h"
 #include "arm_new_nodes.h"
 #include "arm_transform.h"
 #include "be_t.h"
-#include "bearch_arm_t.h"
 #include "beirg.h"
 #include "beflags.h"
 #include "begnuas.h"

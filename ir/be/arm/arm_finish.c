@@ -8,7 +8,7 @@
  * @brief   arm graph touchups before emitting
  * @author  Matthias Braun
  */
-#include "bearch_arm_t.h"
+#include "arm_bearch_t.h"
 
 #include "arm_new_nodes.h"
 #include "arm_optimize.h"

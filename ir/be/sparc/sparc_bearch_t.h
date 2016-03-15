@@ -8,8 +8,8 @@
  * @brief   declarations for SPARC backend -- private header
  * @author  Hannes Rapp, Matthias Braun
  */
-#ifndef FIRM_BE_SPARC_BEARCH_SPARC_T_H
-#define FIRM_BE_SPARC_BEARCH_SPARC_T_H
+#ifndef FIRM_BE_SPARC_SPARC_BEARCH_T_H
+#define FIRM_BE_SPARC_SPARC_BEARCH_T_H
 
 #include <stdbool.h>
 #include <stdint.h>

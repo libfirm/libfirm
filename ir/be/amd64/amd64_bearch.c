@@ -7,13 +7,13 @@
  * @file
  * @brief    The main amd64 backend driver file.
  */
+#include "amd64_bearch_t.h"
 #include "amd64_emitter.h"
 #include "amd64_finish.h"
 #include "amd64_new_nodes.h"
 #include "amd64_optimize.h"
 #include "amd64_transform.h"
 #include "amd64_varargs.h"
-#include "bearch_amd64_t.h"
 #include "beflags.h"
 #include "beirg.h"
 #include "bemodule.h"

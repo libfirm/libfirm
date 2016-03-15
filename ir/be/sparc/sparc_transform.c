@@ -29,8 +29,8 @@
 #include "beirg.h"
 #include "beutil.h"
 #include "betranshlp.h"
-#include "bearch_sparc_t.h"
 
+#include "sparc_bearch_t.h"
 #include "sparc_nodes_attr.h"
 #include "sparc_transform.h"
 #include "sparc_new_nodes.h"

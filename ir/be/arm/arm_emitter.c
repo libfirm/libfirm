@@ -10,11 +10,11 @@
  */
 #include <inttypes.h>
 
+#include "arm_bearch_t.h"
 #include "arm_cconv.h"
 #include "arm_emitter.h"
 #include "arm_new_nodes.h"
 #include "be_t.h"
-#include "bearch_arm_t.h"
 #include "beblocksched.h"
 #include "bediagnostic.h"
 #include "beemithlp.h"

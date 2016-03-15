@@ -11,10 +11,10 @@
 #include "ia32_finish.h"
 
 #include "bearch.h"
-#include "bearch_ia32_t.h"
 #include "besched.h"
 #include "debug.h"
 #include "gen_ia32_regalloc_if.h"
+#include "ia32_bearch_t.h"
 #include "ia32_new_nodes.h"
 #include "ia32_transform.h"
 #include "iredges_t.h"

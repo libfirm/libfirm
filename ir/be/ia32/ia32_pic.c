@@ -8,7 +8,7 @@
  * @brief       position independent code adjustments
  * @author      Matthias Braun
  */
-#include "bearch_ia32_t.h"
+#include "ia32_bearch_t.h"
 
 #include "adt/pmap.h"
 #include "be_t.h"

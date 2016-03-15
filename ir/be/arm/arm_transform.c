@@ -8,7 +8,7 @@
  * @brief   The codegenerator (transform FIRM into arm FIRM)
  * @author  Matthias Braun, Oliver Richter, Tobias Gneist, Michael Beck
  */
-#include "bearch_arm_t.h"
+#include "arm_bearch_t.h"
 #include "irnode_t.h"
 #include "irgraph_t.h"
 #include "irmode_t.h"

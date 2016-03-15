@@ -10,11 +10,11 @@
  */
 #include "amd64_varargs.h"
 
+#include "amd64_bearch_t.h"
 #include "amd64_new_nodes.h"
 #include "amd64_nodes_attr.h"
 #include "amd64_transform.h"
 #include "be.h"
-#include "bearch_amd64_t.h"
 #include "besched.h"
 #include "bitfiddle.h"
 #include "gen_amd64_regalloc_if.h"

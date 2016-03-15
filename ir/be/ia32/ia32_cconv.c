@@ -8,8 +8,9 @@
  * @brief   calling convention helpers
  * @author  Matthias Braun
  */
+#include "ia32_bearch_t.h"
+
 #include "be_t.h"
-#include "bearch_ia32_t.h"
 #include "becconv.h"
 #include "beirg.h"
 #include "ia32_architecture.h"

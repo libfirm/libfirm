@@ -23,9 +23,9 @@
 #include "xmalloc.h"
 
 #include "bearch.h"
-#include "bearch_sparc_t.h"
 #include "bedump.h"
 
+#include "sparc_bearch_t.h"
 #include "sparc_nodes_attr.h"
 #include "sparc_new_nodes_t.h"
 #include "gen_sparc_regalloc_if.h"

@@ -8,8 +8,9 @@
  * @brief    The main sparc backend driver file.
  * @author   Hannes Rapp, Matthias Braun
  */
+#include "sparc_bearch_t.h"
+
 #include "be_t.h"
-#include "bearch_sparc_t.h"
 #include "beflags.h"
 #include "begnuas.h"
 #include "beirg.h"

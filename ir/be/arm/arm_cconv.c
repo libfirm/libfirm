@@ -10,7 +10,7 @@
  */
 #include "arm_cconv.h"
 
-#include "bearch_arm_t.h"
+#include "arm_bearch_t.h"
 #include "becconv.h"
 #include "beirg.h"
 #include "irmode_t.h"

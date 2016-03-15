@@ -8,8 +8,9 @@
  * @brief    ARM 64bit lowering
  * @author   Matthias Braun
  */
+#include "arm_bearch_t.h"
+
 #include "arm_nodes_attr.h"
-#include "bearch_arm_t.h"
 #include "benode.h"
 #include "gen_arm_new_nodes.h"
 #include "gen_arm_regalloc_if.h"

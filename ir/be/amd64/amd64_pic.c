@@ -8,7 +8,7 @@
  * @brief       position independent code adjustments
  * @author      Matthias Braun
  */
-#include "bearch_amd64_t.h"
+#include "amd64_bearch_t.h"
 
 #include "amd64_new_nodes.h"
 #include "be_t.h"

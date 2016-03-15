@@ -12,10 +12,10 @@
 #define FIRM_BE_SPARC_SPARC_CCONV_H
 
 #include "firm_types.h"
-#include "bearch_sparc_t.h"
 #include "be_types.h"
 #include "benode.h"
 #include "gen_sparc_regalloc_if.h"
+#include "sparc_bearch_t.h"
 
 /** information about a single parameter or result */
 typedef struct reg_or_stackslot_t
