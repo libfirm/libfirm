@@ -21,27 +21,18 @@
  */
 #include "beblocksched.h"
 
-#include <stdlib.h>
-
-#include "util.h"
-#include "array.h"
-#include "pdeq.h"
-#include "beirg.h"
-#include "iredges_t.h"
-#include "irgwalk.h"
-#include "irnode_t.h"
-#include "irgraph_t.h"
-#include "irgmod.h"
-#include "irloop.h"
-#include "execfreq.h"
-#include "irdump_t.h"
-#include "irtools.h"
-#include "debug.h"
 #include "bearch.h"
+#include "beirg.h"
 #include "bemodule.h"
 #include "besched.h"
-#include "be.h"
-#include "panic.h"
+#include "debug.h"
+#include "execfreq.h"
+#include "iredges_t.h"
+#include "irgmod.h"
+#include "irgwalk.h"
+#include "irnode_t.h"
+#include "pdeq.h"
+#include "util.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
@@ -63,10 +54,9 @@ static void remove_empty_block(ir_node *block)
 	sched_foreach(block, node) {
 		if (!(arch_get_irn_flags(node) & arch_irn_flag_simple_jump))
 			goto check_preds;
-		if (jump != NULL) {
-			/* we should never have 2 jumps in a block */
+		/* we should never have 2 jumps in a block */
+		if (jump)
 			panic("found 2 jumps in a block");
-		}
 		jump = node;
 	}
 	if (jump == NULL)
@@ -76,8 +66,6 @@ static void remove_empty_block(ir_node *block)
 	ir_node   *pred       = get_Block_cfgpred(block, 0);
 	ir_node   *succ_block = NULL;
 	foreach_out_edge_safe(jump, edge) {
-		int pos = get_edge_src_pos(edge);
-
 		assert(succ_block == NULL);
 		succ_block = get_edge_src_irn(edge);
 		if (get_Block_entity(succ_block) != NULL && entity != NULL) {
@@ -86,6 +74,7 @@ static void remove_empty_block(ir_node *block)
 			goto check_preds;
 		}
 
+		int const pos = get_edge_src_pos(edge);
 		set_irn_n(succ_block, pos, pred);
 	}
 
@@ -97,25 +86,21 @@ static void remove_empty_block(ir_node *block)
 	foreach_out_edge_safe(block, edge) {
 		ir_node *const node = get_edge_src_irn(edge);
 
-		if (node == jump)
+		if (node == jump) {
 			continue;
-		/* we simply kill Pins, because there are some strange interactions
-		 * between jump threading, which produce PhiMs with Pins, we simply
-		 * kill the pins here, everything is scheduled anyway */
-		if (is_Pin(node)) {
+		} else if (is_Pin(node)) {
+			/* we simply kill Pins, because there are some strange interactions
+			 * between jump threading, which produce PhiMs with Pins, we simply
+			 * kill the pins here, everything is scheduled anyway */
 			exchange(node, get_Pin_op(node));
-			continue;
-		}
-		if (is_Sync(node)) {
+		} else if (is_Sync(node)) {
 			set_nodes_block(node, get_nodes_block(pred));
-			continue;
-		}
-		if (is_End(node)) { /* End-keep, reroute it to the successor */
+		} else if (is_End(node)) { /* End-keep, reroute it to the successor */
 			int pos = get_edge_src_pos(edge);
 			set_irn_n(node, pos, succ_block);
-			continue;
+		} else {
+			panic("unexpected node %+F in block %+F with empty schedule", node, block);
 		}
-		panic("unexpected node %+F in block %+F with empty schedule", node, block);
 	}
 
 	ir_graph *irg = get_irn_irg(block);
@@ -143,16 +128,13 @@ static void remove_empty_blocks(ir_graph *irg)
 	inc_irg_visited(irg);
 	remove_empty_block(get_irg_end_block(irg));
 	foreach_irn_in(get_irg_end(irg), i, pred) {
-		if (!is_Block(pred))
-			continue;
-		remove_empty_block(pred);
+		if (is_Block(pred))
+			remove_empty_block(pred);
 	}
 	ir_free_resources(irg, IR_RESOURCE_IRN_VISITED);
 
-	if (blocks_removed) {
-		/* invalidate analysis info */
+	if (blocks_removed)
 		clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
-	}
 }
 
 typedef struct blocksched_entry_t blocksched_entry_t;
@@ -164,15 +146,15 @@ struct blocksched_entry_t {
 
 typedef struct edge_t edge_t;
 struct edge_t {
-	ir_node *block;             /**< source block */
-	int     pos;                /**< number of cfg predecessor (target) */
-	double  execfreq;           /**< the frequency */
-	double  outedge_penalty_freq; /**< for edges leaving the loop this is the
-	                                   penality when we make them a
-	                                   fallthrough. */
-	int     highest_execfreq;   /**< flag that indicates whether this edge is
-	                                 the edge with the highest execfreq pointing
-	                                 away from this block */
+	ir_node *block;                /**< source block */
+	int      pos;                  /**< number of cfg predecessor (target) */
+	double   execfreq;             /**< the frequency */
+	/** for edges leaving the loop this is the penality when we make them a
+	 * fallthrough. */
+	double   outedge_penalty_freq;
+	/** flag that indicates whether this edge is the edge with the highest
+	 * execfreq pointing away from this block */
+	int      highest_execfreq;
 };
 
 typedef struct blocksched_env_t blocksched_env_t;
@@ -181,7 +163,7 @@ struct blocksched_env_t {
 	struct obstack  obst;
 	edge_t         *edges;
 	pdeq           *worklist;
-	int            blockcount;
+	unsigned        blockcount;
 };
 
 static blocksched_entry_t* get_blocksched_entry(const ir_node *block)
@@ -235,17 +217,15 @@ static void collect_egde_frequency(ir_node *block, void *data)
 
 		edge.block = block;
 		for (int i = 0; i < arity; ++i) {
-			double  execfreq;
-			ir_node *pred_block = get_Block_cfgpred_block(block, i);
-
-			execfreq = get_block_execfreq(pred_block);
+			ir_node *const pred_block = get_Block_cfgpred_block(block, i);
+			double   const execfreq   = get_block_execfreq(pred_block);
 
 			edge.pos              = i;
 			edge.execfreq         = execfreq;
 			edge.highest_execfreq = 0;
 			ARR_APP1(edge_t, env->edges, edge);
 
-			if (execfreq > highest_execfreq) {
+			if (highest_execfreq < execfreq) {
 				highest_execfreq = execfreq;
 				highest_edge_num = ARR_LEN(env->edges) - 1;
 			}
@@ -264,14 +244,12 @@ static int cmp_edges_base(const edge_t *e1, const edge_t *e2)
 		return 1;
 	} else if (nr1 > nr2) {
 		return -1;
+	} else if (e1->pos < e2->pos) {
+		return 1;
+	} else if (e1->pos > e2->pos) {
+		return -1;
 	} else {
-		if (e1->pos < e2->pos) {
-			return 1;
-		} else if (e1->pos > e2->pos) {
-			return -1;
-		} else {
-			return 0;
-		}
+		return 0;
 	}
 }
 
@@ -325,19 +303,17 @@ static void coalesce_blocks(blocksched_env_t *env)
 	/* run1: only look at jumps */
 	size_t edge_count = ARR_LEN(edges);
 	for (size_t i = 0; i < edge_count; ++i) {
-		const edge_t *edge  = &edges[i];
-		ir_node      *block = edge->block;
-		int           pos   = edge->pos;
-
+		edge_t const *const edge = &edges[i];
 		/* only check edge with highest frequency */
-		if (! edge->highest_execfreq)
+		if (!edge->highest_execfreq)
 			continue;
 
+		ir_node *const block = edge->block;
 		/* the block might have been removed already... */
 		if (is_Bad(get_Block_cfgpred(block, 0)))
 			continue;
 
-		ir_node *pred_block = get_Block_cfgpred_block(block, pos);
+		ir_node *pred_block = get_Block_cfgpred_block(block, edge->pos);
 		blocksched_entry_t *entry      = get_blocksched_entry(block);
 		blocksched_entry_t *pred_entry = get_blocksched_entry(pred_block);
 
@@ -360,21 +336,20 @@ static void coalesce_blocks(blocksched_env_t *env)
 
 	QSORT_ARR(edges, cmp_edges_outedge_penalty);
 	for (size_t i = 0; i < edge_count; ++i) {
-		const edge_t *edge  = &edges[i];
-		ir_node      *block = edge->block;
-		int           pos   = edge->pos;
-
+		edge_t const *const edge = &edges[i];
 		/* already seen all loop outedges? */
 		if (edge->outedge_penalty_freq == 0)
 			break;
 
+		ir_node *const block = edge->block;
 		/* the block might have been removed already... */
-		if (is_Bad(get_Block_cfgpred(block, pos)))
+		ir_node *const pred = get_Block_cfgpred(block, edge->pos);
+		if (is_Bad(pred))
 			continue;
 
-		ir_node *pred_block = get_Block_cfgpred_block(block, pos);
-		blocksched_entry_t *entry      = get_blocksched_entry(block);
-		blocksched_entry_t *pred_entry = get_blocksched_entry(pred_block);
+		ir_node            *const pred_block = get_nodes_block(pred);
+		blocksched_entry_t *const entry      = get_blocksched_entry(block);
+		blocksched_entry_t *const pred_entry = get_blocksched_entry(pred_block);
 
 		if (pred_entry->next != NULL || entry->prev != NULL)
 			continue;
@@ -406,15 +381,15 @@ static void coalesce_blocks(blocksched_env_t *env)
 	for (size_t i = 0; i < edge_count; ++i) {
 		const edge_t *edge  = &edges[i];
 		ir_node      *block = edge->block;
-		int           pos   = edge->pos;
 
 		/* the block might have been removed already... */
-		if (is_Bad(get_Block_cfgpred(block, pos)))
+		ir_node *const pred = get_Block_cfgpred(block, edge->pos);
+		if (is_Bad(pred))
 			continue;
 
-		ir_node *pred_block = get_Block_cfgpred_block(block, pos);
-		blocksched_entry_t *entry      = get_blocksched_entry(block);
-		blocksched_entry_t *pred_entry = get_blocksched_entry(pred_block);
+		ir_node            *const pred_block = get_nodes_block(pred);
+		blocksched_entry_t *const entry      = get_blocksched_entry(block);
+		blocksched_entry_t *const pred_entry = get_blocksched_entry(pred_block);
 
 		/* is 1 of the blocks already attached to another block? */
 		if (pred_entry->next != NULL || entry->prev != NULL)
@@ -430,7 +405,7 @@ static void coalesce_blocks(blocksched_env_t *env)
 
 static void pick_block_successor(blocksched_entry_t *entry, blocksched_env_t *env)
 {
-	ir_node *block = entry->block;
+	ir_node *const block = entry->block;
 	if (irn_visited_else_mark(block))
 		return;
 
@@ -476,21 +451,20 @@ static void pick_block_successor(blocksched_entry_t *entry, blocksched_env_t *en
 	/* no successor yet: pick the successor block with the highest execution
 	 * frequency which has no predecessor yet */
 
-	ir_node *succ  = NULL;
+	ir_node *succ = NULL;
 	foreach_block_succ(block, edge) {
-		ir_node *succ_block = get_edge_src_irn(edge);
-
+		ir_node *const succ_block = get_edge_src_irn(edge);
 		if (irn_visited(succ_block))
 			continue;
 
-		blocksched_entry_t *succ_entry = get_blocksched_entry(succ_block);
+		blocksched_entry_t *const succ_entry = get_blocksched_entry(succ_block);
 		if (succ_entry->prev != NULL)
 			continue;
 
 		double execfreq = get_block_execfreq(succ_block);
-		if (execfreq > best_succ_execfreq) {
+		if (best_succ_execfreq < execfreq) {
 			best_succ_execfreq = execfreq;
-			succ = succ_block;
+			succ               = succ_block;
 		}
 	}
 
@@ -506,7 +480,7 @@ static void pick_block_successor(blocksched_entry_t *entry, blocksched_env_t *en
 		} while (irn_visited(succ));
 	}
 
-	blocksched_entry_t *succ_entry       = get_blocksched_entry(succ);
+	blocksched_entry_t *const succ_entry = get_blocksched_entry(succ);
 	entry->next      = succ_entry;
 	succ_entry->prev = entry;
 
@@ -515,14 +489,14 @@ static void pick_block_successor(blocksched_entry_t *entry, blocksched_env_t *en
 
 static blocksched_entry_t *finish_block_schedule(blocksched_env_t *env)
 {
-	ir_graph           *irg        = env->irg;
-	ir_node            *startblock = get_irg_start_block(irg);
-	blocksched_entry_t *entry      = get_blocksched_entry(startblock);
+	ir_graph *const irg = env->irg;
 
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_VISITED);
 	inc_irg_visited(irg);
 
 	env->worklist = new_pdeq();
+	ir_node            *const startblock = get_irg_start_block(irg);
+	blocksched_entry_t *const entry      = get_blocksched_entry(startblock);
 	pick_block_successor(entry, env);
 	assert(pdeq_empty(env->worklist));
 	del_pdeq(env->worklist);
@@ -553,11 +527,12 @@ static ir_node **create_blocksched_array(blocksched_env_t *const env)
 
 ir_node **be_create_block_schedule(ir_graph *irg)
 {
-	blocksched_env_t env;
-	env.irg        = irg;
-	env.edges      = NEW_ARR_F(edge_t, 0);
-	env.worklist   = NULL;
-	env.blockcount = 0;
+	blocksched_env_t env = {
+		.irg        = irg,
+		.edges      = NEW_ARR_F(edge_t, 0),
+		.worklist   = NULL,
+		.blockcount = 0,
+	};
 	obstack_init(&env.obst);
 
 	assure_loopinfo(irg);
