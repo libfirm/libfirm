@@ -1453,10 +1453,7 @@ void sparc_emit_function(ir_graph *irg)
 	pick_delay_slots(n_blocks, block_schedule);
 
 	for (size_t i = 0; i < n_blocks; ++i) {
-		ir_node *block = block_schedule[i];
-		if (block == get_irg_end_block(irg))
-			continue;
-		sparc_emit_block(block);
+		sparc_emit_block(block_schedule[i]);
 	}
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 

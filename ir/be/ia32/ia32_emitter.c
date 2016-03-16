@@ -1484,10 +1484,6 @@ bool ia32_should_align_block(ir_node const *const block)
  */
 static void ia32_emit_block_header(ir_node *block)
 {
-	ir_graph *const irg = get_irn_irg(block);
-	if (block == get_irg_end_block(irg))
-		return;
-
 	if (ia32_cg_config.label_alignment > 0) {
 		/* align the current block if:
 		 * a) if should be aligned due to its execution frequency

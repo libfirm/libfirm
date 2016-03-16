@@ -179,6 +179,10 @@ static void collect_egde_frequency(ir_node *block, void *data)
 {
 	blocksched_env_t *env = (blocksched_env_t*)data;
 
+	/* Exclude the end block from the block schedule. */
+	if (block == get_irg_end_block(env->irg))
+		return;
+
 	edge_t edge;
 	memset(&edge, 0, sizeof(edge));
 
@@ -189,10 +193,9 @@ static void collect_egde_frequency(ir_node *block, void *data)
 	ir_loop *loop  = get_irn_loop(block);
 	int      arity = get_Block_n_cfgpreds(block);
 	if (arity == 0) {
-		/* must be the start block (or end-block for endless loops),
-		 * everything else is dead code and should be removed by now */
-		assert(block == get_irg_start_block(env->irg)
-				|| block == get_irg_end_block(env->irg));
+		/* must be the start block, everything else is dead code and should be
+		 * removed by now */
+		assert(block == get_irg_start_block(env->irg));
 		/* nothing to do here */
 		return;
 	} else if (arity == 1) {
@@ -493,6 +496,8 @@ static blocksched_entry_t *finish_block_schedule(blocksched_env_t *env)
 
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_VISITED);
 	inc_irg_visited(irg);
+	/* Exclude the end block from the block schedule. */
+	mark_irn_visited(get_irg_end_block(irg));
 
 	env->worklist = new_pdeq();
 	ir_node            *const startblock = get_irg_start_block(irg);
