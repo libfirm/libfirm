@@ -388,6 +388,6 @@ void arch_copy_irn_out_info(ir_node *dst, unsigned dst_pos, ir_node const *src);
 
 int be_default_is_valid_clobber(char const *clobber);
 
-arch_register_req_t const *be_create_reg_req(struct obstack *obst, arch_register_t const *reg, bool ignore);
+arch_register_req_t const *be_create_reg_req(ir_graph *irg, arch_register_t const *reg, bool ignore);
 
 #endif

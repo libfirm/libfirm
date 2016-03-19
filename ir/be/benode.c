@@ -517,7 +517,7 @@ ir_node *be_new_Start(ir_graph *const irg, be_start_out const *const outs)
 		if (outs[i] != BE_START_NO) {
 			arch_register_t     const *const reg = &regs[i];
 			arch_register_req_t const *const req = outs[i] == BE_START_IGNORE
-				? be_create_reg_req(be_get_be_obst(irg), reg, true)
+				? be_create_reg_req(irg, reg, true)
 				: reg->single_req;
 			arch_set_irn_register_req_out(start, l, req);
 			arch_set_irn_register_out(    start, l, reg);

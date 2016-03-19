@@ -158,8 +158,9 @@ int be_default_is_valid_clobber(char const *const clobber)
 	return false;
 }
 
-arch_register_req_t const *be_create_reg_req(struct obstack *const obst, arch_register_t const *const reg, bool const ignore)
+arch_register_req_t const *be_create_reg_req(ir_graph *const irg, arch_register_t const *const reg, bool const ignore)
 {
+	struct obstack              *const obst    = be_get_be_obst(irg);
 	arch_register_class_t const *const cls     = reg->cls;
 	unsigned                    *const limited = rbitset_obstack_alloc(obst, cls->n_regs);
 	rbitset_set(limited, reg->index);
