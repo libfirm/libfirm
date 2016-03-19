@@ -225,8 +225,6 @@ struct arch_register_req_t {
 	unsigned char                width;
 	/** ignore this input/output while allocating registers */
 	bool                         ignore : 1;
-	/** The registernumber should be aligned (in case of multiregister values)*/
-	bool                         aligned : 1;
 	/** The instructions modifies the value in the register in an unknown way,
 	 * the value has to be copied if it is needed afterwards. */
 	bool                         kills_value : 1;
@@ -242,7 +240,6 @@ static inline bool reg_reqs_equal(const arch_register_req_t *req1,
 	    req1->should_be_same    != req2->should_be_same    ||
 	    req1->must_be_different != req2->must_be_different ||
 	    req1->ignore            != req2->ignore            ||
-	    req1->aligned           != req2->aligned           ||
 	    (req1->limited != NULL) != (req2->limited != NULL))
 		return false;
 
@@ -256,7 +253,7 @@ static inline bool reg_reqs_equal(const arch_register_req_t *req1,
 
 static inline bool reg_req_has_constraint(const arch_register_req_t *req)
 {
-	return req->limited || req->must_be_different != 0 || req->ignore || req->aligned;
+	return req->limited || req->must_be_different != 0 || req->ignore || req->width != 1;
 }
 
 /**

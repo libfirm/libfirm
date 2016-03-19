@@ -690,7 +690,7 @@ static void assign_reg(ir_node const *const block, ir_node *const node, arch_reg
 			continue;
 		/* alignment constraint? */
 		if (width > 1) {
-			if (req->aligned && (final_reg_index % width) != 0)
+			if (final_reg_index % width != 0)
 				continue;
 			bool fine = true;
 			for (unsigned r0 = r+1; r0 < r+width; ++r0) {
@@ -1104,13 +1104,14 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node,
 	bool good = true;
 	be_foreach_use(node, cls, req, op, op_req,
 		/* are there any limitations for the i'th operand? */
-		if (req->width > 1)
-			double_width = true;
 		const arch_register_t *reg       = arch_get_irn_register(op);
 		unsigned               reg_index = reg->index;
-		if (req->aligned && !is_aligned(reg_index, req->width)) {
-			good = false;
-			continue;
+		if (req->width != 1) {
+			double_width = true;
+			if (!is_aligned(reg_index, req->width)) {
+				good = false;
+				continue;
+			}
 		}
 		if (req->limited == NULL)
 			continue;
@@ -1515,9 +1516,8 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 			const arch_register_req_t *phi_req = cls->class_req;
 			if (req->width > 1) {
 				arch_register_req_t *new_req = allocate_reg_req(irg);
-				new_req->cls     = cls;
-				new_req->width   = req->width;
-				new_req->aligned = req->aligned;
+				new_req->cls   = cls;
+				new_req->width = req->width;
 				phi_req = new_req;
 			}
 			ir_node *phi  = be_new_Phi(block, n_preds, phi_ins, mode,

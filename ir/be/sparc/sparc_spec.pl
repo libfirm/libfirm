@@ -217,13 +217,13 @@ my $float_binop = {
 			out_reqs => [ "cls-fp" ],
 		},
 		d => {
-			in_reqs  => [ "cls-fp:a|2", "cls-fp:a|2" ],
-			out_reqs => [ "cls-fp:a|2" ],
+			in_reqs  => [ "cls-fp:2", "cls-fp:2" ],
+			out_reqs => [ "cls-fp:2" ],
 			mode     => $mode_fp2,
 		},
 		q => {
-			in_reqs  => [ "cls-fp:a|4", "cls-fp:a|4" ],
-			out_reqs => [ "cls-fp:a|4" ],
+			in_reqs  => [ "cls-fp:4", "cls-fp:4" ],
+			out_reqs => [ "cls-fp:4" ],
 			mode     => $mode_fp4,
 		}
 	},
@@ -240,13 +240,13 @@ my $float_unop = {
 			out_reqs => [ "cls-fp" ],
 		},
 		d => {
-			in_reqs  => [ "cls-fp:a|2" ],
-			out_reqs => [ "cls-fp:a|2" ],
+			in_reqs  => [ "cls-fp:2" ],
+			out_reqs => [ "cls-fp:2" ],
 			mode     => $mode_fp2,
 		},
 		q => {
-			in_reqs  => [ "cls-fp:a|4" ],
-			out_reqs => [ "cls-fp:a|4" ],
+			in_reqs  => [ "cls-fp:4" ],
+			out_reqs => [ "cls-fp:4" ],
 			mode     => $mode_fp4,
 		}
 	},
@@ -684,9 +684,9 @@ fcmp => {
 	attr      => "ir_mode *fp_mode",
 	out_reqs  => [ "fpflags" ],
 	constructors => {
-		s => { in_reqs => [ "cls-fp",     "cls-fp"     ] },
-		d => { in_reqs => [ "cls-fp:a|2", "cls-fp:a|2" ] },
-		q => { in_reqs => [ "cls-fp:a|4", "cls-fp:a|4" ] },
+		s => { in_reqs => [ "cls-fp",   "cls-fp"   ] },
+		d => { in_reqs => [ "cls-fp:2", "cls-fp:2" ] },
+		q => { in_reqs => [ "cls-fp:4", "cls-fp:4" ] },
 	},
 },
 
@@ -713,9 +713,9 @@ fdiv => {
 	ins          => [ "left", "right" ],
 	outs         => [ "res", "M" ],
 	constructors => {
-		s => { in_reqs => [ "cls-fp",     "cls-fp"     ], out_reqs => [ "cls-fp",     "mem" ] },
-		d => { in_reqs => [ "cls-fp:a|2", "cls-fp:a|2" ], out_reqs => [ "cls-fp:a|2", "mem" ] },
-		q => { in_reqs => [ "cls-fp:a|4", "cls-fp:a|4" ], out_reqs => [ "cls-fp:a|4", "mem" ] }
+		s => { in_reqs => [ "cls-fp",   "cls-fp"   ], out_reqs => [ "cls-fp",   "mem" ] },
+		d => { in_reqs => [ "cls-fp:2", "cls-fp:2" ], out_reqs => [ "cls-fp:2", "mem" ] },
+		q => { in_reqs => [ "cls-fp:4", "cls-fp:4" ], out_reqs => [ "cls-fp:4", "mem" ] }
 	},
 },
 
@@ -737,12 +737,12 @@ fftof => {
 	attr_type => "sparc_fp_conv_attr_t",
 	attr      => "ir_mode *src_mode, ir_mode *dest_mode",
 	constructors => {
-		s_d => { in_reqs => [ "cls-fp"     ], out_reqs => [ "cls-fp:a|2" ], mode => $mode_fp2, },
-		s_q => { in_reqs => [ "cls-fp"     ], out_reqs => [ "cls-fp:a|2" ], mode => $mode_fp4, },
-		d_s => { in_reqs => [ "cls-fp:a|2" ], out_reqs => [ "cls-fp"     ] },
-		d_q => { in_reqs => [ "cls-fp:a|2" ], out_reqs => [ "cls-fp:a|4" ], mode => $mode_fp4, },
-		q_s => { in_reqs => [ "cls-fp:a|4" ], out_reqs => [ "cls-fp"     ] },
-		q_d => { in_reqs => [ "cls-fp:a|4" ], out_reqs => [ "cls-fp:a|2" ], mode => $mode_fp2, },
+		s_d => { in_reqs => [ "cls-fp"   ], out_reqs => [ "cls-fp:2" ], mode => $mode_fp2, },
+		s_q => { in_reqs => [ "cls-fp"   ], out_reqs => [ "cls-fp:2" ], mode => $mode_fp4, },
+		d_s => { in_reqs => [ "cls-fp:2" ], out_reqs => [ "cls-fp"   ] },
+		d_q => { in_reqs => [ "cls-fp:2" ], out_reqs => [ "cls-fp:4" ], mode => $mode_fp4, },
+		q_s => { in_reqs => [ "cls-fp:4" ], out_reqs => [ "cls-fp"   ] },
+		q_d => { in_reqs => [ "cls-fp:4" ], out_reqs => [ "cls-fp:2" ], mode => $mode_fp2, },
 	},
 },
 
@@ -753,9 +753,9 @@ fitof => {
 	attr      => "ir_mode *fp_mode",
 	in_reqs   => [ "cls-fp" ],
 	constructors => {
-		s => { out_reqs => [ "cls-fp"     ] },
-		d => { out_reqs => [ "cls-fp:a|2" ], mode => $mode_fp2, },
-		q => { out_reqs => [ "cls-fp:a|4" ], mode => $mode_fp4, },
+		s => { out_reqs => [ "cls-fp"   ] },
+		d => { out_reqs => [ "cls-fp:2" ], mode => $mode_fp2, },
+		q => { out_reqs => [ "cls-fp:4" ], mode => $mode_fp4, },
 	},
 },
 
@@ -766,9 +766,9 @@ fftoi => {
 	attr      => "ir_mode *fp_mode",
 	out_reqs  => [ "cls-fp" ],
 	constructors => {
-		s => { in_reqs => [ "cls-fp"     ] },
-		d => { in_reqs => [ "cls-fp:a|2" ] },
-		q => { in_reqs => [ "cls-fp:a|4" ] },
+		s => { in_reqs => [ "cls-fp"   ] },
+		d => { in_reqs => [ "cls-fp:2" ] },
+		q => { in_reqs => [ "cls-fp:4" ] },
 	},
 },
 
@@ -776,9 +776,9 @@ Ldf => {
 	op_flags   => [ "uses_memory" ],
 	state      => "exc_pinned",
 	constructors => {
-		s => { out_reqs => [ "cls-fp",     "mem" ] },
-		d => { out_reqs => [ "cls-fp:a|2", "mem" ] },
-		q => { out_reqs => [ "cls-fp:a|4", "mem" ] },
+		s => { out_reqs => [ "cls-fp",   "mem" ] },
+		d => { out_reqs => [ "cls-fp:2", "mem" ] },
+		q => { out_reqs => [ "cls-fp:4", "mem" ] },
 	},
 	in_reqs   => [ "gp", "mem" ],
 	ins       => [ "ptr", "mem" ],
@@ -793,9 +793,9 @@ Stf => {
 	op_flags  => [ "uses_memory" ],
 	state     => "exc_pinned",
 	constructors => {
-		s => { in_reqs => [ "cls-fp",     "gp", "mem" ] },
-		d => { in_reqs => [ "cls-fp:a|2", "gp", "mem" ] },
-		q => { in_reqs => [ "cls-fp:a|4", "gp", "mem" ] },
+		s => { in_reqs => [ "cls-fp",   "gp", "mem" ] },
+		d => { in_reqs => [ "cls-fp:2", "gp", "mem" ] },
+		q => { in_reqs => [ "cls-fp:4", "gp", "mem" ] },
 	},
 	out_reqs  => [ "mem" ],
 	ins       => [ "val", "ptr", "mem" ],

@@ -885,8 +885,6 @@ sub generate_requirements
 				$extra .= "\n\t.ignore = true,";
 			} elsif ($f eq "K") {
 				$extra .= "\n\t.kills_value = true,";
-			} elsif ($f eq "a") {
-				$extra .= "\n\t.aligned = true,";
 			} elsif ($f eq "2" or $f eq "4" or $f eq "8") {
 				$width = int($f);
 			} else {

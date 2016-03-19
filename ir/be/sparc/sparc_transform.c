@@ -1917,14 +1917,12 @@ static const arch_register_req_t float1_req = {
 	.width = 1,
 };
 static const arch_register_req_t float2_req = {
-	.cls     = &sparc_reg_classes[CLASS_sparc_fp],
-	.width   = 2,
-	.aligned = true,
+	.cls   = &sparc_reg_classes[CLASS_sparc_fp],
+	.width = 2,
 };
 static const arch_register_req_t float4_req = {
-	.cls     = &sparc_reg_classes[CLASS_sparc_fp],
-	.width   = 4,
-	.aligned = true,
+	.cls   = &sparc_reg_classes[CLASS_sparc_fp],
+	.width = 4,
 };
 
 static const arch_register_req_t *get_float_req(ir_mode *mode)

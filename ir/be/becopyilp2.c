@@ -49,10 +49,7 @@ typedef struct local_env_t {
 static unsigned check_alignment_constraints(ir_node *node)
 {
 	const arch_register_req_t *req = arch_get_irn_register_req(node);
-	// For larger than 1 variables, support only aligned constraints
-	assert((req->aligned || req->width == 1) &&
-	       "Unaligned large (width > 1) variables not supported");
-	return req->aligned && req->width > 1;
+	return req->width != 1;
 }
 
 static void make_color_var_name(char *buf, size_t buf_size,
