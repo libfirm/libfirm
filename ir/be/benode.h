@@ -165,10 +165,6 @@ unsigned be_get_MemPerm_entity_arity(const ir_node *irn);
 
 arch_register_req_t const **be_allocate_in_reqs(ir_graph *irg, unsigned n);
 
-const arch_register_req_t *be_create_reg_req(struct obstack *obst,
-                                             const arch_register_t *reg,
-                                             bool ignore);
-
 /**
  * Set the register requirements for a phi node.
  */

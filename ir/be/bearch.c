@@ -158,6 +158,19 @@ int be_default_is_valid_clobber(char const *const clobber)
 	return false;
 }
 
+arch_register_req_t const *be_create_reg_req(struct obstack *const obst, arch_register_t const *const reg, bool const ignore)
+{
+	arch_register_class_t const *const cls     = reg->cls;
+	unsigned                    *const limited = rbitset_obstack_alloc(obst, cls->n_regs);
+	rbitset_set(limited, reg->index);
+	arch_register_req_t *const req = OALLOCZ(obst, arch_register_req_t);
+	req->cls     = cls;
+	req->limited = limited;
+	req->width   = 1;
+	req->ignore  = ignore;
+	return req;
+}
+
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch)
 void be_init_arch(void)
 {

@@ -356,22 +356,6 @@ unsigned be_get_MemPerm_entity_arity(const ir_node *irn)
 	return get_irn_arity(irn);
 }
 
-const arch_register_req_t *be_create_reg_req(struct obstack *obst,
-                                             const arch_register_t *reg,
-                                             bool ignore)
-{
-	arch_register_class_t const *cls     = reg->cls;
-	unsigned                    *limited
-		= rbitset_obstack_alloc(obst, cls->n_regs);
-	rbitset_set(limited, reg->index);
-	arch_register_req_t *req = OALLOCZ(obst, arch_register_req_t);
-	req->cls     = cls;
-	req->limited = limited;
-	req->width   = 1;
-	req->ignore  = ignore;
-	return req;
-}
-
 ir_node *be_get_IncSP_pred(ir_node *irn)
 {
 	assert(be_is_IncSP(irn));
