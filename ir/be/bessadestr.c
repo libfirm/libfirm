@@ -109,7 +109,7 @@ static void impl_parcopy(const arch_register_class_t *cls,
 	}
 
 	if (perm_size > 0) {
-		ir_node *perm = be_new_Perm(cls, block, perm_size, perm_ins);
+		ir_node *const perm = be_new_Perm(block, perm_size, perm_ins);
 		sched_add_before(before, perm);
 
 		unsigned i = 0;

@@ -851,7 +851,7 @@ static void permute_values(ir_nodeset_t *live_nodes, ir_node *before,
 		unsigned r2 = permutation[old_r];
 
 		ir_node *const in[] = { assignments[r2], assignments[old_r] };
-		ir_node *const perm = be_new_Perm(cls, block, ARRAY_SIZE(in), in);
+		ir_node *const perm = be_new_Perm(block, ARRAY_SIZE(in), in);
 		sched_add_before(before, perm);
 		DB((dbg, LEVEL_2, "Perm %+F (perm %+F,%+F, before %+F)\n",
 		    perm, in[0], in[1], before));

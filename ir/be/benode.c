@@ -139,26 +139,20 @@ static void init_node_attr(ir_node *const node, unsigned const n_outputs, arch_i
 	info->flags = flags;
 }
 
-ir_node *be_new_Perm(arch_register_class_t const *const cls,
-                     ir_node *const block, int const n,
-                     ir_node *const *const in)
+ir_node *be_new_Perm(ir_node *const block, int const n, ir_node *const *const in)
 {
-	ir_graph *irg = get_irn_irg(block);
-	ir_node  *irn = new_ir_node(NULL, irg, block, op_be_Perm, mode_T, n, in);
+	ir_graph *const irg = get_irn_irg(block);
+	ir_node  *const irn = new_ir_node(NULL, irg, block, op_be_Perm, mode_T, n, in);
 	init_node_attr(irn, n, arch_irn_flags_none);
-	be_node_attr_t *attr = (be_node_attr_t*)get_irn_generic_attr(irn);
+	be_node_attr_t *const attr = (be_node_attr_t*)get_irn_generic_attr(irn);
 	attr->exc.pinned = true;
 	for (int i = 0; i < n; ++i) {
-		const ir_node             *input = in[i];
-		const arch_register_req_t *req   = arch_get_irn_register_req(input);
-		if (req->width == 1) {
-			be_node_set_register_req_in(irn, i, cls->class_req);
-			arch_set_irn_register_req_out(irn, i, cls->class_req);
-		} else {
-			arch_register_req_t *const new_req = be_create_cls_req(irg, cls, req->width);
-			be_node_set_register_req_in(irn, i, new_req);
-			arch_set_irn_register_req_out(irn, i, new_req);
-		}
+		arch_register_req_t const *const in_req   = arch_get_irn_register_req(in[i]);
+		arch_register_req_t const *const slot_req =
+			in_req->width == 1 ? in_req->cls->class_req :
+			be_create_cls_req(irg, in_req->cls, in_req->width);
+		be_node_set_register_req_in(  irn, i, slot_req);
+		arch_set_irn_register_req_out(irn, i, slot_req);
 	}
 
 	return irn;

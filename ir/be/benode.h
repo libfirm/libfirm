@@ -88,8 +88,7 @@ ir_node *be_new_Copy_before_reg(ir_node *val, ir_node *before, arch_register_t c
 /**
  * Make a new Perm node.
  */
-ir_node *be_new_Perm(arch_register_class_t const *cls, ir_node *block, int n,
-                     ir_node *const *in);
+ir_node *be_new_Perm(ir_node *block, int n, ir_node *const *in);
 
 /**
  * Create a new MemPerm node.

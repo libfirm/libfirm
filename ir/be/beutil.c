@@ -85,7 +85,7 @@ ir_node *insert_Perm_before(ir_graph *irg, const arch_register_class_t *cls,
 	QSORT(nodes, n, cmp_node_nr);
 
 	ir_node *const block = get_nodes_block(pos);
-	ir_node *const perm  = be_new_Perm(cls, block, n, nodes);
+	ir_node *const perm  = be_new_Perm(block, n, nodes);
 	sched_add_before(pos, perm);
 	free(nodes);
 
