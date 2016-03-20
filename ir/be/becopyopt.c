@@ -344,6 +344,11 @@ static int ou_max_ind_set_costs(unit_t *const ou)
 	return safe_costs+best_weight;
 }
 
+static bool adhere_same_req(ir_node const *const irn, ir_node const *const other)
+{
+	return !arch_irn_is_ignore(other) && be_values_interfere(irn, other);
+}
+
 static void co_collect_units(ir_node *irn, void *env)
 {
 	if (get_irn_mode(irn) == mode_T)
@@ -422,11 +427,8 @@ static void co_collect_units(ir_node *irn, void *env)
 		for (int i = 0; (1U << i) <= other; ++i) {
 			if (other & (1U << i)) {
 				ir_node *o = get_irn_n(skip_Proj(irn), i);
-				if (arch_irn_is_ignore(o))
-					continue;
-				if (be_values_interfere(irn, o))
-					continue;
-				++count;
+				if (adhere_same_req(irn, o))
+					++count;
 			}
 		}
 
@@ -441,8 +443,7 @@ static void co_collect_units(ir_node *irn, void *env)
 			for (int i = 0; 1U << i <= other; ++i) {
 				if (other & (1U << i)) {
 					ir_node *o = get_irn_n(skip_Proj(irn), i);
-					if (!arch_irn_is_ignore(o) &&
-							!be_values_interfere(irn, o)) {
+					if (adhere_same_req(irn, o)) {
 						unit->nodes[k] = o;
 						unit->costs[k] = co->get_costs(irn, -1);
 						++k;
