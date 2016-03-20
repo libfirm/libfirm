@@ -1437,13 +1437,6 @@ static void assign_phi_registers(ir_node *block)
 	}
 }
 
-static arch_register_req_t *allocate_reg_req(ir_graph *irg)
-{
-	struct obstack *obst = be_get_be_obst(irg);
-	arch_register_req_t *req = OALLOCZ(obst, arch_register_req_t);
-	return req;
-}
-
 /**
  * Walker: assign registers to all nodes of a block that
  * need registers from the currently considered register class.
@@ -1514,12 +1507,8 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 		if (need_phi) {
 			ir_mode *mode = get_irn_mode(node);
 			const arch_register_req_t *phi_req = cls->class_req;
-			if (req->width > 1) {
-				arch_register_req_t *new_req = allocate_reg_req(irg);
-				new_req->cls   = cls;
-				new_req->width = req->width;
-				phi_req = new_req;
-			}
+			if (req->width > 1)
+				phi_req = be_create_cls_req(irg, cls, req->width);
 			ir_node *phi  = be_new_Phi(block, n_preds, phi_ins, mode,
 			                           phi_req);
 

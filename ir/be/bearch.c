@@ -158,6 +158,15 @@ int be_default_is_valid_clobber(char const *const clobber)
 	return false;
 }
 
+arch_register_req_t *be_create_cls_req(ir_graph *const irg, arch_register_class_t const *const cls, unsigned char const width)
+{
+	struct obstack      *const obst = be_get_be_obst(irg);
+	arch_register_req_t *const req  = OALLOCZ(obst, arch_register_req_t);
+	req->cls   = cls;
+	req->width = width;
+	return req;
+}
+
 arch_register_req_t const *be_create_reg_req(ir_graph *const irg, arch_register_t const *const reg, bool const ignore)
 {
 	if (!ignore)

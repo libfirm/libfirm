@@ -400,12 +400,8 @@ static void determine_phi_req(be_ssa_construction_env_t *env, ir_node *value)
 		env->phi_req = req->cls->class_req;
 	} else {
 		/* construct a new register req... */
-		ir_graph            *irg     = get_irn_irg(value);
-		struct obstack      *obst    = be_get_be_obst(irg);
-		arch_register_req_t *new_req = OALLOCZ(obst, arch_register_req_t);
-		new_req->cls   = req->cls;
-		new_req->width = req->width;
-		env->phi_req   = new_req;
+		ir_graph *const irg = get_irn_irg(value);
+		env->phi_req = be_create_cls_req(irg, req->cls, req->width);
 	}
 }
 

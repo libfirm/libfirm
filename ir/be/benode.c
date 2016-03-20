@@ -105,13 +105,6 @@ arch_register_req_t const **be_allocate_in_reqs(ir_graph *const irg, unsigned co
 	return OALLOCN(obst, arch_register_req_t const*, n);
 }
 
-static arch_register_req_t *allocate_reg_req(ir_graph *const irg)
-{
-	struct obstack *obst = be_get_be_obst(irg);
-	arch_register_req_t *req = OALLOCZ(obst, arch_register_req_t);
-	return req;
-}
-
 static void be_node_set_register_req_in(ir_node *const node, int const pos,
                                         arch_register_req_t const *const req)
 {
@@ -162,9 +155,7 @@ ir_node *be_new_Perm(arch_register_class_t const *const cls,
 			be_node_set_register_req_in(irn, i, cls->class_req);
 			arch_set_irn_register_req_out(irn, i, cls->class_req);
 		} else {
-			arch_register_req_t *const new_req = allocate_reg_req(irg);
-			new_req->cls   = cls;
-			new_req->width = req->width;
+			arch_register_req_t *const new_req = be_create_cls_req(irg, cls, req->width);
 			be_node_set_register_req_in(irn, i, new_req);
 			arch_set_irn_register_req_out(irn, i, new_req);
 		}
@@ -202,10 +193,8 @@ static void set_copy_info(ir_node *const irn, ir_graph *const irg, ir_node *cons
 
 	be_node_set_register_req_in(irn, 0, cls->class_req);
 
-	arch_register_req_t *const out_req = allocate_reg_req(irg);
-	out_req->cls            = cls;
+	arch_register_req_t *const out_req = be_create_cls_req(irg, cls, op_req->width);
 	out_req->should_be_same = 1U << 0;
-	out_req->width          = op_req->width;
 	arch_set_irn_register_req_out(irn, 0, out_req);
 }
 
