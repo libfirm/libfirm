@@ -195,13 +195,9 @@ static void collect_stack_nodes_walker(ir_node *node, void *data)
 
 void be_fix_stack_nodes(ir_graph *const irg, arch_register_t const *const sp)
 {
-	be_irg_t *const birg = be_birg_from_irg(irg);
-	const arch_register_req_t *sp_req;
-	if (!rbitset_is_set(birg->allocatable_regs, sp->global_index)) {
-		sp_req = be_create_reg_req(irg, sp, true);
-	} else {
-		sp_req = sp->single_req;
-	}
+	be_irg_t                  *const birg   = be_birg_from_irg(irg);
+	bool                       const ignore = !rbitset_is_set(birg->allocatable_regs, sp->global_index);
+	arch_register_req_t const *const sp_req = be_create_reg_req(irg, sp, ignore);
 
 	fix_stack_walker_env_t walker_env;
 	walker_env.sp = sp;

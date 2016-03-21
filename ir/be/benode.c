@@ -515,10 +515,9 @@ ir_node *be_new_Start(ir_graph *const irg, be_start_out const *const outs)
 	arch_register_t const *const regs = isa_if->registers;
 	for (unsigned i = 0; i != n_regs; ++i) {
 		if (outs[i] != BE_START_NO) {
-			arch_register_t     const *const reg = &regs[i];
-			arch_register_req_t const *const req = outs[i] == BE_START_IGNORE
-				? be_create_reg_req(irg, reg, true)
-				: reg->single_req;
+			arch_register_t     const *const reg    = &regs[i];
+			bool                       const ignore = outs[i] == BE_START_IGNORE;
+			arch_register_req_t const *const req    = be_create_reg_req(irg, reg, ignore);
 			arch_set_irn_register_req_out(start, l, req);
 			arch_set_irn_register_out(    start, l, reg);
 			++l;
