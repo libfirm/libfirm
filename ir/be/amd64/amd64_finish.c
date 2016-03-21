@@ -169,7 +169,7 @@ static void assure_should_be_same_requirements(ir_node *const node)
 	be_foreach_out(node, i) {
 		arch_register_req_t const *const req
 			= arch_get_irn_register_req_out(node, i);
-		unsigned char const same_pos = req->same_as;
+		same_as_t const same_pos = req->same_as;
 		if (same_pos == BE_NOT_SAME)
 			continue;
 		ir_node               *const in_node  = get_irn_n(node, same_pos);

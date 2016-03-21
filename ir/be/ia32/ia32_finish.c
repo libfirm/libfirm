@@ -221,7 +221,7 @@ static void assure_should_be_same_requirements(ir_node *node)
 	be_foreach_out(node, i) {
 		arch_register_req_t const *const req = arch_get_irn_register_req_out(node, i);
 
-		int const same_pos = req->same_as;
+		same_as_t const same_pos = req->same_as;
 		if (same_pos == BE_NOT_SAME)
 			continue;
 
@@ -284,7 +284,7 @@ static void fix_am_source(ir_node *irn)
 	be_foreach_out(irn, i) {
 		const arch_register_req_t *req = arch_get_irn_register_req_out(irn, i);
 
-		int const same_pos = req->same_as;
+		same_as_t const same_pos = req->same_as;
 		if (same_pos == BE_NOT_SAME)
 			continue;
 

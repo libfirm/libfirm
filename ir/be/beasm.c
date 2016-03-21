@@ -20,8 +20,8 @@
 
 arch_register_req_t const *be_make_register_req(struct obstack *obst, be_asm_constraint_t const *const c, int const n_outs, arch_register_req_t const **const out_reqs, int const pos)
 {
-	int const same_as = c->same_as;
-	if (same_as >= 0) {
+	same_as_t const same_as = c->same_as;
+	if (same_as != BE_NOT_SAME) {
 		if (same_as >= n_outs)
 			panic("invalid output number in same_as constraint");
 
@@ -62,7 +62,7 @@ arch_register_req_t const *be_make_register_req(struct obstack *obst, be_asm_con
 void be_parse_asm_constraints_internal(be_asm_constraint_t *const constraint, ident *const constraint_text, bool const is_output, parse_constraint_letter_func_t *const parse_constraint_letter, void const *const env)
 {
 	memset(constraint, 0, sizeof(*constraint));
-	constraint->same_as = -1;
+	constraint->same_as = BE_NOT_SAME;
 
 	char const *i = get_id_str(constraint_text);
 	/* a memory constraint: no need to do anything in backend about it
@@ -77,7 +77,7 @@ void be_parse_asm_constraints_internal(be_asm_constraint_t *const constraint, id
 	arch_register_class_t const *cls                   = NULL;
 	bool                         memory_possible       = false;
 	bool                         all_registers_allowed = false;
-	int                          same_as               = -1;
+	same_as_t                    same_as               = BE_NOT_SAME;
 	while (*i != '\0') {
 		switch (*i) {
 		/* Skip spaces, out/in-out marker. */
@@ -103,10 +103,12 @@ void be_parse_asm_constraints_internal(be_asm_constraint_t *const constraint, id
 				if (is_output)
 					panic("can only specify same constraint on input");
 
+				int v;
 				int p;
-				sscanf(i, "%d%n", &same_as, &p);
-				if (same_as >= 0)
-					i += p;
+				if (sscanf(i, "%d%n", &v, &p) == 1) {
+					same_as = v;
+					i      += p;
+				}
 			} else {
 				be_asm_constraint_t new_constraint;
 				memset(&new_constraint, 0, sizeof(new_constraint));
@@ -134,14 +136,14 @@ void be_parse_asm_constraints_internal(be_asm_constraint_t *const constraint, id
 		}
 	}
 
-	if (same_as >= 0) {
+	if (same_as != BE_NOT_SAME) {
 		if (cls)
 			panic("same as and register constraint not supported");
 		if (immediate_type != '\0')
 			panic("same as and immediate constraint not supported");
 	}
 
-	if (!cls && same_as < 0 && !memory_possible)
+	if (!cls && same_as == BE_NOT_SAME && !memory_possible)
 		panic("no constraint specified for assembler input");
 
 	constraint->same_as               = same_as;

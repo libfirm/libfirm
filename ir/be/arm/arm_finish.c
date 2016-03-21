@@ -102,7 +102,7 @@ static void fix_should_be_same(ir_node *block, void *data)
 			const arch_register_req_t *req
 				= arch_get_irn_register_req_out(node, i);
 
-			unsigned char const same_pos = req->same_as;
+			same_as_t const same_pos = req->same_as;
 			if (same_pos == BE_NOT_SAME)
 				continue;
 

@@ -60,4 +60,6 @@ typedef struct regalloc_if_t     regalloc_if_t;
 
 typedef ir_entity *(*get_frame_entity_func)(const ir_node *node);
 
+typedef unsigned char same_as_t;
+
 #endif

@@ -25,7 +25,7 @@ typedef struct be_asm_constraint_t {
 	bool                         all_registers_allowed;
 	bool                         memory_possible;
 	char                         immediate_type;
-	int                          same_as;
+	same_as_t                    same_as;
 } be_asm_constraint_t;
 
 arch_register_req_t const *be_make_register_req(struct obstack *obst, be_asm_constraint_t const *c, int n_outs, arch_register_req_t const **out_reqs, int pos);

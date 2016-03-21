@@ -208,7 +208,7 @@ static inline const arch_register_t *arch_register_for_index(
 	return &cls->regs[idx];
 }
 
-#define BE_NOT_SAME ((unsigned char)-1)
+#define BE_NOT_SAME ((same_as_t)-1)
 
 /**
  * Expresses requirements to register allocation for an operand.
@@ -222,7 +222,7 @@ struct arch_register_req_t {
 	/** Bitmask of ins which shall use a different register (must_be_different) */
 	unsigned                     must_be_different;
 	/** if out, then it should use the same register as this in */
-	unsigned char                same_as;
+	same_as_t                    same_as;
 	/** Specifies how many sequential registers are required */
 	unsigned char                width;
 	/** ignore this input/output while allocating registers */

@@ -186,7 +186,7 @@ ir_node *x86_match_ASM(ir_node const *const node, x86_clobber_name_t const *cons
 
 		set_operand_if_invalid(op, ASM_OP_IN_REG, in_pos, constraint);
 
-		if (cls == NULL && parsed_constraint.same_as < 0) {
+		if (!cls && parsed_constraint.same_as == BE_NOT_SAME) {
 			op->kind = ASM_OP_MEMORY;
 			req = arch_get_irn_register_req(new_pred)->cls->class_req;
 		} else if (parsed_constraint.memory_possible) {
