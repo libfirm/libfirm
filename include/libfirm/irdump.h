@@ -25,10 +25,7 @@
  * Dumps information so it can be visualised. The dump format of most functions
  * is vcg.  This is a text based graph representation. Some use the original
  * format, but most generate an extended format that is only read by some
- * special versions of xvcg or by the commercialized version now calles aiSee.
- *
- * A test version of aiSee is available at
- *   http://www.absint.de/aisee/download/index.htm.
+ * special versions of xvcg.
  *
  * We have developed an own advanced viewer called ycomp:
  *   http://www.info.uni-karlsruhe.de/software/ycomp/
@@ -251,7 +248,7 @@ typedef enum {
 	/** dump (parts of) typegraph along with nodes */
 	ir_dump_flag_with_typegraph        = 1U << 2,
 	/** Sets the vcg flag "display_edge_labels" to no.
-	 * This is necessary as xvcg and aisee both fail to display graphs
+	 * This is necessary as xvcg fails to display graphs
 	 * with self-edges if these edges have labels. */
 	ir_dump_flag_disable_edge_labels   = 1U << 3,
 	/** If set constants will be replicated for every use. In non blocked view
