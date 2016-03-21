@@ -216,8 +216,6 @@ typedef enum osr_flags {
 /**
  * Performs the Operator Scalar Replacement optimization and linear
  * function test replacement for loop control.
- * Can be switched off using the set_opt_strength_red() flag.
- * In that case, only remove_phi_cycles() is executed.
  *
  * @param irg    the graph which should be optimized
  * @param flags  set of osr_flags
