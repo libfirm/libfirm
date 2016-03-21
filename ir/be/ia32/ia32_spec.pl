@@ -126,11 +126,11 @@ my $binop_commutative = {
 	constructors => {
 		""     => {
 			in_reqs  => [ "gp", "gp", "mem", "gp", "gp" ],
-			out_reqs => [ "in_r3 in_r4", "flags", "mem" ],
+			out_reqs => [ "in_r3+", "flags", "mem" ],
 		},
 		"8bit" => {
 			in_reqs  => [ "gp", "gp", "mem", "eax ebx ecx edx", "eax ebx ecx edx" ],
-			out_reqs => [ "eax ebx ecx edx in_r3 in_r4", "flags", "mem" ],
+			out_reqs => [ "eax ebx ecx edx in_r3+", "flags", "mem" ],
 		},
 	},
 	ins       => [ "base", "index", "mem", "left", "right" ],
@@ -193,7 +193,7 @@ my $shiftop_double = {
 		# With an immediate shift amount we can swap between ShlD/ShrD and negate
 		# the shift amount, if the output gets the same register as the second
 		# input.
-		imm => { out_reqs  => [ "in_r0 in_r1",         "flags" ] },
+		imm => { out_reqs  => [ "in_r0+",              "flags" ] },
 	},
 	ins       => [ "val_high", "val_low", "count" ],
 	outs      => [ "res", "flags" ],
@@ -337,7 +337,7 @@ my $xbinop_commutative = {
 	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
 	in_reqs   => [ "gp", "gp", "mem", "xmm", "xmm" ],
-	out_reqs  => [ "in_r3 in_r4", "flags", "mem" ],
+	out_reqs  => [ "in_r3+", "flags", "mem" ],
 	ins       => [ "base", "index", "mem", "left", "right" ],
 	outs      => [ "res", "flags", "M" ],
 	am        => "source,binary",
@@ -408,7 +408,7 @@ Adc => {
 	template => $carry_user_op,
 	state    => "exc_pinned",
 	in_reqs  => [ "gp", "gp", "mem", "gp", "gp", "flags" ],
-	out_reqs => [ "in_r3 in_r4", "flags", "mem" ],
+	out_reqs => [ "in_r3+", "flags", "mem" ],
 	ins      => [ "base", "index", "mem", "left", "right", "eflags" ],
 	outs     => [ "res", "flags", "M" ],
 	emit     => "adc%M %B",
@@ -852,7 +852,7 @@ CMovcc => {
 	# (note: leave the false,true order intact to make it compatible with other
 	#  ia32_binary ops)
 	in_reqs   => [ "gp", "gp", "mem", "gp", "gp", "eflags" ],
-	out_reqs  => [ "in_r3 in_r4", "none", "mem" ],
+	out_reqs  => [ "in_r3+", "none", "mem" ],
 	ins       => [ "base", "index", "mem", "val_false", "val_true", "eflags" ],
 	outs      => [ "res", "unused", "M" ],
 	am        => "source,binary",

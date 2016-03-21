@@ -94,8 +94,8 @@ sub get_requirement_mode
 	}
 
 	$req =~ s/[ :].*//;
-	if ($req =~ s/^!?in_r//) {
-		$req = $in_reqs->[$req];
+	if ($req =~ /^!?in_r(\d+)\+?/) {
+		$req = $in_reqs->[$1];
 		$req =~ s/[ :].*//;
 	}
 
@@ -650,6 +650,7 @@ sub mangle_requirements
 	my @alternatives = split(/ /, $reqs);
 	for (my $idx = 0; $idx < scalar(@alternatives); $idx++) {
 		$alternatives[$idx] =~ s/!/not_/g;
+		$alternatives[$idx] =~ s/\+/_plus/g;
 	}
 
 	@alternatives = sort @alternatives;
@@ -747,9 +748,19 @@ sub build_subset_class_func
 
 	# set/unset registers
 CHECK_REQS: foreach (split(/ /, $regs)) {
-		if (!$is_in && /(!)?in_r(\d+)/) {
+		if (!$is_in && /(!)?in_r(\d+)(\+)?/) {
 			my $idx     = $2;
 			my $bit_pos = 1 << $idx;
+
+			if ($3) {
+				if ($1) {
+					print STDERR "!in with '+'";
+					return (undef, undef, undef, undef);
+				} else {
+					$bit_pos |= 1 << ($idx + 1);
+				}
+			}
+
 			if ($different_pos & $bit_pos) {
 				if ($1) {
 					print STDERR "duplicate !in constraint\n";
@@ -759,7 +770,7 @@ CHECK_REQS: foreach (split(/ /, $regs)) {
 				return (undef, undef, undef, undef);
 			}
 
-			if (defined($same_as) && $same_as == $idx) {
+			if (defined($same_as) && $same_as == $idx || $same_as_next && $same_as + 1 == $idx) {
 				if ($1) {
 					print STDERR "conflicting !in and in constraints\n";
 				} else {
@@ -772,17 +783,10 @@ CHECK_REQS: foreach (split(/ /, $regs)) {
 				$different_pos |= $bit_pos;
 			} else {
 				if (!defined($same_as)) {
-					$same_as = $idx;
-				} elsif ($same_as_next) {
-					print STDERR "more than two same_as constraints";
-					return (undef, undef, undef, undef);
-				} elsif ($same_as + 1 == $idx) {
-					$same_as_next = 1;
-				} elsif ($same_as == $idx + 1) {
 					$same_as      = $idx;
-					$same_as_next = 1;
+					$same_as_next = defined($3);
 				} else {
-					print STDERR "non-consecutive same_as constraints";
+					print STDERR "multiple same_as constraints";
 					return (undef, undef, undef, undef);
 				}
 			}
