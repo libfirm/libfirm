@@ -244,47 +244,45 @@ FIRM_API ir_dump_verbosity_t ir_get_dump_verbosity(void);
  */
 typedef enum {
 	/** dump basic blocks as subgraphs which contain the nodes in the block */
-	ir_dump_flag_blocks_as_subgraphs   = 1U << 0,
+	ir_dump_flag_blocks_as_subgraphs   = 1U <<  0,
 	/** dump (parts of) typegraph along with nodes */
-	ir_dump_flag_with_typegraph        = 1U << 2,
+	ir_dump_flag_with_typegraph        = 1U <<  1,
 	/** Sets the vcg flag "display_edge_labels" to no.
 	 * This is necessary as xvcg fails to display graphs
 	 * with self-edges if these edges have labels. */
-	ir_dump_flag_disable_edge_labels   = 1U << 3,
+	ir_dump_flag_disable_edge_labels   = 1U <<  2,
 	/** If set constants will be replicated for every use. In non blocked view
 	 * edges from constant to block are skipped.  Vcg then layouts the graphs
 	 * more compact, this makes them better readable. */
-	ir_dump_flag_consts_local          = 1U << 4,
+	ir_dump_flag_consts_local          = 1U <<  3,
 	/** if set node idx will be added to node labels */
-	ir_dump_flag_idx_label             = 1U << 5,
+	ir_dump_flag_idx_label             = 1U <<  4,
 	/** if set node number will be added to node labels */
-	ir_dump_flag_number_label          = 1U << 6,
+	ir_dump_flag_number_label          = 1U <<  5,
 	/** show keepalive edges from the end node */
-	ir_dump_flag_keepalive_edges       = 1U << 7,
+	ir_dump_flag_keepalive_edges       = 1U <<  6,
 	/** dump out edges */
-	ir_dump_flag_out_edges             = 1U << 8,
+	ir_dump_flag_out_edges             = 1U <<  7,
 	/** if set dumps edges from blocks to their immediate dominator */
-	ir_dump_flag_dominance             = 1U << 9,
+	ir_dump_flag_dominance             = 1U <<  8,
 	/** If set the dumper dumps loop nodes and edges from these nodes to the
 	 * contained ir nodes. */
-	ir_dump_flag_loops                 = 1U << 10,
+	ir_dump_flag_loops                 = 1U <<  9,
 	/** if set (and backedge info is computed) dump backedges */
-	ir_dump_flag_back_edges            = 1U << 11,
+	ir_dump_flag_back_edges            = 1U << 10,
 	/** dump backedges from iredges.h */
-	ir_dump_flag_iredges               = 1U << 13,
-	/** write node addresses into the vcg info */
-	ir_dump_flag_node_addresses        = 1U << 14,
+	ir_dump_flag_iredges               = 1U << 11,
 	/** dump all anchor nodes, even the unused ones */
-	ir_dump_flag_all_anchors           = 1U << 15,
+	ir_dump_flag_all_anchors           = 1U << 12,
 	/** dumps marked blocks with an asterisk in the label */
-	ir_dump_flag_show_marks            = 1U << 16,
+	ir_dump_flag_show_marks            = 1U << 13,
 
 	/** turns of dumping of constant entity values in typegraphs */
-	ir_dump_flag_no_entity_values      = 1U << 20,
+	ir_dump_flag_no_entity_values      = 1U << 14,
 	/** dumps ld_names of entities instead of their names */
-	ir_dump_flag_ld_names              = 1U << 21,
+	ir_dump_flag_ld_names              = 1U << 15,
 	/** dump entities in class hierarchies */
-	ir_dump_flag_entities_in_hierarchy = 1U << 22,
+	ir_dump_flag_entities_in_hierarchy = 1U << 16,
 } ir_dump_flags_t;
 ENUM_BITSET(ir_dump_flags_t)
 
