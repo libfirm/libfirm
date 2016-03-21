@@ -208,6 +208,8 @@ static inline const arch_register_t *arch_register_for_index(
 	return &cls->regs[idx];
 }
 
+#define BE_NOT_SAME ((unsigned char)-1)
+
 /**
  * Expresses requirements to register allocation for an operand.
  */
@@ -217,10 +219,10 @@ struct arch_register_req_t {
 	/** allowed register bitset (in case of wide-values this is only about the
 	 * first register). NULL if all registers are allowed. */
 	const unsigned              *limited;
-	/** Bitmask of ins which should use the same register. */
-	unsigned                     should_be_same;
 	/** Bitmask of ins which shall use a different register (must_be_different) */
 	unsigned                     must_be_different;
+	/** if out, then it should use the same register as this in */
+	unsigned char                same_as;
 	/** Specifies how many sequential registers are required */
 	unsigned char                width;
 	/** ignore this input/output while allocating registers */
@@ -228,6 +230,8 @@ struct arch_register_req_t {
 	/** The instructions modifies the value in the register in an unknown way,
 	 * the value has to be copied if it is needed afterwards. */
 	bool                         kills_value : 1;
+	/* Alternatively assigning the same register as same_as + 1 is valid, too. */
+	bool                         same_as_next : 1;
 };
 
 static inline bool reg_reqs_equal(const arch_register_req_t *req1,
@@ -237,10 +241,11 @@ static inline bool reg_reqs_equal(const arch_register_req_t *req1,
 		return true;
 
 	if (req1->cls               != req2->cls               ||
-	    req1->should_be_same    != req2->should_be_same    ||
+	    req1->same_as           != req2->same_as           ||
 	    req1->must_be_different != req2->must_be_different ||
 	    req1->ignore            != req2->ignore            ||
 	    req1->kills_value       != req2->kills_value       ||
+	    req1->same_as_next      != req2->same_as_next      ||
 	    (req1->limited != NULL) != (req2->limited != NULL))
 		return false;
 

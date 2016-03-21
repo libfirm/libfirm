@@ -156,8 +156,8 @@ static void dump_register_req(FILE *const F, arch_register_req_t const *const re
 		}
 	}
 
-	if (req->should_be_same != 0)
-		dump_bitmask(F, " same as", req->should_be_same);
+	if (req->same_as != BE_NOT_SAME)
+		ir_fprintf(F, " same as #%u%s", req->same_as, req->same_as_next ? "+" : "");
 	if (req->must_be_different != 0)
 		dump_bitmask(F, " different from", req->must_be_different);
 

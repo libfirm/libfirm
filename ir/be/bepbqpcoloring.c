@@ -252,23 +252,15 @@ static void create_affinity_edges(ir_node *irn, void *env)
 			return;
 
 		insert_afe_edge(pbqp_alloc_env, irn, arg, -1);
-	} else if (req->should_be_same != 0) {
-		const unsigned other = req->should_be_same;
-		int            i;
-
-		for (i = 0; 1U << i <= other; ++i) {
-			if (other & (1U << i)) {
-				ir_node *other = get_irn_n(skip_Proj(irn), i);
-				if (!arch_irn_consider_in_reg_alloc(cls, other))
-					continue;
-
-				/* no edges to itself */
-				if (irn == other) {
-					continue;
-				}
-
-				insert_afe_edge(pbqp_alloc_env, irn, other, i);
-			}
+	} else if (req->same_as != BE_NOT_SAME) {
+		ir_node *const skipped = skip_Proj(irn);
+		for (unsigned i = req->same_as, last = i + req->same_as_next; i <= last; ++i) {
+			ir_node *const other = get_irn_n(skipped, i);
+			if (other == irn)
+				continue; /* no edges to itself */
+			if (! arch_irn_consider_in_reg_alloc(cls, other))
+				continue;
+			insert_afe_edge(pbqp_alloc_env, irn, other, i);
 		}
 	}
 }

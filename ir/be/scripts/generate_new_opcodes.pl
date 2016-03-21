@@ -739,7 +739,8 @@ sub build_subset_class_func
 	my $neg           = undef;
 	my $class         = undef;
 	my $has_limit     = 0;
-	my $same_pos      = 0;
+	my $same_as       = undef;
+	my $same_as_next  = 0;
 	my $different_pos = 0;
 	my @limit_array;
 	my $limit_reqs;   #used for name mangling
@@ -758,7 +759,7 @@ CHECK_REQS: foreach (split(/ /, $regs)) {
 				return (undef, undef, undef, undef);
 			}
 
-			if ($same_pos & $bit_pos) {
+			if (defined($same_as) && $same_as == $idx) {
 				if ($1) {
 					print STDERR "conflicting !in and in constraints\n";
 				} else {
@@ -770,7 +771,20 @@ CHECK_REQS: foreach (split(/ /, $regs)) {
 			if ($1) {
 				$different_pos |= $bit_pos;
 			} else {
-				$same_pos      |= $bit_pos;
+				if (!defined($same_as)) {
+					$same_as = $idx;
+				} elsif ($same_as_next) {
+					print STDERR "more than two same_as constraints";
+					return (undef, undef, undef, undef);
+				} elsif ($same_as + 1 == $idx) {
+					$same_as_next = 1;
+				} elsif ($same_as == $idx + 1) {
+					$same_as      = $idx;
+					$same_as_next = 1;
+				} else {
+					print STDERR "non-consecutive same_as constraints";
+					return (undef, undef, undef, undef);
+				}
 			}
 
 			$class = get_in_req_class($node, $idx);
@@ -837,7 +851,7 @@ CHECK_REQS: foreach (split(/ /, $regs)) {
 
 		if (defined($limit_bitsets{$limit_name})) {
 			$limit_name = $limit_bitsets{$limit_name};
-			return ($class, $limit_name, $same_pos, $different_pos);
+			return ($class, $limit_name, $same_as, $same_as_next, $different_pos);
 		}
 
 		$limit_bitsets{$limit_name} = $limit_name;
@@ -865,7 +879,7 @@ CHECK_REQS: foreach (split(/ /, $regs)) {
 		$obst_limit_func .= " };\n";
 	}
 
-	return ($class, $limit_name, $same_pos, $different_pos);
+	return ($class, $limit_name, $same_as, $same_as_next, $different_pos);
 }
 
 ###
@@ -930,11 +944,16 @@ EOF
 		$class = get_reg_class($reqs);
 		return "${arch}_single_reg_req_${class}_$reqs";
 	} else {
-		my ($regclass, $limit_bitset, $same_pos, $different_pos)
+		my ($regclass, $limit_bitset, $same_as, $same_as_next, $different_pos)
 			= build_subset_class_func($node, $op, $idx, $is_in, $reqs, $flags);
 
 		if (!defined($regclass)) {
 			die("Fatal error: Could not build subset for requirements '$reqs' of '$op' pos $idx ... exiting.\n");
+		}
+
+		$same_as //= "BE_NOT_SAME";
+		if ($same_as_next) {
+			$extra .= "\n\t.same_as_next      = true,";
 		}
 
 		$limit_bitset //= "NULL";
@@ -944,7 +963,7 @@ EOF
 {
 	.cls               = &${arch}_reg_classes[CLASS_${arch}_$class],
 	.limited           = $limit_bitset,
-	.should_be_same    = $same_pos,
+	.same_as           = $same_as,
 	.must_be_different = $different_pos,
 	.width             = $width,$extra
 };

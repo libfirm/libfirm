@@ -109,26 +109,26 @@ const x86_asm_constraint_list_t amd64_asm_constraints = {
 
 arch_register_req_t const amd64_requirement_gp_same_0 = {
 	.cls               = &amd64_reg_classes[CLASS_amd64_gp],
-	.should_be_same    = BIT(0),
+	.same_as           = 0,
 	.width             = 1,
 };
 
 static const arch_register_req_t amd64_requirement_xmm_same_0 = {
 	.cls               = &amd64_reg_classes[CLASS_amd64_xmm],
-	.should_be_same    = BIT(0),
+	.same_as           = 0,
 	.width             = 1,
 };
 
 static const arch_register_req_t amd64_requirement_gp_same_0_not_1 = {
 	.cls               = &amd64_reg_classes[CLASS_amd64_gp],
-	.should_be_same    = BIT(0),
+	.same_as           = 0,
 	.must_be_different = BIT(1),
 	.width             = 1,
 };
 
 static const arch_register_req_t amd64_requirement_xmm_same_0_not_1 = {
 	.cls               = &amd64_reg_classes[CLASS_amd64_xmm],
-	.should_be_same    = BIT(0),
+	.same_as           = 0,
 	.must_be_different = BIT(1),
 	.width             = 1,
 };

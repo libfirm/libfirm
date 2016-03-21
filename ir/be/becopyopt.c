@@ -201,7 +201,7 @@ static bool co_is_optimizable_root(const ir_node *irn)
 	if (is_Phi(irn) || is_Perm_Proj(irn))
 		return true;
 
-	if (req->should_be_same != 0)
+	if (req->same_as != BE_NOT_SAME)
 		return true;
 
 	return false;
@@ -419,37 +419,27 @@ static void co_collect_units(ir_node *irn, void *env)
 		unit->nodes[0]   = irn;
 		unit->nodes[1]   = get_Perm_src(irn);
 		unit->costs[1]   = co->get_costs(irn, -1);
-	} else if (req->should_be_same != 0) {
+	} else if (req->same_as != BE_NOT_SAME) {
 		/* Src == Tgt of a 2-addr-code instruction */
-		const unsigned other = req->should_be_same;
+		ir_node *nodes[3];
+		int      costs[3];
+		int      count = 0;
 
-		int count = 0;
-		for (int i = 0; (1U << i) <= other; ++i) {
-			if (other & (1U << i)) {
-				ir_node *o = get_irn_n(skip_Proj(irn), i);
-				if (adhere_same_req(irn, o))
-					++count;
-			}
+#define ADD_NODE(node, cost) (nodes[count] = node, costs[count] = cost, ++count)
+		ADD_NODE(irn, 0);
+		ir_node *const skipped = skip_Proj(irn);
+		for (unsigned i = req->same_as, last = i + req->same_as_next; i <= last; ++i) {
+			ir_node *const same = get_irn_n(skipped, i);
+			if (adhere_same_req(irn, same))
+				ADD_NODE(same, co->get_costs(irn, -1));
 		}
+#undef ADD_NODE
 
-		if (count != 0) {
-			int k = 0;
-			++count;
+		if (count != 1) {
 			unit->nodes = XMALLOCN(ir_node*, count);
 			unit->costs = XMALLOCN(int,      count);
-			unit->node_count = count;
-			unit->nodes[k++] = irn;
-
-			for (int i = 0; 1U << i <= other; ++i) {
-				if (other & (1U << i)) {
-					ir_node *o = get_irn_n(skip_Proj(irn), i);
-					if (adhere_same_req(irn, o)) {
-						unit->nodes[k] = o;
-						unit->costs[k] = co->get_costs(irn, -1);
-						++k;
-					}
-				}
-			}
+			MEMCPY(unit->nodes, nodes, count);
+			MEMCPY(unit->costs, costs, count);
 		}
 	} else {
 		panic("this is not an optimizable node");
@@ -609,14 +599,11 @@ static void build_graph_walker(ir_node *irn, void *env)
 	} else if (is_Perm_Proj(irn)) { /* Perms */
 		ir_node *arg = get_Perm_src(irn);
 		add_edges(co, irn, arg, co->get_costs(irn, -1));
-	} else if (req->should_be_same != 0) {
-		const unsigned other = req->should_be_same;
-		for (int i = 0; 1U << i <= other; ++i) {
-			if (other & (1U << i)) {
-				ir_node *other = get_irn_n(skip_Proj(irn), i);
-				if (!arch_irn_is_ignore(other))
-					add_edges(co, irn, other, co->get_costs(irn, -1));
-			}
+	} else if (req->same_as != BE_NOT_SAME) {
+		for (unsigned i = req->same_as, last = i + req->same_as_next; i <= last; ++i) {
+			ir_node *const other = get_irn_n(skip_Proj(irn), i);
+			if (!arch_irn_is_ignore(other))
+				add_edges(co, irn, other, co->get_costs(irn, -1));
 		}
 	}
 }

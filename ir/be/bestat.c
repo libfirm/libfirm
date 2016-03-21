@@ -224,7 +224,7 @@ static void block_count_values(ir_node *block, void *data)
 			if (!req->cls->regs)
 				continue;
 			++stats->values;
-			if (req->should_be_same != 0 || is_Phi(value))
+			if (req->same_as != BE_NOT_SAME || is_Phi(value))
 				++stats->should_be_sames;
 			if (req->limited != NULL)
 				++stats->constrained_values;

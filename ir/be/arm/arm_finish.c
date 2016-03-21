@@ -90,16 +90,6 @@ static void introduce_prolog_epilog(ir_graph *irg)
 	sched_add_after(start, incsp);
 }
 
-static int get_first_same(const arch_register_req_t* req)
-{
-	const unsigned other = req->should_be_same;
-	for (int i = 0; i < 32; ++i) {
-		if (other & (1U << i))
-			return i;
-	}
-	panic("same position not found");
-}
-
 static void fix_should_be_same(ir_node *block, void *data)
 {
 	(void)data;
@@ -111,10 +101,10 @@ static void fix_should_be_same(ir_node *block, void *data)
 		be_foreach_out(node, i) {
 			const arch_register_req_t *req
 				= arch_get_irn_register_req_out(node, i);
-			if (req->should_be_same == 0)
-				continue;
 
-			int same_pos = get_first_same(req);
+			unsigned char const same_pos = req->same_as;
+			if (same_pos == BE_NOT_SAME)
+				continue;
 
 			const arch_register_t *out_reg = arch_get_irn_register_out(node, i);
 			ir_node               *in_node = get_irn_n(node, same_pos);

@@ -1362,7 +1362,7 @@ static bool reg_req_same_limited(arch_register_req_t const *const req,
 static bool is_clobber(ir_node const *const asm_n, ir_node const *const value)
 {
 	arch_register_req_t const *const req = arch_get_irn_register_req(value);
-	if (req->should_be_same != 0)
+	if (req->same_as != BE_NOT_SAME)
 		return false;
 
 	unsigned                 const num      = get_Proj_num(value);

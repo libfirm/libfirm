@@ -43,16 +43,6 @@
 #include "panic.h"
 #include "util.h"
 
-static int get_first_same(const arch_register_req_t *req)
-{
-	const unsigned other = req->should_be_same;
-	for (int i = 0; i < 32; ++i) {
-		if (other & (1U << i))
-			return i;
-	}
-	panic("same position not found");
-}
-
 /**
  * Insert copies for all SPARC nodes where the should_be_same requirement
  * is not fulfilled.
@@ -63,10 +53,10 @@ static void assure_should_be_same_requirements(ir_node *node)
 	/* check all OUT requirements, if there is a should_be_same */
 	be_foreach_out(node, i) {
 		const arch_register_req_t *req = arch_get_irn_register_req_out(node, i);
-		if (req->should_be_same == 0)
-			continue;
 
-		int same_pos = get_first_same(req);
+		int const same_pos = req->same_as;
+		if (same_pos == BE_NOT_SAME)
+			continue;
 
 		/* get in and out register */
 		const arch_register_t *out_reg = arch_get_irn_register_out(node, i);

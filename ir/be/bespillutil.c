@@ -922,22 +922,15 @@ static void assure_different_constraints(ir_node *irn, ir_node *skipped_irn, con
 	const arch_register_req_t *req = arch_get_irn_register_req(irn);
 
 	if (req->must_be_different != 0) {
-		const unsigned other = req->must_be_different;
-
-		if (req->should_be_same != 0) {
-			const unsigned same = req->should_be_same;
-
-			if (is_po2_or_zero(other) && is_po2_or_zero(same)) {
+		unsigned const other = req->must_be_different;
+		unsigned const same  = req->same_as;
+		if (same != BE_NOT_SAME) {
+			if (is_po2_or_zero(other)) {
 				int idx_other = ntz(other);
-				int idx_same  = ntz(same);
-
-				/*
-				 * We can safely ignore a should_be_same x must_be_different y
-				 * IFF both inputs are equal!
-				 */
-				if (get_irn_n(skipped_irn, idx_other) == get_irn_n(skipped_irn, idx_same)) {
+				/* We can safely ignore a should_be_same x must_be_different y
+				 * IFF both inputs are equal! */
+				if (get_irn_n(skipped_irn, idx_other) == get_irn_n(skipped_irn, same))
 					return;
-				}
 			}
 		}
 		for (unsigned i = 0; 1U << i <= other; ++i) {

@@ -31,7 +31,8 @@ static arch_register_class_t arch_exec_cls = {
 };
 
 arch_register_req_t const arch_exec_requirement = {
-	.cls = &arch_exec_cls,
+	.cls     = &arch_exec_cls,
+	.same_as = BE_NOT_SAME,
 };
 
 static arch_register_class_t arch_memory_cls = {
@@ -45,7 +46,8 @@ static arch_register_class_t arch_memory_cls = {
 };
 
 arch_register_req_t const arch_memory_requirement = {
-	.cls = &arch_memory_cls,
+	.cls     = &arch_memory_cls,
+	.same_as = BE_NOT_SAME,
 };
 
 static arch_register_class_t arch_none_cls = {
@@ -59,7 +61,8 @@ static arch_register_class_t arch_none_cls = {
 };
 
 arch_register_req_t const arch_no_requirement = {
-	.cls = &arch_none_cls,
+	.cls     = &arch_none_cls,
+	.same_as = BE_NOT_SAME,
 };
 
 const arch_register_t *arch_get_irn_register(const ir_node *node)
@@ -162,8 +165,9 @@ arch_register_req_t *be_create_cls_req(ir_graph *const irg, arch_register_class_
 {
 	struct obstack      *const obst = be_get_be_obst(irg);
 	arch_register_req_t *const req  = OALLOCZ(obst, arch_register_req_t);
-	req->cls   = cls;
-	req->width = width;
+	req->cls     = cls;
+	req->width   = width;
+	req->same_as = BE_NOT_SAME;
 	return req;
 }
 
@@ -180,6 +184,7 @@ arch_register_req_t const *be_create_reg_req(ir_graph *const irg, arch_register_
 	req->cls     = cls;
 	req->limited = limited;
 	req->width   = 1;
+	req->same_as = BE_NOT_SAME;
 	req->ignore  = ignore;
 	return req;
 }

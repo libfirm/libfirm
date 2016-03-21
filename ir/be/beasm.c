@@ -27,8 +27,8 @@ arch_register_req_t const *be_make_register_req(struct obstack *obst, be_asm_con
 
 		arch_register_req_t       *const req   = OALLOCZ(obst, arch_register_req_t);
 		arch_register_req_t const *const other = out_reqs[same_as];
-		*req                = *other;
-		req->should_be_same = 1U << pos;
+		*req         = *other;
+		req->same_as = pos;
 
 		/* Switch constraints. This is because in firm we have same_as
 		 * constraints on the output constraints while in the gcc asm syntax
@@ -50,11 +50,12 @@ arch_register_req_t const *be_make_register_req(struct obstack *obst, be_asm_con
 	arch_register_req_t *const req     = (arch_register_req_t*)obstack_alloc(obst, sizeof(*req) + sizeof(unsigned));
 	unsigned            *const limited = (unsigned*)(req + 1);
 	*limited = c->allowed_registers;
-
-	memset(req, 0, sizeof(*req));
-	req->cls     = c->cls;
-	req->limited = limited;
-	req->width   = 1;
+	*req     = (arch_register_req_t){
+		.cls     = c->cls,
+		.limited = limited,
+		.width   = 1,
+		.same_as = BE_NOT_SAME,
+	};
 	return req;
 }
 

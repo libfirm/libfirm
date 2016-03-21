@@ -103,8 +103,9 @@ foreach my $class_name (sort(keys(%reg_classes))) {
 
 	$single_constraints .= <<EOF;
 const arch_register_req_t $class_req = {
-	.cls   = &${arch}_reg_classes[$class_enum],
-	.width = 1,
+	.cls     = &${arch}_reg_classes[$class_enum],
+	.width   = 1,
+	.same_as = BE_NOT_SAME,
 };
 EOF
 	$reqdecls .= "extern const arch_register_req_t $class_req;\n";
@@ -165,6 +166,7 @@ const arch_register_req_t $single_req = {
 	.cls     = $class_ptr,
 	.limited = $limited_name,
 	.width   = 1,
+	.same_as = BE_NOT_SAME,
 };
 EOF
 		$reqdecls .= "extern const arch_register_req_t $single_req;\n";

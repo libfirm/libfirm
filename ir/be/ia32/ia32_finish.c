@@ -211,20 +211,6 @@ static inline int need_constraint_copy(ir_node *irn)
 }
 
 /**
- * Returns the index of the "same" register.
- * On the x86, we should have only one.
- */
-static int get_first_same(const arch_register_req_t* req)
-{
-	const unsigned other = req->should_be_same;
-	for (int i = 0; i < 32; ++i) {
-		if (other & (1U << i))
-			return i;
-	}
-	panic("same position not found");
-}
-
-/**
  * Insert copies for all ia32 nodes where the should_be_same requirement
  * is not fulfilled.
  * Transform Sub into Neg -- Add if IN2 == OUT
@@ -234,14 +220,15 @@ static void assure_should_be_same_requirements(ir_node *node)
 	/* check all OUT requirements, if there is a should_be_same */
 	be_foreach_out(node, i) {
 		arch_register_req_t const *const req = arch_get_irn_register_req_out(node, i);
-		if (req->should_be_same == 0)
+
+		int const same_pos = req->same_as;
+		if (same_pos == BE_NOT_SAME)
 			continue;
 
 		/* get in and out register */
-		int                    const same_pos = get_first_same(req);
-		ir_node               *const in_node  = get_irn_n(node, same_pos);
-		arch_register_t const *const in_reg   = arch_get_irn_register(in_node);
-		arch_register_t const *const out_reg  = arch_get_irn_register_out(node, i);
+		ir_node               *const in_node = get_irn_n(node, same_pos);
+		arch_register_t const *const in_reg  = arch_get_irn_register(in_node);
+		arch_register_t const *const out_reg = arch_get_irn_register_out(node, i);
 
 		/* requirement already fulfilled? */
 		if (in_reg == out_reg)
@@ -296,12 +283,13 @@ static void fix_am_source(ir_node *irn)
 
 	be_foreach_out(irn, i) {
 		const arch_register_req_t *req = arch_get_irn_register_req_out(irn, i);
-		if (req->should_be_same == 0)
+
+		int const same_pos = req->same_as;
+		if (same_pos == BE_NOT_SAME)
 			continue;
 
 		/* get in and out register */
 		const arch_register_t *out_reg   = arch_get_irn_register_out(irn, i);
-		int                    same_pos  = get_first_same(req);
 		ir_node               *same_node = get_irn_n(irn, same_pos);
 		const arch_register_t *same_reg  = arch_get_irn_register(same_node);
 

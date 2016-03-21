@@ -27,19 +27,6 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
-/**
- * Returns the index of the first "same" register.
- */
-static unsigned get_first_same(arch_register_req_t const *const req)
-{
-	unsigned const other = req->should_be_same;
-	for (unsigned i = 0; i != 32; ++i) {
-		if (other & (1U << i))
-			return i;
-	}
-	panic("same position not found");
-}
-
 static bool is_commutative(const ir_node *node)
 {
 	return arch_get_irn_flags(node) & amd64_arch_irn_flag_commutative_binop;
@@ -182,9 +169,9 @@ static void assure_should_be_same_requirements(ir_node *const node)
 	be_foreach_out(node, i) {
 		arch_register_req_t const *const req
 			= arch_get_irn_register_req_out(node, i);
-		if (req->should_be_same == 0)
+		unsigned char const same_pos = req->same_as;
+		if (same_pos == BE_NOT_SAME)
 			continue;
-		unsigned               const same_pos = get_first_same(req);
 		ir_node               *const in_node  = get_irn_n(node, same_pos);
 		arch_register_t const *const in_reg   = arch_get_irn_register(in_node);
 		arch_register_t const *const out_reg
