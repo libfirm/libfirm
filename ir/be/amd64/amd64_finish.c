@@ -13,6 +13,7 @@
 #include "amd64_new_nodes.h"
 #include "amd64_nodes_attr.h"
 #include "amd64_transform.h"
+#include "be2addr.h"
 #include "bearch.h"
 #include "benode.h"
 #include "besched.h"
@@ -159,78 +160,32 @@ static void amd64_turn_back_am(ir_node *const node, arch_register_t const *const
 		sched_add_before(node, load);
 }
 
-/**
- * Insert copies for all amd64 nodes where the should_be_same requirement is
- * not fulfilled.
- */
-static void assure_should_be_same_requirements(ir_node *const node)
+static bool amd64_handle_2addr(ir_node *const node, arch_register_req_t const *const req, arch_register_t const *const out_reg)
 {
-	/* Check all OUT requirements, if there is a should_be_same. */
-	be_foreach_out(node, i) {
-		arch_register_req_t const *const req
-			= arch_get_irn_register_req_out(node, i);
-		same_as_t const same_pos = req->same_as;
-		if (same_pos == BE_NOT_SAME)
-			continue;
-		ir_node               *const in_node  = get_irn_n(node, same_pos);
-		arch_register_t const *const in_reg   = arch_get_irn_register(in_node);
-		arch_register_t const *const out_reg
-			= arch_get_irn_register_out(node, i);
-		if (in_reg == out_reg)
-			continue;
+	(void)req;
 
-		/* test if any other input is using the out register */
-		foreach_irn_in(node, i2, in) {
-			arch_register_t const *const reg = arch_get_irn_register(in);
-			if (reg == out_reg && (unsigned)i2 != same_pos) {
-				if (!is_amd64_irn(node))
-					panic("cannot fulfill should_be_same on non-amd64 node");
-				/* see what role this register has */
-				const amd64_attr_t *attr = get_amd64_attr_const(node);
-				if (attr->op_mode == AMD64_OP_ADDR
-				 || attr->op_mode == AMD64_OP_REG
-				 || attr->op_mode == AMD64_OP_REG_IMM) {
-					panic("unexpected op_mode");
-				} else if (attr->op_mode == AMD64_OP_REG_REG) {
-swap:;
-					bool res = try_swap_inputs(node);
-					if (res)
-						return;
-
-					if (is_amd64_sub(node) || is_amd64_subs(node)) {
-						transform_sub_to_neg_add(node, out_reg);
-						return;
-					}
-					panic("couldn't swap inputs of %+F", node);
-				} else {
-					assert(attr->op_mode == AMD64_OP_REG_ADDR);
-					/* extract load into an own instruction */
-					amd64_turn_back_am(node, out_reg);
-					goto swap;
-				}
+	amd64_attr_t const *const attr = get_amd64_attr_const(node);
+	if (attr->op_mode == AMD64_OP_REG_ADDR) {
+		amd64_addr_t const *const addr = &get_amd64_addr_attr_const(node)->addr;
+		if ((x86_addr_variant_has_base( addr->variant) && arch_get_irn_register_in(node, addr->base_input)  == out_reg) ||
+		    (x86_addr_variant_has_index(addr->variant) && arch_get_irn_register_in(node, addr->index_input) == out_reg)) {
+			amd64_turn_back_am(node, out_reg);
+			goto swap;
+		 }
+	} else if (attr->op_mode == AMD64_OP_REG_REG) {
+		if (arch_get_irn_register_in(node, 1) == out_reg) {
+swap:
+			if (try_swap_inputs(node)) {
+				return true;
+			} else if (is_amd64_sub(node) || is_amd64_subs(node)) {
+				transform_sub_to_neg_add(node, out_reg);
+				return true;
 			}
 		}
-
-		ir_node *const copy = be_new_Copy_before_reg(in_node, node, out_reg);
-		/* Set copy as in. */
-		set_irn_n(node, same_pos, copy);
-
-		DBG((dbg, LEVEL_1, "created copy %+F for should be same argument at input %d of %+F\n", copy, same_pos, node));
 	}
-}
 
-/**
- * Block walker: finishes a block.
- */
-static void amd64_finish_irg_walker(ir_node *const block, void *const env)
-{
-	(void) env;
-
-	/* Insert copies for should_be_same constraints. */
-	sched_foreach_safe(block, irn) {
-		if (is_amd64_irn(irn) || be_is_Asm(irn))
-			assure_should_be_same_requirements(irn);
-	}
+	DBG((dbg, LEVEL_1, "create copy for should be same argument at input %d of %+F\n", req->same_as, node));
+	return false;
 }
 
 /**
@@ -238,7 +193,7 @@ static void amd64_finish_irg_walker(ir_node *const block, void *const env)
  */
 void amd64_finish_irg(ir_graph *const irg)
 {
-	irg_block_walk_graph(irg, 0, amd64_finish_irg_walker, 0);
+	be_handle_2addr(irg, &amd64_handle_2addr);
 }
 
 void amd64_init_finish(void)

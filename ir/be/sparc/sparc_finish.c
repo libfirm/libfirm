@@ -24,6 +24,7 @@
  */
 #include "sparc_bearch_t.h"
 
+#include "be2addr.h"
 #include "gen_sparc_regalloc_if.h"
 #include "sparc_new_nodes.h"
 #include "sparc_transform.h"
@@ -42,63 +43,6 @@
 #include "beutil.h"
 #include "panic.h"
 #include "util.h"
-
-/**
- * Insert copies for all SPARC nodes where the should_be_same requirement
- * is not fulfilled.
- * Transform Sub into Neg -- Add if IN2 == OUT
- */
-static void assure_should_be_same_requirements(ir_node *node)
-{
-	/* check all OUT requirements, if there is a should_be_same */
-	be_foreach_out(node, i) {
-		const arch_register_req_t *req = arch_get_irn_register_req_out(node, i);
-
-		same_as_t const same_pos = req->same_as;
-		if (same_pos == BE_NOT_SAME)
-			continue;
-
-		/* get in and out register */
-		const arch_register_t *out_reg = arch_get_irn_register_out(node, i);
-		ir_node               *in_node = get_irn_n(node, same_pos);
-		const arch_register_t *in_reg  = arch_get_irn_register(in_node);
-
-		/* requirement already fulfilled? */
-		if (in_reg == out_reg)
-			continue;
-		assert(in_reg->cls == out_reg->cls);
-
-		/* check if any other input operands uses the out register */
-		ir_node *uses_out_reg     = NULL;
-		int      uses_out_reg_pos = -1;
-		foreach_irn_in(node, i2, in) {
-			const arch_register_t *other_in_reg = arch_get_irn_register(in);
-			if (other_in_reg != out_reg)
-				continue;
-
-			if (uses_out_reg != NULL && in != uses_out_reg) {
-				panic("invalid register allocation");
-			}
-			uses_out_reg = in;
-			if (uses_out_reg_pos >= 0)
-				uses_out_reg_pos = -1; /* multiple inputs... */
-			else
-				uses_out_reg_pos = i2;
-		}
-
-		/* no-one else is using the out reg, we can simply copy it
-		 * (the register can't be live since the operation will override it
-		 *  anyway) */
-		if (uses_out_reg == NULL) {
-			ir_node *const copy = be_new_Copy_before_reg(in_node, node, out_reg);
-			/* set copy as in */
-			set_irn_n(node, same_pos, copy);
-			continue;
-		}
-
-		panic("unresolved should_be_same constraint");
-	}
-}
 
 static ir_heights_t *heights;
 
@@ -632,23 +576,6 @@ static void sparc_set_frame_entity(ir_node *node, ir_entity *entity,
 	attr->base.immediate_value_entity = entity;
 }
 
-/** returns true if the should_be_same constraints of a node must be
- * fulfilled */
-static bool has_must_be_same(const ir_node *node)
-{
-	return is_sparc_Cas(node) || be_is_Asm(node);
-}
-
-static void fix_constraints_walker(ir_node *block, void *env)
-{
-	(void)env;
-	sched_foreach_safe(block, irn) {
-		if (!has_must_be_same(irn))
-			continue;
-		assure_should_be_same_requirements(irn);
-	}
-}
-
 void sparc_finish_graph(ir_graph *irg)
 {
 	bool          omit_fp = sparc_get_irg_data(irg)->omit_fp;
@@ -692,7 +619,7 @@ void sparc_finish_graph(ir_graph *irg)
 
 	heights_free(heights);
 
-	irg_block_walk_graph(irg, NULL, fix_constraints_walker, NULL);
+	be_handle_2addr(irg, NULL);
 
 	be_remove_dead_nodes_from_schedule(irg);
 }
