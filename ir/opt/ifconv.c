@@ -453,11 +453,18 @@ void opt_if_conv_cb(ir_graph *irg, arch_allow_ifconv_func callback)
 	irg_block_walk_graph(irg, init_block_link, fill_waitq, waitq);
 	irg_walk_graph(irg, collect_phis, NULL, NULL);
 
+	/* Disable local optimizations to avoid the creation of
+	 * new Phi nodes that are not tracked by the if conversion. */
+	int rem_opt = get_optimize();
+	set_optimize(0);
+
 	while (! pdeq_empty(waitq)) {
 		ir_node *n = (ir_node *)pdeq_getl(waitq);
 		if_conv_walker(n, &env);
 	}
 	del_pdeq(waitq);
+
+	set_optimize(rem_opt);
 
 	ir_free_resources(irg, IR_RESOURCE_BLOCK_MARK | IR_RESOURCE_PHI_LIST);
 
