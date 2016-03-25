@@ -825,12 +825,6 @@ static void emit_sparc_Call(const ir_node *node)
 
 static void emit_sparc_Cas(const ir_node *node)
 {
-	/* custom emiter is just here to check for should_be_same constraint
-	 * which isn't guaranteed to be fulfilled in current firm backend */
-	if (arch_get_irn_register_out(node, pn_sparc_Cas_res) !=
-	    arch_get_irn_register_in(node, n_sparc_Cas_new)) {
-		panic("sparc: should_be_same in Cas not fulfilled");
-	}
 	/* except for some patched gaisler binutils nobody understands cas
 	 * in v8/leon mode, so we encode the cas in binary form */
 #if 0
