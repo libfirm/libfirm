@@ -289,7 +289,7 @@ static ir_node *gen_ASM(ir_node *node)
 		if (streq(clobber, "cc"))
 			continue;
 
-		arch_register_t const const *reg = arch_find_register(clobber);
+		arch_register_t const *const reg = arch_find_register(clobber);
 		if (reg == NULL)
 			panic("invalid clobber in sparc asm");
 
