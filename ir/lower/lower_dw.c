@@ -1520,10 +1520,12 @@ static void fix_parameter_entities(ir_graph *irg, ir_type *orig_mtp)
 			ir_mode *mode = get_type_mode(tp);
 			if (needs_lowering(mode)) {
 				++n_param;
-				/* note that we do not change the type of the parameter
-				 * entities, as calling convention fixup later still needs to
-				 * know which is/was a lowered doubleword.
-				 * So we just mark/remember it for later */
+				/* Note that we cannot split the parameter entity up, because
+				 * we have to guarantee that we have a continuous 64bit entity.
+				 * As an example imaging an arm function with the first half
+				 * of the doubleword ending up in a register, the 2nd half
+				 * on the stack. If we would have split the entities they would
+				 * not end up continuously. */
 				if (entity != NULL) {
 					assert(!entity->attr.parameter.is_lowered_doubleword);
 					entity->attr.parameter.is_lowered_doubleword = true;
