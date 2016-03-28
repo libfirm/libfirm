@@ -239,6 +239,7 @@ static inline bool reg_reqs_equal(const arch_register_req_t *req1,
 	if (req1->cls               != req2->cls               ||
 	    req1->should_be_same    != req2->should_be_same    ||
 	    req1->must_be_different != req2->must_be_different ||
+	    req1->width             != req2->width             ||
 	    req1->ignore            != req2->ignore            ||
 	    req1->kills_value       != req2->kills_value       ||
 	    (req1->limited != NULL) != (req2->limited != NULL))
