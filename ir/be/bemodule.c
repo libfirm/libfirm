@@ -25,6 +25,7 @@ struct be_module_list_entry_t {
 	struct be_module_list_entry_t *next; /**< Points to the next entry. */
 };
 
+void be_init_2addr(void);
 void be_init_arch(void);
 void be_init_arch_TEMPLATE(void);
 void be_init_arch_amd64(void);
@@ -75,6 +76,7 @@ void be_init_modules(void)
 		return;
 	run_once = true;
 
+	be_init_2addr();
 	be_init_arch();
 	be_init_blocksched();
 	be_init_chordal_common();
