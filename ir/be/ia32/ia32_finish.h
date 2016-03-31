@@ -19,7 +19,4 @@
  */
 void ia32_finish_irg(ir_graph *irg);
 
-/** Initialize the finisher. */
-void ia32_init_finish(void);
-
 #endif

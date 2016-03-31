@@ -846,6 +846,5 @@ void be_init_arch_amd64(void)
 	lc_opt_entry_t *amd64_grp = lc_opt_get_grp(be_grp, "amd64");
 	lc_opt_add_table(amd64_grp, options);
 
-	amd64_init_finish();
 	amd64_init_transform();
 }

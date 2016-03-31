@@ -18,7 +18,4 @@
  */
 void amd64_finish_irg(ir_graph *irg);
 
-/** Initialize the finisher. */
-void amd64_init_finish(void);
-
 #endif

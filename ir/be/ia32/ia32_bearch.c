@@ -1742,7 +1742,6 @@ void be_init_arch_ia32(void)
 	be_register_isa_if("ia32", &ia32_isa_if);
 
 	ia32_init_emitter();
-	ia32_init_finish();
 	ia32_init_optimize();
 	ia32_init_transform();
 	x86_init_x87();
