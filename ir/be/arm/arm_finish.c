@@ -145,7 +145,7 @@ void arm_finish_graph(ir_graph *irg)
 	/* fix stack entity offsets */
 	be_fix_stack_nodes(irg, &arm_registers[REG_SP]);
 	be_birg_from_irg(irg)->non_ssa_regs = NULL;
-	be_sim_stack_pointer(irg, misalign, 2, arm_sp_sim);
+	be_sim_stack_pointer(irg, misalign, ARM_PO2_STACK_ALIGNMENT, arm_sp_sim);
 
 	/* do peephole optimizations and fix stack offsets */
 	arm_peephole_optimization(irg);

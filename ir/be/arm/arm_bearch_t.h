@@ -16,6 +16,8 @@
 #include "beirg.h"
 #include "firm_types.h"
 
+#define ARM_PO2_STACK_ALIGNMENT 3
+
 typedef struct arm_irg_data_t {
 	bool omit_fp;
 } arm_irg_data_t;
