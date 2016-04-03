@@ -70,8 +70,7 @@ static bool node_has_sp_base(ir_node const *const node)
 	} else {
 		panic("Unexpected node %+F", node);
 	}
-	arch_register_t const *const reg
-		= arch_get_irn_register_in(node, n_sparc_FrameAddr_base);
+	arch_register_t const *const reg = arch_get_irn_register_in(node, input);
 	return reg == &sparc_registers[REG_SP];
 }
 
