@@ -40,9 +40,8 @@ typedef void (*sp_sim_func)(ir_node *node, stack_pointer_state_t *state);
 
 /**
  * From function begin simulate relative stack pointer offset along the
- * function.
- * Note that the code already contains a special case for IncSP and MemPerm
- * nodes which need no handling in the callback.
+ * function.  Note that the code already contains a special case for IncSP node
+ * which needs no handling in the callback.
  */
 void be_sim_stack_pointer(ir_graph *irg, unsigned misalign, unsigned p2align,
                           sp_sim_func func);

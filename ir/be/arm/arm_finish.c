@@ -114,6 +114,10 @@ static void arm_determine_frameoffset(ir_node *node, int sp_offset)
 				load_store_attr->offset += get_entity_offset(entity);
 			load_store_attr->offset += sp_offset;
 		}
+	} else if (be_is_MemPerm(node)) {
+		ir_graph *irg = get_irn_irg(node);
+		if (arm_get_irg_data(irg)->omit_fp)
+			be_set_MemPerm_offset(node, sp_offset);
 	}
 }
 

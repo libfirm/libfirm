@@ -72,8 +72,6 @@ static void process_stack_bias(sp_sim_func const sim, ir_node *const block,
 	sched_foreach(block, node) {
 		if (be_is_IncSP(node)) {
 			sim_be_IncSP(node, &state);
-		} else if (be_is_MemPerm(node)) {
-			be_set_MemPerm_offset(node, state.offset);
 		} else {
 			sim(node, &state);
 		}

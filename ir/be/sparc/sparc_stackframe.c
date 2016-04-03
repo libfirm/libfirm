@@ -85,9 +85,7 @@ static void sparc_determine_frameoffset(ir_node *const node,
 			if (node_has_sp_base(node))
 				attr->immediate_value += sp_offset;
 		}
-		return;
-	}
-	if (sparc_has_load_store_attr(node)) {
+	} else if (sparc_has_load_store_attr(node)) {
 		sparc_load_store_attr_t *const attr = get_sparc_load_store_attr(node);
 		if (!attr->is_frame_entity)
 			return;
@@ -98,7 +96,10 @@ static void sparc_determine_frameoffset(ir_node *const node,
 			if (node_has_sp_base(node))
 				attr->base.immediate_value += sp_offset;
 		}
-		return;
+	} else if (be_is_MemPerm(node)) {
+		ir_graph *irg = get_irn_irg(node);
+		if (sparc_get_irg_data(irg)->omit_fp)
+			be_set_MemPerm_offset(node, sp_offset);
 	}
 }
 
