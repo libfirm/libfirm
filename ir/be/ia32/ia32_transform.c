@@ -4751,7 +4751,7 @@ static ir_node *gen_Proj_Load(ir_node *node)
 	if (is_Load(pred) && pn == pn_Load_M && get_irn_n_edges(pred) > 1) {
 		/* this is needed, because sometimes we have loops that are only
 		   reachable through the ProjM */
-		be_enqueue_preds(node);
+		be_enqueue_operands(node);
 		/* do it in 2 steps, to silence firm verifier */
 		ir_node *const res = new_r_Proj(pred, mode_M, pn_Load_M);
 		set_Proj_num(res, pn_ia32_M);

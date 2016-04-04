@@ -69,7 +69,7 @@ bool be_is_transformed(const ir_node *node);
 /**
  * enqueue all inputs into the transform queue.
  */
-void be_enqueue_preds(ir_node *node);
+void be_enqueue_operands(ir_node *node);
 
 /**
  * Transform a graph. Transformers must be registered first.

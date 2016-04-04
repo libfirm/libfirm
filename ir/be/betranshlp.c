@@ -74,7 +74,7 @@ ir_node *be_transform_phi(ir_node *node, const arch_register_req_t *req)
 	}
 
 	arch_set_irn_register_req_out(phi, 0, req);
-	be_enqueue_preds(node);
+	be_enqueue_operands(node);
 
 	return phi;
 }
@@ -100,7 +100,7 @@ static ir_node *transform_block(ir_node *node)
 	block->node_nr = node->node_nr;
 
 	/* put the preds in the worklist */
-	be_enqueue_preds(node);
+	be_enqueue_operands(node);
 
 	return block;
 }
@@ -116,7 +116,7 @@ static ir_node *transform_end(ir_node *node)
 	ir_graph *const irg = get_irn_irg(new_end);
 	set_irg_end(irg, new_end);
 
-	be_enqueue_preds(node);
+	be_enqueue_operands(node);
 
 	return new_end;
 }
@@ -201,7 +201,7 @@ ir_node *be_transform_nodes_block(ir_node const *const node)
 	return be_transform_node(block);
 }
 
-void be_enqueue_preds(ir_node *node)
+void be_enqueue_operands(ir_node *node)
 {
 	/* put the preds in the worklist */
 	foreach_irn_in(node, i, pred) {
