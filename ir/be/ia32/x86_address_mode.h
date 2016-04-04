@@ -123,4 +123,9 @@ bool x86_is_non_address_mode_node(ir_node const *node);
  */
 void x86_mark_non_am(ir_node *node);
 
+/**
+ * Emit address in gnu assembler syntax.
+ */
+void x86_emit_addr(ir_node const *node, x86_addr_t const *addr);
+
 #endif

@@ -372,6 +372,8 @@ static void ia32_perform_memory_operand(ir_node *irn, unsigned int i)
 	set_irn_n(irn, n_ia32_base, get_irg_frame(get_irn_irg(irn)));
 	set_irn_n(irn, n_ia32_mem,  spill);
 	set_irn_n(irn, i,           ia32_get_admissible_noreg(irn, i));
+	ia32_attr_t *const attr = get_ia32_attr(irn);
+	attr->addr.variant = X86_ADDR_BASE;
 	set_ia32_is_reload(irn);
 
 	/* kill the reload */
@@ -676,6 +678,8 @@ static ir_node *ia32_new_spill(ir_node *value, ir_node *after)
 			: new_bd_ia32_Store     (NULL, block, frame, noreg, nomem, value);
 		res   = be_new_Proj(store, pn_ia32_Store_M);
 	}
+	ia32_attr_t *const attr = get_ia32_attr(store);
+	attr->addr.variant = X86_ADDR_BASE;
 	set_ia32_op_type(store, ia32_AddrModeD);
 	set_ia32_ls_mode(store, mode);
 	set_ia32_frame_use(store, IA32_FRAME_USE_AUTO);
@@ -706,6 +710,8 @@ static ir_node *ia32_new_reload(ir_node *value, ir_node *spill, ir_node *before)
 	} else {
 		load = new_bd_ia32_Load(NULL, block, frame, noreg, spill);
 	}
+	ia32_attr_t *const attr = get_ia32_attr(load);
+	attr->addr.variant = X86_ADDR_BASE;
 	set_ia32_op_type(load, ia32_AddrModeS);
 	set_ia32_ls_mode(load, spillmode);
 	set_ia32_frame_use(load, IA32_FRAME_USE_AUTO);
@@ -728,9 +734,12 @@ static ir_node *create_push(ir_node *node, ir_node *schedpoint, ir_node *sp,
 	ir_node *const push = new_bd_ia32_Push(dbgi, block, frame, noreg, mem,
 	                                       noreg, sp, mode);
 	ia32_attr_t *const attr = get_ia32_attr(push);
-	attr->addr.immediate = (x86_imm32_t) {
-		.kind   = X86_IMM_FRAMEENT,
-		.entity = ent,
+	attr->addr = (x86_addr_t) {
+		.immediate = (x86_imm32_t) {
+			.kind   = X86_IMM_FRAMEENT,
+			.entity = ent,
+		},
+		.variant = X86_ADDR_BASE,
 	};
 	set_ia32_frame_use(push, IA32_FRAME_USE_AUTO);
 	set_ia32_op_type(push, ia32_AddrModeS);
@@ -751,9 +760,12 @@ static ir_node *create_pop(ir_node *node, ir_node *schedpoint, ir_node *sp,
 	ir_node  *pop   = new_bd_ia32_PopMem(dbgi, block, frame, noreg,
 	                                     get_irg_no_mem(irg), sp);
 	ia32_attr_t *const attr = get_ia32_attr(pop);
-	attr->addr.immediate = (x86_imm32_t) {
-		.kind   = X86_IMM_FRAMEENT,
-		.entity = ent,
+	attr->addr = (x86_addr_t) {
+		.immediate = (x86_imm32_t) {
+			.kind   = X86_IMM_FRAMEENT,
+			.entity = ent,
+		},
+		.variant = X86_ADDR_BASE,
 	};
 	set_ia32_frame_use(pop, IA32_FRAME_USE_AUTO);
 	set_ia32_op_type(pop, ia32_AddrModeD);

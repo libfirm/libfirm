@@ -11,7 +11,10 @@
  */
 #include "x86_address_mode.h"
 
+#include <inttypes.h>
+#include "bearch.h"
 #include "bediagnostic.h"
+#include "beemitter.h"
 #include "beirg.h"
 #include "belive.h"
 #include "benode.h"
@@ -481,4 +484,66 @@ char const *x86_get_addr_variant_str(x86_addr_variant_t const variant)
 		break;
 	}
 	return "<BAD>";
+}
+
+static void emit_register(arch_register_t const *const reg)
+{
+	be_emit_char('%');
+	be_emit_string(reg->name);
+}
+
+void x86_emit_addr(ir_node const *const node, x86_addr_t const *const addr)
+{
+	switch (addr->segment) {
+	case X86_SEGMENT_DEFAULT:
+		break;
+	case X86_SEGMENT_CS: be_emit_cstring("%cs:"); break;
+	case X86_SEGMENT_SS: be_emit_cstring("%ss:"); break;
+	case X86_SEGMENT_DS: be_emit_cstring("%ds:"); break;
+	case X86_SEGMENT_ES: be_emit_cstring("%es:"); break;
+	case X86_SEGMENT_FS: be_emit_cstring("%fs:"); break;
+	case X86_SEGMENT_GS: be_emit_cstring("%gs:"); break;
+	}
+
+
+	/* emit offset */
+	x86_addr_variant_t const variant = addr->variant;
+	int32_t            const offset  = addr->immediate.offset;
+	ir_entity   const *const entity  = addr->immediate.entity;
+	assert(variant != X86_ADDR_INVALID);
+	if (entity) {
+		x86_emit_relocation_no_offset(addr->immediate.kind, entity);
+		if (offset != 0)
+			be_emit_irprintf("%+"PRId32, offset);
+	} else if (offset != 0 || variant == X86_ADDR_JUST_IMM) {
+		assert(addr->immediate.kind == X86_IMM_VALUE);
+		/* also handle special case if nothing is set */
+		be_emit_irprintf("%"PRId32, offset);
+	}
+
+	if (variant != X86_ADDR_JUST_IMM) {
+		be_emit_char('(');
+
+		if (variant == X86_ADDR_RIP) {
+			be_emit_cstring("%rip");
+		} else {
+			if (x86_addr_variant_has_base(variant)) {
+				arch_register_t const *const reg
+					= arch_get_irn_register_in(node, addr->base_input);
+				emit_register(reg);
+			}
+
+			if (x86_addr_variant_has_index(variant)) {
+				be_emit_char(',');
+				arch_register_t const *const reg
+					= arch_get_irn_register_in(node, addr->index_input);
+				emit_register(reg);
+
+				unsigned const log_scale = addr->log_scale;
+				if (log_scale > 0)
+					be_emit_irprintf(",%u", 1u << log_scale);
+			}
+		}
+		be_emit_char(')');
+	}
 }

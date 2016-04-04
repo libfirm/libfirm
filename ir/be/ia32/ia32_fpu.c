@@ -57,7 +57,10 @@ static ir_entity *create_ent(ir_entity **const dst, int value, const char *name)
 
 static ir_node *create_fnstcw(ir_node *const block, ir_node *const frame, ir_node *const noreg, ir_node *const nomem, ir_node *const state)
 {
-	ir_node *const fnstcw = new_bd_ia32_FnstCW(NULL, block, frame, noreg, nomem, state);
+	ir_node *const fnstcw = new_bd_ia32_FnstCW(NULL, block, frame, noreg, nomem,
+	                                           state);
+	ia32_attr_t *const attr = get_ia32_attr(fnstcw);
+	attr->addr.variant = X86_ADDR_BASE;
 	set_ia32_op_type(fnstcw, ia32_AddrModeD);
 	set_ia32_ls_mode(fnstcw, ia32_mode_fpcw);
 	set_ia32_frame_use(fnstcw, IA32_FRAME_USE_32BIT);
@@ -104,6 +107,7 @@ static ir_node *create_fpu_mode_reload(void *const env, ir_node *const state, ir
 			create_ent(&fpcw_truncate, 0x37F, "_fpcw_truncate");
 		ia32_attr_t *const attr = get_ia32_attr(reload);
 		attr->addr.immediate.entity = rounding_mode;
+		attr->addr.variant          = X86_ADDR_JUST_IMM;
 	} else {
 		ir_node       *mem;
 		ir_node *const frame = get_irg_frame(irg);
@@ -115,6 +119,8 @@ static ir_node *create_fpu_mode_reload(void *const env, ir_node *const state, ir
 			sched_add_before(before, cwstore);
 
 			ir_node *const load = new_bd_ia32_Load(NULL, block, frame, noreg, cwstore);
+			ia32_attr_t *const load_attr = get_ia32_attr(load);
+			load_attr->addr.variant = X86_ADDR_BASE;
 			set_ia32_op_type(load, ia32_AddrModeS);
 			set_ia32_ls_mode(load, mode_Hu);
 			set_ia32_frame_use(load, IA32_FRAME_USE_32BIT);
@@ -128,6 +134,8 @@ static ir_node *create_fpu_mode_reload(void *const env, ir_node *const state, ir
 			sched_add_before(before, orn);
 
 			ir_node *const store = new_bd_ia32_Store(NULL, block, frame, noreg, nomem, orn);
+			ia32_attr_t *const store_attr = get_ia32_attr(store);
+			store_attr->addr.variant = X86_ADDR_BASE;
 			set_ia32_op_type(store, ia32_AddrModeD);
 			/* Use ia32_mode_gp, as movl has a shorter opcode than movw. */
 			set_ia32_ls_mode(store, ia32_mode_gp);
@@ -137,6 +145,8 @@ static ir_node *create_fpu_mode_reload(void *const env, ir_node *const state, ir
 		}
 
 		reload = new_bd_ia32_FldCW(NULL, block, frame, noreg, mem);
+		ia32_attr_t *const attr = get_ia32_attr(reload);
+		attr->addr.variant = X86_ADDR_BASE;
 	}
 
 	set_ia32_op_type(reload, ia32_AddrModeS);

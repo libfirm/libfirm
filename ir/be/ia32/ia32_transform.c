@@ -429,8 +429,15 @@ static ir_node *gen_Const(ir_node *node)
 				load = new_bd_ia32_fld(dbgi, block, base, noreg_GP, nomem,
 				                       ls_mode);
 				set_irn_pinned(load, false);
+				ia32_attr_t *const attr = get_ia32_attr(load);
+				attr->addr = (x86_addr_t) {
+					.immediate = {
+						.kind   = lconst_imm_kind,
+						.entity = floatent,
+					},
+					.variant = X86_ADDR_BASE,
+				};
 				set_ia32_op_type(load, ia32_AddrModeS);
-				set_am_const_entity(load, floatent);
 				arch_add_irn_flags(load, arch_irn_flag_rematerializable);
 				res = be_new_Proj(load, pn_ia32_fld_res);
 			}
@@ -477,6 +484,7 @@ static ir_node *gen_Address(ir_node *node)
 		ir_node *tls_base = new_bd_ia32_LdTls(NULL, block);
 		ir_node *lea      = new_bd_ia32_Lea(dbgi, block, tls_base, noreg_GP);
 		ia32_attr_t *const attr = get_ia32_attr(lea);
+		attr->addr.variant   = X86_ADDR_BASE;
 		attr->addr.immediate = imm;
 		cnst = lea;
 	} else {
@@ -833,9 +841,13 @@ static void build_address_ptr(x86_address_t *addr, ir_node *ptr, ir_node *mem)
 	memset(addr, 0, sizeof(addr[0]));
 	ia32_create_address_mode(addr, ptr, x86_create_am_normal);
 
-	addr->base  = addr->base  ? be_transform_node(addr->base)  : noreg_GP;
-	addr->index = addr->index ? be_transform_node(addr->index) : noreg_GP;
-	addr->mem   = be_transform_node(mem);
+	addr->variant = addr->base ? (addr->index ? X86_ADDR_BASE_INDEX
+	                                          : X86_ADDR_BASE)
+	                           : (addr->index ? X86_ADDR_INDEX
+	                                          : X86_ADDR_JUST_IMM);
+	addr->base    = addr->base  ? be_transform_node(addr->base)  : noreg_GP;
+	addr->index   = addr->index ? be_transform_node(addr->index) : noreg_GP;
+	addr->mem     = be_transform_node(mem);
 }
 
 static void build_address(ia32_address_mode_t *am, ir_node *node,
@@ -855,6 +867,7 @@ static void build_address(ia32_address_mode_t *am, ir_node *node,
 			.kind   = lconst_imm_kind,
 			.entity = entity,
 		};
+		addr->variant     = X86_ADDR_BASE,
 		adjust_relocation(&addr->imm);
 		addr->tls_segment = false;
 		am->ls_mode       = get_type_mode(get_entity_type(entity));
@@ -874,9 +887,13 @@ static void build_address(ia32_address_mode_t *am, ir_node *node,
 	/* construct load address */
 	ia32_create_address_mode(addr, ptr, flags);
 
-	addr->base  = addr->base  ? be_transform_node(addr->base)  : noreg_GP;
-	addr->index = addr->index ? be_transform_node(addr->index) : noreg_GP;
-	addr->mem   = new_mem;
+	addr->variant = addr->base ? (addr->index ? X86_ADDR_BASE_INDEX
+	                                          : X86_ADDR_BASE)
+	                           : (addr->index ? X86_ADDR_INDEX
+	                                          : X86_ADDR_JUST_IMM);
+	addr->base    = addr->base  ? be_transform_node(addr->base)  : noreg_GP;
+	addr->index   = addr->index ? be_transform_node(addr->index) : noreg_GP;
+	addr->mem     = new_mem;
 }
 
 static void set_address(ir_node *node, const x86_address_t *addr)
@@ -884,6 +901,7 @@ static void set_address(ir_node *node, const x86_address_t *addr)
 	ia32_attr_t *const attr = get_ia32_attr(node);
 	attr->addr.immediate = addr->imm;
 	attr->addr.log_scale = addr->scale;
+	attr->addr.variant   = addr->variant;
 	if (addr->tls_segment)
 		attr->addr.segment = X86_SEGMENT_GS;
 	if (addr->imm.kind == X86_IMM_FRAMEENT)
@@ -1060,10 +1078,11 @@ static void match_arguments(ia32_address_mode_t *am, ir_node *block,
 		}
 		am->op_type = ia32_AddrModeS;
 	} else {
-		am->op_type    = ia32_Normal;
-		am->addr.base  = noreg_GP;
-		am->addr.index = noreg_GP;
-		am->addr.mem   = nomem;
+		am->op_type      = ia32_Normal;
+		am->addr.base    = noreg_GP;
+		am->addr.index   = noreg_GP;
+		am->addr.mem     = nomem;
+		am->addr.variant = X86_ADDR_INVALID;
 
 		if (flags & match_try_am) {
 			am->new_op1 = NULL;
@@ -1389,6 +1408,14 @@ static ir_node *gen_unop(ir_node *node, ir_node *op, construct_unop_func *func,
 	return new_node;
 }
 
+static ir_node *create_lea_add(dbg_info *const dbgi, ir_node *const block,
+                               ir_node *const op0, ir_node *const op1)
+{
+	ir_node *const lea = new_bd_ia32_Lea(dbgi, block, op0, op1);
+	get_ia32_attr(lea)->addr.variant = X86_ADDR_BASE_INDEX;
+	return lea;
+}
+
 static ir_node *create_lea_from_address(dbg_info *dbgi, ir_node *block,
                                         x86_address_t *addr)
 {
@@ -1414,7 +1441,7 @@ static ir_node *create_lea_from_address(dbg_info *dbgi, ir_node *block,
 		if (base == noreg_GP)
 			base = tls_base;
 		else
-			base = new_bd_ia32_Lea(dbgi, block, tls_base, base);
+			base = create_lea_add(dbgi, block, tls_base, base);
 		addr->tls_segment = false;
 	}
 
@@ -1941,8 +1968,8 @@ static ir_node *gen_Shl(ir_node *node)
 		dbg_info *dbgi      = get_irn_dbg_info(node);
 		ir_node  *new_block = be_transform_nodes_block(node);
 		ir_node  *new_left  = be_transform_node(left);
-		ir_node  *new_node
-			= new_bd_ia32_Lea(dbgi, new_block, new_left, new_left);
+		ir_node  *new_node  = create_lea_add(dbgi, new_block, new_left,
+		                                     new_left);
 		SET_IA32_ORIG_NODE(new_node, node);
 		return new_node;
 	}
@@ -2996,10 +3023,16 @@ static ir_node *gen_Switch(ir_node *node)
 		set_ia32_ls_mode(switchjmp, ia32_mode_gp);
 	}
 	ia32_attr_t *attr = get_ia32_attr(table_am);
-	attr->addr.log_scale = 2;
+	attr->addr = (x86_addr_t) {
+		.immediate = {
+			.kind   = lconst_imm_kind,
+			.entity = entity,
+		},
+		.log_scale = 2,
+		.variant   = X86_ADDR_BASE_INDEX,
+	};
 	set_ia32_op_type(table_am, ia32_AddrModeS);
 	set_ia32_ls_mode(table_am, ia32_mode_gp);
-	set_am_const_entity(table_am, entity);
 	SET_IA32_ORIG_NODE(switchjmp, node);
 
 	return switchjmp;
@@ -3561,6 +3594,19 @@ static ir_node *create_Conv_I2I(dbg_info *dbgi, ir_node *block, ir_node *base,
 	return func(dbgi, block, base, index, mem, val, mode);
 }
 
+static ir_node *create_lea_add_c(dbg_info *const dbgi, ir_node *const block,
+                                 ir_node *const base, int32_t const offset)
+{
+	ir_node     *const lea  = new_bd_ia32_Lea(dbgi, block, base, noreg_GP);
+	ia32_attr_t *const attr = get_ia32_attr(lea);
+	attr->addr = (x86_addr_t) {
+		.immediate.offset = offset,
+		.variant          = X86_ADDR_BASE,
+	};
+	set_ia32_ls_mode(lea, ia32_mode_gp);
+	return lea;
+}
+
 /**
  * Transforms a Mux node into some code sequence.
  *
@@ -3638,7 +3684,7 @@ static ir_node *gen_Mux(ir_node *node)
 			} else if (new_mode == x86_mode_E) {
 				/* arg, shift 16 NOT supported */
 				log_scale = 3;
-				new_node = new_bd_ia32_Lea(dbgi, new_block, new_node, new_node);
+				new_node = create_lea_add(dbgi, new_block, new_node, new_node);
 			} else {
 				panic("unsupported constant size");
 			}
@@ -3650,10 +3696,11 @@ static ir_node *gen_Mux(ir_node *node)
 						.kind   = lconst_imm_kind,
 						.entity = array,
 					},
-					.base   = get_global_base(irg),
-					.index  = new_node,
-					.mem    = nomem,
-					.scale  = log_scale,
+					.variant = X86_ADDR_BASE_INDEX,
+					.base    = get_global_base(irg),
+					.index   = new_node,
+					.mem     = nomem,
+					.scale   = log_scale,
 				},
 				.ls_mode     = new_mode,
 				.mem_proj    = nomem,
@@ -3721,22 +3768,23 @@ static ir_node *gen_Mux(ir_node *node)
 			for (unsigned step = res.num_steps; step-- != 0;) {
 				switch (res.steps[step].transform) {
 				case SETCC_TR_ADD: {
-					new_node = new_bd_ia32_Lea(dbgi, new_block, new_node, noreg_GP);
-					ia32_attr_t *const attr = get_ia32_attr(new_node);
-					attr->addr.immediate.offset = res.steps[step].val;
+					new_node = create_lea_add_c(dbgi, new_block, new_node,
+					                            res.steps[step].val);
 					SET_IA32_ORIG_NODE(new_node, node);
 					continue;
 				}
 
 				case SETCC_TR_ADDxx:
-					new_node = new_bd_ia32_Lea(dbgi, new_block, new_node, new_node);
+					new_node = create_lea_add(dbgi, new_block, new_node,
+					                          new_node);
 					SET_IA32_ORIG_NODE(new_node, node);
 					continue;
 
 				case SETCC_TR_LEA: {
 					new_node = new_bd_ia32_Lea(dbgi, new_block, noreg_GP, new_node);
 					ia32_attr_t *const attr = get_ia32_attr(new_node);
-					attr->addr.log_scale = res.steps[step].log_scale;
+					attr->addr.variant          = X86_ADDR_INDEX;
+					attr->addr.log_scale        = res.steps[step].log_scale;
 					attr->addr.immediate.offset = res.steps[step].val;
 					SET_IA32_ORIG_NODE(new_node, node);
 					continue;
@@ -3745,7 +3793,8 @@ static ir_node *gen_Mux(ir_node *node)
 				case SETCC_TR_LEAxx: {
 					new_node = new_bd_ia32_Lea(dbgi, new_block, new_node, new_node);
 					ia32_attr_t *const attr = get_ia32_attr(new_node);
-					attr->addr.log_scale = res.steps[step].log_scale;
+					attr->addr.variant          = X86_ADDR_BASE_INDEX;
+					attr->addr.log_scale        = res.steps[step].log_scale;
 					attr->addr.immediate.offset = res.steps[step].val;
 					SET_IA32_ORIG_NODE(new_node, node);
 					continue;
@@ -3837,6 +3886,8 @@ static ir_node *gen_x87_fp_to_gp(ir_node *node)
 	ir_node *fist = gen_fist(dbgi, block, frame, noreg_GP, nomem, new_op,
 	                         ls_mode);
 	set_irn_pinned(fist, false);
+	ia32_attr_t *const fist_attr = get_ia32_attr(fist);
+	fist_attr->addr.variant = X86_ADDR_BASE;
 	set_ia32_op_type(fist, ia32_AddrModeD);
 	arch_add_irn_flags(fist, arch_irn_flag_spill);
 
@@ -3850,6 +3901,8 @@ static ir_node *gen_x87_fp_to_gp(ir_node *node)
 	ir_node *load = new_bd_ia32_Load(dbgi, block, frame, noreg_GP, mem);
 
 	set_irn_pinned(load, false);
+	ia32_attr_t *const load_attr = get_ia32_attr(load);
+	load_attr->addr.variant = X86_ADDR_BASE;
 	set_ia32_op_type(load, ia32_AddrModeS);
 	set_ia32_ls_mode(load, ia32_mode_gp);
 	force_int_stackent(load, ls_mode);
@@ -3871,6 +3924,8 @@ static ir_node *gen_x87_conv(ir_mode *tgt_mode, ir_node *node)
 	ir_node *store = create_fst(dbgi, block, frame, noreg_GP, nomem, node,
 	                            tgt_mode);
 	set_irn_pinned(store, false);
+	ia32_attr_t *const store_attr = get_ia32_attr(store);
+	store_attr->addr.variant = X86_ADDR_BASE;
 	set_ia32_frame_use(store, IA32_FRAME_USE_AUTO);
 	set_ia32_op_type(store, ia32_AddrModeD);
 	arch_add_irn_flags(store, arch_irn_flag_spill);
@@ -3881,6 +3936,8 @@ static ir_node *gen_x87_conv(ir_mode *tgt_mode, ir_node *node)
 	ir_node *load = new_bd_ia32_fld(dbgi, block, frame, noreg_GP, store_mem,
 	                                tgt_mode);
 	set_irn_pinned(load, false);
+	ia32_attr_t *const load_attr = get_ia32_attr(load);
+	load_attr->addr.variant = X86_ADDR_BASE;
 	set_ia32_frame_use(load, IA32_FRAME_USE_AUTO);
 	set_ia32_op_type(load, ia32_AddrModeS);
 	SET_IA32_ORIG_NODE(load, node);
@@ -3922,6 +3979,8 @@ static void store_gp(dbg_info *dbgi, ia32_address_mode_t *am, ir_node *block,
 	                                        nomem, new_node);
 
 	set_irn_pinned(store, false);
+	ia32_attr_t *const attr = get_ia32_attr(store);
+	attr->addr.variant = X86_ADDR_BASE;
 	set_ia32_op_type(store, ia32_AddrModeD);
 	set_ia32_ls_mode(store, ia32_mode_gp);
 	arch_add_irn_flags(store, arch_irn_flag_spill);
@@ -3940,6 +3999,7 @@ static void store_gp(dbg_info *dbgi, ia32_address_mode_t *am, ir_node *block,
 		set_irn_pinned(zero_store, false);
 		set_ia32_op_type(zero_store, ia32_AddrModeD);
 		ia32_attr_t *const attr = get_ia32_attr(zero_store);
+		attr->addr.variant          = X86_ADDR_BASE;
 		attr->addr.immediate.offset = 4;
 		set_ia32_ls_mode(zero_store, ia32_mode_gp);
 		arch_add_irn_flags(zero_store, arch_irn_flag_spill);
@@ -3961,6 +4021,7 @@ static void store_gp(dbg_info *dbgi, ia32_address_mode_t *am, ir_node *block,
 	addr->index     = noreg_GP;
 	addr->mem       = store_mem;
 	addr->imm       = (x86_imm32_t) { .kind = X86_IMM_FRAMEENT };
+	addr->variant   = X86_ADDR_BASE;
 	am->op_type     = ia32_AddrModeS;
 	am->ls_mode     = store_mode;
 	am->pinned      = false;
@@ -4134,6 +4195,8 @@ static void store_fp(dbg_info *dbgi, ia32_address_mode_t *am, ir_node *block,
 	ir_node *fst = create_fst(dbgi, new_block, frame, noreg_GP, nomem,
 	                          new_value, mode);
 	set_irn_pinned(fst, false);
+	ia32_attr_t *const attr = get_ia32_attr(fst);
+	attr->addr.variant = X86_ADDR_BASE;
 	set_ia32_op_type(fst, ia32_AddrModeD);
 	arch_add_irn_flags(fst, arch_irn_flag_spill);
 	force_int_stackent(fst, mode);
@@ -4141,6 +4204,7 @@ static void store_fp(dbg_info *dbgi, ia32_address_mode_t *am, ir_node *block,
 
 	memset(am, 0, sizeof(*am));
 	x86_address_t *addr = &am->addr;
+	addr->variant   = X86_ADDR_BASE;
 	addr->base      = frame;
 	addr->index     = noreg_GP;
 	addr->mem       = mem;
@@ -4551,7 +4615,10 @@ static ir_node *gen_ia32_l_LLtoFloat(ir_node *node)
 	arch_add_irn_flags(store_high, arch_irn_flag_spill);
 	force_int_stackent(store_low, mode_Ls);
 	force_int_stackent(store_high, mode_Ls);
+	ia32_attr_t *const attr_low  = get_ia32_attr(store_low);
+	attr_low->addr.variant = X86_ADDR_BASE;
 	ia32_attr_t *const attr_high = get_ia32_attr(store_high);
+	attr_high->addr.variant          = X86_ADDR_BASE;
 	attr_high->addr.immediate.offset = 4;
 
 	ir_node *in[2] = { mem_low, mem_high };
@@ -4560,6 +4627,8 @@ static ir_node *gen_ia32_l_LLtoFloat(ir_node *node)
 	/* do a fild */
 	ir_node *fild = new_bd_ia32_fild(dbgi, block, frame, noreg_GP, sync);
 	set_irn_pinned(fild, false);
+	ia32_attr_t *const fild_attr = get_ia32_attr(fild);
+	fild_attr->addr.variant = X86_ADDR_BASE;
 	set_ia32_op_type(fild, ia32_AddrModeS);
 	set_ia32_ls_mode(fild, mode_Ls);
 	force_int_stackent(fild, mode_Ls);
@@ -4573,10 +4642,11 @@ static ir_node *gen_ia32_l_LLtoFloat(ir_node *node)
 
 		ia32_address_mode_t am = {
 			.addr = {
-				.base  = get_global_base(irg),
-				.index = new_bd_ia32_Shr(dbgi, block, new_val_high, count),
-				.mem   = nomem,
-				.imm   = {
+				.variant = X86_ADDR_BASE_INDEX,
+				.base    = get_global_base(irg),
+				.index   = new_bd_ia32_Shr(dbgi, block, new_val_high, count),
+				.mem     = nomem,
+				.imm     = {
 					.kind   = lconst_imm_kind,
 					.entity = ia32_gen_fp_known_const(ia32_ULLBIAS),
 				},
@@ -4615,6 +4685,8 @@ static ir_node *gen_ia32_l_FloattoLL(ir_node *node)
 	ir_node *fist = gen_fist(dbgi, block, frame, noreg_GP, nomem, new_val,
 	                         mode_Ls);
 	set_irn_pinned(fist, false);
+	ia32_attr_t *const attr = get_ia32_attr(fist);
+	attr->addr.variant = X86_ADDR_BASE;
 	SET_IA32_ORIG_NODE(fist, node);
 	set_ia32_op_type(fist, ia32_AddrModeD);
 	arch_add_irn_flags(fist, arch_irn_flag_spill);
@@ -4636,6 +4708,8 @@ static ir_node *gen_Proj_l_FloattoLL(ir_node *node)
 
 	ir_node *load = new_bd_ia32_Load(dbgi, block, frame, noreg_GP, new_pred);
 	set_irn_pinned(load, false);
+	ia32_attr_t *const attr = get_ia32_attr(load);
+	attr->addr.variant = X86_ADDR_BASE;
 	SET_IA32_ORIG_NODE(load, node);
 	set_ia32_op_type(load, ia32_AddrModeS);
 	set_ia32_ls_mode(load, ia32_mode_gp);
@@ -5005,11 +5079,8 @@ static ir_node *gen_Call(ir_node *node)
 		ir_type                  *const param_type = get_method_param_type(type, p);
 		if (is_aggregate_type(param_type)) {
 			/* Copy aggregate arguments into the callframe. */
-			ir_node *const lea = new_bd_ia32_Lea(dbgi, block, callframe, noreg_GP);
-			ia32_attr_t *const attr = get_ia32_attr(lea);
-			attr->addr.immediate.offset = param->offset;
-			set_ia32_ls_mode(lea, ia32_mode_gp);
-
+			ir_node *const lea       = create_lea_add_c(dbgi, block, callframe,
+			                                            param->offset);
 			ir_node *const new_value = be_transform_node(value);
 			unsigned const size      = get_type_size(param_type);
 			ir_node *const copyb     = new_bd_ia32_CopyB_i(dbgi, block, lea, new_value, nomem, size);
@@ -5022,10 +5093,11 @@ static ir_node *gen_Call(ir_node *node)
 		} else {
 			/* Value transmitted on callframe. */
 			x86_address_t const store_addr = {
-				.base  = callframe,
-				.index = noreg_GP,
-				.mem   = nomem,
-				.imm   = {
+				.variant = X86_ADDR_BASE,
+				.base    = callframe,
+				.index   = noreg_GP,
+				.mem     = nomem,
+				.imm     = {
 					.offset = param->offset
 				},
 			};
@@ -5164,6 +5236,7 @@ static ir_node *create_frame_load(dbg_info *const dbgi, ir_node *const block,
 	set_ia32_op_type(load, ia32_AddrModeS);
 	set_ia32_ls_mode(load, ia32_mode_gp);
 	ia32_attr_t *const attr = get_ia32_attr(load);
+	attr->addr.variant   = X86_ADDR_BASE;
 	attr->addr.immediate = imm;
 	return be_new_Proj(load, pn_ia32_Load_res);
 }
@@ -5331,10 +5404,8 @@ static ir_node *gen_ffs(ir_node *node)
 	set_ia32_commutative(orn);
 
 	/* add 1 */
-	ir_node *add = new_bd_ia32_Lea(dbgi, block, orn, noreg_GP);
-	ia32_attr_t *const attr = get_ia32_attr(add);
-	attr->addr.immediate.offset = 1;
-	return add;
+	ir_node *add1 = create_lea_add_c(dbgi, block, orn, 1);
+	return add1;
 }
 
 /**
@@ -5561,23 +5632,33 @@ static ir_node *gen_compare_swap(ir_node *node)
 	return new_node;
 }
 
+static ir_node *create_lea_frameaddress(dbg_info *const dbgi,
+                                        ir_node *const block,
+                                        ir_entity *const entity)
+{
+	ir_graph *const irg   = get_irn_irg(block);
+	ir_node  *const frame = get_irg_frame(irg);
+	ir_node  *const lea   = new_bd_ia32_Lea(dbgi, block, frame, noreg_GP);
+	set_ia32_frame_use(lea, IA32_FRAME_USE_AUTO);
+	ia32_attr_t *const attr = get_ia32_attr(lea);
+	attr->addr = (x86_addr_t) {
+		.immediate = {
+			.kind   = X86_IMM_FRAMEENT,
+			.entity = entity,
+		},
+		.variant = X86_ADDR_BASE,
+	};
+	return lea;
+}
+
 static ir_node *gen_va_start(ir_node *node)
 {
 	if (initial_va_list == NULL) {
 		dbg_info *dbgi  = get_irn_dbg_info(node);
 		ir_graph *irg   = get_irn_irg(node);
 		ir_node  *block = get_irg_start_block(irg);
-		ir_node  *frame = get_irg_frame(irg);
-		ir_node  *ap    = new_bd_ia32_Lea(dbgi, block, frame, noreg_GP);
-
-		set_ia32_frame_use(ap, IA32_FRAME_USE_AUTO);
-		ia32_attr_t *const attr = get_ia32_attr(ap);
-		attr->addr.immediate = (x86_imm32_t){
-			.kind   = X86_IMM_FRAMEENT,
-			.entity = current_cconv->va_start_addr,
-		};
-
-		initial_va_list = ap;
+		initial_va_list = create_lea_frameaddress(dbgi, block,
+		                                          current_cconv->va_start_addr);
 	}
 
 	return initial_va_list;

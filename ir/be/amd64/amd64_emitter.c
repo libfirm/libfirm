@@ -224,52 +224,6 @@ static void amd64_emit_immediate64(const amd64_imm64_t *const imm)
 		be_emit_irprintf("%+" PRId64, imm->offset);
 }
 
-static void amd64_emit_addr(const ir_node *const node,
-                            const x86_addr_t *const addr)
-{
-	int32_t            const offset  = addr->immediate.offset;
-	ir_entity         *const entity  = addr->immediate.entity;
-	x86_addr_variant_t const variant = addr->variant;
-	assert(variant != X86_ADDR_INVALID);
-
-	if (entity != NULL) {
-		assert(addr->immediate.kind != X86_IMM_VALUE);
-		assert(!is_frame_type(get_entity_owner(entity)));
-		x86_emit_relocation_no_offset(addr->immediate.kind, entity);
-		if (offset != 0)
-			be_emit_irprintf("%+" PRId32, offset);
-	} else if (offset != 0 || variant == X86_ADDR_JUST_IMM) {
-		assert(addr->immediate.kind == X86_IMM_VALUE);
-		be_emit_irprintf("%" PRId32, offset);
-	}
-
-	if (variant != X86_ADDR_JUST_IMM) {
-		be_emit_char('(');
-
-		if (variant == X86_ADDR_RIP) {
-			be_emit_cstring("%rip");
-		} else {
-			if (x86_addr_variant_has_base(variant)) {
-				arch_register_t const *const reg
-					= arch_get_irn_register_in(node, addr->base_input);
-				emit_register(reg);
-			}
-
-			if (x86_addr_variant_has_index(variant)) {
-				be_emit_char(',');
-				arch_register_t const *const reg
-					= arch_get_irn_register_in(node, addr->index_input);
-				emit_register(reg);
-
-				unsigned scale = addr->log_scale;
-				if (scale > 0)
-					be_emit_irprintf(",%u", 1 << scale);
-			}
-		}
-		be_emit_char(')');
-	}
-}
-
 static void amd64_emit_am(const ir_node *const node, bool indirect_star)
 {
 	const amd64_addr_attr_t *const attr = get_amd64_addr_attr_const(node);
@@ -292,7 +246,7 @@ static void amd64_emit_am(const ir_node *const node, bool indirect_star)
 	case AMD64_OP_REG_ADDR: {
 		const amd64_binop_addr_attr_t *const binop_attr
 			= (const amd64_binop_addr_attr_t*)attr;
-		amd64_emit_addr(node, &attr->addr);
+		x86_emit_addr(node, &attr->addr);
 		be_emit_cstring(", ");
 		const arch_register_t *reg
 			= arch_get_irn_register_in(node, binop_attr->u.reg_input);
@@ -318,7 +272,7 @@ static void amd64_emit_am(const ir_node *const node, bool indirect_star)
 		emit_register_mode(reg, binop_attr->base.size);
 		be_emit_cstring(", ");
 emit_addr:
-		amd64_emit_addr(node, &attr->addr);
+		x86_emit_addr(node, &attr->addr);
 		return;
 	}
 	case AMD64_OP_REG: {
@@ -436,7 +390,7 @@ end_of_mods:
 				default: {
 					amd64_addr_attr_t const *const attr
 						= get_amd64_addr_attr_const(node);
-					amd64_emit_addr(node, &attr->addr);
+					x86_emit_addr(node, &attr->addr);
 					--fmt;
 				}
 				}

@@ -314,66 +314,19 @@ typedef enum ia32_emit_mod_t {
 } ia32_emit_mod_t;
 ENUM_BITSET(ia32_emit_mod_t)
 
-static ir_node const *get_irn_n_reg(ir_node const *const node, int const pos)
-{
-	ir_node *const in = get_irn_n(node, pos);
-	return is_ia32_NoReg_GP(in) ? NULL : in;
-}
-
 /**
  * Emits address mode.
  */
 static void ia32_emit_am(ir_node const *const node)
 {
 	ia32_attr_t const *const attr = get_ia32_attr_const(node);
-	switch (attr->addr.segment) {
-	case X86_SEGMENT_DEFAULT:
-		break;
-	case X86_SEGMENT_CS: be_emit_cstring("%cs:"); break;
-	case X86_SEGMENT_SS: be_emit_cstring("%ss:"); break;
-	case X86_SEGMENT_DS: be_emit_cstring("%ds:"); break;
-	case X86_SEGMENT_ES: be_emit_cstring("%es:"); break;
-	case X86_SEGMENT_FS: be_emit_cstring("%fs:"); break;
-	case X86_SEGMENT_GS: be_emit_cstring("%gs:"); break;
-	}
-
-	ir_node const *const base = get_irn_n_reg(node, n_ia32_base);
-	ir_node const *const idx  = get_irn_n_reg(node, n_ia32_index);
-
-	/* emit offset */
-	int32_t          const offset = attr->addr.immediate.offset;
-	ir_entity const *const entity = attr->addr.immediate.entity;
-	if (entity) {
-		x86_emit_relocation_no_offset(attr->addr.immediate.kind, entity);
-		if (offset != 0)
-			be_emit_irprintf("%+"PRId32, offset);
-	} else if (offset != 0 || (!base && !idx)) {
-		assert(attr->addr.immediate.kind == X86_IMM_VALUE);
-		/* also handle special case if nothing is set */
-		be_emit_irprintf("%"PRId32, offset);
-	}
-
-	if (base || idx) {
-		be_emit_char('(');
-
-		/* emit base */
-		if (base) {
-			arch_register_t const *const reg = arch_get_irn_register(base);
-			emit_register(reg, NULL);
-		}
-
-		/* emit index + scale */
-		if (idx) {
-			be_emit_char(',');
-			arch_register_t const *const reg = arch_get_irn_register(idx);
-			emit_register(reg, NULL);
-
-			unsigned const log_scale = attr->addr.log_scale;
-			if (log_scale > 0)
-				be_emit_irprintf(",%d", 1 << log_scale);
-		}
-		be_emit_char(')');
-	}
+	/* Prepare a temporary x86_addr_t with input numbers set until the ia32
+	 * backend sets them properly earlier. */
+	x86_addr_t addr = attr->addr;
+	addr.base_input  = n_ia32_base;
+	addr.index_input = n_ia32_index;
+	addr.mem_input   = n_ia32_mem;
+	x86_emit_addr(node, &addr);
 }
 
 void ia32_emitf(ir_node const *const node, char const *fmt, ...)
