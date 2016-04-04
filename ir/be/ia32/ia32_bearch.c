@@ -57,7 +57,6 @@ ir_mode *ia32_mode_gp;
 ir_mode *ia32_mode_float64;
 ir_mode *ia32_mode_float32;
 
-/** The current omit-fp state */
 static bool return_small_struct_in_regs;
 
 typedef ir_node *(*create_const_node_func) (dbg_info *dbgi, ir_node *block);
