@@ -68,7 +68,8 @@ static void introduce_prologue(ir_graph *const irg)
 	ir_node               *const initial_sp = be_get_Start_proj(irg, sp);
 	ir_type               *const frame_type = get_irg_frame_type(irg);
 	unsigned               const frame_size = get_type_size(frame_type);
-	ir_node               *const incsp      = be_new_IncSP(sp, block, initial_sp, frame_size, 0);
+	ir_node               *const incsp
+		= be_new_IncSP(sp, block, initial_sp, frame_size, false);
 	edges_reroute_except(initial_sp, incsp, incsp);
 	sched_add_after(start, incsp);
 }
