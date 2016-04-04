@@ -903,31 +903,25 @@ static void memperm_emit_restore_registers(const ir_node *node, int n_spilled)
 	sparc_emitf(node, "add %%sp, %u, %%sp", sp_change);
 }
 
-static int get_real_entity_offset(const ir_node *node, ir_entity *ent)
-{
-	int offset = be_get_MemPerm_offset(node);
-	return get_entity_offset(ent) + offset;
-}
-
 static void memperm_emit_copy(const ir_node *node, ir_entity *in_ent,
-                              ir_entity *out_ent)
+                              ir_entity *out_ent, int ent_offset)
 {
 	ir_graph   *irg     = get_irn_irg(node);
 	const char *reg     = sparc_get_irg_data(irg)->omit_fp ? "sp" : "fp";
-	const int   off_in  = get_real_entity_offset(node, in_ent);
-	const int   off_out = get_real_entity_offset(node, out_ent);
+	const int   off_in  = get_entity_offset(in_ent) + ent_offset;
+	const int   off_out = get_entity_offset(out_ent) + ent_offset;
 
 	sparc_emitf(node, "ld [%%%s%+d], %%l0", reg, off_in);
 	sparc_emitf(node, "st %%l0, [%%%s%+d]", reg, off_out);
 }
 
 static void memperm_emit_swap(const ir_node *node, ir_entity *ent1,
-                              ir_entity *ent2)
+                              ir_entity *ent2, int ent_offset)
 {
 	ir_graph   *irg  = get_irn_irg(node);
 	const char *reg  = sparc_get_irg_data(irg)->omit_fp ? "sp" : "fp";
-	const int   off1 = get_real_entity_offset(node, ent1);
-	const int   off2 = get_real_entity_offset(node, ent2);
+	const int   off1 = get_entity_offset(ent1) + ent_offset;
+	const int   off2 = get_entity_offset(ent2) + ent_offset;
 
 	sparc_emitf(node, "ld [%%%s%+d], %%l0", reg, off1);
 	sparc_emitf(node, "ld [%%%s%+d], %%l1", reg, off2);
@@ -967,6 +961,10 @@ static void emit_be_MemPerm(const ir_node *node)
 	int        *n_users       = ALLOCANZ(int,         max_size);
 	/* n_spilled records the number of spilled registers, either 1 or 2. */
 	int         n_spilled     = 0;
+	ir_graph   *irg           = get_irn_irg(node);
+	bool        omit_fp       = sparc_get_irg_data(irg)->omit_fp;
+
+	int ent_offset = be_get_MemPerm_offset(node);
 
 	for (int i = 0; i < max_size; ++i) {
 		sourceof[i] = i;
@@ -1006,8 +1004,10 @@ static void emit_be_MemPerm(const ir_node *node)
 		if (n_spilled == 0) {
 			memperm_emit_spill_registers(node, n_spilled, /*n_to_spill=*/1);
 			n_spilled = 1;
+			if (omit_fp)
+				ent_offset += 8;
 		}
-		memperm_emit_copy(node, entities[iidx], entities[oidx]);
+		memperm_emit_copy(node, entities[iidx], entities[oidx], ent_offset);
 
 		/* Mark as done. */
 		sourceof[oidx] = oidx;
@@ -1037,7 +1037,7 @@ static void emit_be_MemPerm(const ir_node *node)
 			memperm_emit_spill_registers(node, n_spilled, /*n_to_spill=*/2);
 			n_spilled = 2;
 		}
-		memperm_emit_swap(node, entities[iidx], entities[oidx]);
+		memperm_emit_swap(node, entities[iidx], entities[oidx], ent_offset);
 
 		int tidx = sourceof[iidx];
 		sourceof[iidx] = iidx; /* Mark as done. */

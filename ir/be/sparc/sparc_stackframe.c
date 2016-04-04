@@ -83,7 +83,7 @@ static void sparc_determine_frameoffset(ir_node *const node,
 		if (entity != NULL) {
 			attr->immediate_value += get_entity_offset(entity);
 			if (node_has_sp_base(node))
-				attr->immediate_value += sp_offset;
+				attr->immediate_value += sp_offset + SPARC_MIN_STACKSIZE;
 		}
 	} else if (sparc_has_load_store_attr(node)) {
 		sparc_load_store_attr_t *const attr = get_sparc_load_store_attr(node);
@@ -94,12 +94,12 @@ static void sparc_determine_frameoffset(ir_node *const node,
 		if (entity != NULL) {
 			attr->base.immediate_value += get_entity_offset(entity);
 			if (node_has_sp_base(node))
-				attr->base.immediate_value += sp_offset;
+				attr->base.immediate_value += sp_offset + SPARC_MIN_STACKSIZE;
 		}
 	} else if (be_is_MemPerm(node)) {
 		ir_graph *irg = get_irn_irg(node);
 		if (sparc_get_irg_data(irg)->omit_fp)
-			be_set_MemPerm_offset(node, sp_offset);
+			be_set_MemPerm_offset(node, sp_offset + SPARC_MIN_STACKSIZE);
 	}
 }
 

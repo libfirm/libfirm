@@ -85,8 +85,7 @@ static void introduce_epilog(ir_node *ret, bool omit_fp)
 		kill_unused_stacknodes(sp);
 	} else {
 		ir_type *const frame_type = get_irg_frame_type(irg);
-		unsigned const frame_size = get_type_size(frame_type)
-		                            + SPARC_MIN_STACKSIZE;
+		unsigned const frame_size = get_type_size(frame_type);
 		ir_node *const incsp      = be_new_IncSP(sp_reg, block, sp, -frame_size,
 		                                         true);
 		set_irn_n(ret, n_sparc_Return_sp, incsp);
@@ -101,8 +100,7 @@ static void sparc_introduce_prolog_epilog(ir_graph *irg, bool omit_fp)
 	ir_node               *block      = get_nodes_block(start);
 	ir_node               *initial_sp = be_get_Start_proj(irg, sp_reg);
 	ir_type               *frame_type = get_irg_frame_type(irg);
-	unsigned               frame_size = get_type_size(frame_type)
-	                                    + SPARC_MIN_STACKSIZE;
+	unsigned               frame_size = get_type_size(frame_type);
 
 	/* introduce epilog for every return node */
 	foreach_irn_in(get_irg_end_block(irg), i, ret) {
@@ -111,7 +109,8 @@ static void sparc_introduce_prolog_epilog(ir_graph *irg, bool omit_fp)
 	}
 
 	if (!omit_fp) {
-		ir_node *const save = new_bd_sparc_Save_imm(NULL, block, initial_sp, NULL, -frame_size);
+		ir_node *const save = new_bd_sparc_Save_imm(NULL, block, initial_sp,
+													NULL, -frame_size-SPARC_MIN_STACKSIZE);
 		arch_set_irn_register(save, sp_reg);
 		sched_add_after(start, save);
 
