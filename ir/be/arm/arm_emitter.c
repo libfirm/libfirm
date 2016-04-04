@@ -542,27 +542,27 @@ static void emit_be_MemPerm(const ir_node *node)
 
 	int const memperm_offset = be_get_MemPerm_offset(node);
 
-	int sp_change = memperm_offset;
+	int sp_offset = memperm_offset;
 	for (int i = 0; i < memperm_arity; ++i) {
 		/* spill register */
 		arm_emitf(node, "str r%d, [sp, #-4]!", i);
-		sp_change += 4;
+		sp_offset -= 4;
 		/* load from entity */
 		ir_entity *entity = be_get_MemPerm_in_entity(node, i);
-		int        offset = get_entity_offset(entity) + sp_change;
+		int        offset = get_entity_offset(entity) + sp_offset;
 		arm_emitf(node, "ldr r%d, [sp, #%d]", i, offset);
 	}
 
 	for (int i = memperm_arity; i-- > 0; ) {
 		/* store to new entity */
 		ir_entity *entity = be_get_MemPerm_out_entity(node, i);
-		int        offset = get_entity_offset(entity) + sp_change;
+		int        offset = get_entity_offset(entity) + sp_offset;
 		arm_emitf(node, "str r%d, [sp, #%d]", i, offset);
 		/* restore register */
 		arm_emitf(node, "ldr r%d, [sp], #4", i);
-		sp_change -= 4;
+		sp_offset += 4;
 	}
-	assert(sp_change == memperm_offset);
+	assert(sp_offset == memperm_offset);
 }
 
 static void emit_arm_Jmp(const ir_node *node)

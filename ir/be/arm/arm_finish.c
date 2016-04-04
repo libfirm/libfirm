@@ -96,6 +96,12 @@ static void introduce_prolog_epilog(ir_graph *irg)
 
 static void arm_determine_frameoffset(ir_node *node, int sp_offset)
 {
+	if (be_is_MemPerm(node)) {
+		ir_graph *irg = get_irn_irg(node);
+		if (arm_get_irg_data(irg)->omit_fp)
+			be_set_MemPerm_offset(node, sp_offset);
+		return;
+	}
 	if (!is_arm_irn(node))
 		return;
 	const arm_attr_t *attr   = get_arm_attr_const(node);
@@ -114,10 +120,6 @@ static void arm_determine_frameoffset(ir_node *node, int sp_offset)
 				load_store_attr->offset += get_entity_offset(entity);
 			load_store_attr->offset += sp_offset;
 		}
-	} else if (be_is_MemPerm(node)) {
-		ir_graph *irg = get_irn_irg(node);
-		if (arm_get_irg_data(irg)->omit_fp)
-			be_set_MemPerm_offset(node, sp_offset);
 	}
 }
 
