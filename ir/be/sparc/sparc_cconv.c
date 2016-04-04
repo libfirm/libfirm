@@ -197,7 +197,7 @@ calling_convention_t *sparc_decide_calling_convention(ir_type *function_type,
 	reg_or_stackslot_t *params   = XMALLOCNZ(reg_or_stackslot_t, n_params);
 
 	int      n_param_regs = ARRAY_SIZE(param_regs);
-	unsigned stack_offset = SPARC_MIN_STACKSIZE;
+	unsigned stack_offset = !omit_fp ? SPARC_MIN_STACKSIZE : 0;
 	for (int i = 0; i < n_params; ++i) {
 		ir_type            *param_type = get_method_param_type(function_type,i);
 		ir_mode            *mode;
