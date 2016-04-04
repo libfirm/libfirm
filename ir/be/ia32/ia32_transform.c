@@ -1440,10 +1440,13 @@ static ir_node *create_lea_from_address(dbg_info *dbgi, ir_node *block,
 	if (addr->tls_segment) {
 		ir_node *tls_base = new_bd_ia32_LdTls(NULL, block);
 		assert(addr->imm.entity != NULL);
-		if (base == noreg_GP)
+		if (base == noreg_GP) {
 			base = tls_base;
-		else
+			addr->variant = addr->variant == X86_ADDR_INDEX
+			              ? X86_ADDR_BASE_INDEX : X86_ADDR_BASE;
+		} else {
 			base = create_lea_add(dbgi, block, tls_base, base);
+		}
 		addr->tls_segment = false;
 	}
 
@@ -3702,7 +3705,8 @@ static ir_node *gen_Mux(ir_node *node)
 						.kind   = lconst_imm_kind,
 						.entity = array,
 					},
-					.variant = lconst_variant,
+					.variant = be_options.pic_style != BE_PIC_NONE
+							 ? X86_ADDR_BASE_INDEX : X86_ADDR_INDEX,
 					.base    = get_global_base(irg),
 					.index   = new_node,
 					.mem     = nomem,
