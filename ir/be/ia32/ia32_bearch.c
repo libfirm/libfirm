@@ -131,7 +131,7 @@ static void ia32_set_frame_entity(ir_node *node, ir_entity *entity,
                                   const ir_type *type)
 {
 	ia32_attr_t *const attr = get_ia32_attr(node);
-	attr->am_imm = (x86_imm32_t) {
+	attr->addr.immediate = (x86_imm32_t) {
 		.kind   = X86_IMM_FRAMEENT,
 		.entity = entity,
 		.offset = attr->addr.immediate.offset,
@@ -166,26 +166,27 @@ static void ia32_determine_frameoffset(ir_node *node, int sp_offset)
 		return;
 
 	ia32_attr_t *const attr = get_ia32_attr(node);
-	if (attr->am_imm.kind == X86_IMM_FRAMEENT) {
+	if (attr->addr.immediate.kind == X86_IMM_FRAMEENT) {
 #ifndef NDEBUG
-		attr->old_frame_ent = attr->am_imm.entity;
+		attr->old_frame_ent = attr->addr.immediate.entity;
 #endif
-		attr->am_imm.offset += get_entity_offset(attr->am_imm.entity);
-		attr->am_imm.entity  = NULL;
-		attr->am_imm.kind    = X86_IMM_FRAMEOFFSET;
+		attr->addr.immediate.offset
+			+= get_entity_offset(attr->addr.immediate.entity);
+		attr->addr.immediate.entity  = NULL;
+		attr->addr.immediate.kind    = X86_IMM_FRAMEOFFSET;
 	}
 
-	if (attr->am_imm.kind == X86_IMM_FRAMEOFFSET) {
+	if (attr->addr.immediate.kind == X86_IMM_FRAMEOFFSET) {
 		if (node_has_sp_base(node))
-			attr->am_imm.offset += sp_offset;
+			attr->addr.immediate.offset += sp_offset;
 		else {
 			assert(arch_get_irn_register_in(node, n_ia32_base)
 			       == &ia32_registers[REG_EBP]);
 			/* we calculate offsets relative to the SP value at function begin,
 			 * but EBP points after the saved old frame pointer */
-			attr->am_imm.offset += IA32_REGISTER_SIZE;
+			attr->addr.immediate.offset += IA32_REGISTER_SIZE;
 		}
-		attr->am_imm.kind = X86_IMM_VALUE;
+		attr->addr.immediate.kind = X86_IMM_VALUE;
 	}
 }
 
@@ -479,8 +480,8 @@ ir_node *ia32_turn_back_am(ir_node *node)
 	set_irn_n(node, n_ia32_index, noreg);
 	ia32_attr_t *const attr = get_ia32_attr(node);
 	attr->addr.immediate = (x86_imm32_t) { .kind = X86_IMM_VALUE, .offset = 0 };
+	attr->addr.log_scale = 0;
 	attr->frame_use      = IA32_FRAME_USE_NONE;
-	set_ia32_am_scale(node, 0);
 
 	/* rewire mem-proj */
 	if (get_irn_mode(node) == mode_T) {
@@ -727,7 +728,7 @@ static ir_node *create_push(ir_node *node, ir_node *schedpoint, ir_node *sp,
 	ir_node *const push = new_bd_ia32_Push(dbgi, block, frame, noreg, mem,
 	                                       noreg, sp, mode);
 	ia32_attr_t *const attr = get_ia32_attr(push);
-	attr->am_imm = (x86_imm32_t) {
+	attr->addr.immediate = (x86_imm32_t) {
 		.kind   = X86_IMM_FRAMEENT,
 		.entity = ent,
 	};
@@ -750,7 +751,7 @@ static ir_node *create_pop(ir_node *node, ir_node *schedpoint, ir_node *sp,
 	ir_node  *pop   = new_bd_ia32_PopMem(dbgi, block, frame, noreg,
 	                                     get_irg_no_mem(irg), sp);
 	ia32_attr_t *const attr = get_ia32_attr(pop);
-	attr->am_imm = (x86_imm32_t) {
+	attr->addr.immediate = (x86_imm32_t) {
 		.kind   = X86_IMM_FRAMEENT,
 		.entity = ent,
 	};
@@ -807,7 +808,8 @@ static void transform_MemPerm(ir_node *node)
 
 			ir_node *push = create_push(node, node, sp, mem, inent, mode);
 			sp = create_spproj(push, pn_ia32_Push_stack);
-			add_ia32_am_offs_int(push, offset);
+			ia32_attr_t *const attr = get_ia32_attr(push);
+			attr->addr.immediate.offset = offset;
 
 			unsigned size = get_mode_size_bytes(mode);
 			offset  += size;
@@ -847,7 +849,8 @@ static void transform_MemPerm(ir_node *node)
 			unsigned size = get_mode_size_bytes(mode);
 			offset  -= size;
 			entsize -= size;
-			add_ia32_am_offs_int(pop, offset);
+			ia32_attr_t *const attr = get_ia32_attr(pop);
+			attr->addr.immediate.offset = offset;
 		} while(entsize > 0);
 		pops[i] = pop;
 	}
@@ -906,7 +909,7 @@ static void ia32_collect_frame_entity_nodes(ir_node *node, void *data)
 	if (!is_ia32_irn(node) || get_ia32_op_type(node) != ia32_AddrModeS)
 		return;
 	ia32_attr_t const *const attr = get_ia32_attr_const(node);
-	if (attr->am_imm.kind != X86_IMM_FRAMEENT) {
+	if (attr->addr.immediate.kind != X86_IMM_FRAMEENT) {
 		assert(get_ia32_frame_use(node) == IA32_FRAME_USE_NONE);
 		return;
 	}

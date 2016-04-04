@@ -212,16 +212,6 @@ static bool imm64s_equal(const amd64_imm64_t *const imm0,
 	return imm0->offset == imm1->offset && imm0->entity == imm1->entity;
 }
 
-static bool amd64_addrs_equal(const amd64_addr_t *const am0,
-                              const amd64_addr_t *const am1)
-{
-	return x86_imm32_equal(&am0->immediate, &am1->immediate)
-	    && am0->base_input == am1->base_input
-	    && am0->index_input == am1->index_input
-	    && am0->log_scale == am1->log_scale
-	    && am0->segment == am1->segment;
-}
-
 int amd64_attrs_equal(const ir_node *a, const ir_node *b)
 {
 	const amd64_attr_t *attr_a = get_amd64_attr_const(a);
@@ -234,7 +224,7 @@ int amd64_addr_attrs_equal(const ir_node *a, const ir_node *b)
 	const amd64_addr_attr_t *attr_a = get_amd64_addr_attr_const(a);
 	const amd64_addr_attr_t *attr_b = get_amd64_addr_attr_const(b);
 	return amd64_attrs_equal(a, b)
-	    && amd64_addrs_equal(&attr_a->addr, &attr_b->addr)
+	    && x86_addrs_equal(&attr_a->addr, &attr_b->addr)
 	    && attr_a->size == attr_b->size;
 }
 

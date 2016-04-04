@@ -39,7 +39,7 @@ static inline bool x86_addr_variant_has_index(x86_addr_variant_t const variant)
 }
 
 /**
- * The address mode data: Used to construct (memory) address modes.
+ * The address mode data: Used to match (memory) address mode patterns.
  */
 typedef struct x86_address_t {
 	ir_node    *base;            /**< value for base register (if any) */
@@ -62,6 +62,39 @@ typedef enum x86_create_am_flags_t {
 	/** Fold AM, even if the root node has two users. */
 	x86_create_am_double_use = 1U << 1,
 } x86_create_am_flags_t;
+
+typedef enum x86_segment_selector_t {
+	X86_SEGMENT_DEFAULT,
+	X86_SEGMENT_CS,
+	X86_SEGMENT_SS,
+	X86_SEGMENT_DS,
+	X86_SEGMENT_ES,
+	X86_SEGMENT_FS,
+	X86_SEGMENT_GS,
+} x86_segment_selector_t;
+
+/**
+ * Address mode data. Used as node attribute for nodes supporting address mode.
+ */
+typedef struct x86_addr_t {
+	x86_imm32_t immediate;
+	uint8_t     base_input;
+	uint8_t     index_input;
+	uint8_t     mem_input;
+	unsigned    log_scale : 2; /* 0, 1, 2, 3  (giving scale 1, 2, 4, 8) */
+	ENUMBF(x86_segment_selector_t) segment : 3;
+	ENUMBF(x86_addr_variant_t)     variant : 3;
+} x86_addr_t;
+
+static inline bool x86_addrs_equal(const x86_addr_t *const addr0,
+                                   const x86_addr_t *const addr1)
+{
+	return x86_imm32_equal(&addr0->immediate, &addr1->immediate)
+	    && addr0->base_input == addr1->base_input
+	    && addr0->index_input == addr1->index_input
+	    && addr0->log_scale == addr1->log_scale
+	    && addr0->segment == addr1->segment;
+}
 
 /**
  * Create an address mode for a given node.

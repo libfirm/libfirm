@@ -35,7 +35,7 @@ static void peephole_amd64_lea(ir_node *const node)
 
 	arch_register_t   const *const oreg = arch_get_irn_register_out(node, pn_amd64_lea_res);
 	amd64_addr_attr_t const *const attr = get_amd64_addr_attr_const(node);
-	amd64_addr_t      const *const addr = &attr->addr;
+	x86_addr_t        const *const addr = &attr->addr;
 	if (addr->variant == X86_ADDR_BASE) {
 		/* lea c(%r), %r -> add $c, %r */
 		ir_node *const base = get_irn_n(node, addr->base_input);

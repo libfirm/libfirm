@@ -421,7 +421,7 @@ static ir_node *make_lea_with_offset_entity(dbg_info *dbgi, ir_node *block,
                                             ir_node *base, ir_entity *offset)
 {
 	ir_node *lea_in[] = { base };
-	amd64_addr_t lea_addr = {
+	x86_addr_t lea_addr = {
 		.immediate = {
 			.entity = offset,
 			.kind   = X86_IMM_FRAMEENT,

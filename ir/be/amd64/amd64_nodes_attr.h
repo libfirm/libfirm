@@ -33,16 +33,6 @@ typedef enum amd64_insn_size_t {
 	INSN_SIZE_128,
 } amd64_insn_size_t;
 
-typedef enum amd64_segment_selector_t {
-	AMD64_SEGMENT_DEFAULT,
-	AMD64_SEGMENT_CS,
-	AMD64_SEGMENT_SS,
-	AMD64_SEGMENT_DS,
-	AMD64_SEGMENT_ES,
-	AMD64_SEGMENT_FS,
-	AMD64_SEGMENT_GS,
-} amd64_segment_selector_t;
-
 typedef enum amd64_op_mode_t {
 	AMD64_OP_NONE,
 	AMD64_OP_ADDR,
@@ -67,25 +57,15 @@ typedef struct amd64_imm64_t {
 	ENUMBF(x86_immediate_kind_t) kind : 8;
 } amd64_imm64_t;
 
-typedef struct amd64_addr_t {
-	x86_imm32_t immediate;
-	uint8_t     base_input;
-	uint8_t     index_input;
-	uint8_t     mem_input;
-	unsigned    log_scale : 2; /* 0, 1, 2, 3  (giving scale 1, 2, 4, 8) */
-	ENUMBF(amd64_segment_selector_t) segment : 3;
-	ENUMBF(x86_addr_variant_t)       variant : 3;
-} amd64_addr_t;
-
 typedef struct amd64_attr_t {
 	except_attr exc; /**< the exception attribute. MUST be the first one. */
 	amd64_op_mode_t op_mode;
 } amd64_attr_t;
 
 typedef struct amd64_addr_attr_t {
-	amd64_attr_t base;
+	amd64_attr_t              base;
 	ENUMBF(amd64_insn_size_t) size : 3;
-	amd64_addr_t addr;
+	x86_addr_t                addr;
 } amd64_addr_attr_t;
 
 typedef struct amd64_binop_addr_attr_t {

@@ -108,7 +108,7 @@ static void amd64_turn_back_am(ir_node *const node, arch_register_t const *const
 	ir_node           *block = get_nodes_block(node);
 	amd64_addr_attr_t *attr  = get_amd64_addr_attr(node);
 
-	amd64_addr_t new_addr = attr->addr;
+	x86_addr_t new_addr = attr->addr;
 	ir_node *load_in[3];
 	int      load_arity = 0;
 	x86_addr_variant_t variant = attr->addr.variant;
@@ -138,7 +138,7 @@ static void amd64_turn_back_am(ir_node *const node, arch_register_t const *const
 	new_in[1] = load_res;
 	set_irn_in(node, ARRAY_SIZE(new_in), new_in);
 	attr->base.op_mode = AMD64_OP_REG_REG;
-	attr->addr = (amd64_addr_t) {
+	attr->addr = (x86_addr_t) {
 		.base_input = 0,
 		.variant    = X86_ADDR_REG,
 	};
@@ -163,7 +163,7 @@ static bool amd64_handle_2addr(ir_node *const node, arch_register_req_t const *c
 
 	amd64_attr_t const *const attr = get_amd64_attr_const(node);
 	if (attr->op_mode == AMD64_OP_REG_ADDR) {
-		amd64_addr_t const *const addr = &get_amd64_addr_attr_const(node)->addr;
+		x86_addr_t const *const addr = &get_amd64_addr_attr_const(node)->addr;
 		if ((x86_addr_variant_has_base( addr->variant) && arch_get_irn_register_in(node, addr->base_input)  == out_reg) ||
 		    (x86_addr_variant_has_index(addr->variant) && arch_get_irn_register_in(node, addr->index_input) == out_reg)) {
 			amd64_turn_back_am(node, out_reg);

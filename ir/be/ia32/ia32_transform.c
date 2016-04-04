@@ -883,8 +883,9 @@ static void set_address(ir_node *node, const x86_address_t *addr)
 {
 	ia32_attr_t *const attr = get_ia32_attr(node);
 	attr->addr.immediate = addr->imm;
-	set_ia32_am_scale(node, addr->scale);
-	set_ia32_am_tls_segment(node, addr->tls_segment);
+	attr->addr.log_scale = addr->scale;
+	if (addr->tls_segment)
+		attr->addr.segment = X86_SEGMENT_GS;
 	if (addr->imm.kind == X86_IMM_FRAMEENT)
 		set_ia32_frame_use(node, IA32_FRAME_USE_AUTO);
 }
@@ -2994,7 +2995,8 @@ static ir_node *gen_Switch(ir_node *node)
 		set_ia32_op_type(switchjmp, ia32_Normal);
 		set_ia32_ls_mode(switchjmp, ia32_mode_gp);
 	}
-	set_ia32_am_scale(table_am, 2);
+	ia32_attr_t *attr = get_ia32_attr(table_am);
+	attr->addr.log_scale = 2;
 	set_ia32_op_type(table_am, ia32_AddrModeS);
 	set_ia32_ls_mode(table_am, ia32_mode_gp);
 	set_am_const_entity(table_am, entity);
@@ -3409,9 +3411,9 @@ typedef struct setcc_transform {
 	unsigned             num_steps;
 	x86_condition_code_t cc;
 	struct {
-		enum setcc_transform_insn  transform;
-		long val;
-		int  scale;
+		enum setcc_transform_insn transform;
+		int32_t                   val;
+		unsigned                  log_scale;
 	} steps[4];
 } setcc_transform_t;
 
@@ -3490,37 +3492,37 @@ static void find_const_transform(x86_condition_code_t cc,
 			if (step > 0 && res->steps[step - 1].transform == SETCC_TR_ADD)
 				--step;
 			res->steps[step].transform = SETCC_TR_LEAxx;
-			res->steps[step].scale     = 3; /* (a << 3) + a */
+			res->steps[step].log_scale = 3; /* (a << 3) + a */
 			break;
 		case 8:
 			if (step > 0 && res->steps[step - 1].transform == SETCC_TR_ADD)
 				--step;
 			res->steps[step].transform = res->steps[step].val == 0 ? SETCC_TR_SHL : SETCC_TR_LEA;
-			res->steps[step].scale     = 3; /* (a << 3) */
+			res->steps[step].log_scale = 3; /* (a << 3) */
 			break;
 		case 5:
 			if (step > 0 && res->steps[step - 1].transform == SETCC_TR_ADD)
 				--step;
 			res->steps[step].transform = SETCC_TR_LEAxx;
-			res->steps[step].scale     = 2; /* (a << 2) + a */
+			res->steps[step].log_scale = 2; /* (a << 2) + a */
 			break;
 		case 4:
 			if (step > 0 && res->steps[step - 1].transform == SETCC_TR_ADD)
 				--step;
 			res->steps[step].transform = res->steps[step].val == 0 ? SETCC_TR_SHL : SETCC_TR_LEA;
-			res->steps[step].scale     = 2; /* (a << 2) */
+			res->steps[step].log_scale = 2; /* (a << 2) */
 			break;
 		case 3:
 			if (step > 0 && res->steps[step - 1].transform == SETCC_TR_ADD)
 				--step;
 			res->steps[step].transform = SETCC_TR_LEAxx;
-			res->steps[step].scale     = 1; /* (a << 1) + a */
+			res->steps[step].log_scale = 1; /* (a << 1) + a */
 			break;
 		case 2:
 			if (step > 0 && res->steps[step - 1].transform == SETCC_TR_ADD)
 				--step;
 			res->steps[step].transform = res->steps[step].val == 0 ? SETCC_TR_SHL : SETCC_TR_LEA;
-			res->steps[step].scale     = 1; /* (a << 1) */
+			res->steps[step].log_scale = 1; /* (a << 1) */
 			break;
 		case 1:
 			res->num_steps = step;
@@ -3536,7 +3538,7 @@ static void find_const_transform(x86_condition_code_t cc,
 				assert(val >= 0);
 
 				res->steps[step].transform = SETCC_TR_SHL;
-				res->steps[step].scale     = val;
+				res->steps[step].log_scale = val;
 			}
 		}
 		++step;
@@ -3628,14 +3630,14 @@ static ir_node *gen_Mux(ir_node *node)
 
 			ir_entity *array = ia32_create_const_array(mux_false, mux_true,
 			                                           &new_mode);
-			unsigned scale;
+			unsigned log_scale;
 			if (new_mode == ia32_mode_float32) {
-				scale = 2;
+				log_scale = 2;
 			} else if (new_mode == ia32_mode_float64) {
-				scale = 3;
+				log_scale = 3;
 			} else if (new_mode == x86_mode_E) {
 				/* arg, shift 16 NOT supported */
-				scale = 3;
+				log_scale = 3;
 				new_node = new_bd_ia32_Lea(dbgi, new_block, new_node, new_node);
 			} else {
 				panic("unsupported constant size");
@@ -3651,7 +3653,7 @@ static ir_node *gen_Mux(ir_node *node)
 					.base   = get_global_base(irg),
 					.index  = new_node,
 					.mem    = nomem,
-					.scale  = scale,
+					.scale  = log_scale,
 				},
 				.ls_mode     = new_mode,
 				.mem_proj    = nomem,
@@ -3718,34 +3720,41 @@ static ir_node *gen_Mux(ir_node *node)
 			new_node = node;
 			for (unsigned step = res.num_steps; step-- != 0;) {
 				switch (res.steps[step].transform) {
-				case SETCC_TR_ADD:
+				case SETCC_TR_ADD: {
 					new_node = new_bd_ia32_Lea(dbgi, new_block, new_node, noreg_GP);
-					add_ia32_am_offs_int(new_node, res.steps[step].val);
+					ia32_attr_t *const attr = get_ia32_attr(new_node);
+					attr->addr.immediate.offset = res.steps[step].val;
 					SET_IA32_ORIG_NODE(new_node, node);
 					continue;
+				}
 
 				case SETCC_TR_ADDxx:
 					new_node = new_bd_ia32_Lea(dbgi, new_block, new_node, new_node);
 					SET_IA32_ORIG_NODE(new_node, node);
 					continue;
 
-				case SETCC_TR_LEA:
+				case SETCC_TR_LEA: {
 					new_node = new_bd_ia32_Lea(dbgi, new_block, noreg_GP, new_node);
-					set_ia32_am_scale(new_node, res.steps[step].scale);
-					set_ia32_am_offs_int(new_node, res.steps[step].val);
+					ia32_attr_t *const attr = get_ia32_attr(new_node);
+					attr->addr.log_scale = res.steps[step].log_scale;
+					attr->addr.immediate.offset = res.steps[step].val;
 					SET_IA32_ORIG_NODE(new_node, node);
 					continue;
+				}
 
-				case SETCC_TR_LEAxx:
+				case SETCC_TR_LEAxx: {
 					new_node = new_bd_ia32_Lea(dbgi, new_block, new_node, new_node);
-					set_ia32_am_scale(new_node, res.steps[step].scale);
-					set_ia32_am_offs_int(new_node, res.steps[step].val);
+					ia32_attr_t *const attr = get_ia32_attr(new_node);
+					attr->addr.log_scale = res.steps[step].log_scale;
+					attr->addr.immediate.offset = res.steps[step].val;
 					SET_IA32_ORIG_NODE(new_node, node);
 					continue;
+				}
 
 				case SETCC_TR_SHL: {
 					ir_graph *const irg = get_irn_irg(new_block);
-					ir_node  *const imm = ia32_create_Immediate(irg, res.steps[step].scale);
+					ir_node  *const imm
+						= ia32_create_Immediate(irg, res.steps[step].log_scale);
 					SET_IA32_ORIG_NODE(imm, node);
 					new_node = new_bd_ia32_Shl(dbgi, new_block, new_node, imm);
 					SET_IA32_ORIG_NODE(new_node, node);
@@ -3930,7 +3939,8 @@ static void store_gp(dbg_info *dbgi, ia32_address_mode_t *am, ir_node *block,
 
 		set_irn_pinned(zero_store, false);
 		set_ia32_op_type(zero_store, ia32_AddrModeD);
-		add_ia32_am_offs_int(zero_store, 4);
+		ia32_attr_t *const attr = get_ia32_attr(zero_store);
+		attr->addr.immediate.offset = 4;
 		set_ia32_ls_mode(zero_store, ia32_mode_gp);
 		arch_add_irn_flags(zero_store, arch_irn_flag_spill);
 		set_ia32_frame_use(zero_store, IA32_FRAME_USE_64BIT);
@@ -4541,7 +4551,8 @@ static ir_node *gen_ia32_l_LLtoFloat(ir_node *node)
 	arch_add_irn_flags(store_high, arch_irn_flag_spill);
 	force_int_stackent(store_low, mode_Ls);
 	force_int_stackent(store_high, mode_Ls);
-	add_ia32_am_offs_int(store_high, 4);
+	ia32_attr_t *const attr_high = get_ia32_attr(store_high);
+	attr_high->addr.immediate.offset = 4;
 
 	ir_node *in[2] = { mem_low, mem_high };
 	ir_node *sync = new_rd_Sync(dbgi, block, ARRAY_SIZE(in), in);
@@ -4631,7 +4642,8 @@ static ir_node *gen_Proj_l_FloattoLL(ir_node *node)
 	force_int_stackent(load, mode_Ls);
 
 	if (pn == pn_ia32_l_FloattoLL_res_high) {
-		add_ia32_am_offs_int(load, 4);
+		ia32_attr_t *const attr = get_ia32_attr(load);
+		attr->addr.immediate.offset = 4;
 	} else {
 		assert(pn == pn_ia32_l_FloattoLL_res_low);
 	}
@@ -4994,7 +5006,8 @@ static ir_node *gen_Call(ir_node *node)
 		if (is_aggregate_type(param_type)) {
 			/* Copy aggregate arguments into the callframe. */
 			ir_node *const lea = new_bd_ia32_Lea(dbgi, block, callframe, noreg_GP);
-			set_ia32_am_offs_int(lea, param->offset);
+			ia32_attr_t *const attr = get_ia32_attr(lea);
+			attr->addr.immediate.offset = param->offset;
 			set_ia32_ls_mode(lea, ia32_mode_gp);
 
 			ir_node *const new_value = be_transform_node(value);
@@ -5151,7 +5164,7 @@ static ir_node *create_frame_load(dbg_info *const dbgi, ir_node *const block,
 	set_ia32_op_type(load, ia32_AddrModeS);
 	set_ia32_ls_mode(load, ia32_mode_gp);
 	ia32_attr_t *const attr = get_ia32_attr(load);
-	attr->am_imm = imm;
+	attr->addr.immediate = imm;
 	return be_new_Proj(load, pn_ia32_Load_res);
 }
 
@@ -5319,7 +5332,8 @@ static ir_node *gen_ffs(ir_node *node)
 
 	/* add 1 */
 	ir_node *add = new_bd_ia32_Lea(dbgi, block, orn, noreg_GP);
-	add_ia32_am_offs_int(add, 1);
+	ia32_attr_t *const attr = get_ia32_attr(add);
+	attr->addr.immediate.offset = 1;
 	return add;
 }
 
@@ -5558,7 +5572,7 @@ static ir_node *gen_va_start(ir_node *node)
 
 		set_ia32_frame_use(ap, IA32_FRAME_USE_AUTO);
 		ia32_attr_t *const attr = get_ia32_attr(ap);
-		attr->am_imm = (x86_imm32_t){
+		attr->addr.immediate = (x86_imm32_t){
 			.kind   = X86_IMM_FRAMEENT,
 			.entity = current_cconv->va_start_addr,
 		};

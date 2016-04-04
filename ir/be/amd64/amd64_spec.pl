@@ -132,7 +132,7 @@ my $divop = {
 	out_reqs  => [ "rax", "flags", "mem", "rdx" ],
 	outs      => [ "res_div", "flags", "M", "res_mod" ],
 	attr_type => "amd64_addr_attr_t",
-	fixed     => "amd64_addr_t addr = { .base_input = 0, .variant = X86_ADDR_REG };\n"
+	fixed     => "x86_addr_t addr = { .base_input = 0, .variant = X86_ADDR_REG };\n"
 	            ."amd64_op_mode_t op_mode = AMD64_OP_REG;\n",
 	attr      => "amd64_insn_size_t size",
 };
@@ -148,7 +148,7 @@ my $mulop = {
 	out_reqs  => [ "rax", "flags", "mem", "rdx" ],
 	outs      => [ "res_low", "flags", "M", "res_high" ],
 	attr_type => "amd64_addr_attr_t",
-	attr      => "amd64_insn_size_t size, amd64_op_mode_t op_mode, amd64_addr_t addr",
+	attr      => "amd64_insn_size_t size, amd64_op_mode_t op_mode, x86_addr_t addr",
 };
 
 my $shiftop = {
@@ -169,7 +169,7 @@ my $unop = {
 	attr_type => "amd64_addr_attr_t",
 	attr      => "amd64_insn_size_t size",
 	fixed     => "amd64_op_mode_t op_mode = AMD64_OP_REG;\n"
-	            ."amd64_addr_t addr = { .base_input = 0, .variant = X86_ADDR_REG };",
+	            ."x86_addr_t addr = { .base_input = 0, .variant = X86_ADDR_REG };",
 };
 
 my $unop_out = {
@@ -178,7 +178,7 @@ my $unop_out = {
 	out_reqs  => [ "gp", "flags", "mem" ],
 	outs      => [ "res", "flags", "M" ],
 	attr_type => "amd64_addr_attr_t",
-	attr      => "amd64_insn_size_t size, amd64_op_mode_t op_mode, amd64_addr_t addr",
+	attr      => "amd64_insn_size_t size, amd64_op_mode_t op_mode, x86_addr_t addr",
 };
 
 my $binopx = {
@@ -207,7 +207,7 @@ my $cvtop2x = {
 	out_reqs  => [ "xmm", "none", "mem" ],
 	outs      => [ "res", "none", "M" ],
 	attr_type => "amd64_addr_attr_t",
-	attr      => "amd64_insn_size_t size, amd64_op_mode_t op_mode, amd64_addr_t addr",
+	attr      => "amd64_insn_size_t size, amd64_op_mode_t op_mode, x86_addr_t addr",
 };
 
 my $cvtopx2i = {
@@ -216,7 +216,7 @@ my $cvtopx2i = {
 	out_reqs  => [ "gp", "none", "mem" ],
 	outs      => [ "res", "none", "M" ],
 	attr_type => "amd64_addr_attr_t",
-	attr      => "amd64_insn_size_t size, amd64_op_mode_t op_mode, amd64_addr_t addr",
+	attr      => "amd64_insn_size_t size, amd64_op_mode_t op_mode, x86_addr_t addr",
 };
 
 my $movopx = {
@@ -225,7 +225,7 @@ my $movopx = {
 	outs      => [ "res", "none", "M" ],
 	out_reqs  => [ "xmm", "none", "mem" ],
 	attr_type => "amd64_addr_attr_t",
-	attr      => "amd64_op_mode_t op_mode, amd64_addr_t addr",
+	attr      => "amd64_op_mode_t op_mode, x86_addr_t addr",
 };
 
 my $x87const = {
@@ -275,7 +275,7 @@ push_am => {
 	out_reqs  => [ "rsp:I", "mem" ],
 	outs      => [ "stack", "M" ],
 	attr_type => "amd64_addr_attr_t",
-	attr      => "amd64_insn_size_t size, amd64_addr_t addr",
+	attr      => "amd64_insn_size_t size, x86_addr_t addr",
 	fixed     => "amd64_op_mode_t op_mode = AMD64_OP_ADDR;\n",
 	emit      => "push%M %A",
 },
@@ -298,7 +298,7 @@ pop_am => {
 	out_reqs  => [ "rsp:I", "mem" ],
 	outs      => [ "stack", "M" ],
 	attr_type => "amd64_addr_attr_t",
-	attr      => "amd64_insn_size_t size, amd64_addr_t addr",
+	attr      => "amd64_insn_size_t size, x86_addr_t addr",
 	fixed     => "amd64_op_mode_t op_mode = AMD64_OP_ADDR;\n",
 	emit      => "pop%M %A",
 },
@@ -432,7 +432,7 @@ movs => {
 	out_reqs  => [ "gp", "none", "mem" ],
 	outs      => [ "res", "unused", "M" ],
 	attr_type => "amd64_addr_attr_t",
-	attr      => "amd64_insn_size_t size, amd64_op_mode_t op_mode, amd64_addr_t addr",
+	attr      => "amd64_insn_size_t size, amd64_op_mode_t op_mode, x86_addr_t addr",
 	emit      => "movs%Mq %AM, %^D0",
 },
 
@@ -442,7 +442,7 @@ mov_gp => {
 	out_reqs  => [ "gp", "none", "mem" ],
 	outs      => [ "res", "unused", "M" ],
 	attr_type => "amd64_addr_attr_t",
-	attr      => "amd64_insn_size_t size, amd64_op_mode_t op_mode, amd64_addr_t addr",
+	attr      => "amd64_insn_size_t size, amd64_op_mode_t op_mode, x86_addr_t addr",
 },
 
 ijmp => {
@@ -452,7 +452,7 @@ ijmp => {
 	out_reqs  => [ "exec", "none", "mem" ],
 	outs      => [ "X", "unused", "M" ],
 	attr_type => "amd64_addr_attr_t",
-	attr      => "amd64_insn_size_t size, amd64_op_mode_t op_mode, amd64_addr_t addr",
+	attr      => "amd64_insn_size_t size, amd64_op_mode_t op_mode, x86_addr_t addr",
 	emit      => "jmp %*AM",
 },
 
@@ -504,7 +504,7 @@ lea => {
 	outs      => [ "res" ],
 	out_reqs  => [ "gp" ],
 	attr_type => "amd64_addr_attr_t",
-	attr      => "amd64_insn_size_t size, amd64_addr_t addr",
+	attr      => "amd64_insn_size_t size, x86_addr_t addr",
 	fixed     => "amd64_op_mode_t op_mode = AMD64_OP_ADDR;\n",
 	emit      => "lea%M %A, %D0",
 },
@@ -538,7 +538,7 @@ jmp_switch => {
 	in_reqs   => "...",
 	out_reqs  => "...",
 	attr_type => "amd64_switch_jmp_attr_t",
-	attr      => "amd64_op_mode_t op_mode, const amd64_addr_t *addr, const ir_switch_table *table, ir_entity *table_entity",
+	attr      => "amd64_op_mode_t op_mode, const x86_addr_t *addr, const ir_switch_table *table, ir_entity *table_entity",
 },
 
 call => {
@@ -586,7 +586,7 @@ divs => {
 
 movs_xmm => {
 	template => $movopx,
-	attr     => "amd64_insn_size_t size, amd64_op_mode_t op_mode, amd64_addr_t addr",
+	attr     => "amd64_insn_size_t size, amd64_op_mode_t op_mode, x86_addr_t addr",
 	emit     => "movs%MX %AM, %D0",
 },
 
@@ -643,7 +643,7 @@ movd_xmm_gp => {
 	in_reqs   => [ "xmm" ],
 	out_reqs  => [ "gp" ],
 	attr_type => "amd64_addr_attr_t",
-	attr      => "amd64_insn_size_t size, amd64_op_mode_t op_mode, amd64_addr_t addr",
+	attr      => "amd64_insn_size_t size, amd64_op_mode_t op_mode, x86_addr_t addr",
 	emit      => "movd %S0, %D0"
 },
 
@@ -654,7 +654,7 @@ movd_gp_xmm => {
 	in_reqs   => [ "gp" ],
 	out_reqs  => [ "xmm" ],
 	attr_type => "amd64_addr_attr_t",
-	attr      => "amd64_insn_size_t size, amd64_op_mode_t op_mode, amd64_addr_t addr",
+	attr      => "amd64_insn_size_t size, amd64_op_mode_t op_mode, x86_addr_t addr",
 	emit      => "movd %S0, %D0"
 },
 
@@ -667,7 +667,7 @@ cvtss2sd => {
 
 cvtsd2ss => {
 	template => $cvtop2x,
-	attr     => "amd64_op_mode_t op_mode, amd64_addr_t addr",
+	attr     => "amd64_op_mode_t op_mode, x86_addr_t addr",
 	fixed    => "amd64_insn_size_t size = INSN_SIZE_64;\n",
 	emit     => "cvtsd2ss %AM, %^D0",
 },
@@ -778,7 +778,7 @@ fld => {
 	out_reqs  => [ "x87", "none", "mem" ],
 	outs      => [ "res", "unused", "M" ],
 	attr_type => "amd64_x87_addr_attr_t",
-	attr      => "amd64_insn_size_t size, amd64_op_mode_t op_mode, amd64_addr_t addr",
+	attr      => "amd64_insn_size_t size, amd64_op_mode_t op_mode, x86_addr_t addr",
 	emit      => "fld%FM %AM",
 },
 
@@ -790,7 +790,7 @@ fild => {
 	out_reqs  => [ "x87", "none", "mem" ],
 	outs      => [ "res", "unused", "M" ],
 	attr_type => "amd64_x87_addr_attr_t",
-	attr      => "amd64_insn_size_t size, amd64_op_mode_t op_mode, amd64_addr_t addr",
+	attr      => "amd64_insn_size_t size, amd64_op_mode_t op_mode, x86_addr_t addr",
 	emit      => "fild%M %AM",
 },
 

@@ -85,16 +85,6 @@ typedef enum ia32_frame_use_t {
 	IA32_FRAME_USE_AUTO,
 } ia32_frame_use_t;
 
-typedef struct {
-	x86_imm32_t immediate;
-	uint8_t     base_input;
-	uint8_t     index_input;
-	uint8_t     mem_input;
-	unsigned    log_scale : 2; /* 0, 1, 2, 3  (giving scale 1, 2, 4, 8) */
-	//ENUMBF(amd64_segment_selector_t) segment : 3;
-	ENUMBF(x86_addr_variant_t)       variant : 3;
-} x86_addr_t;
-
 /**
  * The generic ia32 attributes. Every node has them.
  */
@@ -104,9 +94,7 @@ struct ia32_attr_t {
 
 	ENUMBF(ia32_op_type_t) tp:2;          /**< Indicator of used address mode. */
 	unsigned am_arity:2;            /**< Indicates the address mode type supported by this node. */
-	unsigned am_scale:2;            /**< The address mode scale for index register. */
 
-	unsigned am_tls_segment:1;      /**< addresses are relative to TLS */
 	ENUMBF(ia32_frame_use_t) frame_use:2; /**< Whether an entity on the frame is used and its size. */
 	unsigned has_except_label:1;        /**< Set if this node needs a label because of possible exception. */
 

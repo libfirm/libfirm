@@ -457,7 +457,7 @@ static void peephole_ia32_Test(ir_node *node)
 				delta = 3;
 adjust_test:;
 				ia32_attr_t *const attr = get_ia32_attr(node);
-				attr->am_imm.offset += delta;
+				attr->addr.immediate.offset += delta;
 				set_test_imm(node, offset >> (8 * delta));
 				goto set_mode_low;
 			}
@@ -545,7 +545,8 @@ static void peephole_IncSP_Store_to_push(ir_node *irn)
 		if (!is_ia32_NoReg_GP(get_irn_n(node, n_ia32_index)))
 			break;
 
-		int offset = get_ia32_am_offs_int(node);
+		ia32_attr_t const *const attr   = get_ia32_attr_const(node);
+		int32_t            const offset = attr->addr.immediate.offset;
 		/* we should NEVER access uninitialized stack BELOW the current SP */
 		assert(offset >= 0);
 
@@ -667,7 +668,8 @@ static void peephole_Load_IncSP_to_pop(ir_node *irn)
 		if (!is_ia32_NoReg_GP(get_irn_n(node, n_ia32_index)))
 			break;
 
-		int offset = get_ia32_am_offs_int(node);
+		ia32_attr_t const *const attr   = get_ia32_attr_const(node);
+		int32_t            const offset = attr->addr.immediate.offset;
 		/* we should NEVER access uninitialized stack BELOW the current SP */
 		assert(offset >= 0);
 
@@ -862,7 +864,9 @@ static void peephole_ia32_Const(ir_node *node)
 
 static bool is_disp_const(ir_node const *const node, int32_t const val)
 {
-	return !get_ia32_am_ent(node) && get_ia32_am_offs_int(node) == val;
+	ia32_attr_t const *const attr = get_ia32_attr_const(node);
+	x86_imm32_t const *const imm  = &attr->addr.immediate;
+	return imm->entity == NULL && imm->offset == val;
 }
 
 static ir_node *make_add(ir_node *const node, ir_node *const l, ir_node *const r)
@@ -883,7 +887,8 @@ static ir_node *make_add(ir_node *const node, ir_node *const l, ir_node *const r
 static void peephole_ia32_Lea(ir_node *node)
 {
 	/* Frame entities should already be expressed in the offsets. */
-	assert(get_ia32_attr_const(node)->am_imm.kind != X86_IMM_FRAMEENT);
+	ia32_attr_t *const attr = get_ia32_attr(node);
+	assert(attr->addr.immediate.kind != X86_IMM_FRAMEENT);
 
 	/* Simplify leas for shorter opcode:
 	 * BISC
@@ -903,7 +908,7 @@ static void peephole_ia32_Lea(ir_node *node)
 	arch_register_t const *const breg  = is_ia32_NoReg_GP(base) ? NULL : arch_get_irn_register(base);
 	ir_node               *const idx   = get_irn_n(node, n_ia32_Lea_index);
 	arch_register_t const *const ireg  = is_ia32_NoReg_GP(idx)  ? NULL : arch_get_irn_register(idx);
-	unsigned               const scale = get_ia32_am_scale(node);
+	unsigned               const scale = attr->addr.log_scale;
 	arch_register_t const *const oreg  = arch_get_irn_register_out(node, pn_ia32_Lea_res);
 #ifdef DEBUG_libfirm
 	if (!breg && !ireg)
@@ -959,7 +964,8 @@ static void peephole_ia32_Lea(ir_node *node)
 				/* lea c(%b), %b -> add $c, %b */
 				ir_graph          *const irg  = get_irn_irg(node);
 				ia32_attr_t const *const attr = get_ia32_attr_const(node);
-				ir_node           *const imm  = ia32_create_Immediate_full(irg, &attr->am_imm);
+				ir_node           *const imm
+					= ia32_create_Immediate_full(irg, &attr->addr.immediate);
 				res = make_add(node, base, imm);
 exchange:
 				arch_set_irn_register(res, oreg);
@@ -972,7 +978,7 @@ exchange:
 	if (!breg && scale == 1) {
 		/* lea c(, %i, 2), %d -> lea c(%i, %i), %d */
 		set_irn_n(node, n_ia32_Lea_base, idx);
-		set_ia32_am_scale(node, 0);
+		attr->addr.log_scale = 0;
 	}
 }
 

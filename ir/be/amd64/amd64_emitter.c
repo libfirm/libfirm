@@ -263,7 +263,7 @@ static void amd64_emit_immediate32(bool const prefix,
 }
 
 static void amd64_emit_addr(const ir_node *const node,
-                            const amd64_addr_t *const addr)
+                            const x86_addr_t *const addr)
 {
 	int32_t            const offset  = addr->immediate.offset;
 	ir_entity         *const entity  = addr->immediate.entity;

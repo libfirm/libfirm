@@ -94,42 +94,6 @@ ia32_am_type_t get_ia32_am_support(const ir_node *node);
 void set_ia32_am_support(ir_node *node, ia32_am_type_t am_arity);
 
 /**
- * Gets the addressmode offset as long.
- */
-int32_t get_ia32_am_offs_int(const ir_node *node);
-
-/**
- * Sets the addressmode offset
- */
-void set_ia32_am_offs_int(ir_node *node, int32_t offset);
-
-void add_ia32_am_offs_int(ir_node *node, int32_t offset);
-
-/**
- * Returns the entity associated to addrmode.
- */
-ir_entity *get_ia32_am_ent(const ir_node *node);
-
-/**
- * Sets the entity associated to addrmode.
- */
-void set_ia32_am_ent(ir_node *node, ir_entity *sc);
-
-void set_ia32_am_tls_segment(ir_node *node, bool value);
-
-bool get_ia32_am_tls_segment(const ir_node *node);
-
-/**
- * Gets the addr mode const.
- */
-unsigned get_ia32_am_scale(const ir_node *node);
-
-/**
- * Sets the const for addr mode.
- */
-void set_ia32_am_scale(ir_node *node, unsigned scale);
-
-/**
  * copies all address-mode attributes from one node to the other
  */
 void ia32_copy_am_attrs(ir_node *to, const ir_node *from);
@@ -149,7 +113,8 @@ void clear_ia32_commutative(ir_node *node);
  */
 int is_ia32_commutative(const ir_node *node);
 
-static inline void set_ia32_frame_use(ir_node *const node, ia32_frame_use_t const val)
+static inline void set_ia32_frame_use(ir_node *const node,
+                                      ia32_frame_use_t const val)
 {
 	ia32_attr_t *const attr = get_ia32_attr(node);
 	if (attr->frame_use == val)
@@ -160,9 +125,9 @@ static inline void set_ia32_frame_use(ir_node *const node, ia32_frame_use_t cons
 	    || val == IA32_FRAME_USE_NONE);
 	attr->frame_use = val;
 	if (val != IA32_FRAME_USE_NONE) {
-		assert(attr->am_imm.kind == X86_IMM_VALUE ||
-		       attr->am_imm.kind == X86_IMM_FRAMEENT);
-		attr->am_imm.kind = X86_IMM_FRAMEENT;
+		assert(attr->addr.immediate.kind == X86_IMM_VALUE ||
+		       attr->addr.immediate.kind == X86_IMM_FRAMEENT);
+		attr->addr.immediate.kind = X86_IMM_FRAMEENT;
 	}
 }
 

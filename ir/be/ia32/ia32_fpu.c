@@ -102,7 +102,8 @@ static ir_node *create_fpu_mode_reload(void *const env, ir_node *const state, ir
 		ir_entity *const rounding_mode = spill ?
 			create_ent(&fpcw_round,    0xC7F, "_fpcw_round") :
 			create_ent(&fpcw_truncate, 0x37F, "_fpcw_truncate");
-		set_ia32_am_ent(reload, rounding_mode);
+		ia32_attr_t *const attr = get_ia32_attr(reload);
+		attr->addr.immediate.entity = rounding_mode;
 	} else {
 		ir_node       *mem;
 		ir_node *const frame = get_irg_frame(irg);

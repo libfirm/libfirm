@@ -364,14 +364,22 @@ static ir_node const *get_irn_n_reg(ir_node const *const node, int const pos)
  */
 static void ia32_emit_am(ir_node const *const node)
 {
-	if (get_ia32_am_tls_segment(node))
-		be_emit_cstring("%gs:");
+	ia32_attr_t const *const attr = get_ia32_attr_const(node);
+	switch (attr->addr.segment) {
+	case X86_SEGMENT_DEFAULT:
+		break;
+	case X86_SEGMENT_CS: be_emit_cstring("%cs:"); break;
+	case X86_SEGMENT_SS: be_emit_cstring("%ss:"); break;
+	case X86_SEGMENT_DS: be_emit_cstring("%ds:"); break;
+	case X86_SEGMENT_ES: be_emit_cstring("%es:"); break;
+	case X86_SEGMENT_FS: be_emit_cstring("%fs:"); break;
+	case X86_SEGMENT_GS: be_emit_cstring("%gs:"); break;
+	}
 
 	ir_node const *const base = get_irn_n_reg(node, n_ia32_base);
 	ir_node const *const idx  = get_irn_n_reg(node, n_ia32_index);
 
 	/* emit offset */
-	ia32_attr_t const *const attr = get_ia32_attr_const(node);
 	int32_t          const offset = attr->addr.immediate.offset;
 	ir_entity const *const entity = attr->addr.immediate.entity;
 	if (entity) {
@@ -401,9 +409,9 @@ static void ia32_emit_am(ir_node const *const node)
 			arch_register_t const *const reg = arch_get_irn_register(idx);
 			emit_register(reg, NULL);
 
-			int const scale = get_ia32_am_scale(node);
-			if (scale > 0)
-				be_emit_irprintf(",%d", 1 << scale);
+			unsigned const log_scale = attr->addr.log_scale;
+			if (log_scale > 0)
+				be_emit_irprintf(",%d", 1 << log_scale);
 		}
 		be_emit_char(')');
 	}

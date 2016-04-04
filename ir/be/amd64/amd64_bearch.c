@@ -67,7 +67,7 @@ static ir_node *create_push(ir_node *node, ir_node *schedpoint, ir_node *sp,
 	ir_graph *irg   = get_irn_irg(node);
 	ir_node  *frame = get_irg_frame(irg);
 
-	amd64_addr_t addr = {
+	x86_addr_t addr = {
 		.immediate = {
 			.kind   = X86_IMM_FRAMEENT,
 			.entity = ent,
@@ -89,7 +89,7 @@ static ir_node *create_pop(ir_node *node, ir_node *schedpoint, ir_node *sp,
 	ir_graph *irg   = get_irn_irg(node);
 	ir_node  *frame = get_irg_frame(irg);
 
-	amd64_addr_t addr = {
+	x86_addr_t addr = {
 		.immediate = {
 			.kind   = X86_IMM_FRAMEENT,
 			.entity = ent,
@@ -557,7 +557,7 @@ static void introduce_prologue_epilogue(ir_graph *irg, bool omit_fp)
 }
 
 static bool node_has_sp_base(ir_node const *const node,
-                             amd64_addr_t const *const addr)
+                             x86_addr_t const *const addr)
 {
 	if (!x86_addr_variant_has_base(addr->variant))
 		return false;
@@ -572,7 +572,7 @@ static void amd64_determine_frameoffset(ir_node *node, int sp_offset)
 	 || !amd64_has_addr_attr(get_amd64_attr_const(node)->op_mode))
 		return;
 
-	amd64_addr_t *const addr = &get_amd64_addr_attr(node)->addr;
+	x86_addr_t *const addr = &get_amd64_addr_attr(node)->addr;
 	if (addr->immediate.kind == X86_IMM_FRAMEENT) {
 		addr->immediate.offset += get_entity_offset(addr->immediate.entity);
 		addr->immediate.entity  = NULL;

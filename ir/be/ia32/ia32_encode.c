@@ -163,8 +163,8 @@ static ir_node const *get_irn_n_reg(ir_node const *const node, int const pos)
 static void enc_mod_am(unsigned reg, const ir_node *node)
 {
 	ia32_attr_t const *const attr = get_ia32_attr_const(node);
-	ir_entity const *const entity = attr->am_imm.entity;
-	int32_t          const offset = attr->am_imm.offset;
+	ir_entity const *const entity = attr->addr.immediate.entity;
+	int32_t          const offset = attr->addr.immediate.offset;
 
 	/* set the mod part depending on displacement */
 	unsigned modrm    = 0;
@@ -202,10 +202,10 @@ static void enc_mod_am(unsigned reg, const ir_node *node)
 	ir_node const *const idx     = get_irn_n_reg(node, n_ia32_index);
 	if (idx) {
 		arch_register_t const *const reg_index = arch_get_irn_register(idx);
-		unsigned               const scale     = get_ia32_am_scale(node);
+		unsigned               const log_scale = attr->addr.log_scale;
 		/* R/M set to ESP means SIB in 32bit mode. */
 		modrm   |= ENC_RM(0x04, REG_LOW);
-		sib      = ENC_SIB(scale, reg_index->encoding, base_enc);
+		sib      = ENC_SIB(log_scale, reg_index->encoding, base_enc);
 		emitsib = true;
 	} else if (base_enc == 0x04) {
 		/* for the above reason we are forced to emit a SIB when base is ESP.
@@ -235,7 +235,7 @@ static void enc_mod_am(unsigned reg, const ir_node *node)
 	if (emitoffs == 8) {
 		be_emit8((unsigned) offset);
 	} else if (emitoffs == 32) {
-		enc_relocation(&attr->am_imm);
+		enc_relocation(&attr->addr.immediate);
 	}
 }
 
@@ -769,7 +769,7 @@ static void enc_load(const ir_node *node)
 			   as 0xA1 [offset] */
 			be_emit8(0xA1);
 			ia32_attr_t const *const attr = get_ia32_attr_const(node);
-			enc_relocation(&attr->am_imm);
+			enc_relocation(&attr->addr.immediate);
 			return;
 		}
 	}
@@ -808,7 +808,7 @@ static void enc_store(const ir_node *node)
 					be_emit8(0xA3);
 				}
 				ia32_attr_t const *const attr = get_ia32_attr_const(node);
-				enc_relocation(&attr->am_imm);
+				enc_relocation(&attr->addr.immediate);
 				return;
 			}
 		}
