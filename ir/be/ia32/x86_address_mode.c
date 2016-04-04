@@ -24,6 +24,7 @@
 #include "irgwalk.h"
 #include "irnode_t.h"
 #include "irprintf.h"
+#include "util.h"
 
 static bitset_t *non_address_mode_nodes;
 
@@ -490,6 +491,7 @@ static void emit_register(arch_register_t const *const reg)
 {
 	be_emit_char('%');
 	be_emit_string(reg->name);
+	assert(!streq(reg->name, "gp_NOREG"));
 }
 
 void x86_emit_addr(ir_node const *const node, x86_addr_t const *const addr)

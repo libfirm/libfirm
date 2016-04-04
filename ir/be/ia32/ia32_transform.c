@@ -57,6 +57,7 @@ static x86_cconv_t          *current_cconv;
 static be_stack_env_t        stack_env;
 static ir_heights_t         *heights;
 static x86_immediate_kind_t  lconst_imm_kind;
+static x86_addr_variant_t    lconst_variant;
 static ir_node              *initial_va_list;
 
 /** we don't have a concept of aliasing registers, so enumerate them
@@ -337,6 +338,7 @@ static void set_am_const_entity(ir_node *node, ir_entity *entity)
 		.kind   = lconst_imm_kind,
 		.entity = entity,
 	};
+	attr->addr.variant = lconst_variant;
 }
 
 /**
@@ -435,7 +437,7 @@ static ir_node *gen_Const(ir_node *node)
 						.kind   = lconst_imm_kind,
 						.entity = floatent,
 					},
-					.variant = X86_ADDR_BASE,
+					.variant = lconst_variant,
 				};
 				set_ia32_op_type(load, ia32_AddrModeS);
 				arch_add_irn_flags(load, arch_irn_flag_rematerializable);
@@ -867,7 +869,7 @@ static void build_address(ia32_address_mode_t *am, ir_node *node,
 			.kind   = lconst_imm_kind,
 			.entity = entity,
 		};
-		addr->variant     = X86_ADDR_BASE,
+		addr->variant     = lconst_variant,
 		adjust_relocation(&addr->imm);
 		addr->tls_segment = false;
 		am->ls_mode       = get_type_mode(get_entity_type(entity));
@@ -3029,7 +3031,8 @@ static ir_node *gen_Switch(ir_node *node)
 			.entity = entity,
 		},
 		.log_scale = 2,
-		.variant   = X86_ADDR_BASE_INDEX,
+		.variant   = be_options.pic_style != BE_PIC_NONE
+		           ? X86_ADDR_BASE_INDEX : X86_ADDR_INDEX,
 	};
 	set_ia32_op_type(table_am, ia32_AddrModeS);
 	set_ia32_ls_mode(table_am, ia32_mode_gp);
@@ -3699,7 +3702,7 @@ static ir_node *gen_Mux(ir_node *node)
 						.kind   = lconst_imm_kind,
 						.entity = array,
 					},
-					.variant = X86_ADDR_BASE_INDEX,
+					.variant = lconst_variant,
 					.base    = get_global_base(irg),
 					.index   = new_node,
 					.mem     = nomem,
@@ -4645,7 +4648,8 @@ static ir_node *gen_ia32_l_LLtoFloat(ir_node *node)
 
 		ia32_address_mode_t am = {
 			.addr = {
-				.variant = X86_ADDR_BASE_INDEX,
+				.variant = be_options.pic_style != BE_PIC_NONE
+						 ? X86_ADDR_BASE_INDEX : X86_ADDR_INDEX,
 				.base    = get_global_base(irg),
 				.index   = new_bd_ia32_Shr(dbgi, block, new_val_high, count),
 				.mem     = nomem,
@@ -5901,10 +5905,19 @@ void ia32_transform_graph(ir_graph *irg)
 	                         | IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 
 	switch (be_options.pic_style) {
-	case BE_PIC_NONE:       lconst_imm_kind = X86_IMM_ADDR;        break;
-	case BE_PIC_MACH_O:     lconst_imm_kind = X86_IMM_PICBASE_REL; break;
+	case BE_PIC_NONE:
+		lconst_variant  = X86_ADDR_JUST_IMM;
+		lconst_imm_kind = X86_IMM_ADDR;
+		break;
+	case BE_PIC_MACH_O:
+		lconst_variant  = X86_ADDR_BASE;
+		lconst_imm_kind = X86_IMM_PICBASE_REL;
+		break;
 	case BE_PIC_ELF_PLT:
-	case BE_PIC_ELF_NO_PLT: lconst_imm_kind = X86_IMM_GOTOFF;      break;
+	case BE_PIC_ELF_NO_PLT:
+		lconst_variant  = X86_ADDR_BASE;
+		lconst_imm_kind = X86_IMM_GOTOFF;
+		break;
 	}
 	/* fix get_eip mode ia32_pic sets it to mode_P */
 	ir_node *const get_eip = ia32_get_irg_data(irg)->get_eip;
