@@ -3600,7 +3600,10 @@ static ir_node *create_lea_add_c(dbg_info *const dbgi, ir_node *const block,
 	ir_node     *const lea  = new_bd_ia32_Lea(dbgi, block, base, noreg_GP);
 	ia32_attr_t *const attr = get_ia32_attr(lea);
 	attr->addr = (x86_addr_t) {
-		.immediate.offset = offset,
+		.immediate = {
+			.kind   = X86_IMM_VALUE,
+			.offset = offset,
+		},
 		.variant          = X86_ADDR_BASE,
 	};
 	set_ia32_ls_mode(lea, ia32_mode_gp);
