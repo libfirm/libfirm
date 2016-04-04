@@ -121,6 +121,8 @@ static void sparc_sp_sim(ir_node *const node, stack_pointer_state_t *state)
 		attr->immediate_value = -(aligned - prev_offset);
 		state->align_padding  = aligned - new_offset;
 		state->offset         = aligned;
+	} else if (is_sparc_SubSP(node) || is_sparc_AddSP(node)) {
+		state->align_padding = 0;
 	} else if (is_sparc_RestoreZero(node)) {
 		state->offset        = 0;
 		state->align_padding = 0;
