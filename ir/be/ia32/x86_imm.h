@@ -17,6 +17,8 @@
 #include "compiler.h"
 #include "firm_types.h"
 
+extern char const *x86_pic_base_label;
+
 /** immediate/relocation types (see also ELF file format) */
 typedef enum x86_immediate_kind_t {
 	X86_IMM_VALUE,       /**< no relocation, just a value */
@@ -48,6 +50,10 @@ bool x86_match_immediate(x86_imm32_t *immediate, const ir_node *node,
 char const *x86_get_immediate_kind_str(x86_immediate_kind_t const kind);
 
 void x86_dump_imm32(x86_imm32_t const *imm, FILE *F);
+
+void x86_emit_imm32(x86_imm32_t const *imm);
+void x86_emit_relocation_no_offset(x86_immediate_kind_t kind,
+                                   ir_entity const *entity);
 
 static inline bool x86_imm32_equal(x86_imm32_t const *const imm0,
 								   x86_imm32_t const *const imm1)

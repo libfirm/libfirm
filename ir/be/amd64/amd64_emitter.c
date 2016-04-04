@@ -212,29 +212,6 @@ typedef enum amd64_emit_mod_t {
 } amd64_emit_mod_t;
 ENUM_BITSET(amd64_emit_mod_t)
 
-static void emit_relocation_no_offset(x86_immediate_kind_t const kind,
-                                      ir_entity const *const entity)
-{
-	be_gas_emit_entity(entity);
-	switch (kind) {
-	case X86_IMM_ADDR:
-	case X86_IMM_PCREL:
-		return;
-	case X86_IMM_GOTPCREL: be_emit_cstring("@GOTPCREL"); return;
-	case X86_IMM_PLT:      be_emit_cstring("@PLT");      return;
-	case X86_IMM_VALUE:
-	case X86_IMM_TLS_IE:
-	case X86_IMM_TLS_LE:
-	case X86_IMM_PICBASE_REL:
-	case X86_IMM_FRAMEENT:
-	case X86_IMM_FRAMEOFFSET:
-	case X86_IMM_GOT:
-	case X86_IMM_GOTOFF:
-		break;
-	}
-	panic("unexpected or invalid immediate kind");
-}
-
 static void amd64_emit_immediate64(const amd64_imm64_t *const imm)
 {
 	if (imm->kind == X86_IMM_VALUE) {
@@ -242,24 +219,9 @@ static void amd64_emit_immediate64(const amd64_imm64_t *const imm)
 		be_emit_irprintf("0x%" PRIX64, imm->offset);
 		return;
 	}
-	emit_relocation_no_offset(imm->kind, imm->entity);
+	x86_emit_relocation_no_offset(imm->kind, imm->entity);
 	if (imm->offset != 0)
 		be_emit_irprintf("%+" PRId64, imm->offset);
-}
-
-static void amd64_emit_immediate32(bool const prefix,
-                                   x86_imm32_t const *const imm)
-{
-	if (prefix)
-		be_emit_char('$');
-	if (imm->kind == X86_IMM_VALUE) {
-		assert(imm->entity == NULL);
-		be_emit_irprintf("%" PRId32, imm->offset);
-		return;
-	}
-	emit_relocation_no_offset(imm->kind, imm->entity);
-	if (imm->offset != 0)
-		be_emit_irprintf("%+" PRId32, imm->offset);
 }
 
 static void amd64_emit_addr(const ir_node *const node,
@@ -273,7 +235,7 @@ static void amd64_emit_addr(const ir_node *const node,
 	if (entity != NULL) {
 		assert(addr->immediate.kind != X86_IMM_VALUE);
 		assert(!is_frame_type(get_entity_owner(entity)));
-		emit_relocation_no_offset(addr->immediate.kind, entity);
+		x86_emit_relocation_no_offset(addr->immediate.kind, entity);
 		if (offset != 0)
 			be_emit_irprintf("%+" PRId32, offset);
 	} else if (offset != 0 || variant == X86_ADDR_JUST_IMM) {
@@ -316,7 +278,8 @@ static void amd64_emit_am(const ir_node *const node, bool indirect_star)
 	case AMD64_OP_REG_IMM: {
 		const amd64_binop_addr_attr_t *const binop_attr
 			= (const amd64_binop_addr_attr_t*)attr;
-		amd64_emit_immediate32(true, &binop_attr->u.immediate);
+		be_emit_char('$');
+		x86_emit_imm32(&binop_attr->u.immediate);
 		be_emit_cstring(", ");
 		goto emit_addr_reg;
 	}
@@ -339,7 +302,8 @@ static void amd64_emit_am(const ir_node *const node, bool indirect_star)
 	case AMD64_OP_ADDR_IMM: {
 		const amd64_binop_addr_attr_t *const binop_attr
 			= (const amd64_binop_addr_attr_t*)attr;
-		amd64_emit_immediate32(true, &binop_attr->u.immediate);
+		be_emit_char('$');
+		x86_emit_imm32(&binop_attr->u.immediate);
 		be_emit_cstring(", ");
 		goto emit_addr;
 	}
@@ -368,7 +332,7 @@ emit_addr_reg:
 		return;
 	}
 	case AMD64_OP_IMM32:
-		amd64_emit_immediate32(false, &attr->addr.immediate);
+		x86_emit_imm32(&attr->addr.immediate);
 		return;
 
 	case AMD64_OP_X87:
@@ -725,10 +689,11 @@ static void emit_amd64_asm_operand(ir_node const *const node, char const modifie
 		return;
 	}
 
-	case ASM_OP_IMMEDIATE: {
-		amd64_emit_immediate32(modifier != 'c', &op->u.imm32);
+	case ASM_OP_IMMEDIATE:
+		if (modifier != 'c')
+			be_emit_char('$');
+		x86_emit_imm32(&op->u.imm32);
 		return;
-	}
 	}
 	panic("invalid asm operand kind");
 }

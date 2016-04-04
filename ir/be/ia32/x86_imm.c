@@ -13,12 +13,16 @@
 #include <inttypes.h>
 
 #include "bediagnostic.h"
+#include "begnuas.h"
 #include "betranshlp.h"
+#include "beemitter.h"
 #include "irmode_t.h"
 #include "irnode_t.h"
 #include "irprintf.h"
 #include "panic.h"
 #include "tv_t.h"
+
+char const *x86_pic_base_label;
 
 static bool check_immediate_constraint(long val, char immediate_constraint_type)
 {
@@ -113,4 +117,49 @@ void x86_dump_imm32(x86_imm32_t const *const imm, FILE *const F)
 		fprintf(F, imm->entity != NULL ? "%+"PRId32 : "%"PRId32, imm->offset);
 	if (imm->kind != X86_IMM_VALUE && imm->kind != X86_IMM_ADDR)
 		fprintf(F, " [%s]", x86_get_immediate_kind_str(imm->kind));
+}
+
+void x86_emit_relocation_no_offset(x86_immediate_kind_t const kind,
+                                   ir_entity const *const entity)
+{
+	be_gas_emit_entity(entity);
+	switch (kind) {
+	case X86_IMM_ADDR:
+	case X86_IMM_PCREL:
+		return;
+	case X86_IMM_PICBASE_REL:
+		be_emit_char('-');
+		be_emit_string(x86_pic_base_label);
+		return;
+	char const *rstr;
+	case X86_IMM_GOTPCREL: rstr = "@GOTPCREL";  goto emit_str;
+	case X86_IMM_PLT:      rstr = "@PLT";       goto emit_str;
+	case X86_IMM_TLS_IE:   rstr = "@INDNTPOFF"; goto emit_str;
+	case X86_IMM_TLS_LE:   rstr = "@NTPOFF";    goto emit_str;
+	case X86_IMM_GOT:      rstr = "@GOT";       goto emit_str;
+	case X86_IMM_GOTOFF:   rstr = "@GOTOFF";    goto emit_str;
+	emit_str:
+		be_emit_string(rstr);
+		return;
+
+	case X86_IMM_VALUE:
+	case X86_IMM_FRAMEENT:
+	case X86_IMM_FRAMEOFFSET:
+		break;
+	}
+	panic("unexpected or invalid immediate kind");
+}
+
+void x86_emit_imm32(x86_imm32_t const *const imm)
+{
+	x86_immediate_kind_t const kind   = imm->kind;
+	int32_t              const offset = imm->offset;
+	if (kind == X86_IMM_VALUE) {
+		assert(imm->entity == NULL);
+		be_emit_irprintf("%"PRId32, (uint32_t)offset);
+	} else {
+		x86_emit_relocation_no_offset(kind, imm->entity);
+		if (offset != 0)
+			be_emit_irprintf("%+"PRId32, offset);
+	}
 }
