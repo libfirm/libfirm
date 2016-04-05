@@ -713,6 +713,7 @@ static void perform_address_matching(ir_node *ptr, int *arity,
 		get_entity_parameter_number(entity) == IR_VA_START_PARAMETER_NUMBER)
 		panic("perform_address_matching: Request for invalid parameter (va_start parameter)");
 
+	addr->segment   = X86_SEGMENT_DEFAULT;
 	addr->immediate = maddr.imm;
 	addr->log_scale = maddr.scale;
 	addr->variant   = variant;
