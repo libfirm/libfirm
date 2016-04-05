@@ -201,7 +201,7 @@ static ir_node *insert_dummy_phi(be_ssa_construction_env_t *env, ir_node *block)
 {
 	DBG((dbg, LEVEL_3, "\t...create phi at block %+F\n", block));
 
-	ir_node *const phi = be_new_Phi0(block, env->mode, env->phi_req);
+	ir_node *const phi = be_new_Phi0(block, env->phi_req);
 	sched_add_after(block, phi);
 	ARR_APP1(ir_node*, env->new_phis, phi);
 
@@ -396,11 +396,10 @@ void be_ssa_construction_destroy(be_ssa_construction_env_t *env)
 
 static void determine_phi_req(be_ssa_construction_env_t *env, ir_node *value)
 {
-	if (env->mode)
+	if (env->phi_req)
 		return;
 
 	const arch_register_req_t *req = arch_get_irn_register_req(value);
-	env->mode = get_irn_mode(value);
 	if (req->width == 1) {
 		env->phi_req = req->cls->class_req;
 	} else {

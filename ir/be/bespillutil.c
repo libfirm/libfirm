@@ -281,7 +281,7 @@ static void spill_phi(spill_env_t *env, spill_info_t *spillinfo)
 
 	/* build a new PhiM */
 	ir_node *const block = get_nodes_block(phi);
-	ir_node *const phim  = be_new_Phi0(block, mode_M, arch_memory_req);
+	ir_node *const phim  = be_new_Phi0(block, arch_memory_req);
 	sched_add_after(block, phim);
 
 	/* override or replace spills list... */

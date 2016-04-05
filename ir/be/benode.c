@@ -395,10 +395,10 @@ ir_node *be_new_Phi(ir_node *block, int n_ins, ir_node **ins, ir_mode *mode,
 	return optimize_node(phi);
 }
 
-ir_node *be_new_Phi0(ir_node *const block, ir_mode *const mode, arch_register_req_t const *const req)
+ir_node *be_new_Phi0(ir_node *const block, arch_register_req_t const *const req)
 {
 	ir_graph *const irg = get_irn_irg(block);
-	ir_node  *const phi = new_ir_node(NULL, irg, block, op_Phi, mode, 0, NULL);
+	ir_node  *const phi = new_ir_node(NULL, irg, block, op_Phi, req->cls->mode, 0, NULL);
 	struct obstack *const obst = be_get_be_obst(irg);
 	backend_info_t *const info = be_get_info(phi);
 	info->out_infos = NEW_ARR_DZ(reg_out_info_t, obst, 1);
