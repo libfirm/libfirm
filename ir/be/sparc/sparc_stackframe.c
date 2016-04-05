@@ -205,8 +205,8 @@ void sparc_layout_param_entities(ir_graph *const irg,
 	}
 
 	/* calculate offsets/create missing entities */
-	ir_entity *const entity        = get_irg_entity(irg);
-	ir_type   *const function_type = get_entity_type(entity);
+	ir_entity *const function      = get_irg_entity(irg);
+	ir_type   *const function_type = get_entity_type(function);
 	bool       const variadic      = is_method_variadic(function_type);
 	for (size_t i = 0; i < n_params; ++i) {
 		reg_or_stackslot_t *const param  = &cconv->parameters[i];
