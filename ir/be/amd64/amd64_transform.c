@@ -270,9 +270,6 @@ static const arch_register_req_t *reg_rcx_reqs[] = {
 	&amd64_single_reg_req_gp_rcx,
 };
 
-static const arch_register_req_t *no_reqs[] = {
-};
-
 arch_register_req_t const *amd64_xmm_xmm_reqs[] = {
 	&amd64_class_reg_req_xmm,
 	&amd64_class_reg_req_xmm,
@@ -1513,8 +1510,7 @@ static ir_node *gen_IJmp(ir_node *const node)
 	ir_node                    *mem_proj = NULL;
 	if (match_immediate_32(&addr.immediate, op, true)) {
 		op_mode = AMD64_OP_IMM32;
-		arity   = 0;
-		reqs    = no_reqs;
+		reqs    = NULL;
 	} else {
 		ir_node *load = source_am_possible(block, op);
 		if (load != NULL) {
