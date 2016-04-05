@@ -11,7 +11,6 @@
 #ifndef FIRM_BE_IA32_IA32_BEARCH_T_H
 #define FIRM_BE_IA32_IA32_BEARCH_T_H
 
-#include <limits.h>
 #include "beirg.h"
 #include "pmap.h"
 #include "x86_cconv.h"
