@@ -205,9 +205,6 @@ void sparc_layout_param_entities(ir_graph *const irg,
 	}
 
 	/* calculate offsets/create missing entities */
-	ir_entity *const function      = get_irg_entity(irg);
-	ir_type   *const function_type = get_entity_type(function);
-	bool       const variadic      = is_method_variadic(function_type);
 	for (size_t i = 0; i < n_params; ++i) {
 		reg_or_stackslot_t *const param  = &cconv->parameters[i];
 		ir_entity          *      entity = param_map[i];
@@ -220,7 +217,9 @@ void sparc_layout_param_entities(ir_graph *const irg,
 		set_entity_offset(entity, param->offset);
 	}
 
-	if (variadic) {
+	ir_entity *const function      = get_irg_entity(irg);
+	ir_type   *const function_type = get_entity_type(function);
+	if (is_method_variadic(function_type)) {
 		ir_type   *unknown       = get_unknown_type();
 		ident     *id            = new_id_from_str("$va_start");
 		ir_entity *va_start_addr = new_entity(frame_type, id, unknown);
@@ -229,7 +228,6 @@ void sparc_layout_param_entities(ir_graph *const irg,
 		 * original number of parameters */
 		ir_type       *const non_lowered   = get_higher_type(function_type);
 		size_t         const orig_n_params = get_method_n_params(non_lowered);
-		assert(is_method_variadic(function_type));
 		long offset;
 		if (orig_n_params < n_params) {
 			assert(param_map[orig_n_params] != NULL);
