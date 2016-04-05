@@ -1512,7 +1512,6 @@ static ir_node *gen_IJmp(ir_node *const node)
 	amd64_op_mode_t             op_mode;
 	ir_node                    *mem_proj = NULL;
 	if (match_immediate_32(&addr.immediate, op, true)) {
-		// TODO: do we need a must_match_ip_relative in match_immediate_32
 		op_mode = AMD64_OP_IMM32;
 		arity   = 0;
 		reqs    = no_reqs;
