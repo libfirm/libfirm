@@ -577,7 +577,7 @@ static void dump_node(FILE *f, const ir_node *irn, dump_reason_t reason)
 		if (be_is_IncSP(irn)) {
 			const be_incsp_attr_t *a
 				= (const be_incsp_attr_t*)get_irn_generic_attr_const(irn);
-			fprintf(f, "no_align: %s\n", a->no_align ? "true" : "false");
+			fprintf(f, "no_align: %s\n", be_dump_yesno(a->no_align));
 			fprintf(f, "offset: %d\n", a->offset);
 		} else if (be_is_MemPerm(irn)) {
 			for (unsigned i = 0; i < be_get_MemPerm_entity_arity(irn); ++i) {
