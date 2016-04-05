@@ -119,6 +119,8 @@ static bool is_definition(be_ssa_construction_env_t *env, ir_node *node)
  */
 static void introduce_definition(be_ssa_construction_env_t *env, ir_node *def)
 {
+	assert(env->phi_req->cls == arch_get_irn_register_req(def)->cls);
+
 	ir_node     *block      = get_nodes_block(def);
 	constr_info *def_info   = get_or_set_info(env, def);
 	ir_node     *skip       = skip_Proj(def);
@@ -409,11 +411,8 @@ void be_ssa_construction_add_copy(be_ssa_construction_env_t *env,
                                   ir_node *copy)
 {
 	assert(!env->iterated_domfront_calculated);
-	if (env->mode == NULL) {
+	if (env->mode == NULL)
 		determine_phi_req(env, copy);
-	} else {
-		assert(env->mode == get_irn_mode(copy));
-	}
 
 	ir_node *block = get_nodes_block(copy);
 	if (!has_definition(block))
@@ -433,7 +432,6 @@ void be_ssa_construction_add_copies(be_ssa_construction_env_t *env,
 		ir_node *copy  = copies[i];
 		ir_node *block = get_nodes_block(copy);
 
-		assert(env->mode == get_irn_mode(copy));
 		if (!has_definition(block)) {
 			pdeq_putr(env->worklist, block);
 		}
