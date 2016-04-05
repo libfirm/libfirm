@@ -977,7 +977,9 @@ exchange:
 	}
 	if (!breg && scale == 1) {
 		/* lea c(, %i, 2), %d -> lea c(%i, %i), %d */
+		assert(ireg != NULL);
 		set_irn_n(node, n_ia32_Lea_base, idx);
+		attr->addr.variant   = X86_ADDR_BASE_INDEX;
 		attr->addr.log_scale = 0;
 	}
 }

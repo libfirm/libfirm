@@ -16,7 +16,7 @@
 #include <stdint.h>
 #include "x86_imm.h"
 
-typedef enum {
+typedef enum x86_addr_variant_t {
 	X86_ADDR_INVALID,
 	X86_ADDR_REG,
 	X86_ADDR_JUST_IMM,
