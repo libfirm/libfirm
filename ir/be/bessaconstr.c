@@ -396,6 +396,9 @@ void be_ssa_construction_destroy(be_ssa_construction_env_t *env)
 
 static void determine_phi_req(be_ssa_construction_env_t *env, ir_node *value)
 {
+	if (env->mode)
+		return;
+
 	const arch_register_req_t *req = arch_get_irn_register_req(value);
 	env->mode = get_irn_mode(value);
 	if (req->width == 1) {
@@ -411,8 +414,7 @@ void be_ssa_construction_add_copy(be_ssa_construction_env_t *env,
                                   ir_node *copy)
 {
 	assert(!env->iterated_domfront_calculated);
-	if (env->mode == NULL)
-		determine_phi_req(env, copy);
+	determine_phi_req(env, copy);
 
 	ir_node *block = get_nodes_block(copy);
 	if (!has_definition(block))
@@ -424,9 +426,7 @@ void be_ssa_construction_add_copies(be_ssa_construction_env_t *env,
                                     ir_node **copies, size_t copies_len)
 {
 	assert(!env->iterated_domfront_calculated);
-
-	if (env->mode == NULL)
-		determine_phi_req(env, copies[0]);
+	determine_phi_req(env, copies[0]);
 
 	for (size_t i = 0; i < copies_len; ++i) {
 		ir_node *copy  = copies[i];
