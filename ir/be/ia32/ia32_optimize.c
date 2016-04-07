@@ -1229,11 +1229,6 @@ static void optimize_conv_conv(ir_node *node)
 	/* kill the conv */
 	exchange(node, result_conv);
 
-	if (get_irn_n_edges(pred_proj) == 0) {
-		kill_node(pred_proj);
-		if (pred != pred_proj)
-			kill_node(pred);
-	}
 	optimize_conv_conv(result_conv);
 }
 
