@@ -1210,18 +1210,12 @@ static void optimize_conv_conv(ir_node *node)
 				arch_set_irn_register_reqs_in(result_conv, reqs);
 			}
 		}
+	} else if (mode_is_signed(conv_mode) || !mode_is_signed(pred_mode)) {
+		/* Use the smaller conv, if it does zero-extension or if both do
+		 * sign-extension. */
+		result_conv = pred_proj;
 	} else {
-		/* if both convs have the same sign, then we can take the smaller one */
-		if (mode_is_signed(conv_mode) == mode_is_signed(pred_mode)) {
-			result_conv = pred_proj;
-		} else {
-			/* no optimization possible if smaller conv is sign-extend */
-			if (mode_is_signed(pred_mode)) {
-				return;
-			}
-			/* we can take the smaller conv if it is unsigned */
-			result_conv = pred_proj;
-		}
+		return;
 	}
 
 	be_warningf(node, "unoptimized ia32 Conv(Conv)");
