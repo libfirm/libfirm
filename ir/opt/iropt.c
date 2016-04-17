@@ -833,7 +833,7 @@ static ir_tarval *computed_value_Proj_Builtin(ir_node const *const proj)
 		if (b) {
 			val = get_tarval_highest_bit(b->z);
 			if (val != -1 && tarval_get_bit(b->o, val)) {
-				val = get_mode_size_bits(get_irn_mode(proj)) - val - 1;
+				val = get_mode_size_bits(get_irn_mode(op)) - val - 1;
 				goto make_val;
 			}
 		}
