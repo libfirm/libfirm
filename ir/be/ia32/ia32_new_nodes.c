@@ -155,12 +155,8 @@ void ia32_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 			}
 			break;
 
-		case dump_node_mode_txt: {
-			ir_mode *const mode = get_ia32_ls_mode(n);
-			if (mode)
-				fprintf(F, "[%s]", get_mode_name(mode));
+		case dump_node_mode_txt:
 			break;
-		}
 
 		case dump_node_nodeattr_txt:
 			if (! is_ia32_Lea(n)) {

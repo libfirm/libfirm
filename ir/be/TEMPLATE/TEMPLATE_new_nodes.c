@@ -34,7 +34,6 @@ void TEMPLATE_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 		break;
 
 	case dump_node_mode_txt:
-		fprintf(F, "[%s]", get_mode_name(get_irn_mode(n)));
 		break;
 
 	case dump_node_nodeattr_txt:
