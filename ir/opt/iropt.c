@@ -822,6 +822,79 @@ static ir_tarval *compute_cmp_ext(const ir_node *cmp)
 	return computed_value_Cmp(cmp);
 }
 
+static ir_tarval *computed_value_Proj_Builtin(ir_node const *const proj)
+{
+	long           val;
+	ir_node *const builtin = get_Proj_pred(proj);
+	switch (get_Builtin_kind(builtin)) {
+	case ir_bk_clz: {
+		ir_node const *const op = get_Builtin_param(builtin, 0);
+		bitinfo const *const b  = get_bitinfo(op);
+		if (b) {
+			val = get_tarval_highest_bit(b->z);
+			if (val != -1 && tarval_get_bit(b->o, val)) {
+				val = get_mode_size_bits(get_irn_mode(proj)) - val - 1;
+				goto make_val;
+			}
+		}
+		break;
+	}
+
+	case ir_bk_ctz: {
+		ir_node const *const op = get_Builtin_param(builtin, 0);
+		bitinfo const *const b  = get_bitinfo(op);
+		if (b) {
+			val = get_tarval_lowest_bit(b->z);
+			if (val != -1 && tarval_get_bit(b->o, val))
+				goto make_val;
+		}
+		break;
+	}
+
+	case ir_bk_ffs: {
+		ir_node const *const op = get_Builtin_param(builtin, 0);
+		bitinfo const *const b  = get_bitinfo(op);
+		if (b) {
+			val = get_tarval_lowest_bit(b->z);
+			if (val == -1 || tarval_get_bit(b->o, val)) {
+				++val;
+				goto make_val;
+			}
+		}
+		break;
+	}
+
+	case ir_bk_parity: {
+		ir_node *const op = get_Builtin_param(builtin, 0);
+		if (is_Const(op)) {
+			ir_tarval *const tv = get_Const_tarval(op);
+			val = get_tarval_popcount(tv) & 1;
+			goto make_val;
+		}
+		break;
+	}
+
+	case ir_bk_popcount: {
+		ir_node *const op = get_Builtin_param(builtin, 0);
+		if (is_Const(op)) {
+			ir_tarval *const tv = get_Const_tarval(op);
+			val = get_tarval_popcount(tv);
+			goto make_val;
+		}
+		break;
+	}
+
+	default:
+		break;
+	}
+
+	return tarval_unknown;
+
+make_val:;
+	ir_mode *const mode = get_irn_mode(proj);
+	return new_tarval_from_long(val, mode);
+}
+
 /**
  * Calculate the value of an integer Div.
  * Special case: 0 / b
@@ -7597,8 +7670,9 @@ void ir_register_opt_node_ops(void)
 	set_op_computed_value(op_Shrs,     computed_value_Shrs);
 	set_op_computed_value(op_Size,     computed_value_Size);
 	set_op_computed_value(op_Sub,      computed_value_Sub);
-	set_op_computed_value_proj(op_Div, computed_value_Proj_Div);
-	set_op_computed_value_proj(op_Mod, computed_value_Proj_Mod);
+	set_op_computed_value_proj(op_Builtin, computed_value_Proj_Builtin);
+	set_op_computed_value_proj(op_Div,     computed_value_Proj_Div);
+	set_op_computed_value_proj(op_Mod,     computed_value_Proj_Mod);
 
 	set_op_equivalent_node(op_Add,     equivalent_node_Add);
 	set_op_equivalent_node(op_And,     equivalent_node_And);
