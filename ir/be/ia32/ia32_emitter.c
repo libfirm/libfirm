@@ -215,27 +215,30 @@ static void ia32_emit_x87_mode_suffix(ir_node const *const node)
 		return;
 
 	ir_mode *mode = get_ia32_ls_mode(node);
-	assert(mode != NULL);
+	assert(mode_is_float(mode));
+	switch (get_mode_size_bits(mode)) {
+		case  32: be_emit_char('s'); return;
+		case  64: be_emit_char('l'); return;
+		/* long doubles have different sizes due to alignment on different
+		 * platforms. */
+		case  80:
+		case  96:
+		case 128: be_emit_char('t'); return;
+	}
+	panic("cannot output mode_suffix for %+F", mode);
+}
 
-	if (mode_is_float(mode)) {
-		switch (get_mode_size_bits(mode)) {
-			case  32: be_emit_char('s'); return;
-			case  64: be_emit_char('l'); return;
-			/* long doubles have different sizes due to alignment on different
-			 * platforms. */
-			case  80:
-			case  96:
-			case 128: be_emit_char('t'); return;
-		}
-	} else {
-		assert(mode_is_int(mode) || mode_is_reference(mode));
-		switch (get_mode_size_bits(mode)) {
-			case 16: be_emit_char('s');     return;
-			case 32: be_emit_char('l');     return;
-			/* gas docu says q is the suffix but gcc, objdump and icc use ll
-			 * apparently */
-			case 64: be_emit_cstring("ll"); return;
-		}
+static void ia32_emit_x87_mode_suffix_int(ir_node const *const node)
+{
+	assert(get_ia32_op_type(node) != ia32_Normal);
+	ir_mode *mode = get_ia32_ls_mode(node);
+	assert(mode_is_int(mode) || mode_is_reference(mode));
+	switch (get_mode_size_bits(mode)) {
+		case 16: be_emit_char('s');     return;
+		case 32: be_emit_char('l');     return;
+		/* gas docu says q is the suffix but gcc, objdump and icc use ll
+		 * apparently */
+		case 64: be_emit_cstring("ll"); return;
 	}
 	panic("cannot output mode_suffix for %+F", mode);
 }
@@ -463,6 +466,8 @@ destination_operand:
 			case 'F':
 				if (*fmt == 'M') {
 					ia32_emit_x87_mode_suffix(node);
+				} else if (*fmt == 'I') {
+					ia32_emit_x87_mode_suffix_int(node);
 				} else if (*fmt == 'P') {
 					ia32_x87_attr_t const *const attr = get_ia32_x87_attr_const(node);
 					if (attr->x87.pop)
