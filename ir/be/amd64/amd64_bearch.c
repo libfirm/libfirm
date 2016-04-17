@@ -437,7 +437,7 @@ static void amd64_collect_frame_entity_nodes(ir_node *node, void *data)
 	const amd64_addr_attr_t *attr = get_amd64_addr_attr_const(node);
 	x86_imm32_t       const *imm  = &attr->addr.immediate;
 	if (imm->kind == X86_IMM_FRAMEENT && imm->entity == NULL) {
-		const ir_type *type = get_type_for_insn_size(attr->size);
+		const ir_type *type = get_type_for_insn_size(attr->base.size);
 		be_load_needs_frame_entity(env, node, type);
 	}
 }
@@ -519,7 +519,7 @@ static void introduce_prologue(ir_graph *const irg, bool omit_fp)
 		/* push rbp */
 		ir_node *const mem        = get_irg_initial_mem(irg);
 		ir_node *const initial_bp = be_get_Start_proj(irg, bp);
-		ir_node *const push       = new_bd_amd64_push_reg(NULL, block, initial_sp, mem, initial_bp);
+		ir_node *const push       = new_bd_amd64_push_reg(NULL, block, initial_sp, mem, initial_bp, INSN_SIZE_64);
 		sched_add_after(start, push);
 		ir_node *const curr_mem   = be_new_Proj(push, pn_amd64_push_reg_M);
 		edges_reroute_except(mem, curr_mem, push);
@@ -597,14 +597,14 @@ static void amd64_sp_sim(ir_node *const node, stack_pointer_state_t *state)
 	 * address, so do this first */
 	if (is_amd64_pop_am(node)) {
 		const amd64_addr_attr_t *attr = get_amd64_addr_attr_const(node);
-		state->offset -= get_insn_size_bytes(attr->size);
+		state->offset -= get_insn_size_bytes(attr->base.size);
 	}
 
 	amd64_determine_frameoffset(node, state->offset);
 
 	if (is_amd64_push_am(node)) {
 		const amd64_addr_attr_t *attr = get_amd64_addr_attr_const(node);
-		state->offset       += get_insn_size_bytes(attr->size);
+		state->offset       += get_insn_size_bytes(attr->base.size);
 	} else if (is_amd64_push_reg(node)) {
 		/* 64-bit register size */
 		state->offset       += AMD64_REGISTER_SIZE;

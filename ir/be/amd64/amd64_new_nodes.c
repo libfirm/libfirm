@@ -29,25 +29,6 @@
 #include "amd64_new_nodes_t.h"
 #include "gen_amd64_regalloc_if.h"
 
-amd64_insn_size_t get_amd64_insn_size(const ir_node *node)
-{
-	if (is_amd64_mov_imm(node)) {
-		const amd64_movimm_attr_t *const attr
-			= get_amd64_movimm_attr_const(node);
-		return attr->size;
-	}
-	amd64_op_mode_t const op_mode = get_amd64_attr_const(node)->op_mode;
-	if (amd64_has_addr_attr(op_mode)) {
-		amd64_addr_attr_t const *const attr = get_amd64_addr_attr_const(node);
-		return attr->size;
-	} else if (op_mode == AMD64_OP_CC) {
-		amd64_cc_attr_t const *const attr = get_amd64_cc_attr_const(node);
-		return attr->size;
-	} else {
-		panic("Node attributes do not contain insn_size");
-	}
-}
-
 x87_attr_t *amd64_get_x87_attr(ir_node *const node)
 {
 	amd64_attr_t const *const attr = get_amd64_attr_const(node);
@@ -134,6 +115,7 @@ void amd64_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 		const amd64_attr_t *attr = get_amd64_attr_const(n);
 		amd64_op_mode_t const op_mode = attr->op_mode;
 		fprintf(F, "mode = %s\n", get_op_mode_string(op_mode));
+		fprintf(F, "size = %s\n", get_insn_size_string(attr->size));
 		switch (op_mode) {
 		case AMD64_OP_ADDR_REG:
 		case AMD64_OP_REG_ADDR: {
@@ -153,7 +135,6 @@ void amd64_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 		}
 		if (amd64_has_addr_attr(op_mode)) {
 			const amd64_addr_attr_t *addr_attr = get_amd64_addr_attr_const(n);
-			fprintf(F, "size = %s\n", get_insn_size_string(addr_attr->size));
 			x86_addr_variant_t const variant = addr_attr->addr.variant;
 			fprintf(F, "am variant = %s\n", x86_get_addr_variant_str(variant));
 			if (x86_addr_variant_has_base(variant))
@@ -171,11 +152,13 @@ void amd64_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 
 void init_amd64_attributes(ir_node *node, arch_irn_flags_t flags,
                            const arch_register_req_t **in_reqs,
-                           int n_res, amd64_op_mode_t op_mode)
+                           int n_res, amd64_op_mode_t op_mode,
+                           amd64_insn_size_t size)
 {
 	be_info_init_irn(node, flags, in_reqs, n_res);
 	amd64_attr_t *attr = get_amd64_attr(node);
 	attr->op_mode = op_mode;
+	attr->size    = size;
 }
 
 void init_amd64_switch_attributes(ir_node *node, const ir_switch_table *table,
@@ -190,19 +173,15 @@ void init_amd64_switch_attributes(ir_node *node, const ir_switch_table *table,
 	}
 }
 
-void init_amd64_cc_attributes(ir_node *node, x86_condition_code_t cc,
-                              amd64_insn_size_t size)
+void init_amd64_cc_attributes(ir_node *node, x86_condition_code_t cc)
 {
 	amd64_cc_attr_t *attr = get_amd64_cc_attr(node);
-	attr->cc   = cc;
-	attr->size = size;
+	attr->cc = cc;
 }
 
-void init_amd64_movimm_attributes(ir_node *node, amd64_insn_size_t size,
-                                  const amd64_imm64_t *imm)
+void init_amd64_movimm_attributes(ir_node *node, const amd64_imm64_t *imm)
 {
 	amd64_movimm_attr_t *attr = get_amd64_movimm_attr(node);
-	attr->size      = size;
 	attr->immediate = *imm;
 }
 
@@ -216,7 +195,8 @@ int amd64_attrs_equal(const ir_node *a, const ir_node *b)
 {
 	const amd64_attr_t *attr_a = get_amd64_attr_const(a);
 	const amd64_attr_t *attr_b = get_amd64_attr_const(b);
-	return attr_a->op_mode == attr_b->op_mode;
+	return attr_a->op_mode == attr_b->op_mode
+	    && attr_a->size == attr_b->size;
 }
 
 int amd64_addr_attrs_equal(const ir_node *a, const ir_node *b)
@@ -224,8 +204,7 @@ int amd64_addr_attrs_equal(const ir_node *a, const ir_node *b)
 	const amd64_addr_attr_t *attr_a = get_amd64_addr_attr_const(a);
 	const amd64_addr_attr_t *attr_b = get_amd64_addr_attr_const(b);
 	return amd64_attrs_equal(a, b)
-	    && x86_addrs_equal(&attr_a->addr, &attr_b->addr)
-	    && attr_a->size == attr_b->size;
+	    && x86_addrs_equal(&attr_a->addr, &attr_b->addr);
 }
 
 int amd64_binop_addr_attrs_equal(const ir_node *a, const ir_node *b)
@@ -247,8 +226,7 @@ int amd64_movimm_attrs_equal(const ir_node *const a, const ir_node *const b)
 	const amd64_movimm_attr_t *const attr_a = get_amd64_movimm_attr_const(a);
 	const amd64_movimm_attr_t *const attr_b = get_amd64_movimm_attr_const(b);
 	return amd64_attrs_equal(a, b)
-	    && imm64s_equal(&attr_a->immediate, &attr_b->immediate)
-	    && attr_a->size == attr_b->size;
+	    && imm64s_equal(&attr_a->immediate, &attr_b->immediate);
 }
 
 int amd64_shift_attrs_equal(const ir_node *const a, const ir_node *const b)
@@ -256,8 +234,7 @@ int amd64_shift_attrs_equal(const ir_node *const a, const ir_node *const b)
 	const amd64_shift_attr_t *const attr_a = get_amd64_shift_attr_const(a);
 	const amd64_shift_attr_t *const attr_b = get_amd64_shift_attr_const(b);
 	return amd64_attrs_equal(a, b)
-	    && attr_a->immediate == attr_b->immediate
-	    && attr_a->size == attr_b->size;
+	    && attr_a->immediate == attr_b->immediate;
 }
 
 int amd64_cc_attrs_equal(const ir_node *const a, const ir_node *const b)

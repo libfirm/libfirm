@@ -64,15 +64,15 @@ static void transform_sub_to_neg_add(ir_node *node,
 	ir_node                       *add;
 	unsigned                       pos;
 	if (is_amd64_subs(node)) {
-		unsigned bits = amd64_get_insn_size_bits(attr->base.size);
+		unsigned bits = amd64_get_insn_size_bits(attr->base.base.size);
 		ir_tarval *tv = get_mode_one(amd64_mode_xmm);
 		tv = tarval_shl_unsigned(tv, bits - 1);
 		ir_entity *sign_bit_const = create_float_const_entity(tv);
 
 		amd64_binop_addr_attr_t xor_attr = {
-			.base = {
-				.base.op_mode = AMD64_OP_REG_ADDR,
-				.size         = INSN_SIZE_64,
+			.base.base = {
+				.op_mode = AMD64_OP_REG_ADDR,
+				.size    = INSN_SIZE_64,
 			},
 		};
 		init_lconst_addr(&xor_attr.base.addr, sign_bit_const);
@@ -87,7 +87,7 @@ static void transform_sub_to_neg_add(ir_node *node,
 		pos = pn_amd64_adds_res;
 	} else {
 		assert(is_amd64_sub(node));
-		ir_node *neg = new_bd_amd64_neg(dbgi, block, in2, attr->base.size);
+		ir_node *neg = new_bd_amd64_neg(dbgi, block, in2, attr->base.base.size);
 		sched_add_before(node, neg);
 		ir_node *const neg_res = be_new_Proj_reg(neg, pn_amd64_neg_res, out_reg);
 
@@ -127,7 +127,7 @@ static void amd64_turn_back_am(ir_node *const node, arch_register_t const *const
 	load_in[mem_input] = get_irn_n(node, attr->addr.mem_input);
 	assert(get_irn_mode(load_in[mem_input]) == mode_M);
 
-	ir_node *const load     = new_bd_amd64_mov_gp(dbgi, block, load_arity, load_in, gp_am_reqs[load_arity - 1], attr->size, AMD64_OP_ADDR, new_addr);
+	ir_node *const load     = new_bd_amd64_mov_gp(dbgi, block, load_arity, load_in, gp_am_reqs[load_arity - 1], attr->base.size, AMD64_OP_ADDR, new_addr);
 	ir_node *const load_res = be_new_Proj_reg(load, pn_amd64_mov_gp_res, out_reg);
 
 	/* change operation */

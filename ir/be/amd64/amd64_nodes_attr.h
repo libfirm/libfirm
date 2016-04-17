@@ -59,13 +59,13 @@ typedef struct amd64_imm64_t {
 
 typedef struct amd64_attr_t {
 	except_attr exc; /**< the exception attribute. MUST be the first one. */
-	amd64_op_mode_t op_mode;
+	ENUMBF(amd64_op_mode_t)   op_mode : 5;
+	ENUMBF(amd64_insn_size_t) size    : 3;
 } amd64_attr_t;
 
 typedef struct amd64_addr_attr_t {
-	amd64_attr_t              base;
-	ENUMBF(amd64_insn_size_t) size : 3;
-	x86_addr_t                addr;
+	amd64_attr_t base;
+	x86_addr_t   addr;
 } amd64_addr_attr_t;
 
 typedef struct amd64_binop_addr_attr_t {
@@ -77,21 +77,18 @@ typedef struct amd64_binop_addr_attr_t {
 } amd64_binop_addr_attr_t;
 
 typedef struct amd64_shift_attr_t {
-	amd64_attr_t              base;
-	ENUMBF(amd64_insn_size_t) size : 3;
-	uint8_t                   immediate;
+	amd64_attr_t base;
+	uint8_t      immediate;
 } amd64_shift_attr_t;
 
 typedef struct amd64_movimm_attr_t {
-	amd64_attr_t              base;
-	ENUMBF(amd64_insn_size_t) size : 3;
-	amd64_imm64_t             immediate;
+	amd64_attr_t  base;
+	amd64_imm64_t immediate;
 } amd64_movimm_attr_t;
 
 typedef struct amd64_cc_attr_t {
-	amd64_attr_t              base;
-	x86_condition_code_t      cc;
-	ENUMBF(amd64_insn_size_t) size : 3;
+	amd64_attr_t         base;
+	x86_condition_code_t cc;
 } amd64_cc_attr_t;
 
 typedef struct amd64_switch_jmp_attr_t {

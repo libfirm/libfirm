@@ -16,16 +16,15 @@ void amd64_dump_node(FILE *F, const ir_node *n, dump_reason_t reason);
 
 void init_amd64_attributes(ir_node *node, arch_irn_flags_t flags,
                            const arch_register_req_t **in_reqs,
-                           int n_res, amd64_op_mode_t op_mode);
+                           int n_res, amd64_op_mode_t op_mode,
+                           amd64_insn_size_t size);
 
 void init_amd64_switch_attributes(ir_node *node, const ir_switch_table *table,
                                   ir_entity *table_entity);
 
-void init_amd64_cc_attributes(ir_node *node, x86_condition_code_t cc,
-                              amd64_insn_size_t size);
+void init_amd64_cc_attributes(ir_node *node, x86_condition_code_t cc);
 
-void init_amd64_movimm_attributes(ir_node *node, amd64_insn_size_t size,
-                                  const amd64_imm64_t *imm);
+void init_amd64_movimm_attributes(ir_node *node, const amd64_imm64_t *imm);
 
 int amd64_attrs_equal(const ir_node *a, const ir_node *b);
 int amd64_addr_attrs_equal(const ir_node *a, const ir_node *b);

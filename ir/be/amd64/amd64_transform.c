@@ -455,7 +455,7 @@ static ir_node *gen_Const(ir_node *const node)
 		if (mode == x86_mode_E) {
 			return gen_x87_Const(block, tv);
 		} else if (tarval_is_null(tv)) {
-			return new_bd_amd64_xorpd_0(dbgi, block);
+			return new_bd_amd64_xorp_0(dbgi, block, INSN_SIZE_64);
 		}
 		return create_float_const(dbgi, block, tv);
 	}
@@ -643,7 +643,7 @@ static ir_node *create_sar(dbg_info *dbgi, ir_node *const new_block,
 	amd64_shift_attr_t attr;
 	memset(&attr, 0, sizeof(attr));
 	attr.base.op_mode = AMD64_OP_SHIFT_IMM;
-	attr.size         = size;
+	attr.base.size    = size;
 	attr.immediate    = immediate;
 	ir_node *in[1]    = { value };
 	ir_node *const sar = new_bd_amd64_sar(dbgi, new_block, ARRAY_SIZE(in), in,
@@ -727,7 +727,7 @@ static void match_binop(amd64_args_t *args, ir_node *block,
 	bool mode_neutral  = flags & match_mode_neutral;
 
 	amd64_binop_addr_attr_t *const attr = &args->attr;
-	attr->base.size = get_insn_size_from_mode(mode);
+	attr->base.base.size = get_insn_size_from_mode(mode);
 
 	/* TODO: legalize phase */
 	if (mode_neutral) {
@@ -891,7 +891,7 @@ static ir_node *gen_binop_xmm(ir_node *node, ir_node *op0, ir_node *op1,
 	amd64_args_t args;
 	memset(&args, 0, sizeof(args));
 	amd64_binop_addr_attr_t *const attr = &args.attr;
-	attr->base.size = INSN_SIZE_64;
+	attr->base.base.size = INSN_SIZE_64;
 
 	ir_node *load;
 	ir_node *op;
@@ -1003,7 +1003,7 @@ static ir_node *gen_shift_binop(ir_node *node, ir_node *op1, ir_node *op2,
 		reqs              = reg_rcx_reqs;
 		out_req0          = &amd64_requirement_gp_same_0_not_1;
 	}
-	attr.size = get_insn_size_from_mode(mode);
+	attr.base.size = get_insn_size_from_mode(mode);
 
 	dbg_info *const dbgi      = get_irn_dbg_info(node);
 	ir_node  *const new_block = be_transform_nodes_block(node);
@@ -1223,7 +1223,7 @@ static ir_node *create_div(ir_node *const node, ir_mode *const mode,
 		upper_value = create_sar(dbgi, new_block, size, new_op1, bits-1);
 		constructor = new_bd_amd64_idiv;
 	} else {
-		ir_node *const xor0 = new_bd_amd64_xor_0(dbgi, new_block);
+		ir_node *const xor0 = new_bd_amd64_xor_0(dbgi, new_block, INSN_SIZE_32);
 		upper_value = be_new_Proj(xor0, pn_amd64_xor_0_res);
 		constructor = new_bd_amd64_div;
 	}
@@ -1427,12 +1427,14 @@ static ir_node *gen_float_neg(ir_node *const node)
 
 	amd64_binop_addr_attr_t attr = {
 		.base = {
-			.base.op_mode = AMD64_OP_REG_REG,
+			.base = {
+				.op_mode = AMD64_OP_REG_REG,
+				.size    = get_insn_size_from_mode(mode),
+			},
 			.addr = {
 				.base_input = 0,
 				.variant    = X86_ADDR_REG,
 			},
-			.size = get_insn_size_from_mode(mode),
 		},
 	};
 	ir_node *const xor
@@ -1625,8 +1627,7 @@ static ir_node *gen_Switch(ir_node *const node)
 	table = ir_switch_table_duplicate(irg, table);
 
 	ir_node *const out = new_bd_amd64_jmp_switch(dbgi, new_block, arity, in,
-	                                             in_reqs, n_outs, op_mode,
-	                                             &addr, table, entity);
+			in_reqs, n_outs, op_mode, INSN_SIZE_64, &addr, table, entity);
 	return out;
 }
 
@@ -1888,6 +1889,7 @@ no_call_mem:;
 			.base = {
 				.base = {
 					.op_mode = AMD64_OP_ADDR_REG,
+					.size    = size,
 				},
 				.addr = {
 					.immediate = {
@@ -1897,7 +1899,6 @@ no_call_mem:;
 					.variant    = X86_ADDR_BASE,
 					.base_input = 1,
 				},
-				.size = size,
 			},
 		};
 		ir_node *const nomem = get_irg_no_mem(irg);
@@ -1926,8 +1927,8 @@ no_call_mem:;
 		.base = {
 			.base = {
 				.op_mode = op_mode,
+				.size    = INSN_SIZE_64,
 			},
-			.size = INSN_SIZE_64,
 			.addr = addr,
 		},
 		.call_tp       = type,
@@ -2255,8 +2256,8 @@ static void store_to_temp(construct_binop_func const new_store,
 		.base = {
 			.base = {
 				.op_mode = AMD64_OP_ADDR_REG,
+				.size    = size,
 			},
-			.size = size,
 			.addr = {
 				.immediate = {
 					.kind = X86_IMM_FRAMEENT,
@@ -2581,7 +2582,7 @@ static ir_node *gen_Store(ir_node *const node)
 	ir_node *new_mem = be_transform_node(mem);
 	in[arity++]      = new_mem;
 	assert((size_t)arity <= ARRAY_SIZE(in));
-	attr.base.size   = get_insn_size_from_mode(mode);
+	attr.base.base.size = get_insn_size_from_mode(mode);
 	bool const pinned = get_irn_pinned(node);
 	return make_store_for_mode(mode, dbgi, block, arity, in, &attr, pinned);
 }
@@ -2626,7 +2627,7 @@ ir_node *amd64_new_spill(ir_node *value, ir_node *after)
 		reqs = reg_reg_mem_reqs;
 	}
 
-	attr.base.size = size;
+	attr.base.base.size = size;
 	ir_node *const store = cons(NULL, block, ARRAY_SIZE(in), in, reqs, &attr);
 	arch_add_irn_flags(store, arch_irn_flag_spill);
 	sched_add_after(after, store);
@@ -2725,9 +2726,9 @@ static ir_node *gen_Unknown(ir_node *const node)
 	ir_node *const block = be_transform_nodes_block(node);
 
 	if (mode_is_float(get_irn_mode(node))) {
-		return new_bd_amd64_xorpd_0(NULL, block);
+		return new_bd_amd64_xorp_0(NULL, block, INSN_SIZE_64);
 	} else {
-		ir_node *res = new_bd_amd64_xor_0(NULL, block);
+		ir_node *res = new_bd_amd64_xor_0(NULL, block, INSN_SIZE_32);
 		return be_new_Proj(res, pn_amd64_xor_0_res);
 	}
 }
@@ -2822,11 +2823,11 @@ static ir_node *gen_Alloc(ir_node *const node)
 
 	amd64_binop_addr_attr_t attr = {
 		.base = {
+			.base.size = INSN_SIZE_64,
 			.addr = {
 				.base_input = input0,
 				.variant    = X86_ADDR_REG,
 			},
-			.size = INSN_SIZE_64,
 		},
 	};
 	if (is_Const(size)) {
@@ -2869,20 +2870,20 @@ static ir_node *gen_Proj_Alloc(ir_node *const node)
 
 static ir_node *gen_clz(ir_node *const node)
 {
-	ir_node           *const bsr       = gen_unop_out(node, n_Builtin_max + 1,
-	                                                  new_bd_amd64_bsr, pn_amd64_bsr_res);
+	ir_node           *const bsr   = gen_unop_out(node, n_Builtin_max + 1,
+	                                              new_bd_amd64_bsr, pn_amd64_bsr_res);
 	ir_node           *const real  = skip_Proj(bsr);
 	dbg_info          *const dbgi  = get_irn_dbg_info(real);
 	ir_node           *const block = get_nodes_block(real);
-	amd64_insn_size_t  const size  = get_amd64_insn_size(real);
+	amd64_insn_size_t  const size  = get_amd64_attr_const(real)->size;
 	size_t             const mask  = amd64_get_insn_size_bits(size) - 1;
 	ir_node           *const in[]  = { bsr };
 	amd64_binop_addr_attr_t attr = {
 		.base = {
 			.base = {
 				.op_mode = AMD64_OP_REG_IMM,
+				.size    = size,
 			},
-			.size = size,
 			.addr = {
 				.base_input = 0,
 				.variant    = X86_ADDR_REG,
@@ -2931,7 +2932,7 @@ static ir_node *gen_ffs(ir_node *const node)
 	ir_node *const movzbl_res = be_new_Proj(movzbl, pn_amd64_mov_gp_res);
 
 	/* neg temp */
-	amd64_insn_size_t size = get_amd64_insn_size(bsf);
+	amd64_insn_size_t size = get_amd64_attr_const(bsf)->size;
 	ir_node    *const neg  = new_bd_amd64_neg(dbgi, block, movzbl_res, size);
 	ir_node *const neg_res = be_new_Proj(neg, pn_amd64_neg_res);
 
@@ -2941,8 +2942,8 @@ static ir_node *gen_ffs(ir_node *const node)
 		.base = {
 			.base = {
 				.op_mode = AMD64_OP_REG_REG,
+				.size    = size,
 			},
-			.size = size,
 			.addr = {
 				.base_input = 0,
 				.variant    = X86_ADDR_REG,
@@ -2961,8 +2962,8 @@ static ir_node *gen_ffs(ir_node *const node)
 		.base = {
 			.base = {
 				.op_mode = AMD64_OP_REG_IMM,
+				.size    = size,
 			},
-			.size = size,
 			.addr = {
 				.base_input = 0,
 				.variant    = X86_ADDR_REG,
@@ -3015,8 +3016,8 @@ static ir_node *gen_compare_swap(ir_node *const node)
 		.base = {
 			.base = {
 				.op_mode = AMD64_OP_ADDR_REG,
+				.size    = get_insn_size_from_mode(mode),
 			},
-			.size = get_insn_size_from_mode(mode),
 			.addr = addr,
 		},
 		.u = {
@@ -3036,12 +3037,14 @@ static ir_node *gen_saturating_increment(ir_node *const node)
 
 	amd64_binop_addr_attr_t inc_attr = {
 		.base = {
-			.base.op_mode = AMD64_OP_REG_IMM,
+			.base = {
+				.op_mode = AMD64_OP_REG_IMM,
+				.size    = get_insn_size_from_mode(mode),
+			},
 			.addr = {
 				.base_input = 0,
 				.variant    = X86_ADDR_REG,
 			},
-			.size = get_insn_size_from_mode(mode),
 		},
 		.u.immediate = {
 			.kind   = X86_IMM_VALUE,
@@ -3058,12 +3061,14 @@ static ir_node *gen_saturating_increment(ir_node *const node)
 
 	amd64_binop_addr_attr_t sbb_attr = {
 		.base = {
-			.base.op_mode = AMD64_OP_REG_IMM,
+			.base = {
+				.op_mode = AMD64_OP_REG_IMM,
+				.size    = get_insn_size_from_mode(mode),
+			},
 			.addr = {
 				.base_input = 0,
 				.variant    = X86_ADDR_REG,
 			},
-			.size = get_insn_size_from_mode(mode),
 		},
 		.u.immediate = {
 			.kind   = X86_IMM_VALUE,

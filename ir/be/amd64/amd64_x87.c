@@ -7,7 +7,7 @@
 static void sim_amd64_fst(x87_state *const state, ir_node *const node)
 {
 	amd64_addr_attr_t const *const attr = get_amd64_addr_attr_const(node);
-	unsigned const bits = amd64_get_insn_size_bits(attr->size);
+	unsigned const bits = amd64_get_insn_size_bits(attr->base.size);
 	x86_sim_x87_store(state, node, 0, bits);
 }
 

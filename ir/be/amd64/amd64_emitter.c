@@ -239,7 +239,7 @@ static void amd64_emit_am(const ir_node *const node, bool indirect_star)
 	}
 	case AMD64_OP_REG_REG: {
 		const arch_register_t *reg1 = arch_get_irn_register_in(node, 1);
-		emit_register_mode(reg1, attr->size);
+		emit_register_mode(reg1, attr->base.size);
 		be_emit_cstring(", ");
 		goto emit_addr_reg;
 	}
@@ -250,7 +250,7 @@ static void amd64_emit_am(const ir_node *const node, bool indirect_star)
 		be_emit_cstring(", ");
 		const arch_register_t *reg
 			= arch_get_irn_register_in(node, binop_attr->u.reg_input);
-		emit_register_mode(reg, binop_attr->base.size);
+		emit_register_mode(reg, binop_attr->base.base.size);
 		return;
 	}
 	case AMD64_OP_ADDR_IMM: {
@@ -269,7 +269,7 @@ static void amd64_emit_am(const ir_node *const node, bool indirect_star)
 	case AMD64_OP_ADDR_REG: {
 		amd64_binop_addr_attr_t const *const binop_attr = (amd64_binop_addr_attr_t const*)attr;
 		arch_register_t const *const reg = arch_get_irn_register_in(node, binop_attr->u.reg_input);
-		emit_register_mode(reg, binop_attr->base.size);
+		emit_register_mode(reg, binop_attr->base.base.size);
 		be_emit_cstring(", ");
 emit_addr:
 		x86_emit_addr(node, &attr->addr);
@@ -282,7 +282,7 @@ emit_addr_reg:
 		assert(attr->addr.variant == X86_ADDR_REG);
 		arch_register_t const *const reg
 			= arch_get_irn_register_in(node, attr->addr.base_input);
-		emit_register_mode(reg, attr->size);
+		emit_register_mode(reg, attr->base.size);
 		return;
 	}
 	case AMD64_OP_IMM32:
@@ -309,7 +309,7 @@ static void emit_shiftop(const ir_node *const node)
 	case AMD64_OP_SHIFT_IMM: {
 		be_emit_irprintf("$0x%X, ", attr->immediate);
 		const arch_register_t *reg = arch_get_irn_register_in(node, 0);
-		emit_register_mode(reg, attr->size);
+		emit_register_mode(reg, attr->base.size);
 		return;
 	}
 	case AMD64_OP_SHIFT_REG: {
@@ -317,7 +317,7 @@ static void emit_shiftop(const ir_node *const node)
 		const arch_register_t *reg1 = arch_get_irn_register_in(node, 1);
 		emit_register_mode(reg1, INSN_SIZE_8);
 		be_emit_cstring(", ");
-		emit_register_mode(reg0, attr->size);
+		emit_register_mode(reg0, attr->base.size);
 		return;
 	}
 	default:
@@ -420,7 +420,7 @@ end_of_mods:
 					++fmt;
 					amd64_addr_attr_t const *const attr
 						= get_amd64_addr_attr_const(node);
-					amd64_emit_x87_size_suffix(attr->size);
+					amd64_emit_x87_size_suffix(attr->base.size);
 				} else if (*fmt == 'P') {
 					++fmt;
 					x87_attr_t const *const attr
@@ -489,36 +489,24 @@ emit_R:
 				} else if (mod & EMIT_FORCE_32) {
 					emit_register_mode(reg, INSN_SIZE_32);
 				} else if (mod & EMIT_CONV_DEST) {
-					amd64_insn_size_t src_size  = get_amd64_insn_size(node);
+					amd64_attr_t const *const attr = get_amd64_attr_const(node);
+					amd64_insn_size_t src_size  = attr->size;
 					amd64_insn_size_t dest_size = src_size == INSN_SIZE_64
 					                            ? INSN_SIZE_64 : INSN_SIZE_32;
 					emit_register_mode(reg, dest_size);
 				} else {
-					amd64_insn_size_t size = get_amd64_insn_size(node);
-					emit_register_mode(reg, size);
+					amd64_attr_t const *const attr = get_amd64_attr_const(node);
+					emit_register_mode(reg, attr->size);
 				}
 				break;
 			}
 
 			case 'M': {
-				if (*fmt == 'S') {
+				amd64_attr_t const *const attr = get_amd64_attr_const(node);
+				if (*fmt == 'X') {
 					++fmt;
-					const amd64_shift_attr_t *attr
-						= get_amd64_shift_attr_const(node);
-					amd64_emit_insn_size_suffix(attr->size);
-				} else if (*fmt == 'M') {
-					++fmt;
-					const amd64_movimm_attr_t *attr
-						= get_amd64_movimm_attr_const(node);
-					amd64_emit_insn_size_suffix(attr->size);
-				} else if (*fmt == 'X') {
-					++fmt;
-					amd64_addr_attr_t const *const attr
-						= get_amd64_addr_attr_const(node);
 					amd64_emit_xmm_size_suffix(attr->size);
 				} else {
-					amd64_addr_attr_t const *const attr
-						= get_amd64_addr_attr_const(node);
 					amd64_emit_insn_size_suffix(attr->size);
 				}
 				break;
@@ -760,7 +748,7 @@ static void emit_amd64_jcc(const ir_node *irn)
 
 static void emit_amd64_mov_gp(const ir_node *node)
 {
-	const amd64_addr_attr_t *attr = get_amd64_addr_attr_const(node);
+	amd64_attr_t const *const attr = get_amd64_attr_const(node);
 	switch (attr->size) {
 	case INSN_SIZE_8:  amd64_emitf(node, "movzbq %AM, %^D0"); return;
 	case INSN_SIZE_16: amd64_emitf(node, "movzwq %AM, %^D0"); return;

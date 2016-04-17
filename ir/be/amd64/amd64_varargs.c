@@ -332,7 +332,7 @@ static ir_node *make_mov_imm32_to_offset_mem(dbg_info *dbgi, ir_node *block, ir_
 	amd64_binop_addr_attr_t mov_attr = {
 		.base = {
 			.base.op_mode = AMD64_OP_ADDR_IMM,
-			.size         = INSN_SIZE_32,
+			.base.size    = INSN_SIZE_32,
 			.addr = {
 				.immediate = {
 					.offset = offset,
@@ -364,7 +364,7 @@ static ir_node *make_mov_val64_to_offset_mem(dbg_info *dbgi, ir_node *block, ir_
 	amd64_binop_addr_attr_t mov_attr = {
 		.base = {
 			.base.op_mode = AMD64_OP_ADDR_REG,
-			.size         = INSN_SIZE_64,
+			.base.size    = INSN_SIZE_64,
 			.addr = {
 				.immediate = {
 					.entity = entity,
@@ -394,7 +394,7 @@ static ir_node *make_mov_xmmval64_to_offset_mem(dbg_info *dbgi, ir_node *block, 
 	amd64_binop_addr_attr_t mov_attr = {
 		.base = {
 			.base.op_mode = AMD64_OP_ADDR_REG,
-			.size         = INSN_SIZE_64,
+			.base.size    = INSN_SIZE_64,
 			.addr = {
 				.immediate = {
 					.entity = entity,
