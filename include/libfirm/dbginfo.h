@@ -63,7 +63,6 @@ typedef enum {
 	                                   after read optimization. */
 	dbg_read_a_const,             /**< A Firm subgraph was replaced because of a read
 	                                   a constant optimization. */
-	dbg_rem_poly_call,            /**< Remove polymorphic call. */
 	dbg_dead_code,                /**< Removing unreachable code, i.e. blocks that are never executed. */
 	dbg_opt_confirm,              /**< A Firm subgraph was replace because of a Confirmation. */
 	dbg_gvn_pre,                  /**< A Firm node was replace because of the GVN-PRE algorithm. */

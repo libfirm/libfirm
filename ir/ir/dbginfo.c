@@ -45,7 +45,6 @@ const char *dbg_action_2_str(dbg_action a)
 	CASE(dbg_read_after_write);
 	CASE(dbg_read_after_read);
 	CASE(dbg_read_a_const);
-	CASE(dbg_rem_poly_call);
 	CASE(dbg_dead_code);
 	CASE(dbg_opt_confirm);
 	CASE(dbg_gvn_pre);

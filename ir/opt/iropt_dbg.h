@@ -286,22 +286,6 @@
 	} while(0)
 
 /**
- * Merge the debug info due to polymorphic call optimization.
- * A Sel node was replaced by a constant.
- *
- * @param sel   the Sel node that will be replaced.
- * @param c     the constant node that replaces sel
- */
-#define DBG_OPT_POLY(sel, c)                                                 \
-	do {                                                                     \
-	  ir_node *ons[3];                                                       \
-	  ons[0] = sel;                                                          \
-	  ons[1] = skip_Proj(get_Sel_ptr(sel));                                  \
-	  ons[2] = c;                                                            \
-	  __dbg_info_merge_sets(&c, 1, ons, ARRAY_SIZE(ons), dbg_rem_poly_call); \
-	} while(0)
-
-/**
  * A node was replaced by another node due to a Confirmation.
  *
  * @param oldn  the old node
