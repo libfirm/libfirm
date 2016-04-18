@@ -4488,8 +4488,7 @@ static ir_node *gen_IJmp(ir_node *node)
 	assert(get_irn_mode(op) == mode_P);
 
 	ia32_address_mode_t am;
-	match_arguments(&am, block, NULL, op, NULL,
-	                match_am | match_immediate | match_upconv);
+	match_arguments(&am, block, NULL, op, NULL, match_am | match_immediate);
 	adjust_pc_relative_relocation(am.new_op2);
 
 	x86_address_t *addr      = &am.addr;
@@ -5038,8 +5037,7 @@ static ir_node *gen_Call(ir_node *node)
 	ir_node      *const old_block = get_nodes_block(node);
 	ir_node      *const callee    = get_Call_ptr(node);
 	ir_node      *const mem       = get_Call_mem(node);
-	match_arguments(&am, old_block, NULL, callee, mem,
-	                match_am | match_immediate | match_upconv);
+	match_arguments(&am, old_block, NULL, callee, mem, match_am | match_immediate);
 	adjust_pc_relative_relocation(am.new_op2);
 
 	ir_type                    *const type     = get_Call_type(node);
