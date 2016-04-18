@@ -135,8 +135,6 @@ static void ia32_dump_immediate(FILE *const F, ir_entity *const entity,
 
 void ia32_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 {
-	ir_mode *mode = NULL;
-
 	switch (reason) {
 		case dump_node_opcode_txt:
 			fprintf(F, "%s", get_irn_opname(n));
@@ -157,11 +155,12 @@ void ia32_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 			}
 			break;
 
-		case dump_node_mode_txt:
-			mode = get_ia32_ls_mode(n);
-			if (mode != NULL)
+		case dump_node_mode_txt: {
+			ir_mode *const mode = get_ia32_ls_mode(n);
+			if (mode)
 				fprintf(F, "[%s]", get_mode_name(mode));
 			break;
+		}
 
 		case dump_node_nodeattr_txt:
 			if (! is_ia32_Lea(n)) {
