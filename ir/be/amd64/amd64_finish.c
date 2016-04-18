@@ -70,9 +70,11 @@ static void transform_sub_to_neg_add(ir_node *node,
 		ir_entity *sign_bit_const = create_float_const_entity(tv);
 
 		amd64_binop_addr_attr_t xor_attr = {
-			.base.base = {
-				.op_mode = AMD64_OP_REG_ADDR,
-				.size    = INSN_SIZE_64,
+			.base = {
+				.base = {
+					.op_mode = AMD64_OP_REG_ADDR,
+					.size    = INSN_SIZE_64,
+				},
 			},
 		};
 		init_lconst_addr(&xor_attr.base.addr, sign_bit_const);

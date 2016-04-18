@@ -2595,15 +2595,6 @@ ir_node *amd64_new_spill(ir_node *value, ir_node *after)
 	ir_node  *const mem   = get_irg_no_mem(irg);
 	ir_mode  *const mode  = get_irn_mode(value);
 
-	amd64_binop_addr_attr_t attr = {
-		.base.base.op_mode = AMD64_OP_ADDR_REG,
-		.base.addr = {
-			.immediate.kind = X86_IMM_FRAMEENT,
-			.variant        = X86_ADDR_BASE,
-			.base_input     = 1,
-		},
-		.u.reg_input = 0,
-	};
 	ir_node *in[] = { value, frame, mem };
 
 	amd64_insn_size_t           size;
@@ -2627,7 +2618,21 @@ ir_node *amd64_new_spill(ir_node *value, ir_node *after)
 		reqs = reg_reg_mem_reqs;
 	}
 
-	attr.base.base.size = size;
+	amd64_binop_addr_attr_t const attr = {
+		.base = {
+			.base = {
+				.op_mode = AMD64_OP_ADDR_REG,
+				.size    = size,
+			},
+			.addr = {
+				.immediate.kind = X86_IMM_FRAMEENT,
+				.variant        = X86_ADDR_BASE,
+				.base_input     = 1,
+			},
+		},
+		.u.reg_input = 0,
+	};
+
 	ir_node *const store = cons(NULL, block, ARRAY_SIZE(in), in, reqs, &attr);
 	arch_add_irn_flags(store, arch_irn_flag_spill);
 	sched_add_after(after, store);
