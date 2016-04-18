@@ -5489,8 +5489,7 @@ static ir_node *gen_popcount(ir_node *node)
 	ir_node            *param = get_Builtin_param(node, 0);
 	ir_node            *block = get_nodes_block(node);
 	ia32_address_mode_t am;
-	match_arguments(&am, block, NULL, param, NULL,
-					match_am | match_16bit_am | match_upconv);
+	match_arguments(&am, block, NULL, param, NULL, match_am | match_16bit_am | match_zero_ext);
 
 	x86_address_t *addr = &am.addr;
 	dbg_info *dbgi      = get_irn_dbg_info(node);
