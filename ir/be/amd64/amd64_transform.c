@@ -2587,35 +2587,26 @@ static ir_node *gen_Store(ir_node *const node)
 	return make_store_for_mode(mode, dbgi, block, arity, in, &attr, pinned);
 }
 
-ir_node *amd64_new_spill(ir_node *value, ir_node *after)
+ir_node *amd64_new_spill(ir_node *const value, ir_node *const after)
 {
-	ir_node  *const block = get_block(after);
-	ir_graph *const irg   = get_irn_irg(block);
-	ir_node  *const frame = get_irg_frame(irg);
-	ir_node  *const mem   = get_irg_no_mem(irg);
-	ir_mode  *const mode  = get_irn_mode(value);
-
-	ir_node *in[] = { value, frame, mem };
-
 	amd64_insn_size_t           size;
 	construct_binop_func        cons;
 	arch_register_req_t const **reqs;
-	if (mode_is_float(mode) || mode == amd64_mode_xmm) {
-		if (mode == x86_mode_E) {
-			size = INSN_SIZE_80;
-			cons = &new_bd_amd64_fst;
-			reqs = x87_reg_mem_reqs;
-		} else {
-			size = INSN_SIZE_128;
-			/* TODO: currently our stack alignment is messed up so we can't use
-			 * movdqa for spilling... */
-			cons = new_bd_amd64_movdqu_store;
-			reqs = xmm_reg_mem_reqs;
-		}
-	} else {
+	ir_mode            *const   mode = get_irn_mode(value);
+	if (!mode_is_float(mode) && mode != amd64_mode_xmm) {
 		size = INSN_SIZE_64;
 		cons = &new_bd_amd64_mov_store;
 		reqs = reg_reg_mem_reqs;
+	} else if (mode == x86_mode_E) {
+		size = INSN_SIZE_80;
+		cons = &new_bd_amd64_fst;
+		reqs = x87_reg_mem_reqs;
+	} else {
+		size = INSN_SIZE_128;
+		/* TODO: currently our stack alignment is messed up so we can't use
+		 * movdqa for spilling... */
+		cons = new_bd_amd64_movdqu_store;
+		reqs = xmm_reg_mem_reqs;
 	}
 
 	amd64_binop_addr_attr_t const attr = {
@@ -2633,7 +2624,12 @@ ir_node *amd64_new_spill(ir_node *value, ir_node *after)
 		.u.reg_input = 0,
 	};
 
-	ir_node *const store = cons(NULL, block, ARRAY_SIZE(in), in, reqs, &attr);
+	ir_node  *const block = get_block(after);
+	ir_graph *const irg   = get_irn_irg(block);
+	ir_node  *const frame = get_irg_frame(irg);
+	ir_node  *const mem   = get_irg_no_mem(irg);
+	ir_node  *const in[]  = { value, frame, mem };
+	ir_node  *const store = cons(NULL, block, ARRAY_SIZE(in), in, reqs, &attr);
 	arch_add_irn_flags(store, arch_irn_flag_spill);
 	sched_add_after(after, store);
 	return store;
