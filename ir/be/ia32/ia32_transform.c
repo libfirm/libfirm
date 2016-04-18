@@ -1345,7 +1345,7 @@ static ir_node *gen_shift_binop(ir_node *node, ir_node *op1, ir_node *op2,
 
 	assert(!mode_is_float(mode));
 	assert(flags & match_immediate);
-	assert((flags & ~(match_mode_neutral | match_sign_ext | match_zero_ext | match_upconv | match_immediate)) == 0);
+	assert((flags & ~(match_mode_neutral | match_sign_ext | match_zero_ext | match_immediate)) == 0);
 
 	if (get_mode_modulo_shift(mode) != 32) {
 		/* TODO: implement special cases for non-modulo shifts */
@@ -1359,9 +1359,7 @@ static ir_node *gen_shift_binop(ir_node *node, ir_node *op1, ir_node *op2,
 	} else {
 		op1 = be_skip_sameconv(op1);
 		if (get_mode_size_bits(mode) != 32) {
-			if (flags & match_upconv) {
-				new_op1 = transform_upconv(op1, node);
-			} else if (flags & match_sign_ext) {
+			if (flags & match_sign_ext) {
 				new_op1 = transform_sext(op1, node);
 			} else if (flags & match_zero_ext) {
 				new_op1 = transform_zext(op1, node);
