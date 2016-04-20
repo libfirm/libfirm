@@ -131,8 +131,8 @@ static void sparc_sp_sim(ir_node *const node, stack_pointer_state_t *state)
 
 void sparc_fix_stack_bias(ir_graph *irg)
 {
-	unsigned const misalgin = 0;
-	be_sim_stack_pointer(irg, misalgin, SPARC_PO2_STACK_ALIGNMENT,
+	unsigned const misalign = 0;
+	be_sim_stack_pointer(irg, misalign, SPARC_PO2_STACK_ALIGNMENT,
 	                     sparc_sp_sim);
 }
 
