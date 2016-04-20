@@ -67,6 +67,10 @@ static bool node_has_sp_base(ir_node const *const node)
 		input = n_sparc_Ld_ptr;
 	} else if (is_sparc_St(node)) {
 		input = n_sparc_St_ptr;
+	} else if (is_sparc_Ldf(node)) {
+		input = n_sparc_Ldf_ptr;
+	} else if (is_sparc_Stf(node)) {
+		input = n_sparc_Stf_ptr;
 	} else {
 		panic("Unexpected node %+F", node);
 	}
