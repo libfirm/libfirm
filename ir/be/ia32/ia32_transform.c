@@ -2469,12 +2469,6 @@ static ir_node *dest_am_binop(ir_node *node, ir_node *op1, ir_node *op2,
 	}
 
 	x86_address_t *addr = &am.addr;
-	if (addr->base == NULL)
-		addr->base = noreg_GP;
-	if (addr->index == NULL)
-		addr->index = noreg_GP;
-	if (addr->mem == NULL)
-		addr->mem = nomem;
 
 	dbg_info *dbgi    = get_irn_dbg_info(node);
 	ir_node  *block   = be_transform_node(src_block);
