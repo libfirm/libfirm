@@ -209,6 +209,27 @@ static bool eat_shl(x86_address_t *addr, ir_node *node)
 	return true;
 }
 
+static void add_addr_operand(x86_address_t *const addr, ir_node *const op)
+{
+	if (!op)
+		return;
+	ir_node *const base = addr->base;
+	if (base) {
+		addr->variant = X86_ADDR_BASE_INDEX;
+		assert(!addr->index && addr->scale == 0);
+		/* esp must be used as base */
+		if (is_Proj(op) && is_Start(get_Proj_pred(op))) {
+			addr->base  = op;
+			addr->index = base;
+		} else {
+			addr->index = op;
+		}
+	} else {
+		addr->variant = addr->index ? X86_ADDR_BASE_INDEX : X86_ADDR_BASE;
+		addr->base    = op;
+	}
+}
+
 void x86_create_address_mode(x86_address_t *addr, ir_node *node,
                              x86_create_am_flags_t flags)
 {
@@ -305,43 +326,8 @@ tryit:
 			}
 		}
 
-		if (left != NULL) {
-			ir_node *base = addr->base;
-			if (base == NULL) {
-				addr->variant = addr->index != NULL ? X86_ADDR_BASE_INDEX
-				                                    : X86_ADDR_BASE;
-				addr->base    = left;
-			} else {
-				addr->variant = X86_ADDR_BASE_INDEX;
-				assert(addr->index == NULL && addr->scale == 0);
-				assert(right == NULL);
-				/* esp must be used as base */
-				if (is_Proj(left) && is_Start(get_Proj_pred(left))) {
-					addr->index = base;
-					addr->base  = left;
-				} else {
-					addr->index = left;
-				}
-			}
-		}
-		if (right != NULL) {
-			ir_node *base = addr->base;
-			if (base == NULL) {
-				addr->variant = addr->index != NULL ? X86_ADDR_BASE_INDEX
-				                                    : X86_ADDR_BASE;
-				addr->base    = right;
-			} else {
-				addr->variant = X86_ADDR_BASE_INDEX;
-				assert(addr->index == NULL && addr->scale == 0);
-				/* esp must be used as base */
-				if (is_Proj(right) && is_Start(get_Proj_pred(right))) {
-					addr->index = base;
-					addr->base  = right;
-				} else {
-					addr->index = right;
-				}
-			}
-		}
+		add_addr_operand(addr, left);
+		add_addr_operand(addr, right);
 		return;
 	}
 
