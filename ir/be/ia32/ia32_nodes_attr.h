@@ -18,13 +18,13 @@
 #include "x86_x87.h"
 #include "x86_address_mode.h"
 
-typedef enum {
+typedef enum  ia32_op_type_t {
 	ia32_Normal,
 	ia32_AddrModeD,
 	ia32_AddrModeS
 } ia32_op_type_t;
 
-typedef enum {
+typedef enum ia32_am_type_t {
 	ia32_am_none   = 0,
 	ia32_am_unary  = 1,
 	ia32_am_binary = 2
@@ -65,7 +65,7 @@ struct ia32_op_attr_t {
 };
 
 #ifndef NDEBUG
-typedef enum {
+typedef enum ia32_attr_type_t {
 	IA32_ATTR_INVALID                = 0,
 	IA32_ATTR_ia32_attr_t            = 1 << 0,
 	IA32_ATTR_ia32_x87_attr_t        = 1 << 1,
