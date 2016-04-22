@@ -30,6 +30,7 @@
 #include "panic.h"
 #include "array.h"
 #include "heights.h"
+#include "tv_t.h"
 
 #include "bediagnostic.h"
 #include "benode.h"
@@ -421,6 +422,14 @@ static ir_node *gen_Const(ir_node *node)
 				res  = load;
 			} else if (tarval_is_one(tv)) {
 				load = new_bd_ia32_fld1(dbgi, block);
+				res  = load;
+			} else if (tarval_is_minus_null(tv)) {
+				load = new_bd_ia32_fldz(dbgi, block);
+				goto negate;
+			} else if (tarval_is_minus_one(tv)) {
+				load = new_bd_ia32_fld1(dbgi, block);
+negate:
+				load = new_bd_ia32_fchs(dbgi, block, load);
 				res  = load;
 			} else {
 				ir_entity *const floatent = create_float_const_entity(tv, NULL);
