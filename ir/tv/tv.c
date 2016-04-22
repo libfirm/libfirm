@@ -522,6 +522,13 @@ int tarval_is_all_one(ir_tarval const *tv)
 	return tv == get_tarval_mode(tv)->all_one && tv != tarval_bad;
 }
 
+bool tarval_is_minus_null(ir_tarval const *const tv)
+{
+	assert(mode_is_float(get_tarval_mode(tv)));
+	const fp_value *val = (const fp_value*)tv->value;
+	return fc_is_negative(val) && fc_is_zero(val);
+}
+
 bool tarval_is_minus_one(ir_tarval const *tv)
 {
 	assert(mode_is_float(get_tarval_mode(tv)));

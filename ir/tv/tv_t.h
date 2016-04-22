@@ -129,6 +129,8 @@ uint64_t get_tarval_uint64(ir_tarval const *tv);
 
 bool tarval_is_uint64(ir_tarval const *tv);
 
+bool tarval_is_minus_null(ir_tarval const *tv);
+
 bool tarval_is_minus_one(ir_tarval const *tv);
 
 ir_tarval *get_tarval_small(ir_mode *mode);
