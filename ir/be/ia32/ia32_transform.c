@@ -2523,14 +2523,13 @@ static ir_node *dest_am_unop(ir_node *node, ir_node *op, ir_node *mem,
 
 static ir_node *try_create_SetMem(ir_node *node, ir_node *ptr, ir_node *mem)
 {
-	ir_mode              *mode      = get_irn_mode(node);
-	ir_node              *mux_true  = get_Mux_true(node);
-	ir_node              *mux_false = get_Mux_false(node);
-
+	ir_mode *const mode = get_irn_mode(node);
 	if (get_mode_size_bits(mode) != 8)
 		return NULL;
 
-	bool negated;
+	bool           negated;
+	ir_node *const mux_true  = get_Mux_true(node);
+	ir_node *const mux_false = get_Mux_false(node);
 	if (is_Const_1(mux_true) && is_Const_0(mux_false)) {
 		negated = false;
 	} else if (is_Const_0(mux_true) && is_Const_1(mux_false)) {
@@ -2540,8 +2539,8 @@ static ir_node *try_create_SetMem(ir_node *node, ir_node *ptr, ir_node *mem)
 	}
 
 	x86_condition_code_t cc;
-	ir_node *cond  = get_Mux_sel(node);
-	ir_node *flags = get_flags_node(cond, &cc);
+	ir_node       *const cond  = get_Mux_sel(node);
+	ir_node       *const flags = get_flags_node(cond, &cc);
 	/* we can't handle the float special cases with SetM */
 	if (cc & x86_cc_additional_float_cases)
 		return NULL;
