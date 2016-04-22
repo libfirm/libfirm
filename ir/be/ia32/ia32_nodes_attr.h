@@ -30,7 +30,8 @@ typedef enum {
 	ia32_am_binary = 2
 } ia32_am_type_t;
 
-typedef enum {
+typedef enum match_flags_t {
+	match_none              = 0,
 	match_commutative       = 1 << 0, /**< inputs are commutative */
 	match_am_and_immediates = 1 << 1, /**< node supports AM and immediate at
 	                                       the same time */

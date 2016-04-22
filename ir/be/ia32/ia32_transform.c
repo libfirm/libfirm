@@ -821,7 +821,6 @@ struct ia32_address_mode_t {
 	x86_address_t   addr;
 	ir_mode        *ls_mode;
 	ir_node        *mem_proj;
-	ir_node        *am_node;
 	ia32_op_type_t  op_type;
 	ir_node        *new_op1;
 	ir_node        *new_op2;
@@ -884,7 +883,6 @@ static void build_address(ia32_address_mode_t *am, ir_node *node,
 	am->pinned       = get_irn_pinned(load);
 	am->ls_mode      = get_Load_mode(load);
 	am->mem_proj     = get_Proj_for_pn(load, pn_Load_M);
-	am->am_node      = node;
 
 	/* construct load address */
 	ia32_create_address_mode(addr, ptr, flags);
@@ -2445,6 +2443,27 @@ static bool use_dest_am(ir_node *block, ir_node *node, ir_node *mem,
 	return true;
 }
 
+static ir_node *start_dest_am(ia32_address_mode_t *const am, ir_node *const block, ir_node *const op, ir_node *const mem)
+{
+	memset(am, 0, sizeof(*am));
+	build_address(am, op, x86_create_am_double_use);
+	return transform_AM_mem(block, op, mem, am->addr.mem);
+}
+
+static void finish_dest_am(ir_node *const new_node, ir_node *const node, ia32_address_mode_t const *const am, ir_mode *const mode)
+{
+	set_address(new_node, &am->addr);
+	set_ia32_op_type(new_node, ia32_AddrModeD);
+	set_ia32_ls_mode(new_node, mode);
+	SET_IA32_ORIG_NODE(new_node, node);
+
+	ir_node *const new_proj = be_new_Proj(new_node, pn_ia32_M);
+	be_set_transformed_node(get_Proj_pred(am->mem_proj), new_proj);
+	ir_node *const mem_proj = be_transform_node(am->mem_proj);
+	be_set_transformed_node(mem_proj,     new_proj);
+	be_set_transformed_node(am->mem_proj, new_proj);
+}
+
 static ir_node *dest_am_binop(ir_node *node, ir_node *op1, ir_node *op2,
                               ir_node *mem, ir_node *ptr, ir_mode *mode,
                               construct_binop_dest_func *func,
@@ -2452,48 +2471,27 @@ static ir_node *dest_am_binop(ir_node *node, ir_node *op1, ir_node *op2,
                               match_flags_t flags, const char imm_mode)
 {
 	assert(flags & match_immediate); /* there is no destam node without... */
-	bool commutative = (flags & match_commutative) != 0;
 
-	ia32_address_mode_t am;
-	memset(&am, 0, sizeof(am));
-	ir_node *src_block = get_nodes_block(node);
-	ir_node *new_op;
-	if (use_dest_am(src_block, op1, mem, ptr, op2, flags)) {
-		build_address(&am, op1, x86_create_am_double_use);
-		new_op = create_immediate_or_transform(op2, imm_mode);
-	} else if (commutative && use_dest_am(src_block, op2, mem, ptr, op1, flags)) {
-		build_address(&am, op2, x86_create_am_double_use);
-		new_op = create_immediate_or_transform(op1, imm_mode);
-	} else {
-		return NULL;
+	ir_node *const src_block = get_nodes_block(node);
+	if (!use_dest_am(src_block, op1, mem, ptr, op2, flags)) {
+		if (!(flags & match_commutative))
+			return NULL;
+		ir_node *const tmp = op1;
+		op1 = op2;
+		op2 = tmp;
+		if (!use_dest_am(src_block, op1, mem, ptr, op2, flags))
+			return NULL;
 	}
 
-	x86_address_t *addr = &am.addr;
-
-	dbg_info *dbgi    = get_irn_dbg_info(node);
-	ir_node  *block   = be_transform_node(src_block);
-	ir_node  *new_mem = transform_AM_mem(block, am.am_node, mem, addr->mem);
-
-	ir_node *new_node;
-	if (get_mode_size_bits(mode) == 8) {
-		new_node = func8bit(dbgi, block, addr->base, addr->index, new_mem,
-		                    new_op);
-	} else {
-		new_node = func(dbgi, block, addr->base, addr->index, new_mem, new_op);
-	}
-	set_address(new_node, addr);
-	set_ia32_op_type(new_node, ia32_AddrModeD);
-	set_ia32_ls_mode(new_node, mode);
-	SET_IA32_ORIG_NODE(new_node, node);
-
-	ir_node *const new_proj = be_new_Proj(new_node, pn_ia32_M);
-
-	be_set_transformed_node(get_Proj_pred(am.mem_proj), new_proj);
-	ir_node *mem_proj = be_transform_node(am.mem_proj);
-	be_set_transformed_node(am.mem_proj, new_proj);
-	be_set_transformed_node(mem_proj, new_proj);
+	ia32_address_mode_t              am;
+	ir_node                   *const new_op   = create_immediate_or_transform(op2, imm_mode);
+	ir_node                   *const block    = be_transform_node(src_block);
+	ir_node                   *const new_mem  = start_dest_am(&am, block, op1, mem);
+	dbg_info                  *const dbgi     = get_irn_dbg_info(node);
+	construct_binop_dest_func *const cons     = get_mode_size_bits(mode) == 8 ? func8bit : func;
+	ir_node                   *const new_node = cons(dbgi, block, am.addr.base, am.addr.index, new_mem, new_op);
+	finish_dest_am(new_node, node, &am, mode);
 	be_set_transformed_node(node, new_node);
-
 	return new_node;
 }
 
@@ -2501,34 +2499,16 @@ static ir_node *dest_am_unop(ir_node *node, ir_node *op, ir_node *mem,
                              ir_node *ptr, ir_mode *mode,
                              construct_unop_dest_func *func)
 {
-	ir_node  *src_block = get_nodes_block(node);
-
-	if (!use_dest_am(src_block, op, mem, ptr, NULL, (match_flags_t)0))
+	ir_node *const src_block = get_nodes_block(node);
+	if (!use_dest_am(src_block, op, mem, ptr, NULL, match_none))
 		return NULL;
 
-	ia32_address_mode_t am;
-	memset(&am, 0, sizeof(am));
-	build_address(&am, op, x86_create_am_double_use);
-
-	x86_address_t *addr     = &am.addr;
-	dbg_info      *dbgi     = get_irn_dbg_info(node);
-	ir_node       *block    = be_transform_node(src_block);
-	ir_node       *new_mem  = transform_AM_mem(block, am.am_node, mem,
-	                                           addr->mem);
-	ir_node       *new_node = func(dbgi, block, addr->base, addr->index,
-	                               new_mem);
-	set_address(new_node, addr);
-	set_ia32_op_type(new_node, ia32_AddrModeD);
-	set_ia32_ls_mode(new_node, mode);
-	SET_IA32_ORIG_NODE(new_node, node);
-
-	ir_node *const new_proj = be_new_Proj(new_node, pn_ia32_M);
-
-	be_set_transformed_node(get_Proj_pred(am.mem_proj), new_proj);
-	ir_node *mem_proj = be_transform_node(am.mem_proj);
-	be_set_transformed_node(am.mem_proj, new_proj);
-	be_set_transformed_node(mem_proj, new_proj);
-
+	ia32_address_mode_t  am;
+	ir_node       *const block    = be_transform_node(src_block);
+	ir_node       *const new_mem  = start_dest_am(&am, block, op, mem);
+	dbg_info      *const dbgi     = get_irn_dbg_info(node);
+	ir_node       *const new_node = func(dbgi, block, am.addr.base, am.addr.index, new_mem);
+	finish_dest_am(new_node, node, &am, mode);
 	return new_node;
 }
 
