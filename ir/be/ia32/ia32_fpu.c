@@ -60,7 +60,6 @@ static ir_node *create_fnstcw(ir_node *const block, ir_node *const frame, ir_nod
 	ia32_attr_t *const attr = get_ia32_attr(fnstcw);
 	attr->addr.variant = X86_ADDR_BASE;
 	set_ia32_op_type(fnstcw, ia32_AddrModeD);
-	set_ia32_ls_mode(fnstcw, ia32_mode_fpcw);
 	set_ia32_frame_use(fnstcw, IA32_FRAME_USE_32BIT);
 	return fnstcw;
 }
@@ -116,11 +115,10 @@ static ir_node *create_fpu_mode_reload(void *const env, ir_node *const state, ir
 			ir_node *const cwstore = create_fnstcw(block, frame, noreg, nomem, last_state);
 			sched_add_before(before, cwstore);
 
-			ir_node *const load = new_bd_ia32_Load(NULL, block, frame, noreg, cwstore);
+			ir_node *const load = new_bd_ia32_Load(NULL, block, frame, noreg, cwstore, X86_SIZE_16, false);
 			ia32_attr_t *const load_attr = get_ia32_attr(load);
 			load_attr->addr.variant = X86_ADDR_BASE;
 			set_ia32_op_type(load, ia32_AddrModeS);
-			set_ia32_ls_mode(load, mode_Hu);
 			set_ia32_frame_use(load, IA32_FRAME_USE_32BIT);
 			sched_add_before(before, load);
 
@@ -128,15 +126,17 @@ static ir_node *create_fpu_mode_reload(void *const env, ir_node *const state, ir
 
 			/* TODO: Make the actual mode configurable in ChangeCW. */
 			ir_node *const or_const = ia32_create_Immediate(irg, 0xC00);
-			ir_node *const orn      = new_bd_ia32_Or(NULL, block, noreg, noreg, nomem, load_res, or_const);
+			ir_node *const orn      = new_bd_ia32_Or(NULL, block, noreg, noreg,
+			                                         nomem, load_res, or_const,
+			                                         X86_SIZE_32);
 			sched_add_before(before, orn);
 
-			ir_node *const store = new_bd_ia32_Store(NULL, block, frame, noreg, nomem, orn);
+			ir_node *const store = new_bd_ia32_Store(NULL, block, frame, noreg,
+			                                         nomem, orn, X86_SIZE_32);
 			ia32_attr_t *const store_attr = get_ia32_attr(store);
+			/* Use ia32_mode_gp, as movl has a shorter opcode than movw. */
 			store_attr->addr.variant = X86_ADDR_BASE;
 			set_ia32_op_type(store, ia32_AddrModeD);
-			/* Use ia32_mode_gp, as movl has a shorter opcode than movw. */
-			set_ia32_ls_mode(store, ia32_mode_gp);
 			set_ia32_frame_use(store, IA32_FRAME_USE_32BIT);
 			sched_add_before(before, store);
 			mem = be_new_Proj(store, pn_ia32_Store_M);
@@ -147,8 +147,8 @@ static ir_node *create_fpu_mode_reload(void *const env, ir_node *const state, ir
 		attr->addr.variant = X86_ADDR_BASE;
 	}
 
+	get_ia32_attr(reload)->size = X86_SIZE_16;
 	set_ia32_op_type(reload, ia32_AddrModeS);
-	set_ia32_ls_mode(reload, ia32_mode_fpcw);
 	set_ia32_frame_use(reload, IA32_FRAME_USE_32BIT);
 	arch_set_irn_register(reload, &ia32_registers[REG_FPCW]);
 	sched_add_before(before, reload);

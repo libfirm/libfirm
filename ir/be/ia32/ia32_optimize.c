@@ -137,43 +137,61 @@ check_shift_amount:;
 	return pn == pn_ia32_res ? produces_zero_sign : produces_no_flag;
 }
 
-static bool is_op_32bit(ir_node *const node)
-{
-	ir_mode *const ls_mode = get_ia32_ls_mode(node);
-	return !ls_mode || get_mode_size_bits(ls_mode) == 32;
-}
-
 static bool is_res_used(ir_node *const node, unsigned const num)
 {
 	return get_irn_mode(node) == mode_T && get_Proj_for_pn(node, num);
 }
 
-typedef ir_node *cons_binop(dbg_info*, ir_node*, ir_node*, ir_node*, ir_node*, ir_node*, ir_node*);
+typedef ir_node *cons_binop(dbg_info*, ir_node*, ir_node*, ir_node*, ir_node*, ir_node*, ir_node*, x86_insn_size_t size);
 
-static void make_binop(ir_node *const node, cons_binop *const cons, ir_node *const left, ir_node *const right, ir_mode *const mode, arch_register_t const *const reg)
+static ir_node *make_binop(ir_node *const node, cons_binop *const cons,
+                           ir_node *const left, ir_node *const right,
+                           x86_insn_size_t size,
+                           arch_register_t const *const reg)
 {
 	dbg_info *const dbgi  = get_irn_dbg_info(node);
 	ir_node  *const block = get_nodes_block(node);
 	ir_node  *const noreg = get_irn_n(node, n_ia32_base);
 	ir_node  *const nomem = get_irn_n(node, n_ia32_mem);
-	ir_node  *const binop = cons(dbgi, block, noreg, noreg, nomem, left, right);
-	set_ia32_ls_mode(binop, mode);
+	ir_node  *const binop = cons(dbgi, block, noreg, noreg, nomem, left, right,
+	                             size);
 	arch_set_irn_register_out(binop, pn_ia32_res, reg);
 	replace(node, binop);
+	return binop;
 }
 
-static void make_binop_imm(ir_node *const node, cons_binop *const cons, unsigned const val, ir_mode *const mode, arch_register_t const *const reg)
+static ir_node *make_binop_imm(ir_node *const node, cons_binop *const cons,
+                               unsigned const val, x86_insn_size_t const size,
+                               arch_register_t const *const reg)
 {
 	ir_node  *const left  = get_irn_n(node, n_ia32_binary_left);
 	ir_graph *const irg   = get_irn_irg(node);
 	ir_node  *const right = ia32_create_Immediate(irg, val);
-	make_binop(node, cons, left, right, mode, reg);
+	return make_binop(node, cons, left, right, size, reg);
 }
 
-static void make_xor(ir_node *const and, cons_binop *const cons, ir_mode *const mode, arch_register_t const *const reg)
+static void make_binop_imm_8h(ir_node *const node, cons_binop *const cons,
+                              unsigned const val, x86_insn_size_t const size,
+                              arch_register_t const *const reg)
+{
+	ir_node *res = make_binop_imm(node, cons, val, size, reg);
+	get_ia32_attr(res)->use_8bit_high = true;
+}
+
+static ir_node *make_xor(ir_node *const and, cons_binop *const cons,
+                         x86_insn_size_t const size,
+                         arch_register_t const *const reg)
 {
 	ir_node *const left = get_irn_n(and, n_ia32_And_left);
-	make_binop(and, cons, left, left, mode, reg);
+	return make_binop(and, cons, left, left, size, reg);
+}
+
+static void make_xor_8h(ir_node *const and, cons_binop *const cons,
+                        x86_insn_size_t const size,
+                        arch_register_t const *const reg)
+{
+	ir_node *const res = make_xor(and, cons, size, reg);
+	get_ia32_attr(res)->use_8bit_high = true;
 }
 
 /**
@@ -184,7 +202,7 @@ static void make_xor(ir_node *const and, cons_binop *const cons, ir_mode *const 
  */
 static void peephole_ia32_And(ir_node *const node)
 {
-	if (!is_op_32bit(node))
+	if (get_ia32_attr_const(node)->size != X86_SIZE_32)
 		return;
 
 	ia32_immediate_attr_t const *const imm = get_op_imm_no_ent(node, n_ia32_And_right);
@@ -199,16 +217,16 @@ static void peephole_ia32_And(ir_node *const node)
 	arch_register_t const *const reg = arch_get_irn_register_out(node, pn_ia32_And_res);
 	uint32_t               const val = imm->imm.offset;
 	if (val == 0xFFFF0000) {
-		make_xor(node, &new_bd_ia32_Xor, mode_Hu, reg);
+		make_xor(node, &new_bd_ia32_Xor, X86_SIZE_16, reg);
 	} else if (is_hl_register(reg)) {
 		if (val == 0xFFFFFF00) {
-			make_xor(node, &new_bd_ia32_Xor_8bit, mode_Bu, reg);
+			make_xor(node, &new_bd_ia32_Xor_8bit, X86_SIZE_8, reg);
 		} else if (val == 0xFFFF00FF) {
-			make_xor(node, &new_bd_ia32_Xor_8bit, ia32_mode_8h, reg);
+			make_xor_8h(node, &new_bd_ia32_Xor_8bit, X86_SIZE_8, reg);
 		} else if ((val & 0xFFFFFF80) == 0xFFFFFF00) {
-			make_binop_imm(node, &new_bd_ia32_And_8bit, val & 0xFF, mode_Bu, reg);
+			make_binop_imm(node, &new_bd_ia32_And_8bit, val & 0xFF, X86_SIZE_8, reg);
 		} else if ((val & 0xFFFF00FF) == 0xFFFF00FF) {
-			make_binop_imm(node, &new_bd_ia32_And_8bit, val >> 8 & 0xFF, ia32_mode_8h, reg);
+			make_binop_imm_8h(node, &new_bd_ia32_And_8bit, val >> 8 & 0xFF, X86_SIZE_8, reg);
 		}
 	}
 }
@@ -220,7 +238,7 @@ static void peephole_ia32_And(ir_node *const node)
  */
 static void peephole_ia32_Or(ir_node *const node)
 {
-	if (!is_op_32bit(node))
+	if (get_ia32_attr_const(node)->size != X86_SIZE_32)
 		return;
 
 	ia32_immediate_attr_t const *const imm = get_op_imm_no_ent(node, n_ia32_Or_right);
@@ -234,22 +252,28 @@ static void peephole_ia32_Or(ir_node *const node)
 	if (is_hl_register(reg)) {
 		uint32_t const val = imm->imm.offset;
 		if ((val & 0xFFFFFF80) == 0x00000080) {
-			make_binop_imm(node, &new_bd_ia32_Or_8bit, val, mode_Bu, reg);
+			make_binop_imm(node, &new_bd_ia32_Or_8bit, val, X86_SIZE_8, reg);
 		} else if ((val & 0xFFFF00FF) == 0) {
-			make_binop_imm(node, &new_bd_ia32_Or_8bit, val >> 8, ia32_mode_8h, reg);
+			make_binop_imm_8h(node, &new_bd_ia32_Or_8bit, val >> 8, X86_SIZE_8, reg);
 		}
 	}
 }
 
-static void make_not(ir_node *const xor, ir_node *(*const cons)(dbg_info*, ir_node*, ir_node*), ir_mode *const mode, arch_register_t const *const reg)
+static ir_node *make_not(ir_node *const xor, ir_node *(*const cons)(dbg_info*, ir_node*, ir_node*, x86_insn_size_t), x86_insn_size_t const size, arch_register_t const *const reg)
 {
 	dbg_info *const dbgi  = get_irn_dbg_info(xor);
 	ir_node  *const block = get_nodes_block(xor);
 	ir_node  *const left  = get_irn_n(xor, n_ia32_Xor_left);
-	ir_node  *const not   = cons(dbgi, block, left);
-	set_ia32_ls_mode(not, mode);
+	ir_node  *const not   = cons(dbgi, block, left, size);
 	arch_set_irn_register_out(not, pn_ia32_Not_res, reg);
 	replace(xor, not);
+	return not;
+}
+
+static void make_not_8h(ir_node *const xor, ir_node *(*const cons)(dbg_info*, ir_node*, ir_node*, x86_insn_size_t), x86_insn_size_t const size, arch_register_t const *const reg)
+{
+	ir_node *const res = make_not(xor, cons, size, reg);
+	get_ia32_attr(res)->use_8bit_high = true;
 }
 
 /**
@@ -263,7 +287,7 @@ static void make_not(ir_node *const xor, ir_node *(*const cons)(dbg_info*, ir_no
  */
 static void peephole_ia32_Xor(ir_node *const node)
 {
-	if (!is_op_32bit(node))
+	if (get_ia32_attr_const(node)->size != X86_SIZE_32)
 		return;
 
 	ia32_immediate_attr_t const *const imm = get_op_imm_no_ent(node, n_ia32_Xor_right);
@@ -278,16 +302,16 @@ static void peephole_ia32_Xor(ir_node *const node)
 	arch_register_t const *const reg = arch_get_irn_register_out(node, pn_ia32_Xor_res);
 	uint32_t               const val = imm->imm.offset;
 	if (val == 0x0000FFFF) {
-		make_not(node, &new_bd_ia32_Not, mode_Hu, reg);
+		make_not(node, &new_bd_ia32_Not, X86_SIZE_16, reg);
 	} else if (is_hl_register(reg)) {
 		if (val == 0x000000FF) {
-			make_not(node, &new_bd_ia32_Not_8bit, mode_Bu, reg);
+			make_not(node, &new_bd_ia32_Not_8bit, X86_SIZE_8, reg);
 		} else if (val == 0x0000FF00) {
-			make_not(node, &new_bd_ia32_Not_8bit, ia32_mode_8h, reg);
+			make_not_8h(node, &new_bd_ia32_Not_8bit, X86_SIZE_8, reg);
 		} else if ((val & 0xFFFFFF80) == 0x00000080) {
-			make_binop_imm(node, &new_bd_ia32_Xor_8bit, val, mode_Bu, reg);
+			make_binop_imm(node, &new_bd_ia32_Xor_8bit, val, X86_SIZE_8, reg);
 		} else if ((val & 0xFFFF00FF) == 0) {
-			make_binop_imm(node, &new_bd_ia32_Xor_8bit, val >> 8, ia32_mode_8h, reg);
+			make_binop_imm_8h(node, &new_bd_ia32_Xor_8bit, val >> 8, X86_SIZE_8, reg);
 		}
 	}
 }
@@ -312,11 +336,10 @@ static void peephole_ia32_Cmp(ir_node *const node)
 	ir_node  *const op           = get_irn_n(node, n_ia32_Cmp_left);
 	int       const ins_permuted = get_ia32_attr(node)->ins_permuted;
 
-	ir_mode *const ls_mode = get_ia32_ls_mode(node);
-	ir_node *const test    = get_mode_size_bits(ls_mode) == 8
-		? new_bd_ia32_Test_8bit(dbgi, block, noreg, noreg, nomem, op, op, ins_permuted)
-		: new_bd_ia32_Test     (dbgi, block, noreg, noreg, nomem, op, op, ins_permuted);
-	set_ia32_ls_mode(test, ls_mode);
+	x86_insn_size_t    const size = get_ia32_attr_const(node)->size;
+	ir_node           *const test = size == X86_SIZE_8
+		? new_bd_ia32_Test_8bit(dbgi, block, noreg, noreg, nomem, op, op, size, ins_permuted)
+		: new_bd_ia32_Test     (dbgi, block, noreg, noreg, nomem, op, op, size, ins_permuted);
 	arch_set_irn_register_out(test, pn_ia32_Test_eflags, &ia32_registers[REG_EFLAGS]);
 
 	foreach_out_edge_safe(node, edge) {
@@ -392,12 +415,10 @@ static void peephole_ia32_Test(ir_node *node)
 			return;
 		}
 
-		ir_mode *op_mode = get_ia32_ls_mode(op);
-		if (op_mode == NULL)
-			op_mode = get_irn_mode(op);
+		x86_insn_size_t const op_size = get_ia32_attr_const(op)->size;
 
 		/* Make sure we operate on the same bit size */
-		if (get_mode_size_bits(op_mode) != get_mode_size_bits(get_ia32_ls_mode(node)))
+		if (op_size != get_ia32_attr_const(node)->size)
 			return;
 
 		if (produced == produces_zero_in_carry) {
@@ -464,14 +485,18 @@ adjust_test:;
 		} else if (is_hl_register(arch_get_irn_register(left))) {
 			if ((offset & 0xFFFFFF80) == 0) {
 				/* testl $0x000000XX, %eRx -> testb 0xXX, %Rl */
-set_mode_low:
-				/* Technically we should build a Test8Bit because of the register
-				 * constraints, but nobody changes registers at this point anymore. */
-				set_ia32_ls_mode(node, mode_Bu);
+set_mode_low:;
+				/* Technically we should build a Test8Bit because of the
+				 * register constraints, but nobody changes registers at this
+				 * point anymore. */
+				ia32_attr_t *const attr = get_ia32_attr(node);
+				attr->size = X86_SIZE_8;
 			} else if ((offset & 0xFFFF80FF) == 0) {
 				/* testl $0x0000XX00, %eRx -> testb 0xXX, %Rh */
 				set_test_imm(node, offset >> 8);
-				set_ia32_ls_mode(node, ia32_mode_8h);
+				ia32_attr_t *const attr = get_ia32_attr(node);
+				attr->use_8bit_high = true;
+				attr->size          = X86_SIZE_8;
 			}
 		}
 	}
@@ -585,7 +610,7 @@ static void peephole_IncSP_Store_to_push(ir_node *irn)
 		dbg_info *const dbgi  = get_irn_dbg_info(store);
 		ir_node  *const mem   = get_irn_n(store, n_ia32_mem);
 		ir_node  *const val   = get_irn_n(store, n_ia32_unary_op);
-		ir_node  *const push  = new_bd_ia32_Push(dbgi, block, noreg, noreg, mem, val, curr_sp, ia32_mode_gp);
+		ir_node  *const push  = new_bd_ia32_Push(dbgi, block, noreg, noreg, mem, val, curr_sp, X86_SIZE_32);
 		copy_mark(store, push);
 
 		if (first_push == NULL)
@@ -729,7 +754,8 @@ static void peephole_Load_IncSP_to_pop(ir_node *irn)
 		ir_node               *mem  = get_irn_n(load, n_ia32_mem);
 		const arch_register_t *reg  = arch_get_irn_register_out(load, pn_ia32_Load_res);
 
-		ir_node *pop = new_bd_ia32_Pop(get_irn_dbg_info(load), block, mem, pred_sp);
+		x86_insn_size_t const size = get_ia32_attr_const(load)->size;
+		ir_node *pop = new_bd_ia32_Pop(get_irn_dbg_info(load), block, mem, pred_sp, size);
 		arch_set_irn_register_out(pop, pn_ia32_Load_res, reg);
 
 		copy_mark(load, pop);
@@ -778,11 +804,12 @@ static const arch_register_t *get_free_gp_reg(ir_graph *irg)
  */
 static ir_node *create_pop(dbg_info *dbgi, ir_node *block,
                            ir_node *stack, ir_node *schedpoint,
-                           const arch_register_t *reg)
+                           const arch_register_t *reg,
+                           x86_insn_size_t const size)
 {
 	ir_graph *const irg = get_irn_irg(block);
 	ir_node  *const mem = get_irg_no_mem(irg);
-	ir_node  *const pop = new_bd_ia32_Pop(dbgi, block, mem, stack);
+	ir_node  *const pop = new_bd_ia32_Pop(dbgi, block, mem, stack, size);
 	sched_add_before(schedpoint, pop);
 
 	ir_node *const val  = be_new_Proj_reg(pop, pn_ia32_Pop_res, reg);
@@ -825,7 +852,7 @@ static void peephole_be_IncSP(ir_node *node)
 			return;
 
 		do {
-			stack = create_pop(dbgi, block, stack, node, reg);
+			stack = create_pop(dbgi, block, stack, node, reg, X86_SIZE_32);
 		} while ((offset += 4) != 0);
 	} else {
 		do {
@@ -857,7 +884,7 @@ static void peephole_ia32_Const(ir_node *node)
 
 	ir_node  *block = get_nodes_block(node);
 	dbg_info *dbgi  = get_irn_dbg_info(node);
-	ir_node  *xorn  = new_bd_ia32_Xor0(dbgi, block);
+	ir_node  *xorn  = new_bd_ia32_Xor0(dbgi, block, X86_SIZE_32);
 	arch_set_irn_register(xorn, reg);
 	replace(node, xorn);
 }
@@ -876,7 +903,7 @@ static ir_node *make_add(ir_node *const node, ir_node *const l, ir_node *const r
 	ir_graph *const irg   = get_irn_irg(node);
 	ir_node  *const noreg = ia32_new_NoReg_gp(irg);
 	ir_node  *const nomem = get_irg_no_mem(irg);
-	ir_node  *const add   = new_bd_ia32_Add(dbgi, block, noreg, noreg, nomem, l, r);
+	ir_node  *const add   = new_bd_ia32_Add(dbgi, block, noreg, noreg, nomem, l, r, X86_SIZE_32);
 	set_ia32_commutative(add);
 	return add;
 }
@@ -925,7 +952,7 @@ static void peephole_ia32_Lea(ir_node *node)
 				ir_node  *const block = get_nodes_block(node);
 				ir_graph *const irg   = get_irn_irg(node);
 				ir_node  *const amt   = ia32_create_Immediate(irg, scale);
-				res = new_bd_ia32_Shl(dbgi, block, idx, amt);
+				res = new_bd_ia32_Shl(dbgi, block, idx, amt, X86_SIZE_32);
 				goto exchange;
 			} else if (breg && !ireg) {
 				/* lea (%b), %d -> mov %b, %d */
@@ -951,13 +978,13 @@ static void peephole_ia32_Lea(ir_node *node)
 						/* lea 1(%b), %b -> inc %b */
 						dbg_info *const dbgi  = get_irn_dbg_info(node);
 						ir_node  *const block = get_nodes_block(node);
-						res = new_bd_ia32_Inc(dbgi, block, base);
+						res = new_bd_ia32_Inc(dbgi, block, base, X86_SIZE_32);
 						goto exchange;
 					} else if (is_disp_const(node, -1)) {
 						/* lea -1(%b), %b -> dec %b */
 						dbg_info *const dbgi  = get_irn_dbg_info(node);
 						ir_node  *const block = get_nodes_block(node);
-						res = new_bd_ia32_Dec(dbgi, block, base);
+						res = new_bd_ia32_Dec(dbgi, block, base, X86_SIZE_32);
 						goto exchange;
 					}
 				}
@@ -1015,14 +1042,13 @@ static void peephole_ia32_xZero(ir_node *xorn)
  */
 static void peephole_ia32_Conv_I2I(ir_node *node)
 {
-	const arch_register_t *eax          = &ia32_registers[REG_EAX];
-	ir_mode               *smaller_mode = get_ia32_ls_mode(node);
-	ir_node               *val          = get_irn_n(node, n_ia32_Conv_I2I_val);
+	const arch_register_t *const eax = &ia32_registers[REG_EAX];
+	ir_node               *const val = get_irn_n(node, n_ia32_Conv_I2I_val);
 
-	if (get_mode_size_bits(smaller_mode) != 16 ||
-			!mode_is_signed(smaller_mode)          ||
-			eax != arch_get_irn_register(val)      ||
-			eax != arch_get_irn_register_out(node, pn_ia32_Conv_I2I_res))
+	ia32_attr_t const *const attr = get_ia32_attr_const(node);
+	if (attr->size != X86_SIZE_16 || !attr->sign_extend
+	 || eax != arch_get_irn_register(val)
+	 || eax != arch_get_irn_register_out(node, pn_ia32_Conv_I2I_res))
 		return;
 
 	dbg_info *dbgi  = get_irn_dbg_info(node);
@@ -1035,8 +1061,10 @@ static void peephole_ia32_Conv_I2I(ir_node *node)
 /* Replace rolw $8, %[abcd]x by shorter xchgb %[abcd]l, %[abcd]h */
 static void peephole_ia32_Rol(ir_node *node)
 {
-	if (get_mode_size_bits(get_ia32_ls_mode(node)) == 16) {
-		arch_register_t const *const reg = arch_get_irn_register_out(node, pn_ia32_Rol_res);
+	ia32_attr_t const *const attr = get_ia32_attr_const(node);
+	if (attr->size == X86_SIZE_16) {
+		arch_register_t const *const reg
+			= arch_get_irn_register_out(node, pn_ia32_Rol_res);
 		if (is_hl_register(reg)) {
 			dbg_info *const dbgi  = get_irn_dbg_info(node);
 			ir_node  *const block = get_nodes_block(node);
@@ -1101,9 +1129,9 @@ static void optimize_conv_store(ir_node *node)
 
 	/* the store only stores the lower bits, so we only need the conv
 	 * it it shrinks the mode */
-	ir_mode *conv_mode  = get_ia32_ls_mode(pred);
-	ir_mode *store_mode = get_ia32_ls_mode(node);
-	if (get_mode_size_bits(conv_mode) < get_mode_size_bits(store_mode))
+	ia32_attr_t const *const pred_attr = get_ia32_attr_const(pred);
+	ia32_attr_t const *const node_attr = get_ia32_attr_const(node);
+	if (pred_attr->size < node_attr->size)
 		return;
 
 	be_warningf(node, "unoptimized ia32 Store(Conv)");
@@ -1124,28 +1152,21 @@ static void optimize_load_conv(ir_node *node)
 	if (!is_Proj(pred))
 		return;
 
-	ir_node *predpred = get_Proj_pred(pred);
-	if (!is_ia32_Load(predpred))
+	ir_node *load = get_Proj_pred(pred);
+	if (!is_ia32_Load(load))
 		return;
 
 	/* the load is sign extending the upper bits, so we only need the conv
 	 * if it shrinks the mode */
-	ir_mode *load_mode = get_ia32_ls_mode(predpred);
-	ir_mode *conv_mode = get_ia32_ls_mode(node);
-	if (get_mode_size_bits(conv_mode) < get_mode_size_bits(load_mode))
+	ia32_attr_t       *const load_attr = get_ia32_attr(load);
+	ia32_attr_t const *const node_attr = get_ia32_attr_const(node);
+	if (node_attr->size < load_attr->size)
 		return;
 
-	if (mode_is_signed(conv_mode) != mode_is_signed(load_mode)) {
+	if (node_attr->sign_extend != load_attr->sign_extend) {
 		/* change the load if it has only 1 user */
 		if (get_irn_n_edges(pred) == 1) {
-			ir_mode *newmode;
-			if (mode_is_signed(conv_mode)) {
-				newmode = find_signed_mode(load_mode);
-			} else {
-				newmode = find_unsigned_mode(load_mode);
-			}
-			assert(newmode != NULL);
-			set_ia32_ls_mode(predpred, newmode);
+			load_attr->sign_extend = node_attr->sign_extend;
 		} else {
 			/* otherwise we have to keep the conv */
 			return;
@@ -1174,43 +1195,47 @@ static void optimize_conv_conv(ir_node *node)
 
 	/* we know that after a conv, the upper bits are sign extended
 	 * so we only need the 2nd conv if it shrinks the mode */
-	ir_node *result_conv;
-	ir_mode *conv_mode      = get_ia32_ls_mode(node);
-	int      conv_mode_bits = get_mode_size_bits(conv_mode);
-	ir_mode *pred_mode      = get_ia32_ls_mode(pred);
-	int      pred_mode_bits = get_mode_size_bits(pred_mode);
+	ia32_attr_t const *const node_attr = get_ia32_attr_const(node);
+	ia32_attr_t       *const pred_attr = get_ia32_attr(pred);
 
-	if (conv_mode_bits == pred_mode_bits
-			&& mode_is_signed(conv_mode) == mode_is_signed(pred_mode)) {
+	ir_node *result_conv;
+	if (node_attr->size == pred_attr->size
+	 && node_attr->sign_extend == pred_attr->sign_extend) {
 		result_conv = pred_proj;
-	} else if (conv_mode_bits <= pred_mode_bits) {
+	} else if (node_attr->size < pred_attr->size) {
 		/* if 2nd conv is smaller then first conv, then we can always take the
 		 * 2nd conv */
 		if (get_irn_n_edges(pred_proj) == 1) {
-			result_conv = pred_proj;
-			set_ia32_ls_mode(pred, conv_mode);
+			result_conv            = pred_proj;
+			pred_attr->size        = node_attr->size;
+			pred_attr->sign_extend = node_attr->sign_extend;
 
-			/* Argh:We must change the opcode to 8bit AND copy the register constraints */
-			if (get_mode_size_bits(conv_mode) == 8) {
-				const arch_register_req_t **reqs = arch_get_irn_register_reqs_in(node);
+			/* Argh:We must change the opcode to 8bit AND copy the register
+			 * constraints */
+			if (node_attr->size == X86_SIZE_8) {
+				arch_register_req_t const **reqs
+					= arch_get_irn_register_reqs_in(node);
 				arch_set_irn_register_reqs_in(pred, reqs);
 			}
 		} else {
 			/* we don't want to end up with 2 loads, so we better do nothing */
-			if (get_irn_mode(pred) == mode_T) {
+			if (get_irn_mode(pred) == mode_T)
 				return;
-			}
 
 			result_conv = exact_copy(pred);
-			set_ia32_ls_mode(result_conv, conv_mode);
+			ia32_attr_t *const result_attr = get_ia32_attr(result_conv);
+			result_attr->size        = node_attr->size;
+			result_attr->sign_extend = node_attr->sign_extend;
 
-			/* Argh:We must change the opcode to 8bit AND copy the register constraints */
-			if (get_mode_size_bits(conv_mode) == 8) {
-				const arch_register_req_t **reqs = arch_get_irn_register_reqs_in(node);
+			/* Argh:We must change the opcode to 8bit AND copy the register
+			 * constraints */
+			if (node_attr->size == X86_SIZE_8) {
+				arch_register_req_t const **reqs
+					= arch_get_irn_register_reqs_in(node);
 				arch_set_irn_register_reqs_in(result_conv, reqs);
 			}
 		}
-	} else if (mode_is_signed(conv_mode) || !mode_is_signed(pred_mode)) {
+	} else if (node_attr->sign_extend || !pred_attr->sign_extend) {
 		/* Use the smaller conv, if it does zero-extension or if both do
 		 * sign-extension. */
 		result_conv = pred_proj;

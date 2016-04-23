@@ -39,7 +39,6 @@ extern pmap *ia32_tv_ent; /**< A map of entities that store const tarvals */
 
 /** The mode for the floating point control word. */
 extern ir_mode *ia32_mode_fpcw;
-extern ir_mode *ia32_mode_8h; /**< Mode for high 8bit registers */
 extern ir_mode *ia32_mode_gp;
 extern ir_mode *ia32_mode_float64;
 extern ir_mode *ia32_mode_float32;

@@ -16,8 +16,20 @@
 #include <stdio.h>
 #include "compiler.h"
 #include "firm_types.h"
+#include "irmode.h"
+#include "panic.h"
 
 extern char const *x86_pic_base_label;
+
+/** instruction data size. Keep sorted! */
+typedef enum x86_insn_size_t {
+	X86_SIZE_8,
+	X86_SIZE_16,
+	X86_SIZE_32,
+	X86_SIZE_64,
+	X86_SIZE_80,
+	X86_SIZE_128,
+} x86_insn_size_t;
 
 /** immediate/relocation types (see also ELF file format) */
 typedef enum x86_immediate_kind_t {
@@ -60,6 +72,32 @@ static inline bool x86_imm32_equal(x86_imm32_t const *const imm0,
 {
 	return imm0->entity == imm1->entity && imm0->offset == imm1->offset
 	    && imm0->kind == imm1->kind;
+}
+
+static inline x86_insn_size_t x86_size_from_mode(ir_mode *const mode)
+{
+	switch (get_mode_size_bits(mode)) {
+	case 8:   return X86_SIZE_8;
+	case 16:  return X86_SIZE_16;
+	case 32:  return X86_SIZE_32;
+	case 64:  return X86_SIZE_64;
+	case 80:  return X86_SIZE_80;
+	case 128: return X86_SIZE_128;
+	}
+	panic("Unexpected mode");
+}
+
+static inline unsigned x86_bytes_from_size(x86_insn_size_t const size)
+{
+	switch (size) {
+	case X86_SIZE_8:   return 1;
+	case X86_SIZE_16:  return 2;
+	case X86_SIZE_32:  return 4;
+	case X86_SIZE_64:  return 8;
+	case X86_SIZE_80:  return 10;
+	case X86_SIZE_128: return 16;
+	}
+	panic("Invalid size");
 }
 
 #endif

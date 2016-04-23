@@ -885,7 +885,7 @@ do_pop:
 				ir_node *const base  = get_irn_n(n, n_ia32_base);
 				ir_node *const idx   = get_irn_n(n, n_ia32_index);
 				ir_node *const vfld  = new_bd_ia32_fld(NULL, block, base, idx,
-				                                       mem, x86_mode_E);
+				                                       mem, X86_SIZE_80);
 
 				/* copy all attributes */
 				ia32_copy_am_attrs(vfld, n);
@@ -926,14 +926,14 @@ do_pop:
 
 static void sim_ia32_fst(x87_state *state, ir_node *n)
 {
-	unsigned bits = get_mode_size_bits(get_ia32_ls_mode(n));
-	x86_sim_x87_store(state, n, n_ia32_fst_val, bits);
+	x86_insn_size_t const size = get_ia32_attr_const(n)->size;
+	x86_sim_x87_store(state, n, n_ia32_fst_val, x86_bytes_from_size(size) * 8);
 }
 
 static void sim_ia32_fist(x87_state *state, ir_node *n)
 {
-	unsigned bits = get_mode_size_bits(get_ia32_ls_mode(n));
-	x86_sim_x87_store(state, n, n_ia32_fist_val, bits);
+	x86_insn_size_t const size = get_ia32_attr_const(n)->size;
+	x86_sim_x87_store(state, n, n_ia32_fist_val, x86_bytes_from_size(size) * 8);
 }
 
 void x86_sim_x87_store_pop(x87_state *const state, ir_node *const node,

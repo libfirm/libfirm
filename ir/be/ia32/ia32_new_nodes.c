@@ -232,16 +232,14 @@ void ia32_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 
 			fprintf(F, "commutative = %s\n",
 			        be_dump_yesno(is_ia32_commutative(n)));
+			fprintf(F, "sign_extend = %s\n", be_dump_yesno(attr->sign_extend));
+			fprintf(F, "use_8bit_high = %s\n",
+			        be_dump_yesno(attr->use_8bit_high));
 			fprintf(F, "is reload = %s\n", be_dump_yesno(is_ia32_is_reload(n)));
 			fprintf(F, "latency = %u\n", get_ia32_latency(n));
 
 			/* dump modes */
-			fprintf(F, "ls_mode = ");
-			if (get_ia32_ls_mode(n)) {
-				ir_fprintf(F, "%+F", get_ia32_ls_mode(n));
-			} else {
-				fprintf(F, "n/a");
-			}
+			fprintf(F, "size = %u", x86_bytes_from_size(attr->size) * 8);
 			fprintf(F, "\n");
 
 #ifndef NDEBUG
@@ -417,8 +415,8 @@ void ia32_copy_am_attrs(ir_node *to, const ir_node *from)
 	ia32_attr_t       *const to_attr   = get_ia32_attr(to);
 	to_attr->addr      = from_attr->addr;
 	to_attr->frame_use = from_attr->frame_use;
+	to_attr->size      = from_attr->size;
 
-	set_ia32_ls_mode(to, get_ia32_ls_mode(from));
 #ifndef NDEBUG
 	to_attr->old_frame_ent = from_attr->old_frame_ent;
 #endif
@@ -564,13 +562,15 @@ void ia32_swap_left_right(ir_node *node)
 }
 
 void init_ia32_attributes(ir_node *node, arch_irn_flags_t flags,
-                          const arch_register_req_t **in_reqs, int n_res)
+                          const arch_register_req_t **in_reqs, int n_res,
+                          x86_insn_size_t const size)
 {
 	be_info_init_irn(node, flags, in_reqs, n_res);
+	ia32_attr_t *attr = get_ia32_attr(node);
+	attr->size = size;
 
 #ifndef NDEBUG
-	ia32_attr_t *attr  = get_ia32_attr(node);
-	attr->attr_type   |= IA32_ATTR_ia32_attr_t;
+	attr->attr_type |= IA32_ATTR_ia32_attr_t;
 #endif
 }
 
@@ -660,10 +660,12 @@ static int ia32_attrs_equal_(const ia32_attr_t *a, const ia32_attr_t *b)
 
 	return a->tp == b->tp
 	    && x86_addrs_equal(&a->addr, &b->addr)
-	    && a->ls_mode == b->ls_mode
+	    && a->size == b->size
 	    && a->frame_use == b->frame_use
 	    && a->has_except_label == b->has_except_label
-	    && a->ins_permuted == b->ins_permuted;
+	    && a->ins_permuted == b->ins_permuted
+	    && a->sign_extend == b->sign_extend
+	    && a->use_8bit_high == b->use_8bit_high;
 }
 
 int ia32_attrs_equal(const ir_node *a, const ir_node *b)

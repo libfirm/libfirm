@@ -246,13 +246,18 @@ static void enc_imm32(ir_node const *const node)
 }
 
 static void enc_imm(ia32_immediate_attr_t const *const attr,
-                      unsigned const size)
+                    x86_insn_size_t size)
 {
 	switch (size) {
-	case  8: be_emit8(attr->imm.offset);  break;
-	case 16: be_emit16(attr->imm.offset); break;
-	case 32: enc_relocation(&attr->imm);  break;
+	case X86_SIZE_8:  be_emit8(attr->imm.offset);  return;
+	case X86_SIZE_16: be_emit16(attr->imm.offset); return;
+	case X86_SIZE_32: enc_relocation(&attr->imm);  return;
+	case X86_SIZE_64:
+	case X86_SIZE_80:
+	case X86_SIZE_128:
+		break;
 	}
+	panic("Invalid size");
 }
 
 static void enc_mov(arch_register_t const *const src, arch_register_t const *const dst)
@@ -344,10 +349,10 @@ void ia32_enc_unop(ir_node const *const node, uint8_t const code,
 void ia32_enc_unop_mem(ir_node const *const node, uint8_t const code,
                        uint8_t const ext)
 {
-	unsigned size = get_mode_size_bits(get_ia32_ls_mode(node));
-	if (size == 16)
+	x86_insn_size_t const size = get_ia32_attr_const(node)->size;
+	if (size == X86_SIZE_16)
 		be_emit8(0x66);
-	be_emit8(size == 8 ? code : code | OP_16_32);
+	be_emit8(size == X86_SIZE_8 ? code : code | OP_16_32);
 	enc_mod_am(ext, node);
 }
 
@@ -372,19 +377,18 @@ static void enc_binop_reg(ir_node const *const node, unsigned char const code, i
 
 void ia32_enc_binop(ir_node const *const node, unsigned const code)
 {
-	ir_mode *const ls_mode = get_ia32_ls_mode(node);
-	unsigned       size    = ls_mode ? get_mode_size_bits(ls_mode) : 32;
-	if (size == 16)
+	x86_insn_size_t size = get_ia32_attr_const(node)->size;
+	if (size == X86_SIZE_16)
 		be_emit8(0x66);
 
-	unsigned       op    = size == 8 ? OP_8 : OP_16_32;
+	unsigned       op    = size == X86_SIZE_8 ? OP_8 : OP_16_32;
 	ir_node *const right = get_irn_n(node, n_ia32_binary_right);
 	if (is_ia32_Immediate(right)) {
 		ia32_immediate_attr_t const *const attr = get_ia32_immediate_attr_const(right);
 		/* Try to use the short form with 8bit sign extended immediate. */
 		if (op != OP_8 && ia32_is_8bit_imm(attr)) {
 			op   = OP_16_32_IMM8;
-			size = 8;
+			size = X86_SIZE_8;
 		}
 
 		/* Emit the main opcode. */
@@ -402,18 +406,18 @@ void ia32_enc_binop(ir_node const *const node, unsigned const code)
 
 void ia32_enc_binop_mem(ir_node const *const node, unsigned const code)
 {
-	unsigned size = get_mode_size_bits(get_ia32_ls_mode(node));
-	if (size == 16)
+	x86_insn_size_t size = get_ia32_attr_const(node)->size;
+	if (size == X86_SIZE_16)
 		be_emit8(0x66);
 
-	unsigned       op  = size == 8 ? OP_8 : OP_16_32;
+	unsigned       op  = size == X86_SIZE_8 ? OP_8 : OP_16_32;
 	ir_node *const val = get_irn_n(node, n_ia32_unary_op);
 	if (is_ia32_Immediate(val)) {
 		ia32_immediate_attr_t const *const attr = get_ia32_immediate_attr_const(val);
 		/* Try to use the short form with 8bit sign extended immediate. */
 		if (op != OP_8 && ia32_is_8bit_imm(attr)) {
 			op   = OP_16_32_IMM8;
-			size = 8;
+			size = X86_SIZE_8;
 		}
 
 		/* Emit the main opcode. */
@@ -450,22 +454,22 @@ void ia32_enc_shiftop(ir_node const *const node, uint8_t const ext)
 
 void ia32_enc_shiftop_mem(ir_node const *const node, uint8_t const ext)
 {
-	unsigned const size = get_mode_size_bits(get_ia32_ls_mode(node));
-	if (size == 16)
+	x86_insn_size_t const size = get_ia32_attr_const(node)->size;
+	if (size == X86_SIZE_16)
 		be_emit8(0x66);
 	ir_node const *const count = get_irn_n(node, 1);
 	if (is_ia32_Immediate(count)) {
 		int32_t const offset = get_ia32_immediate_attr_const(count)->imm.offset;
 		if (offset == 1) {
-			be_emit8(size == 8 ? 0xD0 : 0xD1);
+			be_emit8(size == X86_SIZE_8 ? 0xD0 : 0xD1);
 			enc_mod_am(ext, node);
 		} else {
-			be_emit8(size == 8 ? 0xC0 : 0xC1);
+			be_emit8(size == X86_SIZE_8 ? 0xC0 : 0xC1);
 			enc_mod_am(ext, node);
 			be_emit8(offset);
 		}
 	} else {
-		be_emit8(size == 8 ? 0xD2 : 0xD3);
+		be_emit8(size == X86_SIZE_8 ? 0xD2 : 0xD3);
 		enc_mod_am(ext, node);
 	}
 }
@@ -607,11 +611,11 @@ static void enc_cmovcc(const ir_node *node)
 
 static void enc_test(ir_node const *const node)
 {
-	unsigned const size = get_mode_size_bits(get_ia32_ls_mode(node));
-	if (size == 16)
+	x86_insn_size_t const size = get_ia32_attr_const(node)->size;
+	if (size == X86_SIZE_16)
 		be_emit8(0x66);
 
-	unsigned const op    = size == 8 ? OP_8 : OP_16_32;
+	unsigned const op    = size == X86_SIZE_8 ? OP_8 : OP_16_32;
 	ir_node *const right = get_irn_n(node, n_ia32_Test_right);
 	if (is_ia32_Immediate(right)) {
 		/* Emit the main opcode. */
@@ -782,13 +786,13 @@ static void enc_load(const ir_node *node)
  */
 static void enc_store(const ir_node *node)
 {
-	const ir_node *value = get_irn_n(node, n_ia32_Store_val);
-	unsigned       size  = get_mode_size_bits(get_ia32_ls_mode(node));
+	ir_node  const *const value = get_irn_n(node, n_ia32_Store_val);
+	x86_insn_size_t const size  = get_ia32_attr_const(node)->size;
 
 	if (is_ia32_Immediate(value)) {
-		if (size == 16)
+		if (size == X86_SIZE_16)
 			be_emit8(0x66);
-		be_emit8(0xC6 | (size != 8 ? OP_16_32 : 0));
+		be_emit8(0xC6 | (size != X86_SIZE_8 ? OP_16_32 : 0));
 		enc_mod_am(0, node);
 		enc_imm(get_ia32_immediate_attr_const(value), size);
 	} else {
@@ -800,10 +804,10 @@ static void enc_store(const ir_node *node)
 			if (!base && !idx) {
 				/* store to constant address from EAX can be encoded as
 				 * 0xA2/0xA3 [offset]*/
-				if (size == 8) {
+				if (size == X86_SIZE_8) {
 					be_emit8(0xA2);
 				} else {
-					if (size == 16)
+					if (size == X86_SIZE_16)
 						be_emit8(0x66);
 					be_emit8(0xA3);
 				}
@@ -813,9 +817,9 @@ static void enc_store(const ir_node *node)
 			}
 		}
 
-		if (size == 16)
+		if (size == X86_SIZE_16)
 			be_emit8(0x66);
-		be_emit8(0x88 | (size != 8 ? OP_16_32 : 0));
+		be_emit8(0x88 | (size != X86_SIZE_8 ? OP_16_32 : 0));
 		enc_mod_am(in->encoding, node);
 	}
 }
@@ -825,10 +829,10 @@ static void enc_conv_i2i(const ir_node *node)
 	/*        8 16 bit source
 	 * movzx B6 B7
 	 * movsx BE BF */
-	ir_mode *const smaller_mode = get_ia32_ls_mode(node);
-	unsigned       opcode       = 0xB6;
-	if (mode_is_signed(smaller_mode))           opcode |= 0x08;
-	if (get_mode_size_bits(smaller_mode) == 16) opcode |= 0x01;
+	ia32_attr_t const *const attr = get_ia32_attr_const(node);
+	unsigned opcode = 0xB6;
+	if (attr->sign_extend)         opcode |= 0x08;
+	if (attr->size == X86_SIZE_16) opcode |= 0x01;
 	ia32_enc_0f_unop_reg(node, opcode, n_ia32_Conv_I2I_val);
 }
 
@@ -1101,8 +1105,7 @@ void ia32_enc_fbinop(ir_node const *const node, unsigned const op_fwd,
 		assert(!x87->reg);
 		assert(!x87->pop);
 
-		unsigned const size = get_mode_size_bits(get_ia32_ls_mode(node));
-		be_emit8(size == 32 ? 0xD8 : 0xDC);
+		be_emit8(attr->attr.size == X86_SIZE_32 ? 0xD8 : 0xDC);
 		enc_mod_am(op, node);
 	}
 }
@@ -1116,77 +1119,91 @@ void ia32_enc_fop_reg(ir_node const *const node, uint8_t const op0,
 
 static void enc_fild(const ir_node *node)
 {
-	switch (get_mode_size_bits(get_ia32_ls_mode(node))) {
-	case 16:
+	x86_insn_size_t const size = get_ia32_attr_const(node)->size;
+	switch (size) {
+	case X86_SIZE_16:
 		be_emit8(0xDF); // filds
 		enc_mod_am(0, node);
 		return;
 
-	case 32:
+	case X86_SIZE_32:
 		be_emit8(0xDB); // fildl
 		enc_mod_am(0, node);
 		return;
 
-	case 64:
+	case X86_SIZE_64:
 		be_emit8(0xDF); // fildll
 		enc_mod_am(5, node);
 		return;
 
-	default:
-		panic("invalid mode size");
+	case X86_SIZE_8:
+	case X86_SIZE_128:
+	case X86_SIZE_80:
+		break;
 	}
+	panic("invalid mode size");
 }
 
 static void enc_fist(const ir_node *node)
 {
-	unsigned       op;
-	unsigned const size = get_mode_size_bits(get_ia32_ls_mode(node));
+	x86_insn_size_t const size = get_ia32_attr_const(node)->size;
+	unsigned op;
 	switch (size) {
-	case 16: be_emit8(0xDF); op = 2; break; // fist[p]s
-	case 32: be_emit8(0xDB); op = 2; break; // fist[p]l
-	case 64: be_emit8(0xDF); op = 6; break; // fistpll
-	default: panic("invalid mode size");
+	case X86_SIZE_16: be_emit8(0xDF); op = 2; break; // fist[p]s
+	case X86_SIZE_32: be_emit8(0xDB); op = 2; break; // fist[p]l
+	case X86_SIZE_64: be_emit8(0xDF); op = 6; break; // fistpll
+	case X86_SIZE_8:
+	case X86_SIZE_80:
+	case X86_SIZE_128:
+		panic("invalid mode size");
 	}
 	if (get_ia32_x87_attr_const(node)->x87.pop)
 		++op;
 	// There is only a pop variant for 64 bit integer store.
-	assert(size < 64 || get_ia32_x87_attr_const(node)->x87.pop);
+	assert(size < X86_SIZE_64 || get_ia32_x87_attr_const(node)->x87.pop);
 	enc_mod_am(op, node);
 }
 
 static void enc_fisttp(ir_node const *const node)
 {
-	switch (get_mode_size_bits(get_ia32_ls_mode(node))) {
-	case 16: be_emit8(0xDF); break; // fisttps
-	case 32: be_emit8(0xDB); break; // fisttpl
-	case 64: be_emit8(0xDD); break; // fisttpll
-	default: panic("invalid mode size");
+	x86_insn_size_t const size = get_ia32_attr_const(node)->size;
+	switch (size) {
+	case X86_SIZE_16: be_emit8(0xDF); break; // fisttps
+	case X86_SIZE_32: be_emit8(0xDB); break; // fisttpl
+	case X86_SIZE_64: be_emit8(0xDD); break; // fisttpll
+	case X86_SIZE_8:
+	case X86_SIZE_80:
+	case X86_SIZE_128:
+		panic("unexpected mode size");
 	}
 	enc_mod_am(1, node);
 }
 
 static void enc_fld(const ir_node *node)
 {
-	switch (get_mode_size_bits(get_ia32_ls_mode(node))) {
-	case 32:
+	x86_insn_size_t const size = get_ia32_attr_const(node)->size;
+	switch (size) {
+	case X86_SIZE_32:
 		be_emit8(0xD9); // flds
 		enc_mod_am(0, node);
 		return;
 
-	case 64:
+	case X86_SIZE_64:
 		be_emit8(0xDD); // fldl
 		enc_mod_am(0, node);
 		return;
 
-	case 80:
-	case 96:
+	case X86_SIZE_80:
 		be_emit8(0xDB); // fldt
 		enc_mod_am(5, node);
 		return;
 
-	default:
-		panic("invalid mode size");
+	case X86_SIZE_8:
+	case X86_SIZE_16:
+	case X86_SIZE_128:
+		break;
 	}
+	panic("unexpected mode size");
 }
 
 static void enc_fldcw(const ir_node *node)
@@ -1197,19 +1214,21 @@ static void enc_fldcw(const ir_node *node)
 
 static void enc_fst(const ir_node *node)
 {
-	unsigned       op;
-	unsigned const size = get_mode_size_bits(get_ia32_ls_mode(node));
+	x86_insn_size_t const size = get_ia32_attr_const(node)->size;
+	unsigned op;
 	switch (size) {
-	case 32: be_emit8(0xD9); op = 2; break; // fst[p]s
-	case 64: be_emit8(0xDD); op = 2; break; // fst[p]l
-	case 80:
-	case 96: be_emit8(0xDB); op = 6; break; // fstpt
-	default: panic("invalid mode size");
+	case X86_SIZE_32: be_emit8(0xD9); op = 2; break; // fst[p]s
+	case X86_SIZE_64: be_emit8(0xDD); op = 2; break; // fst[p]l
+	case X86_SIZE_80: be_emit8(0xDB); op = 6; break; // fstpt
+	case X86_SIZE_8:
+	case X86_SIZE_16:
+	case X86_SIZE_128:
+		panic("unexpected mode size");
 	}
 	if (get_ia32_x87_attr_const(node)->x87.pop)
 		++op;
 	// There is only a pop variant for long double store.
-	assert(size < 80 || get_ia32_x87_attr_const(node)->x87.pop);
+	assert(size < X86_SIZE_80 || get_ia32_x87_attr_const(node)->x87.pop);
 	enc_mod_am(op, node);
 }
 

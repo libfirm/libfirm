@@ -15,7 +15,8 @@
 void ia32_dump_node(FILE *F, const ir_node *n, dump_reason_t reason);
 
 void init_ia32_attributes(ir_node *node, arch_irn_flags_t flags,
-                          const arch_register_req_t **in_reqs, int n_res);
+                          const arch_register_req_t **in_reqs, int n_res,
+                          x86_insn_size_t size);
 void init_ia32_x87_attributes(ir_node *res);
 void init_ia32_immediate_attributes(ir_node *res, x86_imm32_t const *const imm);
 void init_ia32_call_attributes(ir_node* res, unsigned pop, ir_type* call_tp);

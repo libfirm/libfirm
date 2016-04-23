@@ -147,24 +147,6 @@ void set_ia32_is_remat(ir_node *node);
 int is_ia32_is_remat(const ir_node *node);
 
 /**
- * Gets the mode of the stored/loaded value (only set for Store/Load)
- */
-static inline ir_mode *get_ia32_ls_mode(ir_node const *const node)
-{
-	ia32_attr_t const *const attr = get_ia32_attr_const(node);
-	return attr->ls_mode;
-}
-
-/**
- * Sets the mode of the stored/loaded value (only set for Store/Load)
- */
-static inline void set_ia32_ls_mode(ir_node *const node, ir_mode *const mode)
-{
-	ia32_attr_t *const attr = get_ia32_attr(node);
-	attr->ls_mode = mode;
-}
-
-/**
  * Returns the condition code of a node.
  */
 x86_condition_code_t get_ia32_condcode(const ir_node *node);

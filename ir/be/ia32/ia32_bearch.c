@@ -50,7 +50,6 @@ pmap *ia32_tv_ent; /**< A map of entities that store const tarvals */
 
 ir_mode *ia32_mode_fpcw;
 ir_mode *ia32_mode_flags;
-ir_mode *ia32_mode_8h;
 ir_mode *ia32_mode_gp;
 ir_mode *ia32_mode_float64;
 ir_mode *ia32_mode_float32;
@@ -142,11 +141,10 @@ static void ia32_set_frame_entity(ir_node *node, ir_entity *entity,
 		return;
 	ir_mode *mode = get_type_mode(type);
 	/** 8bit stores have a special register requirement, so we can't simply
-	 * change the ls_mode to 8bit here. The "hack" in
-	 * ia32_collect_frame_entity_nodes() should take care that it never happens.
-	 */
+	 * change size to 8bit here. The "hack" in ia32_collect_frame_entity_nodes()
+	 * should take care that it never happens. */
 	assert(!is_ia32_Store(node) || get_mode_size_bits(mode) > 8);
-	set_ia32_ls_mode(node, mode);
+	attr->size = x86_size_from_mode(mode);
 }
 
 static bool node_has_sp_base(ir_node const *const node)
@@ -192,8 +190,8 @@ static void ia32_sp_sim(ir_node *const node, stack_pointer_state_t *state)
 	/* Pop nodes modify the stack pointer before calculating destination
 	 * address, so do this first */
 	if (is_ia32_Pop(node) || is_ia32_PopMem(node)) {
-		ir_mode *ls_mode = get_ia32_ls_mode(node);
-		state->offset       -= get_mode_size_bytes(ls_mode);
+		ia32_attr_t const *const attr = get_ia32_attr_const(node);
+		state->offset -= x86_bytes_from_size(attr->size);
 	}
 
 	if (!state->no_change)
@@ -202,8 +200,8 @@ static void ia32_sp_sim(ir_node *const node, stack_pointer_state_t *state)
 	if (is_ia32_Call(node)) {
 		state->offset -= get_ia32_call_attr_const(node)->pop;
 	} else if (is_ia32_Push(node)) {
-		ir_mode *ls_mode = get_ia32_ls_mode(node);
-		state->offset       += get_mode_size_bytes(ls_mode);
+		ia32_attr_t const *const attr = get_ia32_attr_const(node);
+		state->offset += x86_bytes_from_size(attr->size);
 	} else if (is_ia32_Leave(node) || is_ia32_CopyEbpEsp(node)) {
 		state->offset        = 0;
 		state->align_padding = 0;
@@ -249,8 +247,7 @@ static unsigned ia32_get_op_estimated_cost(ir_node const *const irn)
 	if (get_ia32_op_type(irn) != ia32_Normal) {
 		if (get_ia32_frame_use(irn) != IA32_FRAME_USE_NONE || (
 		      is_ia32_NoReg_GP(get_irn_n(irn, n_ia32_base)) &&
-		      is_ia32_NoReg_GP(get_irn_n(irn, n_ia32_index))
-		    )) {
+		      is_ia32_NoReg_GP(get_irn_n(irn, n_ia32_index)))) {
 			/* Stack access, assume it is cached. */
 			cost += 5;
 		} else {
@@ -260,16 +257,6 @@ static unsigned ia32_get_op_estimated_cost(ir_node const *const irn)
 	}
 
 	return cost;
-}
-
-static ir_mode *get_spill_mode(const ir_node *value)
-{
-	/* determine a sensible spill mode and try to make it small */
-	const ir_node *skipped = skip_Proj_const(value);
-	if (is_ia32_fld(skipped) || is_ia32_Load(skipped))
-		return get_ia32_ls_mode(skipped);
-
-	return get_irn_mode(value);
 }
 
 /**
@@ -321,22 +308,21 @@ static bool ia32_possible_memory_operand(const ir_node *irn, unsigned int i)
 	}
 
 	/* HACK: must not already use "real" memory.
-	 * This can happen for Call and Div */
+	 * This can happen for Call and Div. While we should be able to use Sync
+	 * this currently confused the spillslot coalescing code. */
 	if (!is_NoMem(get_irn_n(irn, n_ia32_mem)))
 		return false;
 
-	ir_node       *const op   = get_irn_n(irn, i);
-	ir_node const *const load = get_Proj_pred(op);
-	ir_mode const *const mode = get_ia32_ls_mode(load);
-	if (mode_is_float(mode)) {
-		if (mode != ia32_mode_float64 && mode != mode_F)
-			return false;
-		/* Don't do reload folding for x87 nodes for now, as we can't predict
-		 * yet wether the spillslot must be widened to 80bit for which no AM
-		 * operations exist. */
-		if (is_ia32_fld(load))
-			return false;
-	}
+	ir_node           *const op   = get_irn_n(irn, i);
+	ir_node     const *const load = get_Proj_pred(op);
+	ia32_attr_t const *const attr = get_ia32_attr_const(load);
+	if (attr->size > X86_SIZE_64)
+		return false;
+	/* Don't do reload folding for x87 nodes for now, as we can't predict yet
+	 * wether the spillslot must be widened to 80bit for which no AM operations
+	 * exist. */
+	if (is_ia32_fld(load))
+		return false;
 
 	return true;
 }
@@ -346,13 +332,14 @@ static void ia32_perform_memory_operand(ir_node *irn, unsigned int i)
 	if (!ia32_possible_memory_operand(irn, i))
 		return;
 
-	ir_node *op           = get_irn_n(irn, i);
-	ir_node *load         = get_Proj_pred(op);
-	ir_mode *load_mode    = get_ia32_ls_mode(load);
-	ir_node *spill        = get_irn_n(load, n_ia32_mem);
-	ir_mode *dest_op_mode = get_ia32_ls_mode(irn);
-	if (get_mode_size_bits(load_mode) <= get_mode_size_bits(dest_op_mode))
-		set_ia32_ls_mode(irn, load_mode);
+	ir_node           *const op           = get_irn_n(irn, i);
+	ir_node           *const load         = get_Proj_pred(op);
+	x86_insn_size_t    const load_size    = get_ia32_attr_const(load)->size;
+	ir_node           *const spill        = get_irn_n(load, n_ia32_mem);
+	ia32_attr_t       *const attr         = get_ia32_attr(irn);
+	x86_insn_size_t    const dest_op_size = attr->size;
+	if (load_size <= dest_op_size)
+		attr->size = load_size;
 	set_ia32_op_type(irn, ia32_AddrModeS);
 	set_ia32_frame_use(irn, IA32_FRAME_USE_AUTO);
 
@@ -369,7 +356,6 @@ static void ia32_perform_memory_operand(ir_node *irn, unsigned int i)
 	set_irn_n(irn, n_ia32_base, get_irg_frame(get_irn_irg(irn)));
 	set_irn_n(irn, n_ia32_mem,  spill);
 	set_irn_n(irn, i,           ia32_get_admissible_noreg(irn, i));
-	ia32_attr_t *const attr = get_ia32_attr(irn);
 	attr->addr.variant = X86_ADDR_BASE;
 	set_ia32_is_reload(irn);
 
@@ -388,10 +374,10 @@ static ir_node *ia32_turn_back_dest_am(ir_node *node)
 	typedef ir_node *construct_binop_func(
 		dbg_info *db, ir_node *block,
 		ir_node *base, ir_node *index, ir_node *mem,
-		ir_node *op1, ir_node *op2);
+		ir_node *op1, ir_node *op2, x86_insn_size_t size);
 
-	ir_mode *ls_mode = get_ia32_ls_mode(node);
-	bool     is_8bit = get_mode_size_bits(ls_mode) == 8;
+	x86_insn_size_t const size = get_ia32_attr_const(node)->size;
+	bool is_8bit = size == X86_SIZE_8;
 
 	construct_binop_func *func;
 	switch (get_ia32_irn_opcode(node)) {
@@ -408,7 +394,7 @@ static ir_node *ia32_turn_back_dest_am(ir_node *node)
 	ir_node  *const base  = get_irn_n(node, n_ia32_base);
 	ir_node  *const idx   = get_irn_n(node, n_ia32_index);
 	ir_node  *const mem   = get_irn_n(node, n_ia32_mem);
-	ir_node  *const load  = new_bd_ia32_Load(dbgi, block, base, idx, mem);
+	ir_node  *const load  = new_bd_ia32_Load(dbgi, block, base, idx, mem, size, false);
 	ia32_copy_am_attrs(load, node);
 	if (is_ia32_is_reload(node))
 		set_ia32_is_reload(load);
@@ -420,15 +406,14 @@ static ir_node *ia32_turn_back_dest_am(ir_node *node)
 	ir_node  *const noreg    = ia32_new_NoReg_gp(irg);
 	ir_node  *const nomem    = get_irg_no_mem(irg);
 	ir_node  *const operand  = get_irn_n(node, n_ia32_binary_left);
-	ir_node  *const new_node = func(dbgi, block, noreg, noreg, nomem, load_res, operand);
-	set_ia32_ls_mode(new_node, ls_mode);
+	ir_node  *const new_node = func(dbgi, block, noreg, noreg, nomem, load_res, operand, size);
 	set_irn_mode(new_node, mode_T);
 
 	arch_set_irn_register_out(new_node, pn_ia32_flags, &ia32_registers[REG_EFLAGS]);
 
 	ir_node *const res_proj = be_new_Proj(new_node, pn_ia32_res);
-	ir_node *const store    = is_8bit ? new_bd_ia32_Store_8bit(dbgi, block, base, idx, load_mem, res_proj)
-	                                  : new_bd_ia32_Store(dbgi, block, base, idx, load_mem, res_proj);
+	ir_node *const store    = is_8bit ? new_bd_ia32_Store_8bit(dbgi, block, base, idx, load_mem, res_proj, size)
+	                                  : new_bd_ia32_Store(dbgi, block, base, idx, load_mem, res_proj, size);
 	ia32_copy_am_attrs(store, node);
 	set_ia32_op_type(store, ia32_AddrModeD);
 	sched_add_after(node, store);
@@ -444,13 +429,15 @@ static ir_node *ia32_turn_back_dest_am(ir_node *node)
 
 ir_node *ia32_turn_back_am(ir_node *node)
 {
+	ia32_attr_t *const attr = get_ia32_attr(node);
 	dbg_info *dbgi     = get_irn_dbg_info(node);
 	ir_graph *irg      = get_irn_irg(node);
 	ir_node  *block    = get_nodes_block(node);
 	ir_node  *base     = get_irn_n(node, n_ia32_base);
 	ir_node  *idx      = get_irn_n(node, n_ia32_index);
 	ir_node  *mem      = get_irn_n(node, n_ia32_mem);
-	ir_node  *load     = new_bd_ia32_Load(dbgi, block, base, idx, mem);
+	ir_node  *load     = new_bd_ia32_Load(dbgi, block, base, idx, mem,
+	                                      attr->size, attr->sign_extend);
 	ir_node  *load_res = be_new_Proj(load, pn_ia32_Load_res);
 
 	ia32_copy_am_attrs(load, node);
@@ -477,7 +464,6 @@ ir_node *ia32_turn_back_am(ir_node *node)
 	ir_node *noreg = ia32_new_NoReg_gp(irg);
 	set_irn_n(node, n_ia32_base,  noreg);
 	set_irn_n(node, n_ia32_index, noreg);
-	ia32_attr_t *const attr = get_ia32_attr(node);
 	attr->addr.immediate = (x86_imm32_t) { .kind = X86_IMM_VALUE, .offset = 0 };
 	attr->addr.log_scale = 0;
 	attr->frame_use      = IA32_FRAME_USE_NONE;
@@ -605,10 +591,10 @@ static void remat_simplifier(ir_node *node, void *env)
 		ir_node  *const mem     = get_irn_n(node, n_ia32_Sub_mem);
 		ir_node  *const minu    = get_irn_n(node, n_ia32_Sub_minuend);
 		ir_node  *const subt    = get_irn_n(node, n_ia32_Sub_subtrahend);
-		ir_mode  *const ls_mode = get_ia32_ls_mode(node);
-		bool            is_8bit = get_mode_size_bits(ls_mode) == 8;
-		ir_node        *cmp     = is_8bit ? new_bd_ia32_Cmp_8bit(dbgi, block, base, idx, mem, minu, subt, false)
-		                                  : new_bd_ia32_Cmp(dbgi, block, base, idx, mem, minu, subt, false);
+		x86_insn_size_t const size = get_ia32_attr_const(node)->size;
+		bool            is_8bit = size == X86_SIZE_8;
+		ir_node        *cmp     = is_8bit ? new_bd_ia32_Cmp_8bit(dbgi, block, base, idx, mem, minu, subt, size, false)
+		                                  : new_bd_ia32_Cmp(dbgi, block, base, idx, mem, minu, subt, size, false);
 		arch_set_irn_register(cmp, &ia32_registers[REG_EFLAGS]);
 		ia32_copy_am_attrs(cmp, node);
 
@@ -648,37 +634,44 @@ static void simplify_remat_nodes(ir_graph *irg)
 
 static ir_node *ia32_new_spill(ir_node *value, ir_node *after)
 {
-	ir_graph *irg   = get_irn_irg(value);
-	ir_node  *block = get_block(after);
-	ir_node  *frame = get_irg_frame(irg);
-	ir_mode  *mode  = get_spill_mode(value);
-	ir_node  *noreg = ia32_new_NoReg_gp(irg);
-	ir_node  *nomem = get_irg_no_mem(irg);
+	ir_graph       *irg   = get_irn_irg(value);
+	ir_node        *block = get_block(after);
+	ir_node        *frame = get_irg_frame(irg);
+	ir_node        *noreg = ia32_new_NoReg_gp(irg);
+	ir_node        *nomem = get_irg_no_mem(irg);
 
-	ir_node *res;
-	ir_node *store;
-	if (mode_is_float(mode)) {
-		if (ia32_cg_config.use_sse2) {
-			store = new_bd_ia32_xStore(NULL, block, frame, noreg, nomem, value);
-			res   = be_new_Proj(store, pn_ia32_xStore_M);
-		} else {
-			store = new_bd_ia32_fst(NULL, block, frame, noreg, nomem, value, mode);
-			res   = be_new_Proj(store, pn_ia32_fst_M);
-		}
-	} else if (get_mode_size_bits(mode) == 128) {
-		/* Spill 128 bit SSE registers */
-		store = new_bd_ia32_xxStore(NULL, block, frame, noreg, nomem, value);
-		res   = be_new_Proj(store, pn_ia32_xxStore_M);
-	} else {
-		store = get_mode_size_bits(mode) == 8
-			? new_bd_ia32_Store_8bit(NULL, block, frame, noreg, nomem, value)
-			: new_bd_ia32_Store     (NULL, block, frame, noreg, nomem, value);
+	// FIXME: Find a way to not duplicate logic with ia32_new_reload()
+	arch_register_req_t   const *const req  = arch_get_irn_register_req(value);
+	arch_register_class_t const *const cls  = req->cls;
+	ir_node               const *const skip = skip_Proj_const(value);
+	ir_node         *res;
+	ir_node         *store;
+	if (cls == &ia32_reg_classes[CLASS_ia32_gp]) {
+		x86_insn_size_t size = X86_SIZE_32;
+		if (is_ia32_Load(skip))
+			size = get_ia32_attr_const(skip)->size;
+
+		store = size == X86_SIZE_8
+			? new_bd_ia32_Store_8bit(NULL, block, frame, noreg, nomem, value, size)
+			: new_bd_ia32_Store     (NULL, block, frame, noreg, nomem, value, size);
 		res   = be_new_Proj(store, pn_ia32_Store_M);
+	} else if (cls == &ia32_reg_classes[CLASS_ia32_fp]) {
+		x86_insn_size_t size  = X86_SIZE_80;
+		if (is_ia32_fld(skip))
+			size = get_ia32_attr_const(skip)->size;
+		store = new_bd_ia32_fst(NULL, block, frame, noreg, nomem, value, size);
+		res   = be_new_Proj(store, pn_ia32_fst_M);
+	} else {
+		assert(cls == &ia32_reg_classes[CLASS_ia32_xmm]);
+		// TODO: find out when we can use xStore and only store 64bit
+		store = new_bd_ia32_xxStore(NULL, block, frame, noreg, nomem, value,
+		                            X86_SIZE_128);
+		res   = be_new_Proj(store, pn_ia32_xxStore_M);
 	}
+
 	ia32_attr_t *const attr = get_ia32_attr(store);
 	attr->addr.variant = X86_ADDR_BASE;
 	set_ia32_op_type(store, ia32_AddrModeD);
-	set_ia32_ls_mode(store, mode);
 	set_ia32_frame_use(store, IA32_FRAME_USE_AUTO);
 	set_ia32_is_spill(store);
 	sched_add_after(after, store);
@@ -688,29 +681,36 @@ static ir_node *ia32_new_spill(ir_node *value, ir_node *after)
 
 static ir_node *ia32_new_reload(ir_node *value, ir_node *spill, ir_node *before)
 {
-	ir_graph *irg       = get_irn_irg(before);
-	ir_node  *block     = get_block(before);
-	ir_mode  *spillmode = get_spill_mode(value);
-	ir_node  *noreg     = ia32_new_NoReg_gp(irg);
-	ir_node  *frame     = get_irg_frame(irg);
+	ir_graph *const irg   = get_irn_irg(before);
+	ir_node  *const block = get_block(before);
+	ir_node  *const noreg = ia32_new_NoReg_gp(irg);
+	ir_node  *const frame = get_irg_frame(irg);
 
-	ir_node *load;
-	if (mode_is_float(spillmode)) {
-		if (ia32_cg_config.use_sse2) {
-			load = new_bd_ia32_xLoad(NULL, block, frame, noreg, spill, spillmode);
-		} else {
-			load = new_bd_ia32_fld(NULL, block, frame, noreg, spill, spillmode);
-		}
-	} else if (get_mode_size_bits(spillmode) == 128) {
-		/* Reload 128 bit SSE registers */
-		load = new_bd_ia32_xxLoad(NULL, block, frame, noreg, spill);
+	// FIXME: Find a way to not duplicate logic with ia32_new_spill()
+	arch_register_req_t   const *const req  = arch_get_irn_register_req(value);
+	arch_register_class_t const *const cls  = req->cls;
+	ir_node               const *const skip = skip_Proj_const(value);
+	ir_node        *load;
+	if (cls == &ia32_reg_classes[CLASS_ia32_gp]) {
+		x86_insn_size_t size = X86_SIZE_32;
+		if (is_ia32_Load(skip))
+			size = get_ia32_attr_const(skip)->size;
+		load = new_bd_ia32_Load(NULL, block, frame, noreg, spill, size, false);
+	} else if (cls == &ia32_reg_classes[CLASS_ia32_fp]) {
+		x86_insn_size_t size = X86_SIZE_80;
+		if (is_ia32_fld(skip))
+			size = get_ia32_attr_const(skip)->size;
+		load = new_bd_ia32_fld(NULL, block, frame, noreg, spill, size);
 	} else {
-		load = new_bd_ia32_Load(NULL, block, frame, noreg, spill);
+		assert(cls == &ia32_reg_classes[CLASS_ia32_xmm]);
+		// TODO: find out when we can use xLoad and only load 64bit
+		/* Reload 128 bit SSE registers */
+		load = new_bd_ia32_xxLoad(NULL, block, frame, noreg, spill,
+		                          X86_SIZE_128);
 	}
 	ia32_attr_t *const attr = get_ia32_attr(load);
 	attr->addr.variant = X86_ADDR_BASE;
 	set_ia32_op_type(load, ia32_AddrModeS);
-	set_ia32_ls_mode(load, spillmode);
 	set_ia32_frame_use(load, IA32_FRAME_USE_AUTO);
 	set_ia32_is_reload(load);
 	arch_add_irn_flags(load, arch_irn_flag_reload);
@@ -720,7 +720,8 @@ static ir_node *ia32_new_reload(ir_node *value, ir_node *spill, ir_node *before)
 }
 
 static ir_node *create_push(ir_node *node, ir_node *schedpoint, ir_node *sp,
-                            ir_node *mem, ir_entity *ent, ir_mode *mode)
+                            ir_node *mem, ir_entity *ent,
+                            x86_insn_size_t const size)
 {
 	dbg_info *dbgi  = get_irn_dbg_info(node);
 	ir_node  *block = get_nodes_block(node);
@@ -729,7 +730,7 @@ static ir_node *create_push(ir_node *node, ir_node *schedpoint, ir_node *sp,
 	ir_node  *frame = get_irg_frame(irg);
 
 	ir_node *const push = new_bd_ia32_Push(dbgi, block, frame, noreg, mem,
-	                                       noreg, sp, mode);
+	                                       noreg, sp, size);
 	ia32_attr_t *const attr = get_ia32_attr(push);
 	attr->addr = (x86_addr_t) {
 		.immediate = (x86_imm32_t) {
@@ -747,7 +748,7 @@ static ir_node *create_push(ir_node *node, ir_node *schedpoint, ir_node *sp,
 }
 
 static ir_node *create_pop(ir_node *node, ir_node *schedpoint, ir_node *sp,
-                           ir_entity *ent, ir_mode *mode)
+                           ir_entity *ent, x86_insn_size_t size)
 {
 	dbg_info *dbgi  = get_irn_dbg_info(node);
 	ir_node  *block = get_nodes_block(node);
@@ -755,7 +756,7 @@ static ir_node *create_pop(ir_node *node, ir_node *schedpoint, ir_node *sp,
 	ir_node  *noreg = ia32_new_NoReg_gp(irg);
 	ir_node  *frame = get_irg_frame(irg);
 	ir_node  *pop   = new_bd_ia32_PopMem(dbgi, block, frame, noreg,
-	                                     get_irg_no_mem(irg), sp);
+	                                     get_irg_no_mem(irg), sp, size);
 	ia32_attr_t *const attr = get_ia32_attr(pop);
 	attr->addr = (x86_addr_t) {
 		.immediate = (x86_imm32_t) {
@@ -766,7 +767,6 @@ static ir_node *create_pop(ir_node *node, ir_node *schedpoint, ir_node *sp,
 	};
 	set_ia32_frame_use(pop, IA32_FRAME_USE_AUTO);
 	set_ia32_op_type(pop, ia32_AddrModeD);
-	set_ia32_ls_mode(pop, mode);
 	set_ia32_is_reload(pop);
 	sched_add_before(schedpoint, pop);
 	return pop;
@@ -805,24 +805,24 @@ static void transform_MemPerm(ir_node *node)
 
 		int offset = 0;
 		do {
-			ir_mode *mode;
+			x86_insn_size_t size;
 			if (entsize%2 == 1) {
-				mode = mode_Bu;
+				size = X86_SIZE_8;
 			} else if (entsize % 4 == 2) {
-				mode = mode_Hu;
+				size = X86_SIZE_16;
 			} else {
 				assert(entsize%4 == 0);
-				mode = ia32_mode_gp;
+				size = X86_SIZE_32;
 			}
 
-			ir_node *push = create_push(node, node, sp, mem, inent, mode);
+			ir_node *push = create_push(node, node, sp, mem, inent, size);
 			sp = create_spproj(push, pn_ia32_Push_stack);
 			ia32_attr_t *const attr = get_ia32_attr(push);
 			attr->addr.immediate.offset = offset;
 
-			unsigned size = get_mode_size_bytes(mode);
-			offset  += size;
-			entsize -= size;
+			unsigned size_bytes = x86_bytes_from_size(size);
+			offset  += size_bytes;
+			entsize -= size_bytes;
 		} while(entsize > 0);
 		set_irn_n(node, i, new_r_Bad(irg, mode_X));
 	}
@@ -843,21 +843,21 @@ static void transform_MemPerm(ir_node *node)
 		int      offset = entsize;
 		ir_node *pop;
 		do {
-			ir_mode *mode;
+			x86_insn_size_t size;
 			if (entsize%2 == 1) {
-				mode = mode_Bu;
+				size = X86_SIZE_8;
 			} else if (entsize%4 == 2) {
-				mode = mode_Hu;
+				size = X86_SIZE_16;
 			} else {
 				assert(entsize%4 == 0);
-				mode = ia32_mode_gp;
+				size = X86_SIZE_32;
 			}
-			pop = create_pop(node, node, sp, outent, mode);
+			pop = create_pop(node, node, sp, outent, size);
 			sp  = create_spproj(pop, pn_ia32_PopMem_stack);
 
-			unsigned size = get_mode_size_bytes(mode);
-			offset  -= size;
-			entsize -= size;
+			unsigned size_bytes = x86_bytes_from_size(size);
+			offset  -= size_bytes;
+			entsize -= size_bytes;
 			ia32_attr_t *const attr = get_ia32_attr(pop);
 			attr->addr.immediate.offset = offset;
 		} while(entsize > 0);
@@ -936,21 +936,23 @@ static void ia32_collect_frame_entity_nodes(ir_node *node, void *data)
 		type = get_type_for_mode(mode_Ls);
 		goto request_entity;
 	case IA32_FRAME_USE_AUTO: {
-		ir_mode *mode = get_ia32_ls_mode(node);
-		/* stupid hack: in some situations (like reloads folded into ConvI2I
-		 * with 8bit mode, an 8bit entity and reload+spill would suffice, but
-		 * an 8bit store has special register requirements on ia32 which we may
-		 * not be able to fulfill anymore at this point, so extend the spillslot
-		 * size to 16bit :-( */
-		if (get_mode_size_bits(mode) == 8) {
+		switch (get_ia32_attr_const(node)->size) {
+		case X86_SIZE_8:
+			/* stupid hack: in some situations (like reloads folded into ConvI2I
+			 * with 8bit mode, an 8bit entity and reload+spill would suffice,
+			 * but an 8bit store has special register requirements on ia32 which
+			 * we may not be able to fulfill anymore at this point, so extend
+			 * the spillslot size to 16bit :-( */
 			type = get_type_for_mode(mode_Hu);
-		} else if (mode == x86_mode_E) {
-			type = x86_type_E; /* make sure we have the right alignment
-			                      entity size (different from mode size) */
-		} else {
-			type = get_type_for_mode(mode);
+			goto request_entity;
+		case X86_SIZE_16: type = get_type_for_mode(mode_Hu); goto request_entity;
+		case X86_SIZE_32: type = get_type_for_mode(mode_Iu); goto request_entity;
+		case X86_SIZE_64: type = get_type_for_mode(mode_Lu); goto request_entity;
+		case X86_SIZE_80: type = x86_type_E; goto request_entity;
+		case X86_SIZE_128:
+			break;
 		}
-		goto request_entity;
+		panic("invalid size");
 	}
 	}
 	panic("invalid frame use type");
@@ -994,7 +996,8 @@ static void introduce_epilogue(ir_node *const ret, bool const omit_fp)
 			sched_add_before(ret, curr_sp);
 
 			/* Pop ebp. */
-			restore  = new_bd_ia32_Pop_ebp(NULL, block, curr_mem, curr_sp);
+			restore  = new_bd_ia32_Pop_ebp(NULL, block, curr_mem, curr_sp,
+			                               X86_SIZE_32);
 			curr_bp  = be_new_Proj_reg(restore, pn_ia32_Pop_res,   bp);
 			curr_sp  = be_new_Proj_reg(restore, pn_ia32_Pop_stack, sp);
 			curr_mem = be_new_Proj(restore, pn_ia32_Pop_M);
@@ -1030,7 +1033,7 @@ static void introduce_prologue(ir_graph *const irg, bool omit_fp)
 		ir_node *const mem        = get_irg_initial_mem(irg);
 		ir_node *const noreg      = ia32_new_NoReg_gp(irg);
 		ir_node *const initial_bp = be_get_Start_proj(irg, bp);
-		ir_node *const push       = new_bd_ia32_Push(NULL, block, noreg, noreg, mem, initial_bp, initial_sp, ia32_mode_gp);
+		ir_node *const push       = new_bd_ia32_Push(NULL, block, noreg, noreg, mem, initial_bp, initial_sp, X86_SIZE_32);
 		sched_add_after(start, push);
 		ir_node *const curr_mem   = be_new_Proj(push, pn_ia32_Push_M);
 		edges_reroute_except(mem, curr_mem, push);
@@ -1389,7 +1392,6 @@ static void ia32_init(void)
 	ia32_mode_fpcw = new_non_arithmetic_mode("fpcw", 16);
 	ia32_mode_flags = new_non_arithmetic_mode("flags", 32);
 
-	ia32_mode_8h = new_non_arithmetic_mode("8h", 8);
 	ia32_mode_gp = new_int_mode("gp", irma_twos_complement, 32, 0, 32);
 	ia32_mode_float64 = new_float_mode("fp64", irma_ieee754, 11, 52,
 	                                   ir_overflow_indefinite);

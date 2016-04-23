@@ -91,27 +91,27 @@ $custom_init_attr_func = \&ia32_custom_init_attr;
 
 %init_attr = (
 	ia32_attr_t =>
-		"init_ia32_attributes(res, irn_flags, in_reqs, n_res);",
+		"init_ia32_attributes(res, irn_flags, in_reqs, n_res, size);",
 	ia32_call_attr_t =>
-		"init_ia32_attributes(res, irn_flags, in_reqs, n_res);\n".
+		"init_ia32_attributes(res, irn_flags, in_reqs, n_res, size);\n".
 		"\tinit_ia32_call_attributes(res, pop, call_tp);",
 	ia32_condcode_attr_t =>
-		"init_ia32_attributes(res, irn_flags, in_reqs, n_res);\n".
+		"init_ia32_attributes(res, irn_flags, in_reqs, n_res, size);\n".
 		"\tinit_ia32_condcode_attributes(res, condition_code);",
 	ia32_switch_attr_t =>
-		"init_ia32_attributes(res, irn_flags, in_reqs, n_res);\n".
+		"init_ia32_attributes(res, irn_flags, in_reqs, n_res, size);\n".
 		"\tinit_ia32_switch_attributes(res, switch_table, table_entity);",
 	ia32_copyb_attr_t =>
-		"init_ia32_attributes(res, irn_flags, in_reqs, n_res);\n".
+		"init_ia32_attributes(res, irn_flags, in_reqs, n_res, size);\n".
 		"\tinit_ia32_copyb_attributes(res, size);",
 	ia32_immediate_attr_t =>
-		"init_ia32_attributes(res, irn_flags, in_reqs, n_res);\n".
+		"init_ia32_attributes(res, irn_flags, in_reqs, n_res, size);\n".
 		"\tinit_ia32_immediate_attributes(res, imm);",
 	ia32_x87_attr_t =>
-		"init_ia32_attributes(res, irn_flags, in_reqs, n_res);\n".
+		"init_ia32_attributes(res, irn_flags, in_reqs, n_res, size);\n".
 		"\tinit_ia32_x87_attributes(res);",
 	ia32_return_attr_t =>
-		"init_ia32_attributes(res, irn_flags, in_reqs, n_res);\n".
+		"init_ia32_attributes(res, irn_flags, in_reqs, n_res, size);\n".
 		"\tinit_ia32_return_attributes(res, pop);",
 );
 
@@ -132,6 +132,7 @@ my $binop_commutative = {
 	},
 	ins       => [ "base", "index", "mem", "left", "right" ],
 	outs      => [ "res", "flags", "M" ],
+	attr      => "x86_insn_size_t size",
 	am        => "source,binary",
 	mode      => "first",
 };
@@ -147,7 +148,7 @@ my $binop_flags = {
 	ins       => [ "base", "index", "mem", "left", "right" ],
 	outs      => [ "eflags", "unused", "M" ],
 	am        => "source,binary",
-	attr      => "bool ins_permuted",
+	attr      => "x86_insn_size_t size, bool ins_permuted",
 	init      => "attr->ins_permuted = ins_permuted;",
 	mode      => "first",
 };
@@ -162,6 +163,7 @@ my $binop_mem = {
 	out_reqs  => [ "none", "flags", "mem" ],
 	ins       => [ "base", "index", "mem", "val" ],
 	outs      => [ "unused", "flags", "M" ],
+	attr      => "x86_insn_size_t size",
 };
 
 my $shiftop = {
@@ -171,6 +173,7 @@ my $shiftop = {
 	ins       => [ "val", "count" ],
 	outs      => [ "res", "flags" ],
 	mode      => "first",
+	attr      => "x86_insn_size_t size",
 };
 
 my $shiftop_mem = {
@@ -180,6 +183,7 @@ my $shiftop_mem = {
 	out_reqs  => [ "none", "flags", "mem" ],
 	ins       => [ "base", "index", "mem", "count" ],
 	outs      => [ "unused", "flags", "M" ],
+	attr      => "x86_insn_size_t size",
 };
 
 my $shiftop_double = {
@@ -195,6 +199,7 @@ my $shiftop_double = {
 	ins       => [ "val_high", "val_low", "count" ],
 	outs      => [ "res", "flags" ],
 	mode      => "first",
+	fixed     => "x86_insn_size_t const size = X86_SIZE_32;",
 };
 
 my $divop = {
@@ -206,6 +211,7 @@ my $divop = {
 	ins       => [ "base", "index", "mem", "divisor", "dividend_low", "dividend_high" ],
 	outs      => [ "div_res", "flags", "M", "mod_res", "X_regular", "X_except" ],
 	am        => "source,unary",
+	attr      => "x86_insn_size_t size",
 };
 
 my $mulop = {
@@ -218,6 +224,7 @@ my $mulop = {
 	ins       => [ "base", "index", "mem", "left", "right" ],
 	outs      => [ "res_low", "flags", "M", "res_high" ],
 	am        => "source,binary",
+	attr      => "x86_insn_size_t size",
 };
 
 my $unop = {
@@ -226,6 +233,7 @@ my $unop = {
 	out_reqs  => [ "in_r0", "flags" ],
 	ins       => [ "val" ],
 	outs      => [ "res", "flags" ],
+	attr      => "x86_insn_size_t size",
 	mode      => "first",
 };
 
@@ -236,6 +244,7 @@ my $unop_no_flags = {
 	out_reqs  => [ "in_r0" ],
 	ins       => [ "val" ],
 	outs      => [ "res" ],
+	attr      => "x86_insn_size_t size",
 };
 
 my $unop_from_mem = {
@@ -247,6 +256,7 @@ my $unop_from_mem = {
 	outs      => [ "res", "flags", "M" ],
 	am        => "source,unary",
 	mode      => "first",
+	attr      => "x86_insn_size_t size",
 };
 
 my $unop_mem = {
@@ -256,6 +266,7 @@ my $unop_mem = {
 	out_reqs  => [ "none", "flags", "mem" ],
 	ins       => [ "base", "index", "mem" ],
 	outs      => [ "unused", "flags", "M" ],
+	attr      => "x86_insn_size_t size",
 };
 
 my $memop = {
@@ -263,6 +274,7 @@ my $memop = {
 	in_reqs  => [ "mem" ],
 	out_reqs => [ "mem" ],
 	ins      => [ "mem" ],
+	fixed    => "x86_insn_size_t const size = X86_SIZE_32;",
 };
 
 my $prefetchop = {
@@ -272,6 +284,7 @@ my $prefetchop = {
 	out_reqs  => [ "mem" ],
 	ins       => [ "base", "index", "mem" ],
 	outs      => [ "M" ],
+	fixed     => "x86_insn_size_t const size = X86_SIZE_8;",
 };
 
 my $fbinop = {
@@ -284,6 +297,7 @@ my $fbinop = {
 	am        => "source,binary",
 	mode      => "first",
 	attr_type => "ia32_x87_attr_t",
+	attr      => "x86_insn_size_t size",
 };
 
 my $funop = {
@@ -291,7 +305,7 @@ my $funop = {
 	in_reqs   => [ "fp" ],
 	out_reqs  => [ "fp" ],
 	ins       => [ "value" ],
-	init      => "attr->ls_mode = x86_mode_E;",
+	fixed     => "x86_insn_size_t const size = X86_SIZE_80;",
 };
 
 my $fconstop = {
@@ -299,8 +313,8 @@ my $fconstop = {
 	irn_flags => [ "rematerializable" ],
 	out_reqs  => [ "fp" ],
 	outs      => [ "res" ],
-	init      => "attr->ls_mode = x86_mode_E;",
-	fixed     => $x87sim,
+	fixed     => "x86_insn_size_t const size = X86_SIZE_80;\n"
+	            ."\t".$x87sim,
 };
 
 my $valueop = {
@@ -308,6 +322,7 @@ my $valueop = {
 	irn_flags => [ "rematerializable" ],
 	out_reqs  => [ "gp" ],
 	outs      => [ "res" ],
+	fixed     => "x86_insn_size_t const size = X86_SIZE_32;",
 };
 
 my $fpopop = {
@@ -317,6 +332,7 @@ my $fpopop = {
 	attr_type   => "ia32_x87_attr_t",
 	attr        => "const arch_register_t *reg",
 	init        => "attr->x87.reg = reg;",
+	fixed       => "x86_insn_size_t const size = X86_SIZE_80;",
 };
 
 my $xbinop = {
@@ -328,6 +344,7 @@ my $xbinop = {
 	outs      => [ "res", "flags", "M" ],
 	am        => "source,binary",
 	mode      => "first",
+	attr      => "x86_insn_size_t size",
 };
 
 my $xbinop_commutative = {
@@ -339,6 +356,7 @@ my $xbinop_commutative = {
 	outs      => [ "res", "flags", "M" ],
 	am        => "source,binary",
 	mode      => "first",
+	attr      => "x86_insn_size_t size",
 };
 
 my $xconv_i2f = {
@@ -346,6 +364,7 @@ my $xconv_i2f = {
 	in_reqs  => [ "gp", "gp", "mem", "gp" ],
 	out_reqs => [ "xmm" ],
 	ins      => [ "base", "index", "mem", "val" ],
+	attr     => "x86_insn_size_t size",
 	am       => "source,unary",
 };
 
@@ -353,6 +372,7 @@ my $xshiftop = {
 	irn_flags => [ "rematerializable" ],
 	in_reqs   => [ "xmm", "xmm" ],
 	out_reqs  => [ "in_r0 !in_r1" ],
+	attr      => "x86_insn_size_t size",
 };
 
 my $xvalueop = {
@@ -360,18 +380,21 @@ my $xvalueop = {
 	irn_flags => [ "rematerializable" ],
 	out_reqs  => [ "xmm" ],
 	outs      => [ "res" ],
+	attr      => "x86_insn_size_t size",
 };
 
 my $carry_user_op = {
 	irn_flags => [ "modify_flags" ],
 	attr_type => "ia32_condcode_attr_t",
 	fixed     => "x86_condition_code_t condition_code = x86_cc_carry;",
+	attr      => "x86_insn_size_t size",
 };
 
 my $noregop = {
 	state     => "pinned",
 	op_flags  => [ "constlike", "dump_noblock" ],
 	irn_flags => [ "not_scheduled" ],
+	fixed     => "x86_insn_size_t const size = X86_SIZE_32;",
 };
 
 %nodes = (
@@ -385,6 +408,7 @@ Immediate => {
 	attr_type => "ia32_immediate_attr_t",
 	hash_func => "ia32_hash_Immediate",
 	latency   => 0,
+	fixed    => "x86_insn_size_t const size = X86_SIZE_32;",
 },
 
 Add => {
@@ -516,6 +540,7 @@ Xor0 => {
 	out_reqs  => [ "gp", "flags" ],
 	outs      => [ "res", "flags" ],
 	emit      => "xor%M %D0, %D0",
+	attr      => "x86_insn_size_t size",
 	latency   => 1,
 	mode      => "first",
 },
@@ -543,6 +568,7 @@ Sub => {
 	ins       => [ "base", "index", "mem", "minuend", "subtrahend" ],
 	outs      => [ "res", "flags", "M" ],
 	am        => "source,binary",
+	attr      => "x86_insn_size_t size",
 	emit      => "sub%M %B",
 	encode    => "ia32_enc_binop(node, 5)",
 	latency   => 1,
@@ -711,6 +737,7 @@ Minus64 => {
 	out_reqs  => [ "in_r0", "in_r1" ],
 	ins       => [ "low", "high" ],
 	outs      => [ "res_low", "res_high" ],
+	fixed     => "x86_insn_size_t const size = X86_SIZE_32;",
 	latency   => 3,
 },
 
@@ -765,6 +792,7 @@ NotMem => {
 	out_reqs  => [ "none", "none", "mem" ],
 	ins       => [ "base", "index", "mem" ],
 	outs      => [ "unused0", "unused1", "M" ],
+	attr      => "x86_insn_size_t size",
 	emit      => "not%M %AM",
 	encode    => "ia32_enc_unop_mem(node, 0xF6, 2)",
 	latency   => 1,
@@ -775,6 +803,9 @@ Cmc => {
 	template => $carry_user_op,
 	in_reqs  => [ "flags" ],
 	out_reqs => [ "flags" ],
+	fixed    => "x86_condition_code_t condition_code = x86_cc_carry;\n"
+	           ."\tx86_insn_size_t const size = X86_SIZE_32;",
+	attr     => "",
 	emit     => "cmc",
 	encode   => "ia32_enc_simple(0xF5)",
 	latency  => 1,
@@ -783,6 +814,7 @@ Cmc => {
 Stc => {
 	irn_flags => [ "modify_flags", "rematerializable" ],
 	out_reqs  => [ "flags" ],
+	fixed     => "x86_insn_size_t const size = X86_SIZE_32;",
 	emit      => "stc",
 	encode    => "ia32_enc_simple(0xF9)",
 	latency   => 1,
@@ -800,6 +832,7 @@ XorHighLow => {
 	state     => "exc_pinned",
 	in_reqs   => [ "eax ebx ecx edx" ],
 	out_reqs  => [ "eax ebx ecx edx in_r0", "flags" ],
+	fixed     => "x86_insn_size_t const size = X86_SIZE_8;",
 	emit      => "xorb %>D0, %<D0",
 	ins       => [ "value" ],
 	outs      => [ "res", "flags" ],
@@ -822,8 +855,8 @@ Setcc => {
 	attr      => "x86_condition_code_t condition_code",
 	# The way we handle Setcc with float nodes (potentially) destroys the flags
 	# (when we emit the setX; setp; orb and the setX;setnp;andb sequences)
-	init      => "attr->attr.ls_mode = mode_Bu;\n".
-	             "\tif (condition_code & x86_cc_additional_float_cases) {\n".
+	fixed     => "x86_insn_size_t const size = X86_SIZE_8;",
+	init      => "if (condition_code & x86_cc_additional_float_cases) {\n".
 	             "\t\tarch_add_irn_flags(res, arch_irn_flag_modify_flags);\n".
 	             "\t\t/* attr->latency = 3; */\n".
 	             "\t}\n",
@@ -838,7 +871,7 @@ SetccMem => {
 	ins       => [ "base", "index", "mem","eflags" ],
 	attr_type => "ia32_condcode_attr_t",
 	attr      => "x86_condition_code_t condition_code",
-	init      => "attr->attr.ls_mode = mode_Bu;",
+	fixed     => "x86_insn_size_t const size = X86_SIZE_8;",
 	emit      => "set%P3 %AM",
 	latency   => 1,
 },
@@ -854,7 +887,7 @@ CMovcc => {
 	outs      => [ "res", "unused", "M" ],
 	am        => "source,binary",
 	attr_type => "ia32_condcode_attr_t",
-	attr      => "x86_condition_code_t condition_code",
+	attr      => "x86_insn_size_t size, x86_condition_code_t condition_code",
 	emit      => "cmov%P5 %B",
 	latency   => 1,
 	mode      => "first",
@@ -867,6 +900,7 @@ Jcc => {
 	out_reqs  => [ "exec", "exec" ],
 	ins       => [ "eflags" ],
 	outs      => [ "false", "true" ],
+	fixed    => "x86_insn_size_t const size = X86_SIZE_32;",
 	attr_type => "ia32_condcode_attr_t",
 	attr      => "x86_condition_code_t condition_code",
 	latency   => 2,
@@ -880,6 +914,7 @@ SwitchJmp => {
 	out_reqs  => "...",
 	attr_type => "ia32_switch_attr_t",
 	attr      => "const ir_switch_table *switch_table, const ir_entity *table_entity",
+	fixed     => "x86_insn_size_t const size = X86_SIZE_32;",
 	latency   => 2,
 },
 
@@ -889,6 +924,7 @@ Jmp => {
 	op_flags  => [ "cfopcode" ],
 	out_reqs  => [ "exec" ],
 	latency   => 1,
+	fixed    => "x86_insn_size_t const size = X86_SIZE_32;",
 },
 
 IJmp => {
@@ -899,6 +935,7 @@ IJmp => {
 	ins      => [ "base", "index", "mem", "target" ],
 	outs     => [ "jmp", "none", "M" ],
 	am       => "source,unary",
+	fixed    => "x86_insn_size_t const size = X86_SIZE_32;",
 	emit     => "jmp %*AS3",
 	# TOOD: No AM when using ia32_enc_unop
 	encode   => "ia32_enc_unop(node, 0xFF, 4, n_ia32_IJmp_target)",
@@ -909,7 +946,8 @@ IJmp => {
 Const => {
 	template  => $valueop,
 	emit      => "movl %I, %D0",
-	attr      => "const x86_imm32_t *imm",
+	fixed     => "",
+	attr      => "x86_insn_size_t size, const x86_imm32_t *imm",
 	attr_type => "ia32_immediate_attr_t",
 	latency   => 1,
 },
@@ -936,7 +974,8 @@ NoReg_GP => {
 NoReg_FP => {
 	template => $noregop,
 	out_reqs => [ "fp_NOREG:I" ],
-	fixed    => $x87sim,
+	fixed    => "x86_insn_size_t const size = X86_SIZE_32;\n"
+	           ."\t".$x87sim,
 	latency  => 0,
 },
 
@@ -959,6 +998,7 @@ FldCW => {
 	out_reqs => [ "fpcw" ],
 	ins      => [ "base", "index", "mem" ],
 	latency  => 5,
+	fixed    => "x86_insn_size_t const size = X86_SIZE_16;",
 	emit     => "fldcw %AM",
 },
 
@@ -969,6 +1009,7 @@ FnstCW => {
 	out_reqs => [ "mem" ],
 	ins      => [ "base", "index", "mem", "fpcw" ],
 	latency  => 5,
+	fixed    => "x86_insn_size_t const size = X86_SIZE_16;",
 	emit     => "fnstcw %AM",
 },
 
@@ -979,6 +1020,7 @@ FnstCWNOP => {
 	out_reqs => [ "mem" ],
 	ins      => [ "fpcw" ],
 	latency  => 0,
+	fixed    => "x86_insn_size_t const size = X86_SIZE_16;",
 	emit     => "",
 },
 
@@ -990,6 +1032,7 @@ Cltd => {
 	emit     => "cltd",
 	encode   => "ia32_enc_simple(0x99)",
 	latency  => 1,
+	fixed    => "x86_insn_size_t const size = X86_SIZE_32;",
 	init     => "arch_set_additional_pressure(res, &ia32_reg_classes[CLASS_ia32_gp], 1);",
 },
 
@@ -1006,6 +1049,8 @@ Load => {
 	ins      => [ "base", "index", "mem" ],
 	outs     => [ "res", "unused", "M", "X_regular", "X_except" ],
 	latency  => 0,
+	attr     => "x86_insn_size_t size, bool sign_extend",
+	init     => "attr->sign_extend = sign_extend;",
 	emit     => "mov%#Ml %AM, %#D0",
 },
 
@@ -1019,6 +1064,7 @@ Store => {
 	out_reqs => [ "mem", "exec", "exec" ],
 	ins      => [ "base", "index", "mem", "val" ],
 	outs     => [ "M", "X_regular", "X_except" ],
+	attr     => "x86_insn_size_t size",
 	emit     => "mov%M %S3, %AM",
 	latency  => 2,
 },
@@ -1031,6 +1077,7 @@ Lea => {
 	out_reqs  => [ "gp" ],
 	ins       => [ "base", "index" ],
 	outs      => [ "res" ],
+	attr      => "x86_insn_size_t size",
 	emit      => "leal %AM, %D0",
 	latency   => 2,
 },
@@ -1044,8 +1091,7 @@ Push => {
 	outs     => [ "M", "stack" ],
 	am       => "source,unary",
 	latency  => 2,
-	attr     => "ir_mode *store_mode",
-	init     => "attr->ls_mode = store_mode;",
+	attr     => "x86_insn_size_t size",
 },
 
 PushEax => {
@@ -1054,6 +1100,7 @@ PushEax => {
 	out_reqs => [ "esp:I" ],
 	ins      => [ "stack" ],
 	outs     => [ "stack" ],
+	fixed    => "x86_insn_size_t const size = X86_SIZE_32;",
 	emit     => "pushl %%eax",
 	latency  => 2,
 },
@@ -1068,8 +1115,8 @@ Pop => {
 	ins     => [ "mem", "stack" ],
 	outs    => [ "res", "unused", "M", "stack" ],
 	emit    => "pop%M %D0",
+	attr    => "x86_insn_size_t size",
 	latency => 3, # Pop is more expensive than Push on Athlon
-	init    => "attr->ls_mode = ia32_mode_gp;",
 },
 
 CopyEbpEsp => {
@@ -1078,6 +1125,7 @@ CopyEbpEsp => {
 	out_reqs => [ "esp:I" ],
 	ins      => [ "ebp" ],
 	outs     => [ "esp" ],
+	fixed    => "x86_insn_size_t const size = X86_SIZE_32;",
 	emit     => "movl %S0, %D0",
 	latency  => 1,
 },
@@ -1088,6 +1136,7 @@ PopMem => {
 	out_reqs => [ "none", "none", "mem", "esp:I" ],
 	ins      => [ "base", "index", "mem", "stack" ],
 	outs     => [ "unused0", "unused1", "M", "stack" ],
+	attr     => "x86_insn_size_t size",
 	emit     => "pop%M %AM",
 	latency  => 3, # Pop is more expensive than Push on Athlon
 },
@@ -1095,6 +1144,7 @@ PopMem => {
 Enter => {
 	in_reqs  => [ "esp" ],
 	out_reqs => [ "ebp", "esp:I", "mem" ],
+	fixed    => "x86_insn_size_t const size = X86_SIZE_32;",
 	emit     => "enter",
 	outs     => [ "frame", "stack", "M" ],
 	latency  => 15,
@@ -1103,6 +1153,7 @@ Enter => {
 Leave => {
 	in_reqs  => [ "mem", "ebp" ],
 	out_reqs => [ "ebp:I", "mem", "esp:I" ],
+	fixed    => "x86_insn_size_t const size = X86_SIZE_32;",
 	emit     => "leave",
 	encode   => "ia32_enc_simple(0xC9)",
 	outs     => [ "frame", "M", "stack" ],
@@ -1115,7 +1166,8 @@ AddSP => {
 	state     => "pinned",
 	in_reqs   => [ "gp", "gp", "mem", "esp", "gp" ],
 	out_reqs  => [ "esp:I", "mem" ],
-	ins       => [ "base", "index", "mem", "stack", "size" ],
+	ins       => [ "base", "index", "mem", "stack", "amount" ],
+	fixed     => "x86_insn_size_t const size = X86_SIZE_32;",
 	am        => "source,binary",
 	emit      => "addl %B",
 	latency   => 1,
@@ -1127,9 +1179,9 @@ SubSP => {
 	state     => "pinned",
 	in_reqs   => [ "gp", "gp", "mem", "esp", "gp" ],
 	out_reqs  => [ "esp:I", "gp", "mem" ],
-	ins       => [ "base", "index", "mem", "stack", "size" ],
+	ins       => [ "base", "index", "mem", "stack", "amount" ],
 	am        => "source,binary",
-	init      => "attr->ls_mode = ia32_mode_gp;",
+	fixed     => "x86_insn_size_t size = X86_SIZE_32;",
 	emit      => "subl %B\n".
 	             "movl %%esp, %D1",
 	latency   => 2,
@@ -1150,6 +1202,7 @@ Bt => {
 	in_reqs   => [ "gp", "gp" ],
 	out_reqs  => [ "flags" ],
 	ins       => [ "left", "right" ],
+	attr      => "x86_insn_size_t size",
 	emit      => "bt%M %S1, %S0",
 	latency   => 1,
 },
@@ -1184,6 +1237,7 @@ Return => {
 	attr_type => "ia32_return_attr_t",
 	attr      => "uint16_t pop",
 	latency   => 0,
+	fixed     => "x86_insn_size_t const size = X86_SIZE_32;",
 },
 
 Call => {
@@ -1194,6 +1248,7 @@ Call => {
 	out_reqs  => "...",
 	ins       => [ "base", "index", "mem", "callee", "stack", "first_argument" ],
 	outs      => [ "mem", "stack", "first_result" ],
+	fixed     => "x86_insn_size_t const size = X86_SIZE_32;",
 	emit      => "call %*AS3",
 	attr_type => "ia32_call_attr_t",
 	attr      => "unsigned pop, ir_type *call_tp",
@@ -1211,6 +1266,7 @@ Bswap16 => {
 	irn_flags => [ "rematerializable" ],
 	in_reqs   => [ "eax ebx ecx edx" ],
 	out_reqs  => [ "eax ebx ecx edx in_r0" ],
+	fixed     => "x86_insn_size_t const size = X86_SIZE_8;",
 	emit      => "xchg %<D0, %>D0",
 	ins       => [ "val" ],
 	outs      => [ "res" ],
@@ -1224,6 +1280,7 @@ CmpXChgMem => {
 	out_reqs  => [ "eax", "flags", "mem" ],
 	ins       => [ "base", "index", "mem", "old", "new" ],
 	outs      => [ "res", "flags", "M" ],
+	attr      => "x86_insn_size_t size",
 	emit      => "lock cmpxchg%M %S4, %AM",
 	latency   => 2,
 },
@@ -1248,6 +1305,7 @@ Outport => {
 	in_reqs   => [ "edx", "eax", "mem" ],
 	out_reqs  => [ "mem" ],
 	ins       => [ "port", "value", "mem" ],
+	attr      => "x86_insn_size_t size",
 	emit      => "out%M %S1, %^S0",
 	latency   => 1,
 },
@@ -1259,6 +1317,7 @@ Inport => {
 	out_reqs  => [ "eax", "mem" ],
 	ins       => [ "port", "mem" ],
 	outs      => [ "res", "M" ],
+	attr      => "x86_insn_size_t size",
 	emit      => "in%M %^S0, %D0",
 	latency   => 1,
 },
@@ -1353,6 +1412,7 @@ xMovd  => {
 	irn_flags => [ "rematerializable" ],
 	in_reqs   => [ "gp" ],
 	out_reqs  => [ "xmm" ],
+	fixed     => "x86_insn_size_t const size = X86_SIZE_32;",
 	emit      => "movd %S0, %D0",
 	latency   => 1,
 },
@@ -1413,6 +1473,7 @@ xSub => {
 	ins       => [ "base", "index", "mem", "minuend", "subtrahend" ],
 	outs      => [ "res", "flags", "M" ],
 	am        => "source,binary",
+	attr      => "x86_insn_size_t size",
 	emit      => "subs%FX %B",
 	latency   => 4,
 	mode      => "first"
@@ -1436,6 +1497,7 @@ Ucomi => {
 	am        => "source,binary",
 	attr      => "bool ins_permuted",
 	init      => "attr->ins_permuted = ins_permuted;",
+	fixed     => "x86_insn_size_t const size = X86_SIZE_32;",
 	emit      => "ucomis%FX %B",
 	latency   => 3,
 },
@@ -1448,8 +1510,7 @@ xLoad => {
 	ins      => [ "base", "index", "mem" ],
 	outs     => [ "res", "unused", "M", "X_regular", "X_except" ],
 	emit     => "movs%FX %AM, %D0",
-	attr     => "ir_mode *load_mode",
-	init     => "attr->ls_mode = load_mode;",
+	attr     => "x86_insn_size_t size",
 	latency  => 0,
 },
 
@@ -1460,6 +1521,7 @@ xStore => {
 	out_reqs => [ "mem", "exec", "exec" ],
 	ins      => [ "base", "index", "mem", "val" ],
 	outs     => [ "M", "X_regular", "X_except" ],
+	attr     => "x86_insn_size_t size",
 	emit     => "movs%FX %S3, %AM",
 	latency  => 0,
 },
@@ -1517,6 +1579,7 @@ Cwtl => {
 	out_reqs => [ "eax" ],
 	ins      => [ "val" ],
 	outs     => [ "res" ],
+	fixed    => "x86_insn_size_t const size = X86_SIZE_32;",
 	emit     => "cwtl",
 	encode   => "ia32_enc_simple(0x98)",
 	latency  => 1,
@@ -1535,8 +1598,8 @@ Conv_I2I => {
 	emit     => "mov%#Ml %AS3, %#D0",
 	am       => "source,unary",
 	latency  => 1,
-	attr     => "ir_mode *smaller_mode",
-	init     => "attr->ls_mode = smaller_mode;",
+	attr     => "x86_insn_size_t size, bool sign_extend",
+	init     => "attr->sign_extend = sign_extend;",
 	mode     => "first",
 },
 
@@ -1547,8 +1610,7 @@ Conv_I2FP => {
 	ins      => [ "base", "index", "mem", "val" ],
 	am       => "source,unary",
 	latency  => 10,
-	attr     => "ir_mode *tgt_mode",
-	init     => "attr->ls_mode = tgt_mode;",
+	attr     => "x86_insn_size_t size",
 	mode     => "first",
 },
 
@@ -1559,8 +1621,7 @@ Conv_FP2I => {
 	ins      => [ "base", "index", "mem", "val" ],
 	am       => "source,unary",
 	latency  => 10,
-	attr     => "ir_mode *src_mode",
-	init     => "attr->ls_mode = src_mode;",
+	attr     => "x86_insn_size_t size",
 	mode     => "first",
 },
 
@@ -1571,8 +1632,7 @@ Conv_FP2FP => {
 	ins      => [ "base", "index", "mem", "val" ],
 	am       => "source,unary",
 	latency  => 8,
-	attr     => "ir_mode *tgt_mode",
-	init     => "attr->ls_mode = tgt_mode;",
+	attr     => "x86_insn_size_t size",
 	mode     => "first",
 },
 
@@ -1631,8 +1691,7 @@ fld => {
 	ins       => [ "base", "index", "mem" ],
 	outs      => [ "res", "unused", "M", "X_regular", "X_except" ],
 	emit      => "fld%FM %AM",
-	attr      => "ir_mode *load_mode",
-	init      => "attr->ls_mode = load_mode;",
+	attr      => "x86_insn_size_t size",
 	fixed     => $x87sim,
 	latency   => 2,
 },
@@ -1646,8 +1705,7 @@ fst => {
 	ins       => [ "base", "index", "mem", "val" ],
 	outs      => [ "M", "X_regular", "X_except" ],
 	emit      => "fst%FP%FM %AM",
-	attr      => "ir_mode *store_mode",
-	init      => "attr->attr.ls_mode = store_mode;",
+	attr      => "x86_insn_size_t size",
 	latency   => 2,
 	attr_type => "ia32_x87_attr_t",
 },
@@ -1661,8 +1719,7 @@ fstp => {
 	ins       => [ "base", "index", "mem", "val" ],
 	outs      => [ "M", "X_regular", "X_except" ],
 	emit      => "fstp%FM %AM",
-	attr      => "ir_mode *store_mode",
-	init      => "attr->attr.ls_mode = store_mode;",
+	attr      => "x86_insn_size_t size",
 	latency   => 2,
 	attr_type => "ia32_x87_attr_t",
 },
@@ -1673,6 +1730,7 @@ fild => {
 	out_reqs  => [ "fp", "none", "mem" ],
 	outs      => [ "res", "unused", "M" ],
 	ins       => [ "base", "index", "mem" ],
+	attr      => "x86_insn_size_t size",
 	emit      => "fild%FI %AM",
 	fixed     => $x87sim,
 	latency   => 4,
@@ -1685,6 +1743,7 @@ fist => {
 	out_reqs  => [ "mem", "exec", "exec" ],
 	ins       => [ "base", "index", "mem", "val", "fpcw" ],
 	outs      => [ "M", "X_regular", "X_except" ],
+	attr      => "x86_insn_size_t size",
 	emit      => "fist%FP%FI %AM",
 	latency   => 4,
 	attr_type => "ia32_x87_attr_t",
@@ -1697,6 +1756,7 @@ fistp => {
 	out_reqs  => [ "mem", "exec", "exec" ],
 	ins       => [ "base", "index", "mem", "val", "fpcw" ],
 	outs      => [ "M", "X_regular", "X_except" ],
+	attr      => "x86_insn_size_t size",
 	emit      => "fistp%FI %AM",
 	latency   => 4,
 	attr_type => "ia32_x87_attr_t",
@@ -1710,6 +1770,7 @@ fisttp => {
 	out_reqs  => [ "mem", "exec", "exec" ],
 	ins       => [ "base", "index", "mem", "val" ],
 	outs      => [ "M", "X_regular", "X_except" ],
+	attr      => "x86_insn_size_t size",
 	emit      => "fisttp%FI %AM",
 	latency   => 4,
 	attr_type => "ia32_x87_attr_t",
@@ -1770,6 +1831,7 @@ FucomFnstsw => {
 	emit      => "fucom%FP %F0\n".
 	             "fnstsw %%ax",
 	attr      => "bool ins_permuted",
+	fixed     => "x86_insn_size_t const size = X86_SIZE_16;",
 	init      => "attr->attr.ins_permuted = ins_permuted;",
 	latency   => 3,
 	attr_type => "ia32_x87_attr_t",
@@ -1783,6 +1845,7 @@ FucomppFnstsw => {
 	out_reqs  => [ "eax" ],
 	ins       => [ "left", "right" ],
 	outs      => [ "flags" ],
+	fixed     => "x86_insn_size_t const size = X86_SIZE_32;",
 	emit      => "fucompp\n".
 	             "fnstsw %%ax",
 	attr      => "bool ins_permuted",
@@ -1797,6 +1860,7 @@ Fucomi => {
 	out_reqs  => [ "eflags" ],
 	ins       => [ "left", "right" ],
 	outs      => [ "flags" ],
+	fixed     => "x86_insn_size_t const size = X86_SIZE_80;",
 	emit      => "fucom%FPi %F0",
 	attr      => "bool ins_permuted",
 	init      => "attr->attr.ins_permuted = ins_permuted;",
@@ -1814,7 +1878,8 @@ FtstFnstsw => {
 	             "fnstsw %%ax",
 	attr      => "bool ins_permuted",
 	init      => "attr->ins_permuted = ins_permuted;",
-	fixed     => $x87sim,
+	fixed     => "x86_insn_size_t const size = X86_SIZE_16;"
+	            ."\t".$x87sim,
 	latency   => 3,
 },
 
@@ -1824,6 +1889,7 @@ Sahf => {
 	out_reqs  => [ "eflags" ],
 	ins       => [ "val" ],
 	outs      => [ "flags" ],
+	fixed     => "x86_insn_size_t const size = X86_SIZE_16;",
 	emit      => "sahf",
 	encode    => "ia32_enc_simple(0x9E)",
 	latency   => 1,
@@ -1836,6 +1902,7 @@ fxch => {
 	op_flags    => [ "keep" ],
 	out_reqs    => [ "none" ],
 	attrs_equal => "attrs_equal_false",
+	fixed       => "x86_insn_size_t const size = X86_SIZE_80;",
 	emit        => "fxch %F0",
 	encode      => "ia32_enc_fop_reg(node, 0xD9, 0xC8)",
 	attr_type   => "ia32_x87_attr_t",
@@ -1849,6 +1916,7 @@ fdup => {
 	out_reqs    => [ "fp" ],
 	ins         => [ "val" ],
 	attrs_equal => "attrs_equal_false",
+	fixed       => "x86_insn_size_t const size = X86_SIZE_80;",
 	emit        => "fld %F0",
 	encode      => "ia32_enc_fop_reg(node, 0xD9, 0xC0)",
 	attr_type   => "ia32_x87_attr_t",
@@ -1877,7 +1945,8 @@ emms => {
 	out_reqs    => [ "none" ],
 	attrs_equal => "attrs_equal_false",
 	emit        => "emms",
-	fixed       => $x87sim,
+	fixed       => "x86_insn_size_t const size = X86_SIZE_32;"
+	              ."\t".$x87sim,
 	latency     => 3,
 },
 
@@ -1886,7 +1955,8 @@ femms => {
 	out_reqs    => [ "none" ],
 	attrs_equal => "attrs_equal_false",
 	emit        => "femms",
-	fixed       => $x87sim,
+	fixed       => "x86_insn_size_t const size = X86_SIZE_32;"
+	              ."\t".$x87sim,
 	latency     => 3,
 },
 
@@ -1897,6 +1967,7 @@ xxLoad => {
 	state     => "exc_pinned",
 	in_reqs   => [ "gp", "gp", "mem" ],
 	out_reqs  => [ "xmm", "mem", "exec", "exec" ],
+	attr      => "x86_insn_size_t size",
 	emit      => "movdqu %D0, %AM",
 	ins       => [ "base", "index", "mem" ],
 	outs      => [ "res", "M", "X_regular", "X_except" ],
@@ -1910,6 +1981,7 @@ xxStore => {
 	out_reqs => [ "mem", "exec", "exec" ],
 	ins      => [ "base", "index", "mem", "val" ],
 	outs     => [ "M", "X_regular", "X_except" ],
+	attr     => "x86_insn_size_t size",
 	emit     => "movdqu %S3, %AM",
 	latency  => 1,
 },

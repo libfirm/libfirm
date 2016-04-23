@@ -31,12 +31,14 @@ static bool reads_carry(x86_condition_code_t code)
 }
 
 /**
- * Transforms a Sub or xSub into Neg--Add iff OUT_REG != SRC1_REG && OUT_REG == SRC2_REG.
- * THIS FUNCTIONS MUST BE CALLED AFTER REGISTER ALLOCATION.
+ * After register allocation, transforms a Sub or xSub into Neg--Add iff
+ *   OUT_REG != SRC1_REG && OUT_REG == SRC2_REG.
  */
-static bool ia32_transform_sub_to_neg_add(ir_node *const irn, arch_register_t const *const out_reg)
+static bool ia32_transform_sub_to_neg_add(ir_node *const irn,
+                                          arch_register_t const *const out_reg)
 {
-	/* in case of sub and OUT == SRC2 we can transform the sequence into neg src2 -- add */
+	/* in case of sub and OUT == SRC2 we can transform the sequence into neg
+	 * src2 -- add */
 	ir_node *const in2 = get_irn_n(irn, n_ia32_binary_right);
 	if (out_reg != arch_get_irn_register(in2))
 		return false;
@@ -51,17 +53,17 @@ static bool ia32_transform_sub_to_neg_add(ir_node *const irn, arch_register_t co
 	/* generate the neg src2 */
 	ir_node *res;
 	if (is_ia32_xSub(irn)) {
-		ir_mode *op_mode = get_ia32_ls_mode(irn);
+		x86_insn_size_t const size = get_ia32_attr_const(irn)->size;
 		assert(get_irn_mode(irn) != mode_T);
 
-		ir_node  *const noreg_fp = ia32_new_NoReg_xmm(irg);
-		res = new_bd_ia32_xXor(dbgi, block, noreg, noreg, nomem, in2, noreg_fp);
-		int        size   = get_mode_size_bits(op_mode);
-		ir_entity *entity = ia32_gen_fp_known_const(size == 32 ? ia32_SSIGN : ia32_DSIGN);
+		ir_node *const noreg_fp = ia32_new_NoReg_xmm(irg);
+		res = new_bd_ia32_xXor(dbgi, block, noreg, noreg, nomem, in2, noreg_fp,
+							   size);
+		ir_entity *entity = ia32_gen_fp_known_const(size == X86_SIZE_32
+		                                            ? ia32_SSIGN : ia32_DSIGN);
 		ia32_attr_t *const attr = get_ia32_attr(res);
 		attr->addr.immediate.entity = entity;
 		set_ia32_op_type(res, ia32_AddrModeS);
-		set_ia32_ls_mode(res, op_mode);
 
 		arch_set_irn_register(res, out_reg);
 
@@ -69,8 +71,8 @@ static bool ia32_transform_sub_to_neg_add(ir_node *const irn, arch_register_t co
 		sched_add_before(irn, res);
 
 		/* generate the add */
-		res = new_bd_ia32_xAdd(dbgi, block, noreg, noreg, nomem, res, in1);
-		set_ia32_ls_mode(res, get_ia32_ls_mode(irn));
+		res = new_bd_ia32_xAdd(dbgi, block, noreg, noreg, nomem, res, in1,
+		                       size);
 	} else {
 		ir_node *flags_proj  = NULL;
 		bool     needs_carry = false;
@@ -108,14 +110,15 @@ static bool ia32_transform_sub_to_neg_add(ir_node *const irn, arch_register_t co
 			carry = new_bd_ia32_Stc(dbgi, block);
 
 carry:;
-			ir_node *nnot = new_bd_ia32_Not(dbgi, block, in2);
+			ir_node *nnot = new_bd_ia32_Not(dbgi, block, in2, X86_SIZE_32);
 			arch_set_irn_register(nnot, out_reg);
 			sched_add_before(irn, nnot);
 
 			arch_set_irn_register(carry, &ia32_registers[REG_EFLAGS]);
 			sched_add_before(irn, carry);
 
-			ir_node *adc = new_bd_ia32_Adc(dbgi, block, noreg, noreg, nomem, nnot, in1, carry);
+			ir_node *adc = new_bd_ia32_Adc(dbgi, block, noreg, noreg, nomem,
+			                               nnot, in1, carry, X86_SIZE_32);
 			arch_set_irn_register(adc, out_reg);
 			set_ia32_commutative(adc);
 
@@ -132,14 +135,15 @@ carry:;
 
 			res = adc;
 		} else {
-			res = new_bd_ia32_Neg(dbgi, block, in2);
+			res = new_bd_ia32_Neg(dbgi, block, in2, X86_SIZE_32);
 			arch_set_irn_register(res, out_reg);
 
 			/* add to schedule */
 			sched_add_before(irn, res);
 
 			/* generate the add */
-			res = new_bd_ia32_Add(dbgi, block, noreg, noreg, nomem, res, in1);
+			res = new_bd_ia32_Add(dbgi, block, noreg, noreg, nomem, res, in1,
+			                      X86_SIZE_32);
 			arch_set_irn_register_out(res, pn_ia32_res,   out_reg);
 			arch_set_irn_register_out(res, pn_ia32_flags, &ia32_registers[REG_EFLAGS]);
 			set_ia32_commutative(res);

@@ -156,30 +156,31 @@ static const char *get_register_name_16bit(const arch_register_t *reg)
 	panic("unexpected register");
 }
 
-static const char *get_register_name_mode(const arch_register_t *reg,
-                                          ir_mode *mode)
+static const char *get_register_name_size(arch_register_t const *const reg,
+                                          x86_insn_size_t const size,
+                                          bool use_8bit_high)
 {
-	if (mode == NULL)
-		return reg->name;
-	if (mode == ia32_mode_8h)
-		return get_register_name_8bit_high(reg);
-	unsigned size = get_mode_size_bits(mode);
-	if (size == 8)
-		return get_register_name_8bit_low(reg);
-	else if (size == 16)
-		return get_register_name_16bit(reg);
-	else
-		return reg->name;
+	switch (size) {
+	case X86_SIZE_8:
+		return use_8bit_high ? get_register_name_8bit_high(reg)
+		                     : get_register_name_8bit_low(reg);
+	case X86_SIZE_16: return get_register_name_16bit(reg);
+	case X86_SIZE_32: return reg->name;
+	case X86_SIZE_64:
+	case X86_SIZE_80:
+	case X86_SIZE_128:
+		break;
+	}
+	panic("Unexpected size");
 }
 
 /**
  * emit a register, possible shortened by a mode
- * @param reg   the register
- * @param mode  the mode of the register or NULL for full register
  */
-static void emit_register(const arch_register_t *reg, ir_mode *mode)
+static void emit_register(arch_register_t const *const reg,
+                          x86_insn_size_t const size, bool const use_8bit_high)
 {
-	const char *name = get_register_name_mode(reg, mode);
+	const char *name = get_register_name_size(reg, size, use_8bit_high);
 	be_emit_char('%');
 	be_emit_string(name);
 }
@@ -194,18 +195,20 @@ static void emit_ia32_immediate_attr(bool const prefix,
 	x86_emit_imm32(&attr->imm);
 }
 
-static void ia32_emit_mode_suffix_mode(const ir_mode *mode)
+static void ia32_emit_mode_suffix(x86_insn_size_t const size)
 {
-	assert(mode_is_int(mode) || mode_is_reference(mode) || mode == ia32_mode_8h);
-	switch (get_mode_size_bits(mode)) {
-		case 8:  be_emit_char('b');     return;
-		case 16: be_emit_char('w');     return;
-		case 32: be_emit_char('l');     return;
-		/* gas docu says q is the suffix but gcc, objdump and icc use ll
-		 * apparently */
-		case 64: be_emit_cstring("ll"); return;
+	switch (size) {
+	case X86_SIZE_8:  be_emit_char('b');     return;
+	case X86_SIZE_16: be_emit_char('w');     return;
+	case X86_SIZE_32: be_emit_char('l');     return;
+	/* gas docu says q is the suffix but gcc, objdump and icc use ll
+	 * apparently */
+	case X86_SIZE_64: be_emit_cstring("ll"); return;
+	case X86_SIZE_80:
+	case X86_SIZE_128:
+		break;
 	}
-	panic("cannot output mode_suffix for %+F", mode);
+	panic("Unexpected mode size");
 }
 
 static void ia32_emit_x87_mode_suffix(ir_node const *const node)
@@ -214,50 +217,57 @@ static void ia32_emit_x87_mode_suffix(ir_node const *const node)
 	if (get_ia32_op_type(node) == ia32_Normal)
 		return;
 
-	ir_mode *mode = get_ia32_ls_mode(node);
-	assert(mode_is_float(mode));
-	switch (get_mode_size_bits(mode)) {
-		case  32: be_emit_char('s'); return;
-		case  64: be_emit_char('l'); return;
-		/* long doubles have different sizes due to alignment on different
-		 * platforms. */
-		case  80:
-		case  96:
-		case 128: be_emit_char('t'); return;
+	ia32_attr_t const *const attr = get_ia32_attr_const(node);
+	switch (attr->size) {
+	case X86_SIZE_32: be_emit_char('s'); return;
+	case X86_SIZE_64: be_emit_char('l'); return;
+	/* long doubles have different sizes due to alignment on different
+	 * platforms. */
+	case X86_SIZE_80:
+	case X86_SIZE_128: be_emit_char('t'); return;
+	case X86_SIZE_8:
+	case X86_SIZE_16:
+		break;
 	}
-	panic("cannot output mode_suffix for %+F", mode);
+	panic("Unexpected size");
 }
 
 static void ia32_emit_x87_mode_suffix_int(ir_node const *const node)
 {
 	assert(get_ia32_op_type(node) != ia32_Normal);
-	ir_mode *mode = get_ia32_ls_mode(node);
-	assert(mode_is_int(mode) || mode_is_reference(mode));
-	switch (get_mode_size_bits(mode)) {
-		case 16: be_emit_char('s');     return;
-		case 32: be_emit_char('l');     return;
-		/* gas docu says q is the suffix but gcc, objdump and icc use ll
-		 * apparently */
-		case 64: be_emit_cstring("ll"); return;
+	ia32_attr_t const *const attr = get_ia32_attr_const(node);
+	switch (attr->size) {
+	case X86_SIZE_16: be_emit_char('s');     return;
+	case X86_SIZE_32: be_emit_char('l');     return;
+	/* gas docu says q is the suffix but gcc, objdump and icc use ll
+	 * apparently */
+	case X86_SIZE_64: be_emit_cstring("ll"); return;
+	case X86_SIZE_8:
+	case X86_SIZE_80:
+	case X86_SIZE_128:
+		break;
 	}
-	panic("cannot output mode_suffix for %+F", mode);
+	panic("Unexpected size");
 }
 
-static char get_xmm_mode_suffix(ir_mode *mode)
+static char get_xmm_mode_suffix(x86_insn_size_t const size)
 {
-	assert(mode_is_float(mode));
-	switch (get_mode_size_bits(mode)) {
-	case 32: return 's';
-	case 64: return 'd';
-	default: panic("invalid XMM mode");
+	switch (size) {
+	case X86_SIZE_32: return 's';
+	case X86_SIZE_64: return 'd';
+	case X86_SIZE_8:
+	case X86_SIZE_16:
+	case X86_SIZE_80:
+	case X86_SIZE_128:
+		break;
 	}
+	panic("invalid XMM mode");
 }
 
 static void ia32_emit_xmm_mode_suffix(ir_node const *const node)
 {
-	ir_mode *mode = get_ia32_ls_mode(node);
-	assert(mode != NULL);
-	be_emit_char(get_xmm_mode_suffix(mode));
+	ia32_attr_t const *const attr = get_ia32_attr_const(node);
+	be_emit_char(get_xmm_mode_suffix(attr->size));
 }
 
 /**
@@ -427,26 +437,27 @@ emit_AM:
 			}
 
 			case 'B': {
+				ia32_attr_t const *const attr = get_ia32_attr_const(node);
 				ir_node const *const src = get_irn_n(node, n_ia32_binary_right);
 				if (is_ia32_Immediate(src)) {
 					emit_ia32_immediate_attr(true, src);
 					be_emit_cstring(", ");
-					if (get_ia32_op_type(node) == ia32_Normal) {
+					if (attr->tp == ia32_Normal) {
 						goto destination_operand;
 					} else {
 						ia32_emit_am(node);
 					}
 				} else {
-					if (get_ia32_op_type(node) == ia32_Normal) {
+					if (attr->tp == ia32_Normal) {
 						reg = arch_get_irn_register(src);
-						emit_register(reg, get_ia32_ls_mode(node));
+						emit_register(reg, attr->size, attr->use_8bit_high);
 					} else {
 						ia32_emit_am(node);
 					}
 					be_emit_cstring(", ");
 destination_operand:
 					reg = arch_get_irn_register_in(node, n_ia32_binary_left);
-					emit_register(reg, get_ia32_ls_mode(node));
+					emit_register(reg, attr->size, attr->use_8bit_high);
 				}
 				break;
 			}
@@ -520,15 +531,14 @@ emit_I:
 				break;
 
 			case 'M': {
-				ir_mode *mode = get_ia32_ls_mode(node);
-				if (!mode)
-					mode = ia32_mode_gp;
+				ia32_attr_t const *const attr = get_ia32_attr_const(node);
 				if (mod & EMIT_32BIT_REG) {
-					if (get_mode_size_bits(mode) == 32)
+					assert(is_ia32_Load(node) || is_ia32_Conv_I2I(node));
+					if (attr->size == X86_SIZE_32)
 						break;
-					be_emit_char(mode_is_signed(mode) ? 's' : 'z');
+					be_emit_char(attr->sign_extend ? 's' : 'z');
 				}
-				ia32_emit_mode_suffix_mode(mode);
+				ia32_emit_mode_suffix(attr->size);
 				break;
 			}
 
@@ -562,7 +572,9 @@ emit_R:
 				} else if (mod & EMIT_32BIT_REG) {
 					name = reg->name;
 				} else {
-					name = get_register_name_mode(reg, get_ia32_ls_mode(node));
+					ia32_attr_t const *const attr = get_ia32_attr_const(node);
+					name = get_register_name_size(reg, attr->size,
+					                              attr->use_8bit_high);
 				}
 				be_emit_char('%');
 				be_emit_string(name);
@@ -853,11 +865,19 @@ static void emit_ia32_asm_register(const arch_register_t *reg, char modifier,
 {
 	const char *name;
 	switch (modifier) {
-	case '\0': name = get_register_name_mode(reg, mode); break;
-	case  'b': name = get_register_name_8bit_low(reg); break;
-	case  'h': name = get_register_name_8bit_high(reg); break;
-	case  'w': name = get_register_name_16bit(reg); break;
-	case  'k': name = reg->name; break;
+	case '\0': {
+		if (mode_is_float(mode)) {
+			name = reg->name;
+		} else {
+			x86_insn_size_t const size = x86_size_from_mode(mode);
+			name = get_register_name_size(reg, size, false);
+		}
+		break;
+	}
+	case 'b': name = get_register_name_8bit_low(reg); break;
+	case 'h': name = get_register_name_8bit_high(reg); break;
+	case 'w': name = get_register_name_16bit(reg); break;
+	case 'k': name = reg->name; break;
 	default:
 		panic("invalid asm op modifier");
 	}
@@ -982,9 +1002,8 @@ static void emit_ia32_CopyB_i(const ir_node *node)
 static void emit_ia32_Conv_with_FP(const ir_node *node, const char* conv_f,
                                    const char* conv_d)
 {
-	ir_mode    *ls_mode = get_ia32_ls_mode(node);
-	int         ls_bits = get_mode_size_bits(ls_mode);
-	const char *conv    = ls_bits == 32 ? conv_f : conv_d;
+	x86_insn_size_t const size = get_ia32_attr_const(node)->size;
+	const char *conv = size == X86_SIZE_32 ? conv_f : conv_d;
 	ia32_emitf(node, "cvt%s %AS3, %D0", conv);
 }
 

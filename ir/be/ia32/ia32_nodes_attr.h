@@ -93,6 +93,7 @@ typedef struct ia32_attr_t ia32_attr_t;
 struct ia32_attr_t {
 	except_attr  exc;               /**< the exception attribute. MUST be the first one. */
 
+	x86_insn_size_t size:3;
 	ENUMBF(ia32_op_type_t) tp:2;          /**< Indicator of used address mode. */
 	unsigned am_arity:2;            /**< Indicates the address mode type supported by this node. */
 
@@ -105,9 +106,8 @@ struct ia32_attr_t {
 	unsigned is_reload:1;           /**< node performs a reload */
 	unsigned is_spill:1;
 	unsigned is_remat:1;
-
-	ir_mode   *ls_mode;       /**< Load/Store mode: This is the mode of the
-	                               value that is manipulated by this node. */
+	unsigned sign_extend:1;
+	unsigned use_8bit_high:1;
 
 	ir_label_t        exc_label;       /**< the exception label iff this instruction can throw an exception */
 
