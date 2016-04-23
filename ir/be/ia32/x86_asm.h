@@ -18,7 +18,7 @@
 #include "compiler.h"
 #include "firm_types.h"
 #include "util.h"
-#include "x86_imm.h"
+#include "x86_node.h"
 
 typedef enum x86_asm_operand_kind_t {
 	ASM_OP_INVALID,

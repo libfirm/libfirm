@@ -18,7 +18,7 @@
 #include "irgwalk.h"
 #include "irnode_t.h"
 #include "panic.h"
-#include "x86_imm.h"
+#include "x86_node.h"
 
 static bool is_externally_visible(ir_entity const *const entity)
 {

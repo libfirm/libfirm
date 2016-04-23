@@ -21,7 +21,7 @@
 #include "ircons_t.h"
 #include "irgwalk.h"
 #include "irnode_t.h"
-#include "x86_imm.h"
+#include "x86_node.h"
 
 /**
  * Create a trampoline entity for the given method.

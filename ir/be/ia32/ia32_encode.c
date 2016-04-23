@@ -25,7 +25,7 @@
 #include "ia32_emitter.h"
 #include "ia32_new_nodes.h"
 #include "irnodehashmap.h"
-#include "x86_cc.h"
+#include "x86_node.h"
 
 static ir_nodehashmap_t block_fragmentnum;
 

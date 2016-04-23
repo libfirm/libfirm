@@ -14,7 +14,7 @@
 #include "firm_types.h"
 #include "irnode_t.h"
 #include "x86_asm.h"
-#include "x86_cc.h"
+#include "x86_node.h"
 #include "x86_x87.h"
 #include "x86_address_mode.h"
 

@@ -8,7 +8,7 @@
  * @brief  Helper functions for immediates / relocations.
  * @author Matthias Braun
  */
-#include "x86_imm.h"
+#include "x86_node.h"
 
 #include <inttypes.h>
 

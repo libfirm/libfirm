@@ -14,7 +14,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-#include "x86_imm.h"
+#include "x86_node.h"
 
 typedef enum x86_addr_variant_t {
 	X86_ADDR_INVALID,

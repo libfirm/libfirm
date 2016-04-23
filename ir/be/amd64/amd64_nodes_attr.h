@@ -13,7 +13,7 @@
 #include <stdint.h>
 
 #include "../ia32/x86_asm.h"
-#include "../ia32/x86_cc.h"
+#include "../ia32/x86_node.h"
 #include "../ia32/x86_x87.h"
 #include "../ia32/x86_address_mode.h"
 #include "compiler.h"
