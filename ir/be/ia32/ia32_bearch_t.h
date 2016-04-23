@@ -111,4 +111,15 @@ int ia32_get_sp_change(ir_node *node);
 
 void ia32_cconv_init(void);
 
+/**
+ * Handle switching of fpu mode
+ */
+void ia32_setup_fpu_mode(ir_graph *irg);
+
+/**
+ * Check 2-Addresscode constraints and call peephole optimizations.
+ * @param irg  The irg to finish
+ */
+void ia32_finish_irg(ir_graph *irg);
+
 #endif

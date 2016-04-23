@@ -25,9 +25,9 @@ typedef enum  ia32_op_type_t {
 } ia32_op_type_t;
 
 typedef enum ia32_am_type_t {
-	ia32_am_none   = 0,
-	ia32_am_unary  = 1,
-	ia32_am_binary = 2
+	ia32_am_none,
+	ia32_am_unary,
+	ia32_am_binary
 } ia32_am_type_t;
 
 typedef enum match_flags_t {
@@ -66,16 +66,16 @@ struct ia32_op_attr_t {
 
 #ifndef NDEBUG
 typedef enum ia32_attr_type_t {
-	IA32_ATTR_INVALID                = 0,
-	IA32_ATTR_ia32_attr_t            = 1 << 0,
-	IA32_ATTR_ia32_x87_attr_t        = 1 << 1,
-	IA32_ATTR_ia32_asm_attr_t        = 1 << 2,
-	IA32_ATTR_ia32_immediate_attr_t  = 1 << 3,
-	IA32_ATTR_ia32_condcode_attr_t   = 1 << 4,
-	IA32_ATTR_ia32_copyb_attr_t      = 1 << 5,
-	IA32_ATTR_ia32_call_attr_t       = 1 << 6,
-	IA32_ATTR_ia32_switch_attr_t     = 1 << 7,
-	IA32_ATTR_ia32_return_attr_t     = 1 << 8,
+	IA32_ATTR_INVALID               = 0,
+	IA32_ATTR_ia32_attr_t           = 1 << 0,
+	IA32_ATTR_ia32_x87_attr_t       = 1 << 1,
+	IA32_ATTR_ia32_asm_attr_t       = 1 << 2,
+	IA32_ATTR_ia32_immediate_attr_t = 1 << 3,
+	IA32_ATTR_ia32_condcode_attr_t  = 1 << 4,
+	IA32_ATTR_ia32_copyb_attr_t     = 1 << 5,
+	IA32_ATTR_ia32_call_attr_t      = 1 << 6,
+	IA32_ATTR_ia32_switch_attr_t    = 1 << 7,
+	IA32_ATTR_ia32_return_attr_t    = 1 << 8,
 } ia32_attr_type_t;
 #endif
 
@@ -125,9 +125,9 @@ struct ia32_attr_t {
  */
 typedef struct ia32_call_attr_t ia32_call_attr_t;
 struct ia32_call_attr_t {
-	ia32_attr_t  attr;    /**< generic attribute */
-	unsigned     pop;     /**< number of bytes that get popped by the callee */
-	ir_type     *call_tp; /**< The call type, copied from the original Call node. */
+	ia32_attr_t attr;    /**< generic attribute */
+	unsigned    pop;     /**< number of bytes that get popped by the callee */
+	ir_type    *call_tp; /**< The call type, copied from the original Call node. */
 };
 
 /**
@@ -154,8 +154,8 @@ struct ia32_switch_attr_t {
  */
 typedef struct ia32_copyb_attr_t ia32_copyb_attr_t;
 struct ia32_copyb_attr_t {
-	ia32_attr_t  attr;      /**< generic attribute */
-	unsigned     size;      /**< size of copied block */
+	ia32_attr_t attr;      /**< generic attribute */
+	unsigned    size;      /**< size of copied block */
 };
 
 /**
@@ -163,8 +163,8 @@ struct ia32_copyb_attr_t {
  */
 typedef struct ia32_immediate_attr_t ia32_immediate_attr_t;
 struct ia32_immediate_attr_t {
-	ia32_attr_t  attr;              /**< generic attribute */
-	x86_imm32_t  imm;
+	ia32_attr_t attr;              /**< generic attribute */
+	x86_imm32_t imm;
 };
 
 /**
@@ -186,14 +186,14 @@ struct ia32_return_attr_t {
 /* the following union is necessary to indicate to the compiler that we might want to cast
  * the structs (we use them to simulate OO-inheritance) */
 union allow_casts_attr_t_ {
-	ia32_attr_t            attr;
-	ia32_call_attr_t       call_attr;
-	ia32_condcode_attr_t   cc_attr;
-	ia32_copyb_attr_t      cpy_attr;
-	ia32_x87_attr_t        x87_attr;
-	ia32_immediate_attr_t  immediate_attr;
-	ia32_switch_attr_t     switch_attr;
-	ia32_return_attr_t     return_attr;
+	ia32_attr_t           attr;
+	ia32_call_attr_t      call_attr;
+	ia32_condcode_attr_t  cc_attr;
+	ia32_copyb_attr_t     cpy_attr;
+	ia32_x87_attr_t       x87_attr;
+	ia32_immediate_attr_t immediate_attr;
+	ia32_switch_attr_t    switch_attr;
+	ia32_return_attr_t    return_attr;
 };
 
 #ifndef NDEBUG

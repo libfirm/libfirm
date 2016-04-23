@@ -614,19 +614,22 @@ static void emit_amd64_asm_operand(ir_node const *const node, char const modifie
 		panic("invalid asm operand");
 
 	case ASM_OP_IN_REG: {
-		arch_register_t const *const reg = arch_get_irn_register_in(node, op->inout_pos);
+		arch_register_t const *const reg
+			= arch_get_irn_register_in(node, op->inout_pos);
 		emit_amd64_asm_register(reg, modifier, op->u.mode);
 		return;
 	}
 
 	case ASM_OP_OUT_REG: {
-		arch_register_t const *const reg = arch_get_irn_register_out(node, op->inout_pos);
+		arch_register_t const *const reg
+			= arch_get_irn_register_out(node, op->inout_pos);
 		emit_amd64_asm_register(reg, modifier, op->u.mode);
 		return;
 	}
 
 	case ASM_OP_MEMORY: {
-		arch_register_t const *const reg = arch_get_irn_register_in(node, op->inout_pos);
+		arch_register_t const *const reg
+			= arch_get_irn_register_in(node, op->inout_pos);
 		be_emit_irprintf("(%%%s)", reg->name);
 		return;
 	}

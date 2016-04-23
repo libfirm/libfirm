@@ -140,7 +140,8 @@ void ia32_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 			fprintf(F, "%s", get_irn_opname(n));
 
 			if (is_ia32_Immediate(n) || is_ia32_Const(n)) {
-				ia32_immediate_attr_t const *const attr = get_ia32_immediate_attr_const(n);
+				ia32_immediate_attr_t const *const attr
+					= get_ia32_immediate_attr_const(n);
 				fputc(' ', F);
 				ia32_dump_immediate(F, attr->imm.entity, attr->imm.offset);
 			} else {
@@ -216,17 +217,21 @@ void ia32_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 					fprintf(F, "condition_code = <invalid (0x%X)>\n",
 					        (unsigned)get_ia32_condcode(n));
 				}
-				fprintf(F, "ins_permuted = %s\n", be_dump_yesno(attr->ins_permuted));
+				fprintf(F, "ins_permuted = %s\n",
+				        be_dump_yesno(attr->ins_permuted));
 			} else if (is_ia32_CopyB(n) || is_ia32_CopyB_i(n)) {
 				fprintf(F, "size = %u\n", get_ia32_copyb_size(n));
 			} else if (has_ia32_x87_attr(n)) {
 				ia32_x87_attr_t const *const attr = get_ia32_x87_attr_const(n);
-				fprintf(F, "explicit operand = %s\n", be_dump_reg_name(attr->x87.reg));
-				fprintf(F, "result to explicit operand = %s\n", be_dump_yesno(attr->x87.res_in_reg));
+				fprintf(F, "explicit operand = %s\n",
+				        be_dump_reg_name(attr->x87.reg));
+				fprintf(F, "result to explicit operand = %s\n",
+				        be_dump_yesno(attr->x87.res_in_reg));
 				fprintf(F, "pop = %s\n", be_dump_yesno(attr->x87.pop));
 			}
 
-			fprintf(F, "commutative = %s\n", be_dump_yesno(is_ia32_commutative(n)));
+			fprintf(F, "commutative = %s\n",
+			        be_dump_yesno(is_ia32_commutative(n)));
 			fprintf(F, "is reload = %s\n", be_dump_yesno(is_ia32_is_reload(n)));
 			fprintf(F, "latency = %u\n", get_ia32_latency(n));
 
@@ -255,8 +260,7 @@ void ia32_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 			/* dump original ir node name */
 			char const *orig = get_ia32_attr_const(n)->orig_node;
 			fprintf(F, "orig node = %s\n", orig ? orig : "n/a");
-#endif /* NDEBUG */
-
+#endif
 			break;
 	}
 }
@@ -529,7 +533,6 @@ void set_ia32_exc_label_id(ir_node *node, ir_label_t id)
 }
 
 #ifndef NDEBUG
-
 static const char *ia32_get_old_node_name(const ir_node *irn)
 {
 	ir_graph       *irg  = get_irn_irg(irn);
@@ -546,8 +549,7 @@ void set_ia32_orig_node(ir_node *node, const ir_node *old)
 	ia32_attr_t *attr = get_ia32_attr(node);
 	attr->orig_node   = name;
 }
-
-#endif /* NDEBUG */
+#endif
 
 void ia32_swap_left_right(ir_node *node)
 {
@@ -575,8 +577,8 @@ void init_ia32_attributes(ir_node *node, arch_irn_flags_t flags,
 void init_ia32_x87_attributes(ir_node *res)
 {
 #ifndef NDEBUG
-	ia32_attr_t *attr  = get_ia32_attr(res);
-	attr->attr_type   |= IA32_ATTR_ia32_x87_attr_t;
+	ia32_attr_t *attr = get_ia32_attr(res);
+	attr->attr_type  |= IA32_ATTR_ia32_x87_attr_t;
 #endif
 	ir_graph *const irg = get_irn_irg(res);
 	ia32_request_x87_sim(irg);
@@ -587,7 +589,7 @@ void init_ia32_immediate_attributes(ir_node *res, x86_imm32_t const *const imm)
 	ia32_immediate_attr_t *attr = (ia32_immediate_attr_t*)get_irn_generic_attr(res);
 
 #ifndef NDEBUG
-	attr->attr.attr_type  |= IA32_ATTR_ia32_immediate_attr_t;
+	attr->attr.attr_type |= IA32_ATTR_ia32_immediate_attr_t;
 #endif
 	attr->imm           = *imm;
 }
@@ -597,7 +599,7 @@ void init_ia32_call_attributes(ir_node* res, unsigned pop, ir_type* call_tp)
 	ia32_call_attr_t *attr = (ia32_call_attr_t*)get_irn_generic_attr(res);
 
 #ifndef NDEBUG
-	attr->attr.attr_type  |= IA32_ATTR_ia32_call_attr_t;
+	attr->attr.attr_type |= IA32_ATTR_ia32_call_attr_t;
 #endif
 	attr->pop     = pop;
 	attr->call_tp = call_tp;
@@ -608,7 +610,7 @@ void init_ia32_copyb_attributes(ir_node *res, unsigned size)
 	ia32_copyb_attr_t *attr = (ia32_copyb_attr_t*)get_irn_generic_attr(res);
 
 #ifndef NDEBUG
-	attr->attr.attr_type  |= IA32_ATTR_ia32_copyb_attr_t;
+	attr->attr.attr_type |= IA32_ATTR_ia32_copyb_attr_t;
 #endif
 	attr->size = size;
 }
@@ -618,7 +620,7 @@ void init_ia32_condcode_attributes(ir_node *res, x86_condition_code_t cc)
 	ia32_condcode_attr_t *attr = (ia32_condcode_attr_t*)get_irn_generic_attr(res);
 
 #ifndef NDEBUG
-	attr->attr.attr_type  |= IA32_ATTR_ia32_condcode_attr_t;
+	attr->attr.attr_type |= IA32_ATTR_ia32_condcode_attr_t;
 #endif
 	attr->condition_code = cc;
 }
@@ -698,7 +700,6 @@ int ia32_copyb_attrs_equal(const ir_node *a, const ir_node *b)
 unsigned ia32_hash_Immediate(const ir_node *irn)
 {
 	const ia32_immediate_attr_t *a = get_ia32_immediate_attr_const(irn);
-
 	return hash_ptr(a->imm.entity) + (unsigned)a->imm.offset;
 }
 

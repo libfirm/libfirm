@@ -224,11 +224,17 @@ static lc_opt_enum_int_var_t opt_arch_var = {
 	(int*) &opt_arch, arch_items
 };
 
+typedef enum ia32_fpu_mode_t {
+	IA32_FPU_X87,
+	IA32_FPU_SSE2,
+	IA32_FPU_SOFTFLOAT,
+} ia32_fpu_mode_t;
+
 static const lc_opt_enum_int_items_t fp_unit_items[] = {
-	{ "387" ,      IA32_FPU_ARCH_X87 },
-	{ "sse",       IA32_FPU_ARCH_SSE2 },
-	{ "softfloat", IA32_FPU_ARCH_SOFTFLOAT },
-	{ NULL,        IA32_FPU_ARCH_NONE }
+	{ "387" ,      IA32_FPU_X87 },
+	{ "sse",       IA32_FPU_SSE2 },
+	{ "softfloat", IA32_FPU_SOFTFLOAT },
+	{ NULL,        IA32_FPU_X87 }
 };
 
 static lc_opt_enum_int_var_t fp_unit_var = {
@@ -868,7 +874,7 @@ static bool flags(cpu_arch_features features, cpu_arch_features flags)
 void ia32_setup_cg_config(void)
 {
 	if (use_softfloat)
-		fpu_arch = IA32_FPU_ARCH_SOFTFLOAT;
+		fpu_arch = IA32_FPU_SOFTFLOAT;
 
 #ifdef NATIVE_X86
 	if (arch == cpu_autodetect)
@@ -888,8 +894,8 @@ void ia32_setup_cg_config(void)
 	/* P4s don't like inc/decs because they only partially write the flags
 	 * register which produces false dependencies */
 	c->use_incdec           = !flags(opt_arch, arch_netburst | arch_nocona | arch_core2 | arch_geode) || opt_size;
-	c->use_softfloat        = (fpu_arch & IA32_FPU_ARCH_SOFTFLOAT) != 0;
-	c->use_sse2             = (fpu_arch & IA32_FPU_ARCH_SSE2) != 0 && flags(arch, arch_feature_sse2);
+	c->use_softfloat        = (fpu_arch & IA32_FPU_SOFTFLOAT) != 0;
+	c->use_sse2             = (fpu_arch & IA32_FPU_SSE2) != 0 && flags(arch, arch_feature_sse2);
 	c->use_ffreep           = flags(opt_arch, arch_athlon_plus);
 	c->use_femms            = flags(opt_arch, arch_athlon_plus) && flags(arch, arch_feature_3DNow);
 	c->use_fucomi           = flags(arch, arch_feature_p6_insn);

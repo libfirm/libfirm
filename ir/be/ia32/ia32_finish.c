@@ -8,8 +8,6 @@
  * @brief   This file implements functions to finalize the irg for emit.
  * @author  Christian Wuerdig
  */
-#include "ia32_finish.h"
-
 #include "be2addr.h"
 #include "bearch.h"
 #include "besched.h"
@@ -157,7 +155,8 @@ carry:;
 	return true;
 }
 
-static bool ia32_transform_ShlD_to_ShrD_imm(ir_node *const irn, arch_register_t const *const out_reg)
+static bool ia32_transform_ShlD_to_ShrD_imm(ir_node *const irn,
+		arch_register_t const *const out_reg)
 {
 	ir_node *const in1 = get_irn_n(irn, n_ia32_ShlD_val_low);
 	if (arch_get_irn_register(in1) != out_reg)
@@ -176,22 +175,6 @@ static bool ia32_transform_ShlD_to_ShrD_imm(ir_node *const irn, arch_register_t 
 	sched_replace(irn, res);
 	exchange(irn, res);
 	return true;
-}
-
-static inline int need_constraint_copy(ir_node *irn)
-{
-	/* TODO this should be determined from the node specification */
-	if (is_ia32_irn(irn)) {
-		switch (get_ia32_irn_opcode(irn)) {
-		case iro_ia32_Lea:
-		case iro_ia32_Minus64:
-			return 0;
-
-		default:
-			return 1;
-		}
-	}
-	return be_is_Asm(irn);
 }
 
 /**
@@ -220,7 +203,7 @@ static bool ia32_handle_2addr(ir_node *const node, arch_register_req_t const *co
 {
 	/* Some nodes are just a bit less efficient, but need no fixing if the
 	 * should_be_same requirement is not fulfilled. */
-	if (!need_constraint_copy(node))
+	if (is_ia32_Lea(node) || is_ia32_Minus64(node))
 		return true;
 	fix_am_source(node, reg);
 	if (req->should_be_same == (1U << n_ia32_binary_left | 1U << n_ia32_binary_right)) {

@@ -24,8 +24,6 @@
 #include "ia32_architecture.h"
 #include "ia32_emitter.h"
 #include "ia32_encode.h"
-#include "ia32_finish.h"
-#include "ia32_fpu.h"
 #include "ia32_new_nodes.h"
 #include "ia32_optimize.h"
 #include "ia32_transform.h"

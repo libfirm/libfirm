@@ -901,19 +901,22 @@ static void emit_ia32_asm_operand(ir_node const *const node, char const modifier
 		panic("invalid asm operand");
 
 	case ASM_OP_IN_REG: {
-		arch_register_t const *const reg = arch_get_irn_register_in(node, op->inout_pos);
+		arch_register_t const *const reg
+			= arch_get_irn_register_in(node, op->inout_pos);
 		emit_ia32_asm_register(reg, modifier, op->u.mode);
 		return;
 	}
 
 	case ASM_OP_OUT_REG: {
-		arch_register_t const *const reg = arch_get_irn_register_out(node, op->inout_pos);
+		arch_register_t const *const reg
+			= arch_get_irn_register_out(node, op->inout_pos);
 		emit_ia32_asm_register(reg, modifier, op->u.mode);
 		return;
 	}
 
 	case ASM_OP_MEMORY: {
-		arch_register_t const *const reg = arch_get_irn_register_in(node, op->inout_pos);
+		arch_register_t const *const reg
+			= arch_get_irn_register_in(node, op->inout_pos);
 		be_emit_irprintf("(%%%s)", reg->name);
 		return;
 	}
@@ -977,7 +980,7 @@ static void emit_ia32_CopyB_i(const ir_node *node)
  * Emit code for conversions (I, FP), (FP, I) and (FP, FP).
  */
 static void emit_ia32_Conv_with_FP(const ir_node *node, const char* conv_f,
-		const char* conv_d)
+                                   const char* conv_d)
 {
 	ir_mode    *ls_mode = get_ia32_ls_mode(node);
 	int         ls_bits = get_mode_size_bits(ls_mode);
