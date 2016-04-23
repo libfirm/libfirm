@@ -49,19 +49,6 @@ x87_attr_t const *amd64_get_x87_attr_const(ir_node const *const node)
 	return amd64_get_x87_attr((ir_node *)node);
 }
 
-unsigned amd64_get_insn_size_bits(amd64_insn_size_t const size)
-{
-	switch (size) {
-	case INSN_SIZE_8:   return 8;
-	case INSN_SIZE_16:  return 16;
-	case INSN_SIZE_32:  return 32;
-	case INSN_SIZE_64:  return 64;
-	case INSN_SIZE_80:  return 80;
-	case INSN_SIZE_128: return 128;
-	}
-	panic("bad insn mode");
-}
-
 static const char *get_op_mode_string(amd64_op_mode_t const op_mode)
 {
 	switch (op_mode) {
@@ -84,19 +71,6 @@ static const char *get_op_mode_string(amd64_op_mode_t const op_mode)
 	return "invalid op_mode";
 }
 
-static const char *get_insn_size_string(amd64_insn_size_t mode)
-{
-	switch (mode) {
-	case INSN_SIZE_8:   return "8";
-	case INSN_SIZE_16:  return "16";
-	case INSN_SIZE_32:  return "32";
-	case INSN_SIZE_64:  return "64";
-	case INSN_SIZE_80:  return "80";
-	case INSN_SIZE_128: return "128";
-	}
-	return "invalid insn_size";
-}
-
 void amd64_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 {
 	switch (reason) {
@@ -114,7 +88,7 @@ void amd64_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 		const amd64_attr_t *attr = get_amd64_attr_const(n);
 		amd64_op_mode_t const op_mode = attr->op_mode;
 		fprintf(F, "mode = %s\n", get_op_mode_string(op_mode));
-		fprintf(F, "size = %s\n", get_insn_size_string(attr->size));
+		fprintf(F, "size = %u\n", x86_bytes_from_size(attr->size));
 		switch (op_mode) {
 		case AMD64_OP_ADDR_REG:
 		case AMD64_OP_REG_ADDR: {
@@ -152,7 +126,7 @@ void amd64_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 void init_amd64_attributes(ir_node *node, arch_irn_flags_t flags,
                            const arch_register_req_t **in_reqs,
                            int n_res, amd64_op_mode_t op_mode,
-                           amd64_insn_size_t size)
+                           x86_insn_size_t size)
 {
 	be_info_init_irn(node, flags, in_reqs, n_res);
 	amd64_attr_t *attr = get_amd64_attr(node);

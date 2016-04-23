@@ -45,22 +45,8 @@ pmap *amd64_constants;
 
 ir_mode *amd64_mode_xmm;
 
-static int get_insn_size_bytes(amd64_insn_size_t size)
-{
-	switch (size) {
-	case INSN_SIZE_8:       return 1;
-	case INSN_SIZE_16:      return 2;
-	case INSN_SIZE_32:      return 4;
-	case INSN_SIZE_64:      return 8;
-	case INSN_SIZE_128:     return 16;
-	case INSN_SIZE_80:      break;
-	}
-	panic("bad insn mode");
-}
-
 static ir_node *create_push(ir_node *node, ir_node *schedpoint, ir_node *sp,
-                            ir_node *mem, ir_entity *ent,
-                            amd64_insn_size_t size)
+                            ir_node *mem, ir_entity *ent, x86_insn_size_t size)
 {
 	dbg_info *dbgi  = get_irn_dbg_info(node);
 	ir_node  *block = get_nodes_block(node);
@@ -82,7 +68,7 @@ static ir_node *create_push(ir_node *node, ir_node *schedpoint, ir_node *sp,
 }
 
 static ir_node *create_pop(ir_node *node, ir_node *schedpoint, ir_node *sp,
-                           ir_entity *ent, amd64_insn_size_t size)
+                           ir_entity *ent, x86_insn_size_t size)
 {
 	dbg_info *dbgi  = get_irn_dbg_info(node);
 	ir_node  *block = get_nodes_block(node);
@@ -138,23 +124,23 @@ static void transform_MemPerm(ir_node *node)
 
 		int offset = 0;
 		do {
-			amd64_insn_size_t size;
+			x86_insn_size_t size;
 			if (entsize%2 == 1) {
-				size = INSN_SIZE_8;
+				size = X86_SIZE_8;
 			} else if (entsize % 4 == 2) {
-				size = INSN_SIZE_16;
+				size = X86_SIZE_16;
 			} else if (entsize % 8 == 4) {
-				size = INSN_SIZE_32;
+				size = X86_SIZE_32;
 			} else {
 				assert(entsize%8 == 0);
-				size = INSN_SIZE_64;
+				size = X86_SIZE_64;
 			}
 
 			ir_node *push = create_push(node, node, sp, mem, inent, size);
 			sp = create_spproj(push, pn_amd64_push_am_stack);
 			get_amd64_addr_attr(push)->addr.immediate.offset = offset;
 
-			unsigned bytes = get_insn_size_bytes(size);
+			unsigned bytes = x86_bytes_from_size(size);
 			offset  += bytes;
 			entsize -= bytes;
 		} while(entsize > 0);
@@ -177,22 +163,22 @@ static void transform_MemPerm(ir_node *node)
 		int      offset = entsize;
 		ir_node *pop;
 		do {
-			amd64_insn_size_t size;
+			x86_insn_size_t size;
 			if (entsize%2 == 1) {
-				size = INSN_SIZE_8;
+				size = X86_SIZE_8;
 			} else if (entsize % 4 == 2) {
-				size = INSN_SIZE_16;
+				size = X86_SIZE_16;
 			} else if (entsize % 8 == 4) {
-				size = INSN_SIZE_32;
+				size = X86_SIZE_32;
 			} else {
 				assert(entsize%8 == 0);
-				size = INSN_SIZE_64;
+				size = X86_SIZE_64;
 			}
 
 			pop = create_pop(node, node, sp, outent, size);
 			sp  = create_spproj(pop, pn_amd64_pop_am_stack);
 
-			unsigned bytes = get_insn_size_bytes(size);
+			unsigned bytes = x86_bytes_from_size(size);
 			offset  -= bytes;
 			entsize -= bytes;
 			get_amd64_addr_attr(pop)->addr.immediate.offset = offset;
@@ -399,13 +385,13 @@ static void amd64_set_frame_entity(ir_node *node, ir_entity *entity,
 	attr->addr.immediate.entity = entity;
 }
 
-static ir_type *get_type_for_insn_size(amd64_insn_size_t const size)
+static ir_type *get_type_for_insn_size(x86_insn_size_t const size)
 {
 	/* TODO: do not hardcode node names here */
 	switch (size) {
-	case INSN_SIZE_128: return get_type_for_mode(amd64_mode_xmm);
-	case INSN_SIZE_80:  return x86_type_E;
-	default:            return get_type_for_mode(mode_Lu);
+	case X86_SIZE_128: return get_type_for_mode(amd64_mode_xmm);
+	case X86_SIZE_80:  return x86_type_E;
+	default:           return get_type_for_mode(mode_Lu);
 	}
 }
 
@@ -519,7 +505,7 @@ static void introduce_prologue(ir_graph *const irg, bool omit_fp)
 		/* push rbp */
 		ir_node *const mem        = get_irg_initial_mem(irg);
 		ir_node *const initial_bp = be_get_Start_proj(irg, bp);
-		ir_node *const push       = new_bd_amd64_push_reg(NULL, block, initial_sp, mem, initial_bp, INSN_SIZE_64);
+		ir_node *const push       = new_bd_amd64_push_reg(NULL, block, initial_sp, mem, initial_bp, X86_SIZE_64);
 		sched_add_after(start, push);
 		ir_node *const curr_mem   = be_new_Proj(push, pn_amd64_push_reg_M);
 		edges_reroute_except(mem, curr_mem, push);
@@ -597,14 +583,14 @@ static void amd64_sp_sim(ir_node *const node, stack_pointer_state_t *state)
 	 * address, so do this first */
 	if (is_amd64_pop_am(node)) {
 		const amd64_addr_attr_t *attr = get_amd64_addr_attr_const(node);
-		state->offset -= get_insn_size_bytes(attr->base.size);
+		state->offset -= x86_bytes_from_size(attr->base.size);
 	}
 
 	amd64_determine_frameoffset(node, state->offset);
 
 	if (is_amd64_push_am(node)) {
 		const amd64_addr_attr_t *attr = get_amd64_addr_attr_const(node);
-		state->offset       += get_insn_size_bytes(attr->base.size);
+		state->offset       += x86_bytes_from_size(attr->base.size);
 	} else if (is_amd64_push_reg(node)) {
 		/* 64-bit register size */
 		state->offset       += AMD64_REGISTER_SIZE;

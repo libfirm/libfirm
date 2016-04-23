@@ -23,16 +23,6 @@ enum amd64_arch_irn_flags_t {
 	amd64_arch_irn_flag_commutative_binop = arch_irn_flag_backend << 0,
 };
 
-/** instruction data size. Keep sorted! */
-typedef enum amd64_insn_size_t {
-	INSN_SIZE_8,
-	INSN_SIZE_16,
-	INSN_SIZE_32,
-	INSN_SIZE_64,
-	INSN_SIZE_80,
-	INSN_SIZE_128,
-} amd64_insn_size_t;
-
 typedef enum amd64_op_mode_t {
 	AMD64_OP_NONE,
 	AMD64_OP_ADDR,
@@ -59,8 +49,8 @@ typedef struct amd64_imm64_t {
 
 typedef struct amd64_attr_t {
 	except_attr exc; /**< the exception attribute. MUST be the first one. */
-	ENUMBF(amd64_op_mode_t)   op_mode : 5;
-	ENUMBF(amd64_insn_size_t) size    : 3;
+	ENUMBF(amd64_op_mode_t) op_mode : 5;
+	ENUMBF(x86_insn_size_t) size    : 3;
 } amd64_attr_t;
 
 typedef struct amd64_addr_attr_t {

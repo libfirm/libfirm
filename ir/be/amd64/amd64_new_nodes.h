@@ -185,8 +185,6 @@ static inline amd64_x87_binop_addr_attr_t *get_amd64_x87_binop_addr_attr(
 x87_attr_t *amd64_get_x87_attr(ir_node *node);
 x87_attr_t const *amd64_get_x87_attr_const(ir_node const *node);
 
-unsigned amd64_get_insn_size_bits(amd64_insn_size_t insn_size);
-
 /* Include the generated headers */
 #include "gen_amd64_new_nodes.h"
 

@@ -333,7 +333,7 @@ static ir_node *make_mov_imm32_to_offset_mem(dbg_info *dbgi, ir_node *block, ir_
 		.base = {
 			.base = {
 				.op_mode = AMD64_OP_ADDR_IMM,
-				.size    = INSN_SIZE_32,
+				.size    = X86_SIZE_32,
 			},
 			.addr = {
 				.immediate = {
@@ -367,7 +367,7 @@ static ir_node *make_mov_val64_to_offset_mem(dbg_info *dbgi, ir_node *block, ir_
 		.base = {
 			.base = {
 				.op_mode = AMD64_OP_ADDR_REG,
-				.size    = INSN_SIZE_64,
+				.size    = X86_SIZE_64,
 			},
 			.addr = {
 				.immediate = {
@@ -399,7 +399,7 @@ static ir_node *make_mov_xmmval64_to_offset_mem(dbg_info *dbgi, ir_node *block, 
 		.base = {
 			.base = {
 				.op_mode = AMD64_OP_ADDR_REG,
-				.size    = INSN_SIZE_64,
+				.size    = X86_SIZE_64,
 			},
 			.addr = {
 				.immediate = {
@@ -435,7 +435,7 @@ static ir_node *make_lea_with_offset_entity(dbg_info *dbgi, ir_node *block,
 		.variant    = X86_ADDR_BASE,
 		.base_input = 0,
 	};
-	return new_bd_amd64_lea(dbgi, block, ARRAY_SIZE(lea_in), lea_in, reg_reqs, INSN_SIZE_64, lea_addr);
+	return new_bd_amd64_lea(dbgi, block, ARRAY_SIZE(lea_in), lea_in, reg_reqs, X86_SIZE_64, lea_addr);
 }
 
 ir_node *amd64_initialize_va_list(dbg_info *dbgi, ir_node *block, x86_cconv_t *cconv,

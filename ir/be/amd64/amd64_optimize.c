@@ -100,7 +100,7 @@ static void peephole_amd64_mov_imm(ir_node *const node)
 		/* mov $0, %reg -> xorl %reg, %reg */
 		dbg_info              *const dbgi  = get_irn_dbg_info(node);
 		ir_node               *const block = get_nodes_block(node);
-		ir_node               *const xor   = new_bd_amd64_xor_0(dbgi, block, INSN_SIZE_32);
+		ir_node               *const xor   = new_bd_amd64_xor_0(dbgi, block, X86_SIZE_32);
 		arch_register_t const *const reg   = arch_get_irn_register_out(node, pn_amd64_mov_imm_res);
 		arch_set_irn_register_out(xor, pn_amd64_xor_0_res, reg);
 		sched_add_before(node, xor);

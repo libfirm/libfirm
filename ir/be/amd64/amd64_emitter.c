@@ -28,59 +28,59 @@
 #include "irgwalk.h"
 #include "panic.h"
 
-static char get_gp_size_suffix(amd64_insn_size_t const size)
+static char get_gp_size_suffix(x86_insn_size_t const size)
 {
 	switch (size) {
-	case INSN_SIZE_8:  return 'b';
-	case INSN_SIZE_16: return 'w';
-	case INSN_SIZE_32: return 'l';
-	case INSN_SIZE_64: return 'q';
-	case INSN_SIZE_80:
-	case INSN_SIZE_128:
+	case X86_SIZE_8:  return 'b';
+	case X86_SIZE_16: return 'w';
+	case X86_SIZE_32: return 'l';
+	case X86_SIZE_64: return 'q';
+	case X86_SIZE_80:
+	case X86_SIZE_128:
 		break;
 	}
 	panic("invalid insn mode");
 }
 
-static void amd64_emit_insn_size_suffix(amd64_insn_size_t const size)
+static void amd64_emit_insn_size_suffix(x86_insn_size_t const size)
 {
 	be_emit_char(get_gp_size_suffix(size));
 }
 
-static char get_xmm_size_suffix(amd64_insn_size_t const size)
+static char get_xmm_size_suffix(x86_insn_size_t const size)
 {
 	switch (size) {
-	case INSN_SIZE_32:  return 's';
-	case INSN_SIZE_64:  return 'd';
-	case INSN_SIZE_128: return 'q';
-	case INSN_SIZE_8:
-	case INSN_SIZE_16:
-	case INSN_SIZE_80:
+	case X86_SIZE_32:  return 's';
+	case X86_SIZE_64:  return 'd';
+	case X86_SIZE_128: return 'q';
+	case X86_SIZE_8:
+	case X86_SIZE_16:
+	case X86_SIZE_80:
 		break;
 	}
 	panic("invalid insn mode");
 }
 
-static void amd64_emit_xmm_size_suffix(amd64_insn_size_t const size)
+static void amd64_emit_xmm_size_suffix(x86_insn_size_t const size)
 {
 	be_emit_char(get_xmm_size_suffix(size));
 }
 
-static char get_x87_size_suffix(amd64_insn_size_t const size)
+static char get_x87_size_suffix(x86_insn_size_t const size)
 {
 	switch (size) {
-	case INSN_SIZE_32: return 's';
-	case INSN_SIZE_64: return 'l';
-	case INSN_SIZE_80: return 't';
-	case INSN_SIZE_8:
-	case INSN_SIZE_16:
-	case INSN_SIZE_128:
+	case X86_SIZE_32: return 's';
+	case X86_SIZE_64: return 'l';
+	case X86_SIZE_80: return 't';
+	case X86_SIZE_8:
+	case X86_SIZE_16:
+	case X86_SIZE_128:
 		break;
 	}
 	panic("Invalid insn mode");
 }
 
-static void amd64_emit_x87_size_suffix(amd64_insn_size_t const size)
+static void amd64_emit_x87_size_suffix(x86_insn_size_t const size)
 {
 	be_emit_char(get_x87_size_suffix(size));
 }
@@ -172,29 +172,29 @@ static void emit_register(const arch_register_t *reg)
 }
 
 static const char *get_register_name_mode(const arch_register_t *reg,
-                                          const amd64_insn_size_t size)
+                                          const x86_insn_size_t size)
 {
 	switch (size) {
-	case INSN_SIZE_8:  return get_register_name_8bit(reg);
-	case INSN_SIZE_16: return get_register_name_16bit(reg);
-	case INSN_SIZE_32: return get_register_name_32bit(reg);
-	case INSN_SIZE_64:
-	case INSN_SIZE_80:
-	case INSN_SIZE_128: return reg->name;
+	case X86_SIZE_8:  return get_register_name_8bit(reg);
+	case X86_SIZE_16: return get_register_name_16bit(reg);
+	case X86_SIZE_32: return get_register_name_32bit(reg);
+	case X86_SIZE_64:
+	case X86_SIZE_80:
+	case X86_SIZE_128: return reg->name;
 		break;
 	}
 	panic("invalid mode");
 }
 
 static void emit_register_sized(const arch_register_t *reg,
-                                const amd64_insn_size_t size)
+                                const x86_insn_size_t size)
 {
 	be_emit_char('%');
 	be_emit_string(get_register_name_mode(reg, size));
 }
 
 static void emit_register_mode(const arch_register_t *reg,
-                               amd64_insn_size_t size)
+                               x86_insn_size_t size)
 {
 	if (reg->cls == &amd64_reg_classes[CLASS_amd64_xmm]) {
 		emit_register(reg);
@@ -315,7 +315,7 @@ static void emit_shiftop(const ir_node *const node)
 	case AMD64_OP_SHIFT_REG: {
 		const arch_register_t *reg0 = arch_get_irn_register_in(node, 0);
 		const arch_register_t *reg1 = arch_get_irn_register_in(node, 1);
-		emit_register_mode(reg1, INSN_SIZE_8);
+		emit_register_mode(reg1, X86_SIZE_8);
 		be_emit_cstring(", ");
 		emit_register_mode(reg0, attr->base.size);
 		return;
@@ -487,12 +487,12 @@ emit_R:
 				if (mod & EMIT_IGNORE_MODE) {
 					emit_register(reg);
 				} else if (mod & EMIT_FORCE_32) {
-					emit_register_mode(reg, INSN_SIZE_32);
+					emit_register_mode(reg, X86_SIZE_32);
 				} else if (mod & EMIT_CONV_DEST) {
 					amd64_attr_t const *const attr = get_amd64_attr_const(node);
-					amd64_insn_size_t src_size  = attr->size;
-					amd64_insn_size_t dest_size = src_size == INSN_SIZE_64
-					                            ? INSN_SIZE_64 : INSN_SIZE_32;
+					x86_insn_size_t src_size  = attr->size;
+					x86_insn_size_t dest_size = src_size == X86_SIZE_64
+					                            ? X86_SIZE_64 : X86_SIZE_32;
 					emit_register_mode(reg, dest_size);
 				} else {
 					amd64_attr_t const *const attr = get_amd64_attr_const(node);
@@ -753,12 +753,12 @@ static void emit_amd64_mov_gp(const ir_node *node)
 {
 	amd64_attr_t const *const attr = get_amd64_attr_const(node);
 	switch (attr->size) {
-	case INSN_SIZE_8:  amd64_emitf(node, "movzbq %AM, %^D0"); return;
-	case INSN_SIZE_16: amd64_emitf(node, "movzwq %AM, %^D0"); return;
-	case INSN_SIZE_32: amd64_emitf(node, "movl %AM, %3D0");   return;
-	case INSN_SIZE_64: amd64_emitf(node, "movq %AM, %^D0");   return;
-	case INSN_SIZE_80:
-	case INSN_SIZE_128:
+	case X86_SIZE_8:  amd64_emitf(node, "movzbq %AM, %^D0"); return;
+	case X86_SIZE_16: amd64_emitf(node, "movzwq %AM, %^D0"); return;
+	case X86_SIZE_32: amd64_emitf(node, "movl %AM, %3D0");   return;
+	case X86_SIZE_64: amd64_emitf(node, "movq %AM, %^D0");   return;
+	case X86_SIZE_80:
+	case X86_SIZE_128:
 		break;
 	}
 	panic("invalid insn mode");

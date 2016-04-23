@@ -64,7 +64,7 @@ static void transform_sub_to_neg_add(ir_node *node,
 	ir_node                       *add;
 	unsigned                       pos;
 	if (is_amd64_subs(node)) {
-		unsigned bits = amd64_get_insn_size_bits(attr->base.base.size);
+		unsigned bits = x86_bytes_from_size(attr->base.base.size) * 8;
 		ir_tarval *tv = get_mode_one(amd64_mode_xmm);
 		tv = tarval_shl_unsigned(tv, bits - 1);
 		ir_entity *sign_bit_const = create_float_const_entity(tv);
@@ -73,7 +73,7 @@ static void transform_sub_to_neg_add(ir_node *node,
 			.base = {
 				.base = {
 					.op_mode = AMD64_OP_REG_ADDR,
-					.size    = INSN_SIZE_64,
+					.size    = X86_SIZE_64,
 				},
 			},
 		};
