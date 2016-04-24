@@ -96,6 +96,15 @@ static ir_node* create_spproj(ir_node *pred, int pos)
 	return be_new_Proj_reg(pred, pos, &amd64_registers[REG_RSP]);
 }
 
+static x86_insn_size_t entsize2insnsize(unsigned const entsize)
+{
+	return
+		entsize % 2 == 1 ? X86_SIZE_8  :
+		entsize % 4 == 2 ? X86_SIZE_16 :
+		entsize % 8 == 4 ? X86_SIZE_32 :
+		(assert(entsize % 8 == 0), X86_SIZE_64);
+}
+
 /**
  * Transform MemPerm, currently we do this the ugly way and produce
  * push/pop into/from memory cascades. This is possible without using
@@ -124,19 +133,8 @@ static void transform_MemPerm(ir_node *node)
 
 		int offset = 0;
 		do {
-			x86_insn_size_t size;
-			if (entsize%2 == 1) {
-				size = X86_SIZE_8;
-			} else if (entsize % 4 == 2) {
-				size = X86_SIZE_16;
-			} else if (entsize % 8 == 4) {
-				size = X86_SIZE_32;
-			} else {
-				assert(entsize%8 == 0);
-				size = X86_SIZE_64;
-			}
-
-			ir_node *push = create_push(node, node, sp, mem, inent, size);
+			x86_insn_size_t const size = entsize2insnsize(entsize);
+			ir_node        *const push = create_push(node, node, sp, mem, inent, size);
 			sp = create_spproj(push, pn_amd64_push_am_stack);
 			get_amd64_addr_attr(push)->addr.immediate.offset = offset;
 
@@ -163,18 +161,7 @@ static void transform_MemPerm(ir_node *node)
 		int      offset = entsize;
 		ir_node *pop;
 		do {
-			x86_insn_size_t size;
-			if (entsize%2 == 1) {
-				size = X86_SIZE_8;
-			} else if (entsize % 4 == 2) {
-				size = X86_SIZE_16;
-			} else if (entsize % 8 == 4) {
-				size = X86_SIZE_32;
-			} else {
-				assert(entsize%8 == 0);
-				size = X86_SIZE_64;
-			}
-
+			x86_insn_size_t const size = entsize2insnsize(entsize);
 			pop = create_pop(node, node, sp, outent, size);
 			sp  = create_spproj(pop, pn_amd64_pop_am_stack);
 

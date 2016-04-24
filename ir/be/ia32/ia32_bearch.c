@@ -777,6 +777,14 @@ static ir_node *create_spproj(ir_node *const pred, unsigned const pos)
 	return be_new_Proj_reg(pred, pos, &ia32_registers[REG_ESP]);
 }
 
+static x86_insn_size_t entsize2insnsize(unsigned const entsize)
+{
+	return
+		entsize % 2 == 1 ? X86_SIZE_8  :
+		entsize % 4 == 2 ? X86_SIZE_16 :
+		(assert(entsize % 4 == 0), X86_SIZE_32);
+}
+
 /**
  * Transform MemPerm, currently we do this the ugly way and produce
  * push/pop into/from memory cascades. This is possible without using
@@ -805,17 +813,8 @@ static void transform_MemPerm(ir_node *node)
 
 		int offset = 0;
 		do {
-			x86_insn_size_t size;
-			if (entsize%2 == 1) {
-				size = X86_SIZE_8;
-			} else if (entsize % 4 == 2) {
-				size = X86_SIZE_16;
-			} else {
-				assert(entsize%4 == 0);
-				size = X86_SIZE_32;
-			}
-
-			ir_node *push = create_push(node, node, sp, mem, inent, size);
+			x86_insn_size_t const size = entsize2insnsize(entsize);
+			ir_node        *const push = create_push(node, node, sp, mem, inent, size);
 			sp = create_spproj(push, pn_ia32_Push_stack);
 			ia32_attr_t *const attr = get_ia32_attr(push);
 			attr->addr.immediate.offset = offset;
@@ -843,15 +842,7 @@ static void transform_MemPerm(ir_node *node)
 		int      offset = entsize;
 		ir_node *pop;
 		do {
-			x86_insn_size_t size;
-			if (entsize%2 == 1) {
-				size = X86_SIZE_8;
-			} else if (entsize%4 == 2) {
-				size = X86_SIZE_16;
-			} else {
-				assert(entsize%4 == 0);
-				size = X86_SIZE_32;
-			}
+			x86_insn_size_t const size = entsize2insnsize(entsize);
 			pop = create_pop(node, node, sp, outent, size);
 			sp  = create_spproj(pop, pn_ia32_PopMem_stack);
 
