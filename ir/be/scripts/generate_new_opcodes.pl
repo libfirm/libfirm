@@ -182,9 +182,7 @@ sub create_constructor
 	}
 	# we have additional attribute arguments
 	if (defined(my $attr = $n->{attr})) {
-		if ($attr ne "") {
-			$complete_args .= ", $attr";
-		}
+		$complete_args .= ", $attr";
 	}
 
 	my $suffix = $name ne "" ? "_$name" : "";

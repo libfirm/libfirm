@@ -805,7 +805,7 @@ Cmc => {
 	out_reqs => [ "flags" ],
 	fixed    => "x86_condition_code_t condition_code = x86_cc_carry;\n"
 	           ."\tx86_insn_size_t const size = X86_SIZE_32;",
-	attr     => "",
+	attr     => undef,
 	emit     => "cmc",
 	encode   => "ia32_enc_simple(0xF5)",
 	latency  => 1,
@@ -946,7 +946,7 @@ IJmp => {
 Const => {
 	template  => $valueop,
 	emit      => "movl %I, %D0",
-	fixed     => "",
+	fixed     => undef,
 	attr      => "const x86_imm32_t *imm",
 	fixed     => "x86_insn_size_t const size = X86_SIZE_32;",
 	attr_type => "ia32_immediate_attr_t",
