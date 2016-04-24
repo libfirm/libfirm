@@ -384,11 +384,12 @@ static ir_node *gen_Const(ir_node *node)
 					ir_node *imm32 = ia32_create_Immediate(irg, 32);
 
 					/* fine, lower 32bit are zero, produce 32bit value */
-					unsigned const val = be_get_tv_bits32(tv, 4);
-					ir_node *cnst
-						= new_bd_ia32_Const(dbgi, block, NULL, 0, val);
-					ir_node *movd = new_bd_ia32_xMovd(dbgi, block, cnst);
-					res = new_bd_ia32_xPsllq(dbgi, block, movd, imm32);
+					x86_imm32_t const imm = {
+						.offset = be_get_tv_bits32(tv, 4),
+					};
+					ir_node *const cnst = new_bd_ia32_Const(dbgi, block, &imm);
+					ir_node *const movd = new_bd_ia32_xMovd(dbgi, block, cnst);
+					res = new_bd_ia32_xPsllq(dbgi, block, movd, imm32, size);
 					goto end;
 				}
 #endif /* CONSTRUCT_SSE_CONST */
