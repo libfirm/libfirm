@@ -126,8 +126,8 @@ struct ia32_attr_t {
 typedef struct ia32_call_attr_t ia32_call_attr_t;
 struct ia32_call_attr_t {
 	ia32_attr_t attr;    /**< generic attribute */
-	unsigned    pop;     /**< number of bytes that get popped by the callee */
-	ir_type    *call_tp; /**< The call type, copied from the original Call node. */
+	uint8_t     pop;     /**< number of bytes that get popped by the callee */
+	uint8_t     n_reg_results;
 };
 
 /**

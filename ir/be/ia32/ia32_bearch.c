@@ -902,19 +902,6 @@ static void ia32_after_ra_walker(ir_node *block, void *env)
  */
 static void ia32_collect_frame_entity_nodes(ir_node *node, void *data)
 {
-	be_fec_env_t *env = (be_fec_env_t*)data;
-	/* Disable coalescing for "returns twice" calls: In case of setjmp/longjmp
-	 * our control flow graph isn't completely correct: There are no backedges
-	 * from longjmp to the setjmp => coalescing would produce wrong results. */
-	if (is_ia32_Call(node)) {
-		const ia32_call_attr_t    *attrs = get_ia32_call_attr_const(node);
-		const ir_type             *type  = attrs->call_tp;
-		mtp_additional_properties  mtp
-			= get_method_additional_properties(type);
-		if (mtp & mtp_property_returns_twice)
-			be_forbid_coalescing(env);
-	}
-
 	if (!is_ia32_irn(node) || get_ia32_op_type(node) != ia32_AddrModeS)
 		return;
 	ia32_attr_t const *const attr = get_ia32_attr_const(node);
@@ -956,7 +943,8 @@ static void ia32_collect_frame_entity_nodes(ir_node *node, void *data)
 	}
 	}
 	panic("invalid frame use type");
-request_entity:
+request_entity:;
+	be_fec_env_t *env = (be_fec_env_t*)data;
 	be_load_needs_frame_entity(env, node, type);
 }
 
@@ -1079,16 +1067,23 @@ static x87_attr_t *ia32_get_x87_attr(ir_node *const node)
 	return &attr->x87;
 }
 
+/**
+ * Last touchups for the graph before emit: x87 simulation to replace the
+ * virtual with real x87 instructions, creating a block schedule and
+ * peephole optimizations.
+ */
 static void ia32_before_emit(ir_graph *irg)
 {
-	/* Last touchups for the graph before emit: x87 simulation to replace the
-	 * virtual with real x87 instructions, creating a block schedule and
-	 * peephole optimizations.
-	 */
-	bool omit_fp = ia32_get_irg_data(irg)->omit_fp;
+	ia32_irg_data_t const *const irg_data = ia32_get_irg_data(irg);
+	bool                   const omit_fp  = irg_data->omit_fp;
 
 	/* create and coalesce frame entities */
 	be_fec_env_t *fec_env = be_new_frame_entity_coalescer(irg);
+	/* Disable coalescing for "returns twice" calls: In case of setjmp/longjmp
+	 * our control flow graph isn't completely correct: There are no backedges
+	 * from longjmp to the setjmp => coalescing would produce wrong results. */
+	if (irg_data->has_returns_twice_call)
+		be_forbid_coalescing(fec_env);
 	irg_walk_graph(irg, NULL, ia32_collect_frame_entity_nodes, fec_env);
 	be_assign_entities(fec_env, ia32_set_frame_entity, omit_fp);
 	be_free_frame_entity_coalescer(fec_env);

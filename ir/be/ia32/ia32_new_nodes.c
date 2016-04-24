@@ -594,15 +594,15 @@ void init_ia32_immediate_attributes(ir_node *res, x86_imm32_t const *const imm)
 	attr->imm           = *imm;
 }
 
-void init_ia32_call_attributes(ir_node* res, unsigned pop, ir_type* call_tp)
+void init_ia32_call_attributes(ir_node* res, uint8_t pop, uint8_t n_reg_results)
 {
 	ia32_call_attr_t *attr = (ia32_call_attr_t*)get_irn_generic_attr(res);
 
 #ifndef NDEBUG
 	attr->attr.attr_type |= IA32_ATTR_ia32_call_attr_t;
 #endif
-	attr->pop     = pop;
-	attr->call_tp = call_tp;
+	attr->pop           = pop;
+	attr->n_reg_results = n_reg_results;
 }
 
 void init_ia32_copyb_attributes(ir_node *res, unsigned size)
@@ -688,7 +688,8 @@ int ia32_call_attrs_equal(const ir_node *a, const ir_node *b)
 	const ia32_call_attr_t *attr_a = get_ia32_call_attr_const(a);
 	const ia32_call_attr_t *attr_b = get_ia32_call_attr_const(b);
 	return ia32_attrs_equal_(&attr_a->attr, &attr_b->attr)
-	    && attr_a->pop == attr_b->pop && attr_a->call_tp == attr_b->call_tp;
+	    && attr_a->pop == attr_b->pop
+	    && attr_a->n_reg_results == attr_b->n_reg_results;
 }
 
 int ia32_copyb_attrs_equal(const ir_node *a, const ir_node *b)

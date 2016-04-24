@@ -94,7 +94,7 @@ $custom_init_attr_func = \&ia32_custom_init_attr;
 		"init_ia32_attributes(res, irn_flags, in_reqs, n_res, size);",
 	ia32_call_attr_t =>
 		"init_ia32_attributes(res, irn_flags, in_reqs, n_res, size);\n".
-		"\tinit_ia32_call_attributes(res, pop, call_tp);",
+		"\tinit_ia32_call_attributes(res, pop, n_reg_results);",
 	ia32_condcode_attr_t =>
 		"init_ia32_attributes(res, irn_flags, in_reqs, n_res, size);\n".
 		"\tinit_ia32_condcode_attributes(res, condition_code);",
@@ -1251,7 +1251,7 @@ Call => {
 	fixed     => "x86_insn_size_t const size = X86_SIZE_32;",
 	emit      => "call %*AS3",
 	attr_type => "ia32_call_attr_t",
-	attr      => "unsigned pop, ir_type *call_tp",
+	attr      => "uint8_t pop, uint8_t n_reg_results",
 	am        => "source,unary",
 	latency   => 4, # random number
 },

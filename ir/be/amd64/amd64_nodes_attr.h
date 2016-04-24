@@ -88,9 +88,9 @@ typedef struct amd64_switch_jmp_attr_t {
 } amd64_switch_jmp_attr_t;
 
 typedef struct amd64_call_addr_attr_t {
-	amd64_addr_attr_t  base;
-	unsigned           n_reg_results; /**< number of results in registers */
-	ir_type           *call_tp;
+	amd64_addr_attr_t base;
+	unsigned          n_reg_results; /**< number of results in registers */
+	bool              returns_twice;
 } amd64_call_addr_attr_t;
 
 typedef struct amd64_x87_attr_t {

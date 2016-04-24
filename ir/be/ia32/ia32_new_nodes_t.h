@@ -19,7 +19,7 @@ void init_ia32_attributes(ir_node *node, arch_irn_flags_t flags,
                           x86_insn_size_t size);
 void init_ia32_x87_attributes(ir_node *res);
 void init_ia32_immediate_attributes(ir_node *res, x86_imm32_t const *const imm);
-void init_ia32_call_attributes(ir_node* res, unsigned pop, ir_type* call_tp);
+void init_ia32_call_attributes(ir_node* res, uint8_t pop, uint8_t n_reg_res);
 void init_ia32_copyb_attributes(ir_node *res, unsigned size);
 void init_ia32_condcode_attributes(ir_node *res, x86_condition_code_t cc);
 void init_ia32_climbframe_attributes(ir_node *res, unsigned count);

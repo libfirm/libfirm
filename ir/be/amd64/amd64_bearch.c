@@ -400,30 +400,15 @@ static ir_type *get_type_for_insn_size(x86_insn_size_t const size)
  */
 static void amd64_collect_frame_entity_nodes(ir_node *node, void *data)
 {
-	if (!is_amd64_irn(node))
-		return;
-
-	/* Disable coalescing for "returns twice" calls: In case of setjmp/longjmp
-	 * our control flow graph isn't completely correct: There are no backedges
-	 * from longjmp to the setjmp => coalescing would produce wrong results. */
-	be_fec_env_t *const env = (be_fec_env_t*)data;
-	if (is_amd64_call(node)) {
-		const amd64_call_addr_attr_t    *attrs = get_amd64_call_addr_attr_const(node);
-		const ir_type                   *type  = attrs->call_tp;
-		const mtp_additional_properties  mtp
-			= get_method_additional_properties(type);
-		if (mtp & mtp_property_returns_twice)
-			be_forbid_coalescing(env);
-	}
-
 	/* we are only interested to report Load nodes */
-	if (!amd64_loads(node))
+	if (!is_amd64_irn(node) || !amd64_loads(node))
 		return;
 
 	const amd64_addr_attr_t *attr = get_amd64_addr_attr_const(node);
 	x86_imm32_t       const *imm  = &attr->addr.immediate;
 	if (imm->kind == X86_IMM_FRAMEENT && imm->entity == NULL) {
-		const ir_type *type = get_type_for_insn_size(attr->base.size);
+		ir_type const *const type = get_type_for_insn_size(attr->base.size);
+		be_fec_env_t  *const env  = (be_fec_env_t*)data;
 		be_load_needs_frame_entity(env, node, type);
 	}
 }
@@ -607,10 +592,16 @@ static void amd64_sp_sim(ir_node *const node, stack_pointer_state_t *state)
  */
 static void amd64_finish_and_emit(ir_graph *irg)
 {
-	bool omit_fp = amd64_get_irg_data(irg)->omit_fp;
+	amd64_irg_data_t const *const irg_data = amd64_get_irg_data(irg);
+	bool                    const omit_fp  = irg_data->omit_fp;
 
 	/* create and coalesce frame entities */
 	be_fec_env_t *fec_env = be_new_frame_entity_coalescer(irg);
+	/* Disable coalescing for "returns twice" calls: In case of setjmp/longjmp
+	 * our control flow graph isn't completely correct: There are no backedges
+	 * from longjmp to the setjmp => coalescing would produce wrong results. */
+	if (irg_data->has_returns_twice_call)
+		be_forbid_coalescing(fec_env);
 	irg_walk_graph(irg, NULL, amd64_collect_frame_entity_nodes, fec_env);
 	be_assign_entities(fec_env, amd64_set_frame_entity, omit_fp);
 	be_free_frame_entity_coalescer(fec_env);

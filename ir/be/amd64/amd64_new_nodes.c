@@ -232,7 +232,8 @@ int amd64_call_addr_attrs_equal(const ir_node *const a, const ir_node *const b)
 		= get_amd64_call_addr_attr_const(a);
 	const amd64_call_addr_attr_t *const attr_b
 		= get_amd64_call_addr_attr_const(b);
-	return amd64_addr_attrs_equal(a, b) && attr_a->call_tp == attr_b->call_tp;
+	return amd64_addr_attrs_equal(a, b)
+	    && attr_a->n_reg_results == attr_b->n_reg_results;
 }
 
 int amd64_x87_attrs_equal(const ir_node *const a, const ir_node *const b)

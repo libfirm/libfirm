@@ -1177,8 +1177,8 @@ static void sim_ia32_Call(x87_state *const state, ir_node *const n)
 	/* at the begin of a call the x87 state should be empty */
 	assert(state->depth == 0 && "stack not empty before call");
 
-	ir_type *const call_tp = get_ia32_call_attr_const(n)->call_tp;
-	if (get_method_n_ress(call_tp) != 0) {
+	unsigned n_reg_results = get_ia32_call_attr_const(n)->n_reg_results;
+	if (n_reg_results != 0) {
 		/* If the called function returns a float, it is returned in st(0).
 		 * This even happens if the return value is NOT used.
 		 * Moreover, only one return result is supported. */

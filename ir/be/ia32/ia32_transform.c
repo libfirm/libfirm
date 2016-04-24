@@ -5029,6 +5029,9 @@ static ir_node *gen_Call(ir_node *node)
 	ir_node                   **const in       = ALLOCAN(ir_node*, n_ins);
 	arch_register_req_t const **const in_req   = be_allocate_in_reqs(irg, n_ins);
 
+	if (get_method_additional_properties(type) & mtp_property_returns_twice)
+		ia32_get_irg_data(irg)->has_returns_twice_call = true;
+
 	in[n_ia32_Call_base]       = am.addr.base;
 	in_req[n_ia32_Call_base]   = req_gp;
 	in[n_ia32_Call_index]      = am.addr.index;
@@ -5116,7 +5119,9 @@ static ir_node *gen_Call(ir_node *node)
 	unsigned const n_out          = o + n_reg_results + n_caller_saves;
 
 	/* Create node. */
-	ir_node *const call = new_bd_ia32_Call(dbgi, block, in_arity, in, in_req, n_out, cconv->sp_delta, type);
+	ir_node *const call = new_bd_ia32_Call(dbgi, block, in_arity, in, in_req,
+										   n_out, cconv->sp_delta,
+										   n_reg_results);
 	arch_set_additional_pressure(call, &ia32_reg_classes[CLASS_ia32_gp],
 	                             add_pressure);
 

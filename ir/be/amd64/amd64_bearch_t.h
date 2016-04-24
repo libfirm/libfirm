@@ -16,6 +16,7 @@
 
 typedef struct amd64_irg_data_t {
 	bool omit_fp;
+	bool has_returns_twice_call;
 } amd64_irg_data_t;
 
 extern pmap *amd64_constants; /**< A map of entities that store const tarvals */
