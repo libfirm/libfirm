@@ -119,13 +119,13 @@ ir_entity *new_label_entity(ir_label_t label)
 }
 
 ir_entity *new_spillslot(ir_type *const frame, unsigned const size,
-                         unsigned const alignment)
+                         unsigned const po2align)
 {
 	assert(is_frame_type(frame));
 	ir_type   *const type = get_unknown_type();
 	ir_entity *const res  = intern_new_entity(frame, IR_ENTITY_SPILLSLOT, NULL,
 	                                          type, ir_visibility_private);
-	set_entity_alignment(res, alignment);
+	set_entity_alignment(res, 1u << po2align);
 	res->attr.spillslot.base.offset = INVALID_OFFSET;
 	res->attr.spillslot.size = size;
 	return res;

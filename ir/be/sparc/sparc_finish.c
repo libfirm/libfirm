@@ -561,16 +561,20 @@ static void sparc_collect_frame_entity_nodes(ir_node *node, void *data)
 		return;
 	if (!attr->is_frame_entity)
 		return;
-	if (arch_get_irn_flags(node) & sparc_arch_irn_flag_needs_64bit_spillslot)
-		mode = mode_Lu;
-	const ir_type *type = get_type_for_mode(mode);
-	be_load_needs_frame_entity(env, node, type);
+	unsigned size     = get_mode_size_bytes(mode);
+	unsigned po2align = log2_floor(size);
+	if (arch_get_irn_flags(node) & sparc_arch_irn_flag_needs_64bit_spillslot) {
+		size     = 8;
+		po2align = 3;
+	}
+	be_load_needs_frame_entity(env, node, size, po2align);
 }
 
 static void sparc_set_frame_entity(ir_node *node, ir_entity *entity,
-                                   const ir_type *type)
+                                   unsigned size, unsigned po2align)
 {
-	(void)type;
+	(void)size;
+	(void)po2align;
 	/* we only say be_node_needs_frame_entity on nodes with load_store
 	 * attributes, so this should be fine */
 	sparc_load_store_attr_t *attr = get_sparc_load_store_attr(node);

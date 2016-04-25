@@ -32,10 +32,11 @@ void be_free_frame_entity_coalescer(be_fec_env_t *env);
 void be_forbid_coalescing(be_fec_env_t *env);
 
 void be_load_needs_frame_entity(be_fec_env_t *env, ir_node *node,
-                                const ir_type *type);
+								unsigned slot_size, unsigned slot_po2align);
 
 typedef void (*set_frame_entity_func)(ir_node *node, ir_entity *entity,
-                                      const ir_type *final_type);
+                                      unsigned final_size,
+                                      unsigned final_po2align);
 
 /**
  * Assigned frame entities to all the nodes added by be_node_needs_frame_entity.

@@ -47,8 +47,9 @@ typedef struct spill_t {
  * produce. All spills that are joined through Phis form a spillweb.
  */
 struct spillweb_t {
-	spillweb_t    *merged_with;
-	const ir_type *type;
+	spillweb_t *merged_with;
+	unsigned    slot_size;
+	unsigned    slot_po2align;
 };
 
 typedef struct affinity_edge_t {
@@ -116,28 +117,11 @@ static inline ir_node *get_memory_edge(const ir_node *node)
 	return NULL;
 }
 
-#ifndef NDEBUG
-static bool modes_compatible(const ir_mode *mode0, const ir_mode *mode1)
-{
-	ir_mode_arithmetic arith0 = get_mode_arithmetic(mode0);
-	ir_mode_arithmetic arith1 = get_mode_arithmetic(mode1);
-	return arith0 == arith1
-	   || (arith0 == irma_ieee754 && arith1 == irma_x86_extended_float)
-	   || (arith1 == irma_ieee754 && arith0 == irma_x86_extended_float);
-}
-#endif
-
-static void merge_spilltypes(spillweb_t *web, const ir_type *type1)
+static void merge_slotsizes(spillweb_t *web, unsigned size, unsigned po2align)
 {
 	assert(web->merged_with == NULL);
-	assert(type1 != NULL);
-	const ir_type *type0 = web->type;
-	if (type0 == NULL) {
-		web->type = type1;
-		return;
-	}
-	assert(modes_compatible(get_type_mode(type0), get_type_mode(type1)));
-	web->type = get_type_size(type1) > get_type_size(type0) ? type1 : type0;
+	web->slot_size     = MAX(size, web->slot_size);
+	web->slot_po2align = MAX(po2align, web->slot_po2align);
 }
 
 static spillweb_t *get_spill_web(spillweb_t *begin)
@@ -159,9 +143,7 @@ static spillweb_t *merge_spillwebs(spillweb_t *web0, spillweb_t *web1)
 	assert(web0 != web1);
 	assert(web0->merged_with == NULL);
 	assert(web1->merged_with == NULL);
-	const ir_type *type1 = web1->type;
-	if (type1 != NULL)
-		merge_spilltypes(web0, type1);
+	merge_slotsizes(web0, web1->slot_size, web1->slot_po2align);
 	web1->merged_with = web0;
 	return web0;
 }
@@ -232,15 +214,16 @@ static spill_t *collect_spill(be_fec_env_t *env, ir_node *node, spillweb_t *web)
 	return spill;
 }
 
-void be_load_needs_frame_entity(be_fec_env_t *env, ir_node *node,
-                                const ir_type *type)
+void be_load_needs_frame_entity(be_fec_env_t *const env, ir_node *const node,
+								unsigned const slot_size,
+								unsigned const slot_po2align)
 {
-	ir_node *mem   = get_memory_edge(node);
-	spill_t *spill = collect_spill(env, mem, NULL);
-	DB((dbg, LEVEL_1, "Slot %d: Reload: %+F Type %+F\n",
-	    spill->spillslot, node, type));
+	ir_node *const mem   = get_memory_edge(node);
+	spill_t *const spill = collect_spill(env, mem, NULL);
+	DB((dbg, LEVEL_1, "Slot %d: Reload: %+F Size: %u Align: %u\n",
+	    spill->spillslot, node, slot_size, 1u << slot_po2align));
 	ARR_APP1(ir_node*, env->reloads, node);
-	merge_spilltypes(spill->web, type);
+	merge_slotsizes(spill->web, slot_size, slot_po2align);
 }
 
 static int merge_interferences(be_fec_env_t *env, bitset_t** interferences,
@@ -374,9 +357,9 @@ static void do_greedy_coalescing(be_fec_env_t *env)
 }
 
 typedef struct spill_slot_t {
-	int        size;
-	int        align;
 	ir_entity *entity;
+	unsigned   size;
+	unsigned   po2align;
 } spill_slot_t;
 
 typedef struct memperm_entry_t memperm_entry_t;
@@ -390,7 +373,7 @@ struct memperm_entry_t {
 
 typedef struct memperm_t {
 	ir_node         *block;
-	int              entrycount;
+	unsigned         entrycount;
 	memperm_entry_t *entries;
 } memperm_t;
 
@@ -418,40 +401,22 @@ static memperm_t *get_memperm(be_fec_env_t *env, ir_node *block)
 	return res;
 }
 
-/**
- * Enlarges a spillslot (if necessary) so that it can carry a value of size
- * @p othersize and alignment @p otheralign.
- */
-static void enlarge_spillslot(spill_slot_t *slot, int otheralign, int othersize)
-{
-	if (othersize > slot->size)
-		slot->size = othersize;
-
-	if (otheralign > slot->align) {
-		if (otheralign % slot->align != 0)
-			slot->align *= otheralign;
-		else
-			slot->align = otheralign;
-	} else if (slot->align % otheralign != 0) {
-		slot->align *= otheralign;
-	}
-}
-
 static void assign_spill_entity(be_fec_env_t *env, ir_node *node,
-                                ir_entity *entity, const ir_type *type)
+                                ir_entity *entity, unsigned size,
+                                unsigned po2align)
 {
 	if (is_NoMem(node))
 		return;
 	if (is_Sync(node)) {
 		foreach_irn_in(node, i, in) {
 			assert(!is_Phi(in));
-			assign_spill_entity(env, in, entity, type);
+			assign_spill_entity(env, in, entity, size, po2align);
 		}
 		return;
 	}
 
 	node = skip_Proj(node);
-	env->set_frame_entity(node, entity, type);
+	env->set_frame_entity(node, entity, size, po2align);
 }
 
 /**
@@ -466,20 +431,13 @@ static void assign_spillslots(be_fec_env_t *env)
 
 	/* construct spillslots */
 	for (size_t s = 0; s < spillcount; ++s) {
-		const spill_t    *spill  = spills[s];
-		int               slotid = spill->spillslot;
-		const spillweb_t *web    = get_spill_web(spill->web);
-		const ir_type    *type   = web->type;
-		int               size   = get_type_size(type);
-		int               align  = get_type_alignment(type);
-		spill_slot_t     *slot   = &spillslots[slotid];
+		const spill_t    *const spill  = spills[s];
+		int               const slotid = spill->spillslot;
+		spillweb_t const *const web    = get_spill_web(spill->web);
+		spill_slot_t     *const slot   = &spillslots[slotid];
 
-		if (slot->align == 0 && slot->size == 0) {
-			slot->align = align;
-			slot->size = size;
-		} else {
-			enlarge_spillslot(slot, align, size);
-		}
+		slot->size     = MAX(slot->size, web->slot_size);
+		slot->po2align = MAX(slot->po2align, web->slot_po2align);
 	}
 
 	ir_type *const frame = get_irg_frame_type(env->irg);
@@ -490,7 +448,7 @@ static void assign_spillslots(be_fec_env_t *env)
 		spill_slot_t  *slot   = &spillslots[slotid];
 
 		if (slot->entity == NULL)
-			slot->entity = new_spillslot(frame, slot->size, slot->align);
+			slot->entity = new_spillslot(frame, slot->size, slot->po2align);
 
 		if (is_Phi(node)) {
 			ir_node *block = get_nodes_block(node);
@@ -504,16 +462,14 @@ static void assign_spillslots(be_fec_env_t *env)
 				int      argslotid = argspill->spillslot;
 
 				if (slotid != argslotid) {
-					memperm_t       *memperm;
-					memperm_entry_t *entry;
-					spill_slot_t    *argslot = &spillslots[argslotid];
+					spill_slot_t *argslot = &spillslots[argslotid];
 					if (argslot->entity == NULL)
 						argslot->entity = new_spillslot(frame, argslot->size,
-						                                argslot->align);
+						                                argslot->po2align);
 
-					memperm = get_memperm(env, predblock);
-
-					entry = OALLOC(&env->obst, memperm_entry_t);
+					memperm_t *const memperm = get_memperm(env, predblock);
+					memperm_entry_t *const entry
+						= OALLOC(&env->obst, memperm_entry_t);
 					entry->node = node;
 					entry->pos = i;
 					entry->in = argslot->entity;
@@ -525,7 +481,8 @@ static void assign_spillslots(be_fec_env_t *env)
 			}
 		} else {
 			const spillweb_t *web = get_spill_web(spill->web);
-			assign_spill_entity(env, node, slot->entity, web->type);
+			assign_spill_entity(env, node, slot->entity, web->slot_size,
+			                    web->slot_po2align);
 		}
 	}
 
@@ -537,8 +494,8 @@ static void assign_spillslots(be_fec_env_t *env)
 		const spillweb_t   *web       = get_spill_web(spill->web);
 
 		assert(slot->entity != NULL);
-
-		env->set_frame_entity(reload, slot->entity, web->type);
+		env->set_frame_entity(reload, slot->entity, web->slot_size,
+		                      web->slot_po2align);
 	}
 }
 

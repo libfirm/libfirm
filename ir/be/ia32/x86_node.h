@@ -161,17 +161,22 @@ static inline bool x86_imm32_equal(x86_imm32_t const *const imm0,
 	    && imm0->kind == imm1->kind;
 }
 
+static inline x86_insn_size_t x86_size_from_bytes(unsigned bytes)
+{
+	switch (bytes) {
+	case 1:  return X86_SIZE_8;
+	case 2:  return X86_SIZE_16;
+	case 4:  return X86_SIZE_32;
+	case 8:  return X86_SIZE_64;
+	case 10: return X86_SIZE_80;
+	case 16: return X86_SIZE_128;
+	}
+	panic("Unexpected size");
+}
+
 static inline x86_insn_size_t x86_size_from_mode(ir_mode *const mode)
 {
-	switch (get_mode_size_bits(mode)) {
-	case 8:   return X86_SIZE_8;
-	case 16:  return X86_SIZE_16;
-	case 32:  return X86_SIZE_32;
-	case 64:  return X86_SIZE_64;
-	case 80:  return X86_SIZE_80;
-	case 128: return X86_SIZE_128;
-	}
-	panic("Unexpected mode");
+	return x86_size_from_bytes(get_mode_size_bytes(mode));
 }
 
 static inline unsigned x86_bytes_from_size(x86_insn_size_t const size)

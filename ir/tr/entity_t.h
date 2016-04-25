@@ -228,7 +228,7 @@ void ir_init_entity(ir_prog *irp);
  */
 ir_entity *new_label_entity(ir_label_t label);
 
-ir_entity *new_spillslot(ir_type *frame, unsigned size, unsigned alignment);
+ir_entity *new_spillslot(ir_type *frame, unsigned size, unsigned po2align);
 
 void set_entity_irg(ir_entity *ent, ir_graph *irg);
 

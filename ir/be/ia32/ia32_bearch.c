@@ -124,7 +124,7 @@ static ir_node *ia32_get_admissible_noreg(ir_node *irn, int pos)
 }
 
 static void ia32_set_frame_entity(ir_node *node, ir_entity *entity,
-                                  const ir_type *type)
+                                  unsigned size, unsigned po2align)
 {
 	ia32_attr_t *const attr = get_ia32_attr(node);
 	attr->addr.immediate = (x86_imm32_t) {
@@ -137,14 +137,14 @@ static void ia32_set_frame_entity(ir_node *node, ir_entity *entity,
 	/* set ls_mode based on entity unless we explicitly requested
 	 * a certain mode */
 	if (get_ia32_frame_use(node) != IA32_FRAME_USE_AUTO
-	    || is_ia32_Cmp(node) || is_ia32_Conv_I2I(node))
+	 || is_ia32_Cmp(node) || is_ia32_Conv_I2I(node))
 		return;
-	ir_mode *mode = get_type_mode(type);
+	(void)po2align;
+	attr->size = size == 12 ? X86_SIZE_80 : x86_size_from_bytes(size);
 	/** 8bit stores have a special register requirement, so we can't simply
 	 * change size to 8bit here. The "hack" in ia32_collect_frame_entity_nodes()
 	 * should take care that it never happens. */
-	assert(!is_ia32_Store(node) || get_mode_size_bits(mode) > 8);
-	attr->size = x86_size_from_mode(mode);
+	assert(!is_ia32_Store(node) || attr->size > X86_SIZE_8);
 }
 
 static bool node_has_sp_base(ir_node const *const node)
@@ -912,40 +912,43 @@ static void ia32_collect_frame_entity_nodes(ir_node *node, void *data)
 	if (attr->addr.immediate.entity != NULL)
 		return;
 
-	ir_type const *type;
+	unsigned size;
+	unsigned po2align;
 	switch (get_ia32_frame_use(node)) {
 	case IA32_FRAME_USE_NONE:
 		panic("X86_IMM_FRAMEENT but IA32_FRAME_USE_NONE");
 	case IA32_FRAME_USE_32BIT:
-		type = get_type_for_mode(ia32_mode_gp);
+		size     = 4;
+		po2align = 2;
 		goto request_entity;
 	case IA32_FRAME_USE_64BIT:
-		type = get_type_for_mode(mode_Ls);
+		size     = 8;
+		po2align = 3;
 		goto request_entity;
 	case IA32_FRAME_USE_AUTO: {
-		switch (get_ia32_attr_const(node)->size) {
-		case X86_SIZE_8:
+		x86_insn_size_t const insn_size = get_ia32_attr_const(node)->size;
+		size = x86_bytes_from_size(insn_size);
+		if (size == 10) {
+			size     = 12;
+			po2align = 2;
+		} else if (size == 1) {
 			/* stupid hack: in some situations (like reloads folded into ConvI2I
 			 * with 8bit mode, an 8bit entity and reload+spill would suffice,
 			 * but an 8bit store has special register requirements on ia32 which
 			 * we may not be able to fulfill anymore at this point, so extend
 			 * the spillslot size to 16bit :-( */
-			type = get_type_for_mode(mode_Hu);
-			goto request_entity;
-		case X86_SIZE_16: type = get_type_for_mode(mode_Hu); goto request_entity;
-		case X86_SIZE_32: type = get_type_for_mode(mode_Iu); goto request_entity;
-		case X86_SIZE_64: type = get_type_for_mode(mode_Lu); goto request_entity;
-		case X86_SIZE_80: type = x86_type_E; goto request_entity;
-		case X86_SIZE_128:
-			break;
+			size     = 2;
+			po2align = 1;
+		} else {
+			po2align = log2_floor(size);
 		}
-		panic("invalid size");
+		goto request_entity;
 	}
 	}
 	panic("invalid frame use type");
 request_entity:;
 	be_fec_env_t *env = (be_fec_env_t*)data;
-	be_load_needs_frame_entity(env, node, type);
+	be_load_needs_frame_entity(env, node, size, po2align);
 }
 
 static int determine_ebp_input(ir_node *ret)

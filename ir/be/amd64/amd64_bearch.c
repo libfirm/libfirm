@@ -378,21 +378,12 @@ static void amd64_handle_intrinsics(ir_graph *irg)
 }
 
 static void amd64_set_frame_entity(ir_node *node, ir_entity *entity,
-                                   const ir_type *type)
+                                   unsigned size, unsigned po2align)
 {
-	(void)type;
+	(void)size;
+	(void)po2align;
 	amd64_addr_attr_t *attr = get_amd64_addr_attr(node);
 	attr->addr.immediate.entity = entity;
-}
-
-static ir_type *get_type_for_insn_size(x86_insn_size_t const size)
-{
-	/* TODO: do not hardcode node names here */
-	switch (size) {
-	case X86_SIZE_128: return get_type_for_mode(amd64_mode_xmm);
-	case X86_SIZE_80:  return x86_type_E;
-	default:           return get_type_for_mode(mode_Lu);
-	}
 }
 
 /**
@@ -404,12 +395,20 @@ static void amd64_collect_frame_entity_nodes(ir_node *node, void *data)
 	if (!is_amd64_irn(node) || !amd64_loads(node))
 		return;
 
-	const amd64_addr_attr_t *attr = get_amd64_addr_attr_const(node);
+	amd64_addr_attr_t const *attr = get_amd64_addr_attr_const(node);
 	x86_imm32_t       const *imm  = &attr->addr.immediate;
 	if (imm->kind == X86_IMM_FRAMEENT && imm->entity == NULL) {
-		ir_type const *const type = get_type_for_insn_size(attr->base.size);
-		be_fec_env_t  *const env  = (be_fec_env_t*)data;
-		be_load_needs_frame_entity(env, node, type);
+		be_fec_env_t  *const env      = (be_fec_env_t*)data;
+		unsigned size;
+		unsigned po2align;
+		if (attr->base.size == X86_SIZE_80) {
+			size     = 12;
+			po2align = 2;
+		} else {
+			size     = x86_bytes_from_size(attr->base.size);
+			po2align = log2_floor(size);
+		}
+		be_load_needs_frame_entity(env, node, size, po2align);
 	}
 }
 

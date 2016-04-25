@@ -42,16 +42,17 @@ static void arm_collect_frame_entity_nodes(ir_node *node, void *data)
 	if (entity != NULL)
 		return;
 	const ir_mode *mode = attr->load_store_mode;
-	const ir_type *type = get_type_for_mode(mode);
 
 	be_fec_env_t *env = (be_fec_env_t*)data;
-	be_load_needs_frame_entity(env, node, type);
+	be_load_needs_frame_entity(env, node, get_mode_size_bytes(mode),
+							   log2_floor(get_mode_size_bytes(mode)));
 }
 
 static void arm_set_frame_entity(ir_node *node, ir_entity *entity,
-                                 const ir_type *type)
+                                 unsigned size, unsigned po2align)
 {
-	(void)type;
+	(void)size;
+	(void)po2align;
 	arm_load_store_attr_t *attr = get_arm_load_store_attr(node);
 	attr->entity = entity;
 }
