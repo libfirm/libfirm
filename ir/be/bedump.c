@@ -183,6 +183,25 @@ static void dump_req_reg_out(FILE *const F, ir_node const *const node, unsigned 
 	dump_req_reg(F, "outreq", pos, req, reg);
 }
 
+static const char *get_flag_name(arch_irn_flags_t flags)
+{
+	assert(is_po2_or_zero(flags));
+	switch (flags) {
+	case arch_irn_flags_none:            return "none";
+	case arch_irn_flag_dont_spill:       return "dont_spill";
+	case arch_irn_flag_rematerializable: return "rematerializable";
+	case arch_irn_flag_modify_flags:     return "modify_flags";
+	case arch_irn_flag_simple_jump:      return "simple_jump";
+	case arch_irn_flag_not_scheduled:    return "not_scheduled";
+	case arch_irn_flag_schedule_first:   return "schedule_first";
+	case arch_irn_flag_spill:            return "spill";
+	case arch_irn_flag_reload:           return "reload";
+	case arch_irn_flag_backend:
+		break;
+	}
+	return NULL;
+}
+
 void be_dump_reqs_and_registers(FILE *const F, ir_node const *const node)
 {
 	if (is_Proj(node)) {
@@ -228,18 +247,16 @@ void be_dump_reqs_and_registers(FILE *const F, ir_node const *const node)
 	if (flags == arch_irn_flags_none) {
 		fputs(" none", F);
 	} else {
-		if (flags & arch_irn_flag_dont_spill)
-			fputs(" unspillable", F);
-		if (flags & arch_irn_flag_rematerializable)
-			fputs(" remat", F);
-		if (flags & arch_irn_flag_modify_flags)
-			fputs(" modify_flags", F);
-		if (flags & arch_irn_flag_simple_jump)
-			fputs(" simple_jump", F);
-		if (flags & arch_irn_flag_not_scheduled)
-			fputs(" not_scheduled", F);
-		if (flags & arch_irn_flag_schedule_first)
-			fputs(" schedule_first", F);
+		arch_irn_flags_t flags_left = flags;
+		while (flags_left != 0) {
+			arch_irn_flags_t const        flag = floor_po2(flags_left);
+			char             const *const name = get_flag_name(flag);
+			if (name != NULL) {
+				fputc(' ', F);
+				fputs(name, F);
+			}
+			flags_left &= ~flag;
+		}
 	}
-	fprintf(F, " (0x%x)\n", (unsigned)flags);
+	fprintf(F, " (0x%X)\n", (unsigned)flags);
 }
