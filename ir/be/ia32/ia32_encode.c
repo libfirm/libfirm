@@ -1215,21 +1215,24 @@ static void enc_fldcw(const ir_node *node)
 static void enc_fst(const ir_node *node)
 {
 	x86_insn_size_t const size = get_ia32_attr_const(node)->size;
-	unsigned op;
 	switch (size) {
-	case X86_SIZE_32: be_emit8(0xD9); op = 2; break; // fst[p]s
-	case X86_SIZE_64: be_emit8(0xDD); op = 2; break; // fst[p]l
-	case X86_SIZE_80: be_emit8(0xDB); op = 6; break; // fstpt
+		unsigned op;
+	case X86_SIZE_32: be_emit8(0xD9); op = 2; goto enc; // fst[p]s
+	case X86_SIZE_64: be_emit8(0xDD); op = 2; goto enc; // fst[p]l
+	case X86_SIZE_80: be_emit8(0xDB); op = 6; goto enc; // fstpt
+enc:
+		if (get_ia32_x87_attr_const(node)->x87.pop)
+			++op;
+		/* There is only a pop variant for long double store. */
+		assert(size < X86_SIZE_80 || get_ia32_x87_attr_const(node)->x87.pop);
+		enc_mod_am(op, node);
+
 	case X86_SIZE_8:
 	case X86_SIZE_16:
 	case X86_SIZE_128:
-		panic("unexpected mode size");
+		break;
 	}
-	if (get_ia32_x87_attr_const(node)->x87.pop)
-		++op;
-	// There is only a pop variant for long double store.
-	assert(size < X86_SIZE_80 || get_ia32_x87_attr_const(node)->x87.pop);
-	enc_mod_am(op, node);
+	panic("unexpected mode size");
 }
 
 static void enc_fnstcw(const ir_node *node)
