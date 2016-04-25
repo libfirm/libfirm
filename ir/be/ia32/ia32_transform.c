@@ -1351,12 +1351,9 @@ static ir_node *gen_shift_binop(ir_node *node, ir_node *op1, ir_node *op2,
 		if (get_mode_size_bits(mode) != 32) {
 			if (flags & match_sign_ext) {
 				new_op1 = transform_sext(op1, node);
-			} else if (flags & match_zero_ext) {
-				new_op1 = transform_zext(op1, node);
 			} else {
-				/* match_mode_neutral not handled here because it makes no
-				 * sense for shift operations */
-				panic("ia32 code selection failed for %+F", node);
+				assert(flags & match_zero_ext);
+				new_op1 = transform_zext(op1, node);
 			}
 		} else {
 			new_op1 = be_transform_node(op1);
@@ -1366,11 +1363,10 @@ static ir_node *gen_shift_binop(ir_node *node, ir_node *op1, ir_node *op2,
 	op2 = skip_shift_amount_conv(op2);
 	ir_node *new_op2 = create_immediate_or_transform(op2, 'I');
 
-	dbg_info       *const dbgi      = get_irn_dbg_info(node);
-	ir_node        *const new_block = be_transform_nodes_block(node);
-	x86_insn_size_t const size      = x86_size_from_mode(mode);
-	ir_node        *const new_node  = func(dbgi, new_block, new_op1, new_op2,
-	                                       size);
+	dbg_info *const dbgi      = get_irn_dbg_info(node);
+	ir_node  *const new_block = be_transform_nodes_block(node);
+	ir_node  *const new_node  = func(dbgi, new_block, new_op1, new_op2,
+	                                 X86_SIZE_32);
 	SET_IA32_ORIG_NODE(new_node, node);
 	return new_node;
 }
