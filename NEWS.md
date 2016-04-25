@@ -19,6 +19,7 @@ libFirm 1.22.1 (2016-01-07)
 * Add peephole optimization 'lea c(, %i, 2), %d' -> 'lea c(%i, %i), %d' (ia32)
 * Add peephole optimization 'lea (%b), %d' -> 'mov %b, %d' (ia32)
 * Add peephole optimization 'testl $0x0000XX00, %eRx' -> 'testb $0xXX, %Rh' (ia32)
+* Generate slightly better code to load the floating-point constants `-0.0` and `-1.0` (ia32)
 * Bugfixes
 
 libFirm 1.22.0 (2015-12-31)
