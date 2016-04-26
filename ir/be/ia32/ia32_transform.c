@@ -473,10 +473,9 @@ static ir_node *gen_Address(ir_node *node)
 	adjust_relocation(&imm);
 
 	if (is_tls_entity(entity)) {
-		ir_node *tls_base = new_bd_ia32_LdTls(NULL, block);
-		ir_node *lea      = new_bd_ia32_Lea(dbgi, block, tls_base, noreg_GP,
-		                                    X86_SIZE_32);
-		ia32_attr_t *const attr = get_ia32_attr(lea);
+		ir_node     *const tls_base = new_bd_ia32_LdTls(NULL, block);
+		ir_node     *const lea      = new_bd_ia32_Lea(dbgi, block, tls_base, noreg_GP);
+		ia32_attr_t *const attr     = get_ia32_attr(lea);
 		attr->addr.variant   = X86_ADDR_BASE;
 		attr->addr.immediate = imm;
 		return lea;
@@ -1379,7 +1378,7 @@ static ir_node *gen_unop(ir_node *node, ir_node *op, construct_unop_func *func,
 static ir_node *create_lea_add(dbg_info *const dbgi, ir_node *const block,
                                ir_node *const op0, ir_node *const op1)
 {
-	ir_node *const lea = new_bd_ia32_Lea(dbgi, block, op0, op1, X86_SIZE_32);
+	ir_node *const lea = new_bd_ia32_Lea(dbgi, block, op0, op1);
 	get_ia32_attr(lea)->addr.variant = X86_ADDR_BASE_INDEX;
 	return lea;
 }
@@ -1416,7 +1415,7 @@ static ir_node *create_lea_from_address(dbg_info *dbgi, ir_node *block,
 		addr->tls_segment = false;
 	}
 
-	ir_node *res = new_bd_ia32_Lea(dbgi, block, base, idx, X86_SIZE_32);
+	ir_node *res = new_bd_ia32_Lea(dbgi, block, base, idx);
 	set_address(res, addr);
 
 	return res;
@@ -3484,8 +3483,7 @@ static ir_node *create_Conv_I2I(dbg_info *dbgi, ir_node *block, ir_node *base,
 static ir_node *create_lea_add_c(dbg_info *const dbgi, ir_node *const block,
                                  ir_node *const base, int32_t const offset)
 {
-	ir_node     *const lea  = new_bd_ia32_Lea(dbgi, block, base, noreg_GP,
-	                                          X86_SIZE_32);
+	ir_node     *const lea  = new_bd_ia32_Lea(dbgi, block, base, noreg_GP);
 	ia32_attr_t *const attr = get_ia32_attr(lea);
 	attr->addr = (x86_addr_t) {
 		.immediate = {
@@ -3671,7 +3669,7 @@ static ir_node *gen_Mux(ir_node *node)
 					continue;
 
 				case SETCC_TR_LEA: {
-					new_node = new_bd_ia32_Lea(dbgi, new_block, noreg_GP, new_node, X86_SIZE_32);
+					new_node = new_bd_ia32_Lea(dbgi, new_block, noreg_GP, new_node);
 					ia32_attr_t *const attr = get_ia32_attr(new_node);
 					attr->addr.variant          = X86_ADDR_INDEX;
 					attr->addr.log_scale        = res.steps[step].log_scale;
@@ -3680,7 +3678,7 @@ static ir_node *gen_Mux(ir_node *node)
 				}
 
 				case SETCC_TR_LEAxx: {
-					new_node = new_bd_ia32_Lea(dbgi, new_block, new_node, new_node, X86_SIZE_32);
+					new_node = new_bd_ia32_Lea(dbgi, new_block, new_node, new_node);
 					ia32_attr_t *const attr = get_ia32_attr(new_node);
 					attr->addr.variant          = X86_ADDR_BASE_INDEX;
 					attr->addr.log_scale        = res.steps[step].log_scale;
@@ -5487,8 +5485,7 @@ static ir_node *create_lea_frameaddress(dbg_info *const dbgi,
 {
 	ir_graph *const irg   = get_irn_irg(block);
 	ir_node  *const frame = get_irg_frame(irg);
-	ir_node  *const lea   = new_bd_ia32_Lea(dbgi, block, frame, noreg_GP,
-	                                        X86_SIZE_32);
+	ir_node  *const lea   = new_bd_ia32_Lea(dbgi, block, frame, noreg_GP);
 	set_ia32_frame_use(lea, IA32_FRAME_USE_AUTO);
 	ia32_attr_t *const attr = get_ia32_attr(lea);
 	attr->addr = (x86_addr_t) {

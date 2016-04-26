@@ -1078,7 +1078,7 @@ Lea => {
 	out_reqs  => [ "gp" ],
 	ins       => [ "base", "index" ],
 	outs      => [ "res" ],
-	attr      => "x86_insn_size_t size",
+	fixed     => "x86_insn_size_t const size = X86_SIZE_32;",
 	emit      => "leal %AM, %D0",
 	latency   => 2,
 },
