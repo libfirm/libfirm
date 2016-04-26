@@ -15,7 +15,6 @@
 #include <stdbool.h>
 #include <inttypes.h>
 
-#include "irargs_t.h"
 #include "irprog_t.h"
 #include "irgraph_t.h"
 #include "irnode_t.h"
@@ -255,9 +254,6 @@ void ia32_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 				}
 				fprintf(F, "\n");
 			}
-			/* dump original ir node name */
-			char const *orig = get_ia32_attr_const(n)->orig_node;
-			fprintf(F, "orig node = %s\n", orig ? orig : "n/a");
 #endif
 			break;
 	}
@@ -529,25 +525,6 @@ void set_ia32_exc_label_id(ir_node *node, ir_label_t id)
 	assert(attr->has_except_label);
 	attr->exc_label = id;
 }
-
-#ifndef NDEBUG
-static const char *ia32_get_old_node_name(const ir_node *irn)
-{
-	ir_graph       *irg  = get_irn_irg(irn);
-	struct obstack *obst = be_get_be_obst(irg);
-
-	lc_eoprintf(firm_get_arg_env(), obst, "%+F", irn);
-	obstack_1grow(obst, 0);
-	return (const char*)obstack_finish(obst);
-}
-
-void set_ia32_orig_node(ir_node *node, const ir_node *old)
-{
-	const char  *name = ia32_get_old_node_name(old);
-	ia32_attr_t *attr = get_ia32_attr(node);
-	attr->orig_node   = name;
-}
-#endif
 
 void ia32_swap_left_right(ir_node *node)
 {

@@ -142,6 +142,13 @@ static void dump_backend_info_hook(void *context, FILE *F, const ir_node *node)
 		if (lv->sets_valid)
 			be_dump_liveness_block(lv, F, node);
 	}
+
+#ifndef NDEBUG
+	if (!is_Proj(node)) {
+		char const *const orig = be_get_info(node)->orig_node;
+		fprintf(F, "orig node = %s\n", orig ? orig : "n/a");
+	}
+#endif
 }
 
 void be_info_init(void)

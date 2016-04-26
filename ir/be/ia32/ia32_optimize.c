@@ -996,7 +996,6 @@ static void peephole_ia32_Lea(ir_node *node)
 				res = make_add(node, base, imm);
 exchange:
 				arch_set_irn_register(res, oreg);
-				SET_IA32_ORIG_NODE(res, node);
 				replace(node, res);
 				return;
 			}

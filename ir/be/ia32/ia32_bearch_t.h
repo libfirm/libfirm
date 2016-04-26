@@ -16,12 +16,6 @@
 #include "x86_cconv.h"
 #include "x86_x87.h"
 
-#ifdef NDEBUG
-#define SET_IA32_ORIG_NODE(n, o) ((void)(n), (void)(o), (void)0)
-#else
-#define SET_IA32_ORIG_NODE(n, o) set_ia32_orig_node(n, o)
-#endif
-
 #define IA32_REGISTER_SIZE 4
 
 typedef struct ia32_irg_data_t {

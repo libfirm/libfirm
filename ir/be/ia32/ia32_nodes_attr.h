@@ -114,7 +114,6 @@ struct ia32_attr_t {
 	x86_addr_t        addr; /**< address mode specification */
 
 #ifndef NDEBUG
-	const char       *orig_node;      /**< holds the name of the original ir node */
 	ir_entity const  *old_frame_ent;  /**< frame entity referenced */
 	unsigned          attr_type;      /**< bitfield indicating the attribute type */
 #endif

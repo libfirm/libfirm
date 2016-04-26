@@ -183,13 +183,6 @@ ir_label_t get_ia32_exc_label_id(const ir_node *node);
  */
 void set_ia32_exc_label_id(ir_node *node, ir_label_t id);
 
-#ifndef NDEBUG
-/**
- * Sets the name of the original ir node.
- */
-void set_ia32_orig_node(ir_node *node, const ir_node *old);
-#endif
-
 /**
  * Swaps left/right input of a node (and sets ins_permuted accordingly)
  */

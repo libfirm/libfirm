@@ -38,6 +38,9 @@ struct backend_info_t {
 	const arch_register_req_t **in_reqs;
 	reg_out_info_t             *out_infos;
 	arch_irn_flags_t            flags;
+#ifndef NDEBUG
+	char const                 *orig_node;
+#endif
 };
 
 static inline backend_info_t *be_get_info(const ir_node *node)

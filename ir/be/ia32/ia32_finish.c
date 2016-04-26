@@ -151,7 +151,6 @@ carry:;
 	}
 
 	set_irn_mode(res, get_irn_mode(irn));
-	SET_IA32_ORIG_NODE(res, irn);
 
 	/* exchange the add and the sub */
 	sched_replace(irn, res);

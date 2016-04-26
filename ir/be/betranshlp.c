@@ -19,6 +19,7 @@
 #include "debug.h"
 #include "execfreq_t.h"
 #include "heights.h"
+#include "irargs_t.h"
 #include "ircons_t.h"
 #include "iredges_t.h"
 #include "irgmod.h"
@@ -42,10 +43,40 @@ typedef struct be_transform_env_t {
 
 static be_transform_env_t env;
 
+#ifndef NDEBUG
+static void be_set_orig_node_rec(ir_node *const node, char const *const name)
+{
+	if (!is_Proj(node)) {
+		char const **const orig = &be_get_info(node)->orig_node;
+		if (*orig)
+			return;
+		*orig = name;
+	}
+	foreach_irn_in(node, i, in) {
+		be_set_orig_node_rec(in, name);
+	}
+}
+
+static void be_set_orig_node(ir_node *const new_node, ir_node const *const old_node)
+{
+	if (!is_Proj(old_node)) {
+		ir_graph       *const irg  = get_irn_irg(old_node);
+		struct obstack *const obst = be_get_be_obst(irg);
+		lc_eoprintf(firm_get_arg_env(), obst, "%+F", old_node);
+		obstack_1grow(obst, 0);
+		char const *const name = (char const*)obstack_finish(obst);
+		be_set_orig_node_rec(new_node, name);
+	}
+}
+#endif
+
 void be_set_transformed_node(ir_node *old_node, ir_node *new_node)
 {
 	set_irn_link(old_node, new_node);
 	mark_irn_visited(old_node);
+#ifndef NDEBUG
+	be_set_orig_node(new_node, old_node);
+#endif
 }
 
 bool be_is_transformed(const ir_node *node)
@@ -176,10 +207,9 @@ ir_node *be_transform_node(ir_node *node)
 		new_node = (ir_node*)get_irn_link(node);
 	} else {
 #ifdef DEBUG_libfirm
-		be_set_transformed_node(node, NULL);
-#else
-		mark_irn_visited(node);
+		set_irn_link(node, NULL);
 #endif
+		mark_irn_visited(node);
 
 		ir_op             *const op        = get_irn_op(node);
 		be_transform_func *const transform = (be_transform_func*)op->ops.generic;
