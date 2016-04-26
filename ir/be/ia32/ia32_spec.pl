@@ -168,7 +168,10 @@ my $binop_mem = {
 
 my $shiftop = {
 	irn_flags => [ "modify_flags", "rematerializable" ],
-	in_reqs   => [ "gp", "ecx" ],
+	constructors => {
+		""     => { in_reqs => [ "gp",              "ecx" ] },
+		"8bit" => { in_reqs => [ "eax ebx ecx edx", "ecx" ] },
+	},
 	out_reqs  => [ "in_r0 !in_r1", "flags" ],
 	ins       => [ "val", "count" ],
 	outs      => [ "res", "flags" ],

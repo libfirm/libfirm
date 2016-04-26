@@ -1310,13 +1310,13 @@ static ir_node *skip_shift_amount_conv(ir_node *n)
 /**
  * Construct a shift/rotate binary operation, sets AM and immediate if required.
  *
- * @param op1   The first operand
- * @param op2   The second operand
- * @param func  The node constructor function
+ * @param op1    The first operand
+ * @param op2    The second operand
+ * @param func   The node constructor function
+ * @param func8  The node constructor function for an 8 bit operation
  * @return The constructed ia32 node.
  */
-static ir_node *gen_shift_binop(ir_node *node, ir_node *op1, ir_node *op2,
-                                construct_shift_func *func, match_flags_t flags)
+static ir_node *gen_shift_binop(ir_node *const node, ir_node *op1, ir_node *op2, construct_shift_func *const func, construct_shift_func *const func8, match_flags_t const flags)
 {
 	ir_mode *mode = get_irn_mode(node);
 
@@ -1329,19 +1329,22 @@ static ir_node *gen_shift_binop(ir_node *node, ir_node *op1, ir_node *op2,
 		panic("modulo shift!=32 not supported by ia32 backend");
 	}
 
+	x86_insn_size_t size = x86_size_from_mode(mode);
 	ir_node *new_op1;
 	if (flags & match_mode_neutral) {
 		op1     = be_skip_downconv(op1, true);
 		new_op1 = be_transform_node(op1);
+		size    = X86_SIZE_32;
 	} else {
 		op1 = be_skip_sameconv(op1);
-		if (get_mode_size_bits(mode) != 32) {
-			if (flags & match_sign_ext) {
-				new_op1 = transform_sext(op1);
-			} else {
-				assert(flags & match_zero_ext);
-				new_op1 = transform_zext(op1);
-			}
+		if (size == X86_SIZE_32) {
+			new_op1 = be_transform_node(op1);
+		} else if (flags & match_sign_ext) {
+			new_op1 = transform_sext(op1);
+			size    = X86_SIZE_32;
+		} else if (flags & match_zero_ext) {
+			new_op1 = transform_zext(op1);
+			size    = X86_SIZE_32;
 		} else {
 			new_op1 = be_transform_node(op1);
 		}
@@ -1350,9 +1353,10 @@ static ir_node *gen_shift_binop(ir_node *node, ir_node *op1, ir_node *op2,
 	op2 = skip_shift_amount_conv(op2);
 	ir_node *new_op2 = create_immediate_or_transform(op2, 'I');
 
-	dbg_info *const dbgi      = get_irn_dbg_info(node);
-	ir_node  *const new_block = be_transform_nodes_block(node);
-	return func(dbgi, new_block, new_op1, new_op2, X86_SIZE_32);
+	dbg_info             *const dbgi      = get_irn_dbg_info(node);
+	ir_node              *const new_block = be_transform_nodes_block(node);
+	construct_shift_func *const cons      = size == X86_SIZE_8 ? func8 : func;
+	return cons(dbgi, new_block, new_op1, new_op2, size);
 }
 
 /**
@@ -1514,12 +1518,12 @@ static ir_node *match_64bit_shift(ir_node *node)
 
 static ir_node *gen_Rol(ir_node *node, ir_node *op1, ir_node *op2)
 {
-	return gen_shift_binop(node, op1, op2, new_bd_ia32_Rol, match_immediate);
+	return gen_shift_binop(node, op1, op2, &new_bd_ia32_Rol, &new_bd_ia32_Rol_8bit, match_immediate);
 }
 
 static ir_node *gen_Ror(ir_node *node, ir_node *op1, ir_node *op2)
 {
-	return gen_shift_binop(node, op1, op2, new_bd_ia32_Ror, match_immediate);
+	return gen_shift_binop(node, op1, op2, &new_bd_ia32_Ror, &new_bd_ia32_Ror_8bit, match_immediate);
 }
 
 /**
@@ -1928,8 +1932,7 @@ static ir_node *gen_Shl(ir_node *node)
 		return create_lea_add(dbgi, new_block, new_left, new_left);
 	}
 
-	return gen_shift_binop(node, left, right, new_bd_ia32_Shl,
-	                       match_mode_neutral | match_immediate);
+	return gen_shift_binop(node, left, right, &new_bd_ia32_Shl, &new_bd_ia32_Shl_8bit, match_mode_neutral | match_immediate);
 }
 
 /**
@@ -1942,8 +1945,7 @@ static ir_node *gen_Shr(ir_node *node)
 	ir_node *left  = get_Shr_left(node);
 	ir_node *right = get_Shr_right(node);
 
-	return gen_shift_binop(node, left, right, new_bd_ia32_Shr,
-	                       match_immediate | match_zero_ext);
+	return gen_shift_binop(node, left, right, &new_bd_ia32_Shr, &new_bd_ia32_Shr_8bit, match_immediate | match_zero_ext);
 }
 
 /**
@@ -1994,8 +1996,7 @@ static ir_node *gen_Shrs(ir_node *node)
 		}
 	}
 
-	return gen_shift_binop(node, left, right, new_bd_ia32_Sar,
-	                       match_immediate | match_sign_ext);
+	return gen_shift_binop(node, left, right, &new_bd_ia32_Sar, &new_bd_ia32_Sar_8bit, match_immediate | match_sign_ext);
 }
 
 /**
