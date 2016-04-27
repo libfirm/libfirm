@@ -1321,8 +1321,7 @@ static ir_node *gen_shift_binop(ir_node *const node, ir_node *op1, ir_node *op2,
 	ir_mode *mode = get_irn_mode(node);
 
 	assert(!mode_is_float(mode));
-	assert(flags & match_immediate);
-	assert((flags & ~(match_mode_neutral | match_sign_ext | match_zero_ext | match_immediate)) == 0);
+	assert((flags & ~(match_mode_neutral | match_sign_ext | match_zero_ext)) == 0);
 
 	if (get_mode_modulo_shift(mode) != 32) {
 		/* TODO: implement special cases for non-modulo shifts */
@@ -1518,12 +1517,12 @@ static ir_node *match_64bit_shift(ir_node *node)
 
 static ir_node *gen_Rol(ir_node *node, ir_node *op1, ir_node *op2)
 {
-	return gen_shift_binop(node, op1, op2, &new_bd_ia32_Rol, &new_bd_ia32_Rol_8bit, match_immediate);
+	return gen_shift_binop(node, op1, op2, &new_bd_ia32_Rol, &new_bd_ia32_Rol_8bit, match_none);
 }
 
 static ir_node *gen_Ror(ir_node *node, ir_node *op1, ir_node *op2)
 {
-	return gen_shift_binop(node, op1, op2, &new_bd_ia32_Ror, &new_bd_ia32_Ror_8bit, match_immediate);
+	return gen_shift_binop(node, op1, op2, &new_bd_ia32_Ror, &new_bd_ia32_Ror_8bit, match_none);
 }
 
 /**
@@ -1932,7 +1931,7 @@ static ir_node *gen_Shl(ir_node *node)
 		return create_lea_add(dbgi, new_block, new_left, new_left);
 	}
 
-	return gen_shift_binop(node, left, right, &new_bd_ia32_Shl, &new_bd_ia32_Shl_8bit, match_mode_neutral | match_immediate);
+	return gen_shift_binop(node, left, right, &new_bd_ia32_Shl, &new_bd_ia32_Shl_8bit, match_mode_neutral);
 }
 
 /**
@@ -1945,7 +1944,7 @@ static ir_node *gen_Shr(ir_node *node)
 	ir_node *left  = get_Shr_left(node);
 	ir_node *right = get_Shr_right(node);
 
-	return gen_shift_binop(node, left, right, &new_bd_ia32_Shr, &new_bd_ia32_Shr_8bit, match_immediate | match_zero_ext);
+	return gen_shift_binop(node, left, right, &new_bd_ia32_Shr, &new_bd_ia32_Shr_8bit, match_zero_ext);
 }
 
 /**
@@ -1996,7 +1995,7 @@ static ir_node *gen_Shrs(ir_node *node)
 		}
 	}
 
-	return gen_shift_binop(node, left, right, &new_bd_ia32_Sar, &new_bd_ia32_Sar_8bit, match_immediate | match_sign_ext);
+	return gen_shift_binop(node, left, right, &new_bd_ia32_Sar, &new_bd_ia32_Sar_8bit, match_sign_ext);
 }
 
 /**
