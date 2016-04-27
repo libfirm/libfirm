@@ -257,8 +257,9 @@ int i_mapper_pow(ir_node *call)
 		} else if (tarval_is_minus_one(tv)) {
 			/* pow(x, -1.0) = 1/x */
 			irn = NULL;
-		} else
+		} else {
 			return 0;
+		}
 	} else {
 		return 0;
 	}

@@ -87,8 +87,9 @@ static void block_remove_bads(ir_node *block)
 static bool has_bad_input(const ir_node *node)
 {
 	foreach_irn_in(node, i, pred) {
-		if (is_Bad(pred))
+		if (is_Bad(pred)) {
 			return true;
+		}
 	}
 	return false;
 }

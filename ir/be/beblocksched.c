@@ -234,8 +234,9 @@ static void collect_egde_frequency(ir_node *block, void *data)
 			}
 		}
 
-		if (highest_edge_num >= 0)
+		if (highest_edge_num >= 0) {
 			env->edges[highest_edge_num].highest_execfreq = 1;
+		}
 	}
 }
 
