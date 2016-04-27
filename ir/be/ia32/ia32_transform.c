@@ -1318,11 +1318,9 @@ static ir_node *skip_shift_amount_conv(ir_node *n)
  */
 static ir_node *gen_shift_binop(ir_node *const node, ir_node *op1, ir_node *op2, construct_shift_func *const func, construct_shift_func *const func8, match_flags_t const flags)
 {
-	ir_mode *mode = get_irn_mode(node);
-
-	assert(!mode_is_float(mode));
 	assert((flags & ~(match_mode_neutral | match_sign_ext | match_zero_ext)) == 0);
 
+	ir_mode *const mode = get_irn_mode(node);
 	if (get_mode_modulo_shift(mode) != 32) {
 		/* TODO: implement special cases for non-modulo shifts */
 		panic("modulo shift!=32 not supported by ia32 backend");
