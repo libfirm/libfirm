@@ -181,7 +181,6 @@ static const char *get_register_name_mode(const arch_register_t *reg,
 	case X86_SIZE_64:
 	case X86_SIZE_80:
 	case X86_SIZE_128: return reg->name;
-		break;
 	}
 	panic("invalid mode");
 }
