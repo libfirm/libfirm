@@ -1147,21 +1147,24 @@ static void enc_fild(const ir_node *node)
 static void enc_fist(const ir_node *node)
 {
 	x86_insn_size_t const size = get_ia32_attr_const(node)->size;
-	unsigned op;
 	switch (size) {
-	case X86_SIZE_16: be_emit8(0xDF); op = 2; break; // fist[p]s
-	case X86_SIZE_32: be_emit8(0xDB); op = 2; break; // fist[p]l
-	case X86_SIZE_64: be_emit8(0xDF); op = 6; break; // fistpll
+		unsigned op;
+	case X86_SIZE_16: be_emit8(0xDF); op = 2; goto enc; // fist[p]s
+	case X86_SIZE_32: be_emit8(0xDB); op = 2; goto enc; // fist[p]l
+	case X86_SIZE_64: be_emit8(0xDF); op = 6; goto enc; // fistpll
+enc:
+		if (get_ia32_x87_attr_const(node)->x87.pop)
+			++op;
+		// There is only a pop variant for 64 bit integer store.
+		assert(size < X86_SIZE_64 || get_ia32_x87_attr_const(node)->x87.pop);
+		enc_mod_am(op, node);
+
 	case X86_SIZE_8:
 	case X86_SIZE_80:
 	case X86_SIZE_128:
-		panic("invalid mode size");
+		break;
 	}
-	if (get_ia32_x87_attr_const(node)->x87.pop)
-		++op;
-	// There is only a pop variant for 64 bit integer store.
-	assert(size < X86_SIZE_64 || get_ia32_x87_attr_const(node)->x87.pop);
-	enc_mod_am(op, node);
+	panic("invalid mode size");
 }
 
 static void enc_fisttp(ir_node const *const node)
