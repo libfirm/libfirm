@@ -812,8 +812,7 @@ ir_node *get_array_size(const ir_type *array)
 
 unsigned get_array_size_int(const ir_type *array)
 {
-	assert(is_Array_type(array));
-	ir_node *node = array->attr.array.size;
+	ir_node *const node = get_array_size(array);
 	return get_Const_long(node);
 }
 
