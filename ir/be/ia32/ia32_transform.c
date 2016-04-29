@@ -2397,9 +2397,6 @@ static void finish_dest_am(ir_node *const new_node, ia32_address_mode_t const *c
 	set_ia32_op_type(new_node, ia32_AddrModeD);
 
 	ir_node *const new_proj = be_new_Proj(new_node, pn_ia32_M);
-	be_set_transformed_node(get_Proj_pred(am->mem_proj), new_proj);
-	ir_node *const mem_proj = be_transform_node(am->mem_proj);
-	be_set_transformed_node(mem_proj,     new_proj);
 	be_set_transformed_node(am->mem_proj, new_proj);
 }
 
