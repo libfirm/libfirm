@@ -59,6 +59,7 @@ static const lc_opt_enum_int_items_t cpu_items[] = {
 	{ "v8",         cpu_generic    },
 	{ "v8plus",     cpu_v8plus     },
 	{ "leon",       cpu_leon       },
+	{ "leon3",      cpu_leon       },
 	{ "supersparc", cpu_supersparc },
 	{ "hypersparc", cpu_hypersparc },
 	{ NULL,         0               },
