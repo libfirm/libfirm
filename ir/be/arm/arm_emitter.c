@@ -466,12 +466,10 @@ static void emit_arm_B(const ir_node *irn)
 	arm_emitf(irn, "b%s %t", suffix, proj_true);
 
 	ir_node const *const false_target = be_emit_get_cfop_target(proj_false);
-	if (be_emit_get_prev_block(false_target) == block) {
-		if (be_options.verbose_asm) {
-			arm_emitf(irn, "/* fallthrough to %t */", proj_false);
-		}
-	} else {
+	if (be_emit_get_prev_block(false_target) != block) {
 		arm_emitf(irn, "b %t", proj_false);
+	} else if (be_options.verbose_asm) {
+		arm_emitf(irn, "/* fallthrough to %t */", proj_false);
 	}
 }
 

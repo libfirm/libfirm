@@ -778,11 +778,10 @@ static void emit_ia32_Jcc(const ir_node *node)
 	}
 
 	/* the second Proj might be a fallthrough */
-	if (fallthrough) {
-		if (be_options.verbose_asm)
-			ia32_emitf(proj_false, "/* fallthrough to %L */");
-	} else {
+	if (!fallthrough) {
 		ia32_emitf(proj_false, "jmp %L");
+	} else if (be_options.verbose_asm) {
+		ia32_emitf(proj_false, "/* fallthrough to %L */");
 	}
 }
 
@@ -852,11 +851,10 @@ static void emit_ia32_Jmp(const ir_node *node)
 	/* we have a block schedule */
 	ir_node *block  = get_nodes_block(node);
 	ir_node *target = be_emit_get_cfop_target(node);
-	if (fallthrough_possible(block, target)) {
-		if (be_options.verbose_asm)
-			ia32_emitf(node, "/* fallthrough to %L */");
-	} else {
+	if (!fallthrough_possible(block, target)) {
 		ia32_emitf(node, "jmp %L");
+	} else if (be_options.verbose_asm) {
+		ia32_emitf(node, "/* fallthrough to %L */");
 	}
 }
 

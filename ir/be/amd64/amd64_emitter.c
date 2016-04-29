@@ -740,11 +740,10 @@ static void emit_amd64_jcc(const ir_node *irn)
 	amd64_emitf(proj_true, "j%PX %L", (int)cc);
 
 	ir_node const *const false_target = be_emit_get_cfop_target(proj_false);
-	if (be_emit_get_prev_block(false_target) == block) {
-		if (be_options.verbose_asm)
-			amd64_emitf(proj_false, "/* fallthrough to %L */");
-	} else  {
+	if (be_emit_get_prev_block(false_target) != block) {
 		amd64_emitf(proj_false, "jmp %L");
+	} else if (be_options.verbose_asm) {
+		amd64_emitf(proj_false, "/* fallthrough to %L */");
 	}
 }
 
