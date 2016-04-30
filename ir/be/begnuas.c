@@ -13,12 +13,9 @@
 
 #include <assert.h>
 #include <ctype.h>
-#include <stdlib.h>
-#include <string.h>
 
 #include "be_t.h"
 #include "bearch.h"
-#include "bedwarf.h"
 #include "beemithlp.h"
 #include "beemitter.h"
 #include "bemodule.h"
@@ -27,12 +24,9 @@
 #include "execfreq.h"
 #include "iredges_t.h"
 #include "irnode_t.h"
-#include "irprog.h"
 #include "irtools.h"
 #include "lc_opts_enum.h"
-#include "obst.h"
 #include "panic.h"
-#include "tv.h"
 #include "util.h"
 
 typedef enum object_file_format_t {
@@ -52,22 +46,27 @@ static be_gas_section_t current_section = (be_gas_section_t) -1;
 static pmap            *block_numbers;
 static unsigned         next_block_nr;
 
-static void emit_section_macho(be_gas_section_t section)
+static bool is_macho(void)
 {
-	be_gas_section_t base  = section & GAS_SECTION_TYPE_MASK;
-	be_gas_section_t flags = section & ~GAS_SECTION_TYPE_MASK;
+	return be_gas_object_file_format == OBJECT_FILE_FORMAT_MACH_O;
+}
 
+static void emit_section_macho(be_gas_section_t const section)
+{
 	if (current_section == section)
 		return;
 	current_section = section;
+
+	be_gas_section_t const base  = section &  GAS_SECTION_TYPE_MASK;
+	be_gas_section_t const flags = section & ~GAS_SECTION_TYPE_MASK;
 
 	static char const *const macho_shortforms[] = {
 		[GAS_SECTION_CONSTRUCTORS] = "mod_init_func",
 		[GAS_SECTION_DESTRUCTORS]  = "mod_term_func",
 	};
 	if (flags == 0 && base < ARRAY_SIZE(macho_shortforms)) {
-		const char *const shortform = macho_shortforms[base];
-		if (shortform != NULL) {
+		char const *const shortform = macho_shortforms[base];
+		if (shortform) {
 			be_emit_irprintf("\t.%s\n", shortform);
 			be_emit_write_line();
 			return;
@@ -114,11 +113,11 @@ static void emit_section_macho(be_gas_section_t section)
 		assert(base < ARRAY_SIZE(macho_sectioninfos));
 		info = &macho_sectioninfos[base];
 	}
-	if (info->segment_section == NULL)
+	if (!info->segment_section)
 		panic("Unsupported macho section requested");
 
 	be_emit_irprintf("\t.section\t%s", info->segment_section);
-	if (info->flags != NULL)
+	if (info->flags)
 		be_emit_irprintf(",%s", info->flags);
 	be_emit_char('\n');
 	be_emit_write_line();
@@ -150,18 +149,19 @@ static const elf_sectioninfo_t elf_sectioninfos[] = {
 static void emit_section_sparc(be_gas_section_t section,
                                const ir_entity *entity)
 {
-	be_gas_section_t base  = section & GAS_SECTION_TYPE_MASK;
-	be_gas_section_t flags = section & ~GAS_SECTION_TYPE_MASK;
 	if (current_section == section && !(section & GAS_SECTION_FLAG_COMDAT))
 		return;
 	current_section = section;
+
+	be_gas_section_t const base  = section &  GAS_SECTION_TYPE_MASK;
+	be_gas_section_t const flags = section & ~GAS_SECTION_TYPE_MASK;
 
 	be_emit_cstring("\t.section\t\".");
 
 	/* Part1: section-name */
 	if (flags & GAS_SECTION_FLAG_TLS)
 		be_emit_char('t');
-	assert(base < (be_gas_section_t)ARRAY_SIZE(elf_sectioninfos));
+	assert((size_t)base < ARRAY_SIZE(elf_sectioninfos));
 	char const *const name = elf_sectioninfos[base].name;
 	assert(name != NULL);
 	be_emit_string(name);
@@ -173,44 +173,31 @@ static void emit_section_sparc(be_gas_section_t section,
 	be_emit_char('"');
 
 	/* for the simple sections we're done here */
-	if (flags == 0)
-		goto end;
+	if (flags != 0) {
+		be_emit_cstring(",#alloc");
 
-	be_emit_cstring(",#alloc");
-
-	switch (base) {
-	case GAS_SECTION_TEXT: be_emit_cstring(",#execinstr"); break;
-	case GAS_SECTION_DATA:
-	case GAS_SECTION_BSS:  be_emit_cstring(",#write"); break;
-	default:
-		/* nothing */
-		break;
-	}
-	if (flags & GAS_SECTION_FLAG_TLS) {
-		be_emit_cstring(",#tls");
+		switch (base) {
+		case GAS_SECTION_TEXT: be_emit_cstring(",#execinstr"); break;
+		case GAS_SECTION_DATA:
+		case GAS_SECTION_BSS:  be_emit_cstring(",#write"); break;
+		default:               /* nothing */ break;
+		}
+		if (flags & GAS_SECTION_FLAG_TLS)
+			be_emit_cstring(",#tls");
 	}
 
-end:
 	be_emit_char('\n');
 	be_emit_write_line();
 }
 
-static void emit_section(be_gas_section_t section, const ir_entity *entity)
+static void emit_section_elf_coff(be_gas_section_t const section, ir_entity const *const entity)
 {
-	be_gas_section_t base = section & GAS_SECTION_TYPE_MASK;
-	be_gas_section_t flags = section & ~GAS_SECTION_TYPE_MASK;
-
-	if (be_gas_object_file_format == OBJECT_FILE_FORMAT_MACH_O) {
-		emit_section_macho(section);
-		return;
-	} else if (be_gas_elf_variant == ELF_VARIANT_SPARC) {
-		emit_section_sparc(section, entity);
-		return;
-	}
-
 	if (current_section == section && !(section & GAS_SECTION_FLAG_COMDAT))
 		return;
 	current_section = section;
+
+	be_gas_section_t const base  = section &  GAS_SECTION_TYPE_MASK;
+	be_gas_section_t const flags = section & ~GAS_SECTION_TYPE_MASK;
 
 	/* shortforms */
 	if (flags == 0) {
@@ -236,7 +223,7 @@ static void emit_section(be_gas_section_t section, const ir_entity *entity)
 		}
 	}
 
-	assert(base < (be_gas_section_t) ARRAY_SIZE(elf_sectioninfos));
+	assert((size_t)base < ARRAY_SIZE(elf_sectioninfos));
 	elf_sectioninfo_t const *const info = &elf_sectioninfos[base];
 	assert(info->name != NULL);
 	be_emit_cstring("\t.section\t.");
@@ -250,19 +237,15 @@ static void emit_section(be_gas_section_t section, const ir_entity *entity)
 	}
 
 	/* section flags */
-	be_emit_cstring(",\"");
-	be_emit_string(info->flags);
+	be_emit_irprintf(",\"%s", info->flags);
 	if (flags & GAS_SECTION_FLAG_TLS)
 		be_emit_char('T');
 	if (flags & GAS_SECTION_FLAG_COMDAT)
 		be_emit_char('G');
 
 	/* section type */
-	if (be_gas_object_file_format != OBJECT_FILE_FORMAT_COFF) {
-		be_emit_cstring("\",");
-		be_emit_char(be_gas_elf_type_char);
-		be_emit_string(info->type);
-	}
+	if (be_gas_object_file_format != OBJECT_FILE_FORMAT_COFF)
+		be_emit_irprintf("\",%c%s", be_gas_elf_type_char, info->type);
 
 	if (flags & GAS_SECTION_FLAG_COMDAT) {
 		be_emit_char(',');
@@ -271,6 +254,17 @@ static void emit_section(be_gas_section_t section, const ir_entity *entity)
 	}
 	be_emit_char('\n');
 	be_emit_write_line();
+}
+
+static void emit_section(be_gas_section_t const section, ir_entity const *const entity)
+{
+	if (is_macho()) {
+		emit_section_macho(section);
+	} else if (be_gas_elf_variant == ELF_VARIANT_SPARC) {
+		emit_section_sparc(section, entity);
+	} else {
+		emit_section_elf_coff(section, entity);
+	}
 }
 
 void be_gas_emit_switch_section(be_gas_section_t section)
@@ -471,8 +465,8 @@ static be_gas_section_t determine_basic_section(const ir_entity *entity)
 
 	if (get_entity_linkage(entity) & IR_LINKAGE_CONSTANT) {
 		/* mach-o is the only one with a cstring section */
-		if (be_gas_object_file_format == OBJECT_FILE_FORMAT_MACH_O
-		    && (get_entity_linkage(entity) & IR_LINKAGE_NO_IDENTITY)
+		if (is_macho()
+		    && get_entity_linkage(entity) & IR_LINKAGE_NO_IDENTITY
 		    && entity_is_string_const(entity, true))
 			return GAS_SECTION_CSTRING;
 
@@ -532,9 +526,7 @@ static be_gas_section_t determine_section(be_main_env_t const *const main_env, i
 static void emit_symbol_directive(const char *directive,
 								  const ir_entity *entity)
 {
-	be_emit_char('\t');
-	be_emit_string(directive);
-	be_emit_char(' ');
+	be_emit_irprintf("\t%s ", directive);
 	be_gas_emit_entity(entity);
 	be_emit_char('\n');
 	be_emit_write_line();
@@ -542,13 +534,10 @@ static void emit_symbol_directive(const char *directive,
 
 static void emit_weak(const ir_entity *entity)
 {
-	const char *directive;
-	if (be_gas_object_file_format == OBJECT_FILE_FORMAT_MACH_O) {
-		directive = entity_has_definition(entity) ? ".weak_definition"
-		                                          : ".weak_reference";
-	} else {
-		directive = ".weak";
-	}
+	char const *const directive =
+		!is_macho()                   ? ".weak" :
+		entity_has_definition(entity) ? ".weak_definition" :
+		/*                           */ ".weak_reference";
 	emit_symbol_directive(directive, entity);
 }
 
@@ -603,7 +592,7 @@ static void emit_visibility(const ir_entity *entity, bool implicit_globl)
 	if (directive != NULL)
 		emit_symbol_directive(directive, entity);
 
-	if (be_gas_object_file_format == OBJECT_FILE_FORMAT_MACH_O
+	if (is_macho()
 			&& (linkage & IR_LINKAGE_HIDDEN_USER)
 			&& get_entity_ld_name(entity)[0] != '\0') {
 		emit_symbol_directive(".no_dead_strip", entity);
@@ -615,7 +604,7 @@ void be_gas_emit_function_prolog(const ir_entity *entity, unsigned po2alignment,
 {
 	be_dwarf_function_before(entity, parameter_infos);
 
-	be_gas_section_t section = determine_section(NULL, entity);
+	be_gas_section_t const section = determine_section(NULL, entity);
 	emit_section(section, entity);
 
 	/* write the begin line (makes the life easier for scripts parsing the
@@ -628,14 +617,10 @@ void be_gas_emit_function_prolog(const ir_entity *entity, unsigned po2alignment,
 	}
 
 	if (po2alignment > 0) {
-		const char *fill_byte    = "";
-		unsigned    maximum_skip = (1 << po2alignment) - 1;
 		/* gcc fills space between function with 0x90... */
-		if (be_gas_object_file_format == OBJECT_FILE_FORMAT_MACH_O) {
-			fill_byte = "0x90";
-		}
-		be_emit_cstring("\t.p2align ");
-		be_emit_irprintf("%u,%s,%u\n", po2alignment, fill_byte, maximum_skip);
+		char const *const fill_byte    = is_macho() ? "0x90" : "";
+		unsigned    const maximum_skip = (1U << po2alignment) - 1;
+		be_emit_irprintf("\t.p2align %u,%s,%u\n", po2alignment, fill_byte, maximum_skip);
 		be_emit_write_line();
 	}
 	emit_visibility(entity, false);
@@ -644,21 +629,14 @@ void be_gas_emit_function_prolog(const ir_entity *entity, unsigned po2alignment,
 	case OBJECT_FILE_FORMAT_ELF:
 		be_emit_cstring("\t.type\t");
 		be_gas_emit_entity(entity);
-		be_emit_cstring(", ");
-		be_emit_char(be_gas_elf_type_char);
-		be_emit_cstring("function\n");
+		be_emit_irprintf(", %cfunction\n", be_gas_elf_type_char);
 		be_emit_write_line();
 		break;
 	case OBJECT_FILE_FORMAT_COFF:
 		be_emit_cstring("\t.def\t");
 		be_gas_emit_entity(entity);
-		be_emit_cstring(";");
-		if (get_entity_visibility(entity) == ir_visibility_local) {
-			be_emit_cstring("\t.scl\t3;");
-		} else {
-			be_emit_cstring("\t.scl\t2;");
-		}
-		be_emit_cstring("\t.type\t32;\t.endef\n");
+		char const vis = get_entity_visibility(entity) == ir_visibility_local ? '3' : '2';
+		be_emit_irprintf(";\t.scl\t%c;\t.type\t32;\t.endef\n", vis);
 		be_emit_write_line();
 		break;
 	case OBJECT_FILE_FORMAT_MACH_O:
@@ -673,7 +651,7 @@ void be_gas_emit_function_prolog(const ir_entity *entity, unsigned po2alignment,
 	be_dwarf_function_begin();
 }
 
-void be_gas_emit_function_epilog(const ir_entity *entity)
+void be_gas_emit_function_epilog(ir_entity const *const entity)
 {
 	be_dwarf_function_end();
 
@@ -730,7 +708,7 @@ const char *be_gas_insn_label_prefix(void)
  */
 static void emit_init_expression(ir_node *const init)
 {
-	ir_mode *mode  = get_irn_mode(init);
+	ir_mode *mode = get_irn_mode(init);
 
 	switch (get_irn_opcode(init)) {
 	case iro_Conv:
@@ -762,27 +740,24 @@ static void emit_init_expression(ir_node *const init)
 		return;
 
 	case iro_Add:
-		if (!mode_is_int(mode) && !mode_is_reference(mode)) {
+		if (!mode_is_int(mode) && !mode_is_reference(mode))
 			panic("constant must be int or pointer for '+' to work");
-		}
 		emit_init_expression(get_Add_left(init));
 		be_emit_cstring(" + ");
 		emit_init_expression(get_Add_right(init));
 		return;
 
 	case iro_Sub:
-		if (!mode_is_int(mode) && !mode_is_reference(mode)) {
+		if (!mode_is_int(mode) && !mode_is_reference(mode))
 			panic("constant must be int or pointer for '-' to work");
-		}
 		emit_init_expression(get_Sub_left(init));
 		be_emit_cstring(" - ");
 		emit_init_expression(get_Sub_right(init));
 		return;
 
 	case iro_Mul:
-		if (!mode_is_int(mode) && !mode_is_reference(mode)) {
-			panic("constant must be int or pointer for '*' to work");
-		}
+		if (!mode_is_int(mode))
+			panic("constant must be int for '*' to work");
 		emit_init_expression(get_Mul_left(init));
 		be_emit_cstring(" * ");
 		emit_init_expression(get_Mul_right(init));
@@ -819,9 +794,9 @@ static void emit_string_char(int c)
 {
 	switch (c) {
 	case '"' : be_emit_cstring("\\\""); break;
-	case '\n': be_emit_cstring("\\n"); break;
-	case '\r': be_emit_cstring("\\r"); break;
-	case '\t': be_emit_cstring("\\t"); break;
+	case '\n': be_emit_cstring("\\n");  break;
+	case '\r': be_emit_cstring("\\r");  break;
+	case '\t': be_emit_cstring("\\t");  break;
 	case '\\': be_emit_cstring("\\\\"); break;
 	default  :
 		if (isprint(c))
@@ -836,8 +811,8 @@ static size_t emit_string_initializer(const ir_initializer_t *initializer)
 {
 	be_emit_cstring("\t.asciz \"");
 
-	size_t len = initializer->compound.n_initializers;
-	for (size_t i = 0; i < len-1; ++i) {
+	size_t const len = initializer->compound.n_initializers - 1;
+	for (size_t i = 0; i < len; ++i) {
 		const ir_initializer_t *sub_initializer
 			= get_initializer_compound_value(initializer, i);
 
@@ -862,11 +837,9 @@ void be_gas_emit_string_literal(const char *string)
 
 void be_gas_emit_cstring(const char *string)
 {
-	be_emit_cstring("\t.asciz \"");
-	for (const char *c = string; *c != '\0'; ++c) {
-		emit_string_char(*c);
-	}
-	be_emit_cstring("\"\n");
+	be_emit_cstring("\t.asciz ");
+	be_gas_emit_string_literal(string);
+	be_emit_char('\n');
 	be_emit_write_line();
 }
 
@@ -901,11 +874,11 @@ static size_t get_initializer_size(const ir_initializer_t *initializer,
 	case IR_INITIALIZER_COMPOUND:
 		if (is_Array_type(type)) {
 			if (is_array_variable_size(type)) {
-				ir_type   *element_type  = get_array_element_type(type);
-				unsigned   element_size  = get_type_size(element_type);
-				unsigned   element_align = get_type_alignment(element_type);
-				unsigned   misalign      = element_size % element_align;
-				size_t     n_inits
+				ir_type  *element_type  = get_array_element_type(type);
+				unsigned  element_size  = get_type_size(element_type);
+				unsigned  element_align = get_type_alignment(element_type);
+				unsigned  misalign      = element_size % element_align;
+				size_t    n_inits
 					= get_initializer_compound_n_entries(initializer);
 				element_size += element_align - misalign;
 				return n_inits * element_size;
@@ -917,7 +890,7 @@ static size_t get_initializer_size(const ir_initializer_t *initializer,
 			size_t size = get_type_size(type);
 			if (is_compound_variable_size(type)) {
 				/* last initializer has to be an array of variable size */
-				size_t l = get_initializer_compound_n_entries(initializer)-1;
+				size_t l = get_initializer_compound_n_entries(initializer) - 1;
 				const ir_initializer_t *last
 					= get_initializer_compound_value(initializer, l);
 				const ir_entity *last_ent  = get_compound_member(type, l);
@@ -966,19 +939,17 @@ static void emit_bitfield(normal_or_bitfield *vals, unsigned offset_bits,
 		tv = get_initializer_tarval_value(initializer);
 		break;
 	case IR_INITIALIZER_CONST: {
-		ir_node *node = get_initializer_const_value(initializer);
-		if (!is_Const(node)) {
+		ir_node *const node = get_initializer_const_value(initializer);
+		if (!is_Const(node))
 			panic("bitfield initializer not a Const node");
-		}
 		tv = get_Const_tarval(node);
 		break;
 	}
 	case IR_INITIALIZER_COMPOUND:
 		panic("bitfield initializer is compound");
 	}
-	if (tv == NULL || tv == tarval_bad) {
+	if (!tv || tv == tarval_bad)
 		panic("couldn't get numeric value for bitfield initializer");
-	}
 
 	int    value_len  = get_type_size(type);
 	size_t bit_offset = 0;
@@ -987,23 +958,18 @@ static void emit_bitfield(normal_or_bitfield *vals, unsigned offset_bits,
 	while (bit_offset < end) {
 		size_t src_offset      = bit_offset / BITS_PER_BYTE;
 		size_t src_offset_bits = bit_offset % BITS_PER_BYTE;
-		size_t dst_offset      = (bit_offset+offset_bits) / BITS_PER_BYTE;
-		size_t dst_offset_bits = (bit_offset+offset_bits) % BITS_PER_BYTE;
-		size_t src_bits_len    = end-bit_offset;
-		size_t dst_bits_len    = BITS_PER_BYTE-dst_offset_bits;
-		if (src_bits_len > dst_bits_len)
-			src_bits_len = dst_bits_len;
+		size_t dst_offset      = (bit_offset + offset_bits) / BITS_PER_BYTE;
+		size_t dst_offset_bits = (bit_offset + offset_bits) % BITS_PER_BYTE;
+		size_t src_bits_len    = end - bit_offset;
+		size_t dst_bits_len    = BITS_PER_BYTE - dst_offset_bits;
+		src_bits_len = MIN(dst_bits_len, src_bits_len);
 
-		normal_or_bitfield *val;
-		if (big_endian) {
-			val = &vals[value_len - dst_offset - 1];
-		} else {
-			val = &vals[dst_offset];
-		}
+		normal_or_bitfield *const val = big_endian ?
+			&vals[value_len - dst_offset - 1] :
+			&vals[dst_offset];
 
-		assert((val-glob_vals) < (ptrdiff_t) max_vals);
-		assert(val->kind == BITFIELD ||
-				(val->kind == NORMAL && val->v.value == NULL));
+		assert(val - glob_vals < (ptrdiff_t)max_vals);
+		assert(val->kind == BITFIELD || (val->kind == NORMAL && !val->v.value));
 		val->kind = BITFIELD;
 		unsigned char curr_bits = get_tarval_sub_bits(tv, src_offset);
 		curr_bits = curr_bits >> src_offset_bits;
@@ -1065,9 +1031,8 @@ static void emit_ir_initializer(normal_or_bitfield *vals,
 			size_t   skip         = get_type_size(element_type);
 			size_t   alignment    = get_type_alignment(element_type);
 			size_t   misalign     = skip % alignment;
-			if (misalign != 0) {
+			if (misalign != 0)
 				skip += alignment - misalign;
-			}
 
 			for (size_t i = 0,
 			     n = get_initializer_compound_n_entries(initializer);
@@ -1144,12 +1109,11 @@ static void emit_tarval_data(ir_type *type, ir_tarval *tv)
  */
 static void emit_node_data(ir_node *const init, ir_type *const type)
 {
-	size_t size = get_type_size(type);
+	size_t const size = get_type_size(type);
 	if (size == 12 || size == 16) {
-		if (!is_Const(init)) {
+		if (!is_Const(init))
 			panic("12/16byte initializers only support Const nodes yet");
-		}
-		ir_tarval *tv = get_Const_tarval(init);
+		ir_tarval *const tv = get_Const_tarval(init);
 		emit_tarval_data(type, tv);
 		return;
 	}
@@ -1169,28 +1133,24 @@ static void emit_initializer(ir_entity const *const entity,
 		return;
 	}
 
-	ir_type *type = get_entity_type(entity);
 	assert(size > 0);
 
-	/*
-	 * In the worst case, every initializer allocates one byte.
-	 * Moreover, initializer might be big, do not allocate on stack.
-	 */
-	normal_or_bitfield *vals = XMALLOCNZ(normal_or_bitfield, size);
+	/* In the worst case, every initializer allocates one byte.
+	 * Moreover, initializer might be big, do not allocate on stack. */
+	normal_or_bitfield *const vals = XMALLOCNZ(normal_or_bitfield, size);
 
 #ifndef NDEBUG
 	glob_vals = vals;
 	max_vals  = size;
 #endif
 
+	ir_type *const type = get_entity_type(entity);
 	emit_ir_initializer(vals, initializer, type);
 
 	/* now write values sorted */
-	for (size_t k = 0; k < size; ) {
-		int                     space     = 0;
-		normal_or_bitfield_kind kind      = vals[k].kind;
-		int                     elem_size;
-		switch (kind) {
+	for (size_t k = 0; k < size;) {
+		int elem_size;
+		switch (vals[k].kind) {
 		case NORMAL:
 			if (vals[k].v.value != NULL) {
 				emit_node_data(vals[k].v.value, vals[k].type);
@@ -1216,6 +1176,7 @@ static void emit_initializer(ir_entity const *const entity,
 		}
 
 		k += elem_size;
+		int space = 0;
 		while (k < size && vals[k].kind == NORMAL && vals[k].v.value == NULL) {
 			++space;
 			++k;
@@ -1254,7 +1215,7 @@ static void emit_common(const ir_entity *entity, unsigned long size,
 	switch (be_gas_object_file_format) {
 	case OBJECT_FILE_FORMAT_MACH_O:
 		assert(!is_local);
-		be_emit_string("\t.comm ");
+		be_emit_cstring("\t.comm ");
 		be_gas_emit_entity(entity);
 		be_emit_irprintf(",%lu,%u\n", size, log2_floor(alignment));
 		be_emit_write_line();
@@ -1268,7 +1229,7 @@ static void emit_common(const ir_entity *entity, unsigned long size,
 		be_emit_write_line();
 		return;
 	case OBJECT_FILE_FORMAT_COFF:
-		be_emit_cstring(is_local ? "\t.lcomm " : "\t.comm ");
+		be_emit_string(is_local ? "\t.lcomm " : "\t.comm ");
 		be_gas_emit_entity(entity);
 		be_emit_irprintf(",%lu # %u\n", size, alignment);
 		be_emit_write_line();
@@ -1284,8 +1245,7 @@ static void emit_zerofill(const ir_entity *entity, const char *section_segment,
 	be_emit_string(section_segment);
 	be_emit_char(',');
 	be_gas_emit_entity(entity);
-	unsigned const alignment
-		= get_effective_entity_alignment(entity);
+	unsigned const alignment = get_effective_entity_alignment(entity);
 	be_emit_irprintf(",%lu,%u\n", size, log2_floor(alignment));
 	be_emit_write_line();
 }
@@ -1293,7 +1253,7 @@ static void emit_zerofill(const ir_entity *entity, const char *section_segment,
 static void emit_indirect_symbol(const ir_entity *entity,
                                  be_gas_section_t section)
 {
-	if (be_gas_object_file_format != OBJECT_FILE_FORMAT_MACH_O)
+	if (!is_macho())
 		panic("indirect_symbol entities only supported for ELF");
 
 	be_gas_emit_entity(entity);
@@ -1326,12 +1286,12 @@ static void emit_alias(const ir_entity *entity)
 
 char const *be_gas_get_private_prefix(void)
 {
-	return be_gas_object_file_format == OBJECT_FILE_FORMAT_MACH_O ? "L" : ".L";
+	return is_macho() ? "L" : ".L";
 }
 
 static bool check_needs_quotes(char const *const s)
 {
-	if (be_gas_object_file_format == OBJECT_FILE_FORMAT_MACH_O) {
+	if (is_macho()) {
 		for (char const *i = s; *i != '\0'; ++i) {
 			if ((unsigned char)*i >= 128)
 				return true;
@@ -1352,9 +1312,8 @@ void be_gas_emit_entity(const ir_entity *entity)
 	bool        const needs_quotes = check_needs_quotes(name);
 	if (needs_quotes)
 		be_emit_char('"');
-	if (get_entity_visibility(entity) == ir_visibility_private) {
+	if (get_entity_visibility(entity) == ir_visibility_private)
 		be_emit_string(be_gas_get_private_prefix());
-	}
 	be_emit_string(name);
 	if (needs_quotes)
 		be_emit_char('"');
@@ -1370,9 +1329,9 @@ void be_gas_emit_block_name(const ir_node *block)
 		int   nr;
 		if (nr_val == NULL) {
 			nr = next_block_nr++;
-			pmap_insert(block_numbers, block, INT_TO_PTR(nr+1));
+			pmap_insert(block_numbers, block, INT_TO_PTR(nr + 1));
 		} else {
-			nr = PTR_TO_INT(nr_val)-1;
+			nr = PTR_TO_INT(nr_val) - 1;
 		}
 		be_emit_irprintf("%s%d", be_gas_get_private_prefix(), nr);
 	}
@@ -1450,7 +1409,7 @@ static void emit_global(be_main_env_t const *const main_env,
 	if (size == 0)
 		size = 1;
 
-	if (((linkage & IR_LINKAGE_MERGE) || zero_initializer)
+	if ((linkage & IR_LINKAGE_MERGE || zero_initializer)
 	  && !(section & GAS_SECTION_FLAG_TLS)) {
 		switch (visibility) {
 		case ir_visibility_external:
@@ -1460,8 +1419,7 @@ static void emit_global(be_main_env_t const *const main_env,
 				emit_visibility(entity, true);
 				emit_common(entity, size, false);
 				return;
-			} else if (be_gas_object_file_format == OBJECT_FILE_FORMAT_MACH_O
-			       && !(linkage & IR_LINKAGE_CONSTANT)) {
+			} else if (is_macho() && !(linkage & IR_LINKAGE_CONSTANT)) {
 				emit_visibility(entity, false);
 				emit_zerofill(entity, "__DATA,__common", size);
 				return;
@@ -1470,12 +1428,14 @@ static void emit_global(be_main_env_t const *const main_env,
 		case ir_visibility_local:
 		case ir_visibility_private:
 			if (!(linkage & IR_LINKAGE_CONSTANT)) {
-				if (be_gas_object_file_format == OBJECT_FILE_FORMAT_ELF
-				 || be_gas_object_file_format == OBJECT_FILE_FORMAT_COFF) {
+				switch (be_gas_object_file_format) {
+				case OBJECT_FILE_FORMAT_ELF:
+				case OBJECT_FILE_FORMAT_COFF:
 					emit_visibility(entity, true);
 					emit_common(entity, size, true);
 					return;
-				} else if (be_gas_object_file_format == OBJECT_FILE_FORMAT_MACH_O) {
+
+				case OBJECT_FILE_FORMAT_MACH_O:
 					emit_visibility(entity, false);
 					emit_zerofill(entity, "__DATA,__bss", size);
 					return;
@@ -1501,16 +1461,13 @@ static void emit_global(be_main_env_t const *const main_env,
 	unsigned alignment = get_effective_entity_alignment(entity);
 	if (!is_po2_or_zero(alignment))
 		panic("alignment not a power of 2");
-	if (alignment > 1) {
+	if (alignment > 1)
 		emit_align(alignment);
-	}
 	if (be_gas_object_file_format == OBJECT_FILE_FORMAT_ELF
 		&& be_gas_emit_types && visibility != ir_visibility_private) {
 		be_emit_cstring("\t.type\t");
 		be_gas_emit_entity(entity);
-		be_emit_cstring(", ");
-		be_emit_char(be_gas_elf_type_char);
-		be_emit_cstring("object\n\t.size\t");
+		be_emit_irprintf(", %cobject\n\t.size\t", be_gas_elf_type_char);
 		be_gas_emit_entity(entity);
 		ir_type *const type = get_entity_type(entity);
 		be_emit_irprintf(", %u\n", get_type_size(type));
@@ -1523,14 +1480,12 @@ static void emit_global(be_main_env_t const *const main_env,
 		be_emit_write_line();
 	}
 
-	if (zero_initializer) {
-		if (size > 0) {
-			/* use .space for stuff in the bss segment */
-			be_emit_irprintf("\t.space %u, 0\n", size);
-			be_emit_write_line();
-		}
-	} else {
+	if (!zero_initializer) {
 		emit_initializer(entity, size);
+	} else if (size > 0) {
+		/* use .space for stuff in the bss segment */
+		be_emit_irprintf("\t.space %u, 0\n", size);
+		be_emit_write_line();
 	}
 }
 
@@ -1542,17 +1497,14 @@ static void emit_global(be_main_env_t const *const main_env,
 static void be_gas_emit_globals(ir_type *const gt, be_main_env_t const *const main_env)
 {
 	for (size_t i = 0, n = get_compound_n_members(gt); i < n; i++) {
-		ir_entity *ent = get_compound_member(gt, i);
-
-		if (get_entity_linkage(ent) & IR_LINKAGE_NO_CODEGEN)
-			continue;
-
-		emit_global(main_env, ent);
+		ir_entity *const ent = get_compound_member(gt, i);
+		if (!(get_entity_linkage(ent) & IR_LINKAGE_NO_CODEGEN))
+			emit_global(main_env, ent);
 	}
 }
 
 /* Generate all entities. */
-static void emit_global_decls(const be_main_env_t *main_env)
+static void emit_global_decls(be_main_env_t const *const main_env)
 {
 	be_gas_emit_globals(get_glob_type(), main_env);
 	be_gas_emit_globals(get_tls_type(), main_env);
@@ -1569,7 +1521,7 @@ static void emit_global_decls(const be_main_env_t *main_env)
 	 * object which we want to address as a whole. Firm code should be fine
 	 * with this.
 	 */
-	if (be_gas_object_file_format == OBJECT_FILE_FORMAT_MACH_O) {
+	if (is_macho()) {
 		be_emit_cstring("\t.subsections_via_symbols\n");
 		be_emit_write_line();
 	}
@@ -1596,15 +1548,12 @@ void be_emit_jump_table(const ir_node *node, const ir_switch_table *table,
 		const ir_switch_table_entry *entry
 			= ir_switch_table_get_entry_const(table, e);
 		ir_tarval *max = entry->max;
-		unsigned long val;
 		if (entry->pn == 0)
 			continue;
 		if (!tarval_is_long(max))
 			panic("switch case overflow (%+F)", node);
-		val = (unsigned long) get_tarval_long(max);
-		if (val > length) {
-			length = val;
-		}
+		unsigned long const val = (unsigned long)get_tarval_long(max);
+		length = MAX(length, val);
 	}
 
 	/* the 16000 isn't a real limit of the architecture. But should protect us
@@ -1627,24 +1576,21 @@ void be_emit_jump_table(const ir_node *node, const ir_switch_table *table,
 			unsigned long val = (unsigned long)get_tarval_long(max);
 			labels[val] = target;
 		} else {
-			unsigned long min_val;
-			unsigned long max_val;
-			unsigned long i;
 			if (!tarval_is_long(min))
 				panic("switch case overflow (%+F)", node);
-			min_val = (unsigned long)get_tarval_long(min);
-			max_val = (unsigned long)get_tarval_long(max);
+			unsigned long const min_val = (unsigned long)get_tarval_long(min);
+			unsigned long const max_val = (unsigned long)get_tarval_long(max);
 			assert(min_val <= max_val);
-			for (i = min_val; i <= max_val; ++i) {
+			for (unsigned long i = min_val; i <= max_val; ++i) {
 				labels[i] = target;
 			}
 		}
 	}
 
 	/* emit table */
-	unsigned pointer_size = get_mode_size_bytes(entry_mode);
-	if (entity != NULL) {
-		if (be_gas_object_file_format != OBJECT_FILE_FORMAT_MACH_O)
+	unsigned const pointer_size = get_mode_size_bytes(entry_mode);
+	if (entity) {
+		if (!is_macho())
 			be_gas_emit_switch_section(GAS_SECTION_RODATA);
 		be_emit_irprintf("\t.align %u\n", pointer_size);
 		be_gas_emit_entity(entity);
@@ -1652,7 +1598,7 @@ void be_emit_jump_table(const ir_node *node, const ir_switch_table *table,
 	}
 
 	for (unsigned long i = 0; i < length; ++i) {
-		const ir_node *target = labels[i];
+		ir_node const *target = labels[i];
 		if (target == NULL)
 			target = targets[0];
 		emit_size_type(pointer_size);
@@ -1661,8 +1607,7 @@ void be_emit_jump_table(const ir_node *node, const ir_switch_table *table,
 		be_emit_write_line();
 	}
 
-	if (entity != NULL
-	 && be_gas_object_file_format != OBJECT_FILE_FORMAT_MACH_O)
+	if (entity && !is_macho())
 		be_gas_emit_switch_section(GAS_SECTION_TEXT);
 
 	free(labels);
@@ -1741,8 +1686,7 @@ void be_init_gas(void)
 		(int*)&be_gas_object_file_format, objectformat_items
 	};
 	static const lc_opt_table_entry_t be_gas_options[] = {
-		LC_OPT_ENT_ENUM_INT("objectformat", "object file format",
-							&format_var),
+		LC_OPT_ENT_ENUM_INT("objectformat", "object file format", &format_var),
 		LC_OPT_LAST
 	};
 
