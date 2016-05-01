@@ -135,13 +135,11 @@ static void add_constructor(ir_entity *method)
 	ir_type   *const ptr_type     = new_type_pointer(method_type);
 	ir_type   *const constructors = get_segment_type(IR_SEGMENT_CONSTRUCTORS);
 	ident     *const ide          = id_unique("constructor_ptr.%u");
-	ir_entity *const ptr          = new_entity(constructors, ide, ptr_type);
+	ir_entity *const ptr          = new_global_entity(constructors, ide, ptr_type, ir_visibility_private, IR_LINKAGE_CONSTANT | IR_LINKAGE_HIDDEN_USER);
 	ir_graph  *const irg          = get_const_code_irg();
 	ir_node   *const val          = new_r_Address(irg, method);
 
 	set_entity_ld_ident(ptr, NEW_IDENT(""));
-	set_entity_linkage(ptr, IR_LINKAGE_CONSTANT | IR_LINKAGE_HIDDEN_USER);
-	set_entity_visibility(ptr, ir_visibility_private);
 	set_atomic_ent_value(ptr, val);
 }
 
@@ -176,9 +174,10 @@ static ir_entity *get_init_firmprof_ref(void)
  */
 static ir_graph *gen_initializer_irg(ir_entity *ent_filename, ir_entity *bblock_counts, int n_blocks)
 {
-	ident     *const name = new_id_from_str("__firmprof_initializer");
-	ir_entity *const ent  = new_entity(get_glob_type(), name, new_type_method(0, 0));
-	set_entity_visibility(ent, ir_visibility_local);
+	ident     *const name  = new_id_from_str("__firmprof_initializer");
+	ir_type   *const owner = get_glob_type();
+	ir_type   *const type  = new_type_method(0, 0);
+	ir_entity *const ent   = new_global_entity(owner, name, type, ir_visibility_local, IR_LINKAGE_DEFAULT);
 
 	ir_graph *const irg              = new_ir_graph(ent, 0);
 	ir_type  *const empty_frame_type = get_irg_frame_type(irg);
@@ -360,10 +359,8 @@ static ir_entity *new_array_entity(ident *name, int size)
 	set_type_size(array_type, size * get_mode_size_bytes(mode_Iu));
 	set_type_state(array_type, layout_fixed);
 
-	ir_entity *const result = new_entity(get_glob_type(), name, array_type);
-	set_entity_visibility(result, ir_visibility_private);
-
-	return result;
+	ir_type *const owner = get_glob_type();
+	return new_global_entity(owner, name, array_type, ir_visibility_private, IR_LINKAGE_DEFAULT);
 }
 
 /**
@@ -381,9 +378,8 @@ static ir_entity *new_static_string_entity(ident *name, const char *string)
 	set_type_size(string_type, length);
 	set_type_state(string_type, layout_fixed);
 
-	ir_entity *const result = new_entity(get_glob_type(), name, string_type);
-	set_entity_visibility(result, ir_visibility_private);
-	set_entity_linkage(result, IR_LINKAGE_CONSTANT);
+	ir_type   *const owner  = get_glob_type();
+	ir_entity *const result = new_global_entity(owner, name, string_type, ir_visibility_private, IR_LINKAGE_CONSTANT);
 
 	/* There seems to be no simpler way to do this. Or at least, cparser
 	 * does exactly the same thing... */
