@@ -49,7 +49,5 @@ ir_entity *create_compilerlib_entity(ident *id, ir_type *mt)
 	/* Create a new one */
 	ir_type *glob = get_glob_type();
 	entity = new_entity(glob, ld_name, mt);
-	set_entity_ld_ident(entity, ld_name);
-	set_entity_visibility(entity, ir_visibility_external);
 	return entity;
 }

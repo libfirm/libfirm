@@ -914,8 +914,6 @@ void ir_init_entity(ir_prog *irp)
 	ident   *const id    = new_id_from_str(UNKNOWN_ENTITY_NAME);
 	ir_type *const utype = get_unknown_type();
 	irp->unknown_entity = intern_new_entity(irp->dummy_owner, IR_ENTITY_UNKNOWN,
-	                                        id, utype, ir_visibility_private);
-	set_entity_visibility(irp->unknown_entity, ir_visibility_external);
-	set_entity_ld_ident(irp->unknown_entity, id);
+	                                        id, utype, ir_visibility_external);
 	hook_new_entity(irp->unknown_entity);
 }

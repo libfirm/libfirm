@@ -162,10 +162,7 @@ static ir_entity *get_init_firmprof_ref(void)
 	set_method_param_type(init_type, 1, uintptr);
 	set_method_param_type(init_type, 2, uint);
 
-	ir_entity *const result = new_entity(get_glob_type(), init_name, init_type);
-	set_entity_visibility(result, ir_visibility_external);
-
-	return result;
+	return new_entity(get_glob_type(), init_name, init_type);
 }
 
 /**
@@ -182,7 +179,6 @@ static ir_graph *gen_initializer_irg(ir_entity *ent_filename, ir_entity *bblock_
 	ident     *const name = new_id_from_str("__firmprof_initializer");
 	ir_entity *const ent  = new_entity(get_glob_type(), name, new_type_method(0, 0));
 	set_entity_visibility(ent, ir_visibility_local);
-	set_entity_ld_ident(ent, name);
 
 	ir_graph *const irg              = new_ir_graph(ent, 0);
 	ir_type  *const empty_frame_type = get_irg_frame_type(irg);
