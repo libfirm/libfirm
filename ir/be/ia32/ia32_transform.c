@@ -1069,30 +1069,26 @@ static void match_arguments(ia32_address_mode_t *am, ir_node *block,
 			return;
 		}
 
+		ir_node            *(*transform)(ir_node*);
 		ir_mode        *const op2_mode = get_irn_mode(op2);
 		x86_insn_size_t       size     = x86_size_from_mode(op2_mode);
 		if (size != X86_SIZE_32
 			&& (flags & (match_mode_neutral | match_upconv | match_zero_ext))) {
 			if (flags & match_upconv) {
-				new_op1 = (op1 == NULL ? NULL : transform_upconv(op1));
-				if (new_op2 == NULL)
-					new_op2 = transform_upconv(op2);
+				transform = &transform_upconv;
 			} else if (flags & match_zero_ext) {
-				new_op1 = (op1 == NULL ? NULL : transform_zext(op1));
-				if (new_op2 == NULL)
-					new_op2 = transform_zext(op2);
+				transform = &transform_zext;
 			} else {
-				new_op1 = (op1 == NULL ? NULL : be_transform_node(op1));
-				if (new_op2 == NULL)
-					new_op2 = be_transform_node(op2);
+				transform = &be_transform_node;
 				assert(flags & match_mode_neutral);
 			}
 			size = X86_SIZE_32;
 		} else {
-			new_op1 = (op1 == NULL ? NULL : be_transform_node(op1));
-			if (new_op2 == NULL)
-				new_op2 = be_transform_node(op2);
+			transform = &be_transform_node;
 		}
+		new_op1 = op1 ? transform(op1) : NULL;
+		if (!new_op2)
+			new_op2 = transform(op2);
 		am->size = size;
 	}
 
