@@ -1075,8 +1075,8 @@ static void match_arguments(ia32_address_mode_t *am, ir_node *block,
 		if (size == X86_SIZE_32 || flags & match_mode_neutral) {
 			transform = &be_transform_node;
 			size      = X86_SIZE_32;
-		} else if (flags & match_upconv) {
-			transform = &transform_upconv;
+		} else if (flags & match_sign_ext) {
+			transform = &transform_sext;
 			size      = X86_SIZE_32;
 		} else if (flags & match_zero_ext) {
 			transform = &transform_zext;
@@ -1841,7 +1841,9 @@ static ir_node *create_Div(ir_node *const node, ir_node *const op1, ir_node *con
 	ia32_address_mode_t  am;
 	ir_node       *const mem_pin_skip = skip_Pin(mem);
 	ir_node       *const old_block    = get_nodes_block(node);
-	match_arguments(&am, old_block, op1, op2, mem_pin_skip, match_am | match_upconv);
+	bool           const is_signed    = mode_is_signed(mode);
+	match_flags_t  const flags        = match_am | (is_signed ? match_sign_ext : match_zero_ext);
+	match_arguments(&am, old_block, op1, op2, mem_pin_skip, flags);
 
 	/* Beware: We don't need a Sync, if the memory predecessor of the Div node
 	 * is the memory of the consumed address. We can have only the second op as
@@ -1853,7 +1855,7 @@ static ir_node *create_Div(ir_node *const node, ir_node *const op1, ir_node *con
 	dbg_info *const dbgi = get_irn_dbg_info(node);
 	ir_node        *ext;
 	ir_node      *(*cons)(dbg_info *db, ir_node *block, ir_node *base, ir_node *index, ir_node *mem, ir_node *op1, ir_node *op2, ir_node *ext, x86_insn_size_t size);
-	if (mode_is_signed(mode)) {
+	if (is_signed) {
 		ext  = create_sex_32_64(dbgi, block, am.new_op1);
 		cons = new_bd_ia32_IDiv;
 	} else {
@@ -3817,7 +3819,7 @@ static void store_gp(dbg_info *dbgi, ia32_address_mode_t *am, ir_node *block,
 			return;
 	} else if (possible_int_mode_for_fp(mode)) {
 		match_arguments(am, block, NULL, value, NULL,
-						match_am | match_try_am | match_upconv | match_16bit_am);
+						match_am | match_try_am | match_sign_ext | match_16bit_am);
 		if (am->op_type == ia32_AddrModeS)
 			return;
 	}

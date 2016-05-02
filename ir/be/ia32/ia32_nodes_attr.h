@@ -49,13 +49,9 @@ typedef enum match_flags_t {
 	/** for 8/16 bit modes, zero_ext operations can be emulated by their
 	 * 32bit equivalents, however the upper bits must be zero extended. */
 	match_zero_ext          = 1 << 8,
-	/** for 8/16 bit modes, upconv operations can be emulated by their
-	 * 32bit equivalents, however the upper bits have to sign/zero extended
-	 * based on the operations mode. */
-	match_upconv            = 1 << 9,
-	match_try_am            = 1 << 10, /**< only try to produce AM node, don't
+	match_try_am            = 1 << 9, /**< only try to produce AM node, don't
 	                                       do anything if AM isn't possible */
-	match_two_users         = 1 << 11,/**< the instruction uses a load two times ... */
+	match_two_users         = 1 << 10,/**< the instruction uses a load two times ... */
 } match_flags_t;
 ENUM_BITSET(match_flags_t)
 
