@@ -954,16 +954,6 @@ static ir_node *transform_zext(ir_node *const node)
 	return create_I2I_Conv(mode, dbgi, block, node);
 }
 
-static ir_node *transform_upconv(ir_node *const node)
-{
-	ir_mode *mode = get_irn_mode(node);
-	if (mode_is_signed(mode)) {
-		return transform_sext(node);
-	} else {
-		return transform_zext(node);
-	}
-}
-
 static ir_node *get_noreg(ir_graph *const irg, ir_mode *const mode)
 {
 	if (!mode_is_float(mode)) {
@@ -2879,10 +2869,10 @@ static ir_node *gen_Switch(ir_node *node)
 	ir_mode  *sel_mode = get_irn_mode(sel);
 
 	assert(get_mode_size_bits(sel_mode) <= 32);
-	assert(!mode_is_float(sel_mode));
+	assert(!mode_is_signed(sel_mode));
 	sel = be_skip_sameconv(sel);
 	if (get_mode_size_bits(sel_mode) < 32)
-		new_sel = transform_upconv(sel);
+		new_sel = transform_zext(sel);
 
 	ir_type   *const utype = get_unknown_type();
 	ir_entity *const entity
