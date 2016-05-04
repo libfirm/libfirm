@@ -1201,7 +1201,7 @@ static void optimize_conv_conv(ir_node *node)
 	if (node_attr->size == pred_attr->size
 	 && node_attr->sign_extend == pred_attr->sign_extend) {
 		result_conv = pred_proj;
-	} else if (node_attr->size < pred_attr->size) {
+	} else if (node_attr->size <= pred_attr->size) {
 		/* if 2nd conv is smaller then first conv, then we can always take the
 		 * 2nd conv */
 		if (get_irn_n_edges(pred_proj) == 1) {
