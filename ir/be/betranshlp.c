@@ -896,15 +896,15 @@ bool be_match_immediate(ir_node const *const node, ir_tarval **const tarval_out,
 			l = r;
 			r = tmp;
 		}
-		if (!is_Const(l))
+		if (!is_Const(r))
 			return false;
-		cnst = l;
-		if (is_Address(r)) {
-			entity     = get_Address_entity(node);
+		cnst = r;
+		if (is_Address(l)) {
+			entity     = get_Address_entity(l);
 			reloc_kind = 0;
-		} else if (be_is_Relocation(r)) {
-			entity     = get_Address_entity(node);
-			reloc_kind = be_get_Relocation_kind(node);
+		} else if (be_is_Relocation(l)) {
+			entity     = be_get_Relocation_entity(l);
+			reloc_kind = be_get_Relocation_kind(l);
 		} else {
 			return false;
 		}
