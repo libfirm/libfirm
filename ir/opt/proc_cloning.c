@@ -435,9 +435,6 @@ static ir_entity *clone_method(const quadruple_t *q)
 	/* a cloned entity is always local */
 	set_entity_visibility(new_entity, ir_visibility_local);
 
-	/* set a ld name here: Should we mangle this ? */
-	set_entity_ld_ident(new_entity, get_entity_ident(new_entity));
-
 	/* set a new type here. */
 	change_entity_type(q, new_entity);
 
