@@ -360,6 +360,7 @@ static ir_node *get_irg_arg(ir_graph *irg, size_t pos)
 static void create_clone_proc_irg(ir_entity *ent, const quadruple_t *q)
 {
 	ir_graph *const method_irg = get_entity_linktime_irg(ent);
+	ir_reserve_resources(method_irg, IR_RESOURCE_IRN_LINK);
 
 	/* We create the skeleton of the clone irg.*/
 	ir_graph *const clone_irg  = new_ir_graph(ent, 0);
@@ -380,6 +381,7 @@ static void create_clone_proc_irg(ir_entity *ent, const quadruple_t *q)
 
 	/* The "cloned" graph must be matured. */
 	irg_finalize_cons(clone_irg);
+	ir_free_resources(method_irg, IR_RESOURCE_IRN_LINK);
 }
 
 /**
