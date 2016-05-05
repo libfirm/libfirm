@@ -197,11 +197,12 @@ ir_entity *clone_entity(ir_entity const *const old, ident *const name,
 	res->overwrites    = NULL;
 	res->overwrittenby = NULL;
 
-	res->nr    = get_irp_new_node_nr();
-	res->name  = name;
-	res->visit = 0;
-	res->usage = ir_usage_unknown;
-	res->owner = owner;
+	res->nr      = get_irp_new_node_nr();
+	res->name    = name;
+	res->ld_name = name;
+	res->visit   = 0;
+	res->usage   = ir_usage_unknown;
+	res->owner   = owner;
 	add_compound_member(owner, res);
 	hook_new_entity(res);
 	return res;
