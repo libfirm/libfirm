@@ -66,6 +66,7 @@ be_options_t be_options = {
 	.do_verify            = true,
 	.ilp_solver           = "",
 	.verbose_asm          = true,
+	.autotransform        = false,
 	.pic_style            = BE_PIC_NONE,
 };
 
@@ -109,6 +110,7 @@ static const lc_opt_table_entry_t be_main_options[] = {
 	LC_OPT_ENT_BOOL     ("profilegenerate", "instrument the code for execution count profiling", &be_options.opt_profile_generate),
 	LC_OPT_ENT_BOOL     ("profileuse",      "use existing profile data",                         &be_options.opt_profile_use),
 	LC_OPT_ENT_BOOL     ("verboseasm", "enable verbose assembler output",                        &be_options.verbose_asm),
+	LC_OPT_ENT_BOOL     ("autotransform", "enable autotransformer if the backend supports it",   &be_options.autotransform),
 
 	LC_OPT_ENT_STR("ilp.solver", "the ilp solver name", &be_options.ilp_solver),
 	LC_OPT_LAST

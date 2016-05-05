@@ -50,6 +50,7 @@ struct be_options_t {
 	bool do_verify;            /**< backend verify option */
 	char ilp_solver[128];      /**< the ilp solver name */
 	bool verbose_asm;          /**< dump verbose assembler */
+	bool autotransform;        /**< use autotransformer */
 	be_pic_style_t pic_style;
 };
 extern be_options_t be_options;

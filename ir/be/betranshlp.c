@@ -88,7 +88,9 @@ bool be_is_transformed(const ir_node *node)
 
 void be_set_autotransform(ir_node *(*at)(ir_node *))
 {
-	autotransform = at;
+	if (be_options.autotransform) {
+		autotransform = at;
+	}
 }
 
 ir_node *be_transform_phi(ir_node *node, const arch_register_req_t *req)
@@ -222,6 +224,8 @@ ir_node *be_transform_node(ir_node *node)
 			new_node = autotransform(node);
 			if (new_node != NULL) {
 				ir_printf("%+F autotransformed to %+F\n", node, new_node);
+			} else {
+				ir_printf("\t%+F not autotransformed\n", node);
 			}
 		}
 
