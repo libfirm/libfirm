@@ -109,10 +109,16 @@ static void peephole_amd64_mov_imm(ir_node *const node)
 	}
 }
 
+static void peephole_be_IncSP(ir_node *const node)
+{
+	be_peephole_IncSP_IncSP(node);
+}
+
 void amd64_peephole_optimization(ir_graph *const irg)
 {
 	ir_clear_opcodes_generic_func();
 	register_peephole_optimization(op_amd64_lea,     peephole_amd64_lea);
 	register_peephole_optimization(op_amd64_mov_imm, peephole_amd64_mov_imm);
+	register_peephole_optimization(op_be_IncSP,      peephole_be_IncSP);
 	be_peephole_opt(irg);
 }
