@@ -180,14 +180,14 @@ clean:
 PREFIX ?= /usr/local
 INSTALL ?= install
 INSTALLPREFIX = $(DESTDIR)$(PREFIX)
-install: $(libfirm_a)
+install: $(libfirm_a) $(libfirm_dll)
 	$(INSTALL) -d "$(INSTALLPREFIX)/include/libfirm"
 	$(INSTALL) -m0644 include/libfirm/*.h "$(INSTALLPREFIX)/include/libfirm"
 	$(INSTALL) -m0644 "$(gendir)"/include/libfirm/*.h "$(INSTALLPREFIX)/include/libfirm"
 	$(INSTALL) -d "$(INSTALLPREFIX)/include/libfirm/adt"
 	$(INSTALL) -m0644 include/libfirm/adt/*.h "$(INSTALLPREFIX)/include/libfirm/adt"
 	$(INSTALL) -d "$(INSTALLPREFIX)/lib"
-	$(INSTALL) -m0644 $< "$(INSTALLPREFIX)/lib"
+	$(INSTALL) -m0644 $^ "$(INSTALLPREFIX)/lib"
 
 # Ensure all output directories are created
 UNUSED1 := $(shell mkdir -p $(libfirm_BUILDDIRS))
