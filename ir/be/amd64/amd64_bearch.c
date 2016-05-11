@@ -574,7 +574,7 @@ static void amd64_sp_sim(ir_node *const node, stack_pointer_state_t *state)
 }
 
 /**
- * Called immediatly before emit phase.
+ * Called immediately before emit phase.
  */
 static void amd64_finish_and_emit(ir_graph *irg)
 {
