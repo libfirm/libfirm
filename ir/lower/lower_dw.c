@@ -1428,7 +1428,7 @@ transform:
 	 * 1 double store+2 integer loads */
 	ir_graph  *irg         = get_irn_irg(node);
 	ir_type   *frame_type  = get_irg_frame_type(irg);
-	ident     *id          = id_unique("bitcast_%u");
+	ident     *id          = id_unique("bitcast");
 	ir_entity *entity      = new_entity(frame_type, id,
 	                                    get_type_for_mode(other_mode));
 	ir_node   *block       = get_nodes_block(node);

@@ -73,5 +73,5 @@ void finish_ident(void)
 ident *id_unique(const char *tag)
 {
 	static unsigned unique_id = 0;
-	return new_id_fmt(tag, unique_id++);
+	return new_id_fmt("%s.%u", tag, unique_id++);
 }

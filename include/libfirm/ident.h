@@ -64,7 +64,7 @@ FIRM_API const char *get_id_str(ident *id);
 
 /**
  * helper function for creating unique idents. It contains an internal counter
- * and replaces a "%u" inside the tag with the counter.
+ * and appends it separated by a dot to the given tag.
  */
 FIRM_API ident *id_unique(const char *tag);
 

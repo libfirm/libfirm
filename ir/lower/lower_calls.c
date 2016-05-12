@@ -506,7 +506,7 @@ static ir_node *get_dummy_member(ir_node *block, ir_type *tp)
 		panic("fixed layout not implemented");
 	}
 
-	ident     *dummy_id = id_unique("call_result.%u");
+	ident     *dummy_id = id_unique("call_result");
 	ir_entity *ent      = new_entity(ft, dummy_id, tp);
 	return new_r_Member(block, get_irg_frame(irg), ent);
 }
@@ -712,7 +712,7 @@ static void fix_call_compound_ret(const cl_entry *entry,
 static ir_entity *create_compound_arg_entity(ir_graph *irg, ir_type *type)
 {
 	ir_type   *frame  = get_irg_frame_type(irg);
-	ident     *id     = id_unique("$compound_param.%u");
+	ident     *id     = id_unique("$compound_param");
 	ir_entity *entity = new_entity(frame, id, type);
 	/* TODO: we could do some optimizations here and create a big union type
 	 * for all different call types in a function */

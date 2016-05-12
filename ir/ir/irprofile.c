@@ -134,7 +134,7 @@ static void add_constructor(ir_entity *method)
 	ir_type   *const method_type  = get_entity_type(method);
 	ir_type   *const ptr_type     = new_type_pointer(method_type);
 	ir_type   *const constructors = get_segment_type(IR_SEGMENT_CONSTRUCTORS);
-	ident     *const ide          = id_unique("constructor_ptr.%u");
+	ident     *const ide          = id_unique("constructor_ptr");
 	ir_entity *const ptr          = new_global_entity(constructors, ide, ptr_type, ir_visibility_private, IR_LINKAGE_CONSTANT | IR_LINKAGE_HIDDEN_USER);
 	ir_graph  *const irg          = get_const_code_irg();
 	ir_node   *const val          = new_r_Address(irg, method);

@@ -318,7 +318,7 @@ static ir_entity *create_float_const_entity(ir_tarval *tv, ident *name)
 	ir_entity *res = pmap_get(ir_entity, ia32_tv_ent, tv);
 	if (!res) {
 		if (!name)
-			name = id_unique("C%u");
+			name = id_unique("C");
 
 		ir_type *const tp = get_prim_type(mode);
 		res = new_global_entity(get_glob_type(), name, tp,
@@ -2867,7 +2867,7 @@ static ir_node *gen_Switch(ir_node *node)
 
 	ir_type   *const utype = get_unknown_type();
 	ir_entity *const entity
-		= new_global_entity(irp->dummy_owner, id_unique("TBL%u"), utype,
+		= new_global_entity(irp->dummy_owner, id_unique("TBL"), utype,
 		                    ir_visibility_private,
 		                    IR_LINKAGE_CONSTANT | IR_LINKAGE_NO_IDENTITY);
 
@@ -3259,7 +3259,7 @@ static ir_entity *ia32_create_const_array(ir_node *c0, ir_node *c1,
 	tp = ia32_create_float_array(tp);
 
 	ir_entity *ent
-		= new_global_entity(get_glob_type(), id_unique("C%u"), tp,
+		= new_global_entity(get_glob_type(), id_unique("C"), tp,
 		                    ir_visibility_private,
 		                    IR_LINKAGE_CONSTANT | IR_LINKAGE_NO_IDENTITY);
 

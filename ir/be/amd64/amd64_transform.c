@@ -332,7 +332,7 @@ ir_entity *create_float_const_entity(ir_tarval *const tv)
 	ir_type *type = mode == x86_mode_E ? x86_type_E : get_type_for_mode(mode);
 	ir_type *glob = get_glob_type();
 
-	entity = new_global_entity(glob, id_unique("C%u"), type,
+	entity = new_global_entity(glob, id_unique("C"), type,
 	                           ir_visibility_private,
 	                           IR_LINKAGE_CONSTANT | IR_LINKAGE_NO_IDENTITY);
 
@@ -1552,7 +1552,7 @@ static ir_node *gen_Switch(ir_node *const node)
 
 	ir_type   *const utype = get_unknown_type();
 	ir_entity *const entity
-		= new_global_entity(irp->dummy_owner, id_unique("TBL%u"), utype,
+		= new_global_entity(irp->dummy_owner, id_unique("TBL"), utype,
 		                    ir_visibility_private,
 		                    IR_LINKAGE_CONSTANT | IR_LINKAGE_NO_IDENTITY);
 

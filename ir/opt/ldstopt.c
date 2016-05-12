@@ -2193,11 +2193,11 @@ again:;
 				/* Construct an anonymous struct type
 				 * for the combined Store.
 				 */
-				ident *struct_id = id_unique("__combined_Store_%u");
+				ident *struct_id = id_unique("__combined_Store");
 				type = new_type_struct(struct_id);
-				ident *member0_id = id_unique("__Store_part_%u");
+				ident *member0_id = id_unique("__Store_part");
 				new_entity(type, member0_id, type0);
-				ident *member1_id = id_unique("__Store_part_%u");
+				ident *member1_id = id_unique("__Store_part");
 				new_entity(type, member1_id, type1);
 			} else {
 				type = type0;
