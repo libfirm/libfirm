@@ -429,7 +429,7 @@ static ir_entity *clone_method(const quadruple_t *q)
 	static size_t nr = 0;
 
 	/* We get a new ident for our clone method.*/
-	ident     *const clone_ident = get_clone_ident(get_entity_ident(q->ent), q->pos, nr);
+	ident     *const clone_ident = get_clone_ident(get_entity_ident(q->ent), q->pos, nr++);
 	/* We get our entity for the clone method. */
 	ir_type   *const owner       = get_entity_owner(q->ent);
 	ir_entity *const new_entity  = clone_entity(q->ent, clone_ident, owner);
