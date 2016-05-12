@@ -593,8 +593,8 @@ static void emit_visibility(const ir_entity *entity, bool implicit_globl)
 		emit_symbol_directive(directive, entity);
 
 	if (is_macho()
-			&& (linkage & IR_LINKAGE_HIDDEN_USER)
-			&& get_entity_ld_name(entity)[0] != '\0') {
+	    && (linkage & IR_LINKAGE_HIDDEN_USER)
+	    && get_entity_ld_name(entity)[0] != '\0') {
 		emit_symbol_directive(".no_dead_strip", entity);
 	}
 }
@@ -1060,7 +1060,7 @@ static void emit_ir_initializer(normal_or_bitfield *vals,
 				if (bitfield_size > 0) {
 					unsigned offset_bits = get_entity_bitfield_offset(member);
 					emit_bitfield(&vals[offset], offset_bits, bitfield_size,
-								  sub_initializer, subtype);
+					              sub_initializer, subtype);
 					continue;
 				}
 

@@ -43,7 +43,7 @@ static ir_node *create_gotpcrel_load(ir_graph  *irg, ir_entity *const entity)
 	ir_node *const nomem = get_irg_no_mem(irg);
 	ir_node *const block = get_irg_start_block(irg);
 	ir_node *const load  = new_rd_Load(NULL, block, nomem, addr, mode_P,
-									   type, cons_floats);
+	                                   type, cons_floats);
 	return new_r_Proj(load, mode_P, pn_Load_res);
 }
 

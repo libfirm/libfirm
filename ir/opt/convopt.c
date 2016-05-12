@@ -109,7 +109,7 @@ static int get_conv_costs(const ir_node *const node, ir_mode *const dest_mode)
 
 	case iro_Conv:
 		if (is_downconv(mode, dest_mode) &&
-				get_irn_mode(get_Conv_op(node)) == dest_mode) {
+		    get_irn_mode(get_Conv_op(node)) == dest_mode) {
 			return -1;
 		}
 		break;
@@ -187,7 +187,7 @@ static ir_node *conv_transform(ir_node *node, ir_mode *dest_mode)
 
 	case iro_Conv:
 		if (is_downconv(mode, dest_mode) &&
-				get_irn_mode(get_Conv_op(node)) == dest_mode) {
+		    get_irn_mode(get_Conv_op(node)) == dest_mode) {
 			return get_Conv_op(node);
 		}
 		break;

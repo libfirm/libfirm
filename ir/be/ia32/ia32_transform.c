@@ -1577,7 +1577,7 @@ static ir_node *gen_Add(ir_node *node)
 	/* test if we can use source address mode */
 	ia32_address_mode_t am;
 	match_arguments(&am, block, op1, op2, NULL, match_commutative
-			| match_mode_neutral | match_am | match_immediate | match_try_am);
+	                | match_mode_neutral | match_am | match_immediate | match_try_am);
 
 	/* construct an Add with source address mode */
 	if (am.op_type == ia32_AddrModeS)
@@ -1713,7 +1713,7 @@ static ir_node *gen_Eor(ir_node *node)
 	ir_node *op1 = get_Eor_left(node);
 	ir_node *op2 = get_Eor_right(node);
 	return gen_binop(node, op1, op2, new_bd_ia32_Xor, match_commutative
-			| match_mode_neutral | match_am | match_immediate);
+	                 | match_mode_neutral | match_am | match_immediate);
 }
 
 /**
@@ -2323,8 +2323,8 @@ static ir_node *gen_Load(ir_node *node)
 
 	if (!get_irn_pinned(node)) {
 		assert((int)pn_ia32_xLoad_res == (int)pn_ia32_fld_res
-				&& (int)pn_ia32_fld_res == (int)pn_ia32_Load_res
-				&& (int)pn_ia32_Load_res == (int)pn_ia32_res);
+		       && (int)pn_ia32_fld_res == (int)pn_ia32_Load_res
+		       && (int)pn_ia32_Load_res == (int)pn_ia32_res);
 		arch_add_irn_flags(new_node, arch_irn_flag_rematerializable);
 	}
 
@@ -3161,7 +3161,7 @@ static ir_node *create_CMov(ir_node *node, ir_node *flags, ir_node *new_flags,
 	ia32_address_mode_t am;
 	ir_node *block = get_nodes_block(node);
 	match_arguments(&am, block, val_false, val_true, flags,
-			match_commutative | match_am | match_16bit_am | match_mode_neutral);
+	                match_commutative | match_am | match_16bit_am | match_mode_neutral);
 
 	if (am.ins_permuted)
 		cc = x86_negate_condition_code(cc);
@@ -3560,7 +3560,7 @@ static ir_node *gen_Mux(ir_node *node)
 						.entity = array,
 					},
 					.variant = be_options.pic_style != BE_PIC_NONE
-							 ? X86_ADDR_BASE_INDEX : X86_ADDR_INDEX,
+					           ? X86_ADDR_BASE_INDEX : X86_ADDR_INDEX,
 					.base    = get_global_base(irg),
 					.index   = new_node,
 					.mem     = nomem,
@@ -3809,7 +3809,7 @@ static void store_gp(dbg_info *dbgi, ia32_address_mode_t *am, ir_node *block,
 			return;
 	} else if (possible_int_mode_for_fp(mode)) {
 		match_arguments(am, block, NULL, value, NULL,
-						match_am | match_try_am | match_sign_ext | match_16bit_am);
+		                match_am | match_try_am | match_sign_ext | match_16bit_am);
 		if (am->op_type == ia32_AddrModeS)
 			return;
 	}
@@ -4483,7 +4483,7 @@ static ir_node *gen_ia32_l_LLtoFloat(ir_node *node)
 		ia32_address_mode_t am = {
 			.addr = {
 				.variant = be_options.pic_style != BE_PIC_NONE
-						 ? X86_ADDR_BASE_INDEX : X86_ADDR_INDEX,
+				           ? X86_ADDR_BASE_INDEX : X86_ADDR_INDEX,
 				.base    = get_global_base(irg),
 				.index   = new_bd_ia32_Shr(dbgi, block, new_val_high, count,
 				                           X86_SIZE_32),
@@ -4526,7 +4526,7 @@ static ir_node *gen_ia32_l_FloattoLL(ir_node *node)
 	ir_node  *new_val   = be_transform_node(val);
 
 	ir_node *fist = gen_fist(dbgi, block, frame, noreg_GP, nomem, new_val,
-							 X86_SIZE_64);
+	                         X86_SIZE_64);
 	set_irn_pinned(fist, false);
 	ia32_attr_t *const attr = get_ia32_attr(fist);
 	attr->addr.variant = X86_ADDR_BASE;
@@ -4971,8 +4971,8 @@ static ir_node *gen_Call(ir_node *node)
 
 	/* Create node. */
 	ir_node *const call = new_bd_ia32_Call(dbgi, block, in_arity, in, in_req,
-										   n_out, cconv->sp_delta,
-										   n_reg_results);
+	                                       n_out, cconv->sp_delta,
+	                                       n_reg_results);
 	arch_set_additional_pressure(call, &ia32_reg_classes[CLASS_ia32_gp],
 	                             add_pressure);
 

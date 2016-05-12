@@ -47,7 +47,7 @@ static void dump_vector(FILE *f, vector_t *vec)
 	for (unsigned index = 0; index < len; ++index) {
 #if KAPS_ENABLE_VECTOR_NAMES
 		fprintf(f, "<span title=\"%s\">%s</span> ",
-				vec->entries[index].name, cost2a(vec->entries[index].data));
+		        vec->entries[index].name, cost2a(vec->entries[index].data));
 #else
 		fprintf(f, "%s ", cost2a(vec->entries[index].data));
 #endif
@@ -82,7 +82,7 @@ void pbqp_dump_edge(FILE *file, pbqp_edge_t *edge)
 {
 	fputs("<tex>\n", file);
 	fprintf(file, "\t\\overline\n{C}_{%u,%u}=\n",
-			edge->src->index, edge->tgt->index);
+	        edge->src->index, edge->tgt->index);
 	dump_matrix(file, edge->costs);
 	fputs("</tex><br>", file);
 }
@@ -170,7 +170,7 @@ void pbqp_dump_graph(pbqp_t *pbqp)
 
 			if (src_index < tgt_index) {
 				fprintf(pbqp->dump_file, "\t n%u -- n%u;\n", src_index,
-						tgt_index);
+				        tgt_index);
 			}
 		}
 	}

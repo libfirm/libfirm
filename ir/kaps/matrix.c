@@ -171,8 +171,8 @@ void pbqp_matrix_sub_col_value(pbqp_matrix_t *matrix, unsigned col_index,
 			continue;
 		}
 		/* inf - x = inf if x < inf */
-		if (matrix->entries[row_index * col_len + col_index] == INF_COSTS && value
-				!= INF_COSTS)
+		if (matrix->entries[row_index * col_len + col_index] == INF_COSTS
+		    && value != INF_COSTS)
 			continue;
 		matrix->entries[row_index * col_len + col_index] -= value;
 	}
@@ -235,8 +235,8 @@ void pbqp_matrix_sub_row_value(pbqp_matrix_t *matrix, unsigned row_index,
 			continue;
 		}
 		/* inf - x = inf if x < inf */
-		if (matrix->entries[row_index * col_len + col_index] == INF_COSTS && value
-				!= INF_COSTS)
+		if (matrix->entries[row_index * col_len + col_index] == INF_COSTS
+		    && value != INF_COSTS)
 			continue;
 		matrix->entries[row_index * col_len + col_index] -= value;
 	}
@@ -278,8 +278,7 @@ void pbqp_matrix_add_to_all_cols(pbqp_matrix_t *mat, vector_t *vec)
 		num value = vec->entries[row_index].data;
 
 		for (unsigned col_index = 0; col_index < col_len; ++col_index) {
-			mat->entries[row_index * col_len + col_index] = pbqp_add(
-					mat->entries[row_index * col_len + col_index], value);
+			mat->entries[row_index * col_len + col_index] = pbqp_add(mat->entries[row_index * col_len + col_index], value);
 		}
 	}
 }

@@ -1228,7 +1228,7 @@ static void emit_ia32_GetEIP(const ir_node *node)
 			ident      *const id   = new_id_fmt("__x86.get_pc_thunk.%s", name);
 			ir_type    *const tp   = get_thunk_type();
 			thunk = new_global_entity(glob, id, tp, ir_visibility_external_private,
-					IR_LINKAGE_MERGE|IR_LINKAGE_GARBAGE_COLLECT);
+			                          IR_LINKAGE_MERGE|IR_LINKAGE_GARBAGE_COLLECT);
 			/* Note that we do not create a proper method graph, but rather cheat
 			 * later and emit the instructions manually. This is just necessary so
 			 * firm knows we will actually output code for this entity. */
@@ -1663,7 +1663,7 @@ void ia32_emit_thunks(void)
 		const arch_register_t *reg = &ia32_reg_classes[CLASS_ia32_gp].regs[i];
 
 		be_gas_emit_function_prolog(entity, ia32_cg_config.function_alignment,
-									NULL);
+		                            NULL);
 		ia32_emitf(NULL, "movl (%%esp), %#R", reg);
 		ia32_emitf(NULL, "ret");
 		be_gas_emit_function_epilog(entity);

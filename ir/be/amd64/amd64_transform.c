@@ -921,8 +921,7 @@ static ir_node *gen_binop_xmm(ir_node *node, ir_node *op0, ir_node *op1,
 
 	fix_node_mem_proj(new_node, args.mem_proj);
 
-	arch_set_irn_register_req_out(new_node, 0,
-								  &amd64_requirement_xmm_same_0);
+	arch_set_irn_register_req_out(new_node, 0, &amd64_requirement_xmm_same_0);
 	return be_new_Proj(new_node, pn_amd64_subs_res);
 }
 
@@ -1046,7 +1045,7 @@ static ir_node *gen_Add(ir_node *const node)
 		if (mode == x86_mode_E)
 			return gen_binop_x87(node, op1, op2, new_bd_amd64_fadd);
 		return gen_binop_am(node, op1, op2, new_bd_amd64_adds,
-							pn_amd64_adds_res, match_commutative | match_am);
+		                    pn_amd64_adds_res, match_commutative | match_am);
 	}
 
 	match_flags_t flags = match_immediate | match_am | match_mode_neutral
@@ -1613,7 +1612,9 @@ static ir_node *gen_Switch(ir_node *const node)
 	table = ir_switch_table_duplicate(irg, table);
 
 	ir_node *const out = new_bd_amd64_jmp_switch(dbgi, new_block, arity, in,
-			in_reqs, n_outs, op_mode, X86_SIZE_64, &addr, table, entity);
+	                                             in_reqs, n_outs, op_mode,
+	                                             X86_SIZE_64, &addr, table,
+	                                             entity);
 	return out;
 }
 
@@ -2133,7 +2134,7 @@ static ir_node *match_mov(dbg_info *dbgi, ir_node *block, ir_node *value,
 	ir_node *load;
 	ir_node *op;
 	bool use_am = use_address_matching(mode, match_am, block, NULL,
-									   value, &load, &op);
+	                                   value, &load, &op);
 
 	amd64_op_mode_t op_mode;
 	x86_addr_t      addr;
@@ -2231,9 +2232,9 @@ static ir_node *create_cvtsd2ss(dbg_info *dbgi, ir_node *block, ir_node *value)
 }
 
 static void store_to_temp(construct_binop_func const new_store,
-		arch_register_req_t const **const in_reqs, x86_addr_t *addr,
-		dbg_info *dbgi, ir_node *block, ir_node **in, int *n_in,
-		ir_node *new_op, x86_insn_size_t size)
+                          arch_register_req_t const **const in_reqs, x86_addr_t *addr,
+                          dbg_info *dbgi, ir_node *block, ir_node **in, int *n_in,
+                          ir_node *new_op, x86_insn_size_t size)
 {
 	ir_graph *const irg    = get_irn_irg(block);
 	ir_node  *const frame  = get_irg_frame(irg);
@@ -2345,7 +2346,7 @@ static ir_node *conv_x87_to_int(dbg_info *const dbgi, ir_node *const block,
 	int      n_in = 0;
 	x86_addr_t addr;
 	store_to_temp(new_bd_amd64_fisttp, x87K_reg_mem_reqs, &addr, dbgi, block,
-				  in, &n_in, new_val, insn_size_src);
+	              in, &n_in, new_val, insn_size_src);
 	assert(n_in < (int)ARRAY_SIZE(in));
 
 	create_mov_func new_mov = insn_size_dest < X86_SIZE_64

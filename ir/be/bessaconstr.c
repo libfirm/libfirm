@@ -369,7 +369,7 @@ void be_ssa_construction_init(be_ssa_construction_env_t *env, ir_graph *irg)
 	                      IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE_FRONTIERS);
 
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_VISITED
-			| IR_RESOURCE_BLOCK_VISITED | IR_RESOURCE_IRN_LINK);
+	                        | IR_RESOURCE_BLOCK_VISITED | IR_RESOURCE_IRN_LINK);
 
 	/* we use the visited flag to indicate blocks in the dominance frontier
 	 * and blocks that already have the relevant value at the end calculated */
@@ -388,7 +388,7 @@ void be_ssa_construction_destroy(be_ssa_construction_env_t *env)
 	DEL_ARR_F(env->new_phis);
 
 	ir_free_resources(env->irg, IR_RESOURCE_IRN_VISITED
-			| IR_RESOURCE_BLOCK_VISITED | IR_RESOURCE_IRN_LINK);
+	                          | IR_RESOURCE_BLOCK_VISITED | IR_RESOURCE_IRN_LINK);
 
 	stat_ev_tim_pop("bessaconstr_total_time");
 	stat_ev_ctx_pop("bessaconstr");

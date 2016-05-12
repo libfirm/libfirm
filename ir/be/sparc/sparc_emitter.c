@@ -133,7 +133,7 @@ static void sparc_emit_offset(const ir_node *node, int offset_node_pos)
 			be_emit_irprintf("%+"PRId32, offset);
 		}
 	} else if (attr->base.immediate_value != 0
-			|| attr->base.immediate_value_entity != NULL) {
+	           || attr->base.immediate_value_entity != NULL) {
 		be_emit_char('+');
 		sparc_emit_immediate(attr->base.immediate_value,
 		                     attr->base.immediate_value_entity);

@@ -322,8 +322,8 @@ static int ou_max_ind_set_costs(unit_t *const ou)
 			/* check if curr is a stable set */
 			for (int i=bitset_next_set(curr, 0); i!=-1; i=bitset_next_set(curr, i+1))
 				for (int o=bitset_next_set(curr, i+1); o!=-1; o=bitset_next_set(curr, o+1)) /* !!!!! difference to qnode_max_ind_set(): NOT (curr, i) */
-						if (be_values_interfere(unsafe[i], unsafe[o]))
-							goto no_stable_set;
+					if (be_values_interfere(unsafe[i], unsafe[o]))
+						goto no_stable_set;
 
 			/* if we arrive here, we have a stable set */
 			/* compute the weight of the stable set*/
@@ -336,7 +336,7 @@ static int ou_max_ind_set_costs(unit_t *const ou)
 				best_weight = curr_weight;
 			}
 
-	no_stable_set:
+no_stable_set:
 			bitset_minus1(curr);
 		}
 	}
@@ -442,7 +442,7 @@ static void co_collect_units(ir_node *irn, void *env)
 				if (other & (1U << i)) {
 					ir_node *o = get_irn_n(skip_Proj(irn), i);
 					if (!arch_irn_is_ignore(o) &&
-							!be_values_interfere(irn, o)) {
+					    !be_values_interfere(irn, o)) {
 						unit->nodes[k] = o;
 						unit->costs[k] = co->get_costs(irn, -1);
 						++k;

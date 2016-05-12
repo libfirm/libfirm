@@ -3601,9 +3601,9 @@ static ir_node *transform_node_Sub(ir_node *n)
 				ir_mode  *const offset_mode
 					= get_reference_offset_mode(ref_mode);
 				ir_node  *const conv_b  = new_r_Conv(block, b,
-													 offset_mode);
+				                                     offset_mode);
 				ir_node  *const new_sub = new_rd_Sub(dbgi, block, conv_op,
-													 conv_b, ref_mode);
+				                                     conv_b, ref_mode);
 				ir_node  *const conv = new_r_Conv(block, new_sub, mode);
 				return conv;
 			}
@@ -3827,7 +3827,7 @@ static ir_node *transform_node_Mul(ir_node *n)
 		if (is_Const(a)) {
 			const ir_tarval *tv = get_Const_tarval(a);
 			if (tarval_get_exponent(tv) == 1 && tarval_zero_mantissa(tv)
-					&& !tarval_is_negative(tv)) {
+			    && !tarval_is_negative(tv)) {
 				/* 2.0 * b = b + b */
 				n = new_rd_Add(get_irn_dbg_info(n), get_nodes_block(n), b, b, mode);
 				DBG_OPT_ALGSIM1(oldn, a, b, n);
@@ -3836,7 +3836,7 @@ static ir_node *transform_node_Mul(ir_node *n)
 		} else if (is_Const(b)) {
 			const ir_tarval *tv = get_Const_tarval(b);
 			if (tarval_get_exponent(tv) == 1 && tarval_zero_mantissa(tv)
-					&& !tarval_is_negative(tv)) {
+			    && !tarval_is_negative(tv)) {
 				/* a * 2.0 = a + a */
 				n = new_rd_Add(get_irn_dbg_info(n), get_nodes_block(n), a, a, mode);
 				DBG_OPT_ALGSIM1(oldn, a, b, n);
@@ -4969,7 +4969,7 @@ static bool is_single_bit(const ir_node *node)
 		int      modulo = get_mode_modulo_shift(mode);
 		/* this works if we shift a 1 and we have modulo shift */
 		if (is_Const(shl_l) && is_Const_one(shl_l)
-				&& 0 < modulo && modulo <= (int)get_mode_size_bits(mode)) {
+		    && 0 < modulo && modulo <= (int)get_mode_size_bits(mode)) {
 			return true;
 		}
 	} else if (is_Const(node)) {
@@ -5877,8 +5877,8 @@ static ir_node *transform_node_Phi(ir_node *phi)
 			pred = get_irn_n(phi, i);
 
 			if (is_Confirm(pred) &&
-					get_Confirm_bound(pred) == bound &&
-					get_Confirm_relation(pred) == relation) {
+			    get_Confirm_bound(pred) == bound &&
+			    get_Confirm_relation(pred) == relation) {
 				in[i]       = get_Confirm_value(pred);
 				has_confirm = true;
 			} else if (is_Bad(pred)) {

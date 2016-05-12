@@ -450,7 +450,7 @@ static void introduce_epilogue(ir_node *ret, bool omit_fp)
 		ir_type *frame_type = get_irg_frame_type(irg);
 		unsigned frame_size = get_type_size(frame_type);
 		ir_node *incsp = amd64_new_IncSP(block, curr_sp, -(int)frame_size,
-										 true);
+		                                 true);
 		sched_add_before(ret, incsp);
 		curr_sp = incsp;
 	}
@@ -496,7 +496,7 @@ static void introduce_prologue(ir_graph *const irg, bool omit_fp)
 		be_keep_if_unused(incsp);
 	} else {
 		ir_node *const incsp = amd64_new_IncSP(block, initial_sp,
-											   frame_size, false);
+		                                       frame_size, false);
 		sched_add_after(start, incsp);
 		edges_reroute_except(initial_sp, incsp, incsp);
 	}
@@ -654,7 +654,7 @@ static void amd64_generate_code(FILE *output, const char *cup_name)
 
 		be_timer_push(T_RA_PREPARATION);
 		be_sched_fix_flags(irg, &amd64_reg_classes[CLASS_amd64_flags], NULL,
-						   NULL, NULL);
+		                   NULL, NULL);
 		be_timer_pop(T_RA_PREPARATION);
 
 		be_step_regalloc(irg, &amd64_regalloc_if);

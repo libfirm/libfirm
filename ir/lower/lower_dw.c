@@ -780,7 +780,7 @@ static void lower_shr_helper(ir_node *node, ir_mode *mode,
 	/* this version is optimized for modulo shift architectures
 	 * (and can't handle anything else) */
 	if (modulo_shift != get_mode_size_bits(shr_mode)
-			|| modulo_shift2<<1 != modulo_shift) {
+	    || modulo_shift2 << 1 != modulo_shift) {
 		panic("Shr lowering only implemented for modulo shift shr operations");
 	}
 	if (!is_po2_or_zero(modulo_shift) || !is_po2_or_zero(modulo_shift2)) {
@@ -1194,8 +1194,8 @@ static void lower_Cond(ir_node *node, ir_mode *high_mode)
 	dstF = get_cfop_destination(projF);
 
 	ir_node *irn = new_rd_Cmp(dbg, block, lentry->high_word,
-							  rentry->high_word,
-							  relation & ~ir_relation_equal);
+	                          rentry->high_word,
+	                          relation & ~ir_relation_equal);
 	dbg = get_irn_dbg_info(node);
 	irn = new_rd_Cond(dbg, block, irn);
 
@@ -1208,7 +1208,7 @@ static void lower_Cond(ir_node *node, ir_mode *high_mode)
 	newbl_eq = new_r_Block(irg, 1, &projHF);
 
 	irn = new_rd_Cmp(dbg, block, lentry->high_word, rentry->high_word,
-					 ir_relation_equal);
+	                 ir_relation_equal);
 	irn = new_rd_Cond(dbg, newbl_eq, irn);
 
 	projEqF = new_r_Proj(irn, mode_X, pn_Cond_false);
@@ -1221,7 +1221,7 @@ static void lower_Cond(ir_node *node, ir_mode *high_mode)
 
 	dbg = get_irn_dbg_info(sel);
 	irn = new_rd_Cmp(dbg, newbl_l, lentry->low_word, rentry->low_word,
-					 relation);
+	                 relation);
 	dbg = get_irn_dbg_info(node);
 	irn = new_rd_Cond(dbg, newbl_l, irn);
 
@@ -1380,12 +1380,12 @@ static void lower_Cmp(ir_node *cmp, ir_mode *m)
 
 	/* a rel b <==> a_h REL b_h || (a_h == b_h && a_l rel b_l) */
 	ir_node *high1 = new_rd_Cmp(dbg, block, lentry->high_word,
-								rentry->high_word,
-								relation & ~ir_relation_equal);
+	                            rentry->high_word,
+	                            relation & ~ir_relation_equal);
 	ir_node *low  = new_rd_Cmp(dbg, block, lentry->low_word,
-							   rentry->low_word, relation);
+	                           rentry->low_word, relation);
 	ir_node *high = new_rd_Cmp(dbg, block, lentry->high_word,
-							   rentry->high_word, ir_relation_equal);
+	                           rentry->high_word, ir_relation_equal);
 	ir_node *t    = new_rd_And(dbg, block, low, high, mode_b);
 	ir_node *res  = new_rd_Or(dbg, block, high1, t, mode_b);
 	exchange(cmp, res);
@@ -2054,8 +2054,8 @@ static void lower_ASM(ir_node *asmn, ir_mode *mode)
 		new_ins[i] = get_ASM_input(asmn, i);
 
 	new_asm = new_rd_ASM(dbgi, block, mem, n_inputs, new_ins, input_constraints,
-						 new_n_outs, new_outputs, n_clobber, clobbers,
-						 asm_text);
+	                     new_n_outs, new_outputs, n_clobber, clobbers,
+	                     asm_text);
 
 	foreach_out_edge_safe(asmn, edge) {
 		ir_node *proj      = get_edge_src_irn(edge);

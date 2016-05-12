@@ -289,7 +289,7 @@ static void analyze_block(ir_node *block, void *data)
 		allocation_info_t *info = get_allocation_info(node);
 		if (get_irn_arity(node) >= (int)sizeof(info->last_uses) * 8) {
 			panic("node with more than %d inputs not supported yet",
-					(int) sizeof(info->last_uses) * 8);
+			      (int) sizeof(info->last_uses) * 8);
 		}
 
 		/* mark last uses */
@@ -571,7 +571,7 @@ static bool try_optimistic_split(ir_node *to_split, ir_node *before,
 		delta = pref_delta + prefs[i].pref;
 		if (delta < split_threshold) {
 			DB((dbg, LEVEL_3, "Not doing optimistical split of %+F (depth %d), win %f too low\n",
-				to_split, recursion, delta));
+			    to_split, recursion, delta));
 			return false;
 		}
 
@@ -1176,7 +1176,7 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node,
 				continue;
 			/* livethrough values may not use constrainted output registers */
 			if (rbitset_is_set(live_through_regs, l)
-					&& rbitset_is_set(forbidden_regs, r))
+			    && rbitset_is_set(forbidden_regs, r))
 				continue;
 
 			hungarian_add(bp, r, l, l == r ? 9 : 8);
@@ -1404,7 +1404,7 @@ static void assign_phi_registers(ir_node *block)
 			costs += 10000;
 			hungarian_add(bp, n, r, (int)costs);
 			DB((dbg, LEVEL_3, " %s(%f)", arch_register_for_index(cls, r)->name,
-						info->prefs[r]));
+			    info->prefs[r]));
 		}
 		DB((dbg, LEVEL_3, "\n"));
 		++n;

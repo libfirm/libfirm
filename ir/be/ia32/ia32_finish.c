@@ -58,7 +58,7 @@ static bool ia32_transform_sub_to_neg_add(ir_node *const irn,
 
 		ir_node *const noreg_fp = ia32_new_NoReg_xmm(irg);
 		res = new_bd_ia32_xXor(dbgi, block, noreg, noreg, nomem, in2, noreg_fp,
-							   size);
+		                       size);
 		ir_entity *entity = ia32_gen_fp_known_const(size == X86_SIZE_32
 		                                            ? ia32_SSIGN : ia32_DSIGN);
 		ia32_attr_t *const attr = get_ia32_attr(res);
@@ -195,7 +195,7 @@ static void fix_am_source(ir_node *const irn, arch_register_t const *const out_r
 		return;
 	/* Only need to fix if the out reg is the same as base or index register. */
 	if (out_reg != arch_get_irn_register_in(irn, n_ia32_base) &&
-			out_reg != arch_get_irn_register_in(irn, n_ia32_index))
+	    out_reg != arch_get_irn_register_in(irn, n_ia32_index))
 		return;
 
 	ir_node *const load_res = ia32_turn_back_am(irn);

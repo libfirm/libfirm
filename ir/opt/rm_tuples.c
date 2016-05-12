@@ -55,8 +55,8 @@ void remove_tuples(ir_graph *irg)
 	}
 
 	confirm_irg_properties(irg, changed
-			? IR_GRAPH_PROPERTIES_CONTROL_FLOW | IR_GRAPH_PROPERTY_ONE_RETURN
-			  | IR_GRAPH_PROPERTY_MANY_RETURNS | IR_GRAPH_PROPERTY_NO_BADS
-			: IR_GRAPH_PROPERTIES_ALL);
+	                       ? IR_GRAPH_PROPERTIES_CONTROL_FLOW | IR_GRAPH_PROPERTY_ONE_RETURN
+	                         | IR_GRAPH_PROPERTY_MANY_RETURNS | IR_GRAPH_PROPERTY_NO_BADS
+	                       : IR_GRAPH_PROPERTIES_ALL);
 	add_irg_properties(irg, IR_GRAPH_PROPERTY_NO_TUPLES);
 }

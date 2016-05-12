@@ -665,7 +665,7 @@ undefined:
 					switch (relation) {
 						case ir_relation_less_greater:
 							if (!tarval_is_null(tarval_andnot(ro, lz)) ||
-									!tarval_is_null(tarval_andnot(lo, rz))) {
+							    !tarval_is_null(tarval_andnot(lo, rz))) {
 								// At least one bit differs.
 								z = o = t;
 							} else if (lz == lo && rz == ro && lz == rz) {
@@ -677,7 +677,7 @@ undefined:
 
 						case ir_relation_equal:
 							if (!tarval_is_null(tarval_andnot(ro, lz)) ||
-									!tarval_is_null(tarval_andnot(lo, rz))) {
+							    !tarval_is_null(tarval_andnot(lo, rz))) {
 								// At least one bit differs.
 								z = o = f;
 							} else if (lz == lo && rz == ro && lz == rz) {
@@ -691,7 +691,7 @@ undefined:
 						case ir_relation_less:
 							/* TODO handle negative values */
 							if (tarval_is_negative(lz) || tarval_is_negative(lo) ||
-									tarval_is_negative(rz) || tarval_is_negative(ro))
+							    tarval_is_negative(rz) || tarval_is_negative(ro))
 								goto result_unknown;
 
 							if (tarval_cmp(lz, ro) & relation) {
@@ -709,7 +709,7 @@ undefined:
 						case ir_relation_greater:
 							/* TODO handle negative values */
 							if (tarval_is_negative(lz) || tarval_is_negative(lo) ||
-									tarval_is_negative(rz) || tarval_is_negative(ro))
+							    tarval_is_negative(rz) || tarval_is_negative(ro))
 								goto result_unknown;
 
 							if (!(tarval_cmp(lz, ro) & relation)) {

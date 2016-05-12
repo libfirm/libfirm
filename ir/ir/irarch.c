@@ -758,15 +758,15 @@ static struct magicu_info compute_unsigned_magic_info(ir_tarval *divisor,
 		 * Note that exponent may be larger than the maximum shift supported,
 		 * so the check for >= ceil_log_2_D is critical. */
 		if ((exponent + extra_shift >= ceil_log_2_D) ||
-				/* (divisor - remainder) <= (1 << exponent + extra_shift) */
-				(CMP(SUB(divisor, remainder), SHL(ONE(mode), exponent + extra_shift)) & ir_relation_less_equal))
+		    /* (divisor - remainder) <= (1 << exponent + extra_shift) */
+		    (CMP(SUB(divisor, remainder), SHL(ONE(mode), exponent + extra_shift)) & ir_relation_less_equal))
 			break;
 
 		/* Set magic_down if we have not set it yet and this exponent works for
 		 * the round_down algorithm */
 		if (!has_magic_down &&
-				(CMP(remainder, SHL(ONE(mode), exponent + extra_shift)) &
-				ir_relation_less_equal)) {
+		    (CMP(remainder, SHL(ONE(mode), exponent + extra_shift)) &
+		    ir_relation_less_equal)) {
 			has_magic_down  = 1;
 			down_multiplier = quotient;
 			down_exponent   = exponent;
@@ -1041,7 +1041,7 @@ ir_node *arch_dep_replace_mod_by_const(ir_node *irn)
 		} else {      /* unsigned case */
 			ir_tarval *k_val
 				= tarval_shr_unsigned(get_mode_all_one(mode),
-									  get_mode_size_bits(mode)-k);
+				                      get_mode_size_bits(mode) - k);
 			ir_node *k_node = new_r_Const(irg, k_val);
 			res = new_rd_And(dbg, block, left, k_node, mode);
 		}

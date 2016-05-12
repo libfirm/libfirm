@@ -761,7 +761,7 @@ void fc_cast(const fp_value *value, const float_descriptor_t *dest,
 
 		int exp_offset = res_bias - val_bias;
 		exp_offset    += dest->mantissa_size - dest->explicit_one
-					   - (desc->mantissa_size - desc->explicit_one);
+		                 - (desc->mantissa_size - desc->explicit_one);
 		sc_word *temp = ALLOCAN(sc_word, value_size);
 		sc_val_from_long(exp_offset, temp);
 		sc_add(_exp(value), temp, _exp(result));
@@ -875,7 +875,7 @@ void fc_get_inf(const float_descriptor_t *desc, fp_value *result, bool sign)
 	sc_zero(_mant(result));
 	// set the explicit one
 	sc_set_bit_at(_mant(result),
-				  (desc->mantissa_size - desc->explicit_one)+ROUNDING_BITS);
+	              (desc->mantissa_size - desc->explicit_one)+ROUNDING_BITS);
 }
 
 ir_relation fc_comp(fp_value const *const val_a, fp_value const *const val_b)
@@ -1125,7 +1125,7 @@ flt2int_result_t fc_flt2int(const fp_value *a, sc_word *result,
 		return FLT2INT_OK;
 	case FC_INF:
 		return a->sign ? FLT2INT_NEGATIVE_OVERFLOW
-					   : FLT2INT_POSITIVE_OVERFLOW;
+		               : FLT2INT_POSITIVE_OVERFLOW;
 	case FC_SUBNORMAL:
 	case FC_NORMAL:
 		if (a->sign && !result_signed)
@@ -1143,7 +1143,7 @@ flt2int_result_t fc_flt2int(const fp_value *a, sc_word *result,
               sc_get_highest_set_bit(_mant(a))
               != sc_get_lowest_set_bit(_mant(a))))) {
 			return a->sign ? FLT2INT_NEGATIVE_OVERFLOW
-						   : FLT2INT_POSITIVE_OVERFLOW;
+			               : FLT2INT_POSITIVE_OVERFLOW;
 		}
 		unsigned mantissa_size = a->desc.mantissa_size + ROUNDING_BITS;
 		int      shift         = exp_val - (mantissa_size-a->desc.explicit_one);

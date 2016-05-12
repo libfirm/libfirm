@@ -506,7 +506,7 @@ static ir_node *gen_Ror(ir_node *node, ir_node *op1, ir_node *op2,
 		new_op2 = new_bd_arm_Rsb_imm(dbgi, block, new_op2, 32, 0);
 	}
 	return new_bd_arm_Mov_reg_shift_reg(dbgi, block, new_op1, new_op2,
-											ARM_SHF_ROR_REG);
+	                                    ARM_SHF_ROR_REG);
 }
 
 static bool is_low_mask(ir_tarval *tv)

@@ -361,7 +361,7 @@ static void ia32_lower_conv64(ir_node *node, ir_mode *mode)
 			l_res = new_r_Proj(float_to_ll, ia32_mode_gp,
 			                   pn_ia32_l_FloattoLL_res_low);
 			h_res = new_r_Proj(float_to_ll, mode,
-							   pn_ia32_l_FloattoLL_res_high);
+			                   pn_ia32_l_FloattoLL_res_high);
 		} else {
 			/* Convert from float to unsigned 64bit. */
 			ir_graph  *irg = get_irn_irg(node);
@@ -410,9 +410,9 @@ static void ia32_lower_conv64(ir_node *node, ir_mode *mode)
 
 			float_to_ll = new_bd_ia32_l_FloattoLL(dbg, lower_blk, flt_phi);
 			l_res = new_r_Proj(float_to_ll, ia32_mode_gp,
-							   pn_ia32_l_FloattoLL_res_low);
+			                   pn_ia32_l_FloattoLL_res_low);
 			h_res = new_r_Proj(float_to_ll, mode,
-							   pn_ia32_l_FloattoLL_res_high);
+			                   pn_ia32_l_FloattoLL_res_high);
 			h_res = new_rd_Add(dbg, lower_blk, h_res, int_phi, mode);
 
 			/* move the call and its Proj's to the lower block */

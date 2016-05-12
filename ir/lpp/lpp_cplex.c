@@ -139,11 +139,11 @@ static void cpx_construct(cpx_t *cpx)
 	}
 
 	cpx->status = CPXcopylpwnames(cpx->env, cpx->prob,
-						numcols, numrows, objsen,
-						obj, rhs, sense,
-						matbeg, matcnt, matind, matval,
-						lb, ub, NULL,
-						colname, rowname);
+	                              numcols, numrows, objsen,
+	                              obj, rhs, sense,
+	                              matbeg, matcnt, matind, matval,
+	                              lb, ub, NULL,
+	                              colname, rowname);
 	chk_cpx_err(cpx);
 
 	cpx->status = CPXcopyctype(cpx->env, cpx->prob, vartype);
@@ -196,7 +196,7 @@ static void cpx_solve(cpx_t *cpx)
 	 */
 	if(lpp->set_bound) {
 		CPXsetdblparam(cpx->env, (lpp->opt_type == lpp_minimize
-					? CPX_PARAM_OBJLLIM : CPX_PARAM_OBJULIM), lpp->bound);
+		                          ? CPX_PARAM_OBJLLIM : CPX_PARAM_OBJULIM), lpp->bound);
 	}
 
 	/* turn on the fancy messages :) */

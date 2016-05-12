@@ -800,7 +800,7 @@ static void sim_ia32_binop_am(x87_state *const state, ir_node *const node)
 		x87_set_st(state, get_result_node(node), 0);
 	} else {
 		x86_sim_x87_binop(state, node, n_ia32_binary_left, n_ia32_binary_right,
-						  out);
+		                  out);
 	}
 	ia32_x87_attr_t *const attr = get_ia32_x87_attr(node);
 	attr->x87.reverse ^= attr->attr.ins_permuted;

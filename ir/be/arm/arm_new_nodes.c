@@ -99,7 +99,7 @@ void arm_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 				break;
 			case ARM_SHF_IMM:
 				fprintf(F, "modifier = imm %d ror %d\n",
-						attr->immediate_value, attr->shift_immediate);
+				        attr->immediate_value, attr->shift_immediate);
 				break;
 			case ARM_SHF_ASR_IMM:
 				fprintf(F, "modifier = V >>s %d\n", attr->shift_immediate);

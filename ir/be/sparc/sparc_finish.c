@@ -110,7 +110,7 @@ static void sparc_introduce_prolog_epilog(ir_graph *irg, bool omit_fp)
 
 	if (!omit_fp) {
 		ir_node *const save = new_bd_sparc_Save_imm(NULL, block, initial_sp,
-													NULL, -frame_size-SPARC_MIN_STACKSIZE);
+		                                            NULL, -frame_size-SPARC_MIN_STACKSIZE);
 		arch_set_irn_register(save, sp_reg);
 		sched_add_after(start, save);
 

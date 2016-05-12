@@ -255,8 +255,8 @@ static ir_node *create_softfloat_address(const ir_node *n, const char *name)
 	} else if (mode == mode_D) {
 		result = double_types > 0 ? "" : "df";
 		double_types++;
-	} else if (mode == mode_Iu || mode == mode_Hu || mode == mode_Bu
-			|| mode == mode_Is || mode == mode_Hs || mode == mode_Bs)
+	} else if (mode == mode_Iu || mode == mode_Hu || mode == mode_Bu ||
+	           mode == mode_Is || mode == mode_Hs || mode == mode_Bs)
 		result = "si";
 	else if (mode == mode_Lu || mode == mode_Ls)
 		result = "di";

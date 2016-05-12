@@ -178,13 +178,13 @@ static char *make_fmt(char *buf, size_t len, const lc_arg_occ_t *occ)
 	}
 #endif
 	snprintf(buf, len, "%%%s%s%s%s%s%s%s%s%c",
-			occ->flag_space ? "#" : "",
-			occ->flag_hash ? "#" : "",
-			occ->flag_plus ? "+" : "",
-			occ->flag_minus ? "-" : "",
-			occ->flag_zero ? "0" : "",
-			width, prec,
-			mod, occ->conversion);
+	         occ->flag_space ? "#" : "",
+	         occ->flag_hash ? "#" : "",
+	         occ->flag_plus ? "+" : "",
+	         occ->flag_minus ? "-" : "",
+	         occ->flag_zero ? "0" : "",
+	         width, prec,
+	         mod, occ->conversion);
 
 	return buf;
 }

@@ -552,7 +552,7 @@ static int node_floats(const ir_node *n)
 static void ird_walk_graph(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post, void *env)
 {
 	if ((flags & ir_dump_flag_all_anchors)
-			|| ((flags & ir_dump_flag_iredges) && edges_activated(irg))) {
+	    || ((flags & ir_dump_flag_iredges) && edges_activated(irg))) {
 		irg_walk_anchors(irg, pre, post, env);
 	} else {
 		irg_walk_graph(irg, pre, post, env);
@@ -1509,7 +1509,7 @@ static void dump_class_hierarchy_node(ir_type *const tp, ir_entity *const ent, v
 		if (!is_Method_type(get_entity_type(ent)))
 			return;  /* GL */
 		if (flags & ir_dump_flag_entities_in_hierarchy
-				&& is_Class_type(get_entity_owner(ent))) {
+		    && is_Class_type(get_entity_owner(ent))) {
 			/* The node */
 			dump_entity_node(F, ent);
 			/* The edges */
@@ -1757,7 +1757,7 @@ void dump_ir_graph_file(FILE *out, ir_graph *irg)
 
 	/* dump the out edges in a separate walk */
 	if ((flags & ir_dump_flag_out_edges)
-			&& (irg_has_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS))) {
+	    && (irg_has_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS))) {
 		irg_out_walk(get_irg_start(irg), dump_out_edge, NULL, out);
 	}
 

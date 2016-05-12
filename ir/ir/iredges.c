@@ -219,7 +219,7 @@ static void add_edge(ir_node *src, int pos, ir_node *tgt, ir_edge_kind_t kind,
 	irn_edge_info_t  *tgt_info = get_irn_edge_info(tgt, kind);
 	struct list_head *head     = &tgt_info->outs_head;
 	assert(head->next && head->prev &&
-		   "target list head must have been initialized");
+	       "target list head must have been initialized");
 
 	/* The old target was NULL, thus, the edge is newly created. */
 	ir_edge_t *edge;
@@ -299,7 +299,7 @@ static void edges_notify_edge_kind(ir_node *src, int pos, ir_node *tgt, ir_node 
 	irn_edge_info_t  *tgt_info = get_irn_edge_info(tgt, kind);
 	struct list_head *head     = &tgt_info->outs_head;
 	assert(head->next && head->prev &&
-			"target list head must have been initialized");
+	       "target list head must have been initialized");
 
 	/* Initialize the edge template to search in the set. */
 	ir_edge_t templ;

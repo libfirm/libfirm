@@ -630,7 +630,7 @@ static int verify_node_Call(const ir_node *n)
 					fine &= check_input_mode(n, n_Call_max+1+i, NULL, mode);
 				} else {
 					fine &= check_input_func(n, n_Call_max+1+i, NULL,
-											 mode_is_reference, "reference");
+					                         mode_is_reference, "reference");
 				}
 			} else {
 				fine &= check_input_func(n, n_Call_max+1+i, NULL,

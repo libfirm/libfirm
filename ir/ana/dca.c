@@ -170,8 +170,8 @@ static void dca_transfer(ir_node *irn)
 				 * don't fit into the smaller mode. */
 				if (get_tarval_highest_bit(care) >= (int)pred_bits)
 					care = tarval_or(care,
-									 tarval_shl_unsigned(get_mode_one(mode),
-												         pred_bits - 1));
+					                 tarval_shl_unsigned(get_mode_one(mode),
+					                 pred_bits - 1));
 			} else {
 				/* Thwart sign extension as it doesn't make sense on
 				 * our abstract tarvals. */
@@ -401,7 +401,7 @@ static void dca_init_node(ir_node *n, void *data)
 
 	ir_mode *m = get_irn_mode(n);
 	set_irn_link(n, (void *) (mode_is_int(m) ?
-				  get_mode_null(m) : tarval_b_false));
+	             get_mode_null(m) : tarval_b_false));
 }
 
 void dca_analyze(ir_graph *irg)
@@ -413,7 +413,7 @@ void dca_analyze(ir_graph *irg)
 	assert(tarval_get_wrap_on_overflow());
 
 	assert(((ir_resources_reserved(irg) & IR_RESOURCE_IRN_LINK) != 0) &&
-			"user of dc analysis must reserve links");
+	       "user of dc analysis must reserve links");
 
 	irg_walk_graph(irg, dca_init_node, NULL, 0);
 

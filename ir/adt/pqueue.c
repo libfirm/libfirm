@@ -49,7 +49,7 @@ static void pqueue_heapify(pqueue_t *q, size_t pos)
 			exchange = pos * 2;
 
 		if ((pos * 2 + 1) < len
-				&& q->elems[exchange].priority < q->elems[pos * 2 + 1].priority)
+		    && q->elems[exchange].priority < q->elems[pos * 2 + 1].priority)
 			exchange = pos * 2 + 1;
 
 		if (exchange == pos)

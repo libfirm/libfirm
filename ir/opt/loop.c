@@ -276,7 +276,7 @@ count:
 
 				if (!is_in_loop(cfgpred)) {
 					DB((dbg, LEVEL_5, "potential head %+F because inloop and pred %+F not inloop\n",
-								node, pred));
+					    node, pred));
 					/* another head? We do not touch this. */
 					if (loop_head && loop_head != node) {
 						loop_head_valid = false;
@@ -389,7 +389,7 @@ static ir_node *search_def_and_create_phis(ir_node *const block, ir_mode *const 
 static void construct_ssa(ir_node *const orig_block, ir_node *const orig_val, ir_node *const second_block, ir_node *const second_val)
 {
 	assert(orig_block && orig_val && second_block && second_val &&
-			"no parameter of construct_ssa may be NULL");
+	       "no parameter of construct_ssa may be NULL");
 
 	if (orig_val == second_val)
 		return;
@@ -628,7 +628,7 @@ static void copy_walk(ir_node *const node, walker_condition *const walk_conditio
 			copy_walk(pred, walk_condition, set_loop);
 			cpin[i] = get_inversion_copy(pred);
 			DB((dbg, LEVEL_5, "copy of %N gets new in %N which is copy of %N\n",
-						node, get_inversion_copy(pred), pred));
+			    node, get_inversion_copy(pred), pred));
 		} else {
 			cpin[i] = pred;
 		}
@@ -743,7 +743,7 @@ static void unmark_not_allowed_cc_blocks(void)
 				set_Block_mark(block, 0);
 				--inversion_blocks_in_cc;
 				DB((dbg, LEVEL_5, "Removed %N from cc (blocks in cc %d)\n",
-						block, inversion_blocks_in_cc));
+				    block, inversion_blocks_in_cc));
 
 				break;
 			}
@@ -797,7 +797,7 @@ static void get_head_outs(ir_node *const node, void *const env)
 				entry_edge const entry = { .node = node, .pos = i, .pred = pred };
 				ARR_APP1(entry_edge, head_df_loop, entry);
 				DB((dbg, LEVEL_5, "Found incc assignment node %N @%d is pred %N, graph %N %N\n",
-						node, i, entry.pred, get_irn_irg(node), get_irg_start_block(get_irn_irg(node))));
+				    node, i, entry.pred, get_irn_irg(node), get_irg_start_block(get_irn_irg(node))));
 			}
 		}
 	}
@@ -1106,7 +1106,7 @@ static void loop_inversion(ir_graph *const irg)
 	unsigned const max_loop_nodes_adapted = get_max_nodes_adapted(loop_depth);
 
 	DB((dbg, LEVEL_1, "max_nodes: %d\nmax_nodes_adapted %d at depth of %d (adaption %d)\n",
-			max_loop_nodes, max_loop_nodes_adapted, loop_depth, opt_params.depth_adaption));
+	    max_loop_nodes, max_loop_nodes_adapted, loop_depth, opt_params.depth_adaption));
 
 	if (loop_info.nodes == 0)
 		return;
@@ -1711,9 +1711,9 @@ static unsigned get_const_pred(ir_node *const node, ir_node **const const_pred, 
 static unsigned simulate_next(ir_tarval **const count_tar, ir_tarval *const stepped, ir_tarval *const step_tar, ir_tarval *const end_tar, ir_relation const norm_proj)
 {
 	DB((dbg, LEVEL_4, "Loop taken if (stepped)%ld %s (end)%ld ",
-				get_tarval_long(stepped),
-				get_relation_string((norm_proj)),
-				get_tarval_long(end_tar)));
+	    get_tarval_long(stepped),
+	    get_relation_string((norm_proj)),
+	    get_tarval_long(end_tar)));
 	DB((dbg, LEVEL_4, "comparing latest value %d\n", loop_info.latest_value));
 
 	/* If current iv does not stay in the loop,
@@ -1722,9 +1722,9 @@ static unsigned simulate_next(ir_tarval **const count_tar, ir_tarval *const step
 		return 1;
 
 	DB((dbg, LEVEL_4, "Result: (stepped)%ld IS %s (end)%ld\n",
-				get_tarval_long(stepped),
-				get_relation_string(tarval_cmp(stepped, end_tar)),
-				get_tarval_long(end_tar)));
+	    get_tarval_long(stepped),
+	    get_relation_string(tarval_cmp(stepped, end_tar)),
+	    get_tarval_long(end_tar)));
 
 	/* next step */
 	ir_tarval *const next = is_Add(loop_info.add) ?
@@ -1732,9 +1732,9 @@ static unsigned simulate_next(ir_tarval **const count_tar, ir_tarval *const step
 		tarval_sub(stepped, step_tar);
 
 	DB((dbg, LEVEL_4, "Loop taken if %ld %s %ld ",
-				get_tarval_long(next),
-				get_relation_string(norm_proj),
-				get_tarval_long(end_tar)));
+	    get_tarval_long(next),
+	    get_relation_string(norm_proj),
+	    get_tarval_long(end_tar)));
 	DB((dbg, LEVEL_4, "comparing latest value %d\n", loop_info.latest_value));
 
 	/* Increase steps. */
@@ -1900,7 +1900,7 @@ static unsigned get_unroll_decision_invariant(ir_graph *const irg)
 	}
 
 	DB((dbg, LEVEL_4, "start %N, end %N, step %N\n",
-				loop_info.start_val, loop_info.end_val, loop_info.step));
+	    loop_info.start_val, loop_info.end_val, loop_info.step));
 
 	ir_mode *const mode = get_irn_mode(loop_info.end_val);
 	if (mode != mode_Is && mode != mode_Iu)

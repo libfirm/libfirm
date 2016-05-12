@@ -842,7 +842,7 @@ static void transform_return(ir_node *ret, size_t n_ret_com, wlk_env *env)
 			/* copy-return optimization is impossible, do the copy. */
 			bool is_volatile = is_partly_volatile(pred);
 			mem = new_r_CopyB(block, mem, arg, pred, type,
-							  is_volatile ? cons_volatile : cons_none);
+			                  is_volatile ? cons_volatile : cons_none);
 		}
 	}
 	/* replace the in of the Return */

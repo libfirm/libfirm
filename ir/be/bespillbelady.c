@@ -780,7 +780,7 @@ static void fix_block_borders(ir_node *block, void *data)
 				continue;
 
 			if (move_spills && be_is_live_in(lv, block, node)
-					&& !pred_end_workset->vals[iter].spilled) {
+			    && !pred_end_workset->vals[iter].spilled) {
 				ir_node *insert_point;
 				if (n_cfgpreds > 1) {
 					insert_point = be_get_end_of_block_insertion_point(pred);

@@ -1050,8 +1050,8 @@ static ir_node *gen_helper_bitop(ir_node *node,
 		}
 	}
 	return gen_helper_binop_args(node, op1, op2,
-								 flags | MATCH_COMMUTATIVE,
-								 new_reg, new_imm);
+	                             flags | MATCH_COMMUTATIVE,
+	                             new_reg, new_imm);
 }
 
 static ir_node *gen_And(ir_node *node)
@@ -1676,7 +1676,7 @@ static void bitcast_float_to_int(dbg_info *dbgi, ir_node *block,
 
 		if (bits == 64) {
 			ir_node *ld2 = new_bd_sparc_Ld_imm(dbgi, block, stack, stf, mode_gp,
-											   NULL, 4, true);
+			                                   NULL, 4, true);
 			set_irn_pinned(ld, false);
 			result[1] = be_new_Proj(ld2, pn_sparc_Ld_res);
 

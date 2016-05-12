@@ -19,7 +19,7 @@
 int edge_bucket_contains(pbqp_edge_bucket_t bucket, pbqp_edge_t *edge)
 {
 	return edge->bucket_index < edge_bucket_get_length(bucket)
-			&& bucket[edge->bucket_index] == edge;
+	       && bucket[edge->bucket_index] == edge;
 }
 
 void edge_bucket_free(pbqp_edge_bucket_t *bucket)
@@ -66,7 +66,7 @@ void node_bucket_shrink(pbqp_node_bucket_t *bucket, unsigned len)
 int node_bucket_contains(pbqp_node_bucket_t bucket, pbqp_node_t *node)
 {
 	return node->bucket_index < node_bucket_get_length(bucket)
-			&& bucket[node->bucket_index] == node;
+	       && bucket[node->bucket_index] == node;
 }
 
 void node_bucket_copy(pbqp_node_bucket_t *dst, pbqp_node_bucket_t src)

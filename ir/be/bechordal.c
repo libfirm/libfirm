@@ -329,7 +329,7 @@ static void assign(ir_node *const block, void *const env_ptr)
 	DBG((dbg, LEVEL_4, "\tusedef chain for block\n"));
 	foreach_border_head(head, b) {
 		DBG((dbg, LEVEL_4, "\t%s %+F/%d\n", b->is_def ? "def" : "use",
-					b->irn, get_irn_idx(b->irn)));
+		     b->irn, get_irn_idx(b->irn)));
 	}
 
 	bitset_t *const available = bitset_alloca(env->allocatable_regs->size);

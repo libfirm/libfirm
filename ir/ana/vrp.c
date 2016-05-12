@@ -227,14 +227,12 @@ static int vrp_update_node(ir_vrp_info *info, ir_node *node)
 		vrp_left = vrp_get_or_set_info(info, get_Eor_left(node));
 		vrp_right = vrp_get_or_set_info(info, get_Eor_right(node));
 
-		new_bits_set = tarval_or(
-						tarval_and(vrp_left->bits_set, tarval_not(vrp_right->bits_not_set)),
-						tarval_and(tarval_not(vrp_left->bits_not_set), vrp_right->bits_set));
+		new_bits_set = tarval_or(tarval_and(vrp_left->bits_set, tarval_not(vrp_right->bits_not_set)),
+		                         tarval_and(tarval_not(vrp_left->bits_not_set), vrp_right->bits_set));
 
-		new_bits_not_set = tarval_not(tarval_or(
-				tarval_and(vrp_left->bits_set,vrp_right->bits_set),
-							tarval_and(tarval_not(vrp_left->bits_not_set),
-								tarval_not(vrp_right->bits_not_set))));
+		new_bits_not_set = tarval_not(tarval_or(tarval_and(vrp_left->bits_set,vrp_right->bits_set),
+		                                        tarval_and(tarval_not(vrp_left->bits_not_set),
+		                                                   tarval_not(vrp_right->bits_not_set))));
 
 		break;
 	}
@@ -272,8 +270,8 @@ static int vrp_update_node(ir_vrp_info *info, ir_node *node)
 		/* The second and is needed if target type is smaller*/
 		new_bits_not_set = tarval_convert_to(get_mode_all_one(old_mode), new_mode);
 		new_bits_not_set = tarval_and(new_bits_not_set, tarval_convert_to(vrp_pred->bits_not_set, new_mode));
-		new_bits_set = tarval_and(
-				new_bits_not_set, tarval_convert_to(vrp_pred->bits_set, new_mode));
+		new_bits_set = tarval_and(new_bits_not_set,
+		                          tarval_convert_to(vrp_pred->bits_set, new_mode));
 
 		/* Matze: TODO, BUGGY, tarval_cmp never returns ir_relation_less_equal */
 		if (tarval_cmp(vrp_pred->range_top, get_mode_max(new_mode)) == ir_relation_less_equal) {
@@ -322,8 +320,7 @@ static int vrp_update_node(ir_vrp_info *info, ir_node *node)
 		for (int i = 1, num = get_Phi_n_preds(node); i < num; i++) {
 			pred = get_Phi_pred(node, i);
 			vrp_pred = vrp_get_or_set_info(info, pred);
-			if (new_range_type == VRP_RANGE && vrp_pred->range_type ==
-					VRP_RANGE) {
+			if (new_range_type == VRP_RANGE && vrp_pred->range_type == VRP_RANGE) {
 				ir_relation relation = tarval_cmp(new_range_top, vrp_pred->range_top);
 				if (relation == ir_relation_less) {
 					new_range_top = vrp_pred->range_top;
@@ -337,7 +334,7 @@ static int vrp_update_node(ir_vrp_info *info, ir_node *node)
 			}
 			new_bits_set = tarval_and(new_bits_set, vrp_pred->bits_set);
 			new_bits_not_set = tarval_or(new_bits_not_set,
-					vrp_pred->bits_not_set);
+			                             vrp_pred->bits_not_set);
 		}
 
 		break;
@@ -397,7 +394,7 @@ static int vrp_update_node(ir_vrp_info *info, ir_node *node)
 	}
 
 	if (vrp->range_type == VRP_UNDEFINED &&
-			new_range_type != VRP_UNDEFINED) {
+	    new_range_type != VRP_UNDEFINED) {
 		something_changed = true;
 		vrp->range_type = new_range_type;
 		vrp->range_bottom = new_range_bottom;
@@ -419,12 +416,12 @@ static int vrp_update_node(ir_vrp_info *info, ir_node *node)
 			/* if they are overlapping, cut the range.*/
 			/* TODO: Maybe we can preserve more information here*/
 			if (tarval_cmp(vrp->range_bottom, new_range_top) == ir_relation_greater &&
-					tarval_cmp(vrp->range_bottom, new_range_bottom) == ir_relation_greater) {
+			    tarval_cmp(vrp->range_bottom, new_range_bottom) == ir_relation_greater) {
 				something_changed = true;
 				vrp->range_bottom = new_range_top;
 
 			} else if (tarval_cmp(vrp->range_top, new_range_bottom) == ir_relation_greater &&
-					tarval_cmp(vrp->range_top, new_range_top) == ir_relation_less) {
+			           tarval_cmp(vrp->range_top, new_range_top) == ir_relation_less) {
 				something_changed = true;
 				vrp->range_top    = new_range_bottom;
 			}
@@ -567,7 +564,7 @@ ir_relation vrp_cmp(const ir_node *left, const ir_node *right)
 	}
 
 	if (!tarval_is_null(tarval_and(vrp_left->bits_set, tarval_not(vrp_right->bits_not_set))) ||
-			!tarval_is_null(tarval_and(tarval_not(vrp_left->bits_not_set), vrp_right->bits_set))) {
+	    !tarval_is_null(tarval_and(tarval_not(vrp_left->bits_not_set), vrp_right->bits_set))) {
 		return ir_relation_less_greater;
 	}
 

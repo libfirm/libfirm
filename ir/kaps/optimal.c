@@ -138,8 +138,7 @@ static void normalize_towards_source(pbqp_edge_t *edge)
 			}
 
 			pbqp_matrix_sub_row_value(mat, src_index, tgt_vec, min);
-			src_vec->entries[src_index].data = pbqp_add(
-					src_vec->entries[src_index].data, min);
+			src_vec->entries[src_index].data = pbqp_add(src_vec->entries[src_index].data, min);
 
 			if (min == INF_COSTS) {
 				new_infinity = 1;
@@ -185,8 +184,7 @@ static void normalize_towards_target(pbqp_edge_t *edge)
 			}
 
 			pbqp_matrix_sub_col_value(mat, tgt_index, src_vec, min);
-			tgt_vec->entries[tgt_index].data = pbqp_add(
-					tgt_vec->entries[tgt_index].data, min);
+			tgt_vec->entries[tgt_index].data = pbqp_add(tgt_vec->entries[tgt_index].data, min);
 
 			if (min == INF_COSTS) {
 				new_infinity = 1;

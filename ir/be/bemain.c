@@ -611,12 +611,11 @@ void be_step_last(ir_graph *irg)
 			for (be_timer_id_t t = T_FIRST; t < T_LAST+1; ++t) {
 				char buf[128];
 				snprintf(buf, sizeof(buf), "bemain_time_%s",
-						 get_timer_name(t));
+				         get_timer_name(t));
 				stat_ev_dbl(buf, ir_timer_elapsed_usec(be_timers[t]));
 			}
 		} else {
-			printf("==>> IRG %s <<==\n",
-				   get_entity_name(get_irg_entity(irg)));
+			printf("==>> IRG %s <<==\n", get_entity_name(get_irg_entity(irg)));
 			for (be_timer_id_t t = T_FIRST; t < T_LAST+1; ++t) {
 				double val = ir_timer_elapsed_usec(be_timers[t]) / 1000.0;
 				printf("%-20s: %10.3f msec\n", get_timer_name(t), val);

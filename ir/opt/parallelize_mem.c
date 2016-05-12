@@ -48,13 +48,13 @@ static void parallelize_load(parallelize_info *pi, ir_node *irn)
 		if (is_Proj(irn)) {
 			ir_node *pred = get_Proj_pred(irn);
 			if (is_Load(pred) &&
-					get_Load_volatility(pred) == volatility_non_volatile) {
+			    get_Load_volatility(pred) == volatility_non_volatile) {
 				ir_node *mem = get_Load_mem(pred);
 				ir_nodeset_insert(&pi->user_mem, irn);
 				parallelize_load(pi, mem);
 				return;
 			} else if (is_Store(pred) &&
-					get_Store_volatility(pred) == volatility_non_volatile) {
+	                           get_Store_volatility(pred) == volatility_non_volatile) {
 				ir_type *org_type   = pi->origin_type;
 				unsigned org_size   = pi->origin_size;
 				ir_node *org_ptr    = pi->origin_ptr;

@@ -55,8 +55,8 @@ lpp_t *lpp_new(const char *name, lpp_opt_t opt_type)
 }
 
 lpp_t *lpp_new_userdef(const char *name, lpp_opt_t opt_type,
-			           int estimated_vars, int estimated_csts,
-			           double grow_factor)
+                       int estimated_vars, int estimated_csts,
+                       double grow_factor)
 {
 	lpp_t *lpp;
 	int   idx;
@@ -338,11 +338,11 @@ void lpp_check_startvals(lpp_t *lpp)
 		int        var_idx;
 
 		for (var_idx = 1; var_idx < lpp->var_next; ++var_idx) {
-				if (lpp->vars[var_idx]->value_kind != lpp_value_start)
-					goto next;
+			if (lpp->vars[var_idx]->value_kind != lpp_value_start)
+				goto next;
 
-				sum += lpp->vars[var_idx]->value *
-					matrix_get(lpp->m, cst_idx, var_idx);
+			sum += lpp->vars[var_idx]->value *
+				matrix_get(lpp->m, cst_idx, var_idx);
 		}
 		switch (cst->type.cst_type) {
 			case lpp_equal:
@@ -417,7 +417,7 @@ void lpp_dump_plain(lpp_t *lpp, FILE *f)
 		}
 
 		fprintf(f, "%3s %+4.1f\n",
-				lpp_cst_op_to_str(cst->type.cst_type), matrix_get(lpp->m, cst->nr, 0));
+		        lpp_cst_op_to_str(cst->type.cst_type), matrix_get(lpp->m, cst->nr, 0));
 	}
 
 	fprintf(f, "Binary\n");

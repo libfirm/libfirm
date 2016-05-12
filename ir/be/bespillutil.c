@@ -514,8 +514,8 @@ static void determine_spill_costs(spill_env_t *env, spill_info_t *spillinfo)
 	}
 
 	DB((dbg, LEVEL_1, "%+F: latespillcosts %f after def: %f\n", to_spill,
-			spills_execfreq * env->regif.spill_cost,
-			spill_execfreq * env->regif.spill_cost));
+	    spills_execfreq * env->regif.spill_cost,
+	    spill_execfreq * env->regif.spill_cost));
 
 	/* multi-/latespill is advantageous -> return*/
 	if (spills_execfreq < spill_execfreq) {
@@ -619,7 +619,7 @@ void be_insert_spills_reloads(spill_env_t *env)
 				 * reconstruction for memory comes below */
 				assert(si->spills != NULL);
 				copy = env->regif.new_reload(si->to_spill, si->spills->spill,
-											 rld->reloader);
+				                             rld->reloader);
 				env->reload_count++;
 			}
 

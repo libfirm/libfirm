@@ -1298,7 +1298,7 @@ static int ia32_is_mux_allowed(ir_node *sel, ir_node *mux_false,
 		return true;
 	/* SSE has own min/max operations */
 	if (ia32_cg_config.use_sse2
-			&& mux_is_float_min_max(sel, mux_true, mux_false))
+	    && mux_is_float_min_max(sel, mux_true, mux_false))
 		return true;
 	/* we can handle Mux(?, Const[f], Const[f]) */
 	if (mux_is_float_const_const(sel, mux_true, mux_false))
@@ -1454,7 +1454,7 @@ static bool lower_for_emit(ir_graph *const irg, unsigned *const sp_is_non_ssa)
 	be_timer_push(T_RA_PREPARATION);
 	ia32_setup_fpu_mode(irg);
 	be_sched_fix_flags(irg, &ia32_reg_classes[CLASS_ia32_flags],
-					   &flags_remat, NULL, &ia32_try_replace_flags);
+	                   &flags_remat, NULL, &ia32_try_replace_flags);
 	simplify_remat_nodes(irg);
 	be_timer_pop(T_RA_PREPARATION);
 
@@ -1678,8 +1678,8 @@ static const backend_params *ia32_get_libfirm_params(void)
 static const lc_opt_table_entry_t ia32_options[] = {
 	LC_OPT_ENT_BOOL("gprof", "Create gprof profiling code", &gprof),
 	LC_OPT_ENT_BOOL("struct_in_reg",
-					"Return small structs in integer registers",
-					&return_small_struct_in_regs),
+	                "Return small structs in integer registers",
+	                &return_small_struct_in_regs),
 	LC_OPT_LAST
 };
 

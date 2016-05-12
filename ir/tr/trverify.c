@@ -366,12 +366,12 @@ static bool verify_info_member(ir_type const *const segment,
 	ident *const ld_ident = get_entity_ld_ident(entity);
 	if (ld_ident[0] != '\0') {
 		report_error("entity %+F in %s segment must not have an ld_name",
-					 entity, get_id_str(get_segment_ident(segment)));
+		             entity, get_id_str(get_segment_ident(segment)));
 		fine = false;
 	}
 	if ((get_entity_linkage(entity) & IR_LINKAGE_HIDDEN_USER) == 0) {
 		report_error("entity %+F in segment %s without LINKAGE_HIDDEN_USER",
-					 entity, get_id_str(get_segment_ident(segment)));
+		             entity, get_id_str(get_segment_ident(segment)));
 		fine = false;
 	}
 	return fine;
