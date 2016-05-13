@@ -78,7 +78,7 @@ static void process_stack_bias(sp_sim_func const sim, ir_node *const block,
 	}
 
 	/* Continue at our control flow successors. */
-	foreach_out_edge_kind(block, edge, EDGE_KIND_BLOCK) {
+	foreach_block_succ(block, edge) {
 		ir_node *succ = get_edge_src_irn(edge);
 		process_stack_bias(sim, succ, p2align, misalign,
 		                   state.offset, state.align_padding);

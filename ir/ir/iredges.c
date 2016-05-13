@@ -351,7 +351,7 @@ void edges_notify_edge(ir_node *src, int pos, ir_node *tgt, ir_node *old_tgt,
 		} else if (get_irn_mode(src) == mode_X && old_tgt != NULL && pos == -1) {
 			assert(is_Block(old_tgt));
 			/* moving a jump node from one block to another */
-			foreach_out_edge_kind_safe(old_tgt, edge, EDGE_KIND_BLOCK) {
+			foreach_block_succ_safe(old_tgt, edge) {
 				ir_node *succ       = get_edge_src_irn(edge);
 				int      succ_pos   = get_edge_src_pos(edge);
 				ir_node *block_pred = get_Block_cfgpred(succ, succ_pos);
@@ -831,7 +831,7 @@ static void irg_walk_edges2(ir_node *node, irg_walk_func *pre,
 	if (pre != NULL)
 		pre(node, env);
 
-	foreach_out_edge_kind_safe(node, edge, EDGE_KIND_NORMAL) {
+	foreach_out_edge_safe(node, edge) {
 		/* find the corresponding successor block. */
 		ir_node *pred = get_edge_src_irn(edge);
 		assert(pred != NULL && "edge deleted while iterating?");
@@ -867,7 +867,7 @@ static void irg_block_edges_walk2(ir_node *bl, irg_walk_func *pre,
 		if (pre)
 			pre(bl, env);
 
-		foreach_out_edge_kind_safe(bl, edge, EDGE_KIND_BLOCK) {
+		foreach_block_succ_safe(bl, edge) {
 			/* find the corresponding successor block. */
 			ir_node *pred = get_edge_src_irn(edge);
 			irg_block_edges_walk2(pred, pre, post, env);

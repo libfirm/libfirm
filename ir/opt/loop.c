@@ -263,7 +263,7 @@ count:
 			unsigned outs_n = 0;
 
 			/* Count innerloop branches */
-			foreach_out_edge_kind(node, edge, EDGE_KIND_BLOCK) {
+			foreach_block_succ(node, edge) {
 				ir_node *succ = get_edge_src_irn(edge);
 				if (is_Block(succ) && is_in_loop(succ))
 					++outs_n;
@@ -817,7 +817,7 @@ static void find_condition_chain(ir_node *const block)
 
 	/* Get node count */
 	unsigned nodes_n = 0;
-	foreach_out_edge_kind(block, edge, EDGE_KIND_NORMAL) {
+	foreach_out_edge(block, edge) {
 		++nodes_n;
 	}
 

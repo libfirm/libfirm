@@ -100,6 +100,11 @@ FIRM_API const ir_edge_t *get_irn_out_edge_next(const ir_node *irn,
 #define foreach_block_succ(bl, edge)      foreach_out_edge_kind(bl, edge, EDGE_KIND_BLOCK)
 
 /**
+ * A convenience iteration macro for all control flow edges.
+ */
+#define foreach_block_succ_safe(bl, edge) foreach_out_edge_kind_safe(bl, edge, EDGE_KIND_BLOCK)
+
+/**
  * Returns the source node of an edge.
  * @param edge The edge.
  * @return The source node of that edge.
