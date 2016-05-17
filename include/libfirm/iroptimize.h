@@ -307,7 +307,7 @@ FIRM_API void proc_cloning(float threshold);
  * and for address expression.
  * Works only if Constant folding is activated.
  *
- * Uses loop information to detect loop-invariant (i.e. contant
+ * Uses loop information to detect loop-invariant (i.e. constant
  * inside the loop) values.
  *
  * See Muchnik 12.3.1 Algebraic Simplification and Reassociation of

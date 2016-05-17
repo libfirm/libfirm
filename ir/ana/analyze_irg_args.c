@@ -245,9 +245,9 @@ enum args_weight {
 };
 
 /**
- * Compute the weight of a method parameter
+ * Computes the weight of a method parameter
  *
- * @param arg  The parameter them weight muss be computed.
+ * @param arg  The parameter whose weight is to be computed.
  */
 static unsigned calc_method_param_weight(ir_node *arg)
 {
@@ -352,7 +352,7 @@ static void analyze_method_params_weight(ir_entity *ent)
 	size_t   nparams  = get_method_n_params(mtp);
 	ent->attr.mtd_attr.param_weight = NEW_ARR_F(unsigned, nparams);
 
-	/* If the method haven't parameters we have nothing to do. */
+	/* If the method has no parameters, we have nothing to do */
 	if (nparams <= 0)
 	  return;
 

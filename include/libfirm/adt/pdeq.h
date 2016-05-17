@@ -18,7 +18,7 @@
 /**
  * @ingroup adt
  * @defgroup pdeq Double Ended Queue
- * Implementation if a double ended queue data structure for generic pointers
+ * Implementation of a double ended queue data structure for generic pointers
  * @{
  */
 

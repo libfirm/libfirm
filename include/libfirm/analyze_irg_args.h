@@ -41,7 +41,7 @@ FIRM_API void analyze_irg_args(ir_graph *irg);
  * has on optimization possibility. Higher values allows
  * higher optimization with procedure cloning.
  *
- * The values are calculation on demand only.
+ * The values are calculated on demand only.
  */
 FIRM_API unsigned get_method_param_weight(ir_entity *ent, size_t pos);
 

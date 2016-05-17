@@ -190,13 +190,13 @@ static void process_call(ir_node *call, ir_entity *callee, q_set *hmap)
 	 * magic. */
 
 	/* In this for loop we collect the calls, that have
-	   an constant parameter. */
+	   a constant parameter. */
 	size_t const n_params = get_Call_n_params(call);
 	for (size_t i = n_params; i-- > 0;) {
 		ir_node *const call_param = get_Call_param(call, i);
 		if (is_Const(call_param)) {
-			/* we have found a Call to collect and we save the informations,
-			 * which we need.*/
+			/* we have found a Call to collect and we save the information
+			 * we need.*/
 			if (!hmap->map)
 				hmap->map = new_pset(entry_cmp, 8);
 
@@ -208,8 +208,9 @@ static void process_call(ir_node *call, ir_entity *callee, q_set *hmap)
 			key->weight  = 0.0F;
 			key->next    = NULL;
 
-			/* We insert our information in the set, where we collect the calls.*/
+			/* Insert entry or get existing equivalent entry */
 			entry_t *const entry = (entry_t*)pset_insert(hmap->map, key, hash_entry(key));
+			/* Free memory if entry already is in set */
 			if (entry != key)
 				obstack_free(&hmap->obst, key);
 
