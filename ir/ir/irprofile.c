@@ -352,12 +352,8 @@ static void instrument_irg(ir_graph *irg, ir_entity *counters, block_id_walker_d
  */
 static ir_entity *new_array_entity(ident *name, int size)
 {
-	ir_type *const uint_type = new_type_primitive(mode_Iu);
-
-	ir_type *const array_type = new_type_array(uint_type);
-	set_array_size_int(array_type, size);
-	set_type_size(array_type, size * get_mode_size_bytes(mode_Iu));
-	set_type_state(array_type, layout_fixed);
+	ir_type *const uint_type  = new_type_primitive(mode_Iu);
+	ir_type *const array_type = new_type_array(uint_type, size);
 
 	ir_type *const owner = get_glob_type();
 	return new_global_entity(owner, name, array_type, ir_visibility_private, IR_LINKAGE_DEFAULT);
@@ -369,14 +365,10 @@ static ir_entity *new_array_entity(ident *name, int size)
  */
 static ir_entity *new_static_string_entity(ident *name, const char *string)
 {
-	ir_type *const char_type   = new_type_primitive(mode_Bs);
-	ir_type *const string_type = new_type_array(char_type);
-	size_t   const length      = strlen(string) + 1;
-
 	/* Create the type for a fixed-length string */
-	set_array_size_int(string_type, length);
-	set_type_size(string_type, length);
-	set_type_state(string_type, layout_fixed);
+	ir_type *const char_type   = new_type_primitive(mode_Bs);
+	size_t   const length      = strlen(string) + 1;
+	ir_type *const string_type = new_type_array(char_type, length);
 
 	ir_type   *const owner  = get_glob_type();
 	ir_entity *const result = new_global_entity(owner, name, string_type, ir_visibility_private, IR_LINKAGE_CONSTANT);

@@ -1561,7 +1561,7 @@ static aggregate_spec_t const *decide_compound_ret(ir_type const *type)
 	unsigned size = get_type_size(type);
 	if (is_Array_type(type)) {
 		/* This is used for returning complex float numbers */
-		if (size == 8 && has_array_size(type) && get_array_size_int(type) == 2
+		if (size == 8 && get_array_size(type) == 2
 		 && is_float(get_array_element_type(type))) {
 			return &iu4_iu4_spec;
 		}

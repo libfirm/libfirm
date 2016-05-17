@@ -1192,34 +1192,9 @@ static void dump_node_with_edges(ir_node *n, void *env)
 		dump_ir_block_edge(F, n);
 }
 
-/** Dumps a const-like node. */
-static void dump_const_node(ir_node *n, void *env)
-{
-	FILE *F = (FILE*)env;
-	if (is_Block(n))
-		return;
-	dump_node_wo_blockedge(F, n);
-}
-
 /***********************************************************************/
 /* the following routines dump the nodes/irgs bracketed to graphs.     */
 /***********************************************************************/
-
-/** Dumps a constant expression as entity initializer, array bound ... */
-static void dump_const_expression(FILE *F, ir_node *value)
-{
-	ir_graph *irg = get_const_code_irg();
-	ir_dump_flags_t old_flags = ir_get_dump_flags();
-	ir_remove_dump_flags(ir_dump_flag_consts_local);
-
-	irg_walk(value, dump_const_node, NULL, F);
-	/* Decrease visited flag so that we walk with the same flag for the next
-	   expression.  This guarantees that we don't dump the same node twice,
-	   as for const expressions cse is performed to save memory. */
-	set_irg_visited(irg, get_irg_visited(irg) -1);
-
-	ir_set_dump_flags(old_flags);
-}
 
 void dump_begin_block_subgraph(FILE *F, const ir_node *block)
 {
@@ -1478,9 +1453,6 @@ static void dump_type_info(ir_type *const tp, ir_entity *const ent, void *const 
 			return;
 		case tpo_array:
 			print_type_type_edge(F, tp, get_array_element_type(tp), ARR_ELT_TYPE_EDGE_ATTR);
-			ir_node *size = get_array_size(tp);
-			print_node_type_edge(F, size, tp, "label: \"size\"");
-			dump_const_expression(F, size);
 			return;
 		case tpo_pointer:
 			print_type_type_edge(F, tp, get_pointer_points_to_type(tp), PTR_PTS_TO_EDGE_ATTR);

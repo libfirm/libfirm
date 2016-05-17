@@ -704,19 +704,8 @@ static void dump_type_details(FILE *const F, ir_type const *const tp)
 
 	case tpo_array:
 		if (verbosity & dump_verbosity_typeattrs) {
-			fprintf(F, "\n  array ");
-
 			const ir_type *elem_tp = get_array_element_type(tp);
-			fprintf(F, "[");
-			const ir_node *size = get_array_size(tp);
-			if (is_Const(size)) {
-				fprintf(F, "%ld", get_Const_long(size));
-			} else {
-				dump_node_opcode(F, size);
-				fprintf(F, " %ld", get_irn_node_nr(size));
-			}
-			ir_fprintf(F, "] of <%+F>", elem_tp);
-			fprintf(F, "\n");
+			ir_fprintf(F, "\n  array [%.u] of <%+F>\n", get_array_size(tp), elem_tp);
 		}
 		return;
 

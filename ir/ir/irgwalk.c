@@ -373,14 +373,4 @@ void walk_const_code(irg_walk_func *pre, irg_walk_func *post, void *env)
 	foreach_irp_irg(i, irg) {
 		walk_types_entities(get_irg_frame_type(irg), &walk_entity, &my_env);
 	}
-
-	/* Walk constant array bounds. */
-	for (size_t i = 0; i < n_types; i++) {
-		ir_type *tp = get_irp_type(i);
-		if (is_Array_type(tp)) {
-			ir_node *size = get_array_size(tp);
-			if (size != NULL)
-				irg_walk(size, pre, post, env);
-		}
-	}
 }

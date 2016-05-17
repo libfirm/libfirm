@@ -1370,24 +1370,15 @@ FIRM_API int is_Method_type(const ir_type *method);
  * @{
  */
 
-/** Create a new type array. */
-FIRM_API ir_type *new_type_array(ir_type *element_type);
+/**
+ * Create a new type array with the given number of elements.
+ *
+ * 0 elements designates an array of unknown length.
+ */
+FIRM_API ir_type *new_type_array(ir_type *element_type, unsigned n_elements);
 
-/** Sets the size (number of elements) of the array, i.e. [0,size[ */
-FIRM_API void set_array_size(ir_type *array, ir_node *size);
-
-/** Sets array size of @p array to @p size elements. */
-FIRM_API void set_array_size_int(ir_type *array, unsigned size);
-
-/** returns true if lower size != Unknown */
-FIRM_API int has_array_size(const ir_type *array);
 /** Returns the size (number of elements) of an array. */
-FIRM_API ir_node *get_array_size(const ir_type *array);
-/** Works only if bound is Const node with tarval that can be converted to long. */
-FIRM_API unsigned get_array_size_int(const ir_type *array);
-
-/** Sets the array element type. */
-FIRM_API void set_array_element_type(ir_type *array, ir_type *tp);
+FIRM_API unsigned get_array_size(const ir_type *array);
 
 /** Returns the array element type. */
 FIRM_API ir_type *get_array_element_type(const ir_type *array);

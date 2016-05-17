@@ -577,13 +577,7 @@ static void write_type_array(write_env_t *env, ir_type *tp)
 
 	write_type_common(env, tp);
 	write_type_ref(env, element_type);
-	ir_node *size = get_array_size(tp);
-	if (is_Const(size))
-		write_long(env, get_Const_long(size));
-	else if (is_Unknown(size))
-		write_symbol(env, "unknown");
-	else
-		panic("upper array bound is not constant");
+	write_unsigned(env, get_array_size(tp));
 	fputc('\n', env->file);
 }
 
@@ -1610,14 +1604,9 @@ static void read_type(read_env_t *env)
 
 	switch (opcode) {
 	case tpo_array: {
-		ir_type *elemtype = read_type_ref(env);
-		type = new_type_array(elemtype);
-		char *str = read_word(env);
-		if (!streq(str, "unknown")) {
-			long size = atol(str);
-			set_array_size_int(type, size);
-		}
-		obstack_free(&env->obst, str);
+		ir_type *const elemtype = read_type_ref(env);
+		unsigned const length   = read_unsigned(env);
+		type = new_type_array(elemtype, length);
 		set_type_size(type, size);
 		goto finish_type;
 	}

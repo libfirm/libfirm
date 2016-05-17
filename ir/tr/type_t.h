@@ -76,7 +76,7 @@ typedef struct {
 
 /** Array type attributes. */
 typedef struct {
-	ir_node *size;         /**< number of elements in the array. */
+	unsigned size;         /**< number of elements in the array. */
 	ir_type *element_type; /**< The type of the array elements. */
 } array_attr;
 

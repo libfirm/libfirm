@@ -772,56 +772,27 @@ ident *get_segment_ident(ir_type const *type)
 	return type->name;
 }
 
-ir_type *new_type_array(ir_type *element_type)
+ir_type *new_type_array(ir_type *const element_type, unsigned const n_elements)
 {
 	assert(!is_Method_type(element_type));
 
-	ir_type  *res = new_type(tpo_array, sizeof(array_attr), NULL);
+	ir_type *const res = new_type(tpo_array, sizeof(array_attr), NULL);
 	res->attr.array.element_type = element_type;
-	res->attr.array.size         = new_r_Unknown(get_const_code_irg(), mode_Iu);
+	res->attr.array.size         = n_elements;
 	set_type_alignment(res, get_type_alignment(element_type));
+	if (n_elements != 0) {
+		set_type_size(res, n_elements * get_type_size(element_type));
+		set_type_state(res, layout_fixed);
+	}
 
 	hook_new_type(res);
 	return res;
 }
 
-void set_array_size(ir_type *array, ir_node *size)
-{
-	assert(is_Array_type(array));
-	assert(size != NULL);
-	array->attr.array.size = size;
-}
-
-void set_array_size_int(ir_type *array, unsigned size)
-{
-	ir_graph *irg = get_const_code_irg();
-	set_array_size(array, new_r_Const_long(irg, mode_Iu, size));
-}
-
-int has_array_size(const ir_type *array)
-{
-	assert(is_Array_type(array));
-	return !is_Unknown(array->attr.array.size);
-}
-
-ir_node *get_array_size(const ir_type *array)
+unsigned get_array_size(const ir_type *array)
 {
 	assert(is_Array_type(array));
 	return array->attr.array.size;
-}
-
-unsigned get_array_size_int(const ir_type *array)
-{
-	ir_node *const node = get_array_size(array);
-	return get_Const_long(node);
-}
-
-void set_array_element_type(ir_type *array, ir_type *tp)
-{
-	assert(is_Array_type(array));
-	assert(!is_Method_type(tp));
-	array->attr.array.element_type = tp;
-	set_type_alignment(array, get_type_alignment(tp));
 }
 
 ir_type *get_array_element_type(const ir_type *array)

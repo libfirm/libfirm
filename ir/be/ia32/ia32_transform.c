@@ -496,16 +496,7 @@ static ir_node *gen_be_Relocation(ir_node *node)
 
 static ir_type *make_array_type(ir_type *tp)
 {
-	unsigned alignment = get_type_alignment(tp);
-	unsigned size      = get_type_size(tp);
-	ir_type *res       = new_type_array(tp);
-	set_type_alignment(res, alignment);
-	set_array_size_int(res, 2);
-	if (alignment > size)
-		size = alignment;
-	set_type_size(res, 2 * size);
-	set_type_state(res, layout_fixed);
-	return res;
+	return new_type_array(tp, 2);
 }
 
 /**

@@ -613,8 +613,8 @@ static void emit_array_type(const ir_type *type)
 	emit_uleb128(abbrev_array_type);
 	emit_type_address(element_type);
 
-	if (has_array_size(type)) {
-		unsigned bound = get_array_size_int(type);
+	unsigned const bound = get_array_size(type);
+	if (bound != 0) {
 		emit_uleb128(abbrev_subrange_type);
 		emit_uleb128(bound);
 	}
