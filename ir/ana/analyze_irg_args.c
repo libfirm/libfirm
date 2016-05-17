@@ -378,14 +378,8 @@ static void analyze_method_params_weight(ir_entity *ent)
 
 unsigned get_method_param_weight(ir_entity *ent, size_t pos)
 {
-	if (ent->attr.mtd_attr.param_weight) {
-		if (pos < ARR_LEN(ent->attr.mtd_attr.param_weight))
-			return ent->attr.mtd_attr.param_weight[pos];
-		else
-			return null_weight;
-	}
-
-	analyze_method_params_weight(ent);
+	if (!ent->attr.mtd_attr.param_weight)
+		analyze_method_params_weight(ent);
 
 	if (pos < ARR_LEN(ent->attr.mtd_attr.param_weight))
 		return ent->attr.mtd_attr.param_weight[pos];
