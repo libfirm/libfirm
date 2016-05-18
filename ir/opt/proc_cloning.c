@@ -326,7 +326,6 @@ static ir_node *get_irg_arg(ir_graph *irg, size_t pos)
 	ir_node *irg_args = get_irg_args(irg);
 	foreach_irn_out_r(irg_args, i, proj) {
 		if (pos == get_Proj_num(proj)) {
-			assert(arg == NULL);
 			if (arg != NULL)
 				panic("multiple projs for the same argument");
 			arg = proj;
