@@ -235,20 +235,6 @@ static void collect_irg_calls(ir_node *call, void *env)
 	process_call(call, callee, hmap);
 }
 
-/**
- * Make a name for a clone. The clone name is
- * the name of the original method suffixed with "_cl_pos_nr".
- * pos is the pos from our quadruplet and nr is a counter.
- *
- * @param id  The ident of the cloned function.
- * @param pos The "pos" from our quadruplet.
- * @param nr  A counter for the clones.
- */
-static ident *get_clone_ident(ident *id, size_t pos, size_t nr)
-{
-	return new_id_fmt("%s_cl_%zu_%zu", id, pos, nr);
-}
-
 static inline ir_node *get_irn_copy(ir_node *const irn)
 {
 	return (ir_node*)get_irn_link(irn);
@@ -425,11 +411,8 @@ static void change_entity_type(const quadruple_t *q, ir_entity *ent)
  */
 static ir_entity *clone_method(const quadruple_t *q)
 {
-	/* A counter for the clones.*/
-	static size_t nr = 0;
-
 	/* We get a new ident for our clone method.*/
-	ident     *const clone_ident = get_clone_ident(get_entity_ident(q->ent), q->pos, nr++);
+	ident     *const clone_ident = id_unique(get_entity_ident(q->ent));
 	/* We get our entity for the clone method. */
 	ir_type   *const owner       = get_entity_owner(q->ent);
 	ir_entity *const new_entity  = clone_entity(q->ent, clone_ident, owner);
