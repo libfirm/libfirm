@@ -591,9 +591,19 @@ static int verify_node_Member(const ir_node *n)
 	if (entity == NULL) {
 		warn(n, "entity is NULL");
 		fine = false;
-	} else if (is_segment_type(get_entity_owner(entity))) {
-		warn(n, "Member from entity with global/segment type owner");
-		fine = false;
+	} else {
+		ir_type *const owner = get_entity_owner(entity);
+		if (is_segment_type(owner)) {
+			warn(n, "Member from entity with global/segment type owner");
+			fine = false;
+		} else {
+			ir_node  *const ptr = get_Member_ptr(n);
+			ir_graph *const irg = get_irn_irg(n);
+			if (ptr == get_irg_frame(irg) && owner != get_irg_frame_type(irg)) {
+				warn(n, "entity of Member with frame base is not in frame");
+				fine = false;
+			}
+		}
 	}
 	return fine;
 }
