@@ -301,13 +301,9 @@ static unsigned calc_method_param_weight(ir_node *arg)
 				if (pred == arg) {
 					/* look for Proj(j) */
 					foreach_irn_out_r(succ, k, succ_succ) {
-						if (is_Proj(succ_succ)) {
-							if (get_Proj_num(succ_succ) == j) {
-								/* found */
-								weight += calc_method_param_weight(succ_succ);
-							}
-						} else {
-							/* this should NOT happen */
+						if (get_Proj_num(succ_succ) == j) {
+							/* found */
+							weight += calc_method_param_weight(succ_succ);
 						}
 					}
 				}
