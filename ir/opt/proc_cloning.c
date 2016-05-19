@@ -122,6 +122,18 @@ static void copy_irn_to_irg(ir_node *n, ir_graph *irg)
 		break;
 	}
 
+	case iro_Member: {
+		ir_graph *const old_irg = get_irn_irg(n);
+		ir_node  *const old_ptr = get_Member_ptr(n);
+		if (old_ptr == get_irg_frame(old_irg)) {
+			dbg_info  *const dbgi  = get_irn_dbg_info(n);
+			ir_node   *const block = get_irg_start_block(irg);
+			ir_entity *const ent   = get_entity_link(get_Member_entity(n));
+			nn = new_rd_Member(dbgi, block, old_ptr, ent);
+		}
+		break;
+	}
+
 	case iro_Start:
 		nn = get_irg_start(irg);
 		break;
@@ -335,6 +347,30 @@ static ir_node *get_irg_arg(ir_graph *irg, size_t pos)
 	return arg;
 }
 
+static void clone_frame(ir_graph *const src_irg, ir_graph *const dst_irg, size_t const param_pos)
+{
+	ir_type *const src_frame = get_irg_frame_type(src_irg);
+	ir_type *const dst_frame = get_irg_frame_type(dst_irg);
+	for (size_t i = 0, n = get_compound_n_members(src_frame); i != n; ++i) {
+		ir_entity *const src_ent = get_compound_member(src_frame, i);
+		if (is_parameter_entity(src_ent)) {
+			size_t const pos = get_entity_parameter_number(src_ent);
+			if (pos >= param_pos) {
+				if (pos == param_pos)
+					panic("specializing parameter with entity not handled yet");
+				ident     *const name    = get_entity_name(src_ent);
+				ir_entity *const dst_ent = clone_entity(src_ent, name, dst_frame);
+				set_entity_link(src_ent, dst_ent);
+				set_entity_parameter_number(dst_ent, pos - 1);
+			}
+		} else {
+			ident     *const name    = get_entity_name(src_ent);
+			ir_entity *const dst_ent = clone_entity(src_ent, name, dst_frame);
+			set_entity_link(src_ent, dst_ent);
+		}
+	}
+}
+
 /**
  * Create a new graph for the clone of the method,
  * that we want to clone.
@@ -349,6 +385,7 @@ static void create_clone_proc_irg(ir_entity *ent, const quadruple_t *q)
 
 	/* We create the skeleton of the clone irg.*/
 	ir_graph *const clone_irg  = new_ir_graph(ent, 0);
+	clone_frame(method_irg, clone_irg, q->pos);
 
 	ir_node *const arg        = get_irg_arg(get_entity_irg(q->ent), q->pos);
 	/* we will replace the argument in position "q->pos" by this constant. */
