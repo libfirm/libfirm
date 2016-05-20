@@ -462,10 +462,6 @@ static ir_entity *clone_method(const quadruple_t *q)
 	/* We need now a new ir_graph for our clone method. */
 	create_clone_proc_irg(new_entity, q);
 
-	/* The "new_entity" don't have this information. */
-	new_entity->attr.mtd_attr.param_access = NULL;
-	new_entity->attr.mtd_attr.param_weight = NULL;
-
 	return new_entity;
 }
 
