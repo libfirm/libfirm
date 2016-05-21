@@ -494,11 +494,6 @@ static ir_node *gen_be_Relocation(ir_node *node)
 	return new_bd_ia32_Const(dbgi, block, &imm);
 }
 
-static ir_type *make_array_type(ir_type *tp)
-{
-	return new_type_array(tp, 2);
-}
-
 /**
  * Create a float[2] array type for the given atomic type.
  *
@@ -506,29 +501,17 @@ static ir_type *make_array_type(ir_type *tp)
  */
 static ir_type *ia32_create_float_array(ir_type *tp)
 {
-	ir_mode *mode = get_type_mode(tp);
-	ir_type *arr;
-
-	if (mode == ia32_mode_float32) {
-		static ir_type *float_F;
-
-		arr = float_F;
-		if (arr == NULL)
-			arr = float_F = make_array_type(tp);
-	} else if (mode == ia32_mode_float64) {
-		static ir_type *float_D;
-
-		arr = float_D;
-		if (arr == NULL)
-			arr = float_D = make_array_type(tp);
-	} else {
-		static ir_type *float_E;
-
-		arr = float_E;
-		if (arr == NULL)
-			arr = float_E = make_array_type(tp);
-	}
-	return arr;
+	static ir_type *float_F;
+	static ir_type *float_D;
+	static ir_type *float_E;
+	ir_mode  *const mode = get_type_mode(tp);
+	ir_type **const arr  =
+		mode == ia32_mode_float32 ? &float_F :
+		mode == ia32_mode_float64 ? &float_D :
+		/*                       */ &float_E;
+	if (!*arr)
+		*arr = new_type_array(tp, 2);
+	return *arr;
 }
 
 /* Generates an entity for a known FP const (used for FP Neg + Abs) */
