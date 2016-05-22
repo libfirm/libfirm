@@ -899,6 +899,7 @@ static ir_type *clone_type_and_cache(ir_type *tp)
 	ir_type *res = pmap_get(ir_type, mtp_map, tp);
 	if (res == NULL) {
 		res = clone_type_method(tp);
+		add_method_additional_properties(res, mtp_property_private);
 		pmap_insert(mtp_map, tp, res);
 	}
 
@@ -922,7 +923,6 @@ static void update_calls_to_private(ir_node *call, void *env)
 	if ((get_entity_additional_properties(callee) & mtp_property_private)
 		&& ((get_method_additional_properties(ctp) & mtp_property_private) == 0)) {
 		ctp = clone_type_and_cache(ctp);
-		add_method_additional_properties(ctp, mtp_property_private);
 		/* clear mismatches in variadicity that can happen in obscure C
 		 * programs and break when changing to private calling convention. */
 		ir_type *entity_ctp = get_entity_type(callee);
@@ -953,7 +953,6 @@ void mark_private_methods(void)
 			if ((get_method_additional_properties(mtp) & mtp_property_private) == 0) {
 				/* need a new type */
 				mtp = clone_type_and_cache(mtp);
-				add_method_additional_properties(mtp, mtp_property_private);
 				set_entity_type(ent, mtp);
 				DB((dbgcall, LEVEL_2, "changed entity type of %+F to %+F\n", ent, mtp));
 				changed = true;
