@@ -559,7 +559,7 @@ int (is_Struct_type)(const ir_type *strct)
 	return is_struct_type_(strct);
 }
 
-ir_type *new_type_method(size_t n_param, size_t n_res)
+ir_type *new_type_method(size_t const n_param, size_t const n_res, bool const is_variadic)
 {
 	ir_type *res = new_type(tpo_method, sizeof(method_attr), mode_P);
 	res->flags                 |= tf_layout_fixed;
@@ -568,14 +568,14 @@ ir_type *new_type_method(size_t n_param, size_t n_res)
 	res->attr.method.params     = XMALLOCNZ(ir_type*, n_param);
 	res->attr.method.n_res      = n_res;
 	res->attr.method.res_type   = XMALLOCNZ(ir_type*, n_res);
-	res->attr.method.variadic   = false;
+	res->attr.method.variadic   = is_variadic;
 	res->attr.method.properties = mtp_no_property;
 	set_type_alignment(res, 1);
 	hook_new_type(res);
 	return res;
 }
 
-ir_type *clone_type_method(ir_type *tp)
+ir_type *clone_type_method(ir_type *const tp, bool const is_variadic)
 {
 	assert(is_Method_type(tp));
 	ir_mode       *mode     = tp->mode;
@@ -594,7 +594,7 @@ ir_type *clone_type_method(ir_type *tp)
 	res->attr.method.n_res            = n_res;
 	res->attr.method.res_type         = XMALLOCN(ir_type*, n_res);
 	MEMCPY(res->attr.method.res_type, tp->attr.method.res_type, n_res);
-	res->attr.method.variadic         = tp->attr.method.variadic;
+	res->attr.method.variadic         = is_variadic;
 	res->attr.method.properties       = tp->attr.method.properties;
 	res->attr.method.irg_calling_conv = tp->attr.method.irg_calling_conv;
 	set_type_alignment(res, get_type_alignment(tp));
@@ -653,12 +653,6 @@ int is_method_variadic(ir_type const *const method)
 {
 	assert(is_Method_type(method));
 	return method->attr.method.variadic;
-}
-
-void set_method_variadic(ir_type *const method, int const is_variadic)
-{
-	assert(is_Method_type(method));
-	method->attr.method.variadic = is_variadic;
 }
 
 mtp_additional_properties (get_method_additional_properties)(const ir_type *method)

@@ -162,13 +162,12 @@ void ir_finish_type(ir_prog *irp);
 
 /** Clone an existing method type.
  *
- * @param tp      the method type to clone.
- * @param prefix  if non-null, will be the prefix for the name of
- *                the cloned type
+ * @param tp           the method type to clone.
+ * @param is_variadic  whether the cloned type is variadic
  *
  * @return the cloned method type.
  */
-ir_type *clone_type_method(ir_type *tp);
+ir_type *clone_type_method(ir_type *tp, bool is_variadic);
 
 extern ir_visited_t firm_type_visited;
 
@@ -386,7 +385,6 @@ ir_type *new_type_segment(ident *name, type_flags flags);
 
 static inline void copy_method_properties(ir_type *const dst, ir_type const *const src)
 {
-	set_method_variadic(dst, is_method_variadic(src));
 	set_method_calling_convention(dst, get_method_calling_convention(src));
 	set_method_additional_properties(dst, get_method_additional_properties(src));
 }

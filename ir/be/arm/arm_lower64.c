@@ -107,7 +107,7 @@ static ir_entity *uldivmod;
 
 static ir_entity *make_divmod(char const *const name, ir_type *const even, ir_type *const odd)
 {
-	ir_type *const mtp = new_type_method(4, 4);
+	ir_type *const mtp = new_type_method(4, 4, false);
 	set_method_param_type(mtp, 0, even);
 	set_method_param_type(mtp, 1, odd);
 	set_method_param_type(mtp, 2, even);

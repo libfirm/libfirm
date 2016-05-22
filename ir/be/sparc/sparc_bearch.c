@@ -290,7 +290,7 @@ static void handle_intrinsic(ir_node *node, void *data)
 
 static ir_type *make_mod_type(ir_type *const tp)
 {
-	ir_type *const mtp = new_type_method(2, 1);
+	ir_type *const mtp = new_type_method(2, 1, false);
 	set_method_param_type(mtp, 0, tp);
 	set_method_param_type(mtp, 1, tp);
 	set_method_res_type(mtp, 0, tp);

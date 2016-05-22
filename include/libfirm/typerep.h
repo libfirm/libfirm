@@ -11,6 +11,7 @@
 #define FIRM_TYPEREP_H
 
 #include <stddef.h>
+#include <stdbool.h>
 
 #include "firm_types.h"
 
@@ -1242,13 +1243,14 @@ FIRM_API int is_Union_type(const ir_type *uni);
 
 /** Create a new method type.
  *
- * @param n_param   the number of parameters
- * @param n_res     the number of results
+ * @param n_param      the number of parameters
+ * @param n_res        the number of results
+ * @param is_variadic  whether the function is variadic
  *
  * The arrays for the parameter and result types are not initialized by
  * the constructor.
  */
-FIRM_API ir_type *new_type_method(size_t n_param, size_t n_res);
+FIRM_API ir_type *new_type_method(size_t n_param, size_t n_res, bool is_variadic);
 
 /** Returns the number of parameters of this method. */
 FIRM_API size_t get_method_n_params(const ir_type *method);
@@ -1268,9 +1270,6 @@ FIRM_API void set_method_res_type(ir_type *method, size_t pos, ir_type *tp);
 
 /** Returns the variadicity of a method. */
 FIRM_API int is_method_variadic(ir_type const *method);
-
-/** Sets the variadicity of a method. */
-FIRM_API void set_method_variadic(ir_type *method, int is_variadic);
 
 /** Returns the mask of the additional graph properties. */
 FIRM_API mtp_additional_properties get_method_additional_properties(const ir_type *method);

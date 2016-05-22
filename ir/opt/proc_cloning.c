@@ -422,7 +422,7 @@ static void change_entity_type(const quadruple_t *q, ir_entity *ent)
 
 	/* Create the new type for our clone. It must have one parameter
 	   less then the original.*/
-	ir_type *const new_mtp  = new_type_method(n_params - 1, n_ress);
+	ir_type *const new_mtp  = new_type_method(n_params - 1, n_ress, false);
 
 	/* We must set the type of the methods parameters.*/
 	for (size_t i = 0, j = 0; i < n_params; ++i) {

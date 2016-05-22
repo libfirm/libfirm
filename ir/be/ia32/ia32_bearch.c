@@ -1135,7 +1135,7 @@ static void ia32_select_instructions(ir_graph *irg)
 
 		static ir_entity *mcount = NULL;
 		if (mcount == NULL) {
-			ir_type *tp = new_type_method(0, 0);
+			ir_type *tp = new_type_method(0, 0, false);
 			ident   *id = new_id_from_str("mcount");
 			mcount = new_global_entity(get_glob_type(), id, tp,
 			                           ir_visibility_external,

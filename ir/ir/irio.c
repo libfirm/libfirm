@@ -595,11 +595,11 @@ static void write_type_method(write_env_t *env, ir_type *tp)
 	write_unsigned(env, get_method_additional_properties(tp));
 	write_size_t(env, nparams);
 	write_size_t(env, nresults);
+	write_unsigned(env, is_method_variadic(tp));
 	for (size_t i = 0; i < nparams; i++)
 		write_type_ref(env, get_method_param_type(tp, i));
 	for (size_t i = 0; i < nresults; i++)
 		write_type_ref(env, get_method_res_type(tp, i));
-	write_unsigned(env, is_method_variadic(tp));
 	fputc('\n', env->file);
 }
 
@@ -1626,10 +1626,10 @@ static void read_type(read_env_t *env)
 		unsigned                  callingconv = read_unsigned(env);
 		mtp_additional_properties addprops
 			= (mtp_additional_properties) read_long(env);
-		size_t nparams  = read_size_t(env);
-		size_t nresults = read_size_t(env);
-
-		type = new_type_method(nparams, nresults);
+		size_t const nparams  = read_size_t(env);
+		size_t const nresults = read_size_t(env);
+		bool   const is_variadic = read_long(env);
+		type = new_type_method(nparams, nresults, is_variadic);
 
 		for (size_t i = 0; i < nparams; i++) {
 			long ptypenr = read_long(env);
@@ -1643,9 +1643,6 @@ static void read_type(read_env_t *env)
 
 			set_method_res_type(type, i, restype);
 		}
-
-		int const variadic = read_long(env);
-		set_method_variadic(type, variadic);
 
 		set_method_calling_convention(type, callingconv);
 		set_method_additional_properties(type, addprops);

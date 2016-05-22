@@ -180,7 +180,8 @@ static ir_type *lower_mtp(lowering_env_t const *const env, ir_type *mtp)
 	assert(nn_params <= n_params + n_ress);
 
 	/* create the new type */
-	lowered = new_type_method(nn_params, nn_ress);
+	bool const is_variadic = is_method_variadic(mtp);
+	lowered = new_type_method(nn_params, nn_ress, is_variadic);
 	set_type_dbg_info(lowered, get_type_dbg_info(mtp));
 
 	/* fill it */
@@ -188,8 +189,6 @@ static ir_type *lower_mtp(lowering_env_t const *const env, ir_type *mtp)
 		set_method_param_type(lowered, i, params[i]);
 	for (size_t i = 0; i < nn_ress; ++i)
 		set_method_res_type(lowered, i, results[i]);
-
-	set_method_variadic(lowered, is_method_variadic(mtp));
 
 	unsigned cconv = get_method_calling_convention(mtp);
 	if (nn_params > n_params) {
