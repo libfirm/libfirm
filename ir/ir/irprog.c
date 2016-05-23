@@ -61,8 +61,8 @@ static void complete_ir_prog(ir_prog *irp, const char *module_name)
 	ir_init_entity(irp);
 
 	irp->name = new_id_from_str(module_name);
-	irp->segment_types[IR_SEGMENT_GLOBAL]       = new_type_segment(NEW_IDENT("GlobalType"),          tf_global_type);
-	irp->segment_types[IR_SEGMENT_THREAD_LOCAL] = new_type_segment(NEW_IDENT("ThreadLocal"),         tf_tls_type);
+	irp->segment_types[IR_SEGMENT_GLOBAL]       = new_type_segment(NEW_IDENT("GlobalType"),          tf_none);
+	irp->segment_types[IR_SEGMENT_THREAD_LOCAL] = new_type_segment(NEW_IDENT("ThreadLocal"),         tf_none);
 	irp->segment_types[IR_SEGMENT_CONSTRUCTORS] = new_type_segment(NEW_IDENT("Constructors"),        tf_info);
 	irp->segment_types[IR_SEGMENT_DESTRUCTORS]  = new_type_segment(NEW_IDENT("Destructors"),         tf_info);
 	irp->segment_types[IR_SEGMENT_JCR]          = new_type_segment(NEW_IDENT("Java Class Registry"), tf_info);
