@@ -11,7 +11,6 @@
 #define FIRM_TYPEREP_H
 
 #include <stddef.h>
-#include <stdbool.h>
 
 #include "firm_types.h"
 
@@ -1250,7 +1249,7 @@ FIRM_API int is_Union_type(const ir_type *uni);
  * The arrays for the parameter and result types are not initialized by
  * the constructor.
  */
-FIRM_API ir_type *new_type_method(size_t n_param, size_t n_res, bool is_variadic);
+FIRM_API ir_type *new_type_method(size_t n_param, size_t n_res, int is_variadic);
 
 /** Returns the number of parameters of this method. */
 FIRM_API size_t get_method_n_params(const ir_type *method);

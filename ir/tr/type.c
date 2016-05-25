@@ -559,7 +559,7 @@ int (is_Struct_type)(const ir_type *strct)
 	return is_struct_type_(strct);
 }
 
-ir_type *new_type_method(size_t const n_param, size_t const n_res, bool const is_variadic)
+ir_type *new_type_method(size_t const n_param, size_t const n_res, int const is_variadic)
 {
 	ir_type *res = new_type(tpo_method, sizeof(method_attr), mode_P);
 	res->flags                 |= tf_layout_fixed;
