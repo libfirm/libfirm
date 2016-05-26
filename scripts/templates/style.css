@@ -17,7 +17,7 @@ div.body {
 }
 
 div.document {
-	width: 940px;
+	max-width: 940px;
 	margin: 30px auto 0 auto;
 }
 
@@ -71,7 +71,7 @@ div.sidebar input {
 }
 
 div.footer {
-	width: 940px;
+	max-width: 940px;
 	margin: 20px auto 30px auto;
 	font-size: 14px;
 	color: #888;
@@ -129,9 +129,9 @@ ul, ol {
 
 pre {
 	background: #eee;
-	padding: 7px 30px;
-	margin: 15px -30px;
+	padding: .5em 1em;
 	line-height: 1.3em;
+	overflow-x: auto;
 }
 
 dl pre, blockquote pre, li pre {
