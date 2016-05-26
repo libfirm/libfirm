@@ -103,7 +103,7 @@ typedef void callgraph_walk_func(ir_graph *g, void *env);
  * Visits ALL graphs in the irp, even if not reached by the main irg, but for
  * those the call order is not guaranteed.
  *
- * Executes pre before visiting the predecessor of a node, post after.
+ * Executes pre before visiting the callees of a node, post after.
  * The void* env can be used to pass status information between the
  * pre and post functions.
  *
