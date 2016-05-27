@@ -355,13 +355,14 @@ static void clone_frame(ir_graph *const src_irg, ir_graph *const dst_irg, size_t
 		ir_entity *const src_ent = get_compound_member(src_frame, i);
 		if (is_parameter_entity(src_ent)) {
 			size_t const pos = get_entity_parameter_number(src_ent);
-			if (pos >= param_pos) {
-				if (pos == param_pos)
-					panic("specializing parameter with entity not handled yet");
+			if (pos == param_pos) {
+				panic("specializing parameter with entity not handled yet");
+			} else {
 				ident     *const name    = get_entity_name(src_ent);
 				ir_entity *const dst_ent = clone_entity(src_ent, name, dst_frame);
 				set_entity_link(src_ent, dst_ent);
-				set_entity_parameter_number(dst_ent, pos - 1);
+				if (pos > param_pos)
+					set_entity_parameter_number(dst_ent, pos - 1);
 			}
 		} else {
 			ident     *const name    = get_entity_name(src_ent);
