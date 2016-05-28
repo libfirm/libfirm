@@ -352,23 +352,22 @@ static void clone_frame(ir_graph *const src_irg, ir_graph *const dst_irg, size_t
 	ir_type *const src_frame = get_irg_frame_type(src_irg);
 	ir_type *const dst_frame = get_irg_frame_type(dst_irg);
 	for (size_t i = 0, n = get_compound_n_members(src_frame); i != n; ++i) {
+		ir_entity       *dst_ent;
 		ir_entity *const src_ent = get_compound_member(src_frame, i);
+		ident     *const name    = get_entity_name(src_ent);
 		if (is_parameter_entity(src_ent)) {
 			size_t const pos = get_entity_parameter_number(src_ent);
 			if (pos == param_pos) {
 				panic("specializing parameter with entity not handled yet");
 			} else {
-				ident     *const name    = get_entity_name(src_ent);
-				ir_entity *const dst_ent = clone_entity(src_ent, name, dst_frame);
-				set_entity_link(src_ent, dst_ent);
+				dst_ent = clone_entity(src_ent, name, dst_frame);
 				if (pos > param_pos)
 					set_entity_parameter_number(dst_ent, pos - 1);
 			}
 		} else {
-			ident     *const name    = get_entity_name(src_ent);
-			ir_entity *const dst_ent = clone_entity(src_ent, name, dst_frame);
-			set_entity_link(src_ent, dst_ent);
+			dst_ent = clone_entity(src_ent, name, dst_frame);
 		}
+		set_entity_link(src_ent, dst_ent);
 	}
 }
 
