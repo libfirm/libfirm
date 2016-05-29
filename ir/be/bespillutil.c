@@ -488,8 +488,8 @@ static void determine_spill_costs(spill_env_t *env, spill_info_t *spillinfo)
 	if (spillinfo->spill_costs >= 0)
 		return;
 
-	ir_node       *to_spill = spillinfo->to_spill;
-	const ir_node *insn     = skip_Proj_const(to_spill);
+	ir_node *const to_spill = spillinfo->to_spill;
+	ir_node *const insn     = skip_Proj(to_spill);
 	assert(!arch_irn_is(insn, dont_spill));
 	assert(!arch_irn_is(insn, reload));
 
@@ -526,7 +526,7 @@ static void determine_spill_costs(spill_env_t *env, spill_info_t *spillinfo)
 
 	/* override spillinfos or create a new one */
 	spill_t *spill = OALLOC(&env->obst, spill_t);
-	spill->after   = be_move_after_schedule_first(skip_Proj(to_spill));
+	spill->after   = be_move_after_schedule_first(insn);
 	spill->next    = NULL;
 	spill->spill   = NULL;
 
