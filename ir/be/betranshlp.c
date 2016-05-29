@@ -40,9 +40,14 @@
 
 typedef struct be_transform_env_t {
 	deq_t worklist;  /**< worklist of nodes that still need to be transformed */
+#ifdef DEBUG_libfirm
+	int n_autotransformed;
+	int n_transformed;
+#endif
 } be_transform_env_t;
 
 static be_transform_env_t env;
+DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
 static ir_node *(*autotransform)(ir_node *);
 
@@ -232,9 +237,10 @@ ir_node *be_transform_node(ir_node *node)
 		if (autotransform != NULL && !is_Block(node)) {
 			new_node = autotransform(node);
 			if (new_node != NULL) {
-				ir_printf("%+F autotransformed to %+F\n", node, new_node);
+				DEBUG_ONLY(env.n_autotransformed++);
+				DB((dbg, LEVEL_2, "autotransform %+F\t%+F\n", node, new_node));
 			} else {
-				ir_printf("\t%+F not autotransformed\n", node);
+				DB((dbg, LEVEL_2, "autotransform %+F\tNIL\n", node));
 			}
 		}
 
@@ -249,6 +255,7 @@ ir_node *be_transform_node(ir_node *node)
 			new_node = transform(node);
 		}
 		be_set_transformed_node(node, new_node);
+		DEBUG_ONLY(env.n_transformed++);
 	}
 	assert(new_node);
 	return new_node;
@@ -316,6 +323,8 @@ static void transform_nodes(ir_graph *irg, arch_pretrans_nodes *pre_transform)
 	inc_irg_visited(irg);
 
 	deq_init(&env.worklist);
+	DEBUG_ONLY(env.n_autotransformed = 0);
+	DEBUG_ONLY(env.n_transformed = 0);
 
 	ir_node *const old_anchor = irg->anchor;
 	ir_node *const new_anchor = new_r_Anchor(irg);
@@ -346,10 +355,15 @@ static void transform_nodes(ir_graph *irg, arch_pretrans_nodes *pre_transform)
 
 	deq_free(&env.worklist);
 	free_End(old_end);
+
+	DB((dbg, LEVEL_1, "autotransform \t\t%s\t%d\t%d\n",
+	    get_entity_name(get_irg_entity(irg)), env.n_autotransformed, env.n_transformed));
 }
 
 void be_transform_graph(ir_graph *irg, arch_pretrans_nodes *func)
 {
+	FIRM_DBG_REGISTER(dbg, "firm.be.autotransform");
+
 	/* create a new obstack */
 	struct obstack old_obst = irg->obst;
 	obstack_init(&irg->obst);
