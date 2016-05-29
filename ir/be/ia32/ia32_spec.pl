@@ -1211,6 +1211,45 @@ Bt => {
 	latency   => 1,
 },
 
+Btc => {
+	irn_flags => [ "modify_flags", "rematerializable" ],
+	state     => "exc_pinned",
+	in_reqs   => [ "gp", "gp", "mem", "gp", "gp" ],
+	out_reqs  => [ "in_r3", "flags", "mem" ],
+	ins       => [ "base", "index", "mem", "bitfield", "bit" ],
+	outs      => [ "res", "flags", "M" ],
+	am        => "source,binary",
+	emit      => "btc%M %B",
+	latency   => 1,
+	mode      => "first",
+},
+
+Btr => {
+	irn_flags => [ "modify_flags", "rematerializable" ],
+	state     => "exc_pinned",
+	in_reqs   => [ "gp", "gp", "mem", "gp", "gp" ],
+	out_reqs  => [ "in_r3", "flags", "mem" ],
+	ins       => [ "base", "index", "mem", "bitfield", "bit" ],
+	outs      => [ "res", "flags", "M" ],
+	am        => "source,binary",
+	emit      => "btr%M %B",
+	latency   => 1,
+	mode      => "first",
+},
+
+Bts => {
+	irn_flags => [ "modify_flags", "rematerializable" ],
+	state     => "exc_pinned",
+	in_reqs   => [ "gp", "gp", "mem", "gp", "gp" ],
+	out_reqs  => [ "in_r3", "flags", "mem" ],
+	ins       => [ "base", "index", "mem", "bitfield", "bit" ],
+	outs      => [ "res", "flags", "M" ],
+	am        => "source,binary",
+	emit      => "bts%M %B",
+	latency   => 1,
+	mode      => "first",
+},
+
 Bsf => {
 	template => $unop_from_mem,
 	emit     => "bsf%M %AS3, %D0",
@@ -1987,6 +2026,39 @@ xxStore => {
 	outs     => [ "M", "X_regular", "X_except" ],
 	attr     => "x86_insn_size_t size",
 	emit     => "movdqu %S3, %AM",
+	latency  => 1,
+},
+
+# BMI instructions
+
+Andn => {
+	irn_flags => [ "modify_flags", "rematerializable" ],
+	state     => "exc_pinned",
+	in_reqs   => [ "gp", "gp", "mem", "gp", "gp" ],
+	out_reqs  => [ "gp", "flags", "mem" ],
+	ins       => [ "base", "index", "mem", "left", "right" ],
+	outs      => [ "res", "flags", "M" ],
+	am        => "source,binary",
+	emit      => "andn%M %B, %D0",
+	latency   => 1,
+	mode      => "first",
+},
+
+Blsi => {
+	template => $unop_from_mem,
+	emit     => "blsi%M %D0",
+	latency  => 1,
+},
+
+Blsmsk => {
+	template => $unop_from_mem,
+	emit     => "blsmsk%M %D0",
+	latency  => 1,
+},
+
+Blsr => {
+	template => $unop_from_mem,
+	emit     => "blsr%M %D0",
 	latency  => 1,
 },
 
