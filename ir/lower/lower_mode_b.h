@@ -15,7 +15,7 @@
  * After this pass the following holds:
  *   - The only inputs with mode_b are for the Cond node and the Sel input of
  *     a Mux node.
- *   - The only nodes producing mode_b are: Proj(Cmp)
+ *   - The only nodes producing mode_b are: Cmp
  */
 #ifndef FIRM_LOWER_MODE_B_H
 #define FIRM_LOWER_MODE_B_H
