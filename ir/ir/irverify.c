@@ -1092,7 +1092,7 @@ static int check_block_cfg(const ir_node *block, check_cfg_env_t *env)
 	}
 
 	if (!get_Block_matured(block)) {
-		warn(block, "imature block found");
+		warn(block, "immature block found");
 		fine = false;
 	}
 
