@@ -22,7 +22,7 @@ int main(void)
 	assert(get_entity_owner(x) == cls);
 
 	ir_entity *gx = ir_get_global(id1);
-	assert (NULL == gx);
+	assert(gx == NULL);
 
 	set_entity_owner(x, glob);
 	assert(get_entity_owner(x) == glob);
