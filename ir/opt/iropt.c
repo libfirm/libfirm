@@ -1127,10 +1127,10 @@ static ir_node *equivalent_node_Add(ir_node *n)
 }
 
 /**
- * optimize operations that are not commutative but have neutral 0 on left,
+ * optimize operations that are not commutative but have right neutral 0,
  * so a op 0 = a.
  */
-static ir_node *equivalent_node_left_zero(ir_node *n)
+static ir_node *equivalent_node_right_zero(ir_node *n)
 {
 	ir_node         *oldn = n;
 	ir_node         *b    = get_binop_right(n);
@@ -7690,9 +7690,9 @@ void ir_register_opt_node_ops(void)
 	set_op_equivalent_node(op_Phi,     equivalent_node_Phi);
 	set_op_equivalent_node(op_Pin,     equivalent_node_Pin);
 	set_op_equivalent_node(op_Proj,    equivalent_node_Proj);
-	set_op_equivalent_node(op_Shl,     equivalent_node_left_zero);
-	set_op_equivalent_node(op_Shr,     equivalent_node_left_zero);
-	set_op_equivalent_node(op_Shrs,    equivalent_node_left_zero);
+	set_op_equivalent_node(op_Shl,     equivalent_node_right_zero);
+	set_op_equivalent_node(op_Shr,     equivalent_node_right_zero);
+	set_op_equivalent_node(op_Shrs,    equivalent_node_right_zero);
 	set_op_equivalent_node(op_Sub,     equivalent_node_Sub);
 	set_op_equivalent_node(op_Sync,    equivalent_node_Sync);
 	set_op_equivalent_node_proj(op_Div,   equivalent_node_Proj_Div);
