@@ -600,9 +600,7 @@ void proc_cloning(float threshold)
 	hmap.heavy_uses = NULL;
 
 	/* initially fill our map by visiting all irgs */
-	foreach_irp_irg(i, irg) {
-		irg_walk_graph(irg, collect_irg_calls, NULL, &hmap);
-	}
+	all_irg_walk(collect_irg_calls, NULL, &hmap);
 
 	/* We have the "Call" nodes to optimize in set "set_entries". Our algorithm
 	   replace one constant parameter and make a new "Call" node for all found "Calls". It exchange the
