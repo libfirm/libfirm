@@ -203,21 +203,18 @@ UNUSED2 := $(shell \
 )
 
 # Unit tests
-UNITTESTS_SOURCES = $(subst $(srcdir)/unittests/,,$(wildcard $(srcdir)/unittests/*.c))
-UNITTESTS         = $(UNITTESTS_SOURCES:%.c=$(builddir)/%.exe)
-UNITTESTS_OK      = $(UNITTESTS_SOURCES:%.c=$(builddir)/%.ok)
+test_src_pattern = $(srcdir)/unittests/%.c
+test_bin_pattern = $(builddir)/%.exe
+test_sources     = $(wildcard $(subst %,*,$(test_src_pattern)))
+test_binaries    = $(test_sources:$(test_src_pattern)=$(test_bin_pattern))
 
-$(builddir)/%.exe: $(srcdir)/unittests/%.c $(libfirm_a)
-	@echo LINK $<
+$(test_bin_pattern) : $(test_src_pattern) $(libfirm_a)
+	@echo TEST $<
 	$(Q)$(LINK) $(CFLAGS) $(CPPFLAGS) $(libfirm_CPPFLAGS) "$<" $(libfirm_a) -lm -o "$@"
+	$(Q)$@
 
-$(builddir)/%.ok: $(builddir)/%.exe
-	@echo EXEC $<
-	$(Q)$< && touch "$@"
-
-.PRECIOUS: $(UNITTESTS)
 .PHONY: test
-test: $(UNITTESTS_OK)
+test: $(test_binaries)
 
 .PHONY: gen
 gen: $(IR_SPEC_GENERATED_INCLUDES) $(libfirm_GEN_SOURCES)
