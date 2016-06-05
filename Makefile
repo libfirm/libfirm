@@ -206,17 +206,22 @@ UNUSED2 := $(shell \
 test_builddir    = $(builddir)/tests
 test_src_pattern = $(srcdir)/unittests/%.c
 test_bin_pattern = $(test_builddir)/%.exe
+test_run_pattern = $(test_builddir)/%.pass
 test_sources     = $(wildcard $(subst %,*,$(test_src_pattern)))
 test_binaries    = $(test_sources:$(test_src_pattern)=$(test_bin_pattern))
+test_runs        = $(test_sources:$(test_src_pattern)=$(test_run_pattern))
 
 $(test_bin_pattern) : $(test_src_pattern) $(libfirm_a)
-	@echo TEST $<
+	@echo CC $@
 	@mkdir -p $(@D)
 	$(Q)$(LINK) $(CFLAGS) $(CPPFLAGS) $(libfirm_CPPFLAGS) "$<" $(libfirm_a) -lm -o "$@"
-	$(Q)$@
+
+$(test_run_pattern) : $(test_bin_pattern)
+	@echo TEST $<
+	$(Q)$< && touch $@
 
 .PHONY: test
-test: $(test_binaries)
+test: $(test_binaries) $(test_runs)
 
 .PHONY: gen
 gen: $(IR_SPEC_GENERATED_INCLUDES) $(libfirm_GEN_SOURCES)
