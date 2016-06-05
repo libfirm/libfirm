@@ -533,11 +533,9 @@ static ir_entity *find_constant_entity(ir_node *ptr)
 			if (!is_Address(ptr) && !is_Align(ptr) && !is_Offset(ptr) && !is_Sel(ptr) && !is_Size(ptr))
 				return NULL;
 		} else if (is_Sub(ptr)) {
-			ir_node *l = get_Sub_left(ptr);
 			ir_node *r = get_Sub_right(ptr);
-
-			if (get_irn_mode(l) == get_irn_mode(ptr) && is_Const(r))
-				ptr = l;
+			if (is_Const(r))
+				ptr = get_Sub_left(ptr);
 			else
 				return NULL;
 			/* for now, we support only one subtraction, reassoc should fold all others */

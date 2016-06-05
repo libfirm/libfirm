@@ -322,14 +322,12 @@ static void get_base_and_offset(ir_node *ptr, base_offset_t *base_offset)
 			offset += get_Const_long(r);
 			ptr     = l;
 		} else if (is_Sub(ptr)) {
-			ir_node *l = get_Sub_left(ptr);
 			ir_node *r = get_Sub_right(ptr);
-
-			if (get_irn_mode(l) != mode || !is_Const(r))
+			if (!is_Const(r))
 				break;
 
 			offset -= get_Const_long(r);
-			ptr     = l;
+			ptr     = get_Sub_left(ptr);
 		} else if (is_Sel(ptr)) {
 			ir_node *index = get_Sel_index(ptr);
 			if (!is_Const(index))
@@ -988,16 +986,15 @@ static ir_entity *find_entity(ir_node *ptr)
 
 		return find_entity(pred);
 	}
-	case iro_Sub:
+
 	case iro_Add: {
-		ir_node *left = get_binop_left(ptr);
-		if (mode_is_reference(get_irn_mode(left)))
-			return find_entity(left);
-		ir_node *right = get_binop_right(ptr);
+		ir_node *const right = get_Add_right(ptr);
 		if (mode_is_reference(get_irn_mode(right)))
 			return find_entity(right);
-		return NULL;
-	}
+	} /* FALLTHROUGH */
+	case iro_Sub:
+		return find_entity(get_binop_left(ptr));
+
 	default:
 		return NULL;
 	}
