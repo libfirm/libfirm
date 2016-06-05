@@ -203,13 +203,15 @@ UNUSED2 := $(shell \
 )
 
 # Unit tests
+test_builddir    = $(builddir)/tests
 test_src_pattern = $(srcdir)/unittests/%.c
-test_bin_pattern = $(builddir)/%.exe
+test_bin_pattern = $(test_builddir)/%.exe
 test_sources     = $(wildcard $(subst %,*,$(test_src_pattern)))
 test_binaries    = $(test_sources:$(test_src_pattern)=$(test_bin_pattern))
 
 $(test_bin_pattern) : $(test_src_pattern) $(libfirm_a)
 	@echo TEST $<
+	@mkdir -p $(@D)
 	$(Q)$(LINK) $(CFLAGS) $(CPPFLAGS) $(libfirm_CPPFLAGS) "$<" $(libfirm_a) -lm -o "$@"
 	$(Q)$@
 
