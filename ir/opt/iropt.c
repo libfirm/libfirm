@@ -1106,22 +1106,16 @@ static ir_node *equivalent_node_Add(ir_node *n)
 	ir_node *left = get_Add_left(n);
 
 	if (is_Sub(left) && get_Sub_right(left) == right) {
-		/* (a - x) + x */
-
+		/* (a - x) + x -> a */
 		n = get_Sub_left(left);
-		if (mode == get_irn_mode(n)) {
-			DBG_OPT_ALGSIM1(oldn, left, right, n);
-			return n;
-		}
+		DBG_OPT_ALGSIM1(oldn, left, right, n);
+		return n;
 	}
 	if (is_Sub(right) && get_Sub_right(right) == left) {
-		/* x + (a - x) */
-
+		/* x + (a - x) -> a */
 		n = get_Sub_left(right);
-		if (mode == get_irn_mode(n)) {
-			DBG_OPT_ALGSIM1(oldn, left, right, n);
-			return n;
-		}
+		DBG_OPT_ALGSIM1(oldn, left, right, n);
+		return n;
 	}
 	return n;
 }
@@ -3451,22 +3445,16 @@ static ir_node *transform_node_Sub(ir_node *n)
 
 			/* check if it's allowed to skip the conv */
 			ir_mode *ma = get_irn_mode(op_a);
-			ir_mode *mb = get_irn_mode(op_b);
-
-			if (mode_is_reference(ma) && mode_is_reference(mb)) {
-				unsigned  const mode_size     = get_mode_size_bits(mode);
-				unsigned  const ma_size       = get_mode_size_bits(ma);
-				unsigned  const mb_size       = get_mode_size_bits(mb);
-				ir_mode  *const offset_mode_a = get_reference_offset_mode(ma);
-				ir_mode  *const offset_mode_b = get_reference_offset_mode(mb);
-
-				if (ma_size == mode_size && mb_size == mode_size
-				 && offset_mode_a == offset_mode_b) {
+			if (mode_is_reference(ma) && ma == get_irn_mode(op_b)) {
+				unsigned const mode_size = get_mode_size_bits(mode);
+				unsigned const ma_size   = get_mode_size_bits(ma);
+				if (ma_size == mode_size) {
+					ir_mode *const offset_mode = get_reference_offset_mode(ma);
 					/* SubInt(ConvInt(aP), ConvInt(bP)) -> SubInt(aP,bP) */
 					dbg_info *const dbgi  = get_irn_dbg_info(n);
 					ir_node  *const block = get_nodes_block(n);
 					ir_node  *const new_sub
-						= new_rd_Sub(dbgi, block, op_a, op_b, offset_mode_a);
+						= new_rd_Sub(dbgi, block, op_a, op_b, offset_mode);
 					ir_node  *const conv
 						= new_rd_Conv(dbgi, block, new_sub, mode);
 					return conv;

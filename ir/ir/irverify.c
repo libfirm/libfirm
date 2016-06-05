@@ -132,21 +132,6 @@ static bool check_mode_same_input(const ir_node *n, int input,
 	return true;
 }
 
-static bool check_mode_ptrdiff_input(const ir_node *n, int input,
-                                     const char *inputname)
-{
-	ir_node  *in           = get_irn_n(n, input);
-	ir_mode  *in_mode      = get_irn_mode(in);
-	ir_mode  *expected     = get_reference_offset_mode(in_mode);
-	ir_mode  *mode         = get_irn_mode(n);
-	if (mode != expected) {
-		warn(n, "Sub with mode %+F at input %s expected mode %+F but has %+F",
-		     in_mode, inputname, expected, mode);
-		return false;
-	}
-	return true;
-}
-
 /**
  * Displays error message that a wrong proj number was found and returns false.
  */
@@ -686,10 +671,9 @@ static int verify_node_Sub(const ir_node *n)
 	if (mode_is_num(mode)) {
 		ir_mode *mode_left = get_irn_mode(get_Sub_left(n));
 		if (mode_is_reference(mode_left)) {
-			fine &= check_input_func(n, n_Sub_left, "left", mode_is_reference, "reference");
-			fine &= check_input_func(n, n_Sub_right, "right", mode_is_reference, "reference");
-			fine &= check_mode_ptrdiff_input(n, n_Sub_left, "left");
-			fine &= check_mode_ptrdiff_input(n, n_Sub_right, "right");
+			fine &= check_input_mode(n, n_Sub_right, "right", mode_left);
+			ir_mode *const offset_mode = get_reference_offset_mode(mode_left);
+			fine &= check_mode(n, offset_mode);
 		} else {
 			fine &= check_mode_same_input(n, n_Sub_left, "left");
 			fine &= check_mode_same_input(n, n_Sub_right, "right");
