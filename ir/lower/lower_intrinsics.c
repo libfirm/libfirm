@@ -173,7 +173,7 @@ int i_mapper_abs(ir_node *call)
 
 	ir_node  *zero     = new_r_Const_null(irg, mode);
 	ir_node  *cmp      = new_rd_Cmp(dbg, block, op, zero, ir_relation_less);
-	ir_node  *minus_op = new_rd_Minus(dbg, block, op, mode);
+	ir_node  *minus_op = new_rd_Minus(dbg, block, op);
 	ir_node  *mux;
 	arch_allow_ifconv_func allow_ifconv = be_get_backend_param()->allow_ifconv;
 
@@ -802,7 +802,7 @@ replace_by_call:
 
 			if (v == right) {
 				/* negate in the ("", s) case */
-				irn = new_rd_Minus(dbg, block, irn, mode);
+				irn = new_rd_Minus(dbg, block, irn);
 			}
 		}
 	}

@@ -363,8 +363,7 @@ ir_node *duplicate_subgraph(dbg_info *dbg, ir_node *n, ir_node *block)
 		                   mode);
 	case iro_Minus:
 		return new_rd_Minus(dbg, block,
-		                    duplicate_subgraph(dbg, get_Minus_op(n), block),
-		                    mode);
+		                    duplicate_subgraph(dbg, get_Minus_op(n), block));
 	case iro_Not:
 		return new_rd_Not(dbg, block,
 		                  duplicate_subgraph(dbg, get_Not_op(n), block));

@@ -3341,7 +3341,7 @@ static ir_node *transform_node_Sub(ir_node *n)
 		ir_node  *left  = get_Minus_op(a);
 		ir_node  *add   = new_rd_Add(dbg, block, left, b, mode);
 
-		n = new_rd_Minus(dbg, block, add, mode);
+		n = new_rd_Minus(dbg, block, add);
 		DBG_OPT_ALGSIM0(oldn, n);
 		return n;
 	}
@@ -3386,7 +3386,7 @@ static ir_node *transform_node_Sub(ir_node *n)
 
 	/* Beware of Sub(P, P) which cannot be optimized into a simple Minus ... */
 	if (mode_is_num(mode) && mode == get_irn_mode(a) && is_Const(a) && is_Const_null(a)) {
-		n = new_rd_Minus(get_irn_dbg_info(n), get_nodes_block(n), b, mode);
+		n = new_rd_Minus(get_irn_dbg_info(n), get_nodes_block(n), b);
 		DBG_OPT_ALGSIM0(oldn, n);
 		return n;
 	}
@@ -3417,20 +3417,16 @@ static ir_node *transform_node_Sub(ir_node *n)
 
 		/* FIXME: Does the Conv's work only for two complement or generally? */
 		if (left == a) {
-			ir_mode *r_mode = get_irn_mode(right);
-
-			n = new_r_Minus(get_nodes_block(n), right, r_mode);
+			n = new_r_Minus(get_nodes_block(n), right);
 			/* This Sub is an effective Cast */
-			if (mode != r_mode)
+			if (mode != get_irn_mode(right))
 				n = new_r_Conv(get_nodes_block(n), n, mode);
 			DBG_OPT_ALGSIM1(oldn, a, b, n);
 			return n;
 		} else if (right == a) {
-			ir_mode *l_mode = get_irn_mode(left);
-
-			n = new_r_Minus(get_nodes_block(n), left, l_mode);
+			n = new_r_Minus(get_nodes_block(n), left);
 			/* This Sub is an effective Cast */
-			if (mode != l_mode)
+			if (mode != get_irn_mode(left))
 				n = new_r_Conv(get_nodes_block(n), n, mode);
 			DBG_OPT_ALGSIM1(oldn, a, b, n);
 			return n;
@@ -3534,7 +3530,7 @@ static ir_node *transform_node_Sub(ir_node *n)
 					ir_tarval *const tv_not = tarval_not(tv);
 					ir_node   *const not_c  = new_rd_Const(dbgi, irg, tv_not);
 					ir_node   *const and    = new_rd_And(dbgi, block, other, not_c, mode);
-					ir_node   *const minus  = new_rd_Minus(dbgi, block, and, mode);
+					ir_node   *const minus  = new_rd_Minus(dbgi, block, and);
 					return minus;
 				}
 			}
@@ -3736,7 +3732,7 @@ static ir_node *transform_node_Mul(ir_node *n)
 		  || (mode_is_float(mode) && tarval_is_minus_one(c1))) {
 			dbg_info *dbgi  = get_irn_dbg_info(n);
 			ir_node  *block = get_nodes_block(n);
-			return new_rd_Minus(dbgi, block, a, mode);
+			return new_rd_Minus(dbgi, block, a);
 		} else if (arith == irma_twos_complement
 		        && get_tarval_popcount(c1) == 1) {
 			/* multiplication behaves Shl-like */
@@ -3763,7 +3759,7 @@ static ir_node *transform_node_Mul(ir_node *n)
 			/* a * (b & 1) -> a & -(b & 1) */
 			dbg_info *dbgi  = get_irn_dbg_info(n);
 			ir_node  *block = get_nodes_block(n);
-			ir_node  *minus = new_rd_Minus(dbgi, block, bit, mode);
+			ir_node  *minus = new_rd_Minus(dbgi, block, bit);
 			return new_rd_And(dbgi, block, other, minus, mode);
 		}
 	}
@@ -3929,7 +3925,7 @@ static ir_node *transform_node_Div(ir_node *n)
 
 				if (tarval_is_all_one(tv)) {
 					/* a / -1 */
-					value = new_rd_Minus(get_irn_dbg_info(n), get_nodes_block(n), a, mode);
+					value = new_rd_Minus(get_irn_dbg_info(n), get_nodes_block(n), a);
 					DBG_OPT_CSTEVAL(n, value);
 					goto make_tuple;
 				}
@@ -6942,7 +6938,7 @@ static ir_node *transform_node_Mux(ir_node *n)
 
 					if (rel_eq == ir_relation_equal ? is_Const_one(cmp_r) : is_Const_null(cmp_r)) {
 						/* Mux((a & 1) != 0, 0, b) => -a & b */
-						cmp_l = new_rd_Minus(dbgi, block, cmp_l, mode);
+						cmp_l = new_rd_Minus(dbgi, block, cmp_l);
 					} else {
 						/* Mux((a & 1) == 0, 0, b) => (a - 1) & b */
 						ir_node *one = new_rd_Const_one(dbgi, irg, mode);

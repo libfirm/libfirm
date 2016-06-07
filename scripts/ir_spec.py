@@ -548,6 +548,7 @@ class Load(Node):
 @op
 class Minus(Node):
 	"""returns the additive inverse of its operand"""
+	mode   = "get_irn_mode(irn_op)"
 	flags  = []
 	ins    = [
 		("op", "operand")

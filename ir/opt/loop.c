@@ -1418,7 +1418,7 @@ static ir_node *new_Abs(ir_node *const op, ir_mode *const mode)
 	ir_graph *const irg      = get_irn_irg(op);
 	ir_node  *const zero     = new_r_Const_null(irg, mode);
 	ir_node  *const cmp      = new_r_Cmp(block, op, zero, ir_relation_less);
-	ir_node  *const minus_op = new_r_Minus(block, op, mode);
+	ir_node  *const minus_op = new_r_Minus(block, op);
 	ir_node  *const mux      = new_r_Mux(block, cmp, op, minus_op, mode);
 	return mux;
 }

@@ -1861,7 +1861,7 @@ static void rebuild(multi_op_env *multi_env)
 				}
 
 				if (!curr) {
-					curr = new_rd_Minus(dbgi, block, inner, mode);
+					curr = new_rd_Minus(dbgi, block, inner);
 				} else {
 					curr = new_rd_Sub(dbgi, block, curr, inner, mode);
 				}
