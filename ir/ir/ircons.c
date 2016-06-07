@@ -314,12 +314,12 @@ ir_node *new_d_ASM(dbg_info *db, ir_node *mem, int arity, ir_node *in[],
 	                  inputs, n_outs, outputs, n_clobber, clobber, text);
 }
 
-ir_node *new_rd_DivRL(dbg_info *dbgi, ir_node *block, ir_node * irn_mem, ir_node * irn_left, ir_node * irn_right, ir_mode* resmode, int pinned)
+ir_node *new_rd_DivRL(dbg_info *dbgi, ir_node *block, ir_node * irn_mem, ir_node * irn_left, ir_node * irn_right, int pinned)
 {
 	ir_graph *const irg = get_irn_irg(block);
 	ir_node  *const in[] = { irn_mem, irn_left, irn_right };
 	ir_node        *res  = new_ir_node(dbgi, irg, block, op_Div, mode_T, ARRAY_SIZE(in), in);
-	res->attr.div.resmode       = resmode;
+	res->attr.div.resmode       = get_irn_mode(irn_left);
 	res->attr.div.no_remainder  = 1;
 	res->attr.div.exc.pinned    = pinned;
 	verify_new_node(res);
@@ -327,20 +327,20 @@ ir_node *new_rd_DivRL(dbg_info *dbgi, ir_node *block, ir_node * irn_mem, ir_node
 	return res;
 }
 
-ir_node *new_r_DivRL(ir_node *block, ir_node * irn_mem, ir_node * irn_left, ir_node * irn_right, ir_mode* resmode, int pinned)
+ir_node *new_r_DivRL(ir_node *block, ir_node * irn_mem, ir_node * irn_left, ir_node * irn_right, int pinned)
 {
-	return new_rd_DivRL(NULL, block, irn_mem, irn_left, irn_right, resmode, pinned);
+	return new_rd_DivRL(NULL, block, irn_mem, irn_left, irn_right, pinned);
 }
 
-ir_node *new_d_DivRL(dbg_info *dbgi, ir_node * irn_mem, ir_node * irn_left, ir_node * irn_right, ir_mode* resmode, int pinned)
+ir_node *new_d_DivRL(dbg_info *dbgi, ir_node * irn_mem, ir_node * irn_left, ir_node * irn_right, int pinned)
 {
 	assert(irg_is_constrained(current_ir_graph, IR_GRAPH_CONSTRAINT_CONSTRUCTION));
-	return new_rd_DivRL(dbgi, current_ir_graph->current_block, irn_mem, irn_left, irn_right, resmode, pinned);
+	return new_rd_DivRL(dbgi, current_ir_graph->current_block, irn_mem, irn_left, irn_right, pinned);
 }
 
-ir_node *new_DivRL(ir_node * irn_mem, ir_node * irn_left, ir_node * irn_right, ir_mode* resmode, int pinned)
+ir_node *new_DivRL(ir_node * irn_mem, ir_node * irn_left, ir_node * irn_right, int pinned)
 {
-	return new_d_DivRL(NULL, irn_mem, irn_left, irn_right, resmode, pinned);
+	return new_d_DivRL(NULL, irn_mem, irn_left, irn_right, pinned);
 }
 
 ir_node *new_rd_Phi_loop(dbg_info *db, ir_node *block, int arity,

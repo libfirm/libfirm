@@ -3819,9 +3819,7 @@ transform_div_mul:
 						ir_node     *div_left  = get_Div_left(div);
 						ir_node     *div_mem   = get_Div_mem(div);
 						op_pin_state pinned    = get_irn_pinned(div);
-						ir_node     *mod
-							= new_rd_Mod(dbgi, div_block, div_mem, div_left,
-							             div_right, mode, pinned);
+						ir_node     *mod       = new_rd_Mod(dbgi, div_block, div_mem, div_left, div_right, pinned);
 						/* we are crazy and exchange the Div with the Mod. We
 						 * can only do this because: We know we are the only
 						 * user and the Proj numbers match up */
@@ -4005,7 +4003,7 @@ static ir_node *transform_node_Mod(ir_node *n)
 						ir_node  *block  = get_nodes_block(n);
 						ir_node  *mem    = get_Mod_mem(mod);
 						int       pinned = get_irn_pinned(n);
-						return new_rd_Mod(dbgi, block, mem, mod_a, b, mode, pinned);
+						return new_rd_Mod(dbgi, block, mem, mod_a, b, pinned);
 					}
 				}
 			}

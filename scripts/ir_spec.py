@@ -430,6 +430,7 @@ class Div(Node):
 	flags = [ "fragile", "uses_memory", "const_memory" ]
 	attrs = [
 		Attribute("resmode", type="ir_mode*",
+		          init="get_irn_mode(irn_left)",
 		          comment="mode of the result value"),
 		Attribute("no_remainder", type="int", init="0"),
 	]
@@ -581,7 +582,9 @@ class Mod(Node):
 	]
 	flags = [ "fragile", "uses_memory", "const_memory" ]
 	attrs = [
-		Attribute("resmode", type="ir_mode*", comment="mode of the result"),
+		Attribute("resmode", type="ir_mode*",
+		          init="get_irn_mode(irn_left)",
+		          comment="mode of the result"),
 	]
 	attr_struct = "mod_attr"
 	pinned      = "exception"
