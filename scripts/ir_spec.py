@@ -753,6 +753,7 @@ class Shl(Binop):
 	The right input (shift amount) must be an unsigned integer value.
 	If the result mode has modulo_shift!=0, then the effective shift amount is
 	the right input modulo this modulo_shift amount."""
+	mode  = "get_irn_mode(irn_left)"
 	flags = []
 
 @op
@@ -762,6 +763,7 @@ class Shr(Binop):
 	The right input (shift amount) must be an unsigned integer value.
 	If the result mode has modulo_shift!=0, then the effective shift amount is
 	the right input modulo this modulo_shift amount."""
+	mode  = "get_irn_mode(irn_left)"
 	flags = []
 
 @op
@@ -772,6 +774,7 @@ class Shrs(Binop):
 	The right input (shift amount) must be an unsigned integer value.
 	If the result mode has modulo_shift!=0, then the effective shift amount is
 	the right input modulo this modulo_shift amount."""
+	mode  = "get_irn_mode(irn_left)"
 	flags = []
 
 @op

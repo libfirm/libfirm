@@ -760,8 +760,7 @@ void set_dw_control_flow_changed(void)
 }
 
 typedef ir_node* (*new_rd_shr_func)(dbg_info *dbgi, ir_node *block,
-                                    ir_node *left, ir_node *right,
-                                    ir_mode *mode);
+                                    ir_node *left, ir_node *right);
 
 static void lower_shr_helper(ir_node *node, ir_mode *mode,
                              new_rd_shr_func new_rd_shrs)
@@ -826,31 +825,26 @@ static void lower_shr_helper(ir_node *node, ir_mode *mode,
 	 */
 	ir_node *true_in[1]   = { proj_true };
 	ir_node *block_true   = new_r_Block(irg, ARRAY_SIZE(true_in), true_in);
-	ir_node *tres_high    = new_rd_shrs(dbgi, block_true, left_high,
-	                                    right, mode);
-	ir_node *shift_low    = new_rd_Shr(dbgi, block_true, left_low, right,
-	                                   low_unsigned);
+	ir_node *tres_high    = new_rd_shrs(dbgi, block_true, left_high, right);
+	ir_node *shift_low    = new_rd_Shr(dbgi, block_true, left_low, right);
 	ir_node *not_shiftval = new_rd_Not(dbgi, block_true, right);
 	ir_node *tconv        = create_conv(block_true, left_high,
 	                                    low_unsigned);
 	ir_node *one          = new_r_Const_one(irg, low_unsigned);
-	ir_node *carry0       = new_rd_Shl(dbgi, block_true, tconv, one,
-	                                   low_unsigned);
-	ir_node *carry1       = new_rd_Shl(dbgi, block_true, carry0,
-	                                   not_shiftval, low_unsigned);
+	ir_node *carry0       = new_rd_Shl(dbgi, block_true, tconv, one);
+	ir_node *carry1       = new_rd_Shl(dbgi, block_true, carry0, not_shiftval);
 	ir_node *tres_low     = new_rd_Or(dbgi, block_true, shift_low, carry1);
 
 	/* false block => shift_width > 1word */
 	ir_node *false_in[1] = { proj_false };
 	ir_node *block_false = new_r_Block(irg, ARRAY_SIZE(false_in), false_in);
 	ir_node *fconv       = create_conv(block_false, left_high, low_unsigned);
-	ir_node *fres_low    = new_rd_shrs(dbgi, block_false, fconv, right,
-	                                   low_unsigned);
+	ir_node *fres_low    = new_rd_shrs(dbgi, block_false, fconv, right);
 	int      cnsti       = modulo_shift2 - 1;
 	ir_node *cnst3       = new_r_Const_long(irg, low_unsigned, cnsti);
 	ir_node *fres_high;
 	if (new_rd_shrs == new_rd_Shrs) {
-		fres_high = new_rd_shrs(dbgi, block_false, left_high, cnst3, mode);
+		fres_high = new_rd_shrs(dbgi, block_false, left_high, cnst3);
 	} else {
 		fres_high = new_r_Const_null(irg, mode);
 	}
@@ -934,16 +928,13 @@ static void lower_Shl(ir_node *node, ir_mode *mode)
 	ir_node *tin[]        = { proj_true };
 	ir_node *block_true   = new_r_Block(irg, ARRAY_SIZE(tin), tin);
 
-	ir_node *tres_low     = new_rd_Shl(dbgi, block_true, left_low,
-	                                   right, low_unsigned);
-	ir_node *shift_high   = new_rd_Shl(dbgi, block_true, left_high, right,
-	                                   mode);
+	ir_node *tres_low     = new_rd_Shl(dbgi, block_true, left_low, right);
+	ir_node *shift_high   = new_rd_Shl(dbgi, block_true, left_high, right);
 	ir_node *not_shiftval = new_rd_Not(dbgi, block_true, right);
 	ir_node *conv         = create_conv(block_true, left_low, mode);
 	ir_node *one          = new_r_Const_one(irg, low_unsigned);
-	ir_node *carry0       = new_rd_Shr(dbgi, block_true, conv, one, mode);
-	ir_node *carry1       = new_rd_Shr(dbgi, block_true, carry0,
-	                                   not_shiftval, mode);
+	ir_node *carry0       = new_rd_Shr(dbgi, block_true, conv, one);
+	ir_node *carry1       = new_rd_Shr(dbgi, block_true, carry0, not_shiftval);
 	ir_node *tres_high    = new_rd_Or(dbgi, block_true, shift_high, carry1);
 
 	/* false block => shift_width > 1word */
@@ -951,7 +942,7 @@ static void lower_Shl(ir_node *node, ir_mode *mode)
 	ir_node *block_false = new_r_Block(irg, ARRAY_SIZE(fin), fin);
 	ir_node *fres_low    = new_r_Const_null(irg, low_unsigned);
 	ir_node *fconv       = create_conv(block_false, left_low, mode);
-	ir_node *fres_high   = new_rd_Shl(dbgi, block_false, fconv, right, mode);
+	ir_node *fres_high   = new_rd_Shl(dbgi, block_false, fconv, right);
 
 	/* patch lower block */
 	ir_node *lower_in[]    = { new_r_Jmp(block_true), new_r_Jmp(block_false) };
@@ -1271,7 +1262,7 @@ static void lower_Conv_to_Ll(ir_node *node)
 				ir_node *cnst    = new_r_Const_long(irg, low_unsigned, c);
 				if (get_irn_mode(op) != low_signed)
 					op = new_rd_Conv(dbg, block, op, low_signed);
-				res_high = new_rd_Shrs(dbg, block, op, cnst, low_signed);
+				res_high = new_rd_Shrs(dbg, block, op, cnst);
 			} else {
 				res_high = new_r_Const_null(irg, low_signed);
 			}

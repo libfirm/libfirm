@@ -419,14 +419,13 @@ static ir_node *transform_previous_value(ir_mode *const load_mode,
 			: delta;
 		ir_node *new_value = prev_value;
 		if (shift != 0) {
-			ir_mode *new_mode = prev_mode;
-			if (mode_is_reference(new_mode)) {
-				new_mode  = get_reference_offset_mode(new_mode);
+			if (mode_is_reference(prev_mode)) {
+				ir_mode *const new_mode = get_reference_offset_mode(prev_mode);
 				new_value = new_r_Conv(block, new_value, new_mode);
 			}
 			ir_graph *const irg  = get_irn_irg(block);
 			ir_node  *const cnst = new_r_Const_long(irg, mode_Iu, shift * 8);
-			new_value = new_r_Shr(block, new_value, cnst, new_mode);
+			new_value = new_r_Shr(block, new_value, cnst);
 		}
 
 		return new_r_Conv(block, new_value, load_mode);
@@ -2209,7 +2208,7 @@ again:;
 			ir_node  *convu1 = new_r_Conv(block, store_val1, mode_unsigned);
 			ir_node  *conv1  = new_r_Conv(block, convu1, double_mode);
 			ir_node  *cnst   = new_r_Const_long(irg, mode_Iu, store_size);
-			ir_node  *shl    = new_r_Shl(block, conv1, cnst, double_mode);
+			ir_node  *shl    = new_r_Shl(block, conv1, cnst);
 			ir_node  *or     = new_r_Or(block, conv0, shl);
 
 			/* create a new store and replace the two small stores */

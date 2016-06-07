@@ -399,13 +399,13 @@ static ir_node *build_graph(mul_env *env, instruction *inst)
 		ir_node *l = build_graph(env, inst->in[0]);
 		ir_node *r = build_graph(env, inst->in[1]);
 		ir_node *c = new_r_Const_long(irg, env->shf_mode, inst->shift_count);
-		ir_node *s = new_rd_Shl(env->dbg, env->blk, r, c, env->mode);
+		ir_node *s = new_rd_Shl(env->dbg, env->blk, r, c);
 		return inst->irn = new_rd_Add(env->dbg, env->blk, l, s, env->mode);
 	}
 	case SHIFT: {
 		ir_node *l = build_graph(env, inst->in[0]);
 		ir_node *c = new_r_Const_long(irg, env->shf_mode, inst->shift_count);
-		return inst->irn = new_rd_Shl(env->dbg, env->blk, l, c, env->mode);
+		return inst->irn = new_rd_Shl(env->dbg, env->blk, l, c);
 	}
 	case SUB: {
 		ir_node *l = build_graph(env, inst->in[0]);
@@ -843,12 +843,12 @@ static ir_node *replace_div_by_mulh(ir_node *div, ir_tarval *tv)
 		/* Do we need the shift */
 		if (mag.s > 0) {
 			c = new_r_Const_long(irg, mode_Iu, mag.s);
-			q = new_rd_Shrs(dbg, block, q, c, mode);
+			q = new_rd_Shrs(dbg, block, q, c);
 		}
 
 		/* final */
 		ir_node *c2 = new_r_Const_long(irg, mode_Iu, bits - 1);
-		ir_node *t  = new_rd_Shr(dbg, block, q, c2, mode);
+		ir_node *t  = new_rd_Shr(dbg, block, q, c2);
 		res = new_rd_Add(dbg, block, q, t, mode);
 	} else {
 		struct magicu_info mafo = get_magic_info(tv);
@@ -856,7 +856,7 @@ static ir_node *replace_div_by_mulh(ir_node *div, ir_tarval *tv)
 
 		if (mafo.pre_shift > 0) {
 			ir_node *c = new_r_Const_long(irg, mode_Iu, mafo.pre_shift);
-			n = new_rd_Shr(dbg, block, n, c, mode);
+			n = new_rd_Shr(dbg, block, n, c);
 		}
 
 		if (mafo.increment) {
@@ -873,10 +873,10 @@ static ir_node *replace_div_by_mulh(ir_node *div, ir_tarval *tv)
 		ir_node *c = new_r_Const(irg, mafo.multiplier);
 		ir_node *q = new_rd_Mulh(dbg, block, n, c);
 		c = new_r_Const_long(irg, mode_Iu, get_mode_size_bits(get_tarval_mode(tv)));
-		res = new_rd_Shr(dbg, block, q, c, mode);
+		res = new_rd_Shr(dbg, block, q, c);
 		if (mafo.post_shift > 0) {
 			c = new_r_Const_long(irg, mode_Iu, mafo.post_shift);
-			res = new_rd_Shr(dbg, block, res, c, mode);
+			res = new_rd_Shr(dbg, block, res, c);
 		}
 	}
 	return res;
@@ -936,11 +936,11 @@ ir_node *arch_dep_replace_div_by_const(ir_node *irn)
 			if (!get_Div_no_remainder(irn)) {
 				if (k != 1) {
 					ir_node *k_node = new_r_Const_long(irg, mode_Iu, k - 1);
-					curr   = new_rd_Shrs(dbg, block, left, k_node, mode);
+					curr   = new_rd_Shrs(dbg, block, left, k_node);
 				}
 
 				ir_node *k_node = new_r_Const_long(irg, mode_Iu, bits - k);
-				curr = new_rd_Shr(dbg, block, curr, k_node, mode);
+				curr = new_rd_Shr(dbg, block, curr, k_node);
 				/* curr is now 2^(k-1) in case left <  0
 				 *          or       0 in case left >= 0
 				 *
@@ -953,7 +953,7 @@ ir_node *arch_dep_replace_div_by_const(ir_node *irn)
 			}
 
 			ir_node *k_node = new_r_Const_long(irg, mode_Iu, k);
-			res = new_rd_Shrs(dbg, block, curr, k_node, mode);
+			res = new_rd_Shrs(dbg, block, curr, k_node);
 
 			if (n_flag) { /* negate the result */
 				ir_node *k_node = new_r_Const_null(irg, mode);
@@ -961,7 +961,7 @@ ir_node *arch_dep_replace_div_by_const(ir_node *irn)
 			}
 		} else {      /* unsigned case */
 			ir_node *k_node = new_r_Const_long(irg, mode_Iu, k);
-			res    = new_rd_Shr(dbg, block, left, k_node, mode);
+			res    = new_rd_Shr(dbg, block, left, k_node);
 		}
 	} else if (k != 0) {
 		/* other constant */
@@ -1026,11 +1026,11 @@ ir_node *arch_dep_replace_mod_by_const(ir_node *irn)
 			ir_node *curr = left;
 			if (k != 1) {
 				ir_node *c = new_r_Const_long(irg, mode_Iu, k - 1);
-				curr = new_rd_Shrs(dbg, block, left, c, mode);
+				curr = new_rd_Shrs(dbg, block, left, c);
 			}
 
 			ir_node *k_node = new_r_Const_long(irg, mode_Iu, bits - k);
-			curr = new_rd_Shr(dbg, block, curr, k_node, mode);
+			curr = new_rd_Shr(dbg, block, curr, k_node);
 			curr = new_rd_Add(dbg, block, left, curr, mode);
 
 			ir_tarval *k_val

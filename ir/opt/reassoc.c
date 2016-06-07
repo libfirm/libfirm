@@ -441,7 +441,7 @@ transform:;
 	if (op == op_Mul)
 		irn = new_rd_Mul(dbg, blk, irn, x);
 	else
-		irn = new_rd_Shl(dbg, blk, irn, x, mode);
+		irn = new_rd_Shl(dbg, blk, irn, x);
 
 	exchange(n, irn);
 	*node = irn;

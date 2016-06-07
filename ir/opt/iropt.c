@@ -2489,10 +2489,10 @@ static ir_node *transform_node_bitop_shift(ir_node *n)
 	}
 
 	if (is_Shl(left)) {
-		new_shift = new_rd_Shl(dbg_shift, block, new_bitop, shift_right, mode);
+		new_shift = new_rd_Shl(dbg_shift, block, new_bitop, shift_right);
 	} else {
 		assert(is_Shr(left));
-		new_shift = new_rd_Shr(dbg_shift, block, new_bitop, shift_right, mode);
+		new_shift = new_rd_Shr(dbg_shift, block, new_bitop, shift_right);
 	}
 
 	return new_shift;
@@ -2677,7 +2677,7 @@ static ir_node *transform_node_Or_(ir_node *n)
 				ir_node  *const aa         = get_Shrs_left(a);
 				dbg_info *const shrs_dbgi  = get_irn_dbg_info(a);
 				ir_node  *const shrs_block = get_nodes_block(a);
-				ir_node  *const shr        = new_rd_Shr(shrs_dbgi, shrs_block, aa, ab, mode);
+				ir_node  *const shr        = new_rd_Shr(shrs_dbgi, shrs_block, aa, ab);
 				dbg_info *const dbgi       = get_irn_dbg_info(n);
 				ir_node  *const block      = get_nodes_block(n);
 				return new_rd_Or(dbgi, block, shr, b);
@@ -3078,7 +3078,7 @@ static ir_node *transform_node_Add(ir_node *n)
 			} else if (get_mode_arithmetic(mode) == irma_twos_complement) {
 				/* a + a -> a << 1 */
 				ir_node *const one = new_r_Const_one(irg, mode_Iu);
-				n = new_rd_Shl(dbgi, block, a, one, mode);
+				n = new_rd_Shl(dbgi, block, a, one);
 				return n;
 			}
 		}
@@ -3663,7 +3663,7 @@ static ir_node *can_negate_cheaply(dbg_info *const dbgi, ir_node *const node)
 			    && get_tarval_long(tv) == (int)get_mode_size_bits(mode)-1) {
 			    ir_node  *left  = get_Shr_left(node);
 			    ir_node  *block = get_nodes_block(node);
-			    return new_rd_Shrs(dbgi, block, left, right, mode);
+			    return new_rd_Shrs(dbgi, block, left, right);
 			}
 		}
 	} else if (is_Shrs(node)) {
@@ -3675,7 +3675,7 @@ static ir_node *can_negate_cheaply(dbg_info *const dbgi, ir_node *const node)
 			    && get_tarval_long(tv) == (int)get_mode_size_bits(mode)-1) {
 			    ir_node  *left  = get_Shrs_left(node);
 			    ir_node  *block = get_nodes_block(node);
-			    return new_rd_Shr(dbgi, block, left, right, mode);
+			    return new_rd_Shr(dbgi, block, left, right);
 			}
 		}
 	}
@@ -3788,7 +3788,7 @@ static ir_node *transform_node_Mul(ir_node *n)
 			dbg_info *const dbgi  = get_irn_dbg_info(n);
 			ir_node  *const block = get_nodes_block(n);
 			ir_node  *const shl_r = get_Shl_right(a);
-			n = new_rd_Shl(dbgi, block, b, shl_r, mode);
+			n = new_rd_Shl(dbgi, block, b, shl_r);
 			return n;
 		}
 	} else if (is_Shl(b)) {
@@ -3798,7 +3798,7 @@ static ir_node *transform_node_Mul(ir_node *n)
 			dbg_info *const dbgi  = get_irn_dbg_info(n);
 			ir_node  *const block = get_nodes_block(n);
 			ir_node  *const shl_r = get_Shl_right(b);
-			n = new_rd_Shl(dbgi, block, a, shl_r, mode);
+			n = new_rd_Shl(dbgi, block, a, shl_r);
 			return n;
 		}
 	}
@@ -4256,14 +4256,14 @@ static ir_node *transform_node_shift_bitop(ir_node *n)
 	ir_tarval *shl_like = is_shl_const_like(n);
 	if (shl_like != NULL) {
 		tv2       = shl_like;
-		new_shift = new_rd_Shl(dbgi, block, bitop_left, right, mode);
+		new_shift = new_rd_Shl(dbgi, block, bitop_left, right);
 		tv_shift  = tarval_shl(tv1, tv2);
 	} else if (is_Shr(n)) {
-		new_shift = new_rd_Shr(dbgi, block, bitop_left, right, mode);
+		new_shift = new_rd_Shr(dbgi, block, bitop_left, right);
 		tv_shift  = tarval_shr(tv1, tv2);
 	} else {
 		assert(is_Shrs(n));
-		new_shift = new_rd_Shrs(dbgi, block, bitop_left, right, mode);
+		new_shift = new_rd_Shrs(dbgi, block, bitop_left, right);
 		tv_shift  = tarval_shrs(tv1, tv2);
 	}
 
@@ -4499,7 +4499,7 @@ absorb:;
 				ir_node  *const aa         = get_Shrs_left(a);
 				dbg_info *const shrs_dbgi  = get_irn_dbg_info(a);
 				ir_node  *const shrs_block = get_nodes_block(a);
-				ir_node  *const shr        = new_rd_Shr(shrs_dbgi, shrs_block, aa, ab, mode);
+				ir_node  *const shr        = new_rd_Shr(shrs_dbgi, shrs_block, aa, ab);
 				dbg_info *const dbgi       = get_irn_dbg_info(n);
 				ir_node  *const block      = get_nodes_block(n);
 				return new_rd_And(dbgi, block, shr, b);
@@ -4736,7 +4736,7 @@ static ir_node *transform_node_Minus(ir_node *n)
 				/* -((a - b) << c) -> (b - a) << c */
 				ir_node *block = get_nodes_block(n);
 				ir_node *r     = get_Shl_right(op);
-				return new_rd_Shl(dbgi, block, negated_l, r, mode);
+				return new_rd_Shl(dbgi, block, negated_l, r);
 			}
 		}
 	}
@@ -5925,7 +5925,7 @@ static ir_node *transform_node_shift(ir_node *n)
 			dbg_info *dbgi  = get_irn_dbg_info(n);
 			ir_mode  *smode = get_irn_mode(right);
 			ir_node  *cnst  = new_r_Const_long(irg, smode, get_mode_size_bits(mode) - 1);
-			return new_rd_Shrs(dbgi, block, get_binop_left(left), cnst, mode);
+			return new_rd_Shrs(dbgi, block, get_binop_left(left), cnst);
 		}
 
 		return new_r_Const_null(irg, mode);
@@ -6014,15 +6014,15 @@ static ir_node *transform_node_shl_shr(ir_node *n)
 		ir_tarval *tv_shift  = tarval_sub(tv_shr, tv_shl);
 		ir_node   *new_const = new_r_Const(irg, tv_shift);
 		if (need_shrs) {
-			new_shift = new_rd_Shrs(dbgi, block, x, new_const, mode);
+			new_shift = new_rd_Shrs(dbgi, block, x, new_const);
 		} else {
-			new_shift = new_rd_Shr(dbgi, block, x, new_const, mode);
+			new_shift = new_rd_Shr(dbgi, block, x, new_const);
 		}
 	} else {
 		assert(relation == ir_relation_greater);
 		ir_tarval *tv_shift  = tarval_sub(tv_shl, tv_shr);
 		ir_node   *new_const = new_r_Const(irg, tv_shift);
-		new_shift = new_rd_Shl(dbgi, block, x, new_const, mode);
+		new_shift = new_rd_Shl(dbgi, block, x, new_const);
 	}
 
 	ir_node *new_const = new_r_Const(irg, tv_mask);
@@ -6038,8 +6038,7 @@ static ir_tarval *get_modulo_tv_value(ir_tarval *tv, int modulo_val)
 	return tarval_mod(tv, modulo_tv);
 }
 
-typedef ir_node*(*new_shift_func)(dbg_info *dbgi, ir_node *block,
-                                  ir_node *left, ir_node *right, ir_mode *mode);
+typedef ir_node*(*new_shift_func)(dbg_info *dbgi, ir_node *block, ir_node *left, ir_node *right);
 
 /**
  * Normalization: if we have a shl/shr with modulo_shift behavior
@@ -6104,7 +6103,7 @@ static ir_node *transform_node_shift_modulo(ir_node *n,
 	if (newop != NULL) {
 		dbg_info *dbgi = get_irn_dbg_info(n);
 		ir_node  *left = get_binop_left(n);
-		return new_shift(dbgi, block, left, newop, mode);
+		return new_shift(dbgi, block, left, newop);
 	}
 	return n;
 }
@@ -6156,7 +6155,7 @@ static ir_node *transform_node_shift_and(ir_node *n, new_shift_func new_shift)
 	dbg_info *dbgi  = get_irn_dbg_info(n);
 	ir_node  *block = get_nodes_block(n);
 	ir_node  *left  = get_binop_left(n);
-	return new_shift(dbgi, block, left, new_amount, mode);
+	return new_shift(dbgi, block, left, new_amount);
 }
 
 /**
@@ -6202,7 +6201,7 @@ static ir_node *transform_node_Shrs(ir_node *n)
 		long      val   = get_mode_size_bits(cmode)-1;
 		ir_graph *irg   = get_irn_irg(n);
 		ir_node  *cnst  = new_r_Const_long(irg, cmode, val);
-		return new_rd_Shrs(dbgi, block, a, cnst, mode);
+		return new_rd_Shrs(dbgi, block, a, cnst);
 	}
 
 	ir_node *c;
@@ -6229,7 +6228,7 @@ static ir_node *transform_node_Shrs(ir_node *n)
 		if (tarval_get_bit(bn->z, mode_bits - 1) == 0) {
 			dbg_info *const dbgi  = get_irn_dbg_info(n);
 			ir_node  *const block = get_nodes_block(n);
-			n = new_rd_Shr(dbgi, block, a, b, mode);
+			n = new_rd_Shr(dbgi, block, a, b);
 			return n;
 		}
 	}
@@ -6725,7 +6724,7 @@ static ir_node *transform_Mux_set(ir_node *n, ir_relation relation)
 					ir_node  *eor          = new_rd_Eor(dbgi, block, left, right);
 					unsigned  shift_amount = MAX(left_low_bit, right_low_bit);
 					ir_node  *shift_cnt    = new_rd_Const_long(dbgi, irg, mode_Iu, shift_amount);
-					ir_node  *shift        = new_rd_Shr(dbgi, block, eor, shift_cnt, mode);
+					ir_node  *shift        = new_rd_Shr(dbgi, block, eor, shift_cnt);
 					if (mode != dest_mode)
 						shift = new_rd_Conv(dbgi, block, shift, dest_mode);
 
@@ -6756,7 +6755,7 @@ static ir_node *transform_Mux_set(ir_node *n, ir_relation relation)
 					ir_graph  *irg          = get_irn_irg(block);
 					unsigned   shift_amount = get_tarval_highest_bit(tv);
 					ir_node   *shift_cnt    = new_rd_Const_long(dbgi, irg, mode_Iu, shift_amount);
-					ir_node   *shift        = new_rd_Shr(dbgi, block, a, shift_cnt, calc_mode);
+					ir_node   *shift        = new_rd_Shr(dbgi, block, a, shift_cnt);
 					ir_node   *c            = new_rd_Const_one(dbgi, irg, calc_mode);
 					ir_node   *and          = new_rd_And(dbgi, block, shift, c);
 					if (calc_mode != dest_mode)
@@ -6818,7 +6817,7 @@ static ir_node *transform_Mux_set(ir_node *n, ir_relation relation)
 	ir_graph  *irg       = get_irn_irg(block);
 	unsigned   bits      = get_mode_size_bits(calc_mode);
 	ir_node   *shift_cnt = new_rd_Const_long(dbgi, irg, mode_Iu, bits - 1);
-	ir_node   *shift     = new_rd_Shr(dbgi, block, sub, shift_cnt, calc_mode);
+	ir_node   *shift     = new_rd_Shr(dbgi, block, sub, shift_cnt);
 	if (calc_mode != dest_mode)
 		shift = new_rd_Conv(dbgi, block, shift, dest_mode);
 
@@ -6846,7 +6845,7 @@ static ir_node *transform_node_Mux(ir_node *n)
 			ir_node  *op         = ir_get_abs_op(sel, f, t);
 			unsigned  bits       = get_mode_size_bits(mode);
 			ir_node  *shiftconst = new_r_Const_long(irg, mode_Iu, bits-1);
-			ir_node  *sext       = new_rd_Shrs(dbgi, block, op, shiftconst, mode);
+			ir_node  *sext       = new_rd_Shrs(dbgi, block, op, shiftconst);
 			ir_node  *xorn       = new_rd_Eor(dbgi, block, op, sext);
 			ir_node  *res;
 			if (abs > 0) {
@@ -6900,7 +6899,7 @@ static ir_node *transform_node_Mux(ir_node *n)
 
 						unsigned  bits = get_mode_size_bits(cmp_mode);
 						ir_node  *c    = new_rd_Const_long(dbgi, irg, mode_Iu, bits - 1U);
-						ir_node  *shrs = new_rd_Shrs(dbgi, block, cmp_l, c, cmp_mode);
+						ir_node  *shrs = new_rd_Shrs(dbgi, block, cmp_l, c);
 
 						if (cmp_mode != mode)
 							shrs = new_rd_Conv(dbgi, block, shrs, mode);
