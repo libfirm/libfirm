@@ -596,6 +596,7 @@ class Mul(Binop):
 class Mulh(Binop):
 	"""returns the upper word of the product of its operands (the part which
 	would not fit into the result mode of a normal Mul anymore)"""
+	mode  = "get_irn_mode(irn_left)"
 	flags = [ "commutative" ]
 
 @op

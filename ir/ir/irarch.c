@@ -832,7 +832,7 @@ static ir_node *replace_div_by_mulh(ir_node *div, ir_tarval *tv)
 
 		/* generate the Mulh instruction */
 		ir_node *c = new_r_Const(irg, mag.M);
-		ir_node *q = new_rd_Mulh(dbg, block, n, c, mode);
+		ir_node *q = new_rd_Mulh(dbg, block, n, c);
 
 		/* do we need an Add or Sub */
 		if (mag.need_add)
@@ -871,7 +871,7 @@ static ir_node *replace_div_by_mulh(ir_node *div, ir_tarval *tv)
 
 		/* generate the Mulh instruction */
 		ir_node *c = new_r_Const(irg, mafo.multiplier);
-		ir_node *q = new_rd_Mulh(dbg, block, n, c, mode);
+		ir_node *q = new_rd_Mulh(dbg, block, n, c);
 		c = new_r_Const_long(irg, mode_Iu, get_mode_size_bits(get_tarval_mode(tv)));
 		res = new_rd_Shr(dbg, block, q, c, mode);
 		if (mafo.post_shift > 0) {
