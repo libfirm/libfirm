@@ -243,7 +243,7 @@ static bool normalize_switch(switch_info_t *info, ir_mode *selector_mode)
 		ir_graph *irg       = get_irn_irg(switchn);
 		ir_node  *min_const = new_r_Const(irg, min);
 		dbg_info *dbgi      = get_irn_dbg_info(switchn);
-		selector = new_rd_Sub(dbgi, block, selector, min_const, mode);
+		selector = new_rd_Sub(dbgi, block, selector, min_const);
 
 		info->switch_max = tarval_sub(info->switch_max, min);
 		info->switch_min = get_mode_null(mode);
@@ -286,8 +286,7 @@ static ir_node *create_case_cond(const ir_switch_table_entry *entry,
 		cmp = new_rd_Cmp(dbgi, block, selector, minconst, ir_relation_equal);
 	} else {
 		ir_tarval *adjusted_max = tarval_sub(entry->max, entry->min);
-		ir_node   *sub          = new_rd_Sub(dbgi, block, selector, minconst,
-		                                     get_tarval_mode(adjusted_max));
+		ir_node   *sub          = new_rd_Sub(dbgi, block, selector, minconst);
 		ir_node   *maxconst     = new_r_Const(irg, adjusted_max);
 		cmp = new_rd_Cmp(dbgi, block, sub, maxconst, ir_relation_less_equal);
 	}

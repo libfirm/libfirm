@@ -226,8 +226,7 @@ static void rewrite_float_unsigned_Conv(ir_node *node)
 
 	ir_node   *c_const     = new_r_Const_long(irg, mode_s, 0x80000000L);
 	collect_new_start_block_node(c_const);
-	ir_node   *sub         = new_rd_Sub(dbgi, true_block, float_x, limitc,
-	                                    mode_f);
+	ir_node   *sub         = new_rd_Sub(dbgi, true_block, float_x, limitc);
 	ir_node   *sub_conv    = new_rd_Conv(dbgi, true_block, sub, mode_s);
 	ir_node   *xorn        = new_rd_Eor(dbgi, true_block, sub_conv, c_const);
 

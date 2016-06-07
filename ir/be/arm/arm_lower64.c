@@ -238,11 +238,11 @@ static void lower64_shl(ir_node *node, ir_mode *mode)
 	ir_node  *shl1     = new_rd_Shl(dbgi, block, left_high, right_low);
 	ir_graph *irg      = get_irn_irg(node);
 	ir_node  *c32      = new_r_Const_long(irg, umode, 32);
-	ir_node  *sub      = new_rd_Sub(dbgi, block, right_low, c32, umode);
+	ir_node  *sub      = new_rd_Sub(dbgi, block, right_low, c32);
 	ir_node  *llo_conv = new_rd_Conv(dbgi, block, left_low, mode);
 	ir_node  *shl2     = new_rd_Shl(dbgi, block, llo_conv, sub);
 	ir_node  *or       = new_rd_Or(dbgi, block, shl1, shl2);
-	ir_node  *sub2     = new_rd_Sub(dbgi, block, c32, right_low, umode);
+	ir_node  *sub2     = new_rd_Sub(dbgi, block, c32, right_low);
 	ir_node  *shr      = new_rd_Shr(dbgi, block, llo_conv, sub2);
 	ir_node  *or2      = new_rd_Or(dbgi, block, or, shr);
 	/* Res_lo = L_lo << R */
@@ -271,11 +271,11 @@ static void lower64_shr(ir_node *node, ir_mode *mode)
 	ir_node  *shr1     = new_rd_Shr(dbgi, block, left_low, right_low);
 	ir_graph *irg      = get_irn_irg(node);
 	ir_node  *c32      = new_r_Const_long(irg, umode, 32);
-	ir_node  *sub      = new_rd_Sub(dbgi, block, right_low, c32, umode);
+	ir_node  *sub      = new_rd_Sub(dbgi, block, right_low, c32);
 	ir_node  *lhi_conv = new_rd_Conv(dbgi, block, left_high, umode);
 	ir_node  *shr2     = new_rd_Shr(dbgi, block, lhi_conv, sub);
 	ir_node  *or       = new_rd_Or(dbgi, block, shr1, shr2);
-	ir_node  *sub2     = new_rd_Sub(dbgi, block, c32, right_low, umode);
+	ir_node  *sub2     = new_rd_Sub(dbgi, block, c32, right_low);
 	ir_node  *shl      = new_rd_Shl(dbgi, block, lhi_conv, sub2);
 	ir_node  *or2      = new_rd_Or(dbgi, block, or, shl);
 	/* Res_hi = L_hi >> R */
@@ -304,7 +304,7 @@ static void lower64_shrs(ir_node *node, ir_mode *mode)
 	ir_node  *shr        = new_rd_Shr(dbgi, block, left_low, right_low);
 	ir_graph *irg        = get_irn_irg(node);
 	ir_node  *c32        = new_r_Const_long(irg, umode, 32);
-	ir_node  *sub        = new_rd_Sub(dbgi, block, c32, right_low, umode);
+	ir_node  *sub        = new_rd_Sub(dbgi, block, c32, right_low);
 	ir_node  *subs       = new_bd_arm_SubS_t(dbgi, block, right_low, c32);
 	ir_node  *subs_res   = new_r_Proj(subs, umode, pn_arm_SubS_t_res);
 	ir_node  *subs_flags = new_r_Proj(subs, mode_ANY, pn_arm_SubS_t_flags);

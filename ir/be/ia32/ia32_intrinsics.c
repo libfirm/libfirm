@@ -201,32 +201,32 @@ static void ia32_lower_sub64(ir_node *node, ir_mode *mode)
 	ir_node      *right_low  = get_lowered_low(right);
 	ir_node      *right_high = get_lowered_high(right);
 	ir_mode      *low_mode   = get_irn_mode(left_low);
-	ir_mode      *high_mode  = get_irn_mode(left_high);
 	carry_result  cr         = lower_sub_borrow(left, right, low_mode);
 
 	assert(get_irn_mode(left_low)  == get_irn_mode(right_low));
 	assert(get_irn_mode(left_high) == get_irn_mode(right_high));
 
 	if (cr == no_carry) {
-		ir_node *sub_low  = new_rd_Sub(dbg, block, left_low,  right_low, low_mode);
-		ir_node *sub_high = new_rd_Sub(dbg, block, left_high, right_high, high_mode);
+		ir_node *sub_low  = new_rd_Sub(dbg, block, left_low,  right_low);
+		ir_node *sub_high = new_rd_Sub(dbg, block, left_high, right_high);
 		ir_set_dw_lowered(node, sub_low, sub_high);
 	} else if (cr == must_carry && (is_Const(left_high) || is_Const(right_high))) {
 		ir_node  *sub_high;
 		ir_graph *irg        = get_irn_irg(right_high);
+		ir_mode  *high_mode  = get_irn_mode(left_high);
 		ir_node  *one        = new_rd_Const(dbg, irg, get_mode_one(high_mode));
 
 		if (is_Const(right_high)) {
 			ir_node *new_const = new_rd_Add(dbg, block, right_high, one);
-			sub_high = new_rd_Sub(dbg, block, left_high, new_const, high_mode);
+			sub_high = new_rd_Sub(dbg, block, left_high, new_const);
 		} else if (is_Const(left_high)) {
-			ir_node *new_const = new_rd_Sub(dbg, block, left_high, one, high_mode);
-			sub_high = new_rd_Sub(dbg, block, new_const, right_high, high_mode);
+			ir_node *new_const = new_rd_Sub(dbg, block, left_high, one);
+			sub_high = new_rd_Sub(dbg, block, new_const, right_high);
 		} else {
 			panic("logic error");
 		}
 
-		ir_node  *sub_low  = new_rd_Sub(dbg, block, left_low, right_low, low_mode);
+		ir_node  *sub_low  = new_rd_Sub(dbg, block, left_low, right_low);
 		ir_set_dw_lowered(node, sub_low, sub_high);
 	} else {
 		/* l_res = a_l - b_l */
@@ -396,7 +396,7 @@ static void ia32_lower_conv64(ir_node *node, ir_mode *mode)
 
 			ir_node *fphi_in[] = {
 				opc,
-				new_rd_Sub(dbg, upper_blk, opc, flt_corr, x86_mode_E)
+				new_rd_Sub(dbg, upper_blk, opc, flt_corr)
 			};
 			ir_node *flt_phi
 				= new_r_Phi(lower_blk, ARRAY_SIZE(fphi_in), fphi_in,

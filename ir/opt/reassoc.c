@@ -429,13 +429,12 @@ transform:;
 	ir_node  *curr_blk = get_nodes_block(n);
 	ir_node  *blk      = earliest_block(a, b, curr_blk);
 	dbg_info *dbg      = get_irn_dbg_info(n);
-	ir_mode  *mode     = get_irn_mode(n);
 
 	ir_node *irn;
 	if (is_Add(n))
 		irn = new_rd_Add(dbg, blk, a, b);
 	else
-		irn = new_rd_Sub(dbg, blk, a, b, mode);
+		irn = new_rd_Sub(dbg, blk, a, b);
 
 	blk = earliest_block(irn, x, curr_blk);
 	if (op == op_Mul)
@@ -1706,7 +1705,6 @@ static void rebuild(multi_op_env *multi_env)
 
 		ir_node  *block = get_nodes_block(o->base_node);
 		dbg_info *dbgi  = get_irn_dbg_info(o->base_node);
-		ir_mode  *mode  = get_irn_mode(o->base_node);
 		ir_node  *curr  = NULL;
 
 
@@ -1810,7 +1808,7 @@ static void rebuild(multi_op_env *multi_env)
 					assert(inner);
 					if (negativ_set) {
 						foreach_pset(negativ_set, ir_node, node) {
-							inner = new_rd_Sub(dbgi, block, inner, node, mode);
+							inner = new_rd_Sub(dbgi, block, inner, node);
 						}
 					}
 
@@ -1861,7 +1859,7 @@ static void rebuild(multi_op_env *multi_env)
 				if (!curr) {
 					curr = new_rd_Minus(dbgi, block, inner);
 				} else {
-					curr = new_rd_Sub(dbgi, block, curr, inner, mode);
+					curr = new_rd_Sub(dbgi, block, curr, inner);
 				}
 			}
 

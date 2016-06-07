@@ -410,7 +410,7 @@ static ir_node *build_graph(mul_env *env, instruction *inst)
 	case SUB: {
 		ir_node *l = build_graph(env, inst->in[0]);
 		ir_node *r = build_graph(env, inst->in[1]);
-		return inst->irn = new_rd_Sub(env->dbg, env->blk, l, r, env->mode);
+		return inst->irn = new_rd_Sub(env->dbg, env->blk, l, r);
 	}
 	case ADD: {
 		ir_node *l = build_graph(env, inst->in[0]);
@@ -838,7 +838,7 @@ static ir_node *replace_div_by_mulh(ir_node *div, ir_tarval *tv)
 		if (mag.need_add)
 			q = new_rd_Add(dbg, block, q, n);
 		else if (mag.need_sub)
-			q = new_rd_Sub(dbg, block, q, n, mode);
+			q = new_rd_Sub(dbg, block, q, n);
 
 		/* Do we need the shift */
 		if (mag.s > 0) {
@@ -957,7 +957,7 @@ ir_node *arch_dep_replace_div_by_const(ir_node *irn)
 
 			if (n_flag) { /* negate the result */
 				ir_node *k_node = new_r_Const_null(irg, mode);
-				res = new_rd_Sub(dbg, block, k_node, res, mode);
+				res = new_rd_Sub(dbg, block, k_node, res);
 			}
 		} else {      /* unsigned case */
 			ir_node *k_node = new_r_Const_long(irg, mode_Iu, k);
@@ -1037,7 +1037,7 @@ ir_node *arch_dep_replace_mod_by_const(ir_node *irn)
 				= tarval_shl_unsigned(get_mode_all_one(mode), k);
 			k_node = new_r_Const(irg, k_val);
 			curr   = new_rd_And(dbg, block, curr, k_node);
-			res    = new_rd_Sub(dbg, block, left, curr, mode);
+			res    = new_rd_Sub(dbg, block, left, curr);
 		} else {      /* unsigned case */
 			ir_tarval *k_val
 				= tarval_shr_unsigned(get_mode_all_one(mode),
@@ -1049,7 +1049,7 @@ ir_node *arch_dep_replace_mod_by_const(ir_node *irn)
 	} else if (allow_Mulh(params, mode)) {
 		res = replace_div_by_mulh(irn, tv);
 		res = new_rd_Mul(dbg, block, res, c);
-		res = new_rd_Sub(dbg, block, left, res, mode);
+		res = new_rd_Sub(dbg, block, left, res);
 	}
 
 	return res;

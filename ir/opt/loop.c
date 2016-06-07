@@ -1447,7 +1447,7 @@ static void create_duffs_block(ir_graph *const irg)
 	}
 
 	ir_mode *const mode = get_irn_mode(loop_info.end_val);
-	ir_node *const ems  = new_r_Sub(block1, loop_info.end_val, loop_info.start_val, mode);
+	ir_node *const ems  = new_r_Sub(block1, loop_info.end_val, loop_info.start_val);
 	DB((dbg, LEVEL_4, "BLOCK1 sub %N\n", ems));
 
 	DB((dbg, LEVEL_4, "mod ins %N %N\n", ems, loop_info.step));

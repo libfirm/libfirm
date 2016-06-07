@@ -279,12 +279,10 @@ static ir_node *find_location(ir_node *block1, ir_node *block2)
  * @param db     debug info to add to the new node
  * @param op1    the first operand
  * @param op2    the second operand
- * @param mode   the mode of the new operation
  *
  * @return the newly created node
  */
-static ir_node *do_apply(unsigned code, dbg_info *db, ir_node *op1,
-                         ir_node *op2, ir_mode *mode)
+static ir_node *do_apply(unsigned code, dbg_info *db, ir_node *op1, ir_node *op2)
 {
 	ir_node *block = find_location(get_nodes_block(op1), get_nodes_block(op2));
 	switch (code) {
@@ -293,7 +291,7 @@ static ir_node *do_apply(unsigned code, dbg_info *db, ir_node *op1,
 	case iro_Add:
 		return new_rd_Add(db, block, op1, op2);
 	case iro_Sub:
-		return new_rd_Sub(db, block, op1, op2, mode);
+		return new_rd_Sub(db, block, op1, op2);
 	default:
 		panic("unsupported opcode");
 	}
@@ -326,7 +324,7 @@ static ir_node *apply(ir_node *header, ir_node *orig, ir_node *op1,
 		} else if (op2_header == header && is_rc(op1, op2_header)) {
 			result = reduce(orig, op2, op1, env);
 		} else {
-			result = do_apply(code, db, op1, op2, get_irn_mode(orig));
+			result = do_apply(code, db, op1, op2);
 			get_irn_ne(result, env)->header = NULL;
 		}
 	}
@@ -988,7 +986,7 @@ static ir_node *apply_one_edge(ir_node *iv, ir_node *rc, ldtr_edge_t *e,
 			if (e->code == iro_Add && mode_is_reference(get_irn_mode(e->rc))) {
 				/* However we allow ONE Pointer Add, as pointer arithmetic with
 				 * wrap around is undefined anyway */
-				return do_apply(e->code, NULL, rc, e->rc, get_irn_mode(e->rc));
+				return do_apply(e->code, NULL, rc, e->rc);
 			}
 			DB((dbg, LEVEL_4, " = UNKNOWN (%+F)", e->rc));
 			return NULL;
@@ -1062,7 +1060,7 @@ static ir_node *apply_one_edge(ir_node *iv, ir_node *rc, ldtr_edge_t *e,
 		ir_graph *irg = get_irn_irg(iv);
 		return new_r_Const(irg, tv);
 	}
-	return do_apply(e->code, NULL, rc, e->rc, get_irn_mode(e->dst));
+	return do_apply(e->code, NULL, rc, e->rc);
 }
 
 /**

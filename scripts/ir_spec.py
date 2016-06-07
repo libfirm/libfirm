@@ -830,6 +830,7 @@ class Store(Node):
 @op
 class Sub(Binop):
 	"""returns the difference of its operands"""
+	mode  = "mode_is_reference(get_irn_mode(irn_right)) ? get_reference_offset_mode(get_irn_mode(irn_left)) : get_irn_mode(irn_left)"
 	flags = []
 
 @op
