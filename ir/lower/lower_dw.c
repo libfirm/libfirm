@@ -830,8 +830,7 @@ static void lower_shr_helper(ir_node *node, ir_mode *mode,
 	                                    right, mode);
 	ir_node *shift_low    = new_rd_Shr(dbgi, block_true, left_low, right,
 	                                   low_unsigned);
-	ir_node *not_shiftval = new_rd_Not(dbgi, block_true, right,
-	                                   low_unsigned);
+	ir_node *not_shiftval = new_rd_Not(dbgi, block_true, right);
 	ir_node *tconv        = create_conv(block_true, left_high,
 	                                    low_unsigned);
 	ir_node *one          = new_r_Const_one(irg, low_unsigned);
@@ -940,8 +939,7 @@ static void lower_Shl(ir_node *node, ir_mode *mode)
 	                                   right, low_unsigned);
 	ir_node *shift_high   = new_rd_Shl(dbgi, block_true, left_high, right,
 	                                   mode);
-	ir_node *not_shiftval = new_rd_Not(dbgi, block_true, right,
-	                                   low_unsigned);
+	ir_node *not_shiftval = new_rd_Not(dbgi, block_true, right);
 	ir_node *conv         = create_conv(block_true, left_low, mode);
 	ir_node *one          = new_r_Const_one(irg, low_unsigned);
 	ir_node *carry0       = new_rd_Shr(dbgi, block_true, conv, one, mode);
@@ -1049,14 +1047,13 @@ static void lower_Eor(ir_node *node, ir_mode *mode)
  */
 static void lower_Not(ir_node *node, ir_mode *mode)
 {
+	(void)mode;
 	ir_node               *op       = get_Not_op(node);
 	const lower64_entry_t *op_entry = get_node_entry(op);
 	dbg_info              *dbgi     = get_irn_dbg_info(node);
 	ir_node               *block    = get_nodes_block(node);
-	ir_node *res_low
-		= new_rd_Not(dbgi, block, op_entry->low_word, env.p.word_unsigned);
-	ir_node *res_high
-		= new_rd_Not(dbgi, block, op_entry->high_word, mode);
+	ir_node *res_low  = new_rd_Not(dbgi, block, op_entry->low_word);
+	ir_node *res_high = new_rd_Not(dbgi, block, op_entry->high_word);
 	ir_set_dw_lowered(node, res_low, res_high);
 }
 

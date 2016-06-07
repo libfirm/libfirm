@@ -2276,7 +2276,7 @@ chain_end:;
 				if (top_not && get_Not_op(top_not) == res) {
 					res = top_not;
 				} else {
-					res = new_rd_Not(dbgi, block, res, mode);
+					res = new_rd_Not(dbgi, block, res);
 				}
 				flip = get_mode_null(mode);
 			}
@@ -2297,7 +2297,7 @@ flip:
 			if (top_not && get_Not_op(top_not) == res) {
 				res = top_not;
 			} else {
-				res = new_rd_Not(dbgi, block, res, mode);
+				res = new_rd_Not(dbgi, block, res);
 			}
 		} else if (!tarval_is_null(flip)) {
 			/* Chain ends with an Eor. */
@@ -2402,7 +2402,7 @@ static ir_node *transform_bitwise_distributive(ir_node *n)
 				dbg_info  *dbgi = get_irn_dbg_info(n);
 				ir_mode   *mode = get_irn_mode(c);
 
-				c = new_rd_Not(dbgi, blk, c, mode);
+				c = new_rd_Not(dbgi, blk, c);
 				n = new_rd_And(dbgi, blk, new_n, c, mode);
 			} else {
 				n = new_binop(a, blk, new_n, c);
@@ -2556,7 +2556,7 @@ static ir_node *transform_node_Or_(ir_node *n)
 		a = get_Not_op(a);
 		b = get_Not_op(b);
 		n = new_rd_And(get_irn_dbg_info(n), block, a, b, mode);
-		n = new_rd_Not(get_irn_dbg_info(n), block, n, mode);
+		n = new_rd_Not(get_irn_dbg_info(n), block, n);
 		DBG_OPT_ALGSIM0(oldn, n);
 		return n;
 	}
@@ -2755,7 +2755,7 @@ static ir_node *transform_node_Eor_(ir_node *n)
 	    operands_are_normalized(get_Not_op(a), b)) {
 		dbg_info *dbg      = get_irn_dbg_info(n);
 		ir_node  *block    = get_nodes_block(n);
-		ir_node  *new_not  = new_rd_Not(dbg, block, b, mode);
+		ir_node  *new_not  = new_rd_Not(dbg, block, b);
 		ir_node  *new_left = get_Not_op(a);
 		n = new_rd_Eor(dbg, block, new_left, new_not, mode);
 		DBG_OPT_ALGSIM0(oldn, n);
@@ -2764,7 +2764,7 @@ static ir_node *transform_node_Eor_(ir_node *n)
 	           !operands_are_normalized(a, get_Not_op(b))) {
 		dbg_info *dbg       = get_irn_dbg_info(n);
 		ir_node  *block     = get_nodes_block(n);
-		ir_node  *new_not   = new_rd_Not(dbg, block, a, mode);
+		ir_node  *new_not   = new_rd_Not(dbg, block, a);
 		ir_node  *new_right = get_Not_op(b);
 		n = new_rd_Eor(dbg, block, new_not, new_right, mode);
 		DBG_OPT_ALGSIM0(oldn, n);
@@ -2776,7 +2776,7 @@ static ir_node *transform_node_Eor_(ir_node *n)
 			/* x ^ 1...1 -> ~x */
 			dbg_info *dbgi  = get_irn_dbg_info(n);
 			ir_node  *block = get_nodes_block(n);
-			n = new_rd_Not(dbgi, block, a, mode);
+			n = new_rd_Not(dbgi, block, a);
 			DBG_OPT_ALGSIM0(oldn, n);
 			return n;
 		}
@@ -2835,7 +2835,7 @@ static ir_node *transform_node_Eor_(ir_node *n)
 			/* (x & y) ^ y => ~x & y */
 			dbg_info *dbgi  = get_irn_dbg_info(n);
 			ir_node  *block = get_nodes_block(n);
-			ir_node  *not   = new_rd_Not(dbgi, block, o, mode);
+			ir_node  *not   = new_rd_Not(dbgi, block, o);
 			return new_rd_And(dbgi, block, not, b, mode);
 		}
 	}
@@ -2845,7 +2845,7 @@ static ir_node *transform_node_Eor_(ir_node *n)
 			/* x ^ (x & y) => x & ~y */
 			dbg_info *dbgi  = get_irn_dbg_info(n);
 			ir_node  *block = get_nodes_block(n);
-			ir_node  *not   = new_rd_Not(dbgi, block, o, mode);
+			ir_node  *not   = new_rd_Not(dbgi, block, o);
 			return new_rd_And(dbgi, block, a, not, mode);
 		}
 	}
@@ -2856,7 +2856,7 @@ static ir_node *transform_node_Eor_(ir_node *n)
 			/* (x | y) ^ y => x & ~y */
 			dbg_info *dbgi  = get_irn_dbg_info(n);
 			ir_node  *block = get_nodes_block(n);
-			ir_node  *not   = new_rd_Not(dbgi, block, b, mode);
+			ir_node  *not   = new_rd_Not(dbgi, block, b);
 			return new_rd_And(dbgi, block, o, not, mode);
 		}
 	}
@@ -2866,7 +2866,7 @@ static ir_node *transform_node_Eor_(ir_node *n)
 			/* x ^ (x | y) => ~x & y */
 			dbg_info *dbgi  = get_irn_dbg_info(n);
 			ir_node  *block = get_nodes_block(n);
-			ir_node  *not   = new_rd_Not(dbgi, block, a, mode);
+			ir_node  *not   = new_rd_Not(dbgi, block, a);
 			return new_rd_And(dbgi, block, not, o, mode);
 		}
 	}
@@ -2935,13 +2935,13 @@ static ir_node *transform_node_Eor_(ir_node *n)
 			ir_node  *block = get_nodes_block(n);
 			ir_node  *t;
 			if(is_And(tb)) {
-				t = new_rd_And(dbgi, block, l, new_rd_Not(dbgi, block, r, mode), mode);
+				t = new_rd_And(dbgi, block, l, new_rd_Not(dbgi, block, r), mode);
 			} else {
 				assert(is_Or(tb));
-				t = new_rd_And(dbgi, block, new_rd_Not(dbgi, block, l, mode), r, mode);
+				t = new_rd_And(dbgi, block, new_rd_Not(dbgi, block, l), r, mode);
 			}
 			if (nots)
-				t = new_rd_Not(dbgi, block, t, mode);
+				t = new_rd_Not(dbgi, block, t);
 			return t;
 		}
 	}
@@ -2968,13 +2968,13 @@ static ir_node *transform_node_Eor_(ir_node *n)
 			ir_node  *block = get_nodes_block(n);
 			ir_node  *t;
 			if(is_And(ta)) {
-				t = new_rd_And(dbgi, block, l, new_rd_Not(dbgi, block, r, mode), mode);
+				t = new_rd_And(dbgi, block, l, new_rd_Not(dbgi, block, r), mode);
 			} else {
 				assert(is_Or(ta));
-				t = new_rd_And(dbgi, block, new_rd_Not(dbgi, block, l, mode), r, mode);
+				t = new_rd_And(dbgi, block, new_rd_Not(dbgi, block, l), r, mode);
 			}
 			if (nots)
-				t = new_rd_Not(dbgi, block, t, mode);
+				t = new_rd_Not(dbgi, block, t);
 			return t;
 		}
 	}
@@ -3278,7 +3278,7 @@ static ir_node *transform_node_Sub(ir_node *n)
 				/* -1 - x -> ~x */
 				dbg_info *dbgi  = get_irn_dbg_info(n);
 				ir_node  *block = get_nodes_block(n);
-				n = new_rd_Not(dbgi, block, b, mode);
+				n = new_rd_Not(dbgi, block, b);
 				DBG_OPT_ALGSIM0(oldn, n);
 				return n;
 			}
@@ -3545,7 +3545,7 @@ static ir_node *transform_node_Sub(ir_node *n)
 			ir_node  *block = get_nodes_block(n);
 			ir_mode  *mode  = get_irn_mode(n);
 			ir_node  *add   = new_rd_Add(dbgi, block, get_Not_op(a), b, mode);
-			ir_node  *not   = new_rd_Not(dbgi, block, add, mode);
+			ir_node  *not   = new_rd_Not(dbgi, block, add);
 			return not;
 		}
 		/* (x & 0x7F...F) - x -> x & 0x80...0 */
@@ -3572,7 +3572,7 @@ static ir_node *transform_node_Sub(ir_node *n)
 				dbg_info *dbgi  = get_irn_dbg_info(n);
 				ir_node  *block = get_nodes_block(n);
 				ir_mode  *mode  = get_irn_mode(n);
-				ir_node  *notn  = new_rd_Not(dbgi, block, y, mode);
+				ir_node  *notn  = new_rd_Not(dbgi, block, y);
 				ir_node  *andn  = new_rd_And(dbgi, block, a, notn, mode);
 				return andn;
 			}
@@ -4452,7 +4452,7 @@ static ir_node *transform_node_And(ir_node *n)
 absorb:;
 			dbg_info *const dbg   = get_irn_dbg_info(n);
 			ir_node  *const block = get_nodes_block(n);
-			ir_node  *const noty  = new_rd_Not(dbg, block, y, mode);
+			ir_node  *const noty  = new_rd_Not(dbg, block, y);
 			n = new_rd_And(dbg, block, noty, x, mode);
 			DBG_OPT_ALGSIM0(oldn, n);
 			return n;
@@ -4465,7 +4465,7 @@ absorb:;
 		a = get_Not_op(a);
 		b = get_Not_op(b);
 		n = new_rd_Or(get_irn_dbg_info(n), block, a, b, mode);
-		n = new_rd_Not(get_irn_dbg_info(n), block, n, mode);
+		n = new_rd_Not(get_irn_dbg_info(n), block, n);
 		DBG_OPT_ALGSIM0(oldn, n);
 		return n;
 	}
@@ -4557,7 +4557,7 @@ static ir_node *transform_node_Not(ir_node *n)
 			dbg_info *dbgi   = get_irn_dbg_info(n);
 			ir_node  *block  = get_nodes_block(n);
 			ir_node  *not_op = get_Not_op(left);
-			ir_node  *not    = new_rd_Not(dbgi, block, right, mode);
+			ir_node  *not    = new_rd_Not(dbgi, block, right);
 			if (is_And(a)) {
 				/* ~(~a & b) => a | ~b */
 				n = new_rd_Or(dbgi, block, not_op, not, mode);
@@ -4572,7 +4572,7 @@ static ir_node *transform_node_Not(ir_node *n)
 			dbg_info *dbgi   = get_irn_dbg_info(n);
 			ir_node  *block  = get_nodes_block(n);
 			ir_node  *not_op = get_Not_op(right);
-			ir_node  *not    = new_rd_Not(dbgi, block, left, mode);
+			ir_node  *not    = new_rd_Not(dbgi, block, left);
 			if (is_And(a)) {
 				/* ~(a & ~b) => ~a | b */
 				n = new_rd_Or(dbgi, block, not, not_op, mode);
@@ -4591,7 +4591,7 @@ static ir_node *transform_node_Not(ir_node *n)
 		ir_node  *block     = get_nodes_block(n);
 		ir_node  *eor_right = get_binop_right(a);
 		ir_node  *eor_left  = get_binop_left(a);
-		eor_right = new_rd_Not(dbg, block, eor_right, mode);
+		eor_right = new_rd_Not(dbg, block, eor_right);
 
 		return new_rd_Eor(dbg, block, eor_left, eor_right, mode);
 	}
@@ -5380,7 +5380,7 @@ cmp_x_eq_0:
 					} else {
 						dbg_info *dbgi  = get_irn_dbg_info(n);
 						ir_node  *block = get_nodes_block(n);
-						ir_node  *notn  = new_rd_Not(dbgi, block, cond, mode_b);
+						ir_node  *notn  = new_rd_Not(dbgi, block, cond);
 						return notn;
 					}
 				}
@@ -6768,7 +6768,7 @@ static ir_node *transform_Mux_set(ir_node *n, ir_relation relation)
 					}
 
 					if (rel_eq == ir_relation_equal)
-						a = new_rd_Not(dbgi, block, a, calc_mode);
+						a = new_rd_Not(dbgi, block, a);
 
 					ir_graph  *irg          = get_irn_irg(block);
 					unsigned   shift_amount = get_tarval_highest_bit(tv);
@@ -6830,7 +6830,7 @@ static ir_node *transform_Mux_set(ir_node *n, ir_relation relation)
 
 	ir_node *sub = new_rd_Sub(dbgi, block, a, b, calc_mode);
 	if (need_not)
-		sub = new_rd_Not(dbgi, block, sub, calc_mode);
+		sub = new_rd_Not(dbgi, block, sub);
 
 	ir_graph  *irg       = get_irn_irg(block);
 	unsigned   bits      = get_mode_size_bits(calc_mode);
@@ -6913,7 +6913,7 @@ static ir_node *transform_node_Mux(ir_node *n)
 						/* Mux(a < 0, 0, 0xFFFFFFFF) => a >>s 31 */
 						/* Mux(a >= 0, 0, 0xFFFFFFFF) => ~a >>s 31 */
 						if (rel_lt == ir_relation_greater_equal)
-							cmp_l = new_rd_Not(dbgi, block, cmp_l, cmp_mode);
+							cmp_l = new_rd_Not(dbgi, block, cmp_l);
 
 						unsigned  bits = get_mode_size_bits(cmp_mode);
 						ir_node  *c    = new_rd_Const_long(dbgi, irg, mode_Iu, bits - 1U);
@@ -7004,7 +7004,7 @@ static ir_node *transform_node_Mux(ir_node *n)
 				return new_rd_Mux(dbgi, block, and, f1, t1, mode);
 			} else if (f == t1) {
 				/* Mux(cond0, Mux(cond1, x, y), x) */
-				ir_node* not_c1  = new_r_Not(block, c1, mode_b);
+				ir_node* not_c1  = new_r_Not(block, c1);
 				ir_node* and     = new_r_And(block, c0, not_c1, mode_b);
 				DBG_OPT_ALGSIM0(oldn, f1);
 				return new_rd_Mux(dbgi, block, and, t1, f1, mode);
@@ -7023,7 +7023,7 @@ static ir_node *transform_node_Mux(ir_node *n)
 				return new_rd_Mux(dbgi, block, or, f1, t1, mode);
 			} else if (t == f1) {
 				/* Mux(cond0, x, Mux(cond1, y, x)) */
-				ir_node* not_c1  = new_r_Not(block, c1, mode_b);
+				ir_node* not_c1  = new_r_Not(block, c1);
 				ir_node* or      = new_r_Or(block, c0, not_c1, mode_b);
 				DBG_OPT_ALGSIM0(oldn, t1);
 				return new_rd_Mux(dbgi, block, or, t1, f1, mode);
@@ -7054,7 +7054,7 @@ static ir_node *transform_node_Mux(ir_node *n)
 				ir_tarval *tv_f = get_Const_tarval(f);
 				if (tv_f == tarval_b_true) {
 					/* Muxb(sel, x, true) = Or(Not(sel), x) */
-					ir_node* not_sel = new_rd_Not(dbg, block, sel, mode_b);
+					ir_node* not_sel = new_rd_Not(dbg, block, sel);
 					n = new_rd_Or(dbg, block, not_sel, t, mode_b);
 					DBG_OPT_ALGSIM0(oldn, n);
 					return n;

@@ -884,7 +884,7 @@ static match_result_t replace_until_other_user(ir_node *node, ir_node *a, ir_nod
 			if (replace) {
 				ir_node *op = b;
 				if (need_not) {
-					op = new_rd_Not(get_irn_dbg_info(op), get_nodes_block(op), op, get_irn_mode(op));
+					op = new_rd_Not(get_irn_dbg_info(op), get_nodes_block(op), op);
 				}
 				DBG((dbg, LEVEL_4, "replace %li @ %li with %li\n", get_irn_node_nr(t), get_irn_node_nr(node), get_irn_node_nr(op)));
 				set_irn_n(node, i, op);

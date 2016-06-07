@@ -616,6 +616,7 @@ class NoMem(Node):
 @op
 class Not(Node):
 	"""returns the bitwise complement of a value. Works for boolean values, too."""
+	mode   = "get_irn_mode(irn_op)"
 	flags  = []
 	ins    = [
 		("op", "operand")
