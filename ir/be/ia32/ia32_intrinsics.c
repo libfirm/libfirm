@@ -313,10 +313,10 @@ static void ia32_lower_mul64(ir_node *node, ir_mode *mode)
 		l_res = new_rd_Proj(dbg, mul, ia32_mode_gp, pn_ia32_l_Mul_res_low);
 
 		ir_node *right_lowc = new_rd_Conv(dbg, block, right_low, mode);
-		ir_node *mul1 = new_rd_Mul(dbg, block, left_high, right_lowc, mode);
+		ir_node *mul1 = new_rd_Mul(dbg, block, left_high, right_lowc);
 		ir_node *add        = new_rd_Add(dbg, block, mul1, pEDX, mode);
 		ir_node *left_lowc  = new_rd_Conv(dbg, block, left_low, mode);
-		ir_node *mul2 = new_rd_Mul(dbg, block, left_lowc, right_high, mode);
+		ir_node *mul2 = new_rd_Mul(dbg, block, left_lowc, right_high);
 		h_res = new_rd_Add(dbg, block, add, mul2, mode);
 	}
 	ir_set_dw_lowered(node, l_res, h_res);

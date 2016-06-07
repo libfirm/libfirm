@@ -289,7 +289,7 @@ static ir_node *do_apply(unsigned code, dbg_info *db, ir_node *op1,
 	ir_node *block = find_location(get_nodes_block(op1), get_nodes_block(op2));
 	switch (code) {
 	case iro_Mul:
-		return new_rd_Mul(db, block, op1, op2, mode);
+		return new_rd_Mul(db, block, op1, op2);
 	case iro_Add:
 		return new_rd_Add(db, block, op1, op2, mode);
 	case iro_Sub:

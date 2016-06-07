@@ -1048,7 +1048,7 @@ ir_node *arch_dep_replace_mod_by_const(ir_node *irn)
 	/* other constant */
 	} else if (allow_Mulh(params, mode)) {
 		res = replace_div_by_mulh(irn, tv);
-		res = new_rd_Mul(dbg, block, res, c, mode);
+		res = new_rd_Mul(dbg, block, res, c);
 		res = new_rd_Sub(dbg, block, left, res, mode);
 	}
 

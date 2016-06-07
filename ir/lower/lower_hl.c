@@ -47,7 +47,7 @@ static void lower_sel(ir_node *sel)
 			ir_graph *const irg      = get_irn_irg(sel);
 			ir_node  *const el_size  = new_rd_Const_long(dbg, irg, offset_mode,
 			                                             element_size);
-			scaled_index = new_rd_Mul(dbg, bl, idx_conv, el_size, offset_mode);
+			scaled_index = new_rd_Mul(dbg, bl, idx_conv, el_size);
 		}
 		newn = new_rd_Add(dbg, bl, ptr, scaled_index, mode);
 	}

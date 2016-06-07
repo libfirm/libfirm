@@ -590,6 +590,7 @@ class Mod(Node):
 
 class Mul(Binop):
 	"""returns the product of its operands"""
+	mode  = "get_irn_mode(irn_left)"
 	flags = [ "commutative" ]
 
 class Mulh(Binop):

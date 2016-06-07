@@ -278,7 +278,7 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env)
 
 				case TR_MUL: {
 					ir_node *v = get_r_value(irg, r, modes[r]);
-					ir_node *n = new_r_Mul(pred_block, v, pred, modes[r]);
+					ir_node *n = new_r_Mul(pred_block, v, pred);
 					set_Return_res(ret, r, n);
 					continue;
 				}

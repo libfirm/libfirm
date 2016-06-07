@@ -439,7 +439,7 @@ transform:;
 
 	blk = earliest_block(irn, x, curr_blk);
 	if (op == op_Mul)
-		irn = new_rd_Mul(dbg, blk, irn, x, mode);
+		irn = new_rd_Mul(dbg, blk, irn, x);
 	else
 		irn = new_rd_Shl(dbg, blk, irn, x, mode);
 
@@ -1815,9 +1815,8 @@ static void rebuild(multi_op_env *multi_env)
 					}
 
 					if (!is_one) {
-						ir_mode *node_mode = get_irn_mode(inner);
 						ir_node *c = new_rd_Const(dbgi, get_irn_irg(inner), positiv_val);
-						inner      = new_rd_Mul(dbgi, block, c, inner, node_mode);
+						inner      = new_rd_Mul(dbgi, block, c, inner);
 					}
 
 					if (!curr || is_one) {
@@ -1856,7 +1855,7 @@ static void rebuild(multi_op_env *multi_env)
 				if (!tarval_is_one(positiv_val)) {
 					ir_mode *node_mode = get_irn_mode(inner);
 					ir_node *c         = new_rd_Const(dbgi, get_irn_irg(inner), tarval_convert_to(positiv_val, node_mode));
-					inner              = new_rd_Mul(dbgi, block, c, inner, node_mode);
+					inner              = new_rd_Mul(dbgi, block, c, inner);
 				}
 
 				if (!curr) {

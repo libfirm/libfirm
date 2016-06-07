@@ -3072,7 +3072,7 @@ static ir_node *transform_node_Add(ir_node *n)
 				ir_tarval *const tv_one = get_mode_one(mode);
 				ir_tarval *const tv_two = tarval_add(tv_one, tv_one);
 				ir_node   *const two    = new_r_Const(irg, tv_two);
-				n = new_rd_Mul(dbgi, block, a, two, mode);
+				n = new_rd_Mul(dbgi, block, a, two);
 				DBG_OPT_ALGSIM0(oldn, n);
 				return n;
 			} else if (get_mode_arithmetic(mode) == irma_twos_complement) {
@@ -3171,7 +3171,7 @@ mul_y_plus_z:;
 						dbg_info *const dbgi  = get_irn_dbg_info(n);
 						ir_node  *const block = get_nodes_block(n);
 						ir_node  *const sum   = new_rd_Add(dbgi, block, y, z, mode);
-						return new_rd_Mul(dbgi, block, x, sum, mode);
+						return new_rd_Mul(dbgi, block, x, sum);
 					}
 				}
 			}
@@ -3466,7 +3466,7 @@ static ir_node *transform_node_Sub(ir_node *n)
 			ir_graph *const irg = get_irn_irg(n);
 			ir_node  *const one = new_r_Const_one(irg, mode);
 			ir_node  *const sub = new_rd_Sub(dbg, blk, y, one, mode);
-			n = new_rd_Mul(dbg, blk, x, sub, mode);
+			n = new_rd_Mul(dbg, blk, x, sub);
 			DBG_OPT_ALGSIM0(oldn, n);
 			return n;
 		}
@@ -3627,7 +3627,7 @@ static ir_node *can_negate_cheaply(dbg_info *const dbgi, ir_node *const node)
 			ir_graph  *irg   = get_irn_irg(node);
 			ir_node   *newc  = new_r_Const(irg, negtv);
 			ir_node   *block = get_nodes_block(node);
-			return new_rd_Mul(dbgi, block, left, newc, mode);
+			return new_rd_Mul(dbgi, block, left, newc);
 		}
 	}
 	/* -(a + C) => -C - a */
@@ -3715,7 +3715,7 @@ static ir_node *transform_node_Mul(ir_node *n)
 
 				dbg_info  *dbgi  = get_irn_dbg_info(n);
 				ir_node   *block = get_nodes_block(n);
-				ir_node   *mul   = new_rd_Mul(dbgi, block, add_left, b, mode);
+				ir_node   *mul   = new_rd_Mul(dbgi, block, add_left, b);
 				ir_tarval *c1_c2 = tarval_mul(c1, c2);
 				ir_graph  *irg   = get_irn_irg(n);
 				ir_node   *cnst  = new_r_Const(irg, c1_c2);
@@ -3769,7 +3769,7 @@ static ir_node *transform_node_Mul(ir_node *n)
 		if (neg_b != NULL) {
 			dbg_info *dbgi  = get_irn_dbg_info(n);
 			ir_node  *block = get_nodes_block(n);
-			return new_rd_Mul(dbgi, block, get_Minus_op(a), neg_b, mode);
+			return new_rd_Mul(dbgi, block, get_Minus_op(a), neg_b);
 		}
 	}
 	/* distribute minus: x * -y => -x * y */
@@ -3778,7 +3778,7 @@ static ir_node *transform_node_Mul(ir_node *n)
 		if (neg_a != NULL) {
 			dbg_info *dbgi  = get_irn_dbg_info(n);
 			ir_node  *block = get_nodes_block(n);
-			return new_rd_Mul(dbgi, block, neg_a, get_Minus_op(b), mode);
+			return new_rd_Mul(dbgi, block, neg_a, get_Minus_op(b));
 		}
 	}
 	if (is_Shl(a)) {
@@ -3948,7 +3948,7 @@ static ir_node *transform_node_Div(ir_node *n)
 				ir_graph *irg   = get_irn_irg(block);
 				ir_node  *c     = new_r_Const(irg, tv);
 				dbg_info *dbgi  = get_irn_dbg_info(n);
-				value = new_rd_Mul(dbgi, block, a, c, mode);
+				value = new_rd_Mul(dbgi, block, a, c);
 
 				goto make_tuple;
 			}
@@ -4717,15 +4717,13 @@ static ir_node *transform_node_Minus(ir_node *n)
 		if (negated_l != NULL) {
 			/* -((a - b) * c) -> (b - a) * c */
 			ir_node *block = get_nodes_block(n);
-			ir_mode *mode  = get_irn_mode(n);
-			return new_rd_Mul(dbgi, block, negated_l, r, mode);
+			return new_rd_Mul(dbgi, block, negated_l, r);
 		}
 		ir_node *negated_r = can_negate_cheaply(NULL, r);
 		if (negated_r != NULL) {
 			/* -(a * (b - c)) -> a * (c - b) */
 			ir_node *block = get_nodes_block(n);
-			ir_mode *mode  = get_irn_mode(n);
-			return new_rd_Mul(dbgi, block, l, negated_r, mode);
+			return new_rd_Mul(dbgi, block, l, negated_r);
 		}
 	}
 
@@ -6260,7 +6258,7 @@ static ir_node *transform_node_Shl(ir_node *n)
 			ir_tarval *const one   = get_mode_one(mode);
 			ir_tarval *const val   = tarval_shl(one, get_Const_tarval(b));
 			ir_node   *const cnst  = new_r_Const(irg, val);
-			return new_rd_Mul(dbgi, block, a, cnst, mode);
+			return new_rd_Mul(dbgi, block, a, cnst);
 		}
 	}
 

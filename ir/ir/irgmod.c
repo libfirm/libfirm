@@ -340,8 +340,7 @@ ir_node *duplicate_subgraph(dbg_info *dbg, ir_node *n, ir_node *block)
 	case iro_Mul:
 		return new_rd_Mul(dbg, block,
 		                  duplicate_subgraph(dbg, get_Mul_left(n), block),
-		                  duplicate_subgraph(dbg, get_Mul_right(n), block),
-		                  mode);
+		                  duplicate_subgraph(dbg, get_Mul_right(n), block));
 	case iro_And:
 		return new_rd_And(dbg, block,
 		                  duplicate_subgraph(dbg, get_And_left(n), block),
