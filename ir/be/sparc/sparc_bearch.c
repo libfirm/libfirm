@@ -171,7 +171,7 @@ static void rewrite_unsigned_float_Conv(ir_node *node)
 	ir_tarval *correction  = new_tarval_from_double(4294967296., mode_d);
 	ir_node   *c_const     = new_r_Const(irg, correction);
 	collect_new_start_block_node(c_const);
-	ir_node   *fadd        = new_rd_Add(dbgi, true_block, res, c_const, mode_d);
+	ir_node   *fadd        = new_rd_Add(dbgi, true_block, res, c_const);
 
 	ir_node  *lower_in[2] = { true_jmp, false_jmp };
 	ir_node  *phi_in[2]   = { fadd, res };

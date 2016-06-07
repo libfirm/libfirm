@@ -49,7 +49,7 @@ static void lower_sel(ir_node *sel)
 			                                             element_size);
 			scaled_index = new_rd_Mul(dbg, bl, idx_conv, el_size);
 		}
-		newn = new_rd_Add(dbg, bl, ptr, scaled_index, mode);
+		newn = new_rd_Add(dbg, bl, ptr, scaled_index);
 	}
 
 	hook_lower(sel);
@@ -81,7 +81,7 @@ static void lower_member(ir_node *member)
 		ir_mode  *const mode_offset = get_reference_offset_mode(mode);
 		ir_node  *const cnst
 			= new_r_Const_long(irg, mode_offset, offset);
-		newn = new_rd_Add(dbg, bl, ptr, cnst, mode);
+		newn = new_rd_Add(dbg, bl, ptr, cnst);
 	} else {
 		newn = ptr;
 	}

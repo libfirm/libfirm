@@ -634,7 +634,7 @@ static void fix_int_return(cl_entry const *const entry,
 		if (offset > 0) {
 			ir_mode *mode_offset = get_reference_offset_mode(mode_ref);
 			ir_node *offset_cnst = new_r_Const_long(irg, mode_offset, offset);
-			addr = new_r_Add(block, addr, offset_cnst, mode_ref);
+			addr = new_r_Add(block, addr, offset_cnst);
 		}
 		ir_node *const value     = new_r_Proj(proj_res, mode, pn+i);
 		ir_type *const type      = get_type_for_mode(mode);
@@ -803,7 +803,7 @@ static void transform_return(ir_node *ret, size_t n_ret_com, wlk_env *env)
 							= get_reference_offset_mode(mode_ref);
 						ir_node *const offset_cnst
 							= new_r_Const_long(irg, mode_offset, offset);
-						addr = new_r_Add(block, addr, offset_cnst, mode_ref);
+						addr = new_r_Add(block, addr, offset_cnst);
 					}
 					ir_mode *const mode = ret_spec->modes[i];
 					ir_node *const load = new_r_Load(block, mem, addr, mode,

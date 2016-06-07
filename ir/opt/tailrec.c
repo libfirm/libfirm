@@ -271,7 +271,7 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env)
 						ir_mode *mode_offset = get_reference_offset_mode(mode);
 						v = new_r_Conv(pred_block, v, mode_offset);
 					}
-					ir_node *add = new_r_Add(pred_block, pred, v, mode);
+					ir_node *add = new_r_Add(pred_block, pred, v);
 					set_Return_res(ret, r, add);
 					continue;
 				}

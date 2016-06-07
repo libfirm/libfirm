@@ -354,16 +354,15 @@ static void lower_Load(ir_node *node, ir_mode *mode)
 	ir_node  *mem      = get_Load_mem(node);
 	ir_type  *type     = get_Load_type(node);
 	ir_node  *cnst     = new_r_Const(irg, env.tv_mode_bytes);
-	ir_mode  *adr_mode = get_irn_mode(adr);
 	ir_node  *block    = get_nodes_block(node);
 	ir_node *low;
 	ir_node *high;
 	if (env.p.big_endian) {
-		low  = new_r_Add(block, adr, cnst, adr_mode);
+		low  = new_r_Add(block, adr, cnst);
 		high = adr;
 	} else {
 		low  = adr;
-		high = new_r_Add(block, adr, cnst, adr_mode);
+		high = new_r_Add(block, adr, cnst);
 	}
 
 	/* create two loads */
@@ -414,21 +413,20 @@ static void lower_Store(ir_node *node, ir_mode *mode)
 	ir_node               *value = get_Store_value(node);
 	const lower64_entry_t *entry = get_node_entry(value);
 
-	ir_graph *irg      = get_irn_irg(node);
-	ir_node  *adr      = get_Store_ptr(node);
-	ir_node  *mem      = get_Store_mem(node);
-	ir_type  *type     = get_Store_type(node);
-	ir_node  *block    = get_nodes_block(node);
-	ir_node  *cnst     = new_r_Const(irg, env.tv_mode_bytes);
-	ir_mode  *adr_mode = get_irn_mode(adr);
+	ir_graph *irg   = get_irn_irg(node);
+	ir_node  *adr   = get_Store_ptr(node);
+	ir_node  *mem   = get_Store_mem(node);
+	ir_type  *type  = get_Store_type(node);
+	ir_node  *block = get_nodes_block(node);
+	ir_node  *cnst  = new_r_Const(irg, env.tv_mode_bytes);
 	ir_node  *low;
 	ir_node  *high;
 	if (env.p.big_endian) {
-		low  = new_r_Add(block, adr, cnst, adr_mode);
+		low  = new_r_Add(block, adr, cnst);
 		high = adr;
 	} else {
 		low  = adr;
-		high = new_r_Add(block, adr, cnst, adr_mode);
+		high = new_r_Add(block, adr, cnst);
 	}
 
 	/* create two Stores */
@@ -1422,10 +1420,9 @@ transform:
 	ir_node   *addr        = new_r_Member(block, frame_ptr, entity);
 	dbg_info  *dbgi        = get_irn_dbg_info(node);
 	ir_node   *nomem       = get_irg_no_mem(irg);
-	ir_mode   *addr_mode   = get_irn_mode(addr);
 	ir_node   *cnst        = new_r_Const(irg, env.tv_mode_bytes);
 	ir_node   *low         = addr;
-	ir_node   *high        = new_r_Add(block, addr, cnst, addr_mode);
+	ir_node   *high        = new_r_Add(block, addr, cnst);
 	ir_type   *src_type    = get_type_for_mode(src_mode);
 	/* big endian requires different order for lower/higher word */
 	if (env.p.big_endian) {
@@ -2274,7 +2271,7 @@ static void lower_reduce_builtin(ir_node *builtin, ir_mode *mode)
 		ir_node *cmp_high       = new_rd_Cmp(dbgi, block, entry->high_word, zero_high, ir_relation_equal);
 		ir_node *ffs_high       = new_rd_Builtin(dbgi, block, mem, 1, in_high, kind, lowered_type_high);
 		ir_node *high_proj      = new_r_Proj(ffs_high, result_mode, pn_Builtin_max+1);
-		ir_node *high           = new_rd_Add(dbgi, block, high_proj, number_of_bits, result_mode);
+		ir_node *high           = new_rd_Add(dbgi, block, high_proj, number_of_bits);
 		ir_node *ffs_low        = new_rd_Builtin(dbgi, block, mem, 1, in_low, kind, lowered_type_low);
 		ir_node *low            = new_r_Proj(ffs_low, result_mode, pn_Builtin_max+1);
 		ir_node *mux_high       = new_rd_Mux(dbgi, block, cmp_high, high, zero_result);
@@ -2295,7 +2292,7 @@ static void lower_reduce_builtin(ir_node *builtin, ir_mode *mode)
 		ir_node *clz_low        = new_rd_Builtin(dbgi, block, mem, 1, in_low, kind, lowered_type_low);
 		ir_node *low_proj       = new_r_Proj(clz_low, result_mode, pn_Builtin_max+1);
 		ir_node *number_of_bits = new_r_Const_long(irg, result_mode, get_mode_size_bits(mode));
-		ir_node *low            = new_rd_Add(dbgi, block, low_proj, number_of_bits, result_mode);
+		ir_node *low            = new_rd_Add(dbgi, block, low_proj, number_of_bits);
 		res = new_rd_Mux(dbgi, block, cmp_high, high, low);
 
 		if (!allow_ifconv(cmp_high, high, low))
@@ -2308,7 +2305,7 @@ static void lower_reduce_builtin(ir_node *builtin, ir_mode *mode)
 		ir_node *ffs_high       = new_rd_Builtin(dbgi, block, mem, 1, in_high, kind, lowered_type_high);
 		ir_node *high_proj      = new_r_Proj(ffs_high, result_mode, pn_Builtin_max+1);
 		ir_node *number_of_bits = new_r_Const_long(irg, result_mode, get_mode_size_bits(env.p.word_unsigned));
-		ir_node *high           = new_rd_Add(dbgi, block, high_proj, number_of_bits, result_mode);
+		ir_node *high           = new_rd_Add(dbgi, block, high_proj, number_of_bits);
 		ir_node *ffs_low        = new_rd_Builtin(dbgi, block, mem, 1, in_low, kind, lowered_type_low);
 		ir_node *low            = new_r_Proj(ffs_low, result_mode, pn_Builtin_max+1);
 		res = new_rd_Mux(dbgi, block, cmp_low, low, high);
@@ -2323,7 +2320,7 @@ static void lower_reduce_builtin(ir_node *builtin, ir_mode *mode)
 		ir_node *high          = new_r_Proj(popcount_high, result_mode, pn_Builtin_max+1);
 		ir_node *low           = new_r_Proj(popcount_low, result_mode, pn_Builtin_max+1);
 
-		res = new_rd_Add(dbgi, block, high, low, result_mode);
+		res = new_rd_Add(dbgi, block, high, low);
 		break;
 	}
 	case ir_bk_parity: {

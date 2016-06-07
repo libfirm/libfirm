@@ -400,7 +400,7 @@ static ir_node *build_graph(mul_env *env, instruction *inst)
 		ir_node *r = build_graph(env, inst->in[1]);
 		ir_node *c = new_r_Const_long(irg, env->shf_mode, inst->shift_count);
 		ir_node *s = new_rd_Shl(env->dbg, env->blk, r, c);
-		return inst->irn = new_rd_Add(env->dbg, env->blk, l, s, env->mode);
+		return inst->irn = new_rd_Add(env->dbg, env->blk, l, s);
 	}
 	case SHIFT: {
 		ir_node *l = build_graph(env, inst->in[0]);
@@ -415,7 +415,7 @@ static ir_node *build_graph(mul_env *env, instruction *inst)
 	case ADD: {
 		ir_node *l = build_graph(env, inst->in[0]);
 		ir_node *r = build_graph(env, inst->in[1]);
-		return inst->irn = new_rd_Add(env->dbg, env->blk, l, r, env->mode);
+		return inst->irn = new_rd_Add(env->dbg, env->blk, l, r);
 	}
 	case ZERO:
 		return inst->irn = new_r_Const_null(irg, env->mode);
@@ -836,7 +836,7 @@ static ir_node *replace_div_by_mulh(ir_node *div, ir_tarval *tv)
 
 		/* do we need an Add or Sub */
 		if (mag.need_add)
-			q = new_rd_Add(dbg, block, q, n, mode);
+			q = new_rd_Add(dbg, block, q, n);
 		else if (mag.need_sub)
 			q = new_rd_Sub(dbg, block, q, n, mode);
 
@@ -849,7 +849,7 @@ static ir_node *replace_div_by_mulh(ir_node *div, ir_tarval *tv)
 		/* final */
 		ir_node *c2 = new_r_Const_long(irg, mode_Iu, bits - 1);
 		ir_node *t  = new_rd_Shr(dbg, block, q, c2);
-		res = new_rd_Add(dbg, block, q, t, mode);
+		res = new_rd_Add(dbg, block, q, t);
 	} else {
 		struct magicu_info mafo = get_magic_info(tv);
 		ir_graph          *irg  = get_irn_irg(div);
@@ -949,7 +949,7 @@ ir_node *arch_dep_replace_div_by_const(ir_node *irn)
 				 * but simply shifting right by one computes -2.
 				 */
 
-				curr = new_rd_Add(dbg, block, left, curr, mode);
+				curr = new_rd_Add(dbg, block, left, curr);
 			}
 
 			ir_node *k_node = new_r_Const_long(irg, mode_Iu, k);
@@ -1031,7 +1031,7 @@ ir_node *arch_dep_replace_mod_by_const(ir_node *irn)
 
 			ir_node *k_node = new_r_Const_long(irg, mode_Iu, bits - k);
 			curr = new_rd_Shr(dbg, block, curr, k_node);
-			curr = new_rd_Add(dbg, block, left, curr, mode);
+			curr = new_rd_Add(dbg, block, left, curr);
 
 			ir_tarval *k_val
 				= tarval_shl_unsigned(get_mode_all_one(mode), k);

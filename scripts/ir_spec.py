@@ -48,6 +48,7 @@ class TypeConst(Node):
 @op
 class Add(Binop):
 	"""returns the sum of its operands"""
+	mode  = "get_irn_mode(mode_is_reference(get_irn_mode(irn_right)) ? irn_right : irn_left)"
 	flags = [ "commutative" ]
 
 @op

@@ -543,7 +543,7 @@ static changes_t try_load_after_load(track_load_env_t *env, ir_node *prev_load)
 		ir_mode    *const ptr_mode      = get_irn_mode(prev_ptr);
 		ir_mode    *const ptr_mode_offs = get_reference_offset_mode(ptr_mode);
 		ir_node    *const c             = new_r_Const_long(irg, ptr_mode_offs, delta);
-		ir_node    *const add           = new_r_Add(block, prev_ptr, c, ptr_mode);
+		ir_node    *const add           = new_r_Add(block, prev_ptr, c);
 		set_Load_ptr(prev_load, add);
 
 		/* Change mode of previous load. */
@@ -606,7 +606,7 @@ static bool try_update_ptr_CopyB(track_load_env_t *env, ir_node *copyb)
 	ir_mode  *mode_offset  = get_reference_offset_mode(mode_ref);
 	ir_node  *cnst         = new_r_Const_long(irg, mode_offset,
 	                                          src_base_offset.offset + delta);
-	ir_node  *new_load_ptr = new_r_Add(block, src_base_offset.base, cnst, mode_P);
+	ir_node  *new_load_ptr = new_r_Add(block, src_base_offset.base, cnst);
 	env->ptr = new_load_ptr;
 	return true;
 }
@@ -1430,7 +1430,7 @@ static changes_t optimize_conv_load(ir_node *conv)
 		ir_mode  *mode_offs = get_reference_offset_mode(mode);
 		ir_node  *delta     = new_r_Const_long(irg, mode_offs, bits_diff/8);
 		ir_node  *block     = get_nodes_block(load);
-		ir_node  *add       = new_r_Add(block, ptr, delta, mode);
+		ir_node  *add       = new_r_Add(block, ptr, delta);
 		set_Load_ptr(load, add);
 	}
 	set_Load_mode(load, mode);

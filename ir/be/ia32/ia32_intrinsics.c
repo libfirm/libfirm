@@ -149,8 +149,8 @@ static void ia32_lower_add64(ir_node *node, ir_mode *mode)
 	assert(get_irn_mode(left_high) == get_irn_mode(right_high));
 
 	if (cr == no_carry) {
-		ir_node *add_low  = new_rd_Add(dbg, block, left_low,  right_low, low_mode);
-		ir_node *add_high = new_rd_Add(dbg, block, left_high, right_high, high_mode);
+		ir_node *add_low  = new_rd_Add(dbg, block, left_low,  right_low);
+		ir_node *add_high = new_rd_Add(dbg, block, left_high, right_high);
 		ir_set_dw_lowered(node, add_low, add_high);
 	} else if (cr == must_carry && (is_Const(left_high) || is_Const(right_high))) {
 		// We cannot assume that left_high and right_high form a normalized Add.
@@ -167,9 +167,9 @@ static void ia32_lower_add64(ir_node *node, ir_mode *mode)
 
 		ir_graph *irg            = get_irn_irg(right_high);
 		ir_node  *one            = new_rd_Const(dbg, irg, get_mode_one(high_mode));
-		ir_node  *const_plus_one = new_rd_Add(dbg, block, constant, one, high_mode);
-		ir_node  *add_high       = new_rd_Add(dbg, block, other, const_plus_one, high_mode);
-		ir_node  *add_low        = new_rd_Add(dbg, block, left_low, right_low, low_mode);
+		ir_node  *const_plus_one = new_rd_Add(dbg, block, constant, one);
+		ir_node  *add_high       = new_rd_Add(dbg, block, other, const_plus_one);
+		ir_node  *add_low        = new_rd_Add(dbg, block, left_low, right_low);
 		ir_set_dw_lowered(node, add_low, add_high);
 	} else {
 		/* l_res = a_l + b_l */
@@ -217,7 +217,7 @@ static void ia32_lower_sub64(ir_node *node, ir_mode *mode)
 		ir_node  *one        = new_rd_Const(dbg, irg, get_mode_one(high_mode));
 
 		if (is_Const(right_high)) {
-			ir_node *new_const = new_rd_Add(dbg, block, right_high, one, high_mode);
+			ir_node *new_const = new_rd_Add(dbg, block, right_high, one);
 			sub_high = new_rd_Sub(dbg, block, left_high, new_const, high_mode);
 		} else if (is_Const(left_high)) {
 			ir_node *new_const = new_rd_Sub(dbg, block, left_high, one, high_mode);
@@ -314,10 +314,10 @@ static void ia32_lower_mul64(ir_node *node, ir_mode *mode)
 
 		ir_node *right_lowc = new_rd_Conv(dbg, block, right_low, mode);
 		ir_node *mul1 = new_rd_Mul(dbg, block, left_high, right_lowc);
-		ir_node *add        = new_rd_Add(dbg, block, mul1, pEDX, mode);
+		ir_node *add        = new_rd_Add(dbg, block, mul1, pEDX);
 		ir_node *left_lowc  = new_rd_Conv(dbg, block, left_low, mode);
 		ir_node *mul2 = new_rd_Mul(dbg, block, left_lowc, right_high);
-		h_res = new_rd_Add(dbg, block, add, mul2, mode);
+		h_res = new_rd_Add(dbg, block, add, mul2);
 	}
 	ir_set_dw_lowered(node, l_res, h_res);
 }
@@ -413,7 +413,7 @@ static void ia32_lower_conv64(ir_node *node, ir_mode *mode)
 			                   pn_ia32_l_FloattoLL_res_low);
 			h_res = new_r_Proj(float_to_ll, mode,
 			                   pn_ia32_l_FloattoLL_res_high);
-			h_res = new_rd_Add(dbg, lower_blk, h_res, int_phi, mode);
+			h_res = new_rd_Add(dbg, lower_blk, h_res, int_phi);
 
 			/* move the call and its Proj's to the lower block */
 			set_nodes_block(node, lower_blk);

@@ -291,7 +291,7 @@ static ir_node *do_apply(unsigned code, dbg_info *db, ir_node *op1,
 	case iro_Mul:
 		return new_rd_Mul(db, block, op1, op2);
 	case iro_Add:
-		return new_rd_Add(db, block, op1, op2, mode);
+		return new_rd_Add(db, block, op1, op2);
 	case iro_Sub:
 		return new_rd_Sub(db, block, op1, op2, mode);
 	default:

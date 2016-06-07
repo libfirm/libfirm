@@ -1501,7 +1501,7 @@ static void create_duffs_block(ir_graph *const irg)
 	ir_node *const correction       = new_r_Phi(count_block, ARRAY_SIZE(correction_ins), correction_ins, mode);
 
 	/* (end - start) / step  +  correction */
-	ir_node *const count = new_r_Add(count_block ,div_res, correction, mode);
+	ir_node *const count = new_r_Add(count_block ,div_res, correction);
 
 	/* We preconditioned the loop to be tail-controlled.
 	 * So, if count is something 'wrong' like 0,

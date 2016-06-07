@@ -96,8 +96,8 @@ static void lower64_mul(ir_node *node, ir_mode *mode)
 	ir_node  *umull_high = new_r_Proj(umull, mode, pn_arm_UMulL_t_high);
 	ir_node  *conv_r_low = new_rd_Conv(dbgi, block, right_low, mode);
 	ir_node  *mul2       = new_rd_Mul(dbgi, block, conv_r_low, left_high);
-	ir_node  *add1       = new_rd_Add(dbgi, block, mul2, mul1, mode);
-	ir_node  *add2       = new_rd_Add(dbgi, block, add1, umull_high, mode);
+	ir_node  *add1       = new_rd_Add(dbgi, block, mul2, mul1);
+	ir_node  *add2       = new_rd_Add(dbgi, block, add1, umull_high);
 	ir_set_dw_lowered(node, umull_low, add2);
 }
 

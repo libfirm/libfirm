@@ -740,7 +740,7 @@ void be_add_parameter_entity_stores_list(ir_graph *irg, unsigned n_entities,
 			ir_mode *mode_ref    = get_irn_mode(addr);
 			ir_mode *mode_offs   = get_reference_offset_mode(mode_ref);
 			ir_node *cnst        = new_r_Const_long(irg, mode_offs, offset);
-			ir_node *next_addr   = new_r_Add(start_block, addr, cnst, mode_ref);
+			ir_node *next_addr   = new_r_Add(start_block, addr, cnst);
 			ir_node *store1      = new_r_Store(start_block, mem0, next_addr, val1,
 			                                   tp, cons_none);
 			mem = new_r_Proj(store1, mode_M, pn_Store_M);

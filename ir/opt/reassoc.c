@@ -433,7 +433,7 @@ transform:;
 
 	ir_node *irn;
 	if (is_Add(n))
-		irn = new_rd_Add(dbg, blk, a, b, mode);
+		irn = new_rd_Add(dbg, blk, a, b);
 	else
 		irn = new_rd_Sub(dbg, blk, a, b, mode);
 
@@ -1804,7 +1804,7 @@ static void rebuild(multi_op_env *multi_env)
 						if (!inner) {
 							inner = node;
 						} else {
-							inner = new_rd_Add(dbgi, block, inner, node, mode);
+							inner = new_rd_Add(dbgi, block, inner, node);
 						}
 					}
 					assert(inner);
@@ -1822,7 +1822,7 @@ static void rebuild(multi_op_env *multi_env)
 					if (!curr || is_one) {
 						curr = inner;
 					} else {
-						curr = new_rd_Add(dbgi, block, curr, inner, mode);
+						curr = new_rd_Add(dbgi, block, curr, inner);
 					}
 
 					pset_insert_ptr(done, positiv_val);
@@ -1847,7 +1847,7 @@ static void rebuild(multi_op_env *multi_env)
 					if (!inner) {
 						inner = node;
 					} else {
-						inner = new_rd_Add(dbgi, block, inner, node, mode);
+						inner = new_rd_Add(dbgi, block, inner, node);
 					}
 				}
 

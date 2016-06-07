@@ -36,7 +36,7 @@ static ir_node *adjust_alloc_size(dbg_info *dbgi, ir_node *size, ir_node *block)
 	ir_tarval *mask    = tarval_shl_unsigned(shr, po2_stack_alignment);
 	ir_tarval *invmask = tarval_not(mask);
 	ir_node   *addv    = new_r_Const(irg, invmask);
-	ir_node   *add     = new_rd_Add(dbgi, block, size, addv, mode);
+	ir_node   *add     = new_rd_Add(dbgi, block, size, addv);
 	ir_node   *maskc   = new_r_Const(irg, mask);
 	ir_node   *and     = new_rd_And(dbgi, block, add, maskc);
 	return and;

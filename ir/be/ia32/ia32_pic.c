@@ -91,7 +91,7 @@ static ir_node *get_eip_relative(ir_graph *const irg,
 	ir_mode *const offset_mode = get_reference_offset_mode(mode_P);
 	ir_node *reloc = be_new_Relocation(irg, (unsigned)kind, entity, offset_mode);
 	/* All ok now for locally constructed stuff. */
-	ir_node *add = new_rd_Add(NULL, block, pic_base, reloc, mode_P);
+	ir_node *const add      = new_rd_Add(NULL, block, pic_base, reloc);
 	/* Make sure the walker doesn't visit this add again. */
 	mark_irn_visited(add);
 	return add;
