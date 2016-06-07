@@ -182,7 +182,7 @@ int i_mapper_abs(ir_node *call)
 		return 0;
 
 	/* construct Mux */
-	mux = new_rd_Mux(dbg, block, cmp, op, minus_op, mode);
+	mux = new_rd_Mux(dbg, block, cmp, op, minus_op);
 	DBG_OPT_ALGSIM0(call, mux);
 	replace_call(mux, call, mem, NULL, NULL);
 	return 1;

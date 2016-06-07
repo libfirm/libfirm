@@ -517,7 +517,7 @@ static bool lower_Cmp(ir_node *const n)
 		result   = make_softfloat_call(n, name2, ARRAY_SIZE(in), in);
 		relation = get_Cmp_relation(n);
 
-		ir_node *const mux = new_rd_Mux(dbgi, block, cmp, result, zero, mode_Is);
+		ir_node *const mux = new_rd_Mux(dbgi, block, cmp, result, zero);
 
 		arch_allow_ifconv_func const allow_ifconv
 			= be_get_backend_param()->allow_ifconv;

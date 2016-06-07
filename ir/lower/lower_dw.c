@@ -1949,6 +1949,8 @@ static void fixup_phi(ir_node *phi)
  */
 static void lower_Mux(ir_node *mux, ir_mode *mode)
 {
+	(void)mode;
+
 	ir_node               *truen       = get_Mux_true(mux);
 	ir_node               *falsen      = get_Mux_false(mux);
 	ir_node               *sel         = get_Mux_sel(mux);
@@ -1960,10 +1962,8 @@ static void lower_Mux(ir_node *mux, ir_mode *mode)
 	ir_node               *false_h     = false_entry->high_word;
 	dbg_info              *dbgi        = get_irn_dbg_info(mux);
 	ir_node               *block       = get_nodes_block(mux);
-	ir_node               *res_low
-		= new_rd_Mux(dbgi, block, sel, false_l, true_l, env.p.word_unsigned);
-	ir_node               *res_high
-		= new_rd_Mux(dbgi, block, sel, false_h, true_h, mode);
+	ir_node               *res_low     = new_rd_Mux(dbgi, block, sel, false_l, true_l);
+	ir_node               *res_high    = new_rd_Mux(dbgi, block, sel, false_h, true_h);
 	ir_set_dw_lowered(mux, res_low, res_high);
 }
 
@@ -2277,11 +2277,11 @@ static void lower_reduce_builtin(ir_node *builtin, ir_mode *mode)
 		ir_node *high           = new_rd_Add(dbgi, block, high_proj, number_of_bits, result_mode);
 		ir_node *ffs_low        = new_rd_Builtin(dbgi, block, mem, 1, in_low, kind, lowered_type_low);
 		ir_node *low            = new_r_Proj(ffs_low, result_mode, pn_Builtin_max+1);
-		ir_node *mux_high       = new_rd_Mux(dbgi, block, cmp_high, high, zero_result, result_mode);
+		ir_node *mux_high       = new_rd_Mux(dbgi, block, cmp_high, high, zero_result);
 		if (!allow_ifconv(cmp_high, high, zero_result))
 			ir_nodeset_insert(&created_mux_nodes, mux_high);
 
-		res = new_rd_Mux(dbgi, block, cmp_low, low, mux_high, result_mode);
+		res = new_rd_Mux(dbgi, block, cmp_low, low, mux_high);
 
 		if (!allow_ifconv(cmp_low, low, mux_high))
 			ir_nodeset_insert(&created_mux_nodes, res);
@@ -2296,7 +2296,7 @@ static void lower_reduce_builtin(ir_node *builtin, ir_mode *mode)
 		ir_node *low_proj       = new_r_Proj(clz_low, result_mode, pn_Builtin_max+1);
 		ir_node *number_of_bits = new_r_Const_long(irg, result_mode, get_mode_size_bits(mode));
 		ir_node *low            = new_rd_Add(dbgi, block, low_proj, number_of_bits, result_mode);
-		res = new_rd_Mux(dbgi, block, cmp_high, high, low, result_mode);
+		res = new_rd_Mux(dbgi, block, cmp_high, high, low);
 
 		if (!allow_ifconv(cmp_high, high, low))
 			ir_nodeset_insert(&created_mux_nodes, res);
@@ -2311,7 +2311,7 @@ static void lower_reduce_builtin(ir_node *builtin, ir_mode *mode)
 		ir_node *high           = new_rd_Add(dbgi, block, high_proj, number_of_bits, result_mode);
 		ir_node *ffs_low        = new_rd_Builtin(dbgi, block, mem, 1, in_low, kind, lowered_type_low);
 		ir_node *low            = new_r_Proj(ffs_low, result_mode, pn_Builtin_max+1);
-		res = new_rd_Mux(dbgi, block, cmp_low, low, high, result_mode);
+		res = new_rd_Mux(dbgi, block, cmp_low, low, high);
 
 		if (!allow_ifconv(cmp_low, low, high))
 			ir_nodeset_insert(&created_mux_nodes, res);

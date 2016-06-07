@@ -1931,13 +1931,11 @@ static ir_node *apply_conv_on_phi(ir_node *phi, ir_mode *mode)
  * @param mux    the Mux node
  * @param other  the other operand
  * @param eval   an evaluator function
- * @param mode   the mode of the result, may be different from the mode of the Mux!
  * @param left   if true, other is the left operand, else the right
  *
  * @return a new Mux node if the conversion was successful, NULL else
  */
-static ir_node *apply_binop_on_mux(ir_node *mux, ir_tarval *other,
-                                   tarval_binop eval, ir_mode *mode, bool left)
+static ir_node *apply_binop_on_mux(ir_node *mux, ir_tarval *other, tarval_binop eval, bool left)
 {
 	if (!only_one_user(mux))
 		return NULL;
@@ -1962,7 +1960,7 @@ static ir_node *apply_binop_on_mux(ir_node *mux, ir_tarval *other,
 	ir_node  *irn_true  = new_r_Const(irg, new_true);
 	ir_node  *irn_false = new_r_Const(irg, new_false);
 	ir_node  *block     = get_nodes_block(mux);
-	return new_r_Mux(block, sel, irn_false, irn_true, mode);
+	return new_r_Mux(block, sel, irn_false, irn_true);
 }
 
 /**
@@ -1971,12 +1969,10 @@ static ir_node *apply_binop_on_mux(ir_node *mux, ir_tarval *other,
  * @param a      the left Mux node
  * @param b      the right Mux node
  * @param eval   an evaluator function
- * @param mode   the mode of the result, may be different from the mode of the Mux!
  *
  * @return a new Mux node if the conversion was successful, NULL else
  */
-static ir_node *apply_binop_on_2_muxs(ir_node *a, ir_node *b, tarval_binop eval,
-                                      ir_mode *mode)
+static ir_node *apply_binop_on_2_muxs(ir_node *a, ir_node *b, tarval_binop eval)
 {
 	if (!only_one_user(a) || !only_one_user(b))
 		return NULL;
@@ -2005,7 +2001,7 @@ static ir_node *apply_binop_on_2_muxs(ir_node *a, ir_node *b, tarval_binop eval,
 		ir_node  *irn_false = new_r_Const(irg, new_false);
 		ir_node  *irn_true  = new_r_Const(irg, new_true);
 		ir_node  *block     = get_nodes_block(a);
-		return new_r_Mux(block, sel_a, irn_false, irn_true, mode);
+		return new_r_Mux(block, sel_a, irn_false, irn_true);
 	} else {
 		return NULL;
 	}
@@ -2038,8 +2034,7 @@ static ir_node *apply_unop_on_mux(ir_node *mux, tarval_unop eval)
 	ir_node  *irn_true  = new_r_Const(irg, new_true);
 	ir_node  *irn_false = new_r_Const(irg, new_false);
 	ir_node  *block     = get_nodes_block(mux);
-	ir_mode  *mode      = get_irn_mode(mux);
-	return new_r_Mux(block, sel, irn_false, irn_true, mode);
+	return new_r_Mux(block, sel, irn_false, irn_true);
 }
 
 /**
@@ -2068,7 +2063,7 @@ static ir_node *apply_conv_on_mux(ir_node *mux, ir_mode *mode)
 	ir_node  *irn_true  = new_r_Const(irg, new_true);
 	ir_node  *irn_false = new_r_Const(irg, new_false);
 	ir_node  *block     = get_nodes_block(mux);
-	return new_r_Mux(block, sel, irn_false, irn_true, mode);
+	return new_r_Mux(block, sel, irn_false, irn_true);
 }
 
 /*
@@ -2090,13 +2085,13 @@ static ir_node *apply_conv_on_mux(ir_node *mux, ir_mode *mode)
     c = apply_binop_on_2_phis(a, b, eval, mode);                  \
   } else if (is_Const(b) && is_const_Mux(a)) {                    \
     /* check for Op(Mux, Const) */                                \
-    c = apply_binop_on_mux(a, get_Const_tarval(b), eval, mode, 0);\
+    c = apply_binop_on_mux(a, get_Const_tarval(b), eval, 0);      \
   } else if (is_Const(a) && is_const_Mux(b)) {                    \
     /* check for Op(Const, Phi) */                                \
-    c = apply_binop_on_mux(b, get_Const_tarval(a), eval, mode, 1);\
+    c = apply_binop_on_mux(b, get_Const_tarval(a), eval, 1);      \
   } else if (is_const_Mux(a) && is_const_Mux(b)) {                \
     /* check for Op(Mux, Mux) */                                  \
-    c = apply_binop_on_2_muxs(a, b, eval, mode);                  \
+    c = apply_binop_on_2_muxs(a, b, eval);                        \
   }                                                               \
   if (c) {                                                        \
     DBG_OPT_ALGSIM0(oldn, c);                                     \
@@ -6965,7 +6960,7 @@ static ir_node *transform_node_Mux(ir_node *n)
 
 			/* Mux(x, a, b) => Mux(not(x), b, a) */
 			sel = new_rd_Cmp(seldbgi, block, cmp_l, cmp_r, relation);
-			return new_rd_Mux(get_irn_dbg_info(n), get_nodes_block(n), sel, f, t, mode);
+			return new_rd_Mux(get_irn_dbg_info(n), get_nodes_block(n), sel, f, t);
 		}
 	}
 
@@ -6983,13 +6978,13 @@ static ir_node *transform_node_Mux(ir_node *n)
 				/* Mux(cond0, Mux(cond1, x, y), y) => Mux(cond0 && cond1, x, y) */
 				ir_node* and = new_r_And(block, c0, c1);
 				DBG_OPT_ALGSIM0(oldn, t1);
-				return new_rd_Mux(dbgi, block, and, f1, t1, mode);
+				return new_rd_Mux(dbgi, block, and, f1, t1);
 			} else if (f == t1) {
 				/* Mux(cond0, Mux(cond1, x, y), x) */
 				ir_node* not_c1  = new_r_Not(block, c1);
 				ir_node* and     = new_r_And(block, c0, not_c1);
 				DBG_OPT_ALGSIM0(oldn, f1);
-				return new_rd_Mux(dbgi, block, and, t1, f1, mode);
+				return new_rd_Mux(dbgi, block, and, t1, f1);
 			}
 		} else if (is_Mux(f)) {
 			ir_node  *block = get_nodes_block(n);
@@ -7002,13 +6997,13 @@ static ir_node *transform_node_Mux(ir_node *n)
 				/* Mux(cond0, x, Mux(cond1, x, y)) -> typical if (cond0 || cond1) x else y */
 				ir_node* or = new_r_Or(block, c0, c1);
 				DBG_OPT_ALGSIM0(oldn, f1);
-				return new_rd_Mux(dbgi, block, or, f1, t1, mode);
+				return new_rd_Mux(dbgi, block, or, f1, t1);
 			} else if (t == f1) {
 				/* Mux(cond0, x, Mux(cond1, y, x)) */
 				ir_node* not_c1  = new_r_Not(block, c1);
 				ir_node* or      = new_r_Or(block, c0, not_c1);
 				DBG_OPT_ALGSIM0(oldn, t1);
-				return new_rd_Mux(dbgi, block, or, t1, f1, mode);
+				return new_rd_Mux(dbgi, block, or, t1, f1);
 			}
 		}
 

@@ -351,7 +351,7 @@ restart:;
 						}
 
 						dbg_info *const dbgi = get_irn_dbg_info(phi);
-						mux = new_rd_Mux(dbgi, mux_block, sel, f, t, get_irn_mode(phi));
+						mux = new_rd_Mux(dbgi, mux_block, sel, f, t);
 						DB((dbg, LEVEL_2, "Generating %+F for %+F\n", mux, phi));
 					}
 

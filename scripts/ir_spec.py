@@ -608,7 +608,8 @@ class Mux(Node):
 	   ("false", "selected if sel input is false"),
 	   ("true",  "selected if sel input is true"),
 	]
-	flags  = []
+	mode  = "get_irn_mode(irn_false)"
+	flags = []
 
 @op
 class NoMem(Node):
