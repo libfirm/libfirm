@@ -345,18 +345,15 @@ ir_node *duplicate_subgraph(dbg_info *dbg, ir_node *n, ir_node *block)
 	case iro_And:
 		return new_rd_And(dbg, block,
 		                  duplicate_subgraph(dbg, get_And_left(n), block),
-		                  duplicate_subgraph(dbg, get_And_right(n), block),
-		                  mode);
+		                  duplicate_subgraph(dbg, get_And_right(n), block));
 	case iro_Or:
 		return new_rd_Or(dbg, block,
 		                 duplicate_subgraph(dbg, get_Or_left(n), block),
-		                 duplicate_subgraph(dbg, get_Or_right(n), block),
-		                 mode);
+		                 duplicate_subgraph(dbg, get_Or_right(n), block));
 	case iro_Eor:
 		return new_rd_Eor(dbg, block,
 		                  duplicate_subgraph(dbg, get_Eor_left(n), block),
-		                  duplicate_subgraph(dbg, get_Eor_right(n), block),
-		                  mode);
+		                  duplicate_subgraph(dbg, get_Eor_right(n), block));
 	case iro_Conv:
 		return new_rd_Conv(dbg, block,
 		                   duplicate_subgraph(dbg, get_Conv_op(n), block),

@@ -294,7 +294,7 @@ static void rewrite_float_unsigned_Conv(ir_node *node)
 	ir_node *sub_conv    = new_rd_Conv(dbgi, true_block, sub, mode_Ls);
 	ir_node *sign_bit    = create_sign_bit_const(irg);
 	collect_new_start_block_node(sign_bit);
-	ir_node *xor         = new_r_Eor(true_block, sub_conv, sign_bit, mode_Ls);
+	ir_node *xor         = new_r_Eor(true_block, sub_conv, sign_bit);
 	ir_node *true_res    = new_rd_Conv(dbgi, true_block, xor, dest_mode);
 
 	/* false block: Simply convert */

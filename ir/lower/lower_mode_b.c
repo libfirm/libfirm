@@ -43,7 +43,7 @@ static ir_node *create_not(dbg_info *dbgi, ir_node *node)
 	ir_graph *irg   = get_irn_irg(node);
 	ir_node  *one   = new_rd_Const_one(dbgi, irg, mode);
 
-	return new_rd_Eor(dbgi, block, node, one, mode);
+	return new_rd_Eor(dbgi, block, node, one);
 }
 
 static ir_node *convert_to_modeb(ir_node *node)
@@ -133,19 +133,19 @@ static ir_node *lower_node(ir_node *node)
 	case iro_And: {
 		ir_node *lowered_left  = lower_node(get_And_left(node));
 		ir_node *lowered_right = lower_node(get_And_right(node));
-		res = new_rd_And(dbgi, block, lowered_left, lowered_right, mode);
+		res = new_rd_And(dbgi, block, lowered_left, lowered_right);
 		break;
 	}
 	case iro_Or: {
 		ir_node *lowered_left  = lower_node(get_Or_left(node));
 		ir_node *lowered_right = lower_node(get_Or_right(node));
-		res = new_rd_Or(dbgi, block, lowered_left, lowered_right, mode);
+		res = new_rd_Or(dbgi, block, lowered_left, lowered_right);
 		break;
 	}
 	case iro_Eor: {
 		ir_node *lowered_left  = lower_node(get_Eor_left(node));
 		ir_node *lowered_right = lower_node(get_Eor_right(node));
-		res = new_rd_Eor(dbgi, block, lowered_left, lowered_right, mode);
+		res = new_rd_Eor(dbgi, block, lowered_left, lowered_right);
 		break;
 	}
 
@@ -165,10 +165,10 @@ static ir_node *lower_node(ir_node *node)
 		ir_node *v_false     = get_Mux_false(node);
 		ir_node *low_v_false = lower_node(v_false);
 
-		ir_node *and0     = new_rd_And(dbgi, block, low_cond, low_v_true, mode);
+		ir_node *and0     = new_rd_And(dbgi, block, low_cond, low_v_true);
 		ir_node *not_cond = create_not(dbgi, low_cond);
-		ir_node *and1     = new_rd_And(dbgi, block, not_cond, low_v_false, mode);
-		res = new_rd_Or(dbgi, block, and0, and1, mode);
+		ir_node *and1     = new_rd_And(dbgi, block, not_cond, low_v_false);
+		res = new_rd_Or(dbgi, block, and0, and1);
 		break;
 	}
 

@@ -2210,7 +2210,7 @@ again:;
 			ir_node  *conv1  = new_r_Conv(block, convu1, double_mode);
 			ir_node  *cnst   = new_r_Const_long(irg, mode_Iu, store_size);
 			ir_node  *shl    = new_r_Shl(block, conv1, cnst, double_mode);
-			ir_node  *or     = new_r_Or(block, conv0, shl, double_mode);
+			ir_node  *or     = new_r_Or(block, conv0, shl);
 
 			/* create a new store and replace the two small stores */
 			ir_cons_flags flags = cons_unaligned;

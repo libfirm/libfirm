@@ -149,7 +149,7 @@ static ir_node *bool_and(cond_pair* const cpair, ir_node *dst_block)
 			lol = new_r_Conv(dst_block, lol, mode);
 			hil = get_Cmp_left(cmp_hi);
 			hil = new_r_Conv(dst_block, hil, mode);
-			p   = new_r_And(dst_block, lol, hil, mode);
+			p   = new_r_And(dst_block, lol, hil);
 			c   = new_r_Const(irg, tv_lo);
 			cmp = new_r_Cmp(dst_block, p, c, ir_relation_equal);
 			return cmp;
@@ -280,7 +280,7 @@ static ir_node *bool_or(cond_pair *const cpair, ir_node *dst_block)
 			lol = new_r_Conv(dst_block, lol, mode);
 			hil = get_Cmp_left(cmp_hi);
 			hil = new_r_Conv(dst_block, hil, mode);
-			p   = new_r_Or(dst_block, lol, hil, mode);
+			p   = new_r_Or(dst_block, lol, hil);
 			c   = new_r_Const(irg, tv_lo);
 			cmp = new_r_Cmp(dst_block, p, c, ir_relation_less_greater);
 			return cmp;

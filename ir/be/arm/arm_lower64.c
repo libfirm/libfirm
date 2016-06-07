@@ -242,10 +242,10 @@ static void lower64_shl(ir_node *node, ir_mode *mode)
 	ir_node  *sub      = new_rd_Sub(dbgi, block, right_low, c32, umode);
 	ir_node  *llo_conv = new_rd_Conv(dbgi, block, left_low, mode);
 	ir_node  *shl2     = new_rd_Shl(dbgi, block, llo_conv, sub, mode);
-	ir_node  *or       = new_rd_Or(dbgi, block, shl1, shl2, mode);
+	ir_node  *or       = new_rd_Or(dbgi, block, shl1, shl2);
 	ir_node  *sub2     = new_rd_Sub(dbgi, block, c32, right_low, umode);
 	ir_node  *shr      = new_rd_Shr(dbgi, block, llo_conv, sub2, mode);
-	ir_node  *or2      = new_rd_Or(dbgi, block, or, shr, mode);
+	ir_node  *or2      = new_rd_Or(dbgi, block, or, shr);
 	/* Res_lo = L_lo << R */
 	ir_node  *low      = new_rd_Shl(dbgi, block, left_low, right_low, umode);
 	ir_set_dw_lowered(node, low, or2);
@@ -275,10 +275,10 @@ static void lower64_shr(ir_node *node, ir_mode *mode)
 	ir_node  *sub      = new_rd_Sub(dbgi, block, right_low, c32, umode);
 	ir_node  *lhi_conv = new_rd_Conv(dbgi, block, left_high, umode);
 	ir_node  *shr2     = new_rd_Shr(dbgi, block, lhi_conv, sub, umode);
-	ir_node  *or       = new_rd_Or(dbgi, block, shr1, shr2, umode);
+	ir_node  *or       = new_rd_Or(dbgi, block, shr1, shr2);
 	ir_node  *sub2     = new_rd_Sub(dbgi, block, c32, right_low, umode);
 	ir_node  *shl      = new_rd_Shl(dbgi, block, lhi_conv, sub2, umode);
-	ir_node  *or2      = new_rd_Or(dbgi, block, or, shl, umode);
+	ir_node  *or2      = new_rd_Or(dbgi, block, or, shl);
 	/* Res_hi = L_hi >> R */
 	ir_node  *shr3       = new_rd_Shr(dbgi, block, left_high, right_low, mode);
 	ir_set_dw_lowered(node, or2, shr3);
@@ -311,7 +311,7 @@ static void lower64_shrs(ir_node *node, ir_mode *mode)
 	ir_node  *subs_flags = new_r_Proj(subs, mode_ANY, pn_arm_SubS_t_flags);
 	ir_node  *left_highu = new_rd_Conv(dbgi, block, left_high, umode);
 	ir_node  *shl        = new_rd_Shl(dbgi, block, left_highu, sub, umode);
-	ir_node  *or         = new_rd_Or(dbgi, block, shr, shl, umode);
+	ir_node  *or         = new_rd_Or(dbgi, block, shr, shl);
 	ir_node  *shrs       = new_rd_Shrs(dbgi, block, left_highu, subs_res,
 	                                   umode);
 	ir_node  *orpl       = new_bd_arm_OrPl_t(dbgi, block, or, shrs, or,

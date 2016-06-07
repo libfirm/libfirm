@@ -1036,14 +1036,14 @@ ir_node *arch_dep_replace_mod_by_const(ir_node *irn)
 			ir_tarval *k_val
 				= tarval_shl_unsigned(get_mode_all_one(mode), k);
 			k_node = new_r_Const(irg, k_val);
-			curr   = new_rd_And(dbg, block, curr, k_node, mode);
+			curr   = new_rd_And(dbg, block, curr, k_node);
 			res    = new_rd_Sub(dbg, block, left, curr, mode);
 		} else {      /* unsigned case */
 			ir_tarval *k_val
 				= tarval_shr_unsigned(get_mode_all_one(mode),
 				                      get_mode_size_bits(mode) - k);
 			ir_node *k_node = new_r_Const(irg, k_val);
-			res = new_rd_And(dbg, block, left, k_node, mode);
+			res = new_rd_And(dbg, block, left, k_node);
 		}
 	/* other constant */
 	} else if (allow_Mulh(params, mode)) {

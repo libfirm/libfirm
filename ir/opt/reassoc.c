@@ -1674,18 +1674,17 @@ static ir_node *rebuild_node(multi_op *o, ir_node *curr, ir_node *node)
 {
 	ir_node  *block = get_nodes_block(o->base_node);
 	dbg_info *dbgi  = get_irn_dbg_info(o->base_node);
-	ir_mode  *mode  = get_irn_mode(o->base_node);
 
 	if (!curr)
 		return node;
 
 	switch (get_op_code(get_multi_op_op(o))) {
 	case iro_Eor:
-		return new_rd_Eor(dbgi, block, node, curr, mode);
+		return new_rd_Eor(dbgi, block, node, curr);
 	case iro_And:
-		return new_rd_And(dbgi, block, node, curr, mode);
+		return new_rd_And(dbgi, block, node, curr);
 	case iro_Or:
-		return new_rd_Or(dbgi, block, node, curr, mode);
+		return new_rd_Or(dbgi, block, node, curr);
 	default:
 		panic("Operation not supported");
 	}

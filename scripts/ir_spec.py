@@ -105,7 +105,8 @@ class Anchor(Node):
 @op
 class And(Binop):
 	"""returns the result of a bitwise and operation of its operands"""
-	flags    = [ "commutative" ]
+	mode  = "get_irn_mode(irn_left)"
+	flags = [ "commutative" ]
 
 @op
 class ASM(Node):
@@ -463,7 +464,8 @@ class Eor(Binop):
 	"""returns the result of a bitwise exclusive or operation of its operands.
 
 	This is also known as the Xor operation."""
-	flags    = [ "commutative" ]
+	mode  = "get_irn_mode(irn_left)"
+	flags = [ "commutative" ]
 
 @op
 class Free(Node):
@@ -630,6 +632,7 @@ class Offset(EntConst):
 @op
 class Or(Binop):
 	"""returns the result of a bitwise or operation of its operands"""
+	mode  = "get_irn_mode(irn_left)"
 	flags = [ "commutative" ]
 
 @op
