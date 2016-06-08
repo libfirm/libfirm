@@ -23,6 +23,7 @@ static void init_constants(ir_node *node, void *env)
 static void worklist_add_outs(pdeq *worklist, const ir_node *node)
 {
 	foreach_irn_out (node, i, user) {
+		if (get_irn_mode(user) == mode_M) continue;
 		pdeq_putr(worklist, user);
 	}
 }
@@ -32,6 +33,8 @@ static bool needs_more_info(ir_node *const node)
 	if (is_Phi(node)) return false;
 
 	foreach_irn_in (node, i, dep_node) {
+		if (get_irn_mode(dep_node) == mode_M) continue;
+
 		if (ir_nodehashmap_get(bitset_t, &arg_deps, dep_node) == NULL) {
 			return true;
 		}
@@ -41,7 +44,7 @@ static bool needs_more_info(ir_node *const node)
 
 static bool is_important_node(ir_node *const node)
 {
-	return is_Cond(node);
+	return is_Cond(node) || is_Load(node) || is_Store(node);
 }
 
 bitset_t *local_important_args(ir_graph *irg)
@@ -78,6 +81,8 @@ bitset_t *local_important_args(ir_graph *irg)
 		const size_t old_size = bitset_popcount(deps);
 
 		foreach_irn_in (node, i, dep_node) {
+			if (get_irn_mode(dep_node) == mode_M) continue;
+
 			bitset_t *const dep_deps =
 			    ir_nodehashmap_get(bitset_t, &arg_deps, dep_node);
 			if (dep_deps == NULL) continue;
