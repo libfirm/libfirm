@@ -44,7 +44,8 @@ static bool needs_more_info(ir_node *const node)
 
 static bool is_important_node(ir_node *const node)
 {
-	return is_Cond(node) || is_Load(node) || is_Store(node);
+	return is_Cond(node) || is_Load(node) || is_Store(node) || is_Call(node) ||
+	       is_Switch(node);
 }
 
 bitset_t *local_important_args(ir_graph *irg)
