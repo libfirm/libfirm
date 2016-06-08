@@ -48,7 +48,7 @@ typedef struct be_transform_env_t {
 static be_transform_env_t env;
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
-static ir_node *(*autotransform)(ir_node *);
+static ir_node *(*autotransform)(ir_node *, int *);
 
 #ifndef NDEBUG
 static void be_set_orig_node_rec(ir_node *const node, char const *const name)
@@ -91,7 +91,7 @@ bool be_is_transformed(const ir_node *node)
 	return irn_visited(node);
 }
 
-void be_set_autotransform(ir_node *(*at)(ir_node *))
+void be_set_autotransform(ir_node *(*at)(ir_node *, int *))
 {
 	if (be_options.autotransform) {
 		autotransform = at;
@@ -226,13 +226,35 @@ ir_node *be_transform_node(ir_node *node)
 		mark_irn_visited(node);
 
 		if (autotransform != NULL && !is_Block(node)) {
-			new_node = autotransform(node);
+			int rule;
+
+			new_node = autotransform(node, &rule);
+
+#ifdef DEBUG_libfirm
 			if (new_node != NULL) {
-				DEBUG_ONLY(env.n_autotransformed++);
-				DB((dbg, LEVEL_2, "autotransform %+F\t%+F\n", node, new_node));
+				env.n_autotransformed++;
+
+				if (is_Proj(node)) {
+					if (is_Proj(new_node)) {
+						DB((dbg, LEVEL_2, "autotransform %+F %+F\t%+F %+F\t%d\n", node, get_Proj_pred(node), new_node, get_Proj_pred(new_node), rule));
+					} else {
+						DB((dbg, LEVEL_2, "autotransform %+F %+F\t%+F\t%d\n", node, get_Proj_pred(node), new_node, rule));
+					}
+				} else {
+					if (is_Proj(new_node)) {
+						DB((dbg, LEVEL_2, "autotransform %+F\t%+F %+F\t%d\n", node, new_node, get_Proj_pred(new_node), rule));
+					} else {
+						DB((dbg, LEVEL_2, "autotransform %+F\t%+F\t%d\n", node, new_node, rule));
+					}
+				}
 			} else {
-				DB((dbg, LEVEL_2, "autotransform %+F\tNIL\n", node));
+				if (is_Proj(node)) {
+					DB((dbg, LEVEL_2, "autotransform %+F %+F\tNIL\n", node, get_Proj_pred(node)));
+				} else {
+					DB((dbg, LEVEL_2, "autotransform %+F\tNIL\n", node));
+				}
 			}
+#endif
 		}
 
 		if (new_node == NULL) {
