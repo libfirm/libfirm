@@ -657,31 +657,11 @@ FIRM_API void add_entity_additional_properties(ir_entity *ent,
  *  This entity is an auxiliary entity dedicated to support analyses.
  *
  *  The unknown entity represents that there could be an entity, but it is not
- *  known.  This entity can be used to initialize fields before an analysis (not known
- *  yet) or to represent the top of a lattice (could not be determined).  There exists
- *  exactly one entity unknown. This entity has as owner and as type the unknown type. It is
- *  allocated when initializing the entity module.
- *
- *  The entity can take the role of any entity, also methods.  It returns default
- *  values in these cases.
- *
- *  The following values are set:
- *
- * - name          = "unknown_entity"
- * - ld_name       = "unknown_entity"
- * - owner         = unknown_type
- * - type          = unknown_type
- * - offset        = -1
- * - value         = Address(unknown_entity)
- * - values        = NULL
- * - val_paths     = NULL
- * - volatility    = volatility_non_volatile
- * - stickyness    = stickyness_unsticky
- * - ld_name       = NULL
- * - overwrites    = NULL
- * - overwrittenby = NULL
- * - irg           = NULL
- * - link          = NULL
+ *  known.  This entity can be used to initialize fields before an analysis (not
+ *  known yet) or to represent the top of a lattice (could not be determined).
+ *  There exists exactly one unknown entity. This entity has as type the unknown
+ *  type and its owner is the dummy type. It is allocated when initializing the
+ *  entity module.
  */
 
 /** Returns the @link unknown_entity unknown entity @endlink. */
