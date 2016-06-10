@@ -1606,8 +1606,7 @@ void ia32_emit_function(ir_graph *const irg)
 
 	ir_entity *const entity = get_irg_entity(irg);
 	parameter_dbg_info_t *infos = construct_parameter_infos(irg);
-	be_gas_emit_function_prolog(entity, ia32_cg_config.function_alignment,
-	                            NULL);
+	be_gas_emit_function_prolog(entity, ia32_cg_config.function_alignment, infos);
 	free(infos);
 
 	omit_fp = ia32_get_irg_data(irg)->omit_fp;
