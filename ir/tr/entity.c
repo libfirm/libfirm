@@ -16,8 +16,6 @@
 #include "util.h"
 #include "irhooks.h"
 #include "irprog_t.h"
-#include "ircons_t.h"
-#include "tv_t.h"
 #include "irdump.h"
 #include "irgraph_t.h"
 #include "callgraph.h"
@@ -419,43 +417,6 @@ void (set_entity_usage)(ir_entity *ent, ir_entity_usage flags)
 	_set_entity_usage(ent, flags);
 }
 
-ir_node *get_atomic_ent_value(const ir_entity *entity)
-{
-	assert(is_atomic_entity(entity));
-
-	ir_initializer_t *initializer = get_entity_initializer(entity);
-	if (initializer == NULL) {
-		ir_type *type = get_entity_type(entity);
-		return new_r_Unknown(get_const_code_irg(), get_type_mode(type));
-	}
-
-	switch (get_initializer_kind(initializer)) {
-	case IR_INITIALIZER_NULL: {
-		ir_type *type = get_entity_type(entity);
-		ir_mode *mode = get_type_mode(type);
-		return new_r_Const_null(get_const_code_irg(), mode);
-	}
-	case IR_INITIALIZER_TARVAL: {
-		ir_tarval *tv = get_initializer_tarval_value(initializer);
-		return new_r_Const(get_const_code_irg(), tv);
-	}
-	case IR_INITIALIZER_CONST:
-		return get_initializer_const_value(initializer);
-	case IR_INITIALIZER_COMPOUND:
-		panic("compound initializer in atomic entity not allowed (%+F)", entity);
-	}
-
-	panic("invalid initializer kind (%+F)", entity);
-}
-
-void set_atomic_ent_value(ir_entity *entity, ir_node *val)
-{
-	assert(is_atomic_entity(entity));
-	assert(is_Dummy(val) || get_irn_mode(val) == get_type_mode(entity->type));
-	ir_initializer_t *initializer = create_initializer_const(val);
-	set_entity_initializer(entity, initializer);
-}
-
 const char *get_initializer_kind_name(ir_initializer_kind_t ini)
 {
 #define X(a)    case a: return #a
@@ -779,14 +740,6 @@ void set_entity_vtable_number(ir_entity *ent, unsigned vtable_number)
 int is_unknown_entity(const ir_entity *entity)
 {
 	return entity->kind == IR_ENTITY_UNKNOWN;
-}
-
-int is_atomic_entity(const ir_entity *ent)
-{
-	ir_type const *const type   = get_entity_type(ent);
-	tp_opcode      const opcode = get_type_opcode(type);
-	return opcode == tpo_primitive || opcode == tpo_pointer
-	    || opcode == tpo_method;
 }
 
 int is_compound_entity(const ir_entity *ent)

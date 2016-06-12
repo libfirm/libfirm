@@ -167,15 +167,12 @@ static void sel_methods_walker(ir_node *node, void *env)
 	ir_entity *const entity = get_Member_entity(node);
 	if (!is_method_entity(entity))
 		return;
-	/* we may have a vtable entry and need this redirection to get the actually
-	 * called method */
-	ir_entity *const called = get_Address_entity(get_atomic_ent_value(entity));
-	if (!pset_find_ptr(entities, called)) {
+	if (!pset_find_ptr(entities, entity)) {
 		/* Entity not yet handled. Find all (internal or external)
 		 * implemented methods that overwrites this entity.
 		 * This set is stored in the entity link. */
-		set_entity_link(called, get_impl_methods(called));
-		pset_insert_ptr(entities, called);
+		set_entity_link(entity, get_impl_methods(entity));
+		pset_insert_ptr(entities, entity);
 	}
 }
 

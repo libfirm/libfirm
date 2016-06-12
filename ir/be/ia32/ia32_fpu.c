@@ -45,9 +45,9 @@ static ir_entity *create_ent(ir_entity **const dst, int value, const char *name)
 			= new_global_entity(glob, id, type, ir_visibility_local,
 			                    IR_LINKAGE_CONSTANT | IR_LINKAGE_NO_IDENTITY);
 
-		ir_graph *const cnst_irg = get_const_code_irg();
-		ir_node  *const cnst     = new_r_Const_long(cnst_irg, mode, value);
-		set_atomic_ent_value(ent, cnst);
+		ir_tarval        *const cnst = new_tarval_from_long(value, mode);
+		ir_initializer_t *const init = create_initializer_tarval(cnst);
+		set_entity_initializer(ent, init);
 		*dst = ent;
 	}
 	return *dst;

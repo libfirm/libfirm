@@ -485,12 +485,6 @@ FIRM_API size_t get_entity_parameter_number(const ir_entity *entity);
  */
 FIRM_API void set_entity_parameter_number(ir_entity *entity, size_t n);
 
-/** Returns initial value of entity with atomic type @p ent. */
-FIRM_API ir_node *get_atomic_ent_value(const ir_entity *ent);
-/** Sets initial value of entity with atomic type @p ent to node @p val.
- * @note @p val must be a node in the const_code graph */
-FIRM_API void set_atomic_ent_value(ir_entity *ent, ir_node *val);
-
 /** @defgroup ir_initializer  Entity Initializers
  * @{
  */
@@ -588,12 +582,6 @@ FIRM_API void set_entity_overwrittenby(ir_entity *ent, size_t pos,
 FIRM_API void remove_entity_overwrittenby(ir_entity *ent,
                                           ir_entity *overwrites);
 
-/** Returns true if the type of the entity is a primitive, pointer
- * or method type.
- *
- * @note This is a different classification than from is_primitive_type().
- */
-FIRM_API int is_atomic_entity(const ir_entity *ent);
 /** Returns true if the type of the entity is a class, structure,
    array or union type. */
 FIRM_API int is_compound_entity(const ir_entity *ent);
