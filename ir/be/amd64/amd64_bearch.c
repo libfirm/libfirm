@@ -315,27 +315,30 @@ static void rewrite_float_unsigned_Conv(ir_node *node)
 	exchange(node, phi);
 }
 
-static bool amd64_rewrite_Conv(ir_node *node)
+static bool is_flt(ir_mode *const mode)
 {
-	ir_mode *to_mode    = get_irn_mode(node);
-	ir_node *op         = get_Conv_op(node);
-	ir_mode *from_mode  = get_irn_mode(op);
-	bool     to_float   = mode_is_float(to_mode);
-	bool     from_float = mode_is_float(from_mode);
+	return mode_is_float(mode) && mode != x86_mode_E;
+}
 
-	if (to_float && !from_float && !mode_is_signed(from_mode)
-	    && get_mode_size_bits(from_mode) == 64
-	    && to_mode != x86_mode_E) {
+static bool is_u64(ir_mode *const mode)
+{
+	return !mode_is_float(mode) && !mode_is_signed(mode) && get_mode_size_bits(mode) == 64;
+}
+
+static bool amd64_rewrite_Conv(ir_node *const node)
+{
+	ir_mode *const to_mode    = get_irn_mode(node);
+	ir_node *const op         = get_Conv_op(node);
+	ir_mode *const from_mode  = get_irn_mode(op);
+	if (is_u64(from_mode) && is_flt(to_mode)) {
 		rewrite_unsigned_float_Conv(node);
 		return true;
-	} else if (from_float && !to_float && !mode_is_signed(to_mode)
-	           && get_mode_size_bits(to_mode) == 64
-	           && from_mode != x86_mode_E) {
+	} else if (is_flt(from_mode) && is_u64(to_mode)) {
 		rewrite_float_unsigned_Conv(node);
 		return true;
+	} else {
+		return false;
 	}
-
-	return false;
 }
 
 static void amd64_intrinsics_walker(ir_node *node, void *data)
