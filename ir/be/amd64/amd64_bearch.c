@@ -290,7 +290,7 @@ static void rewrite_float_unsigned_Conv(ir_node *node)
 	/* true block: Do some arithmetic to use the signed conversion */
 	ir_node *true_block  = new_r_Block(irg, ARRAY_SIZE(in_true), in_true);
 	ir_node *true_jmp    = new_r_Jmp(true_block);
-	ir_node *sub         = new_r_Sub(true_block, fp_const, fp_x);
+	ir_node *sub         = new_r_Sub(true_block, fp_x, fp_const);
 	ir_node *sub_conv    = new_rd_Conv(dbgi, true_block, sub, mode_Ls);
 	ir_node *sign_bit    = create_sign_bit_const(irg);
 	collect_new_start_block_node(sign_bit);
