@@ -74,7 +74,7 @@ static void init_constants(ir_node *node, UNUSED void *env)
 static void worklist_add_outs(pdeq *worklist, const ir_node *node)
 {
 	foreach_irn_out (node, i, user) {
-		if (get_irn_mode(user) == mode_M) continue;
+		if (!mode_is_data(get_irn_mode(user))) continue;
 		pdeq_putr(worklist, user);
 	}
 }
