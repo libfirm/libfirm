@@ -14,7 +14,7 @@ static struct obstack obst;
 
 static void init_constants(ir_node *node, void *env)
 {
-	if (!is_Const(node)) return;
+	if (!is_irn_constlike(node)) return;
 
 	bitset_t *const empty_set = bitset_obstack_alloc(&obst, n_args);
 	ir_nodehashmap_insert((ir_nodehashmap_t *)env, node, empty_set);
