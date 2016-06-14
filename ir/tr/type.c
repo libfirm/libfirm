@@ -127,16 +127,15 @@ static ir_type *new_type(tp_opcode const opcode, size_t attr_size,
 	ir_type *const res       = (ir_type*)xmalloc(node_size);
 	memset(res, 0, node_size);
 
-	res->kind       = k_type;
-	res->opcode     = opcode;
-	res->mode       = mode;
-	res->visibility = ir_visibility_external;
-	res->flags      = tf_none;
-	res->size       = 0;
-	res->align      = 0;
-	res->visit      = 0;
-	res->link       = NULL;
-	res->nr         = get_irp_new_node_nr();
+	res->kind   = k_type;
+	res->opcode = opcode;
+	res->mode   = mode;
+	res->flags  = tf_none;
+	res->size   = 0;
+	res->align  = 0;
+	res->visit  = 0;
+	res->link   = NULL;
+	res->nr     = get_irp_new_node_nr();
 
 	add_irp_type(res);   /* Remember the new type global. */
 
@@ -222,18 +221,6 @@ long get_type_nr(const ir_type *tp)
 unsigned (get_type_size)(const ir_type *tp)
 {
 	return get_type_size_(tp);
-}
-
-ir_visibility get_type_visibility(const ir_type *tp)
-{
-	assert(is_type(tp));
-	return tp->visibility;
-}
-
-void set_type_visibility(ir_type *tp, ir_visibility v)
-{
-	assert(is_type(tp));
-	tp->visibility = v;
 }
 
 void set_type_size(ir_type *tp, unsigned size)

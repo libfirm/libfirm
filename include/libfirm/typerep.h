@@ -1662,11 +1662,6 @@ typedef void entity_walk_func(ir_entity *ent, void *env);
 FIRM_API void walk_types_entities(ir_type *tp, entity_walk_func *doit,
                                   void *env);
 
-/** @deprecated */
-FIRM_API ir_visibility get_type_visibility(const ir_type *tp);
-/** @deprecated */
-FIRM_API void set_type_visibility(ir_type *tp, ir_visibility v);
-
 /** @} */
 
 /** @} */

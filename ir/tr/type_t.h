@@ -117,7 +117,6 @@ struct ir_type {
 	firm_kind kind;          /**< the firm kind, must be k_type */
 	tp_opcode opcode;
 	ident *name;             /**< The name of the type */
-	ir_visibility visibility;/**< Visibility of entities of this type. */
 	unsigned flags;          /**< Type flags, a bitmask of enum type_flags. */
 	unsigned size;           /**< Size of an ir_entity of this type. This is
 	                              determined when fixing the layout of this
