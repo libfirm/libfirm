@@ -91,8 +91,14 @@ static bool node_needs_more_info(const ir_node *node)
 
 static bool node_is_important(const ir_node *node)
 {
-	return is_Cond(node) || is_Load(node) || is_Store(node) || is_Call(node) ||
-	       is_Switch(node);
+	foreach_irn_out (node, i, user) {
+		if (is_Cond(user) || is_Load(user) || is_Call(user) ||
+		    is_Switch(user) ||
+		    (is_Store(user) && get_Store_ptr(user) == node)) {
+			return true;
+		}
+	}
+	return false;
 }
 
 static void important_args_update(bitset_t *important_args, const ir_node *node)
@@ -121,6 +127,7 @@ bitset_t *local_important_args(ir_graph *irg)
 		bitset_t *const deps = arg_deps_create(arg);
 		bitset_set(deps, get_Proj_num(arg));
 
+		important_args_update(important_args, arg);
 		worklist_add_outs(worklist, arg);
 	}
 
