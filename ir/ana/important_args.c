@@ -17,6 +17,13 @@ static size_t n_args;
 static ir_nodehashmap_t arg_deps;
 static struct obstack obst;
 
+static size_t get_irg_n_args(const ir_graph *irg)
+{
+	const ir_entity *const ent = get_irg_entity(irg);
+	const ir_type *const mtp   = get_entity_type(ent);
+	return get_method_n_params(mtp);
+}
+
 static bitset_t *bitset_safe_or(bitset_t *tgt, const bitset_t *src)
 {
 	assert(tgt != NULL);
@@ -102,7 +109,7 @@ bitset_t *local_important_args(ir_graph *irg)
 	ir_nodehashmap_init(&arg_deps);
 
 	const ir_node *const args      = get_irg_args(irg);
-	n_args                         = get_irn_n_outs(args);
+	n_args                         = get_irg_n_args(irg);
 	bitset_t *const important_args = bitset_malloc(n_args);
 	pdeq *const worklist           = new_pdeq();
 
