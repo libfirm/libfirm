@@ -92,8 +92,8 @@ static bool node_needs_more_info(const ir_node *node)
 static bool node_is_important(const ir_node *node)
 {
 	foreach_irn_out (node, i, user) {
-		if (is_Cond(user) || is_Load(user) || is_Call(user) ||
-		    is_Switch(user) ||
+		if (is_Cond(user) || is_Load(user) || is_Switch(user) ||
+		    (is_Call(user) && get_Call_ptr(user) == node) ||
 		    (is_Store(user) && get_Store_ptr(user) == node)) {
 			return true;
 		}

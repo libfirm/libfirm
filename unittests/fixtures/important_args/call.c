@@ -1,10 +1,10 @@
 // FIRM_IMPORTANT_ARGS: 1
 
-typedef void (*proc)(void);
+typedef void (*proc)(int x);
 
-void f(proc g);
+void f(proc g, int x);
 
-void f(proc g)
+void f(proc g, int x)
 {
-	g();
+	g(x);
 }
