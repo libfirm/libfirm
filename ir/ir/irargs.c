@@ -104,6 +104,11 @@ static void print_entity_name(char *buffer, size_t buffer_size,
 	}
 }
 
+static const char *get_entity_name_or_null_str(const ir_entity *const ent)
+{
+	return ent != NULL ? get_entity_name(ent) : "(null)";
+}
+
 /**
  * emit a Firm object
  */
@@ -178,10 +183,7 @@ static int firm_emit(lc_appendable_t *app, const lc_arg_occ_t *occ,
 				snprintf(buf, sizeof(buf), "%s%s %s[%s]", A("irn"), get_irn_opname(node),
 				         get_mode_name(get_irn_mode(node)), get_entity_name(get_Address_entity(node)));
 			} else if (is_Member(node)) {
-				ir_entity *entity = get_Member_entity(node);
-				const char *entity_name = "(null)";
-				if (entity != NULL)
-					entity_name = get_entity_name(entity);
+				const char *entity_name = get_entity_name_or_null_str(get_Member_entity(node));
 				snprintf(buf, sizeof(buf), "%s%s %s[%s]", A("irn"), get_irn_opname(node),
 				         get_mode_name(get_irn_mode(node)), entity_name);
 			} else if (is_Cmp(node)) {
