@@ -9,6 +9,7 @@
  */
 #include <inttypes.h>
 
+#include "amd64_bearch_t.h"
 #include "amd64_emitter.h"
 #include "amd64_new_nodes.h"
 #include "amd64_nodes_attr.h"
@@ -27,6 +28,10 @@
 #include "iredges_t.h"
 #include "irgwalk.h"
 #include "panic.h"
+
+static bool omit_fp;
+static int  frame_type_size;
+static int  callframe_offset;
 
 static char get_gp_size_suffix(x86_insn_size_t const size)
 {
@@ -851,8 +856,27 @@ static void amd64_gen_block(ir_node *block)
 {
 	be_gas_begin_block(block, true);
 
+	if (omit_fp) {
+		ir_graph *irg = get_irn_irg(block);
+		callframe_offset = 8; /* 8 bytes for the return address */
+		/* RSP guessing, TODO perform a real RSP simulation */
+		if (block != get_irg_start_block(irg)) {
+			callframe_offset += frame_type_size;
+		}
+		be_dwarf_callframe_offset(callframe_offset);
+	}
+
+	be_dwarf_location(get_irn_dbg_info(block));
 	sched_foreach(block, node) {
 		be_emit_node(node);
+
+		if (omit_fp) {
+			const int sp_change = -amd64_get_sp_change(node);
+			if (sp_change != 0) {
+				callframe_offset += sp_change;
+				be_dwarf_callframe_offset(callframe_offset);
+			}
+		}
 	}
 }
 
@@ -870,6 +894,22 @@ void amd64_emit_function(ir_graph *irg)
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 
 	be_emit_init_cf_links(blk_sched);
+
+	amd64_irg_data_t const *const irg_data = amd64_get_irg_data(irg);
+	omit_fp = irg_data->omit_fp;
+
+	if (omit_fp) {
+		ir_type *frame_type = get_irg_frame_type(irg);
+		frame_type_size = get_type_size(frame_type);
+		be_dwarf_callframe_register(&amd64_registers[REG_RSP]);
+	} else {
+		/* well not entirely correct here, we should emit this after the
+		 * "movq rsp, rbp" */
+		be_dwarf_callframe_register(&amd64_registers[REG_RBP]);
+		/* TODO: do not hardcode the following */
+		be_dwarf_callframe_offset(16);
+		be_dwarf_callframe_spilloffset(&amd64_registers[REG_RBP], -16);
+	}
 
 	for (size_t i = 0, n = ARR_LEN(blk_sched); i < n; ++i) {
 		ir_node *block = blk_sched[i];

@@ -46,6 +46,8 @@ static inline amd64_irg_data_t *amd64_get_irg_data(ir_graph const *const irg)
 x86_cconv_t *amd64_decide_calling_convention(ir_type *function_type,
                                              ir_graph *irg);
 
+int amd64_get_sp_change(ir_node *const node);
+
 void amd64_cconv_init(void);
 
 void amd64_adjust_pic(ir_graph *irg);
