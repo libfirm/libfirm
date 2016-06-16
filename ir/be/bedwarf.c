@@ -41,7 +41,8 @@ enum {
 };
 static int debug_level = LEVEL_NONE;
 
-static bool has_cfi_sections = true;
+static bool   has_cfi_sections = true;
+static size_t machine_size;
 
 /**
  * Usually we simply use the DW_TAG_xxx numbers for our abbrev IDs, but for
@@ -160,7 +161,8 @@ static unsigned get_sleb128_size(long value)
 
 static void emit_ref(const ir_entity *entity)
 {
-	be_emit_cstring("\t.long ");
+	const char *directive = machine_size == 64 ? "\t.quad " : "\t.long ";
+	be_emit_cstring(directive);
 	be_gas_emit_entity(entity);
 	be_emit_char('\n');
 	be_emit_write_line();
@@ -483,8 +485,9 @@ void be_dwarf_function_before(const ir_entity *entity,
 	}
 	emit_int8(is_extern_entity(entity));
 	emit_ref(entity);
-	be_emit_irprintf("\t.long %sfunction_end_%s\n", be_gas_get_private_prefix(),
-	                 get_entity_ld_name(entity));
+	const char *directive = machine_size == 64 ? ".quad" : ".long";
+	be_emit_irprintf("\t%s %sfunction_end_%s\n", directive,
+	                 be_gas_get_private_prefix(), get_entity_ld_name(entity));
 	/* frame_base prog */
 	emit_int8(1);
 	emit_int8(DW_OP_call_frame_cfa);
@@ -867,6 +870,8 @@ void be_dwarf_unit_begin(const char *filename)
 {
 	if (debug_level < LEVEL_BASIC)
 		return;
+	const backend_params *be_params = be_get_backend_param();
+	machine_size = be_params->machine_size;
 	emit_abbrev();
 
 	be_gas_emit_switch_section(GAS_SECTION_DEBUG_INFO);
@@ -874,12 +879,11 @@ void be_dwarf_unit_begin(const char *filename)
 	emit_label("info_begin");
 
 	/* length of compilation unit info */
-	const backend_params *be_params = be_get_backend_param();
 	emit_size("compile_unit_begin", "compile_unit_end");
 	emit_label("compile_unit_begin");
 	emit_int16(3);   /* dwarf version */
 	emit_address("abbrev_begin");
-	emit_int8(be_params->machine_size / 8); /* pointer size */
+	emit_int8(machine_size / 8); /* pointer size */
 
 	/* compile_unit die */
 	emit_uleb128(abbrev_compile_unit);
