@@ -485,7 +485,7 @@ void remove_keep_alive(const ir_node *irn)
 
 		/* find irn */
 		if (old_ka == irn)
-			set_irn_n(end, END_KEEPALIVE_OFFSET+i, new_r_Bad(irg, get_irn_mode(irn)));
+			set_irn_n(end, END_KEEPALIVE_OFFSET + i, new_r_Bad(irg, get_irn_mode(irn)));
 	}
 }
 
