@@ -162,7 +162,7 @@ static unsigned get_sleb128_size(long value)
 static void emit_ref(const ir_entity *entity)
 {
 	const char *directive = machine_size == 64 ? "\t.quad " : "\t.long ";
-	be_emit_cstring(directive);
+	be_emit_string(directive);
 	be_gas_emit_entity(entity);
 	be_emit_char('\n');
 	be_emit_write_line();
