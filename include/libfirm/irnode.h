@@ -36,8 +36,7 @@
  *                but also to access the mode's fields directly.
  *  - opcode    - The opcode of the node. There are routines to get the opcode
  *                but also to access the opcode's fields directly.
- *  - node_nr   - A unique number for the node.  Available only if debugging
- *                is turned on.
+ *  - node_nr   - A number that uniquely identifies a node in the program.
  * @{
  */
 
