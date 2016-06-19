@@ -109,7 +109,7 @@ void x86_x87_simulate_graph(ir_graph *irg, const x87_simulator_config_t *cfg);
 void x86_init_x87(void);
 
 /** Initialize x87 mode+type/ */
-void x86_init_x87_type(void);
+ir_type *x86_init_x87_type(void);
 
 extern ir_mode *x86_mode_E;
 extern ir_type *x86_type_E;

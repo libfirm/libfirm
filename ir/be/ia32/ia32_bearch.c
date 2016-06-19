@@ -1406,9 +1406,9 @@ static void ia32_init(void)
 		ia32_backend_params.mode_float_arithmetic = NULL;
 		ia32_backend_params.type_long_double = NULL;
 	} else {
-		x86_init_x87_type();
-		ia32_backend_params.mode_float_arithmetic = x86_mode_E;
-		ia32_backend_params.type_long_double      = x86_type_E;
+		ir_type *const type_f80 = x86_init_x87_type();
+		ia32_backend_params.mode_float_arithmetic = get_type_mode(type_f80);
+		ia32_backend_params.type_long_double      = type_f80;
 	}
 
 	ia32_register_init();

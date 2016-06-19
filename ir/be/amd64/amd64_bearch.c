@@ -785,8 +785,8 @@ static void amd64_init_types(void)
 	 * create constants with the xmm mode... */
 	amd64_mode_xmm = new_int_mode("x86_xmm", irma_twos_complement, 128, 0, 0);
 
-	x86_init_x87_type();
-	amd64_backend_params.type_long_double = x86_type_E;
+	ir_type *const type_f80 = x86_init_x87_type();
+	amd64_backend_params.type_long_double = type_f80;
 
 	amd64_backend_params.vararg.va_list_type = amd64_build_va_list_type();
 }

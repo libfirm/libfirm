@@ -288,15 +288,6 @@ static ir_node *try_create_Immediate(const ir_node *node, char const constraint)
 	return ia32_create_Immediate_full(irg, &immediate);
 }
 
-static ir_type *get_prim_type(const ir_mode *mode)
-{
-	if (mode == x86_mode_E) {
-		return x86_type_E;
-	} else {
-		return get_type_for_mode(mode);
-	}
-}
-
 static ir_entity *create_float_const_entity(ir_tarval *tv, ident *name)
 {
 	ir_mode *mode = get_tarval_mode(tv);
@@ -320,7 +311,7 @@ static ir_entity *create_float_const_entity(ir_tarval *tv, ident *name)
 		if (!name)
 			name = id_unique("C");
 
-		ir_type *const tp = get_prim_type(mode);
+		ir_type *const tp = get_type_for_mode(mode);
 		res = new_global_entity(get_glob_type(), name, tp,
 		                        ir_visibility_private,
 		                        IR_LINKAGE_CONSTANT | IR_LINKAGE_NO_IDENTITY);
@@ -545,7 +536,7 @@ ir_entity *ia32_gen_fp_known_const(ia32_known_const_t const kct)
 		ir_tarval *tv = new_tarval_from_str(cnst_str, strlen(cnst_str), mode);
 
 		if (kct == ia32_ULLBIAS) {
-			ir_type *type  = get_prim_type(ia32_mode_float32);
+			ir_type *type  = get_type_for_mode(ia32_mode_float32);
 			ir_type *atype = ia32_create_float_array(type);
 
 			ent = new_global_entity(get_glob_type(), name, atype,
@@ -3238,7 +3229,7 @@ static ir_entity *ia32_create_const_array(ir_node *c0, ir_node *c1,
 
 	}
 
-	ir_type *tp = get_prim_type(mode);
+	ir_type *tp = get_type_for_mode(mode);
 	tp = ia32_create_float_array(tp);
 
 	ir_entity *ent

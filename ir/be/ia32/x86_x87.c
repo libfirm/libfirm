@@ -1650,13 +1650,14 @@ void x86_init_x87(void)
 	FIRM_DBG_REGISTER(dbg, "firm.be.x86.x87");
 }
 
-void x86_init_x87_type(void)
+ir_type *x86_init_x87_type(void)
 {
 	/* note mantissa is 64bit but with explicitely encoded 1 so the really
 	 * usable part as counted by firm is only 63 bits */
 	x86_mode_E = new_float_mode("E", irma_x86_extended_float, 15, 64,
 	                             ir_overflow_indefinite);
-	x86_type_E = new_type_primitive(x86_mode_E);
-	set_type_size(x86_type_E, 12);
-	set_type_alignment(x86_type_E, 4);
+	ir_type *const type_f80 = get_type_for_mode(x86_mode_E);
+	set_type_size(type_f80, 12);
+	set_type_alignment(type_f80, 4);
+	return type_f80;
 }
