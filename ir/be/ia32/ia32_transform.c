@@ -3253,7 +3253,6 @@ static ir_entity *ia32_create_const_array(ir_node *c0, ir_node *c1,
  */
 enum setcc_transform_insn {
 	SETCC_TR_ADD,
-	SETCC_TR_ADDxx,
 	SETCC_TR_LEA,
 	SETCC_TR_LEAxx,
 	SETCC_TR_SHL,
@@ -3601,11 +3600,6 @@ static ir_node *gen_Mux(ir_node *node)
 					                            res.steps[step].val);
 					continue;
 				}
-
-				case SETCC_TR_ADDxx:
-					new_node = create_lea_add(dbgi, new_block, new_node,
-					                          new_node);
-					continue;
 
 				case SETCC_TR_LEA: {
 					new_node = new_bd_ia32_Lea(dbgi, new_block, noreg_GP, new_node);
