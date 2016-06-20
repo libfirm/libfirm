@@ -1322,11 +1322,13 @@ static ir_node *gen_unop(ir_node *node, ir_node *op, construct_unop_func *func,
 	return func(dbgi, new_block, new_op, X86_SIZE_32);
 }
 
-static ir_node *create_lea_add(dbg_info *const dbgi, ir_node *const block,
-                               ir_node *const op0, ir_node *const op1)
+static ir_node *create_lea(dbg_info *const dbgi, ir_node *const block, ir_node *const base, ir_node *const idx, unsigned const log_scale, int32_t const offset)
 {
-	ir_node *const lea = new_bd_ia32_Lea(dbgi, block, op0, op1);
-	get_ia32_attr(lea)->addr.variant = X86_ADDR_BASE_INDEX;
+	ir_node *const lea = new_bd_ia32_Lea(dbgi, block, base, idx);
+	ia32_attr_t *const attr = get_ia32_attr(lea);
+	attr->addr.immediate.offset = offset;
+	attr->addr.log_scale        = log_scale;
+	attr->addr.variant          = idx != noreg_GP ? X86_ADDR_BASE_INDEX: X86_ADDR_BASE;
 	return lea;
 }
 
@@ -1357,7 +1359,7 @@ static ir_node *create_lea_from_address(dbg_info *dbgi, ir_node *block,
 			addr->variant = addr->variant == X86_ADDR_INDEX
 			              ? X86_ADDR_BASE_INDEX : X86_ADDR_BASE;
 		} else {
-			base = create_lea_add(dbgi, block, tls_base, base);
+			base = create_lea(dbgi, block, tls_base, base, 0, 0);
 		}
 		addr->tls_segment = false;
 	}
@@ -1874,7 +1876,7 @@ static ir_node *gen_Shl(ir_node *node)
 		dbg_info *dbgi      = get_irn_dbg_info(node);
 		ir_node  *new_block = be_transform_nodes_block(node);
 		ir_node  *new_left  = be_transform_node(left);
-		return create_lea_add(dbgi, new_block, new_left, new_left);
+		return create_lea(dbgi, new_block, new_left, new_left, 0, 0);
 	}
 
 	return gen_shift_binop(node, left, right, &new_bd_ia32_Shl, &new_bd_ia32_Shl_8bit, match_mode_neutral);
@@ -3418,21 +3420,6 @@ static ir_node *create_Conv_I2I(dbg_info *dbgi, ir_node *block, ir_node *base,
 	return func(dbgi, block, base, index, mem, val, size, sign_extend);
 }
 
-static ir_node *create_lea_add_c(dbg_info *const dbgi, ir_node *const block,
-                                 ir_node *const base, int32_t const offset)
-{
-	ir_node     *const lea  = new_bd_ia32_Lea(dbgi, block, base, noreg_GP);
-	ia32_attr_t *const attr = get_ia32_attr(lea);
-	attr->addr = (x86_addr_t) {
-		.immediate = {
-			.kind   = X86_IMM_VALUE,
-			.offset = offset,
-		},
-		.variant          = X86_ADDR_BASE,
-	};
-	return lea;
-}
-
 /**
  * Transforms a Mux node into some code sequence.
  *
@@ -3509,8 +3496,8 @@ static ir_node *gen_Mux(ir_node *node)
 				log_scale = 3;
 			} else if (new_mode == x86_mode_E) {
 				/* arg, shift 16 NOT supported */
+				new_node = create_lea(dbgi, new_block, new_node, new_node, 0, 0);
 				log_scale = 3;
-				new_node = create_lea_add(dbgi, new_block, new_node, new_node);
 			} else {
 				panic("unsupported constant size");
 			}
@@ -3596,8 +3583,7 @@ static ir_node *gen_Mux(ir_node *node)
 			for (unsigned step = res.num_steps; step-- != 0;) {
 				switch (res.steps[step].transform) {
 				case SETCC_TR_ADD: {
-					new_node = create_lea_add_c(dbgi, new_block, new_node,
-					                            res.steps[step].val);
+					new_node = create_lea(dbgi, new_block, new_node, noreg_GP, 0, res.steps[step].val);
 					continue;
 				}
 
@@ -3611,11 +3597,7 @@ static ir_node *gen_Mux(ir_node *node)
 				}
 
 				case SETCC_TR_LEAxx: {
-					new_node = new_bd_ia32_Lea(dbgi, new_block, new_node, new_node);
-					ia32_attr_t *const attr = get_ia32_attr(new_node);
-					attr->addr.variant          = X86_ADDR_BASE_INDEX;
-					attr->addr.log_scale        = res.steps[step].log_scale;
-					attr->addr.immediate.offset = res.steps[step].val;
+					new_node = create_lea(dbgi, new_block, new_node, new_node, res.steps[step].log_scale, res.steps[step].val);
 					continue;
 				}
 
@@ -4879,8 +4861,7 @@ static ir_node *gen_Call(ir_node *node)
 		ir_type                  *const param_type = get_method_param_type(type, p);
 		if (is_aggregate_type(param_type)) {
 			/* Copy aggregate arguments into the callframe. */
-			ir_node *const lea       = create_lea_add_c(dbgi, block, callframe,
-			                                            param->offset);
+			ir_node *const lea       = create_lea(dbgi, block, callframe, noreg_GP, 0, param->offset);
 			ir_node *const new_value = be_transform_node(value);
 			unsigned const size      = get_type_size(param_type);
 			ir_node *const copyb     = new_bd_ia32_CopyB_i(dbgi, block, lea, new_value, nomem, size);
@@ -5197,7 +5178,7 @@ static ir_node *gen_ffs(ir_node *node)
 	set_ia32_commutative(orn);
 
 	/* add 1 */
-	ir_node *add1 = create_lea_add_c(dbgi, block, orn, 1);
+	ir_node *add1 = create_lea(dbgi, block, orn, noreg_GP, 0, 1);
 	return add1;
 }
 
