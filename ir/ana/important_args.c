@@ -7,6 +7,11 @@
 #include "irouts_t.h"
 #include "irnodehashmap.h"
 #include "pdeq.h"
+#include "pmap.h"
+#include "callgraph.h"
+#include "cgana.h"
+#include "call_sites.h"
+#include "debug.h"
 
 #define foreach_irn_data_in(node, i, operand)                                  \
 	foreach_irn_in ((node), i, operand)                                        \
@@ -113,10 +118,16 @@ static void important_args_update(bitset_t *important_args, const ir_node *node)
 	}
 }
 
+// Complexity: O(n|V|), where n is the number of parameters of the procedure.
+// There is potentially a set for every node in the graph. New items are only
+// added to the work list if a set changes. Each set changes a maximum of n
+// times.
 bitset_t *local_important_args(ir_graph *irg)
 {
-	assure_irg_outs(irg);
+	// TODO remove when we get an instance passed in
 	obstack_init(&obst);
+
+	assure_irg_outs(irg);
 	ir_nodehashmap_init(&arg_deps);
 
 	const ir_node *const args      = get_irg_args(irg);
@@ -150,8 +161,78 @@ bitset_t *local_important_args(ir_graph *irg)
 	}
 
 	// Cleanup
-	obstack_free(&obst, 0);
 	del_pdeq(worklist);
+
+	return important_args;
+}
+
+// Interprocedural part of the analysis
+
+typedef struct order_t {
+	ir_graph **irgs;
+	size_t last;
+} order_t;
+
+static size_t n_irgs = 0;
+
+static void build_topo_order(ir_graph *g, void *env)
+{
+	assert(g != NULL);
+	order_t *order             = (order_t *)env;
+	order->irgs[--order->last] = g;
+}
+
+pmap *important_args_get()
+{
+	// register a debug mask
+	DEBUG_ONLY(firm_dbg_module_t *dbg = NULL);
+	FIRM_DBG_REGISTER(dbg, "ir.ana.important_args");
+
+	obstack_init(&obst);
+	n_irgs                     = get_irp_n_irgs();
+	pmap *const important_args = pmap_create_ex(n_irgs);
+	assure_callgraph_consistent();
+
+	// Get call site info
+	call_sites_t call_sites;
+	call_sites_init(&call_sites);
+
+	// Create topological ordering of the call graph
+	order_t order = {NEW_ARR_DZ(ir_graph *, &obst, n_irgs), n_irgs};
+	callgraph_walk(NULL, build_topo_order, &order);
+	assert(order.last == 0);
+
+	// Walk the call graph in reverse topological order
+	for (size_t i = n_irgs - 1; i != (size_t)-1; --i) {
+		ir_graph *const irg  = order.irgs[i];
+		bitset_t *const vips = local_important_args(irg);
+		pmap_insert(important_args, irg, vips);
+		DB((dbg, LEVEL_2, "Local important args of proc %s: %B\n",
+		    get_entity_name(get_irg_entity(irg)), vips));
+
+		foreach_call_from (&call_sites, irg, call) {
+			assert(call != NULL);
+			const ir_graph *const callee = call_site_get_callee_irg(call);
+			// The callee might be from a different compilation unit or even
+			// completely unknown (e.g. a call using a function pointer)
+			if (callee == NULL) continue;
+
+			const bitset_t *const callee_vips =
+			    pmap_get(const bitset_t, important_args, callee);
+			// This is safe to do since we do not optimize non-trivial cycles
+			if (callee_vips == NULL) continue;
+
+			bitset_foreach (callee_vips, p) {
+				const ir_node *const argument = get_Call_param(call, p);
+				bitset_safe_or(vips, arg_deps_get(argument));
+			}
+		}
+		DB((dbg, LEVEL_1, "Important args of proc %s: %B\n",
+		    get_entity_name(get_irg_entity(irg)), vips));
+	}
+
+	call_sites_destroy(&call_sites);
+	obstack_free(&obst, 0);
 
 	return important_args;
 }
