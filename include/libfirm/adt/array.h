@@ -276,6 +276,20 @@ static inline size_t ARR_LEN(void const *const arr)
 #define ARR_APP1(type, arr, elt) \
   (ARR_EXTEND(type, (arr), 1), (arr)[ARR_LEN((arr))-1] = (elt))
 
+#define ARR_LEN_SAFE(arr) (arr == NULL ? 0 : ARR_LEN(arr))
+
+#define ARR_FOREACH_ITEM(array, type, item)                                    \
+	ARR_FOREACH (array, item##__idx, type, item)
+
+// also handles null pointer correctly
+#define ARR_FOREACH(array, idx, type, item)                                    \
+	for (bool item##__cont = true; item##__cont;)                              \
+		for (type *item##__arr = (array); item##__cont; item##__cont = false)  \
+			for (size_t idx = 0, item##__len = ARR_LEN_SAFE(item##__arr);      \
+			     item##__cont && idx < item##__len; ++idx)                     \
+				for (type item = (item##__cont = false, item##__arr[idx]);     \
+				     !item##__cont; item##__cont = true)
+
 /** @} */
 
 #include "../end.h"
