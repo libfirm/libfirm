@@ -3491,6 +3491,9 @@ static ir_node *gen_Mux(ir_node *node)
 			                                           &new_mode);
 			unsigned log_scale;
 			switch (get_type_size(get_type_for_mode(new_mode))) {
+			case 12:
+				new_node = create_lea(dbgi, new_block, new_node, new_node, 1, 0);
+				/* FALLTHROUGH */
 			case 4:
 				log_scale = 2;
 				break;
