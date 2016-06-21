@@ -718,3 +718,12 @@ void opt_call_addrs(void)
 	sel_methods_init();
 	sel_methods_dispose();
 }
+
+void assure_callee_info_consistent()
+{
+	if (get_irp_callee_info_state() != irg_callee_info_consistent) {
+		ir_entity **free_methods = NULL;
+		cgana(&free_methods);
+		free(free_methods);
+	}
+}

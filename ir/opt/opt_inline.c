@@ -997,11 +997,7 @@ static void callgraph_walker(ir_graph *irg, void *data)
  */
 static ir_graph **create_irg_list(void)
 {
-	ir_entity **free_methods;
-	cgana(&free_methods);
-	free(free_methods);
-
-	compute_callgraph();
+	assure_callgraph_consistent();
 
 	size_t     n_irgs = get_irp_n_irgs();
 	walk_env_t env;

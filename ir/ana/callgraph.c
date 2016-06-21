@@ -814,20 +814,8 @@ void find_callgraph_recursions(void)
 
 void analyse_loop_nesting_depth(void)
 {
-	/* establish preconditions. */
-	if (get_irp_callee_info_state() != irg_callee_info_consistent) {
-		ir_entity **free_methods = NULL;
-
-		cgana(&free_methods);
-		free(free_methods);
-	}
-
-	if (irp_callgraph_consistent != get_irp_callgraph_state()) {
-		compute_callgraph();
-	}
-
+	assure_callgraph_consistent();
 	find_callgraph_recursions();
-
 	set_irp_loop_nesting_depth_state(loop_nesting_depth_consistent);
 }
 
@@ -845,4 +833,13 @@ void set_irp_loop_nesting_depth_state_inconsistent(void)
 {
 	if (irp->lnd_state == loop_nesting_depth_consistent)
 		irp->lnd_state = loop_nesting_depth_inconsistent;
+}
+
+void assure_callgraph_consistent()
+{
+	assure_callee_info_consistent();
+
+	if (get_irp_callgraph_state() != irp_callgraph_consistent) {
+		compute_callgraph();
+	}
 }

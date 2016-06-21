@@ -89,6 +89,9 @@ FIRM_API double get_irg_method_execution_frequency(const ir_graph *irg);
  */
 FIRM_API void compute_callgraph(void);
 
+/** Computes the callgraph and its dependencies if necessary. */
+FIRM_API void assure_callgraph_consistent(void);
+
 /** Destruct the callgraph. */
 FIRM_API void free_callgraph(void);
 

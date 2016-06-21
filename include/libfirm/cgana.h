@@ -53,6 +53,10 @@
  */
 FIRM_API size_t cgana(ir_entity ***free_methods);
 
+/** Assure that the callee_info_state of the program is consistent */
+FIRM_API void assure_callee_info_consistent(void);
+
+
 /**
  * Frees callee information.
  *
