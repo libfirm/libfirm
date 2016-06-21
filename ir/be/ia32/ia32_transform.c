@@ -3490,15 +3490,19 @@ static ir_node *gen_Mux(ir_node *node)
 			ir_entity *array = ia32_create_const_array(mux_false, mux_true,
 			                                           &new_mode);
 			unsigned log_scale;
-			if (new_mode == ia32_mode_float32) {
+			switch (get_type_size(get_type_for_mode(new_mode))) {
+			case 4:
 				log_scale = 2;
-			} else if (new_mode == ia32_mode_float64) {
-				log_scale = 3;
-			} else if (new_mode == x86_mode_E) {
-				/* arg, shift 16 NOT supported */
+				break;
+
+			case 16:
 				new_node = create_lea(dbgi, new_block, new_node, new_node, 0, 0);
+				/* FALLTHROUGH */
+			case 8:
 				log_scale = 3;
-			} else {
+				break;
+
+			default:
 				panic("unsupported constant size");
 			}
 
