@@ -1428,6 +1428,7 @@ static ir_node *equivalent_node_Phi(ir_node *n)
 			first_val = pred;
 		}
 	}
+    assert(first_val && "Phi-node has no real predecessor");
 
 	/* if we are here then all inputs are either self-loops or first_val */
 	if (is_Dummy(first_val))
