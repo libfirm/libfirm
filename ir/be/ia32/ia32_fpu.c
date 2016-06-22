@@ -144,11 +144,11 @@ static ir_node *create_fpu_mode_reload(void *const env, ir_node *const state, ir
 		reload = new_bd_ia32_FldCW(NULL, block, frame, noreg, mem);
 		ia32_attr_t *const attr = get_ia32_attr(reload);
 		attr->addr.variant = X86_ADDR_BASE;
+		set_ia32_frame_use(reload, IA32_FRAME_USE_32BIT);
 	}
 
 	get_ia32_attr(reload)->size = X86_SIZE_16;
 	set_ia32_op_type(reload, ia32_AddrModeS);
-	set_ia32_frame_use(reload, IA32_FRAME_USE_32BIT);
 	arch_set_irn_register(reload, &ia32_registers[REG_FPCW]);
 	sched_add_before(before, reload);
 	return reload;
