@@ -207,10 +207,44 @@ const char *ir_get_dump_filter(void)
 	return dump_filter;
 }
 
+static int starts_with_filter(const char *name, const char *filter)
+{
+    // skip all non wildcard chars
+    while(1)
+    {
+        if(*filter == '\0')
+            return 1;
+
+        if(*filter == '*')
+            break;
+
+        if(*name != *filter)
+            return 0;
+
+        ++name;
+        ++filter;
+
+    }
+
+    //skip all wildcards
+    while(*filter == '*')
+        ++filter;
+
+    while(*name != '\0')
+    {
+        if(starts_with_filter(name, filter))
+            return 1;
+
+        ++name;
+    }
+
+    return 0;
+}
+
 /** Returns true if dump file filter is not set, or if it is a prefix of name. */
 static int ir_should_dump(const char *name)
 {
-	return !dump_filter || strstart(name, dump_filter);
+	return !dump_filter || starts_with_filter(name, dump_filter);
 }
 
 /* -------------- some extended helper functions ----------------- */
