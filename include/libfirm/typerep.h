@@ -1269,8 +1269,10 @@ typedef enum {
 	cc_frame_on_caller_stk = 0x20000000, /**< The method did not allocate an own stack frame, instead the
 	                                          caller must reserve size on its own stack. */
 	cc_fpreg_param         = 0x40000000, /**< Transmit floating point parameters in registers, else the stack is used. */
-	cc_bits                = (0xFF << 24)/**< The calling convention bits. */
 } calling_convention;
+
+/**< The calling convention bits. */
+#define cc_bits (0xFF000000)
 
 /** cdecl calling convention */
 #define cc_cdecl_set    (0)
