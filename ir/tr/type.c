@@ -782,19 +782,6 @@ ir_type *get_array_element_type(const ir_type *array)
 	return array->attr.array.element_type;
 }
 
-int is_array_variable_size(const ir_type *array)
-{
-	assert(is_Array_type(array));
-	return (array->flags & tf_variable_size) != 0;
-}
-
-void set_array_variable_size(ir_type *array, int flag)
-{
-	assert(is_Array_type(array));
-	array->flags = (array->flags & ~tf_variable_size)
-	               | (flag != 0 ? tf_variable_size : 0);
-}
-
 int (is_Array_type)(const ir_type *array)
 {
 	return is_array_type_(array);
@@ -885,19 +872,6 @@ size_t get_compound_member_index(ir_type const *const type,
 			return i;
 	}
 	return INVALID_MEMBER_INDEX;
-}
-
-void set_compound_variable_size(ir_type *tp, int variable_size_flag)
-{
-	assert(is_compound_type(tp));
-	tp->flags = (tp->flags & ~tf_variable_size)
-	            | (variable_size_flag != 0 ? tf_variable_size : 0);
-}
-
-int is_compound_variable_size(const ir_type *tp)
-{
-	assert(is_compound_type(tp));
-	return (tp->flags & tf_variable_size) != 0;
 }
 
 int is_compound_type(const ir_type *tp)
@@ -999,7 +973,6 @@ void default_layout_compound_type(ir_type *type)
 {
 	unsigned size      = 0;
 	unsigned align_all = 1;
-	bool     var_size  = is_compound_variable_size(type);
 	for (size_t i = 0, n = get_compound_n_members(type); i < n; ++i) {
 		ir_entity *entity      = get_compound_member(type, i);
 		ir_type   *entity_type = get_entity_type(entity);
@@ -1011,11 +984,11 @@ void default_layout_compound_type(ir_type *type)
 		}
 
 		unsigned entity_size;
-		if (i+1 < n || !var_size) {
+		if (i + 1 == n && is_Array_type(entity_type) && get_array_size(entity_type) == 0) {
+			entity_size = 0;
+		} else {
 			assert(get_type_state(entity_type) == layout_fixed);
 			entity_size = get_type_size(entity_type);
-		} else {
-			entity_size = 0;
 		}
 
 		unsigned const align = get_type_alignment(entity_type);
