@@ -1037,9 +1037,9 @@ void default_layout_compound_type(ir_type *type)
 		set_entity_offset(entity, offset);
 	}
 
-	if (align_all > 0 && size % align_all) {
-		size += align_all - (size % align_all);
-	}
+	unsigned const misalign = size % align_all;
+	if (misalign != 0)
+		size += align_all - misalign;
 	set_type_alignment(type, align_all);
 	set_type_size(type, size);
 	set_type_state(type, layout_fixed);
