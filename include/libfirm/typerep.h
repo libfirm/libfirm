@@ -1376,11 +1376,6 @@ FIRM_API ir_type *get_pointer_points_to_type(const ir_type *pointer);
 /** Returns true if a type is a pointer type. */
 FIRM_API int is_Pointer_type(const ir_type *pointer);
 
-/** Returns the first pointer type that has as points_to tp.
- *  Not efficient: O(\#types).
- *  If not found returns firm_unknown_type. */
-FIRM_API ir_type *find_pointer_type_to_type(ir_type *tp);
-
 /** @} */
 
 /**
