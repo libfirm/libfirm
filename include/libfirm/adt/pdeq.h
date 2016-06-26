@@ -120,20 +120,16 @@ FIRM_API void **pdeq_copyr(const pdeq *qp, const void **dst);
  *
  * @param dq  The list to add a pointer to.
  * @param x   The pointer element to be added
- *
- * @return The list.
  */
-FIRM_API pdeq *pdeq_putl(pdeq *dq, const void *x);
+FIRM_API void pdeq_putl(pdeq *dq, const void *x);
 
 /**
  * Add a pointer to the right side of a double ended pointer list.
  *
  * @param dq  The list to add a pointer to.
  * @param x   The pointer element to be added
- *
- * @return The list.
  */
-FIRM_API pdeq *pdeq_putr(pdeq *dq, const void *x);
+FIRM_API void pdeq_putr(pdeq *dq, const void *x);
 
 /**
  * Retrieve (and remove) a pointer from the left site of a double ended pointer

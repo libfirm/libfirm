@@ -150,7 +150,7 @@ size_t pdeq_len(pdeq const *dq)
 	return n;
 }
 
-pdeq *pdeq_putr(pdeq *dq, void const *x)
+void pdeq_putr(pdeq *dq, void const *x)
 {
 	VRFY(dq);
 
@@ -180,10 +180,9 @@ pdeq *pdeq_putr(pdeq *dq, void const *x)
 	rdq->data[n] = x;
 
 	VRFY(dq);
-	return dq;
 }
 
-pdeq *pdeq_putl(pdeq *dq, void const *x)
+void pdeq_putl(pdeq *dq, void const *x)
 {
 	VRFY(dq);
 
@@ -215,7 +214,6 @@ pdeq *pdeq_putl(pdeq *dq, void const *x)
 	ldq->p         = p;
 
 	VRFY(dq);
-	return dq;
 }
 
 void *pdeq_getr(pdeq *dq)
