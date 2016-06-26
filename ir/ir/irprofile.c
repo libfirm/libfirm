@@ -304,6 +304,8 @@ static void instrument_irg(ir_graph *irg, ir_entity *counters, block_id_walker_d
 	/* generate a node pointing to the count array */
 	wd->counters = new_r_Address(irg, counters);
 
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
+
 	/* instrument each block in the current irg */
 	irg_block_walk_graph(irg, block_instrument_walker, NULL, wd);
 	irg_block_walk_graph(irg, fix_ssa, NULL, NULL);
@@ -345,6 +347,8 @@ static void instrument_irg(ir_graph *irg, ir_entity *counters, block_id_walker_d
 			set_Call_mem(node, sync_mem(bb, mem));
 		}
 	}
+
+	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 }
 
 /**
