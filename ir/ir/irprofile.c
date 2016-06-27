@@ -180,11 +180,7 @@ static ir_graph *gen_initializer_irg(ir_entity *ent_filename, ir_entity *bblock_
 	ir_type   *const type  = new_type_method(0, 0, false);
 	ir_entity *const ent   = new_global_entity(owner, name, type, ir_visibility_local, IR_LINKAGE_DEFAULT);
 
-	ir_graph *const irg              = new_ir_graph(ent, 0);
-	ir_type  *const empty_frame_type = get_irg_frame_type(irg);
-	set_type_size(empty_frame_type, 0);
-	set_type_state(empty_frame_type, layout_fixed);
-
+	ir_graph  *const irg       = new_ir_graph(ent, 0);
 	ir_node   *const bb        = get_r_cur_block(irg);
 	ir_node   *const init_mem  = get_irg_initial_mem(irg);
 	ir_entity *const init_ent  = get_init_firmprof_ref();
