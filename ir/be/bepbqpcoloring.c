@@ -36,7 +36,7 @@
 #include "benode.h"
 #include "belive.h"
 #include "belive.h"
-#include "plist.h"
+#include "pdeq_new.h"
 #include "pqueue.h"
 
 /* pbqp includes */
@@ -69,7 +69,7 @@ typedef struct be_pbqp_alloc_env_t {
 	bitset_t              const *allocatable_regs;
 	pbqp_matrix_t               *ife_matrix_template;
 	pbqp_matrix_t               *aff_matrix_template;
-	plist_t                     *rpeo;
+	deq_t                        rpeo;
 	unsigned                    *restr_nodes;
 	unsigned                    *ife_edge_num;
 	ir_execfreq_int_factors      execfreq_factors;
@@ -278,9 +278,9 @@ static void create_pbqp_coloring_instance(ir_node *block, void *data)
 	be_pbqp_alloc_env_t         *pbqp_alloc_env     = (be_pbqp_alloc_env_t*)data;
 	be_lv_t                     *lv                 = pbqp_alloc_env->lv;
 	const arch_register_class_t *cls                = pbqp_alloc_env->cls;
-	plist_t                     *rpeo               = pbqp_alloc_env->rpeo;
+	deq_t                       *rpeo               = &pbqp_alloc_env->rpeo;
 	pbqp_t                      *pbqp_inst          = pbqp_alloc_env->pbqp_inst;
-	plist_t                     *temp_list          = plist_new();
+	pbqp_node_t                **temp_list          = NEW_ARR_F(pbqp_node_t*, 0);
 	ir_nodeset_t                 live_nodes;
 #if USE_BIPARTIT_MATCHING
 	int                         *assignment         = ALLOCAN(int, cls->n_regs);
@@ -288,8 +288,8 @@ static void create_pbqp_coloring_instance(ir_node *block, void *data)
 	unsigned                    *restr_nodes        = pbqp_alloc_env->restr_nodes;
 	pqueue_t                    *restr_nodes_queue  = new_pqueue();
 	pqueue_t                    *queue              = new_pqueue();
-	plist_t                     *sorted_list        = plist_new();
 	ir_node                     *last_element       = NULL;
+	pbqp_node_t                **sorted_list        = NEW_ARR_F(pbqp_node_t*, 0);
 #endif
 
 	/* first, determine the pressure */
@@ -345,7 +345,7 @@ static void create_pbqp_coloring_instance(ir_node *block, void *data)
 					continue;
 
 				/* insert pbqp node into temp rpeo list of this block */
-				plist_insert_front(temp_list, get_node(pbqp_inst, get_irn_idx(proj)));
+				ARR_APP1(pbqp_node_t*, temp_list, get_node(pbqp_inst, get_irn_idx(proj)));
 
 				if (is_Perm_Proj(proj)) {
 					/* add proj to clique */
@@ -368,8 +368,8 @@ static void create_pbqp_coloring_instance(ir_node *block, void *data)
 			}
 
 			if (clique_size > 0) {
-				foreach_plist(temp_list, listElement) {
-					pbqp_node *clique_candidate  = listElement->data;
+				for (size_t i = ARR_LEN(temp_list); i-- > 0;) {
+					pbqp_node *clique_candidate  = temp_list[i];
 					unsigned   idx               = 0;
 					bool       isMember          = true;
 
@@ -426,10 +426,8 @@ static void create_pbqp_coloring_instance(ir_node *block, void *data)
 
 			/* free memory */
 			bipartite_free(bp);
-		} else {
-			if (arch_irn_consider_in_reg_alloc(cls, irn)) {
-				plist_insert_front(temp_list, get_node(pbqp_inst, get_irn_idx(irn)));
-			}
+		} else if (arch_irn_consider_in_reg_alloc(cls, irn)) {
+			ARR_APP1(pbqp_node_t*, temp_list, get_node(pbqp_inst, get_irn_idx(irn)));
 		}
 #else
 		/* order nodes for perfect elimination order */
@@ -463,33 +461,40 @@ static void create_pbqp_coloring_instance(ir_node *block, void *data)
 				} else {
 					pqueue_put(queue, last_element, pbqp_alloc_env->ife_edge_num[get_irn_idx(last_element)]);
 				}
-				plist_erase(temp_list, plist_find_value(temp_list, get_node(pbqp_inst, last_element->node_idx)));
+				/* remove node from list */
+				pbqp_node_t *node = get_node(pbqp_inst, last_element->node_idx);
+				for (size_t i = 0, e = ARR_LEN(temp_list); i < e; ++i) {
+					if (temp_list[i] == node) {
+						temp_list[i] = NULL;
+						break;
+					}
+				}
 				last_element = NULL;
 			}
 
 			/* first insert all restricted proj nodes */
 			while (!pqueue_empty(restr_nodes_queue)) {
 				ir_node *node = (ir_node*)pqueue_pop_front(restr_nodes_queue);
-				plist_insert_front(sorted_list, get_node(pbqp_inst, get_irn_idx(node)));
+				ARR_APP1(pbqp_node_t*, sorted_list, get_node(pbqp_inst, get_irn_idx(node)));
 			}
 
 			/* insert proj nodes descending by their number of interference edges */
 			while (!pqueue_empty(queue)) {
 				ir_node *node = (ir_node*)pqueue_pop_front(queue);
-				plist_insert_front(sorted_list, get_node(pbqp_inst, get_irn_idx(node)));
+				ARR_APP1(pbqp_node_t*, sorted_list, get_node(pbqp_inst, get_irn_idx(node)));
 			}
 
 			/* invert sorted list */
-			foreach_plist(sorted_list, el) {
-				plist_insert_front(temp_list, el->data);
+			for (unsigned i = ARR_LEN(sorted_list); i-- > 0;) {
+				ARR_APP1(pbqp_node_t*, temp_list, sorted_list[i]);
 			}
 
-			plist_clear(sorted_list);
+			ARR_SHRINKLEN(sorted_list, 0);
 		} else {
 			if (arch_irn_consider_in_reg_alloc(cls, irn)) {
 				// remember last colorable node
 				last_element = irn;
-				plist_insert_front(temp_list, get_node(pbqp_inst, get_irn_idx(irn)));
+				ARR_APP1(pbqp_node_t*, temp_list, get_node(pbqp_inst, get_irn_idx(irn)));
 			} else {
 				// node not colorable, so ignore it
 				last_element = NULL;
@@ -498,17 +503,20 @@ static void create_pbqp_coloring_instance(ir_node *block, void *data)
 #endif
 	}
 
-	/* add the temp rpeo list of this block to the global reverse perfect elimination order list*/
-	foreach_plist(temp_list, el) {
-		plist_insert_back(rpeo, el->data);
+	/* add the temp rpeo list of this block to the global reverse perfect
+	 * elimination order list */
+	for (size_t i = ARR_LEN(temp_list); i-- > 0;) {
+		if (temp_list[i] == NULL)
+			continue;
+		deq_push_pointer_right(rpeo, temp_list[i]);
 	}
 
 	/* free reserved memory */
 	ir_nodeset_destroy(&live_nodes);
-	plist_free(temp_list);
+	DEL_ARR_F(temp_list);
 #if USE_BIPARTIT_MATCHING
 #else
-	plist_free(sorted_list);
+	DEL_ARR_F(sorted_list);
 	del_pqueue(queue);
 	del_pqueue(restr_nodes_queue);
 #endif
@@ -553,10 +561,10 @@ static void be_pbqp_coloring(be_chordal_env_t *env)
 	pbqp_alloc_env.irg              = irg;
 	pbqp_alloc_env.lv               = be_get_irg_liveness(irg);
 	pbqp_alloc_env.allocatable_regs = env->allocatable_regs;
-	pbqp_alloc_env.rpeo             = plist_new();
 	pbqp_alloc_env.restr_nodes      = XMALLOCNZ(unsigned, get_irg_last_idx(irg));
 	pbqp_alloc_env.ife_edge_num     = XMALLOCNZ(unsigned, get_irg_last_idx(irg));
 	pbqp_alloc_env.env              = env;
+	deq_init(&pbqp_alloc_env.rpeo);
 
 	unsigned const colors_n = cls->n_regs;
 	/* create costs matrix template for interference edges */
@@ -597,8 +605,7 @@ static void be_pbqp_coloring(be_chordal_env_t *env)
 #if TIMER
 	ir_timer_reset_and_start(t_ra_pbqp_alloc_create_aff);
 #endif
-	foreach_plist(pbqp_alloc_env.rpeo, element) {
-		pbqp_node_t *node = (pbqp_node_t*)element->data;
+	deq_foreach_pointer(&pbqp_alloc_env.rpeo, pbqp_node_t, node) {
 		ir_node     *irn  = get_idx_irn(irg, node->index);
 
 		create_affinity_edges(irn, &pbqp_alloc_env);
@@ -616,8 +623,7 @@ static void be_pbqp_coloring(be_chordal_env_t *env)
 
 	/* print out reverse perfect elimination order */
 #if PRINT_RPEO
-	foreach_plist(pbqp_alloc_env.rpeo, elements) {
-		pbqp_node_t *node = elements->data;
+	deq_foreach_pointer(&pbqp_alloc_env.rpeo, pbqp_node_t, node) {
 		printf(" %d(%ld);", node->index, get_idx_irn(irg, node->index)->node_nr);
 	}
 	printf("\n");
@@ -628,9 +634,11 @@ static void be_pbqp_coloring(be_chordal_env_t *env)
 	ir_timer_reset_and_start(t_ra_pbqp_alloc_solve);
 #endif
 	if (use_late_decision) {
-		solve_pbqp_heuristical_co_ld(pbqp_alloc_env.pbqp_inst,pbqp_alloc_env.rpeo);
+		solve_pbqp_heuristical_co_ld(pbqp_alloc_env.pbqp_inst,
+		                             &pbqp_alloc_env.rpeo);
 	} else {
-		solve_pbqp_heuristical_co(pbqp_alloc_env.pbqp_inst,pbqp_alloc_env.rpeo);
+		solve_pbqp_heuristical_co(pbqp_alloc_env.pbqp_inst,
+		                          &pbqp_alloc_env.rpeo);
 	}
 #if TIMER
 	ir_timer_stop(t_ra_pbqp_alloc_solve);
@@ -643,8 +651,7 @@ static void be_pbqp_coloring(be_chordal_env_t *env)
 
 
 	/* assign colors */
-	foreach_plist(pbqp_alloc_env.rpeo, element) {
-		pbqp_node_t           *node  = (pbqp_node_t*)element->data;
+	deq_foreach_pointer(&pbqp_alloc_env.rpeo, pbqp_node_t, node) {
 		ir_node               *irn   = get_idx_irn(irg, node->index);
 		num                    color = get_node_solution(pbqp_alloc_env.pbqp_inst, node->index);
 		const arch_register_t *reg   = arch_register_for_index(cls, color);
@@ -668,7 +675,7 @@ static void be_pbqp_coloring(be_chordal_env_t *env)
 	fclose(file_before);
 #endif
 	free_pbqp(pbqp_alloc_env.pbqp_inst);
-	plist_free(pbqp_alloc_env.rpeo);
+	deq_free(&pbqp_alloc_env.rpeo);
 	free(pbqp_alloc_env.restr_nodes);
 	free(pbqp_alloc_env.ife_edge_num);
 }

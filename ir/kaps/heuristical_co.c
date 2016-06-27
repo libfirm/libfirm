@@ -27,21 +27,20 @@
 #include "pbqp_node_t.h"
 #include "vector.h"
 
-#include "plist.h"
+#include "pdeq_new.h"
 #include "timing.h"
 
-static void merge_into_RN_node(pbqp_t *pbqp, plist_t *rpeo)
+static void merge_into_RN_node(pbqp_t *pbqp, deq_t *rpeo)
 {
 	pbqp_node_t *node;
 
 	/* We want to reduce the first node in reverse perfect elimination order. */
 	do {
 		/* get first element from reverse perfect elimination order */
-		node = (pbqp_node_t *)plist_first(rpeo)->data;
-		/* remove element from reverse perfect elimination order */
-		plist_erase(rpeo, plist_first(rpeo));
-		/* insert node at the end of rpeo so the rpeo already exits after pbqp solving */
-		plist_insert_back(rpeo, node);
+		node = deq_pop_pointer_left(pbqp_node_t, rpeo);
+		/* insert node at the end of rpeo so the rpeo already exits after pbqp
+		 * solving */
+		deq_push_pointer_right(rpeo, node);
 	} while (node_is_reduced(node));
 
 	assert(pbqp_node_get_degree(node) > 2);
@@ -86,7 +85,7 @@ static void apply_RN_co(pbqp_t *pbqp)
 	select_alternative(node, min_index);
 }
 
-static void apply_heuristic_reductions_co(pbqp_t *pbqp, plist_t *rpeo)
+static void apply_heuristic_reductions_co(pbqp_t *pbqp, deq_t *rpeo)
 {
 	#if KAPS_TIMING
 		/* create timers */
@@ -160,7 +159,7 @@ static void apply_heuristic_reductions_co(pbqp_t *pbqp, plist_t *rpeo)
 	}
 }
 
-void solve_pbqp_heuristical_co(pbqp_t *pbqp, plist_t *rpeo)
+void solve_pbqp_heuristical_co(pbqp_t *pbqp, deq_t *rpeo)
 {
 #ifndef NDEBUG
 	assert(pbqp);

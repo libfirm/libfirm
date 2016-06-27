@@ -6,8 +6,8 @@
 #define HEURISTICAL_CO_LD_H_
 
 #include "pbqp_t.h"
-#include "plist.h"
+#include "deq.h"
 
-void solve_pbqp_heuristical_co_ld(pbqp_t *pbqp, plist_t *rpeo);
+void solve_pbqp_heuristical_co_ld(pbqp_t *pbqp, deq_t *rpeo);
 
 #endif
