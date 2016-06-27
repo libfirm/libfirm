@@ -61,13 +61,13 @@ set(SOURCES
 	ir/be/bedump.c
 	ir/be/bedwarf.c
 	ir/be/beemitter.c
-	ir/be/beemitter_binary.c
 	ir/be/beflags.c
 	ir/be/begnuas.c
 	ir/be/beifg.c
 	ir/be/beinfo.c
 	ir/be/beinsn.c
 	ir/be/beirg.c
+	ir/be/bejit.c
 	ir/be/belistsched.c
 	ir/be/belive.c
 	ir/be/beloopana.c
@@ -310,10 +310,11 @@ include_directories(
 )
 
 add_backend(ia32
-	ir/be/ia32/bearch_ia32.c
 	ir/be/ia32/ia32_architecture.c
+	ir/be/ia32/ia32_bearch.c
 	ir/be/ia32/ia32_cconv.c
 	ir/be/ia32/ia32_emitter.c
+	ir/be/ia32/ia32_encode.c
 	ir/be/ia32/ia32_finish.c
 	ir/be/ia32/ia32_fpu.c
 	ir/be/ia32/ia32_intrinsics.c
@@ -324,10 +325,11 @@ add_backend(ia32
 	ir/be/ia32/x86_address_mode.c
 	ir/be/ia32/x86_asm.c
 	ir/be/ia32/x86_cconv.c
-	ir/be/ia32/x86_imm.c
+	ir/be/ia32/x86_node.c
 	ir/be/ia32/x86_x87.c
 )
 add_backend(arm
+	ir/be/arm/arm_bearch.c
 	ir/be/arm/arm_cconv.c
 	ir/be/arm/arm_emitter.c
 	ir/be/arm/arm_finish.c
@@ -335,10 +337,9 @@ add_backend(arm
 	ir/be/arm/arm_new_nodes.c
 	ir/be/arm/arm_optimize.c
 	ir/be/arm/arm_transform.c
-	ir/be/arm/bearch_arm.c
 )
 add_backend(sparc
-	ir/be/sparc/bearch_sparc.c
+	ir/be/sparc/sparc_bearch.c
 	ir/be/sparc/sparc_cconv.c
 	ir/be/sparc/sparc_emitter.c
 	ir/be/sparc/sparc_finish.c
@@ -348,6 +349,7 @@ add_backend(sparc
 	ir/be/sparc/sparc_transform.c
 )
 add_backend(amd64
+	ir/be/amd64/amd64_bearch.c
 	ir/be/amd64/amd64_cconv.c
 	ir/be/amd64/amd64_emitter.c
 	ir/be/amd64/amd64_finish.c
@@ -356,10 +358,9 @@ add_backend(amd64
 	ir/be/amd64/amd64_transform.c
 	ir/be/amd64/amd64_varargs.c
 	ir/be/amd64/amd64_x87.c
-	ir/be/amd64/bearch_amd64.c
 )
 add_backend(TEMPLATE
-	ir/be/TEMPLATE/bearch_TEMPLATE.c
+	ir/be/TEMPLATE/TEMPLATE_bearch.c
 	ir/be/TEMPLATE/TEMPLATE_emitter.c
 	ir/be/TEMPLATE/TEMPLATE_new_nodes.c
 	ir/be/TEMPLATE/TEMPLATE_transform.c
