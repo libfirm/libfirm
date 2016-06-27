@@ -214,6 +214,7 @@ void be_sort_frame_entities(ir_type *const frame, bool spillslots_first)
 void be_layout_frame_type(ir_type *const frame, int const begin,
                           unsigned const misalign)
 {
+	assert(get_type_state(frame) == layout_undefined);
 	/* Layout entities into negative direction. */
 	int offset = begin;
 	for (unsigned i = 0, n_members = get_compound_n_members(frame);
