@@ -20,7 +20,7 @@
 #include "irgopt.h"
 #include "irnode_t.h"
 #include "iroptimize.h"
-#include "pdeq_new.h"
+#include "pdeq.h"
 
 #ifndef NDEBUG
 static bool is_block_reachable(ir_node *block)

@@ -31,7 +31,7 @@
 #include "irgmod.h"
 #include "irgwalk.h"
 #include "irnode_t.h"
-#include "pdeq_new.h"
+#include "pdeq.h"
 #include "util.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)

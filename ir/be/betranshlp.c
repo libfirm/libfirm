@@ -33,7 +33,7 @@
 #include "irouts.h"
 #include "irtools.h"
 #include "panic.h"
-#include "pdeq_new.h"
+#include "pdeq.h"
 #include "util.h"
 #include "vrp.h"
 

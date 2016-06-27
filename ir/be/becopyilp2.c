@@ -37,7 +37,7 @@
 #include "debug.h"
 #include "irprintf.h"
 #include "panic.h"
-#include "pdeq_new.h"
+#include "pdeq.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 

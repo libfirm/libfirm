@@ -42,7 +42,7 @@
 #include "obst.h"
 #include "raw_bitset.h"
 #include "unionfind.h"
-#include "pdeq_new.h"
+#include "pdeq.h"
 #include "hungarian.h"
 #include "statev.h"
 #include "bechordal_t.h"

@@ -27,7 +27,7 @@
 #include "pbqp_node_t.h"
 #include "vector.h"
 
-#include "pdeq_new.h"
+#include "pdeq.h"
 #include "timing.h"
 
 static void merge_into_RN_node(pbqp_t *pbqp, deq_t *rpeo)

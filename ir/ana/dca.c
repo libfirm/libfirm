@@ -20,7 +20,7 @@
 #include "debug.h"
 #include "irnode_t.h"
 #include "tv.h"
-#include "pdeq_new.h"
+#include "pdeq.h"
 #include "irgwalk.h"
 #include "dca.h"
 

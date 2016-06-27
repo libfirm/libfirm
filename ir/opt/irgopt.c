@@ -24,7 +24,7 @@
 #include "iropt_t.h"
 #include "iroptimize.h"
 #include "irtools.h"
-#include "pdeq_new.h"
+#include "pdeq.h"
 
 /**
  * A wrapper around optimize_inplace_2() to be called from a walker.

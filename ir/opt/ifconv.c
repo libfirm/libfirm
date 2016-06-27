@@ -21,7 +21,7 @@
 #include "irnode_t.h"
 #include "iroptimize.h"
 #include "irtools.h"
-#include "pdeq_new.h"
+#include "pdeq.h"
 
 /**
  * Environment for if-conversion.

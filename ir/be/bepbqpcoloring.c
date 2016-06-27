@@ -36,7 +36,7 @@
 #include "benode.h"
 #include "belive.h"
 #include "belive.h"
-#include "pdeq_new.h"
+#include "pdeq.h"
 #include "pqueue.h"
 
 /* pbqp includes */

@@ -37,7 +37,7 @@
 #include "lower_dw.h"
 #include "lowering.h"
 #include "panic.h"
-#include "pdeq_new.h"
+#include "pdeq.h"
 #include "pmap.h"
 #include "set.h"
 #include "tv_t.h"

@@ -26,7 +26,7 @@
 #include "irnodemap.h"
 #include "pqueue.h"
 #include "xmalloc.h"
-#include "pdeq_new.h"
+#include "pdeq.h"
 #include "irprintf.h"
 #include "util.h"
 #include "irtools.h"

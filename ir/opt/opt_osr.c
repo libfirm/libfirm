@@ -32,7 +32,7 @@
 #include "irtools.h"
 #include "obst.h"
 #include "panic.h"
-#include "pdeq_new.h"
+#include "pdeq.h"
 #include "set.h"
 #include "tv.h"
 #include "util.h"

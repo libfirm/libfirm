@@ -27,7 +27,7 @@
 #include "obst.h"
 #include "pmap.h"
 #include "array.h"
-#include "pdeq_new.h"
+#include "pdeq.h"
 #include "debug.h"
 #include "panic.h"
 #include "belive.h"

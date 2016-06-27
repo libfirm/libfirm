@@ -5,7 +5,7 @@
 
 #include "irnode_t.h"
 #include "obst.h"
-#include "pdeq_new.h"
+#include "pdeq.h"
 #include "set.h"
 #include "type_t.h"
 #include "typerep.h"

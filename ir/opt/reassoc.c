@@ -28,7 +28,7 @@
 #include "irouts.h"
 #include "opt_init.h"
 #include "panic.h"
-#include "pdeq_new.h"
+#include "pdeq.h"
 #include "unionfind.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)

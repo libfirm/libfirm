@@ -37,7 +37,7 @@
 #include <stdbool.h>
 #include "firm_types.h"
 #include "belive.h"
-#include "pdeq_new.h"
+#include "pdeq.h"
 #include "irnodemap.h"
 #include "obst.h"
 

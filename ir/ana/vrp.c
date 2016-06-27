@@ -17,7 +17,7 @@
 #include "iredges_t.h"
 #include "tv.h"
 #include "irprintf.h"
-#include "pdeq_new.h"
+#include "pdeq.h"
 #include "irnodemap.h"
 #include "irhooks.h"
 #include "bitset.h"

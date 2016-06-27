@@ -21,7 +21,7 @@
 #include "pbqp_node_t.h"
 #include "vector.h"
 
-#include "pdeq_new.h"
+#include "pdeq.h"
 #include "timing.h"
 
 static void back_propagate_RI(pbqp_t *pbqp, pbqp_node_t *node)
