@@ -71,11 +71,16 @@ static void init_constants(ir_node *node, UNUSED void *env)
 	arg_deps_create(node);
 }
 
+static bool node_produces_value(const ir_node *node)
+{
+	return mode_is_data(get_irn_mode(node)) || is_Div(node);
+}
+
 static void worklist_add_outs(pdeq *worklist, const ir_node *node)
 {
 	foreach_irn_out (node, i, user) {
-		if (!mode_is_data(get_irn_mode(user))) continue;
-		pdeq_putr(worklist, user);
+		if (node_produces_value(user))
+			pdeq_putr(worklist, user);
 	}
 }
 
