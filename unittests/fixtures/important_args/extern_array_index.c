@@ -1,4 +1,4 @@
-// FIRM_IMPORTANT_ARGS: 0
+// // assert_local_important_args("f", 0);
 
 extern int *array;
 int f(int x);

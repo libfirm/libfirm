@@ -1,4 +1,4 @@
-// FIRM_IMPORTANT_ARGS: 2
+// // assert_local_important_args("f", 2);
 
 int f(int x, int y);
 

@@ -8,20 +8,23 @@ def create_irp(source):
     subprocess.run(["cparser", "--export-ir", source], check=True)
     return path.splitext(source)[0] + ".ir"
 
-expected_re = re.compile(r"//\s*FIRM_IMPORTANT_ARGS\s*:\s*(\d+)")
-def parse_expected(source):
+test_re = re.compile(r"//\s*(assert_.+)$", re.M)
+def parse_tests(source):
     with open(source, 'r') as f:
         contents = f.read()
-    result = expected_re.search(contents)
-    return int(result.group(1)) if result else 1
+    result = test_re.findall(contents)
+    return "\n\t".join(result)
 
 test_template = """
-#include "lib/important_args__local.h"
+#include "lib/%s_test_lib.h"
 
-int main(int argc, char *argv[])
+int main(void)
 {
-    (void) argc;
-	test_irg_has_expected_important_args("%s", %u, argv[0]);
+	setup("%s");
+
+	%s
+
+	teardown();
 	return 0;
 }
 """
@@ -44,9 +47,9 @@ for source in sources:
     print("Generating IR representation of %s" % source_file)
     os.chdir(source_dir)
     ir_path = create_irp(source)
-    expected_set = parse_expected(source)
+    tests = parse_tests(source)
 
-    test_content = test_template % (ir_path, expected_set)
+    test_content = test_template % (module_name, ir_path, tests)
     file_name = "_%s__%s" % (module_name, source_file)
     with open(path.join(tests_dir, file_name), "w") as f:
         f.write(test_content)
