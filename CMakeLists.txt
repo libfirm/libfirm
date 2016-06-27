@@ -20,7 +20,6 @@ set(SOURCES
 	ir/adt/gaussjordan.c
 	ir/adt/gaussseidel.c
 	ir/adt/hungarian.c
-	ir/adt/pdeq.c
 	ir/adt/plist.c
 	ir/adt/pmap.c
 	ir/adt/pqueue.c
@@ -411,7 +410,6 @@ set(INSTALL_HEADERS
 	include/libfirm/adt/list.h
 	include/libfirm/adt/obst.h
 	include/libfirm/adt/obstack.h
-	include/libfirm/adt/pdeq.h
 	include/libfirm/adt/plist.h
 	include/libfirm/adt/pmap.h
 	include/libfirm/adt/pqueue.h
