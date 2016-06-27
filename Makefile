@@ -205,13 +205,18 @@ UNUSED2 := $(shell \
 # Unit tests
 UNITTESTS_SOURCES = $(subst $(srcdir)/unittests/,,$(wildcard $(srcdir)/unittests/*.c))
 UNITTESTS         = $(UNITTESTS_SOURCES:%.c=$(builddir)/%.exe)
+UNITTESTS_OK      = $(UNITTESTS_SOURCES:%.c=$(builddir)/%.ok)
 
 $(builddir)/%.exe: $(srcdir)/unittests/%.c $(libfirm_a)
-	@echo TEST $<
+	@echo LINK $<
 	$(Q)$(LINK) $(CFLAGS) $(CPPFLAGS) $(libfirm_CPPFLAGS) "$<" $(libfirm_a) -lm -o "$@"
-	$(Q)$@
 
+$(builddir)/%.ok: $(builddir)/%.exe
+	@echo EXEC $<
+	$(Q)$< && touch "$@"
+
+.PRECIOUS: $(UNITTESTS)
 .PHONY: test
-test: $(UNITTESTS)
+test: $(UNITTESTS_OK)
 
 -include $(libfirm_DEPS)
