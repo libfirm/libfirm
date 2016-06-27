@@ -21,7 +21,7 @@
  * @{
  */
 
-/** @cond DISABLED */
+/** @cond PRIVATE */
 
 #define _FIRM_FNV_OFFSET_BASIS 2166136261U
 #define _FIRM_FNV_FNV_PRIME    16777619U

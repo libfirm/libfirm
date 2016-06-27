@@ -120,7 +120,7 @@ Summary:
 
 #include "../begin.h"
 
-/** @cond DISABLED */
+/** @cond PRIVATE */
 
 /* We need the type of a pointer subtraction.  If __PTRDIFF_TYPE__ is
    defined, as with GNU C, use that; that way we don't pollute the
