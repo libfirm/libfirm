@@ -1,4 +1,4 @@
-// FIRM_IMPORTANT_ARGS: 1
+// FIRM_IMPORTANT_ARGS: 3
 
 int f(int *p, int x);
 

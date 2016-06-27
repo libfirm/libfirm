@@ -73,7 +73,7 @@ static void init_constants(ir_node *node, UNUSED void *env)
 
 static bool node_produces_value(const ir_node *node)
 {
-	return mode_is_data(get_irn_mode(node)) || is_Div(node);
+	return mode_is_data(get_irn_mode(node)) || is_Div(node) || is_Load(node);
 }
 
 static void worklist_add_outs(pdeq *worklist, const ir_node *node)
