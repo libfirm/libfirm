@@ -37,7 +37,7 @@
 #include "debug.h"
 #include "irprintf.h"
 #include "panic.h"
-#include "pdeq.h"
+#include "pdeq_new.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
@@ -397,22 +397,44 @@ static void build_clique_star_cstr(ilp_env_t *ienv)
 	}
 }
 
-static void extend_path(ilp_env_t *ienv, pdeq *path, const ir_node *irn)
+static bool path_contains(deq_t const *const path, ir_node const *const node)
+{
+	deq_foreach_pointer(path, ir_node, n) {
+		if (n == node)
+			return true;
+	}
+	return false;
+}
+
+static unsigned path_len(deq_t const *const path)
+{
+	unsigned res = 0;
+	deq_foreach_pointer(path, ir_node, n) {
+		(void)n;
+		++res;
+	}
+	return res;
+}
+
+static void extend_path(ilp_env_t *ienv, deq_t *path, const ir_node *irn)
 {
 	/* do not walk backwards or in circles */
-	if (pdeq_contains(path, irn))
+	if (path_contains(path, irn))
 		return;
 
 	if (arch_irn_is_ignore(irn))
 		return;
 
 	/* insert the new irn */
-	pdeq_putr(path, irn);
+	deq_push_pointer_right(path, (ir_node*)irn);
 
 	/* check for forbidden interferences */
-	int       const len       = pdeq_len(path);
+	int       const len       = path_len(path);
 	ir_node **const curr_path = ALLOCAN(ir_node*, len);
-	pdeq_copyl(path, (const void **)curr_path);
+	unsigned i = 0;
+	deq_foreach_pointer(path, ir_node, n) {
+		curr_path[i++] = n;
+	}
 
 	for (int i = 1; i < len; ++i) {
 		if (be_values_interfere(irn, curr_path[i]))
@@ -448,7 +470,7 @@ static void extend_path(ilp_env_t *ienv, pdeq *path, const ir_node *irn)
 
 end:
 	/* remove the irn */
-	pdeq_getr(path);
+	deq_pop_pointer_right(ir_node, path);
 }
 
 /**
@@ -461,9 +483,10 @@ static void build_path_cstr(ilp_env_t *ienv)
 {
 	/* for each node with affinity edges */
 	co_gs_foreach_aff_node(ienv->co, aff_info) {
-		pdeq *const path = new_pdeq();
-		extend_path(ienv, path, aff_info->irn);
-		del_pdeq(path);
+		deq_t path;
+		deq_init(&path);
+		extend_path(ienv, &path, aff_info->irn);
+		deq_free(&path);
 	}
 }
 

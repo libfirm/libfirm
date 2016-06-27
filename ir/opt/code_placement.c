@@ -16,11 +16,11 @@
  */
 #include <stdbool.h>
 
-#include "iroptimize.h"
-#include "adt/pdeq.h"
-#include "irnode_t.h"
 #include "iredges_t.h"
 #include "irgopt.h"
+#include "irnode_t.h"
+#include "iroptimize.h"
+#include "pdeq_new.h"
 
 #ifndef NDEBUG
 static bool is_block_reachable(ir_node *block)
@@ -42,7 +42,7 @@ static bool is_block_reachable(ir_node *block)
  * this may still be a dead block, but then there is no real use, as
  * the control flow will be dead later.
  */
-static void place_floats_early(ir_node *n, pdeq *worklist)
+static void place_floats_early(ir_node *n, deq_t *worklist)
 {
 	/* we must not run into an infinite loop */
 	if (irn_visited_else_mark(n))
@@ -61,10 +61,10 @@ static void place_floats_early(ir_node *n, pdeq *worklist)
 	if (get_irn_pinned(n)) {
 		/* we cannot move pinned nodes */
 		foreach_irn_in(n, i, pred) {
-			pdeq_putr(worklist, pred);
+			deq_push_pointer_right(worklist, pred);
 		}
 		if (!is_Block(n))
-			pdeq_putr(worklist, get_nodes_block(n));
+			deq_push_pointer_right(worklist, get_nodes_block(n));
 		return;
 	}
 
@@ -101,7 +101,7 @@ static void place_floats_early(ir_node *n, pdeq *worklist)
  *
  * @param worklist   a worklist, used for the algorithm, empty on in/output
  */
-static void place_early(ir_graph *irg, pdeq *worklist)
+static void place_early(ir_graph *irg, deq_t *worklist)
 {
 	assert(worklist);
 	inc_irg_visited(irg);
@@ -110,8 +110,8 @@ static void place_early(ir_graph *irg, pdeq *worklist)
 	place_floats_early(get_irg_end(irg), worklist);
 
 	/* Work the content of the worklist. */
-	while (!pdeq_empty(worklist)) {
-		ir_node *n = (ir_node*)pdeq_getl(worklist);
+	while (!deq_empty(worklist)) {
+		ir_node *n = deq_pop_pointer_left(ir_node, worklist);
 		if (!irn_visited(n))
 			place_floats_early(n, worklist);
 	}
@@ -258,7 +258,7 @@ static void set_projs_block(ir_node *node, ir_node *block)
  * loops as possible and then makes it as control dependent as
  * possible.
  */
-static void place_floats_late(ir_node *n, pdeq *worklist)
+static void place_floats_late(ir_node *n, deq_t *worklist)
 {
 	if (irn_visited_else_mark(n))
 		return;
@@ -267,7 +267,7 @@ static void place_floats_late(ir_node *n, pdeq *worklist)
 	if (get_irn_pinned(n)) {
 		foreach_out_edge(n, edge) {
 			ir_node *succ = get_edge_src_irn(edge);
-			pdeq_putr(worklist, succ);
+			deq_push_pointer_right(worklist, succ);
 		}
 		return;
 	}
@@ -310,7 +310,7 @@ static void place_floats_late(ir_node *n, pdeq *worklist)
  *
  * @param worklist   the worklist containing the nodes to place
  */
-static void place_late(ir_graph *irg, pdeq *worklist)
+static void place_late(ir_graph *irg, deq_t *worklist)
 {
 	assert(worklist);
 	inc_irg_visited(irg);
@@ -319,8 +319,8 @@ static void place_late(ir_graph *irg, pdeq *worklist)
 	place_floats_late(get_irg_start_block(irg), worklist);
 
 	/* And now empty the worklist again... */
-	while (!pdeq_empty(worklist)) {
-		ir_node *n = (ir_node*)pdeq_getl(worklist);
+	while (!deq_empty(worklist)) {
+		ir_node *n = deq_pop_pointer_left(ir_node, worklist);
 		if (!irn_visited(n))
 			place_floats_late(n, worklist);
 	}
@@ -339,8 +339,9 @@ void place_code(ir_graph *irg)
 
 	/* Place all floating nodes as early as possible. This guarantees
 	 a legal code placement. */
-	pdeq *worklist = new_pdeq();
-	place_early(irg, worklist);
+	deq_t worklist;
+	deq_init(&worklist);
+	place_early(irg, &worklist);
 
 	/* While GCSE might place nodes in unreachable blocks,
 	 * these are now placed in reachable blocks. */
@@ -350,8 +351,8 @@ void place_code(ir_graph *irg)
 
 	/* Now move the nodes down in the dominator tree. This reduces the
 	   unnecessary executions of the node. */
-	place_late(irg, worklist);
+	place_late(irg, &worklist);
 
-	del_pdeq(worklist);
+	deq_free(&worklist);
 	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_CONTROL_FLOW);
 }

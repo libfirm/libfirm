@@ -33,12 +33,12 @@
 #include "irouts.h"
 #include "irtools.h"
 #include "panic.h"
-#include "pdeq.h"
+#include "pdeq_new.h"
 #include "util.h"
 #include "vrp.h"
 
 typedef struct be_transform_env_t {
-	pdeq *worklist;  /**< worklist of nodes that still need to be transformed */
+	deq_t worklist;  /**< worklist of nodes that still need to be transformed */
 } be_transform_env_t;
 
 static be_transform_env_t env;
@@ -235,7 +235,7 @@ void be_enqueue_operands(ir_node *node)
 {
 	/* put the preds in the worklist */
 	foreach_irn_in(node, i, pred) {
-		pdeq_putr(env.worklist, pred);
+		deq_push_pointer_right(&env.worklist, pred);
 	}
 }
 
@@ -286,7 +286,7 @@ static void transform_nodes(ir_graph *irg, arch_pretrans_nodes *pre_transform)
 {
 	inc_irg_visited(irg);
 
-	env.worklist = new_pdeq();
+	deq_init(&env.worklist);
 
 	ir_node *const old_anchor = irg->anchor;
 	ir_node *const new_anchor = new_r_Anchor(irg);
@@ -304,8 +304,8 @@ static void transform_nodes(ir_graph *irg, arch_pretrans_nodes *pre_transform)
 		pre_transform(irg);
 
 	/* process worklist (this should transform all nodes in the graph) */
-	while (!pdeq_empty(env.worklist)) {
-		ir_node *node = (ir_node*)pdeq_getl(env.worklist);
+	while (!deq_empty(&env.worklist)) {
+		ir_node *node = deq_pop_pointer_left(ir_node, &env.worklist);
 		be_transform_node(node);
 	}
 
@@ -315,7 +315,7 @@ static void transform_nodes(ir_graph *irg, arch_pretrans_nodes *pre_transform)
 		fix_loops(n);
 	}
 
-	del_pdeq(env.worklist);
+	deq_free(&env.worklist);
 	free_End(old_end);
 }
 

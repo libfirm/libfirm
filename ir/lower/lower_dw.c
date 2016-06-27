@@ -37,7 +37,7 @@
 #include "lower_dw.h"
 #include "lowering.h"
 #include "panic.h"
-#include "pdeq.h"
+#include "pdeq_new.h"
 #include "pmap.h"
 #include "set.h"
 #include "tv_t.h"
@@ -106,7 +106,7 @@ typedef struct lower_dw_env_t {
 	struct obstack    obst;          /**< obstack for temporary data */
 	ir_tarval        *tv_mode_bytes; /**< a tarval containing the number of
 	                                      bytes in the lowered modes */
-	pdeq             *waitq;         /**< a wait queue of all nodes that must be
+	deq_t             waitq;         /**< a wait queue of all nodes that must be
 	                                      handled later */
 	ir_node         **lowered_phis;  /**< list of lowered phis */
 	lwrdw_param_t     p;             /**< transformation parameter */
@@ -1893,7 +1893,7 @@ static void lower_Phi(ir_node *phi)
 	int arity = get_Phi_n_preds(phi);
 	for (int i = 0; i < arity; ++i) {
 		ir_node *pred = get_Phi_pred(phi, i);
-		pdeq_putr(env.waitq, pred);
+		deq_push_pointer_right(&env.waitq, pred);
 	}
 
 	ir_mode *mode = get_irn_mode(phi);
@@ -2483,7 +2483,7 @@ void ir_register_dw_lower_function(ir_op *op, lower_dw_func func)
 static void enqueue_preds(ir_node *node)
 {
 	foreach_irn_in(node, i, pred) {
-		pdeq_putr(env.waitq, pred);
+		deq_push_pointer_right(&env.waitq, pred);
 	}
 }
 
@@ -2579,12 +2579,12 @@ static void lower_irg(ir_graph *irg)
 		ir_reserve_resources(irg, IR_RESOURCE_IRN_VISITED);
 		inc_irg_visited(irg);
 
-		assert(pdeq_empty(env.waitq));
-		pdeq_putr(env.waitq, get_irg_end(irg));
+		assert(deq_empty(&env.waitq));
+		deq_push_pointer_right(&env.waitq, get_irg_end(irg));
 
 		env.lowered_phis = NEW_ARR_F(ir_node*, 0);
-		while (!pdeq_empty(env.waitq)) {
-			ir_node *node = (ir_node*)pdeq_getl(env.waitq);
+		while (!deq_empty(&env.waitq)) {
+			ir_node *node = deq_pop_pointer_left(ir_node, &env.waitq);
 			lower_node(node);
 		}
 
@@ -2719,7 +2719,7 @@ void ir_lower_dw_ops(void)
 	ir_mode *offset_mode = get_reference_offset_mode(mode_P);
 	env.tv_mode_bytes = new_tarval_from_long(env.p.doubleword_size/(2*8),
 	                                         offset_mode);
-	env.waitq         = new_pdeq();
+	deq_init(&env.waitq);
 
 	irp_reserve_resources(irp, IRP_RESOURCE_TYPE_LINK
 	                         | IRP_RESOURCE_TYPE_VISITED);
@@ -2736,5 +2736,5 @@ void ir_lower_dw_ops(void)
 		ir_nodeset_destroy(&created_mux_nodes);
 	}
 	irp_free_resources(irp, IRP_RESOURCE_TYPE_LINK | IRP_RESOURCE_TYPE_VISITED);
-	del_pdeq(env.waitq);
+	deq_free(&env.waitq);
 }

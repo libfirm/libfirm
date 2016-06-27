@@ -37,14 +37,14 @@
 #include <stdbool.h>
 #include "firm_types.h"
 #include "belive.h"
-#include "pdeq.h"
+#include "pdeq_new.h"
 #include "irnodemap.h"
 #include "obst.h"
 
 typedef struct be_ssa_construction_env_t {
 	ir_graph                    *irg;
 	const arch_register_req_t   *phi_req;
-	pdeq                        *worklist;
+	deq_t                        worklist;
 	ir_node                    **new_phis;
 	bool                         iterated_domfront_calculated;
 	ir_nodemap                   infos;

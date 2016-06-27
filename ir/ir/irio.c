@@ -571,7 +571,7 @@ static void write_type_compound(write_env_t *env, ir_type *tp)
 
 	for (size_t i = 0, n = get_compound_n_members(tp); i < n; ++i) {
 		ir_entity *member = get_compound_member(tp, i);
-		pdeq_putr(env->entity_queue, member);
+		deq_push_pointer_right(&env->entity_queue, member);
 	}
 }
 
@@ -917,7 +917,7 @@ static void write_node_recursive(ir_node *node, write_env_t *env)
 		write_preds(node, env);
 	} else {
 		foreach_irn_in(node, i, pred) {
-			pdeq_putr(env->write_queue, pred);
+			deq_push_pointer_right(&env->write_queue, pred);
 		}
 	}
 	write_node(node, env);
@@ -1036,8 +1036,8 @@ static void write_typegraph(write_env_t *env)
 		write_type(env, type);
 	}
 
-	while (!pdeq_empty(env->entity_queue)) {
-		ir_entity *entity = pdeq_getl(env->entity_queue);
+	while (!deq_empty(&env->entity_queue)) {
+		ir_entity *entity = deq_pop_pointer_left(ir_entity, &env->entity_queue);
 		write_entity(env, entity);
 	}
 
@@ -1053,12 +1053,12 @@ static void write_irg(write_env_t *env, ir_graph *irg)
 	write_scope_begin(env);
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_VISITED);
 	inc_irg_visited(irg);
-	assert(pdeq_empty(env->write_queue));
-	pdeq_putr(env->write_queue, irg->anchor);
+	assert(deq_empty(&env->write_queue));
+	deq_push_pointer_right(&env->write_queue, irg->anchor);
 	do {
-		ir_node *node = (ir_node*) pdeq_getl(env->write_queue);
+		ir_node *node = deq_pop_pointer_left(ir_node, &env->write_queue);
 		write_node_recursive(node, env);
-	} while (!pdeq_empty(env->write_queue));
+	} while (!deq_empty(&env->write_queue));
 	ir_free_resources(irg, IR_RESOURCE_IRN_VISITED);
 	write_scope_end(env);
 }
@@ -1071,8 +1071,8 @@ void ir_export_file(FILE *file)
 
 	memset(env, 0, sizeof(*env));
 	env->file         = file;
-	env->write_queue  = new_pdeq();
-	env->entity_queue = new_pdeq();
+	deq_init(&env->write_queue);
+	deq_init(&env->entity_queue);
 
 	writers_init();
 	write_modes(env);
@@ -1091,8 +1091,8 @@ void ir_export_file(FILE *file)
 
 	write_program(env);
 
-	del_pdeq(env->entity_queue);
-	del_pdeq(env->write_queue);
+	deq_free(&env->entity_queue);
+	deq_free(&env->write_queue);
 }
 
 

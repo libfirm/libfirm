@@ -31,7 +31,7 @@
 #include "irgmod.h"
 #include "irgwalk.h"
 #include "irnode_t.h"
-#include "pdeq.h"
+#include "pdeq_new.h"
 #include "util.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
@@ -162,7 +162,7 @@ struct blocksched_env_t {
 	ir_graph       *irg;
 	struct obstack  obst;
 	edge_t         *edges;
-	pdeq           *worklist;
+	deq_t           worklist;
 	unsigned        blockcount;
 };
 
@@ -441,7 +441,7 @@ static void pick_block_successor(blocksched_entry_t *entry, blocksched_env_t *en
 			continue;
 
 		DB((dbg, LEVEL_1, "Put %+F into worklist\n", succ_entry->block));
-		pdeq_putr(env->worklist, succ_entry->block);
+		deq_push_pointer_right(&env->worklist, succ_entry->block);
 	}
 
 	if (entry->next != NULL) {
@@ -476,11 +476,11 @@ static void pick_block_successor(blocksched_entry_t *entry, blocksched_env_t *en
 		DB((dbg, LEVEL_1, "pick from worklist\n"));
 
 		do {
-			if (pdeq_empty(env->worklist)) {
+			if (deq_empty(&env->worklist)) {
 				DB((dbg, LEVEL_1, "worklist empty\n"));
 				return;
 			}
-			succ = (ir_node*)pdeq_getl(env->worklist);
+			succ = deq_pop_pointer_left(ir_node, &env->worklist);
 		} while (irn_visited(succ));
 	}
 
@@ -500,12 +500,12 @@ static blocksched_entry_t *finish_block_schedule(blocksched_env_t *env)
 	/* Exclude the end block from the block schedule. */
 	mark_irn_visited(get_irg_end_block(irg));
 
-	env->worklist = new_pdeq();
+	deq_init(&env->worklist);
 	ir_node            *const startblock = get_irg_start_block(irg);
 	blocksched_entry_t *const entry      = get_blocksched_entry(startblock);
 	pick_block_successor(entry, env);
-	assert(pdeq_empty(env->worklist));
-	del_pdeq(env->worklist);
+	assert(deq_empty(&env->worklist));
+	deq_free(&env->worklist);
 
 	ir_free_resources(irg, IR_RESOURCE_IRN_VISITED);
 
@@ -536,7 +536,6 @@ ir_node **be_create_block_schedule(ir_graph *irg)
 	blocksched_env_t env = {
 		.irg        = irg,
 		.edges      = NEW_ARR_F(edge_t, 0),
-		.worklist   = NULL,
 		.blockcount = 0,
 	};
 	obstack_init(&env.obst);

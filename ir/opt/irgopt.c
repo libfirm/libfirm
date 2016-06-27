@@ -15,18 +15,16 @@
 #include "irgraph_t.h"
 
 #include "constbits.h"
-#include "iroptimize.h"
-#include "iropt_t.h"
-#include "irgopt.h"
-#include "irgmod.h"
-#include "irgwalk.h"
 #include "ircons.h"
-
-#include "adt/pdeq.h"
-
-#include "irflag_t.h"
 #include "iredges_t.h"
+#include "irflag_t.h"
+#include "irgmod.h"
+#include "irgopt.h"
+#include "irgwalk.h"
+#include "iropt_t.h"
+#include "iroptimize.h"
 #include "irtools.h"
+#include "pdeq_new.h"
 
 /**
  * A wrapper around optimize_inplace_2() to be called from a walker.
@@ -57,12 +55,18 @@ void local_optimize_node(ir_node *n)
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 }
 
-static void enqueue_node(ir_node *node, void *env)
+static void enqueue_node(ir_node *node, deq_t *waitq)
 {
-	pdeq *waitq = (pdeq *)env;
 	if (get_irn_link(node) == waitq)
 		return;
-	pdeq_putr(waitq, node);
+	deq_push_pointer_right(waitq, node);
+	set_irn_link(node, waitq);
+}
+
+static void enqueue_node_init(ir_node *node, void *env)
+{
+	deq_t *waitq = (deq_t *)env;
+	deq_push_pointer_right(waitq, node);
 	set_irn_link(node, waitq);
 }
 
@@ -70,10 +74,10 @@ static void enqueue_node(ir_node *node, void *env)
  * Enqueue all users of a node to a wait queue.
  * Handles mode_T nodes.
  */
-static void enqueue_users(ir_node *n, pdeq *waitq)
+static void enqueue_users(ir_node *n, deq_t *waitq)
 {
 	foreach_out_edge(n, edge) {
-		ir_node *succ  = get_edge_src_irn(edge);
+		ir_node *succ = get_edge_src_irn(edge);
 
 		enqueue_node(succ, waitq);
 
@@ -99,23 +103,23 @@ static void enqueue_users(ir_node *n, pdeq *waitq)
  */
 static void find_unreachable_blocks(ir_node *block, void *env)
 {
-	pdeq *waitq = (pdeq*) env;
+	if (get_Block_dom_depth(block) >= 0)
+		return;
 
-	if (get_Block_dom_depth(block) < 0) {
-		ir_graph *irg = get_irn_irg(block);
-		ir_node  *end = get_irg_end(irg);
-
-		foreach_block_succ(block, edge) {
-			ir_node *succ_block = get_edge_src_irn(edge);
-			enqueue_node(succ_block, waitq);
-			foreach_out_edge(succ_block, edge2) {
-				ir_node *succ = get_edge_src_irn(edge2);
-				if (is_Phi(succ))
-					enqueue_node(succ, waitq);
-			}
+	deq_t *waitq = (deq_t *)env;
+	foreach_block_succ(block, edge) {
+		ir_node *succ_block = get_edge_src_irn(edge);
+		enqueue_node(succ_block, waitq);
+		foreach_out_edge(succ_block, edge2) {
+			ir_node *succ = get_edge_src_irn(edge2);
+			if (is_Phi(succ))
+				enqueue_node(succ, waitq);
 		}
-		enqueue_node(end, waitq);
 	}
+
+	ir_graph *irg = get_irn_irg(block);
+	ir_node *end = get_irg_end(irg);
+	enqueue_node(end, waitq);
 }
 
 void local_optimize_graph(ir_graph *irg)
@@ -128,11 +132,8 @@ void local_optimize_graph(ir_graph *irg)
  * Optimizes all nodes and enqueue its users
  * if done.
  */
-static void opt_walker(ir_node *n, void *env)
+static void opt_walker(ir_node *n, deq_t *waitq)
 {
-	pdeq *waitq = (pdeq *)env;
-	set_irn_link(n, NULL);
-
 	/* If CSE occurs during the optimization,
 	 * our operands have fewer users than before.
 	 * Thus, we may be able to apply a rule that
@@ -153,8 +154,6 @@ static void opt_walker(ir_node *n, void *env)
 
 void optimize_graph_df(ir_graph *irg)
 {
-	pdeq *waitq = new_pdeq();
-
 	if (get_opt_global_cse())
 		set_irg_pinned(irg, op_pin_state_floats);
 
@@ -174,24 +173,27 @@ void optimize_graph_df(ir_graph *irg)
 
 	constbits_analyze(irg);
 
-	irg_walk_graph(irg, NULL, enqueue_node, waitq);
+	deq_t waitq;
+	deq_init(&waitq);
+	irg_walk_graph(irg, NULL, enqueue_node_init, &waitq);
 
 	/* any optimized nodes are stored in the wait queue,
 	 * so if it's not empty, the graph has been changed */
-	while (!pdeq_empty(waitq)) {
+	while (!deq_empty(&waitq)) {
 		/* finish the wait queue */
-		while (! pdeq_empty(waitq)) {
-			ir_node *n = (ir_node*)pdeq_getl(waitq);
-			opt_walker(n, waitq);
+		while (!deq_empty(&waitq)) {
+			ir_node *n = deq_pop_pointer_left(ir_node, &waitq);
+			set_irn_link(n, NULL);
+			opt_walker(n, &waitq);
 		}
 		/* Calculate dominance so we can kill unreachable code
 		 * We want this intertwined with localopts for better optimization
 		 * (phase coupling) */
 		compute_doms(irg);
 		assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
-		irg_block_walk_graph(irg, NULL, find_unreachable_blocks, waitq);
+		irg_block_walk_graph(irg, NULL, find_unreachable_blocks, &waitq);
 	}
-	del_pdeq(waitq);
+	deq_free(&waitq);
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 
 	constbits_clear(irg);

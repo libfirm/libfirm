@@ -27,7 +27,7 @@
 #include "obst.h"
 #include "pmap.h"
 #include "array.h"
-#include "pdeq.h"
+#include "pdeq_new.h"
 #include "debug.h"
 #include "panic.h"
 #include "belive.h"
@@ -93,8 +93,8 @@ struct x87_simulator {
 	pmap          *blk_states; /**< Map blocks to states. */
 	be_lv_t       *lv;         /**< intrablock liveness. */
 	fp_liveness   *live;       /**< Liveness information. */
+	deq_t          worklist;
 	unsigned       n_idx;      /**< The cached get_irg_last_idx() result. */
-	pdeq          *worklist;   /**< Worklist of blocks that must be processed. */
 };
 
 /**
@@ -1509,7 +1509,7 @@ static void x87_simulate_block(x87_simulator *sim, ir_node *block)
 			DEBUG_ONLY(x87_dump_stack(state);)
 			succ_state->begin = state;
 
-			pdeq_putr(sim->worklist, succ);
+			deq_push_pointer_right(&sim->worklist, succ);
 		} else {
 			DB((dbg, LEVEL_2, "succ %+F already has a state, shuffling\n",
 			    succ));
@@ -1619,8 +1619,8 @@ void x86_x87_simulate_graph(ir_graph *irg, const x87_simulator_config_t *config)
 	x87_state const empty = { .sim = &sim };
 	bl_state->begin = &empty;
 
-	sim.worklist = new_pdeq();
-	pdeq_putr(sim.worklist, start_block);
+	deq_init(&sim.worklist);
+	deq_push_pointer_right(&sim.worklist, start_block);
 
 	be_assure_live_sets(irg);
 	sim.lv = be_get_irg_liveness(irg);
@@ -1635,12 +1635,12 @@ void x86_x87_simulate_graph(ir_graph *irg, const x87_simulator_config_t *config)
 
 	/* iterate */
 	do {
-		ir_node *block = (ir_node*)pdeq_getl(sim.worklist);
+		ir_node *block = deq_pop_pointer_left(ir_node, &sim.worklist);
 		x87_simulate_block(&sim, block);
-	} while (!pdeq_empty(sim.worklist));
+	} while (!deq_empty(&sim.worklist));
 
 	/* kill it */
-	del_pdeq(sim.worklist);
+	deq_free(&sim.worklist);
 	x87_destroy_simulator(&sim);
 }
 

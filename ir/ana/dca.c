@@ -20,13 +20,13 @@
 #include "debug.h"
 #include "irnode_t.h"
 #include "tv.h"
-#include "pdeq.h"
+#include "pdeq_new.h"
 #include "irgwalk.h"
 #include "dca.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
-static pdeq *worklist;
+static deq_t worklist;
 
 /**
  * Set cared for bits in irn, possibly putting it on the worklist.
@@ -51,7 +51,7 @@ static void care_for(ir_node *irn, ir_tarval *care)
 		DBG((dbg, LEVEL_3, "queueing %+F: %T->%T\n", irn, old_care, care));
 		assert(old_care != tarval_b_true || care == tarval_b_true);
 		set_irn_link(irn, (void *)care);
-		pdeq_putr(worklist, irn);
+		deq_push_pointer_right(&worklist, irn);
 	} else {
 		DBG((dbg, LEVEL_3, "no change on %+F: %T\n", irn, old_care, care));
 	}
@@ -417,13 +417,13 @@ void dca_analyze(ir_graph *irg)
 
 	irg_walk_graph(irg, dca_init_node, NULL, 0);
 
-	worklist = new_pdeq();
+	deq_init(&worklist);
 
 	care_for(get_irg_end(irg), 0);
 
-	while (!pdeq_empty(worklist)) {
-		ir_node *n = (ir_node*)pdeq_getl(worklist);
+	while (!deq_empty(&worklist)) {
+		ir_node *n = deq_pop_pointer_left(ir_node, &worklist);
 		dca_transfer(n);
 	}
-	del_pdeq(worklist);
+	deq_free(&worklist);
 }

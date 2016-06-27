@@ -8,29 +8,28 @@
  * @brief   Reassociation
  * @author  Michael Beck
  */
-#include "iroptimize.h"
-#include "iropt_t.h"
-#include "irnode_t.h"
-#include "irgraph_t.h"
-#include "irmode_t.h"
+#include "reassoc_t.h"
+
+#include "debug.h"
 #include "ircons_t.h"
-#include "irgmod.h"
-#include "irgopt.h"
-#include "iropt_dbg.h"
 #include "iredges_t.h"
 #include "irflag_t.h"
+#include "irgmod.h"
+#include "irgopt.h"
+#include "irgraph_t.h"
 #include "irgwalk.h"
-#include "irouts.h"
-#include "reassoc_t.h"
-#include "opt_init.h"
 #include "irhooks.h"
 #include "irloop.h"
-#include "pdeq.h"
-#include "debug.h"
+#include "irmode_t.h"
+#include "irnode_t.h"
+#include "iropt_dbg.h"
+#include "iropt_t.h"
+#include "iroptimize.h"
+#include "irouts.h"
+#include "opt_init.h"
 #include "panic.h"
-
+#include "pdeq_new.h"
 #include "unionfind.h"
-#include "plist.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
@@ -263,11 +262,11 @@ static int reassoc_commutative(ir_node **node)
  */
 static void wq_walker(ir_node *n, void *env)
 {
-	pdeq *const wq = (pdeq*)env;
+	deq_t *const wq = (deq_t*)env;
 
 	set_irn_link(n, NULL);
 	if (!is_Block(n)) {
-		pdeq_putr(wq, n);
+		deq_push_pointer_right(wq, n);
 		set_irn_link(n, wq);
 	}
 }
@@ -275,10 +274,10 @@ static void wq_walker(ir_node *n, void *env)
 /**
  * The walker for the reassociation.
  */
-static void do_reassociation(pdeq *const wq)
+static void do_reassociation(deq_t *const wq)
 {
-	while (!pdeq_empty(wq)) {
-		ir_node *n = (ir_node *)pdeq_getl(wq);
+	while (!deq_empty(wq)) {
+		ir_node *n = deq_pop_pointer_left(ir_node, wq);
 		set_irn_link(n, NULL);
 
 		/* reassociation must run until a fixpoint is reached. */
@@ -303,7 +302,7 @@ static void do_reassociation(pdeq *const wq)
 		if (changed) {
 			foreach_irn_in_r(n, i, pred) {
 				if (get_irn_link(pred) != wq) {
-					pdeq_putr(wq, pred);
+					deq_push_pointer_right(wq, pred);
 					set_irn_link(pred, wq);
 				}
 			}
@@ -580,7 +579,7 @@ static bool is_bitop(ir_node *node)
 
 typedef struct {
 	ir_graph *irg;
-	plist_t  *optimizations;
+	deq_t     optimizations;
 
 	pmap        *walk_counter;
 	unsigned int walk_base;
@@ -650,7 +649,7 @@ static void find_path_to_top_node(ir_node *current, ir_node *other_node, ir_node
 		optimization->top_node       = top_node2;
 		optimization->other_node     = other_node;
 
-		plist_insert_back(shdata->optimizations, optimization);
+		deq_push_pointer_right(&shdata->optimizations, optimization);
 
 		return;
 	}
@@ -785,21 +784,24 @@ static bool has_operand(ir_node *node, ir_node *operand)
  */
 static void do_shannon(ir_graph *irg)
 {
-	plist_t     *optimizations = plist_new();
-	pmap        *walk_counter  = pmap_create();
-	shannon_data shdata        = {.irg = irg, .optimizations = optimizations, .walk_counter = walk_counter, .walk_base = 0, .walk_max = 0};
+	shannon_data shdata = {
+		.irg          = irg,
+		.walk_counter = pmap_create(),
+		.walk_base    = 0,
+		.walk_max     = 0
+	};
+	deq_init(&shdata.optimizations);
 
 	/* walk and get optimization data */
 	irg_walk_edges(get_irg_start_block(irg), NULL, try_basenode, &shdata);
 
 	/* optimize */
 	DBG((dbg, LEVEL_4, "optimizations:\n"));
-	foreach_plist(optimizations, el) {
-		optimization_t *optimization = el->data;
-		ir_node        *middle_node  = optimization->middle_node;
-		ir_node        *top_node     = optimization->top_node;
-		ir_node        *base_node    = optimization->base_node;
-		ir_node        *other_node   = optimization->other_node;
+	deq_foreach_pointer(&shdata.optimizations, optimization_t, optimization) {
+		ir_node *const middle_node = optimization->middle_node;
+		ir_node *const top_node    = optimization->top_node;
+		ir_node *const base_node   = optimization->base_node;
+		ir_node *const other_node  = optimization->other_node;
 
 		DBG((dbg, LEVEL_4, "base_node: %li, middle_node: %li, top_node: %li, other_node: %li\n",
 		     get_irn_node_nr(base_node),
@@ -846,8 +848,8 @@ static void do_shannon(ir_graph *irg)
 		free(optimization);
 	}
 
-	pmap_destroy(walk_counter);
-	plist_free(optimizations);
+	pmap_destroy(shdata.walk_counter);
+	deq_free(&shdata.optimizations);
 }
 
 typedef enum {
@@ -1760,7 +1762,8 @@ static void rebuild(multi_op_env *multi_env)
 
 			curr = pointer;
 			pset    *done      = pset_new_ptr_default();
-			plist_t *negatives = plist_new();
+			deq_t negatives;
+			deq_init(&negatives);
 
 			foreach_pmap(dic, entry) {
 				ir_tarval *curr_val = (ir_tarval *)entry->key;
@@ -1828,13 +1831,12 @@ static void rebuild(multi_op_env *multi_env)
 						pset_insert_ptr(done, negativ_val);
 					}
 				} else {
-					plist_insert_back(negatives, curr_val);
+					deq_push_pointer_right(&negatives, curr_val);
 				}
 
 			}
 
-			foreach_plist(negatives, el) {
-				ir_tarval *negativ_val = el->data;
+			deq_foreach_pointer(&negatives, ir_tarval, negativ_val) {
 				assert(tarval_is_negative(negativ_val));
 
 				pset *negativ_set = pmap_get(pset, dic, negativ_val);
@@ -1863,7 +1865,7 @@ static void rebuild(multi_op_env *multi_env)
 				}
 			}
 
-			plist_free(negatives);
+			deq_free(&negatives);
 			del_pset(done);
 			foreach_pmap(dic, entry) {
 				pset *dic_set = (pset *)entry->value;
@@ -1910,15 +1912,14 @@ static void do_Setsort(ir_graph *irg)
 
 	DBG((dbg, LEVEL_5, "analysing...\n"));
 
-	plist_t *queue = plist_new();
+	deq_t queue;
+	deq_init(&queue);
 	foreach_pset(multi_env->sets, multi_op, o) {
 		assert(is_supported_node(o->base_node));
-		plist_insert_front(queue, o);
+		deq_push_pointer_left(&queue, o);
 	}
 
-	foreach_plist(queue, el) {
-		multi_op *o = el->data;
-
+	deq_foreach_pointer(&queue, multi_op, o) {
 		/* Merge sets with only one user */
 		if (!o->other_op && pset_count(o->multi_users) == 1) {
 			multi_op *user = get_user(o);
@@ -1934,7 +1935,7 @@ static void do_Setsort(ir_graph *irg)
 			}
 		}
 	}
-	plist_free(queue);
+	deq_free(&queue);
 
 	rebuild(multi_env);
 
@@ -2028,14 +2029,15 @@ static bool walk_chains(ir_node *node)
  */
 static void do_chaining(ir_graph *irg)
 {
-	pdeq *const wq = new_pdeq();
+	deq_t wq;
+	deq_init(&wq);
 
 	/* now we have collected enough information, optimize */
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
-	irg_walk_graph(irg, NULL, wq_walker, wq);
+	irg_walk_graph(irg, NULL, wq_walker, &wq);
 
-	while (!pdeq_empty(wq)) {
-		ir_node *n = (ir_node *)pdeq_getl(wq);
+	while (!deq_empty(&wq)) {
+		ir_node *n = deq_pop_pointer_left(ir_node, &wq);
 		set_irn_link(n, NULL);
 
 		/* reassociation must run until a fixpoint is reached. */
@@ -2054,16 +2056,16 @@ static void do_chaining(ir_graph *irg)
 
 		if (changed) {
 			foreach_irn_in_r(n, i, pred) {
-				if (get_irn_link(pred) != wq) {
-					pdeq_putr(wq, pred);
-					set_irn_link(pred, wq);
+				if (get_irn_link(pred) != &wq) {
+					deq_push_pointer_right(&wq, pred);
+					set_irn_link(pred, &wq);
 				}
 			}
 		}
 	}
 
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
-	del_pdeq(wq);
+	deq_free(&wq);
 }
 
 /*
@@ -2087,12 +2089,13 @@ void optimize_reassociation(ir_graph *irg)
 
 	DBG((dbg, LEVEL_5, "Eor equality start...\n"));
 
-	pdeq *const wq = new_pdeq();
+	deq_t wq;
+	deq_init(&wq);
 
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
-	irg_walk_edges(get_irg_start_block(irg), wq_walker, NULL, wq);
-	while (!pdeq_empty(wq)) {
-		ir_node *n = (ir_node *)pdeq_getl(wq);
+	irg_walk_edges(get_irg_start_block(irg), wq_walker, NULL, &wq);
+	while (!deq_empty(&wq)) {
+		ir_node *n = deq_pop_pointer_left(ir_node, &wq);
 		set_irn_link(n, NULL);
 
 		walk_equality(n);
@@ -2102,14 +2105,14 @@ void optimize_reassociation(ir_graph *irg)
 	do_Setsort(irg);
 
 	/* now we have collected enough information, optimize */
-	irg_walk_graph(irg, NULL, wq_walker, wq);
-	do_reassociation(wq);
+	irg_walk_graph(irg, NULL, wq_walker, &wq);
+	do_reassociation(&wq);
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 
 	/* reverse those rules that do not result in collapsed constants */
 	irg_walk_graph(irg, NULL, reverse_rules, NULL);
 
-	del_pdeq(wq);
+	deq_free(&wq);
 
 	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_CONTROL_FLOW);
 }

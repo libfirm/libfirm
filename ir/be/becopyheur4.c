@@ -26,7 +26,7 @@
 #include "irnodemap.h"
 #include "pqueue.h"
 #include "xmalloc.h"
-#include "pdeq.h"
+#include "pdeq_new.h"
 #include "irprintf.h"
 #include "util.h"
 #include "irtools.h"
@@ -674,20 +674,21 @@ static void expand_chunk_from(co_mst_env_t *env, co_mst_irn_t *node,
                               aff_chunk_t *orig_chunk, decide_func_t *decider,
                               unsigned col)
 {
-	pdeq *nodes = new_pdeq();
+	deq_t nodes;
+	deq_init(&nodes);
 
 	DBG((dbg, LEVEL_1, "\n\tExpanding new chunk (#%u) from %+F, color %d:",
 	     chunk->id, node->irn, col));
 
 	/* init queue and chunk */
-	pdeq_putr(nodes, node);
+	deq_push_pointer_right(&nodes, node);
 	bitset_set(visited, get_irn_idx(node->irn));
 	aff_chunk_add_node(chunk, node);
 	DB((dbg, LEVEL_1, " %+F", node->irn));
 
 	/* as long as there are nodes in the queue */
-	while (!pdeq_empty(nodes)) {
-		co_mst_irn_t    *n  = (co_mst_irn_t*)pdeq_getl(nodes);
+	while (!deq_empty(&nodes)) {
+		co_mst_irn_t    *n  = deq_pop_pointer_left(co_mst_irn_t, &nodes);
 		affinity_node_t *an = get_affinity_info(env->co, n->irn);
 
 		/* check all affinity neighbors */
@@ -713,14 +714,14 @@ static void expand_chunk_from(co_mst_env_t *env, co_mst_irn_t *node,
 					aff_chunk_add_node(chunk, n2);
 					DB((dbg, LEVEL_1, " %+F", n2->irn));
 					/* enqueue for further search */
-					pdeq_putr(nodes, n2);
+					deq_push_pointer_right(&nodes, n2);
 				}
 			}
 		}
 	}
 	DB((dbg, LEVEL_1, "\n"));
 
-	del_pdeq(nodes);
+	deq_free(&nodes);
 }
 
 /**
@@ -728,7 +729,7 @@ static void expand_chunk_from(co_mst_env_t *env, co_mst_irn_t *node,
  * color.
  */
 static aff_chunk_t *fragment_chunk(co_mst_env_t *env, unsigned col,
-                                   aff_chunk_t *c, pdeq *tmp)
+                                   aff_chunk_t *c, deq_t *tmp)
 {
 	bitset_t    *visited = bitset_malloc(get_irg_last_idx(env->co->irg));
 	aff_chunk_t *best    = NULL;
@@ -752,7 +753,7 @@ static aff_chunk_t *fragment_chunk(co_mst_env_t *env, unsigned col,
 
 		/* create a new chunk starting at current node */
 		aff_chunk_t *tmp_chunk = new_aff_chunk(env);
-		pdeq_putr(tmp, tmp_chunk);
+		deq_push_pointer_right(tmp, tmp_chunk);
 		expand_chunk_from(env, node, visited, tmp_chunk, c, decider, col);
 		assert(ARR_LEN(tmp_chunk->n) > 0 && "No nodes added to chunk");
 
@@ -1068,8 +1069,9 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c)
 	 * which one to take anyway.
 	 * TODO Sebastian: Perhaps we should at all nodes and figure out
 	 * a suitable color using costs as done above (determine_color_costs). */
-	pdeq        *tmp_chunks  = new_pdeq();
-	pdeq        *best_starts = NULL;
+	deq_t tmp_chunks;
+	deq_init(&tmp_chunks);
+	deq_t       *best_starts = NULL;
 	unsigned     n_nodes     = ARR_LEN(c->n);
 	aff_chunk_t *best_chunk  = NULL;
 	int          best_color  = -1;
@@ -1083,7 +1085,8 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c)
 
 		/* try to bring all nodes of given chunk to the current color. */
 		unsigned n_succeeded = 0;
-		pdeq    *good_starts = new_pdeq();
+		deq_t   *good_starts = XMALLOC(deq_t);
+		deq_init(good_starts);
 		for (size_t idx = 0, len = ARR_LEN(c->n); idx < len; ++idx) {
 			const ir_node   *irn  = c->n[idx];
 			co_mst_irn_t    *node = get_co_mst_irn(env, irn);
@@ -1099,7 +1102,7 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c)
 			bool good = change_node_color(env, node, col, &changed);
 			stat_ev_tim_pop("heur4_recolor");
 			if (good) {
-				pdeq_putr(good_starts, node);
+				deq_push_pointer_right(good_starts, node);
 				materialize_coloring(&changed);
 				node->fixed = 1;
 			} else {
@@ -1118,12 +1121,13 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c)
 
 		/* try next color when failed */
 		if (n_succeeded == 0) {
-			del_pdeq(good_starts);
+			deq_free(good_starts);
+			free(good_starts);
 			continue;
 		}
 
 		/* fragment the chunk according to the coloring */
-		aff_chunk_t *local_best = fragment_chunk(env, col, c, tmp_chunks);
+		aff_chunk_t *local_best = fragment_chunk(env, col, c, &tmp_chunks);
 
 		/* search the best of the good list
 		   and make it the new best if it is better than the current */
@@ -1136,16 +1140,20 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c)
 			if (!best_chunk || best_chunk->weight < local_best->weight) {
 				best_chunk = local_best;
 				best_color = col;
-				if (best_starts)
-					del_pdeq(best_starts);
+				if (best_starts) {
+					deq_free(best_starts);
+					free(best_starts);
+				}
 				best_starts = good_starts;
 				DB((dbg, LEVEL_3, "\n\t\t... setting global best chunk (id %u), color %d\n", best_chunk->id, best_color));
 			} else {
 				DB((dbg, LEVEL_3, "\n\t\t... omitting, global best is better\n"));
-				del_pdeq(good_starts);
+				deq_free(good_starts);
+				free(good_starts);
 			}
 		} else {
-			del_pdeq(good_starts);
+			deq_free(good_starts);
+			free(good_starts);
 		}
 
 		/* if all nodes were recolored, bail out */
@@ -1156,17 +1164,19 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c)
 	stat_ev_int("heur4_colors_tried", i);
 
 	/* free all intermediate created chunks except best one */
-	while (!pdeq_empty(tmp_chunks)) {
-		aff_chunk_t *tmp = (aff_chunk_t*)pdeq_getl(tmp_chunks);
+	while (!deq_empty(&tmp_chunks)) {
+		aff_chunk_t *tmp = deq_pop_pointer_left(aff_chunk_t, &tmp_chunks);
 		if (tmp != best_chunk)
 			delete_aff_chunk(tmp);
 	}
-	del_pdeq(tmp_chunks);
+	deq_free(&tmp_chunks);
 
 	/* return if coloring failed */
 	if (!best_chunk) {
-		if (best_starts)
-			del_pdeq(best_starts);
+		if (best_starts) {
+			deq_free(best_starts);
+			free(best_starts);
+		}
 		return;
 	}
 
@@ -1242,8 +1252,10 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c)
 	/* clear obsolete chunks and free some memory */
 	delete_aff_chunk(best_chunk);
 	free(visited);
-	if (best_starts)
-		del_pdeq(best_starts);
+	if (best_starts) {
+		deq_free(best_starts);
+		free(best_starts);
+	}
 
 	stat_ev_ctx_pop("heur4_color_chunk");
 }

@@ -17,7 +17,7 @@
 #include "iredges_t.h"
 #include "tv.h"
 #include "irprintf.h"
-#include "pdeq.h"
+#include "pdeq_new.h"
 #include "irnodemap.h"
 #include "irhooks.h"
 #include "bitset.h"
@@ -26,7 +26,7 @@
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
 typedef struct vrp_env_t {
-	pdeq        *workqueue;
+	deq_t        workqueue;
 	bitset_t    *visited;
 	ir_vrp_info *info;
 } vrp_env_t;
@@ -471,7 +471,7 @@ static void vrp_first_pass(ir_node *n, void *e)
 	foreach_irn_out_r(n, i, succ) {
 		if (bitset_is_set(env->visited, get_irn_idx(succ))) {
 			/* we found a loop*/
-			pdeq_putr(env->workqueue, succ);
+			deq_push_pointer_right(&env->workqueue, succ);
 		}
 	}
 }
@@ -515,25 +515,25 @@ void set_vrp_data(ir_graph *irg)
 	}
 
 	vrp_env_t *env = OALLOCZ(&irg->vrp.obst, vrp_env_t);
-	env->workqueue = new_pdeq();
 	env->info      = info;
+	deq_init(&env->workqueue);
 
 	env->visited = bitset_malloc(get_irg_last_idx(irg));
 	irg_walk_graph(irg, NULL, vrp_first_pass, env);
 	free(env->visited);
 
 	/* while there are entries in the worklist, continue*/
-	while (!pdeq_empty(env->workqueue)) {
-		ir_node *node = (ir_node*) pdeq_getl(env->workqueue);
+	while (!deq_empty(&env->workqueue)) {
+		ir_node *node = deq_pop_pointer_left(ir_node, &env->workqueue);
 
 		if (vrp_update_node(info, node)) {
 			/* if something changed, add successors to worklist*/
 			foreach_irn_out_r(node, i, succ) {
-				pdeq_putr(env->workqueue, succ);
+				deq_push_pointer_right(&env->workqueue, succ);
 			}
 		}
 	}
-	del_pdeq(env->workqueue);
+	deq_free(&env->workqueue);
 }
 
 void free_vrp_data(ir_graph *irg)

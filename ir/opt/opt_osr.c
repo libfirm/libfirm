@@ -15,10 +15,8 @@
  */
 #include <stdbool.h>
 
-#include "adt/pdeq.h"
 #include "array.h"
 #include "debug.h"
-#include "panic.h"
 #include "hashptr.h"
 #include "ircons.h"
 #include "irdom.h"
@@ -33,6 +31,8 @@
 #include "irouts.h"
 #include "irtools.h"
 #include "obst.h"
+#include "panic.h"
+#include "pdeq_new.h"
 #include "set.h"
 #include "tv.h"
 #include "util.h"
@@ -401,10 +401,11 @@ static void update_scc(ir_node *iv, node_entry *e, iv_env *env)
 	scc     *pscc   = e->pscc;
 	ir_node *header = e->header;
 	pscc->head = NULL;
-	pdeq    *wq = new_pdeq();
-	pdeq_putr(wq, iv);
+	deq_t    wq;
+	deq_init(&wq);
+	deq_push_pointer_right(&wq, iv);
 	do {
-		ir_node    *irn = (ir_node*)pdeq_getl(wq);
+		ir_node    *irn = deq_pop_pointer_left(ir_node, &wq);
 		node_entry *ne  = get_irn_ne(irn, env);
 
 		ne->pscc   = pscc;
@@ -418,11 +419,11 @@ static void update_scc(ir_node *iv, node_entry *e, iv_env *env)
 			if (pe->header == header && pe->pscc == NULL) {
 				/* set the pscc here to ensure that the node is NOT enqueued another time */
 				pe->pscc = pscc;
-				pdeq_putr(wq, pred);
+				deq_push_pointer_right(&wq, pred);
 			}
 		}
-	} while (!pdeq_empty(wq));
-	del_pdeq(wq);
+	} while (!deq_empty(&wq));
+	deq_free(&wq);
 	DB((dbg, LEVEL_2, "\n"));
 }
 

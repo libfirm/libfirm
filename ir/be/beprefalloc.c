@@ -42,7 +42,7 @@
 #include "obst.h"
 #include "raw_bitset.h"
 #include "unionfind.h"
-#include "pdeq.h"
+#include "pdeq_new.h"
 #include "hungarian.h"
 #include "statev.h"
 #include "bechordal_t.h"
@@ -1629,9 +1629,10 @@ static void determine_block_order(void)
 	ir_node **blocklist = be_get_cfgpostorder(irg);
 	size_t    n_blocks  = ARR_LEN(blocklist);
 	int       dfs_num   = 0;
-	pdeq     *worklist  = new_pdeq();
 	ir_node **order     = XMALLOCN(ir_node*, n_blocks);
 	size_t    order_p   = 0;
+	deq_t     worklist;
+	deq_init(&worklist);
 
 	/* clear block links... */
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
@@ -1684,7 +1685,7 @@ static void determine_block_order(void)
 			float          best_costs = -1;
 			int            n_cfgpred  = get_Block_n_cfgpreds(block);
 
-			pdeq_putr(worklist, block);
+			deq_push_pointer_right(&worklist, block);
 			mark_Block_block_visited(block);
 			for (int i = 0; i < n_cfgpred; ++i) {
 				ir_node       *pred_block = get_Block_cfgpred_block(block, i);
@@ -1703,14 +1704,14 @@ static void determine_block_order(void)
 		} while (block != NULL && !Block_block_visited(block));
 
 		/* now put all nodes in the worklist in our final order */
-		while (!pdeq_empty(worklist)) {
-			ir_node *pblock = (ir_node*)pdeq_getr(worklist);
+		while (!deq_empty(&worklist)) {
+			ir_node *pblock = deq_pop_pointer_right(ir_node, &worklist);
 			assert(order_p < n_blocks);
 			order[order_p++] = pblock;
 		}
 	}
 	assert(order_p == n_blocks);
-	del_pdeq(worklist);
+	deq_free(&worklist);
 
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_BLOCK_VISITED);
 

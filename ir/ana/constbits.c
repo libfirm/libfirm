@@ -12,7 +12,6 @@
 
 #include <assert.h>
 
-#include "adt/pdeq.h"
 #include "debug.h"
 #include "iredges_t.h"
 #include "irgwalk.h"

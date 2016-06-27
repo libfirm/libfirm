@@ -5,7 +5,7 @@
 
 #include "irnode_t.h"
 #include "obst.h"
-#include "pdeq.h"
+#include "pdeq_new.h"
 #include "set.h"
 #include "type_t.h"
 #include "typerep.h"
@@ -40,8 +40,8 @@ typedef struct read_env_t {
 
 typedef struct write_env_t {
 	FILE *file;
-	pdeq *write_queue;
-	pdeq *entity_queue;
+	deq_t write_queue;
+	deq_t entity_queue;
 } write_env_t;
 
 void write_align(write_env_t *env, ir_align align);
