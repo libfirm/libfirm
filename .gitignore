@@ -1,7 +1,3 @@
 /build
 /config.mak
 /firm-homepage
-
-# generated tests
-/unittests/fixtures/**/*.ir
-/unittests/_*.c

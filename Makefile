@@ -203,25 +203,64 @@ UNUSED2 := $(shell \
 )
 
 # Unit tests
-test_builddir    = $(builddir)/tests
-test_src_pattern = $(srcdir)/unittests/%.c
-test_bin_pattern = $(test_builddir)/%.exe
-test_run_pattern = $(test_builddir)/%.pass
-test_sources     = $(wildcard $(subst %,*,$(test_src_pattern)))
-test_binaries    = $(test_sources:$(test_src_pattern)=$(test_bin_pattern))
-test_runs        = $(test_sources:$(test_src_pattern)=$(test_run_pattern))
+test_builddir    := $(builddir)/tests
+test_srcdir      := $(srcdir)/unittests
+test_incdir      := $(test_srcdir)/include
+test_src_pat     := $(test_srcdir)/%.c
+test_bin_pat     := $(test_builddir)/%.exe
 
-$(test_bin_pattern) : $(test_src_pattern) $(libfirm_a)
-	@echo CC $@
+fixture_dir      := $(test_srcdir)/fixtures
+fixture_pat      := $(fixture_dir)/%.c
+gen_test_dir     := $(gendir)/test
+gen_test_pat     := $(gen_test_dir)/%.c
+ir_pat           := $(gen_test_dir)/%.ir
+test_run_pat     := $(gen_test_dir)/%.pass
+
+fixtures         := $(wildcard $(subst %,**/*,$(fixture_pat)))
+gen_test_srcs    := $(fixtures:$(fixture_pat)=$(gen_test_pat))
+ir_files         := $(fixtures:$(fixture_pat)=$(ir_pat))
+gen_test_bins    := $(gen_test_srcs:$(gen_test_pat)=$(test_bin_pat))
+test_srcs        := $(wildcard $(subst %,*,$(test_src_pat)))
+test_bins        := $(test_srcs:$(test_src_pat)=$(test_bin_pat)) $(gen_test_bins)
+test_runs        := $(test_bins:$(test_bin_pat)=$(test_run_pat))
+
+test_CPPFLAGS     = $(libfirm_CPPFLAGS) -I$(test_incdir)
+test_build_deps  := $(test_incdir)/*.h $(libfirm_a)
+
+define test_build_recipe =
+@echo CC $@
+@mkdir -p $(@D)
+$(Q)$(LINK) $(CFLAGS) $(CPPFLAGS) $(test_CPPFLAGS) "$<" $(libfirm_a) -lm -o "$@"
+endef
+
+$(ir_pat) : $(fixture_pat)
+	@echo GEN $@
 	@mkdir -p $(@D)
-	$(Q)$(LINK) $(CFLAGS) $(CPPFLAGS) $(libfirm_CPPFLAGS) "$<" $(libfirm_a) -lm -o "$@"
+	$(Q)cd $(@D); cparser --export-ir $(abspath $<)
 
-$(test_run_pattern) : $(test_bin_pattern)
+# This makes the ir files an optional dependency
+$(ir_pat):
+	@:
+
+$(gen_test_pat) : $(fixture_pat)
+	@echo GEN $@
+	@mkdir -p $(@D)
+	$(Q)$(fixture_dir)/generate_test.py $< $@
+
+$(test_bin_pat) : $(test_src_pat) $(test_build_deps)
+	$(test_build_recipe)
+
+$(test_bin_pat) : $(gen_test_pat) $(test_build_deps)
+	$(test_build_recipe)
+
+$(test_run_pat) : $(test_bin_pat) $(ir_pat)
 	@echo TEST $<
-	$(Q)$< && touch $@
+	@mkdir -p $(@D)
+	$(Q)$< $(*:%=$(ir_pat)) && touch $@
 
 .PHONY: test
-test: $(test_binaries) $(test_runs)
+.PRECIOUS: $(ir_files) $(gen_test_srcs) $(test_bins)
+test: $(test_runs)
 
 .PHONY: gen
 gen: $(IR_SPEC_GENERATED_INCLUDES) $(libfirm_GEN_SOURCES)

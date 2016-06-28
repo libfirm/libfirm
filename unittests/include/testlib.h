@@ -25,24 +25,27 @@
 #define assert_long_equal(expected, actual)                                    \
 	do {                                                                       \
 		if ((actual) != (expected)) {                                          \
-			fprintf(stderr, FAILURE_MSG_TEMPLATE, (expected), (actual));       \
+			fprintf(stderr, FAILURE_MSG_TEMPLATE, (long)(expected),            \
+			        (long)(actual));                                           \
 			abort();                                                           \
 		}                                                                      \
 	} while (0)
 
 #define assert_local_important_args(proc, expected)                            \
 	do {                                                                       \
-		ir_graph *irg    = irg_get_by_name((proc));                            \
+		ir_graph *irg = irg_get_by_name((proc));                               \
+		assert(irg);                                                           \
 		bitset_t *actual = local_important_args(irg);                          \
-		assert_long_equal((long)(expected), (long)*actual->data);              \
+		assert_long_equal((expected), *actual->data);                          \
 	} while (0)
 
 #define assert_important_args(proc, expected)                                  \
 	do {                                                                       \
-		ir_graph *irg    = irg_get_by_name((proc));                            \
+		ir_graph *irg = irg_get_by_name((proc));                               \
+		assert(irg);                                                           \
 		pmap *result     = important_args_get();                               \
 		bitset_t *actual = pmap_get(bitset_t, result, irg);                    \
-		assert_long_equal((long)(expected), (long)*actual->data);              \
+		assert_long_equal((expected), *actual->data);                          \
 	} while (0)
 
 ir_graph *irg_get_by_name(const char *name);
@@ -55,7 +58,6 @@ ir_graph *irg_get_by_name(const char *name)
 			return irg;
 		}
 	}
-	assert(false);
 	return NULL;
 }
 
