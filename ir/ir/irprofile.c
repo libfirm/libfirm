@@ -352,36 +352,33 @@ static void instrument_irg(ir_graph *irg, ir_entity *counters, block_id_walker_d
 
 /**
  * Creates a new entity representing the equivalent of
- * static unsigned int name[size]
+ * static <element_mode> <name>[<length>];
  */
-static ir_entity *new_array_entity(ident *name, int size)
+static ir_entity *new_array_entity(ident *const name, ir_mode *const element_mode, unsigned const length, ir_linkage const linkage)
 {
-	ir_type *const uint_type  = get_type_for_mode(mode_Iu);
-	ir_type *const array_type = new_type_array(uint_type, size);
-
-	ir_type *const owner = get_glob_type();
-	return new_global_entity(owner, name, array_type, ir_visibility_private, IR_LINKAGE_DEFAULT);
+	ir_type *const element_type = get_type_for_mode(element_mode);
+	ir_type *const array_type   = new_type_array(element_type, length);
+	ident   *const id           = new_id_from_str(name);
+	ir_type *const owner        = get_glob_type();
+	return new_global_entity(owner, id, array_type, ir_visibility_private, linkage);
 }
 
 /**
  * Creates a new entity representing the equivalent of
  * static const char name[strlen(string)+1] = string
  */
-static ir_entity *new_static_string_entity(ident *name, const char *string)
+static ir_entity *new_static_string_entity(char const *const name, char const *const string)
 {
 	/* Create the type for a fixed-length string */
-	ir_type *const char_type   = get_type_for_mode(mode_Bs);
-	size_t   const length      = strlen(string) + 1;
-	ir_type *const string_type = new_type_array(char_type, length);
-
-	ir_type   *const owner  = get_glob_type();
-	ir_entity *const result = new_global_entity(owner, name, string_type, ir_visibility_private, IR_LINKAGE_CONSTANT);
+	ir_mode   *const mode   = mode_Bs;
+	size_t     const length = strlen(string) + 1;
+	ir_entity *const result = new_array_entity(name, mode, length, IR_LINKAGE_CONSTANT);
 
 	/* There seems to be no simpler way to do this. Or at least, cparser
 	 * does exactly the same thing... */
 	ir_initializer_t *const contents = create_initializer_compound(length);
 	for (size_t i = 0; i < length; i++) {
-		ir_tarval        *const c    = new_tarval_from_long(string[i], mode_Bs);
+		ir_tarval        *const c    = new_tarval_from_long(string[i], mode);
 		ir_initializer_t *const init = create_initializer_tarval(c);
 		set_initializer_compound_value(contents, i, init);
 	}
@@ -405,11 +402,9 @@ ir_graph *ir_profile_instrument(const char *filename)
 	/* create all the necessary types and entities. Note that the
 	 * types must have a fixed layout, because we are already running in the
 	 * backend */
-	ident     *const counter_id    = new_id_from_str("__FIRMPROF__BLOCK_COUNTS");
-	ir_entity *const bblock_counts = new_array_entity(counter_id, n_blocks);
+	ir_entity *const bblock_counts = new_array_entity("__FIRMPROF__BLOCK_COUNTS", mode_Iu, n_blocks, IR_LINKAGE_DEFAULT);
 
-	ident     *const filename_id  = new_id_from_str("__FIRMPROF__FILE_NAME");
-	ir_entity *const ent_filename = new_static_string_entity(filename_id, filename);
+	ir_entity *const ent_filename = new_static_string_entity("__FIRMPROF__FILE_NAME", filename);
 
 	/* initialize block id array and instrument blocks */
 	block_id_walker_data_t wd = { .id = 0 };
