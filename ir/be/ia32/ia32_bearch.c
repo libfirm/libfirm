@@ -1389,17 +1389,17 @@ static void ia32_init(void)
 
 	ir_mode *mode_long_long
 		= new_int_mode("long long", irma_twos_complement, 64, 1, 64);
-	ir_type *type_long_long = new_type_primitive(mode_long_long);
+	ir_type *type_long_long = get_type_for_mode(mode_long_long);
 	ir_mode *mode_unsigned_long_long
 		= new_int_mode("unsigned long long", irma_twos_complement, 64, 0, 64);
 	ir_type *type_unsigned_long_long
-		= new_type_primitive(mode_unsigned_long_long);
+		= get_type_for_mode(mode_unsigned_long_long);
 
 	ia32_backend_params.type_long_long          = type_long_long;
 	ia32_backend_params.type_unsigned_long_long = type_unsigned_long_long;
 
 	// va_list is a void pointer
-	ir_type *type_va_list = new_type_pointer(new_type_primitive(mode_ANY));
+	ir_type *type_va_list = new_type_pointer(get_type_for_mode(mode_ANY));
 	ia32_backend_params.vararg.va_list_type = type_va_list;
 
 	if (ia32_cg_config.use_sse2 || ia32_cg_config.use_softfloat) {

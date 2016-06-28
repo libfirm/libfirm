@@ -300,11 +300,11 @@ static void sparc_create_runtime_entities(void)
 	if (rem != NULL)
 		return;
 
-	ir_type *const int_tp = new_type_primitive(mode_Is);
+	ir_type *const int_tp = get_type_for_mode(mode_Is);
 	ir_type *const mod_tp = make_mod_type(int_tp);
 	rem = create_compilerlib_entity(new_id_from_str(".rem"), mod_tp);
 
-	ir_type *const uint_tp = new_type_primitive(mode_Iu);
+	ir_type *const uint_tp = get_type_for_mode(mode_Iu);
 	ir_type *const umod_tp = make_mod_type(uint_tp);
 	urem = create_compilerlib_entity(new_id_from_str(".urem"), umod_tp);
 }
@@ -549,13 +549,13 @@ static const backend_params *sparc_get_backend_params(void)
 
 	ir_mode *mode_long_long
 		= new_int_mode("long long", irma_twos_complement, 64, 1, 64);
-	ir_type *type_long_long = new_type_primitive(mode_long_long);
+	ir_type *type_long_long = get_type_for_mode(mode_long_long);
 	ir_mode *mode_unsigned_long_long
 		= new_int_mode("unsigned long long", irma_twos_complement, 64, 0, 64);
 	ir_type *type_unsigned_long_long
-		= new_type_primitive(mode_unsigned_long_long);
+		= get_type_for_mode(mode_unsigned_long_long);
 	ir_type *type_va_list
-		= new_type_pointer(new_type_primitive(mode_ANY));
+		= new_type_pointer(get_type_for_mode(mode_ANY));
 
 	p.type_long_long          = type_long_long;
 	p.type_unsigned_long_long = type_unsigned_long_long;
@@ -563,7 +563,7 @@ static const backend_params *sparc_get_backend_params(void)
 
 	sparc_mode_Q
 		= new_float_mode("Q", irma_ieee754, 15, 112, ir_overflow_min_max);
-	ir_type *type_long_double = new_type_primitive(sparc_mode_Q);
+	ir_type *type_long_double = get_type_for_mode(sparc_mode_Q);
 	set_type_alignment(type_long_double, 8);
 	set_type_size(type_long_double, 16);
 	p.type_long_double = type_long_double;

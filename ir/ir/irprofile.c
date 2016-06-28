@@ -153,9 +153,9 @@ static ir_entity *get_init_firmprof_ref(void)
 {
 	ident   *const init_name = new_id_from_str("__init_firmprof");
 	ir_type *const init_type = new_type_method(3, 0, false);
-	ir_type *const uint      = new_type_primitive(mode_Iu);
+	ir_type *const uint      = get_type_for_mode(mode_Iu);
 	ir_type *const uintptr   = new_type_pointer(uint);
-	ir_type *const string    = new_type_pointer(new_type_primitive(mode_Bs));
+	ir_type *const string    = new_type_pointer(get_type_for_mode(mode_Bs));
 
 	set_method_param_type(init_type, 0, string);
 	set_method_param_type(init_type, 1, uintptr);
@@ -356,7 +356,7 @@ static void instrument_irg(ir_graph *irg, ir_entity *counters, block_id_walker_d
  */
 static ir_entity *new_array_entity(ident *name, int size)
 {
-	ir_type *const uint_type  = new_type_primitive(mode_Iu);
+	ir_type *const uint_type  = get_type_for_mode(mode_Iu);
 	ir_type *const array_type = new_type_array(uint_type, size);
 
 	ir_type *const owner = get_glob_type();
@@ -370,7 +370,7 @@ static ir_entity *new_array_entity(ident *name, int size)
 static ir_entity *new_static_string_entity(ident *name, const char *string)
 {
 	/* Create the type for a fixed-length string */
-	ir_type *const char_type   = new_type_primitive(mode_Bs);
+	ir_type *const char_type   = get_type_for_mode(mode_Bs);
 	size_t   const length      = strlen(string) + 1;
 	ir_type *const string_type = new_type_array(char_type, length);
 

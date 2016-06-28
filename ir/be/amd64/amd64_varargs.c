@@ -53,8 +53,8 @@ void amd64_set_va_stack_args_param(ir_entity *param)
 
 ir_type *amd64_build_va_list_type(void)
 {
-	ir_type *const int_type     = new_type_primitive(mode_Is);
-	ir_type *const ptr_type     = new_type_pointer(new_type_primitive(mode_ANY));
+	ir_type *const int_type     = get_type_for_mode(mode_Is);
+	ir_type *const ptr_type     = new_type_pointer(get_type_for_mode(mode_ANY));
 	ir_type *const va_list_type = new_type_struct(new_id_from_str("builtin:va_list"));
 
 	va_list_members.gp_offset      = new_entity(va_list_type, new_id_from_str("gp_offset"),      int_type);
