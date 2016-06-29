@@ -796,7 +796,7 @@ void be_stack_finish(be_stack_env_t *const env)
 					ir_node  *const end = get_irg_end(irg);
 					remove_End_keepalive(end, after);
 				}
-			} else {
+			} else if (be_is_IncSP(after)) {
 				/* Move 'after' to X_regular block */
 				assert(get_irn_n_edges(x_regular) == 1);
 				assert(get_irn_n_edges_kind(x_regular, EDGE_KIND_BLOCK) == 0);
