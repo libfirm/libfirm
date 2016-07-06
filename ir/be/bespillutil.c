@@ -35,6 +35,7 @@
 #include "irgwalk.h"
 #include "irnodehashmap.h"
 #include "irnode_t.h"
+#include "irouts_t.h"
 #include "statev_t.h"
 #include "type_t.h"
 #include "util.h"
@@ -254,7 +255,29 @@ static void spill_irn(spill_env_t *env, spill_info_t *spillinfo)
 	DBG((dbg, LEVEL_1, "spilling %+F ... \n", to_spill));
 	for (spill_t *spill = spillinfo->spills; spill != NULL;
 	     spill = spill->next) {
-		ir_node *const after = be_move_after_schedule_first(spill->after);
+
+		ir_node *after = NULL; //be_move_after_schedule_first(spill->after);
+		// if this spill is after a node that may throw an exception, move the spill to the regualar block
+		for (ir_node  *node = spill->after; after == NULL; node = sched_prev(node)) {
+			if (get_irn_op(node) == op_be_Keep) {
+				// skip keep nodes
+			} else if (is_fragile_op(node) && ir_throws_exception(node)) {
+				// found a throwing node
+				// -> move to next regular block
+				foreach_irn_out(node, i, pred) {
+					if(is_x_regular_Proj(pred)) {
+						ir_node *const regular_block  = get_irn_out(pred, 0);
+						after = regular_block; //sched_first(regular_block);
+					}
+				}
+			} else {
+				after = node;
+			}
+		}
+
+		// do schedul_first nodes first
+		after = be_move_after_schedule_first(after);
+
 		spill->spill = env->regif.new_spill(to_spill, after);
 		DB((dbg, LEVEL_1, "\t%+F after %+F\n", spill->spill, after));
 		env->spill_count++;
