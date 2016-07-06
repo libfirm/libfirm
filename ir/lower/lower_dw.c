@@ -2066,6 +2066,21 @@ static void lower_ASM(ir_node *asmn, ir_mode *mode)
 	}
 }
 
+static ir_type *lower_type_builtin(ir_type *const tp, ir_type *const tp_s, ir_type *const tp_u)
+{
+	if (is_Primitive_type(tp)) {
+		ir_mode *const mode = get_type_mode(tp);
+		if (needs_lowering(mode)) {
+			if (mode_is_signed(mode) && env.p.big_endian) {
+				return tp_s;
+			} else {
+				return tp_u;
+			}
+		}
+	}
+	return tp;
+}
+
 /**
  * Lower the builtin type to its higher part.
  * @param mtp  the builtin type to lower
@@ -2105,40 +2120,12 @@ static ir_type *lower_Builtin_type_high(ir_type *mtp)
 	/* set param types and result types */
 	for (size_t i = 0; i < n_params; ++i) {
 		ir_type *tp = get_method_param_type(mtp, i);
-		if (is_Primitive_type(tp)) {
-			ir_mode *mode = get_type_mode(tp);
-			if (needs_lowering(mode)) {
-				if (mode_is_signed(mode)) {
-					if (env.p.big_endian) {
-						set_method_param_type(res, i, tp_s);
-					} else {
-						set_method_param_type(res, i, tp_u);
-					}
-				} else {
-					set_method_param_type(res, i, tp_u);
-				}
-				continue;
-			}
-		}
+		tp = lower_type_builtin(tp, tp_s, tp_u);
 		set_method_param_type(res, i, tp);
 	}
 	for (size_t i = 0; i < n_results; ++i) {
 		ir_type *tp = get_method_res_type(mtp, i);
-		if (is_Primitive_type(tp)) {
-			ir_mode *mode = get_type_mode(tp);
-			if (needs_lowering(mode)) {
-				if (mode_is_signed(mode)) {
-					if (env.p.big_endian) {
-						set_method_res_type(res, i, tp_s);
-					} else {
-						set_method_res_type(res, i, tp_u);
-					}
-				} else {
-					set_method_res_type(res, i, tp_u);
-				}
-				continue;
-			}
-		}
+		tp = lower_type_builtin(tp, tp_s, tp_u);
 		set_method_res_type(res, i, tp);
 	}
 
