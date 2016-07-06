@@ -38,7 +38,6 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
-static ir_mode        *mode_gp;
 static x86_cconv_t    *current_cconv = NULL;
 static be_stack_env_t  stack_env;
 
@@ -957,7 +956,7 @@ static ir_node *gen_shift_binop(ir_node *node, ir_node *op1, ir_node *op2,
 	if (flags & match_mode_neutral) {
 		op1 = be_skip_downconv(op1, true);
 		in[arity++] = be_transform_node(op1);
-		mode = get_mode_size_bits(mode) > 32 ? mode_gp : mode_Iu;
+		mode = get_mode_size_bits(mode) > 32 ? mode_Lu : mode_Iu;
 	} else {
 		op1 = be_skip_sameconv(op1);
 
@@ -3258,7 +3257,6 @@ void amd64_transform_graph(ir_graph *irg)
 	                         | IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
 
 	amd64_register_transformers();
-	mode_gp = mode_Lu;
 
 	be_stack_init(&stack_env);
 	ir_entity *entity = get_irg_entity(irg);
