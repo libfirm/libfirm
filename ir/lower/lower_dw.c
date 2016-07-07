@@ -2066,19 +2066,25 @@ static void lower_ASM(ir_node *asmn, ir_mode *mode)
 	}
 }
 
-static ir_type *lower_type_builtin(ir_type *const tp, ir_type *const tp_s, ir_type *const tp_u)
+typedef ir_type *get_type(ir_type const*, size_t);
+typedef void     set_type(ir_type*, size_t, ir_type*);
+
+static void lower_types_builtin(size_t const n, ir_type *const res, ir_type *const mtp, ir_type *const tp_s, ir_type *const tp_u, get_type *const get, set_type *const set)
 {
-	if (is_Primitive_type(tp)) {
-		ir_mode *const mode = get_type_mode(tp);
-		if (needs_lowering(mode)) {
-			if (mode_is_signed(mode) && env.p.big_endian) {
-				return tp_s;
-			} else {
-				return tp_u;
+	for (size_t i = 0; i < n; ++i) {
+		ir_type *tp = get(mtp, i);
+		if (is_Primitive_type(tp)) {
+			ir_mode *const mode = get_type_mode(tp);
+			if (needs_lowering(mode)) {
+				if (mode_is_signed(mode)) {
+					tp = tp_s;
+				} else {
+					tp = tp_u;
+				}
 			}
 		}
+		set(res, i, tp);
 	}
-	return tp;
 }
 
 /**
@@ -2118,16 +2124,9 @@ static ir_type *lower_Builtin_type_high(ir_type *mtp)
 	set_type_dbg_info(res, get_type_dbg_info(mtp));
 
 	/* set param types and result types */
-	for (size_t i = 0; i < n_params; ++i) {
-		ir_type *tp = get_method_param_type(mtp, i);
-		tp = lower_type_builtin(tp, tp_s, tp_u);
-		set_method_param_type(res, i, tp);
-	}
-	for (size_t i = 0; i < n_results; ++i) {
-		ir_type *tp = get_method_res_type(mtp, i);
-		tp = lower_type_builtin(tp, tp_s, tp_u);
-		set_method_res_type(res, i, tp);
-	}
+	ir_type *const tp_s_l = env.p.big_endian ? tp_s : tp_u;
+	lower_types_builtin(n_params,  res, mtp, tp_s_l, tp_u, &get_method_param_type, &set_method_param_type);
+	lower_types_builtin(n_results, res, mtp, tp_s_l, tp_u, &get_method_res_type,   &set_method_res_type);
 
 	copy_method_properties(res, mtp);
 
@@ -2172,44 +2171,9 @@ static ir_type *lower_Builtin_type_low(ir_type *mtp)
 	set_type_dbg_info(res, get_type_dbg_info(mtp));
 
 	/* set param types and result types */
-	for (size_t i = 0; i < n_params; ++i) {
-		ir_type *tp = get_method_param_type(mtp, i);
-		if (is_Primitive_type(tp)) {
-			ir_mode *mode = get_type_mode(tp);
-			if (needs_lowering(mode)) {
-				if (mode_is_signed(mode)) {
-					if (env.p.big_endian) {
-						set_method_param_type(res, i, tp_u);
-					} else {
-						set_method_param_type(res, i, tp_s);
-					}
-				} else {
-					set_method_param_type(res, i, tp_u);
-				}
-				continue;
-			}
-		}
-		set_method_param_type(res, i, tp);
-	}
-	for (size_t i = 0; i < n_results; ++i) {
-		ir_type *tp = get_method_res_type(mtp, i);
-		if (is_Primitive_type(tp)) {
-			ir_mode *mode = get_type_mode(tp);
-			if (needs_lowering(mode)) {
-				if (mode_is_signed(mode)) {
-					if (env.p.big_endian) {
-						set_method_res_type(res, i, tp_u);
-					} else {
-						set_method_res_type(res, i, tp_s);
-					}
-				} else {
-					set_method_res_type(res, i, tp_u);
-				}
-				continue;
-			}
-		}
-		set_method_res_type(res, i, tp);
-	}
+	ir_type *const tp_s_l = !env.p.big_endian ? tp_s : tp_u;
+	lower_types_builtin(n_params,  res, mtp, tp_s_l, tp_u, &get_method_param_type, &set_method_param_type);
+	lower_types_builtin(n_results, res, mtp, tp_s_l, tp_u, &get_method_res_type,   &set_method_res_type);
 
 	copy_method_properties(res, mtp);
 
