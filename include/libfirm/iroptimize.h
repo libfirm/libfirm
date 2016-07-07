@@ -75,8 +75,8 @@ typedef int (*check_alloc_entity_func)(ir_entity *ent);
  * Anyway, it might be good for handling builtin's
  * even if the later read/write memory (but we know how).
  *
- * This optimizations read the irg_const_function property of
- * entities and and sets the irg_const_function property of
+ * This optimization reads the irg_const_function property of
+ * entities, and sets the irg_const_function property of
  * graphs.
  *
  * If callee information is valid, we also optimize polymorphic Calls.
