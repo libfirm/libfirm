@@ -2087,27 +2087,20 @@ static void lower_types_builtin(size_t const n, ir_type *const res, ir_type *con
 	}
 }
 
-/**
- * Lower the builtin type to its higher part.
- * @param mtp  the builtin type to lower
- * @return the lowered type
- */
-static ir_type *lower_Builtin_type_high(ir_type *mtp)
+static ir_type *lower_Builtin_type(pmap *const type_map, ir_type *const mtp, ir_type *const tp_s_l, ir_type *const tp_u)
 {
-	ir_type *res = pmap_get(ir_type, lowered_builtin_type_high, mtp);
-	if (res != NULL)
+	ir_type *res = pmap_get(ir_type, type_map, mtp);
+	if (res)
 		return res;
 
 	/* check for double word parameter */
 	size_t const n_params        = get_method_n_params(mtp);
 	size_t const n_results       = get_method_n_ress(mtp);
 	bool         must_be_lowered = false;
-	for (size_t i = n_params; i > 0;) {
-		ir_type *tp = get_method_param_type(mtp, --i);
-
+	for (size_t i = n_params; i-- > 0;) {
+		ir_type *const tp = get_method_param_type(mtp, i);
 		if (is_Primitive_type(tp)) {
-			ir_mode *mode = get_type_mode(tp);
-
+			ir_mode *const mode = get_type_mode(tp);
 			if (needs_lowering(mode)) {
 				must_be_lowered = true;
 				break;
@@ -2124,14 +2117,24 @@ static ir_type *lower_Builtin_type_high(ir_type *mtp)
 	set_type_dbg_info(res, get_type_dbg_info(mtp));
 
 	/* set param types and result types */
-	ir_type *const tp_s_l = env.p.big_endian ? tp_s : tp_u;
 	lower_types_builtin(n_params,  res, mtp, tp_s_l, tp_u, &get_method_param_type, &set_method_param_type);
 	lower_types_builtin(n_results, res, mtp, tp_s_l, tp_u, &get_method_res_type,   &set_method_res_type);
 
 	copy_method_properties(res, mtp);
 
-	pmap_insert(lowered_builtin_type_high, mtp, res);
+	pmap_insert(type_map, mtp, res);
 	return res;
+}
+
+/**
+ * Lower the builtin type to its higher part.
+ * @param mtp  the builtin type to lower
+ * @return the lowered type
+ */
+static ir_type *lower_Builtin_type_high(ir_type *mtp)
+{
+	ir_type *const tp_s_l = env.p.big_endian ? tp_s : tp_u;
+	return lower_Builtin_type(lowered_builtin_type_high, mtp, tp_s_l, tp_u);
 }
 
 /**
@@ -2141,44 +2144,8 @@ static ir_type *lower_Builtin_type_high(ir_type *mtp)
  */
 static ir_type *lower_Builtin_type_low(ir_type *mtp)
 {
-	ir_type *res = pmap_get(ir_type, lowered_builtin_type_low, mtp);
-	if (res != NULL)
-		return res;
-
-	/* check for double word parameter */
-	size_t const n_params        = get_method_n_params(mtp);
-	size_t const n_results       = get_method_n_ress(mtp);
-	size_t       must_be_lowered = false;
-	for (size_t i = n_params; i > 0;) {
-		ir_type *tp = get_method_param_type(mtp, --i);
-
-		if (is_Primitive_type(tp)) {
-			ir_mode *mode = get_type_mode(tp);
-
-			if (needs_lowering(mode)) {
-				must_be_lowered = true;
-				break;
-			}
-		}
-	}
-
-	if (!must_be_lowered) {
-		set_type_link(mtp, NULL);
-		return mtp;
-	}
-
-	res = new_type_method(n_params, n_results, false);
-	set_type_dbg_info(res, get_type_dbg_info(mtp));
-
-	/* set param types and result types */
 	ir_type *const tp_s_l = !env.p.big_endian ? tp_s : tp_u;
-	lower_types_builtin(n_params,  res, mtp, tp_s_l, tp_u, &get_method_param_type, &set_method_param_type);
-	lower_types_builtin(n_results, res, mtp, tp_s_l, tp_u, &get_method_res_type,   &set_method_res_type);
-
-	copy_method_properties(res, mtp);
-
-	pmap_insert(lowered_builtin_type_low, mtp, res);
-	return res;
+	return lower_Builtin_type(lowered_builtin_type_low, mtp, tp_s_l, tp_u);
 }
 
 /**
