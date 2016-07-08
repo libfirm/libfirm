@@ -1188,7 +1188,7 @@ zero_neg:
 static ir_type *get_thunk_type(void)
 {
 	if (!thunk_type) {
-		ir_type *const tp = new_type_method(0, 1, false, cc_cdecl_set);
+		ir_type *const tp = new_type_method(0, 1, false, cc_cdecl_set, mtp_no_property);
 		set_method_res_type(tp, 0, get_type_for_mode(mode_P));
 		thunk_type = tp;
 	}

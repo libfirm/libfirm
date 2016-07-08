@@ -898,8 +898,8 @@ static ir_type *clone_type_and_cache(ir_type *const tp, bool const is_variadic)
 {
 	ir_type *res = pmap_get(ir_type, mtp_map, tp);
 	if (res == NULL) {
-		res = clone_type_method(tp, is_variadic);
-		add_method_additional_properties(res, mtp_property_private);
+		mtp_additional_properties const props = get_method_additional_properties(tp);
+		res = clone_type_method(tp, is_variadic, props | mtp_property_private);
 		pmap_insert(mtp_map, tp, res);
 	}
 

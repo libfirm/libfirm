@@ -117,7 +117,7 @@ static void handle_intrinsic(ir_node *node, void *data)
 
 static ir_type *make_divmod_type(ir_type *const tp)
 {
-	ir_type *const mtp = new_type_method(2, 1, false, cc_cdecl_set);
+	ir_type *const mtp = new_type_method(2, 1, false, cc_cdecl_set, mtp_no_property);
 	set_method_param_type(mtp, 0, tp);
 	set_method_param_type(mtp, 1, tp);
 	set_method_res_type(mtp, 0, tp);

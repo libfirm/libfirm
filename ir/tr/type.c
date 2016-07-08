@@ -519,7 +519,7 @@ int (is_Struct_type)(const ir_type *strct)
 	return is_struct_type_(strct);
 }
 
-ir_type *new_type_method(size_t const n_param, size_t const n_res, int const is_variadic, unsigned const cc_mask)
+ir_type *new_type_method(size_t const n_param, size_t const n_res, int const is_variadic, unsigned const cc_mask, mtp_additional_properties const property_mask)
 {
 	ir_type *res = new_type(tpo_method, sizeof(method_attr), mode_P);
 	res->flags                       |= tf_layout_fixed;
@@ -530,13 +530,13 @@ ir_type *new_type_method(size_t const n_param, size_t const n_res, int const is_
 	res->attr.method.res_type         = XMALLOCNZ(ir_type*, n_res);
 	res->attr.method.variadic         = is_variadic;
 	res->attr.method.irg_calling_conv = cc_mask;
-	res->attr.method.properties       = mtp_no_property;
+	res->attr.method.properties       = property_mask;
 	set_type_alignment(res, 1);
 	hook_new_type(res);
 	return res;
 }
 
-ir_type *clone_type_method(ir_type *const tp, bool const is_variadic)
+ir_type *clone_type_method(ir_type *const tp, bool const is_variadic, mtp_additional_properties const property_mask)
 {
 	assert(is_Method_type(tp));
 	ir_mode       *mode     = tp->mode;
@@ -556,7 +556,7 @@ ir_type *clone_type_method(ir_type *const tp, bool const is_variadic)
 	res->attr.method.res_type         = XMALLOCN(ir_type*, n_res);
 	MEMCPY(res->attr.method.res_type, tp->attr.method.res_type, n_res);
 	res->attr.method.variadic         = is_variadic;
-	res->attr.method.properties       = tp->attr.method.properties;
+	res->attr.method.properties       = property_mask;
 	res->attr.method.irg_calling_conv = tp->attr.method.irg_calling_conv;
 	set_type_alignment(res, get_type_alignment(tp));
 	hook_new_type(res);
@@ -619,17 +619,6 @@ int is_method_variadic(ir_type const *const method)
 mtp_additional_properties (get_method_additional_properties)(const ir_type *method)
 {
 	return get_method_additional_properties_(method);
-}
-
-void (set_method_additional_properties)(ir_type *method, mtp_additional_properties mask)
-{
-	set_method_additional_properties_(method, mask);
-}
-
-void (add_method_additional_properties)(ir_type *method,
-                                        mtp_additional_properties flag)
-{
-	add_method_additional_properties_(method, flag);
 }
 
 unsigned (get_method_calling_convention)(const ir_type *method)

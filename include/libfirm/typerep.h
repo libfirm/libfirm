@@ -1200,7 +1200,7 @@ FIRM_API int is_Union_type(const ir_type *uni);
  * The arrays for the parameter and result types are not initialized by
  * the constructor.
  */
-FIRM_API ir_type *new_type_method(size_t n_param, size_t n_res, int is_variadic, unsigned cc_mask);
+FIRM_API ir_type *new_type_method(size_t n_param, size_t n_res, int is_variadic, unsigned cc_mask, mtp_additional_properties property_mask);
 
 /** Returns the number of parameters of this method. */
 FIRM_API size_t get_method_n_params(const ir_type *method);
@@ -1223,14 +1223,6 @@ FIRM_API int is_method_variadic(ir_type const *method);
 
 /** Returns the mask of the additional graph properties. */
 FIRM_API mtp_additional_properties get_method_additional_properties(const ir_type *method);
-
-/** Sets the mask of the additional graph properties. */
-FIRM_API void set_method_additional_properties(ir_type *method,
-                                               mtp_additional_properties property_mask);
-
-/** Sets one additional graph property. */
-FIRM_API void add_method_additional_properties(ir_type *method,
-                                               mtp_additional_properties flag);
 
 /**
  * Calling conventions: lower 24 bits are the number of register parameters,

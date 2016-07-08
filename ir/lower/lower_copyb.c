@@ -92,7 +92,7 @@ static void lower_small_copyb_node(ir_node *irn)
 
 static ir_type *get_memcpy_methodtype(void)
 {
-	ir_type *tp          = new_type_method(3, 1, false, cc_cdecl_set);
+	ir_type *tp          = new_type_method(3, 1, false, cc_cdecl_set, mtp_no_property);
 	ir_mode *size_t_mode = get_ir_mode(native_mode_bytes);
 
 	set_method_param_type(tp, 0, get_type_for_mode(mode_P));

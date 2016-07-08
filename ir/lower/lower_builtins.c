@@ -95,7 +95,7 @@ static void widen_builtin(ir_node *node)
 
 	ir_type *new_arg1   = get_type_for_mode(target_mode);
 	ir_type *new_result = get_method_res_type(mtp, 0);
-	ir_type *new_type   = new_type_method(1, 1, false, cc_cdecl_set);
+	ir_type *new_type   = new_type_method(1, 1, false, cc_cdecl_set, mtp_no_property);
 	set_method_param_type(new_type, 0, new_arg1);
 	set_method_res_type(new_type, 0, new_result);
 	set_Builtin_type(node, new_type);

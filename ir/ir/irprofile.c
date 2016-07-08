@@ -152,7 +152,7 @@ static void add_constructor(ir_entity *method)
 static ir_entity *get_init_firmprof_ref(void)
 {
 	ident   *const init_name = new_id_from_str("__init_firmprof");
-	ir_type *const init_type = new_type_method(3, 0, false, cc_cdecl_set);
+	ir_type *const init_type = new_type_method(3, 0, false, cc_cdecl_set, mtp_no_property);
 	ir_type *const uint      = get_type_for_mode(mode_Iu);
 	ir_type *const uintptr   = new_type_pointer(uint);
 	ir_type *const string    = new_type_pointer(get_type_for_mode(mode_Bs));
@@ -177,7 +177,7 @@ static ir_graph *gen_initializer_irg(ir_entity *ent_filename, ir_entity *bblock_
 {
 	ident     *const name  = new_id_from_str("__firmprof_initializer");
 	ir_type   *const owner = get_glob_type();
-	ir_type   *const type  = new_type_method(0, 0, false, cc_cdecl_set);
+	ir_type   *const type  = new_type_method(0, 0, false, cc_cdecl_set, mtp_no_property);
 	ir_entity *const ent   = new_global_entity(owner, name, type, ir_visibility_local, IR_LINKAGE_DEFAULT);
 
 	ir_graph  *const irg       = new_ir_graph(ent, 0);

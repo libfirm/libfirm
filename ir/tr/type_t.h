@@ -45,10 +45,8 @@
 #define is_atomic_type(tp)                is_atomic_type_(tp)
 #define get_method_n_params(method)       get_method_n_params_(method)
 #define get_method_n_ress(method)         get_method_n_ress_(method)
-#define get_method_additional_properties(method)        get_method_additional_properties_(method)
-#define set_method_additional_properties(method, mask)  set_method_additional_properties_(method, mask)
-#define add_method_additional_properties(method, flag)  add_method_additional_properties_(method, flag)
-#define get_method_calling_convention(method)           get_method_calling_convention_(method)
+#define get_method_additional_properties(method) get_method_additional_properties_(method)
+#define get_method_calling_convention(method)    get_method_calling_convention_(method)
 
 /** Compound type attributes. */
 typedef struct {
@@ -157,12 +155,13 @@ void ir_finish_type(ir_prog *irp);
 
 /** Clone an existing method type.
  *
- * @param tp           the method type to clone.
- * @param is_variadic  whether the cloned type is variadic
+ * @param tp             the method type to clone.
+ * @param is_variadic    whether the cloned type is variadic
+ * @param property_mask  additional method properties for the cloned type
  *
  * @return the cloned method type.
  */
-ir_type *clone_type_method(ir_type *tp, bool is_variadic);
+ir_type *clone_type_method(ir_type *tp, bool is_variadic, mtp_additional_properties property_mask);
 
 extern ir_visited_t firm_type_visited;
 
@@ -341,18 +340,6 @@ static inline mtp_additional_properties get_method_additional_properties_(const 
 	return method->attr.method.properties;
 }
 
-static inline void set_method_additional_properties_(ir_type *method, mtp_additional_properties properties)
-{
-	assert(is_Method_type(method));
-	method->attr.method.properties = properties;
-}
-
-static inline void add_method_additional_properties_(ir_type *method, mtp_additional_properties properties)
-{
-	assert(is_Method_type(method));
-	method->attr.method.properties |= properties;
-}
-
 static inline unsigned get_method_calling_convention_(const ir_type *method)
 {
 	assert(is_Method_type(method));
@@ -371,10 +358,5 @@ static inline bool is_aggregate_type(const ir_type *type)
 }
 
 ir_type *new_type_segment(ident *name, type_flags flags);
-
-static inline void copy_method_properties(ir_type *const dst, ir_type const *const src)
-{
-	set_method_additional_properties(dst, get_method_additional_properties(src));
-}
 
 #endif

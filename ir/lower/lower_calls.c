@@ -183,9 +183,14 @@ static ir_type *lower_mtp(lowering_env_t const *const env, ir_type *mtp)
 	if (nn_params > n_params)
 		cconv |= cc_compound_ret;
 
+	mtp_additional_properties mtp_properties = get_method_additional_properties(mtp);
+	/* after lowering the call is not pure anymore, since it writes to the
+	 * memory for the return value passed to it */
+	mtp_properties &= ~(mtp_property_no_write | mtp_property_pure);
+
 	/* create the new type */
 	bool const is_variadic = is_method_variadic(mtp);
-	lowered = new_type_method(nn_params, nn_ress, is_variadic, cconv);
+	lowered = new_type_method(nn_params, nn_ress, is_variadic, cconv, mtp_properties);
 	set_type_dbg_info(lowered, get_type_dbg_info(mtp));
 
 	/* fill it */
@@ -193,12 +198,6 @@ static ir_type *lower_mtp(lowering_env_t const *const env, ir_type *mtp)
 		set_method_param_type(lowered, i, params[i]);
 	for (size_t i = 0; i < nn_ress; ++i)
 		set_method_res_type(lowered, i, results[i]);
-
-	mtp_additional_properties mtp_properties = get_method_additional_properties(mtp);
-	/* after lowering the call is not pure anymore, since it writes to the
-	 * memory for the return value passed to it */
-	mtp_properties &= ~(mtp_property_no_write | mtp_property_pure);
-	set_method_additional_properties(lowered, mtp_properties);
 
 	/* associate the lowered type with the original one for easier access */
 	set_higher_type(lowered, mtp);
