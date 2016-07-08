@@ -124,7 +124,10 @@ void be_exc_emit_table(void)
 		be_emit_cstring("\t/* Number of entries */\n");
 		be_emit_write_line();
 	}
-	be_emit_irprintf("\t.quad %lu\n", n_exc);
+
+    size_t machine_size = be_get_backend_param()->machine_size;
+    const char *directive = machine_size == 64 ? "\t.quad " : "\t.long ";
+	be_emit_irprintf("%s %lu\n", directive, n_exc);
 	be_emit_write_line();
 
 	for (size_t i = 0; i < ARR_LEN(exc_list); ++i) {
@@ -132,10 +135,10 @@ void be_exc_emit_table(void)
 			be_emit_irprintf("\t/* Handler for %+F: %+F */\n", exc_list[i].instr, exc_list[i].x_except_block);
 			be_emit_write_line();
 		}
-		be_emit_cstring("\t.quad ");
+		be_emit_cstring(directive);
 		emit_label_name(exc_list[i].label);
 		be_emit_char('\n');
-		be_emit_cstring("\t.quad ");
+		be_emit_cstring(directive);
 		be_gas_emit_block_name(exc_list[i].x_except_block);
 		be_emit_char('\n');
 	}
