@@ -519,17 +519,18 @@ int (is_Struct_type)(const ir_type *strct)
 	return is_struct_type_(strct);
 }
 
-ir_type *new_type_method(size_t const n_param, size_t const n_res, int const is_variadic)
+ir_type *new_type_method(size_t const n_param, size_t const n_res, int const is_variadic, unsigned const cc_mask)
 {
 	ir_type *res = new_type(tpo_method, sizeof(method_attr), mode_P);
-	res->flags                 |= tf_layout_fixed;
-	res->size                   = get_mode_size_bytes(mode_P);
-	res->attr.method.n_params   = n_param;
-	res->attr.method.params     = XMALLOCNZ(ir_type*, n_param);
-	res->attr.method.n_res      = n_res;
-	res->attr.method.res_type   = XMALLOCNZ(ir_type*, n_res);
-	res->attr.method.variadic   = is_variadic;
-	res->attr.method.properties = mtp_no_property;
+	res->flags                       |= tf_layout_fixed;
+	res->size                         = get_mode_size_bytes(mode_P);
+	res->attr.method.n_params         = n_param;
+	res->attr.method.params           = XMALLOCNZ(ir_type*, n_param);
+	res->attr.method.n_res            = n_res;
+	res->attr.method.res_type         = XMALLOCNZ(ir_type*, n_res);
+	res->attr.method.variadic         = is_variadic;
+	res->attr.method.irg_calling_conv = cc_mask;
+	res->attr.method.properties       = mtp_no_property;
 	set_type_alignment(res, 1);
 	hook_new_type(res);
 	return res;
@@ -636,25 +637,12 @@ unsigned (get_method_calling_convention)(const ir_type *method)
 	return get_method_calling_convention_(method);
 }
 
-void (set_method_calling_convention)(ir_type *method, unsigned cc_mask)
-{
-	set_method_calling_convention_(method, cc_mask);
-}
-
 unsigned get_method_n_regparams(ir_type *method)
 {
 	unsigned cc = get_method_calling_convention(method);
 	assert(IS_FASTCALL(cc));
 
 	return cc & ~cc_bits;
-}
-
-void set_method_n_regparams(ir_type *method, unsigned n_regs)
-{
-	unsigned cc = get_method_calling_convention(method);
-	assert(IS_FASTCALL(cc));
-
-	set_method_calling_convention(method, (cc & cc_bits) | (n_regs & ~cc_bits));
 }
 
 int (is_Method_type)(const ir_type *method)

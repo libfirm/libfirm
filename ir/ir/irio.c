@@ -1634,7 +1634,7 @@ static void read_type(read_env_t *env)
 		size_t const nparams  = read_size_t(env);
 		size_t const nresults = read_size_t(env);
 		bool   const is_variadic = read_long(env);
-		type = new_type_method(nparams, nresults, is_variadic);
+		type = new_type_method(nparams, nresults, is_variadic, callingconv);
 
 		for (size_t i = 0; i < nparams; i++) {
 			long ptypenr = read_long(env);
@@ -1649,7 +1649,6 @@ static void read_type(read_env_t *env)
 			set_method_res_type(type, i, restype);
 		}
 
-		set_method_calling_convention(type, callingconv);
 		set_method_additional_properties(type, addprops);
 		goto finish_type;
 	}

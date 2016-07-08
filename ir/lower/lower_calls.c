@@ -179,9 +179,13 @@ static ir_type *lower_mtp(lowering_env_t const *const env, ir_type *mtp)
 	assert(nn_ress <= n_ress*2);
 	assert(nn_params <= n_params + n_ress);
 
+	unsigned cconv = get_method_calling_convention(mtp);
+	if (nn_params > n_params)
+		cconv |= cc_compound_ret;
+
 	/* create the new type */
 	bool const is_variadic = is_method_variadic(mtp);
-	lowered = new_type_method(nn_params, nn_ress, is_variadic);
+	lowered = new_type_method(nn_params, nn_ress, is_variadic, cconv);
 	set_type_dbg_info(lowered, get_type_dbg_info(mtp));
 
 	/* fill it */
@@ -189,12 +193,6 @@ static ir_type *lower_mtp(lowering_env_t const *const env, ir_type *mtp)
 		set_method_param_type(lowered, i, params[i]);
 	for (size_t i = 0; i < nn_ress; ++i)
 		set_method_res_type(lowered, i, results[i]);
-
-	unsigned cconv = get_method_calling_convention(mtp);
-	if (nn_params > n_params) {
-		cconv |= cc_compound_ret;
-	}
-	set_method_calling_convention(lowered, cconv);
 
 	mtp_additional_properties mtp_properties = get_method_additional_properties(mtp);
 	/* after lowering the call is not pure anymore, since it writes to the

@@ -160,7 +160,8 @@ bool sparc_variadic_fixups(ir_graph *irg, calling_convention_t *cconv)
 	size_t   const n_params     = get_method_n_params(mtp);
 	size_t   const n_ress       = get_method_n_ress(mtp);
 	size_t   const new_n_params = n_params + (SPARC_N_PARAM_REGS - cconv->n_param_regs);
-	ir_type *const new_mtp      = new_type_method(new_n_params, n_ress, true);
+	unsigned const cc_mask      = get_method_calling_convention(mtp);
+	ir_type *const new_mtp      = new_type_method(new_n_params, n_ress, true, cc_mask);
 
 	type_dbg_info *const dbgi = get_type_dbg_info(mtp);
 	set_type_dbg_info(new_mtp, dbgi);

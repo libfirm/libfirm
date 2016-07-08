@@ -327,10 +327,11 @@ static ir_type *lower_method_type(ir_type *mtp)
 	if (res != NULL)
 		return res;
 
-	size_t const n_param     = get_method_n_params(mtp);
-	size_t const n_res       = get_method_n_ress(mtp);
-	bool   const is_variadic = is_method_variadic(mtp);
-	res = new_type_method(n_param, n_res, is_variadic);
+	size_t   const n_param     = get_method_n_params(mtp);
+	size_t   const n_res       = get_method_n_ress(mtp);
+	bool     const is_variadic = is_method_variadic(mtp);
+	unsigned const cc_mask     = get_method_calling_convention(mtp);
+	res = new_type_method(n_param, n_res, is_variadic, cc_mask);
 
 	/* set param types and result types */
 	for (size_t i = 0; i < n_param; ++i) {
@@ -765,7 +766,7 @@ static void make_binop_type(ir_type **const memoized, ir_type *const left,
                             ir_type *const right, ir_type *const res)
 {
 	if (!*memoized) {
-		ir_type *const type = *memoized = new_type_method(2, 1, false);
+		ir_type *const type = *memoized = new_type_method(2, 1, false, cc_cdecl_set);
 		set_method_param_type(type, 0, left);
 		set_method_param_type(type, 1, right);
 		set_method_res_type(  type, 0, res);
@@ -776,7 +777,7 @@ static void make_unop_type(ir_type **const memoized, ir_type *const op,
                            ir_type *const res)
 {
 	if (!*memoized) {
-		ir_type *const type = *memoized = new_type_method(1, 1, false);
+		ir_type *const type = *memoized = new_type_method(1, 1, false, cc_cdecl_set);
 		set_method_param_type(type, 0, op);
 		set_method_res_type(  type, 0, res);
 	}

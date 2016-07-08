@@ -49,7 +49,6 @@
 #define set_method_additional_properties(method, mask)  set_method_additional_properties_(method, mask)
 #define add_method_additional_properties(method, flag)  add_method_additional_properties_(method, flag)
 #define get_method_calling_convention(method)           get_method_calling_convention_(method)
-#define set_method_calling_convention(method, cc_mask)  set_method_calling_convention_(method, cc_mask)
 
 /** Compound type attributes. */
 typedef struct {
@@ -360,12 +359,6 @@ static inline unsigned get_method_calling_convention_(const ir_type *method)
 	return method->attr.method.irg_calling_conv;
 }
 
-static inline void set_method_calling_convention_(ir_type *method, unsigned cc_mask)
-{
-	assert(is_Method_type(method));
-	method->attr.method.irg_calling_conv = cc_mask;
-}
-
 /**
  * Check if type is a compound or array type.
  * This function returns true iff a value of this type cannot be represented by
@@ -381,7 +374,6 @@ ir_type *new_type_segment(ident *name, type_flags flags);
 
 static inline void copy_method_properties(ir_type *const dst, ir_type const *const src)
 {
-	set_method_calling_convention(dst, get_method_calling_convention(src));
 	set_method_additional_properties(dst, get_method_additional_properties(src));
 }
 

@@ -1195,11 +1195,12 @@ FIRM_API int is_Union_type(const ir_type *uni);
  * @param n_param      the number of parameters
  * @param n_res        the number of results
  * @param is_variadic  whether the function is variadic
+ * @param cc_mask      the calling convention
  *
  * The arrays for the parameter and result types are not initialized by
  * the constructor.
  */
-FIRM_API ir_type *new_type_method(size_t n_param, size_t n_res, int is_variadic);
+FIRM_API ir_type *new_type_method(size_t n_param, size_t n_res, int is_variadic, unsigned cc_mask);
 
 /** Returns the number of parameters of this method. */
 FIRM_API size_t get_method_n_params(const ir_type *method);
@@ -1296,14 +1297,8 @@ typedef enum {
 /** Returns the calling convention of an entities graph. */
 FIRM_API unsigned get_method_calling_convention(const ir_type *method);
 
-/** Sets the calling convention of an entities graph. */
-FIRM_API void set_method_calling_convention(ir_type *method, unsigned cc_mask);
-
 /** Returns the number of registers parameters, 0 means default. */
 FIRM_API unsigned get_method_n_regparams(ir_type *method);
-
-/** Sets the number of registers parameters, 0 means default. */
-FIRM_API void set_method_n_regparams(ir_type *method, unsigned n_regs);
 
 /** Returns true if a type is a method type. */
 FIRM_API int is_Method_type(const ir_type *method);

@@ -149,7 +149,7 @@ static ir_type *get_conv_type(ir_mode *imode, ir_mode *omode)
 		n_res = 2;
 
 	/* create a new method type */
-	mtd = new_type_method(n_param, n_res, false);
+	mtd = new_type_method(n_param, n_res, false, cc_cdecl_set);
 
 	/* set param types and result types */
 	n_param = 0;
@@ -1571,8 +1571,9 @@ static ir_type *lower_mtp(ir_type *mtp)
 		return mtp;
 	}
 
-	bool const is_variadic = is_method_variadic(mtp);
-	res = new_type_method(n_param, n_res, is_variadic);
+	bool     const is_variadic = is_method_variadic(mtp);
+	unsigned const cc_mask     = get_method_calling_convention(mtp);
+	res = new_type_method(n_param, n_res, is_variadic, cc_mask);
 	set_type_dbg_info(res, get_type_dbg_info(mtp));
 
 	/* set param types and result types */
@@ -2113,7 +2114,8 @@ static ir_type *lower_Builtin_type(pmap *const type_map, ir_type *const mtp, ir_
 		return mtp;
 	}
 
-	res = new_type_method(n_params, n_results, false);
+	unsigned const cc_mask = get_method_calling_convention(mtp);
+	res = new_type_method(n_params, n_results, false, cc_mask);
 	set_type_dbg_info(res, get_type_dbg_info(mtp));
 
 	/* set param types and result types */
@@ -2587,7 +2589,7 @@ static int lower_mux_cb(ir_node *mux)
 
 static ir_type *make_type_4_2(ir_type *const even, ir_type *const odd)
 {
-	ir_type *const tp = new_type_method(4, 2, false);
+	ir_type *const tp = new_type_method(4, 2, false, cc_cdecl_set);
 	set_method_param_type(tp, 0, even);
 	set_method_param_type(tp, 1, odd);
 	set_method_param_type(tp, 2, even);
@@ -2599,7 +2601,7 @@ static ir_type *make_type_4_2(ir_type *const even, ir_type *const odd)
 
 static ir_type *make_type_2_2(ir_type *const even, ir_type *const odd)
 {
-	ir_type *const tp = new_type_method(2, 2, false);
+	ir_type *const tp = new_type_method(2, 2, false, cc_cdecl_set);
 	set_method_param_type(tp, 0, even);
 	set_method_param_type(tp, 1, odd);
 	set_method_res_type(tp, 0, even);
