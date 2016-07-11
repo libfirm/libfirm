@@ -86,12 +86,11 @@ typedef struct {
 typedef enum type_flags {
 	tf_none          = 0,       /**< No flags. */
 	tf_compound      = 1U << 0, /**< Set if type is a compound type. */
-	tf_lowered_type  = 1U << 1, /**< Set if this is a lowered type. */
-	tf_layout_fixed  = 1U << 2, /**< Set if the layout of a type is fixed */
+	tf_layout_fixed  = 1U << 1, /**< Set if the layout of a type is fixed */
 
-	tf_frame_type    = 1U << 3, /**< Set if this is a frame type. */
-	tf_info          = 1U << 4, /**< infos (for example constructor, destructor pointers), all members are anonymous */
-	tf_lowered_dw    = 1U << 5, /**< hack to identify lowered doubleword params */
+	tf_frame_type    = 1U << 2, /**< Set if this is a frame type. */
+	tf_info          = 1U << 3, /**< infos (for example constructor, destructor pointers), all members are anonymous */
+	tf_lowered_dw    = 1U << 4, /**< hack to identify lowered doubleword params */
 } type_flags;
 ENUM_BITSET(type_flags)
 
@@ -126,8 +125,6 @@ struct ir_type {
 	ir_visited_t visit;      /**< visited counter for walks of the type information */
 	void *link;              /**< holds temporary data - like in irnode_t.h */
 	type_dbg_info *dbi;      /**< A pointer to information for debug support. */
-	ir_type *higher_type;    /**< link to highlevel type in case of lowered
-	                              types */
 	long nr;                 /**< An unique number for each type. */
 	union {
 		compound_attr compound;
@@ -168,22 +165,6 @@ extern ir_visited_t firm_type_visited;
 static inline ir_visited_t get_master_type_visited_(void)
 {
 	return firm_type_visited;
-}
-
-static inline int is_lowered_type(const ir_type *tp)
-{
-	return tp->flags & tf_lowered_type;
-}
-
-static inline ir_type *get_higher_type(const ir_type *tp)
-{
-	return tp->higher_type;
-}
-
-static inline void set_higher_type(ir_type *tp, ir_type *higher_type)
-{
-	tp->flags |= tf_lowered_type;
-	tp->higher_type = higher_type;
 }
 
 static inline void *get_type_link_(const ir_type *tp)

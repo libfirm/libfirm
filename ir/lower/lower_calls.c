@@ -199,8 +199,6 @@ static ir_type *lower_mtp(lowering_env_t const *const env, ir_type *mtp)
 	for (size_t i = 0; i < nn_ress; ++i)
 		set_method_res_type(lowered, i, results[i]);
 
-	/* associate the lowered type with the original one for easier access */
-	set_higher_type(lowered, mtp);
 	pmap_insert(lowered_mtps, mtp, lowered);
 
 	return lowered;

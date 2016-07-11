@@ -1625,7 +1625,6 @@ static ir_type *lower_mtp(ir_type *mtp)
 		set_method_res_type(res, n_res++, tp);
 	}
 
-	set_higher_type(res, mtp);
 	set_type_link(res, mtp);
 
 	mark_type_visited(res);

@@ -547,7 +547,6 @@ ir_type *clone_type_method(ir_type *const tp, bool const is_variadic, mtp_additi
 	set_type_dbg_info(res, db);
 
 	res->flags                        = tp->flags;
-	res->higher_type                  = tp->higher_type;
 	res->size                         = tp->size;
 	res->attr.method.n_params         = n_params;
 	res->attr.method.params           = XMALLOCN(ir_type*, n_params);
