@@ -350,19 +350,6 @@ void free_class_attrs(ir_type *clss)
 	DEL_ARR_F(clss->attr.cls.supertypes);
 }
 
-ident *get_class_ident(const ir_type *clss)
-{
-	assert(is_Class_type(clss));
-	return clss->name;
-}
-
-const char *get_class_name(const ir_type *clss)
-{
-	if (get_class_ident(clss) == NULL)
-		return NULL;
-	return get_id_str(get_class_ident(clss));
-}
-
 size_t get_class_n_members(const ir_type *clss)
 {
 	assert(is_Class_type(clss));
@@ -507,20 +494,6 @@ ir_type *new_type_struct(ident *name)
 	compound_init(res, name);
 	hook_new_type(res);
 	return res;
-}
-
-ident *get_struct_ident(const ir_type *strct)
-{
-	assert(is_Struct_type(strct));
-	return strct->name;
-}
-
-const char *get_struct_name(const ir_type *strct)
-{
-	ident *id = get_struct_ident(strct);
-	if (id == NULL)
-		return NULL;
-	return get_id_str(id);
 }
 
 size_t get_struct_n_members(const ir_type *strct)
@@ -697,20 +670,6 @@ ir_type *new_type_union(ident *name)
 	return res;
 }
 
-ident *get_union_ident(const ir_type *uni)
-{
-	assert(is_Union_type(uni));
-	return uni->name;
-}
-
-const char *get_union_name(const ir_type *uni)
-{
-	ident *id = get_union_ident(uni);
-	if (id == NULL)
-		return NULL;
-	return get_id_str(id);
-}
-
 size_t get_union_n_members(const ir_type *uni)
 {
 	assert(is_Union_type(uni));
@@ -745,12 +704,6 @@ ir_type *new_type_segment(ident *const name, type_flags const flags)
 int (is_segment_type)(ir_type const *const type)
 {
 	return is_segment_type_(type);
-}
-
-ident *get_segment_ident(ir_type const *type)
-{
-	assert(is_segment_type(type));
-	return type->name;
 }
 
 ir_type *new_type_array(ir_type *const element_type, unsigned const n_elements)
@@ -1024,27 +977,14 @@ void ir_print_type(char *buffer, size_t buffer_size, const ir_type *type)
 		snprintf(buffer, buffer_size, "code");
 		return;
 
-	case tpo_class: {
-		ident *id = get_class_ident(type);
-		snprintf(buffer, buffer_size, "class '%s'", get_id_str(id));
-		return;
-	}
-
-	case tpo_struct: {
-		ident *id = get_struct_ident(type);
-		snprintf(buffer, buffer_size, "struct '%s'", get_id_str(id));
-		return;
-	}
-
-	case tpo_union: {
-		ident *id = get_union_ident(type);
-		snprintf(buffer, buffer_size, "union '%s'", get_id_str(id));
-		return;
-	}
-
-	case tpo_segment: {
-		ident *id = get_segment_ident(type);
-		snprintf(buffer, buffer_size, "segment '%s'", get_id_str(id));
+	{
+		char const *kind_name;
+	case tpo_class:   kind_name = "class";   goto compound;
+	case tpo_struct:  kind_name = "struct";  goto compound;
+	case tpo_union:   kind_name = "union";   goto compound;
+	case tpo_segment: kind_name = "segment"; goto compound;
+compound:
+		snprintf(buffer, buffer_size, "%s '%s'", kind_name, get_compound_name(type));
 		return;
 	}
 

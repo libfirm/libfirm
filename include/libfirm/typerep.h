@@ -1014,12 +1014,6 @@ FIRM_API long get_type_nr(const ir_type *tp);
 /** Creates a new class type. */
 FIRM_API ir_type *new_type_class(ident *name);
 
-/** Returns identifier of the class type */
-FIRM_API ident *get_class_ident(const ir_type *clss);
-
-/** Returns identifier of the class type */
-FIRM_API const char *get_class_name(const ir_type *clss);
-
 /** Returns the number of members of this class. */
 FIRM_API size_t get_class_n_members(const ir_type *clss);
 
@@ -1118,12 +1112,6 @@ FIRM_API int is_Class_type(const ir_type *clss);
 /** Creates a new type struct */
 FIRM_API ir_type *new_type_struct(ident *name);
 
-/** Returns struct identifier */
-FIRM_API ident *get_struct_ident(const ir_type *strct);
-
-/** Returns struct identifier as c-string*/
-FIRM_API const char *get_struct_name(const ir_type *strct);
-
 /** Returns the number of members of this struct. */
 FIRM_API size_t get_struct_n_members(const ir_type *strct);
 
@@ -1155,12 +1143,6 @@ FIRM_API int is_Struct_type(const ir_type *strct);
  */
 /** Creates a new type union. */
 FIRM_API ir_type *new_type_union(ident *name);
-
-/** Returns union identifier */
-FIRM_API ident *get_union_ident(const ir_type *uni);
-
-/** Returns union identifier as c-string */
-FIRM_API const char *get_union_name(const ir_type *uni);
 
 /** Returns the number of unioned types of this union */
 FIRM_API size_t get_union_n_members(const ir_type *uni);
@@ -1529,9 +1511,6 @@ FIRM_API ir_type *clone_frame_type(ir_type *type);
 
 /** Checks, whether a type is a frame type. */
 FIRM_API int is_segment_type(const ir_type *tp);
-
-/** Returns segment identifier. */
-FIRM_API ident *get_segment_ident(ir_type const *type);
 
 /** @} */
 
