@@ -1472,7 +1472,7 @@ FIRM_API void default_layout_compound_type(ir_type *tp);
  *
  * @param tp - any type
  *
- * @return true if the type is class, structure, union or array type.
+ * @return true if the type is class, structure, union or segment type.
  */
 FIRM_API int is_compound_type(const ir_type *tp);
 
