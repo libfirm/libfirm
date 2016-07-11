@@ -147,7 +147,7 @@ void sparc_fix_stack_bias(ir_graph *irg)
  * (because otherwise the backend wouldn't store the value of the register
  *  parameters into memory for the VLA magic)
  */
-bool sparc_variadic_fixups(ir_graph *irg, calling_convention_t *cconv)
+static bool sparc_variadic_fixups(ir_graph *const irg, calling_convention_t *const cconv)
 {
 	ir_entity *entity = get_irg_entity(irg);
 	ir_type   *mtp    = get_entity_type(entity);
@@ -183,14 +183,11 @@ bool sparc_variadic_fixups(ir_graph *irg, calling_convention_t *cconv)
 		new_parameter_entity(frame_type, i, gp_reg_type);
 	}
 
-	set_higher_type(new_mtp, mtp);
-
 	set_entity_type(entity, new_mtp);
 	return true;
 }
 
-void sparc_layout_param_entities(ir_graph *const irg,
-                                 calling_convention_t *const cconv)
+static void sparc_layout_param_entities(ir_graph *const irg, calling_convention_t *const cconv, ir_type *const non_lowered)
 {
 	/* search for existing parameter entities */
 	ir_type    *const frame_type = get_irg_frame_type(irg);
@@ -231,8 +228,7 @@ void sparc_layout_param_entities(ir_graph *const irg,
 
 		/* sparc_variadic_fixups() fiddled with our type, find out the
 		 * original number of parameters */
-		ir_type       *const non_lowered   = get_higher_type(function_type);
-		size_t         const orig_n_params = get_method_n_params(non_lowered);
+		size_t const orig_n_params = get_method_n_params(non_lowered);
 		long offset;
 		if (orig_n_params < n_params) {
 			assert(param_map[orig_n_params] != NULL);
@@ -244,4 +240,17 @@ void sparc_layout_param_entities(ir_graph *const irg,
 		set_entity_offset(va_start_addr, offset);
 		cconv->va_start_addr = va_start_addr;
 	}
+}
+
+calling_convention_t *sparc_prepare_calling_convention(ir_graph *const irg)
+{
+	ir_entity *const entity      = get_irg_entity(irg);
+	ir_type   *const non_lowered = get_entity_type(entity);
+	calling_convention_t *cconv = sparc_decide_calling_convention(get_entity_type(entity), irg);
+	if (sparc_variadic_fixups(irg, cconv)) {
+		sparc_free_calling_convention(cconv);
+		cconv = sparc_decide_calling_convention(get_entity_type(entity), irg);
+	}
+	sparc_layout_param_entities(irg, cconv, non_lowered);
+	return cconv;
 }

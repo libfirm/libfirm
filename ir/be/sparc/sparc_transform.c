@@ -2447,8 +2447,6 @@ void sparc_transform_graph(ir_graph *irg)
 	assure_irg_properties(irg, IR_GRAPH_PROPERTY_NO_TUPLES
 	                         | IR_GRAPH_PROPERTY_NO_BADS);
 
-	ir_entity *entity = get_irg_entity(irg);
-
 	sparc_register_transformers();
 
 	mode_gp    = sparc_reg_classes[CLASS_sparc_gp].mode;
@@ -2459,14 +2457,7 @@ void sparc_transform_graph(ir_graph *irg)
 	frame_base = NULL;
 
 	be_stack_init(&stack_env);
-	current_cconv
-		= sparc_decide_calling_convention(get_entity_type(entity), irg);
-	if (sparc_variadic_fixups(irg, current_cconv)) {
-		sparc_free_calling_convention(current_cconv);
-		current_cconv
-			= sparc_decide_calling_convention(get_entity_type(entity), irg);
-	}
-	sparc_layout_param_entities(irg, current_cconv);
+	current_cconv = sparc_prepare_calling_convention(irg);
 
 	ir_entity *need_stores[current_cconv->n_param_regs];
 	unsigned   n_stores = 0;
