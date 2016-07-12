@@ -252,6 +252,7 @@ static void lower64_shl(ir_node *node, ir_mode *mode)
 
 static void lower64_shr(ir_node *node, ir_mode *mode)
 {
+	(void)mode;
 	/* the following algo works, because we have modulo shift 256 */
 	assert(get_mode_modulo_shift(mode) == 256);
 	dbg_info *dbgi       = get_irn_dbg_info(node);

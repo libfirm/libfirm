@@ -2444,13 +2444,12 @@ static ir_node *transform_node_bitop_shift(ir_node *n)
 
 	ir_node   *shift_left = get_binop_left(left);
 	ir_node   *block      = get_nodes_block(n);
-	ir_mode   *mode       = get_irn_mode(n);
 	dbg_info  *dbg_bitop  = get_irn_dbg_info(n);
 	dbg_info  *dbg_shift  = get_irn_dbg_info(left);
 	ir_tarval *tv1        = get_Const_tarval(shift_right);
 	ir_tarval *tv2        = get_Const_tarval(right);
 	ir_tarval *tv_bitop;
-	assert(get_tarval_mode(tv2) == mode);
+	assert(get_tarval_mode(tv2) == get_irn_mode(n));
 
 	if (is_Shl(left)) {
 		tv_bitop = tarval_shr(tv2, tv1);
@@ -4211,9 +4210,8 @@ static ir_node *transform_node_shift_bitop(ir_node *n)
 	dbg_info  *dbgi       = get_irn_dbg_info(n);
 	ir_tarval *tv1        = get_Const_tarval(bitop_right);
 	ir_tarval *tv2        = get_Const_tarval(right);
-	ir_mode   *mode       = get_irn_mode(n);
 
-	assert(get_tarval_mode(tv1) == mode);
+	assert(get_tarval_mode(tv1) == get_irn_mode(n));
 
 	ir_node   *new_shift;
 	ir_tarval *tv_shift;
@@ -4231,7 +4229,7 @@ static ir_node *transform_node_shift_bitop(ir_node *n)
 		tv_shift  = tarval_shrs(tv1, tv2);
 	}
 
-	assert(get_tarval_mode(tv_shift) == mode);
+	assert(get_tarval_mode(tv_shift) == get_irn_mode(n));
 
 	ir_node *new_const = new_r_Const(irg, tv_shift);
 	ir_node *new_bitop;
