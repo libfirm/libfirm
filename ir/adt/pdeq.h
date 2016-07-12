@@ -84,11 +84,11 @@ static inline void deq_pointer_iter_next(deq_pointer_iter_t *const iter)
 
 #define deq_foreach_pointer(deq, type, pointer) \
 	for (bool pointer##__once = true; pointer##__once;) \
-		for (deq_pointer_iter_t pointer##__iter; pointer##__once;) \
-            for (type *pointer; pointer##__once; pointer##__once = false) \
-                for (deq_pointer_iter_init(&pointer##__iter, deq); \
-				     (pointer = *((type**)pointer##__iter.block_p)), \
-					 !deq_pointer_iter_at_end(&pointer##__iter); \
-					 deq_pointer_iter_next(&pointer##__iter))
+		for (deq_pointer_iter_t pointer##__iter; pointer##__once; pointer##__once = false) \
+			for (deq_pointer_iter_init(&pointer##__iter, deq); \
+			     !deq_pointer_iter_at_end(&pointer##__iter); \
+			     deq_pointer_iter_next(&pointer##__iter)) \
+				for (bool pointer##__once2 = true; pointer##__once2;) \
+					for (type *pointer = *((type**)pointer##__iter.block_p); pointer##__once2; pointer##__once2 = false)
 
 #endif
