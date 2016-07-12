@@ -1192,10 +1192,11 @@ FIRM_API int is_Union_type(const ir_type *uni);
 
 /** Create a new method type.
  *
- * @param n_param      the number of parameters
- * @param n_res        the number of results
- * @param is_variadic  whether the function is variadic
- * @param cc_mask      the calling convention
+ * @param n_param        the number of parameters
+ * @param n_res          the number of results
+ * @param is_variadic    whether the function is variadic
+ * @param cc_mask        the calling convention
+ * @param property_mask  the mask of the additional graph properties
  *
  * The arrays for the parameter and result types are not initialized by
  * the constructor.
