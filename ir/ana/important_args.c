@@ -81,11 +81,11 @@ static bool node_produces_value(const ir_node *node)
 	return mode_is_data(get_irn_mode(node)) || is_Div(node) || is_Load(node);
 }
 
-static void worklist_add_outs(pdeq *worklist, const ir_node *node)
+static void worklist_add_outs(deq_t *worklist, const ir_node *node)
 {
 	foreach_irn_out (node, i, user) {
 		if (node_produces_value(user))
-			pdeq_putr(worklist, user);
+			deq_push_pointer_right(worklist, user);
 	}
 }
 
@@ -133,7 +133,10 @@ bitset_t *local_important_args(ir_graph *irg)
 	const ir_node *const args      = get_irg_args(irg);
 	n_args                         = get_irg_n_args(irg);
 	bitset_t *const important_args = bitset_malloc(n_args);
-	pdeq *const worklist           = new_pdeq();
+
+	deq_t wl;
+	deq_t *const worklist = &wl;
+	deq_init(worklist);
 
 	// Set arg_deps(c) to {} for all constant nodes c
 	irg_walk_graph(irg, init_constants, NULL, NULL);
@@ -148,8 +151,8 @@ bitset_t *local_important_args(ir_graph *irg)
 	}
 
 	// Do a fixpoint iteration
-	while (!pdeq_empty(worklist)) {
-		ir_node *const node = pdeq_getl(worklist);
+	while (!deq_empty(worklist)) {
+		ir_node *const node = deq_pop_pointer_left(ir_node, worklist);
 
 		if (node_needs_more_info(node)) continue;
 
@@ -161,7 +164,7 @@ bitset_t *local_important_args(ir_graph *irg)
 	}
 
 	// Cleanup
-	del_pdeq(worklist);
+	deq_free(worklist);
 
 	return important_args;
 }
