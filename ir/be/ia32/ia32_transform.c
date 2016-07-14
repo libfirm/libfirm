@@ -2769,8 +2769,12 @@ static ir_node *create_store(dbg_info *dbgi, ir_node *new_block,
 		store = create_fst(dbgi, new_block, addr->base, addr->index,
 		                   addr->mem, new_op, size);
 	} else {
-		value = be_skip_downconv(value, false);
-		ir_node *new_val = create_immediate_or_transform(value, 'i');
+		/* The size must match for an immediate, so do not skip Convs. */
+		ir_node *new_val = try_create_Immediate(value, 'i');
+		if (!new_val) {
+			value   = be_skip_downconv(value, false);
+			new_val = be_transform_node(value);
+		}
 		assert(mode != mode_b);
 
 		store = size == X86_SIZE_8
