@@ -1557,6 +1557,9 @@ static ir_node *equivalent_node_Proj_Store(ir_node *proj)
  */
 static ir_node *equivalent_node_CopyB(ir_node *copyb)
 {
+	if (get_CopyB_volatility(copyb) == volatility_is_volatile) {
+		return copyb;
+	}
 	const ir_node *a = get_CopyB_dst(copyb);
 	const ir_node *b = get_CopyB_src(copyb);
 	if (a == b) {
