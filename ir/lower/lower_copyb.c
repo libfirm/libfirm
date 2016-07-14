@@ -49,17 +49,19 @@ static ir_mode *get_ir_mode(unsigned mode_bytes)
  */
 static void lower_small_copyb_node(ir_node *irn)
 {
-	ir_graph *irg        = get_irn_irg(irn);
-	ir_node  *block      = get_nodes_block(irn);
-	ir_type  *tp         = get_CopyB_type(irn);
-	ir_node  *addr_src   = get_CopyB_src(irn);
-	ir_node  *addr_dst   = get_CopyB_dst(irn);
-	ir_node  *mem        = get_CopyB_mem(irn);
-	ir_mode  *mode_ref   = get_irn_mode(addr_src);
-	unsigned  mode_bytes = allow_misalignments ? native_mode_bytes
-	                                           : get_type_alignment(tp);
-	unsigned  size       = get_type_size(tp);
-	unsigned  offset     = 0;
+	ir_graph      *irg         = get_irn_irg(irn);
+	ir_node       *block       = get_nodes_block(irn);
+	ir_type       *tp          = get_CopyB_type(irn);
+	ir_node       *addr_src    = get_CopyB_src(irn);
+	ir_node       *addr_dst    = get_CopyB_dst(irn);
+	ir_node       *mem         = get_CopyB_mem(irn);
+	ir_mode       *mode_ref    = get_irn_mode(addr_src);
+	unsigned       mode_bytes  = allow_misalignments ? native_mode_bytes
+	                                                 : get_type_alignment(tp);
+	unsigned       size        = get_type_size(tp);
+	unsigned       offset      = 0;
+	bool           is_volatile = get_CopyB_volatility(irn) == volatility_is_volatile;
+	ir_cons_flags  flags       = is_volatile ? cons_volatile : cons_none;
 
 	while (offset < size) {
 		ir_mode *mode = get_ir_mode(mode_bytes);
@@ -70,7 +72,7 @@ static void lower_small_copyb_node(ir_node *irn)
 			ir_node *addr_const = new_r_Const_long(irg, mode_ref_int, offset);
 			ir_node *add        = new_r_Add(block, addr_src, addr_const);
 
-			ir_node *load     = new_r_Load(block, mem, add, mode, tp, cons_none);
+			ir_node *load     = new_r_Load(block, mem, add, mode, tp, flags);
 			ir_node *load_res = new_r_Proj(load, mode, pn_Load_res);
 			ir_node *load_mem = new_r_Proj(load, mode_M, pn_Load_M);
 
@@ -78,7 +80,7 @@ static void lower_small_copyb_node(ir_node *irn)
 			ir_node *add2        = new_r_Add(block, addr_dst, addr_const2);
 
 			ir_node *store     = new_r_Store(block, load_mem, add2, load_res,
-			                                 tp, cons_none);
+			                                 tp, flags);
 			ir_node *store_mem = new_r_Proj(store, mode_M, pn_Store_M);
 
 			mem = store_mem;
