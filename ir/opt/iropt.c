@@ -1559,9 +1559,9 @@ static ir_node *equivalent_node_CopyB(ir_node *copyb)
 {
 	const ir_node *a = get_CopyB_dst(copyb);
 	const ir_node *b = get_CopyB_src(copyb);
-	if (a == b)
+	if (a == b) {
 		return get_CopyB_mem(copyb);
-
+	}
 	return copyb;
 }
 
