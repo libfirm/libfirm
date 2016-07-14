@@ -2819,8 +2819,7 @@ static ir_node *gen_Store(ir_node *node)
 
 	dbg_info *dbgi      = get_irn_dbg_info(node);
 	ir_node  *new_block = be_transform_nodes_block(node);
-	ir_node  *value     = get_Store_value(node);
-	ir_node  *store     = create_store(dbgi, new_block, value, &addr);
+	ir_node  *store     = create_store(dbgi, new_block, val, &addr);
 
 	int throws_exception = ir_throws_exception(node);
 	ir_set_throws_exception(store, throws_exception);
