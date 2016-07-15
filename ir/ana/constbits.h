@@ -6,9 +6,9 @@
 
 typedef enum bitinfo_state {
 	BITINFO_INVALID,
+	BITINFO_UNSTABLE,
 	BITINFO_VALID,
 	BITINFO_IN_FLIGHT,
-	BITINFO_UNSTABLE,
 } bitinfo_state;
 
 typedef struct bitinfo

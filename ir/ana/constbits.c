@@ -18,6 +18,7 @@
 #include "irnode_t.h"
 #include "irnodemap.h"
 #include "iropt.h"
+#include "util.h"
 
 #ifndef VERIFY_CONSTBITS
 #	ifdef DEBUG_libfirm
@@ -815,7 +816,16 @@ static void trigger_users(ir_node const *const irn)
 			if (get_irn_mode(src) == mode_T) {
 				/* Trigger Projs of tuple nodes.  They might contain analysis information,
 				 * but the tuple node does not. */
-				trigger_users(src);
+				bitinfo_state state = BITINFO_INVALID;
+				foreach_out_edge(src, e) {
+					bitinfo *const b = get_bitinfo_direct(irn);
+					if (b) {
+						state = MAX(state, b->state);
+					}
+				}
+				if (state == BITINFO_VALID) {
+					trigger_users(src);
+				}
 			} else {
 				trigger(src, irn);
 			}
