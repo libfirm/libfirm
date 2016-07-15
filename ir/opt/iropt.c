@@ -1557,6 +1557,10 @@ static ir_node *equivalent_node_Proj_Store(ir_node *proj)
  */
 static ir_node *equivalent_node_CopyB(ir_node *copyb)
 {
+	const ir_type *type = get_CopyB_type(copyb);
+	if (get_type_size(type) == 0) {
+		return get_CopyB_mem(copyb);
+	}
 	if (get_CopyB_volatility(copyb) == volatility_is_volatile) {
 		return copyb;
 	}
