@@ -11,74 +11,24 @@
 #include "panic.h"
 #include "callgraph.h"
 #include "cgana.h"
+#include "cloning_vector_t.h"
+#include "cvhashmap.h"
 
 struct obstack obst;
 
-typedef ir_node **cloning_vector_t;
-
-#define cv_foreach(cv, i, val)                                                 \
-	ARR_FOREACH (cv, i, ir_node *, val)                                        \
-		if (!val) {                                                            \
-		} else
-
-static cloning_vector_t cv_new(const ir_node *call, const bitset_t *callee_vips)
+static void clone_set_new(ir_entity *clone)
 {
-	assert(call != NULL);
-	assert(callee_vips != NULL);
-
-	size_t const n_params = get_Call_n_params(call);
-	cloning_vector_t cv   = NEW_ARR_DZ(ir_node *, &obst, n_params);
-
-	bitset_foreach (callee_vips, i) {
-		ir_node *const arg = get_Call_param(call, i);
-		cv[i]              = is_irn_constlike(arg) ? arg : NULL;
-	}
-	return cv;
+	set_entity_link(clone, (void *)true);
 }
 
-static size_t cv_get_size(const cloning_vector_t cv)
+static void clone_unset_new(ir_entity *clone)
 {
-	assert(cv != NULL);
-
-	size_t size = 0;
-	cv_foreach (cv, i, val)
-		++size;
-
-	return size;
+	set_entity_link(clone, (void *)false);
 }
 
-static ir_node *cv_get(const cloning_vector_t cv, size_t pos)
+static bool is_new_clone(const ir_entity *clone)
 {
-	assert(cv != NULL);
-	assert(pos < ARR_LEN(cv));
-	return cv[pos];
-}
-
-static size_t cv_get_new_idx(const cloning_vector_t cv, size_t idx)
-{
-	assert(cv != NULL);
-	assert(!cv_get(cv, idx));
-
-	size_t new_idx = idx;
-	cv_foreach (cv, i, val) {
-		if (i > idx) break;
-		--new_idx;
-	}
-
-	assert(new_idx <= idx);
-	return new_idx;
-}
-
-static bitset_t *cv_get_undef(cloning_vector_t cv)
-{
-	assert(cv != NULL);
-
-	bitset_t *undef = bitset_obstack_alloc(&obst, ARR_LEN(cv));
-	bitset_set_all(undef);
-	cv_foreach (cv, i, val)
-		bitset_clear(undef, i);
-
-	return undef;
+	return (bool)get_entity_link(clone);
 }
 
 static void update_irg_args(ir_graph *irg, const cloning_vector_t cv)
@@ -170,7 +120,7 @@ static ir_type *get_clone_type(const ir_type *mtp, const cloning_vector_t cv)
 	return new_mtp;
 }
 
-static ir_entity *get_proc_clone(const ir_entity *src,
+static ir_entity *create_proc_clone(const ir_entity *src,
                                  const cloning_vector_t cv)
 {
 	// Generate a unique identifier for the clone
@@ -194,7 +144,43 @@ static ir_entity *get_proc_clone(const ir_entity *src,
 	set_entity_irg(new_entity, irg);
 	add_irp_irg(irg);
 
+	// Mark the clone as freshly generated
+	clone_set_new(new_entity);
+
 	return new_entity;
+}
+
+static pmap *clone_map = NULL;
+
+static ir_entity *get_proc_clone(const ir_entity *src,
+                                 const cloning_vector_t cv)
+{
+	cv_hashmap_t *const cv2clone_map = pmap_get(cv_hashmap_t, clone_map, src);
+	if (cv2clone_map == NULL) return NULL;
+	return cv_hashmap_get(ir_entity, cv2clone_map, cv);
+}
+
+static void cache_proc_clone(const ir_entity *src, const cloning_vector_t cv,
+                             ir_entity *clone)
+{
+	cv_hashmap_t *cv2clone_map = pmap_get(cv_hashmap_t, clone_map, src);
+	if (cv2clone_map == NULL) {
+		cv2clone_map = obstack_alloc(&obst, sizeof *cv2clone_map);
+		cv_hashmap_init(cv2clone_map);
+		pmap_insert(clone_map, src, cv2clone_map);
+	}
+	cv_hashmap_insert(cv2clone_map, cv, clone);
+}
+
+static ir_entity *get_or_create_proc_clone(const ir_entity *src,
+                                           const cloning_vector_t cv)
+{
+	ir_entity *clone = get_proc_clone(src, cv);
+	if (clone == NULL) {
+		clone = create_proc_clone(src, cv);
+		cache_proc_clone(src, cv, clone);
+	}
+	return clone;
 }
 
 /**
@@ -228,12 +214,6 @@ static void update_call(ir_node *call, ir_entity *clone,
 	exchange(call, clone_call);
 
 	// TODO do anything to remove possibly unused nodes?
-}
-
-static bool is_new_clone(const ir_entity *clone)
-{
-	(void)clone;
-	return true;
 }
 
 typedef struct order_t {
@@ -271,6 +251,9 @@ void proc_cloning(float threshold)
 	callgraph_walk(NULL, build_topo_order, &order);
 	assert(order.last == 0);
 
+	// Initialize clone map
+	clone_map = pmap_create_ex(n_irgs);
+
 	ARR_FOREACH_ITEM (order.irgs, ir_graph *, irg) {
 		ir_entity *const ent = get_irg_entity(irg);
 		const bitset_t *vips = pmap_get(const bitset_t, vip_map, irg);
@@ -283,21 +266,22 @@ void proc_cloning(float threshold)
 			DB((dbg, LEVEL_2, "Analyzing call %p from %s\n", call,
 			    get_entity_name(get_irg_entity(get_irn_irg(call)))));
 
-			cloning_vector_t cv = cv_new(call, vips);
+			cloning_vector_t cv = cv_new(call, vips, &obst);
 			if (cv_get_size(cv) == 0) continue;
 
-			ir_entity *const clone = get_proc_clone(ent, cv);
+			ir_entity *const clone = get_or_create_proc_clone(ent, cv);
 			DB((dbg, LEVEL_1, "Created clone %s\n", get_entity_name(clone)));
 
 			// Even if we invalidate the call_sites here, we do not have to
 			// update them, since we don't come back to already handled calls.
 			// At least not as long as we do not deal with recursion.
-			bitset_t *remaining_params = cv_get_undef(cv);
+			bitset_t *remaining_params = cv_get_undef(cv, &obst);
 			update_call(call, clone, remaining_params);
 
 			if (is_new_clone(clone)) {
 				ir_graph *const clone_irg = get_entity_linktime_irg(clone);
 				call_sites_register_irg_calls(&call_sites, clone_irg);
+				clone_unset_new(clone);
 			}
 		}
 	}
@@ -308,4 +292,5 @@ void proc_cloning(float threshold)
 	call_sites_destroy(&call_sites);
 	obstack_free(&obst, 0);
 	pmap_destroy(vip_map);
+	pmap_destroy(clone_map);
 }
