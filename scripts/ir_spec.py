@@ -495,7 +495,7 @@ class Id(Node):
 @op
 class IJmp(Node):
 	"""Jumps to the code in its argument. The code has to be in the same
-	function and the the destination must be one of the blocks reachable
+	function and the destination must be one of the blocks reachable
 	by the tuple results"""
 	mode     = "mode_X"
 	pinned   = "yes"
@@ -523,7 +523,7 @@ class Load(Node):
 		("M",         "memory result"),
 		("res",       "result of load operation"),
 		("X_regular", "control flow when no exception occurs"),
-		("X_except",  "control flow when exception occured"),
+		("X_except",  "control flow when exception occurred"),
 	]
 	flags    = [ "fragile", "uses_memory", "const_memory" ]
 	pinned   = "exception"

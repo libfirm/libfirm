@@ -54,7 +54,7 @@ typedef enum {
 	irop_flag_uses_memory  = 1U <<  8, /**< This operation has a memory input and may change the memory state. */
 	irop_flag_dump_noblock = 1U <<  9, /**< node should be dumped outside any blocks */
 	/** This operation jumps to an unknown destination. The CFG is a
-	 * conservative aproximation in this case. You cannot change the destination
+	 * conservative approximation in this case. You cannot change the destination
 	 * of an unknown_jump */
 	irop_flag_unknown_jump = 1U << 11,
 	/** The opcode has a memory input/output but does not actually change the
