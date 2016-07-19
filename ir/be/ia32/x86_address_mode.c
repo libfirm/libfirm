@@ -384,7 +384,7 @@ static void mark_non_address_nodes(ir_node *node, void *env)
 
 	switch (get_irn_opcode(node)) {
 	case iro_Load:
-		/* Nothing to do. especially do not mark the pointer, because we want to
+		/* Nothing to do. Especially, do not mark the pointer, because we want to
 		 * turn it into AM. */
 		break;
 
@@ -401,11 +401,11 @@ static void mark_non_address_nodes(ir_node *node, void *env)
 		if (get_irn_n_edges(node) <= 1)
 			break;
 
-		/* for adds and shls with multiple users we use this heuristic:
-		 * we do not fold them into address mode if their operands don't live
+		/* For adds and shls with multiple users we use this heuristic:
+		 * we do not fold them into address mode if their operands do not live
 		 * out of the block, because in this case we will reduce register
-		 * pressure. Otherwise we fold them in aggressively in the hope, that
-		 * the node itself doesn't exist anymore and we were able to save the
+		 * pressure. Otherwise, we fold them aggressively in the hope that
+		 * the node itself does not exist anymore and we were able to save the
 		 * register for the result */
 		ir_node *left  = get_binop_left(node);
 		ir_node *right = get_binop_right(node);
