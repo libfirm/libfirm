@@ -99,12 +99,16 @@ static ir_graph *get_clone_irg(ir_graph *irg, const cloning_vector_t cv)
 static ir_type *get_clone_type(const ir_type *mtp, const cloning_vector_t cv)
 {
 	size_t const n_params     = get_method_n_params(mtp);
-	size_t const n_ress       = get_method_n_ress(mtp);
 	size_t const n_new_params = n_params - cv_get_size(cv);
+	size_t const n_ress       = get_method_n_ress(mtp);
+	bool const is_variadic    = is_method_variadic(mtp);
+	unsigned const cc_mask    = get_method_calling_convention(mtp);
+	mtp_additional_properties const property_mask =
+	    get_method_additional_properties(mtp);
 
 	/* Create the new type for our clone. */
-	ir_type *const new_mtp = new_type_method(n_new_params, n_ress, false,
-	                                         cc_cdecl_set, mtp_no_property);
+	ir_type *const new_mtp = new_type_method(n_new_params, n_ress, is_variadic,
+	                                         cc_mask, property_mask);
 
 	/* We must set the type of the methods parameters.*/
 	for (size_t i = 0, j = 0; i < n_params; ++i) {
@@ -193,12 +197,13 @@ static ir_entity *get_or_create_proc_clone(const ir_entity *src,
  * be used in the updated call
  */
 static void update_call(ir_node *call, ir_entity *clone,
-                        const bitset_t *used_args)
+                        const cloning_vector_t cv)
 {
 	// Actually we would only need to update the ptr and the arguments, but
 	// there is no public interface to do that, so we create a new call
-	size_t const n_args = bitset_popcount(used_args);
-	ir_node **const in  = ALLOCAN(ir_node *, n_args);
+	const bitset_t *const used_args = cv_get_undef(cv, &obst);
+	size_t const n_args             = bitset_popcount(used_args);
+	ir_node **const in              = ALLOCAN(ir_node *, n_args);
 
 	size_t new_idx = 0;
 	bitset_foreach (used_args, i) {
@@ -208,7 +213,7 @@ static void update_call(ir_node *call, ir_entity *clone,
 	ir_node *const block      = get_nodes_block(call);
 	ir_node *const mem        = get_Call_mem(call);
 	ir_node *const ptr        = new_r_Address(get_irn_irg(call), clone);
-	ir_type *const type       = get_entity_type(clone);
+	ir_type *const type       = get_clone_type(get_Call_type(call), cv);
 	ir_node *const clone_call = new_r_Call(block, mem, ptr, n_args, in, type);
 
 	exchange(call, clone_call);
@@ -256,11 +261,15 @@ void proc_cloning(float threshold)
 
 	ARR_FOREACH_ITEM (order.irgs, ir_graph *, irg) {
 		ir_entity *const ent = get_irg_entity(irg);
-		const bitset_t *vips = pmap_get(const bitset_t, vip_map, irg);
-		DB((dbg, LEVEL_2, "Analyzing calls to %s\n", get_entity_name(ent)));
+		bitset_t *vips       = pmap_get(bitset_t, vip_map, irg);
 
-		// TODO handle variadic arguments
-		if (is_method_variadic(get_entity_type(ent))) continue;
+		if (is_method_variadic(get_entity_type(ent))) {
+			// We cannot remove the last fixed parameter of procedures with
+			// variadic arguments since it is used to access the var args.
+			bitset_clear(vips, bitset_size(vips) - 1);
+		}
+
+		DB((dbg, LEVEL_2, "Analyzing calls to %s\n", get_entity_name(ent)));
 
 		foreach_call_to (&call_sites, irg, call) {
 			DB((dbg, LEVEL_2, "Analyzing call %p from %s\n", call,
@@ -275,8 +284,7 @@ void proc_cloning(float threshold)
 			// Even if we invalidate the call_sites here, we do not have to
 			// update them, since we don't come back to already handled calls.
 			// At least not as long as we do not deal with recursion.
-			bitset_t *remaining_params = cv_get_undef(cv, &obst);
-			update_call(call, clone, remaining_params);
+			update_call(call, clone, cv);
 
 			if (is_new_clone(clone)) {
 				ir_graph *const clone_irg = get_entity_linktime_irg(clone);
