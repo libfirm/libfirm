@@ -1092,11 +1092,39 @@ static ir_node *gen_Minus(ir_node *node)
 	return new_bd_arm_Rsb_imm(dbgi, block, new_op, 0, 0);
 }
 
+typedef struct arm_am_t {
+	ir_node *base;
+	long     offset;
+} arm_am_t;
+
+static arm_am_t transform_am(ir_node *addr)
+{
+	long offset = 0;
+	if (is_Add(addr)) {
+		ir_node *const r = get_Add_right(addr);
+		if (is_Const(r)) {
+			long const c = get_Const_long(r);
+			/* Symmetrical, because ARM uses sign+magnitude for offset. */
+			if (-4096 < offset && offset < 4096) {
+				offset = c;
+				addr   = get_Add_left(addr);
+			}
+		}
+	}
+
+	ir_node *const base = be_transform_node(addr);
+
+	return (arm_am_t){
+		.base   = base,
+		.offset = offset,
+	};
+}
+
 static ir_node *gen_Load(ir_node *node)
 {
 	ir_node  *block   = be_transform_nodes_block(node);
 	ir_node  *ptr     = get_Load_ptr(node);
-	ir_node  *new_ptr = be_transform_node(ptr);
+	arm_am_t  am      = transform_am(ptr);
 	ir_node  *mem     = get_Load_mem(node);
 	ir_node  *new_mem = be_transform_node(mem);
 	ir_mode  *mode    = get_Load_mode(node);
@@ -1107,13 +1135,12 @@ static ir_node *gen_Load(ir_node *node)
 	ir_node *new_load;
 	if (mode_is_float(mode)) {
 		if (arm_cg_config.fpu == ARM_FPU_FPA) {
-			new_load = new_bd_arm_Ldf(dbgi, block, new_ptr, new_mem, mode,
-			                          NULL, 0, 0, false);
+			new_load = new_bd_arm_Ldf(dbgi, block, am.base, new_mem, mode, NULL, 0, am.offset, false);
 		} else {
 			panic("softfloat not lowered");
 		}
 	} else {
-		new_load = new_bd_arm_Ldr(dbgi, block, new_ptr, new_mem, mode, NULL, 0, 0, false);
+		new_load = new_bd_arm_Ldr(dbgi, block, am.base, new_mem, mode, NULL, 0, am.offset, false);
 	}
 	set_irn_pinned(new_load, get_irn_pinned(node));
 
@@ -1124,7 +1151,7 @@ static ir_node *gen_Store(ir_node *node)
 {
 	ir_node  *block   = be_transform_nodes_block(node);
 	ir_node  *ptr     = get_Store_ptr(node);
-	ir_node  *new_ptr = be_transform_node(ptr);
+	arm_am_t  am      = transform_am(ptr);
 	ir_node  *mem     = get_Store_mem(node);
 	ir_node  *new_mem = be_transform_node(mem);
 	ir_node  *val     = get_Store_value(node);
@@ -1137,14 +1164,12 @@ static ir_node *gen_Store(ir_node *node)
 	ir_node *new_store;
 	if (mode_is_float(mode)) {
 		if (arm_cg_config.fpu == ARM_FPU_FPA) {
-			new_store = new_bd_arm_Stf(dbgi, block, new_ptr, new_val,
-			                           new_mem, mode, NULL, 0, 0, false);
+			new_store = new_bd_arm_Stf(dbgi, block, am.base, new_val, new_mem, mode, NULL, 0, am.offset, false);
 		} else {
 			panic("softfloat not lowered");
 		}
 	} else {
-		new_store = new_bd_arm_Str(dbgi, block, new_ptr, new_val, new_mem, mode,
-		                           NULL, 0, 0, false);
+		new_store = new_bd_arm_Str(dbgi, block, am.base, new_val, new_mem, mode, NULL, 0, am.offset, false);
 	}
 	set_irn_pinned(new_store, get_irn_pinned(node));
 	return new_store;
