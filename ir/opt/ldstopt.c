@@ -1218,6 +1218,20 @@ static bool has_multiple_users(const ir_node *node)
 	return false;
 }
 
+static ir_cons_flags get_store_cons_flags(ir_node *const store)
+{
+	ir_cons_flags cons = cons_none;
+	if (get_Store_volatility(store) != volatility_non_volatile)
+		cons |= cons_volatile;
+	if (get_Store_unaligned(store) != align_is_aligned)
+		cons |= cons_unaligned;
+	if (get_irn_pinned(store) == op_pin_state_floats)
+		cons |= cons_floats;
+	if (ir_throws_exception(store))
+		cons |= cons_throws_exception;
+	return cons;
+}
+
 /**
  * walker, optimizes Phi after Stores to identical places:
  * Does the following optimization:
@@ -1268,10 +1282,11 @@ static changes_t optimize_phi(ir_node *phi, walk_env_t *wenv)
 		return NO_CHANGES;
 
 	/* this is the address of the store */
-	ir_node     *ptr  = get_Store_ptr(store);
-	ir_mode     *mode = get_irn_mode(get_Store_value(store));
-	ldst_info_t *info = (ldst_info_t *)get_irn_link(store);
-	ir_node     *exc  = info->exc_block;
+	ir_node      *const ptr  = get_Store_ptr(store);
+	ir_mode      *const mode = get_irn_mode(get_Store_value(store));
+	ir_cons_flags const cons = get_store_cons_flags(store);
+	ldst_info_t        *info = (ldst_info_t *)get_irn_link(store);
+	ir_node      *const exc  = info->exc_block;
 
 	for (int i = 1; i < n; ++i) {
 		ir_node *pred = get_Phi_pred(phi, i);
@@ -1284,6 +1299,8 @@ static changes_t optimize_phi(ir_node *phi, walk_env_t *wenv)
 
 		if (ptr != get_Store_ptr(pred)
 		    || mode != get_irn_mode(get_Store_value(pred)))
+			return NO_CHANGES;
+		if (cons != get_store_cons_flags(pred))
 			return NO_CHANGES;
 
 		/* check, if all stores have the same exception flow */
@@ -1356,7 +1373,7 @@ static changes_t optimize_phi(ir_node *phi, walk_env_t *wenv)
 	ir_node *phiD = new_r_Phi(phi_block, n, inD, mode);
 
 	/* fourth step: create the Store */
-	store = new_r_Store(phi_block, phiM, ptr, phiD, type, cons_none);
+	store = new_r_Store(phi_block, phiM, ptr, phiD, type, cons);
 	projM = new_r_Proj(store, mode_M, pn_Store_M);
 
 	/* rewire memory and kill the old nodes */
