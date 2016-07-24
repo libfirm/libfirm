@@ -1300,7 +1300,7 @@ static changes_t optimize_phi(ir_node *phi, walk_env_t *wenv)
 		block_info_t *bl_info = (block_info_t *)get_irn_link(block);
 		if (bl_info->flags & BLOCK_HAS_EXC)
 			return NO_CHANGES;
-		if (block == phi_block || !block_postdominates(phi_block, block))
+		if (!block_strictly_postdominates(phi_block, block))
 			return NO_CHANGES;
 	}
 
