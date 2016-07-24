@@ -1257,8 +1257,11 @@ static changes_t optimize_phi(ir_node *phi, walk_env_t *wenv)
 	if (get_irn_mode(phi) != mode_M)
 		return NO_CHANGES;
 
+	/* Phi must have at least one operand and it is pointless to distribute over a
+	 * Phi with exactly one operand.  It would needlessly create a new Store and
+	 * lose the debug info of the Store. */
 	int n = get_Phi_n_preds(phi);
-	if (n <= 0)
+	if (n <= 1)
 		return NO_CHANGES;
 
 	/* must be only one user */
