@@ -199,6 +199,12 @@ static void copy_all_nodes(ir_node *node, void *env)
 			set_Member_entity(new_node, ent);
 		}
 	}
+
+	/* Make new unique identifiers for copied labels */
+	if (is_Block(new_node)) {
+		new_node->attr.block.entity = NULL;
+		create_Block_entity(new_node);
+	}
 }
 
 /**
