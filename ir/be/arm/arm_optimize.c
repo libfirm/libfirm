@@ -129,8 +129,7 @@ static void peephole_arm_Str_Ldr(ir_node *node)
 {
 	arm_load_store_attr_t *attr    = get_arm_load_store_attr(node);
 	const int              offset  = attr->offset;
-	arm_vals               v;
-	if (allowed_arm_immediate(offset, &v))
+	if (arm_is_offset12(offset))
 		return;
 
 	/* we should only have too big offsets for frame entities */
@@ -146,6 +145,8 @@ static void peephole_arm_Str_Ldr(ir_node *node)
 		ptr = get_irn_n(node, n_arm_Ldr_ptr);
 	}
 
+	arm_vals v;
+	arm_gen_vals_from_word(offset, &v);
 	if (use_add) {
 		ptr = gen_ptr_add(node, ptr, &v);
 	} else {

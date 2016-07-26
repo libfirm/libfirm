@@ -31,4 +31,10 @@ typedef struct arm_vals {
  */
 void arm_gen_vals_from_word(uint32_t value, arm_vals *result);
 
+static inline bool arm_is_offset12(int32_t const v)
+{
+	/* Symmetrical, because ARM uses sign+magnitude for offset. */
+	return -4095 <= v && v <= 4095;
+}
+
 #endif

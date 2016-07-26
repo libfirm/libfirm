@@ -1104,8 +1104,7 @@ static arm_am_t transform_am(ir_node *addr)
 		ir_node *const r = get_Add_right(addr);
 		if (is_Const(r)) {
 			long const c = get_Const_long(r);
-			/* Symmetrical, because ARM uses sign+magnitude for offset. */
-			if (-4096 < offset && offset < 4096) {
+			if (arm_is_offset12(offset)) {
 				offset = c;
 				addr   = get_Add_left(addr);
 			}
