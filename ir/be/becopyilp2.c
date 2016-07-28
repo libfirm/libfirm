@@ -470,7 +470,7 @@ static void extend_path(ilp_env_t *ienv, deq_t *path, const ir_node *irn)
 
 end:
 	/* remove the irn */
-	deq_pop_pointer_right(ir_node, path);
+	(void)deq_pop_pointer_right(ir_node, path);
 }
 
 /**
