@@ -127,7 +127,7 @@ parse_error(read_env_t *env, const char *fmt, ...)
 	va_end(ap);
 }
 
-COMPILETIME_ASSERT(ir_bk_va_arg == ir_bk_last, complete_builtin_list);
+COMPILETIME_ASSERT(ir_bk_va_arg == ir_bk_last, complete_builtin_list)
 
 /** Initializes the symbol table. May be called more than once without problems. */
 static void symtbl_init(void)
