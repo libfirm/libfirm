@@ -516,9 +516,10 @@ static bool inline_method(ir_node *const call, ir_graph *called_graph)
 					n_ret++;
 				}
 			}
-			ir_node *const phi = n_ret > 0
-				? new_r_Phi(post_bl, n_ret, cf_pred, res_mode)
-				: new_r_Bad(irg, res_mode);
+			ir_node *const phi =
+				n_ret == 0 ? new_r_Bad(irg, res_mode) :
+				n_ret == 1 ? cf_pred[0] :
+				new_r_Phi(post_bl, n_ret, cf_pred, res_mode);
 			/* Conserve Phi-list for further inlining -- but might be
 			 * optimized */
 			if (get_nodes_block(phi) == post_bl) {
