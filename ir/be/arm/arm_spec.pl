@@ -130,7 +130,7 @@ my $binop_shifter_operand = {
 };
 
 my $binop_shifter_operand_setflags = {
-	irn_flags    => [ "rematerializable" ],
+	irn_flags    => [ "modify_flags", "rematerializable" ],
 	attr_type    => "arm_shifter_operand_t",
 	out_reqs     => [ "gp", "flags" ],
 	outs         => [ "res", "flags" ],
