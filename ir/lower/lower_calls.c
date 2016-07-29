@@ -920,6 +920,17 @@ static void transform_irg(lowering_env_t const *const env, ir_graph *const irg)
 	irg_walk_graph(irg, firm_clear_link, NULL, &walk_env);
 	irg_walk_graph(irg, fix_args_and_collect_calls, NULL, &walk_env);
 
+	/* transform return nodes */
+	if (n_ret_com > 0) {
+		ir_node *endbl = get_irg_end_block(irg);
+		foreach_irn_in(endbl, i, pred) {
+			if (is_Return(pred)) {
+				transform_return(pred, n_ret_com, &walk_env);
+				break;
+			}
+		}
+	}
+
 	/* fix parameter sels */
 	ir_node *args = get_irg_args(irg);
 	for (size_t i = 0, n = ARR_LEN(walk_env.param_members); i < n; ++i) {
@@ -937,17 +948,6 @@ static void transform_irg(lowering_env_t const *const env, ir_graph *const irg)
 	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_ENTITY_USAGE);
 	fix_calls(&walk_env);
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
-
-	/* transform return nodes */
-	if (n_ret_com > 0) {
-		ir_node *endbl = get_irg_end_block(irg);
-		foreach_irn_in(endbl, i, pred) {
-			if (is_Return(pred)) {
-				transform_return(pred, n_ret_com, &walk_env);
-				break;
-			}
-		}
-	}
 
 	if (walk_env.heights != NULL)
 		heights_free(walk_env.heights);
