@@ -1097,14 +1097,14 @@ typedef struct arm_am_t {
 	long     offset;
 } arm_am_t;
 
-static arm_am_t transform_am(ir_node *addr)
+static arm_am_t transform_am(ir_node *addr, ir_mode *const mode, bool const is_store)
 {
 	long offset = 0;
 	if (is_Add(addr)) {
 		ir_node *const r = get_Add_right(addr);
 		if (is_Const(r)) {
 			long const c = get_Const_long(r);
-			if (arm_is_offset12(offset)) {
+			if (arm_is_valid_offset(c, mode, is_store)) {
 				offset = c;
 				addr   = get_Add_left(addr);
 			}
@@ -1123,10 +1123,10 @@ static ir_node *gen_Load(ir_node *node)
 {
 	ir_node  *block   = be_transform_nodes_block(node);
 	ir_node  *ptr     = get_Load_ptr(node);
-	arm_am_t  am      = transform_am(ptr);
+	ir_mode  *mode    = get_Load_mode(node);
+	arm_am_t  am      = transform_am(ptr, mode, false);
 	ir_node  *mem     = get_Load_mem(node);
 	ir_node  *new_mem = be_transform_node(mem);
-	ir_mode  *mode    = get_Load_mode(node);
 	dbg_info *dbgi    = get_irn_dbg_info(node);
 	if (get_Load_unaligned(node) == align_non_aligned)
 		panic("unaligned Loads not supported yet");
@@ -1150,12 +1150,12 @@ static ir_node *gen_Store(ir_node *node)
 {
 	ir_node  *block   = be_transform_nodes_block(node);
 	ir_node  *ptr     = get_Store_ptr(node);
-	arm_am_t  am      = transform_am(ptr);
+	ir_node  *val     = get_Store_value(node);
+	ir_mode  *mode    = get_irn_mode(val);
+	arm_am_t  am      = transform_am(ptr, mode, true);
 	ir_node  *mem     = get_Store_mem(node);
 	ir_node  *new_mem = be_transform_node(mem);
-	ir_node  *val     = get_Store_value(node);
 	ir_node  *new_val = be_transform_node(val);
-	ir_mode  *mode    = get_irn_mode(val);
 	dbg_info *dbgi    = get_irn_dbg_info(node);
 	if (get_Store_unaligned(node) == align_non_aligned)
 		panic("unaligned Stores not supported yet");

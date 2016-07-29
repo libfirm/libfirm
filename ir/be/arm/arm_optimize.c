@@ -129,7 +129,7 @@ static void peephole_arm_Str_Ldr(ir_node *node)
 {
 	arm_load_store_attr_t *attr    = get_arm_load_store_attr(node);
 	const int              offset  = attr->offset;
-	if (arm_is_offset12(offset))
+	if (arm_is_valid_offset(offset, attr->load_store_mode, is_arm_Str(node)))
 		return;
 
 	/* we should only have too big offsets for frame entities */
@@ -175,4 +175,30 @@ void arm_peephole_optimization(ir_graph *irg)
 	register_peephole_optimization(op_arm_FrameAddr, peephole_arm_FrameAddr);
 
 	be_peephole_opt(irg);
+}
+
+static inline bool arm_is_offset8(int32_t const v)
+{
+	/* Symmetrical, because ARM uses sign+magnitude for offset. */
+	return -255 <= v && v <= 255;
+}
+
+static inline bool arm_is_offset12(int32_t const v)
+{
+	/* Symmetrical, because ARM uses sign+magnitude for offset. */
+	return -4095 <= v && v <= 4095;
+}
+
+bool arm_is_valid_offset(int32_t const v, ir_mode *const mode, bool const is_store)
+{
+	switch (get_mode_size_bits(mode)) {
+	case  8:
+		if (is_store || !mode_is_signed(mode)) {
+	case 32:
+			return arm_is_offset12(v);
+		} else {
+	default:
+			return arm_is_offset8(v);
+		}
+	}
 }
