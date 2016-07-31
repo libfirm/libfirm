@@ -39,7 +39,7 @@
 #define UNUSED      __attribute__((unused))
 
 /**
- * Use an enum type as the base type for a bitfield. This is more usefull
+ * Use an enum type as the base type for a bitfield. This is more useful
  * than using the generic "unsigned" because the compiler can warn if the
  * range of enum elements exceeds the bitfield size now.
  */
