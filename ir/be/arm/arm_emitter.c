@@ -68,12 +68,18 @@ static void arm_emit_dest_register(const ir_node *node, int pos)
 	arm_emit_register(reg);
 }
 
-static void arm_emit_offset(const ir_node *node)
+static void arm_emit_address_mode(ir_node const *const node)
 {
-	const arm_load_store_attr_t *attr = get_arm_load_store_attr_const(node);
-	assert(attr->base.is_load_store);
+	be_emit_char('[');
+	arm_emit_source_register(node, 0);
 
-	be_emit_irprintf("0x%X", attr->offset);
+	arm_load_store_attr_t const *const attr = get_arm_load_store_attr_const(node);
+	assert(attr->base.is_load_store);
+	long const offset = attr->offset;
+	if (offset != 0)
+		be_emit_irprintf(", #%ld", attr->offset);
+
+	be_emit_char(']');
 }
 
 /**
@@ -258,6 +264,10 @@ void arm_emitf(const ir_node *node, const char *format, ...)
 			be_emit_char('%');
 			break;
 
+		case 'A':
+			arm_emit_address_mode(node);
+			break;
+
 		case 'S': {
 			if (!is_digit(*format))
 				goto unknown;
@@ -276,10 +286,6 @@ void arm_emitf(const ir_node *node, const char *format, ...)
 
 		case 'I':
 			arm_emit_address(node);
-			break;
-
-		case 'o':
-			arm_emit_offset(node);
 			break;
 
 		case 'O':
