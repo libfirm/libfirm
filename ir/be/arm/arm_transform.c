@@ -1093,8 +1093,10 @@ static ir_node *gen_Minus(ir_node *node)
 }
 
 typedef struct arm_am_t {
-	ir_node *base;
-	long     offset;
+	ir_node   *base;
+	ir_entity *entity;
+	long       offset;
+	bool       is_frame_entity;
 } arm_am_t;
 
 static arm_am_t transform_am(ir_node *addr, ir_mode *const mode, bool const is_store)
@@ -1111,11 +1113,22 @@ static arm_am_t transform_am(ir_node *addr, ir_mode *const mode, bool const is_s
 		}
 	}
 
+	ir_entity *entity = NULL;
+	if (is_Member(addr)) {
+		entity = get_Member_entity(addr);
+		addr   = get_Member_ptr(addr);
+		/* Must be the frame pointer. All other sels must have been lowered
+		 * already. */
+		assert(is_Proj(addr) && is_Start(get_Proj_pred(addr)));
+	}
+
 	ir_node *const base = be_transform_node(addr);
 
 	return (arm_am_t){
-		.base   = base,
-		.offset = offset,
+		.base            = base,
+		.entity          = entity,
+		.offset          = offset,
+		.is_frame_entity = entity != NULL,
 	};
 }
 
@@ -1134,12 +1147,12 @@ static ir_node *gen_Load(ir_node *node)
 	ir_node *new_load;
 	if (mode_is_float(mode)) {
 		if (arm_cg_config.fpu == ARM_FPU_FPA) {
-			new_load = new_bd_arm_Ldf(dbgi, block, am.base, new_mem, mode, NULL, 0, am.offset, false);
+			new_load = new_bd_arm_Ldf(dbgi, block, am.base, new_mem, mode, am.entity, 0, am.offset, am.is_frame_entity);
 		} else {
 			panic("softfloat not lowered");
 		}
 	} else {
-		new_load = new_bd_arm_Ldr(dbgi, block, am.base, new_mem, mode, NULL, 0, am.offset, false);
+		new_load = new_bd_arm_Ldr(dbgi, block, am.base, new_mem, mode, am.entity, 0, am.offset, am.is_frame_entity);
 	}
 	set_irn_pinned(new_load, get_irn_pinned(node));
 
@@ -1163,12 +1176,12 @@ static ir_node *gen_Store(ir_node *node)
 	ir_node *new_store;
 	if (mode_is_float(mode)) {
 		if (arm_cg_config.fpu == ARM_FPU_FPA) {
-			new_store = new_bd_arm_Stf(dbgi, block, am.base, new_val, new_mem, mode, NULL, 0, am.offset, false);
+			new_store = new_bd_arm_Stf(dbgi, block, am.base, new_val, new_mem, mode, am.entity, 0, am.offset, am.is_frame_entity);
 		} else {
 			panic("softfloat not lowered");
 		}
 	} else {
-		new_store = new_bd_arm_Str(dbgi, block, am.base, new_val, new_mem, mode, NULL, 0, am.offset, false);
+		new_store = new_bd_arm_Str(dbgi, block, am.base, new_val, new_mem, mode, am.entity, 0, am.offset, am.is_frame_entity);
 	}
 	set_irn_pinned(new_store, get_irn_pinned(node));
 	return new_store;
