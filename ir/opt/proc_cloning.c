@@ -271,7 +271,11 @@ void proc_cloning(float threshold)
 
 		DB((dbg, LEVEL_2, "Analyzing calls to %s\n", get_entity_name(ent)));
 
-		foreach_call_to (&call_sites, irg, call) {
+		// call_sites_get_n_calls_to has to be called every time, since we
+		// might update the calls below when we have a direct recursion
+		for (size_t i = 0; i < call_sites_get_n_calls_to(&call_sites, irg); i++) {
+			ir_node *const call = call_sites_get_call_to(&call_sites, irg, i);
+
 			DB((dbg, LEVEL_2, "Analyzing call %p from %s\n", call,
 			    get_entity_name(get_irg_entity(get_irn_irg(call)))));
 
