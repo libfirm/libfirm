@@ -19,6 +19,7 @@
 #include "irgraph_t.h"
 #include "irbackedge_t.h"
 #include "irgopt.h"
+#include "util.h"
 {% endif %}
 
 {% if spec.external %}
