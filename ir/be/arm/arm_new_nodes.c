@@ -399,9 +399,11 @@ int arm_load_store_attrs_equal(const ir_node *a, const ir_node *b)
 	const arm_load_store_attr_t *attr_a = get_arm_load_store_attr_const(a);
 	const arm_load_store_attr_t *attr_b = get_arm_load_store_attr_const(b);
 	return arm_attrs_equal(a, b)
-	    && attr_a->entity == attr_b->entity
-	    && attr_a->entity_sign == attr_b->entity_sign
-	    && attr_a->offset == attr_b->offset;
+	    && attr_a->load_store_mode == attr_b->load_store_mode
+	    && attr_a->entity          == attr_b->entity
+	    && attr_a->offset          == attr_b->offset
+	    && attr_a->is_frame_entity == attr_b->is_frame_entity
+	    && attr_a->entity_sign     == attr_b->entity_sign;
 }
 
 int arm_shifter_operands_equal(const ir_node *a, const ir_node *b)
