@@ -236,7 +236,7 @@ def insdecl(node):
 		for input in node.ins:
 			res += "\n\tr_in[" + repr(i) + "] = irn_" + input.name + ";"
 			i += 1
-		res += "\n\tMEMCPY(&r_in[" + repr(insarity) + "], in, sizeof(ir_node *) * arity);\n\t"
+		res += "\n\tMEMCPY(&r_in[" + repr(insarity) + "], in, arity);\n\t"
 	elif arity == 0:
 		return ""
 	else:
