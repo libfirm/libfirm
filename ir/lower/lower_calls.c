@@ -836,9 +836,10 @@ static void transform_return(ir_node *ret, size_t n_ret_com, wlk_env *env)
 			++n_cr_opt;
 		} else {
 			/* copy-return optimization is impossible, do the copy. */
-			bool is_volatile = is_partly_volatile(pred);
-			mem = new_r_CopyB(block, mem, arg, pred, type,
-			                  is_volatile ? cons_volatile : cons_none);
+			bool          const is_volatile = is_partly_volatile(pred);
+			dbg_info     *const dbgi        = get_irn_dbg_info(ret);
+			ir_cons_flags const cons        = is_volatile ? cons_volatile : cons_none;
+			mem = new_rd_CopyB(dbgi, block, mem, arg, pred, type, cons);
 		}
 	}
 	/* replace the in of the Return */
