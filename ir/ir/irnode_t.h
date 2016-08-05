@@ -317,16 +317,6 @@ struct ir_node {
 	ir_attr attr;
 };
 
-/* forward declaration to avoid circular dependency problems */
-#define get_irg_block_visited(irg) get_irg_block_visited_(irg)
-#define get_irg_visited(irg)       get_irg_visited_(irg)
-#define ir_resources_reserved(irg) ir_resources_reserved_(irg)
-#define is_Id(node)                is_Id_(node)
-static inline ir_visited_t get_irg_visited_(const ir_graph *irg);
-static inline ir_visited_t get_irg_block_visited_(const ir_graph *irg);
-static inline ir_resources_t ir_resources_reserved_(const ir_graph *irg);
-static inline int is_Id_(const ir_node *node);
-
 /**
  * Returns the array with the ins.  The content of the array must not be
  * changed.
