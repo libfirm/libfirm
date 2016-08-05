@@ -112,7 +112,9 @@ static void layout_fragments(ir_jit_function_t *const function,
 	fragment_info_t **const fragment_infos = function->fragment_infos;
 
 	unsigned address      = 0;
+#ifndef NDEBUG
 	unsigned orig_address = 0;
+#endif
 	for (unsigned i = 0; i < n_fragments; ++i) {
 		fragment_info_t *const fragment = fragment_infos[i];
 		assert(fragment->address == ~0u);
@@ -126,7 +128,9 @@ static void layout_fragments(ir_jit_function_t *const function,
 		fragment->address = address;
 
 		address      += fragment->len;
+#ifndef NDEBUG
 		orig_address += fragment->len;
+#endif
 	}
 	function->size = address;
 	assert(code_size == orig_address);
