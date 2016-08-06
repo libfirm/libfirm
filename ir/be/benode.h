@@ -33,14 +33,10 @@ typedef enum be_opcode {
 	beo_last  = beo_Start
 } be_opcode;
 
-typedef struct be_node_attr_t {
-	except_attr exc;
-} be_node_attr_t;
-
 typedef struct be_asm_attr_t {
-	be_node_attr_t base;
-	ident         *text;
-	void          *operands;
+	except_attr exc;
+	ident      *text;
+	void       *operands;
 } be_asm_attr_t;
 
 extern ir_op *op_be_Asm;

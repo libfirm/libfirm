@@ -41,14 +41,12 @@
 
 /** The be_IncSP attribute type. */
 typedef struct {
-	be_node_attr_t base;
 	int            offset; /**< The offset by which the stack shall be
 	                            expanded/shrinked. */
 	bool           no_align;
 } be_incsp_attr_t;
 
 typedef struct {
-	be_node_attr_t base;
 	ir_entity    **in_entities;
 	ir_entity    **out_entities;
 	int            offset;
@@ -146,8 +144,6 @@ ir_node *be_new_Perm(ir_node *const block, int const n, ir_node *const *const in
 	ir_graph *const irg = get_irn_irg(block);
 	ir_node  *const irn = new_ir_node(NULL, irg, block, op_be_Perm, mode_T, n, in);
 	init_node_attr(irn, n, arch_irn_flags_none);
-	be_node_attr_t *const attr = (be_node_attr_t*)get_irn_generic_attr(irn);
-	attr->exc.pinned = true;
 	for (int i = 0; i < n; ++i) {
 		arch_register_req_t const *const in_req   = arch_get_irn_register_req(in[i]);
 		arch_register_req_t const *const slot_req =
@@ -181,8 +177,6 @@ ir_node *be_new_MemPerm(ir_node *const block, int n, ir_node *const *const in)
 static void set_copy_info(ir_node *const irn, ir_graph *const irg, ir_node *const op, arch_irn_flags_t const flags)
 {
 	init_node_attr(irn, 1, flags);
-	be_node_attr_t *const attr = (be_node_attr_t*)get_irn_generic_attr(irn);
-	attr->exc.pinned = false;
 
 	arch_register_req_t   const *const op_req = arch_get_irn_register_req(op);
 	arch_register_class_t const *const cls    = op_req->cls;
@@ -228,8 +222,6 @@ ir_node *be_new_Keep(ir_node *const block, int const n,
 	ir_graph *irg = get_irn_irg(block);
 	ir_node  *res = new_ir_node(NULL, irg, block, op_be_Keep, mode_ANY, n, in);
 	init_node_attr(res, 1, arch_irn_flag_schedule_first);
-	be_node_attr_t *attr = (be_node_attr_t*) get_irn_generic_attr(res);
-	attr->exc.pinned = true;
 
 	for (int i = 0; i < n; ++i) {
 		arch_register_req_t const *const req = arch_get_irn_register_req(in[i]);
@@ -257,7 +249,6 @@ ir_node *be_new_IncSP(const arch_register_t *sp, ir_node *bl,
 	be_incsp_attr_t *a = (be_incsp_attr_t*)get_irn_generic_attr(irn);
 	a->offset          = offset;
 	a->no_align        = no_align;
-	a->base.exc.pinned = true;
 
 	/* Set output constraint to stack register. */
 	be_node_set_register_req_in(irn, 0, sp->cls->class_req);
@@ -628,14 +619,14 @@ void be_init_op(void)
 	/* Acquire all needed opcodes. */
 	unsigned const o = get_next_ir_opcodes(beo_last + 1);
 	op_be_Asm        = new_be_op(o+beo_Asm,        "be_Asm",        op_pin_state_exc_pinned, irop_flag_none,                            oparity_any,      sizeof(be_asm_attr_t));
-	op_be_Copy       = new_be_op(o+beo_Copy,       "be_Copy",       op_pin_state_exc_pinned, irop_flag_none,                            oparity_any,      sizeof(be_node_attr_t));
-	op_be_CopyKeep   = new_be_op(o+beo_CopyKeep,   "be_CopyKeep",   op_pin_state_exc_pinned, irop_flag_keep,                            oparity_variable, sizeof(be_node_attr_t));
-	op_be_IncSP      = new_be_op(o+beo_IncSP,      "be_IncSP",      op_pin_state_exc_pinned, irop_flag_none,                            oparity_any,      sizeof(be_incsp_attr_t));
-	op_be_Keep       = new_be_op(o+beo_Keep,       "be_Keep",       op_pin_state_exc_pinned, irop_flag_keep,                            oparity_variable, sizeof(be_node_attr_t));
-	op_be_MemPerm    = new_be_op(o+beo_MemPerm,    "be_MemPerm",    op_pin_state_exc_pinned, irop_flag_none,                            oparity_variable, sizeof(be_memperm_attr_t));
-	op_be_Perm       = new_be_op(o+beo_Perm,       "be_Perm",       op_pin_state_exc_pinned, irop_flag_none,                            oparity_variable, sizeof(be_node_attr_t));
+	op_be_Copy       = new_be_op(o+beo_Copy,       "be_Copy",       op_pin_state_floats,     irop_flag_none,                            oparity_any,      0);
+	op_be_CopyKeep   = new_be_op(o+beo_CopyKeep,   "be_CopyKeep",   op_pin_state_floats,     irop_flag_keep,                            oparity_variable, 0);
+	op_be_IncSP      = new_be_op(o+beo_IncSP,      "be_IncSP",      op_pin_state_pinned,     irop_flag_none,                            oparity_any,      sizeof(be_incsp_attr_t));
+	op_be_Keep       = new_be_op(o+beo_Keep,       "be_Keep",       op_pin_state_pinned,     irop_flag_keep,                            oparity_variable, 0);
+	op_be_MemPerm    = new_be_op(o+beo_MemPerm,    "be_MemPerm",    op_pin_state_pinned,     irop_flag_none,                            oparity_variable, sizeof(be_memperm_attr_t));
+	op_be_Perm       = new_be_op(o+beo_Perm,       "be_Perm",       op_pin_state_pinned,     irop_flag_none,                            oparity_variable, 0);
 	op_be_Relocation = new_be_op(o+beo_Relocation, "be_Relocation", op_pin_state_floats,     irop_flag_constlike|irop_flag_start_block, oparity_any,      sizeof(be_relocation_attr_t));
-	op_be_Start      = new_be_op(o+beo_Start,      "be_Start",      op_pin_state_pinned,     irop_flag_start_block,                     oparity_variable, sizeof(be_node_attr_t));
+	op_be_Start      = new_be_op(o+beo_Start,      "be_Start",      op_pin_state_pinned,     irop_flag_start_block,                     oparity_variable, 0);
 
 	set_op_attrs_equal(op_be_Asm,        be_asm_attr_equal);
 	set_op_attrs_equal(op_be_Copy,       attrs_equal_be_node);
