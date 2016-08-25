@@ -1162,8 +1162,13 @@ ir_tarval *ir_tarval_from_ascii(const char *buf, ir_mode *mode)
 {
 	size_t len = strlen(buf);
 	switch (get_mode_sort(mode)) {
-	case irms_reference:
 	case irms_internal_boolean:
+		if (buf[0] == '1' && buf[1] == '\0')
+			return get_tarval_b_true();
+		else if (buf[0] == '0' && buf[1] == '\0')
+			return get_tarval_b_false();
+		break;
+	case irms_reference:
 	case irms_int_number:
 		return new_integer_tarval_from_str(buf, len, false, 16, mode);
 	case irms_float_number: {

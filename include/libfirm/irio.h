@@ -52,6 +52,22 @@ FIRM_API int ir_import(const char *filename);
  */
 FIRM_API int ir_import_file(FILE *input, const char *inputname);
 
+/**
+ * If the linker option 'shared' is specified we pass it to the backend.
+ */
+FIRM_API void lto_set_shared_flag(void);
+
+/**
+ * Passes the amount of ir-files to load to the backend.
+ */
+FIRM_API void lto_set_ir_file_count(int count);
+
+/**
+ * Some adjustments are only allowed if we do not export to an ir-file.
+ */
+FIRM_API void lto_set_mode_is_compile_executable(int isExport);
+
+
 /** @} */
 
 #include "end.h"

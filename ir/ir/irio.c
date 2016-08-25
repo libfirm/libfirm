@@ -29,6 +29,7 @@
 #include "pmap.h"
 #include "tv_t.h"
 #include "util.h"
+#include "lto.h"
 
 #define SYMERROR ((unsigned) ~0)
 
@@ -1660,6 +1661,14 @@ static void read_type(read_env_t *env)
 
 	case tpo_primitive: {
 		ir_mode *mode = read_mode_ref(env);
+
+		// Primitives are easy to find and need not be duplicated
+		type = lto_find_primitive(mode, size, align, flags);
+		if(type != NULL){
+			set_id(env, typenr, type);
+			return;
+		}
+
 		type = new_type_primitive(mode);
 		set_type_size(type, size);
 		goto finish_type;
@@ -1681,8 +1690,17 @@ static void read_type(read_env_t *env)
 
 	case tpo_segment: {
 		ident *id = read_ident_null(env);
-		type = new_type_segment(id, 0);
-		goto finish_type;
+
+		// Segment types are generated upon initialization and should all be known
+		type = lto_find_type_by_name(id, tpo_segment);
+		if(type == NULL)
+			panic("All segment types should already be known!");
+
+		set_id(env, typenr, type);
+
+		//type = new_type_segment(id, 0);
+		//goto finish_type;
+		return;
 	}
 
 	case tpo_code:
@@ -1704,6 +1722,7 @@ finish_type:
 		ARR_APP1(ir_type *, env->fixedtypes, type);
 
 	set_id(env, typenr, type);
+	lto_register_type(type);
 }
 
 static void read_unknown_entity(read_env_t *env)
@@ -1711,6 +1730,58 @@ static void read_unknown_entity(read_env_t *env)
 	long       entnr  = read_long(env);
 	ir_entity *entity = get_unknown_entity();
 	set_id(env, entnr, entity);
+}
+
+static ir_initializer_t* parse_initializer(read_env_t *env){
+	const char *str = read_word(env);
+	if (streq(str, "initializer")) {
+		return read_initializer(env);
+
+	} else if (streq(str, "none")) {
+		/* do nothing */
+	} else {
+		parse_error(env, "expected 'initializer' or 'none' got '%s'\n", str);
+	}
+	return NULL;
+}
+
+static void merge_entities(read_env_t* env, ir_entity* entity, ir_type* type, ir_entity_kind kind,
+		ir_linkage linkage, ir_volatility volatility, ir_visibility visibility) {
+
+	switch (kind) {
+	case IR_ENTITY_METHOD: {
+
+		type = lto_handle_implicit_declared_functions(entity->type, type);
+		entity->type = type;
+		break;
+	}
+	case IR_ENTITY_NORMAL: {
+		ir_initializer_t* initializer = parse_initializer(env);
+		// only one entity can have an initializer. This entity must be the definition!
+		if (initializer != NULL) {
+			if (get_entity_initializer(entity) == NULL) {
+				// the current entity has no initializer => we assume it is only a declaration
+				// we take over the type and initializer of this entity, because we can not
+				// easily replace the old entity
+				entity->type = type;
+				set_entity_initializer(entity, initializer);
+			} else {
+				panic("Already have an initializer for this entity: %+F\n", entity);
+			}
+		}
+		break;
+	}
+	default:
+		// We only merge specific entity kinds
+		return;
+	}
+
+	ir_visibility vis = lto_adaptVisibility(entity->visibility, visibility);
+	ir_volatility vol = MAX(entity->volatility, volatility); // is_volatile > not_volatile
+	// Linkage values accumulate
+	set_entity_linkage(entity, linkage | entity->linkage);
+	set_entity_volatility(entity, vol);
+	set_entity_visibility(entity, vis);
 }
 
 /** Reads an entity description and remembers it by its id. */
@@ -1724,8 +1795,11 @@ static void read_entity(read_env_t *env, ir_entity_kind kind)
 	ir_type       *owner      = NULL;
 	ir_entity     *entity     = NULL;
 
-	if (kind != IR_ENTITY_LABEL && kind != IR_ENTITY_PARAMETER) {
-		name    = read_ident(env);
+
+	bool namedEntity = !(kind == IR_ENTITY_LABEL || kind == IR_ENTITY_PARAMETER);
+
+	if (namedEntity) {
+		name = read_ident(env);
 		ld_name = read_ident_null(env);
 	}
 
@@ -1741,6 +1815,66 @@ static void read_entity(read_env_t *env, ir_entity_kind kind)
 
 	ir_volatility volatility = read_volatility(env);
 
+
+	// By default everything with a name, which is private is renamed
+	// TODO: this will rename every private entity even if it has been renamed
+	// in a prior import export cylce.
+	bool shouldRename = namedEntity && lto_is_visibility_private(visibility);
+
+	if(shouldRename){
+		unsigned renamed;
+		renamed = lto_unique_number();
+		char tmp[strlen(name) + 13]; // TODO: hardcoded 10 digits, could be exceeded?
+		sprintf(tmp, "r.%d.%s", renamed, name);
+		name = new_id_from_str(tmp);
+
+
+		if(ld_name != NULL){
+			char tmp[strlen(ld_name) + 13];
+			sprintf(tmp, "r.%d.%s", renamed, ld_name);
+			ld_name = new_id_from_str(tmp);
+		}
+	}
+
+
+	// try to merge all entities, that have a name and are not private
+	if (namedEntity && !shouldRename) {
+
+		// find previous by with the same name
+		entity = lto_get_entity_by_name(name);
+
+		// TODO: more comparison checks?! is kind required??
+		if (entity != NULL && entity->kind == kind
+				&& entity->owner == owner) {
+
+			merge_entities(env, entity, type, kind, linkage, volatility, visibility);
+
+			// Ignore the (possibly) remaining text.
+			skip_to(env, '\n');
+
+			// No new entity is created. Link to the previous entity
+			set_id(env, entnr, entity);
+			return;
+		}
+	}
+
+
+	// in case of LTO can adjust the visibility of all entities
+	// TODO: this can cause trouble(linker errors) in certain combinations
+	if(lto_can_adjust_visibility()
+			// main cannot be made local
+			&& name != NULL && !streq(name, "main")
+			// ignore all private entities
+			&& !lto_is_visibility_private(visibility)){
+
+		// set the visibility to local
+		// and remove the merge attribute to prevent warnings
+		visibility = ir_visibility_local;
+		if((linkage & IR_LINKAGE_MERGE) == IR_LINKAGE_MERGE)
+			linkage &= ~IR_LINKAGE_MERGE;
+	}
+
+
 	switch (kind) {
 	case IR_ENTITY_ALIAS: {
 		ir_entity *aliased = read_entity_ref(env);
@@ -1751,16 +1885,11 @@ static void read_entity(read_env_t *env, ir_entity_kind kind)
 		entity = new_entity(owner, name, type);
 		if (ld_name != NULL)
 			set_entity_ld_ident(entity, ld_name);
-		const char *str = read_word(env);
-		if (streq(str, "initializer")) {
-			ir_initializer_t *initializer = read_initializer(env);
-			if (initializer != NULL)
+
+		ir_initializer_t * initializer = parse_initializer(env);
+		if (initializer != NULL)
 				set_entity_initializer(entity, initializer);
-		} else if (streq(str, "none")) {
-			/* do nothing */
-		} else {
-			parse_error(env, "expected 'initializer' or 'none' got '%s'\n", str);
-		}
+
 		break;
 	case IR_ENTITY_COMPOUND_MEMBER:
 		entity = new_entity(owner, name, type);
@@ -2153,7 +2282,11 @@ static void read_program(read_env_t *env)
 		case kw_segment_type: {
 			ir_segment_t  segment = (ir_segment_t) read_enum(env, tt_segment);
 			ir_type      *type    = read_type_ref(env);
-			set_segment_type(segment, type);
+
+			if (get_segment_type(segment) == NULL) {
+				ir_printf("Setting segment type for segment: %+F. This type should already be set\n", type);
+				set_segment_type(segment, type);
+			}
 			break;
 		}
 		case kw_asm: {
@@ -2189,6 +2322,7 @@ int ir_import_file(FILE *input, const char *inputname)
 
 	readers_init();
 	symtbl_init();
+	lto_init();
 
 	memset(env, 0, sizeof(*env));
 	obstack_init(&env->obst);
