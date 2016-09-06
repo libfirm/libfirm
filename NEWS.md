@@ -21,6 +21,17 @@ libFirm 1.22.1 (2016-01-07)
 * Add peephole optimization 'testl $0x0000XX00, %eRx' -> 'testb $0xXX, %Rh' (ia32)
 * Generate slightly better code to load the floating-point constants `-0.0` and `-1.0` (ia32)
 * Reduce number of stack adjustments (amd64)
+* API: Set the length of an array type solely when creating the array type
+* API: Set whether a function type is variadic and its calling convention and additional properties solely when creating the function type
+* API: Automatically infer the mode when creating Add, And, Div, Eor, Minus, Mod, Mul, Mulh, Mux, Not, Or, Shl, Shr, Shrs and Sub nodes
+* API: Remove the notion of atomic entities, use the initializer accessor functions instead
+* API: Remove visibility from types
+* API: Remove the type flag `tf_variable_size`, test the array size for 0 instead
+* API: Remove `plist`, use `pdeq` instead
+* API: Remove `get_{class,segment,struct,union}_{ident,name}()`, use `get_compound_{ident,name}()` instead
+* Improve IR graph verifier
+* Improve address mode use in instruction selection (arm)
+* Slightly improve preservation of debug info during transformations
 * Bugfixes
 
 libFirm 1.22.0 (2015-12-31)
