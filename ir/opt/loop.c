@@ -231,7 +231,7 @@ static void get_loop_info(ir_node *const node, void *const env)
 		case iro_Phi:
 			if (opt_params.count_phi)
 				goto count;
-				break;
+			break;
 
 		case iro_Address:
 		case iro_Align:
