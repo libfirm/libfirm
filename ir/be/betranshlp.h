@@ -177,4 +177,12 @@ bool be_match_immediate(ir_node const *node, ir_tarval **tarval_out,
 
 ir_node *be_make_Sync(ir_node *block, int arity, ir_node **ins);
 
+/**
+ * Returns true if mode should be stored in a general purpose register
+ */
+static inline bool be_mode_needs_gp_reg(ir_mode *const mode)
+{
+	return get_mode_arithmetic(mode) == irma_twos_complement;
+}
+
 #endif

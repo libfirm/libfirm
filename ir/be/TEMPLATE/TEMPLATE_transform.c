@@ -33,14 +33,6 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 typedef ir_node* (*new_binop_func)(dbg_info *dbgi, ir_node *block,
                                    ir_node *left, ir_node *right);
 
-/**
- * returns true if mode should be stored in a general purpose register
- */
-static inline bool mode_needs_gp_reg(ir_mode *mode)
-{
-	return get_mode_arithmetic(mode) == irma_twos_complement;
-}
-
 static ir_node *transform_const(ir_node *const node, ir_entity *const entity, ir_tarval *const value)
 {
 	ir_node  *const block = be_transform_nodes_block(node);
@@ -271,7 +263,7 @@ static ir_node *gen_Phi(ir_node *node)
 {
 	ir_mode                   *mode = get_irn_mode(node);
 	const arch_register_req_t *req;
-	if (mode_needs_gp_reg(mode)) {
+	if (be_mode_needs_gp_reg(mode)) {
 		req  = TEMPLATE_reg_classes[CLASS_TEMPLATE_gp].class_req;
 	} else {
 		req = arch_memory_req;

@@ -16,6 +16,7 @@
 #include "amd64_transform.h"
 #include "be.h"
 #include "besched.h"
+#include "betranshlp.h"
 #include "bitfiddle.h"
 #include "gen_amd64_regalloc_if.h"
 #include "ident.h"
@@ -297,7 +298,7 @@ void amd64_lower_va_arg(ir_node *node)
 		ir_node   *max;
 		ir_entity *offset_entity;
 		ir_node   *stride;
-		if (mode_is_int(resmode) || mode_is_reference(resmode)) {
+		if (be_mode_needs_gp_reg(resmode)) {
 			max           = new_r_Const_long(irg, mode_Is, n_gp_args * gp_size);
 			offset_entity = va_list_members.gp_offset;
 			stride        = new_r_Const_long(irg, mode_Is, gp_size);

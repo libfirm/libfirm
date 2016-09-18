@@ -379,7 +379,7 @@ static void mark_non_address_nodes(ir_node *node, void *env)
 	be_lv_t *lv = (be_lv_t*)env;
 
 	ir_mode *mode = get_irn_mode(node);
-	if (!mode_is_int(mode) && !mode_is_reference(mode) && mode != mode_b)
+	if (!be_mode_needs_gp_reg(mode) && mode != mode_b)
 		return;
 
 	switch (get_irn_opcode(node)) {

@@ -68,16 +68,6 @@ static const arch_register_t *const omit_fp_callee_saves[] = {
 	&sparc_registers[REG_I5],
 };
 
-static inline bool mode_needs_gp_reg(ir_mode *mode)
-{
-	if (mode_is_int(mode) || mode_is_reference(mode)) {
-		/* we should only see 32bit code */
-		assert(get_mode_size_bits(mode) <= 32);
-		return true;
-	}
-	return false;
-}
-
 /**
  * Create an And that will zero out upper bits.
  *
@@ -1499,7 +1489,7 @@ static ir_node *gen_Unknown(ir_node *node)
 	if (mode_is_float(mode)) {
 		ir_node *block = be_transform_nodes_block(node);
 		return gen_float_const(NULL, block, get_mode_null(mode));
-	} else if (mode_needs_gp_reg(mode)) {
+	} else if (be_mode_needs_gp_reg(mode)) {
 		ir_graph *irg = get_irn_irg(node);
 		return get_g0(irg);
 	}
@@ -1942,7 +1932,7 @@ static ir_node *gen_Phi(ir_node *node)
 {
 	ir_mode                   *mode = get_irn_mode(node);
 	const arch_register_req_t *req;
-	if (mode_needs_gp_reg(mode)) {
+	if (be_mode_needs_gp_reg(mode)) {
 		/* we shouldn't have any 64bit stuff around anymore */
 		assert(get_mode_size_bits(mode) <= 32);
 		/* all integer operations are on 32bit registers now */
@@ -1995,10 +1985,8 @@ static ir_node *gen_compare_swap(ir_node *node)
 
 	ir_mode *mode = get_irn_mode(old);
 	assert(get_irn_mode(new) == mode);
-	if ((!mode_is_int(mode) && !mode_is_reference(mode))
-	    || get_mode_size_bits(mode) != 32) {
+	if (be_mode_needs_gp_reg(mode) || get_mode_size_bits(mode) != 32)
 		panic("compare and swap only allowed for 32bit values");
-	}
 
 	return cas;
 }

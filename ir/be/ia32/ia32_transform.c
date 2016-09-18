@@ -154,11 +154,6 @@ static ir_node *create_I2I_Conv(ir_mode *src_mode, dbg_info *dbgi, ir_node *bloc
 static ir_node *nomem;
 static ir_node *noreg_GP;
 
-static bool mode_needs_gp_reg(ir_mode *mode)
-{
-	return get_mode_arithmetic(mode) == irma_twos_complement;
-}
-
 /** Return non-zero is a node represents the 0 constant. */
 static bool is_Const_0(ir_node *node)
 {
@@ -569,7 +564,7 @@ static ir_node *gen_Unknown(ir_node *node)
 		} else {
 			res = new_bd_ia32_fldz(dbgi, block);
 		}
-	} else if (mode_needs_gp_reg(mode)) {
+	} else if (be_mode_needs_gp_reg(mode)) {
 		res = new_bd_ia32_Unknown(dbgi, block);
 	} else {
 		panic("unsupported Unknown-Mode");
@@ -961,7 +956,7 @@ static void match_arguments(ia32_address_mode_t *am, ir_node *block,
 		use_am = false;
 	}
 
-	if (mode_needs_gp_reg(mode)) {
+	if (be_mode_needs_gp_reg(mode)) {
 		if (flags & match_mode_neutral) {
 			/* we can simply skip downconvs for mode neutral nodes: the upper bits
 			 * can be random for these operations */
@@ -1240,7 +1235,7 @@ static ir_node *skip_shift_amount_conv(ir_node *n)
 	while (is_Conv(n) && get_irn_n_edges(n) == 1) {
 		ir_node *const op   = get_Conv_op(n);
 		ir_mode *const mode = get_irn_mode(op);
-		if (!mode_needs_gp_reg(mode))
+		if (!be_mode_needs_gp_reg(mode))
 			break;
 		assert(get_mode_size_bits(mode) >= 5);
 		n = op;
@@ -2439,7 +2434,7 @@ static ir_node *try_create_dest_am(ir_node *node)
 	ir_mode *mode = get_irn_mode(val);
 
 	/* handle only GP modes for now... */
-	if (!mode_needs_gp_reg(mode))
+	if (!be_mode_needs_gp_reg(mode))
 		return NULL;
 
 	/* store must be the only user of the val node */
@@ -3043,7 +3038,7 @@ static ir_node *gen_Cmp(ir_node *node)
 			return create_Fucom(node);
 		}
 	}
-	assert(mode_needs_gp_reg(cmp_mode));
+	assert(be_mode_needs_gp_reg(cmp_mode));
 
 	/* Prefer the Test instruction, when encountering (x & y) ==/!= 0 */
 	ia32_address_mode_t am;
@@ -3121,7 +3116,7 @@ static ir_node *create_CMov(ir_node *node, ir_node *flags, ir_node *new_flags,
 	ir_node  *val_true  = get_Mux_true(node);
 	ir_node  *val_false = get_Mux_false(node);
 	assert(ia32_cg_config.use_cmov);
-	assert(mode_needs_gp_reg(get_irn_mode(val_true)));
+	assert(be_mode_needs_gp_reg(get_irn_mode(val_true)));
 
 	ia32_address_mode_t am;
 	ir_node *block = get_nodes_block(node);
@@ -3434,7 +3429,7 @@ static ir_node *gen_Mux(ir_node *node)
 
 	int is_abs = ir_mux_is_abs(sel, mux_false, mux_true);
 	if (is_abs != 0) {
-		if (mode_needs_gp_reg(mode)) {
+		if (be_mode_needs_gp_reg(mode)) {
 			be_warningf(node, "integer abs not transformed");
 		} else {
 			ir_node *op = ir_get_abs_op(sel, mux_false, mux_true);
@@ -3545,7 +3540,7 @@ static ir_node *gen_Mux(ir_node *node)
 		panic("cannot transform floating point Mux");
 
 	} else {
-		assert(mode_needs_gp_reg(mode));
+		assert(be_mode_needs_gp_reg(mode));
 
 		if (is_Cmp(sel)) {
 			ir_node    *cmp_left  = get_Cmp_left(sel);
@@ -4229,7 +4224,7 @@ static ir_node *gen_Phi(ir_node *node)
 {
 	ir_mode                   *mode = get_irn_mode(node);
 	const arch_register_req_t *req;
-	if (mode_needs_gp_reg(mode)) {
+	if (be_mode_needs_gp_reg(mode)) {
 		/* we shouldn't have any 64bit stuff around anymore */
 		assert(get_mode_size_bits(mode) <= 32);
 		/* all integer operations are on 32bit registers now */

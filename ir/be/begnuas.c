@@ -19,6 +19,7 @@
 #include "beemithlp.h"
 #include "beemitter.h"
 #include "bemodule.h"
+#include "betranshlp.h"
 #include "dbginfo.h"
 #include "entity_t.h"
 #include "execfreq.h"
@@ -740,7 +741,7 @@ static void emit_init_expression(ir_node *const init)
 		return;
 
 	case iro_Add:
-		if (!mode_is_int(mode) && !mode_is_reference(mode))
+		if (!be_mode_needs_gp_reg(mode))
 			panic("constant must be int or pointer for '+' to work");
 		emit_init_expression(get_Add_left(init));
 		be_emit_cstring(" + ");
@@ -748,7 +749,7 @@ static void emit_init_expression(ir_node *const init)
 		return;
 
 	case iro_Sub:
-		if (!mode_is_int(mode) && !mode_is_reference(mode))
+		if (!be_mode_needs_gp_reg(mode))
 			panic("constant must be int or pointer for '-' to work");
 		emit_init_expression(get_Sub_left(init));
 		be_emit_cstring(" - ");

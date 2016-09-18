@@ -18,6 +18,7 @@
 #include "besched.h"
 #include "bespillslots.h"
 #include "bestack.h"
+#include "betranshlp.h"
 #include "beutil.h"
 #include "bevarargs.h"
 #include "gen_ia32_regalloc_if.h"
@@ -1226,8 +1227,7 @@ static bool mux_is_set(ir_node *sel, ir_node *mux_true, ir_node *mux_false)
 {
 	(void)sel;
 	ir_mode *mode = get_irn_mode(mux_true);
-	if (!mode_is_int(mode) && !mode_is_reference(mode)
-	    && mode != mode_b)
+	if (!be_mode_needs_gp_reg(mode) && mode != mode_b)
 		return false;
 
 	/* we can create a set plus up two 3 instructions for any combination
