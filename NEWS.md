@@ -1,38 +1,38 @@
 libFirm 1.22.1 (2016-01-07)
 ---------------------------
-* Fix cmake/make build
-* New just in time compilation mode which compiles into a memory buffer (ia32)
-* Support PIC with PLT for ELF (amd64)
-* Add `ia32-get_ip={pop,thunk}`
-* Generate 'mov $~1, %r; rol x, %r' for '~(1 << x)' (ia32)
-* Generate 'mov $~0x80000000, %r; ror x, %r' for '~(0x80000000 >> x)' (ia32)
-* Stub support for the asm constraint modifier '%'
-* Support the asm constraint 'e' (amd64, ia32)
-* Support the asm modifier 'c' (amd64, ia32)
-* Support JIT compilation (ia32)
-* Improve permutation moving for copy coalescing
-* Improve handling of negative overflow in float to int tarval conversion
-* Improve matching of immediates during instruction selection (amd64)
-* Add peephole optimization 'mov $0, %r' -> 'xorl %r, %r' (amd64)
-* Add peephole optimization 'lea c(%r), %r' -> 'add $c, %r' (amd64)
-* Add peephole optimization 'lea (%r1, %r2), %r1' -> 'add %r2, %r1' and the commutated case (amd64)
-* Add peephole optimization 'lea c(, %i, 2), %d' -> 'lea c(%i, %i), %d' (ia32)
-* Add peephole optimization 'lea (%b), %d' -> 'mov %b, %d' (ia32)
-* Add peephole optimization 'testl $0x0000XX00, %eRx' -> 'testb $0xXX, %Rh' (ia32)
-* Generate slightly better code to load the floating-point constants `-0.0` and `-1.0` (ia32)
-* Reduce number of stack adjustments (amd64)
-* API: Set the length of an array type solely when creating the array type
-* API: Set whether a function type is variadic and its calling convention and additional properties solely when creating the function type
-* API: Automatically infer the mode when creating Add, And, Div, Eor, Minus, Mod, Mul, Mulh, Mux, Not, Or, Shl, Shr, Shrs and Sub nodes
-* API: Remove the notion of atomic entities, use the initializer accessor functions instead
-* API: Remove visibility from types
-* API: Remove the type flag `tf_variable_size`, test the array size for 0 instead
-* API: Remove `plist`, use `pdeq` instead
-* API: Remove `get_{class,segment,struct,union}_{ident,name}()`, use `get_compound_{ident,name}()` instead
-* Improve IR graph verifier
-* Improve address mode use in instruction selection (arm)
-* Slightly improve preservation of debug info during transformations
-* Improve use of `lea` in instruction selection (amd64)
+* make: Fix cmake/make build
+* ia32: New just in time compilation mode which compiles into a memory buffer
+* amd64: Support PIC with PLT for ELF
+* ia32: Add `ia32-get_ip={pop,thunk}`
+* ia32: Generate `mov $~1, %r; rol x, %r` for `~(1 << x)`
+* ia32: Generate `mov $~0x80000000, %r; ror x, %r` for `~(0x80000000 >> x)`
+* be: Stub support for the asm constraint modifier `%`
+* amd64, ia32: Support the asm constraint `e`
+* amd64, ia32: Support the asm modifier `c`
+* ia32: Support JIT compilation
+* be: Improve permutation moving for copy coalescing
+* ir: Improve handling of negative overflow in float to int tarval conversion
+* amd64: Improve matching of immediates during instruction selection
+* amd64: Add peephole optimization `mov $0, %r` -> `xorl %r, %r`
+* amd64: Add peephole optimization `lea c(%r), %r` -> `add $c, %r`
+* amd64: Add peephole optimization `lea (%r1, %r2), %r1` -> `add %r2, %r1` and the commutated case
+* ia32: Add peephole optimization `lea c(, %i, 2), %d` -> `lea c(%i, %i), %d`
+* ia32: Add peephole optimization `lea (%b), %d` -> `mov %b, %d`
+* ia32: Add peephole optimization `testl $0x0000XX00, %eRx` -> `testb $0xXX, %Rh`
+* ia32: Generate slightly better code to load the floating-point constants `-0.0` and `-1.0`
+* amd64: Reduce number of stack adjustments
+* api: Set the length of an array type solely when creating the array type
+* api: Set whether a function type is variadic and its calling convention and additional properties solely when creating the function type
+* api: Automatically infer the mode when creating Add, And, Div, Eor, Minus, Mod, Mul, Mulh, Mux, Not, Or, Shl, Shr, Shrs and Sub nodes
+* api: Remove the notion of atomic entities, use the initializer access functions instead
+* api: Remove visibility from types
+* api: Remove the type flag `tf_variable_size`, test the array size for 0 instead
+* api: Remove `plist`, use `pdeq` instead
+* api: Remove `get_{class,segment,struct,union}_{ident,name}()`, use `get_compound_{ident,name}()` instead
+* ir: Improve IR graph verifier
+* arm: Improve address mode use in instruction selection
+* ir: Slightly improve preservation of debug info during transformations
+* amd64: Improve use of `lea` in instruction selection
 * Bugfixes
 
 libFirm 1.22.0 (2015-12-31)
