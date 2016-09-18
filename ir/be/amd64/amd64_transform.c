@@ -1010,29 +1010,6 @@ static ir_node *create_add_lea(dbg_info *dbgi, ir_node *new_block,
 	                        amd64_reg_reg_reqs, size, addr);
 }
 
-static ir_node *match_simple_lea(dbg_info *dbgi, ir_node *new_block,
-                                 x86_insn_size_t size, ir_node *op1,
-                                 ir_node *op2)
-{
-	x86_imm32_t immediate;
-	memset(&immediate, 0, sizeof(immediate));
-	if (match_immediate_32(&immediate, op2, false)) {
-		ir_node *in[] = {
-			be_transform_node(op1)
-		};
-		x86_addr_t addr = {
-			.immediate = immediate,
-			.variant   = X86_ADDR_BASE,
-		};
-		return new_bd_amd64_lea(dbgi, new_block, ARRAY_SIZE(in), in, reg_reqs,
-		                        size, addr);
-	} else {
-		ir_node *const new_op1 = be_transform_node(op1);
-		ir_node *const new_op2 = be_transform_node(op2);
-		return create_add_lea(dbgi, new_block, size, new_op1, new_op2);
-	}
-}
-
 static ir_node *gen_Add(ir_node *const node)
 {
 	ir_node *const op1   = get_Add_left(node);
@@ -1059,11 +1036,15 @@ static ir_node *gen_Add(ir_node *const node)
 		res = gen_binop_am(node, op1, op2, new_bd_amd64_add, pn_amd64_add_res,
 		                   flags);
 	else {
-		x86_insn_size_t size = get_mode_size_bits(mode) <= 32
-		                       ? X86_SIZE_32 : X86_SIZE_64;
-		dbg_info *const dbgi      = get_irn_dbg_info(node);
-		ir_node  *const new_block = be_transform_node(block);
-		res = match_simple_lea(dbgi, new_block, size, op1, op2);
+		int        arity = 0;
+		ir_node   *in[2];
+		x86_addr_t addr;
+		perform_address_matching(node, &arity, in, &addr);
+
+		dbg_info       *const dbgi      = get_irn_dbg_info(node);
+		ir_node        *const new_block = be_transform_node(block);
+		x86_insn_size_t const size      = get_mode_size_bits(mode) <= 32 ? X86_SIZE_32 : X86_SIZE_64;
+		res = new_bd_amd64_lea(dbgi, new_block, arity, in, amd64_reg_reg_reqs, size, addr);
 	}
 
 	x86_mark_non_am(node);

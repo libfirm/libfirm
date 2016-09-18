@@ -32,6 +32,7 @@ libFirm 1.22.1 (2016-01-07)
 * Improve IR graph verifier
 * Improve address mode use in instruction selection (arm)
 * Slightly improve preservation of debug info during transformations
+* Improve use of `lea` in instruction selection (amd64)
 * Bugfixes
 
 libFirm 1.22.0 (2015-12-31)
