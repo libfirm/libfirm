@@ -1209,7 +1209,7 @@ static ir_node *gen_Switch(ir_node *node)
 	/* switch selector should be lowered to singled word already */
 	ir_mode *mode = get_irn_mode(selector);
 	if (get_mode_size_bits(mode) != 32)
-		panic("arm: unexpected switch selector mode");
+		panic("unexpected switch selector mode");
 
 	return new_bd_arm_SwitchJmp(dbgi, block, new_op, n_outs, table);
 }

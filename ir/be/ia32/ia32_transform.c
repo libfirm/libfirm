@@ -899,7 +899,7 @@ static ir_node *transform_sext(ir_node *const node)
 	case 8:  mode = mode_Bs; break;
 	case 16: mode = mode_Hs; break;
 	default:
-		panic("ia32: invalid mode in sest: %+F", node);
+		panic("invalid mode in sext: %+F", node);
 	}
 	return create_I2I_Conv(mode, dbgi, block, node);
 }
@@ -914,7 +914,7 @@ static ir_node *transform_zext(ir_node *const node)
 	case 8:  mode = mode_Bu; break;
 	case 16: mode = mode_Hu; break;
 	default:
-		panic("ia32: invalid mode in zest: %+F", node);
+		panic("invalid mode in zext: %+F", node);
 	}
 	return create_I2I_Conv(mode, dbgi, block, node);
 }
@@ -1189,9 +1189,8 @@ static ir_node *skip_float_upconv(ir_node *node)
 
 static void check_x87_floatmode(ir_mode *mode)
 {
-	if (mode != x86_mode_E) {
-		panic("ia32: x87 only supports x86 extended float mode");
-	}
+	if (mode != x86_mode_E)
+		panic("x87 only supports x86 extended float mode");
 }
 
 /**
@@ -4037,7 +4036,7 @@ static ir_node *gen_Bitcast(ir_node *const node)
 		store_fp(dbgi, &am, block, op);
 		break;
 	default:
-		panic("ia32: unexpected src mode in Bitcast");
+		panic("unexpected src mode in Bitcast");
 	}
 
 	ir_node                   *ld;
@@ -4060,7 +4059,7 @@ static ir_node *gen_Bitcast(ir_node *const node)
 		break;
 
 	default:
-		panic("ia32: unexpected dst mode in Bitcast");
+		panic("unexpected dst mode in Bitcast");
 	}
 	am.size = size;
 	set_am_attributes(ld, &am);
@@ -5565,7 +5564,7 @@ static ir_node *gen_Proj_Proj(ir_node *node)
 	} else if (is_Call(pred_pred)) {
 		return gen_Proj_Proj_Call(node);
 	}
-	panic("ia32: unexpected Proj(Proj(%+F))", pred_pred);
+	panic("unexpected Proj(Proj(%+F))", pred_pred);
 }
 
 static ir_node *gen_Proj_default(ir_node *node)

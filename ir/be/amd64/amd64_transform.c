@@ -694,7 +694,7 @@ static void perform_address_matching(ir_node *ptr, int *arity,
 	ir_entity *entity = maddr.imm.entity;
 	if (entity != NULL && is_parameter_entity(entity) &&
 		get_entity_parameter_number(entity) == IR_VA_START_PARAMETER_NUMBER)
-		panic("perform_address_matching: Request for invalid parameter (va_start parameter)");
+		panic("request for invalid parameter (va_start parameter)");
 
 	addr->segment   = X86_SEGMENT_DEFAULT;
 	addr->immediate = maddr.imm;
@@ -1445,7 +1445,7 @@ static ir_node *gen_Member(ir_node *const node)
 		panic("Sel not lowered");
 	if (is_parameter_entity(entity) &&
 	    get_entity_parameter_number(entity) == IR_VA_START_PARAMETER_NUMBER)
-		panic("gen_Member: Request for invalid parameter (va_start parameter)");
+		panic("request for invalid parameter (va_start parameter)");
 
 	x86_addr_t addr = {
 		.immediate = {
@@ -2002,7 +2002,7 @@ static ir_node *gen_Proj_Proj(ir_node *const node)
 	} else if (is_Start(pred_pred)) {
 		return gen_Proj_Proj_Start(node);
 	}
-	panic("amd64: unexpected Proj(Proj) after %+F", pred_pred);
+	panic("unexpected Proj(Proj) after %+F", pred_pred);
 }
 
 static ir_node *match_cmp_x87(ir_node *const node, ir_node *const op0,
@@ -2372,7 +2372,7 @@ static ir_node *gen_Conv(ir_node *const node)
 		} else if (src_bits == 64) {
 			return create_movq(dbgi, block, op);
 		} else {
-			panic("amd64: can't transform %+F", node);
+			panic("cannot transform %+F", node);
 		}
 	} else if (src_bits == 128) {
 		/* 2xdouble -> float */
@@ -2384,7 +2384,7 @@ static ir_node *gen_Conv(ir_node *const node)
 			/* this is a NOP */
 			return be_transform_node(op);
 		} else {
-			panic("amd64: can't transform %+F", node);
+			panic("cannot transform %+F", node);
 		}
 	}
 
@@ -2460,7 +2460,7 @@ static ir_node *gen_Conv(ir_node *const node)
 			                               amd64_xmm_reqs, AMD64_OP_REG, addr);
 			pn_res = pn_amd64_cvtsd2ss_res;
 		} else {
-			panic("amd64: cannot transform %+F", node);
+			panic("cannot transform %+F", node);
 		}
 	} else if (src_float && !dst_float) {
 		/* float to int */
@@ -2483,7 +2483,7 @@ static ir_node *gen_Conv(ir_node *const node)
 			                                addr);
 			pn_res = pn_amd64_cvttsd2si_res;
 		} else {
-			panic("amd64: cannot transform %+F", node);
+			panic("cannot transform %+F", node);
 		}
 	} else {
 		/* int to float */
@@ -2514,7 +2514,7 @@ static ir_node *gen_Conv(ir_node *const node)
 			                               size, AMD64_OP_REG, addr);
 			pn_res = pn_amd64_cvtsi2sd_res;
 		} else {
-			panic("amd64: cannot transform %+F", node);
+			panic("cannot transform %+F", node);
 		}
 	}
 	return be_new_Proj(conv, pn_res);
@@ -3139,7 +3139,7 @@ static ir_node *gen_Bitcast(ir_node *const node)
 	} else if (!src_float && dst_float) {
 		return new_bd_amd64_movd_gp_xmm(dbgi, be_block, be_op, X86_SIZE_64, AMD64_OP_REG, addr);
 	} else {
-		panic("Unhandled bitcast modes: %+F to %+F\n", src_mode, dst_mode);
+		panic("unhandled bitcast modes: %+F to %+F\n", src_mode, dst_mode);
 	}
 }
 

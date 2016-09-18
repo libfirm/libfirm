@@ -452,7 +452,7 @@ static ir_entity *ia32_create_intrinsic_fkt(ir_type *method, const ir_op *op,
 	} else if (op == op_Mod) {
 		name = mode_is_signed(imode) ? "__moddi3" : "__umoddi3";
 	} else {
-		panic("ia32: Unexpected lowering of 64bit op %s", get_op_name(op));
+		panic("unexpected lowering of 64bit op %s", get_op_name(op));
 	}
 	return create_compilerlib_entity(new_id_from_str(name), method);
 }

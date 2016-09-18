@@ -1997,7 +1997,7 @@ static ir_node *gen_compare_swap(ir_node *node)
 	assert(get_irn_mode(new) == mode);
 	if ((!mode_is_int(mode) && !mode_is_reference(mode))
 	    || get_mode_size_bits(mode) != 32) {
-		panic("sparc: compare and swap only allowed for 32bit values");
+		panic("compare and swap only allowed for 32bit values");
 	}
 
 	return cas;
@@ -2160,7 +2160,7 @@ static ir_node *gen_Bitcast(ir_node *node)
 		return res;
 	}
 	default:
-		panic("sparc: unexpected src mode in Bitcast");
+		panic("unexpected src mode in Bitcast");
 	}
 }
 
