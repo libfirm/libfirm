@@ -450,10 +450,6 @@ static ir_node *gen_Address(ir_node *node)
 {
 	ir_node  *block = be_transform_nodes_block(node);
 	dbg_info *dbgi  = get_irn_dbg_info(node);
-	ir_mode  *mode  = get_irn_mode(node);
-
-	if (!mode_needs_gp_reg(mode))
-		panic("unexpected mode for Address");
 
 	ir_entity *entity = get_Address_entity(node);
 	x86_imm32_t imm = {
