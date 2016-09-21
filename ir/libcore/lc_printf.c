@@ -249,7 +249,7 @@ static int std_emit(lc_appendable_t *app, const lc_arg_occ_t *occ, const lc_arg_
 		}
 
 		/* strings are dumped directly, since they can get really big. A
-		 * buffer of 128 letters for all other types should be enough. */
+		 * buffer of 512 letters for all other types should be enough. */
 		case 's': {
 			const char *str = (const char*)val->v_ptr;
 			size_t size = strlen(str);
@@ -259,7 +259,7 @@ static int std_emit(lc_appendable_t *app, const lc_arg_occ_t *occ, const lc_arg_
 		}
 
 		default: {
-			int len = MAX(128, occ->width + 1);
+			int len = MAX(512, occ->width + 1);
 			char *buf = XMALLOCN(char, len);
 			res = dispatch_snprintf(buf, len, fmt, occ->lc_arg_type, val);
 			assert(res < len);
