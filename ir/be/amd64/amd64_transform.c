@@ -668,12 +668,11 @@ static bool use_address_matching(ir_mode *mode, match_flags_t flags,
 	return false;
 }
 
-static void perform_address_matching(ir_node *ptr, int *arity,
-                                     ir_node **in, x86_addr_t *addr)
+static void perform_address_matching_flags(ir_node *const ptr, int *const arity, ir_node **const in, x86_addr_t *const addr, x86_create_am_flags_t const flags)
 {
 	x86_address_t maddr;
 	memset(&maddr, 0, sizeof(maddr));
-	x86_create_address_mode(&maddr, ptr, x86_create_am_normal);
+	x86_create_address_mode(&maddr, ptr, flags);
 
 	x86_addr_variant_t variant = maddr.variant;
 	assert(variant != X86_ADDR_INVALID);
@@ -700,6 +699,11 @@ static void perform_address_matching(ir_node *ptr, int *arity,
 	addr->immediate = maddr.imm;
 	addr->log_scale = maddr.scale;
 	addr->variant   = variant;
+}
+
+static void perform_address_matching(ir_node *const ptr, int *const arity, ir_node **const in, x86_addr_t *const addr)
+{
+	perform_address_matching_flags(ptr, arity, in, addr, x86_create_am_normal);
 }
 
 static void match_binop(amd64_args_t *args, ir_node *block,
@@ -1039,7 +1043,7 @@ static ir_node *gen_Add(ir_node *const node)
 		int        arity = 0;
 		ir_node   *in[2];
 		x86_addr_t addr;
-		perform_address_matching(node, &arity, in, &addr);
+		perform_address_matching_flags(node, &arity, in, &addr, x86_create_am_force);
 
 		dbg_info       *const dbgi      = get_irn_dbg_info(node);
 		ir_node        *const new_block = be_transform_node(block);
