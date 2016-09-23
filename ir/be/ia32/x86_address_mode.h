@@ -90,9 +90,12 @@ static inline bool x86_addrs_equal(const x86_addr_t *const addr0,
                                    const x86_addr_t *const addr1)
 {
 	return x86_imm32_equal(&addr0->immediate, &addr1->immediate)
-	    && addr0->base_input == addr1->base_input
-	    && addr0->index_input == addr1->index_input
-	    && addr0->log_scale == addr1->log_scale
+	    && addr0->variant == addr1->variant
+	    && (!x86_addr_variant_has_base(addr0->variant)
+	        || addr0->base_input == addr1->base_input)
+	    && (!x86_addr_variant_has_index(addr0->variant)
+	        || (addr0->index_input == addr1->index_input
+	            && addr0->log_scale == addr1->log_scale))
 	    && addr0->segment == addr1->segment;
 }
 
