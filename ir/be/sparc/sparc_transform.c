@@ -1985,7 +1985,7 @@ static ir_node *gen_compare_swap(ir_node *node)
 
 	ir_mode *mode = get_irn_mode(old);
 	assert(get_irn_mode(new) == mode);
-	if (be_mode_needs_gp_reg(mode) || get_mode_size_bits(mode) != 32)
+	if (!be_mode_needs_gp_reg(mode) || get_mode_size_bits(mode) != 32)
 		panic("compare and swap only allowed for 32bit values");
 
 	return cas;
