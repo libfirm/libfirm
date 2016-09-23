@@ -96,7 +96,7 @@ libFirm 1.20.0 (2011-12-07)
 * Experimental dwarf debugging support
 * Code cleanups, refactoring
 * Restructured API documentation
-* Bugfixes (we did alot of csmith testing)
+* Bugfixes (we did a lot of csmith testing)
 
 libFirm 1.19.1 (2011-05-17)
 ---------------------------

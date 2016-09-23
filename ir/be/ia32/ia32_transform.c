@@ -112,7 +112,7 @@ const x86_asm_constraint_list_t ia32_asm_constraints = {
 	['u'] = { MATCH_REG, FP, 1 << REG_FP_ST1 },
 	['x'] = { MATCH_REG, &ia32_reg_classes[CLASS_ia32_xmm], 0 },
 
-	// There are more constraints and in general there is alot of internal gcc
+	// There are more constraints and in general there is a lot of internal gcc
 	// logic at play not everything is documented in the manual. In the gcc
 	// source you can look at reload.c, stmt.c and constraints.md. I am not sure
 	// how much we want/need to understand and reimplement here.
