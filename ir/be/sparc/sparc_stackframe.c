@@ -234,7 +234,7 @@ static void sparc_layout_param_entities(ir_graph *const irg, calling_convention_
 			assert(param_map[orig_n_params] != NULL);
 			offset = get_entity_offset(param_map[orig_n_params]);
 		} else {
-			offset = cconv->param_stack_size;
+			offset = cconv->param_stack_size + SPARC_MIN_STACKSIZE;
 		}
 
 		set_entity_offset(va_start_addr, offset);
