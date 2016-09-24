@@ -485,7 +485,7 @@ ir_node *be_new_Start(ir_graph *const irg, be_start_out const *const outs)
 	ir_node *const start  = new_ir_node(NULL, irg, block, op_be_Start, mode_T, 0, NULL);
 	unsigned const n_regs = isa_if->n_registers;
 
-	/* Count the number of outsputs. */
+	/* Count the number of outputs. */
 	unsigned k = 1; /* +1 for memory */
 	for (unsigned i = 0; i != n_regs; ++i) {
 		if (outs[i] != BE_START_NO)
