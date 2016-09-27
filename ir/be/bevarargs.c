@@ -24,7 +24,7 @@ static void be_default_lower_va_arg(ir_node *const node, bool const compound_is_
 	dbg_info *dbgi  = get_irn_dbg_info(node);
 	ir_graph *irg   = get_irn_irg(node);
 
-	ir_type *const aptype   = get_method_res_type(get_Builtin_type(node), 0);
+	ir_type       *aptype   = get_method_res_type(get_Builtin_type(node), 0);
 	ir_node *const ap       = get_irn_n(node, 1);
 	ir_node *const node_mem = get_Builtin_mem(node);
 
@@ -35,6 +35,7 @@ static void be_default_lower_va_arg(ir_node *const node, bool const compound_is_
 		goto load;
 	} else if (compound_is_ptr) {
 		apmode = mode_P;
+		aptype = get_type_for_mode(apmode);
 load:;
 		ir_node *const load = new_rd_Load(dbgi, block, node_mem, ap, apmode, aptype, cons_none);
 		res     = new_r_Proj(load, apmode, pn_Load_res);
