@@ -1365,7 +1365,7 @@ static backend_params ia32_backend_params = {
 	.float_int_overflow             = ir_overflow_indefinite,
 	.vararg                         = {
 		.va_list_type = NULL, /* will be set later */
-		.lower_va_arg = be_default_lower_va_arg,
+		.lower_va_arg = be_default_lower_va_arg_compound_val,
 	},
 };
 

@@ -18,7 +18,7 @@
 #include "irnode_t.h"
 #include "util.h"
 
-void be_default_lower_va_arg(ir_node *node)
+static void be_default_lower_va_arg(ir_node *const node, bool const compound_is_ptr)
 {
 	ir_node  *block = get_nodes_block(node);
 	dbg_info *dbgi  = get_irn_dbg_info(node);
@@ -31,7 +31,11 @@ void be_default_lower_va_arg(ir_node *node)
 	ir_mode *apmode = get_type_mode(aptype);
 	ir_node *res;
 	ir_node *new_mem;
-	if (apmode != NULL) {
+	if (apmode) {
+		goto load;
+	} else if (compound_is_ptr) {
+		apmode = mode_P;
+load:;
 		ir_node *const load = new_rd_Load(dbgi, block, node_mem, ap, apmode, aptype, cons_none);
 		res     = new_r_Proj(load, apmode, pn_Load_res);
 		new_mem = new_r_Proj(load, mode_M,pn_Load_M);
@@ -50,4 +54,14 @@ void be_default_lower_va_arg(ir_node *node)
 
 	ir_node *const in[] = { new_mem, res, new_ap };
 	turn_into_tuple(node, ARRAY_SIZE(in), in);
+}
+
+void be_default_lower_va_arg_compound_ptr(ir_node *const node)
+{
+	be_default_lower_va_arg(node, true);
+}
+
+void be_default_lower_va_arg_compound_val(ir_node *const node)
+{
+	be_default_lower_va_arg(node, false);
 }

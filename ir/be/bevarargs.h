@@ -17,12 +17,23 @@
 /**
  * Default implementation to lower a va_arg node.
  *
+ * This implementation assumes that all arguments except compound types are
+ * stored on the stack and that the va_list value points to the next variadic
+ * argument.  For compound types a pointer to the object is stored on the stack.
+ *
+ * @param node A Builtin node with kind ir_bk_va_arg to be lowered
+ */
+void be_default_lower_va_arg_compound_ptr(ir_node *node);
+
+/**
+ * Default implementation to lower a va_arg node.
+ *
  * This implementation assumes that all arguments are stored on the
  * stack and that the va_list value points to the next variadic
  * argument.
  *
  * @param node A Builtin node with kind ir_bk_va_arg to be lowered
  */
-void be_default_lower_va_arg(ir_node *node);
+void be_default_lower_va_arg_compound_val(ir_node *node);
 
 #endif
