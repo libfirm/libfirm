@@ -190,6 +190,7 @@ static void sparc_parse_constraint_letter(void const *const env, be_asm_constrai
 	case 'A':
 	case 'I':
 	case 'J':
+	case 'K':
 	case 'L':
 	case 'M':
 	case 'O':
@@ -218,7 +219,7 @@ static void parse_asm_constraints(be_asm_constraint_t *const constraint, ident *
 void sparc_init_asm_constraints(void)
 {
 	be_set_constraint_support(ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER,  "0123456789efr");
-	be_set_constraint_support(ASM_CONSTRAINT_FLAG_SUPPORTS_IMMEDIATE, "AIJLMOPin");
+	be_set_constraint_support(ASM_CONSTRAINT_FLAG_SUPPORTS_IMMEDIATE, "AIJKLMOPin");
 	be_set_constraint_support(ASM_CONSTRAINT_FLAG_SUPPORTS_ANY,       "g");
 	be_set_constraint_support(ASM_CONSTRAINT_FLAG_SUPPORTS_MEMOP,     "mw");
 	/* Note there are many more flags in gcc which we can't properly support
@@ -231,6 +232,7 @@ static bool sparc_check_immediate_constraint(long const val, char const imm_type
 	case 'A': return   -16 <= val && val <   16;
 	case 'I': return sparc_is_value_imm_encodeable(val);
 	case 'J': return val ==    0;
+	case 'K': return (val & 0x03FF) == 0;
 	case 'L': return -1024 <= val && val < 1024;
 	case 'M': return  -512 <= val && val <  512;
 	case 'O': return val == 4096;

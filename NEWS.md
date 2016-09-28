@@ -33,6 +33,7 @@ libFirm 1.22.1 (2016-01-07)
 * arm: Improve address mode use in instruction selection
 * ir: Slightly improve preservation of debug info during transformations
 * amd64: Improve use of `lea` in instruction selection
+* sparc: Support the asm constaint `K`
 * Bugfixes
 
 libFirm 1.22.0 (2015-12-31)
