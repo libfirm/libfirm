@@ -33,7 +33,7 @@
 bool sparc_has_load_store_attr(const ir_node *node)
 {
 	return is_sparc_Ld(node) || is_sparc_St(node) || is_sparc_Ldf(node)
-	    || is_sparc_Stf(node);
+	    || is_sparc_Stf(node) || is_sparc_IJmp(node);
 }
 
 static bool has_jmp_cond_attr(const ir_node *node)

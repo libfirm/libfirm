@@ -540,6 +540,28 @@ Cmp => { # aka SubccZero
 	emit     => "cmp %S0, %SI1",
 },
 
+IJmp => {
+	op_flags  => [ "cfopcode", "forking" ],
+	irn_flags => [ "has_delay_slot" ],
+	state     => "pinned",
+	constructors => {
+		imm => {
+			in_reqs => [ "gp" ],
+			ins     => [ "ptr" ],
+			attr    => "ir_entity *entity, int32_t offset, bool is_frame_entity",
+			init    => "init_sparc_load_store_attributes(res, NULL, entity, offset, is_frame_entity, false);",
+		},
+		reg => {
+			in_reqs => [ "gp", "gp" ],
+			ins     => [ "ptr", "ptr2" ],
+			init    => "init_sparc_load_store_attributes(res, NULL, NULL, 0, false, true);",
+		},
+	},
+	out_reqs  => [ "exec" ],
+	outs      => [ "jmp" ],
+	attr_type => "sparc_load_store_attr_t",
+},
+
 SwitchJmp => {
 	op_flags  => [ "cfopcode", "forking" ],
 	irn_flags => [ "has_delay_slot" ],

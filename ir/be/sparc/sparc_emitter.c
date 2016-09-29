@@ -617,10 +617,12 @@ void sparc_emitf(ir_node const *const node, char const *fmt, ...)
 			if (!is_digit(*fmt))
 				goto unknown;
 			unsigned const pos = *fmt++ - '0';
-			be_emit_char('[');
+			if (!plus)
+				be_emit_char('[');
 			sparc_emit_source_register(node, pos);
 			sparc_emit_offset(node, pos + 1);
-			be_emit_char(']');
+			if (!plus)
+				be_emit_char(']');
 			break;
 
 		case 'R': {
@@ -1238,6 +1240,12 @@ static void emit_jumptable_target(ir_entity const *const table,
 	sparc_emit_cfop_target(proj_x);
 }
 
+static void emit_sparc_IJmp(ir_node const *const node)
+{
+	sparc_emitf(node, "jmp %+O0");
+	fill_delay_slot(node);
+}
+
 static void emit_sparc_SwitchJmp(const ir_node *node)
 {
 	const sparc_switch_jmp_attr_t *attr = get_sparc_switch_jmp_attr_const(node);
@@ -1312,6 +1320,7 @@ static void sparc_register_emitters(void)
 	be_set_emitter(op_sparc_Call,      emit_sparc_Call);
 	be_set_emitter(op_sparc_Cas,       emit_sparc_Cas);
 	be_set_emitter(op_sparc_FrameAddr, emit_sparc_FrameAddr);
+	be_set_emitter(op_sparc_IJmp,      emit_sparc_IJmp);
 	be_set_emitter(op_sparc_Restore,   emit_sparc_Restore);
 	be_set_emitter(op_sparc_Return,    emit_sparc_Return);
 	be_set_emitter(op_sparc_SDiv,      emit_sparc_SDiv);

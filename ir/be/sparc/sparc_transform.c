@@ -2358,6 +2358,21 @@ static ir_node *gen_Proj_Proj(ir_node *node)
 	panic("code selection didn't expect Proj(Proj) after %+F", pred_pred);
 }
 
+static ir_node *gen_IJmp(ir_node *node)
+{
+	dbg_info *const dbgi  = get_irn_dbg_info(node);
+	ir_node  *const block = be_transform_nodes_block(node);
+	ir_node  *const op    = get_IJmp_target(node);
+	address_t       address;
+	match_address(op, &address, true);
+	if (address.ptr2) {
+		assert(!address.entity && address.offset == 0);
+		return new_bd_sparc_IJmp_reg(dbgi, block, address.ptr, address.ptr2);
+	} else {
+		return new_bd_sparc_IJmp_imm(dbgi, block, address.ptr, address.entity, address.offset, false);
+	}
+}
+
 /**
  * transform a Jmp
  */
@@ -2391,6 +2406,7 @@ static void sparc_register_transformers(void)
 	be_set_transform_function(op_Div,          gen_Div);
 	be_set_transform_function(op_Eor,          gen_Eor);
 	be_set_transform_function(op_Free,         gen_Free);
+	be_set_transform_function(op_IJmp,         gen_IJmp);
 	be_set_transform_function(op_Jmp,          gen_Jmp);
 	be_set_transform_function(op_Load,         gen_Load);
 	be_set_transform_function(op_Member,       gen_Member);
