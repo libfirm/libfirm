@@ -607,21 +607,20 @@ void sparc_emitf(ir_node const *const node, char const *fmt, ...)
 
 		case 'M':
 			switch (*fmt++) {
-			case 'O': {
-				if (!is_digit(*fmt))
-					goto unknown;
-				unsigned const pos = *fmt++ - '0';
-				be_emit_char('[');
-				sparc_emit_source_register(node, pos);
-				sparc_emit_offset(node, pos + 1);
-				be_emit_char(']');
-				break;
-			}
-
 			case 'L': sparc_emit_load_mode(node);  break;
 			case 'S': sparc_emit_store_mode(node); break;
 			default:  goto unknown;
 			}
+			break;
+
+		case 'O':
+			if (!is_digit(*fmt))
+				goto unknown;
+			unsigned const pos = *fmt++ - '0';
+			be_emit_char('[');
+			sparc_emit_source_register(node, pos);
+			sparc_emit_offset(node, pos + 1);
+			be_emit_char(']');
 			break;
 
 		case 'R': {
