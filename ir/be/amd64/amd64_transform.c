@@ -1469,7 +1469,6 @@ static ir_node *gen_IJmp(ir_node *const node)
 	ir_node  *const block     = get_nodes_block(node);
 	ir_node  *const new_block = be_transform_node(block);
 	ir_node  *const op        = get_IJmp_target(node);
-	assert(get_irn_mode(op) == mode_P);
 
 	int arity = 0;
 	ir_node *in[3];

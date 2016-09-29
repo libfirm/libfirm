@@ -4264,7 +4264,6 @@ static ir_node *gen_IJmp(ir_node *node)
 {
 	ir_node *block = get_nodes_block(node);
 	ir_node *op    = get_IJmp_target(node);
-	assert(get_irn_mode(op) == mode_P);
 
 	ia32_address_mode_t am;
 	match_arguments(&am, block, NULL, op, NULL, match_am | match_immediate);
