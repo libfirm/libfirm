@@ -1340,7 +1340,7 @@ void be_gas_emit_block_name(const ir_node *block)
 
 void be_gas_begin_block(const ir_node *block, bool needs_label)
 {
-	if (needs_label) {
+	if (needs_label || get_Block_entity(block)) {
 		be_gas_emit_block_name(block);
 		be_emit_char(':');
 	} else {

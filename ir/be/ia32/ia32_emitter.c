@@ -92,9 +92,6 @@ static bool is_fallthrough(const ir_node *cfgpred)
  */
 static bool block_needs_label(const ir_node *block)
 {
-	if (get_Block_entity(block) != NULL)
-		return true;
-
 	int n_cfgpreds = get_Block_n_cfgpreds(block);
 	if (n_cfgpreds == 0) {
 		return false;
