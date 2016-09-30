@@ -36,6 +36,7 @@ libFirm 1.22.1 (2016-01-07)
 * sparc: Support the asm constaint `K`
 * sparc: Support computed goto
 * arm: Support computed goto
+* opt: Simplify computed goto with known destination to unconditional branch
 * Bugfixes
 
 libFirm 1.22.0 (2015-12-31)
