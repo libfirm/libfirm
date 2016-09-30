@@ -1187,6 +1187,15 @@ static ir_node *gen_Store(ir_node *node)
 	return new_store;
 }
 
+static ir_node *gen_IJmp(ir_node *const node)
+{
+	dbg_info *const dbgi       = get_irn_dbg_info(node);
+	ir_node  *const block      = be_transform_nodes_block(node);
+	ir_node  *const target     = get_IJmp_target(node);
+	ir_node  *const new_target = be_transform_node(target);
+	return new_bd_arm_IJmp(dbgi, block, new_target);
+}
+
 static ir_node *gen_Jmp(ir_node *node)
 {
 	ir_node  *new_block = be_transform_nodes_block(node);
@@ -1971,6 +1980,7 @@ static void arm_register_transformers(void)
 	be_set_transform_function(op_Conv,        gen_Conv);
 	be_set_transform_function(op_Div,         gen_Div);
 	be_set_transform_function(op_Eor,         gen_Eor);
+	be_set_transform_function(op_IJmp,        gen_IJmp);
 	be_set_transform_function(op_Jmp,         gen_Jmp);
 	be_set_transform_function(op_Load,        gen_Load);
 	be_set_transform_function(op_Member,      gen_Member);

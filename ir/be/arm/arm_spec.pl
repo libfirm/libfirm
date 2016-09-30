@@ -486,6 +486,16 @@ Jmp => {
 	out_reqs  => [ "exec" ],
 },
 
+IJmp => {
+	op_flags  => [ "cfopcode", "forking" ],
+	state     => "pinned",
+	in_reqs   => [ "gp" ],
+	ins       => [ "target" ],
+	out_reqs  => [ "exec" ],
+	outs      => [ "jmp" ],
+	emit      => "mov pc, %S0",
+},
+
 SwitchJmp => {
 	op_flags  => [ "cfopcode", "forking" ],
 	state     => "pinned",

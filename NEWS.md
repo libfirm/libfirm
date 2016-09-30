@@ -35,6 +35,7 @@ libFirm 1.22.1 (2016-01-07)
 * amd64: Improve use of `lea` in instruction selection
 * sparc: Support the asm constaint `K`
 * sparc: Support computed goto
+* arm: Support computed goto
 * Bugfixes
 
 libFirm 1.22.0 (2015-12-31)
