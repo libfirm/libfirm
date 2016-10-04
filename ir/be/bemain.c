@@ -453,11 +453,6 @@ ir_mode *be_get_mode_float_arithmetic(void)
 	return be_get_backend_param()->mode_float_arithmetic;
 }
 
-ir_type *be_get_type_unsigned_long_long(void)
-{
-	return be_get_backend_param()->type_unsigned_long_long;
-}
-
 ir_type *be_get_type_long_double(void)
 {
 	return be_get_backend_param()->type_long_double;

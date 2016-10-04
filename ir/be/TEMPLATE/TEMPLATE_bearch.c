@@ -149,7 +149,6 @@ static const backend_params *TEMPLATE_get_backend_params(void)
 		.allow_ifconv                  = TEMPLATE_is_mux_allowed,
 		.machine_size                  = 32,
 		.mode_float_arithmetic         = NULL,
-		.type_unsigned_long_long       = NULL,
 		.type_long_double              = NULL,
 		.stack_param_align             = 4,
 		.float_int_overflow            = ir_overflow_min_max,

@@ -1358,7 +1358,6 @@ static backend_params ia32_backend_params = {
 	.allow_ifconv                   = ia32_is_mux_allowed,
 	.machine_size                   = 32,
 	.mode_float_arithmetic          = NULL,  /* will be set later */
-	.type_unsigned_long_long        = NULL,  /* will be set later */
 	.type_long_double               = NULL,  /* will be set later */
 	.stack_param_align              = 4,
 	.float_int_overflow             = ir_overflow_indefinite,
@@ -1385,13 +1384,6 @@ static void ia32_init(void)
 	                                   ir_overflow_indefinite);
 	ia32_mode_float32 = new_float_mode("fp32", irma_ieee754, 8, 23,
 	                                   ir_overflow_indefinite);
-
-	ir_mode *mode_unsigned_long_long
-		= new_int_mode("unsigned long long", irma_twos_complement, 64, 0, 64);
-	ir_type *type_unsigned_long_long
-		= get_type_for_mode(mode_unsigned_long_long);
-
-	ia32_backend_params.type_unsigned_long_long = type_unsigned_long_long;
 
 	// va_list is a void pointer
 	ir_type *type_va_list = new_type_pointer(get_type_for_mode(mode_ANY));
