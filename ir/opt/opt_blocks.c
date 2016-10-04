@@ -1140,7 +1140,7 @@ static void add_roots(ir_graph *irg, environment_t *env)
 	}
 	/*
 	 * Now sort the roots to normalize them as good as possible.
-     * Else, we will split identical blocks if we start which different roots.
+	 * Else, we will split identical blocks if we start which different roots.
 	 */
 	for (bl = env->all_blocks; bl != NULL; bl = bl->all_next) {
 		/* TODO: is this really needed? The roots are already in
