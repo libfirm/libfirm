@@ -756,7 +756,6 @@ static backend_params amd64_backend_params = {
 	.allow_ifconv                  = amd64_is_mux_allowed,
 	.machine_size                  = 64,
 	.mode_float_arithmetic         = NULL,  /* will be set later */
-	.type_long_long                = NULL,  /* will be set later */
 	.type_unsigned_long_long       = NULL,  /* will be set later */
 	.type_long_double              = NULL,  /* will be set later */
 	.stack_param_align             = 8,

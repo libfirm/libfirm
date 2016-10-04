@@ -270,7 +270,6 @@ static backend_params arm_backend_params = {
 	.allow_ifconv                  = arm_is_mux_allowed,
 	.machine_size                  = ARM_MACHINE_SIZE,
 	.mode_float_arithmetic         = NULL,
-	.type_long_long                = NULL,
 	.type_unsigned_long_long       = NULL,
 	.type_long_double              = NULL,
 	.stack_param_align             = 4,

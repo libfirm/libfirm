@@ -135,11 +135,6 @@ typedef struct backend_params {
 	ir_mode *mode_float_arithmetic;
 
 	/**
-	 * type used for long long or NULL if none available.
-	 */
-	ir_type *type_long_long;
-
-	/**
 	 * type used for unsigned long long or NULL if none available
 	 */
 	ir_type *type_unsigned_long_long;
@@ -186,9 +181,6 @@ FIRM_API unsigned be_get_machine_size(void);
  * mode (load/store are still done in the "normal" float/double modes).
  */
 FIRM_API ir_mode *be_get_mode_float_arithmetic(void);
-
-/** Returns type used for long long or NULL if none available. */
-FIRM_API ir_type *be_get_type_long_long(void);
 
 /** Returns type used for unsigned long long or NULL if none available. */
 FIRM_API ir_type *be_get_type_unsigned_long_long(void);

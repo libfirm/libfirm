@@ -536,7 +536,6 @@ static const backend_params *sparc_get_backend_params(void)
 		.allow_ifconv                   = sparc_is_mux_allowed,
 		.machine_size                   = 32,
 		.mode_float_arithmetic          = NULL,  /* will be set later */
-		.type_long_long                 = NULL,  /* will be set later */
 		.type_unsigned_long_long        = NULL,  /* will be set later */
 		.type_long_double               = NULL,  /* will be set later */
 		.stack_param_align              = 4,
@@ -547,9 +546,6 @@ static const backend_params *sparc_get_backend_params(void)
 		},
 	};
 
-	ir_mode *mode_long_long
-		= new_int_mode("long long", irma_twos_complement, 64, 1, 64);
-	ir_type *type_long_long = get_type_for_mode(mode_long_long);
 	ir_mode *mode_unsigned_long_long
 		= new_int_mode("unsigned long long", irma_twos_complement, 64, 0, 64);
 	ir_type *type_unsigned_long_long
@@ -557,7 +553,6 @@ static const backend_params *sparc_get_backend_params(void)
 	ir_type *type_va_list
 		= new_type_pointer(get_type_for_mode(mode_ANY));
 
-	p.type_long_long          = type_long_long;
 	p.type_unsigned_long_long = type_unsigned_long_long;
 	p.vararg.va_list_type     = type_va_list;
 
