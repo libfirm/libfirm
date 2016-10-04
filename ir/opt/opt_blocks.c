@@ -1231,7 +1231,9 @@ void shape_blocks(ir_graph *irg)
 	}
 
 	for (bl = env.all_blocks; bl != NULL; bl = bl->all_next) {
-		DEL_ARR_F(bl->roots);
+		if (bl->roots) {
+			DEL_ARR_F(bl->roots);
+		}
 	}
 
 	DEL_ARR_F(env.live_outs);
