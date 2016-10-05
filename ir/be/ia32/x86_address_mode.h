@@ -47,7 +47,7 @@ typedef struct x86_address_t {
 	ir_node    *mem;             /**< value for memory input (if any). */
 	x86_imm32_t imm;
 	unsigned   scale       : 8; /**< An integer scale. {0,1,2,3} */
-	ENUMBF(x86_addr_variant_t) variant : 8; /**< Addres mode variant */
+	ENUMBF(x86_addr_variant_t) variant : 8; /**< Address mode variant */
 	bool       tls_segment : 1; /**< Set if AM is relative to TLS */
 	bool       ip_base     : 1; /**< Base is instruction pointer (IP) */
 } x86_address_t;
