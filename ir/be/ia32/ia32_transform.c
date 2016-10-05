@@ -775,11 +775,11 @@ static void ia32_create_address_mode(x86_address_t *addr, ir_node *ptr,
 	adjust_relocation(&addr->imm);
 }
 
-static void build_address_ptr(x86_address_t *addr, ir_node *ptr, ir_node *mem)
+static void build_address_ptr(x86_address_t *const addr, ir_node *const ptr, ir_node *const mem, x86_create_am_flags_t const flags)
 {
 	/* construct load address */
 	memset(addr, 0, sizeof(addr[0]));
-	ia32_create_address_mode(addr, ptr, x86_create_am_normal);
+	ia32_create_address_mode(addr, ptr, flags);
 	addr->base  = addr->base  ? be_transform_node(addr->base)  : noreg_GP;
 	addr->index = addr->index ? be_transform_node(addr->index) : noreg_GP;
 	addr->mem   = be_transform_node(mem);
@@ -2205,21 +2205,6 @@ static ir_node *get_flags_node(ir_node *cmp, x86_condition_code_t *cc_out)
 	return flags;
 }
 
-static void create_transformed_address_mode(x86_address_t *addr,
-                                            ir_node *ptr,
-                                            x86_create_am_flags_t flags)
-{
-	memset(addr, 0, sizeof(*addr));
-	ia32_create_address_mode(addr, ptr, flags);
-	ir_node *base = addr->base;
-	base = base == NULL ? noreg_GP : be_transform_node(base);
-	addr->base = base;
-
-	ir_node *idx = addr->index;
-	idx = idx == NULL ? noreg_GP : be_transform_node(idx);
-	addr->index = idx;
-}
-
 /**
  * Transforms a Load.
  *
@@ -2230,15 +2215,15 @@ static ir_node *gen_Load(ir_node *node)
 	ir_node  *block   = be_transform_nodes_block(node);
 	ir_node  *ptr     = get_Load_ptr(node);
 	ir_node  *mem     = get_Load_mem(node);
-	ir_node  *new_mem = be_transform_node(mem);
 	dbg_info *dbgi    = get_irn_dbg_info(node);
 	ir_mode  *mode    = get_Load_mode(node);
 
 	/* construct load address */
 	x86_address_t addr;
-	create_transformed_address_mode(&addr, ptr, x86_create_am_normal);
-	ir_node *base = addr.base;
-	ir_node *idx  = addr.index;
+	build_address_ptr(&addr, ptr, mem, x86_create_am_normal);
+	ir_node *const base    = addr.base;
+	ir_node *const idx     = addr.index;
+	ir_node *const new_mem = addr.mem;
 
 	x86_insn_size_t const size = x86_size_from_mode(mode);
 	ir_node *new_node;
@@ -2407,7 +2392,7 @@ static ir_node *try_create_SetMem(ir_node *node, ir_node *ptr, ir_node *mem)
 		cc = x86_negate_condition_code(cc);
 
 	x86_address_t addr;
-	build_address_ptr(&addr, ptr, mem);
+	build_address_ptr(&addr, ptr, mem, x86_create_am_normal);
 
 	dbg_info *dbgi      = get_irn_dbg_info(node);
 	ir_node  *new_block = be_transform_nodes_block(node);
@@ -2624,7 +2609,7 @@ static ir_node *gen_float_const_Store(ir_node *node, ir_node *cns)
 	ir_node   *ins[4];
 
 	x86_address_t addr;
-	build_address_ptr(&addr, ptr, mem);
+	build_address_ptr(&addr, ptr, mem, x86_create_am_normal);
 
 	do {
 		unsigned        val;
@@ -2792,10 +2777,9 @@ static ir_node *gen_Store(ir_node *node)
 
 	/* construct address */
 	ir_node *ptr = get_Store_ptr(node);
-	x86_address_t addr;
-	create_transformed_address_mode(&addr, ptr, x86_create_am_normal);
 	ir_node *mem = get_Store_mem(node);
-	addr.mem = be_transform_node(mem);
+	x86_address_t addr;
+	build_address_ptr(&addr, ptr, mem, x86_create_am_normal);
 
 	dbg_info *dbgi      = get_irn_dbg_info(node);
 	ir_node  *new_block = be_transform_nodes_block(node);
@@ -5068,14 +5052,15 @@ static ir_node *gen_prefetch(ir_node *node)
 	long     const rw    = get_Const_long(param);
 
 	/* construct load address */
-	ir_node      *ptr = get_Builtin_param(node, 0);
+	ir_node      *const ptr     = get_Builtin_param(node, 0);
+	ir_node      *const old_mem = get_Builtin_mem(node);
 	x86_address_t addr;
-	create_transformed_address_mode(&addr, ptr, x86_create_am_normal);
-	ir_node  *base  = addr.base;
-	ir_node  *idx   = addr.index;
-	dbg_info *dbgi  = get_irn_dbg_info(node);
-	ir_node  *block = be_transform_nodes_block(node);
-	ir_node  *mem   = be_transform_node(get_Builtin_mem(node));
+	build_address_ptr(&addr, ptr, old_mem, x86_create_am_normal);
+	ir_node  *const base  = addr.base;
+	ir_node  *const idx   = addr.index;
+	ir_node  *const mem   = addr.mem;
+	dbg_info *const dbgi  = get_irn_dbg_info(node);
+	ir_node  *const block = be_transform_nodes_block(node);
 
 	ir_node *new_node;
 	if (rw == 1 && ia32_cg_config.use_3dnow_prefetch) {
@@ -5365,17 +5350,13 @@ static ir_node *gen_compare_swap(ir_node *node)
 	ir_node  *mem     = get_Builtin_mem(node);
 	ir_node  *new_old = be_transform_node(old);
 	ir_node  *new_new = be_transform_node(new);
-	ir_node  *new_mem = be_transform_node(mem);
 	ir_mode  *mode    = get_irn_mode(new);
 	assert(get_irn_mode(old) == mode);
 
 	x86_address_t addr;
-	create_transformed_address_mode(&addr, ptr, x86_create_am_normal);
-	ir_node        *base = addr.base;
-	ir_node        *idx  = addr.index;
+	build_address_ptr(&addr, ptr, mem, x86_create_am_normal);
 	x86_insn_size_t size = x86_size_from_mode(mode);
-	ir_node *new_node = new_bd_ia32_CmpXChgMem(dbgi, block, base, idx, new_mem,
-	                                           new_old, new_new, size);
+	ir_node *new_node = new_bd_ia32_CmpXChgMem(dbgi, block, addr.base, addr.index, addr.mem, new_old, new_new, size);
 	set_irn_pinned(new_node, get_irn_pinned(node));
 	set_ia32_op_type(new_node, ia32_AddrModeD);
 	set_address(new_node, &addr);
