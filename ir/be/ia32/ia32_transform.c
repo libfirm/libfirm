@@ -780,14 +780,9 @@ static void build_address_ptr(x86_address_t *addr, ir_node *ptr, ir_node *mem)
 	/* construct load address */
 	memset(addr, 0, sizeof(addr[0]));
 	ia32_create_address_mode(addr, ptr, x86_create_am_normal);
-
-	addr->variant = addr->base ? (addr->index ? X86_ADDR_BASE_INDEX
-	                                          : X86_ADDR_BASE)
-	                           : (addr->index ? X86_ADDR_INDEX
-	                                          : X86_ADDR_JUST_IMM);
-	addr->base    = addr->base  ? be_transform_node(addr->base)  : noreg_GP;
-	addr->index   = addr->index ? be_transform_node(addr->index) : noreg_GP;
-	addr->mem     = be_transform_node(mem);
+	addr->base  = addr->base  ? be_transform_node(addr->base)  : noreg_GP;
+	addr->index = addr->index ? be_transform_node(addr->index) : noreg_GP;
+	addr->mem   = be_transform_node(mem);
 }
 
 static void build_address(ia32_address_mode_t *am, ir_node *node,
@@ -825,14 +820,9 @@ static void build_address(ia32_address_mode_t *am, ir_node *node,
 
 	/* construct load address */
 	ia32_create_address_mode(addr, ptr, flags);
-
-	addr->variant = addr->base ? (addr->index ? X86_ADDR_BASE_INDEX
-	                                          : X86_ADDR_BASE)
-	                           : (addr->index ? X86_ADDR_INDEX
-	                                          : X86_ADDR_JUST_IMM);
-	addr->base    = addr->base  ? be_transform_node(addr->base)  : noreg_GP;
-	addr->index   = addr->index ? be_transform_node(addr->index) : noreg_GP;
-	addr->mem     = new_mem;
+	addr->base  = addr->base  ? be_transform_node(addr->base)  : noreg_GP;
+	addr->index = addr->index ? be_transform_node(addr->index) : noreg_GP;
+	addr->mem   = new_mem;
 }
 
 static void set_address(ir_node *node, const x86_address_t *addr)
