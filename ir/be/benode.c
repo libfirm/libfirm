@@ -595,9 +595,7 @@ static void dump_node(FILE *f, const ir_node *irn, dump_reason_t reason)
 
 void be_copy_attr(ir_graph *const irg, ir_node const *const old_node, ir_node *const new_node)
 {
-	void const *const old_attr = get_irn_generic_attr_const(old_node);
-	void       *const new_attr = get_irn_generic_attr(new_node);
-	memcpy(new_attr, old_attr, get_op_attr_size(get_irn_op(old_node)));
+	default_copy_attr(irg, old_node, new_node);
 
 	backend_info_t *const old_info = be_get_info(old_node);
 	backend_info_t *const new_info = be_get_info(new_node);

@@ -192,4 +192,6 @@ static inline void *get_op_attr_(const ir_op *op)
 /** An attr_equals function that always returns 0/false */
 int attrs_equal_false(const ir_node *a, const ir_node *b);
 
+void default_copy_attr(ir_graph *irg, ir_node const *old_node, ir_node *new_node);
+
 #endif

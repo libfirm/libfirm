@@ -32,8 +32,6 @@ static unsigned next_iro = iro_last+1;
 static ir_type *default_get_type_attr(const ir_node *node);
 static ir_entity *default_get_entity_attr(const ir_node *node);
 static unsigned default_hash_node(const ir_node *node);
-static void default_copy_attr(ir_graph *irg, const ir_node *old_node,
-                              ir_node *new_node);
 
 int attrs_equal_false(const ir_node *a, const ir_node *b)
 {
@@ -439,8 +437,7 @@ static int attrs_equal_ASM(const ir_node *a, const ir_node *b)
 	return except_attrs_equal(&attr_a->exc, &attr_b->exc);
 }
 
-static void default_copy_attr(ir_graph *irg, const ir_node *old_node,
-                              ir_node *new_node)
+void default_copy_attr(ir_graph *irg, ir_node const *old_node, ir_node *new_node)
 {
 	(void)irg;
 	assert(get_irn_op(old_node) == get_irn_op(new_node));
