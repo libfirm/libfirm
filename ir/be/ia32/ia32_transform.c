@@ -775,13 +775,18 @@ static void ia32_create_address_mode(x86_address_t *addr, ir_node *ptr,
 	adjust_relocation(&addr->imm);
 }
 
+static ir_node *transform_else_noreg(ir_node *const node)
+{
+	return node ? be_transform_node(node) : noreg_GP;
+}
+
 static void build_address_ptr(x86_address_t *const addr, ir_node *const ptr, ir_node *const mem, x86_create_am_flags_t const flags)
 {
 	/* construct load address */
 	memset(addr, 0, sizeof(addr[0]));
 	ia32_create_address_mode(addr, ptr, flags);
-	addr->base  = addr->base  ? be_transform_node(addr->base)  : noreg_GP;
-	addr->index = addr->index ? be_transform_node(addr->index) : noreg_GP;
+	addr->base  = transform_else_noreg(addr->base);
+	addr->index = transform_else_noreg(addr->index);
 	addr->mem   = be_transform_node(mem);
 }
 
@@ -1311,19 +1316,8 @@ static ir_node *create_lea(dbg_info *const dbgi, ir_node *const block, ir_node *
 static ir_node *create_lea_from_address(dbg_info *dbgi, ir_node *block,
                                         x86_address_t *addr)
 {
-	ir_node *base = addr->base;
-	if (base == NULL) {
-		base = noreg_GP;
-	} else {
-		base = be_transform_node(base);
-	}
-
-	ir_node *idx = addr->index;
-	if (idx == NULL) {
-		idx = noreg_GP;
-	} else {
-		idx = be_transform_node(idx);
-	}
+	ir_node       *base = transform_else_noreg(addr->base);
+	ir_node *const idx  = transform_else_noreg(addr->index);
 
 	/* segment overrides are ineffective for Leas :-( so we have to patch
 	 * around... */
