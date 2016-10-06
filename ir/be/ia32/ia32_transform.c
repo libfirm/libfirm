@@ -810,19 +810,15 @@ static void build_address(ia32_address_mode_t *am, ir_node *node,
 		return;
 	}
 
-	ir_node *load    = get_Proj_pred(node);
-	ir_node *ptr     = get_Load_ptr(load);
-	ir_node *mem     = get_Load_mem(load);
-	ir_node *new_mem = be_transform_node(mem);
-	am->pinned       = get_irn_pinned(load);
-	am->size         = x86_size_from_mode(get_Load_mode(load));
-	am->mem_proj     = get_Proj_for_pn(load, pn_Load_M);
+	ir_node *const load = get_Proj_pred(node);
+	am->pinned   = get_irn_pinned(load);
+	am->size     = x86_size_from_mode(get_Load_mode(load));
+	am->mem_proj = get_Proj_for_pn(load, pn_Load_M);
 
 	/* construct load address */
-	ia32_create_address_mode(addr, ptr, flags);
-	addr->base  = addr->base  ? be_transform_node(addr->base)  : noreg_GP;
-	addr->index = addr->index ? be_transform_node(addr->index) : noreg_GP;
-	addr->mem   = new_mem;
+	ir_node *const ptr = get_Load_ptr(load);
+	ir_node *const mem = get_Load_mem(load);
+	build_address_ptr(addr, ptr, mem, flags);
 }
 
 static void set_address(ir_node *node, const x86_address_t *addr)
