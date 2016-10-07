@@ -180,6 +180,8 @@ void optimize_graph_df(ir_graph *irg)
 	/* any optimized nodes are stored in the wait queue,
 	 * so if it's not empty, the graph has been changed */
 	while (!deq_empty(&waitq)) {
+		assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_POSTDOMINANCE);
+
 		/* finish the wait queue */
 		while (!deq_empty(&waitq)) {
 			ir_node *n = deq_pop_pointer_left(ir_node, &waitq);

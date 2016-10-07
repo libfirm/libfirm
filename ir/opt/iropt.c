@@ -7726,11 +7726,19 @@ static int identities_cmp(const void *elt, const void *key)
 			/* The optimistic approach would be to do nothing here.
 			 * However doing GCSE optimistically produces a lot of partially dead code which appears
 			 * to be worse in practice than the missed opportunities.
-			 * So we use a very conservative variant here and only CSE if 1 value dominates the
-			 * other. */
+			 * So we use a very conservative variant here and only CSE if one value dominates the
+			 * other or one value postdominates the common dominator. */
 			if (!block_dominates(block_a, block_b)
-			 && !block_dominates(block_b, block_a))
-			    return 1;
+			 && !block_dominates(block_b, block_a)) {
+				if (get_Block_dom_depth(block_a) < 0
+				 || get_Block_dom_depth(block_b) < 0)
+					return 1;
+
+				ir_node *dom = ir_deepest_common_dominator(block_a, block_b);
+				if (!block_postdominates(block_a, dom)
+				 && !block_postdominates(block_b, dom))
+					return 1;
+			}
 		}
 	}
 
