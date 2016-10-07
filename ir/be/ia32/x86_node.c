@@ -34,13 +34,13 @@ static bool check_immediate_constraint(long val, char immediate_constraint_type)
 	case 'n': return true;
 
 	case 'e': return -v31 <= val && val < v31;
-	case 'I': return 0 <= val && val <=  31;
-	case 'J': return 0 <= val && val <=  63;
+	case 'I': return    0 <= val && val <  32;
+	case 'J': return    0 <= val && val <  64;
 	case 'K': return -128 <= val && val < 128;
 	case 'L': return val == 0xff || val == 0xffff;
-	case 'M': return 0 <= val && val <=   3;
-	case 'N': return 0 <= val && val <= 255;
-	case 'O': return 0 <= val && val <= 127;
+	case 'M': return    0 <= val && val <   4;
+	case 'N': return    0 <= val && val < 256;
+	case 'O': return    0 <= val && val < 128;
 	}
 	panic("invalid immediate constraint found");
 }
