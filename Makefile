@@ -38,10 +38,12 @@ endif
 CFLAGS_debug       = -O0 -g3 -DDEBUG_libfirm
 CFLAGS_profile     = -O3 -pg -DNDEBUG -fno-inline
 CFLAGS_coverage    = -O0 --coverage -DDEBUG_libfirm
+CFLAGS_llvm_coverage = -O0 -fprofile-instr-generate -fcoverage-mapping
 CFLAGS_optimize    = -O3 -fomit-frame-pointer -DNDEBUG
 LINKFLAGS_debug    =
 LINKFLAGS_profile  = -pg
 LINKFLAGS_coverage = --coverage
+LINKFLAGS_llvm_coverage = --coverage -fprofile-instr-generate -fcoverage-mapping
 
 # General flags
 CPPFLAGS  ?=
