@@ -1990,19 +1990,19 @@ Andn => {
 
 Blsi => {
 	template => $unop_from_mem,
-	emit     => "blsi%M %D0",
+	emit     => "blsi%M %AS3, %D0",
 	latency  => 1,
 },
 
 Blsmsk => {
 	template => $unop_from_mem,
-	emit     => "blsmsk%M %D0",
+	emit     => "blsmsk%M %AS3, %D0",
 	latency  => 1,
 },
 
 Blsr => {
 	template => $unop_from_mem,
-	emit     => "blsr%M %D0",
+	emit     => "blsr%M %AS3, %D0",
 	latency  => 1,
 },
 
