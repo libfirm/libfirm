@@ -31,6 +31,7 @@
 #include "irop_t.h"
 #include "iropt_t.h"
 #include "irouts.h"
+#include "irprog.h"
 #include "irtools.h"
 #include "panic.h"
 #include "pdeq.h"
@@ -231,28 +232,22 @@ ir_node *be_transform_node(ir_node *node)
 			new_node = autotransform(node, &rule);
 
 #ifdef DEBUG_libfirm
+			DB((dbg, LEVEL_2, "autotransform "));
+			DB((dbg, LEVEL_2, "%s\t%s\t", get_irp_name(), get_entity_name(get_irg_entity(get_irn_irg(node)))));
+			DB((dbg, LEVEL_2, "%+F", node));
+			if (is_Proj(node)) {
+				DB((dbg, LEVEL_2, "%+F", get_Proj_pred(node)));
+			}
+			DB((dbg, LEVEL_2, "\t"));
+			DB((dbg, LEVEL_2, "%+F", new_node));
+			if (new_node != NULL && is_Proj(new_node)) {
+				DB((dbg, LEVEL_2, "%+F", get_Proj_pred(new_node)));
+			}
+			DB((dbg, LEVEL_2, "\t"));
+			DB((dbg, LEVEL_2, "%d\n", rule));
+
 			if (new_node != NULL) {
 				env.n_autotransformed++;
-
-				if (is_Proj(node)) {
-					if (is_Proj(new_node)) {
-						DB((dbg, LEVEL_2, "autotransform %+F %+F\t%+F %+F\t%d\n", node, get_Proj_pred(node), new_node, get_Proj_pred(new_node), rule));
-					} else {
-						DB((dbg, LEVEL_2, "autotransform %+F %+F\t%+F\t%d\n", node, get_Proj_pred(node), new_node, rule));
-					}
-				} else {
-					if (is_Proj(new_node)) {
-						DB((dbg, LEVEL_2, "autotransform %+F\t%+F %+F\t%d\n", node, new_node, get_Proj_pred(new_node), rule));
-					} else {
-						DB((dbg, LEVEL_2, "autotransform %+F\t%+F\t%d\n", node, new_node, rule));
-					}
-				}
-			} else {
-				if (is_Proj(node)) {
-					DB((dbg, LEVEL_2, "autotransform %+F %+F\tNIL\n", node, get_Proj_pred(node)));
-				} else {
-					DB((dbg, LEVEL_2, "autotransform %+F\tNIL\n", node));
-				}
 			}
 #endif
 		}
@@ -368,9 +363,6 @@ static void transform_nodes(ir_graph *irg, arch_pretrans_nodes *pre_transform)
 
 	deq_free(&env.worklist);
 	free_End(old_end);
-
-	DB((dbg, LEVEL_1, "autotransform \t\t%s\t%d\t%d\n",
-	    get_entity_name(get_irg_entity(irg)), env.n_autotransformed, env.n_transformed));
 }
 
 void be_transform_graph(ir_graph *irg, arch_pretrans_nodes *func)
