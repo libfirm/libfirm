@@ -49,6 +49,7 @@ static inline const ir_dom_info *get_pdom_info_const(const ir_node *block)
 
 ir_node *get_Block_idom(const ir_node *block)
 {
+	assert(irg_has_properties(get_irn_irg(block), IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE));
 	if (get_Block_dom_depth(block) == -1) {
 		/* This block is not reachable from Start */
 		ir_graph *irg = get_irn_irg(block);
@@ -75,6 +76,7 @@ void set_Block_idom(ir_node *block, ir_node *n)
 
 ir_node *get_Block_ipostdom(const ir_node *block)
 {
+	assert(irg_has_properties(get_irn_irg(block), IR_GRAPH_PROPERTY_CONSISTENT_POSTDOMINANCE));
 	assert(get_Block_postdom_depth(block) != -1);
 	return get_pdom_info_const(block)->idom;
 }
@@ -157,6 +159,7 @@ unsigned get_Block_pdom_max_subtree_pre_num(const ir_node *block)
 
 int block_dominates(const ir_node *a, const ir_node *b)
 {
+	assert(irg_has_properties(get_irn_irg(a), IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE));
 	const ir_dom_info *ai = get_dom_info_const(a);
 	const ir_dom_info *bi = get_dom_info_const(b);
 	return bi->tree_pre_num - ai->tree_pre_num
@@ -165,6 +168,8 @@ int block_dominates(const ir_node *a, const ir_node *b)
 
 ir_node *ir_deepest_common_dominator(ir_node *block0, ir_node *block1)
 {
+	assert(irg_has_properties(get_irn_irg(block0), IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE));
+
 	/* Both blocks must be reachable. */
 	assert(get_Block_dom_depth(block0) >= 0);
 	assert(get_Block_dom_depth(block1) >= 0);
@@ -190,16 +195,19 @@ ir_node *ir_deepest_common_dominator(ir_node *block0, ir_node *block1)
 
 ir_node *get_Block_dominated_first(const ir_node *block)
 {
+	assert(irg_has_properties(get_irn_irg(block), IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE));
 	return get_dom_info_const(block)->first;
 }
 
 ir_node *get_Block_dominated_next(const ir_node *block)
 {
+	assert(irg_has_properties(get_irn_irg(block), IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE));
 	return get_dom_info_const(block)->next;
 }
 
 int block_postdominates(const ir_node *a, const ir_node *b)
 {
+	assert(irg_has_properties(get_irn_irg(a), IR_GRAPH_PROPERTY_CONSISTENT_POSTDOMINANCE));
 	const ir_dom_info *ai = get_pdom_info_const(a);
 	const ir_dom_info *bi = get_pdom_info_const(b);
 	return bi->tree_pre_num - ai->tree_pre_num
@@ -208,22 +216,27 @@ int block_postdominates(const ir_node *a, const ir_node *b)
 
 int block_strictly_postdominates(const ir_node *a, const ir_node *b)
 {
+	assert(irg_has_properties(get_irn_irg(a), IR_GRAPH_PROPERTY_CONSISTENT_POSTDOMINANCE));
 	return (a != b) && block_postdominates(a, b);
 }
 
 ir_node *get_Block_postdominated_first(const ir_node *block)
 {
+	assert(irg_has_properties(get_irn_irg(block), IR_GRAPH_PROPERTY_CONSISTENT_POSTDOMINANCE));
 	return get_pdom_info_const(block)->first;
 }
 
 ir_node *get_Block_postdominated_next(const ir_node *block)
 {
+	assert(irg_has_properties(get_irn_irg(block), IR_GRAPH_PROPERTY_CONSISTENT_POSTDOMINANCE));
 	return get_pdom_info_const(block)->next;
 }
 
 void dom_tree_walk(ir_node *block, irg_walk_func *pre, irg_walk_func *post,
                    void *env)
 {
+	assert(irg_has_properties(get_irn_irg(block), IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE));
+
 	if (pre != NULL)
 		pre(block, env);
 
@@ -238,6 +251,8 @@ void dom_tree_walk(ir_node *block, irg_walk_func *pre, irg_walk_func *post,
 void postdom_tree_walk(ir_node *block, irg_walk_func *pre,
 		irg_walk_func *post, void *env)
 {
+	assert(irg_has_properties(get_irn_irg(block), IR_GRAPH_PROPERTY_CONSISTENT_POSTDOMINANCE));
+
 	if (pre != NULL)
 		pre(block, env);
 
@@ -583,12 +598,12 @@ void compute_doms(ir_graph *irg)
 	/* clean up */
 	free(tdi_list);
 
+	add_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
+
 	/* Do a walk over the tree and assign the tree pre orders. */
 	unsigned tree_pre_order = 0;
 	dom_tree_walk(get_irg_start_block(irg), assign_tree_dom_pre_order,
 	              assign_tree_dom_pre_order_max, &tree_pre_order);
-
-	add_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 }
 
 static void update_pdom_semi(tmp_dom_info *tdi_list, tmp_dom_info *w,
@@ -687,10 +702,10 @@ void compute_postdoms(ir_graph *irg)
 	/* clean up */
 	free(tdi_list);
 
+	add_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_POSTDOMINANCE);
+
 	/* Do a walk over the tree and assign the tree pre orders. */
 	unsigned tree_pre_order = 0;
 	postdom_tree_walk(get_irg_end_block(irg), assign_tree_postdom_pre_order,
 	                  assign_tree_postdom_pre_order_max, &tree_pre_order);
-
-	add_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_POSTDOMINANCE);
 }

@@ -3255,7 +3255,7 @@ void combo(ir_graph *irg)
 	/* need a freshly computed dominance tree (after killing unreachable code
 	 * it is not valid anymore) */
 	clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
-	confirm_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
+	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 
 	irg_walk_graph(irg, NULL, apply_result, &env);
 

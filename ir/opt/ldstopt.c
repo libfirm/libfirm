@@ -2282,6 +2282,7 @@ void optimize_load_store(ir_graph *irg)
 	                         | IR_GRAPH_PROPERTY_NO_CRITICAL_EDGES
 	                         | IR_GRAPH_PROPERTY_NO_TUPLES
 	                         | IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE
+	                         | IR_GRAPH_PROPERTY_CONSISTENT_POSTDOMINANCE
 	                         | IR_GRAPH_PROPERTY_CONSISTENT_ENTITY_USAGE);
 
 	FIRM_DBG_REGISTER(dbg, "firm.opt.ldstopt");
