@@ -710,6 +710,8 @@ void opt_bool(ir_graph *const irg)
 	/* optimize simple Andb and Orb cases */
 	irg_walk_graph(irg, NULL, bool_walk, &env);
 
+	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
+
 	/* now more complicated cases: find control flow And/Or and optimize. */
 	ir_reserve_resources(irg, IR_RESOURCE_BLOCK_MARK | IR_RESOURCE_PHI_LIST);
 	irg_walk_graph(irg, clear_block_infos, collect_phis, NULL);

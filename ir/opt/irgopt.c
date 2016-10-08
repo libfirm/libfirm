@@ -154,8 +154,11 @@ static void opt_walker(ir_node *n, deq_t *waitq)
 
 void optimize_graph_df(ir_graph *irg)
 {
-	if (get_opt_global_cse())
+	ir_graph_properties_t props = IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES;
+	if (get_opt_global_cse()) {
 		set_irg_pinned(irg, op_pin_state_floats);
+		props |= IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE | IR_GRAPH_PROPERTY_CONSISTENT_POSTDOMINANCE;
+	}
 
 	/* enable unreachable code elimination,
 	 * not that currently disabling algebraic simplifications disables all
@@ -167,7 +170,7 @@ void optimize_graph_df(ir_graph *irg)
 	}
 
 	new_identities(irg);
-	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
+	assure_irg_properties(irg, props);
 
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 
