@@ -139,7 +139,7 @@ x86_cconv_t *amd64_decide_calling_convention(ir_type *function_type,
 	/* If the function is variadic, we add all unused parameter
 	 * passing registers to the end of the params array, first GP,
 	 * then XMM. */
-	if (is_method_variadic(function_type)) {
+	if (irg && is_method_variadic(function_type)) {
 		if (amd64_use_x64_abi) {
 			panic("Variadic functions on Windows ABI not supported");
 		}
