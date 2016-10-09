@@ -170,7 +170,6 @@ void optimize_graph_df(ir_graph *irg)
 	}
 
 	new_identities(irg);
-	assure_irg_properties(irg, props);
 
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 
@@ -183,7 +182,7 @@ void optimize_graph_df(ir_graph *irg)
 	/* any optimized nodes are stored in the wait queue,
 	 * so if it's not empty, the graph has been changed */
 	while (!deq_empty(&waitq)) {
-		assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_POSTDOMINANCE);
+		assure_irg_properties(irg, props);
 
 		/* finish the wait queue */
 		while (!deq_empty(&waitq)) {
