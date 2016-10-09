@@ -944,7 +944,7 @@ static void transform_irg(lowering_env_t const *const env, ir_graph *const irg)
 	if (n_param_com > 0 && !(env->flags & LF_DONT_LOWER_ARGUMENTS))
 		remove_compound_param_entities(irg);
 
-	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_ENTITY_USAGE);
+	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE | IR_GRAPH_PROPERTY_CONSISTENT_ENTITY_USAGE);
 	fix_calls(&walk_env);
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 
