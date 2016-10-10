@@ -3675,11 +3675,10 @@ static ir_node *gen_x87_fp_to_gp(ir_node *node)
 /**
  * Creates a x87 Conv by placing a Store and a Load
  */
-static ir_node *gen_x87_conv(x86_insn_size_t const size, ir_node *const node)
+static ir_node *gen_x87_conv(dbg_info *const dbgi, x86_insn_size_t const size, ir_node *const node)
 {
 	ir_node  *block = get_nodes_block(node);
 	ir_graph *irg   = get_irn_irg(block);
-	dbg_info *dbgi  = get_irn_dbg_info(node);
 	ir_node  *frame = get_irg_frame(irg);
 
 	ir_node *store = create_fst(dbgi, block, frame, noreg_GP, nomem, node,
@@ -3886,7 +3885,7 @@ static ir_node *gen_Conv(ir_node *node)
 					DB((dbg, LEVEL_1, "killed Conv(float, float) ..."));
 					return new_op;
 				} else {
-					return gen_x87_conv(size, new_op);
+					return gen_x87_conv(dbgi, size, new_op);
 				}
 			}
 		} else {
@@ -3915,7 +3914,7 @@ static ir_node *gen_Conv(ir_node *node)
 				/* we need a float-conv, if the int mode has more bits than the
 				 * float mantissa */
 				if (float_mantissa < int_mantissa)
-					res = gen_x87_conv(tgt_size, res);
+					res = gen_x87_conv(dbgi, tgt_size, res);
 				return res;
 			}
 		} else {
