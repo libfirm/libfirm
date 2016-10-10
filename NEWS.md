@@ -37,6 +37,7 @@ libFirm 1.22.1 (2016-01-07)
 * sparc: Support computed goto
 * arm: Support computed goto
 * opt: Simplify computed goto with known destination to unconditional branch
+* opt: Handle constant folding for the builtins `clz`, `ctz`, `ffs`, `parity` and `popcount`
 * Bugfixes
 
 libFirm 1.22.0 (2015-12-31)
