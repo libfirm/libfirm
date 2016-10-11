@@ -210,24 +210,6 @@ static ir_node *gen_extension(dbg_info *dbgi, ir_node *block, ir_node *op,
 }
 
 /**
- * returns true if it is assured, that the upper bits of a node are "clean"
- * which means for a 16 or 8 bit value, that the upper bits in the register
- * are 0 for unsigned and a copy of the last significant bit for signed
- * numbers.
- */
-static bool upper_bits_clean(ir_node *transformed_node, ir_mode *mode)
-{
-	if (is_Proj(transformed_node) && get_Proj_num(transformed_node) == pn_arm_Ldr_res) {
-		ir_node *const ldr = get_Proj_pred(transformed_node);
-		if (is_arm_Ldr(ldr)) {
-			arm_load_store_attr_t const *const attr = get_arm_load_store_attr_const(ldr);
-			return get_mode_size_bits(attr->load_store_mode) <= get_mode_size_bits(mode);
-		}
-	}
-	return false;
-}
-
-/**
  * Transforms a Conv node.
  *
  * @return The created ia32 Conv node
@@ -283,9 +265,8 @@ static ir_node *gen_Conv(ir_node *node)
 			min_mode = dst_mode;
 		}
 
-		if (upper_bits_clean(new_op, min_mode)) {
+		if (be_upper_bits_clean(op, min_mode))
 			return new_op;
-		}
 
 		if (mode_is_signed(min_mode)) {
 			return gen_sign_extension(dbg, block, new_op, min_bits);
