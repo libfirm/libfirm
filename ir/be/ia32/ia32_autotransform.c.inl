@@ -26,7 +26,7 @@ static ir_node *transform_f1663153(ir_node *node, ir_node *block, dbg_info *dbgi
 	return NULL;
 }
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Lea(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP); get_ia32_attr(new_node)->am_imm = get_ia32_immediate_attr(is_ia32_Immediate(var1) ? var1 : be_transform_node(var1))->imm; set_ia32_commutative(new_node);
+	new_node = new_bd_ia32_Lea(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP); get_ia32_attr(new_node)->addr.immediate = get_ia32_immediate_attr(is_ia32_Immediate(var1) ? var1 : be_transform_node(var1))->imm; set_ia32_commutative(new_node);
 	return new_node;
 }
 // Add32(IMM_1,VAR_0) ==> ia32_Lea_imm
@@ -57,7 +57,7 @@ static ir_node *transform_f1663154(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Lea(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP); get_ia32_attr(new_node)->am_imm = get_ia32_immediate_attr(is_ia32_Immediate(var1) ? var1 : be_transform_node(var1))->imm; set_ia32_commutative(new_node);
+	new_node = new_bd_ia32_Lea(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP); get_ia32_attr(new_node)->addr.immediate = get_ia32_immediate_attr(is_ia32_Immediate(var1) ? var1 : be_transform_node(var1))->imm; set_ia32_commutative(new_node);
 	return new_node;
 }
 // Add32(VAR_0,const32[4294967295]) ==> ia32_Dec
