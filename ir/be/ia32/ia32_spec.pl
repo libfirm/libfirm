@@ -1982,6 +1982,7 @@ Andn => {
 	out_reqs  => [ "gp", "flags", "mem" ],
 	ins       => [ "base", "index", "mem", "left", "right" ],
 	outs      => [ "res", "flags", "M" ],
+	attr      => "x86_insn_size_t size",
 	am        => "source,binary",
 	emit      => "andn%M %B, %D0",
 	latency   => 1,
