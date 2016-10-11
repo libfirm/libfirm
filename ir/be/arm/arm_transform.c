@@ -1172,19 +1172,21 @@ static ir_node *gen_Store(ir_node *node)
 	arm_am_t  am      = transform_am(ptr, mode, true);
 	ir_node  *mem     = get_Store_mem(node);
 	ir_node  *new_mem = be_transform_node(mem);
-	ir_node  *new_val = be_transform_node(val);
 	dbg_info *dbgi    = get_irn_dbg_info(node);
 	if (get_Store_unaligned(node) == align_non_aligned)
 		panic("unaligned Stores not supported yet");
 
 	ir_node *new_store;
 	if (mode_is_float(mode)) {
+		ir_node *const new_val = be_transform_node(val);
 		if (arm_cg_config.fpu == ARM_FPU_FPA) {
 			new_store = new_bd_arm_Stf(dbgi, block, am.base, new_val, new_mem, mode, am.entity, 0, am.offset, am.is_frame_entity);
 		} else {
 			panic("softfloat not lowered");
 		}
 	} else {
+		val = be_skip_downconv(val, false);
+		ir_node *const new_val = be_transform_node(val);
 		new_store = new_bd_arm_Str(dbgi, block, am.base, new_val, new_mem, mode, am.entity, 0, am.offset, am.is_frame_entity);
 	}
 	set_irn_pinned(new_store, get_irn_pinned(node));
