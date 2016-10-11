@@ -217,9 +217,13 @@ static ir_node *gen_extension(dbg_info *dbgi, ir_node *block, ir_node *op,
  */
 static bool upper_bits_clean(ir_node *transformed_node, ir_mode *mode)
 {
-	(void)transformed_node;
-	(void)mode;
-	/* TODO */
+	if (is_Proj(transformed_node) && get_Proj_num(transformed_node) == pn_arm_Ldr_res) {
+		ir_node *const ldr = get_Proj_pred(transformed_node);
+		if (is_arm_Ldr(ldr)) {
+			arm_load_store_attr_t const *const attr = get_arm_load_store_attr_const(ldr);
+			return get_mode_size_bits(attr->load_store_mode) <= get_mode_size_bits(mode);
+		}
+	}
 	return false;
 }
 
