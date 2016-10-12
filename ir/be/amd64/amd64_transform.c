@@ -2527,7 +2527,7 @@ static ir_node *gen_Store(ir_node *const node)
 {
 	dbg_info *const dbgi  = get_irn_dbg_info(node);
 	ir_node  *const block = be_transform_nodes_block(node);
-	ir_node  *const val   = get_Store_value(node);
+	ir_node        *val   = get_Store_value(node);
 	ir_mode  *const mode  = get_irn_mode(val);
 
 	amd64_binop_addr_attr_t attr;
@@ -2537,10 +2537,13 @@ static ir_node *gen_Store(ir_node *const node)
 	ir_node *in[4];
 	int      arity = 0;
 
-	if (mode_needs_gp_reg(mode)
-	 && match_immediate_32(&attr.u.immediate, val, false)) {
+	if (!mode_needs_gp_reg(mode)) {
+		goto store_reg;
+	} else if (match_immediate_32(&attr.u.immediate, val, false)) {
 		attr.base.base.op_mode = AMD64_OP_ADDR_IMM;
 	} else {
+		val = be_skip_downconv(val, false);
+store_reg:
 		attr.base.base.op_mode = AMD64_OP_ADDR_REG;
 		int reg_input    = arity++;
 		in[reg_input]    = be_transform_node(val);
