@@ -696,10 +696,10 @@ cvtsi2sd => {
 	emit     => "cvtsi2sd %AM, %^D0",
 },
 
-movq => {
+movd => {
 	template => $movopx,
 	fixed    => "x86_insn_size_t size = X86_SIZE_64;\n",
-	emit     => "movq %AM, %D0",
+	emit     => "movd %AM, %D0",
 },
 
 movdqa => {

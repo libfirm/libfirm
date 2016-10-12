@@ -2180,7 +2180,7 @@ static ir_node *extend_if_necessary(dbg_info *const dbgi,
 	return gen_extend(dbgi, block, value, get_irn_mode(value));
 }
 
-static ir_node *new_movq_wrapper(dbg_info *dbgi, ir_node *block, int arity,
+static ir_node *new_movd_wrapper(dbg_info *dbgi, ir_node *block, int arity,
                                  ir_node *const *in,
                                  arch_register_req_t const **in_reqs,
                                  x86_insn_size_t size, amd64_op_mode_t op_mode,
@@ -2188,13 +2188,13 @@ static ir_node *new_movq_wrapper(dbg_info *dbgi, ir_node *block, int arity,
 {
 	(void)size;
 	assert(size == X86_SIZE_64);
-	return new_bd_amd64_movq(dbgi, block, arity, in, in_reqs, op_mode, addr);
+	return new_bd_amd64_movd(dbgi, block, arity, in, in_reqs, op_mode, addr);
 }
 
-static ir_node *create_movq(dbg_info *dbgi, ir_node *block, ir_node *value)
+static ir_node *create_movd(dbg_info *dbgi, ir_node *block, ir_node *value)
 {
-	return match_mov(dbgi, block, value, X86_SIZE_64, new_movq_wrapper,
-	                 pn_amd64_movq_res);
+	return match_mov(dbgi, block, value, X86_SIZE_64, new_movd_wrapper,
+	                 pn_amd64_movd_res);
 }
 
 static ir_node *new_cvtsd2ss_wrapper(dbg_info *dbgi, ir_node *block, int arity,
@@ -2368,12 +2368,12 @@ static ir_node *gen_Conv(ir_node *const node)
 				.base_input = 0,
 				.variant    = X86_ADDR_REG,
 			};
-			ir_node *const movq = new_bd_amd64_movq(dbgi, block, n_in, in,
+			ir_node *const movd = new_bd_amd64_movd(dbgi, block, n_in, in,
 			                                        reg_reqs, AMD64_OP_REG,
 			                                        addr);
-			return be_new_Proj(movq, pn_amd64_movq_res);
+			return be_new_Proj(movd, pn_amd64_movd_res);
 		} else if (src_bits == 64) {
-			return create_movq(dbgi, block, op);
+			return create_movd(dbgi, block, op);
 		} else {
 			panic("cannot transform %+F", node);
 		}
