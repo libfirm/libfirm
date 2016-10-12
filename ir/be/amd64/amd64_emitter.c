@@ -311,7 +311,7 @@ static void emit_shiftop(const ir_node *const node)
 
 	switch (attr->base.op_mode) {
 	case AMD64_OP_SHIFT_IMM: {
-		be_emit_irprintf("$0x%X, ", attr->immediate);
+		be_emit_irprintf("$%u, ", attr->immediate);
 		const arch_register_t *reg = arch_get_irn_register_in(node, 0);
 		emit_register_mode(reg, attr->base.size);
 		return;
