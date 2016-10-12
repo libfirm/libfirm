@@ -23,8 +23,8 @@ static ir_node *transform_f1663153(ir_node *node, ir_node *block, dbg_info *dbgi
 			return NULL;
 		}
 	} else {
-	return NULL;
-}
+		return NULL;
+	}
 	ir_node *new_node = NULL;
 	new_node = new_bd_ia32_Lea(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP); get_ia32_attr(new_node)->addr.immediate = get_ia32_immediate_attr(is_ia32_Immediate(var1) ? var1 : be_transform_node(var1))->imm; set_ia32_commutative(new_node);
 	return new_node;
@@ -49,8 +49,8 @@ static ir_node *transform_f1663154(ir_node *node, ir_node *block, dbg_info *dbgi
 			return NULL;
 		}
 	} else {
-	return NULL;
-}
+		return NULL;
+	}
 	if (var0 == NULL || var0 == get_irn_n(node, 1)) {
 		var0 = get_irn_n(node, 1);
 	} else {
@@ -172,7 +172,7 @@ static ir_node *transform_f1663159(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 1 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 1)) {
 		return NULL;
@@ -234,7 +234,6 @@ static ir_node *transform_f1663160(ir_node *node, ir_node *block, dbg_info *dbgi
 			return res;
 		} else {
 			ir_node *new_pred = be_transform_node(pred);
-set_irn_mode(new_pred, mode_T);
 			return be_new_Proj(new_pred, pn_ia32_Load_M);
 		}
 	} else {
@@ -257,7 +256,7 @@ static ir_node *transform_f1663161(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 1 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 1)) {
 		return NULL;
@@ -319,7 +318,6 @@ static ir_node *transform_f1663162(ir_node *node, ir_node *block, dbg_info *dbgi
 			return res;
 		} else {
 			ir_node *new_pred = be_transform_node(pred);
-set_irn_mode(new_pred, mode_T);
 			return be_new_Proj(new_pred, pn_ia32_Load_M);
 		}
 	} else {
@@ -342,7 +340,7 @@ static ir_node *transform_f1663163(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 1 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 1)) {
 		return NULL;
@@ -404,7 +402,6 @@ static ir_node *transform_f1663164(ir_node *node, ir_node *block, dbg_info *dbgi
 			return res;
 		} else {
 			ir_node *new_pred = be_transform_node(pred);
-set_irn_mode(new_pred, mode_T);
 			return be_new_Proj(new_pred, pn_ia32_Load_M);
 		}
 	} else {
@@ -427,7 +424,7 @@ static ir_node *transform_f1663165(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 1 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 1)) {
 		return NULL;
@@ -489,7 +486,6 @@ static ir_node *transform_f1663166(ir_node *node, ir_node *block, dbg_info *dbgi
 			return res;
 		} else {
 			ir_node *new_pred = be_transform_node(pred);
-set_irn_mode(new_pred, mode_T);
 			return be_new_Proj(new_pred, pn_ia32_Load_M);
 		}
 	} else {
@@ -511,7 +507,7 @@ static ir_node *transform_f1663167(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 1 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 1)) {
 		return NULL;
@@ -564,7 +560,6 @@ static ir_node *transform_f1663168(ir_node *node, ir_node *block, dbg_info *dbgi
 			return res;
 		} else {
 			ir_node *new_pred = be_transform_node(pred);
-set_irn_mode(new_pred, mode_T);
 			return be_new_Proj(new_pred, pn_ia32_Load_M);
 		}
 	} else {
@@ -592,7 +587,7 @@ static ir_node *transform_f1663169(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 1)) && get_Proj_num(get_irn_n(node, 1)) == 1 && get_irn_n_edges(get_irn_n(node, 1)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 1))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 1))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 1))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 1))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 1))) == 1)) {
 		return NULL;
@@ -649,7 +644,6 @@ static ir_node *transform_f1663170(ir_node *node, ir_node *block, dbg_info *dbgi
 			return res;
 		} else {
 			ir_node *new_pred = be_transform_node(pred);
-set_irn_mode(new_pred, mode_T);
 			return be_new_Proj(new_pred, pn_ia32_Load_M);
 		}
 	} else {
@@ -677,7 +671,7 @@ static ir_node *transform_f1663171(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 1)) && get_Proj_num(get_irn_n(node, 1)) == 1 && get_irn_n_edges(get_irn_n(node, 1)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 1))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 1))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 1))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 1))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 1))) == 1)) {
 		return NULL;
@@ -734,7 +728,6 @@ static ir_node *transform_f1663172(ir_node *node, ir_node *block, dbg_info *dbgi
 			return res;
 		} else {
 			ir_node *new_pred = be_transform_node(pred);
-set_irn_mode(new_pred, mode_T);
 			return be_new_Proj(new_pred, pn_ia32_Load_M);
 		}
 	} else {
@@ -762,7 +755,7 @@ static ir_node *transform_f1663173(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 1)) && get_Proj_num(get_irn_n(node, 1)) == 1 && get_irn_n_edges(get_irn_n(node, 1)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 1))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 1))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 1))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 1))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 1))) == 1)) {
 		return NULL;
@@ -819,7 +812,6 @@ static ir_node *transform_f1663174(ir_node *node, ir_node *block, dbg_info *dbgi
 			return res;
 		} else {
 			ir_node *new_pred = be_transform_node(pred);
-set_irn_mode(new_pred, mode_T);
 			return be_new_Proj(new_pred, pn_ia32_Load_M);
 		}
 	} else {
@@ -847,7 +839,7 @@ static ir_node *transform_f1663175(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 1)) && get_Proj_num(get_irn_n(node, 1)) == 1 && get_irn_n_edges(get_irn_n(node, 1)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 1))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 1))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 1))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 1))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 1))) == 1)) {
 		return NULL;
@@ -904,7 +896,6 @@ static ir_node *transform_f1663176(ir_node *node, ir_node *block, dbg_info *dbgi
 			return res;
 		} else {
 			ir_node *new_pred = be_transform_node(pred);
-set_irn_mode(new_pred, mode_T);
 			return be_new_Proj(new_pred, pn_ia32_Load_M);
 		}
 	} else {
@@ -931,7 +922,7 @@ static ir_node *transform_f1663177(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 1)) && get_Proj_num(get_irn_n(node, 1)) == 1 && get_irn_n_edges(get_irn_n(node, 1)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 1))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 1))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 1))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 1))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 1))) == 1)) {
 		return NULL;
@@ -979,7 +970,6 @@ static ir_node *transform_f1663178(ir_node *node, ir_node *block, dbg_info *dbgi
 			return res;
 		} else {
 			ir_node *new_pred = be_transform_node(pred);
-set_irn_mode(new_pred, mode_T);
 			return be_new_Proj(new_pred, pn_ia32_Load_M);
 		}
 	} else {
@@ -1060,8 +1050,8 @@ static ir_node *transform_f1663181(ir_node *node, ir_node *block, dbg_info *dbgi
 			return NULL;
 		}
 	} else {
-	return NULL;
-}
+		return NULL;
+	}
 	if (var0 == NULL || var0 == get_irn_n(node, 1)) {
 		var0 = get_irn_n(node, 1);
 	} else {
@@ -1096,8 +1086,8 @@ static ir_node *transform_f1663182(ir_node *node, ir_node *block, dbg_info *dbgi
 			return NULL;
 		}
 	} else {
-	return NULL;
-}
+		return NULL;
+	}
 	ir_node *new_node = NULL;
 	new_node = new_bd_ia32_And(dbgi, block, noreg_GP, noreg_GP, nomem, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
 	return new_node;
@@ -1118,7 +1108,7 @@ static ir_node *transform_f1663183(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 1 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 1)) {
 		return NULL;
@@ -1180,7 +1170,6 @@ static ir_node *transform_f1663184(ir_node *node, ir_node *block, dbg_info *dbgi
 			return res;
 		} else {
 			ir_node *new_pred = be_transform_node(pred);
-set_irn_mode(new_pred, mode_T);
 			return be_new_Proj(new_pred, pn_ia32_Load_M);
 		}
 	} else {
@@ -1203,7 +1192,7 @@ static ir_node *transform_f1663185(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 1 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 1)) {
 		return NULL;
@@ -1265,7 +1254,6 @@ static ir_node *transform_f1663186(ir_node *node, ir_node *block, dbg_info *dbgi
 			return res;
 		} else {
 			ir_node *new_pred = be_transform_node(pred);
-set_irn_mode(new_pred, mode_T);
 			return be_new_Proj(new_pred, pn_ia32_Load_M);
 		}
 	} else {
@@ -1287,7 +1275,7 @@ static ir_node *transform_f1663187(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 1 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 1)) {
 		return NULL;
@@ -1340,7 +1328,6 @@ static ir_node *transform_f1663188(ir_node *node, ir_node *block, dbg_info *dbgi
 			return res;
 		} else {
 			ir_node *new_pred = be_transform_node(pred);
-set_irn_mode(new_pred, mode_T);
 			return be_new_Proj(new_pred, pn_ia32_Load_M);
 		}
 	} else {
@@ -1368,7 +1355,7 @@ static ir_node *transform_f1663189(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 1)) && get_Proj_num(get_irn_n(node, 1)) == 1 && get_irn_n_edges(get_irn_n(node, 1)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 1))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 1))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 1))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 1))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 1))) == 1)) {
 		return NULL;
@@ -1425,7 +1412,6 @@ static ir_node *transform_f1663190(ir_node *node, ir_node *block, dbg_info *dbgi
 			return res;
 		} else {
 			ir_node *new_pred = be_transform_node(pred);
-set_irn_mode(new_pred, mode_T);
 			return be_new_Proj(new_pred, pn_ia32_Load_M);
 		}
 	} else {
@@ -1453,7 +1439,7 @@ static ir_node *transform_f1663191(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 1)) && get_Proj_num(get_irn_n(node, 1)) == 1 && get_irn_n_edges(get_irn_n(node, 1)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 1))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 1))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 1))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 1))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 1))) == 1)) {
 		return NULL;
@@ -1510,7 +1496,6 @@ static ir_node *transform_f1663192(ir_node *node, ir_node *block, dbg_info *dbgi
 			return res;
 		} else {
 			ir_node *new_pred = be_transform_node(pred);
-set_irn_mode(new_pred, mode_T);
 			return be_new_Proj(new_pred, pn_ia32_Load_M);
 		}
 	} else {
@@ -1537,7 +1522,7 @@ static ir_node *transform_f1663193(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 1)) && get_Proj_num(get_irn_n(node, 1)) == 1 && get_irn_n_edges(get_irn_n(node, 1)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 1))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 1))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 1))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 1))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 1))) == 1)) {
 		return NULL;
@@ -1585,7 +1570,6 @@ static ir_node *transform_f1663194(ir_node *node, ir_node *block, dbg_info *dbgi
 			return res;
 		} else {
 			ir_node *new_pred = be_transform_node(pred);
-set_irn_mode(new_pred, mode_T);
 			return be_new_Proj(new_pred, pn_ia32_Load_M);
 		}
 	} else {
@@ -1671,8 +1655,8 @@ static ir_node *transform_f1663197(ir_node *node, ir_node *block, dbg_info *dbgi
 			return NULL;
 		}
 	} else {
-	return NULL;
-}
+		return NULL;
+	}
 	ir_node *new_node = NULL;
 	new_node = new_bd_ia32_Xor(dbgi, block, noreg_GP, noreg_GP, nomem, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
 	return new_node;
@@ -1697,8 +1681,8 @@ static ir_node *transform_f1663198(ir_node *node, ir_node *block, dbg_info *dbgi
 			return NULL;
 		}
 	} else {
-	return NULL;
-}
+		return NULL;
+	}
 	if (var0 == NULL || var0 == get_irn_n(node, 1)) {
 		var0 = get_irn_n(node, 1);
 	} else {
@@ -1729,7 +1713,7 @@ static ir_node *transform_f1663199(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 1)) && get_Proj_num(get_irn_n(node, 1)) == 1 && get_irn_n_edges(get_irn_n(node, 1)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 1))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 1))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 1))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 1))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 1))) == 1)) {
 		return NULL;
@@ -1786,7 +1770,6 @@ static ir_node *transform_f1663200(ir_node *node, ir_node *block, dbg_info *dbgi
 			return res;
 		} else {
 			ir_node *new_pred = be_transform_node(pred);
-set_irn_mode(new_pred, mode_T);
 			return be_new_Proj(new_pred, pn_ia32_Load_M);
 		}
 	} else {
@@ -1814,7 +1797,7 @@ static ir_node *transform_f1663201(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 1)) && get_Proj_num(get_irn_n(node, 1)) == 1 && get_irn_n_edges(get_irn_n(node, 1)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 1))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 1))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 1))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 1))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 1))) == 1)) {
 		return NULL;
@@ -1871,7 +1854,6 @@ static ir_node *transform_f1663202(ir_node *node, ir_node *block, dbg_info *dbgi
 			return res;
 		} else {
 			ir_node *new_pred = be_transform_node(pred);
-set_irn_mode(new_pred, mode_T);
 			return be_new_Proj(new_pred, pn_ia32_Load_M);
 		}
 	} else {
@@ -1898,7 +1880,7 @@ static ir_node *transform_f1663203(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 1)) && get_Proj_num(get_irn_n(node, 1)) == 1 && get_irn_n_edges(get_irn_n(node, 1)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 1))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 1))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 1))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 1))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 1))) == 1)) {
 		return NULL;
@@ -1946,7 +1928,6 @@ static ir_node *transform_f1663204(ir_node *node, ir_node *block, dbg_info *dbgi
 			return res;
 		} else {
 			ir_node *new_pred = be_transform_node(pred);
-set_irn_mode(new_pred, mode_T);
 			return be_new_Proj(new_pred, pn_ia32_Load_M);
 		}
 	} else {
@@ -1969,7 +1950,7 @@ static ir_node *transform_f1663205(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 1 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 1)) {
 		return NULL;
@@ -2031,7 +2012,6 @@ static ir_node *transform_f1663206(ir_node *node, ir_node *block, dbg_info *dbgi
 			return res;
 		} else {
 			ir_node *new_pred = be_transform_node(pred);
-set_irn_mode(new_pred, mode_T);
 			return be_new_Proj(new_pred, pn_ia32_Load_M);
 		}
 	} else {
@@ -2054,7 +2034,7 @@ static ir_node *transform_f1663207(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 1 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 1)) {
 		return NULL;
@@ -2116,7 +2096,6 @@ static ir_node *transform_f1663208(ir_node *node, ir_node *block, dbg_info *dbgi
 			return res;
 		} else {
 			ir_node *new_pred = be_transform_node(pred);
-set_irn_mode(new_pred, mode_T);
 			return be_new_Proj(new_pred, pn_ia32_Load_M);
 		}
 	} else {
@@ -2138,7 +2117,7 @@ static ir_node *transform_f1663209(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 1 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 1)) {
 		return NULL;
@@ -2191,7 +2170,6 @@ static ir_node *transform_f1663210(ir_node *node, ir_node *block, dbg_info *dbgi
 			return res;
 		} else {
 			ir_node *new_pred = be_transform_node(pred);
-set_irn_mode(new_pred, mode_T);
 			return be_new_Proj(new_pred, pn_ia32_Load_M);
 		}
 	} else {
@@ -2277,8 +2255,8 @@ static ir_node *transform_f1663213(ir_node *node, ir_node *block, dbg_info *dbgi
 			return NULL;
 		}
 	} else {
-	return NULL;
-}
+		return NULL;
+	}
 	ir_node *new_node = NULL;
 	new_node = new_bd_ia32_Or(dbgi, block, noreg_GP, noreg_GP, nomem, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
 	return new_node;
@@ -2303,8 +2281,8 @@ static ir_node *transform_f1663214(ir_node *node, ir_node *block, dbg_info *dbgi
 			return NULL;
 		}
 	} else {
-	return NULL;
-}
+		return NULL;
+	}
 	if (var0 == NULL || var0 == get_irn_n(node, 1)) {
 		var0 = get_irn_n(node, 1);
 	} else {
@@ -2330,7 +2308,7 @@ static ir_node *transform_f1663215(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 1 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 1)) {
 		return NULL;
@@ -2392,7 +2370,6 @@ static ir_node *transform_f1663216(ir_node *node, ir_node *block, dbg_info *dbgi
 			return res;
 		} else {
 			ir_node *new_pred = be_transform_node(pred);
-set_irn_mode(new_pred, mode_T);
 			return be_new_Proj(new_pred, pn_ia32_Load_M);
 		}
 	} else {
@@ -2415,7 +2392,7 @@ static ir_node *transform_f1663217(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 1 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 1)) {
 		return NULL;
@@ -2477,7 +2454,6 @@ static ir_node *transform_f1663218(ir_node *node, ir_node *block, dbg_info *dbgi
 			return res;
 		} else {
 			ir_node *new_pred = be_transform_node(pred);
-set_irn_mode(new_pred, mode_T);
 			return be_new_Proj(new_pred, pn_ia32_Load_M);
 		}
 	} else {
@@ -2499,7 +2475,7 @@ static ir_node *transform_f1663219(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 1 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 1)) {
 		return NULL;
@@ -2552,7 +2528,6 @@ static ir_node *transform_f1663220(ir_node *node, ir_node *block, dbg_info *dbgi
 			return res;
 		} else {
 			ir_node *new_pred = be_transform_node(pred);
-set_irn_mode(new_pred, mode_T);
 			return be_new_Proj(new_pred, pn_ia32_Load_M);
 		}
 	} else {
@@ -2580,7 +2555,7 @@ static ir_node *transform_f1663221(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 1)) && get_Proj_num(get_irn_n(node, 1)) == 1 && get_irn_n_edges(get_irn_n(node, 1)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 1))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 1))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 1))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 1))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 1))) == 1)) {
 		return NULL;
@@ -2637,7 +2612,6 @@ static ir_node *transform_f1663222(ir_node *node, ir_node *block, dbg_info *dbgi
 			return res;
 		} else {
 			ir_node *new_pred = be_transform_node(pred);
-set_irn_mode(new_pred, mode_T);
 			return be_new_Proj(new_pred, pn_ia32_Load_M);
 		}
 	} else {
@@ -2665,7 +2639,7 @@ static ir_node *transform_f1663223(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 1)) && get_Proj_num(get_irn_n(node, 1)) == 1 && get_irn_n_edges(get_irn_n(node, 1)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 1))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 1))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 1))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 1))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 1))) == 1)) {
 		return NULL;
@@ -2722,7 +2696,6 @@ static ir_node *transform_f1663224(ir_node *node, ir_node *block, dbg_info *dbgi
 			return res;
 		} else {
 			ir_node *new_pred = be_transform_node(pred);
-set_irn_mode(new_pred, mode_T);
 			return be_new_Proj(new_pred, pn_ia32_Load_M);
 		}
 	} else {
@@ -2749,7 +2722,7 @@ static ir_node *transform_f1663225(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 1)) && get_Proj_num(get_irn_n(node, 1)) == 1 && get_irn_n_edges(get_irn_n(node, 1)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 1))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 1))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 1))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 1))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 1))) == 1)) {
 		return NULL;
@@ -2797,7 +2770,6 @@ static ir_node *transform_f1663226(ir_node *node, ir_node *block, dbg_info *dbgi
 			return res;
 		} else {
 			ir_node *new_pred = be_transform_node(pred);
-set_irn_mode(new_pred, mode_T);
 			return be_new_Proj(new_pred, pn_ia32_Load_M);
 		}
 	} else {
@@ -2883,8 +2855,8 @@ static ir_node *transform_f1663229(ir_node *node, ir_node *block, dbg_info *dbgi
 			return NULL;
 		}
 	} else {
-	return NULL;
-}
+		return NULL;
+	}
 	ir_node *new_node = NULL;
 	new_node = new_bd_ia32_Shl(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
 	return new_node;
@@ -2941,8 +2913,8 @@ static ir_node *transform_f1663231(ir_node *node, ir_node *block, dbg_info *dbgi
 			return NULL;
 		}
 	} else {
-	return NULL;
-}
+		return NULL;
+	}
 	ir_node *new_node = NULL;
 	new_node = new_bd_ia32_Shr(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
 	return new_node;
@@ -2999,8 +2971,8 @@ static ir_node *transform_f1663233(ir_node *node, ir_node *block, dbg_info *dbgi
 			return NULL;
 		}
 	} else {
-	return NULL;
-}
+		return NULL;
+	}
 	ir_node *new_node = NULL;
 	new_node = new_bd_ia32_Sar(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
 	return new_node;
@@ -3057,8 +3029,8 @@ static ir_node *transform_f1663235(ir_node *node, ir_node *block, dbg_info *dbgi
 			return NULL;
 		}
 	} else {
-	return NULL;
-}
+		return NULL;
+	}
 	ir_node *new_node = NULL;
 	new_node = new_bd_ia32_Sub(dbgi, block, noreg_GP, noreg_GP, nomem, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
 	return new_node;
@@ -3132,7 +3104,7 @@ static ir_node *transform_f1663238(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 1)) && get_Proj_num(get_irn_n(node, 1)) == 1 && get_irn_n_edges(get_irn_n(node, 1)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 1))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 1))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 1))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 1))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 1))) == 1)) {
 		return NULL;
@@ -3189,7 +3161,6 @@ static ir_node *transform_f1663239(ir_node *node, ir_node *block, dbg_info *dbgi
 			return res;
 		} else {
 			ir_node *new_pred = be_transform_node(pred);
-set_irn_mode(new_pred, mode_T);
 			return be_new_Proj(new_pred, pn_ia32_Load_M);
 		}
 	} else {
@@ -3217,7 +3188,7 @@ static ir_node *transform_f1663240(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 1)) && get_Proj_num(get_irn_n(node, 1)) == 1 && get_irn_n_edges(get_irn_n(node, 1)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 1))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 1))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 1))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 1))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 1))) == 1)) {
 		return NULL;
@@ -3274,7 +3245,6 @@ static ir_node *transform_f1663241(ir_node *node, ir_node *block, dbg_info *dbgi
 			return res;
 		} else {
 			ir_node *new_pred = be_transform_node(pred);
-set_irn_mode(new_pred, mode_T);
 			return be_new_Proj(new_pred, pn_ia32_Load_M);
 		}
 	} else {
@@ -3301,7 +3271,7 @@ static ir_node *transform_f1663242(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 1)) && get_Proj_num(get_irn_n(node, 1)) == 1 && get_irn_n_edges(get_irn_n(node, 1)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 1))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 1))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 1))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 1))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 1))) == 1)) {
 		return NULL;
@@ -3349,7 +3319,6 @@ static ir_node *transform_f1663243(ir_node *node, ir_node *block, dbg_info *dbgi
 			return res;
 		} else {
 			ir_node *new_pred = be_transform_node(pred);
-set_irn_mode(new_pred, mode_T);
 			return be_new_Proj(new_pred, pn_ia32_Load_M);
 		}
 	} else {
@@ -3464,7 +3433,7 @@ static ir_node *transform_f1663248(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var2 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(node)) && (get_Load_mode(get_Proj_pred(node)) == mode_Is || get_Load_mode(get_Proj_pred(node)) == mode_Iu || get_Load_mode(get_Proj_pred(node)) == mode_P))) {
 		return NULL;
@@ -3518,7 +3487,6 @@ static ir_node *transform_f1663249(ir_node *node, ir_node *block, dbg_info *dbgi
 			return res;
 		} else {
 			ir_node *new_pred = be_transform_node(pred);
-set_irn_mode(new_pred, mode_T);
 			return be_new_Proj(new_pred, pn_ia32_Load_M);
 		}
 	} else {
@@ -3573,7 +3541,7 @@ static ir_node *transform_f1663251(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var2 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(node)) && (get_Load_mode(get_Proj_pred(node)) == mode_Is || get_Load_mode(get_Proj_pred(node)) == mode_Iu || get_Load_mode(get_Proj_pred(node)) == mode_P))) {
 		return NULL;
@@ -3627,7 +3595,6 @@ static ir_node *transform_f1663252(ir_node *node, ir_node *block, dbg_info *dbgi
 			return res;
 		} else {
 			ir_node *new_pred = be_transform_node(pred);
-set_irn_mode(new_pred, mode_T);
 			return be_new_Proj(new_pred, pn_ia32_Load_M);
 		}
 	} else {
@@ -3681,7 +3648,7 @@ static ir_node *transform_f1663254(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(node)) && (get_Load_mode(get_Proj_pred(node)) == mode_Is || get_Load_mode(get_Proj_pred(node)) == mode_Iu || get_Load_mode(get_Proj_pred(node)) == mode_P))) {
 		return NULL;
@@ -3726,7 +3693,6 @@ static ir_node *transform_f1663255(ir_node *node, ir_node *block, dbg_info *dbgi
 			return res;
 		} else {
 			ir_node *new_pred = be_transform_node(pred);
-set_irn_mode(new_pred, mode_T);
 			return be_new_Proj(new_pred, pn_ia32_Load_M);
 		}
 	} else {
@@ -3772,13 +3738,13 @@ static ir_node *transform_f1663257(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var2 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Store(get_Proj_pred(node)) && (get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Is || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Iu || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_P))) {
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_Proj_pred(node), 0)) && get_Proj_num(get_irn_n(get_Proj_pred(node), 0)) == 0 && get_irn_n_edges(get_irn_n(get_Proj_pred(node), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == 2)) {
 		return NULL;
@@ -3821,7 +3787,7 @@ static ir_node *transform_f1663257(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1)) && get_Proj_num(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) == 2)) {
 		return NULL;
@@ -3862,7 +3828,7 @@ static ir_node *transform_f1663258(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 0 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 2)) {
 		return NULL;
@@ -3905,7 +3871,7 @@ static ir_node *transform_f1663258(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(node, 2), 1)) && get_Proj_num(get_irn_n(get_irn_n(node, 2), 1)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(node, 2), 1)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) == 2)) {
 		return NULL;
@@ -3944,13 +3910,13 @@ static ir_node *transform_f1663259(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var2 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Store(get_Proj_pred(node)) && (get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Is || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Iu || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_P))) {
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_Proj_pred(node), 0)) && get_Proj_num(get_irn_n(get_Proj_pred(node), 0)) == 0 && get_irn_n_edges(get_irn_n(get_Proj_pred(node), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == 2)) {
 		return NULL;
@@ -3993,7 +3959,7 @@ static ir_node *transform_f1663259(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1)) && get_Proj_num(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) == 2)) {
 		return NULL;
@@ -4034,7 +4000,7 @@ static ir_node *transform_f1663260(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 0 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 2)) {
 		return NULL;
@@ -4077,7 +4043,7 @@ static ir_node *transform_f1663260(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(node, 2), 1)) && get_Proj_num(get_irn_n(get_irn_n(node, 2), 1)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(node, 2), 1)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) == 2)) {
 		return NULL;
@@ -4115,13 +4081,13 @@ static ir_node *transform_f1663261(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Store(get_Proj_pred(node)) && (get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Is || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Iu || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_P))) {
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_Proj_pred(node), 0)) && get_Proj_num(get_irn_n(get_Proj_pred(node), 0)) == 0 && get_irn_n_edges(get_irn_n(get_Proj_pred(node), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == 2)) {
 		return NULL;
@@ -4148,7 +4114,7 @@ static ir_node *transform_f1663261(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1)) && get_Proj_num(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) == 2)) {
 		return NULL;
@@ -4180,7 +4146,7 @@ static ir_node *transform_f1663262(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 0 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 2)) {
 		return NULL;
@@ -4207,7 +4173,7 @@ static ir_node *transform_f1663262(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(node, 2), 1)) && get_Proj_num(get_irn_n(get_irn_n(node, 2), 1)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(node, 2), 1)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) == 2)) {
 		return NULL;
@@ -4238,13 +4204,13 @@ static ir_node *transform_f1663263(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var2 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Store(get_Proj_pred(node)) && (get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Is || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Iu || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_P))) {
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_Proj_pred(node), 0)) && get_Proj_num(get_irn_n(get_Proj_pred(node), 0)) == 0 && get_irn_n_edges(get_irn_n(get_Proj_pred(node), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == 2)) {
 		return NULL;
@@ -4287,7 +4253,7 @@ static ir_node *transform_f1663263(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1)) && get_Proj_num(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) == 2)) {
 		return NULL;
@@ -4328,7 +4294,7 @@ static ir_node *transform_f1663264(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 0 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 2)) {
 		return NULL;
@@ -4371,7 +4337,7 @@ static ir_node *transform_f1663264(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(node, 2), 1)) && get_Proj_num(get_irn_n(get_irn_n(node, 2), 1)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(node, 2), 1)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) == 2)) {
 		return NULL;
@@ -4410,13 +4376,13 @@ static ir_node *transform_f1663265(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var2 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Store(get_Proj_pred(node)) && (get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Is || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Iu || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_P))) {
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_Proj_pred(node), 0)) && get_Proj_num(get_irn_n(get_Proj_pred(node), 0)) == 0 && get_irn_n_edges(get_irn_n(get_Proj_pred(node), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == 2)) {
 		return NULL;
@@ -4459,7 +4425,7 @@ static ir_node *transform_f1663265(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1)) && get_Proj_num(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) == 2)) {
 		return NULL;
@@ -4500,7 +4466,7 @@ static ir_node *transform_f1663266(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 0 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 2)) {
 		return NULL;
@@ -4543,7 +4509,7 @@ static ir_node *transform_f1663266(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(node, 2), 1)) && get_Proj_num(get_irn_n(get_irn_n(node, 2), 1)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(node, 2), 1)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) == 2)) {
 		return NULL;
@@ -4581,13 +4547,13 @@ static ir_node *transform_f1663267(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Store(get_Proj_pred(node)) && (get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Is || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Iu || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_P))) {
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_Proj_pred(node), 0)) && get_Proj_num(get_irn_n(get_Proj_pred(node), 0)) == 0 && get_irn_n_edges(get_irn_n(get_Proj_pred(node), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == 2)) {
 		return NULL;
@@ -4614,7 +4580,7 @@ static ir_node *transform_f1663267(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1)) && get_Proj_num(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) == 2)) {
 		return NULL;
@@ -4646,7 +4612,7 @@ static ir_node *transform_f1663268(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 0 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 2)) {
 		return NULL;
@@ -4673,7 +4639,7 @@ static ir_node *transform_f1663268(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(node, 2), 1)) && get_Proj_num(get_irn_n(get_irn_n(node, 2), 1)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(node, 2), 1)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) == 2)) {
 		return NULL;
@@ -4705,13 +4671,13 @@ static ir_node *transform_f1663269(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var3 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Store(get_Proj_pred(node)) && (get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Is || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Iu || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_P))) {
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_Proj_pred(node), 0)) && get_Proj_num(get_irn_n(get_Proj_pred(node), 0)) == 0 && get_irn_n_edges(get_irn_n(get_Proj_pred(node), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == 2)) {
 		return NULL;
@@ -4756,7 +4722,7 @@ static ir_node *transform_f1663269(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1)) && get_Proj_num(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) == 2)) {
 		return NULL;
@@ -4798,7 +4764,7 @@ static ir_node *transform_f1663270(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 0 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 2)) {
 		return NULL;
@@ -4843,7 +4809,7 @@ static ir_node *transform_f1663270(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(node, 2), 1)) && get_Proj_num(get_irn_n(get_irn_n(node, 2), 1)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(node, 2), 1)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) == 2)) {
 		return NULL;
@@ -4883,13 +4849,13 @@ static ir_node *transform_f1663271(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var3 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Store(get_Proj_pred(node)) && (get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Is || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Iu || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_P))) {
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_Proj_pred(node), 0)) && get_Proj_num(get_irn_n(get_Proj_pred(node), 0)) == 0 && get_irn_n_edges(get_irn_n(get_Proj_pred(node), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == 2)) {
 		return NULL;
@@ -4934,7 +4900,7 @@ static ir_node *transform_f1663271(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1)) && get_Proj_num(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) == 2)) {
 		return NULL;
@@ -4976,7 +4942,7 @@ static ir_node *transform_f1663272(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 0 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 2)) {
 		return NULL;
@@ -5021,7 +4987,7 @@ static ir_node *transform_f1663272(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(node, 2), 1)) && get_Proj_num(get_irn_n(get_irn_n(node, 2), 1)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(node, 2), 1)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) == 2)) {
 		return NULL;
@@ -5060,13 +5026,13 @@ static ir_node *transform_f1663273(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var2 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Store(get_Proj_pred(node)) && (get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Is || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Iu || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_P))) {
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_Proj_pred(node), 0)) && get_Proj_num(get_irn_n(get_Proj_pred(node), 0)) == 0 && get_irn_n_edges(get_irn_n(get_Proj_pred(node), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == 2)) {
 		return NULL;
@@ -5095,7 +5061,7 @@ static ir_node *transform_f1663273(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1)) && get_Proj_num(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) == 2)) {
 		return NULL;
@@ -5128,7 +5094,7 @@ static ir_node *transform_f1663274(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 0 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 2)) {
 		return NULL;
@@ -5157,7 +5123,7 @@ static ir_node *transform_f1663274(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(node, 2), 1)) && get_Proj_num(get_irn_n(get_irn_n(node, 2), 1)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(node, 2), 1)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) == 2)) {
 		return NULL;
@@ -5188,13 +5154,13 @@ static ir_node *transform_f1663275(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var2 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Store(get_Proj_pred(node)) && (get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Is || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Iu || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_P))) {
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_Proj_pred(node), 0)) && get_Proj_num(get_irn_n(get_Proj_pred(node), 0)) == 0 && get_irn_n_edges(get_irn_n(get_Proj_pred(node), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == 2)) {
 		return NULL;
@@ -5234,7 +5200,7 @@ static ir_node *transform_f1663275(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == 2)) {
 		return NULL;
@@ -5278,7 +5244,7 @@ static ir_node *transform_f1663276(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 0 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 2)) {
 		return NULL;
@@ -5318,7 +5284,7 @@ static ir_node *transform_f1663276(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(node, 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(node, 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(node, 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == 2)) {
 		return NULL;
@@ -5360,13 +5326,13 @@ static ir_node *transform_f1663277(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var2 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Store(get_Proj_pred(node)) && (get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Is || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Iu || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_P))) {
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_Proj_pred(node), 0)) && get_Proj_num(get_irn_n(get_Proj_pred(node), 0)) == 0 && get_irn_n_edges(get_irn_n(get_Proj_pred(node), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == 2)) {
 		return NULL;
@@ -5406,7 +5372,7 @@ static ir_node *transform_f1663277(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == 2)) {
 		return NULL;
@@ -5450,7 +5416,7 @@ static ir_node *transform_f1663278(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 0 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 2)) {
 		return NULL;
@@ -5490,7 +5456,7 @@ static ir_node *transform_f1663278(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(node, 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(node, 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(node, 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == 2)) {
 		return NULL;
@@ -5531,13 +5497,13 @@ static ir_node *transform_f1663279(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Store(get_Proj_pred(node)) && (get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Is || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Iu || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_P))) {
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_Proj_pred(node), 0)) && get_Proj_num(get_irn_n(get_Proj_pred(node), 0)) == 0 && get_irn_n_edges(get_irn_n(get_Proj_pred(node), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == 2)) {
 		return NULL;
@@ -5561,7 +5527,7 @@ static ir_node *transform_f1663279(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == 2)) {
 		return NULL;
@@ -5596,7 +5562,7 @@ static ir_node *transform_f1663280(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 0 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 2)) {
 		return NULL;
@@ -5620,7 +5586,7 @@ static ir_node *transform_f1663280(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(node, 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(node, 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(node, 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == 2)) {
 		return NULL;
@@ -5654,13 +5620,13 @@ static ir_node *transform_f1663281(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var2 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Store(get_Proj_pred(node)) && (get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Is || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Iu || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_P))) {
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_Proj_pred(node), 0)) && get_Proj_num(get_irn_n(get_Proj_pred(node), 0)) == 0 && get_irn_n_edges(get_irn_n(get_Proj_pred(node), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == 2)) {
 		return NULL;
@@ -5700,7 +5666,7 @@ static ir_node *transform_f1663281(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == 2)) {
 		return NULL;
@@ -5744,7 +5710,7 @@ static ir_node *transform_f1663282(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 0 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 2)) {
 		return NULL;
@@ -5784,7 +5750,7 @@ static ir_node *transform_f1663282(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(node, 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(node, 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(node, 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == 2)) {
 		return NULL;
@@ -5826,13 +5792,13 @@ static ir_node *transform_f1663283(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var2 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Store(get_Proj_pred(node)) && (get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Is || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Iu || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_P))) {
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_Proj_pred(node), 0)) && get_Proj_num(get_irn_n(get_Proj_pred(node), 0)) == 0 && get_irn_n_edges(get_irn_n(get_Proj_pred(node), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == 2)) {
 		return NULL;
@@ -5872,7 +5838,7 @@ static ir_node *transform_f1663283(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == 2)) {
 		return NULL;
@@ -5916,7 +5882,7 @@ static ir_node *transform_f1663284(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 0 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 2)) {
 		return NULL;
@@ -5956,7 +5922,7 @@ static ir_node *transform_f1663284(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(node, 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(node, 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(node, 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == 2)) {
 		return NULL;
@@ -5997,13 +5963,13 @@ static ir_node *transform_f1663285(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Store(get_Proj_pred(node)) && (get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Is || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Iu || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_P))) {
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_Proj_pred(node), 0)) && get_Proj_num(get_irn_n(get_Proj_pred(node), 0)) == 0 && get_irn_n_edges(get_irn_n(get_Proj_pred(node), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == 2)) {
 		return NULL;
@@ -6027,7 +5993,7 @@ static ir_node *transform_f1663285(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == 2)) {
 		return NULL;
@@ -6062,7 +6028,7 @@ static ir_node *transform_f1663286(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 0 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 2)) {
 		return NULL;
@@ -6086,7 +6052,7 @@ static ir_node *transform_f1663286(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(node, 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(node, 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(node, 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == 2)) {
 		return NULL;
@@ -6121,13 +6087,13 @@ static ir_node *transform_f1663287(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var3 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Store(get_Proj_pred(node)) && (get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Is || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Iu || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_P))) {
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_Proj_pred(node), 0)) && get_Proj_num(get_irn_n(get_Proj_pred(node), 0)) == 0 && get_irn_n_edges(get_irn_n(get_Proj_pred(node), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == 2)) {
 		return NULL;
@@ -6167,7 +6133,7 @@ static ir_node *transform_f1663287(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == 2)) {
 		return NULL;
@@ -6214,7 +6180,7 @@ static ir_node *transform_f1663288(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 0 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 2)) {
 		return NULL;
@@ -6254,7 +6220,7 @@ static ir_node *transform_f1663288(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(node, 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(node, 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(node, 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == 2)) {
 		return NULL;
@@ -6299,13 +6265,13 @@ static ir_node *transform_f1663289(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var3 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Store(get_Proj_pred(node)) && (get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Is || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Iu || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_P))) {
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_Proj_pred(node), 0)) && get_Proj_num(get_irn_n(get_Proj_pred(node), 0)) == 0 && get_irn_n_edges(get_irn_n(get_Proj_pred(node), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == 2)) {
 		return NULL;
@@ -6345,7 +6311,7 @@ static ir_node *transform_f1663289(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == 2)) {
 		return NULL;
@@ -6392,7 +6358,7 @@ static ir_node *transform_f1663290(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 0 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 2)) {
 		return NULL;
@@ -6432,7 +6398,7 @@ static ir_node *transform_f1663290(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(node, 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(node, 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(node, 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == 2)) {
 		return NULL;
@@ -6476,13 +6442,13 @@ static ir_node *transform_f1663291(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var2 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Store(get_Proj_pred(node)) && (get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Is || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Iu || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_P))) {
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_Proj_pred(node), 0)) && get_Proj_num(get_irn_n(get_Proj_pred(node), 0)) == 0 && get_irn_n_edges(get_irn_n(get_Proj_pred(node), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == 2)) {
 		return NULL;
@@ -6506,7 +6472,7 @@ static ir_node *transform_f1663291(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == 2)) {
 		return NULL;
@@ -6544,7 +6510,7 @@ static ir_node *transform_f1663292(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 0 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 2)) {
 		return NULL;
@@ -6568,7 +6534,7 @@ static ir_node *transform_f1663292(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(node, 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(node, 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(node, 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == 2)) {
 		return NULL;
@@ -6605,13 +6571,13 @@ static ir_node *transform_f1663293(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var3 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Store(get_Proj_pred(node)) && (get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Is || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Iu || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_P))) {
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_Proj_pred(node), 0)) && get_Proj_num(get_irn_n(get_Proj_pred(node), 0)) == 0 && get_irn_n_edges(get_irn_n(get_Proj_pred(node), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == 2)) {
 		return NULL;
@@ -6656,7 +6622,7 @@ static ir_node *transform_f1663293(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1)) && get_Proj_num(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) == 2)) {
 		return NULL;
@@ -6698,7 +6664,7 @@ static ir_node *transform_f1663294(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 0 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 2)) {
 		return NULL;
@@ -6743,7 +6709,7 @@ static ir_node *transform_f1663294(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(node, 2), 1)) && get_Proj_num(get_irn_n(get_irn_n(node, 2), 1)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(node, 2), 1)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) == 2)) {
 		return NULL;
@@ -6783,13 +6749,13 @@ static ir_node *transform_f1663295(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var3 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Store(get_Proj_pred(node)) && (get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Is || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Iu || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_P))) {
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_Proj_pred(node), 0)) && get_Proj_num(get_irn_n(get_Proj_pred(node), 0)) == 0 && get_irn_n_edges(get_irn_n(get_Proj_pred(node), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == 2)) {
 		return NULL;
@@ -6834,7 +6800,7 @@ static ir_node *transform_f1663295(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1)) && get_Proj_num(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) == 2)) {
 		return NULL;
@@ -6876,7 +6842,7 @@ static ir_node *transform_f1663296(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 0 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 2)) {
 		return NULL;
@@ -6921,7 +6887,7 @@ static ir_node *transform_f1663296(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(node, 2), 1)) && get_Proj_num(get_irn_n(get_irn_n(node, 2), 1)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(node, 2), 1)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) == 2)) {
 		return NULL;
@@ -6960,13 +6926,13 @@ static ir_node *transform_f1663297(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var2 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Store(get_Proj_pred(node)) && (get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Is || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Iu || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_P))) {
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_Proj_pred(node), 0)) && get_Proj_num(get_irn_n(get_Proj_pred(node), 0)) == 0 && get_irn_n_edges(get_irn_n(get_Proj_pred(node), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == 2)) {
 		return NULL;
@@ -6995,7 +6961,7 @@ static ir_node *transform_f1663297(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1)) && get_Proj_num(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) == 2)) {
 		return NULL;
@@ -7028,7 +6994,7 @@ static ir_node *transform_f1663298(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 0 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 2)) {
 		return NULL;
@@ -7057,7 +7023,7 @@ static ir_node *transform_f1663298(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(node, 2), 1)) && get_Proj_num(get_irn_n(get_irn_n(node, 2), 1)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(node, 2), 1)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) == 2)) {
 		return NULL;
@@ -7089,13 +7055,13 @@ static ir_node *transform_f1663299(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var3 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Store(get_Proj_pred(node)) && (get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Is || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Iu || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_P))) {
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_Proj_pred(node), 0)) && get_Proj_num(get_irn_n(get_Proj_pred(node), 0)) == 0 && get_irn_n_edges(get_irn_n(get_Proj_pred(node), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == 2)) {
 		return NULL;
@@ -7135,7 +7101,7 @@ static ir_node *transform_f1663299(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == 2)) {
 		return NULL;
@@ -7182,7 +7148,7 @@ static ir_node *transform_f1663300(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 0 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 2)) {
 		return NULL;
@@ -7222,7 +7188,7 @@ static ir_node *transform_f1663300(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(node, 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(node, 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(node, 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == 2)) {
 		return NULL;
@@ -7267,13 +7233,13 @@ static ir_node *transform_f1663301(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var3 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Store(get_Proj_pred(node)) && (get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Is || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Iu || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_P))) {
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_Proj_pred(node), 0)) && get_Proj_num(get_irn_n(get_Proj_pred(node), 0)) == 0 && get_irn_n_edges(get_irn_n(get_Proj_pred(node), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == 2)) {
 		return NULL;
@@ -7313,7 +7279,7 @@ static ir_node *transform_f1663301(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == 2)) {
 		return NULL;
@@ -7360,7 +7326,7 @@ static ir_node *transform_f1663302(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 0 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 2)) {
 		return NULL;
@@ -7400,7 +7366,7 @@ static ir_node *transform_f1663302(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(node, 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(node, 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(node, 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == 2)) {
 		return NULL;
@@ -7444,13 +7410,13 @@ static ir_node *transform_f1663303(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var2 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Store(get_Proj_pred(node)) && (get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Is || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Iu || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_P))) {
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_Proj_pred(node), 0)) && get_Proj_num(get_irn_n(get_Proj_pred(node), 0)) == 0 && get_irn_n_edges(get_irn_n(get_Proj_pred(node), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == 2)) {
 		return NULL;
@@ -7474,7 +7440,7 @@ static ir_node *transform_f1663303(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == 2)) {
 		return NULL;
@@ -7512,7 +7478,7 @@ static ir_node *transform_f1663304(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 0 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 2)) {
 		return NULL;
@@ -7536,7 +7502,7 @@ static ir_node *transform_f1663304(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(node, 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(node, 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(node, 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == 2)) {
 		return NULL;
@@ -7573,13 +7539,13 @@ static ir_node *transform_f1663305(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var3 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Store(get_Proj_pred(node)) && (get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Is || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Iu || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_P))) {
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_Proj_pred(node), 0)) && get_Proj_num(get_irn_n(get_Proj_pred(node), 0)) == 0 && get_irn_n_edges(get_irn_n(get_Proj_pred(node), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == 2)) {
 		return NULL;
@@ -7624,7 +7590,7 @@ static ir_node *transform_f1663305(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1)) && get_Proj_num(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) == 2)) {
 		return NULL;
@@ -7666,7 +7632,7 @@ static ir_node *transform_f1663306(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 0 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 2)) {
 		return NULL;
@@ -7711,7 +7677,7 @@ static ir_node *transform_f1663306(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(node, 2), 1)) && get_Proj_num(get_irn_n(get_irn_n(node, 2), 1)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(node, 2), 1)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) == 2)) {
 		return NULL;
@@ -7751,13 +7717,13 @@ static ir_node *transform_f1663307(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var3 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Store(get_Proj_pred(node)) && (get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Is || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Iu || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_P))) {
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_Proj_pred(node), 0)) && get_Proj_num(get_irn_n(get_Proj_pred(node), 0)) == 0 && get_irn_n_edges(get_irn_n(get_Proj_pred(node), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == 2)) {
 		return NULL;
@@ -7802,7 +7768,7 @@ static ir_node *transform_f1663307(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1)) && get_Proj_num(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) == 2)) {
 		return NULL;
@@ -7844,7 +7810,7 @@ static ir_node *transform_f1663308(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 0 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 2)) {
 		return NULL;
@@ -7889,7 +7855,7 @@ static ir_node *transform_f1663308(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(node, 2), 1)) && get_Proj_num(get_irn_n(get_irn_n(node, 2), 1)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(node, 2), 1)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) == 2)) {
 		return NULL;
@@ -7928,13 +7894,13 @@ static ir_node *transform_f1663309(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var2 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Store(get_Proj_pred(node)) && (get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Is || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Iu || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_P))) {
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_Proj_pred(node), 0)) && get_Proj_num(get_irn_n(get_Proj_pred(node), 0)) == 0 && get_irn_n_edges(get_irn_n(get_Proj_pred(node), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == 2)) {
 		return NULL;
@@ -7963,7 +7929,7 @@ static ir_node *transform_f1663309(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1)) && get_Proj_num(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) == 2)) {
 		return NULL;
@@ -7996,7 +7962,7 @@ static ir_node *transform_f1663310(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 0 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 2)) {
 		return NULL;
@@ -8025,7 +7991,7 @@ static ir_node *transform_f1663310(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(node, 2), 1)) && get_Proj_num(get_irn_n(get_irn_n(node, 2), 1)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(node, 2), 1)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) == 2)) {
 		return NULL;
@@ -8057,13 +8023,13 @@ static ir_node *transform_f1663311(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var3 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Store(get_Proj_pred(node)) && (get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Is || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Iu || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_P))) {
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_Proj_pred(node), 0)) && get_Proj_num(get_irn_n(get_Proj_pred(node), 0)) == 0 && get_irn_n_edges(get_irn_n(get_Proj_pred(node), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == 2)) {
 		return NULL;
@@ -8103,7 +8069,7 @@ static ir_node *transform_f1663311(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == 2)) {
 		return NULL;
@@ -8150,7 +8116,7 @@ static ir_node *transform_f1663312(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 0 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 2)) {
 		return NULL;
@@ -8190,7 +8156,7 @@ static ir_node *transform_f1663312(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(node, 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(node, 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(node, 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == 2)) {
 		return NULL;
@@ -8235,13 +8201,13 @@ static ir_node *transform_f1663313(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var3 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Store(get_Proj_pred(node)) && (get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Is || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Iu || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_P))) {
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_Proj_pred(node), 0)) && get_Proj_num(get_irn_n(get_Proj_pred(node), 0)) == 0 && get_irn_n_edges(get_irn_n(get_Proj_pred(node), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == 2)) {
 		return NULL;
@@ -8281,7 +8247,7 @@ static ir_node *transform_f1663313(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == 2)) {
 		return NULL;
@@ -8328,7 +8294,7 @@ static ir_node *transform_f1663314(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 0 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 2)) {
 		return NULL;
@@ -8368,7 +8334,7 @@ static ir_node *transform_f1663314(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(node, 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(node, 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(node, 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == 2)) {
 		return NULL;
@@ -8412,13 +8378,13 @@ static ir_node *transform_f1663315(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var2 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Store(get_Proj_pred(node)) && (get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Is || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Iu || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_P))) {
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_Proj_pred(node), 0)) && get_Proj_num(get_irn_n(get_Proj_pred(node), 0)) == 0 && get_irn_n_edges(get_irn_n(get_Proj_pred(node), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == 2)) {
 		return NULL;
@@ -8442,7 +8408,7 @@ static ir_node *transform_f1663315(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == 2)) {
 		return NULL;
@@ -8480,7 +8446,7 @@ static ir_node *transform_f1663316(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 0 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 2)) {
 		return NULL;
@@ -8504,7 +8470,7 @@ static ir_node *transform_f1663316(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(node, 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(node, 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(node, 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == 2)) {
 		return NULL;
@@ -8541,13 +8507,13 @@ static ir_node *transform_f1663317(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var3 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Store(get_Proj_pred(node)) && (get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Is || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Iu || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_P))) {
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_Proj_pred(node), 0)) && get_Proj_num(get_irn_n(get_Proj_pred(node), 0)) == 0 && get_irn_n_edges(get_irn_n(get_Proj_pred(node), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == 2)) {
 		return NULL;
@@ -8592,7 +8558,7 @@ static ir_node *transform_f1663317(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1)) && get_Proj_num(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) == 2)) {
 		return NULL;
@@ -8634,7 +8600,7 @@ static ir_node *transform_f1663318(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 0 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 2)) {
 		return NULL;
@@ -8679,7 +8645,7 @@ static ir_node *transform_f1663318(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(node, 2), 1)) && get_Proj_num(get_irn_n(get_irn_n(node, 2), 1)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(node, 2), 1)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) == 2)) {
 		return NULL;
@@ -8719,13 +8685,13 @@ static ir_node *transform_f1663319(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var3 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Store(get_Proj_pred(node)) && (get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Is || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Iu || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_P))) {
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_Proj_pred(node), 0)) && get_Proj_num(get_irn_n(get_Proj_pred(node), 0)) == 0 && get_irn_n_edges(get_irn_n(get_Proj_pred(node), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == 2)) {
 		return NULL;
@@ -8770,7 +8736,7 @@ static ir_node *transform_f1663319(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1)) && get_Proj_num(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) == 2)) {
 		return NULL;
@@ -8812,7 +8778,7 @@ static ir_node *transform_f1663320(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 0 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 2)) {
 		return NULL;
@@ -8857,7 +8823,7 @@ static ir_node *transform_f1663320(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(node, 2), 1)) && get_Proj_num(get_irn_n(get_irn_n(node, 2), 1)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(node, 2), 1)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) == 2)) {
 		return NULL;
@@ -8896,13 +8862,13 @@ static ir_node *transform_f1663321(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var2 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Store(get_Proj_pred(node)) && (get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Is || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Iu || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_P))) {
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_Proj_pred(node), 0)) && get_Proj_num(get_irn_n(get_Proj_pred(node), 0)) == 0 && get_irn_n_edges(get_irn_n(get_Proj_pred(node), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == 2)) {
 		return NULL;
@@ -8931,7 +8897,7 @@ static ir_node *transform_f1663321(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1)) && get_Proj_num(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 1))) == 2)) {
 		return NULL;
@@ -8964,7 +8930,7 @@ static ir_node *transform_f1663322(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 0 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 2)) {
 		return NULL;
@@ -8993,7 +8959,7 @@ static ir_node *transform_f1663322(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(node, 2), 1)) && get_Proj_num(get_irn_n(get_irn_n(node, 2), 1)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(node, 2), 1)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 1))) == 2)) {
 		return NULL;
@@ -9025,13 +8991,13 @@ static ir_node *transform_f1663323(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var3 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Store(get_Proj_pred(node)) && (get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Is || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Iu || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_P))) {
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_Proj_pred(node), 0)) && get_Proj_num(get_irn_n(get_Proj_pred(node), 0)) == 0 && get_irn_n_edges(get_irn_n(get_Proj_pred(node), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == 2)) {
 		return NULL;
@@ -9071,7 +9037,7 @@ static ir_node *transform_f1663323(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == 2)) {
 		return NULL;
@@ -9118,7 +9084,7 @@ static ir_node *transform_f1663324(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 0 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 2)) {
 		return NULL;
@@ -9158,7 +9124,7 @@ static ir_node *transform_f1663324(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(node, 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(node, 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(node, 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == 2)) {
 		return NULL;
@@ -9203,13 +9169,13 @@ static ir_node *transform_f1663325(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var3 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Store(get_Proj_pred(node)) && (get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Is || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Iu || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_P))) {
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_Proj_pred(node), 0)) && get_Proj_num(get_irn_n(get_Proj_pred(node), 0)) == 0 && get_irn_n_edges(get_irn_n(get_Proj_pred(node), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == 2)) {
 		return NULL;
@@ -9249,7 +9215,7 @@ static ir_node *transform_f1663325(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == 2)) {
 		return NULL;
@@ -9296,7 +9262,7 @@ static ir_node *transform_f1663326(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 0 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 2)) {
 		return NULL;
@@ -9336,7 +9302,7 @@ static ir_node *transform_f1663326(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(node, 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(node, 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(node, 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == 2)) {
 		return NULL;
@@ -9380,13 +9346,13 @@ static ir_node *transform_f1663327(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var2 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Store(get_Proj_pred(node)) && (get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Is || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Iu || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_P))) {
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_Proj_pred(node), 0)) && get_Proj_num(get_irn_n(get_Proj_pred(node), 0)) == 0 && get_irn_n_edges(get_irn_n(get_Proj_pred(node), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == 2)) {
 		return NULL;
@@ -9410,7 +9376,7 @@ static ir_node *transform_f1663327(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == 2)) {
 		return NULL;
@@ -9448,7 +9414,7 @@ static ir_node *transform_f1663328(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 0 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 2)) {
 		return NULL;
@@ -9472,7 +9438,7 @@ static ir_node *transform_f1663328(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(node, 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(node, 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(node, 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == 2)) {
 		return NULL;
@@ -9509,13 +9475,13 @@ static ir_node *transform_f1663329(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var3 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Store(get_Proj_pred(node)) && (get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Is || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Iu || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_P))) {
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_Proj_pred(node), 0)) && get_Proj_num(get_irn_n(get_Proj_pred(node), 0)) == 0 && get_irn_n_edges(get_irn_n(get_Proj_pred(node), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == 2)) {
 		return NULL;
@@ -9555,7 +9521,7 @@ static ir_node *transform_f1663329(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == 2)) {
 		return NULL;
@@ -9602,7 +9568,7 @@ static ir_node *transform_f1663330(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 0 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 2)) {
 		return NULL;
@@ -9642,7 +9608,7 @@ static ir_node *transform_f1663330(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(node, 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(node, 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(node, 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == 2)) {
 		return NULL;
@@ -9687,13 +9653,13 @@ static ir_node *transform_f1663331(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var3 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Store(get_Proj_pred(node)) && (get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Is || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Iu || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_P))) {
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_Proj_pred(node), 0)) && get_Proj_num(get_irn_n(get_Proj_pred(node), 0)) == 0 && get_irn_n_edges(get_irn_n(get_Proj_pred(node), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == 2)) {
 		return NULL;
@@ -9733,7 +9699,7 @@ static ir_node *transform_f1663331(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == 2)) {
 		return NULL;
@@ -9780,7 +9746,7 @@ static ir_node *transform_f1663332(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 0 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 2)) {
 		return NULL;
@@ -9820,7 +9786,7 @@ static ir_node *transform_f1663332(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(node, 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(node, 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(node, 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == 2)) {
 		return NULL;
@@ -9864,13 +9830,13 @@ static ir_node *transform_f1663333(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var2 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Store(get_Proj_pred(node)) && (get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Is || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Iu || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_P))) {
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_Proj_pred(node), 0)) && get_Proj_num(get_irn_n(get_Proj_pred(node), 0)) == 0 && get_irn_n_edges(get_irn_n(get_Proj_pred(node), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == 2)) {
 		return NULL;
@@ -9894,7 +9860,7 @@ static ir_node *transform_f1663333(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == 2)) {
 		return NULL;
@@ -9932,7 +9898,7 @@ static ir_node *transform_f1663334(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 0 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 2)) {
 		return NULL;
@@ -9956,7 +9922,7 @@ static ir_node *transform_f1663334(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(node, 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(node, 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(node, 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == 2)) {
 		return NULL;
@@ -9993,13 +9959,13 @@ static ir_node *transform_f1663335(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var3 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Store(get_Proj_pred(node)) && (get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Is || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Iu || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_P))) {
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_Proj_pred(node), 0)) && get_Proj_num(get_irn_n(get_Proj_pred(node), 0)) == 0 && get_irn_n_edges(get_irn_n(get_Proj_pred(node), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == 2)) {
 		return NULL;
@@ -10039,7 +10005,7 @@ static ir_node *transform_f1663335(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == 2)) {
 		return NULL;
@@ -10086,7 +10052,7 @@ static ir_node *transform_f1663336(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 0 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 2)) {
 		return NULL;
@@ -10126,7 +10092,7 @@ static ir_node *transform_f1663336(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(node, 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(node, 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(node, 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == 2)) {
 		return NULL;
@@ -10171,13 +10137,13 @@ static ir_node *transform_f1663337(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var3 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Store(get_Proj_pred(node)) && (get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Is || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Iu || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_P))) {
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_Proj_pred(node), 0)) && get_Proj_num(get_irn_n(get_Proj_pred(node), 0)) == 0 && get_irn_n_edges(get_irn_n(get_Proj_pred(node), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == 2)) {
 		return NULL;
@@ -10217,7 +10183,7 @@ static ir_node *transform_f1663337(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == 2)) {
 		return NULL;
@@ -10264,7 +10230,7 @@ static ir_node *transform_f1663338(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 0 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 2)) {
 		return NULL;
@@ -10304,7 +10270,7 @@ static ir_node *transform_f1663338(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(node, 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(node, 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(node, 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == 2)) {
 		return NULL;
@@ -10348,13 +10314,13 @@ static ir_node *transform_f1663339(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var2 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Store(get_Proj_pred(node)) && (get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Is || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Iu || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_P))) {
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_Proj_pred(node), 0)) && get_Proj_num(get_irn_n(get_Proj_pred(node), 0)) == 0 && get_irn_n_edges(get_irn_n(get_Proj_pred(node), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == 2)) {
 		return NULL;
@@ -10378,7 +10344,7 @@ static ir_node *transform_f1663339(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == 2)) {
 		return NULL;
@@ -10416,7 +10382,7 @@ static ir_node *transform_f1663340(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 0 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 2)) {
 		return NULL;
@@ -10440,7 +10406,7 @@ static ir_node *transform_f1663340(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(node, 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(node, 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(node, 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == 2)) {
 		return NULL;
@@ -10477,13 +10443,13 @@ static ir_node *transform_f1663341(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var3 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Store(get_Proj_pred(node)) && (get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Is || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Iu || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_P))) {
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_Proj_pred(node), 0)) && get_Proj_num(get_irn_n(get_Proj_pred(node), 0)) == 0 && get_irn_n_edges(get_irn_n(get_Proj_pred(node), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == 2)) {
 		return NULL;
@@ -10523,7 +10489,7 @@ static ir_node *transform_f1663341(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == 2)) {
 		return NULL;
@@ -10570,7 +10536,7 @@ static ir_node *transform_f1663342(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 0 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 2)) {
 		return NULL;
@@ -10610,7 +10576,7 @@ static ir_node *transform_f1663342(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(node, 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(node, 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(node, 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == 2)) {
 		return NULL;
@@ -10655,13 +10621,13 @@ static ir_node *transform_f1663343(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var3 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Store(get_Proj_pred(node)) && (get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Is || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Iu || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_P))) {
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_Proj_pred(node), 0)) && get_Proj_num(get_irn_n(get_Proj_pred(node), 0)) == 0 && get_irn_n_edges(get_irn_n(get_Proj_pred(node), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == 2)) {
 		return NULL;
@@ -10701,7 +10667,7 @@ static ir_node *transform_f1663343(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == 2)) {
 		return NULL;
@@ -10748,7 +10714,7 @@ static ir_node *transform_f1663344(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 0 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 2)) {
 		return NULL;
@@ -10788,7 +10754,7 @@ static ir_node *transform_f1663344(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(node, 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(node, 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(node, 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == 2)) {
 		return NULL;
@@ -10832,13 +10798,13 @@ static ir_node *transform_f1663345(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var2 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Store(get_Proj_pred(node)) && (get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Is || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Iu || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_P))) {
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_Proj_pred(node), 0)) && get_Proj_num(get_irn_n(get_Proj_pred(node), 0)) == 0 && get_irn_n_edges(get_irn_n(get_Proj_pred(node), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == 2)) {
 		return NULL;
@@ -10862,7 +10828,7 @@ static ir_node *transform_f1663345(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == 2)) {
 		return NULL;
@@ -10900,7 +10866,7 @@ static ir_node *transform_f1663346(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 0 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 2)) {
 		return NULL;
@@ -10924,7 +10890,7 @@ static ir_node *transform_f1663346(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(node, 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(node, 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(node, 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == 2)) {
 		return NULL;
@@ -10960,13 +10926,13 @@ static ir_node *transform_f1663347(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var2 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Store(get_Proj_pred(node)) && (get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Is || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Iu || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_P))) {
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_Proj_pred(node), 0)) && get_Proj_num(get_irn_n(get_Proj_pred(node), 0)) == 0 && get_irn_n_edges(get_irn_n(get_Proj_pred(node), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == 2)) {
 		return NULL;
@@ -11006,7 +10972,7 @@ static ir_node *transform_f1663347(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == 2)) {
 		return NULL;
@@ -11050,7 +11016,7 @@ static ir_node *transform_f1663348(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 0 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 2)) {
 		return NULL;
@@ -11090,7 +11056,7 @@ static ir_node *transform_f1663348(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(node, 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(node, 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(node, 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == 2)) {
 		return NULL;
@@ -11132,13 +11098,13 @@ static ir_node *transform_f1663349(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var2 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Store(get_Proj_pred(node)) && (get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Is || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Iu || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_P))) {
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_Proj_pred(node), 0)) && get_Proj_num(get_irn_n(get_Proj_pred(node), 0)) == 0 && get_irn_n_edges(get_irn_n(get_Proj_pred(node), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == 2)) {
 		return NULL;
@@ -11178,7 +11144,7 @@ static ir_node *transform_f1663349(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == 2)) {
 		return NULL;
@@ -11222,7 +11188,7 @@ static ir_node *transform_f1663350(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 0 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 2)) {
 		return NULL;
@@ -11262,7 +11228,7 @@ static ir_node *transform_f1663350(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(node, 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(node, 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(node, 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == 2)) {
 		return NULL;
@@ -11303,13 +11269,13 @@ static ir_node *transform_f1663351(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Store(get_Proj_pred(node)) && (get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Is || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Iu || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_P))) {
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_Proj_pred(node), 0)) && get_Proj_num(get_irn_n(get_Proj_pred(node), 0)) == 0 && get_irn_n_edges(get_irn_n(get_Proj_pred(node), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == 2)) {
 		return NULL;
@@ -11333,7 +11299,7 @@ static ir_node *transform_f1663351(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == 2)) {
 		return NULL;
@@ -11368,7 +11334,7 @@ static ir_node *transform_f1663352(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 0 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 2)) {
 		return NULL;
@@ -11392,7 +11358,7 @@ static ir_node *transform_f1663352(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(node, 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(node, 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(node, 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == 2)) {
 		return NULL;
@@ -11426,13 +11392,13 @@ static ir_node *transform_f1663353(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var2 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Store(get_Proj_pred(node)) && (get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Is || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Iu || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_P))) {
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_Proj_pred(node), 0)) && get_Proj_num(get_irn_n(get_Proj_pred(node), 0)) == 0 && get_irn_n_edges(get_irn_n(get_Proj_pred(node), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == 2)) {
 		return NULL;
@@ -11472,7 +11438,7 @@ static ir_node *transform_f1663353(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == 2)) {
 		return NULL;
@@ -11516,7 +11482,7 @@ static ir_node *transform_f1663354(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 0 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 2)) {
 		return NULL;
@@ -11556,7 +11522,7 @@ static ir_node *transform_f1663354(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(node, 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(node, 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(node, 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == 2)) {
 		return NULL;
@@ -11598,13 +11564,13 @@ static ir_node *transform_f1663355(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var2 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Store(get_Proj_pred(node)) && (get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Is || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Iu || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_P))) {
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_Proj_pred(node), 0)) && get_Proj_num(get_irn_n(get_Proj_pred(node), 0)) == 0 && get_irn_n_edges(get_irn_n(get_Proj_pred(node), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == 2)) {
 		return NULL;
@@ -11644,7 +11610,7 @@ static ir_node *transform_f1663355(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == 2)) {
 		return NULL;
@@ -11688,7 +11654,7 @@ static ir_node *transform_f1663356(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 0 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 2)) {
 		return NULL;
@@ -11728,7 +11694,7 @@ static ir_node *transform_f1663356(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(node, 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(node, 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(node, 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == 2)) {
 		return NULL;
@@ -11769,13 +11735,13 @@ static ir_node *transform_f1663357(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Store(get_Proj_pred(node)) && (get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Is || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Iu || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_P))) {
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_Proj_pred(node), 0)) && get_Proj_num(get_irn_n(get_Proj_pred(node), 0)) == 0 && get_irn_n_edges(get_irn_n(get_Proj_pred(node), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == 2)) {
 		return NULL;
@@ -11799,7 +11765,7 @@ static ir_node *transform_f1663357(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == 2)) {
 		return NULL;
@@ -11834,7 +11800,7 @@ static ir_node *transform_f1663358(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 0 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 2)) {
 		return NULL;
@@ -11858,7 +11824,7 @@ static ir_node *transform_f1663358(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(node, 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(node, 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(node, 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == 2)) {
 		return NULL;
@@ -11893,13 +11859,13 @@ static ir_node *transform_f1663359(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var3 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Store(get_Proj_pred(node)) && (get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Is || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Iu || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_P))) {
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_Proj_pred(node), 0)) && get_Proj_num(get_irn_n(get_Proj_pred(node), 0)) == 0 && get_irn_n_edges(get_irn_n(get_Proj_pred(node), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == 2)) {
 		return NULL;
@@ -11939,7 +11905,7 @@ static ir_node *transform_f1663359(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == 2)) {
 		return NULL;
@@ -11986,7 +11952,7 @@ static ir_node *transform_f1663360(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 0 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 2)) {
 		return NULL;
@@ -12026,7 +11992,7 @@ static ir_node *transform_f1663360(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(node, 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(node, 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(node, 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == 2)) {
 		return NULL;
@@ -12071,13 +12037,13 @@ static ir_node *transform_f1663361(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var3 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Store(get_Proj_pred(node)) && (get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Is || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Iu || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_P))) {
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_Proj_pred(node), 0)) && get_Proj_num(get_irn_n(get_Proj_pred(node), 0)) == 0 && get_irn_n_edges(get_irn_n(get_Proj_pred(node), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == 2)) {
 		return NULL;
@@ -12117,7 +12083,7 @@ static ir_node *transform_f1663361(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == 2)) {
 		return NULL;
@@ -12164,7 +12130,7 @@ static ir_node *transform_f1663362(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 0 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 2)) {
 		return NULL;
@@ -12204,7 +12170,7 @@ static ir_node *transform_f1663362(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(node, 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(node, 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(node, 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == 2)) {
 		return NULL;
@@ -12248,13 +12214,13 @@ static ir_node *transform_f1663363(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var2 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Store(get_Proj_pred(node)) && (get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Is || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Iu || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_P))) {
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_Proj_pred(node), 0)) && get_Proj_num(get_irn_n(get_Proj_pred(node), 0)) == 0 && get_irn_n_edges(get_irn_n(get_Proj_pred(node), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == 2)) {
 		return NULL;
@@ -12278,7 +12244,7 @@ static ir_node *transform_f1663363(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == 2)) {
 		return NULL;
@@ -12316,7 +12282,7 @@ static ir_node *transform_f1663364(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 0 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 2)) {
 		return NULL;
@@ -12340,7 +12306,7 @@ static ir_node *transform_f1663364(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(node, 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(node, 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(node, 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == 2)) {
 		return NULL;
@@ -12376,13 +12342,13 @@ static ir_node *transform_f1663365(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var2 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Store(get_Proj_pred(node)) && (get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Is || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Iu || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_P))) {
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_Proj_pred(node), 0)) && get_Proj_num(get_irn_n(get_Proj_pred(node), 0)) == 0 && get_irn_n_edges(get_irn_n(get_Proj_pred(node), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == 2)) {
 		return NULL;
@@ -12422,7 +12388,7 @@ static ir_node *transform_f1663365(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == 2)) {
 		return NULL;
@@ -12463,7 +12429,7 @@ static ir_node *transform_f1663366(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 0 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 2)) {
 		return NULL;
@@ -12503,7 +12469,7 @@ static ir_node *transform_f1663366(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(node, 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(node, 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(node, 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == 2)) {
 		return NULL;
@@ -12542,13 +12508,13 @@ static ir_node *transform_f1663367(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var2 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Store(get_Proj_pred(node)) && (get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Is || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Iu || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_P))) {
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_Proj_pred(node), 0)) && get_Proj_num(get_irn_n(get_Proj_pred(node), 0)) == 0 && get_irn_n_edges(get_irn_n(get_Proj_pred(node), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == 2)) {
 		return NULL;
@@ -12588,7 +12554,7 @@ static ir_node *transform_f1663367(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == 2)) {
 		return NULL;
@@ -12629,7 +12595,7 @@ static ir_node *transform_f1663368(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 0 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 2)) {
 		return NULL;
@@ -12669,7 +12635,7 @@ static ir_node *transform_f1663368(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(node, 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(node, 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(node, 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == 2)) {
 		return NULL;
@@ -12707,13 +12673,13 @@ static ir_node *transform_f1663369(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Store(get_Proj_pred(node)) && (get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Is || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Iu || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_P))) {
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_Proj_pred(node), 0)) && get_Proj_num(get_irn_n(get_Proj_pred(node), 0)) == 0 && get_irn_n_edges(get_irn_n(get_Proj_pred(node), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == 2)) {
 		return NULL;
@@ -12737,7 +12703,7 @@ static ir_node *transform_f1663369(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0))) == 2)) {
 		return NULL;
@@ -12769,7 +12735,7 @@ static ir_node *transform_f1663370(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 0 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 2)) {
 		return NULL;
@@ -12793,7 +12759,7 @@ static ir_node *transform_f1663370(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(node, 2), 0)) && get_Proj_num(get_irn_n(get_irn_n(node, 2), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(node, 2), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(node, 2), 0))) == 2)) {
 		return NULL;
@@ -12824,13 +12790,13 @@ static ir_node *transform_f1663371(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var2 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Store(get_Proj_pred(node)) && (get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Is || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Iu || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_P))) {
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_Proj_pred(node), 0)) && get_Proj_num(get_irn_n(get_Proj_pred(node), 0)) == 0 && get_irn_n_edges(get_irn_n(get_Proj_pred(node), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == 2)) {
 		return NULL;
@@ -12873,7 +12839,7 @@ static ir_node *transform_f1663371(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0), 0)) && get_Proj_num(get_irn_n(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0), 0))) == 2)) {
 		return NULL;
@@ -12914,7 +12880,7 @@ static ir_node *transform_f1663372(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 0 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 2)) {
 		return NULL;
@@ -12957,7 +12923,7 @@ static ir_node *transform_f1663372(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(get_irn_n(node, 2), 0), 0)) && get_Proj_num(get_irn_n(get_irn_n(get_irn_n(node, 2), 0), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(get_irn_n(node, 2), 0), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(get_irn_n(node, 2), 0), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_irn_n(node, 2), 0), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_irn_n(node, 2), 0), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_irn_n(node, 2), 0), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(get_irn_n(node, 2), 0), 0))) == 2)) {
 		return NULL;
@@ -12996,13 +12962,13 @@ static ir_node *transform_f1663373(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var2 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Store(get_Proj_pred(node)) && (get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Is || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Iu || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_P))) {
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_Proj_pred(node), 0)) && get_Proj_num(get_irn_n(get_Proj_pred(node), 0)) == 0 && get_irn_n_edges(get_irn_n(get_Proj_pred(node), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == 2)) {
 		return NULL;
@@ -13045,7 +13011,7 @@ static ir_node *transform_f1663373(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0), 0)) && get_Proj_num(get_irn_n(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0), 0))) == 2)) {
 		return NULL;
@@ -13086,7 +13052,7 @@ static ir_node *transform_f1663374(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 0 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 2)) {
 		return NULL;
@@ -13129,7 +13095,7 @@ static ir_node *transform_f1663374(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(get_irn_n(node, 2), 0), 0)) && get_Proj_num(get_irn_n(get_irn_n(get_irn_n(node, 2), 0), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(get_irn_n(node, 2), 0), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(get_irn_n(node, 2), 0), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_irn_n(node, 2), 0), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_irn_n(node, 2), 0), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_irn_n(node, 2), 0), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(get_irn_n(node, 2), 0), 0))) == 2)) {
 		return NULL;
@@ -13167,13 +13133,13 @@ static ir_node *transform_f1663375(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Store(get_Proj_pred(node)) && (get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Is || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Iu || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_P))) {
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_Proj_pred(node), 0)) && get_Proj_num(get_irn_n(get_Proj_pred(node), 0)) == 0 && get_irn_n_edges(get_irn_n(get_Proj_pred(node), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == 2)) {
 		return NULL;
@@ -13200,7 +13166,7 @@ static ir_node *transform_f1663375(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0), 0)) && get_Proj_num(get_irn_n(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0), 0))) == 2)) {
 		return NULL;
@@ -13232,7 +13198,7 @@ static ir_node *transform_f1663376(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 0 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 2)) {
 		return NULL;
@@ -13259,7 +13225,7 @@ static ir_node *transform_f1663376(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(get_irn_n(node, 2), 0), 0)) && get_Proj_num(get_irn_n(get_irn_n(get_irn_n(node, 2), 0), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(get_irn_n(node, 2), 0), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(get_irn_n(node, 2), 0), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_irn_n(node, 2), 0), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_irn_n(node, 2), 0), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_irn_n(node, 2), 0), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(get_irn_n(node, 2), 0), 0))) == 2)) {
 		return NULL;
@@ -13290,13 +13256,13 @@ static ir_node *transform_f1663377(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var2 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Store(get_Proj_pred(node)) && (get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Is || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Iu || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_P))) {
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_Proj_pred(node), 0)) && get_Proj_num(get_irn_n(get_Proj_pred(node), 0)) == 0 && get_irn_n_edges(get_irn_n(get_Proj_pred(node), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == 2)) {
 		return NULL;
@@ -13339,7 +13305,7 @@ static ir_node *transform_f1663377(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0), 0)) && get_Proj_num(get_irn_n(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0), 0))) == 2)) {
 		return NULL;
@@ -13380,7 +13346,7 @@ static ir_node *transform_f1663378(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 0 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 2)) {
 		return NULL;
@@ -13423,7 +13389,7 @@ static ir_node *transform_f1663378(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(get_irn_n(node, 2), 0), 0)) && get_Proj_num(get_irn_n(get_irn_n(get_irn_n(node, 2), 0), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(get_irn_n(node, 2), 0), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(get_irn_n(node, 2), 0), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_irn_n(node, 2), 0), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_irn_n(node, 2), 0), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_irn_n(node, 2), 0), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(get_irn_n(node, 2), 0), 0))) == 2)) {
 		return NULL;
@@ -13462,13 +13428,13 @@ static ir_node *transform_f1663379(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var2 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Store(get_Proj_pred(node)) && (get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Is || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Iu || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_P))) {
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_Proj_pred(node), 0)) && get_Proj_num(get_irn_n(get_Proj_pred(node), 0)) == 0 && get_irn_n_edges(get_irn_n(get_Proj_pred(node), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == 2)) {
 		return NULL;
@@ -13511,7 +13477,7 @@ static ir_node *transform_f1663379(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0), 0)) && get_Proj_num(get_irn_n(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0), 0))) == 2)) {
 		return NULL;
@@ -13552,7 +13518,7 @@ static ir_node *transform_f1663380(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 0 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 2)) {
 		return NULL;
@@ -13595,7 +13561,7 @@ static ir_node *transform_f1663380(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(get_irn_n(node, 2), 0), 0)) && get_Proj_num(get_irn_n(get_irn_n(get_irn_n(node, 2), 0), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(get_irn_n(node, 2), 0), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(get_irn_n(node, 2), 0), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_irn_n(node, 2), 0), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_irn_n(node, 2), 0), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_irn_n(node, 2), 0), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(get_irn_n(node, 2), 0), 0))) == 2)) {
 		return NULL;
@@ -13633,13 +13599,13 @@ static ir_node *transform_f1663381(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Store(get_Proj_pred(node)) && (get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Is || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Iu || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_P))) {
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_Proj_pred(node), 0)) && get_Proj_num(get_irn_n(get_Proj_pred(node), 0)) == 0 && get_irn_n_edges(get_irn_n(get_Proj_pred(node), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_Proj_pred(node), 0))) == 2)) {
 		return NULL;
@@ -13666,7 +13632,7 @@ static ir_node *transform_f1663381(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0), 0)) && get_Proj_num(get_irn_n(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(get_irn_n(get_Proj_pred(node), 2), 0), 0))) == 2)) {
 		return NULL;
@@ -13698,7 +13664,7 @@ static ir_node *transform_f1663382(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(node, 0)) && get_Proj_num(get_irn_n(node, 0)) == 0 && get_irn_n_edges(get_irn_n(node, 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(node, 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(node, 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(node, 0))) == 2)) {
 		return NULL;
@@ -13725,7 +13691,7 @@ static ir_node *transform_f1663382(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	if (!(is_Proj(get_irn_n(get_irn_n(get_irn_n(node, 2), 0), 0)) && get_Proj_num(get_irn_n(get_irn_n(get_irn_n(node, 2), 0), 0)) == 1 && get_irn_n_edges(get_irn_n(get_irn_n(get_irn_n(node, 2), 0), 0)) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Load(get_Proj_pred(get_irn_n(get_irn_n(get_irn_n(node, 2), 0), 0))) && (get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_irn_n(node, 2), 0), 0))) == mode_Is || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_irn_n(node, 2), 0), 0))) == mode_Iu || get_Load_mode(get_Proj_pred(get_irn_n(get_irn_n(get_irn_n(node, 2), 0), 0))) == mode_P) && get_irn_n_edges(get_Proj_pred(get_irn_n(get_irn_n(get_irn_n(node, 2), 0), 0))) == 2)) {
 		return NULL;
@@ -13757,7 +13723,7 @@ static ir_node *transform_f1663383(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var3 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Store(get_Proj_pred(node)) && (get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Is || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Iu || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_P))) {
 		return NULL;
@@ -13843,7 +13809,7 @@ static ir_node *transform_f1663385(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var3 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Store(get_Proj_pred(node)) && (get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Is || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Iu || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_P))) {
 		return NULL;
@@ -13928,7 +13894,7 @@ static ir_node *transform_f1663387(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var2 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Store(get_Proj_pred(node)) && (get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Is || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_Iu || get_irn_mode(get_Store_value(get_Proj_pred(node))) == mode_P))) {
 		return NULL;
@@ -13995,7 +13961,7 @@ static ir_node *transform_f1663389(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -14033,7 +13999,7 @@ static ir_node *transform_f1663390(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -14112,7 +14078,7 @@ static ir_node *transform_f1663392(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -14150,7 +14116,7 @@ static ir_node *transform_f1663393(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -14229,7 +14195,7 @@ static ir_node *transform_f1663395(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -14267,7 +14233,7 @@ static ir_node *transform_f1663396(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -14346,7 +14312,7 @@ static ir_node *transform_f1663398(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -14384,7 +14350,7 @@ static ir_node *transform_f1663399(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -14463,7 +14429,7 @@ static ir_node *transform_f1663401(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -14501,7 +14467,7 @@ static ir_node *transform_f1663402(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -14580,7 +14546,7 @@ static ir_node *transform_f1663404(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -14618,7 +14584,7 @@ static ir_node *transform_f1663405(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -14697,7 +14663,7 @@ static ir_node *transform_f1663407(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -14735,7 +14701,7 @@ static ir_node *transform_f1663408(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -14814,7 +14780,7 @@ static ir_node *transform_f1663410(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -14852,7 +14818,7 @@ static ir_node *transform_f1663411(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -14931,7 +14897,7 @@ static ir_node *transform_f1663413(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -14995,7 +14961,7 @@ static ir_node *transform_f1663414(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -15126,7 +15092,7 @@ static ir_node *transform_f1663416(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -15190,7 +15156,7 @@ static ir_node *transform_f1663417(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -15321,7 +15287,7 @@ static ir_node *transform_f1663419(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -15369,7 +15335,7 @@ static ir_node *transform_f1663420(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -15468,7 +15434,7 @@ static ir_node *transform_f1663422(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -15516,7 +15482,7 @@ static ir_node *transform_f1663423(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -15615,7 +15581,7 @@ static ir_node *transform_f1663425(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -15663,7 +15629,7 @@ static ir_node *transform_f1663426(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -15762,7 +15728,7 @@ static ir_node *transform_f1663428(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -15810,7 +15776,7 @@ static ir_node *transform_f1663429(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -15909,7 +15875,7 @@ static ir_node *transform_f1663431(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -15957,7 +15923,7 @@ static ir_node *transform_f1663432(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -16056,7 +16022,7 @@ static ir_node *transform_f1663434(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -16104,7 +16070,7 @@ static ir_node *transform_f1663435(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -16203,7 +16169,7 @@ static ir_node *transform_f1663437(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -16251,7 +16217,7 @@ static ir_node *transform_f1663438(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -16350,7 +16316,7 @@ static ir_node *transform_f1663440(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -16398,7 +16364,7 @@ static ir_node *transform_f1663441(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -16497,7 +16463,7 @@ static ir_node *transform_f1663443(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -16548,7 +16514,7 @@ static ir_node *transform_f1663444(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -16653,7 +16619,7 @@ static ir_node *transform_f1663446(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -16704,7 +16670,7 @@ static ir_node *transform_f1663447(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -16809,7 +16775,7 @@ static ir_node *transform_f1663449(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -16860,7 +16826,7 @@ static ir_node *transform_f1663450(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -16965,7 +16931,7 @@ static ir_node *transform_f1663452(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -17016,7 +16982,7 @@ static ir_node *transform_f1663453(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -17121,7 +17087,7 @@ static ir_node *transform_f1663455(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -17185,7 +17151,7 @@ static ir_node *transform_f1663456(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -17316,7 +17282,7 @@ static ir_node *transform_f1663458(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -17380,7 +17346,7 @@ static ir_node *transform_f1663459(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -17511,7 +17477,7 @@ static ir_node *transform_f1663461(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -17575,7 +17541,7 @@ static ir_node *transform_f1663462(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -17706,7 +17672,7 @@ static ir_node *transform_f1663464(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -17770,7 +17736,7 @@ static ir_node *transform_f1663465(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -17901,7 +17867,7 @@ static ir_node *transform_f1663467(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -17949,7 +17915,7 @@ static ir_node *transform_f1663468(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -18048,7 +18014,7 @@ static ir_node *transform_f1663470(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -18096,7 +18062,7 @@ static ir_node *transform_f1663471(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -18195,7 +18161,7 @@ static ir_node *transform_f1663473(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -18243,7 +18209,7 @@ static ir_node *transform_f1663474(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -18342,7 +18308,7 @@ static ir_node *transform_f1663476(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -18390,7 +18356,7 @@ static ir_node *transform_f1663477(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -18489,7 +18455,7 @@ static ir_node *transform_f1663479(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -18537,7 +18503,7 @@ static ir_node *transform_f1663480(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -18636,7 +18602,7 @@ static ir_node *transform_f1663482(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -18684,7 +18650,7 @@ static ir_node *transform_f1663483(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -18783,7 +18749,7 @@ static ir_node *transform_f1663485(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -18831,7 +18797,7 @@ static ir_node *transform_f1663486(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -18930,7 +18896,7 @@ static ir_node *transform_f1663488(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -18978,7 +18944,7 @@ static ir_node *transform_f1663489(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -19077,7 +19043,7 @@ static ir_node *transform_f1663491(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -19125,7 +19091,7 @@ static ir_node *transform_f1663492(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -19224,7 +19190,7 @@ static ir_node *transform_f1663494(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -19272,7 +19238,7 @@ static ir_node *transform_f1663495(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -19371,7 +19337,7 @@ static ir_node *transform_f1663497(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -19419,7 +19385,7 @@ static ir_node *transform_f1663498(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -19518,7 +19484,7 @@ static ir_node *transform_f1663500(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -19566,7 +19532,7 @@ static ir_node *transform_f1663501(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -19665,7 +19631,7 @@ static ir_node *transform_f1663503(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -19713,7 +19679,7 @@ static ir_node *transform_f1663504(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -19812,7 +19778,7 @@ static ir_node *transform_f1663506(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -19860,7 +19826,7 @@ static ir_node *transform_f1663507(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -19959,7 +19925,7 @@ static ir_node *transform_f1663509(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -20007,7 +19973,7 @@ static ir_node *transform_f1663510(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -20106,7 +20072,7 @@ static ir_node *transform_f1663512(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -20154,7 +20120,7 @@ static ir_node *transform_f1663513(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -20253,7 +20219,7 @@ static ir_node *transform_f1663515(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -20285,7 +20251,7 @@ static ir_node *transform_f1663516(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -20352,7 +20318,7 @@ static ir_node *transform_f1663518(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -20384,7 +20350,7 @@ static ir_node *transform_f1663519(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -20451,7 +20417,7 @@ static ir_node *transform_f1663521(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -20483,7 +20449,7 @@ static ir_node *transform_f1663522(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -20550,7 +20516,7 @@ static ir_node *transform_f1663524(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -20582,7 +20548,7 @@ static ir_node *transform_f1663525(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -20649,7 +20615,7 @@ static ir_node *transform_f1663527(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -20687,7 +20653,7 @@ static ir_node *transform_f1663528(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -20766,7 +20732,7 @@ static ir_node *transform_f1663530(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -20804,7 +20770,7 @@ static ir_node *transform_f1663531(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -20883,7 +20849,7 @@ static ir_node *transform_f1663533(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -20921,7 +20887,7 @@ static ir_node *transform_f1663534(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -21000,7 +20966,7 @@ static ir_node *transform_f1663536(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -21038,7 +21004,7 @@ static ir_node *transform_f1663537(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -21117,7 +21083,7 @@ static ir_node *transform_f1663539(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -21155,7 +21121,7 @@ static ir_node *transform_f1663540(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -21234,7 +21200,7 @@ static ir_node *transform_f1663542(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -21272,7 +21238,7 @@ static ir_node *transform_f1663543(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -21351,7 +21317,7 @@ static ir_node *transform_f1663545(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -21389,7 +21355,7 @@ static ir_node *transform_f1663546(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -21468,7 +21434,7 @@ static ir_node *transform_f1663548(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -21506,7 +21472,7 @@ static ir_node *transform_f1663549(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -21585,7 +21551,7 @@ static ir_node *transform_f1663551(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -21649,7 +21615,7 @@ static ir_node *transform_f1663552(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -21780,7 +21746,7 @@ static ir_node *transform_f1663554(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -21844,7 +21810,7 @@ static ir_node *transform_f1663555(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -21975,7 +21941,7 @@ static ir_node *transform_f1663557(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -22023,7 +21989,7 @@ static ir_node *transform_f1663558(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -22122,7 +22088,7 @@ static ir_node *transform_f1663560(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -22170,7 +22136,7 @@ static ir_node *transform_f1663561(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -22269,7 +22235,7 @@ static ir_node *transform_f1663563(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -22317,7 +22283,7 @@ static ir_node *transform_f1663564(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -22416,7 +22382,7 @@ static ir_node *transform_f1663566(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -22464,7 +22430,7 @@ static ir_node *transform_f1663567(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -22563,7 +22529,7 @@ static ir_node *transform_f1663569(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -22611,7 +22577,7 @@ static ir_node *transform_f1663570(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -22710,7 +22676,7 @@ static ir_node *transform_f1663572(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -22758,7 +22724,7 @@ static ir_node *transform_f1663573(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -22857,7 +22823,7 @@ static ir_node *transform_f1663575(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -22905,7 +22871,7 @@ static ir_node *transform_f1663576(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -23004,7 +22970,7 @@ static ir_node *transform_f1663578(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -23052,7 +23018,7 @@ static ir_node *transform_f1663579(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -23151,7 +23117,7 @@ static ir_node *transform_f1663581(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -23202,7 +23168,7 @@ static ir_node *transform_f1663582(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -23307,7 +23273,7 @@ static ir_node *transform_f1663584(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -23358,7 +23324,7 @@ static ir_node *transform_f1663585(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -23463,7 +23429,7 @@ static ir_node *transform_f1663587(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -23514,7 +23480,7 @@ static ir_node *transform_f1663588(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -23619,7 +23585,7 @@ static ir_node *transform_f1663590(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -23670,7 +23636,7 @@ static ir_node *transform_f1663591(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -23775,7 +23741,7 @@ static ir_node *transform_f1663593(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -23839,7 +23805,7 @@ static ir_node *transform_f1663594(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -23970,7 +23936,7 @@ static ir_node *transform_f1663596(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -24034,7 +24000,7 @@ static ir_node *transform_f1663597(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -24165,7 +24131,7 @@ static ir_node *transform_f1663599(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -24229,7 +24195,7 @@ static ir_node *transform_f1663600(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -24360,7 +24326,7 @@ static ir_node *transform_f1663602(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -24424,7 +24390,7 @@ static ir_node *transform_f1663603(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -24555,7 +24521,7 @@ static ir_node *transform_f1663605(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -24603,7 +24569,7 @@ static ir_node *transform_f1663606(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -24702,7 +24668,7 @@ static ir_node *transform_f1663608(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -24750,7 +24716,7 @@ static ir_node *transform_f1663609(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -24849,7 +24815,7 @@ static ir_node *transform_f1663611(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -24897,7 +24863,7 @@ static ir_node *transform_f1663612(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -24996,7 +24962,7 @@ static ir_node *transform_f1663614(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -25044,7 +25010,7 @@ static ir_node *transform_f1663615(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -25143,7 +25109,7 @@ static ir_node *transform_f1663617(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -25191,7 +25157,7 @@ static ir_node *transform_f1663618(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -25290,7 +25256,7 @@ static ir_node *transform_f1663620(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -25338,7 +25304,7 @@ static ir_node *transform_f1663621(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -25437,7 +25403,7 @@ static ir_node *transform_f1663623(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -25485,7 +25451,7 @@ static ir_node *transform_f1663624(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -25584,7 +25550,7 @@ static ir_node *transform_f1663626(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -25632,7 +25598,7 @@ static ir_node *transform_f1663627(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -25731,7 +25697,7 @@ static ir_node *transform_f1663629(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -25779,7 +25745,7 @@ static ir_node *transform_f1663630(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -25878,7 +25844,7 @@ static ir_node *transform_f1663632(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -25926,7 +25892,7 @@ static ir_node *transform_f1663633(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -26025,7 +25991,7 @@ static ir_node *transform_f1663635(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -26073,7 +26039,7 @@ static ir_node *transform_f1663636(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -26172,7 +26138,7 @@ static ir_node *transform_f1663638(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -26220,7 +26186,7 @@ static ir_node *transform_f1663639(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -26319,7 +26285,7 @@ static ir_node *transform_f1663641(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -26367,7 +26333,7 @@ static ir_node *transform_f1663642(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -26466,7 +26432,7 @@ static ir_node *transform_f1663644(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -26514,7 +26480,7 @@ static ir_node *transform_f1663645(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -26613,7 +26579,7 @@ static ir_node *transform_f1663647(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -26661,7 +26627,7 @@ static ir_node *transform_f1663648(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -26760,7 +26726,7 @@ static ir_node *transform_f1663650(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -26808,7 +26774,7 @@ static ir_node *transform_f1663651(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -26907,7 +26873,7 @@ static ir_node *transform_f1663653(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -26939,7 +26905,7 @@ static ir_node *transform_f1663654(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -27006,7 +26972,7 @@ static ir_node *transform_f1663656(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -27038,7 +27004,7 @@ static ir_node *transform_f1663657(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -27105,7 +27071,7 @@ static ir_node *transform_f1663659(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -27137,7 +27103,7 @@ static ir_node *transform_f1663660(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -27204,7 +27170,7 @@ static ir_node *transform_f1663662(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -27236,7 +27202,7 @@ static ir_node *transform_f1663663(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -27303,7 +27269,7 @@ static ir_node *transform_f1663665(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -27341,7 +27307,7 @@ static ir_node *transform_f1663666(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -27420,7 +27386,7 @@ static ir_node *transform_f1663668(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -27458,7 +27424,7 @@ static ir_node *transform_f1663669(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -27537,7 +27503,7 @@ static ir_node *transform_f1663671(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -27575,7 +27541,7 @@ static ir_node *transform_f1663672(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -27654,7 +27620,7 @@ static ir_node *transform_f1663674(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -27692,7 +27658,7 @@ static ir_node *transform_f1663675(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -27771,7 +27737,7 @@ static ir_node *transform_f1663677(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -27809,7 +27775,7 @@ static ir_node *transform_f1663678(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -27888,7 +27854,7 @@ static ir_node *transform_f1663680(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -27926,7 +27892,7 @@ static ir_node *transform_f1663681(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -28005,7 +27971,7 @@ static ir_node *transform_f1663683(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -28043,7 +28009,7 @@ static ir_node *transform_f1663684(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -28122,7 +28088,7 @@ static ir_node *transform_f1663686(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -28160,7 +28126,7 @@ static ir_node *transform_f1663687(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -28239,7 +28205,7 @@ static ir_node *transform_f1663689(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -28303,7 +28269,7 @@ static ir_node *transform_f1663690(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -28434,7 +28400,7 @@ static ir_node *transform_f1663692(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -28498,7 +28464,7 @@ static ir_node *transform_f1663693(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -28629,7 +28595,7 @@ static ir_node *transform_f1663695(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -28677,7 +28643,7 @@ static ir_node *transform_f1663696(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -28776,7 +28742,7 @@ static ir_node *transform_f1663698(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -28824,7 +28790,7 @@ static ir_node *transform_f1663699(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -28923,7 +28889,7 @@ static ir_node *transform_f1663701(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -28971,7 +28937,7 @@ static ir_node *transform_f1663702(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -29070,7 +29036,7 @@ static ir_node *transform_f1663704(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -29118,7 +29084,7 @@ static ir_node *transform_f1663705(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -29217,7 +29183,7 @@ static ir_node *transform_f1663707(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -29265,7 +29231,7 @@ static ir_node *transform_f1663708(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -29364,7 +29330,7 @@ static ir_node *transform_f1663710(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -29412,7 +29378,7 @@ static ir_node *transform_f1663711(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -29511,7 +29477,7 @@ static ir_node *transform_f1663713(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -29559,7 +29525,7 @@ static ir_node *transform_f1663714(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -29658,7 +29624,7 @@ static ir_node *transform_f1663716(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -29706,7 +29672,7 @@ static ir_node *transform_f1663717(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -29805,7 +29771,7 @@ static ir_node *transform_f1663719(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -29856,7 +29822,7 @@ static ir_node *transform_f1663720(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -29961,7 +29927,7 @@ static ir_node *transform_f1663722(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -30012,7 +29978,7 @@ static ir_node *transform_f1663723(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -30117,7 +30083,7 @@ static ir_node *transform_f1663725(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -30168,7 +30134,7 @@ static ir_node *transform_f1663726(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -30273,7 +30239,7 @@ static ir_node *transform_f1663728(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -30324,7 +30290,7 @@ static ir_node *transform_f1663729(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -30429,7 +30395,7 @@ static ir_node *transform_f1663731(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -30493,7 +30459,7 @@ static ir_node *transform_f1663732(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -30624,7 +30590,7 @@ static ir_node *transform_f1663734(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -30688,7 +30654,7 @@ static ir_node *transform_f1663735(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -30819,7 +30785,7 @@ static ir_node *transform_f1663737(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -30883,7 +30849,7 @@ static ir_node *transform_f1663738(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -31014,7 +30980,7 @@ static ir_node *transform_f1663740(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -31078,7 +31044,7 @@ static ir_node *transform_f1663741(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -31209,7 +31175,7 @@ static ir_node *transform_f1663743(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -31257,7 +31223,7 @@ static ir_node *transform_f1663744(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -31356,7 +31322,7 @@ static ir_node *transform_f1663746(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -31404,7 +31370,7 @@ static ir_node *transform_f1663747(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -31503,7 +31469,7 @@ static ir_node *transform_f1663749(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -31551,7 +31517,7 @@ static ir_node *transform_f1663750(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -31650,7 +31616,7 @@ static ir_node *transform_f1663752(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -31698,7 +31664,7 @@ static ir_node *transform_f1663753(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -31797,7 +31763,7 @@ static ir_node *transform_f1663755(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -31845,7 +31811,7 @@ static ir_node *transform_f1663756(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -31944,7 +31910,7 @@ static ir_node *transform_f1663758(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -31992,7 +31958,7 @@ static ir_node *transform_f1663759(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -32091,7 +32057,7 @@ static ir_node *transform_f1663761(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -32139,7 +32105,7 @@ static ir_node *transform_f1663762(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -32238,7 +32204,7 @@ static ir_node *transform_f1663764(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -32286,7 +32252,7 @@ static ir_node *transform_f1663765(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -32385,7 +32351,7 @@ static ir_node *transform_f1663767(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -32433,7 +32399,7 @@ static ir_node *transform_f1663768(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -32532,7 +32498,7 @@ static ir_node *transform_f1663770(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -32580,7 +32546,7 @@ static ir_node *transform_f1663771(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -32679,7 +32645,7 @@ static ir_node *transform_f1663773(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -32727,7 +32693,7 @@ static ir_node *transform_f1663774(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -32826,7 +32792,7 @@ static ir_node *transform_f1663776(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -32874,7 +32840,7 @@ static ir_node *transform_f1663777(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -32973,7 +32939,7 @@ static ir_node *transform_f1663779(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -33021,7 +32987,7 @@ static ir_node *transform_f1663780(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -33120,7 +33086,7 @@ static ir_node *transform_f1663782(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -33168,7 +33134,7 @@ static ir_node *transform_f1663783(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -33267,7 +33233,7 @@ static ir_node *transform_f1663785(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -33315,7 +33281,7 @@ static ir_node *transform_f1663786(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -33414,7 +33380,7 @@ static ir_node *transform_f1663788(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -33462,7 +33428,7 @@ static ir_node *transform_f1663789(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -33561,7 +33527,7 @@ static ir_node *transform_f1663791(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -33593,7 +33559,7 @@ static ir_node *transform_f1663792(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -33660,7 +33626,7 @@ static ir_node *transform_f1663794(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -33692,7 +33658,7 @@ static ir_node *transform_f1663795(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -33759,7 +33725,7 @@ static ir_node *transform_f1663797(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -33791,7 +33757,7 @@ static ir_node *transform_f1663798(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -33858,7 +33824,7 @@ static ir_node *transform_f1663800(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -33890,7 +33856,7 @@ static ir_node *transform_f1663801(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -33957,7 +33923,7 @@ static ir_node *transform_f1663803(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -33995,7 +33961,7 @@ static ir_node *transform_f1663804(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -34074,7 +34040,7 @@ static ir_node *transform_f1663806(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -34112,7 +34078,7 @@ static ir_node *transform_f1663807(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -34191,7 +34157,7 @@ static ir_node *transform_f1663809(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -34229,7 +34195,7 @@ static ir_node *transform_f1663810(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -34308,7 +34274,7 @@ static ir_node *transform_f1663812(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -34346,7 +34312,7 @@ static ir_node *transform_f1663813(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -34425,7 +34391,7 @@ static ir_node *transform_f1663815(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -34463,7 +34429,7 @@ static ir_node *transform_f1663816(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -34542,7 +34508,7 @@ static ir_node *transform_f1663818(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -34580,7 +34546,7 @@ static ir_node *transform_f1663819(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -34659,7 +34625,7 @@ static ir_node *transform_f1663821(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -34697,7 +34663,7 @@ static ir_node *transform_f1663822(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -34776,7 +34742,7 @@ static ir_node *transform_f1663824(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -34814,7 +34780,7 @@ static ir_node *transform_f1663825(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -34893,7 +34859,7 @@ static ir_node *transform_f1663827(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -34957,7 +34923,7 @@ static ir_node *transform_f1663828(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -35088,7 +35054,7 @@ static ir_node *transform_f1663830(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -35152,7 +35118,7 @@ static ir_node *transform_f1663831(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -35283,7 +35249,7 @@ static ir_node *transform_f1663833(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -35331,7 +35297,7 @@ static ir_node *transform_f1663834(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -35430,7 +35396,7 @@ static ir_node *transform_f1663836(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -35478,7 +35444,7 @@ static ir_node *transform_f1663837(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -35577,7 +35543,7 @@ static ir_node *transform_f1663839(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -35625,7 +35591,7 @@ static ir_node *transform_f1663840(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -35724,7 +35690,7 @@ static ir_node *transform_f1663842(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -35772,7 +35738,7 @@ static ir_node *transform_f1663843(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -35871,7 +35837,7 @@ static ir_node *transform_f1663845(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -35919,7 +35885,7 @@ static ir_node *transform_f1663846(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -36018,7 +35984,7 @@ static ir_node *transform_f1663848(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -36066,7 +36032,7 @@ static ir_node *transform_f1663849(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -36165,7 +36131,7 @@ static ir_node *transform_f1663851(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -36213,7 +36179,7 @@ static ir_node *transform_f1663852(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -36312,7 +36278,7 @@ static ir_node *transform_f1663854(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -36360,7 +36326,7 @@ static ir_node *transform_f1663855(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -36459,7 +36425,7 @@ static ir_node *transform_f1663857(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -36510,7 +36476,7 @@ static ir_node *transform_f1663858(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -36615,7 +36581,7 @@ static ir_node *transform_f1663860(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -36666,7 +36632,7 @@ static ir_node *transform_f1663861(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -36771,7 +36737,7 @@ static ir_node *transform_f1663863(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -36822,7 +36788,7 @@ static ir_node *transform_f1663864(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -36927,7 +36893,7 @@ static ir_node *transform_f1663866(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -36978,7 +36944,7 @@ static ir_node *transform_f1663867(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -37083,7 +37049,7 @@ static ir_node *transform_f1663869(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -37147,7 +37113,7 @@ static ir_node *transform_f1663870(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -37278,7 +37244,7 @@ static ir_node *transform_f1663872(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -37342,7 +37308,7 @@ static ir_node *transform_f1663873(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -37473,7 +37439,7 @@ static ir_node *transform_f1663875(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -37537,7 +37503,7 @@ static ir_node *transform_f1663876(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -37668,7 +37634,7 @@ static ir_node *transform_f1663878(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -37732,7 +37698,7 @@ static ir_node *transform_f1663879(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -37863,7 +37829,7 @@ static ir_node *transform_f1663881(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -37911,7 +37877,7 @@ static ir_node *transform_f1663882(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -38010,7 +37976,7 @@ static ir_node *transform_f1663884(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -38058,7 +38024,7 @@ static ir_node *transform_f1663885(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -38157,7 +38123,7 @@ static ir_node *transform_f1663887(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -38205,7 +38171,7 @@ static ir_node *transform_f1663888(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -38304,7 +38270,7 @@ static ir_node *transform_f1663890(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -38352,7 +38318,7 @@ static ir_node *transform_f1663891(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -38451,7 +38417,7 @@ static ir_node *transform_f1663893(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -38499,7 +38465,7 @@ static ir_node *transform_f1663894(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -38598,7 +38564,7 @@ static ir_node *transform_f1663896(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -38646,7 +38612,7 @@ static ir_node *transform_f1663897(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -38745,7 +38711,7 @@ static ir_node *transform_f1663899(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -38793,7 +38759,7 @@ static ir_node *transform_f1663900(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -38892,7 +38858,7 @@ static ir_node *transform_f1663902(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -38940,7 +38906,7 @@ static ir_node *transform_f1663903(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -39039,7 +39005,7 @@ static ir_node *transform_f1663905(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -39087,7 +39053,7 @@ static ir_node *transform_f1663906(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -39186,7 +39152,7 @@ static ir_node *transform_f1663908(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -39234,7 +39200,7 @@ static ir_node *transform_f1663909(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -39333,7 +39299,7 @@ static ir_node *transform_f1663911(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -39381,7 +39347,7 @@ static ir_node *transform_f1663912(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -39480,7 +39446,7 @@ static ir_node *transform_f1663914(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -39528,7 +39494,7 @@ static ir_node *transform_f1663915(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -39627,7 +39593,7 @@ static ir_node *transform_f1663917(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -39675,7 +39641,7 @@ static ir_node *transform_f1663918(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -39774,7 +39740,7 @@ static ir_node *transform_f1663920(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -39822,7 +39788,7 @@ static ir_node *transform_f1663921(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -39921,7 +39887,7 @@ static ir_node *transform_f1663923(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -39969,7 +39935,7 @@ static ir_node *transform_f1663924(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -40068,7 +40034,7 @@ static ir_node *transform_f1663926(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -40116,7 +40082,7 @@ static ir_node *transform_f1663927(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -40215,7 +40181,7 @@ static ir_node *transform_f1663929(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -40247,7 +40213,7 @@ static ir_node *transform_f1663930(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -40314,7 +40280,7 @@ static ir_node *transform_f1663932(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -40346,7 +40312,7 @@ static ir_node *transform_f1663933(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -40413,7 +40379,7 @@ static ir_node *transform_f1663935(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -40445,7 +40411,7 @@ static ir_node *transform_f1663936(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -40512,7 +40478,7 @@ static ir_node *transform_f1663938(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -40544,7 +40510,7 @@ static ir_node *transform_f1663939(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -40611,7 +40577,7 @@ static ir_node *transform_f1663941(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -40643,7 +40609,7 @@ static ir_node *transform_f1663942(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -40710,7 +40676,7 @@ static ir_node *transform_f1663944(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -40742,7 +40708,7 @@ static ir_node *transform_f1663945(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -40809,7 +40775,7 @@ static ir_node *transform_f1663947(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -40841,7 +40807,7 @@ static ir_node *transform_f1663948(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -40908,7 +40874,7 @@ static ir_node *transform_f1663950(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -40940,7 +40906,7 @@ static ir_node *transform_f1663951(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -41007,7 +40973,7 @@ static ir_node *transform_f1663953(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -41039,7 +41005,7 @@ static ir_node *transform_f1663954(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -41106,7 +41072,7 @@ static ir_node *transform_f1663956(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -41138,7 +41104,7 @@ static ir_node *transform_f1663957(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -41205,7 +41171,7 @@ static ir_node *transform_f1663959(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -41237,7 +41203,7 @@ static ir_node *transform_f1663960(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -41304,7 +41270,7 @@ static ir_node *transform_f1663962(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -41336,7 +41302,7 @@ static ir_node *transform_f1663963(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -41403,7 +41369,7 @@ static ir_node *transform_f1663965(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -41435,7 +41401,7 @@ static ir_node *transform_f1663966(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -41502,7 +41468,7 @@ static ir_node *transform_f1663968(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -41534,7 +41500,7 @@ static ir_node *transform_f1663969(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -41601,7 +41567,7 @@ static ir_node *transform_f1663971(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -41633,7 +41599,7 @@ static ir_node *transform_f1663972(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -41700,7 +41666,7 @@ static ir_node *transform_f1663974(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -41732,7 +41698,7 @@ static ir_node *transform_f1663975(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -41799,7 +41765,7 @@ static ir_node *transform_f1663977(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -41831,7 +41797,7 @@ static ir_node *transform_f1663978(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -41898,7 +41864,7 @@ static ir_node *transform_f1663980(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -41930,7 +41896,7 @@ static ir_node *transform_f1663981(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -41997,7 +41963,7 @@ static ir_node *transform_f1663983(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -42029,7 +41995,7 @@ static ir_node *transform_f1663984(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -42096,7 +42062,7 @@ static ir_node *transform_f1663986(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -42128,7 +42094,7 @@ static ir_node *transform_f1663987(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -42195,7 +42161,7 @@ static ir_node *transform_f1663989(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -42259,7 +42225,7 @@ static ir_node *transform_f1663990(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -42390,7 +42356,7 @@ static ir_node *transform_f1663992(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -42454,7 +42420,7 @@ static ir_node *transform_f1663993(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -42585,7 +42551,7 @@ static ir_node *transform_f1663995(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -42623,7 +42589,7 @@ static ir_node *transform_f1663996(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -42702,7 +42668,7 @@ static ir_node *transform_f1663998(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -42740,7 +42706,7 @@ static ir_node *transform_f1663999(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -42819,7 +42785,7 @@ static ir_node *transform_f1664001(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -42857,7 +42823,7 @@ static ir_node *transform_f1664002(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -42936,7 +42902,7 @@ static ir_node *transform_f1664004(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -42974,7 +42940,7 @@ static ir_node *transform_f1664005(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -43053,7 +43019,7 @@ static ir_node *transform_f1664007(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -43091,7 +43057,7 @@ static ir_node *transform_f1664008(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -43170,7 +43136,7 @@ static ir_node *transform_f1664010(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -43208,7 +43174,7 @@ static ir_node *transform_f1664011(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -43287,7 +43253,7 @@ static ir_node *transform_f1664013(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -43325,7 +43291,7 @@ static ir_node *transform_f1664014(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -43404,7 +43370,7 @@ static ir_node *transform_f1664016(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -43442,7 +43408,7 @@ static ir_node *transform_f1664017(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -43521,7 +43487,7 @@ static ir_node *transform_f1664019(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -43572,7 +43538,7 @@ static ir_node *transform_f1664020(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -43677,7 +43643,7 @@ static ir_node *transform_f1664022(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -43728,7 +43694,7 @@ static ir_node *transform_f1664023(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -43833,7 +43799,7 @@ static ir_node *transform_f1664025(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -43884,7 +43850,7 @@ static ir_node *transform_f1664026(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -43989,7 +43955,7 @@ static ir_node *transform_f1664028(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -44040,7 +44006,7 @@ static ir_node *transform_f1664029(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -44145,7 +44111,7 @@ static ir_node *transform_f1664031(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -44177,7 +44143,7 @@ static ir_node *transform_f1664032(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -44244,7 +44210,7 @@ static ir_node *transform_f1664034(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -44276,7 +44242,7 @@ static ir_node *transform_f1664035(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -44343,7 +44309,7 @@ static ir_node *transform_f1664037(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -44375,7 +44341,7 @@ static ir_node *transform_f1664038(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -44442,7 +44408,7 @@ static ir_node *transform_f1664040(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -44474,7 +44440,7 @@ static ir_node *transform_f1664041(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -44541,7 +44507,7 @@ static ir_node *transform_f1664043(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -44605,7 +44571,7 @@ static ir_node *transform_f1664044(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -44736,7 +44702,7 @@ static ir_node *transform_f1664046(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -44800,7 +44766,7 @@ static ir_node *transform_f1664047(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -44931,7 +44897,7 @@ static ir_node *transform_f1664049(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -44969,7 +44935,7 @@ static ir_node *transform_f1664050(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -45048,7 +45014,7 @@ static ir_node *transform_f1664052(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -45086,7 +45052,7 @@ static ir_node *transform_f1664053(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -45165,7 +45131,7 @@ static ir_node *transform_f1664055(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -45203,7 +45169,7 @@ static ir_node *transform_f1664056(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -45282,7 +45248,7 @@ static ir_node *transform_f1664058(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -45320,7 +45286,7 @@ static ir_node *transform_f1664059(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -45399,7 +45365,7 @@ static ir_node *transform_f1664061(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -45437,7 +45403,7 @@ static ir_node *transform_f1664062(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -45516,7 +45482,7 @@ static ir_node *transform_f1664064(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -45554,7 +45520,7 @@ static ir_node *transform_f1664065(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -45633,7 +45599,7 @@ static ir_node *transform_f1664067(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -45671,7 +45637,7 @@ static ir_node *transform_f1664068(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -45750,7 +45716,7 @@ static ir_node *transform_f1664070(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -45788,7 +45754,7 @@ static ir_node *transform_f1664071(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -45867,7 +45833,7 @@ static ir_node *transform_f1664073(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -45918,7 +45884,7 @@ static ir_node *transform_f1664074(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -46023,7 +45989,7 @@ static ir_node *transform_f1664076(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -46074,7 +46040,7 @@ static ir_node *transform_f1664077(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -46179,7 +46145,7 @@ static ir_node *transform_f1664079(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -46230,7 +46196,7 @@ static ir_node *transform_f1664080(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -46335,7 +46301,7 @@ static ir_node *transform_f1664082(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -46386,7 +46352,7 @@ static ir_node *transform_f1664083(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -46491,7 +46457,7 @@ static ir_node *transform_f1664085(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -46523,7 +46489,7 @@ static ir_node *transform_f1664086(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -46590,7 +46556,7 @@ static ir_node *transform_f1664088(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -46622,7 +46588,7 @@ static ir_node *transform_f1664089(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -46689,7 +46655,7 @@ static ir_node *transform_f1664091(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -46721,7 +46687,7 @@ static ir_node *transform_f1664092(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -46788,7 +46754,7 @@ static ir_node *transform_f1664094(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -46820,7 +46786,7 @@ static ir_node *transform_f1664095(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -46887,7 +46853,7 @@ static ir_node *transform_f1664097(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -46951,7 +46917,7 @@ static ir_node *transform_f1664098(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -47082,7 +47048,7 @@ static ir_node *transform_f1664100(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -47146,7 +47112,7 @@ static ir_node *transform_f1664101(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -47277,7 +47243,7 @@ static ir_node *transform_f1664103(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -47315,7 +47281,7 @@ static ir_node *transform_f1664104(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -47394,7 +47360,7 @@ static ir_node *transform_f1664106(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -47432,7 +47398,7 @@ static ir_node *transform_f1664107(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -47511,7 +47477,7 @@ static ir_node *transform_f1664109(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -47549,7 +47515,7 @@ static ir_node *transform_f1664110(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -47628,7 +47594,7 @@ static ir_node *transform_f1664112(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -47666,7 +47632,7 @@ static ir_node *transform_f1664113(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -47745,7 +47711,7 @@ static ir_node *transform_f1664115(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -47783,7 +47749,7 @@ static ir_node *transform_f1664116(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -47862,7 +47828,7 @@ static ir_node *transform_f1664118(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -47900,7 +47866,7 @@ static ir_node *transform_f1664119(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -47979,7 +47945,7 @@ static ir_node *transform_f1664121(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -48017,7 +47983,7 @@ static ir_node *transform_f1664122(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -48096,7 +48062,7 @@ static ir_node *transform_f1664124(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -48134,7 +48100,7 @@ static ir_node *transform_f1664125(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -48213,7 +48179,7 @@ static ir_node *transform_f1664127(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -48264,7 +48230,7 @@ static ir_node *transform_f1664128(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -48369,7 +48335,7 @@ static ir_node *transform_f1664130(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -48420,7 +48386,7 @@ static ir_node *transform_f1664131(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -48525,7 +48491,7 @@ static ir_node *transform_f1664133(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -48576,7 +48542,7 @@ static ir_node *transform_f1664134(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -48681,7 +48647,7 @@ static ir_node *transform_f1664136(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -48732,7 +48698,7 @@ static ir_node *transform_f1664137(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -48837,7 +48803,7 @@ static ir_node *transform_f1664139(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -48869,7 +48835,7 @@ static ir_node *transform_f1664140(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -48936,7 +48902,7 @@ static ir_node *transform_f1664142(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -48968,7 +48934,7 @@ static ir_node *transform_f1664143(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -49035,7 +49001,7 @@ static ir_node *transform_f1664145(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -49067,7 +49033,7 @@ static ir_node *transform_f1664146(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -49134,7 +49100,7 @@ static ir_node *transform_f1664148(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -49166,7 +49132,7 @@ static ir_node *transform_f1664149(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -49233,7 +49199,7 @@ static ir_node *transform_f1664151(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -49297,7 +49263,7 @@ static ir_node *transform_f1664152(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -49428,7 +49394,7 @@ static ir_node *transform_f1664154(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -49492,7 +49458,7 @@ static ir_node *transform_f1664155(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -49623,7 +49589,7 @@ static ir_node *transform_f1664157(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -49661,7 +49627,7 @@ static ir_node *transform_f1664158(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -49740,7 +49706,7 @@ static ir_node *transform_f1664160(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -49778,7 +49744,7 @@ static ir_node *transform_f1664161(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -49857,7 +49823,7 @@ static ir_node *transform_f1664163(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -49895,7 +49861,7 @@ static ir_node *transform_f1664164(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -49974,7 +49940,7 @@ static ir_node *transform_f1664166(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -50012,7 +49978,7 @@ static ir_node *transform_f1664167(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -50091,7 +50057,7 @@ static ir_node *transform_f1664169(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -50129,7 +50095,7 @@ static ir_node *transform_f1664170(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -50208,7 +50174,7 @@ static ir_node *transform_f1664172(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -50246,7 +50212,7 @@ static ir_node *transform_f1664173(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -50325,7 +50291,7 @@ static ir_node *transform_f1664175(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -50363,7 +50329,7 @@ static ir_node *transform_f1664176(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -50442,7 +50408,7 @@ static ir_node *transform_f1664178(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -50480,7 +50446,7 @@ static ir_node *transform_f1664179(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -50559,7 +50525,7 @@ static ir_node *transform_f1664181(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -50610,7 +50576,7 @@ static ir_node *transform_f1664182(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -50715,7 +50681,7 @@ static ir_node *transform_f1664184(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -50766,7 +50732,7 @@ static ir_node *transform_f1664185(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -50871,7 +50837,7 @@ static ir_node *transform_f1664187(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -50922,7 +50888,7 @@ static ir_node *transform_f1664188(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -51027,7 +50993,7 @@ static ir_node *transform_f1664190(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -51078,7 +51044,7 @@ static ir_node *transform_f1664191(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -51183,7 +51149,7 @@ static ir_node *transform_f1664193(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -51215,7 +51181,7 @@ static ir_node *transform_f1664194(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -51282,7 +51248,7 @@ static ir_node *transform_f1664196(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -51314,7 +51280,7 @@ static ir_node *transform_f1664197(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -51381,7 +51347,7 @@ static ir_node *transform_f1664199(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -51413,7 +51379,7 @@ static ir_node *transform_f1664200(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -51480,7 +51446,7 @@ static ir_node *transform_f1664202(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 0)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
@@ -51512,7 +51478,7 @@ static ir_node *transform_f1664203(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *var1 = NULL;
 
 	if (!(is_Proj(node) && get_Proj_num(node) == 1)) {
-	return NULL;
+		return NULL;
 	}
 	if (!(is_Cond(get_Proj_pred(node)))) {
 		return NULL;
