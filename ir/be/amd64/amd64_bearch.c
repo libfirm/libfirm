@@ -223,7 +223,7 @@ static void rewrite_unsigned_float_Conv(ir_node *node)
 	dbg_info  *dbgi   = get_irn_dbg_info(node);
 	ir_node   *block  = get_nodes_block(node);
 	ir_node   *in     = get_Conv_op(node);
-	ir_node   *in_xmm = new_r_Conv(block, in, amd64_mode_xmm);
+	ir_node   *in_xmm = new_rd_Conv(dbgi, block, in, amd64_mode_xmm);
 	ir_tarval *magic0
 		= new_integer_tarval_from_str("4530000043300000", 16, 0, 16,
 		                              amd64_mode_xmm);
@@ -238,7 +238,7 @@ static void rewrite_unsigned_float_Conv(ir_node *node)
 	ir_node   *subpd  = new_bd_amd64_l_subpd(dbgi, block, punpck, const1);
 	ir_node   *haddpd = new_bd_amd64_l_haddpd(dbgi, block, subpd, subpd);
 	ir_mode   *mode   = get_irn_mode(node);
-	ir_node   *conv   = new_r_Conv(block, haddpd, mode);
+	ir_node   *conv   = new_rd_Conv(dbgi, block, haddpd, mode);
 	exchange(node, conv);
 }
 
