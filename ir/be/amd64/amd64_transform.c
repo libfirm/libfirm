@@ -381,6 +381,7 @@ static ir_node *create_float_const(dbg_info *dbgi, ir_node *block,
 		pn_res = pn_amd64_movs_xmm_res;
 	}
 	set_irn_pinned(load, false);
+	arch_add_irn_flags(load, arch_irn_flag_rematerializable);
 
 	return be_new_Proj(load, pn_res);
 }
