@@ -2393,12 +2393,14 @@ static ir_node *gen_Conv(ir_node *const node)
 
 	bool const src_float = mode_is_float(src_mode);
 	bool const dst_float = mode_is_float(dst_mode);
-	bool const is_gp     = !src_float && !dst_float;
 
-	if (is_gp) {
-		if (src_bits > dst_bits) {
+	if (!src_float && !dst_float) {
+		/* int -> int */
+		if (src_bits >= dst_bits || be_upper_bits_clean(op, src_mode)) {
 			/* Omit unnecessary conversion. */
 			return be_transform_node(op);
+		} else {
+			return gen_extend(dbgi, block, op, src_mode);
 		}
 	}
 
@@ -2410,16 +2412,13 @@ static ir_node *gen_Conv(ir_node *const node)
 	} else {
 		assert(src_bits == dst_bits);
 		/* skip unnecessary conv */
-		if ((src_float && dst_float) || is_gp)
+		if (src_float && dst_float)
 			return be_transform_node(op);
 		min_mode = src_mode;
 	}
 
-	if (is_gp && be_upper_bits_clean(op, min_mode))
-		return be_transform_node(op);
-
 	x86_insn_size_t size;
-	if (!is_gp && get_mode_size_bits(min_mode) < 32) {
+	if (get_mode_size_bits(min_mode) < 32) {
 		/* Only 32-bit and 64-bit register size allowed for
 		 * floating point conversion */
 		size = X86_SIZE_32;
@@ -2429,12 +2428,6 @@ static ir_node *gen_Conv(ir_node *const node)
 		size = x86_size_from_mode(src_mode);
 	} else {
 		size = x86_size_from_mode(min_mode);
-	}
-
-	if (is_gp) {
-		/* int to int */
-		assert(get_mode_size_bits(min_mode) < 64);
-		return gen_extend(dbgi, block, op, min_mode);
 	}
 
 	if (dst_mode == x86_mode_E) {
