@@ -2395,6 +2395,13 @@ static ir_node *gen_Conv(ir_node *const node)
 	bool const dst_float = mode_is_float(dst_mode);
 	bool const is_gp     = !src_float && !dst_float;
 
+	if (is_gp) {
+		if (src_bits > dst_bits) {
+			/* Omit unnecessary conversion. */
+			return be_transform_node(op);
+		}
+	}
+
 	ir_mode *min_mode;
 	if (src_bits < dst_bits) {
 		min_mode = src_mode;

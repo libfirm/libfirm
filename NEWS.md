@@ -40,6 +40,7 @@ libFirm 1.22.1 (2016-01-07)
 * opt: Handle constant folding for the builtins `clz`, `ctz`, `ffs`, `parity` and `popcount`
 * arm: Avoid redundant sign/zero extension right after a load
 * amd64, arm: Avoid redundant sign/zero extension right before a store
+* amd64: Avoid redundant sign/zero extension for truncation
 * Bugfixes
 
 libFirm 1.22.0 (2015-12-31)
